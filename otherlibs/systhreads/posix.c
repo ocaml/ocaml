@@ -16,6 +16,7 @@
 #include <errno.h>
 #include <string.h>
 #include <pthread.h>
+#include <semaphore.h>
 #include <signal.h>
 #include <sys/time.h>
 #include "alloc.h"
@@ -558,6 +559,64 @@ value caml_condition_broadcast(value wrapper)           /* ML */
   End_roots();
   caml_pthread_check(retcode, "Condition.broadcast");
   return Val_unit;
+}
+
+/* Semaphore operations.  Currently not exported to the user,
+   used only for implementing Thread.wait_signal */
+
+#define Semaphore_val(v) ((sem_t *) Field(v, 1))
+#define Max_semaphore_number 1000
+
+static void caml_semaphore_finalize(value wrapper)
+{
+  sem_t * sem = Semaphore_val(wrapper);
+  sem_destroy(sem);
+  stat_free(sem);
+}
+
+value caml_semaphore_new(value vinit)        /* ML */
+{
+  sem_t * sem;
+  value wrapper;
+  sem = stat_alloc(sizeof(sem_t));
+  if (sem_init(sem, 0, Int_val(vinit)) == -1)
+    caml_pthread_check(errno, "Semaphore.create");
+  wrapper = alloc_final(2, caml_semaphore_finalize, 1, Max_semaphore_number);
+  Semaphore_val(wrapper) = sem;
+  return wrapper;
+}
+
+value caml_semaphore_wait(value wrapper)           /* ML */
+{
+  int retcode;
+  sem_t * sem = Semaphore_val(wrapper);
+  Begin_root(wrapper)     /* prevent deallocation of semaphore */
+    enter_blocking_section();
+    retcode = 0;
+    while (sem_wait(sem) == -1) {
+      if (errno != EINTR) { retcode = errno; break; }
+    }
+    leave_blocking_section();
+  End_roots();
+  caml_pthread_check(retcode, "Semaphore.wait");
+  return Val_unit;
+}
+
+value caml_semaphore_post(value wrapper)           /* ML */
+{
+  sem_t * sem = Semaphore_val(wrapper);
+  if (sem_post(sem) == -1)
+    caml_pthread_check(errno, "Semaphore.post");
+  return Val_unit;
+}
+
+value caml_semaphore_getvalue(value wrapper) /* ML */
+{
+  sem_t * sem = Semaphore_val(wrapper);
+  int val;
+  if (sem_getvalue(sem, &val) == -1)
+    caml_pthread_check(errno, "Semaphore.getvalue");
+  return Val_int(val);
 }
 
 /* Error report */

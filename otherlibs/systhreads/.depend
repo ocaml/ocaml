@@ -23,11 +23,13 @@ event.cmo: condition.cmi mutex.cmi event.cmi
 event.cmx: condition.cmx mutex.cmx event.cmi 
 mutex.cmo: mutex.cmi 
 mutex.cmx: mutex.cmi 
-thread.cmo: ../unix/unix.cmi thread.cmi 
-thread.cmx: ../unix/unix.cmx thread.cmi 
+semaphore.cmo: semaphore.cmi 
+semaphore.cmx: semaphore.cmi 
+thread.cmo: semaphore.cmi ../unix/unix.cmi thread.cmi 
+thread.cmx: semaphore.cmx ../unix/unix.cmx thread.cmi 
 threadUnix.cmo: thread.cmi ../unix/unix.cmi threadUnix.cmi 
 threadUnix.cmx: thread.cmx ../unix/unix.cmx threadUnix.cmi 
-thread_posix.cmo: ../unix/unix.cmi 
-thread_posix.cmx: ../unix/unix.cmx 
+thread_posix.cmo: semaphore.cmi ../unix/unix.cmi 
+thread_posix.cmx: semaphore.cmx ../unix/unix.cmx 
 thread_win32.cmo: ../unix/unix.cmi 
 thread_win32.cmx: ../unix/unix.cmx 

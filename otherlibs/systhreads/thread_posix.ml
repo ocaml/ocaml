@@ -71,3 +71,12 @@ let select = Unix.select
 
 let wait_pid p = Unix.waitpid [] p
 
+let wait_signal sigs =
+  let gotsig = ref 0 in
+  let sem = Semaphore.create 0 in
+  let sighandler s = gotsig := s; Semaphore.post sem in
+  let oldhdlrs =
+    List.map (fun s -> Sys.signal s (Sys.Signal_handle sighandler)) sigs in
+  Semaphore.wait sem;
+  List.iter2 (fun s act -> Sys.signal s act; ()) sigs oldhdlrs;
+  !gotsig

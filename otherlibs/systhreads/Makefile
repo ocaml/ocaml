@@ -6,7 +6,8 @@ CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib -I ../unix
 BYTECODE_C_OBJS=posix_b.o
 NATIVECODE_C_OBJS=posix_n.o
 
-THREAD_OBJS=thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo
+THREAD_OBJS=semaphore.cmo thread.cmo mutex.cmo condition.cmo event.cmo \
+  threadUnix.cmo
 
 GENFILES=thread.ml
 
