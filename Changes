@@ -7,6 +7,10 @@ Language features:
 - Support for immediate objects, i.e. objects defined without going
   through a class.  (Syntax is "object <field and methods> end".)
 
+Type-checking:
+- When typing records, the module path annotation of the first path
+  annotated label now stands for all of the labels of the record.
+
 Both compilers:
 - More compact compilation of classes.
 - Much more efficient handling of class definitions inside functors

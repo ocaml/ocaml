@@ -335,6 +335,22 @@ let build_or_pat env loc lid =
           pat pats in
       rp { r with pat_loc = loc }
 
+let rec find_record_qual = function
+  | [] -> None
+  | (Longident.Ldot (modname, _), _) :: _ -> Some modname
+  | _ :: rest -> find_record_qual rest
+
+let type_label_a_list type_lid_a lid_a_list =
+  match find_record_qual lid_a_list with
+  | None -> List.map type_lid_a lid_a_list
+  | Some modname ->
+      List.map
+        (function
+         | (Longident.Lident id), sarg ->
+              type_lid_a (Longident.Ldot (modname, id), sarg)
+         | lid_a -> type_lid_a lid_a)
+        lid_a_list
+
 let rec type_pat env sp =
   match sp.ppat_desc with
     Ppat_any ->
@@ -442,7 +458,7 @@ let rec type_pat env sp =
         (label, arg)
       in
       rp {
-        pat_desc = Tpat_record(List.map type_label_pat lid_sp_list);
+        pat_desc = Tpat_record(type_label_a_list type_label_pat lid_sp_list);
         pat_loc = sp.ppat_loc;
         pat_type = ty;
         pat_env = env }
@@ -934,7 +950,7 @@ let rec type_exp env sexp =
         if label.lbl_private = Private then
           raise(Error(sexp.pexp_loc, Private_type ty));
         (label, {arg with exp_type = instance arg.exp_type}) in
-      let lbl_exp_list = List.map type_label_exp lid_sexp_list in
+      let lbl_exp_list = type_label_a_list type_label_exp lid_sexp_list in
       let rec check_duplicates seen_pos lid_sexp lbl_exp =
         match (lid_sexp, lbl_exp) with
           ((lid, _) :: rem1, (lbl, _) :: rem2) ->
