@@ -31,6 +31,7 @@ and cmxa_magic_number = "Caml1999Z001"
 let load_path = ref ([] : string list)
 
 let max_tag = 248
+let max_young_wosize = 256
 
 let architecture = "%%ARCH%%"
 

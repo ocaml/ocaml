@@ -44,7 +44,9 @@ val cmxa_magic_number: string
 
 val max_tag: int
         (* Biggest tag that can be stored in the header of a block. *)
-
+val max_young_wosize: int
+        (* Maximal size of arrays that are directly allocated in the
+           minor heap *)
 val architecture: string
         (* Name of processor type for the native-code compiler *)
 val system: string
