@@ -71,7 +71,6 @@ let _ =
       Dynlink.init ();
       Dynlink.allow_unsafe_modules true;
       try
-        Dynlink.add_available_units Odoc_crc.crc_unit_list ;
         let real_file = get_real_filename file in
         ignore(Dynlink.loadfile real_file)
       with

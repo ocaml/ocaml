@@ -1,4 +1,5 @@
 Current :
+OK - no need to Dynlink.add_available_units any more
 OK - generate html from module_kind rather than from module_type
 OK   + same for classes and class types
 OK - add the kind to module parameters (the way the parameter was build in the parsetree)
