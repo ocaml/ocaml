@@ -119,7 +119,6 @@ let (msg_file, msg_line, msg_chars, msg_to, msg_colon, warn_head) =
   match Sys.os_type with
   | "MacOS" -> ("File \"", "\"; line ", "; characters ", " to ", "", "### ")
   | _ -> ("File \"", "\", line ", ", characters ", "-", ":", "")
-;;
 
 let print loc =
   if String.length !input_name = 0 then
@@ -141,12 +140,14 @@ let print loc =
   end
 
 let print_warning loc msg =
+  if not !Sys.interactive then Format.set_formatter_out_channel stderr;
   print loc;
   print_string warn_head;
   print_string "Warning: "; print_string msg; print_newline();
-  incr num_loc_lines
+  incr num_loc_lines;
+  if not !Sys.interactive then Format.set_formatter_out_channel stdout
 
 let echo_eof () =
   print_newline ();
   incr num_loc_lines
-;;
+
