@@ -2,10 +2,10 @@
 (*                                                                     *)
 (*                           Objective Caml                            *)
 (*                                                                     *)
-(*            Pierre Weis, projet Cristal, INRIA Rocquencourt         *)
+(*            Pierre Weis, projet Cristal, INRIA Rocquencourt          *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -282,7 +282,7 @@ let format_pp_token state size = function
            if size > state.pp_space_left
             then break_new_line state off width else
            (* break the line here leads to new indentation ? *)
-           if state.pp_current_indent > state.pp_margin + off - width
+           if state.pp_current_indent > state.pp_margin - width + off
            then break_new_line state off width else break_same_line state n
         | Pp_hvbox -> break_new_line state off width
         | Pp_fits -> break_same_line state n
@@ -304,7 +304,7 @@ let rec advance_left state =
         (size < 0 &&
          (state.pp_right_total - state.pp_left_total < state.pp_space_left))
         then begin
-         take_queue state.pp_queue;
+         let _ = take_queue state.pp_queue in
          format_pp_token state (if size < 0 then pp_infinity else size) tok;
          state.pp_left_total <- len + state.pp_left_total;
          advance_left state
@@ -740,7 +740,7 @@ let fprintf ppf format =
           | c ->
               invalid_arg ("fprintf: unknown format")
           end
-       |  c  -> pp_print_char ppf c; doprn (succ i)
+       | c -> pp_print_char ppf c; doprn (succ i)
 
   and skip_args j =
     match format.[j] with
