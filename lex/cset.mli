@@ -18,6 +18,8 @@ type t
 val empty : t
 val is_empty : t -> bool
 val all_chars : t
+exception Bad
+
 val all_chars_eof : t
 val eof : t
 val singleton : int ->  t
