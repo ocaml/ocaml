@@ -776,23 +776,26 @@ then
   has_tk=false
 else
   has_tk=true
-fi
-
-tcl_version=''
-tcl_version=`sh ./runtest $tk_defs tclversion.c 2> /dev/null`
-if test -n "$tcl_version"; then
-  echo "tcl.h version $tcl_version found."
-  case $tcl_version in
-  7.5) tclmaj=7 tclmin=5 tkmaj=4 tkmin=1 ;;
-  7.6) tclmaj=7 tclmin=6 tkmaj=4 tkmin=2 ;;
-  8.0) tclmaj=8 tclmin=0 tkmaj=8 tkmin=0 ;;
-  8.1) tclmaj=8 tclmin=1 tkmaj=8 tkmin=1 ;;
-  8.2) tclmaj=8 tclmin=2 tkmaj=8 tkmin=2 ;;
-  *) echo "This version is not known."; has_tk=false ;;
-  esac
-else
-  echo "tcl.h not found."
-  has_tk=false
+  tcl_version=''
+  tcl_version=`sh ./runtest $tk_defs tclversion.c 2> /dev/null`
+  if test -z "$tcl_version" && test -z "$tk_defs"; then
+    tk_defs=-I/usr/local/include
+    tcl_version=`sh ./runtest $tk_defs tclversion.c 2> /dev/null`
+  fi
+  if test -n "$tcl_version"; then
+    echo "tcl.h version $tcl_version found."
+    case $tcl_version in
+    7.5) tclmaj=7 tclmin=5 tkmaj=4 tkmin=1 ;;
+    7.6) tclmaj=7 tclmin=6 tkmaj=4 tkmin=2 ;;
+    8.0) tclmaj=8 tclmin=0 tkmaj=8 tkmin=0 ;;
+    8.1) tclmaj=8 tclmin=1 tkmaj=8 tkmin=1 ;;
+    8.2) tclmaj=8 tclmin=2 tkmaj=8 tkmin=2 ;;
+    *) echo "This version is not known."; has_tk=false ;;
+    esac
+  else
+    echo "tcl.h not found."
+    has_tk=false
+  fi
 fi
 
 if test $has_tk = true; then
@@ -805,36 +808,44 @@ if test $has_tk = true; then
 fi
 
 tkauxlibs="$mathlib $dllib"
+tcllib=''
+tklib=''
 if test $has_tk = true; then
-  if sh ./hasgot $tk_libs -ltcl$tclmaj.$tclmin $tkauxlibs Tcl_DoOneEvent
+  if sh ./hasgot $tk_libs $tkauxlibs Tcl_DoOneEvent
+  then :
+  elif sh ./hasgot $tk_libs -ltcl$tclmaj.$tclmin $tkauxlibs Tcl_DoOneEvent
   then
-    tcllib=tcl$tclmaj.$tclmin
-    tklib=tk$tkmaj.$tkmin
+    tk_libs="$tk_libs -ltcl$tclmaj.$tclmin -ltk$tkmaj.$tkmin"
   elif sh ./hasgot $tk_libs -ltcl$tclmaj$tclmin $tkauxlibs Tcl_DoOneEvent
   then
-    tcllib=tcl$tclmaj$tclmin
-    tklib=tk$tkmaj$tkmin
-  elif sh ./hasgot $tk_libs -ltcl $tkauxlibs Tcl_DoOneEvent
+    tk_libs="$tk_libs -ltcl$tclmaj$tclmin -ltk$tkmaj$tkmin"
+  elif test -z "$tk_libs" && tk_libs=-L/usr/local/lib && \
+    sh ./hasgot $tk_libs -ltcl$tclmaj.$tclmin $tkauxlibs Tcl_DoOneEvent
   then
-    tcllib=tcl; tklib=tk
+    tk_libs="$tk_libs -ltcl$tclmaj.$tclmin -ltk$tkmaj.$tkmin"
+  elif sh ./hasgot $tk_libs -ltcl$tclmaj$tclmin $tkauxlibs Tcl_DoOneEvent
+  then
+    tk_libs="$tk_libs -ltcl$tclmaj$tclmin -ltk$tkmaj$tkmin"
+# elif sh ./hasgot $tk_libs -ltcl $tkauxlibs Tcl_DoOneEvent; then
+#   tk_libs="$tk_libs -ltcl -ltk"
   else
     echo "Tcl library not found."
     has_tk=false
   fi
-  if test $has_tk = true; then
-    echo "Tcl library ($tcllib) found."
-  fi
 fi
 if test $has_tk = true && \
-  sh ./hasgot $tk_libs -l$tklib -l$tcllib $x11_libs -lX11 $tkauxlibs Tk_SetGrid
+  sh ./hasgot $tk_libs $x11_libs -lX11 $tkauxlibs Tk_SetGrid
 then
-  echo "Tk library ($tklib) found."
+  echo "Tcl/Tk libraries found."
+else
+  echo "Tcl library found."
+  echo "Tk library not found."
+  has_tk=false
 fi
 
 if test $has_tk = true; then
-  tk_link="$tk_libs -l$tklib -l$tcllib"
   echo "TK_DEFS=$tk_defs" >> Makefile
-  echo "TK_LINK=$tk_link" >> Makefile
+  echo "TK_LINK=$tk_libs" >> Makefile
   otherlibraries="$otherlibraries labltk"
 else
   echo "Configuration failed, LablTk will not be built."
@@ -928,8 +939,9 @@ fi
 
 if test $has_tk = true; then
 echo "The \"labltk\" library:"
+echo "  use tcl/tk version ....... $tcl_version"
 echo "	options for compiling .... $tk_defs"
-echo "	options for linking ...... $tk_link"
+echo "	options for linking ...... $tk_libs"
 else
 echo "The \"labltk\" library: configuration failed"
 fi
