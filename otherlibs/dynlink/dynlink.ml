@@ -148,6 +148,15 @@ let loadfile file_name =
   with exc ->
     close_in ic; raise exc
 
+let loadfile_private file_name =
+  let initial_symtable = Symtable.current_state() in
+  try
+    loadfile file_name;
+    Symtable.hide_additions initial_symtable
+  with exn ->
+    Symtable.hide_additions initial_symtable;
+    raise exn
+
 (* Error report *)
 
 let error_message = function
