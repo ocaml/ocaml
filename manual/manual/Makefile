@@ -65,7 +65,7 @@ html: files
 info: files
 	cd infoman; rm -f ocaml.info*; \
 	${HEVEA} ${INFO} -o ocaml.info -I .. -I ../refman -I ../library -I ../cmds -I ../tutorials -I ../../styles -I ../texstuff ../manual.inf -e macros.tex ../manual.tex
-	cd infoman; gzip -9 ocaml.info*
+	cd infoman; rm -f ocaml.info.tmp; gzip -9 ocaml.info*
 
 text: files
 	cd textman; \
@@ -98,11 +98,11 @@ release:
 	gzip < texstuff/manual.dvi > $(RELEASE)refman.dvi.gz
 	dvips -Php11rv -o '!gzip > $(RELEASE)refman.ps.gz' texstuff/manual.dvi
 	rm -f htmlman/manual.html
-	tar cf - htmlman/*.* | gzip > $(RELEASE)refman.html.tar.gz
-	zip -8 $(RELEASE)refman.html.zip htmlman/*.*
+	tar cf - htmlman/*.* htmlman/libref | gzip > $(RELEASE)refman.html.tar.gz
+	zip -8 $(RELEASE)refman.html.zip htmlman/*.* htmlman/libref/*.*
 	cp texstuff/pdfmanual.pdf $(RELEASE)refman.pdf
 	cp textman/manual.txt $(RELEASE)refman.txt
-	tar cf - infoman/ocaml* | gzip > $(RELEASE)refman.info.tar.gz
+	tar cf - infoman/ocaml.info* | gzip > $(RELEASE)refman.info.tar.gz
 
 .SUFFIXES:
 .SUFFIXES: .tex .etex .htex
@@ -110,5 +110,5 @@ release:
 .etex.tex:
 	../tools/texquote2 < $*.etex > $*.tex
 
-version.tex: $(CSLDIR)/utils/config.mlp
-	sed -n -e 's/^let version = "\(.*\)".*$$/\\def\\ocamlversion{\1}/p' $(CSLDIR)/utils/config.mlp > version.tex
+version.tex: $(CSLDIR)/stdlib/sys.ml
+	sed -n -e 's/^let ocaml_version = "\(.*\)".*$$/\\def\\ocamlversion{\1}/p' $(CSLDIR)/stdlib/sys.ml > version.tex
