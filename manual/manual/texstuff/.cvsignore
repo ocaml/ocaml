@@ -8,3 +8,5 @@
 *.ipr
 *.txt
 *.pdf
+*.ps
+pdfmanual.out

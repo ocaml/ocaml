@@ -1,3 +1,4 @@
 *.tex
 *.htex
 arithstatus.mli
+ocamldoc.out
