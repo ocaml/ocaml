@@ -554,7 +554,7 @@ EXTEND
           <:expr< let module $m$ = $mb$ in $e$ >>
       | "function"; OPT "|"; l = LIST1 match_case SEP "|" ->
           <:expr< fun [ $list:l$ ] >>
-      | "fun"; p = patt LEVEL "simple"; e = fun_def ->
+      | "fun"; p = simple_patt; e = fun_def ->
           <:expr< fun [$p$ -> $e$] >>
       | "match"; e = SELF; "with"; OPT "|"; l = LIST1 match_case SEP "|" ->
           <:expr< match $e$ with [ $list:l$ ] >>
@@ -715,7 +715,7 @@ EXTEND
   ;
   fun_binding:
     [ RIGHTA
-      [ p = patt LEVEL "simple"; e = SELF -> <:expr< fun $p$ -> $e$ >>
+      [ p = simple_patt; e = SELF -> <:expr< fun $p$ -> $e$ >>
       | "="; e = expr -> <:expr< $e$ >>
       | ":"; t = ctyp; "="; e = expr -> <:expr< ($e$ : $t$) >> ] ]
   ;
@@ -738,7 +738,7 @@ EXTEND
   ;
   fun_def:
     [ RIGHTA
-      [ p = patt LEVEL "simple"; e = SELF -> <:expr< fun $p$ -> $e$ >>
+      [ p = simple_patt; e = SELF -> <:expr< fun $p$ -> $e$ >>
       | "->"; e = expr -> <:expr< $e$ >> ] ]
   ;
   expr_ident:
@@ -789,7 +789,11 @@ EXTEND
     | LEFTA
       [ p1 = SELF; "."; p2 = SELF -> <:patt< $p1$ . $p2$ >> ]
     | "simple"
-      [ s = LIDENT -> <:patt< $lid:s$ >>
+      [ p = simple_patt -> p ] ]
+  ;
+
+  simple_patt:
+    [ [ s = LIDENT -> <:patt< $lid:s$ >>
       | s = UIDENT -> <:patt< $uid:s$ >>
       | s = INT -> <:patt< $int:s$ >>
       | s = INT32 -> MLast.PaInt32 loc s
@@ -814,9 +818,11 @@ EXTEND
       | "{"; lpl = lbl_patt_list; "}" -> <:patt< { $list:lpl$ } >>
       | "("; ")" -> <:patt< () >>
       | "("; op = operator_rparen -> <:patt< $lid:op$ >>
-      | "("; p = SELF; ":"; t = ctyp; ")" -> <:patt< ($p$ : $t$) >>
-      | "("; p = SELF; ")" -> <:patt< $p$ >>
+      | "("; p = patt; ":"; t = ctyp; ")" -> <:patt< ($p$ : $t$) >>
+      | "("; p = patt; ")" -> <:patt< $p$ >>
       | "_" -> <:patt< _ >>
+      | "`"; s = ident -> <:patt< ` $s$ >>
+      | "#"; t = mod_ident -> <:patt< # $list:t$ >>
       | x = LOCATE ->
           let x =
             try
@@ -841,6 +847,7 @@ EXTEND
           in
           Pcaml.handle_patt_quotation loc x ] ]
   ;
+
   patt_semi_list:
     [ [ p = patt; ";"; pl = SELF -> [p :: pl]
       | p = patt; ";" -> [p]
@@ -981,7 +988,7 @@ EXTEND
     [ [ "="; ce = class_expr -> ce
       | ":"; ct = class_type; "="; ce = class_expr ->
           <:class_expr< ($ce$ : $ct$) >>
-      | p = patt LEVEL "simple"; cfb = SELF ->
+      | p = simple_patt; cfb = SELF ->
           <:class_expr< fun $p$ -> $cfb$ >> ] ]
   ;
   class_type_parameters:
@@ -989,11 +996,11 @@ EXTEND
       | "["; tpl = LIST1 type_parameter SEP ","; "]" -> (loc, tpl) ] ]
   ;
   class_fun_def:
-    [ [ p = patt LEVEL "simple"; "->"; ce = class_expr ->
+    [ [ p = simple_patt; "->"; ce = class_expr ->
           <:class_expr< fun $p$ -> $ce$ >>
       | p = labeled_patt; "->"; ce = class_expr ->
           <:class_expr< fun $p$ -> $ce$ >>
-      | p = patt LEVEL "simple"; cfd = SELF ->
+      | p = simple_patt; cfd = SELF ->
           <:class_expr< fun $p$ -> $cfd$ >>
       | p = labeled_patt; cfd = SELF ->
           <:class_expr< fun $p$ -> $cfd$ >> ] ]
@@ -1215,12 +1222,8 @@ EXTEND
   fun_binding:
     [ [ p = labeled_patt; e = SELF -> <:expr< fun $p$ -> $e$ >> ] ]
   ;
-  patt: LEVEL "simple"
-    [ [ "`"; s = ident -> <:patt< ` $s$ >>
-      | "#"; t = mod_ident -> <:patt< # $list:t$ >> ] ]
-  ;
   labeled_patt:
-    [ [ i = LABEL; p = patt LEVEL "simple" ->
+    [ [ i = LABEL; p = simple_patt ->
            <:patt< ~ $i$ : $p$ >>
       | i = TILDEIDENT ->
            <:patt< ~ $i$ >>
