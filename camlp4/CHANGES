@@ -1,6 +1,10 @@
 Camlp4 Version 3.04
 -------------------
 
+- [27 Nov 01] Fixed functions Token.eval_char and Token.eval_string which
+  returned bad values, resulting lexing of backslash sequences incompatible
+  with OCaml (e.g. "\1" returned "\001" (one character) but OCaml returns
+  the string of the two characters \ and 1).
 - [15 Nov 01] In revised syntax, in let binding in sequences, the "in"
   can be replaced by a semicolon; the revised syntax printer pr_r.cmo
   now rather prints a semicolon there.
