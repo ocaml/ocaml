@@ -13,6 +13,12 @@
 
 #include <stdio.h>
 
+void array_bound_error()
+{
+  fprintf(stderr, "Fatal error: out-of-bound access in array or string\n");
+  exit(2);
+}
+
 long r[100];
 double d[10];
 long x, y;
