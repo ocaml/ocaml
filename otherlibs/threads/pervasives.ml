@@ -156,15 +156,21 @@ let stderr = open_descriptor_out 2
 
 (* Non-blocking stuff *)
 
+external thread_wait_read_prim : Unix.file_descr -> unit = "thread_wait_read"
+external thread_wait_write_prim : Unix.file_descr -> unit = "thread_wait_write"
+
+let thread_wait_read fd = thread_wait_read_prim fd
+let thread_wait_write fd = thread_wait_write_prim fd
+
 external inchan_ready : in_channel -> bool = "thread_inchan_ready"
 external outchan_ready : out_channel -> int -> bool = "thread_outchan_ready"
 external descr_inchan : in_channel -> Unix.file_descr = "channel_descriptor"
 external descr_outchan : out_channel -> Unix.file_descr = "channel_descriptor"
 
 let wait_inchan ic =
-  if not (inchan_ready ic) then Thread.wait_read (descr_inchan ic)
+  if not (inchan_ready ic) then thread_wait_read (descr_inchan ic)
 let wait_outchan oc len =
-  if not (outchan_ready oc len) then Thread.wait_write (descr_outchan oc)
+  if not (outchan_ready oc len) then thread_wait_write (descr_outchan oc)
 
 (* General output functions *)
 
@@ -221,8 +227,9 @@ let output_binary_int oc n =
   output_byte oc (n asr 8);
   output_byte oc n
 
-let output_value oc v =
-  output_string oc (Obj.marshal(Obj.repr v))
+external marshal : 'a -> string = "output_value_to_string"
+
+let output_value oc v = output_string oc (marshal v)
 
 external seek_out_blocking : out_channel -> int -> unit = "seek_out"
 
@@ -276,20 +283,22 @@ let really_input ic s ofs len =
 
 let input_line ic =
   let rec do_input buf pos =
-    if pos >= String.length buf then begin
-      let newbuf = String.create (2 * String.length buf) in
-      String.blit buf 0 newbuf 0 (String.length buf);
+    if pos >= string_length buf then begin
+      let newbuf = string_create (2 * string_length buf) in
+      string_blit buf 0 newbuf 0 (string_length buf);
       do_input newbuf pos
     end else begin
       let c = input_char ic in
-      if c = '\n' then
-        String.sub buf 0 pos 
-      else begin
+      if c = '\n' then begin
+        let res = string_create pos in
+        string_blit buf 0 res 0 pos;
+        res
+      end else begin
         buf.[pos] <- c;
         do_input buf (pos + 1)
       end
     end in
-  do_input (String.create 128) 0
+  do_input (string_create 128) 0
 
 let input_byte ic = wait_inchan ic; input_byte_blocking ic
 
@@ -301,19 +310,22 @@ let input_binary_int ic =
   let b4 = input_byte ic in
   (n1 lsl 24) + (b2 lsl 16) + (b3 lsl 8) + b4
 
+external unmarshal : string -> int -> 'a * int = "input_value_from_string"
+external char_code: char -> int = "%identity"
+
 let input_value ic =
-  let header = String.create 20 in
+  let header = string_create 20 in
   really_input ic header 0 20;
   let bsize =
-    (Char.code header.[4] lsl 24) +
-    (Char.code header.[5] lsl 16) +
-    (Char.code header.[6] lsl 8) +
-    Char.code header.[7] in
-  let buffer = String.create (20 + bsize) in
-  String.blit header 0 buffer 0 20;
+    (char_code header.[4] lsl 24) +
+    (char_code header.[5] lsl 16) +
+    (char_code header.[6] lsl 8) +
+    char_code header.[7] in
+  let buffer = string_create (20 + bsize) in
+  string_blit header 0 buffer 0 20;
   really_input ic buffer 20 bsize;
-  let (res, pos) = Obj.unmarshal buffer 0 in
-  Obj.magic res
+  let (res, pos) = unmarshal buffer 0 in
+  res
 
 external seek_in : in_channel -> int -> unit = "seek_in"
 external pos_in : in_channel -> int = "pos_in"

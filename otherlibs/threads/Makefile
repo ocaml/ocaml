@@ -52,7 +52,8 @@ realclean:
 install:
 	cp libthreads.a $(LIBDIR)/libthreads.a
 	cd $(LIBDIR); $(RANLIB) libthreads.a
-	cp *.cmi threads.cma $(LIBDIR)
+	if test -d $(LIBDIR)/threads; then : ; else mkdir $(LIBDIR)/threads; fi
+	cp thread.cmi mutex.cmi condition.cmi event.cmi threadUnix.cmi threads.cma stdlib.cma $(LIBDIR)/threads
 
 installopt:
 
