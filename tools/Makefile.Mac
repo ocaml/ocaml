@@ -32,7 +32,8 @@ beforedepend ÄÄ ocamldep
 #
 #CSLPROF = ocamlprof.cmo
 #CSLPROF_IMPORTS = misc.cmo config.cmo clflags.cmo terminfo.cmo ¶
-#  location.cmo longident.cmo pstream.cmo parser.cmo lexer.cmo parse.cmo
+#  linenum.cmo location.cmo longident.cmo pstream.cmo ¶
+#  parser.cmo lexer.cmo parse.cmo
 #
 #ocamlprof Ä {CSLPROF} profiling.cmo
 #	{CAMLC} {LINKFLAGS} -o ocamlprof {CSLPROF_IMPORTS} {CSLPROF}

@@ -18,8 +18,9 @@ INCLUDES = -I :utils: -I :parsing: -I :typing: -I :bytecomp: ¶
 UTILS = :utils:misc.cmo :utils:tbl.cmo :utils:config.cmo ¶
         :utils:clflags.cmo :utils:terminfo.cmo :utils:ccomp.cmo
 
-PARSING = :parsing:location.cmo :parsing:longident.cmo :parsing:pstream.cmo ¶
-          :parsing:parser.cmo :parsing:lexer.cmo :parsing:parse.cmo
+PARSING = :parsing:linenum.cmo :parsing:location.cmo :parsing:longident.cmo ¶
+          :parsing:pstream.cmo :parsing:parser.cmo :parsing:lexer.cmo ¶
+          :parsing:parse.cmo
 
 TYPING = :typing:ident.cmo :typing:path.cmo ¶
   :typing:primitive.cmo :typing:types.cmo ¶
@@ -231,7 +232,7 @@ clean ÄÄ
 
 beforedepend ÄÄ :utils:config.ml
 
-# The parser generator
+# The parser
 
 :parsing:parser.mli Ä :parsing:parser.ml
     echo -n
@@ -244,7 +245,7 @@ clean ÄÄ
 
 beforedepend ÄÄ :parsing:parser.mli :parsing:parser.ml
 
-# The lexer generator
+# The lexer
 
 :parsing:lexer.ml Ä :parsing:lexer.mll
     {CAMLLEX} :parsing:lexer.mll
@@ -253,6 +254,16 @@ clean ÄÄ
     delete -i :parsing:lexer.ml
 
 beforedepend ÄÄ :parsing:lexer.ml
+
+# The auxiliary lexer for counting line numbers
+
+:parsing:linenum.ml Ä :parsing:linenum.mll
+    {CAMLLEX} :parsing:linenum.mll
+
+clean ÄÄ
+    delete -i :parsing:linenum.ml
+
+beforedepend ÄÄ :parsing:linenum.ml
 
 # The numeric opcodes
 

@@ -20,7 +20,7 @@ INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver -I tople
 UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo \
   utils/clflags.cmo utils/terminfo.cmo utils/ccomp.cmo
 
-PARSING=parsing/location.cmo parsing/longident.cmo \
+PARSING=parsing/linenum.cmo parsing/location.cmo parsing/longident.cmo \
   parsing/pstream.cmo parsing/parser.cmo parsing/lexer.cmo parsing/parse.cmo
 
 TYPING=typing/ident.cmo typing/path.cmo \
@@ -264,6 +264,16 @@ clean::
 	rm -f parsing/lexer.ml
 
 beforedepend:: parsing/lexer.ml
+
+# The auxiliary lexer for counting line numbers
+
+parsing/linenum.ml: parsing/linenum.mll
+	$(CAMLLEX) parsing/linenum.mll
+
+clean::
+	rm -f parsing/linenum.ml
+
+beforedepend:: parsing/linenum.ml
 
 # The compiler compiled with the native-code compiler
 # Currently not working because it requires C primitives from byterun/meta.c
