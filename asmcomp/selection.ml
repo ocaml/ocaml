@@ -444,6 +444,7 @@ let rec emit_expr env exp seq =
       insert Iexit [||] [||] seq;
       [||]
   | Ctrywith(e1, v, e2) ->
+      Proc.contains_calls := true;
       let (r1, s1) = emit_sequence env e1 in
       let rv = Reg.newv typ_addr in
       let (r2, s2) = emit_sequence (Tbl.add v rv env) e2 in

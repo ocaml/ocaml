@@ -104,10 +104,12 @@ let build_graph fundecl =
         add_interf_self i.res;
         interf weight i.next
     | Iifthenelse(tst, ifso, ifnot) ->
-        interf weight ifso; interf weight ifnot; interf weight i.next
+        interf (weight / 2) ifso;
+        interf (weight / 2) ifnot;
+        interf weight i.next
     | Iswitch(index, cases) ->
         for i = 0 to Array.length cases - 1 do
-          interf weight cases.(i)
+          interf (weight / 2) cases.(i)
         done;
         interf weight i.next
     | Iloop body ->

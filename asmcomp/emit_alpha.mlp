@@ -199,6 +199,8 @@ let rec instr_uses_gp i =
   | Lop(Iextcall(_, _)) -> true
   | Lop(Iload(_, Ibased(_, _))) -> true
   | Lop(Istore(_, Ibased(_, _))) -> true
+  | Lop(Iintop(Idiv | Imod)) -> true    (* divq and remq can be turned into *)
+  | Lop(Iintop_imm((Idiv | Imod), _)) -> true (* a function call *)
   | Lop(Iintop_imm(_, n)) ->
       if n < -0x8000000 or n > 0x7FFFFFFF then true else instr_uses_gp i.next
   | Lswitch(jumptbl) ->
@@ -542,8 +544,7 @@ let emit_instr i =
         `	ldq	$27, 8($sp)\n`;
         `	lda	$sp, 16($sp)\n`;
         liveregs i 0;
-        `	jmp	$26, ($27)\n`
-        (* Keep address of raise in $26 for debugging purposes *)
+        `	jmp	$25, ($27)\n`   (* Keep retaddr in $25 for debugging *)
 
 let rec emit_all i =
   match i.desc with Lend -> () | _ -> emit_instr i; emit_all i.next
@@ -558,6 +559,7 @@ let fundecl fundecl =
   call_gc_sites := [];
   modify_sites := [];
   uses_gp := instr_uses_gp fundecl.fun_body;
+  if !uses_gp then contains_calls := true;
   range_check_trap := 0;
   `	.text\n`;
   `	.align	4\n`;

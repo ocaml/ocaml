@@ -216,11 +216,11 @@ let rec reload i before =
    a conditional but not in the other, then we spill it late on entrance
    in the branch that needs it spilled.
    This strategy is turned off in loops, as it may prevent a spill from
-   being lifted up all the way out of the loop. *)
+   being lifted up all the way out of the loop.
+   Optimization currently turned off -- does not work as implemented. *)
 
 let spill_at_exit = ref Reg.Set.empty
 let spill_at_raise = ref Reg.Set.empty
-let inside_loop = ref false
 
 let add_spills regset i =
   Reg.Set.fold
@@ -254,22 +254,18 @@ let rec spill i finally =
       let (new_next, at_join) = spill i.next finally in
       let (new_ifso, before_ifso) = spill ifso at_join in
       let (new_ifnot, before_ifnot) = spill ifnot at_join in
-      if !inside_loop then
-        (instr_cons (Iifthenelse(test, new_ifso, new_ifnot))
-                    i.arg i.res new_next,
-         Reg.Set.union before_ifso before_ifnot)
-      else
+      (instr_cons (Iifthenelse(test, new_ifso, new_ifnot))
+                  i.arg i.res new_next,
+       Reg.Set.union before_ifso before_ifnot)
+(**** if !inside_loop then
         (instr_cons
             (Iifthenelse(test,
               add_spills (Reg.Set.diff before_ifso before_ifnot) new_ifso,
               add_spills (Reg.Set.diff before_ifnot before_ifso) new_ifnot))
             i.arg i.res new_next,
          Reg.Set.inter before_ifso before_ifnot)
+*****)
   | Iswitch(index, cases) ->
-      (* Could spill early as for ifthenelse, but then it's less clear
-         when to do it (e.g. if all cases except one require a register
-         to be spilled, it's a bit wasteful to do the spill in all cases
-         minus one). *)
       let (new_next, at_join) = spill i.next finally in
       let before = ref Reg.Set.empty in
       let new_cases =
@@ -282,8 +278,6 @@ let rec spill i finally =
       (instr_cons (Iswitch(index, new_cases)) i.arg i.res new_next,
        !before)
   | Iloop(body) ->
-      let saved_inside_loop = !inside_loop in
-      inside_loop := true;
       let (new_next, _) = spill i.next finally in
       let at_head = ref Reg.Set.empty in
       let final_body = ref body in
@@ -298,7 +292,6 @@ let rec spill i finally =
         done
       with Exit -> ()
       end;
-      inside_loop := saved_inside_loop;
       (instr_cons (Iloop(!final_body)) i.arg i.res new_next,
        !at_head)
   | Icatch(body, handler) ->

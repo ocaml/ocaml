@@ -225,24 +225,7 @@ let reload_operation makereg op args res = raise Use_default
 (* Layout of the stack *)
 
 let num_stack_slots = [| 0; 0 |]
-let stack_offset = ref 0
 let contains_calls = ref false
-
-let frame_size () =
-  let size =
-    !stack_offset +
-    8 * (num_stack_slots.(0) + num_stack_slots.(1)) +
-    (if !contains_calls then 8 else 0) in
-  Misc.align size 16
-
-let slot_offset loc class =
-  match loc with
-    Incoming n -> frame_size() + n
-  | Local n ->
-      if class = 0
-      then !stack_offset + n * 8
-      else !stack_offset + (num_stack_slots.(0) + n) * 8
-  | Outgoing n -> n
 
 (* Calling the assembler *)
 
