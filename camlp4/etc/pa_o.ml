@@ -62,8 +62,6 @@ value mkumin loc f arg =
       <:expr< $lid:f$ $arg$ >> ]
 ;
 
-external loc_of_node : 'a -> (int * int) = "%field0";
-
 value mklistexp loc last =
   loop True where rec loop top =
     fun
@@ -72,7 +70,7 @@ value mklistexp loc last =
         [ Some e -> e
         | None -> <:expr< [] >> ]
     | [e1 :: el] ->
-        let loc = if top then loc else (fst (loc_of_node e1), snd loc) in
+        let loc = if top then loc else (fst (MLast.loc_of_expr e1), snd loc) in
         <:expr< [$e1$ :: $loop False el$] >> ]
 ;
 
@@ -84,7 +82,7 @@ value mklistpat loc last =
         [ Some p -> p
         | None -> <:patt< [] >> ]
     | [p1 :: pl] ->
-        let loc = if top then loc else (fst (loc_of_node p1), snd loc) in
+        let loc = if top then loc else (fst (MLast.loc_of_patt p1), snd loc) in
         <:patt< [$p1$ :: $loop False pl$] >> ]
 ;
 
@@ -918,7 +916,7 @@ and type_id_list =
   [ <:ctyp< $uid:m$.$t$ >> -> [m :: type_id_list t]
   | <:ctyp< $lid:i$ >> -> [i]
   | t ->
-      raise_with_loc (loc_of_node t)
+      raise_with_loc (MLast.loc_of_ctyp t)
         (Stream.Error "lowercase identifier expected") ]
 ;
 
