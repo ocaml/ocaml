@@ -26,6 +26,7 @@ type error =
   | Unterminated_string
   | Unterminated_string_in_comment
   | Keyword_as_label of string
+  | Literal_overflow of string
 ;;
 
 exception Error of error * Location.t;;
@@ -211,6 +212,8 @@ let report_error ppf = function
       fprintf ppf "This comment contains an unterminated string literal"
   | Keyword_as_label kwd ->
       fprintf ppf "`%s' is a keyword, it cannot be used as label name" kwd
+  | Literal_overflow ty ->
+      fprintf ppf "Integer literal exceeds the range of representable integers of type %s" ty
 ;;
 
 }
@@ -271,19 +274,32 @@ rule token = parse
   | uppercase identchar *
       { UIDENT(Lexing.lexeme lexbuf) }       (* No capitalized keywords *)
   | int_literal
-      { INT (int_of_string(Lexing.lexeme lexbuf)) }
+      { try
+          INT (int_of_string(Lexing.lexeme lexbuf))
+        with Failure _ ->
+          raise (Error(Literal_overflow "int", Location.curr lexbuf))
+      }
   | float_literal
       { FLOAT (remove_underscores(Lexing.lexeme lexbuf)) }
   | int_literal "l"
       { let s = Lexing.lexeme lexbuf in
-        INT32 (Int32.of_string(String.sub s 0 (String.length s - 1))) }
+        try
+          INT32 (Int32.of_string(String.sub s 0 (String.length s - 1)))
+        with Failure _ ->
+          raise (Error(Literal_overflow "int32", Location.curr lexbuf)) }
   | int_literal "L"
       { let s = Lexing.lexeme lexbuf in
-        INT64 (Int64.of_string(String.sub s 0 (String.length s - 1))) }
+        try
+          INT64 (Int64.of_string(String.sub s 0 (String.length s - 1)))
+        with Failure _ ->
+          raise (Error(Literal_overflow "int64", Location.curr lexbuf)) }
   | int_literal "n"
       { let s = Lexing.lexeme lexbuf in
-        NATIVEINT 
-          (Nativeint.of_string(String.sub s 0 (String.length s - 1))) }
+        try
+          NATIVEINT 
+            (Nativeint.of_string(String.sub s 0 (String.length s - 1)))
+        with Failure _ ->
+          raise (Error(Literal_overflow "nativeint", Location.curr lexbuf)) }
   | "\""
       { reset_string_buffer();
         let string_start = lexbuf.lex_start_p in
