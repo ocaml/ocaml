@@ -157,6 +157,7 @@ let report_error error =
       print_string "Cannot extract field number "; print_int pos;
       print_string " from a "; print_int len;
       print_string "-components tuple of type ";
+      Printtyp.reset (); Printtyp.mark_loops ty;
       print_space(); Printtyp.type_expr ty
   | Array_index(len, pos) ->
       print_string "Cannot extract element number "; print_int pos;

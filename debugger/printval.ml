@@ -309,6 +309,7 @@ let print_named_value max_depth exp obj ty env =
       let n = name_value obj ty in
       print_char '$'; print_int n
   end;
+  Printtyp.reset (); Printtyp.mark_loops ty;
   print_string " :"; print_space(); Printtyp.type_expr ty;
   print_space(); print_string "="; print_space();
   print_value max_depth obj ty env;
