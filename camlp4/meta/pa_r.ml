@@ -180,7 +180,7 @@ EXTEND
     [ "top"
       [ "declare"; st = LIST0 [ s = str_item; ";" -> s ]; "end" ->
           <:str_item< declare $list:st$ end >>
-      | "exception"; (c, tl) = constructor_declaration; b = rebind_exn ->
+      | "exception"; (_, c, tl) = constructor_declaration; b = rebind_exn ->
           <:str_item< exception $c$ of $list:tl$ = $b$ >>
       | "external"; i = LIDENT; ":"; t = ctyp; "="; pd = LIST1 STRING ->
           <:str_item< external $i$ : $t$ = $list:pd$ >>
@@ -225,7 +225,7 @@ EXTEND
     [ "top"
       [ "declare"; st = LIST0 [ s = sig_item; ";" -> s ]; "end" ->
           <:sig_item< declare $list:st$ end >>
-      | "exception"; (c, tl) = constructor_declaration ->
+      | "exception"; (_, c, tl) = constructor_declaration ->
           <:sig_item< exception $c$ of $list:tl$ >>
       | "external"; i = LIDENT; ":"; t = ctyp; "="; pd = LIST1 STRING ->
           <:sig_item< external $i$ : $t$ = $list:pd$ >>
@@ -557,11 +557,12 @@ EXTEND
           <:ctyp< { $list:ldl$ } >> ] ]
   ;
   constructor_declaration:
-    [ [ ci = UIDENT; "of"; cal = LIST1 ctyp SEP "and" -> (ci, cal)
-      | ci = UIDENT -> (ci, []) ] ]
+    [ [ ci = UIDENT; "of"; cal = LIST1 ctyp SEP "and" -> (loc, ci, cal)
+      | ci = UIDENT -> (loc, ci, []) ] ]
   ;
   label_declaration:
-    [ [ i = LIDENT; ":"; mf = OPT "mutable"; t = ctyp -> (i, o2b mf, t) ] ]
+    [ [ i = LIDENT; ":"; mf = OPT "mutable"; t = ctyp ->
+          (loc, i, o2b mf, t) ] ]
   ;
   ident:
     [ [ i = LIDENT -> i

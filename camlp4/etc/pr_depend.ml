@@ -53,8 +53,8 @@ value rec ctyp =
   | TyTup _ tl -> list ctyp tl
   | TyVrn _ sbtll _ -> list variant sbtll
   | x -> not_impl "ctyp" x ]
-and constr_decl (_, tl) = list ctyp tl
-and label_decl (_, _, t) = ctyp t
+and constr_decl (_, _, tl) = list ctyp tl
+and label_decl (_, _, _, t) = ctyp t
 and variant =
   fun
   [ RfTag _ _ tl -> list ctyp tl

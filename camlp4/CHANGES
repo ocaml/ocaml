@@ -1,6 +1,8 @@
 Camlp4 Version 3.04
 -------------------
 
+- [04 Nov 01] Added locations for variants and labels declarations in AST
+  (file MLast.mli).
 - [03 Nov 01] Added option -ca (comment after) when using pr_o or pr_r
   which print ocamldoc comments after the declarations, i.e. as they were
   before version 3.04.

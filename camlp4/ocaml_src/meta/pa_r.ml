@@ -391,7 +391,7 @@ Grammar.extend
        Gramext.Snterm
          (Grammar.Entry.obj (rebind_exn : 'rebind_exn Grammar.Entry.e))],
       Gramext.action
-        (fun (b : 'rebind_exn) (c, tl : 'constructor_declaration) _
+        (fun (b : 'rebind_exn) (_, c, tl : 'constructor_declaration) _
            (loc : int * int) ->
            (MLast.StExc (loc, c, tl, b) : 'str_item));
       [Gramext.Stoken ("", "declare");
@@ -554,7 +554,7 @@ Grammar.extend
             (constructor_declaration :
              'constructor_declaration Grammar.Entry.e))],
       Gramext.action
-        (fun (c, tl : 'constructor_declaration) _ (loc : int * int) ->
+        (fun (_, c, tl : 'constructor_declaration) _ (loc : int * int) ->
            (MLast.SgExc (loc, c, tl) : 'sig_item));
       [Gramext.Stoken ("", "declare");
        Gramext.Slist0
@@ -1567,14 +1567,14 @@ Grammar.extend
      [[Gramext.Stoken ("UIDENT", "")],
       Gramext.action
         (fun (ci : string) (loc : int * int) ->
-           (ci, [] : 'constructor_declaration));
+           (loc, ci, [] : 'constructor_declaration));
       [Gramext.Stoken ("UIDENT", ""); Gramext.Stoken ("", "of");
        Gramext.Slist1sep
          (Gramext.Snterm (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e)),
           Gramext.Stoken ("", "and"))],
       Gramext.action
         (fun (cal : 'ctyp list) _ (ci : string) (loc : int * int) ->
-           (ci, cal : 'constructor_declaration))]];
+           (loc, ci, cal : 'constructor_declaration))]];
     Grammar.Entry.obj
       (label_declaration : 'label_declaration Grammar.Entry.e),
     None,
@@ -1585,7 +1585,7 @@ Grammar.extend
       Gramext.action
         (fun (t : 'ctyp) (mf : string option) _ (i : string)
            (loc : int * int) ->
-           (i, o2b mf, t : 'label_declaration))]];
+           (loc, i, o2b mf, t : 'label_declaration))]];
     Grammar.Entry.obj (ident : 'ident Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Stoken ("UIDENT", "")],

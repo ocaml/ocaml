@@ -902,7 +902,7 @@ EXTEND
   ;
   str_item:
     [ "top"
-      [ "exception"; (c, tl) = constructor_declaration ->
+      [ "exception"; (_, c, tl) = constructor_declaration ->
           <:str_item< exception $c$ of $list:tl$ >>
       | "external"; i = LIDENT; ":"; t = ctyp; "="; pd = LIST1 STRING ->
           <:str_item< external $i$ : $t$ = $list:pd$ >>
@@ -958,7 +958,7 @@ EXTEND
   ;
   sig_item:
     [ "top"
-      [ "exception"; (c, tl) = constructor_declaration ->
+      [ "exception"; (_, c, tl) = constructor_declaration ->
           <:sig_item< exception $c$ of $list:tl$ >>
       | "external"; i = LIDENT; ":"; t = ctyp; "="; pd = LIST1 STRING ->
           <:sig_item< external $i$ : $t$ = $list:pd$ >>
@@ -1348,8 +1348,9 @@ EXTEND
     [ [ "'"; i = ident -> (i, (False, False)) ] ]
   ;
   constructor_declaration:
-    [ [ ci = UIDENT; "of"; cal = LIST1 ctyp LEVEL "ctyp1" SEP "*" -> (ci, cal)
-      | ci = UIDENT -> (ci, []) ] ]
+    [ [ ci = UIDENT; "of"; cal = LIST1 ctyp LEVEL "ctyp1" SEP "*" ->
+          (loc, ci, cal)
+      | ci = UIDENT -> (loc, ci, []) ] ]
   ;
   label_declarations:
     [ [ ld = label_declaration; ";"; ldl = SELF -> [ld :: ldl]
@@ -1357,10 +1358,10 @@ EXTEND
       | ld = label_declaration -> [ld] ] ]
   ;
   label_declaration:
-    [ [ i = LIDENT; ":"; t = ctyp -> (i, False, t)
-      | i = LABEL; t = ctyp -> (i, False, t)
-      | "mutable"; i = LIDENT; ":"; t = ctyp -> (i, True, t)
-      | "mutable"; i = LABEL; t = ctyp -> (i, True, t) ] ]
+    [ [ i = LIDENT; ":"; t = ctyp -> (loc, i, False, t)
+      | i = LABEL; t = ctyp -> (loc, i, False, t)
+      | "mutable"; i = LIDENT; ":"; t = ctyp -> (loc, i, True, t)
+      | "mutable"; i = LABEL; t = ctyp -> (loc, i, True, t) ] ]
   ;
   (* Core types *)
   ctyp:

@@ -126,7 +126,7 @@ EXTEND
       | "#"; n = lident; dp = dir_param -> Node "StDir" [n; dp]
       | "exception"; ctl = constructor_declaration; b = rebind_exn ->
           match ctl with
-          [ Tuple [c; tl] -> Node "StExc" [c; tl; b]
+          [ Tuple [Loc; c; tl] -> Node "StExc" [c; tl; b]
           | _ -> match () with [] ]
       | "external"; i = lident; ":"; t = ctyp; "="; p = SLIST1 string ->
           Node "StExt" [i; t; p]
@@ -175,7 +175,7 @@ EXTEND
       | "#"; n = lident; dp = dir_param -> Node "SgDir" [n; dp]
       | "exception"; ctl = constructor_declaration ->
           match ctl with
-          [ Tuple [c; tl] -> Node "SgExc" [c; tl]
+          [ Tuple [Loc; c; tl] -> Node "SgExc" [c; tl]
           | _ -> match () with [] ]
       | "external"; i = lident; ":"; t = ctyp; "="; p = SLIST1 string ->
           Node "SgExt" [i; t; p]
@@ -527,11 +527,13 @@ EXTEND
       | -> List [] ] ]
   ;
   constructor_declaration:
-    [ [ ci = uident; "of"; cal = SLIST1 ctyp SEP "and" -> Tuple [ci; cal]
-      | ci = uident -> Tuple [ci; List []] ] ]
+    [ [ ci = uident; "of"; cal = SLIST1 ctyp SEP "and" ->
+          Tuple [Loc; ci; cal]
+      | ci = uident -> Tuple [Loc; ci; List []] ] ]
   ;
   label_declaration:
-    [ [ i = lident; ":"; mf = mutable_flag; t = ctyp -> Tuple [i; mf; t] ] ]
+    [ [ i = lident; ":"; mf = mutable_flag; t = ctyp ->
+          Tuple [Loc; i; mf; t] ] ]
   ;
   ident:
     [ [ i = LIDENT -> Str i

@@ -566,7 +566,7 @@ and ctyp_ident_se loc s =
     else loop ibeg (i + 1)
 and constructor_declaration_se =
   fun
-  [ Sexpr loc [Satom _ Auid ci :: sel] -> (ci, List.map ctyp_se sel)
+  [ Sexpr loc [Satom _ Auid ci :: sel] -> (loc, ci, List.map ctyp_se sel)
   | se -> error se "constructor_declaration" ]
 ;
 

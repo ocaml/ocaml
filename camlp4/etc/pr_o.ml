@@ -192,7 +192,7 @@ value private_flag =
 ;
   
 value rec labels b vl _ k = [: b; listws label (S RO ";") vl "" k :]
-and label (f, m, t) _ k =
+and label (loc, f, m, t) _ k =
   HVbox
     [: mutable_flag m; `HVbox [: `S LR (conv_lab f); `S LR ":" :];
        `ctyp t "" k :]
@@ -201,7 +201,7 @@ and label (f, m, t) _ k =
 value rec ctyp_list tel _ k = listws simple_ctyp (S LR "*") tel "" k;
 
 value rec variants b vl _ k = listwbws variant b (S LR "|") vl "" k
-and variant b (c, tl) _ k =
+and variant b (loc, c, tl) _ k =
   match tl with
   [ [] -> HVbox [: b; `HOVbox [: `S LR c; k :] :]
   | _ -> HVbox [: b; `HOVbox [: `S LR c; `S LR "of"; ctyp_list tl "" k :] :] ]
@@ -818,7 +818,7 @@ pr_sig_item.pr_levels :=
           fun curr next dg k -> [: `not_impl "sig_item" si :]
       | <:sig_item< exception $c$ of $list:tl$ >> ->
           fun curr next dg k ->
-            [: `variant [: `S LR "exception" :] (c, tl) "" k :]
+            [: `variant [: `S LR "exception" :] (loc, c, tl) "" k :]
       | <:sig_item< value $s$ : $t$ >> ->
           fun curr next dg k -> [: `value_description (s, t) "" k :]
       | <:sig_item< external $s$ : $t$ = $list:pl$ >> ->
@@ -875,9 +875,10 @@ pr_str_item.pr_levels :=
       | <:str_item< exception $c$ of $list:tl$ = $b$ >> ->
           fun curr next dg k ->
              match b with
-            [ [] -> [: `variant [: `S LR "exception" :] (c, tl) "" k :]
+            [ [] -> [: `variant [: `S LR "exception" :] (loc, c, tl) "" k :]
             | _ ->
-                [: `variant [: `S LR "exception" :] (c, tl) "" [: `S LR "=" :];
+                [: `variant [: `S LR "exception" :] (loc, c, tl) ""
+                     [: `S LR "=" :];
                    mod_ident b "" k :] ]
       | <:str_item< include $me$ >> ->
           fun curr next dg k -> [: `S LR "include"; `module_expr me "" k :]

@@ -146,7 +146,7 @@ value ctyp_f = ref (fun []);
 value ctyp t k = ctyp_f.val t k;
 
 value rec labels b vl k = [: b; listws label (S RO ";") vl k :]
-and label (f, m, t) k =
+and label (loc, f, m, t) k =
   let m = flag "mutable" m in
   HVbox [: `HVbox [: `S LR f; `S LR ":" :]; `HVbox [: m; `ctyp t k :] :]
 ;
@@ -154,7 +154,7 @@ and label (f, m, t) k =
 value rec ctyp_list tel k = listws ctyp (S LR "and") tel k;
 
 value rec variants b vl k = listwbws variant b (S LR "|") vl k
-and variant b (c, tl) k =
+and variant b (loc, c, tl) k =
   match tl with
   [ [] -> HVbox [: b; `HOVbox [: `S LR c; k :] :]
   | _ -> HVbox [: b; `HOVbox [: `S LR c; `S LR "of"; ctyp_list tl k :] :] ]
@@ -820,7 +820,7 @@ pr_sig_item.pr_levels :=
           fun curr next _ k -> [: `not_impl "sig_item1" si :]
       | <:sig_item< exception $c$ of $list:tl$ >> ->
           fun curr next _ k ->
-            [: `variant [: `S LR "exception" :] (c, tl) k :]
+            [: `variant [: `S LR "exception" :] (loc, c, tl) k :]
       | <:sig_item< value $s$ : $t$ >> ->
           fun curr next _ k -> [: `value_description s t k :]
       | <:sig_item< include $mt$ >> ->
@@ -873,9 +873,10 @@ pr_str_item.pr_levels :=
       | <:str_item< exception $c$ of $list:tl$ = $b$ >> ->
           fun curr next _ k ->
             match b with
-            [ [] -> [: `variant [: `S LR "exception" :] (c, tl) k :]
+            [ [] -> [: `variant [: `S LR "exception" :] (loc, c, tl) k :]
             | _ ->
-                [: `variant [: `S LR "exception" :] (c, tl) [: `S LR "=" :];
+                [: `variant [: `S LR "exception" :] (loc, c, tl)
+                     [: `S LR "=" :];
                    mod_ident b k :] ]
       | <:str_item< include $me$ >> ->
           fun curr next _ k -> [: `S LR "include"; `module_expr me k :]

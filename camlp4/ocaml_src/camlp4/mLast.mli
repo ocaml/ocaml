@@ -29,8 +29,8 @@ type ctyp =
   | TyObj of loc * (string * ctyp) list * bool
   | TyOlb of loc * string * ctyp
   | TyQuo of loc * string
-  | TyRec of loc * (string * bool * ctyp) list
-  | TySum of loc * (string * ctyp list) list
+  | TyRec of loc * (loc * string * bool * ctyp) list
+  | TySum of loc * (loc * string * ctyp list) list
   | TyTup of loc * ctyp list
   | TyUid of loc * string
   | TyVrn of loc * row_field list * string list option option

@@ -187,8 +187,8 @@ value mktype loc tl cl tk tm =
 ;
 value mkmutable m = if m then Mutable else Immutable;
 value mkprivate m = if m then Private else Public;
-value mktrecord (n, m, t) = (n, mkmutable m, ctyp t);
-value mkvariant (c, tl) = (c, List.map ctyp tl);
+value mktrecord (_, n, m, t) = (n, mkmutable m, ctyp t);
+value mkvariant (_, c, tl) = (c, List.map ctyp tl);
 value type_decl tl cl =
   fun
   [ TyMan loc t (TyRec _ ltl) ->
