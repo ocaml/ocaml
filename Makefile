@@ -95,7 +95,11 @@ COMPOBJS=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(BYTECOMP) $(DRIVER)
 
 TOPLIB=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(BYTECOMP) $(TOPLEVEL)
 
-TOPOBJS=toplevel/toplevellib.cma $(TOPLEVELMAIN)
+TOPOBJS=$(TOPLEVELLIB) $(TOPLEVELMAIN)
+JOCAMLEXTRATOPOBJS=toplevel/be_join.cmo \
+  otherlibs/dyntypes/dynamics.cmo \
+  camlp4/top/camlp4o.cma jocparsing/pa_joc.cmo
+JOCAMLTOPOBJS=$(TOPLEVELLIB) $(JOCAMLEXTRATOPOBJS) $(TOPLEVELMAIN)
 
 OPTOBJS=$(OPTUTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) $(OPTDRIVER)
 
@@ -235,6 +239,7 @@ install: FORCE
 	cp lex/ocamllex $(BINDIR)/ocamllex$(EXE)
 	cp yacc/ocamlyacc$(EXE) $(BINDIR)/ocamlyacc$(EXE)
 	cp toplevel/toplevellib.cma $(LIBDIR)/toplevellib.cma
+	cp toplevel/be_join.cmo $(LIBDIR)/be_join.cmo
 	cp expunge $(LIBDIR)/expunge$(EXE)
 	cp typing/outcometree.cmi typing/outcometree.mli $(LIBDIR)
 	cp toplevel/topmain.cmo $(LIBDIR)
@@ -292,8 +297,8 @@ toplevel/toplevellib.cma: $(TOPLIB)
 partialclean::
 	rm -f ocaml jocaml toplevel/toplevellib.cma
 
-jocaml: $(TOPOBJS) expunge jocparsing/pa_joc.cmo otherlibs/dyntypes/dynamics.cmo
-	$(CAMLC) $(LINKFLAGS) -linkall -o jocaml.tmp $(TOPLEVELLIB) camlp4/top/camlp4o.cma jocparsing/pa_joc.cmo otherlibs/dyntypes/dynamics.cmo $(TOPLEVELMAIN)
+jocaml: $(JOCAMLTOPOBJS) expunge
+	$(CAMLC) $(LINKFLAGS) -linkall -o jocaml.tmp $(JOCAMLTOPOBJS)
 	- $(CAMLRUN) ./expunge jocaml.tmp jocaml $(PERVASIVES) dynamics
 	rm -f jocaml.tmp
 

@@ -30,7 +30,7 @@ jocp: pa_joc.cmo
 
 install:
 	cp jocp $(BINDIR)
-	cp pa_joc.cmo $(LIBDIR)/camlp4
+	cp pa_joc.cmo $(LIBDIR)/pa_joc.cmo
 
 clean:
 	/bin/rm -f *~ pa_joc.cmo jocp
