@@ -172,6 +172,7 @@ static OSErr ToplevelReceiveDrag (DragReference drag, WEReference we)
   HUnlock (h);
   if (err != noErr) goto failed;
   WESetSelection (dest + curlen, dest + curlen, we);
+  ScrollToEnd (winToplevel);
 
   DisposeHandle (h);
   PopPort;

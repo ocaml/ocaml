@@ -1,0 +1,5 @@
+WASTE 1.3 is needed to build the O'Caml standalone application.
+
+Get WASTE 1.3 from < XXX some URL XXX >
+and unpack it in this directory (maccaml:WASTE:) as
+"WASTE 1.3 Distribution".

@@ -12,6 +12,9 @@
 
 /* $Id$ */
 
+#include "Types.r"
+#include "Sound.r"
+
 #include "constants.h"
 
 resource 'vers' (1) {
@@ -323,12 +326,12 @@ data 'TEXT' (kAboutText, purgeable) {
     "Xavier Leroy, Jer™me Vouillon, Damien Doligez, et al.\n"
     "\n"
     "\n"
-    "O'Caml's interface to MacOS is compiled with MPW"
-    " and uses the WASTE text engine.\n"
+    "O'Caml's interface to Mac OS is compiled with Apple's MPW"
+    " environment and uses the WASTE text engine.\n"
     "\n"
-    "WASTE text engine © 1993-1996 Marco Piovanelli\n"
+    "© 1983-1998 by Apple Computer, Inc., all rights reserved\n"
     "\n"
-    "MPW libraries © 1995-1998 by Apple Computer, Inc., all rights reserved"
+    "WASTE text engine © 1993-1998 Marco Piovanelli\n"
 };
 
 resource 'MBAR' (kMenuBar) {
@@ -448,7 +451,7 @@ resource 'STR#' (kErrorStrings, purgeable) {
     "The file is locked or you do not have the permission to open it.",
     "You do not have the permission to write to this file.",
     "The folder does not exist.",
-    "The connexion to the file server was closed or broken.",
+    "The connection to the file server was closed or broken.",
     "A hardware error occurred during input or output.",
   }
 };
@@ -543,12 +546,12 @@ resource 'snd ' (1002){
   {
     hasData, soundCmd {0x2C},
     noData, ampCmd {127},
-    noData, freqDurationCmd {/* duration */ 0x4321, 60},
+    noData, freqDurationCmd {0x4321, 60},
     noData, quietCmd {},
   },
   {
     4,
-    /* sampling rate */ Rate22K,
+    Rate22K,
     0, 4,
     0,
     60,
@@ -677,8 +680,8 @@ resource 'snd ' (1512, "foo"){
 
 
 /*****************************************************************
-  derez -m 60 'alcools:caml light:caml-icons.rsrc' "{rincludes}types.r" ¶
-        "{rincludes}finder.r" "{rincludes}icons.r" >>ocaml.r
+  derez -m 60 caml-icons.rsrc "{rincludes}types.r" ¶
+        "{rincludes}finder.r" "{rincludes}icons.r" >> ocaml.r
 */
 
 resource 'icl4' (1000) {

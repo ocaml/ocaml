@@ -48,7 +48,7 @@
 #include <TextUtils.h>
 #include <ToolUtils.h>
 
-#include ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h"
+#include "WASTE.h"
 
 #include "constants.h"
 
@@ -245,7 +245,9 @@ void WinUpdateStatus (WindowPtr w);
 
 /* useful macros */
 
-/* PushPort and PopPort assume that there is a local variable [saveport] */
+/* PushPort, PushWindowPort, and PopPort
+   assume that there is a local variable [saveport]
+*/
 #define PushPort(p) do{ GetPort (&saveport); SetPort (p); }while(0)
 #define PushWindowPort(w) \
   do{ GetPort (&saveport); SetPortWindowPort (w); }while(0)
