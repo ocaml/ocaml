@@ -967,8 +967,12 @@ let modtype_declaration id ppf decl =
 
 (* Print a signature body (used by -i when compiling a .ml) *)
 
+let print_signature ppf tree =
+  fprintf ppf "@[<v>%a@]" print_signature_body tree
+let outcome_signature = ref print_signature
+
 let signature ppf sg =
-  fprintf ppf "@[<v>%a@]" print_signature_body (tree_of_signature sg)
+  fprintf ppf "%a" !outcome_signature (tree_of_signature sg)
 
 (* Print an unification error *)
 
