@@ -14,9 +14,9 @@
 (* Module [Digest]: MD5 message digest *)
 
 (* This module provides functions to compute 128-bit ``digests'' of
-   arbitrary-length strings or files, with a very low probability that
-   two different strings will have the same digest. The algorith used
-   is MD5. *)
+   arbitrary-length strings or files. The digests are cryptographic
+   quality: it is very hard, given a digest, to forge a string having
+   that digest. The algorithm used is MD5. *)
 
 type t = string
         (* The type of digests: 16-character strings. *)
@@ -35,6 +35,3 @@ val output: out_channel -> t -> unit
         (* Write a digest on the given output channel. *)
 val input: in_channel -> t
         (* Read a digest from the given input channel. *)
-
-
-
