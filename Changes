@@ -12,6 +12,7 @@ Language:
 - Removed all labels in the standard libraries, except labltk.
   Labelized versions are kept for ArrayLabels, ListLabels, StringLabels
   and UnixLabels. "open StdLabels" gives access to the first three.
+  To help porting, Hashtbl, Map and Set are also available in MoreLabels.
 - Extended polymorphic variant type syntax, allowing union types and
   row abbreviations for both sub- and super-types. #t deprecated in types.
 - See the "Upgrading" file for how to adapt to all the changes above.
@@ -25,6 +26,8 @@ Type-checker:
 - Improved efficiency of module type-checking via lazy computation of
   certain signature summary information.
 - An empty polymorphic variant type is now an error.
+- Allowed coercing self to the type of the current class, avoiding
+  an obscure error message about "Self type cannot be unified..."
 
 Both compilers:
 - Fixed wrong code generated for "struct include M ... end" when M
