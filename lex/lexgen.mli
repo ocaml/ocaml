@@ -26,11 +26,15 @@ and automata_move =
 
 (* Representation of entry points *)
 
-type automata_entry =
+type ('args,'action) automata_entry =
   { auto_name: string;
+    auto_args: 'args;
     auto_initial_state: int;
-    auto_actions: (int * Syntax.location) list }
+    auto_actions: (int * 'action) list }
 
 (* The entry point *)
 
-val make_dfa: Syntax.lexer_definition -> automata_entry list * automata array
+val make_dfa :
+  ((string * 'arg) * (Syntax.regular_expression * 'action) list) list ->
+  ('arg, 'action) automata_entry list * automata array
+

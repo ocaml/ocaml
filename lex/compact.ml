@@ -112,10 +112,17 @@ let compact_tables state_v =
         base.(i) <- b;
         default.(i) <- d
   done;
+  let tables = 
   { tbl_base = base;
     tbl_backtrk = backtrk;
     tbl_default = default;
     tbl_trans = Array.sub !trans 0 !last_used;
     tbl_check = Array.sub !check 0 !last_used }
+  in
+  trans := Array.create 1024 0;
+  check := Array.create 1024 (-1);
+  last_used := 0;
+  tables
+  
 
 

@@ -18,7 +18,7 @@ val output_lexdef:
       string -> in_channel -> out_channel ->
       Syntax.location ->
       Compact.lex_tables ->
-      Lexgen.automata_entry list ->
+      (unit, Syntax.location) Lexgen.automata_entry list ->
       Syntax.location ->
       unit
 

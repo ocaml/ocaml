@@ -86,7 +86,7 @@ other_definitions:
 ;
 definition:
     Tident Tequal entry
-        { ($1,$3) }
+        { (($1,()),$3) }
 ;
 entry:
     Tparse case rest_of_entry

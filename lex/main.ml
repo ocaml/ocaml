@@ -34,7 +34,7 @@ let main () =
   let lexbuf = Lexing.from_channel ic in
   try
     let def = Parser.lexer_definition Lexer.main lexbuf in
-    let (entries, transitions) = Lexgen.make_dfa def in
+    let (entries, transitions) = Lexgen.make_dfa def.entrypoints in
     let tables = Compact.compact_tables transitions in
     Output.output_lexdef source_name ic oc
                          def.header tables entries def.trailer;

@@ -26,11 +26,12 @@ type regexp =
   | Alt of regexp * regexp
   | Star of regexp
 
-type lexer_entry =
+type ('args,'action) lexer_entry =
   { lex_name: string;
+    lex_args: 'args;
     lex_regexp: regexp;
-    lex_actions: (int * location) list }
-    
+    lex_actions: (int * 'action) list }
+
 (* Representation of automata *)
 
 type automata =
@@ -45,17 +46,16 @@ and automata_move =
 
 (* Representation of entry points *)
 
-type automata_entry =
+type ('args,'action) automata_entry =
   { auto_name: string;
+    auto_args: 'args;
     auto_initial_state: int;
-    auto_actions: (int * location) list }
-    
+    auto_actions: (int * 'action) list }
+
 (* From shallow to deep syntax *)
 
 let chars = ref ([] : int list list)
 let chars_count = ref 0
-let actions = ref ([] : (int * location) list)
-let actions_count = ref 0
 
 let rec encode_regexp = function
     Epsilon -> Empty
@@ -73,30 +73,28 @@ let rec encode_regexp = function
 
 let encode_casedef casedef =
   List.fold_left
-   (fun reg (expr, act) ->
-     let act_num = !actions_count in
-     incr actions_count;
-     actions := (act_num, act) :: !actions;
-     Alt(reg, Seq(encode_regexp expr, Action act_num)))
-   Empty
-   casedef
+    (fun (reg,actions,count) (expr, act) ->
+       Alt(reg, Seq(encode_regexp expr, Action count)),
+       (count,act) :: actions,
+       (succ count)
+    )
+    (Empty, [], 0)
+    casedef
 
 let encode_lexdef def =
   chars := [];
   chars_count := 0;
   let entry_list =
     List.map
-      (fun (entry_name, casedef) ->
-        actions := [];
-        actions_count := 0;
-        let re = encode_casedef casedef in
+      (fun ((entry_name,args), casedef) ->
+        let (re,actions,_) = encode_casedef casedef in
         { lex_name = entry_name;
+	  lex_args = args;
           lex_regexp = re;
-          lex_actions = List.rev !actions })
-      def.entrypoints in
+          lex_actions = List.rev actions })
+      def in
   let chr = Array.of_list (List.rev !chars) in
   chars := [];
-  actions := [];
   (chr, entry_list)
 
 (* To generate directly a NFA from a regular expression.
@@ -232,6 +230,7 @@ let make_dfa lexdef =
     List.map
       (fun le ->
         { auto_name = le.lex_name;
+	  auto_args = le.lex_args;
           auto_initial_state = get_state(firstpos le.lex_regexp);
           auto_actions = le.lex_actions })
       entry_list in
