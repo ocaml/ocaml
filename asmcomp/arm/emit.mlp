@@ -535,7 +535,7 @@ let rec emit_all ninstr i =
   if i.desc = Lend then () else begin
     let n = emit_instr i in
     let ninstr' = ninstr + n in
-    let limit = (if !pending_float then 511 else 127) - !num_literals in
+    let limit = (if !pending_float then 127 else 511) - !num_literals in
     if ninstr' >= limit - 32 && no_fallthrough i.desc then begin
       emit_constants();
       emit_all 0 i.next

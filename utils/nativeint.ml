@@ -34,6 +34,13 @@ let shift n s =
   else
     { msw = n.msw asr (-s); lsb = (n.msw asr (-s - 1)) land 1 }
 
+let logand n1 n2 =
+  { msw = n1.msw land n2.msw; lsb = n1.lsb land n2.lsb }
+let logor n1 n2 =
+  { msw = n1.msw lor n2.msw; lsb = n1.lsb lor n2.lsb }
+let logxor n1 n2 =
+  { msw = n1.msw lxor n2.msw; lsb = n1.lsb lxor n2.lsb }
+
 let sign n =
   if n.msw < 0 then -1 else
   if n.msw = 0 && n.lsb = 0 then 0 else 1

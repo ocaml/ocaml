@@ -101,6 +101,8 @@
       (assign i (+ i 1)))))
 
 (function "solitaire" ()
-  (if (app "solve" 0 int)
-      (app "print_board" [] unit)
-    []))
+  (seq
+    (if (app "solve" 0 int)
+        (app "print_board" [] unit)
+      [])
+    0))

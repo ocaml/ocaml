@@ -26,6 +26,10 @@ val sub: t -> t -> t
 val shift: t -> int -> t
         (* [shift n s] shifts [n] left by [s] bits if [s] > 0
            and right by [-s] bits if [s] < 0. *)
+val logand: t -> t -> t
+val logor: t -> t -> t
+val logxor: t -> t -> t
+	(* Bitwise and, or, xor *)
 val sign: t -> int
         (* [sign n1] returns [0] if [n1] is zero, a positive
            integer if [n] is positive, and a negative integer if
