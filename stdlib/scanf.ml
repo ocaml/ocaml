@@ -166,7 +166,15 @@ let token_bool ib =
 (* All the functions that convert a string to a number raise the exception
    Failure when the convertion is not possible.
    This exception is then trapped in kscanf. *)
-let token_int ib = int_of_string (Scanning.token ib);;
+
+let token_int_literal conv ib =
+  match conv with
+    'd' | 'i' | 'u' -> Scanning.token ib
+  | 'o' -> "0o" ^ Scanning.token ib
+  | 'x' | 'X' -> "0x" ^ Scanning.token ib
+  | _ -> assert false
+
+let token_int conv ib = int_of_string (token_int_literal conv ib);;
 let token_float ib = float_of_string (Scanning.token ib);;
 
 (* To scan native ints, int32 and int64 integers.
@@ -179,9 +187,9 @@ external nativeint_of_string: string -> nativeint = "nativeint_of_string";;
 external int32_of_string : string -> int32 = "int32_of_string";;
 external int64_of_string : string -> int64 = "int64_of_string";;
 
-let token_nativeint ib = nativeint_of_string (Scanning.token ib);;
-let token_int32 ib = int32_of_string (Scanning.token ib);;
-let token_int64 ib = int64_of_string (Scanning.token ib);;
+let token_nativeint conv ib = nativeint_of_string (token_int_literal conv ib);;
+let token_int32 conv ib = int32_of_string (token_int_literal conv ib);;
+let token_int64 conv ib = int64_of_string (token_int_literal conv ib);;
 
 (* Scanning numbers. *)
 let scan_sign max ib =
@@ -217,21 +225,15 @@ let scan_binary_digits =
 
 let scan_octal_digits =
   let is_octal = function
-  | '0' .. '8' -> true
+  | '0' .. '7' -> true
   | _ -> false in
   scan_digits is_octal;;
 
 let scan_hexadecimal_digits =
   let is_hexa = function
-  | '0' .. '9' | 'a' .. 'f' -> true
+  | '0' .. '9' | 'a' .. 'f' | 'A' .. 'F' -> true
   | _ -> false in
   scan_digits is_hexa;;
-
-let scan_Hexadecimal_digits =
-  let is_Hexa = function
-  | '0' .. '9' | 'A' .. 'F' -> true
-  | _ -> false in
-  scan_digits is_Hexa;;
 
 (* Decimal integers. *)
 let scan_unsigned_decimal_int max ib =
@@ -243,8 +245,8 @@ let scan_optionally_signed_decimal_int max ib =
   scan_unsigned_decimal_int max ib;;
 
 (* Scan an unsigned integer that could be given in any (common) basis.
-   If digits are prefixed by 0b for one of x, X, o, b the number is
-   assumed to be written respectively in hexadecimal, Hexadecimal,
+   If digits are prefixed by one of 0x, 0X, 0o, 0b, the number is
+   assumed to be written respectively in hexadecimal, hexadecimal,
    octal, or binary. *)
 let scan_unsigned_int max ib =
   match Scanning.peek_char ib with
@@ -253,8 +255,7 @@ let scan_unsigned_int max ib =
       if max = 0 || Scanning.end_of_input ib then max else
       let c = Scanning.peek_char ib in
       begin match c with
-      | 'x' -> scan_hexadecimal_digits (Scanning.store_char ib c max) ib
-      | 'X' -> scan_Hexadecimal_digits (Scanning.store_char ib c max) ib
+      | 'x' | 'X' -> scan_hexadecimal_digits (Scanning.store_char ib c max) ib
       | 'o' -> scan_octal_digits (Scanning.store_char ib c max) ib
       | 'b' -> scan_binary_digits (Scanning.store_char ib c max) ib
       | c -> scan_decimal_digits max ib end
@@ -271,8 +272,7 @@ let scan_int conv max ib =
   | 'i' -> scan_optionally_signed_int max ib
   | 'o' -> scan_octal_digits max ib
   | 'u' -> scan_unsigned_decimal_int max ib
-  | 'x' -> scan_hexadecimal_digits max ib
-  | 'X' -> scan_Hexadecimal_digits max ib
+  | 'x' | 'X' -> scan_hexadecimal_digits max ib
   | c -> assert false;;
 
 (* Scanning floating point numbers. *)
@@ -538,7 +538,7 @@ let kscanf ib (fmt : ('a, 'b, 'c) format) f ef =
     | '%' -> bad_input_char (Scanning.peek_char ib)
     | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv ->
         let x = scan_int conv max ib in
-        scan (stack f (token_int ib)) (i + 1)
+        scan (stack f (token_int conv ib)) (i + 1)
     | 'f' | 'g' | 'G' | 'e' | 'E' ->
         let x = scan_float max ib in
         scan (stack f (token_float ib)) (i + 1)
@@ -564,9 +564,9 @@ let kscanf ib (fmt : ('a, 'b, 'c) format) f ef =
         | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv ->
            let x = scan_int conv max ib in
            begin match t with
-           | 'l' -> scan (stack f (token_int32 ib)) (i + 1)
-           | 'L' -> scan (stack f (token_int64 ib)) (i + 1)
-           | _ -> scan (stack f (token_nativeint ib)) (i + 1) end
+           | 'l' -> scan (stack f (token_int32 conv ib)) (i + 1)
+           | 'L' -> scan (stack f (token_int64 conv ib)) (i + 1)
+           | _ -> scan (stack f (token_nativeint conv ib)) (i + 1) end
         | c -> bad_format fmt i c end
     | 'N' ->
         let x = Scanning.char_count ib in

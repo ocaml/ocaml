@@ -79,11 +79,10 @@ val bscanf :
    characters. The conversion characters and their meanings are:
    - [d]: reads an optionally signed decimal integer.
    - [i]: reads an optionally signed integer
-     (usual input formats for hexadecimal ([0x\[d\]+] and [0X\[d+\]]),
-      octal ([0o\[d\]+]), and binary [0b\[d\]+] notations are understood).
+     (usual input formats for hexadecimal ([0x[d]+] and [0X[d]+]),
+      octal ([0o[d]+]), and binary [0b[d]+] notations are understood).
    - [u]: reads an unsigned decimal integer.
-   - [x]: reads an unsigned hexadecimal integer with lowercase letters.
-   - [X]: reads an unsigned hexadecimal integer with uppercase letters.
+   - [x] or [X]: reads an unsigned hexadecimal integer.
    - [o]: reads an unsigned octal integer.
    - [s]: reads a string argument (by default strings end with a space).
    - [S]: reads a delimited string argument (delimiters and special
@@ -102,7 +101,7 @@ val bscanf :
      the format specified by the second letter.
    - [\[ range \]]: reads characters that matches one of the characters
      mentioned in the range of characters [range] (or not mentioned in
-     it, if the range starts by [^]). Returns a [string] that can be
+     it, if the range starts with [^]). Returns a [string] that can be
      empty, if no character in the input matches the range.
    - [N]: applies [f] to the number of characters read so far.
    - [%]: matches one [%] character in the input.
