@@ -13,9 +13,9 @@
 
 #include <signal.h>
 #include <stdio.h>
-#if defined(TARGET_power) && defined(SYS_elf)
-#include <asm/sigcontext.h>
-#endif
+/* #if defined(TARGET_power) && defined(SYS_elf)
+   #include <asm/sigcontext.h>
+   #endif */
 #if defined(TARGET_sparc) && defined(SYS_solaris)
 #include <ucontext.h>
 #endif
@@ -131,7 +131,7 @@ void handle_signal(int sig, int code, struct sigcontext * context)
 #elif defined(TARGET_power) && defined(SYS_aix)
 void handle_signal(int sig, int code, struct sigcontext * context)
 #elif defined(TARGET_power) && defined(SYS_elf)
-void handle_signal(int sig, struct pt_regs * context)
+void handle_signal(int sig, struct sigcontext * context)
 #elif defined(TARGET_power) && defined(SYS_rhapsody)
 void handle_signal(int sig, int code, struct sigcontext * context)
 #else
@@ -171,7 +171,7 @@ void handle_signal(int sig)
 #endif
 #if defined(TARGET_power) && defined(SYS_elf)
       /* Cached in register 30 */
-      context->gpr[30] = (unsigned long) young_limit;
+      context->regs->gpr[30] = (unsigned long) young_limit;
 #endif
 #if defined(TARGET_power) && defined(SYS_rhapsody)
       /* Cached in register 30 */
@@ -384,11 +384,11 @@ static void trap_handler(int sig, int code, struct sigcontext * context)
 #endif
 
 #if defined(TARGET_power) && defined(SYS_elf)
-static void trap_handler(int sig, struct pt_regs * context)
+static void trap_handler(int sig, struct sigcontext * context)
 {
   /* Recover young_ptr and caml_exception_pointer from registers 31 and 29 */
-  caml_exception_pointer = (char *) context->gpr[29];
-  young_ptr = (char *) context->gpr[31];
+  caml_exception_pointer = (char *) context->regs->gpr[29];
+  young_ptr = (char *) context->regs->gpr[31];
   array_bound_error();
 }
 #endif
