@@ -864,12 +864,7 @@ let expand_abbrev env ty =
             try Env.find_type_expansion path env with Not_found ->
               raise Cannot_expand
           in
-(*          begin try *)
             subst env level abbrev (Some ty) params args body
-(*          with Unify _ ->
-            raise Cannot_expand
-          end
-*)
       end
   | _ ->
       assert false
@@ -894,6 +889,17 @@ let _ = try_expand_head' := try_expand_head
 (* Fully expand the head of a type. *)
 let rec expand_head env ty =
   try try_expand_head env ty with Cannot_expand -> repr ty
+
+(* Make sure that the type parameters of the type constructor [ty]
+   respect the type constraints *)
+let enforce_constraints env ty =
+  match ty with
+    {desc = Tconstr (path, args, abbrev); level = level} ->
+      let decl = Env.find_type path env in
+      ignore
+        (subst env level (ref Mnil) None decl.type_params args (newvar2 level))
+  | _ ->
+      assert false
 
 (* Recursively expand the head of a type.
    Also expand #-types. *)
@@ -965,8 +971,8 @@ let rec occur_rec env visited ty0 ty =
         iter_type_expr (occur_rec env (ty::visited) ty0) ty
       with Occur -> try
         let ty' = try_expand_head env ty in
-        if List.memq ty' visited then raise Occur;
-        occur_rec env (ty'::visited) ty0 ty'
+        if ty == ty0 || List.memq ty' visited then raise Occur;
+        iter_type_expr (occur_rec env (ty'::visited) ty0) ty'
       with Cannot_expand ->
         raise Occur
       end

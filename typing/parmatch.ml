@@ -696,7 +696,7 @@ and pretty_lvals lbls ppf = function
       fprintf ppf "%s=%a;@ %a" name pretty_val v (pretty_lvals lbls) rest
 
 let top_pretty ppf v =
-  fprintf ppf "@[%a@]@." pretty_val v
+  fprintf ppf "@[%a@]@?" pretty_val v
 
 
 (******************************)

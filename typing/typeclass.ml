@@ -394,7 +394,10 @@ let rec class_field cl_num self_type meths vars
   | Pcf_val (lab, mut, sexp, loc) ->
       if StringSet.mem lab inh_vals then
         Location.print_warning loc (Warnings.Hide_instance_variable lab);
-      let exp = type_exp val_env sexp in
+      let exp =
+        try type_exp val_env sexp with Ctype.Unify [(ty, _)] ->
+          raise(Error(loc, Make_nongen_seltype ty))
+      in
       let (id, val_env, met_env, par_env) =
         enter_val cl_num vars lab mut exp.exp_type val_env met_env par_env
       in

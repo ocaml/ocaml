@@ -73,15 +73,6 @@ let transl_declaration env (name, sdecl) (id, decl) =
     raise(Error(sdecl.ptype_loc, Repeated_parameter))
   end;
 
-  List.iter
-    (function (sty, sty', loc) ->
-       try
-         Ctype.unify env (transl_simple_type env false sty)
-                         (transl_simple_type env false sty')
-       with Ctype.Unify _ ->
-         raise(Error(loc, Unconsistent_constraint)))
-    sdecl.ptype_cstrs;
-
   begin match sdecl.ptype_manifest with
     None ->
       ()
@@ -95,6 +86,16 @@ let transl_declaration env (name, sdecl) (id, decl) =
         raise(Error(sdecl.ptype_loc, Type_clash trace))
       end
   end;
+
+  List.iter
+    (function (sty, sty', loc) ->
+       try
+         Ctype.unify env (transl_simple_type env false sty)
+                         (transl_simple_type env false sty')
+       with Ctype.Unify _ ->
+         raise(Error(loc, Unconsistent_constraint)))
+    sdecl.ptype_cstrs;
+
   (id, decl)
 
 (* Second pass: representation *)

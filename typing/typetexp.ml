@@ -131,7 +131,7 @@ let rec transl_type env policy styp =
       let params = List.map (fun _ -> Ctype.newvar ()) args in
       let cstr = newty (Tconstr(path, params, ref Mnil)) in
       begin try
-        ignore(Ctype.expand_head env cstr)
+        Ctype.enforce_constraints env cstr
       with Unify trace ->
         raise (Error(styp.ptyp_loc, Type_mismatch trace))
       end;
