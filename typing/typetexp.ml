@@ -37,7 +37,7 @@ let enter_type_variable name =
   try
     Tbl.find name !type_variables; raise Already_bound
   with Not_found ->
-    let v = newvar() in
+    let v = new_global_var() in
     type_variables := Tbl.add name v !type_variables;
     v
 
@@ -50,7 +50,7 @@ let rec transl_simple_type env fixed styp =
         if fixed then
           raise(Error(styp.ptyp_loc, Unbound_type_variable name))
         else begin
-          let v = newvar() in
+          let v = new_global_var() in
           type_variables := Tbl.add name v !type_variables;
           v
         end

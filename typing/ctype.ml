@@ -29,6 +29,9 @@ and end_def () = decr current_level
 let newvar () =
   Tvar { tvar_level = !current_level; tvar_link = None }
 
+let new_global_var () =
+  Tvar { tvar_level = 1; tvar_link = None }
+
 let rec repr = function
     Tvar({tvar_link = Some ty} as v) ->
       let r = repr ty in

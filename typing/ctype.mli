@@ -21,6 +21,9 @@ val end_def: unit -> unit
         (* Lower the variable level by one at the end of a definition *)
 val newvar: unit -> type_expr
         (* Return a fresh variable *)
+val new_global_var: unit -> type_expr
+        (* Return a fresh variable, bound at toplevel
+           (as type variables ['a] in type constraints). *)
 val repr: type_expr -> type_expr
         (* Return the canonical representative of a type. *)
 val generalize: type_expr -> unit
