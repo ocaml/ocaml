@@ -90,7 +90,7 @@ beforedepend:: Lex/scanner.ml
 $(BYTE_EXE) $(BYTE_KB) $(BYTE_GENLEX): ../camlc
 $(BYTE_EXE): ../stdlib/stdlib.cma
 $(CODE_EXE) $(CODE_KB) $(CODE_GENLEX): ../camlopt
-$(CODE_EXE): ../stdlib/stdlib.cmxa
+$(CODE_EXE): ../stdlib/stdlib.cmxa ../stdlib/libasmrun.a
 
 clean::
 	rm -f *.byt *.out

@@ -338,7 +338,7 @@ let emit_instr i =
           `{record_frame i.live}	call	_caml_call_gc\n`;
           `	mov	{emit_int n}, %g4\n`;
           `	add	%g6, 4, {emit_reg i.res.(0)}\n`;
-          `{emit_label lbl_cont}:`
+          `{emit_label lbl_cont}:\n`
         end else begin
           `{record_frame i.live}	call	_caml_alloc\n`;
           `	mov	{emit_int n}, %g4\n`;
@@ -353,7 +353,7 @@ let emit_instr i =
           `	nop\n`;
           `	call	_caml_fast_modify\n`;
           `	mov	{emit_reg i.arg.(0)}, %g1\n`;
-          `{emit_label lbl_continue}:`
+          `{emit_label lbl_continue}:\n`
         end else begin
           `	call	_caml_modify\n`;
           `	mov	{emit_reg i.arg.(0)}, %g1\n`

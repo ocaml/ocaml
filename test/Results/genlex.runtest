@@ -1,5 +1,5 @@
 case $1 in
-  test) $camlrun genlex Lex/testscanner.mll;;
-  bench) xtime -o /dev/null $camlrun genlex Lex/testscanner.mll;;
+  test) shift; $* Lex/testscanner.mll;;
+  bench) shift; xtime -o /dev/null -e /dev/null -repeat 3 $* Lex/testscanner.mll;;
 esac
 
