@@ -67,6 +67,8 @@ following commands (in the directory set to BINDIR in Makefile.config):
         cslmktop       a tool to make toplevel systems that integrate
                        user-defined C primitives and Caml code
         csldep         output "make" dependencies for Caml sources
+        cslprof        execution count profiler
+        cslcp          the bytecode compiler in profiling mode
 
 From the top directory, become superuser and do "make install".
 Also do "make installopt" to install the native-code compiler, if you
@@ -112,7 +114,7 @@ won't work if /bin/csh is called instead. You may have to unset the SHELL
 environment variable, or set it to /bin/sh.
 
 * gcc 2.6.0 has been reported to generate incorrect code for the
-runtime system in -O mode. Upgrade to 2.6.3 or newer.
+runtime system in -O mode. Upgrade to a newer version.
 
 * If you're using gcc on the I386 or Motorola 680x0, make sure to set
 the -fno-defer-pop option in $(BYTECCCOMPOPTS). Otherwise, there's a
@@ -138,6 +140,4 @@ Fix: use gcc.
 * On some versions of NeXTStep, cc pretends to be gcc but is not quite
 gcc.  If the compilation of byterun/interp.c causes syntax errors,
 insert #undef __GNUC__ at the very beginning of config/s.h
-
-
 
