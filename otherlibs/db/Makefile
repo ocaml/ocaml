@@ -21,8 +21,10 @@ include ../../config/Makefile
 CC=$(BYTECC) -g
 CAMLC=../../ocamlcomp.sh
 CAMLOPT=../../ocamlcompopt.sh
-CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS)
+MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
 COMPFLAGS=-warn-error A
+
+CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)
 COBJS=dbstubs.o
 
 all: libmldb.a db.cmi db.cma
@@ -30,23 +32,22 @@ all: libmldb.a db.cmi db.cma
 allopt: libmldb.a db.cmi db.cmxa
 
 libmldb.a: $(COBJS)
-	rm -rf libmldb.a
-	ar rc libmldb.a $(COBJS)
-	$(RANLIB) libmldb.a
+	$(MKLIB) -oc mldb $(COBJS) $(DB_LINK)
 
 db.cma: db.cmo
-	$(CAMLC) -a -o db.cma -custom db.cmo -cclib -lmldb
+	$(MKLIB) -ocamlc '$(CAMLC)' -o db -oc mldb db.cmo $(DB_LINK)
 
 db.cmxa: db.cmx
-	$(CAMLOPT) -a -o db.cmxa db.cmx -cclib -lmldb
+	$(MKLIB) -ocamlopt '$(CAMLOPT)' -o db -oc mldb db.cmx $(DB_LINK)
 
 partialclean:
 	rm -f *.cm*
 
 clean: partialclean
-	rm -f *.a *.o
+	rm -f *.a *.o *.so
 
 install:
+	if test -f dllmldb.so; then cp dllmldb.so $(STUBLIBDIR)/dllmldb.so; fi
 	cp libmldb.a $(LIBDIR)/libmldb.a
 	cd $(LIBDIR); $(RANLIB) libmldb.a
 	cp db.cma db.cmi db.mli $(LIBDIR)
