@@ -44,7 +44,7 @@ let _ =
         \032    U/u enable/disable unused match case\n\
         \032    V/v enable/disable hidden instance variable\n\
         \032    X/x enable/disable all other warnings\n\
-        \032    default setting is A (all warnings enabled)" ]
+        \032    default setting is \"Al\" (all warnings but labels enabled)" ]
     (fun name -> raise(Arg.Bad("don't know what to do with " ^ name)))
     "ocamlbrowser :";
   Config.load_path :=

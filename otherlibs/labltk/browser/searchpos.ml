@@ -323,7 +323,7 @@ let rec view_signature ?title ?path ?(env = !start_env) ?(detach=false) sign =
         Pack.forget [mw.mw_edit; mw.mw_intf];
         List.iter ~f:destroy (Winfo.children mw.mw_frame);
         Label.configure label ~text:title;
-        pack [label] ~fill:`X;
+        pack [label] ~fill:`X ~side:`Bottom;
         Jg_message.formatted ~title ~on:mw.mw_frame ~maxheight:15 ()
     | None, _ -> raise Not_found
     | Some path, _ ->
@@ -336,7 +336,7 @@ let rec view_signature ?title ?path ?(env = !start_env) ?(detach=false) sign =
         begin match mw.mw_title with None -> ()
         | Some label ->
             Label.configure label ~text:title;
-            pack [label] ~fill:`X
+            pack [label] ~fill:`X ~side:`Bottom
         end;
         Button.configure mw.mw_detach
           ~command:(fun () -> view_signature sign ~title ~env ~detach:true);

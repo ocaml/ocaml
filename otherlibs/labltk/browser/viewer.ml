@@ -158,7 +158,29 @@ let guess_search_mode s : [`Type | `Long | `Pattern] =
   done;
   if !is_type then `Type else if !is_long then `Long else `Pattern
 
-let search_which = ref "itself"
+
+let search_string ?(mode="symbol") ew =
+  let text = Entry.get ew in
+  try
+    if text = "" then () else
+    let l = match mode with
+      "Name" ->
+        begin match guess_search_mode text with
+          `Long -> search_string_symbol text
+        | `Pattern -> search_pattern_symbol text
+        | `Type -> search_string_type text ~mode:`included
+        end
+    | "Type" -> search_string_type text ~mode:`included
+    | "Exact" -> search_string_type text ~mode:`exact
+    | _ -> assert false
+    in
+    match l with [] -> ()
+    | [lid,kind] -> view_symbol lid ~kind ~env:!start_env
+    | l          -> choose_symbol ~title:"Choose symbol" ~env:!start_env l
+  with Searchid.Error (s,e) ->
+    Entry.icursor ew ~index:(`Num s)
+
+let search_which = ref "Name"
 
 let search_symbol () =
   if !module_list = [] then
@@ -169,35 +191,16 @@ let search_symbol () =
   let choice = Frame.create tl
   and which = Textvariable.create ~on:tl () in
   let itself = Radiobutton.create choice ~text:"Itself"
-        ~variable:which ~value:"itself"
+        ~variable:which ~value:"Name"
   and extype = Radiobutton.create choice ~text:"Exact type"
-        ~variable:which ~value:"exact"
+        ~variable:which ~value:"Exact"
   and iotype = Radiobutton.create choice ~text:"Included type"
-        ~variable:which ~value:"iotype"
+        ~variable:which ~value:"Type"
   and buttons = Frame.create tl in
   let search = Button.create buttons ~text:"Search" ~command:
     begin fun () ->
       search_which := Textvariable.get which;
-      let text = Entry.get ew in
-      try if text = "" then () else      
-        let l =
-          match !search_which with
-            "itself" ->
-              begin match guess_search_mode text with
-                `Long -> search_string_symbol text
-              | `Pattern -> search_pattern_symbol text
-              | `Type -> search_string_type text ~mode:`included
-              end
-          | "iotype" -> search_string_type text ~mode:`included
-          | "exact" -> search_string_type text ~mode:`exact
-          | _ -> assert false
-        in
-        if l <> [] then
-        choose_symbol ~title:"Choose symbol" ~env:!start_env l
-      with Searchid.Error (s,e) ->
-        Entry.selection_clear ew;
-        Entry.selection_range ew ~start:(`Num s) ~stop:(`Num e);
-        Entry.xview_index ew ~index:(`Num s)
+      search_string ew ~mode:!search_which
     end
   and ok = Jg_button.create_destroyer tl ~parent:buttons ~text:"Cancel" in
 
@@ -301,6 +304,8 @@ let show_help () =
   let fw, tw, sb = Jg_text.create_with_scrollbar tl in
   let ok = Jg_button.create_destroyer ~parent:tl ~text:"Ok" tl in
   Text.insert tw ~index:tend ~text:Help.text;
+  Text.configure tw ~state:`Disabled;
+  Jg_bind.enter_focus tw;
   pack [tw] ~side:`Left ~fill:`Both ~expand:true;
   pack [sb] ~side:`Right ~fill:`Y;
   pack [fw] ~side:`Top ~expand:true ~fill:`Both;
@@ -334,24 +339,8 @@ let f ?(dir=Unix.getcwd()) ?on () =
 
   let ew = Entry.create tl in
   let buttons = Frame.create tl in
-  let search = Button.create buttons ~text:"Search" ~pady:1 ~command:
-    begin fun () ->
-      let s = Entry.get ew in
-      let mode = guess_search_mode s in
-      let l =
-        match mode with
-        | `Long -> search_string_symbol s
-        | `Pattern ->  search_pattern_symbol s
-        | `Type ->
-            try  search_string_type ~mode:`included s
-            with Searchid.Error (start,stop) ->
-              Entry.icursor ew ~index:(`Num start); []
-      in
-      match l with [] -> ()
-      | [lid,kind] when mode = `Long ->
-          view_symbol lid ~kind ~env:!start_env
-      | _ -> choose_symbol ~title:"Choose symbol" ~env:!start_env l
-    end
+  let search = Button.create buttons ~text:"Search" ~pady:1
+      ~command:(fun () -> search_string ew)
   and close =
     Button.create buttons ~text:"Close all" ~pady:1 ~command:close_all_views
   in
@@ -404,8 +393,9 @@ class st_viewer ?(dir=Unix.getcwd()) ?on () =
   and modmenu = new Jg_menu.c "Modules" ~parent:menus
   and viewmenu = new Jg_menu.c "View" ~parent:menus
   and helpmenu = new Jg_menu.c "Help" ~parent:menus in
+  let search_frame = Frame.create tl in
   let boxes_frame = Frame.create tl ~name:"boxes" in
-  let label = Label.create tl ~anchor:`W ~padx:10 in
+  let label = Label.create tl ~anchor:`W ~padx:5 in
   let view = Frame.create tl in
   let buttons = Frame.create tl in
   let all = Button.create buttons ~text:"Show all" ~padx:20
@@ -426,6 +416,25 @@ object (self)
     fmbox, mbox
 
   initializer
+    (* Search *)
+    let ew = Entry.create search_frame
+    and searchtype = Textvariable.create ~on:tl () in
+    bind ew ~events:[`KeyPressDetail "Return"] ~action:
+      (fun _ -> search_string ew ~mode:(Textvariable.get searchtype));
+    Jg_bind.enter_focus ew;
+    let search_button ?value text =
+      Radiobutton.create search_frame
+        ~text ~variable:searchtype ~value:text in
+    let symbol = search_button "Name"
+    and atype = search_button "Type" in
+    Radiobutton.select symbol;
+    pack [Label.create search_frame ~text:"Search"] ~side:`Left ~ipadx:5;
+    pack [ew] ~fill:`X ~expand:true ~side:`Left;
+    pack [Label.create search_frame ~text:"by"] ~side:`Left ~ipadx:5;
+    pack [symbol; atype] ~side:`Left;
+    pack [Label.create search_frame] ~side:`Right
+
+  initializer
     (* Boxes *)
     let fmbox, mbox = self#create_box in
     Jg_box.add_completion mbox ~nocase:true ~double:false ~action:
@@ -433,6 +442,8 @@ object (self)
         view_defined (Lident (Listbox.get mbox ~index)) ~env:!start_env
       end;
     bind mbox ~events:[`Modified([`Double], `ButtonPressDetail 1)]
+      ~action:(fun _ -> show_all ());
+    bind mbox ~events:[`Modified([`Double], `KeyPressDetail "Return")]
       ~action:(fun _ -> show_all ());
     Setpath.add_update_hook (fun () -> reset_modules mbox; self#hide_after 1);
     List.iter [1;2] ~f:(fun _ -> ignore self#create_box);
@@ -452,6 +463,22 @@ object (self)
     filemenu#add_command "Shell..." ~command:start_shell;
     filemenu#add_command "Quit" ~command:(fun () -> destroy tl);
 
+    (* View menu *)
+    viewmenu#add_command "Show all defs" ~command:(fun () -> show_all ());
+    let show_search = Textvariable.create ~on:tl () in
+    Textvariable.set show_search "1";
+    Menu.add_checkbutton viewmenu#menu ~label:"Search Entry"
+      ~variable:show_search ~indicatoron:true ~state:`Active
+      ~command:
+      begin fun () ->
+        let v = Textvariable.get show_search in
+        if v = "1" then begin
+          Pack.forget [boxes_frame];
+          pack [search_frame] ~fill:`X ~expand:true;
+          pack [boxes_frame] ~fill:`Both ~expand:true
+        end else Pack.forget [search_frame]
+      end;
+
     (* modules menu *)
     modmenu#add_command "Path editor..."
       ~command:(fun () -> Setpath.set ~dir);
@@ -459,17 +486,14 @@ object (self)
       ~command:(fun () -> reset_modules mbox; Env.reset_cache ());
     modmenu#add_command "Search symbol..." ~command:search_symbol;
 
-    (* View menu *)
-    viewmenu#add_command "Show all" ~command:(fun () -> show_all ());
-
     (* Help menu *)
     helpmenu#add_command "Manual..." ~command:show_help;
 
-    pack [filemenu#button; modmenu#button; viewmenu#button]
+    pack [filemenu#button; viewmenu#button; modmenu#button]
       ~side:`Left ~ipadx:5 ~anchor:`W;
     pack [helpmenu#button] ~side:`Right ~anchor:`E ~ipadx:5;
-    pack [menus] ~side:`Top ~fill:`X;      
-    (* pack [close; search] ~fill:`X ~side:`Right ~expand:true; *)
+    pack [menus] ~fill:`X;      
+    pack [search_frame] ~fill:`X ~expand:true;      
     pack [boxes_frame] ~fill:`Both ~expand:true;
     pack [buttons] ~fill:`X ~side:`Bottom ~expand:false;
     pack [view] ~fill:`Both ~side:`Bottom ~expand:true;
