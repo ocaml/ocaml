@@ -1071,3 +1071,37 @@ let _ =
   test "jacaues" g C 2 ;
   test "jacques" g (B (`A,`D)) 3 ;
   ()
+
+(*
+  Compilation bug, segfault, because of incorrect compilation
+  of unused match case .. -> "11"
+*)
+
+type t_l = A | B
+
+let f = function
+  |  _, _, _, _, _, _, _, _, _, _, _, _, _, B, _, _ -> "0"
+  |  _, _, _, B, A, _, _, _, _, _, _, _, _, _, _, _ -> "1"
+  |  _, _, _, B, _, A, _, _, A, _, _, _, _, _, _, _ -> "2"
+  |  _, _, _, _, _, _, _, _, _, _, B, A, _, A, _, _ -> "3"
+  |  _, _, _, _, _, _, _, B, _, _, _, _, B, _, A, A -> "4"
+  |  A, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ -> "5"
+  |  _, _, _, _, _, _, _, B, _, B, _, _, _, _, _, _ -> "6"
+  |  _, B, _, _, _, _, _, _, _, _, _, _, _, _, _, _ -> "7"
+  |  _, A, A, _, A, _, B, _, _, _, _, _, _, _, _, B -> "8"
+  |  _, _, _, _, B, _, _, _, _, _, _, _, _, _, B, _ -> "9"
+  |  _, _, _, _, _, _, _, _, _, _, _, B, _, _, _, _ -> "10"
+  |  _, _, _, _, _, A, _, _, _, _, B, _, _, _, _, _ -> "11"
+  |  B, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ -> "12"
+  |  _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ -> "13"
+
+(*
+File "morematch.ml", line 1094, characters 5-51:
+Warning: this match case is unused.
+File "morematch.ml", line 1096, characters 5-51:
+Warning: this match case is unused.
+*)
+let _  =
+  test "luc"  f (B, A, A, A, A, A, A, A, A, A, A, B, A, A, A, A) "10" ;
+  test "luc"  f (B, A, A, A, A, A, A, A, A, A, A, A, A, A, A, A) "12" ;
+ ()

@@ -327,22 +327,32 @@ type pattern_matching_ext =
 
 let pretty_cases cases =
   List.iter
-    (fun ((ps),_) ->
+    (fun ((ps),l) ->
       List.iter
         (fun p ->
           Parmatch.top_pretty Format.str_formatter p ;
           prerr_string " " ;
           prerr_string (Format.flush_str_formatter ()))
         ps ;
+      prerr_string " -> " ;
+      Printlambda.lambda Format.str_formatter l ;
+      prerr_string (Format.flush_str_formatter ()) ;
       prerr_endline "")
     cases
 
 let pretty_pm pm = pretty_cases pm.cases
 
+let pretty_def def =
+  List.iter
+    (fun (pss,i) ->
+      Printf.fprintf stderr "Matrix for %d\n"  i ;
+      pretty_matrix pss)
+    def
+
 let pretty_ext m =
   prerr_endline "++++++++ To Match ++++++++" ;
   pretty_pm m.to_match ;
-  match m.to_catch with
+  begin match m.to_catch with
   | [] ->
       prerr_endline "++++++++ No Catch ++++++++"
   | to_catch ->
@@ -352,17 +362,12 @@ let pretty_ext m =
           Printf.fprintf stderr "Handler %d: " i ;
           prerr_endline "" ;
           pretty_pm pm)
-        to_catch ;
-      prerr_endline "+++++++++++++++++++++"
-
-let pretty_def def =
-  List.iter
-    (fun (pss,i) ->
-      Printf.fprintf stderr "Matrix for %d\n"  i ;
-      pretty_matrix pss)
-    def
-
-        
+        to_catch
+  end ;
+  prerr_endline "+++++ Defaults +++++" ;
+  pretty_def (snd m.to_match.default) ;
+  prerr_endline "+++++++++++++++++++++"
+  
 
 (* To group lines of patterns with identical keys *)
 
@@ -732,12 +737,6 @@ let get_group p = match p.pat_desc with
 |  _ -> fatal_error "Matching.get_group"
 
 
-let all_vars pss = match pss with
-| ps::_ -> List.for_all group_var ps
-| _ -> false
-(*
-let all_vars _ = false
-*)
 
 let is_or p = match p.pat_desc with
 | Tpat_or _ -> true
@@ -880,6 +879,11 @@ let separe argo pm =
                 next, nexts
             | _                     ->
                 compile_or argo pm.cases [] pm.args  pm.default,[] in
+(*      
+      prerr_endline "SEPARE" ;
+      pretty_ext next ;
+      List.iter (fun (e,p) -> Printf.eprintf "** %d **\n" e ; flush stderr ; pretty_ext p) nexts ;
+*)
       (next,nexts)
   
 
@@ -1642,12 +1646,12 @@ let mk_res get_key env last_choice idef cant_fail ctx =
       
 
 (* Aucune optimisation, reflechir apres la release *)
-let mk_failaction_neg get_key partial seen ctx (_,def) = match partial with
+let mk_failaction_neg partial ctx (_,def) = match partial with
 | Partial -> begin match def with
-  | (_,idef)::_ ->
+   | (_,idef)::_ ->
       Some (Lstaticraise (idef,[])),[],jumps_singleton idef ctx
-  | __ -> assert false
-end
+   | __ -> assert false
+   end
 | Total ->
     None, [], jumps_empty
     
@@ -1686,9 +1690,7 @@ and mk_failaction_pos partial seen ctx (_,defs)  =
 let combine_constant arg cst partial ctx def 
     (const_lambda_list, total, pats) =
   let fail, to_add, local_jumps =
-    mk_failaction_neg
-      (get_key_constant "combine_constant")
-      partial pats ctx def in
+    mk_failaction_neg partial ctx def in
   let const_lambda_list = to_add@const_lambda_list in
   let lambda1 =
     match cst with
@@ -1738,7 +1740,7 @@ let combine_constructor arg ex_pat cstr partial ctx def
     (* Special cases for exceptions *)    
     let cstrs = List.map fst tag_lambda_list in
     let fail, to_add, local_jumps =
-      mk_failaction_neg get_key_constr partial pats ctx def in
+      mk_failaction_neg partial ctx def in
     let tag_lambda_list = to_add@tag_lambda_list in
     let lambda1 =
       let default, tests =
@@ -1844,8 +1846,7 @@ let combine_variant row arg partial ctx def (tag_lambda_list, total1, pats) =
     if sig_complete || (match partial with Total -> true | _ -> false) then
       None, [], jumps_empty
     else
-      mk_failaction_neg get_key_variant
-        partial pats ctx def in
+      mk_failaction_neg partial ctx def in
   let tag_lambda_list = to_add@tag_lambda_list in
   let (consts, nonconsts) = split_cases tag_lambda_list in
   let lambda1 = match fail, one_action with
@@ -1878,8 +1879,7 @@ let combine_variant row arg partial ctx def (tag_lambda_list, total1, pats) =
     
 let combine_array arg kind partial ctx def
     (len_lambda_list, total1, pats)  =
-  let fail, to_add, local_jumps =
-    mk_failaction_neg get_key_array partial pats ctx def in
+  let fail, to_add, local_jumps = mk_failaction_neg partial  ctx def in
   let len_lambda_list = to_add @ len_lambda_list in
   let lambda1 =
     let newvar = Ident.create "len" in
@@ -1964,11 +1964,15 @@ let compile_orhandlers compile_fun lambda1 total1 ctx to_catch =
   do_rec lambda1 total1 to_catch
 
 
-let compile_test compile_fun divide combine ctx to_match to_catch =
+let compile_test compile_fun partial divide combine ctx to_match to_catch =
   let division = divide ctx to_match in
   let c_div = compile_list compile_fun division in
   match c_div with
-  | [],_,_ -> raise Unused
+  | [],_,_ ->
+     begin match mk_failaction_neg partial ctx to_match.default with
+     | None,_,_ -> raise Unused
+     | Some l,_,total -> l,total
+     end
   | _ ->
       let lambda1,total1 = 
         combine ctx to_match.default c_div in
@@ -2033,8 +2037,7 @@ let rec comp_exit ctx m =
 
         
 
-let comp_match_handlers comp_fun partial ctx arg first_match next_matchs =
-  match next_matchs with
+let rec comp_match_handlers comp_fun partial ctx arg first_match next_matchs = match next_matchs with
   | [] -> comp_fun partial ctx arg first_match
   | rem ->
       let rec c_rec body total_body = function
@@ -2060,10 +2063,13 @@ let comp_match_handlers comp_fun partial ctx arg first_match next_matchs =
                     c_rec (Lstaticcatch (body,(i,[]),lambda_unit))
                       total_rem  rem
             end in
-
-      let first_lam,total =
-        comp_fun Partial ctx arg first_match in
+   try
+      let first_lam,total = comp_fun Partial ctx arg first_match in
       c_rec first_lam total rem
+   with Unused -> match next_matchs with
+   | [] -> raise Unused
+   | (_,x)::xs ->  comp_match_handlers comp_fun partial ctx arg x xs
+
 
 (*
   The main compilation function.
@@ -2105,7 +2111,8 @@ let rec compile_match repr partial ctx m = match m with
 
 (* verbose version of do_compile_matching, for debug *)
 and do_compile_matching_pr repr partial ctx arg x =
-  prerr_endline "COMPILE" ;
+  prerr_string "COMPILE: " ;
+  prerr_endline (match partial with Partial -> "Partial" | Total -> "Total") ;
   prerr_endline "MATCH" ;
   pretty_ext x ;
   prerr_endline "CTX" ;
@@ -2133,22 +2140,22 @@ and do_compile_matching repr partial ctx arg
         ctx_combine repr partial ctx to_match to_catch
   | Tpat_constant cst ->
       compile_test
-        (compile_match repr partial)
+        (compile_match repr partial) partial
         divide_constant
         (combine_constant arg cst partial)
         ctx to_match to_catch
   | Tpat_construct (cstr, _) ->
       compile_test
-        (compile_match repr partial)
+        (compile_match repr partial) partial
         divide_constructor (combine_constructor arg pat cstr partial)
         ctx to_match to_catch
   | Tpat_array _ ->    
       let kind = Typeopt.array_pattern_kind pat in
-      compile_test (compile_match repr partial)
+      compile_test (compile_match repr partial) partial
         (divide_array kind) (combine_array arg kind partial)
         ctx to_match to_catch
   | Tpat_variant(lab, _, row) ->
-      compile_test (compile_match repr partial)
+      compile_test (compile_match repr partial) partial
         (divide_variant row)
         (combine_variant row arg partial)
         ctx to_match to_catch
