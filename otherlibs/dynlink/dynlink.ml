@@ -101,9 +101,9 @@ let init () =
 
 let digest_interface unit loadpath =
   let filename =
-    let shortname = String.uncapitalize unit ^ ".cmi" in
+    let shortname = unit ^ ".cmi" in
     try
-      Misc.find_in_path loadpath shortname
+      Misc.find_in_path_uncap loadpath shortname
     with Not_found ->
       raise (Error(File_not_found shortname)) in
   let ic = open_in_bin filename in

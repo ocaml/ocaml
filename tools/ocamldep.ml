@@ -20,36 +20,55 @@ open Parsetree
 
 (* Print the dependencies *)
 
-let load_path = ref [""]
-
+let load_path = ref ([] : (string * string array) list)
 let native_only = ref false
 let force_slash = ref false
+let error_occurred = ref false
+
+let add_to_load_path dir =
+  try
+    let contents = Sys.readdir dir in
+    load_path := !load_path @ [dir, contents]
+  with Sys_error msg ->
+    fprintf Format.err_formatter "@[Bad -I option: %s@]@." msg;
+    error_occurred := true
+
+let concat_filename dirname filename =
+  if dirname = Filename.current_dir_name then filename
+  else if !force_slash then dirname ^ "/" ^ filename
+  else Filename.concat dirname filename
 
 let find_file name =
-  let filename = Misc.find_in_path_uncap !load_path name in
-  if !force_slash then begin
-    let filename = String.copy filename in
-    for i = 0 to String.length filename - 1 do
-      if filename.[i] = '\\' then filename.[i] <- '/'
-    done;
-    filename
-  end else
-    filename
+  let uname = String.uncapitalize name in
+  let rec find_in_array a pos =
+    if pos >= Array.length a then None else begin
+      let s = a.(pos) in
+      if s = name || s = uname then Some s else find_in_array a (pos + 1)
+    end in
+  let rec find_in_path = function
+    [] -> raise Not_found
+  | (dir, contents) :: rem ->
+      match find_in_array contents 0 with
+        Some truename -> concat_filename dir truename
+      | None -> find_in_path rem in
+  find_in_path !load_path
 
 let find_dependency modname (byt_deps, opt_deps) =
   try
     let filename = find_file (modname ^ ".mli") in
     let basename = Filename.chop_suffix filename ".mli" in
-    ((basename ^ ".cmi") :: byt_deps,
-     (if Sys.file_exists (basename ^ ".ml")
+    let optname = 
+      if Sys.file_exists (basename ^ ".ml")
       then basename ^ ".cmx"
-      else basename ^ ".cmi") :: opt_deps)
+      else basename ^ ".cmi" in
+    ((basename ^ ".cmi") :: byt_deps, optname :: opt_deps)
   with Not_found ->
   try
     let filename = find_file (modname ^ ".ml") in
     let basename = Filename.chop_suffix filename ".ml" in
-    ((basename ^ (if !native_only then ".cmx" else ".cmo")) :: byt_deps,
-     (basename ^ ".cmx") :: opt_deps)
+    let bytename =
+      basename ^ (if !native_only then ".cmx" else ".cmo") in
+    (bytename :: byt_deps, (basename ^ ".cmx") :: opt_deps)
   with Not_found ->
     (byt_deps, opt_deps)
 
@@ -138,8 +157,6 @@ let parse_interface ic =
 
 (* Process one file *)
 
-let error_occurred = ref false
-
 let file_dependencies source_file =
   Location.input_name := source_file;
   if Sys.file_exists source_file then begin
@@ -195,8 +212,9 @@ let usage = "Usage: ocamldep [-I <dir>] [-native] <files>"
 
 let _ =
   Clflags.classic := false;
+  add_to_load_path Filename.current_dir_name;
   Arg.parse [
-     "-I", Arg.String(fun dir -> load_path := !load_path @ [dir]),
+     "-I", Arg.String add_to_load_path,
        "<dir>  Add <dir> to the list of include directories";
      "-native", Arg.Set native_only,
        "  Generate dependencies for a pure native-code project \

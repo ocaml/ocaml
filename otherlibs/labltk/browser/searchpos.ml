@@ -358,8 +358,8 @@ let rec view_signature ?title ?path ?(env = !start_env) ?(detach=false) sign =
             try
               let id = head_id path in
               let file =
-                Misc.find_in_path !Config.load_path
-                  (String.uncapitalize (Ident.name id) ^ ext) in
+                Misc.find_in_path_uncap !Config.load_path
+                  ((Ident.name id) ^ ext) in
               Button.configure button
                 ~command:(fun () -> edit_source ~file ~path ~sign);
               if !repack then Pack.forget [button] else
