@@ -78,8 +78,9 @@ let transl_declaration env (name, sdecl) id =
           lbls) in
   Ctype.end_def();
   List.iter Ctype.generalize params;
-  (id,
-   {type_params = params; type_arity = List.length params; type_kind = kind})
+  (id, {type_params = params;
+        type_arity = List.length params;
+        type_kind = kind })
 
 (* Check for recursive abbrevs *)
 
@@ -110,6 +111,20 @@ let transl_type_decl env name_sdecl_list =
 let transl_exception env excdecl =
   reset_type_variables();
   List.map (transl_simple_type env true) excdecl
+
+(* Translate a value declaration *)
+
+let transl_value_decl env valdecl =
+  let ty = Typetexp.transl_type_scheme env valdecl.pval_type in
+  let arity = Ctype.arity ty in
+  let prim =
+    match valdecl.pval_prim with
+      name :: "noalloc" :: _ ->
+        Some { prim_name = name; prim_arity = arity; prim_alloc = false }
+    | name :: _ -> 
+        Some { prim_name = name; prim_arity = arity; prim_alloc = true }
+    | [] -> None in
+  { val_type = ty; val_prim = prim }
 
 (* Error report *)
 

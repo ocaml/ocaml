@@ -342,3 +342,4 @@ let rec arity ty =
   | _ -> 0
 
 let none = Ttuple []                  (* Clearly ill-formed type *)
+

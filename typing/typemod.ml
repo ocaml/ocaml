@@ -95,12 +95,7 @@ and transl_signature env sg =
   match sg with
     [] -> []
   | Psig_value(name, sdesc) :: srem ->
-      let ty = Typetexp.transl_type_scheme env sdesc.pval_type in
-      let prim =
-        match sdesc.pval_prim with
-          None -> Not_prim
-        | Some p -> Primitive(p, Ctype.arity ty) in
-      let desc = { val_type = ty; val_prim = prim } in
+      let desc = Typedecl.transl_value_decl env sdesc in
       let (id, newenv) = Env.enter_value name desc env in
       let rem = transl_signature newenv srem in
       Tsig_value(id, desc) :: rem
@@ -221,12 +216,7 @@ and type_structure env = function
        map_end make_sig_value bound_idents sig_rem,
        final_env)
   | Pstr_primitive(name, sdesc) :: srem ->
-      let ty = Typetexp.transl_type_scheme env sdesc.pval_type in
-      let prim =
-        match sdesc.pval_prim with
-          None -> Not_prim
-        | Some p -> Primitive(p, Ctype.arity ty) in
-      let desc = { val_type = ty; val_prim = prim } in
+      let desc = Typedecl.transl_value_decl env sdesc in
       let (id, newenv) = Env.enter_value name desc env in
       let (str_rem, sig_rem, final_env) = type_structure newenv srem in
       (Tstr_primitive(id, desc) :: str_rem,

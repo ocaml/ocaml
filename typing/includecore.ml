@@ -10,8 +10,8 @@ open Typedtree
 let value_descriptions env vd1 vd2 =
   Ctype.moregeneral env vd1.val_type vd2.val_type &
   begin match (vd1.val_prim, vd2.val_prim) with
-      (Primitive(p1, ar1), Primitive(p2, ar2)) -> p1 = p2 & ar1 = ar2
-    | (Not_prim, Primitive(p, ar)) -> false
+      (Some p1, Some p2) -> p1 = p2
+    | (None, Some p) -> false
     | _ -> true
   end
 

@@ -1,4 +1,4 @@
-(* Typing of type definitions *)
+(* Typing of type definitions and primitive definitions *)
 
 open Typedtree
 
@@ -8,6 +8,9 @@ val transl_type_decl:
 val transl_exception:
         Env.t -> Parsetree.exception_declaration -> exception_declaration
 
+val transl_value_decl:
+        Env.t -> Parsetree.value_description -> value_description
+    
 type error =
     Repeated_parameter
   | Duplicate_constructor of string

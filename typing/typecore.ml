@@ -139,7 +139,7 @@ let add_pattern_variables env =
   pattern_variables := [];
   List.fold_right
     (fun (id, ty) env ->
-      Env.add_value id {val_type = ty; val_prim = Not_prim} env)
+      Env.add_value id {val_type = ty; val_prim = None} env)
     pv env
 
 let type_pattern env spat =
@@ -408,7 +408,7 @@ let rec type_exp env sexp =
       let high = type_expect env shigh Predef.type_int in
       let (id, new_env) =
         Env.enter_value param {val_type = Predef.type_int;
-                                val_prim = Not_prim} env in
+                                val_prim = None} env in
       let body = type_statement new_env sbody in
       { exp_desc = Texp_for(id, low, high, dir, body);
         exp_loc = sexp.pexp_loc;

@@ -26,13 +26,13 @@ and path_array = Pident ident_array
 and path_list = Pident ident_list
 and path_format = Pident ident_format
 
-let type_int = Tconstr(Pident ident_int, [])
-and type_char = Tconstr(Pident ident_char, [])
-and type_string = Tconstr(Pident ident_string, [])
-and type_float = Tconstr(Pident ident_float, [])
-and type_bool = Tconstr(Pident ident_bool, [])
-and type_unit = Tconstr(Pident ident_unit, [])
-and type_exn = Tconstr(Pident ident_exn, [])
+let type_int = Tconstr(path_int, [])
+and type_char = Tconstr(path_char, [])
+and type_string = Tconstr(path_string, [])
+and type_float = Tconstr(path_float, [])
+and type_bool = Tconstr(path_bool, [])
+and type_unit = Tconstr(path_unit, [])
+and type_exn = Tconstr(path_exn, [])
 and type_array t = Tconstr(path_array, [t])
 and type_list t = Tconstr(path_list, [t])
 
@@ -49,27 +49,40 @@ let path_match_failure = Pident ident_match_failure
 
 let build_initial_env add_type add_exception empty_env =
   let newvar() =
-    (* Cannot call newvar here because ctype imports predef via env *)
+    (* Cannot call the real newvar from ctype here
+       because ctype imports predef via env *)
     Tvar{tvar_level = -1 (*generic_level*); tvar_link = None} in
   let decl_abstr =
-    {type_params = []; type_arity = 0; type_kind = Type_abstract}
+    {type_params = [];
+     type_arity = 0;
+     type_kind = Type_abstract}
   and decl_bool =
-    {type_params = []; type_arity = 0;
+    {type_params = [];
+     type_arity = 0;
      type_kind = Type_variant["false",[]; "true",[]]}
   and decl_unit =
-    {type_params = []; type_arity = 0; type_kind = Type_variant["()",[]]}
+    {type_params = []; 
+     type_arity = 0;
+     type_kind = Type_variant["()",[]]}
   and decl_exn =
-    {type_params = []; type_arity = 0; type_kind = Type_variant[]}
+    {type_params = [];
+     type_arity = 0;
+     type_kind = Type_variant []}
   and decl_array =
     let tvar = newvar() in
-    {type_params = [tvar]; type_arity = 1; type_kind = Type_abstract}
+    {type_params = [tvar];
+     type_arity = 1;
+     type_kind = Type_abstract}
   and decl_list =
     let tvar = newvar() in
-    {type_params = [tvar]; type_arity = 1;
+    {type_params = [tvar];
+     type_arity = 1;
      type_kind = Type_variant["[]", []; "::", [tvar; type_list tvar]]}
   and decl_format =
-    {type_params = [newvar(); newvar(); newvar()]; type_arity = 3;
+    {type_params = [newvar(); newvar(); newvar()];
+     type_arity = 3;
      type_kind = Type_abstract} in
+
   add_exception ident_match_failure [Ttuple[type_string; type_int; type_int]] (
   add_exception ident_out_of_memory [] (
   add_exception ident_invalid_argument [type_string] (

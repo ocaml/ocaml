@@ -145,16 +145,20 @@ let exception_declaration id decl =
 
 (* Print a value declaration *)
 
+let primitive_description p =
+  print_string "\""; print_string p.prim_name; print_string "\"";
+  if not p.prim_alloc then print_string " \"noalloc\""
+
 let value_description id decl =
   open_hovbox 2;
   begin match decl.val_prim with
-    Not_prim ->
+    None ->
       print_string "val "; ident id; print_string " :"; print_space();
       type_scheme decl.val_type
-  | Primitive(p, ar) ->
+  | Some p ->
       print_string "val "; ident id; print_string " :"; print_space();
       type_scheme decl.val_type; print_space();
-      print_string "= \""; print_string p; print_string "\""
+      print_string "= "; primitive_description p
   end;
   close_box()
 
