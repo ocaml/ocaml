@@ -117,8 +117,12 @@ static struct error_entry win_error_table[] = {
   { WSAEINTR, 0, EINTR },
   { WSAEINVAL, 0, EINVAL },
   { WSAEMFILE, 0, EMFILE },
+#ifdef WSANAMETOOLONG
   { WSANAMETOOLONG, 0, ENAMETOOLONG },
+#endif
+#ifdef WSAENFILE
   { WSAENFILE, 0, ENFILE },
+#endif
   { WSAENOTEMPTY, 0, ENOTEMPTY },
   { 0, -1, 0 }
 };
