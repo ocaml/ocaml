@@ -16,7 +16,7 @@
 (** Regular expressions and high-level string processing *)
 
 
-(** {2 Regular expressions} *)
+(** {6 Regular expressions} *)
 
 
 type regexp
@@ -63,7 +63,7 @@ val regexp_string_case_fold : string -> regexp
    but the regexp matches in a case-insensitive way. *)
 
    
-(** {2 String matching and searching} *)
+(** {6 String matching and searching} *)
 
 
 external string_match : regexp -> string -> int -> bool = "str_string_match"
@@ -136,7 +136,7 @@ val group_end : int -> int
    was not matched. *)
 
 
-(** {2 Replacement} *)
+(** {6 Replacement} *)
 
 
 val global_replace : regexp -> string -> string -> string
@@ -170,7 +170,7 @@ val substitute_first : regexp -> (string -> string) -> string -> string
 val replace_matched : string -> string -> string
         
 
-(** {2 Splitting} *)
+(** {6 Splitting} *)
 
 
 val split : regexp -> string -> string list
@@ -221,7 +221,7 @@ val bounded_full_split : regexp -> string -> int -> split_result list
    [[Delim "{"; Text "ab"; Delim "}"]]. *)
 
 
-(** {2 Extracting substrings} *)
+(** {6 Extracting substrings} *)
 
 
 val string_before : string -> int -> string
