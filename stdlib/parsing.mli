@@ -29,8 +29,10 @@ exception Parse_error
 (* The following definitions are used by the generated parsers only.
    They are not intended to be used by user programs. *)
 
+type parser_env
+
 type parse_tables =
-  { actions : (unit -> Obj.t) array;
+  { actions : (parser_env -> Obj.t) array;
     transl_const : int array;
     transl_block : int array;
     lhs : string;
@@ -48,5 +50,5 @@ exception YYexit of Obj.t
 
 val yyparse :
       parse_tables -> int -> (Lexing.lexbuf -> 'a) -> Lexing.lexbuf -> 'b
-val peek_val : int -> 'a
+val peek_val : parser_env -> int -> 'a
 val is_current_lookahead: 'a -> bool

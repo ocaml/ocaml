@@ -1,23 +1,5 @@
 (* The parsing engine *)
 
-type parse_tables =
-  { actions : (unit -> Obj.t) array;
-    transl_const : int array;
-    transl_block : int array;
-    lhs : string;
-    len : string;
-    defred : string;
-    dgoto : string;
-    sindex : string;
-    rindex : string;
-    gindex : string;
-    tablesize : int;
-    table : string;
-    check : string }
-
-exception YYexit of Obj.t
-exception Parse_error
-
 open Lexing
 
 (* Internal interface to the parsing engine *)
@@ -37,6 +19,24 @@ type parser_env =
     mutable rule_number : int;          (* Rule number to reduce by *)
     mutable sp : int;                   (* Saved sp for parse_engine *)
     mutable state : int }               (* Saved state for parse_engine *)
+
+type parse_tables =
+  { actions : (parser_env -> Obj.t) array;
+    transl_const : int array;
+    transl_block : int array;
+    lhs : string;
+    len : string;
+    defred : string;
+    dgoto : string;
+    sindex : string;
+    rindex : string;
+    gindex : string;
+    tablesize : int;
+    table : string;
+    check : string }
+
+exception YYexit of Obj.t
+exception Parse_error
 
 type parser_input =
     Start
@@ -106,7 +106,7 @@ let yyparse tables start lexer lexbuf =
     | Raise_parse_error ->
         raise Parse_error
     | Compute_semantic_action ->
-        loop Semantic_action_computed (tables.actions.(env.rule_number) ())
+        loop Semantic_action_computed (tables.actions.(env.rule_number) env)
     | Grow_stacks_1 ->
         grow_stacks(); loop Stacks_grown_1 (Obj.repr ())
     | Grow_stacks_2 ->
@@ -135,7 +135,7 @@ let yyparse tables start lexer lexbuf =
             else tables.transl_const.(Obj.magic tok) = curr_char);
         raise exn
 
-let peek_val n =
+let peek_val env n =
   Obj.magic env.v_stack.(env.asp - n)
 
 let symbol_start () =
