@@ -51,8 +51,25 @@ let _ = Hashtbl.add directive_table "cd" (Directive_string dir_cd)
 
 exception Load_failed
 
+let check_consistency ppf filename compunit =
+  List.iter
+    (fun (name, crc) ->
+      let crc_intf =
+        try
+          Env.crc_of_unit name
+        with Not_found ->
+          fprintf ppf "Cannot find compiled interface for %s.@." name;
+          raise Load_failed in
+      if crc <> crc_intf then begin
+        fprintf ppf "@[<hv 0>File %s is not up-to-date with respect to@ \
+                             interface %s@]@."
+                filename name;
+        raise Load_failed
+      end)
+    compunit.cu_imports
+
 let load_compunit ic filename ppf compunit =
-  Bytelink.check_consistency filename compunit;
+  check_consistency ppf filename compunit;
   seek_in ic compunit.cu_pos;
   let code_size = compunit.cu_codesize + 8 in
   let code = Meta.static_alloc code_size in
