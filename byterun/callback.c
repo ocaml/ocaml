@@ -57,7 +57,16 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   int i;
   value res;
 
+  /* some alternate bytecode implementations (e.g. a JIT translator)
+     might require that the bytecode is kept in a local variable on
+     the C stack */
+#ifdef LOCAL_CALLBACK_BYTECODE
+  opcode_t local_callback_code[7];
+#endif
+
   Assert(narg + 4 <= 256);
+
+#ifndef LOCAL_CALLBACK_BYTECODE
   Init_callback();
   caml_extern_sp -= narg + 4;
   for (i = 0; i < narg; i++) caml_extern_sp[i] = args[i]; /* arguments */
@@ -68,6 +77,20 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
   callback_code[1] = narg + 3;
   callback_code[3] = narg;
   res = caml_interprete(callback_code, sizeof(callback_code));
+#else /*have LOCAL_CALLBACK_BYTECODE*/
+  local_callback_code[0] = ACC;
+  local_callback_code[1] = narg + 3;
+  local_callback_code[2] = APPLY;
+  local_callback_code[3] = narg;
+  local_callback_code[4] = POP;
+  local_callback_code[5] =  1;
+  local_callback_code[6] = STOP;
+#ifdef THREADED_CODE
+  caml_thread_code(local_callback_code, sizeof(local_callback_code));
+#endif /*THREADED_CODE*/
+  res = caml_interprete(local_callback_code, sizeof(local_callback_code));
+  caml_release_bytecode(local_callback_code, sizeof(local_callback_code));
+#endif /*LOCAL_CALLBACK_BYTECODE*/
   if (Is_exception_result(res)) caml_extern_sp += narg + 4; /* PR#1228 */
   return res;
 }
