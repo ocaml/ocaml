@@ -99,7 +99,7 @@ clean: partialclean
 	rm -f pervasives.mli marshal.mli unix.mli
 
 install:
-	if test -f dllthreads.so; then cp dllthreads.so $(LIBDIR)/dllthreads.so; fi
+	if test -f dllthreads.so; then cp dllthreads.so $(STUBLIBDIR)/dllthreads.so; fi
 	cp libthreads.a $(LIBDIR)/libthreads.a
 	cd $(LIBDIR); $(RANLIB) libthreads.a
 	if test -d $(LIBDIR)/threads; then : ; else mkdir $(LIBDIR)/threads; fi

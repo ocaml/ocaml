@@ -70,7 +70,7 @@ clean: partialclean
 	rm -f $(GENFILES)
 
 install:
-	cp dllthreads.dll $(LIBDIR)/dllthreads.dll
+	cp dllthreads.dll $(STUBLIBDIR)/dllthreads.dll
 	cp libthreads.$(A) $(LIBDIR)/libthreads.$(A)
 	mkdir -p $(LIBDIR)/threads
 	cp $(THREAD_OBJS:.cmo=.cmi) threads.cma $(LIBDIR)/threads

@@ -31,8 +31,7 @@ install: lib$(LIBNAME).a $(PUB)
 	cd $(INSTALLDIR); $(RANLIB) lib$(LIBNAME).a
 	cd $(INSTALLDIR); chmod 644 $(PUB) lib$(LIBNAME).a
 	if test -f dll$(LIBNAME).so; then \
-	   cp dll$(LIBNAME).so $(INSTALLDIR)/dll$(LIBNAME).so; \
-	   chmod 644 $(INSTALLDIR)/dll$(LIBNAME).so; fi
+	   cp dll$(LIBNAME).so $(STUBLIBDIR)/dll$(LIBNAME).so; fi
 
 clean : 
 	rm -f *.cm* *.o *.a *.so

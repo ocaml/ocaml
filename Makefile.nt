@@ -211,7 +211,8 @@ installbyt:
 	mkdir -p $(BINDIR)
 	mkdir -p $(LIBDIR)
 	cd byterun ; $(MAKEREC) install
-	echo $(LIBDIR)> $(LIBDIR)/ld.conf
+	echo "$(STUBLIBDIR)" > $(LIBDIR)/ld.conf
+	echo "$(LIBDIR)" >> $(LIBDIR)/ld.conf
 	cp ocamlc $(BINDIR)/ocamlc.exe
 	cp ocaml $(BINDIR)/ocaml.exe
 	cd stdlib ; $(MAKEREC) install
@@ -229,10 +230,10 @@ ifeq ($(TOOLCHAIN),msvc)
 	cd win32caml ; $(MAKE) install
 endif
 	cd camlp4 ; make install
-#	copy /a README $(DISTRIB)/Readme.gen
-#	copy /a README.win32 $(DISTRIB)/Readme.win
-#	copy /a LICENSE $(DISTRIB)/License.txt
-#	copy /a Changes $(DISTRIB)/Changes.txt
+	cp README $(DISTRIB)/Readme.gen
+	cp README.win32 $(DISTRIB)/Readme.win
+	cp LICENSE $(DISTRIB)/License.txt
+	cp Changes $(DISTRIB)/Changes.txt
 
 # Installation of the native-code compiler
 installopt:

@@ -25,6 +25,9 @@ BINDIR=$(PREFIX)/bin
 ### Where to install the standard library
 LIBDIR=$(PREFIX)/lib
 
+### Where to install the stub DLLs
+STUBLIBDIR=$(LIBDIR)/stublibs
+
 ### Where to install the info files
 DISTRIB=$(PREFIX)
 

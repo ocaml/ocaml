@@ -80,7 +80,7 @@ clean: partialclean
 	rm -f $(UNIX_FILES) $(UNIX_CAML_FILES)
 
 install:
-	cp dllunix.dll $(LIBDIR)/dllunix.dll
+	cp dllunix.dll $(STUBLIBDIR)/dllunix.dll
 	cp libunix.$(A) $(LIBDIR)/libunix.$(A)
 	cp unix.cmi unix.cma $(LIBDIR)
 

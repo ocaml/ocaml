@@ -35,8 +35,8 @@ PUB=fileevent.cmi fileevent.mli \
 install:
 	mkdir -p $(INSTALLDIR)
 	cp $(PUB) $(INSTALLDIR)
-	cp dll$(LIBNAME).dll dll$(LIBNAME).$(A) lib$(LIBNAME).$(A) $(INSTALLDIR)
-	echo $(INSTALLDIR) >> $(LIBDIR)/ld.conf
+	cp dll$(LIBNAME).dll $(STUBLIBDIR)/stublibs/dll$(LIBNAME).dll 
+	cp dll$(LIBNAME).$(A) lib$(LIBNAME).$(A) $(INSTALLDIR)
 
 clean : 
 	rm -f *.cm* *.$(O) *.dll *.$(A) *.exp

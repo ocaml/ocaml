@@ -54,7 +54,7 @@ clean:
 install: tkanim.cma 
 	cp tkanim.cma *.cmi *.mli libtkanim.a $(INSTALLDIR)
 	if [ -f dlltkanim.so ]; then \
-		cp dlltkanim.so $(INSTALLDIR); \
+		cp dlltkanim.so $(STUBLIBDIR)/dlltkanim.so; \
 	fi
 
 installopt: tkanim.cmxa

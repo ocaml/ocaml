@@ -143,6 +143,7 @@ case "$libdir" in
       libdir="$prefix/lib/ocaml";;
    *) echo "LIBDIR=$libdir" >> Makefile;;
 esac
+echo 'STUBLIBDIR=$(LIBDIR)/stublibs' >> Makefile
 case "$mandir" in
   "") echo 'MANDIR=$(PREFIX)/man' >> Makefile
       mandir="$prefix/man";;

@@ -53,7 +53,7 @@ clean: partialclean
 	cd $(REGEXLIB); if test -f Makefile; then $(MAKE) distclean; else exit 0; fi
 
 install:
-	if test -f dllstr.so; then cp dllstr.so $(LIBDIR)/dllstr.so; fi
+	if test -f dllstr.so; then cp dllstr.so $(STUBLIBDIR)/dllstr.so; fi
 	cp libstr.a $(LIBDIR)/libstr.a
 	cd $(LIBDIR); $(RANLIB) libstr.a
 	cp str.cma str.cmi str.mli $(LIBDIR)

@@ -58,7 +58,7 @@ bignum/dbignum.$(A) bignum/sbignum.$(A):
 $(CAMLOBJS:.cmo=.cmx): ../../ocamlopt
 
 install:
-	cp dllnums.dll $(LIBDIR)/dllnums.dll
+	cp dllnums.dll $(STUBLIBDIR)/dllnums.dll
 	cp libnums.$(A) $(LIBDIR)/libnums.$(A)
 	cp nums.cma $(CMIFILES) $(LIBDIR)
 

@@ -55,7 +55,7 @@ clean: partialclean
 	rm -f io.h
 
 install:
-	cp dllgraphics.dll $(LIBDIR)/dllgraphics.dll
+	cp dllgraphics.dll $(STUBLIBDIR)/dllgraphics.dll
 	cp libgraphics.$(A) $(LIBDIR)/libgraphics.$(A)
 	cp graphics.cmi graphics.cma $(LIBDIR)
 

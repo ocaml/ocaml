@@ -227,12 +227,11 @@ opt.opt: core ocaml opt-core ocamlc.opt otherlibraries camlp4out \
 install: FORCE
 	if test -d $(BINDIR); then : ; else $(MKDIR) $(BINDIR); fi
 	if test -d $(LIBDIR); then : ; else $(MKDIR) $(LIBDIR); fi
-	if test -d $(LIBDIR)/shlibs; then : ; else $(MKDIR) $(LIBDIR)/shlibs; fi
+	if test -d $(STUBLIBDIR); then : ; else $(MKDIR) $(LIBDIR)/stublibs; fi
 	if test -d $(MANDIR)/man$(MANEXT); then : ; else $(MKDIR) $(MANDIR)/man$(MANEXT); fi
-	rm -f $(LIBDIR)/lib*.so
 	cd byterun; $(MAKE) install
-	if test -r $(LIBDIR)/ld.conf; then :; \
-	   else echo "$(LIBDIR)" > $(LIBDIR)/ld.conf; fi
+	echo "$(STUBLIBDIR)" > $(LIBDIR)/ld.conf
+	echo "$(LIBDIR)" >> $(LIBDIR)/ld.conf
 	cp ocamlc $(BINDIR)/ocamlc$(EXE)
 	cp ocaml $(BINDIR)/ocaml$(EXE)
 	cd stdlib; $(MAKE) install

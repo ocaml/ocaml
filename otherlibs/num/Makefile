@@ -53,7 +53,7 @@ $(BIGNUM_OBJS):
 $(CAMLOBJS:.cmo=.cmx): ../../ocamlopt
 
 install:
-	if test -f dllnums.so; then cp dllnums.so $(LIBDIR)/dllnums.so; fi
+	if test -f dllnums.so; then cp dllnums.so $(STUBLIBDIR)/dllnums.so; fi
 	cp libnums.a $(LIBDIR)/libnums.a
 	cd $(LIBDIR); $(RANLIB) libnums.a
 	cp nums.cma $(CMIFILES) $(CMIFILES:.cmi=.mli) $(LIBDIR)

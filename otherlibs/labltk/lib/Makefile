@@ -60,8 +60,6 @@ $(LIBNAME): Makefile $(TOPDIR)/config/Makefile
 
 install:
 	if test -d $(INSTALLDIR); then : ; else mkdir $(INSTALLDIR); fi
-	if test `grep -s -c '^$(INSTALLDIR)$$' $(LIBDIR)/ld.conf || :` = 0; \
-        then echo $(INSTALLDIR) >> $(LIBDIR)/ld.conf; fi
 	cp $(LIBNAME).cma $(LIBNAME)top$(EXE) $(INSTALLDIR)
 	chmod 644 $(INSTALLDIR)/$(LIBNAME).cma
 	chmod 755 $(INSTALLDIR)/$(LIBNAME)top$(EXE)

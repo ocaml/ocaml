@@ -21,7 +21,8 @@
 BINDIR=/usr/local/bin
 
 ### Where to install the standard library
-LIBDIR=/usr/local/lib/camlsl
+LIBDIR=/usr/local/lib/ocaml
+STUBLIBDIR=$(LIBDIR)/stublibs
 
 ### Where to install the man pages
 # Man pages for commands go in $(MANDIR)/man$(MANEXT)
