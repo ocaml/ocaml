@@ -472,8 +472,7 @@ val input_binary_int : in_channel -> int
 	   integer. *)
 val input_value : in_channel -> 'a
         (* Read the representation of a structured value, as produced
-           by [output_value] or [output_compact_value], and return
-           the corresponding value.
+           by [output_value], and return the corresponding value.
            This is not type-safe. The type of the returned object is
            not ['a] properly speaking: the returned object has one
            unique type, which cannot be determined at compile-time.
