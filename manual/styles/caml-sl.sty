@@ -2,14 +2,17 @@
 
 \typeout{Document Style option `caml-sl' <7 Apr 92>.}
 
-\ifcase\@ptsize
-    \font\sltt = cmsltt10
-\or \font\sltt = cmsltt10 scaled \magstephalf
-\or \font\sltt = cmsltt10 scaled \magstep1
-\fi
+%%\ifcase\@ptsize
+%%    \font\sltt = cmsltt10
+%%\or \font\sltt = cmsltt10 scaled \magstephalf
+%%\or \font\sltt = cmsltt10 scaled \magstep1
+%%\fi
+
+% Use 10pt sltt with 11pt tt
+\font\sltt = cmsltt10
 
 {\catcode`\^^M=\active %
- \gdef\@camlinputline#1^^M{\tt\##1\par} %
+ \gdef\@camlinputline#1^^M{\tt\# #1\par} %
  \gdef\@camloutputline#1^^M{\sltt#1\par} } %
 \def\@camlblankline{\medskip}
 \chardef\@camlbackslash="5C
