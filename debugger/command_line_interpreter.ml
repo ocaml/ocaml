@@ -962,7 +962,7 @@ Argument N means do this N times (or till program stops for another reason)." };
      { instr_name = "start"; instr_prio = false;
        instr_action = instr_start; instr_repeat = true; instr_help =
 "execute backward until the current function is exited." };
-     { instr_name = "previous"; instr_prio = true;
+     { instr_name = "previous"; instr_prio = false;
        instr_action = instr_previous; instr_repeat = true; instr_help =
 "step program until it reaches the previous event.\n\
 Skip over function calls.\n\
