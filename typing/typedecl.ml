@@ -8,6 +8,7 @@ open Typetexp
 type error =
     Repeated_parameter
   | Duplicate_constructor of string
+  | Too_many_constructors
   | Duplicate_label of string
   | Recursive_abbrev of string
 
@@ -51,6 +52,8 @@ let transl_declaration env (name, sdecl) id =
               raise(Error(sdecl.ptype_loc, Duplicate_constructor name));
             all_constrs := Cset.add name !all_constrs)
           cstrs;
+        if List.length cstrs > Config.max_tag then
+          raise(Error(sdecl.ptype_loc, Too_many_constructors));
         Type_variant(List.map
           (fun (name, args) ->
                   (name, List.map (transl_simple_type env true) args))
@@ -111,6 +114,9 @@ let report_error = function
       print_string "A type parameter occurs several times"
   | Duplicate_constructor s ->
       print_string "Two constructors are named "; print_string s
+  | Too_many_constructors ->
+      print_string "Too many constructors -- maximum is ";
+      print_int Config.max_tag; print_string " constructors"
   | Duplicate_label s ->
       print_string "Two labels are named "; print_string s
   | Recursive_abbrev s ->

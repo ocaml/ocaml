@@ -37,7 +37,9 @@ let rec bind_pattern env pat arg mut =
       bind_pattern_list env patl arg mut 0
   | Tpat_construct(cstr, patl) ->
       bind_pattern_list env patl arg mut
-        (match cstr.cstr_tag with Cstr_tag _ -> 0 | Cstr_exception _ -> 1)
+        (match cstr.cstr_tag with
+            Cstr_tag _ -> 0
+          | Cstr_exception _ -> 1)
   | Tpat_record lbl_pat_list ->
       bind_label_pattern env lbl_pat_list arg mut
   | _ ->

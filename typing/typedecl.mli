@@ -11,6 +11,7 @@ val transl_exception:
 type error =
     Repeated_parameter
   | Duplicate_constructor of string
+  | Too_many_constructors
   | Duplicate_label of string
   | Recursive_abbrev of string
 

@@ -13,3 +13,4 @@ and cma_magic_number = "Caml1999A001"
 
 let load_path = ref ([] : string list)
 
+let max_tag = 251

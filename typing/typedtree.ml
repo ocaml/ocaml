@@ -35,7 +35,7 @@ type constructor_description =
 
 and constructor_tag =
     Cstr_tag of int                     (* Regular constructor *)
-  | Cstr_exception of Path.t         (* Exception constructor *)
+  | Cstr_exception of Path.t            (* Exception constructor *)
 
 (* Record label descriptions *)
 

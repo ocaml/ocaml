@@ -60,8 +60,8 @@ let divide_constant {cases = cl; args = al} =
 let make_constr_matching cstr (arg :: argl) =
   let (first_pos, last_pos) =
     match cstr.cstr_tag with
-      Cstr_tag n -> (0, cstr.cstr_arity - 1)
-    | Cstr_exception p -> (1, cstr.cstr_arity) in
+      Cstr_tag _ -> (0, cstr.cstr_arity - 1)
+    | Cstr_exception _ -> (1, cstr.cstr_arity) in
   let rec make_args pos =
     if pos > last_pos
     then argl
@@ -176,7 +176,7 @@ let combine_constructor arg cstr (tag_lambda_list, total1) (lambda2, total2) =
   end else begin
     (* Regular concrete type *)
     let caselist =
-      List.map (fun (Cstr_tag n, act) -> (n, act)) tag_lambda_list in
+      List.map (function (Cstr_tag n, act) -> (n, act)) tag_lambda_list in
     let lambda1 =
       match (caselist, cstr.cstr_span) with
         ([0, act], 1) -> act
@@ -184,7 +184,10 @@ let combine_constructor arg cstr (tag_lambda_list, total1) (lambda2, total2) =
       | ([1, act], 2) -> Lifthenelse(arg, act, Lstaticfail)
       | ([0, act0; 1, act1], 2) -> Lifthenelse(arg, act1, act0)
       | ([1, act1; 0, act0], 2) -> Lifthenelse(arg, act1, act0)
-      | _ -> Lswitch(Lprim(Ptagof, [arg]), 0, cstr.cstr_span, caselist) in
+      | _ ->
+          if cstr.cstr_span < Config.max_tag
+          then Lswitch(Lprim(Ptagof, [arg]), 0, cstr.cstr_span, caselist)
+          else Lswitch(Lprim(Pfield 0, [arg]), 0, cstr.cstr_span, caselist) in
     if total1 & List.length tag_lambda_list = cstr.cstr_span
     then (lambda1, true)
     else (Lcatch(lambda1, lambda2), total2)

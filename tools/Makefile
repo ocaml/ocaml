@@ -5,10 +5,10 @@ LINKFLAGS=$(INCLUDES)
 
 all: dumpobj
 
-DUMPOBJ=opnames.zo dumpobj.zo
+DUMPOBJ=opnames.cmo dumpobj.cmo
 
 dumpobj: $(DUMPOBJ)
-	$(CAMLC) $(LINKFLAGS) -o dumpobj misc.zo tbl.zo config.zo ident.zo opcodes.zo runtimedef.zo $(DUMPOBJ)
+	$(CAMLC) $(LINKFLAGS) -o dumpobj misc.cmo tbl.cmo config.cmo ident.cmo opcodes.cmo runtimedef.cmo $(DUMPOBJ)
 
 clean::
 	rm -f dumpobj
@@ -27,16 +27,16 @@ clean::
 beforedepend:: opnames.ml
 
 .SUFFIXES:
-.SUFFIXES: .ml .zo .mli .zi
+.SUFFIXES: .ml .cmo .mli .cmi
 
-.ml.zo:
+.ml.cmo:
 	$(CAMLC) -c $(COMPFLAGS) $<
 
-.mli.zi:
+.mli.cmi:
 	$(CAMLC) -c $(COMPFLAGS) $<
 
 clean::
-	rm -f *.zo *.zi
+	rm -f *.cmo *.cmi
 
 depend: beforedepend
 	camldep $(INCLUDES) *.mli *.ml > .depend

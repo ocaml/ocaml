@@ -19,7 +19,8 @@ let make_decision_tree casei =
   let rec partition start =
     if start >= n then [] else
     let stop = ref (n-1) in
-    while keyv.(!stop) - keyv.(start) > 4 * (!stop - start) do
+    while let span = keyv.(!stop) - keyv.(start) in
+          span >= 256 or span > 4 * (!stop - start) do
       decr stop
     done;
     (* We've found a dense enough segment.

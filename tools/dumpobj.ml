@@ -31,7 +31,7 @@ let inputs ic =
 type global_table_entry =
     Empty
   | Global of Ident.t
-  | Constant of obj
+  | Constant of Obj.t
 
 let start = ref 0                             (* Position of beg. of code *)
 let reloc = ref ([] : (reloc_info * int) list)  (* Relocation table *)
@@ -277,7 +277,7 @@ let dump_exe ic =
   let symbol_size = input_binary_int ic in
   let debug_size = input_binary_int ic in
   seek_in ic (trailer_pos - debug_size - symbol_size - data_size);
-  let init_data = (input_value ic : obj array) in
+  let init_data = (input_value ic : Obj.t array) in
   globals := Array.new (Array.length init_data) Empty;
   for i = 0 to Array.length init_data - 1 do
     !globals.(i) <- Constant (init_data.(i))

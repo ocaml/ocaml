@@ -1,7 +1,7 @@
 include ../Makefile.config
 
 COMPILER=../camlc
-CAMLC=../boot/camlrun $(COMPILER)
+CAMLC=../byterun/camlrun $(COMPILER)
 CAMLDEP=../tools/camldep
 
 OBJS=pervasives.cmo list.cmo string.cmo char.cmo array.cmo sys.cmo \
