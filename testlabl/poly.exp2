@@ -1,4 +1,4 @@
-        Objective Caml version 3.06+26 (2003-03-26)
+        Objective Caml version 3.06+27 (2003-03-31)
 
 #   * * *       #   type 'a t = { t : 'a; }
 # type 'a fold = { fold : 'b. f:('b -> 'a -> 'b) -> init:'b -> 'b; }
@@ -232,4 +232,6 @@ The universal variable 'a would escape its scope
 type 'a alist = < visit : 'b. ('b, 'a) list_visitor -> 'b >
 class type ct = object ('a) method fold : ('b -> 'a -> 'b) -> 'b -> 'b end
 type t = { f : 'a 'b. ('b -> (#ct as 'a) -> 'b) -> 'b; }
+#     Characters 19-25:
+The type abbreviation t is cyclic
 # 

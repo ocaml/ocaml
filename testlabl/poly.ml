@@ -382,3 +382,6 @@ class type ct = object ('s)
   method fold : ('b -> 's -> 'b) -> 'b -> 'b
 end
 type t = {f : 'a 'b. ('b -> (#ct as 'a) -> 'b) -> 'b};;
+
+(* PR#1663 *)
+type t = u and u = t;;
