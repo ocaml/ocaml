@@ -38,23 +38,23 @@ exception Error of error
 let rec path event = function
     Pident id ->
       if Ident.global id then
-        Debugcom.get_global (Symtable.get_global_position id)
+        Debugcom.Remote_value.global (Symtable.get_global_position id)
       else begin
         try
           let pos = Ident.find_same id event.ev_compenv.ce_stack in
-          Debugcom.get_local (event.ev_stacksize - pos)
+          Debugcom.Remote_value.local (event.ev_stacksize - pos)
         with Not_found ->
         try
           let pos = Ident.find_same id event.ev_compenv.ce_heap in
-          Debugcom.get_environment (pos + 1)
+          Debugcom.Remote_value.from_environment (pos + 1)
         with Not_found ->
           raise(Error(Unbound_identifier id))
       end
   | Pdot(root, fieldname, pos) ->
       let v = path event root in
-      if Debugcom.remote_value_is_int v then
+      if not (Debugcom.Remote_value.is_block v) then
         raise(Error(Not_initialized_yet root));
-      Debugcom.get_field v pos
+      Debugcom.Remote_value.field v pos
   | Papply(p1, p2) ->
       fatal_error "Eval.path: Papply"
 
@@ -69,7 +69,7 @@ let rec expression event env = function
   | E_result ->
       begin match event.ev_kind with
         Event_after ty when !Frames.current_frame = 0 ->
-          (Debugcom.get_accu(), ty)
+          (Debugcom.Remote_value.accu(), ty)
       | _ ->
           raise(Error(No_result))
       end
@@ -85,26 +85,27 @@ let rec expression event env = function
         Ttuple ty_list ->
           if n < 1 || n > List.length ty_list
           then raise(Error(Tuple_index(ty, List.length ty_list, n)))
-          else (Debugcom.get_field v (n-1), List.nth ty_list (n-1))
+          else (Debugcom.Remote_value.field v (n-1), List.nth ty_list (n-1))
       | Tconstr(path, [ty_arg], _) when Path.same path Predef.path_array ->
-          let (_, size) = Debugcom.get_header v in
+          let size = Debugcom.Remote_value.size v in
           if n >= size
           then raise(Error(Array_index(size, n)))
-          else (Debugcom.get_field v n, ty_arg)
+          else (Debugcom.Remote_value.field v n, ty_arg)
       | Tconstr(path, [ty_arg], _) when Path.same path Predef.path_list ->
           let rec nth pos v =
-            if Debugcom.remote_value_is_int v then
+            if not (Debugcom.Remote_value.is_block v) then
               raise(Error(List_index(pos, n)))
             else if pos = n then
-              (Debugcom.get_field v 0, ty_arg)
+              (Debugcom.Remote_value.field v 0, ty_arg)
             else
-              nth (pos + 1) (Debugcom.get_field v 1)
+              nth (pos + 1) (Debugcom.Remote_value.field v 1)
           in nth 0 v
       | Tconstr(path, [], _) when Path.same path Predef.path_string ->
-          let s = (Debugcom.marshal_obj v : string) in
+          let s = (Debugcom.Remote_value.obj v : string) in
           if n >= String.length s
           then raise(Error(String_index(s, String.length s, n)))
-          else (Debugcom.value_int(Char.code s.[n]), Predef.type_char)
+          else (Debugcom.Remote_value.of_int(Char.code s.[n]),
+                Predef.type_char)
       | _ ->
           raise(Error(Wrong_item_type(ty, n)))
       end
@@ -117,7 +118,7 @@ let rec expression event env = function
             Type_record lbl_list ->
               let (pos, ty_res) =
                 find_label lbl env ty path tydesc 0 lbl_list in
-              (Debugcom.get_field v pos, ty_res)
+              (Debugcom.Remote_value.field v pos, ty_res)
           | _ -> raise(Error(Not_a_record ty))
           end
       | _ -> raise(Error(Not_a_record ty))

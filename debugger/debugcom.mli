@@ -75,18 +75,24 @@ val up_frame : int -> int * int
 val set_trap_barrier : int -> unit
 
 (* Handling of remote values *)
-type remote_value
-val remote_value_is_int : remote_value -> bool
-val int_value : remote_value -> int
-val value_int : int -> remote_value
-val get_local : int -> remote_value
-val get_environment : int -> remote_value
-val get_global : int -> remote_value
-val get_accu : unit -> remote_value
-val get_obj : remote_value -> int * remote_value array
-val get_header : remote_value -> int * int
-val get_field : remote_value -> int -> remote_value
-val marshal_obj : remote_value -> 'a
-val get_closure_code : remote_value -> int
 
 exception Marshalling_error
+
+module Remote_value :
+  sig
+    type t
+    
+    val obj : t -> 'a
+    val is_block : t -> bool
+    val tag : t -> int
+    val size : t -> int
+    val field : t -> int -> t
+
+    val of_int : int -> t
+
+    val local : int -> t
+    val from_environment : int -> t
+    val global : int -> t
+    val accu : unit -> t
+    val closure_code : t -> int
+  end

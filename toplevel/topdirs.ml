@@ -180,23 +180,20 @@ let find_printer_type lid =
 let dir_install_printer lid =
   try
     let (ty_arg, path) = find_printer_type lid in
-    let v = eval_path path in
-    Printval.printers :=
-      (path, ty_arg, (Obj.magic v : Obj.t -> unit)) :: !Printval.printers
+    let v = (Obj.obj (eval_path path) : 'a -> unit) in
+    Printval.install_printer path ty_arg (fun repr -> v (Obj.obj repr))
   with Exit ->
     ()
 
 let dir_remove_printer lid =
   try
     let (ty_arg, path) = find_printer_type lid in
-    let rec remove = function
-      [] ->
-        print_string "No printer named "; Printtyp.longident lid;
-        print_newline();
-        []
-    | (p, ty, fn as printer) :: rem ->
-        if Path.same p path then rem else printer :: remove rem in
-    Printval.printers := remove !Printval.printers
+    begin try
+      Printval.remove_printer path
+    with Not_found ->
+      print_string "No printer named "; Printtyp.longident lid;
+      print_newline()
+    end
   with Exit ->
     ()
 

@@ -9,7 +9,9 @@ CAMLLEX=../boot/ocamlrun ../boot/ocamllex
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 DEPFLAGS=$(INCLUDES)
 
-INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../otherlibs/unix -I ../otherlibs/dynlink
+INCLUDES=\
+  -I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../toplevel \
+  -I ../otherlibs/unix -I ../otherlibs/dynlink
 
 OTHEROBJS=\
   ../otherlibs/unix/unix.cma \
@@ -22,7 +24,8 @@ OTHEROBJS=\
   ../typing/datarepr.cmo ../typing/env.cmo \
   ../typing/ctype.cmo ../typing/printtyp.cmo ../typing/mtype.cmo \
   ../bytecomp/runtimedef.cmo ../bytecomp/symtable.cmo \
-  ../bytecomp/opcodes.cmo ../otherlibs/dynlink/dynlink.cmo
+  ../bytecomp/opcodes.cmo ../toplevel/genprintval.cmo \
+  ../otherlibs/dynlink/dynlink.cmo
 
 OBJS=\
 	primitives.cmo \
@@ -31,9 +34,9 @@ OBJS=\
 	envaux.cmo \
 	parameters.cmo \
 	lexer.cmo \
+	input_handling.cmo \
 	debugcom.cmo \
 	exec.cmo \
-	input_handling.cmo \
 	source.cmo \
 	checkpoints.cmo \
 	symbols.cmo \

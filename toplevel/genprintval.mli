@@ -3,7 +3,6 @@
 (*                           Objective Caml                            *)
 (*                                                                     *)
 (*          Jerome Vouillon, projet Cristal, INRIA Rocquencourt        *)
-(*          Objective Caml port by John Malecki and Xavier Leroy       *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
@@ -12,28 +11,32 @@
 
 (* $Id$ *)
 
+(* Printing of values *)
+
 open Types
-open Parser_aux
 
-val path : Instruct.debug_event -> Path.t -> Debugcom.Remote_value.t
-val expression :
-    Instruct.debug_event -> Env.t -> expression ->
-    Debugcom.Remote_value.t * type_expr
+module type Obj =
+  sig
+    type t
 
-type error =
-    Unbound_identifier of Ident.t
-  | Not_initialized_yet of Path.t
-  | Unbound_long_identifier of Longident.t
-  | Unknown_name of int
-  | Tuple_index of type_expr * int * int
-  | Array_index of int * int
-  | List_index of int * int
-  | String_index of string * int * int
-  | Wrong_item_type of type_expr * int
-  | Wrong_label of type_expr * string
-  | Not_a_record of type_expr
-  | No_result
+    val obj : t -> 'a
+    val is_block : t -> bool
+    val tag : t -> int
+    val size : t -> int
+    val field : t -> int -> t
+  end
 
-exception Error of error
+module type S =
+  sig
+    type t
 
-val report_error: error -> unit
+    val install_printer : Path.t -> Types.type_expr -> (t -> unit) -> unit
+    val remove_printer : Path.t -> unit
+
+    val print_exception : t -> unit
+    val print_value :
+          int -> int -> (int -> t -> Types.type_expr -> bool) ->
+          Env.t -> t -> type_expr -> unit
+  end
+
+module Make(Obj : Obj) : (S with type t = Obj.t)

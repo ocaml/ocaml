@@ -21,9 +21,11 @@ symbols.cmi: ../bytecomp/instruct.cmi
 time_travel.cmi: primitives.cmi 
 unix_tools.cmi: ../otherlibs/unix/unix.cmi 
 breakpoints.cmo: checkpoints.cmi debugcom.cmi exec.cmi \
-    ../bytecomp/instruct.cmi primitives.cmi source.cmi breakpoints.cmi 
+    ../bytecomp/instruct.cmi primitives.cmi source.cmi symbols.cmi \
+    breakpoints.cmi 
 breakpoints.cmx: checkpoints.cmx debugcom.cmx exec.cmx \
-    ../bytecomp/instruct.cmx primitives.cmx source.cmx breakpoints.cmi 
+    ../bytecomp/instruct.cmx primitives.cmx source.cmx symbols.cmx \
+    breakpoints.cmi 
 checkpoints.cmo: debugcom.cmi primitives.cmi checkpoints.cmi 
 checkpoints.cmx: debugcom.cmx primitives.cmx checkpoints.cmi 
 command_line_interpreter.cmo: breakpoints.cmi checkpoints.cmi \
@@ -44,8 +46,10 @@ command_line_interpreter.cmx: breakpoints.cmx checkpoints.cmx \
     show_information.cmx show_source.cmx source.cmx symbols.cmx \
     time_travel.cmx ../typing/types.cmx ../otherlibs/unix/unix.cmx \
     unix_tools.cmx command_line_interpreter.cmi 
-debugcom.cmo: ../utils/misc.cmi primitives.cmi debugcom.cmi 
-debugcom.cmx: ../utils/misc.cmx primitives.cmx debugcom.cmi 
+debugcom.cmo: input_handling.cmi ../utils/misc.cmi primitives.cmi \
+    debugcom.cmi 
+debugcom.cmx: input_handling.cmx ../utils/misc.cmx primitives.cmx \
+    debugcom.cmi 
 debugger_config.cmo: debugger_config.cmi 
 debugger_config.cmx: debugger_config.cmi 
 envaux.cmo: ../typing/env.cmi ../utils/misc.cmi ../typing/mtype.cmi \
@@ -116,14 +120,12 @@ pattern_matching.cmx: ../typing/ctype.cmx debugcom.cmx debugger_config.cmx \
     pattern_matching.cmi 
 primitives.cmo: ../otherlibs/unix/unix.cmi primitives.cmi 
 primitives.cmx: ../otherlibs/unix/unix.cmx primitives.cmi 
-printval.cmo: ../typing/ctype.cmi debugcom.cmi ../typing/env.cmi \
-    ../typing/ident.cmi ../utils/misc.cmi parser_aux.cmi ../typing/path.cmi \
-    ../typing/predef.cmi ../typing/printtyp.cmi ../typing/types.cmi \
-    printval.cmi 
-printval.cmx: ../typing/ctype.cmx debugcom.cmx ../typing/env.cmx \
-    ../typing/ident.cmx ../utils/misc.cmx parser_aux.cmi ../typing/path.cmx \
-    ../typing/predef.cmx ../typing/printtyp.cmx ../typing/types.cmx \
-    printval.cmi 
+printval.cmo: debugcom.cmi ../toplevel/genprintval.cmi ../utils/misc.cmi \
+    parser_aux.cmi ../typing/path.cmi ../typing/printtyp.cmi \
+    ../typing/types.cmi printval.cmi 
+printval.cmx: debugcom.cmx ../toplevel/genprintval.cmx ../utils/misc.cmx \
+    parser_aux.cmi ../typing/path.cmx ../typing/printtyp.cmx \
+    ../typing/types.cmx printval.cmi 
 program_loading.cmo: debugger_config.cmi input_handling.cmi ../utils/misc.cmi \
     parameters.cmi primitives.cmi ../otherlibs/unix/unix.cmi unix_tools.cmi \
     program_loading.cmi 

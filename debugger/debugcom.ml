@@ -27,18 +27,15 @@ let set_current_connection io_chan =
 
 let set_event pos =
   output_char !conn.io_out 'e';
-  output_binary_int !conn.io_out pos;
-  flush !conn.io_out
+  output_binary_int !conn.io_out pos
 
 let set_breakpoint pos =
   output_char !conn.io_out 'B';
-  output_binary_int !conn.io_out pos;
-  flush !conn.io_out
+  output_binary_int !conn.io_out pos
 
 let reset_instr pos =
   output_char !conn.io_out 'i';
-  output_binary_int !conn.io_out pos;
-  flush !conn.io_out
+  output_binary_int !conn.io_out pos
 
 (* Basic commands for flow control *)
 
@@ -66,21 +63,26 @@ let do_go n =
   output_char !conn.io_out 'g';
   output_binary_int !conn.io_out n;
   flush !conn.io_out;
-  let summary =
-    match input_char !conn.io_in with
-      'e' -> Event
-    | 'b' -> Breakpoint
-    | 'x' -> Exited
-    | 's' -> Trap_barrier
-    | 'u' -> Uncaught_exc
-    |  _  -> Misc.fatal_error "Debugcom.do_go" in
-  let event_counter = input_binary_int !conn.io_in in
-  let stack_pos = input_binary_int !conn.io_in in
-  let pc = input_binary_int !conn.io_in in
-  { rep_type = summary;
-    rep_event_count = event_counter;
-    rep_stack_pointer = stack_pos;
-    rep_program_pointer = pc }
+  Input_handling.execute_with_other_controller
+    Input_handling.exit_main_loop
+    !conn
+    (function () ->
+       Input_handling.main_loop ();
+       let summary =
+         match input_char !conn.io_in with
+           'e' -> Event
+         | 'b' -> Breakpoint
+         | 'x' -> Exited
+         | 's' -> Trap_barrier
+         | 'u' -> Uncaught_exc
+         |  _  -> Misc.fatal_error "Debugcom.do_go" in
+       let event_counter = input_binary_int !conn.io_in in
+       let stack_pos = input_binary_int !conn.io_in in
+       let pc = input_binary_int !conn.io_in in
+       { rep_type = summary;
+         rep_event_count = event_counter;
+         rep_stack_pointer = stack_pos;
+         rep_program_pointer = pc })
 
 (* Perform a checkpoint *)
 
@@ -93,25 +95,18 @@ let do_checkpoint () =
 (* Kill the given process. *)
 let stop chan =
   try
-    try
-      output_char chan.io_out 's';
-      flush chan.io_out
-    with
-      Sys_error _ -> ()
+    output_char chan.io_out 's';
+    flush chan.io_out
   with
-    End_of_file -> ()
+    Sys_error _ | End_of_file -> ()
 
 (* Ask a process to wait for its child which has been killed. *)
 (* (so as to eliminate zombies). *)
 let wait_child chan =
   try
-    try
-      output_char chan.io_out 'w';
-      flush chan.io_out
-    with
-      Sys_error _ -> ()
+    output_char chan.io_out 'w'
   with
-    End_of_file -> ()
+    Sys_error _ | End_of_file -> ()
 
 (* Move to initial frame (that of current function). *)
 (* Return stack position and current pc *)
@@ -146,19 +141,15 @@ let get_frame () =
 
 let set_frame stack_pos =
   output_char !conn.io_out 'S';
-  output_binary_int !conn.io_out stack_pos;
-  flush !conn.io_out
+  output_binary_int !conn.io_out stack_pos
 
 (* Set the trap barrier to given stack position. *)
 
 let set_trap_barrier pos =
   output_char !conn.io_out 'b';
-  output_binary_int !conn.io_out pos;
-  flush !conn.io_out
+  output_binary_int !conn.io_out pos
 
 (* Handling of remote values *)
-
-type remote_value = string
 
 let value_size = if 1 lsl 31 = 0 then 4 else 8
 
@@ -169,78 +160,77 @@ let input_remote_value ic =
 let output_remote_value ic v =
   output ic v 0 value_size
 
-let remote_value_is_int v =
-  not(Obj.is_block(Array.unsafe_get (Obj.magic v : Obj.t array) 0))
-
-let int_value v =
-  Array.unsafe_get (Obj.magic v : int array) 0
-
-let value_int n =
-  let v = String.create value_size in
-  Array.unsafe_set (Obj.magic v : int array) 0 n;
-  v
-
-let get_local pos =
-  output_char !conn.io_out 'L';
-  output_binary_int !conn.io_out pos;
-  flush !conn.io_out;
-  input_remote_value !conn.io_in
-
-let get_environment pos =
-  output_char !conn.io_out 'E';
-  output_binary_int !conn.io_out pos;
-  flush !conn.io_out;
-  input_remote_value !conn.io_in
-
-let get_global pos =
-  output_char !conn.io_out 'G';
-  output_binary_int !conn.io_out pos;
-  flush !conn.io_out;
-  input_remote_value !conn.io_in
-
-let get_accu () =
-  output_char !conn.io_out 'A';
-  flush !conn.io_out;
-  input_remote_value !conn.io_in
-
-let get_obj v =
-  output_char !conn.io_out 'O';
-  output_remote_value !conn.io_out v;
-  flush !conn.io_out;
-  let header = input_binary_int !conn.io_in in
-  let size = header lsr 10 in
-  let fields = Array.create size "" in
-  for i = 0 to size - 1 do fields.(i) <- input_remote_value !conn.io_in done;
-  (header land 0xFF, fields)
-
-let get_header v =
-  output_char !conn.io_out 'H';
-  output_remote_value !conn.io_out v;
-  flush !conn.io_out;
-  let header = input_binary_int !conn.io_in in
-  (header land 0xFF, header lsr 10)
-
-let get_field v n =
-  output_char !conn.io_out 'F';
-  output_remote_value !conn.io_out v;
-  output_binary_int !conn.io_out n;
-  flush !conn.io_out;
-  input_remote_value !conn.io_in
-
 exception Marshalling_error
 
-let marshal_obj v =
-  output_char !conn.io_out 'M';
-  output_remote_value !conn.io_out v;
-  flush !conn.io_out;
-  try
-    input_value !conn.io_in
-  with End_of_file | Failure _ ->
-    raise Marshalling_error
+module Remote_value =
+  struct
+    type t = string
+    
+    let obj v =
+      output_char !conn.io_out 'M';
+      output_remote_value !conn.io_out v;
+      flush !conn.io_out;
+      try
+        input_value !conn.io_in
+      with End_of_file | Failure _ ->
+        raise Marshalling_error
 
-let get_closure_code v =
-  output_char !conn.io_out 'C';
-  output_remote_value !conn.io_out v;
-  flush !conn.io_out;
-  input_binary_int !conn.io_in
+    let is_block v =
+      Obj.is_block (Array.unsafe_get (Obj.magic v : Obj.t array) 0)
 
+    let tag v =
+      output_char !conn.io_out 'H';
+      output_remote_value !conn.io_out v;
+      flush !conn.io_out;
+      let header = input_binary_int !conn.io_in in
+      header land 0xFF
+
+    let size v =
+      output_char !conn.io_out 'H';
+      output_remote_value !conn.io_out v;
+      flush !conn.io_out;
+      let header = input_binary_int !conn.io_in in
+      header lsr 10
+
+    let field v n =
+      output_char !conn.io_out 'F';
+      output_remote_value !conn.io_out v;
+      output_binary_int !conn.io_out n;
+      flush !conn.io_out;
+      input_remote_value !conn.io_in
+
+    let of_int n =
+      let v = String.create value_size in
+      Array.unsafe_set (Obj.magic v : int array) 0 n;
+      v
+
+    let local pos =
+      output_char !conn.io_out 'L';
+      output_binary_int !conn.io_out pos;
+      flush !conn.io_out;
+      input_remote_value !conn.io_in
+
+    let from_environment pos =
+      output_char !conn.io_out 'E';
+      output_binary_int !conn.io_out pos;
+      flush !conn.io_out;
+      input_remote_value !conn.io_in
+
+    let global pos =
+      output_char !conn.io_out 'G';
+      output_binary_int !conn.io_out pos;
+      flush !conn.io_out;
+      input_remote_value !conn.io_in
+
+    let accu () =
+      output_char !conn.io_out 'A';
+      flush !conn.io_out;
+      input_remote_value !conn.io_in
+
+    let closure_code v =
+      output_char !conn.io_out 'C';
+      output_remote_value !conn.io_out v;
+      flush !conn.io_out;
+      input_binary_int !conn.io_in
+
+  end

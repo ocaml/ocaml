@@ -521,7 +521,7 @@ let instr_break lexbuf =
           let (v, ty) = Eval.expression ev env expr in
           match (Ctype.repr ty).desc with
             Tarrow (_, _) ->
-              add_breakpoint_after_pc (Debugcom.get_closure_code v)
+              add_breakpoint_after_pc (Remote_value.closure_code v)
           | _ ->
               prerr_endline "Not a function.";
               raise Toplevel
@@ -616,21 +616,12 @@ let instr_backtrace lexbuf =
       else begin
         let num_frames = stack_depth() in
         if num_frames < 0 then begin
-          print_string "(Encountered a function with no debugging information)";
+          print_string
+            "(Encountered a function with no debugging information)";
           print_newline()
         end else
           do_backtrace (print_frame (num_frames + number) max_int)
       end
-
-let do_up rep =
-  let stack_pointer = rep.rep_stack_pointer in
-  let pc = rep.rep_program_pointer in
-  let ev = ref (event_at_pc pc) in
-      print_string !ev.ev_module; print_string " char "; print_int !ev.ev_char;
-      print_newline();
-      let (stackpos, pc) = Debugcom.up_frame !ev.ev_stacksize in
-      if stackpos = -1 then raise Exit;
-      current_event := Some (event_at_pc pc)
 
 let instr_up lexbuf =
   let offset =
