@@ -1,4 +1,4 @@
-.TH CSLRUN 1
+.TH OCAMLRUN 1
 
 .SH NAME
 ocamlrun \- The Objective Caml bytecode interpreter

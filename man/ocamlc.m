@@ -1,4 +1,4 @@
-.TH CSLC 1
+.TH OCAMLC 1
 
 .SH NAME
 ocamlc \- The Objective Caml bytecode compiler

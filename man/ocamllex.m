@@ -1,4 +1,4 @@
-.TH CSLLEX 1
+.TH OCAMLLEX 1
 
 .SH NAME
 ocamllex \- The Objective Caml lexer generator

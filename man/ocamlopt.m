@@ -1,4 +1,4 @@
-.TH CSLOPT 1
+.TH OCAMLOPT 1
 
 .SH NAME
 ocamlopt \- The Objective Caml native-code compiler

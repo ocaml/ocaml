@@ -1,4 +1,4 @@
-.TH CSLDEP 1
+.TH OCAMLDEP 1
 
 .SH NAME
 ocamldep \- Dependency generator for Objective Caml

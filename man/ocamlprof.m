@@ -1,4 +1,4 @@
-.TH CSLPROF 1
+.TH OCAMLPROF 1
 
 .SH NAME
 ocamlprof \- The Objective Caml profiler

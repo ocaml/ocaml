@@ -1,4 +1,4 @@
-.TH CSLCP 1
+.TH OCAMLCP 1
 
 .SH NAME
 ocamlcp \- The Objective Caml profiling compiler

@@ -1,4 +1,4 @@
-.TH CSLYACC 1
+.TH OCAMLYACC 1
 
 .SH NAME
 ocamlyacc \- The Objective Caml parser generator

@@ -1,4 +1,4 @@
-.TH CSLTOP 1
+.TH OCAML 1
 
 .SH NAME
 ocaml \- The Objective Caml interactive toplevel
