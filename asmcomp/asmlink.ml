@@ -131,6 +131,9 @@ let make_startup_file filename info_list =
   IntSet.iter
     (fun n -> List.iter Asmgen.compile_phrase (Cmmgen.curry_function n))
     !curry_functions;
+  Array.iter
+    (fun name -> Asmgen.compile_phrase(Cmmgen.predef_exception name))
+    Runtimedef.builtin_exceptions;
   Asmgen.compile_phrase(Cmmgen.global_table name_list);
   Asmgen.compile_phrase(Cmmgen.frame_table ("startup" :: name_list));
   Emit.end_assembly();
@@ -145,7 +148,7 @@ let call_linker file_list startup_file =
   if Sys.command
    (Printf.sprintf
       "%s -I%s -o %s %s %s %s -L%s %s %s %s"
-      Config.c_compiler
+      Config.native_c_compiler
       Config.standard_library
       !Clflags.exec_name
       (String.concat " " (List.rev !Clflags.ccopts))

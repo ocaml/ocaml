@@ -814,3 +814,8 @@ let frame_table namelist =
   Cdata(Cdefine_symbol "caml_frametable" ::
         List.map (fun name -> Csymbol_address(name ^ "_frametable")) namelist @
         [Cint 0])
+
+(* Initialize a predefined exception *)
+
+let predef_exception name =
+  Cdata(emit_constant name (Const_block(0,[Const_base(Const_string name)])) [])

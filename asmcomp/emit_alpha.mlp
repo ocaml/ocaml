@@ -94,6 +94,7 @@ let liveregs instr extra_msk =
 
 let live_24 = 1 lsl (31 - 24)
 let live_25 = 1 lsl (31 - 25)
+let live_26 = 1 lsl (31 - 26)
 let live_27 = 1 lsl (31 - 27)
 
 (* Record live pointers at call points *)
@@ -311,26 +312,30 @@ let emit_instr i =
         `{record_frame i.live}	bsr	{emit_symbol s}\n`
     | Lop(Itailcall_ind) ->
         let n = frame_size() in
-        if !contains_calls then
+        if !contains_calls then begin
           `	ldq	$26, {emit_int(n - 8)}($sp)\n`;
+          `	andnot	$26, 1, $26\n`
+        end;
         if !uses_gp then
           `	ldq	$gp, {emit_int(n - 16)}($sp)\n`;
         if n > 0 then
           `	lda	$sp, {emit_int n}($sp)\n`;
-        liveregs i 0;
+        liveregs i live_26;
         `	jmp	({emit_reg i.arg.(0)})\n`
     | Lop(Itailcall_imm s) ->
         if s = !function_name then begin
           `	br	{emit_label !tailrec_entry_point}\n`
         end else begin
           let n = frame_size() in
-          if !contains_calls then
+          if !contains_calls then begin
             `	ldq	$26, {emit_int(n - 8)}($sp)\n`;
+            `	andnot	$26, 1, $26\n`
+          end;
           if !uses_gp then
             `	ldq	$gp, {emit_int(n - 16)}($sp)\n`;
           if n > 0 then
             `	lda	$sp, {emit_int n}($sp)\n`;
-          liveregs i 0;
+          liveregs i live_26;
           `	br	{emit_symbol s}\n`
         end
     | Lop(Iextcall(s, alloc)) ->
