@@ -776,4 +776,9 @@ let unification_error unif tr txt1 txt2 =
       close_box ()
 
 let trace fst txt tr =
-  trace fst txt (filter_trace tr)
+  match tr with
+    (t1, t1')::(t2, t2')::tr ->
+      trace fst txt ((t1, t1')::(t2, t2')::filter_trace tr)
+  | _ ->
+      ()
+
