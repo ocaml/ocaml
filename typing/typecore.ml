@@ -1345,8 +1345,8 @@ let report_error ppf = function
       fprintf ppf "This function expects too many arguments"
   | Abstract_wrong_label (l, ty) ->
       let label_mark = function
-        | "" -> "but its argument is not labeled"
-        |  l -> sprintf "but its argument is labeled %s" l in
+        | "" -> "but its first argument is not labeled"
+        |  l -> sprintf "but its first argument is labeled %s" l in
       reset_and_mark_loops ty;
       fprintf ppf "@[<v>@[<2>This function should have type@ %a@]@,%s@]"
       type_expr ty (label_mark l)
