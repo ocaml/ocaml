@@ -1,4 +1,6 @@
 Current :
+OK - latex: style latex pour indenter dans les module kind et les class kind
+OK - latex: il manque la génération des paramètres de classe
 OK - parse des {!modules: } et {!indexlist}
 OK - gestion des Module_list et Index_list
 OK - no need to Dynlink.add_available_units any more
@@ -29,7 +31,7 @@ OK - odoc_html: replace some calls to Str. by specific functions on strings
 OK - odoc_cross.ml: use a Map to associate a complete name to
     the known elements with this name, instead of searching each time
     through the whole list of modules -> a gain of more than 90% in speed
-    for cross-referecing (Odoc_cross.associate)
+    for cross-referencing (Odoc_cross.associate)
 OK - fix: Odoc_name.cut printed a '(' instead of a '.' OK - add: new option -customdir
 OK - add: new option -i (to add a path to the directory where 
      to look for custom generators)
@@ -54,8 +56,6 @@ OK - fix: bad display of type parameters for class and class types
 
 TODO:
  - need to fix display of type parameters for inherited classes/class types
- - latex: style latex pour indenter dans les module kind et les class kind
-OK - latex: il manque la génération des paramètres de classe
  - latex: types variant polymorphes dépassent de la page quand ils sont trop longs
  - ajout à la doc de Module_list et Index_list (utilisé dans le html seulement)
  - ajout ds la doc: fichier de l'option -intro utilisé pour l'index en html

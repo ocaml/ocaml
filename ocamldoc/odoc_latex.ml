@@ -391,9 +391,9 @@ class virtual info =
     method virtual text_of_info : ?block: bool -> Odoc_info.info option -> Odoc_info.text 
 
     (** Print LaTeX code for a description, except for the [i_params] field. *)
-    method latex_of_info fmt info_opt = 
+    method latex_of_info fmt ?(block=false) info_opt = 
       self#latex_of_text fmt 
-        (self#text_of_info ~block: false info_opt)
+        (self#text_of_info ~block info_opt)
   end
 
 (** This class is used to create objects which can generate a simple LaTeX documentation. *)
@@ -587,9 +587,9 @@ class latex =
     method latex_of_module_type_kind fmt father kind =
       match kind with
 	Module_type_struct eles ->
-	  self#latex_of_text fmt [Code "sig\n"];
+	  self#latex_of_text fmt [Latex "\\begin{ocamldocsigend}\n"];
 	  List.iter (self#latex_of_module_element fmt father) eles;
-	  self#latex_of_text fmt [Code "end"]
+	  self#latex_of_text fmt [Latex "\\end{ocamldocsigend}\n"]
       | Module_type_functor (p, k) ->
 	  self#latex_of_module_parameter fmt father p;
 	  self#latex_of_module_type_kind fmt father k
@@ -606,9 +606,9 @@ class latex =
     method latex_of_module_kind fmt father kind =
       match kind with
 	Module_struct eles ->
-	  self#latex_of_text fmt [Code "sig\n"];
+	  self#latex_of_text fmt [Latex "\\begin{ocamldocsigend}\n"];
 	  List.iter (self#latex_of_module_element fmt father) eles;
-	  self#latex_of_text fmt [Code "end"]
+	  self#latex_of_text fmt [Latex "\\end{ocamldocsigend}\n"]
       | Module_alias a ->
 	  self#latex_of_text fmt 
 	    [Code (self#relative_module_idents father a.ma_name)]
@@ -646,10 +646,10 @@ class latex =
     method latex_of_class_kind fmt father kind =
       match kind with
         Class_structure (inh, eles) -> 
-	  self#latex_of_text fmt [Code "object\n"];
+	  self#latex_of_text fmt [Latex "\\begin{ocamldocobjectend}\n"];
 	  self#generate_inheritance_info fmt inh;
 	  List.iter (self#latex_of_class_element fmt father) eles;
-	  self#latex_of_text fmt [Code "end"]
+	  self#latex_of_text fmt [Latex "\\end{ocamldocobjectend}\n"]
 
       | Class_apply capp ->
 	  (* TODO: afficher le type final à partir du typedtree *)
@@ -694,10 +694,10 @@ class latex =
 	    [Code (self#relative_idents father cta.cta_name)]
 
       | Class_signature (inh, eles) -> 
-	  self#latex_of_text fmt [Code "object\n"];
+	  self#latex_of_text fmt [Latex "\\begin{ocamldocobjectend}\n"];
 	  self#generate_inheritance_info fmt inh;
 	  List.iter (self#latex_of_class_element fmt father) eles;
-	  self#latex_of_text fmt [Code "end"]
+	  self#latex_of_text fmt [Latex "\\end{ocamldocobjectend}\n"]
 
     method latex_for_module_index fmt m =
       self#latex_of_text fmt 
@@ -784,7 +784,7 @@ class latex =
 	   );
       );
       self#latex_of_text fmt [Newline];
-      self#latex_of_info fmt m.m_info;
+      self#latex_of_info fmt ~block: true m.m_info;
       p fmt "@]";
 
 
@@ -840,7 +840,7 @@ class latex =
 	   );
       );
       self#latex_of_text fmt [Newline];
-      self#latex_of_info fmt mt.mt_info;
+      self#latex_of_info fmt ~block: true mt.mt_info;
       p fmt "@]";
 
     (** Print the LaTeX code for the given included module. *)
@@ -884,7 +884,7 @@ class latex =
       p fmt "@[<h 4>";
       self#latex_of_class_kind fmt father c.cl_kind;
       self#latex_of_text fmt [Newline];
-      self#latex_of_info fmt c.cl_info;
+      self#latex_of_info fmt ~block: true c.cl_info;
       p fmt "@]"
 
     (** Print the LaTeX code for the given class type. *)
@@ -900,7 +900,7 @@ class latex =
 	[
 	  Latex "\\begin{ocamldoccode}\n" ;
 	  Code (Printf.sprintf
-		  "class %s%s%s = "
+		  "class type %s%s%s = "
 		  (if ct.clt_virtual then "virtual " else "")
 		  type_params
 		  (Name.simple ct.clt_name)
@@ -915,7 +915,7 @@ class latex =
       p fmt "@[<h 4>";
       self#latex_of_class_type_kind fmt father ct.clt_kind;
       self#latex_of_text fmt [Newline];
-      self#latex_of_info fmt ct.clt_info;
+      self#latex_of_info fmt ~block: true ct.clt_info;
       p fmt "@]"
 
     (** Print the LaTeX code for the given class element. *)
