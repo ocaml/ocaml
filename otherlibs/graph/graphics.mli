@@ -222,6 +222,4 @@ val key_pressed : unit -> bool
 
 external sound : int -> int -> unit = "gr_sound"
         (* [sound freq dur] plays a sound at frequency [freq] (in hertz)
-           for a duration [dur] (in milliseconds). On the Macintosh,
-           the frequency is rounded to the nearest note in the equal-tempered
-           scale. *)
+           for a duration [dur] (in milliseconds). *)
