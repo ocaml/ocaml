@@ -145,16 +145,18 @@ value rec ctyp_fa al =
 value rec ctyp_long_id_prefix t =
   match t with
   [ TyAcc _ m (TyLid _ s) ->
-      error (loc_of_ctyp t) "invalid path element in type name"
+      error (loc_of_ctyp t) "invalid module expression"
   | TyAcc _ m (TyUid _ s) ->
       let (is_cls, li) = ctyp_long_id_prefix m in
       (is_cls, ldot li s)
   | TyApp _ m1 m2 ->
-      error (loc_of_ctyp t) "invalid path element in type name"
+      let (is_cls, li1) = ctyp_long_id_prefix m1 in
+      let (_, li2) = ctyp_long_id_prefix m2 in
+      (is_cls, Lapply li1 li2)
   | TyUid _ s -> (False, lident s)
   | TyLid _ s ->
-      error (loc_of_ctyp t) "invalid path element in type name"
-  | t -> error (loc_of_ctyp t) "invalid type" ]
+      error (loc_of_ctyp t) "invalid module expression"
+  | t -> error (loc_of_ctyp t) "invalid module expression" ]
 ;
 
 value ctyp_long_id t =
@@ -163,11 +165,11 @@ value ctyp_long_id t =
       let (is_cls, li) = ctyp_long_id_prefix m in
       (is_cls, ldot li s)
   | TyAcc _ m (TyUid _ s as t) ->
-      error (loc_of_ctyp t) "type names cannot be capitalized"
+      error (loc_of_ctyp t) "invalid type name"
   | TyApp _ m1 m2 ->
-      error (loc_of_ctyp t) "expecting a type name"
+      error (loc_of_ctyp t) "invalid type name"
   | TyUid _ s ->
-      error (loc_of_ctyp t) "type names cannot be capitalized"
+      error (loc_of_ctyp t) "invalid type name"
   | TyLid _ s -> (False, lident s)
   | TyCls loc sl -> (True, long_id_of_string_list loc sl)
   | t -> error (loc_of_ctyp t) "invalid type" ]
