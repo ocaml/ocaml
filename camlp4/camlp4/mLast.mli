@@ -135,6 +135,7 @@ and sig_item =
   | SgExt of loc and string and ctyp and list string
   | SgInc of loc and module_type
   | SgMod of loc and string and module_type
+  | SgRecMod of loc and list (string * module_type)
   | SgMty of loc and string and module_type
   | SgOpn of loc and list string
   | SgTyp of loc and list type_decl
@@ -160,6 +161,7 @@ and str_item =
   | StExt of loc and string and ctyp and list string
   | StInc of loc and module_expr
   | StMod of loc and string and module_expr
+  | StRecMod of loc and list (string * module_type * module_expr)
   | StMty of loc and string and module_type
   | StOpn of loc and list string
   | StTyp of loc and list type_decl

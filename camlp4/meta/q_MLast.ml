@@ -305,6 +305,8 @@ EXTEND
       | "include"; me = module_expr -> Qast.Node "StInc" [Qast.Loc; me]
       | "module"; i = a_UIDENT; mb = module_binding ->
           Qast.Node "StMod" [Qast.Loc; i; mb]
+      | "module"; "rec"; nmtmes = SLIST1 module_rec_binding SEP "and" ->
+          Qast.Node "StRecMod" [Qast.Loc; nmtmes]
       | "module"; "type"; i = a_UIDENT; "="; mt = module_type ->
           Qast.Node "StMty" [Qast.Loc; i; mt]
       | "open"; i = mod_ident -> Qast.Node "StOpn" [Qast.Loc; i]
@@ -325,6 +327,10 @@ EXTEND
       | ":"; mt = module_type; "="; me = module_expr ->
           Qast.Node "MeTyc" [Qast.Loc; me; mt]
       | "="; me = module_expr -> me ] ]
+  ;
+  module_rec_binding:
+    [ [ m = a_UIDENT; ":"; mt = module_type; "="; me = module_expr ->
+          Qast.Tuple [m; me; mt] ] ]
   ;
   module_type:
     [ [ "functor"; "("; i = a_UIDENT; ":"; t = SELF; ")"; "->"; mt = SELF ->
@@ -359,6 +365,8 @@ EXTEND
           Qast.Node "SgMod" [Qast.Loc; i; mt]
       | "module"; "type"; i = a_UIDENT; "="; mt = module_type ->
           Qast.Node "SgMty" [Qast.Loc; i; mt]
+      | "module"; "rec"; mds = SLIST1 module_rec_declaration SEP "and" ->
+          Qast.Node "SgRecMod" [Qast.Loc; mds]
       | "open"; i = mod_ident -> Qast.Node "SgOpn" [Qast.Loc; i]
       | "type"; tdl = SLIST1 type_declaration SEP "and" ->
           Qast.Node "SgTyp" [Qast.Loc; tdl]
@@ -370,6 +378,9 @@ EXTEND
       [ ":"; mt = module_type -> mt
       | "("; i = a_UIDENT; ":"; t = module_type; ")"; mt = SELF ->
           Qast.Node "MtFun" [Qast.Loc; i; t; mt] ] ]
+  ;
+  module_rec_declaration:
+    [ [ m = a_UIDENT; ":"; mt = module_type -> Qast.Tuple [m; mt] ] ]
   ;
   with_constr:
     [ [ "type"; i = mod_ident; tpl = SLIST0 type_parameter; "="; t = ctyp ->

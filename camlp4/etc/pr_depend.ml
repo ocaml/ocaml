@@ -154,6 +154,7 @@ and sig_item =
   | SgExc _ _ tl -> list ctyp tl
   | SgExt _ _ t _ -> ctyp t
   | SgMod _ _ mt -> module_type mt
+  | SgRecMod _ mts -> list (fun (_, mt) -> module_type mt) mts
   | SgMty _ _ mt -> module_type mt
   | SgOpn _ [s :: _] -> addmodule s
   | SgTyp _ tdl -> list type_decl tdl
@@ -177,6 +178,7 @@ and str_item =
   | StExp _ e -> expr e
   | StExt _ _ t _ -> ctyp t
   | StMod _ _ me -> module_expr me
+  | StRecMod _ nmtmes -> list (fun (_, mt, me) -> do { module_expr me; module_type mt; }) nmtmes
   | StMty _ _ mt -> module_type mt
   | StOpn _ [s :: _] -> addmodule s
   | StTyp _ tdl -> list type_decl tdl

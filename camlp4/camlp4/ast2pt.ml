@@ -700,6 +700,10 @@ and sig_item s l =
   | SgExt loc n t p -> [mksig loc (Psig_value n (mkvalue_desc t p)) :: l]
   | SgInc loc mt -> [mksig loc (Psig_include (module_type mt)) :: l]
   | SgMod loc n mt -> [mksig loc (Psig_module n (module_type mt)) :: l]
+  | SgRecMod loc nmts ->
+      List.fold_right 
+        (fun (n, mt) l -> [mksig loc (Psig_module n (module_type mt)) :: l])
+        nmts l
   | SgMty loc n mt ->
       let si =
         match mt with
@@ -747,6 +751,12 @@ and str_item s l =
   | StExt loc n t p -> [mkstr loc (Pstr_primitive n (mkvalue_desc t p)) :: l]
   | StInc loc me -> [mkstr loc (Pstr_include (module_expr me)) :: l]
   | StMod loc n me -> [mkstr loc (Pstr_module n (module_expr me)) :: l]
+  | StRecMod loc nmes ->
+      [mkstr loc
+         (Pstr_recmodule
+            (List.map
+               (fun (n,mt,me) -> (n, module_type mt, module_expr me))
+               nmes)) :: l]
   | StMty loc n mt -> [mkstr loc (Pstr_modtype n (module_type mt)) :: l]
   | StOpn loc id ->
       [mkstr loc (Pstr_open (long_id_of_string_list loc id)) :: l]

@@ -489,6 +489,11 @@ value rec module_declaration b mt k =
         [: `HVbox [: :];
            `HVbox [: `HVbox [: b; `S LR ":" :]; `module_type mt [: :] :];
            k :] ]
+and module_rec_declaration b (n,mt) k =
+  HVbox
+    [: `HVbox
+          [: b; `S LR n; `S LR ":"; `module_type mt [: :] :];
+          k :]
 and modtype_declaration s mt k =
   HVbox
     [: `HVbox [: :];
@@ -540,6 +545,15 @@ and module_binding b me k =
         [: `HVbox [: :];
            `HVbox [: `HVbox [: b; `S LR "=" :]; `module_expr me [: :] :];
            k :] ]
+and module_rec_binding b (n, mt,me) k =
+  HVbox
+    [: `HVbox [: :];
+       `HVbox
+         [: `HVbox
+            [: `HVbox [: b; `S LR n; `S LR ":" :];
+               `module_type mt [: `S LR "=" :] :];
+               `module_expr me [: :] :];
+       k :]
 and class_declaration b ci k =
   class_fun_binding
     [: b; flag "virtual" ci.MLast.ciVir; `S LR ci.MLast.ciNam;
@@ -750,6 +764,11 @@ pr_sig_item.pr_levels :=
       | <:sig_item< module $s$ : $mt$ >> ->
           fun curr next _ k ->
             [: `module_declaration [: `S LR "module"; `S LR s :] mt k :]
+      | <:sig_item< module rec $list:nmts$ >> ->
+          fun curr next _ k ->
+            [: `HVbox [: :];
+               listwbws module_rec_declaration [: `S LR "module rec" :] (S LR "and") nmts
+                 k :]
       | <:sig_item< module type $s$ = $mt$ >> ->
           fun curr next _ k -> [: `modtype_declaration s mt k :]
       | <:sig_item< open $sl$ >> ->
@@ -816,6 +835,11 @@ pr_str_item.pr_levels :=
       | <:str_item< module $s$ = $me$ >> ->
           fun curr next _ k ->
             [: `module_binding [: `S LR "module"; `S LR s :] me k :]
+      | <:str_item< module rec $list:nmtmes$ >> ->
+          fun curr next _ k ->
+            [: `HVbox [: :];
+               listwbws module_rec_binding [: `S LR "module rec" :] (S LR "and") nmtmes
+                 k :]
       | <:str_item< module type $s$ = $mt$ >> ->
           fun curr next _ k ->
             [: `HVbox [: :];

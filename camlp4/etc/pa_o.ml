@@ -439,6 +439,8 @@ EXTEND
       | "include"; me = module_expr -> <:str_item< include $me$ >>
       | "module"; i = UIDENT; mb = module_binding ->
           <:str_item< module $i$ = $mb$ >>
+      | "module"; "rec"; nmtmes = LIST1 module_rec_binding SEP "and" ->
+          MLast.StRecMod loc nmtmes
       | "module"; "type"; i = UIDENT; "="; mt = module_type ->
           <:str_item< module type $i$ = $mt$ >>
       | "open"; i = mod_ident -> <:str_item< open $i$ >>
@@ -467,6 +469,10 @@ EXTEND
       | ":"; mt = module_type; "="; me = module_expr ->
           <:module_expr< ( $me$ : $mt$ ) >>
       | "="; me = module_expr -> <:module_expr< $me$ >> ] ]
+  ;
+  module_rec_binding:
+    [ [ m = UIDENT; ":"; mt = module_type; "="; me = module_expr ->
+          (m, mt, me) ] ]
   ;
   (* Module types *)
   module_type:
@@ -498,6 +504,8 @@ EXTEND
       | "include"; mt = module_type -> <:sig_item< include $mt$ >>
       | "module"; i = UIDENT; mt = module_declaration ->
           <:sig_item< module $i$ : $mt$ >>
+      | "module"; "rec"; mds = LIST1 module_rec_declaration SEP "and" ->
+          MLast.SgRecMod loc mds
       | "module"; "type"; i = UIDENT; "="; mt = module_type ->
           <:sig_item< module type $i$ = $mt$ >>
       | "module"; "type"; i = UIDENT ->
@@ -514,6 +522,9 @@ EXTEND
       [ ":"; mt = module_type -> <:module_type< $mt$ >>
       | "("; i = UIDENT; ":"; t = module_type; ")"; mt = SELF ->
           <:module_type< functor ( $i$ : $t$ ) -> $mt$ >> ] ]
+  ;
+  module_rec_declaration:
+    [ [ m = UIDENT; ":"; mt = module_type -> (m, mt)] ]
   ;
   (* "with" constraints (additional type equations over signature
      components) *)

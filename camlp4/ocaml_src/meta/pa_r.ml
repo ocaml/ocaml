@@ -204,8 +204,12 @@ let _ =
        grammar_entry_create "rebind_exn"
      and module_binding : 'module_binding Grammar.Entry.e =
        grammar_entry_create "module_binding"
+     and module_rec_binding : 'module_rec_binding Grammar.Entry.e =
+       grammar_entry_create "module_rec_binding"
      and module_declaration : 'module_declaration Grammar.Entry.e =
        grammar_entry_create "module_declaration"
+     and module_rec_declaration : 'module_rec_declaration Grammar.Entry.e =
+       grammar_entry_create "module_rec_declaration"
      and cons_expr_opt : 'cons_expr_opt Grammar.Entry.e =
        grammar_entry_create "cons_expr_opt"
      and dummy : 'dummy Grammar.Entry.e = grammar_entry_create "dummy"
@@ -383,6 +387,15 @@ let _ =
         Gramext.action
           (fun (mt : 'module_type) _ (i : string) _ _ (loc : int * int) ->
              (MLast.StMty (loc, i, mt) : 'str_item));
+        [Gramext.Stoken ("", "module"); Gramext.Stoken ("", "rec");
+         Gramext.Slist1sep
+           (Gramext.Snterm
+              (Grammar.Entry.obj
+                 (module_rec_binding : 'module_rec_binding Grammar.Entry.e)),
+            Gramext.Stoken ("", "and"))],
+        Gramext.action
+          (fun (nmtmes : 'module_rec_binding list) _ _ (loc : int * int) ->
+             (MLast.StRecMod (loc, nmtmes) : 'str_item));
         [Gramext.Stoken ("", "module"); Gramext.Stoken ("UIDENT", "");
          Gramext.Snterm
            (Grammar.Entry.obj
@@ -464,6 +477,20 @@ let _ =
           (fun (mb : 'module_binding) _ (mt : 'module_type) _ (m : string) _
              (loc : int * int) ->
              (MLast.MeFun (loc, m, mt, mb) : 'module_binding))]];
+      Grammar.Entry.obj
+        (module_rec_binding : 'module_rec_binding Grammar.Entry.e),
+      None,
+      [None, None,
+       [[Gramext.Stoken ("UIDENT", ""); Gramext.Stoken ("", ":");
+         Gramext.Snterm
+           (Grammar.Entry.obj (module_type : 'module_type Grammar.Entry.e));
+         Gramext.Stoken ("", "=");
+         Gramext.Snterm
+           (Grammar.Entry.obj (module_expr : 'module_expr Grammar.Entry.e))],
+        Gramext.action
+          (fun (me : 'module_expr) _ (mt : 'module_type) _ (m : string)
+             (loc : int * int) ->
+             (m, mt, me : 'module_rec_binding))]];
       Grammar.Entry.obj (module_type : 'module_type Grammar.Entry.e), None,
       [None, None,
        [[Gramext.Stoken ("", "functor"); Gramext.Stoken ("", "(");
@@ -556,6 +583,16 @@ let _ =
         Gramext.action
           (fun (mt : 'module_type) _ (i : string) _ _ (loc : int * int) ->
              (MLast.SgMty (loc, i, mt) : 'sig_item));
+        [Gramext.Stoken ("", "module"); Gramext.Stoken ("", "rec");
+         Gramext.Slist1sep
+           (Gramext.Snterm
+              (Grammar.Entry.obj
+                 (module_rec_declaration :
+                  'module_rec_declaration Grammar.Entry.e)),
+            Gramext.Stoken ("", "and"))],
+        Gramext.action
+          (fun (mds : 'module_rec_declaration list) _ _ (loc : int * int) ->
+             (MLast.SgRecMod (loc, mds) : 'sig_item));
         [Gramext.Stoken ("", "module"); Gramext.Stoken ("UIDENT", "");
          Gramext.Snterm
            (Grammar.Entry.obj
@@ -617,6 +654,16 @@ let _ =
         Gramext.action
           (fun (mt : 'module_type) _ (loc : int * int) ->
              (mt : 'module_declaration))]];
+      Grammar.Entry.obj
+        (module_rec_declaration : 'module_rec_declaration Grammar.Entry.e),
+      None,
+      [None, None,
+       [[Gramext.Stoken ("UIDENT", ""); Gramext.Stoken ("", ":");
+         Gramext.Snterm
+           (Grammar.Entry.obj (module_type : 'module_type Grammar.Entry.e))],
+        Gramext.action
+          (fun (mt : 'module_type) _ (m : string) (loc : int * int) ->
+             (m, mt : 'module_rec_declaration))]];
       Grammar.Entry.obj (with_constr : 'with_constr Grammar.Entry.e), None,
       [None, None,
        [[Gramext.Stoken ("", "module");

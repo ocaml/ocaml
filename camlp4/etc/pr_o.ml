@@ -493,6 +493,11 @@ value rec module_declaration b mt k =
         [: `HVbox [: :];
            `HVbox [: `HVbox [: b; `S LR ":" :]; `module_type mt [: :] :];
            k :] ]
+and module_rec_declaration b (n,mt) _ k =
+  HVbox
+    [: `HVbox
+          [: b; `S LR n; `S LR ":"; `module_type mt [: :] :];
+          k :]
 and modtype_declaration (s, mt) _ k =
   match mt with
   [ <:module_type< ' $_$ >> ->
@@ -551,6 +556,15 @@ value rec module_binding b me k =
         [: `HVbox [: :];
            `HVbox [: `HVbox [: b; `S LR "=" :]; `module_expr me "" [: :] :];
            k :] ]
+and module_rec_binding b (n, mt,me) _ k =
+  HVbox
+    [: `HVbox [: :];
+       `HVbox
+         [: `HVbox
+            [: `HVbox [: b; `S LR n; `S LR ":" :];
+               `module_type mt [: `S LR "=" :] :];
+               `module_expr me "" [: :] :];
+       k :]
 and class_declaration b ci _ k =
   class_fun_binding
     [: b; virtual_flag ci.MLast.ciVir; class_type_parameters ci.MLast.ciPrm;
@@ -749,6 +763,11 @@ pr_sig_item.pr_levels :=
       | <:sig_item< module $s$ : $mt$ >> ->
           fun curr next dg k ->
             [: `module_declaration [: `S LR "module"; `S LR s :] mt k :]
+      | <:sig_item< module rec $list:nmts$ >> ->
+          fun curr next _ k ->
+            [: `HVbox [: :];
+               listwbws module_rec_declaration [: `S LR "module rec" :] (S LR "and") nmts
+                 "" k :]
       | <:sig_item< module type $s$ = $mt$ >> ->
           fun curr next dg k -> [: `modtype_declaration (s, mt) "" k :]
       | <:sig_item< open $sl$ >> ->
@@ -816,6 +835,11 @@ pr_str_item.pr_levels :=
       | <:str_item< module $s$ = $me$ >> ->
           fun curr next dg k ->
             [: `module_binding [: `S LR "module"; `S LR s :] me k :]
+      | <:str_item< module rec $list:nmtmes$ >> ->
+          fun curr next _ k ->
+            [: `HVbox [: :];
+               listwbws module_rec_binding [: `S LR "module rec" :] (S LR "and") nmtmes
+                 "" k :]
       | <:str_item< module type $s$ = $mt$ >> ->
           fun curr next dg k ->
             [: `HVbox [: :];
