@@ -1,3 +1,26 @@
+Objective Caml 1.07:
+--------------------
+
+* Native-code compiler:
+  - Revised interface between generated code and GC, fixes serious GC
+    problems with signals and native threads.
+  - Added "-thread" option for compatibility with ocamlc.
+
+* Debugger: correctly print instance variables of objects.
+
+* Run-time system: ported to OpenBSD.
+
+* Standard library: fixed wrong interface for Marshal.to_buffer and
+  Obj.unmarshal.
+
+* Num library: added Intel x86 optimized asm code (courtesy of
+  Bernard Serpette).
+
+* Thread libraries:
+  - Native threads: fixed GC bugs and installation procedure.
+  - Bytecode threads: fixed problem with "Marshal" module.
+  - Both: added Event.always.
+
 Objective Caml 1.06:
 --------------------
 
