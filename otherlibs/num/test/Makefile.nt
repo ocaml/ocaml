@@ -13,6 +13,8 @@
 
 # $Id$
 
+include ../../../config/Makefile
+
 CAMLC=../../../boot/ocamlrun ../../../ocamlc -I ../../../stdlib -I ..
 CAMLOPT=../../../boot/ocamlrun ../../../ocamlopt -I ../../../stdlib -I ..
 CC=$(BYTECC)
@@ -28,10 +30,10 @@ TESTFILES=test.cmo \
 
 TESTOPTFILES=$(TESTFILES:.cmo=.cmx)
 
-test.byt: $(TESTFILES) ../nums.cma ../libnums.lib
+test.byt: $(TESTFILES) ../nums.cma ../libnums.$(A)
 	$(CAMLC) -o test.byt nums.cma $(TESTFILES)
 
-test.opt: $(TESTOPTFILES) ../nums.cmxa ../libnums.lib
+test.opt: $(TESTOPTFILES) ../nums.cmxa ../libnums.$(A)
 	$(CAMLOPT) -o test.opt nums.cmxa $(TESTOPTFILES)
 
 test_bng.exe: test_bng.o
