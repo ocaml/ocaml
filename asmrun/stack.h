@@ -52,6 +52,7 @@
 #define Already_scanned(sp, retaddr) (retaddr & 0x80000000)
 #define Mark_scanned(sp, retaddr) (*((long *)sp) = retaddr | 0x80000000)
 #define Mask_already_scanned(retaddr) (retaddr & ~0x80000000)
+#define Callback_link(sp) ((struct callback_link *)(sp - 8))
 #endif
 
 
