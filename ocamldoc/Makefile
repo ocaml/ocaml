@@ -375,8 +375,7 @@ clean:: dummy
 	@rm -f odoc_lexer.ml odoc_text_lexer.ml odoc_see_lexer.ml odoc_ocamlhtml.ml
 	@rm -f odoc_parser.ml odoc_parser.mli odoc_text_parser.ml odoc_text_parser.mli odoc_crc.ml
 
-.depend depend::
-	rm -f .depend
+depend::
 	$(OCAMLYACC) odoc_text_parser.mly
 	$(OCAMLYACC) odoc_parser.mly
 	$(OCAMLLEX) odoc_text_lexer.mll
