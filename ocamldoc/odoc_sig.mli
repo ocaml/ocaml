@@ -15,46 +15,47 @@
 (** The functions used to retrieve information from a signature. *)
 module Signature_search :
     sig
+      type ele
+      type tab = (ele, Types.signature_item) Hashtbl.t
+
+      (** Create a table from a signature. This table is used by some
+	 of the search functions below. *)
+      val table : Types.signature -> tab
+
       (** This function returns the type expression for the value whose name is given,
 	 in the given signature. 
 	 @raise Not_found if error.*)
-      val search_value : Types.signature_item list -> string -> Types.type_expr
+      val search_value : tab -> string -> Types.type_expr
 
       (** This function returns the type expression list for the exception whose name is given,
-	 in the given signature. 
+	 in the given table. 
 	 @raise Not_found if error.*)
-      val search_exception :
-	  Types.signature_item list -> string -> Types.exception_declaration
+      val search_exception : tab -> string -> Types.exception_declaration
               
       (** This function returns the Types.type_declaration  for the type whose name is given,
-	 in the given signature. 
+	 in the given table. 
 	 @raise Not_found if error.*)
-      val search_type :
-	  Types.signature_item list -> string -> Types.type_declaration
+      val search_type : tab -> string -> Types.type_declaration
 	      
       (** This function returns the Types.class_declaration  for the class whose name is given,
-	 in the given signature. 
+	 in the given table. 
 	 @raise Not_found if error.*)
-      val search_class :
-	  Types.signature_item list -> string -> Types.class_declaration
+      val search_class : tab -> string -> Types.class_declaration
 
       (** This function returns the Types.cltype_declaration  for the class type whose name is given,
-	 in the given signature. 
+	 in the given table. 
 	 @raise Not_found if error.*)
-      val search_class_type :
-	  Types.signature_item list -> string -> Types.cltype_declaration
+      val search_class_type : tab -> string -> Types.cltype_declaration
 
       (** This function returns the Types.module_type  for the module whose name is given,
-	 in the given signature. 
+	 in the given table. 
 	 @raise Not_found if error.*)
-      val search_module :
-	  Types.signature_item list -> string -> Types.module_type
+      val search_module : tab -> string -> Types.module_type
 
       (** This function returns the optional Types.module_type  for the module type whose name is given,
-	 in the given signature. 
+	 in the given table. 
 	 @raise Not_found if error.*)
-      val search_module_type :
-	  Types.signature_item list -> string -> Types.module_type option
+      val search_module_type : tab -> string -> Types.module_type option
 
       (** This function returns the Types.type_expr  for the given val name
 	 in the given class signature. 

@@ -36,165 +36,128 @@ let blank = "[ \010\013\009\012']"
 let simple_blank = "[ \013\009\012]"
 
 
-(** This module is used to search for structure items by name in a Typedtree.structure. *)
+(** This module is used to search for structure items by name in a Typedtree.structure. 
+   One function creates two hash tables, which can then be used to search for elements.
+   Class elements do not use tables.
+*)
 module Typedtree_search =
   struct
-    let search_module typedtree name =
-      let rec iter = function
-	  [] -> raise Not_found
-	| (Typedtree.Tstr_module (ident, module_expr)) :: q when 
-	    (Name.from_ident ident) = name ->
-	      module_expr
-	| _ :: q ->
-	    iter q
-      in
-      iter typedtree
+    type ele = 
+      |	M of string
+      |	MT of string
+      |	T of string
+      |	C of string
+      |	CT of string
+      |	E of string
+      |	ER of string
+      |	P of string
 
-    let search_module_type typedtree name =
-      let rec iter = function
-	  [] -> raise Not_found
-	| (Typedtree.Tstr_modtype (ident, module_type)) :: q when 
-	    (Name.from_ident ident) = name ->
-	      module_type
-	| _ :: q ->
-	    iter q
-      in
-      iter typedtree
+    type tab = (ele, Typedtree.structure_item) Hashtbl.t
+    type tab_values = (Odoc_module.Name.t, Typedtree.pattern * Typedtree.expression) Hashtbl.t
 
-    let search_exception typedtree name =
-      let rec iter = function
-	  [] -> raise Not_found
-	| (Typedtree.Tstr_exception (ident, excep_decl)) :: q when 
-	    (Name.from_ident ident) = name ->
-	      excep_decl
-	| _ :: q ->
-	    iter q
-      in
-      iter typedtree
+    let iter_val_pattern = function
+      | Typedtree.Tpat_any -> None
+      | Typedtree.Tpat_var name -> Some (Name.from_ident name)
+      | Typedtree.Tpat_tuple _ -> None (* A VOIR quand on traitera les tuples *)
+      | _ -> None
 
-    let search_exception_rebind typedtree name =
-      let rec iter = function
-	  [] -> raise Not_found
-	| (Typedtree.Tstr_exn_rebind (ident, p)) :: q when 
-	    (Name.from_ident ident) = name ->
-	      p
-	| _ :: q ->
-	    iter q
-      in
-      iter typedtree
-
-    let search_type_declaration typedtree name =
-      let rec iter = function
-	  [] -> raise Not_found
-	| (Typedtree.Tstr_type ident_type_decl_list) :: q ->
-	    (
-	     try
-	       snd (List.find
-		      (fun (id, _) -> Name.from_ident id = name)
-		      ident_type_decl_list)
-	     with
-	       Not_found ->
-		 iter q
+    let add_to_hashes table table_values tt = 
+      match tt with
+      | Typedtree.Tstr_module (ident, _) -> 
+	  Hashtbl.add table (M (Name.from_ident ident)) tt
+      |	Typedtree.Tstr_modtype (ident, _) -> 
+	  Hashtbl.add table (MT (Name.from_ident ident)) tt
+      |	Typedtree.Tstr_exception (ident, _) ->
+	  Hashtbl.add table (E (Name.from_ident ident)) tt
+      |	Typedtree.Tstr_exn_rebind (ident, _) ->
+	  Hashtbl.add table (ER (Name.from_ident ident)) tt
+      |	Typedtree.Tstr_type ident_type_decl_list ->
+	  List.iter
+	    (fun (id, e) -> 
+	      Hashtbl.add table (T (Name.from_ident id)) 
+		(Typedtree.Tstr_type [(id,e)]))
+	    ident_type_decl_list
+      |	Typedtree.Tstr_class info_list ->
+	  List.iter
+	    (fun ((id,_,_,_) as ci) -> 
+	      Hashtbl.add table (C (Name.from_ident id))
+		(Typedtree.Tstr_class [ci]))
+	    info_list
+      |	Typedtree.Tstr_cltype info_list ->
+	  List.iter
+	    (fun ((id,_) as ci) -> 
+	      Hashtbl.add table
+		(CT (Name.from_ident id))
+		(Typedtree.Tstr_cltype [ci]))
+	    info_list
+      |	Typedtree.Tstr_value (_, pat_exp_list) ->
+	  List.iter
+	    (fun (pat,exp) ->
+	      match iter_val_pattern pat.Typedtree.pat_desc with
+		None -> ()
+	      |	Some n -> Hashtbl.add table_values n (pat,exp)
 	    )
-	| _ :: q ->
-	    iter q
-      in
-      iter typedtree
+	    pat_exp_list
+      |	Typedtree.Tstr_primitive (ident, _) ->
+	  Hashtbl.add table (P (Name.from_ident ident)) tt
+      |	_ ->
+	  ()
 
-    let search_class_exp typedtree name =
-      let rec iter = function
-	  [] -> raise Not_found
-	| (Typedtree.Tstr_class info_list) :: q ->
-	    (
-	     try
-	       let (_,_,_,ce) = (List.find
-				   (fun (id, _, _, class_expr) -> Name.from_ident id = name)
-				   info_list)
-	       in
-	       (* We look for the type artificially created for the class,
-		  to get the list of type parameters. *)
-	       try
-		 let type_decl = search_type_declaration typedtree name in
-		 (ce, type_decl.Types.type_params)
-	       with
-		 Not_found ->
-		   (ce, [])
-	     with
-	       Not_found ->
-		 iter q
-	    )
-	| _ :: q ->
-	    iter q
-      in
-      iter typedtree
+    let tables typedtree =
+      let t = Hashtbl.create 13 in
+      let t_values = Hashtbl.create 13 in
+      List.iter (add_to_hashes t t_values) typedtree;
+      (t, t_values)
 
-    let search_class_type_declaration typedtree name =
-      let rec iter = function
-	  [] -> raise Not_found
-	| (Typedtree.Tstr_cltype info_list) :: q ->
-	    (
-	     try
-	       let (_, cltype_decl) = (List.find
-					 (fun (id, clty_d) -> Name.from_ident id = name)
-					 info_list)
-	       in
-	       cltype_decl
-	     with
-	       Not_found ->
-		 iter q
-	    )
-	| _ :: q ->
-	    iter q
-      in
-      iter typedtree
+    let search_module table name =
+      match Hashtbl.find table (M name) with
+	(Typedtree.Tstr_module (_, module_expr)) -> module_expr
+      |	_ -> assert false
 
-    let search_value typedtree name =
-      let rec iter_pat = function
-	| Typedtree.Tpat_any -> None
-	| Typedtree.Tpat_var name -> Some (Name.from_ident name)
-	| Typedtree.Tpat_tuple _ -> None (* A VOIR quand on traitera les tuples *)
-	| _ -> None
-      in
-      let pred (pat, _) = 
-	match iter_pat pat.Typedtree.pat_desc with
-	| Some n when n = name -> true
-	| _ -> false
-      in
-      let rec iter = function 
-	  [] ->
-	    raise Not_found
-	| item :: q ->
-	    match item with
-	      Tstr_value (_, pat_exp_list) ->
-		(
-		 try
-		   List.find pred pat_exp_list
-		 with
-		   Not_found ->
-		     iter q
-		)
-	    | _ ->
-		iter q
-      in
-      iter typedtree
+    let search_module_type table name =
+      match Hashtbl.find table (MT name) with
+      | (Typedtree.Tstr_modtype (_, module_type)) -> module_type
+      | _ -> assert false
 
-    let search_primitive typedtree name =
-      let rec iter = function 
-	  [] ->
-	    raise Not_found
-	| item :: q ->
-	    match item with
-	      Tstr_primitive (ident, val_desc) ->
-		(
-		 if Name.from_ident ident = name then
-		   val_desc.Types.val_type
-		 else
-		   iter q
-		)
-	    | _ ->
-		iter q
-      in
-      iter typedtree
+    let search_exception table name =
+      match Hashtbl.find table (E name) with
+      | (Typedtree.Tstr_exception (_, excep_decl)) -> excep_decl
+      | _ -> assert false
+
+    let search_exception_rebind table name =
+      match Hashtbl.find table (ER name) with
+      | (Typedtree.Tstr_exn_rebind (_, p)) -> p
+      |	_ -> assert false
+
+    let search_type_declaration table name =
+      match Hashtbl.find table (T name) with
+      | (Typedtree.Tstr_type [(_,decl)]) -> decl
+      |	_ -> assert false
+
+    let search_class_exp table name =
+      match Hashtbl.find table (C name) with
+      | (Typedtree.Tstr_class [(_,_,_,ce)]) ->
+	  (
+	   try
+	     let type_decl = search_type_declaration table name in
+	     (ce, type_decl.Types.type_params)
+	   with
+	     Not_found ->
+	       (ce, [])
+	  )
+      |	_ -> assert false
+
+    let search_class_type_declaration table name =
+      match Hashtbl.find table (CT name) with
+      | (Typedtree.Tstr_cltype [(_,cltype_decl)]) -> cltype_decl
+      |	_ -> assert false
+
+    let search_value table name = Hashtbl.find table name 
+
+    let search_primitive table name =
+      match Hashtbl.find table (P name) with
+	Tstr_primitive (ident, val_desc) -> val_desc.Types.val_type
+      |	_ -> assert false
 
     let get_nth_inherit_class_expr cls n =
       let rec iter cpt = function
@@ -978,6 +941,7 @@ module Analyser =
     (** Analysis of a parse tree structure with a typed tree, to return module elements.*)
     let rec analyse_structure env current_module_name last_pos pos_limit parsetree typedtree = 
       print_DEBUG "Odoc_ast:analyse_struture";
+      let (table, table_values) = Typedtree_search.tables typedtree in
       let rec iter env last_pos = function
 	  [] -> 
 	    let s = get_string_of_file last_pos pos_limit in
@@ -1011,13 +975,16 @@ module Analyser =
 		comment_opt
 		item.Parsetree.pstr_desc
 		typedtree
+		table 
+		table_values
 	    in
 	    ele_comments @ elements @ (iter new_env (item.Parsetree.pstr_loc.Location.loc_end + maybe_more) q)
       in
       iter env last_pos parsetree
 
    (** Analysis of a parse tree structure item to obtain a new environment and a list of elements.*)
-   and analyse_structure_item env current_module_name loc pos_limit comment_opt parsetree_item_desc typedtree = 
+   and analyse_structure_item env current_module_name loc pos_limit comment_opt parsetree_item_desc typedtree 
+	table table_values = 
       print_DEBUG "Odoc_ast:analyse_struture_item";
       match parsetree_item_desc with
 	Parsetree.Pstr_eval _ ->
@@ -1047,7 +1014,7 @@ module Analyser =
 		    iter new_last_pos acc_env acc q
 		| Some name ->
 		    try
-		      let pat_exp = Typedtree_search.search_value typedtree name in
+		      let pat_exp = Typedtree_search.search_value table_values name in
 		      let (info_opt, ele_comments) =
 			(* we already have the optional comment for the first value. *)
 			if first then
@@ -1088,7 +1055,7 @@ module Analyser =
       | Parsetree.Pstr_primitive (name_pre, val_desc) ->
 	  (* of string * value_description *)
 	  print_DEBUG ("Parsetree.Pstr_primitive ("^name_pre^", ["^(String.concat ", " val_desc.Parsetree.pval_prim)^"]");
-	  let typ = Typedtree_search.search_primitive typedtree name_pre in
+	  let typ = Typedtree_search.search_primitive table name_pre in
 	  let name = Name.parens_if_infix name_pre in
 	  let complete_name = Name.concat current_module_name name in
 	  let new_value = {
@@ -1129,7 +1096,7 @@ module Analyser =
 		  | (_, td) :: _ -> td.Parsetree.ptype_loc.Location.loc_start
 		in
 		let tt_type_decl = 
-		  try Typedtree_search.search_type_declaration typedtree name 
+		  try Typedtree_search.search_type_declaration table name 
 		  with Not_found -> raise (Failure (Odoc_messages.type_not_found_in_typedtree complete_name))
 		in
 		let (com_opt, ele_comments) = (* the comment for the first type was already retrieved *)
@@ -1171,7 +1138,7 @@ module Analyser =
 	  let complete_name = Name.concat current_module_name name in
 	  (* we get the exception declaration in the typed tree *)
 	  let tt_excep_decl = 
-	    try Typedtree_search.search_exception typedtree name 
+	    try Typedtree_search.search_exception table name 
 	    with Not_found -> 
 	      raise (Failure (Odoc_messages.exception_not_found_in_typedtree complete_name))
 	  in
@@ -1192,7 +1159,7 @@ module Analyser =
 	  let complete_name = Name.concat current_module_name name in
 	  (* we get the exception rebind in the typed tree *)
 	  let tt_path = 
-	    try Typedtree_search.search_exception_rebind typedtree name 
+	    try Typedtree_search.search_exception_rebind table name 
 	    with Not_found -> 
 	      raise (Failure (Odoc_messages.exception_not_found_in_typedtree complete_name))
 	  in
@@ -1213,7 +1180,7 @@ module Analyser =
 	  (
 	   (* of string * module_expr *)
 	   try
-	     let tt_module_expr = Typedtree_search.search_module typedtree name in
+	     let tt_module_expr = Typedtree_search.search_module table name in
 	     let new_module = analyse_module 
 		 env
 		 current_module_name
@@ -1242,7 +1209,7 @@ module Analyser =
       | Parsetree.Pstr_modtype (name, modtype) ->
 	  let complete_name = Name.concat current_module_name name in
 	  let tt_module_type =
-	    try Typedtree_search.search_module_type typedtree name
+	    try Typedtree_search.search_module_type table name
 	    with Not_found -> 
 	      raise (Failure (Odoc_messages.module_type_not_found_in_typedtree complete_name))
 	  in
@@ -1299,7 +1266,7 @@ module Analyser =
 		[]
 	    | class_decl :: q ->
 		let (tt_class_exp, tt_type_params) =
-		  try Typedtree_search.search_class_exp typedtree class_decl.Parsetree.pci_name 
+		  try Typedtree_search.search_class_exp table class_decl.Parsetree.pci_name 
 		  with Not_found ->
 		    let complete_name = Name.concat current_module_name class_decl.Parsetree.pci_name in
 		    raise (Failure (Odoc_messages.class_not_found_in_typedtree complete_name))
@@ -1343,7 +1310,7 @@ module Analyser =
 		let complete_name = Name.concat current_module_name name in
 		let virt = class_type_decl.Parsetree.pci_virt = Asttypes.Virtual in
 		let tt_cltype_declaration =
-		  try Typedtree_search.search_class_type_declaration typedtree name 
+		  try Typedtree_search.search_class_type_declaration table name 
 		  with Not_found -> 
 		    raise (Failure (Odoc_messages.class_type_not_found_in_typedtree complete_name))
 		in

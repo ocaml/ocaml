@@ -31,115 +31,79 @@ open Odoc_types
 
 module Signature_search =
   struct
-    let search_value signat name =
-      let rec iter sig_item_list =
-	match sig_item_list with
-	  [] ->
-	    raise Not_found
-	| (Types.Tsig_value (ident, val_desc)) :: q  ->
-	    if Ident.name ident = name then
-	      val_desc.Types.val_type
-	    else
-	      iter q
-	| _ :: q ->
-	    iter q
-      in
-      iter signat
+    type ele = 
+      |	M of string
+      |	MT of string
+      |	V of string
+      |	T of string
+      |	C of string
+      |	CT of string
+      |	E of string
+      |	ER of string
+      |	P of string
 
-    let search_exception signat name =
-      let rec iter sig_item_list =
-	match sig_item_list with
-	  [] ->
-	    raise Not_found
-	| (Types.Tsig_exception (ident, type_expr_list)) :: q  ->
-	    if Ident.name ident = name then
-	      type_expr_list
-	    else
-	      iter q
-	| _ :: q ->
-	    iter q
-      in
-      iter signat
+    type tab = (ele, Types.signature_item) Hashtbl.t
 
-    let search_type signat name =
-      let rec iter sig_item_list =
-	match sig_item_list with
-	  [] ->
-	    raise Not_found
-	| (Types.Tsig_type (ident, type_decl)) :: q  ->
-	    if Ident.name ident = name then
-	      type_decl
-	    else
-	      iter q
-	| _ :: q ->
-	    iter q
-      in
-      iter signat
+    let add_to_hash table signat =
+      match signat with
+	Types.Tsig_value (ident, _) ->
+	  Hashtbl.add table (V (Name.from_ident ident)) signat
+      |	Types.Tsig_exception (ident, _) ->
+	  Hashtbl.add table (E (Name.from_ident ident)) signat
+      |	Types.Tsig_type (ident, _) ->
+	  Hashtbl.add table (T (Name.from_ident ident)) signat
+      |	Types.Tsig_class (ident,_) ->
+	  Hashtbl.add table (C (Name.from_ident ident)) signat
+      |	Types.Tsig_cltype (ident, _) ->
+	  Hashtbl.add table (CT (Name.from_ident ident)) signat
+      |	Types.Tsig_module (ident, _) ->
+	  Hashtbl.add table (M (Name.from_ident ident)) signat
+      |	Types.Tsig_modtype (ident,_) ->
+	  Hashtbl.add table (MT (Name.from_ident ident)) signat
 
-    let search_class signat name =
-      let rec iter sig_item_list =
-	match sig_item_list with
-	  [] ->
-	    raise Not_found
-	| (Types.Tsig_class (ident, class_decl)) :: q  ->
-	    if Ident.name ident = name then
-	      class_decl
-	    else
-	      iter q
-	| _ :: q ->
-	    iter q
-      in
-      iter signat
+    let table signat =
+      let t = Hashtbl.create 13 in
+      List.iter (add_to_hash t) signat;
+      t
 
-    let search_class_type signat name =
-      let rec iter sig_item_list =
-	match sig_item_list with
-	  [] ->
-	    raise Not_found
-	| (Types.Tsig_cltype (ident, cltype_decl)) :: q  ->
-	    if Ident.name ident = name then
-	      cltype_decl
-	    else
-	      iter q
-	| _ :: q ->
-	    iter q
-      in
-      iter signat
+    let search_value table name =
+      match Hashtbl.find table (V name) with
+      | (Types.Tsig_value (_, val_desc)) ->  val_desc.Types.val_type
+      |	_ -> assert false
 
-    let search_module signat name =
-      let rec iter sig_item_list =
-	match sig_item_list with
-	  [] ->
-	    raise Not_found
-	| (Types.Tsig_module (ident, module_type)) :: q  ->
-	    if Ident.name ident = name then
-	      module_type
-	    else
-	      iter q
-	| _ :: q ->
-	    iter q
-      in
-      iter signat
+    let search_exception table name =
+      match Hashtbl.find table (E name) with
+      | (Types.Tsig_exception (_, type_expr_list)) ->
+	  type_expr_list
+      |	_ -> assert false
 
-    let search_module_type signat name =
-      let rec iter sig_item_list =
-	match sig_item_list with
-	  [] ->
-	    raise Not_found
-	| (Types.Tsig_modtype (ident, Types.Tmodtype_manifest module_type)) :: q  ->
-	    if Ident.name ident = name then
-	      Some module_type
-	    else
-	      iter q
-	| (Types.Tsig_modtype (ident, Types.Tmodtype_abstract)) :: q  ->
-	    if Ident.name ident = name then
-	      None
-	    else
-	      iter q
-	| _ :: q ->
-	    iter q
-      in
-      iter signat
+    let search_type table name =
+      match Hashtbl.find table (T name) with
+      | (Types.Tsig_type (_, type_decl)) -> type_decl
+      |	_ -> assert false
+
+    let search_class table name =
+      match Hashtbl.find table (C name) with
+      | (Types.Tsig_class (_, class_decl)) -> class_decl
+      |	_ -> assert false
+
+    let search_class_type table name =
+      match Hashtbl.find table (CT name) with
+      | (Types.Tsig_cltype (_, cltype_decl)) -> cltype_decl
+      |	_ -> assert false
+
+    let search_module table name =
+      match Hashtbl.find table (M name) with
+      | (Types.Tsig_module (ident, module_type)) -> module_type
+      |	_ -> assert false
+
+    let search_module_type table name =
+      match Hashtbl.find table (MT name) with
+      | (Types.Tsig_modtype (_, Types.Tmodtype_manifest module_type)) ->
+	  Some module_type
+      | (Types.Tsig_modtype (_, Types.Tmodtype_abstract)) ->
+	  None
+      |	_ -> assert false
 
     let search_attribute_type name class_sig =
       let (_, type_expr) = Types.Vars.find name class_sig.Types.cty_vars in
@@ -499,6 +463,7 @@ module Analyser =
        last_pos is the position of the first character which may be used to look for special comments.
     *)
     let rec analyse_parsetree env signat current_module_name last_pos pos_limit sig_item_list =
+      let table = Signature_search.table signat in
       (* we look for the comment of each item then analyse the item *)
       let rec f acc_eles acc_env last_pos = function
 	  [] ->
@@ -525,6 +490,7 @@ module Analyser =
 	    let (maybe_more, new_env, elements) = analyse_signature_item_desc
 		acc_env
 		signat
+		table
 		current_module_name
 		ele.Parsetree.psig_loc.Location.loc_start
 		ele.Parsetree.psig_loc.Location.loc_end
@@ -547,11 +513,11 @@ module Analyser =
 
     (** Analyse the given signature_item_desc to create the corresponding module element
        (with the given attached comment).*)
-    and analyse_signature_item_desc env signat current_module_name 
+    and analyse_signature_item_desc env signat table current_module_name 
 	pos_start_ele pos_end_ele pos_limit comment_opt sig_item_desc =
 	match sig_item_desc with
 	  Parsetree.Psig_value (name_pre, value_desc) ->
-	    let type_expr = Signature_search.search_value signat name_pre  in
+	    let type_expr = Signature_search.search_value table name_pre  in
 	    let name = Name.parens_if_infix name_pre in
 	    let subst_typ = Odoc_env.subst_type env type_expr in
 	    let v =  
@@ -578,7 +544,7 @@ module Analyser =
 	    (maybe_more, new_env, [ Element_value v ])
 
 	| Parsetree.Psig_exception (name, exception_decl) ->
-	    let types_excep_decl = Signature_search.search_exception signat name  in
+	    let types_excep_decl = Signature_search.search_exception table name  in
 	    let e =
 	      { 
 		ex_name = Name.concat current_module_name name ;
@@ -637,7 +603,7 @@ module Analyser =
 		  let f_DEBUG (name, c_opt) = print_DEBUG ("constructor/field "^name^": "^(match c_opt with None -> "sans commentaire" | Some c -> Odoc_misc.string_of_info c)) in
 		  List.iter f_DEBUG name_comment_list;
 		  (* get the information for the type in the signature *)
-		  let sig_type_decl = Signature_search.search_type signat name in
+		  let sig_type_decl = Signature_search.search_type table name in
 		  (* get the type kind with the associated comments *)
 		  let type_kind = get_type_kind new_env name_comment_list sig_type_decl.Types.type_kind in
 	          (* associate the comments to each constructor and build the [Type.t_type] *)
@@ -688,7 +654,7 @@ module Analyser =
 	    let complete_name = Name.concat current_module_name name in
 	    (* get the the module type in the signature by the module name *)
 	    let sig_module_type = 
-	      try Signature_search.search_module signat name 
+	      try Signature_search.search_module table name 
 	      with Not_found ->
 		raise (Failure (Odoc_messages.module_not_found current_module_name name))
 	    in
@@ -721,7 +687,7 @@ module Analyser =
 
         | Parsetree.Psig_modtype (name, Parsetree.Pmodtype_abstract) ->
 	    let sig_mtype = 
-	      try Signature_search.search_module_type signat name 
+	      try Signature_search.search_module_type table name 
 	      with Not_found ->
 		raise (Failure (Odoc_messages.module_type_not_found current_module_name name))
 	    in
@@ -749,7 +715,7 @@ module Analyser =
 	| Parsetree.Psig_modtype (name, Parsetree.Pmodtype_manifest module_type) ->
 	    let complete_name = Name.concat current_module_name name in
 	    let sig_mtype_opt = 
-	      try Signature_search.search_module_type signat name 
+	      try Signature_search.search_module_type table name 
 	      with Not_found ->
 		raise (Failure (Odoc_messages.module_type_not_found current_module_name name))
 	    in
@@ -834,7 +800,7 @@ module Analyser =
 		  in
 		  let name = class_desc.Parsetree.pci_name in
 		  let complete_name = Name.concat current_module_name name in
-		  let sig_class_decl = Signature_search.search_class signat name in
+		  let sig_class_decl = Signature_search.search_class table name in
 		  let sig_class_type = sig_class_decl.Types.cty_type in
 		  let (parameters, class_kind) = 
 		    analyse_class_kind
@@ -906,7 +872,7 @@ module Analyser =
 		  in
 		  let name = ct_decl.Parsetree.pci_name in
 		  let complete_name = Name.concat current_module_name name in
-		  let sig_cltype_decl = Signature_search.search_class_type signat name in
+		  let sig_cltype_decl = Signature_search.search_class_type table name in
 		  let sig_class_type = sig_cltype_decl.Types.clty_type in
 		  let kind = analyse_class_type_kind
 		      new_env
