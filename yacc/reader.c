@@ -825,13 +825,17 @@ get_tag(void)
     register int i;
     register char *s;
     char *t_line = dup_line();
+    long bracket_depth;
 
     cinc = 0;
+    bracket_depth = 0;
     while (1) {
       c = *++cptr;
       if (c == EOF) unexpected_EOF();
       if (c == '\n') syntax_error(lineno, line, cptr);
-      if (c == '>' && cptr[-1] != '-') break;
+      if (c == '>' && 0 == bracket_depth && cptr[-1] != '-') break;
+      if (c == '[') ++ bracket_depth;
+      if (c == ']') -- bracket_depth;
       cachec(c);
     }
     ++cptr;
