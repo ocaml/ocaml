@@ -26,7 +26,7 @@ str.cmxa: str.cmx
 	$(CAMLOPT) -a -o str.cmxa str.cmx
 
 $(REGEXLIB)/regex.o: $(REGEXLIB)/regex.c $(REGEXLIB)/regex.h
-	cd $(REGEXLIB); CC="$(CC)" sh configure; make
+	cd $(REGEXLIB); CC="$(CC)" sh configure; $(MAKE)
 
 clean:
 	rm -f *.cm*
