@@ -27,7 +27,7 @@ The following command-line options are recognized by "ocamlbrowser".
 Add the given directory to the list of directories searched for
 source and compiled files. By default, only the standard library
 directory is searched.  The standard library can also be changed by
-setting the "CAMLLIB" environment variable.
+setting the "OCAMLLIB" environment variable.
 
 \item["-nolabels"]
 Ignore non-optional labels in types. Labels cannot be used in
