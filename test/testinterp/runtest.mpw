@@ -68,9 +68,9 @@ loop
 
   set -e camlrunparam v=0
   ocamlc -unsafe -nopervasives {libs} "{1}" || (shift; continue)
-  
+
   if {dobytecode}
-    Set f "`Files -f -q "{1}"`"			# get full pathnames
+    Set f "`Files -f -q "{1}"`"         # get full pathnames
     Set _openWindows " ``Windows -q`` "
     If "{_openWindows}" !~ /Å [¶']*"{f}"[¶']* Å/
       Open "{f}"
@@ -78,13 +78,13 @@ loop
     else
       set _closeit 0
     End
-    
+
     find ° "{f}"
     find Æ\'**)'\:\'(**'\Æ "{f}"
     echo >"{f}".¤
     ocamldumpobj a.out >>"{f}".¤
     find ¥ "{f}"
-    
+
     if {_closeit}
       close -y "{f}"
     end
@@ -98,7 +98,7 @@ loop
   end
 
   delete -i "{base}".cmi "{base}".cmo
-  
+
   shift
 end
 
