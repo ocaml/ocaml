@@ -194,8 +194,7 @@ See `caml-types-location-re' for annotation file format.
                                              accu)))
             (setq stack (cons node stack))))))
     (if (null stack)
-        (let ((dummy-pos (vector "" 0 0 0)))
-          (vector dummy-pos dummy-pos ()))
+        (error "no annotations found for this source file")
       (let* ((left-pos (elt (car (last stack)) 0))
              (right-pos (elt (car stack) 1)))
         (if (null (cdr stack))
@@ -253,7 +252,7 @@ See `caml-types-location-re' for annotation file format.
         (nright (elt node 1))
         (left ())
         (right ())
-        (i 3))
+        i)
     (cond
      ((not (caml-types-pos-inside targ-pos node))
       (if (not (caml-types-pos<= nleft targ-pos))
@@ -352,7 +351,7 @@ and its type is displayed in the minibuffer, until the move is released."
          (type-buf (caml-types-find-file type-file))
          (target-line) (target-bol)
          target-pos
-         Left Right limits cnum loc mes ty-start ty-end
+         Left Right limits cnum node mes ty-start ty-end
          (tree caml-types-annotation-tree)
          )
     (caml-types-preprocess type-file type-buf)
