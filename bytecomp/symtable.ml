@@ -246,7 +246,7 @@ let update_global_table () =
 let init_toplevel () =
   (* Read back the known global symbols and the known primitives
      from the executable file *)
-  let ic = open_in_bin Sys.argv.(0) in
+  let ic = open_in_bin Sys.executable_name in
   begin try
     Bytesections.read_toc ic;
     ignore(Bytesections.seek_section ic "SYMB");
