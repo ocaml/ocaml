@@ -8,7 +8,7 @@ INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
 COMPFLAGS=$(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
-all: ocamldep ocamlprof ocamlcp
+all: ocamldep ocamlprof ocamlcp ocamlmktop
 
 # The dependency generator
 
@@ -54,8 +54,15 @@ clean::
 
 # To make custom toplevels
 
+ocamlmktop: ocamlmktop.tpl ../config/Makefile
+	sed -e 's|%%BINDIR%%|$(BINDIR)|' ocamlmktop.tpl > ocamlmktop
+	chmod +x ocamlmktop
+
 install::
 	cp ocamlmktop $(BINDIR)/ocamlmktop
+
+clean::
+	rm -f ocamlmktop
 
 # The preprocessor for asm generators
 
