@@ -24,14 +24,39 @@
 #include "misc.h"
 #include "reverse.h"
 
-static unsigned char * intern_input, * intern_src;
+static unsigned char * intern_src;
+/* Reading pointer in block holding input data. */
+
+static unsigned char * intern_input;
+/* Pointer to beginning of block holding input data.
+   Meaningful only if intern_input_malloced = 1. */
+
 static int intern_input_malloced;
+/* 1 if intern_input was allocated by stat_alloc()
+   and needs stat_free() on error, 0 otherwise. */
+
 static header_t * intern_dest;
+/* Writing pointer in destination block */
+
+static header_t * intern_extra_block;
+/* If non-NULL, point to new heap chunk allocated with alloc_for_heap. */
+
 static asize_t obj_counter;
+/* Count how many objects seen so far */
+
 static value * intern_obj_table;
+/* The pointers to objects already seen */
+
 static unsigned int intern_color;
+/* Color to assign to newly created headers */
+
 static header_t intern_header;
+/* Original header of the destination block.
+   Meaningful only if intern_extra_block is NULL. */
+
 static value intern_block;
+/* Point to the heap block allocated as destination block.
+   Meaningful only if intern_extra_block is NULL. */
 
 #define Sign_extend_shift ((sizeof(long) - 1) * 8)
 #define Sign_extend(x) (((long)(x) << Sign_extend_shift) >> Sign_extend_shift)
@@ -72,7 +97,13 @@ static void intern_cleanup(void)
 {
   if (intern_input_malloced) stat_free(intern_input);
   if (intern_obj_table != NULL) stat_free(intern_obj_table);
-  Hd_val(intern_block) = intern_header; /* Don't confuse the GC */
+  if (intern_extra_block != NULL) {
+    /* free newly allocated heap chunk */
+    free_for_heap(intern_extra_block); 
+  } else {
+    /* restore original header for heap block, otherwise GC is confused */
+    Hd_val(intern_block) = intern_header;
+  }
 }
 
 static void intern_rec(value *dest)
@@ -233,9 +264,18 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
 
   if (whsize == 0) {
     intern_obj_table = NULL;
+    return;
+  }
+  wosize = Wosize_whsize(whsize);
+  if (wosize > Max_wosize) {
+    /* Round desired size up to next page */
+    asize_t request =
+      ((Bsize_wsize(whsize) + Page_size - 1) >> Page_log) << Page_log;
+    intern_extra_block = alloc_for_heap(request);
+    if (intern_extra_block == NULL) raise_out_of_memory();
+    intern_color = allocation_color(intern_extra_block);
+    intern_dest = intern_extra_block;
   } else {
-    wosize = Wosize_whsize(whsize);
-    if (wosize > Max_wosize) failwith("intern: structure too big");
     if (wosize < Max_young_wosize) {
       intern_block = alloc(wosize, String_tag);
     } else {
@@ -245,11 +285,28 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
     intern_color = Color_hd(intern_header);
     Assert (intern_color == White || intern_color == Black);
     intern_dest = (header_t *) Hp_val(intern_block);
-    obj_counter = 0;
-    if (num_objects > 0)
-      intern_obj_table = (value *) stat_alloc(num_objects * sizeof(value));
-    else
-      intern_obj_table = NULL;
+    intern_extra_block = NULL;
+  }
+  obj_counter = 0;
+  if (num_objects > 0)
+    intern_obj_table = (value *) stat_alloc(num_objects * sizeof(value));
+  else
+    intern_obj_table = NULL;
+}
+
+static void intern_add_to_heap(mlsize_t whsize)
+{
+  /* Add new heap chunk to heap if needed */
+  if (intern_extra_block != NULL) {
+    /* If heap chunk not filled totally, build free block at end */
+    asize_t request =
+      ((Bsize_wsize(whsize) + Page_size - 1) >> Page_log) << Page_log;
+    header_t * end_extra_block = intern_extra_block + Wsize_bsize(request);
+    Assert(intern_dest <= end_extra_block);
+    if (intern_dest < end_extra_block)
+      *intern_dest =
+        Make_header(Wosize_whsize(end_extra_block - intern_dest), 0, White);
+    add_to_heap(intern_extra_block);
   }
 }
 
@@ -284,6 +341,7 @@ value input_val(struct channel *chan)
   intern_alloc(whsize, num_objects);
   /* Fill it in */
   intern_rec(&res);
+  intern_add_to_heap(whsize);
   /* Free everything */
   stat_free(intern_input);
   if (intern_obj_table != NULL) stat_free(intern_obj_table);
@@ -325,6 +383,7 @@ value input_val_from_string(value str, long int ofs)
   intern_src = &Byte_u(str, ofs + 5*4); /* If a GC occurred */
   /* Fill it in */
   intern_rec(&obj);
+  intern_add_to_heap(whsize);
   /* Free everything */
   if (intern_obj_table != NULL) stat_free(intern_obj_table);
   return obj;
@@ -355,6 +414,7 @@ value input_value_from_malloc(char * data, long ofs)
   intern_alloc(whsize, num_objects);
   /* Fill it in */
   intern_rec(&obj);
+  intern_add_to_heap(whsize);
   /* Free everything */
   stat_free(intern_input);
   if (intern_obj_table != NULL) stat_free(intern_obj_table);

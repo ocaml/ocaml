@@ -50,6 +50,7 @@ Objective Caml 2.00:
     to toggle open channels between text and binary modes.
   - output_value and input_value check that the given channel is in
     binary mode.
+  - input_value no longer fails on very large marshalled data (> 16 Mbytes).
   - Module Arg: added option Rest.
   - Module Filename: temp_file no longer loops if temp dir doesn't exist.
   - Module List: added rev_append (tail-rec alternative to @).
