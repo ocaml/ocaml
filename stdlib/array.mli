@@ -6,7 +6,8 @@ val get: 'a array -> int -> 'a
 val set: 'a array -> int -> 'a -> unit
 external new: int -> 'a -> 'a array = "make_vect"
 val new_matrix: int -> int -> 'a -> 'a array array
-val concat: 'a array -> 'a array -> 'a array
+val append: 'a array -> 'a array -> 'a array
+val concat: 'a array list -> 'a array
 val sub: 'a array -> int -> int -> 'a array
 val copy: 'a array -> 'a array
 val fill: 'a array -> int -> int -> 'a -> unit

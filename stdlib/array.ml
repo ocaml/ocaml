@@ -32,13 +32,7 @@ let copy a =
     r
   end
 
-let concat_aux a1 a2 l1 l2 init =
-  let r = new (l1 + l2) init in
-  for i = 0 to l1 - 1 do unsafe_set r i (unsafe_get a1 i) done;  
-  for i = 0 to l2 - 1 do unsafe_set r (i + l1) (unsafe_get a1 i) done;  
-  r
-
-let concat a1 a2 =
+let append a1 a2 =
   let l1 = length a1 and l2 = length a2 in
   if l1 = 0 & l2 = 0 then [||] else begin
     let r = new (l1 + l2) (unsafe_get (if l1 > 0 then a1 else a2) 0) in
@@ -46,6 +40,26 @@ let concat a1 a2 =
     for i = 0 to l2 - 1 do unsafe_set r (i + l1) (unsafe_get a1 i) done;  
     r
   end
+
+let concat_aux init al =
+  let size = List.fold_left (fun sz a -> sz + length a) 0 al in
+  let res = new size init in
+  let pos = ref 0 in
+  List.iter
+    (fun a ->
+      for i = 0 to length a - 1 do
+        unsafe_set res !pos (unsafe_get a i);
+        incr pos
+      done)
+    al;
+  res
+
+let concat al =
+  let rec find_init = function
+      [] -> [||]
+    | a :: rem ->
+        if length a > 0 then concat_aux (unsafe_get a 0) al else find_init rem
+  in find_init al
 
 let sub a ofs len =
   if ofs < 0 or len < 0 or ofs + len > length a then invalid_arg "Array.sub"
