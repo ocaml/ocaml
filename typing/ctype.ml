@@ -532,10 +532,9 @@ and unify_core env a1 a2 t1 t2 =        (* Other cases *)
       raise exn
 
 and unify_list env tl1 tl2 =
-  try
-    List.iter2 (unify_rec env None None) tl1 tl2
-  with Invalid_argument _ ->
-    raise (Unify [])
+  if List.length tl1 <> List.length tl2 then
+    raise (Unify []);
+  List.iter2 (unify_rec env None None) tl1 tl2
 
 and unify_fields env ty1 ty2 =
   let (fields1, rest1) = flatten_fields ty1
@@ -744,10 +743,9 @@ let rec moregen env t1 t2 =
     raise exn
 
 and moregen_list env tl1 tl2 =
-  try
-    List.iter2 (moregen env) tl1 tl2
-  with Invalid_argument _ ->
-    raise (Unify [])
+  if List.length tl1 <> List.length tl2 then
+    raise (Unify []);
+  List.iter2 (moregen env) tl1 tl2
 
 and moregen_fields env ty1 ty2 =
   let (fields1, rest1) = flatten_fields ty1
@@ -1055,10 +1053,9 @@ let rec subtype_rec env vars t1 t2 =
       raise (Subtype ((t1, t2)::tr1, tr2))
 
 and subtype_list env vars tl1 tl2 =
-  try
-    List.iter2 (subtype_rec env vars) tl1 tl2
-  with Invalid_argument _ ->
-    raise (Subtype ([], []))
+  if List.length tl1 <> List.length tl2 then
+    raise (Subtype ([], []));
+  List.iter2 (subtype_rec env vars) tl1 tl2
 
 and subtype_fields env vars ty1 ty2 =
   let (fields1, rest1) = flatten_fields ty1 in
