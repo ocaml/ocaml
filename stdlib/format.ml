@@ -1001,7 +1001,9 @@ let fprintf_out str out ppf format =
          if i >= limit then format_invalid_arg "bad box format" format i else
          begin match format.[i] with
          | 'v' -> Pp_hovbox, succ i
-         | _ -> format_invalid_arg "bad box name ho" format i end
+         | c ->
+            format_invalid_arg
+              ("bad box name ho" ^ String.make 1 c) format i end
       | 'v' -> Pp_hvbox, succ i
       | c -> Pp_hbox, i
       end
