@@ -1,5 +1,5 @@
 C = sc
-COptions = -model far -d _STDC_ -w 7
+COptions = -model far -w 7
 AOptions = -model far -wb
 LinkOptions = -model far -msg nodup -compact -pad 0 -state nouse
 Libs = "{libraries}IntEnv.far.o" "{libraries}MacRuntime.o" ¶
@@ -20,7 +20,7 @@ OBJS = interp.a.o misc.c.o stacks.c.o fix_code.c.o startup.c.o main.c.o ¶
   intern.c.o ¶
   hash.c.o sys.c.o meta.c.o parsing.c.o gc_ctrl.c.o terminfo.c.o md5.c.o ¶
   obj.c.o lexing.c.o macintosh.c.o rotatecursor.c.o printexc.c.o callback.c.o ¶
-  debugger.c.o
+  debugger.c.o weak.c.o
 
 PPCOBJS = interp.c.x misc.c.x stacks.c.x fix_code.c.x startup.c.x main.c.x ¶
   freelist.c.x major_gc.c.x minor_gc.c.x memory.c.x alloc.c.x roots.c.x ¶
@@ -29,11 +29,11 @@ PPCOBJS = interp.c.x misc.c.x stacks.c.x fix_code.c.x startup.c.x main.c.x ¶
   intern.c.x ¶
   hash.c.x sys.c.x meta.c.x parsing.c.x gc_ctrl.c.x terminfo.c.x md5.c.x ¶
   obj.c.x lexing.c.x macintosh.c.x rotatecursor.c.x printexc.c.x callback.c.x ¶
-  debugger.c.x
+  debugger.c.x weak.c.x
 
 PRIMS = array.c compare.c extern.c floats.c gc_ctrl.c hash.c ¶
   intern.c interp.c ints.c io.c lexing.c md5.c meta.c obj.c parsing.c ¶
-  signals.c str.c sys.c terminfo.c callback.c
+  signals.c str.c sys.c terminfo.c callback.c weak.c
 
 all Ä ocamlrun libcamlrun.o libcamlrun.x
 
@@ -80,7 +80,7 @@ clean Ä
 	delete -i ocamlrun primitives prims.c opnames.h
 
 primitives Ä {PRIMS}
-	streamedit -d -e "/Å ([a-z0-9_]*)¨0'('Å'* ML *'/ print ¨0" {PRIMS} > primitives
+	streamedit -d -e "/ ([a-z0-9_]+)¨0 *'('Å'* ML *'/ print ¨0" {PRIMS} > primitives
 
 prims.c Ä primitives
 	echo '#include "mlvalues.h"' > prims.c

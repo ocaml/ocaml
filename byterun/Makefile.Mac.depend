@@ -38,6 +38,7 @@
                              minor_gc.h ¶
                              interp.h ¶
                              instruct.h ¶
+                             fix_code.h ¶
                              stacks.h
 
 "compare.c.x" Ä  compare.c ¶
@@ -281,7 +282,8 @@
                              gc.h ¶
                              gc_ctrl.h ¶
                              major_gc.h ¶
-                             roots.h
+                             roots.h ¶
+                             weak.h
 
 "md5.c.x" Ä  md5.c ¶
                         alloc.h ¶
@@ -487,6 +489,19 @@
                              fail.h ¶
                              io.h
 
+"weak.c.x" Ä  weak.c ¶
+                         alloc.h ¶
+                         misc.h ¶
+                         config.h ¶
+                         ::config:sm-Mac.h ¶
+                         mlvalues.h ¶
+                         fail.h ¶
+                         memory.h ¶
+                         gc.h ¶
+                         major_gc.h ¶
+                         freelist.h ¶
+                         minor_gc.h
+
 "wincmdline.c.x" Ä  wincmdline.c
 
 
@@ -529,6 +544,7 @@
                              minor_gc.h ¶
                              interp.h ¶
                              instruct.h ¶
+                             fix_code.h ¶
                              stacks.h
 
 "compare.c.o" Ä  compare.c ¶
@@ -772,7 +788,8 @@
                              gc.h ¶
                              gc_ctrl.h ¶
                              major_gc.h ¶
-                             roots.h
+                             roots.h ¶
+                             weak.h
 
 "md5.c.o" Ä  md5.c ¶
                         alloc.h ¶
@@ -977,6 +994,19 @@
                              mlvalues.h ¶
                              fail.h ¶
                              io.h
+
+"weak.c.o" Ä  weak.c ¶
+                         alloc.h ¶
+                         misc.h ¶
+                         config.h ¶
+                         ::config:sm-Mac.h ¶
+                         mlvalues.h ¶
+                         fail.h ¶
+                         memory.h ¶
+                         gc.h ¶
+                         major_gc.h ¶
+                         freelist.h ¶
+                         minor_gc.h
 
 "wincmdline.c.o" Ä  wincmdline.c
 

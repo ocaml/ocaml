@@ -56,3 +56,5 @@ string.cmoÄ char.cmi list.cmi string.cmi
 string.cmxÄ char.cmx list.cmx string.cmi 
 sys.cmoÄ sys.cmi 
 sys.cmxÄ sys.cmi 
+weak.cmoÄ obj.cmi weak.cmi 
+weak.cmxÄ obj.cmx weak.cmi 

@@ -213,7 +213,11 @@ value log10_float(f)              /* ML */
 value modf_float(f)              /* ML */
      value f;
 {
+#if macintosh
+  _float_eval fres;
+#else
   double fres;
+#endif
   value res;
   Push_roots(r, 2);
 

@@ -47,4 +47,4 @@ Echo "Set -e CAMLLIB `quote "{CAMLLIB}"`" >"{MPW}Startup Items:O'Caml"
 DoMake world
 DoMake bootstrap
 DoMake install
-DoMake realclean
+DoMake clean
