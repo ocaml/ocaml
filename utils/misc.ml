@@ -54,6 +54,13 @@ let rec list_remove x = function
   | hd :: tl ->
       if hd = x then tl else hd :: list_remove x tl
 
+let rec split_last = function
+    [] -> assert false
+  | [x] -> ([], x)
+  | hd :: tl ->
+      let (lst, last) = split_last tl in
+      (hd :: lst, last)
+
 (* Options *)
 
 let may f = function

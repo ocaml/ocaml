@@ -28,7 +28,9 @@ val replicate_list: 'a -> int -> 'a list
            all identical to [elem]. *)
 val list_remove: 'a -> 'a list -> 'a list
         (* [list_remove x l] returns a copy of [l] with the first
-           element equal to [x] removed *)
+           element equal to [x] removed. *)
+val split_last: 'a list -> 'a list * 'a
+        (* Return the last element and the other elements of the given list. *)
 
 val may: ('a -> unit) -> 'a option -> unit
 val may_map: ('a -> 'b) -> 'a option -> 'b option
