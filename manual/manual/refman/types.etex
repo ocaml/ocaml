@@ -25,10 +25,12 @@ method-type:
 The table below shows the relative precedences and associativity of
 operators and non-closed type constructions. The constructions with
 higher precedences come first.
+\ikwd{as\@\verb`as`}
 \begin{tableau}{|l|l|}{Operator}{Associativity}
 \entree{Type constructor application}{--}
 \entree{"*"}{--}
 \entree{"->"}{right}
+\entree{"as"}{--}
 \end{tableau}
 
 Type expressions denote types in definitions of data types as well as
