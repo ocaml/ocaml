@@ -580,7 +580,7 @@ let make_abbrev env
   Ctype.close_object obj_ty;
   Ctype.end_def ();
   List.iter Ctype.generalize obj_ty_params;
-  if not (List.for_all (Ctype.closed_schema false) obj_ty_params) then
+  if not (List.for_all Ctype.closed_schema obj_ty_params) then
     raise(Error(cl.pcl_loc,
                 Non_generalizable(obj_id, obj_ty_params)));
   begin match Ctype.closed_schema_verbose obj_ty with

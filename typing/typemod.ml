@@ -217,14 +217,11 @@ let check_unique_names sg =
     List.iter check_item sg
 
 (* Check that all core type schemes in a structure are closed *)
-(* Also, fully generalize all types (set all type levels to generic
-   level) *)
 
 let closed_class classty =
-  (* Also make associated abbreviations fully generic *)
-  List.for_all (Ctype.closed_schema true) classty.cty_params &
-  List.for_all (Ctype.closed_schema true) classty.cty_args &
-  Vars.fold (fun _ (_, ty) -> (or) (Ctype.closed_schema true ty))
+  List.for_all Ctype.closed_schema classty.cty_params &
+  List.for_all Ctype.closed_schema classty.cty_args &
+  Vars.fold (fun _ (_, ty) -> (or) (Ctype.closed_schema ty))
             classty.cty_vars true
 
 let rec closed_modtype = function
@@ -233,7 +230,7 @@ let rec closed_modtype = function
   | Tmty_functor(id, param, body) -> closed_modtype body
 
 and closed_signature_item = function
-    Tsig_value(id, desc) -> Ctype.closed_schema true desc.val_type
+    Tsig_value(id, desc) -> Ctype.closed_schema desc.val_type
   | Tsig_module(id, mty) -> closed_modtype mty
   | Tsig_class(id, classty) -> closed_class classty
   | _ -> true
@@ -242,7 +239,7 @@ let check_nongen_scheme env = function
     Tstr_value(rec_flag, pat_exp_list) ->
       List.iter
         (fun (pat, exp) ->
-          if not (Ctype.closed_schema true exp.exp_type) then
+          if not (Ctype.closed_schema exp.exp_type) then
             raise(Error(exp.exp_loc, Non_generalizable exp.exp_type)))
         pat_exp_list
   | Tstr_class cl ->
