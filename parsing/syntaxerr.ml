@@ -30,7 +30,7 @@ let report_error ppf = function
       then fprintf ppf "Syntax error: '%s' expected, \
                    the highlighted '%s' might be unmatched" closing opening
       else begin
-        fprintf ppf "%aSyntax error: '%s' expected@?"
+        fprintf ppf "%aSyntax error: '%s' expected@."
           Location.print closing_loc closing;
         fprintf ppf "%aThis '%s' might be unmatched"
           Location.print opening_loc opening 
