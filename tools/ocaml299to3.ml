@@ -115,9 +115,11 @@ let _ =
     print_endline "Usage: ocaml299to3 <source file> ...";
     print_endline "Description:";
     print_endline
-      "Convert Objective Caml implementation or interface files to a syntax";
+      "Convert Objective Caml 2.99 O'Labl-style labels in implementation files to";
     print_endline
-      "compatible with version 3. Old files are renamed to <file>.bak.";
+      "a syntax compatible with version 3. Other syntactic changes are not handled.";
+    print_endline "Old files are renamed to <file>.bak.";
+    print_endline "Interface files do not need label syntax conversion.";
     exit 0
   end;
   for i = 1 to Array.length Sys.argv - 1 do
