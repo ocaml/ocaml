@@ -32,12 +32,12 @@ TYPING=typing/ident.cmo typing/path.cmo typing/typedtree.cmo \
 
 COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/dectree.cmo bytecomp/matching.cmo \
-  bytecomp/translcore.cmo bytecomp/translmod.cmo
+  bytecomp/translcore.cmo bytecomp/translmod.cmo \
+  bytecomp/runtimedef.cmo
 
 BYTECOMP=bytecomp/meta.cmo bytecomp/instruct.cmo bytecomp/bytegen.cmo \
   bytecomp/printinstr.cmo bytecomp/opcodes.cmo bytecomp/emitcode.cmo \
-  bytecomp/runtimedef.cmo bytecomp/symtable.cmo \
-  bytecomp/bytelibrarian.cmo bytecomp/bytelink.cmo
+  bytecomp/symtable.cmo bytecomp/bytelibrarian.cmo bytecomp/bytelink.cmo
 
 ASMCOMP=asmcomp/arch.cmo asmcomp/cmm.cmo asmcomp/printcmm.cmo \
   asmcomp/clambda.cmo asmcomp/compilenv.cmo \
@@ -199,7 +199,8 @@ clean::
 utils/config.ml: utils/config.mlp Makefile.config
 	@rm -f utils/config.ml
 	sed -e 's|%%LIBDIR%%|$(LIBDIR)|' \
-            -e 's|%%CC%%|$(CC) $(CCLINKFLAGS) $(LOWADDRESSES)|' \
+            -e 's|%%BYTECC%%|$(BYTECC) $(CCLINKFLAGS) $(LOWADDRESSES)|' \
+            -e 's|%%NATIVECC%%|$(NATIVECC) $(CCLINKFLAGS)|' \
             -e 's|%%CCLIBS%%|$(CCLIBS)|' \
             utils/config.mlp > utils/config.ml
 	@chmod -w utils/config.ml
