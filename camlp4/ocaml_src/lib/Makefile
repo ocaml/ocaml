@@ -44,9 +44,9 @@ install:
 installopt:
 	cp $(TARGET:.cma=.cmxa) *.cmx $(LIBDIR)/camlp4/.
 	if test -f $(TARGET:.cma=.lib); then \
-		cp $(TARGET:.cma=.lib) $(LIBDIR)/camlp4/.; \
+	  cp $(TARGET:.cma=.lib) $(LIBDIR)/camlp4/.; \
 	else \
-		tar cf - $(TARGET:.cma=.a) | (cd $(LIBDIR)/camlp4/.; tar xf -); \
+	  tar cf - $(TARGET:.cma=.a) | (cd $(LIBDIR)/camlp4/.; tar xf -); \
 	fi
 
 include .depend

@@ -40,9 +40,7 @@ value loct_create () = (ref (Array.create 1024 None), ref False);
 value loct_func (loct, ov) i =
   match
     if i < 0 || i >= Array.length loct.val then
-      if ov.val then
-        Array.unsafe_get loct.val (Array.length loct.val - 1)
-      else None
+      if ov.val then Some (0, 0) else None
     else Array.unsafe_get loct.val i
   with
   [ Some loc -> loc

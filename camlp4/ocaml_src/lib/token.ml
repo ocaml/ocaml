@@ -39,8 +39,7 @@ let locerr () = invalid_arg "Lexer: location function";;
 let loct_create () = ref (Array.create 1024 None), ref false;;
 let loct_func (loct, ov) i =
   match
-    if i < 0 || i >= Array.length !loct then
-      if !ov then Array.unsafe_get !loct (Array.length !loct - 1) else None
+    if i < 0 || i >= Array.length !loct then if !ov then Some (0, 0) else None
     else Array.unsafe_get !loct i
   with
     Some loc -> loc

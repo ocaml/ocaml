@@ -8,7 +8,7 @@ let list_remove x l =
   List.fold_right (fun e l -> if e = x then l else e :: l) l []
 ;;
 
-let defined = ref ["CAMLP4_300"; "NEWSEQ"];;
+let defined = ref ["OCAML_305"; "NEWSEQ"];;
 let define x = defined := x :: !defined;;
 let undef x = defined := list_remove x !defined;;
 

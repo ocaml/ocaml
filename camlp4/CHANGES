@@ -1,10 +1,12 @@
-Camlp4 Version 3.04+1
+Camlp4 Version 3.04+5
 ---------------------
 
 - [01 Fev 02] Fixed bug in token.ml: the location function provided by
   lexer_func_of_parser, lexer_func_of_ocamllex and make_stream_and_location
   could raise Invalid_argument "Array.make" for big files if the number
   of read tokens overflows the maximum arrays size (Sys.max_array_length).
+  The bug is not really fixed: in case of this overflow, the returned
+  location is (0, 0) (but the program does not fail).
 - [28 Jan 02] Fixed bug in pa_o when parsing class_types. A horrible hack
   had to be programmed to be able to treat them correctly.
 - [28 Jan 02] Fixed bug in OCaml toplevel when loading camlp4: the directives
