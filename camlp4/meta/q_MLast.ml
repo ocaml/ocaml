@@ -560,9 +560,12 @@ EXTEND
     [ [ i = patt_label_ident; "="; p = ipatt -> Tuple [i; p] ] ]
   ;
   type_declaration:
-    [ [ n = lident; tpl = SLIST0 type_parameter; "="; tk = ctyp;
+    [ [ n = type_patt; tpl = SLIST0 type_parameter; "="; tk = ctyp;
         cl = SLIST0 constrain ->
-          Tuple [Tuple [Loc; n]; tpl; tk; cl] ] ]
+          Tuple [n; tpl; tk; cl] ] ]
+  ;
+  type_patt:
+    [ [ n = a_LIDENT -> Tuple [Loc; n] ] ]
   ;
   constrain:
     [ [ "constraint"; t1 = ctyp; "="; t2 = ctyp -> Tuple [t1; t2] ] ]
@@ -577,24 +580,18 @@ EXTEND
       [ t1 = SELF; "=="; t2 = SELF -> Node "TyMan" [Loc; t1; t2] ]
     | LEFTA
       [ t1 = SELF; "as"; t2 = SELF -> Node "TyAli" [Loc; t1; t2] ]
-    | RIGHTA
+    | "arrow" RIGHTA
       [ t1 = SELF; "->"; t2 = SELF -> Node "TyArr" [Loc; t1; t2] ]
-    | NONA
-      [ a = TILDEIDENTCOLON; ":"; t = SELF -> Node "TyLab" [Loc; Str a; t]
-      | "~"; a = anti_; ":"; t = SELF -> Node "TyLab" [Loc; a; t]
-      | "?"; a = lident; ":"; t = SELF -> Node "TyOlb" [Loc; a; t] ]
     | LEFTA
       [ t1 = SELF; t2 = SELF -> Node "TyApp" [Loc; t1; t2] ]
     | LEFTA
       [ t1 = SELF; "."; t2 = SELF -> Node "TyAcc" [Loc; t1; t2] ]
     | "simple"
-      [ "'"; a = lident -> Node "TyQuo" [Loc; a]
+      [ a = a_ctyp -> a
+      | "'"; i = ident -> Node "TyQuo" [Loc; i]
       | "_" -> Node "TyAny" [Loc]
-      | a = LIDENT -> Node "TyLid" [Loc; Str a]
-      | a = UIDENT -> Node "TyUid" [Loc; Str a]
-      | a = anti_lid -> Node "TyLid" [Loc; a]
-      | a = anti_uid -> Node "TyUid" [Loc; a]
-      | a = anti_ -> a
+      | i = a_LIDENT -> Node "TyLid" [Loc; i]
+      | i = a_UIDENT -> Node "TyUid" [Loc; i]
       | "("; t = SELF; "*"; tl = SLIST1 ctyp SEP "*"; ")" ->
           Node "TyTup" [Loc; Cons t tl]
       | "("; tl = anti_list; ")" -> Node "TyTup" [Loc; tl]
@@ -602,22 +599,7 @@ EXTEND
       | "["; cdl = SLIST0 constructor_declaration SEP "|"; "]" ->
           Node "TySum" [Loc; cdl]
       | "{"; ldl = SLIST1 label_declaration SEP ";"; "}" ->
-          Node "TyRec" [Loc; ldl]
-      | "[|"; rfl = SLIST0 row_field SEP "|"; "|]" ->
-          Node "TyVrn" [Loc; rfl; Option None]
-      | "[|"; ">"; rfl = SLIST1 row_field SEP "|"; "|]" ->
-          Node "TyVrn" [Loc; rfl; Option (Some (Option None))]
-      | "[|"; "<"; rfl = SLIST1 row_field SEP "|"; sl = opt_tag_list; "|]" ->
-          Node "TyVrn" [Loc; rfl; Option (Some (Option (Some sl)))] ] ]
-  ;
-  row_field:
-    [ [ "`"; i = lident -> Tuple [i; Bool True; List []]
-      | "`"; i = lident; "of"; oa = OPT "&"; l = SLIST1 ctyp SEP "&" ->
-          Tuple [i; Bool (oa <> None); l] ] ]
-  ;
-  opt_tag_list:
-    [ [ ">"; sl = SLIST1 lident -> sl
-      | -> List [] ] ]
+          Node "TyRec" [Loc; ldl] ] ]
   ;
   constructor_declaration:
     [ [ ci = a_UIDENT; "of"; cal = SLIST1 ctyp SEP "and" ->
@@ -625,47 +607,281 @@ EXTEND
       | ci = a_UIDENT -> Tuple [Loc; ci; List []] ] ]
   ;
   label_declaration:
-    [ [ i = lident; ":"; mf = mutable_flag; t = ctyp ->
+    [ [ i = a_LIDENT; ":"; mf = mutable_flag; t = ctyp ->
           Tuple [Loc; i; mf; t] ] ]
   ;
   ident:
-    [ [ i = LIDENT -> Str i
-      | i = UIDENT -> Str i
-      | a = anti_ -> a ] ]
-  ;
-  lident:
-    [ [ i = LIDENT -> Str i
-      | a = anti_ -> a ] ]
+    [ [ i = a_LIDENT -> i
+      | i = a_UIDENT -> i ] ]
   ;
   mod_ident:
     [ RIGHTA
-      [ i = UIDENT -> List [Str i]
-      | i = LIDENT -> List [Str i]
-      | i = anti_ -> i
-      | m = anti_lid -> List [m]
-      | m = anti_uid; "."; i = SELF -> Cons m i
-      | m = UIDENT; "."; i = SELF -> Cons (Str m) i ] ]
+      [ i = anti_ -> i
+      | i = a_UIDENT -> List [i]
+      | i = a_LIDENT -> List [i]
+      | i = a_UIDENT; "."; j = SELF -> Cons i j ] ]
   ;
   direction_flag:
     [ [ "to" -> Bool True
       | "downto" -> Bool False
       | a = anti_to -> a ] ]
   ;
-  rec_flag:
-    [ [ a = anti_rec -> a
-      | "rec" -> Bool True
-      | -> Bool False ] ]
+  (* Objects and Classes *)
+  str_item:
+    [ [ "class"; cd = SLIST1 class_declaration SEP "and" ->
+          Node "StCls" [Loc; cd]
+      | "class"; "type"; ctd = SLIST1 class_type_declaration SEP "and" ->
+          Node "StClt" [Loc; ctd] ] ]
   ;
+  sig_item:
+    [ [ "class"; cd = SLIST1 class_description SEP "and" ->
+          Node "SgCls" [Loc; cd]
+      | "class"; "type"; ctd = SLIST1 class_type_declaration SEP "and" ->
+          Node "SgClt" [Loc; ctd] ] ]
+  ;
+  class_declaration:
+    [ [ vf = virtual_flag; i = a_LIDENT; ctp = class_type_parameters;
+        cfb = class_fun_binding ->
+          Record
+            [("ciLoc", Loc); ("ciVir", vf); ("ciPrm", ctp); ("ciNam", i);
+             ("ciExp", cfb)] ] ]
+  ;
+  class_fun_binding:
+    [ [ "="; ce = class_expr -> ce
+      | ":"; ct = class_type; "="; ce = class_expr ->
+          Node "CeTyc" [Loc; ce; ct]
+      | p = ipatt; cfb = SELF -> Node "CeFun" [Loc; p; cfb] ] ]
+  ;
+  class_type_parameters:
+    [ [ -> Tuple [Loc; List []]
+      | "["; tpl = SLIST1 type_parameter SEP ","; "]" -> Tuple [Loc; tpl] ] ]
+  ;
+  class_fun_def:
+    [ [ p = patt LEVEL "simple"; "->"; ce = class_expr ->
+          Node "CeFun" [Loc; p; ce]
+      | p = patt LEVEL "simple"; cfd = SELF -> Node "CeFun" [Loc; p; cfd] ] ]
+  ;
+  class_expr:
+    [ "top"
+      [ "fun"; cfd = class_fun_def -> cfd
+      | "let"; rf = SOPT "rec"; lb = SLIST1 let_binding SEP "and"; "in";
+        ce = SELF ->
+          Node "CeLet" [Loc; o2b rf; lb; ce] ]
+    | "apply" NONA
+      [ ce = SELF; e = expr LEVEL "simple" -> Node "CeApp" [Loc; ce; e] ]
+    | "simple"
+      [ a = anti_ -> a
+      | ci = class_longident; "["; ctcl = SLIST0 ctyp SEP ","; "]" ->
+          Node "CeCon" [Loc; ci; ctcl]
+      | ci = class_longident -> Node "CeCon" [Loc; ci; List []]
+      | "object"; cspo = SOPT class_self_patt; cf = class_structure; "end" ->
+          Node "CeStr" [Loc; cspo; cf]
+      | "("; ce = SELF; ":"; ct = class_type; ")" ->
+          Node "CeTyc" [Loc; ce; ct]
+      | "("; ce = SELF; ")" -> ce ] ]
+  ;
+  class_structure:
+    [ [ cf = SLIST0 [ cf = class_str_item; ";" -> cf ] -> cf ] ]
+  ;
+  class_self_patt:
+    [ [ "("; p = patt; ")" -> p
+      | "("; p = patt; ":"; t = ctyp; ")" -> Node "PaTyc" [Loc; p; t] ] ]
+  ;
+  class_str_item:
+    [ [ a = a_class_str_item -> a
+      | "declare"; st = SLIST0 [ s = class_str_item; ";" -> s ]; "end" ->
+          Node "CrDcl" [Loc; st]
+      | "inherit"; ce = class_expr; pb = SOPT [ "as"; i = a_LIDENT -> i ] ->
+          Node "CrInh" [Loc; ce; pb]
+      | "value"; (lab, mf, e) = cvalue -> Node "CrVal" [Loc; lab; mf; e]
+      | "method"; "virtual"; "private"; l = label; ":"; t = ctyp ->
+          Node "CrVir" [Loc; l; Bool True; t]
+      | "method"; "virtual"; l = label; ":"; t = ctyp ->
+          Node "CrVir" [Loc; l; Bool False; t]
+      | "method"; "private"; l = label; fb = fun_binding ->
+          Node "CrMth" [Loc; l; Bool True; fb]
+      | "method"; l = label; fb = fun_binding ->
+          Node "CrMth" [Loc; l; Bool False; fb]
+      | "type"; t1 = ctyp; "="; t2 = ctyp -> Node "CrCtr" [Loc; t1; t2]
+      | "initializer"; se = expr -> Node "CrIni" [Loc; se] ] ]
+  ;
+  cvalue:
+    [ [ mf = mutable_flag; l = label; "="; e = expr -> (l, mf, e)
+      | mf = mutable_flag; l = label; ":"; t = ctyp; "="; e = expr ->
+          (l, mf, Node "ExTyc" [Loc; e; t])
+      | mf = mutable_flag; l = label; ":"; t1 = ctyp; ":>"; t2 = ctyp; "=";
+        e = expr ->
+          (l, mf, Node "ExCoe" [Loc; e; Option (Some t1); t2])
+      | mf = mutable_flag; l = label; ":>"; t = ctyp; "="; e = expr ->
+          (l, mf, Node "ExCoe" [Loc; e; Option None; t]) ] ]
+  ;
+  label:
+    [ [ i = a_LIDENT -> i ] ]
+  ;
+  class_type:
+    [ [ a = a_class_type -> a
+      | "["; t = ctyp; "]"; "->"; ct = SELF -> Node "CtFun" [Loc; t; ct]
+      | id = clty_longident; "["; tl = SLIST1 ctyp SEP ","; "]" ->
+          Node "CtCon" [Loc; id; tl]
+      | id = clty_longident -> Node "CtCon" [Loc; id; List []]
+      | "object"; cst = SOPT class_self_type;
+        csf = SLIST0 [ csf = class_sig_item; ";" -> csf ]; "end" ->
+          Node "CtSig" [Loc; cst; csf] ] ]
+  ;
+  class_self_type:
+    [ [ "("; t = ctyp; ")" -> t ] ]
+  ;
+  class_sig_item:
+    [ [ a = a_class_sig_item -> a
+      | "declare"; st = SLIST0 [ s = class_sig_item; ";" -> s ]; "end" ->
+          Node "CgDcl" [Loc; st]
+      | "inherit"; cs = class_type -> Node "CgInh" [Loc; cs]
+      | "value"; mf = mutable_flag; l = label; ":"; t = ctyp ->
+          Node "CgVal" [Loc; l; mf; t]
+      | "method"; "virtual"; "private"; l = label; ":"; t = ctyp ->
+          Node "CgVir" [Loc; l; Bool True; t]
+      | "method"; "virtual"; l = label; ":"; t = ctyp ->
+          Node "CgVir" [Loc; l; Bool False; t]
+      | "method"; "private"; l = label; ":"; t = ctyp ->
+          Node "CgMth" [Loc; l; Bool True; t]
+      | "method"; l = label; ":"; t = ctyp ->
+          Node "CgMth" [Loc; l; Bool False; t]
+      | "type"; t1 = ctyp; "="; t2 = ctyp -> Node "CgCtr" [Loc; t1; t2] ] ]
+  ;
+  class_description:
+    [ [ vf = virtual_flag; n = a_LIDENT; ctp = class_type_parameters; ":";
+        ct = class_type ->
+          Record
+            [("ciLoc", Loc); ("ciVir", vf); ("ciPrm", ctp); ("ciNam", n);
+             ("ciExp", ct)] ] ]
+  ;
+  class_type_declaration:
+    [ [ vf = virtual_flag; n = a_LIDENT; ctp = class_type_parameters; "=";
+        cs = class_type ->
+          Record
+            [("ciLoc", Loc); ("ciVir", vf); ("ciPrm", ctp); ("ciNam", n);
+             ("ciExp", cs)] ] ]
+  ;
+  expr: LEVEL "apply"
+    [ LEFTA
+      [ "new"; i = class_longident -> Node "ExNew" [Loc; i] ] ]
+  ;
+  expr: LEVEL "."
+    [ [ e = SELF; "#"; lab = label -> Node "ExSnd" [Loc; e; lab] ] ]
+  ;
+  expr: LEVEL "simple"
+    [ [ "("; e = SELF; ":"; t = ctyp; ":>"; t2 = ctyp; ")" ->
+          Node "ExCoe" [Loc; e; Option (Some t); t2]
+      | "("; e = SELF; ":>"; t = ctyp; ")" ->
+          Node "ExCoe" [Loc; e; Option None; t]
+      | "{<"; ">}" -> Node "ExOvr" [Loc; List []]
+      | "{<"; fel = field_expr_list; ">}" -> Node "ExOvr" [Loc; List fel]
+      | "{<"; fel = anti_list; ">}" -> Node "ExOvr" [Loc; fel] ] ]
+  ;
+  field_expr_list:
+    [ [ l = label; "="; e = expr; ";"; fel = SELF -> [Tuple [l; e] :: fel]
+      | l = label; "="; e = expr; ";" -> [Tuple [l; e]]
+      | l = label; "="; e = expr -> [Tuple [l; e]] ] ]
+  ;
+  ctyp: LEVEL "simple"
+    [ [ "#"; id = class_longident -> Node "TyCls" [Loc; id]
+      | "<"; (ml, v) = meth_list; ">" -> Node "TyObj" [Loc; ml; v]
+      | "<"; ">" -> Node "TyObj" [Loc; List []; Bool False] ] ]
+  ;
+  meth_list:
+    [ [ a = anti_list -> (a, Bool False)
+      | a = anti_list; b = anti_ -> (a, b)
+      | f = field; ";"; (ml, v) = SELF -> (Cons f ml, v)
+      | f = field; ";" -> (List [f], Bool False)
+      | f = field -> (List [f], Bool False)
+      | ".." -> (List [], Bool True) ] ]
+  ;
+  field:
+    [ [ lab = a_LIDENT; ":"; t = ctyp -> Tuple [lab; t] ] ]
+  ;
+  clty_longident:
+    [ [ l = longid -> List l
+      | a = anti_list -> a ] ]
+  ;
+  class_longident:
+    [ [ l = longid -> List l
+      | a = anti_list -> a ] ]
+  ;
+  longid:
+    [ [ m = a_UIDENT; "."; l = SELF -> [m :: l]
+      | i = a_LIDENT -> [i] ] ]
+  ;
+  (* Labels *)
+  ctyp: AFTER "arrow"
+    [ NONA
+      [ a = TILDEIDENTCOLON; ":"; t = SELF -> Node "TyLab" [Loc; Str a; t]
+      | "~"; a = anti_; ":"; t = SELF -> Node "TyLab" [Loc; a; t]
+      | "?"; a = a_LIDENT; ":"; t = SELF -> Node "TyOlb" [Loc; a; t] ] ]
+  ;
+  ctyp: LEVEL "simple"
+    [ [ "[|"; rfl = SLIST0 row_field SEP "|"; "|]" ->
+          Node "TyVrn" [Loc; rfl; Option None]
+      | "[|"; ">"; rfl = SLIST1 row_field SEP "|"; "|]" ->
+          Node "TyVrn" [Loc; rfl; Option (Some (Option None))]
+      | "[|"; "<"; rfl = SLIST1 row_field SEP "|"; sl = opt_tag_list; "|]" ->
+          Node "TyVrn" [Loc; rfl; Option (Some (Option (Some sl)))] ] ]
+  ;
+  opt_tag_list:
+    [ [ ">"; sl = SLIST1 a_LIDENT -> sl
+      | -> List [] ] ]
+  ;
+  row_field:
+    [ [ "`"; i = a_LIDENT -> Tuple [i; Bool True; List []]
+      | "`"; i = a_LIDENT; "of"; oa = OPT "&"; l = SLIST1 ctyp SEP "&" ->
+          Tuple [i; Bool (oa <> None); l] ] ]
+  ;
+  patt: BEFORE "simple"
+    [ NONA
+      [ "~"; i = a_LIDENT; ":"; p = SELF -> Node "PaLab" [Loc; i; p]
+      | "~"; i = a_LIDENT -> Node "PaLab" [Loc; i; Node "PaLid" [Loc; i]]
+      | "?"; i = a_LIDENT; ":"; "("; p = SELF; e = OPT [ "="; e = expr -> e ];
+        ")" ->
+          Node "PaOlb" [Loc; i; p; Option e]
+      | "?"; i = a_LIDENT; ":"; "("; p = SELF; ":"; t = ctyp;
+        e = OPT [ "="; e = expr -> e ]; ")" ->
+          let p = Node "PaTyc" [Loc; p; t] in
+          Node "PaOlb" [Loc; i; p; Option e]
+      | "?"; i = a_LIDENT ->
+          Node "PaOlb" [Loc; i; Node "PaLid" [Loc; i]; Option None]
+      | "?"; "("; i = a_LIDENT; "="; e = expr; ")" ->
+          Node "PaOlb" [Loc; i; Node "PaLid" [Loc; i]; Option (Some e)]
+      | "?"; "("; i = a_LIDENT; ":"; t = ctyp; "="; e = expr; ")" ->
+          let p = Node "PaTyc" [Loc; Node "PaLid" [Loc; i]; t] in
+          Node "PaOlb" [Loc; i; p; Option (Some e)]
+      | "`"; s = ident -> Node "PaVrn" [Loc; s] ] ]
+  ;
+  expr: AFTER "apply"
+    [ "label" NONA
+      [ lab = TILDEIDENTCOLON; e = SELF -> Node "ExLab" [Loc; Str lab; e]
+      | lab = TILDEIDENT ->
+          Node "ExLab" [Loc; Str lab; Node "ExLid" [Loc; Str lab]]
+      | lab = QUESTIONIDENTCOLON; e = SELF -> Node "ExOlb" [Loc; Str lab; e]
+      | lab = QUESTIONIDENT ->
+          Node "ExOlb" [Loc; Str lab; Node "ExLid" [Loc; Str lab]]
+      | "~"; a = anti_; ":"; e = SELF -> Node "ExLab" [Loc; a; e]
+      | "~"; a = anti_ -> Node "ExLab" [Loc; a; Node "ExLid" [Loc; a]]
+      | "?"; a = anti_; ":"; e = SELF -> Node "ExOlb" [Loc; a; e]
+      | "?"; a = anti_ -> Node "ExOlb" [Loc; a; Node "ExLid" [Loc; a]] ] ]
+  ;
+  expr: LEVEL "simple"
+    [ [ "`"; s = ident -> Node "ExVrn" [Loc; s] ] ]
+  ;
+
   mutable_flag:
     [ [ a = anti_mut -> a
       | "mutable" -> Bool True
       | -> Bool False ] ]
   ;
   str_item:
-    [ [ "#"; n = lident; dp = dir_param -> Node "StDir" [Loc; n; dp] ] ]
+    [ [ "#"; n = a_LIDENT; dp = dir_param -> Node "StDir" [Loc; n; dp] ] ]
   ;
   sig_item:
-    [ [ "#"; n = lident; dp = dir_param -> Node "SgDir" [Loc; n; dp] ] ]
+    [ [ "#"; n = a_LIDENT; dp = dir_param -> Node "SgDir" [Loc; n; dp] ] ]
   ;
   dir_param:
     [ [ a = anti_opt -> a
@@ -699,6 +915,19 @@ EXTEND
   a_ipatt:
     [ [ a = ANTIQUOT "pat" -> antiquot "pat" loc a
       | a = ANTIQUOT "" -> antiquot "" loc a ] ]
+  ;
+  a_ctyp:
+    [ [ a = ANTIQUOT "typ" -> antiquot "typ" loc a
+      | a = ANTIQUOT "" -> antiquot "" loc a ] ]
+  ;
+  a_class_str_item:
+    [ [ a = ANTIQUOT "" -> antiquot "" loc a ] ]
+  ;
+  a_class_sig_item:
+    [ [ a = ANTIQUOT "" -> antiquot "" loc a ] ]
+  ;
+  a_class_type:
+    [ [ a = ANTIQUOT "" -> antiquot "" loc a ] ]
   ;
   a_UIDENT:
     [ [ a = ANTIQUOT "uid" -> antiquot "uid" loc a
@@ -736,12 +965,6 @@ EXTEND
   anti_anti:
     [ [ a = ANTIQUOT "anti" -> antiquot "anti" loc a ] ]
   ;
-  anti_as:
-    [ [ a = ANTIQUOT "as" -> antiquot "as" loc a ] ]
-  ;
-  anti_lid:
-    [ [ a = ANTIQUOT "lid" -> antiquot "lid" loc a ] ]
-  ;
   anti_list:
     [ [ a = ANTIQUOT "list" -> antiquot "list" loc a ] ]
   ;
@@ -751,14 +974,8 @@ EXTEND
   anti_opt:
     [ [ a = ANTIQUOT "opt" -> antiquot "opt" loc a ] ]
   ;
-  anti_rec:
-    [ [ a = ANTIQUOT "rec" -> antiquot "rec" loc a ] ]
-  ;
   anti_to:
     [ [ a = ANTIQUOT "to" -> antiquot "to" loc a ] ]
-  ;
-  anti_uid:
-    [ [ a = ANTIQUOT "uid" -> antiquot "uid" loc a ] ]
   ;
   (* Compatibility old syntax of sequences *)
   expr: LEVEL "top"
@@ -774,243 +991,10 @@ EXTEND
           let _ = warning_seq () in
           Node "ExWhi" [Loc; e; seq] ] ]
   ;
-  (* Labels and variants *)
-  expr: AFTER "apply"
-    [ "label" NONA
-      [ lab = TILDEIDENTCOLON; e = SELF -> Node "ExLab" [Loc; Str lab; e]
-      | lab = TILDEIDENT ->
-          Node "ExLab" [Loc; Str lab; Node "ExLid" [Loc; Str lab]]
-      | lab = QUESTIONIDENTCOLON; e = SELF -> Node "ExOlb" [Loc; Str lab; e]
-      | lab = QUESTIONIDENT ->
-          Node "ExOlb" [Loc; Str lab; Node "ExLid" [Loc; Str lab]]
-      | "~"; a = anti_; ":"; e = SELF -> Node "ExLab" [Loc; a; e]
-      | "~"; a = anti_ -> Node "ExLab" [Loc; a; Node "ExLid" [Loc; a]]
-      | "?"; a = anti_; ":"; e = SELF -> Node "ExOlb" [Loc; a; e]
-      | "?"; a = anti_ -> Node "ExOlb" [Loc; a; Node "ExLid" [Loc; a]] ] ]
-  ;
-  expr: LEVEL "simple"
-    [ [ "`"; s = ident -> Node "ExVrn" [Loc; s] ] ]
-  ;
-  patt: BEFORE "simple"
-    [ NONA
-      [ "~"; i = lident; ":"; p = SELF -> Node "PaLab" [Loc; i; p]
-      | "~"; i = lident -> Node "PaLab" [Loc; i; Node "PaLid" [Loc; i]]
-      | "?"; i = lident; ":"; "("; p = SELF; e = OPT [ "="; e = expr -> e ];
-        ")" ->
-          Node "PaOlb" [Loc; i; p; Option e]
-      | "?"; i = lident; ":"; "("; p = SELF; ":"; t = ctyp;
-        e = OPT [ "="; e = expr -> e ]; ")" ->
-          let p = Node "PaTyc" [Loc; p; t] in
-          Node "PaOlb" [Loc; i; p; Option e]
-      | "?"; i = lident ->
-          Node "PaOlb" [Loc; i; Node "PaLid" [Loc; i]; Option None]
-      | "?"; "("; i = lident; "="; e = expr; ")" ->
-          Node "PaOlb" [Loc; i; Node "PaLid" [Loc; i]; Option (Some e)]
-      | "?"; "("; i = lident; ":"; t = ctyp; "="; e = expr; ")" ->
-          let p = Node "PaTyc" [Loc; Node "PaLid" [Loc; i]; t] in
-          Node "PaOlb" [Loc; i; p; Option (Some e)]
-      | "`"; s = ident -> Node "PaVrn" [Loc; s] ] ]
-  ;
-  (* Objects and Classes *)
-  str_item:
-    [ [ "class"; cd = SLIST1 class_declaration SEP "and" ->
-          Node "StCls" [Loc; cd]
-      | "class"; "type"; ctd = SLIST1 class_type_declaration SEP "and" ->
-          Node "StClt" [Loc; ctd] ] ]
-  ;
-  sig_item:
-    [ [ "class"; cd = SLIST1 class_description SEP "and" ->
-          Node "SgCls" [Loc; cd]
-      | "class"; "type"; ctd = SLIST1 class_type_declaration SEP "and" ->
-          Node "SgClt" [Loc; ctd] ] ]
-  ;
-  (* Class expressions *)
-  class_declaration:
-    [ [ vf = virtual_flag; i = lident; ctp = class_type_parameters;
-        cfb = class_fun_binding ->
-          Record
-            [("ciLoc", Loc); ("ciVir", vf); ("ciPrm", ctp); ("ciNam", i);
-             ("ciExp", cfb)] ] ]
-  ;
-  class_fun_binding:
-    [ [ "="; ce = class_expr -> ce
-      | ":"; ct = class_type; "="; ce = class_expr ->
-          Node "CeTyc" [Loc; ce; ct]
-      | p = patt LEVEL "simple"; cfb = SELF -> Node "CeFun" [Loc; p; cfb] ] ]
-  ;
-  class_type_parameters:
-    [ [ -> Tuple [Loc; List []]
-      | "["; tpl = SLIST1 type_parameter SEP ","; "]" -> Tuple [Loc; tpl] ] ]
-  ;
-  class_fun_def:
-    [ [ p = patt LEVEL "simple"; "->"; ce = class_expr ->
-          Node "CeFun" [Loc; p; ce]
-      | p = patt LEVEL "simple"; cfd = SELF -> Node "CeFun" [Loc; p; cfd] ] ]
-  ;
-  class_expr:
-    [ "top"
-      [ "fun"; cfd = class_fun_def -> cfd
-      | "let"; rf = rec_flag; lb = SLIST1 let_binding SEP "and"; "in";
-        ce = SELF ->
-          Node "CeLet" [Loc; rf; lb; ce] ]
-    | "apply" NONA
-      [ ce = SELF; e = expr LEVEL "simple" -> Node "CeApp" [Loc; ce; e] ]
-    | "simple"
-      [ a = anti_ -> a
-      | ci = class_longident; "["; ctcl = SLIST1 ctyp SEP ","; "]" ->
-          Node "CeCon" [Loc; ci; ctcl]
-      | ci = class_longident -> Node "CeCon" [Loc; ci; List []]
-      | "object"; csp = class_self_patt_opt; cf = class_structure; "end" ->
-          Node "CeStr" [Loc; csp; cf]
-      | "("; ce = SELF; ":"; ct = class_type; ")" ->
-          Node "CeTyc" [Loc; ce; ct]
-      | "("; ce = SELF; ")" -> ce ] ]
-  ;
-  class_structure:
-    [ [ cf = SLIST0 [ cf = class_str_item; ";" -> cf ] -> cf ] ]
-  ;
-  class_self_patt_opt:
-    [ [ a = anti_ -> a
-      | "("; p = patt; ")" -> Option (Some p)
-      | "("; p = patt; ":"; t = ctyp; ")" ->
-          Option (Some (Node "PaTyc" [Loc; p; t])) ] ]
-  ;
-  class_str_item:
-    [ [ "declare"; st = SLIST0 [ s = class_str_item; ";" -> s ]; "end" ->
-          Node "CrDcl" [Loc; st]
-      | "inherit"; ce = class_expr; pb = as_ident_opt ->
-          Node "CrInh" [Loc; ce; pb]
-      | "value"; (lab, mf, e) = cvalue -> Node "CrVal" [Loc; lab; mf; e]
-      | "method"; "virtual"; "private"; l = label; ":"; t = ctyp ->
-          Node "CrVir" [Loc; l; Bool True; t]
-      | "method"; "virtual"; l = label; ":"; t = ctyp ->
-          Node "CrVir" [Loc; l; Bool False; t]
-      | "method"; "private"; l = label; fb = fun_binding ->
-          Node "CrMth" [Loc; l; Bool True; fb]
-      | "method"; l = label; fb = fun_binding ->
-          Node "CrMth" [Loc; l; Bool False; fb]
-      | "type"; t1 = ctyp; "="; t2 = ctyp -> Node "CrCtr" [Loc; t1; t2]
-      | "initializer"; se = expr -> Node "CrIni" [Loc; se] ] ]
-  ;
-  cvalue:
-    [ [ mf = mutable_flag; l = label; "="; e = expr -> (l, mf, e)
-      | mf = mutable_flag; l = label; ":"; t = ctyp; "="; e = expr ->
-          (l, mf, Node "ExTyc" [Loc; e; t])
-      | mf = mutable_flag; l = label; ":"; t1 = ctyp; ":>"; t2 = ctyp; "=";
-        e = expr ->
-          (l, mf, Node "ExCoe" [Loc; e; Option (Some t1); t2])
-      | mf = mutable_flag; l = label; ":>"; t = ctyp; "="; e = expr ->
-          (l, mf, Node "ExCoe" [Loc; e; Option None; t]) ] ]
-  ;
-  label:
-    [ [ i = lident -> i ] ]
-  ;
-  (* Class types *)
-  class_type:
-    [ [ a = anti_ -> a
-      | "["; t = ctyp; "]"; "->"; ct = SELF -> Node "CtFun" [Loc; t; ct]
-      | id = clty_longident; "["; tl = SLIST1 ctyp SEP ","; "]" ->
-          Node "CtCon" [Loc; id; tl]
-      | id = clty_longident -> Node "CtCon" [Loc; id; List []]
-      | "object"; cst = class_self_type_opt;
-        csf = SLIST0 [ csf = class_sig_item; ";" -> csf ]; "end" ->
-          Node "CtSig" [Loc; cst; csf] ] ]
-  ;
-  class_self_type_opt:
-    [ [ a = anti_ -> a
-      | "("; t = ctyp; ")" -> Option (Some t) ] ]
-  ;
-  class_sig_item:
-    [ [ "declare"; st = SLIST0 [ s = class_sig_item; ";" -> s ]; "end" ->
-          Node "CgDcl" [Loc; st]
-      | "inherit"; cs = class_type -> Node "CgInh" [Loc; cs]
-      | "value"; mf = mutable_flag; l = label; ":"; t = ctyp ->
-          Node "CgVal" [Loc; l; mf; t]
-      | "method"; "virtual"; "private"; l = label; ":"; t = ctyp ->
-          Node "CgVir" [Loc; l; Bool True; t]
-      | "method"; "virtual"; l = label; ":"; t = ctyp ->
-          Node "CgVir" [Loc; l; Bool False; t]
-      | "method"; "private"; l = label; ":"; t = ctyp ->
-          Node "CgMth" [Loc; l; Bool True; t]
-      | "method"; l = label; ":"; t = ctyp ->
-          Node "CgMth" [Loc; l; Bool False; t]
-      | "type"; t1 = ctyp; "="; t2 = ctyp -> Node "CgCtr" [Loc; t1; t2] ] ]
-  ;
-  class_description:
-    [ [ vf = virtual_flag; n = lident; ctp = class_type_parameters; ":";
-        ct = class_type ->
-          Record
-            [("ciLoc", Loc); ("ciVir", vf); ("ciPrm", ctp); ("ciNam", n);
-             ("ciExp", ct)] ] ]
-  ;
-  class_type_declaration:
-    [ [ vf = virtual_flag; n = lident; ctp = class_type_parameters; "=";
-        cs = class_type ->
-          Record
-            [("ciLoc", Loc); ("ciVir", vf); ("ciPrm", ctp); ("ciNam", n);
-             ("ciExp", cs)] ] ]
-  ;
-  (* Expressions *)
-  expr: LEVEL "apply"
-    [ LEFTA
-      [ "new"; i = class_longident -> Node "ExNew" [Loc; i] ] ]
-  ;
-  expr: LEVEL "."
-    [ [ e = SELF; "#"; lab = label -> Node "ExSnd" [Loc; e; lab] ] ]
-  ;
-  expr: LEVEL "simple"
-    [ [ "("; e = SELF; ":"; t1 = ctyp; ":>"; t2 = ctyp; ")" ->
-          Node "ExCoe" [Loc; e; Option (Some t1); t2]
-      | "("; e = SELF; ":>"; t = ctyp; ")" ->
-          Node "ExCoe" [Loc; e; Option None; t]
-      | "{<"; ">}" -> Node "ExOvr" [Loc; List []]
-      | "{<"; fel = field_expr_list; ">}" -> Node "ExOvr" [Loc; List fel]
-      | "{<"; fel = anti_list; ">}" -> Node "ExOvr" [Loc; fel] ] ]
-  ;
-  field_expr_list:
-    [ [ l = label; "="; e = expr; ";"; fel = SELF -> [Tuple [l; e] :: fel]
-      | l = label; "="; e = expr; ";" -> [Tuple [l; e]]
-      | l = label; "="; e = expr -> [Tuple [l; e]] ] ]
-  ;
-  (* Core types *)
-  ctyp: LEVEL "simple"
-    [ [ "#"; id = class_longident -> Node "TyCls" [Loc; id]
-      | "<"; (ml, v) = meth_list; ">" -> Node "TyObj" [Loc; ml; v]
-      | "<"; ">" -> Node "TyObj" [Loc; List []; Bool False] ] ]
-  ;
-  meth_list:
-    [ [ a = anti_list -> (a, Bool False)
-      | a = anti_list; b = anti_ -> (a, b)
-      | f = field; ";"; (ml, v) = SELF -> (Cons f ml, v)
-      | f = field; ";" -> (List [f], Bool False)
-      | f = field -> (List [f], Bool False)
-      | ".." -> (List [], Bool True) ] ]
-  ;
-  field:
-    [ [ lab = lident; ":"; t = ctyp -> Tuple [lab; t] ] ]
-  ;
-  (* Identifiers *)
-  longid:
-    [ [ m = a_UIDENT; "."; l = SELF -> [m :: l]
-      | i = lident -> [i] ] ]
-  ;
-  clty_longident:
-    [ [ l = longid -> List l
-      | a = anti_list -> a ] ]
-  ;
-  class_longident:
-    [ [ l = longid -> List l
-      | a = anti_list -> a ] ]
-  ;
   virtual_flag:
     [ [ a = anti_virt -> a
       | "virtual" -> Bool True
       | -> Bool False ] ]
-  ;
-  as_ident_opt:
-    [ [ "as"; p = lident -> Option (Some p)
-      | a = anti_as -> a
-      | -> Option None ] ]
   ;
   anti_virt:
     [ [ a = ANTIQUOT "virt" -> antiquot "virt" loc a ] ]

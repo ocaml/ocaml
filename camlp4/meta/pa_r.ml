@@ -664,7 +664,7 @@ EXTEND
           <:class_expr< $list:ci$ [ $list:ctcl$ ] >>
       | ci = class_longident -> <:class_expr< $list:ci$ >>
       | "object"; cspo = OPT class_self_patt; cf = class_structure; "end" ->
-          <:class_expr< object $cspo$ $list:cf$ end >>
+          <:class_expr< object $opt:cspo$ $list:cf$ end >>
       | "("; ce = SELF; ":"; ct = class_type; ")" ->
           <:class_expr< ($ce$ : $ct$) >>
       | "("; ce = SELF; ")" -> ce ] ]
@@ -714,7 +714,7 @@ EXTEND
       | id = clty_longident -> <:class_type< $list:id$ >>
       | "object"; cst = OPT class_self_type;
         csf = LIST0 [ csf = class_sig_item; ";" -> csf ]; "end" ->
-          <:class_type< object $cst$ $list:csf$ end >> ] ]
+          <:class_type< object $opt:cst$ $list:csf$ end >> ] ]
   ;
   class_self_type:
     [ [ "("; t = ctyp; ")" -> t ] ]
