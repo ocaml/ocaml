@@ -616,8 +616,9 @@ val out_channel_length : out_channel -> int
 
 val close_out : out_channel -> unit
 (** Close the given channel, flushing all buffered write operations.
-   A [Sys_error] exception is raised if any of the functions above
-   is called on a closed channel. *)
+   Output functions raise a [Sys_error] exception when they are
+   applied to a closed output channel, except [close_out] and [flush],
+   which do nothing when applied to an already closed channel. *)
 
 val set_binary_mode_out : out_channel -> bool -> unit
 (** [set_binary_mode_out oc true] sets the channel [oc] to binary
@@ -717,8 +718,10 @@ val in_channel_length : in_channel -> int
    other kinds, the result is meaningless. *)
 
 val close_in : in_channel -> unit
-(** Close the given channel.  A [Sys_error] exception is raised
-   if any of the functions above is called on a closed channel. *)
+(** Close the given channel.  Input functions raise a [Sys_error]
+  exception when they are applied to a closed input channel,
+  except [close_in], which does nothing when applied to an already
+  closed channel. *)
 
 val set_binary_mode_in : in_channel -> bool -> unit
 (** [set_binary_mode_in ic true] sets the channel [ic] to binary
