@@ -385,3 +385,7 @@ type t = {f : 'a 'b. ('b -> (#ct as 'a) -> 'b) -> 'b};;
 
 (* PR#1663 *)
 type t = u and u = t;;
+
+(* PR#1731 *)
+class ['t] a = object constraint 't = [> `A of 't a] end
+type t = [ `A of t a ];;
