@@ -253,8 +253,10 @@ For instance the matching of \verb+aba+ by the regular expression
 either
 \verb+x+ to \verb+"ab"+ and \verb+y+ to \verb+"a"+, or
 \verb+x+ to \verb+"a"+ and \verb+y+ to \verb+"ba"+.
-The behavior of "ocamllex" on such ambiguous regular expressions is
-purposely left unspecified.
+The automata produced "ocamllex" on such ambiguous regular
+expressions will select one of the possible resulting sets of
+bindings.
+The selected set of bindings is purposely left unspecified.
 
 
 \subsection{Reserved identifiers}
