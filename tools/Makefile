@@ -44,7 +44,7 @@ ocamldep.opt: depend.cmi $(CAMLDEP_OBJ:.cmo=.cmx)
 # ocamldep is precious: sometimes we are stuck in the middle of a
 # bootstrap and we need to remake the dependencies
 clean::
-	mv -f ocamldep ocamldep.bak
+	if test -f ocamldep; then mv -f ocamldep ocamldep.bak; fi
 	rm -f ocamldep.opt
 
 install::
@@ -220,6 +220,14 @@ objinfo: objinfo.cmo
 
 clean::
 	rm -f objinfo
+
+# Print imported interfaces for .cmi files
+
+intfinfo: intfinfo.cmo
+	$(CAMLC) $(LINKFLAGS) -o intfinfo config.cmo intfinfo.cmo
+
+clean::
+	rm -f intfinfo
 
 # Scan object files for required primitives
 
