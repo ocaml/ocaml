@@ -490,63 +490,6 @@ value sstoken loc s =
   TXnterm loc n None
 ;
 
-value ssopt loc symb =
-  let psymbol p s t =
-    let symb = {used = []; text = s; styp = t} in
-    {pattern = Some p; symbol = symb}
-  in
-  let rl =
-    let anti_n =
-      try
-        match symb.text with
-        [ TXtok _ "" <:expr< $str:n$ >> -> n
-        | TXrules _ [([TXtok _ "" <:expr< $str:n$ >> :: _], _) :: _] ->
-            if String.length n > 0 then
-              match n.[0] with
-              [ 'A'..'Z' | 'a'..'z' -> n
-              | _ -> raise Not_found ]
-            else raise Not_found
-        | _ -> raise Not_found ]
-      with [ Not_found ->"opt" ]
-    in
-    let r1 =
-      let prod =
-        let text = TXtok loc "ANTIQUOT" <:expr< $str:anti_n$ >> in
-        [psymbol <:patt< a >> text (STlid loc "string")]
-      in
-      let act = <:expr< antiquot $str:anti_n$ loc a >> in
-      {prod = prod; action = Some act}
-    in
-    let r2 =
-      let symb =
-        match symb.text with
-        [ TXtok _ "" <:expr< $str:_$ >> ->
-            let rule =
-              let psymbol = {pattern = Some <:patt< x >>; symbol = symb} in
-              let action = Some <:expr< Str x >> in
-              {prod = [psymbol]; action = action}
-            in
-            let text = TXrules loc (srules loc "ast" [rule] "") in
-            let styp = STlid loc "ast" in
-            {used = []; text = text; styp = styp}
-        | _ -> symb ]
-      in
-      let psymb =
-        let symb =
-          {used = []; text = TXopt loc symb.text;
-           styp = STapp loc "option" symb.styp}
-        in
-        let patt = <:patt< o >> in
-        {pattern = Some patt; symbol = symb}
-      in
-      let act = <:expr< Option o >> in
-      {prod = [psymb]; action = Some act}
-    in
-    [r1; r2]
-  in
-  TXrules loc (srules loc "anti" rl "")
-;
-
 value sslist_aux loc min sep s =
   let psymbol p s t =
     let symb = {used = []; text = s; styp = t} in
@@ -555,8 +498,8 @@ value sslist_aux loc min sep s =
   let rl =
     let r1 =
       let prod =
-        let n = mk_name loc <:expr< anti_list >> in
-        [psymbol <:patt< a >> (TXnterm loc n None) (STquo loc "anti_list")]
+        let n = mk_name loc <:expr< a_list >> in
+        [psymbol <:patt< a >> (TXnterm loc n None) (STquo loc "a_list")]
       in
       let act = <:expr< a >> in
       {prod = prod; action = Some act}
@@ -832,7 +775,7 @@ EXTEND
           {used = used; text = text; styp = styp}
       | UIDENT "OPT"; s = SELF ->
           let styp = STapp loc "option" s.styp in
-          let text = if quotify.val then ssopt loc s else TXopt loc s.text in
+          let text = TXopt loc s.text in
           {used = s.used; text = text; styp = styp} ]
     | [ UIDENT "SELF" ->
           {used = []; text = TXself loc; styp = STprm loc "SELF"}

@@ -24,8 +24,7 @@ EXTEND
             [ Some symb -> [mk_name loc <:expr< anti >> :: symb.used @ s.used]
             | None -> s.used ]
           in
-          {used = used; text = sslist loc min sep s; styp = STlid loc "ast"}
-      | "SOPT"; s = SELF ->
-          {used = s.used; text = ssopt loc s; styp = STlid loc "ast"} ] ]
+          {used = used; text = sslist loc min sep s;
+           styp = STlid loc "ast"} ] ]
   ;
 END;

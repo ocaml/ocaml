@@ -984,82 +984,6 @@ let sstoken loc s =
   TXnterm (loc, n, None)
 ;;
 
-let ssopt loc symb =
-  let psymbol p s t =
-    let symb = {used = []; text = s; styp = t} in
-    {pattern = Some p; symbol = symb}
-  in
-  let rl =
-    let anti_n =
-      try
-        match symb.text with
-          TXtok (_, "", MLast.ExStr (_, n)) -> n
-        | TXrules (_, ((TXtok (_, "", MLast.ExStr (_, n)) :: _, _) :: _)) ->
-            if String.length n > 0 then
-              match n.[0] with
-                'A'..'Z' | 'a'..'z' -> n
-              | _ -> raise Not_found
-            else raise Not_found
-        | _ -> raise Not_found
-      with
-        Not_found -> "opt"
-    in
-    let r1 =
-      let prod =
-        let text = TXtok (loc, "ANTIQUOT", MLast.ExStr (loc, anti_n)) in
-        [psymbol (MLast.PaLid (loc, "a")) text (STlid (loc, "string"))]
-      in
-      let act =
-        MLast.ExApp
-          (loc,
-           MLast.ExApp
-             (loc,
-              MLast.ExApp
-                (loc, MLast.ExLid (loc, "antiquot"),
-                 MLast.ExStr (loc, anti_n)),
-              MLast.ExLid (loc, "loc")),
-           MLast.ExLid (loc, "a"))
-      in
-      {prod = prod; action = Some act}
-    in
-    let r2 =
-      let symb =
-        match symb.text with
-          TXtok (_, "", MLast.ExStr (_, _)) ->
-            let rule =
-              let psymbol =
-                {pattern = Some (MLast.PaLid (loc, "x")); symbol = symb}
-              in
-              let action =
-                Some
-                  (MLast.ExApp
-                     (loc, MLast.ExUid (loc, "Str"), MLast.ExLid (loc, "x")))
-              in
-              {prod = [psymbol]; action = action}
-            in
-            let text = TXrules (loc, srules loc "ast" [rule] "") in
-            let styp = STlid (loc, "ast") in
-            {used = []; text = text; styp = styp}
-        | _ -> symb
-      in
-      let psymb =
-        let symb =
-          {used = []; text = TXopt (loc, symb.text);
-           styp = STapp (loc, "option", symb.styp)}
-        in
-        let patt = MLast.PaLid (loc, "o") in
-        {pattern = Some patt; symbol = symb}
-      in
-      let act =
-        MLast.ExApp (loc, MLast.ExUid (loc, "Option"), MLast.ExLid (loc, "o"))
-      in
-      {prod = [psymb]; action = Some act}
-    in
-    [r1; r2]
-  in
-  TXrules (loc, srules loc "anti" rl "")
-;;
-
 let sslist_aux loc min sep s =
   let psymbol p s t =
     let symb = {used = []; text = s; styp = t} in
@@ -1068,9 +992,9 @@ let sslist_aux loc min sep s =
   let rl =
     let r1 =
       let prod =
-        let n = mk_name loc (MLast.ExLid (loc, "anti_list")) in
+        let n = mk_name loc (MLast.ExLid (loc, "a_list")) in
         [psymbol (MLast.PaLid (loc, "a")) (TXnterm (loc, n, None))
-           (STquo (loc, "anti_list"))]
+           (STquo (loc, "a_list"))]
       in
       let act = MLast.ExLid (loc, "a") in {prod = prod; action = Some act}
     in
@@ -1695,9 +1619,7 @@ Grammar.extend
       Gramext.action
         (fun (s : 'symbol) _ (loc : int * int) ->
            (let styp = STapp (loc, "option", s.styp) in
-            let text =
-              if !quotify then ssopt loc s else TXopt (loc, s.text)
-            in
+            let text = TXopt (loc, s.text) in
             {used = s.used; text = text; styp = styp} :
             'symbol));
       [Gramext.Stoken ("UIDENT", "LIST1"); Gramext.Sself;

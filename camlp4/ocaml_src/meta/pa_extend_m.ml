@@ -18,12 +18,7 @@ Grammar.extend
   [Grammar.Entry.obj (symbol : 'symbol Grammar.Entry.e),
    Some (Gramext.Level "top"),
    [None, Some Gramext.NonA,
-    [[Gramext.Stoken ("", "SOPT"); Gramext.Sself],
-     Gramext.action
-       (fun (s : 'symbol) _ (loc : int * int) ->
-          ({used = s.used; text = ssopt loc s; styp = STlid (loc, "ast")} :
-           'symbol));
-     [Gramext.srules
+    [[Gramext.srules
         [[Gramext.Stoken ("UIDENT", "SLIST1")],
          Gramext.action (fun _ (loc : int * int) -> (true : 'e__1));
          [Gramext.Stoken ("UIDENT", "SLIST0")],

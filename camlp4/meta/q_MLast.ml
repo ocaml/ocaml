@@ -901,7 +901,7 @@ EXTEND
     [ [ "#"; n = a_LIDENT; dp = dir_param -> Node "SgDir" [Loc; n; dp] ] ]
   ;
   dir_param:
-    [ [ a = anti_opt -> a
+    [ [ a = ANTIQUOT "opt" -> antiquot "opt" loc a
       | e = expr -> Option (Some e)
       | -> Option None ] ]
   ;
@@ -925,7 +925,7 @@ EXTEND
     [ [ a = ANTIQUOT "exp" -> antiquot "exp" loc a
       | a = ANTIQUOT "" -> antiquot "" loc a
       | a = ANTIQUOT "anti" -> Node "ExAnt" [Loc; antiquot "anti" loc a]
-      | "("; el = anti_list; ")" -> Node "ExTup" [Loc; el] ] ]
+      | "("; el = a_list; ")" -> Node "ExTup" [Loc; el] ] ]
   ;
   sequence:
     [ [ a = ANTIQUOT "list" -> antiquot "list" loc a ] ]
@@ -937,7 +937,7 @@ EXTEND
     [ [ a = ANTIQUOT "pat" -> antiquot "pat" loc a
       | a = ANTIQUOT "" -> antiquot "" loc a
       | a = ANTIQUOT "anti" -> Node "PaAnt" [Loc; antiquot "anti" loc a]
-      | "("; pl = anti_list; ")" -> Node "PaTup" [Loc; pl] ] ]
+      | "("; pl = a_list; ")" -> Node "PaTup" [Loc; pl] ] ]
   ;
   patt_label_ident: LEVEL "simple"
     [ [ a = ANTIQUOT -> antiquot "" loc a ] ]
@@ -949,12 +949,12 @@ EXTEND
     [ [ a = ANTIQUOT "pat" -> antiquot "pat" loc a
       | a = ANTIQUOT "" -> antiquot "" loc a
       | a = ANTIQUOT "anti" -> Node "PaAnt" [Loc; antiquot "anti" loc a]
-      | "("; pl = anti_list; ")" -> Node "PaTup" [Loc; pl] ] ]
+      | "("; pl = a_list; ")" -> Node "PaTup" [Loc; pl] ] ]
   ;
   ctyp: LEVEL "simple"
     [ [ a = ANTIQUOT "typ" -> antiquot "typ" loc a
       | a = ANTIQUOT "" -> antiquot "" loc a
-      | "("; tl = anti_list; ")" -> Node "TyTup" [Loc; tl] ] ]
+      | "("; tl = a_list; ")" -> Node "TyTup" [Loc; tl] ] ]
   ;
   mod_ident:
     [ [ a = ANTIQUOT -> antiquot "" loc a ] ]
@@ -981,20 +981,23 @@ EXTEND
     [ [ a = ANTIQUOT "opt" -> antiquot "opt" loc a ] ]
   ;
   meth_list:
-    [ [ a = anti_list -> Tuple [a; Bool False]
-      | a = anti_list; b = anti_ -> Tuple [a; b] ] ]
+    [ [ a = a_list -> Tuple [a; Bool False]
+      | a = a_list; b = ANTIQUOT -> Tuple [a; antiquot "" loc b] ] ]
   ;
   expr: LEVEL "simple"
-    [ [ "{<"; fel = anti_list; ">}" -> Node "ExOvr" [Loc; fel] ] ]
+    [ [ "{<"; fel = a_list; ">}" -> Node "ExOvr" [Loc; fel] ] ]
   ;
   clty_longident:
-    [ [ a = anti_list -> a ] ]
+    [ [ a = a_list -> a ] ]
   ;
   class_longident:
-    [ [ a = anti_list -> a ] ]
+    [ [ a = a_list -> a ] ]
   ;
   patt: LEVEL "simple"
-    [ [ "#"; a = anti_list -> Node "PaTyp" [Loc; a] ] ]
+    [ [ "#"; a = a_list -> Node "PaTyp" [Loc; a] ] ]
+  ;
+  a_list:
+    [ [ a = ANTIQUOT "list" -> antiquot "list" loc a ] ]
   ;
   a_UIDENT:
     [ [ a = ANTIQUOT "uid" -> antiquot "uid" loc a
@@ -1047,15 +1050,6 @@ EXTEND
     [ [ a = ANTIQUOT "virt" -> antiquot "virt" loc a ] ]
   ;
   amp_flag:
-    [ [ a = ANTIQUOT "opt" -> antiquot "opt" loc a ] ]
-  ;
-  anti_:
-    [ [ a = ANTIQUOT -> antiquot "" loc a ] ]
-  ;
-  anti_list:
-    [ [ a = ANTIQUOT "list" -> antiquot "list" loc a ] ]
-  ;
-  anti_opt:
     [ [ a = ANTIQUOT "opt" -> antiquot "opt" loc a ] ]
   ;
   (* Compatibility old syntax of sequences *)
