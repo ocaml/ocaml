@@ -1,6 +1,6 @@
 # Makefile for the dynamic link library
 
-include ../../Makefile.config
+include ../../config/Makefile
 
 CAMLC=../../boot/cslrun ../../boot/cslc
 INCLUDES=-I ../../utils -I ../../typing -I ../../bytecomp

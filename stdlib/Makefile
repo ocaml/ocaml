@@ -1,4 +1,4 @@
-include ../Makefile.config
+include ../config/Makefile
 
 RUNTIME=../boot/cslrun
 COMPILER=../cslc
@@ -30,7 +30,7 @@ stdlib.cma: $(OBJS)
 stdlib.cmxa: $(OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o stdlib.cmxa $(OBJS:.cmo=.cmx)
 
-cslheader: header.c ../Makefile.config
+cslheader: header.c ../config/Makefile
 	if $(SHARPBANGSCRIPTS); \
 	then echo "#!$(BINDIR)/cslrun" > cslheader; \
 	else $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) header.c -o cslheader; \

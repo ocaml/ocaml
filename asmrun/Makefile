@@ -1,5 +1,4 @@
-include ../config/Makefile.h
-include ../Makefile.config
+include ../config/Makefile
 
 CC=$(NATIVECC)
 FLAGS=-I../byterun -DNATIVE_CODE -DTARGET_$(ARCH) -DSYS_$(SYSTEM) 

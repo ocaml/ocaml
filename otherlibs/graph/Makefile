@@ -1,6 +1,6 @@
 # Makefile for the portable graphics library
 
-include ../../Makefile.config
+include ../../config/Makefile
 
 CC=$(BYTECC)
 CFLAGS=-I../../byterun -I$(X11_INCLUDES) -O $(BYTECCCOMPOPTS)

@@ -1,7 +1,17 @@
 # The main Makefile
 
-include config/Makefile.h
-include Makefile.config
+include config/Makefile
+
+### Which libraries to compile and install
+# Currently available:
+#       unix            Unix system calls
+#       str             Regular expressions and high-level string processing
+#       num             Arbitrary-precision rational arithmetic
+#       threads         Lightweight concurrent processes
+#       graph           Portable drawing primitives for X11
+#       dynlink         Dynamic linking of bytecode
+#
+OTHERLIBRARIES=unix str num threads graph dynlink
 
 CAMLC=boot/cslrun boot/cslc -I boot
 CAMLOPT=boot/cslrun ./cslopt -I stdlib
@@ -13,6 +23,7 @@ CAMLLEX=boot/cslrun boot/csllex
 CAMLDEP=boot/cslrun tools/csldep
 DEPFLAGS=$(INCLUDES)
 CAMLRUN=byterun/cslrun
+SHELL=/bin/sh
 
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver -I toplevel
 
@@ -217,10 +228,10 @@ clean::
 
 # The configuration file
 
-utils/config.ml: utils/config.mlp Makefile.config
+utils/config.ml: utils/config.mlp config/Makefile
 	@rm -f utils/config.ml
 	sed -e 's|%%LIBDIR%%|$(LIBDIR)|' \
-            -e 's|%%BYTECC%%|$(BYTECC) $(BYTECCLINKOPTS) $(LOWADDRESSES)|' \
+            -e 's|%%BYTECC%%|$(BYTECC) $(BYTECCLINKOPTS)|' \
             -e 's|%%NATIVECC%%|$(NATIVECC) $(NATIVECCLINKOPTS)|' \
             -e 's|%%CCLIBS%%|$(CCLIBS)|' \
             -e 's|%%ARCH%%|$(ARCH)|' \

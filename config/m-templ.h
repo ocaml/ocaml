@@ -13,6 +13,13 @@
 
 /* Processor dependencies */
 
+#define SIXTYFOUR
+
+/* Define SIXTYFOUR if the processor has a natural word size of 64 bits.
+   That is, both sizeof(long) = 8 and sizeof(char *) = 8.
+   Otherwise, leave SIXTYFOUR undefined. This assumes
+   sizeof(long) = sizeof(char *) = 4. */
+
 #define BIG_ENDIAN
 
 /* Define BIG_ENDIAN if the processor is big endian (the most significant
@@ -20,15 +27,9 @@
    if the processor is little-endian (the least significant byte comes first).
 */
 
-#define ALIGNMENT
-
-/* Define ALIGNMENT if the processor puts alignment constraints on 16-bit and
-   32-bit memory accesses. Leave ALIGNMENT undefined if the processor can
-   access a 16-bit or 32-bit integer at any address.
-*/
-
 #define ALIGN_DOUBLE
 
 /* Define ALIGN_DOUBLE if the processor requires doubles to be
    doubleword-aligned. Leave ALIGN_DOUBLE undefined if the processor supports
    word-aligned doubles. */
+

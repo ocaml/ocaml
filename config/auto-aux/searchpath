@@ -1,0 +1,9 @@
+#!/bin/sh
+# Find a program in the path
+
+IFS=':'
+for dir in $PATH; do
+  if test -z "$dir"; then dir=.; fi
+  if test -f $dir/$1; then exit 0; fi
+done
+exit 1

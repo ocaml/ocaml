@@ -1,6 +1,6 @@
 # Makefile for the parser generator.
 
-include ../Makefile.config
+include ../config/Makefile
 
 CC=$(BYTECC)
 CFLAGS=-O -DNDEBUG $(BYTECCCOMPOPTS)

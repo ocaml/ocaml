@@ -1,4 +1,4 @@
-include ../Makefile.config
+include ../config/Makefile
 
 CAMLC=../boot/cslrun ../cslc -I ../stdlib -I KB -I Lex
 CAMLOPT=../boot/cslrun ../cslopt -I ../stdlib -I KB -I Lex

@@ -1,22 +1,50 @@
 INSTALLATION INSTRUCTIONS
 
-1- Edit the file Makefile.config, following the comments in that file.
+1- Configure the system. From the top directory, do:
 
-2- Configure the system. Change to the config/ subdirectory and do:
+        ./configure
 
-        make
+This generates the three configuration files "Makefile", "m.h" and "s.h"
+in the config/ subdirectory.
 
-This generates the two configuration files "m.h" and "s.h" in the
-config/ subdirectory.  If something goes wrong during the make,
-or if the generated "m.h" and "s.h" files cause errors later on, then do
+The "configure" script accepts the following options:
 
-        cp m-templ.h m.h
-        cp s-templ.h s.h
+-bindir <dir>                   (default: /usr/local/bin)
+        Directory where the binaries will be installed
 
-and edit "m.h" and "s.h" by hand, following the guidelines in the
-comments.
+-libdir <dir>                   (default: /usr/local/lib/camlsl)
+        Directory where the Caml library will be installed
 
-3- From the top directory, do:
+-mandir <dir>                   (default: /usr/local/man/man1)
+        Directory where the manual pages will be installed
+
+-cc <C compiler and options>    (default: gcc or cc, depending on availability)
+        C compiler to use for building the system
+
+-libs <extra libraries>         (default: none)
+        Extra libraries to link with the system
+
+-host <hosttype>                (default: determined automatically)
+        The type of the host machine, in GNU's "configuration name"
+        format (CPU-COMPANY-SYSTEM). This info is generally determined
+        automatically by the "configure" script, and rarely ever
+        needs to be provided by hand. The installation instructions
+        for gcc or emacs contain a complete list of configuration names.
+
+Examples:
+        ./configure -bindir /usr/bin -libdir /usr/lib/csl -mandir /usr/man/manl
+        ./configure -cc "acc -fast" -libs "-lucb"
+
+If something goes wrong during the automatic configuration, or if the
+generated files cause errors later on, then look at the template files
+
+        config/Makefile-templ
+        config/m-templ.h
+        config/s-templ.h
+
+for guidance on how to edit the generated files by hand.
+
+2- From the top directory, do:
 
         make world
 
@@ -26,7 +54,7 @@ This phase is fairly verbose; consider redirecting the output to a file:
         make world > log.world 2>&1     # in sh
         make world >& log.world         # in csh
 
-4- To be sure everything works well, you can try to bootstrap the
+3- To be sure everything works well, you can try to bootstrap the
 system --- that is, to recompile all Caml Special Light sources with
 the newly created compiler. From the top directory, do:
 
@@ -46,17 +74,17 @@ a second bootstrapping phase: just do "make bootstrap" again.  It will
 either crash almost immediately, or re-re-compile everything correctly
 and reach the fixpoint.
 
-5- If your platform is supported by the native-code compiler (that is,
-Makefile.config sets ARCH to a value other than "none"), you can now
-build the native-code compiler. From the top directory, do:
+4- If your platform is supported by the native-code compiler (as
+reported during the autoconfiguration), you can now build the
+native-code compiler. From the top directory, do:
 
         make opt
 or:
         make opt > log.opt 2>&1     # in sh
         make opt >& log.opt         # in csh
 
-6- You can now install the Caml Special Light system. This will create the
-following commands (in the directory set to BINDIR in Makefile.config):
+5- You can now install the Caml Special Light system. This will create the
+following commands (in the binary directory selected during autoconfiguration):
 
         cslc           the batch bytecode compiler
         cslopt         the batch native-code compiler (if supported)
@@ -74,7 +102,7 @@ From the top directory, become superuser and do "make install".
 Also do "make installopt" to install the native-code compiler, if you
 have compiled it.
 
-7- Installation is complete. Time to clean up. From the toplevel
+6- Installation is complete. Time to clean up. From the toplevel
 directory, do "make realclean".
 
 
@@ -115,16 +143,6 @@ environment variable, or set it to /bin/sh.
 
 * gcc 2.6.0 has been reported to generate incorrect code for the
 runtime system in -O mode. Upgrade to a newer version.
-
-* If you're using gcc on the I386 or Motorola 680x0, make sure to set
-the -fno-defer-pop option in $(BYTECCCOMPOPTS). Otherwise, there's a
-bug in gcc that causes the bytecode interpreter to push stack frames
-without popping them, causing stack overflows for long-running
-bytecode programs.
-
-* Under NeXTStep, cc pretends to be gcc but is not quite
-gcc.  Be sure to add the -U__GNUC__ option in $(BYTECCCOMPOPTS).
-
 
 MACHINE-SPECIFIC HINTS:
 

@@ -13,12 +13,6 @@
 
 /* Operating system and standard library dependencies. */
 
-/* 0. This is a Unix machine. */
-
-#ifndef unix
-#define unix
-#endif
-
 /* 1. For the runtime system. */
 
 #define HAS_MEMMOVE
@@ -37,6 +31,12 @@
    routines provided in the standard library, but at least it is guaranteed
    to work. So, in doubt, don't define anything. */
 
+#define POSIX_SIGNALS
+
+/* Define POSIX_SIGNALS if signal handling is POSIX-compliant.
+   In particular, sigaction(), sigprocmask() and the operations on
+   sigset_t are provided. */
+
 #define BSD_SIGNALS
 
 /* Define BSD_SIGNALS if signal handlers have the BSD semantics: the handler
@@ -44,9 +44,12 @@
    undefined if signal handlers have the System V semantics: the signal
    resets the behavior to default. */
 
-#define HAS_RENAME
+#define HAS_TERMCAP
 
-/* Define HAS_RENAME if you have rename(). */
+/* Define HAS_TERMCAP if you have the termcap functions to read the
+   terminal database, e.g. tgetent(), tgetstr(), tgetnum(), tputs().
+   Also add the required libraries (e.g. -lcurses -ltermcap) to $(CCLIBS)
+   in ../Makefile.config */
 
 #define HAS_STRERROR
 
@@ -152,3 +155,8 @@
 #define HAS_UNAME
 
 /* Define HAS_UNAME if you have uname(). */
+
+#define HAS_GETTIMEOFDAY
+
+/* Define HAS_GETTIMEOFDAY if you have gettimeofday(). */
+

@@ -1,4 +1,4 @@
-include ../Makefile.config
+include ../config/Makefile
 
 CAMLRUN=../boot/cslrun
 CAMLC=$(CAMLRUN) ../boot/cslc -I ../boot

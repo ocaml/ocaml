@@ -1,4 +1,4 @@
-include ../Makefile.config
+include ../config/Makefile
 
 CAMLC=../boot/cslrun ../boot/cslc -I ../boot
 COMPFLAGS=$(INCLUDES)

@@ -1,13 +1,13 @@
 #!/bin/sh
 
-ccopts=""
-cclibs=""
+opts=""
+libs="$cclibs"
 rm -f hasgot.c
 while : ; do
   case "$1" in
     -i) echo "#include <$2>" >> hasgot.c; shift;;
-    -l*) cclibs="$cclibs $1";;
-    -*) ccopts="$ccopts $1";;
+    -l*) libs="$libs $1";;
+    -*) opts="$opts $1";;
      *) break;;
   esac
   shift
@@ -15,4 +15,4 @@ done
 (echo "main() {"
  for f in $*; do echo "  $f();"; done
  echo "}") >> hasgot.c
-exec $cc $ccopts -o tst hasgot.c $cclibs > /dev/null 2>/dev/null
+exec $cc $opts -o tst hasgot.c $libs > /dev/null 2>/dev/null

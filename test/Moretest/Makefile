@@ -1,4 +1,4 @@
-include ../../Makefile.config
+include ../../config/Makefile
 
 CAMLC=../../boot/cslrun ../../cslc -I ../../stdlib
 CAMLOPT=../../boot/cslrun ../../cslopt -I ../../stdlib

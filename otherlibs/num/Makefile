@@ -1,6 +1,6 @@
 # Makefile for the "num" (exact rational arithmetic) library
 
-include ../../Makefile.config
+include ../../config/Makefile
 
 # Compilation options
 CC=$(BYTECC)
