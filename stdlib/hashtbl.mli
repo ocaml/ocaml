@@ -73,18 +73,22 @@ val replace : ('a, 'b) t -> 'a -> 'b -> unit
 val iter : ('a -> 'b -> unit) -> ('a, 'b) t -> unit
 (** [Hashtbl.iter f tbl] applies [f] to all bindings in table [tbl].
    [f] receives the key as first argument, and the associated value
-   as second argument. The order in which the bindings are passed to
-   [f] is unspecified. Each binding is presented exactly once
-   to [f]. *)
+   as second argument. Each binding is presented exactly once to [f].
+   The order in which the bindings are passed to [f] is unspecified.
+   However, if the table contains several bindings for the same key,
+   they are passed to [f] in reverse order of introduction, that is,
+   the most recent binding is passed first. *)
 
 val fold : ('a -> 'b -> 'c -> 'c) -> ('a, 'b) t -> 'c -> 'c
 (** [Hashtbl.fold f tbl init] computes
    [(f kN dN ... (f k1 d1 init)...)],
    where [k1 ... kN] are the keys of all bindings in [tbl],
    and [d1 ... dN] are the associated values.
-   The order in which the bindings are passed to
-   [f] is unspecified. Each binding is presented exactly once
-   to [f]. *)
+   Each binding is presented exactly once to [f].
+   The order in which the bindings are passed to [f] is unspecified.
+   However, if the table contains several bindings for the same key,
+   they are passed to [f] in reverse order of introduction, that is,
+   the most recent binding is passed first. *)
 
 
 (** {6 Functorial interface} *)
