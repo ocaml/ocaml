@@ -27,7 +27,7 @@ val select_store:
       Arch.addressing_mode -> Cmm.expression -> Mach.operation * Cmm.expression
 val pseudoregs_for_operation:
       Mach.operation -> Reg.t array -> Reg.t array ->
-        Reg.t array * Reg.t array
+        Reg.t array * Reg.t array * bool
 val is_immediate: int -> bool
 val word_addressed: bool
 

@@ -64,7 +64,7 @@ let clone r =
   nr
 
 let at_location ty loc =
-  let r = { name = ""; stamp = !currstamp; typ = ty; loc = loc; spill = false;
+  let r = { name = "R"; stamp = !currstamp; typ = ty; loc = loc; spill = false;
             interf = []; prefer = []; degree = 0; spill_cost = 0;
             visited = false } in
   incr currstamp;

@@ -294,6 +294,26 @@ let join_array rs =
     res
   end
 
+(* Add an Iop opcode.
+   Offer the processor description an opportunity to insert moves
+   before and after the operation, i.e. for two-address 
+   instructions, or instructions using dedicated registers. *)
+
+let insert_op op rs rd seq =
+  try
+    let (rsrc, rdst, move_res) = Proc.pseudoregs_for_operation op rs rd in
+    insert_moves rs rsrc seq;
+    insert (Iop op) rsrc rdst seq;
+    if move_res then begin
+      insert_moves rdst rd seq;
+      rd
+    end else
+      rdst
+  with Proc.Use_default ->
+    (* Assume no constraints on arg and res registers *)
+    insert (Iop op) rs rd seq;
+    rd
+
 (* Add the instructions for the given expression
    at the end of the given sequence *)
 
@@ -301,20 +321,16 @@ let rec emit_expr env exp seq =
   match exp with
     Cconst_int n ->
       let r = Reg.newv typ_int in
-      insert (Iop(Iconst_int n)) [||] r seq;
-      r
+      insert_op (Iconst_int n) [||] r seq
   | Cconst_float n ->
       let r = Reg.newv typ_float in
-      insert (Iop(Iconst_float n)) [||] r seq;
-      r
+      insert_op (Iconst_float n) [||] r seq
   | Cconst_symbol n ->
       let r = Reg.newv typ_addr in
-      insert (Iop(Iconst_symbol n)) [||] r seq;
-      r
+      insert_op (Iconst_symbol n) [||] r seq
   | Cconst_pointer n ->
       let r = Reg.newv typ_addr in
-      insert (Iop(Iconst_int n)) [||] r seq;
-      r
+      insert_op (Iconst_int n) [||] r seq
   | Cvar v ->
       begin try
         Tbl.find v env
@@ -394,12 +410,7 @@ let rec emit_expr env exp seq =
       | Iload(Word, addr) ->
           let r1 = emit_tuple env new_args seq in
           let rd = Reg.newv ty in
-          let a = ref addr in
-          for i = 0 to Array.length ty - 1 do
-            insert(Iop(Iload(Word, !a))) r1 [|rd.(i)|] seq;
-            a := Arch.offset_addressing !a (size_component ty.(i))
-          done;
-          rd
+          insert_op (Iload(Word, addr)) r1 rd seq
       | Istore(Word, addr) ->
           begin match new_args with
             [] -> fatal_error "Selection.Istore"
@@ -419,19 +430,7 @@ let rec emit_expr env exp seq =
       | op ->
           let r1 = emit_tuple env new_args seq in
           let rd = Reg.newv ty in
-          begin try
-            (* Offer the processor description an opportunity to insert moves
-               before and after the operation, i.e. for two-address 
-               instructions, or instructions using dedicated registers. *)
-            let (rsrc, rdst) = Proc.pseudoregs_for_operation op r1 rd in
-            insert_moves r1 rsrc seq;
-            insert (Iop op) rsrc rdst seq;
-            insert_moves rdst rd seq
-          with Proc.Use_default ->
-            (* Assume no constraints on arg and res registers *)
-            insert (Iop op) r1 rd seq
-          end;
-          rd
+          insert_op op r1 rd seq
       end        
   | Csequence(e1, e2) ->
       emit_expr env e1 seq;
@@ -530,7 +529,14 @@ and emit_parts_list env exp_list seq =
       (new_exp :: new_rem, fin_env)
 
 and emit_tuple env exp_list seq =
-  Array.concat(List.map (fun e -> emit_expr env e seq) exp_list)
+  let rec emit_list = function
+    [] -> []
+  | exp :: rem ->
+      (* Again, force right-to-left evaluation *)
+      let loc_rem = emit_list rem in
+      let loc_exp = emit_expr env exp seq in
+      loc_exp :: loc_rem in
+  Array.concat(emit_list exp_list)
 
 and emit_stores env data seq regs_addr addr =
   let a = ref addr in

@@ -60,15 +60,6 @@ let rec reload i =
       (* Don't do anything, the arguments and results are already at
          the correct position (e.g. on stack for some arguments). *)
       instr_cons_live i.desc i.arg i.res i.live (reload i.next)
-  | Iop(Imove | Ireload | Ispill) ->
-      (* Do something if this is a stack-to-stack move *)
-      begin match i.arg.(0), i.res.(0) with
-        {loc = Stack s1}, {loc = Stack s2} when s1 <> s2 ->
-          let r = makereg i.arg.(0) in
-          insert_move i.arg.(0) r (insert_move r i.res.(0) (reload i.next))
-      | _ ->
-          instr_cons i.desc i.arg i.res (reload i.next)
-      end
   | Iop op ->
       (* Let the machine description tell us whether some arguments / results
          can reside on the stack *)
@@ -77,8 +68,19 @@ let rec reload i =
           Proc.reload_operation makereg op i.arg i.res
         with Proc.Use_default ->
           (* By default, assume that arguments and results must reside
-             in hardware registers *)
-          (makeregs i.arg, makeregs i.res) in
+             in hardware registers. For moves, allow one arg or one
+             res to be stack-allocated, but do something for
+             stack-to-stack moves *)
+          match op with
+            Imove | Ireload | Ispill ->
+              begin match i.arg.(0), i.res.(0) with
+                {loc = Stack s1}, {loc = Stack s2} when s1 <> s2 ->
+                  ([| makereg i.arg.(0) |], i.res)
+              | _ ->
+                  (i.arg, i.res)
+              end
+          | _ ->
+              (makeregs i.arg, makeregs i.res) in
       insert_moves i.arg newarg
         (instr_cons_live i.desc newarg newres i.live
           (insert_moves newres i.res
