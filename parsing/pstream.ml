@@ -32,13 +32,13 @@ let ploc loc p = { ppat_desc = p; ppat_loc = loc }
 let spat = Ppat_var "%strm"
 let sexp = Pexp_ident (Lident "%strm")
 let eval x = mkexp (Pexp_ident (Ldot (Lident "Stream", x)))
-let econ c x = mkexp (Pexp_construct (Ldot (Lident "Stream", c), x))
-let pcon c x = mkpat (Ppat_construct (Ldot (Lident "Stream", c), x))
+let econ c x = mkexp (Pexp_construct (Ldot (Lident "Stream", c), x, false))
+let pcon c x = mkpat (Ppat_construct (Ldot (Lident "Stream", c), x, false))
 let afun f x =
   mkexp (Pexp_apply (mkexp (Pexp_ident (Ldot (Lident "Stream", f))), x))
 let araise c x =
   mkexp (Pexp_apply (mkexp (Pexp_ident (Lident "raise")), [econ c x]))
-let esome x = mkexp (Pexp_construct (Lident "Some", Some x))
+let esome x = mkexp (Pexp_construct (Lident "Some", Some x, false))
 
 
 (* parsers *)
@@ -59,7 +59,7 @@ let stream_pattern_component skont =
          (Pexp_try
             (esome (mkexp (Pexp_apply (e, [mkexp sexp]))),
              [(pcon "Failure" None,
-               mkexp (Pexp_construct (Lident "None", None)))])),
+               mkexp (Pexp_construct (Lident "None", None, false)))])),
        p, skont)
   | Spat_sterm p ->
       (esome (mkexp sexp), p, skont)
@@ -89,7 +89,8 @@ let rec stream_pattern epo e ekont =
       mkexp
         (Pexp_match
            (tst,
-            [(ploc p.ppat_loc (Ppat_construct (Lident "Some", Some p)), e);
+            [(ploc p.ppat_loc (Ppat_construct (Lident "Some", Some p, false)),
+              e);
              (mkpat Ppat_any, ckont)]))
 
 let rec parser_cases =

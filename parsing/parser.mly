@@ -46,12 +46,12 @@ let mkassert e =
                         mkexp (Pexp_constant (Const_int st));
                         mkexp (Pexp_constant (Const_int en))]) in
   let ex = Ldot (Lident "Pervasives", "Assert_failure") in
-  let bucket = mkexp (Pexp_construct (ex, Some triple)) in
+  let bucket = mkexp (Pexp_construct (ex, Some triple, false)) in
   let ra = Ldot (Lident "Pervasives", "raise") in
   let raiser = mkexp (Pexp_apply (mkexp (Pexp_ident ra), [bucket])) in
-  let un = mkexp (Pexp_construct (Lident "()", None)) in
+  let un = mkexp (Pexp_construct (Lident "()", None, false)) in
   match e with
-  | {pexp_desc = Pexp_construct (Lident "false", None) } -> raiser
+  | {pexp_desc = Pexp_construct (Lident "false", None, false) } -> raiser
   | _ -> if !Clflags.noassert
          then un
          else mkexp (Pexp_ifthenelse (e, un, Some raiser))
@@ -71,16 +71,18 @@ let mkuminus name arg =
 
 let rec mklistexp = function
     [] ->
-      mkexp(Pexp_construct(Lident "[]", None))
+      mkexp(Pexp_construct(Lident "[]", None, false))
   | e1 :: el ->
       mkexp(Pexp_construct(Lident "::",
-                           Some(mkexp(Pexp_tuple[e1; mklistexp el]))))
+                           Some(mkexp(Pexp_tuple[e1; mklistexp el])),
+                           false))
 let rec mklistpat = function
     [] ->
-      mkpat(Ppat_construct(Lident "[]", None))
+      mkpat(Ppat_construct(Lident "[]", None, false))
   | p1 :: pl ->
       mkpat(Ppat_construct(Lident "::",
-                           Some(mkpat(Ppat_tuple[p1; mklistpat pl]))))
+                           Some(mkpat(Ppat_tuple[p1; mklistpat pl])),
+                           false))
 
 let mkstrexp e =
   { pstr_desc = Pstr_eval e; pstr_loc = e.pexp_loc }
@@ -404,7 +406,7 @@ expr:
   | expr_comma_list
       { mkexp(Pexp_tuple(List.rev $1)) }
   | constr_longident simple_expr %prec prec_constr_appl
-      { mkexp(Pexp_construct($1, Some $2)) }
+      { mkexp(Pexp_construct($1, Some $2, false)) }
   | IF seq_expr THEN expr ELSE expr %prec prec_if
       { mkexp(Pexp_ifthenelse($2, $4, Some $6)) }
   | IF seq_expr THEN expr %prec prec_if
@@ -414,7 +416,7 @@ expr:
   | FOR val_ident EQUAL seq_expr direction_flag seq_expr DO seq_expr DONE
       { mkexp(Pexp_for($2, $4, $6, $5, $8)) }
   | expr COLONCOLON expr
-      { mkexp(Pexp_construct(Lident "::", Some(mkexp(Pexp_tuple[$1;$3])))) }
+      { mkexp(Pexp_construct(Lident "::", Some(mkexp(Pexp_tuple[$1;$3])), false)) }
   | expr INFIXOP0 expr
       { mkinfix $1 $2 $3 }
   | expr INFIXOP1 expr
@@ -466,7 +468,7 @@ simple_expr:
   | constant
       { mkexp(Pexp_constant $1) }
   | constr_longident
-      { mkexp(Pexp_construct($1, None)) }
+      { mkexp(Pexp_construct($1, None, false)) }
   | LPAREN seq_expr RPAREN
       { $2 }
   | BEGIN seq_expr END
@@ -620,9 +622,10 @@ pattern:
   | pattern_comma_list
       { mkpat(Ppat_tuple(List.rev $1)) }
   | constr_longident pattern %prec prec_constr_appl
-      { mkpat(Ppat_construct($1, Some $2)) }
+      { mkpat(Ppat_construct($1, Some $2, false)) }
   | pattern COLONCOLON pattern
-      { mkpat(Ppat_construct(Lident "::", Some(mkpat(Ppat_tuple[$1;$3])))) }
+      { mkpat(Ppat_construct(Lident "::", Some(mkpat(Ppat_tuple[$1;$3])),
+                             false)) }
   | pattern BAR pattern
       { mkpat(Ppat_or($1, $3)) }
 ;
@@ -636,7 +639,7 @@ simple_pattern:
   | CHAR DOTDOT CHAR
       { mkrangepat $1 $3 }
   | constr_longident
-      { mkpat(Ppat_construct($1, None)) }
+      { mkpat(Ppat_construct($1, None, false)) }
   | LBRACE lbl_pattern_list opt_semi RBRACE
       { mkpat(Ppat_record(List.rev $2)) }
   | LBRACKET pattern_semi_list opt_semi RBRACKET

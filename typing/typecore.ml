@@ -102,7 +102,7 @@ let rec type_pat env sp =
       { pat_desc = Tpat_tuple pl;
         pat_loc = sp.ppat_loc;
         pat_type = newty (Ttuple(List.map (fun p -> p.pat_type) pl)) }
-  | Ppat_construct(lid, sarg) ->
+  | Ppat_construct(lid, sarg, explicit_arity) ->
       let constr =
         try
           Env.lookup_constructor lid env
@@ -111,6 +111,7 @@ let rec type_pat env sp =
       let sargs =
         match sarg with
           None -> []
+        | Some {ppat_desc = Ppat_tuple spl} when explicit_arity -> spl
         | Some {ppat_desc = Ppat_tuple spl} when constr.cstr_arity > 1 -> spl
         | Some({ppat_desc = Ppat_any} as sp) when constr.cstr_arity > 1 ->
             replicate_list sp constr.cstr_arity
@@ -362,7 +363,7 @@ let rec type_exp env sexp =
         exp_loc = sexp.pexp_loc;
         exp_type = newty (Ttuple(List.map (fun exp -> exp.exp_type) expl));
         exp_env = env }
-  | Pexp_construct(lid, sarg) ->
+  | Pexp_construct(lid, sarg, explicit_arity) ->
       let constr =
         try
           Env.lookup_constructor lid env
@@ -371,6 +372,7 @@ let rec type_exp env sexp =
       let sargs =
         match sarg with
           None -> []
+        | Some {pexp_desc = Pexp_tuple sel} when explicit_arity -> sel
         | Some {pexp_desc = Pexp_tuple sel} when constr.cstr_arity > 1 -> sel
         | Some se -> [se] in
       if List.length sargs <> constr.cstr_arity then
