@@ -18,6 +18,9 @@
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
+#ifdef __linux__
+#include <i386/fpu_control.h>
+#endif
 #include "alloc.h"
 #include "exec.h"
 #include "fail.h"
@@ -141,6 +144,13 @@ int main(argc, argv)
   int verbose_init = 0, percent_free_init = Percent_free_def;
   long minor_heap_init = Minor_heap_def, heap_chunk_init = Heap_chunk_def;
 
+  /* Machine-dependent initialization of the floating-point hardware
+     so that it behaves as much as possible as specified in IEEE */
+#ifdef __linux__
+  __setfpucw(_FPU_IEEE);
+#endif
+
+  /* Parsing of command-line */
 #ifdef DEBUG
   verbose_init = 1;
 #endif

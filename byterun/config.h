@@ -21,19 +21,16 @@
 /* Library dependencies */
 
 #ifdef HAS_MEMMOVE
+#undef bcopy
 #define bcopy(src,dst,len) memmove((dst), (src), (len))
 #else
 #ifdef HAS_BCOPY
 /* Nothing to do */
 #else
+#undef bcopy
 #define bcopy(src,dst,len) memmov((dst), (src), (len))
 #define USING_MEMMOV
 #endif
-#endif
-
-#ifndef HAS__SETJMP
-#define _setjmp setjmp
-#define _longjmp longjmp
 #endif
 
 /* We use threaded code interpretation if the compiler provides labels

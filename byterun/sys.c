@@ -145,7 +145,11 @@ value sys_getcwd(unit)		/* ML */
      value unit;
 {
   char buff[4096];
+#ifdef HAS_GETCWD
   if (getcwd(buff, sizeof(buff)) == 0) sys_error(NULL);
+#else
+  if (getwd(buff) == 0) sys_error(NULL);
+#endif
   return copy_string(buff);
 }
 
