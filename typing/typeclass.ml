@@ -347,11 +347,11 @@ let type_class_field env var_env self cl
       let ty' = Ctype.expand_head var_env self' in
       begin match ty'.desc with
         Tobject (fi, _) ->
-          if not (Ctype.opened_object self') then
+          if not (Ctype.opened_object ty') then
             begin try
               Ctype.unify var_env self (Ctype.newobj (closed_scheme fi))
             with Ctype.Unify _ ->
-              let lab = missing_method var_env self' self in
+              let lab = missing_method var_env ty' self in
               raise(Error(loc, Closed_ancestor (cl.pcl_name, path, lab)))
             end;
           Ctype.unify var_env ty' self;
@@ -818,11 +818,11 @@ let type_class_field env var_env self cl (vars_sig, meths_sig) =
       begin match ty'.desc with
         Tobject (fi, _) ->
           if ty' != Ctype.expand_head var_env self then begin
-            if not (Ctype.opened_object self') then
+            if not (Ctype.opened_object ty') then
               begin try
                 Ctype.unify var_env self (Ctype.newobj (closed_scheme fi))
               with Ctype.Unify _ ->
-                let lab = missing_method var_env self' self in
+                let lab = missing_method var_env ty' self in
                 raise(Error(loc, Closed_ancestor (cl.pcty_name, path, lab)))
               end;
             Ctype.unify var_env ty' self;
