@@ -10,11 +10,34 @@
 ;*********************************************************************
 
 ; $Id$
+; Must be preprocessed by cpp
 
-        .text
-        .align  2
-	.globl _call_gen_code
-_call_gen_code:
+#ifdef SYS_hpux
+#define G(x) x
+#define DEFG(x) x
+#define CODE .code
+#define CODE_ALIGN 4
+#define EXPORT_CODE(x) .export x, entry, priv_lev=3
+#define STARTPROC .proc ! .callinfo frame=0, no_calls ! .entry
+#define ENDPROC .exit ! .procend
+        .import $$dyncall, MILLICODE
+#endif
+
+#ifdef SYS_nextstep
+#define G(x) _##x
+#define DEFG(x) _##x:
+#define CODE .text
+#define CODE_ALIGN 2
+#define EXPORT_CODE(x) .globl x
+#define STARTPROC
+#define ENDPROC
+#endif
+
+        CODE
+        .align  CODE_ALIGN
+        EXPORT_CODE(G(call_gen_code))
+DEFG(call_gen_code)
+        STARTPROC
 	stw     %r2,-20(%r30)
         ldo	256(%r30), %r30
 ; Save the callee-save registers
@@ -62,8 +85,13 @@ _call_gen_code:
         copy    %r24, %r25
         copy    %r23, %r24
         fcpy,dbl %fr5, %fr4
+#ifdef HPUX
+        bl      $$dyncall, %r2
+        nop
+#else
         ble     0(4, %r22)
         copy    %r31, %r2
+#endif
 ; Shuffle the results
         copy    %r26, %r28
 ; Restore the callee-save registers
@@ -109,9 +137,17 @@ _call_gen_code:
 	ldw     -20(%r30), %r2
         bv      0(%r2)
         nop
+        ENDPROC
 
-	.align	2
-	.globl _caml_c_call
-_caml_c_call:
+	.align	ALIGN_CODE
+	EXPORT_CODE(caml_c_call)
+DEFG(caml_c_call)
+        STARTPROC
+#ifdef SYS_hpux
+        bl $$dyncall, %r0
+        nop
+#else
         bv	0(%r22)
         nop
+#endif
+        ENDPROC

@@ -248,6 +248,13 @@ let emit_align n =
   then `	.align	{emit_int n}\n`
   else `	.align	{emit_int(Misc.log2 n)}\n`
 
+(* Directoves to emit data *)
+
+let dir_word = if hpux then ".word" else ".long"
+let dir_half = if hpux then ".half" else ".short"
+let dir_string = if hpux then ".string" else ".ascii"
+let dir_skip = if hpux then ".blockz" else ".space"
+
 (* Record live pointers at call points *)
 
 type frame_descr =
@@ -275,12 +282,12 @@ let record_frame live =
   `{emit_label lbl}:\n`
 
 let emit_frame fd =
-  `	.long	{emit_label fd.fd_lbl} + 3\n`;
-  `	.short	{emit_int fd.fd_frame_size}\n`;
-  `	.short	{emit_int (List.length fd.fd_live_offset)}\n`;
+  `	{emit_string dir_word}	{emit_label fd.fd_lbl} + 3\n`;
+  `	{emit_string dir_half}	{emit_int fd.fd_frame_size}\n`;
+  `	{emit_string dir_half}	{emit_int (List.length fd.fd_live_offset)}\n`;
   List.iter
     (fun n ->
-      `	.short	{emit_int n}\n`)
+      `	{emit_string dir_half}	{emit_int n}\n`)
     fd.fd_live_offset;
   emit_align 4
 
@@ -840,32 +847,32 @@ let emit_item = function
   | Cint8 n ->
       `	.byte	{emit_int n}\n`
   | Cint16 n ->
-      `	.short	{emit_int n}\n`
+      `	{emit_string dir_half}	{emit_int n}\n`
   | Cint n ->
-      `	.long	{emit_int n}\n`
+      `	{emit_string dir_word}	{emit_int n}\n`
   | Cintlit s ->
-      `	.long	{emit_string s}\n`
+      `	{emit_string dir_word}	{emit_string s}\n`
   | Cfloat f ->
       `	.double	{emit_string f}\n`
   | Csymbol_address s ->
-      `	.long	{emit_symbol s}\n`
+      `	{emit_string dir_word}	{emit_symbol s}\n`
   | Clabel_address lbl ->
-      `	.long	{emit_label(lbl + 10000)}\n`
+      `	{emit_string dir_word}	{emit_label(lbl + 10000)}\n`
   | Cstring s ->
       let l = String.length s in
       if l = 0 then ()
       else if l < 80 then
-        `	.ascii	{emit_string_literal s}\n`
+        `	{emit_string dir_string}	{emit_string_literal s}\n`
       else begin
         let i = ref 0 in
         while !i < l do
           let n = min (l - !i) 80 in
-          `	.ascii	{emit_string_literal(String.sub s !i n)}\n`;
+          `	{emit_string dir_string}	{emit_string_literal(String.sub s !i n)}\n`;
           i := !i + n
         done
       end
   | Cskip n ->
-      if n > 0 then `	.space	{emit_int n}\n`
+      if n > 0 then `	{emit_string dir_skip}	{emit_int n}\n`
   | Calign n ->
       emit_align n
 
@@ -902,11 +909,11 @@ let end_assembly() =
   let lbl_end = Compilenv.current_unit_name() ^ "_end" in
   emit_global lbl_end;
   `{emit_symbol lbl_end}:\n`;
-  `	.long	0\n`;
+  `	{emit_string dir_word}	0\n`;
   let lbl = Compilenv.current_unit_name() ^ "_frametable" in
   emit_global lbl;
   `{emit_symbol lbl}:\n`;
-  `	.long	{emit_int (List.length !frame_descriptors)}\n`;
+  `	{emit_string dir_word}	{emit_int (List.length !frame_descriptors)}\n`;
   List.iter emit_frame !frame_descriptors;
   frame_descriptors := [];
   if hpux then emit_imports()
