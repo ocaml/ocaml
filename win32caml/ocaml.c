@@ -951,13 +951,17 @@ Output:
 Errors:
 --------------------------------------------------------------------------
 Edit History:
+     7 Aug  2004 - Chris Watford christopher.watford@gmail.com
+		- Fixed error where SendLastEditBuffer sent waaaay too many
+		newlines which completely broke the underlying connection to the
+		ocaml.exe pipe
 	15 Sept 2003 - Chris Watford watford@uiuc.edu
 		- Sends line to the pipe and adds newline to the end
 ------------------------------------------------------------------------*/
 void SendLastEditBuffer(HWND hwndChild)
 {
 	char* line = editbuffer_getasbuffer(CurrentEditBuffer);
-	int l = strlen(line);
+	int l = strlen(line) - 1;
 	char* linebuffer = (char*)SafeMalloc(l+2);
 
 	// save current edit buffer to history and create a new blank edit buffer
@@ -967,10 +971,15 @@ void SendLastEditBuffer(HWND hwndChild)
 	CurrentEditBuffer->LineCount = 0;
 	CurrentEditBuffer->Lines = NULL;
 
-	// add the newline to the end
-	strncpy(linebuffer, line, l);
-	linebuffer[l] = '\n';
-	linebuffer[l+1] = '\0';
+	// trim and add the newline to the end
+	strncpy(linebuffer, line, l+1);
+	while((linebuffer[l] == '\n' || linebuffer[l] == '\r') && (l >= 0))
+	{
+		linebuffer[l--] = '\0';
+	}
+
+	linebuffer[l+1] = '\n';
+	linebuffer[l+2] = '\0';
 
 	// save line to the pipe
 	WriteToPipe(linebuffer);
@@ -985,6 +994,10 @@ Output:        None explicit
 Errors:        None
 --------------------------------------------------------------------------
 Edit History:
+	 7 Aug  2004 - Chris Watford christopher.watford@gmail.com
+		- Fixed bug #2932 where many carraige returns were sent and it came
+		back with a null pointer error due to a fault of not checking if
+		the line returned was NULL
 	13 Oct  2003 - Chris Watford watford@uiuc.edu
 		- Solved the error when you have a malformed comment in the buffer
 ------------------------------------------------------------------------*/
@@ -992,7 +1005,16 @@ BOOL SendingFullCommand(void)
 {
 	// if there is a ;; on the line, return true
 	char *line = editbuffer_getasline(CurrentEditBuffer);
-	char *firstComment = strstr(line, "(*"), *firstSemiColonSemiColon = strstr(line, ";;");
+	char *firstComment, *firstSemiColonSemiColon, *firstQuote;
+
+	if(line == NULL)
+	{
+		return FALSE;
+	}
+
+	firstComment = strstr(line, "(*");
+	firstSemiColonSemiColon = strstr(line, ";;");
+	firstQuote = strstr(line, "\"");
 
 	// easy case :D
 	if(firstSemiColonSemiColon == NULL)
@@ -1004,9 +1026,51 @@ BOOL SendingFullCommand(void)
 	// if there are no comments
 	if(firstComment == NULL)
 	{
-		BOOL r = (firstSemiColonSemiColon != NULL);
-		free(line);
-		return r;
+		// if there are no quotations used
+		if(firstQuote == NULL)
+		{
+			BOOL r = (firstSemiColonSemiColon != NULL);
+			free(line);
+			return r;
+		} else {
+			// we need to first check if the ;; is before the \", since the \"
+			// won't matter if its before the semicolonsemicolon
+			if(firstQuote < firstSemiColonSemiColon)
+			{
+				// the quote is before the ;;, we need to make sure its terminated
+				// also we have to check for escaped quotes, le sigh!
+				char *c = firstQuote+1;
+				BOOL in_quote = TRUE;
+				
+				// in-quote determiner loop
+				while(c[0] != '\0')
+				{
+					// are we a backslash?
+					if(c[0] == '\\')
+					{
+						// ignore the next character
+						c++;
+					}
+					else
+					{
+							// are we a quote?
+						if(c[0] == '"')
+						{
+							in_quote = !in_quote;
+						}
+					}
+
+					c++;
+				}
+
+				free(line);
+				return !in_quote;
+			} else {
+				BOOL r = (firstSemiColonSemiColon != NULL);
+				free(line);
+				return r;
+			}
+		}
 	} else {
 		// we have to search through finding all comments
 
