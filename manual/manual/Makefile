@@ -31,8 +31,9 @@ html: files
 	${HACHA} manual.html
 
 info: files
-	cd infoman; \
-	${HEVEA} ${INFO} -I .. -I ../refman -I ../library -I ../cmds -I ../tutorials -I ../../styles -I ../texstuff ../manual.inf -e macros.tex ../manual.tex
+	cd infoman; rm -f ocaml.info*; \
+	${HEVEA} ${INFO} -o ocaml.info -I .. -I ../refman -I ../library -I ../cmds -I ../tutorials -I ../../styles -I ../texstuff ../manual.inf -e macros.tex ../manual.tex
+	cd infoman; gzip -9 ocaml.info*
 
 text: files
 	cd textman; \
@@ -64,12 +65,12 @@ clean:
 release:
 	gzip < texstuff/manual.dvi > $(RELEASE)refman.dvi.gz
 	dvips -Php11rv -o '!gzip > $(RELEASE)refman.ps.gz' texstuff/manual.dvi
-	/bin/rm -rf htmlman/manual.html
+	rm -f htmlman/manual.html
 	tar cf - htmlman/*.* | gzip > $(RELEASE)refman.html.tar.gz
 	zip -8 $(RELEASE)refman.html.zip htmlman/*.*
 	cp texstuff/pdfmanual.pdf $(RELEASE)refman.pdf
 	cp textman/manual.txt $(RELEASE)refman.txt
-	tar cf - infoman/manual.* | gzip > $(RELEASE)refman.info.tar.gz
+	tar cf - infoman/ocaml* | gzip > $(RELEASE)refman.info.tar.gz
 
 .SUFFIXES:
 .SUFFIXES: .tex .etex .htex

@@ -1,5 +1,7 @@
 \input{book.hva}
-\input{fancysection.hva}
+%%\input{fancysection.hva}
+\renewcommand{\@bodyargs}{}
+
 \renewcommand{\part}[2][]{%
 \stepcounter{part}%
 \ifoptarg\cuthere{part}{#1}%

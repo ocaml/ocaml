@@ -198,6 +198,11 @@ file is built from the basename of the source file with the extension
 ".ppi" for an interface (".mli") file and ".ppo" for an implementation
 (".ml") file.
 
+\item["-rectypes"]
+Allow arbitrary recursive types during type-checking.  By default,
+only recursive types where the recursion goes through an object type
+are supported.
+
 \item["-S"]
 Keep the assembly code produced during the compilation. The assembly
 code for the source file \var{x}".ml" is saved in the file \var{x}".s".

@@ -205,6 +205,11 @@ file is built from the basename of the source file with the extension
 ".ppi" for an interface (".mli") file and ".ppo" for an implementation
 (".ml") file.
 
+\item["-rectypes"]
+Allow arbitrary recursive types during type-checking.  By default,
+only recursive types where the recursion goes through an object type
+are supported.
+
 \item["-thread"]
 Compile or link multithreaded programs, in combination with the
 "threads" library described in chapter~\ref{c:threads}. What this

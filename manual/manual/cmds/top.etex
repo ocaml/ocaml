@@ -147,6 +147,11 @@ Directories can also be added to the search path once
 the toplevel is running with the "#directory" directive
 (section~\ref{s:toplevel-directives}).
 
+\item["-rectypes"]
+Allow arbitrary recursive types during type-checking.  By default,
+only recursive types where the recursion goes through an object type
+are supported.
+
 \item["-unsafe"]
 See the corresponding option for "ocamlc", chapter~\ref{c:camlc}.
 Turn bound checking off on array and string accesses (the "v.(i)" and
