@@ -139,7 +139,7 @@ type wait_flag =
     WNOHANG
   | WUNTRACED
 
-        (* Flags for [waitopt] and [waitpid].
+        (* Flags for [waitpid].
            [WNOHANG] means do not block if no child has
            died yet, but immediately return with a pid equal to 0.
            [WUNTRACED] means report also the children that receive stop
