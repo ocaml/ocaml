@@ -76,10 +76,13 @@ static unsigned long max_stack_init = Max_stack_def;
 */
 /* Note: option l is irrelevant to the native-code runtime. */
 
+/* If you change these functions, see also their copy in byterun/startup.c */
+
 static void scanmult (char *opt, long unsigned int *var)
 {
   char mult = ' ';
   sscanf (opt, "=%lu%c", var, &mult);
+  sscanf (opt, "=0x%lx%c", var, &mult);
   if (mult == 'k') *var = *var * 1024;
   if (mult == 'M') *var = *var * (1024 * 1024);
   if (mult == 'G') *var = *var * (1024 * 1024 * 1024);

@@ -269,6 +269,8 @@ static int parse_command_line(char **argv)
    Except for l (maximum stack size) and h (initial heap size).
 */
 
+/* If you change these functions, see also their copy in asmrun/startup.c */
+
 static void scanmult (char *opt, long unsigned int *var)
 {
   char mult = ' ';
