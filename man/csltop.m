@@ -1,0 +1,81 @@
+.TH CSLTOP 1
+
+.SH NAME
+csltop \- The Caml Special Light interactive toplevel
+
+
+.SH SYNOPSIS
+.B csltop
+[
+.B \-unsafe
+]
+[
+.BI \-I \ lib-dir
+]
+
+.SH DESCRIPTION
+
+The
+.BR csltop (1)
+command is the toplevel system for Caml Special Light,
+that permits interactive use of the Caml Special Light system through a
+read-eval-print loop. In this mode, the system repeatedly reads Caml
+phrases from the input, then typechecks, compile and evaluate
+them, then prints the inferred type and result value, if any. The
+system prints a # (sharp) prompt before reading each phrase.
+
+A toplevel phrase can span several lines. It is terminated by ;; (a
+double-semicolon). The syntax of toplevel phrases is as follows.
+
+The toplevel system is started by the command 
+.BR csltop (1).
+Phrases are read on standard input, results are printed on standard
+output, errors on standard error. End-of-file on standard input
+terminates
+.BR csltop (1).
+
+.SH OPTIONS
+
+The following command-line options are recognized by
+.BR csltop (1).
+
+.TP
+.BI \-I \ directory
+Add the given directory to the list of directories searched for
+source and compiled files. By default, the current directory is
+searched first, then the standard library directory. Directories added
+with 
+.B \-I
+are searched after the current directory, in the order in which they
+were given on the command line, but before the standard library
+directory.
+
+.TP
+.B \-unsafe
+Turn bound checking off on array and string accesses (the v.(i)
+and s.[i] constructs). Programs compiled with 
+.B \-unsafe
+are therefore slightly faster, but unsafe: anything can happen if the program
+accesses an array or string outside of its bounds.
+
+.SH ENVIRONMENT VARIABLES
+
+.TP
+.B LC_CTYPE
+If set to iso_8859_1, accented characters (from the
+ISO Latin-1 character set) in string and character literals are
+printed as is; otherwise, they are printed as decimal escape sequences.
+
+.TP
+.B TERM
+When printing error messages, the toplevel system
+attempts to underline visually the location of the error. It
+consults the TERM variable to determines the type of output terminal
+and look up its capabilities in the terminal database.
+
+.SH SEE ALSO
+.BR cslc (1).
+.br
+.I The Caml Special Light user's manual,
+chapter "The toplevel system".
+
