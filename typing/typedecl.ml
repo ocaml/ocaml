@@ -366,7 +366,7 @@ let compute_variance env tvl nega posi ty =
               match Btype.row_field_repr f with
                 Rpresent (Some ty) ->
                   compute_variance_rec posi nega ty
-              | Reither (_, tyl, _) ->
+              | Reither (_, tyl, _, _) ->
                   List.iter (compute_variance_rec posi nega) tyl
               | _ -> ())
             (Btype.row_repr row).row_fields

@@ -202,9 +202,9 @@ let rec transl_type env policy styp =
                 match Btype.row_field_repr f with
                 | Rpresent (Some ty) ->
                     bound := ty :: !bound;
-                    Reither(false, [ty], ref None)
+                    Reither(false, [ty], false, ref None)
                 | Rpresent None ->
-                    Reither (true, [], ref None)
+                    Reither (true, [], false, ref None)
                 | _ -> f)
               row.row_fields
           in
@@ -248,7 +248,7 @@ let rec transl_type env policy styp =
             end else begin
               let tl = List.map (transl_type env policy) stl in
               bound := tl @ !bound;
-              Reither(c, tl, ref None)
+              Reither(c, tl, false, ref None)
             end)
           fields
       in

@@ -63,7 +63,7 @@ let rec repr =
   | t -> t
 
 let rec row_field_repr = function
-    Reither(_, _, {contents = Some fi}) -> row_field_repr fi
+    Reither(_, _, _, {contents = Some fi}) -> row_field_repr fi
   | fi -> fi
 
 let rec row_repr row =
@@ -105,7 +105,7 @@ let rec iter_row f row =
     (fun (_, fi) ->
       match row_field_repr fi with
       | Rpresent(Some ty) -> f ty
-      | Reither(_, tl, _) -> List.iter f tl
+      | Reither(_, tl, _, _) -> List.iter f tl
       | _ -> ())
     row.row_fields;
   match (repr row.row_more).desc with

@@ -45,7 +45,7 @@ and row_desc =
 
 and row_field =
     Rpresent of type_expr option
-  | Reither of bool * type_expr list * row_field option ref
+  | Reither of bool * type_expr list * bool * row_field option ref
   | Rabsent
 
 and abbrev_memo =

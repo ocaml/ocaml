@@ -112,7 +112,7 @@ let rec equal ~prefix t1 t2 =
              match row_field_repr f1, row_field_repr f2 with
                Rpresent None, Rpresent None -> true
              | Rpresent(Some t1), Rpresent (Some t2) -> equal t1 t2 ~prefix
-             | Reither(c1, tl1, _), Reither(c2, tl2, _) ->
+             | Reither(c1, tl1, _, _), Reither(c2, tl2, _, _) ->
                  c1 = c2 && List.length tl1 = List.length tl2 &&
                  List.for_all2 tl1 tl2 ~f:(equal ~prefix)
              | _ -> false
@@ -155,7 +155,7 @@ let rec included ~prefix t1 t2 =
              match row_field_repr f1, row_field_repr f2 with
                Rpresent None, Rpresent None -> true
              | Rpresent(Some t1), Rpresent (Some t2) -> included t1 t2 ~prefix
-             | Reither(c1, tl1, _), Reither(c2, tl2, _) ->
+             | Reither(c1, tl1, _, _), Reither(c2, tl2, _, _) ->
                  c1 = c2 && List.length tl1 = List.length tl2 &&
                  List.for_all2 tl1 tl2 ~f:(included ~prefix)
              | _ -> false

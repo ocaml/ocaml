@@ -1723,7 +1723,7 @@ let combine_variant row arg partial ctx def (tag_lambda_list, total1, pats) =
     List.iter
       (fun (_, f) ->
         match Btype.row_field_repr f with
-          Rabsent | Reither(true, _::_, _) -> ()
+          Rabsent | Reither(true, _::_, _, _) -> ()
         | _ -> incr num_constr)
       row.row_fields
   else

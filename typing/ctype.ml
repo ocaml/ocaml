@@ -321,7 +321,7 @@ let rec filter_row_fields erase = function
       let fi = filter_row_fields erase fi in
       match row_field_repr f with
         Rabsent -> fi
-      | Reither(_,_,e) when erase -> e := Some Rabsent; fi
+      | Reither(_,_,false,e) when erase -> e := Some Rabsent; fi
       | _ -> p :: fi
 
                     (**************************************)
@@ -713,7 +713,8 @@ let rec copy ty =
                   (fun (l,fi) -> l,
                     match row_field_repr fi with
                       Rpresent (Some ty) -> Rpresent(Some(copy ty))
-                    | Reither(c, l, _) -> Reither(c, List.map copy l, ref None)
+                    | Reither(c, l, m, _) ->
+                        Reither(c, List.map copy l, m, ref None)
                     | fi -> fi)
                   row.row_fields
               and name =
@@ -1092,14 +1093,6 @@ let deep_occur t0 ty =
     unmark_type ty; true
 
 (*
-   This flag indicates whether unification should allow conjunctive
-   types in variants or not. They are allowed when typing expressions,
-   but not when typing patterns. This avoids some silly bug, and strange
-   error messages.
-*)
-let allow_conjunctive = ref true
-
-(*
    1. When unifying two non-abbreviated types, one type is made a link
       to the other. When unifying an abbreviated type with a
       non-abbreviated type, the non-abbreviated type is made a link to
@@ -1336,7 +1329,7 @@ and unify_row env row1 row2 =
   let more row rest =
     let rest =
       if closed then
-        filter_row_fields (row.row_closed && !allow_conjunctive) rest
+        filter_row_fields row.row_closed rest
       else rest in
     if rest <> [] && row.row_closed then raise (Unify []);
     let ty =
@@ -1355,11 +1348,11 @@ and unify_row env row1 row2 =
         match f1, f2 with
           Rpresent(Some t1), Rpresent(Some t2) -> unify env t1 t2
         | Rpresent None, Rpresent None -> ()
-        | Reither(c1, tl1, e1), Reither(c2, tl2, e2) ->
+        | Reither(c1, tl1, m1, e1), Reither(c2, tl2, m2, e2) ->
             if e1 == e2 then () else
             let tl = tl1 @ tl2 in
             let tl =
-              if !allow_conjunctive then
+              if not (m1 || m2) then
                 List.fold_right
                   (fun t tl ->
                     let t = repr t in if List.memq t tl then tl else t::tl)
@@ -1371,20 +1364,20 @@ and unify_row env row1 row2 =
                   List.iter (unify env t1) tl;
                   [t1]
             in
-            let f = Reither(c1 || c2, tl, ref None) in
+            let f = Reither(c1 || c2, tl, m1 || m2, ref None) in
             e1 := Some f; e2 := Some f
-        | Reither(false, tl, e1), Rpresent(Some t2) ->
+        | Reither(false, tl, _, e1), Rpresent(Some t2) ->
             e1 := Some f2;
             (try List.iter (fun t1 -> unify env t1 t2) tl
              with exn -> e1 := None; raise exn)
-        | Rpresent(Some t1), Reither(false, tl, e2) ->
+        | Rpresent(Some t1), Reither(false, tl, _, e2) ->
             e2 := Some f1;
             (try List.iter (unify env t1) tl
              with exn -> e2 := None; raise exn)
-        | Reither(true, [], e1), Rpresent None -> e1 := Some f2
-        | Rpresent None, Reither(true, [], e2) -> e2 := Some f1
-        | Reither(_, _, e1), Rabsent when !allow_conjunctive -> e1 := Some f2
-        | Rabsent, Reither(_, _, e2) when !allow_conjunctive -> e2 := Some f1
+        | Reither(true, [], _, e1), Rpresent None -> e1 := Some f2
+        | Rpresent None, Reither(true, [], _, e2) -> e2 := Some f1
+        | Reither(_, _, false, e1), Rabsent -> e1 := Some f2
+        | Rabsent, Reither(_, _, false, e2) -> e2 := Some f1
         | Rabsent, Rabsent -> ()
         | _ -> raise (Unify []))
       pairs
@@ -1392,24 +1385,10 @@ and unify_row env row1 row2 =
     rm1.desc <- md1; rm2.desc <- md2; raise exn
   end
 
-let unify_strict env ty1 ty2 =
-  let old = !allow_conjunctive in
-  try
-    allow_conjunctive := false;
-    unify env ty1 ty2;
-    allow_conjunctive := old
-  with Unify trace ->
-    allow_conjunctive := old;
-    raise (Unify (expand_trace env trace))
-
 let unify env ty1 ty2 =
-  let old = !allow_conjunctive in
   try
-    allow_conjunctive := true;
-    unify env ty1 ty2;
-    allow_conjunctive := old
+    unify env ty1 ty2
   with Unify trace ->
-    allow_conjunctive := old;
     raise (Unify (expand_trace env trace))
 
 let _ = unify' := unify
@@ -1634,10 +1613,10 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
         Rpresent(Some t1), Rpresent(Some t2) ->
           moregen inst_nongen type_pairs env t1 t2
       | Rpresent None, Rpresent None -> ()
-      | Reither(false, tl1, e1), Rpresent(Some t2) ->
+      | Reither(false, tl1, _, e1), Rpresent(Some t2) ->
           e1 := Some f2;
           List.iter (fun t1 -> moregen inst_nongen type_pairs env t1 t2) tl1
-      | Reither(c1, tl1, e1), Reither(c2, tl2, e2) ->
+      | Reither(c1, tl1, _, e1), Reither(c2, tl2, _, e2) ->
           if c1 && not c2 then raise(Unify []);
           e1 := Some f2;
           begin match tl2 with
@@ -1647,8 +1626,8 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
               if List.length tl1 <> List.length tl2 then raise (Unify []);
               List.iter2 (moregen inst_nongen type_pairs env) tl1 tl2
           end
-      | Reither(true, [], e1), Rpresent None -> e1 := Some f2
-      | Reither(_, _, e1), Rabsent -> e1 := Some f2
+      | Reither(true, [], _, e1), Rpresent None -> e1 := Some f2
+      | Reither(_, _, _, e1), Rabsent -> e1 := Some f2
       | Rabsent, Rabsent -> ()
       | _ -> raise (Unify []))
     pairs
@@ -1790,7 +1769,7 @@ and eqtype_row rename type_pairs subst env row1 row2 =
       match row_field_repr f1, row_field_repr f2 with
         Rpresent(Some t1), Rpresent(Some t2) ->
           eqtype rename type_pairs subst env t1 t2
-      | Reither(c1, tl1,_), Reither(c2, tl2,_)
+      | Reither(c1, tl1, _, _), Reither(c2, tl2, _, _)
         when c1 = c2 && List.length tl1 = List.length tl2 ->
           List.iter2 (eqtype rename type_pairs subst env) tl1 tl2
       | Rpresent None, Rpresent None -> ()
@@ -2191,14 +2170,14 @@ let rec build_subtype env visited posi t =
           (fun (l,f as orig) -> match row_field_repr f with
             Rpresent None ->
               if posi then
-                (l, Reither(true, [], ref None)), false
+                (l, Reither(true, [], false, ref None)), false
               else
                 orig, false
           | Rpresent(Some t) ->
               let (t', c) = build_subtype env visited posi t in
               if posi then begin
                 bound := t' :: !bound;
-                (l, Reither(false, [t'], ref None)), c
+                (l, Reither(false, [t'], false, ref None)), c
               end else
                 (l, Rpresent(Some t')), c
           | _ -> assert false)
@@ -2323,11 +2302,11 @@ let rec subtype_rec env trace t1 t2 cstrs =
           List.fold_left
             (fun cstrs (_,f1,f2) ->
               match row_field_repr f1, row_field_repr f2 with
-                (Rpresent None|Reither(true,_,_)), Rpresent None ->
+                (Rpresent None|Reither(true,_,_,_)), Rpresent None ->
                   cstrs
               | Rpresent(Some t1), Rpresent(Some t2) ->
                   subtype_rec env ((t1, t2)::trace) t1 t2 cstrs
-              | Reither(false, t1::_, _), Rpresent(Some t2) ->
+              | Reither(false, t1::_, _, _), Rpresent(Some t2) ->
                   subtype_rec env ((t1, t2)::trace) t1 t2 cstrs
               | Rabsent, _ -> cstrs
               | _ -> raise Exit)
@@ -2439,7 +2418,7 @@ let rec normalize_type_rec env ty =
       let fields = List.map
           (fun (l,f) ->
             let f = row_field_repr f in l,
-            match f with Reither(b, ty::(_::_ as tyl), e) ->
+            match f with Reither(b, ty::(_::_ as tyl), m, e) ->
               let tyl' =
                 List.fold_left
                   (fun tyl ty ->
@@ -2448,7 +2427,7 @@ let rec normalize_type_rec env ty =
                   [ty] tyl
               in
               if List.length tyl' < List.length tyl + 1 then
-                let f = Reither(b, List.rev tyl', ref None) in
+                let f = Reither(b, List.rev tyl', m, ref None) in
                 e := Some f;
                 f
               else f
@@ -2555,10 +2534,10 @@ let rec nondep_type_rec env id ty =
                     match row_field_repr fi with
                       Rpresent (Some ty) ->
                         Rpresent(Some (nondep_type_rec env id ty))
-                    | Reither(c, l, _) ->
+                    | Reither(c, l, m, _) ->
                         let l = List.map (nondep_type_rec env id) l in
                         bound := l @ !bound;
-                        Reither(c, l, ref None)
+                        Reither(c, l, m, ref None)
                     | fi -> fi)
                   row.row_fields
               and name =

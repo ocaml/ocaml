@@ -389,7 +389,7 @@ let full_match tdefs force env =  match env with
             (fun acc (tag, f) ->
               if List.mem_assoc tag acc || List.mem_assoc tag row.row_fields
               then acc
-              else (tag, f)::acc)
+              else (print_endline tag; (tag, f)::acc))
             [] fields
         in
         let closed =
@@ -403,10 +403,16 @@ let full_match tdefs force env =  match env with
         (fun ok (tag,f) ->
           match Btype.row_field_repr f with
             Rabsent -> ok
-          (* | Reither(_, _, e) ->
+          | Reither(_, _, false, e) ->
               if not (List.mem_assoc tag fields) then e := Some Rabsent;
-              ok *)
-          | Reither _
+              let row = Btype.row_repr row in
+              if row.row_name <> None then
+                Ctype.unify tdefs row.row_more
+                  (Btype.newgenty
+                     (Tvariant {row with row_fields = []; row_name = None;
+                                row_more = Btype.newgenvar ()}));
+              ok
+          | Reither (_, _, true, _)
           | Rpresent _ ->
               ok && List.mem_assoc tag fields)
         true row.row_fields
@@ -517,7 +523,8 @@ let build_other env =  match env with
           if List.mem tag tags then others else
           match Btype.row_field_repr f with
             Rabsent (* | Reither _ *) -> others
-          | Reither (c, _, _) -> make_other_pat tag c :: others
+          (* This one is called after erasing pattern info *)
+          | Reither (c, _, _, _) -> make_other_pat tag c :: others
           | Rpresent arg -> make_other_pat tag (arg = None) :: others)
         [] row.row_fields
     with [] -> assert false

@@ -92,7 +92,7 @@ let namable_row row =
   List.for_all
     (fun (_, f) ->
        match row_field_repr f with
-       | Reither(c, l, _) -> if c then l = [] else List.length l = 1
+       | Reither(c, l, _, _) -> if c then l = [] else List.length l = 1
        | _ -> true)
     row.row_fields
 
@@ -270,9 +270,9 @@ let rec typexp sch prio0 ppf ty =
 and row_field sch ppf (l, f) =
   let pr_field ppf f =
     match row_field_repr f with
-    | Rpresent None | Reither(true, [], _) -> ()
+    | Rpresent None | Reither(true, [], _, _) -> ()
     | Rpresent(Some ty) -> fprintf ppf " of@ %a" (typexp sch 0) ty
-    | Reither(c, tyl,_) ->
+    | Reither(c, tyl, _, _) ->
         if c (* contradiction: un constructeur constant qui a un argument *)
         then fprintf ppf " of@ &@ %a" (typlist sch 0 " &") tyl
         else fprintf ppf " of@ %a" (typlist sch 0 " &") tyl

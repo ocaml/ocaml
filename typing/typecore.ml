@@ -96,13 +96,6 @@ let extract_option_type env ty =
 (* Creating new conjunctive types is not allowed when typing patterns *)
 let unify_pat env pat expected_ty =
   try
-    unify_strict env pat.pat_type expected_ty
-  with Unify trace ->
-    raise(Error(pat.pat_loc, Pattern_type_clash(trace)))
-
-(* This one allows conjonctive types *)
-let unify_pat' env pat expected_ty =
-  try
     unify env pat.pat_type expected_ty
   with Unify trace ->
     raise(Error(pat.pat_loc, Pattern_type_clash(trace)))
@@ -133,7 +126,7 @@ let enter_orpat_variables loc env  p1_vs p2_vs =
             unify_vars rem1 rem2
           else begin
             begin try
-              unify_strict env t1 t2
+              unify env t1 t2
             with
             | Unify trace ->
                 raise(Error(loc, Pattern_type_clash(trace)))
@@ -178,7 +171,7 @@ let rec build_as_type env p =
           unify_pat env {arg with pat_type = build_as_type env arg} ty_arg
         end else begin
           let ty_arg', ty_res' = instance_label lbl in
-          unify_strict env ty_arg ty_arg';
+          unify env ty_arg ty_arg';
           unify_pat env p ty_res'
         end in
       Array.iter do_label lbl.lbl_all;
@@ -210,13 +203,13 @@ let build_or_pat env loc lid =
         match row_field_repr f with
           Rpresent None ->
             (l,None) :: pats,
-            (l, Reither(true,[], ref None)) :: fields
+            (l, Reither(true,[], true, ref None)) :: fields
         | Rpresent (Some ty) ->
             bound := ty :: !bound;
             (l, Some{pat_desc=Tpat_any; pat_loc=Location.none; pat_env=env;
                      pat_type=ty})
             :: pats,
-            (l, Reither(false, [ty], ref None)) :: fields
+            (l, Reither(false, [ty], true, ref None)) :: fields
         | _ -> pats, fields)
       ([],[]) fields in
   let row =
@@ -300,7 +293,8 @@ let rec type_pat env sp =
   | Ppat_variant(l, sarg) ->
       let arg = may_map (type_pat env) sarg in
       let arg_type = match arg with None -> [] | Some arg -> [arg.pat_type]  in
-      let row = { row_fields = [l, Reither(arg = None, arg_type,ref None)];
+      let row = { row_fields =
+                    [l, Reither(arg = None, arg_type, true, ref None)];
                   row_bound = arg_type;
                   row_closed = false;
                   row_more = newvar ();
@@ -326,7 +320,7 @@ let rec type_pat env sp =
             raise(Error(sp.ppat_loc, Unbound_label lid)) in
         let (ty_arg, ty_res) = instance_label label in
         begin try
-          unify_strict env ty_res ty
+          unify env ty_res ty
         with Unify trace ->
           raise(Error(sp.ppat_loc, Label_mismatch(lid, trace)))
         end;
@@ -441,13 +435,15 @@ let check_unused_variant pat =
       | Rpresent _ -> ()
       | Rabsent ->
           Location.prerr_warning pat.pat_loc Warnings.Unused_match
-      | Reither (true, [], e) when not row.row_closed ->
+      | Reither (true, [], _, e) when not row.row_closed ->
           e := Some (Rpresent None)
-      | Reither (false, ty::tl, e) when not row.row_closed ->
+      | Reither (false, ty::tl, _, e) when not row.row_closed ->
           e := Some (Rpresent (Some ty));
           begin match opat with None -> assert false
           | Some pat -> List.iter (unify_pat pat.pat_env pat) (ty::tl)
           end
+      | Reither (c, l, true, e) ->
+          e := Some (Reither (c, l, false, ref None))
       | _ -> ()
       end
   | _ -> ()
@@ -1341,7 +1337,7 @@ and type_cases env ty_arg ty_res partial_loc caselist =
         Parmatch.check_partial env loc cases in
   (* `Contaminating' unifications start here *)
   begin match pat_env_list with [] -> ()
-  | (pat, _) :: _ -> unify_pat' env pat ty_arg
+  | (pat, _) :: _ -> unify_pat env pat ty_arg
   end;
   let cases =
     List.map2
@@ -1349,7 +1345,7 @@ and type_cases env ty_arg ty_res partial_loc caselist =
         let exp = type_expect ext_env sexp ty_res in
         (pat, exp))
       pat_env_list caselist in
-  (* Check for impossible variant constructors *)
+  (* Check for impossible variant constructors, and normalize variant types *)
   List.iter (fun (pat, _) -> iter_pattern check_unused_variant pat) cases;
   Parmatch.check_unused env cases;
   cases, partial
@@ -1363,7 +1359,7 @@ and type_let env rec_flag spat_sexp_list =
   in
   if rec_flag = Recursive then
     List.iter2
-      (fun pat (_, sexp) -> unify_pat' env pat (type_approx env sexp))
+      (fun pat (_, sexp) -> unify_pat env pat (type_approx env sexp))
       pat_list spat_sexp_list;
   let exp_env =
     match rec_flag with Nonrecursive | Default -> env | Recursive -> new_env in
