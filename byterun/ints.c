@@ -58,13 +58,14 @@ static int parse_digit(char c)
     return -1;
 }
 
-static long parse_long(value s)
+static long parse_long(value s, int nbits)
 {
   char * p;
-  unsigned long res;
+  unsigned long res, threshold;
   int sign, base, d;
 
   p = parse_sign_and_base(String_val(s), &base, &sign);
+  threshold = ((unsigned long) -1) / base;
   d = parse_digit(*p);
   if (d < 0 || d >= base) failwith("int_of_string");
   for (p++, res = d; /*nothing*/; p++) {
@@ -72,9 +73,23 @@ static long parse_long(value s)
     if (c == '_') continue;
     d = parse_digit(c);
     if (d < 0 || d >= base) break;
+    /* Detect overflow in multiplication base * res */
+    if (res > threshold) failwith("int_of_string");
     res = base * res + d;
+    /* Detect overflow in addition (base * res) + d */
+    if (res < (unsigned long) d) failwith("int_of_string");
   }
   if (p != String_val(s) + string_length(s)) failwith("int_of_string");
+  if (base == 10) {
+    /* Signed representation expected, allow -2^(nbits-1) to 2^(nbits - 1) */
+    if (res > 1UL << (nbits - 1))
+      failwith("int_of_string");
+  } else {
+    /* Unsigned representation expected, allow 0 to 2^nbits - 1
+       and tolerate -(2^nbits - 1) to 0 */
+    if (nbits < sizeof(unsigned long) * 8 && res >= 1UL << nbits)
+      failwith("int_of_string");
+  }
   return sign < 0 ? -((long) res) : (long) res;
 }
 
@@ -106,7 +121,7 @@ CAMLprim value int_compare(value v1, value v2)
 
 CAMLprim value int_of_string(value s)
 {
-  return Val_long(parse_long(s));
+  return Val_long(parse_long(s, 8 * sizeof(value) - 1));
 }
 
 #define FORMAT_BUFFER_SIZE 32
@@ -305,7 +320,7 @@ CAMLprim value int32_format(value fmt, value arg)
 
 CAMLprim value int32_of_string(value s)
 {
-  return copy_int32(parse_long(s));
+  return copy_int32(parse_long(s, 32));
 }
 
 /* 64-bit integers */
@@ -487,10 +502,13 @@ CAMLprim value int64_format(value fmt, value arg)
 CAMLprim value int64_of_string(value s)
 {
   char * p;
-  int64 res;
+  uint64 max_uint64 = I64_literal(0xFFFFFFFF, 0xFFFFFFFF);
+  uint64 max_int64  = I64_literal(0x80000000, 0x00000000);
+  uint64 res, threshold;
   int sign, base, d;
 
   p = parse_sign_and_base(String_val(s), &base, &sign);
+  I64_udivmod(max_uint64, I64_of_int32(base), &threshold, &res);
   d = parse_digit(*p);
   if (d < 0 || d >= base) failwith("int_of_string");
   res = I64_of_int32(d);
@@ -499,9 +517,14 @@ CAMLprim value int64_of_string(value s)
     if (c == '_') continue;
     d = parse_digit(c);
     if (d < 0 || d >= base) break;
+    /* Detect overflow in multiplication base * res */
+    if (I64_ult(threshold, res)) failwith("int_of_string");
     res = I64_add(I64_mul(I64_of_int32(base), res), I64_of_int32(d));
+    /* Detect overflow in addition (base * res) + d */
+    if (I64_ult(res, I64_of_int32(d))) failwith("int_of_string");
   }
   if (p != String_val(s) + string_length(s)) failwith("int_of_string");
+  if (base == 10 && I64_ult(max_int64, res)) failwith("int_of_string");
   if (sign < 0) res = I64_neg(res);
   return copy_int64(res);
 }
@@ -684,7 +707,7 @@ CAMLprim value nativeint_format(value fmt, value arg)
 
 CAMLprim value nativeint_of_string(value s)
 {
-  return copy_nativeint(parse_long(s));
+  return copy_nativeint(parse_long(s, 8 * sizeof(value)));
 }
 
 
