@@ -284,13 +284,13 @@ rule token = parse
         CHAR (Lexing.lexeme_char lexbuf 1) }
   | "'" [^ '\\' '\'' '\010' '\013'] "'"
       { CHAR(Lexing.lexeme_char lexbuf 1) }
-  | "'" '\\' ['\\' '\'' '"' 'n' 't' 'b' 'r'] "'"
+  | "'\\" ['\\' '\'' '"' 'n' 't' 'b' 'r'] "'"
       { CHAR(char_for_backslash (Lexing.lexeme_char lexbuf 2)) }
-  | "'" '\\' ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
+  | "'\\" ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
       { CHAR(char_for_decimal_code lexbuf 2) }
-  | "'" '\\' 'x' ['0'-'9' 'a'-'f' 'A'-'F'] ['0'-'9' 'a'-'f' 'A'-'F'] "'"
+  | "'\\" 'x' ['0'-'9' 'a'-'f' 'A'-'F'] ['0'-'9' 'a'-'f' 'A'-'F'] "'"
       { CHAR(char_for_hexadecimal_code lexbuf 3) }
-  | "'" '\\' _
+  | "'\\" _
       { let l = Lexing.lexeme lexbuf in
         let esc = String.sub l 1 (String.length l - 1) in
         raise (Error(Illegal_escape esc, Location.curr lexbuf))
@@ -416,6 +416,8 @@ and comment = parse
   | "'\\" ['\\' '"' '\'' 'n' 't' 'b' 'r'] "'"
       { comment lexbuf }
   | "'\\" ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
+      { comment lexbuf }
+  | "'\\" 'x' ['0'-'9' 'a'-'f' 'A'-'F'] ['0'-'9' 'a'-'f' 'A'-'F'] "'"
       { comment lexbuf }
   | eof
       { match !comment_start_loc with
