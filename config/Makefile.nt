@@ -8,6 +8,9 @@ BINDIR=c:\camlsl\bin
 ### Where to install the standard library
 LIBDIR=c:\camlsl\lib
 
+### Where to install the info files
+DISTRIB=c:\camlsl
+
 ########## Configuration for the bytecode compiler
 
 ### Which C compiler to use for the bytecode interpreter.
