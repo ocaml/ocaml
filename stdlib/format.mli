@@ -20,6 +20,9 @@
    at specified break hints, and indents lines according to the box
    structure.
 
+   For a gentle introduction to the basics of prety-printing using
+   [Format], read the FAQ at [http://caml.inria.fr/FAQ/format-eng.html]. 
+
    Warning: the material output by the following functions is delayed
    in the pretty-printer queue in order to compute the proper line
    breaking. Hence, you should not mix calls to the printing functions
@@ -584,7 +587,9 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a;;
      [nspaces] and [offset] parameters of the break may be
      optionally specified with the following syntax: 
      the [<] character, followed by an integer [nspaces] value,
-     then an integer offset, and a closing [>] character. 
+     then an integer offset, and a closing [>] character.
+     If no parameters are provided, the good break defaults to a
+     space.
    - [@?]: flush the pretty printer as with [print_flush ()].
      This is equivalent to the conversion [%!].
    - [@.]: flush the pretty printer and output a new line, as with
