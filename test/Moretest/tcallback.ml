@@ -2,7 +2,7 @@ external mycallback1 : ('a -> 'b) -> 'a -> 'b = "mycallback1"
 external mycallback2 : ('a -> 'b -> 'c) -> 'a -> 'b -> 'c = "mycallback2"
 external mycallback3 : ('a -> 'b -> 'c -> 'd) -> 'a -> 'b -> 'c -> 'd = "mycallback3"
 
-let rec tak (x, y, z) =
+let rec tak (x, y, z as tuple) =
   if x > y then tak(tak (x-1, y, z), tak (y-1, z, x), tak (z-1, x, y))
            else z
 
