@@ -588,16 +588,17 @@ let start () =
         prerr_endline "`start not meaningful in outermost frame.";
         raise Toplevel
       end;
-      let offset =
+      let nargs =
         match
           try Symbols.any_event_at_pc pc with Not_found ->
             prerr_endline "Calling function has no debugging information.";
             raise Toplevel
         with
-          {ev_kind = Event_after (_, o)} when o > 0 -> o
-        | {ev_kind = Event_return o} when o > 0     -> o
-        | _ -> Misc.fatal_error "Time_travel.start"
+          {ev_kind = Event_after (_, nargs)} when nargs >= 0 -> nargs
+        | {ev_kind = Event_return nargs}     when nargs >= 0 -> nargs
+        | _ ->  Misc.fatal_error "Time_travel.start"
       in
+      let offset = if nargs < 4 then 1 else 2 in
       let pc = pc - 4 * offset in
       while
         exec_with_temporary_breakpoint pc back_run;
@@ -606,7 +607,7 @@ let start () =
             step (-1);
             (not !interrupted)
               &&
-            (frame' >= frame - curr_event.ev_stacksize)
+            (frame' - nargs > frame - curr_event.ev_stacksize)
         | _ ->
             false
       do

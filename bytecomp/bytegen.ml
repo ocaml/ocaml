@@ -439,22 +439,21 @@ let rec comp_expr env exp sz cont =
           if is_tailcall cont then      (* don't destroy tail call opt *)
             comp_expr env lam sz cont
           else begin
-            let offset =
+            let nargs =
               match lam with
-                Lapply(_, args)   when List.length args     < 4 ->  1
-              | Lsend(_, _, args) when List.length args + 1 < 4 ->  1
-              | Lapply _ | Lsend _                              ->  2
-              | _                                               -> -1
+                Lapply(_, args)   -> List.length args
+              | Lsend(_, _, args) -> List.length args + 1
+              | _                 -> -1
             in
             let cont1 =
               match cont with
               (* Discard following events, supposedly less informative *)
                 Kevent _ :: c ->
-                  Kevent (event (Event_after (ty, offset))) :: c
+                  Kevent (event (Event_after (ty, nargs))) :: c
               (* Weaken event *)
-              | Kpush :: Kevent ev' :: _ when offset >= 0 ->
+              | Kpush :: Kevent ev' :: _ when nargs >= 0 ->
                   let repr = ref 1 in
-                  let ev = event (Event_return offset) in
+                  let ev = event (Event_return nargs) in
                   ev.ev_repr <- Event_parent repr;
                   ev'.ev_repr <- Event_child repr;
                   Kevent ev :: cont
@@ -462,7 +461,7 @@ let rec comp_expr env exp sz cont =
               | Kpush :: Kevent _ :: _ ->
                   cont
               | _  ->
-                  Kevent (event (Event_after (ty, offset))):: cont
+                  Kevent (event (Event_after (ty, nargs))):: cont
             in
             comp_expr env lam sz cont1
           end
