@@ -42,7 +42,7 @@ let () =
 
 let read_output () =
   let input = ref (input_line caml_input) in
-  input := replace_first pat:~"^# *" with:"" !input;
+  input := replace_first pat:~"^# *" templ:"" !input;
   let underline =
     if string_match pat:~"Characters *\\([0-9]+\\)-\\([0-9]+\\):$" !input pos:0
     then
@@ -61,7 +61,7 @@ let read_output () =
   done;
   Buffer.contents output, underline
 
-let escape_backslash = global_replace pat:~"\\\\" with:"\\\\\\\\"
+let escape_backslash = global_replace pat:~"\\\\" templ:"\\\\\\\\"
 
 let process_file file =
   let ic = try open_in file with _ -> failwith "Cannot read input file" in
@@ -69,7 +69,7 @@ let process_file file =
     try if !outfile = "-" then
       stdout
     else if !outfile = "" then
-      open_out (replace_first pat:~"\\.tex$" with:"" file ^ ".ml.tex")
+      open_out (replace_first pat:~"\\.tex$" templ:"" file ^ ".ml.tex")
     else
       open_out_gen mode:[Open_wronly; Open_creat; Open_append; Open_text]
         perm:0x666 !outfile
@@ -117,8 +117,8 @@ let process_file file =
                  escape_backslash rest]
             end else
               escape_backslash phrase in
-          let phrase = global_replace pat:~"^\(.\)" with:camlin phrase
-          and output = global_replace pat:~"^\(.\)" with:camlout output in
+          let phrase = global_replace pat:~"^\(.\)" templ:camlin phrase
+          and output = global_replace pat:~"^\(.\)" templ:camlout output in
           if not !first then output_string oc "\\;";
           fprintf oc "%s\n%s" phrase output;
           flush oc;

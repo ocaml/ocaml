@@ -21,8 +21,9 @@ latexscan.ml: latexscan.mll
 	ocamllex latexscan.mll
 
 caml-tex2: caml-tex2.cmo
-	ocamlc -custom -o caml-tex2 str.cma unix.cma caml-tex2.cmo \
-		-cclib -lunix -cclib -lstr
+	ocamlc -o caml-tex2 str.cma unix.cma caml-tex2.cmo
+#	ocamlc -custom -o caml-tex2 str.cma unix.cma caml-tex2.cmo \
+#		-cclib -lunix -cclib -lstr
 
 .SUFFIXES:
 .SUFFIXES: .ml .cmo .mli .cmi .c
