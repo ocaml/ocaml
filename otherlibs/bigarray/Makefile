@@ -43,6 +43,7 @@ bigarray.cmxa: $(CAML_OBJS:.cmo=.cmx)
 install:
 	cp bigarray.cmi bigarray.mli libbigarray.a bigarray.cma $(LIBDIR)
 	cd $(LIBDIR); $(RANLIB) libbigarray.a
+	cp bigarray.h $(LIBDIR)/caml/bigarray.h
 
 installopt:
 	cp bigarray.a $(CAML_OBJS:.cmo=.cmx) bigarray.cmxa $(LIBDIR)
