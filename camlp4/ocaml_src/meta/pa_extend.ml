@@ -650,6 +650,25 @@ let rec quot_expr e =
              mklistexp loc al)
       | _ -> e
       end
+  | MLast.ExRec (_, pel, None) ->
+      begin try
+        let lel =
+          List.map
+            (fun (p, e) ->
+               let lab =
+                 match p with
+                   MLast.PaLid (_, c) -> MLast.ExStr (loc, c)
+                 | MLast.PaAcc (_, _, MLast.PaLid (_, c)) ->
+                     MLast.ExStr (loc, c)
+                 | _ -> raise Not_found
+               in
+               MLast.ExTup (loc, [lab; quot_expr e]))
+            pel
+        in
+        MLast.ExApp (loc, MLast.ExUid (loc, "Record"), mklistexp loc lel)
+      with
+        Not_found -> e
+      end
   | MLast.ExLid (_, s) ->
       if s = !(Stdpp.loc_name) then MLast.ExUid (loc, "Loc") else e
   | MLast.ExStr (_, s) ->
@@ -1097,7 +1116,7 @@ let text_of_entry loc gmod gl e =
     | None -> MLast.ExUid (loc, "None")
   in
   let levels =
-    if !quotify && is_global e gl then
+    if !quotify && is_global e gl && e.pos = None then
       let rec loop =
         function
           [] -> []

@@ -281,6 +281,23 @@ value rec quot_expr e =
       [ <:expr< $uid:c$ >> -> <:expr< Node $str:c$ $mklistexp loc al$ >>
       | <:expr< $_$.$uid:c$ >> -> <:expr< Node $str:c$ $mklistexp loc al$ >>
       | _ -> e ]
+  | <:expr< {$list:pel$} >> ->
+      try
+        let lel =
+          List.map
+            (fun (p, e) ->
+               let lab =
+                 match p with
+                 [ <:patt< $lid:c$ >> -> <:expr< $str:c$ >>
+                 | <:patt< $_$.$lid:c$ >> -> <:expr< $str:c$ >>
+                 | _ -> raise Not_found ]
+               in
+               <:expr< ($lab$, $quot_expr e$) >>)
+            pel
+        in
+        <:expr< Record $mklistexp loc lel$>>
+      with
+      [ Not_found -> e ]
   | <:expr< $lid:s$ >> -> if s = Stdpp.loc_name.val then <:expr< Loc >> else e
   | <:expr< $str:s$ >> -> <:expr< Str $str:s$ >>
   | <:expr< ($list:el$) >> ->
@@ -544,7 +561,7 @@ value text_of_entry loc gmod gl e =
     | None -> <:expr< None >> ]
   in
   let levels =
-    if quotify.val && is_global e gl then
+    if quotify.val && is_global e gl && e.pos = None then
       loop e.levels where rec loop =
         fun
         [ [] -> []

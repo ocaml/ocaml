@@ -16,7 +16,7 @@ opt:
 optp4:
 	set -e; for i in $(OPTDIRS); do cd $$i; $(MAKE) opt; cd ..; done
 
-boot/camlp4$(EXE):
+boot/camlp4$(EXE): ocaml_src/lib/stdpp.mli
 	$(MAKE) clean_cold library_cold compile_cold
 	$(MAKE) promote_cold
 	$(MAKE) clean_cold clean_hot library
