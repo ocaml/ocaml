@@ -15,8 +15,8 @@ exception Graphic_failure of string
 
 (* Initializations *)
 
-external register_graphic_failure: exn -> unit = "gr_register_graphic_failure"
-let _ = register_graphic_failure(Graphic_failure "")
+let _ =
+  Callback.register_exception "Graphics.Graphic_failure" (Graphic_failure "")
 
 external raw_open_graph: string -> unit = "gr_open_graph"
 external raw_close_graph: unit -> unit = "gr_close_graph"

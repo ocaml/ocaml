@@ -15,6 +15,7 @@
 #include <signal.h>
 #include "libgraph.h"
 #include <alloc.h>
+#include <callback.h>
 #include <fail.h>
 #include <memory.h>
 #ifdef HAS_SETITIMER
@@ -317,22 +318,20 @@ void gr_handle_simple_event(e)
 
 /* Processing of graphic errors */
 
-static value graphic_failure_exn;
-
-value gr_register_graphic_failure(exn)
-     value exn;
-{
-  graphic_failure_exn = Field(exn, 0);
-  register_global_root(&graphic_failure_exn);
-  return Val_unit;
-}
+static value * graphic_failure_exn = NULL;
 
 void gr_fail(fmt, arg)
      char * fmt, * arg;
 {
   char buffer[1024];
+
+  if (graphic_failure_exn == NULL) {
+    graphic_failure_exn = caml_named_value("Graphics.Graphic_failure");
+    if (graphic_failure_exn == NULL)
+      invalid_argument("Exception Graphics.Graphic_failure not initialized, must link graphics.cma");
+  }
   sprintf(buffer, fmt, arg);
-  raise_with_string(graphic_failure_exn, buffer);
+  raise_with_string(*graphic_failure_exn, buffer);
 }
 
 void gr_check_open()

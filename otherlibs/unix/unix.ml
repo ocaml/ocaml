@@ -83,9 +83,8 @@ type error =
 
 exception Unix_error of error * string * string
 
-external register_unix_error: exn -> unit = "unix_register_error"
-
-let _ = register_unix_error(Unix_error(EUNKNOWNERR, "", ""))
+let _ = Callback.register_exception "Unix.Unix_error"
+                                    (Unix_error(EUNKNOWNERR, "", ""))
 
 external error_message : error -> string = "unix_error_message"
 

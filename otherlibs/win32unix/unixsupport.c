@@ -76,15 +76,7 @@ int error_table[] = {
   EHOSTUNREACH, ELOOP /*, EUNKNOWNERR */
 };
 
-static value unix_error_exn;
-
-value unix_register_error(exnval)
-     value exnval;
-{
-  unix_error_exn = Field(exnval, 0);
-  register_global_root(&unix_error_exn);
-  return Val_unit;
-}
+static value * unix_error_exn = NULL;
 
 void unix_error(errcode, cmdname, cmdarg)
      int errcode;
@@ -95,16 +87,23 @@ void unix_error(errcode, cmdname, cmdarg)
   Push_roots(r, 2);
 #define name r[0]
 #define arg r[1]
+  if (unix_error_exn == NULL) {
+    unix_error_exn = caml_named_value("Unix.Unix_error");
+    if (unix_error_exn == NULL)
+      invalid_argument("Exception Unix.Unix_error not initialized, must link unix.cma");
+  }
   arg = cmdarg == Nothing ? copy_string("") : cmdarg;
   name = copy_string(cmdname);
   res = alloc(4, 0);
-  Field(res, 0) = unix_error_exn;
+  Field(res, 0) = *unix_error_exn;
   Field(res, 1) =
     cst_to_constr(errcode, error_table, sizeof(error_table)/sizeof(int),
                   sizeof(error_table)/sizeof(int));
   Field(res, 2) = name;
   Field(res, 3) = arg;
   Pop_roots();
+#undef name
+#under arg
   mlraise(res);
 }
 
