@@ -424,7 +424,7 @@ value go () =
         report_error exc;
         Format.close_box ();
         Format.print_newline ();
-        exit 2
+        raise exc
       }
   }
 ;
