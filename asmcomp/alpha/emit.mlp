@@ -25,14 +25,6 @@ open Mach
 open Linearize
 open Emitaux
 
-(* Determine if a function label is defined in the current compilation
-   unit *)
-
-let is_local s =
-  let cu = Compilenv.current_unit_name() in
-  let lcu = String.length cu in
-  String.length s >= lcu + 1 && String.sub s 0 lcu = cu && s.[lcu] = '.'
-
 (* First pass: insert Iloadgp instructions where needed *)
 
 let instr_copy i next =
@@ -65,11 +57,11 @@ let insert_load_gp f =
     | Lop(Iconst_float s) -> true       (* turned into ldq ($gp) *)
     | Lop(Iconst_symbol s) -> true      (* turned into ldq ($gp) *)
     | Lop(Icall_ind) -> false           (* does ldgp if needed afterwards *)
-    | Lop(Icall_imm s) ->               (* loads $27 from ($gp) if external *)
-        not (is_local s)
+    | Lop(Icall_imm s) -> true          (* loads $27 from ($gp) if external, *)
+                                        (* and assume $gp set if internal *)
     | Lop(Itailcall_ind) -> false
-    | Lop(Itailcall_imm s) ->           (* loads $27 from ($gp) *)
-        s <> f.fun_name && not(is_local s)
+    | Lop(Itailcall_imm s) -> true      (* loads $27 from ($gp) if external *)
+                                        (* and assume $gp set if internal *)
     | Lop(Iextcall(_, _)) -> true       (* loads $27 from ($gp) *)
     | Lop(Iload(_, Ibased(_, _))) -> true (* loads address from ($gp) *)
     | Lop(Istore(_, Ibased(_, _))) -> true (* loads address from ($gp) *)
@@ -127,9 +119,9 @@ let insert_load_gp f =
       (new_instr, instr_needs_gp needs_next i.desc)
     end in
 
-  { fun_body = insert_reload_gp f.fun_body;
-    fun_name = f.fun_name;
-    fun_fast = f.fun_fast }
+  let (new_body, uses_gp) = insert_reload_gp f.fun_body in
+  ({fun_body = new_body; fun_name = f.fun_name; fun_fast = f.fun_fast},
+   uses_gp)
 
 (* Second pass: code generation proper *)
 
@@ -206,7 +198,7 @@ let int_reg_number = [|
   
 let float_reg_number = [|
   0; 1; 2; 3; 4; 5; 6; 7; 8; 9; 10; 11; 12; 13; 14; 15;
-  16; 17; 18; 19; 20; 21; 22; 23; 24; 25; 26; 27; 28; 29
+  16; 17; 18; 19; 20; 21; 22; 23; 24; 25; 26; 27; 29; 30
 |]
 
 let liveregs instr extra_msk =
@@ -266,6 +258,13 @@ let emit_frame fd =
       `	.word	{emit_int n}\n`)
     fd.fd_live_offset;
   `	.align	3\n`
+
+(* Work around a bug in gas regarding the parsing of long decimal constants *)
+
+let emit_nativeint =
+  if digital_asm
+  then Emitaux.emit_nativeint
+  else (fun n -> emit_string(Nativeint.to_hexa_string n))
 
 (* Record calls to the GC -- we've moved them out of the way *)
 
@@ -340,6 +339,14 @@ let name_for_float_comparison cmp neg =
   | Cle -> ("cmptle", false, neg)  | Cgt -> ("cmptlt", true, neg)
   | Clt -> ("cmptlt", false, neg)  | Cge -> ("cmptle", true, neg)
 
+(* Determine if a function label is defined in the current compilation
+   unit *)
+
+let is_local s =
+  let cu = Compilenv.current_unit_name() in
+  let lcu = String.length cu in
+  String.length s >= lcu + 1 && String.sub s 0 lcu = cu && s.[lcu] = '.'
+
 (* Local entry points for functions defined in the current compilation unit *)
 
 let local_entry_points = (Hashtbl.create 19 : (string, label) Hashtbl.t)
@@ -365,6 +372,8 @@ let function_name = ref ""
 let tailrec_entry_point = ref 0
 (* Label of trap for out-of-range accesses *)
 let range_check_trap = ref 0
+(* List of floating-point literals (fon non-Digital assemblers) *)
+let float_constants = ref ([] : (label * string) list)
 
 let emit_instr i =
     match i.desc with
@@ -397,7 +406,16 @@ let emit_instr i =
         else
           `	ldiq	{emit_reg i.res.(0)}, {emit_nativeint n}\n`
     | Lop(Iconst_float s) ->
-        `	ldit	{emit_reg i.res.(0)}, {emit_string s}\n`
+        if digital_asm then
+          `	ldit	{emit_reg i.res.(0)}, {emit_string s}\n`
+        else if float_of_string s = 0.0 then
+          `	fmov	$f31, {emit_reg i.res.(0)}\n`
+        else begin
+          let lbl = new_label() in
+          float_constants := (lbl, s) :: !float_constants;
+          `	lda	$25, {emit_label lbl}\n`;
+          `	ldt     {emit_reg i.res.(0)}, 0($25)\n`
+        end
     | Lop(Iconst_symbol s) ->
         `	lda	{emit_reg i.res.(0)}, {emit_symbol s}\n`
     | Lop(Icall_ind) ->
@@ -477,7 +495,12 @@ let emit_instr i =
               gc_return_lbl = lbl_redo;
               gc_frame = lbl_frame;
               gc_instr = i } :: !call_gc_sites;
-          `{emit_label lbl_redo}:	subq	$13, {emit_int n}, $13\n`;
+          if is_immediate n then
+            `{emit_label lbl_redo}:	subq	$13, {emit_int n}, $13\n`
+          else begin
+            `{emit_label lbl_redo}:	ldiq	$25, {emit_int n}\n`;
+            `	subq	$13, $25, $13\n`
+          end;
           `	cmpult	$13, $14, $25\n`;
           `	bne	$25, {emit_label lbl_call_gc}\n`;
           `	addq	$13, 8, {emit_reg i.res.(0)}\n`
@@ -513,7 +536,7 @@ let emit_instr i =
         if is_immediate n then
           `	addq	{emit_reg i.arg.(0)}, {emit_int(n-1)}, $25\n`
         else begin
-          `	ldiq	$25, {emit_int n}\n`;
+          `	ldiq	$25, {emit_int(n-1)}\n`;
           `	addq	{emit_reg i.arg.(0)}, $25, $25\n`
         end;
         `	cmovge	{emit_reg i.arg.(0)}, {emit_reg i.arg.(0)}, $25\n`;
@@ -521,10 +544,10 @@ let emit_instr i =
     | Lop(Iintop_imm(Imod, n)) when n = 1 lsl (Misc.log2 n) ->
         let l = Misc.log2 n in
         if is_immediate n then
-          `	and	{emit_reg i.arg.(0)}, {emit_int(n-1)}, $25\n`;
+          `	and	{emit_reg i.arg.(0)}, {emit_int(n-1)}, $25\n`
         else begin
-          `	ldiq	$25, {emit_int n}\n`;
-          `	and	{emit_reg i.arg.(0)}, $25, $25\n`;
+          `	ldiq	$25, {emit_int (n-1)}\n`;
+          `	and	{emit_reg i.arg.(0)}, $25, $25\n`
         end;
         `	subq	$25, {emit_int n}, $24\n`;
         `	cmovge	{emit_reg i.arg.(0)}, $25, $24\n`;
@@ -550,17 +573,21 @@ let emit_instr i =
         let instr = name_for_float_operation op in
         `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
     | Lop(Ifloatofint) ->
+        `	.set	noat\n`;
         `	lda	$sp, -8($sp)\n`;
         `	stq	{emit_reg i.arg.(0)}, 0($sp)\n`;
-        `	ldt	$f30, 0($sp)\n`;
-        `	cvtqt	$f30, {emit_reg i.res.(0)}\n`;
-        `	lda	$sp, 8($sp)\n`
+        `	ldt	$f28, 0($sp)\n`;
+        `	cvtqt	$f28, {emit_reg i.res.(0)}\n`;
+        `	lda	$sp, 8($sp)\n`;
+        `	.set	at\n`
     | Lop(Iintoffloat) ->
+        `	.set	noat\n`;
         `	lda	$sp, -8($sp)\n`;
-        `	cvttqc	{emit_reg i.arg.(0)}, $f30\n`;
-        `	stt	$f30, 0($sp)\n`;
+        `	cvttqc	{emit_reg i.arg.(0)}, $f28\n`;
+        `	stt	$f28, 0($sp)\n`;
         `	ldq	{emit_reg i.res.(0)}, 0($sp)\n`;
-        `	lda	$sp, 8($sp)\n`
+        `	lda	$sp, 8($sp)\n`;
+        `	.set	at\n`
     | Lop(Ispecific(Ireloadgp marked_r26)) ->
         if marked_r26 then begin
           `	bic	$26, 1, $26\n`;
@@ -608,14 +635,16 @@ let emit_instr i =
             else
               `	beq	$25, {emit_label lbl}\n`
         | Ifloattest(cmp, neg) ->
+            `	.set	noat\n`;
             let (comp, swap, test) = name_for_float_comparison cmp neg in
             `	{emit_string comp}	`;
             if swap
-            then `{emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}, $f30\n`
-            else `{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, $f30\n`;
+            then `{emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}, $f28\n`
+            else `{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, $f28\n`;
             if test
-            then `	fbeq	$f30, {emit_label lbl}\n`
-            else `	fbne	$f30, {emit_label lbl}\n`
+            then `	fbeq	$f28, {emit_label lbl}\n`
+            else `	fbne	$f28, {emit_label lbl}\n`;
+            `	.set	at\n`
         | Ioddtest ->
             `	blbs	{emit_reg i.arg.(0)}, {emit_label lbl}\n`
         | Ieventest ->
@@ -681,6 +710,7 @@ let emit_fundecl (fundecl, needs_gp) =
   stack_offset := 0;
   call_gc_sites := [];
   range_check_trap := 0;
+  float_constants := [];
   `	.text\n`;
   `	.align	4\n`;
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
@@ -715,7 +745,14 @@ let emit_fundecl (fundecl, needs_gp) =
     `	br	$25, call_array_bound_error\n`
     (* Keep retaddr in $25 for debugging *)
   end;
-  `	.end	{emit_symbol fundecl.fun_name}\n`
+  `	.end	{emit_symbol fundecl.fun_name}\n`;
+  if !float_constants <> [] then begin
+    `	.section .rodata\n`;
+    `	.align	3\n`;
+    List.iter
+      (fun (lbl, s) -> `{emit_label lbl}:	.t_floating {emit_string s}\n`)
+      !float_constants
+  end
 
 let fundecl f =
   emit_fundecl (insert_load_gp f)
@@ -794,7 +831,11 @@ let end_assembly () =
   `{emit_symbol lbl_end}:\n`;
   `	.quad	0\n`;
   let lbl_frame = Compilenv.current_unit_name() ^ "_frametable" in
-  `	.rdata\n`;
+  begin match Config.system with
+    "digital" -> `	.rdata\n`
+  | "linux"   -> `	.section .rodata\n`
+  | _         -> assert false
+  end;
   `	.globl	{emit_symbol lbl_frame}\n`;
   `{emit_symbol lbl_frame}:\n`;
   `	.quad	{emit_int (List.length !frame_descriptors)}\n`;

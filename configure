@@ -207,7 +207,8 @@ model=default
 system=unknown
 
 case "$host" in
-  alpha-*-osf*)                 arch=alpha;;
+  alpha-*-osf*)                 arch=alpha; system=digital;;
+  alpha-*-linux*)               arch=alpha; system=linux;;
   sparc-*-sunos4.*)             arch=sparc; system=sunos;;
   sparc-*-solaris2.*)           arch=sparc; system=solaris;;
   sparc-*-*bsd*)                arch=sparc; system=bsd;;
@@ -227,8 +228,9 @@ case "$host" in
   m68k-*-sunos*)                arch=m68k; system=sunos;;
 esac
 
-case "$arch" in
-  alpha|mips) nativecc=cc;;
+case "$arch,$system" in
+  alpha,digital) nativecc=cc;;
+  mips,*) nativecc=cc;;
   *) nativecc="$bytecc";;
 esac
 
@@ -236,13 +238,13 @@ nativecccompopts=''
 nativecclinkopts=''
 
 case "$arch,$nativecc,$system" in
-  alpha,cc,*)     nativecccompopts=-std1;;
-  mips,cc,irix)   nativecccompopts=-32
-                  nativecclinkopts="-32 -Wl,-woff,84";;
-  mips,cc,ultrix) nativecccompopts=-std;;
-  *,*,nextstep)   nativecccompopts="-Wall -U__GNUC__ -posix"
-                  nativecclinkopts="-posix";;
-  *,gcc,*)        nativecccompopts=-Wall;;
+  alpha,cc,digital) nativecccompopts=-std1;;
+  mips,cc,irix)     nativecccompopts=-32
+                    nativecclinkopts="-32 -Wl,-woff,84";;
+  mips,cc,ultrix)   nativecccompopts=-std;;
+  *,*,nextstep)     nativecccompopts="-Wall -U__GNUC__ -posix"
+                    nativecclinkopts="-posix";;
+  *,gcc,*)          nativecccompopts=-Wall;;
 esac
 
 asflags=''
@@ -250,7 +252,8 @@ aspp='$(AS)'
 asppflags=''
 
 case "$arch,$model,$system" in
-  alpha,*,*)        asflags='-O2'; asppflags="$asflags";;
+  alpha,*,digital)  asflags='-O2'; asppflags='-O2 -DSYS_$(SYSTEM)';;
+  alpha,*,linux)    aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   mips,*,irix)      asflags='-32 -O2'; asppflags="$asflags";;
   mips,*,ultrix)    asflags='-O2'; asppflags="$asflags";;
   sparc,*,bsd)      aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
@@ -537,7 +540,7 @@ fi
 
 case "$host" in
   mips-*-ultrix*) bignum_arch=mips;;
-  alpha*) bignum_arch=alpha;;
+  alpha-*-osf*) bignum_arch=alpha;;
   i960*) bignum_arch=i960;;
   sparc-*-sunos*) bignum_arch=supersparc;;
   sparc-*-solaris*) bignum_arch=supersparc-solaris;;

@@ -231,15 +231,15 @@ method reschedule ready_queue date cont =
         (* Update the start date and number of ancestors emitted of
            all descendents of this node. Enter those that become ready
            in the queue. *)
+        let issue_cycles = self#instr_issue_cycles node.instr in
         List.iter
           (fun (son, delay) ->
-            let completion_date = date + delay in
+            let completion_date = date + issue_cycles + delay - 1 in
             if son.date < completion_date then son.date <- completion_date;
             son.emitted_ancestors <- son.emitted_ancestors + 1;
             if son.emitted_ancestors = son.ancestors then
               new_queue := son :: !new_queue)
           node.sons;
-        let issue_cycles = self#instr_issue_cycles node.instr in
         instr_cons node.instr.desc node.instr.arg node.instr.res
           (self#reschedule !new_queue (date + issue_cycles) cont)
   end

@@ -59,8 +59,8 @@
         stt     $f25, 25 * 8 ($24); \
         stt     $f26, 26 * 8 ($24); \
         stt     $f27, 27 * 8 ($24); \
-        stt     $f28, 28 * 8 ($24); \
-        stt     $f29, 29 * 8 ($24)
+        stt     $f29, 29 * 8 ($24); \
+        stt     $f30, 30 * 8 ($24)
 
 #define LOAD_ALL_REGS \
         lda     $24, gc_entry_regs; \
@@ -105,8 +105,8 @@
         ldt     $f25, 25 * 8 ($24); \
         ldt     $f26, 26 * 8 ($24); \
         ldt     $f27, 27 * 8 ($24); \
-        ldt     $f28, 28 * 8 ($24); \
-        ldt     $f29, 29 * 8 ($24)
+        ldt     $f29, 29 * 8 ($24); \
+        ldt     $f30, 30 * 8 ($24)
 
 /* Allocation */
 
@@ -424,12 +424,16 @@ callback3:
         .ent    call_array_bound_error
         .align  3
 call_array_bound_error:
-        br      $27, $109
-$109:   ldgp    $gp, 0($27)
+        br      $27, $111
+$111:   ldgp    $gp, 0($27)
         jsr     array_bound_error       /* never returns */
         .end    call_array_bound_error
 
+#ifdef SYS_digital	
         .rdata
+#else
+        .section .rodata
+#endif
         .globl  system_frametable
 system_frametable:
         .quad   1               /* one descriptor */

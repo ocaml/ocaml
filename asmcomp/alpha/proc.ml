@@ -39,8 +39,8 @@ let word_addressed = true
     $f0 - $f7   100 - 107   function results
     $f8 - $f15  108 - 115   general purpose ($f2 - $f9 preserved by C)
     $f16 - $f23 116 - 123   function arguments
-    $f24 - $f29 124 - 129   general purpose
-    $f30                    temporary
+    $f24 - $f30 124 - 129   general purpose
+    $f28                    temporary
     $f31                    always zero *)
 
 let int_reg_name = [|
@@ -53,7 +53,7 @@ let float_reg_name = [|
   (* 100-107 *) "$f0"; "$f1"; "$f2"; "$f3"; "$f4"; "$f5"; "$f6"; "$f7";
   (* 108-115 *) "$f8"; "$f9"; "$f10"; "$f11"; "$f12"; "$f13"; "$f14"; "$f15";
   (* 116-123 *) "$f16"; "$f17"; "$f18"; "$f19"; "$f20"; "$f21"; "$f22"; "$f23";
-  (* 124-129 *) "$f24"; "$f25"; "$f26"; "$f27"; "$f28"; "$f29"
+  (* 124-129 *) "$f24"; "$f25"; "$f26"; "$f27"; "$f29"; "$f30"
 |]
 
 let num_register_classes = 2
@@ -204,6 +204,11 @@ let contains_calls = ref false
 
 (* Calling the assembler *)
 
+let as_cmd =
+  if digital_asm
+  then "as -O2 -nocpp -o "
+  else "as -o "
+
 let assemble_file infile outfile =
-  Ccomp.command ("as -O2 -nocpp -o " ^ outfile ^ " " ^ infile)
+  Ccomp.command (as_cmd ^ outfile ^ " " ^ infile)
 

@@ -11,6 +11,7 @@
 
 (* $Id$ *)
 
+open Arch
 open Mach
 
 (* The Digital Unix assembler does scheduling better than us.
@@ -27,7 +28,7 @@ method oper_latency = function
     Ireload -> 3
   | Iload(_, _) -> 3
   | Iconst_symbol _ -> 3 (* turned into a load *)
-  | Iconst_float _ -> 3 (* turned into a load *)
+  | Iconst_float _ -> 3 (* ends up in a load *)
   | Iintop(Imul) -> 23
   | Iintop_imm(Imul, _) -> 23
   | Iaddf -> 6
@@ -43,7 +44,8 @@ method oper_latency = function
 (* Issue cycles.  Rough approximations. *)
 
 method oper_issue_cycles = function
-    Ialloc _ -> 4
+    Iconst_float _ -> 4                 (* load from $gp, then load *)
+  | Ialloc _ -> 4
   | Iintop(Icheckbound) -> 2
   | Iintop_imm(Idiv, _) -> 3
   | Iintop_imm(Imod, _) -> 5
@@ -62,6 +64,6 @@ method oper_in_basic_block = function
 end
 
 let fundecl =
-  if Arch.digital_asm
+  if digital_asm
   then (fun f -> f)
-  else (new scheduler ())#fundecl
+  else (new scheduler ())#schedule_fundecl

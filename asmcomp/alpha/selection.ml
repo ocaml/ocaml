@@ -27,10 +27,10 @@ method is_immediate n = digital_asm || (n >= 0 && n <= 255)
 
 method select_addressing = function
     (* Force an explicit lda for non-scheduling assemblers,
-       this allows our scheduler to do a better job of it. *)
+       this allows our scheduler to do a better job. *)
     Cconst_symbol s when digital_asm ->
       (Ibased(s, 0), Ctuple [])
-  | Cop(Cadda, [Cconst_symbol s; Cconst_int n]) ->
+  | Cop(Cadda, [Cconst_symbol s; Cconst_int n]) when digital_asm ->
       (Ibased(s, n), Ctuple [])
   | Cop(Cadda, [arg; Cconst_int n]) ->
       (Iindexed n, arg)
