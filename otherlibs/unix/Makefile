@@ -20,7 +20,7 @@ OBJS=accept.o access.o addrofstr.o alarm.o bind.o chdir.o chmod.o \
   readdir.o readlink.o rename.o rewinddir.o rmdir.o select.o sendrecv.o \
   setgid.o setuid.o shutdown.o sleep.o socket.o socketaddr.o \
   socketpair.o stat.o strofaddr.o symlink.o termios.o time.o times.o \
-  truncate.o umask.o unix.o unlink.o utimes.o wait.o waitpid.o \
+  truncate.o umask.o unixsupport.o unlink.o utimes.o wait.o waitpid.o \
   write.o
 
 all: libunix.a unix.cmi unix.cma
