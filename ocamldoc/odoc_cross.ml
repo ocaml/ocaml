@@ -151,98 +151,130 @@ let name_alias =
     f alias_tbl name
 
 
-(** The module with lookup predicates. *)
-module P_lookup = 
+module Map_ord =
   struct
-    type t = Name.t
-    let p_module m name = 
-      (Name.prefix m.m_name name, m.m_name = (name_alias name module_aliases))
-    let p_module_type mt name = 
-      (Name.prefix mt.mt_name name, 
-       mt.mt_name = (name_alias name module_and_modtype_aliases))
-    let p_class c name = (false, c.cl_name = (name_alias name module_and_modtype_aliases))
-    let p_class_type ct name = 
-      (false, ct.clt_name = (name_alias name module_and_modtype_aliases))
-    let p_value v name = false
-    let p_type t name = false
-    let p_exception e name = e.ex_name = (name_alias name exception_aliases)
-    let p_attribute a name = false
-    let p_method m name = false
-    let p_section s name = false
+    type t = string 
+    let compare = Pervasives.compare
   end
 
-(** The module used to search by a complete name.*)
-module Search_by_complete_name = Odoc_search.Search (P_lookup)
+module Ele_map = Map.Make (Map_ord)
 
-let rec lookup_module module_list name =
-  prerr_endline (Printf.sprintf "lookup_module: %s" name);
-  let l = List.filter
-      (fun res ->
-        match res with
-          Odoc_search.Res_module _ -> true
-        | _ -> false
-      )
-      (Search_by_complete_name.search module_list name)
-  in
-  match l with
-    (Odoc_search.Res_module m) :: _ -> m
-  | _ -> raise Not_found
+let known_elements = ref Ele_map.empty
+let add_known_element name k = 
+  try
+    let l = Ele_map.find name !known_elements in
+    let s = Ele_map.remove name !known_elements in
+    known_elements := Ele_map.add name (k::l) s
+  with
+    Not_found ->
+      known_elements := Ele_map.add name [k] !known_elements
 
-let rec lookup_module_type module_list name =
-  prerr_endline (Printf.sprintf "lookup_module_type: %s" name);
-  let l = List.filter
-      (fun res ->
-        match res with
-          Odoc_search.Res_module_type _ -> true
-        | _ -> false
-      )
-      (Search_by_complete_name.search module_list name)
-  in
-  match l with
-    (Odoc_search.Res_module_type mt) :: _ -> mt
-  | _ -> raise Not_found
+let get_known_elements name =
+  try Ele_map.find name !known_elements
+  with Not_found -> []
 
-let rec lookup_class module_list name =
-  prerr_endline (Printf.sprintf "lookup_class: %s" name);
-  let l = List.filter
-      (fun res ->
-        match res with
-          Odoc_search.Res_class _ -> true
-        | _ -> false
-      )
-      (Search_by_complete_name.search module_list name)
+let kind_name_exists kind =
+  let pred = 
+    match kind with
+      RK_module -> (fun e -> match e with Odoc_search.Res_module _ -> true | _ -> false)
+    | RK_module_type -> (fun e -> match e with Odoc_search.Res_module_type _ -> true | _ -> false)
+    | RK_class -> (fun e -> match e with Odoc_search.Res_class_type _ -> true | _ -> false)
+    | RK_class_type -> (fun e -> match e with Odoc_search.Res_class_type _ -> true | _ -> false)
+    | RK_value -> (fun e -> match e with Odoc_search.Res_value _ -> true | _ -> false)
+    | RK_type -> (fun e -> match e with Odoc_search.Res_type _ -> true | _ -> false)
+    | RK_exception -> (fun e -> match e with Odoc_search.Res_exception _ -> true | _ -> false)
+    | RK_attribute -> (fun e -> match e with Odoc_search.Res_attribute _ -> true | _ -> false)
+    | RK_method -> (fun e -> match e with Odoc_search.Res_method _ -> true | _ -> false)
+    | RK_section _ -> assert false
   in
-  match l with
-    (Odoc_search.Res_class c) :: _ -> c
-  | _ -> raise Not_found
+  fun name ->
+    try List.exists pred (get_known_elements name)
+    with Not_found -> false
 
-let rec lookup_class_type module_list name =
-  prerr_endline (Printf.sprintf "lookup_class_type: %s" name);
-  let l = List.filter
-      (fun res ->
-        match res with
-          Odoc_search.Res_class_type _ -> true
-        | _ -> false
-      )
-      (Search_by_complete_name.search module_list name)
-  in
-  match l with
-    (Odoc_search.Res_class_type ct) :: _ -> ct
-  | _ -> raise Not_found
+let module_exists = kind_name_exists RK_module
+let module_type_exists = kind_name_exists RK_module_type
+let class_exists = kind_name_exists RK_class
+let class_type_exists = kind_name_exists RK_class_type
+let value_exists = kind_name_exists RK_value
+let type_exists = kind_name_exists RK_type
+let exception_exists = kind_name_exists RK_exception
+let attribute_exists = kind_name_exists RK_attribute
+let method_exists = kind_name_exists RK_method
 
-let rec lookup_exception module_list name =
-  prerr_endline (Printf.sprintf "lookup_exception: %s" name);
-  let l = List.filter
-      (fun res ->
-        match res with
-          Odoc_search.Res_exception _ -> true
-        | _ -> false
-      )
-      (Search_by_complete_name.search module_list name)
-  in
-  match l with
-    (Odoc_search.Res_exception e) :: _ -> e
-  | _ -> raise Not_found
+let lookup_module name =
+  match List.find
+      (fun k -> match k with Odoc_search.Res_module _ -> true | _ -> false) 
+      (get_known_elements name)
+  with
+  | Odoc_search.Res_module m -> m
+  | _ -> assert false
+
+let lookup_module_type name =
+  match List.find
+      (fun k -> match k with Odoc_search.Res_module_type _ -> true | _ -> false) 
+      (get_known_elements name)
+  with
+  | Odoc_search.Res_module_type m -> m
+  | _ -> assert false
+
+let lookup_class name =
+  match List.find
+      (fun k -> match k with Odoc_search.Res_class _ -> true | _ -> false) 
+      (get_known_elements name)
+  with
+  | Odoc_search.Res_class c -> c
+  | _ -> assert false
+
+let lookup_class_type name =
+  match List.find
+      (fun k -> match k with Odoc_search.Res_class_type _ -> true | _ -> false) 
+      (get_known_elements name)
+  with
+  | Odoc_search.Res_class_type c -> c
+  | _ -> assert false
+
+let lookup_exception name =
+  match List.find
+      (fun k -> match k with Odoc_search.Res_exception _ -> true | _ -> false) 
+      (get_known_elements name)
+  with
+  | Odoc_search.Res_exception e -> e
+  | _ -> assert false
+
+class scan =
+  object
+    inherit Odoc_scan.scanner
+    method scan_value v = 
+      add_known_element v.val_name (Odoc_search.Res_value v)
+    method scan_type t = 
+      add_known_element t.ty_name (Odoc_search.Res_type t)
+    method scan_exception e =
+      add_known_element e.ex_name (Odoc_search.Res_exception e)
+    method scan_attribute a =
+      add_known_element a.att_value.val_name
+	(Odoc_search.Res_attribute a)
+    method scan_method m =
+      add_known_element m.met_value.val_name
+	(Odoc_search.Res_method m)
+    method scan_class_pre c =
+      add_known_element c.cl_name (Odoc_search.Res_class c);
+      true
+    method scan_class_type_pre c =
+      add_known_element c.clt_name (Odoc_search.Res_class_type c);
+      true
+    method scan_module_pre m =
+      add_known_element m.m_name (Odoc_search.Res_module m);
+      true
+    method scan_module_type_pre m =
+      add_known_element m.mt_name (Odoc_search.Res_module_type m);
+      true
+
+  end
+
+let init_known_elements_map module_list =
+  let c = new scan in
+  c#scan_module_list module_list
+
 
 (** The type to describe the names not found. *)
 type not_found_name = 
@@ -272,9 +304,9 @@ let rec associate_in_module module_list (acc_b_modif, acc_incomplete_top_module_
              (acc_b, acc_inc, acc_names)
          | None ->
              let mmt_opt =
-               try Some (Mod (lookup_module module_list ma.ma_name))
+               try Some (Mod (lookup_module ma.ma_name))
                with Not_found ->
-                 try Some (Modtype (lookup_module_type module_list ma.ma_name))
+                 try Some (Modtype (lookup_module_type ma.ma_name))
                  with Not_found -> None
              in
              match mmt_opt with
@@ -335,7 +367,7 @@ and associate_in_module_type module_list (acc_b_modif, acc_incomplete_top_module
              (acc_b, acc_inc, acc_names)
          | None ->
              let mt_opt =
-               try Some (lookup_module_type module_list mta.mta_name)
+               try Some (lookup_module_type mta.mta_name)
                with Not_found -> None
              in
              match mt_opt with
@@ -366,9 +398,9 @@ and associate_in_module_element module_list m_name (acc_b_modif, acc_incomplete_
           Some _ -> (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found)
         | None ->
             let mmt_opt =
-              try Some (Mod (lookup_module module_list im.im_name))
+              try Some (Mod (lookup_module im.im_name))
               with Not_found ->
-                try Some (Modtype (lookup_module_type module_list im.im_name))
+                try Some (Modtype (lookup_module_type im.im_name))
                 with Not_found -> None
             in
             match mmt_opt with
@@ -398,7 +430,7 @@ and associate_in_module_element module_list m_name (acc_b_modif, acc_incomplete_
                 (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found)
             | None -> 
                 let ex_opt =
-                  try Some (lookup_exception module_list ea.ea_name)
+                  try Some (lookup_exception ea.ea_name)
                   with Not_found -> None
                 in
                 match ex_opt with
@@ -419,9 +451,9 @@ and associate_in_class module_list (acc_b_modif, acc_incomplete_top_module_names
           Some _ -> (acc_b2, acc_inc2, acc_names2)
         | None ->
             let cct_opt =
-              try Some (Cl (lookup_class module_list ic.ic_name))
+              try Some (Cl (lookup_class ic.ic_name))
               with Not_found ->
-                try Some (Cltype (lookup_class_type module_list ic.ic_name, []))
+                try Some (Cltype (lookup_class_type ic.ic_name, []))
                 with Not_found -> None
             in
             match cct_opt with
@@ -440,7 +472,7 @@ and associate_in_class module_list (acc_b_modif, acc_incomplete_top_module_names
            Some _ ->  (acc_b, acc_inc, acc_names)
          | None -> 
              let cl_opt =
-               try Some (lookup_class module_list capp.capp_name)
+               try Some (lookup_class capp.capp_name)
                with Not_found -> None
              in
              match cl_opt with
@@ -458,14 +490,14 @@ and associate_in_class module_list (acc_b_modif, acc_incomplete_top_module_names
            Some _ ->  (acc_b, acc_inc, acc_names)
          | None -> 
              let cl_opt =
-               try Some (lookup_class module_list cco.cco_name)
+               try Some (lookup_class cco.cco_name)
                with Not_found -> None
              in
              match cl_opt with
                None -> 
                  (
                   let clt_opt =
-                    try Some (lookup_class_type module_list cco.cco_name)
+                    try Some (lookup_class_type cco.cco_name)
                     with Not_found -> None
                   in
                   match clt_opt with
@@ -502,9 +534,9 @@ and associate_in_class_type module_list (acc_b_modif, acc_incomplete_top_module_
             Some _ -> (acc_b2, acc_inc2, acc_names2)
           | None ->
               let cct_opt =
-                try Some (Cltype (lookup_class_type module_list ic.ic_name, []))
+                try Some (Cltype (lookup_class_type ic.ic_name, []))
                 with Not_found ->
-                  try Some (Cl (lookup_class module_list ic.ic_name))
+                  try Some (Cl (lookup_class ic.ic_name))
                   with Not_found -> None
               in
               match cct_opt with
@@ -523,9 +555,9 @@ and associate_in_class_type module_list (acc_b_modif, acc_incomplete_top_module_
            Some _ ->  (acc_b, acc_inc, acc_names)
          | None -> 
              let cct_opt =
-               try Some (Cltype (lookup_class_type module_list cta.cta_name, []))
+               try Some (Cltype (lookup_class_type cta.cta_name, []))
                with Not_found -> 
-                 try Some (Cl (lookup_class module_list cta.cta_name))
+                 try Some (Cl (lookup_class cta.cta_name))
                  with Not_found -> None
              in
              match cct_opt with
@@ -538,92 +570,6 @@ and associate_in_class_type module_list (acc_b_modif, acc_incomplete_top_module_
         )
   in
   iter_kind (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found) ct.clt_kind
-
-(*** TEST WITH MAPS *)
-
-module Map_ord =
-  struct
-    type t = string 
-    let compare = Pervasives.compare
-  end
-
-module Ele_map = Map.Make (Map_ord)
-
-let known_elements = ref Ele_map.empty
-let add_known_element name k = 
-  try
-    let l = Ele_map.find name !known_elements in
-    let s = Ele_map.remove name !known_elements in
-    known_elements := Ele_map.add name (k::l) s
-  with
-    Not_found ->
-      known_elements := Ele_map.add name [k] !known_elements
-
-let get_known_elements name =
-  try Ele_map.find name !known_elements
-  with Not_found -> []
-
-let kind_name_exists kind =
-  let pred = 
-    match kind with
-      RK_module -> (fun e -> match e with Odoc_search.Res_module _ -> true | _ -> false)
-    | RK_module_type -> (fun e -> match e with Odoc_search.Res_module_type _ -> true | _ -> false)
-    | RK_class -> (fun e -> match e with Odoc_search.Res_class_type _ -> true | _ -> false)
-    | RK_class_type -> (fun e -> match e with Odoc_search.Res_class_type _ -> true | _ -> false)
-    | RK_value -> (fun e -> match e with Odoc_search.Res_value _ -> true | _ -> false)
-    | RK_type -> (fun e -> match e with Odoc_search.Res_type _ -> true | _ -> false)
-    | RK_exception -> (fun e -> match e with Odoc_search.Res_exception _ -> true | _ -> false)
-    | RK_attribute -> (fun e -> match e with Odoc_search.Res_attribute _ -> true | _ -> false)
-    | RK_method -> (fun e -> match e with Odoc_search.Res_method _ -> true | _ -> false)
-    | RK_section _ -> assert false
-  in
-  fun name ->
-    try List.exists pred (get_known_elements name)
-    with Not_found -> false
-
-let module_exists = kind_name_exists RK_module
-let module_type_exists = kind_name_exists RK_module_type
-let class_exists = kind_name_exists RK_class
-let class_type_exists = kind_name_exists RK_class_type
-let value_exists = kind_name_exists RK_value
-let type_exists = kind_name_exists RK_type
-let exception_exists = kind_name_exists RK_exception
-let attribute_exists = kind_name_exists RK_attribute
-let method_exists = kind_name_exists RK_method
-
-class scan =
-  object
-    inherit Odoc_scan.scanner
-    method scan_value v = 
-      add_known_element v.val_name (Odoc_search.Res_value v)
-    method scan_type t = 
-      add_known_element t.ty_name (Odoc_search.Res_type t)
-    method scan_exception e =
-      add_known_element e.ex_name (Odoc_search.Res_exception e)
-    method scan_attribute a =
-      add_known_element a.att_value.val_name
-	(Odoc_search.Res_attribute a)
-    method scan_method m =
-      add_known_element m.met_value.val_name
-	(Odoc_search.Res_method m)
-    method scan_class_pre c =
-      add_known_element c.cl_name (Odoc_search.Res_class c);
-      true
-    method scan_class_type_pre c =
-      add_known_element c.clt_name (Odoc_search.Res_class_type c);
-      true
-    method scan_module_pre m =
-      add_known_element m.m_name (Odoc_search.Res_module m);
-      true
-    method scan_module_type_pre m =
-      add_known_element m.mt_name (Odoc_search.Res_module_type m);
-      true
-
-  end
-
-let init_known_elements_map module_list =
-  let c = new scan in
-  c#scan_module_list module_list
 
 (*************************************************************)
 (** Association of types to elements referenced in comments .*)
@@ -897,6 +843,7 @@ let associate_type_of_elements_in_comments module_list =
 (** The function which performs all the cross referencing. *)
 let associate module_list =
   get_alias_names module_list ;
+  init_known_elements_map module_list;
   let rec remove_doubles acc = function
       [] -> acc
     | h :: q ->
@@ -920,7 +867,6 @@ let associate module_list =
       acc_names_not_found
   in
   let names_not_found = iter module_list in
-  init_known_elements_map module_list;
   (
    match names_not_found with
      [] ->
