@@ -1375,6 +1375,8 @@ Does not preserve point."
 	 (indent-diff
 	  (cond
 	   ((not kwop-info) (beginning-of-line 1) 0)
+	   ((looking-at "[[({][|<]?[ \t]*")
+	    (length (caml-match-string 0)))
 	   ((nth 1 kwop-info) (symbol-value (nth 3 kwop-info)))
 	   (t 
 	    (let ((pos (point)))
