@@ -13,7 +13,8 @@ CAMLP4OM=pa_o.cmo pa_op.cmo ../meta/pr_dump.cmo
 CAMLP4OMX=$(CAMLP4OM:.cmo=.cmx)
 CAMLP4SCHM=pa_scheme.cmo ../meta/pr_dump.cmo
 SHELL=/bin/sh
-COUT=$(OBJS) camlp4o$(EXE) #camlp4sch$(EXE)
+# camlp4schm is broken COUT=$(OBJS) camlp4o$(EXE) #camlp4sch$(EXE)
+COUT=$(OBJS) camlp4o$(EXE)
 COPT=$(OBJSX) camlp4o.opt
 
 all: $(COUT) mkcamlp4.sh
@@ -98,7 +99,8 @@ install:
 	cp $(OBJS) "$(LIBDIR)/camlp4/."
 	cp $(INTF) "$(LIBDIR)/camlp4/."
 	cp lib.sml "$(LIBDIR)/camlp4/."
-	cp camlp4o$(EXE) camlp4sch$(EXE) "$(BINDIR)/."
+#	cp camlp4o$(EXE) camlp4sch$(EXE) "$(BINDIR)/."
+	cp camlp4o$(EXE) "$(BINDIR)/."
 	if test -f camlp4o.opt; then cp camlp4o.opt "$(BINDIR)/camlp4o.opt$(EXE)"; cp $(OBJSX) $(OBJSX:.cmx=.o) "$(LIBDIR)/camlp4/."; fi
 	cp mkcamlp4.sh "$(BINDIR)/mkcamlp4"
 	chmod a+x "$(BINDIR)/mkcamlp4"
