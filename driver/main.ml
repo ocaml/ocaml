@@ -20,13 +20,13 @@ let process_interface_file ppf name =
 
 let process_implementation_file ppf name =
   Compile.implementation ppf name;
-  objfiles := (Filename.chop_extension name ^ ".cmo") :: !objfiles
+  objfiles := (Misc.chop_extension_if_any name ^ ".cmo") :: !objfiles
 
 let process_file ppf name =
   if Filename.check_suffix name ".ml"
   || Filename.check_suffix name ".mlt" then begin
     Compile.implementation ppf name;
-    objfiles := (Filename.chop_extension name ^ ".cmo") :: !objfiles
+    objfiles := (Misc.chop_extension_if_any name ^ ".cmo") :: !objfiles
   end
   else if Filename.check_suffix name !Config.interface_suffix then
     Compile.interface ppf name

@@ -107,7 +107,7 @@ let remove_preprocessed_if_ast inputfile =
 
 let interface ppf sourcefile =
   init_path();
-  let prefixname = Filename.chop_extension sourcefile in
+  let prefixname = chop_extension_if_any sourcefile in
   let modulename = String.capitalize(Filename.basename prefixname) in
   let inputfile = preprocess sourcefile in
   try
@@ -133,7 +133,7 @@ let (++) x f = f x
 
 let implementation ppf sourcefile =
   init_path();
-  let prefixname = Filename.chop_extension sourcefile in
+  let prefixname = chop_extension_if_any sourcefile in
   let modulename = String.capitalize(Filename.basename prefixname) in
   let inputfile = preprocess sourcefile in
   let objfile = prefixname ^ ".cmo" in

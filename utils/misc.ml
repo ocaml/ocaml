@@ -124,3 +124,9 @@ let no_overflow_add a b = (a lxor b) lor (a lxor (lnot (a+b))) < 0
 let no_overflow_sub a b = (a lxor (lnot b)) lor (b lxor (a-b)) < 0
 
 let no_overflow_lsl a = min_int asr 1 <= a && a <= max_int asr 1
+
+let chop_extension_if_any fname =
+  try
+    let _ = String.index (Filename.basename fname) '.' in
+    Filename.chop_extension fname
+  with Not_found -> fname

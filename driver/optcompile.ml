@@ -102,7 +102,7 @@ let parse_file inputfile parse_fun ast_magic =
 (* Compile a .mli file *)
 
 let interface ppf sourcefile =
-  let prefixname = Filename.chop_extension sourcefile in
+  let prefixname = Misc.chop_extension_if_any sourcefile in
   let modulename = String.capitalize(Filename.basename prefixname) in
   let inputfile = preprocess sourcefile in
   let ast = parse_file inputfile Parse.interface ast_intf_magic_number in
@@ -124,7 +124,7 @@ let (++) x f = f x
 let (+++) (x, y) f = (x, f y)
 
 let implementation ppf sourcefile =
-  let prefixname = Filename.chop_extension sourcefile in
+  let prefixname = Misc.chop_extension_if_any sourcefile in
   let modulename = String.capitalize(Filename.basename prefixname) in
   let inputfile = preprocess sourcefile in
   let env = initial_env() in
