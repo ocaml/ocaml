@@ -85,8 +85,8 @@ let rotate_registers = true
 (* Representation of hard registers by pseudo-registers *)
 
 let hard_int_reg =
-  let v = Array.create 24 Reg.dummy in
-  for i = 0 to 23 do v.(i) <- Reg.at_location Int (Reg i) done; v
+  let v = Array.create 23 Reg.dummy in
+  for i = 0 to 22 do v.(i) <- Reg.at_location Int (Reg i) done; v
 
 let hard_float_reg =
   let v = Array.create 31 Reg.dummy in
