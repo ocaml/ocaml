@@ -369,7 +369,7 @@ ocamlc.opt: $(COMPOBJS:.cmo=.cmx)
 	cd asmrun; $(MAKE) meta.o dynlink.o
 	$(CAMLOPT) $(LINKFLAGS) -ccopt "$(BYTECCLINKOPTS)" -o ocamlc.opt \
           $(COMPOBJS:.cmo=.cmx) \
-          asmrun/meta.o asmrun/dynlink.o -cclib "$(DYNLINKOPTS)"
+          asmrun/meta.o asmrun/dynlink.o -cclib "$(BYTECCLIBS)"
 	@sed -e 's|@compiler@|$$topdir/ocamlc.opt|' \
 	  driver/ocamlcomp.sh.in > ocamlcomp.sh
 	@chmod +x ocamlcomp.sh
