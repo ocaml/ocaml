@@ -77,7 +77,7 @@ val append : 'a array -> 'a array -> 'a array
    concatenation of the arrays [v1] and [v2]. *)
 
 val concat : 'a array list -> 'a array
-(** Same as [Array.append], but catenates a list of arrays. *)
+(** Same as [Array.append], but concatenates a list of arrays. *)
 
 val sub : 'a array -> int -> int -> 'a array
 (** [Array.sub a start len] returns a fresh array of length [len],
