@@ -129,7 +129,7 @@ and find_label lbl env ty path tydesc pos = function
   | (name, mut, ty_arg) :: rem ->
       if name = lbl then begin
         let descr =
-          { lbl_res = Ctype.newty(Tconstr(path, tydesc.type_params, ref []));
+          { lbl_res = Ctype.newty(Tconstr(path, tydesc.type_params, ref Mnil));
             lbl_arg = ty_arg; lbl_mut = mut; lbl_pos = pos;
             lbl_all = [||]; lbl_repres = Record_regular } in
         let (ty_arg, ty_res) = Ctype.instance_label descr in

@@ -193,7 +193,7 @@ let print_value max_depth obj ty env =
                   print_string "<abstr>"
               | {type_kind = Type_abstract; type_manifest = Some body} ->
                   print_val prio depth obj
-                            (Ctype.substitute [] decl.type_params ty_list body)
+                            (Ctype.substitute decl.type_params ty_list body)
               | {type_kind = Type_variant constr_list} ->
                   let tag =
                     if Debugcom.remote_value_is_int obj then
@@ -204,7 +204,7 @@ let print_value max_depth obj ty env =
                   let (constr_name, constr_args) =
                     find_constr tag 0 0 constr_list in
                   let ty_args =
-                    List.map (Ctype.substitute [] decl.type_params ty_list)
+                    List.map (Ctype.substitute decl.type_params ty_list)
                         constr_args in
                   begin match ty_args with
                     [] ->
@@ -245,7 +245,7 @@ let print_value max_depth obj ty env =
                       print_string lbl_name;
                       print_string "="; print_cut();
                       let ty_arg =
-                        Ctype.substitute [] decl.type_params ty_list lbl_arg in
+                        Ctype.substitute decl.type_params ty_list lbl_arg in
                       cautious
                         (print_val 0 (depth - 1) (Debugcom.get_field obj pos))
                         ty_arg;
