@@ -904,7 +904,14 @@ class html =
     method html_of_type t =
       Odoc_info.reset_type_names ();
       let father = Name.father t.ty_name in
-      "<pre>"^
+      (match t.ty_manifest, t.ty_kind with 
+	None, Type_abstract -> "<pre>" 
+      |	None, Type_variant _ 
+      |	None, Type_record _ -> "<br><code>" 
+      | Some _, Type_abstract -> "<pre>"
+      | Some _, Type_variant _
+      |	Some _, Type_record _ -> "<pre>"
+      )^
       (self#keyword "type")^" "^
       (* html mark *)
       "<a name=\""^(Naming.type_target t)^"\"></a>"^
@@ -919,7 +926,8 @@ class html =
         Type_abstract -> "</pre>"
       | Type_variant (l, priv) ->
           "= "^(if priv then "private" else "")^
-          "</pre><table class=\"typetable\">\n"^ 
+	  (match t.ty_manifest with None -> "</code>" | Some _ -> "</pre>")^
+          "<table class=\"typetable\">\n"^ 
           (String.concat "\n"
              (List.map 
                 (fun constr ->
@@ -963,7 +971,8 @@ class html =
 
       | Type_record (l, priv) ->
           "= "^(if priv then "private " else "")^"{"^
-          "</pre><table class=\"typetable\">\n"^ 
+	  (match t.ty_manifest with None -> "</code>" | Some _ -> "</pre>")^
+          "<table class=\"typetable\">\n"^ 
           (String.concat "\n"
              (List.map 
                 (fun r ->
