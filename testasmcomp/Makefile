@@ -21,21 +21,24 @@ all: codegen $(PROGS)
 
 INCLUDES=-I ../utils -I ../typing -I ../asmcomp
 
-OTHEROBJS=../utils/misc.cmo ../utils/tbl.cmo \
+OTHEROBJS=../utils/misc.cmo ../utils/config.cmo ../utils/tbl.cmo \
+  ../utils/nativeint.cmo ../utils/clflags.cmo ../utils/ccomp.cmo \
   ../utils/config.cmo ../utils/clflags.cmo \
-  ../parsing/location.cmo \
+  ../parsing/linenum.cmo ../parsing/location.cmo \
   ../typing/ident.cmo ../typing/path.cmo ../typing/types.cmo \
-  ../typing/subst.cmo ../typing/primitive.cmo \
+  ../typing/btype.cmo ../typing/subst.cmo ../typing/primitive.cmo \
   ../typing/predef.cmo ../typing/datarepr.cmo ../typing/env.cmo \
   ../bytecomp/lambda.cmo \
   ../asmcomp/arch.cmo ../asmcomp/cmm.cmo ../asmcomp/printcmm.cmo \
   ../asmcomp/clambda.cmo ../asmcomp/compilenv.cmo \
   ../asmcomp/reg.cmo ../asmcomp/mach.cmo ../asmcomp/proc.cmo \
   ../asmcomp/closure.cmo ../asmcomp/cmmgen.cmo \
-  ../asmcomp/printmach.cmo ../asmcomp/selection.cmo ../asmcomp/liveness.cmo \
-  ../asmcomp/spill.cmo ../asmcomp/split.cmo \
-  ../asmcomp/interf.cmo ../asmcomp/coloring.cmo ../asmcomp/reload.cmo \
-  ../asmcomp/linearize.cmo ../asmcomp/scheduling.cmo \
+  ../asmcomp/printmach.cmo \
+  ../asmcomp/selectgen.cmo ../asmcomp/selection.cmo \
+  ../asmcomp/liveness.cmo ../asmcomp/spill.cmo ../asmcomp/split.cmo \
+  ../asmcomp/interf.cmo ../asmcomp/coloring.cmo \
+  ../asmcomp/reloadgen.cmo ../asmcomp/reload.cmo \
+  ../asmcomp/linearize.cmo ../asmcomp/schedgen.cmo ../asmcomp/scheduling.cmo \
   ../asmcomp/printlinear.cmo ../asmcomp/emitaux.cmo \
   ../asmcomp/emit.cmo ../asmcomp/asmgen.cmo
 
