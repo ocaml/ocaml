@@ -35,11 +35,11 @@ output()
   output_trailing_text();
   if (sflag)
     fprintf(output_file,
-      "let yyact = Array.new %d (fun () -> (failwith \"parser\" : Obj.t))\n",
+      "let yyact = Array.new %d (fun _ -> (failwith \"parser\" : Obj.t))\n",
       ntotalrules);
   else
     fprintf(output_file,
-      "let yyact = [|\n  (fun () -> failwith \"parser\")\n");
+      "let yyact = [|\n  (fun _ -> failwith \"parser\")\n");
   output_semantic_actions();
   if (!sflag)
     fprintf(output_file, "|]\n");

@@ -1190,9 +1190,9 @@ copy_action()
     fprintf(f, "(* Rule %d, file %s, line %d *)\n",
             nrules-2, input_file_name, lineno);
     if (sflag)
-      fprintf(f, "yyact.(%d) <- (fun () -> Obj.repr((", nrules-2);
+      fprintf(f, "yyact.(%d) <- (fun parser_env -> Obj.repr((", nrules-2);
     else
-      fprintf(f, "; (fun () -> Obj.repr((");
+      fprintf(f, "; (fun parser_env -> Obj.repr((");
 
     n = 0;
     for (i = nitems - 1; pitem[i]; --i) ++n;
@@ -1213,14 +1213,15 @@ loop:
               unknown_rhs(i);
             item = pitem[nitems + i - n - 1];
             if (item->tag) {
-              fprintf(f, "(peek_val %d : %s)", n - i, item->tag);
+              fprintf(f, "(peek_val parser_env %d : %s)", n - i, item->tag);
             } else {
               if (item->class == TERM)
                 illegal_token_ref(i, item->name);
               if (sflag)
-                fprintf(f, "(peek_val %d)", n - i);
+                fprintf(f, "(peek_val parser_env %d)", n - i);
               else
-                fprintf(f, "(peek_val %d : '%s)", n - i, item->name);
+                fprintf(f, "(peek_val parser_env %d : '%s)",
+                        n - i, item->name);
             }
 	    goto loop;
 	}
@@ -1640,11 +1641,11 @@ make_goal()
               "(* Entry %s *)\n", bp->name);
       if (sflag)
         fprintf(action_file,
-                "yyact.(%d) <- (fun () -> raise (YYexit (peek_val 0)))\n",
+                "yyact.(%d) <- (fun parser_env -> raise (YYexit (peek_val parser_env 0)))\n",
                 ntotalrules);
       else
         fprintf(action_file,
-              "; (fun () -> raise (YYexit (peek_val 0)))\n");
+              "; (fun parser_env -> raise (YYexit (peek_val parser_env 0)))\n");
       ntotalrules++;
       last_was_action = 1;
       end_rule();
