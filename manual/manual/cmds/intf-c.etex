@@ -759,7 +759,7 @@ replaced by "CAMLreturn0".  If your C function is a procedure (i.e. if
 it returns void), you must insert "CAMLreturn0" at the end (to replace
 C's implicit "return").
 
-{\bf Note:} some C compilers give bogus warnings about unused
+\paragraph{Note:} some C compilers give bogus warnings about unused
 variables "caml__dummy_xxx" at each use of "CAMLparam" and
 "CAMLlocal".  You should ignore them.
 
@@ -775,7 +775,7 @@ void foo (value v1, value v2, value v3)
 }
 \end{verbatim}
 
-{\bf Note:} if your function is a primitive with more than 5 arguments
+\paragraph{Note:} if your function is a primitive with more than 5 arguments
 for use with the byte-code runtime, its arguments are not "value"s and
 must not be declared (they have types "value *" and "int").
 
@@ -807,7 +807,9 @@ value bar (value v1, value v2, value v3)
 
 \begin{gcrule}
 Assignments to the fields of structured blocks must be done with the
-"Store_field" macro.  Other assignments must not use "Store_field".
+"Store_field" macro (for normal blocks) or "Store_double_field" macro
+(for arrays and records of floating-point numbers).  Other assignments
+must not use "Store_field" nor "Store_double_field".
 \end{gcrule}
 
 "Store_field ("\var{b}", "\var{n}", "\var{v}")" stores the value
@@ -827,6 +829,12 @@ value bar (value v1, value v2, value v3)
   CAMLreturn (result);
 }
 \end{verbatim}
+
+\paragraph{Warning:} The first argument of "Store_field" and
+"Store_double_field" must be a variable declared by "CAMLparam*" or
+a parameter declared by "CAMLlocal*" to ensure that a garbage
+collection triggered by the evaluation of the other arguments will not
+invalidate the first argument after it is computed.
 
 \begin{gcrule} Global variables containing values must be registered
 with the garbage collector using the "register_global_root" function.

@@ -14,8 +14,17 @@ profiling mode, using the "ocamlcp" front-end to the "ocamlc" compiler
 of ".cmo" files), and can also be used (though this is not strictly
 necessary) when linking them together.
 
-To make sure your programs can be compiled in profiling mode, avoid
-using any identifier that begins with "__ocaml_prof".
+\paragraph{Note} If a module (".ml" file) doesn't have a corresponding
+interface (".mli" file), then compiling it with "ocamlcp" will produce
+object files (".cmi" and ".cmo") that are not compatible with the ones
+produced by "ocamlc", which may lead to problems (if the ".cmi" or
+".cmo" is still around) when switching between profiling and
+non-profiling compilations.  To avoid this problem, you should always
+have a ".mli" file for each ".ml" file.
+
+\paragraph{Note} To make sure your programs can be compiled in
+profiling mode, avoid using any identifier that begins with
+"__ocaml_prof".
 
 The amount of profiling information can be controlled through the "-p"
 option to "ocamlcp", followed by one or several letters indicating which
