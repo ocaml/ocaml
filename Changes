@@ -18,6 +18,7 @@ Type-checking:
   of a type error (only the types computed up to the error are available).
 
 Both compilers:
+- Added option "-dtypes" to dump detailed type information to a file.
 - The sources for a module, say "Mod", can be placed either in Mod.ml or
   in mod.ml.
 - Compilation of "let rec" on non-functional values: tightened some checks,
@@ -63,6 +64,10 @@ The Dynlink library:
 The Str library:
 - Reimplemented regexp matching engine, now less buggy, faster, and LGPL
   instead of GPL.
+
+Emacs mode:
+- Added file caml-types.el to interactively display the type information
+  saved by option -dtypes.
 
 
 Objective Caml 3.06:

@@ -33,11 +33,11 @@
 ; . If you want the type of a list, put the cursor on a bracket,
 ;   or on a semicolon, or on the :: constructor
 ; . Even if type checking fails, you can still look at the types
-;   in the file, up to and including where the type checker failed.
+;   in the file, up to where the type checker failed.
 ; . To get rid of the highlighting, put the cursor in a comment
 ;   and type C-c C-t.
 ; . The mark in the .types file is set to the beginning of the
-;   type, so you can type C-x C-x to view the type in that file.
+;   type, so you can type C-x C-x in that file to view the type.
 
 
 
