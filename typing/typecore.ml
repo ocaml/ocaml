@@ -60,6 +60,7 @@ type error =
   | Less_general of string * (type_expr * type_expr) list
   | Generic_primitive_type_mismatch of type_expr * type_expr
   | Should_not_be_generic of type_expr * type_expr
+  | Cannot_have_full_path
 
 exception Error of Location.t * error
 
@@ -284,6 +285,7 @@ let rec build_as_type env p =
           | _ -> ()
       end;
       ty1
+  | Tpat_rtype _
   | Tpat_any | Tpat_var _ | Tpat_constant _ | Tpat_array _ -> p.pat_type
 
 let build_or_pat env loc lid =
@@ -481,6 +483,23 @@ let rec type_pat env sp =
       p
   | Ppat_type lid ->
       build_or_pat env sp.ppat_loc lid
+  | Ppat_rtype sty ->
+      (* FIXME: define globally? *)
+      let type_path, _ = 
+	Env.lookup_type (Longident.Ldot (Longident.Lident "Rtype", "type_expr")) env in 
+      let type_t = Ctype.newty (Tconstr (type_path, [], ref Mnil)) in
+      let f loc = function
+	| Longident.Lident name -> 
+	    let id = enter_variable loc name type_t in
+	    newty (Tpath (Path.Pident id))
+	| _ -> raise (Error(sty.ptyp_loc, Cannot_have_full_path))
+      in
+      let ty = Typetexp.transl_run_time_type f env sty in
+      rp {
+        pat_desc = Tpat_rtype ty;
+        pat_loc = sp.ppat_loc;
+        pat_type = type_t;
+        pat_env = env }
 
 let get_ref r =
   let v = !r in r := []; v
@@ -1389,10 +1408,26 @@ Format.fprintf Format.err_formatter "funct=%a@."
         exp_env = env;
       }
   | Pexp_rtype sty ->
-      let ty = Typetexp.transl_simple_type env false sty in
+      (* FIXME: define globally? *)
       let type_path, _ = 
 	Env.lookup_type (Longident.Ldot (Longident.Lident "Rtype", "type_expr")) env in 
       let type_t = Ctype.newty (Tconstr (type_path, [], ref Mnil)) in
+      let f loc lid =
+	try
+	  let (path, desc) = Env.lookup_value lid env in
+	  let ty = Kset.instance kset (instance desc.val_type) in
+	  try
+	    unify env ty type_t;
+	    newty (Tpath path)
+	  with
+	  | Unify trace ->
+	      raise(Error(loc, Expr_type_clash(trace)))
+	  | Tags(l1,l2) ->
+	      raise(Typetexp.Error(loc, Typetexp.Variant_tags (l1, l2)))
+	with
+	| Not_found -> raise (Error (loc, Unbound_value lid))
+      in
+      let ty = Typetexp.transl_run_time_type f env sty in
       re {
         exp_desc = Texp_rtype( ty );
         exp_loc = sexp.pexp_loc;
@@ -2127,3 +2162,5 @@ let report_error ppf = function
 	type_scheme scm;
       fprintf ppf "which cannot be bound to a pattern of type %a."
 	type_expr typ
+  | Cannot_have_full_path ->
+      fprintf ppf "This expression is not permitted inside run time type pattern"

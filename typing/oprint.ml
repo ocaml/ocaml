@@ -216,6 +216,7 @@ and print_simple_out_type ppf =
       fprintf ppf "@[<1>(%a)@]" print_out_type ty
   | Otyp_abstract | Otyp_sum _ | Otyp_record _ | Otyp_manifest (_, _) -> ()
   | Otyp_konst _ -> assert false
+  | Otyp_path id -> fprintf ppf ",%a" print_ident id
 
 and print_fields rest ppf =
   function

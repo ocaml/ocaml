@@ -143,6 +143,9 @@ let rec core_type i ppf x =
       line i ppf "Ptyp_konst\n";
       list (i+1) core_type ppf konst; 
       core_type (i+1) ppf t
+  | Ptyp_lident lid ->
+      line i ppf "Ptyp_lident %a\n" fmt_longident lid
+      
 
 and core_field_type i ppf x =
   line i ppf "core_field_type %a\n" fmt_location x.pfield_loc;
@@ -190,6 +193,9 @@ and pattern i ppf x =
   | Ppat_type li ->
       line i ppf "PPat_type";
       longident i ppf li
+  | Ppat_rtype ct ->
+      line i ppf "Ppat_rtype";
+      core_type i ppf ct
 
 and expression i ppf x =
   line i ppf "expression %a\n" fmt_location x.pexp_loc;

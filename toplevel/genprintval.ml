@@ -322,6 +322,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
               Oval_stuff "<poly>"
 	  | Tkonst (_, _) ->
 	      Oval_stuff "<generic>"
+	  | Tpath _ -> assert false
         end
 
       and tree_of_val_list start depth obj ty_list =

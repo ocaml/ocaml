@@ -407,6 +407,7 @@ let compute_variance env tvl nega posi cntr ty =
           compute_same ty
       | Tkonst (konst, ty) -> compute_same ty (* FIXME *)
       | Tvar | Tnil | Tlink _ | Tunivar -> ()
+      | Tpath _ -> assert false
     end
   in
   compute_variance_rec nega posi cntr ty;

@@ -61,6 +61,7 @@ type out_type =
       bool * out_variant * bool * (string list) option
   | Otyp_poly of string list * out_type
   | Otyp_konst of out_type list * out_type
+  | Otyp_path of out_ident
 
 and out_variant =
   | Ovar_fields of (string * bool * out_type list) list

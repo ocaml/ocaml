@@ -4,3 +4,5 @@ type dyn
 
 val dyn : {'a} => 'a -> dyn
 
+val print : {'a} => 'a -> unit
+

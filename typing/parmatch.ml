@@ -77,7 +77,7 @@ let rec compat p q =
   | (Tpat_any|Tpat_var _),_ -> true
   | _,(Tpat_any|Tpat_var _) -> true
   | Tpat_or (p1,p2,_),_     -> compat p1 q || compat p2 q
-  | _,Tpat_or (q1,q2,_)     -> compat p q1 || compat p q2    
+  | _,Tpat_or (q1,q2,_)     -> compat p q1 || compat p q2
   | Tpat_constant c1, Tpat_constant c2 -> c1=c2
   | Tpat_tuple ps, Tpat_tuple qs -> compats ps qs
   | Tpat_construct (c1,ps1), Tpat_construct (c2,ps2) ->
@@ -205,6 +205,8 @@ let rec pretty_val ppf v = match v.pat_desc with
       fprintf ppf "@[(%a@ as %a)@]" pretty_val v Ident.print x
   | Tpat_or (v,w,_)    ->
       fprintf ppf "@[(%a|@,%a)@]" pretty_or v pretty_or w
+  | Tpat_rtype t ->
+      fprintf ppf "@[[: %a :]@]" Printtyp.type_expr t 
 
 and pretty_car ppf v = match v.pat_desc with
 | Tpat_construct ({cstr_tag=tag}, [_ ; _])
@@ -359,6 +361,7 @@ let rec normalize_pat q = match q.pat_desc with
       make_pat (Tpat_record (List.map (fun (lbl,_) -> lbl,omega) largs))
         q.pat_type q.pat_env
   | Tpat_or _ -> fatal_error "Parmatch.normalize_pat"
+  | Tpat_rtype _ -> assert false
 
 
 (*
@@ -835,6 +838,7 @@ let rec has_instance p = match p.pat_desc with
   | Tpat_or (p1,p2,_) -> has_instance p1 || has_instance p2
   | Tpat_construct (_,ps) | Tpat_tuple ps | Tpat_array ps -> has_instances ps
   | Tpat_record lps -> has_instances (List.map snd lps)
+  | Tpat_rtype _ -> assert false
       
 and has_instances = function
   | [] -> true

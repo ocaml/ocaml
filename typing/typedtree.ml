@@ -37,6 +37,7 @@ and pattern_desc =
   | Tpat_record of (label_description * pattern) list
   | Tpat_array of pattern list
   | Tpat_or of pattern * pattern * Path.t option
+  | Tpat_rtype of type_expr
 
 type partial = Partial | Total
 type optional = Required | Optional
@@ -164,6 +165,7 @@ let iter_pattern_desc f = function
   | Tpat_or(p1, p2, _) -> f p1; f p2
   | Tpat_any
   | Tpat_var _
+  | Tpat_rtype _ 
   | Tpat_constant _ -> ()
 
 let map_pattern_desc f d =
@@ -185,6 +187,7 @@ let map_pattern_desc f d =
   | Tpat_var _
   | Tpat_constant _
   | Tpat_any
+  | Tpat_rtype _
   | Tpat_variant (_,None,_) -> d
 
 (* List the identifiers bound by a pattern or a let *)

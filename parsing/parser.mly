@@ -1100,6 +1100,10 @@ simple_pattern:
       { mkpat(Ppat_array []) }
   | LBRACKETBAR pattern_semi_list opt_semi error
       { unclosed "[|" 1 "|]" 4 }
+  | LBRACKETCOLON core_type2 COLONRBRACKET
+      { mkpat(Ppat_rtype $2) }
+  | LBRACKETCOLON core_type2 error
+      { unclosed "[:" 1 ":]" 3 }
   | LPAREN pattern RPAREN
       { reloc_pat $2 }
   | LPAREN pattern error
@@ -1274,6 +1278,8 @@ simple_core_type:
 simple_core_type2:
     QUOTE ident
       { mktyp(Ptyp_var $2) }
+  | COMMA val_longident
+      { mktyp(Ptyp_lident $2) }
   | UNDERSCORE
       { mktyp(Ptyp_any) }
   | type_longident

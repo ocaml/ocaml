@@ -100,6 +100,7 @@ type error =
   | Less_general of string * (type_expr * type_expr) list
   | Generic_primitive_type_mismatch of type_expr * type_expr
   | Should_not_be_generic of type_expr * type_expr
+  | Cannot_have_full_path
 
 exception Error of Location.t * error
 

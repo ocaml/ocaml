@@ -2761,7 +2761,7 @@ let rec build_subtype env visited loops posi level t =
       let c = max c1 c2 in
       if c > Unchanged then (newty (Tkonst (List.map fst konst', ty')), c)
       else (t, Unchanged)
-      
+  | Tpath p -> assert false
 
 let enlarge_type env ty =
   warn := false;

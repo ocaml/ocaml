@@ -55,6 +55,7 @@ let rec add_type bv ty =
   | Ptyp_konst(k, t) -> 
       List.iter (add_type bv) k; 
       add_type bv t
+  | Ptyp_lident li -> add bv li
 
 and add_field_type bv ft =
   match ft.pfield_desc with
@@ -115,6 +116,7 @@ let rec add_pattern bv pat =
   | Ppat_constraint(p, ty) -> add_pattern bv p; add_type bv ty
   | Ppat_variant(_, op) -> add_opt add_pattern bv op
   | Ppat_type (li) -> add bv li
+  | Ppat_rtype ty -> add_type bv ty
 
 let rec add_expr bv exp =
   match exp.pexp_desc with

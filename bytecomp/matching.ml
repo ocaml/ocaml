@@ -614,6 +614,7 @@ let rec extract_vars r p = match p.pat_desc with
 | Tpat_variant (_,Some p, _) -> extract_vars r p
 | Tpat_or (p,_,_) -> extract_vars r p
 | Tpat_constant _|Tpat_any|Tpat_variant (_,None,_) -> r
+| Tpat_rtype _ -> assert false
 
 exception Cannot_flatten
 

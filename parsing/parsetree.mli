@@ -34,6 +34,7 @@ and core_type_desc =
   | Ptyp_variant of row_field list * bool * label list option
   | Ptyp_poly of string list * core_type
   | Ptyp_konst of core_type list * core_type
+  | Ptyp_lident of Longident.t
 
 and core_field_type =
   { pfield_desc: core_field_desc;
@@ -79,6 +80,7 @@ and pattern_desc =
   | Ppat_or of pattern * pattern
   | Ppat_constraint of pattern * core_type
   | Ppat_type of Longident.t
+  | Ppat_rtype of core_type
 
 type expression =
   { pexp_desc: expression_desc;

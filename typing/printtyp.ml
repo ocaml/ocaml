@@ -162,6 +162,9 @@ and raw_type_desc ppf = function
       fprintf ppf "@[<hov1>Tkonst(@,%a,@,%a)@]"
         raw_type_list konst
         raw_type ty
+  | Tpath p ->
+      fprintf ppf "@[<hov1>Tpath %a@]" path p
+      
 
 and raw_field ppf = function
     Rpresent None -> fprintf ppf "Rpresent None"
@@ -291,6 +294,7 @@ let rec mark_loops_rec visited ty =
     | Tkonst (konst, ty) ->
         List.iter (fun t -> add_alias t) konst;
         mark_loops_rec visited ty
+    | Tpath p -> ()
 
 let mark_loops ty =
   normalize_type Env.empty ty;
@@ -400,6 +404,7 @@ let rec tree_of_typexp sch ty =
 	let ktree = List.map (tree_of_typexp sch) konst in
 	let tree = tree_of_typexp sch ty in
 	Otyp_konst (ktree, tree)
+    | Tpath path -> Otyp_path (tree_of_path path)
   in
   let tree = 
     if List.memq px !delayed then delayed := List.filter ((!=) px) !delayed;

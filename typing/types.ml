@@ -39,6 +39,7 @@ and type_desc =
   | Tunivar
   | Tpoly of type_expr * type_expr list
   | Tkonst of konstraint * type_expr
+  | Tpath of Path.t
 
 and row_desc =
     { row_fields: (label * row_field) list;

@@ -40,6 +40,7 @@ type error =
   | Invalid_variable_name of string
   | Cannot_quantify of string * type_expr
   | Cannot_have_konstraint
+  | Cannot_have_lident
 
 exception Error of Location.t * error
 
@@ -103,7 +104,9 @@ let rec swap_list = function
 
 type policy = Fixed | Extensible | Delayed | Univars
 
-let rec transl_type env policy styp =
+let reject_lident loc lid = raise (Error(loc, Cannot_have_lident))
+
+let rec transl_type env ?(lident=reject_lident) policy styp =
   match styp.ptyp_desc with
     Ptyp_any ->
       if policy = Univars then new_pre_univar () else newvar ()
@@ -154,11 +157,11 @@ let rec transl_type env policy styp =
             end
       end
   | Ptyp_arrow(l, st1, st2) ->
-      let ty1 = transl_type env policy st1 in
-      let ty2 = transl_type env policy st2 in
+      let ty1 = transl_type env ~lident policy st1 in
+      let ty2 = transl_type env ~lident policy st2 in
       newty (Tarrow(l, ty1, ty2, Cok))
   | Ptyp_tuple stl ->
-      newty (Ttuple(List.map (transl_type env policy) stl))
+      newty (Ttuple(List.map (transl_type env ~lident policy) stl))
   | Ptyp_constr(lid, stl) ->
       let (path, decl) =
         try
@@ -168,7 +171,7 @@ let rec transl_type env policy styp =
       if List.length stl <> decl.type_arity then
         raise(Error(styp.ptyp_loc, Type_arity_mismatch(lid, decl.type_arity,
                                                            List.length stl)));
-      let args = List.map (transl_type env policy) stl in
+      let args = List.map (transl_type env ~lident policy) stl in
       let params = Ctype.instance_list decl.type_params in
       let unify_param =
         match decl.type_manifest with
@@ -189,7 +192,7 @@ let rec transl_type env policy styp =
       end;
       constr
   | Ptyp_object fields ->
-      newobj (transl_fields env policy fields)
+      newobj (transl_fields env ~lident policy fields)
   | Ptyp_class(lid, stl, present) ->
       let (path, decl, is_variant) =
         try
@@ -222,7 +225,7 @@ let rec transl_type env policy styp =
       if List.length stl <> decl.type_arity then
         raise(Error(styp.ptyp_loc, Type_arity_mismatch(lid, decl.type_arity,
                                                        List.length stl)));
-      let args = List.map (transl_type env policy) stl in
+      let args = List.map (transl_type env ~lident policy) stl in
       let params = Ctype.instance_list decl.type_params in
       List.iter2
         (fun (sty, ty) ty' ->
@@ -291,7 +294,7 @@ let rec transl_type env policy styp =
                   v2
               else v1
           in
-          let ty = transl_type env policy st in
+          let ty = transl_type env ~lident policy st in
           begin try unify_var env t ty with Unify trace ->
             let trace = swap_list trace in
             raise(Error(styp.ptyp_loc, Alias_type_mismatch trace))
@@ -305,7 +308,7 @@ let rec transl_type env policy styp =
           if local then local_aliases := alias :: !local_aliases;
           if policy = Delayed then
             used_variables := Tbl.add alias t !used_variables;
-          let ty = transl_type env policy st in
+          let ty = transl_type env ~lident policy st in
           begin try unify_var env t ty with Unify trace ->
             let trace = swap_list trace in
             raise(Error(styp.ptyp_loc, Alias_type_mismatch trace))
@@ -337,18 +340,18 @@ let rec transl_type env policy styp =
             name := None;
             let f = match present with
               Some present when not (single || List.mem l present) ->
-                let tl = List.map (transl_type env policy) stl in
+                let tl = List.map (transl_type env ~lident policy) stl in
                 bound := tl @ !bound;
                 Reither(c, tl, false, ref None)
             | _ ->
                 if List.length stl > 1 || c && stl <> [] then
                   raise(Error(styp.ptyp_loc, Present_has_conjunction l));
                 match stl with [] -> Rpresent None
-                | st :: _ -> Rpresent (Some(transl_type env policy st))
+                | st :: _ -> Rpresent (Some(transl_type env ~lident policy st))
             in
             add_typed_field styp.ptyp_loc l f fields
         | Rinherit sty ->
-            let ty = transl_type env policy sty in
+            let ty = transl_type env ~lident policy sty in
             let nm =
               match repr ty with
                 {desc=Tconstr(p, tl, _)} -> Some(p, tl)
@@ -422,7 +425,7 @@ let rec transl_type env policy styp =
       let new_univars = List.map (fun name -> name, newvar()) vars in
       let old_univars = !univars in
       univars := new_univars @ !univars;
-      let ty = transl_type env policy st in
+      let ty = transl_type env ~lident policy st in
       univars := old_univars;
       end_def();
       generalize ty;
@@ -443,17 +446,17 @@ let rec transl_type env policy styp =
       ty'
   | Ptyp_konst(_,_) -> (* not allowed *)
       raise (Error(styp.ptyp_loc, Cannot_have_konstraint))
-      
+  | Ptyp_lident li -> lident styp.ptyp_loc li
 
-and transl_fields env policy =
+and transl_fields env ?(lident=reject_lident) policy =
   function
     [] ->
       newty Tnil
   | {pfield_desc = Pfield_var} as field::_ ->
       if policy = Univars then new_pre_univar () else newvar ()
   | {pfield_desc = Pfield(s, e)}::l ->
-      let ty1 = transl_type env policy e in
-      let ty2 = transl_fields env policy l in
+      let ty1 = transl_type env ~lident policy e in
+      let ty2 = transl_fields env ~lident policy l in
         newty (Tfield (s, Fpresent, ty1, ty2))
 
 
@@ -542,6 +545,13 @@ let transl_type_scheme env sktyp =
   generalize t;
   t
 
+let transl_run_time_type f env styp =
+  univars := []; local_aliases := [];
+  let typ = transl_type env ~lident: f Extensible styp in
+  type_variables := List.fold_right Tbl.remove !local_aliases !type_variables;
+  make_fixed_univars typ;
+  typ
+
 (* Error report *)
 
 open Format
@@ -610,3 +620,5 @@ let report_error ppf = function
          else "it is not a variable")
   | Cannot_have_konstraint ->
       fprintf ppf "This type has a constraint which is not allowed in this context."
+  | Cannot_have_lident ->
+      fprintf ppf "This expression is only permitted inside run time types"

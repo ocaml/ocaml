@@ -36,6 +36,7 @@ and pattern_desc =
   | Tpat_record of (label_description * pattern) list
   | Tpat_array of pattern list
   | Tpat_or of pattern * pattern * Path.t option
+  | Tpat_rtype of type_expr
 
 type partial = Partial | Total
 type optional = Required | Optional

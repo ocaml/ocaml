@@ -34,11 +34,13 @@ and type_desc =
   | Tpoly of type_expr * type_expr list
 *)
 
+let mk_type desc = { desc= desc }
+
+(* Type definitions *)
+
 type record_representation =
     Record_regular                      (* All fields are boxed / tagged *)
   | Record_float                        (* All fields are floats *)
-
-(* Type definitions *)
 
 type type_declaration =
   { type_params: type_expr list;
@@ -53,8 +55,6 @@ and type_kind =
   | Type_variant of (string * type_expr list) list (* * private_flag *)
   | Type_record of (string * mutable_flag * type_expr) list
                  * record_representation (* * private_flag *)
-
-let mk_type desc = { desc= desc }
 
 open Format
 
@@ -83,7 +83,7 @@ let name_of_type t =
 
 let rec print_path ppf = function
   | Path.Pident id -> fprintf ppf "%s" id
-  | Path.Pdot (p, name, _) -> fprintf ppf "%a.%s" print_path p name
+  | Path.Pdot (p, name, n) -> fprintf ppf "%a.%s_%d" print_path p name n
   | Path.Papply (p1, p2) -> fprintf ppf "%a(%a)" print_path p1 print_path p2
 
 (* From: Oprint.print_out_type *)

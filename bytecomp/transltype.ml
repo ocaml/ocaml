@@ -126,6 +126,7 @@ let transl_type_expr vartbl t =
 	  | Tvar -> ()
 	  | Tarrow(l,t1,t2,_) -> count_type t1; count_type t2
 	  | Ttuple ts | Tconstr (_, ts, _) -> List.iter count_type ts
+	  | Tpath p -> ()
 	  | _ -> raise Unsupported_type_constructor
     in
     count_type t;
@@ -158,6 +159,7 @@ let transl_type_expr vartbl t =
 	  let t = try List.assq t vartbl with Not_found -> t in
   	  Lambda.transl_path 
 	    (Path.Pident (Etype.find_ident_of_type_variable t))
+      | Tpath p -> Lambda.transl_path p
       | _ -> raise Not_found
     with
     | Not_found -> 
