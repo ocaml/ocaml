@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -27,6 +27,7 @@ external field : t -> int -> t = "%obj_field"
 external set_field : t -> int -> t -> unit = "%obj_set_field"
 external new_block : int -> int -> t = "obj_block"
 external dup : t -> t = "obj_dup"
+external truncate : t -> int -> unit = "obj_truncate"
 
 (* The following two functions are deprecated.  Use module [Marshal]
    instead. *)

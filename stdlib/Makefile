@@ -40,7 +40,7 @@ stdlib.p.cmxa: $(OBJS:.cmo=.p.cmx)
 camlheader camlheader_ur: header.c ../config/Makefile
 	if $(SHARPBANGSCRIPTS); then \
           echo '#! $(BINDIR)/ocamlrun' > camlheader && \
-          echo -n '#! ' > camlheader_ur; \
+          echo '#! ' | tr -d '\012' > camlheader_ur; \
         else \
 	  $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -DRUNTIME_NAME='"$(BINDIR)/ocamlrun"' header.c -o camlheader && \
           strip camlheader && \
