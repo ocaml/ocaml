@@ -19,14 +19,14 @@ extern int error_table[];
 
 #ifdef HAS_STRERROR
 
-#include <string.h>
+extern char * strerror();
 
 value unix_error_message(err)
      value err;
 {
   int errnum;
   errnum = error_table[Int_val(err)];
-  return copy_string(strerror(errno));
+  return copy_string(strerror(errnum));
 }
 
 #else
