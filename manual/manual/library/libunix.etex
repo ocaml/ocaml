@@ -32,14 +32,14 @@ Programs that use the "unix" library must be linked in ``custom
 runtime'' mode, as follows:
 \begin{alltt}
         ocamlc -custom \var{other options} unix.cma \var{other files} \char92
-                %camllib%/libunix.lib wsock32.lib
+                \%CAMLLIB\%/libunix.lib wsock32.lib
         ocamlopt \var{other options} unix.cmxa \var{other files} \char92
-                %camllib%/libunix.lib wsock32.lib
+                \%CAMLLIB\%/libunix.lib wsock32.lib
 \end{alltt}
 For interactive use of the "unix" library, do:
 \begin{alltt}
         ocamlmktop -custom -o mytop.exe unix.cma \char92
-                %camllib%/libunix.lib wsock32.lib
+                \%CAMLLIB\%/libunix.lib wsock32.lib
         mytop.exe
 \end{alltt}
 \end{windows}

@@ -13,7 +13,8 @@ compiled with "ocamlc".
 This library is implemented under the X11 windows system. 
 Programs that use the "graphics" library must be linked as follows:
 \begin{alltt}
-        ocamlc -custom \var{other options} graphics.cma \var{other files} -cclib -lgraphics -cclib -lX11
+        ocamlc -custom \var{other options} graphics.cma \var{other files} \char92
+                -cclib -lgraphics -cclib -lX11
 \end{alltt}
 For interactive use of the "graphics" library, do:
 \begin{alltt}

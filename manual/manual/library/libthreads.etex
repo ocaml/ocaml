@@ -30,7 +30,8 @@ the standard library (see chapter~\ref{c:camlc}).
 \begin{windows}
 Programs that use the "threads" library must be linked as follows:
 \begin{alltt}
-        ocamlc -thread -custom \var{other options} threads.cma \var{other files} \%CAMLLIB\%/libthreads.lib
+        ocamlc -thread -custom \var{other options} threads.cma \var{other files} \char92
+                \%CAMLLIB\%/libthreads.lib
 \end{alltt}
 All object files on the command line must also have been compiled with
 the "-thread" option, which selects a special, thread-safe version of
