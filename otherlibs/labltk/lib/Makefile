@@ -5,7 +5,7 @@ all: $(LIBNAME).cma $(LIBNAME)top$(EXE) $(LIBNAME)
 opt: $(LIBNAME).cmxa
 
 clean: 
-	rm -f $(LIBNAME).cma $(LIBNAME).cmxa $(LIBNAME)top$(EXE) $(LIBNAME)
+	rm -f $(LIBNAME).cma $(LIBNAME).cmxa $(LIBNAME)top$(EXE) $(LIBNAME) *.a
 
 include ../labltk/modules
 LABLTKOBJS=tk.cmo $(WIDGETOBJS)

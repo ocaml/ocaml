@@ -32,7 +32,7 @@ $(OBJS) $(OBJS:.cmo=.cmi): ../lib/$(LIBNAME).cma
 $(OBJS:.cmo=.cmx): ../lib/$(LIBNAME).cmxa
  
 clean:
-	rm -f *.cm* *.o libtkanim.a dlltkanim.so animwish gifanimtest
+	rm -f *.cm* *.o *.a dlltkanim.so animwish gifanimtest
 
 .SUFFIXES :
 .SUFFIXES : .mli .ml .cmi .cmo .mlp .cmx .c .o
