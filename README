@@ -37,7 +37,7 @@ but the compiler may work under other operating systems with little work.
 Before the introduction of objects, Objective Caml was known as Caml
 Special Light. Objective Caml is almost upwards compatible with Caml
 Special Light, except for a few additional reserved keywords that have
-forced some renamings of standard library functions.
+forced some renaming of standard library functions.
 
 CONTENTS:
 
