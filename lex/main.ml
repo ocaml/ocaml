@@ -18,7 +18,6 @@ open Syntax
 open Lexgen
 
 let ml_automata = ref false
-let quiet_mode = ref false
 let source_name = ref None
 let output_name = ref None
 
