@@ -604,7 +604,7 @@ pack_vector(int vector)
 		if (loc > high) high = loc;
 	    }
 
-	    while (check[lowzero] != -1)
+	    while (lowzero < maxtable && check[lowzero] != -1)
 		++lowzero;
 
 	    return (j);
