@@ -91,6 +91,30 @@ module StringMap =
   Map.Make (struct type t = string let compare = Pervasives.compare end)
 
 (*********************)
+(* Variable cleaning *)
+(*********************)
+
+(* Silently eliminate nested variables *)
+
+let rec do_remove_nested to_remove = function
+  | Bind (e,x) ->
+      if StringSet.mem x to_remove then
+        do_remove_nested to_remove e
+      else
+        Bind (do_remove_nested (StringSet.add x to_remove) e, x)
+  | Epsilon|Eof|Characters _ as e -> e
+  | Sequence (e1, e2) ->
+      Sequence
+        (do_remove_nested to_remove  e1, do_remove_nested to_remove  e2)
+  | Alternative (e1, e2) ->
+      Alternative
+        (do_remove_nested to_remove  e1, do_remove_nested to_remove  e2)
+  | Repetition e ->
+      Repetition (do_remove_nested to_remove  e)
+
+let remove_nested_as e = do_remove_nested StringSet.empty e
+
+(*********************)
 (* Variable analysis *)
 (*********************)
 
@@ -453,6 +477,7 @@ let encode_casedef casedef =
   let r =
     List.fold_left
       (fun (reg,actions,count,ntags) (expr, act) ->
+        let expr = remove_nested_as expr in
         let char_vars = find_chars expr in
         let r = encode_regexp char_vars count expr
         and opt_vars = find_optional expr

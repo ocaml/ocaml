@@ -35,6 +35,13 @@ let regexp_for_string s =
 
 let char_class c1 c2 = Cset.interval c1 c2
 
+let rec remove_as = function
+  | Bind (e,_) -> remove_as e
+  | Epsilon|Eof|Characters _ as e -> e
+  | Sequence (e1, e2) -> Sequence (remove_as e1, remove_as e2)
+  | Alternative (e1, e2) -> Alternative (remove_as e1, remove_as e2)
+  | Repetition e -> Repetition (remove_as e)
+
 %}
 
 %token <string> Tident
@@ -126,7 +133,7 @@ regexp:
   | regexp Tmaybe
         { Alternative(Epsilon, $1) }
   | regexp Tplus
-        { Sequence(Repetition ($1), $1) }
+        { Sequence(Repetition (remove_as $1), $1) }
   | regexp Tor regexp
         { Alternative($1,$3) }
   | regexp regexp %prec CONCAT
