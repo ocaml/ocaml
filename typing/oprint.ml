@@ -43,13 +43,20 @@ let value_ident ppf name =
 let print_out_value ppf tree =
   let rec print_tree_1 ppf =
     function
-      Oval_constr (name, [param]) ->
-        fprintf ppf "@[<1>%a@ %a@]" print_ident name print_simple_tree param
+    | Oval_constr (name, [param]) ->
+        fprintf ppf "@[<1>%a@ %a@]" print_ident name print_constr_param param
     | Oval_constr (name, (_ :: _ as params)) ->
         fprintf ppf "@[<1>%a@ (%a)@]" print_ident name
           (print_tree_list print_tree_1 ",") params
     | Oval_variant (name, Some param) ->
         fprintf ppf "@[<2>`%s@ %a@]" name print_simple_tree param
+    | tree -> print_simple_tree ppf tree
+  and print_constr_param ppf = function
+    | Oval_int i ->
+       if i < 0 then fprintf ppf "(%i)" i else fprintf ppf "%i" i
+    | Oval_float f ->
+       let s = string_of_float f in
+       if f < 0.0 then fprintf ppf "(%s)" s else fprintf ppf "%s" s
     | tree -> print_simple_tree ppf tree
   and print_simple_tree ppf =
     function
