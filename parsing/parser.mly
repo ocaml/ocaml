@@ -225,7 +225,7 @@ let unclosed opening_name opening_num closing_name closing_num =
 %token <string> PREFIXOP
 %token PRIVATE
 %token QUESTION
-%token QUESTION3
+%token QUESTION2
 %token QUOTE
 %token RBRACE
 %token RBRACKET
@@ -913,7 +913,7 @@ opt_pat:
 ;
 opt_err:
     /* empty */                                 { None }
-  | QUESTION3 expr %prec prec_list              { Some $2 }
+  | QUESTION2 expr %prec prec_list              { Some $2 }
 ;
 stream_expr:
     stream_expr_component                       { [$1] }

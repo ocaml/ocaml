@@ -91,7 +91,7 @@ let tag ?:start{=tstart} ?end:pend{=tend} tw =
       | INFIXOP3 _
       | INFIXOP4 _
       | PREFIXOP _
-      |	QUESTION3
+      |	QUESTION2
       | SHARP
       	  -> "infix"
       | LABEL _

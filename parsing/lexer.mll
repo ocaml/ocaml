@@ -257,7 +257,7 @@ rule token = parse
   | "*"  { STAR }
   | ","  { COMMA }
   | "?"  { QUESTION }
-  | "???" { QUESTION3 }
+  | "??" { QUESTION2 }
   | "->" { MINUSGREATER }
   | "."  { DOT }
   | ".." { DOTDOT }
