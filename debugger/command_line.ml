@@ -811,7 +811,7 @@ let info_breakpoints ppf lexbuf =
     (fprintf ppf "Num    Address  Where@.";
      List.iter
        (function (num, {ev_pos = pc; ev_module = md; ev_char = char}) ->
-          fprintf ppf "%3d %10d  in %s, character %d\n" num pc md
+          fprintf ppf "%3d %10d  in %s, character %d@." num pc md
                   char.Lexing.pos_cnum)
        (List.rev !breakpoints))
 
