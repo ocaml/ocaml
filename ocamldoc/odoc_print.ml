@@ -89,6 +89,7 @@ let simpl_class_type t =
                                                   Types.desc = Types.Tobject (tnil, ref None) };
                                Types.cty_vars = Types.Vars.empty ;
                                Types.cty_concr = Types.Concr.empty ;
+                               Types.cty_inher = []
                              }
     | Types.Tcty_fun (l, texp, ct) ->
         let new_ct = iter ct in

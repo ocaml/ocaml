@@ -183,7 +183,11 @@ let type_declaration s decl =
 let class_signature s sign =
   { cty_self = typexp s sign.cty_self;
     cty_vars = Vars.map (function (m, t) -> (m, typexp s t)) sign.cty_vars;
-    cty_concr = sign.cty_concr }
+    cty_concr = sign.cty_concr;
+    cty_inher =
+      List.map (fun (p, tl) -> (type_path s p, List.map (typexp s) tl))
+        sign.cty_inher
+  }
 
 let rec class_type s =
   function

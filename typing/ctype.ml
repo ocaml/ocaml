@@ -821,7 +821,9 @@ let instance_class params cty =
           {cty_self = copy sign.cty_self;
            cty_vars =
              Vars.map (function (mut, ty) -> (mut, copy ty)) sign.cty_vars;
-           cty_concr = sign.cty_concr}
+           cty_concr = sign.cty_concr;
+           cty_inher =
+             List.map (fun (p,tl) -> (p, List.map copy tl)) sign.cty_inher}
     | Tcty_fun (l, ty, cty) ->
         Tcty_fun (l, copy ty, copy_class_type cty)
   in
@@ -3177,7 +3179,10 @@ let nondep_class_signature env id sign =
     cty_vars =
       Vars.map (function (m, t) -> (m, nondep_type_rec env id t))
         sign.cty_vars;
-    cty_concr = sign.cty_concr }
+    cty_concr = sign.cty_concr;
+    cty_inher =
+      List.map (fun (p,tl) -> (p, List.map (nondep_type_rec env id) tl))
+        sign.cty_inher }
 
 let rec nondep_class_type env id =
   function

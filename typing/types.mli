@@ -159,7 +159,8 @@ type class_type =
 and class_signature =
   { cty_self: type_expr;
     cty_vars: (Asttypes.mutable_flag * type_expr) Vars.t;
-    cty_concr: Concr.t }
+    cty_concr: Concr.t;
+    cty_inher: (Path.t * type_expr list) list }
 
 type class_declaration =
   { cty_params: type_expr list;

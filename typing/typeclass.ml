@@ -88,9 +88,10 @@ let rec generalize_class_type =
     Tcty_constr (_, params, cty) ->
       List.iter Ctype.generalize params;
       generalize_class_type cty
-  | Tcty_signature {cty_self = sty; cty_vars = vars } ->
+  | Tcty_signature {cty_self = sty; cty_vars = vars; cty_inher = inher} ->
       Ctype.generalize sty;
-      Vars.iter (fun _ (_, ty) -> Ctype.generalize ty) vars
+      Vars.iter (fun _ (_, ty) -> Ctype.generalize ty) vars;
+      List.iter (fun (_,tl) -> List.iter Ctype.generalize tl) inher
   | Tcty_fun (_, ty, cty) ->
       Ctype.generalize ty;
       generalize_class_type cty
@@ -172,7 +173,9 @@ let rec limited_generalize rv =
   | Tcty_signature sign ->
       Ctype.limited_generalize rv sign.cty_self;
       Vars.iter (fun _ (_, ty) -> Ctype.limited_generalize rv ty)
-        sign.cty_vars
+        sign.cty_vars;
+      List.iter (fun (_, tl) -> List.iter (Ctype.limited_generalize rv) tl)
+        sign.cty_inher
   | Tcty_fun (_, ty, cty) ->
       Ctype.limited_generalize rv ty;
       limited_generalize rv cty
@@ -272,10 +275,15 @@ let make_method cl_num expr =
 
 (*******************************)
 
-let rec class_type_field env self_type meths (val_sig, concr_meths) =
+let rec class_type_field env self_type meths (val_sig, concr_meths, inher) =
   function
     Pctf_inher sparent ->
       let parent = class_type env sparent in
+      let inher =
+        match parent with
+          Tcty_constr (p, tl, _) -> (p, tl) :: inher
+        | _ -> inher
+      in
       let (cl_sig, concr_meths, _) =
         inheritance self_type env concr_meths Concr.empty sparent.pcty_loc
           parent
@@ -285,7 +293,7 @@ let rec class_type_field env self_type meths (val_sig, concr_meths) =
           (fun lab (mut, ty) val_sig -> Vars.add lab (mut, ty) val_sig)
           cl_sig.cty_vars val_sig
       in
-      (val_sig, concr_meths)
+      (val_sig, concr_meths, inher)
 
   | Pctf_val (lab, mut, sty_opt, loc) ->
       let (mut, ty) =
@@ -299,19 +307,19 @@ let rec class_type_field env self_type meths (val_sig, concr_meths) =
         | Some sty ->
             mut, transl_simple_type env false sty
       in
-      (Vars.add lab (mut, ty) val_sig, concr_meths)
+      (Vars.add lab (mut, ty) val_sig, concr_meths, inher)
 
   | Pctf_virt (lab, priv, sty, loc) ->
       declare_method env meths self_type lab priv sty loc;
-      (val_sig, concr_meths)
+      (val_sig, concr_meths, inher)
 
   | Pctf_meth (lab, priv, sty, loc)  ->
       declare_method env meths self_type lab priv sty loc;
-      (val_sig, Concr.add lab concr_meths)
+      (val_sig, Concr.add lab concr_meths, inher)
 
   | Pctf_cstr (sty, sty', loc) ->
       type_constraint env sty sty' loc;
-      (val_sig, concr_meths)
+      (val_sig, concr_meths, inher)
 
 and class_signature env sty sign =
   let meths = ref Meths.empty in
@@ -328,15 +336,16 @@ and class_signature env sty sign =
   end;
   
   (* Class type fields *)
-  let (val_sig, concr_meths) =
+  let (val_sig, concr_meths, inher) =
     List.fold_left (class_type_field env self_type meths)
-      (Vars.empty, Concr.empty)
+      (Vars.empty, Concr.empty, [])
       sign
   in
   
   {cty_self = self_type;
    cty_vars = val_sig;
-   cty_concr = concr_meths }
+   cty_concr = concr_meths;
+   cty_inher = inher}
 
 and class_type env scty =
   match scty.pcty_desc with
@@ -376,10 +385,16 @@ and class_type env scty =
 module StringSet = Set.Make(struct type t = string let compare = compare end)
 
 let rec class_field cl_num self_type meths vars
-    (val_env, met_env, par_env, fields, concr_meths, warn_meths, inh_vals) =
+    (val_env, met_env, par_env, fields, concr_meths, warn_meths,
+     inh_vals, inher) =
   function
     Pcf_inher (sparent, super) ->
       let parent = class_expr cl_num val_env par_env sparent in
+      let inher =
+        match parent.cl_type with
+          Tcty_constr (p, tl, _) -> (p, tl) :: inher
+        | _ -> inher
+      in
       let (cl_sig, concr_meths, warn_meths) =
         inheritance self_type val_env concr_meths warn_meths sparent.pcl_loc
           parent.cl_type
@@ -417,7 +432,7 @@ let rec class_field cl_num self_type meths vars
       in
       (val_env, met_env, par_env,
        lazy(Cf_inher (parent, inh_vars, inh_meths))::fields,
-       concr_meths, warn_meths, inh_vals)
+       concr_meths, warn_meths, inh_vals, inher)
 
   | Pcf_val (lab, mut, sexp, loc) ->
       if StringSet.mem lab inh_vals then
@@ -435,12 +450,13 @@ let rec class_field cl_num self_type meths vars
         enter_val cl_num vars lab mut exp.exp_type val_env met_env par_env
       in
       (val_env, met_env, par_env, lazy(Cf_val (lab, id, exp)) :: fields,
-       concr_meths, warn_meths, inh_vals)
+       concr_meths, warn_meths, inh_vals, inher)
 
   | Pcf_virt (lab, priv, sty, loc) ->
       virtual_method val_env meths self_type lab priv sty loc;
       let warn_meths = Concr.remove lab warn_meths in
-      (val_env, met_env, par_env, fields, concr_meths, warn_meths, inh_vals)
+      (val_env, met_env, par_env, fields, concr_meths, warn_meths,
+       inh_vals, inher)
 
   | Pcf_meth (lab, priv, expr, loc)  ->
       let (_, ty) =
@@ -483,11 +499,12 @@ let rec class_field cl_num self_type meths vars
           Cf_meth (lab, texp)
         end in
       (val_env, met_env, par_env, field::fields,
-       Concr.add lab concr_meths, Concr.add lab warn_meths, inh_vals)
+       Concr.add lab concr_meths, Concr.add lab warn_meths, inh_vals, inher)
 
   | Pcf_cstr (sty, sty', loc) ->
       type_constraint val_env sty sty' loc;
-      (val_env, met_env, par_env, fields, concr_meths, warn_meths, inh_vals)
+      (val_env, met_env, par_env, fields, concr_meths, warn_meths,
+       inh_vals, inher)
 
   | Pcf_let (rec_flag, sdefs, loc) ->
       let (defs, val_env) =
@@ -517,7 +534,7 @@ let rec class_field cl_num self_type meths vars
           ([], met_env, par_env)
       in
       (val_env, met_env, par_env, lazy(Cf_let(rec_flag, defs, vals))::fields,
-       concr_meths, warn_meths, inh_vals)
+       concr_meths, warn_meths, inh_vals, inher)
 
   | Pcf_init expr ->
       let expr = make_method cl_num expr in
@@ -534,7 +551,7 @@ let rec class_field cl_num self_type meths vars
           Cf_init texp
         end in
       (val_env, met_env, par_env, field::fields,
-       concr_meths, warn_meths, inh_vals)
+       concr_meths, warn_meths, inh_vals, inher)
 
 and class_structure cl_num final val_env met_env loc (spat, str) =
   (* Environment for substructures *)
@@ -575,17 +592,18 @@ and class_structure cl_num final val_env met_env loc (spat, str) =
   end;
 
   (* Typing of class fields *)
-  let (_, _, _, fields, concr_meths, _, _) =
+  let (_, _, _, fields, concr_meths, _, _, inher) =
     List.fold_left (class_field cl_num self_type meths vars)
       (val_env, meth_env, par_env, [], Concr.empty, Concr.empty,
-       StringSet.empty)
+       StringSet.empty, [])
       str
   in
   Ctype.unify val_env self_type (Ctype.newvar ());
   let sign =
     {cty_self = public_self;
      cty_vars = Vars.map (function (id, mut, ty) -> (mut, ty)) !vars;
-     cty_concr = concr_meths } in
+     cty_concr = concr_meths;
+     cty_inher = inher} in
   let methods = get_methods self_type in
   let priv_meths =
     List.filter (fun (_,kind,_) -> Btype.field_kind_repr kind <> Fpresent)
@@ -948,7 +966,8 @@ let rec initial_env define_class approx
     Tcty_signature
       { cty_self = Ctype.newvar ();
         cty_vars = Vars.empty;
-        cty_concr = Concr.empty }
+        cty_concr = Concr.empty;
+        cty_inher = [] }
   in
   let dummy_class =
     {cty_params = [];             (* Dummy value *)
