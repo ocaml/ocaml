@@ -119,10 +119,14 @@ let create_object cl obj init =
 let rec build_object_init cl_table obj params inh_init obj_init cl =
   match cl.cl_desc with
     Tclass_ident path ->
-      let obj_init = Ident.create "obj_init"
-      and env_init = Ident.create "env_init" in
-      ((obj_init, env_init, path)::inh_init,
-       Lapply(Lvar obj_init, [obj]))
+      let obj_init = Ident.create "obj_init" in
+      let envs, inh_init = inh_init in
+      let env =
+        match envs with None -> []
+        | Some envs -> [Lprim(Pfield (List.length inh_init + 1), [Lvar envs])]
+      in
+      ((envs, (obj_init, path)::inh_init),
+       Lapply(Lvar obj_init, env @ [obj]))
   | Tclass_structure str ->
       create_object cl_table obj (fun obj ->
         let (inh_init, obj_init) =
@@ -183,33 +187,20 @@ let rec build_object_init cl_table obj params inh_init obj_init cl =
   | Tclass_constraint (cl, vals, pub_meths, concr_meths) ->
       build_object_init cl_table obj params inh_init obj_init cl
 
-let rec build_object_init_0 cl_table params cl copy_env top ids =
+let rec build_object_init_0 cl_table params cl copy_env subst_env top ids =
   match cl.cl_desc with
     Tclass_let (rec_flag, defs, vals, cl) ->
-      build_object_init_0 cl_table (vals @ params) cl copy_env top ids
+      build_object_init_0 cl_table (vals@params) cl copy_env subst_env top ids
   | _ ->
       let self = Ident.create "self" in
+      let env = Ident.create "env" in
       let obj = if ids = [] then lambda_unit else Lvar self in
-      let (inh_init, obj_init) =
-        build_object_init cl_table obj params [] copy_env cl in
+      let envs = if top then None else Some env in
+      let ((_,inh_init), obj_init) =
+        build_object_init cl_table obj params (envs,[]) (copy_env env) cl in
       let obj_init =
 	if ids = [] then obj_init else lfunction [self] obj_init in
-      (inh_init, obj_init)
-
-let build_object_init_0 cl_table cl copy_env subst_env top ids =
-  let env = Ident.create "env" in
-  let (inh_init, obj_init) =
-    build_object_init_0 cl_table [] cl (copy_env env) top ids in
-  let obj_init =
-    if top then obj_init else
-    let i = ref (List.length inh_init + 1) in
-    List.fold_right
-      (fun (obj_init, env_init, _) init ->
-	decr i;
-	Llet(Strict, obj_init, Lapply(Lvar env_init, [lfield env !i]), init))
-      inh_init (subst_env env obj_init)
-  in
-  (inh_init, lfunction [env] obj_init)
+      (inh_init, lfunction [env] (subst_env env obj_init))
 
 
 let bind_method tbl public_methods lab id cl_init =
@@ -246,10 +237,10 @@ let rec build_class_init cla pub_meths cstr inh_init cl_init msubst top cl =
   match cl.cl_desc with
     Tclass_ident path ->
       begin match inh_init with
-        (obj_init, env_init, path')::inh_init ->
+        (obj_init, path')::inh_init ->
 	  let lpath = transl_path path in
           (inh_init,
-           Llet (Strict, (if top then obj_init else env_init), 
+           Llet (Strict, obj_init, 
                  Lapply(Lprim(Pfield 1, [lpath]), Lvar cla ::
 			if top then [Lprim(Pfield 3, [lpath])] else []),
                  cl_init))
@@ -330,11 +321,11 @@ let rec build_class_init cla pub_meths cstr inh_init cl_init msubst top cl =
          transl_meth_list (Concr.elements concr_meths)] in
       let cl = ignore_cstrs cl in
       begin match cl.cl_desc, inh_init with
-	Tclass_ident path, (obj_init, env_init, path')::inh_init ->
+	Tclass_ident path, (obj_init, path')::inh_init ->
 	  assert (Path.same path path');
 	  let lpath = transl_path path in
           (inh_init,
-           Llet (Strict, (if top then obj_init else env_init), 
+           Llet (Strict, obj_init, 
 		 Lapply(oo_prim "inherits", narrow_args @
 			[lpath; Lconst(Const_pointer(if top then 1 else 0))]),
                  cl_init))
@@ -365,57 +356,57 @@ let rec build_class_lets cl =
 let rec transl_class_rebind obj_init cl =
   match cl.cl_desc with
     Tclass_ident path ->
-      (path, false, obj_init)
+      (path, obj_init)
   | Tclass_fun (pat, _, cl, partial) ->
-      let path, inh, obj_init = transl_class_rebind obj_init cl in
+      let path, obj_init = transl_class_rebind obj_init cl in
       let build params rem =
         let param = name_pattern "param" [pat, ()] in
         Lfunction (Curried, param::params,
                    Matching.for_function
                      pat.pat_loc None (Lvar param) [pat, rem] partial)
       in
-      (path, inh,
+      (path,
        match obj_init with
          Lfunction (Curried, params, rem) -> build params rem
        | rem                              -> build [] rem)
   | Tclass_apply (cl, oexprs) ->
-      let path, inh, obj_init = transl_class_rebind obj_init cl in
-      (path, inh, transl_apply obj_init oexprs)
+      let path, obj_init = transl_class_rebind obj_init cl in
+      (path, transl_apply obj_init oexprs)
   | Tclass_let (rec_flag, defs, vals, cl) ->
-      let path, inh, obj_init = transl_class_rebind obj_init cl in
-      (path, inh, Translcore.transl_let rec_flag defs obj_init)
+      let path, obj_init = transl_class_rebind obj_init cl in
+      (path, Translcore.transl_let rec_flag defs obj_init)
   | Tclass_structure {cl_field = [Cf_inher(cl, _, _)]} ->
-      let path, inh, obj_init = transl_class_rebind obj_init cl in
-      (path, true, obj_init)
+      let path, obj_init = transl_class_rebind obj_init cl in
+      (path, obj_init)
   | Tclass_structure _ -> raise Exit
   | Tclass_constraint (cl', _, _, _) ->
-      let path, inh, obj_init = transl_class_rebind obj_init cl' in
+      let path, obj_init = transl_class_rebind obj_init cl' in
       let rec check_constraint = function
           Tcty_constr(path', _, _) when Path.same path path' -> ()
         | Tcty_fun (_, _, cty) -> check_constraint cty
         | _ -> raise Exit
       in
       check_constraint cl.cl_type;
-      (path, inh, obj_init)
+      (path, obj_init)
 
 let rec transl_class_rebind_0 self obj_init cl =
   match cl.cl_desc with
     Tclass_let (rec_flag, defs, vals, cl) ->
-      let path, inh, obj_init = transl_class_rebind_0 self obj_init cl in
-      (path, inh, Translcore.transl_let rec_flag defs obj_init)
+      let path, obj_init = transl_class_rebind_0 self obj_init cl in
+      (path, Translcore.transl_let rec_flag defs obj_init)
   | _ ->
-      let path, inh, obj_init = transl_class_rebind obj_init cl in
-      (path, inh, lfunction [self] obj_init)
+      let path, obj_init = transl_class_rebind obj_init cl in
+      (path, lfunction [self] obj_init)
 
 let transl_class_rebind ids cl =
   try
     let obj_init = Ident.create "obj_init"
     and self = Ident.create "self" in
     let obj_init0 = lapply (Lvar obj_init) [Lvar self] in
-    let path, inh, obj_init' = transl_class_rebind_0 self obj_init0 cl in
+    let path, obj_init' = transl_class_rebind_0 self obj_init0 cl in
     if not (Translcore.check_recursive_lambda ids obj_init') then
       raise(Error(cl.cl_loc, Illegal_class_expr));
-    let id = not inh && (obj_init' = lfunction [self] obj_init0) in
+    let id = (obj_init' = lfunction [self] obj_init0) in
     if id then transl_path path else
 
     let cla = Ident.create "class"
@@ -424,18 +415,12 @@ let transl_class_rebind ids cl =
     and env_init = Ident.create "env_init"
     and table = Ident.create "table"
     and envs = Ident.create "envs" in
-    let new_obj_init =
-      if inh then (* recompute for class creation side-effects *)
-        Lapply(lfield cla 2, [lfield cla 3])
-      else (* reuse original obj_init *)
-        lfield cla 0
-    in
     Llet(
     Strict, new_init, lfunction [obj_init] obj_init',
     Llet(
     Alias, cla, transl_path path,
     Lprim(Pmakeblock(0, Immutable),
-          [Lapply(Lvar new_init, [new_obj_init]);
+          [Lapply(Lvar new_init, [lfield cla 0]);
            lfunction [table]
              (Llet(Strict, env_init,
                    Lapply(lfield cla 1, [Lvar table]),
@@ -537,10 +522,21 @@ open M
 
 
 (*
-   XXX
-   Exploiter le fait que les methodes sont definies dans l'ordre pour
-   l'initialisation des classes (et les variables liees par un
-   let ???) ?
+   Traduction d'une classe.
+   Plusieurs cas:
+    * reapplication d'une classe connue -> transl_class_rebind
+    * classe sans dependances locales -> traduction directe
+    * avec dependances locale -> creation d'un arbre de stubs,
+      avec un noeud pour chaque classe locale heritee
+   Une classe est un 4-uplet:
+    (obj_init, class_init, env_init, env)
+    obj_init: fonction de creation d'objet (unit -> obj)
+    class_init: fonction d'heritage (table -> env_init)
+      (une seule par code source)
+    env_init: parametrage par l'environnement local (env -> params -> obj_init)
+      (une par combinaison d'env_init herites)
+    env: environnement local
+   Si ids=0 (objet immediat), alors on ne conserve que env_init.
 *)
 
 
@@ -603,7 +599,7 @@ let transl_class ids cl_id arity pub_meths cl =
   (* Now we start compiling the class *)
   let cla = Ident.create "class" in
   let (inh_init, obj_init) =
-    build_object_init_0 cla cl copy_env subst_env top ids in
+    build_object_init_0 cla [] cl copy_env subst_env top ids in
   if not (Translcore.check_recursive_lambda ids obj_init) then
     raise(Error(cl.cl_loc, Illegal_class_expr));
   let (inh_init', cl_init) =
@@ -650,7 +646,8 @@ let transl_class ids cl_id arity pub_meths cl =
                  List.map (fun id -> Lvar id) !new_ids_meths)) ::
           List.map (fun id -> Lvar id) !new_ids_init)
   and linh_envs =
-    List.map (fun (_, _, p) -> Lprim(Pfield 3, [transl_path p])) inh_init
+    List.map (fun (_, p) -> Lprim(Pfield 3, [transl_path p]))
+      (List.rev inh_init)
   in
   let make_envs lam =
     Llet(StrictOpt, envs,
@@ -665,9 +662,9 @@ let transl_class ids cl_id arity pub_meths cl =
   and cached = Ident.create "cached" in
   let inh_paths =
     List.filter
-      (fun (_,_,path) -> List.mem (Path.head path) new_ids) inh_init in
+      (fun (_,path) -> List.mem (Path.head path) new_ids) inh_init in
   let inh_keys =
-    List.map (fun (_,_,p) -> Lprim(Pfield 2, [transl_path p])) inh_paths in
+    List.map (fun (_,p) -> Lprim(Pfield 2, [transl_path p])) inh_paths in
   let lclass lam =
     Llet(Strict, class_init,
          Lfunction(Curried, [cla], def_ids cla cl_init), lam)
@@ -703,25 +700,7 @@ let transl_class ids cl_id arity pub_meths cl =
          lfield cached 0;
          lenvs])))))
 
-(* example:
-module M(X : sig val x : int end) = struct
-  class c = object method m = X.x end
-end;;
-module M1 = M (struct let x = 3 end);;
-let o = new M1.c;;
-let f (x : int) =
-  let module M = struct class c = object method m = x end end in new M.c;;
-module F(X : sig class c : object method x : int end end) =
-  struct class c = object inherit X.c as super method x = super#x + 1 end end;;
-module M0 = struct class c = object method x = 0 end end;;
-module M2 = struct class c = object method x = 2 end end;;
-let f x = object method x = x end;;
-let f x y z = object method x = x method s = object method y = y end end;;
-module F(X:sig end) = struct
-  class c = let () = prerr_endline "Hello" in let x = 1 in
-   object method m = x end
-end;;
-*)
+(* Dummy for recursive modules *)
 
 let dummy_class undef_fn =
   Lprim(Pmakeblock(0, Mutable), [undef_fn; undef_fn; undef_fn; lambda_unit])
