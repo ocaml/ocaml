@@ -85,14 +85,14 @@ let operation = function
   | Craise -> print_string "raise"
   | Ccheckbound -> print_string "checkbound"
 
-let print_id ppf id = Ident.print id;;
+let print_id ppf id = Ident.print ppf id;;
 
 let rec expr ppf = function
     Cconst_int n -> print_int n
   | Cconst_natint n -> print_string(Nativeint.to_string n)
   | Cconst_float s -> print_string s
   | Cconst_symbol s -> printf "\"%s\"" s
-  | Cvar id -> Ident.print id
+  | Cvar id -> Ident.print ppf id
   | Clet(id, def, (Clet(_, _, _) as body)) ->
       let print_binding id ppf def =
         printf "@[<2>%a@ %a@]" print_id id expr def in
