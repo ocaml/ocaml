@@ -309,12 +309,14 @@ let check_recursion env loc path decl to_check =
           else if to_check path' && not (List.mem path' prev_exp) then begin
             try
               (* Attempt expansion *)
-              let (params, body) = Env.find_type_expansion path' env in
+              let (params0, body0) = Env.find_type_expansion path' env in
               let (params, body) = 
-                Ctype.instance_parameterized_type params body in
+                Ctype.instance_parameterized_type params0 body0 in
               begin
                 try List.iter2 (Ctype.unify env) params args'
-                with Ctype.Unify _ -> assert false
+                with Ctype.Unify _ ->
+                  raise (Error(loc, Constraint_failed
+                                 (ty, Ctype.newconstr path' params0)));
               end;
               check_regular path' args (path' :: prev_exp) body
             with Not_found -> ()
