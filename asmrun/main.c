@@ -41,7 +41,6 @@ int main(argc, argv)
   value retcode;
 
   init_ieee_floats();
-  init_signals();
 #ifdef DEBUG
   verbose_init = 1;
 #endif
@@ -60,6 +59,7 @@ int main(argc, argv)
   }
   init_gc (minor_heap_init, heap_chunk_init, percent_free_init, verbose_init);
   init_atoms();
+  init_signals();
   sys_init(argv);
   retcode = caml_start_program();
   if (retcode == 0) {

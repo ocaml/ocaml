@@ -16,28 +16,15 @@
         .comm   young_start 8
         .comm   young_end 8
         .comm   young_ptr 8
+        .comm   young_limit 8
         .comm   gc_entry_regs 8 * 32
         .comm   gc_entry_float_regs 8 * 32
         .comm   remembered_ptr 8
         .comm   remembered_end 8
-
-        .sdata
-        .globl  caml_top_of_stack
-        .globl  caml_bottom_of_stack
-        .globl  caml_last_return_address
-        .globl  caml_exception_pointer
-        .globl  caml_saved_gp
-caml_top_of_stack:              .quad   0
-caml_bottom_of_stack:           .quad   0
-caml_last_return_address:       .quad   0
-caml_exception_pointer:         .quad   0
-caml_saved_gp:                  .quad   0
-
-/* These are offsets relative to caml_bottom_of_stack */
-
-#define Ofs_last_return_address 8
-#define Ofs_exception_pointer 16
-#define Ofs_saved_gp 24
+        .comm   caml_top_of_stack 8
+        .comm   caml_bottom_of_stack 8
+        .comm   caml_last_return_address 8
+        .comm   caml_exception_pointer 8
 
 #define SAVE_ALL_REGS \
         lda     $24, gc_entry_regs; \
@@ -212,13 +199,13 @@ $103:   ldgp    $gp, 0($27)
     /* gc_entry_regs and gc_entry_float_regs. */
         SAVE_ALL_REGS
     /* Call the garbage collector */
-        jsr     minor_collection
+        jsr     garbage_collection
     /* Restore all regs used by the code generator */
         ldgp    $gp, 0($26)
         LOAD_ALL_REGS
     /* Reload new allocation pointer and allocation limit */
         ldq     $13, young_ptr
-        ldq     $14, young_start
+        ldq     $14, young_limit
     /* Allocate space for the block */
         ldq     $25, 16($sp)
         subq    $13, $25, $13
@@ -237,29 +224,31 @@ $103:   ldgp    $gp, 0($27)
         .align  3
 caml_c_call:
     /* Function to call is in $27 */
-        mov     $gp, $24
+    /* Preserve return address and caller's $gp in callee-save registers */
+        mov     $26, $9
+        mov     $gp, $10
     /* Rebuild $gp */
         br      $25, $105
 $105:   ldgp    $gp, 0($25)
-    /* Record lowest stack address, return address, and caller's $gp */
-        lda     $25, caml_bottom_of_stack
-        stq     $sp, 0($25)
-        stq     $26, Ofs_last_return_address($25)
-        stq     $24, Ofs_saved_gp($25)
+    /* Record lowest stack address and return address */
+        lda     $11, caml_last_return_address
+        stq     $26, 0($11)
+        stq     $sp, caml_bottom_of_stack
     /* Make the exception handler and alloc ptr available to the C code */
-        stq     $13, young_ptr
-        stq     $15, Ofs_exception_pointer($25)
+        lda     $12, young_ptr
+        stq     $13, 0($12)
+        stq     $15, caml_exception_pointer
     /* Call the function */
         jsr     ($27)
-    /* Reload alloc ptr */
-        ldgp    $gp, 0($26)
-        ldq     $13, young_ptr
-    /* Reload $gp and return address */
-        lda     $25, caml_bottom_of_stack
-        ldq     $26, Ofs_last_return_address($25)
-        ldq     $gp, Ofs_saved_gp($25)
+    /* Reload alloc ptr and alloc limit */
+        ldq     $13, 0($12)  /* $12 still points to young_ptr */
+        ldq     $14, young_limit
+    /* Say that we are back into Caml code */
+        stq     $31, 0($11)  /* $11 still points to caml_last_return_address */
+    /* Restore $gp */
+        mov     $10, $gp
     /* Return */
-        ret     ($26)
+        ret     ($9)
 
         .end    caml_c_call
 
@@ -335,9 +324,10 @@ stray_exn_handler:
         .align  3
 raise_caml_exception:
         ldgp    $gp, 0($27)
-        mov     $16, $0
+        mov     $16, $0                         /* Move exn bucket */
+        stq     $31, caml_last_return_address   /* We're back into Caml */
         ldq     $13, young_ptr
-        ldq     $14, young_start
+        ldq     $14, young_limit
         ldq     $sp, caml_exception_pointer
         ldq     $15, 0($sp)
         ldq     $27, 8($sp)
@@ -397,29 +387,28 @@ $107:
         lda     $0, $109
         stq     $0, 8($sp)
         mov     $sp, $15
-    /* Set up a callback link on the stack. Also save there
-       everything put in global variables by caml_c_call. */
-        lda     $sp, -32($sp)
+    /* Set up a callback link on the stack. */
+        lda     $sp, -16($sp)
         ldq     $0, caml_bottom_of_stack
         stq     $0, 0($sp)
         ldq     $1, caml_last_return_address
         stq     $1, 8($sp)
-        ldq     $2, caml_saved_gp
-        stq     $2, 16($sp)
     /* Reload allocation pointers */
         ldq     $13, young_ptr
-        ldq     $14, young_start
+        ldq     $14, young_limit
+    /* We are back into Caml code */
+        stq     $31, caml_last_return_address
     /* Call the Caml code */
 $108:   jsr     ($25)
     /* Reload $gp */
         bic     $26, 1, $26     /* return address may have "scanned" bit set */
         ldgp    $gp, 4($26)
     /* Restore the global variables used by caml_c_call */
+        ldq     $24, 0($sp)
+        stq     $24, caml_bottom_of_stack
         ldq     $25, 8($sp)
         stq     $25, caml_last_return_address
-        ldq     $22, 16($sp)
-        stq     $22, caml_saved_gp
-        lda     $sp, 32($sp)
+        lda     $sp, 16($sp)
     /* Pop the trap frame, restoring caml-exception_pointer */
         ldq     $15, 0($sp)
         stq     $15, caml_exception_pointer
@@ -446,9 +435,16 @@ $108:   jsr     ($25)
         ldq     $26, 0($sp)
         lda     $sp, 128($sp)
         ret     ($26)
-    /* The trap handler: re-raise the exception through mlraise,
-       so that local C roots are cleaned up correctly. */
+    /* The trap handler */
 $109:   ldgp    $gp, 0($27)
+    /* Restore the global variables used by caml_c_call */
+        ldq     $24, 0($sp)
+        stq     $24, caml_bottom_of_stack
+        ldq     $25, 8($sp)
+        stq     $25, caml_last_return_address
+        lda     $sp, 16($sp)
+    /* Re-raise the exception through mlraise,
+       so that local C roots are cleaned up correctly. */
         stq     $13, young_ptr
         stq     $15, caml_exception_pointer
         mov     $0, $16         /* bucket as first argument */

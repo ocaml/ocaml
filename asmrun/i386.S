@@ -25,7 +25,7 @@
 #define FUNCTION_ALIGN 4
 #endif
 
-        .comm   G(young_start), 4
+        .comm   G(young_limit), 4
         .comm   G(young_ptr), 4
         .comm   G(gc_entry_regs), 4 * 7
         .comm   G(caml_bottom_of_stack), 4
@@ -49,7 +49,7 @@ G(caml_alloc1):
         movl    G(young_ptr), %eax
         subl    $8, %eax
         movl    %eax, G(young_ptr)
-        cmpl    G(young_start), %eax
+        cmpl    G(young_limit), %eax
         jb      L100
         ret
 L100:   movl    $8, %eax
@@ -60,7 +60,7 @@ G(caml_alloc2):
         movl    G(young_ptr), %eax
         subl    $12, %eax
         movl    %eax, G(young_ptr)
-        cmpl    G(young_start), %eax
+        cmpl    G(young_limit), %eax
         jb      L101
         ret
 L101:   movl    $12, %eax
@@ -71,7 +71,7 @@ G(caml_alloc3):
         movl    G(young_ptr), %eax
         subl    $16, %eax
         movl    %eax, G(young_ptr)
-        cmpl    G(young_start), %eax
+        cmpl    G(young_limit), %eax
         jb      L102
         ret
 L102:   movl    $16, %eax
@@ -83,7 +83,7 @@ G(caml_alloc):
         movl    G(young_ptr), %eax
         subl    (%esp), %eax
         movl    %eax, G(young_ptr)
-        cmpl    G(young_start), %eax
+        cmpl    G(young_limit), %eax
         jb      L103
         addl    $4, %esp
         ret

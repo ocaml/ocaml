@@ -400,7 +400,7 @@ let emit_instr i =
           `	movl	{emit_symbol "young_ptr"}, %eax\n`;
           `	subl	${emit_int n}, %eax\n`;
           `	movl	%eax, {emit_symbol "young_ptr"}\n`;
-          `	cmpl	{emit_symbol "young_start"}, %eax\n`;
+          `	cmpl	{emit_symbol "young_limit"}, %eax\n`;
           let lbl_cont = record_frame_label i.live in
           `	jae	{emit_label lbl_cont}\n`;
           `	call	{emit_symbol "caml_call_gc"}\n`;
