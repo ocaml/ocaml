@@ -28,23 +28,25 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
    Conversion specifications consist in the [%] character, followed
    by optional flags and field widths, followed by one or two conversion
    character. The conversion characters and their meanings are:
-   - [d] or [i]: convert an integer argument to signed decimal
-   - [u]: convert an integer argument to unsigned decimal
+   - [d] or [i]: convert an integer argument to signed decimal.
+   - [u]: convert an integer argument to unsigned decimal.
    - [x]: convert an integer argument to unsigned hexadecimal,
      using lowercase letters.
    - [X]: convert an integer argument to unsigned hexadecimal,
      using uppercase letters.
    - [o]: convert an integer argument to unsigned octal.
-   - [s]: insert a string argument
-   - [c]: insert a character argument
+   - [s]: insert a string argument.
+   - [S]: insert a string argument as a valid Objective Caml lexical unit.
+   - [c]: insert a character argument.
+   - [C]: insert a character argument as a valid Objective Caml lexical unit.
    - [f]: convert a floating-point argument to decimal notation,
-     in the style [dddd.ddd]
+     in the style [dddd.ddd].
    - [e] or [E]: convert a floating-point argument to decimal notation,
-     in the style [d.ddd e+-dd] (mantissa and exponent)
+     in the style [d.ddd e+-dd] (mantissa and exponent).
    - [g] or [G]: convert a floating-point argument to decimal notation,
-     in style [f] or [e], [E] (whichever is more compact)
+     in style [f] or [e], [E] (whichever is more compact).
    - [b]: convert a boolean argument to the string [true] or [false]
-   - [ld], [li], [lu], [lx], [lX], [lo]: convert an [int32] argument to
+   - [ld], [li], [lu], [lx], [lX], [lo]: convert an [int32] argument to.
      the format specified by the second letter (decimal, hexadecimal, etc).
    - [nd], [ni], [nu], [nx], [nX], [no]: convert a [nativeint] argument to
      the format specified by the second letter.

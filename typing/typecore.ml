@@ -586,9 +586,9 @@ let type_format loc fmt =
     if j >= len then incomplete i else
     match fmt.[j] with
     | '%' -> scan_format (j+1)
-    | 's' | '[' ->
+    | 's' | 'S' | '[' ->
         ty_arrow Predef.type_string (scan_format (j+1))
-    | 'c' ->
+    | 'c' | 'C' ->
         ty_arrow Predef.type_char (scan_format (j+1))
     | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' | 'N' ->
         ty_arrow Predef.type_int (scan_format (j+1))

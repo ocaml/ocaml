@@ -96,15 +96,18 @@ let scan_format fmt pos cont_s cont_a cont_t =
     match String.unsafe_get fmt i with
     | '%' ->
         cont_s "%" (succ i)
-    | 's' ->
+    | 's' | 'S' as conv ->
         Obj.magic (fun (s: string) ->
+          let s = if conv = 's' then s else "\"" ^ String.escaped s ^ "\"" in
           if i = succ pos (* optimize for common case %s *)
           then cont_s s (succ i)
           else cont_s (format_string (extract_format fmt pos i widths) s)
                       (succ i))
-    | 'c' ->
+    | 'c' | 'C' as conv ->
         Obj.magic (fun (c: char) ->
-          cont_s (String.make 1 c) (succ i))
+          if conv = 'c'
+          then cont_s (String.make 1 c) (succ i)
+          else cont_s ("'" ^ Char.escaped c ^ "'") (succ i))
     | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
         Obj.magic(fun (n: int) ->
           cont_s (format_int (extract_format fmt pos i widths) n) (succ i))
