@@ -97,8 +97,7 @@ void sys_exit(retcode)          /* ML */
 #endif
 
 static int sys_open_flags[] = {
-  O_RDONLY, O_WRONLY, O_RDWR, O_APPEND, O_CREAT, O_TRUNC, O_EXCL,
-  O_BINARY, O_TEXT
+  O_RDONLY, O_WRONLY, O_APPEND, O_CREAT, O_TRUNC, O_EXCL, O_BINARY, O_TEXT
 };
 
 value sys_open(path, flags, perm) /* ML */
@@ -193,7 +192,7 @@ char * searchpath(name)
     if (*p == '/') return name;
   }
   path = getenv("PATH");
-  if (path == 0) return 0;
+  if (path == NULL) return 0;
   while(1) {
     p = fullname;
     while (*path != 0 && *path != ':') {

@@ -332,13 +332,12 @@ val read_float : unit -> float
 (** General output functions *)
 
 type open_flag =
-    Open_rdonly | Open_wronly | Open_rdwr
-  | Open_append | Open_creat | Open_trunc | Open_excl
+    Open_rdonly | Open_wronly | Open_append
+  | Open_creat | Open_trunc | Open_excl
   | Open_binary | Open_text
         (* Opening modes for [open_out_gen] and [open_in_gen].
 -          [Open_rdonly]: open for reading.
 -          [Open_wronly]: open for writing.
--          [Open_rdwr]: open for reading and writing.
 -          [Open_append]: open for appending.
 -          [Open_creat]: create the file if it does not exist.
 -          [Open_trunc]: empty the file if it already exists.
