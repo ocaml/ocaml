@@ -372,9 +372,9 @@ raise_caml_exception:
         stq     $31, caml_last_return_address   /* We're back into Caml */
         ldq     $sp, caml_exception_pointer
         ldq     $15, 0($sp)
-        ldq     $27, 8($sp)
+        ldq     $26, 8($sp)
         lda     $sp, 16($sp)
-        jmp     $25, ($27)      /* Keep retaddr in $25 to help debugging */
+        jmp     $25, ($26)      /* Keep retaddr in $25 to help debugging */
         .end    raise_caml_exception
 
 /* Callback from C to Caml */
