@@ -317,21 +317,24 @@ let fundecls_size fundecls =
     fundecls;
   !sz
 
+type rhs_kind =
+  | RHS_block of int
+  | RHS_nonrec
+;;
 let rec expr_size = function
-    Uclosure(fundecls, clos_vars) ->
-      fundecls_size fundecls + List.length clos_vars
-  | Uprim(Pmakeblock(tag, mut), args) ->
-      List.length args
-  | Uprim(Pmakearray(Paddrarray | Pintarray), args) ->
-      List.length args
+  | Uclosure(fundecls, clos_vars) ->
+      RHS_block (fundecls_size fundecls + List.length clos_vars)
   | Ulet(id, exp, body) ->
       expr_size body
   | Uletrec(bindings, body) ->
       expr_size body
+  | Uprim(Pmakeblock(tag, mut), args) ->
+      RHS_block (List.length args)
+  | Uprim(Pmakearray(Paddrarray | Pintarray), args) ->
+      RHS_block (List.length args)
   | Usequence(exp, exp') ->
       expr_size exp'
-  | _ ->
-      fatal_error "Cmmgen.expr_size"
+  | _ -> RHS_nonrec
 
 (* Record application and currying functions *)
 
@@ -1411,21 +1414,25 @@ and transl_switch arg index cases = match Array.length cases with
           (fun i -> Cconst_int i)
           a
           (Array.of_list !inters) actions)
-        
+
 and transl_letrec bindings cont =
+  let bsz = List.map (fun (id, exp) -> (id, exp, expr_size exp)) bindings in
   let rec init_blocks = function
-      [] -> fill_blocks bindings
-    | (id, exp) :: rem ->
-        Clet(id, Cop(Cextcall("alloc_dummy", typ_addr, true),
-                     [int_const(expr_size exp)]),
+    | [] -> fill_blocks bsz
+    | (id, exp, RHS_block sz) :: rem ->
+        Clet(id, Cop(Cextcall("alloc_dummy", typ_addr, true), [int_const sz]),
              init_blocks rem)
+    | (id, exp, RHS_nonrec) :: rem ->
+        Clet (id, transl exp, init_blocks rem)
   and fill_blocks = function
-      [] -> cont
-    | (id, exp) :: rem ->
+    | [] -> cont
+    | (id, exp, RHS_block _) :: rem ->
         Csequence(Cop(Cextcall("update_dummy", typ_void, false),
                       [Cvar id; transl exp]),
                   fill_blocks rem)
-  in init_blocks bindings
+    | (id, exp, RHS_nonrec) :: rem ->
+        fill_blocks rem
+  in init_blocks bsz
 
 (* Translate a function definition *)
 

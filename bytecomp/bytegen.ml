@@ -126,16 +126,20 @@ let rec push_dummies n k = match n with
 
 (**** Auxiliary for compiling "let rec" ****)
 
+type rhs_kind =
+  | RHS_block of int
+  | RHS_nonrec
+;;
 let rec size_of_lambda = function
   | Lfunction(kind, params, body) as funct ->
-      1 + IdentSet.cardinal(free_variables funct)
-  | Lprim(Pmakeblock(tag, mut), args) -> List.length args
-  | Lprim(Pmakearray kind, args) -> List.length args
+      RHS_block (1 + IdentSet.cardinal(free_variables funct))
   | Llet(str, id, arg, body) -> size_of_lambda body
   | Lletrec(bindings, body) -> size_of_lambda body
+  | Lprim(Pmakeblock(tag, mut), args) -> RHS_block (List.length args)
+  | Lprim(Pmakearray kind, args) -> RHS_block (List.length args)
   | Levent (lam, _) -> size_of_lambda lam
   | Lsequence (lam, lam') -> size_of_lambda lam'
-  | _ -> fatal_error "Bytegen.size_of_lambda"
+  | _ -> RHS_nonrec
 
 (**** Merging consecutive events ****)
 
@@ -460,19 +464,27 @@ let rec comp_expr env exp sz cont =
         let decl_size =
           List.map (fun (id, exp) -> (id, exp, size_of_lambda exp)) decl in
         let rec comp_decl new_env sz i = function
-            [] ->
+          | [] ->
               comp_expr new_env body sz (add_pop ndecl cont)
-          | (id, exp, blocksize) :: rem ->
+          | (id, exp, RHS_block blocksize) :: rem ->
               comp_expr new_env exp sz
                 (Kpush :: Kacc i :: Kccall("update_dummy", 2) ::
-                 comp_decl new_env sz (i-1) rem) in
+                 comp_decl new_env sz (i-1) rem)
+          | (id, exp, RHS_nonrec) :: rem ->
+              comp_decl new_env sz (i-1) rem
+        in
         let rec comp_init new_env sz = function
-            [] ->
+          | [] ->
               comp_decl new_env sz ndecl decl_size
-          | (id, exp, blocksize) :: rem ->
+          | (id, exp, RHS_block blocksize) :: rem ->
               Kconst(Const_base(Const_int blocksize)) ::
               Kccall("alloc_dummy", 1) :: Kpush ::
-              comp_init (add_var id (sz+1) new_env) (sz+1) rem in
+              comp_init (add_var id (sz+1) new_env) (sz+1) rem
+          | (id, exp, RHS_nonrec) :: rem ->
+              comp_expr new_env exp sz
+                (Kpush ::
+                 comp_init (add_var id (sz+1) new_env) (sz+1) rem)
+        in
         comp_init env sz decl_size
       end
   | Lprim(Pidentity, [arg]) ->

@@ -1,3 +1,8 @@
+- Enhanced the compilation of recursive values: "let rec" is now
+  less restrictive.
+
+- Additions to the Arg module: Set_*, Symbol
+
 - Match_failure and Assert_failure now report (file, line, column),
   instead of (file, starting char, ending char).
 

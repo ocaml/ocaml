@@ -299,23 +299,19 @@ let transl_primitive p =
 
 let check_recursive_lambda idlist lam =
   let rec check_top idlist = function
-      Lfunction(kind, params, body) as funct -> true
-    | Lprim(Pmakeblock(tag, mut), args) ->
-        List.for_all (check idlist) args
-    | Lprim(Pmakearray(Paddrarray|Pintarray), args) ->
-        List.for_all (check idlist) args
+    | Lvar v -> not (List.mem v idlist)
     | Llet(str, id, arg, body) ->
         check idlist arg && check_top (add_let id arg idlist) body
     | Lletrec(bindings, body) ->
         let idlist' = add_letrec bindings idlist in
         List.for_all (fun (id, arg) -> check idlist' arg) bindings &&
         check_top idlist' body
+    | Lsequence (lam1, lam2) -> check idlist lam1 && check_top idlist lam2
     | Levent (lam, _) -> check_top idlist lam
-    | _ -> false
+    | lam -> check idlist lam
 
   and check idlist = function
-      Lvar _ -> true
-    | Lconst cst -> true
+    | Lvar _ -> true
     | Lfunction(kind, params, body) -> true
     | Llet(str, id, arg, body) ->
         check idlist arg && check (add_let id arg idlist) body
@@ -327,6 +323,7 @@ let check_recursive_lambda idlist lam =
         List.for_all (check idlist) args
     | Lprim(Pmakearray(Paddrarray|Pintarray), args) ->
         List.for_all (check idlist) args
+    | Lsequence (lam1, lam2) -> check idlist lam1 && check idlist lam2
     | Levent (lam, _) -> check idlist lam
     | lam ->
         let fv = free_variables lam in
