@@ -25,14 +25,12 @@ let html_generator = new Odoc_html.html
 let default_latex_generator = new Odoc_latex.latex
 let default_texi_generator = new Odoc_texi.texi
 let default_man_generator = new Odoc_man.man
-let default_iso_generator = new Odoc_iso.iso
 let default_dot_generator = new Odoc_dot.dot
 let _ = Odoc_args.parse
     (html_generator :> Odoc_args.doc_generator)
     (default_latex_generator :> Odoc_args.doc_generator)
     (default_texi_generator :> Odoc_args.doc_generator)
     (default_man_generator :> Odoc_args.doc_generator)
-    (default_iso_generator :> Odoc_args.doc_generator)
     (default_dot_generator :> Odoc_args.doc_generator)
 
 let loaded_modules =

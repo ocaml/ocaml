@@ -25,7 +25,6 @@ let option_version = " Print version and exit"
 let latex_only = "(LaTeX only)"
 let texi_only = "(TeXinfo only)"
 let html_only = "(HTML only)"
-let iso_only = "(ISO only)"
 let verbose_mode = " verbose mode"
 let include_dirs = "<dir>  Add <dir> to the list of include directories"
 let rectypes = " Allow arbitrary recursive types"
@@ -43,7 +42,6 @@ let generate_html = " Generate HTML documentation"
 let generate_latex = " Generate LaTeX documentation"
 let generate_texinfo = " Generate TeXinfo documentation"
 let generate_man = " Generate man pages"
-let generate_iso = " Generate boring check report"
 
 let generate_dot = " Generate dot code of top modules dependencies"
 let default_dot_file = "dep.dot"
@@ -93,7 +91,7 @@ let merge_custom = ('c', "merge custom @-tags")
 let merge_all = ('A', "merge all")
 
 let no_index = " Do not build index for Info files"^texi_only
-let esc_8bits = " scape accentuated characters in Info files"^texi_only
+let esc_8bits = " scape accentuated characters in Info files"^texi_only^"\n"
 
 let options_can_be = "        <options> can be one or more of the following characters:"
 let string_of_options_list l = 
@@ -117,37 +115,6 @@ let merge_options =
        merge_custom ;
        merge_all ]
   )
-
-let iso_description = 'd', "description is mandatory"
-let iso_author = 'a', "author information is mandatory"
-let iso_since = 's', "@since tag is mandatory"
-let iso_version = 'v', "@version tag is mandatory"
-let iso_return = 'r', "@return tag is mandatory"
-let iso_params = 'p', "all named parameters must be described"
-let iso_fields_described = 'f', "All fields of a record type must be described"
-let iso_constructors_described = 'c', "All constructors of a type must be described"
-let iso_all = 'A', "all iso checks"
-let iso_base_option_list = [ iso_description ; iso_author ; iso_version ; iso_since ; iso_all ]
-let iso_type_options = 
-  "<options>  specify iso checks to perform on each type "^iso_only^"\n"^
-  options_can_be^
-  (string_of_options_list ([iso_fields_described ; iso_constructors_described] @ iso_base_option_list))
-let iso_val_met_att_options = 
-  "<options>  specify iso checks to perform on each value, method or attribute "^iso_only^"\n"^
-  options_can_be^
-  (string_of_options_list (iso_params :: iso_return :: iso_base_option_list ))
-let iso_exception_options = 
-  "<options>  specify iso checks to perform on each exception "^iso_only^"\n"^
-  options_can_be^
-  (string_of_options_list iso_base_option_list)
-let iso_class_options = 
-  "<options>  specify iso checks to perform on each class and class type "^iso_only^"\n"^
-  options_can_be^
-  (string_of_options_list (iso_params :: iso_base_option_list))
-let iso_module_options = 
-  "<options>  specify iso checks to perform on each module and module type "^iso_only^"\n"^
-  options_can_be^
-  (string_of_options_list iso_base_option_list)
 
 
 (** Error and warning messages *)
@@ -276,23 +243,3 @@ let previous = "Previous"
 let next = "Next"
 let up = "Up"
 
-(** iso report messages *)
-
-let has_no_description n = n^" has no description."
-let has_no_author n = n^" has no author."
-let has_no_since n = n^" has no @since tag."
-let has_no_version n = n^" has no @version tag."
-let has_no_return n = n^" has no @return tag."
-let has_not_all_params_described n = n^" has not all its parameters described."
-let has_not_all_fields_described n = n^" has not all its fields described."
-let has_not_all_cons_described n = n^" has not all its constructors described."
-
-let value_n n = "Value "^n
-let type_n n = "Type "^n
-let exception_n n = "Exception "^n
-let attribute_n n = "Attribute "^n
-let method_n n = "Method "^n
-let class_n n = "Class "^n
-let class_type_n n = "Class type "^n
-let module_n n = "Module "^n
-let module_type_n n = "Module type "^n

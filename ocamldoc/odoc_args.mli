@@ -25,21 +25,6 @@ val doc_generator : doc_generator option ref
 (** The merge options to be used. *)
 val merge_options : Odoc_types.merge_option list ref
 
-(** The iso checks to perform on each type. *)
-val iso_type_options : Odoc_types.iso_check list ref
-
-(** The iso checks to perform on each value / method / attribute. *)
-val iso_val_options : Odoc_types.iso_check list ref
-
-(** The iso checks to perform on each exception. *)
-val iso_exception_options : Odoc_types.iso_check list ref
-
-(** The iso checks to perform on each class and class type. *)
-val iso_class_options : Odoc_types.iso_check list ref
-
-(** The iso checks to perform on each module and module type. *)
-val iso_module_options : Odoc_types.iso_check list ref
-
 (** Classic mode or not. *)
 val classic : bool ref
     
@@ -143,7 +128,6 @@ val parse :
       latex_generator:doc_generator -> 
 	texi_generator:doc_generator -> 
 	  man_generator:doc_generator -> 
-	    iso_generator:doc_generator -> 
 	      dot_generator:doc_generator -> 
 		unit
             

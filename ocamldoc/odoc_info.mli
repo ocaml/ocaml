@@ -89,17 +89,6 @@ type location = Odoc_types.location = {
 (** A dummy location. *)
 val dummy_loc : location
 
-(** The kind of checks which can be performed on elements. *)
-type iso_check = Odoc_types.iso_check =
-  | Has_description (** the element has an associated description *)
-  | Has_author (** the element's description has one or more \@author tag(s) *)
-  | Has_since  (** the element's description has a \@since tag *)
-  | Has_version (** the element's description has a \@version tag *)
-  | Has_return (** the function's description has a \@return tag *)
-  | Has_params (** all the named parameters of the element has a description *)
-  | Has_fields_decribed (** all the fields of the type are described *)
-  | Has_constructors_decribed (** all the constructors of the type are described *)
-
 (** Representation of element names. *)
 module Name :
     sig

@@ -80,17 +80,6 @@ type location = Odoc_types.location = {
 
 let dummy_loc = { loc_impl = None ; loc_inter = None }
 
-type iso_check = Odoc_types.iso_check =
-  | Has_description
-  | Has_author
-  | Has_since
-  | Has_version
-  | Has_return
-  | Has_params
-  | Has_fields_decribed
-  | Has_constructors_decribed
-
-
 module Name = Odoc_name
 module Parameter = Odoc_parameter
 module Exception = Odoc_exception
