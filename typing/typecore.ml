@@ -742,11 +742,20 @@ let type_format loc fmt =
 
 (* Approximate the type of an expression, for better recursion *)
 
-let rec approx_type sty =
+let rec approx_type env sty =
   match sty.ptyp_desc with
     Ptyp_arrow (p, _, sty) ->
       let ty1 = if is_optional p then type_option (newvar ()) else newvar () in
-      newty (Tarrow (p, ty1, approx_type sty, Cok))
+      newty (Tarrow (p, ty1, approx_type env sty, Cok))
+  | Ptyp_tuple args ->
+      newty (Ttuple (List.map (approx_type env) args))
+  | Ptyp_constr (lid, ctl) ->
+      begin try
+        let tyl = List.map (approx_type env) ctl in
+        let (path, _) = Env.lookup_type lid env in
+        newconstr path tyl
+      with Not_found -> newvar ()
+      end
   | _ -> newvar ()
 
 let rec type_approx env sexp =
@@ -762,9 +771,13 @@ let rec type_approx env sexp =
   | Pexp_ifthenelse (_,e,_) -> type_approx env e
   | Pexp_sequence (_,e) -> type_approx env e
   | Pexp_constraint (e, sty1, sty2) ->
+      let approx_ty_opt = function
+        | None -> newvar ()
+        | Some sty -> approx_type env sty
+      in
       let ty = type_approx env e
-      and ty1 = match sty1 with None -> newvar () | Some sty -> approx_type sty
-      and ty2 = match sty2 with None -> newvar () | Some sty -> approx_type sty
+      and ty1 = approx_ty_opt sty1
+      and ty2 = approx_ty_opt sty2
       in begin
         try unify env ty ty1; unify env ty1 ty2; ty2
         with Unify trace ->
