@@ -245,21 +245,28 @@ static value * unix_error_exn = NULL;
 void unix_error(int errcode, char *cmdname, value cmdarg)
 {
   value res;
-  value name = Val_unit, arg = Val_unit;
+  value name = Val_unit, err = Val_unit, arg = Val_unit;
+  int errconstr;
 
-  Begin_roots2 (name, arg);
+  Begin_roots3 (name, err, arg);
+    arg = cmdarg == Nothing ? copy_string("") : cmdarg;
+    name = copy_string(cmdname);
+    errconstr =
+      cst_to_constr(errcode, error_table, sizeof(error_table)/sizeof(int), -1);
+    if (errconstr == -1) {
+      err = alloc(1, 0);
+      Field(err, 0) = Val_int(errcode);
+    } else {
+      err = Val_int(errconstr);
+    }
     if (unix_error_exn == NULL) {
       unix_error_exn = caml_named_value("Unix.Unix_error");
       if (unix_error_exn == NULL)
         invalid_argument("Exception Unix.Unix_error not initialized, please link unix.cma");
     }
-    arg = cmdarg == Nothing ? copy_string("") : cmdarg;
-    name = copy_string(cmdname);
     res = alloc(4, 0);
     Field(res, 0) = *unix_error_exn;
-    Field(res, 1) =
-      cst_to_constr(errcode, error_table, sizeof(error_table)/sizeof(int),
-                    sizeof(error_table)/sizeof(int));
+    Field(res, 1) = err;
     Field(res, 2) = name;
     Field(res, 3) = arg;
   End_roots();

@@ -24,7 +24,7 @@ extern char * strerror(int);
 value unix_error_message(value err)
 {
   int errnum;
-  errnum = error_table[Int_val(err)];
+  errnum = Is_block(err) ? Int_val(Field(err, 0)) : error_table[Int_val(err)];
   return copy_string(strerror(errnum));
 }
 
@@ -36,7 +36,7 @@ extern char *sys_errlist[];
 value unix_error_message(value err)
 {
   int errnum;
-  errnum = error_table[Int_val(err)];
+  errnum = Is_block(err) ? Int_val(Field(err, 0)) : error_table[Int_val(err)];
   if (errnum < 0 || errnum >= sys_nerr) {
     return copy_string("Unknown error");
   } else {

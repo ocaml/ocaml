@@ -86,7 +86,7 @@ type error =
   | EHOSTUNREACH        (* No route to host *)
   | ELOOP               (* Too many levels of symbolic links *)
   (* All other errors are mapped to EUNKNOWNERR *)
-  | EUNKNOWNERR         (* Unknown error *)
+  | EUNKNOWNERR of int  (* Unknown error *)
 
         (* The type of error codes. *)
 
