@@ -169,9 +169,7 @@ let rec float_needs = function
     Cop((Caddf | Csubf | Cmulf | Cdivf), [arg1; arg2]) ->
       let n1 = float_needs arg1 in
       let n2 = float_needs arg2 in
-      if n1 = n2 then 1 + n1 else max n1 n2
-  | Cop(Cfloatofint, [arg]) ->
-      float_needs arg
+      if n1 = n2 then 1 + n1 else if n1 > n2 then n1 else n2
   | _ ->
       1
 
