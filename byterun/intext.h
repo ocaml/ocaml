@@ -66,9 +66,11 @@
 #define INITIAL_EXTERN_BLOCK_SIZE 8192
 #endif
 
-#ifndef INITIAL_EXTERN_TABLE_SIZE
-#define INITIAL_EXTERN_TABLE_SIZE 2039
+#ifndef INITIAL_EXTERN_TABLE_SIZE_LOG2
+#define INITIAL_EXTERN_TABLE_SIZE_LOG2 11
 #endif
+
+#define INITIAL_EXTERN_TABLE_SIZE (1UL << INITIAL_EXTERN_TABLE_SIZE_LOG2)
 
 /* Maximal value of initial_ofs above which we should start again with
    initial_ofs = 1. Should be low enough to prevent rollover of initial_ofs
@@ -77,7 +79,7 @@
    any value below 2^N - (2^N / (2 * sizeof(value))) suffices.
    We just take 2^(N-1) for simplicity. */
 
-#define INITIAL_OFFSET_MAX ((unsigned long)1 << (8 * sizeof(value) - 1))
+#define INITIAL_OFFSET_MAX (1UL << (8 * sizeof(value) - 1))
 
 /* The entry points */
 
