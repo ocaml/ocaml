@@ -695,7 +695,7 @@ let establish_server server_fun sockaddr =
     socket domain SOCK_STREAM 0 in
   setsockopt sock SO_REUSEADDR true;
   bind sock sockaddr;
-  listen sock 3;
+  listen sock 5;
   while true do
     let (s, caller) = accept sock in
     (* The "double fork" trick, the process which calls server_fun will not
@@ -709,7 +709,7 @@ let establish_server server_fun sockaddr =
             (* The file descriptor was already closed by close_out.
                close_in inchan;
             *)
-            exit 0;
+            exit 0
     | id -> close s; ignore(waitpid [] id) (* Reclaim the son *)
   done
 
