@@ -121,6 +121,7 @@ type error =
   | EHOSTDOWN
   | EHOSTUNREACH
   | ELOOP
+  | EOVERFLOW
   | EUNKNOWNERR of int
 
 exception Unix_error of error * string * string
@@ -255,6 +256,30 @@ external fstat : file_descr -> stats = "unix_fstat"
 external unlink : string -> unit = "unix_unlink"
 external rename : string -> string -> unit = "unix_rename"
 external link : string -> string -> unit = "unix_link"
+
+module LargeFile =
+  struct
+    external lseek : file_descr -> int64 -> seek_command -> int = "unix_lseek_64"
+    external truncate : string -> int64 -> unit = "unix_truncate_64"
+    external ftruncate : file_descr -> int64 -> unit = "unix_ftruncate_64"
+    type stats =
+      { st_dev : int;
+        st_ino : int;
+        st_kind : file_kind;
+        st_perm : file_perm;
+        st_nlink : int;
+        st_uid : int;
+        st_gid : int;
+        st_rdev : int;
+        st_size : int64;
+        st_atime : float;
+        st_mtime : float;
+        st_ctime : float;
+      }
+    external stat : string -> stats = "unix_stat_64"
+    external lstat : string -> stats = "unix_lstat_64"
+    external fstat : file_descr -> stats = "unix_fstat_64"
+  end
 
 type access_permission =
     R_OK

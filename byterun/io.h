@@ -26,9 +26,15 @@
 #define IO_BUFFER_SIZE 4096
 #endif
 
+#ifdef HAS_OFF_T
+typedef off_t file_offset;
+#else
+typedef long file_offset;
+#endif
+
 struct channel {
   int fd;                       /* Unix file descriptor */
-  long offset;                  /* Absolute position of fd in the file */
+  file_offset offset;           /* Absolute position of fd in the file */
   char * end;                   /* Physical end of the buffer */
   char * curr;                  /* Current position in the buffer */
   char * max;                   /* Logical end of the buffer (for input) */
@@ -92,5 +98,15 @@ CAMLextern void (*channel_mutex_unlock_exn) (void);
   if (channel_mutex_unlock != NULL) (*channel_mutex_unlock)(channel)
 #define Unlock_exn() \
   if (channel_mutex_unlock_exn != NULL) (*channel_mutex_unlock_exn)()
+
+/* Conversion between file_offset and int64 */
+
+#ifdef ARCH_INT64_TYPE
+#define Val_file_offset(fofs) copy_int64(fofs)
+#define File_offset_val(v) ((file_offset) Int64_val(v))
+#else
+CAMLextern value Val_file_offset(file_offset fofs);
+CAMLextern file_offset File_offset_val(value v);
+#endif
 
 #endif /* _io_ */

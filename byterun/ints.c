@@ -267,10 +267,6 @@ CAMLexport int64 Int64_val(value v)
   return buffer.j;
 }
 
-CAMLexport void Store_int64(value v, int64 i)
-{
-}
-
 #endif
 
 static int int64_compare(value v1, value v2)
@@ -452,7 +448,7 @@ CAMLprim value int64_float_of_bits(value vi)
 #else
 
 static char int64_error[] =
-  "The type Int64.t is not supported on this platform";
+  "The type int64 is not supported on this platform";
 
 value copy_int64(int64 i)
 { invalid_argument(int64_error); }

@@ -87,11 +87,12 @@ type error =
   | EHOSTDOWN           (** Host is down *)
   | EHOSTUNREACH        (** No route to host *)
   | ELOOP               (** Too many levels of symbolic links *)
+  | EOVERFLOW           (** File size or position not representable *)
 
   | EUNKNOWNERR of int  (** Unknown error *)
 (** The type of error codes. 
    Errors defined in the POSIX standard
-   and additional errors, mostly BSD.
+   and additional errors from UNIX98 and BSD.
    All other errors are mapped to EUNKNOWNERR.
 *)
 
@@ -335,6 +336,42 @@ val lstat : string -> stats
 val fstat : file_descr -> stats
 (** Return the informations for the file associated with the given
    descriptor. *)
+
+
+(** {6 Seeking, truncating and statistics on large files} *)
+
+
+module LargeFile :
+  sig
+    val lseek : file_descr -> int64 -> seek_command -> int
+    val truncate : string -> int64 -> unit
+    val ftruncate : file_descr -> int64 -> unit
+    type stats =
+      { st_dev : int;               (** Device number *)
+        st_ino : int;               (** Inode number *)
+        st_kind : file_kind;        (** Kind of the file *)
+        st_perm : file_perm;        (** Access rights *)
+        st_nlink : int;             (** Number of links *)
+        st_uid : int;               (** User id of the owner *)
+        st_gid : int;               (** Group ID of the file's group *)
+        st_rdev : int;              (** Device minor number *)
+        st_size : int64;            (** Size in bytes *)
+        st_atime : float;           (** Last access time *)
+        st_mtime : float;           (** Last modification time *)
+        st_ctime : float;           (** Last status change time *) 
+      }
+    val stat : string -> stats
+    val lstat : string -> stats
+    val fstat : file_descr -> stats
+  end
+(** This sub-module provides 64-bit variants of the functions
+  {!Unix.lseek} (for positioning a file descriptor),
+  {!Unix.truncate} and {!Unix.ftruncate} (for changing the size of a file),
+  and {!Unix.stat}, {!Unix.lstat} and {!Unix.fstat} (for obtaining
+  information on files).  These alternate functions represent
+  positions and sizes by 64-bit integers (type [int64]) instead of
+  regular integers (type [int]), thus allowing operating on files
+  whose sizes are greater than [max_int]. *)
 
 
 (** {6 Operations on file names} *)

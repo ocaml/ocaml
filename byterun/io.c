@@ -15,10 +15,15 @@
 
 /* Buffered input/output. */
 
+#define _FILE_OFFSET_BITS 64
+
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
 #include <string.h>
+#if !macintosh
+#include <sys/types.h>
+#endif
 #include "config.h"
 #ifdef HAS_UNISTD
 #include <unistd.h>
@@ -104,9 +109,9 @@ CAMLexport void close_channel(struct channel *channel)
   stat_free(channel);
 }
 
-CAMLexport long channel_size(struct channel *channel)
+CAMLexport file_offset channel_size(struct channel *channel)
 {
-  long end;
+  file_offset end;
 
   end = lseek(channel->fd, 0, SEEK_END);
   if (end == -1 ||
@@ -240,7 +245,7 @@ CAMLexport void really_putblock(struct channel *channel, char *p, long int len)
   }
 }
 
-CAMLexport void seek_out(struct channel *channel, long int dest)
+CAMLexport void seek_out(struct channel *channel, file_offset dest)
 {
   flush(channel);
   if (lseek(channel->fd, dest, 0) != dest) sys_error(NO_ARG);
@@ -337,7 +342,7 @@ CAMLexport int really_getblock(struct channel *chan, char *p, long int n)
   return (n == 0);
 }
 
-CAMLexport void seek_in(struct channel *channel, long int dest)
+CAMLexport void seek_in(struct channel *channel, file_offset dest)
 {
   if (dest >= channel->offset - (channel->max - channel->buff) &&
       dest <= channel->offset) {
@@ -486,9 +491,25 @@ CAMLprim value caml_close_channel(value vchannel)
   return Val_unit;
 }
 
+/* EOVERFLOW is the Unix98 error indicating that a file position or file
+   size is not representable.
+   ERANGE is the ANSI C error indicating that some argument to some
+   function is out of range.  This is less precise than EOVERFLOW,
+   but guaranteed to be defined on all ANSI C environments. */
+#ifndef EOVERFLOW
+#define EOVERFLOW ERANGE
+#endif
+
 CAMLprim value caml_channel_size(value vchannel)
 {
-  return Val_long(channel_size(Channel(vchannel)));
+  file_offset size = channel_size(Channel(vchannel));
+  if (size > Max_long) { errno = EOVERFLOW; sys_error(NO_ARG); }
+  return Val_long(size);
+}
+
+CAMLprim value caml_channel_size_64(value vchannel)
+{
+  return Val_file_offset(channel_size(Channel(vchannel)));
 }
 
 CAMLprim value caml_set_binary_mode(value vchannel, value mode)
@@ -578,9 +599,25 @@ CAMLprim value caml_seek_out(value vchannel, value pos)
   return Val_unit;
 }
 
+CAMLprim value caml_seek_out_64(value vchannel, value pos)
+{
+  struct channel * channel = Channel(vchannel);
+  Lock(channel);
+  seek_out(channel, File_offset_val(pos));
+  Unlock(channel);
+  return Val_unit;
+}
+
 CAMLprim value caml_pos_out(value vchannel)
 {
-  return Val_long(pos_out(Channel(vchannel)));
+  file_offset pos = pos_out(Channel(vchannel));
+  if (pos > Max_long) { errno = EOVERFLOW; sys_error(NO_ARG); }
+  return Val_long(pos);
+}
+
+CAMLprim value caml_pos_out_64(value vchannel)
+{
+  return Val_file_offset(pos_out(Channel(vchannel)));
 }
 
 CAMLprim value caml_input_char(value vchannel)
@@ -649,9 +686,25 @@ CAMLprim value caml_seek_in(value vchannel, value pos)
   return Val_unit;
 }
 
+CAMLprim value caml_seek_in_64(value vchannel, value pos)
+{
+  struct channel * channel = Channel(vchannel);
+  Lock(channel);
+  seek_in(channel, File_offset_val(pos));
+  Unlock(channel);
+  return Val_unit;
+}
+
 CAMLprim value caml_pos_in(value vchannel)
 {
-  return Val_long(pos_in(Channel(vchannel)));
+  file_offset pos = pos_in(Channel(vchannel));
+  if (pos > Max_long) { errno = EOVERFLOW; sys_error(NO_ARG); }
+  return Val_long(pos);
+}
+
+CAMLprim value caml_pos_in_64(value vchannel)
+{
+  return Val_file_offset(pos_in(Channel(vchannel)));
 }
 
 CAMLprim value caml_input_scan_line(value vchannel)
@@ -664,3 +717,17 @@ CAMLprim value caml_input_scan_line(value vchannel)
   Unlock(channel);
   return Val_long(res);
 }
+
+/* Conversion between file_offset and int64 */
+
+#ifndef ARCH_INT64_TYPE
+CAMLexport value Val_file_offset(file_offset fofs)
+{
+  invalid_argument("The type int64 is not supported on this platform");
+}
+
+CAMLexport file_offset File_offset_val(value v)
+{
+  invalid_argument("The type int64 is not supported on this platform");
+}
+#endif

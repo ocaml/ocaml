@@ -3,6 +3,7 @@ genlex.cmi: stream.cmi
 moreLabels.cmi: hashtbl.cmi map.cmi set.cmi 
 parsing.cmi: lexing.cmi obj.cmi 
 printf.cmi: buffer.cmi 
+weak.cmi: hashtbl.cmi 
 arg.cmo: array.cmi list.cmi printf.cmi string.cmi sys.cmi arg.cmi 
 arg.cmx: array.cmx list.cmx printf.cmx string.cmx sys.cmx arg.cmi 
 arrayLabels.cmo: array.cmi arrayLabels.cmi 
@@ -17,8 +18,8 @@ char.cmo: char.cmi
 char.cmx: char.cmi 
 complex.cmo: complex.cmi 
 complex.cmx: complex.cmi 
-digest.cmo: string.cmi digest.cmi 
-digest.cmx: string.cmx digest.cmi 
+digest.cmo: printf.cmi string.cmi digest.cmi 
+digest.cmx: printf.cmx string.cmx digest.cmi 
 filename.cmo: buffer.cmi string.cmi sys.cmi filename.cmi 
 filename.cmx: buffer.cmx string.cmx sys.cmx filename.cmi 
 format.cmo: buffer.cmi obj.cmi printf.cmi string.cmi format.cmi 
@@ -33,8 +34,8 @@ int32.cmo: int32.cmi
 int32.cmx: int32.cmi 
 int64.cmo: int32.cmi obj.cmi int64.cmi 
 int64.cmx: int32.cmx obj.cmx int64.cmi 
-lazy.cmo: lazy.cmi 
-lazy.cmx: lazy.cmi 
+lazy.cmo: obj.cmi lazy.cmi 
+lazy.cmx: obj.cmx lazy.cmi 
 lexing.cmo: string.cmi lexing.cmi 
 lexing.cmx: string.cmx lexing.cmi 
 listLabels.cmo: list.cmi listLabels.cmi 
@@ -83,5 +84,5 @@ string.cmo: char.cmi list.cmi string.cmi
 string.cmx: char.cmx list.cmx string.cmi 
 sys.cmo: sys.cmi 
 sys.cmx: sys.cmi 
-weak.cmo: obj.cmi weak.cmi 
-weak.cmx: obj.cmx weak.cmi 
+weak.cmo: array.cmi hashtbl.cmi obj.cmi sys.cmi weak.cmi 
+weak.cmx: array.cmx hashtbl.cmx obj.cmx sys.cmx weak.cmi 

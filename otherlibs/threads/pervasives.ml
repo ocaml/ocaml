@@ -472,6 +472,18 @@ let read_line () = flush stdout; input_line stdin
 let read_int () = int_of_string(read_line())
 let read_float () = float_of_string(read_line())
 
+(* Operations on large files *)
+
+module LargeFile =
+  struct
+    external seek_out : out_channel -> int64 -> unit = "caml_seek_out_64"
+    external pos_out : out_channel -> int64 = "caml_pos_out_64"
+    external out_channel_length : out_channel -> int64 = "caml_channel_size_64"
+    external seek_in : in_channel -> int64 -> unit = "caml_seek_in_64"
+    external pos_in : in_channel -> int64 = "caml_pos_in_64"
+    external in_channel_length : in_channel -> int64 = "caml_channel_size_64"
+  end
+
 (* Miscellaneous *)
 
 external sys_exit : int -> 'a = "sys_exit"

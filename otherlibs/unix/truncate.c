@@ -13,14 +13,26 @@
 
 /* $Id$ */
 
+#include <sys/types.h>
 #include <mlvalues.h>
+#include <io.h>
 #include "unixsupport.h"
+#ifdef HAS_UNISTD
+#include <unistd.h>
+#endif
 
 #ifdef HAS_TRUNCATE
 
 CAMLprim value unix_truncate(value path, value len)
 {
   if (truncate(String_val(path), Long_val(len)) == -1)
+    uerror("truncate", path);
+  return Val_unit;
+}
+
+CAMLprim value unix_truncate_64(value path, value len)
+{
+  if (truncate(String_val(path), File_offset_val(len)) == -1)
     uerror("truncate", path);
   return Val_unit;
 }
