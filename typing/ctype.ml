@@ -1634,8 +1634,9 @@ and unify_row env row1 row2 =
         begin match row_field_repr fi with
           Reither(c, t1::tl, _, e) ->
             if c then raise (Unify []);
-            List.iter (unify env t1) tl;
-            e := Some (Rpresent (Some t1))
+            e := Some (Rpresent (Some t1));
+            (try List.iter (unify env t1) tl
+            with exn -> e := None; raise exn)
         | Reither(true, [], _, e) ->
             e := Some (Rpresent None)
         | _ -> ()
@@ -1654,12 +1655,15 @@ and unify_row_field env fixed1 fixed2 f1 f2 =
   | Rpresent None, Rpresent None -> ()
   | Reither(c1, tl1, m1, e1), Reither(c2, tl2, m2, e2) ->
       if e1 == e2 then () else
-      if m1 || m2 then begin
-        match tl1 @ tl2 with [] -> ()
+      let redo =
+        m1 || m2 &&
+        match tl1 @ tl2 with [] -> false
         | t1 :: tl ->
             if c1 || c2 then raise (Unify []);
-            List.iter (unify env t1) tl
-      end;
+            List.iter (unify env t1) tl;
+            !e1 <> None || !e2 <> None
+      in
+      if redo then unify_row_field env fixed1 fixed2 f1 f2 else
       let tl1 = List.map repr tl1 and tl2 = List.map repr tl2 in
       let rec remq tl = function [] -> []
         | ty :: tl' ->
@@ -1962,16 +1966,17 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
           e1 := Some f2;
           List.iter (fun t1 -> moregen inst_nongen type_pairs env t1 t2) tl1
       | Reither(c1, tl1, _, e1), Reither(c2, tl2, m2, e2) ->
-          if c1 && not c2 then raise(Unify []);
-          e1 := Some (Reither (c2, [], m2, e2));
-          if List.length tl1 = List.length tl2 then
-            List.iter2 (moregen inst_nongen type_pairs env) tl1 tl2
-          else begin match tl2 with
-            t2 :: _ ->
-              List.iter (fun t1 -> moregen inst_nongen type_pairs env t1 t2)
-                tl1
-          | [] ->
-              if tl1 <> [] then raise (Unify [])
+          if e1 != e2 then begin
+            if c1 && not c2 then raise(Unify []);
+            e1 := Some (Reither (c2, [], m2, e2));
+            if List.length tl1 = List.length tl2 then
+              List.iter2 (moregen inst_nongen type_pairs env) tl1 tl2
+            else match tl2 with
+              t2 :: _ ->
+                List.iter (fun t1 -> moregen inst_nongen type_pairs env t1 t2)
+                  tl1
+            | [] ->
+                if tl1 <> [] then raise (Unify [])
           end
       | Reither(true, [], _, e1), Rpresent None when not univ ->
           e1 := Some f2
