@@ -344,8 +344,14 @@ case "$arch,$model,$system" in
   mips,*,irix)      asflags='-n32 -O2'; asppflags="$asflags";;
   sparc,*,bsd)      aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   sparc,*,linux)    aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
-  sparc,*,*)        asppflags='-P -DSYS_$(SYSTEM)';;
-  i386,*,solaris)   asppflags='-P -DSYS_$(SYSTEM)';;
+  sparc,*,*)        case "$cc" in
+                      gcc*) aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
+                         *) asppflags='-P -DSYS_$(SYSTEM)';;
+                    esac;;
+  i386,*,solaris)   case "$cc" in
+                      gcc*) aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
+                         *) asppflags='-P -DSYS_$(SYSTEM)';;
+                    esac;;
   i386,*,*)         aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   hppa,*,*)         aspp="$cc"; asppflags='-c -DSYS_$(SYSTEM)';;
   power,rs6000,aix) asflags='-u -m pwr -w'; asppflags="$asflags";;
