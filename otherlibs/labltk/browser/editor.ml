@@ -657,7 +657,7 @@ let editor ?file ?(pos=0) ?(reuse=false) () =
       already_open := [] (* List.filter !already_open ~f:((<>) ed) *);
       false
   then () else
-    let top = Jg_toplevel.titled "Editor" in
+    let top = Jg_toplevel.titled "OCamlBrowser Editor" in
     let menus = Frame.create top ~name:"menubar" in
     let ed = new editor ~top ~menus in
     already_open := !already_open @ [ed];
