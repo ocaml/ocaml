@@ -57,7 +57,6 @@ primitives : $(PRIMS)
 prims.c : primitives
 	(echo '#include "mlvalues.h"'; \
 	 echo '#include "prims.h"'; \
-	 echo 'static void foo () {}'; \
 	 sed -e 's/.*/extern value &();/' primitives; \
 	 echo 'c_primitive cprim[] = {'; \
 	 sed -e 's/.*/	&,/' primitives; \
