@@ -377,14 +377,14 @@ CAMLprim value caml_gr_draw_char(value chr)
         char str[1];
         gr_check_open();
         str[0] = Int_val(chr);
-        gr_draw_text((value)str, 1);
+        caml_gr_draw_text((value)str, 1);
         return Val_unit;
 }
 
 CAMLprim value caml_gr_draw_string(value str)
 {
         gr_check_open();
-        gr_draw_text(str, string_length(str));
+        caml_gr_draw_text(str, string_length(str));
         return Val_unit;
 }
 
