@@ -23,7 +23,8 @@ open Typedtree
 
 
 type error =
-    Not_an_interface of string
+    Cannot_find_path of Path.t
+  | Not_an_interface of string
   | Corrupted_interface of string
   | Illegal_renaming of string * string
 
@@ -163,12 +164,12 @@ let find proj1 proj2 path env =
       	  Structure_comps c ->
       	    let (data, pos) = Tbl.find s (proj2 c) in data
         | Functor_comps f ->
-      	    fatal_error "Env.find1"
+      	    raise Not_found
 	end
     | Papply(p1, p2) ->
-      	fatal_error "Env.find2"
+      	raise Not_found
   with Not_found ->
-    Printtyp.path path; Format.print_newline(); fatal_error "Env.find3"
+    raise(Error(Cannot_find_path path))
 
 let find_value = find (fun env -> env.values) (fun sc -> sc.comp_values)
 and find_type = find (fun env -> env.types) (fun sc -> sc.comp_types)
@@ -594,7 +595,9 @@ let imported_units() = !imported_units
 (* Error report *)
 
 let report_error = function
-    Not_an_interface filename ->
+    Cannot_find_path p ->
+      print_string "Unbound identifier "; Printtyp.path p
+  | Not_an_interface filename ->
       print_string filename; print_space();
       print_string "is not a compiled interface."
   | Corrupted_interface filename ->

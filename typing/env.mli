@@ -82,7 +82,8 @@ val imported_units: unit -> (string * Digest.t) list
 (* Error report *)
 
 type error =
-    Not_an_interface of string
+    Cannot_find_path of Path.t
+  | Not_an_interface of string
   | Corrupted_interface of string
   | Illegal_renaming of string * string
 
