@@ -694,11 +694,22 @@ and set_all_formatter_output_functions =
 and get_all_formatter_output_functions =
     pp_get_all_formatter_output_functions std_formatter;;
 
+
+(* Printf implementation. *)
+
 external format_int: string -> int -> string = "format_int"
 external format_float: string -> float -> string = "format_float"
 
 let format_invalid_arg s c = invalid_arg (s ^ String.make 1 c);;
 
+(* [fprintf_out] is the printf-like function generator: given the
+   - [str] flag that tells if we are printing into a string,
+   - the [out] function that has to be called at the end of formatting,
+   it generates a [fprintf] function that takes as arguments a [ppf]
+   formatter and a printing format to print the rest of arguments
+   according to the format.
+   Regular [fprintf]-like functions of this module are obtained via partial
+   applications of [fprintf_out]. *)
 let fprintf_out str out ppf format =
   let format = (Obj.magic format : string) in
   let limit = String.length format in
@@ -846,8 +857,6 @@ let fprintf_out str out ppf format =
 
   in doprn 0;;
 
-let unit_out () = ();;
-
 let get_buffer_out b =
  let s = Buffer.contents b in
  Buffer.reset b;
@@ -856,6 +865,8 @@ let get_buffer_out b =
 let string_out b ppf () =
  pp_flush_queue ppf false;
  get_buffer_out b;;
+
+let unit_out () = ();;
 
 let fprintf ppf = fprintf_out false unit_out ppf;;
 let printf f = fprintf_out false unit_out std_formatter f;;
@@ -869,4 +880,4 @@ let bprintf b =
  let ppf = formatter_of_buffer b in
  fprintf_out false (fun () -> pp_flush_queue ppf false) ppf;;
 
-let _ = at_exit print_flush;;
+at_exit print_flush;;
