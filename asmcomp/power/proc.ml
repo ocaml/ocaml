@@ -128,11 +128,8 @@ let calling_conventions
           ofs := !ofs + size_float
         end
   done;
-  let final_ofs = if toc && !ofs > 0 then !ofs + 32 else !ofs in
-  (loc, Misc.align final_ofs 16)
-  (* Keep stack 16-aligned. 
-     Under PowerOpen, keep a free 32 byte linkage area at the bottom
-     if we need to stack-allocate some arguments. *)
+  (loc, Misc.align !ofs 16)
+  (* Keep stack 16-aligned. *)
 
 let incoming ofs = Incoming ofs
 let outgoing ofs = Outgoing ofs

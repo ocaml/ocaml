@@ -882,8 +882,6 @@ let data l =
 (* Beginning / end of an assembly file *)
 
 let begin_assembly() =
-  Hashtbl.clear symbol_constants;
-  Hashtbl.clear float_constants;
   defined_functions := StringSet.empty;
   external_functions := StringSet.empty;
   num_jumptbl_entries := 0;
