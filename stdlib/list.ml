@@ -31,7 +31,7 @@ let rec nth l n =
   | a::l ->
       if n = 0 then a else
       if n > 0 then nth l (n-1) else
-      invalid_argument "List.nth"
+      invalid_arg "List.nth"
 
 let rec rev_append accu = function
     [] -> accu
