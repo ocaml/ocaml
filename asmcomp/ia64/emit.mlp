@@ -41,6 +41,8 @@ type instruction_kind =
   | KI                     (* I type instruction (int unit *)
   | KF                     (* F type instruction (FP unit) *)
   | KM                     (* M type instruction (mem unit) *)
+  | KB_exc                 (* B type instruction, exceptional condition,
+                              can be moved around *)
 
 type instruction_format =
     F_i                                 (* op imm *)
@@ -56,6 +58,7 @@ type instruction_format =
   | F_ri_rr                             (* op p1,p2 = imm, r *)
   | F_ri_r                              (* op r = imm, r *)
   | F_r_r                               (* op r = r *)
+  | F_r_r_pred                          (* (pred) op r = r *)
   | F_rr_rr                             (* op p1,p2 = r1, r2 *)
   | F_r_rir                             (* op r = r1, imm, r2 *)
   | F_rr_r                              (* op r = r1, r2 *)
@@ -84,6 +87,7 @@ let instruction_table = create_hashtable 73 [
   "brret", {opcode = "br.ret.sptk"; latency = 1; kind = KB; format = F_r};
   "brcall", {opcode = "br.call.sptk.many"; latency = 1; kind = KB; format = F_i_r};
   "brcallcond", {opcode = "br.call.spnt.many"; latency = 1; kind = KB; format = F_i_r_pred};
+  "brcallcondexc", {opcode = "br.call.spnt.many"; latency = 1; kind = KB_exc; format = F_i_r_pred};
   "brcallind", {opcode = "br.call.sptk.many"; latency = 1; kind = KB; format = F_r_r};
   "brcond", {opcode = "br.dpnt.many"; latency = 1; kind = KB; format = F_i_pred};
   "brind", {opcode = "br.sptk.many"; latency = 1; kind = KB; format = F_r};
@@ -91,7 +95,9 @@ let instruction_table = create_hashtable 73 [
   "cmp.ge", {opcode = "cmp.ge"; latency = 0; kind = KA; format = F_rr_rr};
   "cmp.geu", {opcode = "cmp.geu"; latency = 0; kind = KA; format = F_rr_rr};
   "cmp.gt", {opcode = "cmp.gt"; latency = 0; kind = KA; format = F_rr_rr};
+  "cmp.gtu", {opcode = "cmp.gtu"; latency = 0; kind = KA; format = F_rr_rr};
   "cmp.le", {opcode = "cmp.le"; latency = 0; kind = KA; format = F_rr_rr};
+  "cmp.leu", {opcode = "cmp.leu"; latency = 0; kind = KA; format = F_rr_rr};
   "cmp.lt", {opcode = "cmp.lt"; latency = 0; kind = KA; format = F_rr_rr};
   "cmp.ltu", {opcode = "cmp.ltu"; latency = 0; kind = KA; format = F_rr_rr};
   "cmp.ne", {opcode = "cmp.ne"; latency = 0; kind = KA; format = F_rr_rr};
@@ -99,88 +105,102 @@ let instruction_table = create_hashtable 73 [
   "cmpi.ge", {opcode = "cmp.ge"; latency = 0; kind = KA; format = F_ir_rr};
   "cmpi.geu", {opcode = "cmp.geu"; latency = 0; kind = KA; format = F_ir_rr};
   "cmpi.gt", {opcode = "cmp.gt"; latency = 0; kind = KA; format = F_ir_rr};
+  "cmpi.gtu", {opcode = "cmp.gtu"; latency = 0; kind = KA; format = F_ir_rr};
   "cmpi.le", {opcode = "cmp.le"; latency = 0; kind = KA; format = F_ir_rr};
+  "cmpi.leu", {opcode = "cmp.leu"; latency = 0; kind = KA; format = F_ir_rr};
   "cmpi.lt", {opcode = "cmp.lt"; latency = 0; kind = KA; format = F_ir_rr};
+  "cmpi.ltu", {opcode = "cmp.ltu"; latency = 0; kind = KA; format = F_ir_rr};
   "cmpi.ne", {opcode = "cmp.ne"; latency = 0; kind = KA; format = F_ir_rr};
   "cmpp.eq", {opcode = "cmp.eq"; latency = 1; kind = KA; format = F_rr_rr};
   "cmpp.ge", {opcode = "cmp.ge"; latency = 1; kind = KA; format = F_rr_rr};
+  "cmpp.geu", {opcode = "cmp.geu"; latency = 1; kind = KA; format = F_rr_rr};
   "cmpp.gt", {opcode = "cmp.gt"; latency = 1; kind = KA; format = F_rr_rr};
+  "cmpp.gtu", {opcode = "cmp.gtu"; latency = 1; kind = KA; format = F_rr_rr};
   "cmpp.le", {opcode = "cmp.le"; latency = 1; kind = KA; format = F_rr_rr};
+  "cmpp.leu", {opcode = "cmp.leu"; latency = 1; kind = KA; format = F_rr_rr};
   "cmpp.lt", {opcode = "cmp.lt"; latency = 1; kind = KA; format = F_rr_rr};
+  "cmpp.ltu", {opcode = "cmp.ltu"; latency = 1; kind = KA; format = F_rr_rr};
   "cmpp.ne", {opcode = "cmp.ne"; latency = 1; kind = KA; format = F_rr_rr};
+  "cmpp.ne.and", {opcode = "cmp.ne.and"; latency = 1; kind = KA; format = F_rr_rr};
   "cmppi.eq", {opcode = "cmp.eq"; latency = 1; kind = KA; format = F_ir_rr};
   "cmppi.ge", {opcode = "cmp.ge"; latency = 1; kind = KA; format = F_ir_rr};
+  "cmppi.geu", {opcode = "cmp.geu"; latency = 1; kind = KA; format = F_ir_rr};
   "cmppi.gt", {opcode = "cmp.gt"; latency = 1; kind = KA; format = F_ir_rr};
+  "cmppi.gtu", {opcode = "cmp.gtu"; latency = 1; kind = KA; format = F_ir_rr};
   "cmppi.le", {opcode = "cmp.le"; latency = 1; kind = KA; format = F_ir_rr};
+  "cmppi.leu", {opcode = "cmp.leu"; latency = 1; kind = KA; format = F_ir_rr};
   "cmppi.lt", {opcode = "cmp.lt"; latency = 1; kind = KA; format = F_ir_rr};
+  "cmppi.ltu", {opcode = "cmp.ltu"; latency = 1; kind = KA; format = F_ir_rr};
   "cmppi.ne", {opcode = "cmp.ne"; latency = 1; kind = KA; format = F_ir_rr};
-  "extr.u", {opcode = "extr.u"; latency = 1; kind = KA; format = F_ri_r};
-  "fabs", {opcode = "fabs"; latency = 1; kind = KA; format = F_r_r};
-  "fadd.d", {opcode = "fadd.d"; latency = 1; kind = KA; format = F_rr_r};
-  "fcmp.eq", {opcode = "fcmp.eq"; latency = 1; kind = KA; format = F_rr_rr};
-  "fcmp.ge", {opcode = "fcmp.ge"; latency = 1; kind = KA; format = F_rr_rr};
-  "fcmp.gt", {opcode = "fcmp.gt"; latency = 1; kind = KA; format = F_rr_rr};
-  "fcmp.le", {opcode = "fcmp.le"; latency = 1; kind = KA; format = F_rr_rr};
-  "fcmp.lt", {opcode = "fcmp.lt"; latency = 1; kind = KA; format = F_rr_rr};
-  "fcmp.neq", {opcode = "fcmp.neq"; latency = 1; kind = KA; format = F_rr_rr};
-  "fcvt.fx.trunc", {opcode = "fcvt.fx.trunc"; latency = 1; kind = KA; format = F_r_r};
-  "fcvt.xf", {opcode = "fcvt.xf"; latency = 1; kind = KA; format = F_r_r};
-  "fma.d", {opcode = "fma.d"; latency = 1; kind = KA; format = F_rrr_r};
-  "fmacond", {opcode = "fma.d.s0"; latency = 1; kind = KA; format = F_rrr_r_pred};
-  "fmas1cond", {opcode = "fma.s1"; latency = 1; kind = KA; format = F_rrr_r_pred};
-  "fmads1cond", {opcode = "fma.d.s1"; latency = 1; kind = KA; format = F_rrr_r_pred};
-  "fmpy.d", {opcode = "fmpy.d"; latency = 1; kind = KA; format = F_rr_r};
-  "fms.d", {opcode = "fms.d"; latency = 1; kind = KA; format = F_rrr_r};
-  "fneg", {opcode = "fneg"; latency = 1; kind = KA; format = F_r_r};
-  "fnma.d", {opcode = "fnma.d"; latency = 1; kind = KA; format = F_rrr_r};
-  "fnmas1cond", {opcode = "fnma.s1"; latency = 1; kind = KA; format = F_rrr_r_pred};
-  "fnmads1cond", {opcode = "fnma.d.s1"; latency = 1; kind = KA; format = F_rrr_r_pred};
-  "fnorm.d", {opcode = "fnorm.d"; latency = 1; kind = KA; format = F_r_r};
-  "frcpa", {opcode = "frcpa.s0"; latency = 1; kind = KA; format = F_rr_rr};
-  "fsub.d", {opcode = "fsub.d"; latency = 1; kind = KA; format = F_rr_r};
-  "getf.sig", {opcode = "getf.sig"; latency = 1; kind = KA; format = F_r_r};
-  "ld1", {opcode = "ld1"; latency = 1; kind = KA; format = F_ld};
-  "ld2", {opcode = "ld2"; latency = 1; kind = KA; format = F_ld};
-  "ld4", {opcode = "ld4"; latency = 1; kind = KA; format = F_ld};
-  "ld8", {opcode = "ld8"; latency = 1; kind = KA; format = F_ld};
-  "ld8+", {opcode = "ld8"; latency = 1; kind = KA; format = F_ld_post};
-  "ldfd", {opcode = "ldfd"; latency = 1; kind = KA; format = F_ld};
-  "ldfd+", {opcode = "ldfd"; latency = 1; kind = KA; format = F_ld_post};
-  "ldfs", {opcode = "ldfs"; latency = 1; kind = KA; format = F_ld};
+  "extr.u", {opcode = "extr.u"; latency = 1; kind = KI; format = F_ri_r};
+  "fabs", {opcode = "fabs"; latency = 1; kind = KF; format = F_r_r};
+  "fadd.d", {opcode = "fadd.d"; latency = 5; kind = KF; format = F_rr_r};
+  "fcmp.eq", {opcode = "fcmp.eq"; latency = 1; kind = KF; format = F_rr_rr};
+  "fcmp.ge", {opcode = "fcmp.ge"; latency = 1; kind = KF; format = F_rr_rr};
+  "fcmp.gt", {opcode = "fcmp.gt"; latency = 1; kind = KF; format = F_rr_rr};
+  "fcmp.le", {opcode = "fcmp.le"; latency = 1; kind = KF; format = F_rr_rr};
+  "fcmp.lt", {opcode = "fcmp.lt"; latency = 1; kind = KF; format = F_rr_rr};
+  "fcmp.neq", {opcode = "fcmp.neq"; latency = 1; kind = KF; format = F_rr_rr};
+  "fcvt.fx.trunc", {opcode = "fcvt.fx.trunc"; latency = 7; kind = KF; format = F_r_r};
+  "fcvt.xf", {opcode = "fcvt.xf"; latency = 5; kind = KF; format = F_r_r};
+  "fma.d", {opcode = "fma.d"; latency = 5; kind = KF; format = F_rrr_r};
+  "fmacond", {opcode = "fma.d.s0"; latency = 5; kind = KF; format = F_rrr_r_pred};
+  "fmas1cond", {opcode = "fma.s1"; latency = 5; kind = KF; format = F_rrr_r_pred};
+  "fmads1cond", {opcode = "fma.d.s1"; latency = 5; kind = KF; format = F_rrr_r_pred};
+  "fmpy.d", {opcode = "fmpy.d"; latency = 5; kind = KF; format = F_rr_r};
+  "fms.d", {opcode = "fms.d"; latency = 5; kind = KF; format = F_rrr_r};
+  "fneg", {opcode = "fneg"; latency = 1; kind = KF; format = F_r_r};
+  "fnma.d", {opcode = "fnma.d"; latency = 5; kind = KF; format = F_rrr_r};
+  "fnmas1cond", {opcode = "fnma.s1"; latency = 5; kind = KF; format = F_rrr_r_pred};
+  "fnmads1cond", {opcode = "fnma.d.s1"; latency = 5; kind = KF; format = F_rrr_r_pred};
+  "fnorm.d", {opcode = "fnorm.d"; latency = 5; kind = KF; format = F_r_r};
+  "frcpa", {opcode = "frcpa.s0"; latency = 5; kind = KF; format = F_rr_rr};
+  "fsub.d", {opcode = "fsub.d"; latency = 5; kind = KF; format = F_rr_r};
+  "getf.sig", {opcode = "getf.sig"; latency = 2; kind = KM; format = F_r_r};
+  "ld1", {opcode = "ld1"; latency = 2; kind = KM; format = F_ld};
+  "ld2", {opcode = "ld2"; latency = 2; kind = KM; format = F_ld};
+  "ld4", {opcode = "ld4"; latency = 2; kind = KM; format = F_ld};
+  "ld8", {opcode = "ld8"; latency = 2; kind = KM; format = F_ld};
+  "ld8+", {opcode = "ld8"; latency = 2; kind = KM; format = F_ld_post};
+  "ldfd", {opcode = "ldfd"; latency = 9; kind = KM; format = F_ld};
+  "ldfd+", {opcode = "ldfd"; latency = 9; kind = KM; format = F_ld_post};
+  "ldfs", {opcode = "ldfs"; latency = 9; kind = KM; format = F_ld};
   "mov", {opcode = "mov"; latency = 1; kind = KA; format = F_r_r};
-  "movb", {opcode = "mov"; latency = 9; kind = KA; format = F_r_r};
+  "movcond", {opcode = "mov"; latency = 1; kind = KA; format = F_r_r_pred};
+  "movtb", {opcode = "mov"; latency = 9; kind = KI; format = F_r_r};
+  "movfb", {opcode = "mov"; latency = 2; kind = KI; format = F_r_r};
   "movi", {opcode = "mov"; latency = 1; kind = KA; format = F_i_r};
   "movicond", {opcode = "mov"; latency = 1; kind = KA; format = F_i_r_pred};
-  "movil", {opcode = "movl"; latency = 1; kind = KA; format = F_i_r};
-  "movpr", {opcode = "mov"; latency = 1; kind = KA; format = F_ri_r};
+  "movil", {opcode = "movl"; latency = 1; kind = KI; format = F_i_r};
+  "movpr", {opcode = "mov"; latency = 1; kind = KI; format = F_ri_r};
   "or", {opcode = "or"; latency = 1; kind = KA; format = F_rr_r};
   "ori", {opcode = "or"; latency = 1; kind = KA; format = F_ir_r};
-  "setf.d", {opcode = "setf.d"; latency = 1; kind = KA; format = F_r_r};
-  "setf.sig", {opcode = "setf.sig"; latency = 1; kind = KA; format = F_r_r};
-  "shl", {opcode = "shl"; latency = 1; kind = KA; format = F_rr_r};
+  "setf.d", {opcode = "setf.d"; latency = 8; kind = KM; format = F_r_r};
+  "setf.sig", {opcode = "setf.sig"; latency = 8; kind = KM; format = F_r_r};
+  "shl", {opcode = "shl"; latency = 2; kind = KI; format = F_rr_r};
   "shladd", {opcode = "shladd"; latency = 1; kind = KA; format = F_r_rir};
-  "shli", {opcode = "shl"; latency = 1; kind = KA; format = F_ri_r};
-  "shr", {opcode = "shr"; latency = 1; kind = KA; format = F_rr_r};
-  "shri", {opcode = "shr"; latency = 1; kind = KA; format = F_ri_r};
-  "shru", {opcode = "shr.u"; latency = 1; kind = KA; format = F_rr_r};
-  "shrui", {opcode = "shr.u"; latency = 1; kind = KA; format = F_ri_r};
-  "st1", {opcode = "st1"; latency = 1; kind = KA; format = F_st};
-  "st2", {opcode = "st2"; latency = 1; kind = KA; format = F_st};
-  "st4", {opcode = "st4"; latency = 1; kind = KA; format = F_st};
-  "st8", {opcode = "st8"; latency = 1; kind = KA; format = F_st};
-  "st8+", {opcode = "st8"; latency = 1; kind = KA; format = F_st_post};
-  "stfd", {opcode = "stfd"; latency = 1; kind = KA; format = F_st};
-  "stfd+", {opcode = "stfd"; latency = 1; kind = KA; format = F_st_post};
-  "stfs", {opcode = "stfs"; latency = 1; kind = KA; format = F_st};
+  "shli", {opcode = "shl"; latency = 1; kind = KI; format = F_ri_r};
+  "shr", {opcode = "shr"; latency = 2; kind = KI; format = F_rr_r};
+  "shri", {opcode = "shr"; latency = 1; kind = KI; format = F_ri_r};
+  "shru", {opcode = "shr.u"; latency = 2; kind = KI; format = F_rr_r};
+  "shrui", {opcode = "shr.u"; latency = 1; kind = KI; format = F_ri_r};
+  "st1", {opcode = "st1"; latency = 0; kind = KM; format = F_st};
+  "st2", {opcode = "st2"; latency = 0; kind = KM; format = F_st};
+  "st4", {opcode = "st4"; latency = 0; kind = KM; format = F_st};
+  "st8", {opcode = "st8"; latency = 0; kind = KM; format = F_st};
+  "st8+", {opcode = "st8"; latency = 1; kind = KM; format = F_st_post};
+  "stfd", {opcode = "stfd"; latency = 0; kind = KM; format = F_st};
+  "stfd+", {opcode = "stfd"; latency = 1; kind = KM; format = F_st_post};
+  "stfs", {opcode = "stfs"; latency = 0; kind = KM; format = F_st};
   "sub", {opcode = "sub"; latency = 1; kind = KA; format = F_rr_r};
   "sub1", {opcode = "sub"; latency = 1; kind = KA; format = F_rri_r};
   "subi", {opcode = "sub"; latency = 1; kind = KA; format = F_ir_r};
-  "sxt1", {opcode = "sxt1"; latency = 1; kind = KA; format = F_r_r};
-  "sxt2", {opcode = "sxt2"; latency = 1; kind = KA; format = F_r_r};
-  "sxt4", {opcode = "sxt4"; latency = 1; kind = KA; format = F_r_r};
-  "tbit.nz", {opcode = "tbit.nz"; latency = 1; kind = KA; format = F_ri_rr};
-  "tbit.z", {opcode = "tbit.z"; latency = 1; kind = KA; format = F_ri_rr};
-  "xma.l", {opcode = "xma.l"; latency = 1; kind = KA; format = F_rr_r};
+  "sxt1", {opcode = "sxt1"; latency = 1; kind = KI; format = F_r_r};
+  "sxt2", {opcode = "sxt2"; latency = 1; kind = KI; format = F_r_r};
+  "sxt4", {opcode = "sxt4"; latency = 1; kind = KI; format = F_r_r};
+  "tbit.nz", {opcode = "tbit.nz"; latency = 0; kind = KI; format = F_ri_rr};
+  "tbit.z", {opcode = "tbit.z"; latency = 0; kind = KI; format = F_ri_rr};
+  "xmpy.l", {opcode = "xmpy.l"; latency = 7; kind = KF; format = F_rr_r};
   "xor", {opcode = "xor"; latency = 1; kind = KA; format = F_rr_r};
   "xori", {opcode = "xor"; latency = 1; kind = KA; format = F_ir_r};
 ]
@@ -293,8 +313,8 @@ let insert_node imm opc arg res =
      resources defined by this instruction *)
    for i = 0 to Array.length res - 1 do
      try
-       let anc = Hashtbl.find code_uses res.(i) in
-       add_edge_after node anc
+       let anc = Hashtbl.find code_results res.(i) in
+       add_edge anc node 1
      with Not_found ->
        ()
    done;
@@ -307,17 +327,14 @@ let insert_node imm opc arg res =
    done;
    node
 
-let addimm opc arg imm res =
+let insimm opc arg imm res =
   let node = insert_node imm opc arg res in
-  if node.ancestors = 0 then add_ready node
+  if node.instr.kind = KB
+  then add_branch node
+  else if node.ancestors = 0 then add_ready node
 
-let add opc arg res =
-  let node = insert_node "" opc arg res in
-  if node.ancestors = 0 then add_ready node
-
-let addbranch opc arg imm res =
-  let node = insert_node imm opc arg res in
-  add_branch node
+let insert opc arg res =
+  insimm opc arg "" res
 
 (* Compute length of longest path to a result. *)
 
@@ -349,7 +366,7 @@ let emit_instr node =
   | F_ir_r ->
         `	{emit_string opc}	{emit_r r.(0)} = {emit_string imm}, {emit_r a.(0)}\n`
   | F_ir_r_pred ->
-        `  ({emit_r a.(0)})	{emit_string opc}	{emit_r r.(0)} = {emit_string imm}, {emit_r a.(0)}\n`
+        `  ({emit_r a.(0)})	{emit_string opc}	{emit_r r.(0)} = {emit_string imm}, {emit_r a.(1)}\n`
   | F_ld ->
         `	{emit_string opc}	{emit_r r.(0)} = [{emit_r a.(0)}]\n`
   | F_ld_post ->
@@ -366,6 +383,8 @@ let emit_instr node =
         `	{emit_string opc}	{emit_r r.(0)} = {emit_r a.(0)}, {emit_string imm}\n`
   | F_r_r ->
         `	{emit_string opc}	{emit_r r.(0)} = {emit_r a.(0)}\n`
+  | F_r_r_pred ->
+        `  ({emit_r a.(0)})	{emit_string opc}	{emit_r r.(0)} = {emit_r a.(1)}\n`
   | F_rr_rr ->
         `	{emit_string opc}	{emit_r r.(0)}, {emit_r r.(1)} = {emit_r a.(0)}, {emit_r a.(1)}\n`
   | F_r_rir ->
@@ -379,7 +398,7 @@ let emit_instr node =
   | F_rrr_r ->
         `	{emit_string opc}	{emit_r r.(0)} = {emit_r a.(0)}, {emit_r a.(1)}, {emit_r a.(2)}\n`
   | F_rrr_r_pred ->
-        `  ({emit_r a.(0)})	{emit_string opc}	{emit_r r.(0)} = {emit_r a.(0)}, {emit_r a.(1)}, {emit_r a.(2)}\n`
+        `  ({emit_r a.(0)})	{emit_string opc}	{emit_r r.(0)} = {emit_r a.(1)}, {emit_r a.(2)}, {emit_r a.(3)}\n`
   | F_st ->
         `	{emit_string opc}	[{emit_r a.(0)}] = {emit_r a.(1)}\n`
   | F_st_post ->
@@ -405,14 +424,14 @@ let can_issue instr =
         if !num_I < 2 then (incr num_I; true)
         else if !num_M < 2 then (incr num_M; true)
         else false
-    | KB ->
-        if !num_B < 3 then (incr num_B; true) else false
     | KF ->
         if !num_F < 2 then (incr num_F; true) else false
     | KI ->
         if !num_I < 2 then (incr num_I; true) else false
     | KM ->
         if !num_M < 2 then (incr num_M; true) else false
+    | _  (* KB | KB_exc *) ->
+        if !num_B < 3 then (incr num_B; true) else false
   end
 
 (* Emit one node, updating the completion date and number of ancestors
@@ -453,6 +472,11 @@ let rec extract_ready d = function
   | node :: rem as queue ->
       if node.date <= d then (add_ready node; extract_ready d rem) else queue
 
+(* Say if a branch is ready to be emitted now *)
+
+let branch_is_ready date br =
+  br.emitted_ancestors = br.ancestors && br.date <= date
+
 (* Schedule the basic block, emitting all of its instructions *)
 
 let rec reschedule date =
@@ -479,8 +503,7 @@ let rec reschedule date =
          group of instructions *)
       if !ready_queue = []
       && !in_progress_queue = []
-      && List.for_all (fun br -> br.emitted_ancestors = br.ancestors)
-                      !branch_list
+      && List.for_all (branch_is_ready date) !branch_list
       then begin
         List.iter emit_instr !branch_list;
         branch_list := []
@@ -639,7 +662,7 @@ let name_for_int_operation = function
   | Ior -> "or"
   | Ixor -> "xor"
   | Ilsl -> "shl"
-  | Ilsr -> "shr.u"
+  | Ilsr -> "shru"
   | Iasr -> "shr"
   | _ -> Misc.fatal_error "Emit.name_for_int_operation"
 
@@ -709,88 +732,88 @@ let emit_instr i =
     match i.desc with
       Lend -> ()
     | Lop(Imove) ->
-        add "mov" (regs i.arg) (regs i.res)
+        insert "mov" (regs i.arg) (regs i.res)
     | Lop(Ispill) ->
         let offset = slot_offset_reg i.res.(0) in
         let r = new_temp_reg() in
-        addimm "addi" [| R "sp" |] (string_of_int offset) [| r |];
-        add (if i.res.(0).typ = Float then "stfd" else "st8")
+        insimm "addi" [| R "sp" |] (string_of_int offset) [| r |];
+        insert (if i.res.(0).typ = Float then "stfd" else "st8")
             [| r; reg i.arg.(0) |] [| Stk offset |]
     | Lop(Ireload) ->
         let offset = slot_offset_reg i.arg.(0) in
         let r = new_temp_reg() in
-        addimm "addi" [| R "sp" |] (string_of_int offset) [| r |];
-        add (if i.arg.(0).typ = Float then "ldfd" else "ld8")
+        insimm "addi" [| R "sp" |] (string_of_int offset) [| r |];
+        insert (if i.arg.(0).typ = Float then "ldfd" else "ld8")
             [| r; Stk offset |] (regs i.res)
     | Lop(Iconst_int n) ->
         let instr =
           if is_immediate_addl_nat n then "movi" else "movil" in
-        addimm instr [||] (Nativeint.to_string n) (regs i.res)
+        insimm instr [||] (Nativeint.to_string n) (regs i.res)
     | Lop(Iconst_float s) ->
         let f = float_of_string s in
         if f = 0.0 then
-          add "mov" [| R "f0" |] (regs i.res)
+          insert "mov" [| R "f0" |] (regs i.res)
         else if f = 1.0 then
-          add "mov" [| R "f1" |] (regs i.res)
+          insert "mov" [| R "f1" |] (regs i.res)
         else begin
-          addimm "movl" [||] (float_bits f) [| R "r2" |];
-          add "setf.d" [| R "r2" |] (regs i.res)
+          insimm "movil" [||] (float_bits f) [| R "r2" |];
+          insert "setf.d" [| R "r2" |] (regs i.res)
         end
     | Lop(Iconst_symbol s) ->
-        addimm "addi" [| R "gp" |] (ltoffset s) (regs i.res);
-        add "ld8" (regs i.res) (regs i.res)
+        insimm "addi" [| R "gp" |] (ltoffset s) (regs i.res);
+        insert "ld8" (regs i.res) (regs i.res)
     | Lop(Icall_ind) ->
-        add "movb" (regs i.arg) [| R "b0" |];
-        addbranch "brcallind" [| R "b0" |] "" [| R "b0" |];
+        insert "movtb" (regs i.arg) [| R "b0" |];
+        insert "brcallind" [| R "b0" |] [| R "b0" |];
         end_basic_block();
         `{record_frame i.live}\n`
     | Lop(Icall_imm s) ->
-        addbranch "brcall" [||] (symbol s) [| R "b0" |];
+        insimm "brcall" [||] (symbol s) [| R "b0" |];
         end_basic_block();
         `{record_frame i.live}\n`
     | Lop(Itailcall_ind) ->
         let n = frame_size() in
-        add "movb" (regs i.arg) [| R "b6" |];
+        insert "movtb" (regs i.arg) [| R "b6" |];
         if !contains_calls then begin
-          addimm "addi" [| R "sp" |] (string_of_int (n + 8)) [| R "r2" |];
-          add "ld8" [| R "r2" |] [| R "r2" |];
-          add "mov" [| R "r2" |] [| R "b0" |]
+          insimm "addi" [| R "sp" |] (string_of_int (n + 8)) [| R "r2" |];
+          insert "ld8" [| R "r2" |] [| R "r2" |];
+          insert "mov" [| R "r2" |] [| R "b0" |]
         end;
         if n > 0 then
-          addimm "addi" [| R "sp" |] (string_of_int n) [| R "sp" |];
-        addbranch "brind" [| R "b6" |] "" [||];
+          insimm "addi" [| R "sp" |] (string_of_int n) [| R "sp" |];
+        insert "brind" [| R "b6" |] [||];
         end_basic_block()
     | Lop(Itailcall_imm s) ->
         if s = !function_name then begin
-          addbranch "br" [||] (label !tailrec_entry_point) [||]
+          insimm "br" [||] (label !tailrec_entry_point) [||]
         end else begin
           let n = frame_size() in
           if !contains_calls then begin
-            addimm "addi" [| R "sp" |] (string_of_int (n + 8)) [| R "r2" |];
-            add "ld8" [| R "r2" |] [| R "r2" |];
-            add "mov" [| R "r2" |] [| R "b0" |]
+            insimm "addi" [| R "sp" |] (string_of_int (n + 8)) [| R "r2" |];
+            insert "ld8" [| R "r2" |] [| R "r2" |];
+            insert "mov" [| R "r2" |] [| R "b0" |]
           end;
           if n > 0 then
-            addimm "addi" [| R "sp" |] (string_of_int n) [| R "sp" |];
-          addbranch "br" [||] (symbol s) [||]
+            insimm "addi" [| R "sp" |] (string_of_int n) [| R "sp" |];
+          insimm "br" [||] (symbol s) [||]
         end;
         end_basic_block()
     | Lop(Iextcall(s, alloc)) ->
         if alloc then begin
-          addimm "addi" [| R "gp" |] (ltoffset_fptr s) [| R "r2" |];
-          add "ld8" [| R "r2" |] [| R "r2" |];
-          addbranch "brcall" [||] "caml_c_call#" [| R "b0" |];
+          insimm "addi" [| R "gp" |] (ltoffset_fptr s) [| R "r2" |];
+          insert "ld8" [| R "r2" |] [| R "r2" |];
+          insimm "brcall" [||] "caml_c_call#" [| R "b0" |];
           end_basic_block();
           `{record_frame i.live}\n`
         end else begin
-          add "mov" [| R "gp" |] [| R "r7" |];
-          addbranch "brcall" [||] (symbol s) [| R "b0" |];
+          insert "mov" [| R "gp" |] [| R "r7" |];
+          insimm "brcall" [||] (symbol s) [| R "b0" |];
           end_basic_block();
-          add "mov" [| R "r7" |] [| R "gp" |]
+          insert "mov" [| R "r7" |] [| R "gp" |]
         end
     | Lop(Istackoffset n) ->
         end_basic_block();
-        addimm "addi" [| R "sp" |] (string_of_int (-n)) [| R "sp" |];
+        insimm "addi" [| R "sp" |] (string_of_int (-n)) [| R "sp" |];
         stack_offset := !stack_offset + n
     | Lop(Iload(chunk, addr)) ->
         let load_instr =
@@ -805,7 +828,7 @@ let emit_instr i =
           | Single -> "ldfs"
           | Double -> "ldfd"
           | Double_u -> "ldfd" in
-        add load_instr [| reg i.arg.(0); Heap |] (regs i.res);
+        insert load_instr [| reg i.arg.(0); Heap |] (regs i.res);
         let sext_instr =
           match chunk with
             Byte_signed -> "sxt1"
@@ -813,7 +836,7 @@ let emit_instr i =
           | Thirtytwo_signed -> "sxt4"
           | _ -> "" in
         if sext_instr <> "" then
-          add sext_instr (regs i.res) (regs i.res)
+          insert sext_instr (regs i.res) (regs i.res)
     | Lop(Istore(chunk, addr)) ->
         let store_instr =
           match chunk with
@@ -827,166 +850,166 @@ let emit_instr i =
           | Single -> "stf4"
           | Double -> "stfd"
           | Double_u -> "stfd" in
-        add store_instr [| reg i.arg.(1); reg i.arg.(0) |] [| Heap |]
+        insert store_instr [| reg i.arg.(1); reg i.arg.(0) |] [| Heap |]
     | Lop(Ialloc n) ->
         if !fastcode_flag then begin
-          addimm "addi" [| R "r4" |] (string_of_int (-n)) [| R "r4" |];
-          add "cmp.ltu" [| R "r4"; R "r5" |] [| R "p6"; R "p0" |];
-          addimm "mov" [||] (string_of_int n) [| R "r2" |];
-          addbranch "brcallcond" [| R "p6" |] "caml_call_gc#" [| R "b0" |];
+          insimm "addi" [| R "r4" |] (string_of_int (-n)) [| R "r4" |];
+          insert "cmp.ltu" [| R "r4"; R "r5" |] [| R "p6"; R "p0" |];
+          insimm "mov" [||] (string_of_int n) [| R "r2" |];
+          insimm "brcallcond" [| R "p6" |] "caml_call_gc#" [| R "b0" |];
           end_basic_block();
           `{record_frame i.live}\n`;
-          addimm "addi" [| R "r4" |] "8" (regs i.res)
+          insimm "addi" [| R "r4" |] "8" (regs i.res)
         end else begin
-          addimm "mov" [||] (string_of_int n) [| R "r2" |];
-          addbranch "brcall" [||] "caml_alloc#" [| R "b0" |];
+          insimm "mov" [||] (string_of_int n) [| R "r2" |];
+          insimm "brcall" [||] "caml_alloc#" [| R "b0" |];
           end_basic_block();
           `{record_frame i.live}\n`;
-          addimm "addi" [| R "r4" |] "8" (regs i.res)
+          insimm "addi" [| R "r4" |] "8" (regs i.res)
         end
     | Lop(Iintop Imul) ->
-        add "setf.sig" (regs i.arg) [| R "f64" |];
-        add "setf.sig" (regs i.arg) [| R "f65" |];
-        add "xma.l" [| R "f64"; R "f65" |] [| R "f64" |];
-        add "getf.sig" [| R "f64" |] (regs i.res)
+        insert "setf.sig" [|reg i.arg.(0)|] [| R "f64" |];
+        insert "setf.sig" [|reg i.arg.(1)|] [| R "f65" |];
+        insert "xmpy.l" [| R "f64"; R "f65" |] [| R "f64" |];
+        insert "getf.sig" [| R "f64" |] (regs i.res)
     | Lop(Iintop(Icomp cmp)) ->
         let comp = "cmpp." ^ name_for_int_comparison cmp in
-        add comp (regs i.arg) [| R "p6"; R "p7" |];
-        addimm "movicond" [| R "p6" |] "1" (regs i.res);
-        addimm "movicond" [| R "p7" |] "0" (regs i.res)
+        insert comp (regs i.arg) [| R "p6"; R "p7" |];
+        insimm "movicond" [| R "p6" |] "1" (regs i.res);
+        insimm "movicond" [| R "p7" |] "0" (regs i.res)
     | Lop(Iintop(Icheckbound)) ->
-        add "cmp.leu" (regs i.arg) [| R "p6"; R "p0" |];
-        addimm "brcallcond" [| R "p6" |] "caml_array_bound_error#"
-                            [| R "b0"; Heap |]
+        insert "cmp.leu" (regs i.arg) [| R "p6"; R "p0" |];
+        insimm "brcallcondexc" [| R "p6" |] "caml_array_bound_error#"
+                               [| R "b0"; Heap |]
     | Lop(Iintop op) ->
         let instr = name_for_int_operation op in
-        add instr (regs i.arg) (regs i.res)
+        insert instr (regs i.arg) (regs i.res)
     | Lop(Iintop_imm(Idiv, n)) -> (* n must be a power of 2 *)
         let src = regs i.arg and dst = regs i.res in
         let l = Misc.log2 n in
-        add "cmpp.lt" [| src.(0); R "r0" |] [| R "p6"; R "p7" |];
+        insert "cmpp.lt" [| src.(0); R "r0" |] [| R "p6"; R "p7" |];
         if is_immediate_adds (n-1) then
-          addimm "addicond" [| R "p6"; src.(0) |] (string_of_int (n-1)) dst
+          insimm "addicond" [| R "p6"; src.(0) |] (string_of_int (n-1)) dst
         else begin
-          let moveop = if is_immediate_addl (n-1) then "mov" else "movl" in
-          addimm moveop [||] (string_of_int (n-1)) [| R "r2" |];
-          add "addcond" [| R "p6"; src.(0); R "r2" |] dst
+          let moveop = if is_immediate_addl (n-1) then "mov" else "movil" in
+          insimm moveop [||] (string_of_int (n-1)) [| R "r2" |];
+          insert "addcond" [| R "p6"; src.(0); R "r2" |] dst
         end;
-        add "movcond" [| R "p7"; src.(0) |] dst;
-        addimm "shri" dst (string_of_int l) dst
+        insert "movcond" [| R "p7"; src.(0) |] dst;
+        insimm "shri" dst (string_of_int l) dst
     | Lop(Iintop_imm(Imod, n)) -> (* n must be a power of 2 *)
         let src = regs i.arg and dst = regs i.res in
         let l = Misc.log2 n in
-        add "cmpp.lt" [| src.(0); R "r0" |] [| R "p6"; R "p0" |];
-        addimm "extr.u" src (sprintf "0, %d" l) dst;
-        add "cmp.ne.and" [| dst.(0); R "r0" |] [| R "p6"; R "p0" |];
+        insert "cmpp.lt" [| src.(0); R "r0" |] [| R "p6"; R "p0" |];
+        insimm "extr.u" src (sprintf "0, %d" l) dst;
+        insert "cmpp.ne.and" [| dst.(0); R "r0"; R "p6" |] [| R "p6"; R "p0" |];
         if is_immediate_adds (-n) then
-          addimm "addicond" [| R "p6"; dst.(0) |] (string_of_int (-n)) dst
+          insimm "addicond" [| R "p6"; dst.(0) |] (string_of_int (-n)) dst
         else begin
-          let moveop = if is_immediate_addl (-n) then "mov" else "movl" in
-          addimm moveop [||] (string_of_int (-n)) [| R "r2" |];
-          add "addcond" [| R "p6"; dst.(0); R "r2" |] dst
+          let moveop = if is_immediate_addl (-n) then "mov" else "movil" in
+          insimm moveop [||] (string_of_int (-n)) [| R "r2" |];
+          insert "addcond" [| R "p6"; dst.(0); R "r2" |] dst
         end
     | Lop(Iintop_imm(Icomp cmp, n)) ->
         let comp = "cmppi." ^ name_for_swapped_int_comparison cmp in
-        addimm comp (regs i.arg) (string_of_int n) [| R "p6"; R "p7" |];
-        addimm "movcond" [| R "p6" |] "1" (regs i.res);
-        addimm "movcond" [| R "p7" |] "0" (regs i.res)
+        insimm comp (regs i.arg) (string_of_int n) [| R "p6"; R "p7" |];
+        insimm "movicond" [| R "p6" |] "1" (regs i.res);
+        insimm "movicond" [| R "p7" |] "0" (regs i.res)
     | Lop(Iintop_imm(Icheckbound, n)) ->
-        addimm "cmp.geu" (regs i.arg) (string_of_int n) [| R "p6"; R "p0" |];
-        addimm "brcallcond" [| R "p6" |] "caml_array_bound_error#"
-                            [| R "b0"; Heap |]
+        insimm "cmpi.geu" (regs i.arg) (string_of_int n) [| R "p6"; R "p0" |];
+        insimm "brcallcondexc" [| R "p6" |] "caml_array_bound_error#"
+                               [| R "b0"; Heap |]
     | Lop(Iintop_imm(op, n)) ->
         let instr = name_for_int_operation op ^ "i" in
-        addimm instr (regs i.arg) (string_of_int n) (regs i.res)
+        insimm instr (regs i.arg) (string_of_int n) (regs i.res)
     | Lop(Inegf | Iabsf | Iaddf | Isubf | Imulf as op) ->
         let instr = name_for_float_operation op in
-        add instr (regs i.arg) (regs i.res)
+        insert instr (regs i.arg) (regs i.res)
     | Lop(Idivf) ->
         (* Straight from the IA64 application developer's architecture guide,
            section 13.3.3.1. Modified so that the destination may be equal
            to one of the operands *)
         let a = reg i.arg.(0) and b = reg i.arg.(1) and r = reg i.res.(0) in
-        add "frcpa" [| a; b |] [| R "f64"; R "p6" |];
-        add "fmas1cond" [| R "p6"; a; R "f64"; R "f0" |] [| R "f65" |];
-        add "fnmas1cond" [| R "p6"; b; R "f64"; R "f1" |] [| R "f66" |];
-        add "fmas1cond" [| R "p6"; R "f66"; R "f66"; R "f65" |] [| R "f65" |];
-        add "fmas1cond" [| R "p6"; R "f66"; R "f66"; R "f0" |] [| R "f67" |];
-        add "fmas1cond" [| R "p6"; R "f66"; R "f64"; R "f664" |] [| R "f64" |];
-        add "fmas1cond" [| R "p6"; R "f67"; R "f65"; R "f65" |] [| R "f65" |];
-        add "fmas1cond" [| R "p6"; R "f67"; R "f67"; R "f0" |] [| R "f66" |];
-        add "fmas1cond" [| R "p6"; R "f67"; R "f64"; R "f64" |] [| R "f64" |];
-        add "fmads1cond" [| R "p6"; R "f66"; R "f65"; R "f65" |] [| R "f65" |];
-        add "fmas1cond" [| R "p6"; R "f66"; R "f64"; R "f64" |] [| R "f64" |];
-        add "fnmads1cond" [| R "p6"; b; R "f65"; a |] [| R "f66" |];
-        add "mov" [| R "f64" |] [| r |];
-        add "fmacond" [| R "f66"; R "f64"; R "f65" |] [| r |]
+        insert "frcpa" [| a; b |] [| R "f64"; R "p6" |];
+        insert "fmas1cond" [| R "p6"; a; R "f64"; R "f0" |] [| R "f65" |];
+        insert "fnmas1cond" [| R "p6"; b; R "f64"; R "f1" |] [| R "f66" |];
+        insert "fmas1cond" [| R "p6"; R "f66"; R "f66"; R "f65" |] [| R "f65" |];
+        insert "fmas1cond" [| R "p6"; R "f66"; R "f66"; R "f0" |] [| R "f67" |];
+        insert "fmas1cond" [| R "p6"; R "f66"; R "f64"; R "f64" |] [| R "f64" |];
+        insert "fmas1cond" [| R "p6"; R "f67"; R "f65"; R "f65" |] [| R "f65" |];
+        insert "fmas1cond" [| R "p6"; R "f67"; R "f67"; R "f0" |] [| R "f66" |];
+        insert "fmas1cond" [| R "p6"; R "f67"; R "f64"; R "f64" |] [| R "f64" |];
+        insert "fmads1cond" [| R "p6"; R "f66"; R "f65"; R "f65" |] [| R "f65" |];
+        insert "fmas1cond" [| R "p6"; R "f66"; R "f64"; R "f64" |] [| R "f64" |];
+        insert "fnmads1cond" [| R "p6"; b; R "f65"; a |] [| R "f66" |];
+        insert "mov" [| R "f64" |] [| r |];
+        insert "fmacond" [| R "p6"; R "f66"; R "f64"; R "f65" |] [| r |]
     | Lop(Ifloatofint) ->
         let src = regs i.arg and dst = regs i.res in
-        add "setf.sig" src dst;
-        add "fcvt.xf" dst dst;
-        add "fnorm.d" dst dst
+        insert "setf.sig" src dst;
+        insert "fcvt.xf" dst dst;
+        insert "fnorm.d" dst dst
     | Lop(Iintoffloat) ->
         let src = regs i.arg and dst = regs i.res in
-        add "fcvt.fx.trunc" src [| R "f64" |];
-        add "getf.sig" [| R "f64" |] dst
+        insert "fcvt.fx.trunc" src [| R "f64" |];
+        insert "getf.sig" [| R "f64" |] dst
     | Lop(Ispecific(Iadd1)) ->
         let s = if Array.length i.arg >= 2 then 1 else 0 in
-        addimm "add1" [| reg i.arg.(0); reg i.arg.(s) |] "1" (regs i.res)
+        insimm "add1" [| reg i.arg.(0); reg i.arg.(s) |] "1" (regs i.res)
     | Lop(Ispecific(Isub1)) ->
-        addimm "sub1" (regs i.arg) "1" (regs i.res)
+        insimm "sub1" (regs i.arg) "1" (regs i.res)
     | Lop(Ispecific(Ishladd n)) ->
-        addimm "shladd" (regs i.arg) (string_of_int n) (regs i.res)
+        insimm "shladd" (regs i.arg) (string_of_int n) (regs i.res)
     | Lop(Ispecific(Isignextend n)) ->
         let op = "sxt" ^ string_of_int n in
-        add op (regs i.arg) (regs i.res)
+        insert op (regs i.arg) (regs i.res)
     | Lop(Ispecific (Imultaddf | Imultsubf | Isubmultf as sop)) ->
         let name = name_for_specific_operation sop in
-        add name (regs i.arg) (regs i.res)
+        insert name (regs i.arg) (regs i.res)
     | Lop(Ispecific (Istoreincr n)) ->
         let op = if i.arg.(0).typ = Float then "stfd+" else "st8+" in
-        addimm op [| reg i.arg.(1); reg i.arg.(0) |]
+        insimm op [| reg i.arg.(1); reg i.arg.(0) |]
                   (string_of_int n) (regs i.res)
     | Lreloadretaddr ->
         let n = frame_size() + 8 in
-        addimm "addi" [| R "sp" |] (string_of_int n) [| R "r2" |];
-        add "ld8" [| R "r2" |] [| R "r2" |];
-        add "movb" [| R "r2" |] [| R "b0" |]
+        insimm "addi" [| R "sp" |] (string_of_int n) [| R "r2" |];
+        insert "ld8" [| R "r2" |] [| R "r2" |];
+        insert "movtb" [| R "r2" |] [| R "b0" |]
     | Lreturn ->
         let n = frame_size() in
         if n > 0 then
-          addimm "addi" [| R "sp" |] (string_of_int n) [| R "sp" |];
-        addbranch "brret" [| R "b0" |] "" [||];
+          insimm "addi" [| R "sp" |] (string_of_int n) [| R "sp" |];
+        insert "brret" [| R "b0" |] [||];
         end_basic_block()
     | Llabel lbl ->
         end_basic_block();
         `{emit_label lbl}:\n`
     | Lbranch lbl ->
-        addbranch "br" [||] (label lbl) [||];
+        insimm "br" [||] (label lbl) [||];
         end_basic_block()
     | Lcondbranch(tst, lbl) ->
         begin match tst with
           Itruetest ->
-            addimm "cmp.ne" (regs i.arg) "0" [| R "p6"; R "p0" |]
+            insimm "cmpi.ne" (regs i.arg) "0" [| R "p6"; R "p0" |]
         | Ifalsetest ->
-            addimm "cmp.eq" (regs i.arg) "0" [| R "p6"; R "p0" |]
+            insimm "cmpi.eq" (regs i.arg) "0" [| R "p6"; R "p0" |]
         | Iinttest cmp ->
             let comp = "cmp." ^ name_for_int_comparison cmp in
-            add comp (regs i.arg) [| R "p6"; R "p0" |]
+            insert comp (regs i.arg) [| R "p6"; R "p0" |]
         | Iinttest_imm(cmp, n) ->
             let comp = "cmpi." ^ name_for_swapped_int_comparison cmp in
-            addimm comp (regs i.arg) (string_of_int n) [| R "p6"; R "p0" |]
+            insimm comp (regs i.arg) (string_of_int n) [| R "p6"; R "p0" |]
         | Ifloattest(cmp, neg) ->
             let comp = "fcmp." ^ name_for_float_comparison cmp in
-            add comp (regs i.arg)
+            insert comp (regs i.arg)
                      (if neg then [| R "p0"; R "p6" |]
                              else [| R "p6"; R "p0" |])
         | Ioddtest ->
-            addimm "tbit.nz" (regs i.arg) "0" [| R "p6"; R "p0" |]
+            insimm "tbit.nz" (regs i.arg) "0" [| R "p6"; R "p0" |]
         | Ieventest ->
-            addimm "tbit.z" (regs i.arg) "0" [| R "p6"; R "p0" |]
+            insimm "tbit.z" (regs i.arg) "0" [| R "p6"; R "p0" |]
         end;
-        addimm "brcond" [| R "p6" |] (label lbl) [||];
+        insimm "brcond" [| R "p6" |] (label lbl) [||];
         end_basic_block()
     | Lcondbranch3(lbl0, lbl1, lbl2) ->
         end_basic_block();
@@ -1053,7 +1076,7 @@ let emit_instr i =
         let lbl_next = new_label() in
         `{emit_label lbl_ip}:	mov	r2 = ip ;;\n`;
         `	add	r2 = {emit_label lbl_next} - {emit_label lbl_ip} - 16, r2\n`;
-        `	br.sptk	{emit_label lbl}\n`;
+        `	br.sptk	{emit_label lbl} ;;\n`;
         `{emit_label lbl_next}:\n`
     | Lpushtrap ->
         end_basic_block();
@@ -1067,7 +1090,7 @@ let emit_instr i =
         `	add	r6 = 16, sp ;;\n`
     | Lpoptrap ->
         end_basic_block();
-        `	add	sp = 16, sp\n`;
+        `	add	sp = 16, sp ;;\n`;
         `	ld8	r6 = [sp] ;;\n`;
         stack_offset := !stack_offset - 16
     | Lraise ->
@@ -1082,6 +1105,14 @@ let emit_instr i =
 let rec emit_all i =
   match i.desc with Lend -> () | _ -> emit_instr i; emit_all i.next
 
+(* Check if a function contains a tail call to itself *)
+
+let rec is_tailrec i =
+  match i.desc with
+    Lend -> false
+  | Lop(Itailcall_imm s) when s = !function_name -> true
+  | _ -> is_tailrec i.next
+
 (* Emission of a function declaration *)
 
 let fundecl f =
@@ -1095,15 +1126,18 @@ let fundecl f =
   `{emit_symbol f.fun_name}:\n`;
   let n = frame_size() in
   if !contains_calls then begin
-    `	mov	r2 = b0\n`;
-    `	add	r3 = 8, sp\n`;
-    `	add	sp = -{emit_int n}, sp ;;\n`;
-    `	st8	[r3] = r2\n`
+    insert "movfb" [| R "b0" |] [| R "r2" |];
+    insimm "addi" [| R "sp" |] "8" [| R "r3" |];
+    insimm "addi" [| R "sp" |] (string_of_int (-n)) [| R "sp" |];
+    insert "st8" [| R "r3"; R "r2" |] [||]
   end
   else if n > 0 then
-    `	add	sp = -{emit_int n}, sp ;;\n`;
-  tailrec_entry_point := new_label();
-  `{emit_label !tailrec_entry_point}:\n`;
+    insimm "addi" [| R "sp" |] (string_of_int (-n)) [| R "sp" |];
+  if is_tailrec f.fun_body then begin
+    tailrec_entry_point := new_label();
+    end_basic_block();
+    `{emit_label !tailrec_entry_point}:\n`
+  end;
   emit_all f.fun_body;
   end_basic_block();
   `	.endp	{emit_symbol f.fun_name}#\n`
