@@ -3,4 +3,4 @@
 include ../Makefile.config
 
 configure:
-	sh autoconf "$(BYTECC) $(BYTECCLINKOPTS) $(CCLINK)"
+	sh autoconf "$(BYTECC) $(BYTECCLINKOPTS) $(CCLIBS)"
