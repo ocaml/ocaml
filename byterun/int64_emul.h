@@ -18,6 +18,12 @@
 
 #include <math.h>
 
+#if ARCH_BIG_ENDIAN
+#define I64_literal(hi,lo) { hi, lo }
+#else
+#define I64_literal(hi,lo) { lo, hi }
+#endif
+
 /* Unsigned comparison */
 static int I64_ucompare(uint64 x, uint64 y)
 {
@@ -27,6 +33,8 @@ static int I64_ucompare(uint64 x, uint64 y)
   if (x.l < y.l) return -1;
   return 0;
 }
+
+#define I64_ult(x, y) (I64_ucompare(x, y) < 0)
 
 /* Signed comparison */
 static int I64_compare(int64 x, int64 y)
