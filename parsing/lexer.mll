@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -143,9 +143,9 @@ let char_for_decimal_code lexbuf i =
                 (Char.code(Lexing.lexeme_char lexbuf (i+2)) - 48) in  
   Char.chr(c land 0xFF)
 
-(* To store the position of the beginning of a string or comment *)
-
-let start_pos = ref 0
+(* To store the position of the beginning of a string and comment *)
+let string_start_pos = ref 0
+and comment_start_pos = ref 0
 
 (* Error report *)
 
@@ -195,7 +195,7 @@ rule token = parse
   | "\""
       { reset_string_buffer();
         let string_start = Lexing.lexeme_start lexbuf in
-        start_pos := string_start;
+        string_start_pos := string_start;
         string lexbuf;
         lexbuf.Lexing.lex_start_pos <-
           string_start - lexbuf.Lexing.lex_abs_pos;
@@ -208,7 +208,7 @@ rule token = parse
       { CHAR(char_for_decimal_code lexbuf 2) }
   | "(*"
       { comment_depth := 1;
-        start_pos := Lexing.lexeme_start lexbuf;
+        comment_start_pos := Lexing.lexeme_start lexbuf;
         comment lexbuf;
         token lexbuf }
   | "#" [' ' '\t']* ['0'-'9']+ [' ' '\t']* "\"" [^ '\n' '\r'] *
@@ -279,7 +279,7 @@ and comment = parse
         if !comment_depth > 0 then comment lexbuf }
   | "\""
       { reset_string_buffer();
-        start_pos := Lexing.lexeme_start lexbuf;
+        string_start_pos := Lexing.lexeme_start lexbuf;
         string lexbuf;
         string_buff := initial_string_buffer;
         comment lexbuf }
@@ -292,7 +292,8 @@ and comment = parse
   | "'\\" ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
       { comment lexbuf }
   | eof
-      { raise (Error(Unterminated_comment, !start_pos, !start_pos+2)) }
+      { raise (Error (Unterminated_comment,
+                      !comment_start_pos, !comment_start_pos+2)) }
   | _
       { comment lexbuf }
 
@@ -308,8 +309,8 @@ and string = parse
       { store_string_char(char_for_decimal_code lexbuf 1);
          string lexbuf }
   | eof
-      { raise (Error(Unterminated_string, !start_pos, !start_pos+1)) }
+      { raise (Error (Unterminated_string,
+                      !string_start_pos, !string_start_pos+1)) }
   | _
       { store_string_char(Lexing.lexeme_char lexbuf 0);
         string lexbuf }
-
