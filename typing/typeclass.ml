@@ -1243,6 +1243,26 @@ let class_type_declarations env cls =
      decl,
    env)
 
+let rec unify_parents env ty cl =
+  match cl.cl_desc with
+    Tclass_ident p ->
+      begin try
+        let decl = Env.find_class p env in
+        let _, body = Ctype.find_cltype_for_path env decl.cty_path in
+        Ctype.unify env ty (Ctype.instance body)
+      with exn -> assert (exn = Not_found)
+      end
+  | Tclass_structure st -> unify_parents_struct env ty st
+  | Tclass_fun (_, _, cl, _)
+  | Tclass_apply (cl, _)
+  | Tclass_let (_, _, _, cl)
+  | Tclass_constraint (cl, _, _, _) -> unify_parents env ty cl
+and unify_parents_struct env ty st =
+  List.iter
+    (function Cf_inher (cl, _, _) -> unify_parents env ty cl
+      | _ -> ())
+    st.cl_field
+
 let type_object env loc s =
   incr class_num;
   let (desc, sign) = class_structure (string_of_int !class_num) env env s in
@@ -1253,6 +1273,7 @@ let type_object env loc s =
   end;
   Ctype.hide_private_methods sty;
   Ctype.close_object sty;
+  unify_parents_struct env sty desc;
   let (fields, _) = Ctype.flatten_fields (Ctype.object_fields sty) in
   let meths = List.map (fun (s,_,_) -> s) fields in
   (desc, sign, meths)

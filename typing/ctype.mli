@@ -72,6 +72,7 @@ val set_object_name:
         Ident.t -> type_expr -> type_expr list -> type_expr -> unit
 val remove_object_name: type_expr -> unit
 val hide_private_methods: type_expr -> unit
+val find_cltype_for_path: Env.t -> Path.t -> type_declaration * type_expr
 
 val sort_row_fields: (label * row_field) list -> (label * row_field) list
 val merge_row_fields:
@@ -189,7 +190,7 @@ val match_class_declarations:
 
 val enlarge_type: Env.t -> type_expr -> type_expr * bool
         (* Make a type larger, flag is true if some pruning had to be done *)
-val subtype : Env.t -> type_expr -> type_expr -> unit -> unit
+val subtype: Env.t -> type_expr -> type_expr -> unit -> unit
         (* [subtype env t1 t2] checks that [t1] is a subtype of [t2].
            It accumulates the constraints the type variables must
            enforce and returns a function that inforce this

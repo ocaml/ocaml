@@ -1448,7 +1448,7 @@ and unify3 env t1 t1' t2 t2' =
         (* XXX One should do some kind of unification... *)
         begin match (repr t2').desc with
           Tobject (_, {contents = Some (_, va::_)})
-          when let va = repr va in va.desc = Tvar || va.desc = Tunivar ->
+          when let va = repr va in List.mem va.desc [Tvar; Tunivar; Tnil] ->
             ()
         | Tobject (_, nm2) ->
             set_name nm2 !nm1
@@ -2569,6 +2569,24 @@ let rec filter_visited = function
 let memq_warn t visited =
   if List.memq t visited then (warn := true; true) else false
 
+let rec lid_of_path sharp = function
+    Path.Pident id ->
+      Longident.Lident (sharp ^ Ident.name id)
+  | Path.Pdot (p1, s, _) ->
+      Longident.Ldot (lid_of_path "" p1, sharp ^ s)
+  | Path.Papply (p1, p2) ->
+      Longident.Lapply (lid_of_path sharp p1, lid_of_path "" p2)
+
+let find_cltype_for_path env p =
+  let path, cl_abbr = Env.lookup_type (lid_of_path "#" p) env in
+  match cl_abbr.type_manifest with
+    Some ty ->
+      begin match (repr ty).desc with
+        Tobject(_,{contents=Some(p',_)}) when Path.same p p' -> cl_abbr, ty
+      | _ -> raise Not_found
+      end
+  | None -> assert false
+
 let rec build_subtype env visited loops posi level t =
   let t = repr t in
   match t.desc with
@@ -2604,22 +2622,7 @@ let rec build_subtype env visited loops posi level t =
       let level' = pred_expand level in
       begin try match t'.desc with
         Tobject _ when posi && not (opened_object t') ->
-          let rec lid_of_path sharp = function
-              Path.Pident id ->
-                Longident.Lident (sharp ^ Ident.name id)
-            | Path.Pdot (p1, s, _) ->
-                Longident.Ldot (lid_of_path "" p1, sharp ^ s)
-            | Path.Papply (p1, p2) ->
-                Longident.Lapply (lid_of_path sharp p1, lid_of_path "" p2)
-          in
-          let path, cl_abbr = Env.lookup_type (lid_of_path "#" p) env in
-          let body =
-            match cl_abbr.type_manifest with Some ty ->
-              begin match (repr ty).desc with
-                Tobject(_,{contents=Some(p',_)}) when Path.same p p' -> ty
-              | _ -> raise Not_found
-              end
-            | None -> assert false in
+          let cl_abbr, body = find_cltype_for_path env p in
           let ty =
             subst env !current_level abbrev None cl_abbr.type_params tl body in
           let ty = repr ty in
