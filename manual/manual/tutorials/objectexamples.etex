@@ -20,6 +20,7 @@ Objective Caml.
 \ref{ss:inheritance} Inheritance \\
 \ref{ss:multiple-inheritance} Multiple inheritance \\
 \ref{ss:parameterized-classes} Parameterized classes \\
+\ref{ss:polymorphic-methods} Polymorphic methods \\
 \ref{ss:using-coercions} Using coercions \\
 \ref{ss:functional-objects} Functional objects \\
 \ref{ss:cloning-objects} Cloning objects \\
