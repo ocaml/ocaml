@@ -23,6 +23,11 @@
 #include <sys/time.h>
 #ifdef HAS_SYS_SELECT_H
 #include <sys/select.h>
+
+#endif
+
+#ifdef __OpenBSD__
+#include <string.h>
 #endif
 
 #ifdef FD_ISSET
