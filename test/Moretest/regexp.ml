@@ -649,6 +649,8 @@ let _ =
        "abc-012-12-def3ghi45";
 
   (** XML tokenization *)
+  (* See "REX: XML Shallow Parsing with Regular Expressions",
+     Robert D. Cameron, Simon Fraser University, CMPT TR 1998-17. *)
   start_test "XML tokenization";
   begin 
     let _TextSE = "[^<]+" in
