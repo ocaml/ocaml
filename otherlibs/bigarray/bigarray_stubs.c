@@ -73,8 +73,8 @@ static struct custom_operations bigarray_ops = {
 
 /* Allocation of a big array */
 
-#define MAX_BIGARRAY_MEMORY 128*1024*1024
-/* 128 Mb -- after allocating that much, it's probably worth speeding
+#define MAX_BIGARRAY_MEMORY 256*1024*1024
+/* 256 Mb -- after allocating that much, it's probably worth speeding
    up the major GC */
 
 value alloc_bigarray(int flags, int num_dims, void * data, long * dim)
@@ -91,7 +91,8 @@ value alloc_bigarray(int flags, int num_dims, void * data, long * dim)
     num_elts = 1;
     for (i = 0; i < num_dims; i++) num_elts = num_elts * dim[i];
     size = num_elts * bigarray_element_size[flags & BIGARRAY_KIND_MASK];
-    data = stat_alloc(size);
+    data = malloc(size);
+    if (data == NULL && size != 0) raise_out_of_memory();
     flags |= BIGARRAY_MANAGED;
   }
   res = alloc_custom(&bigarray_ops,
