@@ -17,6 +17,7 @@ open Spretty;
 open Stdpp;
 
 value no_ss = ref False;
+value input_file_ic = ref None;
 
 value not_impl name x =
   let desc =
@@ -118,6 +119,8 @@ value var_escaped v =
   else v
 ;
 
+value flag n f = if f then [: `S LR n :] else [: :];
+
 value conv_con =
   fun
   [ "True" -> "true"
@@ -191,20 +194,97 @@ value private_flag =
   | _ -> [: :] ]
 ;
 
-value rec labels b vl _ k = [: b; listws label (S RO ";") vl "" k :]
-and label (loc, f, m, t) _ k =
-  HVbox
-    [: mutable_flag m; `HVbox [: `S LR (conv_lab f); `S LR ":" :];
-       `ctyp t "" k :]
+value input_from_source bp ep =
+  match input_file_ic.val with
+  [ Some ic when ep > bp ->
+      do {
+        seek_in ic bp;
+        let len = ep - bp in
+        let buff = Buffer.create 20 in
+        loop 0 where rec loop i =
+          if i < len then do {
+            let c = input_char ic in
+            Buffer.add_char buff c;
+            loop (i + 1)
+          }
+          else Buffer.contents buff
+      }
+  | _ -> "" ]
+;
+
+value rec labels loc b vl _ k =
+  match vl with
+  [ [] -> [: b; k :]
+  | [v] -> [: `label True (snd loc) b v "" k :]
+  | [v :: ([(nloc, _, _, _) :: _] as l)] ->
+      [: `label False (fst nloc) b v "" [: :]; labels loc [: :] l "" k :] ]
+and label is_last bp_next b (loc, f, m, t) _ k =
+  let m = flag "mutable" m in
+  let txt =
+    let s = input_from_source (snd loc) bp_next in
+    let s =
+      try
+        let i = String.index s ';' in
+        String.sub s (i + 1) (String.length s - i - 1)
+      with
+      [ Not_found -> "" ]
+    in
+    try
+      let i = String.rindex s '\n' in
+      String.sub s 0 i
+    with
+    [ Not_found -> s ]
+  in
+  let k =
+    [: if is_last && txt = "" then [: :] else [: `S RO ";" :]; `S RO txt; k :]
+  in
+  Hbox
+    [: `HVbox
+         [: `HVbox [: b; m; `S LR (conv_lab f); `S LR ":" :];
+            `ctyp t "" [: :] :];
+       k :]
 ;
 
 value rec ctyp_list tel _ k = listws simple_ctyp (S LR "*") tel "" k;
 
-value rec variants b vl _ k = listwbws variant b (S LR "|") vl "" k
-and variant b (loc, c, tl) _ k =
+value include_comment_of_last_constructor ep =
+  match input_file_ic.val with
+  [ Some ic ->
+     do {
+       seek_in ic ep;
+       loop ep where rec loop ep =
+         let c = input_char ic in
+         if c = '\n' then ep + 1
+         else loop (ep + 1)
+     }
+  | None -> ep ]
+;
+
+value rec variants loc b vl dg k =
+  let ep = include_comment_of_last_constructor (snd loc) in
+  variants_loop (fst loc, ep) b vl dg k
+and variants_loop loc b vl _ k =
+  match vl with
+  [ [] -> [: b; k :]
+  | [v] -> [: `variant (snd loc) b v "" k :]
+  | [v :: ([(nloc, _, _) :: _] as l)] ->
+      [: `variant (fst nloc) b v "" [: :];
+         variants_loop loc [: `S LR "|" :] l "" k :] ]
+and variant bp_next b (loc, c, tl) _ k =
+  let txt =
+    let s = input_from_source (snd loc) bp_next in
+    try
+      let i = String.rindex s '\n' in
+      String.sub s 0 i
+    with
+    [ Not_found -> "" ]
+  in
+  let k = [: `S RO txt; k :] in
   match tl with
   [ [] -> HVbox [: b; `HOVbox [: `S LR c; k :] :]
-  | _ -> HVbox [: b; `HOVbox [: `S LR c; `S LR "of"; ctyp_list tl "" k :] :] ]
+  | _ ->
+      HVbox
+        [: b; `HOVbox [: `S LR c; `S LR "of"; ctyp_list tl "" [: :]; k :] :] ]
 ;
 
 value rec row_fields b rfl _ k = listwbws row_field b (S LR "|") rfl "" k
@@ -311,10 +391,14 @@ simple_ctyp_f.val :=
           | <:ctyp< $uid:s$ >> -> [: `S LR s; k :]
           | <:ctyp< _ >> -> [: `S LR "_"; k :]
           | <:ctyp< { $list:ftl$ } >> ->
+              let loc = MLast.loc_of_ctyp t in
               [: `HVbox
-                    [: labels [: `S LR "{" :] ftl "" [: `S LR "}" :]; k :] :]
+                    [: labels loc [: `S LR "{" :] ftl "" [: `S LR "}" :];
+                       k :] :]
           | <:ctyp< [ $list:ctl$ ] >> ->
-              [: `BEbox [: `HVbox [: :]; variants [: :] ctl "" [: :]; k :] :]
+              let loc = MLast.loc_of_ctyp t in
+              [: `BEbox [: `HVbox [: :];
+                 variants loc [: :] ctl "" [: :]; k :] :]
           | <:ctyp< [| $list:rfl$ |] >> ->
               [: `HVbox
                     [: `HVbox [: :];
@@ -547,8 +631,7 @@ and module_type1 mt k =
   let next = module_type2 in
   match mt with
   [ <:module_type< $mt$ with $list:icl$ >> ->
-      HVbox
-        [: `curr mt [: :]; `with_constraints [: `S LR "with" :] icl "" k :]
+      HVbox [: `curr mt [: :]; `with_constraints [: `S LR "with" :] icl "" k :]
   | _ -> next mt k ]
 and module_type2 mt k =
   let curr = module_type2 in
@@ -573,6 +656,17 @@ and module_type5 mt k =
   [ <:module_type< $lid:s$ >> -> HVbox [: `S LR s; k :]
   | <:module_type< $uid:s$ >> -> HVbox [: `S LR s; k :]
   | _ -> HVbox [: `S LO "("; `module_type mt [: `S RO ")"; k :] :] ]
+and module_declaration b mt k =
+  match mt with
+  [ <:module_type< functor ( $i$ : $t$ ) -> $mt$ >> ->
+      module_declaration
+        [: b; `S LO "("; `S LR i; `S LR ":"; `module_type t [: `S RO ")" :] :]
+        mt k
+  | _ ->
+      HVbox
+        [: `HVbox [: :];
+           `HVbox [: `HVbox [: b; `S LR ":" :]; `module_type mt [: :] :];
+           k :] ]
 and modtype_declaration (s, mt) _ k =
   HVbox
     [: `HVbox [: :];
@@ -818,7 +912,7 @@ pr_sig_item.pr_levels :=
           fun curr next dg k -> [: `not_impl "sig_item" si :]
       | <:sig_item< exception $c$ of $list:tl$ >> ->
           fun curr next dg k ->
-            [: `variant [: `S LR "exception" :] (loc, c, tl) "" k :]
+            [: `variant 0 [: `S LR "exception" :] (loc, c, tl) "" k :]
       | <:sig_item< value $s$ : $t$ >> ->
           fun curr next dg k -> [: `value_description (s, t) "" k :]
       | <:sig_item< external $s$ : $t$ = $list:pl$ >> ->
@@ -827,11 +921,7 @@ pr_sig_item.pr_levels :=
           fun curr next dg k -> [: `S LR "include"; `module_type mt k :]
       | <:sig_item< module $s$ : $mt$ >> ->
           fun curr next dg k ->
-            [: `HVbox [: :];
-               `HVbox
-                  [: `HVbox [: `S LR "module"; `S LR s; `S LR ":" :];
-                     `module_type mt [: :] :];
-               k :]
+            [: `module_declaration [: `S LR "module"; `S LR s :] mt k :]
       | <:sig_item< module type $s$ = $mt$ >> ->
           fun curr next dg k -> [: `modtype_declaration (s, mt) "" k :]
       | <:sig_item< open $sl$ >> ->
@@ -875,9 +965,9 @@ pr_str_item.pr_levels :=
       | <:str_item< exception $c$ of $list:tl$ = $b$ >> ->
           fun curr next dg k ->
              match b with
-            [ [] -> [: `variant [: `S LR "exception" :] (loc, c, tl) "" k :]
+            [ [] -> [: `variant 0 [: `S LR "exception" :] (loc, c, tl) "" k :]
             | _ ->
-                [: `variant [: `S LR "exception" :] (loc, c, tl) ""
+                [: `variant 0 [: `S LR "exception" :] (loc, c, tl) ""
                      [: `S LR "=" :];
                    mod_ident b "" k :] ]
       | <:str_item< include $me$ >> ->
@@ -1599,6 +1689,7 @@ value output_string_eval oc s =
 value maxl = ref 78;
 value sep = ref None;
 value comm_after = ref False;
+value type_comm = ref False;
 value delayed_comm = ref "";
 
 value copy_after oc s =
@@ -1680,23 +1771,28 @@ value apply_printer printer ast =
   if Pcaml.input_file.val <> "-" && Pcaml.input_file.val <> "" then do {
     let ic = open_in_bin Pcaml.input_file.val in
     try
-      let (first, last_pos) =
-        List.fold_left
-          (fun (first, last_pos) (si, (bp, ep)) ->
-             do {
-               copy_source ic oc first last_pos bp;
-               flush oc;
-               print_pretty pr_ch pr_str pr_nl "" "" maxl.val (fun _ -> ())
-                 (printer si "" [: :]);
-               flush oc;
-               (False, ep)
-             })
-          (True, 0) ast
-      in
-      do { copy_to_end ic oc first last_pos; flush oc }
+      do {
+        input_file_ic.val := if type_comm.val then Some ic else None;
+        let (first, last_pos) =
+          List.fold_left
+            (fun (first, last_pos) (si, (bp, ep)) ->
+               do {
+                 copy_source ic oc first last_pos bp;
+                 flush oc;
+                 print_pretty pr_ch pr_str pr_nl "" "" maxl.val (fun _ -> ())
+                   (printer si "" [: :]);
+                 flush oc;
+                 (False, ep)
+               })
+            (True, 0) ast
+        in
+        copy_to_end ic oc first last_pos;
+        flush oc
+      }
     with x ->
-      do { close_in ic; cleanup (); raise x };
+      do { close_in ic; input_file_ic.val := None; cleanup (); raise x };
     close_in ic;
+    input_file_ic.val := None;
     cleanup ()
   }
   else do {
@@ -1729,3 +1825,6 @@ Pcaml.add_option "-sep" (Arg.String (fun x -> sep.val := Some x))
 
 Pcaml.add_option "-ca" (Arg.Set comm_after)
   "          Put the ocamldoc comments after declarations.";
+
+Pcaml.add_option "-tc" (Arg.Set type_comm)
+  "          Add the comments inside sum and record types.";

@@ -26,6 +26,7 @@ value not_impl name x =
 
 value gen_where = ref True;
 value old_sequences = ref False;
+value input_file_ic = ref None;
 
 external is_printable : char -> bool = "is_printable";
 
@@ -145,19 +146,95 @@ value expr_fun_args ge = Extfun.apply pr_expr_fun_args.val ge;
 value ctyp_f = ref (fun []);
 value ctyp t k = ctyp_f.val t k;
 
-value rec labels b vl k = [: b; listws label (S RO ";") vl k :]
-and label (loc, f, m, t) k =
+value input_from_source bp ep =
+  match input_file_ic.val with
+  [ Some ic when ep > bp ->
+      do {
+        seek_in ic bp;
+        let len = ep - bp in
+        let buff = Buffer.create 20 in
+        loop 0 where rec loop i =
+          if i < len then do {
+            let c = input_char ic in
+            Buffer.add_char buff c;
+            loop (i + 1)
+          }
+          else Buffer.contents buff
+      }
+  | _ -> "" ]
+;
+
+value rec labels loc b vl k =
+  match vl with
+  [ [] -> [: b; k :]
+  | [v] -> [: `label True (snd loc) b v k :]
+  | [v :: ([(nloc, _, _, _) :: _] as l)] ->
+      [: `label False (fst nloc) b v [: :]; labels loc [: :] l k :] ]
+and label is_last bp_next b (loc, f, m, t) k =
   let m = flag "mutable" m in
-  HVbox [: `HVbox [: `S LR f; `S LR ":" :]; `HVbox [: m; `ctyp t k :] :]
+  let txt =
+    let s = input_from_source (snd loc) bp_next in
+    let s =
+      try
+        let i = String.index s ';' in
+        String.sub s (i + 1) (String.length s - i - 1)
+      with
+      [ Not_found -> "" ]
+    in
+    try
+      let i = String.rindex s '\n' in
+      String.sub s 0 i
+    with
+    [ Not_found -> s ]
+  in
+  let k = [: if is_last then [: :] else [: `S RO ";" :]; `S RO txt; k :] in
+  Hbox
+    [: `HVbox
+         [: `HVbox [: b; `S LR f; `S LR ":" :];
+            `HVbox [: m; `ctyp t [: :] :] :];
+       k :]
 ;
 
 value rec ctyp_list tel k = listws ctyp (S LR "and") tel k;
 
-value rec variants b vl k = listwbws variant b (S LR "|") vl k
-and variant b (loc, c, tl) k =
+value include_comment_of_last_constructor ep =
+  match input_file_ic.val with
+  [ Some ic ->
+     do {
+       seek_in ic ep;
+       loop ep where rec loop ep =
+         let c = input_char ic in
+         if c = '\n' then ep + 1
+         else loop (ep + 1)
+     }
+  | None -> ep ]
+;
+
+value rec variants loc b vl k =
+  let ep = include_comment_of_last_constructor (snd loc) in
+  variants_loop (fst loc, ep) b vl k
+and variants_loop loc b vl k =
+  match vl with
+  [ [] -> [: b; k :]
+  | [v] -> [: `variant (snd loc) b v k :]
+  | [v :: ([(nloc, _, _) :: _] as l)] ->
+      [: `variant (fst nloc) b v [: :];
+         variants_loop loc [: `S LR "|" :] l k :] ]
+and variant bp_next b (loc, c, tl) k =
+  let txt =
+    let s = input_from_source (snd loc) bp_next in
+    try
+      let i = String.rindex s '\n' in
+      String.sub s 0 i
+    with
+    [ Not_found -> "" ]
+  in
+  let k = [: `S RO txt; k :] in
   match tl with
   [ [] -> HVbox [: b; `HOVbox [: `S LR c; k :] :]
-  | _ -> HVbox [: b; `HOVbox [: `S LR c; `S LR "of"; ctyp_list tl k :] :] ]
+  | _ ->
+      HVbox
+        [: b; `HOVbox [: `S LR c; `S LR "of"; ctyp_list tl [: :]; k :] :] ]
 ;
 
 value rec row_fields b rfl k = listwbws row_field b (S LR "|") rfl k
@@ -245,11 +322,15 @@ ctyp_f.val :=
           | <:ctyp< $uid:s$ >> -> [: `S LR s; k :]
           | <:ctyp< _ >> -> [: `S LR "_"; k :]
           | <:ctyp< { $list: ftl$ } >> ->
-              [: `HVbox [: labels [: `S LR "{" :] ftl [: `S LR "}" :]; k :] :]
+              let loc = MLast.loc_of_ctyp t in
+              [: `HVbox
+                   [: labels loc [: `S LR "{" :] ftl [: `S LR "}" :]; k :] :]
           | <:ctyp< [ $list:ctl$ ] >> ->
+              let loc = MLast.loc_of_ctyp t in
               [: `Vbox
                     [: `HVbox [: :];
-                       variants [: `S LR "[" :] ctl [: `S LR "]" :]; k :] :]
+                       variants loc
+                          [: `S LR "[" :] ctl [: `S LR "]" :]; k :] :]
           | <:ctyp< [| $list:rfl$ |] >> ->
               [: `HVbox
                     [: `HVbox [: :];
@@ -820,7 +901,7 @@ pr_sig_item.pr_levels :=
           fun curr next _ k -> [: `not_impl "sig_item1" si :]
       | <:sig_item< exception $c$ of $list:tl$ >> ->
           fun curr next _ k ->
-            [: `variant [: `S LR "exception" :] (loc, c, tl) k :]
+            [: `variant 0 [: `S LR "exception" :] (loc, c, tl) k :]
       | <:sig_item< value $s$ : $t$ >> ->
           fun curr next _ k -> [: `value_description s t k :]
       | <:sig_item< include $mt$ >> ->
@@ -873,9 +954,9 @@ pr_str_item.pr_levels :=
       | <:str_item< exception $c$ of $list:tl$ = $b$ >> ->
           fun curr next _ k ->
             match b with
-            [ [] -> [: `variant [: `S LR "exception" :] (loc, c, tl) k :]
+            [ [] -> [: `variant 0 [: `S LR "exception" :] (loc, c, tl) k :]
             | _ ->
-                [: `variant [: `S LR "exception" :] (loc, c, tl)
+                [: `variant 0 [: `S LR "exception" :] (loc, c, tl)
                      [: `S LR "=" :];
                    mod_ident b k :] ]
       | <:str_item< include $me$ >> ->
@@ -1434,6 +1515,7 @@ value maxl = ref 78;
 value sep = ref None;
 value ncip = ref False;
 value comm_after = ref False;
+value type_comm = ref False;
 value delayed_comm = ref "";
 
 value copy_after oc s =
@@ -1520,15 +1602,17 @@ module Buff =
 ;
 
 value extract_comment strm =
-  let rec find_comm =
+  let rec find_comm sp_cnt =
     parser
-    [ [: `'('; a = find_star :] -> a
-    | [: `_; s :] -> find_comm s
+    [ [: `'('; a = find_star sp_cnt :] -> a
+    | [: `' '; s :] -> find_comm (sp_cnt + 1) s
+    | [: `_; s :] -> find_comm 0 s
     | [: :] -> "" ]
-  and find_star =
+  and find_star sp_cnt =
     parser
-    [ [: `'*'; a = insert (Buff.mstore 0 "(*") :] -> a
-    | [: a = find_comm :] -> a ]
+    [ [: `'*';
+         a = insert (Buff.mstore 0 (String.make sp_cnt ' ' ^ "(*")) :] -> a
+    | [: a = find_comm 0 :] -> a ]
   and insert len =
     parser
     [ [: `'*'; a = rparen (Buff.store len '*') :] -> a
@@ -1548,7 +1632,7 @@ value extract_comment strm =
     | [: `'\n'; a = while_space len :] -> a
     | [: :] -> Buff.get len ]
   in
-  find_comm strm
+  find_comm 0 strm
 ;
 
 value print_comment ic oc last_ep (bp, ep) =
@@ -1588,24 +1672,29 @@ value apply_printer printer ast =
       else fun _ -> ()
     in
     try
-      let (first, last_pos) =
-        List.fold_left
-          (fun (first, last_pos) (si, (bp, ep)) ->
-             do {
-               copy_source ic oc first last_pos bp;
-               flush oc;
-               last_ep.val := bp;
-               print_pretty pr_ch pr_str pr_nl "" "" maxl.val prcom
-                 (printer si [: :]);
-               flush oc;
-               (False, ep)
-             })
-          (True, 0) ast
-      in
-      do { copy_to_end ic oc first last_pos; flush oc }
+      do {
+        input_file_ic.val := if type_comm.val then Some ic else None;
+        let (first, last_pos) =
+          List.fold_left
+            (fun (first, last_pos) (si, (bp, ep)) ->
+               do {
+                 copy_source ic oc first last_pos bp;
+                 flush oc;
+                 last_ep.val := bp;
+                 print_pretty pr_ch pr_str pr_nl "" "" maxl.val prcom
+                   (printer si [: :]);
+                 flush oc;
+                 (False, ep)
+               })
+            (True, 0) ast
+        in
+        copy_to_end ic oc first last_pos;
+        flush oc
+      }
     with x ->
-      do { close_in ic; cleanup (); raise x };
+      do { close_in ic; input_file_ic.val := None; cleanup (); raise x };
     close_in ic;
+    input_file_ic.val := None;
     cleanup ()
   }
   else do {
@@ -1640,3 +1729,6 @@ Pcaml.add_option "-old_seq" (Arg.Set old_sequences)
 
 Pcaml.add_option "-ca" (Arg.Set comm_after)
   "          Put the ocamldoc comments after declarations.";
+
+Pcaml.add_option "-tc" (Arg.Set type_comm)
+  "          Add the comments inside sum and record types.";
