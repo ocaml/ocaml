@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -30,31 +30,8 @@ let input_lexbuf = ref (None : lexbuf option)
 
 (* Terminal info *)
 
-type terminal_info_status = Unknown | Bad_term | Good_term
+let status = ref Terminfo.Uninitialised
 
-let status = ref Unknown
-and num_lines = ref 0
-and cursor_up = ref ""
-and cursor_down = ref ""
-and start_standout = ref ""
-and end_standout = ref ""
-
-let setup_terminal_info() =
-  try
-    Terminfo.setupterm();
-    num_lines := Terminfo.getnum "li";
-    cursor_up := Terminfo.getstr "up";
-    cursor_down := Terminfo.getstr "do";
-    begin try
-      start_standout := Terminfo.getstr "us";
-      end_standout := Terminfo.getstr "ue"
-    with Not_found ->
-      start_standout := Terminfo.getstr "so";
-      end_standout := Terminfo.getstr "se"
-    end;
-    status := Good_term
-  with _ ->
-    status := Bad_term
 
 (* Print the location using standout mode. *)
 
@@ -62,51 +39,47 @@ let num_loc_lines = ref 0 (* number of lines already printed after input *)
 
 let rec highlight_locations loc1 loc2 =
   match !status with
-    Unknown ->
-      setup_terminal_info(); highlight_locations loc1 loc2
-  | Bad_term ->
+    Terminfo.Uninitialised ->
+      status := Terminfo.setup stdout; highlight_locations loc1 loc2
+  | Terminfo.Bad_term ->
       false
-  | Good_term ->
+  | Terminfo.Good_term num_lines ->
       match !input_lexbuf with
         None -> false
       | Some lb ->
-          (* Char 0 is at offset -lb.lex_abs_pos in lb.lex_buffer. *)
-          let pos0 = -lb.lex_abs_pos in
-          (* Do nothing if the buffer does not contain the whole phrase. *)
-          if pos0 < 0 then false else begin
+          try
+            (* Char 0 is at offset -lb.lex_abs_pos in lb.lex_buffer. *)
+            let pos0 = -lb.lex_abs_pos in
+            (* Do nothing if the buffer does not contain the whole phrase. *)
+            if pos0 < 0 then raise Exit;
             (* Count number of lines in phrase *)
             let lines = ref !num_loc_lines in
             for i = pos0 to String.length lb.lex_buffer - 1 do
               if lb.lex_buffer.[i] = '\n' then incr lines
             done;
             (* If too many lines, give up *)
-            if !lines >= !num_lines - 2 then false else begin
-              (* Move cursor up that number of lines *)
-              for i = 1 to !lines do
-                Terminfo.puts stdout !cursor_up 1
-              done;
-              (* Print the input, switching to standout for the location *)
-              let bol = ref false in
-	      print_string "# ";
-              for pos = 0 to String.length lb.lex_buffer - pos0 - 1 do
-                if !bol then (print_string "  "; bol := false);
-                if pos = loc1.loc_start || pos = loc2.loc_start then
-                  Terminfo.puts stdout !start_standout 1;
-                if pos = loc1.loc_end || pos = loc2.loc_end then
-                  Terminfo.puts stdout !end_standout 1;
-                let c = lb.lex_buffer.[pos + pos0] in
-                print_char c;
-                bol := (c = '\n')
-              done;
-              (* Make sure standout mode is over *)
-              Terminfo.puts stdout !end_standout 1;
-              (* Position cursor back to original location *)
-              for i = 1 to !num_loc_lines do
-                Terminfo.puts stdout !cursor_down 1
-              done;
-              true
-            end
-          end
+            if !lines >= num_lines - 2 then raise Exit;
+            (* Move cursor up that number of lines *)
+            Terminfo.backup !lines;
+            (* Print the input, switching to standout for the location *)
+            let bol = ref false in
+	    print_string "# ";
+            for pos = 0 to String.length lb.lex_buffer - pos0 - 1 do
+              if !bol then (print_string "  "; bol := false);
+              if pos = loc1.loc_start || pos = loc2.loc_start then
+                Terminfo.standout true;
+              if pos = loc1.loc_end || pos = loc2.loc_end then
+                Terminfo.standout false;
+              let c = lb.lex_buffer.[pos + pos0] in
+              print_char c;
+              bol := (c = '\n')
+            done;
+            (* Make sure standout mode is over *)
+            Terminfo.standout false;
+            (* Position cursor back to original location *)
+            Terminfo.resume !num_loc_lines;
+            true;
+          with Exit -> false
 
 (* Print the location in some way or another *)
 
