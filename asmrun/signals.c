@@ -332,7 +332,7 @@ value install_signal_handler(value signal_number, value action) /* ML */
     }
     modify(&Field(signal_handlers, sig), Field(action, 0));
   }
-  return res;
+  CAMLreturn (res);
 }
 
 /* Machine- and OS-dependent handling of bound check trap */
