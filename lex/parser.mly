@@ -33,8 +33,6 @@ let regexp_for_string s =
          re_string (succ n))
   in re_string 0
 
-let char_class c1 c2 = Cset.interval c1 c2
-
 let rec remove_as = function
   | Bind (e,_) -> remove_as e
   | Epsilon|Eof|Characters _ as e -> e
