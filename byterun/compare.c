@@ -34,11 +34,13 @@ static struct compare_item * compare_stack = compare_stack_init;
 static struct compare_item * compare_stack_limit = compare_stack_init
                                                    + COMPARE_STACK_INIT_SIZE;
 
+CAMLexport int compare_unordered;
+
 /* Free the compare stack if needed */
 static void compare_free_stack(void)
 {
   if (compare_stack != compare_stack_init) {
-    stat_free(compare_stack);
+    free(compare_stack);
     /* Reinitialize the globals for next time around */
     compare_stack = compare_stack_init;
     compare_stack_limit = compare_stack + COMPARE_STACK_INIT_SIZE;
@@ -77,23 +79,36 @@ static struct compare_item * compare_resize_stack(struct compare_item * sp)
 
 /* Structural comparison */
 
-static long compare_val(value v1, value v2)
+#define LESS -1
+#define EQUAL 0
+#define GREATER 1
+#define UNORDERED (1L << (8 * sizeof(value) - 1))
+
+/* The return value of compare_val is as follows:
+      > 0                 v1 is greater than v2
+      0                   v1 is equal to v2
+      < 0 and > UNORDERED v1 is less than v2
+      UNORDERED           v1 and v2 cannot be compared */
+
+static long compare_val(value v1, value v2, int total)
 {
   struct compare_item * sp;
   tag_t t1, t2;
 
   sp = compare_stack;
   while (1) {
-    if (v1 == v2) goto next_item;
+    if (v1 == v2 && total) goto next_item;
     if (Is_long(v1)) {
+      if (v1 == v2) goto next_item;
       if (Is_long(v2))
         return Long_val(v1) - Long_val(v2);
+      /* Subtraction above cannot overflow and cannot result in UNORDERED */
       if ((Is_atom(v2) || Is_young(v2) || Is_in_heap(v2)) &&
           Tag_val(v2) == Forward_tag) {
         v2 = Forward_val(v2);
         continue;
       }
-      return -1;                /* v1 long < v2 block */
+      return LESS;                /* v1 long < v2 block */
     }
     if (Is_long(v2)) {
       if ((Is_atom(v1) || Is_young(v1) || Is_in_heap(v1)) &&
@@ -101,14 +116,17 @@ static long compare_val(value v1, value v2)
         v1 = Forward_val(v1);
         continue;
       }
-      return 1;                 /* v1 block > v2 long */
+      return GREATER;            /* v1 block > v2 long */
     }
     /* If one of the objects is outside the heap (but is not an atom),
        use address comparison. Since both addresses are 2-aligned,
        shift lsb off to avoid overflow in subtraction. */
     if ((!Is_atom(v1) && !Is_young(v1) && !Is_in_heap(v1)) ||
-        (!Is_atom(v2) && !Is_young(v2) && !Is_in_heap(v2)))
+        (!Is_atom(v2) && !Is_young(v2) && !Is_in_heap(v2))) {
+      if (v1 == v2) goto next_item;
       return (v1 >> 1) - (v2 >> 1);
+      /* Subtraction above cannot result in UNORDERED */
+    }
     t1 = Tag_val(v1);
     t2 = Tag_val(v2);
     if (t1 == Forward_tag) { v1 = Forward_val (v1); continue; }
@@ -118,6 +136,7 @@ static long compare_val(value v1, value v2)
     case String_tag: {
       mlsize_t len1, len2, len;
       unsigned char * p1, * p2;
+      if (v1 == v2) break;
       len1 = string_length(v1);
       len2 = string_length(v2);
       for (len = (len1 <= len2 ? len1 : len2),
@@ -132,8 +151,16 @@ static long compare_val(value v1, value v2)
     case Double_tag: {
       double d1 = Double_val(v1);
       double d2 = Double_val(v2);
-      if (d1 < d2) return -1;
-      if (d1 > d2) return 1;
+      if (d1 < d2) return LESS;
+      if (d1 > d2) return GREATER;
+      if (d1 != d2) {
+        if (! total) return UNORDERED;
+        /* One or both of d1 and d2 is NaN.  Order according to the
+           convention NaN = NaN and NaN < f for all other floats f. */
+        if (d1 == d1) return GREATER; /* d1 is not NaN, d2 is NaN */
+        if (d2 == d2) return LESS;    /* d2 is not NaN, d1 is NaN */
+        /* d1 and d2 are both NaN, thus equal: continue comparison */
+      }
       break;
     }
     case Double_array_tag: {
@@ -144,8 +171,14 @@ static long compare_val(value v1, value v2)
       for (i = 0; i < sz1; i++) {
         double d1 = Double_field(v1, i);
         double d2 = Double_field(v2, i);
-        if (d1 < d2) return -1;
-        if (d1 > d2) return 1;
+        if (d1 < d2) return LESS;
+        if (d1 > d2) return GREATER;
+        if (d1 != d2) {
+          if (! total) return UNORDERED;
+          /* See comment for Double_tag case */
+          if (d1 == d1) return GREATER;
+          if (d2 == d2) return LESS;
+        }
       }
       break;
     }
@@ -166,7 +199,9 @@ static long compare_val(value v1, value v2)
       int res;
       int (*compare)(value v1, value v2) = Custom_ops_val(v1)->compare;
       if (compare == NULL) invalid_argument("equal: abstract value");
+      compare_unordered = 0;
       res = Custom_ops_val(v1)->compare(v1, v2);
+      if (compare_unordered && !total) return UNORDERED;
       if (res != 0) return res;
       break;
     }
@@ -192,64 +227,64 @@ static long compare_val(value v1, value v2)
     }
   next_item:
     /* Pop one more item to compare, if any */
-    if (sp == compare_stack) return 0; /* we're done */
-    v1 = *(sp->v1)++;
-    v2 = *(sp->v2)++;
+    if (sp == compare_stack) return EQUAL; /* we're done */
+    v1 = *((sp->v1)++);
+    v2 = *((sp->v2)++);
     if (--(sp->count) == 0) sp--;
   }
 }
 
 CAMLprim value compare(value v1, value v2)
 {
-  long res = compare_val(v1, v2);
+  long res = compare_val(v1, v2, 1);
   /* Free stack if needed */
   if (compare_stack != compare_stack_init) compare_free_stack();
-  if (res < 0) 
-    return Val_int(-1);
+  if (res < 0)
+    return Val_int(LESS);
   else if (res > 0)
-    return Val_int(1);
+    return Val_int(GREATER);
   else
-    return Val_int(0);
+    return Val_int(EQUAL);
 }
 
 CAMLprim value equal(value v1, value v2)
 {
-  long res = compare_val(v1, v2);
+  long res = compare_val(v1, v2, 0);
   if (compare_stack != compare_stack_init) compare_free_stack();
   return Val_int(res == 0);
 }
 
 CAMLprim value notequal(value v1, value v2)
 {
-  long res = compare_val(v1, v2);
+  long res = compare_val(v1, v2, 0);
   if (compare_stack != compare_stack_init) compare_free_stack();
   return Val_int(res != 0);
 }
 
 CAMLprim value lessthan(value v1, value v2)
 {
-  long res = compare_val(v1, v2);
+  long res = compare_val(v1, v2, 0);
   if (compare_stack != compare_stack_init) compare_free_stack();
-  return Val_int(res < 0);
+  return Val_int(res - 1 < -1);
 }
 
 CAMLprim value lessequal(value v1, value v2)
 {
-  long res = compare_val(v1, v2);
+  long res = compare_val(v1, v2, 0);
   if (compare_stack != compare_stack_init) compare_free_stack();
-  return Val_int(res <= 0);
+  return Val_int(res - 1 <= -1);
 }
 
 CAMLprim value greaterthan(value v1, value v2)
 {
-  long res = compare_val(v1, v2);
+  long res = compare_val(v1, v2, 0);
   if (compare_stack != compare_stack_init) compare_free_stack();
   return Val_int(res > 0);
 }
 
 CAMLprim value greaterequal(value v1, value v2)
 {
-  long res = compare_val(v1, v2);
+  long res = compare_val(v1, v2, 0);
   if (compare_stack != compare_stack_init) compare_free_stack();
   return Val_int(res >= 0);
 }
