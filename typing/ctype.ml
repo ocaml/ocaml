@@ -1598,7 +1598,21 @@ and unify_row env row1 row2 =
     List.iter
       (fun (l,f1,f2) ->
         unify_row_field env row1.row_fixed row2.row_fixed f1 f2)
-      pairs
+      pairs;
+    (* Special case when there is only one field left *)
+    if row0.row_closed then begin
+      match filter_row_fields false (row_repr row1).row_fields with [l, fi] ->
+        begin match row_field_repr fi with
+          Reither(c, t1::tl, _, e) ->
+            if c then raise (Unify []);
+            List.iter (unify env t1) tl;
+            e := Some (Rpresent (Some t1))
+        | Reither(true, [], _, e) ->
+            e := Some (Rpresent None)
+        | _ -> ()
+        end
+      | _ -> ()
+    end
   with exn ->
     rm1.desc <- md1; rm2.desc <- md2; raise exn
   end
