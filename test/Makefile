@@ -150,7 +150,7 @@ bench: codebench
 bytebench:
 	set -e; \
         for prog in $(BYTE_EXE:.byt=); do \
-          echo -n "$$prog		"; \
+          echo "$$prog		" | tr -d '\012'; \
           if test -f Results/$$prog.runtest; then \
             sh Results/$$prog.runtest bench $(CAMLRUN) $$prog.byt; \
           else \
@@ -161,7 +161,7 @@ bytebench:
 codebench:
 	set -e; \
         for prog in $(CODE_EXE:.out=); do \
-          echo -n "$$prog		"; \
+          echo "$$prog		" | tr -d '\012'; \
           if test -f Results/$$prog.runtest; then \
             $(CODERUNPARAMS) sh Results/$$prog.runtest bench ./$$prog.out; \
           else \
