@@ -100,32 +100,39 @@ let events_in_module mdle =
 (* Binary search of event at or just after char *)
 let find_event ev char =
   let rec bsearch lo hi =
-    if lo >= hi then
-      if hi + 1 < Array.length ev then hi+1 else hi
-    else begin
+    if lo >= hi then begin
+      if ev.(hi).ev_char < char then raise Not_found;
+      hi
+    end else begin
       let pivot = (lo + hi) / 2 in
       let e = ev.(pivot) in
-      if char = e.ev_char then pivot else
-      if char < e.ev_char then bsearch lo (pivot - 1)
-                          else bsearch (pivot + 1) hi
+      if char <= e.ev_char then bsearch lo pivot
+                           else bsearch (pivot + 1) hi
     end
-  in bsearch 0 (Array.length ev - 1)
+  in
+  bsearch 0 (Array.length ev - 1)
 
 (* Return first event after the given position. *)
-(* Raise [Not_found] if module is unknown. *)
+(* Raise [Not_found] if module is unknown or no event is found. *)
 let event_at_pos md char =
   let ev = Hashtbl.find events_by_module md in
   ev.(find_event ev char)
 
 (* Return event closest to given position *)
-(* Raise [Not_found] if module is unknown. *)
+(* Raise [Not_found] if module is unknown or no event is found. *)
 let event_near_pos md char =
   let ev = Hashtbl.find events_by_module md in
-  let pos = find_event ev char in
-  (* Desired event is either ev.(pos) or ev.(pos - 1), whichever is closest *)
-  if pos > 0 && char - ev.(pos - 1).ev_char <= char - ev.(pos).ev_char
-  then ev.(pos - 1)
-  else ev.(pos)
+  try
+    let pos = find_event ev char in
+    (* Desired event is either ev.(pos) or ev.(pos - 1),
+       whichever is closest *)
+    if pos > 0 && char - ev.(pos - 1).ev_char <= ev.(pos).ev_char - char
+    then ev.(pos - 1)
+    else ev.(pos)
+  with Not_found ->
+    let pos = Array.length ev - 1 in
+    if pos < 0 then raise Not_found;
+    ev.(pos)
 
 (* Flip "event" bit on all instructions *)
 let set_all_events () =
