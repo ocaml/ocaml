@@ -209,6 +209,8 @@ static void intern_rec(dest)
       case CODE_DOUBLE_ARRAY32_BIG:
         len = read32u();
         goto read_double_array;
+      default:
+        fatal_error("intern_rec");
       }
     }
   }

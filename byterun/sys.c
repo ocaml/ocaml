@@ -17,6 +17,7 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <stdio.h>
 #include <string.h>
 #if !macintosh
 #include <sys/types.h>
@@ -125,7 +126,7 @@ value sys_open(path, flags, perm) /* ML */
   int ret;
   ret = open(String_val(path), convert_flag_list(flags, sys_open_flags)
 #if !macintosh
-             ,Int_val(perm)
+             , Int_val(perm)
 #endif
                                        );
   if (ret == -1) sys_error(path);

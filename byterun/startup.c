@@ -30,14 +30,20 @@
 #include "interp.h"
 #include "intext.h"
 #include "io.h"
+#include "memory.h"
 #include "minor_gc.h"
 #include "misc.h"
 #include "mlvalues.h"
+#include "prims.h"
 #include "stacks.h"
 #include "sys.h"
 
 #ifndef O_BINARY
 #define O_BINARY 0
+#endif
+
+#ifndef SEEK_END
+#define SEEK_END 2
 #endif
 
 header_t atom_table[256];
@@ -69,19 +75,20 @@ static int read_trailer(fd, trail)
 {
   char buffer[TRAILER_SIZE];
 
-  lseek(fd, (long) -TRAILER_SIZE, 2);
+  lseek(fd, (long) -TRAILER_SIZE, SEEK_END);
   if (read(fd, buffer, TRAILER_SIZE) < TRAILER_SIZE) return TRUNCATED_FILE;
   trail->code_size = read_size(buffer);
-  trail->data_size = read_size(buffer+4);
-  trail->symbol_size = read_size(buffer+8);
-  trail->debug_size = read_size(buffer+12);
-  if (strncmp(buffer + 16, EXEC_MAGIC, 12) == 0)
+  trail->prim_size = read_size(buffer + 4);
+  trail->data_size = read_size(buffer + 8);
+  trail->symbol_size = read_size(buffer + 12);
+  trail->debug_size = read_size(buffer + 16);
+  if (strncmp(buffer + 20, EXEC_MAGIC, 12) == 0)
     return 0;
   else
     return BAD_MAGIC_NUM;
 }
 
-int attempt_open(name, trail, do_open_script)
+static int attempt_open(name, trail, do_open_script)
      char ** name;
      struct exec_trailer * trail;
      int do_open_script;
@@ -103,6 +110,30 @@ int attempt_open(name, trail, do_open_script)
   err = read_trailer(fd, trail);
   if (err != 0) { close(fd); return err; }
   return fd;
+}
+
+/* Check the primitives used by the bytecode file against the table of
+   primitives linked in this interpreter */
+
+static void check_primitives(fd, prim_size)
+     int fd;
+     int prim_size;
+{
+  char * prims = stat_alloc(prim_size);
+  char * p;
+  int idx;
+
+  if (read(fd, prims, prim_size) != prim_size)
+    fatal_error("Fatal error: cannot read primitive table\n");
+  /* prims contains 0-terminated strings, concatenated. */
+  for (p = prims, idx = 0;
+       p < prims + prim_size;
+       p = p + strlen(p) + 1, idx++) {
+    if (names_of_cprim[idx] == NULL ||
+        strcmp(p, names_of_cprim[idx]) != 0)
+      fatal_error_arg("Fatal error: this bytecode file cannot run on this bytecode interpreter\nMismatch on primitive `%s'\n", p);
+  }
+  stat_free(prims);
 }
 
 /* Invocation of camlrun: 4 cases.
@@ -215,33 +246,33 @@ void caml_main(argv)
   /* Machine-dependent initialization of the floating-point hardware
      so that it behaves as much as possible as specified in IEEE */
   init_ieee_floats();
-  /* Determine options and position of bytecode file */
-#ifdef DEBUG
-  verbose_init = 1;
-#endif
-  parse_camlrunparam();
-  pos = 0;
-  fd = attempt_open(&argv[0], &trail, 0);
-  if (fd < 0) {
-    pos = parse_command_line(argv);
-    if (argv[pos] == 0)
-      fatal_error("No bytecode file specified.\n");
-    fd = attempt_open(&argv[pos], &trail, 1);
-    switch(fd) {
-    case FILE_NOT_FOUND:
-      fatal_error_arg("Fatal error: cannot find file %s\n", argv[pos]);
-      break;
-    case TRUNCATED_FILE:
-    case BAD_MAGIC_NUM:
-      fatal_error_arg(
-        "Fatal error: the file %s is not a bytecode executable file\n",
-        argv[pos]);
-      break;
-    }
-  }
   /* Set up a catch-all exception handler */
   if (sigsetjmp(raise_buf.buf, 1) == 0) {
     external_raise = &raise_buf;
+    /* Determine options and position of bytecode file */
+#ifdef DEBUG
+    verbose_init = 1;
+#endif
+    parse_camlrunparam();
+    pos = 0;
+    fd = attempt_open(&argv[0], &trail, 0);
+    if (fd < 0) {
+      pos = parse_command_line(argv);
+      if (argv[pos] == 0)
+        fatal_error("No bytecode file specified.\n");
+      fd = attempt_open(&argv[pos], &trail, 1);
+      switch(fd) {
+      case FILE_NOT_FOUND:
+        fatal_error_arg("Fatal error: cannot find file %s\n", argv[pos]);
+        break;
+      case TRUNCATED_FILE:
+      case BAD_MAGIC_NUM:
+        fatal_error_arg(
+          "Fatal error: the file %s is not a bytecode executable file\n",
+          argv[pos]);
+        break;
+      }
+    }
     /* Initialize the abstract machine */
     init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
              percent_free_init, max_percent_free_init, verbose_init);
@@ -252,9 +283,12 @@ void caml_main(argv)
     /* Initialize the debugger, if needed */
     debugger_init();
     /* Load the code */
-    lseek(fd, - (long) (TRAILER_SIZE + trail.code_size + trail.data_size
-                        + trail.symbol_size + trail.debug_size), 2);
+    lseek(fd, - (long) (TRAILER_SIZE + trail.code_size + trail.prim_size
+                        + trail.data_size + trail.symbol_size
+                        + trail.debug_size), SEEK_END);
     load_code(fd, trail.code_size);
+    /* Check the primitives */
+    check_primitives(fd, trail.prim_size);
     /* Load the globals */
     { value chan = (value) open_descr(fd);
       Begin_root(chan);

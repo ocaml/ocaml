@@ -149,6 +149,24 @@ static void putval(chan, val)
   really_putblock(chan, (char *) &val, sizeof(val));
 }
 
+static void safe_output_value(chan, val)
+     struct channel * chan;
+     value val;
+{
+  struct longjmp_buffer raise_buf, * saved_external_raise;
+
+  /* Catch exceptions raised by output_value */
+  saved_external_raise = external_raise;
+  if (sigsetjmp(raise_buf.buf, 1) == 0) {
+    external_raise = &raise_buf;
+    output_value(chan, val);
+  } else {
+    /* Send wrong magic number, will cause input_value to fail */
+    really_putblock(chan, "\000\000\000\000", 4);
+  }
+  external_raise = saved_external_raise;
+}
+
 #define Pc(sp) ((code_t)(sp[0]))
 #define Env(sp) (sp[1])
 #define Locals(sp) (sp + 3)
@@ -160,7 +178,6 @@ void debugger(event)
   value * frame;
   long i, pos;
   value val;
-  struct longjmp_buffer raise_buf, * saved_external_raise;
 
   if (dbg_socket == -1) return;  /* Not connected to a debugger. */
 
@@ -189,8 +206,14 @@ void debugger(event)
     break;
   }
   putword(dbg_out, event_count);
-  putword(dbg_out, stack_high - frame);
-  putword(dbg_out, (Pc(frame) - start_code) * sizeof(opcode_t));
+  if (event == EVENT_COUNT || event == BREAKPOINT) {
+    putword(dbg_out, stack_high - frame);
+    putword(dbg_out, (Pc(frame) - start_code) * sizeof(opcode_t));
+  } else {
+    /* No PC and no stack frame associated with other events */
+    putword(dbg_out, 0);
+    putword(dbg_out, 0);
+  }
   flush(dbg_out);
 
  command_loop:
@@ -292,16 +315,7 @@ void debugger(event)
       break;
     case REQ_MARSHAL_OBJ:
       val = getval(dbg_in);
-      /* Catch exceptions raised by output_value */
-      saved_external_raise = external_raise;
-      if (sigsetjmp(raise_buf.buf, 1) == 0) {
-        external_raise = &raise_buf;
-        output_value(dbg_out, val);
-      } else {
-        /* Send wrong magic number, will cause input_value to fail */
-        really_putblock(dbg_out, "\000\000\000\000", 4);
-      }
-      external_raise = saved_external_raise;
+      safe_output_value(dbg_out, val);
       flush(dbg_out);
       break;
     case REQ_GET_CLOSURE_CODE:

@@ -166,7 +166,9 @@ value interprete(prog, prog_size)
   int initial_callback_depth;
   struct longjmp_buffer raise_buf;
   value * modify_dest, modify_newval;
+#ifndef THREADED_CODE
   opcode_t curr_instr;
+#endif
 
 #ifdef THREADED_CODE
   static void * jumptable[] = {
@@ -185,23 +187,24 @@ value interprete(prog, prog_size)
 #if defined(THREADED_CODE) && defined(ARCH_SIXTYFOUR) && !defined(ARCH_CODE32)
   jumptbl_base = Jumptbl_base;
 #endif
+  initial_local_roots = local_roots;
+  initial_sp_offset = (char *) stack_high - (char *) extern_sp;
+  initial_external_raise = external_raise;
+  initial_callback_depth = callback_depth;
+
+  if (sigsetjmp(raise_buf.buf, 1)) {
+    local_roots = initial_local_roots;
+    callback_depth = initial_callback_depth;
+    accu = exn_bucket;
+    goto raise_exception;
+  }
+  external_raise = &raise_buf;
+
   sp = extern_sp;
   pc = prog;
   extra_args = 0;
   env = Atom(0);
   accu = Val_int(0);
-  initial_local_roots = local_roots;
-  initial_sp_offset = stack_high - sp;
-  initial_external_raise = external_raise;
-  initial_callback_depth = callback_depth;
-  if (sigsetjmp(raise_buf.buf, 1)) {
-    local_roots = initial_local_roots;
-    callback_depth = initial_callback_depth;
-    accu = exn_bucket;
-    sp = extern_sp;
-    goto raise_exception;
-  }
-  external_raise = &raise_buf;
 
 #ifdef THREADED_CODE
 #ifdef DEBUG
@@ -699,13 +702,9 @@ value interprete(prog, prog_size)
 
     Instruct(RAISE):
     raise_exception:
-      if (trapsp >= trap_barrier) {
-        Setup_for_debugger;
-        debugger(TRAP_BARRIER);
-        Restore_after_debugger;
-      }
+      if (trapsp >= trap_barrier) debugger(TRAP_BARRIER);
       sp = trapsp;
-      if (sp >= stack_high - initial_sp_offset) {
+      if ((char *) sp >= (char *) stack_high - initial_sp_offset) {
         exn_bucket = accu;
         external_raise = initial_external_raise;
         siglongjmp(external_raise->buf, 1);
