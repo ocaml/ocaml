@@ -22,7 +22,7 @@ Type-checking:
   "emacs/caml-types.el".  The compiler option saves inferred type information
   to file *.types, and the emacs extension allows the user to look at the
   type of any subexpression in the source file.  Works even in the case
-  of a type error (only the types computed up to the error are available).
+  of a type error (all the types computed up to the error are available).
 
 Both compilers:
 - Added option "-dtypes" to dump detailed type information to a file.
@@ -109,7 +109,7 @@ Other libraries:
 - Unix:
      Make Unix.openfile blocking to account for named pipes.
      GC bug in Unix.*stat fixed.
-     Fixed proble with Unix.dup2 on Windows.
+     Fixed problem with Unix.dup2 on Windows.
 
 Ocamllex:
 - Can name parts of the matched input text, e.g.
