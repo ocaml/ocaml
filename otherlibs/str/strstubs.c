@@ -36,7 +36,7 @@ union backtrack_point {
 
 #define Set_tag(p) ((value *) ((long)(p) | 1))
 #define Clear_tag(p) ((value *) ((long)(p) & ~1))
-#define Test_tag(p) ((long)(p) & 1)
+#define Tag_is_set(p) ((long)(p) & 1)
 
 #define BACKTRACK_STACK_BLOCK_SIZE 500
 
@@ -223,7 +223,7 @@ static int re_match(value re,
       int group_no = Arg(instr);
       struct re_group * group = &(re_group[group_no]);
       back.undo.loc = &(group->end);
-      back.undo.val = group->start;
+      back.undo.val = group->end;
       group->end = txt;
       goto push;
     }
@@ -318,7 +318,7 @@ static int re_match(value re,
         sp = stack->point + BACKTRACK_STACK_BLOCK_SIZE;
       }
       sp--;
-      if (Test_tag(sp->pos.pc)) {
+      if (Tag_is_set(sp->pos.pc)) {
         pc = Clear_tag(sp->pos.pc);
         txt = sp->pos.txt;
         break;
