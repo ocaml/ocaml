@@ -395,9 +395,9 @@ problematic.  A method "fold" would have type
 "('b -> 'a -> 'b) -> 'b -> 'b". Here "'a" is the parameter of the stack.
 The parameter "'b" is not related to the class "'a stack" but to the
 argument that will be passed to the method "fold".
-The intuition is that method "fold" should be polymorphic, i.e. of type 
-"All ('a) ('b -> 'a -> 'b) -> 'b -> 'b", which  is not currently possible.
-One possibility would be to make "'b" an extra parameter of class "stack":
+%The intuition is that method "fold" should be polymorphic, i.e. of type 
+%"All ('a) ('b -> 'a -> 'b) -> 'b -> 'b".
+A naive approach is to make "'b" an extra parameter of class "stack":
 \begin{caml_example}
 class ['a, 'b] stack2 =
   object
@@ -412,20 +412,20 @@ let s = new stack2;;
 s#fold (+) 0;;
 s;;
 \end{caml_example}
-The best solution would be to make method "fold" polymorphic. 
-However, OCaml does not currently allow methods to be polymorphic. 
-Thus, the current solution is to leave the function "fold" outside of
-the class.
+A better solution is to use polymorphic methods, which were
+introduced in Objective Caml version 3.05.  Polymorphic methods makes
+it possible to treat the type variable "'b" in the type of "fold" as
+universally quantified, giving "fold" the polymorphic type
+"Forall 'b. ('b -> 'a -> 'b) -> 'b -> 'b".
+An explicit type declaration on the method "fold" is required, since
+the type checker cannot infer the polymorphic type by itself.
 \begin{caml_example}
 class ['a] stack3 =
   object
     inherit ['a] stack
-    method iter f = List.iter (f : 'a -> unit) l
+    method fold : 'b. ('b -> 'a -> 'b) -> 'b -> 'b
+                = fun f x -> List.fold_left f x l
   end;;
-let stack_fold (s : 'a #stack3) f x =
-  let accu = ref x in
-  s#iter (fun e -> accu := f !accu e);
-  !accu;;
 \end{caml_example}
 
 % However, the nice correspondence between the implementations of stacks as 
