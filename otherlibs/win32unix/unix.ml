@@ -135,6 +135,8 @@ external waitpid : wait_flag list -> int -> int * process_status
                  = "win_waitpid"
 external getpid : unit -> int = "unix_getpid"
 
+let wait () = invalid_arg("Unix.wait not implemented") 
+
 type standard_handle = STD_INPUT | STD_OUTPUT | STD_ERROR
 
 external stdhandle : standard_handle -> file_descr = "win_stdhandle"

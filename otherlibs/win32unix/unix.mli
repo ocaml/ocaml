@@ -658,3 +658,5 @@ external getservbyport : int -> string -> service_entry
         (* Find an entry in [services] with the given service number,
            or raise [Not_found]. *)
 
+(*---*)
+val wait : unit -> int * process_status
