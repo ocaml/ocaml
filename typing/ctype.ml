@@ -2079,7 +2079,11 @@ let rec build_subtype env visited t =
     Tlink t' ->                         (* Redundant ! *)
       build_subtype env visited t'
   | Tvar ->
-      (t, false)
+      begin try
+        (List.assq t !subtypes, true)
+      with Not_found ->
+        (t, false)
+      end
   | Tarrow(l, t1, t2) ->
       if List.memq t visited then (t, false) else
       let (t1', c1) = (t1, false) in
@@ -2088,52 +2092,92 @@ let rec build_subtype env visited t =
       else (t, false)
   | Ttuple tlist ->
       if List.memq t visited then (t, false) else
+      let visited = t :: visited in
       let (tlist', clist) =
-        List.split (List.map (build_subtype env (t::visited)) tlist)
+        List.split (List.map (build_subtype env visited) tlist)
       in
       if List.exists (function c -> c) clist then
         (newty (Ttuple tlist'), true)
       else (t, false)
   | Tconstr(p, tl, abbrev) when generic_abbrev env p ->
-      let t' = expand_abbrev env t in
-      let (t'', c) = build_subtype env visited t' in
-      if c then (t'', true)
-      else (t, false)
+      let t' = repr (expand_abbrev env t) in
+      let (t'', c) =
+        try match t'.desc with
+          Tobject _ ->
+            if List.memq t' visited then (t, false) else
+            begin try
+              (List.assq t' !subtypes, true)
+            with Not_found ->
+              let rec lid_of_path sharp = function
+                  Path.Pident id ->
+                    Longident.Lident (sharp ^ Ident.name id)
+                | Path.Pdot (p1, s, _) ->
+                    Longident.Ldot (lid_of_path "" p1, sharp ^ s)
+                | Path.Papply (p1, p2) ->
+                    Longident.Lapply (lid_of_path sharp p1, lid_of_path "" p2)
+              in
+              let path, cl_abbr = Env.lookup_type (lid_of_path "#" p) env in
+              let body =
+                match cl_abbr.type_manifest with Some ty -> ty
+                | None -> assert false in
+              let orig = newvar () in
+              let ty =
+                subst env t'.level abbrev None cl_abbr.type_params tl body in
+              let ty = repr ty in
+              let ty1 =
+                match ty.desc with
+                  Tobject(ty1,{contents=Some(p',_)}) ->
+                    if Path.same p p' then ty1 else raise Not_found
+                | _ -> assert false in
+              ty.desc <- Tlink orig;
+              let t'' = newvar () in
+              subtypes := (orig, t'') :: !subtypes;
+              let (ty1', _) = build_subtype env (t' :: visited) ty1 in
+              (repr t'').desc <- Tobject (ty1', ref None);
+              orig.desc <- Tlink t;
+              (t'', true)
+            end
+        | _ -> raise Not_found
+        with Not_found -> build_subtype env visited t'
+      in
+      if c then (t'', true) else (t, false)
   | Tconstr(p, tl, abbrev) ->
       (t, false)
   | Tvariant row ->
+      if List.memq t visited then (t, false) else
+      let visited = t :: visited in
       let row = row_repr row in
       if not (static_row row) then (t, false) else
       let bound = ref row.row_bound in
       let fields =
         List.map
-          (fun (l,f) -> l, match row_field_repr f with
+          (fun (l,f) -> match row_field_repr f with
             Rpresent None ->
-              Reither(true, [], ref None)
+              (l, Reither(true, [], ref None)), false
           | Rpresent(Some t) ->
-              bound := t :: !bound;
-              Reither(false, [t], ref None)
+              let (t', c) = build_subtype env visited t in
+              bound := t' :: !bound;
+              (l, Reither(false, [t'], ref None)), c
           | _ -> assert false)
           (filter_row_fields false row.row_fields)
       in
       if fields = [] then (t, false) else
       let row =
-        {row with row_fields = fields; row_more = newvar(); row_bound = !bound}
+        {row with row_fields = List.map fst fields;
+         row_more = newvar(); row_bound = !bound;
+         row_name = if List.exists snd fields then None else row.row_name }
       in
       (newty (Tvariant row), true)
   | Tobject (t1, _) when opened_object t1 ->
       (t, false)
   | Tobject (t1, _) ->
-      (begin try
-         List.assq t !subtypes
-       with Not_found ->
-         let t' = newvar () in
-         subtypes := (t, t')::!subtypes;
-         let (t1', _) = build_subtype env visited t1 in
-         t'.desc <- Tobject (t1', ref None);
-         t'
-       end,
-       true)
+      if List.memq t visited then (t, false) else
+      begin try
+        (List.assq t !subtypes, true)
+      with Not_found ->
+        let (t1', _) = build_subtype env (t :: visited) t1 in
+        (newty (Tobject (t1', ref None)), true)
+      end
   | Tfield(s, _, t1, t2) (* Always present *) ->
       let (t1', _) = build_subtype env visited t1 in
       let (t2', _) = build_subtype env visited t2 in
