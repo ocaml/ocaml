@@ -21,11 +21,6 @@
   interesting in case of errors.
 *)
 
-(*
-  TO DO:
-   - (?) reset type names between toplevel phrases
-*)
-
 open Format;;
 open Lexing;;
 open Location;;
@@ -58,27 +53,31 @@ let record_phrase loc =
   if !Clflags.save_types then phrases := loc :: !phrases;
 ;;
 
-(* A comparison function compatible with inclusion order *)
-(* if loc1 is included in loc2, then loc1 is greater than loc2 *)
-let compare_loc loc1 loc2 =
-  match compare loc1.loc_end loc2.loc_end with
-  | 0 -> compare loc2.loc_start loc1.loc_start
+(* comparison order:
+   the intervals are sorted by order of increasing upper bound
+   same upper bound -> sorted by decreasing lower bound
+*)
+let cmp_loc_inner_first loc1 loc2 =
+  match compare loc1.loc_end.pos_cnum loc2.loc_end.pos_cnum with
+  | 0 -> compare loc2.loc_start.pos_cnum loc1.loc_start.pos_cnum
   | x -> x
 ;;
-let compare_ti ti1 ti2 = compare_loc (get_location ti1) (get_location ti2);;
+let cmp_ti_inner_first ti1 ti2 =
+  cmp_loc_inner_first (get_location ti1) (get_location ti2)
+;;
 
 let print_position pp pos =
   fprintf pp "%S %d %d %d" pos.pos_fname pos.pos_lnum pos.pos_bol pos.pos_cnum;
 ;;
 
 let sort_filter_phrases () =
-  let ph = List.sort (fun x y -> compare_loc y x) !phrases in
+  let ph = List.sort (fun x y -> cmp_loc_inner_first y x) !phrases in
   let rec loop accu cur l =
     match l with
     | [] -> accu
     | loc :: t ->
-       if compare cur.loc_start loc.loc_start <= 0
-          && compare cur.loc_end loc.loc_end >= 0
+       if cur.loc_start.pos_cnum <= loc.loc_start.pos_cnum
+          && cur.loc_end.pos_cnum >= loc.loc_end.pos_cnum
        then loop accu cur t
        else loop (loc :: accu) loc t
   in
@@ -87,13 +86,11 @@ let sort_filter_phrases () =
 
 let rec printtyp_reset_maybe loc =
   match !phrases with
-  | [] -> ()   (* assert false; *)
-  | cur :: t ->
-      if cur.loc_end <= loc.loc_start then begin
-        Printtyp.reset ();
-        phrases := t;
-        printtyp_reset_maybe loc;
-      end;
+  | cur :: t when cur.loc_start.pos_cnum <= loc.loc_start.pos_cnum ->
+     Printtyp.reset ();
+     phrases := t;
+     printtyp_reset_maybe loc;
+  | _ -> ()
 ;;
 
 
@@ -101,7 +98,7 @@ let rec printtyp_reset_maybe loc =
 
 let print_info pp ti =
   match ti with
-    Ti_class _ | Ti_mod _ -> ()
+  | Ti_class _ | Ti_mod _ -> ()
   | Ti_pat  {pat_loc = loc; pat_type = typ}
   | Ti_expr {exp_loc = loc; exp_type = typ} ->
       print_position pp loc.loc_start;
@@ -115,17 +112,19 @@ let print_info pp ti =
 ;;
 
 let get_info () =
-  let info = List.fast_sort compare_ti !type_info in
+  let info = List.fast_sort cmp_ti_inner_first !type_info in
   type_info := [];
   info
 ;;
 
 let dump filename =
-  let info = get_info () in
   if !Clflags.save_types then begin
+    let info = get_info () in
     let pp = formatter_of_out_channel (open_out filename) in
     sort_filter_phrases ();
     List.iter (print_info pp) info;
     phrases := [];
+  end else begin
+    type_info := [];
   end;
 ;;
