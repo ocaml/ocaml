@@ -872,6 +872,8 @@ and class_sig_item csf k =
       HVbox [: `S LR "type"; `ctyp t1 [: `S LR "=" :]; `ctyp t2 k :]
   | MLast.CgDcl _ s ->
       HVbox [: `HVbox [: :]; list class_sig_item s k :]
+  | MLast.CgInh _ ce ->
+      HVbox [: `S LR "inherit"; `class_type ce k :]
   | MLast.CgMth _ lab pf t ->
       HVbox
         [: `S LR "method"; flag "private" pf; `label lab; `S LR ":";

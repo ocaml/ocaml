@@ -886,6 +886,8 @@ and class_sig_item csf dg k =
         [: `S LR "constraint"; `ctyp t1 "" [: `S LR "=" :]; `ctyp t2 "" k :]
   | MLast.CgDcl _ s ->
       HVbox [: `HVbox [: :]; list class_sig_item s "" [: :] :]
+  | MLast.CgInh _ ce ->
+      HVbox [: `S LR "inherit"; `class_type ce k :]
   | MLast.CgMth _ lab pf t ->
       HVbox
         [: `S LR "method"; private_flag pf; `label lab; `S LR ":";
