@@ -57,7 +57,6 @@ type error =
   | ESPIPE              (** Invalid seek e.g. on a pipe *)
   | ESRCH               (** No such process *)
   | EXDEV               (** Invalid link *)
-
   | EWOULDBLOCK         (** Operation would block *)
   | EINPROGRESS         (** Operation now in progress *)
   | EALREADY            (** Operation already in progress *)
