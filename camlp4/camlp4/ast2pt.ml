@@ -52,20 +52,8 @@ value mkfield loc d = {pfield_desc = d; pfield_loc = mkloc loc};
 value mkcty loc d = {pcty_desc = d; pcty_loc = mkloc loc};
 value mkpcl loc d = {pcl_desc = d; pcl_loc = mkloc loc};
 
-(* shared strings for bootstrap comparisons (and smaller object files)
-value shd =
-  let tab = Hashtbl.create 701 in
-  fun s ->
-    try Hashtbl.find tab s with
-    [ Not_found -> do { Hashtbl.add tab s s; s } ]
-;
-... but no more implemented because semantic problems with Ocaml:
-let x = "bar" and y = "bar"; x.[0] <- 'c'; print_string y;;
-*)
-value shd x = x;
-(**)
-value lident s = Lident (shd s);
-value ldot l s = Ldot l (shd s);
+value lident s = Lident s;
+value ldot l s = Ldot l s;
 
 value conv_con =
   let t = Hashtbl.create 73 in
@@ -144,7 +132,7 @@ value rec ctyp =
         | (TyQuo _ s, t) -> (t, s)
         | _ -> error loc "incorrect alias type" ]
       in
-      mktyp loc (Ptyp_alias (ctyp t) (shd i))
+      mktyp loc (Ptyp_alias (ctyp t) i)
   | TyAny loc -> mktyp loc Ptyp_any
   | TyApp loc _ _ as f ->
       let (f, al) = ctyp_fa [] f in
@@ -164,7 +152,7 @@ value rec ctyp =
   | TyLid loc s -> mktyp loc (Ptyp_constr (lident s) [])
   | TyMan loc _ _ -> error loc "type manifest not allowed here"
   | TyOlb loc lab _ -> error loc "labeled type not allowed here"
-  | TyQuo loc s -> mktyp loc (Ptyp_var (shd s))
+  | TyQuo loc s -> mktyp loc (Ptyp_var s)
   | TyRec loc _ -> error loc "record type not allowed here"
   | TySum loc _ -> error loc "sum type not allowed here"
   | TyTup loc tl -> mktyp loc (Ptyp_tuple (List.map ctyp tl))
@@ -200,8 +188,8 @@ value mktype loc tl cl tk tm =
 ;
 value mkmutable m = if m then Mutable else Immutable;
 value mkprivate m = if m then Private else Public;
-value mktrecord (n, m, t) = (shd n, mkmutable m, ctyp t);
-value mkvariant (c, tl) = (shd c, List.map ctyp tl);
+value mktrecord (n, m, t) = (n, mkmutable m, ctyp t);
+value mkvariant (c, tl) = (c, List.map ctyp tl);
 value type_decl tl cl =
   fun
   [ TyMan loc t (TyRec _ ltl) ->
@@ -222,7 +210,7 @@ value type_decl tl cl =
       mktype (loc_of_ctyp t) tl cl Ptype_abstract m ]
 ;
 
-value mkvalue_desc t p = {pval_type = ctyp t; pval_prim = List.map shd p};
+value mkvalue_desc t p = {pval_type = ctyp t; pval_prim = p};
 
 value option f =
   fun
@@ -340,7 +328,7 @@ value rec patt =
         | (PaLid _ s, p) -> (p, s)
         | _ -> error loc "incorrect alias pattern" ]
       in
-      mkpat loc (Ppat_alias (patt p) (shd i))
+      mkpat loc (Ppat_alias (patt p) i)
   | PaAnt _ p -> patt p
   | PaAny loc -> mkpat loc Ppat_any
   | PaApp loc _ _ as f ->
@@ -374,7 +362,7 @@ value rec patt =
   | PaInt loc s -> mkpat loc (Ppat_constant (Const_int (int_of_string s)))
   | PaFlo loc s -> mkpat loc (Ppat_constant (Const_float s))
   | PaLab loc _ _ -> error loc "labeled pattern not allowed here"
-  | PaLid loc s -> mkpat loc (Ppat_var (shd s))
+  | PaLid loc s -> mkpat loc (Ppat_var s)
   | PaOlb loc _ _ _ -> error loc "labeled pattern not allowed here"
   | PaOrp loc p1 p2 -> mkpat loc (Ppat_or (patt p1) (patt p2))
   | PaRng loc p1 p2 ->
@@ -495,7 +483,7 @@ value rec expr =
         | ExAre _ e1 e2 ->
             Pexp_apply (mkexp loc (Pexp_ident (array_function "Array" "set")))
               [("", expr e1); ("", expr e2); ("", expr v)]
-        | ExLid _ lab -> Pexp_setinstvar (shd lab) (expr v)
+        | ExLid _ lab -> Pexp_setinstvar lab (expr v)
         | ExSte _ e1 e2 ->
             Pexp_apply
               (mkexp loc (Pexp_ident (array_function "String" "set")))
@@ -511,7 +499,7 @@ value rec expr =
   | ExFor loc i e1 e2 df el ->
       let e3 = ExSeq loc el in
       let df = if df then Upto else Downto in
-      mkexp loc (Pexp_for (shd i) (expr e1) (expr e2) df (expr e3))
+      mkexp loc (Pexp_for i (expr e1) (expr e2) df (expr e3))
   | ExFun loc [(PaLab _ lab p, w, e)] ->
       mkexp loc (Pexp_function lab None [(patt p, when_expr e w)])
   | ExFun loc [(PaOlb _ lab p eo, w, e)] ->
@@ -574,7 +562,7 @@ and when_expr e =
   [ Some w -> mkexp (loc_of_expr e) (Pexp_when (expr w) (expr e))
   | None -> expr e ]
 and mklabexp (lab, e) = (patt_label_long_id lab, expr e)
-and mkideexp (ide, e) = (shd ide, expr e)
+and mkideexp (ide, e) = (ide, expr e)
 and mktype_decl (c, tl, td, cl) =
   let cl =
     List.map
@@ -583,13 +571,13 @@ and mktype_decl (c, tl, td, cl) =
          (ctyp t1, ctyp t2, mkloc loc))
       cl
   in
-  (shd c, type_decl tl cl td)
+  (c, type_decl tl cl td)
 and module_type =
   fun
   [ MtAcc loc _ _ as f -> mkmty loc (Pmty_ident (module_type_long_id f))
   | MtApp loc _ _ as f -> mkmty loc (Pmty_ident (module_type_long_id f))
   | MtFun loc n nt mt ->
-      mkmty loc (Pmty_functor (shd n) (module_type nt) (module_type mt))
+      mkmty loc (Pmty_functor n (module_type nt) (module_type mt))
   | MtLid loc s -> mkmty loc (Pmty_ident (lident s))
   | MtSig loc sl ->
       mkmty loc (Pmty_signature (List.fold_right sig_item sl []))
@@ -606,14 +594,13 @@ and sig_item s l =
   | SgDcl loc sl -> List.fold_right sig_item sl l
   | SgDir loc _ _ -> l
   | SgExc loc n tl ->
-      [mksig loc (Psig_exception (shd n) (List.map ctyp tl)) :: l]
+      [mksig loc (Psig_exception n (List.map ctyp tl)) :: l]
   | SgExt loc n t p ->
-      [mksig loc (Psig_value (shd n) (mkvalue_desc t p)) :: l]
+      [mksig loc (Psig_value n (mkvalue_desc t p)) :: l]
   | SgInc loc mt -> [mksig loc (Psig_include (module_type mt)) :: l]
-  | SgMod loc n mt -> [mksig loc (Psig_module (shd n) (module_type mt)) :: l]
+  | SgMod loc n mt -> [mksig loc (Psig_module n (module_type mt)) :: l]
   | SgMty loc n mt ->
-      [mksig loc
-         (Psig_modtype (shd n) (Pmodtype_manifest (module_type mt))) ::
+      [mksig loc (Psig_modtype n (Pmodtype_manifest (module_type mt))) ::
        l]
   | SgOpn loc id ->
       [mksig loc (Psig_open (long_id_of_string_list loc id)) :: l]
@@ -625,7 +612,7 @@ and module_expr =
   | MeApp loc me1 me2 ->
       mkmod loc (Pmod_apply (module_expr me1) (module_expr me2))
   | MeFun loc n mt me ->
-      mkmod loc (Pmod_functor (shd n) (module_type mt) (module_expr me))
+      mkmod loc (Pmod_functor n (module_type mt) (module_expr me))
   | MeStr loc sl ->
       mkmod loc (Pmod_structure (List.fold_right str_item sl []))
   | MeTyc loc me mt ->
@@ -641,13 +628,13 @@ and str_item s l =
   | StDcl loc sl -> List.fold_right str_item sl l
   | StDir loc _ _ -> l
   | StExc loc n tl ->
-      [mkstr loc (Pstr_exception (shd n) (List.map ctyp tl)) :: l]
+      [mkstr loc (Pstr_exception n (List.map ctyp tl)) :: l]
   | StExp loc e -> [mkstr loc (Pstr_eval (expr e)) :: l]
   | StExt loc n t p ->
-      [mkstr loc (Pstr_primitive (shd n) (mkvalue_desc t p)) :: l]
+      [mkstr loc (Pstr_primitive n (mkvalue_desc t p)) :: l]
   | StInc loc me -> [mkstr loc (Pstr_include (module_expr me)) :: l]
-  | StMod loc n me -> [mkstr loc (Pstr_module (shd n) (module_expr me)) :: l]
-  | StMty loc n mt -> [mkstr loc (Pstr_modtype (shd n) (module_type mt)) :: l]
+  | StMod loc n me -> [mkstr loc (Pstr_module n (module_expr me)) :: l]
+  | StMty loc n mt -> [mkstr loc (Pstr_modtype n (module_type mt)) :: l]
   | StOpn loc id ->
       [mkstr loc (Pstr_open (long_id_of_string_list loc id)) :: l]
   | StTyp loc tdl -> [mkstr loc (Pstr_type (List.map mktype_decl tdl)) :: l]
