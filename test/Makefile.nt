@@ -55,14 +55,14 @@ genlex.exe: $(CODE_GENLEX)
 clean::
 	rm -f Lex\*.cm* Lex\*.obj Lex\*.asm
 
-Lex\grammar.ml Lex\grammar.mli: Lex\grammar.mly
+Lex\grammar.ml Lex\grammar.mli: Lex\grammar.mly ..\yacc\ocamlyacc.exe
 	$(CAMLYACC) $(YACCFLAGS) Lex\grammar.mly
 
 clean::
 	rm -f Lex\grammar.ml Lex\grammar.mli
 beforedepend:: Lex\grammar.ml Lex\grammar.mli
 
-Lex\scanner.ml: Lex\scanner.mll
+Lex\scanner.ml: Lex\scanner.mll ..\lex\ocamllex
 	$(CAMLLEX) Lex\scanner.mll
 
 clean::

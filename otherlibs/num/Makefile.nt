@@ -45,7 +45,7 @@ partialclean:
 
 clean: partialclean
 	rm -f *.lib *.obj
-	cd bignum & $(MAKEREC) clean
+	cd bignum & $(MAKEREC) scratch
 	cd test & $(MAKEREC) clean
 
 .SUFFIXES: .ml .mli .cmi .cmo .cmx
