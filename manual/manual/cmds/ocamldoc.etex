@@ -269,6 +269,10 @@ the module dependency graph.
 The following options apply in conjunction with the "-man" option:
 
 \begin{options}
+\item["-man-mini"]
+Generate man pages only for modules, module types, clases and class 
+types, instead of pages for all elements.
+
 \item["-man-suffix"]
 Set the suffix used for generated man filenames. Default is '"o"',
 like in "List.o".
