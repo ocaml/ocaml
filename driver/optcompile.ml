@@ -4,7 +4,7 @@
 (*                                                                     *)
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
@@ -69,7 +69,7 @@ let remove_preprocessed inputfile =
 
 exception Outdated_version
 
-let parse_file inputfile parse_fun ast_magic =
+let parse_file ppf inputfile parse_fun ast_magic =
   let ic = open_in_bin inputfile in
   let is_ast_file =
     try
@@ -87,6 +87,9 @@ let parse_file inputfile parse_fun ast_magic =
   let ast =
     try
       if is_ast_file then begin
+        if !Clflags.fast then
+          fprintf ppf "@[Warning: %s@]@."
+            "option -unsafe used with a preprocessor returning a syntax tree";
         Location.input_name := input_value ic;
         input_value ic
       end else begin
@@ -105,7 +108,7 @@ let interface ppf sourcefile =
   let prefixname = Misc.chop_extension_if_any sourcefile in
   let modulename = String.capitalize(Filename.basename prefixname) in
   let inputfile = preprocess sourcefile in
-  let ast = parse_file inputfile Parse.interface ast_intf_magic_number in
+  let ast = parse_file ppf inputfile Parse.interface ast_intf_magic_number in
   if !Clflags.dump_parsetree then fprintf ppf "%a@." Printast.interface ast;
   let sg = Typemod.transl_signature (initial_env()) ast in
   if !Clflags.print_types then
@@ -129,7 +132,7 @@ let implementation ppf sourcefile =
   let inputfile = preprocess sourcefile in
   let env = initial_env() in
   Compilenv.reset modulename;
-  parse_file inputfile Parse.implementation ast_impl_magic_number
+  parse_file ppf inputfile Parse.implementation ast_impl_magic_number
   ++ print_if ppf Clflags.dump_parsetree Printast.implementation
   ++ Typemod.type_implementation sourcefile prefixname modulename env
   ++ Translmod.transl_store_implementation modulename
