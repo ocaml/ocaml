@@ -1,9 +1,27 @@
-CAMLC=../boot/camlrun ../boot/camlc -I ../boot
+CAMLRUN=../boot/camlrun
+CAMLC=$(CAMLRUN) ../boot/camlc -I ../boot
+CAMLLEX=$(CAMLRUN) ../boot/camllex
 INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp
 COMPFLAGS=$(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
-all: dumpobj
+all: camldep
+
+CAMLDEP=camldep.cmo
+
+camldep: $(CAMLDEP)
+	$(CAMLC) $(LINKFLAGS) -o camldep misc.cmo $(CAMLDEP)
+
+clean::
+	rm -f camldep
+
+camldep.ml: camldep.mll
+	$(CAMLLEX) camldep.mll
+
+clean::
+	rm -f camldep.ml
+
+beforedepend:: camldep
 
 DUMPOBJ=opnames.cmo dumpobj.cmo
 
@@ -45,6 +63,6 @@ clean::
 	rm -f *.cmo *.cmi
 
 depend: beforedepend
-	camldep $(INCLUDES) *.mli *.ml > .depend
+	$(CAMLRUN) camldep $(INCLUDES) *.mli *.ml > .depend
 
 include .depend

@@ -6,7 +6,7 @@ LINKFLAGS=
 CAMLYACC=../boot/camlyacc
 YACCFLAGS=
 CAMLLEX=../boot/camlrun ../boot/camllex
-CAMLDEP=../tools/camldep
+CAMLDEP=../boot/camlrun ../tools/camldep
 DEPFLAGS=$(INCLUDES)
 CAMLRUN=../boot/camlrun
 

@@ -3,7 +3,7 @@ CAMLOPT=../boot/camlrun ../camlopt -I ../stdlib -I KB -I Lex
 OPTFLAGS=-S
 CAMLYACC=../yacc/camlyacc
 CAMLLEX=../boot/camlrun ../lex/camllex
-CAMLDEP=../tools/camldep
+CAMLDEP=../boot/camlrun ../tools/camldep
 CAMLRUN=../byterun/camlrun
 CODERUNPARAMS=CAMLRUNPARAM='o=100'
 
