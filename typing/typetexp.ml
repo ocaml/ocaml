@@ -72,7 +72,7 @@ let type_variable loc name =
   try
     Tbl.find name !type_variables
   with Not_found ->
-    raise(Error(loc, Unbound_type_variable name))
+    raise(Error(loc, Unbound_type_variable ("'" ^ name)))
 
 type policy = Fixed | Extensible | Delayed
 
@@ -86,7 +86,7 @@ let rec transl_type env policy styp =
             begin try
               Tbl.find name !type_variables
             with Not_found ->
-              raise(Error(styp.ptyp_loc, Unbound_type_variable name))
+              raise(Error(styp.ptyp_loc, Unbound_type_variable ("'" ^ name)))
             end
         | Extensible ->
             begin try

@@ -82,6 +82,7 @@ let rec eliminate_ref id = function
 
 (* Simplification of lets *)
 
+open Format
 let simplify_lambda lam =
   (* First pass: count the occurrences of all identifiers *)
   let occ = Hashtbl.create 83 in
@@ -203,6 +204,6 @@ let simplify_lambda lam =
   | Lsend(m, o, ll) -> Lsend(simplif m, simplif o, List.map simplif ll)
   | Levent(l, ev) -> Levent(simplif l, ev)
   | Lifused(v, l) ->
-      if count_var v > 0 then l else lambda_unit
+      if count_var v > 0 then simplif l else lambda_unit
   in
   simplif lam

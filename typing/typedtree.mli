@@ -62,7 +62,7 @@ and expression_desc =
       Ident.t * expression * expression * direction_flag * expression
   | Texp_when of expression * expression
   | Texp_send of expression * meth
-  | Texp_new of Path.t * int
+  | Texp_new of Path.t * class_declaration
   | Texp_instvar of Path.t * Path.t
   | Texp_setinstvar of Path.t * Path.t * expression
   | Texp_override of Path.t * (Path.t * expression) list

@@ -447,7 +447,7 @@ let rec transl_exp e =
         | Tmeth_val id  -> id
       in
       event_after e (Lsend(Lvar met_id, transl_exp expr, []))
-  | Texp_new (cl, arity) when arity = 0 ->
+  | Texp_new (cl, cl_decl) when Ctype.class_type_arity cl_decl.cty_type = 0 ->
       Lapply(Translobj.oo_prim "object_from_struct", [transl_path cl])
 (*
       let cl_info = Ident.create "class_info" in

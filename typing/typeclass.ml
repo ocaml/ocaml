@@ -477,7 +477,9 @@ and class_structure val_env met_env (spat, str) =
 
   (* Check that the binder has a correct type, and introduce a dummy
      method preventing self type from being closed. *)
-  begin try Ctype.filter_method val_env dummy_method Private self_type with
+  let ty = Ctype.newvar () in
+  Ctype.filter_method val_env dummy_method Private ty;
+  begin try Ctype.unify val_env self_type ty with
     Ctype.Unify _ ->
       raise(Error(pat.pat_loc, Pattern_type_clash self_type))
   end;
@@ -659,41 +661,42 @@ let rec initial_env define_class (res, env) (cl, id, ty_id, obj_id, cl_id) =
   
   (* Temporary type for the class constructor *)
   let constr_type = Ctype.newvar () in
+  let dummy_cty =
+    Tcty_signature
+      { cty_self = Ctype.newvar ();
+        cty_vars = Vars.empty;
+        cty_concr = Concr.empty }
+  in
+  let dummy_class =
+    {cty_params = [];             (* Dummy value *)
+     cty_type = dummy_cty;        (* Dummy value *)
+     cty_path = unbound_class;
+     cty_new =
+       match cl.pci_virt with
+         Virtual  -> None
+       | Concrete -> Some constr_type}
+  in
   let env =
-    let dummy_cty =
-      Tcty_signature
-        { cty_self = Ctype.newvar ();
-          cty_vars = Vars.empty;
-          cty_concr = Concr.empty }
-    in
     Env.add_cltype ty_id
       {clty_params = [];            (* Dummy value *)
        clty_type = dummy_cty;       (* Dummy value *)
        clty_path = unbound_class} (
     if define_class then
-      Env.add_class id
-        {cty_params = [];             (* Dummy value *)
-         cty_type = dummy_cty;        (* Dummy value *)
-         cty_path = unbound_class;
-         cty_new =
-           match cl.pci_virt with
-             Virtual  -> None
-           | Concrete -> Some constr_type}
-        env
+      Env.add_class id dummy_class env
     else
       env)
   in
   ((cl, id, ty_id,
     obj_id, obj_params, obj_ty,
     cl_id, cl_params, cl_ty,
-    constr_type)::res,
+    constr_type, dummy_class)::res,
    env)
 
 let class_infos define_class kind
     (cl, id, ty_id,
      obj_id, obj_params, obj_ty,
      cl_id, cl_params, cl_ty,
-     constr_type)
+     constr_type, dummy_class)
     (res, env) =
 
   reset_type_variables ();
@@ -799,6 +802,7 @@ let class_infos define_class kind
          Virtual  -> None
        | Concrete -> Some constr_type}
   in
+  dummy_class.cty_type <- typ;
   let env =
     Env.add_cltype ty_id cltydef (
     if define_class then Env.add_class id clty env else env)

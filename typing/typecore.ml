@@ -287,7 +287,8 @@ let rec is_nonexpansive exp =
       (match opt_init_exp with None -> true | Some e -> is_nonexpansive e)
   | Texp_field(exp, lbl) -> is_nonexpansive exp
   | Texp_array [] -> true
-  | Texp_new (_, arity) when arity > 0 -> true
+  | Texp_new (_, cl_decl) when Ctype.class_type_arity cl_decl.cty_type > 0 ->
+      true
   | _ -> false
 
 (* Typing of printf formats *)
@@ -681,8 +682,7 @@ let rec type_exp env sexp =
           None ->
             raise(Error(sexp.pexp_loc, Virtual_class cl))
         | Some ty ->
-            { exp_desc = Texp_new (cl_path,
-                                   Ctype.class_type_arity cl_decl.cty_type);
+            { exp_desc = Texp_new (cl_path, cl_decl);
               exp_loc = sexp.pexp_loc;
               exp_type = instance ty;
               exp_env = env }

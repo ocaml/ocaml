@@ -123,7 +123,7 @@ and class_signature =
 
 type class_declaration =
   { cty_params: type_expr list;
-    cty_type: class_type;
+    mutable cty_type: class_type;
     cty_path: Path.t;
     cty_new: type_expr option }
 
