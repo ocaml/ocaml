@@ -324,10 +324,10 @@ int win32_system(char * cmdline)
   if (len < 1000) {
     return system(cmdline);
   } else {
+    /* Skip initial blanks, if any */
+    for (i = 0; cmdline[i] != 0 && isspace(cmdline[i]); i++) /*nothing*/;
     /* Copy command name to buffer, stop at first blank */
-    for (i = 0, j = 0;
-	 cmdline[i] != 0 && ! isspace(cmdline[i]);
-	 i++) {
+    for (j = 0; cmdline[i] != 0 && ! isspace(cmdline[i]); i++) {
       if (j < MAX_CMD_LENGTH) cmd[j++] = cmdline[i];
     }
     /* Save remainder of command line to temp file */
