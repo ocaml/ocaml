@@ -368,6 +368,7 @@ value int64_to_nativeint(value v) /* ML */
 { return copy_nativeint((long) Int64_val(v)); }
 
 value int64_format(value fmt, value arg)      /* ML */
+#ifdef ARCH_INT64_PRINTF_FORMAT
 {
   char format_string[64], default_format_buffer[64];
   char * buffer;
@@ -380,6 +381,9 @@ value int64_format(value fmt, value arg)      /* ML */
   if (buffer != default_format_buffer) stat_free(buffer);
   return res;
 }
+#else
+{ invalid_argument ("Int64.format is not implemented on this platform"); }
+#endif
 
 value int64_of_string(value s)          /* ML */
 {

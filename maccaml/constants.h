@@ -78,7 +78,7 @@
 #define kAlertNeedSys7 1001
 #define kAlertBug 1002
 #define kAlertGeneric 1003
-#define kAlertNonzeroExit 1004
+#define kAlertExit 1004
 #define kDialogPrefs 1005
 #define kAlertNotYet 1006
 #define kAlertSaveAsk 1007

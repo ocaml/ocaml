@@ -56,7 +56,7 @@ value gr_lineto(value vx, value vy)
               grx, Bcvt(gry), x, Bcvt(y));
   if(grdisplay_mode) {
     XDrawLine(grdisplay, grwindow.win, grwindow.gc,
-	      grx, Wcvt(gry), x, Wcvt(y));
+          grx, Wcvt(gry), x, Wcvt(y));
     XFlush(grdisplay);
   }
   grx = x;
@@ -98,7 +98,7 @@ value gr_draw_arc_nat(value vx, value vy, value vrx, value vry, value va1, value
              x - rx, Bcvt(y) - ry, rx * 2, ry * 2, a1 * 64, (a2 - a1) * 64);
   if(grdisplay_mode) {
     XDrawArc(grdisplay, grwindow.win, grwindow.gc,
-	     x - rx, Wcvt(y) - ry, rx * 2, ry * 2, a1 * 64, (a2 - a1) * 64);
+         x - rx, Wcvt(y) - ry, rx * 2, ry * 2, a1 * 64, (a2 - a1) * 64);
     XFlush(grdisplay);
   }
   return Val_unit;

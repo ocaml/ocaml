@@ -40,7 +40,7 @@ value gr_new_image(int w, int h)
                            w * h, Max_image_mem);
   Width_im(res) = w;
   Height_im(res) = h;
-  Data_im(res) = XCreatePixmap(grdisplay, grwindow.win, w, h, 
+  Data_im(res) = XCreatePixmap(grdisplay, grwindow.win, w, h,
                                XDefaultDepth(grdisplay, grscreen));
   Mask_im(res) = None;
   return res;
@@ -89,9 +89,9 @@ value gr_draw_image(value im, value vx, value vy)
               x, by);
   if(grdisplay_mode)
     XCopyArea(grdisplay, Data_im(im), grwindow.win, grwindow.gc,
-	      0, 0,
-	      Width_im(im), Height_im(im),
-	      x, wy);
+          0, 0,
+          Width_im(im), Height_im(im),
+          x, wy);
   if (Mask_im(im) != None) {
     if(grremember_mode)
       XSetClipMask(grdisplay, grbstore.gc, None);

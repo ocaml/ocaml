@@ -39,9 +39,9 @@
      2 font-lock-comment-face)
 ;character literals
    (cons (concat caml-quote-char "\\(\\\\\\([ntbr" caml-quote-char "\\]\\|"
-		 "[0-9][0-9][0-9]\\)\\|.\\)" caml-quote-char
-		 "\\|\"[^\"\\]*\\(\\\\\\(.\\|\n\\)[^\"\\]*\\)*\"")
-	 'font-lock-string-face)
+                 "[0-9][0-9][0-9]\\)\\|.\\)" caml-quote-char
+                 "\\|\"[^\"\\]*\\(\\\\\\(.\\|\n\\)[^\"\\]*\\)*\"")
+         'font-lock-string-face)
 ;labels (and open)
    '("\\(\\<[A-Za-z][A-Za-z0-9_']*:\\)\\([^:=]\\|\\'\\|$\\)" 1
      font-lock-variable-name-face)
@@ -53,23 +53,23 @@
    '("`[A-Za-z][A-Za-z0-9_']*\\>" . font-lock-function-name-face)
 ;definition
    (cons (concat
-	  "\\<\\(a\\(nd\\|s\\)\\|c\\(onstraint\\|lass\\)"
-	  "\\|ex\\(ception\\|ternal\\)\\|fun\\(ct\\(ion\\|or\\)\\)?"
-	  "\\|in\\(herit\\|itializer\\)?\\|let"
-	  "\\|m\\(ethod\\|utable\\|odule\\)"
-	  "\\|of\\|p\\(arser\\|rivate\\)\\|rec\\|type"
-	  "\\|v\\(al\\(ue\\)?\\|irtual\\)\\)\\>")
-	 'font-lock-type-face)
+          "\\<\\(a\\(nd\\|s\\)\\|c\\(onstraint\\|lass\\)"
+          "\\|ex\\(ception\\|ternal\\)\\|fun\\(ct\\(ion\\|or\\)\\)?"
+          "\\|in\\(herit\\|itializer\\)?\\|let"
+          "\\|m\\(ethod\\|utable\\|odule\\)"
+          "\\|of\\|p\\(arser\\|rivate\\)\\|rec\\|type"
+          "\\|v\\(al\\(ue\\)?\\|irtual\\)\\)\\>")
+         'font-lock-type-face)
 ;blocking
    '("\\(\\<\\|:\\)\\(begin\\|end\\|object\\|s\\(ig\\|truct\\)\\)\\>"
      2 font-lock-keyword-face)
 ;control
    (cons (concat
-	  "\\<\\(do\\(ne\\|wnto\\)?\\|else\\|for\\|if"
-	  "\\|lazy\\|match\\|new\\|or\\|t\\(hen\\|o\\|ry\\)"
-	  "\\|w\\(h\\(en\\|ile\\)\\|ith\\)\\)\\>"
-	  "\\|\|\\|->\\|&\\|#")
-	 'font-lock-reference-face) 
+          "\\<\\(do\\(ne\\|wnto\\)?\\|else\\|for\\|if"
+          "\\|lazy\\|match\\|new\\|or\\|t\\(hen\\|o\\|ry\\)"
+          "\\|w\\(h\\(en\\|ile\\)\\|ith\\)\\)\\>"
+          "\\|\|\\|->\\|&\\|#")
+         'font-lock-reference-face)
    '("\\<raise\\>" . font-lock-comment-face)))
 
 (defconst inferior-caml-font-lock-keywords
@@ -80,33 +80,33 @@
 ;labels
     '("[? \t]:[A-Za-z][A-Za-z0-9_']*\\>" . font-lock-variable-name-face))
    caml-font-lock-keywords))
-    
+
 ;; font-lock commands are similar for caml-mode and inferior-caml-mode
 (setq caml-mode-hook
       '(lambda ()
-	 (cond
-	  ((fboundp 'global-font-lock-mode)
-	   (make-local-variable 'font-lock-defaults)
-	   (setq font-lock-defaults
-		 '(caml-font-lock-keywords nil nil ((?' . "w") (?_ . "w")))))
-	  (t
-	   (setq font-lock-keywords caml-font-lock-keywords)))
-	 (make-local-variable 'font-lock-keywords-only)
-	 (setq font-lock-keywords-only t)
-	 (font-lock-mode 1)))
+         (cond
+          ((fboundp 'global-font-lock-mode)
+           (make-local-variable 'font-lock-defaults)
+           (setq font-lock-defaults
+                 '(caml-font-lock-keywords nil nil ((?' . "w") (?_ . "w")))))
+          (t
+           (setq font-lock-keywords caml-font-lock-keywords)))
+         (make-local-variable 'font-lock-keywords-only)
+         (setq font-lock-keywords-only t)
+         (font-lock-mode 1)))
 
 (setq inferior-caml-mode-hooks
       '(lambda ()
-	 (cond
-	  ((fboundp 'global-font-lock-mode)
-	   (make-local-variable 'font-lock-defaults)
-	   (setq font-lock-defaults
-		 '(inferior-caml-font-lock-keywords
-		   nil nil ((?' . "w") (?_ . "w")))))
-	  (t
-	   (setq font-lock-keywords inferior-caml-font-lock-keywords)))
-	 (make-local-variable 'font-lock-keywords-only)
-	 (setq font-lock-keywords-only t)
-	 (font-lock-mode 1)))
+         (cond
+          ((fboundp 'global-font-lock-mode)
+           (make-local-variable 'font-lock-defaults)
+           (setq font-lock-defaults
+                 '(inferior-caml-font-lock-keywords
+                   nil nil ((?' . "w") (?_ . "w")))))
+          (t
+           (setq font-lock-keywords inferior-caml-font-lock-keywords)))
+         (make-local-variable 'font-lock-keywords-only)
+         (setq font-lock-keywords-only t)
+         (font-lock-mode 1)))
 
 (provide 'caml-font)

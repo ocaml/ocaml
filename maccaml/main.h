@@ -13,8 +13,10 @@
 /* $Id$ */
 
 #include <limits.h>
+#include <sched.h>
 #include <signal.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <AERegistry.h>
@@ -146,10 +148,14 @@ void FileRevert (WindowPtr w);
 OSErr FileDoSave (WindowPtr w, int saveasflag);
 
 /* glue.c */
+extern int intr_requested;
+extern int quit_requested;
+extern int exit_called;
+extern int in_gusi;
 extern int caml_at_work;
 void Caml_working (int newstate);
-void GlueInterrupt (void);
 OSErr launch_caml_main (void);
+pascal void RotateCursor (long);
 void DisplayRotatingCursor (void);
 
 /* graph.c */
@@ -157,6 +163,9 @@ void GraphGotEvent (EventRecord *evt);
 void GraphNewSizePos (void);
 void GraphScroll (long dx, long dy);
 void GraphUpdate (void);
+
+/* gusistuff.cp */
+void InitialiseGUSI (void);
 
 /* lcontrols.c */
 OSErr LCAttach( ControlRef );
@@ -172,9 +181,8 @@ void LCSynch( ControlRef );
 /* main.c */
 extern int gHasDragAndDrop;
 extern int gHasPowerManager;
-extern int quit_requested;
 extern int launch_toplevel_requested;
-void ExitApplication (void);
+void Finalise (void);
 
 /* memory.c */
 OSErr AllocHandle (Size size, Handle *result);

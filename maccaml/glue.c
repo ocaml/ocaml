@@ -16,6 +16,7 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "alloc.h"
 #include "mlvalues.h"
@@ -25,9 +26,19 @@
 
 #include "main.h"
 
+/* intr_requested is true if the user pressed command-period
+   during a read on stdin.
+*/
+int intr_requested = 0;
+/* quit_requested becomes true when the user chooses File:Quit */
+int quit_requested = 0;
+/* exit_called is true after exit is called. */
+int exit_called = 0;
+/* in_gusi is true if we know we are not in a GUSI call-back. */
+int in_gusi = 1;
+
 /* These are defined by the ocamlrun library. */
 void caml_main(char **argv);
-char *getcwd (char *buf, long size);
 Handle macos_getfullpathname (short vrefnum, long dirid);
 
 static int erroring = 0;
@@ -54,12 +65,64 @@ void Caml_working (int newstate)
   caml_at_work = newstate;
 }
 
+/***
+  animated cursor (only when toplevel window is frontmost)
+*/
+typedef struct {
+  short nframes;
+  short current;
+  union {
+    CursHandle h;
+    struct { short id; short fill; } i;
+  } frames [1];
+} **AnimCursHandle;
+
+static AnimCursHandle acurh = NULL;
+
+pascal void InitCursorCtl (acurHandle newCursors)
+{
+#pragma unused (newCursors)
+  long i;
+
+  if (acurh != NULL) return;
+  acurh = (AnimCursHandle) GetResource ('acur', 0);
+  for (i = 0; i < (*acurh)->nframes; i++){
+    (*acurh)->frames[i].h = GetCursor ((*acurh)->frames[i].i.id);
+    if ((*acurh)->frames[i].h == NULL){
+      (*acurh)->frames[i].h = GetCursor (watchCursor);
+      Assert ((*acurh)->frames[i].h != NULL);
+    }
+  }
+  (*acurh)->current = 0;
+}
+
+static pascal void interp_yield (long counter)
+{
+  in_gusi = 0;
+  RotateCursor (counter);
+  in_gusi = 1;
+  sched_yield ();
+}
+
+pascal void RotateCursor (long counter)
+{
+  if (acurh == NULL) InitCursorCtl (NULL);
+  (*acurh)->current += (*acurh)->nframes + (counter >= 0 ? 1 : -1);
+  (*acurh)->current %= (*acurh)->nframes;
+  GetAndProcessEvents (noWait, 0, 0);
+}
+
+void DisplayRotatingCursor (void)
+{
+  SetCursor (*((*acurh)->frames[(*acurh)->current].h));
+}
+
 /* Expand the percent escapes in the string specified by s.
    The escapes are:
    %a application file name
    %d full pathname of the current working directory (ends in ':')
    %t full pathname of the temporary directory (ends in ':')
-   %% %
+   %% a percent sign "%"
 */
 static OSErr expand_escapes (Handle s)
 {
@@ -129,11 +192,11 @@ static OSErr expand_escapes (Handle s)
    the 'Line'(kCommandLineTemplate) resource and the environment
    variables according to the 'Line'(kEnvironmentTemplate).
 
-   Each of these resources is a sequence of strings separated by null
+   Each of these resources is a sequence of strings terminated by null
    bytes.  In each string, percent escapes are expanded (see above for
    a description of percent escapes).
 
-   Each resource must end with a null byte.
+   Each resource ends with a null byte.
 */
 
 OSErr launch_caml_main (void)
@@ -179,15 +242,15 @@ OSErr launch_caml_main (void)
   if (envPtr == NULL){ err = MemError (); goto failed; }
   memcpy (envPtr, *template, len);
 
-  rotatecursor_options (&something_to_do, 50);
+  rotatecursor_options (&something_to_do, 0, &interp_yield);
   err = WinOpenToplevel ();
-  if (err != noErr) ExitApplication ();
+  if (err != noErr) goto failed;
 
   Assert (!caml_at_work);
   Caml_working (1);
 
   caml_main (argv);
-  return noErr;   /* Not reached */
+  return noErr;
 
   failed:
     if (template != NULL) ReleaseResource (template);
@@ -196,226 +259,158 @@ OSErr launch_caml_main (void)
     return err;
 }
 
+/* SIO stubs */
 
-/***
-  ui_* stubs for I/O
-*/
-
-static void (**atexit_list) (void) = NULL;
-static long atexit_size = 0;
-static long atexit_len = 0;
-
-void ui_exit (int return_code)
+static pascal void caml_sio_init (int *mainArgc, char ***mainArgv)
 {
-  int i;
+#pragma unused (mainArgc, mainArgv)
+}
+pascal void (*__sioInit) (int *, char ***) = &caml_sio_init;
 
-  for (i = 0; i < atexit_len; i++) (*(atexit_list [i])) ();
+static pascal void caml_sio_read (char *buffer, SInt32 nCharsDesired,
+                                  SInt32 *nCharsUsed, SInt16 *eofFlag)
+{
+#pragma unused (eofFlag)
+  long len, i;
+  char **htext;
+  WEReference we;
+  long selstart, selend;
+  Boolean active;
+  short readonly, autoscroll;
+  int atend;
+
+  if (winToplevel == NULL){
+    *nCharsUsed = 0;
+    *eofFlag = 1;
+    return;
+  }
+
+  we = WinGetWE (winToplevel);
+  Assert (we != NULL);
+  htext = (char **) WEGetText (we);
 
   Assert (caml_at_work);
   Caml_working (0);
 
-  if (return_code != 0){
-    Str255 errorstr;
+  while (1){
+    char *p;
 
-    NumToString ((long) return_code, errorstr);
-    ParamText (errorstr, NULL, NULL, NULL);
+    len = WEGetTextLength (we);
+    p = *htext;
+    for (i = wintopfrontier; i < len; i++){
+      if (p[i] == '\n') goto gotit;
+    }
+    intr_requested = 0;
+    in_gusi = 0;
+    GetAndProcessEvents (waitEvent, 0, 0);
+    in_gusi = 1;
+    if (intr_requested){
+      *nCharsUsed = 0;  /* Hack: behaviour not specified by SIO. */
+      Caml_working (1);
+      return;
+    }
+  }
+
+  gotit:
+
+  Assert (!caml_at_work);
+  Caml_working (1);
+
+  len = i+1 - wintopfrontier;
+  if (len > nCharsDesired) len = nCharsDesired;
+  memcpy (buffer, (*htext)+wintopfrontier, len);
+
+  atend = ScrollAtEnd (winToplevel);
+  autoscroll = WEFeatureFlag (weFAutoScroll, weBitTest, we);
+  WEFeatureFlag (weFAutoScroll, weBitClear, we);
+  WEGetSelection (&selstart, &selend, we);
+  readonly = WEFeatureFlag (weFReadOnly, weBitTest, we);
+  WEFeatureFlag (weFReadOnly, weBitClear, we);
+  /* Always set an empty selection before changing OutlineHilite. */
+  WESetSelection (wintopfrontier, wintopfrontier, we);
+  WEFeatureFlag (weFOutlineHilite, weBitClear, we);
+  active = WEIsActive (we);
+  if (active) WEDeactivate (we);
+  WESetSelection (wintopfrontier, wintopfrontier+len, we);
+  WESetStyle (weDoFont + weDoFace + weDoSize + weDoColor + weDoReplaceFace,
+              &prefs.input, we);
+  WESetSelection (wintopfrontier, wintopfrontier, we);
+  if (active) WEActivate (we);
+  WEFeatureFlag (weFOutlineHilite, weBitSet, we);
+  WESetSelection (selstart, selend, we);
+  if (readonly) WEFeatureFlag (weFReadOnly, weBitSet, we);
+  if (autoscroll) WEFeatureFlag (weFAutoScroll, weBitSet, we);
+  AdjustScrollBars (winToplevel);
+  if (atend) ScrollToEnd (winToplevel);
+
+  WinAdvanceTopFrontier (len);
+  *nCharsUsed = len;
+  return;
+}
+pascal void (*__sioRead) (char *, SInt32, SInt32 *, SInt16 *) = &caml_sio_read;
+
+static pascal void caml_sio_write (SInt16 filenum, char *buffer, SInt32 nChars)
+{
+#pragma unused (filenum)
+  long selstart, selend;
+  WEReference we = WinGetWE (winToplevel);
+  OSErr err;
+  short readonly, autoscroll;
+  int atend;
+
+  Assert (nChars >= 0);
+  Assert (we != NULL);
+  
+  if (erroring){  /* overwrite mode to display errors; see terminfo_* */
+    error_curpos += nChars;  Assert (error_curpos <= wintopfrontier);
+    return;
+  }
+
+  atend = ScrollAtEnd (winToplevel);
+  autoscroll = WEFeatureFlag (weFAutoScroll, weBitTest, we);
+  WEFeatureFlag (weFAutoScroll, weBitClear, we);
+  WEGetSelection (&selstart, &selend, we);
+  readonly = WEFeatureFlag (weFReadOnly, weBitTest, we);
+  WEFeatureFlag (weFReadOnly, weBitClear, we);
+  WESetSelection (wintopfrontier, wintopfrontier, we);
+  WESetStyle (weDoFont + weDoFace + weDoSize + weDoColor + weDoReplaceFace,
+              &prefs.output, we);
+  err = WEInsert (buffer, nChars, NULL, NULL, we);
+  if (err != noErr){
+    WESetSelection (selstart, selend, we);
+    return; /* FIXME raise an exception ? */
+  }
+  if (selstart >= wintopfrontier){
+    selstart += nChars;
+    selend += nChars;
+  }else if (selend > wintopfrontier){
+    selend += nChars;
+  }
+  WESetSelection (selstart, selend, we);
+  if (autoscroll) WEFeatureFlag (weFAutoScroll, weBitSet, we);
+  AdjustScrollBars (winToplevel);
+  if (atend) ScrollToEnd (winToplevel);
+
+  WinAdvanceTopFrontier (nChars);
+  return;
+}
+pascal void (*__sioWrite) (SInt16, char *, SInt32) = &caml_sio_write;
+
+static pascal void caml_sio_exit (void)
+{
+  exit_called = 1;
+  if (caml_at_work) Caml_working (0);
+  if (!quit_requested){
     modalkeys = kKeysOK;
     InitCursor ();
-    NoteAlert (kAlertNonzeroExit, myModalFilterUPP);
+    NoteAlert (kAlertExit, myModalFilterUPP);
   }
-  while (1) GetAndProcessEvents (waitEvent, 0, 0);
+  while (!quit_requested) GetAndProcessEvents (waitEvent, 0, 0);
+  rotatecursor_final ();
+  Finalise ();
 }
+pascal void (*__sioExit) (void) = &caml_sio_exit;
 
-int atexit (void (*f) (void))
-{
-  if (atexit_list == NULL){
-    atexit_list = malloc (5 * sizeof (atexit_list [0]));
-    if (atexit_list == NULL) goto failed;
-    atexit_size = 5;
-  }else if (atexit_len >= atexit_size){
-    void *p = realloc (atexit_list, (atexit_size+10) * sizeof (atexit_list[0]));
-    if (p == NULL) goto failed;
-    atexit_list = p;
-    atexit_size += 10;
-  }
-  Assert (atexit_size > atexit_len);
-  atexit_list [atexit_len++] = f;
-  return 0;
-
-  failed:
-    /* errno = ENOMEM;    FIXME: does malloc set errno ? */
-    return -1;
-}
-
-int ui_read (int file_desc, char *buf, unsigned int length)
-{
-  if (file_desc == 0){                  /* Read from the toplevel window. */
-    long len, i;
-    char **htext;
-    WEReference we = WinGetWE (winToplevel);
-    long selstart, selend;
-    Boolean active;
-    short readonly, autoscroll;
-    int atend;
-
-    Assert (we != NULL);
-    htext = (char **) WEGetText (we);
-
-    Assert (caml_at_work);
-    Caml_working (0);
-
-    while (1){
-      char *p;
-
-      len = WEGetTextLength (we);
-      p = *htext;
-      for (i = wintopfrontier; i < len; i++){
-        if (p[i] == '\n') goto gotit;
-      }
-      GetAndProcessEvents (waitEvent, 0, 0);
-    }
-
-    gotit:
-
-    Assert (!caml_at_work);
-    Caml_working (1);
-
-    len = i+1 - wintopfrontier;
-    if (len > length) len = length;
-    memcpy (buf, (*htext)+wintopfrontier, len);
-
-    atend = ScrollAtEnd (winToplevel);
-    autoscroll = WEFeatureFlag (weFAutoScroll, weBitTest, we);
-    WEFeatureFlag (weFAutoScroll, weBitClear, we);
-    WEGetSelection (&selstart, &selend, we);
-    readonly = WEFeatureFlag (weFReadOnly, weBitTest, we);
-    WEFeatureFlag (weFReadOnly, weBitClear, we);
-    /* Always set an empty selection before changing OutlineHilite. */
-    WESetSelection (wintopfrontier, wintopfrontier, we);
-    WEFeatureFlag (weFOutlineHilite, weBitClear, we);
-    active = WEIsActive (we);
-    if (active) WEDeactivate (we);
-    WESetSelection (wintopfrontier, wintopfrontier+len, we);
-    WESetStyle (weDoFont + weDoFace + weDoSize + weDoColor + weDoReplaceFace,
-                &prefs.input, we);
-    WESetSelection (wintopfrontier, wintopfrontier, we);
-    if (active) WEActivate (we);
-    WEFeatureFlag (weFOutlineHilite, weBitSet, we);
-    WESetSelection (selstart, selend, we);
-    if (readonly) WEFeatureFlag (weFReadOnly, weBitSet, we);
-    if (autoscroll) WEFeatureFlag (weFAutoScroll, weBitSet, we);
-    AdjustScrollBars (winToplevel);
-    if (atend) ScrollToEnd (winToplevel);
-
-    WinAdvanceTopFrontier (len);
-    return len;
-  }else{
-    return read (file_desc, buf, length);
-  }
-}
-
-int ui_write (int file_desc, char *buf, unsigned int length)
-{
-  if (file_desc == 1 || file_desc == 2){  /* Send to the toplevel window. */
-    long selstart, selend;
-    WEReference we = WinGetWE (winToplevel);
-    OSErr err;
-    short readonly, autoscroll;
-    int atend;
-
-    if (erroring){  /* overwrite mode to display errors; see terminfo_* */
-      error_curpos += length;  Assert (error_curpos <= wintopfrontier);
-      return length;
-    }
-
-    Assert (we != NULL);
-    
-    atend = ScrollAtEnd (winToplevel);
-    autoscroll = WEFeatureFlag (weFAutoScroll, weBitTest, we);
-    WEFeatureFlag (weFAutoScroll, weBitClear, we);
-    WEGetSelection (&selstart, &selend, we);
-    readonly = WEFeatureFlag (weFReadOnly, weBitTest, we);
-    WEFeatureFlag (weFReadOnly, weBitClear, we);
-    WESetSelection (wintopfrontier, wintopfrontier, we);
-    WESetStyle (weDoFont + weDoFace + weDoSize + weDoColor + weDoReplaceFace,
-                &prefs.output, we);
-    err = WEInsert (buf, (SInt32) length, NULL, NULL, we);
-    if (err != noErr){
-      WESetSelection (selstart, selend, we);
-      /* XXX should set errno */
-      return -1;
-    }
-    if (selstart >= wintopfrontier){
-      selstart += length;
-      selend += length;
-    }else if (selend > wintopfrontier){
-      selend += length;
-    }
-    WESetSelection (selstart, selend, we);
-    if (autoscroll) WEFeatureFlag (weFAutoScroll, weBitSet, we);
-    AdjustScrollBars (winToplevel);
-    if (atend) ScrollToEnd (winToplevel);
-
-    WinAdvanceTopFrontier (length);
-    return length;
-  }else{
-    return write (file_desc, buf, length);
-  }
-}
-
-void ui_print_stderr (char *format, void *arg)
-{
-  char buf [1000];  /* XXX fixed size buffer :-( */
-
-  sprintf (buf, format, arg);   Assert (strlen (buf) < 1000);
-  ui_write (2, buf, strlen (buf));
-}
-
-
-/***
-  animated cursor (only when toplevel window is frontmost)
-*/
-typedef struct {
-  short nframes;
-  short current;
-  union {
-    CursHandle h;
-    struct { short id; short fill; } i;
-  } frames [1];
-} **AnimCursHandle;
-
-static AnimCursHandle acurh = NULL;
-
-pascal void InitCursorCtl (acurHandle newCursors)
-{
-#pragma unused (newCursors)
-  long i;
-
-  if (acurh != NULL) return;
-  acurh = (AnimCursHandle) GetResource ('acur', 0);
-  for (i = 0; i < (*acurh)->nframes; i++){
-    (*acurh)->frames[i].h = GetCursor ((*acurh)->frames[i].i.id);
-    if ((*acurh)->frames[i].h == NULL){
-      (*acurh)->frames[i].h = GetCursor (watchCursor);
-      Assert ((*acurh)->frames[i].h != NULL);
-    }
-  }
-  (*acurh)->current = 0;
-}
-
-/* In O'Caml, counter is always a multiple of 32. */
-pascal void RotateCursor (long counter)
-{
-  if (acurh == NULL) InitCursorCtl (NULL);
-  (*acurh)->current += (*acurh)->nframes + (counter >= 0 ? 1 : -1);
-  (*acurh)->current %= (*acurh)->nframes;
-  GetAndProcessEvents (noWait, 0, 0);
-}
-
-void DisplayRotatingCursor (void)
-{
-  SetCursor (*((*acurh)->frames[(*acurh)->current].h));
-}
 
 /***
   "getenv" in the standalone application
@@ -472,11 +467,12 @@ value terminfo_backup (value lines)
   p = (char *) *txt;
   j = wintopfrontier - 1;
 
+  while (j >= 0 && p[j] != '\n') --j;
   for (i = 0; i < Long_val (lines); i++){
-    Assert (p[j] == '\n');
-    do{ --j; }while (p[j] != '\n');
+    Assert (p[j] == '\n' || j == -1);
+    do{ --j; }while (j >= 0 && p[j] != '\n');
   }
-  Assert (p[j] == '\n');
+  Assert (p[j] == '\n' || j == -1);
   error_curpos = j + 1;
   erroring = 1;
   error_anchor = -1;

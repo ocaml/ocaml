@@ -22,7 +22,7 @@
 #include <sys/time.h>
 #include <sys/resource.h>
 
-value unix_nice(value incr)
+value unix_nice(value incr)   /* ML */
 {
   int prio;
   errno = 0;

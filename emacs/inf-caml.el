@@ -58,24 +58,24 @@ Input and output via buffer `*inferior-caml*'."
   (if (not (comint-check-proc "*inferior-caml*"))
       (let ((cmdlist (inferior-caml-args-to-list cmd))
             (process-connection-type nil))
-	(set-buffer (apply (function make-comint)
-			   "inferior-caml" (car cmdlist) nil (cdr cmdlist)))
-	(inferior-caml-mode)))
+        (set-buffer (apply (function make-comint)
+                           "inferior-caml" (car cmdlist) nil (cdr cmdlist)))
+        (inferior-caml-mode)))
   (setq caml-shell-active t)
   (inferior-caml-show-subshell))
 
 (defun inferior-caml-args-to-list (string)
   (let ((where (string-match "[ \t]" string)))
     (cond ((null where) (list string))
-	  ((not (= where 0))
-	   (cons (substring string 0 where)
-		 (inferior-caml-args-to-list (substring string (+ 1 where)
-							(length string)))))
-	  (t (let ((pos (string-match "[^ \t]" string)))
-	       (if (null pos)
-		   nil
-		 (inferior-caml-args-to-list (substring string pos
-							(length string)))))))))
+          ((not (= where 0))
+           (cons (substring string 0 where)
+                 (inferior-caml-args-to-list (substring string (+ 1 where)
+                                                        (length string)))))
+          (t (let ((pos (string-match "[^ \t]" string)))
+               (if (null pos)
+                   nil
+                 (inferior-caml-args-to-list (substring string pos
+                                                        (length string)))))))))
 
 (defun inferior-caml-show-subshell ()
   (interactive)
@@ -103,7 +103,7 @@ Input and output via buffer `*inferior-caml*'."
                            "[ \t]*Characters[ \t]+\\([0-9]+\\)-[0-9]+:$"))
                   (string-to-int (match-string 1))))))
     (goto-char loc)))
-         
+
 
 ;;; inf-caml.el ends here
 

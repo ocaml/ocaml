@@ -93,7 +93,7 @@ static int lock_command_table[] = {
   F_ULOCK, F_LOCK, F_TLOCK, F_TEST, F_LOCK, F_TLOCK
 };
 
-value unix_lockf(value fd, value cmd, value span)  /* ML */
+value unix_lockf(value fd, value cmd, value span)
 {
   if (lockf(Int_val(fd), lock_command_table[Int_val(cmd)], Long_val(span))
       == -1) uerror("lockf", Nothing);

@@ -33,7 +33,7 @@ static int sockopt[] = {
   SO_DEBUG, SO_BROADCAST, SO_REUSEADDR, SO_KEEPALIVE, 
   SO_DONTROUTE, SO_OOBINLINE };
 
-value unix_getsockopt(value socket, value option)
+value unix_getsockopt(value socket, value option) /* ML */
 {
   int optval;
   socklen_param_type optsize;
@@ -45,7 +45,7 @@ value unix_getsockopt(value socket, value option)
   return Val_int(optval);
 }
 
-value unix_setsockopt(value socket, value option, value status)
+value unix_setsockopt(value socket, value option, value status) /* ML */
 {
   int optval = Int_val(status);
   if (setsockopt(Int_val(socket), SOL_SOCKET, sockopt[Int_val(option)],

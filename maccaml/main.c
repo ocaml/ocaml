@@ -17,7 +17,6 @@
 QDGlobals qd;
 int gHasDragAndDrop = 0;
 int gHasPowerManager = 0;
-int quit_requested = 0;
 int launch_toplevel_requested = 0;
 
 static OSErr Initialise (void)
@@ -78,6 +77,8 @@ static OSErr Initialise (void)
     if (err != noErr) goto problem;
   }
 
+  InitialiseGUSI ();
+
   err = InitialiseEvents ();
   if (err != noErr) goto problem;
 
@@ -100,32 +101,24 @@ static OSErr Initialise (void)
   problem: return err;
 }
 
-static void Finalise (void)
+void Finalise (void)
 {
   if (gHasDragAndDrop) RemoveDragHandlers ();
   WritePrefs ();
 }
 
-void main (void)
+int main (void)
 {
   OSErr err;
 
   err = Initialise ();
-  if (err != noErr) ExitApplication ();
-
-  while (1){
-    GetAndProcessEvents (waitEvent, 0, 0);
-    if (launch_toplevel_requested){
-      err = launch_caml_main ();   /* does not return */
-      if (err != noErr) ErrorAlertGeneric (err);
-    }
+  if (err != noErr){
+    quit_requested = 1;
+    exit (0);
   }
-  ExitApplication ();
-}
-
-void ExitApplication (void)
-{
-  Caml_working (0);
-  Finalise ();
-  ExitToShell ();
+  while (!launch_toplevel_requested) GetAndProcessEvents (waitEvent, 0, 0);
+  err = launch_caml_main ();
+  if (err != noErr) ErrorAlertGeneric (err);
+  exit (0);
+  return 0;
 }

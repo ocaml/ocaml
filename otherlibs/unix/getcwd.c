@@ -16,7 +16,7 @@
 #include <alloc.h>
 #include "unixsupport.h"
 
-#ifndef _WIN32
+#if !defined (_WIN32) && !macintosh
 #include <sys/param.h>
 #endif
 

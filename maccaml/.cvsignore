@@ -1,6 +1,8 @@
 stdlib
 *.c.x
+*.cp.x
 *.xcoff
+*.dbg
 primitives
 prims.c
 Objective*Caml

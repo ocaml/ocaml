@@ -20,7 +20,8 @@
 #include "../config/m.h"
 #include "../config/s.h"
 #else
-#include "::config:sm-Mac.h"
+#include <m.h>
+#include <s.h>
 #endif
 
 /* Types for signed chars, 16-bit integers, 32-bit integers, 64-bit integers */

@@ -1,6 +1,19 @@
-# Makefile for the WASTE library (version 1.3)
+#########################################################################
+#                                                                       #
+#                            Objective Caml                             #
+#                                                                       #
+#            Damien Doligez, projet Para, INRIA Rocquencourt            #
+#                                                                       #
+#   Copyright 1999 Institut National de Recherche en Informatique et    #
+#   en Automatique.  All rights reserved.  This file is distributed     #
+#   under the terms of the Q Public License version 1.0.                #
+#                                                                       #
+#########################################################################
 
 # $Id$
+
+
+# Makefile for the WASTE library (version 1.3)
 
 # Put this makefile into the "WASTE 1.3 Distribution" folder.
 # If you type "Make all", it will build five files:
@@ -47,15 +60,18 @@ WEDefs = -d WASTE_DEBUG=0  ¶
 
 #### Compilers and their options.
 
+# Uncomment this definition to get a debugging version of the library.
+debugflag = -sym on
+
 # Classic 68k
 C = sc
-COptions = {Defs} {Incl} -model far -w 17 -proto strict -sym on
+COptions = {Defs} {Incl} -model far -w 17 -proto strict {debugflag}
 #C = mwc68k
 #COptions = {Defs} {Incl} -model far
 
 # CFM 68k
 CFMC = sc
-CFMCOptions = {Defs} {Incl} -model cfmflat -w 17 -proto strict -sym on
+CFMCOptions = {Defs} {Incl} -model cfmflat -w 17 -proto strict {debugflag}
 #CFMC = {c}
 #CFMCOptions = {coptions}
 
@@ -171,7 +187,7 @@ WASTELib.CFMo Ä {WECFMObj}
   lib -o WASTELib.CFMo {WECFMObj}
 
 WASTELib.x Ä {WEPPCObj}
-  ppclink -xm library -o WASTELib.x {WEPPCObj} -sym on
+  ppclink {debugflag} -xm library -o WASTELib.x {WEPPCObj}
 
 clean ÄÄ
   delete -i {WEObj} {WECFMObj} {WEPPCObj} {WETarg}

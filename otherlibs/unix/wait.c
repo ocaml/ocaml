@@ -80,7 +80,7 @@ static int wait_flag_table[] = {
   WNOHANG, WUNTRACED
 };
 
-value unix_waitpid(value flags, value pid_req)
+value unix_waitpid(value flags, value pid_req)   /* ML */
 {
   int pid, status;
   

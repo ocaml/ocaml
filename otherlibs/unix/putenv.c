@@ -38,7 +38,7 @@ value unix_putenv(value name, value val) /* ML */
 
 #else
 
-value unix_putenv(value name, value val) /* ML */
+value unix_putenv(value name, value val)
 { invalid_argument("putenv not implemented"); }
 
 #endif

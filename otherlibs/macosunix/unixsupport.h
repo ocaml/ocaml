@@ -2,9 +2,9 @@
 /*                                                                     */
 /*                           Objective Caml                            */
 /*                                                                     */
-/*             Damien Doligez, projet Para, INRIA Rocquencourt         */
+/*          Damien Doligez, projet Moscova, INRIA Rocquencourt         */
 /*                                                                     */
-/*  Copyright 1996 Institut National de Recherche en Informatique et   */
+/*  Copyright 1999 Institut National de Recherche en Informatique et   */
 /*  en Automatique.  All rights reserved.  This file is distributed    */
 /*  under the terms of the GNU Library General Public License.         */
 /*                                                                     */
@@ -12,28 +12,31 @@
 
 /* $Id$ */
 
-/* Processor dependencies */
-
-#define ARCH_BIG_ENDIAN
-
-/* Operating system and standard library dependencies. */
-
-#define OCAML_OS_TYPE "MacOS"
+#define POSIX_SIGNALS
 #define HAS_MEMMOVE
-#define HAS_BCOPY
 #define HAS_STRERROR
+#define HAS_SOCKETS
+#define HAS_SOCKLEN_T
+#define HAS_UNISTD
+#define HAS_DIRENT
+#define HAS_REWINDDIR
 #define HAS_GETCWD
-#define HAS_UI
+#define HAS_UTIME
+#define HAS_DUP2
+#define HAS_TRUNCATE
+#define HAS_SELECT
+#define HAS_SYMLINK
+#define HAS_GETHOSTNAME
+#define HAS_GETTIMEOFDAY
+#define HAS_MKTIME
 
-#define SIZEOF_INT 4
-#define SIZEOF_LONG 4
-#define SIZEOF_SHORT 2
-
-#if powerc
-#define CPU_TYPE_STRING "PPC"
-#else
-#define CPU_TYPE_STRING "68k"
-#define THREADED_CODE
+#ifdef HAS_UNISTD
+#include <unistd.h>
 #endif
 
-/* FIXME to do: add 64-bit integer stuff */
+#define Nothing ((value) 0)
+
+extern void unix_error (int errcode, char * cmdname, value arg) Noreturn;
+extern void uerror (char * cmdname, value arg) Noreturn;
+
+#define UNIX_BUFFER_SIZE 2048

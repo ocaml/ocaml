@@ -19,7 +19,7 @@ value unix_exit(value n)               /* ML */
 {
   _exit(Int_val(n));
   return Val_unit;                  /* never reached, but suppress warnings */
-                                /* from smart compilers */
+                                    /* from smart compilers */
 }
 
 

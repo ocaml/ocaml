@@ -12,9 +12,14 @@
 
 # $Id$
 
+#adbgflag = -sym on -d DEBUG -wb -l
+#cdbgflag = -sym on -d DEBUG
+#ldbgflag = -sym on
+
 C = sc
-COptions = -model far -w 29,30,35 # -d DEBUG -mbg full
-AOptions = -model far # -d DEBUG -wb -l
+COptions = -w 29,30,35 {ocamlgusiflag} -i ::config: {cdbgflag} ¶
+           -model far -mbg full
+AOptions = -model far {adbgflag}
 LinkOptions = -model far -ad 4 -msg nodup -compact -pad 0 -state nouse -br 68k
 Libs = "{libraries}IntEnv.o" ¶
        "{libraries}Interface.o" ¶
@@ -24,29 +29,37 @@ Libs = "{libraries}IntEnv.o" ¶
        "{libraries}ToolLibs.o"
 
 PPCC = mrc
-PPCCOptions = -w 29,30,35 # -sym on -d DEBUG # beware: "-sym on" => "-opt off"
-PPCLinkOptions = -d # -sym on
+PPCCOptions = -w 29,30,35 {ocamlgusiflag} -i ::config: {cdbgflag}
+PPCLinkOptions = -d {ldbgflag}
 PPCLibs = "{sharedlibraries}MathLib" "{ppclibraries}PPCCRuntime.o" ¶
           "{ppclibraries}PPCToolLibs.o" "{sharedlibraries}StdCLib" ¶
           "{ppclibraries}StdCRuntime.o" "{sharedlibraries}InterfaceLib"
 
-OBJS = interp.a.o misc.c.o stacks.c.o fix_code.c.o startup.c.o main.c.o ¶
-  freelist.c.o major_gc.c.o minor_gc.c.o memory.c.o alloc.c.o roots.c.o ¶
-  fail.c.o signals.c.o ¶
-  compare.c.o ints.c.o floats.c.o str.c.o array.c.o io.c.o extern.c.o ¶
-  intern.c.o ¶
-  hash.c.o sys.c.o meta.c.o parsing.c.o gc_ctrl.c.o terminfo.c.o md5.c.o ¶
-  obj.c.o lexing.c.o macintosh.c.o rotatecursor.c.o printexc.c.o callback.c.o ¶
-  debugger.c.o weak.c.o compact.c.o instrtrace.c.o finalise.c.o custom.c.o
+OBJS = :interp.a.o :misc.c.o :stacks.c.o ¶
+  :fix_code.c.o :startup.c.o :main.c.o ¶
+  :freelist.c.o :major_gc.c.o :minor_gc.c.o :memory.c.o :alloc.c.o :roots.c.o ¶
+  :fail.c.o :signals.c.o ¶
+  :compare.c.o :ints.c.o :floats.c.o :str.c.o :array.c.o :io.c.o :extern.c.o ¶
+  :intern.c.o ¶
+  :hash.c.o :sys.c.o :meta.c.o :parsing.c.o ¶
+  :gc_ctrl.c.o :terminfo.c.o :md5.c.o ¶
+  :obj.c.o :lexing.c.o :macintosh.c.o ¶
+  :rotatecursor.c.o :printexc.c.o :callback.c.o ¶
+  :debugger.c.o :weak.c.o :compact.c.o ¶
+  :instrtrace.c.o :finalise.c.o :custom.c.o
 
-PPCOBJS = interp.c.x misc.c.x stacks.c.x fix_code.c.x startup.c.x main.c.x ¶
-  freelist.c.x major_gc.c.x minor_gc.c.x memory.c.x alloc.c.x roots.c.x ¶
-  fail.c.x signals.c.x ¶
-  compare.c.x ints.c.x floats.c.x str.c.x array.c.x io.c.x extern.c.x ¶
-  intern.c.x ¶
-  hash.c.x sys.c.x meta.c.x parsing.c.x gc_ctrl.c.x terminfo.c.x md5.c.x ¶
-  obj.c.x lexing.c.x macintosh.c.x rotatecursor.c.x printexc.c.x callback.c.x ¶
-  debugger.c.x weak.c.x compact.c.x instrtrace.c.x finalise.c.x custom.c.x
+PPCOBJS = :interp.c.x :misc.c.x :stacks.c.x ¶
+  :fix_code.c.x :startup.c.x :main.c.x ¶
+  :freelist.c.x :major_gc.c.x :minor_gc.c.x :memory.c.x :alloc.c.x :roots.c.x ¶
+  :fail.c.x :signals.c.x ¶
+  :compare.c.x :ints.c.x :floats.c.x :str.c.x :array.c.x :io.c.x :extern.c.x ¶
+  :intern.c.x ¶
+  :hash.c.x :sys.c.x :meta.c.x :parsing.c.x ¶
+  :gc_ctrl.c.x :terminfo.c.x :md5.c.x ¶
+  :obj.c.x :lexing.c.x :macintosh.c.x ¶
+  :rotatecursor.c.x :printexc.c.x :callback.c.x ¶
+  :debugger.c.x :weak.c.x :compact.c.x ¶
+  :instrtrace.c.x :finalise.c.x :custom.c.x
 
 PRIMS = alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c ¶
   intern.c interp.c ints.c io.c lexing.c md5.c meta.c obj.c parsing.c ¶
@@ -56,19 +69,19 @@ PUBLIC_INCLUDES = mlvalues.h alloc.h misc.h callback.h fail.h custom.h
 
 all Ä ocamlrun libcamlrun.o libcamlrun.x
 
-ocamlrun ÄÄ libcamlrun.o prims.c.o
-    ilink -c 'MPS ' -t MPST {LinkOptions} -o ocamlrun prims.c.o ¶
-          libcamlrun.o  {libs}
-
-ocamlrun ÄÄ libcamlrun.x prims.c.x
+ocamlrun ÄÄ libcamlrun.x :prims.c.x
     ppclink -c 'MPS ' -t MPST {PPCLinkOptions} -o ocamlrun prims.c.x ¶
             libcamlrun.x {PPCLibs}
 
-libcamlrun.o Ä {OBJS}
-    lib -o libcamlrun.o {OBJS}
+ocamlrun ÄÄ libcamlrun.o :prims.c.o
+    ilink -c 'MPS ' -t MPST {LinkOptions} -o ocamlrun prims.c.o ¶
+          libcamlrun.o  {libs}
 
 libcamlrun.x Ä {PPCOBJS}
     ppclink {PPCLinkOptions} -xm library -o libcamlrun.x {PPCOBJS}
+
+libcamlrun.o Ä {OBJS}
+    lib -o libcamlrun.o {OBJS}
 
 install Ä
     duplicate -y ocamlrun "{BINDIR}ocamlrun"
@@ -80,8 +93,11 @@ install Ä
     duplicate -y config.h "{LIBDIR}caml:"
     open -t "{LIBDIR}caml:config.h"
     find ¥ "{LIBDIR}caml:config.h"
-    find /Å'#include "'Åsm-Mac.hÅ°/ "{LIBDIR}caml:config.h"
-    catenate ::config:sm-Mac.h > "{LIBDIR}caml:config.h".¤
+    find /Å'#include <m.h>'Å°/ "{LIBDIR}caml:config.h"
+    catenate ::config:m.h > "{LIBDIR}caml:config.h".¤
+    find ¥ "{LIBDIR}caml:config.h"
+    find /Å'#include <s.h>'Å°/ "{LIBDIR}caml:config.h"
+    catenate ::config:s.h > "{LIBDIR}caml:config.h".¤
     find ¥ "{LIBDIR}caml:config.h"
     clear -c ° /Å'#include "'Å/  "{LIBDIR}caml:config.h"
     close -y "{LIBDIR}caml:config.h"
@@ -104,7 +120,7 @@ primitives Ä {PRIMS}
     streamedit -d -e "/ ([a-z0-9_]+)¨0 *'('Å'* ML *'/ print ¨0" {PRIMS} ¶
                > primitives
 
-prims.c Ä primitives
+:prims.c Ä primitives
     echo '#include "mlvalues.h"' > prims.c
     echo '#include "prims.h"' >> prims.c
     streamedit -e '1,$ change "extern value " . "();"' primitives >>prims.c
@@ -115,16 +131,18 @@ prims.c Ä primitives
     streamedit -e '1,$ change "  ¶"" . "¶","' primitives >> prims.c
     echo '0 };' >> prims.c
 
-opnames.h Ä instruct.h
+:opnames.h Ä :instruct.h
     streamedit -e "/¶¶/'*'/ delete" ¶
                -e "/enum / replace // 'char * names_of_'" ¶
                -e '/{°/ replace // "[] = {"' ¶
                -e "1,$ replace /([A-Z][A-Z_0-9]*)¨0/ '¶"' ¨0 '¶"' -c °" ¶
                instruct.h > opnames.h
 
-rotatecursor.c.o Ä
+:rotatecursor.c.o Ä
     {C} -b rotatecursor.c -o rotatecursor.c.o {COptions}
 
-depend Ä prims.c opnames.h
-    makedepend Å.c > Makefile.Mac.depend · dev:null
-    makedepend -objext .x Å.c >> Makefile.Mac.depend · dev:null
+depend Ä :prims.c :opnames.h
+    begin
+      makedepend -w -objext .x Å.c
+      makedepend -w Å.c
+    end | streamedit -e "/¶t/ replace // ' ' -c °" > Makefile.Mac.depend

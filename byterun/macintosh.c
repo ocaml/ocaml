@@ -29,36 +29,6 @@
 #include "misc.h"
 #include "rotatecursor.h"
 
-/* The user interface defaults to MPW tool.  The standalone application
-   overrides the ui_* functions, as well as [main], [InitCursorCtl],
-   [RotateCursor], [atexit], [getenv], and the terminfo functions.
-*/
-
-void ui_exit (int return_code)
-{
-  exit (return_code);
-}
-
-int ui_read (int file_desc, char *buf, unsigned int length)
-{
-  ROTATECURSOR_MAGIC ();
-  return read (file_desc, buf, length);
-}
-
-int ui_write (int file_desc, char *buf, unsigned int length)
-{
-  ROTATECURSOR_MAGIC ();
-  return write (file_desc, buf, length);
-}
-
-void ui_print_stderr (char *format, void *arg)
-{
-  ROTATECURSOR_MAGIC ();
-  fprintf (stderr, format, arg);
-  fflush (stderr);
-}
-
-
 /* Unix emulation stuff */
 
 static short prevdir = 0;
@@ -117,7 +87,7 @@ Handle macos_getfullpathname (short vrefnum, long dirid)
     return NULL;
 }
 
-char *getcwd (char *buf, long size)
+char *getcwd (char *buf, size_t size)
 {
   size_t len;
 
@@ -241,10 +211,10 @@ int system (char const *cmd)
   /* forward stdout and stderr */
   err = AEGetParamPtr (&reply, 'diag', typeChar, &ret_type,
                        buf, buf_size, &ret_size);
-  if (err == noErr) ui_write (2, buf, ret_size);
+  if (err == noErr) write (2, buf, ret_size);
   err = AEGetParamPtr (&reply, '----', typeChar, &ret_type,
                        buf, buf_size, &ret_size);
-  if (err == noErr) ui_write (1, buf, ret_size);
+  if (err == noErr) write (1, buf, ret_size);
   
   AEDisposeDesc (&reply);
   AEDisposeDesc (&myevent);

@@ -4,7 +4,7 @@
    2. Drag it to the toplevel window.
    3. Watch the colors.
    4. Drag the mouse over the graphics window and click here and there.
-   5. Type command-period in the toplevel window to stop the program.
+   5. Type any key to the graphics window to stop the program.
 *)
 
 open Graphics;;
@@ -82,6 +82,7 @@ let caml = make_image [|
   [|t;t;t;t;n;n;n;n;n;n;n;n;n;n;n;n;n;n;n;n;n;t;t;t;t;t;t;t;t;t;t;t;|];
 |];;
 
+(*
 let x = ref 0 and y = ref 0;;
 let bg = get_image !x !y 32 32;;
 while true do
@@ -92,6 +93,33 @@ while true do
   blit_image bg !x !y;
   draw_image caml !x !y;
 done;;
+*)
+set_color (rgb 0 0 0);
+remember_mode false;
+try while true do
+  let st = wait_next_event [Mouse_motion; Button_down; Key_pressed] in
+  synchronize ();
+  if st.keypressed then raise Exit;
+  if st.button then begin
+    remember_mode true;
+    draw_image caml st.mouse_x st.mouse_y;
+    remember_mode false;
+  end;
+  let x = st.mouse_x + 16 and y = st.mouse_y + 16 in
+
+  moveto 0 y;
+  lineto (x - 25) y;
+  moveto 10000 y;
+  lineto (x + 25) y;
+
+  moveto x 0;
+  lineto x (y - 25);
+  moveto x 10000;
+  lineto x (y + 25);
+
+  draw_image caml st.mouse_x st.mouse_y;
+done with Exit -> ()
+;;
 
 (* To run this example:
    ********************
@@ -99,5 +127,5 @@ done;;
    2. Drag it to the toplevel window.
    3. Watch the colors.
    4. Drag the mouse over the graphics window and click here and there.
-   5. Type command-period in the toplevel window to stop the program.
+   5. Type any key to the graphics window to stop the program.
 *)

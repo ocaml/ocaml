@@ -29,7 +29,10 @@ value exn_bucket;
 
 void mlraise(value v)
 {
+#ifdef DEBUG
+  extern int volatile async_signal_mode;  /* from signals.c */
   Assert(! async_signal_mode);
+#endif
   Unlock_exn();
   exn_bucket = v;
   if (external_raise == NULL) fatal_uncaught_exception(v);

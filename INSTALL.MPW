@@ -15,12 +15,19 @@
 # You need MPW 3.5 (with MrC) and Universal Interfaces version 3.3
 # You need ToolServer (which comes with MPW by default).
 # You need WASTE version 1.3
+# To use the Unix emulation library "macosunix" in the standalone
+# application, you also need:
+# + GUSI version 2.0.6
+# + SFIO version 04Aug99
 #
 # MPW is available from Apple's FTP site at:
 # <ftp://ftp.apple.com/devworld/Tool_Chest/Core_Mac_OS_Tools/MPW_etc./>
 #
 # WASTE 1.3 is available from:
-# <XXX some URL XXX>
+# <ftp://ftp.boingo.com/dan/WASTE/>
+#
+# GUSI 2.0.6 and SFIO 04Aug99 are available from:
+# <ftp://sunsite.cnlab-switch.ch/software/platform/macos/src/mw_c/>
 
 
 # INSTALLATION INSTRUCTIONS
@@ -35,6 +42,11 @@
 # Go to the directory where you found this file.
 
 Directory "`echo "{active}" | streamedit -e '1 replace /[Â:]*°/ ""'`"
+
+# Set the O'Caml configuration files.
+
+Duplicate -y :config:s-MacOS.h :config:s.h
+Duplicate -y :config:m-MacOS.h :config:m.h
 
 # Copy some useful scripts to your Commands directory.
 #   DoMake is absolutely needed for installation

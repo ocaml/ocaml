@@ -22,7 +22,7 @@ extern int error_table[];
 
 extern char * strerror(int);
 
-value unix_error_message(value err)
+value unix_error_message(value err)   /* ML */
 {
   int errnum;
   errnum = Is_block(err) ? Int_val(Field(err, 0)) : error_table[Int_val(err)];

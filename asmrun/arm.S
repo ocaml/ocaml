@@ -14,12 +14,12 @@
 
 /* Asm part of the runtime system, ARM processor */
 
-trap_ptr	.req	r11
-alloc_ptr	.req	r8
-alloc_limit	.req	r9
-sp		.req	r13
-lr		.req	r14
-pc		.req	r15
+trap_ptr        .req    r11
+alloc_ptr       .req    r8
+alloc_limit     .req    r9
+sp              .req    r13
+lr              .req    r14
+pc              .req    r15
 
         .text
 
@@ -39,7 +39,7 @@ caml_call_gc:
 
         .global caml_alloc1
 caml_alloc1:
-	ldr	r10, [alloc_limit, #0]
+        ldr     r10, [alloc_limit, #0]
         sub     alloc_ptr, alloc_ptr, #8
         cmp     alloc_ptr, r10
         movcs   pc, lr                /* Return if alloc_ptr >= alloc_limit */
@@ -53,7 +53,7 @@ caml_alloc1:
 
         .global caml_alloc2
 caml_alloc2:
-	ldr	r10, [alloc_limit, #0]
+        ldr     r10, [alloc_limit, #0]
         sub     alloc_ptr, alloc_ptr, #12
         cmp     alloc_ptr, r10
         movcs   pc, lr                /* Return if alloc_ptr >= alloc_limit */
@@ -67,7 +67,7 @@ caml_alloc2:
 
         .global caml_alloc3
 caml_alloc3:
-	ldr	r10, [alloc_limit, #0]
+        ldr     r10, [alloc_limit, #0]
         sub     alloc_ptr, alloc_ptr, #16
         cmp     alloc_ptr, r10
         movcs   pc, lr                /* Return if alloc_ptr >= alloc_limit */
@@ -81,11 +81,11 @@ caml_alloc3:
 
         .global caml_alloc
 caml_alloc:
-	str	r12, [sp, #-4]!
-	ldr	r12, [alloc_limit, #0]
+        str     r12, [sp, #-4]!
+        ldr     r12, [alloc_limit, #0]
         sub     alloc_ptr, alloc_ptr, r10
         cmp     alloc_ptr, r12
-	ldr	r12, [sp], #4
+        ldr     r12, [sp], #4
         movcs   pc, lr                /* Return if alloc_ptr >= alloc_limit */
     /* Record return address and desired size */
         ldr     alloc_limit, .Lcaml_last_return_address
@@ -94,7 +94,7 @@ caml_alloc:
     /* Invoke GC */
         bl      .Linvoke_gc
     /* Try again */
-	ldr	r10, .Lcaml_requested_size
+        ldr     r10, .Lcaml_requested_size
         b       caml_alloc
 
 /* Shared code to invoke the GC */
@@ -120,7 +120,7 @@ caml_alloc:
         str     trap_ptr, [r10, #0]
     /* Call the garbage collector */
         bl      garbage_collection
-    /* Restore the registers from the stack */        
+    /* Restore the registers from the stack */
         ldfd    f4, [sp], #8
         ldfd    f5, [sp], #8
         ldfd    f6, [sp], #8
@@ -202,7 +202,7 @@ caml_start_program:
         str     r4, [sp, #0]
         ldr     r4, .LLtrap_handler
         str     r4, [sp, #4]
-	mov	trap_ptr, sp
+        mov     trap_ptr, sp
     /* Reload allocation pointers */
         ldr     r4, .Lyoung_ptr
         ldr     alloc_ptr, [r4, #0]
@@ -268,7 +268,7 @@ raise_caml_exception:
         ldr     r1, .Lcaml_exception_pointer
         ldr     sp, [r1, #0]
     /* Pop previous handler and addr of trap, and jump to it */
-        ldmfd	sp!, {trap_ptr, pc}
+        ldmfd   sp!, {trap_ptr, pc}
 
 /* Callback from C to Caml */
 
@@ -322,7 +322,7 @@ caml_array_bound_error:
 .LLtrap_handler:                .word .Ltrap_handler
 .Lcaml_apply2:                  .word caml_apply2
 .Lcaml_apply3:                  .word caml_apply3
-.Lcaml_requested_size:		.word 0
+.Lcaml_requested_size:          .word 0
 .Larray_bound_error:            .word array_bound_error
 
 /* GC roots for callback */

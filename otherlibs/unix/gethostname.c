@@ -14,10 +14,10 @@
 
 #include <mlvalues.h>
 #include <alloc.h>
-#ifndef _WIN32
-#include <sys/param.h>
-#else
+#if defined (_WIN32)
 #include <winsock.h>
+#elsif !macintosh
+#include <sys/param.h>
 #endif
 #include "unixsupport.h"
 

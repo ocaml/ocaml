@@ -664,7 +664,7 @@ int caml_threadstatus_wait (value wrapper)
 
 /* Synchronous signal wait */
 
-value caml_wait_signal(value sigs)
+value caml_wait_signal(value sigs) /* ML */
 {
   sigset_t set;
   int retcode, signo;

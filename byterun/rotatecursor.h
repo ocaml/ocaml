@@ -12,42 +12,103 @@
 
 /* $Id$ */
 
-#ifndef _rotatecursor_
-#define _rotatecursor_
+/* rotatecursor library, written by <Damien.Doligez@inria.fr>
+   This file is in the public domain.
 
-/* [rotatecursor_flag] will be automagically set to 1 when the time comes
-   to call [rotatecursor_action].
+   version 1.12.2
+
+   The goal of this library is to help implement cooperative multitasking
+   for MPW tools: to make sure that your program calls RotateCursor often
+   enough (about 20 times per second) but not too often (to avoid a big
+   slowdown).
+   It can also be used for applications with a little more work.
+
+
+   Simple usage for MPW tools:
+   ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   1. #include this file where appropriate
+   2. Insert the following line in every loop of your program:
+        ROTATECURSOR_MAGIC ();
+      The overhead of this macro is only a few CPU cycles, so it can be
+      used without problem even in tight loops.
+
+
+   Simple usage for applications:
+   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+   1. Write a function with prototype:
+        pascal void myaction (long x);
+      This functions should get and handle all events until the event
+      queue is empty (i.e. until it gets a null event).  It should also
+      animate the cursor.
+   2. #include this file where appropriate
+   3. Add this line to the init code of your program:
+        rotatecursor_options (NULL, 0, &myaction);
+   4. Insert the following line in every loop of your program:
+        ROTATECURSOR_MAGIC ();
+      The overhead of this macro is only a few CPU cycles, so it can be
+      used without problem even in tight loops.
+   5. If there is no function called RotateCursor in your libraries, you
+      will have to provide one that does nothing (it will not be called).
+
+   See below for advanced options.
 */
+
+#ifndef _rotatecursor_h_
+#define _rotatecursor_h_
+
 extern int volatile rotatecursor_flag;
-
-
-/* Use [rotatecursor_options] to set advanced parameters:
-
-   1. [p1] is a pointer to another variable that will be set to 1 when
-      the time is up, unless it is already nonzero.  Typical use is when
-      you already have a variable in your program that is set
-      asynchronously for something else, and you want to avoid testing
-      two different variables in your inner loop.  Pass NULL if you don't
-      need this feature.
-
-   2. [period] is the interval (in milliseconds) between calls to
-      RotateCursor.  Reasonable values are between 10 and 200;
-      the default is 50.
+/*
+  [rotatecursor_flag] will be automagically set to 1 when the time comes
+  to call [rotatecursor_ticker].
 */
-void rotatecursor_options (int volatile *p1, int period);
 
-/* [reverse] is 0 to rotate the cursor clockwise, anything else to
-   rotate counterclockwise.  This function resets [rotatecursor_flag]
-   to 0.
-   This function always returns 0.  It returns an int so you can use
-   it in an expression as well as a statement.  Useful for some macros.
+
+void rotatecursor_options (int volatile *p1, int period,
+                           pascal void (*action) (long));
+/*
+  Use [rotatecursor_options] to change advanced parameters:
+
+  1. [p1] is a pointer to another variable that will be set to 1 when
+     the time is up, unless it is already nonzero.  Typical use is when
+     you already have a variable in your program that is set
+     asynchronously for something else, and you want to avoid testing
+     two different variables in your inner loop.  Pass [NULL] in this
+     argument if you don't need this feature.
+
+  2. [period] is the interval (in milliseconds) between calls to
+     RotateCursor.  Reasonable values are between 10 and 200.
+     If you pass 0 in this argument, the default value (50) will
+     be used.  This value is passed to PrimeTime, so a negative value
+     represents a delay in microseconds (not very useful here...)
+
+  3. [action] is the function that will be called at regular intervals
+     by [rotatecursor_ticker].  If you pass [NULL] in this argument,
+     the default function, [RotateCursor], will be called.
+*/
+
+int rotatecursor_ticker (void);
+/*
+  [rotatecursor_ticker] calls your [action] function (or [RotateCursor]),
+  resets [rotatecursor_flag] to 0, and rearms the Time Manager task that
+  will set [rotatecursor_flag] to 1 after the appropriate delay.
+
+  This function always returns 0.  It returns an int so you can use
+  it in an expression as well as a statement.
  */
-int rotatecursor_action (int reverse);
 
-/* Simple interface to [rotatecursor_flag] and [rotatecursor_action].
-   Can be used as a statement (followed by a semicolon) or in an
-   expression (followed by a comma).
+#define ROTATECURSOR_MAGIC() (rotatecursor_flag ? rotatecursor_ticker () : 0)
+/*
+  [ROTATECURSOR_MAGIC] is a simple interface to [rotatecursor_flag]
+  and [rotatecursor_ticker].  Can be used as a statement (followed by
+  a semicolon) or in an expression (followed by a comma).
 */
-#define ROTATECURSOR_MAGIC() (rotatecursor_flag ? rotatecursor_action (0) : 0)
 
-#endif /* _rotatecursor_ */
+void rotatecursor_final (void);
+/*
+  This function is set up (with [atexit]) to be called before your
+  program finishes.  If for any reason the [atexit] functions are not
+  called before your program exits, you should call this function by hand.
+  It is harmless to call [rotatecursor_final] twice.
+*/
+
+#endif /* _rotatecursor_h_ */

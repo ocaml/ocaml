@@ -66,7 +66,7 @@ value gr_open_graph(value arg)
     for (q = geometry_spec; *p != 0; p++)
       if (q < geometry_spec + sizeof(geometry_spec) - 1) *q++ = *p;
     *q = 0;
-    
+
     /* Open the display */
     if (grdisplay == NULL) {
       grdisplay = XOpenDisplay(display_name);
@@ -81,7 +81,7 @@ value gr_open_graph(value arg)
     /* Set up the error handlers */
     XSetErrorHandler(gr_error_handler);
     XSetIOErrorHandler(gr_ioerror_handler);
-    
+
     /* Parse the geometry specification */
     hints.x = 0;
     hints.y = 0;
@@ -98,7 +98,7 @@ value gr_open_graph(value arg)
     if (ret & (WidthValue | HeightValue)) {
       hints.width = w; hints.height = h; hints.flags |= USSize;
     }
-    
+
     /* Initial drawing color is black */
     grcolor = grblack;
 
@@ -113,11 +113,11 @@ value gr_open_graph(value arg)
                            None, NULL, 0, &hints);
     grwindow.gc = XCreateGC(grdisplay, grwindow.win, 0, NULL);
     XSetBackground(grdisplay, grwindow.gc, grwhite);
-    XSetForeground(grdisplay, grwindow.gc, grcolor); 
-   
+    XSetForeground(grdisplay, grwindow.gc, grcolor);
+
     /* Require exposure, resize and keyboard events */
     XSelectInput(grdisplay, grwindow.win, DEFAULT_EVENT_MASK);
-    
+
     /* Map the window on the screen and wait for the first Expose event */
     XMapWindow(grdisplay, grwindow.win);
     do { XNextEvent(grdisplay, &event); } while (event.type != Expose);
@@ -136,13 +136,13 @@ value gr_open_graph(value arg)
                     XDefaultDepth(grdisplay, grscreen));
     grbstore.gc = XCreateGC(grdisplay, grbstore.win, 0, NULL);
     XSetBackground(grdisplay, grbstore.gc, grwhite);
-    
+
     /* Clear the pixmap */
     XSetForeground(grdisplay, grbstore.gc, grwhite);
     XFillRectangle(grdisplay, grbstore.win, grbstore.gc,
                    0, 0, grbstore.w, grbstore.h);
     XSetForeground(grdisplay, grbstore.gc, grcolor);
-    
+
     /* Set the display and remember modes on */
     grdisplay_mode = True ;
     grremember_mode = True ;
@@ -150,7 +150,7 @@ value gr_open_graph(value arg)
     /* The global data structures are now correctly initialized.
        In particular, gr_sigio_handler can now handle events safely. */
     gr_initialized = True;
-    
+
     /* If possible, request that system calls be restarted after
        the EVENT_SIGNAL signal. */
 #ifdef POSIX_SIGNALS
@@ -226,7 +226,7 @@ value gr_clear_graph(void)
   if(grdisplay_mode) {
     XSetForeground(grdisplay, grwindow.gc, grwhite);
     XFillRectangle(grdisplay, grwindow.win, grwindow.gc,
-		   0, 0, grwindow.w, grwindow.h);
+                   0, 0, grwindow.w, grwindow.h);
     XSetForeground(grdisplay, grwindow.gc, grcolor);
     XFlush(grdisplay);
   }
@@ -249,9 +249,9 @@ value gr_size_y(void)
 value gr_synchronize(void)
 {
   XCopyArea(grdisplay, grbstore.win, grwindow.win, grwindow.gc,
-	    0, grbstore.h - grwindow.h,
-	    grwindow.w, grwindow.h,
-	    0, 0);
+            0, grbstore.h - grwindow.h,
+            grwindow.w, grwindow.h,
+            0, 0);
   XFlush(grdisplay);
   return Val_unit ;
 }

@@ -1,3 +1,27 @@
+#*** Dependencies: Cut here ***
+# These dependencies were produced at 14:50:27 on 3 avr 2000 by MakeDepend
+
+:nat_stubs.c.x Ä  ¶
+ :nat_stubs.c ¶
+ "{CIncludes}"memory.h ¶
+ :nat.h ¶
+ "{CIncludes}"ConditionalMacros.h ¶
+ "{CIncludes}"MacMemory.h ¶
+ "{CIncludes}"MacTypes.h ¶
+ "{CIncludes}"MixedMode.h
+
+#*** Dependencies: Cut here ***
+# These dependencies were produced at 14:50:28 on 3 avr 2000 by MakeDepend
+
+:nat_stubs.c.o Ä  ¶
+ :nat_stubs.c ¶
+ "{CIncludes}"memory.h ¶
+ :nat.h ¶
+ "{CIncludes}"ConditionalMacros.h ¶
+ "{CIncludes}"MacMemory.h ¶
+ "{CIncludes}"MacTypes.h ¶
+ "{CIncludes}"MixedMode.h
+
 big_int.cmiÄ nat.cmi 
 num.cmiÄ big_int.cmi nat.cmi ratio.cmi 
 ratio.cmiÄ big_int.cmi nat.cmi 

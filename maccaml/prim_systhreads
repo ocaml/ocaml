@@ -1,0 +1,15 @@
+caml_condition_broadcast
+caml_condition_new
+caml_condition_signal
+caml_condition_wait
+caml_mutex_lock
+caml_mutex_new
+caml_mutex_try_lock
+caml_mutex_unlock
+caml_thread_id
+caml_thread_initialize
+caml_thread_join
+caml_thread_new
+caml_thread_self
+caml_thread_yield
+caml_wait_signal

@@ -88,18 +88,18 @@ static void DoKeyDown (EventRecord *evt)
       chr = -1;
     }
   }
-  if (isCmdKey && chr == '.' && FrontWindow () == winToplevel){
-    if (evt->what != autoKey){
-      /* If the signal handler calls longjmp, then it will jump into the
-         bytecode interpreter and Caml will be working.  If it does not,
-         then Caml must have been working already because we are not in
-         a blocking section.  In all cases, raising a signal puts Caml
-         to work.
-      */
-      Caml_working (1);
-      raise (SIGINT);
-    }
-  }else if (isCmdKey && chr >= 0x20){
+  /* If we were called by GUSI via RotateCursor or the Spin hook,
+     GUSI will raise SIGINT if command-period was pressed, so we
+     do it only if in_gusi is false.
+  */
+  if (isCmdKey && chr == '.'
+      && FrontWindow () == winToplevel
+      && evt->what != autoKey
+      && !in_gusi){
+    intr_requested = 1;
+    raise (SIGINT);
+  }
+  if (isCmdKey && chr >= 0x20){
     UpdateMenus ();
     DoMenuChoice (MenuKey (chr), evt->modifiers);
   }else{
@@ -294,6 +294,8 @@ void GetAndProcessEvents (WaitEventOption wait, short oldx, short oldy)
   UInt32 cursleep = (wait == noWait) ? 0 : evtSleep;
   RgnHandle currgn;
   
+  if (!in_gusi && quit_requested && !exit_called) exit (0);
+
   if (wait == waitMove){
     currgn = pointRegion;
     SetRectRgn (pointRegion, oldx, oldy, oldx+1, oldy+1);
@@ -303,12 +305,10 @@ void GetAndProcessEvents (WaitEventOption wait, short oldx, short oldy)
 
   WaitNextEvent (everyEvent, &evt, cursleep, currgn);
   ProcessEvent (&evt, &dummysleep, &dummyregion);
-  if (quit_requested) ExitApplication ();
 
   while (evt.what != nullEvent){
     WaitNextEvent (everyEvent, &evt, 0, NULL);
     ProcessEvent (&evt, &dummysleep, &dummyregion);
-    if (quit_requested) ExitApplication ();
   }
 }
 

@@ -47,7 +47,7 @@ static void gr_draw_text(char *txt, int len)
                 grx, Bcvt(gry) - grfont->descent + 1, txt, len);
   if (grdisplay_mode) {
     XDrawString(grdisplay, grwindow.win, grwindow.gc,
-		grx, Wcvt(gry) - grfont->descent + 1, txt, len);
+                grx, Wcvt(gry) - grfont->descent + 1, txt, len);
     XFlush(grdisplay);
   }
   grx += XTextWidth(grfont, txt, len);

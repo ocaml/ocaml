@@ -20,14 +20,10 @@
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
-#if macintosh
-#include "::config:sm-Mac.h"
-#else
 #include "../config/s.h"
-#endif
 
 #if macintosh
-#include "::byterun:rotatecursor.h"
+#include "../byterun/rotatecursor.h"
 #endif
 
 /*  machine-dependent definitions			*/

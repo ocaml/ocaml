@@ -109,6 +109,7 @@ void enter_blocking_section(void)
 {
   int temp;
 
+#if !macintosh_GUSI
   while (1){
     Assert (!async_signal_mode);
     /* If a signal arrives between the next two instructions,
@@ -119,14 +120,17 @@ void enter_blocking_section(void)
     if (!pending_signal) break;
     async_signal_mode = 0;
   }
+#endif
   if (enter_blocking_section_hook != NULL) enter_blocking_section_hook();
 }
 
 void leave_blocking_section(void)
 {
   if (leave_blocking_section_hook != NULL) leave_blocking_section_hook();
+#if !macintosh_GUSI
   Assert(async_signal_mode);
   async_signal_mode = 0;
+#endif
 }
 
 #ifndef SIGABRT

@@ -62,38 +62,38 @@ caml_call_gc:
         sw      $19, 19 * 4($24)
         sw      $20, 20 * 4($24)
         sw      $21, 21 * 4($24)
-	s.d	$f0, 0 * 8($sp)
-	s.d	$f1, 1 * 8($sp)
-	s.d	$f2, 2 * 8($sp)
-	s.d	$f3, 3 * 8($sp)
-	s.d	$f4, 4 * 8($sp)
-	s.d	$f5, 5 * 8($sp)
-	s.d	$f6, 6 * 8($sp)
-	s.d	$f7, 7 * 8($sp)
-	s.d	$f8, 8 * 8($sp)
-	s.d	$f9, 9 * 8($sp)
-	s.d	$f10, 10 * 8($sp)
-	s.d	$f11, 11 * 8($sp)
-	s.d	$f12, 12 * 8($sp)
-	s.d	$f13, 13 * 8($sp)
-	s.d	$f14, 14 * 8($sp)
-	s.d	$f15, 15 * 8($sp)
-	s.d	$f16, 16 * 8($sp)
-	s.d	$f17, 17 * 8($sp)
-	s.d	$f18, 18 * 8($sp)
-	s.d	$f19, 19 * 8($sp)
-	s.d	$f20, 20 * 8($sp)
-	s.d	$f21, 21 * 8($sp)
-	s.d	$f22, 22 * 8($sp)
-	s.d	$f23, 23 * 8($sp)
-	s.d	$f24, 24 * 8($sp)
-	s.d	$f25, 25 * 8($sp)
-	s.d	$f26, 26 * 8($sp)
-	s.d	$f27, 27 * 8($sp)
-	s.d	$f28, 28 * 8($sp)
-	s.d	$f29, 29 * 8($sp)
-	s.d	$f30, 30 * 8($sp)
-	s.d	$f31, 31 * 8($sp)
+        s.d     $f0, 0 * 8($sp)
+        s.d     $f1, 1 * 8($sp)
+        s.d     $f2, 2 * 8($sp)
+        s.d     $f3, 3 * 8($sp)
+        s.d     $f4, 4 * 8($sp)
+        s.d     $f5, 5 * 8($sp)
+        s.d     $f6, 6 * 8($sp)
+        s.d     $f7, 7 * 8($sp)
+        s.d     $f8, 8 * 8($sp)
+        s.d     $f9, 9 * 8($sp)
+        s.d     $f10, 10 * 8($sp)
+        s.d     $f11, 11 * 8($sp)
+        s.d     $f12, 12 * 8($sp)
+        s.d     $f13, 13 * 8($sp)
+        s.d     $f14, 14 * 8($sp)
+        s.d     $f15, 15 * 8($sp)
+        s.d     $f16, 16 * 8($sp)
+        s.d     $f17, 17 * 8($sp)
+        s.d     $f18, 18 * 8($sp)
+        s.d     $f19, 19 * 8($sp)
+        s.d     $f20, 20 * 8($sp)
+        s.d     $f21, 21 * 8($sp)
+        s.d     $f22, 22 * 8($sp)
+        s.d     $f23, 23 * 8($sp)
+        s.d     $f24, 24 * 8($sp)
+        s.d     $f25, 25 * 8($sp)
+        s.d     $f26, 26 * 8($sp)
+        s.d     $f27, 27 * 8($sp)
+        s.d     $f28, 28 * 8($sp)
+        s.d     $f29, 29 * 8($sp)
+        s.d     $f30, 30 * 8($sp)
+        s.d     $f31, 31 * 8($sp)
     /* Call the garbage collector */
         jal     garbage_collection
     /* Restore all regs used by the code generator */
@@ -118,38 +118,38 @@ caml_call_gc:
         lw      $19, 19 * 4($24)
         lw      $20, 20 * 4($24)
         lw      $21, 21 * 4($24)
-	l.d	$f0, 0 * 8($sp)
-	l.d	$f1, 1 * 8($sp)
-	l.d	$f2, 2 * 8($sp)
-	l.d	$f3, 3 * 8($sp)
-	l.d	$f4, 4 * 8($sp)
-	l.d	$f5, 5 * 8($sp)
-	l.d	$f6, 6 * 8($sp)
-	l.d	$f7, 7 * 8($sp)
-	l.d	$f8, 8 * 8($sp)
-	l.d	$f9, 9 * 8($sp)
-	l.d	$f10, 10 * 8($sp)
-	l.d	$f11, 11 * 8($sp)
-	l.d	$f12, 12 * 8($sp)
-	l.d	$f13, 13 * 8($sp)
-	l.d	$f14, 14 * 8($sp)
-	l.d	$f15, 15 * 8($sp)
-	l.d	$f16, 16 * 8($sp)
-	l.d	$f17, 17 * 8($sp)
-	l.d	$f18, 18 * 8($sp)
-	l.d	$f19, 19 * 8($sp)
-	l.d	$f20, 20 * 8($sp)
-	l.d	$f21, 21 * 8($sp)
-	l.d	$f22, 22 * 8($sp)
-	l.d	$f23, 23 * 8($sp)
-	l.d	$f24, 24 * 8($sp)
-	l.d	$f25, 25 * 8($sp)
-	l.d	$f26, 26 * 8($sp)
-	l.d	$f27, 27 * 8($sp)
-	l.d	$f28, 28 * 8($sp)
-	l.d	$f29, 29 * 8($sp)
-	l.d	$f30, 30 * 8($sp)
-	l.d	$f31, 31 * 8($sp)
+        l.d     $f0, 0 * 8($sp)
+        l.d     $f1, 1 * 8($sp)
+        l.d     $f2, 2 * 8($sp)
+        l.d     $f3, 3 * 8($sp)
+        l.d     $f4, 4 * 8($sp)
+        l.d     $f5, 5 * 8($sp)
+        l.d     $f6, 6 * 8($sp)
+        l.d     $f7, 7 * 8($sp)
+        l.d     $f8, 8 * 8($sp)
+        l.d     $f9, 9 * 8($sp)
+        l.d     $f10, 10 * 8($sp)
+        l.d     $f11, 11 * 8($sp)
+        l.d     $f12, 12 * 8($sp)
+        l.d     $f13, 13 * 8($sp)
+        l.d     $f14, 14 * 8($sp)
+        l.d     $f15, 15 * 8($sp)
+        l.d     $f16, 16 * 8($sp)
+        l.d     $f17, 17 * 8($sp)
+        l.d     $f18, 18 * 8($sp)
+        l.d     $f19, 19 * 8($sp)
+        l.d     $f20, 20 * 8($sp)
+        l.d     $f21, 21 * 8($sp)
+        l.d     $f22, 22 * 8($sp)
+        l.d     $f23, 23 * 8($sp)
+        l.d     $f24, 24 * 8($sp)
+        l.d     $f25, 25 * 8($sp)
+        l.d     $f26, 26 * 8($sp)
+        l.d     $f27, 27 * 8($sp)
+        l.d     $f28, 28 * 8($sp)
+        l.d     $f29, 29 * 8($sp)
+        l.d     $f30, 30 * 8($sp)
+        l.d     $f31, 31 * 8($sp)
     /* Reload new allocation pointer and allocation limit */
         lw      $22, young_ptr
         lw      $23, young_limit
@@ -175,7 +175,7 @@ caml_c_call:
     /* Function to call is in $24 */
     /* Set up $gp, saving caller's $gp in callee-save register $19 */
         .cpsetup $25, $19, caml_c_call
-    /* Preload addresses of interesting global variables 
+    /* Preload addresses of interesting global variables
        in callee-save registers */
         la      $16, caml_last_return_address
         la      $17, young_ptr
@@ -209,7 +209,7 @@ caml_start_program:
     /* Setup $gp */
         .cpsetup $25, 0x80, caml_start_program
     /* Load in $24 the code address to call */
-        la	$24, caml_program
+        la      $24, caml_program
     /* Code shared with callback* */
 $103:
     /* Save return address */
@@ -253,7 +253,7 @@ $103:
         sw      $0, caml_last_return_address
     /* Call the Caml code */
         move    $25, $24
-	jal     $24
+        jal     $24
 $104:
     /* Pop the trap frame, restoring caml_exception_pointer */
         lw      $24, 0($sp)
@@ -290,7 +290,7 @@ $106:
         .cpreturn
         addu    $sp, $sp, 0x90
         j       $31
-        
+
     /* The trap handler: encode exception bucket as an exception result
        and return it */
 $105:

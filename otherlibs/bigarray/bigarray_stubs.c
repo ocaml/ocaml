@@ -24,7 +24,7 @@
 #include "mlvalues.h"
 
 extern void bigarray_unmap_file(void * addr, unsigned long len);
-                                          /* from mmap_stubs.c */
+                                          /* from mmap_xxx.c */
 
 /* Compute the number of elements of a big array */
 
@@ -55,9 +55,23 @@ unsigned long bigarray_byte_size(struct caml_bigarray * b)
          * bigarray_element_size[b->flags & BIGARRAY_KIND_MASK];
 }
 
-/* Allocation of a big array */
+/* Operation table for bigarrays */
 
-static struct custom_operations bigarray_ops;
+static void bigarray_finalize(value v);
+static int bigarray_compare(value v1, value v2);
+static long bigarray_hash(value v);
+static void bigarray_serialize(value, unsigned long *, unsigned long *);
+unsigned long bigarray_deserialize(void * dst);
+static struct custom_operations bigarray_ops = {
+  "_bigarray",
+  bigarray_finalize,
+  bigarray_compare,
+  bigarray_hash,
+  bigarray_serialize,
+  bigarray_deserialize
+};
+
+/* Allocation of a big array */
 
 #define MAX_BIGARRAY_MEMORY 128*1024*1024
 /* 128 Mb -- after allocating that much, it's probably worth speeding
@@ -657,17 +671,6 @@ unsigned long bigarray_deserialize(void * dst)
   }
   return sizeof(struct caml_bigarray) + (b->num_dims - 1) * sizeof(long);
 }
-
-/* Operation table for bigarrays */
-
-static struct custom_operations bigarray_ops = {
-  "_bigarray",
-  bigarray_finalize,
-  bigarray_compare,
-  bigarray_hash,
-  bigarray_serialize,
-  bigarray_deserialize
-};
 
 /* Create / update proxy to indicate that b2 is a sub-array of b1 */
 

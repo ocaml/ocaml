@@ -33,12 +33,18 @@ set -e APPLIDIR "{mpw}:OCaml-distrib:"
 
 ### Which libraries to compile and install
 # Currently available:
-#       str             Regular expressions and high-level string processing
-#       num             Arbitrary-precision rational arithmetic
+#       bigarray        
 #       dynlink         Dynamic linking of bytecode
 #       graph           Graphics (for the standalone application only)
+#       macosunix       Unix emulation (application only)
+#       num             Arbitrary-precision rational arithmetic
+#       str             Regular expressions and high-level string processing
+#       systhreads      POSIX-based threads library
 #
-set -e OTHERLIBRARIES "num str dynlink graph"
+# NOTE: remove macosunix and systhreads from this list if you do not
+#       have GUSI installed.
+# 
+set -e OTHERLIBRARIES "bigarray dynlink graph macosunix num str systhreads"
 
 
 ############# Configuration for the native-code compiler
@@ -49,13 +55,12 @@ set -e MODEL ppc
 set -e SYSTEM unknown
 set -e NATIVECC MrC
 
-
 ############# Version numbers (do not change)
 
 set -e OCAMLMAJOR 2
-set -e OCAMLMINOR 99
+set -e OCAMLMINOR "99+14"
 set -e MAJOR 1
 set -e MINOR 0
 set -e BUGFIX 0
 set -e STAGE a
-set -e REV 8
+set -e REV 9

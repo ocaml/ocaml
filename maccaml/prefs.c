@@ -37,9 +37,9 @@ static void InitPrefs (void)
   defpref.text = defpref.unread = defpref.input = defpref.output
     = defpref.errors = defstyle;
 
-  defpref.unread.tsColor.green = 42000;
-  defpref.output.tsColor.blue = 65535;
-  defpref.errors.tsColor.red = 65535;
+  defpref.unread.tsColor.green = 35000;
+  defpref.input.tsColor.blue = 65535;
+  defpref.errors.tsColor.red = 50000;
   defpref.errors.tsFace = underline;
 }
 

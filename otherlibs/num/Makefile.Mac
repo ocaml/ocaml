@@ -16,9 +16,9 @@
 
 # Compilation options
 C = sc
-COptions = -model far -i :bignum:h:,:::byterun: -w 35
+COptions = -model far -i :bignum:h:,:::byterun:,:::config: -w 35
 PPCC = mrc
-PPCCOptions = -i :bignum:h:,:::byterun: -w 35
+PPCCOptions = -i :bignum:h:,:::byterun:,:::config: -w 35
 
 CAMLC = :::boot:ocamlrun :::ocamlc -I :::stdlib: -w s
 CAMLOPT = :::boot:ocamlrun :::ocamlopt: -I :::stdlib: -w s
@@ -68,6 +68,8 @@ clean Ä partialclean
 nat_stubs.c.o Ä nat.h
 
 depend Ä
-    MakeDepend Å.c > Makefile.Mac.depend · dev:null
-    MakeDepend -objext .x Å.c >> Makefile.Mac.depend · dev:null
-    :::boot:ocamlrun :::tools:ocamldep Å.mli Å.ml >> Makefile.Mac.depend
+    begin
+      MakeDepend -w -objext .x Å.c
+      MakeDepend -w Å.c
+      :::boot:ocamlrun :::tools:ocamldep Å.mli Å.ml
+	end | streamedit -e "/¶t/ replace // ' ' -c °" > Makefile.Mac.depend

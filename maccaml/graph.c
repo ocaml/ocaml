@@ -72,6 +72,7 @@ void GraphNewSizePos (void)
   GraphUpdateGW ();
 }
 
+/* The current port must be winGraphics when this function is called. */
 void GraphUpdate (void)
 {
   Rect r, src, dst;
@@ -105,8 +106,11 @@ void GraphScroll (long dx, long dy)
   RgnHandle update = NewRgn ();
   WStatusH st = WinGetStatus (winGraphics);
   Point p;
+  GrafPtr port;
 
   Assert (st != NULL);
+  GetPort (&port);
+  SetPort (winGraphics);
   WELongRectToRect (&(*st)->viewrect, &r);
   ScrollRect (&r, dx, dy, update);
   WEOffsetLongRect (&(*st)->destrect, dx, dy);
@@ -119,6 +123,7 @@ void GraphScroll (long dx, long dy)
   y0 += dy;
   GetPen (&p);
   MoveTo (p.h + dx, p.v + dy);
+  SetPort (port);
 }
 
 /* keyboard event queue */
@@ -486,7 +491,12 @@ value gr_sigio_handler (value unit)           /* Not used on MacOS */
 value gr_synchronize (value unit)
 {
 #pragma unused (unit)
+  GrafPtr port;
+  
+  GetPort (&port);
+  SetPort (winGraphics);
   GraphUpdate ();
+  SetPort (port);
   return Val_unit;
 }
 

@@ -1,4 +1,4 @@
-	    O'Caml emacs mode, snapshot of $Date$
+        O'Caml emacs mode, snapshot of $Date$
 
 The files in this archive define a caml-mode for emacs, for editing
 Objective Caml and Objective Label programs, as well as an
@@ -15,10 +15,10 @@ see README.itz, which is the README from Ian Zimmerman's package.
 To use it, just put the .el files in your path, and add the following
 three lines in your .emacs.
 
-	(setq auto-mode-alist
-	      (cons '("\\.ml[iylp]?$" . caml-mode) auto-mode-alist))
-	(autoload 'caml-mode "caml" "Major mode for editing Caml code." t)
-	(autoload 'run-caml "inf-caml" "Run an inferior Caml process." t)
+    (setq auto-mode-alist
+          (cons '("\\.ml[iylp]?$" . caml-mode) auto-mode-alist))
+    (autoload 'caml-mode "caml" "Major mode for editing Caml code." t)
+    (autoload 'run-caml "inf-caml" "Run an inferior Caml process." t)
 
 I added camldebug.el from the original distribution, since there will
 soon be a debugger for Objective Caml, but I do not know enough about
@@ -26,17 +26,17 @@ it.
 
 To install the mode itself, edit the Makefile and do
 
-	% make install
+    % make install
 
 To install ocamltags, do
 
-	% make install-ocamltags
+    % make install-ocamltags
 
 To use highlighting capabilities, add ONE of the following two
 lines to your .emacs.
 
-	(if window-system (require 'caml-hilit))
-	(if window-system (require 'caml-font))
+    (if window-system (require 'caml-hilit))
+    (if window-system (require 'caml-font))
 
 caml.el and inf-caml.el can be used collectively, but it might be a
 good idea to copy caml-hilit.el or caml-font.el to you own directory,
@@ -44,19 +44,19 @@ and edit it to your taste and colors.
 
 Main key bindings:
 
-TAB	indent current line
-M-C-q	indent phrase
-M-C-h	mark phrase
-C-c C-a	switch between interface and implementation
-C-c C-c	compile (usually make)
-C-x`	goto next error (also mouse button 2 in the compilation log)
+TAB indent current line
+M-C-q   indent phrase
+M-C-h   mark phrase
+C-c C-a switch between interface and implementation
+C-c C-c compile (usually make)
+C-x`    goto next error (also mouse button 2 in the compilation log)
 
 Once you have started caml by M-x run-caml:
 
-M-C-x	send phrase to inferior caml process
-C-c C-r	send region to inferior caml process
+M-C-x   send phrase to inferior caml process
+C-c C-r send region to inferior caml process
 C-c C-s show inferior caml process
-C-c`	goto error in expression sent by M-C-x
+C-c`    goto error in expression sent by M-C-x
 
 For other bindings, see C-h b.
 
@@ -107,7 +107,7 @@ Version 1.05:
   correctly even when you write them at the beginning of a line.
 
 * added a Caml menu, and Imenu support. Imenu menu can be disabled
-  by setting the variable caml-imenu-disable to t. 
+  by setting the variable caml-imenu-disable to t.
   Xemacs support for the Menu, but no Imenu.
 
 * key bindings closer to lisp-mode.
@@ -122,8 +122,8 @@ Version 1.03b:
 * many bugs corrected.
 
 * (partial) compatibility with Caml-Light added.
-	(setq caml-quote-char "`")
-	(setq inferior-caml-program "camllight")
+    (setq caml-quote-char "`")
+    (setq inferior-caml-program "camllight")
   Literals will be correctly understood and highlighted. However,
   indentation rules are still Objective Caml's: this just happens to
   work well in most cases, but is only intended for occasional use.
@@ -152,14 +152,14 @@ Some remarks about the style supported:
 
 Since Objective Caml's syntax is very liberal (more than 100
 shift-reduce conflicts with yacc), automatic indentation is far from
-easy. Moreover, you expect the indentation to be not purely syntactic, 
+easy. Moreover, you expect the indentation to be not purely syntactic,
 but also semantic: reflecting the meaning of your program.
 
 This mode tries to be intelligent. For instance some operators are
-indented differently in the middle and at the end of a line (thanks to 
+indented differently in the middle and at the end of a line (thanks to
 Ian Zimmerman). Also, we do not indent after if .. then .. else, when
 else is on the same line, to reflect that this idiom is equivalent to
-a return instruction in a more imperative language, or after the in of 
+a return instruction in a more imperative language, or after the in of
 let .. in, since you may see that as an assignment.
 
 However, you may want to use a different indentation style. This is
@@ -178,4 +178,4 @@ in other cases may confuse the phrase selection function.
 
 Comments and bug reports to
 
-	Jacques Garrigue <garrigue@kurims.kyoto-u.ac.jp>
+    Jacques Garrigue <garrigue@kurims.kyoto-u.ac.jp>

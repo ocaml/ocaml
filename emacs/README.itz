@@ -15,9 +15,9 @@ CONTENTS:
 
     caml.el         A major mode for editing Caml code in Gnu Emacs
     inf-caml.el     To run a Caml toplevel under Emacs, with input and
-                    output in an Emacs buffer.    
+                    output in an Emacs buffer.
     camldebug.el    To run the Caml debugger under Emacs.
-    
+
 
 NOTE FOR EMACS 18 USERS:
 
@@ -66,7 +66,7 @@ distribution, and hacked on it. First, I added real syntax dependent
 indentation to caml mode. Like Xavier has said, it was hard (and I
 knew it would be), but I refused to believe it was impossible, partly
 because I knew of a Standard ML mode with indentation (written by
-Matthew Morley). 
+Matthew Morley).
 
 Indentation works pretty much like in other programming modes. C-j at
 the end of a line starts a new line properly indented. M-C-\ indents
@@ -80,14 +80,14 @@ TAB twice in succession. If you don't like this behaviour (but you
 should), it's quite easy to add to your startup code like this:
 
 (defun caml-old-style-indent ()
-	(if (caml-in-indentation)
-		(caml-indent-command)
-		(insert "\t")))
+        (if (caml-in-indentation)
+                (caml-indent-command)
+                (insert "\t")))
 
 (add-hook 'caml-mode-hook
-	(function (lambda ()
-		(define-key 'caml-mode-map "\t"
-			caml-old-style-indent))))
+        (function (lambda ()
+                (define-key 'caml-mode-map "\t"
+                        caml-old-style-indent))))
 
 You can customize the appearance of your caml code by twiddling the
 variables listed at the start of caml.el. Good luck. :-)
@@ -102,7 +102,7 @@ with modern versions of Emacs. The main benefit here is that you can
 do debugger commands _from your caml source buffer_. Commands with the
 C-c prefix in the debugger buffer have counterparts which do the same
 thing (well, a similar thing) in the source buffer, with the C-x C-a
-prefix. 
+prefix.
 
 I made the existing debugger commands smarter in that they now attempt
 to guess the correct parameter to the underlying camldebug command. A
@@ -175,4 +175,3 @@ Ian T Zimmerman           +-------------------------------------------+
 Box 13445                 I    With so many executioners available,   I
 Berkeley CA 94712 USA     I suicide is a really foolish thing to do.  I
 mailto:itz@rahul.net      +-------------------------------------------+
-

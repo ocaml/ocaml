@@ -337,7 +337,7 @@ system=unknown
 case "$host" in
   alpha-*-osf*)                 arch=alpha; system=digital;;
   alpha-*-linux*)               arch=alpha; system=linux;;
-  alpha-*-freebsd*)		arch=alpha; system=freebsd;;
+  alpha-*-freebsd*)             arch=alpha; system=freebsd;;
   alpha-*-netbsd*)              arch=alpha; system=netbsd;;
   alpha-*-openbsd*)             arch=alpha; system=openbsd;;
   sparc-*-sunos4.*)             arch=sparc; system=sunos;;
@@ -632,7 +632,7 @@ if sh ./hasgot -i limits.h && sh ./runtest getgroups.c; then
   echo "#define HAS_GETGROUPS" >> s.h
 fi
 
-if sh ./hasgot -i termios.h && 
+if sh ./hasgot -i termios.h &&
    sh ./hasgot tcgetattr tcsetattr tcsendbreak tcflush tcflow; then
   echo "POSIX termios found."
   echo "#define HAS_TERMIOS" >> s.h

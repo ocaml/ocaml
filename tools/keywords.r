@@ -54,7 +54,7 @@ resource 'Odds' (26087, "O'Caml") {
 };
 
 resource 'Sods' (26087, "O'Caml Keywords") {
-  "\t\r\n ~!$%^&*()/-+=<>,:[]{};",
+  "\t\r\n ~!$%^&*()/-+=<>,[]{};",
   { 
     "(*", openingFill, '(**)', red,
     "*)", closingFill, '(**)', red,

@@ -16,10 +16,10 @@
 
 # Compilation options
 C = sc
-COptions = -model far -i {REGEXLIB},:::byterun: -w 7
+COptions = -model far -i {REGEXLIB},:::byterun:,:::config: -w 7
 
 PPCC = mrc
-PPCCOptions = -i {REGEXLIB},:::byterun: -w 7
+PPCCOptions = -i {REGEXLIB},:::byterun:,:::config: -w 7
 
 CAMLC = :::boot:ocamlrun :::ocamlc -I :::stdlib:
 REGEXLIB = :regex-0.12:
@@ -61,6 +61,8 @@ install Ä
     {CAMLC} -c {COMPFLAGS} {default}.ml
 
 depend Ä
-    MakeDepend Å.c > Makefile.Mac.depend · dev:null
-    MakeDepend -objext .x Å.c >> Makefile.Mac.depend · dev:null
-    :::boot:ocamlrun :::tools:ocamldep Å.mli Å.ml >> Makefile.Mac.depend
+    begin
+      MakeDepend -w -objext .x Å.c
+      MakeDepend -w Å.c
+      :::boot:ocamlrun :::tools:ocamldep Å.mli Å.ml
+    end | streamedit -e "/¶t/ replace // ' ' -c °" > Makefile.Mac.depend

@@ -1,2 +1,30 @@
+#*** Dependencies: Cut here ***
+# These dependencies were produced at 14:50:33 on 3 avr 2000 by MakeDepend
+
+:strstubs.c.x Ä  ¶
+ :strstubs.c ¶
+ "{CIncludes}"SizeTDef.h ¶
+ "{CIncludes}"string.h ¶
+ "{CIncludes}"memory.h ¶
+ "{CIncludes}"NullDef.h ¶
+ "{CIncludes}"ConditionalMacros.h ¶
+ "{CIncludes}"MacMemory.h ¶
+ "{CIncludes}"MacTypes.h ¶
+ "{CIncludes}"MixedMode.h
+
+#*** Dependencies: Cut here ***
+# These dependencies were produced at 14:50:35 on 3 avr 2000 by MakeDepend
+
+:strstubs.c.o Ä  ¶
+ :strstubs.c ¶
+ "{CIncludes}"SizeTDef.h ¶
+ "{CIncludes}"string.h ¶
+ "{CIncludes}"memory.h ¶
+ "{CIncludes}"NullDef.h ¶
+ "{CIncludes}"ConditionalMacros.h ¶
+ "{CIncludes}"MacMemory.h ¶
+ "{CIncludes}"MacTypes.h ¶
+ "{CIncludes}"MixedMode.h
+
 str.cmoÄ str.cmi 
 str.cmxÄ str.cmi 

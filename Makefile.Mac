@@ -14,7 +14,7 @@
 
 # The main Makefile
 
-MacVersion = "Mac{MAJOR}.{MINOR}{STAGE}{REV}"
+MacVersion = "Mac{MAJOR}.{MINOR}.{BUGFIX}{STAGE}{REV}"
 
 CAMLC = :boot:ocamlrun :boot:ocamlc -I :boot:
 COMPFLAGS = {INCLUDES}
@@ -86,7 +86,7 @@ EXPUNGEOBJS = :utils:misc.cmo :utils:formatmsg.cmo :utils:tbl.cmo ¶
 PERVASIVES = arg array buffer callback char digest filename format gc hashtbl ¶
   lexing list map obj parsing pervasives printexc printf queue random ¶
   set sort stack string stream sys oo genlex topdirs toploop weak lazy ¶
-  marshal
+  marshal int32 int64 nativeint
 
 # Recompile the system using the bootstrap compiler
 all Ä runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml ¶
@@ -133,6 +133,9 @@ coldstart Ä
     domake -d COMPILER=::boot:ocamlc all
     duplicate -y {LIBFILES} ::boot:
     directory ::
+
+# Build the core system: the minimum needed to make depend and bootstrap
+core Ä runtime ocamlc ocamllex ocamlyacc ocamltools library
 
 # Save the current bootstrap compiler
 backup Ä
@@ -216,6 +219,7 @@ install Ä $OutOfDate
       directory :::
     end
     duplicate -y "{LIBDIR}"Å "{APPLIDIR}stdlib:"
+    duplicate -y :test:Moretest:graph_example.ml "{APPLIDIR}"
     directory :maccaml:
     domake install
     directory ::

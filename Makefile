@@ -156,6 +156,9 @@ coldstart:
 	if test -d stdlib/caml; then :; else \
           ln -s ../byterun stdlib/caml; fi
 
+# Build the core system: the minimum needed to make depend and bootstrap
+core : runtime ocamlc ocamllex ocamlyacc ocamltools library
+
 # Save the current bootstrap compiler
 MAXSAVED=boot/Saved/Saved.prev/Saved.prev/Saved.prev/Saved.prev/Saved.prev
 backup:

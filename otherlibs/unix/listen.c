@@ -19,7 +19,7 @@
 
 #include <sys/socket.h>
 
-value unix_listen(value sock, value backlog)
+value unix_listen(value sock, value backlog) /* ML */
 {
   if (listen(Int_val(sock), Int_val(backlog)) == -1) uerror("listen", Nothing);
   return Val_unit;

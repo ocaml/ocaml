@@ -25,7 +25,7 @@ resource 'vers' (1) {
   0,
   VERSIONSTR,
   "Objective Caml version " VERSIONSTR "\n"
-  "Copyright 1991-1999 INRIA"
+  COPYRIGHTSTR
 #undef d
 #undef a
 #undef b
@@ -118,7 +118,7 @@ resource 'DITL' (kAlertBug) {
         {10, 70, 80, 368},
         StaticText {disabled,
           "You have discovered a bug in Objective Caml.  Please"
-          " report the following information to <caml-light@inria.fr>."
+          " report the following information to <caml-bugs@inria.fr>."
         },
 
         {80, 20, 145, 368},
@@ -198,8 +198,8 @@ resource 'DITL' (kAlertNeed32BitQD) {
     }
 };
 
-resource 'ALRT' (kAlertNonZeroExit) {
-    {60, 81, 210, 431}, kAlertNonZeroExit,
+resource 'ALRT' (kAlertExit) {
+    {60, 81, 210, 431}, kAlertExit,
     {
         OK, visible, silent,
         OK, visible, silent,
@@ -209,14 +209,14 @@ resource 'ALRT' (kAlertNonZeroExit) {
     alertPositionParentWindowScreen
 };
 
-resource 'DITL' (kAlertNonZeroExit) {
+resource 'DITL' (kAlertExit) {
     {
         {110, 270, 130, 328}, Button {enabled, "OK"},
 
         {10, 70, 95, 328},
         StaticText {
           disabled,
-          "The O'Caml toplevel loop exited with error code ^0.\n\n"
+          "The O'Caml toplevel loop has terminated.\n\n"
           "Any further input in the toplevel window will be ignored."
         },
     }
@@ -302,7 +302,7 @@ resource 'DITL' (kAlertSaveAsk) {
 };
 
 resource 'DLOG' (kDialogAbout) {
-    {70, 60, 260, 452},
+    {70, 60, 280, 470},
     noGrowDocProc,
     visible,
     goAway,
@@ -315,23 +315,24 @@ resource 'DLOG' (kDialogAbout) {
 resource 'DITL' (kDialogAbout) {
     {
         {10, 20, 42, 52}, Icon {disabled, kJoeCamlIcon},
-        {10, 72, 180, 382}, UserItem { disabled },
+        {10, 72, 200, 400}, UserItem { disabled },
     }
 };
 
 data 'TEXT' (kAboutText, purgeable) {
     "Objective Caml version " VERSIONSTR "\n"
-    "Copyright 1991-1999 INRIA\n"
+    COPYRIGHTSTR "\n"
     "\n"
-    "Xavier Leroy, Jer™me Vouillon, Damien Doligez, et al.\n"
+    "Xavier Leroy, Jer™me Vouillon, Jacques Garrigue,"
+    " Damien Doligez, et al.\n"
     "\n"
+    "O'Caml for MacOS uses MPW libraries, the WASTE text engine,"
+    " GUSI, and SFIO.\n"
     "\n"
-    "O'Caml's interface to Mac OS is compiled with Apple's MPW"
-    " environment and uses the WASTE text engine.\n"
-    "\n"
-    "© 1983-1998 by Apple Computer, Inc., all rights reserved\n"
-    "\n"
+    "MPW © 1983-1999 by Apple Computer, Inc., all rights reserved\n"
     "WASTE text engine © 1993-1998 Marco Piovanelli\n"
+    "GUSI Copyright (C) 1992-1999 Matthias Neeracher\n"
+    "SFIO Copyright (c) 1991, 1996 by AT&T Labs - Research.\n"
 };
 
 resource 'MBAR' (kMenuBar) {
