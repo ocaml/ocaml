@@ -745,10 +745,8 @@ value interprete(code_t prog, asize_t prog_size)
         pc += pc[(sizes & 0xFFFF) + index];
       } else {
         long index = Long_val(accu);
-        if ((unsigned long) index < (sizes & 0xFFFF))
-          pc += pc[index];
-        else
-          pc += (sizes & 0xFFFF) + (sizes >> 16);
+        Assert ((unsigned long) index < (sizes & 0xFFFF)) ;
+        pc += pc[index];
       }
       Next;
     }

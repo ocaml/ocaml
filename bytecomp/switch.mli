@@ -15,10 +15,15 @@
   of if tests and switches.
 *)
 
-
 (* integer plus infinity, for interval limits *)
 
 type iext = TooMuch | Int of int
+
+(* For detecting action sharing, object style *)
+
+type 'a t_store =
+    {act_get : unit -> 'a array ; act_store : 'a -> int}
+val mk_store : ('a -> 'a -> bool) -> 'a t_store
 
 (* Arguments to the Make functor *)
 module type S =
@@ -34,8 +39,6 @@ module type S =
     val gtint : primitive
     (* type of actions *)
     type act
-    (* default action *)
-    val default : act
 
     (* Various constructors, for making a binder,
         adding one integer, etc. *)

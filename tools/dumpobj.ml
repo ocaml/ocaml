@@ -367,6 +367,7 @@ let op_shapes = [
   opGEINT, Nothing;
   opOFFSETINT, Sint;
   opOFFSETREF, Sint;
+  opISINT, Nothing;
   opGETMETHOD, Nothing;
   opBEQ, Sint_Disp;
   opBNEQ, Sint_Disp;

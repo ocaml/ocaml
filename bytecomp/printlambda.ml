@@ -225,24 +225,26 @@ let rec lam ppf = function
            if !spc then fprintf ppf "@ " else spc := true;
            fprintf ppf "@[<hv 1>case int %i:@ %a@]" n lam l)
          sw.sw_consts;
-       List.iter
-         (fun (n, l) ->
-           if !spc then fprintf ppf "@ " else spc := true;
-           fprintf ppf "@[<hv 1>case tag %i:@ %a@]" n lam l)
-         sw.sw_blocks in
+        List.iter
+          (fun (n, l) ->
+            if !spc then fprintf ppf "@ " else spc := true;
+            fprintf ppf "@[<hv 1>case tag %i:@ %a@]" n lam l)
+          sw.sw_blocks ;
+        begin match sw.sw_failaction with
+        | None  -> ()
+        | Some l ->
+            if !spc then fprintf ppf "@ " else spc := true;
+            fprintf ppf "@[<hv 1>default:@ %a@]" lam l
+        end in
+            
       fprintf ppf
-       "@[<1>(%s%s%a@ @[<v 0>%a@])@]"
-       (if sw.sw_checked then "switch-checked" else "switch")
-       (if sw.sw_nofail then "* " else " ")
+       "@[<1>(%s %a@ @[<v 0>%a@])@]"
+       (match sw.sw_failaction with None -> "switch*" | _ -> "switch")
        lam larg switch sw
-  | Lstaticfail ->
-      fprintf ppf "exit"
   | Lstaticraise (i, ls)  ->
       let lams ppf largs =
         List.iter (fun l -> fprintf ppf "@ %a" lam l) largs in
       fprintf ppf "@[<2>(exit@ %d%a)@]" i lams ls;
-  | Lcatch(lbody, lhandler) ->
-      fprintf ppf "@[<2>(catch@ %a@;<1 -1>with@ %a)@]" lam lbody lam lhandler
   | Lstaticcatch(lbody, (i, vars), lhandler) ->
       fprintf ppf "@[<2>(catch@ %a@;<1 -1>with (%d%a)@ %a)@]"
         lam lbody i

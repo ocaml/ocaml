@@ -53,11 +53,11 @@ let rec eliminate_ref id = function
          sw_numblocks = sw.sw_numblocks;
          sw_blocks =
             List.map (fun (n, e) -> (n, eliminate_ref id e)) sw.sw_blocks;
-         sw_checked = sw.sw_checked; sw_nofail = sw.sw_nofail})
-  | Lstaticfail as l -> l
-  | Lstaticraise _ as l -> l
-  | Lcatch(e1, e2) ->
-      Lcatch(eliminate_ref id e1, eliminate_ref id e2)
+         sw_failaction = match sw.sw_failaction with
+         | None -> None
+         | Some l -> Some (eliminate_ref id l)})
+  | Lstaticraise (i,args) ->
+      Lstaticraise (i,List.map (eliminate_ref id) args)
   | Lstaticcatch(e1, i, e2) ->
       Lstaticcatch(eliminate_ref id e1, i, eliminate_ref id e2)
   | Ltrywith(e1, v, e2) ->
@@ -101,22 +101,19 @@ let simplify_lambda lam =
     with Not_found ->
       Hashtbl.add occ v (ref 1) in
 
-  (* Also count occurrences of (exit n) statements with no arguments *)
+  (* Also count occurrences of (exit n) statements *)
   let exits = Hashtbl.create 17 in
   let count_exit i =
     try
       !(Hashtbl.find exits i)
     with
     | Not_found -> 0
+
   and incr_exit i =
     try
       incr(Hashtbl.find exits i)
     with
     | Not_found -> Hashtbl.add exits i (ref 1) in
-  (* And occurences of Lstaticfail, in every staticcatch scope *)
-  let count_fail = ref (ref 0) in
-  let at_catch = ref [] in
-  
   
   let rec count = function
   | Lvar v -> incr_var v
@@ -142,29 +139,22 @@ let simplify_lambda lam =
       count body
   | Lprim(p, ll) -> List.iter count ll
   | Lswitch(l, sw) ->
-      (* switch may generate Lstaticfail *)
-      if
-        (not sw.sw_nofail) &&
-        (sw.sw_numconsts > List.length sw.sw_consts ||
-        sw.sw_numblocks > List.length sw.sw_blocks)
-      then
-        !count_fail := !(!count_fail) + 2 ;
+      count_default sw ;
       count l;
-      List.iter (fun (n, l) -> count l) sw.sw_consts;
-      List.iter (fun (n, l) -> count l) sw.sw_blocks ;
-  | Lstaticfail -> incr !count_fail
+      List.iter (fun (_, l) -> count l) sw.sw_consts;
+      List.iter (fun (_, l) -> count l) sw.sw_blocks
   | Lstaticraise (i,ls) -> incr_exit i ; List.iter count ls
-  | Lcatch(l1, l2) as l ->
-      let save_count_fail = !count_fail in
-      count_fail := ref 0 ;                                      
-      count l1;
-      let this_count = !(!count_fail) in
-      at_catch := (l,!(!count_fail)) :: !at_catch ;
-      count_fail := save_count_fail ;
-      (* If l1 does not contain staticfail,
-         l2 will be removed, so don't count its variables *)
-      if this_count > 0 then
-        count l2
+  | Lstaticcatch (l1,(i,[]),Lstaticraise (j,[])) ->
+      (* i will be replaced by j in l1, so each occurence of i in l1
+         increases j's ref count *)
+      count l1 ;
+      let ic = count_exit i in
+      begin try
+        let r = Hashtbl.find exits j in r := !r + ic
+      with
+      | Not_found ->
+          Hashtbl.add exits j (ref ic)
+      end
   | Lstaticcatch(l1, (i,_), l2) ->
       count l1;
       (* If l1 does not contain (exit i),
@@ -184,6 +174,20 @@ let simplify_lambda lam =
   | Levent(l, _) -> count l
   | Lifused(v, l) ->
       if count_var v > 0 then count l
+
+  and count_default sw = match sw.sw_failaction with
+  | None -> ()
+  | Some al ->
+      let nconsts = List.length sw.sw_consts
+      and nblocks = List.length sw.sw_blocks in
+      if
+        nconsts < sw.sw_numconsts && nblocks < sw.sw_numblocks
+      then begin (* default action will occur twice in native code *)
+        count al ; count al
+      end else begin (* default action will occur once *)
+        assert (nconsts < sw.sw_numconsts || nblocks < sw.sw_numblocks) ;
+        count al
+      end
   in
   count lam;
   (* Second pass: remove Lalias bindings of unused variables,
@@ -193,8 +197,8 @@ let simplify_lambda lam =
       - if (exit i) occurs exactly once in body,
         substitute it with handler *)  
   let subst = Hashtbl.create 83
-  and subst_exit = Hashtbl.create 17
-  and subst_fail = ref Lstaticfail in
+  and subst_exit = Hashtbl.create 17 in
+
 
   let rec simplif = function
     Lvar v as l ->
@@ -237,10 +241,14 @@ let simplify_lambda lam =
   | Lswitch(l, sw) ->
       let new_l = simplif l
       and new_consts =  List.map (fun (n, e) -> (n, simplif e)) sw.sw_consts
-      and new_blocks =  List.map (fun (n, e) -> (n, simplif e)) sw.sw_blocks in
+      and new_blocks =  List.map (fun (n, e) -> (n, simplif e)) sw.sw_blocks
+      and new_fail = match sw.sw_failaction with
+      | None -> None
+      | Some l -> Some (simplif l) in
       Lswitch
-        (new_l,{sw with sw_consts = new_consts ; sw_blocks = new_blocks})
-  | Lstaticfail as l -> !subst_fail
+        (new_l,
+         {sw with sw_consts = new_consts ; sw_blocks = new_blocks;
+                  sw_failaction = new_fail})
   | Lstaticraise (i,[]) as l ->
       begin try
         Hashtbl.find subst_exit i
@@ -248,29 +256,10 @@ let simplify_lambda lam =
       | Not_found -> l
       end
   | Lstaticraise (i,ls) ->
-      Lstaticraise (i, List.map simplif ls)         
-  | Lcatch(l1, l2) as l ->
-      let nfail =
-        try
-          List.assq l !at_catch
-        with
-        | Not_found -> Misc.fatal_error "Simplif: catch" in
-      begin match nfail with
-      | 0 -> simplif l1
-      | 1 ->
-          let new_l2 = simplif l2 in
-          let save_subst_fail = !subst_fail in
-          subst_fail := new_l2 ;
-          let r = simplif l1 in
-          subst_fail := save_subst_fail ;
-          r
-      | _ ->
-          let save_subst_fail = !subst_fail in
-          subst_fail := Lstaticfail ;
-          let r = simplif l1 in
-          subst_fail := save_subst_fail ;
-          Lcatch (r,simplif l2)
-      end
+      Lstaticraise (i, List.map simplif ls)   
+  | Lstaticcatch (l1,(i,[]),(Lstaticraise (j,[]) as l2)) ->
+      Hashtbl.add subst_exit i (simplif l2) ;
+      simplif l1
   | Lstaticcatch (l1,(i,[]),l2) ->
       begin match count_exit i with
       | 0 -> simplif l1

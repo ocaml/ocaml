@@ -12,6 +12,33 @@
 
 type iext = TooMuch | Int of int
 
+(* Store for actions in object style *)
+exception Found of int
+
+type 'a t_store =
+    {act_get : unit -> 'a array ; act_store : 'a -> int}
+
+let mk_store same =
+  let r_acts = ref [] in
+  let store act =
+    let rec store_rec i = function
+      | [] -> i,[act] 
+      | act0::rem ->
+          if same act0 act then raise (Found i)
+          else
+            let i,rem = store_rec (i+1) rem in
+            i,act0::rem in
+    try
+      let i,acts = store_rec 0 !r_acts in
+      r_acts := acts ;
+      i
+    with
+    | Found i -> i
+
+  and get () = Array.of_list !r_acts in
+  {act_store=store ; act_get=get}
+
+
 module type S =
  sig
    type primitive
@@ -23,7 +50,6 @@ module type S =
    val gtint : primitive
    type act
 
-   val default : act
    val bind : act -> (act -> act) -> act
    val make_offset : act -> int -> act
    val make_prim : primitive -> act list -> act
@@ -73,19 +99,21 @@ module Make (Arg : S) =
         (string_of_iext i.low) (string_of_iext i.high) ;
       prerr_icases i.icases
 
-    let inter_default _ = function
-      | 0 -> true
-      | _ -> false
+let inter_default _ = function
+   | 0 -> true
+   | _ -> false
 
-    let is_closed i = match i.low, i.high with
-    | Int _, Int _ -> true
-    | _,_          -> false
+let is_closed i = match i.low, i.high with
+  | Int _, Int _ -> true
+  | _,_          -> false
 
-    type 'a t_ctx = 
-      {ctx_low : iext ; ctx_high : iext ; off : int ;
-        arg : 'a}
+type 'a t_ctx = 
+  {ctx_low : iext ; ctx_high : iext ; off : int ;
+  arg : 'a}
 
 let find_staticfail _ = 0
+
+let arg_default i ctx = i.iacts.(0) ctx
 
 (*
 let as_checked i = match i.low, i.high with
@@ -320,35 +348,39 @@ let make_inters_ifs  konst arg ({iacts = acts} as i) =
     if_rec arg l
   with
   | NoSuch -> assert false
-
+        
                      
-    let make_linear_ifs l_status konst arg ({iacts = acts} as i) =
-      match l_status with
-      | Linter -> make_inters_ifs  konst arg i
-      | Lsimple ->
-          let  cases,low,high = i.icases,arg.ctx_low,arg.ctx_high in
-          let n = Array.length cases-1 in
-          let rec do_rec arg i =
-            if i=n then
-              let _,_,act = cases.(i) in
-              acts.(act) arg
-            else
-              let _,high,act = cases.(i) in
-              make_if_test konst
-                Arg.leint arg high (acts.(act) arg)
-                (do_rec arg (i+1)) in
-          match low,high with
-          | TooMuch, TooMuch ->
-              let l = min_key i
-              and h = max_key i in
-              make_if_inter konst arg l h (fun arg -> do_rec arg 0) Arg.default
-          | TooMuch,_ ->
-              let l = min_key i in
-              make_if_test konst Arg.ltint arg l Arg.default (do_rec arg 0)
-          | _, TooMuch ->
-              let h = max_key i in
-              make_if_test konst Arg.gtint arg h Arg.default (do_rec arg 0)
-          | _,_ -> do_rec arg 0 
+let make_linear_ifs l_status konst arg ({iacts = acts} as i) =
+  match l_status with
+  | Linter -> make_inters_ifs  konst arg i
+  | Lsimple ->
+      let  cases,low,high = i.icases,arg.ctx_low,arg.ctx_high in
+      let n = Array.length cases-1 in
+      let rec do_rec arg i =
+        if i=n then
+          let _,_,act = cases.(i) in
+          acts.(act) arg
+        else
+          let _,high,act = cases.(i) in
+          make_if_test konst
+            Arg.leint arg high (acts.(act) arg)
+            (do_rec arg (i+1)) in
+      match low,high with
+      | TooMuch, TooMuch ->
+          let l = min_key i
+          and h = max_key i in
+          make_if_inter
+            konst arg l h (fun arg -> do_rec arg 0)
+            (arg_default i arg)
+      | TooMuch,_ ->
+          let l = min_key i in
+          make_if_test
+            konst Arg.ltint arg l (arg_default i arg) (do_rec arg 0)
+      | _, TooMuch ->
+          let h = max_key i in
+          make_if_test
+            konst Arg.gtint arg h (arg_default i arg) (do_rec arg 0)
+      | _,_ -> do_rec arg 0 
 
 let special_case i = match i.low, i.high with
 | Int 0, Int 2 -> begin match i.icases with
@@ -361,20 +393,17 @@ end
 
 exception Ends
 exception NoCut of t_status
-(*
-let debug = ref false
-*)
+
+
+let limit_switch = 4
+and limit_tree = 3
 
 let cut_here i =
   let c_if, l_status = count_tests i in
-(*
-  if !debug then
-    Printf.fprintf stderr "Attempt: %d as %s\n" c_if
-      (string_of_status (Linear l_status)) ;
-*)
+
   if c_if=0 then raise (NoCut Empty) ;
   if special_case i then raise (NoCut Switch) ;
-  if c_if - count_bornes i <=  !Clflags.limit_switch then
+  if c_if - count_bornes i <=  limit_switch then
     raise (NoCut (Linear l_status)) ;
   let icases = i.icases in
   let len = Array.length icases
@@ -440,12 +469,7 @@ let explode_linear i k =
       explode_rec 1
 
 let rec do_cluster i k =
-(*
-  if !debug then begin
-    prerr_string "++++++++++++++++\nCluster " ; prerr_inter i ;
-    prerr_endline ""
-  end ;
-*)
+
   let cases = i.icases in
   if i.high = TooMuch && inter_default i (low_action i) then
     let l0,h0,act0 = cases.(0) in
@@ -475,12 +499,7 @@ let rec do_cluster i k =
         else
           sub_cases 0 j cases,
           sub_cases j (Array.length cases-j) cases in
-(*
-      if !debug then begin
-        prerr_string "Left = " ; prerr_icases left ; prerr_endline "" ;
-        prerr_string "Right = " ; prerr_icases right ; prerr_endline ""
-      end ;
-*)
+
       do_cluster
         {i with high = Int (c_low-1) ; icases=left}
         (do_cluster
@@ -489,13 +508,7 @@ let rec do_cluster i k =
       let left = sub_cases 0 j cases
       and center = [| cases.(j) |]
       and right = sub_cases (j+1) (Array.length cases-j-1) cases in
-(*
-      if !debug then begin
-        prerr_string "Left = " ; prerr_icases left ; prerr_endline "" ;
-        prerr_string "Center = " ; prerr_icases center ; prerr_endline "" ;
-        prerr_string "Right = " ; prerr_icases right ; prerr_endline ""
-      end ;
-*)
+
       if j=0 then
         {i with low=i.low ; high = Int c_high ;
          icases = center ; status=Empty}::
@@ -517,10 +530,7 @@ let rec do_cluster i k =
     end
 with
 | NoCut status ->
-(*
-    if !debug then
-      Printf.fprintf stderr "%s\n" (string_of_status status) ;
-*)
+
     begin match status with
     | Linear _ -> explode_linear i k
     | _ -> {i with status=status}::k
@@ -532,15 +542,6 @@ with
     and center = sub_cases 1 (len-2) cases
     and ln,_,actn = cases.(len-1) in
 
-(*
-    if !debug then begin
-      prerr_string "Left = " ; prerr_icases [| cases.(0) |] ;
-      prerr_endline "" ;
-      prerr_string "Center = " ; prerr_icases center ; prerr_endline "" ;
-      prerr_string "Right = " ; prerr_icases [| cases.(len-1) |] ;
-      prerr_endline ""
-    end ;
-*)
 
     {i with high = Int h0 ; status = Empty ; icases = [| cases.(0) |]}::
     do_cluster
@@ -561,23 +562,7 @@ let merge_clusters i1 i2 = match i1.status, i2.status with
 | Linear _, Linear _  -> do_merge_clusters  i1 i2
 | _,_                -> raise NoMerge
 
-let simpl_clusters l =
-  match l with
-  | [] -> l
-  | [_] -> l
-  | _ ->
-(*
-      if !debug then begin
-        prerr_endline "------------------- Clusters --------------" ;
-        List.iter
-          (fun i -> prerr_inter i ; prerr_endline "") l
-      end ;
-*)
-      l
-
-let cluster i =
-  
-  simpl_clusters (do_cluster i [])
+let cluster i = do_cluster i []
 
 
 
@@ -684,16 +669,7 @@ let final_tests konst arg cl =
   let rec comp_tree cl =
   let n,status = count_tests cl in
 
-(*
-  if !debug then begin
-    prerr_inter cl  ;
-    Printf.fprintf stderr "\nFinally : %d tests as %s\n" n
-      (string_of_status (Linear status)) ;
-    flush stderr
-  end ;
-*)
-
-  if n <= !Clflags.limit_tree then
+  if n <= limit_tree then
     comp_leaf konst
       {arg with ctx_low = cl.low ; ctx_high = cl.high}
       {cl with status = Linear status}
@@ -730,21 +706,8 @@ let zyva konst arg low high cases acts =
         icases = cases  ;
         iacts=Array.map (fun act -> (fun _ -> act)) acts ;
         status = ToCluster} in
-(*
-    let old_debug = !debug in
-    if fst (count_tests cl) > 2 then debug := true ;
-    if !debug then begin
-      prerr_endline "******** zyva **********" ;
-      prerr_inter cl ;
-      prerr_endline ""
-    end ;
-*)
-    let r = comp_inter konst
-          {ctx_low=low ; ctx_high=high ; off=0 ; arg=arg} cl in
-(*
-    if !debug then prerr_endline "************************" ;
-    debug := old_debug ;
-*)
-    r
+    comp_inter konst
+      {ctx_low=low ; ctx_high=high ; off=0 ; arg=arg} cl
 
-  end
+
+end

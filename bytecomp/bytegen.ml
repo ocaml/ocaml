@@ -19,6 +19,7 @@ open Asttypes
 open Primitive
 open Types
 open Lambda
+open Switch
 open Instruct
 
 (**** Label generation ****)
@@ -224,12 +225,8 @@ let add_event ev =
 
 (**** Compilation of a lambda expression ****)
 
-(* The label to which Lstaticfail branches, and the stack size at that point.*)
+(* association staticraise numbers -> (lbl,size of stack *)
 
-let lbl_staticfail = ref None
-and sz_staticfail = ref 0
-
-(* Same information as a stack for Lstaticraise *)
 let sz_static_raises = ref []
 let find_raise_label i =
   try
@@ -241,13 +238,6 @@ let find_raise_label i =
 
 (* Will the translation of l lead to a jump to label ? *)
 let code_as_jump l sz = match l with
-|  Lstaticfail ->
-    if sz = !sz_staticfail then
-      match !lbl_staticfail with
-      | Some label -> Some label
-      | None -> Misc.fatal_error "exit outside appropriated catch"
-    else
-      None
 | Lstaticraise (i,[]) ->
     let label,size = find_raise_label i in
     if sz = size then
@@ -574,20 +564,6 @@ let rec comp_expr env exp sz cont =
       comp_args env args sz (comp_primitive p args :: cont)
   | Lprim(p, args) ->
       comp_args env args sz (comp_primitive p args :: cont)
-  | Lcatch(body, Lstaticfail) ->
-      comp_expr env body sz cont
-  | Lcatch(body, handler) ->
-      let (branch1, cont1) = make_branch cont in
-      let (lbl_handler, cont2) = label_code (comp_expr env handler sz cont1) in
-      let saved_lbl_staticfail = !lbl_staticfail
-      and saved_sz_staticfail = !sz_staticfail in
-      lbl_staticfail := Some lbl_handler;
-      sz_staticfail := sz;
-      let cont3 = comp_expr env body sz (branch1 :: cont2) in
-      lbl_staticfail := saved_lbl_staticfail;
-      sz_staticfail := saved_sz_staticfail;
-      cont3
-  | Lstaticfail -> comp_static_fail sz cont
   | Lstaticcatch (body, (i, vars) , handler) ->
       let branch1, cont1 = make_branch cont
       and nvars = List.length vars in
@@ -642,33 +618,37 @@ let rec comp_expr env exp sz cont =
   | Lswitch(arg, sw) ->
       let (branch, cont1) = make_branch cont in
       let c = ref (discard_dead_code cont1) in
-      let act_consts = Array.create sw.sw_numconsts Lstaticfail in
-      List.iter (fun (n, act) -> act_consts.(n) <- act) sw.sw_consts;
-      let act_blocks = Array.create sw.sw_numblocks Lstaticfail in
-      List.iter (fun (n, act) -> act_blocks.(n) <- act) sw.sw_blocks;
-      let lbl_consts = Array.create sw.sw_numconsts 0 in
+(* Build indirection vectors *)      
+      let store = mk_store (=) in
+      let act_consts = Array.create sw.sw_numconsts 0
+      and act_blocks = Array.create sw.sw_numblocks 0 in
+      begin match sw.sw_failaction with (* default is index 0 *)
+      | Some fail -> ignore (store.act_store fail)
+      | None      -> ()
+      end ;
+      List.iter
+        (fun (n, act) -> act_consts.(n) <- store.act_store act) sw.sw_consts;
+      List.iter
+        (fun (n, act) -> act_blocks.(n) <- store.act_store act) sw.sw_blocks;
+
+(* Compile and label actions *)
+      let acts = store.act_get () in
+      let lbls = Array.create (Array.length acts) 0 in
+      for i = Array.length acts-1 downto 0 do
+        let lbl,c1 = label_code (comp_expr env acts.(i) sz (branch :: !c)) in
+        lbls.(i) <- lbl ;
+        c := discard_dead_code c1
+      done ;
+
+(* Build label vectors *)
       let lbl_blocks = Array.create sw.sw_numblocks 0 in
-      let comp_nofail =
-        if sw.sw_nofail then
-          fun l c -> match l with
-          | Lstaticfail -> label_code c
-          | _           -> label_code(comp_expr env l sz (branch :: c))
-        else
-          fun l c ->
-            label_code(comp_expr env l sz (branch :: c)) in
-            
       for i = sw.sw_numblocks - 1 downto 0 do
-        let (lbl, c1) = comp_nofail act_blocks.(i) !c in
-        lbl_blocks.(i) <- lbl;
-        c := discard_dead_code c1
+        lbl_blocks.(i) <- lbls.(act_blocks.(i))
       done;
+      let lbl_consts = Array.create sw.sw_numconsts 0 in
       for i = sw.sw_numconsts - 1 downto 0 do
-        let (lbl, c1) = comp_nofail act_consts.(i) !c in
-        lbl_consts.(i) <- lbl;
-        c := discard_dead_code c1
+        lbl_consts.(i) <- lbls.(act_consts.(i))
       done;
-      if sw.sw_checked && not sw.sw_nofail then
-        c := comp_expr env Lstaticfail sz !c;        
       comp_expr env arg sz (Kswitch(lbl_consts, lbl_blocks) :: !c)
   | Lassign(id, expr) ->
       begin try
@@ -725,16 +705,6 @@ let rec comp_expr env exp sz cont =
       end
   | Lifused (_, exp) ->
       comp_expr env exp sz cont
-
-(* compile a static failure, fails if not enclosing catch *)
-and comp_static_fail sz cont =
-  let cont = discard_dead_code cont in
-  begin match !lbl_staticfail with
-  | None ->
-      Misc.fatal_error "exit outside appropriated catch"
-  | Some label ->
-      add_pop (sz - !sz_staticfail) (branch_to label cont)
-  end
 
 (* Compile a list of arguments [e1; ...; eN] to a primitive operation.
    The values of eN ... e2 are pushed on the stack, e2 at top of stack,
@@ -809,8 +779,6 @@ let comp_remainder cont =
 let compile_implementation modulename expr =
   Stack.clear functions_to_compile;
   label_counter := 0;
-  lbl_staticfail := None;
-  sz_staticfail := 0;
   sz_static_raises := [] ;
   compunit_name := modulename;
   let init_code = comp_expr empty_env expr 0 [] in
@@ -823,8 +791,7 @@ let compile_implementation modulename expr =
 let compile_phrase expr =
   Stack.clear functions_to_compile;
   label_counter := 0;
-  lbl_staticfail := None;
-  sz_staticfail := 0;
+  sz_static_raises := [] ;
   let init_code = comp_expr empty_env expr 1 [Kreturn 1] in
   let fun_code = comp_remainder [] in
   (init_code, fun_code)

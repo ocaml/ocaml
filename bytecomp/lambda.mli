@@ -134,8 +134,6 @@ type lambda =
   | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list
   | Lswitch of lambda * lambda_switch
-  | Lstaticfail
-  | Lcatch of lambda * lambda
   | Lstaticraise of int * lambda list
   | Lstaticcatch of lambda * (int * Ident.t list) * lambda
   | Ltrywith of lambda * Ident.t * lambda
@@ -153,8 +151,7 @@ and lambda_switch =
     sw_consts: (int * lambda) list;     (* Integer cases *)
     sw_numblocks: int;                  (* Number of tag block cases *)
     sw_blocks: (int * lambda) list;     (* Tag block cases *)
-    sw_checked: bool ;                  (* True if bound checks needed *)
-    sw_nofail: bool}                    (* True if should not fail *)
+    sw_failaction : lambda option}      (* Action to take if failure *)
 and lambda_event =
   { lev_loc: int;
     lev_kind: lambda_event_kind;
@@ -171,6 +168,7 @@ val lambda_unit: lambda
 val name_lambda: lambda -> (Ident.t -> lambda) -> lambda
 val name_lambda_list: lambda list -> (lambda list -> lambda) -> lambda
 val is_guarded: lambda -> bool
+val patch_guarded : lambda -> lambda -> lambda
 
 module IdentSet: Set.S with type elt = Ident.t
 val free_variables: lambda -> IdentSet.t
@@ -184,4 +182,17 @@ val bind : let_kind -> Ident.t -> lambda -> lambda -> lambda
 val commute_comparison : comparison -> comparison
 val negate_comparison : comparison -> comparison
 
+(***********************)
+(* For static failures *)
+(***********************)
+
+(* Get a new static failure ident *)
 val next_raise_count : unit -> int
+
+
+val staticfail : lambda (* Anticipated static failure *)
+
+(* Check anticipated failure, substitute its final value *)
+val is_guarded: lambda -> bool 
+val patch_guarded : lambda -> lambda -> lambda 
+

@@ -402,8 +402,10 @@ let rec push_defaults loc bindings pat_expr_list partial =
 
 (* Insertion of debugging events *)
 
-let event_before exp lam =
-  if !Clflags.debug && lam <> Lstaticfail
+let event_before exp lam = match lam with
+| Lstaticraise (_,_) -> lam
+| _ ->
+  if !Clflags.debug
   then Levent(lam, {lev_loc = exp.exp_loc.Location.loc_start;
                     lev_kind = Lev_before;
                     lev_repr = None;
@@ -575,7 +577,7 @@ let rec transl_exp e =
   | Texp_when(cond, body) ->
       event_before cond
         (Lifthenelse(transl_exp cond, event_before body (transl_exp body),
-                     Lstaticfail))
+                     staticfail))
   | Texp_send(expr, met) ->
       let met_id =
         match met with
@@ -761,7 +763,7 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
   then begin
     (* Allocate new record with given fields (and remaining fields
        taken from init_expr if any *)
-    let lv = Array.create (Array.length all_labels) Lstaticfail in
+    let lv = Array.create (Array.length all_labels) staticfail in
     let init_id = Ident.create "init" in
     begin match opt_init_expr with
       None -> ()

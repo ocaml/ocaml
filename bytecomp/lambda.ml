@@ -125,8 +125,6 @@ type lambda =
   | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list
   | Lswitch of lambda * lambda_switch
-  | Lstaticfail
-  | Lcatch of lambda * lambda
   | Lstaticraise of int * lambda list
   | Lstaticcatch of lambda * (int * Ident.t list) * lambda
   | Ltrywith of lambda * Ident.t * lambda
@@ -144,8 +142,7 @@ and lambda_switch =
     sw_consts: (int * lambda) list;
     sw_numblocks: int;
     sw_blocks: (int * lambda) list;
-    sw_checked: bool ;
-    sw_nofail: bool }
+    sw_failaction : lambda option}
 
 and lambda_event =
   { lev_loc: int;
@@ -205,10 +202,11 @@ let free_variables l =
   | Lswitch(arg, sw) ->
       freevars arg; 
       List.iter (fun (key, case) -> freevars case) sw.sw_consts;
-      List.iter (fun (key, case) -> freevars case) sw.sw_blocks
-  | Lstaticfail  -> ()
-  | Lcatch(e1, e2) ->
-      freevars e1; freevars e2
+      List.iter (fun (key, case) -> freevars case) sw.sw_blocks;
+      begin match sw.sw_failaction with
+      | None -> ()
+      | Some l -> freevars l
+      end
   | Lstaticraise (_,args) ->
       List.iter freevars args
   | Lstaticcatch(e1, (_,vars), e2) ->
@@ -235,12 +233,29 @@ let free_variables l =
   in freevars l; !fv
 
 (* Check if an action has a "when" guard *)
+let raise_count = ref 0
+
+let next_raise_count () =
+  incr raise_count ;
+  !raise_count
+
+(* Anticipated staticraise, for guards *)
+let staticfail = Lstaticraise (0,[])
 
 let rec is_guarded = function
-    Lifthenelse(cond, body, Lstaticfail) -> true
+  | Lifthenelse( cond, body, Lstaticraise (0,[])) -> true
   | Llet(str, id, lam, body) -> is_guarded body
   | Levent(lam, ev) -> is_guarded lam
   | _ -> false
+
+let rec patch_guarded patch = function
+  | Lifthenelse (cond, body, Lstaticraise (0,[])) ->
+      Lifthenelse (cond, body, patch)
+  | Llet(str, id, lam, body) ->
+      Llet (str, id, lam, patch_guarded patch body)
+  | Levent(lam, ev) ->
+      Levent (patch_guarded patch lam, ev)
+  | _ -> fatal_error "Lambda.patch_guarded"
 
 (* Translate an access path *)
 
@@ -279,10 +294,13 @@ let subst_lambda s lam =
   | Lswitch(arg, sw) ->
       Lswitch(subst arg,
               {sw with sw_consts = List.map subst_case sw.sw_consts;
-                       sw_blocks = List.map subst_case sw.sw_blocks})
-  | Lstaticfail as l -> l
-  | Lcatch(e1, e2) -> Lcatch(subst e1, subst e2)
-  | Lstaticraise _ as l -> l
+                       sw_blocks = List.map subst_case sw.sw_blocks;
+                       sw_failaction =
+                         match sw.sw_failaction with
+                         | None -> None
+                         | Some l -> Some (subst l)})
+                   
+  | Lstaticraise (i,args) ->  Lstaticraise (i, List.map subst args)
   | Lstaticcatch(e1, io, e2) -> Lstaticcatch(subst e1, io, subst e2)
   | Ltrywith(e1, exn, e2) -> Ltrywith(subst e1, exn, subst e2)
   | Lifthenelse(e1, e2, e3) -> Lifthenelse(subst e1, subst e2, subst e3)
@@ -315,8 +333,4 @@ and negate_comparison = function
 | Clt -> Cge | Cle -> Cgt
 | Cgt -> Cle | Cge -> Clt
 
-let raise_count = ref 0
 
-let next_raise_count () =
-  incr raise_count ; (* Done before, since 0 is for partial matches *)
-  !raise_count

@@ -115,10 +115,12 @@ void thread_code (code_t code, asize_t len)
   for (p = code; p < code + len; /*nothing*/) {
     opcode_t instr = *p;
     if (instr < 0 || instr > STOP){
+      /*
       fatal_error_arg ("Fatal error in fix_code: bad opcode (%lx)\n",
                        (char *)(long)instr);
+      */
+      instr = STOP;
     }
-
     *p++ = (opcode_t)(instr_table[instr] - instr_base);
     if (instr == SWITCH) {
       uint32 sizes = *p++;
