@@ -1,3 +1,86 @@
+Objective Caml 2.02:
+--------------------
+
+* Type system:
+  - Check that all components of a signature have unique names.
+  - Fixed bug in signature matching involving a type component and
+    a module component, both sharing an abstract type.
+  - Bug involving recursive classes constrained by a class type fixed.
+  - Fixed bugs in printing class types and in printing unification errors.
+
+* Compilation:
+  - Changed compilation scheme for "{r with lbl = e}" when r has many fields
+    so as to avoid code size explosion.
+
+* Native-code compiler:
+  - Better constant propagation in boolean expressions and in conditionals.
+  - Removal of unused arguments during function inlining.
+  - Eliminated redundant tagging/untagging in bit shifts.
+  - Static allocation of closures for functions without free variables,
+    reduces the size of initialization code.
+  - Revised compilation scheme for definitions at top level of compilation
+    units, so that top level functions have no free variables.
+  - Coalesced multiple allocations of heap blocks inside one expression
+    (e.g. x :: y :: z allocates the two conses in one step).
+  - Ix86: better handling of large integer constants in instruction selection.
+  - MIPS: fixed wrong asm generated for String.length "literal".
+
+* Standard library:
+  - Added the "ignore" primitive function, which just throws away its
+    argument and returns "()".  It allows to write
+    "ignore(f x); y" if "f x" doesn't have type unit and you don't
+    want the warning caused by "f x; y".
+  - Added the "Buffer" module (extensible string buffers).
+  - Module Format: added formatting to buffers and to strings.
+  - Added "mem" functions (membership test) to Hashtbl and Map.
+  - Module List: added find, filter, partition.
+    Renamed remove and removeq to remove_assoc and remove_assq.
+  - Module Marshal: fixed bug in marshaling functions when passed functional
+    values defined by mutual recursion with other functions.
+  - Module Printf: added Printf.bprintf (print to extensible buffer);
+    added %i format as synonymous for %d (as per the docs).
+  - Module Sort: added Sort.array (Quicksort).
+
+* Runtime system:
+  - New callback functions for callbacks with arbitrary many arguments
+    and for catching Caml exceptions escaping from a callback.
+
+* The ocamldep dependency generator: now performs full parsing of the
+    sources, taking into account the scope of module bindings.
+
+* The ocamlyacc parser generator: fixed sentinel error causing wrong
+    tables to be generated in some cases.
+
+* The str library:
+  - Added split_delim, full_split as variants of split that control
+    more precisely what happens to delimiters.
+  - Added replace_matched for separate matching and replacement operations.
+
+* The graphics library:
+  - Bypass color lookup for 16 bpp and 32 bpp direct-color displays.
+  - Larger color cache.
+
+* The thread library:
+  - Bytecode threads: more clever use of non-blocking I/O, makes I/O
+    operations faster.
+  - POSIX threads: gcc-ism removed, should now compile on any ANSI C compiler.
+  - Both: avoid memory leak in the Event module when a communication
+    offer is never selected.
+
+* The Unix library:
+  - Fixed inversion of ctime and mtime in Unix.stat, Unix.fstat, Unix.lstat.
+  - Unix.establish_connection: properly reclaim socket if connect fails.
+
+* The DBM library: no longer crashes when calling Dbm.close twice.
+
+* Emacs mode:
+  - Updated with Garrigue and Zimmerman's latest version.
+  - Now include an "ocamltags" script for using etags on OCaml sources.
+
+* Win32 port:
+  - Fixed end-of-line bug in ocamlcp causing problems with generated sources.
+
+
 Objective Caml 2.01:
 --------------------
 
