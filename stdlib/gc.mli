@@ -52,8 +52,7 @@ type stat =
     fragments : int;
     (** Number of wasted words due to fragmentation.  These are
        1-words free blocks placed between two live blocks.  They
-       cannot be inserted in the free list, thus they are not available
-       for allocation. *)
+       are not available for allocation. *)
     compactions : int;
     (** Number of heap compactions since the program was started. *) 
 }
@@ -200,7 +199,7 @@ val finalise : ('a -> unit) -> 'a -> unit
    during the lifetime of the program, for example a list of integer
    constants; this is also implementation-dependent.
    You should also be aware that some optimisations will duplicate
-   some immutable values, especially floating-point numbers when
+   some immutable values, for example floating-point numbers when
    stored into arrays, so they can be finalised and collected while
    another copy is still in use by the program.
 
