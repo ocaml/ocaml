@@ -214,11 +214,11 @@ external openfile : string -> open_flag list -> file_perm -> file_descr
 external close : file_descr -> unit = "unix_close"
         (* Close a file descriptor. *)
 external read : file_descr -> string -> int -> int -> int = "unix_read"
-        (* [read fd buff start len] reads [len] characters from descriptor
+        (* [read fd buff ofs len] reads [len] characters from descriptor
            [fd], storing them in string [buff], starting at position [ofs]
            in string [buff]. Return the number of characters actually read. *)
 external write : file_descr -> string -> int -> int -> int = "unix_write"
-        (* [write fd buff start len] writes [len] characters to descriptor
+        (* [write fd buff ofs len] writes [len] characters to descriptor
            [fd], taking them from string [buff], starting at position [ofs]
            in string [buff]. Return the number of characters actually
            written. *)
