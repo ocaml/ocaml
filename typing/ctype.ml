@@ -39,6 +39,10 @@ let rec repr = function
       r
   | t -> t
 
+let none = Ttuple []                  (* Clearly ill-formed type *)
+
+(* Type generalization *)
+
 let rec generalize ty =
   match repr ty with
     Tvar v ->
@@ -64,6 +68,8 @@ let rec make_nongen ty =
       ()
   | Tconstr(p, tl) ->
       List.iter make_nongen tl
+
+(* Taking instances of type schemes *)
 
 let inst_subst = ref ([] : (type_expr * type_expr) list)
 
@@ -112,6 +118,8 @@ let substitute params args body =
   let ty = copy body in
   inst_subst := [];
   ty
+
+(* Unification *)
 
 exception Cannot_expand
 
@@ -205,41 +213,63 @@ let rec filter_arrow env t =
   | _ ->
       raise Unify
 
-let rec filter env t1 t2 =
+(* Matching between type schemes *)
+
+let rec moregen_occur tvar ty =
+  match repr ty with
+    Tvar v ->
+      if v == tvar then raise Unify;
+      (* tvar has level = !current_level iff it is generic
+         in the original type scheme. In this case, it can be freely
+         instantiated. Otherwise, tvar is not generic
+         and cannot be instantiated by a type that contains
+         generic variables. *)
+      if v.tvar_level = generic_level & tvar.tvar_level < !current_level
+      then raise Unify
+  | Tarrow(t1, t2) ->
+      moregen_occur tvar t1; moregen_occur tvar t2
+  | Ttuple tl ->
+      List.iter (moregen_occur tvar) tl
+  | Tconstr(p, []) ->
+      ()
+  | Tconstr(p, tl) ->
+      List.iter (moregen_occur tvar) tl
+
+let rec moregen env t1 t2 =
   if t1 == t2 then () else begin
     let t1 = repr t1 in
     let t2 = repr t2 in
     if t1 == t2 then () else begin
       match (t1, t2) with
         (Tvar v, _) ->
-          if v.tvar_level < !current_level then raise Unify;
-          occur v t2;
+          if v.tvar_level = generic_level then raise Unify;
+          moregen_occur v t2;
           v.tvar_link <- Some t2
       | (Tarrow(t1, u1), Tarrow(t2, u2)) ->
-          filter env t1 t2; filter env u1 u2
+          moregen env t1 t2; moregen env u1 u2
       | (Ttuple tl1, Ttuple tl2) ->
-          filter_list env tl1 tl2
+          moregen_list env tl1 tl2
       | (Tconstr(p1, tl1), Tconstr(p2, tl2)) ->
           if Path.same p1 p2 then
-            filter_list env tl1 tl2
+            moregen_list env tl1 tl2
           else begin
             try
-              filter env (expand_abbrev env p1 tl1) t2
+              moregen env (expand_abbrev env p1 tl1) t2
             with Cannot_expand ->
             try
-              filter env t1 (expand_abbrev env p2 tl2)
+              moregen env t1 (expand_abbrev env p2 tl2)
             with Cannot_expand ->
               raise Unify
           end
       | (Tconstr(p1, tl1), _) ->
           begin try
-            filter env (expand_abbrev env p1 tl1) t2
+            moregen env (expand_abbrev env p1 tl1) t2
           with Cannot_expand ->
             raise Unify
           end
       | (_, Tconstr(p2, tl2)) ->
           begin try
-            filter env t1 (expand_abbrev env p2 tl2)
+            moregen env t1 (expand_abbrev env p2 tl2)
           with Cannot_expand ->
             raise Unify
           end
@@ -248,21 +278,23 @@ let rec filter env t1 t2 =
     end
   end
 
-and filter_list env tl1 tl2 =
+and moregen_list env tl1 tl2 =
   match (tl1, tl2) with
     ([], []) -> ()
-  | (t1::r1, t2::r2) -> filter env t1 t2; filter_list env r1 r2
+  | (t1::r1, t2::r2) -> moregen env t1 t2; moregen_list env r1 r2
   | (_, _) -> raise Unify
   
 let moregeneral env sch1 sch2 =
   begin_def();
   try
-    filter env (instance sch1) sch2;
+    moregen env (instance sch1) sch2;
     end_def();
     true
   with Unify ->
     end_def();
     false
+
+(* Equivalence between parameterized types *)
 
 let equal env params1 ty1 params2 ty2 =
   let subst = List.combine params1 params2 in
@@ -314,12 +346,7 @@ let equal env params1 ty1 params2 ty2 =
   in
     eqtype ty1 ty2
 
-let rec closed_schema ty =
-  match repr ty with
-    Tvar v -> v.tvar_level = generic_level
-  | Tarrow(t1, t2) -> closed_schema t1 & closed_schema t2
-  | Ttuple tl -> List.for_all closed_schema tl
-  | Tconstr(p, tl) -> List.for_all closed_schema tl
+(* Remove dependencies *)
 
 let rec nondep_type env id ty =
   match repr ty with
@@ -360,6 +387,15 @@ let rec free_type_ident env ids ty =
         List.exists (free_type_ident env ids) tl
       end
 
+(* Miscellaneous *)
+
+let rec closed_schema ty =
+  match repr ty with
+    Tvar v -> v.tvar_level = generic_level
+  | Tarrow(t1, t2) -> closed_schema t1 & closed_schema t2
+  | Ttuple tl -> List.for_all closed_schema tl
+  | Tconstr(p, tl) -> List.for_all closed_schema tl
+
 let is_generic ty =
   match repr ty with
     Tvar v -> v.tvar_level = generic_level
@@ -369,6 +405,3 @@ let rec arity ty =
   match repr ty with
     Tarrow(t1, t2) -> 1 + arity t2
   | _ -> 0
-
-let none = Ttuple []                  (* Clearly ill-formed type *)
-
