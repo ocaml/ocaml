@@ -266,7 +266,7 @@ module_type:
   | SIG signature END
       { mkmty(Pmty_signature(List.rev $2)) }
   | FUNCTOR LPAREN UIDENT COLON module_type RPAREN MINUSGREATER module_type
-    %prec FUNCTOR
+    %prec prec_fun
       { mkmty(Pmty_functor($3, $5, $8)) }
   | module_type WITH with_constraints
       { mkmty(Pmty_with($1, List.rev $3)) }
