@@ -33,15 +33,13 @@ type lex_tables =
 
 external engine: lex_tables -> int -> lexbuf -> int = "lex_engine"
 
-let lex_aux_buffer = String.create 1024
-
-let lex_refill read_fun lexbuf =
+let lex_refill read_fun aux_buffer lexbuf =
   let read =
-    read_fun lex_aux_buffer 1024 in
+    read_fun aux_buffer (String.length aux_buffer) in
   let n =
     if read > 0
     then read
-    else (String.unsafe_set lex_aux_buffer 0 '\000'; 1) in
+    else (String.unsafe_set aux_buffer 0 '\000'; 1) in
   if lexbuf.lex_start_pos < n then begin
     let oldlen = lexbuf.lex_buffer_len in
     let newlen = oldlen * 2 in
@@ -57,7 +55,7 @@ let lex_refill read_fun lexbuf =
   String.unsafe_blit lexbuf.lex_buffer n
                      lexbuf.lex_buffer 0 
                      (lexbuf.lex_buffer_len - n);
-  String.unsafe_blit lex_aux_buffer 0
+  String.unsafe_blit aux_buffer 0
                      lexbuf.lex_buffer (lexbuf.lex_buffer_len - n)
                      n;
   lexbuf.lex_abs_pos <- lexbuf.lex_abs_pos + n;
@@ -66,13 +64,13 @@ let lex_refill read_fun lexbuf =
   lexbuf.lex_last_pos <- lexbuf.lex_last_pos - n
 
 let from_function f =
-  { refill_buff = lex_refill f;
-    lex_buffer = String.create 2048;
-    lex_buffer_len = 2048;
-    lex_abs_pos = - 2048;
-    lex_start_pos = 2048;
-    lex_curr_pos = 2048;
-    lex_last_pos = 2048;
+  { refill_buff = lex_refill f (String.create 512);
+    lex_buffer = String.create 1024;
+    lex_buffer_len = 1024;
+    lex_abs_pos = - 1024;
+    lex_start_pos = 1024;
+    lex_curr_pos = 1024;
+    lex_last_pos = 1024;
     lex_saved_state = -1;
     lex_last_action = 0 }
 

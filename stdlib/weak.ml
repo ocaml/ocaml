@@ -13,13 +13,11 @@
 
 (* Weak array operations *)
 
-(* WARNING: the following declaration is not type-safe. *)
-
-type 'a t = 'a array;;
+type 'a t
 
 external create: int -> 'a t = "weak_create";;
 
-let length x = Array.length x - 1;;
+let length x = Obj.size(Obj.repr x) - 1;;
 
 external set : 'a t -> int -> 'a option -> unit = "weak_set";;
 
