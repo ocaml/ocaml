@@ -277,10 +277,14 @@ external modf : float -> float * float = "modf_float" "modf"
            part of [f]. *)
 external float : int -> float = "%floatofint"
         (* Convert an integer to floating-point. *)
+external float_of_int : int -> float = "%floatofint"
+        (* Alias of [float] above. *)
 external truncate : float -> int = "%intoffloat"
         (* Truncate the given floating-point number to an integer.
            The result is unspecified if it falls outside the
            range of representable integers. *)
+external int_of_float : float -> int = "%intoffloat"
+        (* Alias of [truncate] above. *)
 
 (*** String operations *)
 
@@ -293,6 +297,10 @@ val (^) : string -> string -> string
 
 val string_of_bool : bool -> string
         (* Return the string representation of a boolean. *)
+val bool_of_string : string -> bool
+        (* Convert the given string to a boolean.
+           Raise [Invalid_argument "bool_of_string"] if the string is not
+           ["true"] or ["false"]. *)
 val string_of_int : int -> string
         (* Return the string representation of an integer, in decimal. *)
 external int_of_string : string -> int = "int_of_string"
