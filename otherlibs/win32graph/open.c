@@ -167,7 +167,7 @@ static value gr_reset(void)
         grwindow.height = rc.bottom;
         if (grwindow.gcBitmap == (HDC)0) {
 //              grwindow.hBitmap = CreateCompatibleBitmap(grwindow.gc,grwindow.width,grwindow.height);
-                                grwindow.hBitmap = CreateCompatibleBitmap(grwindow.gc,screenx,screeny);
+                grwindow.hBitmap = CreateCompatibleBitmap(grwindow.gc,screenx,screeny);
                 grwindow.gcBitmap = CreateCompatibleDC(grwindow.gc);
                 grwindow.tempDC = CreateCompatibleDC(grwindow.gc);
                 SelectObject(grwindow.gcBitmap,grwindow.hBitmap);

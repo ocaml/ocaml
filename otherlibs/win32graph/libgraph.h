@@ -24,13 +24,6 @@ struct canvas {
 };
 
 extern HWND grdisplay;     /* The display connection */
-//extern int grscreen;            /* The screen number */
-//extern Colormap grcolormap;     /* The color map */
-//extern struct canvas grwindow;  /* The graphics window */
-//extern struct canvas grbstore;  /* The pixmap used for backing store */
-//extern int grwhite, grblack;    /* Black and white pixels for X */
-//extern int grbackground;        /* Background color for X
-//                                   (used for CAML color -1) */
 extern COLORREF grbackground;
 extern BOOL grdisplay_mode;     /* Display-mode flag */
 extern BOOL grremember_mode;    /* Remember-mode flag */
@@ -46,7 +39,6 @@ extern int bits_per_pixel;
 #define Wcvt(y) (grwindow.height - 1 - (y))
 #define Bcvt(y) (grwindow.height - 1 - (y))
 #define WtoB(y) ((y) + WindowRect.bottom - grwindow.h)
-//#define BtoW(y) ((y) + WindowRect.bottom - grbstore.h)
 
 #define DEFAULT_SCREEN_WIDTH 1024
 #define DEFAULT_SCREEN_HEIGHT 768
@@ -57,20 +49,6 @@ extern int bits_per_pixel;
           (ExposureMask | KeyPressMask | StructureNotifyMask)
 #define DEFAULT_FONT "fixed"
 #define SIZE_QUEUE 256
-
-/* To handle events asynchronously */
-#ifdef HAS_ASYNC_IO
-#define USE_ASYNC_IO
-#define EVENT_SIGNAL SIGIO
-#else
-#ifdef HAS_SETITIMER
-#define USE_INTERVAL_TIMER
-#define EVENT_SIGNAL SIGALRM
-#else
-#define USE_ALARM
-#define EVENT_SIGNAL SIGALRM
-#endif
-#endif
 
 void gr_fail(char *fmt, char *arg);
 void gr_check_open(void);

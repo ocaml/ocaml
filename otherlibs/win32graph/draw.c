@@ -18,7 +18,6 @@
 #include "libgraph.h"
 #include "custom.h"
 #include "memory.h"
-#define UD(y)  (grwindow.height - 1 - y)
 HDC gcMetaFile;
 int grdisplay_mode;
 int grremember_mode;
@@ -38,15 +37,11 @@ CAMLprim value gr_plot(value vx, value vy)
         int x = Int_val(vx);
         int y = Int_val(vy);
         gr_check_open();
-        //      gr_moveto(vx,vy);
-        //      gr_lineto(Val_int(Int_val(vx)+1),vy);
-        //      return Val_unit;
         if(grremember_mode)
                 SetPixel(grwindow.gcBitmap, x, Wcvt(y),grwindow.CurrentColor);
         if(grdisplay_mode) {
                 SetPixel(grwindow.gc, x, Wcvt(y),grwindow.CurrentColor);
         }
-        //      gr_moveto(vx+1,vy);
         return Val_unit;
 }
 
@@ -104,7 +99,6 @@ CAMLprim value gr_draw_rect(value vx, value vy, value vw, value vh)
         }
         return Val_unit;
 #else
-        // (x,y)=top bottom
         int     x, y, w, h;
         POINT pt[5];
         x=Int_val(vx);
@@ -112,12 +106,10 @@ CAMLprim value gr_draw_rect(value vx, value vy, value vw, value vh)
         w=Int_val(vw);
         h=Int_val(vh);
 
-        //                      pt[0].x = x;   pt[0].y = UD(y+h-1);
         pt[0].x = x;
         pt[0].y = Wcvt(y-1);
         pt[1].x = x+w;
         pt[1].y = pt[0].y;
-        //                      pt[2].x = pt[1].x;  pt[2].y = UD(y-1);
         pt[2].x = pt[1].x;
         pt[2].y = Wcvt(y+h-1);
         pt[3].x = pt[0].x;
@@ -265,7 +257,6 @@ CAMLprim value gr_set_color(value vcolor)
         grwindow.CurrentPen = newPen;
         SetTextColor(grwindow.gc,c);
         SetTextColor(grwindow.gcBitmap,c);
-        //      printf("gr_set_color, vcolor = %x, lbColor = %x\n", Int_val(vcolor), lb.lbColor);
         oldBrush = grwindow.CurrentBrush;
         lb.lbStyle = BS_SOLID;
         lb.lbColor = c;
@@ -312,21 +303,21 @@ static value gr_draw_or_fill_arc(value vx, value vy, value vrx, value vry,
                 SelectObject(grwindow.gcBitmap,grwindow.CurrentPen);
                 SelectObject(grwindow.gcBitmap,grwindow.CurrentBrush);
                 if( fill )
-                        Pie(grwindow.gcBitmap,x1, UD(y1), x2, UD(y2),
-                                x3, UD(y3), x4, UD(y4));
+                        Pie(grwindow.gcBitmap,x1, Wcvt(y1), x2, Wcvt(y2),
+                                x3, Wcvt(y3), x4, Wcvt(y4));
                 else
-                        Arc(grwindow.gcBitmap,x1, UD(y1), x2, UD(y2),
-                                x3, UD(y3), x4, UD(y4));
+                        Arc(grwindow.gcBitmap,x1, Wcvt(y1), x2, Wcvt(y2),
+                                x3, Wcvt(y3), x4, Wcvt(y4));
         }
         if( grdisplay_mode ) {
                 SelectObject(grwindow.gc,grwindow.CurrentPen);
                 SelectObject(grwindow.gc,grwindow.CurrentBrush);
                 if (fill)
-                        Pie(grwindow.gc,x1, UD(y1), x2, UD(y2),
-                                x3, UD(y3), x4, UD(y4));
+                        Pie(grwindow.gc,x1, Wcvt(y1), x2, Wcvt(y2),
+                                x3, Wcvt(y3), x4, Wcvt(y4));
                 else
-                        Arc(grwindow.gc,x1, UD(y1), x2, UD(y2),
-                                x3, UD(y3), x4, UD(y4));
+                        Arc(grwindow.gc,x1, Wcvt(y1), x2, Wcvt(y2),
+                                x3, Wcvt(y3), x4, Wcvt(y4));
         }
         return Val_unit;
 }
@@ -545,7 +536,7 @@ CAMLprim value gr_fill_poly(value vect)
         p = poly;
         for( i = 0; i < n_points; i++ ){
                 p->x = Int_val(Field(Field(vect,i),0));
-                p->y = UD(Int_val(Field(Field(vect,i),1)));
+                p->y = Wcvt(Int_val(Field(Field(vect,i),1)));
                 p++;
         }
         if (grremember_mode) {
@@ -584,13 +575,12 @@ struct image {
 #define Height(i) (((struct image *)Data_custom_val(i))->h)
 #define Data(i) (((struct image *)Data_custom_val(i))->data)
 #define Mask(i) (((struct image *)Data_custom_val(i))->mask)
-//(1280x1024)
 #define Max_image_mem 53000000 
 
 static void finalize_image (value i)
 {
-        free (Data(i));
-        if (Mask(i) != NULL) free(Mask(i));
+        DeleteObject (Data(i));
+        if (Mask(i) != NULL) DeleteObject(Mask(i));
 }
 
 static struct custom_operations image_ops = {
@@ -602,20 +592,22 @@ static struct custom_operations image_ops = {
         custom_deserialize_default
 };
 
-CAMLprim value gr_create_image(value w,value h)
+CAMLprim value gr_create_image(value vw, value vh)
 {
         HBITMAP cbm;
         value res;
+	int w = Int_val(vw);
+	int h = Int_val(vh);
 
-        if (Int_val (w) < 0 || Int_val (h) < 0)
+        if (w < 0 || h < 0)
                 gr_fail("create_image: width and height must be positive",0);
 
-        cbm = CreateCompatibleBitmap(grwindow.gcBitmap, Int_val(w), Int_val(h));
+        cbm = CreateCompatibleBitmap(grwindow.tempDC, w, h);
         res = alloc_custom(&image_ops, sizeof(struct image),
                 w * h, Max_image_mem);
         if (res) {
-                Width (res) = Int_val(w);
-                Height (res) = Int_val(h);
+		Width (res) = w;
+                Height (res) = h;
                 Data (res) = cbm;
                 Mask (res) = NULL;
         }
@@ -626,7 +618,9 @@ CAMLprim value gr_blit_image (value i, value x, value y)
 {
         HBITMAP oldBmp = SelectObject(grwindow.tempDC,Data(i));
         int xsrc = Int_val(x);
-        int ysrc = UD(Int_val(y) + Height(i) - 1);
+        int ysrc = Wcvt(Int_val(y) + Height(i) - 1);
+	printf("blitting from (%d, %d) size (%d, %d)\n",
+	       xsrc, ysrc, Width(i), Height(i));
         BitBlt(grwindow.tempDC,0, 0, Width(i), Height(i),
                 grwindow.gcBitmap, xsrc, ysrc, SRCCOPY);
         SelectObject(grwindow.tempDC,oldBmp);
@@ -639,7 +633,6 @@ CAMLprim value gr_draw_image(value i, value x, value y)
         HBITMAP oldBmp;
 
         int xdst = Int_val(x);
-//      int ydst = UD(Int_val(y) + Height(i) - 1);
         int ydst = Wcvt(Int_val(y)+Height(i)-1);
         if (Mask(i) == NULL) {
                 if (grremember_mode) {
