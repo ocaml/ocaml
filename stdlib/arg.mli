@@ -39,7 +39,7 @@
 *)
 
 type spec =
-    Unit of (unit -> unit)     (** Call the function with unit argument *)
+  | Unit of (unit -> unit)     (** Call the function with unit argument *)
   | Set of bool ref            (** Set the reference to true *)
   | Clear of bool ref          (** Set the reference to false *)
   | String of (string -> unit) (** Call the function with a string argument *)
@@ -57,8 +57,13 @@ type spec =
 (** The concrete type describing the behavior associated
    with a keyword. *)
 
+type key = string
+type doc = string
+type usage_msg = string
+type annon_fun = (string -> unit)
+
 val parse :
-  (string * spec * string) list -> (string -> unit) -> string -> unit
+  (key * spec * doc) list -> annon_fun -> usage_msg -> unit
 (** [Arg.parse speclist anonfun usage_msg] parses the command line.
     [speclist] is a list of triples [(key, spec, doc)].
     [key] is the option keyword, it must start with a ['-'] character.
@@ -85,7 +90,7 @@ val parse :
 *)
 
 val parse_argv : string array ->
-  (string * spec * string) list -> (string -> unit) -> string -> unit
+  (key * spec * doc) list -> annon_fun -> usage_msg -> unit
 (** [Arg.parse_argv args speclist anonfun usage_msg] parses array [args] as
   if it were the command line. *)
 
@@ -93,7 +98,7 @@ exception Bad of string
 (** Functions in [spec] or [anonfun] can raise [Arg.Bad] with an error
    message to reject invalid arguments. *)
 
-val usage : (string * spec * string) list -> string -> unit
+val usage : (key * spec * doc) list -> usage_msg -> unit
 (** [Arg.usage speclist usage_msg] prints an error message including
     the list of valid options.  This is the same message that
     {!Arg.parse} prints in case of error.

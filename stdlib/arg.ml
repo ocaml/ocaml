@@ -13,6 +13,11 @@
 
 (* $Id$ *)
 
+type key = string
+type doc = string
+type usage_msg = string
+type annon_fun = (string -> unit)
+
 type spec =
   | Unit of (unit -> unit)     (* Call the function with unit argument *)
   | Set of bool ref            (* Set the reference to true *)
@@ -42,8 +47,8 @@ open Printf
 let rec assoc3 x l =
   match l with
   | [] -> raise Not_found
-  | (y1, y2, y3)::t when y1 = x -> y2
-  | _::t -> assoc3 x t
+  | (y1, y2, y3) :: t when y1 = x -> y2
+  | _ :: t -> assoc3 x t
 ;;
 
 let make_symlist prefix sep suffix l =
@@ -107,46 +112,46 @@ let parse_argv argv speclist anonfun errmsg =
         | Set r -> r := true;
         | Clear r -> r := false;
         | String f when !current + 1 < l ->
-            f argv.(!current+1);
+            f argv.(!current + 1);
             incr current;
         | Symbol (symb, f) when !current + 1 < l ->
-            let arg = argv.(!current+1) in
+            let arg = argv.(!current + 1) in
             if List.mem arg symb then begin
-              f argv.(!current+1);
+              f argv.(!current + 1);
               incr current;
             end else begin
               stop (Wrong (s, arg, "one of: " ^ (make_symlist "" " " "" symb)))
             end
         | Set_string r when !current + 1 < l ->
-            r := argv.(!current+1);
+            r := argv.(!current + 1);
             incr current;
         | Int f when !current + 1 < l ->
-            let arg = argv.(!current+1) in
+            let arg = argv.(!current + 1) in
             begin try f (int_of_string arg)
             with Failure "int_of_string" -> stop (Wrong (s, arg, "an integer"))
             end;
             incr current;
         | Set_int r when !current + 1 < l ->
-            let arg = argv.(!current+1) in
+            let arg = argv.(!current + 1) in
             begin try r := (int_of_string arg)
             with Failure "int_of_string" -> stop (Wrong (s, arg, "an integer"))
             end;
             incr current;
         | Float f when !current + 1 < l ->
-            let arg = argv.(!current+1) in
+            let arg = argv.(!current + 1) in
             begin try f (float_of_string arg);
             with Failure "float_of_string" -> stop (Wrong (s, arg, "a float"))
             end;
             incr current;
         | Set_float r when !current + 1 < l ->
-            let arg = argv.(!current+1) in
+            let arg = argv.(!current + 1) in
             begin try r := (float_of_string arg);
             with Failure "float_of_string" -> stop (Wrong (s, arg, "a float"))
             end;
             incr current;
         | Rest f ->
-            while !current < l-1 do
-              f argv.(!current+1);
+            while !current < l - 1 do
+              f argv.(!current + 1);
               incr current;
             done;
         | _ -> stop (Missing s)
