@@ -59,8 +59,8 @@ type @class-type@.
 The class type expression
 @'object' ['(' typexpr ')'] {class-field-spec} 'end'@
 is the type of a class body. It specifies its instance variables and
-methods. In this type, @typexpr@ is match agains self type, therefore
-provinding a binding for self type.
+methods. In this type, @typexpr@ is matched against the self type, therefore
+providing a binding for the self type.
 
 A class body will match a class body type if it provides definitions
 for all the components specified in the class type, and these
@@ -68,8 +68,8 @@ definitions meet the type requirements given in the class type.
 Furthermore, all methods either virtual or public present in the class
 body must also be present in the class type (on the other hand, some
 instance variables and concrete private methods may be omitted).  A
-virtual method will match a concrete method, thus allowing to forget
-its implementation. An immutable instance variable will match a
+virtual method will match a concrete method, which makes it possible
+to forget its implementation. An immutable instance variable will match a
 mutable instance variable.
 
 \subsubsection*{Inheritance}
