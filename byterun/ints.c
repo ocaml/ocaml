@@ -39,7 +39,7 @@ static char * parse_sign_and_base(char * p,
       *base = 16; p += 2; break;
     case 'o': case 'O':
       *base = 8; p += 2; break;
-    case 'b': case 'B':
+    case 'b':
       *base = 2; p += 2; break;
     }
   }
