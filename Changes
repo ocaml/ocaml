@@ -8,6 +8,12 @@
 - Match_failure and Assert_failure now report (file, line, column),
   instead of (file, starting char, ending char).
 
+- In toplevel, tightened interface consistency checks between
+  .cmi files, .cm[oa] files loaded by #load, and the running toplevel.
+
+- Dynlink library: by default, dynamically-loaded code now has access to all
+  modules defined by the program; new functions Dynlink.allow_only
+  and Dynlink.prohibit for access control.
 
 Objective Caml 3.06:
 --------------------
