@@ -46,6 +46,8 @@ type error =
   | Missing of string
   | Message of string
 
+exception Stop of error;; (* used internally *)
+
 open Printf
 
 let rec assoc3 x l =
@@ -124,7 +126,7 @@ let parse_argv ?(current=current) argv speclist anonfun errmsg =
             let arg = argv.(!current + 1) in
             begin try f (bool_of_string arg)
             with Invalid_argument "bool_of_string" ->
-                   stop (Wrong (s, arg, "a boolean"))
+                   raise (Stop (Wrong (s, arg, "a boolean")))
             end;
             incr current;
         | Set r -> r := true;
@@ -138,7 +140,8 @@ let parse_argv ?(current=current) argv speclist anonfun errmsg =
               f argv.(!current + 1);
               incr current;
             end else begin
-              stop (Wrong (s, arg, "one of: " ^ (make_symlist "" " " "" symb)))
+              raise (Stop (Wrong (s, arg, "one of: "
+                                          ^ (make_symlist "" " " "" symb))))
             end
         | Set_string r when !current + 1 < l ->
             r := argv.(!current + 1);
@@ -146,25 +149,29 @@ let parse_argv ?(current=current) argv speclist anonfun errmsg =
         | Int f when !current + 1 < l ->
             let arg = argv.(!current + 1) in
             begin try f (int_of_string arg)
-            with Failure "int_of_string" -> stop (Wrong (s, arg, "an integer"))
+            with Failure "int_of_string" ->
+                   raise (Stop (Wrong (s, arg, "an integer")))
             end;
             incr current;
         | Set_int r when !current + 1 < l ->
             let arg = argv.(!current + 1) in
             begin try r := (int_of_string arg)
-            with Failure "int_of_string" -> stop (Wrong (s, arg, "an integer"))
+            with Failure "int_of_string" ->
+                   raise (Stop (Wrong (s, arg, "an integer")))
             end;
             incr current;
         | Float f when !current + 1 < l ->
             let arg = argv.(!current + 1) in
             begin try f (float_of_string arg);
-            with Failure "float_of_string" -> stop (Wrong (s, arg, "a float"))
+            with Failure "float_of_string" ->
+                   raise (Stop (Wrong (s, arg, "a float")))
             end;
             incr current;
         | Set_float r when !current + 1 < l ->
             let arg = argv.(!current + 1) in
             begin try r := (float_of_string arg);
-            with Failure "float_of_string" -> stop (Wrong (s, arg, "a float"))
+            with Failure "float_of_string" ->
+                   raise (Stop (Wrong (s, arg, "a float")))
             end;
             incr current;
         | Tuple specs ->
@@ -174,9 +181,11 @@ let parse_argv ?(current=current) argv speclist anonfun errmsg =
               f argv.(!current + 1);
               incr current;
             done;
-        | _ -> stop (Missing s) in
+        | _ -> raise (Stop (Missing s))
+        in
         treat_action action
       with Bad m -> stop (Message m);
+         | Stop e -> stop e;
       end;
       incr current;
     end else begin
