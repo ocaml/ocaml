@@ -54,7 +54,7 @@ let preempt signal = yield()
 (* Initialization of the scheduler *)
 
 let _ =
-  Sys.signal Sys.sigterm (Sys.Signal_handle preempt);
+  ignore(Sys.signal Sys.sigterm (Sys.Signal_handle preempt));
   thread_initialize()
 
 (* Wait functions *)
