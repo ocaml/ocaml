@@ -413,3 +413,8 @@ type 'a u = < m : 'a v > and 'a v = 'a list u;;
 (* PR#1744: Ctype.matches *)
 type 'a t = 'a
 type 'a u = A of 'a t;;
+
+(* Unification of cyclic terms *)
+type 'a t = < a : 'a >;;
+fun (x : 'a t as 'a) -> (x : 'b t);;
+type u = 'a t as 'a;;

@@ -1204,8 +1204,8 @@ let rec occur_rec env visited ty0 ty =
         if List.memq ty visited then raise Occur;
         if not !Clflags.recursive_types then
           iter_type_expr (occur_rec env (ty::visited) ty0) ty
-      with Occur when generic_abbrev env p ->
-        let ty' = repr (expand_abbrev env ty) in
+      with Occur -> try
+        let ty' = try_expand_head env ty in
         (* Maybe we could simply make a recursive call here,
            but it seems it could make the occur check loop
            (see change in rev. 1.58) *)
@@ -1215,6 +1215,7 @@ let rec occur_rec env visited ty0 ty =
         | _ ->
             if not !Clflags.recursive_types then
               iter_type_expr (occur_rec env (ty'::visited) ty0) ty'
+      with Cannot_expand -> raise Occur
       end
   | Tobject _ | Tvariant _ ->
       ()
@@ -2071,19 +2072,22 @@ let rec rigidify_rec vars ty =
   let ty = repr ty in
   if ty.level >= lowest_level then begin
     ty.level <- pivot_level - ty.level;
-    begin match ty.desc with
+    match ty.desc with
     | Tvar ->
         if not (List.memq ty !vars) then vars := ty :: !vars
     | Tvariant row ->
         let row = row_repr row in
         let more = repr row.row_more in
-        if more.desc = Tvar && not row.row_fixed then
+        if more.desc = Tvar && not row.row_fixed then begin
           let more' = newty2 more.level Tvar in
           let row' = {row with row_fixed=true; row_fields=[]; row_more=more'}
           in link_type more (newty2 ty.level (Tvariant row'))
-    | _ -> ()
-    end;
-    iter_type_expr (rigidify_rec vars) ty
+        end;
+        iter_row (rigidify_rec vars) row;
+        (* only consider the row variable if the variant is not static *)
+        if not (static_row row) then rigidify_rec vars (row_more row)
+    | _ ->
+        iter_type_expr (rigidify_rec vars) ty
   end
 
 let rigidify ty =
