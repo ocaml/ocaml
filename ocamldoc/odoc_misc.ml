@@ -38,20 +38,18 @@ let string_of_longident li = String.concat "." (Longident.flatten li)
 let string_of_type_expr t =
   let b = Buffer.create 256 in
   let fmt = Format.formatter_of_buffer b in
-  Format.fprintf fmt "@[<hov 2>";
   Printtyp.mark_loops t;
   Printtyp.type_scheme_max ~b_reset_names: false fmt t;
-  Format.fprintf fmt "@]";
   Format.pp_print_flush fmt () ;
   let s =  Buffer.contents b in
-  prerr_endline s ;
 
-  let b2 = Buffer.create 256 in
-  let fmt2 = Format.formatter_of_buffer b2 in
-  Format.fprintf fmt2 "@[<hov 2>%s@]" s;
-  Format.pp_print_flush fmt2 ();
-  prerr_endline (Buffer.contents b2);
-  s
+  Buffer.reset b;
+  for i = 0 to String.length s - 1 do
+    match s.[i] with
+      '\n' -> Buffer.add_string b "\n  "
+    | c -> Buffer.add_char b c
+  done;
+  Buffer.contents b
 
 (** Return the given module type where methods and vals have been removed
    from the signatures. Used when we don't want to print a too long module type.*)
