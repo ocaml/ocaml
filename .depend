@@ -48,9 +48,9 @@ typing/predef.cmi: typing/ident.cmi typing/path.cmi typing/typedtree.cmi
 typing/printtyp.cmi: typing/ident.cmi parsing/longident.cmi typing/path.cmi \
     typing/typedtree.cmi 
 typing/subst.cmi: typing/ident.cmi typing/path.cmi typing/typedtree.cmi 
-typing/typeclass.cmi: parsing/asttypes.cmi typing/env.cmi typing/ident.cmi \
-    parsing/location.cmi parsing/longident.cmi parsing/parsetree.cmi \
-    typing/path.cmi typing/typedtree.cmi 
+typing/typeclass.cmi: parsing/asttypes.cmi typing/ctype.cmi typing/env.cmi \
+    typing/ident.cmi parsing/location.cmi parsing/longident.cmi \
+    parsing/parsetree.cmi typing/path.cmi typing/typedtree.cmi 
 typing/typecore.cmi: parsing/asttypes.cmi typing/env.cmi parsing/location.cmi \
     parsing/longident.cmi parsing/parsetree.cmi typing/typedtree.cmi 
 typing/typedecl.cmi: typing/env.cmi typing/ident.cmi parsing/location.cmi \
@@ -187,7 +187,8 @@ bytecomp/printinstr.cmi: bytecomp/instruct.cmi
 bytecomp/printlambda.cmi: bytecomp/lambda.cmi 
 bytecomp/simplif.cmi: bytecomp/lambda.cmi 
 bytecomp/symtable.cmi: bytecomp/emitcode.cmi typing/ident.cmi 
-bytecomp/translclass.cmi: bytecomp/lambda.cmi typing/typedtree.cmi 
+bytecomp/translclass.cmi: typing/ident.cmi bytecomp/lambda.cmi \
+    typing/typedtree.cmi 
 bytecomp/translcore.cmi: parsing/asttypes.cmi typing/ident.cmi \
     bytecomp/lambda.cmi parsing/location.cmi typing/primitive.cmi \
     typing/typedtree.cmi 
@@ -315,10 +316,10 @@ asmcomp/scheduling.cmi: asmcomp/linearize.cmi
 asmcomp/selection.cmi: asmcomp/cmm.cmi asmcomp/mach.cmi 
 asmcomp/spill.cmi: asmcomp/mach.cmi 
 asmcomp/split.cmi: asmcomp/mach.cmi 
-asmcomp/arch_i386.cmo: asmcomp/cmm.cmi 
-asmcomp/arch_i386.cmx: asmcomp/cmm.cmx 
 asmcomp/arch_mips.cmo: utils/misc.cmi 
 asmcomp/arch_mips.cmx: utils/misc.cmx 
+asmcomp/arch_power.cmo: utils/misc.cmi 
+asmcomp/arch_power.cmx: utils/misc.cmx 
 asmcomp/arch_sparc.cmo: utils/misc.cmi 
 asmcomp/arch_sparc.cmx: utils/misc.cmx 
 asmcomp/asmgen.cmo: utils/clflags.cmo asmcomp/closure.cmi asmcomp/cmm.cmi \
@@ -405,10 +406,10 @@ asmcomp/linearize.cmo: asmcomp/cmm.cmi asmcomp/mach.cmi asmcomp/proc.cmi \
     asmcomp/reg.cmi asmcomp/linearize.cmi 
 asmcomp/linearize.cmx: asmcomp/cmm.cmx asmcomp/mach.cmx asmcomp/proc.cmx \
     asmcomp/reg.cmx asmcomp/linearize.cmi 
-asmcomp/liveness.cmo: asmcomp/mach.cmi asmcomp/proc.cmi asmcomp/reg.cmi \
-    asmcomp/liveness.cmi 
-asmcomp/liveness.cmx: asmcomp/mach.cmx asmcomp/proc.cmx asmcomp/reg.cmx \
-    asmcomp/liveness.cmi 
+asmcomp/liveness.cmo: asmcomp/mach.cmi utils/misc.cmi asmcomp/printmach.cmi \
+    asmcomp/proc.cmi asmcomp/reg.cmi asmcomp/liveness.cmi 
+asmcomp/liveness.cmx: asmcomp/mach.cmx utils/misc.cmx asmcomp/printmach.cmx \
+    asmcomp/proc.cmx asmcomp/reg.cmx asmcomp/liveness.cmi 
 asmcomp/mach.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi asmcomp/reg.cmi \
     asmcomp/mach.cmi 
 asmcomp/mach.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx asmcomp/reg.cmx \
@@ -433,10 +434,10 @@ asmcomp/proc_alpha.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi asmcomp/mach.cmi \
     utils/misc.cmi asmcomp/reg.cmi 
 asmcomp/proc_alpha.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx asmcomp/mach.cmx \
     utils/misc.cmx asmcomp/reg.cmx 
-asmcomp/proc_hppa.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi asmcomp/mach.cmi \
-    utils/misc.cmi asmcomp/reg.cmi 
-asmcomp/proc_hppa.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx asmcomp/mach.cmx \
-    utils/misc.cmx asmcomp/reg.cmx 
+asmcomp/proc_hppa.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi utils/config.cmi \
+    asmcomp/mach.cmi utils/misc.cmi asmcomp/reg.cmi 
+asmcomp/proc_hppa.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx utils/config.cmx \
+    asmcomp/mach.cmx utils/misc.cmx asmcomp/reg.cmx 
 asmcomp/proc_i386.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi asmcomp/mach.cmi \
     utils/misc.cmi asmcomp/reg.cmi 
 asmcomp/proc_i386.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx asmcomp/mach.cmx \
