@@ -13,10 +13,12 @@
 
 /* Thread interface for POSIX 1003.1c threads */
 
+#include <string.h>
 #include <pthread.h>
 #include <signal.h>
 #include <sys/time.h>
 #include "alloc.h"
+#include "callback.h"
 #include "fail.h"
 #include "memory.h"
 #include "misc.h"
@@ -69,6 +71,7 @@ static long thread_next_ident = 0;
 value caml_mutex_new P((value));
 value caml_mutex_lock P((value));
 value caml_mutex_unlock P((value));
+static void caml_pthread_check P((int, char *));
 
 /* Hook for scanning the stacks of the other threads */
 
@@ -195,7 +198,8 @@ value caml_thread_initialize(unit)   /* ML */
   Push_roots(r, 1);
 
   /* Initialize the main mutex */
-  if (pthread_mutex_init(&caml_mutex, NULL) != 0) sys_error("Thread.init");
+  caml_pthread_check(pthread_mutex_init(&caml_mutex, NULL),
+                     "Thread.init");
   pthread_mutex_lock(&caml_mutex);
   /* Initialize the key */
   pthread_key_create(&thread_descriptor_key, NULL);
@@ -227,8 +231,9 @@ value caml_thread_initialize(unit)   /* ML */
   /* Fork the tick thread */
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-  if (pthread_create(&tick_pthread, &attr, caml_thread_tick, NULL) != 0)
-    sys_error("Thread.init");
+  caml_pthread_check(
+     pthread_create(&tick_pthread, &attr, caml_thread_tick, NULL),
+     "Thread.init");
   pthread_detach(tick_pthread);
   Pop_roots();
   return Val_unit;
@@ -291,8 +296,9 @@ value caml_thread_new(clos)          /* ML */
   /* Fork the new thread */
   pthread_attr_init(&attr);
   pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
-  if (pthread_create(&th->pthread, &attr, caml_thread_start, (void *) th) != 0)
-    sys_error("Thread.new");
+  caml_pthread_check(
+     pthread_create(&th->pthread, &attr, caml_thread_start, (void *) th),
+     "Thread.new");
   Pop_roots();
   return (value) th;
 }
@@ -376,8 +382,7 @@ value caml_mutex_new(unit)        /* ML */
   value mut;
   mut = alloc_final(1 + sizeof(pthread_mutex_t) / sizeof(value),
                     caml_mutex_finalize, 1, Max_mutex_number);
-  if (pthread_mutex_init(&Mutex_val(mut), NULL) != 0)
-    sys_error("Mutex.new");
+  caml_pthread_check(pthread_mutex_init(&Mutex_val(mut), NULL), "Mutex.new");
   return mut;
 }
 
@@ -388,7 +393,7 @@ value caml_mutex_lock(mut)           /* ML */
   enter_blocking_section();
   retcode = pthread_mutex_lock(&(Mutex_val(mut)));
   leave_blocking_section();
-  if (retcode != 0) sys_error("Mutex.lock");
+  caml_pthread_check(retcode, "Mutex.lock");
   return Val_unit;
 }
 
@@ -399,7 +404,7 @@ value caml_mutex_unlock(mut)           /* ML */
   enter_blocking_section();
   retcode = pthread_mutex_unlock(&(Mutex_val(mut)));
   leave_blocking_section();
-  if (retcode != 0) sys_error("Mutex.unlock");
+  caml_pthread_check(retcode, "Mutex.unlock");
   return Val_unit;
 }
 
@@ -428,8 +433,8 @@ value caml_condition_new(unit)        /* ML */
   value cond;
   cond = alloc_final(1 + sizeof(pthread_cond_t) / sizeof(value),
                      caml_condition_finalize, 1, Max_condition_number);
-  if (pthread_cond_init(&Condition_val(cond), NULL) != 0)
-    sys_error("Condition.new");
+  caml_pthread_check(pthread_cond_init(&Condition_val(cond), NULL),
+                     "Condition.new");
   return cond;
 }
 
@@ -440,7 +445,7 @@ value caml_condition_wait(cond, mut)           /* ML */
   enter_blocking_section();
   retcode = pthread_cond_wait(&Condition_val(cond), &Mutex_val(mut));
   leave_blocking_section();
-  if (retcode != 0) sys_error("Condition.wait");
+  caml_pthread_check(retcode, "Condition.wait");
   return Val_unit;
 }
 
@@ -451,7 +456,7 @@ value caml_condition_signal(cond)           /* ML */
   enter_blocking_section();
   retcode = pthread_cond_signal(&Condition_val(cond));
   leave_blocking_section();
-  if (retcode != 0) sys_error("Condition.signal");
+  caml_pthread_check(retcode, "Condition.signal");
   return Val_unit;
 }
 
@@ -462,7 +467,27 @@ value caml_condition_broadcast(cond)           /* ML */
   enter_blocking_section();
   retcode = pthread_cond_broadcast(&Condition_val(cond));
   leave_blocking_section();
-  if (retcode != 0) sys_error("Condition.broadcast");
+  caml_pthread_check(retcode, "Condition.broadcast");
   return Val_unit;
 }
 
+/* Error report */
+
+static void caml_pthread_check(retcode, msg)
+     int retcode;
+     char * msg;
+{
+  char * err;
+  int errlen, msglen;
+  value str;
+
+  if (retcode == 0) return;
+  err = strerror(retcode);
+  msglen = strlen(msg);
+  errlen = strlen(err);
+  str = alloc_string(msglen + 2 + errlen);
+  bcopy(msg, &Byte(str, 0), msglen);
+  bcopy(": ", &Byte(str, msglen), 2);
+  bcopy(err, &Byte(str, msglen + 2), errlen);
+  raise_sys_error(str);
+}
