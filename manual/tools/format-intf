@@ -69,13 +69,15 @@ while(<>) {
       }
       s/^\s*//;
       $count = 0;
-      foreach $part (split(/([\[\]])/, $_)) {
+      foreach $part (split(/(\\?[\[\]])/, $_)) {
         if ($part eq "[") {
           print ($count == 0 ? "\\verb`" : "[");
           $count++;
         } elsif ($part eq "]") {
           $count--;
           print ($count == 0 ? "`" : "]");
+        } elsif ($part =~ m/^\\([\[\]])$/) {
+          print $1;
         } else {
           print $part;
         }
