@@ -308,5 +308,4 @@ let run_script name =
   Compile.init_path();
   toplevel_env := Compile.initial_env();
   Format.set_formatter_out_channel stderr;
-  use_print_results := false;
-  use_file name
+  use_silently name
