@@ -302,8 +302,8 @@ beforedepend:: bytecomp\opcodes.ml
 
 # The predefined exceptions and primitives
 
-runtime\primitives:
-	cd runtime & $(MAKEREC) primitives
+byterun\primitives:
+	cd byterun & $(MAKEREC) primitives
 
 bytecomp\runtimedef.ml: byterun\primitives byterun\fail.h
 	echo let builtin_exceptions = ^[^| > bytecomp\runtimedef.ml
