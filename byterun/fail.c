@@ -27,7 +27,7 @@ value exn_bucket;
 void mlraise(v)
      value v;
 {
-  leave_blocking_section();
+  Assert(! async_signal_mode);
   exn_bucket = v;
   siglongjmp(external_raise->buf, 1);
 }
@@ -63,7 +63,13 @@ void raise_with_string(tag, msg)
      value tag;
      char * msg;
 {
-  raise_with_arg(tag, copy_string(msg));
+  value vmsg;
+  Push_roots(r, 1);
+  r[0] = tag;
+  vmsg = copy_string(msg);
+  tag = r[0];
+  Pop_roots();
+  raise_with_arg(tag, vmsg);
 }
 
 void failwith (msg)
