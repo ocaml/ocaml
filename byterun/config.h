@@ -13,8 +13,8 @@
 
 /* $Id$ */
 
-#ifndef _config_
-#define _config_
+#ifndef CAML_CONFIG_H
+#define CAML_CONFIG_H
 
 /* <include ../config/m.h> */
 /* <include ../config/s.h> */
@@ -27,6 +27,8 @@
 #include <s.h>
 #endif
 /* </private> */
+
+#include "compatibility.h"
 
 /* Types for signed chars, 16-bit integers, 32-bit integers, 64-bit integers */
 
@@ -143,4 +145,4 @@ typedef struct { uint32 l, h; } uint64, int64;
 #define Max_percent_free_def 500
 
 
-#endif /* _config_ */
+#endif /* CAML_CONFIG_H */

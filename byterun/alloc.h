@@ -13,10 +13,11 @@
 
 /* $Id$ */
 
-#ifndef _alloc_
-#define _alloc_
+#ifndef CAML_ALLOC_H
+#define CAML_ALLOC_H
 
 
+#include "compatibility.h"
 #include "misc.h"
 #include "mlvalues.h"
 
@@ -41,4 +42,4 @@ CAMLextern value alloc_final (mlsize_t, /*size in words*/
 
 CAMLextern int convert_flag_list (value, int *);
 
-#endif /* _alloc_ */
+#endif /* CAML_ALLOC_H */

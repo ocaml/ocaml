@@ -15,9 +15,10 @@
 
 /* Callbacks from C to Caml */
 
-#ifndef _callback_
-#define _callback_
+#ifndef CAML_CALLBACK_H
+#define CAML_CALLBACK_H
 
+#include "compatibility.h"
 #include "mlvalues.h"
 
 CAMLextern value callback (value closure, value arg);

@@ -16,8 +16,8 @@
 include ../config/Makefile
 
 CC=$(BYTECC)
-CFLAGS=-O $(BYTECCCOMPOPTS)
-DFLAGS=-g -DDEBUG $(BYTECCCOMPOPTS)
+CFLAGS=-DCAML_NAME_SPACE -O $(BYTECCCOMPOPTS)
+DFLAGS=-DCAML_NAME_SPACE -g -DDEBUG $(BYTECCCOMPOPTS)
 
 OBJS=interp.o misc.o stacks.o fix_code.o startup.o main.o \
   freelist.o major_gc.o minor_gc.o memory.o alloc.o roots.o globroots.o \
@@ -35,7 +35,7 @@ PRIMS=alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
   dynlink.c
 
 PUBLIC_INCLUDES=alloc.h callback.h config.h custom.h fail.h intext.h \
-  memory.h misc.h mlvalues.h signals.h
+  memory.h misc.h mlvalues.h signals.h compatibility.h
 
 all: ocamlrun$(EXE)
 
