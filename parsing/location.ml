@@ -207,6 +207,8 @@ let get_pos_info pos =
 let print ppf loc =
   let (file, line, startchar) = get_pos_info loc.loc_start in
   let endchar = loc.loc_end.pos_cnum - loc.loc_start.pos_cnum + startchar in
+  let startchar = if startchar < 0 then 0 else startchar in
+  let enchar = if endchar < 0 then 0 else endchar in
   if file = "" then begin
     if highlight_locations ppf loc none then () else
       fprintf ppf "Characters %i-%i:@."
