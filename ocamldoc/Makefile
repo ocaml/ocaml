@@ -323,7 +323,7 @@ test_texi: dummy
 	$(MKDIR) $@ 
 	$(OCAMLDOC_RUN) -texi -sort -d $@ $(INCLUDES) odoc*.ml odoc*.mli
 
-stdlib_man/Pervasives.o: $(STDLIB_MLIS)
+stdlib_man/Pervasives.3o: $(STDLIB_MLIS)
 	$(MKDIR) stdlib_man
 	$(OCAMLDOC_RUN) -man -d stdlib_man $(INCLUDES) \
 	-t "OCaml library" -man-mini -man-suffix 3o \
