@@ -120,14 +120,14 @@ inherited.
 
 This ability provides class constructors as can be found in other
 languages. Several constructors can be defined this way to build
-objects of the same class but with different initialialization patterns.
+objects of the same class but with different initialization patterns.
 
 
 \subsection*{Reference to self}
 
 A method can also send messages to self (that is, the current object).  For
 that, self must be explicitly bound, here to the variable "s" ("s" could be
-any identifier, even though we will oftenr choose the name "self".)
+any identifier, even though we will often choose the name "self".)
 \begin{caml_example}
 class printable_point x_init =
   object (s)
@@ -158,7 +158,7 @@ class printable_point x_init =
     method get_x = x
     method move d = x <- x + d
     method print = print_int self#get_x
-    initializer print_string "new point at "; s#print; print_newline()
+    initializer print_string "new point at "; self#print; print_newline()
   end;;
 let p = new printable_point 17;;
 \end{caml_example}
@@ -210,28 +210,29 @@ unless they are hidden by signature matching, as described below.
 
 \subsection*{Class interfaces}
 
-%XXX Differencier class type et interface de classe
+%XXX Differencier class type et interface de classe ?
 
 Class interfaces are inferred from class definitions.  They may also
 be defined directly and used to restrict the type of a class. As class
 declarations, they also define a new type constructor.
 \begin{caml_example}
 class type restricted_point_type = 
-  object 
+  object
     method get_x : int
     method bump : unit
 end;;
 fun (x : restricted_point_type) -> x;;
 \end{caml_example}
 In addition to documentation, these class interfaces can be used to
-constrain the type of a class. Both instance variables and private methods
-can be hidden by a class type constraint. Regular methods, however, cannot. 
+constrain the type of a class. Both instance variables and concrete
+private methods can be hidden by a class type constraint. Public and
+virtual methods, however, cannot. 
 \begin{caml_example}
-class restricted_point' = (restricted_point : int -> restricted_point_type);;
+class restricted_point' x = (restricted_point x : restricted_point_type);;
 \end{caml_example}
 Or, equivalently:
 \begin{caml_example}
-class restricted_point' x = (restricted_point x : restricted_point_type);;
+class restricted_point' = (restricted_point : int -> restricted_point_type);;
 \end{caml_example}
 The interface of a class can also be specified in a module
 signature, and used to restrict the inferred signature of a module. 
@@ -246,19 +247,6 @@ end;;
 module Point : POINT = struct 
   class restricted_point' = restricted_point
 end;;
-\end{caml_example}
-Instance variables and concrete private methods can be hidden by
-signature matching, as shown below. However, public methods and
-virtual methods cannot be hidden.
-\begin{caml_example}
-module type ABSPOINT = sig 
-  class restricted_point' : int -> 
-    object 
-      method get_x : int
-      method bump : unit
-    end 
-end;;
-module Abspoint : ABSPOINT = Point;;
 \end{caml_example}
 
 \subsection*{Inheritance}
@@ -445,11 +433,12 @@ syntactic relation between classes while subtyping is a semantic relation
 between types.  For instance, the class of colored points could have been
 defined directly, without inheriting from the class of points; the type of
 colored points would remain unchanged and thus still be a subtype of
-points. Conversely, the class "int_comparable" inherits from class
-"comparable", but type "int_comparable" is not a subtype of "comparable".
-\begin{caml_example}
-function x -> (x : int_comparable :> comparable);;
-\end{caml_example}
+points.
+% Conversely, the class "int_comparable" inherits from class
+%"comparable", but type "int_comparable" is not a subtype of "comparable".
+%\begin{caml_example}
+%function x -> (x : int_comparable :> comparable);;
+%\end{caml_example}
 
 The domain of a coercion can usually be omitted. For instance, one can
 define:
@@ -523,14 +512,14 @@ the identity function, as in
 \begin{caml_example}
 function x -> (x :> 'a);;
 \end{caml_example}
-%XXX Il faudrait aussi definir "closed object type"
 As a consequence, if the coercion is applied to "self", as in the
 following example, the type of "self" is unified with the closed type
-"c".  This would constrains the type of self be closed and is thus
-rejected. Indeed, the type of self cannot be closed: this would
-prevent a further extension of the class. Therefore, a type error is
-generated when the unification of this type with another type would
-result in a closed object type.
+"c" (a closed object type is an object type without ellipsis).  This
+would constrains the type of self be closed and is thus rejected.
+Indeed, the type of self cannot be closed: this would prevent any
+further extension of the class. Therefore, a type error is generated
+when the unification of this type with another type would result in a
+closed object type.
 \begin{caml_example}
 class c = object (self) method m = (self : #c :> c) end;;
 \end{caml_example}
@@ -841,7 +830,7 @@ The general pattern amounts to the definition a pair of two
 classes that recusively interact with one another.  
 
 The class "observer"  has a distinguished method "notify" that requires 
-two arguments, a  subject and an event to  excecute an action. 
+two arguments, a subject and an event to excecute an action. 
 \begin{caml_example}
 class virtual ['subject, 'event] observer =
   object
@@ -888,7 +877,7 @@ Unsurprisingly the type of "window" is recursive.
 let window = new window_subject;;
 \end{caml_example}
 However, the two classes of "window_subject" and "window_observer" are not
-recursive themselves. 
+mutually recursive. 
 \begin{caml_example}
 let window_observer = new window_observer;;
 window#add_observer window_observer;;
@@ -905,13 +894,13 @@ class ['observer] richer_window_subject =
     val mutable size = 1
     method resize x = size <- size + x; self#notify_observers Resize
     val mutable top = false
-    method raise x = top <- true; self#notify_observers Raise
+    method raise = top <- true; self#notify_observers Raise
     method draw = Printf.printf "{Postion = %d; Size = %d}\n"  position size;
   end;;
 class ['subject] richer_window_observer =
   object 
     inherit ['subject] window_observer as super
-    method notify s e = s#raise; super#notify s e
+    method notify s e = if e <> Raise then s#raise; super#notify s e
   end;;
 \end{caml_example}
 We can also create a different kind of observer: 
