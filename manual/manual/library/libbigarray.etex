@@ -69,7 +69,7 @@ Various characteristics of the Caml big array can be consulted from C
 as follows:
 \begin{tableau}{|l|l|}{C expression}{Returns}
 \entree{"Bigarray_val("\var{v}")->num_dims"}{number of dimensions}
-\entree{"Bigarray_val("\var{v}")->dim["\var{i}"[i]"}{\var{i}-th dimension}
+\entree{"Bigarray_val("\var{v}")->dim["\var{i}"]"}{\var{i}-th dimension}
 \entree{"Bigarray_val("\var{v}")->flags & BIGARRAY_KIND_MASK"}{kind of array elements}
 \end{tableau}
 The kind of array elements is one of the following constants:
