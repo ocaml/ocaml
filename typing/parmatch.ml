@@ -378,7 +378,7 @@ let full_match tdefs force env =  match env with
             [] fields
         in
         let closed =
-          { row_fields = more_fields; row_more = Ctype.newvar();
+          { row_fields = more_fields; row_more = Btype.newgenvar();
             row_bound = row.row_bound; row_closed = true;
             row_name = if more_fields = [] then row.row_name else None }
          (* Cannot fail *)
@@ -854,9 +854,11 @@ and compats ps qs = match ps,qs with
 (******************************)
 
 let check_partial tdefs loc casel =
-  if not (Warnings.is_active (Warnings.Partial_match "")) then
-    Partial
-  else   
+  (* This must be checked: typing of variants depend of this
+   * if not (Warnings.is_active (Warnings.Partial_match "")) then
+   *   Partial
+   * else
+   *)
     let pss = get_mins (initial_matrix casel) in    
     match pss with
     | [] ->
@@ -894,7 +896,7 @@ let location_of_clause = function
   | _ -> fatal_error "Parmatch.location_of_clause"
 
 let check_unused tdefs casel =
-  if Warnings.is_active Warnings.Unused_match then begin
+  if Warnings.is_active Warnings.Unused_match then
     let prefs =   
       List.fold_right
         (fun (pat,act as clause) r ->
@@ -919,4 +921,3 @@ let check_unused tdefs casel =
             (Warnings.Other "Fatal Error") ;
           raise e)
       prefs
-  end

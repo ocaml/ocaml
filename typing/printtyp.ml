@@ -238,7 +238,8 @@ let rec typexp sch prio0 ppf ty =
             let close_mark =
               if row.row_closed then
                 if all_present then " " else "< "
-              else "> " in
+              else
+                if all_present then "> " else "? " in
             let print_present ppf = function
               | [] -> ()
               | l ->

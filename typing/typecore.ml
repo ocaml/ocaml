@@ -432,11 +432,24 @@ let type_self_pattern cl_num val_env met_env par_env spat =
 
 let check_unused_variant pat =
   match pat.pat_desc with
-    Tpat_variant(tag, _, row) ->
+    Tpat_variant(tag, opat, row) ->
       let row = row_repr row in
-      if try row_field_repr (List.assoc tag row.row_fields) = Rabsent
-         with Not_found -> true
-      then Location.prerr_warning pat.pat_loc Warnings.Unused_match
+      begin match
+        try row_field_repr (List.assoc tag row.row_fields)
+        with Not_found -> Rabsent
+      with
+      | Rpresent _ -> ()
+      | Rabsent ->
+          Location.prerr_warning pat.pat_loc Warnings.Unused_match
+      | Reither (true, [], e) when not row.row_closed ->
+          e := Some (Rpresent None)
+      | Reither (false, ty::tl, e) when not row.row_closed ->
+          e := Some (Rpresent (Some ty));
+          begin match opat with None -> assert false
+          | Some pat -> List.iter (unify_pat pat.pat_env pat) (ty::tl)
+          end
+      | _ -> ()
+      end
   | _ -> ()
 
 let rec iter_pattern f p =
@@ -633,16 +646,17 @@ let rec type_exp env sexp =
   | Pexp_match(sarg, caselist) ->
       let arg = type_exp env sarg in
       let ty_res = newvar() in
-      let cases = type_cases env arg.exp_type ty_res caselist in
-      let partial = Parmatch.check_partial env sexp.pexp_loc cases in
+      let cases, partial =
+        type_cases env arg.exp_type ty_res (Some sexp.pexp_loc) caselist in
       { exp_desc = Texp_match(arg, cases, partial);
         exp_loc = sexp.pexp_loc;
         exp_type = ty_res;
         exp_env = env }
   | Pexp_try(sbody, caselist) ->
       let body = type_exp env sbody in
-      let cases =
-        type_cases env (instance Predef.type_exn) body.exp_type caselist in
+      let cases, _ =
+        type_cases env (instance Predef.type_exn) body.exp_type None
+          caselist in
       { exp_desc = Texp_try(body, cases);
         exp_loc = sexp.pexp_loc;
         exp_type = body.exp_type;
@@ -1251,8 +1265,8 @@ and type_expect env sexp ty_expected =
         try unify env ty_arg (type_option(newvar()))
         with Unify _ -> assert false
       end;
-      let cases = type_cases env ty_arg ty_res caselist in
-      let partial = Parmatch.check_partial env sexp.pexp_loc cases in
+      let cases, partial =
+        type_cases env ty_arg ty_res (Some sexp.pexp_loc) caselist in
       let rec all_labeled ty =
         match (repr ty).desc with
           Tarrow ("", _, _) | Tvar -> false
@@ -1287,7 +1301,7 @@ and type_statement env sexp =
 
 (* Typing of match cases *)
 
-and type_cases env ty_arg ty_res caselist =
+and type_cases env ty_arg ty_res partial_loc caselist =
   let ty_arg' = newvar () in
   let pat_env_list =
     List.map
@@ -1296,17 +1310,22 @@ and type_cases env ty_arg ty_res caselist =
         unify_pat env pat ty_arg';
         (pat, ext_env))
       caselist in
-  (* Check unused cases here (required for polymorphic variants) *)
-  let cases = List.map2
-      (fun (pat, _) (_, act) ->
-        let dummy = { exp_desc = Texp_tuple []; exp_type = newty (Ttuple[]);
-                      exp_env = env; exp_loc = act.pexp_loc } in
-        match act.pexp_desc with
-          Pexp_when _ -> pat, {dummy with exp_desc = Texp_when(dummy, dummy)}
-        | _           -> pat, dummy)
-      pat_env_list caselist in
-  Parmatch.check_unused env cases;
-  (* Delay other unifications until after the use of unify_pat *)
+  (* Check partial matches here (required for polymorphic variants) *)
+  let partial =
+    match partial_loc with None -> Partial
+    | Some loc ->
+        let cases = List.map2
+            (fun (pat, _) (_, act) ->
+              let dummy = { exp_desc = Texp_tuple [];
+                            exp_type = newty (Ttuple[]);
+                            exp_env = env; exp_loc = act.pexp_loc } in
+              match act.pexp_desc with
+                Pexp_when _ ->
+                  pat, {dummy with exp_desc = Texp_when(dummy, dummy)}
+              | _           -> pat, dummy)
+            pat_env_list caselist in
+        Parmatch.check_partial env loc cases in
+  (* `Contaminating' unifications start here *)
   begin match pat_env_list with [] -> ()
   | (pat, _) :: _ -> unify_pat' env pat ty_arg
   end;
@@ -1318,7 +1337,8 @@ and type_cases env ty_arg ty_res caselist =
       pat_env_list caselist in
   (* Check for impossible variant constructors *)
   List.iter (fun (pat, _) -> iter_pattern check_unused_variant pat) cases;
-  cases
+  Parmatch.check_unused env cases;
+  cases, partial
 
 (* Typing of let bindings *)
 
