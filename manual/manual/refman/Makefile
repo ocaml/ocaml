@@ -1,5 +1,6 @@
 FILES= refman.tex lex.tex names.tex values.tex const.tex types.tex \
-  patterns.tex expr.tex typedecl.tex modtypes.tex modules.tex compunit.tex
+  patterns.tex expr.tex typedecl.tex modtypes.tex modules.tex compunit.tex \
+  exten.tex
 
 TRANSF=../../tools/transf
 TEXQUOTE=../../tools/texquote2
