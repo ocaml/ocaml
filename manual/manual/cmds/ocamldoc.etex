@@ -346,7 +346,9 @@ The following rules must be respected in order to avoid name clashes
 resulting in cross-reference errors:
 \begin{itemize}
 \item In a module, there must not be two modules, two module types or
-  a module and a module type with the same name.
+  a module and a module type with the same name. 
+  In the default HTML generator, modules "ab" and "AB" will be printed
+  to the same file on case insensitive file systems.
 \item In a module, there must not be two classes, two class types or
   a class and a class type with the same name.
 \item In a module, there must not be two values, two types, or two
