@@ -1008,6 +1008,7 @@ let emit_item = function
   | Cfloat f ->
       `	.double	{emit_string f}\n`
   | Csymbol_address s ->
+      use_symbol s;
       `	.long	{emit_symbol s}\n`
   | Clabel_address lbl ->
       `	.long	{emit_label(lbl + 100000)}\n`
