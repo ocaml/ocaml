@@ -308,7 +308,7 @@ expr:
       { mkexp(Pexp_let($2, List.rev $3, $5)) }
   | FUNCTION match_cases %prec prec_fun
       { mkexp(Pexp_function(List.rev $2)) }
-  | FUN pattern fun_def %prec prec_fun
+  | FUN simple_pattern fun_def %prec prec_fun
       { mkexp(Pexp_function([$2, $3])) }
   | MATCH expr WITH match_cases %prec prec_match
       { mkexp(Pexp_match($2, List.rev $4)) }
@@ -406,7 +406,7 @@ let_bindings:
 let_binding:
     val_ident fun_binding
       { ({ppat_desc = Ppat_var $1; ppat_loc = rhs_loc 1}, $2) }
-  | let_pattern EQUAL expr
+  | pattern EQUAL expr
       { ($1, $3) }
 ;
 fun_binding:
@@ -414,7 +414,7 @@ fun_binding:
       { $2 }
   | COLON core_type EQUAL expr %prec prec_let
       { mkexp(Pexp_constraint($4,$2)) }
-  | pattern fun_binding
+  | simple_pattern fun_binding
       { mkexp(Pexp_function[$1,$2]) }
 ;
 match_cases:
@@ -423,7 +423,7 @@ match_cases:
 ;
 fun_def:
     match_action                                { $1 }
-  | pattern fun_def                             { mkexp(Pexp_function[$1,$2]) }
+  | simple_pattern fun_def                      { mkexp(Pexp_function[$1,$2]) }
 ;
 match_action:
     MINUSGREATER expr                           { $2 }
@@ -447,35 +447,40 @@ expr_semi_list:
 /* Patterns */
 
 pattern:
-    val_ident
-      { mkpat(Ppat_var $1) }
-  | UNDERSCORE
-      { mkpat(Ppat_any) }
+    simple_pattern
+      { $1 }
   | pattern AS val_ident
       { mkpat(Ppat_alias($1, $3)) }
-  | signed_constant
-      { mkpat(Ppat_constant $1) }
-  | CHAR DOTDOT CHAR
-      { mkrangepat $1 $3 }
   | pattern_comma_list
       { mkpat(Ppat_tuple(List.rev $1)) }
-  | constr_longident
-      { mkpat(Ppat_construct($1, None)) }
   | constr_longident pattern %prec prec_constr_appl
       { mkpat(Ppat_construct($1, Some $2)) }
   | pattern COLONCOLON pattern
       { mkpat(Ppat_construct(Lident "::", Some(mkpat(Ppat_tuple[$1;$3])))) }
+  | pattern BAR pattern
+      { mkpat(Ppat_or($1, $3)) }
+;
+simple_pattern:
+    val_ident
+      { mkpat(Ppat_var $1) }
+  | UNDERSCORE
+      { mkpat(Ppat_any) }
+  | signed_constant
+      { mkpat(Ppat_constant $1) }
+  | CHAR DOTDOT CHAR
+      { mkrangepat $1 $3 }
+  | constr_longident
+      { mkpat(Ppat_construct($1, None)) }
   | LBRACE lbl_pattern_list RBRACE
       { mkpat(Ppat_record(List.rev $2)) }
   | LBRACKET pattern_semi_list RBRACKET
       { mklistpat(List.rev $2) }
-  | pattern BAR pattern
-      { mkpat(Ppat_or($1, $3)) }
   | LPAREN pattern RPAREN
       { $2 }
   | LPAREN pattern COLON core_type RPAREN
       { mkpat(Ppat_constraint($2, $4)) }
 ;
+
 pattern_comma_list:
     pattern_comma_list COMMA pattern            { $3 :: $1 }
   | pattern COMMA pattern                       { [$3; $1] }
@@ -487,20 +492,6 @@ pattern_semi_list:
 lbl_pattern_list:
     label_longident EQUAL pattern               { [($1, $3)] }
   | lbl_pattern_list SEMI label_longident EQUAL pattern { ($3, $5) :: $1 }
-;
-let_pattern:
-    constr_longident
-      { mkpat(Ppat_construct($1, None)) }
-  | constr_longident pattern %prec prec_constr_appl
-      { mkpat(Ppat_construct($1, Some $2)) }
-  | LBRACE lbl_pattern_list RBRACE
-      { mkpat(Ppat_record(List.rev $2)) }
-  | LBRACKET pattern_semi_list RBRACKET
-      { mklistpat(List.rev $2) }
-  | LPAREN pattern RPAREN
-      { $2 }
-  | LPAREN pattern COLON core_type RPAREN
-      { mkpat(Ppat_constraint($2, $4)) }
 ;
 
 /* Primitive declarations */
