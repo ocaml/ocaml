@@ -137,8 +137,9 @@ let op_SIMPLESTAR = 13
 let op_SIMPLEPLUS = 14
 let op_GOTO = 15
 let op_PUSHBACK = 16
-let op_GOTO_STAR = 17
-let op_GOTO_PLUS = 18
+let op_SETMARK = 17
+let op_CLEARMARK = 18
+let op_CHECKPROGRESS = 19
 
 (* Encoding of bytecode instructions *)
 
@@ -150,8 +151,26 @@ let displ dest from = dest - from - 1
 
 (** Compilation of a regular expression *)
 
+(* Determine if a regexp can match the empty string *)
+
+let rec is_nullable = function
+    Char c -> false
+  | String s -> s = ""
+  | CharClass cl -> false
+  | Seq rl -> List.for_all is_nullable rl
+  | Alt (r1, r2) -> is_nullable r1 || is_nullable r2
+  | Star r -> true
+  | Plus r -> is_nullable r
+  | Option r -> true
+  | Group(n, r) -> is_nullable r
+  | Refgroup n -> true
+  | Bol -> true
+  | Eol -> true
+  | Wordboundary -> true
+
 (* first r returns a set of characters C such that:
-     for all string s, s matches r => the first character of s is in C *)
+     for all string s, s matches r => the first character of s is in C.
+   For convenience, return Charset.full if r is nullable. *)
 
 let rec first = function
     Char c -> Charset.singleton c
@@ -203,7 +222,8 @@ let compile fold_case re =
   and progpos = ref 0
   and cpool = ref StringMap.empty
   and cpoolpos = ref 0
-  and numgroups = ref 1 in
+  and numgroups = ref 1
+  and numregs = ref 0 in
   (* Add a new instruction *)
   let emit_instr opc arg =
     if !progpos >= Array.length !prog then begin
@@ -229,6 +249,15 @@ let compile fold_case re =
       cpool := StringMap.add s p !cpool;
       incr cpoolpos;
       p in
+  (* Allocate fresh register if regexp is nullable *)
+  let allocate_register_if_nullable r =
+    if is_nullable r then begin
+      let n = !numregs in
+      if n >= 32 then failwith "too many r* or r+ where r is nullable";
+      incr numregs;
+      n
+    end else
+      -1 in
   (* Main recursive compilation function *)
   let rec emit_code = function
     Char c ->
@@ -279,27 +308,51 @@ let compile fold_case re =
       patch_instr pos_goto_end op_GOTO lbl2
   | Star r ->
       (* Implement longest match semantics for compatibility with old Str *)
-      (* lbl1: PUSHBACK lbl2
-               <match r>
-               GOTO_STAR lbl1
-         lbl2:
-      *)
+      (* General translation:
+           lbl1: PUSHBACK lbl2
+                 SETMARK regno
+                 <match r>
+                 CHECKPROGRESS regno
+                 GOTO lbl1
+           lbl2:
+         If r cannot match the empty string, code can be simplified:
+           lbl1: PUSHBACK lbl2
+                 <match r>
+                 GOTO lbl1
+           lbl2:
+        *)
+      let regno = allocate_register_if_nullable r in
       let lbl1 = emit_hole() in
+      if regno >= 0 then emit_instr op_SETMARK regno;
       emit_code r;
-      emit_instr op_GOTO_STAR (displ lbl1 !progpos);
+      if regno >= 0 then emit_instr op_CHECKPROGRESS regno;
+      emit_instr op_GOTO (displ lbl1 !progpos);
       let lbl2 = !progpos in
       patch_instr lbl1 op_PUSHBACK lbl2
   | Plus r ->
       (* Implement longest match semantics for compatibility with old Str *)
-      (* lbl1: <match r>
-               PUSHBACK lbl2
-               GOTO_PLUS lbl1
-         lbl2:
+      (* General translation:
+                 CLEARMARK regno
+           lbl1: <match r>
+                 CHECKPROGRESS regno
+                 PUSHBACK lbl2
+                 SETMARK regno
+                 GOTO lbl1
+           lbl2:
+         If r cannot match the empty string, code can be simplified:
+           lbl1: <match r>
+                 PUSHBACK lbl2
+                 GOTO_PLUS lbl1
+           lbl2:
       *)
+      let regno = allocate_register_if_nullable r in
+      if regno >= 0 then emit_instr op_CLEARMARK regno;
       let lbl1 = !progpos in
       emit_code r;
+      if regno >= 0 then emit_instr op_CHECKPROGRESS regno;
       let pos_pushback = emit_hole() in
-      emit_instr op_GOTO_PLUS (displ lbl1 !progpos);
+      if regno >= 0 then emit_instr op_SETMARK regno;
+      emit_instr op_GOTO (displ lbl1 !progpos);
       let lbl2 = !progpos in
       patch_instr pos_pushback op_PUSHBACK lbl2
   | Option r ->

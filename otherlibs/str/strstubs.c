@@ -26,7 +26,7 @@
 struct backtrack_point {
   unsigned char * txt;
   value * pc;
-  int mask;
+  int mask, register_mask;
 };
 
 #define BACKTRACK_STACK_BLOCK_SIZE 500
@@ -59,10 +59,9 @@ enum {
   GOTO,       /* unconditional branch */
   PUSHBACK,   /* record a backtrack point -- 
                  where to jump in case of failure */
-  GOTO_STAR,  /* like goto, except that we fall through if no
-                 characters were consumed since last PUSHBACK */
-  GOTO_PLUS,  /* like goto, except that we fall through if no
-                 characters were consumed since penultimate PUSHBACK */
+  SETMARK,    /* remember current position in given register # */
+  CLEARMARK,  /* clear given register # */
+  CHECKPROGRESS /* backtrack if no progress was made w.r.t. reg # */
 };
 
 /* Accessors in a compiled regexp */
@@ -82,6 +81,12 @@ static struct re_group re_group[32];
 
 /* Bitvector recording which groups were fully matched */
 static int re_mask;
+
+/* Record positions reached during matching */
+static unsigned char * re_register[32];
+
+/* Bitvector recording which registers are vaild */
+static int re_register_mask;
 
 /* The initial backtracking stack */
 static struct backtrack_stack initial_stack = { NULL, };
@@ -106,19 +111,6 @@ static unsigned char re_word_letters[32] = {
 };
 #define Is_word_letter(c) ((re_word_letters[(c) >> 3] >> ((c) & 7)) & 1)
 
-/* Return the n-th previous backtrack point.
-   Must have  n < BACKTRACK_STACK_BLOCK_SIZE. */
-static struct backtrack_point *
-re_previous_backtrack_point(struct backtrack_point * sp,
-                            struct backtrack_stack * stack,
-                            int n)
-{
-  if (sp >= stack->point + n) return sp - n;
-  stack = stack->previous;
-  if (stack == NULL) return NULL;
-  return stack->point + BACKTRACK_STACK_BLOCK_SIZE - n;
-}
-
 /* The bytecode interpreter for the NFA */
 static int re_match(value re, 
                     unsigned char * starttxt,
@@ -140,6 +132,7 @@ static int re_match(value re,
   normtable = Normtable(re);
   re_mask = 0;
   re_group[0].start = txt;
+  re_register_mask = 0;
 
   while (1) {
     long instr = Long_val(*pc++);
@@ -265,18 +258,24 @@ static int re_match(value re,
       sp->txt = txt;
       sp->pc = pc + SignedArg(instr);
       sp->mask = re_mask;
+      sp->register_mask = re_register_mask;
       sp++;
       break;
-    case GOTO_STAR: {
-      struct backtrack_point * p = re_previous_backtrack_point(sp, stack, 1);
-      if (p == NULL || txt > p->txt)
-        pc = pc + SignedArg(instr);
+    case SETMARK: {
+      int reg_no = Arg(instr);
+      re_register[reg_no] = txt;
+      re_register_mask |= (1 << reg_no);
       break;
     }
-    case GOTO_PLUS: {
-      struct backtrack_point * p = re_previous_backtrack_point(sp, stack, 2);
-      if (p == NULL || txt > p->txt)
-        pc = pc + SignedArg(instr);
+    case CLEARMARK: {
+      int reg_no = Arg(instr);
+      re_register_mask &= ~(1 << reg_no);
+      break;
+    }
+    case CHECKPROGRESS: {
+      int reg_no = Arg(instr);
+      if ((re_register_mask & (1 << reg_no)) && re_register[reg_no] == txt)
+        goto backtrack;
       break;
     }
     default:
@@ -302,6 +301,7 @@ static int re_match(value re,
     txt = sp->txt;
     pc = sp->pc;
     re_mask = sp->mask;
+    re_register_mask = sp->register_mask;
   }  
  accept:
   /* We get here when the regexp was successfully matched */
