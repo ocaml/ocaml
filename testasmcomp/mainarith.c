@@ -21,14 +21,14 @@ double f, g;
 #define INTTEST(arg,res) \
   { long result = (res); \
     if (arg != result) \
-      printf("Failed test \"%s == %s\": result %ld, expected %ld\n", \
-             #arg, #res, arg, result); \
+      printf("Failed test \"%s == %s\" for x=%ld and y=%ld: result %ld, expected %ld\n", \
+             #arg, #res, x, y, arg, result); \
   }
 #define FLOATTEST(arg,res) \
   { double result = (res); \
     if (arg != result) \
-      printf("Failed test \"%s == %s\": result %e, expected %e\n", \
-             #arg, #res, arg, result); \
+      printf("Failed test \"%s == %s\" for f=%g and g=%g: result %e, expected %e\n", \
+             #arg, #res, f, g, arg, result); \
   }
 
 extern void call_gen_code();
@@ -157,6 +157,13 @@ void do_test()
       INTTEST(r[88], (x >= 0) && (x < y));
       INTTEST(r[89], (0 < y));
       INTTEST(r[90], (5 < y));
+
+      INTTEST(r[91], (f == g));
+      INTTEST(r[92], (f != g));
+      INTTEST(r[93], (f < g));
+      INTTEST(r[94], (f > g));
+      INTTEST(r[95], (f <= g));
+      INTTEST(r[96], (f >= g));
 }
 
 
@@ -165,17 +172,28 @@ int main(argc, argv)
      int argc;
      char ** argv;
 {
+  double weird[4];
+
   if (argc >= 5) {
     x = atoi(argv[1]);
     y = atoi(argv[2]);
-    sscanf(argv[3], "%f", &f);
-    sscanf(argv[4], "%f", &g);
+    sscanf(argv[3], "%lf", &f);
+    sscanf(argv[4], "%lf", &g);
     do_test();
     return 0;
   }
   for(y = -2; y <= 2; y++) {
     for (x = -2; x <= 2; x++) {
       f = x; g = y; do_test();
+    }
+  }
+  weird[0] = 0.0;
+  weird[1] = 1.0 / 0.0;         /* +infty */
+  weird[2] = -1.0 / 0.0;        /* -infty */
+  weird[3] = 0.0 / 0.0;         /* NaN */
+  for (x = 0; x < 4; x++) {
+    for (y = 0; y < 4; y++) {
+      f = weird[x]; g = weird[y]; do_test();
     }
   }
   while(1) {

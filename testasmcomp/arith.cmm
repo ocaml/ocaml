@@ -148,6 +148,13 @@
           (seq (checkbound y 5) (addraset r 90 1))
         (addraset r 90 0))
 
+      (addraset r 91 (let res 1 (if (==f f g) [] (assign res 0)) res))
+      (addraset r 92 (let res 1 (if (!=f f g) [] (assign res 0)) res))
+      (addraset r 93 (let res 1 (if (<f f g) [] (assign res 0)) res))
+      (addraset r 94 (let res 1 (if (>f f g) [] (assign res 0)) res))
+      (addraset r 95 (let res 1 (if (<=f f g) [] (assign res 0)) res))
+      (addraset r 96 (let res 1 (if (>=f f g) [] (assign res 0)) res))
+
 )))))))
 
 

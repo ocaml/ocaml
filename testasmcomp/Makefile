@@ -67,6 +67,8 @@ beforedepend:: lexcmm.ml
 
 # The test programs
 
+$(PROGS:.out=.o): codegen
+
 fib.out: main.c fib.o $(ARCH).o
 	$(CC) $(CFLAGS) -o fib.out -DINT_INT -DFUN=fib main.c fib.o $(ARCH).o
 
