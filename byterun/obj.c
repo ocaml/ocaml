@@ -51,6 +51,12 @@ CAMLprim value obj_tag(value arg)
   return Val_int(Tag_val(arg));
 }
 
+CAMLprim value obj_set_tag (value arg, value new_tag)
+{
+  Tag_val (arg) = Int_val (new_tag);
+  return Val_unit;
+}
+
 CAMLprim value obj_block(value tag, value size)
 {
   value res;

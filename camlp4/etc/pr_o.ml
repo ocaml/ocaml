@@ -97,7 +97,7 @@ value is_keyword =
        "}"; "|"; "end"; "{"; "lxor"; "_"; "^"; "]"; "["; "let"; "!="; "||";
        "@"; ">"; "="; "<"; ";"; ":"; "mutable"; "/"; "[|"; "."; "-"; ","; "+";
        "begin"; "downto"; "*"; ")"; "|]"; "("; "'"; "&"; "functor"; ">="; "#";
-       "~-."; "!"; "~-"; "fun"; "mod"; "=="; "val"];
+       "~-."; "!"; "~-"; "fun"; "mod"; "=="; "val"; "lazy"; "assert"];
     fun s -> try Hashtbl.find keywords s with [ Not_found -> False ]
   }
 ;
@@ -1388,7 +1388,7 @@ pr_expr.pr_levels :=
       extfun Extfun.empty with
       [ <:expr< [$_$ :: $_$] >> as e ->
           fun curr next dg k -> [: `next e "" k :]
-      | <:expr< Pervasives.ref (Lazy.Delayed (fun () -> $x$)) >> ->
+      | <:expr< lazy ($x$) >> ->
           fun curr next dg k -> [: `S LR "lazy"; `next x "" k :]
       | <:expr< if $e$ then () else raise (Assert_failure $_$) >> ->
           fun curr next dg k -> [: `S LR "assert"; `next e "" k :]

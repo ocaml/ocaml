@@ -149,6 +149,7 @@ let rec add_expr bv exp =
       add_module bv m; add_expr (StringSet.add id bv) e
   | Pexp_assert (e) -> add_expr bv e
   | Pexp_assertfalse -> ()
+  | Pexp_lazy (e) -> add_expr bv e
 
 and add_pat_expr_list bv pel =
   List.iter (fun (p, e) -> add_pattern bv p; add_expr bv e) pel

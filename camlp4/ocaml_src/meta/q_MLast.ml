@@ -153,29 +153,6 @@ let mkassert loc e =
       else Node ("ExIfe", [Loc; e; Node ("ExUid", [Loc; Str "()"]); raiser])
 ;;
 
-let mklazy loc e =
-  Node
-    ("ExApp",
-     [Loc;
-      Node
-        ("ExAcc",
-         [Loc; Node ("ExUid", [Loc; Str "Pervasives"]);
-          Node ("ExLid", [Loc; Str "ref"])]);
-      Node
-        ("ExApp",
-         [Loc;
-          Node
-            ("ExAcc",
-             [Loc; Node ("ExUid", [Loc; Str "Lazy"]);
-              Node ("ExUid", [Loc; Str "Delayed"])]);
-          Node
-            ("ExFun",
-             [Loc;
-              List
-                [Tuple
-                   [Node ("PaUid", [Loc; Str "()"]); Option None; e]]])])])
-;;
-
 let not_yet_warned = ref true;;
 let warning_seq () =
   if !not_yet_warned then
@@ -506,7 +483,7 @@ Grammar.extend
                 Tuple [xx1; xx2; xx3] -> xx1, xx2, xx3
               | _ ->
                   match () with
-                  _ -> raise (Match_failure ("q_MLast.ml", 6297, 6313))
+                  _ -> raise (Match_failure ("q_MLast.ml", 5892, 5908))
             in
             Node ("StExc", [Loc; c; tl; b]) :
             'str_item));
@@ -741,7 +718,7 @@ Grammar.extend
                 Tuple [xx1; xx2; xx3] -> xx1, xx2, xx3
               | _ ->
                   match () with
-                  _ -> raise (Match_failure ("q_MLast.ml", 8360, 8376))
+                  _ -> raise (Match_failure ("q_MLast.ml", 7955, 7971))
             in
             Node ("SgExc", [Loc; c; tl]) :
             'sig_item));
@@ -1272,7 +1249,8 @@ Grammar.extend
      Some "apply", Some Gramext.LeftA,
      [[Gramext.Stoken ("", "lazy"); Gramext.Sself],
       Gramext.action
-        (fun (e : 'expr) _ (loc : int * int) -> (mklazy loc e : 'expr));
+        (fun (e : 'expr) _ (loc : int * int) ->
+           (Node ("ExLaz", [Loc; e]) : 'expr));
       [Gramext.Stoken ("", "assert"); Gramext.Sself],
       Gramext.action
         (fun (e : 'expr) _ (loc : int * int) -> (mkassert loc e : 'expr));

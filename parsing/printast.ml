@@ -271,6 +271,9 @@ and expression i ppf x =
       expression i ppf e;
   | Pexp_assertfalse ->
       line i ppf "Pexp_assertfalse";
+  | Pexp_lazy (e) ->
+      line i ppf "Pexp_lazy";
+      expression i ppf e;
 
 and value_description i ppf x =
   line i ppf "value_description\n";

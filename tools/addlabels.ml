@@ -252,7 +252,8 @@ let rec add_labels_expr ~text ~values ~classes expr =
   | Pexp_send (e, _)
   | Pexp_setinstvar (_, e)
   | Pexp_letmodule (_, _, e)
-  | Pexp_assert e ->
+  | Pexp_assert e
+  | Pexp_lazy e ->
       add_labels_rec e
   | Pexp_record (lst, opt) ->
       List.iter lst ~f:(fun (_,e) -> add_labels_rec e);

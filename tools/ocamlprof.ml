@@ -285,6 +285,8 @@ and rw_exp iflag sexp =
   | Pexp_assert (cond) -> rewrite_exp iflag cond
   | Pexp_assertfalse -> ()
 
+  | Pexp_lazy (expr) -> rewrite_exp iflag expr
+
 and rewrite_ifbody iflag ghost sifbody =
   if !instr_if && not ghost then
     insert_profile rw_exp sifbody

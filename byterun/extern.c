@@ -317,6 +317,9 @@ static void extern_rec(value v)
       writecode32(CODE_INFIXPOINTER, Infix_offset_hd(hd));
       extern_rec(v - Infix_offset_hd(hd));
       break;
+    case Forward_tag:
+      v = Forward_val (v);
+      goto tailcall;
     case Object_tag:
       extern_invalid_argument("output_value: object value");
       break;

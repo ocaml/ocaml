@@ -225,6 +225,12 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
                     Oval_array (List.rev (tree_of_items [] 0))
               else
                 Oval_array []
+          | Tconstr (path, [ty_arg], _)
+            when Path.same path Predef.path_lazy_t ->
+              if Lazy.lazy_is_val (O.obj obj)
+              then let v = tree_of_val depth (Lazy.force (O.obj obj)) ty_arg in
+                   Oval_constr (Oide_ident "lazy", [v])
+              else Oval_stuff "<lazy>"
           | Tconstr(path, ty_list, _) ->
               begin try
                 let decl = Env.find_type path env in

@@ -69,6 +69,9 @@ void set_minor_heap_size (asize_t size)
 
 static value oldify_todo_list = NULL;
 
+/* Note that the tests on the tag depend on the fact that Infix_tag,
+   Forward_tag, and No_scan_tag are contiguous. */
+
 void oldify_one (value v, value *p)
 {
   value result, field0;
@@ -84,18 +87,7 @@ void oldify_one (value v, value *p)
       *p = Field (v, 0);  /*  then forward pointer is first field. */
     }else{
       tag = Tag_hd (hd);
-      if (tag >= No_scan_tag){
-        sz = Wosize_hd (hd);
-        result = alloc_shr (sz, tag);
-        for (i = 0; i < sz; i++) Field (result, i) = Field (v, i);
-        Hd_val (v) = 0;            /* Set forward flag */
-        Field (v, 0) = result;     /*  and forward pointer. */
-        *p = result;
-      }else if (tag == Infix_tag){
-        mlsize_t offset = Infix_offset_hd (hd);
-        oldify_one (v - offset, p);   /* This cannot recurse deeper than 1. */
-        *p += offset;
-      }else{
+      if (tag < Infix_tag){
         sz = Wosize_hd (hd);
         result = alloc_shr (sz, tag);
         *p = result;
@@ -112,6 +104,21 @@ void oldify_one (value v, value *p)
 	  v = field0;
           goto tail_call;
 	}
+      }else if (tag >= No_scan_tag){
+        sz = Wosize_hd (hd);
+        result = alloc_shr (sz, tag);
+        for (i = 0; i < sz; i++) Field (result, i) = Field (v, i);
+        Hd_val (v) = 0;            /* Set forward flag */
+        Field (v, 0) = result;     /*  and forward pointer. */
+        *p = result;
+      }else if (tag == Infix_tag){
+        mlsize_t offset = Infix_offset_hd (hd);
+        oldify_one (v - offset, p);   /* This cannot recurse deeper than 1. */
+        *p += offset;
+      }else{
+        Assert (tag == Forward_tag);
+        v = Forward_val (v);          /* Follow the forwarding */
+        goto tail_call;               /*  then oldify. */
       }
     }
   }else{

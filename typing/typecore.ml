@@ -506,9 +506,9 @@ let rec is_nonexpansive exp =
   | Texp_let(rec_flag, pat_exp_list, body) ->
       List.for_all (fun (pat, exp) -> is_nonexpansive exp) pat_exp_list &&
       is_nonexpansive body
+  | Texp_function _ -> true
   | Texp_apply(e, (None,_)::el) ->
       is_nonexpansive e && List.for_all is_nonexpansive_opt (List.map fst el)
-  | Texp_function _ -> true
   | Texp_tuple el ->
       List.for_all is_nonexpansive el
   | Texp_construct(_, el) ->
@@ -525,6 +525,7 @@ let rec is_nonexpansive exp =
       is_nonexpansive ifso && is_nonexpansive_opt ifnot
   | Texp_new (_, cl_decl) when Ctype.class_type_arity cl_decl.cty_type > 0 ->
       true
+  | Texp_lazy e -> true
   | _ -> false
 
 and is_nonexpansive_opt = function
@@ -1127,6 +1128,14 @@ let rec type_exp env sexp =
          exp_desc = Texp_assertfalse;
          exp_loc = sexp.pexp_loc;
          exp_type = newvar ();
+         exp_env = env;
+       }
+  | Pexp_lazy (e) ->
+       let arg = type_exp env e in
+       {
+         exp_desc = Texp_lazy arg;
+         exp_loc = sexp.pexp_loc;
+         exp_type = instance (Predef.type_lazy_t arg.exp_type);
          exp_env = env;
        }
 

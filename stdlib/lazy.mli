@@ -15,25 +15,50 @@
 
 (** Deferred computations. *)
 
-type 'a status = 
-    Delayed of (unit -> 'a) 
-  | Value of 'a 
-  | Exception of exn
+type 'a t = 'a lazy_t;;
+(** A value of type ['a Lazy.t] is a deferred computation, called
+   a suspension, that has a result of type ['a].  The special
+   expression syntax [lazy (expr)] makes a suspension of the
+   computation of [expr], without computing [expr] itself yet.
+   "Forcing" the suspension will then compute [expr] and return its
+   result.
 
-type 'a t = 'a status ref
-(** A value of type ['a Lazy.t] is a deferred computation (also called a
-   suspension) that computes a result of type ['a].  The expression
-   [lazy (expr)] returns a suspension that computes [expr]. **)
-
-
-exception Undefined
-
-val force : 'a t -> 'a
-(** [Lazy.force x] computes the suspension [x] and returns its result.
-   If the suspension was already computed, [Lazy.force x] returns the
-   same value again.  If it raised an exception, the same exception is
-   raised again.
-   Raise [Undefined] if the evaluation of the suspension requires its
-   own result.
+   Note: [lazy_t] is the built-in type constructor used by the compiler
+   for the [lazy] keyword.  You should not use it directly.  Always use
+   [Lazy.t] instead.
 *)
 
+
+exception Undefined;;
+
+val force : 'a t -> 'a;;
+(** [force x] forces the suspension [x] and returns its result.
+   If [x] has already been forced, [Lazy.force x] returns the
+   same value again without recomputing it.  If it raised an exception,
+   the same exception is raised again.
+   Raise [Undefined] if the forcing of [x] tries to force [x] itself
+   recursively.
+*)
+
+val force_val : 'a t -> 'a;;
+(** [force_val x] forces the suspension [x] and returns its
+    result.  If [x] has already been forced, [force_val x]
+    returns the same value again without recomputing it.
+    Raise [Undefined] if the forcing of [x] tries to force [x] itself
+    recursively.
+    If the computation of [x] raises an exception, it is unspecified
+    whether [force_val x] raises the same exception or [Undefined].
+*)
+
+val lazy_from_fun : (unit -> 'a) -> 'a t;;
+(** [lazy_from_fun f] is the same as [lazy (f ())] but slightly more
+    efficient. *)
+
+val lazy_from_val : 'a -> 'a t;;
+(** [lazy_from_val v] returns an already-forced suspension of [v]
+    This is for special purposes only and should not be confused with
+    [lazy (v)]. *)
+
+val lazy_is_val : 'a t -> bool;;
+(** [lazy_is_val x] returns [true] if [x] has already been forced and
+    did not raise an exception. *)

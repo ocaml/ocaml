@@ -452,6 +452,7 @@ let rec transl_exp e =
       raise(Error(e.exp_loc, Free_super_var))
   | Texp_ident(path, {val_kind = Val_reg | Val_self _}) ->
       transl_path path
+  | Texp_ident _ -> fatal_error "Translcore.transl_exp: bad Texp_ident"
   | Texp_constant cst ->
       Lconst(Const_base cst)
   | Texp_let(rec_flag, pat_expr_list, body) ->
@@ -525,6 +526,7 @@ let rec transl_exp e =
       end
   | Texp_record ((lbl1, _) :: _ as lbl_expr_list, opt_init_expr) ->
       transl_record lbl1.lbl_all lbl1.lbl_repres lbl_expr_list opt_init_expr
+  | Texp_record ([], _) -> fatal_error "Translcore.transl_exp: bad Texp_record"
   | Texp_field(arg, lbl) ->
       let access =
         match lbl.lbl_repres with
@@ -607,8 +609,9 @@ let rec transl_exp e =
       then lambda_unit
       else Lifthenelse (transl_exp cond, lambda_unit, assert_failed e.exp_loc)
   | Texp_assertfalse -> assert_failed e.exp_loc
-  | _ ->
-      fatal_error "Translcore.transl"
+  | Texp_lazy e ->
+      let fn = Lfunction (Curried, [Ident.create "param"], transl_exp e) in
+      Lprim(Pmakeblock(Obj.lazy_tag, Immutable), [fn])
 
 and transl_list expr_list =
   List.map transl_exp expr_list

@@ -49,6 +49,7 @@ static void hash_aux(value obj)
   hash_univ_limit--;
   if (hash_univ_count < 0 || hash_univ_limit < 0) return;
 
+ again:
   if (Is_long(obj)) {
     hash_univ_count--;
     Combine(Long_val(obj));
@@ -57,7 +58,8 @@ static void hash_aux(value obj)
 
   /* Pointers into the heap are well-structured blocks. So are atoms.
      We can inspect the block contents. */
-  
+
+  Assert (Is_block (obj));  
   if (Is_atom(obj) || Is_young(obj) || Is_in_heap(obj)) {
     tag = Tag_val(obj);
     switch (tag) {
@@ -104,6 +106,9 @@ static void hash_aux(value obj)
     case Infix_tag:
       hash_aux(obj - Infix_offset_val(obj));
       break;
+    case Forward_tag:
+      obj = Forward_val (obj);
+      goto again;
     case Object_tag:
       hash_univ_count--;
       Combine(Oid_val(obj));

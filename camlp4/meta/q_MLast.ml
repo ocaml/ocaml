@@ -147,21 +147,6 @@ value mkassert loc e =
       else Node "ExIfe" [Loc; e; Node "ExUid" [Loc; Str "()"]; raiser] ]
 ;
 
-value mklazy loc e =
-  Node "ExApp"
-    [Loc;
-     Node "ExAcc"
-       [Loc; Node "ExUid" [Loc; Str "Pervasives"];
-        Node "ExLid" [Loc; Str "ref"]];
-     Node "ExApp"
-       [Loc;
-        Node "ExAcc"
-          [Loc; Node "ExUid" [Loc; Str "Lazy"];
-           Node "ExUid" [Loc; Str "Delayed"]];
-        Node "ExFun"
-          [Loc; List [Tuple [Node "PaUid" [Loc; Str "()"]; Option None; e]]]]]
-;
-
 value not_yet_warned = ref True;
 value warning_seq () =
   if not_yet_warned.val then do {
@@ -408,7 +393,7 @@ EXTEND
     | "apply" LEFTA
       [ e1 = SELF; e2 = SELF -> Node "ExApp" [Loc; e1; e2]
       | "assert"; e = SELF -> mkassert loc e
-      | "lazy"; e = SELF -> mklazy loc e ]
+      | "lazy"; e = SELF -> Node "ExLaz" [Loc; e] ]
     | "." LEFTA
       [ e1 = SELF; "."; "("; e2 = SELF; ")" -> Node "ExAre" [Loc; e1; e2]
       | e1 = SELF; "."; "["; e2 = SELF; "]" -> Node "ExSte" [Loc; e1; e2]

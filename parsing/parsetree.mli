@@ -107,6 +107,7 @@ and expression_desc =
   | Pexp_letmodule of string * module_expr * expression
   | Pexp_assert of expression
   | Pexp_assertfalse
+  | Pexp_lazy of expression
 
 (* Value descriptions *)
 

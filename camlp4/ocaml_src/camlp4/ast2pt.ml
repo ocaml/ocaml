@@ -521,6 +521,7 @@ let rec expr =
       mkexp loc (Pexp_ifthenelse (expr e1, expr e2, Some (expr e3)))
   | ExInt (loc, s) -> mkexp loc (Pexp_constant (Const_int (int_of_string s)))
   | ExLab (loc, _, _) -> error loc "labeled expression not allowed here"
+  | ExLaz (loc, e) -> mkexp loc (Pexp_lazy (expr e))
   | ExLet (loc, rf, pel, e) ->
       mkexp loc (Pexp_let (mkrf rf, List.map mkpe pel, expr e))
   | ExLid (loc, s) -> mkexp loc (Pexp_ident (lident s))

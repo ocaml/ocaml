@@ -39,10 +39,10 @@ value empty s =
   | None -> Some ((), s) ]
 ;
 
-value nil () = {count = 0; data = ref (Lazy.Value Nil)};
+value nil () = {count = 0; data = Lazy.lazy_from_val Nil};
 value cons a s = Cons a s;
 value app s1 s2 = App s1 s2;
-value flazy f = {count = 0; data = ref (Lazy.Delayed f)};
+value flazy f = {count = 0; data = Lazy.lazy_from_fun f};
 
 value of_list l =
   List.fold_right (fun x s -> flazy (fun () -> cons x s)) l (nil ())
@@ -67,7 +67,9 @@ value count s = s.count;
 
 value count_unfrozen s =
   loop 0 s where rec loop cnt s =
-    match s.data.val with
-    [ Lazy.Value (Cons _ s) -> loop (cnt + 1) s
-    | _ -> cnt ]
+    if Lazy.lazy_is_val s.data then
+      match Lazy.force s.data with
+      [ (Cons _ s) -> loop (cnt + 1) s
+      | _ -> cnt ]
+    else cnt
 ;

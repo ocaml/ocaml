@@ -58,7 +58,8 @@ extern char *gc_sweep_hp;
 #define Not_in_heap 0
 #define Page(p) ((unsigned long) (p) >> Page_log)
 #define Is_in_heap(p) \
-  ((addr)(p) >= (addr)heap_start && (addr)(p) < (addr)heap_end \
+  (Assert (Is_block (p)), \
+   (addr)(p) >= (addr)heap_start && (addr)(p) < (addr)heap_end \
    && page_table [Page (p)])
 
 void init_major_heap (asize_t);

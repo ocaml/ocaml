@@ -23,6 +23,7 @@ external magic : 'a -> 'b = "%identity"
 external is_block : t -> bool = "obj_is_block"
 external is_int : t -> bool = "%obj_is_int"
 external tag : t -> int = "obj_tag"
+external set_tag : t -> int -> unit = "obj_set_tag"
 external size : t -> int = "%obj_size"
 external field : t -> int -> t = "%obj_field"
 external set_field : t -> int -> t -> unit = "%obj_set_field"
@@ -35,12 +36,14 @@ let marshal (obj : t) =
 let unmarshal str pos =
   (Marshal.from_string str pos, pos + Marshal.total_size str pos)
 
-let no_scan_tag = 251
-let closure_tag = 250
-let infix_tag = 249
+let lazy_tag = 246
+let closure_tag = 247
 let object_tag = 248
+let infix_tag = 249
+let forward_tag = 250
+let no_scan_tag = 251
 let abstract_tag = 251
 let string_tag = 252
 let double_tag = 253
 let double_array_tag = 254
-let final_tag = 255
+let custom_tag = 255

@@ -1116,7 +1116,7 @@ EXTEND
               if no_assert.val then <:expr< () >>
               else <:expr< if $e$ then () else $raiser$ >> ]
       | "lazy"; e = SELF ->
-          <:expr< Pervasives.ref (Lazy.Delayed (fun () -> $e$)) >> ]
+          <:expr< lazy ($e$) >> ]
     | "simple" LEFTA
       [ e1 = SELF; "."; "("; e2 = SELF; ")" -> <:expr< $e1$ .( $e2$ ) >>
       | e1 = SELF; "."; "["; e2 = SELF; "]" -> <:expr< $e1$ .[ $e2$ ] >>

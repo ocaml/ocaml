@@ -84,6 +84,8 @@ static long compare_val(value v1, value v2)
 
   sp = compare_stack;
   while (1) {
+    while (Is_block (v1) && Tag_val (v1) == Forward_tag) v1 = Forward_val (v1);
+    while (Is_block (v2) && Tag_val (v2) == Forward_tag) v2 = Forward_val (v2);
     if (v1 == v2) goto next_item;
     if (Is_long(v1)) {
       if (Is_long(v2))

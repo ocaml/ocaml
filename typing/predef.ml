@@ -32,6 +32,7 @@ and ident_option = Ident.create "option"
 and ident_nativeint = Ident.create "nativeint"
 and ident_int32 = Ident.create "int32"
 and ident_int64 = Ident.create "int64"
+and ident_lazy_t = Ident.create "lazy_t"
 
 let path_int = Pident ident_int
 and path_char = Pident ident_char
@@ -47,6 +48,7 @@ and path_option = Pident ident_option
 and path_nativeint = Pident ident_nativeint
 and path_int32 = Pident ident_int32
 and path_int64 = Pident ident_int64
+and path_lazy_t = Pident ident_lazy_t
 
 let type_int = newgenty (Tconstr(path_int, [], ref Mnil))
 and type_char = newgenty (Tconstr(path_char, [], ref Mnil))
@@ -61,6 +63,7 @@ and type_option t = newgenty (Tconstr(path_option, [t], ref Mnil))
 and type_nativeint = newgenty (Tconstr(path_nativeint, [], ref Mnil))
 and type_int32 = newgenty (Tconstr(path_int32, [], ref Mnil))
 and type_int64 = newgenty (Tconstr(path_int64, [], ref Mnil))
+and type_lazy_t t = newgenty (Tconstr(path_lazy_t, [t], ref Mnil))
 
 let ident_match_failure = Ident.create "Match_failure"
 and ident_out_of_memory = Ident.create "Out_of_memory"
@@ -129,6 +132,13 @@ let build_initial_env add_type add_exception empty_env =
      type_kind = Type_variant["None", []; "Some", [tvar]];
      type_manifest = None;
      type_variance = [true, false]}
+  and decl_lazy_t =
+    let tvar = newgenvar() in
+    {type_params = [tvar];
+     type_arity = 1;
+     type_kind = Type_abstract;
+     type_manifest = None;
+     type_variance = [true, false]}
   in
 
   add_exception ident_match_failure
@@ -147,6 +157,7 @@ let build_initial_env add_type add_exception empty_env =
   add_type ident_int64 decl_abstr (
   add_type ident_int32 decl_abstr (
   add_type ident_nativeint decl_abstr (
+  add_type ident_lazy_t decl_lazy_t (
   add_type ident_option decl_option (
   add_type ident_format decl_format (
   add_type ident_list decl_list (
@@ -158,7 +169,7 @@ let build_initial_env add_type add_exception empty_env =
   add_type ident_string decl_abstr (
   add_type ident_char decl_abstr (
   add_type ident_int decl_abstr (
-    empty_env)))))))))))))))))))))))))
+    empty_env))))))))))))))))))))))))))
 
 let builtin_values =
   List.map (fun id -> Ident.make_global id; (Ident.name id, id))

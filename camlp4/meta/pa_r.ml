@@ -150,10 +150,6 @@ value mkassert loc e =
       else <:expr< if $e$ then () else $raiser$ >> ]
 ;
 
-value mklazy loc e =
-  <:expr< Pervasives.ref (Lazy.Delayed (fun () -> $e$)) >>
-;
-
 (* ...suppose to flush the input in case of syntax error to avoid multiple
    errors in case of cut-and-paste in the xterm, but work bad: for example
    the input "for x = 1;" waits for another line before displaying the
@@ -377,7 +373,7 @@ EXTEND
     | "apply" LEFTA
       [ e1 = SELF; e2 = SELF -> <:expr< $e1$ $e2$ >>
       | "assert"; e = SELF -> mkassert loc e
-      | "lazy"; e = SELF -> mklazy loc e ]
+      | "lazy"; e = SELF -> <:expr< lazy ($e$) >> ]
     | "." LEFTA
       [ e1 = SELF; "."; "("; e2 = SELF; ")" -> <:expr< $e1$ .( $e2$ ) >>
       | e1 = SELF; "."; "["; e2 = SELF; "]" -> <:expr< $e1$ .[ $e2$ ] >>

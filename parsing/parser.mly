@@ -63,15 +63,6 @@ let mkassert e =
   | _ -> mkexp (Pexp_assert (e))
 ;;
 
-let mklazy e =
-  let void_pat = ghpat (Ppat_construct (Lident "()", None, false)) in
-  let f = ghexp (Pexp_function ("", None, [void_pat, e])) in
-  let delayed = Ldot (Lident "Lazy", "Delayed") in
-  let df = ghexp (Pexp_construct (delayed, Some f, false)) in
-  let r = ghexp (Pexp_ident (Ldot (Lident "Pervasives", "ref"))) in
-  ghexp (Pexp_apply (r, ["", df]))
-;;
-
 let mkinfix arg1 name arg2 =
   mkexp(Pexp_apply(mkoperator name 2, ["", arg1; "", arg2]))
 
@@ -833,7 +824,7 @@ expr:
   | ASSERT simple_expr %prec prec_appl
       { mkassert $2 }
   | LAZY simple_expr %prec prec_appl
-      { mklazy $2 }
+      { mkexp (Pexp_lazy ($2)) }
 ;
 simple_expr:
     val_longident

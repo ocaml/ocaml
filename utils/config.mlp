@@ -12,7 +12,7 @@
 
 (* $Id$ *)
 
-let version = "3.04+2 (2002-01-18)"
+let version = "3.04+3 (2002-01-20)"
 
 let standard_library =
   try
@@ -39,14 +39,14 @@ and cmo_magic_number = "Caml1999O004"
 and cma_magic_number = "Caml1999A006"
 and cmx_magic_number = "Caml1999Y006"
 and cmxa_magic_number = "Caml1999Z008"
-and ast_impl_magic_number = "Caml1999M008"
+and ast_impl_magic_number = "Caml1999M009"
 and ast_intf_magic_number = "Caml1999N007"
 
 let load_path = ref ([] : string list)
 
 let interface_suffix = ref ".mli"
 
-let max_tag = 246
+let max_tag = 245
 let max_young_wosize = 256
 let stack_threshold = 256 (* see byterun/config.h *)
 

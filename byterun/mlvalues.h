@@ -158,10 +158,17 @@ bits  63    10 9     8 7   0
 typedef int32 opcode_t;
 typedef opcode_t * code_t;
 
-/* Special case of tuples of fields: closures */
+/* NOTE: [Forward_tag] and [Infix_tag] must be just under
+   [No_scan_tag], with [Infix_tag] the lower one.
+   See [oldify_one] in minor_gc.c for more details.
 
-#define Closure_tag 250
-#define Code_val(val) (((code_t *) (val)) [0])     /* Also an l-value. */
+   NOTE: Update stdlib/obj.ml whenever you change the tags.
+ */
+
+/* Forward_tag: forwarding pointer that the GC may silently shortcut.
+   See stdlib/lazy.ml. */
+#define Forward_tag 250
+#define Forward_val(v) Field(v, 0)
 
 /* If tag == Infix_tag : an infix header inside a closure */
 /* Infix_tag must be odd so that the infix header is scanned as an integer */
@@ -176,6 +183,14 @@ typedef opcode_t * code_t;
 #define Object_tag 248
 #define Class_val(val) Field((val), 0)
 #define Oid_val(val) Long_val(Field((val), 1))
+
+/* Special case of tuples of fields: closures */
+#define Closure_tag 247
+#define Code_val(val) (((code_t *) (val)) [0])     /* Also an l-value. */
+
+/* This tag is not special for the runtime, but it must not be used
+   for any constructor.  See stdlib/lazy.ml. */
+#define Lazy_tag 246
 
 /* Another special case: variants */
 CAMLextern value hash_variant(char * tag);

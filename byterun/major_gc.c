@@ -119,8 +119,14 @@ static void mark_slice (long work)
       if (Tag_hd (hd) < No_scan_tag){
         for (i = 0; i < size; i++){
           child = Field (v, i);
+        again:
           if (Is_block (child) && Is_in_heap (child)) {
             hd = Hd_val(child);
+            if (Tag_hd (hd) == Forward_tag){
+              child = Forward_val (child);
+              Field (v, i) = child;
+              goto again;
+            }
             if (Tag_hd(hd) == Infix_tag) {
               child -= Infix_offset_val(child);
               hd = Hd_val(child);

@@ -84,6 +84,7 @@ and expr =
   | ExIfe of loc and expr and expr and expr
   | ExInt of loc and string
   | ExLab of loc and string and expr
+  | ExLaz of loc and expr
   | ExLet of loc and bool and list (patt * expr) and expr
   | ExLid of loc and string
   | ExLmd of loc and string and module_expr and expr

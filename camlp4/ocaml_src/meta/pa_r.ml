@@ -148,18 +148,6 @@ let mkassert loc e =
       else MLast.ExIfe (loc, e, MLast.ExUid (loc, "()"), raiser)
 ;;
 
-let mklazy loc e =
-  MLast.ExApp
-    (loc,
-     MLast.ExAcc
-       (loc, MLast.ExUid (loc, "Pervasives"), MLast.ExLid (loc, "ref")),
-     MLast.ExApp
-       (loc,
-        MLast.ExAcc
-          (loc, MLast.ExUid (loc, "Lazy"), MLast.ExUid (loc, "Delayed")),
-        MLast.ExFun (loc, [MLast.PaUid (loc, "()"), None, e])))
-;;
-
 (* ...suppose to flush the input in case of syntax error to avoid multiple
    errors in case of cut-and-paste in the xterm, but work bad: for example
    the input "for x = 1;" waits for another line before displaying the
@@ -980,7 +968,8 @@ Grammar.extend
      Some "apply", Some Gramext.LeftA,
      [[Gramext.Stoken ("", "lazy"); Gramext.Sself],
       Gramext.action
-        (fun (e : 'expr) _ (loc : int * int) -> (mklazy loc e : 'expr));
+        (fun (e : 'expr) _ (loc : int * int) ->
+           (MLast.ExLaz (loc, e) : 'expr));
       [Gramext.Stoken ("", "assert"); Gramext.Sself],
       Gramext.action
         (fun (e : 'expr) _ (loc : int * int) -> (mkassert loc e : 'expr));

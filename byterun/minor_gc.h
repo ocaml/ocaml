@@ -25,7 +25,8 @@ extern asize_t minor_heap_size;
 extern int in_minor_collection;
 
 #define Is_young(val) \
-  ((addr)(val) < (addr)young_end && (addr)(val) > (addr)young_start)
+  (Assert (Is_block (val)), \
+   (addr)(val) < (addr)young_end && (addr)(val) > (addr)young_start)
 
 extern void set_minor_heap_size (asize_t);
 extern void empty_minor_heap (void);
