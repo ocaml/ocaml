@@ -23,12 +23,12 @@ OTHEROBJS=../utils/misc.cmo ../utils/tbl.cmo \
   ../utils/clflags.cmo ../utils/config.cmo \
   ../parsing/location.cmo \
   ../typing/ident.cmo ../typing/path.cmo ../typing/subst.cmo \
-  ../typing/predef.cmo ../typing/env.cmo \
+  ../typing/predef.cmo ../typing/datarepr.cmo ../typing/env.cmo \
   ../bytecomp/lambda.cmo \
   ../asmcomp/arch.cmo ../asmcomp/cmm.cmo ../asmcomp/printcmm.cmo \
   ../asmcomp/clambda.cmo ../asmcomp/compilenv.cmo \
-  ../asmcomp/closure.cmo ../asmcomp/cmmgen.cmo \
   ../asmcomp/reg.cmo ../asmcomp/mach.cmo ../asmcomp/proc.cmo \
+  ../asmcomp/closure.cmo ../asmcomp/cmmgen.cmo \
   ../asmcomp/printmach.cmo ../asmcomp/selection.cmo \
   ../asmcomp/liveness.cmo ../asmcomp/spill.cmo ../asmcomp/split.cmo \
   ../asmcomp/interf.cmo ../asmcomp/coloring.cmo ../asmcomp/reload.cmo \

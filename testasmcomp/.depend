@@ -2,8 +2,14 @@ lexcmm.cmi: parsecmm.cmi
 parsecmm.cmi: ../asmcomp/cmm.cmi 
 parsecmmaux.cmi: ../typing/ident.cmi 
 lexcmm.cmo: lexcmm.cmi ../utils/misc.cmi parsecmm.cmi 
+lexcmm.cmx: lexcmm.cmi ../utils/misc.cmx parsecmm.cmx 
 main.cmo: ../asmcomp/printmach.cmi lexcmm.cmi parsecmmaux.cmi \
     ../asmcomp/asmgen.cmi parsecmm.cmi ../utils/clflags.cmo 
+main.cmx: ../asmcomp/printmach.cmx lexcmm.cmx parsecmmaux.cmx \
+    ../asmcomp/asmgen.cmx parsecmm.cmx ../utils/clflags.cmx 
 parsecmm.cmo: parsecmm.cmi ../utils/misc.cmi ../asmcomp/arch.cmo \
     parsecmmaux.cmi ../asmcomp/cmm.cmi 
+parsecmm.cmx: parsecmm.cmi ../utils/misc.cmx ../asmcomp/arch.cmx \
+    parsecmmaux.cmx ../asmcomp/cmm.cmx 
 parsecmmaux.cmo: parsecmmaux.cmi ../typing/ident.cmi 
+parsecmmaux.cmx: parsecmmaux.cmi ../typing/ident.cmx 
