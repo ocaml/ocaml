@@ -32,11 +32,13 @@ let newty2 level desc  =
   incr new_id; { desc = desc; level = level; id = !new_id }
 let newgenty desc      = newty2 generic_level desc
 let newgenvar ()       = newgenty Tvar
+(*
 let newmarkedvar level =
   incr new_id; { desc = Tvar; level = pivot_level - level; id = !new_id }
 let newmarkedgenvar () =
   incr new_id;
   { desc = Tvar; level = pivot_level - generic_level; id = !new_id }
+*)
 
 (**** Representative of a type ****)
 
@@ -59,11 +61,44 @@ let rec repr =
       repr t'
   | t -> t
 
+let rec row_field_repr = function
+    Reither(_, {contents = Some fi}) -> row_field_repr fi
+  | fi -> fi
+
+let rec row_repr row =
+  match (repr row.row_more).desc with
+  | Tvariant row' ->
+      {(row_repr row') with row_fields = row.row_fields @ row'.row_fields}
+  | _ -> row
+
+let rec row_more row =
+  match repr row.row_more with
+  | {desc=Tvariant row'} -> row_more row'
+  | ty -> ty
+  
+
+let static_row row =
+  let row = row_repr row in
+  row.row_closed &&
+  List.for_all (function (_,Reither _) -> false | _ -> true) row.row_fields
+
 
                   (**********************************)
                   (*  Utilities for type traversal  *)
                   (**********************************)
 
+let rec iter_row f row =
+  List.iter
+    (fun (_, fi) ->
+      match row_field_repr fi with
+      |	Rpresent(Some ty) -> f ty
+      |	Reither(Some tl, _) -> List.iter f tl
+      | _ -> ())
+    row.row_fields;
+  match (repr row.row_more).desc with
+    Tvariant row -> iter_row f row
+  | Tvar -> Misc.may (fun (_,l) -> List.iter f l) row.row_name
+  | _ -> assert false
 
 let iter_type_expr f ty =
   match ty.desc with
@@ -74,9 +109,11 @@ let iter_type_expr f ty =
   | Tobject(ty, {contents = Some (_, p)})
                         -> f ty; List.iter f p
   | Tobject (ty, _)     -> f ty
+  | Tvariant row	-> iter_row f row; f (row_more row)
   | Tfield (_, _, ty1, ty2) -> f ty1; f ty2
   | Tnil                -> ()
   | Tlink ty            -> f ty
+  | Tsubst _		-> assert false
 
 let saved_desc = ref []
   (* Saved association of generic nodes with their description. *)
@@ -140,7 +177,6 @@ let rec unmark_class_type =
       unmark_class_signature sign
   | Tcty_fun (_, ty, cty) ->
       unmark_type ty; unmark_class_type cty
-
 
 
                   (*******************************************)

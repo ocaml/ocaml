@@ -61,6 +61,7 @@ and pattern_desc =
   | Ppat_constant of constant
   | Ppat_tuple of pattern list
   | Ppat_construct of Longident.t * pattern option * bool
+  | Ppat_variant of label * pattern option
   | Ppat_record of (Longident.t * pattern) list
   | Ppat_array of pattern list
   | Ppat_or of pattern * pattern
@@ -80,6 +81,7 @@ and expression_desc =
   | Pexp_try of expression * (pattern * expression) list
   | Pexp_tuple of expression list
   | Pexp_construct of Longident.t * expression option * bool
+  | Pexp_variant of label * expression option
   | Pexp_record of (Longident.t * expression) list * expression option
   | Pexp_field of expression * Longident.t
   | Pexp_setfield of expression * Longident.t * expression

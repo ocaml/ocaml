@@ -31,6 +31,7 @@ and pattern_desc =
   | Tpat_constant of constant
   | Tpat_tuple of pattern list
   | Tpat_construct of constructor_description * pattern list
+  | Tpat_variant of label * pattern option
   | Tpat_record of (label_description * pattern) list
   | Tpat_array of pattern list
   | Tpat_or of pattern * pattern
@@ -51,6 +52,7 @@ and expression_desc =
   | Texp_try of expression * (pattern * expression) list
   | Texp_tuple of expression list
   | Texp_construct of constructor_description * expression list
+  | Texp_variant of label * expression option
   | Texp_record of (label_description * expression) list * expression option
   | Texp_field of expression * label_description
   | Texp_setfield of expression * label_description * expression

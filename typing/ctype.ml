@@ -136,9 +136,7 @@ let new_global_ty desc = newty2 !global_level desc
 
 let newvar ()          = newty2 !current_level Tvar
 let newvar2 level      = newty2 level Tvar
-let newmarkedvar       = Btype.newmarkedvar
 let new_global_var ()  = newty2 !global_level Tvar
-let newmarkedgenvar    = Btype.newmarkedgenvar
 
 let newobj fields      = newty (Tobject (fields, ref None))
 
@@ -311,15 +309,12 @@ let rec closed_schema_rec ty =
     match ty.desc with
       Tvar when level <> generic_level ->
         raise Non_closed
-    | Tobject(f, {contents = Some (_, p)}) ->
-        closed_schema_rec f;
-        List.iter closed_schema_rec p
-    | Tobject(f, _) ->
-        closed_schema_rec f
     | Tfield(_, kind, t1, t2) ->
         if field_kind_repr kind = Fpresent then
           closed_schema_rec t1;
         closed_schema_rec t2
+    | Tvariant row when static_row row ->
+        iter_row closed_schema_rec row
     | _ ->
         iter_type_expr closed_schema_rec ty
   end
@@ -351,6 +346,8 @@ let rec free_vars_rec real ty =
         free_vars_rec false ty
     | Tfield (_, _, ty1, ty2) ->
         free_vars_rec true ty1; free_vars_rec false ty2
+    | Tvariant row when static_row row ->
+        iter_row (free_vars_rec true) row
     | _    ->
         iter_type_expr (free_vars_rec true) ty
     end;
@@ -608,11 +605,10 @@ let rec find_repr p1 =
    Generic nodes are duplicated, while non-generic nodes are left
    as-is.
    During instantiation, the description of a generic node is first
-   replaced by a link to a stub ([Tlink (newmarkedvar ())]). Once the
+   replaced by a link to a stub ([Tsubst (newvar ())]). Once the
    copy is made, it replaces the stub.
    After instantiation, the description of generic node, which was
    stored by [save_desc], must be put back, using [cleanup_types].
-   Marked on the copy are removed by [unmark].
 *)
 
 let abbreviations = ref (ref Mnil)
@@ -620,13 +616,14 @@ let abbreviations = ref (ref Mnil)
 
 let rec copy ty =
   let ty = repr ty in
-  if ty.level <> generic_level then
-    ty
-  else begin
+  match ty.desc with
+    Tsubst ty -> ty
+  | _ ->
+    if ty.level <> generic_level then ty else
     let desc = ty.desc in
     save_desc ty desc;
-    let t = newmarkedvar !current_level in          (* Stub *)
-    ty.desc <- Tlink t;
+    let t = newvar() in          (* Stub *)
+    ty.desc <- Tsubst t;
     t.desc <-
       begin match desc with
         Tvar ->
@@ -663,6 +660,40 @@ let rec copy ty =
                 Some (p, List.map copy tl)
           in
           Tobject (copy t1, ref name')
+      |	Tvariant row0 ->
+	  let row = row_repr row0 in
+	  let more = repr row.row_more in
+	  (* We must substitute in a subtle way *)
+	  begin match more.desc with
+	    Tsubst ty2 ->
+	      (* This variant type has been already copied *)
+	      ty.desc <- Tsubst ty2; (* avoid Tlink in the new type *)
+	      Tlink ty2
+	  | _ ->
+	      (* We shall really check the level on the row variable *)
+	      if more.level <> generic_level then Tvariant row0 else
+	      (* We create a new copy *)
+	      let fields =
+		List.map
+		  (fun (l,fi) -> l,
+		    match row_field_repr fi with
+		      Rpresent (Some ty) -> Rpresent(Some(copy ty))
+		    | Reither(Some l, _) ->
+			Reither(Some(List.map copy l), ref None)
+		    | Reither(None, _) -> Reither(None, ref None)
+		    | fi -> fi)
+		  row.row_fields
+	      and name =
+		may_map (fun (p,l) -> p, List.map copy l) row.row_name in
+	      let var = newty (
+		Tvariant { row_fields = fields; row_more = newvar();
+			   row_closed = row.row_closed; row_name = name }
+	       ) in
+	      (* Remember it for other occurences *)
+	      save_desc more more.desc;
+	      more.desc <- Tsubst var;
+	      Tsubst var
+	  end
       | Tfield (label, kind, t1, t2) ->
           begin match field_kind_repr kind with
             Fpresent ->
@@ -676,43 +707,39 @@ let rec copy ty =
           Tnil
       | Tlink t -> (* Actually unused *)
           Tlink (copy t)
+      |	Tsubst _ ->
+	  assert false
       end;
     t
-  end
 
 (**** Variants of instantiations ****)
 
 let instance sch =
   let ty = copy sch in
   cleanup_types ();
-  unmark_type ty;
   ty
 
 let instance_list schl =
   let tyl = List.map copy schl in
   cleanup_types ();
-  List.iter unmark_type tyl;
   tyl
 
 let instance_constructor cstr =
   let ty_res = copy cstr.cstr_res in
   let ty_args = List.map copy cstr.cstr_args in
   cleanup_types ();
-  List.iter unmark_type ty_args; unmark_type ty_res;
   (ty_args, ty_res)
 
 let instance_label lbl =
   let ty_res = copy lbl.lbl_res in
   let ty_arg = copy lbl.lbl_arg in
   cleanup_types ();
-  unmark_type ty_arg; unmark_type ty_res;
   (ty_arg, ty_res)
 
 let instance_parameterized_type sch_args sch =
   let ty_args = List.map copy sch_args in
   let ty = copy sch in
   cleanup_types ();
-  List.iter unmark_type ty_args; unmark_type ty;
   (ty_args, ty)
 
 let instance_parameterized_type_2 sch_args sch_lst sch =
@@ -720,8 +747,6 @@ let instance_parameterized_type_2 sch_args sch_lst sch =
   let ty_lst = List.map copy sch_lst in
   let ty = copy sch in
   cleanup_types ();
-  List.iter unmark_type ty_args; List.iter unmark_type ty_lst;
-  unmark_type ty;  
   (ty_args, ty_lst, ty)
 
 let instance_class params cty =
@@ -741,19 +766,6 @@ let instance_class params cty =
   let params' = List.map copy params in
   let cty' = copy_class_type cty in
   cleanup_types ();
-  let rec unmark_class_type =
-    function
-      Tcty_constr (path, tyl, cty) ->
-        List.iter unmark_type tyl;
-        unmark_class_type cty
-    | Tcty_signature sign ->
-        unmark_type sign.cty_self;
-        Vars.iter (fun lab (mut, ty) -> unmark_type ty) sign.cty_vars;
-    | Tcty_fun (_, ty, cty) ->
-        unmark_type ty; unmark_class_type cty
-  in
-  List.iter unmark_type params';
-  unmark_class_type cty';
   (params', cty')
 
 (**** Instantiation with parameter substitution ****)
@@ -942,7 +954,7 @@ let rec non_recursive_abbrev env ty =
         with Cannot_expand ->
           iter_type_expr (non_recursive_abbrev env) ty
         end
-    | Tobject (_, _) ->
+    | Tobject _ | Tvariant _ ->
         ()
     | _ ->
         iter_type_expr (non_recursive_abbrev env) ty
@@ -970,7 +982,7 @@ let rec occur_rec env visited ty0 ty =
       with Cannot_expand ->
         raise Occur
       end
-  | Tobject (_, _) ->
+  | Tobject _ | Tvariant _ ->
       ()
   | _ ->
       iter_type_expr (occur_rec env visited ty0) ty
@@ -1124,6 +1136,73 @@ and unify3 env t1 t1' t2 t2' =
         | _ ->
             ()
         end
+    | (Tvariant row1, Tvariant row2) ->
+	let row1 = row_repr row1 and row2 = row_repr row2 in
+	let sort = Sort.list (fun (p,_) (q,_) -> p < q) in
+	let fi1 = sort row1.row_fields and fi2 = sort row2.row_fields in
+	let rec merge r1 r2 pairs fi1 fi2 =
+	  match fi1, fi2 with
+	    (l1,f1 as p1)::fi1', (l2,f2 as p2)::fi2' ->
+	      if l1 = l2 then merge r1 r2 ((l1,f1,f2)::pairs) fi1' fi2' else
+	      if l1 < l2 then merge (p1::r1) r2 pairs fi1' fi2 else
+	      merge r1 (p2::r2) pairs fi1 fi2'
+	  | [], _ -> (List.rev r1, List.rev_append r2 fi2, pairs)
+	  | _, [] -> (List.rev_append r1 fi1, List.rev r2, pairs)
+	in
+	let r1, r2, pairs = merge [] [] [] fi1 fi2 in
+	let rm1 = row_more row1 and rm2 =row_more row2 in
+	let more = newty2 (min rm1.level rm2.level) Tvar
+	and closed = row1.row_closed || row2.row_closed in
+	let name =
+	  if r1 = [] && row2.row_name <> None then row2.row_name else
+	  if r2 = [] then row1.row_name else None
+	in
+	let row0 = {row_fields = []; row_more = more;
+		   row_closed = closed; row_name = name} in
+	let more row rm rest =
+	  if rest = [] && (row.row_closed || not closed) then more else
+	  if rest <> [] && row.row_closed then raise (Unify []) else
+	  let ty =
+	    newty2 generic_level (Tvariant {row0 with row_fields = rest}) in
+	  update_level env rm.level ty;
+	  ty
+	in
+	let md1 = rm1.desc and md2 = rm2.desc in
+	begin try
+	  rm1.desc <- Tlink (more row1 rm1 r2);
+	  rm2.desc <- Tlink (more row2 rm2 r1);
+	  List.iter
+	    (fun (_,f1,f2) ->
+	      let f1 = row_field_repr f1 and f2 = row_field_repr f2 in
+	      match f1, f2 with
+		Rpresent(Some t1), Rpresent(Some t2) -> unify env t1 t2
+	      | Rpresent None, Rpresent None -> ()
+	      | Reither(Some tl1, e1), Reither(Some tl2, e2) ->
+		  if e1 == e2 then () else
+		  let tl = tl1 @ tl2 in
+		  let tl =
+		    List.fold_right
+		      (fun t tl ->
+			let t = repr t in if List.memq t tl then tl else t::tl)
+		      tl [] in
+		  let f = Reither(Some tl, ref None) in
+		  e1 := Some f; e2 := Some f
+	      | Reither(None, e1), Reither(None, e2) ->
+		  if e1 == e2 then () else e2 := Some f1
+	      | Reither(Some tl, e1), Rpresent(Some t) ->
+		  e1 := Some f2; List.iter (unify env t) tl
+	      | Rpresent(Some t), Reither(Some tl, e2) ->
+		  e2 := Some f1; List.iter (unify env t) tl
+	      | Reither(None,e1), Rpresent None -> e1 := Some f2
+	      | Rpresent None, Reither(None,e2) -> e2 := Some f1
+	      |	Reither(_, e1), Rabsent -> e1 := Some f2
+	      |	Rabsent, Reither(_, e2) -> e2 := Some f1
+	      |	Rabsent, Rabsent -> ()
+	      |	_ -> raise (Unify []))
+	    pairs
+	with exn ->
+	  rm1.desc <- md1; rm2.desc <- md2; raise exn
+	end
     | (Tfield _, Tfield _) ->           (* Actually unused *)
         unify_fields env t1' t2'
     | (Tnil, Tnil) ->
@@ -1847,6 +1926,8 @@ let rec build_subtype env t =
   | Tnil ->
       let v = newvar () in
       (v, true)
+  | Tsubst _ ->
+      assert false
 
 let enlarge_type env ty =
   subtypes := [];
@@ -2002,23 +2083,22 @@ let rec cyclic_abbrev env id ty =
    Variables are left unchanged. Other type nodes are duplicated, with
    levels set to generic level.
    During copying, the description of a (non-variable) node is first
-   replaced by a link to a marked stub ([Tlink (newmarkedgenvar ())]).
-   The mark allows to differentiate the original type from the copy.
+   replaced by a link to a stub ([Tsubst (newgenvar ())]).
    Once the copy is made, it replaces the stub.
    After copying, the description of node, which was stored by
-   [save_desc], must be put back, using [cleanup_types], and the
-   marks on the copy must be removed.
+   [save_desc], must be put back, using [cleanup_types].
 *)
 
 let rec nondep_type_rec env id ty =
   let ty = repr ty in
-  if (ty.desc = Tvar) || (ty.level < lowest_level) then
-    ty
-  else begin
+  match ty.desc with
+    Tvar     -> ty
+  | Tsubst ty -> ty
+  | _ ->
     let desc = ty.desc in
     save_desc ty desc;
-    let ty' = newmarkedgenvar () in        (* Stub *)
-    ty.desc <- Tlink ty';
+    let ty' = newgenvar () in        (* Stub *)
+    ty.desc <- Tsubst ty';
     ty'.desc <-
       begin match desc with
         Tvar ->
@@ -2050,6 +2130,44 @@ let rec nondep_type_rec env id ty =
                       | Some (p, tl) ->
                           if Path.isfree id p then None
                           else Some (p, List.map (nondep_type_rec env id) tl)))
+      |	Tvariant row ->
+	  let row = row_repr row in
+	  let more = repr row.row_more in
+	  (* We must substitute in a subtle way *)
+	  begin match more.desc with
+	    Tsubst ty2 ->
+	      (* This variant type has been already copied *)
+	      ty.desc <- Tsubst ty2; (* avoid Tlink in the new type *)
+	      Tlink ty2
+	  | _ ->
+	      (* We create a new copy *)
+	      let fields =
+		List.map
+		  (fun (l,fi) -> l,
+		    match row_field_repr fi with
+		      Rpresent (Some ty) ->
+			Rpresent(Some (nondep_type_rec env id ty))
+		    | Reither(Some l, _) ->
+			Reither(Some(List.map (nondep_type_rec env id) l),
+				ref None)
+		    | Reither(None, _) -> Reither(None, ref None)
+		    | fi -> fi)
+		  row.row_fields
+	      and name =
+		match row.row_name with
+		  Some (p,l) when Path.isfree id p ->
+		    Some (p, List.map (nondep_type_rec env id) l)
+		| _ -> None
+	      in
+	      let var = newgenty (
+		Tvariant { row_fields = fields; row_more = newgenvar();
+			   row_closed = row.row_closed; row_name = name }
+	       ) in
+	      (* Remember it for other occurences *)
+	      save_desc more more.desc;
+	      more.desc <- Tsubst var;
+	      Tsubst var
+	  end
       | Tfield(label, kind, t1, t2) ->
           begin match field_kind_repr kind with
             Fpresent ->
@@ -2067,7 +2185,6 @@ let rec nondep_type_rec env id ty =
           Tlink(nondep_type_rec env id ty)
       end;
     ty'
-  end
 
 let nondep_type env id ty =
   try

@@ -687,6 +687,8 @@ expr:
       { mkexp(Pexp_tuple(List.rev $1)) }
   | constr_longident simple_expr %prec prec_constr_appl
       { mkexp(Pexp_construct($1, Some $2, false)) }
+  | name_tag simple_expr %prec prec_constr_appl
+      { mkexp(Pexp_variant($1, Some $2)) }
   | IF seq_expr THEN expr ELSE expr %prec prec_if
       { mkexp(Pexp_ifthenelse($2, $4, Some $6)) }
   | IF seq_expr THEN expr %prec prec_if
@@ -763,6 +765,8 @@ simple_expr:
       { mkexp(Pexp_constant $1) }
   | constr_longident
       { mkexp(Pexp_construct($1, None, false)) }
+  | name_tag
+      { mkexp(Pexp_variant($1, None)) }
   | LPAREN seq_expr RPAREN
       { $2 }
   | LPAREN seq_expr error

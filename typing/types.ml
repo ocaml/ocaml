@@ -32,6 +32,19 @@ and type_desc =
   | Tfield of string * field_kind * type_expr * type_expr
   | Tnil
   | Tlink of type_expr
+  | Tsubst of type_expr
+  | Tvariant of row_desc
+
+and row_desc =
+    { row_fields: (label * row_field) list;
+      row_more: type_expr;
+      row_closed: bool;
+      row_name: (Path.t * type_expr list) option }
+
+and row_field =
+    Rpresent of type_expr option
+  | Reither of type_expr list option * row_field option ref
+  | Rabsent
 
 and abbrev_memo =
     Mnil

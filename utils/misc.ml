@@ -55,6 +55,10 @@ let rec list_remove x = function
 
 (* Options *)
 
+let may f = function
+    Some x -> f x
+  | None -> ()
+
 let may_map f = function
     Some x -> Some (f x)
   | None -> None
