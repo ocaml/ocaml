@@ -28,7 +28,7 @@ value * trapsp;
 value * trap_barrier;
 value global_data;
 
-unsigned long max_stack_size;
+unsigned long max_stack_size;            /* also used in gc_ctrl.c */
 
 void init_stack (long unsigned int initial_max_size)
 {
@@ -83,7 +83,9 @@ void change_max_stack_size (long unsigned int new_max_size)
   asize_t size = stack_high - extern_sp + Stack_threshold / sizeof (value);
 
   if (new_max_size < size) new_max_size = size;
-  gc_message ("Changing stack limit to %luk bytes\n",
-              new_max_size * sizeof (value) / 1024);
+  if (new_max_size != max_stack_size){
+    gc_message ("Changing stack limit to %luk bytes\n",
+                new_max_size * sizeof (value) / 1024);
+  }
   max_stack_size = new_max_size;
 }

@@ -21,6 +21,10 @@
 #include "mlvalues.h"
 #include "stacks.h"
 
+#ifndef NATIVE_CODE
+extern unsigned long max_stack_size;    /* defined in stacks.c */
+#endif
+
 long stat_minor_words = 0,
      stat_promoted_words = 0,
      stat_major_words = 0,
@@ -125,11 +129,17 @@ value gc_get(value v) /* ML */
   value res;
 
   Assert (v == Val_unit);
-  res = alloc (4, 0);
+  res = alloc (6, 0);
   Field (res, 0) = Wsize_bsize (Val_long (minor_heap_size));
   Field (res, 1) = Wsize_bsize (Val_long (major_heap_increment));
   Field (res, 2) = Val_long (percent_free);
   Field (res, 3) = Val_bool (verb_gc);
+  Field (res, 4) = Val_long (percent_max);
+#ifndef NATIVE_CODE
+  Field (res, 5) = Val_long (max_stack_size);
+#else
+  Field (res, 5) = 0;
+#endif
   return res;
 }
 
