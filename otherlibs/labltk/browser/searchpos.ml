@@ -612,6 +612,7 @@ let rec search_pos_structure ~pos str =
   | Tstr_class l ->
       List.iter l ~f:(fun (id, _, _, cl) -> search_pos_class_expr cl ~pos)
   | Tstr_cltype _ -> ()
+  | Tstr_include (m, _) -> search_pos_module_expr m ~pos
   end
 
 and search_pos_class_expr ~pos cl =
@@ -730,6 +731,9 @@ and search_pos_expr ~pos exp =
       List.iter l ~f:(fun (_, exp) -> search_pos_expr exp ~pos)
   | Texp_letmodule (id, modexp, exp) ->
       search_pos_module_expr modexp ~pos;
+      search_pos_expr exp ~pos
+  | Texp_assertfalse -> ()
+  | Texp_assert exp ->
       search_pos_expr exp ~pos
   end;
   raise (Found_str (`Exp(`Expr, exp.exp_type), exp.exp_env))

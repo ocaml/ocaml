@@ -77,6 +77,15 @@ let remove_file filename =
   with Sys_error msg ->
     ()
 
+(* Expand a -I option: if it starts with +, make it relative to the standard
+   library directory *)
+
+let expand_directory alt s =
+  if String.length s > 0 && s.[0] = '+'
+  then Filename.concat alt
+                       (String.sub s 1 (String.length s - 1))
+  else s
+
 (* Hashtable functions *)
 
 let create_hashtable size init =

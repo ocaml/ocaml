@@ -35,7 +35,8 @@ let _ = Hashtbl.add directive_table "quit" (Directive_none dir_quit)
 (* To add a directory to the load path *)
 
 let dir_directory s =
-  Config.load_path := s :: !Config.load_path;
+  Config.load_path :=
+    expand_directory Config.standard_library s :: !Config.load_path;
   Env.reset_cache()
 
 let _ = Hashtbl.add directive_table "directory" (Directive_string dir_directory)

@@ -21,7 +21,9 @@ let file_argument name =
 
 let main () =
   Arg.parse [
-     "-I", Arg.String(fun dir -> include_dirs := dir :: !include_dirs),
+     "-I", Arg.String(fun dir ->
+       let dir = Misc.expand_directory Config.standard_library dir in
+       include_dirs := dir :: !include_dirs),
            "<dir>  Add <dir> to the list of include directories";
      "-labels", Arg.Clear classic, " Use commuting label mode";
      "-modern", Arg.Clear classic, " (deprecated) same as -labels";

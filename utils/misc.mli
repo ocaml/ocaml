@@ -39,6 +39,9 @@ val find_in_path: string list -> string -> string
         (* Search a file in a list of directories. *)
 val remove_file: string -> unit
         (* Delete the given file if it exists. Never raise an error. *)
+val expand_directory: string -> string -> string
+        (* [expand_directory alt file] eventually expands a [+] at the
+           beginning of file into [alt] (an alternate root directory) *)
 
 val create_hashtable: int -> ('a * 'b) list -> ('a, 'b) Hashtbl.t
         (* Create a hashtable of the given size and fills it with the
