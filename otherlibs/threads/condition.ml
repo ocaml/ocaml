@@ -11,17 +11,21 @@
 
 (* $Id$ *)
 
-(* Module [Thread]: user-level lightweight threads *)
+type t =
+  { mutable cond_waiting: t list }
 
-type t
-val new : ('a -> 'b) -> 'a -> t
-val exit : unit -> unit
-val self : unit -> t
-val kill : t -> unit
-val sleep : unit -> unit
-val wakeup : t -> unit
-val wait_descr : Unix.file_descr -> unit
-val wait_inchan : in_channel -> unit
-val delay: float -> unit
+let new () = { cond_waiting = [] }
 
+let wait cond lock =
+  cond.cond_waiting <- Thread.self() :: cond.cond_waiting;
+  Mutex.unlock lock;
+  Thread.sleep()
 
+let signal cond =
+  match cond.cond_waiting with
+    [] -> ()
+  | pid :: rem -> Thread.wakeup pid; cond.cond_waiting <- rem
+
+let broadcast cond =
+  List.iter Thread.wakeup cond.cond_waiting;
+  cond.cond_waiting <- []

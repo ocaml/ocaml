@@ -11,17 +11,10 @@
 
 (* $Id$ *)
 
-(* Module [Thread]: user-level lightweight threads *)
+(* Module [Mutex]: mutually-exclusive locks *)
 
 type t
-val new : ('a -> 'b) -> 'a -> t
-val exit : unit -> unit
-val self : unit -> t
-val kill : t -> unit
-val sleep : unit -> unit
-val wakeup : t -> unit
-val wait_descr : Unix.file_descr -> unit
-val wait_inchan : in_channel -> unit
-val delay: float -> unit
-
-
+val new: unit -> t
+val lock: t -> unit
+val try_lock: t -> bool
+val unlock: t -> unit

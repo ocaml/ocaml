@@ -16,7 +16,7 @@
 type t
 
 (* It is mucho important that the primitives that reschedule are called 
-   through an ML function call, not directly. That's because when a C
+   through an ML function call, not directly. That's because when such a
    primitive returns, the bytecode interpreter is only semi-obedient:
    it takes sp from the new thread, but keeps pc from the old thread.
    But that's OK if all calls to rescheduling primitives are immediately
@@ -34,7 +34,6 @@ external thread_wakeup : t -> unit = "thread_wakeup"
 external thread_self : unit -> t = "thread_self"
 external thread_kill : t -> unit = "thread_kill"
 
-let yield () = thread_yield()
 let sleep () = thread_sleep()
 let wait_descr fd = thread_wait_descr fd
 let wait_inchan ic = thread_wait_inchan ic
@@ -60,54 +59,3 @@ let new fn arg =
 let _ =
   Sys.signal Sys.sigvtalrm (Sys.Signal_handle(fun signal -> thread_yield()));
   thread_initialize()
-
-(* Locks *)
-
-type lock =
-  { mutable locked: bool;
-    mutable lock_waiting: t list }
-
-(* We rely heavily on the fact that signals are detected only at
-   function applications and beginning of loops, making all other operations
-   atomic. *)
-
-let new_lock () = { locked = false; lock_waiting = [] }
-
-let rec lock l =
-  if l.locked then begin
-    l.lock_waiting <- self() :: l.lock_waiting;
-    sleep();
-    lock l
-  end else begin
-    l.locked <- true
-  end
-
-let try_lock l =
-  if l.locked then false else begin l.locked <- true; true end
-
-let unlock l =
-  List.iter wakeup l.lock_waiting;
-  l.locked <- false
-
-(* Conditions *)
-
-type condition =
-  { mutable cond_waiting: t list }
-
-let new_condition () = { cond_waiting = [] }
-
-let wait cond lock =
-  cond.cond_waiting <- self() :: cond.cond_waiting;
-  unlock lock;
-  sleep()
-
-let signal cond =
-  match cond.cond_waiting with
-    [] -> ()
-  | pid :: rem -> wakeup pid; cond.cond_waiting <- rem
-
-let broadcast cond =
-  List.iter wakeup cond.cond_waiting;
-  cond.cond_waiting <- []
-
-

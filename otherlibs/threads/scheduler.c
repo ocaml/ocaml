@@ -312,7 +312,11 @@ value thread_wait_for(time)          /* ML */
 value thread_wakeup(thread)     /* ML */
      value thread;
 {
-  ((thread_t) thread)->runnable = 1;
+  thread_t th = (thread_t) thread;
+  /* The thread is no longer waiting on I/O or timer. */
+  if (th->fd != NO_FD) { th->fd = NO_FD; num_waiting_on_fd--; }
+  if (th->delay != NO_DELAY) { th->delay = NO_DELAY; num_waiting_on_timer--; }
+  th->runnable = 1;
   return Val_unit;
 }
 
