@@ -76,7 +76,7 @@ unsigned long gr_pixel_rgb(int rgb)
     i = (i + 1) & (Color_cache_size - 1);
     if (i == h) {
 	/* Cache is full.  Instead of inserting at slot h, which causes
-	   thrasing if many colors hash to the same value,
+	   thrashing if many colors hash to the same value,
 	   insert at h + n where n is pseudo-random and
 	   smaller than Color_cache_slack */
 	int slack = num_overflows++ & (Color_cache_slack - 1);
@@ -120,8 +120,3 @@ value gr_set_color(value vrgb)
   XSetForeground(grdisplay, grbstore.gc, grcolor);
   return Val_unit;
 }
-
-
-                                     
-
-

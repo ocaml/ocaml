@@ -59,10 +59,10 @@ static value fdset_to_fdlist(file_descr_set *fdset)
   Begin_root(res);
     for (i = FD_SETSIZE - 1; i >= 0; i--) {
       if (FD_ISSET(i, fdset)) {
-	value newres = alloc_small(2, 0);
-	Field(newres, 0) = Val_int(i);
-	Field(newres, 1) = res;
-	res = newres;
+        value newres = alloc_small(2, 0);
+        Field(newres, 0) = Val_int(i);
+        Field(newres, 1) = res;
+        res = newres;
       }
     }
   End_roots();

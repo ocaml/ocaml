@@ -55,13 +55,13 @@ let new_channel () =
 
 let masterlock = Mutex.create()
 
-let do_aborts abort_env genev performed = 
+let do_aborts abort_env genev performed =
   if abort_env <> [] then begin
     if performed >= 0 then begin
       let ids_done = snd genev.(performed) in
-      List.iter 
-	(fun (id,f) -> if not (List.mem id ids_done) then f ())
-	abort_env
+      List.iter
+        (fun (id,f) -> if not (List.mem id ids_done) then f ())
+        abort_env
     end else begin
       List.iter (fun (_,f) -> f ()) abort_env
     end
@@ -110,25 +110,25 @@ let scramble_array a =
 
 let gensym = let count = ref 0 in fun () -> incr count; !count
 
-let rec flatten_event 
-      (abort_list : int list) 
+let rec flatten_event
+      (abort_list : int list)
       (accu : ('a behavior * int list) list)
-      (accu_abort : (int * (unit -> unit)) list) 
+      (accu_abort : (int * (unit -> unit)) list)
       ev =
   match ev with
      Communication bev -> ((bev,abort_list) :: accu) , accu_abort
   | WrapAbort (ev,fn) ->
-      let id = gensym () in 
+      let id = gensym () in
       flatten_event (id :: abort_list) accu ((id,fn)::accu_abort) ev
   | Choose evl ->
       let rec flatten_list accu' accu_abort'= function
-	 ev :: l ->
-	   let (accu'',accu_abort'') = 
-	     flatten_event abort_list accu' accu_abort' ev in
-	   flatten_list accu'' accu_abort'' l
+         ev :: l ->
+           let (accu'',accu_abort'') =
+             flatten_event abort_list accu' accu_abort' ev in
+           flatten_list accu'' accu_abort'' l
        | [] -> (accu',accu_abort') in
       flatten_list accu accu_abort evl
-  | Guard fn -> flatten_event abort_list accu accu_abort (fn ()) 
+  | Guard fn -> flatten_event abort_list accu accu_abort (fn ())
 
 let sync ev =
   let (evl,abort_env) = flatten_event [] [] [] ev in

@@ -14,7 +14,7 @@
 
         .globl  call_gen_code
         .ent    call_gen_code
-	
+
 call_gen_code:
         lda     $sp, -80($sp)
         stq     $26, 0($sp)
@@ -41,7 +41,7 @@ call_gen_code:
         ldt     $f3, 48($sp)
         ldt     $f4, 56($sp)
         ldt     $f5, 64($sp)
-	lda     $sp, 80($sp)
+        lda     $sp, 80($sp)
         ret     ($26)
 
         .end    call_gen_code
@@ -52,7 +52,7 @@ caml_c_call:
         lda     $sp, -16($sp)
         stq     $26, 0($sp)
         stq     $gp, 8($sp)
-	mov     $25, $27
+        mov     $25, $27
         jsr     ($25)
         ldq     $26, 0($sp)
         ldq     $gp, 8($sp)
@@ -60,4 +60,3 @@ caml_c_call:
         ret     ($26)
 
         .end    caml_c_call
-

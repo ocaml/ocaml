@@ -91,7 +91,7 @@ type control = {
              of live data.  If [max_overhead] is set to 0, heap
              compaction is triggered at the end of each major GC cycle
              (this setting is intended for testing purposes only).
-	     If [max_overhead >= 1000000], compaction is never triggered.
+             If [max_overhead >= 1000000], compaction is never triggered.
              Default: 1000000.
 -     [verbose]  This value controls the GC messages on standard error output.
              It is a sum of some of the following flags, to print messages

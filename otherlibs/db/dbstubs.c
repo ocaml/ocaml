@@ -28,7 +28,7 @@
 #include <string.h>
 #include "dbstubs.h"
 
-/* This MUST be in the same order as in dbm.mli 
+/* This MUST be in the same order as in dbm.mli
  * We take a minimum (check O_NONBLOCK ?)
  */
 static int db_open_flags[] = {
@@ -73,7 +73,7 @@ static void caml_db_free(value cdb)
 /*
  * The primitives
  */
-value caml_db_close(value cdb)	/* ML */
+value caml_db_close(value cdb)  /* ML */
 {
   if (caml_db_close_internal(cdb) == 0)
     return Val_unit;
@@ -86,7 +86,7 @@ value caml_db_del(value cdb, value key, value vflags) /* ML */
   /* Note: we could check that db is still open */
   DBT dbt;
   int flags;
-  
+
   Assert(Is_string(key));
   dbt.data = String_val(key);
   dbt.size = string_length(key);
@@ -146,7 +146,7 @@ value caml_db_put(value cdb, value vkey, value vdata, value vflags) /* ML */
 }
 
 
-value caml_db_seq(value cdb, value vkey, value vflags)	/* ML */
+value caml_db_seq(value cdb, value vkey, value vflags)  /* ML */
 {
   DBT key;
   DBT data;
@@ -171,7 +171,7 @@ value caml_db_seq(value cdb, value vkey, value vflags)	/* ML */
       End_roots();
       return res;
     }
-  case 1: 
+  case 1:
     raise_not_found();
   default:
     raise_db("seq");
@@ -179,7 +179,7 @@ value caml_db_seq(value cdb, value vkey, value vflags)	/* ML */
 }
 
 
-value caml_db_sync(value cdb)	/* ML */
+value caml_db_sync(value cdb)   /* ML */
 {
   if (0 == Camldb_db(cdb)->sync(Camldb_db(cdb), 0))
     return Val_unit;
@@ -195,7 +195,7 @@ value caml_db_open(value vfile, value vflags, value vmode, value vpars) /* ML */
   BTREEINFO *info;
   DB *db;
 
-  /* Infos for btree structure : 0 is default everywhere */  
+  /* Infos for btree structure : 0 is default everywhere */
   info = stat_alloc(sizeof(BTREEINFO));
   bzero(info, sizeof(BTREEINFO));
 
@@ -204,17 +204,17 @@ value caml_db_open(value vfile, value vflags, value vmode, value vpars) /* ML */
     if (Is_block(par)) { /* It's a non-constant constructor */
       switch(Tag_val(par)) {
       case 0: /* Cachesize */
-	info->cachesize = Int_val(Field(par, 0));
+        info->cachesize = Int_val(Field(par, 0));
       default:
-	break;
+        break;
       }
     } else { /* It's a constant constructor */
       switch (Int_val(par)) {
       case 0: /* Duplicates */
-	info->flags |= R_DUP;
-	break;
+        info->flags |= R_DUP;
+        break;
       default:
-	break;
+        break;
       }
     }
     vpars = Field(vpars, 1);
@@ -240,7 +240,7 @@ exception DBError of string
 let _ = Callback.register_exception "dberror" (DBError "")
 as well as a call to the init function.
 */
-value caml_db_init(value v)		/* ML */
+value caml_db_init(value v)             /* ML */
 {
   if (caml_db_exn == NULL)
     caml_db_exn = caml_named_value("dberror");

@@ -37,7 +37,7 @@ value unix_recv(value sock, value buff, value ofs, value len, value flags) /* ML
     if (numbytes > UNIX_BUFFER_SIZE) numbytes = UNIX_BUFFER_SIZE;
     enter_blocking_section();
     ret = recv(Int_val(sock), iobuf, (int) numbytes,
-	       convert_flag_list(flags, msg_flag_table));
+               convert_flag_list(flags, msg_flag_table));
     leave_blocking_section();
     if (ret == -1) uerror("recv", Nothing);
     bcopy(iobuf, &Byte(buff, Long_val(ofs)), ret);
@@ -59,8 +59,8 @@ value unix_recvfrom(value sock, value buff, value ofs, value len, value flags) /
     sock_addr_len = sizeof(sock_addr);
     enter_blocking_section();
     ret = recvfrom(Int_val(sock), iobuf, (int) numbytes,
-		   convert_flag_list(flags, msg_flag_table),
-		   &sock_addr.s_gen, &sock_addr_len);
+                   convert_flag_list(flags, msg_flag_table),
+                   &sock_addr.s_gen, &sock_addr_len);
     leave_blocking_section();
     if (ret == -1) uerror("recvfrom", Nothing);
     bcopy(iobuf, &Byte(buff, Long_val(ofs)), ret);

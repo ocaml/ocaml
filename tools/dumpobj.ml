@@ -355,7 +355,7 @@ let op_shapes = [
 ];;
 
 let print_instr ic =
-  print_int (currpc ic); print_string "\t";
+  printf "%8d" (currpc ic);
   let op = inputu ic in
   if op >= Array.length names_of_instructions || op < 0
   then (print_string "*** unknown opcode : "; print_int op)
@@ -381,11 +381,11 @@ let print_instr ic =
      -> let n = inputu ic in
         let orig = currpc ic in
         for i = 0 to (n land 0xFFFF) - 1 do
-          print_string "\n\tint "; print_int i; print_string " -> ";
+          print_string "\n        int "; print_int i; print_string " -> ";
           print_int(orig + inputs ic);
         done;
         for i = 0 to (n lsr 16) - 1 do
-          print_string "\n\ttag "; print_int i; print_string " -> ";
+          print_string "\n        tag "; print_int i; print_string " -> ";
           print_int(orig + inputs ic);
         done;
   | Closurerec
@@ -413,12 +413,12 @@ let print_code ic len =
 (* Dump relocation info *)
 
 let print_reloc (info, pos) =
-  printf "\t%d\t(%d)\t" pos (pos/4);
+  printf "    %d    (%d)    " pos (pos/4);
   match info with
     Reloc_literal sc -> print_struct_const sc; printf "\n"
-  | Reloc_getglobal id -> printf "require\t%s\n" (Ident.name id)
-  | Reloc_setglobal id -> printf "provide\t%s\n" (Ident.name id)
-  | Reloc_primitive s -> printf "prim\t%s\n" s
+  | Reloc_getglobal id -> printf "require    %s\n" (Ident.name id)
+  | Reloc_setglobal id -> printf "provide    %s\n" (Ident.name id)
+  | Reloc_primitive s -> printf "prim    %s\n" s
 
 (* Print a .zo file *)
 

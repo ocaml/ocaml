@@ -37,21 +37,18 @@ value gr_dump_image(value image)
       XGetImage(grdisplay, Data_im(image), 0, 0, width, height, (-1), ZPixmap);
     for (i = 0; i < height; i++)
       for (j = 0; j < width; j++)
-	Field(Field(m, i), j) = Val_int(gr_rgb_pixel(XGetPixel(idata, j, i)));
+        Field(Field(m, i), j) = Val_int(gr_rgb_pixel(XGetPixel(idata, j, i)));
     XDestroyImage(idata);
 
     if (Mask_im(image) != None) {
       imask =
-	XGetImage(grdisplay, Mask_im(image), 0, 0, width, height, 1, ZPixmap);
+        XGetImage(grdisplay, Mask_im(image), 0, 0, width, height, 1, ZPixmap);
       for (i = 0; i < height; i++)
-	for (j = 0; j < width; j++)
-	  if (XGetPixel(imask, j, i) == 0)
-	    Field(Field(m, i), j) = Val_int(Transparent);
+        for (j = 0; j < width; j++)
+          if (XGetPixel(imask, j, i) == 0)
+            Field(Field(m, i), j) = Val_int(Transparent);
       XDestroyImage(imask);
     }
   End_roots();
   return m;
 }
-
-
-    

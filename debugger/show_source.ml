@@ -47,16 +47,16 @@ let show_point mdle point before selected =
   if !emacs & selected then
     begin try
       let source = source_of_module mdle in
-	print_string "\026\026M";
-	print_string source;
-	print_string ":";
-	print_int point;
-	print_string (if before then ":before" else ":after");
-	print_newline ()
+        print_string "\026\026M";
+        print_string source;
+        print_string ":";
+        print_int point;
+        print_string (if before then ":before" else ":after");
+        print_newline ()
     with
       Not_found    -> (* get_buffer *)
         prerr_endline ("No source file for " ^ mdle ^ ".");
-	show_no_point ()
+        show_no_point ()
     end
   else
     begin try

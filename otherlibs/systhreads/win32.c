@@ -253,7 +253,7 @@ value caml_thread_initialize(value unit)   /* ML */
     if (caml_mutex == NULL) caml_wthread_error("Thread.init");
     /* Create a finalized value to hold thread handle */
     vthread = alloc_final(sizeof(struct caml_thread_handle) / sizeof(value),
-			  caml_thread_finalize, 1, 1000);
+                          caml_thread_finalize, 1, 1000);
     ((struct caml_thread_handle *)vthread)->handle = NULL;
     /* Create a descriptor for the current thread */
     descr = alloc_tuple(sizeof(struct caml_thread_descr) / sizeof(value));
@@ -326,7 +326,7 @@ static void caml_thread_start(caml_thread_t th)
   /* Free the thread descriptor */
   stat_free(th);
   /* The thread now stops running */
-}  
+}
 
 value caml_thread_new(value clos)          /* ML */
 {
@@ -338,7 +338,7 @@ value caml_thread_new(value clos)          /* ML */
   Begin_roots2 (clos, vthread)
     /* Create a finalized value to hold thread handle */
     vthread = alloc_final(sizeof(struct caml_thread_handle) / sizeof(value),
-			  caml_thread_finalize, 1, 1000);
+                          caml_thread_finalize, 1, 1000);
     ((struct caml_thread_handle *)vthread)->handle = NULL;
     /* Create a descriptor for the new thread */
     descr = alloc_tuple(sizeof(struct caml_thread_descr) / sizeof(value));

@@ -35,10 +35,10 @@ static value fdset_to_fdlist(value fdlist, fd_set *fdset)
     for (/*nothing*/; fdlist != Val_int(0); fdlist = Field(fdlist, 1)) {
       value s = Field(fdlist, 0);
       if (FD_ISSET((SOCKET) Handle_val(s), fdset)) {
-	value newres = alloc_small(2, 0);
-	Field(newres, 0) = s;
-	Field(newres, 1) = res;
-	res = newres;
+        value newres = alloc_small(2, 0);
+        Field(newres, 0) = s;
+        Field(newres, 1) = res;
+        res = newres;
       }
     }
   End_roots();

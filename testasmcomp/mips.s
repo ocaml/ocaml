@@ -15,7 +15,7 @@
         .globl  call_gen_code
         .ent    call_gen_code
 call_gen_code:
-	subu    $sp, $sp, 0x90
+        subu    $sp, $sp, 0x90
         sd      $31, 0x88($sp)
     /* Save all callee-save registers */
         sd      $16, 0x0($sp)

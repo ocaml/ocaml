@@ -139,7 +139,7 @@ static void (*prev_scan_roots_hook) (scanning_action);
 static void thread_scan_roots(scanning_action action)
 {
   thread_t th, start;
-  
+
   /* Scan all active descriptors */
   start = curr_thread;
   (*action)((value) curr_thread, (value *) &curr_thread);
@@ -410,7 +410,7 @@ try_again:
         sys_error(NO_ARG);
       }
     if (retcode > 0) {
-      /* Some descriptors are ready. 
+      /* Some descriptors are ready.
          Mark the corresponding threads runnable. */
       FOREACH_THREAD(th)
         if (retcode <= 0) break;
@@ -445,8 +445,8 @@ try_again:
               Field(retval, 2) = e;
               Assign(th->retval, retval);
               th->status = RUNNABLE;
-	      if (run_thread == NULL) run_thread = th; /* Found one. */
-	    }
+              if (run_thread == NULL) run_thread = th; /* Found one. */
+            }
           End_roots();
         }
       END_FOREACH(th);
@@ -732,10 +732,10 @@ static value inter_fdlist_set(value fdl, fd_set *set, int *count)
       int fd = Int_val(Field(fdl, 0));
       if (FD_ISSET(fd, set)) {
         cons = alloc_small(2, 0);
-	Field(cons, 0) = Val_int(fd);
-	Field(cons, 1) = res;
-	res = cons;
-	FD_CLR(fd, set); /* wake up only one thread per fd ready */
+        Field(cons, 0) = Val_int(fd);
+        Field(cons, 1) = res;
+        res = cons;
+        FD_CLR(fd, set); /* wake up only one thread per fd ready */
         (*count)--;
       }
     }
@@ -821,4 +821,3 @@ static void thread_restore_std_descr(void)
   thread_set_nonblock(1, stdout_initial_status);
   thread_set_nonblock(2, stderr_initial_status);
 }
-

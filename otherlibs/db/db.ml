@@ -83,29 +83,29 @@ external sync : t -> unit
 (* Wrap-up as for other table-like types *)
 let add db x v = put db x v [R_NOOVERWRITE]
 let find db x = get db x []
-let find_all db x = 
+let find_all db x =
   try
     match seq db x [R_CURSOR] with
       k, v when k = x ->
-	let l = ref [v] in
-	begin
-	  try 
-	    while true do
-	      let k, v = seq db x [R_NEXT] in
-	      if k = x then l := v :: !l
-	      else raise Exit
-	    done;
-	    !l
-	  with
-	    Exit | Not_found -> !l
-	end
+        let l = ref [v] in
+        begin
+          try
+            while true do
+              let k, v = seq db x [R_NEXT] in
+              if k = x then l := v :: !l
+              else raise Exit
+            done;
+            !l
+          with
+            Exit | Not_found -> !l
+        end
     | _ -> (* its greater than x *) []
   with
     Not_found -> []
 
 let remove db x = del db x []
 
-let iter f db = 
+let iter f db =
   let rec walk k =
     let k, v = seq db k [R_NEXT] in
     f k v;
@@ -117,4 +117,3 @@ let iter f db =
     walk k
   with
     Not_found -> ()
-	

@@ -83,7 +83,7 @@ value alloc_sockaddr(void)
     { value n = copy_string(sock_addr.s_unix.sun_path);
       Begin_root (n);
         res = alloc_small(1, 0);
-	Field(res,0) = n;
+        Field(res,0) = n;
       End_roots();
       break;
     }
@@ -92,8 +92,8 @@ value alloc_sockaddr(void)
     { value a = alloc_inet_addr(sock_addr.s_inet.sin_addr.s_addr);
       Begin_root (a);
         res = alloc_small(2, 1);
-	Field(res,0) = a;
-	Field(res,1) = Val_int(ntohs(sock_addr.s_inet.sin_port));
+        Field(res,0) = a;
+        Field(res,1) = Val_int(ntohs(sock_addr.s_inet.sin_port));
       End_roots();
       break;
     }

@@ -30,7 +30,7 @@ val shift: t -> int -> t
 val logand: t -> t -> t
 val logor: t -> t -> t
 val logxor: t -> t -> t
-	(* Bitwise and, or, xor *)
+        (* Bitwise and, or, xor *)
 val sign: t -> int
         (* [sign n1] returns [0] if [n1] is zero, a positive
            integer if [n] is positive, and a negative integer if

@@ -15,14 +15,14 @@
 (* Module [Stream]: streams and parsers *)
 
 type 'a t
-	(* The type of streams holding values of type ['a]. *)
+        (* The type of streams holding values of type ['a]. *)
 
 exception Failure;;
-	(* Raised by parsers when none of the first components of the stream
+        (* Raised by parsers when none of the first components of the stream
            patterns is accepted. *)
 exception Error of string;;
-	(* Raised by parsers when the first component of a stream pattern is
-	   accepted, but one of the following components is rejected. *)
+        (* Raised by parsers when the first component of a stream pattern is
+           accepted, but one of the following components is rejected. *)
 
 (** Stream builders *)
 (* Warning: these functions create streams with fast access; it is illegal
@@ -30,7 +30,7 @@ exception Error of string;;
    when accessing such mixed streams. *)
 
 val from : (int -> 'a option) -> 'a t;;
-  	(* [Stream.from f] returns a stream built from the function [f].
+        (* [Stream.from f] returns a stream built from the function [f].
            To create a new stream element, the function [f] is called with
            the current stream count. The user function [f] must return either
            [Some <value>] for a value or [None] to specify the end of the
@@ -41,7 +41,7 @@ val of_list : 'a list -> 'a t;;
 val of_string : string -> char t;;
         (* Return the stream of the characters of the string parameter. *)
 val of_channel : in_channel -> char t;;
-	(* Return the stream of the characters read from the input channel. *)
+        (* Return the stream of the characters read from the input channel. *)
 
 (** Stream iterator *)
 
@@ -52,10 +52,10 @@ val iter : ('a -> unit) -> 'a t -> unit;;
 (** Predefined parsers *)
 
 val next : 'a t -> 'a;;
-	(* Return the first element of the stream and remove it from the
+        (* Return the first element of the stream and remove it from the
            stream. Raise [Stream.Failure] if the stream is empty. *)
 val empty : 'a t -> unit;;
-	(* Return [()] if the stream is empty, else raise [Stream.Failure]. *)
+        (* Return [()] if the stream is empty, else raise [Stream.Failure]. *)
 
 (** Useful functions *)
 
@@ -66,7 +66,7 @@ val junk : 'a t -> unit;;
         (* Remove the first element of the stream, possibly unfreezing
            it before. *)
 val count : 'a t -> int;;
-	(* Return the current count of the stream elements, i.e. the number
+        (* Return the current count of the stream elements, i.e. the number
            of the stream elements discarded. *)
 
 val npeek : int -> 'a t -> 'a list;;

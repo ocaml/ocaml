@@ -83,7 +83,7 @@ let _ =
   let status =
     Sys.command
       (Printf.sprintf "ocamlc -pp \"ocamlprof %s -instrument %s\" %s %s"
-	  !ismultithreaded
+          !ismultithreaded
           (String.concat " " (List.rev !profargs))
           (if !make_archive then "" else "profiling.cmo")
           (String.concat " " (List.rev !compargs))) in

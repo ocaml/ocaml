@@ -23,8 +23,8 @@
     ;; collect definitions
     (while (caml-prev-index-position-function)
       (if (looking-at "[ \t]*val") nil
-	(setq index (cons (caml-match-string 5) (point)))
-	(setq all-alist (cons index all-alist))))
+        (setq index (cons (caml-match-string 5) (point)))
+        (setq all-alist (cons index all-alist))))
     all-alist))
 
 (defun caml-tags-file (filename)
@@ -91,7 +91,7 @@
         (prin1 (car tail)))
       (setq tail (cdr tail) i (1+ i)))
     (princ "\n")))
-   
+
 
 (setq gc-cons-threshold 1000000)
 

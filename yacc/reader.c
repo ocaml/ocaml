@@ -1222,7 +1222,7 @@ void copy_action(void)
     for (i = 1; i <= n; i++) {
       item = pitem[nitems + i - n - 1];
       if (item->class == TERM && !item->tag) continue;
-      fprintf(f, "\tlet _%d = ", i);
+      fprintf(f, "    let _%d = ", i);
       if (item->tag)
         fprintf(f, "(peek_val parser_env %d : %s) in\n", n - i, item->tag);
       else if (sflag)
@@ -1230,7 +1230,7 @@ void copy_action(void)
       else
         fprintf(f, "(peek_val parser_env %d : '%s) in\n", n - i, item->name);
     }
-    fprintf(f, "\tObj.repr((\n");
+    fprintf(f, "    Obj.repr((\n");
     fprintf(f, "# %d \"%s\"\n", lineno, input_file_name);
     for (i = cptr - line; i >= 0; i--) fputc(' ', f);
 

@@ -9,10 +9,10 @@
 This function removes or adds spaces and tabs at beginning of line
 only if necessary.  It leaves point at end of indentation."
       (if (= (current-indentation) column)
-	  (back-to-indentation)
-	(beginning-of-line 1)
-	(delete-horizontal-space)
-	(indent-to column))))
+          (back-to-indentation)
+        (beginning-of-line 1)
+        (delete-horizontal-space)
+        (indent-to column))))
 
 ;; buffer-substring-no-properties
 

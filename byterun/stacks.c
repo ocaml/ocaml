@@ -41,11 +41,11 @@ void init_stack (long unsigned int initial_max_size)
   trap_barrier = stack_high + 1;
   max_stack_size = initial_max_size;
   gc_message (0x08, "Initial stack limit: %luk bytes\n",
-	      max_stack_size / 1024 * sizeof (value));
+              max_stack_size / 1024 * sizeof (value));
 }
 
 void realloc_stack(void)
-{        
+{
   asize_t size;
   value * new_low, * new_high, * new_sp;
   value * p;
