@@ -761,18 +761,7 @@ let emit_item = function
   | Clabel_address lbl ->
       `	DWORD	{emit_label (10000 + lbl)}\n`
   | Cstring s ->
-      let l = String.length s in
-      if l > 0 then begin
-        for i = 0 to l - 1 do
-          let b = Char.code s.[i] in
-          let p = i land 0xF in
-          if p = 0
-          then `	BYTE	{emit_int b}`
-          else `,{emit_int b}`;
-          if p = 0xF then `\n`
-        done;
-        `\n`
-      end
+      emit_bytes_directive "	BYTE	" s
   | Cskip n ->
       if n > 0 then `	BYTE	{emit_int n} DUP (?)\n`
   | Calign n ->

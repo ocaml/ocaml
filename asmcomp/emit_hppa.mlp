@@ -877,18 +877,7 @@ let emit_item = function
   | Clabel_address lbl ->
       `	.long	{emit_label(lbl + 10000)}\n`
   | Cstring s ->
-      let l = String.length s in
-      if l = 0 then ()
-      else if l < 80 then
-        `	.ascii	{emit_string_literal s}\n`
-      else begin
-        let i = ref 0 in
-        while !i < l do
-          let n = min (l - !i) 80 in
-          `	.ascii	{emit_string_literal(String.sub s !i n)}\n`;
-          i := !i + n
-        done
-      end
+      emit_string_directive "	.ascii	" s
   | Cskip n ->
       if n > 0 then
         if hpux then `	.block	{emit_int n}\n`

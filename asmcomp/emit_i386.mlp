@@ -64,7 +64,7 @@ let label_prefix =
 let emit_label lbl =
   emit_string label_prefix; emit_int lbl
 
-(* Name of some data directives *)
+(* Some data directives have different names under Solaris *)
 
 let word_dir =
   match Config.system with
@@ -776,31 +776,9 @@ let emit_item = function
   | Clabel_address lbl ->
       `	.long	{emit_label (10000 + lbl)}\n`
   | Cstring s ->
-      if use_ascii_dir then begin
-        let l = String.length s in
-        if l = 0 then ()
-        else if l < 80 then
-          `	.ascii	{emit_string_literal s}\n`
-        else begin
-          let i = ref 0 in
-          while !i < l do
-            let n = min (l - !i) 80 in
-            `	.ascii	{emit_string_literal(String.sub s !i n)}\n`;
-            i := !i + n
-          done
-        end
-      end else begin
-        let pos = ref 0 in
-        for i = 0 to String.length s - 1 do
-          if !pos = 0
-          then `	.byte	`
-          else `,`;
-          emit_int(Char.code s.[i]);
-          incr pos;
-          if !pos >= 16 then begin `\n`; pos := 0 end
-        done;
-        if !pos > 0 then `\n`
-      end
+      if use_ascii_dir
+      then emit_string_directive "	.ascii	" s
+      else emit_bytes_directive  "	.byte	" s
   | Cskip n ->
       if n > 0 then `	{emit_string skip_dir}	{emit_int n}\n`
   | Calign n ->
