@@ -79,4 +79,4 @@ val add : t -> key -> data -> unit
 val find : t -> key -> data
 val find_all : t -> key -> data list
 val remove : t -> key -> unit
-val iter : fun:(key:string -> data:string -> unit) -> t -> unit
+val iter : (string -> string -> unit) -> t -> unit
