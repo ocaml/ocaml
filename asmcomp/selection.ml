@@ -357,6 +357,8 @@ let rec emit_expr env exp seq =
       let r1 = emit_expr env e1 seq in
       insert_moves r1 rv seq;
       [||]
+  | Ctuple [] ->
+      [||]
   | Ctuple exp_list ->
       let (simple_list, ext_env) = emit_parts_list env exp_list seq in
       emit_tuple ext_env simple_list seq

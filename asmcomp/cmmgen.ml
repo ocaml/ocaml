@@ -169,11 +169,11 @@ let subst_boxed_float boxed_id unboxed_id exp =
 
 (* Unit *)
 
-let return_unit c = Csequence(c, Cconst_int 1)
+let return_unit c = Csequence(c, Cconst_pointer 1)
 
 let rec remove_unit = function
-    Cconst_int 1 -> Ctuple []
-  | Csequence(c, Cconst_int 1) -> c
+    Cconst_pointer 1 -> Ctuple []
+  | Csequence(c, Cconst_pointer 1) -> c
   | Csequence(c1, c2) ->
       Csequence(c1, remove_unit c2)
   | Cifthenelse(cond, ifso, ifnot) ->
@@ -186,7 +186,13 @@ let rec remove_unit = function
       Ctrywith(remove_unit body, exn, remove_unit handler)
   | Clet(id, c1, c2) ->
       Clet(id, c1, remove_unit c2)
-  | c -> c
+  | Cop(Capply mty, args) ->
+      Cop(Capply [||], args)
+  | Cop(Cextcall(proc, mty, alloc), args) ->
+      Cop(Cextcall(proc, [||], alloc), args)
+  | Cexit -> Cexit
+  | Ctuple [] as c -> c
+  | c -> Csequence(c, Ctuple [])
 
 (* Access to block fields *)
 

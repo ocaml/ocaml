@@ -101,5 +101,10 @@ let rec live i finally =
       Reg.add_set_array across i.arg
 
 let fundecl f =
-  live f.fun_body Reg.Set.empty; ()
-
+  let initially_live = live f.fun_body Reg.Set.empty in
+  (* Sanity check: only function parameters can be live at entrypoint *)
+  let wrong_live = Reg.Set.diff initially_live (Reg.set_of_array f.fun_args) in
+  if not (Reg.Set.is_empty wrong_live) then begin
+    Printmach.regset wrong_live; Format.print_newline();
+    Misc.fatal_error "Liveness.fundecl"
+  end
