@@ -35,10 +35,10 @@ installopt-default:
 	cd $(LIBDIR); $(RANLIB) stdlib.a
 
 installopt-noprof:
-	ln -s stdlib.cmxa $(LIBDIR)/stdlib.p.cmxa
-	ln -s stdlib.a $(LIBDIR)/stdlib.p.a
-	ln -s std_exit.cmx $(LIBDIR)/std_exit.p.cmx
-	ln -s std_exit.o $(LIBDIR)/std_exit.p.o
+	rm -f $(LIBDIR)/stdlib.p.cmxa; ln -s stdlib.cmxa $(LIBDIR)/stdlib.p.cmxa
+	rm -f $(LIBDIR)/stdlib.p.a; ln -s stdlib.a $(LIBDIR)/stdlib.p.a
+	rm -f $(LIBDIR)/std_exit.p.cmx; ln -s std_exit.cmx $(LIBDIR)/std_exit.p.cmx
+	rm -f $(LIBDIR)/std_exit.p.o; ln -s std_exit.o $(LIBDIR)/std_exit.p.o
 
 installopt-prof:
 	cp stdlib.p.cmxa stdlib.p.a std_exit.p.cmx std_exit.p.o $(LIBDIR)
