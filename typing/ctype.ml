@@ -1417,6 +1417,7 @@ let nondep_type env id ty =
     cleanup_types ();
     raise Not_found
 
+(* Preserve sharing inside type declarations. *)
 let nondep_type_decl env mid id is_covariant decl =
   try
     let params = List.map (nondep_type_rec env mid) decl.type_params in
@@ -1450,7 +1451,7 @@ let nondep_type_decl env mid id is_covariant decl =
           end }
     in
     cleanup_types ();
-    List.iter unmark_type params;
+    List.iter unmark_type decl.type_params;
     begin match decl.type_kind with
       Type_abstract -> ()
     | Type_variant cstrs ->
@@ -1467,6 +1468,7 @@ let nondep_type_decl env mid id is_covariant decl =
     cleanup_types ();
     raise Not_found
 
+(* Preserve sharing inside class types. *)
 let nondep_class_type env id decl =
   try
     let decl =
