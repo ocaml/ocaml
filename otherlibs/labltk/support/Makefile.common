@@ -6,7 +6,7 @@ OTHERS=../..
 
 include $(TOPDIR)/config/Makefile
 
-LABLTKDIR=$(LIBDIR)/mltk
+LABLTKDIR=$(LIBDIR)/labltk
 
 ## Tools from the Objective Caml distribution
 
