@@ -153,22 +153,24 @@ expressions, but otherwise behave much as identifiers.
 The identifiers below are reserved as keywords, and cannot be employed
 otherwise:
 \begin{verbatim}
-    and         as          asr         begin       do          done        
-    downto      else        end         exception   external    false       
-    for         fun         function    functor     if          in          
-    include     land        let         lor         lsl         lsr         
-    lxor        match       mod         module      mutable     of          
-    open        or          rec         sig         struct      then        
-    to          true        try         type        val         when        
-    while       with
+    and         as          asr         begin       class       closed
+    constraint  do          done        downto      else        end
+    exception   external    false       for         fun         function
+    functor     if          in          include     inherit     land
+    let         lor         lsl         lsr         lxor        match
+    method      mod         module      mutable     new         of
+    open        or          parser      private     rec         sig
+    struct      then        to          true        try         type
+    val         virtual     when        while       with        
 \end{verbatim}
 %
 The following character sequences are also keywords:
 %
 \begin{verbatim}
-    #     &     '     (     )     *     ,     ->    .     ..    
-    .(    .[    :     ::    :=    ;     ;;    <-    =     [     
-    [|    ]     _     {     |     |]    }
+    #     &     '     (     )     *     ,     ->    ?
+    .     ..    .(    .[    :     ::    :=    ;     ;;
+    <-    =     [     [|    [<    {<    ]     |]    >]
+    >}    _     {     |     }
 \end{verbatim}
 
 \subsubsection*{Ambiguities}
