@@ -322,6 +322,10 @@ let make_class_store pub_meths class_init init_table =
   init_table.class_init <- class_init;
   init_table.env_init <- env_init
 
+let dummy_class loc =
+  let undef = fun _ -> raise (Undefined_recursive_module loc) in
+  (Obj.magic undef, undef, undef, Obj.repr 0)
+
 (**** Objects ****)
 
 let create_object table =

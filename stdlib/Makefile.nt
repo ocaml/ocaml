@@ -32,7 +32,8 @@ OTHERS=array.cmo list.cmo char.cmo string.cmo sys.cmo \
   set.cmo map.cmo stack.cmo queue.cmo stream.cmo buffer.cmo \
   printf.cmo format.cmo scanf.cmo \
   arg.cmo printexc.cmo gc.cmo \
-  digest.cmo random.cmo callback.cmo camlinternalOO.cmo oo.cmo \
+  digest.cmo random.cmo callback.cmo \
+  camlinternalOO.cmo oo.cmo camlinternalMod.cmo \
   genlex.cmo weak.cmo \
   lazy.cmo filename.cmo complex.cmo \
   arrayLabels.cmo listLabels.cmo stringLabels.cmo moreLabels.cmo stdLabels.cmo
