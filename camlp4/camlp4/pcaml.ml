@@ -12,24 +12,7 @@
 
 (* $Id$ *)
 
-value version = "3.04+15";
-
-let ov = Sys.ocaml_version in
-try
-  let oi = String.index ov ' ' in
-  let ov = String.sub ov 0 oi in
-  if String.sub version 0 (String.length ov) = ov then ()
-  else failwith "bad version"
-with
-[ Not_found | Invalid_argument _ | Failure _ ->
-  do {
-    Printf.eprintf "This OCaml and this Camlp4 are incompatible:\n";
-    Printf.eprintf "- OCaml version is %s\n" ov;
-    Printf.eprintf "- Camlp4 version is %s\n" version;
-    flush stderr;
-    failwith "bad versions";
-  } ]
-;
+value version = Sys.ocaml_version;
 
 value gram =
   Grammar.gcreate

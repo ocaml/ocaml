@@ -1,4 +1,4 @@
-Camlp4s Version 3.04+10
+Camlp4 Version 3.05
 -----------------------
 
 - [12 Jul 02] Better treatment of comments in option -cip (add comments
