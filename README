@@ -29,6 +29,7 @@ native-code compiler currently runs on the following platforms:
     PowerPC processors: IBM RS6000 and PowerPC workstations under AIX 4.3,
                         PowerMacintosh under MkLinux, LinuxPPC, MacOS X
     Strong ARM processors: Corel Netwinder under Linux
+    Intel IA64 processors: prototypes under Linux
 
 Other operating systems for the processors above have not been tested,
 but the compiler may work under other operating systems with little work.
@@ -105,17 +106,18 @@ KEEPING IN TOUCH WITH THE CAML COMMUNITY:
 There exists a mailing list of users of the Caml implementations
 developed at INRIA. The purpose of this list is to share
 experience, exchange ideas (and even code), and report on applications
-of the Caml language. This list is moderated; messages can be
-written in English or in French. The list has about 400 subscribers.
+of the Caml language. Messages can be written in English or in
+French. The list has about 500 subscribers.
 
 Messages to the list should be sent to:
 
               caml-list@inria.fr
 
-If you wish to subscribe to this list, please send a message
-(including your email address) to:
+If you wish to subscribe to this list, please send a message to:
 
               caml-list-request@inria.fr
+
+with the single word "subscribe" in the body of the message.
 
 Archives of the list are available on the World Wide Web at URL
 http://caml.inria.fr/
@@ -131,7 +133,7 @@ Send your bug reports by E-mail to:
               caml-bugs@inria.fr
 
 or report them using the Web interface to the bug-tracking system
-at http://caml.inria.fr/caml-bugs
+at http://caml.inria.fr/bin/caml-bugs
 
 To be effective, bug reports should include a complete program
 (preferably small) that exhibits the unexpected behavior, and the
