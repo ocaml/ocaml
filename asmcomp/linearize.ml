@@ -23,7 +23,7 @@ let label_counter = ref 99
 let new_label() = incr label_counter; !label_counter
 
 type instruction =
-  { desc: instruction_desc;
+  { mutable desc: instruction_desc;
     next: instruction;
     arg: Reg.t array;
     res: Reg.t array;

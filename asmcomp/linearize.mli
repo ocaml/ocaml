@@ -17,7 +17,7 @@ type label = int
 val new_label: unit -> label
 
 type instruction =
-  { desc: instruction_desc;
+  { mutable desc: instruction_desc;
     next: instruction;
     arg: Reg.t array;
     res: Reg.t array;
