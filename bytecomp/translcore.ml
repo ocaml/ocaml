@@ -596,7 +596,24 @@ let rec transl_exp e =
         | Record_float -> Psetfloatfield lbl.lbl_pos in
       Lprim(access, [transl_exp arg; transl_exp newval])
   | Texp_array expr_list ->
-      Lprim(Pmakearray (array_kind e), transl_list expr_list)
+      let kind = array_kind e in
+      let ll = transl_list expr_list in
+      begin try
+        (* Deactivate constant optimization if array is small enough *)
+        if List.length ll <= 5 then raise Not_constant;
+        let cl = List.map extract_constant ll in
+        let master =
+          match kind with
+          | Paddrarray | Pintarray ->        
+              Lconst(Const_block(0, cl))
+          | Pfloatarray ->
+              Lconst(Const_float_array(List.map extract_float cl))
+          | Pgenarray ->
+              assert false in
+        Lprim(Pccall prim_obj_dup, [master])
+      with Not_constant ->
+        Lprim(Pmakearray kind, ll)
+      end
   | Texp_ifthenelse(cond, ifso, Some ifnot) ->
       Lifthenelse(transl_exp cond,
                   event_before ifso (transl_exp ifso),
