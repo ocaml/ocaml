@@ -608,7 +608,7 @@ val read_float : unit -> float
 type open_flag =
     Open_rdonly      (** open for reading. *)
   | Open_wronly      (** open for writing. *)
-  | Open_append      (** open for appending. always write at end of file (needs [Open_wronly]. *)
+  | Open_append      (** open for appending: always write at end of file. *)
   | Open_creat       (** create the file if it does not exist. *)
   | Open_trunc       (** empty the file if it already exists. *)
   | Open_excl        (** fail if the file already exists. *)
