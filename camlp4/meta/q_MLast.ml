@@ -793,8 +793,8 @@ EXTEND
   (* Labels *)
   ctyp: AFTER "arrow"
     [ NONA
-      [ i = a_TILDEIDENTCOLON; t = SELF -> Node "TyLab" [Loc; i; t]
-      | i = a_QUESTIONIDENTCOLON; t = SELF -> Node "TyOlb" [Loc; i; t] ] ]
+      [ i = a_TILDEIDENT; ":"; t = SELF -> Node "TyLab" [Loc; i; t]
+      | i = a_QUESTIONIDENT; ":"; t = SELF -> Node "TyOlb" [Loc; i; t] ] ]
   ;
   ctyp: LEVEL "simple"
     [ [ "[|"; rfl = SLIST0 row_field SEP "|"; "|]" ->
@@ -864,16 +864,11 @@ EXTEND
   ;
   expr: AFTER "apply"
     [ "label" NONA
-      [ lab = TILDEIDENTCOLON; e = SELF -> Node "ExLab" [Loc; Str lab; e]
-      | lab = TILDEIDENT ->
-          Node "ExLab" [Loc; Str lab; Node "ExLid" [Loc; Str lab]]
-      | lab = QUESTIONIDENTCOLON; e = SELF -> Node "ExOlb" [Loc; Str lab; e]
-      | lab = QUESTIONIDENT ->
-          Node "ExOlb" [Loc; Str lab; Node "ExLid" [Loc; Str lab]]
-      | "~"; a = anti_; ":"; e = SELF -> Node "ExLab" [Loc; a; e]
-      | "~"; a = anti_ -> Node "ExLab" [Loc; a; Node "ExLid" [Loc; a]]
-      | "?"; a = anti_; ":"; e = SELF -> Node "ExOlb" [Loc; a; e]
-      | "?"; a = anti_ -> Node "ExOlb" [Loc; a; Node "ExLid" [Loc; a]] ] ]
+      [ i = a_TILDEIDENT; ":"; e = SELF -> Node "ExLab" [Loc; i; e]
+      | i = a_TILDEIDENT -> Node "ExLab" [Loc; i; Node "ExLid" [Loc; i]]
+      | i = a_QUESTIONIDENT; ":"; e = SELF -> Node "ExOlb" [Loc; i; e]
+      | i = a_QUESTIONIDENT ->
+          Node "ExOlb" [Loc; i; Node "ExLid" [Loc; i]] ] ]
   ;
   expr: LEVEL "simple"
     [ [ "`"; s = ident -> Node "ExVrn" [Loc; s] ] ]
@@ -1031,17 +1026,9 @@ EXTEND
       | a = ANTIQUOT "" -> antiquot "" loc a
       | s = CHAR -> Str s ] ]
   ;
-  a_TILDEIDENTCOLON:
-    [ [ "~"; a = ANTIQUOT ""; ":" -> antiquot "" loc a
-      | s = TILDEIDENTCOLON -> Str s ] ]
-  ;
   a_TILDEIDENT:
     [ [ "~"; a = ANTIQUOT "" -> antiquot "" loc a
       | s = TILDEIDENT -> Str s ] ]
-  ;
-  a_QUESTIONIDENTCOLON:
-    [ [ "?"; a = ANTIQUOT ""; ":" -> antiquot "" loc a
-      | s = QUESTIONIDENTCOLON -> Str s ] ]
   ;
   a_QUESTIONIDENT:
     [ [ "?"; a = ANTIQUOT "" -> antiquot "" loc a

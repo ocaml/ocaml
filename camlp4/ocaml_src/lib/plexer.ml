@@ -186,15 +186,8 @@ let next_token_fun dfa find_kwd =
                 try ident (store 0 c) strm__ with
                   Stream.Failure -> raise (Stream.Error "")
               in
-              let t =
-                try
-                  match Stream.peek strm__ with
-                    Some ':' -> Stream.junk strm__; "TILDEIDENTCOLON"
-                  | _ -> "TILDEIDENT"
-                with
-                  Stream.Failure -> raise (Stream.Error "")
-              in
-              let ep = Stream.count strm__ in (t, get_buff len), (bp, ep)
+              let ep = Stream.count strm__ in
+              ("TILDEIDENT", get_buff len), (bp, ep)
           | _ ->
               let id = get_buff (ident2 (store 0 c) strm__) in
               keyword_or_error (bp, Stream.count strm__) id
@@ -211,15 +204,8 @@ let next_token_fun dfa find_kwd =
                 try ident (store 0 c) strm__ with
                   Stream.Failure -> raise (Stream.Error "")
               in
-              let t =
-                try
-                  match Stream.peek strm__ with
-                    Some ':' -> Stream.junk strm__; "QUESTIONIDENTCOLON"
-                  | _ -> "QUESTIONIDENT"
-                with
-                  Stream.Failure -> raise (Stream.Error "")
-              in
-              let ep = Stream.count strm__ in (t, get_buff len), (bp, ep)
+              let ep = Stream.count strm__ in
+              ("QUESTIONIDENT", get_buff len), (bp, ep)
           | _ ->
               let id = get_buff (ident2 (store 0 c) strm__) in
               keyword_or_error (bp, Stream.count strm__) id
@@ -710,9 +696,8 @@ let using_token kwd_table ident_table (p_con, p_prm) =
               error_ident_and_keyword p_con p_prm
             else Hashtbl.add ident_table p_prm p_con
         end
-  | "TILDEIDENT" | "TILDEIDENTCOLON" | "QUESTIONIDENT" |
-    "QUESTIONIDENTCOLON" | "INT" | "FLOAT" | "CHAR" | "STRING" | "QUOTATION" |
-    "ANTIQUOT" | "LOCATE" | "EOI" ->
+  | "TILDEIDENT" | "QUESTIONIDENT" | "INT" | "FLOAT" | "CHAR" | "STRING" |
+    "QUOTATION" | "ANTIQUOT" | "LOCATE" | "EOI" ->
       ()
   | _ ->
       raise

@@ -5,7 +5,7 @@
 (*                                                                     *)
 (*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -756,8 +756,8 @@ EXTEND
   (* Labels *)
   ctyp: AFTER "arrow"
     [ NONA
-      [ i = TILDEIDENTCOLON; t = SELF -> <:ctyp< ~ $i$ : $t$ >>
-      | i = QUESTIONIDENTCOLON; t = SELF -> <:ctyp< ? $i$ : $t$ >> ] ]
+      [ i = TILDEIDENT; ":"; t = SELF -> <:ctyp< ~ $i$ : $t$ >>
+      | i = QUESTIONIDENT; ":"; t = SELF -> <:ctyp< ? $i$ : $t$ >> ] ]
   ;
   ctyp: LEVEL "simple"
     [ [ "[|"; rfl = LIST0 row_field SEP "|"; "|]" ->
@@ -784,17 +784,17 @@ EXTEND
   patt: LEVEL "simple"
     [ [ "`"; s = ident -> <:patt< ` $s$ >>
       | "#"; sl = mod_ident -> <:patt< # $list:sl$ >>
-      | i = TILDEIDENTCOLON; p = SELF ->
+      | i = TILDEIDENT; ":"; p = SELF ->
           <:patt< ~ $i$ : $p$ >>
       | i = TILDEIDENT ->
           <:patt< ~ $i$ >>
-      | i = QUESTIONIDENTCOLON; "("; p = patt; ")" ->
+      | i = QUESTIONIDENT; ":"; "("; p = patt; ")" ->
           <:patt< ? $i$ : ( $p$ ) >>
-      | i = QUESTIONIDENTCOLON; "("; p = patt; "="; e = expr; ")" ->
+      | i = QUESTIONIDENT; ":"; "("; p = patt; "="; e = expr; ")" ->
           <:patt< ? $i$ : ( $p$ = $e$ ) >>
-      | i = QUESTIONIDENTCOLON; "("; p = patt; ":"; t = ctyp; ")" ->
+      | i = QUESTIONIDENT; ":"; "("; p = patt; ":"; t = ctyp; ")" ->
           <:patt< ? $i$ : ( $p$ : $t$ ) >>
-      | i = QUESTIONIDENTCOLON; "("; p = patt; ":"; t = ctyp; "=";
+      | i = QUESTIONIDENT; ":"; "("; p = patt; ":"; t = ctyp; "=";
         e = expr; ")" ->
           <:patt< ? $i$ : ( $p$ : $t$ = $e$ ) >>
       | i = QUESTIONIDENT ->
@@ -805,17 +805,17 @@ EXTEND
           <:patt< ? ( $i$ : $t$ = $e$ ) >> ] ]
   ;
   ipatt:
-    [ [ i = TILDEIDENTCOLON; p = SELF ->
+    [ [ i = TILDEIDENT; ":"; p = SELF ->
           <:patt< ~ $i$ : $p$ >>
       | i = TILDEIDENT ->
           <:patt< ~ $i$ >>
-      | i = QUESTIONIDENTCOLON; "("; p = ipatt; ")" ->
+      | i = QUESTIONIDENT; ":"; "("; p = ipatt; ")" ->
           <:patt< ? $i$ : ( $p$ ) >>
-      | i = QUESTIONIDENTCOLON; "("; p = ipatt; "="; e = expr; ")" ->
+      | i = QUESTIONIDENT; ":"; "("; p = ipatt; "="; e = expr; ")" ->
           <:patt< ? $i$ : ( $p$ = $e$ ) >>
-      | i = QUESTIONIDENTCOLON; "("; p = ipatt; ":"; t = ctyp; ")" ->
+      | i = QUESTIONIDENT; ":"; "("; p = ipatt; ":"; t = ctyp; ")" ->
           <:patt< ? $i$ : ( $p$ : $t$ ) >>
-      | i = QUESTIONIDENTCOLON; "("; p = ipatt; ":"; t = ctyp; "=";
+      | i = QUESTIONIDENT; ":"; "("; p = ipatt; ":"; t = ctyp; "=";
         e = expr; ")" ->
           <:patt< ? $i$ : ( $p$ : $t$ = $e$ ) >>
       | i = QUESTIONIDENT ->
@@ -827,9 +827,9 @@ EXTEND
   ;
   expr: AFTER "apply"
     [ "label" NONA
-      [ i = TILDEIDENTCOLON; e = SELF -> <:expr< ~ $i$ : $e$ >>
+      [ i = TILDEIDENT; ":"; e = SELF -> <:expr< ~ $i$ : $e$ >>
       | i = TILDEIDENT -> <:expr< ~ $i$ >>
-      | i = QUESTIONIDENTCOLON; e = SELF -> <:expr< ? $i$ : $e$ >>
+      | i = QUESTIONIDENT; ":"; e = SELF -> <:expr< ? $i$ : $e$ >>
       | i = QUESTIONIDENT -> <:expr< ? $i$ >> ] ]
   ;
   expr: LEVEL "simple"

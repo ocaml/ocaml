@@ -1127,7 +1127,7 @@ EXTEND
   ctyp: AFTER "arrow"
     [ NONA
       [ i = lident_colon; t = SELF -> <:ctyp< ~ $i$ : $t$ >>
-      | i = QUESTIONIDENTCOLON; t = SELF -> <:ctyp< ? $i$ : $t$ >> ] ]
+      | i = QUESTIONIDENT; ":"; t = SELF -> <:ctyp< ? $i$ : $t$ >> ] ]
   ;
   ctyp: LEVEL "simple"
     [ [ "["; OPT "|"; rfl = LIST0 row_field SEP "|"; "]" ->
@@ -1154,9 +1154,9 @@ EXTEND
   ;
   expr: AFTER "apply"
     [ "label"
-      [ i = TILDEIDENTCOLON; e = SELF -> <:expr< ~ $i$ : $e$ >>
+      [ i = TILDEIDENT; ":"; e = SELF -> <:expr< ~ $i$ : $e$ >>
       | i = TILDEIDENT -> <:expr< ~ $i$ >>
-      | i = QUESTIONIDENTCOLON; e = SELF -> <:expr< ? $i$ : $e$ >>
+      | i = QUESTIONIDENT; ":"; e = SELF -> <:expr< ? $i$ : $e$ >>
       | i = QUESTIONIDENT -> <:expr< ? $i$ >> ] ]
   ;
   expr: LEVEL "simple"
@@ -1173,7 +1173,7 @@ EXTEND
       | "#"; t = mod_ident -> <:patt< # $list:t$ >> ] ]
   ;
   labeled_patt:
-    [ [ i = TILDEIDENTCOLON; p = patt LEVEL "simple" ->
+    [ [ i = TILDEIDENT; ":"; p = patt LEVEL "simple" ->
            <:patt< ~ $i$ : $p$ >>
       | i = TILDEIDENT ->
            <:patt< ~ $i$ >>
@@ -1181,13 +1181,13 @@ EXTEND
            <:patt< ~ $i$ >>
       | "~"; "("; i = LIDENT; ":"; t = ctyp; ")" ->
            <:patt< ~ $i$ : ($lid:i$ : $t$) >>
-      | i = QUESTIONIDENTCOLON; j = LIDENT ->
+      | i = QUESTIONIDENT; ":"; j = LIDENT ->
            <:patt< ? $i$ : ($lid:j$) >>
-      | i = QUESTIONIDENTCOLON; "("; p = patt; "="; e = expr; ")" ->
+      | i = QUESTIONIDENT; ":"; "("; p = patt; "="; e = expr; ")" ->
           <:patt< ? $i$ : ( $p$ = $e$ ) >>
-      | i = QUESTIONIDENTCOLON; "("; p = patt; ":"; t = ctyp; ")" ->
+      | i = QUESTIONIDENT; ":"; "("; p = patt; ":"; t = ctyp; ")" ->
           <:patt< ? $i$ : ( $p$ : $t$ ) >>
-      | i = QUESTIONIDENTCOLON; "("; p = patt; ":"; t = ctyp; "=";
+      | i = QUESTIONIDENT; ":"; "("; p = patt; ":"; t = ctyp; "=";
         e = expr; ")" ->
           <:patt< ? $i$ : ( $p$ : $t$ = $e$ ) >>
       | i = QUESTIONIDENT -> <:patt< ? $i$ : ($lid:i$) >>
@@ -1203,7 +1203,7 @@ EXTEND
   class_type:
     [ [ i = lident_colon; t = ctyp LEVEL "ctyp1"; "->"; ct = SELF ->
           <:class_type< [ ~ $i$ : $t$ ] -> $ct$ >>
-      | i = QUESTIONIDENTCOLON; t = ctyp LEVEL "ctyp1"; "->"; ct = SELF ->
+      | i = QUESTIONIDENT; ":"; t = ctyp LEVEL "ctyp1"; "->"; ct = SELF ->
           <:class_type< [ ? $i$ : $t$ ] -> $ct$ >> ] ]
   ;
   class_fun_binding:

@@ -5,7 +5,7 @@
 (*                                                                     *)
 (*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -2289,13 +2289,15 @@ Grammar.extend
     Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e),
     Some (Gramext.After "arrow"),
     [None, Some Gramext.NonA,
-     [[Gramext.Stoken ("QUESTIONIDENTCOLON", ""); Gramext.Sself],
+     [[Gramext.Stoken ("QUESTIONIDENT", ""); Gramext.Stoken ("", ":");
+       Gramext.Sself],
       Gramext.action
-        (fun (t : 'ctyp) (i : string) (loc : int * int) ->
+        (fun (t : 'ctyp) _ (i : string) (loc : int * int) ->
            (MLast.TyOlb (loc, i, t) : 'ctyp));
-      [Gramext.Stoken ("TILDEIDENTCOLON", ""); Gramext.Sself],
+      [Gramext.Stoken ("TILDEIDENT", ""); Gramext.Stoken ("", ":");
+       Gramext.Sself],
       Gramext.action
-        (fun (t : 'ctyp) (i : string) (loc : int * int) ->
+        (fun (t : 'ctyp) _ (i : string) (loc : int * int) ->
            (MLast.TyLab (loc, i, t) : 'ctyp))]];
     Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e),
     Some (Gramext.Level "simple"),
@@ -2402,42 +2404,43 @@ Grammar.extend
       Gramext.action
         (fun (i : string) (loc : int * int) ->
            (MLast.PaOlb (loc, i, MLast.PaLid (loc, i), None) : 'patt));
-      [Gramext.Stoken ("QUESTIONIDENTCOLON", ""); Gramext.Stoken ("", "(");
-       Gramext.Sself; Gramext.Stoken ("", ":");
+      [Gramext.Stoken ("QUESTIONIDENT", ""); Gramext.Stoken ("", ":");
+       Gramext.Stoken ("", "("); Gramext.Sself; Gramext.Stoken ("", ":");
        Gramext.Snterm (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e));
        Gramext.Stoken ("", "=");
        Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e));
        Gramext.Stoken ("", ")")],
       Gramext.action
-        (fun _ (e : 'expr) _ (t : 'ctyp) _ (p : 'patt) _ (i : string)
+        (fun _ (e : 'expr) _ (t : 'ctyp) _ (p : 'patt) _ _ (i : string)
            (loc : int * int) ->
            (MLast.PaOlb (loc, i, MLast.PaTyc (loc, p, t), Some e) : 'patt));
-      [Gramext.Stoken ("QUESTIONIDENTCOLON", ""); Gramext.Stoken ("", "(");
-       Gramext.Sself; Gramext.Stoken ("", ":");
+      [Gramext.Stoken ("QUESTIONIDENT", ""); Gramext.Stoken ("", ":");
+       Gramext.Stoken ("", "("); Gramext.Sself; Gramext.Stoken ("", ":");
        Gramext.Snterm (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e));
        Gramext.Stoken ("", ")")],
       Gramext.action
-        (fun _ (t : 'ctyp) _ (p : 'patt) _ (i : string) (loc : int * int) ->
+        (fun _ (t : 'ctyp) _ (p : 'patt) _ _ (i : string) (loc : int * int) ->
            (MLast.PaOlb (loc, i, MLast.PaTyc (loc, p, t), None) : 'patt));
-      [Gramext.Stoken ("QUESTIONIDENTCOLON", ""); Gramext.Stoken ("", "(");
-       Gramext.Sself; Gramext.Stoken ("", "=");
+      [Gramext.Stoken ("QUESTIONIDENT", ""); Gramext.Stoken ("", ":");
+       Gramext.Stoken ("", "("); Gramext.Sself; Gramext.Stoken ("", "=");
        Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e));
        Gramext.Stoken ("", ")")],
       Gramext.action
-        (fun _ (e : 'expr) _ (p : 'patt) _ (i : string) (loc : int * int) ->
+        (fun _ (e : 'expr) _ (p : 'patt) _ _ (i : string) (loc : int * int) ->
            (MLast.PaOlb (loc, i, p, Some e) : 'patt));
-      [Gramext.Stoken ("QUESTIONIDENTCOLON", ""); Gramext.Stoken ("", "(");
-       Gramext.Sself; Gramext.Stoken ("", ")")],
+      [Gramext.Stoken ("QUESTIONIDENT", ""); Gramext.Stoken ("", ":");
+       Gramext.Stoken ("", "("); Gramext.Sself; Gramext.Stoken ("", ")")],
       Gramext.action
-        (fun _ (p : 'patt) _ (i : string) (loc : int * int) ->
+        (fun _ (p : 'patt) _ _ (i : string) (loc : int * int) ->
            (MLast.PaOlb (loc, i, p, None) : 'patt));
       [Gramext.Stoken ("TILDEIDENT", "")],
       Gramext.action
         (fun (i : string) (loc : int * int) ->
            (MLast.PaLab (loc, i, MLast.PaLid (loc, i)) : 'patt));
-      [Gramext.Stoken ("TILDEIDENTCOLON", ""); Gramext.Sself],
+      [Gramext.Stoken ("TILDEIDENT", ""); Gramext.Stoken ("", ":");
+       Gramext.Sself],
       Gramext.action
-        (fun (p : 'patt) (i : string) (loc : int * int) ->
+        (fun (p : 'patt) _ (i : string) (loc : int * int) ->
            (MLast.PaLab (loc, i, p) : 'patt));
       [Gramext.Stoken ("", "#");
        Gramext.Snterm
@@ -2475,42 +2478,45 @@ Grammar.extend
       Gramext.action
         (fun (i : string) (loc : int * int) ->
            (MLast.PaOlb (loc, i, MLast.PaLid (loc, i), None) : 'ipatt));
-      [Gramext.Stoken ("QUESTIONIDENTCOLON", ""); Gramext.Stoken ("", "(");
-       Gramext.Sself; Gramext.Stoken ("", ":");
+      [Gramext.Stoken ("QUESTIONIDENT", ""); Gramext.Stoken ("", ":");
+       Gramext.Stoken ("", "("); Gramext.Sself; Gramext.Stoken ("", ":");
        Gramext.Snterm (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e));
        Gramext.Stoken ("", "=");
        Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e));
        Gramext.Stoken ("", ")")],
       Gramext.action
-        (fun _ (e : 'expr) _ (t : 'ctyp) _ (p : 'ipatt) _ (i : string)
+        (fun _ (e : 'expr) _ (t : 'ctyp) _ (p : 'ipatt) _ _ (i : string)
            (loc : int * int) ->
            (MLast.PaOlb (loc, i, MLast.PaTyc (loc, p, t), Some e) : 'ipatt));
-      [Gramext.Stoken ("QUESTIONIDENTCOLON", ""); Gramext.Stoken ("", "(");
-       Gramext.Sself; Gramext.Stoken ("", ":");
+      [Gramext.Stoken ("QUESTIONIDENT", ""); Gramext.Stoken ("", ":");
+       Gramext.Stoken ("", "("); Gramext.Sself; Gramext.Stoken ("", ":");
        Gramext.Snterm (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e));
        Gramext.Stoken ("", ")")],
       Gramext.action
-        (fun _ (t : 'ctyp) _ (p : 'ipatt) _ (i : string) (loc : int * int) ->
+        (fun _ (t : 'ctyp) _ (p : 'ipatt) _ _ (i : string)
+           (loc : int * int) ->
            (MLast.PaOlb (loc, i, MLast.PaTyc (loc, p, t), None) : 'ipatt));
-      [Gramext.Stoken ("QUESTIONIDENTCOLON", ""); Gramext.Stoken ("", "(");
-       Gramext.Sself; Gramext.Stoken ("", "=");
+      [Gramext.Stoken ("QUESTIONIDENT", ""); Gramext.Stoken ("", ":");
+       Gramext.Stoken ("", "("); Gramext.Sself; Gramext.Stoken ("", "=");
        Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e));
        Gramext.Stoken ("", ")")],
       Gramext.action
-        (fun _ (e : 'expr) _ (p : 'ipatt) _ (i : string) (loc : int * int) ->
+        (fun _ (e : 'expr) _ (p : 'ipatt) _ _ (i : string)
+           (loc : int * int) ->
            (MLast.PaOlb (loc, i, p, Some e) : 'ipatt));
-      [Gramext.Stoken ("QUESTIONIDENTCOLON", ""); Gramext.Stoken ("", "(");
-       Gramext.Sself; Gramext.Stoken ("", ")")],
+      [Gramext.Stoken ("QUESTIONIDENT", ""); Gramext.Stoken ("", ":");
+       Gramext.Stoken ("", "("); Gramext.Sself; Gramext.Stoken ("", ")")],
       Gramext.action
-        (fun _ (p : 'ipatt) _ (i : string) (loc : int * int) ->
+        (fun _ (p : 'ipatt) _ _ (i : string) (loc : int * int) ->
            (MLast.PaOlb (loc, i, p, None) : 'ipatt));
       [Gramext.Stoken ("TILDEIDENT", "")],
       Gramext.action
         (fun (i : string) (loc : int * int) ->
            (MLast.PaLab (loc, i, MLast.PaLid (loc, i)) : 'ipatt));
-      [Gramext.Stoken ("TILDEIDENTCOLON", ""); Gramext.Sself],
+      [Gramext.Stoken ("TILDEIDENT", ""); Gramext.Stoken ("", ":");
+       Gramext.Sself],
       Gramext.action
-        (fun (p : 'ipatt) (i : string) (loc : int * int) ->
+        (fun (p : 'ipatt) _ (i : string) (loc : int * int) ->
            (MLast.PaLab (loc, i, p) : 'ipatt))]];
     Grammar.Entry.obj (expr : 'expr Grammar.Entry.e),
     Some (Gramext.After "apply"),
@@ -2519,17 +2525,19 @@ Grammar.extend
       Gramext.action
         (fun (i : string) (loc : int * int) ->
            (MLast.ExOlb (loc, i, MLast.ExLid (loc, i)) : 'expr));
-      [Gramext.Stoken ("QUESTIONIDENTCOLON", ""); Gramext.Sself],
+      [Gramext.Stoken ("QUESTIONIDENT", ""); Gramext.Stoken ("", ":");
+       Gramext.Sself],
       Gramext.action
-        (fun (e : 'expr) (i : string) (loc : int * int) ->
+        (fun (e : 'expr) _ (i : string) (loc : int * int) ->
            (MLast.ExOlb (loc, i, e) : 'expr));
       [Gramext.Stoken ("TILDEIDENT", "")],
       Gramext.action
         (fun (i : string) (loc : int * int) ->
            (MLast.ExLab (loc, i, MLast.ExLid (loc, i)) : 'expr));
-      [Gramext.Stoken ("TILDEIDENTCOLON", ""); Gramext.Sself],
+      [Gramext.Stoken ("TILDEIDENT", ""); Gramext.Stoken ("", ":");
+       Gramext.Sself],
       Gramext.action
-        (fun (e : 'expr) (i : string) (loc : int * int) ->
+        (fun (e : 'expr) _ (i : string) (loc : int * int) ->
            (MLast.ExLab (loc, i, e) : 'expr))]];
     Grammar.Entry.obj (expr : 'expr Grammar.Entry.e),
     Some (Gramext.Level "simple"),

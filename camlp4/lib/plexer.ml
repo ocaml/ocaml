@@ -164,12 +164,8 @@ value next_token_fun dfa find_kwd =
     | [: `('~' as c);
          a =
            parser
-           [ [: `('a'..'z' as c); len = ident (store 0 c);
-                t =
-                  parser
-                  [ [: `':' :] -> "TILDEIDENTCOLON"
-                  | [: :] -> "TILDEIDENT" ] :] ep ->
-               ((t, get_buff len), (bp, ep))
+           [ [: `('a'..'z' as c); len = ident (store 0 c) :] ep ->
+               (("TILDEIDENT", get_buff len), (bp, ep))
            | [: s :] ->
                let id = get_buff (ident2 (store 0 c) s) in
                keyword_or_error (bp, Stream.count s) id ] :] ->
@@ -177,12 +173,8 @@ value next_token_fun dfa find_kwd =
     | [: `('?' as c);
          a =
            parser
-           [ [: `('a'..'z' as c); len = ident (store 0 c);
-                t =
-                  parser
-                  [ [: `':' :] -> "QUESTIONIDENTCOLON"
-                  | [: :] -> "QUESTIONIDENT" ] :] ep ->
-               ((t, get_buff len), (bp, ep))
+           [ [: `('a'..'z' as c); len = ident (store 0 c) :] ep ->
+               (("QUESTIONIDENT", get_buff len), (bp, ep))
            | [: s :] ->
                let id = get_buff (ident2 (store 0 c) s) in
                keyword_or_error (bp, Stream.count s) id ] :] ->
@@ -489,8 +481,8 @@ value using_token kwd_table ident_table (p_con, p_prm) =
             if Hashtbl.mem kwd_table p_prm then
               error_ident_and_keyword p_con p_prm
             else Hashtbl.add ident_table p_prm p_con ]
-  | "TILDEIDENT" | "TILDEIDENTCOLON" | "QUESTIONIDENT" |
-    "QUESTIONIDENTCOLON" | "INT" | "FLOAT" | "CHAR" | "STRING" | "QUOTATION" |
+  | "TILDEIDENT" | "QUESTIONIDENT" |
+    "INT" | "FLOAT" | "CHAR" | "STRING" | "QUOTATION" |
     "ANTIQUOT" | "LOCATE" | "EOI" ->
       ()
   | _ ->
