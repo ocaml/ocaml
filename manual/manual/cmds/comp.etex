@@ -150,6 +150,15 @@ Specify the name of the output file produced by the linker. The
 default output name is "a.out", in keeping with the Unix tradition. If
 the "-a" option is given, specify the name of the library produced.
 
+\item["-pp" \var{command}]
+Cause the compiler to call the given \var{command} as a preprocessor
+for each source file. The output of the \var{command} is redirected to
+an intermediate file, which is compiled. If there are no compilation
+errors, the intermediate file is afterwards deleted. The name of this
+file is built from the basename of the source file with the extension
+".ppi" for an interface (".mli") file and ".ppo" for an implementation
+(".ml") file.
+
 \item["-v"]
 Print the version number of the compiler.
 
