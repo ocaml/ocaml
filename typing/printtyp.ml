@@ -186,9 +186,9 @@ let rec typexp sch prio0 ppf ty =
           print_label ppf l;
           if is_optional l then
             match (repr ty1).desc with
-            | Tconstr(path, [ty], _) when path = Predef.path_option ->
+            | Tconstr(path, [ty], _) when Path.same path Predef.path_option ->
                 typexp sch 2 ppf ty
-            | _ -> assert false
+            | _ -> fprintf ppf "<hidden>"
           else typexp sch 2 ppf ty1;
           fprintf ppf " ->@ %a" (typexp sch 1) ty2 in
         if prio >= 2
@@ -518,8 +518,8 @@ let rec perform_class_type sch params ppf = function
       let ty =
        if is_optional l then
          match (repr ty).desc with
-         | Tconstr(path, [ty], _) when path = Predef.path_option -> ty
-         | _ -> assert false
+         | Tconstr(path, [ty], _) when Path.same path Predef.path_option -> ty
+         | _ -> newconstr (Path.Pident(Ident.create "<hidden>")) []
        else ty in
       fprintf ppf "@[%a%a ->@ %a@]"
        print_label l (typexp sch 2) ty (perform_class_type sch params) cty
