@@ -60,14 +60,22 @@ let remove_preprocessed inputfile =
 
 (* Parse a file or get a dumped syntax tree in it *)
 
+exception Outdated_version
+
 let parse_file inputfile parse_fun ast_magic =
   let ic = open_in_bin inputfile in
   let is_ast_file =
     try
       let buffer = String.create (String.length ast_magic) in
       really_input ic buffer 0 (String.length ast_magic);
-      buffer = ast_magic
-    with _ -> false
+      if buffer = ast_magic then true
+      else if String.sub buffer 0 9 = String.sub ast_magic 0 9 then
+        raise Outdated_version
+      else false
+    with
+      Outdated_version ->
+        failwith "Ocaml and preprocessor have incompatible versions"
+    | _ -> false
   in
   let ast =
     try
