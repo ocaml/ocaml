@@ -347,19 +347,32 @@ let rec transl_exp e =
       | Cstr_exception path ->
           Lprim(Pmakeblock(0, Immutable), transl_path path :: ll)
       end
-  | Texp_record ((lbl1, _) :: _ as lbl_expr_list) ->
-      let lv = Array.create (Array.length lbl1.lbl_all) Lstaticfail in
+  | Texp_record ((lbl1, _) :: _ as lbl_expr_list, opt_init_expr) ->
+      let all_labels = lbl1.lbl_all in
+      let lv = Array.create (Array.length all_labels) Lstaticfail in
+      let init_id = Ident.create "init" in
+      begin match opt_init_expr with
+        None -> ()
+      | Some init_expr ->
+          for i = 0 to Array.length all_labels - 1 do
+            let access =
+              match all_labels.(i).lbl_repres with
+                Record_regular -> Pfield i
+              | Record_float -> Pfloatfield i in
+            lv.(i) <- Lprim(access, [Lvar init_id])
+          done
+      end;
       List.iter
         (fun (lbl, expr) -> lv.(lbl.lbl_pos) <- transl_exp expr)
         lbl_expr_list;
       let ll = Array.to_list lv in
-      if List.exists (fun (lbl, expr) -> lbl.lbl_mut = Mutable) lbl_expr_list
-      then begin
-        match lbl1.lbl_repres with
-          Record_regular -> Lprim(Pmakeblock(0, Mutable), ll)
-        | Record_float -> Lprim(Pmakearray Pfloatarray, ll)
-      end else begin
+      let mut =
+        if List.exists (fun (lbl, expr) -> lbl.lbl_mut = Mutable) lbl_expr_list
+        then Mutable
+        else Immutable in
+      let lam =
         try
+          if mut = Mutable then raise Not_constant;
           let cl = List.map extract_constant ll in
           match lbl1.lbl_repres with
             Record_regular -> Lconst(Const_block(0, cl))
@@ -367,8 +380,11 @@ let rec transl_exp e =
               Lconst(Const_float_array(List.map extract_float cl))
         with Not_constant ->
           match lbl1.lbl_repres with
-            Record_regular -> Lprim(Pmakeblock(0, Immutable), ll)
-          | Record_float -> Lprim(Pmakearray Pfloatarray, ll)
+            Record_regular -> Lprim(Pmakeblock(0, mut), ll)
+          | Record_float -> Lprim(Pmakearray Pfloatarray, ll) in
+      begin match opt_init_expr with
+        None -> lam
+      | Some init_expr -> Llet(Strict, init_id, transl_exp init_expr, lam)
       end
   | Texp_field(arg, lbl) ->
       let access =

@@ -165,7 +165,8 @@ and rewrite_exp sexp =
   | Pexp_construct(_, Some sarg, _) ->
     rewrite_exp sarg
 
-  | Pexp_record lid_sexp_list ->
+  | Pexp_record(lid_sexp_list, opt_sexp) ->
+    begin match opt_sexp with None -> () | Some sexp -> rewrite_exp sexp end;
     rewrite_labelexp_list lid_sexp_list
 
   | Pexp_field(sarg, _) ->

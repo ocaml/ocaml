@@ -52,7 +52,7 @@ and expression_desc =
   | Texp_try of expression * (pattern * expression) list
   | Texp_tuple of expression list
   | Texp_construct of constructor_description * expression list
-  | Texp_record of (label_description * expression) list
+  | Texp_record of (label_description * expression) list * expression option
   | Texp_field of expression * label_description
   | Texp_setfield of expression * label_description * expression
   | Texp_array of expression list

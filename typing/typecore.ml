@@ -238,10 +238,11 @@ let rec is_nonexpansive exp =
       List.for_all is_nonexpansive el
   | Texp_construct(_, el) ->
       List.for_all is_nonexpansive el
-  | Texp_record lbl_exp_list ->
+  | Texp_record(lbl_exp_list, opt_init_exp) ->
       List.for_all
         (fun (lbl, exp) -> lbl.lbl_mut = Immutable & is_nonexpansive exp)
-        lbl_exp_list
+        lbl_exp_list &&
+      (match opt_init_exp with None -> true | Some e -> is_nonexpansive e)
   | Texp_field(exp, lbl) -> is_nonexpansive exp
   | Texp_array [] -> true
   | Texp_new _ -> true
@@ -408,7 +409,7 @@ let rec type_exp env sexp =
         exp_loc = sexp.pexp_loc;
         exp_type = ty_res;
         exp_env = env }
-  | Pexp_record lid_sexp_list ->
+  | Pexp_record(lid_sexp_list, opt_sexp) ->
       let ty = newvar() in
       let num_fields = ref 0 in
       let type_label_exp (lid, sarg) =
@@ -434,9 +435,13 @@ let rec type_exp env sexp =
           then raise(Error(sexp.pexp_loc, Label_multiply_defined lid))
           else check_duplicates remainder in
       check_duplicates lid_sexp_list;
-      if List.length lid_sexp_list <> !num_fields then
+      let opt_exp =
+        match opt_sexp with
+          None -> None
+        | Some sexp -> Some(type_expect env sexp ty) in
+      if opt_sexp = None && List.length lid_sexp_list <> !num_fields then
         raise(Error(sexp.pexp_loc, Label_missing));
-      { exp_desc = Texp_record lbl_exp_list;
+      { exp_desc = Texp_record(lbl_exp_list, opt_exp);
         exp_loc = sexp.pexp_loc;
         exp_type = ty;
         exp_env = env }

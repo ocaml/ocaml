@@ -529,10 +529,10 @@ simple_expr:
                          [$1; $4])) }
   | simple_expr DOT LBRACKET seq_expr error
       { unclosed "[" 3 "]" 5 }
-  | LBRACE lbl_expr_list opt_semi RBRACE
-      { mkexp(Pexp_record(List.rev $2)) }
-  | LBRACE lbl_expr_list opt_semi error
-      { unclosed "{" 1 "}" 4 }
+  | LBRACE record_expr RBRACE
+      { let (exten, fields) = $2 in mkexp(Pexp_record(fields, exten)) }
+  | LBRACE record_expr error
+      { unclosed "{" 1 "}" 5 }
   | LBRACKETLESS stream_expr opt_semi GREATERRBRACKET
       { Pstream.cstream (List.rev $2) }
   | LBRACKETLESS stream_expr opt_semi error
@@ -555,9 +555,9 @@ simple_expr:
       { mkexp(Pexp_send($1, $3)) }
   | NEW class_longident
       { mkexp(Pexp_new($2)) }
-  | LBRACELESS label_expr_list opt_semi GREATERRBRACE
+  | LBRACELESS field_expr_list opt_semi GREATERRBRACE
       { mkexp(Pexp_override(List.rev $2)) }
-  | LBRACELESS label_expr_list opt_semi error
+  | LBRACELESS field_expr_list opt_semi error
       { unclosed "{<" 1 ">}" 4 }
   | LBRACELESS GREATERRBRACE
       { mkexp(Pexp_override []) }
@@ -648,16 +648,20 @@ expr_comma_list:
     expr_comma_list COMMA expr                  { $3 :: $1 }
   | expr COMMA expr                             { [$3; $1] }
 ;
+record_expr:
+    simple_expr WITH lbl_expr_list opt_semi     { (Some $1, List.rev $3) }
+  | lbl_expr_list opt_semi                      { (None, List.rev $1) }
+;
 lbl_expr_list:
     label_longident EQUAL expr %prec prec_list
       { [$1,$3] }
   | lbl_expr_list SEMI label_longident EQUAL expr %prec prec_list
       { ($3, $5) :: $1 }
 ;
-label_expr_list:
+field_expr_list:
     label EQUAL expr %prec prec_list
       { [$1,$3] }
-  | label_expr_list SEMI label EQUAL expr %prec prec_list
+  | field_expr_list SEMI label EQUAL expr %prec prec_list
       { ($3, $5) :: $1 }
 ;
 expr_semi_list:
