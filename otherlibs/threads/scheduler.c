@@ -168,9 +168,9 @@ value thread_new(clos)          /* ML */
   th->delay = NO_DELAY;
   th->joining = NO_JOINING;
   /* Insert thread in doubly linked list of threads */
-  Assign(th->prev, curr_thread->prev);
+  th->prev = curr_thread->prev;
+  th->next = curr_thread;
   Assign(curr_thread->prev->next, th);
-  Assign(th->next, curr_thread);
   Assign(curr_thread->prev, th);
   /* Return thread */
   return (value) th;
