@@ -34,6 +34,8 @@ let dot_reduce = ref false
 
 let dot_colors  = ref Odoc_messages.default_dot_colors
 
+let man_suffix = ref Odoc_messages.default_man_suffix
+
 (** Analysis of a string defining options. Return the list of
    options according to the list giving associations between
    [(character, _)] and a list of options. *)
@@ -231,6 +233,9 @@ let options  = ref [
   "-dot-include-all", Arg.Set dot_include_all, Odoc_messages.dot_include_all ;
   "-dot-types", Arg.Set dot_types, Odoc_messages.dot_types ;
   "-dot-reduce", Arg.Set dot_reduce, Odoc_messages.dot_reduce ;
+
+(* man only options *)
+  "-man-suffix", Arg.String (fun s -> man_suffix := s), Odoc_messages.man_suffix ;
 
 ] 
 

@@ -113,6 +113,9 @@ val dot_reduce : bool ref
 (** The colors used in the dot output. *)
 val dot_colors : string list ref
 
+(** The suffix for man pages. *)
+val man_suffix : string ref
+
 (** The files to be analysed. *)
 val files : string list ref
     
