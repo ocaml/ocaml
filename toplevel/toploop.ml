@@ -94,6 +94,7 @@ let input_name = Location.input_name
 
 (* Load in-core and execute a lambda term *)
 
+let may_trace = ref false (* Global lock on tracing *)
 type evaluation_outcome = Result of Obj.t | Exception of exn
 
 let load_lambda ppf lam =
@@ -111,10 +112,13 @@ let load_lambda ppf lam =
   Symtable.patch_object code reloc;
   Symtable.update_global_table();
   try
+    may_trace := true;
     let retval = (Meta.reify_bytecode code code_size) () in
+    may_trace := false;
     if can_free then Meta.static_free code;
     Result retval
   with x ->
+    may_trace := false;
     if can_free then Meta.static_free code;
     Symtable.restore_state initial_symtable;
     Exception x

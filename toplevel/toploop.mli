@@ -75,3 +75,7 @@ val parse_use_file : (Lexing.lexbuf -> Parsetree.toplevel_phrase list) ref
 val print_location : formatter -> Location.t -> unit
 val print_warning : Location.t -> formatter -> Warnings.t -> unit
 val input_name : string ref
+
+(* Used by Trace module *)
+
+val may_trace : bool ref

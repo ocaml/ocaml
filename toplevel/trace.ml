@@ -69,21 +69,31 @@ let rec instrument_result env name ppf clos_typ =
       let trace_res = instrument_result env starred_name ppf t2 in
       (fun clos_val ->
         Obj.repr (fun arg ->
-          fprintf ppf "@[<2>%a <--@ %a%a@]@."
-          Printtyp.longident starred_name
-          print_label l
-          (print_value !toplevel_env arg) t1;
-          try
-            let res = (Obj.magic clos_val : Obj.t -> Obj.t) arg in
-            fprintf ppf "@[<2>%a -->@ %a@]@."
-            Printtyp.longident starred_name
-            (print_value !toplevel_env res) t2;
-            trace_res res
-          with exn ->
-            fprintf ppf "@[<2>%a raises@ %a@]@."
-              Printtyp.longident starred_name
-              (print_value !toplevel_env (Obj.repr exn)) Predef.type_exn;
-            raise exn))
+          if not !may_trace then
+            (Obj.magic clos_val : Obj.t -> Obj.t) arg
+          else begin
+            may_trace := false;
+            try
+              fprintf ppf "@[<2>%a <--@ %a%a@]@."
+                Printtyp.longident starred_name
+                print_label l
+                (print_value !toplevel_env arg) t1;
+              may_trace := true;
+              let res = (Obj.magic clos_val : Obj.t -> Obj.t) arg in
+              may_trace := false;
+              fprintf ppf "@[<2>%a -->@ %a@]@."
+                Printtyp.longident starred_name
+                (print_value !toplevel_env res) t2;
+              may_trace := true;
+              trace_res res
+            with exn ->
+              may_trace := false;
+              fprintf ppf "@[<2>%a raises@ %a@]@."
+                Printtyp.longident starred_name
+                (print_value !toplevel_env (Obj.repr exn)) Predef.type_exn;
+              may_trace := true;
+              raise exn
+          end))
   | _ -> (fun v -> v)
 
 (* Same as instrument_result, but for a toplevel closure (modified in place) *)
@@ -93,21 +103,31 @@ let instrument_closure env name ppf clos_typ =
   | Tarrow(l, t1, t2) ->
       let trace_res = instrument_result env name ppf t2 in
       (fun actual_code closure arg ->
-        fprintf ppf "@[<2>%a <--@ %a%a@]@."
-        Printtyp.longident name
-        print_label l
-        (print_value !toplevel_env arg) t1;
-        try
-          let res = invoke_traced_function actual_code closure arg in
-          fprintf ppf "@[<2>%a -->@ %a@]@."
-          Printtyp.longident name
-          (print_value !toplevel_env res) t2;
-          trace_res res
-        with exn ->
-          fprintf ppf "@[<2>%a raises@ %a@]@."
-            Printtyp.longident name
-            (print_value !toplevel_env (Obj.repr exn)) Predef.type_exn;
-          raise exn)
+        if not !may_trace then
+          (fun v -> v) (invoke_traced_function actual_code closure arg)
+        else begin
+          may_trace := false;
+          try
+            fprintf ppf "@[<2>%a <--@ %a%a@]@."
+              Printtyp.longident name
+              print_label l
+              (print_value !toplevel_env arg) t1;
+            may_trace := true;
+            let res = invoke_traced_function actual_code closure arg in
+            may_trace := false;
+            fprintf ppf "@[<2>%a -->@ %a@]@."
+              Printtyp.longident name
+              (print_value !toplevel_env res) t2;
+            may_trace := true;
+            trace_res res
+          with exn ->
+            may_trace := false;
+            fprintf ppf "@[<2>%a raises@ %a@]@."
+              Printtyp.longident name
+              (print_value !toplevel_env (Obj.repr exn)) Predef.type_exn;
+            may_trace := true;
+            raise exn
+        end)
   | _ -> assert false
 
 (* Given the address of a closure, find its tracing info *)

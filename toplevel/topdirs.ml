@@ -82,8 +82,11 @@ let load_compunit ic filename ppf compunit =
   Symtable.patch_object code compunit.cu_reloc;
   Symtable.update_global_table();
   begin try
-    ignore((Meta.reify_bytecode code code_size) ())
+    may_trace := true;
+    ignore((Meta.reify_bytecode code code_size) ());
+    may_trace := false;
   with exn ->
+    may_trace := false;
     Symtable.restore_state initial_symtable;
     print_exception_outcome ppf exn;
     raise Load_failed
