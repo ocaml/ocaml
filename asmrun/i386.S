@@ -17,13 +17,19 @@
 /* Linux with ELF binaries and Solaris do not prefix identifiers with _.
    Linux with a.out binaries, FreeBSD, and NextStep do. */
 
+#if defined(SYS_solaris)
+#define CONCAT(a,b) a/**/b
+#else
+#define CONCAT(a,b) a##b
+#endif
+
 #if defined(SYS_linux_elf) || defined(SYS_solaris)
 #define G(x) x
-#define LBL(x) .L##x
+#define LBL(x) CONCAT(.L,x)
 #define FUNCTION_ALIGN 4
 #else
-#define G(x) _##x
-#define LBL(x) L##x
+#define G(x) CONCAT(_,x)
+#define LBL(x) CONCAT(L,x)
 #define FUNCTION_ALIGN 2
 #endif
 
