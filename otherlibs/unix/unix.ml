@@ -162,11 +162,11 @@ external unsafe_read : file_descr -> string -> int -> int -> int = "unix_read"
 external unsafe_write : file_descr -> string -> int -> int -> int = "unix_write"
 
 let read fd buf ofs len =
-  if len < 0 or ofs + len >= String.length buf
+  if len < 0 or ofs + len > String.length buf
   then invalid_arg "Unix.read"
   else unsafe_read fd buf ofs len
 let write fd buf ofs len =
-  if len < 0 or ofs + len >= String.length buf
+  if len < 0 or ofs + len > String.length buf
   then invalid_arg "Unix.write"
   else unsafe_write fd buf ofs len
 
@@ -374,19 +374,19 @@ external unsafe_sendto :
                                   = "unix_sendto" "unix_sendto_native"
 
 let recv fd buf ofs len flags =
-  if len < 0 or ofs + len >= String.length buf
+  if len < 0 or ofs + len > String.length buf
   then invalid_arg "Unix.recv"
   else unsafe_recv fd buf ofs len flags
 let recvfrom fd buf ofs len flags =
-  if len < 0 or ofs + len >= String.length buf
+  if len < 0 or ofs + len > String.length buf
   then invalid_arg "Unix.recvfrom"
   else unsafe_recvfrom fd buf ofs len flags
 let send fd buf ofs len flags =
-  if len < 0 or ofs + len >= String.length buf
+  if len < 0 or ofs + len > String.length buf
   then invalid_arg "Unix.send"
   else unsafe_send fd buf ofs len flags
 let sendto fd buf ofs len flags addr =
-  if len < 0 or ofs + len >= String.length buf
+  if len < 0 or ofs + len > String.length buf
   then invalid_arg "Unix.sendto"
   else unsafe_sendto fd buf ofs len flags addr
 
