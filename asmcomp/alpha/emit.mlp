@@ -80,12 +80,7 @@ let insert_load_gp f =
         opt_label_needs_gp next lbl1 ||
         opt_label_needs_gp next lbl2 ||
         opt_label_needs_gp next lbl3
-    | Lswitch lblv ->
-        let n = ref false in
-        for i = 0 to Array.length lblv - 1 do
-          n := !n || label_needs_gp lblv.(i)
-        done;
-        !n
+    | Lswitch lblv -> true
     | Lsetuptrap lbl -> label_needs_gp lbl
     | Lpushtrap -> next
     | Lpoptrap -> next
@@ -276,6 +271,14 @@ let emit_call_gc gc =
   `{emit_label gc.gc_frame}:	bsr	$26, caml_call_gc\n`;
   (* caml_call_gc preserves $gp *)
   `	br	{emit_label gc.gc_return_lbl}\n`
+
+(* Name of readonly data section *)
+
+let rdata_section =
+  match Config.system with
+    "digital" -> ".rdata"
+  | "linux"   -> ".section .rodata"
+  | _         -> assert false
 
 (* Names of various instructions *)
 
@@ -636,13 +639,18 @@ let emit_instr i =
             end
         end
     | Lswitch jumptbl ->
-        let lbl_jump = new_label() in
-        `	br	$25, {emit_label lbl_jump}\n`;
+        let lbl_jumptbl = new_label() in
+        `	lda	$25, {emit_label lbl_jumptbl}\n`;
+        `	s4addq	{emit_reg i.arg.(0)}, $25, $25\n`;
+        `	ldl	$25, 0($25)\n`;
+        `	addq	$gp, $25, $25\n`;
+        `	jmp	($25), {emit_label jumptbl.(0)}\n`;
+        `	{emit_string rdata_section}\n`;
+        `{emit_label lbl_jumptbl}:`;
         for i = 0 to Array.length jumptbl - 1 do
-          `	br	{emit_label jumptbl.(i)}\n`
+          `	.gprel32 {emit_label jumptbl.(i)}\n`
         done;
-        `{emit_label lbl_jump}:	s4addq	{emit_reg i.arg.(0)}, $25, $25\n`;
-        `	jmp	($25), {emit_label jumptbl.(0)}\n`
+        `	.text\n`
     | Lsetuptrap lbl ->
         `	br	$25, {emit_label lbl}\n`
     | Lpushtrap ->
@@ -802,11 +810,7 @@ let end_assembly () =
   `{emit_symbol lbl_end}:\n`;
   `	.quad	0\n`;
   let lbl_frame = Compilenv.current_unit_name() ^ "_frametable" in
-  begin match Config.system with
-    "digital" -> `	.rdata\n`
-  | "linux"   -> `	.section .rodata\n`
-  | _         -> assert false
-  end;
+  `	{emit_string rdata_section}\n`;
   `	.globl	{emit_symbol lbl_frame}\n`;
   `{emit_symbol lbl_frame}:\n`;
   `	.quad	{emit_int (List.length !frame_descriptors)}\n`;
