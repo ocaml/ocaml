@@ -10,8 +10,7 @@ OTHERS=../..
 !include $(TOPDIRNT)\config\Makefile.nt
 
 LABLTKDIR=$(LIBDIR)\labltk
-TKLINKOPT=$(STATIC) -cclib ../support/liblabltk41.lib \
-	  -cclib "$(TK_LINK)" $(X11_LINK) -cclib "$(CCLIBS) $(DLLIB)"
+TKLINKOPT=$(STATIC)
 
 ## Tools from the Objective Caml distribution
 

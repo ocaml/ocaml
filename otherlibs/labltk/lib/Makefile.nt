@@ -18,10 +18,12 @@ include ./modules
 WIDGETOBJSX = $(WIDGETOBJS:.cmo=.cmx)
 
 tk41.cma : $(SUPPORT) $(WIDGETOBJS) tk.cmo 
-	$(LABLLIBR) -o tk41.cma $(SUPPORT) tk.cmo $(WIDGETOBJS)
+	$(LABLLIBR) -custom -o tk41.cma $(SUPPORT) tk.cmo $(WIDGETOBJS) \
+	  -cclib -llabltk41 $(TK_LINK)
 
 tk41.cmxa : $(SUPPORTX) $(WIDGETOBJSX) tk.cmx
-	$(CAMLOPTLIBR) -o tk41.cmxa $(SUPPORTX) tk.cmx $(WIDGETOBJSX)
+	$(CAMLOPTLIBR) -o tk41.cmxa $(SUPPORTX) tk.cmx $(WIDGETOBJSX) \
+	  -cclib -llabltk41 $(TK_LINK)
 
 labltk : $(TOPDEPS) $(WIDGETOBJS) $(SUPPORT)
 	$(LABLC) -custom -linkall -o $@ -I ../support $(TKLINKOPT) \

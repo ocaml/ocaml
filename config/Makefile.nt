@@ -16,7 +16,7 @@
 
 ######### General configuration
 
-PREFIX=C:\Home\garrigue\ocaml
+PREFIX=C:\ocaml
 
 ### Where to install the binaries
 BINDIR=$(PREFIX)\bin
@@ -28,7 +28,7 @@ LIBDIR=$(PREFIX)\lib
 DISTRIB=$(PREFIX)
 
 ### Location of VC++ include files
-SYSTEM_INCLUDES=c:\progra~1\micros~1\VC98\include
+SYSTEM_INCLUDES=c:\Msdev\VC98\Include
 
 ########## Configuration for the bytecode compiler
 
@@ -76,14 +76,14 @@ AFLAGS=/coff /Cp
 
 ############# Configuration for the contributed libraries
 
-OTHERLIBRARIES=win32unix systhreads str num graph dynlink labltk
+OTHERLIBRARIES=win32unix systhreads str num graph dynlink labltk bigarray
 
 ### Name of the target architecture for the "num" library
 BIGNUM_ARCH=C
 
 ### Configuration for LablTk
-TK_DEFS=-Ic:\progra~1\tcl\include
-TK_LINK=c:\progra~1\tcl\lib\tk80.lib c:\progra~1\tcl\lib\tcl80.lib
+TK_DEFS=-Ic:\Tcl\include
+TK_LINK=c:\Tcl\lib\tk83.lib c:\Tcl\lib\tcl83.lib
 
 ############# Aliases for common commands
 

@@ -204,8 +204,9 @@ SHARPBANGSCRIPTS=true
 #       graph           Portable drawing primitives for X11
 #       dynlink         Dynamic linking of bytecode
 #       labltk          Tcl/Tk interface
-#
-OTHERLIBRARIES=unix str num threads graph dynlink labltk
+#       bigarray        Large, multidimensional numerical arrays
+
+OTHERLIBRARIES=unix str num threads graph dynlink labltk bigarray
 
 ### Name of the target architecture for the "num" library
 # Known targets:

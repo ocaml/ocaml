@@ -20,8 +20,11 @@ value unix_bind(socket, address)      /* ML */
      value socket, address;
 {
   int ret;
-  get_sockaddr(address);
-  ret = bind((SOCKET) Handle_val(socket), &sock_addr.s_gen, sock_addr_len);
+  union sock_addr_union addr;
+  socklen_param_type addr_len;
+
+  get_sockaddr(address, &addr, &addr_len);
+  ret = bind((SOCKET) Handle_val(socket), &addr.s_gen, addr_len);
   if (ret == -1) unix_error(WSAGetLastError(), "bind", Nothing);
   return Val_unit;
 }

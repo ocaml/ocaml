@@ -16,6 +16,7 @@
 #define WIN32_LEAN_AND_MEAN
 
 #include <windows.h>
+#include "../byterun/mlvalues.h"
 #include "../byterun/exec.h"
 
 #pragma comment(linker , "/entry:headerentry")
@@ -42,26 +43,31 @@ static __inline char * read_runtime_path(HANDLE h)
   char buffer[TRAILER_SIZE];
   static char runtime_path[MAX_PATH];
   DWORD nread;
-  struct exec_trailer tr;
-  long size;
+  int num_sections, path_size, i;
+  long ofs;
 
   if (SetFilePointer(h, -TRAILER_SIZE, NULL, FILE_END) == -1) return NULL;
   if (! ReadFile(h, buffer, TRAILER_SIZE, &nread, NULL)) return NULL;
   if (nread != TRAILER_SIZE) return NULL;
-  tr.path_size = read_size(buffer);
-  tr.code_size = read_size(buffer + 4);
-  tr.prim_size = read_size(buffer + 8);
-  tr.data_size = read_size(buffer + 12);
-  tr.symbol_size = read_size(buffer + 16);
-  tr.debug_size = read_size(buffer + 20);
-  if (tr.path_size >= MAX_PATH) return NULL;
-  if (tr.path_size == 0) return default_runtime_name;
-  size = tr.path_size + tr.code_size + tr.prim_size +
-         tr.data_size + tr.symbol_size + tr.debug_size + TRAILER_SIZE;
-  if (SetFilePointer(h, -size, NULL, FILE_END) == -1) return NULL;
-  if (! ReadFile(h, runtime_path, tr.path_size, &nread, NULL)) return NULL;
-  if (nread != tr.path_size) return NULL;
-  runtime_path[tr.path_size - 1] = 0;
+  num_sections = read_size(buffer);
+  ofs = TRAILER_SIZE + num_sections * 8;
+  if (SetFilePointer(h, - ofs, NULL, FILE_END) == -1) return NULL;
+  path_size = 0;
+  for (i = 0; i < num_sections; i++) {
+    if (! ReadFile(h, buffer, 8, &nread, NULL) || nread != 8) return NULL;
+    if (buffer[0] == 'R' && buffer[1] == 'N' &&
+        buffer[2] == 'T' && buffer[3] == 'M') {
+      path_size = read_size(buffer + 4);
+      ofs += path_size;
+    } else if (path_size > 0)
+      ofs += read_size(buffer + 4);
+  }
+  if (path_size == 0) return default_runtime_name;
+  if (path_size >= MAX_PATH) return NULL;
+  if (SetFilePointer(h, -ofs, NULL, FILE_END) == -1) return NULL;
+  if (! ReadFile(h, runtime_path, path_size, &nread, NULL)) return NULL;
+  if (nread != path_size) return NULL;
+  runtime_path[path_size - 1] = 0;
   return runtime_path;
 }
 

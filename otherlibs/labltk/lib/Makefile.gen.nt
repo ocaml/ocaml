@@ -8,23 +8,23 @@ tkgen.ml: ..\Widgets.src ..\compiler\tkcompiler
 # dependencies are broken: wouldn't work with gmake 3.77
 
 tk.ml .depend: tkgen.ml ..\builtin\report.ml #../builtin/builtin_*.ml
-	cat << > tk.ml
+	type << > tk.ml
 open Widget
 open Protocol
 open Support
 open Textvariable
 <<
-	cat ../builtin/report.ml >> tk.ml
-	cat ../builtin/builtin_*.ml >> tk.ml
-	cat tkgen.ml >> tk.ml
-	cat << >> tk.ml
+	type ..\builtin\report.ml >> tk.ml
+	type ..\builtin\builtin_*.ml >> tk.ml
+	type tkgen.ml >> tk.ml
+	type << >> tk.ml
 
 
 module Tkintf = struct
 <<
-	cat ../builtin/builtini_*.ml >> tk.ml
-	cat tkigen.ml >> tk.ml
-	cat << >> tk.ml
+	type ..\builtin\builtini_*.ml >> tk.ml
+	type tkigen.ml >> tk.ml
+	type << >> tk.ml
 end (* module Tkintf *)
 
 
@@ -32,6 +32,6 @@ open Tkintf
 
 
 <<
-	cat ../builtin/builtinf_*.ml >> tk.ml
-	cat tkfgen.ml >> tk.ml
+	type ..\builtin\builtinf_*.ml >> tk.ml
+	type tkfgen.ml >> tk.ml
 	$(LABLDEP) *.mli *.ml > .depend

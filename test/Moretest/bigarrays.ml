@@ -566,32 +566,39 @@ let _ =
 
   testing_function "map_file";
   let mapped_file = Filename.temp_file "bigarray" ".data" in
-  let fd =
-   Unix.openfile mapped_file [Unix.O_RDWR; Unix.O_TRUNC; Unix.O_CREAT] 0o666 in
-  let a = Array1.map_file fd float64 c_layout true 10000 in
-  Unix.close fd;
-  for i = 0 to 9999 do a.{i} <- float i done;
-  let fd = Unix.openfile mapped_file [Unix.O_RDONLY] 0 in
-  let b = Array2.map_file fd float64 fortran_layout false 100 (-1) in
-  Unix.close fd;
-  let ok = ref true in
-  for i = 0 to 99 do
-    for j = 0 to 99 do
-      if b.{j+1,i+1} <> float (100 * i + j) then ok := false
-    done
-  done;
-  test 1 !ok true;
-  b.{50,50} <- (-1.0);
-  let fd = Unix.openfile mapped_file [Unix.O_RDONLY] 0 in
-  let c = Array2.map_file fd float64 c_layout false (-1) 100 in
-  Unix.close fd;
-  let ok = ref true in
-  for i = 0 to 99 do
-    for j = 0 to 99 do
-      if c.{i,j} <> float (100 * i + j) then ok := false
-    done
-  done;
-  test 2 !ok true;
+  begin
+    let fd =
+     Unix.openfile mapped_file
+                   [Unix.O_RDWR; Unix.O_TRUNC; Unix.O_CREAT] 0o666 in
+    let a = Array1.map_file fd float64 c_layout true 10000 in
+    Unix.close fd;
+    for i = 0 to 9999 do a.{i} <- float i done;
+    let fd = Unix.openfile mapped_file [Unix.O_RDONLY] 0 in
+    let b = Array2.map_file fd float64 fortran_layout false 100 (-1) in
+    Unix.close fd;
+    let ok = ref true in
+    for i = 0 to 99 do
+      for j = 0 to 99 do
+        if b.{j+1,i+1} <> float (100 * i + j) then ok := false
+      done
+    done;
+    test 1 !ok true;
+    b.{50,50} <- (-1.0);
+    let fd = Unix.openfile mapped_file [Unix.O_RDONLY] 0 in
+    let c = Array2.map_file fd float64 c_layout false (-1) 100 in
+    Unix.close fd;
+    let ok = ref true in
+    for i = 0 to 99 do
+      for j = 0 to 99 do
+        if c.{i,j} <> float (100 * i + j) then ok := false
+      done
+    done;
+    test 2 !ok true
+  end;
+  (* Force garbage collection of the mapped bigarrays above, otherwise
+     Win32 doesn't let us erase the file.  Notice the begin...end above
+     so that the VM doesn't keep stack references to the mapped bigarrays. *)
+  Gc.full_major();
   Sys.remove mapped_file;
 
   ()
