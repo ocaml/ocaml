@@ -1,3 +1,16 @@
+/***********************************************************************/
+/*                                                                     */
+/*                           Objective Caml                            */
+/*                                                                     */
+/*            Francois Rouaix, projet Cristal, INRIA Rocquencourt      */
+/*                                                                     */
+/*  Copyright 1996 Institut National de Recherche en Informatique et   */
+/*  en Automatique.  Distributed only by permission.                   */
+/*                                                                     */
+/***********************************************************************/
+
+/* $Id$ */
+
 /* A DB is a finalized value containing
  *  a pointer to the DB,
  *  a pointer to the openstruct

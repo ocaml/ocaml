@@ -1,14 +1,3 @@
-#(***********************************************************************)
-#(*                                                                     *)
-#(*                           Objective Caml                            *)
-#(*                                                                     *)
-#(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
-#(*                                                                     *)
-#(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-#(*  en Automatique.  Distributed only by permission.                   *)
-#(*                                                                     *)
-#(***********************************************************************)
-
 # Makefile for the "num" (exact rational arithmetic) library
 
 include ../../config/Makefile
