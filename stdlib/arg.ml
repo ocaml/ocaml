@@ -18,6 +18,8 @@ type spec =
   | String of (string -> unit) (* Call the function with a string argument *)
   | Int of (int -> unit)       (* Call the function with an int argument *)
   | Float of (float -> unit)   (* Call the function with a float argument *)
+  | Rest of (string -> unit)   (* Stop interpreting keywords and call the
+                                  function with each remaining argument *)
 
 exception Bad of string
 
@@ -91,6 +93,11 @@ let parse speclist anonfun errmsg =
             let arg = Sys.argv.(!current+1) in
             f (float_of_string arg);
             incr current;
+        | Rest f ->
+            while !current < l-1 do
+              f Sys.argv.(!current+1);
+              incr current;
+            done;
         | _ -> stop (Missing s)
       with Bad m -> stop (Message m);
       end;

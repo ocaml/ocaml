@@ -20,10 +20,11 @@
 (* Syntax of command lines:
     A keyword is a character string starting with a [-].
     An option is a keyword alone or followed by an argument.
-    There are six types of keywords: [Unit], [Set], [Clear], [String],
-    [Int], and [Float].  [Unit], [Set] and [Clear] keywords take no
-    argument.  [String], [Int], and [Float] keywords take the following
-    word on the command line as an argument.
+    The types of keywords are: [Unit], [Set], [Clear], [String],
+    [Int], [Float], and [Rest].  [Unit], [Set] and [Clear] keywords take
+    no argument.  [String], [Int], and [Float] keywords take the following
+    word on the command line as an argument.  A [Rest] keyword takes the
+    remaining of the command line as (string) arguments.
     Arguments not preceded by a keyword are called anonymous arguments.
 *)
 
@@ -33,6 +34,8 @@
 -   [cmd -string foobar  ](a string option with argument ["foobar"])
 -   [cmd -float 12.34    ](a float option with argument [12.34])
 -   [cmd a b c           ](three anonymous arguments: ["a"], ["b"], and ["c"])
+-   [cmd a b -- c d      ](two anonymous arguments and a rest option with
+-   [                    ] two arguments)
 *)
 
 type spec =
@@ -42,6 +45,8 @@ type spec =
   | String of (string -> unit) (* Call the function with a string argument *)
   | Int of (int -> unit)       (* Call the function with an int argument *)
   | Float of (float -> unit)   (* Call the function with a float argument *)
+  | Rest of (string -> unit)   (* Stop interpreting keywords and call the
+                                  function with each remaining argument *)
         (* The concrete type describing the behavior associated
            with a keyword. *)
 
@@ -64,7 +69,7 @@ val parse : (string * spec * string) list -> (string -> unit) -> string -> unit
 -   The list of options, each followed by the corresponding [doc] string.
 
     For the user to be able to specify anonymous arguments starting with a
-    [-], include for example [("--", String anonfun, doc)] in [speclist].
+    [-], include for example [("-", String anonfun, doc)] in [speclist].
 
     By default, [parse] recognizes a unit option [-help], which will
     display [usage_msg] and the list of options, and exit the program.
