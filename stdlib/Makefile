@@ -12,7 +12,7 @@ OBJS=pervasives.cmo list.cmo string.cmo char.cmo array.cmo sys.cmo \
   hashtbl.cmo sort.cmo filename.cmo obj.cmo lexing.cmo parsing.cmo \
   set.cmo map.cmo stack.cmo queue.cmo stream.cmo \
   printf.cmo format.cmo arg.cmo printexc.cmo gc.cmo \
-  digest.cmo random.cmo oo.cmo
+  digest.cmo random.cmo oo.cmo genlex.cmo
 
 all: stdlib.cma std_exit.cmo cslheader
 

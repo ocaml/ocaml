@@ -344,7 +344,7 @@ val read_float : unit -> float
 type open_flag =
     Open_rdonly | Open_wronly | Open_append
   | Open_creat | Open_trunc | Open_excl
-  | Open_binary | Open_text
+  | Open_binary | Open_text | Open_nonblock
         (* Opening modes for [open_out_gen] and [open_in_gen].
 -          [Open_rdonly]: open for reading.
 -          [Open_wronly]: open for writing.
@@ -353,7 +353,8 @@ type open_flag =
 -          [Open_trunc]: empty the file if it already exists.
 -          [Open_excl]: fail if the file already exists.
 -          [Open_binary]: open in binary mode (no conversion).
--          [Open_text]: open in text mode (may perform conversions). *)
+-          [Open_text]: open in text mode (may perform conversions).
+-          [Open_nonblock]: open in non-blocking mode. *)
            
 val open_out : string -> out_channel
         (* Open the named file for writing, and return a new output channel

@@ -59,8 +59,8 @@ val empty : 'a t -> unit
 (** Useful functions *)
 
 val peek : 'a t -> 'a option
-        (* Return [Some] of "the first element" of the stream, or [None] if
-           the stream is empty. *)
+        (* Return [Some c] where [c] is the first element of the stream,
+           or [None] if the stream is empty. *)
 val junk : 'a t -> unit
         (* Remove the first element of the stream, possibly unfreezing
            it before. *)
