@@ -21,8 +21,7 @@ external beginning_group: int -> int = "str_beginning_group"
 external end_group: int -> int = "str_end_group"
 external replacement_text: string -> string -> string = "str_replacement_text"
 
-let string_before s n =
-  if n = 0 then s else String.sub s 0 n
+let string_before s n = String.sub s 0 n
 
 let string_after s n = String.sub s n (String.length s - n)
 
