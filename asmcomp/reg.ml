@@ -70,7 +70,7 @@ let at_location ty loc =
   incr currstamp;
   r
 
-let reset() = reg_list := []
+let reset() = currstamp := 100; reg_list := []
 let all_registers() = !reg_list
 let num_registers() = !currstamp
 
