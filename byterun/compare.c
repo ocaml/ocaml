@@ -165,7 +165,7 @@ static long compare_val(value v1, value v2)
     case Custom_tag: {
       int res;
       int (*compare)(value v1, value v2) = Custom_ops_val(v1)->compare;
-      if (compare == NULL) failwith("equal: abstract value");
+      if (compare == NULL) invalid_argument("equal: abstract value");
       res = Custom_ops_val(v1)->compare(v1, v2);
       if (res != 0) return res;
       break;
