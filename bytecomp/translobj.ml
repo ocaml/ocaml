@@ -44,20 +44,18 @@ let reset_labels () =
 
 let string s = Lconst (Const_base (Const_string s))
 
-let transl_init kind labels expr =
-  if labels = [] then
+let transl_label_init expr =
+  if !used_methods = [] then
     expr
   else
-    let init = Ident.create kind in
-    Llet(Alias, init, oo_prim kind,
-    List.fold_right
-      (fun (lab, id) expr ->
-         Llet(Alias, id, Lapply(Lvar init, [string lab]), expr))
-      labels
-      expr)
-
-let transl_label_init expr =
-  let new_method = Ident.create "new_method" in
-  let expr' = transl_init "new_method"  !used_methods expr in
+    let init = Ident.create "new_method" in
+    let expr' =
+      Llet(StrictOpt, init, oo_prim "new_method",
+      List.fold_right
+        (fun (lab, id) expr ->
+           Llet(StrictOpt, id, Lapply(Lvar init, [string lab]), expr))
+        !used_methods
+        expr)
+    in
     reset_labels ();
     expr'
