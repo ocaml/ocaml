@@ -332,7 +332,7 @@ CAMLexport void caml_main(char **argv)
   caml_external_raise = NULL;
   /* Determine options and position of bytecode file */
 #ifdef DEBUG
-  caml_verb_gc = 63;
+  caml_verb_gc = 0xBF;
 #endif
   parse_camlrunparam();
   pos = 0;
