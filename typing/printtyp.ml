@@ -826,7 +826,9 @@ let rec tree_of_class_type sch params =
       in
       let csil = [] in
       let csil =
-        List.fold_left (tree_of_metho sch sign.cty_concr) csil fields
+        List.fold_left
+          (fun csil (ty1, ty2) -> Ocsg_constraint (ty1, ty2) :: csil)
+          csil (tree_of_constraints params)
       in
       let all_vars =
         Vars.fold (fun l (m, t) all -> (l, m, t) :: all) sign.cty_vars [] in
@@ -837,9 +839,7 @@ let rec tree_of_class_type sch params =
           csil all_vars
       in
       let csil =
-        List.fold_left
-          (fun csil (ty1, ty2) -> Ocsg_constraint (ty1, ty2) :: csil)
-          csil (tree_of_constraints params)
+        List.fold_left (tree_of_metho sch sign.cty_concr) csil fields
       in
       Octy_signature (self_ty, List.rev csil)
   | Tcty_fun (l, ty, cty) ->
