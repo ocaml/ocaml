@@ -16,3 +16,5 @@ thread.cmo: thread.cmi
 thread.cmx: thread.cmi 
 threadIO.cmo: thread.cmi threadIO.cmi 
 threadIO.cmx: thread.cmx threadIO.cmi 
+threadUnix.cmo: thread.cmi threadUnix.cmi 
+threadUnix.cmx: thread.cmx threadUnix.cmi 

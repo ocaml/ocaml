@@ -6,7 +6,8 @@ CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS)
 CAMLC=../../boot/cslrun ../../boot/cslc -I ../../boot -I ../unix
 
 C_OBJS=scheduler.o
-CAML_OBJS=thread.cmo threadIO.cmo mutex.cmo condition.cmo event.cmo
+CAML_OBJS=thread.cmo threadIO.cmo threadUnix.cmo \
+  mutex.cmo condition.cmo event.cmo
 
 all: libthreads.a threads.cma
 

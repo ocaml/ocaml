@@ -13,9 +13,9 @@
 
 (* Module [ThreadIO]: thread-compatible input-output operations *)
 
-(* This module reimplements some of the input functions from [Pervasives]
+(* This module reimplements some of the functions from [Pervasives]
    and [Lexing] so that they only block the calling thread, not all threads
-   in the program, if data is not immediately available on the input.
+   in the program, if input or output is not immediately possible.
    See the documentation of the [Pervasives] and [Lexing] modules for
    precise descriptions of the functions below. *)
 

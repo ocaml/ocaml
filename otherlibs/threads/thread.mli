@@ -61,13 +61,14 @@ val wait_timed_write : Unix.file_descr -> float -> bool
            the amount of time given as second argument (in seconds).
            Return [true] if the file descriptor is ready for input/output
            and [false] if the timeout expired. *)
-val wait_pid : int -> unit
+val wait_pid : int -> int * Unix.process_status
         (* [wait_pid p] suspends the execution of the calling thread
            until the Unix process specified by the process identifier [p]
            terminates. A pid [p] of [-1] means wait for any child.
            A pid of [0] means wait for any child in the same process group
            as the current process. Negative pid arguments represent
-           process groups. *)
+           process groups. Returns the pid of the child caught and
+           its termination status, as per [Unix.wait]. *)
 
 (*--*)
 

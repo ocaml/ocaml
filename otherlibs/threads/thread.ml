@@ -22,7 +22,7 @@ type resumption_status =
   | Resumed_io
   | Resumed_delay
   | Resumed_join
-  | Resumed_wait
+  | Resumed_wait of int * Unix.process_status
 
 (* It is mucho important that the primitives that reschedule are called 
    through an ML function call, not directly. That's because when such a
@@ -46,7 +46,8 @@ external thread_wait_timed_write
             = "thread_wait_timed_write"
 external thread_join : t -> unit = "thread_join"
 external thread_delay : float -> unit = "thread_delay"
-external thread_wait_pid : int -> unit = "thread_wait_pid"
+external thread_wait_pid : int -> int * Unix.process_status
+            = "thread_wait_pid"
 external thread_wakeup : t -> unit = "thread_wakeup"
 external thread_self : unit -> t = "thread_self"
 external thread_kill : t -> unit = "thread_kill"
