@@ -116,8 +116,9 @@ sys.o: sys.c config.h ../config/m.h ../config/s.h alloc.h misc.h \
   gc.h major_gc.h freelist.h minor_gc.h sys.h
 terminfo.o: terminfo.c config.h ../config/m.h ../config/s.h alloc.h \
   misc.h mlvalues.h fail.h io.h
-unix.o: unix.c config.h ../config/m.h ../config/s.h memory.h gc.h \
-  mlvalues.h misc.h major_gc.h freelist.h minor_gc.h osdeps.h
+unix.o: unix.c config.h ../config/m.h ../config/s.h /sw/include/dlfcn.h \
+  memory.h gc.h mlvalues.h misc.h major_gc.h freelist.h minor_gc.h \
+  osdeps.h
 weak.o: weak.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
   mlvalues.h fail.h memory.h gc.h major_gc.h freelist.h minor_gc.h
 win32.o: win32.c memory.h config.h ../config/m.h ../config/s.h gc.h \
@@ -241,8 +242,9 @@ sys.d.o: sys.c config.h ../config/m.h ../config/s.h alloc.h misc.h \
   gc.h major_gc.h freelist.h minor_gc.h sys.h
 terminfo.d.o: terminfo.c config.h ../config/m.h ../config/s.h alloc.h \
   misc.h mlvalues.h fail.h io.h
-unix.d.o: unix.c config.h ../config/m.h ../config/s.h memory.h gc.h \
-  mlvalues.h misc.h major_gc.h freelist.h minor_gc.h osdeps.h
+unix.d.o: unix.c config.h ../config/m.h ../config/s.h /sw/include/dlfcn.h \
+  memory.h gc.h mlvalues.h misc.h major_gc.h freelist.h minor_gc.h \
+  osdeps.h
 weak.d.o: weak.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
   mlvalues.h fail.h memory.h gc.h major_gc.h freelist.h minor_gc.h
 win32.d.o: win32.c memory.h config.h ../config/m.h ../config/s.h gc.h \
