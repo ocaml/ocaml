@@ -42,7 +42,7 @@ partialclean:
 	rm -f *.cm*
 
 clean: partialclean
-	rm -f *.a *.o
+	rm -f *.a *.o *.so
 
 install:
 	if test -f dllmldbm.so; then cp dllmldbm.so $(LIBDIR)/dllmldbm.so; fi
