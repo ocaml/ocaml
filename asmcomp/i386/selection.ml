@@ -193,6 +193,16 @@ method select_operation op args =
       self#select_floatarith Imulf Imulf Ifloatmul Ifloatmul args
   | Cdivf ->
       self#select_floatarith Idivf (Ispecific Idivfrev) Ifloatdiv Ifloatdivrev args
+  (* Recognize store instructions *)
+  | Cstore ->
+      begin match args with
+        [loc; Cop(Caddi, [Cop(Cload _, [loc']); Cconst_int n])]
+        when loc = loc' ->
+          let (addr, arg) = self#select_addressing loc in
+          (Ispecific(Ioffset_loc(n, addr)), [arg])
+      | _ ->
+          super#select_operation op args
+      end
   | _ -> super#select_operation op args
 
 (* Recognize float arithmetic with mem *)
