@@ -73,6 +73,9 @@ ocamldumpobj Ä {DUMPOBJ}
 clean ÄÄ
     delete -i ocamldumpobj
 
+install ÄÄ
+    duplicate -y ocamldumpobj "{BINDIR}ocamldumpobj"
+
 opnames.ml Ä ::byterun:instruct.h
     streamedit -e '/¶/¶*/ delete' ¶
            -e '/enum (Å)¨0 {/ replace // "let names_of_" ¨0 "= [|"' ¶
