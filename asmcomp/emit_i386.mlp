@@ -62,6 +62,15 @@ let label_prefix =
 let emit_label lbl =
   emit_string label_prefix; emit_int lbl
 
+(* Output a .align directive.
+   The numerical argument to .align is log2 of alignment size, except
+   under ELF, where it is the alignment size... *)
+
+let emit_align =
+  match Config.system with
+    "linux_elf" -> (fun n -> `	.align	{emit_int n}\n`)
+  | _           -> (fun n -> `	.align	{emit_int(Misc.log2 n)}\n`)
+  
 (* Output a pseudo-register *)
 
 let emit_reg r =
@@ -170,7 +179,7 @@ let emit_frame fd =
     (fun n ->
       `	.word	{emit_int n}\n`)
     fd.fd_live_offset;
-  `	.align	2\n`
+  emit_align 4
 
 (* Names for instructions *)
 
@@ -273,7 +282,7 @@ let emit_instr i =
     | Lop(Iextcall(s, alloc)) ->
         if alloc then begin
           `	movl	${emit_symbol s}, %eax\n`;
-          `	call	_caml_c_call\n`;
+          `	call	{emit_symbol "caml_c_call"}\n`;
           record_frame i.live
         end else begin
           `	finit\n`;
@@ -335,22 +344,22 @@ let emit_instr i =
         end
     | Lop(Ialloc n) ->
         if !fastcode_flag then begin
-          `	movl	_young_ptr, %eax\n`;
+          `	movl	{emit_symbol "young_ptr"}, %eax\n`;
           `	subl	${emit_int n}, %eax\n`;
-          `	movl	%eax, _young_ptr\n`;
-          `	cmpl	_young_start, %eax\n`;
+          `	movl	%eax, {emit_symbol "young_ptr"}\n`;
+          `	cmpl	{emit_symbol "young_start"}, %eax\n`;
           let lbl_cont = record_frame_label i.live in
           `	jae	{emit_label lbl_cont}\n`;
-          `	call	_caml_call_gc\n`;
+          `	call	{emit_symbol "caml_call_gc"}\n`;
           `	.word	{emit_int n}\n`;
           `{emit_label lbl_cont}:	leal	4(%eax), {emit_reg i.res.(0)}\n`
         end else begin
           begin match n with
-            8  -> `	call	_caml_alloc1\n`
-          | 12 -> `	call	_caml_alloc2\n`
-          | 16 -> `	call	_caml_alloc3\n`
+            8  -> `	call	{emit_symbol "caml_alloc1"}\n`
+          | 12 -> `	call	{emit_symbol "caml_alloc2"}\n`
+          | 16 -> `	call	{emit_symbol "caml_alloc3"}\n`
           | _  -> `	movl	${emit_int n}, %eax\n`;
-                  `	call	_caml_alloc\n`
+                  `	call	{emit_symbol "caml_alloc"}\n`
           end;
           `{record_frame i.live}	leal	4(%eax), {emit_reg i.res.(0)}\n`
         end
@@ -535,7 +544,7 @@ let emit_instr i =
     | Lswitch jumptbl ->
         let lbl = new_label() in
         `	jmp	*{emit_label lbl}(, {emit_reg i.arg.(0)}, 4)\n`;
-        `	.align	2\n`;
+        emit_align 4;
         `{emit_label lbl}:`;
         for i = 0 to Array.length jumptbl - 1 do
           `	.long	{emit_label jumptbl.(i)}\n`
@@ -543,16 +552,16 @@ let emit_instr i =
     | Lsetuptrap lbl ->
         `	call	{emit_label lbl}\n`
     | Lpushtrap ->
-        `	pushl	_caml_exception_pointer\n`;
-        `	movl	%esp, _caml_exception_pointer\n`;
+        `	pushl	{emit_symbol "caml_exception_pointer"}\n`;
+        `	movl	%esp, {emit_symbol "caml_exception_pointer"}\n`;
         stack_offset := !stack_offset + 8
     | Lpoptrap ->
-        `	popl	_caml_exception_pointer\n`;
+        `	popl	{emit_symbol "caml_exception_pointer"}\n`;
         `	addl	$4, %esp\n`;
         stack_offset := !stack_offset - 8
     | Lraise ->
-        `	movl	_caml_exception_pointer, %esp\n`;
-        `	popl    _caml_exception_pointer\n`;
+        `	movl	{emit_symbol "caml_exception_pointer"}, %esp\n`;
+        `	popl    {emit_symbol "caml_exception_pointer"}\n`;
         `	ret\n`
 
 let rec emit_all i =
@@ -574,7 +583,7 @@ let fundecl fundecl =
   float_constants := [];
   range_check_trap := 0;
   `	.text\n`;
-  `	.align	4\n`; (* 16-byte alignment is recommended for the 486 *)
+  emit_align 16; (* 16-byte alignment is recommended for the 486 *)
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
   let n = frame_size() - 4 in
@@ -624,7 +633,7 @@ let emit_item = function
   | Cskip n ->
       if n > 0 then `	.space	{emit_int n}\n`
   | Calign n ->
-      `	.align	{emit_int(Misc.log2 n)}\n`
+      emit_align n
 
 let data l =
   `	.data\n`;
