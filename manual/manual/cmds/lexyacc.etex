@@ -44,6 +44,22 @@ semantic actions compute a value belonging to the type "token" defined
 by the generated parsing module. (See the description of "ocamlyacc"
 below.)
 
+\subsection{Options}
+The following command-line options are recognized by "ocamllex".
+
+\begin{options}
+\item["-o" \var{output-file}]
+Specify the name of the output file produced by "ocamllex".
+Default is \var{lexer}".ml", "ocamllex" being invoked as
+"ocamllex" \var{lexer}".mll".
+
+\item["-ml"]
+Output code that does not use the Caml built-in automata
+interpreter. Instead, the automaton is encoded by Caml functions.
+This option is useful for debugging "ocamllex", using it for
+production lexers is not recommended.
+\end{options}
+
 \section{Syntax of lexer definitions}
 
 The format of lexer definitions is as follows:
