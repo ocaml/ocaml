@@ -19,6 +19,7 @@ val skip_sharp_bang: Lexing.lexbuf -> unit
 
 type error =
   | Illegal_character of char
+  | Illegal_escape of string
   | Unterminated_comment
   | Unterminated_string
   | Unterminated_string_in_comment
