@@ -52,6 +52,7 @@
 \input libunix.tex
 \input libnum.tex
 \input libstr.tex
+\input libthreads.tex
 \input libgraph.tex
 
 \part{Appendix}
