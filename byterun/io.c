@@ -444,6 +444,9 @@ value caml_flush_partial(value vchannel)            /* ML */
 {
   struct channel * channel = Channel(vchannel);
   int res;
+  /* Don't fail if channel is closed, this causes problem with flush on
+     stdout and stderr at exit.  Revise when "flushall" is implemented. */
+  if (channel->fd == -1) return Val_true;
   Lock(channel);
   res = flush_partial(channel);
   Unlock(channel);
@@ -453,6 +456,9 @@ value caml_flush_partial(value vchannel)            /* ML */
 value caml_flush(value vchannel)            /* ML */
 {
   struct channel * channel = Channel(vchannel);
+  /* Don't fail if channel is closed, this causes problem with flush on
+     stdout and stderr at exit.  Revise when "flushall" is implemented. */
+  if (channel->fd == -1) return Val_unit;
   Lock(channel);
   flush(channel);
   Unlock(channel);
