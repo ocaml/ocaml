@@ -187,7 +187,7 @@ let print_value env obj ty =
                 print_string "<abstr>"
             | {type_kind = Type_abstract; type_manifest = Some body} ->
                 print_val prio depth obj
-                          (Ctype.substitute [] decl.type_params ty_list body)
+                          (Ctype.substitute decl.type_params ty_list body)
             | {type_kind = Type_variant constr_list} ->
                 let tag =
                   if Obj.is_block obj
@@ -196,7 +196,7 @@ let print_value env obj ty =
                 let (constr_name, constr_args) =
                   find_constr tag 0 0 constr_list in
                 let ty_args =
-                  List.map (Ctype.substitute [] decl.type_params ty_list)
+                  List.map (Ctype.substitute decl.type_params ty_list)
                       constr_args in
                 begin match ty_args with
                   [] ->
@@ -233,7 +233,7 @@ let print_value env obj ty =
                     print_label env path lbl_name;
                     print_string "="; print_cut();
                     let ty_arg =
-                      Ctype.substitute [] decl.type_params ty_list lbl_arg in
+                      Ctype.substitute decl.type_params ty_list lbl_arg in
                     cautious (print_val 0 (depth - 1) (Obj.field obj pos))
                              ty_arg;
                     close_box();

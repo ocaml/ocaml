@@ -38,19 +38,24 @@ open Types
 
    - Revoir affichage des types.
    - Abreviations avec contraintes.
-   - Revoir [copy].
    - Types recursifs sans limitation.
    - #-type implementes comme de vraies abreviations.
    - Effacer les abreviations memorisees plus tot ?
 
 *)
 
+(**** Errors ****)
+
+exception Unify of (type_expr * type_expr) list
+
 exception Subtype of
         (type_expr * type_expr) list * (type_expr * type_expr) list
 
+(**** Type level management ****)
+
+let generic_level = (-1)
 let current_level = ref 0
 let global_level = ref 1
-let generic_level = (-1)
 
 let init_def level = current_level := level
 let begin_def () = incr current_level
@@ -59,24 +64,35 @@ let end_def () = decr current_level
 let reset_global_level () =
   global_level := !current_level + 1
 
-let newty desc         = { desc = desc; level = !current_level }
-let new_global_ty desc = { desc = desc; level = !global_level }
+(**** Some type creators ****)
+
 let newgenty desc      = { desc = desc; level = generic_level }
+let newgenvar ()     = newgenty Tvar
+
+let newty desc         = { desc = desc; level = !current_level }
 let newvar ()          = { desc = Tvar; level = !current_level }
-let new_global_var ()  = new_global_ty Tvar
-let new_gen_var ()     = newgenty Tvar
 let newobj fields      = newty (Tobject (fields, ref None))
 
-let rec repr = function
+let new_global_ty desc = { desc = desc; level = !global_level }
+let new_global_var ()  = new_global_ty Tvar
+
+let none = newty (Ttuple [])                (* Clearly ill-formed type *)
+
+(**** Representative of a type ****)
+
+let rec repr =
+  function
     {desc = Tlink t'} as t ->
       let r = repr t' in
       if r != t' then t.desc <- Tlink r;
       r
   | t -> t
 
-let none = newty (Ttuple [])                (* Clearly ill-formed type *)
 
-(* --- *)
+                  (**********************************************)
+                  (*  Miscellaneous operations on object types  *)
+                  (**********************************************)
+
 
 (**** Object field manipulation. ****)
 
@@ -127,9 +143,56 @@ let rec opened_object ty =
   | Tvar            -> true
   | _               -> false
 
-(**** Type generalization ****)
+(**** Close an object ****)
 
-(* XXX Probablement pas le bon endroit pour effacer l'abreviation *)
+let close_object ty =
+  let rec close ty =
+    let ty = repr ty in
+    match ty.desc with
+      Tvar              ->
+        ty.desc <- Tlink {desc = Tnil; level = ty.level}
+    | Tfield(_, _, ty') -> close ty'
+    | Tnil              -> ()
+    | _                 -> fatal_error "Ctype.close_object (1)"
+  in
+  match (repr ty).desc with
+    Tobject (ty, _)   -> close ty
+  | Tconstr (_, _, _) -> ()             (* Already closed *)
+  | _                 -> fatal_error "Ctype.close_object (2)"
+
+
+(**** Object name manipulation ****)
+(* XXX Obsolete *)
+
+let rec row_variable ty =
+  let ty = repr ty in
+  match ty.desc with
+    Tfield (_, _, ty) -> row_variable ty
+  | Tvar              -> ty
+  | Tnil              -> raise Not_found
+  | _                 -> fatal_error "Ctype.row_variable"
+
+let set_object_name ty params id =
+  match (repr ty).desc with
+    Tobject (fi, nm) ->
+      begin try
+        nm := Some (Path.Pident id, (row_variable fi)::params)
+      with Not_found ->
+        ()
+      end
+  | Tconstr (_, _, _) ->
+      ()
+  | _ ->
+      fatal_error "Ctype.set_object_name"
+
+let remove_object_name ty =
+  match (repr ty).desc with
+    Tobject (_, nm)   -> nm := None
+  | Tconstr (_, _, _) -> ()
+  | _                 -> fatal_error "Ctype.remove_object_name"
+
+(**** Type level manipulation ****)
+
 let rec generalize ty =
   let ty = repr ty in
   if ty.level > !current_level then begin
@@ -141,198 +204,7 @@ let rec generalize ty =
     iter_type_expr generalize ty
   end
 
-let rec make_nongen ty =
-  let ty = repr ty in
-  if ty.level > !current_level then begin
-    ty.level <- !current_level;
-    iter_type_expr make_nongen ty
-  end
-
-(**** Remove abbreviations from generalized types ****)
-
-(* XXX Plutot ne jamais laisser trainer d'abbrev ? *)
-let visited = ref ([] : type_expr list)
-
-let remove_abbrev ty =
-  let rec remove ty =
-    let ty = repr ty in
-    if ty.level = generic_level & not (List.memq ty !visited) then begin
-      visited := ty :: !visited;
-      match ty.desc with
-        Tvar               -> ()
-      | Tarrow(t1, t2)     -> remove t1; remove t2
-      | Ttuple tl          -> List.iter remove tl
-      | Tconstr(_, tl, ab) -> ab := []; List.iter remove tl
-      | Tobject(f, {contents = Some (_, p)})
-                           -> remove f; List.iter remove p
-      | Tobject(f, _)      -> remove f
-      | Tfield(_, t1, t2)  -> remove t1; remove t2
-      | Tnil               -> ()
-      | Tlink _            -> fatal_error "Ctype.remove_abbrev"
-      end
-  in
-    visited := []; remove ty; visited := []
-
-
-                              (*******************)
-                              (*  Instantiation  *)
-                              (*******************)
-
-(* XXX HUGE simplification ? *) 
-
-type 'a visited = Zero | One | Many of 'a
-
-let inst_subst = ref ([] : (type_expr * type_expr) list)
-
-let rec copy_rec abbrev visited ty =
-  let ty = repr ty in
-  if ty.level <> generic_level then ty else
-  try
-    match List.assq ty visited with
-      {contents = Zero} as v ->
-      	let t = newvar () in
-	v := Many t;
-	let ty' = copy_rec_2 abbrev visited ty v in
-	t.desc <- ty'.desc;
-	t
-    | {contents = One} as v ->
-        let t = newvar () in
-        v := Many t;
-        t
-    | {contents = Many t} ->
-        t
-  with Not_found ->
-    let v = ref One in
-    let ty' = copy_rec_2 abbrev ((ty, v)::visited) ty v in
-    match v with
-      {contents = Many t} ->
-      	t.desc <- ty'.desc;
-	t
-    | _ ->
-      	ty'
-
-and copy_rec_2 abbrev visited ty v =
-  match ty.desc with
-    Tvar ->
-      begin try List.assq ty !inst_subst with Not_found ->
-        let ty' = newvar () in
-        inst_subst := (ty, ty') :: !inst_subst;
-        ty'
-      end
-  | Tarrow (t1, t2) ->
-      newty (Tarrow (copy_rec abbrev visited t1,
-                     copy_rec abbrev visited t2))
-  | Ttuple tl ->
-      newty (Ttuple (List.map (copy_rec abbrev visited) tl))
-  | Tconstr (p, [], _) ->
-      newty (Tconstr (p, [], ref abbrev))
-  | Tconstr (p, tl, _) ->
-      newty (Tconstr (p, List.map (copy_rec abbrev visited) tl,
-                      ref abbrev))
-  | Tobject (t1, {contents = name}) ->
-      let ty' () =
-        let name' =
-          match name with
-            None ->
-              None
-          | Some (p, tl) ->
-              Some (p, List.map (copy_rec abbrev visited) tl)
-        in
-          newty (Tobject (copy_rec abbrev visited t1, ref name'))
-      in
-      if opened_object ty then
-        try
-          List.assq ty !inst_subst
-        with Not_found ->
-          if v = ref One then begin
-            let t = newvar () in
-    	    v := Many t;
-            inst_subst := (ty, t):: !inst_subst
-          end;
-          ty' ()
-      else
-        ty' ()
-  | Tfield (label, t1, t2) ->
-      newty (Tfield (label, copy_rec abbrev visited t1,
-                            copy_rec abbrev visited t2))
-  | Tnil ->
-      newty Tnil
-  | Tlink _ ->
-      fatal_error "Ctype.copy_rec"
-
-let copy ty = copy_rec [] [] ty
-let subst abbrev ty = copy_rec abbrev [] ty
-let copy_parameterized params ty = copy_rec [] params ty
-
-let instance sch =
-  inst_subst := [];
-  let ty = copy sch in
-  inst_subst := [];
-  ty
-
-let instance_constructor cstr =
-  inst_subst := [];
-  let ty_res = copy cstr.cstr_res in
-  let ty_args = List.map copy cstr.cstr_args in
-  inst_subst := [];
-  (ty_args, ty_res)
-
-let instance_label lbl =
-  inst_subst := [];
-  let ty_res = copy lbl.lbl_res in
-  let ty_arg = copy lbl.lbl_arg in
-  inst_subst := [];
-  (ty_arg, ty_res)
-
-let substitute abbrev params args body =
-  inst_subst := List.combine params args;
-  let ty = subst abbrev body in
-  inst_subst := [];
-  ty
-
-let instance_parameterized_type sch_args sch =
-  inst_subst := [];
-  let params = List.map (function p -> (repr p, ref Zero)) sch_args in
-  let ty_args = List.map (copy_parameterized params) sch_args in
-  let ty = copy_parameterized params sch in
-  inst_subst := [];
-  (ty_args, ty)
-
-let instance_parameterized_type_2 sch_args sch_lst sch =
-  inst_subst := [];
-  let params = List.map (function p -> (repr p, ref Zero)) sch_args in
-  let ty_args = List.map (copy_parameterized params) sch_args in
-  let ty_lst = List.map (copy_parameterized params) sch_lst in
-  let ty = copy_parameterized params sch in
-  inst_subst := [];
-  (ty_args, ty_lst, ty)
-
-let instance_class cl =
-  inst_subst := [];
-  let params0 = List.map (function p -> (repr p, ref Zero)) cl.cty_params in
-  let params = List.map (copy_parameterized params0) cl.cty_params in
-  let args = List.map (copy_parameterized params0) cl.cty_args in
-  let vars =
-    Vars.fold
-      (fun lab (mut, ty) ->
-         Vars.add lab (mut, copy_parameterized params0 ty))
-      cl.cty_vars
-      Vars.empty in
-  let self = copy_parameterized params0 cl.cty_self in
-  inst_subst := [];
-  (params, args, vars, self)
-
-                              (*****************)
-                              (*  Unification  *)
-                              (*****************)
-
-
-(**** Unification errors ****)
-
-exception Unify of (type_expr * type_expr) list
-
-(**** Lower the levels of a type ****)
-
+(* Lower the levels of a type *)
 let rec update_level level ty =
   let ty = repr ty in
   if ty.level > level then begin
@@ -344,7 +216,149 @@ let rec update_level level ty =
     iter_type_expr (update_level level) ty
   end
 
-(**** Abbreviation expansion ****)
+let make_nongen ty = update_level !current_level ty
+
+
+                              (*******************)
+                              (*  Instantiation  *)
+                              (*******************)
+
+(*
+   Generic nodes are duplicated, while non-generic nodes are left
+   as-is. The instance cannot be generic.
+   During instantiation, the description of a generic node is first
+   replaced by a link to a stub ([Tlink (newvar ())]). Once the copy
+   is made, it replaces the stub.
+   After instantiation, the description of generic node, which was
+   stored in [saved_desc], must be put back, using [cleanup_types].
+   [bind_param t t'] can be used to replace a node [t] by a node [t'].
+*)
+
+let saved_desc = ref []
+  (* Saved association of generic node with their description. *)
+let abbreviations = ref []
+  (* Abbreviation memorized. *)
+
+let rec copy =
+  function  (* [repr] cannot be used here. *)
+    {desc = Tlink ty'} -> copy ty'
+  | ty ->
+      if ty.level <> generic_level then ty else
+      let desc = ty.desc in
+      saved_desc := (ty, desc)::!saved_desc;
+      let t = newvar () in              (* Stub *)
+      ty.desc <- Tlink t;
+      t.desc <-
+        begin match desc with
+          Tvar ->
+            Tvar
+        | Tarrow (t1, t2) ->
+            Tarrow (copy t1, copy t2)
+        | Ttuple tl ->
+            Ttuple (List.map copy tl)
+        | Tconstr (p, [], _) ->
+            Tconstr (p, [], ref !abbreviations)
+        | Tconstr (p, tl, _) ->
+            Tconstr (p, List.map copy tl, ref !abbreviations)
+        | Tobject (t1, {contents = name}) ->
+            let name' =
+              match name with
+                None ->
+                  None
+              | Some (p, tl) ->
+                  Some (p, List.map copy tl)
+            in
+            Tobject (copy t1, ref name')
+        | Tfield (label, t1, t2) ->
+            Tfield (label, copy t1, copy t2)
+        | Tnil ->
+            Tnil
+        | Tlink t ->
+            Tlink (copy t)
+        end;
+      t
+
+let bind_param ty ty' =
+  saved_desc := (ty, ty.desc)::!saved_desc;
+  ty.desc <- Tlink ty'
+
+let cleanup_types () =
+  List.iter (fun (ty, desc) -> ty.desc <- desc) !saved_desc;
+  saved_desc := []
+
+(**** Variants of instantiations ****)
+
+let instance sch =
+  let ty = copy sch in
+  cleanup_types ();
+  ty
+
+let instance_constructor cstr =
+  let ty_res = copy cstr.cstr_res in
+  let ty_args = List.map copy cstr.cstr_args in
+  cleanup_types ();
+  (ty_args, ty_res)
+
+let instance_label lbl =
+  let ty_res = copy lbl.lbl_res in
+  let ty_arg = copy lbl.lbl_arg in
+  cleanup_types ();
+  (ty_arg, ty_res)
+
+let instance_parameterized_type sch_args sch =
+  let ty_args = List.map copy sch_args in
+  let ty = copy sch in
+  cleanup_types ();
+  (ty_args, ty)
+
+let instance_parameterized_type_2 sch_args sch_lst sch =
+  let ty_args = List.map copy sch_args in
+  let ty_lst = List.map copy sch_lst in
+  let ty = copy sch in
+  cleanup_types ();
+  (ty_args, ty_lst, ty)
+
+let instance_class cl =
+  let params = List.map copy cl.cty_params in
+  let args = List.map copy cl.cty_args in
+  let vars =
+    Vars.fold
+      (fun lab (mut, ty) ->
+         Vars.add lab (mut, copy ty))
+      cl.cty_vars
+      Vars.empty in
+  let self = copy cl.cty_self in
+  cleanup_types ();
+  (params, args, vars, self)
+
+(**** Instantiation with duplication ****)
+
+let rec subst abbrev params args body =
+  if !current_level <> generic_level then begin
+    List.iter2 bind_param params args;
+    abbreviations := abbrev;
+    let ty = copy body in
+    abbreviations := [];
+    cleanup_types ();
+    ty
+  end else begin
+    (* One cannot expand directly to a generic type. *)
+    incr current_level;
+    let vars = List.map (fun _ -> newvar ()) args in
+    let ty = subst abbrev params vars body in
+    decr current_level;
+    generalize ty;
+    List.iter2 (fun v a -> v.desc <- Tlink a) vars args;
+    ty
+  end
+
+let substitute params args body = subst [] params args body
+
+
+                              (****************************)
+                              (*  Abbreviation expansion  *)
+                              (****************************)
+
 
 exception Cannot_expand
 
@@ -375,7 +389,7 @@ let expand_abbrev env path args abbrev level =
           abbrev := (path, v)::!abbrev;
           let old_level = !current_level in
           current_level := level;
-          let ty = substitute !abbrev decl.type_params args body in
+          let ty = subst !abbrev decl.type_params args body in
           current_level := old_level;
           v.desc <- Tlink ty;
           ty
@@ -421,6 +435,35 @@ let generic_abbrev env path =
     Not_found ->
       false
 
+
+(**** Remove abbreviations from generalized types ****)
+
+let visited = ref ([] : type_expr list)
+
+(* XXX Est-ce utile ? Desactive pour l'instant, et ca a l'air de
+   toujours marcher... *)
+let remove_abbrev ty =
+  let rec remove ty =
+    let ty = repr ty in
+    if ty.level = generic_level & not (List.memq ty !visited) then begin
+      visited := ty :: !visited;
+      begin match ty.desc with
+        Tconstr(_, tl, ab) -> ab := []
+      | _ -> ()
+      end;
+      iter_type_expr remove ty
+    end
+  in
+    remove ty;
+    visited := []
+
+
+                              (*****************)
+                              (*  Unification  *)
+                              (*****************)
+
+
+
 (**** Occur check ****)
 
 (* XXX A supprimer *)
@@ -455,6 +498,7 @@ let occur env ty0 ty =
     occur_rec ty
 
 (**** Transform error trace ****)
+(* XXX Move it somewhere else ? *)
 
 let expand_trace env trace =
   List.fold_right
@@ -699,7 +743,13 @@ let rec filter_method env name ty =
   | _ ->
       raise (Unify [])
 
-(**** Matching between type schemes ****)
+
+                        (***********************************)
+                        (*  Matching between type schemes  *)
+                        (***********************************)
+
+(* XXX A voir... *)
+
 
 (* XXX This is not really an occur check !!! *)
 let moregen_occur env ty0 ty =
@@ -822,15 +872,21 @@ let moregeneral env sch1 sch2 =
   begin_def();
   try
     moregen env (instance sch1) sch2;
-    remove_abbrev sch2;
+(*     remove_abbrev sch2; *)
     end_def();
     true
   with Unify _ ->
-    remove_abbrev sch2;
+(*     remove_abbrev sch2; *)
     end_def();
     false
 
-(**** Equivalence between parameterized types ****)
+
+                 (*********************************************)
+                 (*  Equivalence between parameterized types  *)
+                 (*********************************************)
+
+
+(* XXX A voir... *)
 
 let equal env params1 ty1 params2 ty2 =
   let subst = ref (List.combine params1 params2) in
@@ -908,18 +964,20 @@ let equal env params1 ty1 params2 ty2 =
       fields1
   in
     let eq = eqtype ty1 ty2 in
-    remove_abbrev ty1; remove_abbrev ty2;
+(*     remove_abbrev ty1; remove_abbrev ty2; *)
     eq
+
 
                               (***************)
                               (*  Subtyping  *)
                               (***************)
 
 
-(**** Build a subtype for a given type. ****)
+(**** Build a subtype of a given type. ****)
 
 let subtypes = ref []
 
+(* XXX Types récursifs ? *)
 let rec build_subtype env t =
   let t = repr t in
   match t.desc with
@@ -975,7 +1033,7 @@ let enlarge_type env ty =
   subtypes := [];
   ty'
 
-(**** Check that a type is a subtype of another type. ****)
+(**** Check whether a type is a subtype of another type. ****)
 
 let subtypes = ref [];;
 
@@ -1058,7 +1116,6 @@ and subtype_fields env trace ty1 ty2 =
         cstrs @ (subtype_rec env ((t1, t2)::trace) t1 t2))
      [] pairs)
 
-(* XXX Supporte les types recursifs sans limitation *)
 let subtype env ty1 ty2 =
   subtypes := [];
   (* Build constraint set. *)
@@ -1073,15 +1130,20 @@ let subtype env ty1 ty2 =
       cstrs;
     subtypes := []
 
-(**** Remove dependencies ****)
+
+                              (*************************)
+                              (*  Remove dependencies  *)
+                              (*************************)
+
 
 let inst_subst = ref ([] : (type_expr * type_expr) list)
 
+(* XXX A voir... *)
 let rec nondep_type_rec env id ty =
   let ty = repr ty in
   if ty.desc = Tvar then ty else
   try List.assq ty !inst_subst with Not_found ->
-    let ty' = new_gen_var () in
+    let ty' = newgenvar () in
     inst_subst := (ty, ty') :: !inst_subst;
     ty'.desc <-
       begin match ty.desc with
@@ -1142,10 +1204,15 @@ let nondep_class_type env id decl =
   inst_subst := [];
   decl
 
-(**** Type pruning ****)
+
+                              (******************)
+                              (*  Type pruning  *)
+                              (******************)
+
 
 let inst_subst = ref ([] : (type_expr * type_expr) list)
 
+(* XXX A voir... *)
 let rec prune_rec top cstr ty =
   let ty = repr ty in
   try List.assq ty (if top then [] else cstr) with Not_found ->
@@ -1231,52 +1298,11 @@ let prune_class_type cl =
   inst_subst := [];
   (List.rev cstr, args, vars, self)
 
-(* --- *)
 
-let rec row_variable ty =
-  let ty = repr ty in
-  match ty.desc with
-    Tfield (_, _, ty) -> row_variable ty
-  | Tvar              -> ty
-  | Tnil              -> raise Not_found
-  | _                 -> fatal_error "Ctype.row_variable"
+                              (******************************)
+                              (*  Abbreviation correctness  *)
+                              (******************************)
 
-let close_object ty =
-  let rec close ty =
-    let ty = repr ty in
-    match ty.desc with
-      Tvar              ->
-        ty.desc <- Tlink {desc = Tnil; level = ty.level}
-    | Tfield(_, _, ty') -> close ty'
-    | Tnil              -> ()
-    | _                 -> fatal_error "Ctype.close_object (1)"
-  in
-  match (repr ty).desc with
-    Tobject (ty, _)   -> close ty
-  | Tconstr (_, _, _) -> ()             (* Already closed *)
-  | _                 -> fatal_error "Ctype.close_object (2)"
-
-
-let set_object_name ty params id =
-  match (repr ty).desc with
-    Tobject (fi, nm) ->
-      begin try
-        nm := Some (Path.Pident id, (row_variable fi)::params)
-      with Not_found ->
-        ()
-      end
-  | Tconstr (_, _, _) ->
-      ()
-  | _ ->
-      fatal_error "Ctype.set_object_name"
-
-let remove_object_name ty =
-  match (repr ty).desc with
-    Tobject (_, nm)   -> nm := None
-  | Tconstr (_, _, _) -> ()
-  | _                 -> fatal_error "Ctype.remove_object_name"
-
-(**** Abbreviation correctness ****)
 
 exception Nonlinear_abbrev
 exception Recursive_abbrev
@@ -1373,9 +1399,11 @@ let correct_abbrev env ident params ty =
     linear_abbrev env path params [] ty;
     visited_abbrevs := []
   end;
-  remove_abbrev ty
-
-(**** Miscellaneous ****)
+(*   remove_abbrev ty *)
+()
+                              (*******************)
+                              (*  Miscellaneous  *)
+                              (*******************)
 
 let unroll_abbrev id tl ty =
   let ty = repr ty in

@@ -97,8 +97,7 @@ val nondep_type: Env.t -> Ident.t -> type_expr -> type_expr
 val nondep_class_type: Env.t -> Ident.t -> class_type -> class_type
         (* Same for class types. *)
 val substitute:
-        (Path.t * type_expr) list -> type_expr list ->
-        type_expr list -> type_expr -> type_expr
+        type_expr list -> type_expr list -> type_expr -> type_expr
         (* [substitute [v1...vN] [t1...tN] t]
            returns a copy of [t] where the [vi] are replaced
            by the [ti]. *)
