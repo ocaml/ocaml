@@ -39,7 +39,7 @@ MSG msg;
 HANDLE EventHandle, EventProcessedHandle;
 static char *szOcamlWindowClass = "OcamlWindowClass";
 static BOOL gr_initialized = 0;
-CAMLprim value gr_clear_graph(void);
+CAMLprim value caml_gr_clear_graph(void);
 HANDLE hInst;
 HFONT CreationFont(char *name)
 {
@@ -186,7 +186,7 @@ static value gr_reset(void)
         grwindow.CurrentBrush = SelectObject(grwindow.gc,GetStockObject(WHITE_BRUSH));
         SelectObject(grwindow.gc,grwindow.CurrentBrush);
         SelectObject(grwindow.gcBitmap,grwindow.CurrentBrush);
-	gr_set_color(Val_long(0));
+	caml_gr_set_color(Val_long(0));
         SelectObject(grwindow.gc,grwindow.CurrentFont);
         SelectObject(grwindow.gcBitmap,grwindow.CurrentFont);
         grdisplay_mode = grremember_mode = 1;
@@ -291,7 +291,7 @@ static DWORD WINAPI gr_open_graph_internal(value arg)
   return 0;
 }
 
-CAMLprim value gr_open_graph(value arg)
+CAMLprim value caml_gr_open_graph(value arg)
 {
   long tid;
   if (gr_initialized) return Val_unit;
@@ -307,7 +307,7 @@ CAMLprim value gr_open_graph(value arg)
   return Val_unit;
 }
 
-CAMLprim value gr_close_graph(void)
+CAMLprim value caml_gr_close_graph(void)
 {
         if (gr_initialized) {
                 DeleteDC(grwindow.tempDC);
@@ -319,7 +319,7 @@ CAMLprim value gr_close_graph(void)
         return Val_unit;
 }
 
-CAMLprim value gr_clear_graph(void)
+CAMLprim value caml_gr_clear_graph(void)
 {
         gr_check_open();
         if(grremember_mode) {
@@ -333,19 +333,19 @@ CAMLprim value gr_clear_graph(void)
         return Val_unit;
 }
 
-CAMLprim value gr_size_x(void)
+CAMLprim value caml_gr_size_x(void)
 {
         gr_check_open();
         return Val_int(grwindow.width);
 }
 
-CAMLprim value gr_size_y(void)
+CAMLprim value caml_gr_size_y(void)
 {
         gr_check_open();
         return Val_int(grwindow.height);
 }
 
-CAMLprim value gr_synchronize(void)
+CAMLprim value caml_gr_synchronize(void)
 {
         gr_check_open();
         BitBlt(grwindow.gc,0,0,grwindow.width,grwindow.height,
@@ -353,24 +353,24 @@ CAMLprim value gr_synchronize(void)
         return Val_unit ;
 }
 
-CAMLprim value gr_display_mode(value flag)
+CAMLprim value caml_gr_display_mode(value flag)
 {
         grdisplay_mode =  (Int_val(flag)) ? 1 : 0;
         return Val_unit ;
 }
 
-CAMLprim value gr_remember_mode(value flag)
+CAMLprim value caml_gr_remember_mode(value flag)
 {
         grremember_mode = (Int_val(flag)) ? 1 : 0;
         return Val_unit ;
 }
 
-CAMLprim value gr_sigio_signal(value unit)
+CAMLprim value caml_gr_sigio_signal(value unit)
 {
         return Val_unit;
 }
 
-CAMLprim value gr_sigio_handler(void)
+CAMLprim value caml_gr_sigio_handler(void)
 {
         return Val_unit;
 }

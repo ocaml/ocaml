@@ -52,7 +52,7 @@ extern int bits_per_pixel;
 
 void gr_fail(char *fmt, char *arg);
 void gr_check_open(void);
-CAMLprim value gr_set_color(value vcolor);
+CAMLprim value caml_gr_set_color(value vcolor);
 
 // Windows specific definitions
 extern RECT WindowRect;

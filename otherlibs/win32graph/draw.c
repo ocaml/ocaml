@@ -32,7 +32,7 @@ static void GetCurrentPosition(HDC hDC,POINT *pt)
 static value gr_draw_or_fill_arc(value vx, value vy, value vrx, value vry,
 				 value vstart, value vend, BOOL fill);
 
-CAMLprim value gr_plot(value vx, value vy)
+CAMLprim value caml_gr_plot(value vx, value vy)
 {
         int x = Int_val(vx);
         int y = Int_val(vy);
@@ -45,7 +45,7 @@ CAMLprim value gr_plot(value vx, value vy)
         return Val_unit;
 }
 
-CAMLprim value gr_moveto(value vx, value vy)
+CAMLprim value caml_gr_moveto(value vx, value vy)
 {
         grwindow.grx = Int_val(vx);
         grwindow.gry = Int_val(vy);
@@ -56,17 +56,17 @@ CAMLprim value gr_moveto(value vx, value vy)
         return Val_unit;
 }
 
-CAMLprim value gr_current_x(void)
+CAMLprim value caml_gr_current_x(void)
 {
         return Val_int(grwindow.grx);
 }
 
-CAMLprim value gr_current_y(void)
+CAMLprim value caml_gr_current_y(void)
 {
         return Val_int(grwindow.gry);
 }
 
-CAMLprim value gr_lineto(value vx, value vy)
+CAMLprim value caml_gr_lineto(value vx, value vy)
 {
         int x = Int_val(vx);
         int y = Int_val(vy);
@@ -82,7 +82,7 @@ CAMLprim value gr_lineto(value vx, value vy)
         return Val_unit;
 }
 
-CAMLprim value gr_draw_rect(value vx, value vy, value vw, value vh)
+CAMLprim value caml_gr_draw_rect(value vx, value vy, value vw, value vh)
 {
 #if 0
         int x = Int_val(vx);
@@ -126,7 +126,7 @@ CAMLprim value gr_draw_rect(value vx, value vy, value vw, value vh)
 #endif
 }
 
-CAMLprim value gr_draw_text(value text,value x)
+CAMLprim value caml_gr_draw_text(value text,value x)
 {
         POINT pt;
         int oldmode = SetBkMode(grwindow.gc,TRANSPARENT);
@@ -147,7 +147,7 @@ CAMLprim value gr_draw_text(value text,value x)
         return Val_unit;
 }
 
-CAMLprim value gr_fill_rect(value vx, value vy, value vw, value vh)
+CAMLprim value caml_gr_fill_rect(value vx, value vy, value vw, value vh)
 {
         int x = Int_val(vx);
         int y = Int_val(vy);
@@ -167,13 +167,13 @@ CAMLprim value gr_fill_rect(value vx, value vy, value vw, value vh)
         return Val_unit;
 }
 
-CAMLprim value gr_sound(value freq, value vdur)
+CAMLprim value caml_gr_sound(value freq, value vdur)
 {
         Beep(freq,vdur);
         return Val_unit;
 }
 
-CAMLprim value gr_point_color(value vx, value vy)
+CAMLprim value caml_gr_point_color(value vx, value vy)
 {
         int x = Int_val(vx);
         int y = Int_val(vy);
@@ -188,7 +188,7 @@ CAMLprim value gr_point_color(value vx, value vy)
         return Val_long((r<<16) + (g<<8) + b);
 }
 
-CAMLprim value gr_circle(value x,value y,value radius)
+CAMLprim value caml_gr_circle(value x,value y,value radius)
 {
         int left,top,right,bottom;
 
@@ -201,24 +201,24 @@ CAMLprim value gr_circle(value x,value y,value radius)
         return Val_unit;
 }
 
-CAMLprim value gr_set_window_title(value text)
+CAMLprim value caml_gr_set_window_title(value text)
 {
         SetWindowText(grwindow.hwnd,(char *)text);
         return Val_unit;
 }
 
-CAMLprim value gr_draw_arc(value *argv, int argc)
+CAMLprim value caml_gr_draw_arc(value *argv, int argc)
 {
   return gr_draw_or_fill_arc(argv[0], argv[1], argv[2], argv[3],
 			     argv[4], argv[5], FALSE);
 }
 
-CAMLprim value gr_draw_arc_nat(vx, vy, vrx, vry, vstart, vend)
+CAMLprim value caml_gr_draw_arc_nat(vx, vy, vrx, vry, vstart, vend)
 {
   return gr_draw_or_fill_arc(vx, vy, vrx, vry, vstart, vend, FALSE);
 }
 
-CAMLprim value gr_set_line_width(value vwidth)
+CAMLprim value caml_gr_set_line_width(value vwidth)
 {
         int width = Int_val(vwidth);
         HPEN oldPen,newPen;
@@ -233,7 +233,7 @@ CAMLprim value gr_set_line_width(value vwidth)
         return Val_unit;
 }
 
-CAMLprim value gr_set_color(value vcolor)
+CAMLprim value caml_gr_set_color(value vcolor)
 {
         HBRUSH oldBrush, newBrush;
         LOGBRUSH lb;
@@ -322,7 +322,7 @@ static value gr_draw_or_fill_arc(value vx, value vy, value vrx, value vry,
         return Val_unit;
 }
 
-CAMLprim value gr_show_bitmap(value filename,int x,int y)
+CAMLprim value caml_gr_show_bitmap(value filename,int x,int y)
 {
         AfficheBitmap(filename,grwindow.gcBitmap,x,Wcvt(y));
         AfficheBitmap(filename,grwindow.gc,x,Wcvt(y));
@@ -331,7 +331,7 @@ CAMLprim value gr_show_bitmap(value filename,int x,int y)
 
 
 
-CAMLprim value gr_get_mousex(void)
+CAMLprim value caml_gr_get_mousex(void)
 {
         POINT pt;
         GetCursorPos(&pt);
@@ -339,7 +339,7 @@ CAMLprim value gr_get_mousex(void)
         return pt.x;
 }
 
-CAMLprim value gr_get_mousey(void)
+CAMLprim value caml_gr_get_mousey(void)
 {
         POINT pt;
         GetCursorPos(&pt);
@@ -360,19 +360,19 @@ static void gr_font(char *fontname)
         }
 }
 
-CAMLprim value gr_set_font(value fontname)
+CAMLprim value caml_gr_set_font(value fontname)
 {
         gr_check_open();
         gr_font(String_val(fontname));
         return Val_unit;
 }
 
-CAMLprim value gr_set_text_size (value sz)
+CAMLprim value caml_gr_set_text_size (value sz)
 {
         return Val_unit;
 }
 
-CAMLprim value gr_draw_char(value chr)
+CAMLprim value caml_gr_draw_char(value chr)
 {
         char str[1];
         gr_check_open();
@@ -381,14 +381,14 @@ CAMLprim value gr_draw_char(value chr)
         return Val_unit;
 }
 
-CAMLprim value gr_draw_string(value str)
+CAMLprim value caml_gr_draw_string(value str)
 {
         gr_check_open();
         gr_draw_text(str, string_length(str));
         return Val_unit;
 }
 
-CAMLprim value gr_text_size(value str)
+CAMLprim value caml_gr_text_size(value str)
 {
         SIZE extent;
         value res;
@@ -429,7 +429,7 @@ void gr_enqueue_char(unsigned char c)
 #define Poll                    16
 MSG * InspectMessages = NULL;
 
-CAMLprim value gr_wait_event(value eventlist)
+CAMLprim value caml_gr_wait_event(value eventlist)
 {
         value res;
         int mask;
@@ -524,7 +524,7 @@ CAMLprim value gr_wait_event(value eventlist)
         return res;
 }
 
-CAMLprim value gr_fill_poly(value vect)
+CAMLprim value caml_gr_fill_poly(value vect)
 {
         int n_points, i;
         POINT   *p,*poly;
@@ -553,13 +553,13 @@ CAMLprim value gr_fill_poly(value vect)
         return Val_unit;
 }
 
-CAMLprim value gr_fill_arc(value *argv, int argc)
+CAMLprim value caml_gr_fill_arc(value *argv, int argc)
 {
   return gr_draw_or_fill_arc(argv[0], argv[1], argv[2], argv[3],
 			     argv[4], argv[5], TRUE);
 }
 
-CAMLprim value gr_fill_arc_nat(vx, vy, vrx, vry, vstart, vend)
+CAMLprim value caml_gr_fill_arc_nat(vx, vy, vrx, vry, vstart, vend)
 {
   return gr_draw_or_fill_arc(vx, vy, vrx, vry, vstart, vend, TRUE);
 }
@@ -593,7 +593,7 @@ static struct custom_operations image_ops = {
         custom_deserialize_default
 };
 
-CAMLprim value gr_create_image(value vw, value vh)
+CAMLprim value caml_gr_create_image(value vw, value vh)
 {
         HBITMAP cbm;
         value res;
@@ -615,7 +615,7 @@ CAMLprim value gr_create_image(value vw, value vh)
         return res;
 }
 
-CAMLprim value gr_blit_image (value i, value x, value y)
+CAMLprim value caml_gr_blit_image (value i, value x, value y)
 {
         HBITMAP oldBmp = SelectObject(grwindow.tempDC,Data(i));
         int xsrc = Int_val(x);
@@ -627,7 +627,7 @@ CAMLprim value gr_blit_image (value i, value x, value y)
 }
 
 
-CAMLprim value gr_draw_image(value i, value x, value y)
+CAMLprim value caml_gr_draw_image(value i, value x, value y)
 {
         HBITMAP oldBmp;
 
@@ -671,7 +671,7 @@ CAMLprim value gr_draw_image(value i, value x, value y)
         return Val_unit;
 }
 
-CAMLprim value gr_make_image(value matrix)
+CAMLprim value caml_gr_make_image(value matrix)
 {
         int width, height,has_transp,i,j;
         value img;
@@ -688,7 +688,7 @@ CAMLprim value gr_make_image(value matrix)
                 }
         }
         Begin_roots1(matrix)
-                img = gr_create_image(Val_int(width), Val_int(height));
+                img = caml_gr_create_image(Val_int(width), Val_int(height));
         End_roots();
         has_transp = 0;
         oldBmp = SelectObject(grwindow.tempDC,Data(img));
@@ -742,7 +742,7 @@ static value alloc_int_vect(mlsize_t size)
         return res;
 }
 
-CAMLprim value gr_dump_image (value img)
+CAMLprim value caml_gr_dump_image (value img)
 {
         int height = Height(img);
         int width = Width(img);
