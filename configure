@@ -82,16 +82,41 @@ if test -z "$cc"; then
   fi
 fi
 
+# Configure the bytecode compiler
+
+bytecc="$cc"
+bytecccompopts=""
+bytecclinkopts=""
+
+case "$bytecc,$host" in
+  gcc,*-*-nextstep*)
+    # GNU C extensions disabled, but __GNUC__ still defined!
+    bytecccompopts="-fno-defer-pop -Wall -U__GNUC__ -posix"
+    bytecclinkopts="-posix";;
+  gcc,alpha-*-osf*)
+    bytecccompopts="-fno-defer-pop -Wall"
+    # -taso puts code in lower 4GB
+    bytecclinkopts="-Xlinker -taso";;
+  gcc*)
+    bytecccompopts="-fno-defer-pop -Wall";;
+  cc,mips-*-irix*)
+    # Add -32 flag to ensure compatibility with native-code compiler
+    bytecccompopts="-32"
+    # Turn off warning "unused library"
+    bytecclinkopts="-32 -Wl,-woff,84";;
+  cc*,mips-*-irix*)
+    # Turn off warning "unused library"
+    bytecclinkopts="-Wl,-woff,84";;
+esac
+
+echo "BYTECC=$bytecc" >> Makefile
+echo "BYTECCCOMPOPTS=$bytecccompopts" >> Makefile
+echo "BYTECCLINKOPTS=$bytecclinkopts" >> Makefile
+
+# Configure compiler to use in further tests
+
+cc="$bytecc $bytecclinkopts"
 export cc cclibs
-
-# Is cc/gcc the GNU C compiler?
-
-if sh runtest gcctest.c; then
-  echo "We're using the GNU C compiler"
-  gcc=yes
-else
-  gcc=no
-fi
 
 # Check the sizes of data types
 
@@ -151,32 +176,6 @@ case $? in
      echo "#define ARCH_ALIGN_DOUBLE" >> m.h;;
 esac
 
-# Configure the bytecode compiler
-
-bytecc="$cc"
-bytecccompopts=""
-bytecclinkopts=""
-
-case "$bytecc,$host" in
-  gcc,*-*-nextstep*)
-    bytecccompopts="-fno-defer-pop -Wall -U__GNUC__ -posix"
-    bytecclinkopts="-posix";;
-  gcc,alpha-*-osf*)
-    bytecccompopts="-fno-defer-pop -Wall"
-    bytecclinkopts="-Xlinker -taso";;
-  gcc*)
-    bytecccompopts="-fno-defer-pop -Wall";;
-  cc,mips-*-irix*)
-    bytecccompopts="-32"
-    bytecclinkopts="-Wl,-woff,84";;
-  cc*,mips-*-irix*)
-    bytecclinkopts="-Wl,-woff,84";;
-esac
-
-echo "BYTECC=$bytecc" >> Makefile
-echo "BYTECCCOMPOPTS=$bytecccompopts" >> Makefile
-echo "BYTECCLINKOPTS=$bytecclinkopts" >> Makefile
-
 # Configure the native-code compiler
 
 arch=none
@@ -217,7 +216,7 @@ case "$arch,$nativecc,$system" in
   mips,cc,irix)   nativecccompopts=-32
                   nativecclinkopts="-32 -Wl,-woff,84";;
   mips,cc,ultrix) nativecccompopts=-std;;
-  *,*,nextstep)   nativecccompopts="-Wall -posix"
+  *,*,nextstep)   nativecccompopts="-Wall -U__GNUC__ -posix"
                   nativecclinkopts="-posix";;
   *,gcc,*)        nativecccompopts=-Wall;;
 esac
