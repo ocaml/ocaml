@@ -17,7 +17,7 @@
 #include <errno.h>
 #include <string.h>
 #include <pthread.h>
-#ifdef __sun__
+#ifdef __sun
 #define _POSIX_PTHREAD_SEMANTICS
 #endif
 #include <signal.h>
