@@ -2,15 +2,15 @@
 
 (* recursive types *)
 class c = object (self) method m = 1 method s = self end
-module type S = sig type t as #c end;;
+module type S = sig type t = private #c end;;
 
 module M : S = struct type t = c end
 module type S' = S with type t = c;;
 
 class d = object inherit c method n = 2 end
-module type S2 = S with type t as #d;;
+module type S2 = S with type t = private #d;;
 module M2 : S = struct type t = d end;;
-module M3 : S = struct type t as #d end;;
+module M3 : S = struct type t = private #d end;;
 
 module T1 = struct
   type ('a,'b) a = [`A of 'a | `B of 'b]
@@ -22,8 +22,8 @@ module type T2 = sig
   val evalb : b -> int
 end
 module type T3 = sig
-  type a0 as [> (a0,b0) T1.a]
-  and b0 as [> (a0,b0) T1.b]
+  type a0 = private [> (a0,b0) T1.a]
+  and b0 = private [> (a0,b0) T1.b]
 end
 module type T4 = sig
   include T3
@@ -54,14 +54,21 @@ end
 module M5 = F(M4)
 
 module M6 : sig
-  type c as < move: int -> unit; x: int; ..>
+  class ci : int ->
+    object
+      val x : int
+      method x : int
+      method move : int -> unit
+    end      
+  type c = private #ci
   val create : int -> c
 end = struct
-  class c x = object
+  class ci x = object
     val mutable x : int = x
     method x = x
     method move d = x <- x+d
   end
-  let create = new c
+  type c = ci
+  let create = new ci
 end
 let f (x : M6.c) = x#move 3; x#x;;
