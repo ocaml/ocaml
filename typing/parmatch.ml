@@ -602,10 +602,11 @@ let full_match closing env =  match env with
         row.row_fields
     else
       row.row_closed &&
-      List.for_all
-        (fun (tag,f) ->
-          Btype.row_field_repr f = Rabsent || List.mem tag fields)
-        row.row_fields
+      let count =
+        List.fold_left
+          (fun n (_,f) -> if Btype.row_field_repr f = Rabsent then n else n+1)
+          0 row.row_fields in
+      List.length fields = count
 | ({pat_desc = Tpat_constant(Const_char _)},_) :: _ ->
     List.length env = 256
 | ({pat_desc = Tpat_constant(_)},_) :: _ -> false
