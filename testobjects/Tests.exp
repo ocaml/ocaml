@@ -51,6 +51,9 @@ type 'a d = < f : int c >
 type 'a t = 'a t u
 #   Characters 19-32:
 The type abbreviation t is cyclic
+# type 'a u = 'a
+# Characters 4-18:
+The type abbreviation t is cyclic
 #   type t = < x : t >
 # type 'a u = 'a
 # - : t -> t u -> bool = <fun>

@@ -105,6 +105,8 @@ type 'a u = < x : 'a>
 and 'a t = 'a t u;;
 type 'a u = 'a
 and 'a t = 'a t u;;
+type 'a u = 'a;;
+type t = t u * t u;;
 
 type t = <x : 'a> as 'a;;
 type 'a u = 'a;;
@@ -289,3 +291,12 @@ fun (x : 'a t) -> (x : 'a); ();;
 type 'a t = < x : 'a >;;
 fun (x : 'a t as 'a) -> ();;
 fun (x : 'a t) -> (x : 'a); ();;
+
+class 'a c () =
+  constraint 'a = < .. > -> unit
+  method m = (fun x -> () : 'a)
+end;;
+class 'a c () =
+  constraint 'a = unit -> < .. >
+  method m (f : 'a) = f ()
+end;;
