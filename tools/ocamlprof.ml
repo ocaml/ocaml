@@ -401,7 +401,7 @@ let main () =
        "-F", Arg.String (fun s -> special_id := s),
              "<s>  Insert string <s> with the counts";
        "-instrument", Arg.Set instr_mode, " (undocumented)";
-       "-m", Arg.String (fun s -> modes := s), " (undocumented)"
+       "-m", Arg.String (fun s -> modes := s), "<flags>  (undocumented)"
       ] process_file usage;
     exit 0
   with x ->
