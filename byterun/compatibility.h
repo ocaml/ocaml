@@ -26,11 +26,11 @@
    g       --> global C identifier
    x       --> special case
 
-   SP signals the special cases:
+   SP* signals the special cases:
    - when the identifier was not simply prefixed with [caml_]
    - when the [caml_] version was already used for something else, and
-     was renamed out of the way (watch out for caml_alloc and
-     array_bound_error in *.s)
+     was renamed out of the way (watch out for [caml_alloc] and
+     [caml_array_bound_error] in *.s)
 */
 
 /* a faire:
@@ -44,11 +44,11 @@
 /* **** macintosh.c */
 /* **** mpwtool.c */
 /* **** rotatecursor.c */
-/* INSTALL.MPW, **/Makefile.Mac, maccaml, otherlibs/macosunix */
+/* INSTALL.MPW, **Makefile.Mac, maccaml, otherlibs/macosunix */
 
 
 /* **** alloc.c */
-#define alloc caml_alloc  /*SP*/
+#define alloc caml_alloc /*SP*/
 #define alloc_small caml_alloc_small
 #define alloc_tuple caml_alloc_tuple
 #define alloc_string caml_alloc_string
@@ -175,7 +175,7 @@
 #define raise_sys_blocked_io caml_raise_sys_blocked_io
 #define init_exceptions caml_init_exceptions
 /* **** asmrun/fail.c */
-/*    g raise_caml_exception -> caml_raise_exception */
+/*    g raise_caml_exception -> caml_raise_exception SP*/
 /* **** asmrun/<arch>.s */
 /*    g caml_array_bound_error -> caml_ml_array_bound_error SP*/
 
@@ -431,7 +431,7 @@
 /*      caml_open_descriptor_in -> caml_ml_open_descriptor_in SP*/
 /*      caml_open_descriptor_out -> caml_ml_open_descriptor_out SP*/
 /*      caml_out_channels_list -> caml_ml_out_channels_list SP*/
-/*      channel_descriptor -> caml_channel_descriptor */
+/*      channel_descriptor -> caml_channel_descriptor FIXME add ml_ ? */
 /*      caml_close_channel -> caml_ml_close_channel SP*/
 /*      caml_channel_size -> caml_ml_channel_size SP*/
 /*      caml_channel_size_64 -> caml_ml_channel_size_64 SP*/
