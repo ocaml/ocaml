@@ -16,6 +16,9 @@
 
 (* $Id$ *)
 
+(* This file selecter works only under the OS with the full unix support.
+   For the portability, Tk.getOpenFile and Tk.getSaveFile are recommended. *)
+
 open Support
 
 val f :
