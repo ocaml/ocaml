@@ -17,10 +17,16 @@ extern unsigned long extra_heap_memory;
 #define Phase_mark 0
 #define Phase_sweep 1
 
+#ifdef __alpha
+typedef int page_table_entry;
+#else
+typedef char page_table_entry;
+#endif
+
 extern char *heap_start;
 extern char *heap_end;
 extern unsigned long total_heap_size;
-extern char *page_table;
+extern page_table_entry *page_table;
 extern asize_t page_table_size;
 extern char *gc_sweep_hp;
 
@@ -29,7 +35,7 @@ extern char *gc_sweep_hp;
 #define Page(p) (((addr) (p) - (addr) heap_start) >> Page_log)
 #define Is_in_heap(p) \
   ((addr)(p) >= (addr)heap_start && (addr)(p) < (addr)heap_end \
-   && page_table [Page (p)] == In_heap)
+   && page_table [Page (p)])
 
 void init_major_heap P((asize_t));
 asize_t round_heap_chunk_size P((asize_t));

@@ -21,7 +21,7 @@
 int percent_free;
 long major_heap_increment;
 char *heap_start, *heap_end;
-char *page_table;
+page_table_entry *page_table;
 asize_t page_table_size;
 char *gc_sweep_hp;
 int gc_phase;
@@ -86,13 +86,15 @@ static void start_cycle ()
 static void mark_slice (work)
      long work;
 {
+  value * gray_vals_ptr;  /* Local copy of gray_vals_cur */
   value v, child;
   header_t hd;
   mlsize_t size, i;
 
+  gray_vals_ptr = gray_vals_cur;
   while (work > 0){
-    if (gray_vals_cur > gray_vals){
-      v = *--gray_vals_cur;
+    if (gray_vals_ptr > gray_vals){
+      v = *--gray_vals_ptr;
       hd = Hd_val(v);
       Assert (Is_gray_hd (hd));
       Hd_val (v) = Blackhd_hd (hd);
@@ -108,8 +110,12 @@ static void mark_slice (work)
             }
             if (Is_white_hd (hd)){
               Hd_val (child) = Grayhd_hd (hd);
-              *gray_vals_cur++ = child;
-              if (gray_vals_cur >= gray_vals_end) realloc_gray_vals ();
+              *gray_vals_ptr++ = child;
+              if (gray_vals_ptr >= gray_vals_end) {
+                gray_vals_cur = gray_vals_ptr;
+                realloc_gray_vals ();
+                gray_vals_ptr = gray_vals_cur;
+              }
             }
           }
         }
@@ -126,8 +132,8 @@ static void mark_slice (work)
 	}
       }else{
 	if (Is_gray_val (Val_hp (markhp))){
-	  Assert (gray_vals_cur == gray_vals);
-	  *gray_vals_cur++ = Val_hp (markhp);
+	  Assert (gray_vals_ptr == gray_vals);
+	  *gray_vals_ptr++ = Val_hp (markhp);
 	}
 	markhp += Bhsize_hp (markhp);
       }
@@ -138,6 +144,7 @@ static void mark_slice (work)
       limit = chunk + (((heap_chunk_head *) chunk) [-1]).size;
     }else{
       /* Marking is done. */
+      gray_vals_cur = gray_vals_ptr;
       gc_sweep_hp = heap_start;
       fl_init_merge ();
       gc_phase = Phase_sweep;
@@ -147,6 +154,7 @@ static void mark_slice (work)
       work = 0;
     }
   }
+  gray_vals_cur = gray_vals_ptr;
 }
 
 static void sweep_slice (work)
@@ -168,14 +176,13 @@ static void sweep_slice (work)
 	}
 	gc_sweep_hp = fl_merge_block (Bp_hp (hp));
 	break;
-      case Gray:
-	Assert (0);     /* Fall through to Black when not in debug mode. */
-      case Black:
-	Hd_hp (hp) = Whitehd_hd (hd);
-	break;
       case Blue:
 	/* Only the blocks of the free-list are blue.  See [freelist.c]. */
 	fl_merge = Bp_hp (hp);
+	break;
+      default:          /* Gray or Black */
+        Assert(Color_hd(hd) == Black);
+	Hd_hp (hp) = Whitehd_hd (hd);
 	break;
       }
       Assert (gc_sweep_hp <= limit);
@@ -281,12 +288,9 @@ void init_major_heap (heap_size)
   (((heap_chunk_head *) heap_start) [-1]).next = NULL;
   heap_end = heap_start + stat_heap_size;
   Assert ((unsigned long) heap_end % Page_size == 0);
-#ifdef SIXTEEN
-  page_table_size = 640L * 1024L / Page_size + 1;
-#else
   page_table_size = 4 * stat_heap_size / Page_size;
-#endif
-  page_table = (char *) malloc (page_table_size);
+  page_table = 
+    (page_table_entry *) malloc (page_table_size * sizeof(page_table_entry));
   if (page_table == NULL){
     fatal_error ("Fatal error: not enough memory for the initial heap.\n");
   }

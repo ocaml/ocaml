@@ -15,6 +15,7 @@ char *young_start = NULL, *young_end = NULL, *young_ptr = NULL;
 static value **ref_table = NULL, **ref_table_end, **ref_table_threshold;
 value **ref_table_ptr = NULL, **ref_table_limit;
 static asize_t ref_table_size, ref_table_reserve;
+int in_minor_collection = 0;
 
 void set_minor_heap_size (size)
     asize_t size;
@@ -106,16 +107,9 @@ void oldify (p, v)
 void minor_collection ()
 {
   value **r;
-  struct longjmp_buffer raise_buf;
-  struct longjmp_buffer *old_external_raise;
   long prev_alloc_words = allocated_words;
 
-  if (setjmp(raise_buf.buf)) {
-    fatal_error ("Fatal error: out of memory.\n");
-  }
-  old_external_raise = external_raise;
-  external_raise = &raise_buf;
-
+  in_minor_collection = 1;
   gc_message ("<", 0);
   oldify_local_roots();
   for (r = ref_table; r < ref_table_ptr; r++) oldify (*r, **r);
@@ -124,8 +118,7 @@ void minor_collection ()
   ref_table_ptr = ref_table;
   ref_table_limit = ref_table_threshold;
   gc_message (">", 0);
-
-  external_raise = old_external_raise;
+  in_minor_collection = 0;
 
   stat_promoted_words += allocated_words - prev_alloc_words;
   ++ stat_minor_collections;
@@ -142,18 +135,14 @@ void realloc_ref_table ()
     gc_message ("ref_table threshold crossed\n", 0);
     ref_table_limit = ref_table_end;
     force_minor_gc ();
-  }else{                                       /* This will never happen. */
+  }else{ /* This will almost never happen with the bytecode interpreter. */
     asize_t sz;
     asize_t cur_ptr = ref_table_ptr - ref_table;
                                                   Assert (force_minor_flag);
                                                    Assert (something_to_do);
-    ref_table_reserve += 1024;
+    ref_table_size *= 2;
     sz = (ref_table_size + ref_table_reserve) * sizeof (value *);
     gc_message ("Growing ref_table to %ldk\n", (long) sz / 1024);
-#ifdef MAX_MALLOC_SIZE
-    if (sz > MAX_MALLOC_SIZE) ref_table = NULL;
-    else
-#endif
     ref_table = (value **) realloc ((char *) ref_table, sz);
     if (ref_table == NULL) fatal_error ("Fatal error: ref_table overflow\n");
     ref_table_end = ref_table + ref_table_size + ref_table_reserve;

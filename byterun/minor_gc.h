@@ -7,6 +7,7 @@
 extern char *young_start, *young_ptr, *young_end;
 extern value **ref_table_ptr, **ref_table_limit;
 extern asize_t minor_heap_size;
+extern int in_minor_collection;
 
 #define Is_young(val) \
   ((addr)(val) > (addr)young_start && (addr)(val) < (addr)young_end)

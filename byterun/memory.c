@@ -17,7 +17,7 @@ static char *expand_heap (request)
      mlsize_t request;
 {
   char *mem;
-  char *new_page_table;
+  page_table_entry *new_page_table;
   asize_t new_page_table_size;
   asize_t malloc_request;
   asize_t i, more_pages;
@@ -47,7 +47,9 @@ static char *expand_heap (request)
 
   if (more_pages != 0){
     new_page_table_size = page_table_size + more_pages;
-    new_page_table = (char *) malloc (new_page_table_size);
+    new_page_table =
+      (page_table_entry *) 
+        malloc(new_page_table_size * sizeof(page_table_entry));
     if (new_page_table == NULL){
       gc_message ("No room for growing page table\n", 0);
       free (mem);
@@ -63,7 +65,8 @@ static char *expand_heap (request)
     for (i = 0; i < more_pages; i++){
       new_page_table [i] = Not_in_heap;
     }
-    bcopy (page_table, new_page_table + more_pages, page_table_size);
+    bcopy (page_table, new_page_table + more_pages,
+           page_table_size * sizeof(page_table_entry));
     (((heap_chunk_head *) mem) [-1]).next = heap_start;
     heap_start = mem;
   }else{
@@ -75,7 +78,8 @@ static char *expand_heap (request)
       for (i = page_table_size; i < new_page_table_size; i++){
         new_page_table [i] = Not_in_heap;
       }
-      bcopy (page_table, new_page_table, page_table_size);
+      bcopy (page_table, new_page_table, 
+             page_table_size * sizeof(page_table_entry));
     }
     last = &heap_start;
     cur = *last;
@@ -88,7 +92,7 @@ static char *expand_heap (request)
   }
 
   if (more_pages != 0){
-    free (page_table);
+    free ((char *) page_table);
     page_table = new_page_table;
     page_table_size = new_page_table_size;
   }
@@ -109,7 +113,12 @@ value alloc_shr (wosize, tag)
   hp = fl_allocate (wosize);
   if (hp == NULL){
     new_block = expand_heap (wosize);
-    if (new_block == NULL) raise_out_of_memory ();
+    if (new_block == NULL) {
+      if (in_minor_collection)
+        fatal_error ("Fatal error: out of memory.\n");
+      else
+        raise_out_of_memory ();
+    }
     fl_add_block (new_block);
     hp = fl_allocate (wosize);
   }

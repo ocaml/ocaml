@@ -614,7 +614,7 @@ value interprete(prog, prog_size)
       Next;
     }
     Instruct(BOOLNOT):
-      accu = Bool_val(accu == Val_false);
+      accu = Val_not(accu);
       Next;
 
 /* Exceptions */
