@@ -28,6 +28,7 @@ value copy_string_array (char **);
 value copy_double (double);
 value copy_int32 (int32);       /* defined in [ints.c] */
 value copy_int64 (int64);       /* defined in [ints.c] */
+value copy_nativeint (long);    /* defined in [ints.c] */
 value alloc_array (value (*funct) (char *), char ** array);
 
 typedef void (*final_fun)(value);
