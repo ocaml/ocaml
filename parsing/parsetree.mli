@@ -74,6 +74,9 @@ and pattern_desc =
   | Ppat_or of pattern * pattern
   | Ppat_constraint of pattern * core_type
   | Ppat_type of Longident.t
+(* GENERIC
+  | Ppat_dynamic of pattern * core_type
+/GENERIC *)
 
 type expression =
   { pexp_desc: expression_desc;
@@ -109,8 +112,11 @@ and expression_desc =
   | Pexp_assertfalse
 (* DYN *)  
   | Pexp_dynamic of expression 
-  | Pexp_coerce of expression * (pattern * expression) list
+  | Pexp_coerce of expression 
 (* /DYN *)  
+(* GENERIC
+  | Pexp_coerce of expression * (pattern * expression) list
+/GENERIC *)
 
 (* Value descriptions *)
 

@@ -28,6 +28,7 @@ type error =
     Illegal_letrec_pat
   | Illegal_letrec_expr
   | Free_super_var
+  | Contains_abstract_type of Types.type_expr * Path.t
 
 exception Error of Location.t * error
 
@@ -618,12 +619,38 @@ let rec transl_exp e =
   | Texp_assertfalse -> assert_failed e.exp_loc
 (* DYN *)
   | Texp_dynamic (exp) ->
-      Lapply(Transltype.rtype_prim "dynamic_comp", 
-	     [ make_block 0 [ Transltype.transl_rtype_of_type exp.exp_type ];
+      begin try 
+	Lapply(Transltype.rtype_prim "dynamic_comp", 
+	       [ make_block 0 [ Transltype.transl_run_type_of_typexp 
+				  exp.exp_env exp.exp_type ];
+		 transl_exp exp ])
+      with
+      | Transltype.Error e ->
+	  match e with
+	  | Transltype.Contains_abstract_type (t,p) ->
+	      raise (Error (exp.exp_loc, Contains_abstract_type (t,p))) 
+      end
+  | Texp_coerce (exp) ->
+      begin try 
+	Lapply(Transltype.rtype_prim "coerce_comp", 
+	       [ Lconst(Const_block(0, 
+		  [Const_base(Const_string !Location.input_name);
+		   Const_base(Const_int e.exp_loc.Location.loc_start);
+		   Const_base(Const_int e.exp_loc.Location.loc_end)]));
+	       make_block 0 [ Transltype.transl_run_type_of_typexp 
+				e.exp_env e.exp_type ];
 	       transl_exp exp ])
+      with
+      | Transltype.Error err ->
+	  match err with
+	  | Transltype.Contains_abstract_type (t,p) ->
+	      raise (Error (e.exp_loc, Contains_abstract_type (t,p))) 
+      end
+(* /DYN *)
+(* GENERIC
   | Texp_coerce (arg, pat_typ_expr_list) ->
       transl_coerce e arg pat_typ_expr_list
-(* /DYN *)
+/GENERIC *)
   | _ ->
       fatal_error "Translcore.transl"
 
@@ -836,7 +863,7 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
     end
   end
 
-(* DYN *)
+(* GENERIC
 and transl_coerce e arg pat_typ_expr_list =
   (* It is really look alike with Texp_match, but its compilation
      cannot be done with match compiler *)
@@ -858,7 +885,7 @@ and transl_coerce e arg pat_typ_expr_list =
 *)
 	let rtpat = 
 	  try
-	    let result = Transltype.transl_rtype_of_type tpat in
+	    let result = raise Exit (* Transltype.transl_rtype_of_type e.exp_env tpat *) in
 (*
 	    Transltype.inside_coerce_typecase := false;
 *)
@@ -871,6 +898,7 @@ and transl_coerce e arg pat_typ_expr_list =
 	      raise e
 	in
 	let r_num = next_raise_count () in
+(*
 	Lstaticcatch (
 	  Lifthenelse (Lapply( Transltype.rtype_prim "is_instance",
 			      [ Lvar id_rtyp; rtpat ]),
@@ -881,6 +909,8 @@ and transl_coerce e arg pat_typ_expr_list =
 		       Lstaticraise (r_num,[])),
 	  (r_num, []),
 	  case_compiler xs )
+*)
+       raise Exit
     | [] -> Lstaticraise(raise_num,[])
   in
   Llet(Strict, id_dyn, transl_exp arg,
@@ -895,7 +925,7 @@ and transl_coerce e arg pat_typ_expr_list =
 			 Lconst (Const_base(Const_int e.exp_loc.Location.loc_start));
 			 Lconst (Const_base(Const_int e.exp_loc.Location.loc_end)) ])))))
 ;;
-(* /DYN *)
+/GENERIC *)
 
 (* Compile an exception definition *)
 
@@ -920,3 +950,7 @@ let report_error ppf = function
   | Free_super_var ->
       fprintf ppf
         "Ancestor names can only be used to select inherited methods"
+  | Contains_abstract_type (ty, p) ->
+      fprintf ppf
+        "This value has type %a which cannot be exported"
+	Printtyp.type_scheme ty
