@@ -55,7 +55,7 @@ exception Error of string * string;;
 
 let nolib = ref false;;
 let initialized = ref false;;
-let path = ref [];;
+let path = ref ([] : string list);;
 
 let loadfile file =
   if not !initialized then

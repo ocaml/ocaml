@@ -23,10 +23,10 @@ odyl.cma: $(OBJS)
 odyl.cmxa: $(OBJS:.cmo=.cmx)
 	$(OCAMLOPT) $(LINKFLAGS) $(OBJS:.cmo=.cmx) -a -o odyl.cmxa
 
-odyl.cmx: odyl.ml
-	../../boot/camlp4r -nolib -I ../../boot pa_ifdef.cmo -DOPT -o odyl.ppo odyl.ml
-	$(OCAMLOPT) -c -impl odyl.ppo
-	rm -f odyl.ppo
+odyl_main.cmx: odyl_main.ml
+	$(CAMLP4_COMM) -nolib -DOPT -o odyl_main.ppo odyl_main.ml
+	$(OCAMLOPT) -c -impl odyl_main.ppo
+	rm -f odyl_main.ppo
 
 odyl_config.cmo:
 	echo "let standard_library =" > odyl_config.ml
