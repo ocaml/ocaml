@@ -78,8 +78,8 @@ void enter_blocking_section(void)
 
 void leave_blocking_section(void)
 {
-  Assert(async_signal_mode);
   if (leave_blocking_section_hook != NULL) leave_blocking_section_hook();
+  Assert(async_signal_mode);
   async_signal_mode = 0;
 }
 
