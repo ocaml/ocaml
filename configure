@@ -215,10 +215,10 @@ violation on boot/ocamlc.)  Those incorrectly patched versions can be found
 in RedHat 7.2 and Mandrake 8.0 and 8.1; other Linux distributions
 might also be affected.  (See bug #57760 on bugzilla.redhat.com)
 
-Auto-configuration will now select gcc compiler flags that we believe
-work around the problem.  Still, if you observe segmentation faults
-while running ocamlc or ocamlopt, you are advised to try another version
-of gcc, such as 2.95.3 or 3.0.4.
+Auto-configuration will now select gcc compiler flags that work around
+the problem.  Still, if you observe segmentation faults while running
+ocamlc or ocamlopt, you are advised to try another version of gcc,
+such as 2.95.3 or 3.2.
 
 EOF
         buggycc="gcc.2.96";;
