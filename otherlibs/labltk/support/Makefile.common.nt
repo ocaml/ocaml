@@ -7,7 +7,7 @@ EXEDIR=$(TOPDIRNT)
 ## Path to the otherlibs subdirectory
 OTHERS=../..
 
-LIBNAME=labltk
+LIBNAME=mltk
 
 !include $(TOPDIRNT)\config\Makefile.nt
 

@@ -1,4 +1,4 @@
-# Top Makefile for LablTk
+# Top Makefile for mlTk
 
 SUBDIRS=compiler support lib labltk camltk jpf frx tkanim examples_labltk examples_camltk browser
 
