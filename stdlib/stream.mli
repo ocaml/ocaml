@@ -23,17 +23,7 @@ exception Parse_error of string
 	(* Raised by parsers when the first component of a stream pattern is
 	   accepted, but one of the following components is rejected. *)
 
-val next : 'a t -> 'a
-	(* Returns the first element of the stream and removes it from the
-           stream. Raises [Parse_failure] if the stream is empty. *)
-val empty : 'a t -> unit
-	(* Returns [()] if the stream is empty, else raises [Parse_failure]. *)
-
-val peek : 'a t -> 'a option
-        (* Returns [Some] "the first element" of the stream, or [None] if the
-           stream is empty. *)
-val count : 'a t -> int
-	(* Returns the count of elements of the stream (starting from 0). *)
+(** Stream builders *)
 
 val from : (int -> 'a option) -> 'a t
   	(* [Stream.from f] returns a stream built from the function [f].
@@ -48,6 +38,29 @@ val of_string : string -> char t
         (* Returns the character stream of the string parameter. *)
 val of_channel : in_channel -> char t
 	(* Returns the characters stream read from the input channel. *)
+
+(** Stream iterator *)
+
+val iter : ('a -> 'b) -> 'a t -> unit
+        (* [Stream.iter f s] scans the whole stream s, applying function [f]
+           in turn to each stream element encountered. *)
+
+(** Predefined parsers *)
+
+val next : 'a t -> 'a
+	(* Returns the first element of the stream and removes it from the
+           stream. Raises [Parse_failure] if the stream is empty. *)
+val empty : 'a t -> unit
+	(* Returns [()] if the stream is empty, else raises [Parse_failure]. *)
+
+(** Usefull functions *)
+
+val peek : 'a t -> 'a option
+        (* Returns [Some] "the first element" of the stream, or [None] if the
+           stream is empty. *)
+val count : 'a t -> int
+	(* Returns the current count of the stream elements, i.e. the number
+           of the stream elements discarded. *)
 
 (*--*)
 

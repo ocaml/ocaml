@@ -76,6 +76,15 @@ let empty s =
     Some _  -> raise Parse_failure
   | None -> ()
 
+let iter f strm =
+  let rec do_rec () =
+    match peek strm with
+      Some a -> junk strm; f a; do_rec ()
+    | None -> ()
+  in
+  do_rec ()
+
+(* Stream building functions *)
 
 let from f =
   let rec g c =
@@ -95,12 +104,16 @@ let of_channel ic =
   {count = 0;
    data = Sbuffio {ic = ic; buff = String.create 4096; len = 0; ind = 0}}
 
+(* Stream expressions builders *)
+
 let sempty = {count = 0; data = Sempty}
 let scons f s = {count = 0; data = Sfunc (fun _ -> Scons (f (), s.data))}
 let sapp f s =
   match s.data with
     Sempty -> {count = 0; data = Sfunc (fun _ -> (f ()).data)}
   | d -> {count = 0; data = Sfunc (fun _-> Sapp ((f ()).data, d))}
+
+(* For debugging use *)
 
 let rec dump f s =
   print_string "{count = "; print_int s.count; print_string "; data = ";
