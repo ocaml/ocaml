@@ -279,7 +279,7 @@ type tag = string;;
 
    By default, those tags do not influence line breaking calculation:
    the tag ``markers'' are not considered as part of the printing
-   material that drive line breaking (in other words, the length of
+   material that drives line breaking (in other words, the length of
    those strings is considered as zero for line breaking).
 
    Thus, tag handling is in some sense transparent to pretty-printing
@@ -303,7 +303,7 @@ type tag = string;;
    marker string associated to its tag argument. Being flushed
    directly into the output device of the formatter, tag marker
    strings are not considered as part of the printing material that
-   drive line breaking (in other words, the length of the strings
+   drives line breaking (in other words, the length of the strings
    corresponding to tag markers is considered as zero for line
    breaking). In addition, advanced users may take advantage of
    the specificity of tag markers to be precisely output when the
@@ -338,7 +338,7 @@ val set_mark_tags : bool -> unit;;
     [set_mark_tags b] turns on or off the output of tag markers. *)
 val get_print_tags : unit -> bool;;
 val get_mark_tags : unit -> bool;;
-(** Return the current status of tag printing and marking. *)
+(** Return the current status of tags printing and tags marking. *)
 
 
 (** {6 Redirecting formatter output} *)
