@@ -23,8 +23,8 @@ let main () =
   Arg.parse [
      "-I", Arg.String(fun dir -> include_dirs := dir :: !include_dirs),
            "<dir>  Add <dir> to the list of include directories";
-     "-label", Arg.Clear classic, " Use strict label syntax";
-     "-modern", Arg.Clear classic, " (deprecated) same as -label";
+     "-labels", Arg.Clear classic, " Use commuting label mode";
+     "-modern", Arg.Clear classic, " (deprecated) same as -labels";
      "-noassert", Arg.Set noassert, " Do not compile assertion checks";
      "-rectypes", Arg.Set recursive_types, " Allow arbitrary recursive types";
      "-unsafe", Arg.Set fast, " No bound checking on array and string access";

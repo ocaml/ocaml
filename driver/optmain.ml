@@ -82,10 +82,10 @@ let main () =
              "<file>  Suffix for interface files (default: .mli)";
        "-intf_suffix", Arg.String (fun s -> Config.interface_suffix := s),
              "<file>  (deprecated) same as -intf-suffix";
-       "-label", Arg.Clear classic, " Use strict label syntax";
+       "-labels", Arg.Clear classic, " Use commuting label mode";
        "-linkall", Arg.Set link_everything,
              " Link all modules, even unused ones";
-       "-modern", Arg.Clear classic, " (deprecated) same as -label";
+       "-modern", Arg.Clear classic, " (deprecated) same as -labels";
        "-noassert", Arg.Set noassert, " Don't compile assertion checks";
        "-noautolink", Arg.Set no_auto_link,
              " Don't automatically link C libraries specified in .cma files";
