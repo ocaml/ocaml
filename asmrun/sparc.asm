@@ -222,7 +222,7 @@ Caml_c_call:
         sethi   %hi(Young_limit), %g7
     /* Return to caller */
         retl
-        or      %g7, %lo(Young_limit)], %g7      /* in delay slot */
+        or      %g7, %lo(Young_limit), %g7      /* in delay slot */
 
 /* Start the Caml program */
 
@@ -309,10 +309,9 @@ L109:   call    %l2
         nop
     /* Restore the global variables used by caml_c_call */
         ldd     [%sp + 96], %l0
+        add     %sp, 8, %sp
         Store(%l0, Caml_bottom_of_stack)
         Store(%l1, Caml_last_return_address)
-        add     %sp, 8, %sp
-        Store(%l0, Caml_last_return_address)
     /* Pop trap frame and restore caml_exception_pointer */
         ld      [%sp + 100], %g5
         add     %sp, 8, %sp
