@@ -506,6 +506,11 @@ external gmtime : int -> tm = "unix_gmtime"
 external localtime : int -> tm = "unix_localtime"
         (* Convert a time in seconds, as returned by [time], into a date and
            a time. Assumes the local time zone. *)
+external mktime : tm -> int * tm = "unix_mktime"
+        (* Convert a date and time, specified by the [tm] argument, into
+           a time in seconds, as returned by [time]. Also return a normalized
+           copy of the given [tm] record, with the [tm_wday] and [tm_yday]
+           recomputed from the other fields. *)
 external alarm : int -> int = "unix_alarm"
         (* Schedule a [SIGALRM] signals after the given number of seconds. *)
 external sleep : int -> unit = "unix_sleep"

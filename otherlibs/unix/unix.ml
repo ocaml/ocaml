@@ -277,6 +277,7 @@ external time : unit -> int = "unix_time"
 external gettimeofday : unit -> float = "unix_gettimeofday"
 external gmtime : int -> tm = "unix_gmtime"
 external localtime : int -> tm = "unix_localtime"
+external mktime : tm -> int * tm = "unix_mktime"
 external alarm : int -> int = "unix_alarm"
 external sleep : int -> unit = "unix_sleep"
 external times : unit -> process_times =

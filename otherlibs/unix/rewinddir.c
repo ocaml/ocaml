@@ -20,9 +20,17 @@
 #include <sys/dir.h>
 #endif
 
+#ifdef HAS_REWINDDIR
+
 value unix_rewinddir(d)          /* ML */
      value d;
 {
   rewinddir((DIR *) d);
   return Val_unit;
 }
+
+#else
+
+value unix_rewinddir() { invalid_argument("rewinddir not implemented"); }
+
+#endif

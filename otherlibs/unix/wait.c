@@ -63,7 +63,11 @@ value unix_wait()                /* ML */
   return alloc_process_status(pid, status);
 }
 
-#ifdef HAS_WAITPID
+#if defined(HAS_WAITPID) || defined(HAS_WAIT4)
+
+#ifndef HAS_WAITPID
+#define waitpid(pid,status,opts) wait4(pid,status,opts,NULL)
+#endif
 
 static int wait_flag_table[] = {
   WNOHANG, WUNTRACED
