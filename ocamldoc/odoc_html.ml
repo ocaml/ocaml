@@ -211,12 +211,10 @@ class text =
 	 None -> ""
        | Some l -> "<a name=\""^(Naming.label_target l)^"\"></a>"
       )^
-      "<table cellpadding=0 cellspacing=0 width=\"100%\">\n"^
+      "<table cellpadding=5 cellspacing=5 width=\"100%\">\n"^
       "<tr class=\""^css_class^"\"><td><div align=center>\n"^
-      "<table><tr class=\""^css_class^"\">\n"^
-      "<td width=\"100%\" align=center>\n"^
       "<span class=\""^css_class^"\">"^(self#html_of_text t)^"</span>\n"^
-      "</td>\n</tr>\n</table>\n</div>\n</td>\n</tr>\n</table>\n"
+      "</div>\n</td>\n</tr>\n</table>\n"
 
     method html_of_Latex _ = ""
       (* don't care about LaTeX stuff in HTML. *)
