@@ -22,7 +22,6 @@ open Typedtree
 open Btype
 open Ctype
 
-
 type error =
     Unbound_value of Longident.t
   | Unbound_constructor of Longident.t
@@ -630,7 +629,7 @@ let type_format loc fmt =
         ty_arrow (ty_arrow ty_input (ty_arrow ty_arg ty_aresult))
           (ty_arrow ty_arg (scan_format (j+1)))
     | 't' ->
-        ty_arrow (ty_arrow ty_input ty_result) (scan_format (j+1))
+        ty_arrow (ty_arrow ty_input ty_aresult) (scan_format (j+1))
     | 'l' ->
         if j+1 >= len then incomplete i else begin
           match fmt.[j+1] with
