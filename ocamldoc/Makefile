@@ -193,78 +193,31 @@ $(OCAMLDOC_LIBCMXA): $(LIBCMXFILES)
 manpages: stdlib_man
 
 odoc_crc.ml: $(CMIFILES)
-	$(EXTRAC_CRC) $(INCLUDES)\
+	$(EXTRAC_CRC) $(INCLUDES) \
 	Arg Arith_status Array Big_int Buffer Callback Char Digest Dynlink \
 	Filename Format Gc Genlex Hashtbl \
-	Lazy Lexing List Map Marshal Nat\
-	Num Obj CamlinternalOO Outcometree Parsing Pervasives Printexc\
-	Printf Profiling Queue Random Ratio\
-	Set Sort Stack Std_exit Str Stream\
-	String Sys Topdirs Toploop Unix Weak\
-	Printast \
-	Ident \
-	Tbl \
-	Misc \
-	Config \
-	Clflags \
-	Warnings \
-	Ccomp \
-	Linenum\
-	Location\
-	Longident \
-	Syntaxerr \
-	Parser \
-	Lexer \
-	Parse \
-	Types \
-	Path \
-	Btype \
-	Predef \
-	Datarepr \
-	Subst \
-	Env \
-	Ctype \
-	Primitive \
-	Oprint \
-	Printtyp \
-	Includecore \
-	Typetexp \
-	Parmatch \
-	Typedtree \
-	Typecore \
-	Includeclass \
-	Typedecl \
-	Typeclass \
-	Mtype \
-	Includemod \
-	Typemod \
-	Lambda \
-	Typeopt \
-	Printlambda \
-	Switch \
-	Matching \
-	Translobj \
-	Translcore \
-	Bytesections \
-	Runtimedef \
-	Symtable \
-	Opcodes \
-	Bytelink \
-	Bytelibrarian \
-	Translclass \
-	Errors \
-	Main_args \
-	Asttypes \
-	Depend \
-	Odoc_global Odoc_args Odoc_info Odoc_messages Odoc_types\
-	Odoc_misc Odoc_text_parser Odoc_text_lexer\
-	Odoc_text Odoc_comments_global Odoc_parser\
-	Odoc_lexer Odoc_comments Odoc_name Odoc_parameter\
-	Odoc_value Odoc_type Odoc_exception Odoc_class\
-	Odoc_module Odoc_str Odoc_args Odoc_env\
-	Odoc_sig Odoc_ast Odoc_control Odoc_inherit\
-	Odoc_search Odoc_cross Odoc_merge Odoc_analyse\
-	Odoc_dag2html Odoc_ocamlhtml Odoc_html\
+	Lazy Lexing List Map Marshal Nat \
+	Num Obj CamlinternalOO Outcometree Parsing Pervasives Printexc \
+	Printf Profiling Queue Random Ratio \
+	Set Sort Stack Std_exit Str Stream \
+	String Sys Topdirs Toploop Unix Weak \
+	Printast Ident Tbl Misc Config Clflags Warnings Ccomp \
+	Linenum Location Longident Syntaxerr Parser Lexer Parse \
+	Types Path Btype Predef Datarepr Subst Env Ctype Primitive \
+	Oprint Printtyp Includecore Typetexp Parmatch Typedtree Typecore \
+	Includeclass Typedecl Typeclass Mtype Includemod Typemod \
+	Lambda Typeopt Printlambda Switch Matching Translobj Translcore \
+	Bytesections Runtimedef Symtable Opcodes Bytelink Bytelibrarian \
+	Translclass Errors Main_args Asttypes Depend \
+	Odoc_global Odoc_args Odoc_info Odoc_messages Odoc_types \
+	Odoc_misc Odoc_text_parser Odoc_text_lexer \
+	Odoc_text Odoc_comments_global Odoc_parser \
+	Odoc_lexer Odoc_comments Odoc_name Odoc_parameter \
+	Odoc_value Odoc_type Odoc_exception Odoc_class \
+	Odoc_module Odoc_str Odoc_args Odoc_env \
+	Odoc_sig Odoc_ast Odoc_control Odoc_inherit \
+	Odoc_search Odoc_cross Odoc_merge Odoc_analyse \
+	Odoc_dag2html Odoc_ocamlhtml Odoc_html \
 	Odoc_latex Odoc_man Odoc_texi Odoc_scan > $@
 
 # Parsers and lexers dependencies :
