@@ -72,7 +72,8 @@ static char * parse_ld_conf(void)
   struct stat st;
   int ldconf, nread;
 
-  stdlib = getenv("CAMLLIB");
+  stdlib = getenv("OCAMLLIB");
+  if (stdlib == NULL) stdlib = getenv("CAMLLIB");
   if (stdlib == NULL) stdlib = OCAML_STDLIB_DIR;
   ldconfname = stat_alloc(strlen(stdlib) + 2 + sizeof(LD_CONF_NAME));
   strcpy(ldconfname, stdlib);
