@@ -1,4 +1,4 @@
-        Objective Caml version 3.05
+        Objective Caml version 3.06
 
 #   * * *       #   type 'a t = { t : 'a; } 
 # type 'a fold = { fold : 'b. f:('b -> 'a -> 'b) -> init:'b -> 'b; } 
