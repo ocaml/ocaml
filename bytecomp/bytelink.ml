@@ -428,14 +428,6 @@ let build_custom_runtime prim_name exec_name =
       remove_file (Filename.chop_suffix prim_name ".c" ^ ".obj");
       retcode
   | "MacOS" ->
-      let c68k = "sc"
-      and libs68k = "\"{libraries}IntEnv.far.o\" \
-                     \"{libraries}MacRuntime.o\" \
-                     \"{clibraries}StdCLib.far.o\" \
-                     \"{libraries}MathLib.far.o\" \
-                     \"{libraries}ToolLibs.o\" \
-                     \"{libraries}Interface.o\""
-      and link68k = "ilink -compact -state nouse -model far -msg nodup"
       and cppc = "mrc"
       and libsppc = "\"{sharedlibraries}MathLib\" \
                      \"{ppclibraries}PPCCRuntime.o\" \
@@ -444,18 +436,11 @@ let build_custom_runtime prim_name exec_name =
                      \"{ppclibraries}StdCRuntime.o\" \
                      \"{sharedlibraries}InterfaceLib\""
       and linkppc = "ppclink -d"
-      and objs68k = extract ".o" (List.rev !Clflags.ccobjs)
       and objsppc = extract ".x" (List.rev !Clflags.ccobjs)
       and q_prim_name = Filename.quote prim_name
       and q_stdlib = Filename.quote Config.standard_library
       and q_exec_name = Filename.quote exec_name
       in
-      Ccomp.run_command (Printf.sprintf "%s -i %s %s %s -o %s.o"
-        c68k
-        q_stdlib
-        (String.concat " " (List.rev_map Filename.quote !Clflags.ccopts))
-        q_prim_name
-        q_prim_name);
       Ccomp.run_command (Printf.sprintf "%s -i %s %s %s -o %s.x"
         cppc
         q_stdlib
@@ -463,15 +448,6 @@ let build_custom_runtime prim_name exec_name =
         q_prim_name
         q_prim_name);
       Ccomp.run_command ("delete -i " ^ q_exec_name);
-      Ccomp.run_command (Printf.sprintf
-        "%s -t MPST -c 'MPS ' -o %s %s.o %s %s %s"
-        link68k
-        q_exec_name
-        q_prim_name
-        (String.concat " " (List.map Filename.quote objs68k))
-        (Filename.quote
-            (Filename.concat Config.standard_library "libcamlrun.o"))
-        libs68k);
       Ccomp.command (Printf.sprintf
         "%s -t MPST -c 'MPS ' -o %s %s.x %s %s %s"
         linkppc
