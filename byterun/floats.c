@@ -101,9 +101,13 @@ CAMLprim value format_float(value fmt, value arg)
   return res;
 }
 
-CAMLprim value float_of_string(value s)
+CAMLprim value float_of_string(value vs)
 {
-  return copy_double(atof(String_val(s)));
+  char * s = String_val(vs);
+  char * ends;
+  double d = strtod((const char *) s, &ends);
+  if (ends != s + string_length(vs)) failwith("float_of_string");
+  return copy_double(d);
 }
 
 CAMLprim value int_of_float(value f)

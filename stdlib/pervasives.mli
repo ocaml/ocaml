@@ -383,11 +383,16 @@ external int_of_float : float -> int = "%intoffloat"
 val infinity: float
 (** Negative infinity. *)
 val neg_infinity: float
-
 (** A special floating-point value denoting the result of an
    undefined operation such as [0.0 /. 0.0].  Stands for
    ``not a number''. *)
 val nan: float
+(** The largest positive finite value of type [float]. *)
+val max_float: float
+(** The smallest positive, non-zero, non-denormalized value of type [float]. *)
+val min_float: float
+(** The smallest positive float [x] such that [1.0 +. x <> 1.0]. *)
+val epsilon_float: float
 
 (** The five classes of floating-point numbers, as determined by
    the {!Pervasives.classify_float} function. *)
@@ -462,9 +467,8 @@ external int_of_string : string -> int = "int_of_string"
 (** Return the string representation of a floating-point number. *)
 val string_of_float : float -> string
 
-(** Convert the given string to a float.
-   The result is unspecified if the given string is not
-   a valid representation of a float. *)
+(** Convert the given string to a float.  Raise [Failure "float_of_string"]
+   if the given string is not a valid representation of a float. *)
 external float_of_string : string -> float = "float_of_string"
 
 
