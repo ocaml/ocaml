@@ -90,7 +90,7 @@ long channel_size(struct channel *channel)
   return end;
 }
 
-int channel_binary_mode(struct channel *channel);
+int channel_binary_mode(struct channel *channel)
 {
 #ifdef _WIN32
   int oldmode = setmode(channel->fd, O_BINARY);
