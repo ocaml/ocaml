@@ -323,6 +323,20 @@ CAMLprim value int32_of_string(value s)
   return copy_int32(parse_long(s, 32));
 }
 
+CAMLprim value int32_bits_of_float(value vd)
+{
+  union { float d; int32 i; } u;
+  u.d = Double_val(vd);
+  return copy_int32(u.i);
+}
+
+CAMLprim value int32_float_of_bits(value vi)
+{
+  union { float d; int32 i; } u;
+  u.i = Int32_val(vi);
+  return copy_double(u.d);
+}
+
 /* 64-bit integers */
 
 #ifdef ARCH_INT64_TYPE

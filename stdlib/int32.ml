@@ -31,6 +31,8 @@ external of_int : int -> int32 = "%int32_of_int"
 external to_int : int32 -> int = "%int32_to_int"
 external of_float : float -> int32 = "int32_of_float"
 external to_float : int32 -> float = "int32_to_float"
+external bits_of_float : float -> int32 = "int32_bits_of_float"
+external float_of_bits : int32 -> float = "int32_float_of_bits"
 
 let zero = 0l
 let one = 1l

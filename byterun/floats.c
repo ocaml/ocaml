@@ -339,17 +339,6 @@ CAMLprim value float_compare(value vf, value vg)
   return Val_int(0);              /* both f and g are NaN */
 }
 
-CAMLprim value float_of_bytes(value s)
-{
-  value d = copy_double(0.0);
-#ifdef ARCH_BIG_ENDIAN
-  memcpy(String_val(d), String_val(s), 8);
-#else
-  Reverse_64(String_val(d), String_val(s));
-#endif
-  return d;
-}
-
 enum { FP_normal, FP_subnormal, FP_zero, FP_infinite, FP_nan };
 
 CAMLprim value classify_float(value vd)

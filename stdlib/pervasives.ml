@@ -107,25 +107,20 @@ external float : int -> float = "%floatofint"
 external float_of_int : int -> float = "%floatofint"
 external truncate : float -> int = "%intoffloat"
 external int_of_float : float -> int = "%intoffloat"
-external float_of_bytes : string -> float = "float_of_bytes"
+external float_of_bits : int64 -> float = "int64_float_of_bits"
 let infinity =
-  float_of_bytes "\127\240\000\000\000\000\000\000"
-              (* 0x7F F0 00 00 00 00 00 00 *)
+  float_of_bits 0x7F_F0_00_00_00_00_00_00L
 let neg_infinity =
-  float_of_bytes "\255\240\000\000\000\000\000\000"
-              (* 0xFF F0 00 00 00 00 00 00 *)
+  float_of_bits 0xFF_F0_00_00_00_00_00_00L
 let nan =
-  float_of_bytes "\127\240\000\000\000\000\000\001"
-              (* 0x7F F0 00 00 00 00 00 01 *)
+  float_of_bits 0x7F_F0_00_00_00_00_00_01L
 let max_float =
-  float_of_bytes "\127\239\255\255\255\255\255\255"
-              (* 0x7f ef ff ff ff ff ff ff *)
+  float_of_bits 0x7F_EF_FF_FF_FF_FF_FF_FFL
 let min_float =
-  float_of_bytes "\000\016\000\000\000\000\000\000"
-              (* 0x00 10 00 00 00 00 00 00 *)
+  float_of_bits 0x00_10_00_00_00_00_00_00L
 let epsilon_float =
-  float_of_bytes "\060\176\000\000\000\000\000\000"
-              (* 0x3c b0 00 00 00 00 00 00 *)
+  float_of_bits 0x3C_B0_00_00_00_00_00_00L
+  
 type fpclass =
     FP_normal
   | FP_subnormal
