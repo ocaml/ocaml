@@ -45,6 +45,8 @@ let rec print_approx ppf = function
       print_string "_"
   | Value_integer n ->
       print_int n
+  | Value_constptr n ->
+      print_int n; print_string "p"
 
 let print_name_crc (name, crc) =
   printf "@ %s (%a)" name print_digest crc
@@ -72,9 +74,9 @@ let print_unit_info filename =
       close_in ic;
       print_infos (ui, crc)
     end else if buffer = cmxa_magic_number then begin
-      let info_crc_list = (input_value ic : (unit_infos * Digest.t) list) in
+      let li = (input_value ic : library_infos) in
       close_in ic;
-      List.iter print_infos info_crc_list
+      List.iter print_infos li.lib_units
     end else begin
       close_in ic;
       prerr_endline "Wrong magic number";
