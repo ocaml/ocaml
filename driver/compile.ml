@@ -31,7 +31,6 @@ let init_path () =
 (* Return the initial environment in which compilation proceeds. *)
 
 let initial_env () =
-  init_path();
   try
     if !Clflags.nopervasives
     then Env.initial
@@ -42,6 +41,7 @@ let initial_env () =
 (* Compile a .mli file *)
 
 let interface sourcefile =
+  init_path();
   let prefixname = Filename.chop_extension sourcefile in
   let modulename = capitalize(Filename.basename prefixname) in
   let ic = open_in_bin sourcefile in
@@ -64,6 +64,7 @@ let print_if flag printer arg =
   arg
 
 let implementation sourcefile =
+  init_path();
   let prefixname = Filename.chop_extension sourcefile in
   let modulename = capitalize(Filename.basename prefixname) in
   let objfile = prefixname ^ ".cmo" in
