@@ -210,9 +210,12 @@ let instr_cd ppf lexbuf =
           error s
 
 let instr_shell ppf lexbuf =
-  let cmd = argument_eol argument lexbuf in
+  let cmdarg = argument_list_eol argument lexbuf in
+  let cmd = String.concat " " cmdarg in
+  (* perhaps we should use $SHELL -c ? *)
   let err = Sys.command cmd in
-  if (err != 0) then eprintf "Shell command %S failed with exit code %d\n%!" cmd err
+  if (err != 0) then 
+    eprintf "Shell command %S failed with exit code %d\n%!" cmd err
 
 let instr_pwd ppf lexbuf =
   eol lexbuf;
@@ -898,7 +901,7 @@ With no argument, reset the search path." };
 "exit the debugger." };
      { instr_name = "shell"; instr_prio = false;
        instr_action = instr_shell; instr_repeat = true; instr_help =
-"Execute a given COMMAND thru the shell." };
+"Execute a given COMMAND thru the system shell." };
       (* Displacements *)
      { instr_name = "run"; instr_prio = true;
        instr_action = instr_run; instr_repeat = true; instr_help =
