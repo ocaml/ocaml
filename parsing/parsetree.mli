@@ -134,7 +134,6 @@ and joinpattern =
 and joinident = {pjident_desc : string ; pjident_loc : Location.t}
 
 and joinpattern_desc =  joinident * joinident list
-
 (*< JOCAML *)
 
 (* Value descriptions *)
@@ -270,10 +269,6 @@ and structure_item =
 and structure_item_desc =
   | Pstr_eval of expression
   | Pstr_value of rec_flag * (pattern * expression) list
-(*> JOCAML *)
-  | Pstr_def of joinautomaton list
-  | Pstr_loc of joinlocation list
-(*< JOCAML *)
   | Pstr_primitive of string * value_description
   | Pstr_type of (string * type_declaration) list
   | Pstr_exception of string * exception_declaration
@@ -284,6 +279,10 @@ and structure_item_desc =
   | Pstr_class of class_declaration list
   | Pstr_class_type of class_type_declaration list
   | Pstr_include of module_expr
+(*> JOCAML *)
+  | Pstr_def of joinautomaton list
+  | Pstr_loc of joinlocation list
+(*< JOCAML *)
 
 (* Toplevel phrases *)
 

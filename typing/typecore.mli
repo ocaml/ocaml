@@ -85,6 +85,12 @@ type error =
   | Masked_instance_variable of Longident.t
   | Not_a_variant_type of Longident.t
   | Incoherent_label_order
+(*> JOCAML *)
+  | Expr_as_proc
+  | Proc_as_expr
+  | Garrigue_illegal od string (* merci Jacques ! *)
+  | Vouillon_illegal of string (* merci Jerome ! *)
+(*< JOCAML *)
 
 exception Error of Location.t * error
 

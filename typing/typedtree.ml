@@ -76,6 +76,31 @@ and expression_desc =
   | Texp_letmodule of Ident.t * module_expr * expression
   | Texp_assert of expression
   | Texp_assertfalse
+(*> JOCAML *)
+  | Texp_jsend of expression * expression
+  | Texp_spawn of expression
+  | Texp_par of expression * expression
+  | Texp_null
+  | Texp_reply of expression * Ident.t
+  | Texp_def of joinautomaton list * expression
+  | Texp_loc of joinlocation list * expression
+
+and joinlocation =
+    {jloc_desc : Ident.t * joinautomaton list * expression ;
+      jloc_loc : Location.t}
+
+and joinautomaton =
+    {jauto_desc : joinclause list ;
+      jauto_loc : Location.t}
+
+and joinclause =
+    {jclause_desc : joinpattern list * expression ;
+      jclause_loc : Location.t}
+
+and joinpattern =
+    { jpat_desc: Ident.t * Ident.t list ;
+      jpat_loc: Location.t}
+(*< JOCAML *)
 
 and meth =
     Tmeth_name of string
@@ -139,6 +164,10 @@ and structure_item =
   | Tstr_class of (Ident.t * int * string list * class_expr) list
   | Tstr_cltype of (Ident.t * cltype_declaration) list
   | Tstr_include of module_expr * Ident.t list
+(*> JOCAML *)
+  | Tstr_def of joinautomaton list
+  | Tstr_loc of joinlocation list
+(*< JOCAML *)
 
 and module_coercion =
     Tcoerce_none

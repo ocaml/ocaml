@@ -29,6 +29,11 @@ val type_option: type_expr -> type_expr
 val type_nativeint: type_expr
 val type_int32: type_expr
 val type_int64: type_expr
+(*> JOCAML *)
+val type_channel : type_expr -> type_expr
+val type_location : type_expr
+val type_process : type_expr
+(*< JOCAML *)
 
 val path_int: Path.t
 val path_char: Path.t
@@ -44,7 +49,9 @@ val path_option: Path.t
 val path_nativeint: Path.t
 val path_int32: Path.t
 val path_int64: Path.t
-
+(*> JOCAML *)
+val path_process : Path.t
+(*< JOCAML *)
 val path_match_failure: Path.t
 val path_assert_failure : Path.t
 

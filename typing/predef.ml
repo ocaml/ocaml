@@ -32,6 +32,11 @@ and ident_option = Ident.create "option"
 and ident_nativeint = Ident.create "nativeint"
 and ident_int32 = Ident.create "int32"
 and ident_int64 = Ident.create "int64"
+(*> JOCAML *)
+and ident_channel = Ident.create "channel"
+and ident_process = Ident.create "process"
+and ident_location = Ident.create "location"
+(*< JOCAML *)
 
 let path_int = Pident ident_int
 and path_char = Pident ident_char
@@ -47,6 +52,11 @@ and path_option = Pident ident_option
 and path_nativeint = Pident ident_nativeint
 and path_int32 = Pident ident_int32
 and path_int64 = Pident ident_int64
+(*> JOCAML *)
+and path_channel = Pident ident_channel
+and path_process = Pident ident_process
+and path_location = Pident ident_location
+(*< JOCAML *)
 
 let type_int = newgenty (Tconstr(path_int, [], ref Mnil))
 and type_char = newgenty (Tconstr(path_char, [], ref Mnil))
@@ -61,6 +71,11 @@ and type_option t = newgenty (Tconstr(path_option, [t], ref Mnil))
 and type_nativeint = newgenty (Tconstr(path_nativeint, [], ref Mnil))
 and type_int32 = newgenty (Tconstr(path_int32, [], ref Mnil))
 and type_int64 = newgenty (Tconstr(path_int64, [], ref Mnil))
+(*> JOCAML *)
+and type_channel t = newgenty (Tconstr(path_channel, [t], ref Mnil))
+and type_process = newgenty (Tconstr(path_process, [], ref Mnil))
+and type_location = newgenty (Tconstr(path_location, [], ref Mnil))
+(*< JOCAML *)
 
 let ident_match_failure = Ident.create "Match_failure"
 and ident_out_of_memory = Ident.create "Out_of_memory"
@@ -129,6 +144,15 @@ let build_initial_env add_type add_exception empty_env =
      type_kind = Type_variant["None", []; "Some", [tvar]];
      type_manifest = None;
      type_variance = [true, false]}
+(*> JOCAML *)
+  and decl_channel =
+    let tvar = newgenvar() in
+    {type_params = [tvar];
+    type_arity = 1;
+    type_kind = Type_abstract;
+    type_manifest = None;
+    type_variance = [false, true]} (* Channels are contravariant *)
+(*< JOCAML *)
   in
 
   add_exception ident_match_failure
@@ -144,6 +168,11 @@ let build_initial_env add_type add_exception empty_env =
   add_exception ident_division_by_zero [] (
   add_exception ident_assert_failure
                          [newgenty (Ttuple[type_string; type_int; type_int])] (
+(*> JOCAML *)
+  add_type ident_channel decl_channel (
+  add_type ident_process decl_abstr (
+  add_type ident_location decl_abstr (
+(*< JOCAML *)
   add_type ident_int64 decl_abstr (
   add_type ident_int32 decl_abstr (
   add_type ident_nativeint decl_abstr (
@@ -159,6 +188,9 @@ let build_initial_env add_type add_exception empty_env =
   add_type ident_char decl_abstr (
   add_type ident_int decl_abstr (
     empty_env)))))))))))))))))))))))))
+(*> JOCAML *)
+    )))
+(*< JOCAML *)
 
 let builtin_values =
   List.map (fun id -> Ident.make_global id; (Ident.name id, id))
