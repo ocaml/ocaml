@@ -604,7 +604,7 @@ and print_out_type_decl kwd ppf (name, args, ty, constraints) =
         (print_list print_out_constr (fun ppf -> fprintf ppf "@ | ")) constrs
         print_constraints constraints
   | ty ->
-      fprintf ppf "@[<2>@[<hv 2>%t = %a@]@ %a@]"
+      fprintf ppf "@[<2>@[<hv 2>%t = %a@]%a@]"
         print_name_args !outcome_type ty
         print_constraints constraints
 and print_out_constr ppf (name, tyl) =
