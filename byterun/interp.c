@@ -815,10 +815,10 @@ value interprete(prog, prog_size)
     Instruct(LSLINT):
       accu = (value)((((long) accu - 1) << Long_val(*sp++)) + 1); Next;
     Instruct(LSRINT):
-      accu = (value)((((long) accu - 1) >> Long_val(*sp++)) | 1); Next;
-    Instruct(ASRINT):
       accu = (value)((((unsigned long) accu - 1) >> Long_val(*sp++)) | 1);
       Next;
+    Instruct(ASRINT):
+      accu = (value)((((long) accu - 1) >> Long_val(*sp++)) | 1); Next;
 
 #define Integer_comparison(opname,tst) \
     Instruct(opname): \
