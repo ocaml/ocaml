@@ -308,7 +308,7 @@ test_framed: dummy
 
 test_latex: dummy
 	$(MKDIR) $@ 
-	$(OCAMLDOC_RUN) -latex -d $@ $(INCLUDES) odoc*.ml odoc*.mli
+	$(OCAMLDOC_RUN) -latex -d $@ $(INCLUDES) odoc*.ml odoc*.mli ../stdlib/*.mli ../otherlibs/unix/unix.mli
 
 test_man: dummy
 	$(MKDIR) $@ 
