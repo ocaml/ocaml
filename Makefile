@@ -207,7 +207,7 @@ opt-core:runtimeopt ocamlopt libraryopt
 opt: runtimeopt ocamlopt libraryopt otherlibrariesopt camlp4opt
 
 # Native-code versions of the tools
-opt.opt: ocamlc.opt ocamlopt.opt ocamllex.opt
+opt.opt: ocamlc.opt ocamlopt.opt ocamllex.opt camlp4optopt
 
 # Installation
 install: FORCE
@@ -541,6 +541,8 @@ camlp4out: ocamlc
 	set -e; cd camlp4; $(MAKE) all
 camlp4opt: ocamlopt
 	set -e; cd camlp4; $(MAKE) opt
+camlp4optopt: ocamlopt
+	set -e; cd camlp4; $(MAKE) optp4
 partialclean::
 	set -e; cd camlp4; $(MAKE) clean
 alldepend::
