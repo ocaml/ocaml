@@ -423,17 +423,23 @@ case "$host" in
 esac
 
 if $int64_native; then
-  sh ./runtest int64align.c
-  case $? in
-    0) echo "64-bit integers can be word-aligned."
-       echo "#undef ARCH_ALIGN_INT64" >> m.h;;
-    1) echo "64-bit integers must be doubleword-aligned."
-       echo "#define ARCH_ALIGN_INT64" >> m.h;;
-    *) echo "Something went wrong during alignment determination for 64-bit integers."
-       echo "I'm going to assume this architecture has alignment constraints."
-       echo "That's a safe bet: Objective Caml will work even if"
-       echo "this architecture has actually no alignment constraints."
-       echo "#define ARCH_ALIGN_INT64" >> m.h;;
+  case "$host" in
+    hppa*-*-*)
+      echo "64-bit integers must be doubleword-aligned."
+      echo "#define ARCH_ALIGN_INT64" >> m.h;;
+    *)
+      sh ./runtest int64align.c
+      case $? in
+        0) echo "64-bit integers can be word-aligned."
+           echo "#undef ARCH_ALIGN_INT64" >> m.h;;
+        1) echo "64-bit integers must be doubleword-aligned."
+           echo "#define ARCH_ALIGN_INT64" >> m.h;;
+        *) echo "Something went wrong during alignment determination for 64-bit integers."
+           echo "I'm going to assume this architecture has alignment constraints."
+           echo "That's a safe bet: Objective Caml will work even if"
+           echo "this architecture has actually no alignment constraints."
+           echo "#define ARCH_ALIGN_INT64" >> m.h;;
+      esac
   esac
 else
   echo "#undef ARCH_ALIGN_INT64" >> m.h
@@ -557,7 +563,7 @@ case "$host" in
   mips-*-irix6*)                arch=mips; system=irix;;
   hppa1.1-*-hpux*)              arch=hppa; system=hpux;;
   hppa2.0*-*-hpux*)             arch=hppa; system=hpux;;
-  hppa1.1-*-nextstep*)          arch=hppa; system=nextstep;;
+  hppa*-*-linux*)		arch=hppa; system=linux;;
   rs6000-*-aix*)                arch=power; model=rs6000; system=aix;;
   powerpc-*-aix*)               arch=power; model=ppc; system=aix;;
   powerpc-*-linux*)             arch=power; model=ppc; system=elf;;
@@ -567,9 +573,8 @@ case "$host" in
   arm*-*-linux*)                arch=arm; system=linux;;
   ia64-*-linux*)                arch=ia64; system=linux;;
   ia64-*-freebsd*)              arch=ia64; system=freebsd;;
-  amd64-*-freebsd*)             arch=amd64; system=freebsd;;
-  x86_64-*-freebsd*)            arch=amd64; system=freebsd;;
   x86_64-*-linux*)              arch=amd64; system=linux;;
+  x86_64-*-freebsd*)            arch=amd64; system=freebsd;;
 esac
 
 if test -z "$ccoption"; then

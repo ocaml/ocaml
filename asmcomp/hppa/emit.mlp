@@ -31,14 +31,6 @@ open Mach
 open Linearize
 open Emitaux
 
-(* Adaptation to HPUX and NextStep *)
-
-let hpux =
-  match Config.system with
-    "hpux" -> true
-  | "nextstep" -> false
-  | _ -> fatal_error "Emit_hppa.hpux"
-
 (* Tradeoff between code size and code speed *)
 
 let fastcode_flag = ref true
@@ -66,29 +58,25 @@ let slot_offset loc cl =
 
 (* Output a label *)
 
-let label_prefix = if hpux then "L$" else "L"
-
 let emit_label lbl =
-  emit_string label_prefix; emit_int lbl
+  emit_string "L$"; emit_int lbl
 
 (* Output a symbol *)
 
-let symbol_prefix = if hpux then "" else "_"
-
 let emit_symbol s =
-  emit_string symbol_prefix; Emitaux.emit_symbol '$' s
+  Emitaux.emit_symbol '$' s
 
 (* Output a pseudo-register *)
 
 let emit_reg r =
   match r.loc with
     Reg r -> emit_string (register_name r)
-  | _ -> fatal_error "Emit.emit_reg"
+  | _ -> assert false
 
 (* Output low address / high address prefixes *)
 
-let low_prefix = if hpux then "RR'" else "R\`"
-let high_prefix = if hpux then "LR'" else "L\`"
+let low_prefix = "RR%"
+let high_prefix = "LR%"
 
 let is_immediate n = (n < 16) && (n >= -16) (* 5 bits *)
 
@@ -99,19 +87,13 @@ let emit_nativeint_low n = emit_string low_prefix; emit_nativeint n
 let emit_nativeint_high n = emit_string high_prefix; emit_nativeint n
 
 let emit_symbol_low s =
-  if hpux
-  then `RR'{emit_symbol s}-$global$`
-  else `R\`{emit_symbol s}`
+  `RR%{emit_symbol s}-$global$`
 
 let load_symbol_high s =
-  if hpux
-  then `	addil	LR'{emit_symbol s}-$global$, %r27\n`
-  else `	ldil	L\`{emit_symbol s}, %r1\n`
+  `	addil	LR%{emit_symbol s}-$global$, %r27\n`
 
 let load_symbol_offset_high s ofs =
-  if hpux
-  then `	addil	LR'{emit_symbol s}-$global$+{emit_int ofs}, %r27\n`
-  else `	ldil	L\`{emit_symbol s}+{emit_int ofs}, %r1\n`
+  `	addil	LR%{emit_symbol s}-$global$+{emit_int ofs}, %r27\n`
 
 (* Record imported and defined symbols *)
 
@@ -120,14 +102,12 @@ let defined_symbols = ref StringSet.empty
 let called_symbols = ref StringSet.empty
 
 let use_symbol s =
-  if hpux then used_symbols := StringSet.add s !used_symbols
+  used_symbols := StringSet.add s !used_symbols
 let define_symbol s =
   defined_symbols := StringSet.add s !defined_symbols
 let call_symbol s =
-  if hpux then begin
-    used_symbols := StringSet.add s !used_symbols;
-    called_symbols := StringSet.add s !called_symbols
-  end
+  used_symbols := StringSet.add s !used_symbols;
+  called_symbols := StringSet.add s !called_symbols
 
 (* An external symbol is code if either it is branched to, or
    it is one of the caml_apply* caml_curry* caml_tuplify* special functions. *)
@@ -167,8 +147,8 @@ let emit_load instr addr arg dst =
         load_symbol_high s;
         `	{emit_string instr}	{emit_symbol_low s}(%r1), {emit_reg dst}\n`
   | Ibased(s, ofs) ->
-        load_symbol_offset_high s ofs;
         use_symbol s;
+        load_symbol_offset_high s ofs;
         `	{emit_string instr}	{emit_symbol_low s}+{emit_int ofs}(%r1), {emit_reg dst}\n`
   | Iindexed ofs ->
       if is_offset ofs then
@@ -266,14 +246,10 @@ let emit_float_store addr arg src doubleword =
           `	fstws	{emit_reg src}R, 4(%r1)\n`
       end
 
-(* Output an align directive.
-   Under HPUX: alignment = number of bytes
-   Undex NextStep: alignment = log2 of number of bytes *)
+(* Output an align directive. *)
 
 let emit_align n =
-  if hpux
-  then `	.align	{emit_int n}\n`
-  else `	.align	{emit_int(Misc.log2 n)}\n`
+  `	.align	{emit_int n}\n`
 
 (* Record live pointers at call points *)
 
@@ -315,35 +291,17 @@ let emit_frame fd =
 
 let float_constants = ref ([] : (int * string) list)
 
-let emit_float_constant (lbl, cst) =
-  if hpux then begin
+let emit_float_constants () =
+  if Config.system = "hpux" then begin
     `	.space	$TEXT$\n`;
     `	.subspa	$LIT$\n`
   end else
-    `	.literal8\n`;
+    `	.text\n`;
   emit_align 8;
-  `{emit_label lbl}:	.double	{emit_string cst}\n`
-
-(* Record external calls and generate stub code for these *)
-
-let stub_label_table = (Hashtbl.create 19 : (string, int) Hashtbl.t)
-
-let stub_label symb =
-  try
-    Hashtbl.find stub_label_table symb
-  with Not_found ->
-    let lbl = new_label() in
-    Hashtbl.add stub_label_table symb lbl;
-    lbl
-
-let emit_stub symb lbl =
-  `{emit_label lbl}:	ldil	L\`{emit_symbol symb}, %r1\n`;
-  `	ble,n	{emit_symbol_low symb}(4, %r1)\n`
-
-let emit_stubs () =
-  `	.text\n`;
-  emit_align 4;
-  Hashtbl.iter emit_stub stub_label_table
+  List.iter
+    (fun (lbl, cst) -> `{emit_label lbl}:	.double	{emit_string cst}\n`)
+    !float_constants;
+  float_constants := []
 
 (* Describe the registers used to pass arguments to a C function *)
 
@@ -364,16 +322,8 @@ let describe_call arg =
 (* Output a function call *)
 
 let emit_call s retreg =
-  if hpux then begin
-    `	bl	{emit_symbol s}, {emit_string retreg}\n`;
-    call_symbol s
-  end else
-  if StringSet.mem s !defined_symbols then
-    `	bl	{emit_symbol s}, {emit_string retreg}\n`
-  else begin
-    let lbl = stub_label s in
-    `	jbsr	{emit_symbol s}, {emit_string retreg}, {emit_label lbl}\n`
-  end
+  call_symbol s;
+  `	bl	{emit_symbol s}, {emit_string retreg}\n`
 
 (* Names of various instructions *)
 
@@ -383,14 +333,14 @@ let name_for_int_operation = function
   | Iand -> "and"
   | Ior -> "or"
   | Ixor -> "xor"
-  | _ -> Misc.fatal_error "Emit.name_for_int_operation"
+  | _ -> assert false
 
 let name_for_float_operation = function
     Iaddf -> "fadd,dbl"
   | Isubf -> "fsub,dbl"
   | Imulf -> "fmpy,dbl"
   | Idivf -> "fdiv,dbl"
-  | _ -> Misc.fatal_error "Emit.name_for_float_operation"
+  | _ -> assert false
 
 let name_for_specific_operation = function
     Ishift1add -> "sh1add"
@@ -465,7 +415,7 @@ let rec emit_instr i dslot =
               `	fldds	0(%r1), {emit_reg dst}\n`
               end
           | (_, _) ->
-              fatal_error "Emit: Imove"
+              assert false
         end
     | Lop(Iconst_int n) ->
         if is_offset_native n then
@@ -511,19 +461,13 @@ let rec emit_instr i dslot =
     | Lop(Iextcall(s, alloc)) ->
         call_symbol s;
         if alloc then begin
-          if hpux then begin
-            `	ldil	LR'{emit_symbol s}, %r22\n`;
-            describe_call i.arg;
-            emit_call "caml_c_call" "%r2";
-            `	ldo	RR'{emit_symbol s}(%r22), %r22\n`  (* in delay slot *)
-          end else begin
-            `	ldil	L\`{emit_symbol s}, %r22\n`;
-            emit_call "caml_c_call" "%r2";
-          `	ldo	{emit_symbol_low s}(%r22), %r22\n` (* in delay slot *)
-          end;
+          `	ldil	LR%{emit_symbol s}, %r22\n`;
+          describe_call i.arg;
+          emit_call "caml_c_call" "%r2";
+          `	ldo	RR%{emit_symbol s}(%r22), %r22\n`;  (* in delay slot *)
           record_frame i.live
         end else begin
-          if hpux then describe_call i.arg;
+          describe_call i.arg;
           emit_call s "%r2";
           fill_delay_slot dslot
         end
@@ -584,7 +528,7 @@ let rec emit_instr i dslot =
           (* Cannot use %r1 either *)
           `	ldi	{emit_int n}, %r29\n`; (* in delay slot *)
           record_frame i.live;
-          `	addi	4, %r3, {emit_reg i.res.(0)}\n` (* in delay slot *)
+          `	addi	4, %r3, {emit_reg i.res.(0)}\n`
         end
     | Lop(Iintop Imul) ->
         `	stws,ma	{emit_reg i.arg.(0)}, 8(%r30)\n`;
@@ -596,21 +540,11 @@ let rec emit_instr i dslot =
         `	ldws,mb	-8(%r30), {emit_reg i.res.(0)}\n`
     | Lop(Iintop Idiv) ->
         (* Arguments are assumed to be in %r26 and %r25, result in %r29 *)
-        if hpux then
-          `	bl	$$divI, %r31\n`
-        else begin
-          `	ldil	L\`$$divI, %r1\n`;
-          `	ble	R\`$$divI(4, %r1)\n`
-        end;
+        `	bl	$$divI, %r31\n`;
         fill_delay_slot dslot
     | Lop(Iintop Imod) ->
         (* Arguments are assumed to be in %r26 and %r25, result in %r29 *)
-        if hpux then
-          `	bl	$$remI, %r31\n`
-        else begin
-          `	ldil	L\`$$remI, %r1\n`;
-          `	ble	R\`$$remI(4, %r1)\n`
-        end;
+        `	bl	$$remI, %r31\n`;
         fill_delay_slot dslot
     | Lop(Iintop Ilsl) ->
         `	subi	31, {emit_reg i.arg.(1)}, %r1\n`;
@@ -641,13 +575,19 @@ let rec emit_instr i dslot =
     | Lop(Iintop_imm(Idiv, n)) ->
         let l = Misc.log2 n in
         `	comclr,>= {emit_reg i.arg.(0)}, %r0, %r1\n`;
-        `	zdepi	-1, 31, {emit_int l}, %r1\n`;
+	if not (l = 0) then
+          `	zdepi	-1, 31, {emit_int l}, %r1\n`
+	else
+	  `	xor	%r1, %r1, %r1\n`;
         `	add	{emit_reg i.arg.(0)}, %r1, %r1\n`;
         `	extrs	%r1, {emit_int(31-l)}, {emit_int(32-l)}, {emit_reg i.res.(0)}\n`
     | Lop(Iintop_imm(Imod, n)) ->
         let l = Misc.log2 n in
         `	comclr,>= {emit_reg i.arg.(0)}, %r0, %r1\n`;
-        `	zdepi	-1, 31, {emit_int l}, %r1\n`;
+	if not (l = 0) then
+          `	zdepi	-1, 31, {emit_int l}, %r1\n`
+	else
+	  `	xor	%r1, %r1, %r1\n`;
         `	add	{emit_reg i.arg.(0)}, %r1, %r1\n`;
         `	depi	0, 31, {emit_int l}, %r1\n`;
         `	sub	{emit_reg i.arg.(0)}, %r1, {emit_reg i.res.(0)}\n`
@@ -669,7 +609,7 @@ let rec emit_instr i dslot =
         `	comiclr,<< {emit_int n}, {emit_reg i.arg.(0)}, %r0\n`;
         `	b,n	{emit_label !range_check_trap}\n`
     | Lop(Iintop_imm(op, n)) ->
-        fatal_error "Emit_hppa: Iintop_imm"
+        assert false
     | Lop(Iaddf | Isubf | Imulf | Idivf as op) ->
         let instr = name_for_float_operation op in
         `	{emit_string instr} {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
@@ -940,7 +880,7 @@ let fixup_cond_branches funbody =
          the code positions. *)
       displ < -1843 || displ > 1842
     with Not_found ->
-      fatal_error "Emit_hppa.long_branch" in
+      assert false in
   let rec fix_branches pos i =
     match i.desc with
       Lend -> ()
@@ -970,7 +910,8 @@ let fundecl fundecl =
   define_symbol fundecl.fun_name;
   range_check_trap := 0;
   let n = frame_size() in
-  if hpux then begin
+  begin match Config.system with
+  | "hpux" ->
     `	.code\n`;
     `	.align	4\n`;
     `	.export	{emit_symbol fundecl.fun_name}, entry, priv_lev=3\n`;
@@ -981,11 +922,13 @@ let fundecl fundecl =
     else
       `	.callinfo frame={emit_int n}, no_calls\n`;
     `	.entry\n`
-  end else begin
+  | "linux" ->
     `	.text\n`;
-    `	.align	2\n`;
+    `	.align	8\n`;
     `	.globl	{emit_symbol fundecl.fun_name}\n`;
     `{emit_symbol fundecl.fun_name}:\n`
+  | _ ->
+    assert false
   end;
   if !contains_calls then
     `	stwm	%r2, {emit_int n}(%r30)\n`
@@ -995,25 +938,20 @@ let fundecl fundecl =
   emit_all fundecl.fun_body;
   if !range_check_trap > 0 then begin
     `{emit_label !range_check_trap}:\n`;
-    if hpux then begin
-      emit_call "caml_ml_array_bound_error" "%r31";
-      `	nop\n`
-    end else begin
-      `	ldil	L\`{emit_symbol "caml_ml_array_bound_error"}, %r1\n`;
-      `	ble,n	{emit_symbol_low "caml_ml_array_bound_error"}(4, %r1)\n`
-    end
+    emit_call "caml_ml_array_bound_error" "%r31";
+    `	nop\n`
   end;
-  if hpux then begin
+  if Config.system = "hpux"then begin
     `	.exit\n`;
     `	.procend\n`
   end;
-  List.iter emit_float_constant !float_constants
+  emit_float_constants()
 
 (* Emission of data *)
 
 let declare_global s =
   define_symbol s;
-  if hpux
+  if Config.system = "hpux"
   then `	.export	{emit_symbol s}, data\n`
   else `	.globl	{emit_symbol s}\n`
 
@@ -1046,8 +984,9 @@ let emit_item = function
       emit_string_directive "	.ascii	" s
   | Cskip n ->
       if n > 0 then
-        if hpux then `	.block	{emit_int n}\n`
-                else `	.space	{emit_int n}\n`
+        if Config.system = "hpux"
+        then `	.block	{emit_int n}\n`
+        else `	.space	{emit_int n}\n`
   | Calign n ->
       emit_align n
 
@@ -1058,7 +997,7 @@ let data l =
 (* Beginning / end of an assembly file *)
 
 let begin_assembly() =
-  if hpux then begin
+  if Config.system = "hpux" then begin
     `	.space $PRIVATE$\n`;
     `	.subspa $DATA$,quad=1,align=8,access=31\n`;
     `	.subspa $BSS$,quad=1,align=8,access=31,zero,sort=82\n`;
@@ -1072,7 +1011,6 @@ let begin_assembly() =
   used_symbols := StringSet.empty;
   defined_symbols := StringSet.empty;
   called_symbols := StringSet.empty;
-  Hashtbl.clear stub_label_table;
   let lbl_begin = Compilenv.make_symbol (Some "data_begin") in
   `	.data\n`;
   declare_global lbl_begin;
@@ -1084,7 +1022,6 @@ let begin_assembly() =
 
 
 let end_assembly() =
-  if not hpux then emit_stubs();
   `	.code\n`;
   let lbl_end = Compilenv.make_symbol (Some "code_end") in
   declare_global lbl_end;
@@ -1100,4 +1037,4 @@ let end_assembly() =
   `	.long	{emit_int (List.length !frame_descriptors)}\n`;
   List.iter emit_frame !frame_descriptors;
   frame_descriptors := [];
-  if hpux then emit_imports()
+  emit_imports()
