@@ -33,7 +33,7 @@ type error =
   | With_mismatch of Longident.t * Includemod.error list
   | Repeated_name of string * string
   | Non_generalizable of type_expr
-  | Non_generalizable_class of Ident.t * class_type
+  | Non_generalizable_class of Ident.t * class_declaration
   | Non_generalizable_module of module_type
 
 exception Error of Location.t * error
@@ -154,12 +154,21 @@ and transl_signature env sg =
       let rem = transl_signature newenv srem in
       sg @ rem
   | {psig_desc = Psig_class cl} :: srem ->
-      let (classes, newenv) = Typeclass.transl_class_types env cl in
+      let (classes, newenv) = Typeclass.class_descriptions env cl in
+      let rem = transl_signature newenv srem in
+      List.flatten
+        (map_end
+           (fun (i, d, i', d', i'', d'', i''', d''', _, _, _) ->
+              [Tsig_class(i, d);    Tsig_cltype(i', d');
+               Tsig_type(i'', d''); Tsig_type(i''', d''')])
+           classes [rem])
+  | {psig_desc = Psig_class_type cl} :: srem ->
+      let (classes, newenv) = Typeclass.class_type_declarations env cl in
       let rem = transl_signature newenv srem in
       List.flatten
         (map_end
            (fun (i, d, i', d', i'', d'') ->
-              [Tsig_class(i, d); Tsig_type(i', d'); Tsig_type(i'', d'')])
+              [Tsig_cltype(i, d); Tsig_type(i', d'); Tsig_type(i'', d'')])
            classes [rem])
 
 and transl_modtype_info env sinfo =
@@ -210,19 +219,18 @@ let check_unique_names sg =
     | Pstr_open lid -> ()
     | Pstr_class decl ->
         List.iter
-          (fun {pcl_name = name} ->
+          (fun {pci_name = name} ->
+             check "type" item.pstr_loc type_names name)
+          decl
+    | Pstr_class_type decl ->
+        List.iter
+          (fun {pci_name = name} ->
              check "type" item.pstr_loc type_names name)
           decl
   in
     List.iter check_item sg
 
 (* Check that all core type schemes in a structure are closed *)
-
-let closed_class classty =
-  List.for_all Ctype.closed_schema classty.cty_params &
-  List.for_all Ctype.closed_schema classty.cty_args &
-  Vars.fold (fun _ (_, ty) -> (or) (Ctype.closed_schema ty))
-            classty.cty_vars true
 
 let rec closed_modtype = function
     Tmty_ident p -> true
@@ -232,7 +240,6 @@ let rec closed_modtype = function
 and closed_signature_item = function
     Tsig_value(id, desc) -> Ctype.closed_schema desc.val_type
   | Tsig_module(id, mty) -> closed_modtype mty
-  | Tsig_class(id, classty) -> closed_class classty
   | _ -> true
 
 let check_nongen_scheme env = function
@@ -242,14 +249,6 @@ let check_nongen_scheme env = function
           if not (Ctype.closed_schema exp.exp_type) then
             raise(Error(exp.exp_loc, Non_generalizable exp.exp_type)))
         pat_exp_list
-  | Tstr_class cl ->
-      List.iter
-        (fun (id, imp) ->
-           let desc = Env.find_class (Pident id) env in
-           if not (closed_class desc) then
-             raise(Error(imp.cl_loc,
-                   Non_generalizable_class (id, desc))))
-        cl
   | Tstr_module(id, md) ->
       if not (closed_modtype md.mod_type) then
         raise(Error(md.mod_loc, Non_generalizable_module md.mod_type))
@@ -385,17 +384,40 @@ and type_struct env sstr =
       let (path, mty) = type_module_path env loc lid in
       let sg = extract_sig_open env loc mty in
       type_struct (Env.open_signature path sg env) srem
-  | {pstr_desc = Pstr_class cl; pstr_loc = loc} :: srem ->
-      let (classes, new_env) = Typeclass.transl_classes env cl in
+  | {pstr_desc = Pstr_class cl} :: srem ->
+      let (classes, new_env) = Typeclass.class_declarations env cl in
       let (str_rem, sig_rem, final_env) = type_struct new_env srem in
-      (Tstr_class (List.map (fun (i, _, _, _, _, _, c) -> (i, c)) classes)
-       :: Tstr_type (List.map (fun (_, _, i, d, _, _, _) -> (i, d)) classes)
-       :: Tstr_type (List.map (fun (_, _, _, _, i, d, _) -> (i, d)) classes)
-       :: str_rem,
+      (Tstr_class
+         (List.map (fun (i, _,_,_,_,_,_,_, s, m, c) ->
+            (i, s, m, c)) classes) ::
+       Tstr_cltype
+         (List.map (fun (_,_, i, d, _,_,_,_,_,_,_) -> (i, d)) classes) ::
+       Tstr_type
+         (List.map (fun (_,_,_,_, i, d, _,_,_,_,_) -> (i, d)) classes) ::
+       Tstr_type
+         (List.map (fun (_,_,_,_,_,_, i, d, _,_,_) -> (i, d)) classes) ::
+       str_rem,
        List.flatten
          (map_end
-            (fun (i, d, i', d', i'', d'', _) ->
-               [Tsig_class(i, d); Tsig_type(i', d'); Tsig_type(i'', d'')])
+            (fun (i, d, i', d', i'', d'', i''', d''', _, _, _) ->
+               [Tsig_class(i, d);    Tsig_cltype(i', d');
+                Tsig_type(i'', d''); Tsig_type(i''', d''')])
+            classes [sig_rem]),
+       final_env)
+  | {pstr_desc = Pstr_class_type cl} :: srem ->
+      let (classes, new_env) = Typeclass.class_type_declarations env cl in
+      let (str_rem, sig_rem, final_env) = type_struct new_env srem in
+      (Tstr_cltype
+         (List.map (fun (i, d, _, _, _, _) -> (i, d)) classes) ::
+       Tstr_type
+         (List.map (fun (_, _, i, d, _, _) -> (i, d)) classes) ::
+       Tstr_type
+         (List.map (fun (_, _, _, _, i, d) -> (i, d)) classes) ::
+       str_rem,
+       List.flatten
+         (map_end
+            (fun (i, d, i', d', i'', d'') ->
+               [Tsig_cltype(i, d); Tsig_type(i', d'); Tsig_type(i'', d'')])
             classes [sig_rem]),
        final_env)
 
@@ -489,7 +511,7 @@ let report_error = function
   | Non_generalizable_class (id, desc) ->
       open_box 0;
       print_string "The type of this class,"; print_space();
-      class_type id desc; print_string ","; print_space();
+      class_declaration id desc; print_string ","; print_space();
       print_string "contains type variables that cannot be generalized";
       close_box()
   | Non_generalizable_module mty ->

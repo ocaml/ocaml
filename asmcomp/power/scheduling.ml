@@ -16,9 +16,9 @@
 open Arch
 open Mach
 
-class scheduler () as self =
+class scheduler = struct
 
-inherit Schedgen.scheduler_generic () as super
+inherit Schedgen.scheduler_generic
 
 (* Latencies (in cycles). Based roughly on the "common model". *)
 
@@ -61,5 +61,5 @@ method reload_retaddr_issue_cycles = 3
 
 end
 
-let fundecl f = (new scheduler ())#schedule_fundecl f
+let fundecl f = (new scheduler)#schedule_fundecl f
 

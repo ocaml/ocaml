@@ -43,9 +43,9 @@ let rec select_addr = function
   | exp ->
       (Alinear exp, 0)
 
-class selector () as self =
+class selector = struct (self)
 
-inherit Selectgen.selector_generic() as super
+inherit Selectgen.selector_generic as super
 
 method is_immediate n = (n <= 4095) && (n >= -4096)
 
@@ -101,4 +101,4 @@ method insert_move_args arg loc stacksize =
 
 end
 
-let fundecl f = (new selector ())#emit_fundecl f
+let fundecl f = (new selector)#emit_fundecl f

@@ -19,9 +19,9 @@ open Reg
 open Arch
 open Mach
 
-class selector () as self =
+class selector = struct
 
-inherit Selectgen.selector_generic() as super
+inherit Selectgen.selector_generic
 
 method is_immediate (n : int) = true
 
@@ -39,4 +39,4 @@ method select_addressing = function
 
 end
 
-let fundecl f = (new selector ())#emit_fundecl f
+let fundecl f = (new selector)#emit_fundecl f

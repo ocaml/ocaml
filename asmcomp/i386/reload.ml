@@ -23,9 +23,9 @@ let stackp r =
     Stack _ -> true
   | _ -> false
 
-class reload () as self =
+class reload = object (self)
 
-inherit Reloadgen.reload_generic () as super
+inherit Reloadgen.reload_generic as super
 
 method makereg r =
   match r.typ with
@@ -64,6 +64,4 @@ method reload_test tst arg =
 end
 
 let fundecl f =
-  (new reload ())#fundecl f
-
-
+  (new reload)#fundecl f

@@ -104,7 +104,7 @@ let some_load = (Iload(Cmm.Word, Arch.identity_addressing))
 
 (* The generic scheduler *)
 
-class virtual scheduler_generic () as self =
+class virtual scheduler_generic = object (self)
 
 (* Determine whether an operation ends a basic block or not.
    Can be overriden for some processors to signal specific instructions
@@ -122,7 +122,7 @@ method oper_in_basic_block = function
 
 (* Determine whether an instruction ends a basic block or not *)
 
-method protected instr_in_basic_block instr =
+method private instr_in_basic_block instr =
   match instr.desc with
     Lop op -> self#oper_in_basic_block op
   | Lreloadretaddr -> true
@@ -140,19 +140,19 @@ method is_load = function
     Iload(_, _) -> true
   | _ -> false
 
-method protected instr_is_store instr =
+method private instr_is_store instr =
   match instr.desc with
     Lop op -> self#is_store op
   | _ -> false
 
-method protected instr_is_load instr =
+method private instr_is_load instr =
   match instr.desc with
     Lop op -> self#is_load op
   | _ -> false
 
 (* Estimate the latency of an operation. *)
 
-virtual oper_latency : Mach.operation -> int
+method virtual oper_latency : Mach.operation -> int
 
 (* Estimate the latency of a Lreloadretaddr operation. *)
 
@@ -160,7 +160,7 @@ method reload_retaddr_latency = self#oper_latency some_load
 
 (* Estimate the delay needed to evaluate an instruction *)
 
-method protected instr_latency instr =
+method private instr_latency instr =
   match instr.desc with
     Lop op -> self#oper_latency op
   | Lreloadretaddr -> self#reload_retaddr_latency
@@ -168,7 +168,7 @@ method protected instr_latency instr =
 
 (* Estimate the number of cycles consumed by emitting an operation. *)
 
-virtual oper_issue_cycles : Mach.operation -> int
+method virtual oper_issue_cycles : Mach.operation -> int
 
 (* Estimate the number of cycles consumed by emitting a Lreloadretaddr. *)
 
@@ -176,7 +176,7 @@ method reload_retaddr_issue_cycles = self#oper_issue_cycles some_load
 
 (* Estimate the number of cycles consumed by emitting an instruction. *)
 
-method protected instr_issue_cycles instr =
+method private instr_issue_cycles instr =
   match instr.desc with
     Lop op -> self#oper_issue_cycles op
   | Lreloadretaddr -> self#reload_retaddr_issue_cycles
@@ -184,7 +184,7 @@ method protected instr_issue_cycles instr =
 
 (* Add an instruction to the code dag *)
 
-method protected add_instruction ready_queue instr =
+method private add_instruction ready_queue instr =
   let delay = self#instr_latency instr in
   let node =
     { instr = instr;
@@ -251,7 +251,7 @@ method protected add_instruction ready_queue instr =
    maximal distance to result.  If we can't find any, return None.
    This does not take multiple issues into account, though. *)
 
-method protected ready_instruction date queue =
+method private ready_instruction date queue =
   let rec extract best = function
     [] ->
       if best == dummy_node then None else Some best
@@ -265,7 +265,7 @@ method protected ready_instruction date queue =
 (* Schedule a basic block, adding its instructions in front of the given
    instruction sequence *)
 
-method protected reschedule ready_queue date cont =
+method private reschedule ready_queue date cont =
   if ready_queue = [] then cont else begin
     match self#ready_instruction date ready_queue with
       None ->

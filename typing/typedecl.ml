@@ -29,6 +29,7 @@ type error =
   | Unconsistent_constraint
   | Type_clash of (type_expr * type_expr) list
   | Null_arity_external
+  | Unbound_type_var
 
 exception Error of Location.t * error
 
@@ -72,40 +73,29 @@ let transl_declaration env (name, sdecl) (id, decl) =
     raise(Error(sdecl.ptype_loc, Repeated_parameter))
   end;
 
-  let cstr_params =
-    List.map (function (v, _, loc) -> type_variable loc v) sdecl.ptype_cstrs
-  in
-  List.iter2
-    (fun (v, sty, loc) ty' ->
+  List.iter
+    (function (sty, sty', loc) ->
        try
-         Ctype.unify env (transl_simple_type env false sty) ty'
+         Ctype.unify env (transl_simple_type env false sty)
+                         (transl_simple_type env false sty')
        with Ctype.Unify _ ->
          raise(Error(loc, Unconsistent_constraint)))
-    sdecl.ptype_cstrs cstr_params;
+    sdecl.ptype_cstrs;
 
-  let decl' =
-    { type_params = decl.type_params;
-      type_arity = decl.type_arity;
-      type_kind =
-        Type_abstract;
-      type_manifest =
-        begin match (decl.type_manifest, sdecl.ptype_manifest) with
-          (None, None) -> None
-        | (Some ty, Some sty) ->
-            let ty' =
-              Ctype.unroll_abbrev id decl.type_params
-                (transl_simple_type env true sty)
-            in
-            if Ctype.cyclic_abbrev env id ty' then
-              raise(Error(sdecl.ptype_loc, Recursive_abbrev name));
-            begin try Ctype.unify env ty' ty with Ctype.Unify trace ->
-              raise(Error(sdecl.ptype_loc, Type_clash trace))
-            end;
-            Some ty
-        | _ ->
-            fatal_error "Typedecl.transl_declaration"
-        end } in
-  (id, decl')
+  begin match sdecl.ptype_manifest with
+    None ->
+      ()
+  | Some sty ->
+      let ty = transl_simple_type env true sty in
+      if Ctype.cyclic_abbrev env id ty then
+        raise(Error(sdecl.ptype_loc, Recursive_abbrev name));
+      begin try
+        Ctype.unify env ty (Ctype.newconstr (Path.Pident id) decl.type_params) 
+      with Ctype.Unify trace ->
+        raise(Error(sdecl.ptype_loc, Type_clash trace))
+      end
+  end;
+  (id, decl)
 
 (* Second pass: representation *)
 let transl_declaration2 env (name, sdecl) (id, decl) =
@@ -261,6 +251,13 @@ let transl_type_decl env name_sdecl_list =
       (fun (id, decl) env -> Env.add_type id decl env)
       decls env
   in
+  (* Check that all type variable are closed *)
+  List.iter2
+    (fun (_, sdecl) (id, decl) ->
+       match Ctype.closed_type_decl decl with
+         Some _ -> raise(Error(sdecl.ptype_loc, Unbound_type_var))
+       | None   -> ())
+    name_sdecl_list decls;
   (* Check re-exportation *)
   List.iter2 (check_abbrev newenv) name_sdecl_list decls;
   (* Done *)
@@ -299,10 +296,10 @@ let transl_with_constraint env sdecl =
     with Already_bound ->
       raise(Error(sdecl.ptype_loc, Repeated_parameter)) in
   List.iter
-    (function (v, ty, loc) ->
+    (function (ty, ty', loc) ->
        try
-         Ctype.unify env
-           (type_variable loc v) (transl_simple_type env false ty)
+         Ctype.unify env (transl_simple_type env false ty)
+                         (transl_simple_type env false ty')
        with Ctype.Unify _ ->
          raise(Error(loc, Unconsistent_constraint)))
     sdecl.ptype_cstrs;
@@ -353,3 +350,5 @@ let report_error = function
            print_string "but is here used with type")
   | Null_arity_external ->
       print_string "External identifiers must be functions"
+  | Unbound_type_var ->
+      print_string "A type variable is unbound in this type declaration";

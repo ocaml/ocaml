@@ -207,7 +207,7 @@ let rec typexp sch prio0 ty =
       if prio0 >= 1 then print_string ")";
       close_box()
     end
-(* ; print_string "["; print_int ty.level; print_string "]" *)
+(*; print_string "["; print_int ty.level; print_string "]"*)
 
 and typlist sch prio sep = function
     [] -> ()
@@ -232,7 +232,8 @@ and typobject sch ty fi nm =
                   l)
            fields []
        in
-       typfields sch rest present_fields);
+       typfields sch rest
+         (Sort.list (fun (n, _) (n', _) -> n <= n') present_fields));
       print_string " >";
       close_box ()
   | Some (p, {desc = Tvar}::tyl) ->
@@ -401,13 +402,7 @@ let value_description id decl =
 
 (* Print a class type *)
 
-let class_arg arg =
-  print_space ();
-  open_box 1; print_string "(";
-  type_sch arg;
-  print_string ")"; close_box ()
-
-let class_var l (m, t) =
+let class_var sch l (m, t) =
   print_space ();
   open_box 2;
   print_string "val ";
@@ -418,78 +413,202 @@ let class_var l (m, t) =
   print_string l;
   print_string " :";
   print_space();
-  type_sch t;
+  typexp sch 0 t;
   close_box()
 
-let metho public concrete lab ty =
-  print_space ();
-  open_box 2;
-  if Concr.mem lab concrete then print_string "method "
-  else print_string "virtual ";
-  if not (List.mem_assoc lab public) then print_string "protected ";
-  print_string lab;
-  print_string " :";
-  print_space ();
-  type_sch ty;
-  close_box ()
+let metho sch concrete (lab, kind, ty) =
+  if lab <> "*dummy method*" then begin
+    print_space ();
+    open_box 2;
+    print_string "method ";
+    begin match field_kind_repr kind with
+      Fvar _ (* {contents = None} *) -> print_string "private "
+    | _ (* Fpresent *)               -> ()
+    end;
+    if not (Concr.mem lab concrete) then print_string "virtual ";
+    print_string lab;
+    print_string " :";
+    print_space ();
+    typexp sch 0 ty;
+    close_box ()
+  end
 
-let methods_of_type ty =
-  match (repr ty).desc with
-    Tobject (m, _) -> m
-  | _              -> fatal_error "Printtyp.methods_of_type"
+let rec prepare_class_type path =
+  function
+    Tcty_constr (p, rv::tyl, cty)
+        when not (Path.same p path) && (repr rv).desc = Tvar ->
+      let sty = Ctype.self_type cty in
+      visited_objects := sty :: !visited_objects;
+      List.iter mark_loops tyl
+  | Tcty_constr (_, _, cty)  ->
+      prepare_class_type path cty
+  | Tcty_signature sign ->
+      let sty = repr sign.cty_self in
+      (* Self may have a name *)
+      visited_objects := sty :: !visited_objects;
+      begin match sty.desc with
+        Tobject (fi, _) -> mark_loops fi
+      | _               -> assert false
+      end;
+      Vars.iter (fun _ (_, ty) -> mark_loops ty) sign.cty_vars
+  | Tcty_fun (ty, cty) ->
+      prepare_class_type path cty;
+      mark_loops ty
 
-let rec list_public_methods ty =
-  let (fields, _) = flatten_fields ty in
-  List.map (function (m, _, t) -> (m, t)) fields
+let rec perform_class_type sch p params =
+  function
+    Tcty_constr (p', rv::tyl, cty)
+(* XXX Critere de non-expansion insuffisant :
+   expanser egalement s'il y a plus de methods publiques *)
+        when not (Path.same p p') && (repr rv).desc = Tvar ->
+      let sty = Ctype.self_type cty in
+      open_box 0;
+      if tyl <> [] then begin
+        open_box 1;
+        print_string "[";
+        typlist true 0 "," tyl;
+        print_string "]";
+        close_box ();
+        print_space ()
+      end;
+      path p';
+      if List.memq sty !aliased then begin
+        print_space ();
+        open_box 0;
+        print_string "['";
+        print_string (name_of_type sty);
+        print_string "]";
+        close_box ()
+      end;
+      close_box ()
+  | Tcty_constr (_, _, cty)  ->
+      perform_class_type sch p params cty
+  | Tcty_signature sign ->
+      let sty = repr sign.cty_self in
+      open_hvbox 2;
+      open_box 2;
+      print_string "sig";
+      if List.memq sty !aliased then begin
+        print_space ();
+        open_box 0;
+        print_string "('";
+        print_string (name_of_type sty);
+        print_string ")";
+        close_box ()
+      end;
+      close_box ();
+      List.iter constrain params;
+      Vars.iter (class_var sch) sign.cty_vars;
+      let (fields, _) =
+        Ctype.flatten_fields (Ctype.object_fields sign.cty_self)
+      in
+      List.iter (metho sch sign.cty_concr) fields;
+      print_break 1 (-2);
+      print_string "end";
+      close_box()
+  | Tcty_fun (ty, cty) ->
+      open_box 0;
+      print_string "{"; typexp sch 0 ty; print_string "} ->";
+      print_space ();
+      perform_class_type sch p params cty;
+      close_box ()
 
-let class_type id cl_ty =
-  let self = repr cl_ty.cty_self in
-  let params = List.map repr cl_ty.cty_params in
-  let args = cl_ty.cty_args in
-  let vars = cl_ty.cty_vars in
+let rec alternate_class_type sch path params cty =
+  match cty with
+    Tcty_signature _ | Tcty_constr _ ->
+      print_string ":"; print_space ();
+      perform_class_type sch path params cty
+  | Tcty_fun (ty, cty) ->
+      print_string "("; typexp sch 0 ty; print_string ")";
+      print_space ();
+      alternate_class_type sch path params cty
+
+let class_type cty =
+  reset ();
+  let no_path = Pident (Ident.create "") in
+  prepare_class_type no_path cty;
+  perform_class_type false no_path [] cty
+
+let class_declaration id cl =
+  let params = List.map repr cl.cty_params in
 
   reset ();
-  (* Self may have a name *)
-  visited_objects := self :: !visited_objects;
   aliased := params @ !aliased;
-  begin match self.desc with
-    Tobject (fi, _) -> mark_loops fi
-  | _               -> fatal_error "Printtyp.class_type"
-  end;
+  prepare_class_type cl.cty_path cl.cty_type;
+  let sty = self_type cl.cty_type in
   List.iter mark_loops params;
-  List.iter mark_loops args;
-  Vars.iter (fun _ (_, ty) -> mark_loops ty) vars;
-  Meths.iter (fun _ ty -> mark_loops ty) cl_ty.cty_meths;
+
   List.iter (fun x -> name_of_type x; ()) params;
-  open_hvbox 2;
-  open_box 0;
-  print_string "class ";
-  if cl_ty.cty_new = None then
-    print_string "virtual ";
-  if not (opened_object self) then
-    print_string "closed ";
-  type_sch {desc = Tconstr(Pident id, params, ref Mnil); level = 0};
-  if List.memq self !aliased then
-    (name_of_type self; ());
-  List.iter class_arg args;
-  if List.memq self !aliased then begin
-    print_string " : ";
-    print_string "'";
-    print_string (name_of_type self)
+  if List.memq sty !aliased then
+    (name_of_type sty; ());
+
+  open_box 2;
+  print_string "class";
+  print_space ();
+  if cl.cty_new = None then begin
+    print_string "virtual";
+    print_space ()
   end;
-  print_string " =";
-  close_box ();
-  List.iter constrain params;
-  Vars.iter class_var vars;
-  let public_methods = list_public_methods (methods_of_type self) in
-  let methods =
-    List.fold_left (fun m (lab, ty) -> Meths.add lab ty m)
-      cl_ty.cty_meths public_methods
+  if params <> [] then begin
+    open_box 1;
+    print_string "[";
+    typlist true 0 "," params;
+    print_string "]";
+    close_box ();
+    print_space ()
+  end;
+  ident id;
+  print_space ();
+  alternate_class_type true cl.cty_path params cl.cty_type;
+  close_box ()
+
+let cltype_declaration id cl =
+  let params = List.map repr cl.clty_params in
+
+  reset ();
+  aliased := params @ !aliased;
+  prepare_class_type cl.clty_path cl.clty_type;
+  let sty = self_type cl.clty_type in
+  List.iter mark_loops params;
+
+  List.iter (fun x -> name_of_type x; ()) params;
+  if List.memq sty !aliased then
+    (name_of_type sty; ());
+
+  let sign = Ctype.signature_of_class_type cl.clty_type in
+  let virt =
+    let (fields, _) =
+      Ctype.flatten_fields (Ctype.object_fields sign.cty_self)
+    in
+    List.exists
+      (fun (lab, _, ty) ->
+         not ((lab = "*dummy method*")
+                         ||
+              (Concr.mem lab sign.cty_concr)))
+      fields
   in
-  Meths.iter (metho public_methods cl_ty.cty_concr) methods;
-  print_break 1 (-2);
-  print_string "end";
-  close_box()
+
+  open_box 2;
+  print_string "class type";
+  print_space ();
+  if virt then begin
+    print_string "virtual";
+    print_space ()
+  end;
+  if params <> [] then begin
+    open_box 1;
+    print_string "[";
+    typlist true 0 "," params;
+    print_string "]";
+    close_box ();
+    print_space ()
+  end;
+  ident id;
+  print_space ();
+  print_string "=";
+  print_space ();
+  perform_class_type true cl.clty_path params cl.clty_type;
+  close_box ()
 
 (* Print a module type *)
 
@@ -535,8 +654,13 @@ and signature_body spc = function
         | Tsig_modtype(id, decl)  ->
             modtype_declaration id decl; rem
         | Tsig_class(id, decl) ->
-            class_type id decl;
-            match rem with tydecl1 :: tydecl2 :: rem -> rem | _ -> []
+            class_declaration id decl;
+            begin match rem with
+              ctydecl::tydecl1::tydecl2::rem -> rem | _ -> []
+            end
+        | Tsig_cltype(id, decl) ->
+            cltype_declaration id decl;
+            match rem with tydecl1::tydecl2::rem -> rem | _ -> []
       in signature_body true cont
 
 and modtype_declaration id decl =
@@ -585,18 +709,68 @@ let rec trace fst txt =
   | _ ->
       ()
 
+let rec mismatch =
+  function
+    [(_, t); (_, t')] -> (t, t')
+  | _ :: _ :: rem     -> mismatch rem
+  | _                 -> assert false
+
+let rec filter_trace =
+  function
+    (t1, t1')::(t2, t2')::rem ->
+      let rem' = filter_trace rem in
+      if (t1 == t1') & (t2 == t2')
+      then rem'
+      else (t1, t1')::(t2, t2')::rem'
+  | _ ->
+      []
+
 let unification_error tr txt1 txt2 =
   reset ();
-  List.iter
-    (function (t, t') -> mark_loops t; if t != t' then mark_loops t')
-    tr;
-  open_box 0;
-  let (t1, t1') = List.hd tr in
-  let (t2, t2') = List.hd (List.tl tr) in
-  txt1 (); print_break 1 2;
-  type_expansion t1 t1'; print_space();
-  txt2 (); print_break 1 2;
-  type_expansion t2 t2';
-  close_box();
-  trace false (fun _ -> print_string "is not compatible with type")
-        (List.tl (List.tl tr))
+  let (t3, t4) = mismatch tr in
+  match tr with
+    [] | _::[] ->
+      assert false
+  | (t1, t1')::(t2, t2')::tr ->
+      let tr = filter_trace tr in
+      let mark (t, t') = mark_loops t; if t != t' then mark_loops t' in
+      mark (t1, t1'); mark (t2, t2');
+      List.iter mark tr;
+      open_box 0;
+      txt1 (); print_break 1 2;
+      type_expansion t1 t1'; print_space();
+      txt2 (); print_break 1 2;
+      type_expansion t2 t2';
+      close_box();
+      trace false (fun _ -> print_string "is not compatible with type") tr;
+      print_cut ();
+      match t3.desc, t4.desc with
+        Tfield _, Tvar | Tvar, Tfield _ ->
+          print_string "Self type cannot escape its class"
+      | Tconstr (p, _, _), Tvar ->
+          open_box 0;
+          print_string "The type constructor"; print_break 1 2;
+          path p;
+          print_space (); print_string "would escape its scope";
+          close_box()
+      | Tvar, Tconstr (p, _, _) ->
+          open_box 0;
+          print_string "The type constructor"; print_break 1 2;
+          path p;
+          print_space (); print_string "would escape its scope";
+          close_box()
+      | Tfield ("*dummy method*", _, _, _), _
+      | _, Tfield ("*dummy method*", _, _, _) ->
+          print_string "Self type cannot be unified with a closed object type"
+      | Tfield (l, _, _, _), _ ->
+          open_box 0;
+          print_string "Only the first object type has a method ";
+          print_string l;
+          close_box()
+      | _, Tfield (l, _, _, _) ->
+          open_box 0;
+          print_string "Only the second object type has a method ";
+          print_string l;
+          close_box()
+      | _ ->
+          ()

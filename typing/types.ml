@@ -34,7 +34,7 @@ and type_desc =
 
 and abbrev_memo =
     Mnil
-  | Mcons of Path.t * type_expr * abbrev_memo
+  | Mcons of Path.t * type_expr * type_expr * abbrev_memo
   | Mlink of abbrev_memo ref
 
 and field_kind =
@@ -42,10 +42,11 @@ and field_kind =
   | Fpresent
   | Fabsent
 
-(* A set of methods, with their types *)
+(* Maps of methods and instance variables *)
 
 module OrderedString = struct type t = string let compare = compare end
 module Meths = Map.Make(OrderedString)
+module Vars = Meths
 
 (* Value descriptions *)
 
@@ -57,9 +58,11 @@ and value_kind =
     Val_reg                             (* Regular value *)
   | Val_prim of Primitive.description   (* Primitive *)
   | Val_ivar of mutable_flag            (* Instance variable (mutable ?) *)
-  | Val_self of (Ident.t * type_expr) Meths.t ref
+  | Val_self of (Ident.t * type_expr) Meths.t ref *
+                (Ident.t * Asttypes.mutable_flag * type_expr) Vars.t ref
                                         (* Self *)
   | Val_anc of (string * Ident.t) list  (* Ancestor *)
+  | Val_unbound                         (* Unbound variable *)
 
 (* Constructor descriptions *)
 
@@ -90,20 +93,6 @@ and record_representation =
     Record_regular                      (* All fields are boxed / tagged *)
   | Record_float                        (* All fields are floats *)
 
-(* Type expressions for classes *)
-
-module Vars = Map.Make(OrderedString)
-module Concr = Set.Make(OrderedString)
-
-type class_type =
-  { cty_params: type_expr list;
-    cty_args: type_expr list;
-    cty_vars: (Asttypes.mutable_flag * type_expr) Vars.t;
-    cty_meths: type_expr Meths.t;
-    cty_self: type_expr;
-    cty_concr: Concr.t;
-    mutable cty_new: type_expr option }
-
 (* Type definitions *)
 
 type type_declaration =
@@ -118,6 +107,31 @@ and type_kind =
   | Type_record of (string * mutable_flag * type_expr) list
 
 type exception_declaration = type_expr list
+
+(* Type expressions for the class language *)
+
+module Concr = Set.Make(OrderedString)
+
+type class_type =
+    Tcty_constr of Path.t * type_expr list * class_type
+  | Tcty_signature of class_signature
+  | Tcty_fun of type_expr * class_type
+
+and class_signature =
+  { cty_self: type_expr;
+    cty_vars: (Asttypes.mutable_flag * type_expr) Vars.t;
+    cty_concr: Concr.t }
+
+type class_declaration =
+  { cty_params: type_expr list;
+    cty_type: class_type;
+    cty_path: Path.t;
+    cty_new: type_expr option }
+
+type cltype_declaration =
+  { clty_params: type_expr list;
+    clty_type: class_type;
+    clty_path: Path.t }
 
 (* Type expressions for the module language *)
 
@@ -134,7 +148,8 @@ and signature_item =
   | Tsig_exception of Ident.t * exception_declaration
   | Tsig_module of Ident.t * module_type
   | Tsig_modtype of Ident.t * modtype_declaration
-  | Tsig_class of Ident.t * class_type
+  | Tsig_class of Ident.t * class_declaration
+  | Tsig_cltype of Ident.t * cltype_declaration
 
 and modtype_declaration =
     Tmodtype_abstract

@@ -39,6 +39,15 @@ and core_field_desc =
     Pfield of string * core_type
   | Pfield_var
 
+(* XXX Type expressions for the class language *)
+
+type 'a class_infos =
+  { pci_virt: virtual_flag;
+    pci_params: string list * Location.t;
+    pci_name: string;
+    pci_expr: 'a;
+    pci_loc: Location.t }
+
 (* Value expressions for the core language *)
 
 type pattern =
@@ -97,7 +106,7 @@ and value_description =
 
 and type_declaration =
   { ptype_params: string list;
-    ptype_cstrs: (string * core_type * Location.t) list;
+    ptype_cstrs: (core_type * core_type * Location.t) list;
     ptype_kind: type_kind;
     ptype_manifest: core_type option;
     ptype_loc: Location.t }
@@ -111,43 +120,54 @@ and exception_declaration = core_type list
 
 (* Type expressions for the class language *)
 
-and class_type_field =
-    Pctf_inher of (Longident.t * core_type list * Location.t)
-  | Pctf_val of
-      (string * private_flag * mutable_flag * core_type option * Location.t)
-  | Pctf_virt of (string * private_flag * core_type * Location.t)
-  | Pctf_meth of (string * private_flag * core_type * Location.t)
-
 and class_type =
-  { pcty_name: string;
-    pcty_param: string list * Location.t;
-    pcty_args: core_type list;
-    pcty_self: string option;
-    pcty_cstr: (string * core_type * Location.t) list;
-    pcty_field: class_type_field list;
-    pcty_kind: virtual_flag;
-    pcty_closed: closed_flag;
+  { pcty_desc: class_type_desc;
     pcty_loc: Location.t }
 
-and class_field =
-    Pcf_inher of (Longident.t * core_type list * expression list *
-                  string option * Location.t)
-  | Pcf_val of
-      (string * private_flag * mutable_flag * expression option * Location.t)
-  | Pcf_virt of (string * private_flag * core_type * Location.t)
-  | Pcf_meth of (string * private_flag * expression * Location.t)
+and class_type_desc =
+    Pcty_constr of Longident.t * core_type list
+  | Pcty_signature of class_signature
+  | Pcty_fun of core_type * class_type
 
-and class_def =
-  { pcl_name: string;
-    pcl_param: string list * Location.t;
-    pcl_args: pattern list;
-    pcl_self: string option;
-    pcl_self_ty: string option;
-    pcl_cstr: (string * core_type * Location.t) list;
-    pcl_field: class_field list;
-    pcl_kind: virtual_flag;
-    pcl_closed: closed_flag;
+and class_signature = core_type * class_type_field list
+
+and class_type_field =
+    Pctf_inher of class_type
+  | Pctf_val   of (string * mutable_flag * core_type option * Location.t)
+  | Pctf_virt  of (string * private_flag * core_type * Location.t)
+  | Pctf_meth  of (string * private_flag * core_type * Location.t)
+  | Pctf_cstr  of (core_type * core_type * Location.t)
+
+and class_description = class_type class_infos
+
+and class_type_declaration = class_type class_infos
+
+(* Value expressions for the class language *)
+
+and class_expr =
+  { pcl_desc: class_expr_desc;
     pcl_loc: Location.t }
+
+and class_expr_desc =
+    Pcl_constr of Longident.t * core_type list
+  | Pcl_structure of class_structure
+  | Pcl_fun of pattern * class_expr
+  | Pcl_apply of class_expr * expression list
+  | Pcl_let of rec_flag * (pattern * expression) list * class_expr
+  | Pcl_constraint of class_expr * class_type
+
+and class_structure = pattern * class_field list
+
+and class_field =
+    Pcf_inher of class_expr * string option
+  | Pcf_val   of (string * mutable_flag * expression * Location.t)
+  | Pcf_virt  of (string * private_flag * core_type * Location.t)
+  | Pcf_meth  of (string * private_flag * expression * Location.t)
+  | Pcf_cstr  of (core_type * core_type * Location.t)
+  | Pcf_let   of rec_flag * (pattern * expression) list * Location.t
+  | Pcf_init  of expression
+
+and class_declaration = class_expr class_infos
 
 (* Type expressions for the module language *)
 
@@ -175,7 +195,8 @@ and signature_item_desc =
   | Psig_modtype of string * modtype_declaration
   | Psig_open of Longident.t
   | Psig_include of module_type
-  | Psig_class of class_type list
+  | Psig_class of class_description list
+  | Psig_class_type of class_type_declaration list
 
 and modtype_declaration =
     Pmodtype_abstract
@@ -213,7 +234,9 @@ and structure_item_desc =
   | Pstr_module of string * module_expr
   | Pstr_modtype of string * module_type
   | Pstr_open of Longident.t
-  | Pstr_class of class_def list
+  | Pstr_class of class_declaration list
+  | Pstr_class_type of class_type_declaration list
+
 
 (* Toplevel phrases *)
 

@@ -20,6 +20,7 @@
 #include "mlvalues.h"
 
 extern int debugger_in_use;
+extern int running;
 extern unsigned long event_count;
 
 enum event_kind {
@@ -37,8 +38,9 @@ void debugger (enum event_kind event);
 enum debugger_request {
   REQ_SET_EVENT = 'e',          /* uint32 pos */
   /* Set an event on the instruction at position pos */
-  REQ_SET_BREAKPOINT = 'B',     /* uint32 pos */
+  REQ_SET_BREAKPOINT = 'B',     /* uint32 pos, (char k) */
   /* Set a breakpoint at position pos */
+  /* In profiling mode, the breakpoint kind is set to k */
   REQ_RESET_INSTR = 'i',        /* uint32 pos */
   /* Clear an event or breapoint at position pos, restores initial instr. */
   REQ_CHECKPOINT = 'c',         /* no args */
@@ -80,9 +82,11 @@ enum debugger_request {
   REQ_MARSHAL_OBJ = 'M',        /* mlvalue v */
   /* Send a copy of the data structure rooted at v, using the same
      format as output_value. */
-  REQ_GET_CLOSURE_CODE = 'C'    /* mlvalue v */
+  REQ_GET_CLOSURE_CODE = 'C',   /* mlvalue v */
   /* Send the code address of the given closure.
      Reply is one uint32. */
+  REQ_PROFILING = 'P'       /* no args */
+  /* Switch to profiler mode. */
 };
 
 /* Replies to a REQ_GO request. All replies are followed by three uint32:

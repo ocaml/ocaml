@@ -55,6 +55,7 @@ let keyword_table =
     "in", IN;
     "include", INCLUDE;
     "inherit", INHERIT;
+    "initializer", INITIALIZER;
     "lazy", LAZY;
     "let", LET;
     "match", MATCH;
@@ -62,12 +63,12 @@ let keyword_table =
     "module", MODULE;
     "mutable", MUTABLE;
     "new", NEW;
+    "object", OBJECT;
     "of", OF;
     "open", OPEN;
     "or", OR;
     "parser", PARSER;
     "private", PRIVATE;
-    "protected", PROTECTED;
     "rec", REC;
     "sig", SIG;
     "struct", STRUCT;

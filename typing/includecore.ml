@@ -107,32 +107,3 @@ let vars vars1 vars2 =
         end,
         encode_val v2 vl2))
     vars2 ([], [])
-
-let class_types env d1 d2 =
-  (* Same abbreviations *)
-  Ctype.equal env true
-    (d1.cty_self::d1.cty_params) (d2.cty_self::d2.cty_params)
-      &&
-  (* Fewer concretes methods *)
-  Concr.subset d2.cty_concr d1.cty_concr
-      &&
-  (* If virtual, stays virtual *)
-  (d1.cty_new <> None or d2.cty_new = None)
-      &&
-  (* Virtual methods cannot be hidden *)
-  Meths.fold
-    (fun lab ty res ->
-       res &&
-       (Concr.mem lab d1.cty_concr ||
-        try Meths.find lab d2.cty_meths; true with Not_found -> false))
-    d1.cty_meths
-    true
-      &&
-  (* Less general *)
-  let (m1, m2) = meths d1.cty_meths d2.cty_meths in
-  let (v1, v2) = vars d1.cty_vars d2.cty_vars in
-  let t1 = Ctype.newgenty (Ttuple (d1.cty_self::m1@v1@d1.cty_args)) in
-  let t2 = Ctype.newgenty (Ttuple (d2.cty_self::m2@v2@d2.cty_args)) in
-  List.length d1.cty_args = List.length d2.cty_args
-      &&
-  Ctype.moregeneral env true t1 t2

@@ -158,16 +158,16 @@ and transl_structure fields cc rootpath = function
   | Tstr_open path :: rem ->
       transl_structure fields cc rootpath rem
   | Tstr_class cl_list :: rem ->
-      List.fold_right
-        (fun (id, cl) re ->
-           Llet(Strict, id, class_stub, re))
-        cl_list
-        (List.fold_right
-           (fun (id, cl) re ->
-              Lsequence(transl_class id cl, re))
-           cl_list
-         (transl_structure
-            ((List.rev (List.map fst cl_list)) @ fields) cc rootpath rem))
+      Lletrec(List.map
+                (fun (id, arity, meths, cl) ->
+                  (id, transl_class id arity meths cl))
+                cl_list,
+              transl_structure
+                ((List.rev (List.map (fun (i, _, _, _) -> i) cl_list))
+                 @ fields)
+                cc rootpath rem)
+  | Tstr_cltype cl_list :: rem ->
+      transl_structure fields cc rootpath rem
 
 (* Update forward declaration in Translcore *)
 let _ =
@@ -222,15 +222,15 @@ let transl_store_structure glob map prims str =
   | Tstr_open path :: rem ->
       transl_store rem
   | Tstr_class cl_list :: rem ->
-      List.fold_right
-        (fun (id, cl) re ->
-           Llet(Strict, id, class_stub, re))
-        cl_list
-        (List.fold_right
-           (fun (id, cl) re ->
-              Lsequence(transl_class id cl, re))
-           cl_list
-           (store_idents glob map (List.map fst cl_list) (transl_store rem)))
+      Lletrec(List.map
+                (fun (id, arity, meths, cl) ->
+                   (id, transl_class id arity meths cl))
+                cl_list,
+              store_idents glob map (List.map (fun (i, _, _, _) -> i)
+                                       cl_list)
+                (transl_store rem))
+  | Tstr_cltype cl_list :: rem ->
+      transl_store rem
 
   and store_ident glob map id cont =
     try
@@ -266,7 +266,8 @@ let rec defined_idents = function
   | Tstr_modtype(id, decl) :: rem -> defined_idents rem
   | Tstr_open path :: rem -> defined_idents rem
   | Tstr_class cl_list :: rem ->
-      List.map fst cl_list @ defined_idents rem
+      List.map (fun (i, _, _, _) -> i) cl_list @ defined_idents rem
+  | Tstr_cltype cl_list :: rem -> defined_idents rem
 
 (* Transform a coercion and the list of value identifiers built above
    into a table id -> (pos, coercion), with [pos] being the position
@@ -347,17 +348,19 @@ let transl_toplevel_item = function
       lambda_unit
   | Tstr_class cl_list ->
       let lam =
-        List.fold_right
-          (fun (id, cl) re ->
-             Llet(Strict, id, class_stub, re))
-          cl_list
-          (make_sequence
-             (fun (id, cl) ->
-                Lsequence(Lprim(Psetglobal id, [Lvar id]), transl_class id cl))
-             cl_list)
+        Lletrec(List.map
+                  (fun (id, arity, meths, cl) ->
+                     (id, transl_class id arity meths cl))
+                  cl_list,
+                make_sequence
+                  (fun (id, _, _, _) -> Lprim(Psetglobal id, [Lvar id]))
+                  cl_list)
       in
-      List.iter (fun (id, cl) -> Ident.make_global id) cl_list;
+      List.iter (fun (id, _, _, _) -> Ident.make_global id) cl_list;
       lam
+      
+  | Tstr_cltype cl_list ->
+      lambda_unit
 
 let transl_toplevel_definition str =
   reset_labels ();

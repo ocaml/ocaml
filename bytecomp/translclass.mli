@@ -15,4 +15,4 @@ open Typedtree
 open Lambda
 
 val class_stub : lambda
-val transl_class : Ident.t -> class_def -> lambda;;
+val transl_class : Ident.t -> int -> string list -> class_expr -> lambda;;

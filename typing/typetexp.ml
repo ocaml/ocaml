@@ -37,6 +37,7 @@ exception Error of Location.t * error
 
 let type_variables = ref (Tbl.empty : (string, type_expr) Tbl.t)
 let aliases        = ref (Tbl.empty : (string, type_expr) Tbl.t)
+let saved_type_variables = ref ([] : (string, type_expr) Tbl.t list)
 
 let used_variables = ref (Tbl.empty : (string, type_expr) Tbl.t)
 let bindings       = ref ([] : (type_expr * type_expr) list)
@@ -44,7 +45,18 @@ let bindings       = ref ([] : (type_expr * type_expr) list)
 
 let reset_type_variables () =
   reset_global_level ();
-  type_variables := Tbl.empty
+  type_variables := Tbl.empty;
+  saved_type_variables := []
+
+let narrow () =
+  increase_global_level ();
+  saved_type_variables := !type_variables :: !saved_type_variables
+
+let widen () =
+  restore_global_level ();
+  match !saved_type_variables with
+    tv :: rem -> type_variables := tv; saved_type_variables := rem
+  | []        -> assert false
 
 let enter_type_variable strict name =
   try
@@ -116,8 +128,9 @@ let rec transl_type env policy styp =
         raise(Error(styp.ptyp_loc, Type_arity_mismatch(lid, decl.type_arity,
                                                            List.length stl)));
       let args = List.map (transl_type env policy) stl in
-      let cstr = newty (Tconstr(path, args, ref Mnil)) in
-      let params = Ctype.instance_list decl.type_params in
+      let params = List.map (fun _ -> Ctype.newvar ()) args in
+      let cstr = newty (Tconstr(path, params, ref Mnil)) in
+      Ctype.expand_head env cstr;
       List.iter2
         (fun (sty, ty) ty' ->
            try unify env ty ty' with Unify trace ->
@@ -198,6 +211,7 @@ let transl_simple_type_delayed env styp =
   used_variables := Tbl.empty;
   bindings := [];
   (typ,
+(* XXX L'unification peut echouer... *)
    function () -> List.iter (function (t1, t2) -> unify env t1 t2) b)
 
 let transl_type_scheme env styp =

@@ -21,16 +21,28 @@ let last_id = ref 0
 let new_id () =
   let id = !last_id in incr last_id; id
 
+let set_id o id =
+  let id0 = !id in
+  Array.unsafe_set (Obj.magic o : int array) 1 id0;
+  id := id0 + 1
+
 (**** Object copy ****)
 
-let copy (o : < .. >) : 'a =
-  let o = Obj.repr (o : 'a) in
-  let s = Obj.size o in
-  let r = Obj.new_block object_tag s in
-  Obj.set_field r 0 (Obj.field o 0);
-  Obj.set_field r 1 (Obj.repr !last_id); incr last_id;
-  for i = 2 to s - 1 do Obj.set_field r i (Obj.field o i) done;
-  Obj.obj r
+(*
+let copy o =
+  let o = (Obj.obj (Obj.dup (Obj.repr o))) in
+  let id = (Obj.magic last_id : int ref) in
+  let id0 = !id in
+  Array.unsafe_set (Obj.magic o : int array) 1 id0;
+  id := id0 + 1;
+  o
+*)
+let copy o =
+  let o = (Obj.obj (Obj.dup (Obj.repr o))) in
+  set_id o last_id;
+  o
+
+let f x = (x, x, x, x)
 
 (**** Compression options ****)
 (* Parameters *)
@@ -223,7 +235,7 @@ let new_anonymous_method =
 
 (**** Types ****)
 
-type object = t array
+type obj = t array
 
 (**** Sparse array ****)
 
@@ -231,45 +243,36 @@ module Vars = Map.Make(struct type t = string let compare = compare end)
 type vars = int Vars.t
 
 module Meths = Map.Make(struct type t = string let compare = compare end)
-type meths = label list Meths.t
+type meths = label Meths.t
+module Labs = Map.Make(struct type t = label let compare = compare end)
+type labs = bool Labs.t
 
 type obj_init
+(* The compiler assumes that the first field of this structure is [size]. *)
 type table =
- { mutable buckets: bucket array;
-   mutable methods: meths;
-   mutable saved_methods: meths list;
-   mutable meth_defs: (label * item) list;
+ { mutable size: int;
+   mutable buckets: bucket array;
+   mutable methods_by_name: meths;
+   mutable methods_by_label: labs;
+   mutable previous_states:
+     (meths * labs * (label * item) list * vars *
+      label list * string list) list;
+   mutable hidden_meths: (label * item) list;
    mutable vars: vars;
-   mutable saved_vars: vars list;
-   mutable saved_var_lst: int option list;
-   mutable size: int;
-   mutable init: obj_init list list }
+   mutable initializers: (obj -> unit) list }
 
 let table_count = ref 0
 
 let new_table () =
   incr table_count;
   { buckets = [| |];
-    methods = Meths.empty;
-    saved_methods = [];
-    meth_defs = [];
+    methods_by_name = Meths.empty;
+    methods_by_label = Labs.empty;
+    previous_states = [];
+    hidden_meths = [];
     vars = Vars.empty;
-    saved_vars = [];
-    saved_var_lst = [];
-    size = initial_object_size;
-    init = [[]; []]}
-
-let copy_table array1 array2 =
-  incr version;
-  array1.buckets <- Array.copy array2.buckets;
-  array1.methods <- array2.methods;
-  array1.saved_methods <- [];
-  array1.meth_defs <- array2.meth_defs;
-  array1.vars <- array2.vars;
-  array1.saved_vars <- [];
-  array1.saved_var_lst <- array1.saved_var_lst;
-  array1.size <- array2.size;
-  array1.init <- array2.init
+    initializers = [];
+    size = initial_object_size }
 
 let resize array new_size =
   let old_size = Array.length array.buckets in
@@ -287,194 +290,186 @@ let put array label element =
     bucket := new_bucket ();
     array.buckets.(buck) <- !bucket
   end;
-  if !bucket.(elem) != element then begin
-    if
-      (bucket_version !bucket < !version)
-          &
-      (!bucket.(elem) != dummy_item)
-    then begin
-      if params.clean_when_copying then
-        bucket := new_filled_bucket buck array.meth_defs
-      else
-        bucket := copy_bucket !bucket;
-      array.buckets.(buck) <- !bucket
-    end;
-    !bucket.(elem) <- element
-  end
+  !bucket.(elem) <- element
 
 (**** Classes ****)
 
+let method_count = ref 0
+let inst_var_count = ref 0
+
 type t
+type meth = item
 type class_info =
   {mutable obj_init: t;
-   mutable class_init: table -> unit;
+   mutable class_init: table -> bool -> obj_init;
    mutable table: table}
 
-let set_initializer table init =
-  match table.init with
-    l::l'::l'' ->
-      let i =
-        List.fold_right
-          (fun init2 init1 -> (magic init1 : obj_init -> obj_init) init2)
-          l init
-      in
-        table.init <- (i::l')::l''
-  | _ ->
-      invalid_arg "Fatal error in Oo.set_initializer."
-
-let inheritance table cl vars meths =
-  if
-    params.copy_parent
-    && (table.methods = Meths.empty) && (table.size = initial_object_size)
-    && (table.init = [[]; []])
-  then begin
-    copy_table table cl.table;
-    table.init <- table.init@[[]];
-    table.vars <- 
-      List.fold_left
-        (fun s v ->
-           try Vars.add v (Vars.find v table.vars) s with Not_found -> s)
-        Vars.empty
-        vars;
-    table.methods <-
-      List.fold_left
-        (fun s m ->
-           try Meths.add m (Meths.find m table.methods) s with Not_found -> s)
-        Meths.empty
-        meths
-  end else begin
-    table.init <- []::table.init;
-    table.saved_vars <- table.vars::table.saved_vars;
-    table.vars <-
-      List.fold_left
-        (fun s v ->
-           try Vars.add v (Vars.find v table.vars) s with Not_found -> s)
-        Vars.empty
-        vars;
-    table.saved_methods <- table.methods::table.saved_methods;
-    table.methods <-
-      List.fold_left
-        (fun s m ->
-           try Meths.add m (Meths.find m table.methods) s with Not_found -> s)
-        Meths.empty
-        meths;
-    cl.class_init table;
-    table.vars <-
-      List.fold_left
-        (fun s v ->
-           try Vars.add v (Vars.find v table.vars) s with Not_found -> s)
-        (List.hd table.saved_vars)
-        vars;
-    table.saved_vars <- List.tl table.saved_vars;
-    table.methods <-
-      List.fold_left
-        (fun s m ->
-           try Meths.add m (Meths.find m table.methods) s with Not_found -> s)
-        (List.hd table.saved_methods)
-        meths;
-    table.saved_methods <- List.tl table.saved_methods
-  end
-
-let get_method_labels table name =
+let get_method_label table name =
   try
-    Meths.find name table.methods
+    Meths.find name table.methods_by_name
   with Not_found ->
     let label = new_anonymous_method () in
-    table.methods <- Meths.add name [label] table.methods;
-    [label]
+    table.methods_by_name <- Meths.add name label table.methods_by_name;
+    table.methods_by_label <- Labs.add label true table.methods_by_label;
+    label
 
-let get_method_label table name =
-  List.hd (get_method_labels table name)
-
-let set_method table name element =
-  List.iter
-    (function label ->
-       table.meth_defs <- (label, element) :: table.meth_defs;
-       put table label element)
-    (get_method_labels table name)
+let set_method table label element =
+  incr method_count;
+  if Labs.find label table.methods_by_label then
+    put table label element
+  else
+    table.hidden_meths <- (label, element) :: table.hidden_meths
 
 let get_method table label =
+  try List.assoc label table.hidden_meths with Not_found ->
   let (buck, elem) = decode label in
   table.buckets.(buck).(elem)
+
+let narrow table vars virt_meths concr_meths =
+  let virt_meth_labs = List.map (get_method_label table) virt_meths in
+  table.previous_states <-
+     (table.methods_by_name, table.methods_by_label, table.hidden_meths,
+      table.vars, virt_meth_labs, vars)
+     :: table.previous_states;
+  table.vars <- Vars.empty;
+  let by_name = ref Meths.empty in
+  let by_label = ref Labs.empty in
+  List.iter
+    (function met ->
+       let label = get_method_label table met in
+       by_name := Meths.add met label !by_name;
+       by_label :=
+          Labs.add label
+            (try Labs.find label table.methods_by_label with Not_found -> true)
+            !by_label)
+    concr_meths;
+  List.iter2
+    (fun met label ->
+       by_name := Meths.add met label !by_name;
+       by_label := Labs.add label false !by_label)
+    virt_meths virt_meth_labs;
+  table.methods_by_name <- !by_name;
+  table.methods_by_label <- !by_label;
+  table.hidden_meths <-
+     List.fold_right
+       (fun ((lab, _) as met) hm ->
+          if List.mem lab virt_meth_labs then hm else met::hm)
+       table.hidden_meths
+       []
+
+let widen table =
+  let (by_name, by_label, saved_hidden_meths, saved_vars, virt_meths, vars) =
+    List.hd table.previous_states
+  in
+  table.previous_states <- List.tl table.previous_states;
+  table.vars <-
+     List.fold_left
+       (fun s v -> Vars.add v (Vars.find v table.vars) s)
+       saved_vars vars;
+  table.methods_by_name <- by_name;
+  table.methods_by_label <- by_label;
+  table.hidden_meths <-
+     List.fold_right
+       (fun ((lab, _) as met) hm ->
+          if List.mem lab virt_meths then hm else met::hm)
+       table.hidden_meths
+       saved_hidden_meths
+
+let get_class table cl = cl.class_init table false
 
 let new_slot table =
   let index = table.size in
   table.size <- index + 1;
   index
 
-let get_variable table name =
-  try
-    Vars.find name table.vars
-  with Not_found ->
-    let index = new_slot table in
-    table.vars <- Vars.add name index table.vars;
-    index
-
-let hide_variable table name =
-  try
-    let i = Vars.find name table.vars in
-    table.vars <- Vars.remove name table.vars;
-    table.saved_var_lst <- Some i::table.saved_var_lst
-  with Not_found ->
-    table.saved_var_lst <- None::table.saved_var_lst
-
-let rec list_remove name =
-  function
-    [] ->
-       invalid_arg "Fatal error in Oo.get_private_variable"
-  | (n, _) as a::l ->
-       if name = n then l
-       else a::list_remove name l
-
-let get_private_variable table name =
-  let index =
-    try Vars.find name table.vars with Not_found -> new_slot table
-  in
-  table.vars <-
-    begin match List.hd table.saved_var_lst with
-      None ->
-        Vars.remove name table.vars
-    | Some i ->
-        Vars.add name i table.vars
-    end;
-  table.saved_var_lst <- List.tl table.saved_var_lst;
+let new_variable table name =
+  let index = new_slot table in
+  table.vars <- Vars.add name index table.vars;
   index
 
-let method_count = ref 0
-let inst_var_count = ref 0
+let get_variable table name =
+  Vars.find name table.vars
 
-let new_object table =
-  let obj = Array.create table.size (magic () : t) in
-  obj.(0) <- (magic table.buckets : t);
-  obj
+let copy_variables class_info table =
+  ();
+  function () ->
+  let template = class_info.obj_init in
+  let max = class_info.table.size - 1 in
+  let max' = table.size - 1 in
+  let offset = max' - max in
+  function obj ->
+    for i = initial_object_size to max do
+      (* XXX Hack *)
+      Array.unsafe_set (Obj.magic obj : string array) (i + offset)
+        (Array.unsafe_get (Obj.magic template : string array) i)
+    done
 
-let create_class class_info public_methods creator class_init =
+let add_initializer table f =
+  table.initializers <- f::table.initializers
+
+let create_class class_info public_methods class_init creator =
   let table = new_table () in
   List.iter
     (function met ->
-       table.methods <- Meths.add met [new_method met] table.methods)
+       let lab = new_method met in
+       table.methods_by_name  <- Meths.add met lab table.methods_by_name;
+       table.methods_by_label <-  Labs.add lab true table.methods_by_label)
     public_methods;
-  class_init table;
-  method_count := !method_count + List.length table.meth_defs;
+  let obj_init = class_init table true in
+  inst_var_count := !inst_var_count + table.size - 1;
   if params.compact_table then
     compact_buckets table.buckets;
-  inst_var_count := !inst_var_count + table.size - 1;
+  table.initializers <- List.rev table.initializers;
   class_info.class_init <- class_init;
   class_info.table <- table;
-  class_info.obj_init <- creator table
+  class_info.obj_init <- creator table obj_init
+
+let create_table public_methods =
+  let table = new_table () in
+  List.iter
+    (function met ->
+       let lab = new_method met in
+       table.methods_by_name  <- Meths.add met lab table.methods_by_name;
+       table.methods_by_label <- Labs.add lab true table.methods_by_label)
+    public_methods;
+  table
+
+let init_class table =
+  inst_var_count := !inst_var_count + table.size - 1;
+  if params.compact_table then
+    compact_buckets table.buckets;
+  table.initializers <- List.rev table.initializers
 
 (**** Objects ****)
 
 let create_object table =
+  (* XXX Appel de [obj_block] *)
   let obj = Obj.new_block object_tag table.size in
+  (* XXX Appel de [modify] *)
   Obj.set_field obj 0 (Obj.repr table.buckets);
-  Obj.set_field obj 1 (Obj.repr (new_id ()));
-  let initialization = Obj.magic List.hd (List.hd table.init) in
-  initialization (Obj.obj obj)
+  set_id obj last_id;
+  (Obj.obj obj)
+
+let rec iter_f obj =
+  function
+    []   -> ()
+  | f::l -> f obj; iter_f obj l
+
+let run_initializers obj table =
+  let inits = table.initializers in
+  if inits <> [] then
+    iter_f obj inits
+
+let object_from_struct cl_inf =
+  (* XXX Appel de [obj_dup] *)
+  let obj = (Obj.obj (Obj.dup (Obj.repr cl_inf.obj_init))) in
+  set_id obj last_id;
+  run_initializers (Obj.magic obj) cl_inf.table;
+  obj
 
 let send obj lab =
   let (buck, elem) = decode lab in
-  (magic obj : (object -> t) array array array).(0).(buck).(elem) obj
+  (magic obj : (obj -> t) array array array).(0).(buck).(elem) obj
 
 (**** Statistics ****)
 

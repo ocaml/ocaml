@@ -45,7 +45,12 @@ val lowest_level: int
         (* Marked type: ty.level < lowest_level *)
 val pivot_level: int
         (* Type marking: ty.level <- pivot_level - ty.level *)
+val mark_type: type_expr -> unit
+        (* Mark a type *)
 val unmark_type: type_expr -> unit
+val unmark_type_decl: type_declaration -> unit
+val unmark_class_type: class_type -> unit
+val unmark_class_signature: class_signature -> unit
         (* Remove marks from a type *)
 
 (**** Memorization of abbreviation expansion ****)
@@ -55,5 +60,8 @@ val cleanup_abbrev: unit -> unit
            When some types are saved (using [output_value]), this
            function MUST be called just before. *)
 val memorize_abbrev:
-        abbrev_memo ref -> Path.t -> type_expr -> unit
+        abbrev_memo ref -> Path.t -> type_expr -> type_expr -> unit
         (* Add an expansion in the cache *)
+val forget_abbrev:
+        abbrev_memo ref -> Path.t -> unit
+        (* Remove an abbreviation from the cache *)

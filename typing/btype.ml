@@ -32,6 +32,11 @@ let newmarkedgenvar () = { desc = Tvar; level = pivot_level - generic_level }
 
 (**** Representative of a type ****)
 
+let rec field_kind_repr =
+  function
+    Fvar {contents = Some kind} -> field_kind_repr kind
+  | kind                        -> kind
+
 let rec repr =
   function
     {desc = Tlink t'} ->
@@ -42,12 +47,10 @@ let rec repr =
          unification).
       *)
       repr t'
+  | {desc = Tfield (_, k, _, t')} when field_kind_repr k = Fabsent ->
+      repr t'
   | t -> t
 
-let rec field_kind_repr =
-  function
-    Fvar {contents = Some kind} -> field_kind_repr kind
-  | kind                        -> kind
 
                   (**********************************)
                   (*  Utilities for type traversal  *)
@@ -73,10 +76,18 @@ let saved_desc = ref []
 let save_desc ty desc = 
   saved_desc := (ty, desc)::!saved_desc
 
-(* Restored type descriptions *)
+(* Restored type descriptions. *)
 let cleanup_types () =
   List.iter (fun (ty, desc) -> ty.desc <- desc) !saved_desc;
   saved_desc := []
+
+(* Mark a type. *)
+let rec mark_type ty =
+  let ty = repr ty in
+  if ty.level >= lowest_level then begin
+    ty.level <- pivot_level - ty.level;
+    iter_type_expr mark_type ty
+  end
 
 (* Remove marks from a type. *)
 let rec unmark_type ty =
@@ -85,6 +96,34 @@ let rec unmark_type ty =
     ty.level <- pivot_level - ty.level;
     iter_type_expr unmark_type ty
   end
+
+let unmark_type_decl decl =
+  List.iter unmark_type decl.type_params;
+  begin match decl.type_kind with
+    Type_abstract -> ()
+  | Type_variant cstrs ->
+      List.iter (fun (c, tl) -> List.iter unmark_type tl) cstrs
+  | Type_record lbls ->
+      List.iter (fun (c, mut, t) -> unmark_type t) lbls
+  end;
+  begin match decl.type_manifest with
+    None    -> ()
+  | Some ty -> unmark_type ty
+  end
+
+let unmark_class_signature sign =
+  unmark_type sign.cty_self;
+  Vars.iter (fun l (m, t) -> unmark_type t) sign.cty_vars
+
+let rec unmark_class_type =
+  function
+    Tcty_constr (p, tyl, cty) ->
+      List.iter unmark_type tyl; unmark_class_type cty
+  | Tcty_signature sign ->
+      unmark_class_signature sign
+  | Tcty_fun (ty, cty) ->
+      unmark_type ty; unmark_class_type cty
+
 
 
                   (*******************************************)
@@ -99,7 +138,22 @@ let cleanup_abbrev () =
   List.iter (fun abbr -> abbr := Mnil) !memo;
   memo := []
 
-let memorize_abbrev mem path v =
+let memorize_abbrev mem path v v' =
         (* Memorize the expansion of an abbreviation. *)
-  mem := Mcons (path, v, !mem);
+  mem := Mcons (path, v, v', !mem);
   memo := mem :: !memo
+
+let rec forget_abbrev_rec mem path =
+  match mem with
+    Mnil ->
+      assert false
+  | Mcons (path', _, _, rem) when Path.same path path' ->
+      rem 
+  | Mcons (path, v, v', rem) ->
+      Mcons (path, v, v', forget_abbrev_rec rem path)
+  | Mlink mem' ->
+      mem' := forget_abbrev_rec !mem' path;
+      raise Exit
+
+let forget_abbrev mem path =
+  try mem := forget_abbrev_rec !mem path with Exit -> ()

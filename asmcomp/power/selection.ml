@@ -46,9 +46,9 @@ let rec select_addr = function
 
 (* Instruction selection *)
 
-class selector () as self =
+class selector = struct (self)
 
-inherit Selectgen.selector_generic() as super
+inherit Selectgen.selector_generic as super
 
 method is_immediate n = (n <= 32767) & (n >= -32768)
 
@@ -103,4 +103,4 @@ method select_logical op = function
 
 end
 
-let fundecl f = (new selector ())#emit_fundecl f
+let fundecl f = (new selector)#emit_fundecl f

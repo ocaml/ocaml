@@ -24,6 +24,8 @@ val transl_type_scheme:
 val reset_type_variables: unit -> unit
 val enter_type_variable: bool -> string -> Types.type_expr
 val type_variable : Location.t -> string -> Types.type_expr
+val narrow: unit -> unit
+val widen: unit -> unit
 
 exception Already_bound
 

@@ -37,7 +37,8 @@ type error =
   | Label_missing
   | Label_not_mutable of Longident.t
   | Bad_format of string
-  | Undefined_method_err of string
+  | Undefined_method of type_expr * string
+  | Undefined_inherited_method of string
   | Unbound_class of Longident.t
   | Virtual_class of Longident.t
   | Unbound_instance_variable of string
@@ -48,6 +49,7 @@ type error =
   | Coercion_failure of type_expr * type_expr * (type_expr * type_expr) list
   | Too_many_arguments
   | Scoping_let_module of string * type_expr
+  | Masked_instance_variable of Longident.t
 
 exception Error of Location.t * error
 
@@ -190,7 +192,7 @@ let add_pattern_variables env =
   pattern_variables := [];
   List.fold_right
     (fun (id, ty) env ->
-      Env.add_value id {val_type = ty; val_kind = Val_reg} env)
+       Env.add_value id {val_type = ty; val_kind = Val_reg} env)
     pv env
 
 let type_pattern env spat =
@@ -204,6 +206,39 @@ let type_pattern_list env spatl =
   let patl = List.map (type_pat env) spatl in
   let new_env = add_pattern_variables env in
   (patl, new_env)
+
+let type_class_arg_pattern val_env met_env spat =
+  pattern_variables := [];
+  let pat = type_pat val_env spat in
+  let (pv, met_env) =
+    List.fold_right
+      (fun (id, ty) (pv, env) ->
+         let id' = Ident.create (Ident.name id) in
+         ((id', id, ty)::pv,
+          Env.add_value id' {val_type = ty; val_kind = Val_ivar Immutable}
+            env))
+      !pattern_variables ([], met_env)
+  in
+  let val_env = add_pattern_variables val_env in
+  (pat, pv, val_env, met_env)
+
+let type_self_pattern val_env met_env par_env spat =
+  pattern_variables := [];
+  let pat = type_pat val_env spat in
+  let meths = ref Meths.empty in
+  let vars = ref Vars.empty in
+  let pv = !pattern_variables in
+  pattern_variables := [];
+  let (val_env, met_env, par_env) =
+    List.fold_right
+      (fun (id, ty) (val_env, met_env, par_env) ->
+         (Env.add_value id {val_type = ty; val_kind = Val_unbound} val_env,
+          Env.add_value id {val_type = ty; val_kind = Val_self (meths, vars)}
+            met_env,
+          Env.add_value id {val_type = ty; val_kind = Val_unbound} par_env))
+      pv (val_env, met_env, par_env)
+  in
+  (pat, meths, vars, val_env, met_env, par_env)
 
 let rec iter_pattern f p =
   f p;
@@ -307,12 +342,19 @@ let rec type_exp env sexp =
       begin try
         let (path, desc) = Env.lookup_value lid env in
         { exp_desc =
-            begin match (desc.val_kind, lid) with
-              (Val_ivar _, Longident.Lident lab) ->
-                let (path_self, _) =
+            begin match desc.val_kind with
+              Val_ivar _ ->
+                let (self_path, _) =
                   Env.lookup_value (Longident.Lident "*self*") env
                 in
-                Texp_instvar (path_self, path)
+                Texp_instvar(self_path, path)
+            | Val_self _ ->
+                let (path, _) =
+                  Env.lookup_value (Longident.Lident "*self*") env
+                in
+                Texp_ident(path, desc)
+            | Val_unbound ->
+                raise(Error(sexp.pexp_loc, Masked_instance_variable lid))
             | _ ->
                 Texp_ident(path, desc)
             end;
@@ -570,62 +612,70 @@ let rec type_exp env sexp =
         exp_type = body.exp_type;
         exp_env = env }
   | Pexp_send (e, met) ->
-      let object = type_exp env e in
+      let obj = type_exp env e in
       begin try
         let (exp, typ) =
-          match object.exp_desc with
-            Texp_ident(path, {val_kind = Val_self meths}) ->
-              begin try                 (* Private method *)
-                let (id, typ) = Meths.find met !meths in
-                (Texp_send(object, Tmeth_val id), typ)
-              with Not_found ->         (* Implicitely defined method *)
-                let id = Ident.create met in
-                let typ = filter_method env met Private object.exp_type in
-                meths := Meths.add met (id, typ) !meths;
-                (Texp_send(object, Tmeth_val id), typ)
-              end
-          | Texp_ident(path, {val_kind = Val_anc methods}) ->
-              let typ = filter_method env met Public object.exp_type in
-              let (path, desc) =
-                Env.lookup_value (Longident.Lident "*self*") env
+          match obj.exp_desc with
+            Texp_ident(path, {val_kind = Val_self (meths, _)}) ->
+              let (id, typ) =
+                filter_self_method env met Private meths obj.exp_type
               in
-              let method_id = List.assoc met methods in
-              let method_type = newvar () in
-              let (obj_ty, res_ty) = filter_arrow env method_type in
-              unify env obj_ty desc.val_type;
-              unify env res_ty typ;
-              (Texp_apply({exp_desc = Texp_ident(Path.Pident method_id,
-                                                 {val_type = method_type;
-                                                  val_kind = Val_reg});
-                           exp_loc = sexp.pexp_loc;
-                           exp_type = method_type;
-                           exp_env = env },
-                          [{exp_desc = Texp_ident(path, desc);
-                            exp_loc = object.exp_loc;
-                            exp_type = desc.val_type;
-                            exp_env = env }]),
-               typ)
+              (Texp_send(obj, Tmeth_val id), typ)
+          | Texp_ident(path, {val_kind = Val_anc methods}) ->
+              let method_id =
+                begin try List.assoc met methods with Not_found ->
+                  raise(Error(e.pexp_loc, Undefined_inherited_method met))
+                end
+              in
+              begin match
+                Env.lookup_value (Longident.Lident "*self_pat*") env,
+                Env.lookup_value (Longident.Lident "*self*") env
+              with
+                (_, ({val_kind = Val_self (meths, _)} as desc)),
+                (path, _) ->
+                  let (_, typ) =
+                    filter_self_method env met Private meths obj.exp_type
+                  in
+                  let method_type = newvar () in
+                  let (obj_ty, res_ty) = filter_arrow env method_type in
+                  unify env obj_ty desc.val_type;
+                  unify env res_ty typ;
+                  (Texp_apply({exp_desc = Texp_ident(Path.Pident method_id,
+                                                     {val_type = method_type;
+                                                       val_kind = Val_reg});
+                                exp_loc = sexp.pexp_loc;
+                                exp_type = method_type;
+                                exp_env = env },
+                              [{exp_desc = Texp_ident(path, desc);
+                                 exp_loc = obj.exp_loc;
+                                 exp_type = desc.val_type;
+                                 exp_env = env }]),
+                   typ)
+              |  _ ->
+                  assert false
+              end
           | _ ->
-              (Texp_send(object, Tmeth_name met),
-               filter_method env met Public object.exp_type)
+              (Texp_send(obj, Tmeth_name met),
+               filter_method env met Public obj.exp_type)
         in
           { exp_desc = exp;
             exp_loc = sexp.pexp_loc;
             exp_type = typ;
             exp_env = env }
       with Unify _ ->
-        raise(Error(e.pexp_loc, Undefined_method_err met))
+        raise(Error(e.pexp_loc, Undefined_method (obj.exp_type, met)))
       end
   | Pexp_new cl ->
-      let (cl_path, cl_typ) =
+      let (cl_path, cl_decl) =
         try Env.lookup_class cl env with Not_found ->
           raise(Error(sexp.pexp_loc, Unbound_class cl))
       in
-        begin match cl_typ.cty_new with
+        begin match cl_decl.cty_new with
           None ->
             raise(Error(sexp.pexp_loc, Virtual_class cl))
         | Some ty ->
-            { exp_desc = Texp_new cl_path;
+            { exp_desc = Texp_new (cl_path,
+                                   Ctype.class_type_arity cl_decl.cty_type);
               exp_loc = sexp.pexp_loc;
               exp_type = instance ty;
               exp_env = env }
@@ -660,35 +710,37 @@ let rec type_exp env sexp =
            lab::l)
         lst
         [];
-      let (path_self, {val_type = self_ty}) =
+      begin match
         try
+          Env.lookup_value (Longident.Lident "*self_pat*") env,
           Env.lookup_value (Longident.Lident "*self*") env
         with Not_found ->
           raise(Error(sexp.pexp_loc, Outside_class))
-      in
-      let type_override (lab, snewval) =
-        begin try
-          let (path, desc) = Env.lookup_value (Longident.Lident lab) env in
-          match desc.val_kind with
-            Val_ivar _ ->
-              (path, type_expect env snewval desc.val_type)
-          | _ ->
-              raise(Error(sexp.pexp_loc, Unbound_instance_variable lab))
-        with
-          Not_found ->
-            raise(Error(sexp.pexp_loc, Unbound_instance_variable lab))
-        end
-      in
-      let modifs = List.map type_override lst in
-      { exp_desc = Texp_override(path_self, modifs);
-        exp_loc = sexp.pexp_loc;
-        exp_type = self_ty;
-        exp_env = env }
-      (* let obj = Oo.copy self in obj.x <- e; obj *)
+      with
+        (_, {val_type = self_ty; val_kind = Val_self (_, vars)}),
+        (path_self, _) ->
+          let type_override (lab, snewval) =
+            begin try
+              let (id, _, ty) = Vars.find lab !vars in
+              (Path.Pident id, type_expect env snewval ty)
+            with
+              Not_found ->
+                raise(Error(sexp.pexp_loc, Unbound_instance_variable lab))
+            end
+          in
+          let modifs = List.map type_override lst in
+          { exp_desc = Texp_override(path_self, modifs);
+            exp_loc = sexp.pexp_loc;
+            exp_type = self_ty;
+            exp_env = env }
+      | _ ->
+          assert false
+      end
   | Pexp_letmodule(name, smodl, sbody) ->
       let ty = newvar() in
       let modl = !type_module env smodl in
       let (id, new_env) = Env.enter_module name modl.mod_type env in
+      Ctype.init_def(Ident.current_time());
       let body = type_exp new_env sbody in
       (* Unification of body.exp_type with the fresh variable ty
          fails if and only if the prefix condition is violated,
@@ -737,6 +789,26 @@ and type_expect env sexp ty_expected =
       { exp_desc = Texp_sequence(exp1, exp2);
         exp_loc = sexp.pexp_loc;
         exp_type = exp2.exp_type;
+        exp_env = env }
+  | Pexp_function caselist ->
+      let (ty_arg, ty_res) =
+        try filter_arrow env ty_expected with Unify _ ->
+          raise(Error(sexp.pexp_loc, Too_many_arguments))
+      in
+      let cases =
+        List.map
+          (fun (spat, sexp) ->
+             let (pat, ext_env) = type_pattern env spat in
+             unify_pat env pat ty_arg;
+             let exp = type_expect ext_env sexp ty_res in
+             (pat, exp))
+          caselist
+      in
+      Parmatch.check_unused cases;
+      Parmatch.check_partial sexp.pexp_loc cases;
+      { exp_desc = Texp_function cases;
+        exp_loc = sexp.pexp_loc;
+        exp_type = newty (Tarrow(ty_arg, ty_res));
         exp_env = env }
   | _ ->
       let exp = type_exp env sexp in
@@ -810,65 +882,6 @@ let type_expression env sexp =
   else make_nongen exp.exp_type;
   exp
 
-(* Typing of methods *)
-
-let rec type_expect_fun env sexp ty_expected =
-  match sexp.pexp_desc with
-    Pexp_function caselist ->
-      let (ty_arg, ty_res) =
-        try filter_arrow env ty_expected with Unify _ ->
-          raise(Error(sexp.pexp_loc, Too_many_arguments))
-      in
-      let cases =
-        List.map
-          (fun (spat, sexp) ->
-             let (pat, ext_env) = type_pattern env spat in
-             unify_pat env pat ty_arg;
-             let exp = type_expect_fun ext_env sexp ty_res in
-             (pat, exp))
-          caselist
-      in
-      Parmatch.check_unused cases;
-      Parmatch.check_partial sexp.pexp_loc cases;
-      { exp_desc = Texp_function cases;
-        exp_loc = sexp.pexp_loc;
-        exp_type = newty (Tarrow(ty_arg, ty_res));
-        exp_env = env }
-  | _ ->
-      type_expect env sexp ty_expected
-
-let type_method env self self_name meths sexp ty_expected =
-  let meths = ref meths in
-  let (obj, env) =
-    Env.enter_value "*self*" {val_type = self; val_kind = Val_reg} env
-  in
-  let pattern =
-    { pat_desc = Tpat_var obj;
-      pat_loc = Location.none;
-      pat_type = self;
-      pat_env = env }
-  in
-  let (pattern, env) =
-    match self_name with
-      None      ->
-        (pattern, env)
-    | Some name ->
-        let (self_name, env) =
-          Env.enter_value name {val_type = self; val_kind = Val_self meths} env
-        in
-        ({ pat_desc = Tpat_alias (pattern, self_name);
-           pat_loc = Location.none;
-           pat_type = self;
-           pat_env = env },
-         env)
-  in
-  let exp = type_expect_fun env sexp ty_expected in
-  { exp_desc = Texp_function [(pattern, exp)];
-    exp_loc = sexp.pexp_loc;
-    exp_type = newty (Tarrow(pattern.pat_type, exp.exp_type));
-    exp_env = env },
-  !meths
-
 (* Error report *)
 
 open Format
@@ -930,7 +943,18 @@ let report_error = function
       print_string " is not mutable"
   | Bad_format s ->
       print_string "Bad format `"; print_string s; print_string "'"
-  | Undefined_method_err me ->
+  | Undefined_method (ty, me) ->
+      open_vbox 0;
+      open_box 0;
+      print_string "This expression has type";
+      print_break 1 2;
+      type_expr ty;
+      close_box ();
+      print_cut ();
+      print_string "It has no method ";
+      print_string me;
+      close_box ()
+  | Undefined_inherited_method me ->
       print_string "This expression has no method ";
       print_string me
   | Unbound_class cl ->
@@ -955,7 +979,7 @@ let report_error = function
       trace true (fun _ -> print_string "is not a subtype of type") tr1;
       trace false (fun _ -> print_string "is not compatible with type") tr2
   | Outside_class ->
-      print_string "Object duplication outside a class definition."
+      print_string "This object duplication occurs outside a class definition."
   | Value_multiply_overridden v ->
       print_string "The instance variable "; print_string v;
       print_string " is overridden several times"
@@ -978,3 +1002,7 @@ let report_error = function
       print_space(); type_expr ty; print_space();
       print_string "In this type, the locally bound module name ";
       print_string id; print_string " escapes its scope"
+  | Masked_instance_variable lid ->
+      print_string "The instance variable "; longident lid; print_space ();
+      print_string
+        "cannot be accessed from the definition of another instance variable"

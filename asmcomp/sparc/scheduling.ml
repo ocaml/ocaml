@@ -15,9 +15,9 @@ open Mach
 
 (* Instruction scheduling for the Sparc *)
 
-class scheduler () as self =
+class scheduler = struct
 
-inherit Schedgen.scheduler_generic () as super
+inherit Schedgen.scheduler_generic
 
 (* Latencies (in cycles). Wild guesses. *)
 
@@ -50,5 +50,5 @@ method oper_issue_cycles = function
 
 end
 
-let fundecl f = (new scheduler ())#schedule_fundecl f
+let fundecl f = (new scheduler)#schedule_fundecl f
 

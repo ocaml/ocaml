@@ -19,9 +19,9 @@ open Reg
 open Arch
 open Mach
 
-class selector () as self =
+class selector = struct (self)
 
-inherit Selectgen.selector_generic() as super
+inherit Selectgen.selector_generic as super
 
 method is_immediate n = digital_asm || (n >= 0 && n <= 255)
 
@@ -75,4 +75,4 @@ method select_operation op args =
 
 end
 
-let fundecl f = (new selector ())#emit_fundecl f
+let fundecl f = (new selector)#emit_fundecl f

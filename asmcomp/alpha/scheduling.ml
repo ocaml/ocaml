@@ -18,9 +18,9 @@ open Mach
    However, the Linux-Alpha assembler does not do scheduling, so we do
    a feeble attempt here. *)
 
-class scheduler () as self =
+class scheduler = struct (self)
 
-inherit Schedgen.scheduler_generic () as super
+inherit Schedgen.scheduler_generic as super
 
 (* Latencies (in cycles). Based on the 21064, with some poetic license. *)
 
@@ -66,4 +66,4 @@ end
 let fundecl =
   if digital_asm
   then (fun f -> f)
-  else (new scheduler ())#schedule_fundecl
+  else (new scheduler)#schedule_fundecl

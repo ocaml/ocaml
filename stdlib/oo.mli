@@ -13,10 +13,6 @@
 
 (* Module [Oo]: object-oriented extension *)
 
-val copy : (< .. > as 'a) -> 'a
-        (* [Oo.copy o] returns a copy of object [o], that is a fresh
-           object with the same methods and instance variables as [o]  *)
-
 (*--*)
 
 (*** For system use only, not for the casual user *)
@@ -26,27 +22,34 @@ type label
 val new_method: string -> label
 
 (* Classes *)
-type t
 type table
-type item
+type meth
 type obj_init
 type class_info
-val set_initializer: table -> obj_init -> unit
-val inheritance: table -> class_info -> string list -> string list -> unit
-val get_method: table -> label -> item
-val set_method: table -> string -> item -> unit
-val get_method_label: table -> string -> label
+type t
+type obj
+val get_class: table -> class_info -> obj_init
+val new_variable: table -> string -> int
 val get_variable: table -> string -> int
-val hide_variable: table -> string -> unit
-val get_private_variable: table -> string -> int
+val copy_variables: class_info -> table -> unit -> obj -> unit
+val get_method_label: table -> string -> label
+val get_method: table -> label -> meth
+val set_method: table -> label -> meth -> unit
+val narrow: table -> string list -> string list -> string list -> unit
+val widen: table -> unit
+val add_initializer: table -> (obj -> unit) -> unit
 val create_class:
-        class_info -> string list -> (table -> t) ->
-        (table -> unit) -> unit
+        class_info -> string list -> (table -> bool -> obj_init) ->
+        (table -> obj_init -> t) -> unit
+val create_table: string list -> table
+val init_class: table -> unit
 
 (* Objects *)
-type object
-val create_object: table -> t
-val send:   object -> label -> t
+val create_object: table -> obj
+val run_initializers: obj -> table -> unit
+val object_from_struct: class_info -> obj
+val send:   obj -> label -> t
+val copy : obj -> obj
 
 (* Parameters *)
 type params = {

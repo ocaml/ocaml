@@ -102,6 +102,7 @@ type lambda =
   | Lassign of Ident.t * lambda
   | Lsend of lambda * lambda * lambda list
   | Levent of lambda * lambda_event
+  | Lifused of Ident.t * lambda
 
 and lambda_switch =
   { sw_numconsts: int;                  (* Number of integer cases *)

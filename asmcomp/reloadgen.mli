@@ -11,7 +11,7 @@
 
 (* $Id$ *)
 
-class reload_generic (unit) =
+class reload_generic : object
   method reload_operation :
     Mach.operation -> Reg.t array -> Reg.t array -> Reg.t array * Reg.t array
   method reload_test : Mach.test -> Reg.t array -> Reg.t array

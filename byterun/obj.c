@@ -63,3 +63,21 @@ value obj_block(value tag, value size) /* ML */
   return res;
 }
 
+value obj_dup(value arg) /* ML */
+{
+  value res;
+  mlsize_t sz, i;
+  tag_t tg;
+
+  sz = Wosize_val(arg);
+  if (sz == 0) return arg;
+
+  Begin_root(arg);
+  tg = Tag_val(arg);
+  res = alloc(sz, tg);
+  for (i = 0; i < sz; i++)
+    Field(res, i) = Field(arg, i);
+  End_roots();
+
+  return res;
+}

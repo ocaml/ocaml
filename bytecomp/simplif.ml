@@ -77,6 +77,8 @@ let rec eliminate_ref id = function
             List.map (eliminate_ref id) el)
   | Levent(l, ev) ->
       Levent(eliminate_ref id l, ev)
+  | Lifused(v, e) ->
+      Lifused(v, eliminate_ref id e)
 
 (* Simplification of lets *)
 
@@ -133,6 +135,8 @@ let simplify_lambda lam =
       count l
   | Lsend(m, o, ll) -> List.iter count (m::o::ll)
   | Levent(l, ev) -> count l
+  | Lifused(v, l) ->
+      if count_var v > 0 then count l
   in
   count lam;
   (* Second pass: remove Lalias bindings of unused variables,
@@ -186,6 +190,10 @@ let simplify_lambda lam =
   | Lcatch(l1, l2) -> Lcatch(simplif l1, simplif l2)
   | Ltrywith(l1, v, l2) -> Ltrywith(simplif l1, v, simplif l2)
   | Lifthenelse(l1, l2, l3) -> Lifthenelse(simplif l1, simplif l2, simplif l3)
+  | Lsequence(Lifused(v, l1), l2) ->
+      if count_var v > 0
+      then Lsequence(simplif l1, simplif l2)
+      else simplif l2
   | Lsequence(l1, l2) -> Lsequence(simplif l1, simplif l2)
   | Lwhile(l1, l2) -> Lwhile(simplif l1, simplif l2)
   | Lfor(v, l1, l2, dir, l3) ->
@@ -193,5 +201,7 @@ let simplify_lambda lam =
   | Lassign(v, l) -> Lassign(v, simplif l)
   | Lsend(m, o, ll) -> Lsend(simplif m, simplif o, List.map simplif ll)
   | Levent(l, ev) -> Levent(simplif l, ev)
+  | Lifused(v, l) ->
+      if count_var v > 0 then l else lambda_unit
   in
   simplif lam

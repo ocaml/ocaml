@@ -38,9 +38,9 @@ let insert_moves src dst next =
     else insert_move src.(i) dst.(i) (insmoves (i+1))
   in insmoves 0
 
-class reload_generic () as self =
+class reload_generic = object (self)
 
-val private mutable redo_regalloc = false
+val mutable redo_regalloc = false
 
 method makereg r =
   match r.loc with
@@ -53,13 +53,13 @@ method makereg r =
       newr.spill_cost <- 100000;
       newr
 
-method protected makeregs rv =
+method private makeregs rv =
   let n = Array.length rv in
   let newv = Array.create n Reg.dummy in
   for i = 0 to n-1 do newv.(i) <- self#makereg rv.(i) done;
   newv
 
-method protected makereg1 rv =
+method private makereg1 rv =
   let newv = Array.copy rv in
   newv.(0) <- self#makereg rv.(0);
   newv
@@ -83,7 +83,7 @@ method reload_operation op arg res =
 method reload_test tst args =
   self#makeregs args
 
-method protected reload i =
+method private reload i =
   match i.desc with
     (* For function calls, returns, etc: the arguments and results are
        already at the correct position (e.g. on stack for some arguments).
@@ -115,7 +115,7 @@ method protected reload i =
   | Iswitch(index, cases) ->
       let newarg = self#makeregs i.arg in
       insert_moves i.arg newarg      
-        (instr_cons (Iswitch(index, Array.map self#reload cases)) newarg [||]
+        (instr_cons (Iswitch(index, Array.map (self#reload) cases)) newarg [||]
           (self#reload i.next))
   | Iloop body ->
       instr_cons (Iloop(self#reload body)) [||] [||] (self#reload i.next)

@@ -37,6 +37,7 @@ type error =
   | Unconsistent_constraint
   | Type_clash of (type_expr * type_expr) list
   | Null_arity_external
+  | Unbound_type_var
 
 exception Error of Location.t * error
 

@@ -28,7 +28,12 @@ type error =
   | Modtype_infos of Ident.t * modtype_declaration * modtype_declaration
   | Modtype_permutation
   | Interface_mismatch of string * string
-  | Class_types of Ident.t * class_type * class_type
+  | Class_type_declarations of
+      Ident.t * cltype_declaration * cltype_declaration *
+      Ctype.class_match_failure list
+  | Class_declarations of
+      Ident.t * class_declaration * class_declaration *
+      Ctype.class_match_failure list
 
 exception Error of error list
 
@@ -61,13 +66,19 @@ let exception_declarations env subst id decl1 decl2 =
   then ()
   else raise(Error[Exception_declarations(id, decl1, decl2)])
 
-(* Inclusion between class types *)
+(* Inclusion between class declarations *)
 
-let class_types env subst id decl1 decl2 =
-  let decl2 = Subst.class_type subst decl2 in
-  if Includecore.class_types env decl1 decl2
-  then ()
-  else raise(Error[Class_types(id, decl1, decl2)])
+let class_type_declarations env subst id decl1 decl2 =
+  let decl2 = Subst.cltype_declaration subst decl2 in
+  match Includeclass.class_type_declarations env decl1 decl2 with
+    []     -> ()
+  | reason -> raise(Error[Class_type_declarations(id, decl1, decl2, reason)])
+
+let class_declarations env subst id decl1 decl2 =
+  let decl2 = Subst.class_declaration subst decl2 in
+  match Includeclass.class_declarations env decl1 decl2 with
+    []     -> ()
+  | reason -> raise(Error[Class_declarations(id, decl1, decl2, reason)])
 
 (* Expand a module type identifier when possible *)
 
@@ -87,6 +98,7 @@ type field_desc =
   | Field_exception of string
   | Field_module of string
   | Field_modtype of string
+  | Field_class of string
   | Field_classtype of string
 
 let item_ident_name = function
@@ -95,7 +107,8 @@ let item_ident_name = function
   | Tsig_exception(id, _) -> (id, Field_exception(Ident.name id))
   | Tsig_module(id, _) -> (id, Field_module(Ident.name id))
   | Tsig_modtype(id, _) -> (id, Field_modtype(Ident.name id))
-  | Tsig_class(id, _) -> (id, Field_classtype(Ident.name id))
+  | Tsig_class(id, _) -> (id, Field_class(Ident.name id))
+  | Tsig_cltype(id, _) -> (id, Field_classtype(Ident.name id))
 
 (* Simplify a structure coercion *)
 
@@ -155,7 +168,7 @@ and try_modtypes2 env mty1 mty2 =
   | (_, Tmty_ident p2) ->
       try_modtypes env Subst.identity mty1 (expand_module_path env p2)
   | (_, _) ->
-      fatal_error "Includemod.try_modtypes2"
+      assert false
 
 (* Inclusion between signatures *)
 
@@ -173,7 +186,8 @@ and signatures env subst sig1 sig2 =
           match item with
             Tsig_value(_,{val_kind = Val_prim _})
           | Tsig_type(_,_)
-          | Tsig_modtype(_,_) -> pos
+          | Tsig_modtype(_,_)
+          | Tsig_cltype(_,_) -> pos
           | Tsig_value(_,_)
           | Tsig_exception(_,_)
           | Tsig_module(_,_)
@@ -205,7 +219,7 @@ and signatures env subst sig1 sig2 =
                 Subst.add_module id2 (Pident id1) subst
             | Tsig_modtype _ ->
                 Subst.add_modtype id2 (Tmty_ident (Pident id1)) subst
-            | Tsig_value _ | Tsig_exception _ | Tsig_class _ ->
+            | Tsig_value _ | Tsig_exception _ | Tsig_class _ | Tsig_cltype _ ->
                 subst
           in
           pair_components new_subst
@@ -240,10 +254,13 @@ and signature_components env subst = function
       modtype_infos env subst id1 info1 info2;
       signature_components env subst rem
   | (Tsig_class(id1, decl1), Tsig_class(id2, decl2), pos) :: rem ->
-      class_types env subst id1 decl1 decl2;
+      class_declarations env subst id1 decl1 decl2;
       (pos, Tcoerce_none) :: signature_components env subst rem
+  | (Tsig_cltype(id1, info1), Tsig_cltype(id2, info2), pos) :: rem ->
+      class_type_declarations env subst id1 info1 info2;
+      signature_components env subst rem
   | _ ->
-      fatal_error "Includemod.signature_components"
+      assert false
 
 (* Inclusion between module type specifications *)
 
@@ -352,14 +369,26 @@ let include_err = function
       print_string intf_name;
       print_string ":";
       close_box()
-  | Class_types(id, d1, d2) ->
+  | Class_type_declarations(id, d1, d2, reason) ->
       open_hvbox 2;
-      print_string "Class types do not match:"; print_space();
-      Printtyp.class_type id d1; 
+      print_string "Class type declarations do not match:"; print_space();
+      Printtyp.cltype_declaration id d1; 
       print_break 1 (-2);
       print_string "is not included in"; print_space();
-      Printtyp.class_type id d2;
-      close_box()
+      Printtyp.cltype_declaration id d2;
+      close_box(),
+      print_space ();
+      Includeclass.report_error reason
+  | Class_declarations(id, d1, d2, reason) ->
+      open_hvbox 2;
+      print_string "Class declarations do not match:"; print_space();
+      Printtyp.class_declaration id d1; 
+      print_break 1 (-2);
+      print_string "is not included in"; print_space();
+      Printtyp.class_declaration id d2;
+      close_box();
+      print_space ();
+      Includeclass.report_error reason
 
 let report_error errlist =
   match errlist with

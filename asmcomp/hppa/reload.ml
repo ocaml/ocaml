@@ -14,4 +14,4 @@
 (* Reloading for the HPPA *)
 
 let fundecl f =
-  (new Reloadgen.reload_generic ())#fundecl f
+  (new Reloadgen.reload_generic)#fundecl f

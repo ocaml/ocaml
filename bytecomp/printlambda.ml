@@ -272,6 +272,12 @@ let rec lambda = function
       lambda lam;
       print_string ")";
       close_box()
+  | Lifused(id, expr) ->
+      open_box 2;
+      print_string "(ifused"; print_space();
+      Ident.print id; print_space();
+      lambda expr; print_string ")";
+      close_box()
 
 and sequence = function
     Lsequence(l1, l2) ->

@@ -63,7 +63,7 @@ and expression_desc =
       Ident.t * expression * expression * direction_flag * expression
   | Texp_when of expression * expression
   | Texp_send of expression * meth
-  | Texp_new of Path.t
+  | Texp_new of Path.t * int
   | Texp_instvar of Path.t * Path.t
   | Texp_setinstvar of Path.t * Path.t * expression
   | Texp_override of Path.t * (Path.t * expression) list
@@ -73,21 +73,33 @@ and meth =
     Tmeth_name of string
   | Tmeth_val of Ident.t
 
-(* Value expressions for classes *)
+(* Value expressions for the class language *)
+
+and class_expr =
+  { cl_desc: class_expr_desc;
+    cl_loc: Location.t;
+    cl_type: class_type }
+
+and class_expr_desc =
+    Tclass_ident of Path.t
+  | Tclass_structure of class_structure
+  | Tclass_fun of pattern * (Ident.t * expression) list * class_expr
+  | Tclass_apply of class_expr * expression list
+  | Tclass_let of rec_flag *  (pattern * expression) list *
+                  (Ident.t * expression) list * class_expr
+  | Tclass_constraint of class_expr * string list * string list * Concr.t
+
+and class_structure =
+  { cl_field: class_field list;
+    cl_meths: Ident.t Meths.t }
 
 and class_field =
-    Cf_inher of
-      Path.t * expression list * (string * Ident.t) list *
-      (string * Ident.t) list * string list
-  | Cf_val of string * Ident.t * private_flag * expression option
+    Cf_inher of class_expr * (string * Ident.t) list * (string * Ident.t) list
+  | Cf_val of string * Ident.t * expression
   | Cf_meth of string * expression
-
-and class_def =
-  { cl_args: pattern list;
-    cl_field: class_field list;
-    cl_pub_meths: string list;
-    cl_meths: Ident.t Meths.t;
-    cl_loc: Location.t }
+  | Cf_let of rec_flag * (pattern * expression) list *
+              (Ident.t * expression) list
+  | Cf_init of expression
 
 (* Value expressions for the module language *)
 
@@ -115,7 +127,8 @@ and structure_item =
   | Tstr_module of Ident.t * module_expr
   | Tstr_modtype of Ident.t * module_type
   | Tstr_open of Path.t
-  | Tstr_class of (Ident.t * class_def) list
+  | Tstr_class of (Ident.t * int * string list * class_expr) list
+  | Tstr_cltype of (Ident.t * cltype_declaration) list
 
 and module_coercion =
     Tcoerce_none

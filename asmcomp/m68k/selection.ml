@@ -96,9 +96,9 @@ let pseudoregs_for_operation op arg res =
 
 (* The selector *)
     
-class selector () as self =
+class selector = struct (self)
 
-inherit Selectgen.selector_generic() as super
+inherit Selectgen.selector_generic as super
 
 method is_immediate (n : int) = true
 
@@ -195,4 +195,4 @@ method emit_extcall_args env args =
 
 end
 
-let fundecl f = (new selector ())#emit_fundecl f
+let fundecl f = (new selector)#emit_fundecl f

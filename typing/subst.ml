@@ -102,8 +102,10 @@ let rec typexp s ty =
           begin match field_kind_repr kind with
             Fpresent ->
               Tfield(label, Fpresent, typexp s t1, typexp s t2)
-          | _ ->
-              Tlink(typexp s t2)
+          | Fabsent ->
+              Tlink (typexp s t2)
+          | Fvar _ (* {contents = None} *) as k ->
+              Tfield(label, k, typexp s t1, typexp s t2)
           end
       | Tnil ->
           Tnil
@@ -145,28 +147,28 @@ let type_declaration s decl =
     }
   in
   cleanup_types ();
-  List.iter unmark_type decl.type_params;
-  begin match decl.type_kind with
-    Type_abstract -> ()
-  | Type_variant cstrs ->
-      List.iter (fun (c, tl) -> List.iter unmark_type tl) cstrs
-  | Type_record lbls ->
-      List.iter (fun (c, mut, t) -> unmark_type t) lbls
-  end;
-  begin match decl.type_manifest with
-    None    -> ()
-  | Some ty -> unmark_type ty
-  end;
+  unmark_type_decl decl;
   decl
 
-let class_type s decl =
+let class_signature s sign =
+  { cty_self = typexp s sign.cty_self;
+    cty_vars = Vars.map (function (m, t) -> (m, typexp s t)) sign.cty_vars;
+    cty_concr = sign.cty_concr }
+
+let rec class_type s =
+  function
+    Tcty_constr (p, tyl, cty) ->
+      Tcty_constr (type_path s p, List.map (typexp s) tyl, class_type s cty)
+  | Tcty_signature sign ->
+      Tcty_signature (class_signature s sign)
+  | Tcty_fun (ty, cty) ->
+      Tcty_fun (typexp s ty, class_type s cty)
+
+let class_declaration s decl =
   let decl =
     { cty_params = List.map (typexp s) decl.cty_params;
-      cty_args = List.map (typexp s) decl.cty_args;
-      cty_vars = Vars.map (function (m, t) -> (m, typexp s t)) decl.cty_vars;
-      cty_meths = Meths.map (typexp s) decl.cty_meths;
-      cty_self = typexp s decl.cty_self;
-      cty_concr = decl.cty_concr;
+      cty_type = class_type s decl.cty_type;
+      cty_path = type_path s decl.cty_path;
       cty_new =
         begin match decl.cty_new with
           None    -> None
@@ -175,15 +177,29 @@ let class_type s decl =
   in
   cleanup_types ();
   List.iter unmark_type decl.cty_params;
-  List.iter unmark_type decl.cty_args;
-  Vars.iter (fun l (m, t) -> unmark_type t) decl.cty_vars;
-  Meths.iter (fun l t -> unmark_type t) decl.cty_meths;
-  unmark_type decl.cty_self;
+  unmark_class_type decl.cty_type;
   begin match decl.cty_new with
     None    -> ()
   | Some ty -> unmark_type ty
   end;
   decl
+
+let cltype_declaration s decl =
+  let decl =
+    { clty_params = List.map (typexp s) decl.clty_params;
+      clty_type = class_type s decl.clty_type;
+      clty_path = type_path s decl.clty_path }
+  in
+  cleanup_types ();
+  List.iter unmark_type decl.clty_params;
+  unmark_class_type decl.clty_type;
+  decl
+
+let class_type s cty =
+  let cty = class_type s cty in
+  cleanup_types ();
+  unmark_class_type cty;
+  cty
 
 let value_description s descr =
   { val_type = type_expr s descr.val_type;
@@ -221,7 +237,9 @@ and signature s = function
       Tsig_modtype(id, modtype_declaration s d) ::
       signature (remove_modtype id s) sg
   | Tsig_class(id, d) :: sg ->
-      Tsig_class(id, class_type s d) :: signature s sg
+      Tsig_class(id, class_declaration s d) :: signature s sg
+  | Tsig_cltype(id, d) :: sg ->
+      Tsig_cltype(id, cltype_declaration s d) :: signature s sg
 
 and modtype_declaration s = function
     Tmodtype_abstract -> Tmodtype_abstract

@@ -26,9 +26,9 @@ let shiftadd = function
   | 8 -> Ishift3add
   | _ -> fatal_error "Proc_hppa.shiftadd"
 
-class selector () as self =
+class selector = struct (self)
 
-inherit Selectgen.selector_generic() as super
+inherit Selectgen.selector_generic as super
 
 method is_immediate n = (n < 16) && (n >= -16) (* 5 bits *)
 
@@ -105,4 +105,4 @@ method insert_op op rs rd =
 
 end
 
-let fundecl f = (new selector ())#emit_fundecl f
+let fundecl f = (new selector)#emit_fundecl f

@@ -320,6 +320,8 @@ let rec expr_size = function
       expr_size body
   | Uletrec(bindings, body) ->
       expr_size body
+  | Usequence(exp, exp') ->
+      expr_size exp'
   | _ ->
       fatal_error "Cmmgen.expr_size"
 

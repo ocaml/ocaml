@@ -60,13 +60,23 @@ let label_code = function
    continuation performs. We avoid generating branches to branches and
    branches to returns. *)
 
+let rec make_branch_2 lbl n cont =
+  function
+    Kreturn m :: _ -> (Kreturn (n + m), cont)
+  | Klabel _ :: c  -> make_branch_2 lbl n cont c
+  | Kpop m :: c    -> make_branch_2 lbl (n + m) cont c
+  | _              ->
+      match lbl with
+        Some lbl -> (Kbranch lbl, cont)
+      | None     -> let lbl = new_label() in (Kbranch lbl, Klabel lbl :: cont)
+
 let make_branch cont =
   match cont with
     (Kbranch _ as branch) :: _ -> (branch, cont)
   | (Kreturn _ as return) :: _ -> (return, cont)
   | Kraise :: _ -> (Kraise, cont)
-  | Klabel lbl :: _ -> (Kbranch lbl, cont)
-  | _ -> let lbl = new_label() in (Kbranch lbl, Klabel lbl :: cont)
+  | Klabel lbl :: _ -> make_branch_2 (Some lbl) 0 cont cont
+  | _ ->  make_branch_2 (None) 0 cont cont
 
 (* Discard all instructions up to the next label.
    This function is to be applied to the continuation before adding a
@@ -111,6 +121,7 @@ let rec size_of_lambda = function
   | Llet(str, id, arg, body) -> size_of_lambda body
   | Lletrec(bindings, body) -> size_of_lambda body
   | Levent (lam, _) -> size_of_lambda lam
+  | Lsequence (lam, lam') -> size_of_lambda lam'
   | _ -> fatal_error "Bytegen.size_of_lambda"
 
 (**** Merging consecutive events ****)
@@ -565,6 +576,8 @@ let rec comp_expr env exp sz cont =
           let cont1 = add_event ev cont in
           comp_expr env lam sz cont1
       end
+  | Lifused (_, exp) ->
+      comp_expr env exp sz cont
 
 (* Compile a list of arguments [e1; ...; eN] to a primitive operation.
    The values of eN ... e2 are pushed on the stack, e2 at top of stack,

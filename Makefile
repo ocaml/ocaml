@@ -31,8 +31,8 @@ TYPING=typing/ident.cmo typing/path.cmo \
   typing/btype.cmo \
   typing/subst.cmo typing/predef.cmo \
   typing/datarepr.cmo typing/env.cmo \
-  typing/typedtree.cmo \
-  typing/ctype.cmo typing/printtyp.cmo \
+  typing/typedtree.cmo typing/ctype.cmo \
+  typing/printtyp.cmo typing/includeclass.cmo \
   typing/mtype.cmo typing/includecore.cmo \
   typing/includemod.cmo typing/parmatch.cmo \
   typing/typetexp.cmo typing/typecore.cmo \
@@ -83,8 +83,8 @@ OPTOBJS=$(OPTUTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) $(OPTDRIVER)
 
 EXPUNGEOBJS=utils/misc.cmo utils/tbl.cmo \
   utils/config.cmo utils/clflags.cmo \
-  typing/ident.cmo typing/types.cmo typing/btype.cmo typing/predef.cmo \
-  bytecomp/runtimedef.cmo bytecomp/symtable.cmo \
+  typing/ident.cmo typing/path.cmo typing/types.cmo typing/btype.cmo \
+  typing/predef.cmo bytecomp/runtimedef.cmo bytecomp/symtable.cmo \
   toplevel/expunge.cmo
 
 PERVASIVES=arg array callback char digest filename format gc hashtbl \
@@ -433,7 +433,7 @@ alldepend::
 
 # The library
 
-library:
+library: ocamlc
 	cd stdlib; $(MAKE) all
 library-cross:
 	cd stdlib; $(MAKE) RUNTIME=../byterun/ocamlrun all
@@ -446,7 +446,7 @@ alldepend::
 
 # The lexer and parser generators
 
-ocamllex:
+ocamllex: ocamlyacc ocamlc
 	cd lex; $(MAKE) all
 partialclean::
 	cd lex; $(MAKE) clean
@@ -460,7 +460,7 @@ clean::
 
 # Tools
 
-ocamltools:
+ocamltools: ocamlc ocamlyacc ocamllex
 	cd tools; $(MAKE) all
 partialclean::
 	cd tools; $(MAKE) clean
@@ -482,7 +482,7 @@ alldepend::
 
 # The replay debugger
 
-ocamldebugger:
+ocamldebugger: ocamlc ocamlyacc ocamllex
 	cd debugger; $(MAKE) all
 partialclean::
 	cd debugger; $(MAKE) clean

@@ -53,6 +53,8 @@ let rec env_from_summary sum =
           Env.add_modtype id desc (env_from_summary s)
       | Env_class(s, id, desc) ->
           Env.add_class id desc (env_from_summary s)
+      | Env_cltype (s, id, desc) ->
+          Env.add_cltype id desc (env_from_summary s)
       | Env_open(s, path) ->
           let env = env_from_summary s in
           let mty =

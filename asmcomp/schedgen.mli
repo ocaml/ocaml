@@ -22,11 +22,11 @@ type code_dag_node =
     mutable ancestors: int;
     mutable emitted_ancestors: int }
 
-class virtual scheduler_generic (unit) =
+class virtual scheduler_generic : object
   (* Can be overriden by processor description *)
-  virtual oper_issue_cycles : Mach.operation -> int
+  method virtual oper_issue_cycles : Mach.operation -> int
       (* Number of cycles needed to issue the given operation *)
-  virtual oper_latency : Mach.operation -> int
+  method virtual oper_latency : Mach.operation -> int
       (* Number of cycles needed to complete the given operation *)
   method reload_retaddr_issue_cycles : int
       (* Number of cycles needed to issue a Lreloadretaddr operation *)

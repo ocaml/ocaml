@@ -39,7 +39,7 @@ type error =
   | With_mismatch of Longident.t * Includemod.error list
   | Repeated_name of string * string
   | Non_generalizable of type_expr
-  | Non_generalizable_class of Ident.t * class_type
+  | Non_generalizable_class of Ident.t * class_declaration
   | Non_generalizable_module of module_type
 
 exception Error of Location.t * error

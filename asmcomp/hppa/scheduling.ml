@@ -16,9 +16,9 @@
 open Arch
 open Mach
 
-class scheduler () as self =
+class scheduler = struct (self)
 
-inherit Schedgen.scheduler_generic () as super
+inherit Schedgen.scheduler_generic
 
 (* Latencies (in cycles). Roughly based on the ``Mustang'' chips. *)
 
@@ -55,5 +55,4 @@ method oper_issue_cycles = function
 
 end
 
-let fundecl f = (new scheduler ())#schedule_fundecl f
-
+let fundecl f = (new scheduler)#schedule_fundecl f

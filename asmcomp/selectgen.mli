@@ -18,13 +18,13 @@ type environment = (Ident.t, Reg.t array) Tbl.t
 
 val size_expr : environment -> Cmm.expression -> int
 
-class virtual selector_generic (unit) : 'a =
+class virtual selector_generic : object
   (* The following methods must or can be overriden by the processor
      description *)
-  virtual is_immediate : int -> bool
+  method virtual is_immediate : int -> bool
     (* Must be defined to indicate whether a constant is a suitable
        immediate operand to arithmetic instructions *)
-  virtual select_addressing :
+  method virtual select_addressing :
     Cmm.expression -> Arch.addressing_mode * Cmm.expression
     (* Must be defined to select addressing modes *)
   method select_operation :
@@ -60,4 +60,3 @@ class virtual selector_generic (unit) : 'a =
     (Ident.t, Reg.t array) Tbl.t -> Cmm.expression -> Reg.t array
   method emit_tail : (Ident.t, Reg.t array) Tbl.t -> Cmm.expression -> unit
 end
-

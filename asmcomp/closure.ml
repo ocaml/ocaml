@@ -471,7 +471,7 @@ let rec close fenv cenv = function
   | Lassign(id, lam) ->
       let (ulam, _) = close fenv cenv lam in
       (Uassign(id, ulam), Value_unknown)
-  | Levent _ -> assert false
+  | Levent _ | Lifused _ -> assert false
 
 and close_list fenv cenv = function
     [] -> []

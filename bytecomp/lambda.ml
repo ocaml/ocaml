@@ -93,6 +93,7 @@ type lambda =
   | Lassign of Ident.t * lambda
   | Lsend of lambda * lambda * lambda list
   | Levent of lambda * lambda_event
+  | Lifused of Ident.t * lambda
 
 and lambda_switch =
   { sw_numconsts: int;
@@ -179,6 +180,8 @@ let free_variables l =
       List.iter freevars (met::obj::args)
   | Levent (lam, evt) ->
       freevars lam
+  | Lifused (v, e) ->
+      freevars e
   in freevars l; !fv
 
 (* Check if an action has a "when" guard *)

@@ -289,7 +289,7 @@ let rec transl_exp e =
       transl_primitive p
   | Texp_ident(path, {val_kind = Val_anc _}) ->
       raise(Error(e.exp_loc, Free_super_var))
-  | Texp_ident(path, desc) ->
+  | Texp_ident(path, {val_kind = Val_reg | Val_self _}) ->
       transl_path path
   | Texp_constant cst ->
       Lconst(Const_base cst)
@@ -447,7 +447,19 @@ let rec transl_exp e =
         | Tmeth_val id  -> id
       in
       event_after e (Lsend(Lvar met_id, transl_exp expr, []))
-  | Texp_new cl ->
+  | Texp_new (cl, arity) when arity = 0 ->
+      Lapply(Translobj.oo_prim "object_from_struct", [transl_path cl])
+(*
+      let cl_info = Ident.create "class_info" in
+      let self = Ident.create "self" in
+      Llet(Strict, cl_info, transl_path cl,
+      Llet(Strict, self,
+           Lapply(oo_prim "copy", [Lprim(Pfield 0, [Lvar cl_info])]),
+      Lsequence(Lapply(oo_prim "run_initializers",
+                       [Lvar self; Lprim(Pfield 2, [Lvar cl_info])]),
+                Lvar self)))
+*)
+  | Texp_new (cl, _) ->
       Lprim(Pfield 0, [transl_path cl])
   | Texp_instvar(path_self, path) ->
       Lprim(Parrayrefu Paddrarray , [transl_path path_self; transl_path path])

@@ -221,6 +221,10 @@ and rewrite_exp sexp =
   | Pexp_override l ->
       List.iter (fun (_, sexp) -> rewrite_exp sexp) l
 
+  | Pexp_letmodule (_, smod, sexp) ->
+      rewrite_mod smod;
+      rewrite_exp sexp
+
 and rewrite_ifbody sifbody =
   if !instr_if then
     insert_profile rewrite_exp sifbody
@@ -251,25 +255,42 @@ and rewrite_trymatching l =
 
 (* Rewrite a class definition *)
 
-let rewrite_class_field =
+and rewrite_class_field =
   function
-    Pcf_inher (_, _, l, _, _) -> List.iter rewrite_exp l
-  | Pcf_val (_, _, _, Some sexp, _) -> rewrite_exp sexp
-  | Pcf_val (_, _, _, None, _) | Pcf_virt _ -> ()
+    Pcf_inher (cexpr, _)     -> rewrite_class_expr cexpr
+  | Pcf_val (_, _, sexp, _)  -> rewrite_exp sexp
   | Pcf_meth (_, _, ({pexp_desc = Pexp_function _} as sexp), _) ->
       rewrite_exp sexp
   | Pcf_meth (_, _, sexp, _) ->
-      if !instr_fun then
-        insert_profile rewrite_exp sexp
-      else
-        rewrite_exp sexp
+      if !instr_fun then insert_profile rewrite_exp sexp
+      else rewrite_exp sexp
+  | Pcf_let(_, spat_sexp_list, _) ->
+      rewrite_patexp_list spat_sexp_list
+  | Pcf_init sexp ->
+      rewrite_exp sexp
+  | Pcf_virt _ | Pcf_cstr _  -> ()
 
-let rewrite_class cl =
-  List.iter rewrite_class_field cl.pcl_field
+and rewrite_class_expr cexpr =
+  match cexpr.pcl_desc with
+    Pcl_constr _ -> ()
+  | Pcl_structure (_, fields) ->
+      List.iter rewrite_class_field fields
+  | Pcl_fun (_, cexpr) ->
+      rewrite_class_expr cexpr
+  | Pcl_apply (cexpr, exprs) ->
+      rewrite_class_expr cexpr; List.iter rewrite_exp exprs
+  | Pcl_let (_, spat_sexp_list, cexpr) ->
+      rewrite_patexp_list spat_sexp_list;
+      rewrite_class_expr cexpr
+  | Pcl_constraint (cexpr, _) ->
+      rewrite_class_expr cexpr
+
+and rewrite_class_declaration cl =
+  rewrite_class_expr cl.pci_expr
 
 (* Rewrite a module expression or structure expression *)
 
-let rec rewrite_mod smod =
+and rewrite_mod smod =
   match smod.pmod_desc with
     Pmod_ident lid -> ()
   | Pmod_structure sstr -> List.iter rewrite_str_item sstr
@@ -282,7 +303,7 @@ and rewrite_str_item item =
     Pstr_eval exp -> rewrite_exp exp
   | Pstr_value(_, exps) -> List.iter (function (_,exp) -> rewrite_exp exp) exps
   | Pstr_module(name, smod) -> rewrite_mod smod
-  | Pstr_class classes -> List.iter rewrite_class classes
+  | Pstr_class classes -> List.iter rewrite_class_declaration classes
   | _ -> ()
 
 (* Rewrite a .ml file *)
