@@ -426,7 +426,7 @@ value int64_of_int32(value v)
 value int64_to_int32(value v)
 { invalid_argument(int64_error); }
 
-value format_int64(value fmt, value arg)
+value int64_format(value fmt, value arg)
 { invalid_argument(int64_error); }
 
 value int64_of_string(value s)
