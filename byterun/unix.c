@@ -153,6 +153,10 @@ char * search_dll_in_path(struct ext_table * path, char * name)
 
 #ifdef SUPPORT_DYNAMIC_LINKING
 
+#ifndef RTLD_GLOBAL
+#define RTLD_GLOBAL 0
+#endif
+
 void * caml_dlopen(char * libname)
 {
   return dlopen(libname, RTLD_NOW|RTLD_GLOBAL);
