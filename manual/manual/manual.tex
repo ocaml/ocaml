@@ -13,6 +13,11 @@
 \newif\ifpdf
 \pdffalse
 \input{macros.tex}
+
+\usepackage{hyperref}
+\makeatletter \def\@wrindex#1#2{\xdef \@indexfile{\csname #1@idxfile\endcsname}\@@wrindex#2||\\}\makeatother
+\def\th{^{\hbox{\scriptsize th}}}
+
 \raggedbottom
 \input{version.tex}
 
