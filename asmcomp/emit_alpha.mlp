@@ -159,14 +159,13 @@ let emit_frame fd =
 type gc_call =
   { gc_lbl: label;                      (* Entry label *)
     gc_return_lbl: label;               (* Where to branch after GC *)
-    gc_desired_size: int;               (* Required block size *)
     gc_frame: label;                    (* Label of frame descriptor *)
     gc_instr: instruction }             (* Record live registers *)
 
 let call_gc_sites = ref ([] : gc_call list)
 
 let emit_call_gc gc =
-  `{emit_label gc.gc_lbl}:	ldiq	$25, {emit_int gc.gc_desired_size}\n`;
+  `{emit_label gc.gc_lbl}:`;
   liveregs gc.gc_instr 0;
   `{emit_label gc.gc_frame}:	bsr	caml_call_gc\n`;
   `	br	{emit_label gc.gc_return_lbl}\n`

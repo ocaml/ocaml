@@ -165,6 +165,8 @@ let select_oper op args =
 
 let select_store addr exp = raise Use_default
 
+let select_push exp = fatal_error "Proc: select_push"
+
 let pseudoregs_for_operation op arg res =
   match op with
     Iintop(Idiv | Imod) ->       (* handled via calls to millicode *)
@@ -249,6 +251,8 @@ let loc_external_arguments arg =
           fatal_error "Proc.external_calling_conventions: cannot call"
     done;
     (loc, Misc.align !ofs 8)
+
+let extcall_use_push = false
 
 let loc_external_results res =
   let (loc, ofs) = calling_conventions 21 21 100 100 not_supported res in loc

@@ -85,6 +85,8 @@ let select_oper op args =
 
 let select_store addr exp = raise Use_default
 
+let select_push exp = fatal_error "Proc: select_push"
+
 let pseudoregs_for_operation op arg res = raise Use_default
 
 let word_addressed = false
@@ -222,6 +224,8 @@ let loc_external_arguments arg =
     end
   done;
   (loc, Misc.align (!ofs + 4) 8)     (* Keep stack 8-aligned *)
+
+let extcall_use_push = false
 
 let loc_external_results res =
   let (loc, ofs) = calling_conventions 8 8 100 100 not_supported res in loc

@@ -99,6 +99,8 @@ let select_oper op args =
 
 let select_store addr exp = raise Use_default
 
+let select_push exp = fatal_error "Proc: select_push"
+
 let pseudoregs_for_operation op arg res = raise Use_default
 
 let is_immediate n = (n <= 32767) & (n >= -32768)
@@ -245,6 +247,8 @@ let external_conventions first_int last_int first_float last_float arg =
   (loc, Misc.align !ofs 8) (* Keep stack 8-aligned *)
 
 let loc_external_arguments arg = external_conventions 0 7 100 112 arg
+
+let extcall_use_push = false
 
 (* Results are in GPR 3 and FPR 1 *)
 

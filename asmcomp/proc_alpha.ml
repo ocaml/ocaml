@@ -63,6 +63,8 @@ let select_oper op args =
 
 let select_store addr exp = raise Use_default
 
+let select_push exp = fatal_error "Proc: select_push"
+
 let pseudoregs_for_operation op arg res = raise Use_default
 
 let is_immediate (n:int) = true
@@ -215,6 +217,7 @@ let loc_external_arguments arg =
   ext_calling_conventions 13 18 116 121 outgoing arg
 let loc_external_results res =
   let (loc, ofs) = ext_calling_conventions 0 0 100 100 not_supported res in loc
+let extcall_use_push = false
 
 let loc_exn_bucket = phys_reg 0         (* $0 *)
 

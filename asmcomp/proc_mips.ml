@@ -41,6 +41,8 @@ let select_oper op args = raise Use_default
 
 let select_store addr exp = raise Use_default
 
+let select_push exp = fatal_error "Proc: select_push"
+
 let pseudoregs_for_operation op arg res = raise Use_default
 
 let is_immediate (n:int) = true
@@ -183,6 +185,8 @@ let loc_external_arguments arg =
          [| phys_reg 2; phys_reg 3; phys_reg 4 |], 16
     | _ ->
          fatal_error "Proc_mips.loc_external_arguments"
+
+let extcall_use_push = false
 
 let loc_external_results res =
   let (loc, ofs) = calling_conventions 0 0 100 100 0 not_supported res in loc
