@@ -84,12 +84,13 @@ external to_string: 'a -> extern_flags list -> string
            The [flags] argument has the same meaning as for
            [Marshal.to_channel]. *)
 
-val to_buffer: string -> int -> int -> 'a -> extern_flags list -> unit
-        (* [Marshal.to_buffer v buff ofs len flags] marshals the value [v],
+val to_buffer: string -> int -> int -> 'a -> extern_flags list -> int
+        (* [Marshal.to_buffer buff ofs len v flags] marshals the value [v],
            storing its byte representation in the string [buff],
            starting at character number [ofs], and writing at most
-           [len] characters.  If the byte representation of [v]
-           does not fit in [len] characters, the exception [Failure]
+           [len] characters.  It returns the number of characters
+           actually written to the string. If the byte representation
+           of [v] does not fit in [len] characters, the exception [Failure]
            is raised. *)
 
 external from_channel: in_channel -> 'a = "input_value"
