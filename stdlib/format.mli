@@ -391,9 +391,11 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a;;
            an ``horizontal-vertical'' box, or an ``horizontal or
            vertical'' box ([b] standing for an ``horizontal or
            vertical'' box demonstrating indentation and [hov] standing
-           for a regular``horizontal or vertical'' box). 
+           for a regular``horizontal or vertical'' box).
            For instance, [@\[<hov 2>] opens an ``horizontal or vertical''
-           box with indentation 2.
+           box with indentation 2 as obtained with [open_hovbox 2].
+           For more details about boxes, see the various box opening
+           functions [open_*box].
 -          [@\]]: close the most recently opened pretty-printing box.
 -          [@,]: output a good break as with [print_cut ()].
 -          [@ ]: output a space, as with [print_space ()].
