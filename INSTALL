@@ -145,6 +145,9 @@ Just do:
 
         make ocamlc.opt         # to build a native-code version of ocamlc
         make ocamlopt.opt       # to build a native-code version of ocamlopt
+        make ocamllex.opt       # to build a native-code version of ocamllex
+or
+        make opt.opt            # to build all of them
 
 Later, you can compile your programs to bytecode using ocamlc.opt
 instead of ocamlc, and to native-code using ocamlopt.opt instead of
@@ -174,6 +177,7 @@ and also, if you built them during step 5,
 
         ocamlc.opt       the batch bytecode compiler compiled with ocamlopt
         ocamlopt.opt     the batch native-code compiler compiled with ocamlopt
+        ocamllex.opt     the lexer generator compiled with ocamlopt
 
 From the top directory, become superuser and do:
 

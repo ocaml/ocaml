@@ -204,6 +204,9 @@ cleanboot:
 # Compile the native-code compiler
 opt: runtimeopt ocamlopt libraryopt otherlibrariesopt
 
+# Native-code versions of the tools
+opt.opt: ocamlc.opt ocamlopt.opt ocamllex.opt
+
 # Installation
 install: FORCE
 	if test -d $(BINDIR); then : ; else $(MKDIR) $(BINDIR); fi
@@ -233,6 +236,7 @@ installopt:
 	set -e; for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) installopt); done
 	if test -f ocamlc.opt; then cp ocamlc.opt $(BINDIR)/ocamlc.opt$(EXE); else :; fi
 	if test -f ocamlopt.opt; then cp ocamlopt.opt $(BINDIR)/ocamlopt.opt$(EXE); else :; fi
+	if test -f lex/ocamllex.opt; then cp lex/ocamllex.opt $(BINDIR)/ocamllex.opt$(EXE); else :; fi
 
 clean:: partialclean
 
@@ -476,6 +480,8 @@ alldepend::
 
 ocamllex: ocamlyacc ocamlc
 	cd lex; $(MAKE) all
+ocamllex.opt: ocamlopt
+	cd lex; $(MAKE) allopt
 partialclean::
 	cd lex; $(MAKE) clean
 alldepend::

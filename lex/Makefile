@@ -15,6 +15,7 @@
 # The lexer generator
 
 CAMLC=../boot/ocamlrun ../boot/ocamlc -I ../boot
+CAMLOPT=../boot/ocamlrun ../ocamlopt -I ../stdlib
 COMPFLAGS=
 LINKFLAGS=
 CAMLYACC=../boot/ocamlyacc
@@ -26,12 +27,16 @@ DEPFLAGS=
 OBJS=parser.cmo lexer.cmo lexgen.cmo compact.cmo output.cmo main.cmo
 
 all: ocamllex
+allopt: ocamllex.opt
 
 ocamllex: $(OBJS)
 	$(CAMLC) $(LINKFLAGS) -o ocamllex $(OBJS)
 
+ocamllex.opt: $(OBJS:.cmo=.cmx)
+	$(CAMLOPT) -o ocamllex.opt $(OBJS:.cmo=.cmx)
+
 clean::
-	rm -f ocamllex
+	rm -f ocamllex ocamllex.opt
 	rm -f *.cmo *.cmi
 
 parser.ml parser.mli: parser.mly
@@ -51,13 +56,16 @@ clean::
 beforedepend:: lexer.ml
 
 .SUFFIXES:
-.SUFFIXES: .ml .cmo .mli .cmi
+.SUFFIXES: .ml .cmo .mli .cmi .cmx
 
 .ml.cmo:
 	$(CAMLC) -c $(COMPFLAGS) $<
 
 .mli.cmi:
 	$(CAMLC) -c $(COMPFLAGS) $<
+
+.ml.cmx:
+	$(CAMLOPT) -c $(COMPFLAGS) $<
 
 depend: beforedepend
 	$(CAMLDEP) *.mli *.ml > .depend

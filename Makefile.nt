@@ -199,6 +199,9 @@ cleanboot:
 # Compile the native-code compiler
 opt: runtimeopt ocamlopt libraryopt otherlibrariesopt
 
+# Native-code versions of the tools
+opt.opt: ocamlc.opt ocamlopt.opt ocamllex.opt
+
 # Installation
 install: installbyt installopt
 
@@ -475,6 +478,8 @@ alldepend::
 
 ocamllex:
 	cd lex & $(MAKEREC) all
+ocamllex.opt:
+	cd lex & $(MAKEREC) allopt
 partialclean::
 	cd lex & $(MAKEREC) clean
 alldepend::
