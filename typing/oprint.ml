@@ -366,10 +366,6 @@ and print_out_type_decl kwd ppf (name, args, ty, constraints) =
            !out_type ty2)
       params
   in
-  let type_parameter ppf (ty, (co, cn)) =
-    fprintf ppf "%s'%s" (if not cn then "+" else if not co then "-" else "")
-      ty
-  in
   let type_defined ppf =
     match args with
       [] -> fprintf ppf "%s" name
