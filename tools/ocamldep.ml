@@ -105,6 +105,7 @@ let rec add_pattern bv pat =
   | Ppat_or(p1, p2) -> add_pattern bv p1; add_pattern bv p2
   | Ppat_constraint(p, ty) -> add_pattern bv p; add_type bv ty
   | Ppat_variant(_, op) -> add_opt add_pattern bv op
+  | Ppat_type (li) -> add bv li
 
 let rec add_expr bv exp =
   match exp.pexp_desc with
