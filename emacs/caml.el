@@ -1835,6 +1835,8 @@ with prefix arg, indent that many phrases starting with the current phrase."
 
 (autoload 'run-caml "inf-caml" "Run an inferior Caml process." t)
 
+(load "caml-types")
+
 ;;; caml.el ends here
 
 (provide 'caml)

@@ -12,39 +12,8 @@
 
 ;(* $Id$ *)
 
-; WARNING:
-; This code is experimental.  Everything may change at any time.
 
 ; An emacs-lisp complement to the "-dtypes" option of ocamlc and ocamlopt.
-; Load this file in your emacs, then C-c C-t will show you the
-; type of the expression (or pattern) that contains the cursor.
-; The expression is highlighted in the current buffer.
-; The type is highlighted in "foo.annot" (if your file is "foo.ml"),
-; which is convenient when the type doesn't fit on a line.
-
-
-; Hints on using the type display:
-
-; . If you want the type of an identifier, put the cursor in any
-;   occurrence of this identifier (as expression or as pattern) and
-;   type C-c C-t
-; . If you want the result type of a function application, put the
-;   cursor at the first space after the function name
-; . If you want the type of a list, put the cursor on a bracket,
-;   or on a semicolon, or on the :: constructor
-; . Even if type checking fails, you can still look at the types
-;   in the file, up to where the type checker failed.
-; . To get rid of the highlighting, put the cursor in a comment
-;   and type C-c C-t.
-; . The mark in the foo.annot file is set to the beginning of the
-;   type, so you can type C-x C-x in that file to view the type.
-
-
-
-; TO DO:
-; - make emacs scroll the foo.annot file to show the type
-; - (?) integrate this file into caml.el
-
 
 ; Format of the *.annot files:
 
@@ -73,9 +42,6 @@
 ; For the moment, the only possible keyword is "type".
 
 
-; (global-set-key "\C-c\C-t" 'caml-types-show-type)
-
-
 (let* ((caml-types-filename-re "\"\\(\\([^\\\"]\\|\\\\.\\)*\\)\"")
        (caml-types-number-re "\\([0-9]*\\)")
        (caml-types-position-re
@@ -92,8 +58,21 @@
 (overlay-put caml-types-type-ovl 'face 'region)
 
 (defun caml-types-show-type ()
-  "Highlight the smallest expression that contains the cursor,
-   and display its type in the minibuffer."
+  "Show the type of expression or pattern at point.
+   The smallest expression or pattern that contains point is
+   temporarily highlighted.  Its type is highlighted in the .annot
+   file and the mark is set to the beginning of the type.
+   The type is also displayed in the mini-buffer.
+
+   Hints on using the type display:
+   . If you want the type of an identifier, put point within any
+     occurrence of this identifier.
+   . If you want the result type of a function application, put point
+     at the first space after the function name.
+   . If you want the type of a list, put point on a bracket, on a
+     semicolon, or on the :: constructor.
+   . Even if type checking fails, you can still look at the types
+     in the file, up to where the type checker failed."
   (interactive)
   (let* ((target-buf (current-buffer))
          (target-file (file-name-nondirectory (buffer-file-name)))
@@ -114,9 +93,9 @@
                                              target-bol target-cnum)))
           (if (null loc)
               (progn
-                (move-overlay caml-types-expr-ovl 1 1)
-                (move-overlay caml-types-type-ovl 1 1)
-                (message "The cursor is not within a typechecked expression or pattern."))
+                (delete-overlay caml-types-expr-ovl)
+                (delete-overlay caml-types-type-ovl)
+                (message "Point is not within a typechecked expression or pattern."))
             (let ((left (caml-types-get-pos target-buf (nth 0 loc) (nth 1 loc)))
                   (right (caml-types-get-pos target-buf
                                              (nth 2 loc) (nth 3 loc))))
@@ -127,24 +106,18 @@
             (move-overlay caml-types-type-ovl (match-beginning 1) (match-end 1)
                           type-buf)
             (message (format "type: %s" (match-string 1)))
-                                        ; *** this doesn't seem to work, I don't know why...
-                                        ; *** (goto-char type-point)
-                                        ; *** workaround: set the mark instead
-            (set-mark (match-beginning 1))
-            )))
+            (set-mark (match-beginning 1)))))
       (let
           ((window (get-buffer-window type-buf))
            (this-window (selected-window)))
-        
         (if window
             (progn
               (select-window window)
               (goto-char (mark))
               (select-window this-window))))
       (unwind-protect
-          (sit-for 3)
-        (delete-overlay caml-types-expr-ovl))
-      )))
+          (sit-for 60)
+        (delete-overlay caml-types-expr-ovl)))))
 
 (defun caml-types-date< (date1 date2)
   (or (< (car date1) (car date2))
@@ -207,3 +180,21 @@
           (set-buffer buf)
           (toggle-read-only 1))
         buf)))
+
+
+;; bindings
+
+(and
+ (boundp 'caml-mode-map)
+ (keymapp caml-mode-map)
+ (progn 
+   (define-key caml-mode-map [?\C-c?\C-t] 'caml-types-show-type)
+   (let ((map (lookup-key caml-mode-map [menu-bar caml])))
+     (and
+      (keymapp map)
+      (progn
+        (define-key map [separator-types] '("---"))
+        (define-key map [show-type]
+          '("Show type at point" . caml-types-show-type )))))))
+
+(provide 'caml-types)
