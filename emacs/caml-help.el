@@ -30,8 +30,6 @@
 ;; Loading or building databases.
 ;; 
 
-(require 'info)
-
 ;; variables to be customized
 
 (defvar ocaml-lib-path 'lazy
@@ -42,31 +40,21 @@
   "Computes if necessary and returns the path for ocaml libs"
   (if (listp 'ocaml-lib-path) nil
     (setq ocaml-lib-path
-          (split-string (shell-command-to-string "ocamlc -where")))
+          (split-string
+           (shell-command-to-string
+            (or
+             (and (boundp 'inferior-caml-program)
+                      (string-match "\\([^ ]*/ocaml\\)\\( \\|$\\)"
+                       inferior-caml-program)
+                      (let ((file
+                             (concat (match-string 1 inferior-caml-program)
+                                     "c")))
+                        (and (file-executable-p file)
+                             (concat file " -where"))))
+             "ocamlc -where"))))
     ocaml-lib-path))
 
       
-
-(defvar ocaml-info-alist 'ocaml-info-default-function-old
-  "A-list binding module names to info entries: 
-
-  nil means do not use info.
-
-  A function to build the list lazily (at the first call). The result of
-the function call will be assign permanently to this variable for future
-uses. We provide two default functions \\[ocaml-info-default-function]
-(info produced by HeVeA is the default) and \\[ocaml-info-default-function] 
-(info produced by ocamldoc). 
-
-  Otherwise, this value should be an alist binding module names to info
-entries of the form to \"(entry)section\" be taken by the \\[info] 
-command. An entry may be an info module or a complete file name."
-)
-
-
-(defvar ocaml-info-name-list "ocaml"
-  "Name of ocaml info files describing library modules.")
-
 
 ;; General purpose auxiliary functions
 
@@ -79,7 +67,6 @@ command. An entry may be an info module or a complete file name."
 (defun iter (f l) (while (consp l) (apply f (list (car l))) (setq l (cdr l))))
 
 (defun ocaml-find-files (path filter &optional depth split)
-  (message "%s - %s" path filter)
   (let* ((path-string
           (if (stringp path)
               (if (file-directory-p path) path nil)
@@ -145,12 +132,13 @@ command. An entry may be an info module or a complete file name."
 ;; Symbols of module are lazily computed
 
 (defun ocaml-module-filename (module)
-  (let ((module (uncapitalise module)) (name))
-    (or (file-exists-p (setq name (concat module ".mli")))
-        ; (file-exists-p (setq name (concat module ".ml"))) 
-        (file-exists-p
-         (setq name (concat ocaml-lib-directory "/" module ".mli")))
-        (setq name nil))
+  (let ((module (ocaml-uncapitalize module)) (name))
+    (if (file-exists-p (setq name (concat module ".mli"))) nil
+      (let ((tmp (ocaml-lib-path)))
+        (while (consp tmp)
+          (setq name (concat (car tmp) "/" module ".mli"))
+          (if (file-exists-p name) (setq tmp nil)
+            (setq name nil)))))
     name))
 
 (defun ocaml-module-symbols (module-info)
@@ -175,7 +163,7 @@ command. An entry may be an info module or a complete file name."
               (insert-file-contents file))
           (message "Module %s not found" module))
         (while (re-search-forward
-                "^\\([ \t]*val\\|let\\) \\([^ (:=]*\\)" (point-max) 'move)
+                "^\\([ \t]*val\\|let\\|external\\) \\([^ (:=]*\\)" (point-max) 'move)
           (setq alist (cons (match-string 2) alist)))
         (erase-buffer)
         )
@@ -223,6 +211,7 @@ with an optional non-nil argument.
 "
   (save-excursion
     (let ((module) (entry))
+      (if (looking-at "[ \n]") (skip-chars-backward " ")) 
       (if (re-search-backward
            "[^A-Za-z0-9_.']\\([A-Za-z0-9_']*[.]\\)*[A-Za-z0-9_']*\\="
            (- (point) 100) t)
@@ -270,7 +259,7 @@ with an optional non-nil argument.
   "Does completion for qualified identifiers. 
 
 It attemps to recognize an qualified identifier Module . entry 
-around point using function \\[ocaml-qualified-identifier].
+around point using function `ocaml-qualified-identifier'.
 
 If Module is defined, it does completion for identifier in Module.
 
@@ -279,12 +268,25 @@ Then, if completion fails, it does completion among  all modules
 where identifier is defined."
   (interactive "p")
   (let* ((module-entry (ocaml-qualified-identifier))
-         (module)
+         (module) 
          (entry (cdr module-entry))
          (beg) (end) (pattern))
     (if (car module-entry)
-        (setq module
-              (buffer-substring (caar module-entry) (cdar module-entry))))
+        (progn
+          (setq module
+                (buffer-substring (caar module-entry) (cdar module-entry)))
+          (or (assoc module (ocaml-module-alist))
+              (and (setq module
+                         (completing-read "Module: " (ocaml-module-alist)
+                                          nil nil module))
+                   (save-excursion
+                     (goto-char (caar module-entry))
+                     (delete-region (caar module-entry) (cdar module-entry))
+                     (insert module) t)
+                   (setq module-entry (ocaml-qualified-identifier))
+                   (car module-entry)
+                   (progn (setq entry (cdr module-entry)) t))
+              (error "Unknown module %s" module))))
     (if (consp (cdr module-entry))
         (progn         
           (setq beg (cadr module-entry))
@@ -298,6 +300,7 @@ where identifier is defined."
             (setq end beg))))
     (if (not (and beg end))
         (error "Did not find anything to complete around point")
+
       (setq pattern (buffer-substring beg end))
       (let* ((table 'ocaml-completion)
              (all-completions (ocaml-completion pattern module))
@@ -308,6 +311,7 @@ where identifier is defined."
               ((null completion)
                (let*
                    ((modules (ocaml-find-module pattern))
+                    (hist)
                     (module
                      (cond
                       ((null modules)
@@ -321,7 +325,10 @@ where identifier is defined."
                       )))
                  (if (null module)
                      (error "Can't find completion for \"%s\"" pattern)
-                   (delete-region beg end)
+                   (message "Completion found in module %s" module)
+                   (if (and (consp module-entry) (consp (cdr module-entry)))
+                       (delete-region (caar module-entry) end)
+                     (delete-region beg end))
                    (insert module "." pattern))))
                      
               ((not (string-equal pattern completion))
@@ -329,16 +336,23 @@ where identifier is defined."
                (insert completion))
 
               (t
-               (with-output-to-temp-buffer "*Help*"
-                 (display-completion-list all-completions))
-               ))
+                (with-output-to-temp-buffer "*Completions*"
+                  (display-completion-list all-completions))
+                ))
                ))))
 
 
-;; Info files
+;; Info files (only in ocamldoc style)
 
 
-(defun ocaml-info-add-entries-old (entries dir name)
+(defvar ocaml-info-basename "ocaml"
+  "Basename of ocaml info files describing library modules.
+Suffix .info will be added to info files. 
+Additional suffix .gz may be added if info files are compressed.
+")
+;; 
+
+(defun ocaml-hevea-info-add-entries (entries dir name)
   (let*
       ((filter
         (concat "-type f -regex '.*/" name
@@ -354,78 +368,103 @@ where identifier is defined."
             (string-match files "^ *$"))
         (message "No info file found: %s." (mapconcat 'identity files " "))
       (message "Scanning info files %s." files)
-      (set-buffer (get-buffer-create "*caml-help*"))
-      (setq command
-            (concat "gunzip -c -f " files
-                " | grep -e '" section-regexp "'"))
-      (message command)
-      (or (shell-command command (current-buffer)) (error "HERE"))
-      (goto-char (point-min))
-      (while (re-search-forward section-regexp (point-max) t)
-        (let* ((module (match-string 2))
-               (section (match-string 1)))
-          (message "%s %s" module section)
-          (if (assoc module entries) nil
-            (setq entries
-                  (cons (cons module (concat "(" name ")" section))
-                        entries))
-            )))
-      (kill-buffer (current-buffer)))
+      (save-window-excursion
+        (set-buffer (get-buffer-create "*caml-help*"))
+        (setq command
+              (concat "zcat -f " files
+                      " | grep -e '" section-regexp "'"))
+        (message "Scanning files with: %s" command)
+        (or (shell-command command (current-buffer))
+            (error "Error while scanning"))
+        (goto-char (point-min))
+        (while (re-search-forward section-regexp (point-max) t)
+          (let* ((module (match-string 2))
+                 (section (match-string 1)))
+            ;; (message "%s %s" module section)
+            (if (assoc module entries) nil
+              (setq entries
+                    (cons (cons module (concat "(" name ")" section))
+                          entries))
+              )))
+        (let ((buf (get-buffer "*caml-help*")))
+          (if buf (kill-buffer buf)))))
     entries))
 
-(defun ocaml-info-default-function-old ()
+(defun ocaml-hevea-info ()
   "The default way to create an info data base from the value 
-of \\[Info-default-directory-list] and the base name \\[ocaml-info-name] 
-of files to look for.
+of `Info-default-directory-list' and the base name `ocaml-info-name'
+of files with basename `ocaml-info-basename' to look for. 
 
-This uses info files produced by HeVeA."
+This uses info files produced by HeVeA.
+"
   (let ((collect) (seen))
     (iter '(lambda (d)
              (if (member d seen) nil
                (setq collect
-                     (ocaml-info-add-entries-old
-                      collect d ocaml-info-name-list))
+                     (ocaml-hevea-info-add-entries
+                      collect d ocaml-info-basename))
                (setq done (cons d seen))))
           Info-directory-list)
     collect))
 
-(defun ocaml-info-add-entries (entries dir name)
+(defun ocaml-ocamldoc-info-add-entries (entries dir name)
   (let*
       ((module-regexp "^Node: \\([A-Z][A-Za-z_0-9]*\\)[^ ]")
        (command
         (concat
          "find " dir " -type f -regex '.*/" name
          "\\(.info\\|\\)\\([.]gz\\|\\)' -print0"
-         " | xargs -0 grep '" module-regexp "'")))
+         " | xargs -0 zcat -f | grep '" module-regexp "'")))
     (message "Scanning info files in %s" dir)
-    (message command)
-    (set-buffer (get-buffer-create "*caml-help*"))
-    (or (shell-command command (current-buffer)) (error "HERE"))
-    (goto-char (point-min))
-    (while (re-search-forward module-regexp (point-max) t)
-      (let* ((module (match-string 1)))
-        (if (assoc module entries) nil
-          (setq entries
-                (cons (cons module (concat "(" name ")" module))
-                      entries))
-          )))
-    (kill-buffer (current-buffer))
+    (save-window-excursion
+      (set-buffer (get-buffer-create "*caml-help*"))
+      (or (shell-command command (current-buffer)) (error "HERE"))
+      (goto-char (point-min))
+      (while (re-search-forward module-regexp (point-max) t)
+        (if (equal (char-after (match-end 1)) 127)
+            (let* ((module (match-string 1)))
+              (if (assoc module entries) nil
+                (setq entries
+                      (cons (cons module (concat "(" name ")" module))
+                            entries))
+                ))))
+      ; (kill-buffer (current-buffer))
+      )
     entries))
 
-(defun ocaml-info-default-function ()
+(defun ocaml-ocamldoc-info ()
   "The default way to create an info data base from the value 
-of \\[Info-default-directory-list] and the base name \\[ocaml-info-name] 
-of files to look for.
+of `Info-default-directory-list' and the base name `ocaml-info-name' 
+of files with basename `ocaml-info-basename' to look for. 
 
 This uses info files produced by ocamldoc."
+  (require 'info)
   (let ((collect) (seen))
     (iter '(lambda (d)
              (if (member d seen) nil
                (setq collect
-                     (ocaml-info-add-entries collect d ocaml-info-name-list))
+                     (ocaml-ocamldoc-info-add-entries collect d
+                                                      ocaml-info-prefix))
                (setq done (cons d seen))))
           Info-directory-list)
     collect))
+
+;; Continuing
+
+(defvar ocaml-info-alist nil
+  "A-list binding module names to info entries: 
+
+  nil means do not use info.
+
+  A function to build the list lazily (at the first call). The result of
+the function call will be assign permanently to this variable for future
+uses. We provide two default functions `ocaml-hevea-info' and
+`ocaml-ocamldoc-info'. 
+
+  Otherwise, this value should be an alist binding module names to info
+entries of the form to \"(entry)section\" be taken by the `info'
+command. An entry may be an info module or a complete file name."
+)
 
 (defun ocaml-info-alist ()
   "Call by need value of variable ocaml-info-alist"
@@ -457,7 +496,7 @@ This uses info files produced by ocamldoc."
 (defun ocaml-goto-help (&optional module entry)
   "Searches info manual for MODULE and ENTRY in MODULE.
 If unspecified, MODULE and ENTRY are inferred from the position in the
-current buffer using \\[ocaml-qualified-identifier]."
+current buffer using `ocaml-qualified-identifier'."
   (interactive)
   (let ((info-section (assoc module (ocaml-info-alist))))
     (if info-section (info (cdr info-section))
@@ -467,7 +506,7 @@ current buffer using \\[ocaml-qualified-identifier]."
                   (and (file-exists-p
                         (concat (ocaml-uncapitalize module) ".mli"))
                        (ocaml-get-or-make-module module))))                  
-             (location (cdr (car (cdr module-info)))))
+             (location (cdr (cadr module-info))))
         (cond
          (location
           (view-file (concat location (ocaml-uncapitalize module) ".mli"))
@@ -479,7 +518,8 @@ current buffer using \\[ocaml-qualified-identifier]."
       (let ((here (point)))
         (goto-char (point-min))
         (or (re-search-forward
-             (concat "\\(val\\|exception\\|[|{;]\\) +" (regexp-quote entry))
+             (concat "\\(val\\|exception\\|external\\|[|{;]\\) +"
+                     (regexp-quote entry))
              (point-max) t)
             (search-forward entry (point-max) t)
             (progn
@@ -492,7 +532,7 @@ current buffer using \\[ocaml-qualified-identifier]."
   "Find help for qualified identifiers. 
 
 It attemps to recognize an qualified identifier of the form Module . entry 
-around point using function \\[ocaml-qualified-identifier].
+around point using function `ocaml-qualified-identifier'.
 
 If Module is undefined it finds it from indentifier and visible modules, 
 or asks the user interactively. 
@@ -540,7 +580,7 @@ With prefix arg 4, it prompt for Module instead of its contectual value.
 
 ;; bindings
 
-(if (boundp 'caml-mode-map)
+(if (and (boundp 'caml-mode-map) (keymapp caml-mode-map))
     (progn 
       (define-key caml-mode-map [?\C-c?\C-h] 'caml-help)
       (define-key caml-mode-map [?\C-c?\t] 'caml-complete)
