@@ -68,6 +68,10 @@ external search_forward: regexp -> string -> int -> int = "str_search_forward"
 external search_backward: regexp -> string -> int -> int = "str_search_backward"
         (* Same as [search_forward], but the search proceeds towards the
            beginning of the string. *)
+external string_partial_match: regexp -> string -> int -> bool = "str_string_partial_match"
+        (* Similar to [string_match], but succeeds whenever the argument
+           string is a prefix of a string that matches.  This includes
+           the case of a true complete match. *)
 
 val matched_string: string -> string
         (* [matched_string s] returns the substring of [s] that was matched

@@ -15,6 +15,8 @@ type regexp
 
 external compile_regexp: string -> bool -> regexp = "str_compile_regexp"
 external string_match: regexp -> string -> int -> bool = "str_string_match"
+external string_partial_match: regexp -> string -> int -> bool =
+  "str_string_partial_match"
 external search_forward: regexp -> string -> int -> int = "str_search_forward"
 external search_backward: regexp -> string -> int -> int = "str_search_backward"
 external beginning_group: int -> int = "str_beginning_group"

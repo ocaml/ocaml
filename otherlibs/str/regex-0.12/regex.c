@@ -2261,7 +2261,9 @@ compile_range (p_ptr, pend, translate, syntax, b)
    exactly that if always used MAX_FAILURE_SPACE each time we failed.
    This is a variable only so users of regex can assign to it; we never
    change it ourselves.  */
-int re_max_failures = 2000;
+/* Xavier Leroy 14/10/1998: bumped from 2000 to 8000 because 2000
+   causes failures even with relatively simple patterns */
+int re_max_failures = 8000;
 
 typedef const unsigned char *fail_stack_elt_t;
 
@@ -3065,12 +3067,14 @@ typedef union
 
 /* Call before fetching a character with *d.  This switches over to
    string2 if necessary.  */
+/* itz Mon Sep 21 19:31:55 PDT 1998 set a flag in case we're at the
+   end, to indicate a partial match was possible. */
 #define PREFETCH()							\
   while (d == dend)						    	\
     {									\
       /* End of string2 => fail.  */					\
       if (dend == end_match_2) 						\
-        goto fail;							\
+        { partial = 1; goto fail; }					\
       /* End of string1 => advance to string2.  */ 			\
       d = string2;						        \
       dend = end_match_2;						\
@@ -3259,6 +3263,9 @@ re_match_2 (bufp, string1, size1, string2, size2, pos, regs, stop)
   /* Used when we pop values we don't care about.  */
   const char **reg_dummy;
   register_info_type *reg_info_dummy;
+
+  /* itz Mon Sep 21 19:34:09 PDT 1998 record a partial match here */
+  int partial = 0;
 
 #ifdef DEBUG
   /* Counts the total number of registers pushed.  */
@@ -4341,7 +4348,7 @@ re_match_2 (bufp, string1, size1, string2, size2, pos, regs, stop)
 
   FREE_VARIABLES ();
 
-  return -1;         			/* Failure to match.  */
+  return (partial ? -3 : -1);   /* Failure to match.  */
 } /* re_match_2 */
 
 /* Subroutine definitions for re_match_2.  */

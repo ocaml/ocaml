@@ -72,10 +72,32 @@ static struct re_registers match_regs = { 10, start_regs, end_regs };
 
 value str_string_match(regexp expr, value text, value pos) /* ML */
 {
-  switch (re_match(&(expr->re), String_val(text), string_length(text),
-                   Int_val(pos), &match_regs)) {
-  case -2:
+  int len = string_length(text);
+  int start = Int_val(pos);
+  if (start < 0 || start > len)
     invalid_argument("Str.string_match");
+  switch (re_match(&(expr->re), String_val(text), len,
+                   start, &match_regs)) {
+  case -2:
+    failwith("Str.string_match");
+  case -1:
+  case -3:
+    return Val_false;
+  default:
+    return Val_true;
+  }
+}
+
+value str_string_partial_match(regexp expr, value text, value pos) /* ML */
+{
+  int len = string_length(text);
+  int start = Int_val(pos);
+  if (start < 0 || start > len)
+    invalid_argument("Str.string_partial_match");
+  switch (re_match(&(expr->re), String_val(text), len,
+                   start, &match_regs)) {
+  case -2:
+    failwith("Str.string_partial_match");
   case -1:
     return Val_false;
   default:
@@ -85,13 +107,16 @@ value str_string_match(regexp expr, value text, value pos) /* ML */
 
 value str_search_forward(regexp expr, value text, value pos) /* ML */
 {
+  int res;
   int len = string_length(text);
   int start = Int_val(pos);
-  int res = re_search(&(expr->re), String_val(text), len, start, len-start,
-                      &match_regs);
+  if (start < 0 || start > len)
+    invalid_argument("Str.search_forward");
+  res = re_search(&(expr->re), String_val(text), len, start, len-start,
+                  &match_regs);
   switch(res) {
   case -2:
-    invalid_argument("Str.search_forward");
+    failwith("Str.search_forward");
   case -1:
     raise_not_found();
   default:
@@ -101,13 +126,16 @@ value str_search_forward(regexp expr, value text, value pos) /* ML */
 
 value str_search_backward(regexp expr, value text, value pos) /* ML */
 {
+  int res;
   int len = string_length(text);
   int start = Int_val(pos);
-  int res = re_search(&(expr->re), String_val(text), len, start, -start-1,
-                      &match_regs);
+  if (start < 0 || start > len)
+    invalid_argument("Str.search_backward");
+  res = re_search(&(expr->re), String_val(text), len, start, -start-1,
+                  &match_regs);
   switch(res) {
   case -2:
-    invalid_argument("Str.search_backward");
+    failwith("Str.search_backward");
   case -1:
     raise_not_found();
   default:
