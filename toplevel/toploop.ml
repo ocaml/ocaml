@@ -328,6 +328,13 @@ let refill_lexbuf buffer len =
     | Exit -> !i
   end
 
+(* Discard data left in lexer buffer. *)
+
+let empty_lexbuf lb =
+  lb.lex_curr_pos <- 0;
+  lb.lex_abs_pos <- 0;
+  lb.lex_buffer_end <- 0
+
 (* Toplevel initialization. Performed here instead of at the
    beginning of loop() so that user code linked in with ocamlmktop
    can call directives from Topdirs. *)
@@ -362,6 +369,7 @@ let loop ppf =
   load_ocamlinit ppf;
   while true do
     try
+      empty_lexbuf lb;
       Location.reset();
       first_line := true;
       let phr = try !parse_toplevel_phrase lb with Exit -> raise PPerror in
