@@ -42,9 +42,9 @@ let default = {
 (* Returns 30 random bits as an integer 0 <= x < 1073741824 *)
 let s_bits s =
   s.idx <- (s.idx + 1) mod 55;
-  let newval = s.st.((s.idx + 24) mod 55) + s.st.(s.idx) in
+  let newval = (s.st.((s.idx + 24) mod 55) + s.st.(s.idx)) land 0x3FFFFFFF in
   s.st.(s.idx) <- newval;
-  newval land 0x3FFFFFFF
+  newval
 ;;
 
 (* Returns a float 0 <= x < 1 with at most 90 bits of precision. *)
