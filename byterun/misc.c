@@ -43,7 +43,7 @@ int verb_gc;
 
 void gc_message (int level, char *msg, unsigned long arg)
 {
-  if (verb_gc & level || level == 0xFFFF){
+  if (level < 0 || (verb_gc & level) != 0){
 #ifdef HAS_UI
     ui_print_stderr(msg, (void *) arg);
 #else
