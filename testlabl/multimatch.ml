@@ -15,6 +15,13 @@ module M : sig
     [< `A & 'a = int & 'b = float | `B &   'b =string & 'a =   int] -> 'a * 'b
 end = struct let f = f end;;
 
+(* Should be good! *)
+module M : sig
+  val f :
+    [< `A & 'a = int * float | `B & 'a = bool * string] -> 'a
+end = struct let f = f end;;
+
+let f = multifun `A|`B as x -> f x;;
 
 (* Two-level example *)
 let f = multifun
@@ -59,7 +66,7 @@ module M : sig
   val f : [< `A & 'b = int list ref | `B & 'b = 'c list ref] -> 'b
 end = struct let f = f end;;
 (* Still OK *)
-let l : int list = r;;
+let l : int list ref = r;;
 module M : sig
   val f : [< `A & 'b = int list ref | `B & 'b = 'c list ref] -> 'b
 end = struct let f = f end;;
