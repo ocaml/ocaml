@@ -931,9 +931,20 @@ and transl_reaction  = function
       let lam =  Lfunction (Curried, params, body) in
       x, None, lam
   | Joinmatch.Reaction (jpats, (idpats, p)) ->
+(*
+      let dump_oid fp = function
+      | Some id -> Printf.fprintf fp "+%s" (Ident.unique_name id)
+      | None -> Printf.fprintf fp "-"  in
+*)
       let exjpats = List.map List.hd jpats in
       let sync = Transljoin.principal p in
       let konts = List.map (fun jp -> jp.jpat_kont) exjpats in
+(*
+
+      Printf.eprintf "Principal: %a\n" dump_oid sync ;
+      List.iter (fun k -> dump_oid stderr k) konts ;
+      prerr_endline "" ;
+*)
       let x = Ident.create "guard" in
       let body =
         List.fold_right
@@ -948,6 +959,8 @@ and transl_reaction  = function
             (fun k (id,_) r ->
               match k, sync with
               | Some kid, Some sync_id when not (Ident.equal kid sync_id) ->
+                  kid::id::r
+              | Some kid,None ->
                   kid::id::r
               | _,_ -> id::r)
             konts idpats [Ident.create "_x"]

@@ -22,6 +22,44 @@ open Env
 open Lambda
 open Joinmatch
 
+(**********)
+(* Errors *)
+(**********)
+
+type error =
+  | Double of Ident.t * Location.t * Location.t
+  | Missing of Ident.t * Location.t
+  | Extra of Ident.t * Location.t
+  | NonExhaustive of Location.t
+
+
+exception Error of error
+
+let report_error ppf = function
+  | Missing (id, loc) ->
+      Format.fprintf ppf
+        "%aReply to '%s' is missing here"
+        Location.print loc (Ident.name id)
+  | Extra (id, loc) ->
+      Format.fprintf ppf
+        "%aReply to '%s' cannot occur here, it is missing in some other clause"
+        Location.print loc (Ident.name id)
+  | Double (id, loc1, loc2) ->
+      if
+        String.length !Location.input_name = 0
+          && Location.highlight_locations ppf loc1 loc2
+      then
+        Format.fprintf ppf "Double reply to '%s'" (Ident.name id)
+      else begin
+        Format.fprintf ppf "%aDouble reply to '%s'@."
+          Location.print loc1 (Ident.name id) ;
+        Format.fprintf ppf "%aOther reply" Location.print loc2
+      end
+  | NonExhaustive loc ->
+      Format.fprintf ppf
+        "%aThis non-exhaustive mactching replies to synchronous names"
+        Location.print loc
+
 (* DEBUG stuff *)
 open Printf
 
@@ -181,13 +219,20 @@ let unlock_automaton lam = mk_apply lambda_unlock_automaton [lam]
 
  Synchronous threads are guarded processes, when one of matched names
  at least is synchronous.
-   In such case the guarded process is compliled into a function,
-   whose result is the answer to a distinguished synchronous name
-   (principal name)
+
+ In such case the guarded process is compliled into a function,
+ whose result is the answer to a distinguished synchronous name
+ (principal name)
 *)
-let id_lt x y = Ident.name x < Ident.name y
+
+let id_lt (x,_) (y,_) = Ident.stamp x < Ident.stamp y
+
+
+exception MissingLeft of Ident.t
+exception MissingRight of Ident.t
 
 (* Symetrical difference, catches double answers  *)
+
 let rec delta xs ys = match xs, ys with
 | [],_  -> ys
 | _, [] -> xs
@@ -197,18 +242,22 @@ let rec delta xs ys = match xs, ys with
    else if id_lt y x then
      y::delta xs ry
    else (* x=y *)
-     delta rx ry
+     let id,loc1 = x
+     and _,loc2 = y in
+     raise (Error (Double (id, loc1, loc2)))
 
-let rec inter xs ys = match xs, ys with
-| [],_  -> []
-| _, [] -> []
+
+let rec inter loc xs ys = match xs, ys with
+| [],(id,_)::_  -> raise (MissingLeft id)
+| (id,_)::_, [] ->  raise (MissingRight id)
+| [],[] -> []
 | x::rx, y::ry ->
-   if id_lt x y then
-     inter rx ys
-   else if id_lt y x then
-     inter xs ry
+   if id_lt y x then
+     raise (MissingLeft (fst y))
+   else if id_lt x y then
+     raise (MissingRight (fst x))
    else (* x=y *)
-     x::inter rx ry
+     (fst x,loc)::inter loc rx ry
 
 
 
@@ -216,25 +265,51 @@ let rec do_principal p = match p.exp_desc with
 (* Base cases processes *)
 | Texp_asyncsend (_,_) | Texp_exec (_) | Texp_null 
  -> []
-| Texp_reply (_, Path.Pident id) -> [id]
+| Texp_reply (_, Path.Pident id) -> [id, p.exp_loc]
 (* Recursion *)
 | Texp_par (p1, p2) -> delta (do_principal p1) (do_principal p2)
 | Texp_let (_,_,p) | Texp_def (_,p) | Texp_loc (_,p)
-| Texp_sequence (_,p) | Texp_when (_,p)
- -> do_principal p
-| Texp_match (_,(_,p)::cls,_) ->
-   List.fold_right
-     (fun (_, p) r -> inter (do_principal p) r)
-     cls (do_principal p)
+| Texp_sequence (_,p) | Texp_when (_,p) -> do_principal p
+| Texp_match (_,cls,partial) ->
+    let syncs =
+      List.map
+        (fun (_,p) -> do_principal p, p.exp_loc)
+        cls in
+    let r =
+      begin match syncs with
+      | (fst,_)::rem ->
+          List.fold_right
+            (fun (here, here_loc) r ->
+              try
+                inter p.exp_loc r here
+              with
+              | MissingLeft id ->
+                  raise (Error (Extra (id, here_loc)))
+              | MissingRight id ->
+                  raise (Error (Missing (id, here_loc))))
+            syncs fst
+      | _ -> []
+      end in
+    begin match r, partial with
+    | _::_, Partial -> raise (Error (NonExhaustive p.exp_loc))
+    | _ -> r
+    end
 | Texp_ifthenelse (_,pifso, Some pifno) ->
-   inter (do_principal pifso) (do_principal pifno)
+    begin try
+      inter p.exp_loc (do_principal pifso) (do_principal pifno)
+    with
+    | MissingLeft kid ->
+        raise (Error (Missing (kid, pifso.exp_loc)))
+    | MissingRight kid ->
+        raise (Error (Missing (kid, pifno.exp_loc)))
+    end
 | Texp_ifthenelse (_,_,None) -> []
 (* Errors *)
 | _ -> assert false
 
 let principal p = match do_principal p with
-| x::_ -> Some x
-| []   -> None  
+| (x,_)::_ -> Some x
+| []       -> None  
 
 (* Once again for finding back parts of princpal threads *)
 let rec is_principal id p = match p.exp_desc with

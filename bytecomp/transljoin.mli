@@ -12,11 +12,17 @@
 
 (* $Id$ *)
 
-(*
-  From typedtree to lambda code, for some jocaml constructs
-*)
+(**********)
+(* Errors *)
+(**********)
+type error
+exception Error of error
+val report_error : Format.formatter -> error -> unit
 
+
+(**********************************************)
 (* Basic join operations from the module Join *)
+(**********************************************)
 
 val exit : unit -> Lambda.lambda
 val create_location : unit -> Lambda.lambda
