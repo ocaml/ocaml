@@ -16,6 +16,11 @@ open Misc
 open Types
 open Env
 
+type error =
+    Module_not_found of Path.t
+
+exception Error of error
+
 let env_cache =
   (Hashtbl.create 59 : (Env.summary, Env.t) Hashtbl.t)
 
@@ -54,9 +59,8 @@ let rec env_from_summary sum =
             try 
               Env.find_module path env
             with Not_found ->
-(* XXX Brutal !!! *)
-              fatal_error "Envaux.env_from_summary"
-            in
+              raise (Error (Module_not_found path))
+          in
           Env.open_signature path (extract_sig env mty) env
     in
       Hashtbl.add env_cache sum env;
@@ -66,3 +70,15 @@ let env_of_event =
   function
     None    -> Env.empty
   | Some ev -> env_from_summary ev.Instruct.ev_typenv
+
+(* Error report *)
+
+open Format
+
+let report_error error =
+  open_box 0;
+  begin match error with
+    Module_not_found p ->
+      print_string "Cannot find module "; Printtyp.path p
+  end;
+  close_box(); print_newline()
