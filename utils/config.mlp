@@ -33,7 +33,7 @@ let native_c_libraries = "%%NATIVECCLIBS%%"
 let native_partial_linker = "%%PARTIALLD%%"
 let ranlib = "%%RANLIBCMD%%"
 
-let exec_magic_number = "Caml1999X006"
+let exec_magic_number = "Caml1999X007"
 and cmi_magic_number = "Caml1999I008"
 and cmo_magic_number = "Caml1999O004"
 and cma_magic_number = "Caml1999A006"

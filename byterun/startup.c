@@ -247,7 +247,7 @@ static int parse_command_line(char **argv)
       exit(0);
       break;
     case 'b':
-      backtrace_active = 1;
+      init_backtrace();
       break;
     case 'I':
       if (argv[i + 1] != NULL) {
@@ -293,7 +293,7 @@ static void parse_camlrunparam(void)
       case 'o': scanmult (opt, &percent_free_init); break;
       case 'O': scanmult (opt, &max_percent_free_init); break;
       case 'v': scanmult (opt, &verb_gc); break;
-      case 'b': backtrace_active = 1; break;
+      case 'b': init_backtrace(); break;
       case 'p': parser_trace = 1; break;
       }
     }

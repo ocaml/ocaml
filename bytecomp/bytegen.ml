@@ -77,7 +77,6 @@ let make_branch cont =
     (Kbranch _ as branch) :: _ -> (branch, cont)
   | (Kreturn _ as return) :: _ -> (return, cont)
   | Kraise :: _ -> (Kraise, cont)
-  | Kreraise :: _ -> (Kreraise, cont)
   | Klabel lbl :: _ -> make_branch_2 (Some lbl) 0 cont cont
   | _ ->  make_branch_2 (None) 0 cont cont
 
@@ -112,7 +111,6 @@ let rec add_pop n cont =
       Kpop m :: cont -> add_pop (n + m) cont
     | Kreturn m :: cont -> Kreturn(n + m) :: cont
     | Kraise :: _ -> cont
-    | Kreraise :: _ -> cont
     | _ -> Kpop n :: cont
 
 (* Add the constant "unit" in front of a continuation *)
@@ -517,12 +515,7 @@ let rec comp_expr env exp sz cont =
             comp_expr env exp2 sz cont1)
       end
   | Lprim(Praise, [arg]) ->
-      let raise_op =
-        match arg with
-          Lvar v -> Kreraise
-        | Levent(Lvar v, ev) -> Kreraise
-        | _ -> Kraise in
-      comp_expr env arg sz (raise_op :: discard_dead_code cont)
+      comp_expr env arg sz (Kraise :: discard_dead_code cont)
   | Lprim(Paddint, [arg; Lconst(Const_base(Const_int n))])
     when is_immed n ->
       comp_expr env arg sz (Koffsetint n :: cont)

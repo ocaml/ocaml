@@ -780,12 +780,8 @@ value interprete(code_t prog, asize_t prog_size)
 
     Instruct(RAISE):
     raise_exception:
-      backtrace_pos = 0;
-      /* fallthrough */
-
-    Instruct(RERAISE):
       if (trapsp >= trap_barrier) debugger(TRAP_BARRIER);
-      if (backtrace_active) stash_backtrace(pc, sp);
+      if (backtrace_active) stash_backtrace(accu, pc, sp);
       sp = trapsp;
       if ((char *) sp >= (char *) stack_high - initial_sp_offset) {
         external_raise = initial_external_raise;
