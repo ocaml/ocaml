@@ -1,5 +1,0 @@
-WASTE 1.3 is needed to build the O'Caml standalone application.
-
-Get WASTE 1.3 from <ftp://ftp.boingo.com/dan/WASTE/>
-and unpack it in this directory (maccaml:WASTE:) to create the folder
-"WASTE 1.3 Distribution".
