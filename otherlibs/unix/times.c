@@ -15,8 +15,17 @@
 #include <alloc.h>
 #include <memory.h>
 #include "unix.h"
+#include <time.h>
 #include <sys/types.h>
 #include <sys/times.h>
+
+#ifndef CLK_TCK
+#ifdef HZ
+#define CLK_TCK HZ
+#else
+#define CLK_TCK 60
+#endif
+#endif
 
 value unix_times()               /* ML */
 {
@@ -30,10 +39,10 @@ value unix_times()               /* ML */
 #endif
 
   times(&buffer);
-  t[0] = copy_double((double) buffer.tms_utime / HZ);
-  t[1] = copy_double((double) buffer.tms_stime / HZ);
-  t[2] = copy_double((double) buffer.tms_cutime / HZ);
-  t[3] = copy_double((double) buffer.tms_cstime / HZ);
+  t[0] = copy_double((double) buffer.tms_utime / CLK_TCK);
+  t[1] = copy_double((double) buffer.tms_stime / CLK_TCK);
+  t[2] = copy_double((double) buffer.tms_cutime / CLK_TCK);
+  t[3] = copy_double((double) buffer.tms_cstime / CLK_TCK);
   res = alloc_tuple(4);
   for (i = 0; i < 4; i++)
     Field(res, i) = t[i];
