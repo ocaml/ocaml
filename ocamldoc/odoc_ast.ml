@@ -1162,6 +1162,8 @@ module Analyser =
           )
 
       | Parsetree.Pstr_recmodule mods ->
+	  (* A VOIR ICI ca merde avec /work/tmp/graph.ml: pas de lien avec les module type 
+	     dans les contraintes sur les modules *)
 	  let new_env =
             List.fold_left 
               (fun acc_env (name, _, mod_exp) ->
@@ -1383,7 +1385,10 @@ module Analyser =
       let complete_name = Name.concat current_module_name module_name in
       let pos_start = p_module_expr.Parsetree.pmod_loc.Location.loc_start.Lexing.pos_cnum in
       let pos_end = p_module_expr.Parsetree.pmod_loc.Location.loc_end.Lexing.pos_cnum in
-      let modtype = tt_module_expr.Typedtree.mod_type in
+      let modtype = 
+        (* A VOIR : Odoc_env.subst_module_type env  ? *)
+	tt_module_expr.Typedtree.mod_type 
+      in
       let m_code_intf =
 	match p_module_expr.Parsetree.pmod_desc with
 	  Parsetree.Pmod_constraint (_, pmodule_type) ->
@@ -1396,7 +1401,7 @@ module Analyser =
       let m_base =
         {
           m_name = complete_name ;
-          m_type = tt_module_expr.Typedtree.mod_type ;
+          m_type = modtype ;
           m_info = comment_opt ;
           m_is_interface = false ;
           m_file = !file_name ;
@@ -1438,8 +1443,8 @@ module Analyser =
 	       mp_kind = mp_kind ;
              } 
            in
+           let dummy_complete_name = (*Name.concat "__"*) param.mp_name in
 	   (* TODO: A VOIR CE __ *)
-           let dummy_complete_name = Name.concat "__" param.mp_name in
            let new_env = Odoc_env.add_module env dummy_complete_name in
            let m_base2 = analyse_module 
                new_env
@@ -1479,6 +1484,8 @@ module Analyser =
 
       | (Parsetree.Pmod_constraint (p_module_expr2, p_modtype), 
          Typedtree.Tmod_constraint (tt_module_expr2, tt_modtype, _)) ->
+	  print_DEBUG ("Odoc_ast: case Parsetree.Pmod_constraint + Typedtree.Tmod_constraint "^module_name);
+
           (* we create the module with p_module_expr2 and tt_module_expr2 
              but we change its type according to the constraint. 
              A VOIR : est-ce que c'est bien ?
@@ -1498,7 +1505,7 @@ module Analyser =
           in
           { 
             m_base with
-            m_type = tt_modtype ; 
+            m_type = Odoc_env.subst_module_type env tt_modtype ; 
             m_kind = Module_constraint (m_base2.m_kind, 
                                         mtkind)
 
@@ -1513,11 +1520,16 @@ module Analyser =
 	    tt_modtype, _)
 	) ->
 	  (* needed for recursive modules *)
+
+	  print_DEBUG ("Odoc_ast: case Parsetree.Pmod_structure + Typedtree.Tmod_constraint "^module_name);
 	  let elements = analyse_structure env complete_name pos_start pos_end p_structure tt_structure in
           (* we must complete the included modules *)
           let included_modules_from_tt = tt_get_included_module_list tt_structure in
           let elements2 = replace_dummy_included_modules elements included_modules_from_tt in
-          { m_base with m_kind = Module_struct elements2 }
+          { m_base with 
+	    m_type = Odoc_env.subst_module_type env tt_modtype ;
+	    m_kind = Module_struct elements2 ;
+	  }
 
       | (parsetree, typedtree) ->
           let s_parse = 

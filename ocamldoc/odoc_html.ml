@@ -993,14 +993,6 @@ class html =
       bs b (self#create_fully_qualified_idents_links m_name s2);
       bs b "</code>"
 
-    (** Print html code to display a [Types.class_type].*)
-    method html_of_class_type_expr b m_name t =
-      let s = remove_last_newline (Odoc_info.string_of_class_type t) in
-      let s2 = newline_to_indented_br s in
-      bs b "<code class=\"type\">";
-      bs b (self#create_fully_qualified_idents_links m_name s2);
-      bs b "</code>"
-
     (** Print html code to display a [Types.type_expr list]. *)
     method html_of_type_expr_list ?par b m_name sep l =
       print_DEBUG "html#html_of_type_expr_list";
@@ -1017,9 +1009,9 @@ class html =
     method html_of_class_type_param_expr_list b m_name l =
       let s = Odoc_info.string_of_class_type_param_list l in
       let s2 = newline_to_indented_br s in
-      bs b "<code class=\"type\">";
+      bs b "<code class=\"type\">[";
       bs b (self#create_fully_qualified_idents_links m_name s2);
-      bs b "</code>"
+      bs b "]</code>"
 
     (** Print html code to display a list of type parameters for the given type.*)
     method html_of_type_expr_param_list b m_name t =
@@ -1049,7 +1041,7 @@ class html =
 	       bs b "</div>"
 	   | Some m ->
 	       let (html_file, _) = Naming.html_files m.m_name in
-	       bp b " <a href=\"%s\">..</a> " html_file	       
+	       bp b " <a href=\"%s\">..</a> " html_file
 	  );
 	  self#html_of_text b [Code "end"]
       | Module_alias a ->
@@ -1158,7 +1150,6 @@ class html =
     method output_class_type in_title file ctyp =
       let s = remove_last_newline(Odoc_info.string_of_class_type ~complete: true ctyp) in
       self#output_code in_title file s
-
 
     (** Print html code for a value. *)
     method html_of_value b v =
@@ -1590,6 +1581,99 @@ class html =
       bs b "</pre>\n";
       self#html_of_info b im.im_info
 
+    method html_of_class_element b element =
+      match element with
+        Class_attribute a ->
+          self#html_of_attribute b a
+      | Class_method m ->
+          self#html_of_method b m
+      | Class_comment t ->
+          self#html_of_class_comment b t
+
+    method html_of_class_kind b father ?cl kind =
+      match kind with
+        Class_structure (inh, eles) -> 
+	  self#html_of_text b [Code "object"];
+	  (
+	   match cl with
+	     None ->
+	       bs b "\n";
+	       (
+		match inh with
+		  [] -> ()
+		| _ -> 
+		    self#generate_inheritance_info b inh
+	       );
+	       List.iter (self#html_of_class_element b) eles;
+	   | Some cl ->
+	       let (html_file, _) = Naming.html_files cl.cl_name in
+	       bp b " <a href=\"%s\">..</a> " html_file
+	  );
+	  self#html_of_text b [Code "end"]
+
+      | Class_apply capp ->
+	  (* TODO: afficher le type final à partir du typedtree *)
+	  self#html_of_text b [Raw "class application not handled yet"]
+            
+      | Class_constr cco ->
+	  (
+           match cco.cco_type_parameters with
+             [] -> ()
+           | l -> 
+               self#html_of_class_type_param_expr_list b father l;
+	       bs b " "
+	  );
+	  self#html_of_text b
+	    [Code (self#create_fully_qualified_idents_links father cco.cco_name)]
+
+      | Class_constraint (ck, ctk) ->
+          self#html_of_text b [Code "( "] ;
+          self#html_of_class_kind b father ck;
+          self#html_of_text b [Code " : "] ;
+          self#html_of_class_type_kind b father ctk;
+          self#html_of_text b [Code " )"]
+
+    method html_of_class_type_kind b father ?ct kind =
+      match kind with
+        Class_type cta -> 
+          (
+           match cta.cta_type_parameters with
+             [] -> ()
+           | l -> 
+	       self#html_of_class_type_param_expr_list b father l;
+	       bs b " "
+          );
+          self#html_of_text b
+	    [Code (self#create_fully_qualified_idents_links father cta.cta_name)]
+
+      | Class_signature (inh, eles) -> 
+	  self#html_of_text b [Code "object"];
+	  (
+	   match ct with
+	     None ->
+	       bs b "\n";
+	       (
+		match inh with
+		  [] -> ()
+		| _ -> self#generate_inheritance_info b inh
+	       );
+	       List.iter (self#html_of_class_element b) eles
+	   | Some ct ->
+	       let (html_file, _) = Naming.html_files ct.clt_name in
+	       bp b " <a href=\"%s\">..</a> " html_file
+	  );
+	  self#html_of_text b [Code "end"]
+
+    method html_of_class_parameter b father p =
+      self#html_of_type_expr b father (Parameter.typ p)
+
+    method html_of_class_parameter_list b father params =
+      List.iter
+	(fun p -> 
+	  self#html_of_class_parameter b father p;
+	  bs b " -&gt; ")
+	params
+
     (** Print html code for a class. *)
     method html_of_class b ?(complete=true) ?(with_link=true) c =
       let father = Name.father c.cl_name in
@@ -1626,7 +1710,8 @@ class html =
       );
 
       bs b " : " ;
-      self#html_of_class_type_expr b father c.cl_type;
+      self#html_of_class_parameter_list b father c.cl_parameters ;
+      self#html_of_class_kind b father ~cl: c c.cl_kind;
       bs b "</pre>" ;
       print_DEBUG "html#html_of_class : info" ;
       (
@@ -1669,7 +1754,7 @@ class html =
         bs b (Name.simple ct.clt_name);
 
       bs b " = ";
-      self#html_of_class_type_expr b father ct.clt_type;
+      self#html_of_class_type_kind b father ~ct ct.clt_kind;
       bs b "</pre>";
       (
        if complete then 
@@ -1872,16 +1957,7 @@ class html =
         (* a horizontal line *)
         bs b "<hr width=\"100%\">\n";
         (* the various elements *)
-        List.iter 
-          (fun element ->
-            match element with
-              Class_attribute a ->
-                self#html_of_attribute b a
-            | Class_method m ->
-                self#html_of_method b m
-            | Class_comment t ->
-                self#html_of_class_comment b t
-          )
+        List.iter (self#html_of_class_element b)
           (Class.class_elements ~trans:false cl);
         bs b "</body></html>";
 	Buffer.output_buffer chanout b;
@@ -1926,16 +2002,7 @@ class html =
         (* a horizontal line *)
         bs b "<hr width=\"100%\">\n";
         (* the various elements *)
-        List.iter 
-          (fun element ->
-            match element with
-              Class_attribute a ->
-                self#html_of_attribute b a
-            | Class_method m ->
-                self#html_of_method b m
-            | Class_comment t ->
-                self#html_of_class_comment b t
-          )
+        List.iter (self#html_of_class_element b)
           (Class.class_type_elements ~trans: false clt);
         bs b "</body></html>";
 	Buffer.output_buffer chanout b;

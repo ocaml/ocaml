@@ -631,6 +631,15 @@ class latex =
 	  (* TODO: on affiche quoi ? *)
 	  self#latex_of_module_kind fmt father k
 
+    method latex_of_class_parameter fmt father p =
+      ps fmt (self#normal_type father (Parameter.typ p))
+
+    method latex_of_class_parameter_list fmt father params =
+      List.iter
+	(fun p -> 
+	  self#latex_of_class_parameter fmt father p;
+	  ps fmt " -> ")
+	params
 
     method latex_of_class_kind fmt father kind =
       match kind with
@@ -641,7 +650,7 @@ class latex =
 	  self#latex_of_text fmt [Code "end"]
 
       | Class_apply capp ->
-	  (* TODO: afficher le type final à partirdu typedtree *)
+	  (* TODO: afficher le type final à partir du typedtree *)
 	  self#latex_of_text fmt [Raw "class application not handled yet"]
             
       | Class_constr cco ->
@@ -866,7 +875,7 @@ class latex =
 	] 
       in
       self#latex_of_text fmt t;
-
+      self#latex_of_class_parameter_list fmt father c.cl_parameters;
       self#latex_of_text fmt [ Latex "\\end{ocamldoccode}\n" ];
       self#latex_for_class_label fmt c;
       self#latex_for_class_index fmt c;
@@ -986,14 +995,6 @@ class latex =
           self#generate_inheritance_info fmt l
       | Class_type _ ->
           ()
-
-    (** Generate the LaTeX code for the given class, in the given buffer. *)
-    method generate_for_class fmt c =
-      self#generate_class_inheritance_info fmt c
-
-    (** Generate the LaTeX code for the given class type, in the given buffer. *)
-    method generate_for_class_type fmt ct =
-      self#generate_class_type_inheritance_info fmt ct
 
     (** Generate the LaTeX code for the given top module, in the given buffer. *)
     method generate_for_top_module fmt m =
