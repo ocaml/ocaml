@@ -38,7 +38,7 @@ let dump_linear_if flag message phrase =
   phrase
 
 let rec regalloc round fd =
-  if round > 10 then
+  if round > 50 then
     fatal_error(fd.Mach.fun_name ^
                 ": function too complex, cannot complete register allocation");
   dump_if dump_live "Liveness analysis" fd;
