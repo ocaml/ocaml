@@ -127,6 +127,19 @@ let rec extract_row_fields p =
   | _ ->
       raise Not_found
 
+let rec extract_sum_type env p =
+  match p.pat_desc with
+    Tpat_or(p1, p2) ->
+      let ty1 = extract_sum_type env p1 and ty2 = extract_sum_type env p2 in
+      unify_pat env {p1 with pat_type = ty1} ty2;
+      ty1
+  | Tpat_construct(constr, args) ->
+      let ty_args, ty_res = instance_constructor constr in
+      List.iter2 (unify_pat env) args ty_args;
+      ty_res
+  | _ ->
+      raise Not_found
+
 let build_or_pat env loc lid =
   let path, decl =
     try Env.lookup_type lid env
@@ -198,7 +211,10 @@ let rec type_pat env sp =
             (Tvariant { row_fields = fields; row_more = newgenvar();
                         row_closed = false; row_name = None;
                         row_bound = [] })
-        with Not_found -> p.pat_type
+        with Not_found -> try
+          extract_sum_type env p
+        with Not_found ->
+          p.pat_type
       in
       let id = enter_variable sp.ppat_loc name ty_var in
       { pat_desc = Tpat_alias(p, id);
@@ -623,9 +639,24 @@ let rec type_exp env sexp =
           else check_duplicates remainder in
       check_duplicates lid_sexp_list;
       let opt_exp =
-        match opt_sexp with
-          None -> None
-        | Some sexp -> Some(type_expect env sexp ty) in
+        match opt_sexp, lbl_exp_list with
+          None, _ -> None
+        | Some sexp, (lbl, _) :: _ ->
+            let ty_exp = newvar () in
+            let unify_kept lbl =
+              if List.for_all (fun (lbl',_) -> lbl'.lbl_pos <> lbl.lbl_pos)
+                  lbl_exp_list
+              then begin
+                let ty_arg1, ty_res1 = instance_label lbl
+                and ty_arg2, ty_res2 = instance_label lbl in
+                unify env ty_exp ty_res1;
+                unify env ty ty_res2;
+                unify env ty_arg1 ty_arg2
+              end in
+            Array.iter unify_kept lbl.lbl_all;
+            Some(type_expect env sexp ty_exp)
+        | _ -> assert false
+      in
       if opt_sexp = None && List.length lid_sexp_list <> !num_fields then
         raise(Error(sexp.pexp_loc, Label_missing));
       { exp_desc = Texp_record(lbl_exp_list, opt_exp);
