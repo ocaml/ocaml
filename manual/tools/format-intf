@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 
+$sep = "|";
+
 $html = 0;
 if ($ARGV[0] eq "-html") {
     $html = 1;
@@ -19,7 +21,7 @@ s/\]/}/g;
 print "\\section{$_}\n\n";
 $label = $modname; $label =~ s/[^A-Za-z0-9]//g;
 print "\\label{s:$label}\n";
-print "\\index{$modname (module)@\\verb`$modname` (module)}%\n\n";
+print "\\index{$modname (module)@\\verb$sep$modname$sep (module)}%\n\n";
 s/{\\tt //g;
 s/}//g;
 s/_//g;
@@ -75,11 +77,11 @@ while(<>) {
       $count = 0;
       foreach $part (split(/(\\?[\[\]])/, $_)) {
         if ($part eq "[") {
-          print ($count == 0 ? "\\verb`" : "[");
+          print ($count == 0 ? "\\verb$sep" : "[");
           $count++;
         } elsif ($part eq "]") {
           $count--;
-          print ($count == 0 ? "`" : "]");
+          print ($count == 0 ? "$sep" : "]");
         } elsif ($part =~ m/^\\([\[\]])$/) {
           print $1;
         } else {
@@ -129,7 +131,7 @@ sub indexentry {
   local ($_, $comment) = @_;
   return if m/^$/ || m/^[a-zA-Z]$/;
   s/([@|!])/"$1/g;
-  push (@index, "\\index{$_$comment@\\verb`$_`$comment}");
+  push (@index, "\\index{$_$comment@\\verb$sep$_$sep$comment}");
 }
 
 sub end_verbatim {
