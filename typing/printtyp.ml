@@ -356,14 +356,13 @@ let value_description id decl =
 
 let list_state = ref []
 let start_list sp =
-  list_state := false::!list_state;
-  if sp then print_space ()
+  list_state := sp::!list_state
 let list_item () =
   match !list_state with
     false::l -> list_state := true::l
   | _        -> print_space ()
 let end_list sp =
-  if sp & (List.hd !list_state) then print_break 1 (-2);
+  if sp then print_break 1 (-2);
   list_state := List.tl !list_state
 
 let class_arg arg =
@@ -441,7 +440,7 @@ let class_type id cl_ty =
   List.iter mark_loops args;
   List.iter (fun (_, ty) -> mark_loops ty) cstr;
   Vars.iter (fun _ (_, ty) -> mark_loops ty) vars;
-  open_vbox 2;
+  open_hvbox 2;
   open_hovbox 0;
   print_string "class ";
   if cl_ty.cty_new = None then
@@ -462,22 +461,10 @@ let class_type id cl_ty =
   print_string "=";
   close_box ();
   start_list true;
-  if cstr <> [] then begin
-    list_item ();
-    open_vbox 0;
-    start_list false;
+  if cstr <> [] then
     List.iter constrain cstr;
-    end_list false;
-    close_box()
-  end;
-  if vars <> Vars.empty then begin
-    list_item ();
-    open_vbox 0;
-    start_list false;
+  if vars <> Vars.empty then
     Vars.iter class_var vars;
-    end_list false;
-    close_box ()
-  end;
   let meths = list_meths (methods_of_type self) in
   let (meths, virt) =
     List.fold_right
@@ -489,23 +476,10 @@ let class_type id cl_ty =
       meths
       ([], [])
   in
-  if meths <> [] then begin
-    list_item ();
-    open_vbox 0;
-    start_list false;
+  if meths <> [] then
     List.iter (metho "method ") meths;
-    close_box ();
-    end_list false
-  end;
-  if virt <> [] then begin
-    list_item ();
-    open_vbox 0;
-    start_list false;
+  if virt <> [] then
     List.iter (metho "virtual ") virt;
-    close_box ();
-    end_list false
-  end;
-  close_box();
   end_list true;
   print_string "end";
   close_box()
