@@ -720,11 +720,7 @@ let imported_units() =
 let save_signature sg modname filename =
   Btype.cleanup_abbrev ();
   Subst.reset_for_saving ();
-  let s = Subst.for_saving Subst.identity in
-  let sg = Subst.signature s sg in
-  let comps =
-    components_of_module empty s
-      (Pident(Ident.create_persistent modname)) (Tmty_signature sg) in
+  let sg = Subst.signature (Subst.for_saving Subst.identity) sg in
   let oc = open_out_bin filename in
   try
     output_string oc cmi_magic_number;
@@ -733,16 +729,19 @@ let save_signature sg modname filename =
     let crc = Digest.file filename in
     let crcs = (modname, crc) :: imported_units() in
     output_value oc crcs;
+    close_out oc;
     (* Enter signature in persistent table so that imported_unit()
        will also return its crc *)
+    let comps =
+      components_of_module empty Subst.identity
+        (Pident(Ident.create_persistent modname)) (Tmty_signature sg) in
     let ps =
       { ps_name = modname;
         ps_sig = sg;
         ps_comps = comps;
         ps_crcs = crcs;
         ps_filename = filename } in
-    Hashtbl.add persistent_structures modname ps;
-    close_out oc
+    Hashtbl.add persistent_structures modname ps
   with exn ->
     close_out oc;
     remove_file filename;
