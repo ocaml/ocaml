@@ -183,11 +183,12 @@ case "$host" in
   sparc-*-sunos4.*)             arch=sparc; system=sunos;;
   sparc-*-solaris2.*)           arch=sparc; system=solaris;;
   sparc-*-*bsd*)                arch=sparc; system=bsd;;
-  i[3456]86-*-linuxaout)        arch=i386; system=linux;;
-  i[3456]86-*-linuxoldld)       arch=i386; system=linux;;
+  i[3456]86-*-linuxaout)        arch=i386; system=linux_aout;;
+  i[3456]86-*-linuxoldld)       arch=i386; system=linux_aout;;
   i[3456]86-*-linux)            arch=i386; system=linux_elf;;
   i[3456]86-*-*bsd*)            arch=i386; system=bsd;;
   i[3456]86-*-nextstep*)        arch=i386; system=nextstep;;
+  i[3456]86-*-solaris*)         arch=i386; system=solaris;;
   mips-*-ultrix*)               arch=mips;;
   hppa1.1-*-hpux*)              arch=hppa; system=hpux;;
   hppa1.1-*-nextstep*)          arch=hppa; system=nextstep;;
@@ -211,23 +212,21 @@ esac
 
 nativecclinkopts=''
 
-as='as'
+asflags=''
+aspp='$(AS)'
+asppflags=''
 
-case "$arch" in
-  alpha|mips)   asflags='-O2';;
-  sparc)
-    case "$system" in
-      bsd)      as='gcc'; asflags='-x assembler-with-cpp -c -DSYS_$(SYSTEM)';;
-        *)      asflags='-P -DSYS_$(SYSTEM)';;
-    esac;;
-  i386)         asflags='-DSYS_$(SYSTEM)';;
-  hppa)         as="$cc"; asflags='-c -DSYS_$(SYSTEM)';;
-  power)
-    case "$model,$system" in
-      rs6000,aix)   asflags='-u -m pwr -w';;
-      ppc,aix)      asflags='-u -m ppc -w';;
-      *,elf)        asflags='';;
-    esac;;
+case "$arch,$model,$system" in
+  alpha,*,*)        asflags='-O2'; asppflags="$asflags";;
+  mips,*,*)         asflags='-O2'; asppflags="$asflags";;
+  sparc,*,bsd)      aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
+  sparc,*,*)        asppflags='-P -DSYS_$(SYSTEM)';;
+  i386,*,solaris)   asppflags='-P -DSYS_$(SYSTEM)';;
+  i386,*,*)         aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
+  hppa,*,*)         aspp="$cc"; asppflags='-c -DSYS_$(SYSTEM)';;
+  power,rs6000,aix) asflags='-u -m pwr -w'; asppflags="$asflags";;
+  power,ppc,aix)    asflags='-u -m ppc -w'; asppflags="$asflags";;
+  power,*,elf)      aspp='gcc'; asppflags='-c';;
 esac
 
 echo "ARCH=$arch" >> Makefile
@@ -236,8 +235,9 @@ echo "SYSTEM=$system" >> Makefile
 echo "NATIVECC=$nativecc" >> Makefile
 echo "NATIVECCCOMPOPTS=$nativecccompopts" >> Makefile
 echo "NATIVECCLINKOPTS=$nativecclinkopts" >> Makefile
-echo "AS=$as" >> Makefile
 echo "ASFLAGS=$asflags" >> Makefile
+echo "ASPP=$aspp" >> Makefile
+echo "ASPPFLAGS=$asppflags" >> Makefile
 
 # Checking how to invoke cpp
 
@@ -619,7 +619,8 @@ else
   echo "	C compiler used........... $nativecc"
   echo "	options for compiling..... $nativecccompopts"
   echo "	options for linking....... $nativecclinkopts $cclibs"
-  echo "	assembler ................ $as $asflags"
+  echo "        assembler ................ \$(AS) $asflags"
+  echo "        preprocessed assembler ... $aspp $asppflags"
 fi
 
 echo "Configuration for the external libraries:"

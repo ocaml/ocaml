@@ -159,6 +159,17 @@ SHARPBANGSCRIPTS=true
 # For the RS6000:
 #ASFLAGS=-u -m pwr -w
 
+### Command and flags to use for assembling .S files (often with preprocessing)
+# If gcc is available:
+#ASPP=gcc
+#ASPPFLAGS=-c -DSYS_$(SYSTEM)
+# On SunOS and Solaris:
+#ASPP=$(AS)
+#ASPPFLAGS=-P -DSYS_$(SYSTEM)
+# Otherwise:
+#ASPP=$(AS)
+#ASPPFLAGS=$(ASFLAGS)
+
 ############# Configuration for the contributed libraries
 
 ### Which libraries to compile and install
