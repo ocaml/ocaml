@@ -186,8 +186,8 @@ let rename_approx mapping approx =
       Ufor(id, ren_ulambda u1, ren_ulambda u2, dir, ren_ulambda u3)
   | Uassign(id, u) ->
       Uassign(id, ren_ulambda u)
-  | Usend(u1, u2, ul) ->
-      Usend(ren_ulambda u1, ren_ulambda u2, List.map ren_ulambda ul) in
+  | Usend(k, u1, u2, ul) ->
+      Usend(k, ren_ulambda u1, ren_ulambda u2, List.map ren_ulambda ul) in
 
   let rec ren_approx = function
       Value_closure(fd, res) ->

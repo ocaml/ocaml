@@ -120,7 +120,7 @@ camlinternalOO.cmi: camlinternalOO.mli
 	$(CAMLC) $(COMPFLAGS) -nopervasives -c camlinternalOO.mli
 
 camlinternalOO.cmx: camlinternalOO.ml
-	$(CAMLOPT) $(OPTCOMPFLAGS) -inline 0 camlinternalOO.ml
+	$(CAMLOPT) $(OPTCOMPFLAGS) -inline 0 -c camlinternalOO.ml
 
 OO_P_CMX=camlinternalOO.p.cmx
 $(OO_P_CMX): camlinternalOO.ml

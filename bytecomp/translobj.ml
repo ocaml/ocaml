@@ -46,7 +46,7 @@ let share c =
 
 let used_methods = ref ([] : (string * Ident.t) list);;
 
-let meth s = Lconst(Const_pointer(Btype.hash_variant s))
+let meth s = Lconst(Const_base(Const_int(Btype.hash_variant s)))
 
 (*
 let meth lab =

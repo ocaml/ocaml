@@ -529,6 +529,7 @@ module M = struct
 end
 open M
 
+(*
 let rec hash_size n tags =
   let arr = String.make n ' ' in
   let base = -(1 lsl 30) in
@@ -541,11 +542,15 @@ let rec hash_size n tags =
         if String.unsafe_get arr y = ' ' then String.unsafe_set arr y '1'
         else raise Not_found)
       tags;
+    Printf.eprintf "[%d%t]\n" n
+      (fun _ -> List.iter (fun x -> Printf.eprintf " %d" (umod x)) tags);
+    flush stderr;
     n
   with Not_found -> hash_size (n+1) tags
 
 let perfect_hash_size tags =
   hash_size (List.length tags) tags
+*)
 
 (*
    Traduction d'une classe.
@@ -640,27 +645,29 @@ let transl_class ids cl_id arity pub_meths cl =
     List.sort
       (fun s s' -> compare (Btype.hash_variant s) (Btype.hash_variant s'))
       pub_meths in
-  let hash_size =
+  (*
+  let hash_size () =
     if not !Clflags.native_code then lambda_unit else
     let size = perfect_hash_size (List.map Btype.hash_variant pub_meths) in
     Lconst(Const_base(Const_int size))
   in
-  (*
   let public_map () =
     if not !Clflags.native_code then lambda_unit else
     let meth = Ident.create "meth" in
     let i = ref 0 in
     let index m = incr i;
-      (Const_int (Btype.hash_variant m), Lconst(Const_pointer !i)) in
+      (Const_int (Btype.hash_variant m), Lconst(Const_base(Const_int !i))) in
     Lfunction(Curried, [meth],
               Matching.make_test_sequence None (Pintcomp Cneq) (Pintcomp Clt)
                 (Lvar meth) (List.map index pub_meths))
   in
   *)
+  let create_arg =
+   if not !Clflags.native_code then lambda_unit else Lconst(Const_pointer 1) in
   let ltable table lam =
     Llet(Strict, table,
          Lapply (oo_prim "create_table",
-                 [hash_size; transl_meth_list pub_meths]), lam)
+                 [create_arg; transl_meth_list pub_meths]), lam)
   and ldirect obj_init =
     Llet(Strict, obj_init, cl_init,
          Lsequence(Lapply (oo_prim "init_class", [Lvar cla]),
@@ -677,7 +684,7 @@ let transl_class ids cl_id arity pub_meths cl =
          lam class_init)
   and lbody class_init =
     Lapply (oo_prim "make_class",
-            [hash_size; transl_meth_list pub_meths; Lvar class_init])
+            [create_arg; transl_meth_list pub_meths; Lvar class_init])
   and lbody_virt lenvs =
     Lprim(Pmakeblock(0, Immutable),
           [lambda_unit; Lfunction(Curried,[cla], cl_init); lambda_unit; lenvs])
@@ -748,7 +755,7 @@ let transl_class ids cl_id arity pub_meths cl =
               if not concrete then lclass_virt () else
               lclass (
               Lapply (oo_prim "make_class_store",
-                      [hash_size; transl_meth_list pub_meths;
+                      [create_arg; transl_meth_list pub_meths;
                        Lvar class_init; Lvar cached]))),
   make_envs (
   if ids = [] then Lapply(lfield cached 0, [lenvs]) else

@@ -54,8 +54,6 @@ let params = {
 (**** Parameters ****)
 
 let step = Sys.word_size / 16
-let first_bucket = 0
-let bucket_size = 32                    (* Must be 256 or less *)
 let initial_object_size = 2
 
 (**** Items ****)
@@ -94,6 +92,107 @@ type meths = label Meths.t
 module Labs = Map.Make(struct type t = label let compare = compare end)
 type labs = bool Labs.t
 
+module Labset = Set.Make(struct type t = label let compare = compare end)
+
+let bucket_count = ref 0
+
+type span =
+    { mutable labels: Labset.t;
+      mutable children: (label * slot) list;
+      mutable array: closure array;
+      mutable link: span option }
+and slot = Method of tag | Span of span
+
+let mergeable sp1 sp2 =
+  Labset.is_empty (Labset.inter sp1.labels sp2.labels)
+
+let rec (!!) span =
+  match span.link with
+    None -> span
+  | Some x -> !!x
+
+let rec merge spans = function
+    [] -> List.rev spans
+  | span :: rem ->
+      let rec try_merge = function
+          [] -> false
+        | span' :: rem' ->
+            if mergeable !!span !!span' then
+              let span'' =
+                { labels = Labset.union !!span.labels !!span'.labels;
+                  children = !!span.children @ !!span'.children;
+                  array = [||]; link = None } in
+              !!span.link <- Some span'';
+              !!span'.link <- Some span'';
+              true
+            else try_merge rem'
+      in
+      merge (if try_merge spans then spans else span :: spans) rem
+
+let decode (tag : tag) =
+  let n = Int32.logand (Int32.of_int (magic tag)) 0x7fffffffl in
+  let lab3 = Int32.to_int (Int32.rem n 1291l)
+  and n' = Int32.to_int (Int32.div n 1291l) in
+  let lab2 = n' mod 1291 and lab1 = n' / 1291 in
+  (lab1, lab2, lab3)
+
+let empty_span () =
+  {labels = Labset.empty; children = []; array = [||]; link = None}
+
+let add_child span lab data =
+    !!span.labels <- Labset.add lab !!span.labels;
+    !!span.children <- (lab, data) :: !!span.children
+
+let insert_span lab span =
+  if Labset.mem lab !!span.labels then
+    match List.assoc lab !!span.children with
+      Method _ -> assert false
+    | Span span -> span
+  else
+    let span' = empty_span () in
+    add_child span lab (Span span');
+    span'
+
+let make_span tags =
+  let span = empty_span () in
+  Array.iter
+    (fun tag ->
+      let (lab1, lab2, lab3) = decode tag in
+      let span1 = insert_span lab1 span in
+      let span2 = insert_span lab2 span1 in
+      add_child span2 lab3 (Method tag))
+    tags;
+  span
+
+let rec span_list = function
+    (_, Span sp) :: rem ->
+      sp :: span_list !!sp.children @ span_list rem
+  | _ :: rem ->
+      span_list rem
+  | [] -> []
+
+let connect_slots span =
+  List.iter
+    (fun (lab, slot) ->
+      match slot with
+        Span sp -> !!span.array.(lab) <- magic (!!sp.array : _ array)
+      | Method tag -> !!span.array.(lab) <- magic 1)
+    !!span.children
+
+let truncate_size arr =
+  let n = ref (Array.length arr - 1) in
+  while !n > 1 && arr.(!n) == dummy_item do decr n done;
+  let len = !n + 1 in
+  if len <> Array.length arr then Obj.truncate (Obj.repr arr) len
+
+let build_access_table tags =
+  let span = make_span tags in
+  let spans = merge [span] (span_list !!span.children) in
+  bucket_count := !bucket_count + List.length spans;
+  List.iter (fun span -> !!span.array <- Array.create 1291 dummy_item) spans;
+  List.iter connect_slots spans;
+  List.iter (fun sp -> truncate_size !!sp.array) (List.tl spans);
+  !!span.array
 
 (* The compiler assumes that the first field of this structure is [size]. *)
 type table =
@@ -102,6 +201,7 @@ type table =
    mutable next_label: int;
    mutable methods_by_name: meths;
    mutable methods_by_label: labs;
+   mutable public_methods: (label * label * label) Labs.t;
    mutable previous_states:
      (meths * labs * (label * item) list * vars *
       label list * string list) list;
@@ -114,6 +214,7 @@ let dummy_table =
     next_label = 0;
     methods_by_name = Meths.empty;
     methods_by_label = Labs.empty;
+    public_methods = Labs.empty;
     previous_states = [];
     hidden_meths = [];
     vars = Vars.empty;
@@ -128,6 +229,7 @@ let new_table meths next =
     next_label = next;
     methods_by_name = Meths.empty;
     methods_by_label = Labs.empty;
+    public_methods = Labs.empty;
     previous_states = [];
     hidden_meths = [];
     vars = Vars.empty;
@@ -135,6 +237,7 @@ let new_table meths next =
     size = initial_object_size }
 
 let resize array new_size =
+  if new_size > 1291 then prerr_endline "CamlinternalOO: huge class";
   let old_size = Array.length array.methods in
   if new_size > old_size then begin
     let new_buck = Array.create new_size dummy_item in
@@ -144,7 +247,13 @@ let resize array new_size =
 
 let put array label element =
   resize array (label + 1);
-  array.methods.(label) <- element
+  array.methods.(label) <- element;
+  if Labs.mem label array.public_methods then begin
+    let (lab1, lab2, lab3) = Labs.find label array.public_methods in
+    let arr1 = array.methods.(lab1) in
+    let arr2 = (magic arr1).(lab2) in
+    arr2.(lab3) <- element;
+  end
 
 (**** Classes ****)
 
@@ -160,7 +269,7 @@ let new_method table =
     table.methods.(table.next_label) <> dummy_item
   do table.next_label <- table.next_label + 1 done;
   let index = table.next_label in
-  table.next_label <- table.next_label + 1;
+  table.next_label <- index + 1;
   resize table (index+1);
   index
 
@@ -285,9 +394,11 @@ let create_table public_methods =
 
 let compute_labels n tags =
   if n = 0 then Array.mapi (fun i _ -> i+1) tags else
-  let base = -(1 lsl 30) in
-  let ofs = n - base mod n in
-  let umod (x : tag) = (((magic x : int) lxor base) mod n + ofs) mod n in
+  let umod (x : tag) =
+    1 + Int32.to_int
+      (Int32.rem (Int32.logand (Int32.of_int (magic x)) 0x7fffffffl)
+         (Int32.of_int n))
+  in
   Array.map umod tags
 
 let init_hash n labels =
@@ -304,22 +415,30 @@ let create_table n public_methods =
   if public_methods == magic 0 then new_table [||] 0 else
   (* [public_methods] must be in ascending order for bytecode *)
   let tags = Array.map public_method_label public_methods in
-  let labels = compute_labels n tags in
-  let table =
-    if n = 0 then new_table [|magic tags|] (Array.length tags + 1) else
-    new_table (magic (init_hash n labels : int array)) 1
+  (* let labels = compute_labels n tags in *)
+  let arg, next =
+    if n = 0 then [|magic tags|], 1 else
+    build_access_table tags, 0
+  in
+  let table = new_table arg next
+    (* new_table (magic (init_hash n labels : int array)) 1 *)
   in
   Array.iteri
     (fun i met ->
-      let lab = labels.(i) in
+      let lab = new_method table in
       table.methods_by_name  <- Meths.add met lab table.methods_by_name;
-      table.methods_by_label <- Labs.add lab true table.methods_by_label)
+      table.methods_by_label <- Labs.add lab true table.methods_by_label;
+      if n <> 0 then
+        table.public_methods <-
+          Labs.add lab (decode tags.(i)) table.public_methods)
     public_methods;
   table
 
 let init_class table =
   inst_var_count := !inst_var_count + table.size - 1;
-  table.initializers <- List.rev table.initializers
+  table.initializers <- List.rev table.initializers;
+  if table.public_methods <> Labs.empty then
+    truncate_size table.methods
 
 let inherits cla vals virt_meths concr_meths (_, super, _, env) top =
   narrow cla vals virt_meths concr_meths;
@@ -533,8 +652,10 @@ let set_methods table methods =
 (**** Statistics ****)
 
 type stats =
-  { classes: int; methods: int; inst_vars: int; }
+  { classes: int; methods: int; inst_vars: int; buckets: int }
 
 let stats () =
   { classes = !table_count;
-    methods = !method_count; inst_vars = !inst_var_count; }
+    methods = !method_count;
+    inst_vars = !inst_var_count;
+    buckets = !bucket_count; }

@@ -120,6 +120,7 @@ type impl =
 
 (** {6 Parameters} *)
 
+(* currently disabled *)
 type params =
   { mutable compact_table : bool;
     mutable copy_parent : bool;
@@ -134,5 +135,6 @@ val params : params
 type stats =
   { classes : int; 
     methods : int; 
-    inst_vars : int }
+    inst_vars : int;
+    buckets : int }
 val stats : unit -> stats
