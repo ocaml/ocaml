@@ -47,19 +47,20 @@ below.)
 \section{Syntax of lexer definitions}
 
 The format of lexer definitions is as follows:
+\begingroup\newcommand{\sub}[1]{$_{#1}$}
 \begin{alltt}
 \{ \var{header} \}
 let \var{ident} = \var{regexp} \ldots
-rule \var{entrypoint} =
+rule \var{entrypoint} [\var{arg\sub{1}}\ldots{} \var{arg\sub{n}}] =
   parse \var{regexp} \{ \var{action} \}
       | \ldots
       | \var{regexp} \{ \var{action} \}
-and \var{entrypoint} =
+and \var{entrypoint} [\var{arg\sub{1}}\ldots{} \var{arg\sub{n}}] =
   parse \ldots
 and \ldots
 \{ \var{trailer} \}
 \end{alltt}
-
+\endgroup
 Comments are delimited by "(*" and "*)", as in Caml.
 
 The "parse" keyword, can be replaced by the "shortest" keyword, with
@@ -86,12 +87,17 @@ In following regular expressions, the identifier
 \subsection{Entry points}
 
 The names of the entry points must be valid identifiers for Caml
-values (starting with a lowercase letter).  Each entry point becomes a
-Caml function that takes one argument of type "Lexing.lexbuf".
+values (starting with a lowercase letter).
+Similarily, the arguments \texttt{\var{arg$_1$}\ldots{}
+\var{arg$_n$}} must be valid identifiers for Caml.
+Each entry point becomes a
+Caml function that takes $n+1$ arguments,
+the extra implicit last argument being of type "Lexing.lexbuf".
 Characters are read from the "Lexing.lexbuf" argument and matched
 against the regular expressions provided in the rule, until a prefix
 of the input matches one of the rule.  The corresponding action is
 then evaluated and returned as the result of the function.
+
 
 If several regular expressions match a prefix of the input, the
 ``longest match'' rule applies: the regular expression that matches
