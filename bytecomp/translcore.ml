@@ -205,7 +205,13 @@ let primitives_table = create_hashtable 57 [
   "%int64_xor", Pxorbint Pint64;
   "%int64_lsl", Plslbint Pint64;
   "%int64_lsr", Plsrbint Pint64;
-  "%int64_asr", Pasrbint Pint64
+  "%int64_asr", Pasrbint Pint64;
+  "%bigarray_ref_1", Pbigarrayref(1, Pbigarray_unknown, Pbigarray_c_layout);
+  "%bigarray_ref_2", Pbigarrayref(2, Pbigarray_unknown, Pbigarray_c_layout);
+  "%bigarray_ref_3", Pbigarrayref(3, Pbigarray_unknown, Pbigarray_c_layout);
+  "%bigarray_set_1", Pbigarrayset(1, Pbigarray_unknown, Pbigarray_c_layout);
+  "%bigarray_set_2", Pbigarrayset(2, Pbigarray_unknown, Pbigarray_c_layout);
+  "%bigarray_set_3", Pbigarrayset(3, Pbigarray_unknown, Pbigarray_c_layout)
 ]
 
 let prim_makearray =
@@ -253,6 +259,12 @@ let transl_prim prim args =
       | (Parraysetu Pgenarray, arg1 :: _) -> Parraysetu(array_kind arg1)
       | (Parrayrefs Pgenarray, arg1 :: _) -> Parrayrefs(array_kind arg1)
       | (Parraysets Pgenarray, arg1 :: _) -> Parraysets(array_kind arg1)
+      | (Pbigarrayref(n, Pbigarray_unknown, _), arg1 :: _) ->
+            let (k, l) = bigarray_kind_and_layout arg1 in
+            Pbigarrayref(n, k, l)
+      | (Pbigarrayset(n, Pbigarray_unknown, _), arg1 :: _) ->
+            let (k, l) = bigarray_kind_and_layout arg1 in
+            Pbigarrayset(n, k, l)
       | _ -> p
     end
   with Not_found ->

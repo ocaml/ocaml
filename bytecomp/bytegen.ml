@@ -308,6 +308,8 @@ let comp_primitive p args =
   | Pbintcomp(bi, Cgt) -> Kccall("greaterthan", 2)
   | Pbintcomp(bi, Cle) -> Kccall("lessequal", 2)
   | Pbintcomp(bi, Cge) -> Kccall("greaterequal", 2)
+  | Pbigarrayref(n, _, _) -> Kccall("bigarray_get_" ^ string_of_int n, n + 1)
+  | Pbigarrayset(n, _, _) -> Kccall("bigarray_set_" ^ string_of_int n, n + 2)
   | _ -> fatal_error "Bytegen.comp_primitive"
 
 (* Compile an expression.

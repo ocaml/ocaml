@@ -120,6 +120,14 @@ let sub_int c1 c2 =
   | (c1, c2) ->
       Cop(Csubi, [c1; c2])
 
+let mul_int c1 c2 =
+  match (c1, c2) with
+    (Cconst_int 0, _) -> c1
+  | (Cconst_int 1, _) -> c2
+  | (_, Cconst_int 0) -> c2
+  | (_, Cconst_int 1) -> c1
+  | (_, _) -> Cop(Cmuli, [c1; c2])
+
 let tag_int = function
     Cconst_int n -> int_const n
   | c -> Cop(Caddi, [Cop(Clsl, [c; Cconst_int 1]); Cconst_int 1])
@@ -475,15 +483,80 @@ let unbox_unsigned_int bi arg =
       Cop(Cload(if bi = Pint32 then Thirtytwo_unsigned else Word),
           [Cop(Cadda, [arg; Cconst_int size_addr])])
 
+(* Big arrays *)
+
+let bigarray_indexing elt_kind layout b args =
+  let rec ba_indexing dim_ofs delta_ofs = function
+    [] -> assert false
+  | [arg] ->
+      bind "idx" (untag_int arg)
+        (fun idx ->
+          Csequence(
+            Cop(Ccheckbound, [Cop(Cload Word,[field_address b dim_ofs]); idx]),
+            idx))
+  | arg1 :: argl ->
+      let rem = ba_indexing (dim_ofs + delta_ofs) delta_ofs argl in
+      bind "idx" (untag_int arg1)
+        (fun idx ->
+          bind "bound" (Cop(Cload Word, [field_address b dim_ofs]))
+          (fun bound ->
+            Csequence(Cop(Ccheckbound, [bound; idx]),
+                      add_int (mul_int rem bound) idx))) in
+  let offset =
+    match layout with
+      Pbigarray_unknown_layout ->
+        assert false
+    | Pbigarray_c_layout ->
+        ba_indexing (4 + List.length args) (-1) (List.rev args)
+    | Pbigarray_fortran_layout ->
+        ba_indexing 5 1 (List.map (fun idx -> sub_int idx (Cconst_int 2)) args)
+  and elt_size =
+    match elt_kind with
+      Pbigarray_unknown -> assert false
+    | Pbigarray_float32 -> 4
+    | Pbigarray_float64 -> 8
+    | Pbigarray_sint8 -> 1
+    | Pbigarray_uint8 -> 1
+    | Pbigarray_sint16 -> 2
+    | Pbigarray_uint16 -> 2
+    | Pbigarray_int32 -> 4
+    | Pbigarray_int64 -> 8
+    | Pbigarray_caml_int -> size_int
+    | Pbigarray_native_int -> size_int in
+  let byte_offset =
+    if elt_size = 1
+    then offset
+    else Cop(Clsl, [offset; Cconst_int(log2 elt_size)]) in
+  Cop(Cadda, [Cop(Cload Word, [field_address b 1]); byte_offset])
+
+let bigarray_word_kind = function
+    Pbigarray_unknown -> assert false
+  | Pbigarray_float32 -> Single
+  | Pbigarray_float64 -> Double
+  | Pbigarray_sint8 -> Byte_signed
+  | Pbigarray_uint8 -> Byte_unsigned
+  | Pbigarray_sint16 -> Sixteen_signed
+  | Pbigarray_uint16 -> Sixteen_unsigned
+  | Pbigarray_int32 -> Thirtytwo_signed
+  | Pbigarray_int64 -> Word
+  | Pbigarray_caml_int -> Word
+  | Pbigarray_native_int -> Word
+
+let bigarray_get elt_kind layout b args =
+  Cop(Cload (bigarray_word_kind elt_kind),
+      [bigarray_indexing elt_kind layout b args])
+
+let bigarray_set elt_kind layout b args newval =
+  Cop(Cstore (bigarray_word_kind elt_kind),
+      [bigarray_indexing elt_kind layout b args; newval])
+
 (* Simplification of some primitives into C calls *)
 
 let default_prim name =
   { prim_name = name; prim_arity = 0 (*ignored*);
     prim_alloc = true; prim_native_name = ""; prim_native_float = false }
 
-let simplif_primitive p =
-  if size_int = 8 then p else
-  match p with
+let simplif_primitive_32bits = function
     Pbintofint Pint64 -> Pccall (default_prim "int64_of_int")
   | Pintofbint Pint64 -> Pccall (default_prim "int64_to_int")
   | Pnegbint Pint64 -> Pccall (default_prim "int64_neg")
@@ -504,7 +577,24 @@ let simplif_primitive p =
   | Pbintcomp(Pint64, Lambda.Cgt) -> Pccall (default_prim "greaterthan")
   | Pbintcomp(Pint64, Lambda.Cle) -> Pccall (default_prim "lessequal")
   | Pbintcomp(Pint64, Lambda.Cge) -> Pccall (default_prim "greaterequal")
+  | Pbigarrayref(n, Pbigarray_int64, layout) ->
+      Pccall (default_prim ("bigarray_get_" ^ string_of_int n))
+  | Pbigarrayset(n, Pbigarray_int64, layout) ->
+      Pccall (default_prim ("bigarray_set_" ^ string_of_int n))
   | p -> p
+
+let simplif_primitive p =
+  match p with
+    Pbigarrayref(n, Pbigarray_unknown, layout) ->
+      Pccall (default_prim ("bigarray_get_" ^ string_of_int n))
+  | Pbigarrayset(n, Pbigarray_unknown, layout) ->
+      Pccall (default_prim ("bigarray_set_" ^ string_of_int n))
+  | Pbigarrayref(n, kind, Pbigarray_unknown_layout) ->
+      Pccall (default_prim ("bigarray_get_" ^ string_of_int n))
+  | Pbigarrayset(n, kind, Pbigarray_unknown_layout) ->
+      Pccall (default_prim ("bigarray_set_" ^ string_of_int n))
+  | p ->
+      if size_int = 8 then p else simplif_primitive_32bits p
 
 (* Translate an expression *)
 
@@ -625,6 +715,29 @@ let rec transl = function
               Cop(Calloc, alloc_floatarray_header (List.length args) ::
                           List.map transl_unbox_float args)
           end
+      | (Pbigarrayref(num_dims, elt_kind, layout), arg1 :: argl) ->
+          let elt =
+            bigarray_get elt_kind layout
+                         (transl arg1) (List.map transl argl) in
+          begin match elt_kind with
+            Pbigarray_float32 | Pbigarray_float64 -> box_float elt
+          | Pbigarray_int32 -> box_int Pint32 elt
+          | Pbigarray_int64 -> box_int Pint64 elt
+          | Pbigarray_native_int -> box_int Pnativeint elt
+          | _ -> tag_int elt
+          end
+      | (Pbigarrayset(num_dims, elt_kind, layout), arg1 :: argl) ->
+          let (argidx, argnewval) = split_last argl in
+          bigarray_set elt_kind layout
+            (transl arg1)
+            (List.map transl argidx)
+            (match elt_kind with
+                Pbigarray_float32 | Pbigarray_float64 ->
+                  transl_unbox_float argnewval
+              | Pbigarray_int32 -> transl_unbox_int Pint32 argnewval
+              | Pbigarray_int64 -> transl_unbox_int Pint64 argnewval
+              | Pbigarray_native_int -> transl_unbox_int Pnativeint argnewval
+              | _ -> untag_int (transl argnewval))
       | (p, [arg]) ->
           transl_prim_1 p arg
       | (p, [arg1; arg2]) ->

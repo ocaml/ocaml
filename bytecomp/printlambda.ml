@@ -49,6 +49,26 @@ let print_boxed_integer name bi =
   | Pint32 -> printf "Int32.%s" name
   | Pint64 -> printf "Int64.%s" name
 
+let print_bigarray name kind layout =
+  printf "Bigarray.%s[%s,%s]"
+         name
+         (match kind with
+            Pbigarray_unknown -> "generic"
+          | Pbigarray_float32 -> "float32"
+          | Pbigarray_float64 -> "float64"
+          | Pbigarray_sint8 -> "sint8"
+          | Pbigarray_uint8 -> "uint8"
+          | Pbigarray_sint16 -> "sint16"
+          | Pbigarray_uint16 -> "uint16"
+          | Pbigarray_int32 -> "int32"
+          | Pbigarray_int64 -> "int64"
+          | Pbigarray_caml_int -> "camlint"
+          | Pbigarray_native_int -> "nativeint")
+         (match layout with
+            Pbigarray_unknown_layout -> "unknown"
+          | Pbigarray_c_layout -> "C"
+          | Pbigarray_fortran_layout -> "Fortran")
+
 let primitive ppf = function
     Pidentity -> print_string "id"
   | Pignore -> print_string "ignore"
@@ -134,6 +154,8 @@ let primitive ppf = function
   | Pbintcomp(bi, Cgt) -> print_boxed_integer ">" bi
   | Pbintcomp(bi, Cle) -> print_boxed_integer "<=" bi
   | Pbintcomp(bi, Cge) -> print_boxed_integer ">=" bi
+  | Pbigarrayref(n, kind, layout) -> print_bigarray "get" kind layout
+  | Pbigarrayset(n, kind, layout) -> print_bigarray "set" kind layout
 
 let rec lam ppf = function
     Lvar id ->

@@ -93,3 +93,35 @@ let array_kind exp = array_kind_gen exp.exp_type exp.exp_env
 
 let array_pattern_kind pat = array_kind_gen pat.pat_type pat.pat_env
 
+let bigarray_decode_type ty tbl dfl =
+  match (Ctype.repr ty).desc with
+    Tconstr(Pdot(Pident mod_id, type_name, _), [], _)
+    when Ident.name mod_id = "Bigarray" ->
+      begin try List.assoc type_name tbl with Not_found -> dfl end
+  | _ ->
+      dfl
+
+let kind_table =
+  ["float32_elt", Pbigarray_float32;
+   "float64_elt", Pbigarray_float64;
+   "int8_signed_elt", Pbigarray_sint8;
+   "int8_unsigned_elt", Pbigarray_uint8;
+   "int16_signed_elt", Pbigarray_sint16;
+   "int16_unsigned_elt", Pbigarray_uint16;
+   "int32_elt", Pbigarray_int32;
+   "int64_elt", Pbigarray_int64;
+   "int_elt", Pbigarray_caml_int;
+   "nativeint_elt", Pbigarray_native_int]
+
+let layout_table =
+  ["c_layout", Pbigarray_c_layout;
+   "fortran_layout", Pbigarray_fortran_layout]
+
+let bigarray_kind_and_layout exp =
+  let ty = Ctype.repr (Ctype.expand_head exp.exp_env exp.exp_type) in
+  match ty.desc with
+    Tconstr(p, [caml_type; elt_type; layout_type], abbrev) ->
+      (bigarray_decode_type elt_type kind_table Pbigarray_unknown,
+       bigarray_decode_type layout_type layout_table Pbigarray_unknown_layout)
+  | _ ->
+      (Pbigarray_unknown, Pbigarray_unknown_layout)

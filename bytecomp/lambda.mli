@@ -75,6 +75,9 @@ type primitive =
   | Plsrbint of boxed_integer
   | Pasrbint of boxed_integer
   | Pbintcomp of boxed_integer * comparison
+  (* Operations on big arrays *)
+  | Pbigarrayref of int * bigarray_kind * bigarray_layout
+  | Pbigarrayset of int * bigarray_kind * bigarray_layout
 
 and comparison =
     Ceq | Cneq | Clt | Cgt | Cle | Cge
@@ -84,6 +87,19 @@ and array_kind =
 
 and boxed_integer =
     Pnativeint | Pint32 | Pint64
+
+and bigarray_kind =
+    Pbigarray_unknown
+  | Pbigarray_float32 | Pbigarray_float64
+  | Pbigarray_sint8 | Pbigarray_uint8
+  | Pbigarray_sint16 | Pbigarray_uint16
+  | Pbigarray_int32 | Pbigarray_int64 
+  | Pbigarray_caml_int | Pbigarray_native_int
+
+and bigarray_layout =
+    Pbigarray_unknown_layout
+  | Pbigarray_c_layout
+  | Pbigarray_fortran_layout
 
 type structured_constant =
     Const_base of constant
