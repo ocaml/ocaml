@@ -1,10 +1,13 @@
 In the following, "the Library" refers to all files marked "Copyright
 INRIA" in the following directories and their sub-directories:
 
-  asmrun, byterun, camlp4, config, maccaml, otherlibs, stdlib, win32caml
+  asmrun, byterun, camlp4, config, otherlibs, stdlib, win32caml
 
 and "the Compiler" refers to all files marked "Copyright INRIA" in the
-other directories and their sub-directories.
+following directories and their sub-directories:
+
+  asmcomp, boot, bytecomp, debugger, driver, lex, ocamldoc, parsing,
+  tools, toplevel, typing, utils, yacc
 
 The Compiler is distributed under the terms of the Q Public License
 version 1.0 (included below).
