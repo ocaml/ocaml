@@ -302,13 +302,18 @@ CAMLprim value sys_time(value unit)
 
 CAMLprim value sys_random_seed (value unit)
 {
+  long seed;
 #ifdef HAS_GETTIMEOFDAY
   struct timeval tv;
   gettimeofday(&tv, NULL);
-  return Val_int(tv.tv_sec ^ tv.tv_usec);
+  seed = tv.tv_sec ^ tv.tv_usec;
 #else
-  return Val_int(time (NULL));
+  seed = time (NULL);
 #endif
+#ifdef HAS_UNISTD
+  seed ^= getppid() << 16 | getpid();
+#endif
+  return Val_long(seed);
 }
 
 CAMLprim value sys_get_config(value unit)
