@@ -30,6 +30,7 @@ and instruction_desc =
   | Llabel of label
   | Lbranch of label
   | Lcondbranch of Mach.test * label
+  | Lcondbranch3 of label option * label option * label option
   | Lswitch of label array
   | Lsetuptrap of label
   | Lpushtrap

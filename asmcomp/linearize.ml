@@ -36,6 +36,7 @@ and instruction_desc =
   | Llabel of label
   | Lbranch of label
   | Lcondbranch of test * label
+  | Lcondbranch3 of label option * label option * label option
   | Lswitch of label array
   | Lsetuptrap of label
   | Lpushtrap
@@ -164,7 +165,18 @@ let rec linear i n =
         lbl_cases.(i) <- lbl_case;
         n2 := discard_dead_code ncase
       done;
-      copy_instr (Lswitch(Array.map (fun n -> lbl_cases.(n)) index)) i !n2
+      (* Switches with 1 and 2 branches have been eliminated earlier.
+         Here, we do something for switches with 3 branches. *)
+      if Array.length index = 3 then begin
+        let fallthrough_lbl =
+          match !n2.desc with Llabel lbl -> lbl | _ -> -1 in
+        let find_label n =
+          let lbl = lbl_cases.(index.(n)) in
+          if lbl = fallthrough_lbl then None else Some lbl in
+        copy_instr (Lcondbranch3(find_label 0, find_label 1, find_label 2))
+                   i !n2
+      end else
+        copy_instr (Lswitch(Array.map (fun n -> lbl_cases.(n)) index)) i !n2
   | Iloop body ->
       let lbl_head = new_label() in
       let n1 = linear i.Mach.next n in

@@ -173,7 +173,7 @@ let _ = Hashtbl.add directive_table "remove_printer"
 
 let copy_closure cls =
   let sz = Obj.size cls in
-  let new = Obj.new_block 251 sz in
+  let new = Obj.new_block 250 sz in
   for i = 0 to sz - 1 do Obj.set_field new i (Obj.field cls i) done;
   new
 
@@ -220,7 +220,7 @@ let dir_trace lid =
     let (path, desc) = Env.lookup_value lid !toplevel_env in
     let clos = eval_path path in
     (* Nothing to do if it's not a closure *)
-    if Obj.is_block clos & Obj.tag clos = 251 then begin
+    if Obj.is_block clos & Obj.tag clos = 250 then begin
       let old_clos = copy_closure clos in
       (* Instrument the old closure *)
       let new_clos =
@@ -236,7 +236,7 @@ let dir_trace lid =
           open_hovbox 0;
           print_string "Warning: "; Printtyp.longident lid;
           print_string " is an external function."; print_space();
-          print_string "Direct calls will not be traced.";
+          print_string "Inlined calls will not be traced.";
           close_box(); print_newline()
     end else begin
       Printtyp.longident lid; print_string " is not a function.";

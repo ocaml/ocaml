@@ -123,6 +123,12 @@ let iter_preferred f reg =
   List.iter (fun (r, w) -> walk r w) reg.prefer;
   reg.visited <- false
 
+(* Where to start the search for a suitable register. 
+   Used to introduce some "randomness" in the choice between registers
+   with equal scores. This offers more opportunities for scheduling. *)
+
+let start_register = Array.new Proc.num_register_classes 0
+
 (* Assign a location to a register, the best we can *)
 
 let assign_location reg =
@@ -172,16 +178,24 @@ let assign_location reg =
     reg.interf;
   (* Pick the register with the best score *)
   let best_score = ref (-1000000) and best_reg = ref (-1) in
-  for n = 0 to num_regs - 1 do
+  let start = start_register.(class) in
+  for n = start to num_regs - 1 do
+    if score.(n) > !best_score then begin
+      best_score := score.(n);
+      best_reg := n
+    end
+  done;
+  for n = 0 to start - 1 do
     if score.(n) > !best_score then begin
       best_score := score.(n);
       best_reg := n
     end
   done;
   (* Found a register? *)
-  if !best_reg >= 0 then
-    reg.loc <- Reg(first_reg + !best_reg)
-  else begin
+  if !best_reg >= 0 then begin
+    reg.loc <- Reg(first_reg + !best_reg);
+    start_register.(class) <- (if start + 1 >= num_regs then 0 else start + 1)
+  end else begin
     (* Sorry, we must put the pseudoreg in a stack location *)
     (* First, check if we have a preference for an incoming location
        we do not conflict with. *)
@@ -266,7 +280,8 @@ let allocate_registers() =
      Third pass: determine coloring order by successive removals of regs
      Fourth pass: assign registers in that order *)
   for i = 0 to Proc.num_register_classes - 1 do
-    Proc.num_stack_slots.(i) <- 0
+    Proc.num_stack_slots.(i) <- 0;
+    start_register.(i) <- 0
   done;
   List.iter allocate_spilled (Reg.all_registers());
   List.iter find_degree (Reg.all_registers());

@@ -392,29 +392,32 @@ let emit_instr i =
             `	and	$25, {emit_reg i.arg.(0)}, 1\n`;
             `	beq	$25, $0, {emit_label lbl}\n`
         end
-    | Lswitch jumptbl ->
-        (* Switches with 1 or 2 cases have normally been eliminated before *)
-        (* Do something for 3 cases *)
-        begin match Array.length jumptbl with
-          3 ->
-            (* Should eliminate the branches that just fall through *)
-            `	subu	$25, {emit_reg i.arg.(0)}, 1\n`;
-            `	beq	{emit_reg i.arg.(0)}, $0, {emit_label jumptbl.(0)}\n`;
-            `	beq	$25, $0, {emit_label jumptbl.(1)}\n`;
-            `	b	{emit_label jumptbl.(2)}\n`
-        | _ ->
-            let lbl_jumptbl = new_label() in
-            `	sll     $25, {emit_reg i.arg.(0)}, 2\n`;
-            `	lw	$25, {emit_label lbl_jumptbl}($25)\n`;
-            liveregs i live_25;
-            `	j	$25\n`;
-            `	.rdata\n`;
-            `{emit_label lbl_jumptbl}:\n`;
-            for i = 0 to Array.length jumptbl - 1 do
-              `	.word	{emit_label jumptbl.(i)}\n`
-            done;
-            `	.text\n`
+  | Lcondbranch3(lbl0, lbl1, lbl2) ->
+        `	subu	$25, {emit_reg i.arg.(0)}, 1\n`;
+        begin match lbl0 with
+          None -> ()
+        | Some lbl -> `	beq	{emit_reg i.arg.(0)}, $0, {emit_label lbl}\n`
+        end;
+        begin match lbl1 with
+          None -> ()
+        | Some lbl -> `	beq	$25, $0, {emit_label lbl}\n`
+        end;
+        begin match lbl2 with
+          None -> ()
+        | Some lbl -> `	bgtz	$25, {emit_label lbl}\n`
         end
+  | Lswitch jumptbl ->
+        let lbl_jumptbl = new_label() in
+        `	sll     $25, {emit_reg i.arg.(0)}, 2\n`;
+        `	lw	$25, {emit_label lbl_jumptbl}($25)\n`;
+        liveregs i live_25;
+        `	j	$25\n`;
+        `	.rdata\n`;
+        `{emit_label lbl_jumptbl}:\n`;
+        for i = 0 to Array.length jumptbl - 1 do
+          `	.word	{emit_label jumptbl.(i)}\n`
+        done;
+        `	.text\n`
     | Lsetuptrap lbl ->
         `	subu	$sp, $sp, 8\n`;
         `	bal	{emit_label lbl}\n`

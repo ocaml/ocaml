@@ -524,31 +524,31 @@ let emit_instr i =
             `	be	{emit_label lbl}\n`;
             `	nop\n`
         end
-    | Lswitch jumptbl ->
-        (* Switches with 1 or 2 cases have normally been eliminated before *)
-        (* Do something for 3 cases *)
-        let lbl_jumptbl = new_label() in
-        begin match Array.length jumptbl with
-          3 ->
-            `	cmp	{emit_reg i.arg.(0)}, 1\n`;
-            `	bl	{emit_label jumptbl.(0)}\n`;
-            `	nop\n`;
-            `	be	{emit_label jumptbl.(1)}\n`;
-            `	nop\n`;
-            `	b	{emit_label jumptbl.(2)}\n`;
-            `	nop\n`
-        | _ ->
-            `	sethi	%hi({emit_label lbl_jumptbl}), %g1\n`;
-            `	or	%g1, %lo({emit_label lbl_jumptbl}), %g1\n`;
-            `	sll	{emit_reg i.arg.(0)}, 2, %g4\n`;
-            `	ld	[%g1 + %g4], %g1\n`;
-            `	jmp	%g1\n`;
-            `	nop\n`;
-            `{emit_label lbl_jumptbl}:`;
-            for i = 0 to Array.length jumptbl - 1 do
-              `	.word	{emit_label jumptbl.(i)}\n`
-            done
+  | Lcondbranch3(lbl0, lbl1, lbl2) ->
+        `	cmp	{emit_reg i.arg.(0)}, 1\n`;
+        begin match lbl0 with
+          None -> ()
+        | Some lbl -> `	bl	{emit_label lbl}\n	nop\n`
+        end;
+        begin match lbl1 with
+          None -> ()
+        | Some lbl -> `	be	{emit_label lbl}\n	nop\n`
+        end;
+        begin match lbl2 with
+          None -> ()
+        | Some lbl -> `	bg	{emit_label lbl}\n	nop\n`
         end
+    | Lswitch jumptbl ->
+        `	sethi	%hi({emit_label lbl_jumptbl}), %g1\n`;
+        `	or	%g1, %lo({emit_label lbl_jumptbl}), %g1\n`;
+        `	sll	{emit_reg i.arg.(0)}, 2, %g4\n`;
+        `	ld	[%g1 + %g4], %g1\n`;
+        `	jmp	%g1\n`;
+        `	nop\n`;
+        `{emit_label lbl_jumptbl}:`;
+        for i = 0 to Array.length jumptbl - 1 do
+          `	.word	{emit_label jumptbl.(i)}\n`
+        done
     | Lsetuptrap lbl ->
         `	call	{emit_label lbl}\n`;
         `	mov     %o7, %g4\n`     (* in delay slot *)

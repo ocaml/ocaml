@@ -217,9 +217,7 @@ let rec instr_uses_gp i =
   | Lop(Iintop_imm((Idiv | Imod), _)) -> true (* a function call *)
   | Lop(Iintop_imm(_, n)) ->
       if n < -0x8000000 or n > 0x7FFFFFFF then true else instr_uses_gp i.next
-  | Lswitch(jumptbl) ->
-      let l = Array.length jumptbl in
-      if l < 3 or l > 4 then true else instr_uses_gp i.next
+  | Lswitch(jumptbl) -> true
   | _ ->
       instr_uses_gp i.next
 
@@ -522,37 +520,42 @@ let emit_instr i =
         | Ieventest ->
             `	blbc	{emit_reg i.arg.(0)}, {emit_label lbl}\n`
         end
-    | Lswitch jumptbl ->
-        (* Switches with 1 or 2 cases have normally been eliminated before *)
-        (* Do something for 3 and 4 cases *)
-        begin match Array.length jumptbl with
-          3 ->
-            (* Should eliminate the branches that just fall through *)
-            `	beq	{emit_reg i.arg.(0)}, {emit_label jumptbl.(0)}\n`;
-            `	blbs	{emit_reg i.arg.(0)}, {emit_label jumptbl.(1)}\n`;
-            `	br	{emit_label jumptbl.(2)}\n`
-        | 4 ->
-            `	beq	{emit_reg i.arg.(0)}, {emit_label jumptbl.(0)}\n`;
-            `	subq	{emit_reg i.arg.(0)}, 2, $25\n`;
-            `	blt	$25, {emit_label jumptbl.(1)}\n`;
-            `	beq	$25, {emit_label jumptbl.(2)}\n`;
-            `	br	{emit_label jumptbl.(3)}\n`
-        | _ ->
-            let lbl_jumptbl = new_label() in
-            `	lda     $25, {emit_label lbl_jumptbl}\n`;
-            `	s4addq	{emit_reg i.arg.(0)}, $25, $25\n`;
-            `	ldl	$25, 0($25)\n`;
-            `	addq	$25, $gp, $25\n`;
-            let likely_target = most_frequent_element jumptbl in
-            liveregs i live_25;
-            `	jmp	($25), {emit_label likely_target}\n`;
-            `	.rdata\n`;
-            `{emit_label lbl_jumptbl}:\n`;
-            for i = 0 to Array.length jumptbl - 1 do
-              `	.gprel32	{emit_label jumptbl.(i)}\n`
-            done;
-            `	.text\n`
+    | Lcondbranch(lbl0, lbl1, lbl2) ->
+        begin match lbl0 with
+          None -> ()
+        | Some lbl -> `	beq	{emit_reg i.arg.(0)}, {emit_label lbl}\n`
+        end;
+        begin match lbl1 with
+          None -> ()
+        | Some lbl -> `	blbs	{emit_reg i.arg.(0)}, {emit_label lbl}\n`
+        end;
+        begin match lbl2 with
+          None -> ()
+        | Some lbl ->
+            if lbl0 <> None then
+              `	blbc	{emit_reg i.arg.(0)}, {emit_label lbl}\n`
+            else if lbl1 <> None then
+              `	bne	{emit_reg i.arg.(0)}, {emit_label lbl}\n`
+            else begin
+              `	subq	{emit_reg i.arg.(0)}, 2, $25\n`;
+              `	beq	{emit_label lbl}\n`
+            end
         end
+    | Lswitch jumptbl ->
+        let lbl_jumptbl = new_label() in
+        `	lda     $25, {emit_label lbl_jumptbl}\n`;
+        `	s4addq	{emit_reg i.arg.(0)}, $25, $25\n`;
+        `	ldl	$25, 0($25)\n`;
+        `	addq	$25, $gp, $25\n`;
+        let likely_target = most_frequent_element jumptbl in
+        liveregs i live_25;
+        `	jmp	($25), {emit_label likely_target}\n`;
+        `	.rdata\n`;
+        `{emit_label lbl_jumptbl}:\n`;
+        for i = 0 to Array.length jumptbl - 1 do
+          `	.gprel32	{emit_label jumptbl.(i)}\n`
+        done;
+        `	.text\n`
     | Lsetuptrap lbl ->
         `	br	$25, {emit_label lbl}\n`;
         if !uses_gp then

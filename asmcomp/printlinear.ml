@@ -44,6 +44,16 @@ let instr i =
       print_string "goto "; label lbl
   | Lcondbranch(tst, lbl) ->
       print_string "if "; test tst i.arg; print_string " goto "; label lbl
+  | Lcondbranch3(lbl0, lbl1, lbl2) ->
+      print_string "switch3 "; reg i.arg.(0);
+      let case n = function
+        None -> ()
+      | Some lbl ->
+          print_cut();
+          print_string "case "; print_int n;
+          print_string ": goto "; label lbl in
+      case 0 lbl0; case 1 lbl1; case 2 lbl2;
+      print_cut(); print_string "endswitch"
   | Lswitch lblv ->
       print_string "switch "; reg i.arg.(0);
       for i = 0 to Array.length lblv - 1 do
