@@ -491,6 +491,14 @@ if $shared_libraries_supported; then
   echo "#define SUPPORT_DYNAMIC_LINKING" >> s.h
 fi
 
+# Further machine-specific hacks
+
+case "$host" in
+  ia64-*-linux*)
+    echo "Will use mmap() instead of malloc() for allocation of major heap chunks."
+    echo "#define USE_MMAP_INSTEAD_OF_MALLOC" >> s.h;;
+esac
+
 # Configure the native-code compiler
 
 arch=none
@@ -1344,7 +1352,7 @@ echo "NATIVECCCOMPOPTS=$nativecccompopts" >> Makefile
 echo "NATIVECCPROFOPTS=$nativeccprofopts" >> Makefile
 echo "NATIVECCLINKOPTS=$nativecclinkopts" >> Makefile
 echo "NATIVECCRPATH=$nativeccrpath" >> Makefile
-echo "NATIVECCLIBS=$cclibs" >> Makefile
+echo "NATIVECCLIBS=$cclibs $dllib" >> Makefile
 echo "ASFLAGS=$asflags" >> Makefile
 echo "ASPP=$aspp" >> Makefile
 echo "ASPPFLAGS=$asppflags" >> Makefile
