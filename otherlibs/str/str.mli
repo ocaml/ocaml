@@ -21,7 +21,7 @@ type regexp
 val regexp: string -> regexp
         (* Compile a regular expression. The syntax for regular expressions
            is the same as in Gnu Emacs. The special characters are
-           [$^.*+?[]\]. The following constructs are recognized:
+           [$^.*+?[]]. The following constructs are recognized:
 -          [.     ] matches any character except newline
 -          [*     ] (postfix) matches the previous expression zero, one or
                     several times
@@ -29,8 +29,8 @@ val regexp: string -> regexp
                     several times
 -          [?     ] (postfix) matches the previous expression once or
                     not at all
--          [[..]  ] character set; ranges are denoted with [-], as in [a-z];
-                    an initial [^], as in [^0-9], complements the set
+-          [[..]  ] character set; ranges are denoted with [-], as in [[a-z]];
+                    an initial [^], as in [[^0-9]], complements the set
 -          [^     ] matches at beginning of line
 -          [$     ] matches at end of line
 -          [\|    ] (infix) alternative between two expressions
