@@ -261,11 +261,18 @@ let init_toplevel () =
   with Bytesections.Bad_magic_number | Not_found | Failure _ ->
     fatal_error "Toplevel bytecode executable is corrupted"
   end;
+  (* Initialize the Dll machinery for toplevel use *)
   let dllpath =
     try Bytesections.read_section ic "DLPT" with Not_found -> "" in
+  Dll.init_toplevel dllpath;
+  (* Recover CRC infos for interfaces *)
+  let crcintfs =
+    try
+      ignore(Bytesections.seek_section ic "CRCS");
+      (input_value ic : (string * Digest.t) list)
+    with Not_found -> [] in
   close_in ic;
-  (* Initialize the Dll machinery for toplevel use *)
-  Dll.init_toplevel dllpath
+  crcintfs
 
 (* Find the value of a global identifier *)
 

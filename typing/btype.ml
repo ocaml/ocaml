@@ -384,8 +384,8 @@ let set_level ty level =
   ty.level <- level
 let set_univar rty ty =
   log_change (Cuniv (rty, !rty)); rty := Some ty
-let log_name nm = log_change (Cname (nm, !nm))
-let unset_name nm = log_name nm; nm := None
+let set_name nm v =
+  log_change (Cname (nm, !nm)); nm := v
 let set_row_field e v =
   log_change (Crow (e, !e)); e := Some v
 let set_kind rk k =
@@ -405,15 +405,9 @@ let rec rev_log accu = function
     Unchanged -> accu
   | Invalid -> assert false
   | Change (ch, next) ->
-      rev_log (ch::accu) !next
-
-let rec invalidate_after = function
-    Unchanged -> ()
-  | Invalid -> assert false
-  | Change (_, next) ->
       let d = !next in
       next := Invalid;
-      invalidate_after d
+      rev_log (ch::accu) d
 
 let backtrack changes =
   match !changes with
@@ -423,5 +417,5 @@ let backtrack changes =
       cleanup_abbrev ();
       let backlog = rev_log [] change in
       List.iter undo_change backlog;
-      invalidate_after change;
-      changes := Unchanged
+      changes := Unchanged;
+      Weak.set trail 0 (Some changes)

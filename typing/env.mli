@@ -99,6 +99,10 @@ val crc_of_unit: string -> Digest.t
 
 val imported_units: unit -> (string * Digest.t) list
 
+(* Direct access to the table of imported compilation units with their CRC *)
+
+val crc_units: Consistbl.t
+
 (* Summaries -- compact representation of an environment, to be
    exported in debugging information. *)
 

@@ -113,6 +113,20 @@ type pers_struct =
 let persistent_structures =
   (Hashtbl.create 17 : (string, pers_struct) Hashtbl.t)
 
+(* Consistency between persistent structures *)
+
+let crc_units = Consistbl.create()
+
+let check_consistency filename crcs =
+  try
+    List.iter
+      (fun (name, crc) -> Consistbl.check crc_units name crc filename)
+      crcs
+  with Consistbl.Inconsistency(name, source, auth) ->
+    raise(Error(Inconsistent_import(name, auth, source)))
+
+(* Reading persistent structures from .cmi files *)
+
 let read_pers_struct modname filename =
   let ic = open_in_bin filename in
   try
@@ -136,6 +150,7 @@ let read_pers_struct modname filename =
                ps_filename = filename } in
     if ps.ps_name <> modname then
       raise(Error(Illegal_renaming(ps.ps_name, filename)));
+    check_consistency filename ps.ps_crcs;
     Hashtbl.add persistent_structures modname ps;
     ps
   with End_of_file | Failure _ ->
@@ -149,7 +164,8 @@ let find_pers_struct name =
     read_pers_struct name (find_in_path_uncap !load_path (name ^ ".cmi"))
 
 let reset_cache() =
-  Hashtbl.clear persistent_structures
+  Hashtbl.clear persistent_structures;
+  Consistbl.clear crc_units
 
 (* Lookup by identifier *)
 
@@ -690,22 +706,7 @@ let crc_of_unit name =
 (* Return the list of imported interfaces with their CRCs *)
 
 let imported_units() =
-  let imported_units =
-    ref ([] : (string * Digest.t) list) in
-  let units_xref =
-    (Hashtbl.create 13 : (string, Digest.t * string) Hashtbl.t) in
-  let add_unit source (name, crc) =
-    try
-      let (oldcrc, oldsource) = Hashtbl.find units_xref name in
-      if oldcrc <> crc then
-        raise(Error(Inconsistent_import(name, oldsource, source)))
-    with Not_found ->
-      Hashtbl.add units_xref name (crc, source);
-      imported_units := (name, crc) :: !imported_units in
-  Hashtbl.iter
-    (fun name ps -> List.iter (add_unit ps.ps_filename) ps.ps_crcs)
-    persistent_structures;
-  !imported_units
+  Consistbl.extract crc_units
 
 (* Save a signature to a file *)
 
@@ -733,7 +734,8 @@ let save_signature_with_imports sg modname filename imports =
         ps_comps = comps;
         ps_crcs = crcs;
         ps_filename = filename } in
-    Hashtbl.add persistent_structures modname ps
+    Hashtbl.add persistent_structures modname ps;
+    Consistbl.set crc_units modname crc filename
   with exn ->
     close_out oc;
     remove_file filename;
@@ -763,6 +765,6 @@ let report_error ppf = function
       "Wrong file naming: %s@ contains the compiled interface for@ %s"
       filename modname
   | Inconsistent_import(name, source1, source2) -> fprintf ppf
-      "@[<hov>The compiled interfaces %s@ and %s@ \
-              make inconsistent assumptions over interface %s@]"
-      source1 source2  name;;
+      "@[<hov>The files %s@ and %s@ \
+              make inconsistent assumptions@ over interface %s@]"
+      source1 source2 name

@@ -28,7 +28,7 @@ val output_primitive_table: out_channel -> unit
 
 (* Functions for the toplevel *)
 
-val init_toplevel: unit -> unit
+val init_toplevel: unit -> (string * Digest.t) list
 val update_global_table: unit -> unit
 val get_global_value: Ident.t -> Obj.t
 val assign_global_value: Ident.t -> Obj.t -> unit

@@ -890,10 +890,11 @@ let rec type_exp env sexp =
         end;
         let arg = type_argument env sarg ty_arg in
         end_def ();
-        if not (is_nonexpansive arg) then List.iter make_nongen vars;
+        if vars <> [] && not (is_nonexpansive arg) then
+          generalize_expansive env arg.exp_type;
         check_univars env "field value" arg label.lbl_arg vars;
         num_fields := Array.length label.lbl_all;
-        (label, arg) in
+        (label, {arg with exp_type = instance arg.exp_type}) in
       let lbl_exp_list = List.map type_label_exp lid_sexp_list in
       let rec check_duplicates seen_pos lid_sexp lbl_exp =
         match (lid_sexp, lbl_exp) with
@@ -966,7 +967,8 @@ let rec type_exp env sexp =
       unify_exp env record ty_res;
       let newval = type_expect env snewval ty_arg in
       end_def ();
-      if not (is_nonexpansive newval) then List.iter make_nongen vars;
+      if vars <> [] && not (is_nonexpansive newval) then
+        generalize_expansive env newval.exp_type;
       check_univars env "field value" newval label.lbl_arg vars;
       { exp_desc = Texp_setfield(record, label, newval);
         exp_loc = sexp.pexp_loc;
@@ -1827,9 +1829,7 @@ and type_let env rec_flag spat_sexp_list =
   List.iter2
     (fun pat exp ->
        if not (is_nonexpansive exp) then
-         let f =
-           if !Clflags.principal then generalize_expansive else make_nongen in
-         iter_pattern (fun pat -> f pat.pat_type) pat)
+         iter_pattern (fun pat -> generalize_expansive env pat.pat_type) pat)
     pat_list exp_list;
   List.iter
     (fun pat -> iter_pattern (fun pat -> generalize pat.pat_type) pat)
@@ -1850,8 +1850,7 @@ let type_expression env sexp =
   let exp = type_exp env sexp in
   end_def();
   if is_nonexpansive exp then generalize exp.exp_type
-  else if !Clflags.principal then generalize_expansive exp.exp_type
-  else make_nongen exp.exp_type;
+  else generalize_expansive env exp.exp_type;
   exp
 
 (* Error report *)
