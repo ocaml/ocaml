@@ -129,8 +129,8 @@ void leave_blocking_section(void)
   if (leave_blocking_section_hook != NULL) leave_blocking_section_hook();
 #if !macintosh_GUSI
   Assert(async_signal_mode);
-  async_signal_mode = 0;
 #endif
+  async_signal_mode = 0;
 }
 
 #ifndef SIGABRT

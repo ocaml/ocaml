@@ -12,9 +12,6 @@
 
 # $Id$
 
-#cdbgflag = -sym on -d DEBUG
-#ldbgflag = -sym on
-
 C = sc
 COptions = -includes unix -i ":::byterun:,:::config:,{GUSI}include:" -w 35 ¶
            {cdbgflag} -model far

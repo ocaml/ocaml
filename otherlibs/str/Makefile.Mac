@@ -16,10 +16,10 @@
 
 # Compilation options
 C = sc
-COptions = -model far -i {REGEXLIB},:::byterun:,:::config: -w 7
+COptions = -model far -i {REGEXLIB},:::byterun:,:::config: -w 7 {cdbgflag}
 
 PPCC = mrc
-PPCCOptions = -i {REGEXLIB},:::byterun:,:::config: -w 7
+PPCCOptions = -i {REGEXLIB},:::byterun:,:::config: -w 7 {cdbgflag}
 
 CAMLC = :::boot:ocamlrun :::ocamlc -I :::stdlib:
 REGEXLIB = :regex-0.12:
@@ -33,7 +33,7 @@ libstr.o Ä {COBJS}
     lib -o libstr.o {COBJS}
 
 libstr.x Ä {PPCCOBJS}
-    ppclink -xm library -o libstr.x {PPCCOBJS}
+    ppclink {ldbgflag} -xm library -o libstr.x {PPCCOBJS}
 
 str.cma Ä str.cmo
     {CAMLC} -a -o str.cma str.cmo

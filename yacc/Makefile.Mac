@@ -15,15 +15,15 @@
 # Makefile for the parser generator.
 
 C = sc
-COptions = -includes unix -d NDEBUG -model far -w 2,35
+COptions = -includes unix {cdbgflag} -model far -w 2,35
 LinkOptions = -model far -msg nodup -compact -state nouse -br 68k
 Libs = "{libraries}IntEnv.far.o" "{libraries}MacRuntime.o" ¶
        "{clibraries}StdCLib.far.o" "{libraries}MathLib.far.o" ¶
        "{libraries}ToolLibs.o" "{libraries}Interface.o"
 
 PPCC = mrc
-PPCCOptions = -includes unix -d NDEBUG -w 2,35
-PPCLinkOptions = -d
+PPCCOptions = -includes unix {cdbgflag} -w 2,35
+PPCLinkOptions = -d {ldbgflag}
 PPCLibs = "{sharedlibraries}MathLib" "{ppclibraries}PPCCRuntime.o" ¶
           "{ppclibraries}PPCToolLibs.o" "{sharedlibraries}StdCLib" ¶
           "{ppclibraries}StdCRuntime.o" "{sharedlibraries}InterfaceLib"

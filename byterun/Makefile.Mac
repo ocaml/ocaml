@@ -12,10 +12,6 @@
 
 # $Id$
 
-#adbgflag = -sym on -d DEBUG -wb -l
-#cdbgflag = -sym on -d DEBUG
-#ldbgflag = -sym on
-
 C = sc
 COptions = -w 29,30,35 {ocamlgusiflag} -i ::config: {cdbgflag} ¶
            -model far -mbg full
@@ -137,6 +133,9 @@ primitives Ä {PRIMS}
                -e '/{°/ replace // "[] = {"' ¶
                -e "1,$ replace /([A-Z][A-Z_0-9]*)¨0/ '¶"' ¨0 '¶"' -c °" ¶
                instruct.h > opnames.h
+
+:md5.c.x Ä
+    {PPCC} :md5.c -o :md5.c.x -opt off {PPCCOptions} -opt off
 
 :rotatecursor.c.o Ä
     {C} -b rotatecursor.c -o rotatecursor.c.o {COptions}

@@ -12,9 +12,6 @@
 
 # $Id$
 
-#ldbgflag = -sym on
-#cdbgflag = -sym on -d DEBUG
-
 includepath = ":config:,:byterun:,{GUSI}include:"
 
 C = sc

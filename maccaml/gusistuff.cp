@@ -12,6 +12,7 @@
 /* $Id$ */
 
 #define GUSI_SOURCE
+#include <GUSIConfig.h>
 #include <GUSIBasics.h>
 
 extern "C" {
@@ -27,6 +28,14 @@ static void spin_hook_for_gusi (bool wait)
 extern "C" void InitialiseGUSI (void)
 {
   GUSISetHook (GUSI_SpinHook, (GUSIHook) spin_hook_for_gusi);
+}
+
+void GUSIConfiguration::CheckInterrupt ()
+{
+  if (intr_requested){
+    intr_requested = 0;
+    raise (SIGINT);
+  }
 }
 
 /**************** B E G I N GUSI CONFIGURATION ****************************
@@ -97,7 +106,9 @@ void GUSISetupDevices()
 #endif
 
 GUSIConfiguration::FileSuffix   sSuffices[] = {
-    "", '????', '????'
+    ".ml"  , 'TEXT', 'Caml',
+    ".mli" , 'TEXT', 'Caml',
+    ""     , '????', '????',
 };
 
 extern "C" void GUSISetupConfig()
@@ -110,6 +121,7 @@ extern "C" void GUSISetupConfig()
     config->ConfigureAutoInitGraf(false);
     config->ConfigureAutoSpin(false);
     config->ConfigureSigPipe(true);
+    config->ConfigureSigInt(false);
 }
 
 /**************** E N D GUSI CONFIGURATION *************************/

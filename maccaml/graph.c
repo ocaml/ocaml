@@ -1109,7 +1109,7 @@ value gr_wait_event (value veventlist)
   pt.h = Wx (oldx);
   pt.v = Wy (oldy);
   LocalToGlobal (&pt);
-  /* Restore the grafport now because GetAndProcessEvents may longjmp
+  /* Restore the grafport now because handle_signal may longjmp
      directly out of here.
   */
   PopPort;
@@ -1118,6 +1118,15 @@ value gr_wait_event (value veventlist)
     enter_blocking_section ();
     Caml_working (0);
     GetAndProcessEvents (askmotion ? waitMove : waitEvent, pt.h, pt.v);
+    if (quit_requested) exit (0);
+    if (intr_requested){
+      intr_requested = 0;
+      Caml_working (1);
+      async_signal_mode = 1;
+      handle_signal (SIGINT);
+      async_signal_mode = 0;
+      Caml_working (0);
+    }
     Caml_working (1);
     leave_blocking_section ();
     if (askkey && (evt = GraphQPop ()) != NULL){
@@ -1156,6 +1165,7 @@ value gr_wait_event (value veventlist)
         goto gotevent;
       }
     }
+    sched_yield ();
   }
   gotevent:
   oldx = mouse_x;

@@ -88,16 +88,10 @@ static void DoKeyDown (EventRecord *evt)
       chr = -1;
     }
   }
-  /* If we were called by GUSI via RotateCursor or the Spin hook,
-     GUSI will raise SIGINT if command-period was pressed, so we
-     do it only if in_gusi is false.
-  */
   if (isCmdKey && chr == '.'
       && FrontWindow () == winToplevel
-      && evt->what != autoKey
-      && !in_gusi){
+      && evt->what != autoKey){
     intr_requested = 1;
-    raise (SIGINT);
   }
   if (isCmdKey && chr >= 0x20){
     UpdateMenus ();
@@ -293,8 +287,6 @@ void GetAndProcessEvents (WaitEventOption wait, short oldx, short oldy)
   RgnHandle dummyregion;
   UInt32 cursleep = (wait == noWait) ? 0 : evtSleep;
   RgnHandle currgn;
-  
-  if (!in_gusi && quit_requested && !exit_called) exit (0);
 
   if (wait == waitMove){
     currgn = pointRegion;

@@ -42,9 +42,8 @@ OSErr DoQuit ()
     if (err != noErr) return err;
   }
   done:
-  if (winGraphics != NULL) WinCloseGraphics ();
-  WinCloseToplevel ();
   quit_requested = 1;
+  intr_requested = 1;
   return noErr;
 }
 

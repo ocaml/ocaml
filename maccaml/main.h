@@ -108,6 +108,10 @@ struct prefs {
   TextStyle errors;
 };
 
+/* from ::byterun:signals.c */
+extern int async_signal_mode;
+extern void handle_signal (int);
+
 /* aboutbox.c */
 void OpenAboutBox (void);
 void CloseAboutBox (WindowPtr w);
@@ -151,7 +155,6 @@ OSErr FileDoSave (WindowPtr w, int saveasflag);
 extern int intr_requested;
 extern int quit_requested;
 extern int exit_called;
-extern int in_gusi;
 extern int caml_at_work;
 void Caml_working (int newstate);
 OSErr launch_caml_main (void);

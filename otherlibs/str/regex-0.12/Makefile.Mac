@@ -28,10 +28,10 @@ version = 0.12
 CPPFLAGS = 
 
 C = sc
-COptions = -model far -w 29,35
+COptions = -model far -w 29,35 {cdbgflag}
 
 PPCC = mrc
-PPCCOptions = -w 29,35
+PPCCOptions = -w 29,35 {cdbgflag}
 
 DEFS = -d STDC_HEADERS -d STRING_H -d REGEX_MALLOC
 

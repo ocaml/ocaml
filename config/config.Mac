@@ -33,7 +33,7 @@ set -e APPLIDIR "{mpw}:OCaml-distrib:"
 
 ### Which libraries to compile and install
 # Currently available:
-#       bigarray        
+#       bigarray        Statically-allocated arrays
 #       dynlink         Dynamic linking of bytecode
 #       graph           Graphics (for the standalone application only)
 #       macosunix       Unix emulation (application only)
@@ -45,6 +45,18 @@ set -e APPLIDIR "{mpw}:OCaml-distrib:"
 #       have GUSI installed.
 # 
 set -e OTHERLIBRARIES "bigarray dynlink graph macosunix num str systhreads"
+
+
+############# To compile in debug mode (or not)
+
+# compile without debugging info / with optimisations
+unset adbgflag ldbgflag
+set -e cdbgflag "-d NDEBUG"
+
+# compile with debugging info / without optimisations
+#set -e adbgflag "-sym on -d DEBUG -wb -l"
+#set -e cdbgflag "-sym on -d DEBUG"
+#set -e ldbgflag "-sym on"
 
 
 ############# Configuration for the native-code compiler

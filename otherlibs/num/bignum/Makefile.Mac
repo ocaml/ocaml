@@ -1,15 +1,15 @@
 #  Copyright     Digital Equipment Corporation & INRIA     1988, 1989, 1992
 
 C = sc
-COptions = -model far -i :h: -d CAML_LIGHT -w 30
+COptions = -model far -i :h: -d CAML_LIGHT -w 30 {cdbgflag}
 LinkOptions = -state nouse -compact -model far
 Libs = "{libraries}IntEnv.far.o" "{libraries}MacRuntime.o" ¶
        "{clibraries}StdCLib.far.o" "{libraries}MathLib.far.o" ¶
        "{libraries}ToolLibs.o" "{libraries}Interface.o"
 
 PPCC = mrc
-PPCCOptions = -i :h: -d CAML_LIGHT -w 30
-PPCLinkOptions =
+PPCCOptions = -i :h: -d CAML_LIGHT -w 30 {cdbgflag}
+PPCLinkOptions = {ldbgflag}
 PPCLibs = "{sharedlibraries}MathLib" "{ppclibraries}PPCCRuntime.o" ¶
           "{ppclibraries}PPCToolLibs.o" "{sharedlibraries}StdCLib" ¶
           "{ppclibraries}StdCRuntime.o" "{sharedlibraries}InterfaceLib"
@@ -49,7 +49,7 @@ scratch Ä
     lib -o {LIB} {OBJECT}
 
 {PPCLIB} Ä {PPCOBJECT}
-    ppclink -xm library -o {PPCLIB} {PPCOBJECT}
+    ppclink {ldbgflag} -xm library -o {PPCLIB} {PPCOBJECT}
 
 # How to choose the machine dependent version. All produce KerN.o
 :o:KerN.o Ä :c:KerN.c 

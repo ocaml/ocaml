@@ -26,16 +26,13 @@
 
 #include "main.h"
 
-/* intr_requested is true if the user pressed command-period
-   during a read on stdin.
-*/
+/* intr_requested is true if the user pressed command-period and the signal
+   was not sent yet. */
 int intr_requested = 0;
 /* quit_requested becomes true when the user chooses File:Quit */
 int quit_requested = 0;
 /* exit_called is true after exit is called. */
 int exit_called = 0;
-/* in_gusi is true if we know we are not in a GUSI call-back. */
-int in_gusi = 1;
 
 /* These are defined by the ocamlrun library. */
 void caml_main(char **argv);
@@ -98,9 +95,12 @@ pascal void InitCursorCtl (acurHandle newCursors)
 
 static pascal void interp_yield (long counter)
 {
-  in_gusi = 0;
   RotateCursor (counter);
-  in_gusi = 1;
+  if (quit_requested) exit (0);
+  if (intr_requested){
+    intr_requested = 0;
+    handle_signal (SIGINT);
+  }
   sched_yield ();
 }
 
@@ -300,15 +300,17 @@ static pascal void caml_sio_read (char *buffer, SInt32 nCharsDesired,
     for (i = wintopfrontier; i < len; i++){
       if (p[i] == '\n') goto gotit;
     }
-    intr_requested = 0;
-    in_gusi = 0;
     GetAndProcessEvents (waitEvent, 0, 0);
-    in_gusi = 1;
+    if (quit_requested) exit (0);
     if (intr_requested){
-      *nCharsUsed = 0;  /* Hack: behaviour not specified by SIO. */
+      intr_requested = 0;
+      async_signal_mode = 1;
       Caml_working (1);
-      return;
+      handle_signal (SIGINT);
+      Caml_working (0);
+      async_signal_mode = 0;
     }
+    sched_yield ();
   }
 
   gotit:
@@ -326,7 +328,8 @@ static pascal void caml_sio_read (char *buffer, SInt32 nCharsDesired,
   WEGetSelection (&selstart, &selend, we);
   readonly = WEFeatureFlag (weFReadOnly, weBitTest, we);
   WEFeatureFlag (weFReadOnly, weBitClear, we);
-  /* Always set an empty selection before changing OutlineHilite. */
+  /* Always set an empty selection before changing OutlineHilite or
+     the active status. */
   WESetSelection (wintopfrontier, wintopfrontier, we);
   WEFeatureFlag (weFOutlineHilite, weBitClear, we);
   active = WEIsActive (we);
@@ -398,6 +401,9 @@ pascal void (*__sioWrite) (SInt16, char *, SInt32) = &caml_sio_write;
 
 static pascal void caml_sio_exit (void)
 {
+  if (winGraphics != NULL) WinCloseGraphics ();
+  WinCloseToplevel ();
+
   exit_called = 1;
   if (caml_at_work) Caml_working (0);
   if (!quit_requested){

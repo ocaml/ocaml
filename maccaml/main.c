@@ -116,7 +116,10 @@ int main (void)
     quit_requested = 1;
     exit (0);
   }
-  while (!launch_toplevel_requested) GetAndProcessEvents (waitEvent, 0, 0);
+  while (!launch_toplevel_requested){
+    GetAndProcessEvents (waitEvent, 0, 0);
+    if (quit_requested) exit (0);
+  }
   err = launch_caml_main ();
   if (err != noErr) ErrorAlertGeneric (err);
   exit (0);

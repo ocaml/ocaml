@@ -1,5 +1,5 @@
 #*** Dependencies: Cut here ***
-# These dependencies were produced at 14:49:05 on 3 avr 2000 by MakeDepend
+# These dependencies were produced at 17:16:18 on 7 avr 2000 by MakeDepend
 
 :alloc.c.x Ä  ¶
  :alloc.c ¶
@@ -836,7 +836,6 @@
  :signals.h ¶
  :sys.h ¶
  :rotatecursor.h ¶
- "{CIncludes}"windows.h ¶
  ::config:m.h ¶
  ::config:s.h ¶
  "{CIncludes}"setjmp.h ¶
@@ -845,41 +844,10 @@
  :minor_gc.h ¶
  "{CIncludes}"stddef.h ¶
  "{CIncludes}"stdlib.h ¶
- "{CIncludes}"ConditionalMacros.h ¶
- "{CIncludes}"MacWindows.h ¶
  :freelist.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
- "{CIncludes}"WCharTDef.h ¶
- "{CIncludes}"MacTypes.h ¶
- "{CIncludes}"Aliases.h ¶
- "{CIncludes}"AppleEvents.h ¶
- "{CIncludes}"Collections.h ¶
- "{CIncludes}"Drag.h ¶
- "{CIncludes}"Events.h ¶
- "{CIncludes}"Menus.h ¶
- "{CIncludes}"MixedMode.h ¶
- "{CIncludes}"QDOffscreen.h ¶
- "{CIncludes}"QuickDraw.h ¶
- "{CIncludes}"TextCommon.h ¶
- "{CIncludes}"Icons.h ¶
- "{CIncludes}"MacErrors.h ¶
- "{CIncludes}"AppleTalk.h ¶
- "{CIncludes}"Files.h ¶
- "{CIncludes}"Notification.h ¶
- "{CIncludes}"AEDataModel.h ¶
- "{CIncludes}"OSUtils.h ¶
- "{CIncludes}"Endian.h ¶
- "{CIncludes}"Fonts.h ¶
- "{CIncludes}"Processes.h ¶
- "{CIncludes}"Components.h ¶
- "{CIncludes}"QuickdrawText.h ¶
- "{CIncludes}"CodeFragments.h ¶
- "{CIncludes}"UTCUtils.h ¶
- "{CIncludes}"Finder.h ¶
- "{CIncludes}"MacMemory.h ¶
- "{CIncludes}"Patches.h ¶
- "{CIncludes}"DateTimeUtils.h
+ "{CIncludes}"WCharTDef.h
 
 :stacks.c.x Ä  ¶
  :stacks.c ¶
@@ -910,6 +878,7 @@
  "{CIncludes}"string.h ¶
  "{CIncludes}"fcntl.h ¶
  :config.h ¶
+ "{CIncludes}"windows.h ¶
  :alloc.h ¶
  :callback.h ¶
  :custom.h ¶
@@ -930,7 +899,6 @@
  :signals.h ¶
  :stacks.h ¶
  :sys.h ¶
- "{CIncludes}"windows.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -938,13 +906,12 @@
  "{CIncludes}"WCharTDef.h ¶
  ::config:m.h ¶
  ::config:s.h ¶
+ "{CIncludes}"ConditionalMacros.h ¶
+ "{CIncludes}"MacWindows.h ¶
  "{CIncludes}"setjmp.h ¶
  :gc.h ¶
  :major_gc.h ¶
  "{CIncludes}"stddef.h ¶
- "{CIncludes}"ConditionalMacros.h ¶
- "{CIncludes}"MacWindows.h ¶
- :freelist.h ¶
  "{CIncludes}"MacTypes.h ¶
  "{CIncludes}"Aliases.h ¶
  "{CIncludes}"AppleEvents.h ¶
@@ -958,6 +925,7 @@
  "{CIncludes}"TextCommon.h ¶
  "{CIncludes}"Icons.h ¶
  "{CIncludes}"MacErrors.h ¶
+ :freelist.h ¶
  "{CIncludes}"AppleTalk.h ¶
  "{CIncludes}"Files.h ¶
  "{CIncludes}"Notification.h ¶
@@ -1014,7 +982,6 @@
  :stacks.h ¶
  :sys.h ¶
  :ui.h ¶
- "{CIncludes}"ctype.h ¶
  "{CIncludes}"SeekDefs.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"NullDef.h ¶
@@ -1069,21 +1036,61 @@
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"WCharTDef.h
 
-:wincmdline.c.x Ä  ¶
- :wincmdline.c ¶
+:win32.c.x Ä  ¶
+ :win32.c ¶
+ "{CIncludes}"windows.h ¶
  "{CIncludes}"stdlib.h ¶
  "{CIncludes}"stdio.h ¶
  "{CIncludes}"fcntl.h ¶
  "{CIncludes}"ctype.h ¶
  "{CIncludes}"string.h ¶
+ "{CIncludes}"signal.h ¶
+ :signals.h ¶
+ "{CIncludes}"ConditionalMacros.h ¶
+ "{CIncludes}"MacWindows.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"WCharTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
- "{CIncludes}"VaListTDef.h
+ "{CIncludes}"VaListTDef.h ¶
+ :misc.h ¶
+ :mlvalues.h ¶
+ "{CIncludes}"MacTypes.h ¶
+ "{CIncludes}"Aliases.h ¶
+ "{CIncludes}"AppleEvents.h ¶
+ "{CIncludes}"Collections.h ¶
+ "{CIncludes}"Drag.h ¶
+ "{CIncludes}"Events.h ¶
+ "{CIncludes}"Menus.h ¶
+ "{CIncludes}"MixedMode.h ¶
+ "{CIncludes}"QDOffscreen.h ¶
+ "{CIncludes}"QuickDraw.h ¶
+ "{CIncludes}"TextCommon.h ¶
+ "{CIncludes}"Icons.h ¶
+ "{CIncludes}"MacErrors.h ¶
+ :config.h ¶
+ "{CIncludes}"stddef.h ¶
+ "{CIncludes}"AppleTalk.h ¶
+ "{CIncludes}"Files.h ¶
+ "{CIncludes}"Notification.h ¶
+ "{CIncludes}"AEDataModel.h ¶
+ "{CIncludes}"OSUtils.h ¶
+ "{CIncludes}"Endian.h ¶
+ "{CIncludes}"Fonts.h ¶
+ "{CIncludes}"Processes.h ¶
+ "{CIncludes}"Components.h ¶
+ "{CIncludes}"QuickdrawText.h ¶
+ "{CIncludes}"CodeFragments.h ¶
+ ::config:m.h ¶
+ ::config:s.h ¶
+ "{CIncludes}"UTCUtils.h ¶
+ "{CIncludes}"Finder.h ¶
+ "{CIncludes}"MacMemory.h ¶
+ "{CIncludes}"Patches.h ¶
+ "{CIncludes}"DateTimeUtils.h
 
 #*** Dependencies: Cut here ***
-# These dependencies were produced at 14:49:18 on 3 avr 2000 by MakeDepend
+# These dependencies were produced at 17:16:30 on 7 avr 2000 by MakeDepend
 
 :alloc.c.o Ä  ¶
  :alloc.c ¶
@@ -1920,7 +1927,6 @@
  :signals.h ¶
  :sys.h ¶
  :rotatecursor.h ¶
- "{CIncludes}"windows.h ¶
  ::config:m.h ¶
  ::config:s.h ¶
  "{CIncludes}"setjmp.h ¶
@@ -1929,41 +1935,10 @@
  :minor_gc.h ¶
  "{CIncludes}"stddef.h ¶
  "{CIncludes}"stdlib.h ¶
- "{CIncludes}"ConditionalMacros.h ¶
- "{CIncludes}"MacWindows.h ¶
  :freelist.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
- "{CIncludes}"WCharTDef.h ¶
- "{CIncludes}"MacTypes.h ¶
- "{CIncludes}"Aliases.h ¶
- "{CIncludes}"AppleEvents.h ¶
- "{CIncludes}"Collections.h ¶
- "{CIncludes}"Drag.h ¶
- "{CIncludes}"Events.h ¶
- "{CIncludes}"Menus.h ¶
- "{CIncludes}"MixedMode.h ¶
- "{CIncludes}"QDOffscreen.h ¶
- "{CIncludes}"QuickDraw.h ¶
- "{CIncludes}"TextCommon.h ¶
- "{CIncludes}"Icons.h ¶
- "{CIncludes}"MacErrors.h ¶
- "{CIncludes}"AppleTalk.h ¶
- "{CIncludes}"Files.h ¶
- "{CIncludes}"Notification.h ¶
- "{CIncludes}"AEDataModel.h ¶
- "{CIncludes}"OSUtils.h ¶
- "{CIncludes}"Endian.h ¶
- "{CIncludes}"Fonts.h ¶
- "{CIncludes}"Processes.h ¶
- "{CIncludes}"Components.h ¶
- "{CIncludes}"QuickdrawText.h ¶
- "{CIncludes}"CodeFragments.h ¶
- "{CIncludes}"UTCUtils.h ¶
- "{CIncludes}"Finder.h ¶
- "{CIncludes}"MacMemory.h ¶
- "{CIncludes}"Patches.h ¶
- "{CIncludes}"DateTimeUtils.h
+ "{CIncludes}"WCharTDef.h
 
 :stacks.c.o Ä  ¶
  :stacks.c ¶
@@ -1994,6 +1969,7 @@
  "{CIncludes}"string.h ¶
  "{CIncludes}"fcntl.h ¶
  :config.h ¶
+ "{CIncludes}"windows.h ¶
  :alloc.h ¶
  :callback.h ¶
  :custom.h ¶
@@ -2014,7 +1990,6 @@
  :signals.h ¶
  :stacks.h ¶
  :sys.h ¶
- "{CIncludes}"windows.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -2022,13 +1997,12 @@
  "{CIncludes}"WCharTDef.h ¶
  ::config:m.h ¶
  ::config:s.h ¶
+ "{CIncludes}"ConditionalMacros.h ¶
+ "{CIncludes}"MacWindows.h ¶
  "{CIncludes}"setjmp.h ¶
  :gc.h ¶
  :major_gc.h ¶
  "{CIncludes}"stddef.h ¶
- "{CIncludes}"ConditionalMacros.h ¶
- "{CIncludes}"MacWindows.h ¶
- :freelist.h ¶
  "{CIncludes}"MacTypes.h ¶
  "{CIncludes}"Aliases.h ¶
  "{CIncludes}"AppleEvents.h ¶
@@ -2042,6 +2016,7 @@
  "{CIncludes}"TextCommon.h ¶
  "{CIncludes}"Icons.h ¶
  "{CIncludes}"MacErrors.h ¶
+ :freelist.h ¶
  "{CIncludes}"AppleTalk.h ¶
  "{CIncludes}"Files.h ¶
  "{CIncludes}"Notification.h ¶
@@ -2098,7 +2073,6 @@
  :stacks.h ¶
  :sys.h ¶
  :ui.h ¶
- "{CIncludes}"ctype.h ¶
  "{CIncludes}"SeekDefs.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"NullDef.h ¶
@@ -2153,16 +2127,56 @@
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"WCharTDef.h
 
-:wincmdline.c.o Ä  ¶
- :wincmdline.c ¶
+:win32.c.o Ä  ¶
+ :win32.c ¶
+ "{CIncludes}"windows.h ¶
  "{CIncludes}"stdlib.h ¶
  "{CIncludes}"stdio.h ¶
  "{CIncludes}"fcntl.h ¶
  "{CIncludes}"ctype.h ¶
  "{CIncludes}"string.h ¶
+ "{CIncludes}"signal.h ¶
+ :signals.h ¶
+ "{CIncludes}"ConditionalMacros.h ¶
+ "{CIncludes}"MacWindows.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"WCharTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
- "{CIncludes}"VaListTDef.h
+ "{CIncludes}"VaListTDef.h ¶
+ :misc.h ¶
+ :mlvalues.h ¶
+ "{CIncludes}"MacTypes.h ¶
+ "{CIncludes}"Aliases.h ¶
+ "{CIncludes}"AppleEvents.h ¶
+ "{CIncludes}"Collections.h ¶
+ "{CIncludes}"Drag.h ¶
+ "{CIncludes}"Events.h ¶
+ "{CIncludes}"Menus.h ¶
+ "{CIncludes}"MixedMode.h ¶
+ "{CIncludes}"QDOffscreen.h ¶
+ "{CIncludes}"QuickDraw.h ¶
+ "{CIncludes}"TextCommon.h ¶
+ "{CIncludes}"Icons.h ¶
+ "{CIncludes}"MacErrors.h ¶
+ :config.h ¶
+ "{CIncludes}"stddef.h ¶
+ "{CIncludes}"AppleTalk.h ¶
+ "{CIncludes}"Files.h ¶
+ "{CIncludes}"Notification.h ¶
+ "{CIncludes}"AEDataModel.h ¶
+ "{CIncludes}"OSUtils.h ¶
+ "{CIncludes}"Endian.h ¶
+ "{CIncludes}"Fonts.h ¶
+ "{CIncludes}"Processes.h ¶
+ "{CIncludes}"Components.h ¶
+ "{CIncludes}"QuickdrawText.h ¶
+ "{CIncludes}"CodeFragments.h ¶
+ ::config:m.h ¶
+ ::config:s.h ¶
+ "{CIncludes}"UTCUtils.h ¶
+ "{CIncludes}"Finder.h ¶
+ "{CIncludes}"MacMemory.h ¶
+ "{CIncludes}"Patches.h ¶
+ "{CIncludes}"DateTimeUtils.h
 

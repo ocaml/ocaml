@@ -12,9 +12,6 @@
 
 # $Id$
 
-#cdbgflag = -sym on -d DEBUG
-#ldbgflag = -sym on
-
 VERSIONSTR = ¶
   "¶"{OCAMLMAJOR}.{OCAMLMINOR}/Mac{MAJOR}.{MINOR}.{BUGFIX}{STAGE}{REV}¶""
 COPYRIGHTSTR = "¶"Copyright 1991-2000 INRIA¶""

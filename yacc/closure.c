@@ -217,7 +217,7 @@ void print_closure(int n)
 
 void print_EFF(void)
 {
-    register int i, j, k;
+    register int i, j;
     register unsigned *rowp;
     register unsigned word;
     register unsigned mask;

@@ -27,7 +27,7 @@ let point x y =
   else if dg > db then set_color (rgb (255*dr/dg) 255 (255*db/dg))
   else set_color (rgb (255*dr/db) (255*dg/db) 255);
   fill_rect x y 2 2;
-;;
+;;
 
 for y = (size_y () - 1) / 2 downto 0 do
   for x = 0 to (size_x () - 1) / 2 do
