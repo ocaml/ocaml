@@ -306,8 +306,9 @@ void debugger(enum event_kind event)
         putch(dbg_out, 0);
         putval(dbg_out, Field(val, i));
       } else {
+        double d = Double_field(val, i);
         putch(dbg_out, 1);
-        really_putblock(dbg_out, (char *) &Double_field(val, i), 8);
+        really_putblock(dbg_out, (char *) &d, 8);
       }
       flush(dbg_out);
       break;
