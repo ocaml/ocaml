@@ -29,9 +29,9 @@ void adjust_gc_speed (mlsize_t, mlsize_t);
 void modify (value *, value);
 void initialize (value *, value);
 value check_urgent_gc (value);
-char * stat_alloc (asize_t);              /* Size in bytes. */
-void stat_free (char *);
-char * stat_resize (char *, asize_t);     /* Size in bytes. */
+void * stat_alloc (asize_t);              /* Size in bytes. */
+void stat_free (void *);
+void * stat_resize (void *, asize_t);     /* Size in bytes. */
 
 /* void shrink_heap (char *);        Only used in compact.c */
 

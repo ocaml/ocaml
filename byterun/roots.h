@@ -27,7 +27,7 @@ void do_local_roots (scanning_action, value *, value *,
                      struct caml__roots_block *);
 #else
 void do_local_roots (scanning_action, unsigned long, char *,
-                     struct caml__roots_block *);
+                     struct caml__roots_block *, value *);
 #endif
 
 extern void (*scan_roots_hook) (scanning_action);

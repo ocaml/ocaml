@@ -44,7 +44,7 @@ void set_minor_heap_size (asize_t size)
                                            Assert (young_ptr == young_end);
   new_heap = (char *) stat_alloc (size);
   if (young_start != NULL){
-    stat_free ((char *) young_start);
+    stat_free (young_start);
   }
   young_start = new_heap;
   young_end = new_heap + size;
@@ -56,7 +56,7 @@ void set_minor_heap_size (asize_t size)
   ref_table_reserve = 256;
   new_table = (value **) stat_alloc ((ref_table_size + ref_table_reserve)
                                      * sizeof (value *));
-  if (ref_table != NULL) stat_free ((char *) ref_table);
+  if (ref_table != NULL) stat_free (ref_table);
   ref_table = new_table;
   ref_table_ptr = ref_table;
   ref_table_threshold = ref_table + ref_table_size;

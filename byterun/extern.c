@@ -80,7 +80,7 @@ static void resize_extern_table(void)
       extern_table[h].obj = obj;
     }
   }
-  stat_free((char *) oldtable);
+  stat_free(oldtable);
 }
 
 /* Free the extern table. We keep it around for next call if
@@ -90,7 +90,7 @@ static void free_extern_table(void)
 {
   if (extern_table_size > INITIAL_EXTERN_TABLE_SIZE ||
       initial_ofs >= INITIAL_OFFSET_MAX) {
-    stat_free((char *) extern_table);
+    stat_free(extern_table);
     extern_table = NULL;
   }
 }

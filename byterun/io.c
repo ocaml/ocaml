@@ -73,7 +73,7 @@ void close_channel(struct channel *channel)
 {
   close(channel->fd);
   if (channel_mutex_free != NULL) (*channel_mutex_free)(channel);
-  stat_free((char *) channel);
+  stat_free(channel);
 }  
 
 long channel_size(struct channel *channel)
@@ -367,7 +367,7 @@ static void finalize_channel(value vchan)
 {
   struct channel * chan = Channel(vchan);
   if (channel_mutex_free != NULL) (*channel_mutex_free)(chan);
-  stat_free((char *) chan);
+  stat_free(chan);
 }
 
 static value alloc_channel(struct channel *chan)

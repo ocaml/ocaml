@@ -70,8 +70,8 @@ static long read64s(void)
 
 static void intern_cleanup(void)
 {
-  if (intern_input_malloced) stat_free((char *) intern_input);
-  if (intern_obj_table != NULL) stat_free((char *) intern_obj_table);
+  if (intern_input_malloced) stat_free(intern_input);
+  if (intern_obj_table != NULL) stat_free(intern_obj_table);
   Hd_val(intern_block) = intern_header; /* Don't confuse the GC */
 }
 
@@ -274,7 +274,7 @@ value input_val(struct channel *chan)
   intern_input = (unsigned char *) stat_alloc(block_len);
   intern_input_malloced = 1;
   if (really_getblock(chan, (char *)intern_input, block_len) == 0) {
-    stat_free((char *) intern_input);
+    stat_free(intern_input);
     failwith("input_value: truncated object");
   }
   intern_src = intern_input;
@@ -288,8 +288,8 @@ value input_val(struct channel *chan)
   /* Fill it in */
   intern_rec(&res);
   /* Free everything */
-  stat_free((char *) intern_input);
-  if (intern_obj_table != NULL) stat_free((char *) intern_obj_table);
+  stat_free(intern_input);
+  if (intern_obj_table != NULL) stat_free(intern_obj_table);
   return res;
 }
 
@@ -327,7 +327,7 @@ value input_val_from_string(value str, long int ofs)
   /* Fill it in */
   intern_rec(&obj);
   /* Free everything */
-  if (intern_obj_table != NULL) stat_free((char *) intern_obj_table);
+  if (intern_obj_table != NULL) stat_free(intern_obj_table);
   return obj;
 }
 

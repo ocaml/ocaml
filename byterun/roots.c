@@ -52,7 +52,7 @@ void remove_global_root(value *r)
     gr = *gp;
     if (gr->root == r) {
       *gp = gr->next;
-      stat_free((char *) gr);
+      stat_free(gr);
       return;
     }
   }

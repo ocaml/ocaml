@@ -28,7 +28,7 @@ value static_alloc(value size)        /* ML */
 
 value static_free(value blk)          /* ML */
 {
-  stat_free((char *) blk);
+  stat_free((void *) blk);
   return Val_unit;
 }
 

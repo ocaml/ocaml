@@ -243,22 +243,22 @@ void modify (value *fp, value val)
   Modify (fp, val);
 }
 
-char *stat_alloc (asize_t sz)
+void * stat_alloc (asize_t sz)
 {
-  char *result = (char *) malloc (sz);
+  void * result = malloc (sz);
 
   if (result == NULL) raise_out_of_memory ();
   return result;
 }
 
-void stat_free (char *blk)
+void stat_free (void * blk)
 {
   free (blk);
 }
 
-char *stat_resize (char *blk, asize_t sz)
+void * stat_resize (void * blk, asize_t sz)
 {
-  char *result = (char *) realloc (blk, sz);
+  void * result = realloc (blk, sz);
 
   if (result == NULL) raise_out_of_memory ();
   return result;
