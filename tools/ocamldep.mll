@@ -121,10 +121,10 @@ let find_dependency modname (byt_deps, opt_deps) =
     (byt_deps, opt_deps)
 
 let (depends_on, escaped_eol) =
-  match (Sys.get_config ()).Sys.os_type with
+  match Sys.os_type with
   | "Unix" | "Win32" -> (": ", "\\\n    ")
   | "MacOS" -> ("\196 ", "\182\n    ")
-  | x -> failwith ("Ocamldep: unknown system type" ^ x)
+  | x -> Misc.fatal_error ("Ocamldep: unknown system type" ^ x)
 ;;
 
 let print_dependencies target_file deps =

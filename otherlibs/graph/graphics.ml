@@ -18,8 +18,6 @@ exception Graphic_failure of string
 external register_graphic_failure: exn -> unit = "gr_register_graphic_failure"
 let _ = register_graphic_failure(Graphic_failure "")
 
-let os_type = (Sys.get_config ()).Sys.os_type;;
-
 external raw_open_graph: string -> unit = "gr_open_graph"
 external raw_close_graph: unit -> unit = "gr_close_graph"
 external sigio_signal: unit -> int = "gr_sigio_signal"
@@ -28,18 +26,17 @@ external sigio_handler: int -> unit = "gr_sigio_handler"
 let unix_open_graph arg =
   Sys.signal (sigio_signal()) (Sys.Signal_handle sigio_handler);
   raw_open_graph arg
-;;
+
 let unix_close_graph () =
   Sys.signal (sigio_signal()) Sys.Signal_ignore;
   raw_close_graph ()
-;;
+
 let (open_graph, close_graph) =
-  match os_type with
+  match Sys.os_type with
   | "Unix" -> (unix_open_graph, unix_close_graph)
   | "Win32" -> (raw_open_graph, raw_close_graph)
   | "MacOS" -> (raw_open_graph, raw_close_graph)
-  | _ -> failwith ("Graphics: unknown OS type: " ^ os_type)
-;;
+  | _ -> invalid_arg ("Graphics: unknown OS type: " ^ Sys.os_type)
 
 external clear_graph : unit -> unit = "gr_clear_graph"
 external size_x : unit -> int = "gr_size_x"
