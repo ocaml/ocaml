@@ -11,6 +11,9 @@
 
 /* $Id$ */
 
+/* Namespace pollution!  One of the Win32 includes has a struct field
+   called `Blue'... */
+#undef Blue
 #include <wtypes.h>
 #include <winbase.h>
 #include <stdlib.h>
