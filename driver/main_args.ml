@@ -56,59 +56,59 @@ struct
     "-cclib", Arg.String F._cclib, "<opt>  Pass option <opt> to the C linker";
     "-ccopt", Arg.String F._ccopt,
                       "<opt>  Pass option <opt> to the C compiler and linker";
-     "-custom", Arg.Unit F._custom, " Link in custom mode";
-     "-g", Arg.Unit F._g, " Save debugging information";
-     "-i", Arg.Unit F._i, " Print the types";
-     "-I", Arg.String F._I,
-                        "<dir>  Add <dir> to the list of include directories";
-     "-impl", Arg.String F._impl, "<file>  Compile <file> as a .ml file";
-     "-intf", Arg.String F._intf, "<file>  Compile <file> as a .mli file";
-     "-intf-suffix", Arg.String F._intf_suffix,
-            "<file>  Suffix for interface file (default: .mli)";
-     "-intf_suffix", Arg.String F._intf_suffix,
-            "<file>  (deprecated) same as -intf-suffix";
-     "-linkall", Arg.Unit F._linkall, " Link all modules, even unused ones";
-     "-make-runtime", Arg.Unit F._make_runtime,
-            " Build a runtime system with given C objects and libraries";
-     "-make_runtime", Arg.Unit F._make_runtime,
-            " (deprecated) same as -make-runtime";
-     "-noassert", Arg.Unit F._noassert, " Do not compile assertion checks";
-     "-o", Arg.String F._o, "<file>  Set output file name to <file>";
-     "-output-obj", Arg.Unit F._output_obj,
-                            "Output a C object file instead of an executable";
-     "-pp", Arg.String F._pp,
-                     "<command>  Pipe sources through preprocessor <command>";
-     "-rectypes", Arg.Unit F._rectypes, " Allow arbitrary recursive types";
-     "-thread", Arg.Unit F._thread, " Use thread-safe standard library";
-     "-unsafe", Arg.Unit F._unsafe,
-                             " No bounds checking on array and string access";
-     "-use-runtime", Arg.String F._use_runtime,
-                   "<path>  Generate bytecode for the given runtime system";
-     "-use_runtime", Arg.String F._use_runtime,
-                   "<path>  (deprecated) same as -use-runtime";
-     "-v", Arg.Unit F._v, " Print compiler version number";
-     "-verbose", Arg.Unit F._verbose, " Print calls to external commands";
-     "-w", Arg.String F._w,
-           "<flags>  Enable or disable warnings according to <flags>:\n\
-       \032    A/a enable/disable all warnings\n\
-       \032    C/c enable/disable suspicious comment\n\
-       \032    F/f enable/disable partially applied function\n\
-       \032    M/m enable/disable overriden method\n\
-       \032    P/p enable/disable partial match\n\
-       \032    S/s enable/disable non-unit statement\n\
-       \032    U/u enable/disable unused match case\n\
-       \032    V/v enable/disable hidden instance variable\n\
-       \032    X/x enable/disable all other warnings\n\
-       \032    default setting is A (all warnings enabled)";
+    "-custom", Arg.Unit F._custom, " Link in custom mode";
+    "-g", Arg.Unit F._g, " Save debugging information";
+    "-i", Arg.Unit F._i, " Print the types";
+    "-I", Arg.String F._I,
+                       "<dir>  Add <dir> to the list of include directories";
+    "-impl", Arg.String F._impl, "<file>  Compile <file> as a .ml file";
+    "-intf", Arg.String F._intf, "<file>  Compile <file> as a .mli file";
+    "-intf-suffix", Arg.String F._intf_suffix,
+           "<file>  Suffix for interface files (default: .mli)";
+    "-intf_suffix", Arg.String F._intf_suffix,
+           "<file>  (deprecated) same as -intf-suffix";
+    "-linkall", Arg.Unit F._linkall, " Link all modules, even unused ones";
+    "-make-runtime", Arg.Unit F._make_runtime,
+           " Build a runtime system with given C objects and libraries";
+    "-make_runtime", Arg.Unit F._make_runtime,
+           " (deprecated) same as -make-runtime";
+    "-noassert", Arg.Unit F._noassert, " Do not compile assertion checks";
+    "-o", Arg.String F._o, "<file>  Set output file name to <file>";
+    "-output-obj", Arg.Unit F._output_obj,
+                           "Output a C object file instead of an executable";
+    "-pp", Arg.String F._pp,
+                    "<command>  Pipe sources through preprocessor <command>";
+    "-rectypes", Arg.Unit F._rectypes, " Allow arbitrary recursive types";
+    "-thread", Arg.Unit F._thread, " Use thread-safe standard library";
+    "-unsafe", Arg.Unit F._unsafe,
+                            " No bounds checking on array and string access";
+    "-use-runtime", Arg.String F._use_runtime,
+                  "<path>  Generate bytecode for the given runtime system";
+    "-use_runtime", Arg.String F._use_runtime,
+                  "<path>  (deprecated) same as -use-runtime";
+    "-v", Arg.Unit F._v, " Print compiler version number";
+    "-verbose", Arg.Unit F._verbose, " Print calls to external commands";
+    "-w", Arg.String F._w,
+          "<flags>  Enable or disable warnings according to <flags>:\n\
+      \032    A/a enable/disable all warnings\n\
+      \032    C/c enable/disable suspicious comment\n\
+      \032    F/f enable/disable partially applied function\n\
+      \032    M/m enable/disable overriden method\n\
+      \032    P/p enable/disable partial match\n\
+      \032    S/s enable/disable non-unit statement\n\
+      \032    U/u enable/disable unused match case\n\
+      \032    V/v enable/disable hidden instance variable\n\
+      \032    X/x enable/disable all other warnings\n\
+      \032    default setting is A (all warnings enabled)";
 
-     "-nopervasives", Arg.Unit F._nopervasives, " (undocumented)";
-     "-dparsetree", Arg.Unit F._dparsetree, " (undocumented)";
-     "-drawlambda", Arg.Unit F._drawlambda, " (undocumented)";
-     "-dlambda", Arg.Unit F._dlambda, " (undocumented)";
-     "-dinstr", Arg.Unit F._dinstr, " (undocumented)";
-     "-use-prims", Arg.String F._use_prims, "<file>  (undocumented)";
+    "-nopervasives", Arg.Unit F._nopervasives, " (undocumented)";
+    "-dparsetree", Arg.Unit F._dparsetree, " (undocumented)";
+    "-drawlambda", Arg.Unit F._drawlambda, " (undocumented)";
+    "-dlambda", Arg.Unit F._dlambda, " (undocumented)";
+    "-dinstr", Arg.Unit F._dinstr, " (undocumented)";
+    "-use-prims", Arg.String F._use_prims, "<file>  (undocumented)";
 
-     "-", Arg.String F.anonymous,
-           "<file>  Treat <file> as a file name (even if it starts with `-')";
+    "-", Arg.String F.anonymous,
+          "<file>  Treat <file> as a file name (even if it starts with `-')";
   ]
 end;;
