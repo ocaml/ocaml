@@ -1,7 +1,7 @@
 \chapter{Language extensions} \label{c:extensions}
 
 This chapter describes the language features that are implemented in
-Caml Special Light, but not described in the Caml Special Light
+Objective Caml, but not described in the Objective Caml
 reference manual. In contrast with the fairly stable kernel language
 that is described in the reference manual, the extensions presented
 here are still experimental, and may be removed or changed in the
@@ -10,7 +10,7 @@ future.
 \section{Streams and stream parsers}
 \label{s:streams}
 
-Caml Special Light comprises a library type for {\it streams}
+Objective Caml comprises a library type for {\it streams}
 (possibly infinite sequences of elements, that are evaluated on
 demand), and associated stream expressions, to build streams, and
 stream patterns, to destructure streams. Streams and stream patterns
@@ -113,7 +113,7 @@ by Michel Mauny and Daniel de Rauglaudre, in the proceedings of the
 
 \section{Range patterns}
 
-In patterns, Caml Special Light recognizes the form
+In patterns, Objective Caml recognizes the form
 @"'" c "'" ".." "'" d "'"@
 (two character literals separated by~"..") as shorthand for the pattern
 \begin{center}

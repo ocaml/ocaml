@@ -1,27 +1,27 @@
-\chapter{Native-code compilation (cslopt)} \label{c:nativecomp}
+\chapter{Native-code compilation (ocamlopt)} \label{c:nativecomp}
 
-This chapter describes the Caml Special Light high-performance
-native-code compiler "cslopt", which compiles Caml source files to
+This chapter describes the Objective Caml high-performance
+native-code compiler "ocamlopt", which compiles Caml source files to
 native code object files and link these object files to produce
 standalone executables. 
 
 The native-code compiler is only available on certain platforms.
 It produces code that runs faster than the bytecode produced by
-"cslc", at the cost of increased compilation time and executable code
+"ocamlc", at the cost of increased compilation time and executable code
 size. Compatibility with the bytecode compiler is extremely high: the
-same source code should run identically when compiled with "cslc" and
-"cslopt".
+same source code should run identically when compiled with "ocamlc" and
+"ocamlopt".
 
-It is not possible to mix native-code object files produced by "cslc"
-with bytecode object files produced by "cslopt": a program must be
-compiled entirely with "cslopt" or entirely with "cslc". Native-code
-object files produced by "cslopt" cannot be loaded in the toplevel
-system "csltop".
+It is not possible to mix native-code object files produced by "ocamlc"
+with bytecode object files produced by "ocamlopt": a program must be
+compiled entirely with "ocamlopt" or entirely with "ocamlc". Native-code
+object files produced by "ocamlopt" cannot be loaded in the toplevel
+system "ocaml".
 
 \section{Overview of the compiler}
 
-The "cslopt" command has a command-line interface very close to that
-of "cslc". It accepts the same types of arguments:
+The "ocamlopt" command has a command-line interface very close to that
+of "ocamlc". It accepts the same types of arguments:
 
 \begin{itemize}
 \item
@@ -29,24 +29,24 @@ Arguments ending in ".mli" are taken to be source files for
 compilation unit interfaces. Interfaces specify the names exported by
 compilation units: they declare value names with their types, define
 public data types, declare abstract data types, and so on. From the
-file \var{x}".mli", the "cslopt" compiler produces a compiled interface
+file \var{x}".mli", the "ocamlopt" compiler produces a compiled interface
 in the file \var{x}".cmi". The interface produced is identical to that
-produced by the bytecode compiler "cslc".
+produced by the bytecode compiler "ocamlc".
 
 \item
 Arguments ending in ".ml" are taken to be source files for compilation
 unit implementations. Implementations provide definitions for the
 names exported by the unit, and also contain expressions to be
-evaluated for their side-effects.  From the file \var{x}".ml", the "cslopt"
+evaluated for their side-effects.  From the file \var{x}".ml", the "ocamlopt"
 compiler produces two files: \var{x}".o", containing native object code,
 and \var{x}".cmx", containing extra information for linking and
 optimization of the clients of the unit. The compiled implementation
 should always be referred to under the name \var{x}".cmx" (when given
-a ".o" file, "cslopt" assumes that it contains code compiled from C,
+a ".o" file, "ocamlopt" assumes that it contains code compiled from C,
 not from Caml).
 
 The implementation is checked against the interface file \var{x}".mli"
-(if it exists) as described in the manual for "cslc"
+(if it exists) as described in the manual for "ocamlc"
 (chapter~\ref{c:camlc}).
 
 \item
@@ -64,7 +64,7 @@ before all ".cmx" files that refer to the unit \var{x}.
 Arguments ending in ".cmxa" are taken to be libraries of object code.
 Such a library packs in two files (\var{lib}".cmxa" and \var{lib}".a")
 a set of object files (".cmx"/".o" files). Libraries are build with
-"cslopt -a" (see the description of the "-a" option below). The object
+"ocamlopt -a" (see the description of the "-a" option below). The object
 files contained in the library are linked as regular ".cmx" files (see
 above), in the order specified when the library was built. The only
 difference is that if an object file contained in a library is not
@@ -81,11 +81,11 @@ libraries. They are linked with the program.
 \end{itemize}
 
 The output of the linking phase is a regular Unix executable file. It
-does not need "cslrun" to run.
+does not need "ocamlrun" to run.
 
 \section{Options}
 
-The following command-line options are recognized by "cslopt".
+The following command-line options are recognized by "ocamlopt".
 
 \begin{options}
 
@@ -154,7 +154,7 @@ array or string outside of its bounds.
 
 \section{Common errors}
 
-The error messages are almost identical to those of "cslc".
+The error messages are almost identical to those of "ocamlc".
 See section~\ref{s:comp-errors}.
 
 \section{Compatibility with the bytecode compiler}

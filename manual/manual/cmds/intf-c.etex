@@ -1,4 +1,4 @@
-\chapter{Interfacing C with Caml Special Light} \label{c:intf-c}
+\chapter{Interfacing C with Objective Caml} \label{c:intf-c}
 
 This chapter describes how user-defined primitives, written in C, can
 be linked with Caml code and called from Caml functions.
@@ -64,10 +64,10 @@ application.
 
 User primitives with arity greater than 5 should be implemented by two
 C functions. The first function, to be used in conjunction with the
-bytecode compiler "cslc", receives two arguments: a pointer to an
+bytecode compiler "ocamlc", receives two arguments: a pointer to an
 array of Caml Light values (the values for the arguments), and an
 integer which is the number of arguments provided. The other function,
-to be used in conjunction with the native-code compiler "cslopt",
+to be used in conjunction with the native-code compiler "ocamlopt",
 takes its arguments directly. For instance, here are the two C
 functions for the 7-argument primitive "Nat.add_nat":
 \begin{verbatim}
@@ -131,7 +131,7 @@ performed by the function  "getblock", which is declared as:
         }
 \end{verbatim}
 
-To write C code that operates on Caml Special Light values, the following
+To write C code that operates on Objective Caml values, the following
 include files are provided:
 \begin{tableau}{|l|p{12cm}|}{Include file}{Provides}
 \entree{"caml/mlvalues.h"}{definition of the "value" type, and conversion macros}
@@ -145,7 +145,7 @@ standard library directory (usually "/usr/local/lib/caml-light").
 
 \subsection{Linking C code with Caml code}
 
-The Caml Special Light runtime system comprises three main parts: the bytecode
+The Objective Caml runtime system comprises three main parts: the bytecode
 interpreter, the memory manager, and a set of C functions that
 implement the primitive operations. Some bytecode instructions are
 provided to call these C functions, designated by their offset in a
@@ -173,7 +173,7 @@ bytecode is appended to the end of the custom runtime system, so that
 it will be automatically executed when the output file (custom
 runtime + bytecode) is launched.
 
-To link in ``custom runtime'' mode, execute the "cslc" command with:
+To link in ``custom runtime'' mode, execute the "ocamlc" command with:
 \begin{itemize}
 \item the "-custom" option
 \item the names of the desired Caml object files (".cmo" files) 
@@ -591,7 +591,7 @@ external mvwaddstr: window -> int -> int -> string -> unit = "curses_mvwaddstr"
 \end{verbatim}
 To compile this interface:
 \begin{verbatim}
-        cslc -c curses.mli
+        ocamlc -c curses.mli
 \end{verbatim}
 
 To implement these functions, we just have to provide the stub code;
@@ -649,9 +649,9 @@ The file "curses.c" can be compiled with:
 \end{verbatim}
 or, even simpler,
 \begin{verbatim}
-        cslc -c curses.c
+        ocamlc -c curses.c
 \end{verbatim}
-(When passed a ".c" file, the "cslc" command simply calls "cc" on
+(When passed a ".c" file, the "ocamlc" command simply calls "cc" on
 that file, with the right "-I" option.)
 
 Now, here is a sample Caml program "test.ml" that uses the "curses"
@@ -668,9 +668,9 @@ let small_window = newwin 10 5 20 10 in
 \end{verbatim}
 To compile this program, run:
 \begin{verbatim}
-        cslc -c test.ml
+        ocamlc -c test.ml
 \end{verbatim}
 Finally, to link everything together:
 \begin{verbatim}
-        cslc -custom -o test test.zo curses.o -cclib curses
+        ocamlc -custom -o test test.zo curses.o -cclib curses
 \end{verbatim}

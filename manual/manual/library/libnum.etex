@@ -15,12 +15,12 @@ functions is given below.
 Programs that use the "num" library must be linked in ``custom
 runtime'' mode, as follows:
 \begin{alltt}
-        cslc -custom \var{other options} nums.cma \var{other files} -cclib -lnums
-        cslopt \var{other options} nums.cmxa \var{other files} -cclib -lnums
+        ocamlc -custom \var{other options} nums.cma \var{other files} -cclib -lnums
+        ocamlopt \var{other options} nums.cmxa \var{other files} -cclib -lnums
 \end{alltt}
 For interactive use of the "nums" library, do:
 \begin{alltt}
-        cslmktop -custom -o mytop nums.cma -cclib -lnums
+        ocamlmktop -custom -o mytop nums.cma -cclib -lnums
         ./mytop
 \end{alltt}
 

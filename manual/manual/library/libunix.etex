@@ -12,12 +12,12 @@ are not available, they will raise "Invalid_arg" when called.
 Programs that use the "unix" library must be linked in ``custom
 runtime'' mode, as follows:
 \begin{alltt}
-        cslc -custom \var{other options} unix.cma \var{other files} -cclib -lunix
-        cslopt \var{other options} unix.cmxa \var{other files} -cclib -lunix
+        ocamlc -custom \var{other options} unix.cma \var{other files} -cclib -lunix
+        ocamlopt \var{other options} unix.cmxa \var{other files} -cclib -lunix
 \end{alltt}
 For interactive use of the "unix" library, do:
 \begin{alltt}
-        cslmktop -custom -o mytop unix.cma -cclib -lunix
+        ocamlmktop -custom -o mytop unix.cma -cclib -lunix
         ./mytop
 \end{alltt}
 

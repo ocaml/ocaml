@@ -1,0 +1,378 @@
+\chapter{The core language}
+
+This part of the manual is a tutorial introduction to the Objective
+Caml language. The present chapter introduces the core
+language. Chapter~\ref{c:objectexamples} deals with the
+object-oriented features, and chapter~\ref{c:moduleexamples} with the
+module system.
+
+\subsection*{Basics}
+
+For this overview of Caml, we will use the interactive system "ocaml".
+\begin{verbatim}
+~$ ocaml
+
+\end{verbatim}
+Under the interactive system, the user types Caml phrases, terminated
+by ";;", in response to the "#" prompt, and the system compiles them
+on the fly, executes them, and prints the outcome of evaluation.
+Phrases are either simple expressions, or "let" definitions of
+identifiers (either values or functions).
+\begin{caml_example}
+1+2*3;;
+let pi = 4.0 *. atan 1.0;;
+let square x = x *. x;;
+square(sin pi) +. square(cos pi);;
+\end{caml_example}
+The Caml system computes both the value and the type for
+each phrase. Even function parameters do not need to be  given a type
+explicitly: the system infers their types from their usage in the
+function. Notice also that integers and floating-point numbers are
+distinct types, with distinct operators: "+" and "*" operate on
+integers, but "+." and "*."  operate on floats.
+\begin{caml_example}
+1.0 * 2;;
+\end{caml_example}
+
+Recursive functions are defined with the "let rec" binding:
+\begin{caml_example}
+let rec fib n =
+  if n < 2 then 1 else fib(n-1) + fib(n-2);;
+fib 10;;
+\end{caml_example}
+
+\subsection*{Interacting with Caml}
+
+Caml code  can also be compiled separately and executed
+non-interactively using the batch compiler "ocamlc". The source
+code must be put in a file with extension ".ml". It consists of a
+sequence of phrases, which will be evaluated at runtime in their order
+of appearance in the source file. Unlike in interactive mode, types
+and values are not printed automatically; the program must call
+printing functions explicitly to produce some output. Here is a sample
+standalone program to print Fibonacci numbers:
+\begin{verbatim}
+~$ cat fib.ml
+let rec fib n =
+  if n < 2 then 1 else fib(n-1) + fib(n-2);;
+let main () =
+  let arg = int_of_string Sys.argv.(1) in
+  print_int(fib arg);
+  print_newline();
+  exit 0;;
+main ();;
+~$ ocamlc -o fib fib.ml
+~$ ./fib 10
+89
+~$
+\end{verbatim}
+"Sys.argv" is an array of strings containing the command-line
+parameters. "Sys.argv.(1)" is thus the first command-line parameter. 
+Functions without parameters are defined using "()". The
+"let"\ldots"in"\ldots is a local definition, and the semicolon ";"
+evaluates two expressions one after the other.
+
+\subsection*{Data types}
+
+In addition to integers and floating-point numbers,  Caml offers the
+usual base data types: booleans, characters, and character strings.
+\begin{caml_example}
+(1 < 2) = false;;
+'a';;
+"Hello world";;
+\end{caml_example}
+
+Predefined data structures include tuples, arrays, and lists. General
+mechanisms for defining your own data structures are also provided.
+The will be covered in more details later; for now, we concentrate on lists.
+Lists are either given in extension as a bracketed list of
+semicolon-separated elements, or built from the empty list "[]"
+(pronounce ``nil'') by adding elements in front using the "::"
+(``cons'') operator.
+\begin{caml_example}
+let l = ["is"; "a"; "tale"; "told"; "etc."];;
+"Life" :: l;;
+\end{caml_example}
+As with all other Caml data structures, lists do not need to be
+explicitly allocated and deallocated from memory: all memory
+management is entirely automatic in Caml. Similarly, there is no
+explicit handling of pointers: the Caml compiler silently introduces
+pointers where necessary.
+
+As with most Caml data structures, inspecting and destructuring lists
+is performed by pattern-matching. List patterns have the exact same
+shape as list expressions, with identifier representing unspecified
+parts of the list. As an example, here is insertion sort on a list:
+\begin{caml_example}
+let rec sort lst =
+  match lst with
+    [] -> []              (* empty list: already sorted *)
+  | [elt] -> lst          (* one-element list: already sorted *)
+  | head :: tail -> insert head (sort tail)
+and insert elt lst =
+  match lst with
+    [] -> [elt]
+  | head :: tail -> if elt <= head then lst else head :: insert elt tail
+;;
+sort l;;
+\end{caml_example}
+
+The type inferred for "sort", "'a list -> 'a list", means that "sort"
+can actually apply to lists of any type, and returns a list of the
+same type. This is because the comparisons ("=", "<=", etc.) are {\em
+polymorphic} in Caml: they operate between any two values of the same
+type. This makes "sort" itself polymorphic over all list types.
+\begin{caml_example}
+sort [6;2;5;3];;
+sort [3.14; 2.718];;
+\end{caml_example}
+
+The "sort" function above does not modify its input list: it builds
+and returns a new list containing the same elements as the input list,
+in ascending order. There is actually no way in Caml to modify
+in-place a list once it is built: we say that lists are  {\em immutable}
+data structures. Most Caml data structures are immutable, but a few
+(most notably arrays) are {\em mutable}, meaning that they can be
+modified in-place at any time.
+
+\subsection*{Functions as values}
+
+Caml is a  functional language: functions in the full mathematical
+sense are supported and can be passed around freely just as any other
+piece of data. For instance, here is a "deriv" function that takes any
+float function as argument and returns an approximation of its
+derivative function:
+\begin{caml_example}
+let deriv f dx = function x -> (f(x +. dx) -. f(x)) /. dx;;
+let cos' = deriv sin 1e-6;;
+cos' pi;;
+\end{caml_example}
+Even function composition is definable:
+\begin{caml_example}
+let compose f g = function x -> f(g(x));;
+let cos2 = compose square cos;;
+\end{caml_example}
+
+Functions that take other functions as arguments are known as
+``functionals'', or ``higher-order functions''. Functionals are
+especially useful to provide iterators or similar generic operations
+over a data structure. For instance, the standard Caml library
+provides a "List.map" functional that applies a given function to each
+element of a list, and returns the list of the results:
+\begin{caml_example}
+List.map (fun n -> n * 2 + 1) [0;1;2;3;4];;
+\end{caml_example}
+This functional, along with a number of other list and array
+functionals, is predefined because it is often useful, but there is
+nothing magic with it: it can easily be defined as follows.
+\begin{caml_example}
+let rec map f l =
+  match l with
+    [] -> []
+  | hd :: tl -> f hd :: map f tl;;
+\end{caml_example}
+
+\subsection*{Records and variants}
+
+User-defined data structures include records and variants. Both are
+defined with the "type" declaration. Here are declarations for record
+types representing 2-dimensional points and 2-dimensional
+transformations:
+\begin{caml_example}
+type point = {x: float; y: float};;
+type transform = {scale_xx: float; scale_xy: float;
+                  scale_yx: float; scale_yy: float;
+                  transl_x: float; transl_y: float};;
+let apply_transf t p =
+  {x = p.x * t.scale_xx + p.y * t.scale_xy + t.transl_x;
+   y = p.x * t.scale_yx + p.y * t.scale_yy + t.transl_y};;
+let rotation angle =
+  {scale_xx = cos angle; scale_xy = sin angle;
+   scale_yx = -. sin angle; scale_yy = cos angle;
+   transl_x = 0.0; transl_y = 0.0};;
+apply (rotation (pi /. 4.0)) {x = 3.0; y = 2.0};;
+\end{caml_example}
+
+The declaration of a variant type list all possible shapes for values
+of that type. Each case is identified by a name, called a constructor,
+which serves both for constructing values of the variant type and
+inspecting them by pattern-matching. For instance, here is a variant
+type for doing mixed arithmetic (integers and floats):
+\begin{caml_example}
+type number = Int of int | Float of float | Error;;
+\end{caml_example}
+This declaration expresses that a value of type "number" is either an
+integer, a floating-point number, or the constant "Error" representing
+the result of an invalid operation (e.g. a division by zero).
+
+Enumerated types are a special case of variant types, where all
+alternatives are constants:
+\begin{caml_example}
+type sign = Positive | Negative;;
+let sign_int n = if n >= 0 then Positive else Negative;;
+\end{caml_example}
+
+Arithmetic operations over the "number" type are defined by
+pattern-matching on the two numbers involved:
+\begin{caml_example}
+let add_num n1 n2 =
+  match (n1, n2) with
+    (Int i1, Int i2) ->
+      (* Check for overflow of integer addition *)
+      if sign_int i1 = sign_int i2 && sign_int(i1 + i2) <> sign_int i1
+      then Float(float i1 +. float i2)
+      else Int(i1 + i2)
+  | (Int i1, Float f2) -> Float(float i1 +. f2)
+  | (Float f1, Int i2) -> Float(f1 +. float i2)
+  | (Float f1, Float f2) -> Float(f1 +. f2)
+  | (Error, _) -> Error
+  | (_, Error) -> Error;;
+add_num (Int 123) (Float 3.14159);;
+\end{caml_example}
+
+The most common usage of variant types is to describe recursive data
+structures. Consider for example the type of binary trees:
+\begin{caml_example}
+type 'a btree = Empty | Node of 'a * 'a btree * 'a btree;;
+\end{caml_example}
+This definition reads as follow: a binary tree containing values of
+type "'a" (an arbitrary type) is either empty, or is a node containing
+one value of type "'a" and two subtrees containing also values of type
+"'a", that is, two "'a btree".
+
+Operations on binary trees express naturally as recursive functions
+following the same structure as the type definition itself. For
+instance, here are functions performing insertion and lookup in
+ordered binary trees (elements increase from left to right):
+\begin{caml_example}
+let rec member x btree =
+  match btree with
+    Empty -> false
+  | Node(y, left, right) ->
+      if x = y then true else
+      if x < y then member x left else member x right;;
+let rec insert x btree =
+  match btree with
+    Empty -> Node(x, Empty, Empty)
+  | Node(y, left, right) ->
+      if x <= y then Node(y, insert x left, right)
+                else Node(y, left, insert x right);;
+\end{caml_example}
+
+\subsection*{Imperative features}
+
+Though all examples so far were written in purely applicative style,
+Caml is also equipped with full imperative features. This includes the
+usual "while" and "for" loops, as well as mutable data structures such
+as arrays. Arrays are either given in extension between "[|" and "|]"
+brackets, or allocated and initialized with the "Array.create"
+function, then filled up later by assignments. For instance, the
+function below sums two vectors (represented as float arrays) componentwise.
+\begin{caml_example}
+let add_vect v1 v2 =
+  let len = min (Array.length v1) (Array.length v2) in
+  let res = Array.new len 0.0 in
+  for i = 0 to len - 1 do
+    res.(i) <- v1.(i) +. v2.(i)
+  done;
+  res;;
+add_vect [| 1.0; 2.0 |] [| 3.0; 4.0 |];;
+\end{caml_example}
+
+Record fields can also be modified by assignment, provided they have
+been declared "mutable" in the definition of the record type:
+\begin{caml_example}
+type mutable_point = { mutable x: float; mutable y: float };;
+let translate p dx dy =
+  p.x <- p.x +. dx; p.y <- p.y +. dy;;
+let mypoint = { x = 0.0; y = 0.0 };;
+translate mypoint 1.0 2.0;;
+mypoint;;
+\end{caml_example}
+
+Caml has no built-in notion of variable -- identifiers whose current
+value can be changed by assignment. (The "let" binding is not an
+assignment, it introduces a new identifier with a new scope.)
+However, the standard library provides references, which are mutable
+indirection cells (or one-element arrays), with operators "!" to fetch
+the current contents of the reference and ":=" to assign the contents.
+Variables can then be emulated by "let"-binding a reference. For
+instance, here is an in-place insertion sort over arrays:
+\begin{caml_example}
+let insertion_sort a =
+  for i = 1 to Array.length a - 1 do
+    let val_i = a.(i) in
+    let j = ref i in
+    while !j > 0 && val_i < a.(!j) do
+      a.(!j) <- a.(!j - 1);
+      j := !j - 1
+    done;
+    a.(!j) <- val_i
+  done;;
+\end{caml_example}
+
+Again, there is nothing magic with references: they are implemented as
+a one-field mutable record, as follows.
+\begin{caml_example}
+type 'a ref = { mutable contents: 'a };;
+let (!) ref = ref.contents;;
+let (:=) ref newval = ref.contents <- newval;;
+\end{caml_example}
+
+\subsection*{Exceptions}
+
+Caml provides exceptions for signalling and handling exceptional
+conditions. Exceptions can also be used as a general-purpose non-local
+control structures. Exceptions are declared with the "exception"
+construct, and signalled with the "raise" operator. For instance, the
+function below for taking the head of a list uses an exception  to
+signal the case where an empty list is given.
+\begin{caml_example}
+exception Empty_list;;
+let head l =
+  match l with
+    [] -> raise Empty_list
+  | hd :: tl -> hd;;
+head [1;2];;
+head [];;
+\end{caml_example}
+
+Exceptions are used throughout the standard library to signal cases
+where the library functions cannot complete normally. For instance,
+the "List.assoc" function, which returns the data associated with a
+given key in a list of (key, data) pairs, raises the predefined
+exception "Not_found" when the key does not appear in the list:
+\begin{caml_example}
+List.assoc 1 [0, "zero"; 1, "one"];;
+List.assoc 2 [0, "zero"; 1, "one"];;
+\end{caml_example}
+
+Exceptions can be trapped with the "try"\ldots"with" construct:
+\begin{caml_example}
+let name_of_binary_digit digit =
+  try
+    List.assoc digit [0, "zero"; 1, "one"]
+  with Not_found ->
+    "not a binary digit";;
+name_of_binary_digit 0;;
+name_of_binary_digit (-1);;
+\end{caml_example}
+
+The "with" part is actually a regular pattern-matching on the
+exception value. Thus, several exceptions can be caught by one
+"try"\ldots"with" construct. Also, finalization can be performed by
+trapping all exceptions, performing the finalization, then raising
+again the exception:
+\begin{caml_example}
+let temporarily_set_reference ref newval funct =
+  let oldval = !ref in
+  try
+    ref := newval;
+    let res = funct () in
+    ref := oldval;
+    res
+  with x ->
+    ref := oldval;
+    raise x;;
+\end{caml_example}
+

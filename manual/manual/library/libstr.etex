@@ -8,12 +8,12 @@ such as "awk", "perl" or "sed".
 Programs that use the "str" library must be linked in ``custom
 runtime'' mode, as follows:
 \begin{alltt}
-        cslc -custom \var{other options} str.cma \var{other files} -cclib -lstr
-        cslopt \var{other options} str.cmxa \var{other files} -cclib -lstr
+        ocamlc -custom \var{other options} str.cma \var{other files} -cclib -lstr
+        ocamlopt \var{other options} str.cmxa \var{other files} -cclib -lstr
 \end{alltt}
 For interactive use of the "str" library, do:
 \begin{alltt}
-        cslmktop -custom -o mytop str.cma -cclib -lstr
+        ocamlmktop -custom -o mytop str.cma -cclib -lstr
         ./mytop
 \end{alltt}
 

@@ -1,7 +1,6 @@
-\chapter{The toplevel system (csltop)} \label{c:camllight}
+\chapter{The toplevel system (ocaml)} \label{c:camllight}
 
-This chapter describes the toplevel system for Caml Special
-Light, that permits interactive use of the Caml Special Light system
+This chapter describes the toplevel system for Objective Caml, that permits interactive use of the Objective Caml system
 through a read-eval-print loop. In this mode, the system repeatedly
 reads Caml phrases from the input, then typechecks, compile and
 evaluate them, then prints the inferred type and result value, if
@@ -54,29 +53,29 @@ section~\ref{s:toplevel-directives}.
 \medskip
 
 \begin{unix}
-The toplevel system is started by the command "csltop". Phrases are
+The toplevel system is started by the command "ocaml". Phrases are
 read on standard input, results are printed on standard output, errors
 on standard error. End-of-file on standard input terminates
-"csltop" (see also the "#quit" directive in
+"ocaml" (see also the "#quit" directive in
 section~\ref{s:toplevel-directives}).
 
 The toplevel system does not perform line editing, but it can
 easily be used in conjunction with an external line editor such as
-"fep"; just run "fep -emacs csltop" or "fep -vi csltop".
-Another option is to use "csltop" under Gnu Emacs, which gives the
+"fep"; just run "fep -emacs ocaml" or "fep -vi ocaml".
+Another option is to use "ocaml" under Gnu Emacs, which gives the
 full editing power of Emacs (see the "camlmode" package distributed
 with Caml Light 0.7).
 
 At any point, the parsing, compilation or evaluation of the current
 phrase can be interrupted by pressing "ctrl-C" (or, more precisely,
-by sending the "intr" signal to the "csltop" process). The toplevel
+by sending the "intr" signal to the "ocaml" process). The toplevel
 then immediately returns to the "#" prompt.
 \end{unix}
 
 \begin{windows}
-In addition to the text-only command "csltop.exe", which works exactly
+In addition to the text-only command "ocaml.exe", which works exactly
 linke under Unix (see above), a graphical user interface for the
-toplevel is available under the name "cslwin.exe". It should be
+toplevel is available under the name "ocamlwin.exe". It should be
 launched from the Windows file manager or program manager.
 
 The ``Terminal'' windows is split in two panes. Phrases are entered
@@ -101,7 +100,7 @@ menu item. This goes back to the "#" prompt.
 
 \section{Options} \label{s:toplevel-options}
 
-The following command-line options are recognized by the "csltop" command.
+The following command-line options are recognized by the "ocaml" command.
 
 \begin{options}
 
@@ -118,7 +117,7 @@ the toplevel is running with the "#directory" directive
 (section~\ref{s:toplevel-directives}).
 
 \item["-unsafe"]
-See the corresponding option for "cslc", chapter~\ref{c:camlc}.
+See the corresponding option for "ocamlc", chapter~\ref{c:camlc}.
 Turn bound checking off on array and string accesses (the "v.(i)" and
 "s.[i]" constructs). Programs compiled with "-unsafe" are therefore
 slightly faster, but unsafe: anything can happen if the program
@@ -148,7 +147,7 @@ memory, and trace program execution.
 \begin{options}
 
 \item["#quit;;"]
-Exit the toplevel loop and terminate the "csltop" command.
+Exit the toplevel loop and terminate the "ocaml" command.
 
 \item["#directory \""\var{dir-name}"\";;"]
 Add the given directory to the list of directories searched for
@@ -159,7 +158,7 @@ Change the current working directory.
 
 \item["#load \""\var{file-name}"\";;"]
 Load in memory a bytecode object file (".cmo" file) produced by
-the batch compiler "cslc".
+the batch compiler "ocamlc".
 
 \item["#use \""\var{file-name}"\";;"]
 Read, compile and execute source phrases from the given file.
@@ -260,19 +259,17 @@ with "#load". See section~\ref{s:toplevel-modules} above.
 
 \end{options}
 
-\section{Building custom toplevel systems: "cslmktop"}
+\section{Building custom toplevel systems: "ocamlmktop"}
 
-The "cslmktop" command builds Caml Special Light toplevels that
+The "ocamlmktop" command builds Objective Caml toplevels that
 contain user code preloaded at start-up. 
 
-The "cslmktop" command takes as argument a set of ".cmo" and ".cma"
-files, and links them with the object files that implement the Caml
-Special Light toplevel. The typical use is:
+The "ocamlmktop" command takes as argument a set of ".cmo" and ".cma"
+files, and links them with the object files that implement the Objective Caml toplevel. The typical use is:
 \begin{verbatim}
-        cslmktop -o mytoplevel foo.cmo bar.cmo gee.cmo
+        ocamlmktop -o mytoplevel foo.cmo bar.cmo gee.cmo
 \end{verbatim}
-This creates the bytecode file "mytoplevel", containing the Caml
-Special Light toplevel system, plus the code from the three ".cmo"
+This creates the bytecode file "mytoplevel", containing the Objective Caml toplevel system, plus the code from the three ".cmo"
 files. This toplevel is directly executable and is started by:
 \begin{verbatim}
         ./mytoplevel
@@ -294,23 +291,23 @@ yourself, if this is what you wish.
 
 \section{Options}
 
-The following command-line options are recognized by "cslmktop".
+The following command-line options are recognized by "ocamlmktop".
 
 \begin{options}
 
 \item["-cclib" \var{libname}]
 Pass the "-l"\var{libname} option to the C linker when linking in
 ``custom runtime'' mode. See the corresponding option for
-"cslc", in chapter~\ref{c:camlc}.
+"ocamlc", in chapter~\ref{c:camlc}.
 
 \item["-ccopt" \var{option}]
 Pass the given option to the C compiler and linker, when linking in
 ``custom runtime'' mode. See the corresponding option for
-"cslc", in chapter~\ref{c:camlc}.
+"ocamlc", in chapter~\ref{c:camlc}.
 
 \item["-custom"]
 Link in ``custom runtime'' mode. See the corresponding option for
-"cslc", in chapter~\ref{c:camlc}.
+"ocamlc", in chapter~\ref{c:camlc}.
 
 \item["-I" \var{directory}]
 Add the given directory to the list of directories searched for

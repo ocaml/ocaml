@@ -74,3 +74,10 @@ in a given variant type to at most 249.
 \subsection{Functions}
 
 Functional values are mappings from values to values.
+
+\subsection{Objects}
+
+Objects are composed of a hidden internal state which is a
+record of instance variables, and a set of methods for accessing and
+modifying these variables.  Object structures are described by
+toplevel classes.

@@ -1,25 +1,31 @@
 \input version.tex
 
 \begin{rawhtml}
-  <TITLE>Caml Special Light manual</TITLE>
-  <H1>The Caml Special Light system, documentation and user's guide</H1>
+  <TITLE>Objective Caml manual</TITLE>
+  <H1>The Objective Caml system, documentation and user's guide</H1>
 \end{rawhtml}
 
-{\bf Release \cslversion}
+{\bf Release \ocamlversion}
 
 {\bf Xavier Leroy}
 
-Copyright \copyright\ 1995 Institut National de Recherche en Informatique et
+Copyright \copyright\ 1996 Institut National de Recherche en Informatique et
 Automatique
 
 \input foreword.tex
 
-\part{The Caml Special Light language} \label{p:refman}
+\part{An introduction to Objective Caml}
+\label{p:tutorials}
+\input coreexamples.tex
+\input objectexamples.tex
+\input moduleexamples.tex
+
+\part{The Objective Caml language} \label{p:refman}
 \input refman.tex
 \input exten.tex
 \input objects.tex
 
-\part{The Caml Special Light tools}
+\part{The Objective Caml tools}
 \label{p:commands}
 \input comp.tex
 \input top.tex
@@ -32,7 +38,7 @@ Automatique
 % \input emacs.tex
 \input intf-c.tex
 
-\part{The Caml Special Light library}
+\part{The Objective Caml library}
 \label{p:library}
 \input core.tex
 \input stdlib.tex
@@ -42,6 +48,3 @@ Automatique
 \input libthreads.tex
 \input libgraph.tex
 
-\part{Tutorials}
-\label{p:tutorials}
-\input objectexamples.tex

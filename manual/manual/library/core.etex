@@ -5,7 +5,7 @@ core library module: module "Pervasives". This module is special in two
 ways:
 \begin{itemize}
 \item It is automatically linked with the user's object code files by
-the "cslc" command (chapter~\ref{c:camlc}).
+the "ocamlc" command (chapter~\ref{c:camlc}).
 
 \item It is automatically ``opened'' when a compilation starts, or
 when the toplevel system is launched. Hence, it is possible to use

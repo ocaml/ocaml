@@ -9,9 +9,12 @@ non-constant -- class @ncconstr-name@),
 \item type constructors (@typeconstr-name@),
 \item record labels (@label-name@),
 \item module names (@module-name@),
-\item module type names (@modtype-name@).
+\item module type names (@modtype-name@),
+\item class names (@class-name@),
+\item method names (@method-name@),
+\item instance variable names (@inst-var-name@).
 \end{itemize}
-These six name spaces are distinguished both by the context and by the
+These nine name spaces are distinguished both by the context and by the
 capitalization of the identifier: whether the first letter of the
 identifier is in lowercase (written @lowercase-ident@ below) or in
 uppercase (written @capitalized-ident@).
@@ -51,6 +54,15 @@ module-name:
 ;
 modtype-name:
         ident
+;
+class-name:
+    lowercase-ident
+;
+inst-var-name:
+    lowercase-ident
+;
+method-name:
+    lowercase-ident
 \end{syntax}
 As shown above, prefix and infix symbols as well as some keywords can
 be used as value names, provided they are written between parentheses.
@@ -102,6 +114,10 @@ extended-module-path:
 modtype-path:
         modtype-name
       | extended-module-path '.' ident
+;
+class-path:
+    class-name
+  | module-path '.' lowercase-ident
 \end{syntax}
 
 A named object can be referred to either by its name (following the
@@ -115,3 +131,5 @@ also contain simple functor applications (as in the syntactic class
 @extended-module-path@ above), in case the defining module is the
 result of a functor application.
 
+Instance variable names and method names need not be qualified: the
+former are local to a class while the latter are global labels.

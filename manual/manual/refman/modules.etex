@@ -28,6 +28,7 @@ definition:
         | 'external' value-name ':' typexpr '=' external-declaration
         | type-definition
         | exception-definition
+        | 'class' class-definition { 'and' class-definition } 'end'
         | 'module' module-name { '(' module-name ':' module-type ')' }
                                [ ':' module-type ] '=' module-expr
         | 'module' 'type' modtype-name '=' module-type

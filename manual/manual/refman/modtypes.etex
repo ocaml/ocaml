@@ -27,6 +27,7 @@ specification:
         | 'external' value-name ':' typexpr '=' external-declaration
         | type-definition
         | exception-definition
+        | 'class' class-type { 'and' class-type } 'end'
         | 'module' module-name ':' module-type
         | 'module' module-name { '(' module-name ':' module-type ')' }
           ':' module-type

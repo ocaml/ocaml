@@ -1,18 +1,18 @@
-\chapter{The runtime system (cslrun)} \label{c:runtime}
+\chapter{The runtime system (ocamlrun)} \label{c:runtime}
 
-The "cslrun" command executes bytecode files produced by the
-linking phase of the "cslc" command.
+The "ocamlrun" command executes bytecode files produced by the
+linking phase of the "ocamlc" command.
 
 \section{Overview}
 
-The "cslrun" command comprises three main parts: the bytecode
+The "ocamlrun" command comprises three main parts: the bytecode
 interpreter, that actually executes bytecode files; the memory
 allocator and garbage collector; and a set of C functions that
 implement primitive operations such as input/output.
 
-The usage for "cslrun" is:
+The usage for "ocamlrun" is:
 \begin{alltt}
-        cslrun \var{options} \var{bytecode-executable} \nth{arg}{1} ... \nth{arg}{n}
+        ocamlrun \var{options} \var{bytecode-executable} \nth{arg}{1} ... \nth{arg}{n}
 \end{alltt}
 The first non-option argument is taken to be the name of the file
 containing the executable bytecode. (That file is searched in the
@@ -23,8 +23,8 @@ bytecode executable file; elements 1 to \var{n} are the remaining
 arguments \nth{arg}{1} to \nth{arg}{n}.
 
 As mentioned in chapter~\ref{c:camlc}, in most cases, the bytecode
-executable files produced by the "cslc" command are self-executable,
-and manage to launch the "cslrun" command on themselves
+executable files produced by the "ocamlc" command are self-executable,
+and manage to launch the "ocamlrun" command on themselves
 automatically. That is, assuming "caml.out" is a bytecode executable
 file,
 \begin{alltt}
@@ -32,14 +32,14 @@ file,
 \end{alltt}
 works exactly as
 \begin{alltt}
-        cslrun caml.out \nth{arg}{1} ... \nth{arg}{n}
+        ocamlrun caml.out \nth{arg}{1} ... \nth{arg}{n}
 \end{alltt}
-Notice that it is not possible to pass options to "cslrun" when
+Notice that it is not possible to pass options to "ocamlrun" when
 invoking "caml.out" directly.
 
 \section{Options}
 
-The following command-line option is recognized by "cslrun".
+The following command-line option is recognized by "ocamlrun".
 
 \begin{options}
 
@@ -71,7 +71,7 @@ The following environment variable are also consulted:
 \begin{alltt}
         setenv CAMLRUNPARAM 's=250000 v=1'
 \end{alltt}
-  tells a subsequent "cslrun" to set its initial minor heap size to
+  tells a subsequent "ocamlrun" to set its initial minor heap size to
   about 1~megabyte (on a 32-bit machine) and to print its GC messages.
 
 \item["PATH"] List of directories searched to find the bytecode
@@ -88,22 +88,21 @@ error messages.
 \item[{\it filename}": no such file or directory"]
 If {\it filename} is the name of a self-executable bytecode file, this
 means that either that file does not exist, or that it failed to run
-the "cslrun" bytecode interpreter on itself. The second possibility
-indicates that Caml Special Light has not been properly installed on your
+the "ocamlrun" bytecode interpreter on itself. The second possibility
+indicates that Objective Caml has not been properly installed on your
 system.
 
 \item["Cannot exec camlrun"]
-(When launching a self-executable bytecode file.) The "cslrun"
- could not be found in the executable path. Check that Caml
-Special Light has been properly installed on your system.
+(When launching a self-executable bytecode file.) The "ocamlrun"
+ could not be found in the executable path. Check that Objective Caml has been properly installed on your system.
 
 \item["Cannot find the bytecode file"]
-The file that "cslrun" is trying to execute (e.g. the file given as
-first non-option argument to "cslrun") either does not exist, or is
+The file that "ocamlrun" is trying to execute (e.g. the file given as
+first non-option argument to "ocamlrun") either does not exist, or is
 not a valid executable bytecode file.
 
 \item["Truncated bytecode file"]
-The file that "cslrun" is trying to execute is not a valid executable
+The file that "ocamlrun" is trying to execute is not a valid executable
 bytecode file. Probably it has been truncated or mangled since
 created. Erase and rebuild it.
 
@@ -125,7 +124,7 @@ string, attempts to build an infinite list or other data structure,
 \ldots
 
 To help you diagnose this error, run your program with the "-v" option
-to "cslrun". If it displays lots of ``"Growing stack"\ldots''
+to "ocamlrun". If it displays lots of ``"Growing stack"\ldots''
 messages, this is probably a looping recursive function. If it
 displays lots of ``"Growing heap"\ldots'' messages, with the heap size
 growing slowly, this is probably an attempt to construct a data

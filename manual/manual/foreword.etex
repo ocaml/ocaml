@@ -1,14 +1,16 @@
 \chapter*{Foreword}
 \markboth{Foreword}{}
 
-This manual documents the release \cslversion\ of the Caml Special
-Light system. It is organized as follows.
+This manual documents the release \ocamlversion\ of the Objective Caml
+system. It is organized as follows.
 \begin{itemize}
-\item Part~\ref{p:refman}, ``The Caml Special Light language'', is the
-reference description of the Caml Special Light language.
-\item Part~\ref{p:commands}, ``The Caml Special Light tools, documents
+\item Part~\ref{p:tutorials}, ``An introduction to Objective Caml'',
+is a tutorial introduction to the language.
+\item Part~\ref{p:refman}, ``The Objective Caml language'', is the
+reference description of the language.
+\item Part~\ref{p:commands}, ``The Objective Caml tools, documents
 the compilers, toplevel system, and programming utilities.
-\item Part~\ref{p:library}, ``The Caml Special Light library'', describes the
+\item Part~\ref{p:library}, ``The Objective Caml library'', describes the
 modules provided in the standard library.
 \item Part~\ref{p:appendix}, ``Appendix'', contains an
 index of all identifiers defined in the standard library, and an
@@ -17,7 +19,7 @@ index of keywords.
 
 \section*{Conventions}
 
-Caml Special Light runs on several operating systems. The parts of
+Objective Caml runs on several operating systems. The parts of
 this manual that are specific to one operating system are presented as
 shown below:
 
@@ -29,22 +31,23 @@ shown below:
 
 \section*{License}
 
-The Caml Special Light system is copyright \copyright\ 1995 Institut
+The Objective Caml system is copyright \copyright\ 1996 Institut
 National de Recherche en Informatique et en Automatique (INRIA).
-INRIA holds all ownership rights to the Caml Special Light system. See
+INRIA holds all ownership rights to the Objective Caml system. See
 the file "LICENSE" in the distribution for licensing information.
 
-The Caml Special Light system can be freely copied, but not sold. More
-precisely, INRIA grants any user of the Caml Special Light system the
+The Objective Caml system can be freely copied, but not sold. More
+precisely, INRIA grants any user of the Objective Caml system the
 right to reproduce it, provided that the copies are distributed free
 of charge and under the conditions given in the "LICENSE" file. The
 present documentation is distributed under the same conditions.
 
 \section*{Availability}
 
-The complete Caml Special Light distribution resides on the machine
-"ftp.inria.fr". The distribution files can be transferred by anonymous FTP:
+The complete Objective Caml distribution resides on the machine
+"ftp.inria.fr".
 \begin{latexonly}
+The distribution files can be transferred by anonymous FTP:
 \begin{center}
 \begin{tabular}{ll}
 Host:       & "ftp.inria.fr" (Internet address "192.93.2.54") \\
@@ -56,14 +59,9 @@ Files:      & see the index in file "README"
 \end{center}
 \end{latexonly}
 \begin{rawhtml}
-<blockquote>
-<b>Host:</b> <tt>ftp.inria.fr</tt> (Internet address <tt>192.93.2.54</tt>)<br>
-<b>Login name:</b> <tt>anonymous</tt> <br>
-<b>Password:</b> your e-mail address <br>
-<b>Directory:</b> <tt>lang/caml-light</tt><br>
-<b>Files:</b> see the index in file <tt>README</tt>
-</blockquote>
+Follow <A HREF="ftp://ftp.inria.fr/lang/caml-light/">this link</A>
+to access the distribution.
 \end{rawhtml}
 
-More information on Caml Special Light is also available on the World
-Wide Web, "http://pauillac.inria.fr/csl/".
+More information on the Caml family of languages is also available on
+the World Wide Web, "http://pauillac.inria.fr/caml/".

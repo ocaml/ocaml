@@ -1,6 +1,6 @@
 \chapter{The threads library}
 
-The "threads" library allows concurrent programming in Caml Special Light.
+The "threads" library allows concurrent programming in Objective Caml.
 It provides multiple threads of control (also called lightweight
 processes) that execute concurrently in the same memory space. Threads
 communicate by in-place modification of shared data structures, or by
@@ -13,15 +13,15 @@ faster. However, many programs are easier to write when structured as
 several communicating processes.
 
 This library cannot be used in native-code programs compiled with
-"cslopt"; it can only be used with bytecode programs
-compiled with "cslc".
+"ocamlopt"; it can only be used with bytecode programs
+compiled with "ocamlc".
 
 Programs that use the "threads" library must be linked as follows:
 \begin{alltt}
-        cslc -custom \var{other options} threads.cma \var{other files} -cclib -lthreads
+        ocamlc -custom \var{other options} threads.cma \var{other files} -cclib -lthreads
 \end{alltt}
-Interactive use through a toplevel built with "cslmktop" is
-impractical, because the Caml Special Light toplevel itself is not
+Interactive use through a toplevel built with "ocamlmktop" is
+impractical, because the Objective Caml toplevel itself is not
 thread-aware.
 
 \begin{library}

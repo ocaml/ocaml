@@ -66,4 +66,4 @@ release:
 	cp $*.etex $*.htex
 
 version.tex: $(CSLDIR)/utils/config.mlp
-	sed -n -e 's/^let version = "\(.*\)".*$$/\\def\\cslversion{\1}/p' $(CSLDIR)/utils/config.mlp > version.tex
+	sed -n -e 's/^let version = "\(.*\)".*$$/\\def\\ocamlversion{\1}/p' $(CSLDIR)/utils/config.mlp > version.tex

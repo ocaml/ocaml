@@ -21,6 +21,7 @@
 \ikwd{begin\@\verb`begin`}
 \ikwd{end\@\verb`end`}
 \ikwd{when\@\verb`when`}
+\ikwd{new\@\verb`new`}
 
 \begin{syntax}
 expr:
@@ -53,6 +54,10 @@ expr:
   | 'fun' multiple-matching
   | 'try' expr 'with' pattern-matching
   | 'let' ['rec'] let-binding  { 'and' let-binding } 'in' expr
+  | 'new' class-path
+  | expr '#' method-name
+  | '(' expr ':>' typexpr ')'
+  | '(' expr ':' typexpr ':>' typexpr ')'
 ;
 pattern-matching:
     pattern ['when' expr] '->' expr
@@ -576,5 +581,35 @@ details). Their meaning may be changed at any time using
 \entree{">" }{Test ``greater than''.}
 \entree{">=" }{Test ``greater than or equal''}
 \end{tableau}
+
+\subsection{Objects}
+
+\subsubsection*{Object creation}
+
+\ikwd{new\@\verb`new`}
+The expression @'new' class-path@ denotes a function that takes some
+initialization arguments and returns a new object of class
+@class-path@.
+
+\subsubsection*{Message sending}
+
+The expression @expr '#' method-name@ invokes the method
+@method-name@ of the object denoted by @expr@.
+
+\subsubsection*{Coercion}
+
+The type of an object can be coerced (weakened) to a subtype.
+%
+The expression @'(' expr ':>' typexpr ')'@ coerces the expression @expr@
+to type @typexpr@.
+%
+The expression @'(' expr ':' typexpr_1 ':>' typexpr_2 ')'@ coerces the
+expression @expr@ from type @typexpr_1@ to type @typexpr_2@. It is
+more general than the previous one.
+
+\subsubsection*{Object duplication}
+
+An object can be duplicated using the library function "Oo.copy"
+(see~\ref{s:Oo}).
 
 %% \newpage

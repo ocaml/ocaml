@@ -2,7 +2,7 @@
 
 This chapter describes the functions provided by the Caml Light
 standard library. The modules from the standard library are
-automatically linked with the user's object code files by the "cslc"
+automatically linked with the user's object code files by the "ocamlc"
 command. Hence, these modules can be used in standalone programs without
 having to add any ".cmo" file on the command line for the linking
 phase. Similarly, in interactive use, these globals can be used in

@@ -1,6 +1,6 @@
-\chapter{Dependency generator (csldep)} \label{c:camldep}
+\chapter{Dependency generator (ocamldep)} \label{c:camldep}
 
-The "csldep" command scans a set of Caml Special Light source files
+The "ocamldep" command scans a set of Objective Caml source files
 (".ml" and ".mli" files) for references to external compilation units,
 and outputs dependency lines in a format suitable for the "make"
 utility. This ensures that "make" will compile the source files in the
@@ -9,18 +9,18 @@ file is modified.
 
 The typical usage is:
 \begin{alltt}
-        csldep \var{options} *.mli *.ml > .depend
+        ocamldep \var{options} *.mli *.ml > .depend
 \end{alltt}
 where "*.mli *.ml" expands to all source files in the current
 directory and ".depend" is the file that should contain the
 dependencies. (See below for a typical "Makefile".)
 
 Dependencies are generated both for compiling with the bytecode
-compiler "cslc" and with the native-code compiler "cslopt".
+compiler "ocamlc" and with the native-code compiler "ocamlopt".
 
 \section{Options}
 
-The following command-line option is recognized by "csldep".
+The following command-line option is recognized by "ocamldep".
 
 \begin{options}
 
@@ -32,22 +32,22 @@ compilation unit "Bar", a dependency on that unit's interface
 current directory or in one of the directories specified with "-I".
 Otherwise, "Bar" is assumed to be a module form the standard library,
 and no dependencies are generated. For programs that span multiple
-directories, it is recommended to pass "csldep" the same "-I" options
+directories, it is recommended to pass "ocamldep" the same "-I" options
 that are passed to the compiler.
 
 \end{options}
 
 \section{A typical Makefile}
 
-Here is a template "Makefile" for a Caml Special Light program.
+Here is a template "Makefile" for a Objective Caml program.
 
 \begin{verbatim}
-CSLC=cslc
-CSLOPT=cslopt
-CSLDEP=csldep
+CSLC=ocamlc
+CSLOPT=ocamlopt
+CSLDEP=ocamldep
 INCLUDES=               #all relevant -I options here
-CSLFLAGS=$(INCLUDES)    #add other options for cslc here
-CSLOPTFLAGS=$(INCLUDES) #add other options for cslopt here
+CSLFLAGS=$(INCLUDES)    #add other options for ocamlc here
+CSLOPTFLAGS=$(INCLUDES) #add other options for ocamlopt here
 
 # prog1 should be compiled to bytecode, and is composed of three
 # units: mod1, mod2 and mod3.

@@ -1,131 +1,4 @@
-\section{The object-oriented extension} \label{s:objects}
-
-This section describes the object-oriented extension to Caml Special
-Light.  Objects are composed of a hidden internal state which is a
-record of instance variables, and a set of methods for accessing and
-modifying these variables.  Object structures are described by
-toplevel classes.
-
-\subsection{Names}
-
-\begin{syntax}
-class-name:
-    lowercase-ident
-;
-class-path:
-    class-name
-  | module-path '.' lowercase-ident
-;
-inst-var-name:
-    lowercase-ident
-;
-method-name:
-    lowercase-ident
-;
-\end{syntax}
-
-Instance variable names and method names need not be qualified: the
-former are local to a class while the latter are global labels.
-
-\subsection{Type expressions}
-
-\ikwd{as\@\verb`as`}
-\begin{syntax}
-typexpr:
-    \ldots
-  | typeconstr 'as' "'" ident
-  | typexpr typeconstr 'as' "'" ident
-  | '(' typexpr { ',' typexpr } ')' typeconstr 'as' "'" ident
-  | '<' ['..'] '>' ['as' "'" ident]
-  | '<' method-type { ';' method-type } [';' '..'] '>'
-    ['as' "'" ident]
-  | '#' class-path ['as' "'" ident]
-  | typexpr '#' class-path ['as' "'" ident]
-  | '(' typexpr { ',' typexpr } ) '#' class-path ['as' "'" ident]
-;
-method-type:
-    method-name ':' typexpr
-;
-\end{syntax}
-
-\subsubsection*{Recursive types}
-
-\ikwd{as\@\verb`as`}
-Recursives types are allowed as long as any recursion crosses a type
-constructor or an object type.
-%
-The type expression @typexpr 'as' "'" ident@ denotes the same type as
-@typexpr@, and also binds the type variable @ident@ to type @typexpr@
-both in @typexpr@ and in the remaining part of the toplevel phrase. 
-
-\subsubsection*{Object types}
-
-An object type
-@'<' method-type { ';' method-type } '>'@
-is a record of method types.
-
-The type @'<' method-type { ';' method-type } ';' '..'  '>'@ is the
-type of an object with methods whose type is described by
-@method-type_1, \ldots, method-type_n@, and possibly some other
-methods represented by the ellipsis.  This ellipsis actually behaves
-as a type variable.
-
-\subsubsection*{\#-types}
-\label{s:sharp-types}
-
-The type @'#' class-path@ is a special kind of abbreviation. This
-abbreviation unifies with the type of any object belonging to a subclass
-of class @class-path@.
-%
-It is handled in a special way as it usually hides a type variable (an
-ellipsis, representing the methods that may be added in a subclass).
-In particular, it vanishes when the ellipsis gets instantiated.
-%
-Each type expression @'#' class-path@ defines a new type variable, so
-type @'#' class-path '->' '#' class-path@ is usually not the same as
-type @'#' class-path 'as' "'" ident '->' "'" ident@.
-%
-
-\subsection{Object manipulation}
-
-\ikwd{new\@\verb`new`}
-\begin{syntax}
-expr:
-    \ldots
-  | 'new' class-path
-  | expr '#' method-name
-  | '(' expr ':>' typexpr ')'
-  | '(' expr ':' typexpr ':>' typexpr ')'
-;
-\end{syntax}
-
-\subsubsection*{Object creation}
-
-\ikwd{new\@\verb`new`}
-The expression @'new' class-path@ denotes a function that takes some
-initialization arguments and returns a new object of class
-@class-path@.
-
-\subsubsection*{Message sending}
-
-The expression @expr '#' method-name@ invocates the method
-@method-name@ of the object denoted by @expr@.
-
-\subsubsection*{Coercion}
-
-The type of an object can be weakened  to a subtype.
-%
-The expression @'(' expr ':>' typexpr ')'@ coerces expression @expr@
-to type @typexpr@.
-%
-The expression @'(' expr ':' typexpr_1 ':>' typexpr_2 ')'@ coerces
-expression @expr@ from type @typexpr_1@ to type @typexpr_2@. It is
-more general than the previous one.
-
-\subsubsection*{Object duplication}
-
-An object can be duplicated using the library function "Oo.copy"
-(see~\ref{s:Oo}).
+\section{Classes}
 
 \subsection{Class definitions}
 
@@ -144,10 +17,6 @@ An object can be duplicated using the library function "Oo.copy"
 \ikwd{virtual\@\verb`virtual`}
 
 \begin{syntax}
-definition:
-    \ldots
-  | 'class' class-definition { 'and' class-definition } 'end'
-;
 class-definition:
     class-header '=' [constraints] { class-fields }
 ;
@@ -328,7 +197,7 @@ Objects cannot be created from a virtual class.
 A class can be flagged as @'closed'@.  A closed class is a class
 to which subclasses cannot add methods.
 
-\subsection{Class type}
+\subsection{Class types}
 
 \ikwd{and\@\verb`and`}
 \ikwd{as\@\verb`as`}
@@ -344,13 +213,10 @@ to which subclasses cannot add methods.
 \ikwd{val\@\verb`val`}
 \ikwd{virtual\@\verb`virtual`}
 
-Class types are modeled on class definitions.
+Class types are specifications for class definitions. The syntax of
+class types is closely modeled on class definitions.
 
 \begin{syntax}
-specification:
-    \ldots
-  | 'class' class-type { 'and' class-type } 'end'
-;
 class-type:
     class-type-header '=' [constraints] { class-type-fields }
 ;

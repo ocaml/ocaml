@@ -5,19 +5,19 @@ Drawing takes place
 in a separate window that is created when "open_graph" is called.
 
 This library cannot be used in native-code programs compiled with
-"cslopt" (because it uses signals, which are not supported by the
+"ocamlopt" (because it uses signals, which are not supported by the
 native-code compiler); it can only be used with bytecode programs
-compiled with "cslc".
+compiled with "ocamlc".
 
 \begin{unix}
 This library is implemented under the X11 windows system. 
 Programs that use the "graphics" library must be linked as follows:
 \begin{alltt}
-        cslc -custom \var{other options} graphics.cma \var{other files} -cclib -lgraphics -cclib -lX11
+        ocamlc -custom \var{other options} graphics.cma \var{other files} -cclib -lgraphics -cclib -lX11
 \end{alltt}
 For interactive use of the "graphics" library, do:
 \begin{alltt}
-        cslmktop -custom -o mytop graphics.cma -cclib -lgraphics -cclib -lX11
+        ocamlmktop -custom -o mytop graphics.cma -cclib -lgraphics -cclib -lX11
         ./mytop
 \end{alltt}
 \end{unix}
