@@ -11,7 +11,7 @@
 
 (* $Id$ *)
 
-(* Machine-independent graphics primitives *)
+(* Module [Graphics]: machine-independent graphics primitives *)
 
 exception Graphic_failure of string
         (* Raised by the functions below when they encounter an error. *)
