@@ -91,6 +91,9 @@ static void start_cycle (void)
   darken_all_roots();
   gc_phase = Phase_mark;
   markhp = NULL;
+#ifdef DEBUG
+  heap_check ();
+#endif
 }
 
 static void mark_slice (long work)
