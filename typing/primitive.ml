@@ -13,6 +13,7 @@
 
 (* Description of primitive functions *)
 
+open Misc
 open Format
 
 type description =
@@ -25,25 +26,25 @@ type description =
 let parse_declaration arity decl =
   match decl with
     name :: "noalloc" :: name2 :: "float" :: _ ->
-      Some{prim_name = name; prim_arity = arity; prim_alloc = false;
-           prim_native_name = name2; prim_native_float = true}
+      {prim_name = name; prim_arity = arity; prim_alloc = false;
+       prim_native_name = name2; prim_native_float = true}
   | name :: "noalloc" :: name2 :: _ ->
-      Some{prim_name = name; prim_arity = arity; prim_alloc = false;
-           prim_native_name = name2; prim_native_float = false}
+      {prim_name = name; prim_arity = arity; prim_alloc = false;
+       prim_native_name = name2; prim_native_float = false}
   | name :: name2 :: "float" :: _ ->
-      Some{prim_name = name; prim_arity = arity; prim_alloc = true;
-           prim_native_name = name2; prim_native_float = true}
+      {prim_name = name; prim_arity = arity; prim_alloc = true;
+       prim_native_name = name2; prim_native_float = true}
   | name :: "noalloc" :: _ ->
-      Some{prim_name = name; prim_arity = arity; prim_alloc = false;
-           prim_native_name = ""; prim_native_float = false}
+      {prim_name = name; prim_arity = arity; prim_alloc = false;
+       prim_native_name = ""; prim_native_float = false}
   | name :: name2 :: _ ->
-      Some{prim_name = name; prim_arity = arity; prim_alloc = true;
-           prim_native_name = name2; prim_native_float = false}
+      {prim_name = name; prim_arity = arity; prim_alloc = true;
+       prim_native_name = name2; prim_native_float = false}
   | name :: _ ->
-      Some{prim_name = name; prim_arity = arity; prim_alloc = true;
-           prim_native_name = ""; prim_native_float = false}
+      {prim_name = name; prim_arity = arity; prim_alloc = true;
+       prim_native_name = ""; prim_native_float = false}
   | [] ->
-      None
+      fatal_error "Primitive.parse_declaration"
 
 let print_quoted s = print_char '"'; print_string s; print_char '"'
 

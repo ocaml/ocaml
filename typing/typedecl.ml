@@ -28,6 +28,7 @@ type error =
   | Definition_mismatch of type_expr
   | Unconsistent_constraint
   | Type_clash of (type_expr * type_expr) list
+  | Null_arity_external
 
 exception Error of Location.t * error
 
@@ -295,9 +296,15 @@ let transl_exception env excdecl =
 (* Translate a value declaration *)
 let transl_value_decl env valdecl =
   let ty = Typetexp.transl_type_scheme env valdecl.pval_type in
-  let prim = Primitive.parse_declaration (Ctype.arity ty) valdecl.pval_prim in
-  { val_type = ty;
-    val_kind = match prim with Some p -> Val_prim p | None -> Val_reg }
+  match valdecl.pval_prim with
+    [] ->
+      { val_type = ty; val_kind = Val_reg }
+  | decl ->
+      let arity = Ctype.arity ty in
+      if arity = 0 then
+        raise(Error(valdecl.pval_type.ptyp_loc, Null_arity_external));
+      let prim = Primitive.parse_declaration arity decl in
+      { val_type = ty; val_kind = Val_prim prim }
 
 (* Translate a "with" constraint -- much simplified version of
     transl_type_decl. *)
@@ -362,3 +369,5 @@ let report_error = function
            print_string "This type constructor expands to type")
         (function () ->
            print_string "but is here used with type")
+  | Null_arity_external ->
+      print_string "External identifiers must be functions"

@@ -72,7 +72,7 @@ let rec add_methods env self t =
   match (Ctype.repr t).desc with
     Tfield (lab, k, _, t') ->
       if Btype.field_kind_repr k = Fpresent then begin
-        Ctype.filter_method env lab Public self;
+        Ctype.filter_method env lab Public self; ()
       end;
       add_methods env self t'
   | _ ->

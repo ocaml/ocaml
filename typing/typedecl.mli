@@ -36,6 +36,7 @@ type error =
   | Definition_mismatch of type_expr
   | Unconsistent_constraint
   | Type_clash of (type_expr * type_expr) list
+  | Null_arity_external
 
 exception Error of Location.t * error
 

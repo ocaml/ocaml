@@ -20,5 +20,5 @@ type description =
     prim_native_name: string;  (* Name of C function for the nat. code gen. *)
     prim_native_float: bool }  (* Does the above operate on unboxed floats? *)
 
-val parse_declaration: int -> string list -> description option
+val parse_declaration: int -> string list -> description
 val print_description: description -> unit
