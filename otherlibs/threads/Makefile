@@ -10,6 +10,8 @@ CAML_OBJS=thread.cmo threadIO.cmo mutex.cmo condition.cmo event.cmo
 
 all: libthreads.a threads.cma
 
+allopt:
+
 libthreads.a: $(C_OBJS)
 	rm -f libthreads.a
 	ar rc libthreads.a $(C_OBJS)
@@ -25,6 +27,8 @@ install:
 	cp libthreads.a $(LIBDIR)/libthreads.a
 	cd $(LIBDIR); $(RANLIB) libthreads.a
 	cp *.cmi threads.cma $(LIBDIR)
+
+installopt:
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 

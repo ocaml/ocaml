@@ -42,7 +42,7 @@ typedef struct thread_struct * thread_t;
 
 #define NO_FD (-1)
 #define NO_DELAY (-1.0)
-#define DELAY_INFTY 1E20        /* +infty, for this purpose */
+#define DELAY_INFTY 1E30        /* +infty, for this purpose */
 
 thread_t curr_thread = NULL;    /* The thread currently active */
 int num_waiting_on_fd;          /* Number of threads waiting on file descrs. */
@@ -57,8 +57,12 @@ static void thread_scan_roots(action)
 {
   thread_t th;
   register value * sp;
+  /* Thread descriptors are allocated in the major heap so that
+     they stay at fixed addresses. */
+  (*action)((value) curr_thread, (value *) &curr_thread);
   /* Don't scan curr_thread->sp, this has already been done */
   for (th = curr_thread->next; th != curr_thread; th = th->next) {
+    (*action)((value) th, (value *) &th);
     for (sp = th->sp; sp < th->stack_high; sp++) {
       (*action)(*sp, sp);
     }
@@ -74,7 +78,8 @@ value thread_initialize(unit)       /* ML */
 {
   struct itimerval timer;
   /* Create a descriptor for the current thread */
-  curr_thread = (thread_t) stat_alloc(sizeof(struct thread_struct));
+  curr_thread = (thread_t)
+    alloc_shr(sizeof(struct thread_struct) / sizeof(value), Abstract_tag);
   curr_thread->next = curr_thread;
   curr_thread->prev = curr_thread;
   curr_thread->stack_low = stack_low;
@@ -106,7 +111,12 @@ value thread_new(clos)          /* ML */
 {
   thread_t th;
   /* Allocate the thread and its stack */
-  th = (thread_t) stat_alloc(sizeof(struct thread_struct));
+  Push_roots(r, 1);
+  r[0] = clos;
+  th = (thread_t)
+    alloc_shr(sizeof(struct thread_struct) / sizeof(value), Abstract_tag);
+  clos = r[0];
+  Pop_roots();
   th->stack_low = (value *) stat_alloc(Thread_stack_size);
   th->stack_high = th->stack_low + Thread_stack_size / sizeof(value);
   th->stack_threshold = th->stack_low + Stack_threshold / sizeof(value);
@@ -215,7 +225,7 @@ void schedule_thread()
           delay_ptr = NULL;
         } else {
           delay_tv.tv_sec = (unsigned int) delay;
-          delay_tv.tv_usec = (delay - (double) delay_tv.tv_sec) * 1e6;
+          delay_tv.tv_usec = (delay - (double) delay_tv.tv_sec) * 1E6;
           delay_ptr = &delay_tv;
         }
         retcode = select(FD_SETSIZE, &readfds, NULL, NULL, delay_ptr);
@@ -347,7 +357,6 @@ value thread_kill(thread)       /* ML */
   th->next->prev = th->prev;
   /* Free its resources */
   stat_free((char *) th->stack_low);
-  stat_free((char *) th);
   return Val_unit;
 }
 

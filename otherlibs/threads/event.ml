@@ -80,17 +80,15 @@ let basic_sync genev =
   (* Extract the result *)
   bev.(!performed).result()
 
-(* Rotate an array by some pseudo-random amount *)
+(* Apply a random permutation on an array *)
 
-let rotate_array a =
-  if Array.length a <= 1 then a else begin
-    let r = Array.new (Array.length a) a.(0) in
-    let n = Random.int(Array.length a) in
-    let m = Array.length a - n in
-    for i = 0 to n - 1 do r.(i) <- a.(i + m) done;
-    for i = 0 to m - 1 do r.(i + n) <- a.(i) done;
-    r
-  end
+let scramble_array a =
+  let len = Array.length a in
+  for i = len - 1 downto 1 do
+    let j = Random.int (i + 1) in
+    let temp = a.(i) in a.(i) <- a.(j); a.(j) <- temp
+  done;
+  a
 
 (* Main synchronization function *)
 
@@ -101,7 +99,7 @@ let rec flatten_event ev accu =
   | Guard fn -> flatten_event (fn ()) accu
 
 let sync ev =
-  basic_sync(rotate_array(Array.of_list(flatten_event ev [])))
+  basic_sync(scramble_array(Array.of_list(flatten_event ev [])))
 
 (* Event construction *)
 
