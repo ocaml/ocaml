@@ -54,7 +54,7 @@ module type S =
     val remove: key -> 'a t -> 'a t
         (* [remove x m] returns a map containing the same bindings as
            [m], except for [x] which is unbound in the returned map. *)
-    val mem:  key -> 'a t -> bool
+    val mem: key -> 'a t -> bool
         (* [mem x m] returns [true] if [m] contains a binding for [m],
            and [false] otherwise. *)
     val iter: f:(key:key -> data:'a -> unit) -> 'a t -> unit
