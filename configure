@@ -191,7 +191,7 @@ case "$bytecc,$host" in
     # GNU C extensions disabled, but __GNUC__ still defined!
     bytecccompopts="-fno-defer-pop $gcc_warnings -U__GNUC__ -posix"
     bytecclinkopts="-posix";;
-  *,*-*-rhapsody*)
+  *,*-*-rhapsody*|*,*-*-darwin*)
     # Almost the same as NeXTStep
     bytecccompopts="-fno-defer-pop $gcc_warnings -DSHRINKED_GNUC"
     mathlib="";;
@@ -383,6 +383,7 @@ case "$host" in
   powerpc-*-aix*)               arch=power; model=ppc; system=aix;;
   powerpc-*-linux*)             arch=power; model=ppc; system=elf;;
   powerpc-*-rhapsody*)          arch=power; model=ppc; system=rhapsody;;
+  powerpc-*-darwin*)            arch=power; model=ppc; system=rhapsody;;
   arm*-*-linux*)                arch=arm; system=linux;;
   ia64-*-linux*)                arch=ia64; system=linux;;
 esac
