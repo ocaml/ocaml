@@ -21,6 +21,10 @@ open Translcore
 
 (* XXX Rajouter des evenements... *)
 
+type error = Illegal_class_expr
+
+exception Error of Location.t * error
+
 let lfunction params body =
   match body with
     Lfunction (Curried, params', body') ->
@@ -159,6 +163,19 @@ let rec build_object_init cl_table obj params inh_init cl =
   | Tclass_constraint (cl, vals, pub_meths, concr_meths) ->
       build_object_init cl_table obj params inh_init cl
 
+let rec build_object_init_0 cl_table params cl =
+  match cl.cl_desc with
+    Tclass_let (rec_flag, defs, vals, cl) ->
+      let (inh_init, obj_init) =
+        build_object_init_0 cl_table (vals @ params) cl
+      in
+      (inh_init, Translcore.transl_let rec_flag defs obj_init)
+  | _ ->
+      let obj = Ident.create "self" in
+      let (inh_init, obj_init) = build_object_init cl_table obj params [] cl in
+      let obj_init = lfunction [obj] obj_init in
+      (inh_init, obj_init)
+
 let bind_method tbl public_methods lab id cl_init =
   if List.mem lab public_methods then
     Llet(Alias, id, Lvar (meth lab), cl_init)
@@ -177,8 +194,7 @@ let rec build_class_init cla pub_meths cstr inh_init cl_init cl =
         obj_init::inh_init ->
           (inh_init,
            Llet (Strict, obj_init, 
-                 Lapply(Lprim(Pfield 1, [transl_path path]),
-                        [Lvar cla]),
+                 Lapply(Lprim(Pfield 1, [transl_path path]), [Lvar cla]),
                  cl_init))
       | _ ->
           assert false
@@ -270,11 +286,11 @@ let rec build_class_init cla pub_meths cstr inh_init cl_init cl =
    let ???) ?
 *)
 
-let transl_class cl_id arity pub_meths cl =
+let transl_class ids cl_id arity pub_meths cl =
   let cla = Ident.create "class" in
-  let obj = Ident.create "self" in
-  let (inh_init, obj_init) = build_object_init cla obj [] [] cl in
-  let obj_init = lfunction [obj] obj_init in
+  let (inh_init, obj_init) = build_object_init_0 cla [] cl in
+  if not (Translcore.check_recursive_lambda ids obj_init) then
+    raise(Error(cl.cl_loc, Illegal_class_expr));
   let (inh_init, cl_init) =
     build_class_init cla pub_meths true (List.rev inh_init) obj_init cl
   in
@@ -295,3 +311,12 @@ let transl_class cl_id arity pub_meths cl =
 
 let class_stub =
   Lprim(Pmakeblock(0, Mutable), [lambda_unit; lambda_unit; lambda_unit])
+
+(* Error report *)
+
+open Format
+
+let report_error = function
+  Illegal_class_expr ->
+    print_string
+      "This kind of class expression is not allowed"

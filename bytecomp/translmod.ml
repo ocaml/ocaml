@@ -158,14 +158,12 @@ and transl_structure fields cc rootpath = function
   | Tstr_open path :: rem ->
       transl_structure fields cc rootpath rem
   | Tstr_class cl_list :: rem ->
+      let ids = List.map (fun (i, _, _, _) -> i) cl_list in
       Lletrec(List.map
                 (fun (id, arity, meths, cl) ->
-                  (id, transl_class id arity meths cl))
+                  (id, transl_class ids id arity meths cl))
                 cl_list,
-              transl_structure
-                ((List.rev (List.map (fun (i, _, _, _) -> i) cl_list))
-                 @ fields)
-                cc rootpath rem)
+              transl_structure (List.rev ids @ fields) cc rootpath rem)
   | Tstr_cltype cl_list :: rem ->
       transl_structure fields cc rootpath rem
 
@@ -222,13 +220,12 @@ let transl_store_structure glob map prims str =
   | Tstr_open path :: rem ->
       transl_store rem
   | Tstr_class cl_list :: rem ->
+      let ids = List.map (fun (i, _, _, _) -> i) cl_list in
       Lletrec(List.map
                 (fun (id, arity, meths, cl) ->
-                   (id, transl_class id arity meths cl))
+                   (id, transl_class ids id arity meths cl))
                 cl_list,
-              store_idents glob map (List.map (fun (i, _, _, _) -> i)
-                                       cl_list)
-                (transl_store rem))
+              store_idents glob map ids (transl_store rem))
   | Tstr_cltype cl_list :: rem ->
       transl_store rem
 
@@ -347,10 +344,11 @@ let transl_toplevel_item = function
   | Tstr_open path ->
       lambda_unit
   | Tstr_class cl_list ->
+      let ids = List.map (fun (i, _, _, _) -> i) cl_list in
       let lam =
         Lletrec(List.map
                   (fun (id, arity, meths, cl) ->
-                     (id, transl_class id arity meths cl))
+                     (id, transl_class ids id arity meths cl))
                   cl_list,
                 make_sequence
                   (fun (id, _, _, _) -> Lprim(Psetglobal id, [Lvar id]))

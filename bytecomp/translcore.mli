@@ -28,6 +28,8 @@ val transl_primitive: Primitive.description -> lambda
 val transl_exception:
       Ident.t -> Path.t option -> exception_declaration -> lambda
 
+val check_recursive_lambda: Ident.t list -> lambda -> bool
+
 type error =
     Illegal_letrec_pat
   | Illegal_letrec_expr
