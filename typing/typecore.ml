@@ -287,7 +287,6 @@ let rec is_nonexpansive exp =
       (match opt_init_exp with None -> true | Some e -> is_nonexpansive e)
   | Texp_field(exp, lbl) -> is_nonexpansive exp
   | Texp_array [] -> true
-  | Texp_new _ -> true
   | _ -> false
 
 (* Typing of printf formats *)
@@ -910,14 +909,14 @@ let report_error = function
       print_string " argument(s)";
       close_box()
   | Label_mismatch(lid, trace) ->
-      unification_error trace
+      unification_error true trace
         (function () ->
            print_string "The label "; longident lid;
            print_space(); print_string "belongs to the type")
         (function () ->
            print_string "but is here mixed with labels of type")
   | Pattern_type_clash trace ->
-      unification_error trace
+      unification_error true trace
         (function () ->
            print_string "This pattern matches values of type")
         (function () ->
@@ -927,7 +926,7 @@ let report_error = function
   | Orpat_not_closed ->
       print_string "A pattern with | must not bind variables"
   | Expr_type_clash trace ->
-      unification_error trace
+      unification_error true trace
         (function () ->
            print_string "This expression has type")
         (function () ->
@@ -991,7 +990,7 @@ let report_error = function
       print_string "The instance variable "; print_string v;
       print_string " is overridden several times"
   | Coercion_failure (ty, ty', trace) ->
-      unification_error trace
+      unification_error true trace
         (function () ->
            mark_loops ty; if ty' != ty then mark_loops ty';
            print_string "This expression cannot be coerced to type";
