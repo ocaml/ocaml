@@ -187,15 +187,19 @@ let sname_of_type t =
     name
 ;;
 
-let rec tree_of_val_type conv = function
-  | Rtyp_var x ->
-      Otyp_var (false, sname_of_type x)
-  | Rtyp_arrow (l,t1,t2) ->
-      Otyp_arrow (l, tree_of_val_type conv t1, tree_of_val_type conv t2)
-  | Rtyp_tuple tls ->
-      Otyp_tuple (List.map (tree_of_val_type conv) tls)
-  | Rtyp_constr (p, tls) ->
-      Otyp_constr (conv p, List.map (tree_of_val_type conv) tls)
+let tree_of_val_type conv t = 
+  let rec aux = function
+    | Rtyp_var x ->
+	Otyp_var (false, sname_of_type x)
+    | Rtyp_arrow (l,t1,t2) ->
+	Otyp_arrow (l, aux t1, aux t2)
+    | Rtyp_tuple tls ->
+	Otyp_tuple (List.map aux tls)
+    | Rtyp_constr (p, tls) ->
+	Otyp_constr (conv p, List.map aux tls)
+  in
+  sreset_names ();
+  aux t
 ;;
 
 let tree_of_run_type = tree_of_val_type (fun (ri,_) -> tree_of_run_ident ri)
