@@ -92,7 +92,7 @@ let interface sourcefile =
   let inputfile = preprocess sourcefile (prefixname ^ ".ppi") in
   let ast = parse_file inputfile Parse.interface ast_intf_magic_number in
   let sg = Typemod.transl_signature (initial_env()) ast in
-  if !Clflags.print_types then (Printtyp.signature sg; print_flush());
+  if !Clflags.print_types then (Printtyp.signature sg; print_newline());
   Env.save_signature sg modulename (prefixname ^ ".cmi");
   remove_preprocessed inputfile
 
@@ -143,8 +143,9 @@ let implementation sourcefile =
 let c_file name =
   if Sys.command
      (Printf.sprintf
-       "%s -c %s -I%s %s"
+       "%s -c %s %s -I%s %s"
        Config.bytecomp_c_compiler
+       (String.concat " " (List.rev !Clflags.ccopts))
        (String.concat " "
          (List.map (fun dir -> "-I" ^ dir) 
                    (List.rev !Clflags.include_dirs)))
