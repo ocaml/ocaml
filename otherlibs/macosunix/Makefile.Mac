@@ -15,12 +15,13 @@
 includepath = ":config:,:byterun:,{GUSI}include:"
 
 C = sc
-COptions = -i {includepath} -includes unix -w 30,35 -model far {cdbgflag}
+COptions = -i {includepath} -includes unix -w 30,35 {cdbgflag} -model far
 
 PPCC = mrc
 PPCCOptions = -i {includepath} -includes unix -w 30,35 {cdbgflag}
 
 CAMLC = :::boot:ocamlrun :::boot:ocamlc -I :::stdlib:
+
 
 # Files in this directory
 MAC_OBJS = macosunix.c.o
@@ -129,7 +130,8 @@ partialclean Ä
 
 clean Ä partialclean
     delete -i Å.[xo] || set status 0
-    delete -i -y {UNIX_FILES} :byterun :config
+    delete -i -y :byterun :config
+    delete -i {UNIX_FILES}
 
 install Ä
     duplicate -y libcamlrun-unix.o libcamlrun-unix.x unix.cmi unix.cma ¶

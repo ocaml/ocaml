@@ -117,15 +117,17 @@ primitives Ä {PRIMS}
                > primitives
 
 :prims.c Ä primitives
-    echo '#include "mlvalues.h"' > prims.c
-    echo '#include "prims.h"' >> prims.c
-    streamedit -e '1,$ change "extern value " . "();"' primitives >>prims.c
-    echo 'c_primitive cprim [] = {' >> prims.c
-    streamedit -e '1,$ change "  " . ","' primitives >> prims.c
-    echo '0 };' >> prims.c
-    echo 'char * names_of_cprim [] = {' >> prims.c
-    streamedit -e '1,$ change "  ¶"" . "¶","' primitives >> prims.c
-    echo '0 };' >> prims.c
+    begin
+      echo '#include "mlvalues.h"'
+      echo '#include "prims.h"'
+      streamedit -e '1,$ change "extern value " . "();"' primitives
+      echo 'c_primitive cprim [] = {'
+      streamedit -e '1,$ change "  " . ","' primitives
+      echo '0 };'
+      echo 'char * names_of_cprim [] = {'
+      streamedit -e '1,$ change "  ¶"" . "¶","' primitives
+      echo '0 };'
+    end > prims.c
 
 :opnames.h Ä :instruct.h
     streamedit -e "/¶¶/'*'/ delete" ¶

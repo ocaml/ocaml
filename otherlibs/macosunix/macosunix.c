@@ -76,7 +76,7 @@ value unix_getpid (void)              /* ML */
 
 value unix_time (void)                /* ML */
 {
-  return copy_double (time (NULL) - 2082844800.);
+  return copy_double (time (NULL) /* - 2082844800. */);
 }
 
 value unix_times (void)               /* ML */
