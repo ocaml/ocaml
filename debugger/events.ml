@@ -35,11 +35,15 @@ let update_current_event () =
     None ->
       current_event := None;
       old_pc := None
-  | (Some pc) as opt_pc ->
-      if opt_pc <> !old_pc then begin
-      	current_event := Some (Symbols.event_at_pc pc);
-      	old_pc := opt_pc
-	end
+  | (Some pc) as opt_pc when opt_pc <> !old_pc ->
+      current_event := begin try
+                         Some (Symbols.event_at_pc pc)
+                       with Not_found ->
+                         None
+                       end;
+      old_pc := opt_pc
+  | _ ->
+      ()
 
 (* Current position in source. *)
 (* Raise `Not_found' if not on an event (beginning or end of program). *)
