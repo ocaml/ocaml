@@ -170,15 +170,15 @@ let execute_phrase phr =
 
 (* Reading function *)
 
-external input_scan_line : in_channel -> int = "input_scan_line"
-
 let first_line = ref true
 
 let refill_lexbuf buffer len =
   output_string stdout (if !first_line then "# " else "  "); flush stdout;
   first_line := false;
-  let n = min len (abs(input_scan_line stdin)) in
-  input stdin buffer 0 n
+  let i = ref 0 in
+  while !i < len && (let c = input_char stdin in buffer.[!i] <- c; c <> '\n')
+  do incr i done;
+  !i + 1
 
 (* Discard everything already in a lexer buffer *)
 
@@ -188,11 +188,12 @@ let empty_lexbuf lb =
   lb.lex_curr_pos <- l
 
 (* Toplevel initialization. Performed here instead of at the
-   beginning of loop() so that user code linked in with cslmktop
+   beginning of loop() so that user code linked in with ocamlmktop
    can call directives from Topdirs. *)
 
 let _ =
   Symtable.init_toplevel();
+  Clflags.thread_safe := true;
   Compile.init_path();
   Sys.interactive := true
 
