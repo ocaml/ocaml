@@ -5,7 +5,7 @@
 (*    Valerie Menissier-Morain, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -555,7 +555,7 @@ let square_big_int bi =
   let len_res = 2 * len_bi in
   let res = make_nat len_res in
     square_nat res 0 len_res (bi.abs_value) 0 len_bi;
-    { sign = 1;
+    { sign = bi.sign * bi.sign;
       abs_value = res }
 
 (* round off of the futur last digit (of the integer represented by the string
