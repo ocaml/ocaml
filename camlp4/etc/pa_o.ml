@@ -521,8 +521,10 @@ EXTEND
       | "try"; e = SELF; "with"; OPT "|"; l = LIST1 match_case SEP "|" ->
           <:expr< try $e$ with [ $list:l$ ] >>
       | "if"; e1 = SELF; "then"; e2 = expr LEVEL "expr1";
-        e3 = [ "else"; e = expr LEVEL "expr1" -> e | -> <:expr< () >> ] ->
+        "else"; e3 = expr LEVEL "expr1" ->
           <:expr< if $e1$ then $e2$ else $e3$ >>
+      | "if"; e1 = SELF; "then"; e2 = expr LEVEL "expr1" ->
+          <:expr< if $e1$ then $e2$ else () >>
       | "for"; i = LIDENT; "="; e1 = SELF; df = direction_flag; e2 = SELF;
         "do"; e = SELF; "done" ->
           <:expr< for $i$ = $e1$ $to:df$ $e2$ do { $list:get_seq e$ } >>

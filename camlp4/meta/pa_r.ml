@@ -262,14 +262,14 @@ EXTEND
       | "fun"; "["; l = LIST0 match_case SEP "|"; "]" ->
           <:expr< fun [ $list:l$ ] >>
       | "fun"; p = ipatt; e = fun_def -> <:expr< fun $p$ -> $e$ >>
-      | "match"; x = SELF; "with"; "["; l = LIST0 match_case SEP "|"; "]" ->
-          <:expr< match $x$ with [ $list:l$ ] >>
-      | "match"; x = SELF; "with"; p = ipatt; "->"; e = SELF ->
-          <:expr< match $x$ with $p$ -> $e$ >>
-      | "try"; x = SELF; "with"; "["; l = LIST0 match_case SEP "|"; "]" ->
-          <:expr< try $x$ with [ $list:l$ ] >>
-      | "try"; x = SELF; "with"; p = ipatt; "->"; e = SELF ->
-          <:expr< try $x$ with $p$ -> $e$ >>
+      | "match"; e = SELF; "with"; "["; l = LIST0 match_case SEP "|"; "]" ->
+          <:expr< match $e$ with [ $list:l$ ] >>
+      | "match"; e = SELF; "with"; p1 = ipatt; "->"; e1 = SELF ->
+          <:expr< match $e$ with $p1$ -> $e1$ >>
+      | "try"; e = SELF; "with"; "["; l = LIST0 match_case SEP "|"; "]" ->
+          <:expr< try $e$ with [ $list:l$ ] >>
+      | "try"; e = SELF; "with"; p1 = ipatt; "->"; e1 = SELF ->
+          <:expr< try $e$ with $p1$ -> $e1$ >>
       | "if"; e1 = SELF; "then"; e2 = SELF; "else"; e3 = SELF ->
           <:expr< if $e1$ then $e2$ else $e3$ >>
       | "do"; "{"; seq = sequence; "}" ->
