@@ -34,7 +34,8 @@ let (~) =
       data
 
 let caml_input, caml_output =
-  try Unix.open_process !camllight with _ -> failwith "Cannot start toplevel"
+  let cmd = !camllight ^ " 2>&1" in
+  try Unix.open_process cmd with _ -> failwith "Cannot start toplevel"
 let () =
   at_exit (fun () -> ignore (Unix.close_process (caml_input, caml_output)));
   ignore (input_line caml_input);
@@ -64,6 +65,7 @@ let read_output () =
 let escape_backslash = global_replace pat:~"\\\\" templ:"\\\\\\\\"
 
 let process_file file =
+  prerr_endline ("Processing " ^ file);
   let ic = try open_in file with _ -> failwith "Cannot read input file" in
   let oc =
     try if !outfile = "-" then
