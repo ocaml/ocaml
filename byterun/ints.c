@@ -376,61 +376,61 @@ static char int64_error[] =
   "The type Int64.t is not supported on this platform";
 
 value copy_int64(int64 i)
-{ invalid_arg(int64_error); }
+{ invalid_argument(int64_error); }
 
 value int64_neg(value v)
-{ invalid_arg(int64_error); }
+{ invalid_argument(int64_error); }
 
 value int64_add(value v1, value v2)
-{ invalid_arg(int64_error); }
+{ invalid_argument(int64_error); }
 
 value int64_sub(value v1, value v2)
-{ invalid_arg(int64_error); }
+{ invalid_argument(int64_error); }
 
 value int64_mul(value v1, value v2)
-{ invalid_arg(int64_error); }
+{ invalid_argument(int64_error); }
 
 value int64_div(value v1, value v2)
-{ invalid_arg(int64_error); }
+{ invalid_argument(int64_error); }
 
 value int64_mod(value v1, value v2)
-{ invalid_arg(int64_error); }
+{ invalid_argument(int64_error); }
 
 value int64_and(value v1, value v2)
-{ invalid_arg(int64_error); }
+{ invalid_argument(int64_error); }
 
 value int64_or(value v1, value v2)
-{ invalid_arg(int64_error); }
+{ invalid_argument(int64_error); }
 
 value int64_xor(value v1, value v2)
-{ invalid_arg(int64_error); }
+{ invalid_argument(int64_error); }
 
 value int64_shift_left(value v1, value v2)
-{ invalid_arg(int64_error); }
+{ invalid_argument(int64_error); }
 
 value int64_shift_right(value v1, value v2)
-{ invalid_arg(int64_error); }
+{ invalid_argument(int64_error); }
 
 value int64_shift_right_unsigned(value v1, value v2)
-{ invalid_arg(int64_error); }
+{ invalid_argument(int64_error); }
 
 value int64_of_int(value v)
-{ invalid_arg(int64_error); }
+{ invalid_argument(int64_error); }
 
 value int64_to_int(value v)
-{ invalid_arg(int64_error); }
+{ invalid_argument(int64_error); }
 
 value int64_of_int32(value v)
-{ invalid_arg(int64_error); }
+{ invalid_argument(int64_error); }
 
 value int64_to_int32(value v)
-{ invalid_arg(int64_error); }
+{ invalid_argument(int64_error); }
 
 value format_int64(value fmt, value arg)
-{ invalid_arg(int64_error); }
+{ invalid_argument(int64_error); }
 
 value int64_of_string(value s)
-{ invalid_arg(int64_error); }
+{ invalid_argument(int64_error); }
 
 #endif
 
