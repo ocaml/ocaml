@@ -229,6 +229,9 @@ p#get_x;;
 (p#move 3)#get_x;;
 p#get_x;;
 \end{caml_example}
+Note that the type abbreviation "functional_point" is recursive, which can
+be seen in the class type of "functional_point": the type of self to "'a"
+and "'a" appears inside the type of the "move" method.
 
 \subsection*{Virtual methods}
 
@@ -293,39 +296,77 @@ or "int_comparable2".
 (min (new int_comparable2 5) (new int_comparable2 3))#x;;
 \end{caml_example}
 
-%This last example is somewhat more complicated. It demonstrates
-%recursive classes.
-%\begin{caml_example}
-%class virtual 'a lst () as self =
-%  virtual null : bool
-%  virtual hd : 'a
-%  virtual tl : 'a lst
-%  method map f =
-%    (if self#null then
-%       new nil ()
-%     else
-%       new cons (f self#hd) (self#tl#map f)
-%     : 'a lst)
-%  method iter (f : 'a -> unit) =
-%    if self#null then ()
-%    else begin
-%      f self#hd;
-%      self#tl#iter f
-%    end
-%and 'a nil () =
-%  inherit ('a) lst ()
-%  method null = true
-%  method hd   = failwith "hd"
-%  method tl   = failwith "tl"
-%and 'a cons h t =
-%  inherit ('a) lst ()
-%  val h = h val t = t
-%  method null = false
-%  method hd   = h
-%  method tl   = t
-%end;;
-%let l1 = new cons 3 (new cons 10 (new nil ()));;
-%l1#iter (fun i -> print_int i; print_string " ");;
-%let l2 = l1#map (fun x -> x + 1);;
-%l2#iter (fun i -> print_int i; print_string " ");;
-%\end{caml_example}
+
+\subsection* {Recursive classes}
+
+This last example is somewhat more complicated. It demonstrates
+recursive classes. Indeed, lists can also be implemented by classes.
+We recursively define three classes:
+\begin{enumerate}
+\item a virtual class "lst" that implements functional over lists, here a
+map method, an interation method, and a printing method. 
+
+\item a class "nil" defines the behavior of the empty list. 
+
+\item a class "cons" defines the behavior of non empty lists. 
+
+\end{enumerate}
+All three classes have the same interface. 
+The class "lst" depends on classes "nil" and "cons" since the "map" method
+creates objets of the classes "nil" and "cons", which themselves depend on
+the class "lst", since they both inherits the class "lst". 
+\begin{caml_example}
+class virtual 'a lst () as self =
+  virtual null : bool
+  virtual hd : 'a
+  virtual tl : 'a lst
+  method map f =
+    (if self#null then
+       new nil ()
+     else
+       new cons (f self#hd) (self#tl#map f)
+     : 'a lst)
+  method iter (f : 'a -> unit) =
+    if self#null then ()
+    else begin
+      f self#hd;
+      self#tl#iter f
+    end
+  method print (f : 'a -> unit) = 
+    print_string "(";
+    self#iter (fun x -> f x; print_string "::");
+    print_string "[]";
+    print_string ")"
+and 'a nil () =
+  inherit ('a) lst ()
+  method null = true
+  method hd   = failwith "hd"
+  method tl   = failwith "tl"
+
+and 'a cons h t =
+  inherit ('a) lst ()
+  val h = h val t = t
+  method null = false
+  method hd   = h
+  method tl   = t
+end;;
+\end{caml_example}
+It is a weakness of Objective Caml that objects
+cannot have polymorphic methods: the  method "map" can
+only return a list of the same type as the objet to which it aplies.  
+\begin{caml_example}
+let l1 = new cons 3 (new cons 10 (new nil ()));;
+l1#print print_int;;
+let l2 = l1#map (fun x -> x + 1);;
+l2#print print_int;;
+\end{caml_example}
+A polymorphic "map" function can still be defined:
+\begin{caml_example}
+let rec map_list f (x:'a lst) = 
+  if x#null then new nil() 
+  else new cons (f x#hd) (map_list f x#tl)
+;; 
+
+let p1 = (map_list (fun x -> new printable_color_point x "red") l1);;
+p1#print (fun x -> x#print);;
+\end{caml_example}
