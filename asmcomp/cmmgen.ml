@@ -17,7 +17,7 @@ open Misc
 open Arch
 open Asttypes
 open Primitive
-open Typedtree
+open Types
 open Lambda
 open Clambda
 open Cmm
