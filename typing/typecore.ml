@@ -425,9 +425,9 @@ let rec type_exp env sexp =
           { exp_desc = Texp_ifthenelse(cond, ifso, None);
             exp_loc = sexp.pexp_loc;
             exp_type = instance Predef.type_unit }
-      | Some sexp ->
+      | Some sifnot ->
           let ifso = type_exp env sifso in
-          let ifnot = type_expect env sexp ifso.exp_type in
+          let ifnot = type_expect env sifnot ifso.exp_type in
           { exp_desc = Texp_ifthenelse(cond, ifso, Some ifnot);
             exp_loc = sexp.pexp_loc;
             exp_type = ifso.exp_type }
