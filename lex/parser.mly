@@ -50,10 +50,9 @@ let rec subtract l1 l2 =
 %token Tstar Tmaybe Tplus Tlparen Trparen Tcaret Tdash Tlet
 
 %left Tor
-%left CONCAT
-%nonassoc Tmaybe
-%left Tstar
-%left Tplus
+%nonassoc CONCAT
+%nonassoc Tmaybe Tstar Tplus
+          Tident Tchar Tstring Tunderscore Teof Tlbracket Tlparen
 
 %start lexer_definition
 %type <Syntax.lexer_definition> lexer_definition
