@@ -33,6 +33,7 @@ type error =
   | Orpat_not_closed
   | Expr_type_clash of (type_expr * type_expr) list
   | Apply_non_function of type_expr
+  | Apply_wrong_label of label
   | Label_multiply_defined of Longident.t
   | Label_missing
   | Label_not_mutable of Longident.t
@@ -319,22 +320,24 @@ let type_format loc fmt =
           '%' ->
             scan_format (j+1)
         | 's' ->
-            newty (Tarrow(instance Predef.type_string, scan_format (j+1)))
+            newty (Tarrow("",instance Predef.type_string, scan_format (j+1)))
         | 'c' ->
-            newty (Tarrow(instance Predef.type_char, scan_format (j+1)))
+            newty (Tarrow("",instance Predef.type_char, scan_format (j+1)))
         | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
-            newty (Tarrow(instance Predef.type_int, scan_format (j+1)))
+            newty (Tarrow("",instance Predef.type_int, scan_format (j+1)))
         | 'f' | 'e' | 'E' | 'g' | 'G' ->
-            newty (Tarrow(instance Predef.type_float, scan_format (j+1)))
+            newty (Tarrow("",instance Predef.type_float, scan_format (j+1)))
         | 'b' ->
-            newty (Tarrow(instance Predef.type_bool, scan_format (j+1)))
+            newty (Tarrow("",instance Predef.type_bool, scan_format (j+1)))
         | 'a' ->
             let ty_arg = newvar() in
-            newty (Tarrow (newty (Tarrow(ty_input,
-                                         newty (Tarrow (ty_arg, ty_result)))),
-                           newty (Tarrow (ty_arg, scan_format (j+1)))))
+            newty (Tarrow ("",
+			   newty (Tarrow("", ty_input,
+                                         newty (Tarrow ("", ty_arg,
+							ty_result)))),
+                           newty (Tarrow ("", ty_arg, scan_format (j+1)))))
         | 't' ->
-            newty (Tarrow(newty (Tarrow(ty_input, ty_result)),
+            newty (Tarrow("", newty (Tarrow("", ty_input, ty_result)),
                           scan_format (j+1)))
         | c ->
             raise(Error(loc, Bad_format(String.sub fmt i (j-i+1))))
@@ -391,27 +394,31 @@ let rec type_exp env sexp =
         exp_loc = sexp.pexp_loc;
         exp_type = body.exp_type;
         exp_env = env }
-  | Pexp_function caselist ->
+  | Pexp_function (l, _, caselist) ->
       let ty_arg = newvar() and ty_res = newvar() in
       let cases = type_cases env ty_arg ty_res caselist in
       Parmatch.check_unused cases;
       Parmatch.check_partial sexp.pexp_loc cases;
       { exp_desc = Texp_function cases;
         exp_loc = sexp.pexp_loc;
-        exp_type = newty (Tarrow(ty_arg, ty_res));
+        exp_type = newty (Tarrow(l, ty_arg, ty_res));
         exp_env = env }
   | Pexp_apply(sfunct, sargs) ->
       let funct = type_exp env sfunct in
       let rec type_args ty_fun = function
         [] ->
           ([], ty_fun)
-      | sarg1 :: sargl ->
+      | (l1, sarg1) :: sargl ->
           let (ty1, ty2) =
             try
-              filter_arrow env ty_fun
+              filter_arrow env ty_fun l1
             with Unify _ ->
-              raise(Error(sfunct.pexp_loc,
-                          Apply_non_function funct.exp_type)) in
+	      match repr ty_fun with
+		{desc=Tarrow _} ->
+		  raise(Error(sfunct.pexp_loc, Apply_wrong_label l1))
+	      |	_ ->
+		  raise(Error(sfunct.pexp_loc,
+                              Apply_non_function funct.exp_type)) in
           let arg1 = type_expect env sarg1 ty1 in
           let (argl, ty_res) = type_args ty2 sargl in
           (arg1 :: argl, ty_res) in
@@ -652,7 +659,7 @@ let rec type_exp env sexp =
                     filter_self_method env met Private meths obj.exp_type
                   in
                   let method_type = newvar () in
-                  let (obj_ty, res_ty) = filter_arrow env method_type in
+                  let (obj_ty, res_ty) = filter_arrow env method_type "" in
                   unify env obj_ty desc.val_type;
                   unify env res_ty typ;
                   (Texp_apply({exp_desc = Texp_ident(Path.Pident method_id,
@@ -806,9 +813,9 @@ and type_expect env sexp ty_expected =
         exp_loc = sexp.pexp_loc;
         exp_type = exp2.exp_type;
         exp_env = env }
-  | Pexp_function caselist ->
+  | Pexp_function (l, _, caselist) ->
       let (ty_arg, ty_res) =
-        try filter_arrow env ty_expected with Unify _ ->
+        try filter_arrow env ty_expected l with Unify _ ->
           raise(Error(sexp.pexp_loc, Too_many_arguments))
       in
       let cases =
@@ -824,7 +831,7 @@ and type_expect env sexp ty_expected =
       Parmatch.check_partial sexp.pexp_loc cases;
       { exp_desc = Texp_function cases;
         exp_loc = sexp.pexp_loc;
-        exp_type = newty (Tarrow(ty_arg, ty_res));
+        exp_type = newty (Tarrow(l, ty_arg, ty_res));
         exp_env = env }
   | _ ->
       let exp = type_exp env sexp in
@@ -836,7 +843,7 @@ and type_expect env sexp ty_expected =
 and type_statement env sexp =
     let exp = type_exp env sexp in
     match (expand_head env exp.exp_type).desc with
-    | Tarrow(_, _) ->
+    | Tarrow(_, _, _) ->
         Location.print_warning sexp.pexp_loc Warnings.Partial_application;
         exp
     | Tconstr (p, _, _) when Path.same p Predef.path_unit -> exp
@@ -945,12 +952,17 @@ let report_error = function
            print_string "but is here used with type")
   | Apply_non_function typ ->
       begin match (repr typ).desc with
-        Tarrow(_, _) ->
+        Tarrow _ ->
           print_string "This function is applied to too many arguments"
       | _ ->
           print_string
             "This expression is not a function, it cannot be applied"
       end
+  | Apply_wrong_label l ->
+      if l = "" then
+	print_string "This function cannot be applied without label"
+      else
+	printf "This function cannot be applied on label %s" l
   | Label_multiply_defined lid ->
       print_string "The label "; longident lid;
       print_string " is defined several times"

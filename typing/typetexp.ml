@@ -112,10 +112,10 @@ let rec transl_type env policy styp =
               v
             end
       end
-  | Ptyp_arrow(st1, st2) ->
+  | Ptyp_arrow(l, st1, st2) ->
       let ty1 = transl_type env policy st1 in
       let ty2 = transl_type env policy st2 in
-      newty (Tarrow(ty1, ty2))
+      newty (Tarrow(l, ty1, ty2))
   | Ptyp_tuple stl ->
       newty (Ttuple(List.map (transl_type env policy) stl))
   | Ptyp_constr(lid, stl) ->

@@ -284,7 +284,7 @@ let rec signature_of_class_type =
   function
     Tcty_constr (_, _, cty) -> signature_of_class_type cty
   | Tcty_signature sign     -> sign
-  | Tcty_fun (ty, cty)      -> signature_of_class_type cty
+  | Tcty_fun (_, ty, cty)   -> signature_of_class_type cty
 
 let self_type cty =
   repr (signature_of_class_type cty).cty_self
@@ -293,7 +293,7 @@ let rec class_type_arity =
   function
     Tcty_constr (_, _, cty) ->  class_type_arity cty
   | Tcty_signature _        ->  0
-  | Tcty_fun (_, cty)       ->  1 + class_type_arity cty
+  | Tcty_fun (_, _, cty)    ->  1 + class_type_arity cty
 
 
                     (**************************************)
@@ -631,8 +631,8 @@ let rec copy ty =
       begin match desc with
         Tvar ->
           Tvar
-      | Tarrow (t1, t2) ->
-          Tarrow (copy t1, copy t2)
+      | Tarrow (l, t1, t2) ->
+          Tarrow (l, copy t1, copy t2)
       | Ttuple tl ->
           Ttuple (List.map copy tl)
       | Tconstr (p, tl, _) ->
@@ -735,8 +735,8 @@ let instance_class params cty =
            cty_vars =
              Vars.map (function (mut, ty) -> (mut, copy ty)) sign.cty_vars;
            cty_concr = sign.cty_concr}
-    | Tcty_fun (ty, cty) ->
-        Tcty_fun (copy ty, copy_class_type cty)
+    | Tcty_fun (l, ty, cty) ->
+        Tcty_fun (l, copy ty, copy_class_type cty)
   in
   let params' = List.map copy params in
   let cty' = copy_class_type cty in
@@ -749,7 +749,7 @@ let instance_class params cty =
     | Tcty_signature sign ->
         unmark_type sign.cty_self;
         Vars.iter (fun lab (mut, ty) -> unmark_type ty) sign.cty_vars;
-    | Tcty_fun (ty, cty) ->
+    | Tcty_fun (_, ty, cty) ->
         unmark_type ty; unmark_class_type cty
   in
   List.iter unmark_type params';
@@ -1105,7 +1105,7 @@ and unify3 env t1 t1' t2 t2' =
           update_level env t2'.level t1;
           t2'.desc <- Tlink t1
         end
-    | (Tarrow (t1, u1), Tarrow (t2, u2)) ->
+    | (Tarrow (l1, t1, u1), Tarrow (l2, t2, u2)) when l1 = l2 ->
         unify env t1 t2; unify env u1 u2
     | (Ttuple tl1, Ttuple tl2) ->
         unify_list env tl1 tl2
@@ -1211,17 +1211,17 @@ let _ = unify' := unify
 
 (**** Special cases of unification ****)
 
-(* Unify [t] and ['a -> 'b]. Return ['a] and ['b]. *)
-let rec filter_arrow env t =
+(* Unify [t] and [l:'a -> 'b]. Return ['a] and ['b]. *)
+let rec filter_arrow env t l =
   let t = expand_head env t in
   match t.desc with
     Tvar ->
       let t1 = newvar () and t2 = newvar () in
-      let t' = newty (Tarrow (t1, t2)) in
+      let t' = newty (Tarrow (l, t1, t2)) in
       update_level env t.level t';
       t.desc <- Tlink t';
       (t1, t2)
-  | Tarrow(t1, t2) ->
+  | Tarrow(l', t1, t2) when l = l' ->
       (t1, t2)
   | _ ->
       raise (Unify [])
@@ -1334,7 +1334,7 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
                                           else t1'.level =  generic_level ->
               moregen_occur env t1'.level t2;
               t1'.desc <- Tlink t2
-          | (Tarrow (t1, u1), Tarrow (t2, u2)) ->
+          | (Tarrow (l1, t1, u1), Tarrow (l2, t2, u2)) when l1 = l2 ->
               moregen inst_nongen type_pairs env t1 t2;
               moregen inst_nongen type_pairs env u1 u2
           | (Ttuple tl1, Ttuple tl2) ->
@@ -1455,7 +1455,7 @@ let rec eqtype rename type_pairs subst env t1 t2 =
               with Not_found ->
                 subst := (t1', t2') :: !subst
               end
-          | (Tarrow (t1, u1), Tarrow (t2, u2)) ->
+          | (Tarrow (l1, t1, u1), Tarrow (l2, t2, u2)) when l1 = l2 ->
               eqtype rename type_pairs subst env t1 t2;
               eqtype rename type_pairs subst env u1 u2;
           | (Ttuple tl1, Ttuple tl2) ->
@@ -1547,7 +1547,7 @@ let rec moregen_clty trace type_pairs env cty1 cty2 =
         moregen_clty true type_pairs env cty1 cty2
     | _, Tcty_constr (_, _, cty2) ->
         moregen_clty true type_pairs env cty1 cty2
-    | Tcty_fun (ty1, cty1'), Tcty_fun (ty2, cty2') ->
+    | Tcty_fun (l1, ty1, cty1'), Tcty_fun (l2, ty2, cty2') when l1 = l2 ->
         begin try moregen true type_pairs env ty1 ty2 with Unify trace ->
           raise (Failure [CM_Parameter_mismatch (expand_trace env trace)])
         end;
@@ -1672,7 +1672,7 @@ let rec equal_clty trace type_pairs subst env cty1 cty2 =
         equal_clty true type_pairs subst env cty1 cty2
     | _, Tcty_constr (_, _, cty2) ->
         equal_clty true type_pairs subst env cty1 cty2
-    | Tcty_fun (ty1, cty1'), Tcty_fun (ty2, cty2') ->
+    | Tcty_fun (l1, ty1, cty1'), Tcty_fun (l2, ty2, cty2') when l1 = l2 ->
         begin try eqtype true type_pairs subst env ty1 ty2 with Unify trace ->
           raise (Failure [CM_Parameter_mismatch (expand_trace env trace)])
         end;
@@ -1808,10 +1808,10 @@ let rec build_subtype env t =
       build_subtype env t'
   | Tvar ->
       (t, false)
-  | Tarrow(t1, t2) ->
+  | Tarrow(l, t1, t2) ->
       let (t1', c1) = (t1, false) in
       let (t2', c2) = build_subtype env t2 in
-      if c1 or c2 then (newty (Tarrow(t1', t2')), true)
+      if c1 or c2 then (newty (Tarrow(l, t1', t2')), true)
       else (t, false)
   | Ttuple tlist ->
       let (tlist', clist) =
@@ -1888,7 +1888,7 @@ let rec subtype_rec env trace t1 t2 cstrs =
     match (t1.desc, t2.desc) with
       (Tvar, _) | (_, Tvar) ->
         (trace, t1, t2)::cstrs
-    | (Tarrow(t1, u1), Tarrow(t2, u2)) ->
+    | (Tarrow(l1, t1, u1), Tarrow(l2, t2, u2)) when l1 = l2 ->
         let cstrs = subtype_rec env ((t2, t1)::trace) t2 t1 cstrs in
         subtype_rec env ((u1, u2)::trace) u1 u2 cstrs
     | (Ttuple tl1, Ttuple tl2) ->
@@ -1974,7 +1974,7 @@ let unroll_abbrev id tl ty =
 (* Return the arity (as for curried functions) of the given type. *)
 let rec arity ty =
   match (repr ty).desc with
-    Tarrow(t1, t2) -> 1 + arity t2
+    Tarrow(_, t1, t2) -> 1 + arity t2
   | _ -> 0
 
 (* Check whether an abbreviation expands to itself. *)
@@ -2023,8 +2023,8 @@ let rec nondep_type_rec env id ty =
       begin match desc with
         Tvar ->
           fatal_error "Ctype.nondep_type_rec"
-      | Tarrow(t1, t2) ->
-          Tarrow(nondep_type_rec env id t1, nondep_type_rec env id t2)
+      | Tarrow(l, t1, t2) ->
+          Tarrow(l, nondep_type_rec env id t1, nondep_type_rec env id t2)
       | Ttuple tl ->
           Ttuple(List.map (nondep_type_rec env id) tl)
       | Tconstr(p, tl, abbrev) ->
@@ -2147,8 +2147,8 @@ let rec nondep_class_type env id =
                    nondep_class_type env id cty)
   | Tcty_signature sign ->
       Tcty_signature (nondep_class_signature env id sign)
-  | Tcty_fun (ty, cty) ->
-      Tcty_fun (nondep_type_rec env id ty, nondep_class_type env id cty)
+  | Tcty_fun (l, ty, cty) ->
+      Tcty_fun (l, nondep_type_rec env id ty, nondep_class_type env id cty)
 
 let nondep_class_declaration env id decl =
   assert (not (Path.isfree id decl.cty_path));

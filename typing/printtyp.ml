@@ -93,7 +93,7 @@ let rec mark_loops_rec visited ty =
     let visited = ty :: visited in
     match ty.desc with
       Tvar                -> ()
-    | Tarrow(ty1, ty2)    ->
+    | Tarrow(_, ty1, ty2) ->
         mark_loops_rec visited ty1; mark_loops_rec visited ty2
     | Ttuple tyl          -> List.iter (mark_loops_rec visited) tyl
     | Tconstr(_, tyl, _)  ->
@@ -140,6 +140,12 @@ let reset_loop_marks () =
 let reset () =
   reset_names (); reset_loop_marks ()
 
+let print_label l =
+  if l <> "" then begin
+    print_string l;
+    print_char ':'
+  end
+
 let rec typexp sch prio0 ty =
   let ty = repr ty in
   if List.mem_assq ty !names then begin
@@ -161,9 +167,10 @@ let rec typexp sch prio0 ty =
         then print_string "'"
         else print_string "'_";
         print_name_of_type ty
-    | Tarrow(ty1, ty2) ->
+    | Tarrow(l, ty1, ty2) ->
         if prio >= 2 then begin open_box 1; print_string "(" end
                      else open_box 0;
+	print_label l;
         typexp sch 2 ty1;
         print_string " ->"; print_space();
         typexp sch 1 ty2;
@@ -461,7 +468,7 @@ let rec prepare_class_type =
       end;
 *)
       Vars.iter (fun _ (_, ty) -> mark_loops ty) sign.cty_vars
-  | Tcty_fun (ty, cty) ->
+  | Tcty_fun (_, ty, cty) ->
       mark_loops ty;
       prepare_class_type cty
 
@@ -507,8 +514,9 @@ let rec perform_class_type sch params =
       print_break 1 (-2);
       print_string "end";
       close_box()
-  | Tcty_fun (ty, cty) ->
+  | Tcty_fun (l, ty, cty) ->
       open_box 0;
+      print_label l;
       typexp sch 2 ty; print_string " ->";
       print_space ();
       perform_class_type sch params cty;

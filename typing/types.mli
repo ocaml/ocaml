@@ -24,7 +24,7 @@ type type_expr =
 
 and type_desc =
     Tvar
-  | Tarrow of type_expr * type_expr
+  | Tarrow of label * type_expr * type_expr
   | Ttuple of type_expr list
   | Tconstr of Path.t * type_expr list * abbrev_memo ref
   | Tobject of type_expr * (Path.t * type_expr list) option ref
@@ -116,7 +116,7 @@ module Concr : Set.S with type elt = string
 type class_type =
     Tcty_constr of Path.t * type_expr list * class_type
   | Tcty_signature of class_signature
-  | Tcty_fun of type_expr * class_type
+  | Tcty_fun of label * type_expr * class_type
 
 and class_signature =
   { cty_self: type_expr;

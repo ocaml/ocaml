@@ -67,16 +67,16 @@ let rec repr =
 
 let iter_type_expr f ty =
   match ty.desc with
-    Tvar               -> ()
-  | Tarrow (ty1, ty2) -> f ty1; f ty2
-  | Ttuple l           -> List.iter f l
-  | Tconstr (_, l, _)          -> List.iter f l
+    Tvar               	-> ()
+  | Tarrow (_, ty1, ty2)-> f ty1; f ty2
+  | Ttuple l            -> List.iter f l
+  | Tconstr (_, l, _)   -> List.iter f l
   | Tobject(ty, {contents = Some (_, p)})
-                         -> f ty; List.iter f p
-  | Tobject (ty, _)    -> f ty
+                        -> f ty; List.iter f p
+  | Tobject (ty, _)     -> f ty
   | Tfield (_, _, ty1, ty2) -> f ty1; f ty2
-  | Tnil               -> ()
-  | Tlink ty           -> f ty
+  | Tnil                -> ()
+  | Tlink ty            -> f ty
 
 let saved_desc = ref []
   (* Saved association of generic nodes with their description. *)
@@ -138,7 +138,7 @@ let rec unmark_class_type =
       List.iter unmark_type tyl; unmark_class_type cty
   | Tcty_signature sign ->
       unmark_class_signature sign
-  | Tcty_fun (ty, cty) ->
+  | Tcty_fun (_, ty, cty) ->
       unmark_type ty; unmark_class_type cty
 
 

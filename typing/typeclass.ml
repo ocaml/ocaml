@@ -83,7 +83,7 @@ let rec generalize_class_type =
   | Tcty_signature {cty_self = sty; cty_vars = vars } ->
       Ctype.generalize sty;
       Vars.iter (fun _ (_, ty) -> Ctype.generalize ty) vars
-  | Tcty_fun (ty, cty) ->
+  | Tcty_fun (_, ty, cty) ->
       Ctype.generalize ty;
       generalize_class_type cty
 
@@ -105,8 +105,8 @@ let rec constructor_type constr cty =
       constructor_type constr cty
   | Tcty_signature sign ->
       constr
-  | Tcty_fun (ty, cty) ->
-      Ctype.newty (Tarrow (ty, constructor_type constr cty))
+  | Tcty_fun (l, ty, cty) ->
+      Ctype.newty (Tarrow (l, ty, constructor_type constr cty))
 
 let rec class_body cty =
   match cty with
@@ -114,7 +114,7 @@ let rec class_body cty =
       cty (* Only class bodies can be abbreviated *)
   | Tcty_signature sign ->
       cty
-  | Tcty_fun (ty, cty) ->
+  | Tcty_fun (_, ty, cty) ->
       class_body cty
 
 let rec extract_constraints cty =
@@ -134,8 +134,8 @@ let rec abbreviate_class_type path params cty =
   match cty with
     Tcty_constr (_, _, _) | Tcty_signature _ ->
       Tcty_constr (path, params, cty)
-  | Tcty_fun (ty, cty) ->
-      Tcty_fun (ty, abbreviate_class_type path params cty)
+  | Tcty_fun (l, ty, cty) ->
+      Tcty_fun (l, ty, abbreviate_class_type path params cty)
 
 let rec closed_class_type =
   function
@@ -147,7 +147,7 @@ let rec closed_class_type =
       Vars.fold (fun _ (_, ty) cc -> Ctype.closed_schema ty && cc)
         sign.cty_vars
         true
-  | Tcty_fun (ty, cty) ->
+  | Tcty_fun (_, ty, cty) ->
       Ctype.closed_schema ty
         &&
       closed_class_type cty
@@ -166,7 +166,7 @@ let rec limited_generalize rv =
       Ctype.limited_generalize rv sign.cty_self;
       Vars.iter (fun _ (_, ty) -> Ctype.limited_generalize rv ty)
         sign.cty_vars
-  | Tcty_fun (ty, cty) ->
+  | Tcty_fun (_, ty, cty) ->
       Ctype.limited_generalize rv ty;
       limited_generalize rv cty
 
@@ -238,10 +238,11 @@ let type_constraint val_env sty sty' loc =
 let mkpat d = { ppat_desc = d; ppat_loc = Location.none }
 let make_method cl_num expr =
   { pexp_desc =
-      Pexp_function [mkpat (Ppat_alias (mkpat(Ppat_var "self-*"),
-                                        "self-" ^ cl_num)),
-                     expr];
-    pexp_loc = Location.none }
+      Pexp_function ("", None,
+		     [mkpat (Ppat_alias (mkpat(Ppat_var "self-*"),
+                                         "self-" ^ cl_num)),
+                      expr]);
+    pexp_loc = expr.pexp_loc }
 
 (*******************************)
 
@@ -338,10 +339,10 @@ and class_type env scty =
   | Pcty_signature (sty, sign) ->
       Tcty_signature (class_signature env sty sign)
       
-  | Pcty_fun (sty, scty) ->
+  | Pcty_fun (l, sty, scty) ->
       let ty = transl_simple_type env false sty in
       let cty = class_type env scty in
-      Tcty_fun (ty, cty)
+      Tcty_fun (l, ty, cty)
 
 (*******************************)
 
@@ -412,7 +413,7 @@ let rec class_field cl_num self_type meths vars
         Ctype.filter_self_method val_env lab priv meths self_type
       in
       let meth_type = Ctype.newvar () in
-      let (obj_ty, res_ty) = Ctype.filter_arrow val_env meth_type in
+      let (obj_ty, res_ty) = Ctype.filter_arrow val_env meth_type "" in
       Ctype.unify val_env obj_ty self_type;
       Ctype.unify val_env res_ty ty;
       let texp = type_expect met_env expr meth_type in
@@ -458,7 +459,7 @@ let rec class_field cl_num self_type meths vars
       let expr = make_method cl_num expr in
       Ctype.raise_nongen_level ();
       let meth_type = Ctype.newvar () in
-      let (obj_ty, res_ty) = Ctype.filter_arrow val_env meth_type in
+      let (obj_ty, res_ty) = Ctype.filter_arrow val_env meth_type "" in
       Ctype.unify val_env obj_ty self_type;
       Ctype.unify val_env res_ty (Ctype.instance Predef.type_unit);
       let texp = type_expect met_env expr meth_type in
@@ -538,7 +539,7 @@ and class_expr cl_num val_env met_env scl =
       {cl_desc = Tclass_structure desc;
        cl_loc = scl.pcl_loc;
        cl_type = Tcty_signature ty}
-  | Pcl_fun (spat, scl') ->
+  | Pcl_fun (l, _, spat, scl') ->
       let (pat, pv, val_env, met_env) =
         Typecore.type_class_arg_pattern cl_num val_env met_env spat
       in
@@ -562,16 +563,16 @@ and class_expr cl_num val_env met_env scl =
       Ctype.end_def ();
       {cl_desc = Tclass_fun (pat, pv, cl);
        cl_loc = scl.pcl_loc;
-       cl_type = Tcty_fun (pat.pat_type, cl.cl_type)}
+       cl_type = Tcty_fun (l, pat.pat_type, cl.cl_type)}
   | Pcl_apply (scl', sargs) ->
       let cl = class_expr cl_num val_env met_env scl' in
       let rec type_args ty_fun =
         function
           [] ->
             ([], ty_fun)
-        | sarg1 :: sargl ->
+        | (l1, sarg1) :: sargl ->
             begin match ty_fun with
-              Tcty_fun (ty, cty) ->
+              Tcty_fun (l2, ty, cty) when l1 = l2 ->
                 let arg1 = type_expect val_env sarg1 ty in
                 let (argl, ty_res) = type_args cty sargl in
                 (arg1 :: argl, ty_res)

@@ -86,8 +86,8 @@ let rec typexp s ty =
       begin match desc with
         Tvar | Tlink _ ->
           fatal_error "Subst.typexp"
-      | Tarrow(t1, t2) ->
-          Tarrow(typexp s t1, typexp s t2)
+      | Tarrow(l, t1, t2) ->
+          Tarrow(l, typexp s t1, typexp s t2)
       | Ttuple tl ->
           Ttuple(List.map (typexp s) tl)
       | Tconstr(p, tl, abbrev) ->
@@ -161,8 +161,8 @@ let rec class_type s =
       Tcty_constr (type_path s p, List.map (typexp s) tyl, class_type s cty)
   | Tcty_signature sign ->
       Tcty_signature (class_signature s sign)
-  | Tcty_fun (ty, cty) ->
-      Tcty_fun (typexp s ty, class_type s cty)
+  | Tcty_fun (l, ty, cty) ->
+      Tcty_fun (l, typexp s ty, class_type s cty)
 
 let class_declaration s decl =
   let decl =
