@@ -150,8 +150,8 @@ method emit_stores env data regs_addr =
       None -> (* keep it for later *)
         backlog := Some r
     | Some r' -> (* store r' at t1 and r at t2 *)
-        self#insert (Iop(Ispecific(Istoreincr 16))) [| r'; t1 |] [|r'|];
-        self#insert (Iop(Ispecific(Istoreincr 16))) [| r ; t2 |] [|r|];
+        self#insert (Iop(Ispecific(Istoreincr 16))) [| t1; r' |] [| t1 |];
+        self#insert (Iop(Ispecific(Istoreincr 16))) [| t2; r  |] [| t2 |];
         backlog := None in
   List.iter
     (fun exp -> Array.iter do_store (self#emit_expr env exp))
@@ -159,7 +159,7 @@ method emit_stores env data regs_addr =
   (* Store the backlog if any *)
   match !backlog with
     None -> ()
-  | Some r -> self#insert (Iop(Ispecific(Istoreincr 16))) [| r; t1 |] [||]
+  | Some r -> self#insert (Iop(Ispecific(Istoreincr 16))) [| t1; r |] [| t1 |]
 
 end
 
