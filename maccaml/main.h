@@ -29,9 +29,11 @@
 #include <Fonts.h>
 #include <Gestalt.h>
 #include <LowMem.h>
+#include <MacTypes.h>
 #include <MacWindows.h>
 #include <Menus.h>
 #include <Power.h>
+#include <Printing.h>
 #include <Processes.h>
 #include <QDOffscreen.h>
 #include <QuickDraw.h>
@@ -44,7 +46,6 @@
 #include <Strings.h>
 #include <TextUtils.h>
 #include <ToolUtils.h>
-#include <Types.h>
 
 #include ":WASTE-1.2:WASTE C/C++ Headers:WASTE.h"
 
@@ -240,3 +241,11 @@ void WinGraphicsStdState (Rect *r);
 void WinToplevelStdState (Rect *r);
 void WinUpdate (WindowPtr w);
 void WinUpdateStatus (WindowPtr w);
+
+/* useful macros */
+
+/* PushPort and PopPort assume that there is a local variable [saveport] */
+#define PushPort(p) do{ GetPort (&saveport); SetPort (p); }while(0)
+#define PushWindowPort(w) \
+  do{ GetPort (&saveport); SetPortWindowPort (w); }while(0)
+#define PopPort do{ SetPort (saveport); }while(0)

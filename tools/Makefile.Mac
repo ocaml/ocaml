@@ -53,8 +53,9 @@ install ÄÄ
 DUMPOBJ = opnames.cmo dumpobj.cmo
 
 OCamlDumpObj Ä {DUMPOBJ}
-    {CAMLC} {LINKFLAGS} -o OCamlDumpObj misc.cmo tbl.cmo config.cmo ident.cmo ¶
-            opcodes.cmo {DUMPOBJ}
+    {CAMLC} {LINKFLAGS} -o OCamlDumpObj ¶
+            misc.cmo formatmsg.cmo tbl.cmo config.cmo ident.cmo opcodes.cmo ¶
+            {DUMPOBJ}
 
 clean ÄÄ
     delete -i OCamlDumpObj

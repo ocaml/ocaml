@@ -11,17 +11,17 @@
 
 /* $Id$ */
 
-/* Macintosh-specific stuff */
+/* MacOS-specific stuff */
 
-#include <CursorCtl.h>
+#include <stdio.h>
+#include <stdlib.h>
+
 #include <Files.h>
 #include <IntEnv.h>
 #include <MacTypes.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <Strings.h>
 #include <TextUtils.h>
-#include <Timer.h>
+
+#include "rotatecursor.h"
 
 /* The user interface defaults to MPW tool.  The standalone application
    overrides the ui_* functions, as well as [main], [InitCursorCtl],
@@ -35,16 +35,19 @@ void ui_exit (int return_code)
 
 int ui_read (int file_desc, char *buf, unsigned int length)
 {
+  ROTATECURSOR_MAGIC ();
   return read (file_desc, buf, length);
 }
 
 int ui_write (int file_desc, char *buf, unsigned int length)
 {
+  ROTATECURSOR_MAGIC ();
   return write (file_desc, buf, length);
 }
 
 void ui_print_stderr (char *format, void *arg)
 {
+  ROTATECURSOR_MAGIC ();
   fprintf (stderr, format, arg);
   fflush (stderr);
 }

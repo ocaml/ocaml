@@ -100,12 +100,12 @@
     :parsing:longident.cmi :parsing:parsetree.cmi :typing:types.cmi 
 :typing:btype.cmoÄ :typing:path.cmi :typing:types.cmi :typing:btype.cmi 
 :typing:btype.cmxÄ :typing:path.cmx :typing:types.cmx :typing:btype.cmi 
-:typing:ctype.cmoÄ :parsing:asttypes.cmi :typing:btype.cmi :typing:env.cmi ¶
-    :typing:ident.cmi :utils:misc.cmi :typing:path.cmi :typing:subst.cmi ¶
-    :typing:types.cmi :typing:ctype.cmi 
-:typing:ctype.cmxÄ :parsing:asttypes.cmi :typing:btype.cmx :typing:env.cmx ¶
-    :typing:ident.cmx :utils:misc.cmx :typing:path.cmx :typing:subst.cmx ¶
-    :typing:types.cmx :typing:ctype.cmi 
+:typing:ctype.cmoÄ :parsing:asttypes.cmi :typing:btype.cmi :utils:clflags.cmo ¶
+    :typing:env.cmi :typing:ident.cmi :utils:misc.cmi :typing:path.cmi ¶
+    :typing:subst.cmi :typing:types.cmi :typing:ctype.cmi 
+:typing:ctype.cmxÄ :parsing:asttypes.cmi :typing:btype.cmx :utils:clflags.cmx ¶
+    :typing:env.cmx :typing:ident.cmx :utils:misc.cmx :typing:path.cmx ¶
+    :typing:subst.cmx :typing:types.cmx :typing:ctype.cmi 
 :typing:datarepr.cmoÄ :parsing:asttypes.cmi :utils:misc.cmi :typing:path.cmi ¶
     :typing:predef.cmi :typing:types.cmi :typing:datarepr.cmi 
 :typing:datarepr.cmxÄ :parsing:asttypes.cmi :utils:misc.cmx :typing:path.cmx ¶

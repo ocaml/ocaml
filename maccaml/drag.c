@@ -110,7 +110,7 @@ static pascal OSErr MyTrackingHandler (DragTrackingMessage message, WindowPtr w,
 
 static OSErr ToplevelReceiveDrag (DragReference drag, WEReference we)
 {
-  GrafPtr (saveport);
+  GrafPtr saveport;
   short readonly = 0;
   Boolean canaccept;
   OSErr err;
@@ -124,8 +124,7 @@ static OSErr ToplevelReceiveDrag (DragReference drag, WEReference we)
   Size sz, curlen;
   long dest, selstart, selend = -1;
 
-  GetPort (&saveport);
-  SetPortWindowPort (winToplevel);
+  PushWindowPort (winToplevel);
 
   readonly = WEFeatureFlag (weFReadOnly, weBitTest, we);
   if (readonly) WEFeatureFlag (weFReadOnly, weBitClear, we);
@@ -174,14 +173,14 @@ static OSErr ToplevelReceiveDrag (DragReference drag, WEReference we)
   WESetSelection (dest + curlen, dest + curlen, we);
 
   DisposeHandle (h);
-  SetPort (saveport);
+  PopPort;
   return noErr;
 
   failed:
     if (h != NULL) DisposeHandle (h);
     if (selend != -1) WESetSelection (selstart, selend, we);
     if (readonly) WEFeatureFlag (weFReadOnly, weBitSet, we);
-    SetPort (saveport);
+    PopPort;
     return err;
 }
 

@@ -91,12 +91,11 @@ void WinActivateDeactivate (int activate, WindowPtr w)
   WStatusH st = WinGetStatus (w);
   WEHandle we = WinGetWE (w);
   VHSelect axis;
-  GrafPtr savePort;
+  GrafPtr saveport;
 
   if (st == NULL) return;
 
-  GetPort (&savePort);
-  SetPort (w);
+  PushWindowPort (w);
 
   if (we != NULL){
     if (activate) WEActivate (we);   else   WEDeactivate (we);
@@ -118,7 +117,7 @@ void WinActivateDeactivate (int activate, WindowPtr w)
   */
   if (GetWVariant (w) != noGrowDocProc) DrawGrowIcon (w);
 
-  SetPort (savePort);
+  PopPort;
 }
 
 void WinAdvanceTopFrontier (long length)
@@ -160,12 +159,11 @@ void WinCloseGraphics (void)
   
   Assert (winGraphics != NULL);
 
-  GetPort (&saveport);
-  SetPort (winGraphics);
+  PushWindowPort (winGraphics);
   r = winGraphics->portRect;
   LocalToGlobalRect (&r);
   prefs.graphpos = r;
-  SetPort (saveport);
+  PopPort;
 
   DisposeWindow (winGraphics);
   winGraphics = NULL;
@@ -177,8 +175,7 @@ void WinCloseToplevel (void)
   GrafPtr saveport;
 
   if (winToplevel != NULL){
-    GetPort (&saveport);
-    SetPort (winToplevel);
+    PushWindowPort (winToplevel);
 
     r = winToplevel->portRect;
     LocalToGlobalRect (&r);
@@ -186,7 +183,7 @@ void WinCloseToplevel (void)
     if (prefs.asksavetop){
       XXX ();
     }
-    SetPort (saveport);
+    PopPort;
   }
   DisposeWindow (winToplevel);
   winToplevel = NULL;
@@ -209,8 +206,7 @@ void WinDoContentClick (EventRecord *event, WindowPtr w)
     Point hitPt = event->where;
     GrafPtr saveport;
 
-    GetPort (&saveport);
-    SetPort (w);
+    PushWindowPort (w);
     GlobalToLocal (&hitPt);
     if (inback){
       SelectWindow (w);
@@ -223,7 +219,7 @@ void WinDoContentClick (EventRecord *event, WindowPtr w)
         ScrollDoClick (w, hitPt, event->modifiers);
       }
     }
-    SetPort (saveport);
+    PopPort;
     break;
   }
 
@@ -235,8 +231,7 @@ void WinDoContentClick (EventRecord *event, WindowPtr w)
     WEReference we = WinGetWE (w);
 
     Assert (we != NULL);
-    GetPort (&saveport);
-    SetPort (w);
+    PushWindowPort (w);
     GlobalToLocal (&hitPt);
 
     if (inback && gHasDragAndDrop){
@@ -261,7 +256,7 @@ void WinDoContentClick (EventRecord *event, WindowPtr w)
         ScrollDoClick (w, hitPt, event->modifiers);
       }
     }
-    SetPort (saveport);
+    PopPort;
     break;
   }
 
@@ -373,8 +368,7 @@ static void WinResize (WindowPtr w, short x, short y)
   WEReference we = WinGetWE (w);
   Rect r;
 
-  GetPort (&saveport);
-  SetPort (w);
+  PushWindowPort (w);
 
   /* Invalidate the old grow icon and the text margin. */
   r = w->portRect;
@@ -392,7 +386,7 @@ static void WinResize (WindowPtr w, short x, short y)
   }
   if (w == winGraphics) WinGraphNewSize (w);
   ScrollNewSize (w);
-  SetPort (saveport);
+  PopPort;
 }
 
 void WinDoGrow (Point where, WindowPtr w)
@@ -789,8 +783,7 @@ void WinUpdate (WindowPtr w)
 
   Assert (k != kWinUnknown);
 
-  GetPort (&saveport);
-  SetPort (w);
+  PushWindowPort (w);
   BeginUpdate (w);
   updateRgn = w->visRgn;
   if (!EmptyRgn (updateRgn)){
@@ -801,7 +794,7 @@ void WinUpdate (WindowPtr w)
     if (we != NULL) WEUpdate (updateRgn, we);
   }
   EndUpdate (w);
-  SetPort (saveport);
+  PopPort;
 }
 
 void WinUpdateStatus (WindowPtr w)

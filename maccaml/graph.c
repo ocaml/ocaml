@@ -184,11 +184,9 @@ void GraphGotEvent (EventRecord *evt)
   Point pt = evt->where;
   GraphEvent grevt;
   
-  GetPort (&saveport);
-  SetPort (winGraphics);
+  PushWindowPort (winGraphics);
   GlobalToLocal (&pt);
-  SetPort (saveport);
-  
+  PopPort;  
 
   switch (evt->what){
   case mouseDown:
@@ -314,7 +312,7 @@ static void gr_check_open (void)
    in one major GC cycle.  The GC will speed up to match this allocation
    speed.
 */
-#define Max_image_mem 1000000   /* XXX Should use 20% of total memory */
+#define Max_image_mem 1000000   /* XXX Should use user pref. */
 
 #define Transparent (-1)
 
@@ -974,8 +972,7 @@ value gr_wait_event (value veventlist)
   Point pt;
 
   gr_check_open();
-  GetPort (&saveport);
-  SetPort (winGraphics);
+  PushWindowPort (winGraphics);
 
   while (veventlist != Val_int (0)) {
     switch (Int_val(Field (veventlist, 0))) {
@@ -1017,7 +1014,7 @@ value gr_wait_event (value veventlist)
   /* Restore the grafport now because GetAndProcessEvents may longjmp
      directly out of here.
   */
-  SetPort (saveport);
+  PopPort;
   while (1){
     latestevent.valid = 0;
     enter_blocking_section ();

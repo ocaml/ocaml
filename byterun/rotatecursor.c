@@ -11,13 +11,6 @@
 
 /* $Id$ */
 
-/* Rotatecursor library, written by Damien Doligez
-   This file is in the public domain.
-   version 1.7
-   
-   See rotatecursor.h for documentation.
-*/
-
 #include <CursorCtl.h>
 #include <MacTypes.h>
 #include <stdlib.h>

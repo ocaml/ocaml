@@ -51,8 +51,7 @@ void AdjustScrollBars (WindowPtr w)
   long xmax, xval, ymax, yval;
   long h;
 
-  GetPort (&saveport);
-  SetPort (w);
+  PushWindowPort (w);
 
   st = WinGetStatus (w);
   Assert (st != NULL);
@@ -83,7 +82,7 @@ void AdjustScrollBars (WindowPtr w)
 
   if (xval > xmax || yval > ymax) AdjustView (st);
 
-  SetPort (saveport);
+  PopPort;
 }
 
 /* Callback procedure for auto-scrolling the text. (called by WASTE) */
@@ -258,8 +257,7 @@ void ScrollNewSize (WindowPtr w)
 
   Assert (st != NULL);
 
-  GetPort (&saveport);
-  SetPort (w);
+  PushWindowPort (w);
 
   bar = (*st)->scrollbars[H];
   r.left = port.left - 1;
@@ -297,7 +295,7 @@ void ScrollNewSize (WindowPtr w)
 
   AdjustScrollBars (w);
 
-  SetPort (saveport);
+  PopPort;
 }
 
 /* Return 1 if the vertical scroll bar is at its max setting, 0 otherwise.

@@ -154,13 +154,12 @@ static void DoMouseUp (EventRecord *e)
   if (FrontWindow () != winGraphics) return;
   partCode = FindWindow (e->where, &w);
   if (partCode != inContent) return;
-  GetPort (&saveport);
-  SetPort (winGraphics);
+  PushWindowPort (winGraphics);
   hitpt = e->where;
   GlobalToLocal (&hitpt);
   ScrollCalcGraph (winGraphics, &r);
   if (PtInRect (hitpt, &r)) GraphGotEvent (e);
-  SetPort (saveport);
+  PopPort;
   return;
 }
 

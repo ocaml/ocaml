@@ -11,26 +11,6 @@
 
 /* $Id$ */
 
-/* Rotatecursor library, written by Damien Doligez
-   This file is in the public domain.
-   version 1.7
-
-   The goal of this library is to help implement cooperative multitasking
-   for MPW tools: to make sure that your program calls RotateCursor often
-   enough (about 20 times per second) but not too often (to avoid a big
-   slowdown).  It can also be used in applications as soon as you have
-   an implementation of InitCursorCtl and RotateCursor (which is not hard
-   to do).
-   
-   Simplified usage:
-   
-   1. #include this file where appropriate
-   2. Insert the following line in the inner loop(s) of your program:
-        ROTATECURSOR_MAGIC ();
-      The overhead of this macro is only a few CPU cycles, so it can be
-      used without problem even in a tight loop.
-*/
-
 #ifndef _rotatecursor_
 #define _rotatecursor_
 
