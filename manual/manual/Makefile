@@ -1,13 +1,13 @@
 FILES=allfiles.tex biblio.tex foreword.tex version.tex foreword.htex
 DVI2TXT=../tools/dvi2txt
-TEXINPUTS=.:..:../refman:../library:../cmds:../tutorials:../../styles:
+TEXINPUTS=.:..:../refman:../library:../cmds:../tutorials:../../styles:/usr/local/lib/tex/inputs
 TEXFONTS=../../styles:
 RELEASE=$$HOME/release/$${RELEASENAME}
 CSLDIR=../../csl
 
 manual: files
 	cd texstuff; \
-	TEXINPUTS=$(TEXINPUTS) latex manual.tex
+	TEXINPUTS=$(TEXINPUTS) pdfolatex manual.tex
 
 index::
 	cd texstuff; makeindex manual.idx

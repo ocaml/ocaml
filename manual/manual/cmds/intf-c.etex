@@ -49,8 +49,7 @@ functions and macros are described in details below.  For instance,
 here is the declaration for the C function implementing the "input"
 primitive:
 \begin{verbatim}
-        value input(channel, buffer, offset, length)
-                value channel, buffer, offset, length;
+        value input(value channel, value buffer, value offset, value length)
         {
          ...
         }
@@ -71,14 +70,13 @@ to be used in conjunction with the native-code compiler "ocamlopt",
 takes its arguments directly. For instance, here are the two C
 functions for the 7-argument primitive "Nat.add_nat":
 \begin{verbatim}
-        value add_nat_native(nat1, ofs1, len1, nat2, ofs2, len2, carry_in)
-             value nat1, ofs1, len1, nat2, ofs2, len2, carry_in;
+        value add_nat_native(value nat1, value ofs1, value len1,
+                             value nat2, value ofs2, value len2,
+                             value carry_in)
         {
           ...
         }
-        value add_nat_bytecode(argv, argn)
-             value * argv;
-             int argn;
+        value add_nat_bytecode(value * argv, int argn)
         {
           return add_nat_native(argv[0], argv[1], argv[2], argv[3],
                                 argv[4], argv[5], argv[6]);
@@ -110,8 +108,7 @@ call the first function, and convert the returned C value to Caml
 value. For instance, here is the stub code for the "input"
 primitive:
 \begin{verbatim}
-        value input(channel, buffer, offset, length)
-                value channel, buffer, offset, length;
+        value input(value channel, value buffer, value offset, value length)
         {
           return Val_long(getblock((struct channel *) channel,
                                    &Byte(buffer, Long_val(offset)),
@@ -122,10 +119,7 @@ primitive:
 type "value", that will be described later.) The hard work is
 performed by the function  "getblock", which is declared as:
 \begin{verbatim}
-        long getblock(channel, p, n)
-             struct channel * channel;
-             char * p;
-             long n;
+        long getblock(struct channel * channel, char * p, long n)
         {
           ...
         }
@@ -139,6 +133,8 @@ include files are provided:
 objects)}
 \entree{"caml/memory.h"}{miscellaneous memory-related functions (for in-place
 modification of structures, etc).}
+\entree{"caml/fail.h"}{functions for raising exceptions
+(see section~\ref{s:c-exceptions})}
 \entree{"caml/callback.h"}{callback from C to Caml (see
 section~\ref{s:callback}).}
 \end{tableau}
@@ -178,12 +174,59 @@ runtime + bytecode) is launched.
 To link in ``custom runtime'' mode, execute the "ocamlc" command with:
 \begin{itemize}
 \item the "-custom" option
-\item the names of the desired Caml object files (".cmo" files) 
+\item the names of the desired Caml object files (".cmo" and ".cma" files) 
 \item the names of the C object files and libraries (".o" and ".a"
 files) that implement the required primitives. (Under Unix, a library
 named "lib"\var{name}".a" residing in one of the standard library
 directories can also be specified as "-cclib -l"\var{name}.)
 \end{itemize}
+
+If you are using the native-code compiler "ocamlopt", the "-custom"
+flag is not needed, as the final linking phase of "ocamlopt" always
+builds a standalone executable.  To build a mixed Caml/C executable,
+execute the "ocamlopt" command with:
+\begin{itemize}
+\item the names of the desired Caml native object files (".cmx" and
+".cmxa" files) 
+\item the names of the C object files and libraries (".o" and ".a"
+files) that implement the required primitives.
+\end{itemize}
+
+\subsection{Building standalone custom runtime systems}
+\label{s:custom-runtime}
+
+It is sometimes inconvenient to build a custom runtime system each
+time Caml code is linked with C libraries, like "ocamlc -custom" does.
+For one thing, the building of the runtime system is slow on some
+systems (that have bad linkers or slow remote file systems); for
+another thing, the platform-independence of bytecode files is lost,
+forcing to perform one "ocamlc -custom" link per platform of interest.
+
+An alternative to "ocamlc -custom" is to build separately a custom
+runtime system integrating the desired C libraries, then generate
+``pure'' bytecode executables (not containing their own runtime
+system) that can run on this custom runtime.  This is achieved by the
+"-make_runtime" and "-use_runtime" flags to "ocamlc".  For example,
+to build a custom runtime system integrating the C parts of the
+``unix'' and ``threads'' libraries, do:
+\begin{verbatim}
+        ocamlc -make_runtime /home/me/ocamlunixrun unix.cma threads.cma \
+                -cclib -lunix -cclib -lthreads
+\end{verbatim}
+To generate a bytecode executable that runs on this runtime system,
+do:
+\begin{alltt}
+        ocamlc -use_runtime /home/me/ocamlunixrun -o myprog \char92
+                unix.cma threads.cma {\it{your .cmo and .cma files}}
+\end{alltt}
+The bytecode executable "myprog" can then be launched as usual:
+"myprog" \var{args} or "/home/me/ocamlunixrun myprog" \var{args}.
+
+Notice that the bytecode libraries "unix.cma" and "threads.cma" must
+be given twice: when building the runtime system (so that "ocamlc"
+knows which C primitives from "-lunix" and "-lthreads" are required)
+and also when building the bytecode executable (so that the bytecode
+from "unix.cma" and "threads.cma" is actually linked in).
 
 \section{The "value" type}
 
@@ -224,20 +267,20 @@ word is a pointer to a piece of bytecode, the remaining words are
 "value" containing the environment.}
 \entree{"String_tag"}{A character string.}
 \entree{"Double_tag"}{A double-precision floating-point number.}
-\entree{"Double_array_tag"}{An array of double-precision
-floating-point numbers (for the native-code compiler only).}
+\entree{"Double_array_tag"}{An array or record of double-precision
+floating-point numbers.}
 \entree{"Abstract_tag"}{A block representing an abstract datatype.}
 \entree{"Final_tag"}{A block representing an abstract datatype
               with a ``finalization'' function, to be called when
               the block is deallocated.}
 \end{tableau}
 
-\subsection{Pointers to outside the heap}
+\subsection{Pointers outside the heap}
 
-Any word-aligned pointer to outside the heap can be safely cast to and
-from the type "value". This includes pointers returned by "malloc",
-and pointers to C variables (of size at least one word) obtained with
-the \verb'&' operator.
+Any word-aligned pointer to an address outside the heap can be safely
+cast to and from the type "value". This includes pointers returned by
+"malloc", and pointers to C variables (of size at least one word)
+obtained with the \verb'&' operator.
 
 \section{Representation of Caml data types}
 
@@ -263,24 +306,21 @@ the record fields: the value associated to the label
 declared first is stored in field~0 of the block, the value associated
 to the label declared next goes in field~1, and so on.
 
-The native-code compiler represents specially records whose fields all
-have type "float". These are represented as arrays of floating-point
-numbers, with tag "Double_array_tag". (See the section below on arrays.)
+As an optimization, records whose fields all have static type "float"
+are represented as arrays of floating-point numbers, with tag
+"Double_array_tag". (See the section below on arrays.)
 
 \subsection{Arrays}
 
-In the bytecode compiler, all arrays are represented like tuples, 
-that is, as pointers to blocks tagged~0.
+Arrays of integers and pointers are represented like tuples, 
+that is, as pointers to blocks tagged~0.  They are accessed with the
+"Field" macro for reading and the "modify" function for writing.
 
-The native-code compiler has a special, unboxed, more efficient
-representation for arrays of floating-point numbers (type 
-"float array"). These arrays are represented by pointers to blocks with tag
-"Double_array_tag". They should be accessed with the "Double_field"
+Arrays of floating-point numbers (type "float array")
+have a special, unboxed, more efficient representation.
+These arrays are represented by pointers to blocks with tag
+"Double_array_tag".  They should be accessed with the "Double_field"
 and "Store_double_field" macros.
-
-Arrays of floating-point numbers in the bytecode compiler should be
-accessed with "Double_val(Field(v, n))" for reading and
-"modify(&Field(v, n), copy_double(d))" for writing.
 
 \subsection{Concrete types}
 
@@ -333,10 +373,15 @@ and false if it is an immediate integer.
 \subsection{Operations on integers}
 
 \begin{itemize}
-\item "Val_long("\var{l}")" returns the value encoding the "long int" \var{l}
-\item "Long_val("\var{v}")" returns the "long int" encoded in value \var{v}
-\item "Val_int("\var{i}")" returns the value encoding the "int" \var{i}
-\item "Int_val("\var{v}")" returns the "int" encoded in value \var{v}
+\item "Val_long("\var{l}")" returns the value encoding the "long int" \var{l}.
+\item "Long_val("\var{v}")" returns the "long int" encoded in value \var{v}.
+\item "Val_int("\var{i}")" returns the value encoding the "int" \var{i}.
+\item "Int_val("\var{v}")" returns the "int" encoded in value \var{v}.
+\item "Val_bool("\var{x}")" returns the Caml boolean representing the
+truth value of the C integer \var{x}.
+\item "Bool_val("\var{v}")" returns 0 if \var{v} is the Caml boolean
+"false", 1 if \var{v} is "true".
+\item "Val_true", "Val_false" represent to Caml booleans "true" and "false".
 \end{itemize}
 
 \subsection{Accessing blocks}
@@ -365,10 +410,10 @@ strings can contain embedded null characters, that will confuse
 the usual C functions over strings. 
 \item "Double_val("\var{v}")" returns the floating-point number contained in
 value \var{v}, with type "double".
-\item (Native-code only.) "Double_field("\var{v}", "\var{n}")" returns
+\item "Double_field("\var{v}", "\var{n}")" returns
 the $n\th$ element of the array of floating-point numbers \var{v} (a
 block tagged "Double_array_tag").
-\item (Native-code only.) "Store_double_field("\var{v}", "\var{n}",
+\item "Store_double_field("\var{v}", "\var{n}",
 "\var{d}")" stores the double precision floating-point number \var{d}
 in the $n\th$ element of the array of floating-point numbers \var{v}.
 \end{itemize}
@@ -386,7 +431,7 @@ below).
 From the standpoint of the allocation functions, blocks are divided
 according to their size as zero-sized blocks, small blocks (with size
 less than or equal to \verb"Max_young_wosize"), and large blocks (with
-size greater than to \verb"Max_young_wosize"). The constant
+size greater than \verb"Max_young_wosize"). The constant
 \verb"Max_young_wosize" is declared in the include file "mlvalues.h". It
 is guaranteed to be at least 64 (words), so that any block with
 constant size less than or equal to 64 can be assumed to be small. For
@@ -436,7 +481,8 @@ into a value. The array \var{a} is an array of pointers terminated by the
 null pointer. The function \var{f} receives each pointer as argument, and
 returns a value. The zero-tagged block returned by
 "alloc_array("\var{f}", "\var{a}")" is filled with the values returned by the
-successive calls to \var{f}.
+successive calls to \var{f}.  (This function must not be used to build
+an array of floating-point numbers.)
 \item
 "copy_string_array("\var{p}")" allocates an array of strings, copied from
 the pointer to a string array \var{p} (a \verb"char **").
@@ -498,11 +544,12 @@ not represent well-formed values.
 If you really need to allocate before the fields can receive their
 final value,  first initialize with a constant value (e.g.
 "Val_long(0)"), then allocate, then modify the fields with the correct
-value (see rule~3).
+value (see rule~4).
 
-\begin{gcrule} Local variables containing values must be registered
-with the garbage collector (using the "Begin_roots" and "End_roots"
-macros), if they are to survive a call to an allocation function.
+\begin{gcrule} Local variables and function parameters containing
+values must be registered with the garbage collector (using the
+"Begin_roots" and "End_roots" macros), if they are to survive a call
+to an allocation function.
 \end{gcrule}
 
 Registration is performed with the "Begin_roots" set of macros.
@@ -567,8 +614,7 @@ well-formed value; then, call the "modify" function:
 To illustrate the rules above, here is a C function that builds and
 returns a list containing the two integers given as parameters:
 \begin{verbatim}
-value alloc_list_int(i1, i2)
-        int i1, i2;
+value alloc_list_int(int i1, int i2)
 {
   value result = Val_unit;
   value r = Val_unit;
@@ -592,8 +638,7 @@ In the example above, the list is built bottom-up. Here is an
 alternate way, that proceeds top-down. It is less efficient, but
 illustrates the use of "modify".
 \begin{verbatim}
-value alloc_list_int(i1, i2)
-        int i1, i2;
+value alloc_list_int(int i1, int i2)
 {
   value tail;
   value r = Val_unit;
@@ -720,7 +765,7 @@ the given argument:
 \subsection{Main program in C} \label{s:main-c}
 
 In normal operation, a mixed Caml/C program starts by executing the
-Caml initialization code, which then can proceed to call C
+Caml initialization code, which then may proceed to call C
 functions. We say that the main program is the Caml code. In some
 applications, it is desirable that the C code plays the role of the
 main program, calling Caml functions when needed. This can be achieved as
@@ -832,36 +877,31 @@ The stub code file, "curses.o", looks like:
 #include <curses.h>
 #include <mlvalues.h>
 
-value curses_initscr(unit)
-        value unit;
+value curses_initscr(value unit)
 {
   return (value) initscr();     /* OK to coerce directly from WINDOW * to value
                                    since that's a block created by malloc() */
 }
 
-value curses_wrefresh(win)
-        value win;
+value curses_wrefresh(value win)
 {
   wrefresh((WINDOW *) win);
   return Val_unit;
 }
 
-value curses_newwin(nlines, ncols, x0, y0)
-        value nlines, ncols, x0, y0;
+value curses_newwin(value nlines, value ncols, value x0, value y0)
 {
   return (value) newwin(Int_val(nlines), Int_val(ncols),
                         Int_val(x0), Int_val(y0));
 }
 
-value curses_addch(c)
-        value c;
+value curses_addch(value c)
 {
   addch(Int_val(c));            /* Characters are encoded like integers */
   return Val_unit;
 }
 
-value curses_addstr(s)
-        value s;
+value curses_addstr(value s)
 {
   addstr(String_val(s));
   return Val_unit;
@@ -869,10 +909,6 @@ value curses_addstr(s)
 
 /* This goes on for pages. */
 \end{verbatim}
-(Actually, it would be better to create a library for the stub code,
-with each stub code function in a separate file, so that linking would
-pick only those functions from the "curses" library that are actually
-used.)
 
 The file "curses.c" can be compiled with:
 \begin{verbatim}
@@ -963,6 +999,9 @@ library along with the stub code in "modwrap.c" and the Caml runtime system:
         cp /usr/local/lib/ocaml/libcamlrun.a mod.a
         ar r mod.a modcaml.o modwrap.o
 \end{verbatim}
+(One can also use "ocamlopt -output-obj" instead of "ocamlc -custom
+-output-obj".  In this case, replace "libcamlrun.a" (the bytecode
+runtime library) by "libasmrun.a" (the native-code runtime library).)
 
 Now, we can use the two fonctions "fib" and "format_result" in any C
 program, just like regular C functions. Just remember to call

@@ -1,0 +1,19 @@
+\chapter{The dynlink library: dynamic loading and linking of object files}
+
+The "dynlink" library supports type-safe dynamic loading and linking
+of bytecode object files (".cmo" and ".cma" files) in a running
+bytecode program.  Type safety is ensured by limiting the set of
+modules from the running program that the loaded object file can
+access, and checking that the running program and the loaded object
+file have been compiled against the same interfaces for these modules.
+
+Programs that use the "dynlink" library simply need to link
+"dynlink.cma" with their object files and other libraries.  Linking in
+``custom runtime'' mode is not necessary.  Dynamic linking is
+available only to bytecode programs compiled with "ocamlc", not to
+native-code programs compiled with "ocamlopt".
+
+\begin{library}
+\input dynlink.tex
+\end{library}
+

@@ -165,6 +165,14 @@ building a library ("-a" flag), setting the "-linkall" flag forces all
 subsequent links of programs involving that library to link all the
 modules contained in the library.
 
+\item["-make_runtime" \var{runtime-name}]
+Build a custom runtime system (in the file \var{runtime-name})
+incorporating the C object files and libraries given on the command
+line.  This custom runtime system can be used later to execute
+bytecode executables produced with the
+"ocamlc -use_runtime" \var{runtime-name} option.
+See section~\ref{s:custom-runtime} for more information.
+
 \item["-noassert"]
 Turn assertion checking off: assertions are not compiled.
 This flag has no effect when linking already compiled files.
@@ -203,6 +211,12 @@ Turn bound checking off on array and string accesses (the "v.(i)" and
 "s.[i]" constructs). Programs compiled with "-unsafe" are therefore
 slightly faster, but unsafe: anything can happen if the program
 accesses an array or string outside of its bounds.
+
+\item["-use_runtime" \var{runtime-name}]
+Generate a bytecode executable file that can be executed on the custom
+runtime system \var{runtime-name}, built earlier with
+"ocamlc -make_runtime" \var{runtime-name}.  
+See section~\ref{s:custom-runtime} for more information.
 
 \item["-v"]
 Print the version number of the compiler.

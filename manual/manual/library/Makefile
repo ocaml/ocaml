@@ -8,12 +8,12 @@ STDLIB_INTF=arg.tex array.tex char.tex digest.tex filename.tex format.tex \
 
 OTHERLIB_INTF=unix.tex str.tex num.tex arithstatus.tex graphics.tex \
   thread.tex mutex.tex condition.tex event.tex threadUnix.tex \
-  dbm.tex
+  dbm.tex dynlink.tex
 
 INTF=$(CORE_INTF) $(STDLIB_INTF) $(OTHERLIB_INTF)
 
 BLURB=core.tex stdlib.tex libunix.tex libstr.tex libnum.tex libgraph.tex \
-  libthreads.tex libdbm.tex
+  libthreads.tex libdbm.tex libdynlink.tex
 
 FILES=$(BLURB) $(INTF) $(BLURB:.tex=.htex) $(INTF:.tex=.htex)
 
@@ -21,7 +21,7 @@ FORMAT=../../tools/format-intf
 
 CSLDIR=../../../csl
 
-VPATH=.:$(CSLDIR)/stdlib:$(CSLDIR)/otherlibs/unix:$(CSLDIR)/otherlibs/str:$(CSLDIR)/otherlibs/num:$(CSLDIR)/otherlibs/graph:$(CSLDIR)/otherlibs/threads:$(CSLDIR)/otherlibs/dbm
+VPATH=.:$(CSLDIR)/stdlib:$(CSLDIR)/otherlibs/unix:$(CSLDIR)/otherlibs/str:$(CSLDIR)/otherlibs/num:$(CSLDIR)/otherlibs/graph:$(CSLDIR)/otherlibs/threads:$(CSLDIR)/otherlibs/dbm:$(CSLDIR)/otherlibs/dynlink
 
 all: $(FILES)
 

@@ -18,9 +18,10 @@ Programs that use the "threads" library must be linked as follows:
 \begin{alltt}
         ocamlc -thread -custom \var{other options} threads.cma \var{other files} -cclib -lthreads
 \end{alltt}
-All object files on the command line must also have been compiled with
-the "-thread" option, which selects a special, thread-safe version of
-the standard library (see chapter~\ref{c:camlc}).
+The "-thread" option selects a special, thread-safe version of
+the standard library (see chapter~\ref{c:camlc}).  The "-thread"
+option must also be given when compiling any source file that
+references modules from the thread library ("Thread", "Mutex", \ldots).
 
 The default thread implementation cannot be used in native-code
 programs compiled with "ocamlopt".  If your operating system provides

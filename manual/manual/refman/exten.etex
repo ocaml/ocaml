@@ -155,3 +155,39 @@ standard library (section~\ref{s:Lazy}).
 %
 \index{Lazy (module)\@\verb`Lazy` (module)}%
 \index{force\@\verb`force`}%
+
+\section{Record copy with update}
+\ikwd{with\@\verb`with`}
+
+The expression
+@"{" expr "with" lbl_1 "=" expr_1 ";" \ldots ";" lbl_n "=" expr_n "}"@
+builds a fresh record with fields @lbl_1 \ldots lbl_n@ equal to
+@expr_1 \ldots expr_n@, and all other fields having the same value as
+in the record @expr@.  In other terms, it returns a shallow copy of
+the record @expr@, except for the fields @lbl_1 \ldots lbl_n@,
+which are initialized to @expr_1 \ldots expr_n@.  For example:
+\begin{verbatim}
+        type point = { x : float; y : float; z : float }
+        let proj p = { p with x = 0.0 }
+        let proj p = { x = 0.0; y = p.y; z = p.z }
+\end{verbatim}
+The two definitions of "proj" above are equivalent.
+
+\section{Local modules}
+\ikwd{let\@\verb`let`}
+\ikwd{module\@\verb`module`}
+
+The expression
+@"let" "module" module-name "=" module-expr "in" expr@
+locally binds the module expression @module-expr@ to the identifier
+@module-name@ during the evaluation of the expression @expr@.
+It then returns the value of @expr@.  For example:
+\begin{verbatim}
+        let remove_duplicates comparison_fun string_list =
+          let module StringSet =
+            Set.Make(struct type t = string
+                            let compare = comparison_fun end) in
+          StringSet.elements
+            (List.fold_right StringSet.add string_list StringSet.empty)
+\end{verbatim}
+

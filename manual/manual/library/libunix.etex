@@ -71,7 +71,6 @@ file system)}
 functions; use threads instead of non-blocking I/O}
 \entree{"rewinddir"}{not implemented; re-open the directory instead}
 \entree{"mkfifo"}{not implemented}
-\entree{"ioctl_int", "ioctl_ptr"}{not implemented (no "ioctl" in Windows)}
 \entree{"select"}{implemented, but works only for sockets; use threads
                   if you need to wait on other kinds of file descriptors}
 \entree{"lockf"}{not implemented}

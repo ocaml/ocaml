@@ -16,7 +16,7 @@
 \large          Xavier Leroy \\[1cm]
                 \today
 \vfill
-\normalsize     Copyright \copyright\ 1997 Institut National de
+\normalsize     Copyright \copyright\ \number\year\ Institut National de
                 Recherche en Informatique et Automatique
 \end{center}
 \cleardoublepage
@@ -61,6 +61,7 @@
 \input libthreads.tex
 \input libgraph.tex
 \input libdbm.tex
+\input libdynlink.tex
 
 \part{Appendix}
 \label{p:appendix}
