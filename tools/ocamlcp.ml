@@ -58,6 +58,7 @@ module Options = Main_args.Make_options (struct
   let _verbose = option "-verbose"
   let _w = option_with_arg "-w"
   let _nopervasives = option "-nopervasives"
+  let _dparsetree = option "-dparsetree"
   let _drawlambda = option "-drawlambda"
   let _dlambda = option "-dlambda"
   let _dinstr = option "-dinstr"
