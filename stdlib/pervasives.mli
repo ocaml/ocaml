@@ -566,7 +566,7 @@ val flush : out_channel -> unit
    output and standard error at the right time. *)
 
 val flush_all : unit -> unit
-(** Flush all opened output channels. *)
+(** Flush all open output channels; ignore errors. *)
 
 val output_char : out_channel -> char -> unit
 (** Write the character on the given output channel. *)
@@ -808,7 +808,7 @@ val exit : int -> 'a
 (** Terminate the process, returning the given status code
    to the operating system: usually 0 to indicate no errors,
    and a small positive integer to indicate failure. 
-   All opened output channels are flushed.
+   All open output channels are flushed with flush_all.
    An implicit [exit 0] is performed each time a program
    terminates normally.  An implicit [exit 2] is performed if the program
    terminates early because of an uncaught exception. *)

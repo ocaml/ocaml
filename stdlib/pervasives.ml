@@ -244,7 +244,7 @@ external out_channels_list : unit -> out_channel list
 let flush_all () = 
   let rec iter = function
       [] -> ()
-    | a::l -> flush a; iter l
+    | a::l -> (try flush a with _ -> ()); iter l
   in iter (out_channels_list ())
 
 external unsafe_output : out_channel -> string -> int -> int -> unit
