@@ -113,3 +113,36 @@ let bounded_split expr text num =
 
 let split expr text = bounded_split expr text 0
 
+let bounded_split_delim expr text num =
+  let rec split start n =
+    if start > String.length text then [] else
+    if n = 1 then [string_after text start] else
+      try
+        let pos = search_forward expr text start in
+        String.sub text start (pos-start) :: split (match_end()) (n-1)
+      with Not_found ->
+        [string_after text start] in
+  if text = "" then [] else split 0 num
+
+let split_delim expr text = bounded_split_delim expr text 0
+
+type split_result = Text of string | Delim of string
+
+let bounded_full_split expr text num =
+  let rec split start n =
+    if start >= String.length text then [] else
+    if n = 1 then [Text(string_after text start)] else
+      try
+        let pos = search_forward expr text start in
+        if pos > start then
+          Text(String.sub text start (pos-start)) ::
+          Delim(matched_string text) ::
+          split (match_end()) (n-1)
+        else
+          Delim(matched_string text) ::
+          split (match_end()) (n-1)
+      with Not_found ->
+        [Text(string_after text start)] in
+  split 0 num
+
+let full_split expr text = bounded_full_split expr text 0

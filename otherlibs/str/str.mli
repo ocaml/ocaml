@@ -129,10 +129,31 @@ val split: regexp -> string -> string list
         (* [split r s] splits [s] into substrings, taking as delimiters
            the substrings that match [r], and returns the list of substrings.
            For instance, [split (regexp "[ \t]+") s] splits [s] into
-           blank-separated words. *)
+           blank-separated words.  An occurrence of the delimiter at the
+           beginning and at the end of the string is ignored. *)
 val bounded_split: regexp -> string -> int -> string list
         (* Same as [split], but splits into at most [n] substrings,
            where [n] is the extra integer parameter. *)
+
+val split_delim: regexp -> string -> string list
+val bounded_split_delim: regexp -> string -> int -> string list
+        (* Same as [split] and [bounded_split], but occurrences of the
+           delimiter at the beginning and at the end of the string are
+           recognized and returned as empty strings in the result.
+           For instance, [split_delim (regexp " ") " abc "]
+           returns [[""; "abc"; ""]], while [split] with the same
+           arguments returns [["abc"]]. *)
+
+type split_result = Text of string | Delim of string
+
+val full_split: regexp -> string -> split_result list
+val bounded_full_split: regexp -> string -> int -> split_result list
+        (* Same as [split_delim] and [bounded_split_delim], but returns
+           the delimiters as well as the substrings contained between
+           delimiters.  The former are tagged [Delim] in the result list;
+           the latter are tagged [Text].  For instance,
+           [full_split (regexp "[{}]") "{ab}"] returns
+           [[Delim "{"; Text "ab"; Delim "}"]]. *)
 
 (*** Extracting substrings *)
 
