@@ -88,8 +88,8 @@ let rec is_simple_expr = function
         (* The following may have side effects *)
         Capply _ | Cextcall(_, _, _) | Calloc | Cstore | Cstorechunk _ | 
         Craise -> false
-        (* The remaining operations are simple *)
-      | _ -> true
+        (* The remaining operations are simple if their args are *)
+      | _ -> List.for_all is_simple_expr args
       end
   | _ -> false
 
