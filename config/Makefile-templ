@@ -166,6 +166,12 @@ SHARPBANGSCRIPTS=true
 #ASPP=$(AS)
 #ASPPFLAGS=
 
+### Extra flags to use for assembling .S files in profiling mode
+# On Digital Unix:
+#ASPPPROFFLAGS=-pg -DPROFILING
+# Otherwise:
+#ASPPPROFFLAGS=-DPROFILING
+
 ############# Configuration for the contributed libraries
 
 ### Which libraries to compile and install

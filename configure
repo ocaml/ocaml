@@ -306,9 +306,11 @@ esac
 asflags=''
 aspp='$(AS)'
 asppflags=''
+asppprofflags='-DPROFILING'
 
 case "$arch,$model,$system" in
-  alpha,*,digital)  asflags='-O2'; asppflags='-O2 -DSYS_$(SYSTEM)';;
+  alpha,*,digital)  asflags='-O2'; asppflags='-O2 -DSYS_$(SYSTEM)';
+                    asppprofflags='-pg -DPROFILING';;
   alpha,*,linux)    aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   mips,*,irix)      asflags='-32 -O2'; asppflags="$asflags";;
   mips,*,ultrix)    asflags='-O2'; asppflags="$asflags";;
@@ -716,6 +718,7 @@ echo "NATIVECCLINKOPTS=$nativecclinkopts" >> Makefile
 echo "ASFLAGS=$asflags" >> Makefile
 echo "ASPP=$aspp" >> Makefile
 echo "ASPPFLAGS=$asppflags" >> Makefile
+echo "ASPPPROFFLAGS=$asppprofflags" >> Makefile
 
 echo "CCLIBS=$cclibs" >> Makefile
 echo "OTHERLIBRARIES=$otherlibraries" >> Makefile

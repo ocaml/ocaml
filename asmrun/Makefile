@@ -113,7 +113,7 @@ clean::
 	$(ASPP) $(ASPPFLAGS) -o $*.o $*.S
 
 .S.p.o:
-	$(ASPP) $(ASPPFLAGS) -DPROFILING -o $*.p.o $*.S
+	$(ASPP) $(ASPPFLAGS) $(ASPPPROFFLAGS) -o $*.p.o $*.S
 
 .c.d.o:
 	@ if test -f $*.o; then mv $*.o $*.f.o; else :; fi
