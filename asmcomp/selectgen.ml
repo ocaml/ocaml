@@ -66,6 +66,8 @@ let size_expr env exp =
         size_machtype(oper_result_type op)
     | Clet(id, arg, body) ->
         size (Tbl.add id (size localenv arg) localenv) body
+    | Csequence(e1, e2) ->
+        size localenv e2
     | _ ->
         fatal_error "Selection.size_expr"
   in size Tbl.empty exp
@@ -86,6 +88,7 @@ let rec is_simple_expr = function
   | Cvar _ -> true
   | Ctuple el -> List.for_all is_simple_expr el
   | Clet(id, arg, body) -> is_simple_expr arg && is_simple_expr body
+  | Csequence(e1, e2) -> is_simple_expr e1 && is_simple_expr e2
   | Cop(op, args) ->
       begin match op with
         (* The following may have side effects *)

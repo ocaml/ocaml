@@ -19,11 +19,11 @@
 
 #if defined(SYS_linux_elf) || defined(SYS_solaris)
 #define G(x) x
-#define L(x) .L##x
+#define LBL(x) .L##x
 #define FUNCTION_ALIGN 4
 #else
 #define G(x) _##x
-#define L(x) L##x
+#define LBL(x) L##x
 #define FUNCTION_ALIGN 2
 #endif
 
@@ -56,7 +56,8 @@ G(caml_call_gc):
         leal    4(%esp), %eax
         movl    %eax, G(caml_bottom_of_stack)
     /* Build array of registers, save it into caml_gc_regs */
-L(105): pushl   %ebp
+LBL(105):
+        pushl   %ebp
         pushl   %edi
         pushl   %esi
         pushl   %edx
@@ -84,13 +85,14 @@ G(caml_alloc1):
         subl    $8, %eax
         movl    %eax, G(young_ptr)
         cmpl    G(young_limit), %eax
-        jb      L(100)
+        jb      LBL(100)
         ret
-L(100): movl    0(%esp), %eax
+LBL(100):
+        movl    0(%esp), %eax
         movl    %eax, G(caml_last_return_address)
         leal    4(%esp), %eax
         movl    %eax, G(caml_bottom_of_stack)
-        call    L(105)
+        call    LBL(105)
         jmp     G(caml_alloc1)
 
         .align  FUNCTION_ALIGN
@@ -100,13 +102,14 @@ G(caml_alloc2):
         subl    $12, %eax
         movl    %eax, G(young_ptr)
         cmpl    G(young_limit), %eax
-        jb      L(101)
+        jb      LBL(101)
         ret
-L(101): movl    0(%esp), %eax
+LBL(101):
+        movl    0(%esp), %eax
         movl    %eax, G(caml_last_return_address)
         leal    4(%esp), %eax
         movl    %eax, G(caml_bottom_of_stack)
-        call    L(105)
+        call    LBL(105)
         jmp     G(caml_alloc2)
 
         .align  FUNCTION_ALIGN
@@ -116,13 +119,14 @@ G(caml_alloc3):
         subl    $16, %eax
         movl    %eax, G(young_ptr)
         cmpl    G(young_limit), %eax
-        jb      L(102)
+        jb      LBL(102)
         ret
-L(102): movl    0(%esp), %eax
+LBL(102):
+        movl    0(%esp), %eax
         movl    %eax, G(caml_last_return_address)
         leal    4(%esp), %eax
         movl    %eax, G(caml_bottom_of_stack)
-        call    L(105)
+        call    LBL(105)
         jmp     G(caml_alloc3)
 
         .align  FUNCTION_ALIGN
@@ -131,10 +135,11 @@ G(caml_alloc):
         subl    G(young_ptr), %eax      /* eax = size - young_ptr */
         negl    %eax                    /* eax = young_ptr - size */
         cmpl    G(young_limit), %eax
-        jb      L(103)
+        jb      LBL(103)
         movl    %eax, G(young_ptr)
         ret
-L(103): subl    G(young_ptr), %eax      /* eax = - size */
+LBL(103):
+        subl    G(young_ptr), %eax      /* eax = - size */
         negl    %eax                    /* eax = size */
         pushl   %eax                    /* save desired size */
         subl    %eax, G(young_ptr)      /* must update young_ptr */
@@ -142,7 +147,7 @@ L(103): subl    G(young_ptr), %eax      /* eax = - size */
         movl    %eax, G(caml_last_return_address)
         leal    8(%esp), %eax
         movl    %eax, G(caml_bottom_of_stack)
-        call    L(105)
+        call    LBL(105)
         popl    %eax                    /* recover desired size */
         jmp     G(caml_alloc)
 
@@ -174,18 +179,18 @@ G(caml_start_program):
     /* Initial entry point is caml_program */
         movl    $ G(caml_program), %esi
     /* Common code for caml_start_program and callback* */
-L(106):
+LBL(106):
     /* Build a callback link */
         pushl   G(caml_gc_regs)
         pushl   G(caml_last_return_address)
         pushl   G(caml_bottom_of_stack)
     /* Build an exception handler */
-        pushl   $ L(108)
+        pushl   $ LBL(108)
         pushl   G(caml_exception_pointer)
         movl    %esp, G(caml_exception_pointer)
     /* Call the Caml code */
         call    *%esi
-L(107):
+LBL(107):
     /* Pop the exception handler */
         popl    G(caml_exception_pointer)
         popl    %esi    /* dummy register */
@@ -200,7 +205,7 @@ L(107):
         popl    %ebx
     /* Return to caller. */
         ret
-L(108):
+LBL(108):
     /* Exception handler*/
     /* Pop the callback link, restoring the global variables */
         popl    G(caml_bottom_of_stack)
@@ -237,7 +242,7 @@ G(callback):
         movl    20(%esp), %ebx   /* closure */
         movl    24(%esp), %eax   /* argument */
         movl    0(%ebx), %esi    /* code pointer */
-        jmp     L(106)
+        jmp     LBL(106)
 
         .globl  G(callback2)
         .align  FUNCTION_ALIGN
@@ -253,7 +258,7 @@ G(callback2):
         movl    24(%esp), %eax   /* first argument */
         movl    28(%esp), %ebx   /* second argument */
         movl    $ G(caml_apply2), %esi   /* code pointer */
-        jmp     L(106)
+        jmp     LBL(106)
 
         .globl  G(callback3)
         .align  FUNCTION_ALIGN
@@ -270,13 +275,28 @@ G(callback3):
         movl    28(%esp), %ebx   /* second argument */
         movl    32(%esp), %ecx   /* third argument */
         movl    $ G(caml_apply3), %esi   /* code pointer */
-        jmp     L(106)
+        jmp     LBL(106)
+
+        .globl  G(caml_array_bound_error)
+        .align  FUNCTION_ALIGN
+G(caml_array_bound_error):
+    /* Empty the floating-point stack */
+        ffree   %st(0)
+        ffree   %st(1)
+        ffree   %st(2)
+        ffree   %st(3)
+        ffree   %st(4)
+        ffree   %st(5)
+        ffree   %st(6)
+        ffree   %st(7)
+    /* Branch to array_bound_error */
+        jmp     G(array_bound_error)
 
         .data
         .globl  G(system_frametable)
 G(system_frametable):
         .long   1               /* one descriptor */
-        .long   L(107)          /* return address into callback */
+        .long   LBL(107)        /* return address into callback */
 #ifndef SYS_solaris
         .word   -1              /* negative frame size => use callback link */
         .word   0               /* no roots here */
