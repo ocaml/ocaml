@@ -29,6 +29,7 @@ val add_shown_module : Path.t -> widgets:module_widgets -> unit
 val find_shown_module : Path.t -> module_widgets
 val is_shown_module : Path.t -> bool
 val default_frame : module_widgets option ref
+val set_path : (Path.t -> sign:Types.signature -> unit) ref
 
 val view_defined_ref : (Longident.t -> env:Env.t -> unit) ref
 val editor_ref :

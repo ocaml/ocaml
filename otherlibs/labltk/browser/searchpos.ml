@@ -248,6 +248,7 @@ type module_widgets =
 
 let shown_modules = Hashtbl.create 17
 let default_frame = ref None
+let set_path = ref (fun _ ~sign -> assert false)
 let filter_modules () =
   Hashtbl.iter
     (fun key data ->
@@ -335,6 +336,7 @@ let rec view_signature ?title ?path ?(env = !start_env) ?(detach=false) sign =
             view_module path ~env;
             find_shown_module path
         in
+        !set_path path ~sign;
         begin match mw.mw_title with None -> ()
         | Some label ->
             Label.configure label ~text:title;

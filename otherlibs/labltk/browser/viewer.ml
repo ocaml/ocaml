@@ -216,18 +216,17 @@ let search_symbol () =
 
 (* Display the contents of a module *)
 
+let ident_of_decl ~modlid = function
+    Tsig_value (id, _) -> Lident (Ident.name id), Pvalue
+  | Tsig_type (id, _) -> Lident (Ident.name id), Ptype
+  | Tsig_exception (id, _) -> Ldot (modlid, Ident.name id), Pconstructor
+  | Tsig_module (id, _) -> Lident (Ident.name id), Pmodule
+  | Tsig_modtype (id, _) -> Lident (Ident.name id), Pmodtype
+  | Tsig_class (id, _) -> Lident (Ident.name id), Pclass
+  | Tsig_cltype (id, _) -> Lident (Ident.name id), Pcltype
+
 let view_defined modlid ~env =
-  try match lookup_module modlid env with
-    path, Tmty_signature sign ->
-    let ident_of_decl = function
-        Tsig_value (id, _) -> Lident (Ident.name id), Pvalue
-      | Tsig_type (id, _) -> Lident (Ident.name id), Ptype
-      | Tsig_exception (id, _) -> Ldot (modlid, Ident.name id), Pconstructor
-      | Tsig_module (id, _) -> Lident (Ident.name id), Pmodule
-      | Tsig_modtype (id, _) -> Lident (Ident.name id), Pmodtype
-      | Tsig_class (id, _) -> Lident (Ident.name id), Pclass
-      | Tsig_cltype (id, _) -> Lident (Ident.name id), Pcltype
-    in
+  try match lookup_module modlid env with path, Tmty_signature sign ->
     let rec iter_sign sign idents =
       match sign with
         [] -> List.rev idents
@@ -236,7 +235,7 @@ let view_defined modlid ~env =
             Tsig_class _, cty :: ty1 :: ty2 :: rem -> rem
           | Tsig_cltype _, ty1 :: ty2 :: rem -> rem
           | _, rem -> rem
-          in iter_sign rem (ident_of_decl decl :: idents)
+          in iter_sign rem (ident_of_decl ~modlid decl :: idents)
     in
     let l = iter_sign sign [] in
     !choose_symbol_ref l ~title:(string_of_path path) ~signature:sign
@@ -451,6 +450,7 @@ object (self)
     Searchpos.default_frame := Some
         { mw_frame = view; mw_title = Some label;
           mw_detach = detach; mw_edit = edit; mw_intf = intf };
+    Searchpos.set_path := self#set_path;
 
     (* Buttons *)
     pack [close] ~side:`Right ~fill:`X ~expand:true;
@@ -530,6 +530,57 @@ object (self)
           self#hide_after 2;
           shown_paths <- [path];
           1
+
+  method set_path path ~sign =
+    prerr_endline ("* " ^ string_of_path path);
+    let rec path_elems l path =
+      match path with
+        Path.Pdot (path, _, _) -> path_elems (path::l) path
+      | _ -> []
+    in
+    let path_elems path =
+      match path with
+      | Path.Pident _ -> [path]
+      | _ -> path_elems [] path
+    in
+    let see_path ~box:n ?(sign=[]) path =
+      let (_, box) = List.nth boxes n in
+      let texts = Listbox.get_range box ~first:(`Num 0) ~last:`End in
+      let rec index s = function
+          [] -> raise Not_found
+        | a :: l -> if a = s then 0 else 1 + index s l
+      in
+      try
+        let modlid, s =
+          match path with
+            Path.Pdot (p, s, _) -> longident_of_path p, s
+          | Path.Pident i -> Longident.Lident "M", Ident.name i
+          | _ -> assert false
+        in
+        let li, k =
+          if sign = [] then Longident.Lident s, Pmodule else
+          ident_of_decl ~modlid (List.hd sign) in
+        let s =
+          if n = 0 then string_of_longident li else
+          string_of_longident li ^ " (" ^ string_of_kind k ^ ")" in
+        prerr_endline s;
+        let n = index s texts in
+        Listbox.see box (`Num n);
+        Listbox.activate box (`Num n)
+      with Not_found -> ()
+    in
+    let l = path_elems path in
+    if l <> [] then begin
+      List.iter l ~f:
+        begin fun path ->
+          if not (List.mem path shown_paths) then
+            view_symbol (longident_of_path path) ~kind:Pmodule
+              ~env:Env.initial ~path;
+          let n = self#get_box path - 1 in
+          see_path path ~box:n
+        end;
+      see_path path ~box:(self#get_box path) ~sign
+    end
         
   method choose_symbol ~title ~env ?signature ?path l =
     let n =
