@@ -1692,7 +1692,7 @@ type SendOption {
   SendAsync ["-async"]    	
 }
 
-function () send ["send"; SendOption list; "--"; app: string; command: string list]
+unsafe function () send ["send"; SendOption list; "--"; app: string; command: string list]
 
 %%%%% text(n)
 
@@ -1939,10 +1939,10 @@ subtype option(texttag) {
 
 
 %%%%% tk(n)
-function () appname_set ["tk"; "appname"; string]
-function (string) appname_get ["tk"; "appname"]
+unsafe function () appname_set ["tk"; "appname"; string]
+unsafe function (string) appname_get ["tk"; "appname"]
 function (float) scaling_get ["tk"; "scaling"; ?displayof:["-displayof"; widget]]
-function () scaling_set ["tk"; "scaling"; ?displayof:["-displayof"; widget]; float]
+unsafe function () scaling_set ["tk"; "scaling"; ?displayof:["-displayof"; widget]; float]
 
 %%%%% tk_chooseColor(n)
 
@@ -2051,7 +2051,7 @@ module Winfo {
    function (int,int,int) rgb ["winfo"; "rgb"; widget; color: Color]
    function (int) rootx ["winfo"; "rootx"; widget]
    function (int) rooty ["winfo"; "rooty"; widget]
-   function (string) screen ["winfo"; "screen"; widget]
+   unsafe function (string) screen ["winfo"; "screen"; widget]
    function (int) screencells ["winfo"; "screencells"; widget]
    function (int) screendepth ["winfo"; "screendepth"; widget]
    function (int) screenheight ["winfo"; "screenheight"; widget]
@@ -2084,108 +2084,108 @@ type FocusModel {
 }
 
 type WmFrom {
-   FromUser ["user"]
-   FromProgram ["program"]
+   User ["user"]
+   Program ["program"]
 }
 
 module Wm {
 %%% Aspect
-   function () aspect_set ["wm"; "aspect"; widget; minnum:int; mindenom:int; maxnum:int; maxdenom:int]
+   function () aspect_set ["wm"; "aspect"; widget(toplevel); minnum:int; mindenom:int; maxnum:int; maxdenom:int]
    % aspect: problem with empty return
-   function (int,int,int,int) aspect_get ["wm"; "aspect"; widget]
+   function (int,int,int,int) aspect_get ["wm"; "aspect"; widget(toplevel)]
 %%% WM_CLIENT_MACHINE
-   function () client_set ["wm"; "client"; widget; name: string]
-   function (string) client_get ["wm"; "client"; widget]
+   function () client_set ["wm"; "client"; widget(toplevel); name: string]
+   function (string) client_get ["wm"; "client"; widget(toplevel)]
 %%% WM_COLORMAP_WINDOWS
    function () colormapwindows_set 
-        ["wm"; "colormapwindows"; widget; [windows: widget list]]
+        ["wm"; "colormapwindows"; widget(toplevel); [windows: widget list]]
    unsafe function (widget list) colormapwindows_get
-        ["wm"; "colormapwindows"; widget]
+        ["wm"; "colormapwindows"; widget(toplevel)]
 %%% WM_COMMAND
-   function () command_clear ["wm"; "command"; widget; ""]
-   function () command_set ["wm"; "command"; widget; [string list]]
-   function (string list) command_get ["wm"; "command"; widget]
+   function () command_clear ["wm"; "command"; widget(toplevel); ""]
+   function () command_set ["wm"; "command"; widget(toplevel); [string list]]
+   function (string list) command_get ["wm"; "command"; widget(toplevel)]
 
-   function () deiconify ["wm"; "deiconify"; widget]
+   function () deiconify ["wm"; "deiconify"; widget(toplevel)]
 
 %%% Focus model
-   function () focusmodel_set ["wm"; "focusmodel"; widget; FocusModel]
-   function (FocusModel) focusmodel_get ["wm"; "focusmodel"; widget]
+   function () focusmodel_set ["wm"; "focusmodel"; widget(toplevel); FocusModel]
+   function (FocusModel) focusmodel_get ["wm"; "focusmodel"; widget(toplevel)]
 
-   function (string) frame ["wm"; "frame"; widget]
+   function (string) frame ["wm"; "frame"; widget(toplevel)]
 
 %%% Geometry
-   function () geometry_set ["wm"; "geometry"; widget; string]
-   function (string) geometry_get ["wm"; "geometry"; widget]
+   function () geometry_set ["wm"; "geometry"; widget(toplevel); string]
+   function (string) geometry_get ["wm"; "geometry"; widget(toplevel)]
 
 %%% Grid
-   function () grid_clear ["wm"; "grid"; widget; ""; ""; ""; ""]
-   function () grid_set ["wm"; "grid"; widget; basewidth: int; baseheight: int; widthinc: int; heightinc: int]
-   function (int,int,int,int) grid_get ["wm"; "grid"; widget]
+   function () grid_clear ["wm"; "grid"; widget(toplevel); ""; ""; ""; ""]
+   function () grid_set ["wm"; "grid"; widget(toplevel); basewidth: int; baseheight: int; widthinc: int; heightinc: int]
+   function (int,int,int,int) grid_get ["wm"; "grid"; widget(toplevel)]
 
 %%% Groups
-   function () group_clear ["wm"; "group"; widget; ""]
-   function () group_set ["wm"; "group"; widget; leader: widget]
-   unsafe function (widget) group_get ["wm"; "group"; widget]
+   function () group_clear ["wm"; "group"; widget(toplevel); ""]
+   function () group_set ["wm"; "group"; widget(toplevel); leader: widget]
+   unsafe function (widget) group_get ["wm"; "group"; widget(toplevel)]
 %%% Icon bitmap
-   function () iconbitmap_clear ["wm"; "iconbitmap"; widget; ""]
-   function () iconbitmap_set ["wm"; "iconbitmap"; widget; Bitmap]
-   function (Bitmap) iconbitmap_get ["wm"; "iconbitmap"; widget]
+   function () iconbitmap_clear ["wm"; "iconbitmap"; widget(toplevel); ""]
+   function () iconbitmap_set ["wm"; "iconbitmap"; widget(toplevel); Bitmap]
+   function (Bitmap) iconbitmap_get ["wm"; "iconbitmap"; widget(toplevel)]
 
-   function () iconify ["wm"; "iconify"; widget]
+   function () iconify ["wm"; "iconify"; widget(toplevel)]
 
 %%% Icon mask
-   function () iconmask_clear ["wm"; "iconmask"; widget; ""]
-   function () iconmask_set ["wm"; "iconmask"; widget; Bitmap]
-   function (Bitmap) iconmask_get ["wm"; "iconmask"; widget]
+   function () iconmask_clear ["wm"; "iconmask"; widget(toplevel); ""]
+   function () iconmask_set ["wm"; "iconmask"; widget(toplevel); Bitmap]
+   function (Bitmap) iconmask_get ["wm"; "iconmask"; widget(toplevel)]
 
 %%% Icon name
-   function () iconname_set ["wm"; "iconname"; widget; string]
-   function (string) iconname_get ["wm"; "iconname"; widget]
+   function () iconname_set ["wm"; "iconname"; widget(toplevel); string]
+   function (string) iconname_get ["wm"; "iconname"; widget(toplevel)]
 %%% Icon position
-   function () iconposition_clear ["wm"; "iconposition"; widget; ""; ""]
-   function () iconposition_set ["wm"; "iconposition"; widget; x: int; y: int]
-   function (int,int) iconposition_get ["wm"; "iconposition"; widget]
+   function () iconposition_clear ["wm"; "iconposition"; widget(toplevel); ""; ""]
+   function () iconposition_set ["wm"; "iconposition"; widget(toplevel); x: int; y: int]
+   function (int,int) iconposition_get ["wm"; "iconposition"; widget(toplevel)]
 %%% Icon window
-   function () iconwindow_clear ["wm"; "iconwindow"; widget; ""]
-   function () iconwindow_set ["wm"; "iconwindow"; widget; icon: widget]
-   unsafe function (widget) iconwindow_get ["wm"; "iconwindow"; widget]
+   function () iconwindow_clear ["wm"; "iconwindow"; widget(toplevel); ""]
+   function () iconwindow_set ["wm"; "iconwindow"; widget(toplevel); icon: widget(toplevel)]
+   unsafe function (widget(toplevel)) iconwindow_get ["wm"; "iconwindow"; widget(toplevel)]
 
 %%% Sizes
-   function () maxsize_set ["wm"; "maxsize"; widget; width: int; height: int]
-   function (int,int) maxsize_get ["wm"; "maxsize"; widget]
-   function () minsize_set ["wm"; "minsize"; widget; width: int; height: int]
-   function (int,int) minsize_get ["wm"; "minsize"; widget]
+   function () maxsize_set ["wm"; "maxsize"; widget(toplevel); width: int; height: int]
+   function (int,int) maxsize_get ["wm"; "maxsize"; widget(toplevel)]
+   function () minsize_set ["wm"; "minsize"; widget(toplevel); width: int; height: int]
+   function (int,int) minsize_get ["wm"; "minsize"; widget(toplevel)]
 %%% Override
-   function () overrideredirect_set ["wm"; "overrideredirect"; widget; bool]
-   function (bool) overrideredirect_get ["wm"; "overrideredirect"; widget]
+   unsafe function () overrideredirect_set ["wm"; "overrideredirect"; widget(toplevel); bool]
+   function (bool) overrideredirect_get ["wm"; "overrideredirect"; widget(toplevel)]
 %%% Position
-   function () positionfrom_clear ["wm"; "positionfrom"; widget; ""]
-   function () positionfrom_set ["wm"; "positionfrom"; widget; WmFrom]
-   function (WmFrom) positionfrom_get ["wm"; "positionfrom"; widget]
+   function () positionfrom_clear ["wm"; "positionfrom"; widget(toplevel); ""]
+   function () positionfrom_set ["wm"; "positionfrom"; widget(toplevel); WmFrom]
+   function (WmFrom) positionfrom_get ["wm"; "positionfrom"; widget(toplevel)]
 %%% Protocols
-   function () protocol_set ["wm"; "protocol"; widget; name: string; command: function()]
-   function () protocol_clear ["wm"; "protocol"; widget; name: string; ""]
-   function (string list) protocols ["wm"; "protocol"; widget]
+   function () protocol_set ["wm"; "protocol"; widget(toplevel); name: string; command: function()]
+   function () protocol_clear ["wm"; "protocol"; widget(toplevel); name: string; ""]
+   function (string list) protocols ["wm"; "protocol"; widget(toplevel)]
 %%% Resize
    function () resizable_set ["wm"; "resizable"; widget(toplevel); width: bool; height: bool]
    function (bool, bool) resizable_get ["wm"; "resizable"; widget(toplevel)]
 %%% Sizefrom
-   function () sizefrom_clear ["wm"; "sizefrom"; widget; ""]
-   function () sizefrom_set ["wm"; "sizefrom"; widget; WmFrom]
-   function (WmFrom) sizefrom_get ["wm"; "sizefrom"; widget]
+   function () sizefrom_clear ["wm"; "sizefrom"; widget(toplevel); ""]
+   function () sizefrom_set ["wm"; "sizefrom"; widget(toplevel); WmFrom]
+   function (WmFrom) sizefrom_get ["wm"; "sizefrom"; widget(toplevel)]
 
-   function (string) state ["wm"; "state"; widget]
+   function (string) state ["wm"; "state"; widget(toplevel)]
 
 %%% Title
-   function (string) title_get ["wm"; "title"; widget]
-   function () title_set ["wm"; "title"; widget; string]
+   function (string) title_get ["wm"; "title"; widget(toplevel)]
+   function () title_set ["wm"; "title"; widget(toplevel); string]
 %%% Transient
-   function () transient_clear ["wm"; "transient"; widget; ""]
-   function () transient_set ["wm"; "transient"; widget; master: widget(toplevel)]
-   unsafe function (widget(toplevel)) transient_get ["wm"; "transient"; widget]
+   function () transient_clear ["wm"; "transient"; widget(toplevel); ""]
+   function () transient_set ["wm"; "transient"; widget(toplevel); master: widget]
+   unsafe function (widget) transient_get ["wm"; "transient"; widget(toplevel)]
 
-   function () withdraw ["wm"; "withdraw"; widget]
+   function () withdraw ["wm"; "withdraw"; widget(toplevel)]
 
 }
 
@@ -2206,18 +2206,18 @@ function (string) getSaveFile ["tk_getSaveFile"; option(getFile) list]
 
 %%%%% tk_messageBox
 type MessageIcon {
-   MessageError ["error"]
-   MessageInfo  ["info"]
-   MessageQuestion ["question"]
-   MessageWarning ["warning"]
+   Error ["error"]
+   Info  ["info"]
+   Question ["question"]
+   Warning ["warning"]
 }
 type MessageType {
-   MessageAbortRetryIgnore ["abortretryignore"]
-   MessageOk ["ok"]
-   MessageOkCancel ["okcancel"]
-   MessageRetryCancel ["retrycancel"]
-   MessageYesNo ["yesno"] 
-   MessageYesNoCancel ["yesnocancel"]
+   AbortRetryIgnore ["abortretryignore"]
+   Ok ["ok"]
+   OkCancel ["okcancel"]
+   RetryCancel ["retrycancel"]
+   YesNo ["yesno"] 
+   YesNoCancel ["yesnocancel"]
 }
 subtype option(messageBox) {
   MessageDefault ["-default"; string]
@@ -2238,11 +2238,8 @@ module Tkvars {
   function (string) version ["$tk_version"]
 }
 
-##ifdef CAMLTK
-%
 % Direct API calls, non Tcl-based modules
 
 module Pixmap {
    external create "builtin/rawimg"
    }
-##endif
