@@ -31,7 +31,7 @@
 value terminfo_setup(unit)      /* ML */
      value unit;
 {
-  static buffer[1024];
+  static char buffer[1024];
   if (tgetent(buffer, getenv("TERM")) != 1) failwith("Terminfo.setupterm");
   return Val_unit;
 }
