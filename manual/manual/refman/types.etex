@@ -8,7 +8,7 @@ typexpr:
         "'" ident
       | "_" 
       | '(' typexpr ')'
-      | [[?]label] typexpr '->' typexpr
+      | [['?']ident':'] typexpr '->' typexpr
       | typexpr {{ '*' typexpr }}
       | typeconstr
       | typexpr typeconstr

@@ -133,17 +133,20 @@ string literals.
 The current implementation places no restrictions on the length of
 string literals.
 
-\subsubsection*{Labels}
+\subsubsection*{Naming labels}
+
+To avoid ambiguities, naming labels cannot just be defined
+syntactically as the sequence of the three tokens "~", @ident@ and
+":", and have to be defined at the lexical level.
 
 \begin{syntax}
-label : ("a" \ldots "z") { letter||"0"\ldots"9"||"_"||"'" } ":" ;
-labelid : ":" ("a" \ldots "z") { letter||"0"\ldots"9"||"_"||"'" }
+label : "~" ("a" \ldots "z") { letter||"0"\ldots"9"||"_"||"'" } ":" ;
+optlabel : "?" ("a" \ldots "z") { letter||"0"\ldots"9"||"_"||"'" } ":"
 \end{syntax}
 
-Labels can be used to differentiate arguments in function definition
-and application. They are made of a lowercase identifier followed by a
-colon ":", without space between them. The sequence "name:name" may be
-abbreviated by the label-identifier ":name".
+Naming labels come in two flavours: @label@ for normal arguments and
+@optlabel@ for optional ones. They are simply distinguished by their
+first character, either "~" or "?".
 
 \subsubsection*{Prefix and infix symbols}
 
@@ -190,7 +193,7 @@ The following character sequences are also keywords:
     #     &     '     (     )     *     ,     ->    ?
     ??    .     ..    .(    .[    :     ::    :=    ;
     ;;    <-    =     [     [|    [<    {<    ]     |]
-    >]    >}    _     `     {     |     }
+    >]    >}    _     `     {     |     }     ~
 \end{verbatim}
 
 \subsubsection*{Ambiguities}

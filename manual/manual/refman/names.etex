@@ -7,6 +7,7 @@ objects and refer to these objects by name later:
 \item value names (syntactic class @value-name@),
 \item value constructors (constant -- class @cconstr-name@ -- or
 non-constant -- class @ncconstr-name@),
+\item labels (@label-name@),
 \item variant tags (@tag-name@),
 \item type constructors (@typeconstr-name@),
 \item record fields (@field-name@),
@@ -46,6 +47,9 @@ ncconstr-name:
         capitalized-ident
       | '::'
 ;
+label-name:
+        lowercase-ident
+;
 tag-name:
         capitalized-ident
 ;
@@ -79,6 +83,7 @@ below.
 \begin{tableau}{|l|l|}{Name space}{Case of first letter}
 \entree{Values}{lowercase}
 \entree{Constructors}{uppercase}
+\entree{Labels}{lowercase}
 \entree{Variant tag}{uppercase}
 \entree{Type constructors}{lowercase}
 \entree{Record fields}{lowercase}
@@ -140,6 +145,6 @@ also contain simple functor applications (as in the syntactic class
 @extended-module-path@ above), in case the defining module is the
 result of a functor application.
 
-Instance variable names, tag names and method names need not be
-qualified: the former are local to a class while the two latter
-categories are global labels.
+Label names, tag names, method names and instance variable names need
+not be qualified: the former three are global labels, while the latter
+are local to a class.

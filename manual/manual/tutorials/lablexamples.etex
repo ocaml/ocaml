@@ -22,35 +22,27 @@ String.sub;;
 
 Such annotations of the form "name:" are called {\em labels}. They are
 meant to document the code, and allow more checking where needed.
-You can add them in interfaces, just like they appear in the above
-types, and also write them directly in your programs.
+You can simply add them in interfaces, just like they appear in the
+above types;
+but you can also give names to arguments in your programs, by
+prefixing them with a tilde "~".
 
 \begin{caml_example}
-let f x:x y:y = x - y;;
-f x:3 y:2;;
+let f ~x ~y = x - y;;
+let x = 3 and y = 2 in f ~x ~y;;
 \end{caml_example}
 
-In order to lighten the notations, the expression "name: name", where
-"name" is either a pattern variable or an identifier, can be
-abbreviated in ":name".
+When you want to use distinct names for the variable and the label
+appearing in the type, you can use a naming label of the form
+"~name:". This also applies when the argument is not a variable.
 
 \begin{caml_example}
-let f :x :y = x - y;;
-let pred x = f :x y:1;;
+let f ~x:x1 ~y:y1 = x1 - y1;;
+f ~x:3 ~y:2;;
 \end{caml_example}
 
-%% FIXME
-Beware that if you use this abbreviated notation with labels named
-after keywords ({\em e.g.} ":fun", ":to"), you will not be able to use
-the newly defined variable, since its name is masked by the keyword!
-In such cases you should avoid the abbreviated notation, and write
-"fun:f" for instance.
-
-\paragraph{Warning}
-Since the colon ":" is used inside labels, you must be careful to put
-spaces around it in type annotations. You must write "(x : int)" and
-not "(x:int)". You may omit the space before the colon in type
-definitions and interface declarations, like in "val x: int".
+Labels obey the same rules as other identifiers in Caml, that is you
+cannot use a reserved keyword (like "in" or "to") as label.
 
 \subsection{Classic mode}
 
@@ -59,8 +51,8 @@ default {\em classic} mode, or the {\em commuting label} mode.
 
 You need do nothing special to be in classic mode, and legacy programs
 written for previous versions of Objective Caml will work with no
-modifications in this mode, except for the problem mentioned in the
-above warning. Indeed, all the first chapter was written in this mode.
+modifications in this mode. Indeed, all the first chapter was written
+in this mode.
 
 In the classic mode, labels need not be explicitly written in
 function applications, but whenever they are given they are checked
@@ -69,7 +61,7 @@ against the labels in the function type.
 \def\myerror{3}
 \begin{caml_example}
 f 3 2;;
-f x:3 z:2;;
+f ~x:3 ~z:2;;
 \end{caml_example}
 The above error message gives the the type of the function applied to
 its previous arguments (here "x"), and the position of the unexpected
@@ -82,22 +74,23 @@ labels expected by the enclosing function.
 \begin{caml_example}
 Hashtbl.iter;;
 let print_all tbl =
-  Hashtbl.iter f:(fun :key :data -> Printf.printf "%s: %s\n" key data) tbl;;
+  Hashtbl.iter ~f:(fun ~key ~data -> Printf.printf "%s: %s\n" key data) tbl;;
 let print_all tbl =
-  Hashtbl.iter f:(fun :data :key -> Printf.printf "%s: %s\n" key data) tbl;;
+  Hashtbl.iter ~f:(fun ~data ~key -> Printf.printf "%s: %s\n" key data) tbl;;
 \end{caml_example}
 
 \subsection{Optional arguments}
 
 An interesting feature of labeled arguments is that they can be made
-optional. An optional parameter is prefixed by a question mark "?" in
-the function definition, and in the function type.
+optional. For optional parameters, the question mark "?" replaces the
+tilde "~" of non-optional ones, and the label is also prefixed by "?"
+in the function type.
 Default values may be given for such optional parameters.
 
 \begin{caml_example}
-let bump ?(:step = 1) x = x + step;;
+let bump ?(step = 1) x = x + step;;
 bump 2;;
-bump step:3 2;;
+bump ~step:3 2;;
 \end{caml_example}
 
 A function taking some optional arguments must also take at least one
@@ -107,9 +100,9 @@ non-labeled argument appearing after this optional argument in the
 function type.
 
 \begin{caml_example}
-let test ?(:x = 0) ?(:y = 0) () ?(:z = 0) () = (x, y, z);;
+let test ?(x = 0) ?(y = 0) () ?(z = 0) () = (x, y, z);;
 test ();;
-test x:2 () z:3 ();;
+test ~x:2 () ~z:3 ();;
 \end{caml_example}
 
 Optional arguments behave similarly in classic and commuting label
@@ -118,7 +111,7 @@ and in both cases commutation between differently labeled optional
 arguments may occur.
 
 \begin{caml_example}
-test y:2 x:3 () ();;
+test ~y:2 ~x:3 () ();;
 \end{caml_example}
 
 Optional arguments are actually implemented as option types. If
@@ -127,7 +120,7 @@ representation, "type 'a option = None | Some of 'a". You can then
 provide different behaviors when an argument is present or not.
 
 \begin{caml_example}
-let bump ?:step x =
+let bump ?step x =
   match step with
   | None -> x * 2
   | Some y -> x + y
@@ -140,16 +133,12 @@ with "?". This question mark disables the wrapping of optional
 argument in an option type.
 
 \begin{caml_example}
-let test2 ?:x ?:y () = test ?:x ?:y () ();;
+let test2 ?x ?y () = test ?x ?y () ();;
 test2 ?x:None;;
 \end{caml_example}
 
 \subsection{Labels and type inference}
 \label{ss:label-inference}
-%FIXME
-\begin{caml_eval}
-#labels true;;
-\end{caml_eval}
 
 While they provide an increased comfort for writing function
 applications, labels and optional arguments have the pitfall that they
@@ -157,42 +146,44 @@ cannot be inferred as completely as the rest of the language.
 
 You can see it in the following example.
 \begin{caml_example}
-let bump_twice bump x =
-  bump (bump step:2 x);;
-bump_twice bump 1;;
+let bump_it bump x =
+  bump ~step:2 x;;
+bump_it bump 1;;
 \end{caml_example}
-While we intended "bump" to be of type "?step:int -> int -> int", it
-is inferred as "'a -> step:int -> 'a". These two type being
-incompatible, a type error occurs when applying "bump_twice" to
+While we intended the argument "bump" to be of type "?step:int -> int
+-> int", it is inferred as "step:int -> 'a -> 'b". These two types
+being incompatible (internally normal and optional arguments are
+different), a type error occurs when applying "bump_it" to the real
 "bump".
 
-We will not try here to explain in detail why such an erroneous type
-is inferred. One must just understand that there is not enough
+We will not try here to explain in detail how type inference works.
+One must just understand that there is not enough
 information in the above program to deduce the correct type of
 "bump". That is, there is no way to know whether an argument is
-optional or not, or which is the correct order, by looking only at how
-a function is applied. The strategy used by the compiler is to assume
-that there are no optional arguments, and that applications are done
+optional or not, or which is the correct order (for commuting label
+mode), by looking only at how a function is applied. The strategy used
+by the compiler is to assume that there are no optional arguments, and
+that applications are done
 in the right order.
 
 The right way to solve this problem is to add a type annotation to
 the argument "bump".
 \begin{caml_example}
-let bump_twice (bump : ?step:int -> int -> int) x =
-  bump (bump step:2 x);;
-bump_twice bump 1;;
+let bump_it (bump : ?step:int -> int -> int) x =
+  bump ~step:2 x;;
+bump_it bump 1;;
 \end{caml_example}
 In practive, such problems appear mostly when using objects whose
 methods have optional arguments, so that writing the type of object
 arguments is often a good idea.
 
-Normally the compiler only reports a type error if you attempt to pass
-to a function a parameter whose type is different from the expected
-one. However,
-in the specific case where the expected type is a non-labeled function
-type, and the argument is a function expecting optional parameters,
-the compiler will attempt to transform the argument to have it match
-the expected type, by passing "None" for all optional parameters.
+Normally the compiler generates a type error if you attempt to pass to
+a function a parameter whose type is different from the expected one.
+However, in the specific case where the expected type is a non-labeled
+function type, and the argument is a function expecting optional
+parameters, the compiler will attempt to transform the argument to
+have it match the expected type, by passing "None" for all optional
+parameters.
 
 \begin{caml_example}
 let twice f (x : int) = f(f x);;
@@ -200,9 +191,9 @@ twice bump 2;;
 \end{caml_example}
 
 This transformation is coherent with the intended semantics,
-includeing side-effects. That is, if the application of optional
+including side-effects. That is, if the application of optional
 parameters shall produce side-effects, these are delayed until the
-received function is really applied to a non-labeled argument.
+received function is really applied to an argument.
 
 \subsection{Commuting label mode} \label{s:commuting-mode}
 
@@ -235,16 +226,16 @@ in applications. One can also partially apply a function on any
 argument, creating a new function of the remaining parameters.
 
 \begin{caml_example}
-let f :x :y = x - y;;
-f y:2 x:3;;
-List.fold_left [1;2;3] init:0 f:(+);;
-List.fold_left [1;2;3];;
+let f ~x ~y = x - y;;
+f ~y:2 ~x:3;;
+List.fold_left [1;2;3] ~init:0 ~f:(+);;
+List.fold_left ~init:0;;
 \end{caml_example}
 
 Optional parameters may also commute with non-optional or unlabelled
 ones.
 \begin{caml_example}
-test () () z:1 y:2 x:3;;
+test () () ~z:1 ~y:2 ~x:3;;
 \end{caml_example}
 
 As described in section~\ref{ss:label-inference}, for
@@ -253,7 +244,7 @@ previous to the application, otherwise an incompatible
 out-of-order type will be generated.
 
 \begin{caml_example}
-let h g = g y:2 x:3;;
+let h g = g ~y:2 ~x:3;;
 h f;;
 \end{caml_example}
 
@@ -262,8 +253,8 @@ they will not commute among themselves, and order matters. But they
 can still commute with other arguments.
 
 \begin{caml_example}
-let hline x:x1 x:x2 :y = (x1, x2, y);;
-hline x:3 y:2 x:5;;
+let hline ~x:x1 ~x:x2 ~y = (x1, x2, y);;
+hline ~x:3 ~y:2 ~x:5;;
 \end{caml_example} 
 
 
@@ -286,7 +277,7 @@ function has a main argument, its {\em object}, and other arguments
 related with its action, the {\em parameters}. To permit the
 combination of functions through functionals in commuting label mode, the
 object will not be labeled. Its role is clear by the function
-itself. The parameters are labeled with keywords reminding either of
+itself. The parameters are labeled with names reminding either of
 their nature or role. Best labels combine in their meaning nature and
 role. When this is not possible the role is to prefer, since the nature will
 often be given by the type itself. Obscure abbreviations should be
@@ -304,7 +295,7 @@ left unlabeled.
 
 When there is no preferable object, all arguments are labeled.
 \caml
-\:Sys.rename : old:string -> new:string -> unit
+\:Sys.rename : src:string -> dst:string -> unit
 \:String.blit :
 \:  src:string -> src_pos:int -> dst:string -> dst_pos:int -> len:int -> unit
 \endcaml
@@ -334,12 +325,12 @@ libraries.
 \end{tableau}
 
 All these are only suggestions, but one shall keep in mind that the
-choice of labels is essential for readability. Omissions or bizarre
-choices will make the program difficult to maintain.
+choice of labels is essential for readability. Bizarre choices will
+make the program harder to maintain.
 
 In the ideal, the right function name with right labels shall be
 enough to understand the function's meaning. Since one can get this
-information with OCamlBrowser or the ocaml toplevel, the documentation
+information with OCamlBrowser or the "ocaml" toplevel, the documentation
 is only used when a more detailed specification is needed.
 
 \begin{caml_eval}
@@ -372,7 +363,7 @@ to prefix their names with a backquote character "`".
 [`On; `Off];;
 `Number 1;;
 let f = function `On -> 1 | `Off -> 0 | `Number n -> n;;
-List.map :f [`On; `Off];;
+List.map ~f [`On; `Off];;
 \end{caml_example}
 "[>`Off|`On] list" means that to match this list, you should at
 least be able to match "`Off" and "`On", without argument.
@@ -394,9 +385,9 @@ just like in a normal datatype definition. For conciseness, "of" is
 omitted in polymorphic variant types.
 \begin{caml_example}
 type 'a vlist = [`Nil | `Cons of 'a * 'a vlist];;
-let rec map :f : 'a vlist -> 'b vlist = function
+let rec map ~f : 'a vlist -> 'b vlist = function
   | `Nil -> `Nil
-  | `Cons(a, l) -> `Cons(f a, map :f l)
+  | `Cons(a, l) -> `Cons(f a, map ~f l)
 ;;
 \end{caml_example}
 

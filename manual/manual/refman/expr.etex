@@ -64,15 +64,17 @@ expr:
 ;
 argument:
     expr
-  | ['?'] label expr
-  | ['?'] labelid
+  | '~' value-name
+  | label expr
+  | '?' value-name
+  | optlabel expr
 ;
+\end{syntax}
+\begin{syntax}
 pattern-matching:
     pattern ['when' expr] '->' expr
     { '|' pattern ['when' expr] '->' expr }
 ;
-\end{syntax}
-\begin{syntax}
 multiple-matching:
     {{ parameter }} ['when' expr] '->' expr
 ;
@@ -82,10 +84,13 @@ let-binding:
 ;
 parameter:
     pattern
-  | ['?'] label pattern
-  | ['?'] labelid
-  | ['?'] '(' label pattern [':' typexpr] ['=' expr] ')'
-  | ['?'] '(' labelid [':' typexpr] ['=' expr] ')'
+  | '~' value-name
+  | '~' '(' value-name [':' typexpr] ')'
+  | label pattern
+  | '?' value-name
+  | '?' '(' value-name [':' typexpr] ['=' expr] ')'
+  | optlabel pattern
+  | optlabel '(' pattern [':' typexpr] ['=' expr] ')'
 ;
 infix-op:
     infix-symbol
@@ -164,14 +169,12 @@ expressions. The expression @expr argument_1 \ldots argument_n@
 evaluates the expression @expr@ and those appearing in @argument_1@
 to @argument_n@. The expression @expr@ must evaluate to a
 functional value @f@, which is then applied to the values of 
-@argument_1, \ldots, argument_n@. Inside arguments, the @labelid@
-":name" is equivalent to "name: name", that is a label followed by a
-variable of same name.
+@argument_1, \ldots, argument_n@.
 
 If a parameter is specified as optional (label prefixed by "?") in
 @expr@'s type, the corresponding argument will be automatically
 wrapped with the constructor "Some", except if the argument itself is
-prefixed by "?", in which case it is passed as is.
+also prefixed by "?", in which case it is passed as is.
 
 The order in which the expressions @expr, argument_1, \ldots,
 argument_n@ are evaluated is not specified.
@@ -191,13 +194,13 @@ defaulted, that is the value "None" will be passed for them. Otherwise
 they will be kept, and the result of the function will still be a
 function of the missing optional parameters.
 
-In the strict, or label mode, parameters and arguments are matched
-according to their labels. The order is irrelevent, except if several
-arguments have the same label, or no label. The criterion for
+In the strict, or commuting label mode, parameters and arguments are
+matched according to their labels. The order is irrelevent, except if
+several arguments have the same label, or no label. The criterion for
 defaulting missing optional arguments is whether a non-labeled
-parameter following them in @f@ was matched by an argument or not.
-If some parameters were not matched in the process, the result will be
-a new function from these parameters to the body of @f@.
+parameter following them in @f@ was matched by an argument or not.  If
+some parameters were not matched in the process, the result will be a
+new function from these parameters to the body of @f@.
 
 \subsubsection*{Function definition}
 
@@ -237,12 +240,10 @@ This expression is equivalent to:
 \begin{center}
 @"fun" parameter_1 "->" \ldots "fun" parameter_n "->" expr@
 \end{center}
-Inside parameters, the @labelid@ ":name" is equivalent to "name: name",
-that is a label followed by a variable of same name.
-Functions of the form @"fun" '?(' label pattern '=' expr_0 ')' '->'
+Functions of the form @"fun" optlabel '(' pattern '=' expr_0 ')' '->'
 expr@ are equivalent to
 \begin{syntax}
-"fun" '?'label x '->'
+"fun" optlabel x '->'
   "let" pattern '='
     "match" x "with" "Some" x "->" x '|' "None" '->' expr_0
   "in" expr
@@ -252,7 +253,7 @@ unspecified.
 
 After these two transformations, expressions are of the form
 \begin{center}
-@"fun" [['?']label_1] pattern_1 "->" \ldots "fun" [['?']label_n] pattern_n "->" expr@
+@"fun" [label_1] pattern_1 "->" \ldots "fun" [label_n] pattern_n "->" expr@
 \end{center}
 If we ignore labels, which will only be meaningful at function
 application, this is equivalent to
