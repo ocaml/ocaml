@@ -24,7 +24,11 @@
    on all 32-bit platforms for which the C compiler supports 64-bit
    arithmetic.  On 32-bit platforms without support for 64-bit arithmetic,
    all functions in this module raise an [Invalid_argument] exception.
-*)
+
+   Performance notice: values of type [int64] occupy more memory
+   space than values of type [int], and arithmetic operations on
+   [int64] are generally slower than those on [int].  Use [int64]
+   only when the application requires exact 64-bit arithmetic. *)
 
 val zero : int64
 val one : int64
@@ -51,9 +55,9 @@ external rem : int64 -> int64 -> int64 = "%int64_mod"
            If [x < 0] or [y < 0], the result of [Int64.rem x y] is
            not specified and depends on the platform. *)
 val succ : int64 -> int64
-      (* Successor.  [Int64.succ x] is [Int64.add x 1i]. *)
+      (* Successor.  [Int64.succ x] is [Int64.add x Int64.one]. *)
 val pred : int64 -> int64
-      (* Predecessor.  [Int64.pred x] is [Int64.sub x 1i]. *)
+      (* Predecessor.  [Int64.pred x] is [Int64.sub x Int64.one]. *)
 val abs : int64 -> int64
       (* Return the absolute value of its argument. *)
 val max_int : int64
@@ -70,15 +74,18 @@ external logxor : int64 -> int64 -> int64 = "%int64_xor"
 val lognot : int64 -> int64
       (* Bitwise logical negation *)
 external shift_left : int64 -> int -> int64 = "%int64_lsl"
-      (* [Int64.shift_left x y] shifts [x] to the left by [y] bits. *)
+      (* [Int64.shift_left x y] shifts [x] to the left by [y] bits.
+         The result is unspecified if [y < 0] or [y >= 64]. *)
 external shift_right : int64 -> int -> int64 = "%int64_asr"
       (* [Int64.shift_right x y] shifts [x] to the right by [y] bits.
          This is an arithmetic shift: the sign bit of [x] is replicated
-         and inserted in the vacated bits. *)
+         and inserted in the vacated bits.
+         The result is unspecified if [y < 0] or [y >= 64]. *)
 external shift_right_logical : int64 -> int -> int64 = "%int64_lsr"
       (* [Int64.shift_right_logical x y] shifts [x] to the right by [y] bits.
          This is a logical shift: zeroes are inserted in the vacated bits
-         regardless of the sign of [x]. *)
+         regardless of the sign of [x].
+         The result is unspecified if [y < 0] or [y >= 64]. *)
 
 external of_int : int -> int64 = "%int64_of_int"
       (* Convert the given integer (type [int]) to a 64-bit integer
@@ -132,3 +139,14 @@ external format : string -> int64 -> string = "int64_format"
          [fmt] is a [Printf]-style format containing exactly
          one [%d], [%i], [%u], [%x], [%X] or [%o] conversion specification.
          See the documentation of the [Printf] module for more information, *)
+
+external bits_of_float : float -> int64 = "int64_bits_of_float"
+      (* Return the internal representation of the given float according
+         to the IEEE 754 floating-point ``double format'' bit layout.
+         Bit 63 of the result represents the sign of the float;
+         bits 62 to 52 represent the (biased) exponent; bits 51 to 0
+         represent the mantissa. *)
+external float_of_bits : int64 -> float = "int64_float_of_bits"
+      (* Return the floating-point number whose internal representation,
+         according to the IEEE 754 floating-point ``double format'' bit layout,
+         is the given [int64]. *)
