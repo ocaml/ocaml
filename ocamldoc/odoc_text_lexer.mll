@@ -160,8 +160,8 @@ let begin_clt_ref = "{!classtype:"blank_nl | "{!classtype:"
 let begin_att_ref = "{!attribute:"blank_nl | "{!attribute:"
 let begin_met_ref = "{!method:"blank_nl | "{!method:"
 let begin_sec_ref = "{!section:"blank_nl | "{!section:"
-
-
+let begin_mod_list_ref = "{!modules:"blank_nl | "{!modules:"
+let index_list = "{!indexlist}"
 let begin_superscript = "{^"blank_nl | "{^"
 let begin_subscript = "{_"blank_nl | "{_"
 
@@ -641,6 +641,34 @@ rule main = parse
           )
     }
 
+| begin_mod_list_ref
+    {
+      incr_cpts lexbuf ;
+      if !verb_mode or !latex_mode or !code_pre_mode or !open_brackets >= 1 then
+        Char (Lexing.lexeme lexbuf)
+      else
+        if not !ele_ref_mode then
+          (
+           ele_ref_mode := true;
+           MOD_LIST_REF
+          )
+        else
+          (
+           Char (Lexing.lexeme lexbuf)
+          )
+    }
+
+| index_list
+    {
+      incr_cpts lexbuf ;
+      if !verb_mode or !latex_mode or !code_pre_mode or !open_brackets >= 1 then
+        Char (Lexing.lexeme lexbuf)
+      else
+	if not !ele_ref_mode then
+          INDEX_LIST
+	else
+	  Char (Lexing.lexeme lexbuf)
+    } 
 
 | begin_verb    
     {

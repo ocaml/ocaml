@@ -241,6 +241,8 @@ class text =
       | Odoc_info.Ref (name, ref_opt) -> self#latex_of_Ref fmt name ref_opt
       | Odoc_info.Superscript t -> self#latex_of_Superscript fmt t
       | Odoc_info.Subscript t -> self#latex_of_Subscript fmt t
+      |	Odoc_info.Module_list _ -> ()
+      |	Odoc_info.Index_list -> ()
 
     method latex_of_Raw fmt s = 
       ps fmt (self#escape s)

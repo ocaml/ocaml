@@ -184,7 +184,7 @@ let bs = Buffer.add_string
 
 
 (** Generation of html code from text structures. *)
-class text =
+class virtual text =
   object (self)
     (** We want to display colorized code. *)
     inherit ocaml_code 
@@ -246,6 +246,8 @@ class text =
       | Odoc_info.Ref (name, ref_opt) -> self#html_of_Ref b name ref_opt
       | Odoc_info.Superscript t -> self#html_of_Superscript b t
       | Odoc_info.Subscript t -> self#html_of_Subscript b t
+      |	Odoc_info.Module_list l -> self#html_of_Module_list b l
+      |	Odoc_info.Index_list -> self#html_of_Index_list b
 
     method html_of_Raw b s = bs b (self#escape s)
 
@@ -398,6 +400,65 @@ class text =
       self#html_of_text b t;
       bs b "</sub>"
 
+    method html_of_Module_list b l =
+      bs b "<br>\n<table class=\"indextable\">\n";
+      List.iter
+        (fun name ->
+	  bs b "<tr><td>";
+	  (
+	   try
+	     let m = 
+	       List.find (fun m -> m.m_name = name) self#list_modules 
+	     in
+	     let (html, _) = Naming.html_files m.m_name in
+	     bp b "<a href=\"%s\">%s</a></td>" html m.m_name;
+	     bs b "<td>";
+	     self#html_of_info_first_sentence b m.m_info;
+	   with
+	     Not_found ->
+	       Odoc_messages.pwarning (Odoc_messages.cross_module_not_found name);
+	       bp b "%s</td><td>" name
+	  );
+	  bs b "</td></tr>\n"
+	)
+        l;
+      bs b "</table>\n</body>\n</html>";
+
+    method html_of_Index_list b =
+      let index_if_not_empty l url m =
+        match l with
+          [] -> ()
+        | _ -> bp b "<a href=\"%s\">%s</a><br>\n" url m
+      in
+      index_if_not_empty self#list_types self#index_types Odoc_messages.index_of_types;
+      index_if_not_empty self#list_exceptions self#index_exceptions Odoc_messages.index_of_exceptions;
+      index_if_not_empty self#list_values self#index_values Odoc_messages.index_of_values;
+      index_if_not_empty self#list_attributes self#index_attributes Odoc_messages.index_of_attributes;
+      index_if_not_empty self#list_methods self#index_methods Odoc_messages.index_of_methods;
+      index_if_not_empty self#list_classes self#index_classes Odoc_messages.index_of_classes;
+      index_if_not_empty self#list_class_types self#index_class_types Odoc_messages.index_of_class_types;
+      index_if_not_empty self#list_modules self#index_modules Odoc_messages.index_of_modules;
+      index_if_not_empty self#list_module_types self#index_module_types Odoc_messages.index_of_module_types
+
+    method virtual list_types : Odoc_info.Type.t_type list
+    method virtual index_types : string
+    method virtual list_exceptions : Odoc_info.Exception.t_exception list
+    method virtual index_exceptions : string
+    method virtual list_values : Odoc_info.Value.t_value list
+    method virtual index_values : string
+    method virtual list_attributes : Odoc_info.Value.t_attribute list
+    method virtual index_attributes : string
+    method virtual list_methods : Odoc_info.Value.t_method list
+    method virtual index_methods : string
+    method virtual list_classes : Odoc_info.Class.t_class list
+    method virtual index_classes : string
+    method virtual list_class_types : Odoc_info.Class.t_class_type list
+    method virtual index_class_types : string
+    method virtual list_modules : Odoc_info.Module.t_module list
+    method virtual index_modules : string
+    method virtual list_module_types : Odoc_info.Module.t_module_type list
+    method virtual index_module_types : string
+
   end
 
 (** A class used to generate html code for info structures. *)
@@ -506,14 +567,17 @@ class virtual info =
         )
         l
 
-    (** Print html code for a description, except for the [i_params] field. *)
-    method html_of_info b info_opt =
+    (** Print html code for a description, except for the [i_params] field. 
+       @param indent can be specified not to use the style of info comments;
+       default is [true].
+    *)
+    method html_of_info ?(indent=true) b info_opt =
       match info_opt with
         None ->
           ()
       | Some info ->
           let module M = Odoc_info in
-          bs b "<div class=\"info\">\n";
+          if indent then bs b "<div class=\"info\">\n";
           (
 	   match info.M.i_deprecated with
             None -> ()
@@ -537,7 +601,7 @@ class virtual info =
           self#html_of_return_opt b info.M.i_return_value;
           self#html_of_sees b info.M.i_sees;
           self#html_of_custom b info.M.i_custom;
-          bs b "</div>\n"
+          if indent then bs b "</div>\n"
 
     (** Print html code for the first sentence of a description. 
        The titles and lists in this first sentence has been removed.*)
@@ -696,45 +760,54 @@ class html =
     val mutable known_modules_names = StringSet.empty
 
     (** The main file. *)
-    val mutable index = "index.html"
+    method index = "index.html"
     (** The file for the index of values. *)
-    val mutable index_values = "index_values.html"
+    method index_values = "index_values.html"
     (** The file for the index of types. *)
-    val mutable index_types = "index_types.html"
+    method index_types = "index_types.html"
     (** The file for the index of exceptions. *)
-    val mutable index_exceptions = "index_exceptions.html"
+    method index_exceptions = "index_exceptions.html"
     (** The file for the index of attributes. *)
-    val mutable index_attributes = "index_attributes.html"
+    method index_attributes = "index_attributes.html"
     (** The file for the index of methods. *)
-    val mutable index_methods = "index_methods.html"
+    method index_methods = "index_methods.html"
     (** The file for the index of classes. *)
-    val mutable index_classes = "index_classes.html"
+    method index_classes = "index_classes.html"
     (** The file for the index of class types. *)
-    val mutable index_class_types = "index_class_types.html"
+    method index_class_types = "index_class_types.html"
     (** The file for the index of modules. *)
-    val mutable index_modules = "index_modules.html"
+    method index_modules = "index_modules.html"
     (** The file for the index of module types. *)
-    val mutable index_module_types = "index_module_types.html"
+    method index_module_types = "index_module_types.html"
 
 
     (** The list of attributes. Filled in the [generate] method. *)
     val mutable list_attributes = []
+    method list_attributes = list_attributes
     (** The list of methods. Filled in the [generate] method. *)
     val mutable list_methods = []
+    method list_methods = list_methods
     (** The list of values. Filled in the [generate] method. *)
     val mutable list_values = []
+    method list_values = list_values
     (** The list of exceptions. Filled in the [generate] method. *)
     val mutable list_exceptions = []
+    method list_exceptions = list_exceptions
     (** The list of types. Filled in the [generate] method. *)
     val mutable list_types = []
+    method list_types = list_types
     (** The list of modules. Filled in the [generate] method. *)
     val mutable list_modules = []
+    method list_modules = list_modules
     (** The list of module types. Filled in the [generate] method. *)
     val mutable list_module_types = []
+    method list_module_types = list_module_types
     (** The list of classes. Filled in the [generate] method. *)
     val mutable list_classes = []
+    method list_classes = list_classes
     (** The list of class types. Filled in the [generate] method. *)
     val mutable list_class_types = []
+    method list_class_types = list_class_types
 
     (** The header of pages. Must be prepared by the [prepare_header] method.*)
     val mutable header = fun b -> fun ?(nav=None) -> fun ?(comments=[]) -> fun _ -> ()
@@ -790,7 +863,7 @@ class html =
         bs b "<head>\n";
 	bs b style;
         bs b "<link rel=\"Start\" href=\"";
-	bs b index;
+	bs b self#index;
 	bs b "\">\n" ;
         (
          match nav with
@@ -810,19 +883,19 @@ class html =
              );
              (
               let father = Name.father name in
-              let href = if father = "" then index else fst (Naming.html_files father) in
+              let href = if father = "" then self#index else fst (Naming.html_files father) in
               bp b "<link rel=\"Up\" href=\"%s\">\n" href
              )
         );
-        link_if_not_empty list_types Odoc_messages.index_of_types index_types;
-        link_if_not_empty list_exceptions Odoc_messages.index_of_exceptions index_exceptions;
-        link_if_not_empty list_values Odoc_messages.index_of_values index_values;
-        link_if_not_empty list_attributes Odoc_messages.index_of_attributes index_attributes;
-        link_if_not_empty list_methods Odoc_messages.index_of_methods index_methods;
-        link_if_not_empty list_classes Odoc_messages.index_of_classes index_classes;
-        link_if_not_empty list_class_types Odoc_messages.index_of_class_types index_class_types;
-        link_if_not_empty list_modules Odoc_messages.index_of_modules index_modules;
-        link_if_not_empty list_module_types Odoc_messages.index_of_module_types index_module_types;
+        link_if_not_empty self#list_types Odoc_messages.index_of_types self#index_types;
+        link_if_not_empty self#list_exceptions Odoc_messages.index_of_exceptions self#index_exceptions;
+        link_if_not_empty self#list_values Odoc_messages.index_of_values self#index_values;
+        link_if_not_empty self#list_attributes Odoc_messages.index_of_attributes self#index_attributes;
+        link_if_not_empty self#list_methods Odoc_messages.index_of_methods self#index_methods;
+        link_if_not_empty self#list_classes Odoc_messages.index_of_classes self#index_classes;
+        link_if_not_empty self#list_class_types Odoc_messages.index_of_class_types self#index_class_types;
+        link_if_not_empty self#list_modules Odoc_messages.index_of_modules self#index_modules;
+        link_if_not_empty self#list_module_types Odoc_messages.index_of_module_types self#index_module_types;
 	let print_one m =
 	  let html_file = fst (Naming.html_files m.m_name) in
           bp b "<link title=\"%s\" rel=\"Chapter\" href=\"%s\">"
@@ -894,7 +967,7 @@ class html =
       );
       bs b "&nbsp;";
       let father = Name.father name in
-      let href = if father = "" then index else fst (Naming.html_files father) in
+      let href = if father = "" then self#index else fst (Naming.html_files father) in
       bp b "<a href=\"%s\">%s</a>\n" href Odoc_messages.up;
       bs b "&nbsp;";
       (
@@ -1522,7 +1595,7 @@ class html =
       if info then
         (
 	 if complete then 
-	   self#html_of_info 
+	   self#html_of_info ~indent: false
 	 else 
 	   self#html_of_info_first_sentence 
 	) b m.m_info
@@ -1551,7 +1624,7 @@ class html =
       if info then
         (
 	 if complete then 
-	   self#html_of_info
+	   self#html_of_info ~indent: false
 	 else
 	   self#html_of_info_first_sentence
 	) b mt.mt_info
@@ -1716,7 +1789,7 @@ class html =
       print_DEBUG "html#html_of_class : info" ;
       (
        if complete then 
-	 self#html_of_info 
+	 self#html_of_info ~indent: false
        else 
 	 self#html_of_info_first_sentence
       ) b c.cl_info
@@ -1758,7 +1831,7 @@ class html =
       bs b "</pre>";
       (
        if complete then 
-	 self#html_of_info 
+	 self#html_of_info ~indent: false
        else 
 	 self#html_of_info_first_sentence
       ) b ct.clt_info
@@ -2166,14 +2239,9 @@ class html =
        @raise Failure if an error occurs.*)
     method generate_index module_list =
       try
-        let chanout = open_out (Filename.concat !Args.target_dir index) in
+        let chanout = open_out (Filename.concat !Args.target_dir self#index) in
 	let b = new_buf () in
         let title = match !Args.title with None -> "" | Some t -> self#escape t in
-        let index_if_not_empty l url m =
-          match l with
-            [] -> ()
-          | _ -> bp b "<a href=\"%s\">%s</a><br>\n" url m
-        in
 	bs b "<html>\n";
         self#print_header b self#title;
         bs b "<body>\n";
@@ -2183,28 +2251,15 @@ class html =
 	let info = Odoc_info.apply_opt
 	    Odoc_info.info_of_comment_file !Odoc_info.Args.intro_file 
 	in
-	self#html_of_info b info;
-	(match info with None -> () | Some _ -> bs b "<br/>");
-        index_if_not_empty list_types index_types Odoc_messages.index_of_types;
-        index_if_not_empty list_exceptions index_exceptions Odoc_messages.index_of_exceptions;
-        index_if_not_empty list_values index_values Odoc_messages.index_of_values;
-        index_if_not_empty list_attributes index_attributes Odoc_messages.index_of_attributes;
-        index_if_not_empty list_methods index_methods Odoc_messages.index_of_methods;
-        index_if_not_empty list_classes index_classes Odoc_messages.index_of_classes;
-        index_if_not_empty list_class_types index_class_types Odoc_messages.index_of_class_types;
-        index_if_not_empty list_modules index_modules Odoc_messages.index_of_modules;
-        index_if_not_empty list_module_types index_module_types Odoc_messages.index_of_module_types;
-        bs b "<br>\n<table class=\"indextable\">\n";
-	List.iter
-          (fun m ->
-            let (html, _) = Naming.html_files m.m_name in
-            bp b "<tr><td><a href=\"%s\">%s</a></td>" html m.m_name;
-            bs b "<td>";
-	    self#html_of_info_first_sentence b m.m_info;
-	    bs b "</td></tr>\n"
-	  )
-          module_list;
-        bs b "</table>\n</body>\n</html>";
+	(
+	 match info with
+	   None ->
+	     self#html_of_Index_list b;
+	     bs b "<br/>";
+	     self#html_of_Module_list b
+	       (List.map (fun m -> m.m_name) module_list)
+	 | Some i -> self#html_of_info ~indent: false b info
+	);
 	Buffer.output_buffer chanout b;
         close_out chanout
       with
@@ -2214,93 +2269,93 @@ class html =
     (** Generate the values index in the file [index_values.html]. *)
     method generate_values_index module_list =
       self#generate_elements_index 
-        list_values
+        self#list_values
         (fun v -> v.val_name) 
         (fun v -> v.val_info)
         Naming.complete_value_target
         Odoc_messages.index_of_values
-        index_values
+        self#index_values
 
     (** Generate the exceptions index in the file [index_exceptions.html]. *)
     method generate_exceptions_index module_list =
       self#generate_elements_index 
-        list_exceptions
+        self#list_exceptions
         (fun e -> e.ex_name) 
         (fun e -> e.ex_info)
         Naming.complete_exception_target
         Odoc_messages.index_of_exceptions
-        index_exceptions
+        self#index_exceptions
 
     (** Generate the types index in the file [index_types.html]. *)
     method generate_types_index module_list =
       self#generate_elements_index 
-        list_types
+        self#list_types
         (fun t -> t.ty_name) 
         (fun t -> t.ty_info)
         Naming.complete_type_target
         Odoc_messages.index_of_types
-        index_types
+        self#index_types
 
     (** Generate the attributes index in the file [index_attributes.html]. *)
     method generate_attributes_index module_list =
       self#generate_elements_index 
-        list_attributes
+        self#list_attributes
         (fun a -> a.att_value.val_name) 
         (fun a -> a.att_value.val_info)
         Naming.complete_attribute_target
         Odoc_messages.index_of_attributes
-        index_attributes
+        self#index_attributes
 
     (** Generate the methods index in the file [index_methods.html]. *)
     method generate_methods_index module_list =
       self#generate_elements_index 
-        list_methods
+        self#list_methods
         (fun m -> m.met_value.val_name) 
         (fun m -> m.met_value.val_info)
         Naming.complete_method_target
         Odoc_messages.index_of_methods
-        index_methods
+        self#index_methods
 
     (** Generate the classes index in the file [index_classes.html]. *)
     method generate_classes_index module_list =
       self#generate_elements_index
-        list_classes
+        self#list_classes
         (fun c -> c.cl_name) 
         (fun c -> c.cl_info)
         (fun c -> fst (Naming.html_files c.cl_name))
         Odoc_messages.index_of_classes
-        index_classes
+        self#index_classes
 
     (** Generate the class types index in the file [index_class_types.html]. *)
     method generate_class_types_index module_list =
       self#generate_elements_index
-        list_class_types
+        self#list_class_types
         (fun ct -> ct.clt_name) 
         (fun ct -> ct.clt_info)
         (fun ct -> fst (Naming.html_files ct.clt_name))
         Odoc_messages.index_of_class_types
-        index_class_types
+        self#index_class_types
 
     (** Generate the modules index in the file [index_modules.html]. *)
     method generate_modules_index module_list =
       self#generate_elements_index
-        list_modules
+        self#list_modules
         (fun m -> m.m_name) 
         (fun m -> m.m_info)
         (fun m -> fst (Naming.html_files m.m_name))
         Odoc_messages.index_of_modules
-        index_modules
+        self#index_modules
 
     (** Generate the module types index in the file [index_module_types.html]. *)
     method generate_module_types_index module_list =
       let module_types = Odoc_info.Search.module_types module_list in
       self#generate_elements_index
-        list_module_types
+        self#list_module_types
         (fun mt -> mt.mt_name) 
         (fun mt -> mt.mt_info)
         (fun mt -> fst (Naming.html_files mt.mt_name))
         Odoc_messages.index_of_module_types
-        index_module_types
+        self#index_module_types
 
     (** Generate all the html files from a module list. The main
        file is [index.html]. *)

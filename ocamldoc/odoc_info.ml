@@ -46,7 +46,8 @@ and text_element = Odoc_types.text_element =
   | Ref of string * ref_kind option
   | Superscript of text
   | Subscript of text
-
+  | Module_list of string list
+  | Index_list
 
 and text = text_element list
 

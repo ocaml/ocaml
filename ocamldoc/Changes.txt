@@ -1,4 +1,6 @@
 Current :
+OK - parse des {!modules: } et {!indexlist}
+OK - gestion des Module_list et Index_list
 OK - no need to Dynlink.add_available_units any more
 OK - generate html from module_kind rather than from module_type
 OK   + same for classes and class types
@@ -55,6 +57,8 @@ TODO:
  - latex: style latex pour indenter dans les module kind et les class kind
 OK - latex: il manque la génération des paramètres de classe
  - latex: types variant polymorphes dépassent de la page quand ils sont trop longs
+ - ajout à la doc de Module_list et Index_list (utilisé dans le html seulement)
+ - ajout ds la doc: fichier de l'option -intro utilisé pour l'index en html
 
 ======
 

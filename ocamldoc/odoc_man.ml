@@ -269,6 +269,10 @@ class man =
           bs b "^{"; self#man_of_text2 b t
       | Odoc_info.Subscript t ->
           bs b "_{"; self#man_of_text2 b t
+      |	Odoc_info.Module_list _ ->
+	  ()
+      |	Odoc_info.Index_list -> 
+	  ()
 
     (** Print groff string to display code. *)
     method man_of_code b s = self#man_of_text b [ Code s ]

@@ -33,6 +33,33 @@ let input_file_as_string nom =
   close_in chanin;
   Buffer.contents buf
 
+let split_string s chars =
+  let len = String.length s in
+  let rec iter acc pos =
+    if pos >= len then
+      match acc with
+	"" -> []
+      |	_ -> [acc]
+    else
+      if List.mem s.[pos] chars then
+	match acc with
+	  "" -> iter "" (pos + 1)
+	| _ -> acc :: (iter "" (pos + 1))
+      else
+	iter (Printf.sprintf "%s%c" acc s.[pos]) (pos + 1)
+  in
+  iter "" 0
+
+let split_with_blanks s = split_string s [' ' ; '\n' ; '\r' ; '\t' ]
+
+let list_concat sep =
+  let rec iter = function
+      [] -> []
+    | [h] -> [h]
+    | h :: q -> h :: sep :: q
+  in
+  iter
+
 let string_of_longident li = String.concat "." (Longident.flatten li)
 
 let get_fields type_expr =
@@ -88,6 +115,13 @@ let rec string_of_text t =
           "^{"^(string_of_text t)^"}"
       | Odoc_types.Subscript t ->
           "^{"^(string_of_text t)^"}"
+      |	Odoc_types.Module_list l ->
+	  string_of_text
+	    (list_concat (Odoc_types.Raw ", ")
+	       (List.map (fun s -> Odoc_types.Code s) l)
+	    )
+      |	Odoc_types.Index_list ->
+	  "" 
   in
   String.concat "" (List.map iter t)
 
@@ -221,6 +255,13 @@ let rec text_no_title_no_list t =
     | Odoc_types.Link (s, t) -> [Odoc_types.Link (s, (text_no_title_no_list t))]
     | Odoc_types.Superscript t -> [Odoc_types.Superscript (text_no_title_no_list t)]
     | Odoc_types.Subscript t -> [Odoc_types.Subscript (text_no_title_no_list t)]
+    | Odoc_types.Module_list l ->
+	list_concat (Odoc_types.Raw ", ") 
+	  (List.map
+	     (fun s -> Odoc_types.Ref (s, Some Odoc_types.RK_module))
+	     l
+	  )
+    | Odoc_types.Index_list -> []
   in
   List.flatten (List.map iter t)
 
@@ -248,6 +289,8 @@ let get_titles_in_text t =
     | Odoc_types.Link (_, t)
     | Odoc_types.Superscript t 
     | Odoc_types.Subscript t  -> iter_text t
+    | Odoc_types.Module_list _ -> ()
+    | Odoc_types.Index_list -> ()
   and iter_text te = 
     List.iter iter_ele te
   in
@@ -329,8 +372,9 @@ and first_sentence_text_ele text_ele =
   | Odoc_types.Link _ 
   | Odoc_types.Ref _ 
   | Odoc_types.Superscript _ 
-  | Odoc_types.Subscript _ -> (false, text_ele, None)
-
+  | Odoc_types.Subscript _ 
+  | Odoc_types.Module_list _ 
+  | Odoc_types.Index_list -> (false, text_ele, None)
 
 let first_sentence_of_text t = 
   let (_,t2,_) = first_sentence_text t in 

@@ -297,6 +297,8 @@ class text =
       | Ref (name, kind) ->self#texi_of_Ref name kind
       | Superscript t -> self#texi_of_Superscript t
       | Subscript t -> self#texi_of_Subscript t
+      |	Odoc_info.Module_list _ -> ""
+      |	Odoc_info.Index_list -> ""
 
     method texi_of_Verbatim s = s
     method texi_of_Raw s = self#escape s

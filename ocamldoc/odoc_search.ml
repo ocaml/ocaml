@@ -79,7 +79,9 @@ module Search =
       | T.Link (_, t) -> search_text root t v
       | T.List l 
       | T.Enum l -> List.flatten (List.map (fun t -> search_text root t v) l)
-      | T.Newline -> []
+      | T.Newline 
+      |	T.Module_list _
+      |	T.Index_list -> []
       | T.Title (n, l_opt, t) -> 
           (match l_opt with
             None -> []
