@@ -50,6 +50,8 @@ and text_element = Odoc_types.text_element =
 
 and text = text_element list
 
+exception Text_syntax = Odoc_text.Text_syntax
+
 type see_ref = Odoc_types.see_ref =
     See_url of string
   | See_file of string
@@ -176,7 +178,11 @@ let apply_if_equal f v1 v2 =
   else
     v2
 
-let info_of_comment_file f =
+let text_of_string = Odoc_text.Texter.text_of_string
+
+let text_string_of_text = Odoc_text.Texter.string_of_text
+
+let info_of_string s =
   let dummy =
     {
       i_desc = None ;
@@ -191,19 +197,19 @@ let info_of_comment_file f =
       i_custom = [] ;
     } 
   in
+  let s2 = Printf.sprintf "(** %s *)" s in
+  let (_, i_opt) = Odoc_comments.Basic_info_retriever.first_special "-" s2 in
+  match i_opt with
+    None -> dummy
+  | Some i -> i
+      
+let info_of_comment_file f =
   try
-    let s = Printf.sprintf "(** %s *)" (Odoc_misc.input_file_as_string f) in
-    let (_, i_opt) = Odoc_comments.Basic_info_retriever.first_special f s in
-    (
-     match i_opt with
-       None -> dummy
-     | Some i -> i
-    )
+    let s = Odoc_misc.input_file_as_string f in
+    info_of_string s
   with
     Sys_error s -> 
-      prerr_endline s;
-      incr errors;
-      dummy
+      failwith s
 
 module Search = 
   struct 

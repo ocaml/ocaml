@@ -328,6 +328,14 @@ stdlib_man/Pervasives.o: $(STDLIB_MLIS)
 	-t "OCaml library" -man-mini -man-suffix 3o \
 	$(STDLIB_MLIS)
 
+autotest_stdlib: dummy
+	$(MKDIR) $@ 
+	$(OCAMLDOC_RUN) -g autotest/odoc_test.cmo\
+	$(INCLUDES) -keep-code \
+	../stdlib/pervasives.ml ../stdlib/*.mli \
+	../otherlibs/unix/unix.mli \
+	../otherlibs/str/str.mli
+
 # backup, clean and depend :
 ############################
 

@@ -418,13 +418,33 @@ rule main = parse
       if !verb_mode or !latex_mode or !ele_ref_mode then
         Char (Lexing.lexeme lexbuf)
       else
-        if !code_pre_mode then 
-          (
-           code_pre_mode := false;
-           END_CODE_PRE 
-          )
-        else
-          Char (Lexing.lexeme lexbuf)
+	if !open_brackets >= 1 then
+	  (
+	   lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_curr_pos - 1;
+           lexbuf.Lexing.lex_curr_p <- 
+	     { lexbuf.Lexing.lex_curr_p with
+	       pos_cnum = lexbuf.Lexing.lex_curr_p.pos_cnum - 1
+	     } ;
+	   decr char_number ;
+	   if !open_brackets > 1 then
+	     (
+	      decr open_brackets;
+              Char "]"
+	     )
+	   else
+	     (
+              open_brackets := 0;
+              END_CODE 
+             )
+	  )
+	else
+          if !code_pre_mode then 
+            (
+             code_pre_mode := false;
+             END_CODE_PRE 
+            )
+          else
+            Char (Lexing.lexeme lexbuf)
     }
 
 | begin_ele_ref end

@@ -18,4 +18,7 @@ exception Text_syntax of int * int * string (* line, char, string *)
 
 (** Transformation of strings to text structures. *)
 module Texter : 
-    sig val text_of_string : string -> Odoc_types.text end
+    sig 
+      val text_of_string : string -> Odoc_types.text 
+      val string_of_text : Odoc_types.text -> string
+    end

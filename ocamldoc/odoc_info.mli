@@ -59,6 +59,10 @@ type see_ref = Odoc_types.see_ref =
   | See_file of string
   | See_doc of string
 
+(** Raised when parsing string to build a {!Odoc_info.text}
+   structure. [(line, char, string) *)
+exception Text_syntax of int * int * string 
+
 (** The information in a \@see tag. *)
 type see = see_ref * text
 
@@ -725,9 +729,26 @@ val apply_opt : ('a -> 'b) -> 'a option -> 'b option
    are different, return the second one.*)
 val apply_if_equal : ('a -> 'a) -> 'a -> 'a -> 'a
 
+(** [text_of_string s] returns the text structure from the
+   given string. 
+   @raise Text_syntax if a syntax error is encountered. *)
+val text_of_string : string -> text
+
+(** [string_text_of_text text] returns the string representing
+   the given [text]. This string can then be parsed again
+   by {!Odoc_info.text_of_string}.*)   
+val text_string_of_text : text -> string
+
+(** [info_of_string s] parses the given string
+   like a regular ocamldoc comment and return an 
+   {!Odoc_info.info} structure.
+   @return an empty structure if there was a syntax error. TODO: change this
+*)
+val info_of_string : string -> info
+
 (** [info_of_comment_file file] parses the given file
-   and return an info structure. The content of the file
-   must have the same syntax as the content of a special comment.
+   and return an {!Odoc_info.info} structure. The content of the 
+   file must have the same syntax as the content of a special comment.
    @raise Failure is the file could not be opened or there is a
    syntax error.
 *)

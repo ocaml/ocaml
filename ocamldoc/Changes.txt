@@ -1,4 +1,7 @@
 Current :
+OK - fixes: some bugs in the text parser 
+     ( ]} meaning end of code and somehting else instead of end of precode)
+OK - add: in Odoc_info: text_of_string, text_string_of_text, info_of_string
 OK - fix: better output of titles in html (use more the style)
 OK - add: -intro option to use a file content as ocamldoc comment to use as
 OK   introduction for LaTeX document and HTML index page
