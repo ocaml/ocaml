@@ -49,6 +49,7 @@
 #define Callback3 _callback3
 #define Caml_apply2 _caml_apply2
 #define Caml_apply3 _caml_apply3
+#define Mlraise _mlraise
 #define System_frametable _system_frametable
 
 #endif
@@ -87,6 +88,7 @@
 #define Callback3 callback3
 #define Caml_apply2 caml_apply2
 #define Caml_apply3 caml_apply3
+#define Mlraise mlraise
 #define System_frametable system_frametable
 
 #endif
@@ -284,34 +286,53 @@ L107:   mov     %g5, %sp
         .global Callback
 Callback:
     /* Save callee-save registers and return address */
-        save    %sp, -104, %sp
+        save    %sp, -96, %sp
     /* Initial shuffling of arguments */
         mov     %i0, %g1
         mov     %i1, %i0        /* first arg */
         mov     %g1, %i1        /* environment */
         ld      [%g1], %l2      /* code pointer */
 L108:
+    /* Set up a trap frame to catch exceptions escaping the Caml code */
+        sub     %sp, 8, %sp
+        Load(Caml_exception_pointer, %g5)
+        sethi   %hi(L110), %g4
+        or      %g4, %lo(L110), %g4
+        std     %g4, [%sp + 96]
+        mov     %sp, %g5
     /* Set up a callback link on the stack. */
+        sub     %sp, 8, %sp
         Load(Caml_bottom_of_stack, %l0)
         Load(Caml_last_return_address, %l1)
         std     %l0, [%sp + 96]
-    /* Reload allocation pointers and trap pointer */
-        Load(Caml_exception_pointer, %g5)
+    /* Reload allocation pointers */
         Load(Young_ptr, %g6)
         Load(Young_start, %g7)
     /* Call the Caml code */
 L109:   call    %l2
         nop
     /* Restore the global variables used by caml_c_call */
-        Store(%g5, Caml_exception_pointer)
-        Store(%g6, Young_ptr)
         ld      [%sp + 100], %l0
+        add     %sp, 8, %sp
         Store(%l0, Caml_last_return_address)
+    /* Pop trap frame and restore caml_exception_pointer */
+        ld      [%sp + 100], %g5
+        add     %sp, 8, %sp
+        Store(%g5, Caml_exception_pointer)
+    /* Save allocation pointer */
+        Store(%g6, Young_ptr)
     /* Move result where the C function expects it */
         mov     %o0, %i0        /* %i0 will become %o0 after restore */
     /* Reload callee-save registers and return */
         ret
         restore
+L110:
+    /* The trap handler: re-raise the exception through mlraise,
+       so that local C roots are cleaned up correctly. */
+        Store(%g5, Caml_exception_pointer)
+        Store(%g6, Young_ptr)
+        call    Mlraise         /* never returns */
+        nop
 
         .global Callback2
 Callback2:
