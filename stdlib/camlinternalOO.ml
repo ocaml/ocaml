@@ -292,10 +292,12 @@ let create_table arg public_methods =
     (fun i met ->
       let lab =
         if magic arg = 0 then new_method table else
-        compute_label (magic tags.(i)) arg.(0) arg.(1)
+        let lab = compute_label (magic tags.(i)) arg.(0) arg.(1) in
+        Printf.eprintf "%s: 0x%x * 0x%x -> %d\n"
+          met (magic tags.(i)) arg.(1) lab;
+        flush stderr;
+        lab
       in
-      Printf.eprintf "%s: 0x%x -> %d\n" met (magic tags.(i)) lab;
-      flush stderr;
       put table lab (magic 1);
       table.methods_by_name  <- Meths.add met lab table.methods_by_name;
       table.methods_by_label <- Labs.add lab true table.methods_by_label)

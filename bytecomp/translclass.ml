@@ -536,7 +536,8 @@ let try_hash f n l =
       let y = f x in if arr.[y] = ' ' then arr.[y] <- '1' else raise Not_found)
     l
 
-let flip c n = Int32.logxor c (Int32.shift_left 1l (31 - n))
+let flip c n =
+  if n = 0 then c else Int32.logxor c (Int32.shift_left 1l (31 - n))
 
 let perfect_hash l =
   let len = List.length l in
@@ -546,7 +547,7 @@ let perfect_hash l =
   let c = ref 0l and i = ref 0 and j = ref 0 and k = ref 0 in
   while !n > 0 do
     try
-      c := flip (flip (flip 0x4f1bbcdcl !i) !j) !k;
+      c := flip (flip (flip 0x4f1bbcddl !i) !j) !k;
       try_hash
         (fun x ->
           let big =
