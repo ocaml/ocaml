@@ -12,6 +12,7 @@ pattern:
   | '(' pattern ':' typexpr ')'
   | pattern '|' pattern
   | ncconstr pattern
+  | "`"tag-name pattern
   | pattern { ',' pattern }
   | '{' field '=' pattern { ';' field '=' pattern } '}'
   | '[' pattern { ';' pattern } ']'
@@ -92,6 +93,12 @@ The pattern @"[" pattern_1 ";" \ldots ";" pattern_n "]"@ matches lists
 of length $n$ whose elements match @pattern_1@ \ldots @pattern_n@,
 respectively. This pattern behaves like
 @pattern_1 "::" \ldots "::" pattern_n "::" "[]"@.
+
+\subsubsection*{Polymorphic variant patterns}
+
+The pattern @"`"tag-name pattern_1@ matches all polymorphic variants
+whose tag is equal to @tag-name@, and whose argument matches
+@pattern_1@.
 
 \subsubsection*{Tuple patterns}
 

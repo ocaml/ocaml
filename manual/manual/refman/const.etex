@@ -8,8 +8,10 @@ constant:
   | char-literal
   | string-literal
   | cconstr
+  | "`"tag-name
 \end{syntax}
 
 The syntactic class of constants comprises literals from the four
 base types (integers, floating-point numbers, characters, character
-strings), and constant constructors.
+strings), and constant constructors from both normal and polymorphic
+variants.

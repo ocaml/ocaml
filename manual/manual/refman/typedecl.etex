@@ -16,8 +16,10 @@ type-definition:
           'type' typedef { 'and' typedef }
 ;
 typedef:
-          [type-params] typeconstr-name [type-equation] [type-representation]
-          { type-constraint }
+          [type-params] typeconstr-name [type-information]
+;
+type-information:
+          [type-equation] [type-representation] { type-constraint }
 ;
 type-equation:
           '=' typexpr

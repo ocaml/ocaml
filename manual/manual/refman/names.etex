@@ -141,5 +141,5 @@ also contain simple functor applications (as in the syntactic class
 result of a functor application.
 
 Instance variable names, tag names and method names need not be
-qualified: the former are local to a class while the two latter are
-global labels.
+qualified: the former are local to a class while the two latter
+categories are global labels.

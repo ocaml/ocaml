@@ -147,6 +147,11 @@ Directories can also be added to the search path once
 the toplevel is running with the "#directory" directive
 (section~\ref{s:toplevel-directives}).
 
+\item["-modern"]
+Switch to the @modern@ mode of compilation, meaning that labeling
+rules are applied strictly, and commutation between labeled arguments
+is allowed.
+
 \item["-rectypes"]
 Allow arbitrary recursive types during type-checking.  By default,
 only recursive types where the recursion goes through an object type
@@ -158,6 +163,10 @@ Turn bound checking off on array and string accesses (the "v.(i)" and
 "s.[i]" constructs). Programs compiled with "-unsafe" are therefore
 slightly faster, but unsafe: anything can happen if the program
 accesses an array or string outside of its bounds.
+
+\item["-w" \var{warning-list}]
+Enable or disable warnings according to the argument.
+\var{warning-list}.
 
 \end{options}
 
@@ -186,6 +195,13 @@ memory, and trace program execution.
 
 \item["#quit;;"]
 Exit the toplevel loop and terminate the "ocaml" command.
+
+\item["#modern "\var{bool}";;"]
+Switch to @modern@ style if argument is "true", or back to @classic@
+style if argument is "false".
+
+\item["#warnings \""\var{warning-list}"\";;"]
+Enable or disable warnings according to the argument.
 
 \item["#directory \""\var{dir-name}"\";;"]
 Add the given directory to the list of directories searched for

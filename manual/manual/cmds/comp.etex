@@ -178,6 +178,13 @@ bytecode executables produced with the
 "ocamlc -use-runtime" \var{runtime-name} option.
 See section~\ref{s:custom-runtime} for more information.
 
+\item["-modern"]
+Switch to the {\em modern} mode of compilation, meaning that labeling
+rules are applied strictly, and commutation between labeled arguments
+is allowed. This mode cannot be used to compile a program written in
+the default {\em classic} style, but modules written in the two styles
+can be mixed in the same application.
+
 \item["-noassert"]
 Turn assertion checking off: assertions are not compiled.
 This flag has no effect when linking already compiled files.

@@ -1,0 +1,148 @@
+\chapter{OCamlBrowser} \label{c:browser}
+\pdfchapter{OCamlBrowser}
+
+This chapter describes OCamlBrowser, a source and compiled interface
+browser, written using LablTk. This is a necessary companion to the
+programmer.
+
+Its functions are:
+\begin{itemize}
+\item navigation through Objective Caml's modules (using compiled interfaces).
+\item source editing, type-checking, and browsing.
+\item integrated Objective Caml shell, running as a subprocess.
+\end{itemize}
+
+The name of the command is "ocamlbrowser", and, as with the
+compiler, you may change the standard library directory by setting
+"CAMLLIB", and extend the load path using "-I" options.
+
+\section{Viewer}
+This is the first window you get when you start OCamlBrowser.
+It displays the list of modules in the load path. Click on one to
+start your trip.
+
+\begin{itemize}
+\item The entry line at the bottom allows one to search for an
+  identifier in all modules (wildcards ``?'' and ``*'' allowed). If
+  the input contains an arrow (``"->"''), the search is done by
+  type inclusion ({\em cf.} Search Symbol - Included type).
+
+\item The {\bf Close all} button is there to dismiss the windows
+  creating during you trip (every click creates one\dots) By
+  double-clicking on it you will quit the browser.
+
+\item {\bf File - Open} and {\bf File - Editor} give access to the
+  editor.
+
+\item {\bf File - Shell} creates an Objective Caml subprocess in a shell.
+
+\item {\bf Modules - Path editor} changes the load path.  {\bf Modules
+    - Reset cache} rescans the load path and resets the module cache.
+  Do it if you recompile some interface, or get confused about what is 
+  in the cache.
+
+\item {\bf Modules - Search symbol} allows to search a symbol either
+  by its name, like the bottom line of the viewer, or, more
+  interestingly, by its type. {\bf Exact type} searches for a type
+  with exactly the same information as the pattern (variables match
+  only variables). {\bf Included type} allows to give only partial
+  information: the actual type may take more arguments and return more
+  results, and variables in the pattern match anything. In both cases,
+  argument and tuple order is irrelevant\footnote{To avoid
+    combinatorial explosion of the search space, optional arguments in
+    the actual type are ignored in the actual if (1) there are too many
+    of them, and (2) they do not appear explicitly in the pattern.},
+  and unlabeled arguments in the pattern match any label.
+\end{itemize}
+
+\section{Module walking}
+
+Each module is displayed in its own window.
+
+At the top, a scrollable list of the defined identifiers. If you click
+on one, this will either create a new window (if this is a sub-module)
+or display the signature for this identifier below.
+
+Signatures are clickable. Double clicking with the left mouse button
+on an identifier in a signature brings you to its signature, inside
+its module box.
+
+A single click on the right button pops up a menu displaying the type
+declaration for the selected identifier. Its title, when selectable,
+also brings you to its signature.
+
+At the bottom, a series of buttons, depending on the context.
+\begin{itemize}
+\item {\bf Show all} displays the signature of the whole module.
+\item {\bf Detach} copies the currently displayed signature in a new window,
+  to keep it.
+\item {\bf Impl} and {\bf Intf} bring you to the implementation or
+  interface of the currently displayed signature, if it is available.
+\end{itemize}
+
+C-s lets you search a string in the signature.
+
+\section{File editor}
+You can edit files with it, if you like to live dangerously. Otherwise
+you can use it as a browser, making occasional corrections.
+
+The {\bf Edit} menu contains commands for jump (C-g), search (C-s),
+and sending the current phrase (or selection if some text is selected)
+to a sub-shell (M-x). For this last option, you may choose the shell
+via a dialog.
+
+Essential functions are in the {\bf Compiler} menu.
+
+\begin{itemize}
+\item {\bf Preferences} opens a dialog to set internals of the editor
+  and type-checker.
+
+\item  {\bf Lex} adds colors according to lexical categories.
+  
+\item {\bf Typecheck} verifies typing, and memorizes to let one see an
+  expression's type by double-clicking on it. This is also valid for
+  interfaces. If an error occurs, the part of the interface preceding
+  the error is computed.
+  
+  After typechecking, pressing the right button pops up a menu giving
+  the type of the pointed expression, and eventually allowing to
+  follow some links.
+
+\item {\bf Clear errors} dismisses type-checker error messages and warnings.
+
+\item {\bf Signature} shows the signature of the current file
+  (after type checking).
+\end{itemize}
+
+\section{Shell}
+When you create a shell, a dialog is presented to you, letting you
+choose which command you want to run, and the title of the shell (to
+choose it in the Editor).
+
+%You may change the default command by setting the "OCAML"
+%environment variable.
+
+The executed subshell is given the current load path.
+
+\begin{itemize}
+\item {\bf File} use a source file or load a bytecode file.  You may
+  also import the browser's path into the subprocess.
+\item {\bf History} M-p and M-n browse up and down.
+\item {\bf Signal} C-c interrupts, and you can also kill the subprocess.
+\end{itemize}
+
+\section{Bugs}
+
+\begin{itemize}
+\item This not really a bug, but OCamlBrowser is a huge memory
+  consumer.  Go and buy some.
+  
+\item When you quit the editor and some file was modified, a dialogue
+  is displayed asking whether you want to really quit or not. But 1) if
+  you quit directly from the viewer, there is no dialogue at all, and
+  2) if you close from the window manager, the dialogue is displayed,
+  but you cannot cancel the destruction... Beware.
+  
+\item When you run it through xon, the shell hangs at the first error.
+  But its ok if you start ocamlbrowser from a remote shell...
+\end{itemize}

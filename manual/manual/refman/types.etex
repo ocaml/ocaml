@@ -70,7 +70,8 @@ the argument is labeled @label@.
 
 @'?'label typexpr_1 '->' typexpr_2@ denotes the type of functions
 mapping an optional labeled argument of type @typexpr_1@ to results of
-type @typexpr_2@.
+type @typexpr_2@. That is, the physical type of the function will be
+@typexpr_1 "option" '->' typexpr_2@.
 
 \subsubsection*{Tuple types}
 
@@ -179,7 +180,13 @@ type @'#' class-path '->' '#' class-path@ is usually not the same as
 type @'#' class-path 'as' "'" ident '->' "'" ident@.
 %
 
-\#-types can also be used to abbreviate variant types.
+\#-types can also be used to abbreviate variant types. Similarly they
+express the presence of a row variable, allowing further refinement of
+the type. Precisely, if "t" has been defined as the type
+@"[" "`tag"_1 t_1 "|" \dots "|`tag"_n t_n"]"@ then "\#t" is the type
+@"[<" "`tag"_1 t_1 "|" \dots"|`tag"_n t_n"]"@, and
+@"#t[>" "`tag"_1 \dots"`tag"_k"]"@ is the type
+@"[<" "`tag"_1 t_1 "|" \dots"|`tag"_n t_n ">" "`tag"_1 \dots"`tag"_k"]"@.
 
 \subsubsection*{Variant and record types}
 

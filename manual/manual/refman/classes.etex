@@ -22,7 +22,7 @@ specify the general shape and type properties of classes.
 \begin{syntax}
 class-type:
    |  class-body-type
-   |  typexpr '->' class-type
+   |  [['?']label]typexpr '->' class-type
 ;
 class-body-type:
       'object' ['(' typexpr ')'] {class-field-spec} 'end'
@@ -157,8 +157,8 @@ class-expr:
    |  '[' typexpr {',' typexpr} ']' class-path
    |  '(' class-expr ')'
    |  '(' class-expr ':' class-type ')'
-   |  class-expr expr
-   |  'fun' {{pattern}} '->' class-expr
+   |  class-expr {{argument}}
+   |  'fun' {{parameter}} '->' class-expr
    |  'let' ['rec'] let-binding {'and' let-binding} 'in' class-expr
    |  'object' ['(' pattern [':' typexpr] ')'] { class-field } 'end'
 ;
@@ -193,26 +193,28 @@ implementation @class-expr@ meets the type specification
 
 \subsubsection*{Class application}
 
-Class application is denoted by juxtaposition of expressions. The
-expression @class-expr expr@ evaluates the expressions @class-expr@
-and @expr@. The expression @class-expr@ must evaluate to a functional
-class value, which is then applied to the value of @expr@.
+Class application is denoted by juxtaposition of (possibly labeled)
+expressions. Evaluation works as for expression application.
 
 \subsubsection*{Class function}
 
-The expression @'fun' pattern '->' class-expr@ evaluates to a
+The expression @'fun' [['?']label]pattern '->' class-expr@ evaluates to a
 function from values to classes.
 When this function is applied to a value \var{v}, this value is
 matched against the pattern @pattern@ and the result is the result of
 the evaluation of @class-expr@ in the extended environment.
 
+Conversion from functions with default values to functions with
+patterns only works identically for class functions as for normal
+functions.
+
 The expression
 \begin{center}
-@"fun" pattern_1 \ldots pattern_n "->" class-expr@
+@"fun" parameter_1 \ldots parameter_n "->" class-expr@
 \end{center}
 is a short form for
 \begin{center}
-@"fun" pattern_1 "->" \ldots "fun" pattern_n "->" expr@
+@"fun" parameter_1 "->" \ldots "fun" parameter_n "->" expr@
 \end{center}
 
 \subsubsection*{Local definitions}

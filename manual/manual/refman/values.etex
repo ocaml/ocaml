@@ -76,8 +76,8 @@ in a given variant type to at most 249.
 
 Polymorphic variants are an alternate form of variant values, not
 belonging explicitly to a predefined variant type, and following
-specific typing rules. They can be either constant, written {\em
-"`"tag-name}, or non-constant {\em "`"tag-name}($v$).
+specific typing rules. They can be either constant, written
+@"`"tag-name@, or non-constant, written @"`"tag-name(v)@.
 
 \subsection{Functions}
 

@@ -154,6 +154,13 @@ building a library ("-a" flag), setting the "-linkall" flag forces all
 subsequent links of programs involving that library to link all the
 modules contained in the library.
 
+\item["-modern"]
+Switch to the {\em modern} mode of compilation, meaning that labeling
+rules are applied strictly, and commutation between labeled arguments
+is allowed. This mode cannot be used to compile a program written in
+the default {\em classic} style, but modules written in the two styles
+can be mixed in the same application.
+
 \item["-o" \var{exec-file}]
 Specify the name of the output file produced by the linker. The
 default output name is "a.out", in keeping with the Unix tradition. If
