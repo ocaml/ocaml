@@ -69,17 +69,17 @@ let put on: w ms: millisec mesg =
 
   List.iter [[`Leave]; [`ButtonPress]; [`ButtonRelease]; [`Destroy];
              [`KeyPress]; [`KeyRelease]]
-    fun:(fun events -> bind w :events extend:true action:(fun _ -> reset ()));
-  List.iter [[`Enter]; [`Motion]] fun:
+    f:(fun events -> bind w :events extend:true action:(fun _ -> reset ()));
+  List.iter [[`Enter]; [`Motion]] f:
     begin fun events ->
       bind w :events extend:true fields:[`RootX; `RootY]
         action:(fun ev -> reset (); set ev)
     end
 
 let init () =
-  let t = Hashtbl.create size:101 in
+  let t = Hashtbl.create 101 in
   Protocol.add_destroy_hook (fun w ->
-    Hashtbl.remove t key:w);
+    Hashtbl.remove t w);
   topw := Toplevel.create default_toplevel;
   Wm.overrideredirect_set !topw to: true;
   Wm.withdraw !topw;
@@ -88,7 +88,7 @@ let init () =
   pack [!popupw];
   bind_class "all" events: [`Enter] extend:true fields:[`Widget] action:
     begin fun w ->
-      try Hashtbl.find t key: w.ev_Widget
+      try Hashtbl.find t w.ev_Widget
       with Not_found ->
         Hashtbl.add t key:w.ev_Widget data: ();
         let x = Option.get w.ev_Widget name: "balloon" class: "Balloon" in

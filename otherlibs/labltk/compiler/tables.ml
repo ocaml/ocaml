@@ -99,7 +99,7 @@ type module_def = {
 (******************** The tables ********************)
 
 (* the table of all explicitly defined types *)
-let types_table = (Hashtbl.create size:37 : (string, type_def) Hashtbl.t)
+let types_table = (Hashtbl.create 37 : (string, type_def) Hashtbl.t)
 (* "builtin" types *)
 let types_external = ref ([] : (string * parser_arity) list)
 (* dependancy order *)
@@ -109,7 +109,7 @@ let types_returned = ref ([] : string list)
 (* Function table *)
 let function_table = ref ([] : fullcomponent list)
 (* Widget/Module table *)
-let module_table = (Hashtbl.create size:37 : (string, module_def) Hashtbl.t)
+let module_table = (Hashtbl.create 37 : (string, module_def) Hashtbl.t)
 
 
 (* variant name *)
@@ -162,23 +162,23 @@ let new_type typname arity =
 let is_subtyped s =
   s = "widget" or
   try  
-    let typdef = Hashtbl.find types_table key:s in
+    let typdef = Hashtbl.find types_table s in
       typdef.subtypes <> []
   with
     Not_found -> false
 
 let requires_widget_context s = 
   try  
-    (Hashtbl.find types_table key:s).requires_widget_context
+    (Hashtbl.find types_table s).requires_widget_context
   with
     Not_found -> false
 
 let declared_type_parser_arity s = 
   try  
-    (Hashtbl.find types_table key:s).parser_arity
+    (Hashtbl.find types_table s).parser_arity
   with
     Not_found -> 
-      try List.assoc key:s !types_external
+      try List.assoc s !types_external
       with
         Not_found ->
            prerr_string "Type "; prerr_string s;
@@ -210,8 +210,8 @@ let enter_external_type s v =
 let rec enter_argtype = function
     Unit | Int | Float | Bool | Char | String -> ()
   | List ty -> enter_argtype ty
-  | Product tyl -> List.iter fun:enter_argtype tyl
-  | Record tyl -> List.iter tyl fun:(fun (l,t) -> enter_argtype t)
+  | Product tyl -> List.iter f:enter_argtype tyl
+  | Record tyl -> List.iter tyl f:(fun (l,t) -> enter_argtype t)
   | UserDefined s -> Tsort.add_element types_order s
   | Subtype (s,_) -> Tsort.add_element types_order s
   | Function ty -> enter_argtype ty
@@ -220,14 +220,14 @@ let rec enter_argtype = function
 let rec enter_template_types = function
      StringArg _ -> ()
    | TypeArg (l,t) -> enter_argtype t
-   | ListArg l -> List.iter fun:enter_template_types l
-   | OptionalArgs (_,tl,_) -> List.iter fun:enter_template_types tl 
+   | ListArg l -> List.iter f:enter_template_types l
+   | OptionalArgs (_,tl,_) -> List.iter f:enter_template_types tl 
  
 (* Find type dependancies on s *)
 let rec add_dependancies s =
   function
     List ty -> add_dependancies s ty
-  | Product tyl -> List.iter fun:(add_dependancies s) tyl
+  | Product tyl -> List.iter f:(add_dependancies s) tyl
   | Subtype(s',_) -> if s <> s' then Tsort.add_relation types_order (s', s)
   | UserDefined s' -> if s <> s' then Tsort.add_relation types_order (s', s)
   | Function ty -> add_dependancies s ty
@@ -237,20 +237,20 @@ let rec add_dependancies s =
 let rec add_template_dependancies s = function
      StringArg _ -> ()
    | TypeArg (l,t) -> add_dependancies s t
-   | ListArg l -> List.iter fun:(add_template_dependancies s) l
-   | OptionalArgs (_,tl,_) -> List.iter fun:(add_template_dependancies s) tl
+   | ListArg l -> List.iter f:(add_template_dependancies s) l
+   | OptionalArgs (_,tl,_) -> List.iter f:(add_template_dependancies s) tl
 
 (* Assumes functions are not nested in products, which is reasonable due to syntax*)
 let rec has_callback = function
      StringArg _ -> false
    | TypeArg (l,Function _ ) -> true
    | TypeArg _ -> false
-   | ListArg l -> List.exists pred:has_callback l
-   | OptionalArgs (_,tl,_) -> List.exists pred:has_callback tl
+   | ListArg l -> List.exists f:has_callback l
+   | OptionalArgs (_,tl,_) -> List.exists f:has_callback tl
 
 (*** Returned types ***)
 let really_add ty = 
-  if List.mem item:ty !types_returned then ()
+  if List.mem ty !types_returned then ()
   else types_returned := ty :: !types_returned
 
 let rec add_return_type = function
@@ -261,8 +261,8 @@ let rec add_return_type = function
   | Char -> ()
   | String -> ()
   | List ty -> add_return_type ty
-  | Product tyl -> List.iter fun:add_return_type tyl
-  | Record tyl -> List.iter tyl fun:(fun (l,t) -> add_return_type t) 
+  | Product tyl -> List.iter f:add_return_type tyl
+  | Record tyl -> List.iter tyl f:(fun (l,t) -> add_return_type t) 
   | UserDefined s -> really_add s
   | Subtype (s,_) -> really_add s
   | Function _ -> fatal_error "unexpected return type (function)" (* whoah *)
@@ -299,11 +299,11 @@ let rec find_constructor cname = function
 
 (* Enter a type, must not be previously defined *)
 let enter_type typname ?(:variant = false) arity constructors =
-  if Hashtbl.mem types_table key:typname then
+  if Hashtbl.mem types_table typname then
       raise (Duplicate_Definition ("type", typname)) else
   let typdef = new_type typname arity in
   if variant then typdef.variant <- true;  
-  List.iter constructors fun:
+  List.iter constructors f:
     begin fun c ->
       if not (check_duplicate_constr false c typdef.constructors)
       then begin 
@@ -320,14 +320,14 @@ let enter_type typname ?(:variant = false) arity constructors =
 let enter_subtype typ arity subtyp constructors =
   (* Retrieve the type if already defined, else add a new one *)
   let typdef = 
-    try Hashtbl.find types_table key:typ
+    try Hashtbl.find types_table typ
     with Not_found -> new_type typ arity
   in
-    if List.mem_assoc key:subtyp typdef.subtypes
+    if List.mem_assoc subtyp typdef.subtypes
     then raise (Duplicate_Definition ("subtype", typ ^" "^subtyp))
     else begin
       let real_constructors = 
-        List.map constructors fun:
+        List.map constructors f:
           begin function
             Full c -> 
               if not (check_duplicate_constr true c typdef.constructors)
@@ -354,41 +354,41 @@ let enter_subtype typ arity subtyp constructors =
    all components are assumed to be in Full form *)
 let retrieve_option optname =
   let optiontyp =
-    try Hashtbl.find types_table key:"options"
+    try Hashtbl.find types_table "options"
     with 
       Not_found -> raise (Invalid_implicit_constructor optname)
   in find_constructor optname optiontyp.constructors
   
 (* Sort components by type *)
-let rec add_sort acc:l obj =
+let rec add_sort l obj =
   match l with
     []  -> [obj.component ,[obj]]
   | (s',l)::rest ->
      if obj.component = s' then
        (s',obj::l)::rest
      else 
-       (s',l)::(add_sort acc:rest obj)
+       (s',l)::(add_sort rest obj)
 
-let separate_components =  List.fold_left fun:add_sort acc:[]
+let separate_components =  List.fold_left f:add_sort init:[]
 
 let enter_widget name components =
-  if Hashtbl.mem module_table key:name then
+  if Hashtbl.mem module_table name then
     raise (Duplicate_Definition ("widget/module", name)) else
   let sorted_components = separate_components components in
-  List.iter sorted_components fun:
+  List.iter sorted_components f:
     begin function 
       Constructor, l ->
         enter_subtype "options" MultipleToken 
-          name (List.map fun:(fun c -> Full c) l)
+          name (List.map f:(fun c -> Full c) l)
     | Command, l -> 
-        List.iter fun:enter_component_types l
+        List.iter f:enter_component_types l
     | External, _ -> ()
     end;
   let commands = 
-      try List.assoc key:Command sorted_components
+      try List.assoc Command sorted_components
       with Not_found -> [] 
   and externals = 
-      try List.assoc key:External sorted_components
+      try List.assoc External sorted_components
       with Not_found -> []
   in
   Hashtbl.add module_table key:name 
@@ -402,20 +402,20 @@ let enter_function comp =
 
 (******************** Modules ********************)
 let enter_module name components = 
-  if Hashtbl.mem module_table key:name then
+  if Hashtbl.mem module_table name then
     raise (Duplicate_Definition ("widget/module", name)) else
   let sorted_components = separate_components components in
-  List.iter sorted_components fun:
+  List.iter sorted_components f:
     begin function 
       Constructor, l -> fatal_error "unexpected Constructor"
-    | Command, l -> List.iter fun:enter_component_types l
+    | Command, l -> List.iter f:enter_component_types l
     | External, _ -> ()
     end;
   let commands = 
-      try List.assoc key:Command sorted_components
+      try List.assoc Command sorted_components
       with Not_found -> [] 
   and externals = 
-      try List.assoc key:External sorted_components
+      try List.assoc External sorted_components
       with Not_found -> []
   in
     Hashtbl.add module_table key:name 

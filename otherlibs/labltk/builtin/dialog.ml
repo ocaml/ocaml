@@ -7,6 +7,6 @@ let create :parent :title :message :buttons ?:name
                      TkToken message;
                      cCAMLtoTKbitmap bitmap;
                      TkToken (string_of_int default);
-                     TkTokenList (List.map fun:(fun x -> TkToken x) buttons)|]
+                     TkTokenList (List.map f:(fun x -> TkToken x) buttons)|]
    in
     int_of_string res

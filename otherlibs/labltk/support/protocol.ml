@@ -57,10 +57,10 @@ let debug =
 let dump_args args =
   let rec print_arg = function 
     TkToken s -> prerr_string s; prerr_string " "
-  | TkTokenList l -> List.iter fun:print_arg l
+  | TkTokenList l -> List.iter f:print_arg l
   | TkQuote a -> prerr_string "{"; print_arg a; prerr_string "} "
  in
-  Array.iter fun:print_arg args;
+  Array.iter f:print_arg args;
   prerr_newline()
 
 (*
@@ -92,10 +92,10 @@ let cTKtoCAMLwidget = function
 
 
 let callback_naming_table = 
-   (Hashtbl.create size:401 : (int, callback_buffer -> unit) Hashtbl.t) 
+   (Hashtbl.create 401 : (int, callback_buffer -> unit) Hashtbl.t) 
 
 let callback_memo_table =
-   (Hashtbl.create size:401 : (any widget, int) Hashtbl.t)
+   (Hashtbl.create 401 : (any widget, int) Hashtbl.t)
 
 let new_function_id =
   let counter = ref 0 in
@@ -113,15 +113,15 @@ let register_callback w callback:f =
     (string_of_cbid id)
 
 let clear_callback id =
-  Hashtbl.remove callback_naming_table key:id
+  Hashtbl.remove callback_naming_table id
 
 (* Clear callbacks associated to a given widget *)
 let remove_callbacks w =
   let w = forget_type w in
-  let cb_ids = Hashtbl.find_all callback_memo_table key:w in
-    List.iter fun:clear_callback cb_ids;
+  let cb_ids = Hashtbl.find_all callback_memo_table w in
+    List.iter f:clear_callback cb_ids;
     for i = 1 to List.length cb_ids do
-      Hashtbl.remove callback_memo_table key:w
+      Hashtbl.remove callback_memo_table w
     done
 
 (* Hand-coded callback for destroyed widgets
@@ -140,7 +140,7 @@ let install_cleanup () =
   let call_destroy_hooks = function
       [wname] -> 
         let w = cTKtoCAMLwidget wname in
-         List.iter fun:(fun f -> f w) !destroy_hooks
+         List.iter f:(fun f -> f w) !destroy_hooks
     | _ -> raise (TkError "bad cleanup callback") in
   let fid = new_function_id () in
   Hashtbl.add callback_naming_table key:fid data:call_destroy_hooks;
@@ -155,10 +155,10 @@ let prerr_cbid id =
 let dispatch_callback id args =
   if !debug then begin
     prerr_cbid id;
-    List.iter fun:(fun x -> prerr_string " "; prerr_string x) args;
+    List.iter f:(fun x -> prerr_string " "; prerr_string x) args;
     prerr_newline()
     end;
-  (Hashtbl.find callback_naming_table key:id) args;
+  (Hashtbl.find callback_naming_table id) args;
   if !debug then prerr_endline "<<-"
 
 let protected_dispatch id args =

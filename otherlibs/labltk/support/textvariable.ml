@@ -21,18 +21,18 @@ external internal_tracevar : string -> cbid -> unit
         = "camltk_trace_var"
 external internal_untracevar : string -> cbid -> unit
         = "camltk_untrace_var"
-external set : string -> to:string -> unit = "camltk_setvar"
+external set : string -> string -> unit = "camltk_setvar"
 external get : string -> string = "camltk_getvar"
 
 
 type textVariable = string
 
 (* List of handles *)
-let handles = Hashtbl.create size:401
+let handles = Hashtbl.create 401
 
 let add_handle var cbid = 
   try
-    let r = Hashtbl.find handles key:var in
+    let r = Hashtbl.find handles var in
     r := cbid :: !r
   with
     Not_found -> 
@@ -48,9 +48,9 @@ let exceptq x =
 
 let rem_handle var cbid =
   try
-    let r = Hashtbl.find handles key:var in
+    let r = Hashtbl.find handles var in
     match exceptq cbid !r with
-      [] -> Hashtbl.remove handles key:var
+      [] -> Hashtbl.remove handles var
     | remaining -> r := remaining
   with
     Not_found -> ()
@@ -60,9 +60,9 @@ let rem_handle var cbid =
  *)
 let rem_all_handles var =
   try
-    let r = Hashtbl.find handles key:var in
-    List.iter fun:(internal_untracevar var) !r;
-    Hashtbl.remove handles key:var
+    let r = Hashtbl.find handles var in
+    List.iter f:(internal_untracevar var) !r;
+    Hashtbl.remove handles var
   with
     Not_found -> ()
 
@@ -85,31 +85,31 @@ let handle vname f =
 module StringSet =
   Set.Make(struct type t = string let compare = compare end)
 let freelist = ref (StringSet.empty)
-let memo = Hashtbl.create size:101
+let memo = Hashtbl.create 101
 
 (* Added a variable v referenced by widget w *)
 let add w v =
   let w = Widget.forget_type w in
   let r = 
-    try Hashtbl.find memo key:w 
+    try Hashtbl.find memo w 
     with
       Not_found -> 
         let r = ref StringSet.empty in
           Hashtbl.add memo key:w data:r;
           r in
-   r := StringSet.add !r item:v
+   r := StringSet.add v !r
 
 (* to be used with care ! *)
 let free v =
   rem_all_handles v;
-  freelist := StringSet.add item:v !freelist
+  freelist := StringSet.add v !freelist
 
 (* Free variables associated with a widget *)
 let freew w =
   try
-    let r = Hashtbl.find memo key:w in
-    StringSet.iter fun:free !r;
-    Hashtbl.remove memo key:w 
+    let r = Hashtbl.find memo w in
+    StringSet.iter f:free !r;
+    Hashtbl.remove memo w 
   with
     Not_found -> ()
 
@@ -125,9 +125,9 @@ let getv () =
       end
     else
       let v = StringSet.choose !freelist in
-        freelist := StringSet.remove item:v !freelist;
+        freelist := StringSet.remove v !freelist;
         v in
-    set v to:"";
+    set v "";
     v
 
 let create ?on: w () =
@@ -141,7 +141,7 @@ let create ?on: w () =
 
 (* to be used with care ! *)
 let free v =
-  freelist := StringSet.add item:v !freelist
+  freelist := StringSet.add v !freelist
 
 let cCAMLtoTKtextVariable s = TkToken s
 
