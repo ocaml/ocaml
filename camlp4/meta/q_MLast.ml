@@ -668,11 +668,8 @@ EXTEND
           Node "CeApp" [ce; sel] ]
     | "simple"
       [ a = anti_ -> a
-      | ci = class_longident; "["; ct = ctyp; ","; ctcl = SLIST1 ctyp SEP ",";
-        "]" ->
-          Node "CeCon" [ci; Cons ct ctcl]
-      | ci = class_longident; "["; ct = ctyp; "]" ->
-          Node "CeCon" [ci; List [ct]]
+      | ci = class_longident; "["; ctcl = SLIST1 ctyp SEP ","; "]" ->
+          Node "CeCon" [ci; ctcl]
       | ci = class_longident -> Node "CeCon" [ci; List []]
       | "object"; csp = class_self_patt_opt; cf = class_structure; "end" ->
           Node "CeStr" [csp; cf]

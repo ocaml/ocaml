@@ -1764,25 +1764,14 @@ Grammar.extend
          (Grammar.Entry.obj
             (class_longident : 'class_longident Grammar.Entry.e));
        Gramext.Stoken ("", "[");
-       Gramext.Snterm (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e));
-       Gramext.Stoken ("", "]")],
-      Gramext.action
-        (fun _ (ct : 'ctyp) _ (ci : 'class_longident) (loc : int * int) ->
-           (MLast.CeCon (loc, ci, [ct]) : 'class_expr));
-      [Gramext.Snterm
-         (Grammar.Entry.obj
-            (class_longident : 'class_longident Grammar.Entry.e));
-       Gramext.Stoken ("", "[");
-       Gramext.Snterm (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e));
-       Gramext.Stoken ("", ",");
-       Gramext.Slist1sep
+       Gramext.Slist0sep
          (Gramext.Snterm (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e)),
           Gramext.Stoken ("", ","));
        Gramext.Stoken ("", "]")],
       Gramext.action
-        (fun _ (ctcl : 'ctyp list) _ (ct : 'ctyp) _ (ci : 'class_longident)
+        (fun _ (ctcl : 'ctyp list) _ (ci : 'class_longident)
            (loc : int * int) ->
-           (MLast.CeCon (loc, ci, (ct :: ctcl)) : 'class_expr))]];
+           (MLast.CeCon (loc, ci, ctcl) : 'class_expr))]];
     Grammar.Entry.obj (class_structure : 'class_structure Grammar.Entry.e),
     None,
     [None, None,

@@ -1471,7 +1471,7 @@ EXTEND
     | "simple"
       [ "["; ct = ctyp; ","; ctcl = LIST1 ctyp SEP ","; "]";
         ci = class_longident ->
-          <:class_expr< $list:ci$ [ $ct$ , $list:ctcl$ ] >>
+          <:class_expr< $list:ci$ [ $list:[ct :: ctcl]$ ] >>
       | "["; ct = ctyp; "]"; ci = class_longident ->
           <:class_expr< $list:ci$ [ $ct$ ] >>
       | ci = class_longident -> <:class_expr< $list:ci$ >>

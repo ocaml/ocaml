@@ -610,11 +610,8 @@ EXTEND
       [ ce = SELF; sel = LIST1 expr LEVEL "simple" ->
           <:class_expr< $ce$ $list:sel$ >> ]
     | "simple"
-      [ ci = class_longident; "["; ct = ctyp; ","; ctcl = LIST1 ctyp SEP ",";
-        "]" ->
-          <:class_expr< $list:ci$ [ $ct$ , $list:ctcl$ ] >>
-      | ci = class_longident; "["; ct = ctyp; "]" ->
-          <:class_expr< $list:ci$ [ $ct$ ] >>
+      [ ci = class_longident; "["; ctcl = LIST0 ctyp SEP ","; "]" ->
+          <:class_expr< $list:ci$ [ $list:ctcl$ ] >>
       | ci = class_longident -> <:class_expr< $list:ci$ >>
       | "object"; cspo = OPT class_self_patt; cf = class_structure; "end" ->
           <:class_expr< object $cspo$ $list:cf$ end >>
