@@ -28,9 +28,17 @@
 #define NOT_FOUND_EXN 6         /* "Not_found" */
 #define MATCH_FAILURE_EXN 7     /* "Match_failure" */
 
+#ifdef POSIX_SIGNALS
+struct longjmp_buffer {
+  sigjmp_buf buf;
+};
+#else
 struct longjmp_buffer {
   jmp_buf buf;
 };
+#define sigsetjmp(buf,save) setjmp(buf)
+#define siglongjmp(buf,val) longjmp(buf,val)
+#endif
 
 extern struct longjmp_buffer * external_raise;
 extern value exn_bucket;

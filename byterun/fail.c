@@ -29,7 +29,7 @@ void mlraise(v)
 {
   leave_blocking_section();
   exn_bucket = v;
-  longjmp(external_raise->buf, 1);
+  siglongjmp(external_raise->buf, 1);
 }
 
 void raise_constant(tag)

@@ -137,7 +137,7 @@ value interprete(prog, prog_size)
   initial_local_roots = local_roots;
   initial_sp_offset = stack_high - sp;
   initial_external_raise = external_raise;
-  if (setjmp(raise_buf.buf)) {
+  if (sigsetjmp(raise_buf.buf, 1)) {
     local_roots = initial_local_roots;
     accu = exn_bucket;
     goto raise_exception;
@@ -663,7 +663,7 @@ value interprete(prog, prog_size)
       if (sp >= stack_high - initial_sp_offset) {
         exn_bucket = accu;
         external_raise = initial_external_raise;
-        longjmp(external_raise->buf, 1);
+        siglongjmp(external_raise->buf, 1);
       }
       pc = Trap_pc(sp);
       trapsp = Trap_link(sp);

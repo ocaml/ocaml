@@ -207,7 +207,7 @@ int main(argc, argv)
     }
   }
 
-  if (setjmp(raise_buf.buf) == 0) {
+  if (sigsetjmp(raise_buf.buf, 1) == 0) {
 
     external_raise = &raise_buf;
 
