@@ -46,80 +46,80 @@ $(LIB): $(OBJECT)
 # How to choose the machine dependent version. All produce KerN.o
 o/KerN.o: c/KerN.c 
 	@echo "The Default is KerN written in C with digits on long"
-	make C CC="$(CC)" CFLAGS="$(CFLAGS)"
+	$(MAKE) C CC="$(CC)" CFLAGS="$(CFLAGS)"
 
 C: scratch
 	$(CC) $(CFLAGS) c/KerN.c
 	mv KerN.o o
-	make CC="$(CC)" CFLAGS="$(CFLAGS)" \
+	$(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" \
 	     OBJECT="$(OBJECT)" all
 
 68K: scratch
 	as s/68KerN.s -o o/KerN.o
-	make CC="$(CC)" CFLAGS="$(CFLAGS)" \
+	$(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" \
 	     OBJECT="$(OBJECT)" all
 
 vax: scratch
 	as s/vaxKerN.s -o o/KerN.o
-	make CC="$(CC)" CFLAGS="$(CFLAGS)" all
+	$(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" all
 
 ns: scratch
 	as s/nsKerN.s -o o/KerN.o
-	make CC="$(CC)" CFLAGS="$(CFLAGS)" \
+	$(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" \
 	     OBJECT="$(OBJECT)" all
 
 mips: scratch
 	as -w s/mipsKerN.s -o o/KerN.o
-	make CC="$(CC)" CFLAGS="$(CFLAGS)" all
+	$(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" all
 
 alpha: scratch
 	as -O s/alphaKerN.s -o o/KerN.o
-	make CC="$(CC)" CFLAGS="$(CFLAGS)" all
+	$(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" all
 
 pyramid: scratch
 	as s/pyramidKerN.s -o o/KerN.o
-	make CC="$(CC)" CFLAGS="$(CFLAGS)" \
+	$(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" \
 	     OBJECT="$(OBJECT)" all
 
 i960: scratch
 	as s/i960KerN.s -o o/KerN.o
-	make CC="$(CC)" CFLAGS="$(CFLAGS)" \
+	$(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" \
 	     OBJECT="$(OBJECT)" all
 
 sparc: scratch
 	as s/sparcKerN.s -o o/KerN.o
-	make CC="$(CC)" CFLAGS="$(CFLAGS)" \
+	$(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" \
 	     OBJECT="$(OBJECT)" all
 
 sparcfpu: scratch
 	as s/sparcfpuKerN.s -o o/KerN.o
-	make CC="$(CC)" CFLAGS="$(CFLAGS)" \
+	$(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" \
 	     OBJECT="$(OBJECT)" all
 
 supersparc: scratch
 	as s/supersparcKerN.s -o o/KerN.o
-	make CC="$(CC)" CFLAGS="$(CFLAGS)" \
+	$(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" \
 	     OBJECT="$(OBJECT)" all
 
 sparc-solaris: scratch
 	sed -e 's/_Bnn/Bnn/g' s/sparcKerN.s > s/KerN.s
 	as s/KerN.s -o o/KerN.o
 	rm -f s/KerN.s
-	make CC="$(CC)" CFLAGS="$(CFLAGS)" \
+	$(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" \
 	     OBJECT="$(OBJECT)" all
 
 sparcfpu-solaris: scratch
 	sed -e 's/_Bnn/Bnn/g' s/sparcfpuKerN.s > s/KerN.s
 	as s/KerN.s -o o/KerN.o
 	rm -f s/KerN.s
-	make CC="$(CC)" CFLAGS="$(CFLAGS)" \
+	$(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" \
 	     OBJECT="$(OBJECT)" all
 
 supersparc-solaris: scratch
 	sed -e 's/_Bnn/Bnn/g' s/supersparcKerN.s > s/KerN.s
 	as s/KerN.s -o o/KerN.o
 	rm -f s/KerN.s
-	make CC="$(CC)" CFLAGS="$(CFLAGS)" \
+	$(MAKE) CC="$(CC)" CFLAGS="$(CFLAGS)" \
 	     OBJECT="$(OBJECT)" all
 
 # Construct VMS assembler from UNIX version

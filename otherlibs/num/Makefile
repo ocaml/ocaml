@@ -31,7 +31,7 @@ libnums.a: bignum/libbignum.a $(COBJS)
 	$(RANLIB) libnums.a
 
 bignum/libbignum.a:
-	cd bignum; make $(BIGNUM_ARCH) CC="$(CC)"
+	cd bignum; $(MAKE) $(BIGNUM_ARCH) CC="$(CC)"
 
 $(CAMLOBJS:.cmo=.cmx): ../../cslopt
 
@@ -50,8 +50,8 @@ clean:
 realclean: clean
 	rm -f *.a *.o
 	rm -f nat.ml int_misc.ml
-	cd bignum; make scratch
-	cd test; make clean
+	cd bignum; $(MAKE) scratch
+	cd test; $(MAKE) clean
 
 .SUFFIXES: .ml .mli .mlp .cmi .cmo .cmx
 

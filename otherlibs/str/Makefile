@@ -35,7 +35,7 @@ clean:
 
 realclean: clean
 	rm -f *.a *.o
-	cd $(REGEXLIB); if test -f Makefile; then make distclean; else exit 0; fi
+	cd $(REGEXLIB); if test -f Makefile; then $(MAKE) distclean; else exit 0; fi
 
 install:
 	cp libstr.a $(LIBDIR)/libstr.a
