@@ -24,26 +24,32 @@ type regexp
 
 
 val regexp : string -> regexp
-(** Compile a regular expression. The syntax for regular expressions
-   is the same as in Gnu Emacs. The special characters are
-   [$^.*+?[]]. The following constructs are recognized:
-   - [.     ] matches any character except newline
-   - [*     ] (postfix) matches the previous expression zero, one or
+(** Compile a regular expression. The following constructs are
+    recognized:
+   - [.     ] Matches any character except newline.
+   - [*     ] (postfix) Matches the preceding expression zero, one or
               several times
-   - [+     ] (postfix) matches the previous expression one or
+   - [+     ] (postfix) Matches the preceding expression one or
               several times
-   - [?     ] (postfix) matches the previous expression once or
+   - [?     ] (postfix) Matches the preceding expression once or
               not at all
-   - [[..]  ] character set; ranges are denoted with [-], as in [[a-z]];
-              an initial [^], as in [[^0-9]], complements the set
-   - [^     ] matches at beginning of line
-   - [$     ] matches at end of line
-   - [\|    ] (infix) alternative between two expressions
-   - [\(..\)] grouping and naming of the enclosed expression
-   - [\1    ] the text matched by the first [\(...\)] expression
-     ([\2] for the second expression, and so on up to [\9])
-   - [\b    ] matches word boundaries
-   - [\     ] quotes special characters. *)
+   - [[..]  ] Character set. Ranges are denoted with [-], as in [[a-z]].
+              An initial [^], as in [[^0-9]], complements the set.
+              To include a [\]] character in a set, make it the first
+              character of the set. To include a [-] character in a set,
+              make it the first or the last character of the set.
+   - [^     ] Matches at beginning of line (either at the beginning of
+              the matched string, or just after a newline character).
+   - [$     ] Matches at end of line (either at the end of the matched
+              string, or just before a newline character).
+   - [\|    ] (infix) Alternative between two expressions.
+   - [\(..\)] Grouping and naming of the enclosed expression.
+   - [\1    ] The text matched by the first [\(...\)] expression
+     ([\2] for the second expression, and so on up to [\9]).
+   - [\b    ] Matches word boundaries.
+   - [\     ] Quotes special characters.  The special characters
+              are [$^.*+?[]].
+*)
 
 val regexp_case_fold : string -> regexp
 (** Same as [regexp], but the compiled expression will match text
