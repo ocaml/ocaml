@@ -186,14 +186,16 @@ typing/typecore.cmo: parsing/asttypes.cmi typing/btype.cmi utils/clflags.cmo \
     typing/ctype.cmi typing/env.cmi typing/ident.cmi parsing/location.cmi \
     parsing/longident.cmi utils/misc.cmi typing/parmatch.cmi \
     parsing/parsetree.cmi typing/path.cmi typing/predef.cmi \
-    typing/printtyp.cmi typing/typedtree.cmi typing/types.cmi \
-    typing/typetexp.cmi utils/warnings.cmi typing/typecore.cmi 
+    typing/primitive.cmi typing/printtyp.cmi typing/typedtree.cmi \
+    typing/types.cmi typing/typetexp.cmi utils/warnings.cmi \
+    typing/typecore.cmi 
 typing/typecore.cmx: parsing/asttypes.cmi typing/btype.cmx utils/clflags.cmx \
     typing/ctype.cmx typing/env.cmx typing/ident.cmx parsing/location.cmx \
     parsing/longident.cmx utils/misc.cmx typing/parmatch.cmx \
     parsing/parsetree.cmi typing/path.cmx typing/predef.cmx \
-    typing/printtyp.cmx typing/typedtree.cmx typing/types.cmx \
-    typing/typetexp.cmx utils/warnings.cmx typing/typecore.cmi 
+    typing/primitive.cmx typing/printtyp.cmx typing/typedtree.cmx \
+    typing/types.cmx typing/typetexp.cmx utils/warnings.cmx \
+    typing/typecore.cmi 
 typing/typedecl.cmo: parsing/asttypes.cmi typing/btype.cmi utils/clflags.cmo \
     utils/config.cmi typing/ctype.cmi typing/env.cmi typing/ident.cmi \
     typing/includecore.cmi parsing/location.cmi parsing/longident.cmi \
@@ -689,10 +691,10 @@ toplevel/toploop.cmx: bytecomp/bytegen.cmx utils/clflags.cmx \
     bytecomp/symtable.cmx bytecomp/translmod.cmx typing/typedtree.cmx \
     typing/typemod.cmx typing/types.cmx utils/warnings.cmx \
     toplevel/toploop.cmi 
-toplevel/topmain.cmo: utils/clflags.cmo toplevel/toploop.cmi \
-    utils/warnings.cmi 
-toplevel/topmain.cmx: utils/clflags.cmx toplevel/toploop.cmx \
-    utils/warnings.cmx 
+toplevel/topmain.cmo: utils/clflags.cmo utils/config.cmi utils/misc.cmi \
+    toplevel/toploop.cmi utils/warnings.cmi 
+toplevel/topmain.cmx: utils/clflags.cmx utils/config.cmx utils/misc.cmx \
+    toplevel/toploop.cmx utils/warnings.cmx 
 toplevel/trace.cmo: typing/ctype.cmi parsing/longident.cmi bytecomp/meta.cmi \
     utils/misc.cmi typing/path.cmi typing/predef.cmi typing/printtyp.cmi \
     toplevel/toploop.cmi typing/types.cmi toplevel/trace.cmi 
