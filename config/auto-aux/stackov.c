@@ -29,8 +29,6 @@ static void segv_handler(int signo, siginfo_t * info, void * context)
   char * fault_addr = (char *) info->si_addr;
 #endif
   struct rlimit limit;
-  struct sigaction act;
-  static char buffer[4096];
 
   if (getrlimit(RLIMIT_STACK, &limit) == 0 &&
       ((long) fault_addr & (sizeof(long) - 1)) == 0 &&
@@ -50,6 +48,8 @@ int main(int argc, char ** argv)
 {
   struct sigaltstack stk;
   struct sigaction act;
+  struct rlimit limit;
+
   stk.ss_sp = sig_alt_stack;
   stk.ss_size = SIGSTKSZ;
   stk.ss_flags = 0;
@@ -59,11 +59,13 @@ int main(int argc, char ** argv)
 #else
   act.sa_sigaction = segv_handler;
   act.sa_flags = SA_SIGINFO | SA_ONSTACK | SA_NODEFER;
-#endif
+#endif  
   sigemptyset(&act.sa_mask);
   system_stack_top = (char *) &act;
+  limit.rlim_max = limit.rlim_cur = 0x20000;
   if (sigaltstack(&stk, NULL) != 0) { perror("sigaltstack"); return 2; }
   if (sigaction(SIGSEGV, &act, NULL) != 0) { perror("sigaction"); return 2; }
+  if (setrlimit(RLIMIT_STACK, &limit) != 0) { perror("setrlimit"); return 2; }
   f(NULL);
   return 2;
 }
