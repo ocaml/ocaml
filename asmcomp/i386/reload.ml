@@ -73,6 +73,9 @@ method reload_test tst arg =
       if stackp arg.(0) && stackp arg.(1)
       then [| self#makereg arg.(0); arg.(1) |]
       else arg
+  | Ispectest(Iinttests _) ->
+      (* We already use all possible addressings *)
+      Array.map self#makereg arg
   | _ ->
       (* The argument(s) can be either in register or on stack *)
       arg
