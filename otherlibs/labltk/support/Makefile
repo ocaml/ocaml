@@ -19,13 +19,9 @@ THFLAGS=-I $(OTHERS)/systhreads -I $(OTHERS)/threads
 lib$(LIBNAME).a : $(COBJS)
 	$(MKLIB) -o $(LIBNAME) $(COBJS) $(TK_LINK)
 
-PUB=fileevent.cmi fileevent.mli \
-    protocol.cmi protocol.mli \
-    textvariable.cmi textvariable.mli \
-    timer.cmi timer.mli \
-    rawwidget.cmi rawwidget.mli \
-    widget.cmi widget.mli \
-    tkthread.cmo tkthread.cmi tkthread.mli
+PUBMLI=fileevent.mli protocol.mli textvariable.mli timer.mli \
+    rawwidget.mli widget.mli
+PUB= $(PUBMLI) $(PUBMLI:.mli=.cmi) tkthread.mli tkthread.cmi tkthread.cmo
 
 install: lib$(LIBNAME).a $(PUB)
 	if test -d $(INSTALLDIR); then : ; else mkdir $(INSTALLDIR); fi
@@ -37,8 +33,11 @@ install: lib$(LIBNAME).a $(PUB)
 
 installopt: opt
 	@if test -d $(INSTALLDIR); then : ; else mkdir $(INSTALLDIR); fi
-	cp *.cmx tkthread.o $(INSTALLDIR)
-	chmod 644 $(INSTALLDIR)/tkthread.o
+	cp $(PUBMLI:.mli=.cmx) $(INSTALLDIR)
+	if test -f tkthread.o; then \
+	  cp tkthread.o $(INSTALLDIR); \
+	  chmod 644 $(INSTALLDIR)/tkthread.o; \
+	fi
 
 clean : 
 	rm -f *.cm* *.o *.a *.so
@@ -63,7 +62,9 @@ tkthread.cmi: tkthread.mli
 tkthread.cmo: tkthread.ml
 	$(CAMLCOMP) $(COMPFLAGS) $(THFLAGS) $<
 tkthread.cmx: tkthread.ml
-	$(CAMLOPT) -c $(COMPFLAGS) $(THFLAGS) $<
+	if test -f $(OTHERS)/systhreads/threads.cmxa; then \
+	  $(CAMLOPT) -c $(COMPFLAGS) $(THFLAGS) $< ; \
+	fi
 
 depend:
 	$(CAMLDEP) *.mli *.ml > .depend
