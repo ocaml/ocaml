@@ -45,6 +45,6 @@ let _ =
   let status =
     Sys.command
       (Printf.sprintf "ocamlc -pp \"ocamlprof -instrument %s\" %s"
-          String.concat " " (List.rev !profargs)
-          String.concat " " (List.rev !compargs)) in
+          (String.concat " " (List.rev !profargs))
+          (String.concat " " (List.rev !compargs))) in
   exit status
