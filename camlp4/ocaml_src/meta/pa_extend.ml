@@ -1105,7 +1105,7 @@ let is_global e =
   | Some gl -> List.exists (fun n -> n.tvar = e.name.tvar) gl
 ;;
 
-let text_of_entry loc gmod gl e =
+let text_of_entry loc gmod e =
   let ent =
     let x = e.name in
     let loc = e.name.loc in
@@ -1124,33 +1124,6 @@ let text_of_entry loc gmod gl e =
     match e.pos with
       Some pos -> MLast.ExApp (loc, MLast.ExUid (loc, "Some"), pos)
     | None -> MLast.ExUid (loc, "None")
-  in
-  let levels =
-    if !quotify && is_global e gl && e.pos = None then
-      let rec loop =
-        function
-          [] -> []
-        | [level] ->
-            let level =
-              let rule =
-                let psymbol =
-                  let s =
-                    let n = "a_" ^ e.name.tvar in
-                    let e = mk_name loc (MLast.ExLid (loc, n)) in
-                    {used = []; text = TXnterm (loc, e, None);
-                     styp = STlid (loc, "ast")}
-                  in
-                  {pattern = Some (MLast.PaLid (loc, "a")); symbol = s}
-                in
-                {prod = [psymbol]; action = Some (MLast.ExLid (loc, "a"))}
-              in
-              {level with rules = rule :: level.rules}
-            in
-            [level]
-        | level :: levels -> level :: loop levels
-      in
-      loop e.levels
-    else e.levels
   in
   let txt =
     List.fold_right
@@ -1178,7 +1151,7 @@ let text_of_entry loc gmod gl e =
               txt)
          in
          txt)
-      levels (MLast.ExUid (loc, "[]"))
+      e.levels (MLast.ExUid (loc, "[]"))
   in
   ent, pos, txt
 ;;
@@ -1188,11 +1161,13 @@ let let_in_of_extend loc gmod functor_version gl el args =
     Some (n1 :: _ as nl) ->
       check_use nl el;
       let ll =
+        let same_tvar e n = e.name.tvar = n.tvar in
         List.fold_right
           (fun e ll ->
              match e.name.expr with
                MLast.ExLid (_, _) ->
-                 if List.exists (fun n -> e.name.tvar = n.tvar) nl then ll
+                 if List.exists (same_tvar e) nl then ll
+                 else if List.exists (same_tvar e) ll then ll
                  else e.name :: ll
              | _ -> ll)
           el []
@@ -1286,7 +1261,7 @@ let text_of_extend loc gmod gl el f =
     let args =
       List.map
         (fun e ->
-           let (ent, pos, txt) = text_of_entry e.name.loc gmod gl e in
+           let (ent, pos, txt) = text_of_entry e.name.loc gmod e in
            let ent =
              MLast.ExApp
                (loc,
@@ -1320,7 +1295,7 @@ let text_of_extend loc gmod gl el f =
     let args =
       List.fold_right
         (fun e el ->
-           let (ent, pos, txt) = text_of_entry e.name.loc gmod gl e in
+           let (ent, pos, txt) = text_of_entry e.name.loc gmod e in
            let ent =
              MLast.ExApp
                (loc,
@@ -1346,7 +1321,7 @@ let text_of_functorial_extend loc gmod gl el =
     let el =
       List.map
         (fun e ->
-           let (ent, pos, txt) = text_of_entry e.name.loc gmod gl e in
+           let (ent, pos, txt) = text_of_entry e.name.loc gmod e in
            let e =
              MLast.ExApp
                (loc,

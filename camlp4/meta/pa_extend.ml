@@ -590,7 +590,7 @@ value is_global e =
   | Some gl -> List.exists (fun n -> n.tvar = e.name.tvar) gl ]
 ;
 
-value text_of_entry loc gmod gl e =
+value text_of_entry loc gmod e =
   let ent =
     let x = e.name in
     let loc = e.name.loc in
@@ -600,31 +600,6 @@ value text_of_entry loc gmod gl e =
     match e.pos with
     [ Some pos -> <:expr< Some $pos$ >>
     | None -> <:expr< None >> ]
-  in
-  let levels =
-    if quotify.val && is_global e gl && e.pos = None then
-      loop e.levels where rec loop =
-        fun
-        [ [] -> []
-        | [level] ->
-            let level =
-              let rule =
-                let psymbol =
-                  let s =
-                    let n = "a_" ^ e.name.tvar in
-                    let e = mk_name loc <:expr< $lid:n$ >> in
-                    {used = []; text = TXnterm loc e None;
-                     styp = STlid loc "ast"}
-                  in
-                  {pattern = Some <:patt< a >>; symbol = s}
-                in
-                {prod = [psymbol]; action = Some <:expr< a >>}
-              in
-              {(level) with rules = [rule :: level.rules]}
-            in
-            [level]
-        | [level :: levels] -> [level :: loop levels] ]
-    else e.levels
   in
   let txt =
     List.fold_right
@@ -645,7 +620,7 @@ value text_of_entry loc gmod gl e =
            <:expr< [($lab$, $ass$, $e$) :: $txt$] >>
          in
          txt)
-      levels <:expr< [] >>
+      e.levels <:expr< [] >>
   in
   (ent, pos, txt)
 ;
@@ -656,11 +631,13 @@ value let_in_of_extend loc gmod functor_version gl el args =
       do {
         check_use nl el;
         let ll =
+          let same_tvar e n = e.name.tvar = n.tvar in
           List.fold_right
             (fun e ll ->
                match e.name.expr with
                [ <:expr< $lid:_$ >> ->
-                   if List.exists (fun n -> e.name.tvar = n.tvar) nl then ll
+                   if List.exists (same_tvar e) nl then ll
+                   else if List.exists (same_tvar e) ll then ll
                    else [e.name :: ll]
                | _ -> ll ])
             el []
@@ -706,7 +683,7 @@ value text_of_extend loc gmod gl el f =
     let args =
       List.map
         (fun e ->
-           let (ent, pos, txt) = text_of_entry e.name.loc gmod gl e in
+           let (ent, pos, txt) = text_of_entry e.name.loc gmod e in
            let ent = <:expr< $uid:gmod$.Entry.obj $ent$ >> in
            let e = <:expr< ($ent$, $pos$, $txt$) >> in
            <:expr< let aux () = $f$ [$e$] in aux () >>)
@@ -718,7 +695,7 @@ value text_of_extend loc gmod gl el f =
     let args =
       List.fold_right
         (fun e el ->
-           let (ent, pos, txt) = text_of_entry e.name.loc gmod gl e in
+           let (ent, pos, txt) = text_of_entry e.name.loc gmod e in
            let ent = <:expr< $uid:gmod$.Entry.obj $ent$ >> in
            let e = <:expr< ($ent$, $pos$, $txt$) >> in
            <:expr< [$e$ :: $el$] >>)
@@ -733,7 +710,7 @@ value text_of_functorial_extend loc gmod gl el =
     let el =
       List.map
         (fun e ->
-           let (ent, pos, txt) = text_of_entry e.name.loc gmod gl e in
+           let (ent, pos, txt) = text_of_entry e.name.loc gmod e in
            let e = <:expr< $uid:gmod$.extend $ent$ $pos$ $txt$ >> in
            if split_ext.val then <:expr< let aux () = $e$ in aux () >> else e)
         el

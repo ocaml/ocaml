@@ -97,17 +97,8 @@ value mkumin loc f arg =
       <:expr< $lid:f$ $arg$ >> ]
 ;
 
-value mkuminpat loc f arg =
-  match arg with
-  [ <:patt< $int:n$ >> when int_of_string n > 0 ->
-      let n = "-" ^ n in
-      <:patt< $int:n$ >>
-  | <:patt< $flo:n$ >> when float_of_string n > 0.0 ->
-      let n = "-" ^ n in
-      <:patt< $flo:n$ >>
-  | _ ->
-      let f = "~" ^ f in
-      <:patt< $lid:f$ $arg$ >> ]
+value mkuminpat loc f is_int n =
+  if is_int then <:patt< $int:"-" ^ n$ >> else <:patt< $flo:"-" ^ n$ >>
 ;
 
 value mklistexp loc last =
@@ -229,7 +220,8 @@ EXTEND
           <:module_expr< struct $list:st$ end >> ]
     | [ me1 = SELF; me2 = SELF -> <:module_expr< $me1$ $me2$ >> ]
     | [ me1 = SELF; "."; me2 = SELF -> <:module_expr< $me1$ . $me2$ >> ]
-    | [ i = UIDENT -> <:module_expr< $uid:i$ >>
+    | "simple"
+      [ i = UIDENT -> <:module_expr< $uid:i$ >>
       | "("; me = SELF; ":"; mt = module_type; ")" ->
           <:module_expr< ( $me$ : $mt$ ) >>
       | "("; me = SELF; ")" -> <:module_expr< $me$ >> ] ]
@@ -275,7 +267,8 @@ EXTEND
           <:module_type< sig $list:sg$ end >> ]
     | [ m1 = SELF; m2 = SELF -> <:module_type< $m1$ $m2$ >> ]
     | [ m1 = SELF; "."; m2 = SELF -> <:module_type< $m1$ . $m2$ >> ]
-    | [ i = UIDENT -> <:module_type< $uid:i$ >>
+    | "simple"
+      [ i = UIDENT -> <:module_type< $uid:i$ >>
       | i = LIDENT -> <:module_type< $lid:i$ >>
       | "("; mt = SELF; ")" -> <:module_type< $mt$ >> ] ]
   ;
@@ -409,27 +402,7 @@ EXTEND
       | "("; e = SELF; ":"; t = ctyp; ")" -> <:expr< ($e$ : $t$) >>
       | "("; e = SELF; ","; el = LIST1 expr SEP ","; ")" ->
           <:expr< ( $list:[e::el]$) >>
-      | "("; e = SELF; ")" -> <:expr< $e$ >>
-      | x = LOCATE ->
-          let x =
-            try
-              let i = String.index x ':' in
-              (int_of_string (String.sub x 0 i),
-               String.sub x (i + 1) (String.length x - i - 1))
-            with
-            [ Not_found | Failure _ -> (0, x) ]
-          in
-          Pcaml.handle_expr_locate loc x
-      | x = QUOTATION ->
-          let x =
-            try
-              let i = String.index x ':' in
-              (String.sub x 0 i,
-               String.sub x (i + 1) (String.length x - i - 1))
-            with
-            [ Not_found -> ("", x) ]
-          in
-          Pcaml.handle_expr_quotation loc x ] ]
+      | "("; e = SELF; ")" -> <:expr< $e$ >> ] ]
   ;
   dummy:
     [ [ -> () ] ]
@@ -486,8 +459,8 @@ EXTEND
       | s = FLOAT -> <:patt< $flo:s$ >>
       | s = STRING -> <:patt< $str:s$ >>
       | s = CHAR -> <:patt< $chr:s$ >>
-      | "-"; s = INT -> mkuminpat loc "-" <:patt< $int:s$ >>
-      | "-"; s = FLOAT -> mkuminpat loc "-" <:patt< $flo:s$ >>
+      | "-"; s = INT -> mkuminpat loc "-" True s
+      | "-"; s = FLOAT -> mkuminpat loc "-" False s
       | "["; "]" -> <:patt< [] >>
       | "["; pl = LIST1 patt SEP ";"; last = OPT [ "::"; p = patt -> p ];
         "]" ->
@@ -500,27 +473,7 @@ EXTEND
       | "("; p = SELF; "as"; p2 = SELF; ")" -> <:patt< ($p$ as $p2$) >>
       | "("; p = SELF; ","; pl = LIST1 patt SEP ","; ")" ->
           <:patt< ( $list:[p::pl]$) >>
-      | "_" -> <:patt< _ >>
-      | x = LOCATE ->
-          let x =
-            try
-              let i = String.index x ':' in
-              (int_of_string (String.sub x 0 i),
-               String.sub x (i + 1) (String.length x - i - 1))
-            with
-            [ Not_found | Failure _ -> (0, x) ]
-          in
-          Pcaml.handle_patt_locate loc x
-      | x = QUOTATION ->
-          let x =
-            try
-              let i = String.index x ':' in
-              (String.sub x 0 i,
-               String.sub x (i + 1) (String.length x - i - 1))
-            with
-            [ Not_found -> ("", x) ]
-          in
-          Pcaml.handle_patt_quotation loc x ] ]
+      | "_" -> <:patt< _ >> ] ]
   ;
   label_patt:
     [ [ i = patt_label_ident; "="; p = patt -> (i, p) ] ]
@@ -528,7 +481,7 @@ EXTEND
   patt_label_ident:
     [ LEFTA
       [ p1 = SELF; "."; p2 = SELF -> <:patt< $p1$ . $p2$ >> ]
-    | RIGHTA
+    | "simple" RIGHTA
       [ i = UIDENT -> <:patt< $uid:i$ >>
       | i = LIDENT -> <:patt< $lid:i$ >> ] ]
   ;
@@ -607,6 +560,53 @@ EXTEND
   direction_flag:
     [ [ "to" -> True
       | "downto" -> False ] ]
+  ;
+END;
+
+EXTEND
+  expr: LEVEL "simple"
+    [ [ x = LOCATE ->
+          let x =
+            try
+              let i = String.index x ':' in
+              (int_of_string (String.sub x 0 i),
+               String.sub x (i + 1) (String.length x - i - 1))
+            with
+            [ Not_found | Failure _ -> (0, x) ]
+          in
+          Pcaml.handle_expr_locate loc x
+      | x = QUOTATION ->
+          let x =
+            try
+              let i = String.index x ':' in
+              (String.sub x 0 i,
+               String.sub x (i + 1) (String.length x - i - 1))
+            with
+            [ Not_found -> ("", x) ]
+          in
+          Pcaml.handle_expr_quotation loc x ] ]
+  ;
+  patt: LEVEL "simple"
+    [ [ x = LOCATE ->
+          let x =
+            try
+              let i = String.index x ':' in
+              (int_of_string (String.sub x 0 i),
+               String.sub x (i + 1) (String.length x - i - 1))
+            with
+            [ Not_found | Failure _ -> (0, x) ]
+          in
+          Pcaml.handle_patt_locate loc x
+      | x = QUOTATION ->
+          let x =
+            try
+              let i = String.index x ':' in
+              (String.sub x 0 i,
+               String.sub x (i + 1) (String.length x - i - 1))
+            with
+            [ Not_found -> ("", x) ]
+          in
+          Pcaml.handle_patt_quotation loc x ] ]
   ;
 END;
 

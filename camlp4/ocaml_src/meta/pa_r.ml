@@ -89,13 +89,9 @@ let mkumin loc f arg =
   | _ -> let f = "~" ^ f in MLast.ExApp (loc, MLast.ExLid (loc, f), arg)
 ;;
 
-let mkuminpat loc f arg =
-  match arg with
-    MLast.PaInt (_, n) when int_of_string n > 0 ->
-      let n = "-" ^ n in MLast.PaInt (loc, n)
-  | MLast.PaFlo (_, n) when float_of_string n > 0.0 ->
-      let n = "-" ^ n in MLast.PaFlo (loc, n)
-  | _ -> let f = "~" ^ f in MLast.PaApp (loc, MLast.PaLid (loc, f), arg)
+let mkuminpat loc f is_int n =
+  if is_int then MLast.PaInt (loc, ("-" ^ n))
+  else MLast.PaFlo (loc, ("-" ^ n))
 ;;
 
 let mklistexp loc last =
@@ -368,7 +364,7 @@ Grammar.extend
       Gramext.action
         (fun (me2 : 'module_expr) _ (me1 : 'module_expr) (loc : int * int) ->
            (MLast.MeAcc (loc, me1, me2) : 'module_expr))];
-     None, None,
+     Some "simple", None,
      [[Gramext.Stoken ("", "("); Gramext.Sself; Gramext.Stoken ("", ")")],
       Gramext.action
         (fun _ (me : 'module_expr) _ (loc : int * int) ->
@@ -545,7 +541,7 @@ Grammar.extend
       Gramext.action
         (fun (m2 : 'module_type) _ (m1 : 'module_type) (loc : int * int) ->
            (MLast.MtAcc (loc, m1, m2) : 'module_type))];
-     None, None,
+     Some "simple", None,
      [[Gramext.Stoken ("", "("); Gramext.Sself; Gramext.Stoken ("", ")")],
       Gramext.action
         (fun _ (mt : 'module_type) _ (loc : int * int) ->
@@ -1011,33 +1007,7 @@ Grammar.extend
         (fun (e : 'expr) _ (loc : int * int) ->
            (MLast.ExApp (loc, MLast.ExLid (loc, "~-"), e) : 'expr))];
      Some "simple", None,
-     [[Gramext.Stoken ("QUOTATION", "")],
-      Gramext.action
-        (fun (x : string) (loc : int * int) ->
-           (let x =
-              try
-                let i = String.index x ':' in
-                String.sub x 0 i,
-                String.sub x (i + 1) (String.length x - i - 1)
-              with
-                Not_found -> "", x
-            in
-            Pcaml.handle_expr_quotation loc x :
-            'expr));
-      [Gramext.Stoken ("LOCATE", "")],
-      Gramext.action
-        (fun (x : string) (loc : int * int) ->
-           (let x =
-              try
-                let i = String.index x ':' in
-                int_of_string (String.sub x 0 i),
-                String.sub x (i + 1) (String.length x - i - 1)
-              with
-                Not_found | Failure _ -> 0, x
-            in
-            Pcaml.handle_expr_locate loc x :
-            'expr));
-      [Gramext.Stoken ("", "("); Gramext.Sself; Gramext.Stoken ("", ")")],
+     [[Gramext.Stoken ("", "("); Gramext.Sself; Gramext.Stoken ("", ")")],
       Gramext.action (fun _ (e : 'expr) _ (loc : int * int) -> (e : 'expr));
       [Gramext.Stoken ("", "("); Gramext.Sself; Gramext.Stoken ("", ",");
        Gramext.Slist1sep
@@ -1258,33 +1228,7 @@ Grammar.extend
         (fun (p2 : 'patt) _ (p1 : 'patt) (loc : int * int) ->
            (MLast.PaAcc (loc, p1, p2) : 'patt))];
      Some "simple", None,
-     [[Gramext.Stoken ("QUOTATION", "")],
-      Gramext.action
-        (fun (x : string) (loc : int * int) ->
-           (let x =
-              try
-                let i = String.index x ':' in
-                String.sub x 0 i,
-                String.sub x (i + 1) (String.length x - i - 1)
-              with
-                Not_found -> "", x
-            in
-            Pcaml.handle_patt_quotation loc x :
-            'patt));
-      [Gramext.Stoken ("LOCATE", "")],
-      Gramext.action
-        (fun (x : string) (loc : int * int) ->
-           (let x =
-              try
-                let i = String.index x ':' in
-                int_of_string (String.sub x 0 i),
-                String.sub x (i + 1) (String.length x - i - 1)
-              with
-                Not_found | Failure _ -> 0, x
-            in
-            Pcaml.handle_patt_locate loc x :
-            'patt));
-      [Gramext.Stoken ("", "_")],
+     [[Gramext.Stoken ("", "_")],
       Gramext.action (fun _ (loc : int * int) -> (MLast.PaAny loc : 'patt));
       [Gramext.Stoken ("", "("); Gramext.Sself; Gramext.Stoken ("", ",");
        Gramext.Slist1sep
@@ -1348,11 +1292,11 @@ Grammar.extend
       [Gramext.Stoken ("", "-"); Gramext.Stoken ("FLOAT", "")],
       Gramext.action
         (fun (s : string) _ (loc : int * int) ->
-           (mkuminpat loc "-" (MLast.PaFlo (loc, s)) : 'patt));
+           (mkuminpat loc "-" false s : 'patt));
       [Gramext.Stoken ("", "-"); Gramext.Stoken ("INT", "")],
       Gramext.action
         (fun (s : string) _ (loc : int * int) ->
-           (mkuminpat loc "-" (MLast.PaInt (loc, s)) : 'patt));
+           (mkuminpat loc "-" true s : 'patt));
       [Gramext.Stoken ("CHAR", "")],
       Gramext.action
         (fun (s : string) (loc : int * int) ->
@@ -1395,7 +1339,7 @@ Grammar.extend
         (fun (p2 : 'patt_label_ident) _ (p1 : 'patt_label_ident)
            (loc : int * int) ->
            (MLast.PaAcc (loc, p1, p2) : 'patt_label_ident))];
-     None, Some Gramext.RightA,
+     Some "simple", Some Gramext.RightA,
      [[Gramext.Stoken ("LIDENT", "")],
       Gramext.action
         (fun (i : string) (loc : int * int) ->
@@ -1631,6 +1575,66 @@ Grammar.extend
       [Gramext.Stoken ("", "to")],
       Gramext.action
         (fun _ (loc : int * int) -> (true : 'direction_flag))]]]);;
+
+Grammar.extend
+  [Grammar.Entry.obj (expr : 'expr Grammar.Entry.e),
+   Some (Gramext.Level "simple"),
+   [None, None,
+    [[Gramext.Stoken ("QUOTATION", "")],
+     Gramext.action
+       (fun (x : string) (loc : int * int) ->
+          (let x =
+             try
+               let i = String.index x ':' in
+               String.sub x 0 i,
+               String.sub x (i + 1) (String.length x - i - 1)
+             with
+               Not_found -> "", x
+           in
+           Pcaml.handle_expr_quotation loc x :
+           'expr));
+     [Gramext.Stoken ("LOCATE", "")],
+     Gramext.action
+       (fun (x : string) (loc : int * int) ->
+          (let x =
+             try
+               let i = String.index x ':' in
+               int_of_string (String.sub x 0 i),
+               String.sub x (i + 1) (String.length x - i - 1)
+             with
+               Not_found | Failure _ -> 0, x
+           in
+           Pcaml.handle_expr_locate loc x :
+           'expr))]];
+   Grammar.Entry.obj (patt : 'patt Grammar.Entry.e),
+   Some (Gramext.Level "simple"),
+   [None, None,
+    [[Gramext.Stoken ("QUOTATION", "")],
+     Gramext.action
+       (fun (x : string) (loc : int * int) ->
+          (let x =
+             try
+               let i = String.index x ':' in
+               String.sub x 0 i,
+               String.sub x (i + 1) (String.length x - i - 1)
+             with
+               Not_found -> "", x
+           in
+           Pcaml.handle_patt_quotation loc x :
+           'patt));
+     [Gramext.Stoken ("LOCATE", "")],
+     Gramext.action
+       (fun (x : string) (loc : int * int) ->
+          (let x =
+             try
+               let i = String.index x ':' in
+               int_of_string (String.sub x 0 i),
+               String.sub x (i + 1) (String.length x - i - 1)
+             with
+               Not_found | Failure _ -> 0, x
+           in
+           Pcaml.handle_patt_locate loc x :
+           'patt))]]];;
 
 (* Objects and Classes *)
 
