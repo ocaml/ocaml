@@ -84,13 +84,14 @@ TOPLEVEL=driver\errors.cmo driver\compile.cmo \
   toplevel\printval.cmo toplevel\toploop.cmo \
   toplevel\trace.cmo toplevel\topdirs.cmo
 
+TOPLEVELLIB=toplevel\toplevellib.cma
 TOPLEVELMAIN=toplevel\topmain.cmo
 
 COMPOBJS=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(BYTECOMP) $(DRIVER)
 
 TOPLIB=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(BYTECOMP) $(TOPLEVEL)
 
-TOPOBJS=$(TOPLIB) $(TOPLEVELMAIN)
+TOPOBJS=toplevel\toplevellib.cma $(TOPLEVELMAIN)
 
 OPTOBJS=$(OPTUTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) $(OPTDRIVER)
 
@@ -205,6 +206,7 @@ installbyt:
 	cd stdlib & $(MAKEREC) install
 	cp lex\ocamllex $(BINDIR)\ocamllex.exe
 	cp yacc\ocamlyacc.exe $(BINDIR)\ocamlyacc.exe
+	cp toplevel\toplevellib.cma $(LIBDIR)\toplevellib.cma
 	$(CAMLC) -a -o $(LIBDIR)\toplevellib.cma $(TOPLIB)
 	cp expunge $(LIBDIR)\expunge.exe
 	cp toplevel\topmain.cmo $(LIBDIR)\topmain.cmo
@@ -249,6 +251,9 @@ ocaml: $(TOPOBJS) expunge
 	$(CAMLC) $(LINKFLAGS) -linkall -o ocaml.tmp $(TOPOBJS)
 	- $(CAMLRUN) .\expunge ocaml.tmp ocaml $(PERVASIVES)
 	rm -f ocaml.tmp
+
+toplevel\toplevellib.cma: $(TOPLIB)
+	$(CAMLC) -a -o $@ $(TOPLIB)
 
 partialclean::
 	rm -f ocaml
