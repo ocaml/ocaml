@@ -58,6 +58,7 @@ expr:
   | expr '#' method-name
   | '(' expr ':>' typexpr ')'
   | '(' expr ':' typexpr ':>' typexpr ')'
+  | '{<' inst-var-name '=' expr { ';' inst-var-name '=' expr } '>}'
 ;
 pattern-matching:
     pattern ['when' expr] '->' expr
@@ -613,6 +614,10 @@ more general than the previous one.
 \subsubsection*{Object duplication}
 
 An object can be duplicated using the library function "Oo.copy"
-(see section~\ref{s:Oo}).
+(see section~\ref{s:Oo}). Inside a method, the expression
+@ '{<' inst-var-name '=' expr { ';' inst-var-name '=' expr } '>}'@
+returns a copy of self with the given instance variables replaced by
+the values of the associated expressions; other instance variables
+have the same value in the returned object as in self.
 
 %% \newpage
