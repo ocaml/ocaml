@@ -619,19 +619,17 @@ let rec comp_expr env exp sz cont =
             comp_expr env cond sz (Kbranchif lbl_loop :: add_const_unit cont))
   | Lfor(param, start, stop, dir, body) ->
       let lbl_loop = new_label() in
-      let lbl_test = new_label() in
+      let lbl_exit = new_label() in
       let offset = match dir with Upto -> 1 | Downto -> -1 in
-      let comp = match dir with Upto -> Cle | Downto -> Cge in
+      let comp = match dir with Upto -> Cgt | Downto -> Clt in
       comp_expr env start sz
         (Kpush :: comp_expr env stop (sz+1)
-          (Kpush :: Kbranch lbl_test ::
+          (Kpush :: Kpush :: Kacc 2 :: Kintcomp comp :: Kbranchif lbl_exit ::
            Klabel lbl_loop :: Kcheck_signals ::
            comp_expr (add_var param (sz+1) env) body (sz+2)
-             (Kacc 1 :: Koffsetint offset :: Kassign 1 ::
-              Klabel lbl_test ::
-              Kacc 0 :: Kpush :: Kacc 2 :: Kintcomp comp ::
-              Kbranchif lbl_loop ::
-              add_const_unit (add_pop 2 cont))))
+             (Kacc 1 :: Kpush :: Koffsetint offset :: Kassign 2 ::
+              Kacc 1 :: Kintcomp Cneq :: Kbranchif lbl_loop ::
+              Klabel lbl_exit :: add_const_unit (add_pop 2 cont))))
   | Lswitch(arg, sw) ->
       let (branch, cont1) = make_branch cont in
       let c = ref (discard_dead_code cont1) in

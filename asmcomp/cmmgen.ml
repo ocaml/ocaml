@@ -951,6 +951,7 @@ let rec transl = function
       let tst = match dir with Upto -> Cgt   | Downto -> Clt in
       let inc = match dir with Upto -> Caddi | Downto -> Csubi in
       let raise_num = next_raise_count () in
+      let id_prev = Ident.rename id in
       return_unit
         (Clet
            (id, transl low,
@@ -962,11 +963,13 @@ let rec transl = function
                     Cloop
                       (Csequence
                          (remove_unit(transl body),
+                         Clet(id_prev, Cvar id,
                           Csequence
-                            (Cassign(id, Cop(inc, [Cvar id; Cconst_int 2])),
+                            (Cassign(id, 
+                               Cop(inc, [Cvar id; Cconst_int 2])),
                              Cifthenelse
-                               (Cop(Ccmpi tst, [Cvar id; high]),
-                                Cexit (raise_num,[]), Ctuple []))))),
+                               (Cop(Ccmpi Ceq, [Cvar id_prev; high]),
+                                Cexit (raise_num,[]), Ctuple [])))))),
                  Ctuple []))))
   | Uassign(id, exp) ->
       return_unit(Cassign(id, transl exp))
