@@ -350,6 +350,11 @@ if sh hasgot -i dirent.h; then
   echo "#define HAS_DIRENT" >> s.h
 fi
 
+if sh hasgot rewinddir; then
+  echo "rewinddir() found."
+  echo "#define HAS_REWINDDIR" >> s.h
+fi
+
 if sh hasgot lockf; then
   echo "lockf() found."
   echo "#define HAS_LOCKF" >> s.h
@@ -416,14 +421,16 @@ if sh hasgot symlink readlink lstat;  then
   echo "#define HAS_SYMLINK" >> s.h
 fi
 
-if sh hasgot wait3;  then
-  echo "wait3() found."
-  echo "#define HAS_WAIT3" >> s.h
-fi
-
 if sh hasgot waitpid;  then
   echo "waitpid() found."
   echo "#define HAS_WAITPID" >> s.h
+  has_wait=yes
+fi
+
+if sh hasgot wait4;  then
+  echo "wait4() found."
+  echo "#define HAS_WAIT4" >> s.h
+  has_wait=yes
 fi
 
 if sh hasgot -i sys/param.h && sh runtest getgroups.c; then
@@ -494,8 +501,9 @@ echo "BIGNUM_ARCH=$bignum_arch" >> Makefile
 
 if test "$has_select" = "yes" \
 && test "$has_setitimer" = "yes" \
-&& test "$has_gettimeofday" = "yes"; then
-  echo "Threads library supported"
+&& test "$has_gettimeofday" = "yes" \
+&& test "$has_wait" = "yes"; then
+  echo "Threads library supported."
   otherlibraries="$otherlibraries threads"
 else
   echo "No threads library (missing system calls)"
@@ -547,7 +555,7 @@ done
 
 if test "$x11_include" = "not found" || test "$x11_link" = "not found"
 then
-  echo "X11 not found, the \"graph\" library will not be supported"
+  echo "X11 not found, the \"graph\" library will not be supported."
 else
   echo "X11_INCLUDES=$x11_include" >> Makefile
   echo "X11_LINK=$x11_link" >> Makefile
@@ -563,7 +571,7 @@ then
   echo "NDBM library found."
   otherlibraries="$otherlibraries dbm"
 else
-  echo "NDBM not found, the \"dbm\" library will not be supported"
+  echo "NDBM not found, the \"dbm\" library will not be supported."
 fi
 
 # Finish generated files

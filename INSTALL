@@ -1,3 +1,17 @@
+PREREQUISITES
+
+* Perl version 4 or 5 is required for building the Objective Caml
+  native-code compiler.
+
+* The GNU C compiler gcc is recommended, as the bytecode
+  interpreter takes advantage of gcc-specific features to enhance
+  performance. Versions 2.5.8, 2.6.3, 2.7.0 and 2.7.2 have all been
+  tested at some point and appear to work.
+
+* Under HP/UX, gcc, the GNU binutils, and GNU make are all required.
+  The native cc, as, and make have major problems.
+
+
 INSTALLATION INSTRUCTIONS
 
 1- Configure the system. From the top directory, do:
@@ -104,8 +118,6 @@ following commands (in the binary directory selected during autoconfiguration):
         ocamlcp          the bytecode compiler in profiling mode
 
 From the top directory, become superuser and do "make install".
-Also do "make installopt" to install the native-code compiler, if you
-have compiled it.
 
 6- Installation is complete. Time to clean up. From the toplevel
 directory, do "make realclean".

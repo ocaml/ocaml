@@ -183,6 +183,7 @@ install:
 	cd tools; $(MAKE) install
 	cd man; for i in *.m; do cp $$i $(MANDIR)/`basename $$i .m`.$(MANEXT); done
 	for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) install); done
+	if test -f ocamlopt; then $(MAKE) installopt; else :; fi
 
 # Installation of the native-code compiler
 installopt:
