@@ -280,6 +280,9 @@
                            minor_gc.h
 
 "macintosh.c.x" Ä  macintosh.c ¶
+                              misc.h ¶
+                              config.h ¶
+                              ::config:sm-Mac.h ¶
                               rotatecursor.h
 
 "main.c.x" Ä  main.c ¶
@@ -490,6 +493,7 @@
                         fail.h
 
 "sys.c.x" Ä  sys.c ¶
+                        macintosh.h ¶
                         config.h ¶
                         ::config:sm-Mac.h ¶
                         alloc.h ¶
@@ -814,6 +818,9 @@
                            minor_gc.h
 
 "macintosh.c.o" Ä  macintosh.c ¶
+                              misc.h ¶
+                              config.h ¶
+                              ::config:sm-Mac.h ¶
                               rotatecursor.h
 
 "main.c.o" Ä  main.c ¶
@@ -1024,6 +1031,7 @@
                         fail.h
 
 "sys.c.o" Ä  sys.c ¶
+                        macintosh.h ¶
                         config.h ¶
                         ::config:sm-Mac.h ¶
                         alloc.h ¶
