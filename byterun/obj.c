@@ -102,6 +102,8 @@ value obj_truncate (value v, value newsize)  /* ML */
   mlsize_t wosize = Wosize_hd (hd);
   mlsize_t i;
 
+  if (tag == Double_array_tag) new_wosize *= Double_wosize;  /* PR#156 */
+
   if (new_wosize <= 0 || new_wosize > wosize) 
     invalid_argument ("Obj.truncate");
   if (new_wosize == wosize) return Val_unit;

@@ -13,6 +13,7 @@ open Printf;;
 *)
 
 (* FIXME: faire des tests sur des longueurs non puissances de 2 *)
+(* FIXME: faire des tests sur des flottants avec une machine 32 bits *)
 
 (* FIXME: merge sort avec listes mutables *)
 (* FIXME: merge sort avec listes initiales maximales *)
