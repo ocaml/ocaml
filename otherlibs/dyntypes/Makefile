@@ -18,44 +18,25 @@
 include ../../config/Makefile
 
 # Compilation options
-JOCPARSER=../../boot/ocamlrun ../../jocparsing/jocp
-CAMLC=../../boot/ocamlrun ../../ocamlc -pp "$(JOCPARSER)" -I ../../stdlib
-CAMLOPT=../../boot/ocamlrun ../../ocamlopt -pp "$(JOCPARSER)" -I ../../stdlib
-MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
+ROOT = ../..
+CAMLRUN = $(ROOT)/boot/ocamlrun
+JOCPARSER = $(CAMLRUN) $(ROOT)/jocparsing/jocp
+CAMLC = $(CAMLRUN) $(ROOT)/ocamlc -pp "$(JOCPARSER)" -I $(ROOT)/stdlib
+CAMLOPT = $(CAMLRUN) $(ROOT)/ocamlopt -pp "$(JOCPARSER)" -I $(ROOT)/stdlib
+MKLIB = $(CAMLRUN) $(ROOT)/tools/ocamlmklib
 
 LOCAL_MODULES = dynamics
-ROOT = ../..
-UTILS_MODULES = config clflags misc tbl
-PARSING_MODULES = longident
-TYPING_MODULES = ident path primitive types typedynt btype subst predef datarepr env ctype printtyp
+UTILS_MODULES = config misc tbl clflags
+PARSING_MODULES = asttypes longident
+TYPING_MODULES = outcometree ident path primitive types typedynt btype subst predef datarepr env ctype printtyp
 IMPORTED_MODULES = $(UTILS_MODULES) $(PARSING_MODULES) $(TYPING_MODULES)
-IMPORTED_INTERFACES = $(IMPORTED_MODULES) asttypes outcometree
-CMIFILES = $(IMPORTED_MODULES:=.cmi) $(LOCAL_MODULES:=.cmi)
-CAMLOBJS = $(IMPORTED_MODULES:=.cmo) $(LOCAL_MODULES:=.cmo)
+CAMLOBJS = dyntypes_compiler_bits.cmo $(LOCAL_MODULES:=.cmo)
+CMIFILES = $(CAMLOBJS:.cmo=.cmi)
 
 default: all
 
-import:
-	set -e; \
-	for x in $(UTILS_MODULES); do \
-	  test $$x = clflags || \
-	  cp -f $(ROOT)/utils/$$x.mli $(ROOT)/utils/$$x.ml .; \
-	done; \
-	for x in $(PARSING_MODULES); do \
-	  cp -f $(ROOT)/parsing/$$x.mli $(ROOT)/parsing/$$x.ml .; \
-	done; \
-	for x in $(TYPING_MODULES); do \
-	  cp -f $(ROOT)/typing/$$x.mli $(ROOT)/typing/$$x.ml .; \
-	done; \
-	cp -f $(ROOT)/utils/clflags.ml .; \
-	cp -f $(ROOT)/parsing/asttypes.mli $(ROOT)/typing/outcometree.mli .
-	touch import
-do-import: do_import
-do_import:
-	rm -f import
-	$(MAKE) import
-	: >.depend
-	$(MAKE) depend
+dyntypes_compiler_bits.ml: gather_compiler_bits
+	$(CAMLRUN) ./gather_compiler_bits $(ROOT)/utils $(ROOT)/parsing $(ROOT)/typing - $(IMPORTED_MODULES) >$@
 
 all: dynamics.cma $(CMIFILES)
 
@@ -67,9 +48,7 @@ dynamics.cma: $(CAMLOBJS)
 dynamics.cmxa: $(CAMLOBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o $@ $(CAMLOBJS:.cmo=.cmx)
 
-$(IMPORTED_INTERFACES:=.mli): import
-$(IMPORTED_MODULES:=.ml): import
-$(CAMLOBJS:.cmo=.cmx): ../../ocamlopt
+$(CAMLOBJS:.cmo=.cmx): $(ROOT)/ocamlopt
 
 install:
 	cp dynamics.cma $(CMIFILES) $(CMIFILES:.cmi=.mli) $(LIBDIR)
@@ -81,7 +60,7 @@ partialclean:
 	rm -f *.cm*
 
 clean: partialclean
-	rm -f import $(IMPORTED_MODULES:=.ml) $(IMPORTED_INTERFACES:=.mli)
+	rm -f dyntypes_compiler_bits.ml gather_compiler_bits
 	rm -f *.a *.o *.so
 
 .SUFFIXES: .ml .mli .cmi .cmo .cmx
@@ -95,11 +74,16 @@ clean: partialclean
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
-# Don't try to make clflags.cmi from clflags.mli as the latter doesn't exist
-clflags.cmi: ;
+gather_compiler_bits: gather_compiler_bits.ml
+	$(CAMLC) -o $@ gather_compiler_bits.ml
 
 depend:
 	: >.depend
-	../../boot/ocamlrun ../../tools/ocamldep *.mli *.ml >> .depend
+	$(CAMLRUN) $(ROOT)/tools/ocamldep *.mli *.ml >> .depend
+
+dynamics.cmi: dyntypes_compiler_bits.cmi
+dynamics.cmo: dyntypes_compiler_bits.cmo
+dynamics.cmx: dyntypes_compiler_bits.cmx
+dyntypes_compiler_bits.cmi: dyntypes_compiler_bits.cmo ;
 
 include .depend

@@ -12,6 +12,8 @@
 
 (* $Id$ *)
 
+open Dyntypes_compiler_bits
+
 type type_bytes = string
 type type_data = Typedynt.reified_type_data
 
