@@ -69,6 +69,7 @@ Other libraries:
   Improved speed on the PowerPC and AMD64 architectures.
 - The Str library: fixed bug in "split" functions with nullable regexps.
 - The Unix library:
+   . Added Unix.single_write.
    . Added support for IPv6.
    . Bug fixes in Unix.closedir.
    . Allow thread switching on Unix.lockf.
