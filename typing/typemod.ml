@@ -208,7 +208,11 @@ let check_unique_names sg =
     | Pstr_modtype(name, decl) ->
         check "module type" item.pstr_loc modtype_names name
     | Pstr_open lid -> ()
-    | Pstr_class decl -> ()
+    | Pstr_class decl ->
+        List.iter
+          (fun {pcl_name = name} ->
+             check "type" item.pstr_loc type_names name)
+          decl
   in
     List.iter check_item sg
 
