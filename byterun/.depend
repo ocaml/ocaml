@@ -32,7 +32,7 @@ fix_code.o: fix_code.c config.h ../config/m.h ../config/s.h debugger.h \
  major_gc.h freelist.h minor_gc.h reverse.h
 floats.o: floats.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h memory.h gc.h major_gc.h freelist.h minor_gc.h \
- stacks.h
+ reverse.h stacks.h
 freelist.o: freelist.c config.h ../config/m.h ../config/s.h freelist.h \
  misc.h mlvalues.h gc.h gc_ctrl.h major_gc.h
 gc_ctrl.o: gc_ctrl.c alloc.h misc.h config.h ../config/m.h \
@@ -142,7 +142,7 @@ fix_code.d.o: fix_code.c config.h ../config/m.h ../config/s.h debugger.h \
  major_gc.h freelist.h minor_gc.h reverse.h
 floats.d.o: floats.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h memory.h gc.h major_gc.h freelist.h minor_gc.h \
- stacks.h
+ reverse.h stacks.h
 freelist.d.o: freelist.c config.h ../config/m.h ../config/s.h freelist.h \
  misc.h mlvalues.h gc.h gc_ctrl.h major_gc.h
 gc_ctrl.d.o: gc_ctrl.c alloc.h misc.h config.h ../config/m.h \

@@ -28,10 +28,11 @@
 extern unsigned long max_stack_size;    /* defined in stacks.c */
 #endif
 
-long stat_minor_words = 0,
-     stat_promoted_words = 0,
-     stat_major_words = 0,
-     stat_minor_collections = 0,
+double stat_minor_words = 0.0,
+       stat_promoted_words = 0.0,
+       stat_major_words = 0.0;
+
+long stat_minor_collections = 0,
      stat_major_collections = 0,
      stat_heap_size = 0,              /* bytes */
      stat_compactions = 0;
@@ -120,6 +121,7 @@ static void check_block (char *hp)
 */
 static value heap_stats (int returnstats)
 {
+  CAMLparam0 ();
   long live_words = 0, live_blocks = 0,
        free_words = 0, free_blocks = 0, largest_free = 0,
        fragments = 0, heap_chunks = 0;
@@ -200,26 +202,29 @@ static value heap_stats (int returnstats)
   Assert (live_words + free_words + fragments == Wsize_bsize (stat_heap_size));
 
   if (returnstats){
-    value res = alloc_small (14, 0);
+    CAMLlocal1 (res);
 
-    Field (res, 0) = Val_long (stat_minor_words
-                               + Wsize_bsize (young_end - young_ptr));
-    Field (res, 1) = Val_long (stat_promoted_words);
-    Field (res, 2) = Val_long (stat_major_words + allocated_words);
-    Field (res, 3) = Val_long (stat_minor_collections);
-    Field (res, 4) = Val_long (stat_major_collections);
-    Field (res, 5) = Val_long (Wsize_bsize (stat_heap_size));
-    Field (res, 6) = Val_long (heap_chunks);
-    Field (res, 7) = Val_long (live_words);
-    Field (res, 8) = Val_long (live_blocks);
-    Field (res, 9) = Val_long (free_words);
-    Field (res, 10) = Val_long (free_blocks);
-    Field (res, 11) = Val_long (largest_free);
-    Field (res, 12) = Val_long (fragments);
-    Field (res, 13) = Val_long (stat_compactions);
-    return res;
+    res = alloc_tuple (14);
+    Store_field (res, 0,
+                 copy_double (stat_minor_words
+                              + (double) Wsize_bsize (young_end - young_ptr)));
+    Store_field (res, 1, copy_double (stat_promoted_words));
+    Store_field (res, 2,
+                 copy_double (stat_major_words + (double) allocated_words));
+    Store_field (res, 3, Val_long (stat_minor_collections));
+    Store_field (res, 4, Val_long (stat_major_collections));
+    Store_field (res, 5, Val_long (Wsize_bsize (stat_heap_size)));
+    Store_field (res, 6, Val_long (heap_chunks));
+    Store_field (res, 7, Val_long (live_words));
+    Store_field (res, 8, Val_long (live_blocks));
+    Store_field (res, 9, Val_long (free_words));
+    Store_field (res, 10, Val_long (free_blocks));
+    Store_field (res, 11, Val_long (largest_free));
+    Store_field (res, 12, Val_long (fragments));
+    Store_field (res, 13, Val_long (stat_compactions));
+    CAMLreturn (res);
   }else{
-    return Val_unit;
+    CAMLreturn (Val_unit);
   }
 }
 
@@ -238,35 +243,36 @@ value gc_stat(value v) /* ML */
 
 value gc_counters(value v) /* ML */
 {
-  CAMLparam1 (v);
+  CAMLparam0 ();   /* v is ignored */
   CAMLlocal1 (res);
 
-  Assert (v == Val_unit);
-  res = alloc_small (3, 0);
-  Field (res, 0) = Val_long (stat_minor_words
-                             + Wsize_bsize (young_end - young_ptr));
-  Field (res, 1) = Val_long (stat_promoted_words);
-  Field (res, 2) = Val_long (stat_major_words + allocated_words);
+  res = alloc_tuple (3);
+  Store_field (res, 0,
+               copy_double (stat_minor_words
+                            + (double) Wsize_bsize (young_end - young_ptr)));
+  Store_field (res, 1, copy_double (stat_promoted_words));
+  Store_field (res, 2,
+               copy_double (stat_major_words + (double) allocated_words));
   CAMLreturn (res);
 }
 
 value gc_get(value v) /* ML */
 {
-  value res;
+  CAMLparam0 ();   /* v is ignored */
+  CAMLlocal1 (res);
 
-  Assert (v == Val_unit);
-  res = alloc_small (6, 0);
-  Field (res, 0) = Wsize_bsize (Val_long (minor_heap_size));        /* s */
-  Field (res, 1) = Wsize_bsize (Val_long (major_heap_increment));   /* i */
-  Field (res, 2) = Val_long (percent_free);                         /* o */
-  Field (res, 3) = Val_long (verb_gc);                              /* v */
-  Field (res, 4) = Val_long (percent_max);                          /* O */
+  res = alloc_tuple (6);
+  Store_field (res, 0, Wsize_bsize (Val_long (minor_heap_size)));       /* s */
+  Store_field (res, 1, Wsize_bsize (Val_long (major_heap_increment)));  /* i */
+  Store_field (res, 2, Val_long (percent_free));                        /* o */
+  Store_field (res, 3, Val_long (verb_gc));                             /* v */
+  Store_field (res, 4, Val_long (percent_max));                         /* O */
 #ifndef NATIVE_CODE
-  Field (res, 5) = Val_long (max_stack_size);                       /* l */
+  Store_field (res, 5, Val_long (max_stack_size));                      /* l */
 #else
-  Field (res, 5) = 0;
+  Store_field (res, 5, Val_long (0));
 #endif
-  return res;
+  CAMLreturn (res);
 }
 
 #define Max(x,y) ((x) < (y) ? (y) : (x))

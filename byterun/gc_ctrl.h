@@ -17,10 +17,12 @@
 
 #include "misc.h"
 
-extern long
+extern double
      stat_minor_words,
      stat_promoted_words,
-     stat_major_words,
+     stat_major_words;
+
+extern long
      stat_minor_collections,
      stat_major_collections,
      stat_heap_size,
