@@ -1,3 +1,14 @@
+Release 1.14:
+
+* cslopt ported to the PowerPC/RS6000 architecture. Better support for
+AIX in the bytecode system as well.
+
+* cslopt for the Intel: more bug fixes in the floating-point code.
+
+* cslopt, all platforms: fixed bug in live range splitting around catch/exit.
+
+* Several bug fixes in callbacks.
+
 Release 1.13:
 
 * Pattern-matching compilation revised to factor out accesses inside
