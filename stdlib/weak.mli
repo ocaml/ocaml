@@ -23,7 +23,11 @@ type 'a t
    pointer is a value that the garbage collector may erase at
    any time.
    A weak pointer is said to be full if it points to a value,
-   empty if the value was erased by the GC.*)
+   empty if the value was erased by the GC.
+   Note that weak arrays cannot be marshaled using
+   {!Pervasives.output_value} or the functions of the {!Marshal}
+   module.
+*)
 
 
 val create : int -> 'a t
@@ -98,7 +102,10 @@ module type S = sig
   type data
     (** The type of the elements stored in the table. *)
   type t
-    (** The type of tables that contain elements of type [data]. *)
+    (** The type of tables that contain elements of type [data].
+        Note that weak hash tables cannot be marshaled using
+        {!Pervasives.output_value} or the functions of the {!Marshal}
+        module. *)
   val create : int -> t
     (** [create n] creates a new empty weak hash table, of initial
         size [n].  The table will grow as needed. *)
