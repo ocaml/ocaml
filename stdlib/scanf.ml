@@ -698,10 +698,6 @@ let kscanf ib ef fmt f =
     | 'N' ->
         let x = Scanning.token_count ib in
         scan_fmt (stack f x) (i + 1)
-    | 'r' ->
-        Obj.magic (fun reader arg ->
-          let x = reader ib arg in
-          scan_fmt (stack f x) (succ i))
     | c -> bad_format fmt i c
 
   and scan_fmt_stoppers i =
