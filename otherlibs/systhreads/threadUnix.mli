@@ -69,8 +69,6 @@ val sleep : int -> unit
 
 val socket : domain:Unix.socket_domain ->
              kind:Unix.socket_type -> protocol:int -> Unix.file_descr
-val socketpair : domain:Unix.socket_domain -> kind:Unix.socket_type ->
-                 protocol:int -> Unix.file_descr * Unix.file_descr
 val accept : Unix.file_descr -> Unix.file_descr * Unix.sockaddr
 val connect : Unix.file_descr -> addr:Unix.sockaddr -> unit
 val recv : Unix.file_descr -> buf:string ->
