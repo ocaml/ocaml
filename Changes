@@ -29,6 +29,8 @@
 
 - Fixed bug in ocamlopt -pack related to tracking of imported modules.
 
+- Allow polymorphism for covariant parts of expansive expressions
+
 
 Objective Caml 3.06:
 --------------------

@@ -535,8 +535,7 @@ let rec generalize_structure var_level ty =
     else if ty.level > !current_level then begin
       set_level ty generic_level;
       begin match ty.desc with
-        Tconstr (_, _, abbrev) ->
-          iter_abbrev (generalize_structure var_level) !abbrev
+        Tconstr (_, _, abbrev) -> abbrev := Mnil
       | _ -> ()
       end;
       iter_type_expr (generalize_structure var_level) ty
@@ -547,7 +546,7 @@ let generalize_structure var_level ty =
   simple_abbrevs := Mnil;
   generalize_structure var_level ty
 
-let generalize_expansive ty = generalize_structure !nongen_level ty
+(* let generalize_expansive ty = generalize_structure !nongen_level ty *)
 let generalize_global ty = generalize_structure !global_level ty
 let generalize_structure ty = generalize_structure !current_level ty
 
@@ -613,19 +612,41 @@ let rec update_level env level ty =
         iter_type_expr (update_level env level) ty
     | _ ->
         set_level ty level;
+        (* XXX what about abbreviations in Tconstr ? *)
         iter_type_expr (update_level env level) ty
     end
   end
 
-(* 
-   Function [update_level] will never try to expand an abbreviation in
-   this case ([current_level] is greater than the binding time of any
-   type constructor path). So, it can be called with the empty
-   environnement.
-*)
-let make_nongen ty =
+(* Generalize and lower levels of contravariant branches simultaneously *)
+
+let rec generalize_expansive env var_level ty =
+  let ty = repr ty in
+  if ty.level <> generic_level then begin
+    if ty.level > var_level then begin
+      set_level ty generic_level;
+      match ty.desc with
+        Tconstr (path, tyl, abbrev) ->
+          let variance =
+            try (Env.find_type path env).type_variance
+            with Not_found -> List.map (fun _ -> (true,true)) tyl in
+          abbrev := Mnil;
+          List.iter2
+            (fun (co,cn) t ->
+              if cn then update_level env var_level t
+              else generalize_expansive env var_level t)
+            variance tyl
+      | Tarrow (_, t1, t2, _) ->
+          update_level env var_level t1;
+          generalize_expansive env var_level t2
+      | _ ->
+          iter_type_expr (generalize_expansive env var_level) ty
+    end
+  end
+
+let generalize_expansive env ty =
+  simple_abbrevs := Mnil;
   try
-    update_level Env.empty !nongen_level ty
+    generalize_expansive env !nongen_level ty
   with Unify [_, ty'] ->
     raise (Unify [ty, ty'])
 

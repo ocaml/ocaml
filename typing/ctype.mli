@@ -85,17 +85,16 @@ val generalize: type_expr -> unit
         (* Generalize in-place the given type *)
 val iterative_generalization: int -> type_expr list -> type_expr list
         (* Efficient repeated generalization of a type *)
-val generalize_expansive: type_expr -> unit
-        (* Generalize the structure of a type, making variables
-           non-generalizable *)
+val generalize_expansive: Env.t -> type_expr -> unit
+        (* Generalize the covariant part of a type, making
+           contravariant branches non-generalizable *)
 val generalize_global: type_expr -> unit
-        (* Same, but variables are lowered to !global_level *)
+        (* Generalize the structure of a type, lowering variables
+           to !global_level *)
 val generalize_structure: type_expr -> unit
         (* Same, but variables are only lowered to !current_level *)
 val generalize_spine: type_expr -> unit
         (* Special function to generalize a method during inference *)
-val make_nongen: type_expr -> unit
-        (* Make non-generalizable the given type *)
 val correct_levels: type_expr -> type_expr
         (* Returns a copy with decreasing levels *)
 val limited_generalize: type_expr -> type_expr -> unit
