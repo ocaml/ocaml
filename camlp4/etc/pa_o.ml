@@ -113,6 +113,15 @@ value operator_rparen =
        | _ -> raise Stream.Failure ])
 ;
 
+value lident_colon =
+  Grammar.Entry.of_parser gram "lident_colon"
+    (fun strm ->
+       match Stream.npeek 2 strm with
+       [ [("LIDENT", i); ("", ":")] ->
+           do { Stream.junk strm; Stream.junk strm; i }
+       | _ -> raise Stream.Failure ])
+;
+
 value symbolchar =
   let list =
     ['!'; '$'; '%'; '&'; '*'; '+'; '-'; '.'; '/'; ':'; '<'; '='; '>'; '?';
@@ -1105,7 +1114,7 @@ EXTEND
   GLOBAL: ctyp expr patt fun_def fun_binding class_type class_fun_binding;
   ctyp: AFTER "arrow"
     [ NONA
-      [ i = LIDENT; ":"; t = SELF -> <:ctyp< ~ $i$ : $t$ >>
+      [ i = lident_colon; t = SELF -> <:ctyp< ~ $i$ : $t$ >>
       | i = QUESTIONIDENTCOLON; t = SELF -> <:ctyp< ? $i$ : $t$ >> ] ]
   ;
   ctyp: LEVEL "simple"
