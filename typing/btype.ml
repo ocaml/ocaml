@@ -75,12 +75,21 @@ let rec row_more row =
   match repr row.row_more with
   | {desc=Tvariant row'} -> row_more row'
   | ty -> ty
-  
 
 let static_row row =
   let row = row_repr row in
   row.row_closed &&
   List.for_all (function (_,Reither _) -> false | _ -> true) row.row_fields
+
+let hash_variant s =
+  let accu = ref 0 in
+  for i = 0 to String.length s - 1 do
+    accu := 223 * !accu + Char.code s.[i]
+  done;
+  (* reduce to 31 bits *)
+  accu := !accu land (1 lsl 31 - 1);
+  (* make it signed for 64 bits architectures *)
+  if !accu > 0x3FFFFFFF then !accu - (1 lsl 31) else !accu
 
 
                   (**********************************)

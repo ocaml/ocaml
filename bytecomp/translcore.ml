@@ -324,7 +324,7 @@ let rec transl_exp e =
       Lconst(Const_base cst)
   | Texp_let(rec_flag, pat_expr_list, body) ->
       transl_let rec_flag pat_expr_list (event_before body (transl_exp body))
-  | Texp_function pat_expr_list ->
+  | Texp_function (pat_expr_list, partial) ->
       let ((kind, params), body) =
         event_function e
           (function repr ->

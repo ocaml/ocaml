@@ -580,12 +580,12 @@ and class_expr cl_num val_env met_env scl =
 	| Tcty_fun (_, _, ty_fun) -> all_labeled ty_fun
 	| _ -> true
       in
-      Parmatch.check_partial pat.pat_loc
-        [pat, (* Dummy expression *)
-              {exp_desc = Texp_constant (Asttypes.Const_int 1);
-               exp_loc = Location.none;
-               exp_type = Ctype.none;
-               exp_env = Env.empty }];
+      ignore (Parmatch.check_partial val_env pat.pat_loc
+		[pat, (* Dummy expression *)
+		 {exp_desc = Texp_constant (Asttypes.Const_int 1);
+		  exp_loc = Location.none;
+		  exp_type = Ctype.none;
+		  exp_env = Env.empty }]);
       Ctype.raise_nongen_level ();
       let cl = class_expr cl_num val_env met_env scl' in
       Ctype.end_def ();

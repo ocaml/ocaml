@@ -146,6 +146,17 @@ let rec type_pat env sp =
         pat_loc = sp.ppat_loc;
         pat_type = ty_res;
         pat_env = env }
+  | Ppat_variant(l, sarg) ->
+      let arg = may_map (type_pat env) sarg in
+      let arg_type = may_map (fun arg -> [arg.pat_type]) arg in
+      let row = { row_fields = [l, Reither(arg_type,ref None)];
+		  row_closed = false;
+		  row_more = newvar ();
+		  row_name = None } in
+      { pat_desc = Tpat_variant(l, arg, row);
+	pat_loc = sp.ppat_loc;
+	pat_type = newty (Tvariant row);
+	pat_env = env }
   | Ppat_record lid_sp_list ->
       let rec check_duplicates = function
         [] -> ()
@@ -272,6 +283,8 @@ let rec iter_pattern f p =
       List.iter (iter_pattern f) pl
   | Tpat_construct (_, pl) ->
       List.iter (iter_pattern f) pl
+  | Tpat_variant (_, p, _) ->
+      may (iter_pattern f) p
   | Tpat_record fl ->
       List.iter (fun (_, p) -> iter_pattern f p) fl
   | Tpat_or (p, p') ->
@@ -407,9 +420,9 @@ let rec type_exp env sexp =
 	if is_optional l then type_option(newvar()) else newvar()
       and ty_res = newvar() in
       let cases = type_cases env ty_arg ty_res caselist in
-      Parmatch.check_unused cases;
-      Parmatch.check_partial sexp.pexp_loc cases;
-      { exp_desc = Texp_function cases;
+      Parmatch.check_unused env cases;
+      let partial = Parmatch.check_partial env sexp.pexp_loc cases in
+      { exp_desc = Texp_function(cases, partial);
         exp_loc = sexp.pexp_loc;
         exp_type = newty (Tarrow(l, ty_arg, ty_res));
         exp_env = env }
@@ -424,9 +437,9 @@ let rec type_exp env sexp =
       let arg = type_exp env sarg in
       let ty_res = newvar() in
       let cases = type_cases env arg.exp_type ty_res caselist in
-      Parmatch.check_unused cases;
-      Parmatch.check_partial sexp.pexp_loc cases;
-      { exp_desc = Texp_match(arg, cases);
+      Parmatch.check_unused env cases;
+      let partial = Parmatch.check_partial env sexp.pexp_loc cases in
+      { exp_desc = Texp_match(arg, cases, partial);
         exp_loc = sexp.pexp_loc;
         exp_type = ty_res;
         exp_env = env }
@@ -434,7 +447,7 @@ let rec type_exp env sexp =
       let body = type_exp env sbody in
       let cases =
         type_cases env (instance Predef.type_exn) body.exp_type caselist in
-      Parmatch.check_unused cases;
+      Parmatch.check_unused env cases;
       { exp_desc = Texp_try(body, cases);
         exp_loc = sexp.pexp_loc;
         exp_type = body.exp_type;
@@ -466,6 +479,16 @@ let rec type_exp env sexp =
         exp_loc = sexp.pexp_loc;
         exp_type = ty_res;
         exp_env = env }
+  | Pexp_variant(l, sarg) ->
+      let arg = may_map (type_exp env) sarg in
+      let arg_type = may_map (fun arg -> arg.exp_type) arg in
+      { exp_desc = Texp_variant(l, arg);
+	exp_loc = sexp.pexp_loc;
+	exp_type= newty (Tvariant{row_fields = [l, Rpresent arg_type];
+				  row_more = newvar ();
+				  row_closed = false;
+				  row_name = None});
+	exp_env = env }
   | Pexp_record(lid_sexp_list, opt_sexp) ->
       let ty = newvar() in
       let num_fields = ref 0 in
@@ -909,9 +932,9 @@ and type_expect env sexp ty_expected =
       if is_optional l && all_labeled ty_res then
 	Location.print_warning (fst (List.hd cases)).pat_loc
 	  (Warnings.Other "This optional argument cannot be erased");
-      Parmatch.check_unused cases;
-      Parmatch.check_partial sexp.pexp_loc cases;
-      { exp_desc = Texp_function cases;
+      Parmatch.check_unused env cases;
+      let partial = Parmatch.check_partial env sexp.pexp_loc cases in
+      { exp_desc = Texp_function(cases, partial);
         exp_loc = sexp.pexp_loc;
         exp_type = newty (Tarrow(l, ty_arg, ty_res));
         exp_env = env }
@@ -959,7 +982,7 @@ and type_let env rec_flag spat_sexp_list =
       (fun (spat, sexp) pat -> type_expect exp_env sexp pat.pat_type)
       spat_sexp_list pat_list in
   List.iter2
-    (fun pat exp -> Parmatch.check_partial pat.pat_loc [pat, exp])
+    (fun pat exp -> ignore(Parmatch.check_partial env pat.pat_loc [pat, exp]))
     pat_list exp_list;
   end_def();
   List.iter2

@@ -98,6 +98,20 @@ let rec mark_loops_rec visited ty =
     | Ttuple tyl          -> List.iter (mark_loops_rec visited) tyl
     | Tconstr(_, tyl, _)  ->
         List.iter (mark_loops_rec visited) tyl
+    | Tvariant row	  ->
+	let row = row_repr row in
+	let rm = row_more row in
+        if List.memq rm !visited_objects then begin
+          if not (List.memq ty !aliased) then
+            aliased := ty :: !aliased
+        end else begin
+          if not (static_row row) then
+            visited_objects := rm :: !visited_objects;
+	  (* match row.row_name with
+	    Some(p, tyl) -> List.iter (mark_loops_rec visited) tyl
+	  | None -> *)
+	  iter_row (mark_loops_rec visited) row
+	end
     | Tobject (fi, nm)    ->
         if List.memq ty !visited_objects then begin
           if not (List.memq ty !aliased) then
@@ -145,6 +159,11 @@ let print_label l =
     print_string l;
     print_char ':'
   end
+
+let rec print_list pr sep = function
+    [] -> ()
+  | [a] -> pr a
+  | a::l -> pr a; sep (); print_list pr sep l
 
 let rec typexp sch prio0 ty =
   let ty = repr ty in
@@ -200,6 +219,41 @@ let rec typexp sch prio0 ty =
         end;
         path p;
         close_box()
+    | Tvariant row ->
+	let row = row_repr row in
+	if static_row row then begin
+	  let fields =
+	    List.filter (fun (_,f) -> row_field_repr f <> Rabsent)
+	      row.row_fields
+	  in
+	  open_hvbox 0;
+	  print_char '[';
+	  print_list (row_field sch) (fun () -> printf "@ | ") fields;
+	  print_char ']';
+	  close_box ()
+	end else if row.row_closed then begin
+	  let fields =
+	    List.filter (fun (_,f) -> row_field_repr f <> Rabsent)
+	      row.row_fields
+	  in
+	  open_hvbox 0;
+	  print_string "[<";
+	  print_list (row_field sch) (fun () -> printf "@ | ") fields;
+	  let present =
+	    List.filter
+	      (fun (_,f) -> match row_field_repr f with
+	      |	Rpresent _ -> true
+	      | _ -> false)
+	      fields in
+	  if present <> [] then begin
+	    print_space ();
+	    print_string "> ";
+	    print_list (fun (s,_) -> print_char '`'; print_string s)
+	      print_space present;
+	  end;
+	  print_char ']';
+	  close_box ()
+	end
     | Tobject (fi, nm) ->
         typobject sch ty fi nm
 (*
@@ -220,6 +274,16 @@ let rec typexp sch prio0 ty =
     end
   end
 (*; print_string "["; print_int ty.level; print_string "]"*)
+
+and row_field sch (l,f) =
+  open_box 2;
+  print_char '`';
+  print_string l;
+  match row_field_repr f with
+    Rpresent None | Reither(None, _) -> ()
+  | Rpresent(Some ty) -> print_space (); typexp sch 0 ty
+  | Reither(Some tyl,_) -> print_space (); typlist sch 0 " &" tyl
+  | Rabsent -> print_space (); print_string "[]"
 
 and typlist sch prio sep = function
     [] -> ()

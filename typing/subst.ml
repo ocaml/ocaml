@@ -144,6 +144,8 @@ let rec typexp s ty =
           end
       | Tnil ->
           Tnil
+      |	Tsubst _ ->
+	  assert false
       end;
     ty'
 
