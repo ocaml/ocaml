@@ -107,26 +107,31 @@ let include_err =
       open_box 0;
       print_string "The public method ";
       print_string lab;
-      print_string "cannot be hidden";
+      print_string " cannot be hidden";
       close_box ()
   | CM_Hide_virtual lab ->
       open_box 0;
       print_string "The virtual method ";
       print_string lab;
-      print_string "cannot be hidden";
+      print_string " cannot be hidden";
       close_box ()
   | CM_Public_method lab ->
       open_box 0;
       print_string "The public method ";
       print_string lab;
-      print_string "cannot become private";
+      print_string " cannot become private";
       close_box ()
   | CM_Virtual_method lab ->
       open_box 0;
       print_string "The virtual method ";
       print_string lab;
-      print_string "cannot become concrete";
+      print_string " cannot become concrete";
       close_box ()
+  | CM_Private_method lab ->
+      open_box 0;
+      print_string "The private method ";
+      print_string lab;
+      print_string " cannot become public";
 
 let report_error errlist =
   match errlist with
