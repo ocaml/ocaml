@@ -1069,7 +1069,7 @@ let _ =
   test "jacques" g (A `C) 0 ;
   test "jacques" g (B (`B,`D)) 1 ;
   test "jacaues" g C 2 ;
-  test "jacques" g (B (`A,`D)) 3 ;
+(*  test "jacques" g (B (`A,`D)) 3 ; (* type incorrect expected behavior ? *)*)
   ()
 
 (*
