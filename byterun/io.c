@@ -251,9 +251,9 @@ CAMLexport void seek_out(struct channel *channel, file_offset dest)
   channel->offset = dest;
 }
 
-CAMLexport long pos_out(struct channel *channel)
+CAMLexport file_offset pos_out(struct channel *channel)
 {
-  return channel->offset + channel->curr - channel->buff;
+  return channel->offset + (file_offset)(channel->curr - channel->buff);
 }
 
 /* Input */
@@ -354,9 +354,9 @@ CAMLexport void seek_in(struct channel *channel, file_offset dest)
   }
 }
 
-CAMLexport long pos_in(struct channel *channel)
+CAMLexport file_offset pos_in(struct channel *channel)
 {
-  return channel->offset - (channel->max - channel->curr);
+  return channel->offset - (file_offset)(channel->max - channel->curr);
 }
 
 CAMLexport long input_scan_line(struct channel *channel)
