@@ -80,7 +80,8 @@ let create_hashtable size init =
 
 (** The function used to return html code for the given comment body. *)
 let html_of_comment = ref 
-    (fun (s : string) -> "<b>Odoc_ocamlhtml.html_of_comment not initialized</b>")
+    (fun (fmt: Format.formatter) (s : string) -> 
+      Format.fprintf fmt "@{<b>Odoc_ocamlhtml.html_of_comment not initialized@}")
 
 let keyword_table =
   create_hashtable 149 [
@@ -169,28 +170,28 @@ let make_margin () =
 let print_comment () =
   let s = Buffer.contents comment_buffer in
   let len = String.length s in
-  let code = 
-    if len < 1 then
-      "<span class=\""^comment_class^"\">(*"^(escape s)^"*)</span>"
-    else
-      match s.[0] with 
-	'*' -> 
-	  (
-	   try 
-	     let html = !html_of_comment (String.sub s 1 (len-1)) in
-	     "</code><table><tr><td>"^(make_margin ())^"</td><td>"^
-	     "<span class=\""^comment_class^"\">"^
-	     "(**"^html^"*)"^
-	     "</span></td></tr></table><code class=\""^code_class^"\">"
-	   with
-	     e ->
-	       prerr_endline (Printexc.to_string e);
-	       "<span class=\""^comment_class^"\">(*"^(escape s)^"*)</span>"
-	  )
-      | _ ->
-	  "<span class=\""^comment_class^"\">(*"^(escape s)^"*)</span>"
-  in
-  print ~esc: false code
+  if len < 1 then
+    Format.fprintf !fmt "@{<span class=\"%s\">(*%s*)@}" comment_class (escape s)
+  else
+    match s.[0] with 
+      '*' -> 
+	(
+	 try 
+	   Format.pp_print_string !fmt
+	     ("</code><table><tr><td>"^(make_margin ())^"</td><td>"^
+	      "<span class=\""^comment_class^"\">"^
+	      "(**");
+	   !html_of_comment !fmt (String.sub s 1 (len-1));
+	   Format.pp_print_string !fmt
+	     ("*)</span></td></tr></table><code class=\""^code_class^"\">")
+	 with
+	   e ->
+	     prerr_endline (Printexc.to_string e);
+	     Format.pp_print_string !fmt
+	       ("<span class=\""^comment_class^"\">(*"^(escape s)^"*)</span>")
+	)
+    | _ ->
+	Format.fprintf !fmt "@{<span class=\"%s\">(*%s*)@}" comment_class (escape s)
 
 (** To buffer string literals *)
 
@@ -494,45 +495,36 @@ and string = parse
         string lexbuf }
 {
 
-let html_of_code ?(with_pre=true) code =
+let html_of_code formatter ?(with_pre=true) code =
   let old_pre = !pre in
   let old_margin = !margin in
   let old_comment_buffer = Buffer.contents comment_buffer in
   let old_string_buffer = Buffer.contents string_buffer in
-  let buf = Buffer.create 256 in
   let old_fmt = !fmt in
-  fmt := Format.formatter_of_buffer buf ;
+  let buf = Buffer.create 256 in
+  fmt := Format.formatter_of_buffer buf;
   pre := with_pre;
   margin := 0;
   
+  Format.fprintf formatter "@{<code class=\"%s\">" code_class ;
+  (
+   try
+     let lexbuf = Lexing.from_string code in
+     ignore (token lexbuf);
+     Format.pp_print_flush !fmt ();
+     Format.pp_print_string formatter (Buffer.contents buf)
+   with
+     _ -> 
+       Format.pp_print_string formatter (escape code)
+  );
+  Format.fprintf formatter "@}";
 
-  let start = "<code class=\""^code_class^"\">" in
-  let ending = "</code>" in
-  let html = 
-    (
-     try
-       print ~esc: false start ;
-       let lexbuf = Lexing.from_string code in
-       let _ = token lexbuf  in
-       print ~esc: false ending ;
-       Format.pp_print_flush !fmt () ;
-       Buffer.contents buf
-     with
-       _ -> 
-         (* flush str_formatter because we already output 
-	    something in it *)
-	 Format.pp_print_flush !fmt () ;
-	 start^code^ending
-    )
-  in
   pre := old_pre;
+  fmt := old_fmt;
   margin := old_margin ;
   Buffer.reset comment_buffer;
   Buffer.add_string comment_buffer old_comment_buffer ;
   Buffer.reset string_buffer;
   Buffer.add_string string_buffer old_string_buffer ;
-  fmt := old_fmt ;
-
-  html
 
 } 
