@@ -1,25 +1,33 @@
        Release notes on the MS Windows ports of Objective Caml
        -------------------------------------------------------
 
-Starting with OCaml 3.01, there are now two ports of Objective Caml
-for MS Windows available:
-  - a native Win32 port, built with the Microsoft development tools;
+Starting with OCaml 3.05, there are now no less than three ports of
+Objective Caml for MS Windows available:
+  - a native Win32 port, built with the Microsoft development tools (non-free);
+  - a native Win32 port, built with the MinGW development tools (free);
   - a port consisting of the Unix sources compiled under the Cygwin
-    Unix-like environment for Windows.
+    Unix-like environment for Windows (free).
 
-The Cygwin port requires only free software, runs faster in bytecode
-mode, and provides a more thorough emulation of the Unix library.
-It currently lacks the threads library and the ability to interface
-with COM components via CamlIDL.  No graphical user interface to the
-OCaml toplevel is provided.
+Here is a summary of the main differences between these ports:
 
-The native Win32 port has threads and COM support, but is slower in
-bytecode, does not implement some of the functionality of the Unix library, 
-and requires MS Visual C++ version 6 for compilation in -custom mode
-and in native-code mode.  A simple graphical user interface to the
-OCaml toplevel is provided.
+				      Native MS	    Native MinGW	Cygwin
+Third-party software required
+  - for base bytecode system		none		none		none
+  - for ocamlc -custom			MSVC		MinGW		Cygwin
+  - for native-code generation		MSVC+MASM	MinGW		Cygwin
 
-The remainder of this document provides more information on both ports.
+Speed of bytecode interpreter  		70%		100%		100%
+
+Replay debugger				no		no		yes
+
+The Unix library			partial		partial		full
+
+The Threads library			yes		yes		no
+
+The Graphics library			yes		yes		no
+
+
+The remainder of this document gives more information on each port.
 
 ------------------------------------------------------------------------------
 
@@ -39,13 +47,8 @@ i.e. Windows 95, 98, ME, NT and 2000 on Intel IA32 machines.
 
 INSTALLATION:
 
-The binary distribution is a .tar.gz archive that unpacks in
-usr/local/bin and usr/local/lib/ocaml/.  To install, just open
-a "bash" windows and type:
-         cd /
-         tar xvzf /full/path/to/ocaml-X.XX-cygwin.tar.gz
-
-Make sure that /usr/local/bin is in the PATH environment variable.
+For various reasons, no binary distribution of this port is available.
+You need to recompile from the source distribution.
 
 
 RECOMPILATION FROM THE SOURCES:
@@ -57,12 +60,12 @@ NOTES:
 
 The libraries available in this port are "num", "str", "unix" and "labltk".
 "graph" and "threads" are not available yet.
-
+The replay debugger is supported.
 
 ------------------------------------------------------------------------------
 
-               The native Win32 port of Objective Caml
-               ---------------------------------------
+           The native Win32 port built with Microsoft Visual C
+           ---------------------------------------------------
 
 REQUIREMENTS:
 
@@ -81,7 +84,7 @@ The native-code compiler (ocamlopt) requires Visual C++ version 6
 and the Microsoft assembler MASM version 6.11 or later.
 MASM can be downloaded for free from Microsoft's Web site;
 see the comp.lang.asm.x86 FAQ for directions, or
-http://www.cs.uu.nl/wais/html/na-dir/assembly-language/x86/microsoft.html
+http://www2.dgsys.com/~raymoon/faq/masm.html
 
 The LablTk GUI requires Tcl/Tk 8.3.  Windows binaries are
 available from ftp://ftp.scriptics.com/pub/tcl/tcl8_3/.
@@ -104,17 +107,6 @@ Installing the command-line tools:
   and the other tools will be unable to find the Caml runtime system
   ocamlrun.exe.
 
-  The command-line tools assume that the standard library resides in
-  C:\ocaml\lib. If you have unpacked it elsehwere, define the CAMLLIB
-  environment variable to point to the standard library directory, e.g.
-
-          set CAMLLIB=D:\lang\ocaml\lib
-
-  For Windows 95, 98 and ME, the OCaml installer is able to perform the
-  corresponding modifications to AUTOEXEC.BAT (define CAMLLIB and
-  append to the PATH variable).  For Windows NT and 2000, you'll have to
-  edit the environment variables yourself.
-
   To use the LablTK GUI, the directory where the libraries tk83.lib
   and tcl83.lib were installed (by the Tcl/Tk installer)
   must be added to the library search path in the LIB environment variable.
@@ -129,32 +121,40 @@ distribution (ocaml-X.YZ.tar.gz), which also contains the files modified
 for Windows.
 
 You will need the following software components to perform the recompilation:
-- Windows NT or 2000 (the Makefiles do not work under Windows 95, 98, ME
-    due to differences between NT and 9x command-line interpreters);
+- Windows NT, 2000, or XP (we advise against compiling under Windows 95/98/ME)
 - Visual C++ version 6
 - MASM version 6.11 (see above)
 - The CygWin port of GNU tools, available from
       http://sourceware.cygnus.com/cygwin/
 - TCL/TK version 8.3 (for the LablTK GUI) (see above).
 
-To recompile, first copy manually the files config/m-nt.h and config/s-nt.h
-to config/m.h and config/s.h.  Edit config/Makefile.nt as needed.
-Then, use "nmake -f Makefile.nt" to build the system, e.g. 
+To recompile, start a Cygwin shell and change to the top-level
+directory of the OCaml distribution.  Then, do
 
-        nmake -f Makefile.nt world
-        nmake -f Makefile.nt bootstrap
-        nmake -f Makefile.nt opt
-        
+	cp config/m-nt.h config/m.h
+	cp config/s-nt.h config/s.h
+	cp config/Makefile.msvc config/Makefile
 
-RANDOM NOTES:
+Then, edit config/Makefile as needed (see the comments in this file).
+
+Finally, use "make -f Makefile.nt" to build the system, e.g. 
+
+        make -f Makefile.nt world
+        make -f Makefile.nt bootstrap
+        make -f Makefile.nt opt
+        make -f Makefile.nt install
+
+
+NOTES:
 
 * The VC++ compiler does a poor job on byterun/interp.c. Consequently,
 the performance of bytecode programs is about 2/3 of that obtained under
-Unix/GCC or Cygwin on similar hardware.
+Unix/GCC or Cygwin or Mingw on similar hardware.
 
 * Libraries available in this port: "num", "str", "threads", "graphics",
 "labltk", and large parts of "unix". 
 
+* The replay debugger is not supported.
 
 CREDITS:
 
@@ -163,3 +163,66 @@ to Windows NT was done by Kevin Gallo at Microsoft Research, who
 kindly contributed his changes to the Caml project.
 
 The graphical user interface for the toplevel is due to Jacob Navia.
+
+------------------------------------------------------------------------------
+
+           The native Win32 port built with Mingw
+           --------------------------------------
+
+REQUIREMENTS:
+
+This port runs under MS Windows 95, 98, ME, NT and 2000 on Intel IA32
+machines.
+
+The base bytecode system (ocamlc, ocaml, ocamllex, ocamlyacc, ...)
+runs without any additional tools.
+
+The native-code compiler (ocamlopt), as well as static linking of
+Caml bytecode with C code (ocamlc -custom), require the MinGW
+development tools, which is free software available at
+	http://www.mingw.org/
+
+The LablTk GUI requires Tcl/Tk 8.0 for MinGW, available from
+  ftp://ftp.xraylith.wisc.edu/pub/khan/tcl/tcltk-8.0p2-mingw32.zip
+
+
+INSTALLATION:
+
+There is no binary distribution yet, so follow the compilation instructions
+below.
+
+
+RECOMPILATION FROM THE SOURCES:
+
+You will need the following software components to perform the recompilation:
+- Windows NT, 2000, or XP (we advise against compiling under Windows 95/98/ME)
+- MinGW:  http://www.mingw.org/
+- Cygwin: http://sourceware.cygnus.com/cygwin/
+- Make sure that MinGW binaries occur before Cygwin binaries in the PATH
+  (e.g. PATH=/mingw/bin:/usr/bin/:...)
+- TCL/TK version 8.0 for MinGW (see above).
+
+Start a Cygwin shell and unpack the source distribution
+(ocaml-X.YZ.tar.gz) with "tar xzf".  Change to the top-level
+directory of the OCaml distribution.  Then, do
+
+	cp config/m-nt.h config/m.h
+	cp config/s-nt.h config/s.h
+	cp config/Makefile.mingw config/Makefile
+
+Then, edit config/Makefile as needed (see the comments in this file).
+
+Finally, use "make -f Makefile.nt" to build the system, e.g. 
+
+        make -f Makefile.nt world
+        make -f Makefile.nt bootstrap
+        make -f Makefile.nt opt
+        make -f Makefile.nt opt.opt
+
+
+NOTES:
+
+* Libraries available in this port: "num", "str", "threads", "graphics",
+  "labltk", and large parts of "unix". 
+
+* The replay debugger is not supported.
