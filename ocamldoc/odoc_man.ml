@@ -531,7 +531,7 @@ class man =
 	  (".TH \""^Odoc_messages.clas^"\" "^
 	   cl.cl_name^" "^
 	   "\""^(Odoc_misc.string_of_date ~hour: false date)^"\" "^ 
-	   "Odoc "^
+	   "OCamldoc "^
 	   "\""^(match !Odoc_args.title with Some t -> t | None -> "")^"\n");
 
 	output_string chanout
@@ -631,7 +631,7 @@ class man =
 	  (".TH \""^Odoc_messages.module_type^"\" "^
 	   mt.mt_name^" "^
 	   "\""^(Odoc_misc.string_of_date ~hour: false date)^"\" "^ 
-	   "Odoc "^
+	   "OCamldoc "^
 	   "\""^(match !Odoc_args.title with Some t -> t | None -> "")^"\n");
 
 	output_string chanout
@@ -701,7 +701,7 @@ class man =
 	  (".TH \""^Odoc_messages.modul^"\" "^
 	   m.m_name^" "^
 	   "\""^(Odoc_misc.string_of_date ~hour: false date)^"\" "^ 
-	   "Odoc "^
+	   "OCamldoc "^
 	   "\""^(match !Odoc_args.title with Some t -> t | None -> "")^"\n");
 
 	output_string chanout
@@ -820,7 +820,7 @@ class man =
 	  (".TH \""^name^"\" "^
 	   "man "^
 	   "\""^(Odoc_misc.string_of_date ~hour: false date)^"\" "^ 
-	   "Odoc "^
+	   "OCamldoc "^
 	   "\""^(match !Odoc_args.title with Some t -> t | None -> "")^"\n");
 
 	let f ele =
