@@ -413,22 +413,31 @@ let occur env ty0 ty =
         List.iter occur_rec tl
     | Tconstr(p, [], abbrev) ->
         if ty0.level < Path.binding_time p then begin
-          let ty' =
-            try expand_abbrev env p [] abbrev ty.level
-            with Cannot_expand -> raise (Unify []) in
-          occur_rec ty'
+          if not (List.memq ty !visited) then begin
+            visited := ty :: !visited;
+            let ty' =
+              try expand_abbrev env p [] abbrev ty.level
+              with Cannot_expand -> raise (Unify []) in
+            occur_rec ty'
+          end
         end
     | Tconstr(p, tl, abbrev) ->
         if not (List.memq ty !visited) then begin
           visited := ty :: !visited;
-          try
-            if ty0.level < Path.binding_time p then raise(Unify []);
-            List.iter occur_rec tl
-          with Unify lst ->
+          if ty0.level < Path.binding_time p then begin
             let ty' =
-              try expand_abbrev env p tl abbrev ty.level
-              with Cannot_expand -> raise (Unify lst) in
+              try expand_abbrev env p [] abbrev ty.level
+              with Cannot_expand -> raise (Unify []) in
             occur_rec ty'
+          end else begin
+            try
+              List.iter occur_rec tl
+            with Unify lst ->
+            try
+              let ty' = expand_abbrev env p tl abbrev ty.level in
+              occur_rec ty'
+            with Cannot_expand -> ()
+          end
         end
     | Tobject (_, _) ->
         ()
@@ -456,8 +465,24 @@ let rec unify_rec env a1 a2 t1 t2 =     (* Variables and abbreviations *)
            None    -> occur env t2 t1; t2.desc <- Tlink t1
          | Some l1 -> occur env t2 l1; t2.desc <- Tlink l1
          end
-    | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) when Path.same p1 p2 ->
-         unify_core env a1 a2 t1 t2
+    | (Tconstr (p1, tl1, abbrev1), Tconstr (p2, tl2, abbrev2))
+            when Path.same p1 p2 ->
+        begin
+          try
+            unify_core env a1 a2 t1 t2
+          with Unify lst ->
+          try
+            let t3 = expand_abbrev env p1 tl1 abbrev1 t1.level in
+            update_level t2.level t1;
+            unify_rec env (Some t1) a2 t3 t2
+          with Cannot_expand ->
+          try
+            let t3 = expand_abbrev env p2 tl2 abbrev2 t2.level in
+            update_level t1.level t2;
+            unify_rec env a1 (Some t2) t1 t3
+          with Cannot_expand ->
+            raise (Unify lst)
+        end
     | (Tconstr (p1, tl1, abbrev1), Tconstr (p2, tl2, abbrev2)) ->
         begin
           try
@@ -715,9 +740,19 @@ let rec moregen env t1 t2 =
         moregen_list env tl1 tl2
     | (Tconstr(p1, tl1, abbrev1), Tconstr(p2, tl2, abbrev2)) ->
         if Path.same p1 p2 then begin
-          t1.desc <- Tlink t2;
-          moregen_list env tl1 tl2;
-          t1.desc <- d1
+          try
+            t1.desc <- Tlink t2;
+            moregen_list env tl1 tl2;
+            t1.desc <- d1
+          with Unify lst ->
+          t1.desc <- d1;
+          try
+            moregen env (expand_abbrev env p1 tl1 abbrev1 t1.level) t2
+          with Cannot_expand ->
+          try
+            moregen env t1 (expand_abbrev env p2 tl2 abbrev2 t2.level)
+          with Cannot_expand ->
+            raise (Unify lst)
         end else begin
           try
             moregen env (expand_abbrev env p1 tl1 abbrev1 t1.level) t2
