@@ -55,156 +55,156 @@ HFONT CreationFont(char *name)
 
 void SetCoordinates(HWND hwnd)
 {
-	RECT rc;
+        RECT rc;
 
-	GetClientRect(hwnd,&rc);
-	grwindow.width = rc.right;
-	grwindow.height = rc.bottom;
-	gr_reset();
+        GetClientRect(hwnd,&rc);
+        grwindow.width = rc.right;
+        grwindow.height = rc.bottom;
+        gr_reset();
 }
 
 void ResetForClose(HWND hwnd)
 {
-	DeleteObject(grwindow.hBitmap);
-	memset(&grwindow,0,sizeof(grwindow));
+        DeleteObject(grwindow.hBitmap);
+        memset(&grwindow,0,sizeof(grwindow));
 }
 
-	
+        
 
 static LRESULT CALLBACK GraphicsWndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
 {
-	PAINTSTRUCT ps;
-	HDC hdc;
+        PAINTSTRUCT ps;
+        HDC hdc;
 
-	switch (msg) {
-		// Create the MDI client invisible window
-	case WM_CREATE:
-		break;
-	case WM_PAINT:
-		hdc = BeginPaint(hwnd,&ps);
-		BitBlt(hdc,0,0,grwindow.width,grwindow.height,
-			grwindow.gcBitmap,0,0,SRCCOPY);
-		EndPaint(hwnd,&ps);
-		break;
-		// Move the child windows
-	case WM_SIZE:
-		// Position the MDI client window between the tool and status bars
-		if (wParam != SIZE_MINIMIZED) {
-			SetCoordinates(hwnd);
-		}
+        switch (msg) {
+                // Create the MDI client invisible window
+        case WM_CREATE:
+                break;
+        case WM_PAINT:
+                hdc = BeginPaint(hwnd,&ps);
+                BitBlt(hdc,0,0,grwindow.width,grwindow.height,
+                        grwindow.gcBitmap,0,0,SRCCOPY);
+                EndPaint(hwnd,&ps);
+                break;
+                // Move the child windows
+        case WM_SIZE:
+                // Position the MDI client window between the tool and status bars
+                if (wParam != SIZE_MINIMIZED) {
+                        SetCoordinates(hwnd);
+                }
 
-		return 0;
-		// End application
-	case WM_DESTROY:
-		ResetForClose(hwnd);
-		break;
-	case WM_LBUTTONDOWN:
-		MouseLbuttonDown = 1;
-		break;
-	case WM_LBUTTONUP:
-		MouseLbuttonDown = 0;
-		break;
-	case WM_RBUTTONDOWN:
-		MouseRbuttonDown = 1;
-		break;
-	case WM_RBUTTONUP:
-		MouseRbuttonDown = 0;
-		break;
-	case WM_MBUTTONDOWN:
-		MouseMbuttonDown = 1;
-		break;
-	case WM_MBUTTONUP:
-		MouseMbuttonDown = 0;
-		break;
-	case WM_CHAR:
+                return 0;
+                // End application
+        case WM_DESTROY:
+                ResetForClose(hwnd);
+                break;
+        case WM_LBUTTONDOWN:
+                MouseLbuttonDown = 1;
+                break;
+        case WM_LBUTTONUP:
+                MouseLbuttonDown = 0;
+                break;
+        case WM_RBUTTONDOWN:
+                MouseRbuttonDown = 1;
+                break;
+        case WM_RBUTTONUP:
+                MouseRbuttonDown = 0;
+                break;
+        case WM_MBUTTONDOWN:
+                MouseMbuttonDown = 1;
+                break;
+        case WM_MBUTTONUP:
+                MouseMbuttonDown = 0;
+                break;
+        case WM_CHAR:
                 LastKey = wParam & 0xFF;
                 break;
-	case WM_KEYUP:
+        case WM_KEYUP:
                 LastKey = -1;
                 break;
-	case WM_MOUSEMOVE:
+        case WM_MOUSEMOVE:
 #if 0
-		pt.x = GET_X_LPARAM(lParam);
-		pt.y = GET_Y_LPARAM(lParam);
-		MapWindowPoints(HWND_DESKTOP,grwindow.hwnd,&pt,1);
-		MouseLastX = pt.x;
-		MouseLastY = grwindow.height - 1 - pt.y;
+                pt.x = GET_X_LPARAM(lParam);
+                pt.y = GET_Y_LPARAM(lParam);
+                MapWindowPoints(HWND_DESKTOP,grwindow.hwnd,&pt,1);
+                MouseLastX = pt.x;
+                MouseLastY = grwindow.height - 1 - pt.y;
 #else
-		MouseLastX = GET_X_LPARAM(lParam);
-		MouseLastY = grwindow.height - 1 - GET_Y_LPARAM(lParam);
+                MouseLastX = GET_X_LPARAM(lParam);
+                MouseLastY = grwindow.height - 1 - GET_Y_LPARAM(lParam);
 #endif
-		break;
-	}
-	return DefWindowProc(hwnd,msg,wParam,lParam);
+                break;
+        }
+        return DefWindowProc(hwnd,msg,wParam,lParam);
 }
 
 int DoRegisterClass(void)
 {
-	WNDCLASS wc;
+        WNDCLASS wc;
 
-	memset(&wc,0,sizeof(WNDCLASS));
-	wc.style = CS_HREDRAW|CS_VREDRAW |CS_DBLCLKS|CS_OWNDC ;
-	wc.lpfnWndProc = (WNDPROC)GraphicsWndProc;
-	wc.hInstance = hInst;
-	wc.hbrBackground = (HBRUSH)(COLOR_WINDOW+1);
-	wc.lpszClassName = szOcamlWindowClass;
-	wc.lpszMenuName = 0;
-	wc.hCursor = LoadCursor(NULL,IDC_ARROW);
-	wc.hIcon = 0;
-	return RegisterClass(&wc);
+        memset(&wc,0,sizeof(WNDCLASS));
+        wc.style = CS_HREDRAW|CS_VREDRAW |CS_DBLCLKS|CS_OWNDC ;
+        wc.lpfnWndProc = (WNDPROC)GraphicsWndProc;
+        wc.hInstance = hInst;
+        wc.hbrBackground = (HBRUSH)(COLOR_WINDOW+1);
+        wc.lpszClassName = szOcamlWindowClass;
+        wc.lpszMenuName = 0;
+        wc.hCursor = LoadCursor(NULL,IDC_ARROW);
+        wc.hIcon = 0;
+        return RegisterClass(&wc);
 }
 
 static value gr_reset(void)
 {
-	RECT rc;
-	int screenx,screeny;
+        RECT rc;
+        int screenx,screeny;
 
-	screenx = GetSystemMetrics(SM_CXSCREEN);
-	screeny = GetSystemMetrics(SM_CYSCREEN);
-	GetClientRect(grwindow.hwnd,&rc);
-	grwindow.gc = GetDC(grwindow.hwnd);
-	grwindow.width = rc.right;
-	grwindow.height = rc.bottom;
-	if (grwindow.gcBitmap == (HDC)0) {
-//		grwindow.hBitmap = CreateCompatibleBitmap(grwindow.gc,grwindow.width,grwindow.height);
-				grwindow.hBitmap = CreateCompatibleBitmap(grwindow.gc,screenx,screeny);
-		grwindow.gcBitmap = CreateCompatibleDC(grwindow.gc);
-		grwindow.tempDC = CreateCompatibleDC(grwindow.gc);
-		SelectObject(grwindow.gcBitmap,grwindow.hBitmap);
-		SetMapMode(grwindow.gcBitmap,MM_TEXT);
-		MoveToEx(grwindow.gcBitmap,0,grwindow.height-1,0);
-		BitBlt(grwindow.gcBitmap,0,0,screenx,screeny,
-			grwindow.gcBitmap,0,0,WHITENESS);
-		grwindow.CurrentFontSize = 15;
-		grwindow.CurrentFont = CreationFont("Courier");
-	}
-	grwindow.CurrentColor = GetSysColor(COLOR_WINDOWTEXT);
-	grwindow.grx = 0;
-	grwindow.gry = 0;
-	grwindow.CurrentPen = SelectObject(grwindow.gc,GetStockObject(WHITE_PEN));
-	SelectObject(grwindow.gc,grwindow.CurrentPen);
-	SelectObject(grwindow.gcBitmap,grwindow.CurrentPen);
-	grwindow.CurrentBrush = SelectObject(grwindow.gc,GetStockObject(WHITE_BRUSH));
-	SelectObject(grwindow.gc,grwindow.CurrentBrush);
-	SelectObject(grwindow.gcBitmap,grwindow.CurrentBrush);
-	SelectObject(grwindow.gc,grwindow.CurrentFont);
-	SelectObject(grwindow.gcBitmap,grwindow.CurrentFont);
-	grdisplay_mode = grremember_mode = 1;
-	MoveToEx(grwindow.gc,0,grwindow.height-1,0);
-	MoveToEx(grwindow.gcBitmap,0,grwindow.height-1,0);
-	SetTextAlign(grwindow.gcBitmap,TA_BOTTOM);
-	SetTextAlign(grwindow.gc,TA_BOTTOM);
-	return Val_unit;
+        screenx = GetSystemMetrics(SM_CXSCREEN);
+        screeny = GetSystemMetrics(SM_CYSCREEN);
+        GetClientRect(grwindow.hwnd,&rc);
+        grwindow.gc = GetDC(grwindow.hwnd);
+        grwindow.width = rc.right;
+        grwindow.height = rc.bottom;
+        if (grwindow.gcBitmap == (HDC)0) {
+//              grwindow.hBitmap = CreateCompatibleBitmap(grwindow.gc,grwindow.width,grwindow.height);
+                                grwindow.hBitmap = CreateCompatibleBitmap(grwindow.gc,screenx,screeny);
+                grwindow.gcBitmap = CreateCompatibleDC(grwindow.gc);
+                grwindow.tempDC = CreateCompatibleDC(grwindow.gc);
+                SelectObject(grwindow.gcBitmap,grwindow.hBitmap);
+                SetMapMode(grwindow.gcBitmap,MM_TEXT);
+                MoveToEx(grwindow.gcBitmap,0,grwindow.height-1,0);
+                BitBlt(grwindow.gcBitmap,0,0,screenx,screeny,
+                        grwindow.gcBitmap,0,0,WHITENESS);
+                grwindow.CurrentFontSize = 15;
+                grwindow.CurrentFont = CreationFont("Courier");
+        }
+        grwindow.CurrentColor = GetSysColor(COLOR_WINDOWTEXT);
+        grwindow.grx = 0;
+        grwindow.gry = 0;
+        grwindow.CurrentPen = SelectObject(grwindow.gc,GetStockObject(WHITE_PEN));
+        SelectObject(grwindow.gc,grwindow.CurrentPen);
+        SelectObject(grwindow.gcBitmap,grwindow.CurrentPen);
+        grwindow.CurrentBrush = SelectObject(grwindow.gc,GetStockObject(WHITE_BRUSH));
+        SelectObject(grwindow.gc,grwindow.CurrentBrush);
+        SelectObject(grwindow.gcBitmap,grwindow.CurrentBrush);
+        SelectObject(grwindow.gc,grwindow.CurrentFont);
+        SelectObject(grwindow.gcBitmap,grwindow.CurrentFont);
+        grdisplay_mode = grremember_mode = 1;
+        MoveToEx(grwindow.gc,0,grwindow.height-1,0);
+        MoveToEx(grwindow.gcBitmap,0,grwindow.height-1,0);
+        SetTextAlign(grwindow.gcBitmap,TA_BOTTOM);
+        SetTextAlign(grwindow.gc,TA_BOTTOM);
+        return Val_unit;
 }
 
 void SuspendGraphicThread(void)
 {
-	SuspendThread(threadHandle);
+        SuspendThread(threadHandle);
 }
 
 void ResumeGraphicThread(void)
 {
-	ResumeThread(threadHandle);
+        ResumeThread(threadHandle);
 }
 
 /* For handshake between the event handling thread and the main thread */
@@ -232,17 +232,17 @@ static DWORD WINAPI gr_open_graph_internal(value arg)
     if (!registered) {
       registered = DoRegisterClass();
       if (!registered) {
-	open_graph_errmsg = "Cannot register the window class";
-	SetEvent(open_graph_event);
-	return 1;
+        open_graph_errmsg = "Cannot register the window class";
+        SetEvent(open_graph_event);
+        return 1;
       }
     }
     grwindow.hwnd = CreateWindow(szOcamlWindowClass,
-				 WINDOW_NAME,
-				 WS_OVERLAPPEDWINDOW,
-				 x,y,
-				 w,h,
-				 NULL,0,hInst,NULL);
+                                 WINDOW_NAME,
+                                 WS_OVERLAPPEDWINDOW,
+                                 x,y,
+                                 w,h,
+                                 NULL,0,hInst,NULL);
     if (grwindow.hwnd == NULL) {
       open_graph_errmsg = "Cannot create window";
       SetEvent(open_graph_event);
@@ -295,9 +295,9 @@ CAMLprim value gr_open_graph(value arg)
   open_graph_event = CreateEvent(NULL, FALSE, FALSE, NULL);
   threadHandle = 
     CreateThread(NULL,0,
-		 (LPTHREAD_START_ROUTINE)gr_open_graph_internal,(void **)arg,
-		 0,
-		 &tid);
+                 (LPTHREAD_START_ROUTINE)gr_open_graph_internal,(void **)arg,
+                 0,
+                 &tid);
   WaitForSingleObject(open_graph_event, INFINITE);
   CloseHandle(open_graph_event);
   if (open_graph_errmsg != NULL) gr_fail("%s", open_graph_errmsg);
@@ -306,70 +306,70 @@ CAMLprim value gr_open_graph(value arg)
 
 CAMLprim value gr_close_graph(void)
 {
-	if (gr_initialized) {
-		DeleteDC(grwindow.tempDC);
-		DeleteDC(grwindow.gcBitmap);
-		DestroyWindow(grwindow.hwnd);
-		memset(&grwindow,0,sizeof(grwindow));
-		gr_initialized = 0;
-	}
-	return Val_unit;
+        if (gr_initialized) {
+                DeleteDC(grwindow.tempDC);
+                DeleteDC(grwindow.gcBitmap);
+                DestroyWindow(grwindow.hwnd);
+                memset(&grwindow,0,sizeof(grwindow));
+                gr_initialized = 0;
+        }
+        return Val_unit;
 }
 
 CAMLprim value gr_clear_graph(void)
 {
-	gr_check_open();
-	if(grremember_mode) {
-		BitBlt(grwindow.gcBitmap,0,0,grwindow.width,grwindow.height,
-			grwindow.gcBitmap,0,0,WHITENESS);
-	}
-	if(grdisplay_mode) {
-		BitBlt(grwindow.gc,0,0,grwindow.width,grwindow.height,
-			grwindow.gc,0,0,WHITENESS);
-	}
-	return Val_unit;
+        gr_check_open();
+        if(grremember_mode) {
+                BitBlt(grwindow.gcBitmap,0,0,grwindow.width,grwindow.height,
+                        grwindow.gcBitmap,0,0,WHITENESS);
+        }
+        if(grdisplay_mode) {
+                BitBlt(grwindow.gc,0,0,grwindow.width,grwindow.height,
+                        grwindow.gc,0,0,WHITENESS);
+        }
+        return Val_unit;
 }
 
 CAMLprim value gr_size_x(void)
 {
-	gr_check_open();
-	return Val_int(grwindow.width);
+        gr_check_open();
+        return Val_int(grwindow.width);
 }
 
 CAMLprim value gr_size_y(void)
 {
-	gr_check_open();
-	return Val_int(grwindow.height);
+        gr_check_open();
+        return Val_int(grwindow.height);
 }
 
 CAMLprim value gr_synchronize(void)
 {
-	gr_check_open();
-	BitBlt(grwindow.gc,0,0,grwindow.width,grwindow.height,
-		grwindow.gcBitmap,0,0,SRCCOPY);
-	return Val_unit ;
+        gr_check_open();
+        BitBlt(grwindow.gc,0,0,grwindow.width,grwindow.height,
+                grwindow.gcBitmap,0,0,SRCCOPY);
+        return Val_unit ;
 }
 
 CAMLprim value gr_display_mode(value flag)
 {
-	grdisplay_mode =  (Int_val(flag)) ? 1 : 0;
-	return Val_unit ;
+        grdisplay_mode =  (Int_val(flag)) ? 1 : 0;
+        return Val_unit ;
 }
 
 CAMLprim value gr_remember_mode(value flag)
 {
-	grremember_mode = (Int_val(flag)) ? 1 : 0;
-	return Val_unit ;
+        grremember_mode = (Int_val(flag)) ? 1 : 0;
+        return Val_unit ;
 }
 
 CAMLprim value gr_sigio_signal(value unit)
 {
-	return Val_unit;
+        return Val_unit;
 }
 
 CAMLprim value gr_sigio_handler(void)
 {
-	return Val_unit;
+        return Val_unit;
 }
 
 

@@ -2,23 +2,23 @@
 
 (* sp to avoid being picked up by doc scripts *)
  type index_constrs =
-	  CNumber
+          CNumber
         | CActiveElement
-	| CEnd
-	| CLast
-	| CNoIndex
-	| CInsert
-	| CSelFirst
-	| CSelLast
+        | CEnd
+        | CLast
+        | CNoIndex
+        | CInsert
+        | CSelFirst
+        | CSelLast
         | CAt
         | CAtXY
         | CAnchorPoint
-	| CPattern
-	| CLineChar
-	| CMark
-	| CTagFirst
-	| CTagLast
-	| CEmbedded
+        | CPattern
+        | CLineChar
+        | CMark
+        | CTagFirst
+        | CTagLast
+        | CEmbedded
 ;;
 
 let index_any_table = 
@@ -54,18 +54,18 @@ let cCAMLtoTKindex table = function
  | SelLast -> chk_sub "SelLast" table CSelLast; TkToken "sel.last"
  | At n -> chk_sub "At" table CAt; TkToken ("@"^string_of_int n)
  | AtXY (x,y) -> chk_sub "AtXY" table CAtXY; 
-      	     TkToken ("@"^string_of_int x^","^string_of_int y)
+             TkToken ("@"^string_of_int x^","^string_of_int y)
  | AnchorPoint -> chk_sub "AnchorPoint" table CAnchorPoint; TkToken "anchor"
  | Pattern s -> chk_sub "Pattern" table CPattern; TkToken s
  | LineChar (l,c) -> chk_sub "LineChar" table CLineChar;
-      	  TkToken (string_of_int l^"."^string_of_int c)
+          TkToken (string_of_int l^"."^string_of_int c)
  | Mark s -> chk_sub "Mark" table CMark; TkToken s
  | TagFirst t -> chk_sub "TagFirst" table CTagFirst; 
-      	   TkToken (t^".first")
+           TkToken (t^".first")
  | TagLast t -> chk_sub "TagLast" table CTagLast;
-      	   TkToken (t^".last")
+           TkToken (t^".last")
  | Embedded w -> chk_sub "Embedded" table CEmbedded;
-       	   cCAMLtoTKwidget widget_any_table w
+           cCAMLtoTKwidget widget_any_table w
 ;;
 
 let char_index c s =
@@ -83,7 +83,7 @@ let cTKtoCAMLindex s =
   try
    let p = char_index '.' s in
     LineChar(int_of_string (String.sub s 0 p), 
-      	     int_of_string (String.sub s (p+1) (String.length s - p - 1)))
+             int_of_string (String.sub s (p+1) (String.length s - p - 1)))
   with
     Not_found ->
       try Number (int_of_string s)

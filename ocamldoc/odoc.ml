@@ -26,14 +26,14 @@ let (cmo_or_cma_opt, paths) =
   let rec iter (f_opt, inc) = function
       [] | _ :: [] -> (f_opt, inc)
     | "-g" :: file :: q when
-	((Filename.check_suffix file "cmo") or
-	 (Filename.check_suffix file "cma")) &
-	(f_opt = None) ->
-	  iter (Some file, inc) q
+        ((Filename.check_suffix file "cmo") or
+         (Filename.check_suffix file "cma")) &
+        (f_opt = None) ->
+          iter (Some file, inc) q
     | "-i" :: dir :: q ->
-	iter (f_opt, inc @ [dir]) q
+        iter (f_opt, inc @ [dir]) q
     | _ :: q ->
-	iter (f_opt, inc) q
+        iter (f_opt, inc) q
   in
   iter (None, []) arg_list
 
@@ -48,19 +48,19 @@ let _ =
       Dynlink.init ();
       Dynlink.allow_unsafe_modules true;
       try
-	Dynlink.add_available_units Odoc_crc.crc_unit_list ;
-	let _ = Dynlink.loadfile file in
-	()
+        Dynlink.add_available_units Odoc_crc.crc_unit_list ;
+        let _ = Dynlink.loadfile file in
+        ()
       with
-	Dynlink.Error e -> 
-	  prerr_endline (Odoc_messages.load_file_error file (Dynlink.error_message e)) ;
-	  exit 1
-      |	Not_found ->
-	  prerr_endline (Odoc_messages.load_file_error file "Not_found");
-	  exit 1  
-      |	Sys_error s ->
-	  prerr_endline (Odoc_messages.load_file_error file s);
-	  exit 1  
+        Dynlink.Error e -> 
+          prerr_endline (Odoc_messages.load_file_error file (Dynlink.error_message e)) ;
+          exit 1
+      | Not_found ->
+          prerr_endline (Odoc_messages.load_file_error file "Not_found");
+          exit 1  
+      | Sys_error s ->
+          prerr_endline (Odoc_messages.load_file_error file s);
+          exit 1  
 
 let _ = print_DEBUG "Fin du chargement dynamique éventuel"
 
@@ -81,15 +81,15 @@ let loaded_modules =
   List.flatten 
     (List.map 
        (fun f ->
-	 Odoc_info.verbose (Odoc_messages.loading f);
-	 try 
-	   let l = Odoc_analyse.load_modules f in
-	   Odoc_info.verbose Odoc_messages.ok;
-	   l
-	 with Failure s -> 
-	   prerr_endline s ; 
-	   incr Odoc_global.errors ;
-	   []
+         Odoc_info.verbose (Odoc_messages.loading f);
+         try 
+           let l = Odoc_analyse.load_modules f in
+           Odoc_info.verbose Odoc_messages.ok;
+           l
+         with Failure s -> 
+           prerr_endline s ; 
+           incr Odoc_global.errors ;
+           []
        )
        !Odoc_args.load
     )
@@ -102,8 +102,8 @@ let _ =
   | Some f ->
       try Odoc_analyse.dump_modules f modules
       with Failure s -> 
-	prerr_endline s ;
-	incr Odoc_global.errors
+        prerr_endline s ;
+        incr Odoc_global.errors
 
 let _ = 
   match !Odoc_args.doc_generator with

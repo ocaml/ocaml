@@ -61,4 +61,4 @@ depend Ä
     begin
       MakeDepend -w -objext .x Å.c
       :::boot:ocamlrun :::tools:ocamldep Å.mli Å.ml
-	end | streamedit -e "/¶t/ replace // ' ' -c °" > Makefile.Mac.depend
+    end | streamedit -e "/¶t/ replace // ' ' -c °" > Makefile.Mac.depend

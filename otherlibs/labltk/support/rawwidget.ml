@@ -148,8 +148,8 @@ let new_atom ~parent ?name:nom clas =
           else parentpath ^ "." ^ name
     in
       let w = Typed(path,clas) in
-	Hashtbl.add table path w;
-	w
+        Hashtbl.add table path w;
+        w
 
 (* Just create a path. Only to check existence of widgets *)
 (* Use with care *)

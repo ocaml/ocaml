@@ -129,32 +129,32 @@ type eventField =
 (* /type *)
 
 let filleventInfo ev v = function 
-  | Ev_Above    -> 	ev.ev_Above <- int_of_string v
-  | Ev_ButtonNumber -> 	ev.ev_ButtonNumber <- int_of_string v
-  | Ev_Count -> 	ev.ev_Count <- int_of_string v
-  | Ev_Detail -> 	ev.ev_Detail <- v
-  | Ev_Focus -> 	ev.ev_Focus <- v = "1"
-  | Ev_Height -> 	ev.ev_Height <- int_of_string v
-  | Ev_KeyCode -> 	ev.ev_KeyCode <- int_of_string v
-  | Ev_Mode -> 		ev.ev_Mode <- v
+  | Ev_Above    ->      ev.ev_Above <- int_of_string v
+  | Ev_ButtonNumber ->  ev.ev_ButtonNumber <- int_of_string v
+  | Ev_Count ->         ev.ev_Count <- int_of_string v
+  | Ev_Detail ->        ev.ev_Detail <- v
+  | Ev_Focus ->         ev.ev_Focus <- v = "1"
+  | Ev_Height ->        ev.ev_Height <- int_of_string v
+  | Ev_KeyCode ->       ev.ev_KeyCode <- int_of_string v
+  | Ev_Mode ->          ev.ev_Mode <- v
   | Ev_OverrideRedirect -> ev.ev_OverrideRedirect <- v = "1"
-  | Ev_Place -> 	ev.ev_Place <- v
-  | Ev_State -> 	ev.ev_State <- v
-  | Ev_Time -> 		ev.ev_Time <- int_of_string v
-  | Ev_Width -> 	ev.ev_Width <- int_of_string v
-  | Ev_MouseX -> 	ev.ev_MouseX <- int_of_string v
-  | Ev_MouseY -> 	ev.ev_MouseY <- int_of_string v
-  | Ev_Char -> 		ev.ev_Char <- v
-  | Ev_BorderWidth -> 	ev.ev_BorderWidth <- int_of_string v
-  | Ev_SendEvent -> 	ev.ev_SendEvent <- v = "1"
-  | Ev_KeySymString -> 	ev.ev_KeySymString <- v
-  | Ev_KeySymInt -> 	ev.ev_KeySymInt <- int_of_string v
-  | Ev_RootWindow -> 	ev.ev_RootWindow <- int_of_string v
-  | Ev_SubWindow -> 	ev.ev_SubWindow <- int_of_string v
-  | Ev_Type -> 		ev.ev_Type <- int_of_string v
-  | Ev_Widget -> 	ev.ev_Widget <- cTKtoCAMLwidget v
-  | Ev_RootX -> 	ev.ev_RootX <- int_of_string v
-  | Ev_RootY -> 	ev.ev_RootY <- int_of_string v
+  | Ev_Place ->         ev.ev_Place <- v
+  | Ev_State ->         ev.ev_State <- v
+  | Ev_Time ->          ev.ev_Time <- int_of_string v
+  | Ev_Width ->         ev.ev_Width <- int_of_string v
+  | Ev_MouseX ->        ev.ev_MouseX <- int_of_string v
+  | Ev_MouseY ->        ev.ev_MouseY <- int_of_string v
+  | Ev_Char ->          ev.ev_Char <- v
+  | Ev_BorderWidth ->   ev.ev_BorderWidth <- int_of_string v
+  | Ev_SendEvent ->     ev.ev_SendEvent <- v = "1"
+  | Ev_KeySymString ->  ev.ev_KeySymString <- v
+  | Ev_KeySymInt ->     ev.ev_KeySymInt <- int_of_string v
+  | Ev_RootWindow ->    ev.ev_RootWindow <- int_of_string v
+  | Ev_SubWindow ->     ev.ev_SubWindow <- int_of_string v
+  | Ev_Type ->          ev.ev_Type <- int_of_string v
+  | Ev_Widget ->        ev.ev_Widget <- cTKtoCAMLwidget v
+  | Ev_RootX ->         ev.ev_RootX <- int_of_string v
+  | Ev_RootY ->         ev.ev_RootY <- int_of_string v
 ;;
 
 let wrapeventInfo f what =
@@ -189,7 +189,7 @@ let wrapeventInfo f what =
     let l = ref args in
     List.iter (function field ->
       match !l with
-	[] -> ()
+        [] -> ()
       | v::rest -> filleventInfo ev v field; l:=rest)
       what;
     f ev

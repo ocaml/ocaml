@@ -44,7 +44,7 @@ module Basic_info_retriever :
        [str] to the end of the special comment. *)
     val first_special :
         string -> string -> int * Odoc_types.info option
-	    
+
     (** Return a pair [(comment_opt, element_comment_list)], where [comment_opt] is the last special
        comment found in the given string and not followed by a blank line, 
        and [element_comment_list] the list of values built from the other

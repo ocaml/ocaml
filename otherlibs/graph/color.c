@@ -82,9 +82,9 @@ void gr_init_direct_rgb_to_pixel(void)
  
 #ifdef QUICKCOLORDEBUG
     fprintf(stderr, "visual %lx %lx %lx\n", 
-	    red_mask, 
-	    green_mask, 
-	    blue_mask);
+            red_mask, 
+            green_mask, 
+            blue_mask);
 #endif
 
     get_shifts(red_mask, &red_l, &red_r); 
@@ -112,8 +112,8 @@ void gr_init_direct_rgb_to_pixel(void)
     }
     
     if( red_l < 0 || red_r < 0 || 
-	green_l < 0 || green_r < 0 || 
-	blue_l < 0 || blue_r < 0 ){
+        green_l < 0 || green_r < 0 || 
+        blue_l < 0 || blue_r < 0 ){
 #ifdef QUICKCOLORDEBUG
       fprintf(stderr, "Damn, boost failed\n");
 #endif

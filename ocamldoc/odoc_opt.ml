@@ -37,15 +37,15 @@ let loaded_modules =
   List.flatten 
     (List.map 
        (fun f ->
-	 Odoc_info.verbose (Odoc_messages.loading f);
-	 try 
-	   let l = Odoc_analyse.load_modules f in
-	   Odoc_info.verbose Odoc_messages.ok;
-	   l
-	 with Failure s -> 
-	   prerr_endline s ; 
-	   incr Odoc_global.errors ;
-	   []
+         Odoc_info.verbose (Odoc_messages.loading f);
+         try 
+           let l = Odoc_analyse.load_modules f in
+           Odoc_info.verbose Odoc_messages.ok;
+           l
+         with Failure s -> 
+           prerr_endline s ; 
+           incr Odoc_global.errors ;
+           []
        )
        !Odoc_args.load
     )
@@ -58,8 +58,8 @@ let _ =
   | Some f ->
       try Odoc_analyse.dump_modules f modules
       with Failure s -> 
-	prerr_endline s ;
-	incr Odoc_global.errors
+        prerr_endline s ;
+        incr Odoc_global.errors
 
 let _ = 
   match !Odoc_args.doc_generator with

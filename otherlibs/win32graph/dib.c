@@ -300,8 +300,8 @@ static HANDLE ReadDIBFile (int hFile,int dwBitsSize)
    if ((_lread (hFile, (LPSTR) &bmfHeader, sizeof (bmfHeader)) != sizeof (bmfHeader)) ||
         (bmfHeader.bfType != DIB_HEADER_MARKER))
       {
-	//		ShowDbgMsg("Not a DIB file!");
-		return NULL;
+        //              ShowDbgMsg("Not a DIB file!");
+                return NULL;
       }
 
    // Allocate memory for DIB
@@ -310,8 +310,8 @@ static HANDLE ReadDIBFile (int hFile,int dwBitsSize)
 
    if (hDIB == 0)
      {
-       //	ShowDbgMsg("Couldn't allocate memory!");
-		return NULL;
+       //       ShowDbgMsg("Couldn't allocate memory!");
+                return NULL;
      }
 
    pDIB = GlobalLock (hDIB);
@@ -398,19 +398,19 @@ static void DIBPaint (HDC hDC,LPRECT lpDCRect,HANDLE hDIB)
       return;
       // Lock down the DIB, and get a pointer to the beginning of the bit
       //  buffer.
-	lpDIBHdr  = GlobalLock (hDIB);
-	lpDIBBits = FindDIBBits (lpDIBHdr);
+        lpDIBHdr  = GlobalLock (hDIB);
+        lpDIBBits = FindDIBBits (lpDIBHdr);
       // Make sure to use the stretching mode best for color pictures.
-	SetStretchBltMode (hDC, COLORONCOLOR);
-	SetDIBitsToDevice (hDC,                          // hDC
+        SetStretchBltMode (hDC, COLORONCOLOR);
+        SetDIBitsToDevice (hDC,                          // hDC
                          lpDCRect->left,               // DestX
                          lpDCRect->top,                // DestY
                          RECTWIDTH (lpDCRect),         // nDestWidth
                          RECTHEIGHT (lpDCRect),        // nDestHeight
-								 0,              // SrcX
+                                                                 0,              // SrcX
                          0,
  //                        (int) DIBHeight (lpDIBHdr),   // SrcY
-								 0,                            // nStartScan
+                                                                 0,                            // nStartScan
                          (WORD) DIBHeight (lpDIBHdr),  // nNumScans
                          lpDIBBits,                    // lpBits
                          (LPBITMAPINFO) lpDIBHdr,      // lpBitsInfo
@@ -421,76 +421,76 @@ static void DIBPaint (HDC hDC,LPRECT lpDCRect,HANDLE hDIB)
 
 static unsigned int Getfilesize(char *name)
 {
-	FILE *f;
-	unsigned int size;
+        FILE *f;
+        unsigned int size;
 
-	f = fopen(name,"rb");
-	if (f == NULL)
-		return 0;
-	fseek(f,0,SEEK_END);
-	size = ftell(f);
-	fclose(f);
-	return size;
+        f = fopen(name,"rb");
+        if (f == NULL)
+                return 0;
+        fseek(f,0,SEEK_END);
+        size = ftell(f);
+        fclose(f);
+        return size;
 }
 
 
 HANDLE ChargerBitmap(char *FileName,POINT *lppt)
 {
-	HFILE hFile;
-	OFSTRUCT ofstruct;
-	HANDLE result;
-	LPSTR    lpDIBHdr;
-	unsigned int size;
+        HFILE hFile;
+        OFSTRUCT ofstruct;
+        HANDLE result;
+        LPSTR    lpDIBHdr;
+        unsigned int size;
 
-	size = Getfilesize(FileName);
-	hFile=OpenFile((LPSTR) FileName, &ofstruct, OF_READ | OF_SHARE_DENY_WRITE);
-	result =  ReadDIBFile(hFile,size);
-	if (hFile) _lclose(hFile);
-	if (result) {
-		LPBITMAPINFOHEADER lpbmi;
-		LPBITMAPCOREHEADER lpbmc;
+        size = Getfilesize(FileName);
+        hFile=OpenFile((LPSTR) FileName, &ofstruct, OF_READ | OF_SHARE_DENY_WRITE);
+        result =  ReadDIBFile(hFile,size);
+        if (hFile) _lclose(hFile);
+        if (result) {
+                LPBITMAPINFOHEADER lpbmi;
+                LPBITMAPCOREHEADER lpbmc;
 
-		lpDIBHdr  = GlobalLock (result);
-		lpbmi = (LPBITMAPINFOHEADER) lpDIBHdr;
-		lpbmc = (LPBITMAPCOREHEADER) lpDIBHdr;
+                lpDIBHdr  = GlobalLock (result);
+                lpbmi = (LPBITMAPINFOHEADER) lpDIBHdr;
+                lpbmc = (LPBITMAPCOREHEADER) lpDIBHdr;
 
-		if (lpbmi->biSize == sizeof (BITMAPINFOHEADER)) {
-			lppt->y = lpbmi->biHeight;
-			lppt->x = lpbmi->biWidth;
-		}
-		else {
-			lppt->y = lpbmc->bcHeight;
-			lppt->x = lpbmc->bcWidth;
-		}
-		GlobalUnlock(result);
-	}
-	return(result);
+                if (lpbmi->biSize == sizeof (BITMAPINFOHEADER)) {
+                        lppt->y = lpbmi->biHeight;
+                        lppt->x = lpbmi->biWidth;
+                }
+                else {
+                        lppt->y = lpbmc->bcHeight;
+                        lppt->x = lpbmc->bcWidth;
+                }
+                GlobalUnlock(result);
+        }
+        return(result);
 }
 
 void DessinerBitmap(HANDLE hDIB,HDC hDC,LPRECT lpDCRect)
 {
-	DIBPaint (hDC,
+        DIBPaint (hDC,
              lpDCRect,
              hDIB);
 }
 
 void AfficheBitmap(char *filename,HDC hDC,int x,int y)
 {
-	RECT rc;
-	HANDLE hdib;
-	POINT pt;
-	char titi[60];
+        RECT rc;
+        HANDLE hdib;
+        POINT pt;
+        char titi[60];
 
-   	hdib = ChargerBitmap(filename,&pt);
-	if (hdib == NULL) {
-		return;
+        hdib = ChargerBitmap(filename,&pt);
+        if (hdib == NULL) {
+                return;
     }
-	rc.top = y;
-	rc.left = x;
-	rc.right = pt.x+x;
-	rc.bottom = pt.y+y;
-	pt.y += GetSystemMetrics(SM_CYCAPTION);
-	DessinerBitmap(hdib,hDC,&rc);
-	GlobalFree(hdib);
+        rc.top = y;
+        rc.left = x;
+        rc.right = pt.x+x;
+        rc.bottom = pt.y+y;
+        pt.y += GetSystemMetrics(SM_CYCAPTION);
+        DessinerBitmap(hdib,hDC,&rc);
+        GlobalFree(hdib);
 }
 

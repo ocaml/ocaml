@@ -113,8 +113,8 @@ be sent from another buffer in Caml mode.
 Input and output via buffer `*inferior-caml*'."
   (interactive
    (list (if (not (comint-check-proc inferior-caml-buffer-name))
-	     (read-from-minibuffer "Caml toplevel to run: "
-				   inferior-caml-program))))
+             (read-from-minibuffer "Caml toplevel to run: "
+                                   inferior-caml-program))))
   (caml-run-process-if-needed cmd)
   (switch-to-buffer-other-window inferior-caml-buffer-name))
 
@@ -250,15 +250,15 @@ should lies."
           (cond ((re-search-forward
                   " *Characters \\([01-9][01-9]*\\)-\\([1-9][01-9]*\\):\n[^W]"
                   (point-max) t)
-		 (setq beg (string-to-int (caml-match-string 1)))
+                 (setq beg (string-to-int (caml-match-string 1)))
                  (setq end (string-to-int (caml-match-string 2)))
                  (switch-to-buffer buf)
-		 (goto-char orig)
-		 (forward-byte end)
-		 (setq end (point))
-		 (goto-char orig)
-		 (forward-byte beg)
-		 (setq beg (point))
+                 (goto-char orig)
+                 (forward-byte end)
+                 (setq end (point))
+                 (goto-char orig)
+                 (forward-byte beg)
+                 (setq beg (point))
                  (setq err beg)
                  )
                 ((looking-at

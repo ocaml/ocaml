@@ -74,6 +74,7 @@ genlex.out: $(CODE_GENLEX)
 clean::
 	rm -f Lex/*.cm[iox] Lex/*.[os]
 	rm -f Lex/*~
+	rm -f Lex/grammar.output
 
 Lex/grammar.ml Lex/grammar.mli: Lex/grammar.mly ../yacc/ocamlyacc$(EXE)
 	$(CAMLYACC) $(YACCFLAGS) Lex/grammar.mly

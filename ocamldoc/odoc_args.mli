@@ -159,8 +159,8 @@ val add_option : string * Arg.spec * string -> unit
 val parse :
     html_generator:doc_generator -> 
       latex_generator:doc_generator -> 
-	texi_generator:doc_generator -> 
-	  man_generator:doc_generator -> 
-	      dot_generator:doc_generator -> 
-		unit
+        texi_generator:doc_generator -> 
+          man_generator:doc_generator -> 
+              dot_generator:doc_generator -> 
+                unit
             

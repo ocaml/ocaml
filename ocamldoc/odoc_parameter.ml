@@ -47,11 +47,11 @@ let complete_name p =
   let rec iter pi = 
     match pi with
       Simple_name sn ->
-	sn.sn_name
+        sn.sn_name
     | Tuple ([], _) -> (* anonymous parameter *)
-	"??"
+        "??"
     | Tuple (pi_list, _) ->
-	"("^(String.concat "," (List.map iter pi_list))^")"
+        "("^(String.concat "," (List.map iter pi_list))^")"
   in
   iter p
 
@@ -67,9 +67,9 @@ let update_parameter_text f p =
   let rec iter pi = 
     match pi with
       Simple_name sn ->
-	sn.sn_text <- f sn.sn_name
+        sn.sn_text <- f sn.sn_name
     | Tuple (l, _) ->
-	List.iter iter l
+        List.iter iter l
   in
   iter p
 
@@ -79,9 +79,9 @@ let desc_by_name pi name =
   let rec iter acc pi =
     match pi with
       Simple_name sn ->
-	(sn.sn_name, sn.sn_text) :: acc
+        (sn.sn_name, sn.sn_text) :: acc
     | Tuple (pi_list, _) ->
-	List.fold_left iter acc pi_list
+        List.fold_left iter acc pi_list
       in
   let l = iter [] pi in
   List.assoc name l
@@ -93,9 +93,9 @@ let names pi =
   let rec iter acc pi =
     match pi with
       Simple_name sn ->
-	sn.sn_name :: acc
+        sn.sn_name :: acc
     | Tuple (pi_list, _) ->
-	    List.fold_left iter acc pi_list
+            List.fold_left iter acc pi_list
   in
   iter [] pi
 
@@ -105,9 +105,9 @@ let type_by_name pi name =
   let rec iter acc pi =
     match pi with
       Simple_name sn ->
-	(sn.sn_name, sn.sn_type) :: acc
+        (sn.sn_name, sn.sn_type) :: acc
     | Tuple (pi_list, _) ->
-	List.fold_left iter acc pi_list
+        List.fold_left iter acc pi_list
       in
   let l = iter [] pi in
   List.assoc name l
@@ -119,12 +119,12 @@ let desc_from_info_opt info_opt s =
     None -> None
   | Some i ->
       match s with
-	"" -> None
-      |	_ ->
-	  try 
-	    Some (List.assoc s i.Odoc_types.i_params)
-	  with
-	    Not_found -> 
-	      print_DEBUG ("desc_from_info_opt "^s^" not found in\n");
-	      List.iter (fun (s, _) -> print_DEBUG s) i.Odoc_types.i_params;
-	      None
+        "" -> None
+      | _ ->
+          try 
+            Some (List.assoc s i.Odoc_types.i_params)
+          with
+            Not_found -> 
+              print_DEBUG ("desc_from_info_opt "^s^" not found in\n");
+              List.iter (fun (s, _) -> print_DEBUG s) i.Odoc_types.i_params;
+              None

@@ -62,50 +62,50 @@
 // In this structure should go eventually all global variables scattered
 // through the program.
 typedef struct _programParams {
-	HFONT hFont;					// The handle of the current font
-	COLORREF TextColor;				// The text color
-	char CurrentWorkingDir[MAX_PATH];// The current directory
+        HFONT hFont;                                    // The handle of the current font
+        COLORREF TextColor;                             // The text color
+        char CurrentWorkingDir[MAX_PATH];// The current directory
 } PROGRAM_PARAMS;
 
 //**************** Global variables ***********************
 extern PROGRAM_PARAMS ProgramParams;
 
-extern COLORREF BackColor;			// The background color
-extern HBRUSH BackgroundBrush;		// A brush built with the background color
-extern char LibDir[];				// The lib directory
-extern char OcamlPath[];			// The Path to ocaml.exe
-extern HANDLE hInst;				// The instance handle for this application
-extern HWND hwndSession;			// The current session window handle
-extern LOGFONT CurrentFont;			// The current font characteristics
+extern COLORREF BackColor;                      // The background color
+extern HBRUSH BackgroundBrush;          // A brush built with the background color
+extern char LibDir[];                           // The lib directory
+extern char OcamlPath[];                        // The Path to ocaml.exe
+extern HANDLE hInst;                            // The instance handle for this application
+extern HWND hwndSession;                        // The current session window handle
+extern LOGFONT CurrentFont;                     // The current font characteristics
 extern HWND hwndMain,hwndMDIClient; // Window handles of frame and mdi window
 
 // ***************** Function prototypes ******************
-int WriteToPipe(char *data);		// Writes to the pipe
+int WriteToPipe(char *data);            // Writes to the pipe
 int ReadFromPipe(char *data,int len);// Reads from the pipe
-int AskYesOrNo(char *msg);			//Ditto!
+int AskYesOrNo(char *msg);                      //Ditto!
 int BrowseForFile(char *fname,char *path);
-void GotoEOF(void);					// Positions the cursor at the end of the text
-void ShowDbgMsg(char *msg);			// Shows an error message
+void GotoEOF(void);                                     // Positions the cursor at the end of the text
+void ShowDbgMsg(char *msg);                     // Shows an error message
 void HandleCommand(HWND hwnd, WPARAM wParam,LPARAM lParam);
-int GetOcamlPath(void);				// Finds where ocaml.exe is
-void ForceRepaint(void);			// Ditto.
+int GetOcamlPath(void);                         // Finds where ocaml.exe is
+void ForceRepaint(void);                        // Ditto.
 void AddLineToControl(char *buf);
-char *GetHistoryLine(int n);		// Gets the nth history line base 1.
+char *GetHistoryLine(int n);            // Gets the nth history line base 1.
 int StartOcaml(void);
 // **************** User defined window messages *************
-#define WM_NEWLINE	(WM_USER+6000)
+#define WM_NEWLINE      (WM_USER+6000)
 #define WM_TIMERTICK (WM_USER+6001)
 #define WM_QUITOCAML (WM_USER+6002)
 // ********************** Structures ***********************
 typedef struct tagPosition {
-	int line;
-	int col;
+        int line;
+        int col;
 } POSITION;
 
 // Simple linked list for holding the history lines
 typedef struct tagHistory {
-	struct tagHistory *Next;
-	char *Text;
+        struct tagHistory *Next;
+        char *Text;
 } HISTORYLINE;
 
 extern void *SafeMalloc(int);

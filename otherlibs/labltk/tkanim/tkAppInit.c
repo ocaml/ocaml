@@ -16,8 +16,8 @@
 /* 
  * tkAppInit.c --
  *
- *	Provides a default version of the Tcl_AppInit procedure for
- *	use in wish and similar Tk-based applications.
+ *      Provides a default version of the Tcl_AppInit procedure for
+ *      use in wish and similar Tk-based applications.
  *
  * Copyright (c) 1993 The Regents of the University of California.
  * Copyright (c) 1994 Sun Microsystems, Inc.
@@ -32,7 +32,7 @@ static char sccsid[] = "@(#) tkAppInit.c 1.19 95/12/23 17:09:24";
 
 #include "tk.h"
 
-int	Tkanimation_Init _ANSI_ARGS_ ((Tcl_Interp *interp));
+int     Tkanimation_Init _ANSI_ARGS_ ((Tcl_Interp *interp));
 
 /*
  * The following variable is a special hack that is needed in order for
@@ -43,7 +43,7 @@ extern int matherr();
 int *tclDummyMathPtr = (int *) matherr;
 
 #ifdef TK_TEST
-EXTERN int		Tktest_Init _ANSI_ARGS_((Tcl_Interp *interp));
+EXTERN int              Tktest_Init _ANSI_ARGS_((Tcl_Interp *interp));
 #endif /* TK_TEST */
 
 /*
@@ -51,25 +51,25 @@ EXTERN int		Tktest_Init _ANSI_ARGS_((Tcl_Interp *interp));
  *
  * main --
  *
- *	This is the main program for the application.
+ *      This is the main program for the application.
  *
  * Results:
- *	None: Tk_Main never returns here, so this procedure never
- *	returns either.
+ *      None: Tk_Main never returns here, so this procedure never
+ *      returns either.
  *
  * Side effects:
- *	Whatever the application does.
+ *      Whatever the application does.
  *
  *----------------------------------------------------------------------
  */
 
 int
 main(argc, argv)
-    int argc;			/* Number of command-line arguments. */
-    char **argv;		/* Values of command-line arguments. */
+    int argc;                   /* Number of command-line arguments. */
+    char **argv;                /* Values of command-line arguments. */
 {
     Tk_Main(argc, argv, Tcl_AppInit);
-    return 0;			/* Needed only to prevent compiler warning. */
+    return 0;                   /* Needed only to prevent compiler warning. */
 }
 
 /*
@@ -77,34 +77,34 @@ main(argc, argv)
  *
  * Tcl_AppInit --
  *
- *	This procedure performs application-specific initialization.
- *	Most applications, especially those that incorporate additional
- *	packages, will have their own version of this procedure.
+ *      This procedure performs application-specific initialization.
+ *      Most applications, especially those that incorporate additional
+ *      packages, will have their own version of this procedure.
  *
  * Results:
- *	Returns a standard Tcl completion code, and leaves an error
- *	message in interp->result if an error occurs.
+ *      Returns a standard Tcl completion code, and leaves an error
+ *      message in interp->result if an error occurs.
  *
  * Side effects:
- *	Depends on the startup script.
+ *      Depends on the startup script.
  *
  *----------------------------------------------------------------------
  */
 
 int
 Tcl_AppInit(interp)
-    Tcl_Interp *interp;		/* Interpreter for application. */
+    Tcl_Interp *interp;         /* Interpreter for application. */
 {
     if (Tcl_Init(interp) == TCL_ERROR) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     if (Tk_Init(interp) == TCL_ERROR) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
     Tcl_StaticPackage(interp, "Tk", Tk_Init, (Tcl_PackageInitProc *) NULL);
 #ifdef TK_TEST
     if (Tktest_Init(interp) == TCL_ERROR) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
 #endif /* TK_TEST */
 
@@ -121,7 +121,7 @@ Tcl_AppInit(interp)
      */
 
     if (Tkanim_Init(interp) == TCL_ERROR) {
-	return TCL_ERROR;
+        return TCL_ERROR;
     }
 
     /*

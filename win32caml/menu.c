@@ -33,39 +33,39 @@ char CurrentFontName[64] = "Courier";
 ------------------------------------------------------------------------*/
 int OpenMlFile(char *fname,int lenbuf)
 {
-	OPENFILENAME ofn;
-	int r;
-	char *p,defext[5],tmp[512];
+        OPENFILENAME ofn;
+        int r;
+        char *p,defext[5],tmp[512];
 
-	memset(&ofn,0,sizeof(OPENFILENAME));
-	memset(tmp,0,sizeof(tmp));
-	fname[0] = 0;
-	strcpy(tmp,"ocaml sources|*.ml|bytecode object files|*.cmo|All files|*.*");
-	p = tmp;
-	while (*p) {
-		if (*p == '|')
-			*p = 0;
-		p++;
-	}
-	strcpy(defext,"ml");
-	ofn.lStructSize = sizeof(OPENFILENAME);
-	ofn.hwndOwner = hwndMain;
-	ofn.lpstrFilter = tmp;
-	ofn.nFilterIndex = 1;
-	ofn.hInstance = hInst;
-	ofn.lpstrFile = fname;
-	ofn.lpstrTitle = "Open file";
-	ofn.lpstrInitialDir = LibDir;
-	ofn.nMaxFile = lenbuf;
-	ofn.Flags = OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR | OFN_LONGNAMES |
-		OFN_HIDEREADONLY |OFN_EXPLORER;
-	r = GetOpenFileName(&ofn);
-	if (r) {
-	  /* Replace backslashes by forward slashes in file name */
-	  for (p = fname; *p != 0; p++)
-	    if (*p == '\\') *p = '/';
-	}
-	return r;
+        memset(&ofn,0,sizeof(OPENFILENAME));
+        memset(tmp,0,sizeof(tmp));
+        fname[0] = 0;
+        strcpy(tmp,"ocaml sources|*.ml|bytecode object files|*.cmo|All files|*.*");
+        p = tmp;
+        while (*p) {
+                if (*p == '|')
+                        *p = 0;
+                p++;
+        }
+        strcpy(defext,"ml");
+        ofn.lStructSize = sizeof(OPENFILENAME);
+        ofn.hwndOwner = hwndMain;
+        ofn.lpstrFilter = tmp;
+        ofn.nFilterIndex = 1;
+        ofn.hInstance = hInst;
+        ofn.lpstrFile = fname;
+        ofn.lpstrTitle = "Open file";
+        ofn.lpstrInitialDir = LibDir;
+        ofn.nMaxFile = lenbuf;
+        ofn.Flags = OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR | OFN_LONGNAMES |
+                OFN_HIDEREADONLY |OFN_EXPLORER;
+        r = GetOpenFileName(&ofn);
+        if (r) {
+          /* Replace backslashes by forward slashes in file name */
+          for (p = fname; *p != 0; p++)
+            if (*p == '\\') *p = '/';
+        }
+        return r;
 }
 /*------------------------------------------------------------------------
  Procedure:     GetSaveName ID:1
@@ -79,36 +79,36 @@ int OpenMlFile(char *fname,int lenbuf)
 ------------------------------------------------------------------------*/
 int GetSaveName(char *fname,int lenbuf)
 {
-	OPENFILENAME ofn;
-	int r;
-	char *p,defext[5],tmp[512];
+        OPENFILENAME ofn;
+        int r;
+        char *p,defext[5],tmp[512];
 
-	memset(&ofn,0,sizeof(OPENFILENAME));
-	memset(tmp,0,sizeof(tmp));
-	fname[0] = 0;
-	strcpy(tmp,"Text files|*.txt");
-	p = tmp;
-	while (*p) {
-		if (*p == '|')
-			*p = 0;
-		p++;
-	}
-	strcpy(defext,"txt");
-	ofn.lStructSize = sizeof(OPENFILENAME);
-	ofn.hwndOwner = hwndMain;
-	ofn.lpstrFilter = tmp;
-	ofn.nFilterIndex = 1;
-	ofn.hInstance = hInst;
-	ofn.lpstrFile = fname;
-	ofn.lpstrTitle = "Save as";
-	ofn.lpstrInitialDir = LibDir;
-	ofn.nMaxFile = lenbuf;
-	ofn.Flags =  OFN_NOCHANGEDIR | OFN_LONGNAMES |
-		OFN_HIDEREADONLY |OFN_EXPLORER;
-	r = GetSaveFileName(&ofn);
-	if (r == 0)
-		return 0;
-	else return 1;
+        memset(&ofn,0,sizeof(OPENFILENAME));
+        memset(tmp,0,sizeof(tmp));
+        fname[0] = 0;
+        strcpy(tmp,"Text files|*.txt");
+        p = tmp;
+        while (*p) {
+                if (*p == '|')
+                        *p = 0;
+                p++;
+        }
+        strcpy(defext,"txt");
+        ofn.lStructSize = sizeof(OPENFILENAME);
+        ofn.hwndOwner = hwndMain;
+        ofn.lpstrFilter = tmp;
+        ofn.nFilterIndex = 1;
+        ofn.hInstance = hInst;
+        ofn.lpstrFile = fname;
+        ofn.lpstrTitle = "Save as";
+        ofn.lpstrInitialDir = LibDir;
+        ofn.nMaxFile = lenbuf;
+        ofn.Flags =  OFN_NOCHANGEDIR | OFN_LONGNAMES |
+                OFN_HIDEREADONLY |OFN_EXPLORER;
+        r = GetSaveFileName(&ofn);
+        if (r == 0)
+                return 0;
+        else return 1;
 }
 /*------------------------------------------------------------------------
  Procedure:     BrowseForFile ID:1
@@ -122,36 +122,36 @@ int GetSaveName(char *fname,int lenbuf)
 ------------------------------------------------------------------------*/
 int BrowseForFile(char *fname,char *path)
 {
-	OPENFILENAME ofn;
-	char *p,tmp[512],browsefor[512];
-	int r;
+        OPENFILENAME ofn;
+        char *p,tmp[512],browsefor[512];
+        int r;
 
-	memset(tmp,0,sizeof(tmp));
-	strncpy(tmp,fname,sizeof(tmp)-1);
-	p = tmp;
-	while (*p) {
-		if (*p == '|')
-			*p = 0;
-		p++;
-	}
-	memset(&ofn,0,sizeof(OPENFILENAME));
-	ofn.lpstrFilter = tmp;
-	ofn.nFilterIndex = 1;
-	ofn.lStructSize = sizeof(OPENFILENAME);
-	ofn.hwndOwner = hwndMain;
-	ofn.hInstance = hInst;
-	ofn.lpstrFilter = tmp;
-	ofn.lpstrFile = path;
-	wsprintf(browsefor,"Open %s",fname);
-	ofn.lpstrTitle = browsefor;
-	ofn.lpstrInitialDir = "c:\\";
-	ofn.nMaxFile = MAX_PATH;
-	ofn.Flags = OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR | OFN_LONGNAMES |
-		OFN_HIDEREADONLY |OFN_EXPLORER;
-	r = GetOpenFileName(&ofn);
-	if (r == 0)
-		return 0;
-	else return 1;
+        memset(tmp,0,sizeof(tmp));
+        strncpy(tmp,fname,sizeof(tmp)-1);
+        p = tmp;
+        while (*p) {
+                if (*p == '|')
+                        *p = 0;
+                p++;
+        }
+        memset(&ofn,0,sizeof(OPENFILENAME));
+        ofn.lpstrFilter = tmp;
+        ofn.nFilterIndex = 1;
+        ofn.lStructSize = sizeof(OPENFILENAME);
+        ofn.hwndOwner = hwndMain;
+        ofn.hInstance = hInst;
+        ofn.lpstrFilter = tmp;
+        ofn.lpstrFile = path;
+        wsprintf(browsefor,"Open %s",fname);
+        ofn.lpstrTitle = browsefor;
+        ofn.lpstrInitialDir = "c:\\";
+        ofn.nMaxFile = MAX_PATH;
+        ofn.Flags = OFN_PATHMUSTEXIST | OFN_NOCHANGEDIR | OFN_LONGNAMES |
+                OFN_HIDEREADONLY |OFN_EXPLORER;
+        r = GetOpenFileName(&ofn);
+        if (r == 0)
+                return 0;
+        else return 1;
 }
 
 /*------------------------------------------------------------------------
@@ -166,31 +166,31 @@ int BrowseForFile(char *fname,char *path)
 ------------------------------------------------------------------------*/
 static int CallChangeFont(HWND hwnd)
 {
-	LOGFONT lf;
-	CHOOSEFONT cf;
-	int r;
-	HWND hwndChild;
+        LOGFONT lf;
+        CHOOSEFONT cf;
+        int r;
+        HWND hwndChild;
 
-	memset(&cf, 0, sizeof(CHOOSEFONT));
-	memcpy(&lf, &CurrentFont, sizeof(LOGFONT));
-	cf.lStructSize = sizeof(CHOOSEFONT);
-	cf.hwndOwner = hwnd;
-	cf.lpLogFont = &lf;
-	cf.Flags = CF_SCREENFONTS | CF_EFFECTS | CF_APPLY | CF_INITTOLOGFONTSTRUCT;
-	cf.nFontType = SCREEN_FONTTYPE;
-	r = ChooseFont(&cf);
-	if (!r)
-		return (0);
-	DeleteObject(ProgramParams.hFont);
-	memcpy(&CurrentFont, &lf, sizeof(LOGFONT));
-	ProgramParams.hFont = CreateFontIndirect(&CurrentFont);
-	strcpy(CurrentFontName, CurrentFont.lfFaceName);
-	CurrentFontFamily = lf.lfPitchAndFamily;
-	CurrentFontStyle = lf.lfWeight;
+        memset(&cf, 0, sizeof(CHOOSEFONT));
+        memcpy(&lf, &CurrentFont, sizeof(LOGFONT));
+        cf.lStructSize = sizeof(CHOOSEFONT);
+        cf.hwndOwner = hwnd;
+        cf.lpLogFont = &lf;
+        cf.Flags = CF_SCREENFONTS | CF_EFFECTS | CF_APPLY | CF_INITTOLOGFONTSTRUCT;
+        cf.nFontType = SCREEN_FONTTYPE;
+        r = ChooseFont(&cf);
+        if (!r)
+                return (0);
+        DeleteObject(ProgramParams.hFont);
+        memcpy(&CurrentFont, &lf, sizeof(LOGFONT));
+        ProgramParams.hFont = CreateFontIndirect(&CurrentFont);
+        strcpy(CurrentFontName, CurrentFont.lfFaceName);
+        CurrentFontFamily = lf.lfPitchAndFamily;
+        CurrentFontStyle = lf.lfWeight;
     hwndChild = (HWND) GetWindowLong(hwndSession, DWL_USER);
-	SendMessage(hwndChild,WM_SETFONT,(WPARAM)ProgramParams.hFont,0);
-	ForceRepaint();
-	return (1);
+        SendMessage(hwndChild,WM_SETFONT,(WPARAM)ProgramParams.hFont,0);
+        ForceRepaint();
+        return (1);
 }
 
 /*------------------------------------------------------------------------
@@ -223,29 +223,29 @@ int CallDlgProc(BOOL (CALLBACK *fn)(HWND,UINT,WPARAM,LPARAM), int id)
 ------------------------------------------------------------------------*/
 static COLORREF CallChangeColor(COLORREF InitialColor)
 {
-	CHOOSECOLOR CC;
-	COLORREF CustColors[16];
-	int r, g, b, i;
-	memset(&CC, 0, sizeof(CHOOSECOLOR));
-	r = g = b = 0;
-	for (i = 0; i < 16; i++) {
-		CustColors[i] = RGB(r, g, b);
-		if (r < 255)
-			r += 127;
-		else if (g < 255)
-			g += 127;
-		else if (b < 255)
-			g += 127;
-	}
-	CC.lStructSize = sizeof(CHOOSECOLOR);
-	CC.hwndOwner = hwndMain;
-	CC.hInstance = hInst;
-	CC.rgbResult = InitialColor;
-	CC.lpCustColors = CustColors;
-	CC.Flags = CC_RGBINIT;
-	if (!ChooseColor(&CC))
-		return (InitialColor);
-	return (CC.rgbResult);
+        CHOOSECOLOR CC;
+        COLORREF CustColors[16];
+        int r, g, b, i;
+        memset(&CC, 0, sizeof(CHOOSECOLOR));
+        r = g = b = 0;
+        for (i = 0; i < 16; i++) {
+                CustColors[i] = RGB(r, g, b);
+                if (r < 255)
+                        r += 127;
+                else if (g < 255)
+                        g += 127;
+                else if (b < 255)
+                        g += 127;
+        }
+        CC.lStructSize = sizeof(CHOOSECOLOR);
+        CC.hwndOwner = hwndMain;
+        CC.hInstance = hInst;
+        CC.rgbResult = InitialColor;
+        CC.lpCustColors = CustColors;
+        CC.Flags = CC_RGBINIT;
+        if (!ChooseColor(&CC))
+                return (InitialColor);
+        return (CC.rgbResult);
 }
 
 /*------------------------------------------------------------------------
@@ -259,18 +259,18 @@ static COLORREF CallChangeColor(COLORREF InitialColor)
 ------------------------------------------------------------------------*/
 static int CallPrintSetup(void)
 {
-	PAGESETUPDLG sd;
-	int r;
+        PAGESETUPDLG sd;
+        int r;
 
-	memset(&sd,0,sizeof(sd));
-	sd.lStructSize = sizeof(sd);
-	sd.Flags = PSD_RETURNDEFAULT;
-	r = PageSetupDlg(&sd);
-	if (!r)
-		return 0;
-	sd.Flags = 0;
-	r = PageSetupDlg(&sd);
-	return r;
+        memset(&sd,0,sizeof(sd));
+        sd.lStructSize = sizeof(sd);
+        sd.Flags = PSD_RETURNDEFAULT;
+        r = PageSetupDlg(&sd);
+        if (!r)
+                return 0;
+        sd.Flags = 0;
+        r = PageSetupDlg(&sd);
+        return r;
 }
 
 
@@ -283,10 +283,10 @@ static int CallPrintSetup(void)
 ------------------------------------------------------------------------*/
 void Undo(HWND hwnd)
 {
-	HWND hEdit;
+        HWND hEdit;
 
-	hEdit = (HWND)GetWindowLong(hwnd,DWL_USER);
-	SendMessage(hEdit,EM_UNDO,0,0);
+        hEdit = (HWND)GetWindowLong(hwnd,DWL_USER);
+        SendMessage(hEdit,EM_UNDO,0,0);
 }
 
 /*------------------------------------------------------------------------
@@ -299,14 +299,14 @@ void Undo(HWND hwnd)
 ------------------------------------------------------------------------*/
 void ForceRepaint(void)
 {
-	HWND hwndEdit = (HWND)GetWindowLong(hwndSession,DWL_USER);
-	InvalidateRect(hwndEdit,NULL,1);
+        HWND hwndEdit = (HWND)GetWindowLong(hwndSession,DWL_USER);
+        InvalidateRect(hwndEdit,NULL,1);
 }
 
 static void Add_Char_To_Queue(int c)
 {
-	HWND hwndEdit = (HWND)GetWindowLong(hwndSession,DWL_USER);
-	SendMessage(hwndEdit,WM_CHAR,c,1);
+        HWND hwndEdit = (HWND)GetWindowLong(hwndSession,DWL_USER);
+        SendMessage(hwndEdit,WM_CHAR,c,1);
 }
 
 /*------------------------------------------------------------------------
@@ -321,14 +321,14 @@ static void Add_Char_To_Queue(int c)
 ------------------------------------------------------------------------*/
 void AddLineToControl(char *buf)
 {
-	HWND hEditCtrl;
+        HWND hEditCtrl;
 
-	if (*buf == 0)
-		return;
-	hEditCtrl = (HWND)GetWindowLong(hwndSession,DWL_USER);
-	GotoEOF();
-	SendMessage(hEditCtrl,EM_REPLACESEL,0,(LPARAM)buf);
-	SendMessage(hEditCtrl,WM_CHAR,'\r',0);
+        if (*buf == 0)
+                return;
+        hEditCtrl = (HWND)GetWindowLong(hwndSession,DWL_USER);
+        GotoEOF();
+        SendMessage(hEditCtrl,EM_REPLACESEL,0,(LPARAM)buf);
+        SendMessage(hEditCtrl,WM_CHAR,'\r',0);
 }
 
 /*------------------------------------------------------------------------
@@ -340,9 +340,9 @@ void AddLineToControl(char *buf)
 ------------------------------------------------------------------------*/
 static BOOL CALLBACK AboutDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	if (message == WM_CLOSE)
-		EndDialog(hDlg,1);
-	return 0;
+        if (message == WM_CLOSE)
+                EndDialog(hDlg,1);
+        return 0;
 }
 /*------------------------------------------------------------------------
  Procedure:     HistoryDlgProc ID:1
@@ -357,48 +357,48 @@ static BOOL CALLBACK AboutDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM
 ------------------------------------------------------------------------*/
 static BOOL CALLBACK HistoryDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
-	HISTORYLINE *rvp;
-	int idx;
-	RECT rc;
+        HISTORYLINE *rvp;
+        int idx;
+        RECT rc;
 
-	switch (message) {
-		case WM_INITDIALOG:
-			SendDlgItemMessage(hDlg,IDLIST,WM_SETFONT,(WPARAM)ProgramParams.hFont,0);
-			rvp = History;
-			idx = 0;
-			while (rvp) {
-				SendDlgItemMessage(hDlg,IDLIST,LB_INSERTSTRING,0,(LPARAM)rvp->Text);
-				SendDlgItemMessage(hDlg,IDLIST,LB_SETITEMDATA,0,(LPARAM)idx);
-				rvp = rvp->Next;
-				idx++;
-			}
-			SendDlgItemMessage(hDlg,IDLIST,LB_SETCURSEL,(LPARAM)idx-1,0);
-			return 1;
-		case WM_COMMAND:
-			switch(LOWORD(wParam)) {
-				case IDLIST:
-					switch(HIWORD(wParam)) {
-						case LBN_DBLCLK:
-							idx = SendDlgItemMessage(hDlg,IDLIST,LB_GETCURSEL,0,0);
-							if (idx == LB_ERR)
-								break;
-							idx = SendDlgItemMessage(hDlg,IDLIST,LB_GETITEMDATA,idx,0);
-							EndDialog(hDlg,idx+1);
-							return 1;
-					}
-					break;
-			}
-			break;
-		case WM_SIZE:
-			GetClientRect(hDlg,&rc);
-			MoveWindow(GetDlgItem(hDlg,IDLIST),0,0,rc.right,rc.bottom,1);
-			break;
+        switch (message) {
+                case WM_INITDIALOG:
+                        SendDlgItemMessage(hDlg,IDLIST,WM_SETFONT,(WPARAM)ProgramParams.hFont,0);
+                        rvp = History;
+                        idx = 0;
+                        while (rvp) {
+                                SendDlgItemMessage(hDlg,IDLIST,LB_INSERTSTRING,0,(LPARAM)rvp->Text);
+                                SendDlgItemMessage(hDlg,IDLIST,LB_SETITEMDATA,0,(LPARAM)idx);
+                                rvp = rvp->Next;
+                                idx++;
+                        }
+                        SendDlgItemMessage(hDlg,IDLIST,LB_SETCURSEL,(LPARAM)idx-1,0);
+                        return 1;
+                case WM_COMMAND:
+                        switch(LOWORD(wParam)) {
+                                case IDLIST:
+                                        switch(HIWORD(wParam)) {
+                                                case LBN_DBLCLK:
+                                                        idx = SendDlgItemMessage(hDlg,IDLIST,LB_GETCURSEL,0,0);
+                                                        if (idx == LB_ERR)
+                                                                break;
+                                                        idx = SendDlgItemMessage(hDlg,IDLIST,LB_GETITEMDATA,idx,0);
+                                                        EndDialog(hDlg,idx+1);
+                                                        return 1;
+                                        }
+                                        break;
+                        }
+                        break;
+                case WM_SIZE:
+                        GetClientRect(hDlg,&rc);
+                        MoveWindow(GetDlgItem(hDlg,IDLIST),0,0,rc.right,rc.bottom,1);
+                        break;
 
-		case WM_CLOSE:
-			EndDialog(hDlg,0);
-			break;
-	}
-	return 0;
+                case WM_CLOSE:
+                        EndDialog(hDlg,0);
+                        break;
+        }
+        return 0;
 }
 /*------------------------------------------------------------------------
  Procedure:     SaveText ID:1
@@ -411,27 +411,27 @@ static BOOL CALLBACK HistoryDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPAR
 ------------------------------------------------------------------------*/
 static void SaveText(char *fname)
 {
-	int i,len;
-	HWND hEdit = (HWND)GetWindowLong(hwndSession,DWL_USER);
-	int linesCount = SendMessage(hEdit,EM_GETLINECOUNT,0,0);
-	FILE *f;
-	char *buf = SafeMalloc(8192);
+        int i,len;
+        HWND hEdit = (HWND)GetWindowLong(hwndSession,DWL_USER);
+        int linesCount = SendMessage(hEdit,EM_GETLINECOUNT,0,0);
+        FILE *f;
+        char *buf = SafeMalloc(8192);
 
-	f = fopen(fname,"wb");
-	if (f == NULL) {
-		wsprintf("Impossible to open %s for writing",fname);
-		ShowDbgMsg(buf);
-		return;
-	}
-	for (i=0; i<linesCount;i++) {
-		*(unsigned short *)buf = 8100;
-		len = SendMessage(hEdit,EM_GETLINE,i,(LPARAM)buf);
-		buf[len] = 0;
-		strcat(buf,"\r\n");
-		fwrite(buf,1,len+2,f);
-	}
-	fclose(f);
-	free(buf);
+        f = fopen(fname,"wb");
+        if (f == NULL) {
+                wsprintf("Impossible to open %s for writing",fname);
+                ShowDbgMsg(buf);
+                return;
+        }
+        for (i=0; i<linesCount;i++) {
+                *(unsigned short *)buf = 8100;
+                len = SendMessage(hEdit,EM_GETLINE,i,(LPARAM)buf);
+                buf[len] = 0;
+                strcat(buf,"\r\n");
+                fwrite(buf,1,len+2,f);
+        }
+        fclose(f);
+        free(buf);
 }
 
 
@@ -462,30 +462,30 @@ static void Add_Clipboard_To_Queue(void)
 
 static void CopyToClipboard(HWND hwnd)
 {
-	HWND hwndEdit = (HWND)GetWindowLong(hwndSession,DWL_USER);
-	SendMessage(hwndEdit,WM_COPY,0,0);
+        HWND hwndEdit = (HWND)GetWindowLong(hwndSession,DWL_USER);
+        SendMessage(hwndEdit,WM_COPY,0,0);
 }
 
 int ResetText(void)
 {
-	HWND hwndEdit = (HWND) GetWindowLong(hwndSession,DWL_USER);
-	TEXTRANGE cr;
-	int len = SendMessage(hwndEdit,WM_GETTEXTLENGTH,0,0);
-	char *tmp = malloc(len+10),*p;
+        HWND hwndEdit = (HWND) GetWindowLong(hwndSession,DWL_USER);
+        TEXTRANGE cr;
+        int len = SendMessage(hwndEdit,WM_GETTEXTLENGTH,0,0);
+        char *tmp = malloc(len+10),*p;
 
-	memset(tmp,0,len+10);
-	cr.chrg.cpMin = 0;
-	cr.chrg.cpMax = -1;
-	cr.lpstrText = tmp;
-	SendMessage(hwndEdit,EM_GETTEXTRANGE,0,(LPARAM)&cr);
-	p = tmp+len/2;
-	while (*p && *p != '\r')
-		p++;
-	SendMessage(hwndEdit,EM_SETSEL,0,(LPARAM)-1);
-	SendMessage(hwndEdit,EM_REPLACESEL,0,(LPARAM)p);
-	InvalidateRect(hwndEdit,0,1);
-	free(tmp);
-	return 0;
+        memset(tmp,0,len+10);
+        cr.chrg.cpMin = 0;
+        cr.chrg.cpMax = -1;
+        cr.lpstrText = tmp;
+        SendMessage(hwndEdit,EM_GETTEXTRANGE,0,(LPARAM)&cr);
+        p = tmp+len/2;
+        while (*p && *p != '\r')
+                p++;
+        SendMessage(hwndEdit,EM_SETSEL,0,(LPARAM)-1);
+        SendMessage(hwndEdit,EM_REPLACESEL,0,(LPARAM)p);
+        InvalidateRect(hwndEdit,0,1);
+        free(tmp);
+        return 0;
 }
 
 /*------------------------------------------------------------------------
@@ -497,95 +497,95 @@ int ResetText(void)
 ------------------------------------------------------------------------*/
 void HandleCommand(HWND hwnd, WPARAM wParam,LPARAM lParam)
 {
-	char *fname;
-	int r;
+        char *fname;
+        int r;
 
-	switch(LOWORD(wParam)) {
-		case IDM_OPEN:
-			fname = SafeMalloc(512);
-			if (OpenMlFile(fname,512)) {
-				char *buf = SafeMalloc(512);
-				char *p = strrchr(fname,'.');
-				if (p && !stricmp(p,".ml")) {
-					wsprintf(buf,"#use \"%s\";;",fname);
-					AddLineToControl(buf);
-				}
-				else if (p && !stricmp(p,".cmo")) {
-					wsprintf(buf,"#load \"%s\";;",fname);
-					AddLineToControl(buf);
-				}
-				free(buf);
-			}
-			free(fname);
-			break;
-		case IDM_GC:
-			AddLineToControl("Gc.full_major();;");
-			break;
-		case IDCTRLC:
-			InterruptOcaml();
-			break;
-		case IDM_EDITPASTE:
-			Add_Clipboard_To_Queue();
-			break;
-		case IDM_EDITCOPY:
-			CopyToClipboard(hwnd);
-			break;
-		case IDM_SAVE:
-			fname = SafeMalloc(512);
-			if (GetSaveName(fname,512)) {
-				SaveText(fname);
-			}
-			free(fname);
-			break;
-		case IDM_HISTORY:
-			r = CallDlgProc(HistoryDlgProc,IDD_HISTORY);
-			if (r) {
-				AddLineToControl(GetHistoryLine(r-1));
-			}
-			break;
-		case IDM_PRINTSU:
-			CallPrintSetup();
-			break;
-		case IDM_FONT:
-			CallChangeFont(hwndMain);
-			break;
-		case IDM_COLORTEXT:
-			ProgramParams.TextColor = CallChangeColor(ProgramParams.TextColor);
-			ForceRepaint();
-			break;
-		case IDM_BACKCOLOR:
-			BackColor = CallChangeColor(BackColor);
-			DeleteObject(BackgroundBrush);
-			BackgroundBrush = CreateSolidBrush(BackColor);
-			ForceRepaint();
-			break;
-		case IDM_EDITUNDO:
-			Undo(hwnd);
-			break;
-		case IDM_WINDOWTILE:
-			SendMessage(hwndMDIClient,WM_MDITILE,0,0);
-			break;
-		case IDM_WINDOWCASCADE:
-			SendMessage(hwndMDIClient,WM_MDICASCADE,0,0);
-			break;
-		case IDM_WINDOWICONS:
-			SendMessage(hwndMDIClient,WM_MDIICONARRANGE,0,0);
-			break;
-		case IDM_EXIT:
-			PostMessage(hwnd,WM_CLOSE,0,0);
-			break;
-		case IDM_ABOUT:
-			CallDlgProc(AboutDlgProc,IDD_ABOUT);
-			break;
-		default:
-			if (LOWORD(wParam) >= IDEDITCONTROL && LOWORD(wParam) < IDEDITCONTROL+5) {
-				switch (HIWORD(wParam)) {
-					case EN_ERRSPACE:
-						ResetText();
-						break;
-				}
-			}
-			break;
-	}
+        switch(LOWORD(wParam)) {
+                case IDM_OPEN:
+                        fname = SafeMalloc(512);
+                        if (OpenMlFile(fname,512)) {
+                                char *buf = SafeMalloc(512);
+                                char *p = strrchr(fname,'.');
+                                if (p && !stricmp(p,".ml")) {
+                                        wsprintf(buf,"#use \"%s\";;",fname);
+                                        AddLineToControl(buf);
+                                }
+                                else if (p && !stricmp(p,".cmo")) {
+                                        wsprintf(buf,"#load \"%s\";;",fname);
+                                        AddLineToControl(buf);
+                                }
+                                free(buf);
+                        }
+                        free(fname);
+                        break;
+                case IDM_GC:
+                        AddLineToControl("Gc.full_major();;");
+                        break;
+                case IDCTRLC:
+                        InterruptOcaml();
+                        break;
+                case IDM_EDITPASTE:
+                        Add_Clipboard_To_Queue();
+                        break;
+                case IDM_EDITCOPY:
+                        CopyToClipboard(hwnd);
+                        break;
+                case IDM_SAVE:
+                        fname = SafeMalloc(512);
+                        if (GetSaveName(fname,512)) {
+                                SaveText(fname);
+                        }
+                        free(fname);
+                        break;
+                case IDM_HISTORY:
+                        r = CallDlgProc(HistoryDlgProc,IDD_HISTORY);
+                        if (r) {
+                                AddLineToControl(GetHistoryLine(r-1));
+                        }
+                        break;
+                case IDM_PRINTSU:
+                        CallPrintSetup();
+                        break;
+                case IDM_FONT:
+                        CallChangeFont(hwndMain);
+                        break;
+                case IDM_COLORTEXT:
+                        ProgramParams.TextColor = CallChangeColor(ProgramParams.TextColor);
+                        ForceRepaint();
+                        break;
+                case IDM_BACKCOLOR:
+                        BackColor = CallChangeColor(BackColor);
+                        DeleteObject(BackgroundBrush);
+                        BackgroundBrush = CreateSolidBrush(BackColor);
+                        ForceRepaint();
+                        break;
+                case IDM_EDITUNDO:
+                        Undo(hwnd);
+                        break;
+                case IDM_WINDOWTILE:
+                        SendMessage(hwndMDIClient,WM_MDITILE,0,0);
+                        break;
+                case IDM_WINDOWCASCADE:
+                        SendMessage(hwndMDIClient,WM_MDICASCADE,0,0);
+                        break;
+                case IDM_WINDOWICONS:
+                        SendMessage(hwndMDIClient,WM_MDIICONARRANGE,0,0);
+                        break;
+                case IDM_EXIT:
+                        PostMessage(hwnd,WM_CLOSE,0,0);
+                        break;
+                case IDM_ABOUT:
+                        CallDlgProc(AboutDlgProc,IDD_ABOUT);
+                        break;
+                default:
+                        if (LOWORD(wParam) >= IDEDITCONTROL && LOWORD(wParam) < IDEDITCONTROL+5) {
+                                switch (HIWORD(wParam)) {
+                                        case EN_ERRSPACE:
+                                                ResetText();
+                                                break;
+                                }
+                        }
+                        break;
+        }
 }
 

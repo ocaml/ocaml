@@ -20,10 +20,10 @@
 CAMLprim value unix_rename(value path1, value path2)
 {
   if (MoveFileEx(String_val(path1), String_val(path2),
-		 MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH |
-		 MOVEFILE_COPY_ALLOWED) == 0) {
+                 MOVEFILE_REPLACE_EXISTING | MOVEFILE_WRITE_THROUGH |
+                 MOVEFILE_COPY_ALLOWED) == 0) {
     win32_maperr(GetLastError());
     uerror("rename", path1);
-  }	
+  }     
   return Val_unit;
 }

@@ -47,15 +47,15 @@ and class_constr = {
 
 and class_kind =
     Class_structure of inherited_class list * class_element list
-	(** an explicit class structure, used in implementation and interface *)
+        (** an explicit class structure, used in implementation and interface *)
   | Class_apply of class_apply (** application/alias of a class, used in implementation only *)
   | Class_constr of class_constr (** a class used to give the type of the defined class,
-				    instead of a structure, used in interface only.
-				    For example, it will be used with the name "M1.M2....tutu" 
-				    when the class to is defined like this :
-				    class toto : int -> tutu *)
+                                    instead of a structure, used in interface only.
+                                    For example, it will be used with the name "M1.M2....tutu" 
+                                    when the class to is defined like this :
+                                    class toto : int -> tutu *)
   | Class_constraint of class_kind * class_type_kind
-	(** A class definition with a constraint. *)
+        (** A class definition with a constraint. *)
 
 (** Representation of a class. *)
 and t_class = {
@@ -100,11 +100,11 @@ let class_parameter_text_by_name cl label =
     None -> None
   | Some i ->
       try
-	let t = List.assoc label i.Odoc_types.i_params in
-	Some t
+        let t = List.assoc label i.Odoc_types.i_params in
+        Some t
       with
-	Not_found ->
-	  None
+        Not_found ->
+          None
 
 (** Returns the list of elements of a t_class. *)
 let rec class_elements ?(trans=true) cl = 
@@ -112,29 +112,29 @@ let rec class_elements ?(trans=true) cl =
     match k with
       Class_structure (_, elements) -> elements
     | Class_constraint (c_kind, ct_kind) ->
-	iter_kind c_kind
+        iter_kind c_kind
       (* A VOIR : utiliser le c_kind ou le ct_kind ?
-	 Pour l'instant, comme le ct_kind n'est pas analysé,
-	 on cherche dans le c_kind
-	 class_type_elements ~trans: trans 
-	 { clt_name = "" ; clt_info = None ;
-	  clt_type_parameters = [] ;
-	 clt_virtual = false ;
-	 clt_kind = ct_kind }
+         Pour l'instant, comme le ct_kind n'est pas analysé,
+         on cherche dans le c_kind
+         class_type_elements ~trans: trans 
+         { clt_name = "" ; clt_info = None ;
+          clt_type_parameters = [] ;
+         clt_virtual = false ;
+         clt_kind = ct_kind }
       *)
     | Class_apply capp ->
-	(
-	 match capp.capp_class with
-	   Some c when trans -> class_elements ~trans: trans c
-	 | _ -> []
-	)
+        (
+         match capp.capp_class with
+           Some c when trans -> class_elements ~trans: trans c
+         | _ -> []
+        )
     | Class_constr cco ->
-	(
-	 match cco.cco_class with
-	   Some (Cl c) when trans -> class_elements ~trans: trans c
-	 | Some (Cltype (ct,_)) when trans -> class_type_elements ~trans: trans ct
-	 | _ -> []
-	)
+        (
+         match cco.cco_class with
+           Some (Cl c) when trans -> class_elements ~trans: trans c
+         | Some (Cltype (ct,_)) when trans -> class_type_elements ~trans: trans ct
+         | _ -> []
+        )
   in
   iter_kind cl.cl_kind 
   
@@ -154,10 +154,10 @@ let class_attributes ?(trans=true) cl =
   List.fold_left
     (fun acc -> fun ele ->
       match ele with
-	Class_attribute a ->
-	  acc @ [ a ]
+        Class_attribute a ->
+          acc @ [ a ]
       | _ ->
-	  acc
+          acc
     )
     []
     (class_elements ~trans cl)
@@ -167,10 +167,10 @@ let class_methods ?(trans=true) cl =
   List.fold_left
     (fun acc -> fun ele ->
       match ele with
-	Class_method m ->
-	  acc @ [ m ]
+        Class_method m ->
+          acc @ [ m ]
       | _ ->
-	  acc
+          acc
     )
     []
     (class_elements ~trans cl)
@@ -180,10 +180,10 @@ let class_comments ?(trans=true) cl =
   List.fold_left
     (fun acc -> fun ele ->
       match ele with
-	Class_comment t ->
-	  acc @ [ t ]
+        Class_comment t ->
+          acc @ [ t ]
       | _ ->
-	  acc
+          acc
     )
     []
     (class_elements ~trans cl)
@@ -201,10 +201,10 @@ let class_type_attributes ?(trans=true) clt =
   List.fold_left
     (fun acc -> fun ele ->
       match ele with
-	Class_attribute a ->
-	  acc @ [ a ]
+        Class_attribute a ->
+          acc @ [ a ]
       | _ ->
-	  acc
+          acc
     )
     []
     (class_type_elements ~trans clt)
@@ -214,10 +214,10 @@ let class_type_methods ?(trans=true) clt =
   List.fold_left
     (fun acc -> fun ele ->
       match ele with
-	Class_method m ->
-	  acc @ [ m ]
+        Class_method m ->
+          acc @ [ m ]
       | _ ->
-	  acc
+          acc
     )
     []
     (class_type_elements ~trans clt)
@@ -227,10 +227,10 @@ let class_type_comments ?(trans=true) clt =
   List.fold_left
     (fun acc -> fun ele ->
       match ele with
-	Class_comment m ->
-	  acc @ [ m ]
+        Class_comment m ->
+          acc @ [ m ]
       | _ ->
-	  acc
+          acc
     )
     []
     (class_type_elements ~trans clt)
@@ -242,10 +242,10 @@ let class_type_parameter_text_by_name clt label =
     None -> None
   | Some i ->
       try
-	let t = List.assoc label i.Odoc_types.i_params in
-	Some t
+        let t = List.assoc label i.Odoc_types.i_params in
+        Some t
       with
-	Not_found ->
-	  None
+        Not_found ->
+          None
 
-	
+        

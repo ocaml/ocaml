@@ -59,16 +59,16 @@ CAMLprim value camltk_getimgdata (value imgname) /* ML */
     CAMLreturn(res);
   } else {
     int y;                      /* varies from 0 to height - 1 */
-    int yoffs = 0;		/* byte offset of line in src */
-    int yidx = 0;	        /* byte offset of line in dst */
+    int yoffs = 0;              /* byte offset of line in src */
+    int yidx = 0;               /* byte offset of line in dst */
     for (y=0; y<pib.height; y++,yoffs+=pib.pitch,yidx+=pib.width * 3) {
-      int x;			/* varies from 0 to width - 1 */
-      int xoffs = yoffs;	/* byte offset of pxl in src */
-      int xidx = yidx;		/* byte offset of pxl in dst */
+      int x;                    /* varies from 0 to width - 1 */
+      int xoffs = yoffs;        /* byte offset of pxl in src */
+      int xidx = yidx;          /* byte offset of pxl in dst */
       for (x=0; x<pib.width; x++,xoffs+=pib.pixelSize,xidx+=3) {
-	Byte(res, xidx) = pib.pixelPtr[xoffs+pib.offset[0]];
-	Byte(res, xidx + 1) = pib.pixelPtr[xoffs+pib.offset[1]];
-	Byte(res, xidx + 2) = pib.pixelPtr[xoffs+pib.offset[2]];
+        Byte(res, xidx) = pib.pixelPtr[xoffs+pib.offset[0]];
+        Byte(res, xidx + 1) = pib.pixelPtr[xoffs+pib.offset[1]];
+        Byte(res, xidx + 2) = pib.pixelPtr[xoffs+pib.offset[2]];
       };
     }
     CAMLreturn(res);
@@ -77,7 +77,7 @@ CAMLprim value camltk_getimgdata (value imgname) /* ML */
 
 CAMLprim void
 camltk_setimgdata_native (value imgname, value pixmap, value x, value y, 
-		   value w, value h) /* ML */
+                   value w, value h) /* ML */
 {
   Tk_PhotoHandle ph;
   Tk_PhotoImageBlock pib;
@@ -107,5 +107,5 @@ CAMLprim void camltk_setimgdata_bytecode(argv,argn)
      int argn;
 {
   camltk_setimgdata_native(argv[0], argv[1], argv[2], argv[3],
-			   argv[4], argv[5]);
+                           argv[4], argv[5]);
 }

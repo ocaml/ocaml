@@ -51,7 +51,7 @@ and module_kind =
   | Module_apply of module_kind * module_kind
   | Module_with of module_type_kind * string
   | Module_constraint of module_kind * module_type_kind
-	
+        
 (** Representation of a module. *)
 and t_module = {
     m_name : Name.t ; 
@@ -84,7 +84,7 @@ and t_module_type = {
     mt_is_interface : bool ; (** true for modules read from interface files *)
     mt_file : string ; (** the file the module type is defined in. *)
     mutable mt_kind : module_type_kind option ; (** [None] = abstract module type if mt_type = None ;
-					   Always [None] when the module type was extracted from the implementation file. *)
+                                           Always [None] when the module type was extracted from the implementation file. *)
     mutable mt_loc : Odoc_types.location ;  
   } 
 
@@ -96,8 +96,8 @@ let values l =
   List.fold_left 
     (fun acc -> fun ele ->
       match ele with 
-	Element_value v -> acc @ [v]
-      |	_ -> acc
+        Element_value v -> acc @ [v]
+      | _ -> acc
     )
     []
     l
@@ -107,8 +107,8 @@ let types l =
   List.fold_left 
     (fun acc -> fun ele ->
       match ele with 
-	Element_type t -> acc @ [t]
-      |	_ -> acc
+        Element_type t -> acc @ [t]
+      | _ -> acc
     )
     []
     l
@@ -118,8 +118,8 @@ let exceptions l =
   List.fold_left 
     (fun acc -> fun ele ->
       match ele with 
-	Element_exception e -> acc @ [e]
-      |	_ -> acc
+        Element_exception e -> acc @ [e]
+      | _ -> acc
     )
     []
     l
@@ -129,8 +129,8 @@ let classes l =
   List.fold_left 
     (fun acc -> fun ele ->
       match ele with 
-	Element_class c -> acc @ [c]
-      |	_ -> acc
+        Element_class c -> acc @ [c]
+      | _ -> acc
     )
     []
     l
@@ -140,8 +140,8 @@ let class_types l =
   List.fold_left 
     (fun acc -> fun ele ->
       match ele with 
-	Element_class_type ct -> acc @ [ct]
-      |	_ -> acc
+        Element_class_type ct -> acc @ [ct]
+      | _ -> acc
     )
     []
     l
@@ -151,8 +151,8 @@ let modules l =
   List.fold_left 
     (fun acc -> fun ele ->
       match ele with 
-	Element_module m -> acc @ [m]
-      |	_ -> acc
+        Element_module m -> acc @ [m]
+      | _ -> acc
     )
     []
     l
@@ -162,8 +162,8 @@ let mod_types l =
   List.fold_left 
     (fun acc -> fun ele ->
       match ele with 
-	Element_module_type mt -> acc @ [mt]
-      |	_ -> acc
+        Element_module_type mt -> acc @ [mt]
+      | _ -> acc
     )
     []
     l
@@ -173,8 +173,8 @@ let comments l =
   List.fold_left 
     (fun acc -> fun ele ->
       match ele with 
-	Element_module_comment t -> acc @ [t]
-      |	_ -> acc
+        Element_module_comment t -> acc @ [t]
+      | _ -> acc
     )
     []
     l
@@ -184,8 +184,8 @@ let included_modules l =
   List.fold_left 
     (fun acc -> fun ele ->
       match ele with 
-	Element_included_module m -> acc @ [m]
-      |	_ -> acc
+        Element_included_module m -> acc @ [m]
+      | _ -> acc
     )
     []
     l
@@ -197,33 +197,33 @@ let rec module_elements ?(trans=true) m =
     Module_struct l -> l
   | Module_alias ma -> 
       if trans then
-	match ma.ma_module with
-	  None -> []
-	| Some (Mod m) -> module_elements m
-	| Some (Modtype mt) -> module_type_elements mt
+        match ma.ma_module with
+          None -> []
+        | Some (Mod m) -> module_elements m
+        | Some (Modtype mt) -> module_type_elements mt
       else
-	[]
+        []
   | Module_functor (_, k) 
   | Module_apply (k, _) -> iter_kind k
   | Module_with (tk,_) ->
       module_type_elements ~trans: trans
-	{ mt_name = "" ; mt_info = None ; mt_type = None ;
-	  mt_is_interface = false ; mt_file = "" ; mt_kind = Some tk ;
-	  mt_loc = Odoc_types.dummy_loc ;
-	}
+        { mt_name = "" ; mt_info = None ; mt_type = None ;
+          mt_is_interface = false ; mt_file = "" ; mt_kind = Some tk ;
+          mt_loc = Odoc_types.dummy_loc ;
+        }
   | Module_constraint (k, tk) ->
       (* A VOIR : utiliser k ou tk ? *)
       module_elements ~trans: trans
-	{ m_name = "" ; m_info = None ; m_type = Types.Tmty_signature [] ;
-	  m_is_interface = false ; m_file = "" ; m_kind = k ;
-	  m_loc = Odoc_types.dummy_loc ;
-	  m_top_deps = [] ;
-	}
+        { m_name = "" ; m_info = None ; m_type = Types.Tmty_signature [] ;
+          m_is_interface = false ; m_file = "" ; m_kind = k ;
+          m_loc = Odoc_types.dummy_loc ;
+          m_top_deps = [] ;
+        }
 (*
       module_type_elements ~trans: trans
-	{ mt_name = "" ; mt_info = None ; mt_type = None ;
-	  mt_is_interface = false ; mt_file = "" ; mt_kind = Some tk ;
-	  mt_loc = Odoc_types.dummy_loc }
+        { mt_name = "" ; mt_info = None ; mt_type = None ;
+          mt_is_interface = false ; mt_file = "" ; mt_kind = Some tk ;
+          mt_loc = Odoc_types.dummy_loc }
 *)
   in
   iter_kind m.m_kind 
@@ -236,15 +236,15 @@ and module_type_elements ?(trans=true) mt =
     | Some (Module_type_struct l) -> l
     | Some (Module_type_functor (_, k)) -> iter_kind (Some k)
     | Some (Module_type_with (k, _)) ->
-	if trans then
-	  iter_kind (Some k)
-	else
-	  []
+        if trans then
+          iter_kind (Some k)
+        else
+          []
     | Some (Module_type_alias mta) -> 
        if trans then
-	 match mta.mta_module with
-	   None -> []
-	 | Some mt -> module_type_elements mt
+         match mta.mta_module with
+           None -> []
+         | Some mt -> module_type_elements mt
        else
         []
   in
@@ -306,40 +306,40 @@ let rec module_type_parameters ?(trans=true) mt =
   let rec iter k =
     match k with
       Some (Module_type_functor (params, _)) -> 
-	(
+        (
          (* we create the couple (parameter, description opt), using
-	    the description of the parameter if we can find it in the comment.*)
-	 match mt.mt_info with
-	   None ->
-	     List.map (fun p -> (p, None)) params
-	 | Some i ->
-	     List.map 
-	       (fun p ->
-		 try
-		   let d = List.assoc p.Odoc_parameter.mp_name i.Odoc_types.i_params in
-		   (p, Some d)
-		 with
-		   Not_found ->
-		     (p, None)
-	       )
-	       params
-	)
+            the description of the parameter if we can find it in the comment.*)
+         match mt.mt_info with
+           None ->
+             List.map (fun p -> (p, None)) params
+         | Some i ->
+             List.map 
+               (fun p ->
+                 try
+                   let d = List.assoc p.Odoc_parameter.mp_name i.Odoc_types.i_params in
+                   (p, Some d)
+                 with
+                   Not_found ->
+                     (p, None)
+               )
+               params
+        )
     | Some (Module_type_alias mta) ->
-	if trans then
-	  match mta.mta_module with
-	    None -> []
-	  | Some mt2 -> module_type_parameters ~trans mt2
-	else
-	  []
+        if trans then
+          match mta.mta_module with
+            None -> []
+          | Some mt2 -> module_type_parameters ~trans mt2
+        else
+          []
     | Some (Module_type_with (k, _)) ->
-	if trans then
-	  iter (Some k)
-	else
-	  []
+        if trans then
+          iter (Some k)
+        else
+          []
     | Some (Module_type_struct _) ->
-	[]
+        []
     | None ->
-	[]
+        []
   in 
   iter mt.mt_kind
 
@@ -350,35 +350,35 @@ and module_parameters ?(trans=true) m =
     Module_functor (params, _) -> 
       (
        (* we create the couple (parameter, description opt), using
-	  the description of the parameter if we can find it in the comment.*)
+          the description of the parameter if we can find it in the comment.*)
        match m.m_info with
-	 None ->
-	   List.map (fun p -> (p, None)) params
+         None ->
+           List.map (fun p -> (p, None)) params
        | Some i ->
-	   List.map 
-	     (fun p ->
-	      try
-		let d = List.assoc p.Odoc_parameter.mp_name i.Odoc_types.i_params in
-		(p, Some d)
-	      with
-		Not_found ->
-		  (p, None)
-	     )
-	     params
+           List.map 
+             (fun p ->
+              try
+                let d = List.assoc p.Odoc_parameter.mp_name i.Odoc_types.i_params in
+                (p, Some d)
+              with
+                Not_found ->
+                  (p, None)
+             )
+             params
       )
   | Module_alias ma ->
       if trans then
-	match ma.ma_module with
-	  None -> []
-	| Some (Mod m) -> module_parameters ~trans m
-	| Some (Modtype mt) -> module_type_parameters ~trans mt
+        match ma.ma_module with
+          None -> []
+        | Some (Mod m) -> module_parameters ~trans m
+        | Some (Modtype mt) -> module_type_parameters ~trans mt
       else
-	[]
+        []
   | Module_constraint (k, tk) ->
       module_type_parameters ~trans: trans
-	{ mt_name = "" ; mt_info = None ; mt_type = None ;
-	  mt_is_interface = false ; mt_file = "" ; mt_kind = Some tk ;
-	  mt_loc = Odoc_types.dummy_loc }
+        { mt_name = "" ; mt_info = None ; mt_type = None ;
+          mt_is_interface = false ; mt_file = "" ; mt_kind = Some tk ;
+          mt_loc = Odoc_types.dummy_loc }
   | Module_struct _ 
   | Module_apply _ 
   | Module_with _ ->
@@ -399,13 +399,13 @@ let rec module_type_is_functor mt =
     match k with
       Some (Module_type_functor _) -> true
     | Some (Module_type_alias mta) ->
-	(
-	 match mta.mta_module with
-	   None -> false 
-	 | Some mtyp -> module_type_is_functor mtyp
-	)
+        (
+         match mta.mta_module with
+           None -> false 
+         | Some mtyp -> module_type_is_functor mtyp
+        )
     | Some (Module_type_with (k, _)) ->
-	iter (Some k)
+        iter (Some k)
     | Some (Module_type_struct _) 
     | None -> false
   in
@@ -418,7 +418,7 @@ let rec module_is_functor m =
   | Module_alias ma ->
       (
        match ma.ma_module with
-	 None -> false 
+         None -> false 
        | Some (Mod mo) -> module_is_functor mo
        | Some (Modtype mt) -> module_type_is_functor mt
       )

@@ -68,8 +68,8 @@ let print ?(esc=true) s =
 
 let print_class ?(esc=true) cl s =
   print ~esc: false ("<span class=\""^cl^"\">"^
-		     (if esc then escape s else s)^
-		     "</span>")
+                     (if esc then escape s else s)^
+                     "</span>")
 ;;
 
 (** The table of keywords with colors *)
@@ -174,21 +174,21 @@ let print_comment () =
       "<span class=\""^comment_class^"\">(*"^(escape s)^"*)</span>"
     else
       match s.[0] with 
-	'*' -> 
-	  (
-	   try 
-	     let html = !html_of_comment (String.sub s 1 (len-1)) in
-	     "</code><table><tr><td>"^(make_margin ())^"</td><td>"^
-	     "<span class=\""^comment_class^"\">"^
-	     "(**"^html^"*)"^
-	     "</span></td></tr></table><code class=\""^code_class^"\">"
-	   with
-	     e ->
-	       prerr_endline (Printexc.to_string e);
-	       "<span class=\""^comment_class^"\">(*"^(escape s)^"*)</span>"
-	  )
+        '*' -> 
+          (
+           try 
+             let html = !html_of_comment (String.sub s 1 (len-1)) in
+             "</code><table><tr><td>"^(make_margin ())^"</td><td>"^
+             "<span class=\""^comment_class^"\">"^
+             "(**"^html^"*)"^
+             "</span></td></tr></table><code class=\""^code_class^"\">"
+           with
+             e ->
+               prerr_endline (Printexc.to_string e);
+               "<span class=\""^comment_class^"\">(*"^(escape s)^"*)</span>"
+          )
       | _ ->
-	  "<span class=\""^comment_class^"\">(*"^(escape s)^"*)</span>"
+          "<span class=\""^comment_class^"\">(*"^(escape s)^"*)</span>"
   in
   print ~esc: false code
 
@@ -270,16 +270,16 @@ let float_literal =
 rule token = parse
     blank
       { 
-	let s = Lexing.lexeme lexbuf in
-	(
-	 match s with
-	   " " -> incr margin 
-	 | "\t" -> margin := !margin + 8
-	 | "\n" -> margin := 0
-	 | _ -> ()
-	);
-	print s;
-	token lexbuf 
+        let s = Lexing.lexeme lexbuf in
+        (
+         match s with
+           " " -> incr margin 
+         | "\t" -> margin := !margin + 8
+         | "\n" -> margin := 0
+         | _ -> ()
+        );
+        print s;
+        token lexbuf 
       }
   | "_"
       { print "_" ; token lexbuf }
@@ -303,7 +303,7 @@ rule token = parse
       { let s = Lexing.lexeme lexbuf in
           try
             let cl = Hashtbl.find keyword_table s in
-	    (print_class cl s ; token lexbuf )
+            (print_class cl s ; token lexbuf )
           with Not_found ->
             (print s ; token lexbuf )}
   | uppercase identchar *
@@ -320,40 +320,40 @@ rule token = parse
         lexbuf.Lexing.lex_start_pos <-
           string_start - lexbuf.Lexing.lex_abs_pos;
         print_class string_class ("\""^(get_stored_string())^"\"") ;
-	token lexbuf }
+        token lexbuf }
   | "'" [^ '\\' '\''] "'"
       { print_class string_class (Lexing.lexeme lexbuf) ;
-	token lexbuf }
+        token lexbuf }
   | "'" '\\' ['\\' '\'' 'n' 't' 'b' 'r'] "'"
       { print_class string_class (Lexing.lexeme lexbuf ) ;
-	token lexbuf }
+        token lexbuf }
   | "'" '\\' ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
       { print_class string_class (Lexing.lexeme lexbuf ) ;
-	token lexbuf }
+        token lexbuf }
   | "(*"
       { 
-	reset_comment_buffer ();
-	comment_start_pos := [Lexing.lexeme_start lexbuf];        
-	comment lexbuf ;
-	print_comment ();
+        reset_comment_buffer ();
+        comment_start_pos := [Lexing.lexeme_start lexbuf];        
+        comment lexbuf ;
+        print_comment ();
         token lexbuf }
   | "(*)"
       { reset_comment_buffer ();
-	comment_start_pos := [Lexing.lexeme_start lexbuf];
+        comment_start_pos := [Lexing.lexeme_start lexbuf];
         comment lexbuf ;
-	print_comment ();
+        print_comment ();
         token lexbuf
       }
   | "*)"
       { lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_curr_pos - 1;
         print (Lexing.lexeme lexbuf) ;
-	token lexbuf 
+        token lexbuf 
       }
   | "#" [' ' '\t']* ['0'-'9']+ [^ '\n' '\r'] * ('\n' | '\r' | "\r\n")
       (* # linenum ...  *)
       { 
-	print (Lexing.lexeme lexbuf);
-	token lexbuf 
+        print (Lexing.lexeme lexbuf);
+        token lexbuf 
       }
   | "#"  { print_class kwsign_class (Lexing.lexeme lexbuf) ; token lexbuf }
   | "&"  { print_class kwsign_class (Lexing.lexeme lexbuf) ; token lexbuf }
@@ -418,8 +418,8 @@ rule token = parse
 and comment = parse
     "(*"
       { comment_start_pos := Lexing.lexeme_start lexbuf :: !comment_start_pos;
-	store_comment_char '(';
-	store_comment_char '*';
+        store_comment_char '(';
+        store_comment_char '*';
         comment lexbuf;
       }
   | "*)"
@@ -427,15 +427,15 @@ and comment = parse
         | [] -> assert false
         | [x] -> comment_start_pos := []
         | _ :: l -> 
-	    store_comment_char '*';
-	    store_comment_char ')';
-	    comment_start_pos := l;
+            store_comment_char '*';
+            store_comment_char ')';
+            comment_start_pos := l;
             comment lexbuf;
        }
   | "\""
       { reset_string_buffer();
         string_start_pos := Lexing.lexeme_start lexbuf;
-	store_comment_char '"';
+        store_comment_char '"';
         begin try string lexbuf
         with Error (Unterminated_string, _, _) ->
           let st = List.hd !comment_start_pos in
@@ -444,36 +444,36 @@ and comment = parse
         comment lexbuf }
   | "''"
       { 
-	store_comment_char '\'';
-	store_comment_char '\'';
-	comment lexbuf }
+        store_comment_char '\'';
+        store_comment_char '\'';
+        comment lexbuf }
   | "'" [^ '\\' '\''] "'"
       { 
-	store_comment_char '\'';
-	store_comment_char (Lexing.lexeme_char lexbuf 1);
-	store_comment_char '\'';
-	comment lexbuf }
+        store_comment_char '\'';
+        store_comment_char (Lexing.lexeme_char lexbuf 1);
+        store_comment_char '\'';
+        comment lexbuf }
   | "'\\" ['\\' '\'' 'n' 't' 'b' 'r'] "'"
       { 
-	store_comment_char '\'';
-	store_comment_char '\\';
-	store_comment_char(char_for_backslash(Lexing.lexeme_char lexbuf 1)) ;
-	store_comment_char '\'';
-	comment lexbuf }
+        store_comment_char '\'';
+        store_comment_char '\\';
+        store_comment_char(char_for_backslash(Lexing.lexeme_char lexbuf 1)) ;
+        store_comment_char '\'';
+        comment lexbuf }
   | "'\\" ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
       { 
-	store_comment_char '\'';
-	store_comment_char '\\';
-	store_comment_char(char_for_decimal_code lexbuf 1);
-	store_comment_char '\'';
-	comment lexbuf }
+        store_comment_char '\'';
+        store_comment_char '\\';
+        store_comment_char(char_for_decimal_code lexbuf 1);
+        store_comment_char '\'';
+        comment lexbuf }
   | eof
       { let st = List.hd !comment_start_pos in
         raise (Error (Unterminated_comment, st, st + 2));
       }
   | _
       { store_comment_char(Lexing.lexeme_char lexbuf 0);
-	comment lexbuf }
+        comment lexbuf }
 
 and string = parse
     '"'
@@ -520,9 +520,9 @@ let html_of_code ?(with_pre=true) code =
      with
        _ -> 
          (* flush str_formatter because we already output 
-	    something in it *)
-	 Format.pp_print_flush !fmt () ;
-	 start^code^ending
+            something in it *)
+         Format.pp_print_flush !fmt () ;
+         start^code^ending
     )
   in
   pre := old_pre;

@@ -109,7 +109,7 @@ let rec transl_type env policy rowvar styp =
       if policy = Univars then new_pre_univar () else newvar ()
   | Ptyp_var name ->
       begin try
-	List.assoc name !univars
+        List.assoc name !univars
       with Not_found ->
         match policy with
           Fixed ->
@@ -130,9 +130,9 @@ let rec transl_type env policy rowvar styp =
             begin try
               instance (Tbl.find name !type_variables)
             with Not_found ->
-	      let v = new_pre_univar () in
+              let v = new_pre_univar () in
               type_variables := Tbl.add name v !type_variables;
-	      v
+              v
             end
         | Delayed ->
             begin try
@@ -181,9 +181,9 @@ let rec transl_type env policy rowvar styp =
       cstr
   | Ptyp_object fields ->
       begin try
-	newobj (transl_fields env policy rowvar fields)
+        newobj (transl_fields env policy rowvar fields)
       with Error (loc, No_row_variable _) when loc = Location.none ->
-	raise (Error(styp.ptyp_loc, No_row_variable "object "))
+        raise (Error(styp.ptyp_loc, No_row_variable "object "))
       end
   | Ptyp_class(lid, stl, present) ->
       if policy = Fixed & rowvar = None then
@@ -218,7 +218,7 @@ let rec transl_type env policy rowvar styp =
       in
       if List.length stl <> decl.type_arity then
         raise(Error(styp.ptyp_loc, Type_arity_mismatch(lid, decl.type_arity,
-						       List.length stl)));
+                                                       List.length stl)));
       let args = List.map (transl_type env policy None) stl in
       let cstr = newty (Tconstr(path, args, ref Mnil)) in
       let ty =
@@ -283,10 +283,10 @@ let rec transl_type env policy rowvar styp =
   | Ptyp_alias(st, alias) ->
       if List.mem_assoc alias !univars then
         match List.assoc alias !univars with
-	  {desc=Tlink({desc=Tunivar} as tc)} as tr ->
-	    let ty = transl_type env policy (Some tc) st in
+          {desc=Tlink({desc=Tunivar} as tc)} as tr ->
+            let ty = transl_type env policy (Some tc) st in
             tr.level <- tc.level;
-	    tr.desc <- Tvar;
+            tr.desc <- Tvar;
             begin try unify_var env tr ty with Unify trace ->
               let trace = swap_list trace in
               raise(Error(styp.ptyp_loc, Alias_type_mismatch trace))
@@ -331,7 +331,7 @@ let rec transl_type env policy rowvar styp =
       end
   | Ptyp_variant(fields, closed, present) ->
       if rowvar <> None && present = None && closed then
-	raise (Error(styp.ptyp_loc, No_row_variable "variant "));
+        raise (Error(styp.ptyp_loc, No_row_variable "variant "));
       let bound = ref [] and name = ref None in
       let fixed = rowvar <> None || policy = Univars in
       let mkfield l f =
@@ -429,10 +429,10 @@ let rec transl_type env policy rowvar styp =
         if static then row else
         { row with row_more = match rowvar with Some v -> v
             | None ->
-	        if policy = Univars then new_pre_univar () else
+                if policy = Univars then new_pre_univar () else
                 if policy = Fixed && not static then
                   raise(Error(styp.ptyp_loc, Unbound_type_variable "[..]"))
-	        else row.row_more
+                else row.row_more
         } in
       newty (Tvariant row)
   | Ptyp_poly(vars, st) ->
@@ -453,11 +453,11 @@ and transl_fields env policy rowvar =
       newty Tnil
   | {pfield_desc = Pfield_var} as field::_ ->
       begin match rowvar with
-	None ->
-	  if policy = Fixed then
+        None ->
+          if policy = Fixed then
             raise(Error(field.pfield_loc, Unbound_type_variable ".."));
-	  if policy = Univars then new_pre_univar () else newvar ()
-      |	Some v -> v
+          if policy = Univars then new_pre_univar () else newvar ()
+      | Some v -> v
       end
   | {pfield_desc = Pfield(s, e)}::l ->
       let ty1 = transl_type env policy None e in
@@ -480,7 +480,7 @@ let transl_simple_type_univars env styp =
     List.fold_left
       (fun acc v ->
         let v = repr v in
-	if v.desc <> Tvar || v.level <> Btype.generic_level || List.memq v acc
+        if v.desc <> Tvar || v.level <> Btype.generic_level || List.memq v acc
         then acc
         else (v.desc <- Tunivar ; v :: acc))
       [] !pre_univars

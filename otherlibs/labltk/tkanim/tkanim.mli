@@ -31,7 +31,7 @@ type imageType =
 
       (* This data type is required to distinguish normal still images
          and animated gifs. Usually objects typed imagePhoto or
-	 imageBitmap are used for Still. *)
+         imageBitmap are used for Still. *)
 
 (*** Flags ***)
 
@@ -47,8 +47,8 @@ val init : unit -> unit
 val available : unit -> bool
 
       (* [available ()] returns true if there is Tkanim Tcl/Tk
-	 extension linked statically/dynamically in Tcl/Tk
-	 interpreter. Otherwise, return false. *)
+         extension linked statically/dynamically in Tcl/Tk
+         interpreter. Otherwise, return false. *)
 
 (*** User interface ***)
 
@@ -56,24 +56,24 @@ val available : unit -> bool
 val create : string -> imageType
 
       (* [create file] loads a gif87 or gif89 image file and parse it,
-	 and returns [Animated animated_gif] if the image file has
-	 more than one images. Otherwise, it returns 
-	 [Still (ImagePhoto image_photo)] *) 
+         and returns [Animated animated_gif] if the image file has
+         more than one images. Otherwise, it returns 
+         [Still (ImagePhoto image_photo)] *) 
 
 val delete : animatedGif -> unit
 
       (* [delete anim] deletes all the images in anim. Usually
          animatedGifs contain many images, so you must not forget to
-	 use this function to free the memory. *)
+         use this function to free the memory. *)
 
 val width : animatedGif -> int
 val height : animatedGif -> int
       (* [width anim] and [height anim] return the width and height of
-	 given animated gif. *)
+         given animated gif. *)
 
 val images : animatedGif -> imagePhoto list
       (* [images anim] returns the list of still images used in the 
-	 animation *)
+         animation *)
 
 val animate : widget -> animatedGif -> bool -> unit
 val animate_canvas_item : widget -> tagOrId -> animatedGif -> bool -> unit
@@ -92,4 +92,4 @@ val animate_canvas_item : widget -> tagOrId -> animatedGif -> bool -> unit
 
 val gifdata : string -> imageType
       (* [gifdata data] reads [data] as a row data of a gif file and
-	 decodes it. *)
+         decodes it. *)

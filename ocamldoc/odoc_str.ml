@@ -19,8 +19,8 @@ let string_of_type t =
   "type "^
   (String.concat ""
      (List.map 
-	(fun p -> (Odoc_misc.string_of_type_expr p)^" ")
-	t.M.ty_parameters
+        (fun p -> (Odoc_misc.string_of_type_expr p)^" ")
+        t.M.ty_parameters
      )
   )^
   (Name.simple t.M.ty_name)^" "^
@@ -34,41 +34,41 @@ let string_of_type t =
   | M.Type_variant l ->
       "=\n"^
       (String.concat ""
-	 (List.map 
-	    (fun cons ->
-	      "  | "^cons.M.vc_name^
-	      (match cons.M.vc_args with
-		[] -> "" 
-	      | l -> 
-		  " of "^(String.concat " * " 
-			    (List.map (fun t -> "("^(Odoc_misc.string_of_type_expr t)^")") l))
-	      )^
-	      (match cons.M.vc_text with
-		None ->
-		  ""
-	      | Some t ->
-		  "(* "^(Odoc_misc.string_of_text t)^" *)"
-	      )^"\n"
-	    )
-	    l
-	 )
+         (List.map 
+            (fun cons ->
+              "  | "^cons.M.vc_name^
+              (match cons.M.vc_args with
+                [] -> "" 
+              | l -> 
+                  " of "^(String.concat " * " 
+                            (List.map (fun t -> "("^(Odoc_misc.string_of_type_expr t)^")") l))
+              )^
+              (match cons.M.vc_text with
+                None ->
+                  ""
+              | Some t ->
+                  "(* "^(Odoc_misc.string_of_text t)^" *)"
+              )^"\n"
+            )
+            l
+         )
       )
   | M.Type_record l ->
       "= {\n"^
       (String.concat ""
-	 (List.map 
-	    (fun record ->
-	      "   "^(if record.M.rf_mutable then "mutable " else "")^
-	      record.M.rf_name^" : "^(Odoc_misc.string_of_type_expr record.M.rf_type)^";"^
-	      (match record.M.rf_text with
-		None ->
-		  ""
-	      | Some t ->
-		  "(* "^(Odoc_misc.string_of_text t)^" *)"
-	      )^"\n"
-	    )
-	    l
-	 )
+         (List.map 
+            (fun record ->
+              "   "^(if record.M.rf_mutable then "mutable " else "")^
+              record.M.rf_name^" : "^(Odoc_misc.string_of_type_expr record.M.rf_type)^";"^
+              (match record.M.rf_text with
+                None ->
+                  ""
+              | Some t ->
+                  "(* "^(Odoc_misc.string_of_text t)^" *)"
+              )^"\n"
+            )
+            l
+         )
       )^
       "}\n"
   )^
@@ -83,7 +83,7 @@ let string_of_exception e =
     [] -> ""
   | _ ->" : "^
       (String.concat " -> " 
-	 (List.map (fun t -> "("^(Odoc_misc.string_of_type_expr t)^")") e.M.ex_args)
+         (List.map (fun t -> "("^(Odoc_misc.string_of_type_expr t)^")") e.M.ex_args)
       )
   )^
   (match e.M.ex_alias with
@@ -91,8 +91,8 @@ let string_of_exception e =
   | Some ea ->
       " = "^
       (match ea.M.ea_ex with
-	None -> ea.M.ea_name
-      |	Some e2 -> e2.M.ex_name
+        None -> ea.M.ea_name
+      | Some e2 -> e2.M.ex_name
       )
   )^"\n"^
   (match e.M.ex_info with

@@ -57,7 +57,7 @@ puts a lock on a region of the file opened as fd. The region starts at the curre
 #endif
 
 static void set_file_pointer(HANDLE h, LARGE_INTEGER dest,
-			     PLARGE_INTEGER cur, DWORD method)
+                             PLARGE_INTEGER cur, DWORD method)
 {
   LONG high = dest.HighPart;
   DWORD ret = SetFilePointer(h, dest.LowPart, &high, method);
@@ -70,95 +70,95 @@ static void set_file_pointer(HANDLE h, LARGE_INTEGER dest,
 
 CAMLprim value unix_lockf(value fd, value cmd, value span)
 {
-  	int ret;
-	OVERLAPPED overlap;
-	DWORD l_start;
-	DWORD l_len;
-  	HANDLE h;
-  	OSVERSIONINFO VersionInfo;
-	LARGE_INTEGER cur_position;
-	LARGE_INTEGER end_position;
-	LARGE_INTEGER offset_position;
+        int ret;
+        OVERLAPPED overlap;
+        DWORD l_start;
+        DWORD l_len;
+        HANDLE h;
+        OSVERSIONINFO VersionInfo;
+        LARGE_INTEGER cur_position;
+        LARGE_INTEGER end_position;
+        LARGE_INTEGER offset_position;
 
-	VersionInfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
-	if(GetVersionEx(&VersionInfo) == 0)
-		{
-		invalid_argument("lockf only supported on WIN32_NT platforms: could not determine current platform.");
-		}
+        VersionInfo.dwOSVersionInfoSize = sizeof(OSVERSIONINFO);
+        if(GetVersionEx(&VersionInfo) == 0)
+                {
+                invalid_argument("lockf only supported on WIN32_NT platforms: could not determine current platform.");
+                }
 /* file locking only exists on NT versions */
-	if(VersionInfo.dwPlatformId != VER_PLATFORM_WIN32_NT)
-		{
-		invalid_argument("lockf only supported on WIN32_NT platforms");
-		}
+        if(VersionInfo.dwPlatformId != VER_PLATFORM_WIN32_NT)
+                {
+                invalid_argument("lockf only supported on WIN32_NT platforms");
+                }
 
-	h = Handle_val(fd);
+        h = Handle_val(fd);
 
-	overlap.Offset = 0;
-	overlap.OffsetHigh = 0;
-	overlap.hEvent = 0;
-  	l_len = Long_val(span);
+        overlap.Offset = 0;
+        overlap.OffsetHigh = 0;
+        overlap.hEvent = 0;
+        l_len = Long_val(span);
 
-	offset_position.HighPart = 0;
-	cur_position.HighPart = 0;
-	end_position.HighPart = 0;
-	offset_position.LowPart = 0;
-	cur_position.LowPart = 0;
-	end_position.LowPart = 0;
+        offset_position.HighPart = 0;
+        cur_position.HighPart = 0;
+        end_position.HighPart = 0;
+        offset_position.LowPart = 0;
+        cur_position.LowPart = 0;
+        end_position.LowPart = 0;
 
-	if(l_len == 0)
-		{
+        if(l_len == 0)
+                {
 /* save current pointer */
-		set_file_pointer(h,offset_position,&cur_position,FILE_CURRENT);
+                set_file_pointer(h,offset_position,&cur_position,FILE_CURRENT);
 /* set to end and query */
-		set_file_pointer(h,offset_position,&end_position,FILE_END);
-		l_len = end_position.LowPart;
+                set_file_pointer(h,offset_position,&end_position,FILE_END);
+                l_len = end_position.LowPart;
 /* restore previous current pointer */
-		set_file_pointer(h,cur_position,NULL,FILE_BEGIN);
-		}
-	else 
-		{
-  		if (l_len < 0) 
-			{
-			set_file_pointer(h,offset_position,&cur_position,FILE_CURRENT);
-    			l_len = abs(l_len);
-			if(l_len > cur_position.LowPart)
-				{
-        			errno = EINVAL;
-				uerror("lockf", Nothing);
-  				return Val_unit;
-				}
-    			overlap.Offset = cur_position.LowPart - l_len;
-  			} 
-		}
+                set_file_pointer(h,cur_position,NULL,FILE_BEGIN);
+                }
+        else 
+                {
+                if (l_len < 0) 
+                        {
+                        set_file_pointer(h,offset_position,&cur_position,FILE_CURRENT);
+                        l_len = abs(l_len);
+                        if(l_len > cur_position.LowPart)
+                                {
+                                errno = EINVAL;
+                                uerror("lockf", Nothing);
+                                return Val_unit;
+                                }
+                        overlap.Offset = cur_position.LowPart - l_len;
+                        } 
+                }
   switch (Int_val(cmd)) 
-	{
-  	case 0: /* F_ULOCK */
-		if(UnlockFileEx(h, 0, l_len,0,&overlap) == 0)
-			{
-        		errno = EACCES;
-        		ret = -1;
-			}
-    		break;
-  	case 1: /* F_LOCK */
+        {
+        case 0: /* F_ULOCK */
+                if(UnlockFileEx(h, 0, l_len,0,&overlap) == 0)
+                        {
+                        errno = EACCES;
+                        ret = -1;
+                        }
+                break;
+        case 1: /* F_LOCK */
 /* this should block until write lock is obtained */
-		if(LockFileEx(h,LOCKFILE_EXCLUSIVE_LOCK,0,l_len,0,&overlap) == 0)
-			{
-        		errno = EACCES;
-        		ret = -1;
-			}
-    		break;
-  	case 2: /* F_TLOCK */
+                if(LockFileEx(h,LOCKFILE_EXCLUSIVE_LOCK,0,l_len,0,&overlap) == 0)
+                        {
+                        errno = EACCES;
+                        ret = -1;
+                        }
+                break;
+        case 2: /* F_TLOCK */
 /* 
  * this should return immediately if write lock can-not
  * be obtained.
  */
-		if(LockFileEx(h,LOCKFILE_FAIL_IMMEDIATELY | LOCKFILE_EXCLUSIVE_LOCK,0,l_len,0,&overlap) == 0)
-			{
-        		errno = EACCES;
-        		ret = -1;
-			}
-    		break;
-  	case 3: /* F_TEST */
+                if(LockFileEx(h,LOCKFILE_FAIL_IMMEDIATELY | LOCKFILE_EXCLUSIVE_LOCK,0,l_len,0,&overlap) == 0)
+                        {
+                        errno = EACCES;
+                        ret = -1;
+                        }
+                break;
+        case 3: /* F_TEST */
 /*  
  * I'm doing this by aquiring an immediate write
  * lock and then releasing it. It is not clear that
@@ -166,40 +166,40 @@ CAMLprim value unix_lockf(value fd, value cmd, value span)
  * it is not clear the nature of the lock test performed
  * by ocaml (unix) currently.
  */
-		if(LockFileEx(h,LOCKFILE_FAIL_IMMEDIATELY | LOCKFILE_EXCLUSIVE_LOCK,0,l_len,0,&overlap) == 0)
-			{
-        		errno = EACCES;
-        		ret = -1;
-			}
-      		else
-			{
-			UnlockFileEx(h, 0, l_len,0,&overlap);
-        		ret = 0;
-    			}
-    		break;
-  	case 4: /* F_RLOCK */
+                if(LockFileEx(h,LOCKFILE_FAIL_IMMEDIATELY | LOCKFILE_EXCLUSIVE_LOCK,0,l_len,0,&overlap) == 0)
+                        {
+                        errno = EACCES;
+                        ret = -1;
+                        }
+                else
+                        {
+                        UnlockFileEx(h, 0, l_len,0,&overlap);
+                        ret = 0;
+                        }
+                break;
+        case 4: /* F_RLOCK */
 /* this should block until read lock is obtained */
-		if(LockFileEx(h,0,0,l_len,0,&overlap) == 0)
-			{
-        		errno = EACCES;
-        		ret = -1;
-			}
-    		break;
-  	case 5: /* F_TRLOCK */
+                if(LockFileEx(h,0,0,l_len,0,&overlap) == 0)
+                        {
+                        errno = EACCES;
+                        ret = -1;
+                        }
+                break;
+        case 5: /* F_TRLOCK */
 /* 
  * this should return immediately if read lock can-not
  * be obtained.
  */
-		if(LockFileEx(h,LOCKFILE_FAIL_IMMEDIATELY,0,l_len,0,&overlap) == 0)
-			{
-        		errno = EACCES;
-        		ret = -1;
-			}
-    		break;
-  	default:
-    		errno = EINVAL;
-    		ret = -1;
-  	}
+                if(LockFileEx(h,LOCKFILE_FAIL_IMMEDIATELY,0,l_len,0,&overlap) == 0)
+                        {
+                        errno = EACCES;
+                        ret = -1;
+                        }
+                break;
+        default:
+                errno = EINVAL;
+                ret = -1;
+        }
   if (ret == -1) uerror("lockf", Nothing);
   return Val_unit;
 }

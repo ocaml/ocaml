@@ -25,7 +25,7 @@ let register name f =
   Textvariable.set (Textvariable.coerce ("camltkrpc("^name^")"))
                    (string_of_cbid id);
   tkCommand [| TkToken "proc"; TkToken name; TkToken "args";
-      	    TkToken ("camlcb "^(string_of_cbid id)^" $args") |]
+            TkToken ("camlcb "^(string_of_cbid id)^" $args") |]
 
 (* RPC *)
 let invoke interp f args =

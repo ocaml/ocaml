@@ -18,8 +18,8 @@
 val merge_info_opt :
     Odoc_types.merge_option list ->
       Odoc_types.info option ->
-	Odoc_types.info option ->
-	  Odoc_types.info option
+        Odoc_types.info option ->
+          Odoc_types.info option
 
 (** Merge of modules which represent the same OCaml module, in a list of t_module.
    There must be at most two t_module for the same OCaml module, one for a .mli, another for the .ml.

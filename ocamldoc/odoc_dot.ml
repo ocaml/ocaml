@@ -42,40 +42,40 @@ class dot =
 
     method get_one_color =
       match colors with
-	[] -> None
-      |	h :: q -> 
-	  colors <- q ;
-	  Some h
+        [] -> None
+      | h :: q -> 
+          colors <- q ;
+          Some h
 
     method node_color s =
       try Some (List.assoc s loc_colors)
       with
-	Not_found -> 
-	  match self#get_one_color with
-	    None -> None
-	  | Some c ->
-	      loc_colors <- (s, c) :: loc_colors ;
-	      Some c
+        Not_found -> 
+          match self#get_one_color with
+            None -> None
+          | Some c ->
+              loc_colors <- (s, c) :: loc_colors ;
+              Some c
 
     method print_module_atts fmt m =
       match self#node_color (Filename.dirname m.Module.m_file) with
-	None -> ()
-      |	Some col -> F.fprintf fmt "\"%s\" [style=filled, color=%s];\n" m.Module.m_name col
+        None -> ()
+      | Some col -> F.fprintf fmt "\"%s\" [style=filled, color=%s];\n" m.Module.m_name col
 
     method print_type_atts fmt t =
       match self#node_color (Name.father t.Type.ty_name) with
-	None -> ()
-      |	Some col -> F.fprintf fmt "\"%s\" [style=filled, color=%s];\n" t.Type.ty_name col
+        None -> ()
+      | Some col -> F.fprintf fmt "\"%s\" [style=filled, color=%s];\n" t.Type.ty_name col
 
     method print_one_dep fmt src dest =
       F.fprintf fmt "\"%s\" -> \"%s\";\n" src dest
 
     method generate_for_module fmt m =
       let l = List.filter 
-	  (fun n -> 
-	    !Odoc_args.dot_include_all or 
-	    (List.exists (fun m -> m.Module.m_name = n) modules)) 
-	  m.Module.m_top_deps
+          (fun n -> 
+            !Odoc_args.dot_include_all or 
+            (List.exists (fun m -> m.Module.m_name = n) modules)) 
+          m.Module.m_top_deps
       in
       self#print_module_atts fmt m;
       List.iter (self#print_one_dep fmt m.Module.m_name) l
@@ -83,48 +83,48 @@ class dot =
     method generate_for_type fmt (t, l) =
       self#print_type_atts fmt t;
       List.iter
-	(self#print_one_dep fmt t.Type.ty_name)
-	l
+        (self#print_one_dep fmt t.Type.ty_name)
+        l
 
     method generate_types types =
       try
-	let oc = open_out !Odoc_args.out_file in
-	let fmt = F.formatter_of_out_channel oc in
-	F.fprintf fmt "%s" self#header;
-	let graph = Odoc_info.Dep.deps_of_types 
-	    ~kernel: !Odoc_args.dot_reduce
-	    types 
-	in
-	List.iter (self#generate_for_type fmt) graph;
-	F.fprintf fmt "}\n" ;
-	F.pp_print_flush fmt ();
-	close_out oc
+        let oc = open_out !Odoc_args.out_file in
+        let fmt = F.formatter_of_out_channel oc in
+        F.fprintf fmt "%s" self#header;
+        let graph = Odoc_info.Dep.deps_of_types 
+            ~kernel: !Odoc_args.dot_reduce
+            types 
+        in
+        List.iter (self#generate_for_type fmt) graph;
+        F.fprintf fmt "}\n" ;
+        F.pp_print_flush fmt ();
+        close_out oc
       with
-	Sys_error s ->
-	  raise (Failure s)
+        Sys_error s ->
+          raise (Failure s)
 
     method generate_modules modules_list = 
       try
-	modules <- modules_list ;
-	let oc = open_out !Odoc_args.out_file in
-	let fmt = F.formatter_of_out_channel oc in
-	F.fprintf fmt "%s" self#header;
+        modules <- modules_list ;
+        let oc = open_out !Odoc_args.out_file in
+        let fmt = F.formatter_of_out_channel oc in
+        F.fprintf fmt "%s" self#header;
 
-	if !Odoc_args.dot_reduce then 
-	  Odoc_info.Dep.kernel_deps_of_modules modules_list;
+        if !Odoc_args.dot_reduce then 
+          Odoc_info.Dep.kernel_deps_of_modules modules_list;
 
-	List.iter (self#generate_for_module fmt) modules_list;
-	F.fprintf fmt "}\n" ;
-	F.pp_print_flush fmt ();
-	close_out oc
+        List.iter (self#generate_for_module fmt) modules_list;
+        F.fprintf fmt "}\n" ;
+        F.pp_print_flush fmt ();
+        close_out oc
       with
-	Sys_error s ->
-	  raise (Failure s)
+        Sys_error s ->
+          raise (Failure s)
 
     (** Generate the dot code in the file {!Odoc_args.out_file}. *)
     method generate (modules_list : Odoc_info.Module.t_module list) =
       if !Odoc_args.dot_types then
-	self#generate_types (Odoc_info.Search.types modules_list)
+        self#generate_types (Odoc_info.Search.types modules_list)
       else
-	self#generate_modules modules_list
+        self#generate_modules modules_list
   end

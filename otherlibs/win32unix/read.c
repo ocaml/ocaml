@@ -34,8 +34,8 @@ CAMLprim value unix_read(value fd, value buf, value ofs, value len)
       ret = recv(s, iobuf, numbytes, 0);
       leave_blocking_section();
       if (ret == SOCKET_ERROR) {
-	win32_maperr(WSAGetLastError());
-	uerror("read", Nothing);
+        win32_maperr(WSAGetLastError());
+        uerror("read", Nothing);
       }
       numread = ret;
     } else {
@@ -45,8 +45,8 @@ CAMLprim value unix_read(value fd, value buf, value ofs, value len)
       ret = ReadFile(h, iobuf, numbytes, &numread, NULL);
       leave_blocking_section();
       if (! ret) {
-	win32_maperr(GetLastError());
-	uerror("read", Nothing);
+        win32_maperr(GetLastError());
+        uerror("read", Nothing);
       }
     }
     memmove (&Byte(buf, Long_val(ofs)), iobuf, numread);

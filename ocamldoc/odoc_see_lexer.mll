@@ -30,63 +30,63 @@ rule main = parse
 
   | [ '\010' ] 
       { 
-	print_DEBUG2 " [ '\010' ] ";
-	main lexbuf 
+        print_DEBUG2 " [ '\010' ] ";
+        main lexbuf 
       }
 
   | "<" 
       { 
-	print_DEBUG2 "call url lexbuf" ;
-	url lexbuf 
-      }	
+        print_DEBUG2 "call url lexbuf" ;
+        url lexbuf 
+      } 
 
   | "\"" 
       { 
-	print_DEBUG2 "call doc lexbuf" ;
-	doc lexbuf
-      }	
+        print_DEBUG2 "call doc lexbuf" ;
+        doc lexbuf
+      } 
 
 
   | '\''
       {
-	print_DEBUG2 "call file lexbuf" ;
-	file lexbuf
-      }	
+        print_DEBUG2 "call file lexbuf" ;
+        file lexbuf
+      } 
 
   | eof
       { 
-	print_DEBUG2 "EOF";
-	EOF 
+        print_DEBUG2 "EOF";
+        EOF 
       }
 
   | _
       { 
-	Buffer.reset buf ;
-	Buffer.add_string buf (Lexing.lexeme lexbuf); 
-	desc lexbuf
-      }	
+        Buffer.reset buf ;
+        Buffer.add_string buf (Lexing.lexeme lexbuf); 
+        desc lexbuf
+      } 
 
 and url = parse
   | ([^'>'] | '\n')+">"
       {
-	let s = Lexing.lexeme lexbuf in
-	print_DEBUG2 ("([^'>'] | '\n')+ \">\" with "^s) ;
-	See_url (String.sub s 0 ((String.length s) -1))
+        let s = Lexing.lexeme lexbuf in
+        print_DEBUG2 ("([^'>'] | '\n')+ \">\" with "^s) ;
+        See_url (String.sub s 0 ((String.length s) -1))
       }
 
       
 and doc = parse
   | ([^'"'] | '\n' | "\\'")* "\""
       {
-	let s = Lexing.lexeme lexbuf in
-	See_doc (String.sub s 0 ((String.length s) -1))
+        let s = Lexing.lexeme lexbuf in
+        See_doc (String.sub s 0 ((String.length s) -1))
       }
 
 and file = parse
   | ([^'\''] | '\n' | "\\\"")* "'"
       {
-	let s = Lexing.lexeme lexbuf in
-	See_file (String.sub s 0 ((String.length s) -1))
+        let s = Lexing.lexeme lexbuf in
+        See_file (String.sub s 0 ((String.length s) -1))
       }
 
 
@@ -95,6 +95,6 @@ and desc = parse
       { Desc (Buffer.contents buf) }
   | _ 
       { 
-	Buffer.add_string buf (Lexing.lexeme lexbuf);
-	desc lexbuf
+        Buffer.add_string buf (Lexing.lexeme lexbuf);
+        desc lexbuf
       }

@@ -34,26 +34,26 @@ CAMLprim value unix_write(value fd, value buf, value vofs, value vlen)
       numbytes = len > UNIX_BUFFER_SIZE ? UNIX_BUFFER_SIZE : len;
       memmove (iobuf, &Byte(buf, ofs), numbytes);
       if (Descr_kind_val(fd) == KIND_SOCKET) {
-	int ret;
-	SOCKET s = Socket_val(fd);
-	enter_blocking_section();
-	ret = send(s, iobuf, numbytes, 0);
-	leave_blocking_section();
-	if (ret == SOCKET_ERROR) {
-	  win32_maperr(WSAGetLastError());
-	  uerror("write", Nothing);
-	}
-	numwritten = ret;
+        int ret;
+        SOCKET s = Socket_val(fd);
+        enter_blocking_section();
+        ret = send(s, iobuf, numbytes, 0);
+        leave_blocking_section();
+        if (ret == SOCKET_ERROR) {
+          win32_maperr(WSAGetLastError());
+          uerror("write", Nothing);
+        }
+        numwritten = ret;
       } else {
-	BOOL ret;
-	HANDLE h = Handle_val(fd);
-	enter_blocking_section();
-	ret = WriteFile(h, iobuf, numbytes, &numwritten, NULL);
-	leave_blocking_section();
-	if (! ret) {
-	  win32_maperr(GetLastError());
-	  uerror("write", Nothing);
-	}
+        BOOL ret;
+        HANDLE h = Handle_val(fd);
+        enter_blocking_section();
+        ret = WriteFile(h, iobuf, numbytes, &numwritten, NULL);
+        leave_blocking_section();
+        if (! ret) {
+          win32_maperr(GetLastError());
+          uerror("write", Nothing);
+        }
       }
       written += numwritten;
       ofs += numwritten;

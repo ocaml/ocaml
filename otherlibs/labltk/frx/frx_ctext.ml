@@ -32,11 +32,11 @@ let create top opts navigation =
     (* Make the text widget an embedded canvas object *)
     ignore
      (Canvas.create_window c (Pixels 0) (Pixels 0)
-      	[Anchor NW; Window t; Tags [Tag "main"]]);
+        [Anchor NW; Window t; Tags [Tag "main"]]);
     Canvas.focus c (Tag "main");
     (*
     Canvas.configure c [Width (Pixels (Winfo.reqwidth t));
-      	       	        Height(Pixels (Winfo.reqheight t))];
+                        Height(Pixels (Winfo.reqheight t))];
     *)
     Canvas.configure c [YScrollCommand (Scrollbar.set yscroll)];
     (* The horizontal scrollbar is directly attached to the
@@ -46,12 +46,12 @@ let create top opts navigation =
     Scrollbar.configure yscroll [ScrollCommand (Canvas.yview c)];
     let scroll, check = Frx_fit.vert t in
     Text.configure t [
-      	XScrollCommand (Scrollbar.set xscroll);
+        XScrollCommand (Scrollbar.set xscroll);
         YScrollCommand (fun first last ->
-      	   scroll first last;
-	   let x,y,w,h = Canvas.bbox c [Tag "main"] in
-	     Canvas.configure c 
-      	       [ScrollRegion (Pixels x, Pixels y, Pixels w, Pixels h)])
+           scroll first last;
+           let x,y,w,h = Canvas.bbox c [Tag "main"] in
+             Canvas.configure c 
+               [ScrollRegion (Pixels x, Pixels y, Pixels w, Pixels h)])
         ];
 
     bind c [[],Configure] (BindSet ([Ev_Width], (fun ei ->

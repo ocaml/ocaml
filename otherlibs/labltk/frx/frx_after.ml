@@ -21,4 +21,4 @@ let idle f =
     f() in
   Hashtbl.add callback_naming_table id wrapped;
     tkCommand [| TkToken "after"; TkToken "idle";
-      	         TkToken ("camlcb "^ string_of_cbid id) |]
+                 TkToken ("camlcb "^ string_of_cbid id) |]

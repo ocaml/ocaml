@@ -1205,14 +1205,14 @@ with_constraint:
 /* Polymorphic types */
 
 typevar_list:
-	QUOTE ident				{ [$2] }
-      | typevar_list QUOTE ident		{ $3 :: $1 }
+        QUOTE ident                             { [$2] }
+      | typevar_list QUOTE ident                { $3 :: $1 }
 ;
 poly_type:
-	core_type
-	  { mktyp(Ptyp_poly([], $1)) }
-      |	typevar_list DOT core_type
-	  { mktyp(Ptyp_poly(List.rev $1, $3)) }
+        core_type
+          { mktyp(Ptyp_poly([], $1)) }
+      | typevar_list DOT core_type
+          { mktyp(Ptyp_poly(List.rev $1, $3)) }
 ;
 
 /* Core types */

@@ -22,7 +22,7 @@ open Camltk
 exception Done
 
 type cell = {mutable color : int; 
-      	     tag : tagOrId * tagOrId * tagOrId}
+             tag : tagOrId * tagOrId * tagOrId}
 
 type falling_block = {
   mutable pattern: int array list;
@@ -220,8 +220,8 @@ let init fw =
   let f = Frame.create fw [BorderWidth (Pixels 2)] in
   let c = Canvas.create f [Width (Pixels (block_size * 10));
                            Height (Pixels (block_size * 20));
-			   BorderWidth (Pixels cell_border);
-			   Relief Sunken;
+                           BorderWidth (Pixels cell_border);
+                           Relief Sunken;
                            Background Black]
   and r = Frame.create f [] 
   and r' = Frame.create f [] in
@@ -229,9 +229,9 @@ let init fw =
   let nl = Label.create r [Text "Next"; Font "variable"] in
   let nc = Canvas.create r [Width (Pixels (block_size * 4));
                            Height (Pixels (block_size * 4));
-			   BorderWidth (Pixels cell_border);
-			   Relief Sunken;
-                           Background Black] in			   
+                           BorderWidth (Pixels cell_border);
+                           Relief Sunken;
+                           Background Black] in                    
   let scl = Label.create r [Text "Score"; Font "variable"] in
   let sc = Label.create r [TextVariable scorev; Font "variable"] in
   let lnl = Label.create r [Text "Lines"; Font "variable"] in
@@ -249,21 +249,21 @@ let init fw =
   let cells_src = Array.create 20 (Array.create 10 ()) in
   let cells = Array.map (Array.map (fun () ->
     {tag= 
-      	(let t1, t2, t3 =
-      	  Canvas.create_rectangle c 
-      	     (Pixels (-block_size - 8)) (Pixels (-block_size - 8))
+        (let t1, t2, t3 =
+          Canvas.create_rectangle c 
+             (Pixels (-block_size - 8)) (Pixels (-block_size - 8))
              (Pixels (-9))          (Pixels (-9)) [],
-	  Canvas.create_rectangle c 
-      	     (Pixels (-block_size - 10)) (Pixels (-block_size - 10))
+          Canvas.create_rectangle c 
+             (Pixels (-block_size - 10)) (Pixels (-block_size - 10))
              (Pixels (-11))          (Pixels (-11)) [],
-	  Canvas.create_rectangle c 
-      	     (Pixels (-block_size - 12)) (Pixels (-block_size - 12))
+          Canvas.create_rectangle c 
+             (Pixels (-block_size - 12)) (Pixels (-block_size - 12))
              (Pixels (-13))          (Pixels (-13)) []
         in
-	  Canvas.raise_top c t1;
-	  Canvas.raise_top c t2;
-	  Canvas.lower_bot c t3;
-      	  t1,t2,t3);
+          Canvas.raise_top c t1;
+          Canvas.raise_top c t2;
+          Canvas.lower_bot c t3;
+          t1,t2,t3);
      color= 0})) cells_src
   in
   let nexts_src = Array.create 4 (Array.create 4 ()) in
@@ -271,20 +271,20 @@ let init fw =
    Array.map (Array.map (fun () ->
     {tag= 
        (let t1, t2, t3 =
-      	  Canvas.create_rectangle nc 
-      	     (Pixels (-block_size - 8)) (Pixels (-block_size - 8))
+          Canvas.create_rectangle nc 
+             (Pixels (-block_size - 8)) (Pixels (-block_size - 8))
              (Pixels (-9))          (Pixels (-9)) [],
-	  Canvas.create_rectangle nc 
-      	     (Pixels (-block_size - 10)) (Pixels (-block_size - 10))
+          Canvas.create_rectangle nc 
+             (Pixels (-block_size - 10)) (Pixels (-block_size - 10))
              (Pixels (-11))          (Pixels (-11)) [],
-	  Canvas.create_rectangle nc 
-      	     (Pixels (-block_size - 12)) (Pixels (-block_size - 12))
+          Canvas.create_rectangle nc 
+             (Pixels (-block_size - 12)) (Pixels (-block_size - 12))
              (Pixels (-13))          (Pixels (-13)) []
         in
-	  Canvas.raise_top nc t1;
-      	  Canvas.raise_top nc t2;
-	  Canvas.lower_bot nc t3;
-      	  t1, t2, t3);
+          Canvas.raise_top nc t1;
+          Canvas.raise_top nc t2;
+          Canvas.lower_bot nc t3;
+          t1, t2, t3);
      color= 0})) nexts_src in
   let game_over () = ()
   in
@@ -313,27 +313,27 @@ let cell_set (c, cf) x y col =
       end
     else
       begin
-      	Canvas.configure_rectangle c t2
+        Canvas.configure_rectangle c t2
               [FillColor (Array.get colors (col - 1)); 
-      	       Outline (Array.get colors (col - 1))];
-      	Canvas.configure_rectangle c t1
+               Outline (Array.get colors (col - 1))];
+        Canvas.configure_rectangle c t1
               [FillColor Black;
-      	       Outline Black];
-      	Canvas.configure_rectangle c t3
+               Outline Black];
+        Canvas.configure_rectangle c t3
               [FillColor (NamedColor "light gray");
-      	       Outline (NamedColor "light gray")];
-      	if cur.color = 0 && col <> 0 then
-      	  begin
-      	    Canvas.move c t1
-      	      (Pixels (block_size * (x+1)+10+ cell_border*2))
-              (Pixels (block_size * (y+1)+10+ cell_border*2));
-      	    Canvas.move c t2
+               Outline (NamedColor "light gray")];
+        if cur.color = 0 && col <> 0 then
+          begin
+            Canvas.move c t1
               (Pixels (block_size * (x+1)+10+ cell_border*2))
               (Pixels (block_size * (y+1)+10+ cell_border*2));
-      	    Canvas.move c t3
+            Canvas.move c t2
+              (Pixels (block_size * (x+1)+10+ cell_border*2))
+              (Pixels (block_size * (y+1)+10+ cell_border*2));
+            Canvas.move c t3
               (Pixels (block_size * (x+1)+10+ cell_border*2))
               (Pixels (block_size * (y+1)+10+ cell_border*2))
-	  end     
+          end     
       end;
     cur.color <- col
 
@@ -343,14 +343,14 @@ let draw_block field col d x y =
     let xd = Array.get d iy in
     for ix = 0 to 3 do
       if xd land !base <> 0 then
-      	begin
-      	  try cell_set field (ix + x) (iy + y) col with _ -> ()  
-	end  
+        begin
+          try cell_set field (ix + x) (iy + y) col with _ -> ()  
+        end  
       else
-      	begin
-      	(* cell_set field (ix + x) (iy + y) 0 *) ()
-	end;
-      base := !base lsl 1		
+        begin
+        (* cell_set field (ix + x) (iy + y) 0 *) ()
+        end;
+      base := !base lsl 1               
     done
   done 
 

@@ -41,7 +41,7 @@ let _ =
     ["Amharic(አማርኛ)", "ሠላም";
      "Arabic", "�����������";
      "Croatian (Hrvatski)", "Bog (Bok), Dobar dan";
-     "Czech (česky)",	"Dobrý den";
+     "Czech (česky)",       "Dobrý den";
      "Danish (Dansk)", "Hej, Goddag";
      "English", "Hello";
      "Esperanto", "Saluton";

@@ -39,25 +39,25 @@ let get_event name =
        let var = "camltk_events(" ^ name ^")" in
        let tkvar = Textvariable.coerce var in
        let rec set () =
-	 Textvariable.handle tkvar
-	 (fun () ->
-	    begin match Textvariable.get tkvar with
-	      "all" -> (* Invoke all callbacks *)
-		Hashtbl.iter
-      	       	  (fun p f -> 
-      	       	     try 
-      	       	      f (cTKtoCAMLwidget p) 
-      	       	     with _ -> ())
+         Textvariable.handle tkvar
+         (fun () ->
+            begin match Textvariable.get tkvar with
+              "all" -> (* Invoke all callbacks *)
+                Hashtbl.iter
+                  (fun p f -> 
+                     try 
+                      f (cTKtoCAMLwidget p) 
+                     with _ -> ())
                   h
-	    | p -> (* Invoke callback for p *)
-		try
-		  let w = cTKtoCAMLwidget p
-      	       	  and f = Hashtbl.find h p in
-		    f w
-      	        with
-      	       	  _ -> ()
+            | p -> (* Invoke callback for p *)
+                try
+                  let w = cTKtoCAMLwidget p
+                  and f = Hashtbl.find h p in
+                    f w
+                with
+                  _ -> ()
             end; 
-      	    set ()(* reactivate the callback *)
+            set ()(* reactivate the callback *)
             ) in
        set();
        h 

@@ -118,16 +118,16 @@ let process_implementation_file ppf sourcefile =
   with
     e ->
       match e with
-	Syntaxerr.Error err ->
-	  fprintf Format.err_formatter "@[%a@]@."
+        Syntaxerr.Error err ->
+          fprintf Format.err_formatter "@[%a@]@."
             Syntaxerr.report_error err;
-	  None, inputfile
+          None, inputfile
       | Failure s ->
-	  prerr_endline s;
-	  incr Odoc_global.errors ;
-	  None, inputfile
+          prerr_endline s;
+          incr Odoc_global.errors ;
+          None, inputfile
       | e ->
-	  raise e
+          raise e
 
 (** Analysis of an interface file. Returns (Some signature) if
    no error occured, else None and an error message is printed.*)
@@ -204,57 +204,57 @@ let process_file ppf sourcefile =
      try
        let (parsetree_typedtree_opt, input_file) = process_implementation_file ppf sourcefile in
        match parsetree_typedtree_opt with
-	 None ->
-	   None
+         None ->
+           None
        | Some (parsetree, typedtree) ->
-	   let file_module = Ast_analyser.analyse_typed_tree sourcefile !Location.input_name parsetree typedtree in
+           let file_module = Ast_analyser.analyse_typed_tree sourcefile !Location.input_name parsetree typedtree in
 
-	   file_module.Odoc_module.m_top_deps <- Odoc_dep.impl_dependencies parsetree ;
+           file_module.Odoc_module.m_top_deps <- Odoc_dep.impl_dependencies parsetree ;
 
-	   if !Odoc_args.verbose then 
-	     (
-	      print_string Odoc_messages.ok;
-	      print_newline ()
-	     );
-	   remove_preprocessed input_file;
-	   Some file_module
+           if !Odoc_args.verbose then 
+             (
+              print_string Odoc_messages.ok;
+              print_newline ()
+             );
+           remove_preprocessed input_file;
+           Some file_module
      with
      | Sys_error s 
      | Failure s ->
-	 prerr_endline s ;
-	 incr Odoc_global.errors ;
-	 None
+         prerr_endline s ;
+         incr Odoc_global.errors ;
+         None
      | e ->
-	 process_error e ;
-	 incr Odoc_global.errors ;
-	 None
+         process_error e ;
+         incr Odoc_global.errors ;
+         None
     )
   else
     if Filename.check_suffix sourcefile "mli" then
       (
        try
-	 let (ast, signat, input_file) = process_interface_file ppf sourcefile in
-	 let file_module = Sig_analyser.analyse_signature sourcefile !Location.input_name ast signat in
+         let (ast, signat, input_file) = process_interface_file ppf sourcefile in
+         let file_module = Sig_analyser.analyse_signature sourcefile !Location.input_name ast signat in
 
-	 file_module.Odoc_module.m_top_deps <- Odoc_dep.intf_dependencies ast ;
+         file_module.Odoc_module.m_top_deps <- Odoc_dep.intf_dependencies ast ;
 
-	 if !Odoc_args.verbose then 
-	   (
-	    print_string Odoc_messages.ok;
-	    print_newline ()
-	   );
-	 remove_preprocessed input_file;
-	 Some file_module
+         if !Odoc_args.verbose then 
+           (
+            print_string Odoc_messages.ok;
+            print_newline ()
+           );
+         remove_preprocessed input_file;
+         Some file_module
        with
        | Sys_error s 
        | Failure s ->
-	   prerr_endline s;
-	   incr Odoc_global.errors ;
-	   None
+           prerr_endline s;
+           incr Odoc_global.errors ;
+           None
        | e ->
-	   process_error e ;
-	   incr Odoc_global.errors ;
-	   None
+           process_error e ;
+           incr Odoc_global.errors ;
+           None
       )
     else
       (
@@ -267,10 +267,10 @@ let rec remove_class_elements_after_stop eles =
     [] -> []
   | ele :: q ->
       match ele with
-	Odoc_class.Class_comment [ Odoc_types.Raw "/*" ] -> []
-      |	Odoc_class.Class_attribute _ 
-      |	Odoc_class.Class_method _ 
-      |	Odoc_class.Class_comment _ -> ele :: (remove_class_elements_after_stop q)
+        Odoc_class.Class_comment [ Odoc_types.Raw "/*" ] -> []
+      | Odoc_class.Class_attribute _ 
+      | Odoc_class.Class_method _ 
+      | Odoc_class.Class_comment _ -> ele :: (remove_class_elements_after_stop q)
 
 (** Remove the class elements after the stop special comment in a class kind. *)
 let rec remove_class_elements_after_stop_in_class_kind k =
@@ -281,7 +281,7 @@ let rec remove_class_elements_after_stop_in_class_kind k =
   | Odoc_class.Class_constr _ -> k
   | Odoc_class.Class_constraint (k1, ctk) ->
       Odoc_class.Class_constraint (remove_class_elements_after_stop_in_class_kind k1,
-			remove_class_elements_after_stop_in_class_type_kind ctk)
+                        remove_class_elements_after_stop_in_class_type_kind ctk)
 
 (** Remove the class elements after the stop special comment in a class type kind. *)
 and remove_class_elements_after_stop_in_class_type_kind tk =
@@ -298,28 +298,28 @@ let rec remove_module_elements_after_stop eles =
     [] -> []
   | ele :: q ->
       match ele with
-	Odoc_module.Element_module_comment [ Odoc_types.Raw "/*" ] -> []
-      |	Odoc_module.Element_module_comment _ ->
-	  ele :: (f q)
-      |	Odoc_module.Element_module m ->
-	  m.Odoc_module.m_kind <- remove_module_elements_after_stop_in_module_kind m.Odoc_module.m_kind ;
-	  (Odoc_module.Element_module m) :: (f q)
-      |	Odoc_module.Element_module_type mt ->
-	  mt.Odoc_module.mt_kind <- Odoc_misc.apply_opt 
-	      remove_module_elements_after_stop_in_module_type_kind mt.Odoc_module.mt_kind ;
-	  (Odoc_module.Element_module_type mt) :: (f q)
+        Odoc_module.Element_module_comment [ Odoc_types.Raw "/*" ] -> []
+      | Odoc_module.Element_module_comment _ ->
+          ele :: (f q)
+      | Odoc_module.Element_module m ->
+          m.Odoc_module.m_kind <- remove_module_elements_after_stop_in_module_kind m.Odoc_module.m_kind ;
+          (Odoc_module.Element_module m) :: (f q)
+      | Odoc_module.Element_module_type mt ->
+          mt.Odoc_module.mt_kind <- Odoc_misc.apply_opt 
+              remove_module_elements_after_stop_in_module_type_kind mt.Odoc_module.mt_kind ;
+          (Odoc_module.Element_module_type mt) :: (f q)
       | Odoc_module.Element_included_module _ ->
-	  ele :: (f q)
+          ele :: (f q)
       | Odoc_module.Element_class c ->
-	  c.Odoc_class.cl_kind <- remove_class_elements_after_stop_in_class_kind c.Odoc_class.cl_kind ;
-	  (Odoc_module.Element_class c) :: (f q)
+          c.Odoc_class.cl_kind <- remove_class_elements_after_stop_in_class_kind c.Odoc_class.cl_kind ;
+          (Odoc_module.Element_class c) :: (f q)
       | Odoc_module.Element_class_type ct ->
-	  ct.Odoc_class.clt_kind <- remove_class_elements_after_stop_in_class_type_kind ct.Odoc_class.clt_kind ;
-	  (Odoc_module.Element_class_type ct) :: (f q)
+          ct.Odoc_class.clt_kind <- remove_class_elements_after_stop_in_class_type_kind ct.Odoc_class.clt_kind ;
+          (Odoc_module.Element_class_type ct) :: (f q)
       | Odoc_module.Element_value _
       | Odoc_module.Element_exception _
       | Odoc_module.Element_type _ ->
-	  ele :: (f q)
+          ele :: (f q)
 
 
 (** Remove the module elements after the stop special comment, in the given module kind. *)
@@ -331,12 +331,12 @@ and remove_module_elements_after_stop_in_module_kind k =
       Odoc_module.Module_functor (params, remove_module_elements_after_stop_in_module_kind k2)
   | Odoc_module.Module_apply (k1, k2) ->
       Odoc_module.Module_apply (remove_module_elements_after_stop_in_module_kind k1, 
-		    remove_module_elements_after_stop_in_module_kind k2)
+                    remove_module_elements_after_stop_in_module_kind k2)
   | Odoc_module.Module_with (mtkind, s) ->
       Odoc_module.Module_with (remove_module_elements_after_stop_in_module_type_kind mtkind, s)
   | Odoc_module.Module_constraint (k2, mtkind) ->
       Odoc_module.Module_constraint (remove_module_elements_after_stop_in_module_kind k2, 
-			 remove_module_elements_after_stop_in_module_type_kind mtkind)
+                         remove_module_elements_after_stop_in_module_type_kind mtkind)
 
 (** Remove the module elements after the stop special comment, in the given module type kind. *)
 and remove_module_elements_after_stop_in_module_type_kind tk =
@@ -364,17 +364,17 @@ let analyse_files ?(init=[]) files =
     init @ 
     (List.fold_left
        (fun acc -> fun file ->
-	 try
-	   match process_file Format.err_formatter file with
-	     None ->
-	       acc
-	   | Some m ->
-	       acc @ [ m ]
-	 with
-	   Failure s ->
-	     prerr_endline s ;
-	     incr Odoc_global.errors ;
-	     acc
+         try
+           match process_file Format.err_formatter file with
+             None ->
+               acc
+           | Some m ->
+               acc @ [ m ]
+         with
+           Failure s ->
+             prerr_endline s ;
+             incr Odoc_global.errors ;
+             acc
        )
        []
        files

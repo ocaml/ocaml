@@ -88,7 +88,7 @@ while : ; do
     -tklibs*|--tklibs*)
         tk_libs=$2; shift;;
     -tk-no-x11|--tk-no-x11)
-	tk_x11=no;;
+        tk_x11=no;;
     -binutils*|--binutils*)
         binutils_dir=$2; shift;;
     -verbose|--verbose)
@@ -467,13 +467,13 @@ if test $withsharedlibs = "yes"; then
             byteccrpath="-Wl,-rpath,"
             mksharedlibrpath="-Wl,-rpath,"
           fi
-	  shared_libraries_supported=true;;
+          shared_libraries_supported=true;;
         *)
           sharedcccompopts="-KPIC"
           byteccrpath="-R"
           mksharedlibrpath="-R"
-	  mksharedlib="/usr/ccs/bin/ld -G -o"
-	  shared_libraries_supported=true;;
+          mksharedlib="/usr/ccs/bin/ld -G -o"
+          shared_libraries_supported=true;;
       esac;;
     mips*-*-irix[56]*)
       case "$bytecc" in
@@ -1134,7 +1134,7 @@ for dir in \
     /usr/unsupported/lib  \
     /usr/athena/lib       \
     /usr/lpp/Xamples/lib  \
-    /lib/usr/lib/X11	  \
+    /lib/usr/lib/X11      \
                           \
     /usr/openwin/lib      \
     /usr/openwin/share/lib \

@@ -25,8 +25,8 @@ let rec nop = function
   | Ifdef (_, _, c1, c2o) ->
       List.iter nop c1;
       begin match c2o with
-      |	Some c2 -> List.iter nop c2
-      |	None -> ()
+      | Some c2 -> List.iter nop c2
+      | None -> ()
       end
   | _ -> ()
 ;;
@@ -34,27 +34,27 @@ let rec nop = function
 let rec exec lp f = function
   | Line line -> 
       if !debug then 
-	prerr_endline (Printf.sprintf "%03d: %s" !linenum 
-			 (String.sub line 0 ((String.length line) - 1)));
+        prerr_endline (Printf.sprintf "%03d: %s" !linenum 
+                         (String.sub line 0 ((String.length line) - 1)));
       f line; incr linenum
   | Ifdef (sw, k, c1, c2o) ->
       if List.mem k !defined = sw then begin
-	List.iter (exec lp f) c1;
-	begin match c2o with
-	| Some c2 -> List.iter nop c2
-	| None -> ()
-	end;
-	lp !linenum
+        List.iter (exec lp f) c1;
+        begin match c2o with
+        | Some c2 -> List.iter nop c2
+        | None -> ()
+        end;
+        lp !linenum
       end else begin
-	List.iter nop c1;
-	match c2o with
-	| Some c2 -> 
-	    lp !linenum;
-	    List.iter (exec lp f) c2
-	| None -> ()
+        List.iter nop c1;
+        match c2o with
+        | Some c2 -> 
+            lp !linenum;
+            List.iter (exec lp f) c2
+        | None -> ()
       end
   | Define k -> defined := k :: !defined
   | Undef k -> 
       defined := List.fold_right (fun k' s ->
-	if k = k' then s else k' :: s) [] !defined
+        if k = k' then s else k' :: s) [] !defined
 ;;

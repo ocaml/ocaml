@@ -7,8 +7,8 @@ let handle_set opts w cmd =
     TkToken"handle";
     TkTokenList 
       (List.map 
-    	 (function x -> cCAMLtoTKicccm w icccm_selection_handle_table x)
-    	 opts);
+         (function x -> cCAMLtoTKicccm w icccm_selection_handle_table x)
+         opts);
     cCAMLtoTKwidget widget_any_table w;
     let id = register_callback w (function args ->
       let (a1,args) = int_of_string (List.hd args), List.tl args in
@@ -29,11 +29,11 @@ selection_handle_icccm_optionals (fun opts w ->
     TkTokenList opts;
     cCAMLtoTKwidget w;
     let id = register_callback w ~callback:
-    	begin fun args ->
-    	  let pos = int_of_string (List.hd args) in
-    	  let len = int_of_string (List.nth args 1) in
-    	  tkreturn (command ~pos ~len)
-    	end
+        begin fun args ->
+          let pos = int_of_string (List.hd args) in
+          let len = int_of_string (List.nth args 1) in
+          tkreturn (command ~pos ~len)
+        end
     in TkToken ("camlcb " ^ id)
   |])
 ;;

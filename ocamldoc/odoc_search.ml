@@ -80,10 +80,10 @@ module Search =
       | T.Enum l -> List.flatten (List.map (fun t -> search_text root t v) l)
       | T.Newline -> []
       | T.Title (n, l_opt, t) -> 
-	  (match l_opt with
-	    None -> []
-	  | Some s -> search_section (Name.concat root s) v) @
-	  (search_text root t v)
+          (match l_opt with
+            None -> []
+          | Some s -> search_section (Name.concat root s) v) @
+          (search_text root t v)
 
     let search_value va v = if P.p_value va v then [Res_value va] else []
 
@@ -98,197 +98,197 @@ module Search =
     let search_class c v =
       let (go_deeper, ok) = P.p_class c v in
       let l = 
-	if go_deeper then
-	  let res_att = 
-	    List.fold_left
-	      (fun acc -> fun att -> acc @ (search_attribute att v))
-	      []
-	      (Odoc_class.class_attributes c)
-	  in
-	  let res_met = 
-	    List.fold_left
-	      (fun acc -> fun m -> acc @ (search_method m v))
-	      []
-	      (Odoc_class.class_methods c)
-	  in
-	  let res_sec = 
-	    List.fold_left
-	      (fun acc -> fun t -> acc @ (search_text c.cl_name t v))
-	      []
-	      (Odoc_class.class_comments c)
-	  in
-	  let l = res_att @ res_met @ res_sec in
-	  l
-	else
-	  []
+        if go_deeper then
+          let res_att = 
+            List.fold_left
+              (fun acc -> fun att -> acc @ (search_attribute att v))
+              []
+              (Odoc_class.class_attributes c)
+          in
+          let res_met = 
+            List.fold_left
+              (fun acc -> fun m -> acc @ (search_method m v))
+              []
+              (Odoc_class.class_methods c)
+          in
+          let res_sec = 
+            List.fold_left
+              (fun acc -> fun t -> acc @ (search_text c.cl_name t v))
+              []
+              (Odoc_class.class_comments c)
+          in
+          let l = res_att @ res_met @ res_sec in
+          l
+        else
+          []
       in
       if ok then
-	(Res_class c) :: l
+        (Res_class c) :: l
       else
-	l
+        l
 
     let search_class_type ct v =
       let (go_deeper, ok) = P.p_class_type ct v in
       let l = 
-	if go_deeper then
-	  let res_att = 
-	    List.fold_left
-	      (fun acc -> fun att -> acc @ (search_attribute att v))
-	      []
-	      (Odoc_class.class_type_attributes ct)
-	  in
-	  let res_met = 
-	    List.fold_left
-	      (fun acc -> fun m -> acc @ (search_method m v))
-	      []
-	      (Odoc_class.class_type_methods ct)
-	  in
-	  let res_sec = 
-	    List.fold_left
-	      (fun acc -> fun t -> acc @ (search_text ct.clt_name t v))
-	      []
-	      (Odoc_class.class_type_comments ct)
-	  in
-	  let l = res_att @ res_met @ res_sec in
-	  l
-	else
-	  []
+        if go_deeper then
+          let res_att = 
+            List.fold_left
+              (fun acc -> fun att -> acc @ (search_attribute att v))
+              []
+              (Odoc_class.class_type_attributes ct)
+          in
+          let res_met = 
+            List.fold_left
+              (fun acc -> fun m -> acc @ (search_method m v))
+              []
+              (Odoc_class.class_type_methods ct)
+          in
+          let res_sec = 
+            List.fold_left
+              (fun acc -> fun t -> acc @ (search_text ct.clt_name t v))
+              []
+              (Odoc_class.class_type_comments ct)
+          in
+          let l = res_att @ res_met @ res_sec in
+          l
+        else
+          []
       in
       if ok then
-	(Res_class_type ct) :: l
+        (Res_class_type ct) :: l
       else
-	l
+        l
 
     let rec search_module_type mt v =
       let (go_deeper, ok) =  P.p_module_type mt v in
       let l =
-	if go_deeper then
-	  let res_val = 
-	    List.fold_left
-	      (fun acc -> fun va -> acc @ (search_value va v))
-	      []
-	      (Odoc_module.module_type_values mt)
-	  in
-	  let res_typ = 
-	    List.fold_left
-	      (fun acc -> fun t -> acc @ (search_type t v))
-	      []
-	      (Odoc_module.module_type_types mt)
-	  in
-	  let res_exc = 
-	    List.fold_left
-	      (fun acc -> fun e -> acc @ (search_exception e v))
-	      []
-	      (Odoc_module.module_type_exceptions mt)
-	  in
-	  let res_mod = search (Odoc_module.module_type_modules mt) v in
-	  let res_modtyp = 
-	    List.fold_left
-	      (fun acc -> fun mt -> acc @ (search_module_type mt v))
-	      []
-	      (Odoc_module.module_type_module_types mt)
-	  in	
-	  let res_cl = 
-	    List.fold_left
-	      (fun acc -> fun cl -> acc @ (search_class cl v))
-	      []
-	      (Odoc_module.module_type_classes mt)
-	  in
-	  let res_cltyp = 
-	    List.fold_left
-	      (fun acc -> fun clt -> acc @ (search_class_type clt v))
-	      []
-	      (Odoc_module.module_type_class_types mt)
-	  in
-	  let res_sec = 
-	    List.fold_left
-	      (fun acc -> fun t -> acc @ (search_text mt.mt_name t v))
-	      []
-	      (Odoc_module.module_type_comments mt)
-	  in
-	  let l = res_val @ res_typ @ res_exc @ res_mod @ 
-	    res_modtyp @ res_cl @ res_cltyp @ res_sec 
-	  in
-	  l
-	else
-	  []
+        if go_deeper then
+          let res_val = 
+            List.fold_left
+              (fun acc -> fun va -> acc @ (search_value va v))
+              []
+              (Odoc_module.module_type_values mt)
+          in
+          let res_typ = 
+            List.fold_left
+              (fun acc -> fun t -> acc @ (search_type t v))
+              []
+              (Odoc_module.module_type_types mt)
+          in
+          let res_exc = 
+            List.fold_left
+              (fun acc -> fun e -> acc @ (search_exception e v))
+              []
+              (Odoc_module.module_type_exceptions mt)
+          in
+          let res_mod = search (Odoc_module.module_type_modules mt) v in
+          let res_modtyp = 
+            List.fold_left
+              (fun acc -> fun mt -> acc @ (search_module_type mt v))
+              []
+              (Odoc_module.module_type_module_types mt)
+          in    
+          let res_cl = 
+            List.fold_left
+              (fun acc -> fun cl -> acc @ (search_class cl v))
+              []
+              (Odoc_module.module_type_classes mt)
+          in
+          let res_cltyp = 
+            List.fold_left
+              (fun acc -> fun clt -> acc @ (search_class_type clt v))
+              []
+              (Odoc_module.module_type_class_types mt)
+          in
+          let res_sec = 
+            List.fold_left
+              (fun acc -> fun t -> acc @ (search_text mt.mt_name t v))
+              []
+              (Odoc_module.module_type_comments mt)
+          in
+          let l = res_val @ res_typ @ res_exc @ res_mod @ 
+            res_modtyp @ res_cl @ res_cltyp @ res_sec 
+          in
+          l
+        else
+          []
       in
       if ok then 
-	(Res_module_type mt) :: l
+        (Res_module_type mt) :: l
       else
-	l
+        l
 
     and search_module m v =
       let (go_deeper, ok) =  P.p_module m v in
       let l =
-	if go_deeper then
-	  let res_val = 
-	    List.fold_left
-	      (fun acc -> fun va -> acc @ (search_value va v))
-	      []
-	      (Odoc_module.module_values m)
-	  in
-	  let res_typ = 
-	    List.fold_left
-	      (fun acc -> fun t -> acc @ (search_type t v))
-	      []
-	      (Odoc_module.module_types m)
-	  in
-	  let res_exc = 
-	    List.fold_left
-	      (fun acc -> fun e -> acc @ (search_exception e v))
-	      []
-	      (Odoc_module.module_exceptions m)
-	  in
-	  let res_mod = search (Odoc_module.module_modules m) v in
-	  let res_modtyp = 
-	    List.fold_left
-	      (fun acc -> fun mt -> acc @ (search_module_type mt v))
-	      []
-	      (Odoc_module.module_module_types m)
-	  in
-	  let res_cl = 
-	    List.fold_left
-	      (fun acc -> fun cl -> acc @ (search_class cl v))
-	      []
-	      (Odoc_module.module_classes m)
-	  in
-	  let res_cltyp = 
-	    List.fold_left
-	      (fun acc -> fun clt -> acc @ (search_class_type clt v))
-	      []
-	      (Odoc_module.module_class_types m)
-	  in
-	  let res_sec = 
-	    List.fold_left
-	      (fun acc -> fun t -> acc @ (search_text m.m_name t v))
-	      []
-	      (Odoc_module.module_comments m)
-	  in
-	  let l = res_val @ res_typ @ res_exc @ res_mod @ 
-	    res_modtyp @ res_cl @ res_cltyp @ res_sec
-	  in
-	  l
-	else
-	  []
+        if go_deeper then
+          let res_val = 
+            List.fold_left
+              (fun acc -> fun va -> acc @ (search_value va v))
+              []
+              (Odoc_module.module_values m)
+          in
+          let res_typ = 
+            List.fold_left
+              (fun acc -> fun t -> acc @ (search_type t v))
+              []
+              (Odoc_module.module_types m)
+          in
+          let res_exc = 
+            List.fold_left
+              (fun acc -> fun e -> acc @ (search_exception e v))
+              []
+              (Odoc_module.module_exceptions m)
+          in
+          let res_mod = search (Odoc_module.module_modules m) v in
+          let res_modtyp = 
+            List.fold_left
+              (fun acc -> fun mt -> acc @ (search_module_type mt v))
+              []
+              (Odoc_module.module_module_types m)
+          in
+          let res_cl = 
+            List.fold_left
+              (fun acc -> fun cl -> acc @ (search_class cl v))
+              []
+              (Odoc_module.module_classes m)
+          in
+          let res_cltyp = 
+            List.fold_left
+              (fun acc -> fun clt -> acc @ (search_class_type clt v))
+              []
+              (Odoc_module.module_class_types m)
+          in
+          let res_sec = 
+            List.fold_left
+              (fun acc -> fun t -> acc @ (search_text m.m_name t v))
+              []
+              (Odoc_module.module_comments m)
+          in
+          let l = res_val @ res_typ @ res_exc @ res_mod @ 
+            res_modtyp @ res_cl @ res_cltyp @ res_sec
+          in
+          l
+        else
+          []
       in
       if ok then 
-	(Res_module m) :: l
+        (Res_module m) :: l
       else
-	l
+        l
 
     and search module_list v =
       List.fold_left
-	(fun acc -> fun m -> 
-	  List.fold_left
-	    (fun acc2 -> fun ele ->
-	      if List.mem ele acc2 then acc2 else acc2 @ [ele]
-	    )
-	    acc
-	    (search_module m v)
-	)
-	[]
-	module_list
+        (fun acc -> fun m -> 
+          List.fold_left
+            (fun acc2 -> fun ele ->
+              if List.mem ele acc2 then acc2 else acc2 @ [ele]
+            )
+            acc
+            (search_module m v)
+        )
+        []
+        module_list
   end
 
 module P_name = 

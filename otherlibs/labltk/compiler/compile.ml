@@ -87,7 +87,7 @@ let rec types_of_template = function
   | ListArg l -> List.flatten (List.map ~f:types_of_template l)
   | OptionalArgs (l, tl, _) -> 
       begin 
-	match List.flatten (List.map ~f:types_of_template tl) with
+        match List.flatten (List.map ~f:types_of_template tl) with
           ["", t] -> ["?" ^ l, t]
         | [_, _] -> raise (Failure "0 label required")
         | _ -> raise (Failure "0 or more than 1 args in for optionals")
@@ -149,7 +149,7 @@ let ppMLtype ?(any=false) ?(return=false) ?(def=false) ?(counter=ref 0) =
   | UserDefined "widget" -> 
       if !Flags.camltk then "widget"
       else begin
-	if any then "any widget" else 
+        if any then "any widget" else 
         let c = String.make 1 (Char.chr(Char.code 'a' + !counter)) in 
         incr counter;
         "'" ^ c ^ " widget"
@@ -158,20 +158,20 @@ let ppMLtype ?(any=false) ?(return=false) ?(def=false) ?(counter=ref 0) =
       if !Flags.camltk then s
       else begin
         (* a bit dirty hack for ImageBitmap and ImagePhoto *)
-	try
+        try
           let typdef = Hashtbl.find types_table s in
           if typdef.variant then
             if return then try
               "[>" ^
               String.concat ~sep:"|" 
-		(List.map typdef.constructors ~f:
+                (List.map typdef.constructors ~f:
                    begin
                      fun c ->
                        "`" ^ c.var_name ^ 
                        (match types_of_template c.template with
-			 [] -> ""
+                         [] -> ""
                        | l ->  " of " ^ ppMLtype (Product (List.map l
-			     ~f:(labeloff ~at:"ppMLtype UserDefined"))))
+                             ~f:(labeloff ~at:"ppMLtype UserDefined"))))
                    end) ^ "]"
             with
               Not_found -> prerr_endline ("ppMLtype " ^ s ^ " ?"); s
@@ -179,7 +179,7 @@ let ppMLtype ?(any=false) ?(return=false) ?(def=false) ?(counter=ref 0) =
               "[< " ^ s ^ "]"
             else s
           else s
-	with Not_found -> s
+        with Not_found -> s
       end
   | Subtype (s, s') -> 
       if !Flags.camltk then "(* " ^ s' ^ " *) " ^ s else s' ^ "_" ^ s
@@ -274,10 +274,10 @@ let write_constructor_set ~w ~sep = function
   | x::l -> 
       w ("C" ^ x.ml_name);
       List.iter l ~f: (function x ->
-	w sep;
-	w ("C" ^ x.ml_name))
+        w sep;
+        w ("C" ^ x.ml_name))
 
-(* CamlTk: Definition of a type *)	    
+(* CamlTk: Definition of a type *)          
 let camltk_write_type ~intf:w ~impl:w' name ~def:typdef =
   (* Put markers for extraction *)
   w "(* type *)\n";
@@ -335,9 +335,9 @@ let rec converterTKtoCAML ~arg = function
         ["(Obj.magic (cTKtoCAMLwidget "; arg; ") :"; s'; "widget)"]
   | Subtype (s, s') -> 
       if !Flags.camltk then 
-	"cTKtoCAML" ^ s ^ " " ^ arg
+        "cTKtoCAML" ^ s ^ " " ^ arg
       else
-	"cTKtoCAML" ^ s' ^ "_" ^ s ^ " " ^ arg
+        "cTKtoCAML" ^ s' ^ "_" ^ s ^ " " ^ arg
   | List ty ->
      begin match type_parser_arity ty with
        OneToken ->
@@ -400,8 +400,8 @@ let rec wrapper_code ~name ty =
           String.concat ~sep:"" readarg ^ name ^ " " ^
           String.concat ~sep:" " 
             (List.map2 ~f:(fun v (l, _) -> 
-	      if !Flags.camltk then v
-	      else labelstring l ^ v) vnames tyl)
+              if !Flags.camltk then v
+              else labelstring l ^ v) vnames tyl)
 
         (* all other types are read in one operation *)
         | List ty ->
@@ -562,11 +562,11 @@ let rec converterCAMLtoTK ~context_widget argname ty =
        let name = "cCAMLtoTK" ^ s ^ " " in
        let args = argname in
        let args = 
-	 if !Flags.camltk then begin
-	   if is_subtyped s then (* unconstraint subtype *)
-	     s ^ "_any_table " ^ args
-	   else args
-	 end else args
+         if !Flags.camltk then begin
+           if is_subtyped s then (* unconstraint subtype *)
+             s ^ "_any_table " ^ args
+           else args
+         end else args
        in
        let args = 
            if requires_widget_context s then
@@ -575,30 +575,30 @@ let rec converterCAMLtoTK ~context_widget argname ty =
        name ^ args
  |  Subtype ("widget", s') ->
        if !Flags.camltk then 
-	 let name = "cCAMLtoTKwidget " in
-	 let args = "widget_"^s'^"_table "^argname in
-	 let args = 
-       	   if requires_widget_context "widget" then
-	     context_widget^" "^args
+         let name = "cCAMLtoTKwidget " in
+         let args = "widget_"^s'^"_table "^argname in
+         let args = 
+           if requires_widget_context "widget" then
+             context_widget^" "^args
            else args in
-	 name^args
+         name^args
        else begin 
-	 let name = "cCAMLtoTKwidget " in
-	 let args = "(" ^ argname ^ " : " ^ s' ^ " widget)" in
-	 name ^ args
+         let name = "cCAMLtoTKwidget " in
+         let args = "(" ^ argname ^ " : " ^ s' ^ " widget)" in
+         name ^ args
        end
  |  Subtype (s, s') ->
        let name = 
-	 if !Flags.camltk then "cCAMLtoTK" ^ s ^ " "
-	 else "cCAMLtoTK" ^ s' ^ "_" ^ s ^ " " 
+         if !Flags.camltk then "cCAMLtoTK" ^ s ^ " "
+         else "cCAMLtoTK" ^ s' ^ "_" ^ s ^ " " 
        in
        let args =
-	 if !Flags.camltk then begin
-	   s^"_"^s'^"_table "^argname
-	 end else begin
+         if !Flags.camltk then begin
+           s^"_"^s'^"_table "^argname
+         end else begin
            if safetype then "(" ^ argname ^ " : [< " ^ s' ^ "_" ^ s ^ "])"
            else argname
-	 end
+         end
        in
        let args = 
            if requires_widget_context s then context_widget ^ " " ^ args
@@ -648,20 +648,20 @@ let code_of_template ~context_widget ?func:(funtemplate=false) template =
     StringArg s -> "TkToken \"" ^ s ^ "\""
   | TypeArg (_, List (Subtype (sup, sub) as ty)) when not !Flags.camltk ->
       begin try
-	let typdef = Hashtbl.find types_table sup in
-	let classdef = List.assoc sub typdef.subtypes in
-	let lbl = gettklabel (List.hd classdef) in
-	catch_opts := (sub ^ "_" ^ sup, lbl);
-	newvar := newvar2;
-	"TkTokenList opts"
+        let typdef = Hashtbl.find types_table sup in
+        let classdef = List.assoc sub typdef.subtypes in
+        let lbl = gettklabel (List.hd classdef) in
+        catch_opts := (sub ^ "_" ^ sup, lbl);
+        newvar := newvar2;
+        "TkTokenList opts"
       with Not_found -> 
-	raise (Failure (Printf.sprintf "type %s(%s) not found" sup sub));
+        raise (Failure (Printf.sprintf "type %s(%s) not found" sup sub));
       end
   | TypeArg (l, List ty) ->
       (if !Flags.camltk then 
-	 "TkTokenList (List.map (function x -> "
+         "TkTokenList (List.map (function x -> "
        else 
-	 "TkTokenList (List.map ~f:(function x -> ")
+         "TkTokenList (List.map ~f:(function x -> ")
       ^ converterCAMLtoTK ~context_widget "x" ty
       ^ ") " ^ !newvar l ^ ")"
   | TypeArg (l, Function tyarg) ->
@@ -801,9 +801,9 @@ let rec write_result_parsing ~w = function
       w "(splitlist res)"
   | List ty ->
       if !Flags.camltk then
-	w ("    List.map " ^ converterTKtoCAML ~arg:"(splitlist res)" ty)
+        w ("    List.map " ^ converterTKtoCAML ~arg:"(splitlist res)" ty)
       else
-	w ("    List.map ~f: " ^ converterTKtoCAML ~arg:"(splitlist res)" ty)
+        w ("    List.map ~f: " ^ converterTKtoCAML ~arg:"(splitlist res)" ty)
   | Product tyl -> raise (Failure "Product -> record was done. ???") 
   | Record tyl -> (* of course all the labels are "" *)
       let rnames = varnames ~prefix:"r" (List.length tyl) in
@@ -937,11 +937,11 @@ let camltk_write_function ~w def =
   | l -> 
       let has_normal_argument = ref false in
       List.iter (fun (l,x) -> 
-	w " ";
-	if l <> "" then 
-	  if l.[0] = '?' then w (l ^ ":") else has_normal_argument := true
-	else has_normal_argument := true;
-	w x) l; 
+        w " ";
+        if l <> "" then 
+          if l.[0] = '?' then w (l ^ ":") else has_normal_argument := true
+        else has_normal_argument := true;
+        w x) l; 
       if not !has_normal_argument then w " ()";
       w " =\n"
   end;
@@ -1015,16 +1015,16 @@ let write_external ~w def =
       begin try
         let realname = find_in_path !search_path (fname ^ ".ml") in
         let ic = open_in_bin realname in
-	try
-	  let code_list = Ppparse.parse_channel ic in
-	  close_in ic;
-	  List.iter (Ppexec.exec (fun _ -> ()) w)
-	    (if !Flags.camltk then 
-	      Code.Define "CAMLTK" :: code_list else code_list );
-	with
-	| Ppparse.Error s -> 
-	    close_in ic;
-	    raise (Compiler_Error (Printf.sprintf "Preprocess error: %s" s))
+        try
+          let code_list = Ppparse.parse_channel ic in
+          close_in ic;
+          List.iter (Ppexec.exec (fun _ -> ()) w)
+            (if !Flags.camltk then 
+              Code.Define "CAMLTK" :: code_list else code_list );
+        with
+        | Ppparse.Error s -> 
+            close_in ic;
+            raise (Compiler_Error (Printf.sprintf "Preprocess error: %s" s))
       with
       | Not_found ->
           raise (Compiler_Error ("can't find external file: " ^ fname))

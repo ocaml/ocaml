@@ -56,7 +56,7 @@ supported out of the box, without additional software.
 The native-code compiler (ocamlopt) requires Visual C++ and the
 Microsoft assembler MASM version 6.11 or later.  MASM can be
 downloaded for free from Microsoft's Web site; for directions, see
-	http://www.easystreet.com/~jkirwan/pctools.html
+        http://www.easystreet.com/~jkirwan/pctools.html
     or  http://www2.dgsys.com/~raymoon/faq/masm.html
     or  the comp.lang.asm.x86 FAQ.
 
@@ -96,14 +96,14 @@ You will need the following software components to perform the recompilation:
 To recompile, start a Cygwin shell and change to the top-level
 directory of the OCaml distribution.  Then, do
 
-	cp config/m-nt.h config/m.h
-	cp config/s-nt.h config/s.h
-	cp config/Makefile.msvc config/Makefile
+        cp config/m-nt.h config/m.h
+        cp config/s-nt.h config/s.h
+        cp config/Makefile.msvc config/Makefile
 
 Then, edit config/Makefile as needed, following the comments in this file.
 Normally, the only variables that need to be changed are
-        PREFIX	    where to install everything
-	TK_ROOT	    where TCL/TK was installed
+        PREFIX      where to install everything
+        TK_ROOT     where TCL/TK was installed
 
 Finally, use "make -f Makefile.nt" to build the system, e.g. 
 
@@ -149,7 +149,7 @@ runs without any additional tools.
 The native-code compiler (ocamlopt), as well as static linking of
 Caml bytecode with C code (ocamlc -custom), require either the MinGW
 development tools, which is free software available at
-	http://www.mingw.org/
+        http://www.mingw.org/
 or the Cygwin development tools (also free software), available at
         http://sources.redhat.com/cygwin/
 
@@ -174,14 +174,14 @@ Start a Cygwin shell and unpack the source distribution
 (ocaml-X.YZ.tar.gz) with "tar xzf".  Change to the top-level
 directory of the OCaml distribution.  Then, do
 
-	cp config/m-nt.h config/m.h
-	cp config/s-nt.h config/s.h
-	cp config/Makefile.mingw config/Makefile
+        cp config/m-nt.h config/m.h
+        cp config/s-nt.h config/s.h
+        cp config/Makefile.mingw config/Makefile
 
 Then, edit config/Makefile as needed, following the comments in this file.
 Normally, the only variables that need to be changed are
-        PREFIX	    where to install everything
-	TK_ROOT	    where TCL/TK was installed
+        PREFIX      where to install everything
+        TK_ROOT     where TCL/TK was installed
 
 Finally, use "make -f Makefile.nt" to build the system, e.g. 
 

@@ -46,13 +46,13 @@ class scanner =
        A VOIR : scan des classes héritées.*)
     method scan_class_elements c =
       List.iter 
-	(fun ele -> 
-	  match ele with
-	    Odoc_class.Class_attribute a -> self#scan_attribute a 
-	  | Odoc_class.Class_method m -> self#scan_method m
-	  | Odoc_class.Class_comment t -> self#scan_class_comment t
-	)
-	(Odoc_class.class_elements c)
+        (fun ele -> 
+          match ele with
+            Odoc_class.Class_attribute a -> self#scan_attribute a 
+          | Odoc_class.Class_method m -> self#scan_method m
+          | Odoc_class.Class_comment t -> self#scan_class_comment t
+        )
+        (Odoc_class.class_elements c)
 
     (** Scan of a class. Should not be overriden. It calls [scan_class_pre]
       and if [scan_class_pre] returns [true], then it calls scan_class_elements.*)
@@ -72,13 +72,13 @@ class scanner =
        A VOIR : scan des classes héritées.*)
     method scan_class_type_elements ct =
       List.iter 
-	(fun ele -> 
-	  match ele with
-	    Odoc_class.Class_attribute a -> self#scan_attribute a 
-	  | Odoc_class.Class_method m -> self#scan_method m
-	  | Odoc_class.Class_comment t -> self#scan_class_type_comment t
-	)
-	(Odoc_class.class_type_elements ct)
+        (fun ele -> 
+          match ele with
+            Odoc_class.Class_attribute a -> self#scan_attribute a 
+          | Odoc_class.Class_method m -> self#scan_method m
+          | Odoc_class.Class_comment t -> self#scan_class_type_comment t
+        )
+        (Odoc_class.class_type_elements ct)
 
     (** Scan of a class type. Should not be overriden. It calls [scan_class_type_pre]
       and if [scan_class_type_pre] returns [true], then it calls scan_class_type_elements.*)
@@ -97,19 +97,19 @@ class scanner =
     (** This method scan the elements of the given module. *)
     method scan_module_elements m =
       List.iter 
-	(fun ele -> 
-	  match ele with
-	    Odoc_module.Element_module m -> self#scan_module m
-	  | Odoc_module.Element_module_type mt -> self#scan_module_type mt
-	  | Odoc_module.Element_included_module im -> self#scan_included_module im
-	  | Odoc_module.Element_class c -> self#scan_class c
-	  | Odoc_module.Element_class_type ct -> self#scan_class_type ct
-	  | Odoc_module.Element_value v -> self#scan_value v
-	  | Odoc_module.Element_exception e -> self#scan_exception e
-	  | Odoc_module.Element_type t -> self#scan_type t
-	  | Odoc_module.Element_module_comment t -> self#scan_module_comment t
-	)
-	(Odoc_module.module_elements m)
+        (fun ele -> 
+          match ele with
+            Odoc_module.Element_module m -> self#scan_module m
+          | Odoc_module.Element_module_type mt -> self#scan_module_type mt
+          | Odoc_module.Element_included_module im -> self#scan_included_module im
+          | Odoc_module.Element_class c -> self#scan_class c
+          | Odoc_module.Element_class_type ct -> self#scan_class_type ct
+          | Odoc_module.Element_value v -> self#scan_value v
+          | Odoc_module.Element_exception e -> self#scan_exception e
+          | Odoc_module.Element_type t -> self#scan_type t
+          | Odoc_module.Element_module_comment t -> self#scan_module_comment t
+        )
+        (Odoc_module.module_elements m)
 
     (** Scan of a module. Should not be overriden. It calls [scan_module_pre]
       and if [scan_module_pre] returns [true], then it calls scan_module_elements.*)
@@ -128,19 +128,19 @@ class scanner =
     (** This method scan the elements of the given module type. *)
     method scan_module_type_elements mt =
       List.iter 
-	(fun ele -> 
-	  match ele with
-	    Odoc_module.Element_module m -> self#scan_module m
-	  | Odoc_module.Element_module_type mt -> self#scan_module_type mt
-	  | Odoc_module.Element_included_module im -> self#scan_included_module im
-	  | Odoc_module.Element_class c -> self#scan_class c
-	  | Odoc_module.Element_class_type ct -> self#scan_class_type ct
-	  | Odoc_module.Element_value v -> self#scan_value v
-	  | Odoc_module.Element_exception e -> self#scan_exception e
-	  | Odoc_module.Element_type t -> self#scan_type t
-	  | Odoc_module.Element_module_comment t -> self#scan_module_comment t
-	)
-	(Odoc_module.module_type_elements mt)
+        (fun ele -> 
+          match ele with
+            Odoc_module.Element_module m -> self#scan_module m
+          | Odoc_module.Element_module_type mt -> self#scan_module_type mt
+          | Odoc_module.Element_included_module im -> self#scan_included_module im
+          | Odoc_module.Element_class c -> self#scan_class c
+          | Odoc_module.Element_class_type ct -> self#scan_class_type ct
+          | Odoc_module.Element_value v -> self#scan_value v
+          | Odoc_module.Element_exception e -> self#scan_exception e
+          | Odoc_module.Element_type t -> self#scan_type t
+          | Odoc_module.Element_module_comment t -> self#scan_module_comment t
+        )
+        (Odoc_module.module_type_elements mt)
 
     (** Scan of a module type. Should not be overriden. It calls [scan_module_type_pre]
       and if [scan_module_type_pre] returns [true], then it calls scan_module_type_elements.*)

@@ -34,7 +34,7 @@ rule token = parse
          let str = Lexing.lexeme lexbuf in
          let line = !linenum in
          if String.length str <> 0 && str.[String.length str - 1] = '\n' then 
-	 begin
+         begin
            incr linenum
          end;
          OTHER (str)

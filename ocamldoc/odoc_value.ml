@@ -30,14 +30,14 @@ type t_value = {
 (** Representation of a class attribute. *)
 type t_attribute = {
     att_value : t_value ; (** an attribute has almost all the same information
-			     as a value *)
+                             as a value *)
     att_mutable : bool ; 
   } 
 
 (** Representation of a class method. *)
 type t_method = {
     met_value : t_value ; (** a method has almost all the same information
-			     as a value *)
+                             as a value *)
     met_private : bool ; 
     met_virtual : bool ;
   } 
@@ -51,11 +51,11 @@ let value_parameter_text_by_name v name =
     None -> None
   | Some i ->
       try
-	let t = List.assoc name i.Odoc_types.i_params in
-	Some t
+        let t = List.assoc name i.Odoc_types.i_params in
+        Some t
       with
-	Not_found ->
-	  None
+        Not_found ->
+          None
 
 (** Update the parameters text of a t_value, according to the val_info field. *)
 let update_value_parameters_text v =
@@ -70,9 +70,9 @@ let parameter_list_from_arrows typ =
   let rec iter t = 
     match t.Types.desc with
       Types.Tarrow (l, t1, t2, _) ->
-	(l, t1) :: (iter t2)
+        (l, t1) :: (iter t2)
     | _ ->
-	[]
+        []
   in
   iter typ
 
@@ -86,33 +86,33 @@ let dummy_parameter_list typ =
     match s with 
       "" -> s
     | _ -> 
-	match s.[0] with
-	  '?' -> String.sub s 1 ((String.length s) - 1)
-	| _ -> s
+        match s.[0] with
+          '?' -> String.sub s 1 ((String.length s) - 1)
+        | _ -> s
   in
   Printtyp.mark_loops typ;
   let liste_param = parameter_list_from_arrows typ in
   let rec iter (label, t) =
     match t.Types.desc with
     | Types.Ttuple l -> 
-	if label = "" then
-	  Odoc_parameter.Tuple 
-	    (List.map (fun t2 -> iter ("", t2)) l, t)
-	else
-	  (* if there is a label, then we don't want to decompose the tuple *)
-	  Odoc_parameter.Simple_name 
-	    { Odoc_parameter.sn_name = normal_name label ;
-	      Odoc_parameter.sn_type = t ;
-	      Odoc_parameter.sn_text = None }
+        if label = "" then
+          Odoc_parameter.Tuple 
+            (List.map (fun t2 -> iter ("", t2)) l, t)
+        else
+          (* if there is a label, then we don't want to decompose the tuple *)
+          Odoc_parameter.Simple_name 
+            { Odoc_parameter.sn_name = normal_name label ;
+              Odoc_parameter.sn_type = t ;
+              Odoc_parameter.sn_text = None }
     | Types.Tlink t2  
     | Types.Tsubst t2 ->
-	(iter (label, t2))
+        (iter (label, t2))
 
     | _ ->
-	Odoc_parameter.Simple_name 
-	  { Odoc_parameter.sn_name = normal_name label ;
-	     Odoc_parameter.sn_type = t ;
-	    Odoc_parameter.sn_text = None }
+        Odoc_parameter.Simple_name 
+          { Odoc_parameter.sn_name = normal_name label ;
+             Odoc_parameter.sn_type = t ;
+            Odoc_parameter.sn_text = None }
   in 
   List.map iter liste_param
 
@@ -121,12 +121,12 @@ let is_function v =
   let rec f t =
     match t.Types.desc with
       Types.Tarrow _ ->
-	true
+        true
     | Types.Tlink t ->
-	f t
-	| _ ->
-	    false
+        f t
+        | _ ->
+            false
       in
   f v.val_type
 
-	
+        

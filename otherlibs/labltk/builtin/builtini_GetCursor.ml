@@ -1,12 +1,12 @@
 ##ifdef CAMLTK
 
 let cCAMLtoTKcolor = function
-	NamedColor x -> TkToken x
-	| Black -> TkToken "black"
-	| White -> TkToken "white"
-	| Red -> TkToken "red"
-	| Green -> TkToken "green"
-	| Blue -> TkToken "blue"
+        NamedColor x -> TkToken x
+        | Black -> TkToken "black"
+        | White -> TkToken "white"
+        | Red -> TkToken "red"
+        | Green -> TkToken "green"
+        | Blue -> TkToken "blue"
         | Yellow -> TkToken "yellow"
 ;;
 

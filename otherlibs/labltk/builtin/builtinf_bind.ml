@@ -16,24 +16,24 @@ FUNCTION
 *)
 let bind widget eventsequence action =
   tkCommand [| TkToken "bind";
-      	       TkToken (Widget.name widget);
-	       cCAMLtoTKeventSequence eventsequence;
-	       begin match action with
-		 BindRemove -> TkToken ""
-	       | BindSet (what, f) ->
-		   let cbId = register_callback widget (wrapeventInfo f what) 
-		   in
-		   TkToken ("camlcb " ^ cbId ^ (writeeventField what))
-	       | BindSetBreakable (what, f) ->
-		   let cbId = register_callback widget (wrapeventInfo f what) 
-		   in
-		   TkToken ("camlcb " ^ cbId ^ (writeeventField what) ^
-			    " ; if { $BreakBindingsSequence == 1 } then { break ;} ; set BreakBindingsSequence 0")
-	       |  BindExtend (what, f) ->
-		   let cbId = register_callback widget (wrapeventInfo f what) 
-		   in
-		   TkToken ("+camlcb " ^ cbId ^ (writeeventField what))
-	       end |]
+               TkToken (Widget.name widget);
+               cCAMLtoTKeventSequence eventsequence;
+               begin match action with
+                 BindRemove -> TkToken ""
+               | BindSet (what, f) ->
+                   let cbId = register_callback widget (wrapeventInfo f what) 
+                   in
+                   TkToken ("camlcb " ^ cbId ^ (writeeventField what))
+               | BindSetBreakable (what, f) ->
+                   let cbId = register_callback widget (wrapeventInfo f what) 
+                   in
+                   TkToken ("camlcb " ^ cbId ^ (writeeventField what) ^
+                            " ; if { $BreakBindingsSequence == 1 } then { break ;} ; set BreakBindingsSequence 0")
+               |  BindExtend (what, f) ->
+                   let cbId = register_callback widget (wrapeventInfo f what) 
+                   in
+                   TkToken ("+camlcb " ^ cbId ^ (writeeventField what))
+               end |]
 ;;
 
 (* FUNCTION
@@ -45,24 +45,24 @@ let bind widget eventsequence action =
 
 let bind_class clas eventsequence action =
   tkCommand [| TkToken "bind";
-      	       TkToken clas;
-	       cCAMLtoTKeventSequence eventsequence;
-	       begin match action with
-		 BindRemove -> TkToken ""
-	       | BindSet (what, f) ->
-		   let cbId = register_callback Widget.dummy 
-		       (wrapeventInfo f what) in
-		   TkToken ("camlcb " ^ cbId ^ (writeeventField what))
-	       | BindSetBreakable (what, f) ->
-		   let cbId = register_callback Widget.dummy 
-		       (wrapeventInfo f what) in
-		   TkToken ("camlcb " ^ cbId ^ (writeeventField what)^
-			    " ; if { $BreakBindingsSequence == 1 } then { break ;} ; set BreakBindingsSequence 0" )
-	       | BindExtend (what, f) ->
-		   let cbId = register_callback Widget.dummy 
-		       (wrapeventInfo f what) in
-		   TkToken ("+camlcb " ^ cbId ^ (writeeventField what))
-	       end |]
+               TkToken clas;
+               cCAMLtoTKeventSequence eventsequence;
+               begin match action with
+                 BindRemove -> TkToken ""
+               | BindSet (what, f) ->
+                   let cbId = register_callback Widget.dummy 
+                       (wrapeventInfo f what) in
+                   TkToken ("camlcb " ^ cbId ^ (writeeventField what))
+               | BindSetBreakable (what, f) ->
+                   let cbId = register_callback Widget.dummy 
+                       (wrapeventInfo f what) in
+                   TkToken ("camlcb " ^ cbId ^ (writeeventField what)^
+                            " ; if { $BreakBindingsSequence == 1 } then { break ;} ; set BreakBindingsSequence 0" )
+               | BindExtend (what, f) ->
+                   let cbId = register_callback Widget.dummy 
+                       (wrapeventInfo f what) in
+                   TkToken ("+camlcb " ^ cbId ^ (writeeventField what))
+               end |]
 ;;
 
 (* FUNCTION

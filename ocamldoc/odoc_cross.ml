@@ -32,13 +32,13 @@ module P_alias =
     let p_module m _ = 
       (true,
        match m.m_kind with
-	 Module_alias _ -> true
+         Module_alias _ -> true
        | _ -> false
       )
     let p_module_type mt _ =
       (true,
        match mt.mt_kind with
-	 Some (Module_type_alias _) -> true
+         Some (Module_type_alias _) -> true
        | _ -> false
       )
     let p_class c _ = (false, false)
@@ -59,23 +59,23 @@ let rec build_alias_list (acc_m, acc_mt, acc_ex) = function
       (acc_m, acc_mt, acc_ex)
   | (Odoc_search.Res_module m) :: q ->
       let new_acc_m = 
-	match m.m_kind with
-	  Module_alias ma -> (m.m_name, ma.ma_name) :: acc_m
-	| _ -> acc_m
+        match m.m_kind with
+          Module_alias ma -> (m.m_name, ma.ma_name) :: acc_m
+        | _ -> acc_m
       in
       build_alias_list (new_acc_m, acc_mt, acc_ex) q
   | (Odoc_search.Res_module_type mt) :: q ->
       let new_acc_mt = 
-	match mt.mt_kind with
-	  Some (Module_type_alias mta) -> (mt.mt_name, mta.mta_name) :: acc_mt
-	| _ -> acc_mt
+        match mt.mt_kind with
+          Some (Module_type_alias mta) -> (mt.mt_name, mta.mta_name) :: acc_mt
+        | _ -> acc_mt
       in
       build_alias_list (acc_m, new_acc_mt, acc_ex) q
   | (Odoc_search.Res_exception e) :: q ->
       let new_acc_ex = 
-	match e.ex_alias with
-	  None -> acc_ex
-	| Some ea -> (e.ex_name, ea.ea_name) :: acc_ex
+        match e.ex_alias with
+          None -> acc_ex
+        | Some ea -> (e.ex_name, ea.ea_name) :: acc_ex
       in
       build_alias_list (acc_m, acc_mt, new_acc_ex) q
   | _ :: q ->
@@ -124,9 +124,9 @@ module Search_by_complete_name = Odoc_search.Search (P_lookup)
 let rec lookup_module module_list name =
   let l = List.filter
       (fun res ->
-	match res with
-	  Odoc_search.Res_module _ -> true
-	| _ -> false
+        match res with
+          Odoc_search.Res_module _ -> true
+        | _ -> false
       )
       (Search_by_complete_name.search module_list name)
   in
@@ -137,9 +137,9 @@ let rec lookup_module module_list name =
 let rec lookup_module_type module_list name =
   let l = List.filter
       (fun res ->
-	match res with
-	  Odoc_search.Res_module_type _ -> true
-	| _ -> false
+        match res with
+          Odoc_search.Res_module_type _ -> true
+        | _ -> false
       )
       (Search_by_complete_name.search module_list name)
   in
@@ -150,9 +150,9 @@ let rec lookup_module_type module_list name =
 let rec lookup_class module_list name =
   let l = List.filter
       (fun res ->
-	match res with
-	  Odoc_search.Res_class _ -> true
-	| _ -> false
+        match res with
+          Odoc_search.Res_class _ -> true
+        | _ -> false
       )
       (Search_by_complete_name.search module_list name)
   in
@@ -163,9 +163,9 @@ let rec lookup_class module_list name =
 let rec lookup_class_type module_list name =
   let l = List.filter
       (fun res ->
-	match res with
-	  Odoc_search.Res_class_type _ -> true
-	| _ -> false
+        match res with
+          Odoc_search.Res_class_type _ -> true
+        | _ -> false
       )
       (Search_by_complete_name.search module_list name)
   in
@@ -176,9 +176,9 @@ let rec lookup_class_type module_list name =
 let rec lookup_exception module_list name =
   let l = List.filter
       (fun res ->
-	match res with
-	  Odoc_search.Res_exception _ -> true
-	| _ -> false
+        match res with
+          Odoc_search.Res_exception _ -> true
+        | _ -> false
       )
       (Search_by_complete_name.search module_list name)
   in
@@ -202,97 +202,97 @@ let rec associate_in_module module_list (acc_b_modif, acc_incomplete_top_module_
   let rec iter_kind (acc_b, acc_inc, acc_names) k =
     match k with
       Module_struct elements ->
-	List.fold_left
-	  (associate_in_module_element module_list m.m_name)
-	  (acc_b, acc_inc, acc_names)
-	  elements
-	  
+        List.fold_left
+          (associate_in_module_element module_list m.m_name)
+          (acc_b, acc_inc, acc_names)
+          elements
+          
     | Module_alias ma ->
-	(
-	 match ma.ma_module with
-	   Some _ ->
-	     (acc_b, acc_inc, acc_names)
-	 | None ->
-	     let mmt_opt =
-	       try Some (Mod (lookup_module module_list ma.ma_name))
-	       with Not_found ->
-		 try Some (Modtype (lookup_module_type module_list ma.ma_name))
-		 with Not_found -> None
-	     in
-	     match mmt_opt with
-	       None -> (acc_b, (Name.head m.m_name) :: acc_inc, 
-			(* we don't want to output warning messages for 
-			   "sig ... end" or "struct ... end" modules not found *)
-			(if ma.ma_name = Odoc_messages.struct_end or 
-			  ma.ma_name = Odoc_messages.sig_end then
-			  acc_names
-			else
-			  (NF_mmt ma.ma_name) :: acc_names)
-		       )
-	     | Some mmt -> 
-		 ma.ma_module <- Some mmt ;
-		 (true, acc_inc, acc_names)
-	)
+        (
+         match ma.ma_module with
+           Some _ ->
+             (acc_b, acc_inc, acc_names)
+         | None ->
+             let mmt_opt =
+               try Some (Mod (lookup_module module_list ma.ma_name))
+               with Not_found ->
+                 try Some (Modtype (lookup_module_type module_list ma.ma_name))
+                 with Not_found -> None
+             in
+             match mmt_opt with
+               None -> (acc_b, (Name.head m.m_name) :: acc_inc, 
+                        (* we don't want to output warning messages for 
+                           "sig ... end" or "struct ... end" modules not found *)
+                        (if ma.ma_name = Odoc_messages.struct_end or 
+                          ma.ma_name = Odoc_messages.sig_end then
+                          acc_names
+                        else
+                          (NF_mmt ma.ma_name) :: acc_names)
+                       )
+             | Some mmt -> 
+                 ma.ma_module <- Some mmt ;
+                 (true, acc_inc, acc_names)
+        )
 
     | Module_functor (_, k) ->
-	iter_kind (acc_b, acc_inc, acc_names) k
+        iter_kind (acc_b, acc_inc, acc_names) k
 
     | Module_with (tk, _) ->
-	associate_in_module_type module_list (acc_b, acc_inc, acc_names)
-	  { mt_name = "" ; mt_info = None ; mt_type = None ;
-	    mt_is_interface = false ; mt_file = ""; mt_kind = Some tk ;
-	    mt_loc = Odoc_types.dummy_loc }
-	  
+        associate_in_module_type module_list (acc_b, acc_inc, acc_names)
+          { mt_name = "" ; mt_info = None ; mt_type = None ;
+            mt_is_interface = false ; mt_file = ""; mt_kind = Some tk ;
+            mt_loc = Odoc_types.dummy_loc }
+          
     | Module_apply (k1, k2) ->
-	let (acc_b2, acc_inc2, acc_names2) = iter_kind (acc_b, acc_inc, acc_names) k1 in
-	iter_kind (acc_b2, acc_inc2, acc_names2) k2
+        let (acc_b2, acc_inc2, acc_names2) = iter_kind (acc_b, acc_inc, acc_names) k1 in
+        iter_kind (acc_b2, acc_inc2, acc_names2) k2
 
     | Module_constraint (k, tk) ->
-	let (acc_b2, acc_inc2, acc_names2) = iter_kind (acc_b, acc_inc, acc_names) k in
-	associate_in_module_type module_list (acc_b2, acc_inc2, acc_names2)
-	  { mt_name = "" ; mt_info = None ; mt_type = None ;
-	    mt_is_interface = false ; mt_file = "" ; mt_kind = Some tk ;
-	    mt_loc = Odoc_types.dummy_loc }
+        let (acc_b2, acc_inc2, acc_names2) = iter_kind (acc_b, acc_inc, acc_names) k in
+        associate_in_module_type module_list (acc_b2, acc_inc2, acc_names2)
+          { mt_name = "" ; mt_info = None ; mt_type = None ;
+            mt_is_interface = false ; mt_file = "" ; mt_kind = Some tk ;
+            mt_loc = Odoc_types.dummy_loc }
   in
   iter_kind (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found) m.m_kind
-	
+        
 and associate_in_module_type module_list (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found) mt =
   let rec iter_kind (acc_b, acc_inc, acc_names) k =
     match k with
       Module_type_struct elements ->
-	List.fold_left
-	  (associate_in_module_element module_list mt.mt_name)
-	  (acc_b, acc_inc, acc_names)
-	  elements
+        List.fold_left
+          (associate_in_module_element module_list mt.mt_name)
+          (acc_b, acc_inc, acc_names)
+          elements
 
     | Module_type_functor (_, k) ->
-	iter_kind (acc_b, acc_inc, acc_names) k
+        iter_kind (acc_b, acc_inc, acc_names) k
 
     | Module_type_with (k, _) ->
-	iter_kind (acc_b, acc_inc, acc_names) k
+        iter_kind (acc_b, acc_inc, acc_names) k
 
     | Module_type_alias mta ->
-	match mta.mta_module with
-	   Some _ ->
-	     (acc_b, acc_inc, acc_names)
-	 | None ->
-	     let mt_opt =
-	       try Some (lookup_module_type module_list mta.mta_name)
-	       with Not_found -> None
-	     in
-	     match mt_opt with
-	       None -> (acc_b, (Name.head mt.mt_name) :: acc_inc, 
-			(* we don't want to output warning messages for 
-			   "sig ... end" or "struct ... end" modules not found *)
-			(if mta.mta_name = Odoc_messages.struct_end or 
-			  mta.mta_name = Odoc_messages.sig_end then
-			  acc_names 
-			else 
-			  (NF_mt mta.mta_name) :: acc_names)
-		       )
-	     | Some mt -> 
-		 mta.mta_module <- Some mt ;
-		 (true, acc_inc, acc_names)
+        match mta.mta_module with
+           Some _ ->
+             (acc_b, acc_inc, acc_names)
+         | None ->
+             let mt_opt =
+               try Some (lookup_module_type module_list mta.mta_name)
+               with Not_found -> None
+             in
+             match mt_opt with
+               None -> (acc_b, (Name.head mt.mt_name) :: acc_inc, 
+                        (* we don't want to output warning messages for 
+                           "sig ... end" or "struct ... end" modules not found *)
+                        (if mta.mta_name = Odoc_messages.struct_end or 
+                          mta.mta_name = Odoc_messages.sig_end then
+                          acc_names 
+                        else 
+                          (NF_mt mta.mta_name) :: acc_names)
+                       )
+             | Some mt -> 
+                 mta.mta_module <- Some mt ;
+                 (true, acc_inc, acc_names)
   in
   match mt.mt_kind with
     None -> (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found)
@@ -304,50 +304,50 @@ and associate_in_module_element module_list m_name (acc_b_modif, acc_incomplete_
    | Element_module_type mt -> associate_in_module_type module_list (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found) mt
    | Element_included_module im -> 
        (
-	match im.im_module with
-	  Some _ -> (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found)
-	| None ->
-	    let mmt_opt =
-	      try Some (Mod (lookup_module module_list im.im_name))
-	      with Not_found ->
-		try Some (Modtype (lookup_module_type module_list im.im_name))
-		with Not_found -> None
-	    in
-	    match mmt_opt with
-	      None -> (acc_b_modif, (Name.head m_name) :: acc_incomplete_top_module_names, 
-		       (* we don't want to output warning messages for 
-			   "sig ... end" or "struct ... end" modules not found *)
-			(if im.im_name = Odoc_messages.struct_end or 
-			  im.im_name = Odoc_messages.sig_end then
-			  acc_names_not_found
-			else
-			  (NF_mmt im.im_name) :: acc_names_not_found)
-		      )
-	    | Some mmt -> 
-		im.im_module <- Some mmt ;
-		(true, acc_incomplete_top_module_names, acc_names_not_found)
+        match im.im_module with
+          Some _ -> (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found)
+        | None ->
+            let mmt_opt =
+              try Some (Mod (lookup_module module_list im.im_name))
+              with Not_found ->
+                try Some (Modtype (lookup_module_type module_list im.im_name))
+                with Not_found -> None
+            in
+            match mmt_opt with
+              None -> (acc_b_modif, (Name.head m_name) :: acc_incomplete_top_module_names, 
+                       (* we don't want to output warning messages for 
+                           "sig ... end" or "struct ... end" modules not found *)
+                        (if im.im_name = Odoc_messages.struct_end or 
+                          im.im_name = Odoc_messages.sig_end then
+                          acc_names_not_found
+                        else
+                          (NF_mmt im.im_name) :: acc_names_not_found)
+                      )
+            | Some mmt -> 
+                im.im_module <- Some mmt ;
+                (true, acc_incomplete_top_module_names, acc_names_not_found)
        )
    | Element_class cl -> associate_in_class module_list (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found) cl
    | Element_class_type ct -> associate_in_class_type module_list (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found) ct
    | Element_value _ -> (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found)
    | Element_exception ex ->
        (
-	match ex.ex_alias with
-	  None -> (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found)
-	| Some ea ->
-	    match ea.ea_ex with
-	      Some _ -> 
-		(acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found)
-	    | None -> 
-		let ex_opt =
-		  try Some (lookup_exception module_list ea.ea_name)
-		  with Not_found -> None
-		in
-		match ex_opt with
-		  None -> (acc_b_modif, (Name.head m_name) :: acc_incomplete_top_module_names, (NF_ex ea.ea_name) :: acc_names_not_found)
-		| Some e ->
-		    ea.ea_ex <- Some e ;
-		    (true, acc_incomplete_top_module_names, acc_names_not_found)
+        match ex.ex_alias with
+          None -> (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found)
+        | Some ea ->
+            match ea.ea_ex with
+              Some _ -> 
+                (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found)
+            | None -> 
+                let ex_opt =
+                  try Some (lookup_exception module_list ea.ea_name)
+                  with Not_found -> None
+                in
+                match ex_opt with
+                  None -> (acc_b_modif, (Name.head m_name) :: acc_incomplete_top_module_names, (NF_ex ea.ea_name) :: acc_names_not_found)
+                | Some e ->
+                    ea.ea_ex <- Some e ;
+                    (true, acc_incomplete_top_module_names, acc_names_not_found)
        )
    | Element_type _ -> (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found)
    | Element_module_comment _ -> (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found)
@@ -356,82 +356,82 @@ and associate_in_class module_list (acc_b_modif, acc_incomplete_top_module_names
   let rec iter_kind (acc_b, acc_inc, acc_names) k = 
     match k with
       Class_structure (inher_l, _) ->
-	let f (acc_b2, acc_inc2, acc_names2) ic =
-	  match ic.ic_class with
-	  Some _ -> (acc_b2, acc_inc2, acc_names2)
-	| None ->
-	    let cct_opt =
-	      try Some (Cl (lookup_class module_list ic.ic_name))
-	      with Not_found ->
-		try Some (Cltype (lookup_class_type module_list ic.ic_name, []))
-		with Not_found -> None
-	    in
-	    match cct_opt with
-	      None -> (acc_b2, (Name.head c.cl_name) :: acc_inc2,
-		       (* we don't want to output warning messages for "object ... end" classes not found *)
-		       (if ic.ic_name = Odoc_messages.object_end then acc_names2 else (NF_cct ic.ic_name) :: acc_names2))
-	    | Some cct -> 
-		ic.ic_class <- Some cct ;
-		(true, acc_inc2, acc_names2)
-	in
-	List.fold_left f (acc_b, acc_inc, acc_names) inher_l
+        let f (acc_b2, acc_inc2, acc_names2) ic =
+          match ic.ic_class with
+          Some _ -> (acc_b2, acc_inc2, acc_names2)
+        | None ->
+            let cct_opt =
+              try Some (Cl (lookup_class module_list ic.ic_name))
+              with Not_found ->
+                try Some (Cltype (lookup_class_type module_list ic.ic_name, []))
+                with Not_found -> None
+            in
+            match cct_opt with
+              None -> (acc_b2, (Name.head c.cl_name) :: acc_inc2,
+                       (* we don't want to output warning messages for "object ... end" classes not found *)
+                       (if ic.ic_name = Odoc_messages.object_end then acc_names2 else (NF_cct ic.ic_name) :: acc_names2))
+            | Some cct -> 
+                ic.ic_class <- Some cct ;
+                (true, acc_inc2, acc_names2)
+        in
+        List.fold_left f (acc_b, acc_inc, acc_names) inher_l
 
     | Class_apply capp ->
-	(
-	 match capp.capp_class with
-	   Some _ ->  (acc_b, acc_inc, acc_names)
-	 | None -> 
-	     let cl_opt =
-	       try Some (lookup_class module_list capp.capp_name)
-	       with Not_found -> None
-	     in
-	     match cl_opt with
-	       None -> (acc_b, (Name.head c.cl_name) :: acc_inc, 
-			(* we don't want to output warning messages for "object ... end" classes not found *)
-			(if capp.capp_name = Odoc_messages.object_end then acc_names else (NF_c capp.capp_name) :: acc_names))
-	     | Some c ->
-		 capp.capp_class <- Some c ;
-		 (true, acc_inc, acc_names)
-	)
+        (
+         match capp.capp_class with
+           Some _ ->  (acc_b, acc_inc, acc_names)
+         | None -> 
+             let cl_opt =
+               try Some (lookup_class module_list capp.capp_name)
+               with Not_found -> None
+             in
+             match cl_opt with
+               None -> (acc_b, (Name.head c.cl_name) :: acc_inc, 
+                        (* we don't want to output warning messages for "object ... end" classes not found *)
+                        (if capp.capp_name = Odoc_messages.object_end then acc_names else (NF_c capp.capp_name) :: acc_names))
+             | Some c ->
+                 capp.capp_class <- Some c ;
+                 (true, acc_inc, acc_names)
+        )
 
     | Class_constr cco ->
-	(
-	 match cco.cco_class with
-	   Some _ ->  (acc_b, acc_inc, acc_names)
-	 | None -> 
-	     let cl_opt =
-	       try Some (lookup_class module_list cco.cco_name)
-	       with Not_found -> None
-	     in
-	     match cl_opt with
-	       None -> 
-		 (
-		  let clt_opt =
-		    try Some (lookup_class_type module_list cco.cco_name)
-		    with Not_found -> None
-		  in
-		  match clt_opt with
-		    None ->
-		      (acc_b, (Name.head c.cl_name) :: acc_inc, 
-			(* we don't want to output warning messages for "object ... end" classes not found *)
-		       (if cco.cco_name = Odoc_messages.object_end then acc_names else (NF_cct cco.cco_name) :: acc_names))
-		  | Some ct ->
-		      cco.cco_class <- Some (Cltype (ct, [])) ;
-		      (true, acc_inc, acc_names)
-		 )
-	     | Some c ->
-		 cco.cco_class <- Some (Cl c) ;
-		 (true, acc_inc, acc_names)
-	)
+        (
+         match cco.cco_class with
+           Some _ ->  (acc_b, acc_inc, acc_names)
+         | None -> 
+             let cl_opt =
+               try Some (lookup_class module_list cco.cco_name)
+               with Not_found -> None
+             in
+             match cl_opt with
+               None -> 
+                 (
+                  let clt_opt =
+                    try Some (lookup_class_type module_list cco.cco_name)
+                    with Not_found -> None
+                  in
+                  match clt_opt with
+                    None ->
+                      (acc_b, (Name.head c.cl_name) :: acc_inc, 
+                        (* we don't want to output warning messages for "object ... end" classes not found *)
+                       (if cco.cco_name = Odoc_messages.object_end then acc_names else (NF_cct cco.cco_name) :: acc_names))
+                  | Some ct ->
+                      cco.cco_class <- Some (Cltype (ct, [])) ;
+                      (true, acc_inc, acc_names)
+                 )
+             | Some c ->
+                 cco.cco_class <- Some (Cl c) ;
+                 (true, acc_inc, acc_names)
+        )
     | Class_constraint (ckind, ctkind) ->
-	let (acc_b2, acc_inc2, acc_names2) = iter_kind (acc_b, acc_inc, acc_names) ckind in
-	associate_in_class_type module_list (acc_b2, acc_inc2, acc_names2)
-	    { clt_name = "" ; clt_info = None ;
-	      clt_type = c.cl_type ; (* should be ok *)
-	      clt_type_parameters = [] ;
-	      clt_virtual = false ;
-	      clt_kind = ctkind ;
-	      clt_loc = Odoc_types.dummy_loc }
+        let (acc_b2, acc_inc2, acc_names2) = iter_kind (acc_b, acc_inc, acc_names) ckind in
+        associate_in_class_type module_list (acc_b2, acc_inc2, acc_names2)
+            { clt_name = "" ; clt_info = None ;
+              clt_type = c.cl_type ; (* should be ok *)
+              clt_type_parameters = [] ;
+              clt_virtual = false ;
+              clt_kind = ctkind ;
+              clt_loc = Odoc_types.dummy_loc }
   in
   iter_kind (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found) c.cl_kind
 
@@ -439,45 +439,45 @@ and associate_in_class_type module_list (acc_b_modif, acc_incomplete_top_module_
   let rec iter_kind (acc_b, acc_inc, acc_names) k = 
     match k with
       Class_signature (inher_l, _) ->
-	let f (acc_b2, acc_inc2, acc_names2) ic =
-	  match ic.ic_class with
-	    Some _ -> (acc_b2, acc_inc2, acc_names2)
-	  | None ->
-	      let cct_opt =
-		try Some (Cltype (lookup_class_type module_list ic.ic_name, []))
-		with Not_found ->
-		  try Some (Cl (lookup_class module_list ic.ic_name))
-		  with Not_found -> None
-	      in
-	      match cct_opt with
-		None -> (acc_b2, (Name.head ct.clt_name) :: acc_inc2, 
-			 (* we don't want to output warning messages for "object ... end" class types not found *)
-			 (if ic.ic_name = Odoc_messages.object_end then acc_names2 else (NF_cct ic.ic_name) :: acc_names2))
-	      | Some cct -> 
-		  ic.ic_class <- Some cct ;
-		  (true, acc_inc2, acc_names2)
-	in
-	List.fold_left f (acc_b, acc_inc, acc_names) inher_l
+        let f (acc_b2, acc_inc2, acc_names2) ic =
+          match ic.ic_class with
+            Some _ -> (acc_b2, acc_inc2, acc_names2)
+          | None ->
+              let cct_opt =
+                try Some (Cltype (lookup_class_type module_list ic.ic_name, []))
+                with Not_found ->
+                  try Some (Cl (lookup_class module_list ic.ic_name))
+                  with Not_found -> None
+              in
+              match cct_opt with
+                None -> (acc_b2, (Name.head ct.clt_name) :: acc_inc2, 
+                         (* we don't want to output warning messages for "object ... end" class types not found *)
+                         (if ic.ic_name = Odoc_messages.object_end then acc_names2 else (NF_cct ic.ic_name) :: acc_names2))
+              | Some cct -> 
+                  ic.ic_class <- Some cct ;
+                  (true, acc_inc2, acc_names2)
+        in
+        List.fold_left f (acc_b, acc_inc, acc_names) inher_l
 
     | Class_type cta ->
-	(
-	 match cta.cta_class with
-	   Some _ ->  (acc_b, acc_inc, acc_names)
-	 | None -> 
-	     let cct_opt =
-	       try Some (Cltype (lookup_class_type module_list cta.cta_name, []))
-	       with Not_found -> 
-		 try Some (Cl (lookup_class module_list cta.cta_name))
-		 with Not_found -> None
-	     in
-	     match cct_opt with
-	       None -> (acc_b, (Name.head ct.clt_name) :: acc_inc, 
-			(* we don't want to output warning messages for "object ... end" class types not found *)
-			(if cta.cta_name = Odoc_messages.object_end then acc_names else (NF_cct cta.cta_name) :: acc_names))
-	     | Some c ->
-		 cta.cta_class <- Some c ;
-		 (true, acc_inc, acc_names)
-	)
+        (
+         match cta.cta_class with
+           Some _ ->  (acc_b, acc_inc, acc_names)
+         | None -> 
+             let cct_opt =
+               try Some (Cltype (lookup_class_type module_list cta.cta_name, []))
+               with Not_found -> 
+                 try Some (Cl (lookup_class module_list cta.cta_name))
+                 with Not_found -> None
+             in
+             match cct_opt with
+               None -> (acc_b, (Name.head ct.clt_name) :: acc_inc, 
+                        (* we don't want to output warning messages for "object ... end" class types not found *)
+                        (if cta.cta_name = Odoc_messages.object_end then acc_names else (NF_cct cta.cta_name) :: acc_names))
+             | Some c ->
+                 cta.cta_class <- Some c ;
+                 (true, acc_inc, acc_names)
+        )
   in
   iter_kind (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found) ct.clt_kind
 
@@ -500,8 +500,8 @@ let rec assoc_comments_text_elements module_list t_ele =
     | Left t -> Left (assoc_comments_text module_list t)
     | Right t -> Right (assoc_comments_text module_list t)
     | Emphasize t -> Emphasize (assoc_comments_text module_list t)
-    | List l ->	List (List.map (assoc_comments_text module_list) l)
-    | Enum l ->	Enum (List.map (assoc_comments_text module_list) l)
+    | List l -> List (List.map (assoc_comments_text module_list) l)
+    | Enum l -> Enum (List.map (assoc_comments_text module_list) l)
     | Newline -> Newline
     | Block t -> Block (assoc_comments_text module_list t)
     | Superscript t -> Superscript (assoc_comments_text module_list t)
@@ -509,27 +509,27 @@ let rec assoc_comments_text_elements module_list t_ele =
     | Title (n, l_opt, t) -> Title (n, l_opt, (assoc_comments_text module_list t))
     | Link (s, t) -> Link (s, (assoc_comments_text module_list t))
     | Ref (name, None) ->
-	let re = Str.regexp ("^"^(Str.quote name)^"$") in
-	let res = Odoc_search.Search_by_name.search module_list re in
-	match res with
-	  [] ->
-	    Odoc_messages.pwarning (Odoc_messages.cross_element_not_found name);
-	    t_ele
-	| ele :: _ ->
-	    let kind = 
-	      match ele with
-		Odoc_search.Res_module _ -> RK_module
-	      | Odoc_search.Res_module_type _ -> RK_module_type
-	      | Odoc_search.Res_class _ -> RK_class
-	      | Odoc_search.Res_class_type _ -> RK_class_type
-	      | Odoc_search.Res_value _ -> RK_value
-	      | Odoc_search.Res_type _ -> RK_type
-	      | Odoc_search.Res_exception _ -> RK_exception
-	      | Odoc_search.Res_attribute _ -> RK_attribute
-	      | Odoc_search.Res_method _ -> RK_method
-	      | Odoc_search.Res_section _ -> RK_section
-	    in
-	    Ref (name, Some kind)
+        let re = Str.regexp ("^"^(Str.quote name)^"$") in
+        let res = Odoc_search.Search_by_name.search module_list re in
+        match res with
+          [] ->
+            Odoc_messages.pwarning (Odoc_messages.cross_element_not_found name);
+            t_ele
+        | ele :: _ ->
+            let kind = 
+              match ele with
+                Odoc_search.Res_module _ -> RK_module
+              | Odoc_search.Res_module_type _ -> RK_module_type
+              | Odoc_search.Res_class _ -> RK_class
+              | Odoc_search.Res_class_type _ -> RK_class_type
+              | Odoc_search.Res_value _ -> RK_value
+              | Odoc_search.Res_type _ -> RK_type
+              | Odoc_search.Res_exception _ -> RK_exception
+              | Odoc_search.Res_attribute _ -> RK_attribute
+              | Odoc_search.Res_method _ -> RK_method
+              | Odoc_search.Res_section _ -> RK_section
+            in
+            Ref (name, Some kind)
 
 and assoc_comments_text module_list text =
   List.map (assoc_comments_text_elements module_list) text
@@ -574,12 +574,12 @@ and assoc_comments_module_kind module_list mk =
       mk
   | Module_apply (mk1, mk2) -> 
       Module_apply (assoc_comments_module_kind module_list mk1,
-		    assoc_comments_module_kind module_list mk2)
+                    assoc_comments_module_kind module_list mk2)
   | Module_with (mtk, s) -> 
       Module_with (assoc_comments_module_type_kind module_list mtk, s)
   | Module_constraint (mk1, mtk) -> 
       Module_constraint (assoc_comments_module_kind module_list mk1,
-			 assoc_comments_module_type_kind module_list mtk)
+                         assoc_comments_module_type_kind module_list mtk)
 
 and assoc_comments_module_type_kind module_list mtk =
   match mtk with
@@ -596,10 +596,10 @@ and assoc_comments_class_kind module_list ck =
   match ck with
     Class_structure (inher, eles) ->
       let inher2 = 
-	List.map 
-	  (fun ic -> { ic with 
-		       ic_text = ao (assoc_comments_text module_list) ic.ic_text })
-	  inher
+        List.map 
+          (fun ic -> { ic with 
+                       ic_text = ao (assoc_comments_text module_list) ic.ic_text })
+          inher
       in
       Class_structure (inher2, List.map (assoc_comments_class_element module_list) eles)
 
@@ -607,16 +607,16 @@ and assoc_comments_class_kind module_list ck =
   | Class_constr _ -> ck
   | Class_constraint (ck1, ctk) ->
       Class_constraint (assoc_comments_class_kind module_list ck1,
-			assoc_comments_class_type_kind module_list ctk)
+                        assoc_comments_class_type_kind module_list ctk)
 
 and assoc_comments_class_type_kind module_list ctk =
   match ctk with
     Class_signature (inher, eles) ->
       let inher2 = 
-	List.map 
-	  (fun ic -> { ic with 
-		       ic_text = ao (assoc_comments_text module_list) ic.ic_text })
-	  inher
+        List.map 
+          (fun ic -> { ic with 
+                       ic_text = ao (assoc_comments_text module_list) ic.ic_text })
+          inher
       in
       Class_signature (inher2, List.map (assoc_comments_class_element module_list) eles)
 
@@ -669,12 +669,12 @@ and assoc_comments_type module_list t =
     Type_abstract -> ()
   | Type_variant vl ->
       List.iter 
-	(fun vc -> vc.vc_text <- ao (assoc_comments_text module_list) vc.vc_text)
-	vl 
+        (fun vc -> vc.vc_text <- ao (assoc_comments_text module_list) vc.vc_text)
+        vl 
   | Type_record fl ->
       List.iter 
-	(fun rf -> rf.rf_text <- ao (assoc_comments_text module_list) rf.rf_text)
-	fl
+        (fun rf -> rf.rf_text <- ao (assoc_comments_text module_list) rf.rf_text)
+        fl
   );
   t
 
@@ -699,8 +699,8 @@ let associate module_list =
   let rec remove_doubles acc = function
       [] -> acc
     | h :: q ->
-	if List.mem h acc then remove_doubles acc q
-	else remove_doubles (h :: acc) q
+        if List.mem h acc then remove_doubles acc q
+        else remove_doubles (h :: acc) q
   in
   let rec iter incomplete_modules =
     let (b_modif, remaining_inc_modules, acc_names_not_found) = 
@@ -708,8 +708,8 @@ let associate module_list =
     in
     let remaining_no_doubles = remove_doubles [] remaining_inc_modules in
     let remaining_modules = List.filter
-	(fun m -> List.mem m.m_name remaining_no_doubles)
-	incomplete_modules
+        (fun m -> List.mem m.m_name remaining_no_doubles)
+        incomplete_modules
     in
     if b_modif then
       (* we may be able to associate something else *)
@@ -725,23 +725,23 @@ let associate module_list =
        ()
    | l ->
        List.iter 
-	 (fun nf ->
-	   Odoc_messages.pwarning
-	     (
-	      match nf with
-		NF_m n -> Odoc_messages.cross_module_not_found n
-	      | NF_mt n -> Odoc_messages.cross_module_type_not_found n
-	      | NF_mmt n -> Odoc_messages.cross_module_or_module_type_not_found n
-	      | NF_c n -> Odoc_messages.cross_class_not_found n
-	      | NF_ct n -> Odoc_messages.cross_class_type_not_found n
-	      | NF_cct n -> Odoc_messages.cross_class_or_class_type_not_found n
-	      | NF_ex n -> Odoc_messages.cross_exception_not_found n
-	     );
-	 )
-	 l
+         (fun nf ->
+           Odoc_messages.pwarning
+             (
+              match nf with
+                NF_m n -> Odoc_messages.cross_module_not_found n
+              | NF_mt n -> Odoc_messages.cross_module_type_not_found n
+              | NF_mmt n -> Odoc_messages.cross_module_or_module_type_not_found n
+              | NF_c n -> Odoc_messages.cross_class_not_found n
+              | NF_ct n -> Odoc_messages.cross_class_type_not_found n
+              | NF_cct n -> Odoc_messages.cross_class_or_class_type_not_found n
+              | NF_ex n -> Odoc_messages.cross_exception_not_found n
+             );
+         )
+         l
   ) ;
 
   (* Find a type for each name of element which is referenced in comments. *)
   let _ = associate_type_of_elements_in_comments module_list in
   ()
-	
+        

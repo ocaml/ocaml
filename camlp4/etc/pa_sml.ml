@@ -779,7 +779,7 @@ EXTEND
           | Left x2 -> <:module_expr< $x1$ (struct $list:x2$ end) >>
           | Right x2 -> <:module_expr< $x1$ $x2$ >> ]
       | "let"; x1 = strdecs; "in"; x2 = module_expr; "end" ->
-          not_impl loc "str 4"	
+          not_impl loc "str 4"
       | x1 = module_expr; ":"; x2 = module_type -> not_impl loc "str 5"
       | x1 = module_expr; x2 = ":>"; x3 = module_type ->
           not_impl loc "str 6" ] ]

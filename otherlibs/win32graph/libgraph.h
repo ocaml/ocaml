@@ -30,7 +30,7 @@ extern HWND grdisplay;     /* The display connection */
 //extern struct canvas grbstore;  /* The pixmap used for backing store */
 //extern int grwhite, grblack;    /* Black and white pixels for X */
 //extern int grbackground;        /* Background color for X
-//				     (used for CAML color -1) */
+//                                   (used for CAML color -1) */
 extern COLORREF grbackground;
 extern BOOL grdisplay_mode;     /* Display-mode flag */
 extern BOOL grremember_mode;    /* Remember-mode flag */
@@ -84,20 +84,20 @@ extern RECT WindowRect;
 extern int grCurrentColor;
 
 typedef struct tagWindow {
-	HDC gc;
-	HDC gcBitmap;
-	HWND hwnd;
-	HBRUSH CurrentBrush;
-	HPEN CurrentPen;
-	DWORD CurrentColor;
-	int width;
-	int height;
-	int grx;
-	int gry;
-	HBITMAP hBitmap;
-	HFONT CurrentFont;
-	int CurrentFontSize;
-	HDC tempDC; // For image operations;
+        HDC gc;
+        HDC gcBitmap;
+        HWND hwnd;
+        HBRUSH CurrentBrush;
+        HPEN CurrentPen;
+        DWORD CurrentColor;
+        int width;
+        int height;
+        int grx;
+        int gry;
+        HBITMAP hBitmap;
+        HFONT CurrentFont;
+        int CurrentFontSize;
+        HDC tempDC; // For image operations;
 } GR_WINDOW;
 
 extern GR_WINDOW grwindow;

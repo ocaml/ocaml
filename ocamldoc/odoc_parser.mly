@@ -92,20 +92,20 @@ param:
       (* we only look for simple id, no pattern nor tuples *)
       let s = $2 in
       match Str.split (Str.regexp (blank^"+")) s with
-	[]
+        []
       | _ :: [] ->
-	  raise (Failure "usage: @param id description")
+          raise (Failure "usage: @param id description")
       | id :: _ ->    
-	  print_DEBUG ("Identificator "^id);
-	  let reg = identchar^"+" in
-	  print_DEBUG ("reg="^reg);
-	  if Str.string_match (Str.regexp reg) id 0 then
-	    let remain = String.sub s (String.length id) ((String.length s) - (String.length id)) in
-	    print_DEBUG ("T_PARAM Desc remain="^remain);
-	    let remain2 = Str.replace_first (Str.regexp ("^"^blank^"+")) "" remain in
-	    params := !params @ [(id, remain2)] 
-	  else
-	    raise (Failure (id^" is not a valid parameter identificator in \"@param "^s^"\""))
+          print_DEBUG ("Identificator "^id);
+          let reg = identchar^"+" in
+          print_DEBUG ("reg="^reg);
+          if Str.string_match (Str.regexp reg) id 0 then
+            let remain = String.sub s (String.length id) ((String.length s) - (String.length id)) in
+            print_DEBUG ("T_PARAM Desc remain="^remain);
+            let remain2 = Str.replace_first (Str.regexp ("^"^blank^"+")) "" remain in
+            params := !params @ [(id, remain2)] 
+          else
+            raise (Failure (id^" is not a valid parameter identificator in \"@param "^s^"\""))
     }
 ;
 author:
@@ -129,19 +129,19 @@ raise_exc:
       (* isolate the exception construtor name *)
       let s = $2 in
       match Str.split (Str.regexp (blank^"+")) s with
-	[]
+        []
       | _ :: [] ->
-	  raise (Failure "usage: @raise Exception description")
+          raise (Failure "usage: @raise Exception description")
       | id :: _ ->    
-	  print_DEBUG ("exception "^id);
-	  let reg = uppercase^identchar^"*"^"\\(\\."^uppercase^identchar^"*\\)*" in
-	  print_DEBUG ("reg="^reg);
-	  if Str.string_match (Str.regexp reg) id 0 then
-	    let remain = String.sub s (String.length id) ((String.length s) - (String.length id)) in
-	    let remain2 = Str.replace_first (Str.regexp ("^"^blank^"+")) "" remain in
-	    raised_exceptions := !raised_exceptions @ [(id, remain2)] 
-	  else
-	    raise (Failure (id^" is not a valid exception constructor in \"@raise "^s^"\""))
+          print_DEBUG ("exception "^id);
+          let reg = uppercase^identchar^"*"^"\\(\\."^uppercase^identchar^"*\\)*" in
+          print_DEBUG ("reg="^reg);
+          if Str.string_match (Str.regexp reg) id 0 then
+            let remain = String.sub s (String.length id) ((String.length s) - (String.length id)) in
+            let remain2 = Str.replace_first (Str.regexp ("^"^blank^"+")) "" remain in
+            raised_exceptions := !raised_exceptions @ [(id, remain2)] 
+          else
+            raise (Failure (id^" is not a valid exception constructor in \"@raise "^s^"\""))
     } 
 ;
 return:

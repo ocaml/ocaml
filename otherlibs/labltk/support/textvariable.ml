@@ -96,9 +96,9 @@ let add w v =
     try Hashtbl.find memo w 
     with
       Not_found -> 
-      	let r = ref StringSet.empty in
-	  Hashtbl.add memo w r;
-	  r in
+        let r = ref StringSet.empty in
+          Hashtbl.add memo w r;
+          r in
    r := StringSet.add v !r
 
 (* to be used with care ! *)

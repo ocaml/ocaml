@@ -50,7 +50,7 @@ module Widget : sig
     (* [dummy] is a widget used as context when we don't have any.
        It is *not* a real widget.
      *)
-  	    
+            
   val new_atom : parent: widget -> ?name: string -> string -> widget
       (* incompatible with the classic camltk *)
 
@@ -80,10 +80,10 @@ module Widget : sig
   
   val chk_sub : string -> 'a list -> 'a -> unit
   val check_class : widget -> string list -> unit
-  	(* Widget subtyping *)
+        (* Widget subtyping *)
   
   exception IllegalWidgetType of string
-  	(* Raised when widget command applied illegally*)
+        (* Raised when widget command applied illegally*)
 
   (* this function is not used, but introduced for the compatibility
      with labltk. useless for camltk users *)
@@ -95,10 +95,10 @@ module Protocol : sig
   
   (* Lower level interface *)
   exception TkError of string
-  	(* Raised by the communication functions *)
+        (* Raised by the communication functions *)
   
   val debug : bool ref 
-  	(* When set to true, displays approximation of intermediate Tcl code *)
+        (* When set to true, displays approximation of intermediate Tcl code *)
   
   type tkArgs =
       TkToken of string
@@ -108,7 +108,7 @@ module Protocol : sig
   
   (* Misc *)
   external splitlist : string -> string list
-  	  = "camltk_splitlist"
+          = "camltk_splitlist"
   
   val add_destroy_hook : (widget -> unit) -> unit
   
@@ -133,19 +133,19 @@ module Protocol : sig
   
   val openTk : ?display:string -> ?clas:string -> unit -> widget
       (* [openTk ~display:display ~clas:clas ()] is equivalent to
-  	 [opentk ["-display"; display; "-name"; clas]] *)
+         [opentk ["-display"; display; "-name"; clas]] *)
   
   (* Legacy opentk functions *)
   val openTkClass: string -> widget
       (* [openTkClass class] is equivalent to [opentk ["-name"; class]] *)
   val openTkDisplayClass: string -> string -> widget
       (* [openTkDisplayClass disp class] is equivalent to 
-  	 [opentk ["-display"; disp; "-name"; class]] *)
+         [opentk ["-display"; disp; "-name"; class]] *)
   
   val closeTk : unit -> unit
   val finalizeTk : unit -> unit 
       (* Finalize tcl/tk before exiting. This function will be automatically 
-  	 called when you call [Pervasives.exit ()] *)
+         called when you call [Pervasives.exit ()] *)
   
   val mainLoop : unit -> unit
   
@@ -164,23 +164,23 @@ module Protocol : sig
   type cbid = Protocol.cbid
   
   type callback_buffer = string list
-  	(* Buffer for reading callback arguments *)
+        (* Buffer for reading callback arguments *)
   
   val callback_naming_table : (cbid, callback_buffer -> unit) Hashtbl.t
   (* CAMLTK val callback_memo_table : (widget, cbid) Hashtbl.t *)
   val callback_memo_table : (widget, cbid) Hashtbl.t
-  	(* Exported for debug purposes only. Don't use them unless you
-  	   know what you are doing *)
+        (* Exported for debug purposes only. Don't use them unless you
+           know what you are doing *)
   val new_function_id : unit -> cbid
   val string_of_cbid : cbid -> string
   val register_callback : widget -> callback:(callback_buffer -> unit) -> string
-  	(* Callback support *)
+        (* Callback support *)
   val clear_callback : cbid -> unit
-  	(* Remove a given callback from the table *)
+        (* Remove a given callback from the table *)
   val remove_callbacks : widget -> unit
-  	(* Clean up callbacks associated to widget. Must be used only when
-  	   the Destroy event is bind by the user and masks the default
-  	   Destroy event binding *)
+        (* Clean up callbacks associated to widget. Must be used only when
+           the Destroy event is bind by the user and masks the default
+           Destroy event binding *)
   
   val cTKtoCAMLwidget : string -> widget
   val cCAMLtoTKwidget : string list -> widget -> tkArgs
@@ -196,27 +196,27 @@ module Textvariable : sig
   open Protocol
   
   type textVariable = Textvariable.textVariable
-  	(* TextVariable is an abstract type *)
+        (* TextVariable is an abstract type *)
   
   val create : ?on: widget -> unit -> textVariable
-  	(* Allocation of a textVariable with lifetime associated to widget 
-  	   if a widget is specified *)
+        (* Allocation of a textVariable with lifetime associated to widget 
+           if a widget is specified *)
   val create_temporary : widget -> textVariable
         (* for backward compatibility
-	   [create_temporary w] is equivalent to [create ~on:w ()] *)
+           [create_temporary w] is equivalent to [create ~on:w ()] *)
 
   val set : textVariable -> string -> unit
-  	(* Setting the val of a textVariable *)
+        (* Setting the val of a textVariable *)
   val get : textVariable -> string
-  	(* Reading the val of a textVariable *)
+        (* Reading the val of a textVariable *)
   val name : textVariable -> string
-  	(* Its tcl name *)
+        (* Its tcl name *)
   
   val cCAMLtoTKtextVariable : textVariable -> tkArgs
-  	(* Internal conversion function *)
+        (* Internal conversion function *)
   
   val handle : textVariable -> (unit -> unit) -> unit
-  	(* Callbacks on variable modifications *)
+        (* Callbacks on variable modifications *)
   
   val coerce : string -> textVariable
   
@@ -231,7 +231,7 @@ module Fileevent : sig
   val   remove_fileinput: file_descr -> unit
   val   add_fileoutput : file_descr -> (unit -> unit) -> unit
   val   remove_fileoutput: file_descr -> unit
-  	(* see [tk] module *)
+        (* see [tk] module *)
 end
 
 module Timer : sig

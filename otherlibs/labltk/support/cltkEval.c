@@ -203,8 +203,8 @@ CAMLprim value camltk_tcl_direct_eval(value v)
       Tcl_DStringInit(&buf);
       Tcl_DStringAppend(&buf, argv[0], -1);
       for (i=1; i<size; i++) {
-	Tcl_DStringAppend(&buf, " ", -1);
-	Tcl_DStringAppend(&buf, argv[i], -1);
+        Tcl_DStringAppend(&buf, " ", -1);
+        Tcl_DStringAppend(&buf, argv[i], -1);
       }
       result = Tcl_Eval(cltclinterp, Tcl_DStringValue(&buf));
       Tcl_DStringFree(&buf);
@@ -217,13 +217,13 @@ CAMLprim value camltk_tcl_direct_eval(value v)
   } else { /* implement the autoload stuff */
     if (Tcl_GetCommandInfo(cltclinterp,"unknown",&info)) { /* unknown found */
       for (i = size; i >= 0; i--)
-	argv[i+1] = argv[i];
+        argv[i+1] = argv[i];
       argv[0] = "unknown";
       result = (*info.proc)(info.clientData,cltclinterp,size+1,argv);
     } else { /* ah, it isn't there at all */
       result = TCL_ERROR;
       Tcl_AppendResult(cltclinterp, "Unknown command \"", 
-		       argv[0], "\"", NULL);
+                       argv[0], "\"", NULL);
     }
   }
 

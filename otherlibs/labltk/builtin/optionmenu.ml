@@ -10,7 +10,7 @@ let create ?name parent variable values =
     tkEval [|TkToken "tk_optionMenu";
              TkToken (Widget.name w);
              cCAMLtoTKtextVariable variable;
-	     TkTokenList (List.map (function x -> TkToken x) values)|] in
+             TkTokenList (List.map (function x -> TkToken x) values)|] in
   if res <> Widget.name mw then
     raise (TkError "internal error in Optionmenu.create")
   else
@@ -24,7 +24,7 @@ let create_named parent name variable values =
     tkEval [|TkToken "tk_optionMenu";
              TkToken (Widget.name w);
              cCAMLtoTKtextVariable variable;
-	     TkTokenList (List.map (function x -> TkToken x) values)|] in
+             TkTokenList (List.map (function x -> TkToken x) values)|] in
   if res <> Widget.name mw then
     raise (TkError "internal error in Optionmenu.create")
   else

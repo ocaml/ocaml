@@ -20,12 +20,12 @@ let input_file_as_string nom =
     try
       let n = input chanin s 0 len in
       if n = 0 then
-	()
+        ()
       else
-	(
-	 Buffer.add_substring buf s 0 n;
-	 iter ()
-	)
+        (
+         Buffer.add_substring buf s 0 n;
+         iter ()
+        )
     with
       End_of_file -> ()
   in
@@ -47,7 +47,7 @@ let string_of_type_list sep type_list =
       Types.Tarrow _ | Types.Ttuple _ -> true
     | Types.Tlink t2 | Types.Tsubst t2 -> need_parent t2
     | Types.Tconstr _ ->
-	false
+        false
     | Types.Tvar | Types.Tunivar | Types.Tobject _ | Types.Tpoly _
     | Types.Tfield _ | Types.Tnil | Types.Tvariant _ -> false
   in
@@ -69,8 +69,8 @@ let string_of_type_list sep type_list =
       Format.fprintf Format.str_formatter "@[<hov 2>";
       print_one_type ty;
       List.iter
-	(fun t -> Format.fprintf Format.str_formatter "@,%s" sep; print_one_type t)
-	tyl;
+        (fun t -> Format.fprintf Format.str_formatter "@,%s" sep; print_one_type t)
+        tyl;
       Format.fprintf Format.str_formatter "@]"
   end;
   Format.flush_str_formatter()
@@ -83,7 +83,7 @@ let simpl_module_type t =
       Types.Tmty_ident p -> t
     | Types.Tmty_signature _ -> Types.Tmty_signature []
     | Types.Tmty_functor (id, mt1, mt2) ->
-	Types.Tmty_functor (id, iter mt1, iter mt2)
+        Types.Tmty_functor (id, iter mt1, iter mt2)
   in
   iter t
 
@@ -101,17 +101,17 @@ let simpl_class_type t =
     match t with
       Types.Tcty_constr (p,texp_list,ct) -> t
     | Types.Tcty_signature cs ->
-	(* on vire les vals et methods pour ne pas qu'elles soient imprimées
-	   quand on affichera le type *)
-	let tnil = { Types.desc = Types.Tnil ; Types.level = 0; Types.id = 0 } in
-	Types.Tcty_signature { Types.cty_self = { cs.Types.cty_self with 
-						  Types.desc = Types.Tobject (tnil, ref None) };
-			       Types.cty_vars = Types.Vars.empty ;
-			       Types.cty_concr = Types.Concr.empty ;
-			     }
+        (* on vire les vals et methods pour ne pas qu'elles soient imprimées
+           quand on affichera le type *)
+        let tnil = { Types.desc = Types.Tnil ; Types.level = 0; Types.id = 0 } in
+        Types.Tcty_signature { Types.cty_self = { cs.Types.cty_self with 
+                                                  Types.desc = Types.Tobject (tnil, ref None) };
+                               Types.cty_vars = Types.Vars.empty ;
+                               Types.cty_concr = Types.Concr.empty ;
+                             }
     | Types.Tcty_fun (l, texp, ct) ->
-	let new_ct = iter ct in
-	Types.Tcty_fun (l, texp, new_ct)
+        let new_ct = iter ct in
+        Types.Tcty_fun (l, texp, new_ct)
   in
   iter t
 
@@ -127,13 +127,13 @@ let get_fields type_expr =
   List.fold_left
     (fun acc -> fun (label, field_kind, typ) ->
       match field_kind with
-	Types.Fabsent ->
-	  acc
-      |	_ ->
-	  if label = "*dummy method*" then
-	    acc
-	  else
-	    acc @ [label, typ]
+        Types.Fabsent ->
+          acc
+      | _ ->
+          if label = "*dummy method*" then
+            acc
+          else
+            acc @ [label, typ]
     )
     []
     fields
@@ -147,34 +147,34 @@ let rec string_of_text t =
       | Odoc_types.Verbatim s -> s
       | Odoc_types.Bold t 
       | Odoc_types.Italic t
-      |	Odoc_types.Center t
-      |	Odoc_types.Left t
-      |	Odoc_types.Right t
+      | Odoc_types.Center t
+      | Odoc_types.Left t
+      | Odoc_types.Right t
       | Odoc_types.Emphasize t -> string_of_text t
       | Odoc_types.List l ->
-	  (String.concat ""
-	     (List.map (fun t -> "\n- "^(string_of_text t)) l))^
-	  "\n"
+          (String.concat ""
+             (List.map (fun t -> "\n- "^(string_of_text t)) l))^
+          "\n"
       | Odoc_types.Enum l ->
-	  let rec f n = function
-	      [] -> "\n"
-	    | t :: q ->
-		"\n"^(string_of_int n)^". "^(string_of_text t)^
-		(f (n + 1) q)
-	  in
-	  f 1 l
-      |	Odoc_types.Newline -> "\n"
-      |	Odoc_types.Block t -> "\t"^(string_of_text t)^"\n"
+          let rec f n = function
+              [] -> "\n"
+            | t :: q ->
+                "\n"^(string_of_int n)^". "^(string_of_text t)^
+                (f (n + 1) q)
+          in
+          f 1 l
+      | Odoc_types.Newline -> "\n"
+      | Odoc_types.Block t -> "\t"^(string_of_text t)^"\n"
       | Odoc_types.Title (_, _, t) -> "\n"^(string_of_text t)^"\n"
       | Odoc_types.Latex s -> "{% "^s^" %}"
       | Odoc_types.Link (s, t) ->
-	  "["^s^"]"^(string_of_text t)
-      |	Odoc_types.Ref (name, _) ->
-	  iter (Odoc_types.Code name)
-      |	Odoc_types.Superscript t ->
-	  "^{"^(string_of_text t)^"}"
-      |	Odoc_types.Subscript t ->
-	  "^{"^(string_of_text t)^"}"
+          "["^s^"]"^(string_of_text t)
+      | Odoc_types.Ref (name, _) ->
+          iter (Odoc_types.Code name)
+      | Odoc_types.Superscript t ->
+          "^{"^(string_of_text t)^"}"
+      | Odoc_types.Subscript t ->
+          "^{"^(string_of_text t)^"}"
   in
   String.concat "" (List.map iter t)
 
@@ -204,10 +204,10 @@ let string_of_raised_exceptions l =
   | _ ->
       Odoc_messages.raises^"\n"^
       (String.concat ""
-	 (List.map
-	    (fun (ex, desc) -> "- "^ex^" "^(string_of_text desc)^"\n")
-	    l
-	 )
+         (List.map
+            (fun (ex, desc) -> "- "^ex^" "^(string_of_text desc)^"\n")
+            l
+         )
       )^"\n"
 
 let string_of_see (see_ref, t) =
@@ -226,10 +226,10 @@ let string_of_sees l =
   | _ ->
       Odoc_messages.see_also^"\n"^
       (String.concat ""
-	 (List.map
-	    (fun see -> "- "^(string_of_see see)^"\n")
-	    l
-	 )
+         (List.map
+            (fun see -> "- "^(string_of_see see)^"\n")
+            l
+         )
       )^"\n"
 
 let string_of_return_opt return_opt =
@@ -287,10 +287,10 @@ let rec text_no_title_no_list t =
     | Odoc_types.Title (_,_,t) -> text_no_title_no_list t
     | Odoc_types.List l
     | Odoc_types.Enum l -> 
-	(Odoc_types.Raw " ") ::
-	(text_list_concat
-	   (Odoc_types.Raw ", ") 
-	   (List.map text_no_title_no_list l))
+        (Odoc_types.Raw " ") ::
+        (text_list_concat
+           (Odoc_types.Raw ", ") 
+           (List.map text_no_title_no_list l))
     | Odoc_types.Raw _
     | Odoc_types.Code _
     | Odoc_types.CodePre _
@@ -317,7 +317,7 @@ let get_titles_in_text t =
     match ele with
     | Odoc_types.Title (n,lopt,t) -> l := (n,lopt,t) :: !l
     | Odoc_types.List l
-    | Odoc_types.Enum l -> List.iter iter_text l	
+    | Odoc_types.Enum l -> List.iter iter_text l        
     | Odoc_types.Raw _
     | Odoc_types.Code _
     | Odoc_types.CodePre _
@@ -352,12 +352,12 @@ let rec get_before_dot s =
       (true, s, "")
     else
       match s.[n+1] with
-	' ' | '\n' | '\r' | '\t' ->
-	  (true, String.sub s 0 (n+1),
-	   String.sub s (n+1) (len - n - 1))
-      |	_ ->
-	  let b, s2, s_after = get_before_dot (String.sub s (n + 1) (len - n - 1)) in
-	  (b, (String.sub s 0 (n+1))^s2, s_after)
+        ' ' | '\n' | '\r' | '\t' ->
+          (true, String.sub s 0 (n+1),
+           String.sub s (n+1) (len - n - 1))
+      | _ ->
+          let b, s2, s_after = get_before_dot (String.sub s (n + 1) (len - n - 1)) in
+          (b, (String.sub s 0 (n+1))^s2, s_after)
   with
     Not_found -> (false, s, "")
 
@@ -367,11 +367,11 @@ let rec first_sentence_text t =
   | ele :: q ->
       let (stop, ele2, ele3_opt) = first_sentence_text_ele ele in
       if stop then 
-	(stop, [ele2], 
-	 match ele3_opt with None -> q | Some e -> e :: q)
+        (stop, [ele2], 
+         match ele3_opt with None -> q | Some e -> e :: q)
       else
-	let (stop2, q2, rest) = first_sentence_text q in
-	(stop2, ele2 :: q2, rest)
+        let (stop2, q2, rest) = first_sentence_text q in
+        (stop2, ele2 :: q2, rest)
 
 
 and first_sentence_text_ele text_ele =
@@ -433,19 +433,19 @@ let create_index_lists elements string_of_ele =
   let rec f current acc0 acc1 acc2 = function
       [] -> (acc0 :: acc1) @ [acc2]
     | ele :: q ->
-	let s = string_of_ele ele in
-	match s with
-	  "" -> f current acc0 acc1 (acc2 @ [ele]) q
-	| _ ->
-	    let first = Char.uppercase s.[0] in
-	    match first with
-	      'A' .. 'Z' ->
-		if current = first then
-		  f current acc0 acc1 (acc2 @ [ele]) q
-		else
-		  f first acc0 (acc1 @ [acc2]) [ele] q
-	    | _ ->
-		f current (acc0 @ [ele]) acc1 acc2 q
+        let s = string_of_ele ele in
+        match s with
+          "" -> f current acc0 acc1 (acc2 @ [ele]) q
+        | _ ->
+            let first = Char.uppercase s.[0] in
+            match first with
+              'A' .. 'Z' ->
+                if current = first then
+                  f current acc0 acc1 (acc2 @ [ele]) q
+                else
+                  f first acc0 (acc1 @ [acc2]) [ele] q
+            | _ ->
+                f current (acc0 @ [ele]) acc1 acc2 q
   in
   f '_' [] [] [] elements
 
@@ -459,16 +459,16 @@ let remove_option typ =
   let rec iter t =
     match t with
     | Types.Tconstr (p,tlist,_) ->
-	(
-	 match p with
-	   Path.Pident id when Ident.name id = "option" ->
-	     (
-	      match tlist with
-		[t2] -> t2.Types.desc
-	      | _ -> t
-	     )
-	 | _ -> t
-	)
+        (
+         match p with
+           Path.Pident id when Ident.name id = "option" ->
+             (
+              match tlist with
+                [t2] -> t2.Types.desc
+              | _ -> t
+             )
+         | _ -> t
+        )
     | Types.Tvar
     | Types.Tunivar
     | Types.Tpoly _

@@ -23,7 +23,7 @@ let entry0_w = Entry.create top_w [] ;;
 let button0_w = Button.create top_w [Text "Quit"; Command (fun _ -> exit 0)] ;;
 Fileevent.add_fileinput fd_in (fun _ ->
                   let n = Unix.read fd_in buffer 0 (String.length buffer) in
-		  let txt = String.sub buffer 0 n in
+                  let txt = String.sub buffer 0 n in
                   Text.insert text0_w (TextIndex (End, [])) txt []) ;;
 let send _ =
  let txt = Entry.get entry0_w ^ "\n" in

@@ -42,8 +42,8 @@ let open_simple title action notaction memory =
 
   let activate _ =
     let v = Entry.get e in
-     Grab.release t;			(* because of wm *)
-     destroy t;				(* so action can call open_simple *)
+     Grab.release t;                    (* because of wm *)
+     destroy t;                         (* so action can call open_simple *)
      action v in
 
   bind e [[], KeyPressDetail "Return"] (BindSet ([], activate));
@@ -51,11 +51,11 @@ let open_simple title action notaction memory =
   let f = Frame.create t [] in
   let bok = Button.create f [Text "Ok"; Command activate] in
   let bcancel = Button.create f
-      	    [Text "Cancel"; 
+            [Text "Cancel"; 
              Command (fun () -> notaction(); Grab.release t; destroy t)] in
 
     bind e [[], KeyPressDetail "Escape"]
-      	 (BindSet ([], (fun _ -> Button.invoke bcancel)));
+         (BindSet ([], (fun _ -> Button.invoke bcancel)));
     pack [bok] [Side Side_Left; Expand true];
     pack [bcancel] [Side Side_Right; Expand true];
     pack [tit;e] [Fill Fill_X];
@@ -78,8 +78,8 @@ let open_simple_synchronous title memory =
   let waiting = Textvariable.create_temporary t in
   
   let activate _ =
-     Grab.release t;			(* because of wm *)
-     destroy t;				(* so action can call open_simple *)
+     Grab.release t;                    (* because of wm *)
+     destroy t;                         (* so action can call open_simple *)
      Textvariable.set waiting "1" in
 
   bind e [[], KeyPressDetail "Return"] (BindSet ([], activate));
@@ -88,12 +88,12 @@ let open_simple_synchronous title memory =
   let bok = Button.create f [Text "Ok"; Command activate] in
   let bcancel = 
      Button.create f
-	[Text "Cancel"; 
-	 Command (fun () -> 
-		   Grab.release t; destroy t; Textvariable.set waiting "0")] in
+        [Text "Cancel"; 
+         Command (fun () -> 
+                   Grab.release t; destroy t; Textvariable.set waiting "0")] in
 
     bind e [[], KeyPressDetail "Escape"]
-      	 (BindSet ([], (fun _ -> Button.invoke bcancel)));
+         (BindSet ([], (fun _ -> Button.invoke bcancel)));
     pack [bok] [Side Side_Left; Expand true];
     pack [bcancel] [Side Side_Right; Expand true];
     pack [tit;e] [Fill Fill_X];
@@ -140,7 +140,7 @@ let open_list title elements action notaction =
   let f = Frame.create t [] in
   let bok = Button.create f [Text "Ok"; Command activate] in
   let bcancel = Button.create f 
-      	    [Text "Cancel"; 
+            [Text "Cancel"; 
              Command (fun () -> notaction(); Grab.release t; destroy t)] in
 
     pack [bok; bcancel] [Side Side_Left; Fill Fill_X; Expand true];
@@ -168,14 +168,14 @@ let open_passwd title =
   in
   let fb = Frame.create t [] in
    let bok = Button.create fb 
-      	      [Text "Ok"; Command (fun _ -> 
-	                            username := Entry.get eu;
-				    password := Entry.get ep;
+              [Text "Ok"; Command (fun _ -> 
+                                    username := Entry.get eu;
+                                    password := Entry.get ep;
                                     Grab.release t; (* because of wm *)
                                     destroy t)] (* will return from tkwait *)
    and bcancel = Button.create fb
               [Text "Cancel"; Command (fun _ ->
-	                            cancelled := true;
+                                    cancelled := true;
                                     Grab.release t; (* because of wm *)
                                     destroy t)] (* will return from tkwait *)
   in
@@ -185,7 +185,7 @@ let open_passwd title =
     bind ep [[], KeyPressDetail "Return"]
       (BindSetBreakable ([], (fun _ -> Button.flash bok; 
                                        Button.invoke bok; 
-      	       	       	       	       break())));
+                                       break())));
 
     pack [bok] [Side Side_Left; Expand true];
     pack [bcancel] [Side Side_Right; Expand true];

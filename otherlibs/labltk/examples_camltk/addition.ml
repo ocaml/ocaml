@@ -36,7 +36,7 @@ let main () =
        r := int_of_string (Entry.get w);
        refresh ()
       with
-      	Failure "int_of_string" ->
+        Failure "int_of_string" ->
           Label.configure result_display [Text "error"]
   in
   (* Set the callbacks *)

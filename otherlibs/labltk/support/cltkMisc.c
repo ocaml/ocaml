@@ -39,7 +39,7 @@ CAMLprim value camltk_splitlist (value v)
   switch(result) {
   case TCL_OK:
    { value res = copy_string_list(argc,argv);
-     Tcl_Free((char *)argv);	/* only one large block was allocated */
+     Tcl_Free((char *)argv);    /* only one large block was allocated */
      /* argv points into utf: utf must be freed after argv are freed */
      stat_free( utf );
      return res;

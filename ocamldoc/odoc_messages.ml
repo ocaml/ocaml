@@ -54,9 +54,9 @@ let dot_include_all = " include all modules in the dot output,\n"^
   "        not only the modules given on the command line"
 let dot_types = " generate dependency graph for types instead of modules"
 let default_dot_colors = [ "darkturquoise" ; "darkgoldenrod2" ; "cyan" ; "green" ; "magenta" ; "yellow" ;
-			   "burlywood1" ; "aquamarine" ; "floralwhite" ; "lightpink" ;
-			   "lightblue" ; "mediumturquoise" ; "salmon" ; "slategray3" ;
-			 ] 
+                           "burlywood1" ; "aquamarine" ; "floralwhite" ; "lightpink" ;
+                           "lightblue" ; "mediumturquoise" ; "salmon" ; "slategray3" ;
+                         ] 
 let dot_colors = "<c1,c2,...,cn>  use colors c1,c1,...,cn in the dot output\n"^
   "        (default list is "^(String.concat "," default_dot_colors)^")"
 let dot_reduce = " perform a transitive reduction on the selected dependency graph before the dot output\n"

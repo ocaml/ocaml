@@ -77,7 +77,7 @@ static __inline char * read_runtime_path(HANDLE h)
 static BOOL WINAPI ctrl_handler(DWORD event)
 {
   if (event == CTRL_C_EVENT || event == CTRL_BREAK_EVENT)
-    return TRUE;		/* pretend we've handled them */
+    return TRUE;                /* pretend we've handled them */
   else
     return FALSE;
 }

@@ -101,9 +101,9 @@ type merge_option =
   | Merge_since (** Since information are concatenated. *)
   | Merge_deprecated (** Deprecated information are concatenated. *)
   | Merge_param (** Information on each parameter is concatenated,
-		    and all parameters are kept. *)
+                    and all parameters are kept. *)
   | Merge_raised_exception (** Information on each raised_exception is concatenated,
-			       and all raised exceptions are kept. *)
+                               and all raised exceptions are kept. *)
   | Merge_return_value (** Information on return value are concatenated. *)
   | Merge_custom (** Merge custom tags (all pairs (tag, text) are kept). *)
   

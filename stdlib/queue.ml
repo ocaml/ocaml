@@ -113,8 +113,8 @@ let copy q =
     let rec copy cell =
       if cell == tail then tail'
       else {
-	content = cell.content;
-	next = copy cell.next
+        content = cell.content;
+        next = copy cell.next
       } in
 
     tail'.next <- copy tail.next;
@@ -135,7 +135,7 @@ let iter f q =
     let rec iter cell =
       f cell.content;
       if cell != tail then
-	iter cell.next in
+        iter cell.next in
     iter tail.next
 
 let fold f accu q =
@@ -146,9 +146,9 @@ let fold f accu q =
     let rec fold accu cell =
       let accu = f accu cell.content in
       if cell == tail then
-	accu
+        accu
       else
-	fold accu cell.next in
+        fold accu cell.next in
     fold accu tail.next
 
 let transfer q1 q2 =

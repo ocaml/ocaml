@@ -33,10 +33,10 @@ let merge_info merge_options (m1 : info) (m2 : info) =
     | None, Some d
     | Some d, None -> Some d
     | Some d1, Some d2 ->
-	if List.mem Merge_description merge_options then
-	  Some (d1 @ (Newline :: d2))
-	else
-	  Some d1
+        if List.mem Merge_description merge_options then
+          Some (d1 @ (Newline :: d2))
+        else
+          Some d1
   in
   let new_authors = 
     match m1.i_authors, m2.i_authors with
@@ -44,10 +44,10 @@ let merge_info merge_options (m1 : info) (m2 : info) =
     | l, []
     | [], l -> l
     | l1, l2 ->
-	if List.mem Merge_author merge_options then
-	  l1 @ l2
-	else
-	  l1
+        if List.mem Merge_author merge_options then
+          l1 @ l2
+        else
+          l1
   in
   let new_version = 
     match m1.i_version , m2.i_version with
@@ -55,10 +55,10 @@ let merge_info merge_options (m1 : info) (m2 : info) =
     | Some v, None
     | None, Some v -> Some v
     | Some v1, Some v2 ->
-	if List.mem Merge_version merge_options then
-	  Some (v1^" "^v2)
-	else
-	  Some v1
+        if List.mem Merge_version merge_options then
+          Some (v1^" "^v2)
+        else
+          Some v1
   in
   let new_sees = 
     match m1.i_sees, m2.i_sees with
@@ -66,10 +66,10 @@ let merge_info merge_options (m1 : info) (m2 : info) =
     | l, []
     | [], l -> l
     | l1, l2 ->
-	if List.mem Merge_see merge_options then
-	  l1 @ l2
-	else
-	  l1
+        if List.mem Merge_see merge_options then
+          l1 @ l2
+        else
+          l1
   in
   let new_since = 
     match m1.i_since, m2.i_since with
@@ -77,10 +77,10 @@ let merge_info merge_options (m1 : info) (m2 : info) =
     | Some v, None
     | None, Some v -> Some v
     | Some v1, Some v2 ->
-	if List.mem Merge_since merge_options then
-	  Some (v1^" "^v2)
-	else
-	  Some v1
+        if List.mem Merge_since merge_options then
+          Some (v1^" "^v2)
+        else
+          Some v1
   in
   let new_dep = 
     match m1.i_deprecated, m2.i_deprecated with
@@ -88,10 +88,10 @@ let merge_info merge_options (m1 : info) (m2 : info) =
     | None, Some t
     | Some t, None -> Some t
     | Some t1, Some t2 ->
-	if List.mem Merge_deprecated merge_options then
-	  Some (t1 @ (Newline :: t2))
-	else
-	  Some t1
+        if List.mem Merge_deprecated merge_options then
+          Some (t1 @ (Newline :: t2))
+        else
+          Some t1
   in
   let new_params = 
     match m1.i_params, m2.i_params with
@@ -99,23 +99,23 @@ let merge_info merge_options (m1 : info) (m2 : info) =
     | l, []
     | [], l -> l
     | l1, l2 ->
-	if List.mem Merge_param merge_options then
-	  (
-	   let l_in_m1_and_m2, l_in_m2_only = List.partition
-	       (fun (param2, _) -> List.mem_assoc param2 l1)
-	       l2
-	   in
-	   let rec iter = function
-	       [] -> []
-	     | (param2, desc2) :: q ->
-		 let desc1 = List.assoc param2 l1 in
-		 (param2, desc1 @ (Newline :: desc2)) :: (iter q)
-	   in
-	   let l1_completed = iter l_in_m1_and_m2 in
-	   l1_completed @ l_in_m2_only
-	  )
-	else
-	  l1
+        if List.mem Merge_param merge_options then
+          (
+           let l_in_m1_and_m2, l_in_m2_only = List.partition
+               (fun (param2, _) -> List.mem_assoc param2 l1)
+               l2
+           in
+           let rec iter = function
+               [] -> []
+             | (param2, desc2) :: q ->
+                 let desc1 = List.assoc param2 l1 in
+                 (param2, desc1 @ (Newline :: desc2)) :: (iter q)
+           in
+           let l1_completed = iter l_in_m1_and_m2 in
+           l1_completed @ l_in_m2_only
+          )
+        else
+          l1
   in
   let new_raised_exceptions = 
     match m1.i_raised_exceptions, m2.i_raised_exceptions with
@@ -123,23 +123,23 @@ let merge_info merge_options (m1 : info) (m2 : info) =
     | l, []
     | [], l -> l
     | l1, l2 ->
-	if List.mem Merge_raised_exception merge_options then
-	  (
-	   let l_in_m1_and_m2, l_in_m2_only = List.partition
-	       (fun (exc2, _) -> List.mem_assoc exc2 l1)
-	       l2
-	   in
-	   let rec iter = function
-	       [] -> []
-	     | (exc2, desc2) :: q ->
-		 let desc1 = List.assoc exc2 l1 in
-		 (exc2, desc1 @ (Newline :: desc2)) :: (iter q)
-	   in
-	   let l1_completed = iter l_in_m1_and_m2 in
-	   l1_completed @ l_in_m2_only
-	  )
-	else
-	  l1
+        if List.mem Merge_raised_exception merge_options then
+          (
+           let l_in_m1_and_m2, l_in_m2_only = List.partition
+               (fun (exc2, _) -> List.mem_assoc exc2 l1)
+               l2
+           in
+           let rec iter = function
+               [] -> []
+             | (exc2, desc2) :: q ->
+                 let desc1 = List.assoc exc2 l1 in
+                 (exc2, desc1 @ (Newline :: desc2)) :: (iter q)
+           in
+           let l1_completed = iter l_in_m1_and_m2 in
+           l1_completed @ l_in_m2_only
+          )
+        else
+          l1
   in
   let new_rv = 
     match m1.i_return_value, m2.i_return_value with
@@ -147,10 +147,10 @@ let merge_info merge_options (m1 : info) (m2 : info) =
     | None, Some t
     | Some t, None -> Some t
     | Some t1, Some t2 ->
-	if List.mem Merge_return_value merge_options then
-	  Some (t1 @ (Newline :: t2))
-	else
-	  Some t1
+        if List.mem Merge_return_value merge_options then
+          Some (t1 @ (Newline :: t2))
+        else
+          Some t1
   in
   let new_custom =
     match m1.i_custom, m2.i_custom with
@@ -158,10 +158,10 @@ let merge_info merge_options (m1 : info) (m2 : info) =
     | [], l 
     | l, [] -> l
     | l1, l2 ->
-	if List.mem Merge_custom merge_options then
-	  l1 @ l2
-	else
-	  l1
+        if List.mem Merge_custom merge_options then
+          l1 @ l2
+        else
+          l1
   in
   {
     Odoc_types.i_desc = new_desc_opt ;
@@ -195,65 +195,65 @@ let merge_types merge_options mli ml =
 
   | Type_variant l1, Type_variant l2 ->
       let f cons =
-	try
-	  let cons2 = List.find
-	      (fun c2 -> c2.vc_name = cons.vc_name)
-	      l2
-	  in
-	  let new_desc = 
-	    match cons.vc_text, cons2.vc_text with
-	      None, None -> None
-	    | Some d, None
-	    | None, Some d -> Some d
-	    | Some d1, Some d2 ->
-		if List.mem Merge_description merge_options then
-		  Some (d1 @ d2)
-		else
-		  Some d1
-	  in
-	  cons.vc_text <- new_desc
-	with
-	  Not_found ->
-	    if !Odoc_args.inverse_merge_ml_mli then
-	      ()
-	    else
-	      raise (Failure (Odoc_messages.different_types mli.ty_name))
+        try
+          let cons2 = List.find
+              (fun c2 -> c2.vc_name = cons.vc_name)
+              l2
+          in
+          let new_desc = 
+            match cons.vc_text, cons2.vc_text with
+              None, None -> None
+            | Some d, None
+            | None, Some d -> Some d
+            | Some d1, Some d2 ->
+                if List.mem Merge_description merge_options then
+                  Some (d1 @ d2)
+                else
+                  Some d1
+          in
+          cons.vc_text <- new_desc
+        with
+          Not_found ->
+            if !Odoc_args.inverse_merge_ml_mli then
+              ()
+            else
+              raise (Failure (Odoc_messages.different_types mli.ty_name))
       in
       List.iter f l1
 
   | Type_record l1, Type_record l2 ->
       let f record =
-	try
-	  let record2= List.find
-	      (fun r -> r.rf_name = record.rf_name)
-	      l2
-	  in
-	  let new_desc = 
-	    match record.rf_text, record2.rf_text with
-	      None, None -> None
-	    | Some d, None
-	    | None, Some d -> Some d
-	    | Some d1, Some d2 ->
-		if List.mem Merge_description merge_options then
-		  Some (d1 @ d2)
-		else
-		  Some d1
-	  in
-	  record.rf_text <- new_desc
-	with
-	  Not_found ->
-	    if !Odoc_args.inverse_merge_ml_mli then
-	      ()
-	    else
-	      raise (Failure (Odoc_messages.different_types mli.ty_name))
+        try
+          let record2= List.find
+              (fun r -> r.rf_name = record.rf_name)
+              l2
+          in
+          let new_desc = 
+            match record.rf_text, record2.rf_text with
+              None, None -> None
+            | Some d, None
+            | None, Some d -> Some d
+            | Some d1, Some d2 ->
+                if List.mem Merge_description merge_options then
+                  Some (d1 @ d2)
+                else
+                  Some d1
+          in
+          record.rf_text <- new_desc
+        with
+          Not_found ->
+            if !Odoc_args.inverse_merge_ml_mli then
+              ()
+            else
+              raise (Failure (Odoc_messages.different_types mli.ty_name))
       in
       List.iter f l1
 
   | _ ->
       if !Odoc_args.inverse_merge_ml_mli then
-	()
+        ()
       else
-	raise (Failure (Odoc_messages.different_types mli.ty_name))
+        raise (Failure (Odoc_messages.different_types mli.ty_name))
 
 (** Merge of two param_info, one from a .mli, one from a .ml. 
    The text fields are not handled but will be recreated from the
@@ -265,25 +265,25 @@ let rec merge_param_info pi_mli pi_ml =
   match (pi_mli, pi_ml) with
     (Simple_name sn_mli, Simple_name sn_ml) ->
       if sn_mli.sn_name = "" then
-	Simple_name { sn_mli with sn_name = sn_ml.sn_name }
+        Simple_name { sn_mli with sn_name = sn_ml.sn_name }
       else
-	pi_mli
+        pi_mli
   | (Simple_name _, Tuple _) ->
       pi_mli
   | (Tuple (_, t_mli), Simple_name sn_ml) ->
       (* if we're here, then the tuple in the .mli has no parameter names ;
-	 then we take the name of the parameter of the .ml and the type of the .mli. *)
+         then we take the name of the parameter of the .ml and the type of the .mli. *)
       Simple_name { sn_ml with sn_type = t_mli }
       
   | (Tuple (l_mli, t_mli), Tuple (l_ml, _)) ->
       (* if the two tuples have different lengths
-	 (which should not occurs), we return the pi_mli,
-	 without further investigation.*)
+         (which should not occurs), we return the pi_mli,
+         without further investigation.*)
       if (List.length l_mli) <> (List.length l_ml) then
-	pi_mli
+        pi_mli
       else
-	let new_l = List.map2 merge_param_info l_mli l_ml in
-	Tuple (new_l, t_mli)
+        let new_l = List.map2 merge_param_info l_mli l_ml in
+        Tuple (new_l, t_mli)
 
 (** Merge of the parameters of two functions/methods/classes, one for a .mli, another for a .ml.
    The prameters in the .mli are completed by the name in the .ml.*)
@@ -309,71 +309,71 @@ let merge_classes merge_options mli ml =
   List.iter
     (fun a ->
       try
-	let _ = List.find
-	    (fun ele -> 
-	      match ele with
-		Class_attribute a2 -> 
-		  if a2.att_value.val_name = a.att_value.val_name then
-		    (
-		     a.att_value.val_info <- merge_info_opt merge_options 
-			 a.att_value.val_info a2.att_value.val_info;
-		     a.att_value.val_loc <- { a.att_value.val_loc with loc_impl = a2.att_value.val_loc.loc_impl } ;
-		     if !Odoc_args.keep_code then 
-		       a.att_value.val_code <- a2.att_value.val_code;
-		     true
-		    )
-		  else
-		    false
-	      |	_ ->
-		  false
-	    )
-	    (* we look for the last attribute with this name defined in the implementation *)
-	    (List.rev (Odoc_class.class_elements ml))
-	in
-	()
+        let _ = List.find
+            (fun ele -> 
+              match ele with
+                Class_attribute a2 -> 
+                  if a2.att_value.val_name = a.att_value.val_name then
+                    (
+                     a.att_value.val_info <- merge_info_opt merge_options 
+                         a.att_value.val_info a2.att_value.val_info;
+                     a.att_value.val_loc <- { a.att_value.val_loc with loc_impl = a2.att_value.val_loc.loc_impl } ;
+                     if !Odoc_args.keep_code then 
+                       a.att_value.val_code <- a2.att_value.val_code;
+                     true
+                    )
+                  else
+                    false
+              | _ ->
+                  false
+            )
+            (* we look for the last attribute with this name defined in the implementation *)
+            (List.rev (Odoc_class.class_elements ml))
+        in
+        ()
       with
-	Not_found ->
-	  ()
+        Not_found ->
+          ()
     )
     (Odoc_class.class_attributes mli);
   (* merge methods *)
   List.iter
     (fun m ->
       try
-	let _ = List.find
-	    (fun ele -> 
-	      match ele with
-		Class_method m2 -> 
-		  if m2.met_value.val_name = m.met_value.val_name then
-		    (
-		     m.met_value.val_info <- merge_info_opt
-			 merge_options m.met_value.val_info m2.met_value.val_info;
-		     m.met_value.val_loc <- { m.met_value.val_loc with loc_impl = m2.met_value.val_loc.loc_impl } ;
-		     (* merge the parameter names *)
-		     m.met_value.val_parameters <- (merge_parameters 
-						      m.met_value.val_parameters
-						      m2.met_value.val_parameters) ;
+        let _ = List.find
+            (fun ele -> 
+              match ele with
+                Class_method m2 -> 
+                  if m2.met_value.val_name = m.met_value.val_name then
+                    (
+                     m.met_value.val_info <- merge_info_opt
+                         merge_options m.met_value.val_info m2.met_value.val_info;
+                     m.met_value.val_loc <- { m.met_value.val_loc with loc_impl = m2.met_value.val_loc.loc_impl } ;
+                     (* merge the parameter names *)
+                     m.met_value.val_parameters <- (merge_parameters 
+                                                      m.met_value.val_parameters
+                                                      m2.met_value.val_parameters) ;
                      (* we must reassociate comments in @param to the corresponding
-			parameters because the associated comment of a parameter may have been changed by the merge.*)
-		     Odoc_value.update_value_parameters_text m.met_value;
+                        parameters because the associated comment of a parameter may have been changed by the merge.*)
+                     Odoc_value.update_value_parameters_text m.met_value;
 
-		     if !Odoc_args.keep_code then 
-		       m.met_value.val_code <- m2.met_value.val_code;
+                     if !Odoc_args.keep_code then 
+                       m.met_value.val_code <- m2.met_value.val_code;
 
-		     true
-		    )
-		  else
-		    false
-	      |	_ ->
-		  false
-	    )
-	    (* we look for the last method with this name defined in the implementation *)
-	    (List.rev (Odoc_class.class_elements ml))
-	in
-	()
+                     true
+                    )
+                  else
+                    false
+              | _ ->
+                  false
+            )
+            (* we look for the last method with this name defined in the implementation *)
+            (List.rev (Odoc_class.class_elements ml))
+        in
+        ()
       with
-	Not_found ->
-	  ()
+        Not_found ->
+          ()
     )
     (Odoc_class.class_methods mli)
 
@@ -386,71 +386,71 @@ let merge_class_types merge_options mli ml =
   List.iter
     (fun a ->
       try
-	let _ = List.find
-	    (fun ele -> 
-	      match ele with
-		Class_attribute a2 -> 
-		  if a2.att_value.val_name = a.att_value.val_name then
-		    (
-		     a.att_value.val_info <- merge_info_opt merge_options 
-			 a.att_value.val_info a2.att_value.val_info;
-		     a.att_value.val_loc <- { a.att_value.val_loc with loc_impl = a2.att_value.val_loc.loc_impl } ;
-		     if !Odoc_args.keep_code then 
-		       a.att_value.val_code <- a2.att_value.val_code;
+        let _ = List.find
+            (fun ele -> 
+              match ele with
+                Class_attribute a2 -> 
+                  if a2.att_value.val_name = a.att_value.val_name then
+                    (
+                     a.att_value.val_info <- merge_info_opt merge_options 
+                         a.att_value.val_info a2.att_value.val_info;
+                     a.att_value.val_loc <- { a.att_value.val_loc with loc_impl = a2.att_value.val_loc.loc_impl } ;
+                     if !Odoc_args.keep_code then 
+                       a.att_value.val_code <- a2.att_value.val_code;
 
-		     true
-		    )
-		  else
-		    false
-	      |	_ ->
-		  false
-	    )
-	    (* we look for the last attribute with this name defined in the implementation *)
-	    (List.rev (Odoc_class.class_type_elements ml))
-	in
-	()
+                     true
+                    )
+                  else
+                    false
+              | _ ->
+                  false
+            )
+            (* we look for the last attribute with this name defined in the implementation *)
+            (List.rev (Odoc_class.class_type_elements ml))
+        in
+        ()
       with
-	Not_found ->
-	  ()
+        Not_found ->
+          ()
     )
     (Odoc_class.class_type_attributes mli);
   (* merge methods *)
   List.iter
     (fun m ->
       try
-	let _ = List.find
-	    (fun ele -> 
-	      match ele with
-		Class_method m2 -> 
-		  if m2.met_value.val_name = m.met_value.val_name then
-		    (
-		     m.met_value.val_info <- merge_info_opt
-			 merge_options m.met_value.val_info m2.met_value.val_info;
-		     m.met_value.val_loc <- { m.met_value.val_loc with loc_impl = m2.met_value.val_loc.loc_impl } ;
+        let _ = List.find
+            (fun ele -> 
+              match ele with
+                Class_method m2 -> 
+                  if m2.met_value.val_name = m.met_value.val_name then
+                    (
+                     m.met_value.val_info <- merge_info_opt
+                         merge_options m.met_value.val_info m2.met_value.val_info;
+                     m.met_value.val_loc <- { m.met_value.val_loc with loc_impl = m2.met_value.val_loc.loc_impl } ;
                      m.met_value.val_parameters <- (merge_parameters 
-						      m.met_value.val_parameters
-						      m2.met_value.val_parameters) ;
+                                                      m.met_value.val_parameters
+                                                      m2.met_value.val_parameters) ;
                      (* we must reassociate comments in @param to the the corresponding
-			parameters because the associated comment of a parameter may have been changed y the merge.*)
-		     Odoc_value.update_value_parameters_text m.met_value;
-		     
-		     if !Odoc_args.keep_code then 
-		       m.met_value.val_code <- m2.met_value.val_code;
+                        parameters because the associated comment of a parameter may have been changed y the merge.*)
+                     Odoc_value.update_value_parameters_text m.met_value;
+                     
+                     if !Odoc_args.keep_code then 
+                       m.met_value.val_code <- m2.met_value.val_code;
 
-		     true
-		    )
-		  else
-		    false
-	      |	_ ->
-		  false
-	    )
-	    (* we look for the last method with this name defined in the implementation *)
-	    (List.rev (Odoc_class.class_type_elements ml))
-	in
-	()
+                     true
+                    )
+                  else
+                    false
+              | _ ->
+                  false
+            )
+            (* we look for the last method with this name defined in the implementation *)
+            (List.rev (Odoc_class.class_type_elements ml))
+        in
+        ()
       with
-	Not_found ->
-	  ()
+        Not_found ->
+          ()
     )
     (Odoc_class.class_type_methods mli)
 
@@ -464,86 +464,86 @@ let rec merge_module_types merge_options mli ml =
   List.iter
     (fun ex ->
       try
-	let _ = List.find
-	    (fun ele -> 
-	      match ele with
-		Element_exception ex2 -> 
-		  if ex2.ex_name = ex.ex_name then
-		    (
-		     ex.ex_info <- merge_info_opt merge_options ex.ex_info ex2.ex_info;
-		     ex.ex_loc <- { ex.ex_loc with loc_impl = ex2.ex_loc.loc_impl } ;
-		     true
-		    )
-		  else
-		    false
-	      |	_ ->
-		  false
-	    )
-	    (* we look for the last exception with this name defined in the implementation *)
-	    (List.rev (Odoc_module.module_type_elements ml))
-	in
-	()
+        let _ = List.find
+            (fun ele -> 
+              match ele with
+                Element_exception ex2 -> 
+                  if ex2.ex_name = ex.ex_name then
+                    (
+                     ex.ex_info <- merge_info_opt merge_options ex.ex_info ex2.ex_info;
+                     ex.ex_loc <- { ex.ex_loc with loc_impl = ex2.ex_loc.loc_impl } ;
+                     true
+                    )
+                  else
+                    false
+              | _ ->
+                  false
+            )
+            (* we look for the last exception with this name defined in the implementation *)
+            (List.rev (Odoc_module.module_type_elements ml))
+        in
+        ()
       with
-	Not_found ->
-	  ()
+        Not_found ->
+          ()
     )
     (Odoc_module.module_type_exceptions mli);
   (* merge types *)
   List.iter
     (fun ty ->
       try
-	let _ = List.find
-	    (fun ele -> 
-	      match ele with
-		Element_type ty2 -> 
-		  if ty2.ty_name = ty.ty_name then
-		    (
-		     merge_types merge_options ty ty2;
-		     true
-		    )
-		  else
-		    false
-	      |	_ ->
-		  false
-	    )
-	    (* we look for the last type with this name defined in the implementation *)
-	    (List.rev (Odoc_module.module_type_elements ml))
-	in
-	()
+        let _ = List.find
+            (fun ele -> 
+              match ele with
+                Element_type ty2 -> 
+                  if ty2.ty_name = ty.ty_name then
+                    (
+                     merge_types merge_options ty ty2;
+                     true
+                    )
+                  else
+                    false
+              | _ ->
+                  false
+            )
+            (* we look for the last type with this name defined in the implementation *)
+            (List.rev (Odoc_module.module_type_elements ml))
+        in
+        ()
       with
-	Not_found ->
-	  ()
+        Not_found ->
+          ()
     )
     (Odoc_module.module_type_types mli);
   (* merge submodules *)
   List.iter
     (fun m ->
       try
-	let _ = List.find
-	    (fun ele -> 
-	      match ele with
-		Element_module m2 -> 
-		  if m2.m_name = m.m_name then
-		    (
-		     merge_modules merge_options m m2 ;
+        let _ = List.find
+            (fun ele -> 
+              match ele with
+                Element_module m2 -> 
+                  if m2.m_name = m.m_name then
+                    (
+                     merge_modules merge_options m m2 ;
 (*
-		     m.m_info <- merge_info_opt merge_options m.m_info m2.m_info;
-		     m.m_loc <- { m.m_loc with loc_impl = m2.m_loc.loc_impl } ;
+                     m.m_info <- merge_info_opt merge_options m.m_info m2.m_info;
+                     m.m_loc <- { m.m_loc with loc_impl = m2.m_loc.loc_impl } ;
 *)
-		     true
-		    )
-		  else
-		    false
-	      |	_ ->
-		  false
-	    )
-	    (* we look for the last module with this name defined in the implementation *)
-	    (List.rev (Odoc_module.module_type_elements ml))
-	in
-	()
+                     true
+                    )
+                  else
+                    false
+              | _ ->
+                  false
+            )
+            (* we look for the last module with this name defined in the implementation *)
+            (List.rev (Odoc_module.module_type_elements ml))
+        in
+        ()
       with
-	Not_found ->
-	  ()
+        Not_found ->
+          ()
     )
     (Odoc_module.module_type_modules mli);
 
@@ -551,27 +551,27 @@ let rec merge_module_types merge_options mli ml =
   List.iter
     (fun m ->
       try
-	let _ = List.find
-	    (fun ele -> 
-	      match ele with
-		Element_module_type m2 -> 
-		  if m2.mt_name = m.mt_name then
-		    (
-		     merge_module_types merge_options m m2;
-		     true
-		    )
-		  else
-		    false
-	      |	_ ->
-		  false
-	    )
-	    (* we look for the last module with this name defined in the implementation *)
-	    (List.rev (Odoc_module.module_type_elements ml))
-	in
-	()
+        let _ = List.find
+            (fun ele -> 
+              match ele with
+                Element_module_type m2 -> 
+                  if m2.mt_name = m.mt_name then
+                    (
+                     merge_module_types merge_options m m2;
+                     true
+                    )
+                  else
+                    false
+              | _ ->
+                  false
+            )
+            (* we look for the last module with this name defined in the implementation *)
+            (List.rev (Odoc_module.module_type_elements ml))
+        in
+        ()
       with
-	Not_found ->
-	  ()
+        Not_found ->
+          ()
     )
     (Odoc_module.module_type_module_types mli);
 
@@ -581,39 +581,39 @@ let rec merge_module_types merge_options mli ml =
   List.iter
     (fun v ->
       try
-	let _ = List.find
-	    (fun ele -> 
-	      match ele with
-		Element_value v2 -> 
-		  if v2.val_name = v.val_name then
-		    (
-		     v.val_info <- merge_info_opt merge_options v.val_info v2.val_info ;
-		     v.val_loc <- { v.val_loc with loc_impl = v2.val_loc.loc_impl } ;
-		     (* in the .mli we don't know any parameters so we add the ones in the .ml *)
-		     v.val_parameters <- (merge_parameters
-					    v.val_parameters
-					    v2.val_parameters) ;
-		     (* we must reassociate comments in @param to the the corresponding
-			parameters because the associated comment of a parameter may have been changed y the merge.*)
-		     Odoc_value.update_value_parameters_text v;
+        let _ = List.find
+            (fun ele -> 
+              match ele with
+                Element_value v2 -> 
+                  if v2.val_name = v.val_name then
+                    (
+                     v.val_info <- merge_info_opt merge_options v.val_info v2.val_info ;
+                     v.val_loc <- { v.val_loc with loc_impl = v2.val_loc.loc_impl } ;
+                     (* in the .mli we don't know any parameters so we add the ones in the .ml *)
+                     v.val_parameters <- (merge_parameters
+                                            v.val_parameters
+                                            v2.val_parameters) ;
+                     (* we must reassociate comments in @param to the the corresponding
+                        parameters because the associated comment of a parameter may have been changed y the merge.*)
+                     Odoc_value.update_value_parameters_text v;
 
-		     if !Odoc_args.keep_code then 
-		       v.val_code <- v2.val_code;
+                     if !Odoc_args.keep_code then 
+                       v.val_code <- v2.val_code;
 
-		     true
-		    )
-		  else
-		    false
-	      |	_ ->
-		  false
-	    )
-	    (* we look for the last value with this name defined in the implementation *)
-	    (List.rev (Odoc_module.module_type_elements ml))
-	in
-	()
+                     true
+                    )
+                  else
+                    false
+              | _ ->
+                  false
+            )
+            (* we look for the last value with this name defined in the implementation *)
+            (List.rev (Odoc_module.module_type_elements ml))
+        in
+        ()
       with
-	Not_found ->
-	  ()
+        Not_found ->
+          ()
     )
     (Odoc_module.module_type_values mli);
 
@@ -621,27 +621,27 @@ let rec merge_module_types merge_options mli ml =
   List.iter
     (fun c ->
       try
-	let _ = List.find
-	    (fun ele -> 
-	      match ele with
-		Element_class c2 -> 
-		  if c2.cl_name = c.cl_name then
-		    (
-		     merge_classes merge_options c c2;
-		     true
-		    )
-		  else
-		    false
-	      |	_ ->
-		  false
-	    )
-	    (* we look for the last value with this name defined in the implementation *)
-	    (List.rev (Odoc_module.module_type_elements ml))
-	in
-	()
+        let _ = List.find
+            (fun ele -> 
+              match ele with
+                Element_class c2 -> 
+                  if c2.cl_name = c.cl_name then
+                    (
+                     merge_classes merge_options c c2;
+                     true
+                    )
+                  else
+                    false
+              | _ ->
+                  false
+            )
+            (* we look for the last value with this name defined in the implementation *)
+            (List.rev (Odoc_module.module_type_elements ml))
+        in
+        ()
       with
-	Not_found ->
-	  ()
+        Not_found ->
+          ()
     )
     (Odoc_module.module_type_classes mli);
 
@@ -649,27 +649,27 @@ let rec merge_module_types merge_options mli ml =
   List.iter
     (fun c ->
       try
-	let _ = List.find
-	    (fun ele -> 
-	      match ele with
-		Element_class_type c2 -> 
-		  if c2.clt_name = c.clt_name then
-		    (
-		     merge_class_types merge_options c c2;
-		     true
-		    )
-		  else
-		    false
-	      |	_ ->
-		  false
-	    )
-	    (* we look for the last value with this name defined in the implementation *)
-	    (List.rev (Odoc_module.module_type_elements ml))
-	in
-	()
+        let _ = List.find
+            (fun ele -> 
+              match ele with
+                Element_class_type c2 -> 
+                  if c2.clt_name = c.clt_name then
+                    (
+                     merge_class_types merge_options c c2;
+                     true
+                    )
+                  else
+                    false
+              | _ ->
+                  false
+            )
+            (* we look for the last value with this name defined in the implementation *)
+            (List.rev (Odoc_module.module_type_elements ml))
+        in
+        ()
       with
-	Not_found ->
-	  ()
+        Not_found ->
+          ()
     )
     (Odoc_module.module_type_class_types mli)
 
@@ -684,86 +684,86 @@ and merge_modules merge_options mli ml =
   List.iter
     (fun ex ->
       try
-	let _ = List.find
-	    (fun ele -> 
-	      match ele with
-		Element_exception ex2 -> 
-		  if ex2.ex_name = ex.ex_name then
-		    (
-		     ex.ex_info <- merge_info_opt merge_options ex.ex_info ex2.ex_info;
-		     ex.ex_loc <- { ex.ex_loc with loc_impl = ex.ex_loc.loc_impl } ;
-		     true
-		    )
-		  else
-		    false
-	      |	_ ->
-		  false
-	    )
-	    (* we look for the last exception with this name defined in the implementation *)
-	    (List.rev (Odoc_module.module_elements ml))
-	in
-	()
+        let _ = List.find
+            (fun ele -> 
+              match ele with
+                Element_exception ex2 -> 
+                  if ex2.ex_name = ex.ex_name then
+                    (
+                     ex.ex_info <- merge_info_opt merge_options ex.ex_info ex2.ex_info;
+                     ex.ex_loc <- { ex.ex_loc with loc_impl = ex.ex_loc.loc_impl } ;
+                     true
+                    )
+                  else
+                    false
+              | _ ->
+                  false
+            )
+            (* we look for the last exception with this name defined in the implementation *)
+            (List.rev (Odoc_module.module_elements ml))
+        in
+        ()
       with
-	Not_found ->
-	  ()
+        Not_found ->
+          ()
     )
     (Odoc_module.module_exceptions mli);
   (* merge types *)
   List.iter
     (fun ty ->
       try
-	let _ = List.find
-	    (fun ele -> 
-	      match ele with
-		Element_type ty2 -> 
-		  if ty2.ty_name = ty.ty_name then
-		    (
-		     merge_types merge_options ty ty2;
-		     true
-		    )
-		  else
-		    false
-	      |	_ ->
-		  false
-	    )
-	    (* we look for the last type with this name defined in the implementation *)
-	    (List.rev (Odoc_module.module_elements ml))
-	in
-	()
+        let _ = List.find
+            (fun ele -> 
+              match ele with
+                Element_type ty2 -> 
+                  if ty2.ty_name = ty.ty_name then
+                    (
+                     merge_types merge_options ty ty2;
+                     true
+                    )
+                  else
+                    false
+              | _ ->
+                  false
+            )
+            (* we look for the last type with this name defined in the implementation *)
+            (List.rev (Odoc_module.module_elements ml))
+        in
+        ()
       with
-	Not_found ->
-	  ()
+        Not_found ->
+          ()
     )
     (Odoc_module.module_types mli);
   (* merge submodules *)
   List.iter
     (fun m ->
       try
-	let _ = List.find
-	    (fun ele -> 
-	      match ele with
-		Element_module m2 -> 
-		  if m2.m_name = m.m_name then
-		    (
-		     merge_modules merge_options m m2 ;
+        let _ = List.find
+            (fun ele -> 
+              match ele with
+                Element_module m2 -> 
+                  if m2.m_name = m.m_name then
+                    (
+                     merge_modules merge_options m m2 ;
 (*
-		     m.m_info <- merge_info_opt merge_options m.m_info m2.m_info;
-		     m.m_loc <- { m.m_loc with loc_impl = m2.m_loc.loc_impl } ;
+                     m.m_info <- merge_info_opt merge_options m.m_info m2.m_info;
+                     m.m_loc <- { m.m_loc with loc_impl = m2.m_loc.loc_impl } ;
 *)
-		     true
-		    )
-		  else
-		    false
-	      |	_ ->
-		  false
-	    )
-	    (* we look for the last module with this name defined in the implementation *)
-	    (List.rev (Odoc_module.module_elements ml))
-	in
-	()
+                     true
+                    )
+                  else
+                    false
+              | _ ->
+                  false
+            )
+            (* we look for the last module with this name defined in the implementation *)
+            (List.rev (Odoc_module.module_elements ml))
+        in
+        ()
       with
-	Not_found ->
-	  ()
+        Not_found ->
+          ()
     )
     (Odoc_module.module_modules mli);
 
@@ -771,27 +771,27 @@ and merge_modules merge_options mli ml =
   List.iter
     (fun m ->
       try
-	let _ = List.find
-	    (fun ele -> 
-	      match ele with
-		Element_module_type m2 -> 
-		  if m2.mt_name = m.mt_name then
-		    (
-		     merge_module_types merge_options m m2;
-		     true
-		    )
-		  else
-		    false
-	      |	_ ->
-		  false
-	    )
-	    (* we look for the last module with this name defined in the implementation *)
-	    (List.rev (Odoc_module.module_elements ml))
-	in
-	()
+        let _ = List.find
+            (fun ele -> 
+              match ele with
+                Element_module_type m2 -> 
+                  if m2.mt_name = m.mt_name then
+                    (
+                     merge_module_types merge_options m m2;
+                     true
+                    )
+                  else
+                    false
+              | _ ->
+                  false
+            )
+            (* we look for the last module with this name defined in the implementation *)
+            (List.rev (Odoc_module.module_elements ml))
+        in
+        ()
       with
-	Not_found ->
-	  ()
+        Not_found ->
+          ()
     )
     (Odoc_module.module_module_types mli);
 
@@ -801,34 +801,34 @@ and merge_modules merge_options mli ml =
   List.iter
     (fun v ->
       try
-	let _ = List.find
-	    (fun v2 ->
-	      if v2.val_name = v.val_name then
-		(
-		 v.val_info <- merge_info_opt merge_options v.val_info v2.val_info ;
-		 v.val_loc <- { v.val_loc with loc_impl = v2.val_loc.loc_impl } ;
-		 (* in the .mli we don't know any parameters so we add the ones in the .ml *)
-		 v.val_parameters <- (merge_parameters
-					v.val_parameters
-					v2.val_parameters) ;
-   	         (* we must reassociate comments in @param to the the corresponding
-		    parameters because the associated comment of a parameter may have been changed y the merge.*)
-		 Odoc_value.update_value_parameters_text v;
-		 
-		 if !Odoc_args.keep_code then 
-		   v.val_code <- v2.val_code;
-		 true
-		)
-	      else
-		false
-	    )
-	    (* we look for the last value with this name defined in the implementation *)
-	    (List.rev (Odoc_module.module_values ml))
-	in
-	()
+        let _ = List.find
+            (fun v2 ->
+              if v2.val_name = v.val_name then
+                (
+                 v.val_info <- merge_info_opt merge_options v.val_info v2.val_info ;
+                 v.val_loc <- { v.val_loc with loc_impl = v2.val_loc.loc_impl } ;
+                 (* in the .mli we don't know any parameters so we add the ones in the .ml *)
+                 v.val_parameters <- (merge_parameters
+                                        v.val_parameters
+                                        v2.val_parameters) ;
+                 (* we must reassociate comments in @param to the the corresponding
+                    parameters because the associated comment of a parameter may have been changed y the merge.*)
+                 Odoc_value.update_value_parameters_text v;
+                 
+                 if !Odoc_args.keep_code then 
+                   v.val_code <- v2.val_code;
+                 true
+                )
+              else
+                false
+            )
+            (* we look for the last value with this name defined in the implementation *)
+            (List.rev (Odoc_module.module_values ml))
+        in
+        ()
       with
-	Not_found ->
-	  ()
+        Not_found ->
+          ()
     )
     (Odoc_module.module_values mli);
 
@@ -836,27 +836,27 @@ and merge_modules merge_options mli ml =
   List.iter
     (fun c ->
       try
-	let _ = List.find
-	    (fun ele -> 
-	      match ele with
-		Element_class c2 -> 
-		  if c2.cl_name = c.cl_name then
-		    (
-		     merge_classes merge_options c c2;
-		     true
-		    )
-		  else
-		    false
-	      |	_ ->
-		  false
-	    )
-	    (* we look for the last value with this name defined in the implementation *)
-	    (List.rev (Odoc_module.module_elements ml))
-	in
-	()
+        let _ = List.find
+            (fun ele -> 
+              match ele with
+                Element_class c2 -> 
+                  if c2.cl_name = c.cl_name then
+                    (
+                     merge_classes merge_options c c2;
+                     true
+                    )
+                  else
+                    false
+              | _ ->
+                  false
+            )
+            (* we look for the last value with this name defined in the implementation *)
+            (List.rev (Odoc_module.module_elements ml))
+        in
+        ()
       with
-	Not_found ->
-	  ()
+        Not_found ->
+          ()
     )
     (Odoc_module.module_classes mli);
 
@@ -864,27 +864,27 @@ and merge_modules merge_options mli ml =
   List.iter
     (fun c ->
       try
-	let _ = List.find
-	    (fun ele -> 
-	      match ele with
-		Element_class_type c2 -> 
-		  if c2.clt_name = c.clt_name then
-		    (
-		     merge_class_types merge_options c c2;
-		     true
-		    )
-		  else
-		    false
-	      |	_ ->
-		  false
-	    )
-	    (* we look for the last value with this name defined in the implementation *)
-	    (List.rev (Odoc_module.module_elements ml))
-	in
-	()
+        let _ = List.find
+            (fun ele -> 
+              match ele with
+                Element_class_type c2 -> 
+                  if c2.clt_name = c.clt_name then
+                    (
+                     merge_class_types merge_options c c2;
+                     true
+                    )
+                  else
+                    false
+              | _ ->
+                  false
+            )
+            (* we look for the last value with this name defined in the implementation *)
+            (List.rev (Odoc_module.module_elements ml))
+        in
+        ()
       with
-	Not_found ->
-	  ()
+        Not_found ->
+          ()
     )
     (Odoc_module.module_class_types mli);
   
@@ -894,41 +894,41 @@ let merge merge_options modules_list =
   let rec iter = function
       [] -> []
     | m :: q ->
-	(* look for another module with the same name *)
-	let (l_same, l_others) = List.partition
-	    (fun m2 -> m.m_name = m2.m_name)
-	    q
-	in
-	match l_same with
-	  [] ->
-	    (* no other module to merge with *)
-	    m :: (iter l_others)
-	| m2 :: [] ->
-	    (
-	     (* we can merge m with m2 if there is an implementation 
-		and an interface.*)
-	     let f b = if !Odoc_args.inverse_merge_ml_mli then not b else b in
-	     match f m.m_is_interface, f m2.m_is_interface with
-	       true, false -> (merge_modules merge_options m m2) :: (iter l_others)
-	     | false, true -> (merge_modules merge_options m2 m) :: (iter l_others)
-	     | false, false ->                 
-		 if !Odoc_args.inverse_merge_ml_mli then
-   		   (* two Module.ts for the .mli ! *)
-		   raise (Failure (Odoc_messages.two_interfaces m.m_name))
-		 else
+        (* look for another module with the same name *)
+        let (l_same, l_others) = List.partition
+            (fun m2 -> m.m_name = m2.m_name)
+            q
+        in
+        match l_same with
+          [] ->
+            (* no other module to merge with *)
+            m :: (iter l_others)
+        | m2 :: [] ->
+            (
+             (* we can merge m with m2 if there is an implementation 
+                and an interface.*)
+             let f b = if !Odoc_args.inverse_merge_ml_mli then not b else b in
+             match f m.m_is_interface, f m2.m_is_interface with
+               true, false -> (merge_modules merge_options m m2) :: (iter l_others)
+             | false, true -> (merge_modules merge_options m2 m) :: (iter l_others)
+             | false, false ->                 
+                 if !Odoc_args.inverse_merge_ml_mli then
+                   (* two Module.ts for the .mli ! *)
+                   raise (Failure (Odoc_messages.two_interfaces m.m_name))
+                 else
                    (* two Module.t for the .ml ! *)
-		   raise (Failure (Odoc_messages.two_implementations m.m_name))
-	     | true, true ->
-		 if !Odoc_args.inverse_merge_ml_mli then
-		   (* two Module.t for the .ml ! *)
-		   raise (Failure (Odoc_messages.two_implementations m.m_name))
-		 else
-		   (* two Module.ts for the .mli ! *)
-		   raise (Failure (Odoc_messages.two_interfaces m.m_name))
-	    )
-	| _ ->
-	    (* two many Module.t ! *)
-	    raise (Failure (Odoc_messages.too_many_module_objects m.m_name))
+                   raise (Failure (Odoc_messages.two_implementations m.m_name))
+             | true, true ->
+                 if !Odoc_args.inverse_merge_ml_mli then
+                   (* two Module.t for the .ml ! *)
+                   raise (Failure (Odoc_messages.two_implementations m.m_name))
+                 else
+                   (* two Module.ts for the .mli ! *)
+                   raise (Failure (Odoc_messages.two_interfaces m.m_name))
+            )
+        | _ ->
+            (* two many Module.t ! *)
+            raise (Failure (Odoc_messages.too_many_module_objects m.m_name))
 
   in
   iter modules_list

@@ -179,11 +179,11 @@ let protected_dispatch id args =
   with
   | e ->
       try
-	Printf.eprintf "Uncaught exception: %s\n" (Printexc.to_string e);
-	flush stderr;
-	(* raise x *)
+        Printf.eprintf "Uncaught exception: %s\n" (Printexc.to_string e);
+        flush stderr;
+        (* raise x *)
       with
-	Out_of_memory -> raise Out_of_memory
+        Out_of_memory -> raise Out_of_memory
       | Sys.Break -> raise Sys.Break
 
 let _ = Callback.register "camlcb" protected_dispatch

@@ -54,16 +54,16 @@ let parse_file filename =
       close_in ic;
       let buf = Buffer.create 50000 in
       List.iter (Ppexec.exec 
-		   (fun l -> Buffer.add_string buf
-		       (Printf.sprintf "##line %d\n" l))
-		   (Buffer.add_string buf))
-	(if !Flags.camltk then Code.Define "CAMLTK" :: code_list 
-	else code_list);
+                   (fun l -> Buffer.add_string buf
+                       (Printf.sprintf "##line %d\n" l))
+                   (Buffer.add_string buf))
+        (if !Flags.camltk then Code.Define "CAMLTK" :: code_list 
+        else code_list);
       Lexing.from_string (Buffer.contents buf)
     with
     | Ppparse.Error s -> 
-	close_in ic;
-	raise (Compiler_Error (Printf.sprintf "Preprocess error: %s" s))
+        close_in ic;
+        raise (Compiler_Error (Printf.sprintf "Preprocess error: %s" s))
   in
   try
     while true do
@@ -145,22 +145,22 @@ let option_hack oc =
    let hack =
      { parser_arity = OneToken;
        constructors = begin
-	 let constrs = 
+         let constrs = 
            List.map typdef.constructors ~f:
              begin fun c -> 
                { component = Constructor;
-		 ml_name = (if !Flags.camltk then "C" ^ c.ml_name 
-		            else c.ml_name);
-		 var_name = c.var_name; (* as variants *)
-		 template = 
-		 begin match c.template with
-		   ListArg (x :: _) -> x
-		 | _ -> fatal_error "bogus hack"
-		 end;
-		 result = UserDefined "options_constrs";
-		 safe = true }
+                 ml_name = (if !Flags.camltk then "C" ^ c.ml_name 
+                            else c.ml_name);
+                 var_name = c.var_name; (* as variants *)
+                 template = 
+                 begin match c.template with
+                   ListArg (x :: _) -> x
+                 | _ -> fatal_error "bogus hack"
+                 end;
+                 result = UserDefined "options_constrs";
+                 safe = true }
              end in
-	 if !Flags.camltk then constrs else uniq_clauses constrs (* JPF ?? *)
+         if !Flags.camltk then constrs else uniq_clauses constrs (* JPF ?? *)
        end;
        subtypes = [];
        requires_widget_context = false; 
@@ -238,13 +238,13 @@ let compile () =
     end;
     List.iter ~f:(fun s -> output_string oc s; output_string oc' s)
       begin
-	if !Flags.camltk then
-	  [ "open CTk\n";
+        if !Flags.camltk then
+          [ "open CTk\n";
             "open Tkintf\n";
             "open Widget\n";
             "open Textvariable\n\n" ]
-	else
-	  [ "open StdLabels\n";
+        else
+          [ "open StdLabels\n";
             "open Tk\n";
             "open Tkintf\n";
             "open Widget\n";
@@ -254,14 +254,14 @@ let compile () =
     begin match wdef.module_type with
       Widget ->
         if !Flags.camltk then begin
-	  camltk_write_create ~w:(output_string oc) wname;
-	  camltk_write_named_create ~w:(output_string oc) wname;
-	  camltk_write_create_p ~w:(output_string oc') wname;
-	  camltk_write_named_create_p ~w:(output_string oc') wname;
-	end else begin
-	  labltk_write_create ~w:(output_string oc) wname;
+          camltk_write_create ~w:(output_string oc) wname;
+          camltk_write_named_create ~w:(output_string oc) wname;
+          camltk_write_create_p ~w:(output_string oc') wname;
+          camltk_write_named_create_p ~w:(output_string oc') wname;
+        end else begin
+          labltk_write_create ~w:(output_string oc) wname;
           labltk_write_create_p ~w:(output_string oc') wname
-	end
+        end
     | Family -> ()
     end;
     List.iter ~f:(write_function ~w:(output_string oc)) 
@@ -295,8 +295,8 @@ let compile () =
     Hashtbl.iter (fun name _ ->
       let cname = realname name in
       output_string oc (Printf.sprintf "module %s = %s;;\n"
-			  (String.capitalize name)
-			  (String.capitalize cname))) module_table;
+                          (String.capitalize name)
+                          (String.capitalize cname))) module_table;
     close_out oc
   end else begin
     let oc = open_out_bin (destfile "labltk.ml") in
@@ -316,20 +316,20 @@ module Timer = Timer;;
     Hashtbl.iter (fun name _ ->
       let cname = realname name in
       output_string oc (Printf.sprintf "module %s = %s;;\n"
-			  (String.capitalize name)
-			  (String.capitalize name))) module_table;
+                          (String.capitalize name)
+                          (String.capitalize name))) module_table;
     (* widget typer *)
     output_string oc "\n(** Widget typers *)\n\nopen Widget\n\n";
     Hashtbl.iter (fun name def ->
       match def.module_type with
-      |	Widget ->
-	  output_string oc (Printf.sprintf 
-	      "let %s (w : any widget) =\n" name);
-	  output_string oc (Printf.sprintf 
-	      "  Rawwidget.check_class w widget_%s_table;\n" name);
-	  output_string oc (Printf.sprintf
-	      "  (Obj.magic w : %s widget);;\n\n" name);
-      |	_ -> () ) module_table;
+      | Widget ->
+          output_string oc (Printf.sprintf 
+              "let %s (w : any widget) =\n" name);
+          output_string oc (Printf.sprintf 
+              "  Rawwidget.check_class w widget_%s_table;\n" name);
+          output_string oc (Printf.sprintf
+              "  (Obj.magic w : %s widget);;\n\n" name);
+      | _ -> () ) module_table;
     close_out oc
   end;
 
@@ -370,9 +370,9 @@ module Timer = Timer;;
     output_string oc "camltk.cmo : cTk.cmo ";
     Hashtbl.iter
       (fun name _ ->
-	let name = realname name in
-	output_string oc name;
-	output_string oc ".cmo ") module_table;
+        let name = realname name in
+        output_string oc name;
+        output_string oc ".cmo ") module_table;
     output_string oc "\n"
   end;
 

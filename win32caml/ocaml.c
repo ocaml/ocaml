@@ -41,10 +41,10 @@ COLORREF BackColor = RGB(255,255,255);
 PROGRAM_PARAMS ProgramParams;
 HISTORYLINE *History;
 /*<----------------- global variables --------------------------------------->*/
-HANDLE hInst;		// Instance handle
-HWND hwndMain;		//Main window handle
+HANDLE hInst;           // Instance handle
+HWND hwndMain;          //Main window handle
 HWND hwndSession;
-HWND hwndMDIClient;		//Mdi client window handle
+HWND hwndMDIClient;             //Mdi client window handle
 static LRESULT CALLBACK MainWndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam);
 static LRESULT CALLBACK MdiChildWndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam);
 PROCESS_INFORMATION pi;
@@ -198,32 +198,32 @@ static BOOL CreateSBar(HWND hwndParent,char *initialText,int nrOfParts)
 ------------------------------------------------------------------------*/
 static BOOL InitApplication(void)
 {
-	WNDCLASS wc;
+        WNDCLASS wc;
 
-	memset(&wc,0,sizeof(WNDCLASS));
-	wc.style = CS_HREDRAW|CS_VREDRAW |CS_DBLCLKS ;
-	wc.lpfnWndProc = (WNDPROC)MainWndProc;
-	wc.hInstance = hInst;
-	wc.hbrBackground = (HBRUSH)(COLOR_WINDOW+1);
-	wc.lpszClassName = "inriaWndClass";
-	wc.lpszMenuName = MAKEINTRESOURCE(IDMAINMENU);
-	wc.hCursor = LoadCursor(NULL,IDC_ARROW);
-	wc.hIcon = LoadIcon(hInst,MAKEINTRESOURCE(OCAML_ICON));
-	if (!RegisterClass(&wc))
-		return 0;
-	wc.style         = 0;
-	wc.lpfnWndProc   = (WNDPROC)MdiChildWndProc;
-	wc.cbClsExtra    = 0;
-	wc.cbWndExtra    = 20;
-	wc.hInstance     = hInst;                      // Owner of this class
-	wc.hIcon         = LoadIcon(hInst, MAKEINTRESOURCE(OCAML_ICON));
-	wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
-	wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1); // Default color
-	wc.lpszMenuName  = NULL;
-	wc.lpszClassName = "MdiChildWndClass";
-	if (!RegisterClass((LPWNDCLASS)&wc))
-		return FALSE;
-	return 1;
+        memset(&wc,0,sizeof(WNDCLASS));
+        wc.style = CS_HREDRAW|CS_VREDRAW |CS_DBLCLKS ;
+        wc.lpfnWndProc = (WNDPROC)MainWndProc;
+        wc.hInstance = hInst;
+        wc.hbrBackground = (HBRUSH)(COLOR_WINDOW+1);
+        wc.lpszClassName = "inriaWndClass";
+        wc.lpszMenuName = MAKEINTRESOURCE(IDMAINMENU);
+        wc.hCursor = LoadCursor(NULL,IDC_ARROW);
+        wc.hIcon = LoadIcon(hInst,MAKEINTRESOURCE(OCAML_ICON));
+        if (!RegisterClass(&wc))
+                return 0;
+        wc.style         = 0;
+        wc.lpfnWndProc   = (WNDPROC)MdiChildWndProc;
+        wc.cbClsExtra    = 0;
+        wc.cbWndExtra    = 20;
+        wc.hInstance     = hInst;                      // Owner of this class
+        wc.hIcon         = LoadIcon(hInst, MAKEINTRESOURCE(OCAML_ICON));
+        wc.hCursor       = LoadCursor(NULL, IDC_ARROW);
+        wc.hbrBackground = (HBRUSH)(COLOR_WINDOW + 1); // Default color
+        wc.lpszMenuName  = NULL;
+        wc.lpszClassName = "MdiChildWndClass";
+        if (!RegisterClass((LPWNDCLASS)&wc))
+                return FALSE;
+        return 1;
 }
 
 /*------------------------------------------------------------------------
@@ -235,13 +235,13 @@ static BOOL InitApplication(void)
 ------------------------------------------------------------------------*/
 HWND CreateinriaWndClassWnd(void)
 {
-	return CreateWindow("inriaWndClass","Ocaml",
-		WS_MINIMIZEBOX|WS_VISIBLE|WS_CLIPSIBLINGS|WS_CLIPCHILDREN|WS_MAXIMIZEBOX|WS_CAPTION|WS_BORDER|WS_SYSMENU|WS_THICKFRAME,
-		CW_USEDEFAULT,0,CW_USEDEFAULT,0,
-		NULL,
-		NULL,
-		hInst,
-		NULL);
+        return CreateWindow("inriaWndClass","Ocaml",
+                WS_MINIMIZEBOX|WS_VISIBLE|WS_CLIPSIBLINGS|WS_CLIPCHILDREN|WS_MAXIMIZEBOX|WS_CAPTION|WS_BORDER|WS_SYSMENU|WS_THICKFRAME,
+                CW_USEDEFAULT,0,CW_USEDEFAULT,0,
+                NULL,
+                NULL,
+                hInst,
+                NULL);
 }
 
 /*------------------------------------------------------------------------
@@ -254,19 +254,19 @@ HWND CreateinriaWndClassWnd(void)
 ------------------------------------------------------------------------*/
 static HWND MDICmdFileNew(char *title, int show)
 {
-	HWND  hwndChild;
-	char  rgch[150];
-	static int cUntitled;
-	MDICREATESTRUCT mcs;
+        HWND  hwndChild;
+        char  rgch[150];
+        static int cUntitled;
+        MDICREATESTRUCT mcs;
 
-	if (title == NULL)
-		wsprintf(rgch,"Session%d", cUntitled++);
-	else {
-		strncpy(rgch,title,149);
-		rgch[149] = 0;
-	}
+        if (title == NULL)
+                wsprintf(rgch,"Session%d", cUntitled++);
+        else {
+                strncpy(rgch,title,149);
+                rgch[149] = 0;
+        }
 
-	// Create the MDI child window
+        // Create the MDI child window
 
         mcs.szClass = "MdiChildWndClass";      // window class name
         mcs.szTitle = rgch;             // window title
@@ -283,10 +283,10 @@ static HWND MDICmdFileNew(char *title, int show)
                                        0,
                                        (LPARAM)(LPMDICREATESTRUCT) &mcs);
 
-	if (hwndChild != NULL && show)
-		ShowWindow(hwndChild, SW_SHOW);
+        if (hwndChild != NULL && show)
+                ShowWindow(hwndChild, SW_SHOW);
 
-	return hwndChild;
+        return hwndChild;
 }
 static HWND CreateMdiClient(HWND hwndparent)
 {
@@ -316,23 +316,23 @@ static HWND CreateMdiClient(HWND hwndparent)
 
 void GotoEOF(void)
 {
-	HWND hEdit = (HWND)GetWindowLong(hwndSession,DWL_USER);
-	int linesCount = SendMessage(hEdit,EM_GETLINECOUNT,0,0);
-	int lineindex = SendMessage(hEdit,EM_LINEINDEX,linesCount-1,0);
-	int lastLineLength = SendMessage(hEdit,EM_LINELENGTH,linesCount-1,0);
+        HWND hEdit = (HWND)GetWindowLong(hwndSession,DWL_USER);
+        int linesCount = SendMessage(hEdit,EM_GETLINECOUNT,0,0);
+        int lineindex = SendMessage(hEdit,EM_LINEINDEX,linesCount-1,0);
+        int lastLineLength = SendMessage(hEdit,EM_LINELENGTH,linesCount-1,0);
 
-	lineindex += lastLineLength;
-	SendMessage(hEdit,EM_SETSEL,lineindex,lineindex);
+        lineindex += lastLineLength;
+        SendMessage(hEdit,EM_SETSEL,lineindex,lineindex);
 }
 
 int GetCurLineIndex(HWND hEdit)
 {
-	return SendMessage(hEdit,EM_LINEFROMCHAR,(WPARAM)-1,0);
+        return SendMessage(hEdit,EM_LINEFROMCHAR,(WPARAM)-1,0);
 }
 
 int GetNumberOfLines(HWND hEdit)
 {
-	return SendMessage(hEdit,EM_GETLINECOUNT,0,0);
+        return SendMessage(hEdit,EM_GETLINECOUNT,0,0);
 }
 
 static int GetWordUnderCursor(HWND hwndEditControl,char *buf,int len)
@@ -345,7 +345,7 @@ static int GetWordUnderCursor(HWND hwndEditControl,char *buf,int len)
     startingChar = SendMessage(hwndEditControl,EM_LINEINDEX,lineidx,0);
     start -= startingChar;
     end -= startingChar;
-	lineidx = SendMessage(hwndEditControl,EM_LINEFROMCHAR,start,0);
+        lineidx = SendMessage(hwndEditControl,EM_LINEFROMCHAR,start,0);
     length = SendMessage(hwndEditControl,EM_LINELENGTH,lineidx,0);
     offset = SendMessage(hwndEditControl,EM_LINEINDEX,lineidx,0);
     line = SafeMalloc(length+1);
@@ -374,7 +374,7 @@ static int GetWordUnderCursor(HWND hwndEditControl,char *buf,int len)
             pend--;
     memcpy(buf,pstart,1+pend-pstart);
     buf[pend-pstart] = 0;
-	free(line);
+        free(line);
     return 1;
 }
 
@@ -382,82 +382,82 @@ void DoHelp(HWND hwnd)
 {
     char word[256];
     GetWordUnderCursor(hwnd,word,sizeof(word));
-	MessageBox(NULL,word,"Aide pour:",MB_OK);
+        MessageBox(NULL,word,"Aide pour:",MB_OK);
 }
 
 
 static LRESULT CALLBACK SubClassEdit(HWND hwnd, UINT msg, WPARAM mp1, LPARAM mp2)
 {
-	LRESULT r;
-	int postit=0,nl;
-	if (msg == WM_CHAR && mp1 == '\r') {
-		if (!busy) {
-			CallWindowProc(lpEProc,hwnd,WM_KEYDOWN,VK_END,1);
-			CallWindowProc(lpEProc,hwnd,WM_KEYUP,VK_END,1);
-			r =  GetCurLineIndex(hwnd);
-			nl = GetNumberOfLines(hwnd);
-			if (r != nl-1) {
-				PostMessage(GetParent(hwnd),WM_NEWLINE,0,0);
-				return 0;
-			}
-			postit = 1;
-		}
+        LRESULT r;
+        int postit=0,nl;
+        if (msg == WM_CHAR && mp1 == '\r') {
+                if (!busy) {
+                        CallWindowProc(lpEProc,hwnd,WM_KEYDOWN,VK_END,1);
+                        CallWindowProc(lpEProc,hwnd,WM_KEYUP,VK_END,1);
+                        r =  GetCurLineIndex(hwnd);
+                        nl = GetNumberOfLines(hwnd);
+                        if (r != nl-1) {
+                                PostMessage(GetParent(hwnd),WM_NEWLINE,0,0);
+                                return 0;
+                        }
+                        postit = 1;
+                }
 
-	}
-	else if (msg == WM_KEYDOWN && mp1 == VK_F1) {
-		DoHelp(hwnd);
-	}
-	r = CallWindowProc(lpEProc, hwnd, msg, mp1, mp2);
-	if (postit)
-		PostMessage(GetParent(hwnd),WM_NEWLINE,0,0);
-	return r;
+        }
+        else if (msg == WM_KEYDOWN && mp1 == VK_F1) {
+                DoHelp(hwnd);
+        }
+        r = CallWindowProc(lpEProc, hwnd, msg, mp1, mp2);
+        if (postit)
+                PostMessage(GetParent(hwnd),WM_NEWLINE,0,0);
+        return r;
 }
 
 static void SubClassEditField(HWND hwnd)
 {
-	if (lpEProc == NULL) {
-		lpEProc = (WNDPROC) GetWindowLong(hwnd, GWL_WNDPROC);
-	}
-	SetWindowLong(hwnd, GWL_WNDPROC, (DWORD) SubClassEdit);
+        if (lpEProc == NULL) {
+                lpEProc = (WNDPROC) GetWindowLong(hwnd, GWL_WNDPROC);
+        }
+        SetWindowLong(hwnd, GWL_WNDPROC, (DWORD) SubClassEdit);
 }
 
 void AddToHistory(char *text)
 {
-	HISTORYLINE *newLine;
+        HISTORYLINE *newLine;
 
-	while (*text == ' ')
-		text++; // skip leading blanks
-	if (*text == 0)
-		return;
-	if (History && !strstr(History->Text,";;")) {
-		char *p = History->Text;
-		int len = strlen(p)+strlen(text) + 1 + 1; // space and zero terminator
-		History->Text = SafeMalloc(len);
-		strcpy(History->Text,p);
-		strcat(History->Text," ");
-		strcat(History->Text,text);
-		free(p);
-		return;
-	}
-	newLine = SafeMalloc(sizeof(HISTORYLINE));
-	newLine->Next = History;
-	newLine->Text = SafeMalloc(strlen(text)+1);
-	strcpy(newLine->Text,text);
-	History = newLine;
+        while (*text == ' ')
+                text++; // skip leading blanks
+        if (*text == 0)
+                return;
+        if (History && !strstr(History->Text,";;")) {
+                char *p = History->Text;
+                int len = strlen(p)+strlen(text) + 1 + 1; // space and zero terminator
+                History->Text = SafeMalloc(len);
+                strcpy(History->Text,p);
+                strcat(History->Text," ");
+                strcat(History->Text,text);
+                free(p);
+                return;
+        }
+        newLine = SafeMalloc(sizeof(HISTORYLINE));
+        newLine->Next = History;
+        newLine->Text = SafeMalloc(strlen(text)+1);
+        strcpy(newLine->Text,text);
+        History = newLine;
 }
 
 char *GetHistoryLine(int n)
 {
-	HISTORYLINE *rvp = History;
-	int i;
+        HISTORYLINE *rvp = History;
+        int i;
 
-	for (i=0; i<n; i++) {
-		rvp = rvp->Next;
-	}
-	if (rvp)
-		return &rvp->Text[0];
-	else
-		return "";
+        for (i=0; i<n; i++) {
+                rvp = rvp->Next;
+        }
+        if (rvp)
+                return &rvp->Text[0];
+        else
+                return "";
 }
 
 /*------------------------------------------------------------------------
@@ -471,36 +471,36 @@ char *GetHistoryLine(int n)
 ------------------------------------------------------------------------*/
 void SendLastLine(HWND hEdit)
 {
-	int curline = GetCurLineIndex(hEdit);
-	char *p,linebuffer[2048];
-	int n;
-	int linescount = GetNumberOfLines(hEdit);
+        int curline = GetCurLineIndex(hEdit);
+        char *p,linebuffer[2048];
+        int n;
+        int linescount = GetNumberOfLines(hEdit);
 
-	*(unsigned short *)linebuffer = sizeof(linebuffer)-1;
-	if (curline != linescount-1)
-	  n = SendMessage(hEdit,EM_GETLINE,curline,(LPARAM)linebuffer);
-	else
-	  n = SendMessage(hEdit,EM_GETLINE,curline-1,(LPARAM)linebuffer);
-	if (n >= 2 && linebuffer[0] == '#' && linebuffer[1] == ' ') {
-	  n -= 2;
-	  memmove(linebuffer, linebuffer+2, n);
-	}
-	linebuffer[n] = 0;
-	// Record user input!
-	AddToHistory(linebuffer);
-	linebuffer[n] = '\n';
-	linebuffer[n+1] = 0;
-	WriteToPipe(linebuffer);
-	if (curline != linescount-1) {
-		// Copy the line sent to the end of the text
-		p = strrchr(linebuffer,'\n');
-		if (p) {
-			*p = 0;
-		}
-		busy = 1;
-		AddLineToControl(linebuffer);
-		busy = 0;
-	}
+        *(unsigned short *)linebuffer = sizeof(linebuffer)-1;
+        if (curline != linescount-1)
+          n = SendMessage(hEdit,EM_GETLINE,curline,(LPARAM)linebuffer);
+        else
+          n = SendMessage(hEdit,EM_GETLINE,curline-1,(LPARAM)linebuffer);
+        if (n >= 2 && linebuffer[0] == '#' && linebuffer[1] == ' ') {
+          n -= 2;
+          memmove(linebuffer, linebuffer+2, n);
+        }
+        linebuffer[n] = 0;
+        // Record user input!
+        AddToHistory(linebuffer);
+        linebuffer[n] = '\n';
+        linebuffer[n+1] = 0;
+        WriteToPipe(linebuffer);
+        if (curline != linescount-1) {
+                // Copy the line sent to the end of the text
+                p = strrchr(linebuffer,'\n');
+                if (p) {
+                        *p = 0;
+                }
+                busy = 1;
+                AddLineToControl(linebuffer);
+                busy = 0;
+        }
 }
 /*------------------------------------------------------------------------
  Procedure:     SetLastPrompt ID:1
@@ -512,10 +512,10 @@ void SendLastLine(HWND hEdit)
 ------------------------------------------------------------------------*/
 void SetLastPrompt(HWND hEdit)
 {
-	DWORD startpos,endpos;
-	SendMessage(hEdit,EM_GETSEL,(WPARAM)&startpos,(LPARAM)&endpos);
-	LastPromptPosition.line = SendMessage(hEdit,EM_LINEFROMCHAR,(WPARAM)-1,0);
-	LastPromptPosition.col = startpos;
+        DWORD startpos,endpos;
+        SendMessage(hEdit,EM_GETSEL,(WPARAM)&startpos,(LPARAM)&endpos);
+        LastPromptPosition.line = SendMessage(hEdit,EM_LINEFROMCHAR,(WPARAM)-1,0);
+        LastPromptPosition.col = startpos;
 }
 
 /*------------------------------------------------------------------------
@@ -530,11 +530,11 @@ void SetLastPrompt(HWND hEdit)
 ------------------------------------------------------------------------*/
 static LRESULT CALLBACK MdiChildWndProc(HWND hwnd,UINT msg,WPARAM wparam,LPARAM lparam)
 {
-	HWND hwndChild;
-	RECT rc;
-	HDC hDC;
+        HWND hwndChild;
+        RECT rc;
+        HDC hDC;
 
-	switch(msg) {
+        switch(msg) {
         case WM_CREATE:
           GetClientRect(hwnd,&rc);
           hwndChild= CreateWindow("EDIT",
@@ -603,7 +603,7 @@ static LRESULT CALLBACK MdiChildWndProc(HWND hwnd,UINT msg,WPARAM wparam,LPARAM 
           hwndChild = (HWND) GetWindowLong(hwnd, DWL_USER);
           if (ReadToLineBuffer()) {
             char *p;
-				// Ok we read something. Display it.
+                                // Ok we read something. Display it.
             AddLineBuffer();
             p = strrchr(lineBuffer,'\r');
             if (p && !strcmp(p,"\r\n# ")) {
@@ -615,8 +615,8 @@ static LRESULT CALLBACK MdiChildWndProc(HWND hwnd,UINT msg,WPARAM wparam,LPARAM 
           }
           break;
 
-	}
-	return DefMDIChildProc(hwnd, msg, wparam, lparam);
+        }
+        return DefMDIChildProc(hwnd, msg, wparam, lparam);
 }
 
 
@@ -636,52 +636,52 @@ static LRESULT CALLBACK MdiChildWndProc(HWND hwnd,UINT msg,WPARAM wparam,LPARAM 
 ------------------------------------------------------------------------*/
 static LRESULT CALLBACK MainWndProc(HWND hwnd,UINT msg,WPARAM wParam,LPARAM lParam)
 {
-	switch (msg) {
-		// Create the MDI client invisible window
-	case WM_CREATE:
-		hwndMDIClient = CreateMdiClient(hwnd);
+        switch (msg) {
+                // Create the MDI client invisible window
+        case WM_CREATE:
+                hwndMDIClient = CreateMdiClient(hwnd);
         TimerId = SetTimer((HWND) 0, 0, 100, (TIMERPROC) TimerProc);
-		break;
-	// Move the child windows
-	case WM_SIZE:
-		SendMessage(hWndStatusbar,msg,wParam,lParam);
-		InitializeStatusBar(hWndStatusbar,1);
-		// Position the MDI client window between the tool and status bars
-		if (wParam != SIZE_MINIMIZED) {
-			RECT rc, rcClient;
+                break;
+        // Move the child windows
+        case WM_SIZE:
+                SendMessage(hWndStatusbar,msg,wParam,lParam);
+                InitializeStatusBar(hWndStatusbar,1);
+                // Position the MDI client window between the tool and status bars
+                if (wParam != SIZE_MINIMIZED) {
+                        RECT rc, rcClient;
 
-			GetClientRect(hwnd, &rcClient);
-			GetWindowRect(hWndStatusbar, &rc);
-			ScreenToClient(hwnd, (LPPOINT)&rc.left);
-			rcClient.bottom = rc.top;
-			MoveWindow(hwndMDIClient,rcClient.left,rcClient.top,rcClient.right-rcClient.left, rcClient.bottom-rcClient.top, TRUE);
-		}
+                        GetClientRect(hwnd, &rcClient);
+                        GetWindowRect(hWndStatusbar, &rc);
+                        ScreenToClient(hwnd, (LPPOINT)&rc.left);
+                        rcClient.bottom = rc.top;
+                        MoveWindow(hwndMDIClient,rcClient.left,rcClient.top,rcClient.right-rcClient.left, rcClient.bottom-rcClient.top, TRUE);
+                }
 
-		return 0;
-		// Dispatch the menu commands
-	case WM_COMMAND:
-		HandleCommand(hwnd, wParam,lParam);
-		return 0;
-		// If user confirms close
-	case WM_CLOSE:
-		if (!AskYesOrNo("Quit Ocaml?"))
-			return 0;
-		break;
-		// End application
-	case WM_DESTROY:
-		PostQuitMessage(0);
-		break;
-		// The interpreter has exited. Force close of the application
-	case WM_QUITOCAML:
-		DestroyWindow(hwnd);
-		return 0;
-	case WM_USER+1000:
-		// TestGraphics();
-		break;
-	default:
-		return DefFrameProc(hwnd,hwndMDIClient,msg,wParam,lParam);
-	}
-	return DefFrameProc(hwnd,hwndMDIClient,msg,wParam,lParam);
+                return 0;
+                // Dispatch the menu commands
+        case WM_COMMAND:
+                HandleCommand(hwnd, wParam,lParam);
+                return 0;
+                // If user confirms close
+        case WM_CLOSE:
+                if (!AskYesOrNo("Quit Ocaml?"))
+                        return 0;
+                break;
+                // End application
+        case WM_DESTROY:
+                PostQuitMessage(0);
+                break;
+                // The interpreter has exited. Force close of the application
+        case WM_QUITOCAML:
+                DestroyWindow(hwnd);
+                return 0;
+        case WM_USER+1000:
+                // TestGraphics();
+                break;
+        default:
+                return DefFrameProc(hwnd,hwndMDIClient,msg,wParam,lParam);
+        }
+        return DefFrameProc(hwnd,hwndMDIClient,msg,wParam,lParam);
 }
 
 /*------------------------------------------------------------------------
@@ -716,8 +716,8 @@ static HFONT CreationCourier(int flag)
 ------------------------------------------------------------------------*/
 int ReadToLineBuffer(void)
 {
-	memset(lineBuffer,0,sizeof(lineBuffer));
-	return ReadFromPipe(lineBuffer,sizeof(lineBuffer));
+        memset(lineBuffer,0,sizeof(lineBuffer));
+        return ReadFromPipe(lineBuffer,sizeof(lineBuffer));
 }
 
 /*------------------------------------------------------------------------
@@ -730,10 +730,10 @@ int ReadToLineBuffer(void)
 ------------------------------------------------------------------------*/
 int AddLineBuffer(void)
 {
-	HWND hEditCtrl;
+        HWND hEditCtrl;
 
-	hEditCtrl = (HWND)GetWindowLong(hwndSession,DWL_USER);
-	return SendMessage(hEditCtrl,EM_REPLACESEL,0,(LPARAM)lineBuffer);
+        hEditCtrl = (HWND)GetWindowLong(hwndSession,DWL_USER);
+        return SendMessage(hEditCtrl,EM_REPLACESEL,0,(LPARAM)lineBuffer);
 
 }
 
@@ -747,14 +747,14 @@ int AddLineBuffer(void)
 ------------------------------------------------------------------------*/
 static int Setup(HANDLE *phAccelTable)
 {
-	if (!InitApplication())
-		return 0;
-	ProgramParams.hFont = CreationCourier(1);
-	ProgramParams.TextColor = RGB(0,0,0);
-	GetObject(ProgramParams.hFont,sizeof(LOGFONT),&CurrentFont);
-	BackgroundBrush = CreateSolidBrush(BackColor);
-	*phAccelTable = LoadAccelerators(hInst,MAKEINTRESOURCE(IDACCEL));
-	return 1;
+        if (!InitApplication())
+                return 0;
+        ProgramParams.hFont = CreationCourier(1);
+        ProgramParams.TextColor = RGB(0,0,0);
+        GetObject(ProgramParams.hFont,sizeof(LOGFONT),&CurrentFont);
+        BackgroundBrush = CreateSolidBrush(BackColor);
+        *phAccelTable = LoadAccelerators(hInst,MAKEINTRESOURCE(IDACCEL));
+        return 1;
 }
 
 
@@ -767,49 +767,49 @@ static int Setup(HANDLE *phAccelTable)
 ------------------------------------------------------------------------*/
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine, INT nCmdShow)
 {
-	MSG msg;
-	HANDLE hAccelTable;
-	char consoleTitle[512];
-	HWND hwndConsole;
+        MSG msg;
+        HANDLE hAccelTable;
+        char consoleTitle[512];
+        HWND hwndConsole;
 
-	// Setup the hInst global
-	hInst = hInstance;
-	// Do the setup
-	if (!Setup(&hAccelTable))
-		return 0;
+        // Setup the hInst global
+        hInst = hInstance;
+        // Do the setup
+        if (!Setup(&hAccelTable))
+                return 0;
         // Need to set up a console so that we can send ctrl-break signal
         // to inferior Caml
-	AllocConsole();
-	GetConsoleTitle(consoleTitle,sizeof(consoleTitle));
-	hwndConsole = FindWindow(NULL,consoleTitle);
-	ShowWindow(hwndConsole,SW_HIDE);
-	// Create main window and exit if this fails
-	if ((hwndMain = CreateinriaWndClassWnd()) == (HWND)0)
-		return 0;
-	// Create the status bar
-	CreateSBar(hwndMain,"Ready",2);
-	// Show the window
-	ShowWindow(hwndMain,SW_SHOW);
-	// Create the session window
-	hwndSession = MDICmdFileNew("Session transcript",0);
-	// Get the path to ocaml.exe
-	GetOcamlPath();
-	// Start the interpreter
-	StartOcaml();
-	// Show the session window
-	ShowWindow(hwndSession, SW_SHOW);
-	// Maximize it
+        AllocConsole();
+        GetConsoleTitle(consoleTitle,sizeof(consoleTitle));
+        hwndConsole = FindWindow(NULL,consoleTitle);
+        ShowWindow(hwndConsole,SW_HIDE);
+        // Create main window and exit if this fails
+        if ((hwndMain = CreateinriaWndClassWnd()) == (HWND)0)
+                return 0;
+        // Create the status bar
+        CreateSBar(hwndMain,"Ready",2);
+        // Show the window
+        ShowWindow(hwndMain,SW_SHOW);
+        // Create the session window
+        hwndSession = MDICmdFileNew("Session transcript",0);
+        // Get the path to ocaml.exe
+        GetOcamlPath();
+        // Start the interpreter
+        StartOcaml();
+        // Show the session window
+        ShowWindow(hwndSession, SW_SHOW);
+        // Maximize it
     SendMessage(hwndMDIClient, WM_MDIMAXIMIZE, (WPARAM) hwndSession, 0);
 
-	PostMessage(hwndMain,WM_USER+1000,0,0);
-	while (GetMessage(&msg,NULL,0,0)) {
-		if (!TranslateMDISysAccel(hwndMDIClient, &msg))
-			if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg)) {
-				TranslateMessage(&msg);  // Translates virtual key codes
-				DispatchMessage(&msg);   // Dispatches message to window
-			}
-	}
-	WriteToPipe("#quit;;\r\n\032");
+        PostMessage(hwndMain,WM_USER+1000,0,0);
+        while (GetMessage(&msg,NULL,0,0)) {
+                if (!TranslateMDISysAccel(hwndMDIClient, &msg))
+                        if (!TranslateAccelerator(msg.hwnd, hAccelTable, &msg)) {
+                                TranslateMessage(&msg);  // Translates virtual key codes
+                                DispatchMessage(&msg);   // Dispatches message to window
+                        }
+        }
+        WriteToPipe("#quit;;\r\n\032");
     KillTimer((HWND) 0, TimerId);
-	return msg.wParam;
+        return msg.wParam;
 }

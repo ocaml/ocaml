@@ -4,15 +4,15 @@ ARGS=
 FILES=
 ENTRIES=
 while test "" != "$1"; do
-	case $1 in
+        case $1 in
         -e)
            shift;
            if test "$ENTRIES" != ""; then ENTRIES="$ENTRIES; "; fi
            ENTRIES="$ENTRIES$1";;
-	*.ml*) FILES="$FILES $1";;
-	*) ARGS="$ARGS $1";;
-	esac
-	shift
+        *.ml*) FILES="$FILES $1";;
+        *) ARGS="$ARGS $1";;
+        esac
+        shift
 done
 
 cat $FILES | sed -e 's/Pcaml.parse_i.*$//' > tmp.ml

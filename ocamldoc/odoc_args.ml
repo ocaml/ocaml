@@ -45,9 +45,9 @@ let analyse_option_string l s =
   List.fold_left
     (fun acc -> fun ((c,_), v) ->
       if String.contains s c then
-	acc @ v
+        acc @ v
       else
-	acc)
+        acc)
     []
     l
 
@@ -152,13 +152,13 @@ let add_hidden_modules s =
     (fun n ->
       let name = Str.global_replace (Str.regexp "[ \n\r\t]+") "" n in
       match name with
-	"" -> ()
-      |	_ -> 
-	  match name.[0] with
-	    'A'..'Z' -> hidden_modules := name :: !hidden_modules
-	  | _ ->
-	      incr Odoc_global.errors;
-	      prerr_endline (Odoc_messages.not_a_module_name name)
+        "" -> ()
+      | _ -> 
+          match name.[0] with
+            'A'..'Z' -> hidden_modules := name :: !hidden_modules
+          | _ ->
+              incr Odoc_global.errors;
+              prerr_endline (Odoc_messages.not_a_module_name name)
     )
     l
 
@@ -265,10 +265,10 @@ let add_option o =
   let rec iter = function
       [] -> [o]
     | (s2,f,m) :: q ->
-	if s = s2 then
-	  o :: q
-	else
-	  (s2,f,m) :: (iter q)
+        if s = s2 then
+          o :: q
+        else
+          (s2,f,m) :: (iter q)
   in
   options := iter !options
 

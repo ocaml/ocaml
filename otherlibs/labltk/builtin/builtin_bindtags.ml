@@ -2,8 +2,8 @@
 
 (* type *)
 type bindings =
-  | TagBindings of string	(* tk option: <string> *)
-  | WidgetBindings of widget	(* tk option: <widget> *)
+  | TagBindings of string       (* tk option: <string> *)
+  | WidgetBindings of widget    (* tk option: <widget> *)
 ;;
 (* /type *)
 

@@ -67,17 +67,17 @@ let init () =
        let liver = (float st.live_words) /. (float st.heap_words)
        and freer = (float st.free_words) /. (float st.heap_words) in
        Place.configure flive [X (Pixels 0); Y (Pixels 0);
-			      RelWidth liver; RelHeight 1.0];
+                              RelWidth liver; RelHeight 1.0];
        Place.configure ffree [RelX liver; Y (Pixels 0);
-			      RelWidth freer; RelHeight 1.0];
+                              RelWidth freer; RelHeight 1.0];
        Place.configure fdead [RelX (liver +. freer); Y (Pixels 0);
-			      RelWidth (1.0 -. freer -. liver); RelHeight 1.0]
+                              RelWidth (1.0 -. freer -. liver); RelHeight 1.0]
 
     in
     let rec tim () =
       if Winfo.exists top then begin
-      	display();
-	Timer.set (!delay * 1000) tim
+        display();
+        Timer.set (!delay * 1000) tim
       end
     in
     tim()

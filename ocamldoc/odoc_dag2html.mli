@@ -25,6 +25,6 @@ val html_of_dag : string dag -> string
 val create_class_dag :
     Odoc_info.Class.t_class list -> 
       Odoc_info.Class.t_class_type list -> 
-	(Odoc_info.Name.t * Odoc_info.Class.cct option) dag
+        (Odoc_info.Name.t * Odoc_info.Class.cct option) dag
 
 

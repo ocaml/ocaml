@@ -220,7 +220,7 @@ widget button {
    option WrapLength
    % Widget specific options
    option Command ["-command"; function ()]
-   option Default ["-default"; State]	
+   option Default ["-default"; State]   
    option Height ["-height"; Units/int]
    option State ["-state"; State]
    option Width ["-width"; Units/int]
@@ -693,44 +693,44 @@ module Focus {
 type font external % builtin/builtin_font.ml
 
 type weight {
-  Weight_Normal(Normal)		["normal"]
-  Weight_Bold(Bold)		["bold"]
+  Weight_Normal(Normal)         ["normal"]
+  Weight_Bold(Bold)             ["bold"]
 }
 
 type slant {
-  Slant_Roman(Roman)		["roman"]
-  Slant_Italic(Italic)		["italic"]
+  Slant_Roman(Roman)            ["roman"]
+  Slant_Italic(Italic)          ["italic"]
 }
 
 type fontMetrics {
   Ascent ["-ascent"]
-  Descent ["-descent"]	
+  Descent ["-descent"]  
   Linespace ["-linespace"]
   Fixed ["-fixed"]
 }
 
 subtype options(font) {
-  Font_Family	["-family"; string]
-  Font_Size		["-size"; int]
-  Font_Weight	["-weight"; weight]
-  Font_Slant		["-slant"; slant]
-  Font_Underline	["-underline"; bool]
-  Font_Overstrike	["-overstrike"; bool]
+  Font_Family   ["-family"; string]
+  Font_Size             ["-size"; int]
+  Font_Weight   ["-weight"; weight]
+  Font_Slant            ["-slant"; slant]
+  Font_Underline        ["-underline"; bool]
+  Font_Overstrike       ["-overstrike"; bool]
 % later, JP only
-% Charset			["-charset"; string]
+% Charset                       ["-charset"; string]
 %% Beware of the order of Compound ! Put it as the first option
-% Compound			["-compound"; [font list]]
-% Copy				["-copy"; string]
-}		
+% Compound                      ["-compound"; [font list]]
+% Copy                          ["-copy"; string]
+}               
 
 module Font {
   function (string) actual ["font"; "actual"; font; 
-	                        ?displayof:["-displayof"; widget]; 
-	                        options(font) list]
+                                ?displayof:["-displayof"; widget]; 
+                                options(font) list]
 ##ifdef CAMLTK
   function (string) actual_displayof ["font"; "actual"; font; 
-					"-displayof"; widget; 
-					options(font) list]
+                                        "-displayof"; widget; 
+                                        options(font) list]
 ##endif
   function () configure ["font"; "configure"; font; options(font) list]
   function (font) create ["font"; "create"; ?name:[string]; options(font) list]
@@ -739,24 +739,24 @@ module Font {
 ##endif
   function () delete ["font"; "delete"; font]
   function (string list) families ["font"; "families";
-	                        ?displayof:["-displayof"; widget]] 
+                                ?displayof:["-displayof"; widget]] 
 ##ifdef CAMLTK
   function (string list) families_displayof ["font"; "families";
-						"-displayof"; widget]
+                                                "-displayof"; widget]
 ##endif
   function (int) measure ["font"; "measure"; font; string;
-	                        ?displayof:["-displayof"; widget]] 
+                                ?displayof:["-displayof"; widget]] 
 ##ifdef CAMLTK
   function (int) measure_displayof ["font"; "measure"; font;
                                     "-displayof"; widget; string ]
 ##endif
   function (int) metrics ["font"; "metrics"; font;
-	                        ?displayof:["-displayof"; widget];
-	                        fontMetrics ] 
+                                ?displayof:["-displayof"; widget];
+                                fontMetrics ] 
 ##ifdef CAMLTK
   function (int) metrics_displayof ["font"; "metrics"; font; 
-				    "-displayof"; widget;
-	                            fontMetrics ]
+                                    "-displayof"; widget;
+                                    fontMetrics ]
 ##endif
   function (string list) names ["font"; "names"]
 % JP
@@ -797,7 +797,7 @@ widget frame {
    option Clas  ["-class"; string]
 ##endif
    option Colormap ["-colormap"; Colormap]
-   option Container ["-container"; bool]	
+   option Container ["-container"; bool]        
    option Height
    option Visual ["-visual"; Visual]
    option Width
@@ -834,7 +834,7 @@ module Grab {
 subtype option(rowcolumnconfigure) {
   Minsize ["-minsize"; Units/int]
   Weight  ["-weight"; float]
-  Pad ["-pad"; Units/int]	
+  Pad ["-pad"; Units/int]       
 }
 
 subtype option(grid) {
@@ -1092,7 +1092,7 @@ subtype option(menucheck) {
 ##ifdef CAMLTK
    ImageBitmap SelectImageBitmap ImagePhoto SelectImagePhoto
 ##else
-   Image SelectImage	
+   Image SelectImage    
 ##endif
    IndicatorOn Label
    OffValue OnValue SelectColor
@@ -1115,7 +1115,7 @@ type menuType {
   Menu_Menubar ["menubar"]
   Menu_Tearoff ["tearoff"]
   Menu_Normal ["normal"]
-}	 
+}        
 
 % Separators and tearoffs don't have options
 
@@ -1691,7 +1691,7 @@ module Selection {
 %%%%% send(n)
 type SendOption {
   SendDisplayOf ["-displayof"; widget] % DisplayOf is used for icccm !
-  SendAsync ["-async"]    	
+  SendAsync ["-async"]          
 }
 
 unsafe function () send ["send"; SendOption list; "--"; app: string; command: string list]
@@ -1829,7 +1829,7 @@ widget text {
    % require result parser
    function (string list) dump [widget(text); "dump"; text_dump list; start: TextIndex; stop: TextIndex]
    function (string list) dump_char [widget(text); "dump"; text_dump list; index: TextIndex]
-	
+        
    function (string) get [widget(text); "get"; start: TextIndex; stop: TextIndex]
    function (string) get_char [widget(text); "get"; index: TextIndex]
    function () image_configure
@@ -1951,7 +1951,7 @@ unsafe function () scaling_set ["tk"; "scaling"; ?displayof:["-displayof"; widge
 subtype option(chooseColor){
     InitialColor ["-initialcolor"; Color]
     Parent ["-parent"; widget]
-    Title ["-title"; string]	
+    Title ["-title"; string]    
     }
 function (Color) chooseColor ["tk_chooseColor"; option(chooseColor) list] 
 
@@ -2252,8 +2252,8 @@ module Encoding {
   function (string) convertfrom ["encoding"; "convertfrom"; 
                                  ?encoding: [string]; string]
   function (string) convertto ["encoding"; "convertto";
-	                        ?encoding: [string]; string]	
+                                ?encoding: [string]; string]    
   function (string list) names ["encoding"; "names"]
   function () system_set ["encoding"; "system"; string]
   function (string) system_get ["encoding"; "system"]
-}	
+}       

@@ -45,8 +45,8 @@ struct WinCBData {
 };
 
 static void WaitVisibilityProc(clientData, eventPtr)
-    ClientData clientData;	
-    XEvent *eventPtr;		/* Information about event (not used). */
+    ClientData clientData;      
+    XEvent *eventPtr;           /* Information about event (not used). */
 {
   struct WinCBData *vis = clientData;
   value cbid = Val_int(vis->cbid);

@@ -22,7 +22,7 @@ val standard_library: string
 val standard_runtime: string
         (* The full path to the standard bytecode interpreter ocamlrun *)
 val ccomp_type: string
-	(* The "kind" of the C compiler: one of
+        (* The "kind" of the C compiler: one of
                "cc" (for Unix-style C compilers)
                "msvc" (Microsoft Visual C++)
                "mrc" (Macintosh MPW) *)

@@ -104,13 +104,13 @@ your .ml files.
     versions, using optional labeled arguments. For example, Bell.ring 
     had/have the following types:
 
-	before: Bell.ring : unit -> unit
-	now:    Bell.ring : ?displayof:Camltk.widget -> unit -> unit
+        before: Bell.ring : unit -> unit
+        now:    Bell.ring : ?displayof:Camltk.widget -> unit -> unit
 
     If you use these functions as callbacks directly like Command Bell.ring,
     you need eta-expansions to flush these new optional arguments:
 
-	Button.create w [Command Bell.ring]
+        Button.create w [Command Bell.ring]
 
              => Button.create w [Command (fun () -> Bell.ring ())]
 

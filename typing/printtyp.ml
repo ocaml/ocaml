@@ -181,8 +181,8 @@ let rec mark_loops_rec visited ty =
     | Tsubst ty -> mark_loops_rec visited ty
     | Tlink _ -> fatal_error "Printtyp.mark_loops_rec (2)"
     | Tpoly (ty, tyl) ->
-	List.iter (fun t -> add_alias t) tyl;
-	mark_loops_rec visited ty
+        List.iter (fun t -> add_alias t) tyl;
+        mark_loops_rec visited ty
     | Tunivar -> ()
 
 let mark_loops ty =
@@ -278,7 +278,7 @@ let rec tree_of_typexp sch ty =
     | Tlink _ | Tnil | Tfield _ ->
         fatal_error "Printtyp.tree_of_typexp"
     | Tpoly (ty, []) ->
-	tree_of_typexp sch ty
+        tree_of_typexp sch ty
     | Tpoly (ty, tyl) ->
         let tyl = List.map repr tyl in
         (* let tyl = List.filter is_aliased tyl in *)

@@ -103,32 +103,32 @@ CAMLprim value camltk_opentk(value argv)
 
       tmp = Field(argv, 1); /* starts from argv[1] */
       while ( tmp != Val_int(0) ) {
-	argc++;
-	tmp = Field(tmp, 1);
+        argc++;
+        tmp = Field(tmp, 1);
       }
 
       if( argc != 0 ){
-	int i;
-	char *args;
-	char **tkargv;
-	char argcstr[256]; /* string of argc */
+        int i;
+        char *args;
+        char **tkargv;
+        char argcstr[256]; /* string of argc */
 
-	tkargv = (char**)stat_alloc(sizeof( char* ) * argc );
-	tmp = Field(argv, 1); /* starts from argv[1] */
-	i = 0;
+        tkargv = (char**)stat_alloc(sizeof( char* ) * argc );
+        tmp = Field(argv, 1); /* starts from argv[1] */
+        i = 0;
 
-	while ( tmp != Val_int(0) ) {
-	  tkargv[i] = String_val(Field(tmp, 0));
-	  tmp = Field(tmp, 1);
-	  i++;
-	}
-	
-	sprintf( argcstr, "%d", argc );
+        while ( tmp != Val_int(0) ) {
+          tkargv[i] = String_val(Field(tmp, 0));
+          tmp = Field(tmp, 1);
+          i++;
+        }
+        
+        sprintf( argcstr, "%d", argc );
         Tcl_SetVar(cltclinterp, "argc", argcstr, TCL_GLOBAL_ONLY);
         args = Tcl_Merge(argc, tkargv); /* args must be freed by Tcl_Free */
         Tcl_SetVar(cltclinterp, "argv", args, TCL_GLOBAL_ONLY);
         Tcl_Free(args);
-	stat_free( tkargv );
+        stat_free( tkargv );
       }
     }
     if (Tk_Init(cltclinterp) != TCL_OK)

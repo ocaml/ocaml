@@ -643,7 +643,7 @@ Camlp4 Version 0.6:
 * Added option -where: "camlp4 -where" prints the name of the standard
   library directory of Camlp4 and exit. So, the ocaml toplevel and the
   compiler can use the option:
-	-I `camlp4 -where`
+        -I `camlp4 -where`
 
 * Added option -nolib to not search for objects files in the installed
   library directory of Camlp4.

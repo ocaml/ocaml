@@ -121,11 +121,11 @@ let cCAMLtoTKevent (ev : event) =
     | `Unmap -> "Unmap"
     | `Visibility -> "Visibility"
     | `Virtual s -> 
-	if !modified then raise IllegalVirtualEvent else "<"^s^">"
+        if !modified then raise IllegalVirtualEvent else "<"^s^">"
     | `Modified(ml, ev) ->
-	modified := true;
-	String.concat ~sep:"" (List.map ~f:cCAMLtoTKmodifier ml)
-	^ convert ev
+        modified := true;
+        String.concat ~sep:"" (List.map ~f:cCAMLtoTKmodifier ml)
+        ^ convert ev
   in "<" ^ convert ev ^ ">"
 ;;
 

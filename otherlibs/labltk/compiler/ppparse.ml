@@ -26,11 +26,11 @@ let parse_channel ic =
       and loc_end = Lexing.lexeme_end lexbuf
       in
       raise (Error (Printf.sprintf "parse error at char %d, %d: %s" 
-      		 loc_start loc_end s))
+                 loc_start loc_end s))
   | Parsing.Parse_error ->
       let loc_start = Lexing.lexeme_start lexbuf 
       and loc_end = Lexing.lexeme_end lexbuf
       in
       raise (Error (Printf.sprintf "parse error at char %d, %d" 
-      		loc_start loc_end))
+                loc_start loc_end))
 ;;

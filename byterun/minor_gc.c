@@ -98,12 +98,12 @@ void oldify_one (value v, value *p)
           Field (result, 0) = field0;
           Field (result, 1) = oldify_todo_list;    /* Add this block */
           oldify_todo_list = v;                    /*  to the "to do" list. */
-	}else{
+        }else{
           Assert (sz == 1);
           p = &Field (result, 0);
-	  v = field0;
+          v = field0;
           goto tail_call;
-	}
+        }
       }else if (tag >= No_scan_tag){
         sz = Wosize_hd (hd);
         result = alloc_shr (sz, tag);

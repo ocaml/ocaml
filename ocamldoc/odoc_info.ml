@@ -175,15 +175,15 @@ module Search =
   struct 
     type result_element = Odoc_search.result_element =
           Res_module of Module.t_module
-	| Res_module_type of Module.t_module_type
-	| Res_class of Class.t_class
-	| Res_class_type of Class.t_class_type
-	| Res_value of Value.t_value
-	| Res_type of Type.t_type
-	| Res_exception of Exception.t_exception
-	| Res_attribute of Value.t_attribute
-	| Res_method of Value.t_method
-	| Res_section of string
+        | Res_module_type of Module.t_module_type
+        | Res_class of Class.t_class
+        | Res_class_type of Class.t_class_type
+        | Res_value of Value.t_value
+        | Res_type of Type.t_type
+        | Res_exception of Exception.t_exception
+        | Res_attribute of Value.t_attribute
+        | Res_method of Value.t_method
+        | Res_section of string
 
     type search_result = result_element list
 

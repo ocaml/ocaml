@@ -41,11 +41,11 @@ let find fmly wght slant pxlsz =
     else
       let c = get_canvas() in
       try
-	let tag = Canvas.create_text c (Pixels 0) (Pixels 0) 
+        let tag = Canvas.create_text c (Pixels 0) (Pixels 0) 
                                 [Text "foo"; Font fontspec] in
-	   Canvas.delete c [tag];
-	   available_fonts := StringSet.add fontspec !available_fonts;
-	   fontspec
+           Canvas.delete c [tag];
+           available_fonts := StringSet.add fontspec !available_fonts;
+           fontspec
       with
         _ -> raise (Invalid_argument fontspec)
 

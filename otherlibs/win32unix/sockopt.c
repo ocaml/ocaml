@@ -37,7 +37,7 @@ CAMLprim value getsockopt_int(int *sockopt, value socket,
   optsize = sizeof(optval);
   if (getsockopt(Socket_val(socket),
                  level, sockopt[Int_val(option)],
-		 (void *) &optval, &optsize) == -1)
+                 (void *) &optval, &optsize) == -1)
     uerror("getsockopt", Nothing);
   return Val_int(optval);
 }
@@ -48,7 +48,7 @@ CAMLprim value setsockopt_int(int *sockopt, value socket, int level,
   int optval = Int_val(status);
   if (setsockopt(Socket_val(socket),
                  level, sockopt[Int_val(option)],
-		 (void *) &optval, sizeof(optval)) == -1)
+                 (void *) &optval, sizeof(optval)) == -1)
     uerror("setsockopt", Nothing);
   return Val_unit;
 }
@@ -76,12 +76,12 @@ CAMLprim value getsockopt_optint(int *sockopt, value socket,
 {
   struct linger optval;
   int optsize;
-  value res = Val_int(0);			/* None */
+  value res = Val_int(0);                       /* None */
 
   optsize = sizeof(optval);
   if (getsockopt(Socket_val(socket),
                  level, sockopt[Int_val(option)],
-		 (void *) &optval, &optsize) == -1)
+                 (void *) &optval, &optsize) == -1)
     uerror("getsockopt_optint", Nothing);
   if (optval.l_onoff != 0) {
     res = alloc_small(1, 0);
@@ -100,7 +100,7 @@ CAMLprim value setsockopt_optint(int *sockopt, value socket, int level,
     optval.l_linger = Int_val (Field (status, 0));
   if (setsockopt(Socket_val(socket),
                  level, sockopt[Int_val(option)],
-		 (void *) &optval, sizeof(optval)) == -1)
+                 (void *) &optval, sizeof(optval)) == -1)
     uerror("setsockopt_optint", Nothing);
   return Val_unit;
 }
@@ -124,7 +124,7 @@ CAMLprim value getsockopt_float(int *sockopt, value socket,
   optsize = sizeof(tv);
   if (getsockopt(Socket_val(socket),
                  level, sockopt[Int_val(option)],
-		 (void *) &tv, &optsize) == -1)
+                 (void *) &tv, &optsize) == -1)
     uerror("getsockopt_float", Nothing);
   return copy_double((double) tv.tv_sec + (double) tv.tv_usec / 1e6);
 }
@@ -140,7 +140,7 @@ CAMLprim value setsockopt_float(int *sockopt, value socket, int level,
   tv.tv_usec = (int) (1e6 * (tv_f - tv.tv_sec));
   if (setsockopt(Socket_val(socket),
                  level, sockopt[Int_val(option)],
-		 (void *) &tv, sizeof(tv)) == -1)
+                 (void *) &tv, sizeof(tv)) == -1)
     uerror("setsockopt_float", Nothing);
   return Val_unit;
 }

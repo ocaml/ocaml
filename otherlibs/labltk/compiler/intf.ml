@@ -145,11 +145,11 @@ let camltk_write_function_type ~w def =
   List.iter tys ~f:
     begin fun (l, t) ->
       if l <> "" then 
-	if l.[0] = '?' then w (l^":")
-	else begin
-	  have_normal_arg := true;
-	  w (" (* " ^ l ^ ":*)")
-	end
+        if l.[0] = '?' then w (l^":")
+        else begin
+          have_normal_arg := true;
+          w (" (* " ^ l ^ ":*)")
+        end
       else have_normal_arg := true;
       w (ppMLtype t ~counter);
       w " -> "
@@ -171,19 +171,19 @@ let write_external_type ~w def =
       begin try
         let realname = find_in_path !search_path (fname ^ ".mli") in
         let ic = open_in_bin realname in
-	try
-	  let code_list = Ppparse.parse_channel ic in
-	  close_in ic;
+        try
+          let code_list = Ppparse.parse_channel ic in
+          close_in ic;
           if not def.safe then w "(* unsafe *)\n";
-	  List.iter (Ppexec.exec (fun _ -> ()) w)
-	    (if !Flags.camltk then 
-	      Code.Define "CAMLTK" :: code_list else code_list );
+          List.iter (Ppexec.exec (fun _ -> ()) w)
+            (if !Flags.camltk then 
+              Code.Define "CAMLTK" :: code_list else code_list );
           if def.safe then w "\n\n"
           else w "\n(* /unsafe *)\n\n"
-	with
-	| Ppparse.Error s -> 
-	    close_in ic;
-	    raise (Compiler_Error (Printf.sprintf "Preprocess error: %s" s))
+        with
+        | Ppparse.Error s -> 
+            close_in ic;
+            raise (Compiler_Error (Printf.sprintf "Preprocess error: %s" s))
       with
       | Not_found ->
           raise (Compiler_Error ("can't find external file: " ^ fname))

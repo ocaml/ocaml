@@ -12,12 +12,12 @@ type textTag = string;;
 
 (* type *)
 type textModifier =
-  | CharOffset of int		(* tk keyword: +/- Xchars *)
-  | LineOffset of int		(* tk keyword: +/- Xlines *)
-  | LineStart			(* tk keyword: linestart *)
-  | LineEnd			(* tk keyword: lineend *)
-  | WordStart			(* tk keyword: wordstart *)
-  | WordEnd 			(* tk keyword: wordend *)
+  | CharOffset of int           (* tk keyword: +/- Xchars *)
+  | LineOffset of int           (* tk keyword: +/- Xlines *)
+  | LineStart                   (* tk keyword: linestart *)
+  | LineEnd                     (* tk keyword: lineend *)
+  | WordStart                   (* tk keyword: wordstart *)
+  | WordEnd                     (* tk keyword: wordend *)
 ;;
 (* /type *)
 

@@ -58,10 +58,10 @@ touch Makefile.cnf
 
 for i in utils parsing otherlibs/dynlink; do
     if test ! -d "$ocaml_top/$i"; then
-	echo "Bad value $ocaml_top for option -ocaml-top"
+        echo "Bad value $ocaml_top for option -ocaml-top"
         echo "There is no directory $ocaml_top/$i"
-	echo "Configuration script failed"
-	exit 1
+        echo "Configuration script failed"
+        exit 1
     fi
 done
 

@@ -169,77 +169,77 @@ rule main = parse
     {
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or 
-	(!open_brackets >= 1) then
-	Char (Lexing.lexeme lexbuf)
+        (!open_brackets >= 1) then
+        Char (Lexing.lexeme lexbuf)
       else
-	let _ = 
-	  if !ele_ref_mode then
-	    ele_ref_mode := false 
-	in
-	END
+        let _ = 
+          if !ele_ref_mode then
+            ele_ref_mode := false 
+        in
+        END
     }
 | begin_title
     {
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or
-	(!open_brackets >= 1) or !ele_ref_mode then
-	Char (Lexing.lexeme lexbuf)
+        (!open_brackets >= 1) or !ele_ref_mode then
+        Char (Lexing.lexeme lexbuf)
       else
-	let s = Lexing.lexeme lexbuf in
-	try
+        let s = Lexing.lexeme lexbuf in
+        try
           (* chech if the "{..." or html_title mark was used. *)
-	  if s.[0] = '<' then
-	    let (n, l) = (2, (String.length s - 3)) in
-	    let s2 = String.sub s n l in
-	    Title (int_of_string s2, None)
-	  else
-	    let (n, l) = (1, (String.length s - 2)) in
-	    let s2 = String.sub s n l in
-	    try 
-	      let i = String.index s2 ':' in
-	      let s_n = String.sub s2 0 i in
-	      let s_label = String.sub s2 (i+1) (l-i-1) in
-	      Title (int_of_string s_n, Some s_label)
-	    with
-	      Not_found ->
-		Title (int_of_string s2, None)
-	with
-	  _ ->
-	    Title (1, None)
+          if s.[0] = '<' then
+            let (n, l) = (2, (String.length s - 3)) in
+            let s2 = String.sub s n l in
+            Title (int_of_string s2, None)
+          else
+            let (n, l) = (1, (String.length s - 2)) in
+            let s2 = String.sub s n l in
+            try 
+              let i = String.index s2 ':' in
+              let s_n = String.sub s2 0 i in
+              let s_label = String.sub s2 (i+1) (l-i-1) in
+              Title (int_of_string s_n, Some s_label)
+            with
+              Not_found ->
+                Title (int_of_string s2, None)
+        with
+          _ ->
+            Title (1, None)
     } 
 | begin_bold
     { 
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or 
-	(!open_brackets >= 1) or !ele_ref_mode then
-	Char (Lexing.lexeme lexbuf)
+        (!open_brackets >= 1) or !ele_ref_mode then
+        Char (Lexing.lexeme lexbuf)
       else
-	BOLD 
+        BOLD 
     } 
 | begin_italic
     { 
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or 
-	(!open_brackets >= 1) or !ele_ref_mode then
-	Char (Lexing.lexeme lexbuf)
+        (!open_brackets >= 1) or !ele_ref_mode then
+        Char (Lexing.lexeme lexbuf)
       else
-	ITALIC
+        ITALIC
     } 
 | begin_link
     { 
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or
-	(!open_brackets >= 1) or !ele_ref_mode then
-	Char (Lexing.lexeme lexbuf)
+        (!open_brackets >= 1) or !ele_ref_mode then
+        Char (Lexing.lexeme lexbuf)
       else
-	LINK 
+        LINK 
     } 
 | begin_emp
     {
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or
-	(!open_brackets >= 1) or !ele_ref_mode then
-	Char (Lexing.lexeme lexbuf)
+        (!open_brackets >= 1) or !ele_ref_mode then
+        Char (Lexing.lexeme lexbuf)
       else
         EMP 
     }
@@ -247,8 +247,8 @@ rule main = parse
     {
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or
-	(!open_brackets >= 1) or !ele_ref_mode then
-	Char (Lexing.lexeme lexbuf)
+        (!open_brackets >= 1) or !ele_ref_mode then
+        Char (Lexing.lexeme lexbuf)
       else
         SUPERSCRIPT 
     }
@@ -256,8 +256,8 @@ rule main = parse
     {
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or
-	(!open_brackets >= 1) or !ele_ref_mode then
-	Char (Lexing.lexeme lexbuf)
+        (!open_brackets >= 1) or !ele_ref_mode then
+        Char (Lexing.lexeme lexbuf)
       else
         SUBSCRIPT 
     }
@@ -265,17 +265,17 @@ rule main = parse
     {
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or
-	(!open_brackets >= 1) or !ele_ref_mode then
-	Char (Lexing.lexeme lexbuf)
+        (!open_brackets >= 1) or !ele_ref_mode then
+        Char (Lexing.lexeme lexbuf)
       else
-	CENTER
+        CENTER
     }
 | begin_left
     {
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or
-	(!open_brackets >= 1) or !ele_ref_mode then
-	Char (Lexing.lexeme lexbuf)
+        (!open_brackets >= 1) or !ele_ref_mode then
+        Char (Lexing.lexeme lexbuf)
       else
         LEFT
     }
@@ -283,8 +283,8 @@ rule main = parse
      {
       incr_cpts lexbuf ;
        if !verb_mode or !latex_mode or !code_pre_mode 
-	   or (!open_brackets >= 1) or !ele_ref_mode then
-	 Char (Lexing.lexeme lexbuf)
+           or (!open_brackets >= 1) or !ele_ref_mode then
+         Char (Lexing.lexeme lexbuf)
        else
          RIGHT
      }
@@ -292,8 +292,8 @@ rule main = parse
     { 
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or
-	(!open_brackets >= 1) or !ele_ref_mode then
-	Char (Lexing.lexeme lexbuf)
+        (!open_brackets >= 1) or !ele_ref_mode then
+        Char (Lexing.lexeme lexbuf)
       else
         LIST 
     }
@@ -301,43 +301,43 @@ rule main = parse
     { 
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or
-	(!open_brackets >= 1) or !ele_ref_mode then
-	Char (Lexing.lexeme lexbuf)
+        (!open_brackets >= 1) or !ele_ref_mode then
+        Char (Lexing.lexeme lexbuf)
       else
-	ENUM
+        ENUM
     }
 | begin_item
     {
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or
-	(!open_brackets >= 1) or !ele_ref_mode then
-	Char (Lexing.lexeme lexbuf)
+        (!open_brackets >= 1) or !ele_ref_mode then
+        Char (Lexing.lexeme lexbuf)
       else
-	ITEM 
+        ITEM 
     }
 | begin_latex
     {
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or
-	(!open_brackets >= 1) or !ele_ref_mode then
-	Char (Lexing.lexeme lexbuf)
+        (!open_brackets >= 1) or !ele_ref_mode then
+        Char (Lexing.lexeme lexbuf)
       else
-	(
-	 latex_mode := true;
-	 LATEX
-	)
+        (
+         latex_mode := true;
+         LATEX
+        )
     }
 | end_latex
     {
       incr_cpts lexbuf ;
       if !verb_mode or (!open_brackets >= 1) or !code_pre_mode or
-	!ele_ref_mode then
-	Char (Lexing.lexeme lexbuf)
+        !ele_ref_mode then
+        Char (Lexing.lexeme lexbuf)
       else
-	(
-	 latex_mode := false;
-	 END_LATEX
-	)
+        (
+         latex_mode := false;
+         END_LATEX
+        )
     }
 | begin_code end_code
     {
@@ -349,35 +349,35 @@ rule main = parse
     {
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or !ele_ref_mode then
-	Char (Lexing.lexeme lexbuf)
+        Char (Lexing.lexeme lexbuf)
       else
         if !open_brackets <= 0 then
-	  (
-	   open_brackets := 1;
-	   CODE 
-	  )
-	else
-	  (
-	   incr open_brackets;
-	   Char (Lexing.lexeme lexbuf)
-	  )
+          (
+           open_brackets := 1;
+           CODE 
+          )
+        else
+          (
+           incr open_brackets;
+           Char (Lexing.lexeme lexbuf)
+          )
     }
 | end_code
     { 
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or !ele_ref_mode then
-	Char (Lexing.lexeme lexbuf)
+        Char (Lexing.lexeme lexbuf)
       else
-	if !open_brackets > 1 then
-	  (
-	   decr open_brackets;
-	   Char "]"
-	  )
-	else
-	  (
-	   open_brackets := 0;
-	   END_CODE 
-	  )
+        if !open_brackets > 1 then
+          (
+           decr open_brackets;
+           Char "]"
+          )
+        else
+          (
+           open_brackets := 0;
+           END_CODE 
+          )
     }
 
 | begin_code_pre end_code_pre
@@ -390,26 +390,26 @@ rule main = parse
     {
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or !ele_ref_mode then
-	Char (Lexing.lexeme lexbuf)
+        Char (Lexing.lexeme lexbuf)
       else
-	(
-	 code_pre_mode := true;
-	 CODE_PRE
-	)
+        (
+         code_pre_mode := true;
+         CODE_PRE
+        )
     }
 | end_code_pre
     {
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !ele_ref_mode then
-	Char (Lexing.lexeme lexbuf)
+        Char (Lexing.lexeme lexbuf)
       else
-	if !code_pre_mode then 
-	  (
-	   code_pre_mode := false;
-	   END_CODE_PRE 
-	  )
-	else
-	  Char (Lexing.lexeme lexbuf)
+        if !code_pre_mode then 
+          (
+           code_pre_mode := false;
+           END_CODE_PRE 
+          )
+        else
+          Char (Lexing.lexeme lexbuf)
     }
 
 | begin_ele_ref end
@@ -422,66 +422,66 @@ rule main = parse
     {
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or !open_brackets >= 1 then
-	Char (Lexing.lexeme lexbuf)
+        Char (Lexing.lexeme lexbuf)
       else
         if not !ele_ref_mode then
-	  (
-	   ele_ref_mode := true;
-	   ELE_REF
-	  )
-	else
-	  (
-	   Char (Lexing.lexeme lexbuf)
-		     )
+          (
+           ele_ref_mode := true;
+           ELE_REF
+          )
+        else
+          (
+           Char (Lexing.lexeme lexbuf)
+                     )
     }
     
 | begin_verb    
     {
       incr_cpts lexbuf ;
       if !latex_mode or (!open_brackets >= 1) or !code_pre_mode or !ele_ref_mode then
-	Char (Lexing.lexeme lexbuf)
+        Char (Lexing.lexeme lexbuf)
       else
-	(
-	 verb_mode := true;
-	 VERB
-	)
+        (
+         verb_mode := true;
+         VERB
+        )
     }
 | end_verb
     {
       incr_cpts lexbuf ;
       if !latex_mode or (!open_brackets >= 1) or !code_pre_mode or !ele_ref_mode then
-	Char (Lexing.lexeme lexbuf)
+        Char (Lexing.lexeme lexbuf)
       else
-	(
-	 verb_mode := false;
-	 END_VERB
-	)
+        (
+         verb_mode := false;
+         END_VERB
+        )
     }
 
 | shortcut_list_item 
     {
       incr_cpts lexbuf ;
       if !shortcut_list_mode then
-	(
-	 SHORTCUT_LIST_ITEM
-	)
+        (
+         SHORTCUT_LIST_ITEM
+        )
       else
         (
-	 shortcut_list_mode := true;
-	 BEGIN_SHORTCUT_LIST_ITEM
-	)
+         shortcut_list_mode := true;
+         BEGIN_SHORTCUT_LIST_ITEM
+        )
     }
 
 | shortcut_enum_item
     {
       incr_cpts lexbuf ;
       if !shortcut_list_mode then
-	SHORTCUT_ENUM_ITEM
+        SHORTCUT_ENUM_ITEM
       else
         (
-	 shortcut_list_mode := true;
-	 BEGIN_SHORTCUT_ENUM_ITEM
-	)
+         shortcut_list_mode := true;
+         BEGIN_SHORTCUT_ENUM_ITEM
+        )
     }
 | end_shortcut_list
     {
@@ -491,15 +491,15 @@ rule main = parse
       lexbuf.Lexing.lex_last_pos <- lexbuf.Lexing.lex_last_pos - 1;
       decr line_number ;
       if !shortcut_list_mode then
-	(
-	 shortcut_list_mode := false;
-			(* go back one char to re-use the last '\n', so we can 
-			   restart another shortcut-list with a single blank line, 
-			   and not two.*)
-	 END_SHORTCUT_LIST
-	)
+        (
+         shortcut_list_mode := false;
+                        (* go back one char to re-use the last '\n', so we can 
+                           restart another shortcut-list with a single blank line, 
+                           and not two.*)
+         END_SHORTCUT_LIST
+        )
       else
-	BLANK_LINE
+        BLANK_LINE
     } 
    
 | eof           { EOF }
@@ -508,9 +508,9 @@ rule main = parse
     { 
       incr_cpts lexbuf ;
       if !latex_mode or (!open_brackets >= 1) or !code_pre_mode or !ele_ref_mode then
-	Char (Lexing.lexeme lexbuf)
+        Char (Lexing.lexeme lexbuf)
       else
-	ERROR 
+        ERROR 
     }
 | _
     { 

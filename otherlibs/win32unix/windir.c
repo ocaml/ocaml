@@ -36,7 +36,7 @@ CAMLprim value win_findfirst(name)
       if (err == ERROR_NO_MORE_FILES)
         raise_end_of_file();
       else {
-	win32_maperr(err);
+        win32_maperr(err);
         uerror("opendir", Nothing);
       }
     }

@@ -76,10 +76,10 @@ typedef char *(Tcl_VarTraceProc) _ANSI_ARGS_((ClientData clientData,
  */
 static char * tracevar(clientdata, interp, name1, name2, flags)
      ClientData clientdata;
-     Tcl_Interp *interp;	/* Interpreter containing variable. */
-     char *name1;		/* Name of variable. */
-     char *name2;		/* Second part of variable name. */
-     int flags;			/* Information about what happened. */
+     Tcl_Interp *interp;        /* Interpreter containing variable. */
+     char *name1;               /* Name of variable. */
+     char *name2;               /* Second part of variable name. */
+     int flags;                 /* Information about what happened. */
 {
   Tcl_UntraceVar2(interp, name1, name2,
                 TCL_GLOBAL_ONLY|TCL_TRACE_WRITES|TCL_TRACE_UNSETS,

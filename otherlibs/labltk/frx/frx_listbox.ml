@@ -22,7 +22,7 @@ let version = "$Id$"
  *)
 let scroll_link sb lb =
   Listbox.configure lb 
-      	[YScrollCommand (Scrollbar.set sb)];
+        [YScrollCommand (Scrollbar.set sb)];
   Scrollbar.configure sb 
         [ScrollCommand (Listbox.yview lb)]
 
@@ -36,9 +36,9 @@ let scroll_link sb lb =
  *)
 
 let add_completion lb action =
-  let prefx = ref ""		  (* current match prefix *)
+  let prefx = ref ""              (* current match prefix *)
   and maxi = Listbox.size lb - 1 (* maximum index (doesn't matter actually) *)
-  and current = ref 0 		  (* current position *)
+  and current = ref 0             (* current position *)
   and lastevent = ref 0 in
 
   let rec move_forward () =
@@ -71,11 +71,11 @@ let add_completion lb action =
 
   bind lb [[], KeyPress] 
       (BindSet([Ev_Char; Ev_Time], 
-      	  (function ev -> 
-	     (* consider only keys producing characters. The callback is called
-	      * even if you press Shift.
+          (function ev -> 
+             (* consider only keys producing characters. The callback is called
+              * even if you press Shift.
               *)
-      	     if ev.ev_Char <> "" then complete ev.ev_Time ev.ev_Char)));
+             if ev.ev_Char <> "" then complete ev.ev_Time ev.ev_Char)));
   (* Key specific bindings override KeyPress *)
   bind lb [[], KeyPressDetail "Return"] (BindSet([], action));
   (* Finally, we have to set focus, otherwise events dont get through *)

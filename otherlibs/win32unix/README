@@ -91,7 +91,7 @@ diff -c -r d:/msdev/crt/src/osfinfo.c crt/src/osfinfo.c
 ! 				return -1;
           }
 + #else
-+ 		/* Windows 95 lossage */
++                 /* Windows 95 lossage */
 +         if (isdev == FILE_TYPE_UNKNOWN) isdev = FILE_TYPE_PIPE;
   
 + #endif

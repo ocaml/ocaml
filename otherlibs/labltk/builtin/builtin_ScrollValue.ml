@@ -2,9 +2,9 @@
 
 (* type *)
 type scrollValue =
-  | ScrollPage of int		(* tk option: scroll <int> page *)
-  | ScrollUnit of int		(* tk option: scroll <int> unit *)
-  | MoveTo of float		(* tk option: moveto <float> *)
+  | ScrollPage of int           (* tk option: scroll <int> page *)
+  | ScrollUnit of int           (* tk option: scroll <int> unit *)
+  | MoveTo of float             (* tk option: moveto <float> *)
 ;;
 (* /type *)
 

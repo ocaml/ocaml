@@ -7,8 +7,8 @@ let own_set v1 v2 =
     TkToken"own";
     TkTokenList 
       (List.map 
-    	 (function x -> cCAMLtoTKicccm v2 icccm_selection_ownset_table x)
-    	 v1);
+         (function x -> cCAMLtoTKicccm v2 icccm_selection_ownset_table x)
+         v1);
     cCAMLtoTKwidget widget_any_table v2
   |]
 ;;

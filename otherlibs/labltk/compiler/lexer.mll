@@ -162,8 +162,8 @@ and comment = parse
 and linenum = parse
  | ['0'-'9']+ { 
             let next_line = int_of_string (Lexing.lexeme lexbuf) in
-	    current_line := next_line - 1
-	  }
+            current_line := next_line - 1
+          }
  | _ { raise (Lexical_error("illegal ##line directive: no line number"))}
 
 and line = parse

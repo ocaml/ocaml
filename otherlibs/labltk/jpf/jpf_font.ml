@@ -80,9 +80,9 @@ let parse_xlfd xlfd_string =
       if cur >= len then [String.sub str beg (len - beg)]
       else if char_sep (String.get str cur) 
       then 
-	let nextw = succ cur in
-	(String.sub str beg (cur - beg))
-	::(split nextw nextw)
+        let nextw = succ cur in
+        (String.sub str beg (cur - beg))
+        ::(split nextw nextw)
       else split beg (succ cur) in
     split 0 0
   in
@@ -190,11 +190,11 @@ let nearest_pixel_size dispname vector_ok pattern =
   Hashtbl.iter (fun s xlfd ->
     if vector_ok then
       if s = 0 then begin
-	if is_vector_font xlfd then begin
-	  log (Printf.sprintf "%s is vector" (string_of_valid_xlfd xlfd));
-	  xlfd.pixelSize <- pxlsz;
-	  Hashtbl.add newtbl pxlsz xlfd
-	end
+        if is_vector_font xlfd then begin
+          log (Printf.sprintf "%s is vector" (string_of_valid_xlfd xlfd));
+          xlfd.pixelSize <- pxlsz;
+          Hashtbl.add newtbl pxlsz xlfd
+        end
       end else Hashtbl.add newtbl s xlfd
     else if not (is_vector_font xlfd) && s <> 0 then
       Hashtbl.add newtbl s xlfd) tbl;

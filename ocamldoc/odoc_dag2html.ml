@@ -1661,54 +1661,54 @@ let create_class_dag cl_list clt_list =
   let all_classes =
     let rec iter list2 = 
       List.fold_left
-	(fun acc -> fun (name, cct_opt) -> 
-	  let l = 
-	    match cct_opt with
-	      None -> []
-	    | Some (M.Cl c) ->
-		iter 
-		  (List.map 
-		     (fun inh ->(inh.M.ic_name, inh.M.ic_class))
-		     (match c.M.cl_kind with
-		       M.Class_structure (inher_l, _) ->
-			 inher_l
-		     | _ ->
-			 []
-		     )
-		  )
-	    | Some (M.Cltype (ct, _)) ->
-		iter 
-		  (List.map 
-		     (fun inh ->(inh.M.ic_name, inh.M.ic_class))
-		     (match ct.M.clt_kind with
-		       M.Class_signature (inher_l, _) ->
-			 inher_l
-		     | _ ->
-			 []
-		     )
-		  )
-	  in
-	  (name, cct_opt) :: (acc @ l)
-	)
-	[]
-	list2
+        (fun acc -> fun (name, cct_opt) -> 
+          let l = 
+            match cct_opt with
+              None -> []
+            | Some (M.Cl c) ->
+                iter 
+                  (List.map 
+                     (fun inh ->(inh.M.ic_name, inh.M.ic_class))
+                     (match c.M.cl_kind with
+                       M.Class_structure (inher_l, _) ->
+                         inher_l
+                     | _ ->
+                         []
+                     )
+                  )
+            | Some (M.Cltype (ct, _)) ->
+                iter 
+                  (List.map 
+                     (fun inh ->(inh.M.ic_name, inh.M.ic_class))
+                     (match ct.M.clt_kind with
+                       M.Class_signature (inher_l, _) ->
+                         inher_l
+                     | _ ->
+                         []
+                     )
+                  )
+          in
+          (name, cct_opt) :: (acc @ l)
+        )
+        []
+        list2
     in
     iter list
   in
   let rec distinct acc = function
     [] ->
       acc
-    |	(name, cct_opt) :: q ->
-	if List.exists (fun (name2, _) -> name = name2) acc then
-	  distinct acc q
-	else
-	  distinct ((name, cct_opt) :: acc) q
+    |   (name, cct_opt) :: q ->
+        if List.exists (fun (name2, _) -> name = name2) acc then
+          distinct acc q
+        else
+          distinct ((name, cct_opt) :: acc) q
   in
   let distinct_classes = distinct [] all_classes in
   let liste_index = 
     let rec f n = function
-	[] -> []
-      |	(name, _) :: q -> (name, n) :: (f (n+1) q)
+        [] -> []
+      | (name, _) :: q -> (name, n) :: (f (n+1) q)
     in
     f 0 distinct_classes
   in
@@ -1716,24 +1716,24 @@ let create_class_dag cl_list clt_list =
   (* create the dag array, filling parents and values *)
   let fmap (name, cct_opt) = 
     { pare = List.map
-	(fun inh -> List.assoc inh.M.ic_name liste_index )
-	(match cct_opt with
-	  None -> []
-	| Some (M.Cl c) ->
-	    (match c.M.cl_kind with
-	      M.Class_structure (inher_l, _) ->
-		inher_l
-	    | _ ->
-		[]
-	    )
-	| Some (M.Cltype (ct, _)) ->
-	    (match ct.M.clt_kind with
-	      M.Class_signature (inher_l, _) ->
-		inher_l
-	    | _ ->
-		[]
-	    )
-	);
+        (fun inh -> List.assoc inh.M.ic_name liste_index )
+        (match cct_opt with
+          None -> []
+        | Some (M.Cl c) ->
+            (match c.M.cl_kind with
+              M.Class_structure (inher_l, _) ->
+                inher_l
+            | _ ->
+                []
+            )
+        | Some (M.Cltype (ct, _)) ->
+            (match ct.M.clt_kind with
+              M.Class_signature (inher_l, _) ->
+                inher_l
+            | _ ->
+                []
+            )
+        );
       valu = (name, cct_opt) ;
       chil = []
     } 
@@ -1743,7 +1743,7 @@ let create_class_dag cl_list clt_list =
   let fiter i node =
     let l = Array.to_list dag.dag in
     let l2 = List.map (fun n -> n.valu)
-	(List.filter (fun n -> List.mem i n.pare) l)
+        (List.filter (fun n -> List.mem i n.pare) l)
     in
     node.chil <- List.map (fun (name,_) -> List.assoc name liste_index) l2
   in
@@ -1752,4 +1752,4 @@ let create_class_dag cl_list clt_list =
 
       
       
-	
+        

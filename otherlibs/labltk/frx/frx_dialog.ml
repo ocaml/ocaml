@@ -41,7 +41,7 @@ let f w name title mesg bitmap def buttons =
    Label.create_named ftop "msg" 
      [Justify Justify_Left; Text mesg; WrapLength (Pixels 600)] in
      pack [l][Side Side_Right; Expand true; Fill Fill_Both;
-       	      PadX (Millimeters 3.0); PadY (Millimeters 3.0)];
+              PadX (Millimeters 3.0); PadY (Millimeters 3.0)];
   begin match bitmap with
      Predefined "" -> ()
   |  _ ->
@@ -55,21 +55,21 @@ let f w name title mesg bitmap def buttons =
   let buttons =
     mapi (fun i bname ->
      let b = Button.create t 
-      	      [Text bname; 
-      	       Command (fun () -> Textvariable.set waitv (string_of_int i))] in
+              [Text bname; 
+               Command (fun () -> Textvariable.set waitv (string_of_int i))] in
     if i = def then begin
       let f = Frame.create_named fbot "default" 
-      	         [Relief Sunken; BorderWidth (Pixels 1)] in
+                 [Relief Sunken; BorderWidth (Pixels 1)] in
         raise_window_above b f;
-	pack [f][Side Side_Left; Expand true; 
-      	         PadX (Millimeters 3.0); PadY (Millimeters 2.0)];
+        pack [f][Side Side_Left; Expand true; 
+                 PadX (Millimeters 3.0); PadY (Millimeters 2.0)];
         pack [b][In f; PadX (Millimeters 2.0); PadY (Millimeters 2.0)];
-	bind t [[], KeyPressDetail "Return"]
-	 (BindSet ([], (fun _ -> Button.flash b; Button.invoke b)))
-	end
+        bind t [[], KeyPressDetail "Return"]
+         (BindSet ([], (fun _ -> Button.flash b; Button.invoke b)))
+        end
     else
       pack [b][In fbot; Side Side_Left; Expand true; 
-      	       PadX (Millimeters 3.0); PadY (Millimeters 2.0)];
+               PadX (Millimeters 3.0); PadY (Millimeters 2.0)];
     b
     )
     0 buttons in
@@ -106,9 +106,9 @@ let f w name title mesg bitmap def buttons =
      [] -> ()
    | x::l -> 
       try
-	match !grabstatus with
-       	  Some(GrabGlobal) -> Grab.set_global x
-      	| _ -> Grab.set x
+        match !grabstatus with
+          Some(GrabGlobal) -> Grab.set_global x
+        | _ -> Grab.set x
       with TkError _ -> ()
    end;
 
