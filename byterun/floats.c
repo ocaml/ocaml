@@ -360,18 +360,18 @@ value classify_float(value vd)   /* ML */
    so that it behaves as much as possible like the IEEE standard.
    In particular, return special numbers like Infinity and NaN instead
    of signalling exceptions.  Currently, everyone is in IEEE mode
-   at program startup. */
+   at program startup, except FreeBSD prior to 4.0R. */
 
 #ifdef __FreeBSD__
 #include <osreldate.h>
-#if (__FreeBSD_version < 310000)
+#if (__FreeBSD_version < 400017)
 #include <floatingpoint.h>
 #endif
 #endif
 
 void init_ieee_floats(void)
 {
-#if defined(__FreeBSD__) && (__FreeBSD_version < 310000)
-  fpsetmask(fpgetmask() & ~(FP_X_DZ | FP_X_INV));
+#if defined(__FreeBSD__) && (__FreeBSD_version < 400017)
+  fpsetmask(0);
 #endif
 }
