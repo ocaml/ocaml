@@ -116,7 +116,15 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
     Array.fold_right (fold_bucket 0) t.table init
   ;;
 
-  let iter f t = fold (fun d () -> ()) t ();;
+  let iter f t =
+    let rec iter_bucket i b =
+      if i >= length b then () else
+      match get b i with
+      | Some v -> f v; iter_bucket (i+1) b
+      | None -> iter_bucket (i+1) b
+    in
+    Array.iter (iter_bucket 0) t.table
+  ;;
 
   let count t =
     let rec count_bucket i b accu =
