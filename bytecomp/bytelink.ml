@@ -508,8 +508,10 @@ let fix_exec_name name =
 (* Main entry point (build a custom runtime if needed) *)
 
 let link objfiles =
-  let objfiles = if !Clflags.nopervasives then objfiles
-                 else "stdlib.cma" :: (objfiles @ ["std_exit.cmo"]) in
+  let objfiles =
+    if !Clflags.nopervasives then objfiles
+    else if !Clflags.output_c_object then "stdlib.cma" :: objfiles
+    else "stdlib.cma" :: (objfiles @ ["std_exit.cmo"]) in
   let tolink = List.fold_right scan_file objfiles [] in
   Clflags.ccobjs := !Clflags.ccobjs @ !lib_ccobjs; (* put user's libs last *)
   Clflags.ccopts := !lib_ccopts @ !Clflags.ccopts; (* put user's opts first *)
