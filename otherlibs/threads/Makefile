@@ -23,6 +23,8 @@ threads.cma: $(CAML_OBJS)
 clean:
 	rm -f libthreads.a *.o *.cm*
 
+realclean: clean
+
 install:
 	cp libthreads.a $(LIBDIR)/libthreads.a
 	cd $(LIBDIR); $(RANLIB) libthreads.a
