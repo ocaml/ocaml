@@ -185,15 +185,15 @@ The identifiers below are reserved as keywords, and cannot be employed
 otherwise:
 \begin{verbatim}
       and         as          assert      asr         begin       class
-      closed      constraint  do          done        downto      else
-      end         exception   external    false       for         fun
-      function    functor     if          in          include     inherit
-      initializer land        lazy        let         lor         lsl
-      lsr         lxor        match       method      mod         module
-      mutable     new         object      of          open        or
-      parser      private     rec         sig         struct      then
-      to          true        try         type        val         virtual
-      when        while       with        
+      constraint  do          done        downto      else        end
+      exception   external    false       for         fun         function
+      functor     if          in          include     inherit     initializer
+      land        lazy        let         lor         lsl         lsr
+      lxor        match       method      mod         module      mutable
+      new         object      of          open        or          parser
+      private     rec         sig         struct      then        to
+      true        try         type        val         virtual     when
+      while       with        
 \end{verbatim}
 %
 The following character sequences are also keywords:
