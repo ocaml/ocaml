@@ -71,6 +71,7 @@ rule main = parse
       | "parse" -> Tparse
       | "and" -> Tand
       | "eof" -> Teof
+      | "let" -> Tlet
       | s -> Tident s }
   | '"' 
     { reset_string_buffer();
@@ -90,7 +91,6 @@ rule main = parse
   | '='  { Tequal }
   | '|'  { Tor }
   | '_'  { Tunderscore }
-  | "eof"  { Teof }
   | '['  { Tlbracket }
   | ']'  { Trbracket }
   | '*'  { Tstar }

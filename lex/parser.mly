@@ -18,6 +18,9 @@ open Syntax
 
 (* Auxiliaries for the parser. *)
 
+let named_regexps =
+  (Hashtbl.create 13 : (string, regular_expression) Hashtbl.t)
+
 let regexp_for_string s =
   let rec re_string n =
     if n >= String.length s then Epsilon
@@ -43,7 +46,7 @@ let rec subtract l1 l2 =
 %token <string> Tstring
 %token <Syntax.location> Taction
 %token Trule Tparse Tand Tequal Tend Tor Tunderscore Teof Tlbracket Trbracket
-%token Tstar Tmaybe Tplus Tlparen Trparen Tcaret Tdash
+%token Tstar Tmaybe Tplus Tlparen Trparen Tcaret Tdash Tlet
 
 %left Tor
 %left CONCAT
@@ -57,21 +60,27 @@ let rec subtract l1 l2 =
 %%
 
 lexer_definition:
-    header Trule definition other_definitions header Tend
+    header named_regexps Trule definition other_definitions header Tend
         { {header = $1;
-           entrypoints = $3::(List.rev $4);
-           trailer = $5} }
+           entrypoints = $4 :: List.rev $5;
+           trailer = $6} }
 ;
 header:
     Taction
         { $1 }
-  |
+  | /*epsilon*/
         { Location(0,0) }
+;
+named_regexps:
+    named_regexps Tlet Tident Tequal regexp
+        { Hashtbl.add named_regexps $3 $5 }
+  | /*epsilon*/
+        { () }
 ;
 other_definitions:
     other_definitions Tand definition
         { $3::$1 }
-  |     
+  | /*epsilon*/
         { [] }
 ;
 definition:
@@ -117,6 +126,16 @@ regexp:
         { Sequence($1,$2) }
   | Tlparen regexp Trparen
         { $2 }
+  | Tident
+        { try
+            Hashtbl.find named_regexps $1
+          with Not_found ->
+            prerr_string "Reference to unbound regexp name `";
+            prerr_string $1;
+            prerr_string "' at char ";
+            prerr_int (Parsing.symbol_start());
+            prerr_newline();
+            exit 2 }
 ;
 char_class:
     Tcaret char_class1

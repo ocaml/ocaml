@@ -161,28 +161,36 @@ let report_error = function
 
 }
 
+let blank = [' ' '\010' '\013' '\009' '\012']
+let lowercase = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
+let uppercase = ['A'-'Z' '\192'-'\214' '\216'-'\222']
+let identchar = 
+  ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
+let symbolchar =
+  ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
+let decimal_literal = ['0'-'9']+
+let hex_literal = '0' ['x' 'X'] ['0'-'9' 'A'-'F' 'a'-'f']+
+let oct_literal = '0' ['o' 'O'] ['0'-'7']+
+let bin_literal = '0' ['b' 'B'] ['0'-'1']+
+let float_literal =
+  ['0'-'9']+ ('.' ['0'-'9']*)? (['e' 'E'] ['+' '-']? ['0'-'9']+)?
+
 rule token = parse
-    [' ' '\010' '\013' '\009' '\012'] +
+    blank +
       { token lexbuf }
-  | "_"  { UNDERSCORE }
-  | ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
-    (['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255'
-      '\'' '0'-'9' ]) *
+  | "_"
+      { UNDERSCORE }
+  | lowercase identchar *
       { let s = Lexing.lexeme lexbuf in
           try
             Hashtbl.find keyword_table s
           with Not_found ->
             LIDENT s }
-  | ['A'-'Z' '\192'-'\214' '\216'-'\222' ]
-    (['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255'
-      '\'' '0'-'9' ]) *
+  | uppercase identchar *
       { UIDENT(Lexing.lexeme lexbuf) }       (* No capitalized keywords *)
-  | ['0'-'9']+
-    | '0' ['x' 'X'] ['0'-'9' 'A'-'F' 'a'-'f']+
-    | '0' ['o' 'O'] ['0'-'7']+
-    | '0' ['b' 'B'] ['0'-'1']+
+  | decimal_literal | hex_literal | oct_literal | bin_literal
       { INT (int_of_string(Lexing.lexeme lexbuf)) }
-  | ['0'-'9']+ ('.' ['0'-'9']*)? (['e' 'E'] ['+' '-']? ['0'-'9']+)?
+  | float_literal
       { FLOAT (Lexing.lexeme lexbuf) }
   | "\""
       { reset_string_buffer();
@@ -246,23 +254,17 @@ rule token = parse
   | "-"  { SUBTRACTIVE "-" }
   | "-." { SUBTRACTIVE "-." }
 
-  | ['!' '?' '~']
-    ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~'] *
+  | ['!' '?' '~'] symbolchar *
             { PREFIXOP(Lexing.lexeme lexbuf) }
-  | ['=' '<' '>' '|' '&' '$']
-    ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~'] *
+  | ['=' '<' '>' '|' '&' '$'] symbolchar *
             { INFIXOP0(Lexing.lexeme lexbuf) }
-  | ['@' '^']
-    ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~'] *
+  | ['@' '^'] symbolchar *
             { INFIXOP1(Lexing.lexeme lexbuf) }
-  | ['+' '-']
-    ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~'] *
+  | ['+' '-'] symbolchar *
             { INFIXOP2(Lexing.lexeme lexbuf) }
-  | "**"
-    ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~'] *
+  | "**" symbolchar *
             { INFIXOP4(Lexing.lexeme lexbuf) }
-  | ['*' '/' '%']
-    ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~'] *
+  | ['*' '/' '%'] symbolchar *
             { INFIXOP3(Lexing.lexeme lexbuf) }
   | eof { EOF }
   | _
