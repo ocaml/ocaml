@@ -90,11 +90,13 @@ let empty = {
 type pers_struct =
   { ps_name: string;
     ps_sig: signature;
-    ps_comps: module_components;
+    ps_comps: module_components Lazy.t;
     ps_crcs: (string * Digest.t) list }
 
 let persistent_structures =
   (Hashtbl.create 17 : (string, pers_struct) Hashtbl.t)
+
+let components_of_module' = ref (fun _ _ _ _ -> assert false)
 
 let read_pers_struct modname filename =
   let ic = open_in_bin filename in
@@ -105,9 +107,12 @@ let read_pers_struct modname filename =
       close_in ic;
       raise(Error(Not_an_interface filename))
     end;
-    let (name, sign, comps) = input_value ic in
+    let (name, sign) = input_value ic in
     let crcs = input_value ic in
     close_in ic;
+    let comps = lazy
+	(!components_of_module' empty Subst.identity
+	   (Pident(Ident.create_persistent name)) (Tmty_signature sign)) in
     let ps = { ps_name = name;
                ps_sig = sign;
                ps_comps = comps;
@@ -151,7 +156,7 @@ let rec find_module_descr path env =
         in desc
       with Not_found ->
         if Ident.persistent id
-        then (find_pers_struct (Ident.name id)).ps_comps
+        then Lazy.force (find_pers_struct (Ident.name id)).ps_comps
         else raise Not_found
       end
   | Pdot(p, s, pos) ->
@@ -238,7 +243,7 @@ let rec lookup_module_descr lid env =
         Ident.find_name s env.components
       with Not_found ->
         let ps = find_pers_struct s in
-        (Pident(Ident.create_persistent s), ps.ps_comps)
+        (Pident(Ident.create_persistent s), Lazy.force ps.ps_comps)
       end
   | Ldot(l, s) ->
       let (p, descr) = lookup_module_descr l env in
@@ -598,6 +603,8 @@ and store_cltype id path desc env =
     cltypes = Ident.add id (path, desc) env.cltypes;
     summary = Env_cltype(env.summary, id, desc) }
 
+let _ = components_of_module' := components_of_module
+
 (* Memoized function to compute the components of a functor application
    in a path. *)
 
@@ -748,12 +755,12 @@ let imported_units() =
 
 let save_signature sg modname filename =
   Btype.cleanup_abbrev ();
-  let comps =
-    components_of_module empty Subst.identity
-       (Pident(Ident.create_persistent modname)) (Tmty_signature sg) in
+  let comps = lazy
+    (components_of_module empty Subst.identity
+       (Pident(Ident.create_persistent modname)) (Tmty_signature sg)) in
   let oc = open_out_bin filename in
   output_string oc cmi_magic_number;
-  output_value oc (modname, sg, comps);
+  output_value oc (modname, sg);
   flush oc;
   let crc = Digest.file filename in
   let crcs = (modname, crc) :: imported_units() in

@@ -15,7 +15,7 @@ OBJS=pervasives.cmo list.cmo char.cmo string.cmo array.cmo sys.cmo \
   set.cmo map.cmo stack.cmo queue.cmo stream.cmo \
   buffer.cmo printf.cmo format.cmo arg.cmo printexc.cmo gc.cmo \
   digest.cmo random.cmo oo.cmo genlex.cmo callback.cmo weak.cmo \
-  lazy.cmo stdlabel.cmo morelabel.cmo
+  lazy.cmo
 
 all: stdlib.cma std_exit.cmo camlheader camlheader_ur
 

@@ -51,17 +51,17 @@ val add_char : t -> char -> unit
 val add_string : t -> string -> unit
      (* [add_string b s] appends the string [s] at the end of
         the buffer [b]. *)
-val add_substring : t -> string -> int -> int -> unit
+val add_substring : t -> string -> pos:int -> len:int -> unit
      (* [add_substring b s ofs len] takes [len] characters from offset
         [ofs] in string [s] and appends them at the end of the buffer [b]. *)
 val add_buffer : t -> t -> unit
      (* [add_buffer b1 b2] appends the current contents of buffer [b2]
         at the end of buffer [b1].  [b2] is not modified. *)
-val add_channel : t -> in_channel -> int -> unit
+val add_channel : t -> in_channel -> len:int -> unit
      (* [add_channel b ic n] reads exactly [n] character from the
         input channel [ic] and stores them at the end of buffer [b].
         Raise [End_of_file] if the channel contains fewer than [n]
         characters. *)
-val output_buffer : out_channel -> t -> unit
+val output_buffer : to:out_channel -> t -> unit
      (* [output_buffer oc b] writes the current contents of buffer [b]
         on the output channel [oc]. *)

@@ -223,7 +223,8 @@ val set_formatter_out_channel : out_channel -> unit;;
         (* Redirect the pretty-printer output to the given channel. *)
 
 val set_formatter_output_functions :
-      (string -> int -> int -> unit) -> (unit -> unit) -> unit;;
+      out:(buffer:string -> pos:int -> len:int -> unit) ->
+      flush:(unit -> unit) -> unit;;
         (* [set_formatter_output_functions out flush] redirects the
            pretty-printer output to the functions [out] and [flush].
            The [out] function performs the pretty-printer output.
@@ -233,13 +234,14 @@ val set_formatter_output_functions :
            called whenever the pretty-printer is flushed using
            [print_flush] or [print_newline]. *)
 val get_formatter_output_functions :
-        unit -> (string -> int -> int -> unit) * (unit -> unit);;
+      unit -> (buffer:string -> pos:int -> len:int -> unit) * (unit -> unit);;
         (* Return the current output functions of the pretty-printer. *)
 
 (*** Changing the meaning of indentation and line breaking *)
 val set_all_formatter_output_functions :
-      (string -> int -> int -> unit) -> (unit -> unit) ->
-      (unit -> unit) -> (int -> unit) -> unit;;
+      out:(buffer:string -> pos:int -> len:int -> unit) ->
+      flush:(unit -> unit) ->
+      newline:(unit -> unit) -> space:(int -> unit) -> unit;;
         (* [set_all_formatter_output_functions out flush outnewline outspace]
            redirects the pretty-printer output to the functions
            [out] and [flush] as described in
@@ -256,7 +258,7 @@ val set_all_formatter_output_functions :
            [outspace] and [outnewline] are [out (String.make n ' ') 0 n]
            and [out "\n" 0 1]. *)
 val get_all_formatter_output_functions : unit ->
-        (string -> int -> int -> unit) * (unit -> unit) *
+        (buffer:string -> pos:int -> len:int -> unit) * (unit -> unit) *
         (unit -> unit) * (int -> unit);;
         (* Return the current output functions of the pretty-printer,
            including line breaking and indentation functions. *)

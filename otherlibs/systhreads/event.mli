@@ -25,7 +25,7 @@ val new_channel: unit -> 'a channel
 
 type 'a event
         (* The type of communication events returning a result of type ['a]. *)
-val send: 'a channel -> 'a -> unit event
+val send: to:'a channel -> 'a -> unit event
         (* [send ch v] returns the event consisting in sending the value [v]
            over the channel [ch]. The result value of this event is [()]. *) 
 val receive: 'a channel -> 'a event
@@ -38,11 +38,11 @@ val always: 'a -> 'a event
 val choose: 'a event list -> 'a event
         (* [choose evl] returns the event that is the alternative of
            all the events in the list [evl]. *)
-val wrap: 'a event -> ('a -> 'b) -> 'b event
+val wrap: 'a event -> fun:('a -> 'b) -> 'b event
         (* [wrap ev fn] returns the event that performs the same communications
            as [ev], then applies the post-processing function [fn]
            on the return value. *)
-val wrap_abort: 'a event -> (unit -> unit) -> 'a event
+val wrap_abort: 'a event -> fun:(unit -> unit) -> 'a event
         (* [wrap_abort ev fn] returns the event that performs
            the same communications as [ev], but if it is not selected
            the function [fn] is called after the synchronization. *)

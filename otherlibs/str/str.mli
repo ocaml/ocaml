@@ -55,20 +55,24 @@ val regexp_string_case_fold: string -> regexp
 
 (*** String matching and searching *)
 
-external string_match: regexp -> string -> int -> bool = "str_string_match"
+external string_match: regexp -> string -> pos:int -> bool
+	 = "str_string_match"
         (* [string_match r s start] tests whether the characters in [s]
            starting at position [start] match the regular expression [r].
            The first character of a string has position [0], as usual. *)
-external search_forward: regexp -> string -> int -> int = "str_search_forward"
+external search_forward: regexp -> string -> pos:int -> int
+	 = "str_search_forward"
         (* [search_forward r s start] searchs the string [s] for a substring
            matching the regular expression [r]. The search starts at position
            [start] and proceeds towards the end of the string.
            Return the position of the first character of the matched
            substring, or raise [Not_found] if no substring matches. *)
-external search_backward: regexp -> string -> int -> int = "str_search_backward"
+external search_backward: regexp -> string -> pos:int -> int
+	 = "str_search_backward"
         (* Same as [search_forward], but the search proceeds towards the
            beginning of the string. *)
-external string_partial_match: regexp -> string -> int -> bool = "str_string_partial_match"
+external string_partial_match: regexp -> string -> pos:int -> bool
+	 = "str_string_partial_match"
         (* Similar to [string_match], but succeeds whenever the argument
            string is a prefix of a string that matches.  This includes
            the case of a true complete match. *)
@@ -101,23 +105,23 @@ val group_end: int -> int
 
 (*** Replacement *)
 
-val global_replace: regexp -> string -> string -> string
+val global_replace: regexp -> with:string -> string -> string
         (* [global_replace regexp repl s] returns a string identical to [s],
            except that all substrings of [s] that match [regexp] have been
            replaced by [repl]. The replacement text [repl] can contain
            [\1], [\2], etc; these sequences will be replaced by the text
            matched by the corresponding group in the regular expression.
            [\0] stands for the text matched by the whole regular expression. *)
-val replace_first: regexp -> string -> string -> string
+val replace_first: regexp -> with:string -> string -> string
         (* Same as [global_replace], except that only the first substring
            matching the regular expression is replaced. *)
-val global_substitute: regexp -> (string -> string) -> string -> string
+val global_substitute: regexp -> with:(string -> string) -> string -> string
         (* [global_substitute regexp subst s] returns a string identical
            to [s], except that all substrings of [s] that match [regexp]
            have been replaced by the result of function [subst]. The
            function [subst] is called once for each matching substring,
            and receives [s] (the whole text) as argument. *)
-val substitute_first: regexp -> (string -> string) -> string -> string
+val substitute_first: regexp -> with:(string -> string) -> string -> string
         (* Same as [global_substitute], except that only the first substring
            matching the regular expression is replaced. *)
 val replace_matched : string -> string -> string
@@ -129,18 +133,18 @@ val replace_matched : string -> string -> string
 
 (*** Splitting *)
 
-val split: regexp -> string -> string list
+val split: sep:regexp -> string -> string list
         (* [split r s] splits [s] into substrings, taking as delimiters
            the substrings that match [r], and returns the list of substrings.
            For instance, [split (regexp "[ \t]+") s] splits [s] into
            blank-separated words.  An occurrence of the delimiter at the
            beginning and at the end of the string is ignored. *)
-val bounded_split: regexp -> string -> int -> string list
+val bounded_split: sep:regexp -> string -> int -> string list
         (* Same as [split], but splits into at most [n] substrings,
            where [n] is the extra integer parameter. *)
 
-val split_delim: regexp -> string -> string list
-val bounded_split_delim: regexp -> string -> int -> string list
+val split_delim: sep:regexp -> string -> string list
+val bounded_split_delim: sep:regexp -> string -> int -> string list
         (* Same as [split] and [bounded_split], but occurrences of the
            delimiter at the beginning and at the end of the string are
            recognized and returned as empty strings in the result.
@@ -150,8 +154,8 @@ val bounded_split_delim: regexp -> string -> int -> string list
 
 type split_result = Text of string | Delim of string
 
-val full_split: regexp -> string -> split_result list
-val bounded_full_split: regexp -> string -> int -> split_result list
+val full_split: sep:regexp -> string -> split_result list
+val bounded_full_split: sep:regexp -> string -> int -> split_result list
         (* Same as [split_delim] and [bounded_split_delim], but returns
            the delimiters as well as the substrings contained between
            delimiters.  The former are tagged [Delim] in the result list;
@@ -161,17 +165,17 @@ val bounded_full_split: regexp -> string -> int -> split_result list
 
 (*** Extracting substrings *)
 
-val string_before: string -> int -> string
+val string_before: string -> pos:int -> string
         (* [string_before s n] returns the substring of all characters of [s]
            that precede position [n] (excluding the character at 
            position [n]). *)
-val string_after: string -> int -> string
+val string_after: string -> pos:int -> string
         (* [string_after s n] returns the substring of all characters of [s]
            that follow position [n] (including the character at 
            position [n]). *)
-val first_chars: string -> int -> string
+val first_chars: string -> pos:int -> string
         (* [first_chars s n] returns the first [n] characters of [s].
            This is the same function as [string_before]. *)
-val last_chars: string -> int -> string
+val last_chars: string -> pos:int -> string
         (* [last_chars s n] returns the last [n] characters of [s]. *)
 

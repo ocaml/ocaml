@@ -42,6 +42,7 @@ type error =
   | Method_type_mismatch of string * (type_expr * type_expr) list
   | Structure_expected of class_type
   | Cannot_apply of class_type
+  | Apply_wrong_label of label
   | Pattern_type_clash of type_expr
   | Repeated_parameter
   | Unbound_class of Longident.t

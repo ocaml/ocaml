@@ -839,6 +839,8 @@ and type_application env funct sargs =
 	   (fun ty_fun (l,ty,lv) -> newty2 lv (Tarrow(l,ty,ty_fun)))
 	   ty_fun omitted)
     | (l1, sarg1) :: sargl ->
+	if !Clflags.classic && l1 <> "" then
+	  raise(Error(funct.exp_loc, Apply_wrong_label l1));
         let (ty1, ty2) =
           try
             filter_arrow env ty_fun l1
@@ -852,14 +854,30 @@ and type_application env funct sargs =
         let arg1 = type_expect env sarg1 ty1 in
         type_unknown_args (Some arg1 :: args) omitted ty2 sargl
   in
-  let rec type_args args omitted ty_fun sargs =
+  let rec type_args args omitted ty_fun sargs more_sargs =
     match expand_head env ty_fun with
-      {desc=Tarrow (l, ty, ty_fun); level=lv} when sargs <> [] ->
+      {desc=Tarrow (l, ty, ty_fun); level=lv}
+      when sargs <> [] || more_sargs <> [] ->
 	let name = label_name l in
-	let sargs, sarg =
-	  try
-	    let (l', sarg0, sargs) = extract_label name sargs in
-	    sargs,
+	let sargs, more_sargs, sarg =
+	  if !Clflags.classic && not (is_optional l) then begin
+	    if sargs <> [] then 
+	      raise(Error(funct.exp_loc,
+			  Apply_wrong_label(fst (List.hd sargs))));
+	    let (l', sarg0) = List.hd more_sargs in
+	    if l <> l' && l' <> "" then
+	      raise(Error(funct.exp_loc, Apply_wrong_label l'))
+	    else ([], List.tl more_sargs, Some sarg0)
+	  end else try
+	    let (l', sarg0, sargs, more_sargs) =
+	      try
+		let (l', sarg0, sargs1, sargs2) = extract_label name sargs
+		in (l', sarg0, sargs1 @ sargs2, more_sargs)
+	      with Not_found ->
+		let (l', sarg0, sargs1, sargs2) = extract_label name more_sargs
+		in (l', sarg0, sargs @ sargs1, sargs2)
+	    in
+	    sargs, more_sargs,
 	    if is_optional l' || not (is_optional l) then
 	      Some sarg0
 	    else
@@ -867,8 +885,10 @@ and type_application env funct sargs =
 		     pexp_desc = Pexp_construct (Longident.Lident "Some",
 						 Some sarg0, false) }
 	  with Not_found ->
-	    sargs,
-	    if is_optional l && List.mem_assoc "" sargs then
+	    sargs, more_sargs,
+	    if is_optional l &&
+	      (List.mem_assoc "" sargs || List.mem_assoc "" more_sargs)
+	    then
 	      Some { pexp_loc = Location.none;
 		     pexp_desc = Pexp_construct (Longident.Lident "None",
 						 None, false) }
@@ -878,11 +898,16 @@ and type_application env funct sargs =
 	  match sarg with None -> None, (l,ty,lv) :: omitted
 	  | Some sarg -> Some (type_expect env sarg ty), omitted
 	in
-	type_args (arg::args) omitted ty_fun sargs
+	type_args (arg::args) omitted ty_fun sargs more_sargs
     | _ ->
-	type_unknown_args args omitted ty_fun sargs
+	if !Clflags.classic && sargs <> [] then
+	  raise(Error(funct.exp_loc, Apply_wrong_label(fst (List.hd sargs))));
+	type_unknown_args args omitted ty_fun (sargs @ more_sargs)
   in
-  type_args [] [] funct.exp_type sargs
+  if !Clflags.classic then
+    type_args [] []  funct.exp_type [] sargs
+  else
+    type_args [] [] funct.exp_type sargs []
 
 (* Typing of an expression with an expected type.
    Some constructs are treated specially to provide better error messages. *)

@@ -439,7 +439,7 @@ val open_out_bin : string -> out_channel
            so that no translation takes place during writes. On operating
            systems that do not distinguish between text mode and binary
            mode, this function behaves like [open_out]. *)
-val open_out_gen : open_flag list -> int -> string -> out_channel
+val open_out_gen : mode:open_flag list -> perm:int -> string -> out_channel
         (* [open_out_gen mode rights filename] opens the file named
            [filename] for writing, as above. The extra argument [mode]
            specify the opening mode. The extra argument [rights] specifies
@@ -452,32 +452,32 @@ val flush : out_channel -> unit
            Interactive programs must be careful about flushing standard
            output and standard error at the right time.
            [flush] is an alias for [fflush]. *)
-val output_char : out_channel -> char -> unit
+val output_char : to:out_channel -> char -> unit
         (* Write the character on the given output channel. *)
-val output_string : out_channel -> string -> unit
+val output_string : to:out_channel -> string -> unit
         (* Write the string on the given output channel. *)
-val output : out_channel -> string -> int -> int -> unit
+val output : out_channel -> buffer:string -> pos:int -> len:int -> unit
         (* [output chan buff ofs len] writes [len] characters from string 
            [buff], starting at offset [ofs], to the output channel [chan].
            Raise [Invalid_argument "output"] if [ofs] and [len] do not
            designate a valid substring of [buff]. *)
-val output_byte : out_channel -> int -> unit
+val output_byte : to:out_channel -> int -> unit
         (* Write one 8-bit integer (as the single character with that code)
            on the given output channel. The given integer is taken modulo
            256. *)
-val output_binary_int : out_channel -> int -> unit
+val output_binary_int : to:out_channel -> int -> unit
         (* Write one integer in binary format on the given output channel.
            The only reliable way to read it back is through the
            [input_binary_int] function. The format is compatible across
            all machines for a given version of Objective Caml. *)
-val output_value : out_channel -> 'a -> unit
+val output_value : to:out_channel -> 'a -> unit
         (* Write the representation of a structured value of any type
            to a channel. Circularities and sharing inside the value
            are detected and preserved. The object can be read back,
            by the function [input_value]. See the description of module
            [Marshal] for more information. [output_value] is equivalent
            to [Marshal.to_channel] with an empty list of flags. *)
-val seek_out : out_channel -> int -> unit
+val seek_out : out_channel -> pos:int -> unit
         (* [seek_out chan pos] sets the current writing position to [pos]
            for channel [chan]. This works only for regular files. On
            files of other kinds (such as terminals, pipes and sockets),
@@ -513,7 +513,7 @@ val open_in_bin : string -> in_channel
            so that no translation takes place during reads. On operating
            systems that do not distinguish between text mode and binary
            mode, this function behaves like [open_in]. *)
-val open_in_gen : open_flag list -> int -> string -> in_channel
+val open_in_gen : mode:open_flag list -> perm:int -> string -> in_channel
         (* [open_in_gen mode rights filename] opens the file named
            [filename] for reading, as above. The extra arguments
            [mode] and [rights] specify the opening mode and file permissions.
@@ -527,7 +527,7 @@ val input_line : in_channel -> string
            all characters read, without the newline character at the end.
            Raise [End_of_file] if the end of the file is reached
            at the beginning of line. *)
-val input : in_channel -> string -> int -> int -> int
+val input : in_channel -> buffer:string -> pos:int -> len:int -> int
         (* [input chan buff ofs len] attempts to read [len] characters
            from channel [chan], storing them in string [buff], starting at
            character number [ofs]. It returns the actual number of characters
@@ -538,7 +538,7 @@ val input : in_channel -> string -> int -> int -> int
            called again to read the remaining characters, if desired.
            Exception [Invalid_argument "input"] is raised if [ofs] and [len]
            do not designate a valid substring of [buff]. *)          
-val really_input : in_channel -> string -> int -> int -> unit
+val really_input : in_channel -> buffer:string -> pos:int -> len:int -> unit
         (* [really_input chan buff ofs len] reads [len] characters
            from channel [chan], storing them in string [buff], starting at
            character number [ofs]. Raise [End_of_file] if
@@ -560,7 +560,7 @@ val input_value : in_channel -> 'a
            This function is identical to [Marshal.from_channel];
            see the description of module [Marshal] for more information,
            in particular concerning the lack of type safety. *)
-val seek_in : in_channel -> int -> unit
+val seek_in : in_channel -> pos:int -> unit
         (* [seek_in chan pos] sets the current reading position to [pos]
            for channel [chan]. This works only for regular files. On
            files of other kinds, the behavior is unspecified. *)

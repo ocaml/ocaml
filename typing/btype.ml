@@ -240,7 +240,7 @@ let label_name l =
 let rec extract_label_aux hd l = function
     [] -> raise Not_found
   | (l',t as p) :: ls ->
-      if label_name l' = l then (l', t, List.rev_append hd ls)
+      if label_name l' = l then (l', t, List.rev hd, ls)
       else extract_label_aux (p::hd) l ls
 
 let extract_label l ls = extract_label_aux [] l ls

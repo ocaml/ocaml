@@ -24,6 +24,7 @@ type error =
   | Method_type_mismatch of string * (type_expr * type_expr) list
   | Structure_expected of class_type
   | Cannot_apply of class_type
+  | Apply_wrong_label of label
   | Pattern_type_clash of type_expr
   | Repeated_parameter
   | Unbound_class of Longident.t
@@ -601,15 +602,31 @@ and class_expr cl_num val_env met_env scl =
        cl_type = Tcty_fun (l, pat.pat_type, cl.cl_type)}
   | Pcl_apply (scl', sargs) ->
       let cl = class_expr cl_num val_env met_env scl' in
-      let rec type_args args omitted ty_fun sargs =
+      let rec type_args args omitted ty_fun sargs more_sargs =
 	match ty_fun with
-	| Tcty_fun (l, ty, ty_fun) when sargs <> [] ->
-	    if sargs = [] then print_endline "sargs = []";
+	| Tcty_fun (l, ty, ty_fun) when sargs <> [] || more_sargs <> [] ->
 	    let name = Btype.label_name l in
-	    let sargs, sarg =
-	      try
-		let (l', sarg0, sargs) = Btype.extract_label name sargs in
-		sargs,
+	    let sargs, more_sargs, sarg =
+	      if !Clflags.classic && not (Btype.is_optional l) then begin
+		if sargs <> [] then 
+		  raise(Error(cl.cl_loc,
+			      Apply_wrong_label(fst (List.hd sargs))));
+		let (l', sarg0) = List.hd more_sargs in
+		if l <> l' && l' <> "" then
+		  raise(Error(cl.cl_loc, Apply_wrong_label l'))
+		else ([], List.tl more_sargs, Some sarg0)
+	      end else try
+		let (l', sarg0, sargs, more_sargs) =
+		  try
+		    let (l', sarg0, sargs1, sargs2) =
+		      Btype.extract_label name sargs
+		    in (l', sarg0, sargs1 @ sargs2, more_sargs)
+		  with Not_found ->
+		    let (l', sarg0, sargs1, sargs2) =
+		      Btype.extract_label name more_sargs
+		    in (l', sarg0, sargs @ sargs1, sargs2)
+		in
+		sargs, more_sargs,
 		if Btype.is_optional l' || not (Btype.is_optional l) then
 		  Some sarg0
 		else
@@ -617,8 +634,10 @@ and class_expr cl_num val_env met_env scl =
 			 pexp_desc = Pexp_construct (Longident.Lident "Some",
 						     Some sarg0, false) }
 	      with Not_found ->
-		sargs,
-		if Btype.is_optional l && List.mem_assoc "" sargs then
+		sargs, more_sargs,
+		if Btype.is_optional l &&
+		  (List.mem_assoc "" sargs || List.mem_assoc "" more_sargs)
+		then
 		  Some { pexp_loc = Location.none;
 			 pexp_desc = Pexp_construct (Longident.Lident "None",
 						     None, false) }
@@ -628,16 +647,25 @@ and class_expr cl_num val_env met_env scl =
 	      match sarg with None -> None, (l,ty) :: omitted
 	      |	Some sarg -> Some (type_expect val_env sarg ty), omitted
 	    in
-	    type_args (arg::args) omitted ty_fun sargs
+	    type_args (arg::args) omitted ty_fun sargs more_sargs
 	| _ ->
+	    let sargs = sargs @ more_sargs in
 	    if sargs <> [] then
-              raise(Error(cl.cl_loc, Cannot_apply cl.cl_type));
+	      if omitted <> [] then
+		raise(Error(cl.cl_loc, Apply_wrong_label(fst (List.hd sargs))))
+	      else
+		raise(Error(cl.cl_loc, Cannot_apply cl.cl_type));
             (List.rev args,
 	     List.fold_left
 	       (fun ty_fun (l,ty) -> Tcty_fun(l,ty,ty_fun))
 	       ty_fun omitted)
       in
-      let (args, cty) = type_args [] [] cl.cl_type sargs in
+      let (args, cty) =
+	if !Clflags.classic then
+	  type_args [] [] cl.cl_type [] sargs
+	else
+	  type_args [] [] cl.cl_type sargs []
+      in
       {cl_desc = Tclass_apply (cl, args);
        cl_loc = scl.pcl_loc;
        cl_type = cty}
@@ -1039,6 +1067,11 @@ let report_error = function
   | Cannot_apply clty ->
       print_string
         "This class expression is not a class function, it cannot be applied"
+  | Apply_wrong_label l ->
+      if l = "" then
+	print_string "This class function cannot be applied without label"
+      else
+	printf "This class function cannot be applied on label %s" l
   | Pattern_type_clash ty ->
       (* XXX Trace *)
       (* XXX Revoir message d'erreur *)

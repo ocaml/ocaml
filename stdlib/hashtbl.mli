@@ -29,32 +29,32 @@ val create : int -> ('a,'b) t
 val clear : ('a, 'b) t -> unit
         (* Empty a hash table. *)
 
-val add : ('a, 'b) t -> 'a -> 'b -> unit
+val add : ('a, 'b) t -> key:'a -> data:'b -> unit
         (* [Hashtbl.add tbl x y] adds a binding of [x] to [y] in table [tbl].
            Previous bindings for [x] are not removed, but simply
            hidden. That is, after performing [Hashtbl.remove tbl x],
            the previous binding for [x], if any, is restored.
            (Same behavior as with association lists.) *)
 
-val find : ('a, 'b) t -> 'a -> 'b
+val find : ('a, 'b) t -> key:'a -> 'b
         (* [Hashtbl.find tbl x] returns the current binding of [x] in [tbl],
            or raises [Not_found] if no such binding exists. *)
 
-val find_all : ('a, 'b) t -> 'a -> 'b list
+val find_all : ('a, 'b) t -> key:'a -> 'b list
         (* [Hashtbl.find_all tbl x] returns the list of all data
            associated with [x] in [tbl].
            The current binding is returned first, then the previous
            bindings, in reverse order of introduction in the table. *)
 
-val mem :  ('a, 'b) t -> 'a -> bool
+val mem :  ('a, 'b) t -> key:'a -> bool
         (* [Hashtbl.mem tbl x] checks if [x] is bound in [tbl]. *)
 
-val remove : ('a, 'b) t -> 'a -> unit
+val remove : ('a, 'b) t -> key:'a -> unit
         (* [Hashtbl.remove tbl x] removes the current binding of [x] in [tbl],
            restoring the previous binding if it exists.
            It does nothing if [x] is not bound in [tbl]. *)
 
-val iter : ('a -> 'b -> unit) -> ('a, 'b) t -> unit
+val iter : fun:(key:'a -> data:'b -> unit) -> ('a, 'b) t -> unit
         (* [Hashtbl.iter f tbl] applies [f] to all bindings in table [tbl].
            [f] receives the key as first argument, and the associated value
            as second argument. The order in which the bindings are passed to
@@ -88,12 +88,12 @@ module type S =
     type 'a t
     val create: int -> 'a t
     val clear: 'a t -> unit
-    val add: 'a t -> key -> 'a -> unit
-    val remove: 'a t -> key -> unit
-    val find: 'a t -> key -> 'a
-    val find_all: 'a t -> key -> 'a list
-    val mem: 'a t -> key -> bool
-    val iter: (key -> 'a -> unit) -> 'a t -> unit
+    val add: 'a t -> key:key -> data:'a -> unit
+    val remove: 'a t -> key:key -> unit
+    val find: 'a t -> key:key -> 'a
+    val find_all: 'a t -> key:key -> 'a list
+    val mem: 'a t -> key:key -> bool
+    val iter: fun:(key:key -> data:'a -> unit) -> 'a t -> unit
   end
 
 module Make(H: HashedType): (S with type key = H.t)

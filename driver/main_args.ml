@@ -25,9 +25,9 @@ module Make_options (F :
      val _impl : string -> unit
      val _intf : string -> unit
      val _intf_suffix : string -> unit
-     val _labelize : unit -> unit
      val _linkall : unit -> unit
      val _make_runtime : unit -> unit
+     val _modern : unit -> unit
      val _noassert : unit -> unit
      val _o : string -> unit
      val _output_obj : unit -> unit
@@ -67,8 +67,8 @@ struct
             "<file>  Suffix for interface file (default: .mli)";
      "-intf_suffix", Arg.String F._intf_suffix,
             "<file>  (deprecated) same as -intf-suffix";
-     "-labelize", Arg.Unit F._labelize,
-    	    " Compile an implementation again a labelized interface";
+     "-modern", Arg.Unit F._modern,
+    	    " Use strict label syntax";
      "-linkall", Arg.Unit F._linkall, " Link all modules, even unused ones";
      "-make-runtime", Arg.Unit F._make_runtime,
             " Build a runtime system with given C objects and libraries";

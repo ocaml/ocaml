@@ -46,7 +46,8 @@ type data = string
 type t
 
 (* Raw access *)
-external dbopen : string -> open_flag list -> file_perm -> btree_flag list -> t
+external dbopen :
+    string -> flags:open_flag list -> perm:file_perm -> btree_flag list -> t
     = "caml_db_open"
     (* [dbopen file flags mode] *)
 
@@ -54,26 +55,26 @@ external dbopen : string -> open_flag list -> file_perm -> btree_flag list -> t
 external close : t -> unit
     = "caml_db_close"
 
-external del : t -> key -> routine_flag list -> unit
+external del : t -> key:key -> cmd:routine_flag list -> unit
     = "caml_db_del"
     (* raise Not_found if the key was not in the file *)
 
-external get : t -> key -> routine_flag list -> data
+external get : t -> key:key -> cmd:routine_flag list -> data
     = "caml_db_get"
     (* raise Not_found if the key was not in the file *)
 
-external put : t -> key -> data -> routine_flag list -> unit
+external put : t -> key:key -> data:data -> cmd:routine_flag list -> unit
     = "caml_db_put"
 
-external seq : t -> key -> routine_flag list -> (key * data)
+external seq : t -> key:key -> cmd:routine_flag list -> (key * data)
     = "caml_db_seq"
 
 external sync : t -> unit
     = "caml_db_sync"
 
 
-val add : t -> key -> data -> unit
-val find : t -> key -> data
-val find_all : t -> key -> data list
-val remove : t -> key -> unit
-val iter : (string -> string -> unit) -> t -> unit
+val add : t -> key:key -> data:data -> unit
+val find : t -> key:key -> data
+val find_all : t -> key:key -> data list
+val remove : t -> key:key -> unit
+val iter : fun:(key:string -> data:string -> unit) -> t -> unit
