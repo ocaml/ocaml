@@ -345,10 +345,11 @@ let lookup_tag obj tag =
 *)
 
 let decode_tag tag =
-  let n = Nativeint.logand tag 0x7fffffffn in
+  let n = Nativeint.logand (Nativeint.shift_right tag 1) 0x7fffffffn in
   let lab3 = Nativeint.to_int (Nativeint.rem n 1291n)
   and n' = Nativeint.to_int (Nativeint.div n 1291n) in
   let lab2 = n' mod 1291 and lab1 = n' / 1291 in
+  (* Printf.eprintf "%nd = (%d, %d, %d)\n" n lab1 lab2 lab3; flush stderr; *)
   let shift ofs = ofs lsl log2_size_addr in
   (Cconst_int (shift lab1), Cconst_int (shift lab2), Cconst_int (shift lab3))
 
@@ -364,8 +365,8 @@ let lookup_tag obj tag =
     let table = Ident.create "table" in
     let (wrap, (lab1, lab2, lab3)) =
       match tag with
-        Cconst_int tag -> id, decode_tag (Nativeint.of_int (tag lsr 1))
-      | Cconst_natint tag -> id, decode_tag (Nativeint.shift_right tag 1)
+        Cconst_int tag -> id, decode_tag (Nativeint.of_int tag)
+      | Cconst_natint tag -> id, decode_tag tag
       | _ ->
           let itag = Ident.create "tag" in
           let tag' = Cop(Clsr, [tag; Cconst_int 1]) in

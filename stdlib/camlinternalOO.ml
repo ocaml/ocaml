@@ -80,7 +80,9 @@ let public_method_label s : tag =
   (* reduce to 31 bits *)
   accu := !accu land (1 lsl 31 - 1);
   (* make it signed for 64 bits architectures *)
-  magic (if !accu > 0x3FFFFFFF then !accu - (1 lsl 31) else !accu)
+  let tag = if !accu > 0x3FFFFFFF then !accu - (1 lsl 31) else !accu in
+  (* Printf.eprintf "%s = %d\n" s tag; flush stderr; *)
+  magic tag
 
 (**** Sparse array ****)
 
@@ -103,16 +105,22 @@ type span =
       mutable link: span option }
 and slot = Method of tag | Span of span
 
-let mergeable sp1 sp2 =
-  Labset.is_empty (Labset.inter sp1.labels sp2.labels)
-
 let rec (!!) span =
   match span.link with
     None -> span
   | Some x -> !!x
 
+let mergeable sp1 sp2 =
+  let common = Labset.inter sp1.labels sp2.labels in
+  Labset.for_all
+    (fun lab ->
+      match List.assoc lab sp1.children, List.assoc lab sp2.children with
+	Span sp1', Span sp2' -> !!sp1' == !!sp2'
+      | _ -> Printf.eprintf "conflict on label %d\n" lab; flush stderr; false)
+    common
+
 let rec merge spans = function
-    [] -> List.rev spans
+    [] -> spans
   | span :: rem ->
       let rec try_merge = function
           [] -> false
@@ -130,10 +138,11 @@ let rec merge spans = function
       merge (if try_merge spans then spans else span :: spans) rem
 
 let decode (tag : tag) =
-  let n = Int32.logand (Int32.of_int (magic tag)) 0x7fffffffl in
-  let lab3 = Int32.to_int (Int32.rem n 1291l)
-  and n' = Int32.to_int (Int32.div n 1291l) in
+  let n = Nativeint.logand (Nativeint.of_int (magic tag)) 0x7fffffffn in
+  let lab3 = Nativeint.to_int (Nativeint.rem n 1291n)
+  and n' = Nativeint.to_int (Nativeint.div n 1291n) in
   let lab2 = n' mod 1291 and lab1 = n' / 1291 in
+  (* Printf.eprintf "%nd = (%d, %d, %d)\n" n lab1 lab2 lab3; flush stderr; *)
   (lab1, lab2, lab3)
 
 let empty_span () =
@@ -160,6 +169,7 @@ let make_span tags =
       let (lab1, lab2, lab3) = decode tag in
       let span1 = insert_span lab1 span in
       let span2 = insert_span lab2 span1 in
+      assert (not (Labset.mem lab3 !!span2.labels));
       add_child span2 lab3 (Method tag))
     tags;
   span
@@ -187,12 +197,15 @@ let truncate_size arr =
 
 let build_access_table tags =
   let span = make_span tags in
-  let spans = merge [span] (span_list !!span.children) in
-  bucket_count := !bucket_count + List.length spans;
+  let spans = merge [] (List.rev (span :: span_list !!span.children)) in
+  let len = List.length spans in
+  Printf.eprintf "%d bucket%s\n" len (if len > 1 then "s" else "");
+  flush stderr;
+  bucket_count := !bucket_count + len;
   List.iter (fun span -> !!span.array <- Array.create 1291 dummy_item) spans;
   List.iter connect_slots spans;
   List.iter (fun sp -> truncate_size !!sp.array) (List.tl spans);
-  !!span.array
+  (!!span.array, len = 1)
 
 (* The compiler assumes that the first field of this structure is [size]. *)
 type table =
@@ -379,25 +392,13 @@ let add_initializer table f =
   table.initializers <- f::table.initializers
 
 (*
-let create_table public_methods =
-  if public_methods == magic 0 then new_table [||] else
-  let table = new_table (Array.map public_method_label public_methods) in
-  Array.iter
-    (function met ->
-      let lab = new_method table in
-      table.methods.(lab) <- magic 1;
-      table.methods_by_name  <- Meths.add met lab table.methods_by_name;
-      table.methods_by_label <- Labs.add lab true table.methods_by_label)
-    public_methods;
-  table
-*)
-
 let compute_labels n tags =
   if n = 0 then Array.mapi (fun i _ -> i+1) tags else
   let umod (x : tag) =
-    1 + Int32.to_int
-      (Int32.rem (Int32.logand (Int32.of_int (magic x)) 0x7fffffffl)
-         (Int32.of_int n))
+    1 + Nativeint.to_int
+      (Nativeint.rem
+	 (Nativeint.logand (Nativeint.of_int (magic x)) 0x7fffffffn)
+         (Nativeint.of_int n))
   in
   Array.map umod tags
 
@@ -410,14 +411,15 @@ let init_hash n labels =
       Array.unsafe_set arr lab 1)
     labels;
   if !last = n then arr else Array.sub arr 0 (!last+1)
+*)
 
 let create_table n public_methods =
   if public_methods == magic 0 then new_table [||] 0 else
   (* [public_methods] must be in ascending order for bytecode *)
   let tags = Array.map public_method_label public_methods in
   (* let labels = compute_labels n tags in *)
-  let arg, next =
-    if n = 0 then [|magic tags|], 1 else
+  let (arg, flat), next =
+    if n = 0 then ([|magic tags|], true), 1 else
     build_access_table tags, 0
   in
   let table = new_table arg next
@@ -425,10 +427,13 @@ let create_table n public_methods =
   in
   Array.iteri
     (fun i met ->
-      let lab = new_method table in
+      let lab =
+	if n = 0 || not flat then new_method table else
+	let (_,_,lab) = decode tags.(i) in lab
+      in
       table.methods_by_name  <- Meths.add met lab table.methods_by_name;
       table.methods_by_label <- Labs.add lab true table.methods_by_label;
-      if n <> 0 then
+      if not flat then
         table.public_methods <-
           Labs.add lab (decode tags.(i)) table.public_methods)
     public_methods;
