@@ -19,6 +19,7 @@
 #include "alloc.h"
 #include "fail.h"
 #include "gc.h"
+#include "interp.h"
 #include "major_gc.h"
 #include "memory.h"
 #include "minor_gc.h"
