@@ -79,14 +79,10 @@ let type_variable loc name =
     raise(Error(loc, Unbound_type_variable ("'" ^ name)))
 
 type policy = Fixed | Extensible | Delayed 
-  (* GENERIC | DynamicPattern /GENERIC *)
 
 let rec transl_type env policy styp =
   match styp.ptyp_desc with
     Ptyp_any -> 
-(* GENERIC
-      if policy <> DynamicPattern then Ctype.newvar () else new_global_var ()
-/GENERIC *)
       Ctype.newvar ()
   | Ptyp_var name ->
       begin
@@ -105,19 +101,6 @@ let rec transl_type env policy styp =
               type_variables := Tbl.add name v !type_variables;
               v
             end
-(* GENERIC
-	| DynamicPattern ->
-	    let polymorphic = (name.[0] <> '_') in
-            begin try
-              Tbl.find name !type_variables
-            with Not_found ->
-              let v = 
-		if polymorphic then Ctype.newvar () else new_global_var () 
-	      in
-              type_variables := Tbl.add name v !type_variables;
-              v
-            end
-/GENERIC *)
         | Delayed ->
             begin try
               Tbl.find name !used_variables
@@ -377,22 +360,16 @@ let transl_type_scheme env styp =
   generalize typ;
   typ
 
-(* GENERIC
-let transl_type_scheme_pattern env styp =
-  (* temporary forget variable informations *)
-  let type_variables_away = !type_variables in
-  let saved_type_variables_away = !saved_type_variables in
-  type_variables := Tbl.empty;
-  saved_type_variables := [];
+(* DYN *)
+let transl_type_scheme_for_dynamic env styp =
   begin_def();
-  let typ = transl_type env DynamicPattern styp in
+  narrow ();
+  let typ = transl_simple_type env false styp in
+  widen ();
   end_def();
   generalize typ;
-  (* regain the variable informations *)
-  type_variables := type_variables_away;
-  saved_type_variables := saved_type_variables_away;
   typ
-/GENERIC *)
+(* /DYN *)
 
 (* Error report *)
 
