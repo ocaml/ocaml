@@ -1,5 +1,5 @@
 let cCAMLtoTKscrollValue : scrollValue -> tkArgs = function
-   `Page v1 ->
+ | `Page v1 ->
     TkTokenList [TkToken"scroll"; TkToken (string_of_int v1); TkToken"pages"]
  | `Unit v1 ->
     TkTokenList [TkToken"scroll"; TkToken (string_of_int v1); TkToken"units"]
@@ -8,10 +8,10 @@ let cCAMLtoTKscrollValue : scrollValue -> tkArgs = function
 
 (* str l -> scrllv -> str l *)
 let cTKtoCAMLscrollValue = function
-   "scroll"::n::"pages"::l -> 
+ | "scroll" :: n :: "pages" :: l -> 
      `Page (int_of_string n), l
- | "scroll"::n::"units"::l ->
+ | "scroll" :: n :: "units" :: l ->
      `Unit (int_of_string n), l
- | "moveto"::f::l ->
+ | "moveto" :: f :: l ->
      `Moveto (float_of_string f), l
  | _ -> raise (Invalid_argument "TKtoCAMLscrollValue")

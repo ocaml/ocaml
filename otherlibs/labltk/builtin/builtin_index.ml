@@ -5,7 +5,7 @@
 *)
 
 type canvas_index = [
-    `Num(int)           
+  | `Num(int)           
   | `End                        
   | `Insert             
   | `Selfirst           
@@ -14,7 +14,7 @@ type canvas_index = [
 ]
 
 type entry_index = [
-    `Num(int)           
+  | `Num(int)           
   | `End
   | `Insert             
   | `Selfirst           
@@ -24,7 +24,7 @@ type entry_index = [
 ]
 
 type listbox_index = [
-    `Num(int)           
+  | `Num(int)           
   | `Active
   | `Anchor
   | `End
@@ -32,7 +32,7 @@ type listbox_index = [
 ]
 
 type menu_index = [
-    `Num(int)           
+  | `Num(int)           
   | `Active
   | `End
   | `Last                       
@@ -42,7 +42,7 @@ type menu_index = [
 ]
 
 type text_index = [
-    `Linechar(int * int)   
+  | `Linechar(int * int)   
   | `Atxy(int * int)
   | `End
   | `Mark(string)

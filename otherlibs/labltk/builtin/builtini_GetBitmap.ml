@@ -1,6 +1,6 @@
 let cCAMLtoTKbitmap : bitmap -> tkArgs = function
-  `File s -> TkToken ("@" ^ s)
-| `Predefined s -> TkToken s
+  | `File s -> TkToken ("@" ^ s)
+  | `Predefined s -> TkToken s
 
 let cTKtoCAMLbitmap s = 
  if String.get s 0 = '@'

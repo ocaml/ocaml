@@ -7,7 +7,7 @@ let cTKtoCAMLtextTag x = x
 (* TextModifiers are never returned by Tk *)
 let cCAMLtoTKtextIndex (i : textIndex) =
   let ppTextModifier = function
-      `Char n -> 
+    | `Char n -> 
         if n > 0 then "+" ^ (string_of_int n) ^ "chars"
         else if n = 0 then ""
         else (string_of_int n) ^ "chars"

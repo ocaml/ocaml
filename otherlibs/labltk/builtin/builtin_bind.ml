@@ -4,7 +4,7 @@ open Widget
 (* Builtin types *)
 (* type *)
 type event = [
-    `ButtonPress (* also Button, but we omit it *)
+  | `ButtonPress (* also Button, but we omit it *)
   | `ButtonPressDetail (int)
   | `ButtonRelease
   | `ButtonReleaseDetail (int)
@@ -32,7 +32,7 @@ type event = [
 ]
 
 and modifier = [
-    `Control
+  | `Control
   | `Shift
   | `Lock
   | `Button1
@@ -91,7 +91,7 @@ type eventInfo =
    use Ev_ prefix *)
 (* type *)
 type eventField = [
-    `Above
+  | `Above
   | `ButtonNumber
   | `Count
   | `Detail
@@ -121,7 +121,7 @@ type eventField = [
 (* /type *)
 
 let filleventInfo ev v : eventField -> unit = function 
-    `Above    ->        ev.ev_Above <- int_of_string v
+  | `Above    ->        ev.ev_Above <- int_of_string v
   | `ButtonNumber ->    ev.ev_ButtonNumber <- int_of_string v
   | `Count ->           ev.ev_Count <- int_of_string v
   | `Detail ->          ev.ev_Detail <- v
@@ -180,44 +180,44 @@ let wrapeventInfo f (what : eventField list) =
        let l = ref args in
          List.iter fun:(function field ->
                     match !l with
-                      [] -> ()
-                    | v::rest -> filleventInfo ev v field; l:=rest)
+                    | [] -> ()
+                    | v :: rest -> filleventInfo ev v field; l := rest)
                  what;
        f ev
 
 
 
 let rec writeeventField : eventField list -> string = function
-    [] -> ""
-  | field::rest ->
+  | [] -> ""
+  | field :: rest ->
     begin
     match field with
-        `Above ->     " %a"
-      | `ButtonNumber ->" %b"
-      | `Count ->     " %c"
-      | `Detail ->    " %d"
-      | `Focus ->     " %f"
-      | `Height ->    " %h"
-      | `KeyCode ->   " %k"
-      | `Mode ->      " %m"
-      | `OverrideRedirect -> " %o"
-      | `Place ->     " %p"
-      | `State ->     " %s"
-      | `Time ->      " %t"
-      | `Width ->     " %w"
-      | `MouseX ->    " %x"
-      | `MouseY ->    " %y"
-      (* Quoting is done by Tk *)
-      | `Char ->      " %A"
-      | `BorderWidth -> " %B"
-      | `SendEvent -> " %E"
-      | `KeySymString -> " %K"
-      | `KeySymInt -> " %N"
-      | `RootWindow ->" %R"
-      | `SubWindow -> " %S"
-      | `Type ->      " %T"
-      | `Widget ->    " %W"
-      | `RootX ->     " %X"
-      | `RootY ->     " %Y"
+    | `Above ->     " %a"
+    | `ButtonNumber ->" %b"
+    | `Count ->     " %c"
+    | `Detail ->    " %d"
+    | `Focus ->     " %f"
+    | `Height ->    " %h"
+    | `KeyCode ->   " %k"
+    | `Mode ->      " %m"
+    | `OverrideRedirect -> " %o"
+    | `Place ->     " %p"
+    | `State ->     " %s"
+    | `Time ->      " %t"
+    | `Width ->     " %w"
+    | `MouseX ->    " %x"
+    | `MouseY ->    " %y"
+    (* Quoting is done by Tk *)
+    | `Char ->      " %A"
+    | `BorderWidth -> " %B"
+    | `SendEvent -> " %E"
+    | `KeySymString -> " %K"
+    | `KeySymInt -> " %N"
+    | `RootWindow ->" %R"
+    | `SubWindow -> " %S"
+    | `Type ->      " %T"
+    | `Widget ->    " %W"
+    | `RootX ->     " %X"
+    | `RootY ->     " %Y"
     end 
     ^ writeeventField rest

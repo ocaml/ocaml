@@ -1,5 +1,5 @@
 let cCAMLtoTKmodifier : modifier -> string = function
-   `Control -> "Control-"
+ | `Control -> "Control-"
  | `Shift -> "Shift-"
  | `Lock -> "Lock-"
  | `Button1 -> "Button1-"
@@ -19,7 +19,7 @@ let cCAMLtoTKmodifier : modifier -> string = function
 
 let cCAMLtoTKevent (ev : event) =
   let rec convert = function
-    `ButtonPress -> "ButtonPress"
+  | `ButtonPress -> "ButtonPress"
   | `ButtonPressDetail n -> "ButtonPress-"^string_of_int n
   | `ButtonRelease -> "ButtonRelease"
   | `ButtonReleaseDetail n -> "ButtonRelease-"^string_of_int n
