@@ -188,7 +188,8 @@ let call_linker file_list startup_file =
             runtime_lib
             Config.c_libraries
         else
-          Printf.sprintf "lib /nologo /debugtype:cv /out:%s %s %s"
+          Printf.sprintf "%s /out:%s %s %s"
+            Config.native_partial_linker
             !Clflags.object_name
             startup_file
             (String.concat " " (List.rev file_list))
@@ -206,7 +207,8 @@ let call_linker file_list startup_file =
             runtime_lib
             Config.c_libraries
         else
-          Printf.sprintf "ld -r -o %s %s %s"
+          Printf.sprintf "%s -o %s %s %s"
+            Config.native_partial_linker
             !Clflags.object_name
             startup_file
             (String.concat " " (List.rev file_list))
