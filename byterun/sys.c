@@ -18,6 +18,8 @@
 #include <signal.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <unistd.h>
 #include "config.h"
 #include "alloc.h"
@@ -112,7 +114,8 @@ value sys_open(path, flags, perm) /* ML */
 value sys_file_exists(name)     /* ML */
      value name;
 {
-  return Val_bool(access(String_val(name), F_OK) == 0);
+  struct stat st;
+  return Val_bool(stat(String_val(name), &st) == 0);
 }
 
 value sys_remove(name)          /* ML */
@@ -173,6 +176,10 @@ value sys_system_command(command)   /* ML */
 
 /* Search path function */
 
+#ifndef S_ISREG
+#define S_ISREG(mode) (((mode) & S_IFMT) == S_IFREG)
+#endif
+
 char * searchpath(name)
      char * name;
 {
@@ -180,6 +187,7 @@ char * searchpath(name)
   char * path;
   char * p;
   char * q;
+  struct stat st;
 
   for (p = name; *p != 0; p++) {
     if (*p == '/') return name;
@@ -197,7 +205,7 @@ char * searchpath(name)
       *p++ = *q++;
     }
     *p = 0;
-    if (access(fullname, F_OK) == 0) return fullname;
+    if (stat(fullname, &st) == 0 && S_ISREG(st.st_mode)) return fullname;
     if (*path == 0) return 0;
     path++;
   }
