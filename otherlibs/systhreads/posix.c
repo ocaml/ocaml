@@ -59,6 +59,7 @@ struct caml_thread_struct {
   value descr;                  /* The heap-allocated descriptor */
   struct caml_thread_struct * next;  /* Double linking of running threads */
   struct caml_thread_struct * prev;
+  int async_mode;               /* If 0: sync mode, if 1: async */
 #ifdef NATIVE_CODE
   struct caml_context * last_context;
                                 /* Saved value of caml_last_context */
@@ -152,6 +153,12 @@ static void caml_thread_enter_blocking_section(void)
   curr_thread->local_roots = local_roots;
   curr_thread->external_raise = external_raise;
 #endif
+  /* Tell caml_thread_cleanup we no longer hold the global mutex.
+     Note: since there is no cancellation point here, acquiring the
+     mutex and setting curr_thread->async_mode is atomic w.r.t.
+     cancellation */
+  Assert(!curr_thread->async_mode);
+  curr_thread->async_mode = 1;
   /* Release the global mutex */
   pthread_mutex_unlock(&caml_mutex);
 }
@@ -163,6 +170,12 @@ static void caml_thread_leave_blocking_section(void)
   /* Update curr_thread to point to the thread descriptor corresponding
      to the thread currently executing */
   curr_thread = pthread_getspecific(thread_descriptor_key);
+  /* Tell caml_thread_cleanup we now hold the global mutex.
+     Note: since there is no cancellation point here, acquiring the
+     mutex and setting curr_thread->async_mode is atomic w.r.t.
+     cancellation */
+  Assert(curr_thread->async_mode);
+  curr_thread->async_mode = 0;
   /* Restore the stack-related global variables */
 #ifdef NATIVE_CODE
   caml_last_context = curr_thread->last_context;
@@ -241,11 +254,14 @@ static void * caml_thread_tick(void * arg)
 }
 
 /* Thread cleanup: remove the descriptor from the list and free
-   the stack space. */
+   the stack space.  This function is called either at pthread_exit
+   or on receipt of a cancellation request. */
 
 static void caml_thread_cleanup(void * arg)
 {
   caml_thread_t th = (caml_thread_t) arg;
+  /* If we don't already hold the global mutex, acquire it */
+  if (th->async_mode == 1) leave_blocking_section();
   /* Signal that the thread has terminated */
   caml_mutex_unlock(Terminated(th->descr));
   /* Remove th from the doubly-linked list of threads */
@@ -257,8 +273,9 @@ static void caml_thread_cleanup(void * arg)
 #endif
   /* Free the thread descriptor */
   stat_free((char *) th);
-  /* Release the main mutex */
+  /* Release the main mutex (forever) */
   enter_blocking_section();
+  /* The thread now stops running */
 }
 
 /* Initialize the thread machinery */
@@ -294,12 +311,11 @@ value caml_thread_initialize(value unit)   /* ML */
     curr_thread->descr = descr;
     curr_thread->next = curr_thread;
     curr_thread->prev = curr_thread;
+    curr_thread->async_mode = 0;
     /* The stack-related fields will be filled in at the next
        enter_blocking_section */
     /* Associate the thread descriptor with the thread */
     pthread_setspecific(thread_descriptor_key, (void *) curr_thread);
-    /* Allow cancellation */
-    pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
     /* Set up the hooks */
     prev_scan_roots_hook = scan_roots_hook;
     scan_roots_hook = caml_thread_scan_roots;
@@ -333,8 +349,6 @@ static void * caml_thread_start(void * arg)
   pthread_setspecific(thread_descriptor_key, (void *) th);
   /* Set up termination routine */
   pthread_cleanup_push(caml_thread_cleanup, (void *) th);
-  /* Allow cancellation */
-  pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
   /* Acquire the global mutex and set up the stack variables */
   leave_blocking_section();
   /* Callback the closure */
@@ -367,6 +381,7 @@ value caml_thread_new(value clos)          /* ML */
     /* Create an info block for the current thread */
     th = (caml_thread_t) stat_alloc(sizeof(struct caml_thread_struct));
     th->descr = descr;
+    th->async_mode = 1;
 #ifdef NATIVE_CODE
     th->last_context = NULL;
     th->exception_pointer = NULL;
