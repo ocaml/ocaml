@@ -3,6 +3,7 @@ stdlib
 primitives
 prims.c
 Objective*Caml
+Objective*Caml.xcoff
 OCaml.68k
 OCaml.PPC
 OCaml.bytecode

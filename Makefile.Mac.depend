@@ -14,7 +14,10 @@
 :utils:tbl.cmxÄ :utils:tbl.cmi 
 :utils:terminfo.cmoÄ :utils:terminfo.cmi 
 :utils:terminfo.cmxÄ :utils:terminfo.cmi 
+:utils:warnings.cmoÄ :utils:warnings.cmi 
+:utils:warnings.cmxÄ :utils:warnings.cmi 
 :parsing:lexer.cmiÄ :parsing:parser.cmi 
+:parsing:location.cmiÄ :utils:warnings.cmi 
 :parsing:parse.cmiÄ :parsing:parsetree.cmi 
 :parsing:parser.cmiÄ :parsing:parsetree.cmi 
 :parsing:parsetree.cmiÄ :parsing:asttypes.cmi :parsing:location.cmi ¶
@@ -26,9 +29,9 @@
 :parsing:linenum.cmoÄ :utils:misc.cmi :parsing:linenum.cmi 
 :parsing:linenum.cmxÄ :utils:misc.cmx :parsing:linenum.cmi 
 :parsing:location.cmoÄ :parsing:linenum.cmi :utils:terminfo.cmi ¶
-    :parsing:location.cmi 
+    :utils:warnings.cmi :parsing:location.cmi 
 :parsing:location.cmxÄ :parsing:linenum.cmx :utils:terminfo.cmx ¶
-    :parsing:location.cmi 
+    :utils:warnings.cmx :parsing:location.cmi 
 :parsing:longident.cmoÄ :utils:misc.cmi :parsing:longident.cmi 
 :parsing:longident.cmxÄ :utils:misc.cmx :parsing:longident.cmi 
 :parsing:parse.cmoÄ :parsing:lexer.cmi :parsing:location.cmi ¶
@@ -133,10 +136,10 @@
     :typing:ident.cmx :typing:path.cmx :typing:types.cmx :typing:mtype.cmi 
 :typing:parmatch.cmoÄ :parsing:asttypes.cmi :typing:ctype.cmi :typing:env.cmi ¶
     :parsing:location.cmi :utils:misc.cmi :typing:typedtree.cmi ¶
-    :typing:types.cmi :typing:parmatch.cmi 
+    :typing:types.cmi :utils:warnings.cmi :typing:parmatch.cmi 
 :typing:parmatch.cmxÄ :parsing:asttypes.cmi :typing:ctype.cmx :typing:env.cmx ¶
     :parsing:location.cmx :utils:misc.cmx :typing:typedtree.cmx ¶
-    :typing:types.cmx :typing:parmatch.cmi 
+    :typing:types.cmx :utils:warnings.cmx :typing:parmatch.cmi 
 :typing:path.cmoÄ :typing:ident.cmi :typing:path.cmi 
 :typing:path.cmxÄ :typing:ident.cmx :typing:path.cmi 
 :typing:predef.cmoÄ :typing:btype.cmi :typing:ident.cmi :typing:path.cmi ¶
@@ -163,26 +166,26 @@
     :typing:parmatch.cmi :parsing:parsetree.cmi :typing:path.cmi ¶
     :typing:predef.cmi :typing:printtyp.cmi :typing:typecore.cmi ¶
     :typing:typedtree.cmi :typing:types.cmi :typing:typetexp.cmi ¶
-    :typing:typeclass.cmi 
+    :utils:warnings.cmi :typing:typeclass.cmi 
 :typing:typeclass.cmxÄ :parsing:asttypes.cmi :typing:ctype.cmx ¶
     :typing:env.cmx :typing:ident.cmx :typing:includeclass.cmx ¶
     :parsing:location.cmx :parsing:longident.cmx :utils:misc.cmx ¶
     :typing:parmatch.cmx :parsing:parsetree.cmi :typing:path.cmx ¶
     :typing:predef.cmx :typing:printtyp.cmx :typing:typecore.cmx ¶
     :typing:typedtree.cmx :typing:types.cmx :typing:typetexp.cmx ¶
-    :typing:typeclass.cmi 
+    :utils:warnings.cmx :typing:typeclass.cmi 
 :typing:typecore.cmoÄ :parsing:asttypes.cmi :typing:btype.cmi ¶
     :typing:ctype.cmi :typing:env.cmi :typing:ident.cmi :parsing:location.cmi ¶
     :parsing:longident.cmi :utils:misc.cmi :typing:parmatch.cmi ¶
     :parsing:parsetree.cmi :typing:path.cmi :typing:predef.cmi ¶
     :typing:printtyp.cmi :typing:typedtree.cmi :typing:types.cmi ¶
-    :typing:typetexp.cmi :typing:typecore.cmi 
+    :typing:typetexp.cmi :utils:warnings.cmi :typing:typecore.cmi 
 :typing:typecore.cmxÄ :parsing:asttypes.cmi :typing:btype.cmx ¶
     :typing:ctype.cmx :typing:env.cmx :typing:ident.cmx :parsing:location.cmx ¶
     :parsing:longident.cmx :utils:misc.cmx :typing:parmatch.cmx ¶
     :parsing:parsetree.cmi :typing:path.cmx :typing:predef.cmx ¶
     :typing:printtyp.cmx :typing:typedtree.cmx :typing:types.cmx ¶
-    :typing:typetexp.cmx :typing:typecore.cmi 
+    :typing:typetexp.cmx :utils:warnings.cmx :typing:typecore.cmi 
 :typing:typedecl.cmoÄ :utils:config.cmi :typing:ctype.cmi :typing:env.cmi ¶
     :typing:ident.cmi :typing:includecore.cmi :parsing:location.cmi ¶
     :utils:misc.cmi :parsing:parsetree.cmi :typing:path.cmi ¶
@@ -398,10 +401,10 @@
     :driver:errors.cmi 
 :driver:main.cmoÄ :bytecomp:bytelibrarian.cmi :bytecomp:bytelink.cmi ¶
     :utils:clflags.cmo :driver:compile.cmi :utils:config.cmi ¶
-    :driver:errors.cmi :driver:main_args.cmi 
+    :driver:errors.cmi :driver:main_args.cmi :utils:warnings.cmi 
 :driver:main.cmxÄ :bytecomp:bytelibrarian.cmx :bytecomp:bytelink.cmx ¶
     :utils:clflags.cmx :driver:compile.cmx :utils:config.cmx ¶
-    :driver:errors.cmx :driver:main_args.cmx 
+    :driver:errors.cmx :driver:main_args.cmx :utils:warnings.cmx 
 :driver:main_args.cmoÄ :driver:main_args.cmi 
 :driver:main_args.cmxÄ :driver:main_args.cmi 
 :driver:optcompile.cmoÄ :utils:ccomp.cmi :utils:clflags.cmo :utils:config.cmi ¶
@@ -425,14 +428,14 @@
     :typing:typedecl.cmx :typing:typemod.cmx :typing:typetexp.cmx ¶
     :driver:opterrors.cmi 
 :driver:optmain.cmoÄ :utils:clflags.cmo :utils:config.cmi ¶
-    :driver:optcompile.cmi :driver:opterrors.cmi 
+    :driver:optcompile.cmi :driver:opterrors.cmi :utils:warnings.cmi 
 :driver:optmain.cmxÄ :utils:clflags.cmx :utils:config.cmx ¶
-    :driver:optcompile.cmx :driver:opterrors.cmx 
+    :driver:optcompile.cmx :driver:opterrors.cmx :utils:warnings.cmx 
 :toplevel:genprintval.cmiÄ :typing:env.cmi :typing:path.cmi :typing:types.cmi 
 :toplevel:printval.cmiÄ :typing:env.cmi :typing:path.cmi :typing:types.cmi 
 :toplevel:topdirs.cmiÄ :parsing:longident.cmi 
 :toplevel:toploop.cmiÄ :typing:env.cmi :parsing:location.cmi ¶
-    :parsing:longident.cmi :parsing:parsetree.cmi 
+    :parsing:longident.cmi :parsing:parsetree.cmi :utils:warnings.cmi 
 :toplevel:trace.cmiÄ :typing:env.cmi :parsing:longident.cmi :typing:path.cmi ¶
     :typing:types.cmi 
 :toplevel:expunge.cmoÄ :utils:config.cmi :typing:ident.cmi :utils:misc.cmi ¶

@@ -16,7 +16,8 @@ INCLUDES = -I :utils: -I :parsing: -I :typing: -I :bytecomp: ¶
            -I :driver: -I :toplevel:
 
 UTILS = :utils:misc.cmo :utils:tbl.cmo :utils:config.cmo ¶
-        :utils:clflags.cmo :utils:terminfo.cmo :utils:ccomp.cmo
+        :utils:clflags.cmo :utils:terminfo.cmo :utils:ccomp.cmo ¶
+        :utils:warnings.cmo
 
 PARSING = :parsing:linenum.cmo :parsing:location.cmo :parsing:longident.cmo ¶
           :parsing:syntaxerr.cmo :parsing:pstream.cmo :parsing:parser.cmo ¶
@@ -396,6 +397,8 @@ alldepend ÄÄ
 
 maccaml Ä
     directory :maccaml:; domake all; directory ::
+partialclean ÄÄ
+    directory :maccaml:; domake partialclean; directory ::
 clean ÄÄ
     directory :maccaml:; domake clean; directory ::
 alldepend ÄÄ

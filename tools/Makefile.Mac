@@ -49,7 +49,7 @@ beforedepend ÄÄ ocamldep
 # To make custom toplevels
 
 install ÄÄ
-    duplicate -y ocamlmktop "{BINDIR}ocamlmktop"
+    duplicate -y ocamlmktop.tpl "{BINDIR}ocamlmktop"
     duplicate -y ocamlc-custom "{BINDIR}ocamlc-custom"
 
 # The bytecode disassembler

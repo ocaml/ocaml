@@ -68,7 +68,7 @@ OCaml.PPC Ä {PPCOBJS}
 
 OCaml.bytecode Ä primitives ::toplevellib.cma ::toplevel:topmain.cmo ¶
                  ::otherlibs:graph:graphics.cma 
-    ::byterun:ocamlrun ::ocamlc -linkall -use_prims primitives ¶
+    ::byterun:ocamlrun ::ocamlc -I ::stdlib: -linkall -use-prims primitives ¶
        ::toplevellib.cma ::otherlibs:graph:graphics.cma ::toplevel:topmain.cmo ¶
        -o OCaml.bytecode
     mergefragment -c -t Caml OCaml.bytecode
@@ -82,6 +82,9 @@ appli ÄÄ ocaml.r OCaml.bytecode OCaml.PPC OCaml.68k
 
 install Ä
     duplicate -y "Objective Caml" "{APPLIDIR}"
+
+partialclean Ä
+    delete -i OCaml.bytecode "Objective Caml"
 
 clean Ä
     delete -i {OBJS} {PPCOBJS} OCaml.68k OCaml.PPC OCaml.bytecode ¶

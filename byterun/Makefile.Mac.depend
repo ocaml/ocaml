@@ -65,8 +65,7 @@
                             gc.h ¶
                             major_gc.h ¶
                             freelist.h ¶
-                            minor_gc.h ¶
-                            str.h
+                            minor_gc.h
 
 "debugger.c.x" Ä  debugger.c ¶
                              config.h ¶
@@ -102,8 +101,7 @@
                            major_gc.h ¶
                            freelist.h ¶
                            minor_gc.h ¶
-                           reverse.h ¶
-                           str.h
+                           reverse.h
 
 "fail.c.x" Ä  fail.c ¶
                          alloc.h ¶
@@ -186,8 +184,7 @@
                          gc.h ¶
                          major_gc.h ¶
                          freelist.h ¶
-                         minor_gc.h ¶
-                         str.h
+                         minor_gc.h
 
 "instrtrace.c.x" Ä  instrtrace.c ¶
                                instruct.h ¶
@@ -236,7 +233,6 @@
                            prims.h ¶
                            signals.h ¶
                            stacks.h ¶
-                           str.h ¶
                            rotatecursor.h
 
 "ints.c.x" Ä  ints.c ¶
@@ -250,8 +246,7 @@
                          gc.h ¶
                          major_gc.h ¶
                          freelist.h ¶
-                         minor_gc.h ¶
-                         str.h
+                         minor_gc.h
 
 "io.c.x" Ä  io.c ¶
                        config.h ¶
@@ -281,8 +276,7 @@
                            gc.h ¶
                            major_gc.h ¶
                            freelist.h ¶
-                           minor_gc.h ¶
-                           str.h
+                           minor_gc.h
 
 "macintosh.c.x" Ä  macintosh.c
 
@@ -508,7 +502,6 @@
                         major_gc.h ¶
                         freelist.h ¶
                         minor_gc.h ¶
-                        str.h ¶
                         sys.h ¶
                         ui.h
 
@@ -603,8 +596,7 @@
                             gc.h ¶
                             major_gc.h ¶
                             freelist.h ¶
-                            minor_gc.h ¶
-                            str.h
+                            minor_gc.h
 
 "debugger.c.o" Ä  debugger.c ¶
                              config.h ¶
@@ -640,8 +632,7 @@
                            major_gc.h ¶
                            freelist.h ¶
                            minor_gc.h ¶
-                           reverse.h ¶
-                           str.h
+                           reverse.h
 
 "fail.c.o" Ä  fail.c ¶
                          alloc.h ¶
@@ -724,8 +715,7 @@
                          gc.h ¶
                          major_gc.h ¶
                          freelist.h ¶
-                         minor_gc.h ¶
-                         str.h
+                         minor_gc.h
 
 "instrtrace.c.o" Ä  instrtrace.c ¶
                                instruct.h ¶
@@ -774,7 +764,6 @@
                            prims.h ¶
                            signals.h ¶
                            stacks.h ¶
-                           str.h ¶
                            rotatecursor.h
 
 "ints.c.o" Ä  ints.c ¶
@@ -788,8 +777,7 @@
                          gc.h ¶
                          major_gc.h ¶
                          freelist.h ¶
-                         minor_gc.h ¶
-                         str.h
+                         minor_gc.h
 
 "io.c.o" Ä  io.c ¶
                        config.h ¶
@@ -819,8 +807,7 @@
                            gc.h ¶
                            major_gc.h ¶
                            freelist.h ¶
-                           minor_gc.h ¶
-                           str.h
+                           minor_gc.h
 
 "macintosh.c.o" Ä  macintosh.c
 
@@ -1046,7 +1033,6 @@
                         major_gc.h ¶
                         freelist.h ¶
                         minor_gc.h ¶
-                        str.h ¶
                         sys.h ¶
                         ui.h
 
