@@ -1,3 +1,5 @@
+utils/agraph.cmo: utils/extarray.cmi utils/table.cmi utils/agraph.cmi 
+utils/agraph.cmx: utils/extarray.cmx utils/table.cmx utils/agraph.cmi 
 utils/ccomp.cmo: utils/clflags.cmo utils/config.cmi utils/misc.cmi \
     utils/ccomp.cmi 
 utils/ccomp.cmx: utils/clflags.cmx utils/config.cmx utils/misc.cmx \
@@ -8,8 +10,14 @@ utils/config.cmo: utils/config.cmi
 utils/config.cmx: utils/config.cmi 
 utils/consistbl.cmo: utils/consistbl.cmi 
 utils/consistbl.cmx: utils/consistbl.cmi 
+utils/extarray.cmo: utils/extarray.cmi 
+utils/extarray.cmx: utils/extarray.cmi 
+utils/graph.cmo: utils/extarray.cmi utils/table.cmi utils/graph.cmi 
+utils/graph.cmx: utils/extarray.cmx utils/table.cmx utils/graph.cmi 
 utils/misc.cmo: utils/misc.cmi 
 utils/misc.cmx: utils/misc.cmi 
+utils/table.cmo: utils/table.cmi 
+utils/table.cmx: utils/table.cmi 
 utils/tbl.cmo: utils/tbl.cmi 
 utils/tbl.cmx: utils/tbl.cmi 
 utils/terminfo.cmo: utils/terminfo.cmi 
