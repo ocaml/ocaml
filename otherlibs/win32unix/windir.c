@@ -38,6 +38,7 @@ value win_findfirst(name)             /* ML */
   v = alloc_tuple(2);
   Field(v,0) = valname;
   Field(v,1) = Val_int(h);
+  Pop_roots();
   return v;
 }
 
