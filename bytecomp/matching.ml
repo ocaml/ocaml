@@ -109,11 +109,10 @@ let divide_tuple arity {cases = cl; args = al} =
     match simplify cl with
       ({pat_desc = Tpat_tuple args} :: patl, action) :: rem ->
         add_line (args @ patl, action) (divide rem)
-    | ({pat_desc = (Tpat_any | Tpat_var _)} :: patl, action)
-      :: rem ->
+    | ({pat_desc = (Tpat_any | Tpat_var _)} :: patl, action) :: rem ->
         let rec make_args n =
-          if n >= arity then patl else any_pat :: make_args (n-1) in
-        add_line (make_args arity, action) (divide rem)
+          if n >= arity then patl else any_pat :: make_args (n+1) in
+        add_line (make_args 0, action) (divide rem)
     | [] ->
         make_tuple_matching arity al
   in divide cl
