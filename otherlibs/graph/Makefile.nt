@@ -5,9 +5,12 @@
 CAMLC=..\..\boot\ocamlrun ..\..\boot\ocamlc -I ..\..\boot
 CAMLOPT=..\..\boot\ocamlrun ..\..\ocamlopt -I ..\..\stdlib
 
-all: graphics.cmi graphics.cmo
+all: graphics.cmi graphics.cmo graphics.cma
 
 allopt:
+
+graphics.cma: graphics.cmo
+	$(CAMLC) -a -o graphics.cma graphics.cmo
 
 partialclean:
 	rm -f *.cm*
@@ -15,7 +18,7 @@ partialclean:
 clean: partialclean
 
 install:
-	cp graphics.cm[io] $(LIBDIR)
+	cp graphics.cm[ioa] $(LIBDIR)
 
 installopt:
 
