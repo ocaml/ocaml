@@ -249,6 +249,7 @@ value gr_size_y(void)
 
 value gr_synchronize(void)
 {
+  gr_check_open();
   XCopyArea(grdisplay, grbstore.win, grwindow.win, grwindow.gc,
             0, grbstore.h - grwindow.h,
             grwindow.w, grwindow.h,
