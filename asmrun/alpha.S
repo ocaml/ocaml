@@ -330,9 +330,9 @@ stray_exn_handler:
 raise_caml_exception:
         ldgp    $gp, 0($27)
         mov     $16, $0                         /* Move exn bucket */
-        stq     $31, caml_last_return_address   /* We're back into Caml */
         ldq     $13, young_ptr
         ldq     $14, young_limit
+        stq     $31, caml_last_return_address   /* We're back into Caml */
         ldq     $sp, caml_exception_pointer
         ldq     $15, 0($sp)
         ldq     $27, 8($sp)
