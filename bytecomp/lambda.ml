@@ -70,7 +70,7 @@ type structured_constant =
 
 type function_kind = Curried | Tupled
 
-type let_kind = Strict | Alias | StrictOpt
+type let_kind = Strict | Alias | StrictOpt | Variable
 
 type shared_code = (int * int) list
 

@@ -156,11 +156,10 @@ let simplify_lambda lam =
       let slinit = simplif linit in
       let slbody = simplif lbody in
       begin try
-        Llet(Strict, v, slinit, eliminate_ref v slbody)
+        Llet(Variable, v, slinit, eliminate_ref v slbody)
       with Real_reference ->
         Llet(Strict, v, Lprim(Pmakeblock(0, Mutable), [slinit]), slbody)
       end
-  | Llet(Strict, v, l1, l2) -> Llet(Strict, v, simplif l1, simplif l2)
   | Llet(Alias, v, l1, l2) ->
       begin match count_var v with
         0 -> simplif l2
@@ -172,6 +171,7 @@ let simplify_lambda lam =
         0 -> simplif l2
       | n -> Llet(Alias, v, simplif l1, simplif l2)
       end
+  | Llet(kind, v, l1, l2) -> Llet(kind, v, simplif l1, simplif l2)
   | Lletrec(bindings, body) ->
       Lletrec(List.map (fun (v, l) -> (v, simplif l)) bindings, simplif body)
   | Lprim(p, ll) -> Lprim(p, List.map simplif ll)
