@@ -193,7 +193,7 @@ module TypeSet =
       let compare t1 t2 = t1.id - t2.id
     end)
 
-let rec check_constraints_rec env loc visited ty =
+let rec check_constraints_rec env newenv loc visited ty =
   let ty = Ctype.repr ty in
   if TypeSet.mem ty !visited then () else begin
   visited := TypeSet.add ty !visited;
@@ -202,7 +202,7 @@ let rec check_constraints_rec env loc visited ty =
       Ctype.begin_def ();
       let args' = List.map (fun _ -> Ctype.newvar ()) args in
       let ty' = Ctype.newconstr path args' in
-      begin try Ctype.enforce_constraints env ty'
+      begin try Ctype.enforce_constraints newenv ty'
       with Ctype.Unify _ -> assert false
       | Not_found -> raise (Error(loc, Unavailable_type_constructor path))
       end;
@@ -210,15 +210,15 @@ let rec check_constraints_rec env loc visited ty =
       Ctype.generalize ty';
       if not (List.for_all2 (Ctype.moregeneral env false) args' args) then
         raise (Error(loc, Constraint_failed (ty, ty')));
-      List.iter (check_constraints_rec env loc visited) args
+      List.iter (check_constraints_rec env newenv loc visited) args
   | Tpoly (ty, tl) ->
       let _, ty = Ctype.instance_poly false tl ty in
-      check_constraints_rec env loc visited ty
+      check_constraints_rec env newenv loc visited ty
   | _ ->
-      Btype.iter_type_expr (check_constraints_rec env loc visited) ty
+      Btype.iter_type_expr (check_constraints_rec env newenv loc visited) ty
   end
 
-let check_constraints env (_, sdecl) (_, decl) =
+let check_constraints env newenv (_, sdecl) (_, decl) =
   let visited = ref TypeSet.empty in
   let rec check = function
   | Type_abstract -> ()
@@ -233,7 +233,8 @@ let check_constraints env (_, sdecl) (_, decl) =
         (fun (name, tyl) ->
           let styl = try List.assoc name pl with Not_found -> assert false in
           List.iter2
-            (fun sty ty -> check_constraints_rec env sty.ptyp_loc visited ty)
+            (fun sty ty ->
+              check_constraints_rec env newenv sty.ptyp_loc visited ty)
             styl tyl)
         l
   | Type_record (l, _) ->
@@ -250,7 +251,7 @@ let check_constraints env (_, sdecl) (_, decl) =
       in
       List.iter
         (fun (name, _, ty) ->
-          check_constraints_rec env (get_loc name pl) visited ty)
+          check_constraints_rec env newenv (get_loc name pl) visited ty)
         l
   | Type_private tkind -> check tkind in
   check decl.type_kind;
@@ -260,7 +261,7 @@ let check_constraints env (_, sdecl) (_, decl) =
       let sty =
         match sdecl.ptype_manifest with Some sty -> sty | _ -> assert false
       in
-      check_constraints_rec env sty.ptyp_loc visited ty
+      check_constraints_rec env newenv sty.ptyp_loc visited ty
   end
 
 (*
@@ -512,7 +513,7 @@ let transl_type_decl env name_sdecl_list =
   (* Check re-exportation *)
   List.iter2 (check_abbrev newenv) name_sdecl_list decls;
   (* Check that constraints are enforced *)
-  List.iter2 (check_constraints newenv) name_sdecl_list decls;
+  List.iter2 (check_constraints temp_env newenv) name_sdecl_list decls;
   (* Check that abbreviations have same parameters *)
   let id_loc_list =
     List.map2
