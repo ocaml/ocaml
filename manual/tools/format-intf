@@ -102,7 +102,7 @@ while(<>) {
     }
     s/^external /val /;
     s/ = ("[^"]*"\s*)+$//;
-    next line if /^$/;
+    next line if /^\s*$/;
     s/^val \( ([^ )]+) \)/val (\1)/;
     {
       do indexentry($1, " (operator)"), last

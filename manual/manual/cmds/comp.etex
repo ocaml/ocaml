@@ -172,7 +172,8 @@ extension is not ".mli".
 \item["-labels"]
 Switch to the {\em commuting label} mode of compilation, meaning that labeling
 rules are applied strictly, and commutation between labeled arguments
-is allowed. This mode cannot be used to compile a program written in
+is allowed. (See section~\ref{s:commuting-mode}.)
+This mode cannot be used to compile a program written in
 the default {\em classic} style, but modules written in the two styles
 can be mixed in the same application.
 

@@ -1,10 +1,11 @@
 \chapter{Interfacing C with Objective Caml} \label{c:intf-c}
-\pdfchapter{Interfacing C with Objective Caml}
+\pdfchapterfold{-9}{Interfacing C with Objective Caml}
 
 This chapter describes how user-defined primitives, written in C, can
 be linked with Caml code and called from Caml functions.
 
 \section{Overview and compilation information}
+\pdfsection{Overview and compilation information}
 
 \subsection{Declaring primitives}
 
@@ -186,9 +187,9 @@ In the ``custom runtime'' mode, the Caml linker scans the
 object files and determines the set of required primitives. Then, it
 builds a suitable runtime system, by calling the native code linker with:
 \begin{itemize}
-\item the table of the required primitives
+\item the table of the required primitives;
 \item a library that provides the bytecode interpreter, the
-memory manager, and the standard primitives
+memory manager, and the standard primitives;
 \item libraries and object code files (".o" files) mentioned on the
 command line for the Caml linker, that provide implementations
 for the user's primitives.
@@ -201,12 +202,12 @@ runtime + bytecode) is launched.
 
 To link in ``custom runtime'' mode, execute the "ocamlc" command with:
 \begin{itemize}
-\item the "-custom" option
-\item the names of the desired Caml object files (".cmo" and ".cma" files) 
+\item the "-custom" option;
+\item the names of the desired Caml object files (".cmo" and ".cma" files) ;
 \item the names of the C object files and libraries (".o" and ".a"
 files) that implement the required primitives. Under Unix and Windows,
 a library named "lib"\var{name}".a" residing in one of the standard
-library directories can also be specified as "-cclib -l"\var{name}.)
+library directories can also be specified as "-cclib -l"\var{name}.
 \end{itemize}
 
 If you are using the native-code compiler "ocamlopt", the "-custom"
@@ -215,13 +216,13 @@ builds a standalone executable.  To build a mixed Caml/C executable,
 execute the "ocamlopt" command with:
 \begin{itemize}
 \item the names of the desired Caml native object files (".cmx" and
-".cmxa" files) 
+".cmxa" files);
 \item the names of the C object files and libraries (".o" and ".a"
 files) that implement the required primitives.
 \end{itemize}
 
 Starting with OCaml 3.00, it is possible to record the
-"-custom" option as well as the names of C libraries in the Caml
+"-custom" option as well as the names of C libraries in a Caml
 library file ".cma" or ".cmxa".  For instance, consider a Caml library
 "mylib.cma", built from the Caml object files "a.cmo" and "b.cmo",
 which reference C code in "libmylib.a".  If the library is
@@ -236,7 +237,7 @@ users of the library can simply link with "mylib.cma":
 and the system will automatically add the "-custom" and "-cclib
 -lmylib" options, achieving the same effect as
 \begin{alltt}
-        ocamlc -o myprog -custom mylib.cma ... -cclib -lmylib
+        ocamlc -o myprog -custom a.cmo b.cmo ... -cclib -lmylib
 \end{alltt}
 The alternative, of course, is to build the library without extra
 options:
@@ -269,8 +270,7 @@ system) that can run on this custom runtime.  This is achieved by the
 to build a custom runtime system integrating the C parts of the
 ``unix'' and ``threads'' libraries, do:
 \begin{verbatim}
-        ocamlc -make-runtime -o /home/me/ocamlunixrun unix.cma threads.cma \
-                -cclib -lunix -cclib -lthreads
+        ocamlc -make-runtime -o /home/me/ocamlunixrun unix.cma threads.cma
 \end{verbatim}
 To generate a bytecode executable that runs on this runtime system,
 do:
@@ -283,19 +283,20 @@ The bytecode executable "myprog" can then be launched as usual:
 
 Notice that the bytecode libraries "unix.cma" and "threads.cma" must
 be given twice: when building the runtime system (so that "ocamlc"
-knows which C primitives from "-lunix" and "-lthreads" are required)
-and also when building the bytecode executable (so that the bytecode
-from "unix.cma" and "threads.cma" is actually linked in).
+knows which C primitives are required) and also when building the
+bytecode executable (so that the bytecode from "unix.cma" and
+"threads.cma" is actually linked in).
 
 \section{The "value" type}
+\pdfsection{The "value" type}
 
 All Caml objects are represented by the C type "value",
 defined in the include file "caml/mlvalues.h", along with macros to
 manipulate values of that type. An object of type "value" is either:
 \begin{itemize}
-\item an unboxed integer
+\item an unboxed integer;
 \item a pointer to a block inside the heap (such as the blocks
-allocated through one of the \verb"alloc_*" functions below)
+allocated through one of the \verb"alloc_*" functions below);
 \item a pointer to an object outside the heap (e.g., a pointer to a block
 allocated by "malloc", or to a C variable).
 \end{itemize}
@@ -341,7 +342,18 @@ cast to and from the type "value". This includes pointers returned by
 "malloc", and pointers to C variables (of size at least one word)
 obtained with the \verb'&' operator.
 
+Caution: if a pointer returned by "malloc" is cast to the type "value"
+and returned to Caml, explicit deallocation of the pointer using
+"free" is potentially dangerous, because the pointer may still be
+accessible from the Caml world.  Worse, the memory space deallocated
+by "free" can later be reallocated as part of the Caml heap; the
+pointer, formerly pointing outside the Caml heap, now points inside
+the Caml heap, and this can confuse the garbage collector.  To avoid
+these problems, it is preferable to wrap the pointer in a Caml block
+with tag "Abstract_tag" or "Custom_tag".
+
 \section{Representation of Caml data types}
+\pdfsection{Representation of Caml data types}
 
 This section describes how Caml data types are encoded in the
 "value" type.
@@ -422,6 +434,7 @@ Instance variables are stored in the order in which they appear in the
 class definition (taking inherited classes into account).
 
 \section{Operations on values}
+\pdfsection{Operations on values}
 
 \subsection{Kind tests}
 
@@ -608,6 +621,7 @@ the C string \var{s} as argument.
 \end{itemize}
 
 \section{Living in harmony with the garbage collector}
+\pdfsection{Living in harmony with the garbage collector}
 
 Unused blocks in the heap are automatically reclaimed by the garbage
 collector. This requires some cooperation from C code that
@@ -756,7 +770,7 @@ not represent well-formed values.
 
 If you really need to allocate before the fields can receive their
 final value,  first initialize with a constant value (e.g.
-"Val_long(0)"), then allocate, then modify the fields with the correct
+"Val_unit"), then allocate, then modify the fields with the correct
 value (see rule~6).
 
 %% \begin{gcrule} Local variables and function parameters containing
@@ -880,6 +894,7 @@ a root because there is no allocation between the assignment where it
 takes its value and the "modify" statement that uses the value.
 
 \section{A complete example}
+\pdfsection{A complete example}
 
 This section outlines how the functions from the Unix "curses" library
 can be made available to Objective Caml programs. First of all, here is
@@ -977,6 +992,7 @@ Finally, to link everything together:
 \end{verbatim}
 
 \section{Advanced topic: callbacks from C to Caml} \label{s:callback}
+\pdfsection{Advanced topic: callbacks from C to Caml}
 
 So far, we have described how to call C functions from Caml. In this
 section, we show how C functions can call Caml functions, either as
@@ -1184,15 +1200,17 @@ compilation of Objective Caml, as the variables "BYTECCLINKOPTS"
 -output-obj").  Currently, the only ports that require special
 attention are:
 \begin{itemize}
-\item Digital Unix on the Alpha: object files produced by "ocamlc
--output-obj" must be linked with the "-taso" option.  This is not
-necessary for object files produced by "ocamlopt -output-obj".
+\item Alpha under Digital Unix / Tru64 Unix with "gcc":
+object files produced by "ocamlc -output-obj" must be linked with the
+"gcc" options "-Wl,-T,12000000 -Wl,-D,14000000".
+This is not necessary for object files produced by "ocamlopt -output-obj".
 \item Windows NT: the object file produced by Objective Caml have been
 compiled with the "/MT" flag, and therefore all other object files
 linked with it should also be compiled with "/MT".
 \end{itemize}
 
 \section{Advanced example with callbacks}
+\pdfsection{Advanced example with callbacks}
 
 This section illustrates the callback facilities described in
 section~\ref{s:callback}. We are going to package some Caml functions
@@ -1281,6 +1299,7 @@ To build the whole program, just invoke the C compiler as follows:
 \end{verbatim}
 
 \section{Advanced topic: custom blocks} \label{s:custom}
+\pdfsection{Advanced topic: custom blocks}
 
 Blocks with tag "Custom_tag" contain both arbitrary user data and a
 pointer to a C struct, with type "struct custom_operations", that
@@ -1334,7 +1353,7 @@ called whenever the custom block needs to be serialized (marshaled)
 using the Caml functions "output_value" or "Marshal.to_...".
 For a custom block, those functions first write the identifier of the
 block (as given by the "identifier" field) to the output stream,
-then calls the user-provided "serialize" function.  That function is
+then call the user-provided "serialize" function.  That function is
 responsible for writing the data contained in the custom block, using
 the "serialize_..." functions defined in "<caml/intext.h>" and listed
 below.  The user-provided "serialize" function must then store in its
@@ -1399,6 +1418,15 @@ Windows bitmap of \var{w} by \var{h} pixels, and you'd rather not
 have more than 1 mega-pixels of unreclaimed bitmaps, specify
 $\var{used} = \var{w} * \var{h}$ and $\var{max} = 1000000$.
 
+Another way to describe the effect of the \var{used} and \var{max}
+parameters is in terms of full GC cycles.  If you allocate many custom
+blocks with $\var{used} / \var{max} = 1 / \var{N}$, the GC will then do one
+full cycle (examining every object in the heap and calling
+finalization functions on those that are unreachable) every \var{N}
+allocations.  For instance, if $\var{used} = 1$ and $\var{max} = 1000$,
+the GC will do one full cycle at least every 1000 allocations of
+custom blocks.
+
 If your finalized blocks contain no pointers to out-of-heap resources,
 or if the previous discussion made little sense to you, just take
 $\var{used} = 0$ and $\var{max} = 1$.  But if you later find that the
@@ -1426,7 +1454,7 @@ write and read back the contents of custom blocks in a portable way.
 Those functions handle endianness conversions when e.g. data is
 written on a little-endian machine and read back on a big-endian machine.
 
-\begin{tableau}{|l|p{12cm}}{Function}{Action}
+\begin{tableau}{|l|p{10cm}}{Function}{Action}
 \entree{"serialize_int_1"}{Write a 1-byte integer}
 \entree{"serialize_int_2"}{Write a 2-byte integer}
 \entree{"serialize_int_4"}{Write a 4-byte integer}

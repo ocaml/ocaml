@@ -204,7 +204,7 @@ includeing side-effects. That is, if the application of optional
 parameters shall produce side-effects, these are delayed until the
 received function is really applied to a non-labeled argument.
 
-\subsection{Commuting label mode}
+\subsection{Commuting label mode} \label{s:commuting-mode}
 
 The {\em commuting label} mode allows a freer syntax, at the
 constraint that you must write all labels both in function definition

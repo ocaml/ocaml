@@ -149,10 +149,10 @@ Directories can also be added to the search path once
 the toplevel is running with the "#directory" directive
 (section~\ref{s:toplevel-directives}).
 
-\item["-label"]
-Switch to the @label@ mode of compilation, meaning that labeling
+\item["-labels"]
+Switch to the {\em commuting label} mode of compilation, meaning that labeling
 rules are applied strictly, and commutation between labeled arguments
-is allowed.
+is allowed. (See section~\ref{s:commuting-mode}.)
 
 \item["-rectypes"]
 Allow arbitrary recursive types during type-checking.  By default,
@@ -198,9 +198,10 @@ memory, and trace program execution.
 \item["#quit;;"]
 Exit the toplevel loop and terminate the "ocaml" command.
 
-\item["#label "\var{bool}";;"]
-Switch to @label@ style if argument is "true", or back to @classic@
-style if argument is "false".
+\item["#labels "\var{bool}";;"]
+Switch to {\em commuting label} style if argument is "true", or back to 
+{\em classic} (non-commuting) style if argument is "false". 
+(See section~\ref{s:commuting-mode}.)
 
 \item["#warnings \""\var{warning-list}"\";;"]
 Enable or disable warnings according to the argument.
