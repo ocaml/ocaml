@@ -928,7 +928,6 @@ and transl_reaction  = function
       let body =
         List.fold_right
           (fun (param, pat) lam ->
-            Printf.eprintf "PARAM=%s\n" (Ident.unique_name param) ;
             Matching.for_function
               Location.none None (Lvar param) [pat,lam] Total)
           idpats

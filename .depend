@@ -12,12 +12,8 @@ utils/consistbl.cmo: utils/consistbl.cmi
 utils/consistbl.cmx: utils/consistbl.cmi 
 utils/extarray.cmo: utils/extarray.cmi 
 utils/extarray.cmx: utils/extarray.cmi 
-utils/graph.cmo: utils/extarray.cmi utils/table.cmi utils/graph.cmi 
-utils/graph.cmx: utils/extarray.cmx utils/table.cmx utils/graph.cmi 
 utils/misc.cmo: utils/misc.cmi 
 utils/misc.cmx: utils/misc.cmi 
-utils/table.cmo: utils/table.cmi 
-utils/table.cmx: utils/table.cmi 
 utils/tbl.cmo: utils/tbl.cmi 
 utils/tbl.cmx: utils/tbl.cmi 
 utils/terminfo.cmo: utils/terminfo.cmi 
@@ -412,19 +408,19 @@ bytecomp/translclass.cmx: parsing/asttypes.cmi utils/clflags.cmx \
 bytecomp/translcore.cmo: parsing/asttypes.cmi typing/btype.cmi \
     utils/clflags.cmo utils/config.cmi typing/env.cmi typing/ident.cmi \
     bytecomp/joinmatch.cmi bytecomp/lambda.cmi parsing/location.cmi \
-    bytecomp/matching.cmi utils/misc.cmi typing/path.cmi typing/predef.cmi \
-    typing/primitive.cmi bytecomp/transldyn.cmi bytecomp/transljmatch.cmi \
-    bytecomp/transljoin.cmi bytecomp/translobj.cmi typing/typedtree.cmi \
-    bytecomp/typeopt.cmi typing/types.cmi typing/typetexp.cmi \
-    bytecomp/translcore.cmi 
+    bytecomp/matching.cmi utils/misc.cmi typing/parmatch.cmi typing/path.cmi \
+    typing/predef.cmi typing/primitive.cmi bytecomp/transldyn.cmi \
+    bytecomp/transljmatch.cmi bytecomp/transljoin.cmi bytecomp/translobj.cmi \
+    typing/typedtree.cmi bytecomp/typeopt.cmi typing/types.cmi \
+    typing/typetexp.cmi bytecomp/translcore.cmi 
 bytecomp/translcore.cmx: parsing/asttypes.cmi typing/btype.cmx \
     utils/clflags.cmx utils/config.cmx typing/env.cmx typing/ident.cmx \
     bytecomp/joinmatch.cmi bytecomp/lambda.cmx parsing/location.cmx \
-    bytecomp/matching.cmx utils/misc.cmx typing/path.cmx typing/predef.cmx \
-    typing/primitive.cmx bytecomp/transldyn.cmx bytecomp/transljmatch.cmx \
-    bytecomp/transljoin.cmx bytecomp/translobj.cmx typing/typedtree.cmx \
-    bytecomp/typeopt.cmx typing/types.cmx typing/typetexp.cmx \
-    bytecomp/translcore.cmi 
+    bytecomp/matching.cmx utils/misc.cmx typing/parmatch.cmx typing/path.cmx \
+    typing/predef.cmx typing/primitive.cmx bytecomp/transldyn.cmx \
+    bytecomp/transljmatch.cmx bytecomp/transljoin.cmx bytecomp/translobj.cmx \
+    typing/typedtree.cmx bytecomp/typeopt.cmx typing/types.cmx \
+    typing/typetexp.cmx bytecomp/translcore.cmi 
 bytecomp/transldyn.cmo: parsing/asttypes.cmi typing/btype.cmi \
     typing/ctype.cmi typing/env.cmi typing/ident.cmi bytecomp/lambda.cmi \
     parsing/longident.cmi utils/misc.cmi parsing/parsetree.cmi \

@@ -961,7 +961,8 @@ let rec last_arg = function
   | [x] -> [],x
   | x::rem ->
       let r,last = last_arg rem in
-      x::r, x
+      x::r, last
+
 (* Build a new application *)
 
 let rec get_loc_end = function

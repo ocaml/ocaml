@@ -48,6 +48,7 @@ let active_mutex = Mutex.create ()
 and active_condition = Condition.create ()
 and active = ref 1
 and in_pool = ref 0
+and pool_konts = ref 0
 (* Number of threads devoted to join *)
 (*DEBUG*)and nthreads = ref 1
 (*DEBUG*)and suspended = ref 0
@@ -66,8 +67,8 @@ and decr_locked r =
 
 let check_active () =
 (*DEBUG*)debug2 "CHECK"
-(*DEBUG*) (sprintf "active=%i, nthreads=%i, suspended=%i[%i]"
-(*DEBUG*)   !active !nthreads !suspended !in_pool) ;
+(*DEBUG*) (sprintf "active=%i, nthreads=%i, suspended=%i[%i,%i]"
+(*DEBUG*)   !active !nthreads !suspended !in_pool !pool_konts) ;
   if !active <= 0 then Condition.signal active_condition
 
 let become_inactive () =
@@ -83,28 +84,28 @@ and incr_active () =
   incr active ;
   Mutex.unlock active_mutex
 
-let exit_hook () =
-(*DEBUG*)debug1 "EXIT HOOK" "enter" ;
-(*DEBUG*)decr_locked nthreads ;
-  Mutex.lock active_mutex ;
-  decr active ;
-  begin if !active > 0 then begin
-(*DEBUG*)debug1 "EXIT HOOK" "suspend" ;
-    Condition.wait active_condition active_mutex
-  end else
-    Mutex.unlock active_mutex
-  end ;
-(*DEBUG*)debug1 "EXIT HOOK" "over" ;
-  ()
-
-let _ = at_exit exit_hook
+(*************************************)
+(* Real threads creation/destruction *)
+(*************************************)
 
 external thread_new : (unit -> unit) -> Thread.t = "caml_thread_new"
 external thread_uncaught_exception : exn -> unit = "caml_thread_uncaught_exception"
 
-(*************************************)
-(* Real threads creation/destruction *)
-(*************************************)
+
+let pool_size =
+  try
+    int_of_string (Sys.getenv "POOLSIZE")
+  with
+  | _ -> 10
+and runmax =
+   try
+    Some (int_of_string (Sys.getenv "RUNMAX"))
+  with
+  | _ -> None
+(*DEBUG*)let tasks_status () =
+(*DEBUG*)sprintf "active=%i, nthread=%i suspended=%i[%i, %i]"
+(*DEBUG*) !active !nthreads !suspended !in_pool
+(*DEBUG*) (!pool_konts)
 
 
 let really_exit_thread () =
@@ -115,20 +116,27 @@ let really_exit_thread () =
 (* Note: really_create_process
    uses thread_new, to short-circuit handling of exceptions by Thread *)  
 
+exception MaxRun
+
 let really_create_process f =
   incr_locked nthreads ;
   try
+    begin match runmax with
+    | Some k when !nthreads - !suspended > k -> raise MaxRun
+    | _ -> ()
+    end ;
     let t = Thread.id (thread_new f) in
 (*DEBUG*)debug1 "REAL FORK"
 (*DEBUG*) (sprintf "%i nthread=%i suspended=%i[%i]"
 (*DEBUG*)   t !nthreads !suspended !in_pool) ;
-    ignore(t)
+    ignore(t) ;
+    true
   with
   | e ->
-      prerr_string "Cannot create process: " ;
-      prerr_endline (Printexc.to_string e) ;
+(*DEBUG*)debug2 "REAL FORK FAILED"
+(*DEBUG*)  (sprintf "%s, %s" (tasks_status ()) (Printexc.to_string e)) ;
       decr_locked nthreads ;
-      become_inactive ()
+      false
       
 
 
@@ -139,25 +147,18 @@ let really_create_process f =
 let pool_condition = Condition.create ()
 and pool_mutex = Mutex.create ()
 and pool_kont = ref [] 
-and pool_size =
-  try
-    int_of_string (Sys.getenv "POOLSIZE")
-  with
-  | _ -> 10
 
 let rec do_pool () =
   incr in_pool ;
 (*DEBUG*)incr_locked suspended ;
-(*DEBUG*)debug2 "POOL SLEEP"
-(*DEBUG*)  (sprintf "%i, nthread=%i suspended=%i pool=%i"
-(*DEBUG*)     (Thread.id (Thread.self())) !nthreads !suspended !in_pool) ;
+(*DEBUG*)debug2 "POOL SLEEP" (tasks_status ()) ;
   Condition.wait pool_condition pool_mutex ;
 (*DEBUG*)decr_locked suspended ;
-(*DEBUG*)debug2 "POOL AWAKE" (sprintf "%i" (Thread.id (Thread.self()))) ;
+(*DEBUG*)debug2 "POOL AWAKE" (tasks_status ()) ;
   decr in_pool ;
   match !pool_kont with
   | f::rem ->
-      pool_kont := rem ;
+      pool_kont := rem ; decr pool_konts ;
 (*DEBUG*)debug2 "POOL RUN" (sprintf "%i" (Thread.id (Thread.self()))) ;
       Mutex.unlock pool_mutex ;
       f ()
@@ -169,24 +170,50 @@ let pool_enter () =
   Mutex.lock pool_mutex ;
   match !pool_kont with
   | f::rem ->
-      pool_kont := rem ;
+      pool_kont := rem ; decr pool_konts ;
       Mutex.unlock pool_mutex ;
 (*DEBUG*)debug2 "POOL FIRST RUN" (sprintf "%i" (Thread.id (Thread.self()))) ;
       f ()
   | [] ->
       do_pool ()
-        
+
+let rec grab_from_pool delay =
+  Mutex.lock pool_mutex ;
+  if !in_pool > 0 then begin
+    Condition.signal pool_condition ;
+    Mutex.unlock pool_mutex
+  end else match !pool_kont with
+  | f::rem ->
+      pool_kont := rem ; decr pool_konts ;
+      Mutex.unlock pool_mutex ;
+      if not (really_create_process f) then begin
+        Mutex.lock pool_mutex ;
+        pool_kont := f :: !pool_kont ; incr pool_konts ;
+        Mutex.unlock pool_mutex ;
+        prerr_endline "Threads exhausted" ;
+        Thread.delay delay ;
+        grab_from_pool (1.0 +. delay)
+      end
+  | [] ->
+      Mutex.unlock pool_mutex
 
 let exit_thread () =
-(*DEBUG*)debug2 "EXIT THREAD" "" ;
+(*DEBUG*)debug2 "EXIT THREAD" (tasks_status ()) ;
   become_inactive () ;
-  if !in_pool >= pool_size then
+  if !in_pool >= pool_size && !active > !pool_konts then
     really_exit_thread ()
-  else
+  else 
     pool_enter ()
 
+let put_pool f =
+  Mutex.lock pool_mutex ;
+  pool_kont := f :: !pool_kont ; incr pool_konts ;
+  Condition.signal pool_condition ;
+(*DEBUG*)debug2 "PUT POOL" (tasks_status ()) ;
+  Mutex.unlock pool_mutex
+
 let create_process f =
-(*DEBUG*)debug2 "CREATE_PROCESS" "" ;
+(*DEBUG*)debug2 "CREATE_PROCESS" (tasks_status ()) ;
   incr_active () ;
 (* Wapper around f, to be sure to call my exit_thread *)  
   let g () = 
@@ -198,12 +225,9 @@ let create_process f =
     exit_thread () in
 
   if !in_pool = 0 then begin
-    really_create_process g
+    if not (really_create_process g) then put_pool g 
   end else begin
-    Mutex.lock pool_mutex ;
-    pool_kont := g :: !pool_kont ;
-    Condition.signal pool_condition ;
-    Mutex.unlock pool_mutex ;
+    put_pool g
   end
 
 type queue = Obj.t list
@@ -215,6 +239,7 @@ type automaton = {
   mutex : Mutex.t ;
   queues : queue array ;
   mutable matches : (reaction) array ;
+  names : Obj.t ;
 } 
 
 and reaction = status * int * (Obj.t -> Obj.t)
@@ -238,8 +263,19 @@ let create_automaton nchans =
     mutex = Mutex.create () ;
     queues = Array.create nchans [] ;
     matches = [| |] ;
+    names = Obj.magic 0 ;
   } 
 
+let create_automaton_debug nchans names =
+  {
+    status = 0 ;
+    mutex = Mutex.create () ;
+    queues = Array.create nchans [] ;
+    matches = [| |] ;
+    names = names ;
+  } 
+
+let get_name auto idx = Obj.magic (Obj.field auto.names idx)
 
 let patch_table auto t = auto.matches <- t
 
@@ -294,9 +330,9 @@ let just_go_async auto f =
   Mutex.unlock auto.mutex ;
   f ()
 
-let rec attempt_match tail auto reactions i =
+let rec attempt_match tail auto reactions idx i =
   if i >= Obj.size reactions then begin
-    (*DEBUG*)debug3 "ATTEMPT FAILED" "" ;
+(*DEBUG*)debug3 "ATTEMPT FAILED" (sprintf "%s %i" (get_name auto idx) auto.status) ;    
     Mutex.unlock auto.mutex
   end else begin
     let (ipat, iprim, f) = Obj.magic (Obj.field reactions i) in
@@ -307,11 +343,12 @@ let rec attempt_match tail auto reactions i =
         f kont_go
       end
     else
-      attempt_match tail auto reactions (i+1)
+      attempt_match tail auto reactions idx (i+1)
   end
 
 let direct_send_async auto idx a =
-(*DEBUG*)  debug3 "SEND_ASYNC" (sprintf "channel %i, status=%x" idx auto.status ) ;
+(*DEBUG*)debug3 "SEND_ASYNC" (sprintf "channel=%s, status=%x"
+(*DEBUG*)                      (get_name auto idx) auto.status ) ;
 (* Acknowledge new message by altering queue and status *)
   Mutex.lock auto.mutex ;
   let old_status = auto.status in
@@ -319,10 +356,10 @@ let direct_send_async auto idx a =
   put_queue auto idx a ;
   auto.status <- new_status ;
   if old_status = new_status then begin
-(*DEBUG*)    debug3 "SEND_ASYNC" (sprintf "Return: %i" auto.status) ;
+(*DEBUG*)debug3 "SEND_ASYNC" (sprintf "Return: %i" auto.status) ;
     Mutex.unlock auto.mutex
   end else begin
-    attempt_match false auto (Obj.magic auto.matches) 0
+    attempt_match false auto (Obj.magic auto.matches) idx 0
   end
 
 (* Optimize forwarders *)
@@ -338,7 +375,8 @@ let send_async chan a = match chan with
 
 
 let tail_direct_send_async auto idx a =
-(*DEBUG*)  debug3 "TAIL_ASYNC" (sprintf "channel %i" idx) ;
+(*DEBUG*)debug3 "TAIL_ASYNC" (sprintf "channel %s, status=%i"
+(*DEBUG*)       (get_name auto idx) auto.status) ;
 (* Acknowledge new message by altering queue and status *)
   Mutex.lock auto.mutex ;
   let old_status = auto.status in
@@ -349,7 +387,7 @@ let tail_direct_send_async auto idx a =
 (*DEBUG*)    debug3 "TAIL_ASYNC" (sprintf "Return: %i" auto.status) ;
     Mutex.unlock auto.mutex
   end else begin
-    attempt_match true auto (Obj.magic auto.matches) 0
+    attempt_match true auto (Obj.magic auto.matches) idx 0
   end
 
 
@@ -371,9 +409,10 @@ let tail_send_async chan a = match chan with
 
 (* No match was found *)
 let kont_suspend k =
-(*DEBUG*)debug2 "KONT_SUSPEND" "" ;
+(*DEBUG*)debug3 "KONT_SUSPEND" (tasks_status ()) ;
 (*DEBUG*)incr_locked suspended ;
   become_inactive () ;
+  if !active = !pool_konts then grab_from_pool 0.1 ;      
   Condition.wait k.kcondition k.kmutex ;
 (*DEBUG*)decr_locked suspended ;
   Mutex.unlock k.kmutex ;
@@ -390,7 +429,9 @@ let suspend_for_reply k =
 (*DEBUG*)decr_locked suspended ;
   Mutex.unlock k.kmutex ;
   match k.kval with
-  | Ret v -> v
+  | Ret v ->
+(*DEBUG*)debug3 "REPLIED" (tasks_status ()) ;
+      v
   | Start|Go _ -> assert false
 
 
@@ -414,9 +455,10 @@ let fire_suspend k auto f =
   suspend_for_reply k
 
 let rec attempt_match_sync idx kont auto reactions i =
-  if i >= Obj.size reactions then
+  if i >= Obj.size reactions then begin
+(*DEBUG*)debug3 "SYNC ATTEMPT FAILED" (sprintf "%s %i" (get_name auto idx) auto.status) ;    
     kont_suspend kont
-  else begin
+  end else begin
     let (ipat, ipri, f) = Obj.magic (Obj.field reactions i) in
     if ipat land auto.status = ipat then begin
       if ipri < 0 then
@@ -430,7 +472,7 @@ let rec attempt_match_sync idx kont auto reactions i =
   end
 
 let send_sync auto idx a =
-(*DEBUG*)  debug3 "SEND_SYNC" (sprintf "channel %i" idx) ;
+(*DEBUG*)  debug3 "SEND_SYNC" (sprintf "channel %s" (get_name auto idx)) ;
 (* Acknowledge new message by altering queue and status *)
   Mutex.lock auto.mutex ;
   let old_status = auto.status in
@@ -466,3 +508,46 @@ let reply_to v k =
   k.kval <- Ret v ;
   Condition.signal k.kcondition ;
   Mutex.unlock k.kmutex 
+
+(********************************)
+(* Management of initial thread *)
+(********************************)
+
+
+(* Called when all active tasks are waiting in thread pool *)
+let from_pool () =
+  if !in_pool > 0 then begin
+(*DEBUG*)debug1 "HOOK" "SIGNAL" ;    
+    Condition.signal pool_condition ;
+  end else begin (* Create a new thread to enter pool *)
+(*DEBUG*)debug1 "HOOK" "CREATE" ;    
+    incr_active () ;
+    let b = really_create_process exit_thread in
+(*DEBUG*)debug1 "HOOK" (if b then "PROCESS CREATED" else "FAILED");
+    if not b then begin
+      prerr_endline "Threads are exhausted, good bye !"
+    end
+
+  end
+
+let rec exit_hook () =
+(*DEBUG*)debug1 "HOOK" "enter" ;
+(*DEBUG*)decr_locked nthreads ;
+  Mutex.lock active_mutex ;
+  decr active ;
+  begin if !active > 0 then begin
+    if !pool_konts = !active then begin
+      Mutex.unlock active_mutex ;
+      from_pool ()
+    end ;
+(*DEBUG*)debug1 "HOOK" "suspend" ;
+    Condition.wait active_condition active_mutex
+  end else
+    Mutex.unlock active_mutex
+  end ;
+(*DEBUG*)debug1 "HOOK" "over" ;
+  ()
+
+
+let _ = at_exit exit_hook
+

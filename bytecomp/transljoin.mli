@@ -31,11 +31,6 @@ val tail_direct_send_async :
   Ident.t -> int -> int option -> Lambda.lambda -> Lambda.lambda
 val tail_send_async : Lambda.lambda -> Lambda.lambda -> Lambda.lambda
 
-(*
-val create_automaton : Ident.t option -> int -> int -> Lambda.lambda
-val patch_match : Ident.t -> int -> int list -> Lambda.lambda
-val patch_guard : Ident.t -> int -> Lambda.lambda -> Lambda.lambda
-*)
 val reply_to : Lambda.lambda -> Lambda.lambda -> Lambda.lambda
 val do_spawn : Ident.t option -> Lambda.lambda -> Lambda.lambda
 

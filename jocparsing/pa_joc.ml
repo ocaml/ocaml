@@ -119,7 +119,7 @@ EXTEND (* join calculus *)
      |  "reply" ; e = SELF ; "to" ; id = joinident -> ExRep (loc, e, id)
      |  "spawn" ;  e = bracedproc -> ExSpa (loc, e)
      |  "exec" ; "{" ;  e = expr LEVEL "top" ; "}" -> ExSpa (loc, e)
-     |  "let" ; "def" ; d = LIST1 joinautomaton SEP "and" ;
+     |  "def" ; d = LIST1 joinautomaton SEP "and" ;
         "in" ; e=expr LEVEL "top" ->
         ExDef (loc, d, e)
      | "let" ; "loc" ; d = LIST1 joinlocation SEP "and" ;
@@ -129,14 +129,14 @@ EXTEND (* join calculus *)
 
  str_item: LEVEL "top"
     [[
-      "let" ; "def" ; d = LIST1 joinautomaton SEP "and" ;
+      "def" ; d = LIST1 joinautomaton SEP "and" ;
       "in" ; e=expr ->
         StExp (loc, ExDef (loc, d, e))
     | "let" ; "loc" ; d = LIST1 joinlocation SEP "and" ;
        "in" ; e=expr ->
         StExp (loc, ExLoc (loc, d, e))
 
-    | "let" ; "def" ; d = LIST1 joinautomaton SEP "and" ->
+    | "def" ; d = LIST1 joinautomaton SEP "and" ->
          StDef (loc, d)
     | "let" ; "loc" ; d = LIST1 joinlocation SEP "and"  ->
         StLoc (loc, d)
