@@ -49,7 +49,7 @@ floats.o: floats.c ../byterun/alloc.h ../byterun/misc.h \
  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/mlvalues.h ../byterun/fail.h ../byterun/memory.h \
  ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h \
- ../byterun/minor_gc.h ../byterun/stacks.h
+ ../byterun/minor_gc.h ../byterun/reverse.h ../byterun/stacks.h
 freelist.o: freelist.c ../byterun/config.h ../byterun/../config/m.h \
  ../byterun/../config/s.h ../byterun/freelist.h ../byterun/misc.h \
  ../byterun/mlvalues.h ../byterun/gc.h ../byterun/gc_ctrl.h \
@@ -214,7 +214,7 @@ floats.d.o: floats.c ../byterun/alloc.h ../byterun/misc.h \
  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/mlvalues.h ../byterun/fail.h ../byterun/memory.h \
  ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h \
- ../byterun/minor_gc.h ../byterun/stacks.h
+ ../byterun/minor_gc.h ../byterun/reverse.h ../byterun/stacks.h
 freelist.d.o: freelist.c ../byterun/config.h ../byterun/../config/m.h \
  ../byterun/../config/s.h ../byterun/freelist.h ../byterun/misc.h \
  ../byterun/mlvalues.h ../byterun/gc.h ../byterun/gc_ctrl.h \
@@ -379,7 +379,7 @@ floats.p.o: floats.c ../byterun/alloc.h ../byterun/misc.h \
  ../byterun/config.h ../byterun/../config/m.h ../byterun/../config/s.h \
  ../byterun/mlvalues.h ../byterun/fail.h ../byterun/memory.h \
  ../byterun/gc.h ../byterun/major_gc.h ../byterun/freelist.h \
- ../byterun/minor_gc.h ../byterun/stacks.h
+ ../byterun/minor_gc.h ../byterun/reverse.h ../byterun/stacks.h
 freelist.p.o: freelist.c ../byterun/config.h ../byterun/../config/m.h \
  ../byterun/../config/s.h ../byterun/freelist.h ../byterun/misc.h \
  ../byterun/mlvalues.h ../byterun/gc.h ../byterun/gc_ctrl.h \
