@@ -55,7 +55,7 @@ dynamics.cmxa: $(CAMLOBJS:.cmo=.cmx)
 $(CAMLOBJS:.cmo=.cmx): $(ROOT)/ocamlopt
 
 install:
-	cp dynamics.cma $(CMIFILES) $(CMIFILES:.cmi=.mli) $(LIBDIR)
+	cp dynamics.cma $(CMIFILES) $(LOCAL_MODULES:=.mli) $(LIBDIR)
 
 installopt:
 	cp $(CAMLOBJS:.cmo=.cmx) dynamics.cmxa $(LIBDIR)
