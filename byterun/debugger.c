@@ -169,6 +169,7 @@ static void safe_output_value(chan, val)
 
 #define Pc(sp) ((code_t)(sp[0]))
 #define Env(sp) (sp[1])
+#define Extra_args(sp) (Long_val((sp[2])))
 #define Locals(sp) (sp + 3)
 
 void debugger(event)
@@ -270,10 +271,10 @@ void debugger(event)
       break;
     case REQ_UP_FRAME:
       i = getword(dbg_in);
-      if (frame + i + 3 >= stack_high) {
+      if (frame + Extra_args(frame) + i + 3 >= stack_high) {
         putword(dbg_out, -1);
       } else {
-        frame += i + 3;
+        frame += Extra_args(frame) + i + 3;
         putword(dbg_out, stack_high - frame);
         putword(dbg_out, (Pc(frame) - start_code) * sizeof(opcode_t));
       }
