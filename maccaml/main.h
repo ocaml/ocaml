@@ -55,7 +55,7 @@
 
 #include "../byterun/signals.h"
 
-#include "constants.h"
+#include "ocamlconstants.h"
 
 #if DEBUG
 #define Assert(cond) if (!(cond)) assert_failure (#cond, __FILE__, __LINE__)

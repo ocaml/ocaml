@@ -3,10 +3,10 @@ stdlib
 *.cp.x
 *.xcoff
 *.dbg
-primitives
+appliprims
+appli
 prims.c
 Objective*Caml
 OCaml.68k
 OCaml.PPC
-OCaml.bytecode
 dummy_fragment

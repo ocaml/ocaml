@@ -1,5 +1,5 @@
 #*** Dependencies: Cut here ***
-# These dependencies were produced at 21:25:48 on 17 avr 2000 by MakeDepend
+# These dependencies were produced at 15:17:32 on 20 avr 2000 by MakeDepend
 
 :aboutbox.c.x Ä  ¶
  :aboutbox.c ¶
@@ -41,7 +41,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -125,7 +125,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -209,7 +209,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -293,7 +293,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -380,7 +380,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -464,7 +464,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -548,7 +548,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -638,7 +638,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"VaListTDef.h ¶
  "{CIncludes}"MacErrors.h ¶
  "{CIncludes}"MixedMode.h ¶
@@ -721,7 +721,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"MixedMode.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
@@ -808,7 +808,7 @@
  "{CIncludes}"StandardFile.h ¶
  "{CIncludes}"Strings.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"ConditionalMacros.h ¶
  "{CIncludes}"Components.h ¶
  "{CIncludes}"MixedMode.h ¶
@@ -887,7 +887,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -971,7 +971,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -1055,7 +1055,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -1139,7 +1139,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -1223,7 +1223,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -1307,7 +1307,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -1391,7 +1391,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -1478,7 +1478,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -1562,7 +1562,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -1646,7 +1646,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -1691,7 +1691,7 @@
  "{CIncludes}"DriverSynchronization.h
 
 #*** Dependencies: Cut here ***
-# These dependencies were produced at 21:25:59 on 17 avr 2000 by MakeDepend
+# These dependencies were produced at 15:17:41 on 20 avr 2000 by MakeDepend
 
 :aboutbox.c.o Ä  ¶
  :aboutbox.c ¶
@@ -1733,7 +1733,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -1817,7 +1817,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -1901,7 +1901,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -1985,7 +1985,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -2072,7 +2072,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -2156,7 +2156,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -2240,7 +2240,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -2330,7 +2330,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"VaListTDef.h ¶
  "{CIncludes}"MacErrors.h ¶
  "{CIncludes}"MixedMode.h ¶
@@ -2413,7 +2413,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"MixedMode.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
@@ -2500,7 +2500,7 @@
  "{CIncludes}"StandardFile.h ¶
  "{CIncludes}"Strings.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"ConditionalMacros.h ¶
  "{CIncludes}"Components.h ¶
  "{CIncludes}"MixedMode.h ¶
@@ -2579,7 +2579,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -2663,7 +2663,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -2747,7 +2747,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -2831,7 +2831,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -2915,7 +2915,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -2999,7 +2999,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -3083,7 +3083,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -3170,7 +3170,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -3254,7 +3254,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶
@@ -3338,7 +3338,7 @@
  "{CIncludes}"TextUtils.h ¶
  "{CIncludes}"ToolUtils.h ¶
  ::byterun:signals.h ¶
- :constants.h ¶
+ :ocamlconstants.h ¶
  "{CIncludes}"NullDef.h ¶
  "{CIncludes}"SizeTDef.h ¶
  "{CIncludes}"SeekDefs.h ¶

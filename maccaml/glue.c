@@ -197,6 +197,12 @@ static OSErr expand_escapes (Handle s)
     return err;
 }
 
+static void caml_main_then_exit (char **argv)
+{
+  caml_main (argv);
+  exit (0);
+}
+
 /* [build_command_line] creates the array of strings that represents
    the command line according to the template found in
    the 'Line'(kCommandLineTemplate) resource and the environment
@@ -280,10 +286,12 @@ OSErr launch_caml_main (void)
   err = WinOpenToplevel ();
   if (err != noErr) goto failed;
 
-  build_command_line (&argv);
+  err = build_command_line (&argv);
+  if (err) goto failed;
   pthread_attr_init (&attr);
   pthread_attr_setstacksize (&attr, 256 * 1024);
-  res = pthread_create (&topthread, &attr, (void *) caml_main, (void *) argv);
+  res = pthread_create (&topthread, &attr, (void *) caml_main_then_exit,
+                        (void *) argv);
   pthread_attr_destroy (&attr);
   if (res != 0){
     err = -1;

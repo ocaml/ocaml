@@ -37,7 +37,7 @@ void OpenAboutBox (void)
   LongRect lr;
   WEHandle we = NULL;
   WStatusH st = NULL;
-  Handle txt = NULL;
+  Handle txt = NULL, copr = NULL;
   TextStyle ts;
 
   if (DrawAboutUPP == NULL) DrawAboutUPP = NewUserItemProc (DrawAbout);
@@ -72,9 +72,20 @@ void OpenAboutBox (void)
     err = WESetStyle (weDoFont + weDoSize, &ts, we);
     if (err != noErr) goto failed;
 
-    txt = GetResource ('TEXT', kAboutText);
+    txt = GetResource ('TEXT', kAboutText1);
     err = ResError (); if (err != noErr){ err = noErr; goto failed; }
     DetachResource (txt);
+
+    copr = GetResource ('TEXT', kAboutText2);
+    err = ResError ();
+    if (err == noErr){
+      HLock (copr);
+      err = HandAndHand (copr, txt);
+      /* ignore errors */
+      HUnlock (copr);
+      ReleaseResource (copr);
+      copr = NULL;
+    }
 
     err = WEUseText (txt, we);
     if (err != noErr) goto failed;
@@ -86,6 +97,7 @@ void OpenAboutBox (void)
     return;
 
     failed:
+    if (copr != NULL) DisposeHandle (copr);
     if (txt != NULL) DisposeHandle (txt);
     if (we != NULL) WEDispose (we);
     if (st != NULL) DisposeHandle ((Handle) st);

@@ -72,7 +72,8 @@
 
 #define kScrollBarTemplate 1000
 
-#define kJoeCamlIcon 1000  /* see ocaml.r(ICON/cicn) before changing */
+/* DO NOT CHANGE this definition. */
+#define kApplicationIcon 1000
 
 #define kDialogAbout 1000
 #define kAlertNeedSys7 1001
@@ -123,7 +124,8 @@
 #define kDisconnected 15
 #define kIOError 16
 
-#define kAboutText 1000
+#define kAboutText1 1000
+#define kAboutText2 1001
 
 #define kMenuBar 1000
 

@@ -14,6 +14,7 @@
 
 VERSIONSTR = ¶
   "¶"{OCAMLMAJOR}.{OCAMLMINOR}/Mac{MAJOR}.{MINOR}.{BUGFIX}{STAGE}{REV}¶""
+
 COPYRIGHTSTR = "¶"Copyright 1991-2000 INRIA¶""
 
 XIncludes = -i ::byterun:,::config: ¶
@@ -86,8 +87,8 @@ camllibs = ::otherlibs:graph:graphics.cma ¶
 primfiles = ::byterun:primitives ¶
             prim_bigarray prim_graph prim_num prim_unix prim_systhreads
 
-RezDefs = -d SystemSevenOrLater=1 -d MAJORVNUM={MAJOR} ¶
-          -d MINORVNUM=0x{MINOR}{BUGFIX} -d STAGE={STAGE} -d DEVVNUM={REV} ¶
+RezDefs = -d MAJORVNUM={MAJOR} -d MINORVNUM=0x{MINOR}{BUGFIX} ¶
+          -d STAGE={STAGE} -d DEVVNUM={REV} ¶
           -d VERSIONSTR={VERSIONSTR} -d COPYRIGHTSTR={COPYRIGHTSTR}
 
 OBJS = aboutbox.c.o appleevents.c.o clipboard.c.o ¶
@@ -104,21 +105,21 @@ PPCOBJS = aboutbox.c.x appleevents.c.x clipboard.c.x ¶
           menus.c.x mcmisc.c.x modalfilter.c.x prefs.c.x prims.c.x ¶
           print.c.x scroll.c.x windows.c.x gusistuff.cp.x
 
-all Ä appli
+all Ä appli appliprims ocamlconstants.h appli.r "Objective Caml"
     set status 0
 
-primitives Ä {primfiles}
-    catenate {primfiles} >primitives
+appliprims Ä {primfiles}
+    catenate {primfiles} > appliprims
 
-prims.c Ä primitives
+prims.c Ä appliprims
     echo '#include "mlvalues.h"' > prims.c
     echo '#include "prims.h"' >> prims.c
-    streamedit -e '1,$ change "extern value " . "();"' primitives >> prims.c
+    streamedit -e '1,$ change "extern value " . "();"' appliprims >> prims.c
     echo 'c_primitive cprim [] = {' >> prims.c
-    streamedit -e '1,$ change "  " . ","' primitives >> prims.c
+    streamedit -e '1,$ change "  " . ","' appliprims >> prims.c
     echo '0 };' >> prims.c
     echo 'char * names_of_cprim [] = {' >> prims.c
-    streamedit -e '1,$ change "  ¶"" . "¶","' primitives >> prims.c
+    streamedit -e '1,$ change "  ¶"" . "¶","' appliprims >> prims.c
     echo '0 };' >> prims.c
 
 gusistuff.cp.x Ä gusistuff.cp
@@ -136,36 +137,39 @@ OCaml.PPC Ä {PPCOBJS} {ppccamlrunlibs}
 OCaml.68k Ä {OBJS} {camlrunlibs}
     ilink -o OCaml.68k {linkoptions} {OBJS} {libs}
 
-OCaml.bytecode Ä primitives ::toplevellib.cma ::toplevel:topmain.cmo ¶
-                 {camllibs}
-    ::boot:ocamlrun ::boot:ocamlc -I ::stdlib: -linkall -use-prims primitives ¶
-                    ::toplevellib.cma {camllibs} ::toplevel:topmain.cmo ¶
-                    -noautolink -o OCaml.bytecode
-
 dummy_fragment Ä dummy_fragment.c.x
     ppclink -xm l -o dummy_fragment {ppclinkoptions} dummy_fragment.c.x
 
-appli ÄÄ OCaml.PPC OCaml.68k OCaml.bytecode ocaml.r dummy_fragment
-    duplicate -y OCaml.68k "Objective Caml"
-    rez -a -o "Objective Caml" {RezDefs} ocaml.r
-    mergefragment -a OCaml.PPC "Objective Caml"
-    mergefragment dummy_fragment "Objective Caml"
-    catenate OCaml.bytecode >> "Objective Caml"
-    setfile -t APPL -c Caml -a iB "Objective Caml"
+appli ÄÄ OCaml.PPC OCaml.68k dummy_fragment
+    duplicate -y OCaml.68k appli
+    mergefragment -a OCaml.PPC appli
+    mergefragment dummy_fragment appli
 
-install Ä
+"Objective Caml" Ä appliprims appli.r ocamlconstants.h appli ¶
+                   ::toplevellib.cma {camllibs} ::toplevel:topmain.cmo
+    :ocamlmkappli -creator Caml ¶
+       -ocamlc ¶
+           "::boot:ocamlrun ::boot:ocamlc -I ::stdlib: -linkall -noautolink" ¶
+       {rezdefs} -lib : -name "Objective Caml" -r ocaml.r ¶
+       -prefsize 5000 -minsize 3000 ¶
+       ::toplevellib.cma {camllibs} ::toplevel:topmain.cmo
+
+install Ä appli appli.r appliprims ocamlconstants.h ocamlmkappli ¶
+          "Objective Caml"
     duplicate -y "Objective Caml" ¶
                  `exists "objective caml.xcoff" ¶
                          "::test:Moretest:graph_example.ml" ¶
                          ` ¶
               "{APPLIDIR}"
+    duplicate -y appli appli.r appliprims ocamlconstants.h "{LIBDIR}"
+    duplicate -y ocamlmkappli "{BINDIR}"
 
 partialclean Ä
-    delete -i OCaml.bytecode "Objective Caml"
+    delete -i "Objective Caml"
 
 clean Ä
-    delete -i -y {OBJS} {PPCOBJS} OCaml.68k OCaml.PPC OCaml.bytecode ¶
-                 "Objective Caml" primitives prims.c null :config ¶
+    delete -i -y {OBJS} {PPCOBJS} OCaml.68k OCaml.PPC ¶
+                 "Objective Caml" appliprims prims.c null :config ¶
                  dummy_fragment dummy_fragment.c.x dummy_fragment.xcoff ¶
                  "Objective Caml.xcoff" "Objective Caml.dbg"
 

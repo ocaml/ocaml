@@ -13,9 +13,8 @@
 /* $Id$ */
 
 #include "Types.r"
-#include "Sound.r"
 
-#include "constants.h"
+#include "ocamlconstants.h"
 
 resource 'vers' (1) {
 #define d development
@@ -31,652 +30,22 @@ resource 'vers' (1) {
 #undef b
 };
 
-resource 'SIZE' (-1) {
-    reserved,
-    acceptSuspendResumeEvents,
-    reserved,
-    canBackground,
-    doesActivateOnFGSwitch,
-    backgroundAndForeground,
-    dontGetFrontClicks,
-    ignoreChildDiedEvents,
-    is32BitCompatible,
-    isHighLevelEventAware,
-    localAndRemoteHLEvents,
-    isStationeryAware,
-    dontuseTextEditServices,
-    reserved,
-    reserved,
-    reserved,
-    6000 * 1024,
-    2000 * 1024
-};
-
-data 'Line' (kCommandLineTemplate) {
+data 'Line' (1000) {  /* kCommandLineTemplate */
   "%a\000"
 };
 
-data 'Line' (kEnvironmentTemplate) {
-  "CAMLLIB=%dstdlib:\000"
+data 'Line' (1001) {  /* kEnvironmentTemplate */
   "TempFolder=%t\000"
+  "CAMLLIB=%dstdlib:\000"
 };
 
-type 'Kequ' {
-  wide array KequArray {
-    byte any = 0   command = 1;
-    byte char;
-    byte item;
-    fill byte;
-  };
-};
-
-resource 'Kequ' (kKeysOK) {
-  {
-    any, charReturn, 1,
-    any, charEnter, 1,
-    any, 'o', 1,
-    any, 'O', 1,
-  }
-};
-
-resource 'Kequ' (kKeysSaveDontCancel) {
-  {
-    any, charReturn, 1,
-    any, charEnter, 1,
-    any, 'y', 1,
-    any, 'Y', 1,
-    any, 's', 1,
-    any, 'S', 1,
-
-    any, charEscape, 2,
-    command, '.', 2,
-    any, 'c', 2,
-    any, 'C', 2,
-
-    any, 'n', 3,
-    any, 'N', 3,
-    any, 'd', 3,
-    any, 'D', 3,
-  }
-};
-
-resource 'ALRT' (kAlertBug) {
-    {60, 61, 260, 451}, kAlertBug,
-    {
-        OK, visible, silent,
-        OK, visible, silent,
-        OK, visible, silent,
-        OK, visible, silent,
-    },
-    alertPositionParentWindowScreen
-};
-
-resource 'DITL' (kAlertBug) {
-    {
-        {160, 310, 180, 368}, Button {enabled, "Quit"},
-
-        {10, 70, 80, 368},
-        StaticText {disabled,
-          "You have discovered a bug in Objective Caml.  Please"
-          " report the following information to <caml-bugs@inria.fr>."
-        },
-
-        {80, 20, 145, 368},
-        StaticText {disabled, "file: ^1\nline: ^2\nexpr: ^0"},
-    }
-};
-
-resource 'ALRT' (kAlertNotYet) {
-    {60, 81, 160, 431}, kAlertNotYet,
-    {
-        OK, visible, silent,
-        OK, visible, silent,
-        OK, visible, silent,
-        OK, visible, silent,
-    },
-    alertPositionParentWindowScreen
-};
-
-resource 'DITL' (kAlertNotYet) {
-    {
-        {60, 270, 80, 328}, Button {enabled, "OK"},
-
-        {10, 70, 45, 328},
-        StaticText {disabled, "This feature is not yet implemented." },
-    }
-};
-
-resource 'ALRT' (kAlertNeedSys7) {
-    {60, 81, 200, 431}, kAlertNeedSys7,
-    {
-        OK, visible, silent,
-        OK, visible, silent,
-        OK, visible, silent,
-        OK, visible, silent,
-    },
-    alertPositionMainScreen
-};
-
-resource 'DITL' (kAlertNeedSys7) {
-    {
-        {100, 270, 120, 328},
-        Button {enabled, "Quit"},
-
-        {10, 70, 85, 328},
-        StaticText {
-            disabled,
-            "Objective Caml cannot run on MacOS versions prior to System 7."
-        },
-
-        {10, 20, 42, 52}, Icon {disabled, kJoeCamlIcon},
-    }
-};
-
-resource 'ALRT' (kAlertNeed32BitQD) {
-    {60, 81, 200, 431}, kAlertNeed32BitQD,
-    {
-        OK, visible, silent,
-        OK, visible, silent,
-        OK, visible, silent,
-        OK, visible, silent,
-    },
-    alertPositionMainScreen
-};
-
-resource 'DITL' (kAlertNeed32BitQD) {
-    {
-        {100, 270, 120, 328},
-        Button {enabled, "Quit"},
-
-        {10, 70, 85, 328},
-        StaticText {
-            disabled,
-            "Objective Caml needs a Macintosh with 32-bit color QuickDraw."
-        },
-
-        {10, 20, 42, 52}, Icon {disabled, kJoeCamlIcon},
-    }
-};
-
-resource 'ALRT' (kAlertExit) {
-    {60, 81, 210, 431}, kAlertExit,
-    {
-        OK, visible, silent,
-        OK, visible, silent,
-        OK, visible, silent,
-        OK, visible, silent,
-    },
-    alertPositionParentWindowScreen
-};
-
-resource 'DITL' (kAlertExit) {
-    {
-        {110, 270, 130, 328}, Button {enabled, "OK"},
-
-        {10, 70, 95, 328},
-        StaticText {
-          disabled,
-          "The O'Caml toplevel loop has terminated.\n\n"
-          "Any further input in the toplevel window will be ignored."
-        },
-    }
-};
-
-resource 'ALRT' (kAlertErrorMsg) {
-    {60, 81, 200, 431}, kAlertErrorMsg,
-    {
-        OK, visible, sound1,
-        OK, visible, sound1,
-        OK, visible, sound1,
-        OK, visible, sound1,
-    },
-    alertPositionParentWindowScreen
-};
-
-resource 'DITL' (kAlertErrorMsg) {
-    {
-        {100, 270, 120, 328}, Button {enabled, "OK"},
-        {10, 70, 85, 328}, StaticText { disabled, "^0^1^2^3" },
-    }
-};
-
-resource 'ALRT' (kAlertErrorNum) {
-    {60, 81, 200, 431}, kAlertErrorNum,
-    {
-        OK, visible, sound1,
-        OK, visible, sound1,
-        OK, visible, sound1,
-        OK, visible, sound1,
-    },
-    alertPositionParentWindowScreen
-};
-
-resource 'DITL' (kAlertErrorNum) {
-    {
-        {100, 270, 120, 328}, Button {enabled, "OK"},
-
-        {10, 70, 85, 328},
-        StaticText { disabled, "An error occurred.\n\nerror code = ^3" },
-    }
-};
-
-resource 'ALRT' (kAlertGeneric) {
-    {60, 81, 200, 431}, kAlertGeneric,
-    {
-        OK, visible, sound1,
-        OK, visible, sound1,
-        OK, visible, sound1,
-        OK, visible, sound1,
-    },
-    alertPositionParentWindowScreen
-};
-
-resource 'DITL' (kAlertGeneric) {
-    {
-        {100, 270, 120, 328}, Button {enabled, "OK"},
-
-        {10, 20, 85, 378},
-        StaticText { disabled, "^0^1^2^3" },
-    }
-};
-
-resource 'ALRT' (kAlertSaveAsk) {
-    {60, 81, 200, 431}, kAlertSaveAsk,
-    {
-        OK, visible, silent,
-        OK, visible, silent,
-        OK, visible, silent,
-        OK, visible, silent,
-    },
-    alertPositionParentWindowScreen
-};
-
-resource 'DITL' (kAlertSaveAsk) {
-    {
-        {100, 270, 120, 328}, Button {enabled, "Save"},
-        {100, 202, 120, 260}, Button {enabled, "Cancel"},
-        {100,  22, 120, 110}, Button {enabled, "Don't Save"},
-        {10, 70, 85, 328}, StaticText { disabled, "Save \"^0\" before ^1 ?" },
-        {10, 20, 42, 52}, Icon {disabled, kJoeCamlIcon},
-    }
-};
-
-resource 'DLOG' (kDialogAbout) {
-    {70, 60, 280, 470},
-    noGrowDocProc,
-    visible,
-    goAway,
-    0,
-    kDialogAbout,
-    "About Objective Caml",
-    alertPositionMainScreen
-};
-
-resource 'DITL' (kDialogAbout) {
-    {
-        {10, 20, 42, 52}, Icon {disabled, kJoeCamlIcon},
-        {10, 72, 200, 400}, UserItem { disabled },
-    }
-};
-
-data 'TEXT' (kAboutText, purgeable) {
-    "Objective Caml version " VERSIONSTR "\n"
-    COPYRIGHTSTR "\n"
-    "\n"
-    "Xavier Leroy, Jer™me Vouillon, Jacques Garrigue,"
-    " Damien Doligez, et al.\n"
-    "\n"
-    "O'Caml for MacOS uses MPW libraries, the WASTE text engine,"
-    " GUSI, and SFIO.\n"
-    "\n"
-    "MPW © 1983-1999 by Apple Computer, Inc., all rights reserved\n"
-    "WASTE text engine © 1993-1998 Marco Piovanelli\n"
-    "GUSI Copyright (C) 1992-1999 Matthias Neeracher\n"
-    "SFIO Copyright (c) 1991, 1996 by AT&T Labs - Research.\n"
-};
-
-resource 'MBAR' (kMenuBar) {
-    {kMenuApple, kMenuFile, kMenuEdit, kMenuWindows, }
-};
-
-resource 'MENU' (kMenuApple) {
-    kMenuApple,
-    textMenuProc,
-    0x7FFFFFFD,
-    enabled,
-    apple,
-    {
-        "About Objective CamlÉ", noIcon, noKey, noMark, plain,
-        "-", noIcon, noKey, noMark, plain,
-    }
-};
-
-resource 'MENU' (kMenuFile) {
-    kMenuFile,
-    textMenuProc,
-    0x7FFFFB7B,
-    enabled,
-    "File",
-    {
-        "New", noIcon, "N", noMark, plain,
-        "OpenÉ", noIcon, "O", noMark, plain,
-        "-", noIcon, noKey, noMark, plain,
-        "Close", noIcon, "W", noMark, plain,
-        "Save", noIcon, "S", noMark, plain,
-        "Save asÉ", noIcon, noKey, noMark, plain,
-        "Revert to Saved", noIcon, noKey, noMark, plain,
-        "-", noIcon, noKey, noMark, plain,
-        "Page SetupÉ", noIcon, nokey, noMark, plain,
-        "PrintÉ", noIcon, "P", noMark, plain,
-        "-", noIcon, noKey, noMark, plain,
-        "Quit", noIcon, "Q", noMark, plain,
-    }
-};
-
-resource 'MENU' (kMenuEdit) {
-    kMenuEdit,
-    textMenuProc,
-    0x7FFFFFBD,
-    enabled,
-    "Edit",
-    {
-        "Undo", noIcon, "Z", noMark, plain,
-        "-", noIcon, noKey, noMark, plain,
-        "Cut", noIcon, "X", noMark, plain,
-        "Copy", noIcon, "C", noMark, plain,
-        "Paste", noIcon, "V", noMark, plain,
-        "Clear", noIcon, noKey, noMark, plain,
-        "Select All", noIcon, "A", noMark, plain,
-        "Show Clipboard", noIcon, noKey, noMark, plain,
-        "-", noIcon, noKey, noMark, plain,
-        "FindÉ", noIcon, "F", noMark, plain,
-        "ReplaceÉ", noIcon, "R", noMark, plain,
-        "-", noIcon, noKey, noMark, plain,
-        "PreferencesÉ", noIcon, noKey, noMark, plain,
-    }
-};
-
-resource 'MENU' (kMenuWindows) {
-    kMenuWindows,
-    textMenuProc,
-    0x7FFFFFF9,
-    enabled,
-    "Windows",
-    {
-        "Toplevel", noIcon, "T", noMark, plain,
-        "Graphics", noIcon, "G", noMark, plain,
-        "-", noIcon, noKey, noMark, plain,
-    }
-};
-
-resource 'STR#' (kUndoStrings) {
-  {
-    "Cannot undo",
-    "Undo", "Redo",
-    "Undo Typing", "Redo Typing",
-    "Undo Cut", "Redo Cut",
-    "Undo Paste", "Redo Paste",
-    "Undo Clear", "Redo Clear",
-    "Undo Drag & Drop", "Redo Drag & Drop",
-    /* Style change is not supported. */
-  }
-};
-
-resource 'STR#' (kMiscStrings, purgeable) {
-  {
-    "Objective Caml Preferences",
-    "Untitled",
-    "closing",
-    "quitting",
-    "Unable to open \"",
-    "\".  ",
-    "Save file as:",
-    "",
-    "Unable to write to \"",
-  }
-};
-
-resource 'STR#' (kErrorStrings, purgeable) {
-  {
-    "There is not enough memory.",
-    "The disk is full.",
-    "The directory is full.",
-    "Too many files are already open.",
-    "The file does not exist.",
-    "The disk is write-protected.",
-    "The file is locked.",
-    "The disk is locked.",
-    "The file is in use.",
-    "The file is already open (by Objective Caml or another application).",
-    "The disk was ejected.",
-    "The file is locked or you do not have the permission to open it.",
-    "You do not have the permission to write to this file.",
-    "The folder does not exist.",
-    "The connection to the file server was closed or broken.",
-    "A hardware error occurred during input or output.",
-  }
-};
-
-resource 'STR ' (kPrefsDescriptionStr, purgeable) {
-  "This document describes user preferences for Objective Caml. "
-  "You cannot open or print this document. To be "
-  "effective, this document must be stored in the Preferences "
-  "folder of the System Folder."
-};
-
-resource 'WIND' (kToplevelWinTemplate) {
-  {40, 4, 342, 512},
-  zoomDocProc,
-  invisible,
-  noGoAway,
-  0,
-  "O'Caml Toplevel",
-  noAutoCenter
-};
-
-resource 'WIND' (kGraphicsWinTemplate) {
-  {40, 4, 342, 512},
-  zoomDocProc,
-  invisible,
-  goAway,
-  0,
-  "O'Caml Graphics",
-  noAutoCenter
-};
-
-resource 'WIND' (kDocumentWinTemplate) {
-  {45, 10, 342, 512},
-  zoomDocProc,
-  visible,
-  goAway,
-  0,
-  "Untitled",
-  staggerMainScreen
-};
-
-resource 'CNTL' (kScrollBarTemplate) {
-  {0, 0, 16, 16},
-  0,
-  invisible,
-  0, 0,
-  scrollBarProc,
-  0,
-  ""
-};
-
-resource 'acur' (0) {
-  {1000, 1001, 1002, 1003, }
-};
-
-resource 'CURS' (1000) {
-    $"07C0 1F30 3F08 7F04 7F04 FF02 FF02 FFFE"
-    $"81FE 81FE 41FC 41FC 21F8 19F0 07C0",
-    $"07C0 1FF0 3FF8 7FFC 7FFC FFFE FFFE FFFE"
-    $"FFFE FFFE 7FFC 7FFC 3FF8 1FF0 07C0",
-    {7, 7}
-};
-
-resource 'CURS' (1001) {
-    $"07C0 1FF0 3FF8 5FF4 4FE4 87C2 8382 8102"
-    $"8382 87C2 4FE4 5FF4 3FF8 1FF0 07C0",
-    $"07C0 1FF0 3FF8 7FFC 7FFC FFFE FFFE FFFE"
-    $"FFFE FFFE 7FFC 7FFC 3FF8 1FF0 07C0",
-    {7, 7}
-};
-
-resource 'CURS' (1002) {
-    $"07C0 19F0 21F8 41FC 41FC 81FE 81FE FFFE"
-    $"FF02 FF02 7F04 7F04 3F08 1F30 07C0",
-    $"07C0 1FF0 3FF8 7FFC 7FFC FFFE FFFE FFFE"
-    $"FFFE FFFE 7FFC 7FFC 3FF8 1FF0 07C0",
-    {7, 7}
-};
-
-resource 'CURS' (1003) {
-    $"07C0 1830 2008 701C 783C FC7E FEFE FFFE"
-    $"FEFE FC7E 783C 701C 2008 1830 07C0",
-    $"07C0 1FF0 3FF8 7FFC 7FFC FFFE FFFE FFFE"
-    $"FFFE FFFE 7FFC 7FFC 3FF8 1FF0 07C0",
-    {7, 7}
-};
-
-resource 'snd ' (1002){
-  FormatOne{
-    { sampledSynth, 0x80 },
-  },
-  {
-    hasData, soundCmd {0x2C},
-    noData, ampCmd {127},
-    noData, freqDurationCmd {0x4321, 60},
-    noData, quietCmd {},
-  },
-  {
-    4,
-    Rate22K,
-    0, 4,
-    0,
-    60,
-    $"FF01FF01"
-  }
-};
-
-resource 'snd ' (1004){
-  FormatOne{
-    { sampledSynth, 0x80 },
-  },
-  {
-    hasData, soundCmd {0x2C},
-    noData, ampCmd {127},
-    noData, freqDurationCmd {0x4321, 60},
-    noData, quietCmd {},
-  },
-  {
-    4,
-    Rate22K,
-    0, 4,
-    0,
-    60,
-    $"FF800180"
-  }
-};
-
-resource 'snd ' (1008){
-  FormatOne{
-    { sampledSynth, 0x80 },
-  },
-  {
-    hasData, soundCmd {0x2C},
-    noData, ampCmd {127},
-    noData, freqDurationCmd {0x4321, 60},
-    noData, quietCmd {},
-  },
-  {
-    8,
-    Rate22K,
-    0, 8,
-    0,
-    60,
-    $"FFDA8026012680DA"
-  }
-};
-
-resource 'snd ' (1032){
-  FormatOne{
-    { sampledSynth, 0x80 },
-  },
-  {
-    hasData, soundCmd {0x2C},
-    noData, ampCmd {127},
-    noData, freqDurationCmd {0x4321, 60},
-    noData, quietCmd {},
-  },
-  {
-    32,
-    Rate22K,
-    0, 32,
-    0,
-    60,
-    $"FFFDF5EADAC7B19980674F3926160B0301030B1626394F678099B1C7DAEAF5FD"
-  }
-};
-
-
-resource 'snd ' (1128){
-  FormatOne{
-    { sampledSynth, 0x80 },
-  },
-  {
-    hasData, soundCmd {0x2C},
-    noData, ampCmd {127},
-    noData, freqDurationCmd {0x4321, 60},
-    noData, quietCmd {},
-  },
-  {
-    128,
-    Rate22K,
-    0, 128,
-    0,
-    60,
-    $"FFFFFEFEFDFBFAF8F5F3F0EDEAE6E2DEDAD5D1CCC7C1BCB6B1ABA59F99938C86"
-    $"807A746D67615B554F4A443F39342F2B26221E1A1613100D0B08060503020201"
-    $"01010202030506080B0D1013161A1E22262B2F34393F444A4F555B61676D747A"
-    $"80868C93999FA5ABB1B6BCC1C7CCD1D5DADEE2E6EAEDF0F3F5F8FAFBFDFEFEFF"
-  }
-};
-
-resource 'snd ' (1512, "foo"){
-  FormatOne{
-    { sampledSynth, 0x80 },
-  },
-  {
-    hasData, soundCmd {0x2C},
-    noData, ampCmd {127},
-    noData, freqDurationCmd {0x4321, 60},
-    noData, quietCmd {},
-  },
-  {
-    512,
-    Rate22K,
-    0, 512,
-    0,
-    60,
-    $"FFFFFFFFFFFFFFFFFEFEFEFEFEFDFDFDFDFCFCFCFBFBFAFAFAF9F9F8F8F7F6F6"
-    $"F5F5F4F3F3F2F1F1F0EFEFEEEDECEBEAEAE9E8E7E6E5E4E3E2E1E0DFDEDDDCDB"
-    $"DAD9D8D6D5D4D3D2D1CFCECDCCCAC9C8C7C5C4C3C1C0BFBDBCBAB9B8B6B5B3B2"
-    $"B1AFAEACABA9A8A6A5A3A2A09F9D9C9A999796949391908E8C8B898886858382"
-    $"807E7D7B7A7877757472706F6D6C6A696766646361605E5D5B5A585755545251"
-    $"4F4E4D4B4A484746444341403F3D3C3B39383736343332312F2E2D2C2B2A2827"
-    $"262524232221201F1E1D1C1B1A1918171616151413121111100F0F0E0D0D0C0B"
-    $"0B0A0A0908080707060606050504040403030303020202020201010101010101"
-    $"0101010101010101020202020203030303040404050506060607070808090A0A"
-    $"0B0B0C0D0D0E0F0F1011111213141516161718191A1B1C1D1E1F202122232425"
-    $"2627282A2B2C2D2E2F31323334363738393B3C3D3F404143444647484A4B4D4E"
-    $"4F5152545557585A5B5D5E606163646667696A6C6D6F7072747577787A7B7D7E"
-    $"808283858688898B8C8E909193949697999A9C9D9FA0A2A3A5A6A8A9ABACAEAF"
-    $"B1B2B3B5B6B8B9BABCBDBFC0C1C3C4C5C7C8C9CACCCDCECFD1D2D3D4D5D6D8D9"
-    $"DADBDCDDDEDFE0E1E2E3E4E5E6E7E8E9EAEAEBECEDEEEFEFF0F1F1F2F3F3F4F5"
-    $"F5F6F6F7F8F8F9F9FAFAFAFBFBFCFCFCFDFDFDFDFEFEFEFEFEFFFFFFFFFFFFFF"
-  }
+data 'TEXT' (1000, purgeable) {  /* kAboutText1 */
+  "Objective Caml version " VERSIONSTR "\n"
+  COPYRIGHTSTR "\n"
+  "\n"
+  "Xavier Leroy, Jer™me Vouillon, Jacques Garrigue, Damien Doligez, et al.\n"
+  "\n"
+  "\n"
 };
 
 
@@ -1057,51 +426,6 @@ resource 'ics8' (1002) {
     $"00FF FFFF FFFF FFFF FFFF FFFF FFFF FC"
 };
 
-resource 'FREF' (128) {
-    'APPL',
-    0,
-    ""
-};
-
-resource 'FREF' (129) {
-    'TEXT',
-    1,
-    ""
-};
-
-resource 'FREF' (130) {
-    'sEXT',
-    2,
-    ""
-};
-
-resource 'BNDL' (128) {
-    'Caml',
-    0,
-    {   /* array TypeArray: 2 elements */
-        /* [1] */
-        'FREF',
-        {   /* array IDArray: 3 elements */
-            /* [1] */
-            0, 128,
-            /* [2] */
-            1, 129,
-            /* [3] */
-            2, 130
-        },
-        /* [2] */
-        'ICN#',
-        {   /* array IDArray: 3 elements */
-            /* [1] */
-            0, 1000,
-            /* [2] */
-            1, 1001,
-            /* [3] */
-            2, 1002
-        }
-    }
-};
-
 resource 'ICON' (1000) {
     $"001F 8000 003F E000 00FF F000 FDF0 183E 83C0 07FE 81FF FFFE"
     $"80E3 FFFC C073 FFFC 603B F9F8 381F F0F0 0C0F F030 0607 E018"
@@ -1112,47 +436,43 @@ resource 'ICON' (1000) {
 };
 
 data 'cicn' (1000) {
-    $"0000 0000 8010 0000 0000 0020 0020 0000 0000 0000 0000 0048"                /* ....€...... . .........H */
-    $"0000 0048 0000 0000 0004 0001 0004 0000 0000 0000 0000 0000"                /* ...H.................... */
-    $"0000 0000 0000 0004 0000 0000 0020 0020 0000 0000 0004 0000"                /* ............. . ........ */
-    $"0000 0020 0020 0000 0000 FFFF FFFF FFFF FFFF FFFF FFFF FFFF"                /* ... . ....ÿÿÿÿÿÿÿÿÿÿÿÿÿÿ */
-    $"FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF"                /* ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ */
-    $"FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF"                /* ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ */
-    $"FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF"                /* ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ */
-    $"FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF"                /* ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ */
-    $"FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF FFFF 001F 8000 003F"                /* ÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿÿ..€..? */
-    $"E000 00FF F000 FDF0 183E 83C0 07FE 81FF FFFE 80E3 FFFC C073"                /* à..ÿğ.ığ.>ƒÀ.şÿÿş€ãÿüÀs */
-    $"FFFC 603B F9F8 381F F0F0 0C0F F030 0607 E018 0600 300C 0E00"                /* ÿü`;ùø8.ğğ..ğ0..à...0... */
-    $"1806 0E00 0C03 0E00 C603 0E00 C303 0E00 C183 0E00 C0C3 0E00"                /* ........Æ...Ã...Áƒ..ÀÃ.. */
-    $"C067 0F00 E035 0700 E01D 0301 E019 0106 7019 0118 7819 0368"                /* Àg..à5..à...à...p...x..h */
-    $"1C19 02C8 0E3A 0740 077A 0640 03FC 0C00 07E0 0800 0C00 0FFF"                /* ...È.:.@.z.@.ü...à.....ÿ */
-    $"F800 0000 0000 0000 0007 0000 FFFF FFFF FFFF 0001 FFFF FFFF"                /* ø...........ÿÿÿÿÿÿ..ÿÿÿÿ */
-    $"0000 0002 CCCC 9999 6666 0003 8888 8888 8888 0004 DDDD DDDD"                /* ....ÌÌ™™ff..ˆˆˆˆˆˆ..İİİİ */
-    $"DDDD 0005 FFFF CCCC 9999 0006 0000 BBBB 0000 000F 0000 0000"                /* İİ..ÿÿÌÌ™™....»»........ */
-    $"0000 0000 0000 000F FFFF F000 0000 0000 0000 0000 0000 00FF"                /* ........ÿÿğ............ÿ */
-    $"FFFF FFF0 0000 0000 0000 0000 0000 FFFF FFFF FFFF 0000 0000"                /* ÿÿÿğ..........ÿÿÿÿÿÿ.... */
-    $"0000 FFFF FF0F FFFF 5555 555F F000 00FF FFF0 F222 22FF FF55"                /* ..ÿÿÿ.ÿÿUUU_ğ..ÿÿğò""ÿÿU */
-    $"5555 5555 5FFF FFFF FFF0 F222 222F FFFF FFFF FFFF FFFF FFFF"                /* UUUU_ÿÿÿÿğò""/ÿÿÿÿÿÿÿÿÿÿ */
-    $"FFF0 F222 2222 FFF3 33FF FFFF FFFF FFFF FF00 FF22 2222 2FFF"                /* ÿğò"""ÿó3ÿÿÿÿÿÿÿÿ.ÿ"""/ÿ */
-    $"44FF FFFF FFFF FFFF FF00 0FF2 2222 22FF F4FF FFFF F55F FFFF"                /* Dÿÿÿÿÿÿÿÿ..ò"""ÿôÿÿÿõ_ÿÿ */
-    $"F000 00FF F222 222F FFFF FFFF 5555 FFFF 0000 0000 FF22 2222"                /* ğ..ÿò""/ÿÿÿÿUUÿÿ....ÿ""" */
-    $"FFFF FFFF 5555 55FF 0000 0000 0FF2 2222 2FFF FFF2 2555 555F"                /* ÿÿÿÿUUUÿ.....ò""/ÿÿò%UU_ */
-    $"F000 0000 0FF2 2222 2555 55FF 2255 5555 FF00 0000 FFF2 2222"                /* ğ....ò""%UUÿ"UUUÿ...ÿò"" */
-    $"5555 555F F225 5555 5FF0 0000 FFF2 2225 5555 5555 FF22 5555"                /* UUU_ò%UU_ğ..ÿò"%UUUUÿ"UU */
-    $"55FF 0000 FFF2 2225 5555 FF55 5FF2 2555 55FF 0000 FFF2 2225"                /* Uÿ..ÿò"%UUÿU_ò%UUÿ..ÿò"% */
-    $"5555 FF55 55FF 2252 55FF 0000 FFF2 2225 5555 FF55 555F F222"                /* UUÿUUÿ"RUÿ..ÿò"%UUÿUU_ò" */
-    $"22FF 0000 FFF2 2225 5555 FF55 5555 FF22 22FF 0000 FFF2 2222"                /* "ÿ..ÿò"%UUÿUUUÿ""ÿ..ÿò"" */
-    $"5555 FF55 5555 5FF2 2FFF 0000 FFFF 2222 2555 FFF5 5555 55FF"                /* UUÿUUU_ò/ÿ..ÿÿ""%UÿõUUUÿ */
-    $"2F5F 0000 0FFF 2222 2255 FFF5 5555 555F FF5F 0000 00FF 2222"                /* /_...ÿ"""UÿõUUU_ÿ_...ÿ"" */
-    $"2221 61F5 5555 555F F55F 0000 000F 2222 2612 2FFF 5555 555F"                /* "!aõUUU_õ_....""&./ÿUUU_ */
-    $"F55F 0000 000F 2221 6222 2FFF F555 555F F55F 0000 00FF 2612"                /* õ_...."!b"/ÿõUU_õ_...ÿ&. */
-    $"1222 222F FF55 555F F55F 0000 00F2 1122 6222 2222 FFF5 55FF"                /* .""/ÿUU_õ_...ò."b"""ÿõUÿ */
-    $"F5F0 0000 0FF6 2622 2222 2222 2FFF 5FFF F5F0 0000 0F62 2622"                /* õğ...ö&"""""/ÿ_ÿõğ...b&" */
-    $"2222 2222 22FF FFFF FF00 0000 FF22 2222 2222 2222 2FFF FFF0"                /* """""ÿÿÿÿ...ÿ"""""""/ÿÿğ */
-    $"0000 0000 F222 2222 2222 2222 FF00 0000 0000 0000 FFFF FFFF"                /* ....ò"""""""ÿ.......ÿÿÿÿ */
-    $"FFFF FFFF F000 0000 0000"                                                   /* ÿÿÿÿğ..... */
-};
-
-data 'Caml' (0) {
-    $"00"                                                                         /* . */
+    $"0000 0000 8010 0000 0000 0020 0020 0000 0000 0000 0000 0048"
+    $"0000 0048 0000 0000 0004 0001 0004 0000 0000 0000 0000 0000"
+    $"0000 0000 0000 0004 0000 0000 0020 0020 0000 0000 0004 0000"
+    $"0000 0020 0020 0000 0000 001F 8000 003F E000 00FF F000 FDFF"
+    $"F83E FFFF FFFE FFFF FFFE FFFF FFFC FFFF FFFC 7FFF FFF8 3FFF"
+    $"FFF0 0FFF FFF0 07FF FFF8 07FF FFFC 0FFF FFFE 0FFF FFFF 0FFF"
+    $"FFFF 0FFF FFFF 0FFF FFFF 0FFF FFFF 0FFF FFFF 0FFF FFFF 07FF"
+    $"FFFF 03FF FFFF 01FF FFFF 01FF FFFF 03FF FFFF 03FF FFFE 07FF"
+    $"FFFE 07FF FFFC 0FFF FFE0 0FFF FC00 0FFF F800 001F 8000 003F"
+    $"E000 00FF F000 FDF0 183E 83C0 07FE 81FF FFFE 80E3 FFFC C073"
+    $"FFFC 603B F9F8 381F F0F0 0C0F F030 0607 E018 0600 300C 0E00"
+    $"1806 0E00 0C03 0E00 C603 0E00 C303 0E00 C183 0E00 C0C3 0E00"
+    $"C067 0F00 E035 0700 E01D 0301 E019 0106 7019 0118 7819 0368"
+    $"1C19 02C8 0E3A 0740 077A 0640 03FC 0C00 07E0 0800 0C00 0FFF"
+    $"F800 0000 0000 0000 0007 0000 FFFF FFFF FFFF 0001 FFFF FFFF"
+    $"0000 0002 CCCC 9999 6666 0003 8888 8888 8888 0004 DDDD DDDD"
+    $"DDDD 0005 FFFF CCCC 9999 0006 0000 BBBB 0000 000F 0000 0000"
+    $"0000 0000 0000 000F FFFF F000 0000 0000 0000 0000 0000 00FF"
+    $"FFFF FFF0 0000 0000 0000 0000 0000 FFFF FFFF FFFF 0000 0000"
+    $"0000 FFFF FF0F FFFF 5555 555F F000 00FF FFF0 F222 22FF FF55"
+    $"5555 5555 5FFF FFFF FFF0 F222 222F FFFF FFFF FFFF FFFF FFFF"
+    $"FFF0 F222 2222 FFF3 33FF FFFF FFFF FFFF FF00 FF22 2222 2FFF"
+    $"44FF FFFF FFFF FFFF FF00 0FF2 2222 22FF F4FF FFFF F55F FFFF"
+    $"F000 00FF F222 222F FFFF FFFF 5555 FFFF 0000 0000 FF22 2222"
+    $"FFFF FFFF 5555 55FF 0000 0000 0FF2 2222 2FFF FFF2 2555 555F"
+    $"F000 0000 0FF2 2222 2555 55FF 2255 5555 FF00 0000 FFF2 2222"
+    $"5555 555F F225 5555 5FF0 0000 FFF2 2225 5555 5555 FF22 5555"
+    $"55FF 0000 FFF2 2225 5555 FF55 5FF2 2555 55FF 0000 FFF2 2225"
+    $"5555 FF55 55FF 2252 55FF 0000 FFF2 2225 5555 FF55 555F F222"
+    $"22FF 0000 FFF2 2225 5555 FF55 5555 FF22 22FF 0000 FFF2 2222"
+    $"5555 FF55 5555 5FF2 2FFF 0000 FFFF 2222 2555 FFF5 5555 55FF"
+    $"2F5F 0000 0FFF 2222 2255 FFF5 5555 555F FF5F 0000 00FF 2222"
+    $"2221 61F5 5555 555F F55F 0000 000F 2222 2612 2FFF 5555 555F"
+    $"F55F 0000 000F 2221 6222 2FFF F555 555F F55F 0000 00FF 2612"
+    $"1222 222F FF55 555F F55F 0000 00F2 1122 6222 2222 FFF5 55FF"
+    $"F5F0 0000 0FF6 2622 2222 2222 2FFF 5FFF F5F0 0000 0F62 2622"
+    $"2222 2222 22FF FFFF FF00 0000 FF22 2222 2222 2222 2FFF FFF0"
+    $"0000 0000 F222 2222 2222 2222 FF00 0000 0000 0000 FFFF FFFF"
+    $"FFFF FFFF F000 0000 0000"
 };
