@@ -3,8 +3,8 @@
 
 The "num" library implements
 exact-precision rational arithmetic. It is built upon the
-state-of-the-art BigNum arbitrary-precision integer arithmetic
-package, and therefore achieves very high performance.
+BigNum arbitrary-precision integer arithmetic
+package, and therefore achieves fairly high performance.
 
 The functions provided in this library are fully documented in
 {\em The CAML Numbers Reference Manual\/} by 
