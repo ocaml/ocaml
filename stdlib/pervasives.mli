@@ -516,10 +516,16 @@ val exit : int -> 'a
            and terminate the process, returning the given status code
 	   to the operating system (usually 0 to indicate no errors,
            and a small positive integer to indicate failure.) 
-           This function should be called at
-           the end of all standalone programs that output results on
-           [stdout] or [stderr]; otherwise, the program may appear
-           to produce no output, or its output may be truncated. *)
+           An implicit [exit 0] is performed each time a program
+           terminates normally (but not if it terminates because of
+           an uncaught exception). *)
+
+val at_exit: (unit -> unit) -> unit
+        (* Register the given function to be called at program
+           termination time. The functions registered with [at_exit]
+           will be called in some unspecified order when the program
+           executes [exit]. They will not be called if the program
+           terminates because of an uncaught exception. *)
 
 (*--*)
 

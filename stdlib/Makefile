@@ -12,15 +12,15 @@ OBJS=pervasives.cmo list.cmo string.cmo char.cmo array.cmo sys.cmo \
   set.cmo map.cmo stack.cmo queue.cmo \
   printf.cmo format.cmo arg.cmo printexc.cmo gc.cmo random.cmo digest.cmo
 
-all: stdlib.cma cslheader
+all: stdlib.cma std_exit.cmo cslheader
 
-allopt: stdlib.cmxa
+allopt: stdlib.cmxa std_exit.cmx
 
 install:
-	cp stdlib.cma *.cmi *.mli cslheader $(LIBDIR)
+	cp stdlib.cma std_exit.cmo *.cmi *.mli cslheader $(LIBDIR)
 
 installopt:
-	cp stdlib.cmxa stdlib.a *.cmx $(LIBDIR)
+	cp stdlib.cmxa stdlib.a std_exit.cmx *.cmx $(LIBDIR)
 	cd $(LIBDIR); $(RANLIB) stdlib.a
 
 stdlib.cma: $(OBJS)
@@ -55,7 +55,7 @@ pervasives.cmx: pervasives.ml
 .ml.cmx:
 	$(CAMLOPT) $(COMPFLAGS) -c $<
 
-$(OBJS): pervasives.cmi
+$(OBJS) std_exit.cmo: pervasives.cmi
 
 $(OBJS): $(COMPILER)
 $(OBJS:.cmo=.cmi): $(COMPILER)

@@ -11,6 +11,8 @@
 
 (* $Id$ *)
 
+type 'a option = None | Some of 'a
+
 (* Exceptions *)
 
 external raise : exn -> 'a = "%raise"
@@ -288,7 +290,12 @@ external decr: int ref -> unit = "%decr"
 
 external sys_exit : int -> 'a = "sys_exit"
 
-let exit retcode =
-  flush stdout; flush stderr; sys_exit retcode
+let exit_function = ref (fun () -> flush stdout; flush stderr)
 
-type 'a option = None | Some of 'a
+let exit retcode =
+  (!exit_function)();
+  sys_exit retcode
+
+let at_exit f =
+  let g = !exit_function in
+  exit_function := (fun () -> f(); g())
