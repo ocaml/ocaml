@@ -1257,6 +1257,18 @@ if test $has_tk = true; then
     tcl_version=`sh ./runtest $tk_defs $tk_x11_include tclversion.c`
   fi
   if test -z "$tcl_version"; then
+    tk_defs="-I/usr/local/include/tcl8.2 -I/usr/local/include/tk8.2"
+    tcl_version=`sh ./runtest $tk_defs $tk_x11_include tclversion.c`
+  fi
+  if test -z "$tcl_version"; then
+    tk_defs="-I/usr/local/include/tcl8.3 -I/usr/local/include/tk8.3"
+    tcl_version=`sh ./runtest $tk_defs $tk_x11_include tclversion.c`
+  fi
+  if test -z "$tcl_version"; then
+    tk_defs="-I/usr/local/include/tcl8.4 -I/usr/local/include/tk8.4"
+    tcl_version=`sh ./runtest $tk_defs $tk_x11_include tclversion.c`
+  fi
+  if test -z "$tcl_version"; then
     tk_defs="-I/usr/include/tcl8.2 -I/usr/include/tk8.2"
     tcl_version=`sh ./runtest $tk_defs $tk_x11_include tclversion.c`
   fi
