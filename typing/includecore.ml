@@ -98,7 +98,7 @@ let vars vars1 vars2 =
         encode_val v2 vl2))
     vars2 ([], [])
 
-let class_type env d1 d2 =
+let class_types env d1 d2 =
   (* Same abbreviations *)
   Ctype.equal env true
     (d1.cty_self::d1.cty_params) (d2.cty_self::d2.cty_params)
