@@ -12,6 +12,8 @@
 /* $Id$ */
 
 #include "libgraph.h"
+#include <alloc.h>
+#include <str.h>
 
 XFontStruct * grfont = NULL;
 

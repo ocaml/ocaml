@@ -71,6 +71,8 @@ value gr_make_image(m)
         XPutPixel(imask, j, i, rgb != Transparent);
       }
     }
+  } else {
+    imask = NULL;
   }
 
   /* Allocate the image and store the XImages into the Pixmaps */

@@ -21,9 +21,12 @@
 #include <sys/time.h>
 #endif
 
+Display * grdisplay = NULL;
+
 static Bool gr_initialized = False;
 
-static int gr_error_handler(), gr_ioerror_handler();
+static int gr_error_handler();
+static int gr_ioerror_handler();
 value gr_clear_graph();
 
 value gr_open_graph(arg)
@@ -51,13 +54,15 @@ value gr_open_graph(arg)
     *q = 0;
     
     /* Open the display */
-    grdisplay = XOpenDisplay(display_name);
-    if (grdisplay == NULL)
-      gr_fail("Cannot open display %s", XDisplayName(display_name));
-    grscreen = DefaultScreen(grdisplay);
-    grblack = BlackPixel(grdisplay, grscreen);
-    grwhite = WhitePixel(grdisplay, grscreen);
-    grcolormap = DefaultColormap(grdisplay, grscreen);
+    if (grdisplay == NULL) {
+      grdisplay = XOpenDisplay(display_name);
+      if (grdisplay == NULL)
+        gr_fail("Cannot open display %s", XDisplayName(display_name));
+      grscreen = DefaultScreen(grdisplay);
+      grblack = BlackPixel(grdisplay, grscreen);
+      grwhite = WhitePixel(grdisplay, grscreen);
+      grcolormap = DefaultColormap(grdisplay, grscreen);
+    }
 
     /* Set up the error handlers */
     XSetErrorHandler(gr_error_handler);
@@ -186,7 +191,6 @@ value gr_close_graph()
     XDestroyWindow(grdisplay, grwindow.win);
     XFreeGC(grdisplay, grbstore.gc);
     XFreePixmap(grdisplay, grbstore.win);
-    XCloseDisplay(grdisplay);
   }
   return Val_unit;
 }

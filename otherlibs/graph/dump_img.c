@@ -13,6 +13,7 @@
 
 #include "libgraph.h"
 #include "image.h"
+#include <alloc.h>
 #include <memory.h>
 
 static value gr_alloc_int_vect(size)

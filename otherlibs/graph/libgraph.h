@@ -22,7 +22,7 @@ struct canvas {
   GC gc;                        /* The associated graphics context */
 };
 
-Display * grdisplay;            /* The display connection */
+extern Display * grdisplay;     /* The display connection */
 int grscreen;                   /* The screen number */
 Colormap grcolormap;            /* The color map */
 struct canvas grwindow;         /* The graphics window */
@@ -68,3 +68,4 @@ unsigned long gr_pixel_rgb();
 int gr_rgb_pixel();
 void gr_handle_simple_event();
 void gr_enqueue_char();
+void gr_init_color_cache();
