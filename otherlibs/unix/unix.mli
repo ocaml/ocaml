@@ -283,7 +283,7 @@ type stats =
     st_perm : file_perm;                (* Access rights *)
     st_nlink : int;                     (* Number of links *)
     st_uid : int;                       (* User id of the owner *)
-    st_gid : int;                       (* Group id of the owner *)
+    st_gid : int;                       (* Group ID of the file's group *)
     st_rdev : int;                      (* Device minor number *)
     st_size : int;                      (* Size in bytes *)
     st_atime : float;                   (* Last access time *)
