@@ -52,7 +52,7 @@ TYPING=typing\ident.cmo typing\path.cmo \
   typing\typemod.cmo
 
 COMP=bytecomp\lambda.cmo bytecomp\printlambda.cmo \
-  bytecomp\typeopt.cmo bytecomp\translobj.cmo \
+  bytecomp\typeopt.cmo bytecomp\switch.cmo bytecomp\translobj.cmo \
   bytecomp\matching.cmo bytecomp\translcore.cmo \
   bytecomp\translclass.cmo bytecomp\translmod.cmo \
   bytecomp\simplif.cmo bytecomp\runtimedef.cmo
@@ -274,7 +274,8 @@ utils\config.ml: utils\config.mlp config\Makefile.nt
             -e "s|%%%%NATIVECC%%%%|$(NATIVECC) $(NATIVECCCOMPOPTS)|" \
             -e "s|%%%%NATIVELINK%%%%|$(NATIVECC) $(NATIVECCLINKOPTS)|" \
             -e "s|%%%%PARTIALLD%%%%|lib /nologo /debugtype:cv|" \
-            -e "s|%%%%CCLIBS%%%%|$(CCLIBS)|" \
+            -e "s|%%%%BYTECCLIBS%%%%|$(BYTECCLIBS)|" \
+            -e "s|%%%%NATIVECCLIBS%%%%|$(NATIVECCLIBS)|" \
             -e "s|%%%%ARCH%%%%|$(ARCH)|" \
             -e "s|%%%%MODEL%%%%|$(MODEL)|" \
             -e "s|%%%%SYSTEM%%%%|$(SYSTEM)|" \
