@@ -400,6 +400,8 @@ class virtual text =
       self#html_of_text b t;
       bs b "</sub>"
 
+    method virtual html_of_info_first_sentence : _
+
     method html_of_Module_list b l =
       bs b "<br>\n<table class=\"indextable\">\n";
       List.iter
