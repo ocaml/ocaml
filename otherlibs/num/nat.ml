@@ -535,7 +535,9 @@ let sys_nat_of_string base s off len =
         if (!digits_read = pint or i = bound) & not (!digits_read = 0) then 
           begin
            set_digit_nat nat1 0 !int;
-           for j = 1 to !current_len do 
+           let erase_len = if !new_len = !current_len then !current_len - 1
+                           else !current_len in
+           for j = 1 to erase_len do 
              set_digit_nat nat1 j 0
            done;
            mult_digit_nat nat1 0 !possible_len 
