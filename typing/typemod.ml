@@ -32,6 +32,7 @@ type error =
   | Repeated_name of string * string
   | Non_generalizable of type_expr
   | Non_generalizable_class of Ident.t * class_type
+  | Non_generalizable_module of module_type
 
 exception Error of Location.t * error
 
@@ -204,33 +205,45 @@ let check_unique_names sg =
 
 (* Check that all core type schemes in a structure are closed *)
 
+let closed_class classty =
+  List.for_all Ctype.closed_schema classty.cty_params &
+  List.for_all Ctype.closed_schema classty.cty_args &
+  Vars.fold (fun _ (_, ty) -> (or) (Ctype.closed_schema ty))
+            classty.cty_vars true
+
+let rec closed_modtype = function
+    Tmty_ident p -> true
+  | Tmty_signature sg -> List.for_all closed_signature_item sg
+  | Tmty_functor(id, param, body) -> closed_modtype body
+
+and closed_signature_item = function
+    Tsig_value(id, desc) -> Ctype.closed_schema desc.val_type
+  | Tsig_module(id, mty) -> closed_modtype mty
+  | Tsig_class(id, classty) -> closed_class classty
+  | _ -> true
+
+let check_nongen_scheme env = function
+    Tstr_value(rec_flag, pat_exp_list) ->
+      List.iter
+        (fun (pat, exp) ->
+          if not (Ctype.closed_schema exp.exp_type) then
+            raise(Error(exp.exp_loc, Non_generalizable exp.exp_type)))
+        pat_exp_list
+  | Tstr_class cl ->
+      List.iter
+        (fun (id, imp) ->
+           let desc = Env.find_class (Pident id) env in
+           if not (closed_class desc) then
+             raise(Error(imp.cl_loc,
+                   Non_generalizable_class (id, desc))))
+        cl
+  | Tstr_module(id, md) ->
+      if not (closed_modtype md.mod_type) then
+        raise(Error(md.mod_loc, Non_generalizable_module md.mod_type))
+  | _ -> ()
+
 let check_nongen_schemes env str =
-  List.iter 
-    (function
-        Tstr_value(rec_flag, pat_exp_list) ->
-          List.iter
-            (fun (pat, exp) ->
-              if not (Ctype.closed_schema exp.exp_type) then
-                raise(Error(exp.exp_loc, Non_generalizable exp.exp_type)))
-            pat_exp_list
-      | Tstr_class cl ->
-          List.iter
-	    (fun (id, imp) ->
-	       let desc = Env.find_class (Pident id) env in
-	       if not
-	         (List.for_all Ctype.closed_schema desc.cty_params
-	             &
-	          List.for_all Ctype.closed_schema desc.cty_args
-	             &
-	          Vars.fold (fun _ (_, ty) -> (or) (Ctype.closed_schema ty))
-                    desc.cty_vars
-      	       	    true)
-	       then
-	         raise(Error(imp.cl_loc,
-      	       	       Non_generalizable_class (id, desc))))
-	    cl
-      | _ -> ())  (* Sub-structures have been checked before *)
-    str
+  List.iter (check_nongen_scheme env) str
 
 (* Type a module value expression *)
 
@@ -243,7 +256,6 @@ let rec type_module env smod =
         mod_loc = smod.pmod_loc }
   | Pmod_structure sstr ->
       let (str, sg, finalenv) = type_structure env sstr in
-      check_nongen_schemes finalenv str;
       { mod_desc = Tmod_structure str;
         mod_type = Tmty_signature sg;
         mod_loc = smod.pmod_loc }
@@ -422,5 +434,11 @@ let report_error = function
       open_hovbox 0;
       print_string "The type of this class,"; print_space();
       class_type id desc; print_string ","; print_space();
+      print_string "contains type variables that cannot be generalized";
+      close_box()
+  | Non_generalizable_module mty ->
+      open_hovbox 0;
+      print_string "The type of this module,"; print_space();
+      modtype mty; print_string ","; print_space();
       print_string "contains type variables that cannot be generalized";
       close_box()
