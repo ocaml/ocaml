@@ -116,6 +116,8 @@ value find_pr_level : string -> list (pr_level 'a) -> pr_level 'a;
 
 value top_printer : printer_t 'a -> 'a -> unit;
 
+value inter_phrases : ref (option string);
+
 (* for system use *)
 
 value warning : ref ((int * int) -> string -> unit);

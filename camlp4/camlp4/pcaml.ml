@@ -397,3 +397,5 @@ value top_printer pr x =
     Format.print_string " >>";
   }
 ;
+
+value inter_phrases = ref None;

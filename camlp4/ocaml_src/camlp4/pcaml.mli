@@ -114,6 +114,8 @@ val find_pr_level : string -> 'a pr_level list -> 'a pr_level;;
 
 val top_printer : 'a printer_t -> 'a -> unit;;
 
+val inter_phrases : string option ref;;
+
 (* for system use *)
 
 val warning : (int * int -> string -> unit) ref;;

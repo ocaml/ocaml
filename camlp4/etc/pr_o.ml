@@ -1712,7 +1712,7 @@ value output_string_eval oc s =
 ;
 
 value maxl = ref 78;
-value sep = ref None;
+value sep = Pcaml.inter_phrases;
 value ncip = ref False;
 value comm_after = ref False;
 value type_comm = ref False;
@@ -1922,6 +1922,9 @@ Pcaml.add_option "-l" (Arg.Int (fun x -> maxl.val := x))
 
 Pcaml.add_option "-no_ss" (Arg.Set no_ss)
   "       Do not print double semicolons.";
+
+Pcaml.add_option "-sep_src" (Arg.Unit (fun () -> sep.val := None))
+  "     Read source file for text between phrases.";
 
 Pcaml.add_option "-sep" (Arg.String (fun x -> sep.val := Some x))
   "<string> Use this string between phrases instead of reading source.";

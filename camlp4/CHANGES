@@ -1,3 +1,11 @@
+Camlp4 Version ....
+-------------------
+
+- [29 Dec 01] Added variable "inter_phrases" in Pcaml, of type ref (option
+  string) to specify the string to print between phrases in pretty printers.
+  The default is None, meaning to copy the inter phrases from the source
+  file.
+
 Camlp4 Version 3.04
 -------------------
 
