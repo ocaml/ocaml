@@ -129,6 +129,21 @@ Algorithm:
 
 extern void init_ieee_floats();
 
+#ifdef BC_PROFILE
+unsigned long bc_counts [128];
+void savecounts ()
+{
+  char *countfilename = getenv ("CAML_BC_COUNTFILE");
+
+  if (countfilename != NULL){
+    FILE *countfile = fopen (countfilename, "w");
+    if (countfile != NULL){
+      fwrite (bc_counts, sizeof (unsigned long), 128, countfile);
+    }
+  }
+}
+#endif /* BC_PROFILE */
+
 void caml_main(argc, argv)
      int argc;
      char ** argv;
@@ -149,6 +164,22 @@ void caml_main(argc, argv)
 #ifdef DEBUG
   verbose_init = 1;
 #endif
+
+#ifdef BC_PROFILE
+  {
+    char *countfilename = getenv ("CAML_BC_COUNTFILE");
+    int i;
+
+    if (countfilename != NULL){
+      FILE *countfile = fopen (countfilename, "r");
+      for (i = 0; i < 128; i++) bc_counts [i] = 0;
+      if (countfile != NULL){
+	fread (bc_counts, sizeof (unsigned long), 128, countfile);
+      }
+    }
+    atexit (savecounts);
+  }
+#endif /* BC_PROFILE */
 
   i = 0;
   fd = attempt_open(&argv[0], &trail, 0);

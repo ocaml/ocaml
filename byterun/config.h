@@ -36,7 +36,7 @@
 /* We use threaded code interpretation if the compiler provides labels
    as first-class values (GCC 2.x). */
 
-#if defined(__GNUC__) && __GNUC__ >= 2 && !defined(DEBUG)
+#if defined(__GNUC__) && __GNUC__ >= 2 && !defined(DEBUG) && !defined(BC_PROFILE)
 #define THREADED_CODE
 #endif
 

@@ -1,7 +1,7 @@
 include ../config/Makefile
 
 CC=$(BYTECC)
-CFLAGS=-O $(BYTECCCOMPOPTS)
+CFLAGS=-O $(BYTECCCOMPOPTS) -DBC_PROFILE
 DFLAGS=-g -DDEBUG $(BYTECCCOMPOPTS)
 
 OBJS=interp.o misc.o stacks.o fix_code.o startup.o main.o \
