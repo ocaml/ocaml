@@ -12,8 +12,10 @@ gr_set_color
 gr_plot
 gr_point_color
 gr_moveto
-gr_current_point
+gr_current_x
+gr_current_y
 gr_lineto
+gr_draw_rect
 gr_draw_arc_nat
 gr_draw_arc
 gr_set_line_width

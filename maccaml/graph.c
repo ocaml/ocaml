@@ -231,8 +231,10 @@ value gr_set_color (value vrgb);
 value gr_plot (value vx, value vy);
 value gr_point_color (value vx, value vy);
 value gr_moveto (value vx, value vy);
-value gr_current_point (value unit);
+value gr_current_x (value unit);
+value gr_current_y (value unit);
 value gr_lineto (value vx, value vy);
+value gr_draw_rect (value vx, value vy, value vw, value vh);
 value gr_draw_arc (value *argv, int argc);
 value gr_draw_arc_nat (value, value, value, value, value, value);
 value gr_set_line_width (value vwidth);
@@ -584,15 +586,20 @@ value gr_moveto (value vx, value vy)
   return Val_unit;
 }
 
-value gr_current_point (value unit)
+value gr_current_x (value unit)
 {
 #pragma unused (unit)
-  value result = alloc_tuple (2);
 
   gr_check_open ();
-  Field (result, 0) = Val_long (cur_x);
-  Field (result, 1) = Val_long (cur_y);
-  return result;
+  return Val_long (cur_x);
+}
+
+value gr_current_y (value unit)
+{
+#pragma unused (unit)
+
+  gr_check_open ();
+  return Val_long (cur_y);
 }
 
 value gr_lineto (value vx, value vy)
@@ -606,6 +613,23 @@ value gr_lineto (value vx, value vy)
     LineTo (Wx (x), Wy (y));
   EndOffOn
   cur_x = x; cur_y = y;
+  return Val_unit;
+}
+
+value gr_draw_rect (value vx, value vy, value vw, value vh)
+{
+  XY;
+  long w = Long_val (vw), h = Long_val (vh);
+  Rect r;
+
+  gr_check_open ();
+  BeginOff
+    SetRect (&r, Bx (x), By (y+h), Bx (x+w), By (y));
+    FrameRect (&r);
+  On
+    SetRect (&r, Wx (x), Wy (y+h), Wx (x+w), Wy (y));
+    FrameRect (&r);
+  EndOffOn
   return Val_unit;
 }
 
