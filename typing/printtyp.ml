@@ -285,8 +285,8 @@ let rec typexp sch prio0 ppf ty =
   if List.memq px !aliased then begin
     check_name_of_type px;
     if prio0 >= 1
-    then printf "@[<1>(%a as '%a)@]" pr_typ 0 print_name_of_type px
-    else printf "@[%a as '%a@]" pr_typ prio0 print_name_of_type px end
+    then fprintf ppf "@[<1>(%a as '%a)@]" pr_typ 0 print_name_of_type px
+    else fprintf ppf "@[%a as '%a@]" pr_typ prio0 print_name_of_type px end
   else pr_typ ppf prio0
 
 and row_field sch ppf (l, f) =
