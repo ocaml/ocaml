@@ -316,7 +316,7 @@ struct
        5, "1234567890123456789";
        6, "9223372036854775807";
        7, "-9223372036854775808"];
-    List.iter (fun (n, s) -> test n (format "0x%X" (of_string s)) s)
+    List.iter (fun (n, s) -> test n ("0x" ^ format "%X" (of_string s)) s)
       [7, "0x0"; 8, "0x123"; 9, "0xABCDEF"; 10, "0x1234567812345678";
        11, "0x7FFFFFFFFFFFFFFF"; 12, "0x8000000000000000";
        13, "0xFFFFFFFFFFFFFFFF"];
