@@ -12,20 +12,26 @@
 
 (* $Id$ *)
 
-(* Module [Printexc]: a catch-all exception handler *)
-
-val catch: ('a -> 'b) -> 'a -> 'b
-        (* [Printexc.catch fn x] applies [fn] to [x] and returns the result.
-           If the evaluation of [fn x] raises any exception, the
-           name of the exception is printed on standard error output,
-           and the programs aborts with exit code 2.
-           Typical use is [Printexc.catch main ()], where [main], with type
-           [unit->unit], is the entry point of a standalone program.
-           This catches and reports any exception that escapes the program. *)
-
-val print: ('a -> 'b) -> 'a -> 'b
-        (* Same as [catch], but re-raise the stray exception after
-           printing it, instead of aborting the program. *)
+(* Module [Printexc]: facilities for printing exceptions *)
 
 val to_string : exn -> string
-        (* [Printexc.to_string e] returns a string representation of [e]. *)
+        (* [Printexc.to_string e] returns a string representation of
+           the exception [e]. *)
+
+val print: ('a -> 'b) -> 'a -> 'b
+        (* [Printexc.print fn x] applies [fn] to [x] and returns the result.
+           If the evaluation of [fn x] raises any exception, the
+           name of the exception is printed on standard error output,
+           and the exception is raised again.
+           The typical use is to catch and report exceptions that
+           escape a function application. *)
+
+val catch: ('a -> 'b) -> 'a -> 'b
+        (* [Printexc.catch fn x] is similar to [Printexc.print], but
+           aborts the program with exit code 2 after printing the
+           uncaught exception.  This function is deprecated: the runtime
+           system is now able to print uncaught exceptions as precisely
+           as [Printexc.catch] does.  Moreover, calling [Printexc.catch]
+           makes it harder to track the location of the exception
+           using the debugger or the stack backtrace facility.
+           So, do not use [Printexc.catch] in new code.  *)
