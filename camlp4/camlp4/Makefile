@@ -25,16 +25,16 @@ $(CAMLP4): $(OBJS) ../odyl/odyl.cmo
 	$(OCAMLC) -g $(OBJS) $(CAMLP4M) ../odyl/odyl.cmo -linkall -o $(CAMLP4)
 
 $(CAMLP4OPT): $(OBJS:.cma=.cmxa) ../odyl/odyl.cmx
-	$(OCAMLOPT) $(OBJS:.cma=.cmxa) $(CAMLP4M) ../odyl/odyl.cmx -linkall -o $(CAMLP4OPT)
+	$(OCAMLOPT) $(OBJS:.cma=.cmxa) $(CAMLP4M) ../odyl/odyl.cmx -o $(CAMLP4OPT)
 
 $(OTOP)/utils/config.cmx: $(OTOP)/utils/config.ml
 	$(OCAMLOPT) -c $(OTOP)/utils/config.ml
 
 camlp4.cma: $(CAMLP4_OBJS)
-	$(OCAMLC) $(LINKFLAGS) $(CAMLP4_OBJS) -a -o camlp4.cma
+	$(OCAMLC) $(LINKFLAGS) $(CAMLP4_OBJS) -a  -linkall -o camlp4.cma
 
 camlp4.cmxa: $(CAMLP4_XOBJS)
-	$(OCAMLOPT) $(LINKFLAGS) $(CAMLP4_XOBJS) -a -o camlp4.cmxa
+	$(OCAMLOPT) $(LINKFLAGS) $(CAMLP4_XOBJS) -a -linkall -o camlp4.cmxa
 
 clean::
 	rm -f *.cm* *.pp[io] *.$(O) *.$(A) *.bak .*.bak *.out *.opt
