@@ -2,17 +2,6 @@
 
 include config/Makefile
 
-### Which libraries to compile and install
-# Currently available:
-#       unix            Unix system calls
-#       str             Regular expressions and high-level string processing
-#       num             Arbitrary-precision rational arithmetic
-#       threads         Lightweight concurrent processes
-#       graph           Portable drawing primitives for X11
-#       dynlink         Dynamic linking of bytecode
-#
-OTHERLIBRARIES=unix str num threads graph dynlink
-
 CAMLC=boot/cslrun boot/cslc -I boot
 CAMLOPT=boot/cslrun ./cslopt -I stdlib
 COMPFLAGS=$(INCLUDES)

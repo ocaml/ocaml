@@ -31,7 +31,7 @@ while : ; do
     -man*|--man*) mandir=$2; manext=`echo $mandir | sed -e 's/^.*\(.\)$/\1/'`;;
     -host*|--host*) host_type=$2;;
     -cc*) cc="$2";;
-    -lib*) cclibs="$2";;
+    -lib*) cclibs="$2 ";;
     *) echo "Unknown option \"$1\"." 1>&2; exit 2;;
   esac
   shift
@@ -50,11 +50,6 @@ echo "BINDIR=$bindir" >> Makefile
 echo "LIBDIR=$libdir" >> Makefile
 echo "MANDIR=$mandir" >> Makefile
 echo "MANEXT=$manext" >> Makefile
-
-echo "Directories where Caml Special Light will be installed:"
-echo "	binaries.................. $bindir"
-echo "	standard library.......... $libdir"
-echo "	manual pages.............. $mandir (with extension .$manext)"
 
 # Determine the system type
 
@@ -166,11 +161,6 @@ else
   $bytecc=cc
 fi
 
-echo "Configuration for the bytecode compiler:"
-echo "	C compiler used........... $bytecc"
-echo "	options for compiling..... $bytecccompopts"
-echo "	options for linking....... $bytecclinkopts $cclibs"
-
 echo "BYTECC=$bytecc" >> Makefile
 echo "BYTECCCOMPOPTS=$bytecccompopts" >> Makefile
 echo "BYTECCLINKOPTS=$bytecclinkopts" >> Makefile
@@ -229,24 +219,6 @@ echo "NATIVECC=$nativecc" >> Makefile
 echo "NATIVECCCOMPOPTS=$nativecccompopts" >> Makefile
 echo "NATIVECCLINKOPTS=$nativecclinkopts" >> Makefile
 echo "ASFLAGS=$asflags" >> Makefile
-
-echo "Configuration for the native-code compiler:"
-if test "$arch" = "none"; then
-  echo "	(not supported on this platform)"
-else
-  if test "$model" = "default"; then
-    echo "	hardware architecture..... $arch"
-  else
-    echo "	hardware architecture..... $arch ($model)"
-  fi
-  if test "$system" = "unknown"; then : ; else
-  echo "	OS variant................ $system"
-  fi
-  echo "	C compiler used........... $nativecc"
-  echo "	options for compiling..... $nativecccompopts"
-  echo "	options for linking....... $nativecclinkopts $cclibs"
-  echo "	assembler flags........... $asflags"
-fi
 
 # Checking how to invoke cpp
 
@@ -336,8 +308,12 @@ fi
 if sh hasgot -lcurses -ltermcap tgetent tgetstr tgetnum tputs; then
   echo "termcap functions found."
   echo "#define HAS_TERMCAP" >> s.h
-  cclibs="$cclibs -lcurses -ltermcap"
+  cclibs="${cclibs}-lcurses -ltermcap"
 fi
+
+# Configuration for the libraries
+
+otherlibraries="unix str num dynlink"
 
 # For the Unix library
 
@@ -498,45 +474,158 @@ echo "BIGNUM_ARCH=$bignum_arch" >> Makefile
 x11_include="not found"
 x11_lib="not found"
 
-xdirs="/usr /usr/local /usr/unsupported /usr/athena \
-/usr/openwin /usr/openwin/share \
-/usr/X386 /usr/x386 \
-/usr/X11R6 /usr/X11R5 /usr/X11R4 \
-/usr/local/X11R6 /usr/local/X11R5 /usr/local/X11R4"
-
-for dir in $xdirs; do
-  if test -f $dir/include/X11/X.h; then
-    x11_include=$dir/include
+for dir in \
+  /usr/X11R6/include /usr/X11R5/include /usr/X11R4/include \
+  /usr/include/X11R6 /usr/include/X11R5 /usr/include/X11R4 \
+  /usr/local/X11R6/include /usr/local/X11R5/include /usr/local/X11R4/include \
+  /usr/local/include/X11R6 /usr/local/include/X11R5 /usr/local/include/X11R4 \
+  /usr/X11/include /usr/include/X11 /usr/local/X11/include \
+  /usr/local/include/X11 /usr/X386/include /usr/x386/include \
+  /usr/XFree86/include/X11 /usr/include /usr/local/include \
+  /usr/unsupported/include /usr/athena/include /usr/local/x11r5/include \
+  /usr/lpp/Xamples/include /usr/openwin/include /usr/openwin/share/include
+do
+  if test -f $dir/X11/X.h; then
+    x11_include=$dir
     break
   fi
 done
 
-for dir in $xdirs; do
-  if test -f $dir/lib/libX11.a || \
-     test -f $dir/lib/libX11.so || \
-     test -f $dir/lib/libX11.sa; then
-    x11_lib=$dir/lib
+for dir in \
+  /usr/X11R6/lib /usr/X11R5/lib /usr/X11R4/lib \
+  /usr/lib/X11R6 /usr/lib/X11R5 /usr/lib/X11R4 \
+  /usr/local/X11R6/lib /usr/local/X11R5/lib /usr/local/X11R4/lib \
+  /usr/local/lib/X11R6 /usr/local/lib/X11R5 /usr/local/lib/X11R4 \
+  /usr/X11/lib /usr/lib/X11 /usr/local/X11/lib \
+  /usr/local/lib/X11 /usr/X386/lib /usr/x386/lib \
+  /usr/XFree86/lib/X11 /usr/lib /usr/local/lib \
+  /usr/unsupported/lib /usr/athena/lib /usr/local/x11r5/lib \
+  /usr/lpp/Xamples/lib /usr/openwin/lib /usr/openwin/share/lib
+do
+  if test -f $dir/libX11.a || \
+     test -f $dir/libX11.so || \
+     test -f $dir/libX11.sa; then
+    x11_lib=$dir
     break
   fi
 done
 
-echo "X11_INCLUDES=$x11_include" >> Makefile
-echo "X11_LIB=$x11_lib" >> Makefile
-
-echo "Location of X11 include files: $x11_include"
-echo "Location of X11 libraries: $x11_lib"
 
 if test "$x11_include" = "not found" || test "$x11_lib" = "not found"
 then
-  echo "(Please edit the generated config/Makefile to set X11_INCLUDES"
-  echo " and X11_LIB correctly. If you don't have X11 installed,"
-  echo " please remove \"graph\" from the OTHERLIBRARIES variable.)"
+  echo "X11 not found, the \"graph\" library will not be supported"
+else
+  x11_link="-cclib -L$x11_lib -cclib -lX11"
+  echo "X11_INCLUDES=$x11_include" >> Makefile
+  echo "X11_LIB=$x11_lib" >> Makefile
+  echo "X11_LINK=$x11_link" >> Makefile
+  echo "Location of X11 include files: $x11_include"
+  echo "Location of X11 libraries: $x11_lib"
+  echo "Link-time options for the \"graph\" library: $x11_link"
+  otherlibraries="$otherlibraries graph"
+fi
+
+# Determine the location of POSIX threads
+
+pthreads_include="not found"
+pthreads_lib="not found"
+
+for dir in \
+  /usr/include /usr/local/include /usr/local/pthreads/include \
+  /usr/local/lib/pthreads/include
+do
+  if test -f $dir/pthread.h; then
+    pthreads_include=$dir
+    break
+  fi
+done
+
+for dir in \
+  /usr/lib /usr/local/lib /usr/local/pthreads/lib /usr/local/lib/pthreads
+do
+  if test -f $dir/libpthreads.a || \
+     test -f $dir/libpthreads.so || \
+     test -f $dir/libpthreads.sa; then
+    pthreads_lib=$dir
+    break
+  fi
+done
+
+if test "$pthreads_include" = "not found" || test "$pthreads_lib" = "not found"
+then
+  echo "POSIX threads not found, the \"threads\" library will not be supported"
+else
+  case "$host" in
+    alpha-*-osf*)
+      pthreads_link="-cclib -lpthreads -cclib -lmach -cclib -lc_r";;
+    *)
+      pthreads_link="-cclib -L$pthreads_lib -cclib -lpthreads";;
+  esac
+  echo "PTHREADS_INCLUDES=$pthreads_include" >> Makefile
+  echo "PTHREADS_LIB=$pthreads_lib" >> Makefile
+  echo "PTHREADS_LINK=$pthreads_link" >> Makefile
+  echo "Location of POSIX threads include files: $pthreads_include"
+  echo "Location of POSIX threads libraries: $pthreads_lib"
+  echo "Link-time options for the \"threads\" library: $pthreads_link"
+  otherlibraries="$otherlibraries threads"
 fi
 
 # Finish generated files
 
-echo "CCLIBS=$cclibs -lm" >> Makefile
+cclibs="$cclibs -lm"
+echo "CCLIBS=$cclibs" >> Makefile
+echo "OTHERLIBRARIES=$otherlibraries" >> Makefile
 
 rm -f tst hasgot.c
 rm -f ../m.h ../s.h ../Makefile
 mv m.h s.h Makefile ..
+
+# Print a summary
+
+echo
+echo "** Configuration summary **"
+echo
+echo "Directories where Caml Special Light will be installed:"
+echo "	binaries.................. $bindir"
+echo "	standard library.......... $libdir"
+echo "	manual pages.............. $mandir (with extension .$manext)"
+
+echo "Configuration for the bytecode compiler:"
+echo "	C compiler used........... $bytecc"
+echo "	options for compiling..... $bytecccompopts"
+echo "	options for linking....... $bytecclinkopts $cclibs"
+
+echo "Configuration for the native-code compiler:"
+if test "$arch" = "none"; then
+  echo "	(not supported on this platform)"
+else
+  if test "$model" = "default"; then
+    echo "	hardware architecture..... $arch"
+  else
+    echo "	hardware architecture..... $arch ($model)"
+  fi
+  if test "$system" = "unknown"; then : ; else
+  echo "	OS variant................ $system"
+  fi
+  echo "	C compiler used........... $nativecc"
+  echo "	options for compiling..... $nativecccompopts"
+  echo "	options for linking....... $nativecclinkopts $cclibs"
+  echo "	assembler flags........... $asflags"
+fi
+
+echo "Configuration for the external libraries:"
+echo "	libraries supported....... $otherlibraries"
+
+if test "$x11_include" != "not found" && test "$x11_lib" != "not found"; then
+echo "The \"graph\" library:"
+echo "	options for compiling .... -I$x11_include"
+echo "	options for linking ...... $x11_link"
+fi
+
+if test "$pthreads_include" != "not found" && \
+   test "$pthreads_lib" != "not found"; then
+echo "The \"threads\" library:"
+echo "	options for compiling .... -I$pthreads_include"
+echo "	options for linking ...... $pthreads_link"
+fi
+

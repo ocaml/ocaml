@@ -2,8 +2,6 @@
 
 !include config\Makefile.nt
 
-OTHERLIBRARIES=str num graph
-
 CAMLC=boot\cslrun boot\cslc -I boot
 CAMLOPT=boot\cslrun .\cslopt -I stdlib
 COMPFLAGS=$(INCLUDES)
