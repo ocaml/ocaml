@@ -258,7 +258,7 @@ type seek_command =
 
 val lseek : file_descr -> int -> mode:seek_command -> int
         (* Set the current position for a file descriptor *)
-val truncate : file:string -> len:int -> unit
+val truncate : string -> len:int -> unit
         (* Truncates the named file to the given size. *)
 val ftruncate : file_descr -> len:int -> unit
         (* Truncates the file corresponding to the given descriptor
@@ -323,17 +323,17 @@ type access_permission =
 
         (* Flags for the [access] call. *)
 
-val chmod : file:string -> perm:file_perm -> unit
+val chmod : string -> perm:file_perm -> unit
         (* Change the permissions of the named file. *)
 val fchmod : file_descr -> perm:file_perm -> unit
         (* Change the permissions of an opened file. *)
-val chown : file:string -> uid:int -> gid:int -> unit
+val chown : string -> uid:int -> gid:int -> unit
         (* Change the owner uid and owner gid of the named file. *)
 val fchown : file_descr -> uid:int -> gid:int -> unit
         (* Change the owner uid and owner gid of an opened file. *)
 val umask : int -> int
         (* Set the process creation mask, and return the previous mask. *)
-val access : file:string -> perm:access_permission list -> unit
+val access : string -> perm:access_permission list -> unit
         (* Check that the process has the given permissions over the named
            file. Raise [Unix_error] otherwise. *)
 
@@ -582,7 +582,7 @@ val sleep : int -> unit
         (* Stop execution for the given number of seconds. *)
 val times : unit -> process_times
         (* Return the execution times of the process. *)
-val utimes : file:string -> access:float -> modif:float -> unit
+val utimes : string -> access:float -> modif:float -> unit
         (* Set the last access time (second arg) and last modification time
            (third arg) for a file. Times are expressed in seconds from
            00:00:00 GMT, Jan. 1, 1970. *)
