@@ -38,7 +38,7 @@ external create: int -> 'a -> 'a array = "make_vect"
            Consequently, if [x] is mutable, it is shared among all elements
            of the array, and modifying [x] through one of the array entries
            will modify all other entries at the same time.
-           Raise [Invalid_argument] if [n <= 0] or [n > Sys.max_array_length].
+           Raise [Invalid_argument] if [n < 0] or [n > Sys.max_array_length].
            If the value of [x] is a floating-point number, then the maximum
            size is only [Sys.max_array_length / 2].
            [Array.create] is a deprecated alias for [Array.make]. *)
