@@ -28,3 +28,4 @@ val parse_toplevel_phrase : (Lexing.lexbuf -> Parsetree.toplevel_phrase) ref
 val parse_use_file : (Lexing.lexbuf -> Parsetree.toplevel_phrase list) ref
 val print_location : Location.t -> unit
 val print_warning : Location.t -> string -> unit
+val input_name : string ref
