@@ -748,8 +748,12 @@ if test "$posix_threads" = "yes"; then
     *-*-freebsd*)
         pthread_link="-ccopt -pthread"
         bytecccompopts="$bytecccompopts -D_THREAD_SAFE"
-        nativecccompopts="$nativecccompopts -D_THREAD_SAFE"
-        ;;
+        nativecccompopts="$nativecccompopts -D_THREAD_SAFE";;
+    *-*-openbsd*)
+        pthread_link="-ccopt -pthread"
+        bytecccompopts="$bytecccompopts -pthread"
+        asppflags="$asppflags -pthread"
+        nativecccompopts="$nativecccompopts -pthread";;
     *)
         pthread_link="-cclib -lpthread";;
   esac
@@ -833,7 +837,7 @@ fi
 # See if we can compile the dbm library
 
 dbm_include="not found"
-for dir in /usr/include /usr/include/gdbm; do
+for dir in /usr/include /usr/include/gdbm /usr/include/db1; do
   if test -f $dir/ndbm.h; then
     dbm_include=$dir
     break
