@@ -26,6 +26,7 @@ type error =
       Ident.t * exception_declaration * exception_declaration
   | Module_types of module_type * module_type
   | Modtype_infos of Ident.t * modtype_declaration * modtype_declaration
+  | Interface_mismatch of string * string
 
 exception Error of error list
 
@@ -221,6 +222,15 @@ let check_modtype_inclusion env mty1 mty2 =
 
 let _ = Env.check_modtype_inclusion := check_modtype_inclusion
 
+(* Check that an implementation of a compilation unit meets its
+   interface. *)
+
+let compunit impl_name impl_sig intf_name intf_sig =
+  try
+    signatures Env.initial impl_sig intf_sig
+  with Error reasons ->
+    raise(Error(Interface_mismatch(impl_name, intf_name) :: reasons))
+
 (* Error report *)
 
 open Format
@@ -228,7 +238,8 @@ open Printtyp
 
 let include_err = function
     Missing_field id ->
-      print_string "Missing field "; ident id
+      print_string "The field `"; ident id; 
+      print_string "' is required but not provided"
   | Value_descriptions(id, d1, d2) ->
       open_hvbox 2;
       print_string "Values do not match:"; print_space();
@@ -268,6 +279,13 @@ let include_err = function
       print_break 1 (-2);
       print_string "is not included in"; print_space();
       modtype_declaration id d2;
+      close_box()
+  | Interface_mismatch(impl_name, intf_name) ->
+      open_hovbox 0;
+      print_string "The implementation "; print_string impl_name;
+      print_space(); print_string "does not match the interface ";
+      print_string intf_name;
+      print_string ":";
       close_box()
 
 let report_error errlist =

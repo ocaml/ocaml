@@ -130,23 +130,27 @@ let execute_phrase phr =
               close_box();
               print_flush()
           end;
-          toplevel_env := newenv
+          toplevel_env := newenv;
+          true
       | Exception exn ->
-          print_exception_outcome exn
+          print_exception_outcome exn;
+          false
       end
   | Ptop_dir(dir_name, dir_arg) ->
       try
         match (Hashtbl.find directive_table dir_name, dir_arg) with
-          (Directive_none f, Pdir_none) -> f ()
-        | (Directive_string f, Pdir_string s) -> f s
-        | (Directive_int f, Pdir_int n) -> f n
-        | (Directive_ident f, Pdir_ident lid) -> f lid
+          (Directive_none f, Pdir_none) -> f (); true
+        | (Directive_string f, Pdir_string s) -> f s; true
+        | (Directive_int f, Pdir_int n) -> f n; true
+        | (Directive_ident f, Pdir_ident lid) -> f lid; true
         | (_, _) ->
             print_string "Wrong type of argument for directive `";
-            print_string dir_name; print_string "'"; print_newline()
+            print_string dir_name; print_string "'"; print_newline();
+            false
       with Not_found ->
         print_string "Unknown directive `"; print_string dir_name;
-        print_string "'"; print_newline()
+        print_string "'"; print_newline();
+        false
 
 (* Reading function -- should use input_scan_line directly... *)
 
@@ -185,7 +189,7 @@ let loop() =
   while true do
     try
       empty_lexbuf lb;
-       execute_phrase (Parse.toplevel_phrase lb)
+      execute_phrase (Parse.toplevel_phrase lb); ()
     with
       End_of_file ->
         print_newline(); exit 0

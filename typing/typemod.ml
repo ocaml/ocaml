@@ -30,6 +30,7 @@ type error =
   | With_not_abstract of string
   | With_arity_mismatch of string
   | Repeated_name of string * string
+  | Non_generalizable of type_expr
 
 exception Error of Location.t * error
 
@@ -189,6 +190,20 @@ let check_unique_names sg =
     | Pstr_open(lid, loc) -> () in
   List.iter check_item sg
 
+(* Check that all core type schemes in a structure are closed *)
+
+let check_nongen_schemes str =
+  List.iter 
+    (function
+        Tstr_value(rec_flag, pat_exp_list) ->
+          List.iter
+            (fun (pat, exp) ->
+              if not (Ctype.closed_schema exp.exp_type) then
+                raise(Error(exp.exp_loc, Non_generalizable exp.exp_type)))
+            pat_exp_list
+      | _ -> ())  (* Sub-structures have been checked before *)
+  str
+
 (* Type a module value expression *)
 
 let rec type_module env smod =
@@ -200,6 +215,7 @@ let rec type_module env smod =
         mod_loc = smod.pmod_loc }
   | Pmod_structure sstr ->
       let (str, sg, _) = type_structure env sstr in
+      check_nongen_schemes str;
       { mod_desc = Tmod_structure str;
         mod_type = Tmty_signature sg;
         mod_loc = smod.pmod_loc }
@@ -357,3 +373,8 @@ let report_error = function
       print_space();
       print_string "Names must be unique in a given structure.";
       close_box()
+  | Non_generalizable typ ->
+      open_hovbox 0;
+      print_string "The type of this expression,"; print_space();
+      type_scheme typ; print_string ","; print_space();
+      print_string "contains type variables that cannot be generalized"

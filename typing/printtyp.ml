@@ -71,7 +71,7 @@ let rec typexp sch prio = function
     Tvar {tvar_link = Some ty} ->
       typexp sch prio ty
   | Tvar {tvar_link = None; tvar_level = lvl} as v ->
-      if not sch or lvl = -1 (* generic *)
+      if (not sch) or lvl = -1 (* generic *)
       then print_string "'"
       else print_string "'_";
       print_string(name_of_var v)

@@ -111,10 +111,14 @@ let dir_use name =
     let lb = Lexing.from_channel ic in
     protect Location.input_name filename (fun () ->
       try
-        while true do
-          execute_phrase (Parse.toplevel_phrase lb)
-        done
-      with End_of_file -> ());
+        while execute_phrase (Parse.toplevel_phrase lb)
+        do () done
+      with
+        End_of_file -> ()
+      | Sys.Break ->
+          print_string "Interrupted."; print_newline()
+      | x ->
+          Errors.report_error x);
     close_in ic
   with Not_found ->
     print_string "Cannot find file "; print_string name; print_newline()

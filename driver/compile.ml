@@ -81,9 +81,10 @@ let implementation sourcefile =
           try find_in_path !load_path (prefixname ^ ".cmi")
           with Not_found -> prefixname ^ ".cmi" in
         let (dclsig, crc) = Env.read_signature modulename intf_file in
-        (Includemod.signatures Env.initial sg dclsig, crc)
+        (Includemod.compunit sourcefile sg intf_file dclsig, crc)
       end else begin
         let crc = Env.save_signature sg modulename (prefixname ^ ".cmi") in
+        Typemod.check_nongen_schemes str;
         (Tcoerce_none, crc)
       end in
     Emitcode.to_file oc modulename crc

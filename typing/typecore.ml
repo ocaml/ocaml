@@ -33,7 +33,6 @@ type error =
   | Label_multiply_defined of Longident.t
   | Label_missing
   | Label_not_mutable of Longident.t
-  | Non_generalizable of type_expr
   | Bad_format_letter of char
 
 exception Error of Location.t * error
@@ -525,14 +524,7 @@ and type_let env rec_flag spat_sexp_list =
 
 let type_binding env rec_flag spat_sexp_list =
   Typetexp.reset_type_variables();
-  let (pat_exp_list, new_env as result) =
-    type_let env rec_flag spat_sexp_list in
-  List.iter
-    (fun (pat, exp) ->
-      if not (closed_schema exp.exp_type) then
-        raise(Error(exp.exp_loc, Non_generalizable exp.exp_type)))
-    pat_exp_list;
-  result
+  type_let env rec_flag spat_sexp_list
 
 (* Typing of toplevel expressions *)
 
@@ -605,10 +597,5 @@ let report_error = function
   | Label_not_mutable lid ->
       print_string "The label "; longident lid;
       print_string " is not mutable"
-  | Non_generalizable typ ->
-      open_hovbox 0;
-      print_string "The type of this expression,"; print_space();
-      type_scheme typ; print_string ","; print_space();
-      print_string "contains type variables that cannot be generalized"
   | Bad_format_letter c ->
       print_string "Bad format letter `%"; print_char c; print_string "'"

@@ -47,12 +47,11 @@ let main () =
        "-o", Arg.String(fun s -> exec_name := s; archive_name := s);
        "-i", Arg.Unit(fun () -> print_types := true);
        "-a", Arg.Unit(fun () -> make_archive := true);
-       "-fast", Arg.Unit(fun () -> fast := true);
+       "-unsafe", Arg.Unit(fun () -> fast := true);
        "-nopervasives", Arg.Unit(fun () -> nopervasives := true);
        "-custom", Arg.Unit(fun () -> custom_runtime := true);
        "-ccopt", Arg.String(fun s -> ccopts := s :: !ccopts);
        "-cclib", Arg.String(fun s -> ccobjs := ("-l" ^ s) :: !ccobjs);
-       "-l", Arg.String(fun s -> ccobjs := s :: !ccobjs);
        "-linkall", Arg.Unit(fun s -> link_everything := true);
        "-dlambda", Arg.Unit(fun () -> dump_lambda := true);
        "-dinstr", Arg.Unit(fun () -> dump_instr := true);

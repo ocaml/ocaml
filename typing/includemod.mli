@@ -17,6 +17,7 @@ open Typedtree
 
 val modtypes: Env.t -> module_type -> module_type -> module_coercion
 val signatures: Env.t -> signature -> signature -> module_coercion
+val compunit: string -> signature -> string -> signature -> module_coercion
 
 type error =
     Missing_field of Ident.t
@@ -26,6 +27,7 @@ type error =
       Ident.t * exception_declaration * exception_declaration
   | Module_types of module_type * module_type
   | Modtype_infos of Ident.t * modtype_declaration * modtype_declaration
+  | Interface_mismatch of string * string
 
 exception Error of error list
 

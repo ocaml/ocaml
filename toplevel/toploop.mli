@@ -25,8 +25,9 @@ type directive_fun =
 
 val directive_table: (string, directive_fun) Hashtbl.t
         (* Table of known directives, with their execution function *)
-val execute_phrase: Parsetree.toplevel_phrase -> unit
-        (* Execute the given toplevel phrase *)
+val execute_phrase: Parsetree.toplevel_phrase -> bool
+        (* Execute the given toplevel phrase. Return [true] if the
+           phrase executed with no errors and [false] otherwise. *)
 val print_exception_outcome: exn -> unit
         (* Print an exception resulting from the evaluation of user code. *)
 val toplevel_env: Env.t ref

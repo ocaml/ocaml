@@ -162,10 +162,6 @@ int main(argc, argv)
       case 'v':
         verbose_init = 1;
         break;
-      case 'V':
-        fprintf(stderr, "The Caml 1999 runtime system, version %s\n",
-                "1");
-        exit(0);
       default:
         fatal_error_arg("Unknown option %s.\n", argv[i]);
       }
