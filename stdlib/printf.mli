@@ -108,7 +108,7 @@ val bprintf : Buffer.t -> ('a, Buffer.t, unit, unit) format -> 'a
    append the formatted arguments to the given extensible buffer
    (see module {!Buffer}). *)
 
-val kprintf : (string -> string) -> ('a, unit, string, string) format -> 'a
+val kprintf : (string -> 'a) -> ('b, unit, string, 'a) format -> 'b
 (** [kprintf k format arguments] is the same as [sprintf format arguments],
     except that the resulting string is passed as argument to [k]; the
     result of [k] is then returned as the result of [kprintf]. *)
