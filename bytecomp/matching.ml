@@ -209,8 +209,12 @@ let combine_constant arg cst (const_lambda_list, total1) (lambda2, total2) =
   let lambda1 =
     match cst with
       Const_int _ ->
-        make_translated_switch arg
-          (List.map (fun (Const_int n, l) -> (n, l)) const_lambda_list)
+      	let caselist =
+      	  List.map (fun (Const_int n, l) -> (n, l)) const_lambda_list in
+	if List.for_all (fun (n, l) -> n >= 0 & n <= 0xFF) caselist then
+          make_translated_switch arg caselist
+	else
+	  make_test_sequence (Pintcomp Ceq) arg const_lambda_list
     | Const_char _ ->
         make_translated_switch arg
           (List.map (fun (Const_char c, l) -> (Char.code c, l))
