@@ -204,42 +204,43 @@ external current_environment: unit -> Obj.t = "get_current_environment"
 let dir_trace lid =
   try
     let (path, desc) = Env.lookup_value lid !toplevel_env in
-    let clos = eval_path path in
-    (* Nothing to do if it's not a closure *)
-    if Obj.is_block clos & Obj.tag clos = 250 then begin
-    match is_traced clos with
-      Some opath ->
-        Printtyp.path path; print_string " is already traced (under the name ";
-        Printtyp.path opath; print_string ")";
+    (* Check if this is a primitive *)
+    match desc.val_kind with
+      Val_prim p ->
+        Printtyp.longident lid;
+        print_string " is an external function and cannot be traced.";
         print_newline()
-    | None ->
-        (* Instrument the old closure *)
-        let old_clos = copy_closure clos in
-        traced_functions :=
-          { path = path; 
-            closure = clos;
-            initial_closure = old_clos;
-            instrumented_fun =
-              instrument_closure lid (Ctype.instance desc.val_type) old_clos}
-          :: !traced_functions;
-        (* Redirect the code field of the old closure *)
-        overwrite_closure clos
-         (Obj.repr (fun arg -> Trace.print_trace (current_environment()) arg));
-        (* Warn if this is a primitive *)
-        match desc.val_kind with
-          Val_prim p ->
-            open_hovbox 0;
-            print_string "Warning: "; Printtyp.longident lid;
-            print_string " is an external function."; print_space();
-            print_string "Inlined calls will not be traced.";
-            close_box(); print_newline()
-        | _ ->
+    | _ ->
+        let clos = eval_path path in
+        (* Nothing to do if it's not a closure *)
+        if Obj.is_block clos & Obj.tag clos = 250 then begin
+        match is_traced clos with
+          Some opath ->
+            Printtyp.path path;
+            print_string " is already traced (under the name ";
+            Printtyp.path opath; print_string ")";
+            print_newline()
+        | None ->
+            (* Instrument the old closure *)
+            let old_clos = copy_closure clos in
+            traced_functions :=
+              { path = path; 
+                closure = clos;
+                initial_closure = old_clos;
+                instrumented_fun =
+                  instrument_closure lid (Ctype.instance desc.val_type)
+                                     old_clos}
+              :: !traced_functions;
+            (* Redirect the code field of the old closure *)
+            overwrite_closure clos
+             (Obj.repr (fun arg ->
+                          Trace.print_trace (current_environment()) arg));
             Printtyp.longident lid; print_string " is now traced.";
             print_newline()
-    end else begin
-      Printtyp.longident lid; print_string " is not a function.";
-      print_newline()
-    end      
+        end else begin
+          Printtyp.longident lid; print_string " is not a function.";
+          print_newline()
+        end      
   with Not_found ->
     print_string "Unbound value "; Printtyp.longident lid;
     print_newline()
