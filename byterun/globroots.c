@@ -20,8 +20,8 @@
 #include "globroots.h"
 
 /* The set of global memory roots is represented as a skip list
-   (see Bill Pugh's paper in CACM xx(xx)).  
-   Probabilistic data structures rule! */
+   (see William Pugh, "Skip lists: a probabilistic alternative to
+   balanced binary trees", Comm. ACM 33(6), 1990). */
 
 /* Generate a random level for a new node: 0 with probability 3/4,
    1 with probability 3/16, 2 with probability 3/64, etc.
@@ -32,17 +32,20 @@
 
 static uint32 random_seed = 0;
 
-#define RANDOM_A 201
-#define RANDOM_C 25173
-
 static int random_level(void)
 {
   uint32 r;
   int level = 0;
 
-  r = random_seed = random_seed * RANDOM_A + RANDOM_C;
-  while ((r & 3) == 3) { level++; r = r >> 2; }
+  /* Linear congruence with modulus = 2^32, multiplier = 69069
+     (Knuth vol 2 p. 106, line 15 of table 1), additive = 25173. */
+  r = random_seed = random_seed * 69069 + 25173;
+  /* Knuth (vol 2 p. 13) shows that the least significant bits are
+     "less random" than the most significant bits with a modulus of 2^m,
+     so consume most significant bits first */
+  while ((r & 0xC0000000U) == 0xC0000000U) { level++; r = r << 2; }
   Assert(level <= MAX_LEVEL);
+  printf("%d\n", level);
   return level;
 }
 
