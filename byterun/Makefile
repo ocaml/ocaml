@@ -16,7 +16,7 @@ PRIMS=array.c compare.c crc.c extern.c floats.c gc_ctrl.c hash.c \
   intern.c interp.c ints.c io.c meta.c obj.c parsing.c \
   signals.c str.c sys.c terminfo.c
 
-all: camlrun camlrund
+all: camlrun
 
 camlrun: $(OBJS) prims.o
 	$(BYTECC) $(BYTECCCOMPOPTS) $(CCLINKOPTS) $(LOWADDRESSES) -o camlrun prims.o $(OBJS) $(CCLIBS)

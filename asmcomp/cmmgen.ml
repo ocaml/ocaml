@@ -18,8 +18,8 @@ let bind name arg fn =
 
 (* Block headers. Meaning of the tag field:
        0 - 248: regular blocks
-       249: closures
-       250: infix closure
+       249: infix closure
+       250: closures
        251: abstract
        252: string
        253: float
@@ -29,8 +29,8 @@ let bind name arg fn =
 let float_tag = Cconst_int 253
 
 let block_header tag sz = (sz lsl 10) + tag
-let closure_header sz = block_header 249 sz
-let infix_header ofs = block_header 250 ofs
+let closure_header sz = block_header 250 sz
+let infix_header ofs = block_header 249 ofs
 let float_header = block_header 253 (size_float / size_addr)
 let floatarray_header len = block_header 254 (len * size_float / size_addr)
 let string_header len = block_header 252 ((len + size_addr) / size_addr)

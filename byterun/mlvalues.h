@@ -132,7 +132,7 @@ bits  63    10 9     8 7   0
 #endif
 
 /* The lowest tag for blocks containing no value. */
-#define No_scan_tag (Num_tags - 6)
+#define No_scan_tag 251
 
 
 /* 1- If tag < No_scan_tag : a tuple of fields.  */
@@ -145,13 +145,15 @@ bits  63    10 9     8 7   0
 typedef int32 opcode_t;
 typedef opcode_t * code_t;
 
-#define Closure_tag (No_scan_tag - 1)
+/* Special case of tuples of fields: closures */
+
+#define Closure_tag 250
 #define Code_val(val) (((code_t *) (val)) [0])     /* Also an l-value. */
 
-/* 2- If tag == No_scan_tag : an infix header inside a closure */
-/* Since No_scan_tag is odd, the infix header will be scanned as an integer */
+/* If tag == Infix_tag : an infix header inside a closure */
+/* Infix_tag must be odd so that the infix header is scanned as an integer */
 
-#define Infix_tag No_scan_tag
+#define Infix_tag 249
 #define Infix_offset_hd(hd) (Bosize_hd(hd))
 #define Infix_offset_val(v) Infix_offset_hd(Hd_val(v))
 
@@ -167,14 +169,14 @@ typedef opcode_t * code_t;
 /* Abstract things.  Their contents is not traced by the GC; therefore they
    must not contain any [value].
 */
-#define Abstract_tag (No_scan_tag + 1)
+#define Abstract_tag 251
 
 /* Strings. */
-#define String_tag (No_scan_tag + 2)
+#define String_tag 252
 #define String_val(x) ((char *) Bp_val(x))
 
 /* Floating-point numbers. */
-#define Double_tag (No_scan_tag + 3)
+#define Double_tag 253
 #define Double_wosize ((sizeof(double) / sizeof(value)))
 #ifndef ALIGN_DOUBLE
 #define Double_val(v) (* (double *)(v))
@@ -185,7 +187,7 @@ void Store_double_val P((value,double));
 #endif
 
 /* Arrays of floating-point numbers. */
-#define Double_array_tag (No_scan_tag + 4)
+#define Double_array_tag 254
 #define Double_field(v,i) Double_val((value)((double *)(v) + (i)))
 #define Store_double_field(v,i,d) \
   Store_double_val((value)((double *)(v) + (i)),d)
@@ -193,7 +195,7 @@ void Store_double_val P((value,double));
 /* Finalized things.  Just like abstract things, but the GC will call the
    [Final_fun] before deallocation.
 */
-#define Final_tag (No_scan_tag + 5)
+#define Final_tag 255
 typedef void (*final_fun) P((value));
 #define Final_fun(val) (((final_fun *) (val)) [0]) /* Also an l-value. */
 
