@@ -18,7 +18,7 @@ CAMLRUN = :::byterun:ocamlrun
 
 FILES = arrays.byt callback.byt equality.byt intext.byt io.byt manyargs.byt ¶
         multdef.byt patmatch.byt recvalues.byt sets.byt signals.byt syserror.byt ¶
-        testrandom.byt usemultdef.byt wc.byt
+        testrandom.byt usemultdef.byt wc.byt tscanf.byt
 
 all Ä {FILES}
   duplicate -y :::ocaml ":/vmunix"
