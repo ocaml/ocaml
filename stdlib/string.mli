@@ -126,7 +126,7 @@ val uncapitalize: string -> string
 external unsafe_get : string -> int -> char = "%string_unsafe_get"
 external unsafe_set : string -> int -> char -> unit = "%string_unsafe_set"
 external unsafe_blit :
-	src:string -> src_pos:int ->
+        src:string -> src_pos:int ->
         dst:string -> dst_pos:int -> len:int -> unit
         = "blit_string" "noalloc"
 external unsafe_fill : string -> pos:int -> len:int -> char -> unit

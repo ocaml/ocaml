@@ -208,8 +208,8 @@ let quote s =
   Buffer.add_char b '\'';
   for i = 0 to l - 1 do
     if s.[i] = '\''
-	then Buffer.add_string b quotequote
-	else Buffer.add_char b  s.[i]
+    then Buffer.add_string b quotequote
+    else Buffer.add_char b  s.[i]
   done;
   Buffer.add_char b '\'';
   Buffer.contents b

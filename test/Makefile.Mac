@@ -18,7 +18,8 @@ CAMLLEX = ::boot:ocamlrun ::lex:ocamllex
 CAMLDEP = ::boot:ocamlrun ::tools:ocamldep
 CAMLRUN = ::byterun:ocamlrun
 
-BYTE_EXE = fib.byt takc.byt taku.byt sieve.byt quicksort.byt quicksort.fast.byt ¶
+BYTE_EXE = fib.byt takc.byt taku.byt sieve.byt quicksort.byt ¶
+  quicksort.fast.byt ¶
   fft.byt fft.fast.byt soli.byt soli.fast.byt boyer.byt kb.byt ¶
   nucleic.byt genlex.byt bdd.byt
 
@@ -90,15 +91,16 @@ clean ÄÄ
 # Regression test
 
 test Ä {BYTE_EXE}
-        for prog in `echo {BYTE_EXE} | streamedit -e '1 replace /.byt/ "" -c °'`
-          echo {prog}
-          if "`exists :Results:{prog}.runtest.Mac`"
-            :Results:{prog}.runtest.Mac test {CAMLRUN} {prog}.byt
-          else
-            {CAMLRUN} {prog}.byt > "{tempfolder}ocaml-test"
-            equal -d "{tempfolder}ocaml-test" :Results:{prog}.out
-          end
-        end
+    set echo 0
+    for prog in `echo {BYTE_EXE} | streamedit -e '1 replace /.byt/ "" -c °'`
+      echo {prog}
+      if "`exists :Results:{prog}.runtest.Mac`"
+        :Results:{prog}.runtest.Mac test {CAMLRUN} {prog}.byt
+      else
+        {CAMLRUN} {prog}.byt > "{tempfolder}ocaml-test"
+        equal -d "{tempfolder}ocaml-test" :Results:{prog}.out
+      end
+    end
 
 clean ÄÄ
         delete -i :Lex:testscanner.ml "{tempfolder}ocaml-test"
@@ -106,14 +108,15 @@ clean ÄÄ
 # Benchmark
 
 bench Ä {BYTE_EXE}
-        for prog in `echo {BYTE_EXE} | streamedit -e '1 replace /.byt/ "" -c °'`
-          echo {prog}
-          if "`exists :Results:{prog}.runtest.Mac`"
-            :Results:{prog}.runtest.Mac bench {CAMLRUN} {prog}.byt
-          else
-            time "{CAMLRUN} {prog}.byt ·dev:null"
-          end
-        end
+    set echo 0
+    for prog in `echo {BYTE_EXE} | streamedit -e '1 replace /.byt/ "" -c °'`
+      echo {prog}
+      if "`exists :Results:{prog}.runtest.Mac`"
+        :Results:{prog}.runtest.Mac bench {CAMLRUN} {prog}.byt
+      else
+        time "{CAMLRUN} {prog}.byt ·dev:null"
+      end
+    end
 
 # Dependencies
 

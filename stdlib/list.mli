@@ -90,13 +90,13 @@ val rev_map2 : fun:('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
            [List.rev (List.map2 f l)], but is tail-recursive and
            more efficient. *)
 val fold_left2 :
-	fun:(acc:'a -> 'b -> 'c -> 'a) -> acc:'a -> 'b list -> 'c list -> 'a
+        fun:(acc:'a -> 'b -> 'c -> 'a) -> acc:'a -> 'b list -> 'c list -> 'a
         (* [List.fold_left2 f a [b1; ...; bn] [c1; ...; cn]] is
            [f (... (f (f a b1 c1) b2 c2) ...) bn cn].
            Raise [Invalid_argument] if the two lists have
            different lengths. *)
 val fold_right2 :
-	fun:('a -> 'b -> acc:'c -> 'c) -> 'a list -> 'b list -> acc:'c -> 'c
+        fun:('a -> 'b -> acc:'c -> 'c) -> 'a list -> 'b list -> acc:'c -> 'c
         (* [List.fold_right2 f [a1; ...; an] [b1; ...; bn] c] is
            [f a1 b1 (f a2 b2 (... (f an bn c) ...))].
            Raise [Invalid_argument] if the two lists have

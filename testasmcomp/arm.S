@@ -12,11 +12,11 @@
 
 /* $Id$ */
 
-fp	.req	r11
-ip	.req	r12
-sp	.req	r13
-lr	.req	r14
-pc	.req	r15
+fp      .req    r11
+ip      .req    r12
+sp      .req    r13
+lr      .req    r14
+pc      .req    r15
 
         .text
 
@@ -26,7 +26,7 @@ pc	.req	r15
 call_gen_code:
         mov     ip, sp
         stmfd   sp!, {r4, r5, r6, r7, r8, r9, fp, ip, lr, pc}
-	sub	fp, ip, #4
+        sub     fp, ip, #4
     @ r0 is function to call
     @ r1, r2, r3 are arguments 1, 2, 3
         mov     r4, r0

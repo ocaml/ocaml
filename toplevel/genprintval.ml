@@ -319,33 +319,33 @@ module Make(O : OBJ) = struct
               | Datarepr.Constr_not_found -> (* raised by find_constr_by_tag *)
                   print_string "<unknown constructor>"
               end
-	  | Tvariant row ->
-	      let row = Btype.row_repr row in
-	      if O.is_block obj then begin
-		let tag : int = O.obj (O.field obj 0) in
-		if prio > 1 then (open_box 2; print_char '(');
-		print_char '`';
-		List.iter
-		  (fun (l,f) -> if Btype.hash_variant l = tag then
-		    match Btype.row_field_repr f with
-		      Rpresent(Some ty) -> 
-			print_string l; print_space ();
-			cautious (print_val 2 (depth - 1) (O.field obj 1)) ty
-		    | _ -> ())
-		  row.row_fields;
-		if prio >1 then (print_char ')'; close_box ())
-	      end else begin
-		let tag : int = O.obj obj in
-		print_char '`';
-		List.iter
-		  (fun (l,_) ->
-		    if Btype.hash_variant l = tag then print_string l)
-		  row.row_fields
-	      end
+          | Tvariant row ->
+              let row = Btype.row_repr row in
+              if O.is_block obj then begin
+                let tag : int = O.obj (O.field obj 0) in
+                if prio > 1 then (open_box 2; print_char '(');
+                print_char '`';
+                List.iter
+                  (fun (l,f) -> if Btype.hash_variant l = tag then
+                    match Btype.row_field_repr f with
+                      Rpresent(Some ty) ->
+                        print_string l; print_space ();
+                        cautious (print_val 2 (depth - 1) (O.field obj 1)) ty
+                    | _ -> ())
+                  row.row_fields;
+                if prio >1 then (print_char ')'; close_box ())
+              end else begin
+                let tag : int = O.obj obj in
+                print_char '`';
+                List.iter
+                  (fun (l,_) ->
+                    if Btype.hash_variant l = tag then print_string l)
+                  row.row_fields
+              end
           | Tobject (_, _) ->
               print_string "<obj>"
-	  | Tsubst ty ->
-	      print_val prio (depth - 1) obj ty
+          | Tsubst ty ->
+              print_val prio (depth - 1) obj ty
           | Tfield(_, _, _, _) | Tnil | Tlink _ ->
               fatal_error "Printval.print_value"
 

@@ -52,7 +52,7 @@ let b = Buffer.create 1024 ;;
 let blank = [' ' '\010' '\013' '\009' '\012']
 let lowercase = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
 let uppercase = ['A'-'Z' '\192'-'\214' '\216'-'\222']
-let identchar = 
+let identchar =
   ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
 let symbolchar =
   ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
@@ -68,7 +68,7 @@ let float_literal =
 rule token = parse
     lowercase identchar * ':' [ ^ ':' '=' '>']
       { let s = Lexing.lexeme lexbuf in
-      	lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_curr_pos - 2;
+        lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_curr_pos - 2;
         Buffer.add_string b (String.sub s 0 (String.length s - 2));
         Buffer.add_string b " ";
         modified := true;
@@ -89,7 +89,7 @@ rule token = parse
         Buffer.add_string b "(*";
         comment lexbuf;
         token lexbuf }
-  | "?" 
+  | "?"
       { Buffer.add_string b "??";
         modified := true;
         token lexbuf }
@@ -106,41 +106,41 @@ rule token = parse
   | "#"
   | "&"
   | "&&"
-  | "`" 
-  | "'" 
-  | "(" 
-  | ")" 
-  | "*" 
-  | "," 
+  | "`"
+  | "'"
+  | "("
+  | ")"
+  | "*"
+  | ","
   | "??"
   | "->"
-  | "." 
+  | "."
   | ".."
-  | ":" 
+  | ":"
   | "::"
   | ":="
   | ":>"
-  | ";" 
+  | ";"
   | ";;"
-  | "<" 
+  | "<"
   | "<-"
-  | "=" 
-  | "[" 
+  | "="
+  | "["
   | "[|"
   | "[<"
-  | "]" 
-  | "{" 
+  | "]"
+  | "{"
   | "{="
   | "{<"
-  | "|" 
+  | "|"
   | "||"
   | "|]"
-  | ">" 
+  | ">"
   | ">]"
-  | "}" 
+  | "}"
   | ">}"
   | "!="
-  | "-" 
+  | "-"
   | "-."
   | ['!' '~'] symbolchar *
   | '?' symbolchar2 *
@@ -214,7 +214,7 @@ let convert_file name =
     try token (Lexing.from_channel ic); close_in ic
     with exn -> close_in ic; raise exn
   end;
-  if !modified then begin 
+  if !modified then begin
     let backup = name ^ ".bak" in
     if Sys.file_exists backup then Sys.remove backup;
     Sys.rename name backup;
@@ -240,4 +240,4 @@ let _ =
     Printexc.catch convert_file name
   done
 
-} 
+}

@@ -77,7 +77,7 @@ let rec instrument_result env name clos_typ =
           open_box 2;
           Printtyp.longident starred_name;
           print_string " <--"; print_space();
-	  print_label l;
+          print_label l;
           print_value !toplevel_env arg t1;
           close_box(); print_newline();
           try
@@ -105,7 +105,7 @@ let instrument_closure env name clos_typ =
       (fun actual_code closure arg ->
         open_box 2;
         Printtyp.longident name; print_string " <--"; print_space();
-	print_label l;
+        print_label l;
         print_value !toplevel_env arg t1;
         close_box(); print_newline();
         try

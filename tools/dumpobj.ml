@@ -355,7 +355,7 @@ let op_shapes = [
 ];;
 
 let print_instr ic =
-  printf "%8d" (currpc ic);
+  printf "%8d  " (currpc ic);
   let op = inputu ic in
   if op >= Array.length names_of_instructions || op < 0
   then (print_string "*** unknown opcode : "; print_int op)

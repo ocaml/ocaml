@@ -2,7 +2,7 @@
 (*                                                                     *)
 (*                           Objective Caml                            *)
 (*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(*             Damien Doligez, projet Para, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
@@ -52,7 +52,7 @@ type spec =
            with a keyword. *)
 
 val parse : keywords:(string * spec * string) list ->
-	    others:(string -> unit) -> errmsg:string -> unit
+            others:(string -> unit) -> errmsg:string -> unit
 (*
     [Arg.parse speclist anonfun usage_msg] parses the command line.
     [speclist] is a list of triples [(key, spec, doc)].
@@ -85,7 +85,7 @@ exception Bad of string
      message to reject invalid arguments.
 *)
 
-val usage: keywords:(string * spec * string) list -> errmsg:string -> unit
+val usage : keywords:(string * spec * string) list -> errmsg:string -> unit
 (*
     [Arg.usage speclist usage_msg] prints an error message including
     the list of valid options.  This is the same message that
@@ -93,7 +93,7 @@ val usage: keywords:(string * spec * string) list -> errmsg:string -> unit
     [speclist] and [usage_msg] are the same as for [Arg.parse].
 *)
 
-val current: int ref;;
+val current : int ref;;
 (*
     Position (in [Sys.argv]) of the argument being processed.  You can
     change this value, e.g. to force [Arg.parse] to skip some arguments.

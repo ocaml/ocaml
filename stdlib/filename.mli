@@ -36,7 +36,7 @@ val check_suffix : string -> suff:string -> bool
         (* [check_suffix name suff] returns [true] if the filename [name]
            ends with the suffix [suff]. *)
 val chop_suffix : string -> suff:string -> string
-        (* [chop_suffix name suff] removes the suffix [suff] from 
+        (* [chop_suffix name suff] removes the suffix [suff] from
            the filename [name]. The behavior is undefined if [name] does not
            end with the suffix [suff]. *)
 val chop_extension : string -> string
@@ -52,7 +52,7 @@ val dirname : string -> string
            current directory to [dirname name] (with [Sys.chdir]),
            references to [basename name] (which is a relative file name)
            designate the same file as [name] before the call to [Sys.chdir]. *)
-val temp_file: prefix:string -> suffix:string -> string
+val temp_file : prefix:string -> suffix:string -> string
         (* [temp_file prefix suffix] returns the name of a
            non-existent temporary file in the temporary directory.
            The base name of the temporary file is formed by concatenating
@@ -65,7 +65,7 @@ val temp_file: prefix:string -> suffix:string -> string
            Under MacOS, the name of the temporary directory is given
            by the environment variable [TempFolder]; if not set,
            temporary files are created in the current directory. *)
-val quote: string -> string;;
+val quote : string -> string;;
         (* Return a quoted version of a file name, suitable for use as
-		   one argument in a shell command line, escaping any shell
-		   meta-characters. *)
+           one argument in a shell command line, escaping any shell
+           meta-characters. *)
