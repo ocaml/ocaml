@@ -409,7 +409,7 @@
 #define really_putblock caml_really_putblock
 #define seek_out caml_seek_out /*SP*/
 #define pos_out caml_pos_out /*SP*/
-#define do_read caml_do_read                      /* FIXME not in io.h */
+#define do_read caml_do_read
 #define refill caml_refill
 #define getword caml_getword
 #define getblock caml_getblock
@@ -417,7 +417,7 @@
 #define seek_in caml_seek_in /*SP*/
 #define pos_in caml_pos_in /*SP*/
 #define input_scan_line caml_input_scan_line /*SP*/
-#define finalize_channel caml_finalize_channel    /* FIXME not in io.h */
+#define finalize_channel caml_finalize_channel
 #define alloc_channel caml_alloc_channel
 /*      caml_open_descriptor_in -> caml_ml_open_descriptor_in SP*/
 /*      caml_open_descriptor_out -> caml_ml_open_descriptor_out SP*/
