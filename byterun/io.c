@@ -172,12 +172,19 @@ again:
 
 /* Attempt to flush the buffer. This will make room in the buffer for
    at least one character. Returns true if the buffer is empty at the
-   end of the flush, or false if some data remains in the buffer. */
+   end of the flush, or false if some data remains in the buffer.
+
+   If the channel is closed, DO NOT raise a "bad file descriptor"
+   exception, but do nothing (the buffer is already empty).  See
+   the "at_exit" line of stdlib/format.ml for a good reason to avoid
+   the exception.
+ */
 
 CAMLexport int flush_partial(struct channel *channel)
 {
   int towrite, written;
 
+  if (channel->fd == -1) return 1;
   towrite = channel->curr - channel->buff;
   if (towrite > 0) {
     written = do_write(channel->fd, channel->buff, towrite);
