@@ -21,6 +21,7 @@
 #include <tk.h>
 #include <mlvalues.h>
 #include <memory.h>
+#include <alloc.h>
 #include <callback.h>
 #include <signals.h>
 #include <fail.h>

@@ -53,11 +53,11 @@ let tcl_command s = ignore (tcl_eval s);;
 
 exception TkError of string
       (* Raised by the communication functions *)
-let _ = Callback.register_exception "tkerror" (TkError "")
+let () = Callback.register_exception "tkerror" (TkError "")
 
 let cltclinterp = ref Nativeint.zero
       (* For use in other extensions *)
-let _ = Callback.register "cltclinterp" cltclinterp
+let () = Callback.register "cltclinterp" cltclinterp
 
 (* Debugging support *)
 let debug = 
