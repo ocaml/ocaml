@@ -16,6 +16,7 @@
 #include <errno.h>
 #include <fcntl.h>
 #include <mlvalues.h>
+#include <signals.h>
 #include "unixsupport.h"
 
 #if defined(F_GETLK) && defined(F_SETLK) && defined(F_SETLKW)
