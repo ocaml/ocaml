@@ -334,32 +334,39 @@ let closed_schema ty =
     unmark_type ty;
     false
 
-exception Non_closed of type_expr
+exception Non_closed of type_expr * bool
 
 let free_variables = ref []
 
-let rec free_vars_rec ty =
+let rec free_vars_rec real ty =
   let ty = repr ty in
   if ty.level >= lowest_level then begin
-    begin match ty.desc with
-      Tvar -> free_variables := ty :: !free_variables
-    | _    -> ()
-    end;
     ty.level <- pivot_level - ty.level;
-    iter_type_expr free_vars_rec ty
+    begin match ty.desc with
+      Tvar ->
+        free_variables := (ty, real) :: !free_variables
+    | Tobject(ty, {contents = Some (_, p)}) ->
+        free_vars_rec false ty; List.iter (free_vars_rec true) p
+    | Tobject (ty, _) ->
+        free_vars_rec false ty
+    | Tfield (_, _, ty1, ty2) ->
+        free_vars_rec true ty1; free_vars_rec false ty2
+    | _    ->
+        iter_type_expr (free_vars_rec true) ty
+    end;
   end
 
 let free_vars ty =
   free_variables := [];
-  free_vars_rec ty;
+  free_vars_rec true ty;
   let res = !free_variables in
   free_variables := [];
   res
 
 let rec closed_type ty =
   match free_vars ty with
-      []   -> ()
-  | v :: _ -> raise (Non_closed v)
+      []           -> ()
+  | (v, real) :: _ -> raise (Non_closed (v, real))
 
 let closed_parameterized_type params ty =
   List.iter mark_type params;
@@ -390,13 +397,13 @@ let closed_type_decl decl =
     end;
     unmark_type_decl decl;
     None
-  with Non_closed ty ->
+  with Non_closed (ty, _) ->
     unmark_type_decl decl;
     Some ty
 
 type closed_class_failure =
-    CC_Method of type_expr * string * type_expr
-  | CC_Value of type_expr * string * type_expr
+    CC_Method of type_expr * bool * string * type_expr
+  | CC_Value of type_expr * bool * string * type_expr
 
 exception Failure of closed_class_failure
 
@@ -409,31 +416,19 @@ let closed_class params sign =
     (fun (lab, _, ty) -> if lab = "*dummy method*" then mark_type ty)
     fields;
   try
-(*
-    List.iter
-      (fun (lab, kind, ty) ->
-        try closed_type ty with Non_closed ty0 ->
-          raise (Failure (CC_Method (ty0, lab, ty))))
-      fields;
-    Vars.iter
-      (fun lab (_, ty) ->
-        try closed_type ty with Non_closed ty0 ->
-          raise (Failure (CC_Value (ty0, lab, ty))))
-      sign.cty_vars;
-*)
     mark_type_node (repr sign.cty_self);
     List.iter
       (fun (lab, kind, ty) ->
         if field_kind_repr kind = Fpresent then
-        try closed_type ty with Non_closed ty0 ->
-          raise (Failure (CC_Method (ty0, lab, ty))))
+        try closed_type ty with Non_closed (ty0, real) ->
+          raise (Failure (CC_Method (ty0, real, lab, ty))))
       fields;
     mark_type_params (repr sign.cty_self);
     List.iter unmark_type params;
     unmark_class_signature sign;
     None
   with Failure reason ->
-    mark_type sign.cty_self;
+    mark_type_params (repr sign.cty_self);
     List.iter unmark_type params;
     unmark_class_signature sign;
     Some reason
@@ -855,18 +850,26 @@ let expand_abbrev env ty =
       begin match find_expans path !abbrev with
         Some ty ->
           if level <> generic_level then
-            update_level env level ty;
+            begin try
+              update_level env level ty
+            with Unify _ ->
+              (* XXX This should not happen.
+                 However, levels are not correctly restored after a
+                 typing error *)
+              ()
+            end;
           ty
       | None ->
           let (params, body) =
             try Env.find_type_expansion path env with Not_found ->
               raise Cannot_expand
           in
-          begin try
+(*          begin try *)
             subst env level abbrev (Some ty) params args body
-          with Unify _ ->
+(*          with Unify _ ->
             raise Cannot_expand
           end
+*)
       end
   | _ ->
       assert false
@@ -1743,7 +1746,7 @@ let match_class_declarations env patt_params patt_type subj_params subj_type =
           (Fvar _, Fvar _)
         | (Fpresent, Fpresent) -> err
         | (Fvar _, Fpresent)   -> CM_Private_method lab::err
-        | (Fpresent, Fabsent)  -> CM_Public_method lab::err
+        | (Fpresent, Fvar _)  -> CM_Public_method lab::err
         | _                    -> assert false)
       pairs error
   in

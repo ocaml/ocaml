@@ -114,6 +114,7 @@ val filter_method: Env.t -> string -> private_flag -> type_expr -> type_expr
         (* A special case of unification (with {m : 'a; 'b}). *)
 val check_filter_method: Env.t -> string -> private_flag -> type_expr -> unit
         (* A special case of unification (with {m : 'a; 'b}), returning unit. *)
+val occur: Env.t -> type_expr -> type_expr -> unit
 val filter_self_method:
         Env.t -> string -> private_flag -> (Ident.t * type_expr) Meths.t ref ->
         type_expr -> Ident.t * type_expr
@@ -178,8 +179,8 @@ val closed_schema: type_expr -> bool
 
 val closed_type_decl: type_declaration -> type_expr option
 type closed_class_failure =
-    CC_Method of type_expr * string * type_expr
-  | CC_Value of type_expr * string * type_expr
+    CC_Method of type_expr * bool * string * type_expr
+  | CC_Value of type_expr * bool * string * type_expr
 val closed_class:
         type_expr list -> class_signature -> closed_class_failure option
         (* Check whether all type variables are bound *)

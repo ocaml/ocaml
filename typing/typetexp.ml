@@ -40,7 +40,7 @@ let aliases        = ref (Tbl.empty : (string, type_expr) Tbl.t)
 let saved_type_variables = ref ([] : (string, type_expr) Tbl.t list)
 
 let used_variables = ref (Tbl.empty : (string, type_expr) Tbl.t)
-let bindings       = ref ([] : (type_expr * type_expr) list)
+let bindings       = ref ([] : (Location.t * type_expr * type_expr) list)
         (* These two variables are used for the "delayed" policy. *)
 
 let reset_type_variables () =
@@ -103,7 +103,7 @@ let rec transl_type env policy styp =
               let v1 = Tbl.find name !type_variables in
               let v2 = new_global_var () in
               used_variables := Tbl.add name v2 !used_variables;
-              bindings := (v1, v2)::!bindings;
+              bindings := (styp.ptyp_loc, v1, v2)::!bindings;
               v2
             with Not_found ->
               let v = new_global_var () in
@@ -130,7 +130,10 @@ let rec transl_type env policy styp =
       let args = List.map (transl_type env policy) stl in
       let params = List.map (fun _ -> Ctype.newvar ()) args in
       let cstr = newty (Tconstr(path, params, ref Mnil)) in
-      let _ = Ctype.expand_head env cstr in
+      let _ =
+        try Ctype.expand_head env cstr with Unify trace ->
+          raise (Error(styp.ptyp_loc, Type_mismatch trace))
+      in
       List.iter2
         (fun (sty, ty) ty' ->
            try unify env ty ty' with Unify trace ->
@@ -157,7 +160,12 @@ let rec transl_type env policy styp =
         raise(Error(styp.ptyp_loc, Type_arity_mismatch(lid, decl.type_arity,
                                                            List.length stl)));
       let args = List.map (transl_type env policy) stl in
-      let ty = Ctype.expand_head env (newty (Tconstr(path, args, ref Mnil))) in
+      let ty =
+        try
+          Ctype.expand_head env (newty (Tconstr(path, args, ref Mnil)))
+        with Unify trace ->
+          raise (Error(styp.ptyp_loc, Type_mismatch trace))
+      in
       let params = Ctype.instance_list decl.type_params in
       List.iter2
         (fun (sty, ty') ty ->
@@ -206,8 +214,12 @@ let transl_simple_type_delayed env styp =
   used_variables := Tbl.empty;
   bindings := [];
   (typ,
-(* XXX L'unification peut echouer... *)
-   function () -> List.iter (function (t1, t2) -> unify env t1 t2) b)
+   function () ->
+     List.iter
+       (function (loc, t1, t2) ->
+          try unify env t1 t2 with Unify trace ->
+            raise (Error(loc, Type_mismatch trace)))
+       b)
 
 let transl_type_scheme env styp =
   reset_type_variables();
@@ -246,7 +258,7 @@ let report_error = function
   | Type_mismatch trace ->
       Printtyp.unification_error true trace
         (function () ->
-           print_string "This type parameter")
+           print_string "This type")
         (function () ->
            print_string "should be an instance of type")
   | Alias_type_mismatch trace ->

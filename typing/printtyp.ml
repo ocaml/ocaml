@@ -454,10 +454,12 @@ let rec prepare_class_type =
         Ctype.flatten_fields (Ctype.object_fields sign.cty_self)
       in
       List.iter (fun (_, _, ty) -> mark_loops ty) fields;
+(*
       begin match sty.desc with
         Tobject (fi, _) -> mark_loops fi
       | _               -> assert false
       end;
+*)
       Vars.iter (fun _ (_, ty) -> mark_loops ty) sign.cty_vars
   | Tcty_fun (ty, cty) ->
       mark_loops ty;

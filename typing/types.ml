@@ -58,11 +58,13 @@ type value_description =
 and value_kind =
     Val_reg                             (* Regular value *)
   | Val_prim of Primitive.description   (* Primitive *)
-  | Val_ivar of mutable_flag            (* Instance variable (mutable ?) *)
+  | Val_ivar of mutable_flag * string   (* Instance variable (mutable ?) *)
   | Val_self of (Ident.t * type_expr) Meths.t ref *
-                (Ident.t * Asttypes.mutable_flag * type_expr) Vars.t ref
+                (Ident.t * Asttypes.mutable_flag * type_expr) Vars.t ref *
+                string
                                         (* Self *)
-  | Val_anc of (string * Ident.t) list  (* Ancestor *)
+  | Val_anc of (string * Ident.t) list * string
+                                        (* Ancestor *)
   | Val_unbound                         (* Unbound variable *)
 
 (* Constructor descriptions *)

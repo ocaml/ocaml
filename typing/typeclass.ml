@@ -1062,6 +1062,7 @@ let report_error = function
   | Unbound_val lab ->
       print_string "Unbound instance variable "; print_string lab
   | Unbound_type_var (printer, reason) ->
+      Printtyp.reset ();
       open_vbox 0;
       open_box 0;
       print_string "Some type variables are unbound in this type:";
@@ -1071,8 +1072,7 @@ let report_error = function
       print_space ();
       open_box 0;
       begin match reason with
-        Ctype.CC_Method (ty0, lab, ty) ->
-    (* XXX Cas ou une row variable n'est pas liee... *)
+        Ctype.CC_Method (ty0, real, lab, ty) ->
           Printtyp.reset ();
           Printtyp.mark_loops ty; Printtyp.mark_loops ty0;
           print_string "The method"; print_space ();
@@ -1080,9 +1080,13 @@ let report_error = function
           print_string "has type"; print_break 1 2;
           Printtyp.type_expr ty; print_space ();
           print_string "where"; print_space ();
-          Printtyp.type_expr ty0; print_space ();
+          if real then begin
+            Printtyp.type_expr ty0; print_space ()
+          end else begin
+            print_string ".."; print_space ()
+          end;
           print_string "is unbound"
-      | Ctype.CC_Value (ty0, lab, ty) ->
+      | Ctype.CC_Value (ty0, real, lab, ty) ->
           Printtyp.reset ();
           Printtyp.mark_loops ty; Printtyp.mark_loops ty0;
           print_string "The instance variable"; print_space ();
@@ -1090,7 +1094,11 @@ let report_error = function
           print_string "has type"; print_break 1 2;
           Printtyp.type_expr ty; print_space ();
           print_string "where"; print_space ();
-          Printtyp.type_expr ty0; print_space ();
+          if real then begin
+            Printtyp.type_expr ty0; print_space ()
+          end else begin
+            print_string ".."; print_space ()
+          end;
           print_string "is unbound"
       end;
       close_box ();
