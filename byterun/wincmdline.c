@@ -42,7 +42,7 @@ static void store_argument(char * arg)
   if (argc + 1 >= argvsize) {
     argvsize *= 2;
     argv = (char **) realloc(argv, argvsize * sizeof(char *));
-    if (argv == NULL) out_of_memory;
+    if (argv == NULL) out_of_memory();
   }
   argv[argc++] = arg;
 }
