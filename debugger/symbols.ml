@@ -29,6 +29,12 @@ let events_by_module =
 let all_events_by_module =
   (Hashtbl.create 17 : (string, debug_event list) Hashtbl.t)
 
+let relocate_event orig ev =
+  ev.ev_pos <- orig + ev.ev_pos;
+  match ev.ev_repr with
+    Event_parent repr -> repr := ev.ev_pos
+  | _                 -> ()
+
 let read_symbols' bytecode_file =
   let ic = open_in_bin bytecode_file in
   let pos_trailer =
@@ -52,9 +58,17 @@ let read_symbols' bytecode_file =
   end;
   seek_in ic (pos_trailer - debug_size - symbol_size);
   Symtable.restore_state (input_value ic);
-  let all_events = (input_value ic : debug_event list list) in
+  let num_eventlists = input_binary_int ic in
+  let eventlists = ref [] in
+  for i = 1 to num_eventlists do
+    let orig = input_binary_int ic in
+    let evl = (input_value ic : debug_event list) in
+    (* Relocate events in event list *)
+    List.iter (relocate_event orig) evl;
+    eventlists := evl :: !eventlists
+  done;
   close_in ic;
-  all_events
+  !eventlists
 
 let read_symbols bytecode_file =
   let all_events = read_symbols' bytecode_file in
