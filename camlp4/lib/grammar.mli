@@ -5,7 +5,7 @@
 (*                                                                     *)
 (*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
-(*  Copyright 1998 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -93,22 +93,6 @@ module Unsafe :
 -        itself is not reinitialized.
 -      * [Unsafe.clear_entry e] removes all rules of the entry [e]. *)
 
-(*** Functions called by statements EXTEND and DELETE RULE *)
-
-(* These functions are not to be used directly. The statements [EXTEND]
-   and [DELETE_RULE] use these functions generating type constraints which
-   ensure the typing consistency. *)
-
-value extend :
-  list
-    (Gramext.g_entry * option Gramext.position *
-     list
-       (option string * option Gramext.g_assoc *
-        list (list Gramext.g_symbol * Gramext.g_action))) ->
-    unit;
-
-value delete_rule : Entry.e 'a -> list Gramext.g_symbol -> unit;
-
 (*** Functorial interface *)
 
     (* Alternative for grammars use. Grammars are not yet Ocaml values:
@@ -161,8 +145,20 @@ module type S =
 
 module Make (L : LexerType) : S;
 
+value print_entry : Format.formatter -> Gramext.g_entry -> unit;
+    (* General printer for all kinds of entries (obj entries) *)
+
 (*--*)
 
 (*** For system use *)
 
 value loc_of_token_interval : int -> int -> (int * int);
+value extend :
+  list
+    (Gramext.g_entry * option Gramext.position *
+     list
+       (option string * option Gramext.g_assoc *
+        list (list Gramext.g_symbol * Gramext.g_action))) ->
+    unit;
+
+value delete_rule : Entry.e 'a -> list Gramext.g_symbol -> unit;

@@ -1,6 +1,9 @@
 Camlp4 Version 3.04+5
 ---------------------
 
+- [06 Feb 02] Added Grammar.print_entry printing any kind of (obj) entry
+  and having the Format.formatter as first parameter (Grammar.Entry.print
+  and its equivalent in functorial interface call it).
 - [05 Feb 02] Added a flag Plexer.no_quotations. When set to True, the
   quotations are no more lexed in all lexers built by Plexer.make ()
 - [05 Feb 02] Changed the printing of options so that the option -help

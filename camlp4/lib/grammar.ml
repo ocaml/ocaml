@@ -5,7 +5,7 @@
 (*                                                                     *)
 (*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -25,84 +25,66 @@ value rec flatten_tree =
       List.map (fun l -> [n :: l]) (flatten_tree s) @ flatten_tree b ]
 ;
 
-value print_str s = print_string ("\"" ^ String.escaped s ^ "\"");
+value print_str ppf s = fprintf ppf "\"%s\"" (String.escaped s);
 
-value rec print_symbol =
+value rec print_symbol ppf =
   fun
-  [ Slist0 s -> do { print_string "LIST0"; print_string " "; print_symbol1 s }
+  [ Slist0 s ->
+      fprintf ppf "LIST0 %a" print_symbol1 s
   | Slist0sep s t ->
-      do {
-        print_string "LIST0";
-        print_string " ";
-        print_symbol1 s;
-        print_string " SEP ";
-        print_symbol1 t
-      }
-  | Slist1 s -> do { print_string "LIST1"; print_string " "; print_symbol1 s }
+      fprintf ppf "LIST0 %a SEP %a" print_symbol1 s print_symbol1 t
+  | Slist1 s ->
+      fprintf ppf "LIST1 %a" print_symbol1 s
   | Slist1sep s t ->
-      do {
-        print_string "LIST1";
-        print_string " ";
-        print_symbol1 s;
-        print_string " SEP ";
-        print_symbol1 t
-      }
-  | Sopt s -> do { print_string "OPT "; print_symbol1 s }
+      fprintf ppf "LIST1 %a SEP %a" print_symbol1 s print_symbol1 t
+  | Sopt s ->
+      fprintf ppf "OPT %a" print_symbol1 s
   | Stoken (con, prm) when con <> "" && prm <> "" ->
-      do { print_string con; print_space (); print_str prm }
+      fprintf ppf "%s@ %a" con print_str prm
   | Snterml e l ->
-      do {
-        print_string e.ename;
-        print_space ();
-        print_string "LEVEL";
-        print_space ();
-        print_str l
-      }
-  | s -> print_symbol1 s ]
-and print_symbol1 =
+      fprintf ppf "%s@ LEVEL@ %a" e.ename print_str l
+  | s ->
+      print_symbol1 ppf s ]
+and print_symbol1 ppf =
   fun
-  [ Stoken ("", s) -> print_str s
-  | Snterm e -> print_string e.ename
-  | Sself -> print_string "SELF"
-  | Snext -> print_string "NEXT"
-  | Stoken (con, "") -> print_string con
-  | Stree t -> print_level print_space (flatten_tree t)
-  | s -> do { print_string "("; print_symbol s; print_string ")" } ]
-and print_rule symbols =
+  [ Stoken ("", s) -> print_str ppf s
+  | Snterm e -> pp_print_string ppf e.ename
+  | Sself -> pp_print_string ppf "SELF"
+  | Snext -> pp_print_string ppf "NEXT"
+  | Stoken (con, "") -> pp_print_string ppf con
+  | Stree t -> print_level ppf pp_print_space (flatten_tree t)
+  | s -> fprintf ppf "(%a)" print_symbol s ]
+and print_rule ppf symbols =
   do {
-    open_hovbox 0;
+    fprintf ppf "@[<hov 0>";
     let _ =
       List.fold_left
         (fun sep symbol ->
            do {
-             sep ();
-             print_symbol symbol;
-             fun () -> do { print_string ";"; print_space () }
+             fprintf ppf "%t%a" sep print_symbol symbol;
+             fun ppf -> fprintf ppf ";@ "
            })
-        (fun () -> ()) symbols
+        (fun ppf -> ()) symbols
     in
-    close_box ()
+    fprintf ppf "@]"
   }
-and print_level print_space rules =
+and print_level ppf pp_print_space rules =
   do {
-    open_hovbox 0;
-    print_string "[ ";
+    fprintf ppf "@[<hov 0>[ ";
     let _ =
       List.fold_left
         (fun sep rule ->
            do {
-             sep ();
-             print_rule rule;
-             fun () -> do { print_space (); print_string "| " }
+             fprintf ppf "%t%a" sep print_rule rule;
+             fun ppf -> fprintf ppf "%a| " pp_print_space ()
            })
-        (fun () -> ()) rules
+        (fun ppf -> ()) rules
     in
-    print_string " ]";
-    close_box ()
+    fprintf ppf " ]@]";
   }
 ;
 
-value print_levels elev =
+value print_levels ppf elev =
   let _ =
     List.fold_left
       (fun sep lev ->
@@ -111,39 +93,30 @@ value print_levels elev =
              flatten_tree lev.lprefix
          in
          do {
-           sep ();
-           open_hovbox 2;
+           fprintf ppf "%t@[<hov 2>" sep;
            match lev.lname with
-           [ Some n ->
-               do {
-                 print_string ("\"" ^ String.escaped n ^ "\"");
-                 print_break 1 2
-               }
+           [ Some n -> fprintf ppf "%a@;<1 2>" print_str n
            | _ -> () ];
            match lev.assoc with
-           [ LeftA -> print_string "LEFTA"
-           | RightA -> print_string "RIGHTA"
-           | NonA -> print_string "NONA" ];
-           close_box ();
-           print_break 1 2;
-           print_level force_newline rules;
-           fun () -> do { print_cut (); print_string "| " }
+           [ LeftA -> fprintf ppf "LEFTA"
+           | RightA -> fprintf ppf "RIGHTA"
+           | NonA -> fprintf ppf "NONA" ];
+           fprintf ppf "@]@;<1 2>";
+           print_level ppf pp_force_newline rules;
+           fun ppf -> fprintf ppf "@,| "
          })
-      (fun () -> ()) elev
+      (fun ppf -> ()) elev
   in
   ()
 ;
 
-value print_entry e =
+value print_entry ppf e =
   do {
-    open_vbox 0;
-    print_string "[ ";
+    fprintf ppf "@[<v 0>[ ";
     match e.edesc with
-    [ Dlevels elev -> print_levels elev
-    | Dparser _ -> print_string "<parser>" ];
-    print_string " ]";
-    close_box ();
-    print_newline ()
+    [ Dlevels elev -> print_levels ppf elev
+    | Dparser _ -> fprintf ppf "<parser>" ];
+    fprintf ppf " ]@]@.";
   }
 ;
 
@@ -331,21 +304,15 @@ value tree_failed entry prev_symb_result prev_symb tree =
   do {
     if error_verbose.val then do {
       let tree = search_tree_in_entry prev_symb tree entry.edesc in
-      set_formatter_out_channel stderr;
-      open_vbox 0;
-      print_newline ();
-      print_string "----------------------------------";
-      print_newline ();
-      printf "Parse error in entry [%s], rule:" entry.ename;
-      print_break 0 2;
-      open_vbox 0;
-      print_level force_newline (flatten_tree tree);
-      close_box ();
-      print_newline ();
-      print_string "----------------------------------";
-      print_newline ();
-      close_box ();
-      print_newline ()
+      let ppf = err_formatter in
+      fprintf ppf "@[<v 0>@,";
+      fprintf ppf "----------------------------------@,";
+      fprintf ppf "Parse error in entry [%s], rule:@;<0 2>" entry.ename;
+      fprintf ppf "@[";
+      print_level ppf pp_force_newline (flatten_tree tree);
+      fprintf ppf "@]@,";
+      fprintf ppf "----------------------------------@,";
+      fprintf ppf "@]@.";
     }
     else ();
     txt ^ " (in [" ^ entry.ename ^ "])"
@@ -878,7 +845,7 @@ module Entry =
        econtinue _ _ _ = parser []; edesc = Dparser (Obj.magic p)}
     ;
     external obj : e 'a -> Gramext.g_entry = "%identity";
-    value print e = print_entry (obj e);
+    value print e = print_entry std_formatter (obj e);
     value find e = Obj.magic (find_entry (obj e));
   end
 ;
@@ -959,7 +926,7 @@ module Make (L : LexerType) : S =
            econtinue _ _ _ = parser []; edesc = Dparser (Obj.magic p)}
         ;
         external obj : e 'a -> Gramext.g_entry = "%identity";
-        value print e = print_entry (obj e);
+        value print e = print_entry std_formatter (obj e);
       end
     ;
     module Unsafe =
