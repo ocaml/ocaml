@@ -56,6 +56,7 @@
 	.import mlraise, code
 	.import caml_apply2, code
 	.import caml_apply3, code
+	.import array_bound_error, code
 
 young_limit                  .comm 8
 young_ptr                    .comm 8
@@ -529,14 +530,15 @@ G(caml_array_bound_error):
         STARTPROC
 ; Load address of array_bound_error in %r22
 #ifdef SYS_hpux
-        ldil    LP'array_bound_error, %r22
-        ldo     RP'array_bound_error(%r22), %r22
+        ldil    LP%array_bound_error, %r22
+        ldo     RP%array_bound_error(%r22), %r22
 #else
         ldil    L`_array_bound_error, %r22
         ldo     R`_array_bound_error(%r22), %r22
 #endif
-; Jump to caml_c_call
-        b,n     G(caml_c_call)
+; Reserve 48 bytes of stack space and jump to caml_c_call
+        b       G(caml_c_call)
+	ldo	48(%r30), %r30	/* in delay slot */
         ENDPROC
 
         .data
