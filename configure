@@ -495,7 +495,7 @@ fi
 # Further machine-specific hacks
 
 case "$host" in
-  ia64-*-linux*)
+  ia64-*-linux*|alpha*-*-linux*)
     echo "Will use mmap() instead of malloc() for allocation of major heap chunks."
     echo "#define USE_MMAP_INSTEAD_OF_MALLOC" >> s.h;;
 esac
