@@ -46,8 +46,7 @@ external thread_wait_timed_write
             = "thread_wait_timed_write"
 external thread_join : t -> unit = "thread_join"
 external thread_delay : float -> unit = "thread_delay"
-external thread_wait_pid : int -> int * Unix.process_status
-            = "thread_wait_pid"
+external thread_wait_pid : int -> resumption_status = "thread_wait_pid"
 external thread_wakeup : t -> unit = "thread_wakeup"
 external thread_self : unit -> t = "thread_self"
 external thread_kill : t -> unit = "thread_kill"
@@ -63,7 +62,6 @@ let wait_read fd = thread_wait_read fd
 let wait_write fd = thread_wait_write fd
 let delay duration = thread_delay duration
 let join th = thread_join th
-let wait_pid pid = thread_wait_pid pid
 let wakeup pid = thread_wakeup pid
 let self () = thread_self()
 let kill pid = thread_kill pid
@@ -71,9 +69,14 @@ let exit () = thread_kill(thread_self())
 
 let wait_timed_read_aux fd d = thread_wait_timed_read fd d
 let wait_timed_write_aux fd d = thread_wait_timed_write fd d
+let wait_pid_aux pid = thread_wait_pid pid
 
 let wait_timed_read fd d = wait_timed_read_aux fd d = Resumed_io
 let wait_timed_write fd d = wait_timed_write_aux fd d = Resumed_io
+let wait_pid pid = 
+  match wait_pid_aux pid with
+    Resumed_wait(pid, status) -> (pid, status)
+  | _ -> invalid_arg "Thread.wait_pid"
 
 (* For new, make sure the function passed to thread_new always terminates
    by calling exit. *)

@@ -403,6 +403,7 @@ static void check_callback()
 value thread_yield(unit)        /* ML */
      value unit;
 {
+  Assert(curr_thread != NULL);
   curr_thread->retval = Val_unit;
   return schedule_thread();
 }
@@ -412,6 +413,7 @@ value thread_yield(unit)        /* ML */
 value thread_sleep(unit)        /* ML */
      value unit;
 {
+  Assert(curr_thread != NULL);
   check_callback();
   curr_thread->status = SUSPENDED;
   return schedule_thread();
@@ -422,6 +424,7 @@ value thread_sleep(unit)        /* ML */
 value thread_wait_read(fd)        /* ML */
      value fd;
 {
+  if (curr_thread == NULL) return Val_unit;
   check_callback();
   curr_thread->status = BLOCKED_READ;
   curr_thread->fd = fd;
@@ -431,6 +434,7 @@ value thread_wait_read(fd)        /* ML */
 value thread_wait_write(fd)        /* ML */
      value fd;
 {
+  if (curr_thread == NULL) return Val_unit;
   check_callback();
   curr_thread->status = BLOCKED_WRITE;
   curr_thread->fd = fd;
@@ -468,6 +472,7 @@ value thread_delay(time)          /* ML */
      value time;
 {
   double date = timeofday() + Double_val(time);
+  Assert(curr_thread != NULL);
   check_callback();
   curr_thread->status = BLOCKED_DELAY;
   Assign(curr_thread->delay, copy_double(date));
@@ -480,6 +485,7 @@ value thread_wait_timed_read(fd, time)        /* ML */
      value fd, time;
 {
   double date = timeofday() + Double_val(time);
+  Assert(curr_thread != NULL);
   check_callback();
   curr_thread->status = BLOCKED_READ | BLOCKED_DELAY;
   curr_thread->fd = fd;
@@ -491,6 +497,7 @@ value thread_wait_timed_write(fd, time)        /* ML */
      value fd, time;
 {
   double date = timeofday() + Double_val(time);
+  Assert(curr_thread != NULL);
   check_callback();
   curr_thread->status = BLOCKED_WRITE | BLOCKED_DELAY;
   curr_thread->fd = fd;
@@ -504,6 +511,7 @@ value thread_join(th)          /* ML */
      value th;
 {
   check_callback();
+  Assert(curr_thread != NULL);
   if (((thread_t)th)->status == KILLED) return Val_unit;
   curr_thread->status = BLOCKED_JOIN;
   Assign(curr_thread->joining, th);
@@ -515,6 +523,7 @@ value thread_join(th)          /* ML */
 value thread_wait_pid(pid)          /* ML */
      value pid;
 {
+  Assert(curr_thread != NULL);
   check_callback();
   curr_thread->status = BLOCKED_WAIT;
   curr_thread->waitpid = pid;
@@ -545,6 +554,7 @@ value thread_wakeup(thread)     /* ML */
 value thread_self(unit)         /* ML */
      value unit;
 {
+  Assert(curr_thread != NULL);
   return (value) curr_thread;
 }
 
