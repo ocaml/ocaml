@@ -52,7 +52,7 @@ let rec eval_path = function
       if Ident.persistent id || Ident.global id then
         Symtable.get_global_value id
       else begin
-        let name = Ident.name id in
+        let name = Translmod.toplevel_name id in
         try
           Hashtbl.find toplevel_value_bindings name
         with Not_found ->
