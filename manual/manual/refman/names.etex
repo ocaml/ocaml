@@ -84,7 +84,7 @@ ncconstr:
 ;
 typeconstr:
         typeconstr-name
-      | module-path '.' lowercase-ident
+      | extended-module-path '.' lowercase-ident
 ;
 label:
         label-name
@@ -93,11 +93,15 @@ label:
 module-path:
         module-name
       | module-path '.' capitalized-ident
-      | module-path '(' module-path ')'
+;
+extended-module-path:
+        module-name
+      | extended-module-path '.' capitalized-ident
+      | extended-module-path '(' extended-module-path ')'
 ;
 modtype-path:
         modtype-name
-      | module-path '.' ident
+      | extended-module-path '.' ident
 \end{syntax}
 
 A named object can be referred to either by its name (following the
@@ -105,8 +109,9 @@ usual static scoping rules for names) or by an access path @prefix '.' name@,
 where @prefix@ designates a module and @name@ is the name of an object
 defined in that module. The first component of the path, @prefix@, is
 either a simple module name or an access path @name_1 '.' name_2 \ldots@,
-in case the defining module is itself nested inside other modules. The
-@prefix@ can also contain simple functor applications of the format
-@module-path '(' module-path ')'@, in case the defining module is the
+in case the defining module is itself nested inside other modules.
+For referring to type constructors or module types, the @prefix@ can
+also contain simple functor applications (as in the syntactic class
+@extended-module-path@ above), in case the defining module is the
 result of a functor application.
 

@@ -14,14 +14,17 @@ type-definition:
           'type' typedef { 'and' typedef }
 ;
 typedef:
-          type-params typeconstr-name '=' constr-decl { '|' constr-decl }
-        | type-params typeconstr-name '=' '{' label-decl { ';' label-decl } '}'
-        | type-params typeconstr-name '=' typexpr
-        | type-params typeconstr-name
+          [type-params] typeconstr-name [type-equation] [type-representation]
+;
+type-equation:
+          '=' typexpr
+;
+type-representation:
+          '=' constr-decl { '|' constr-decl }
+        | '=' '{' label-decl { ';' label-decl } '}'
 ;
 type-params:
-          nothing
-        | "'" ident
+          "'" ident
         | '(' "'" ident { "," "'" ident } ')'
 ;
 constr-decl:
@@ -40,19 +43,31 @@ recursive, separated by the "and" keyword. Each simple definition
 defines one type constructor.
 
 A simple definition consists in a lowercase identifier, possibly preceded by
-one or several type parameters, and followed by a data type
-description. The identifier is the name of the type constructor being defined.
+one or several type parameters, and followed by an optional type
+equation, then an optional type representation. The identifier
+is the name of the type constructor being defined.
+
 The optional type parameters are either one type variable @"'" ident@,
 for type constructors with one parameter, or a list of type variables
 @("'"ident_1,\ldots,"'"ident_n)@, for type constructors with several
 parameters. These type parameters can appear in the type expressions
 of the right-hand side of the definition.
 
-\subsubsection*{Variant types}
+The optional type equation @'=' typexpr@ makes the defined type
+equivalent to the type expression @typexpr@ on the right of the @'='@
+sign: one can be substituted freely for the other during typing.
+If no type equation is given, a new type is generated: the defined type
+is incompatible with any other type.
 
-The type definition
-@type-params typeconstr-name '=' constr-decl { '|' constr-decl }@
-defines a variant type. The constructor declarations
+The optional type representation describes the data structure
+representing the defined type, by giving the list of associated
+constructors (if it is a variant type) or associated labels (if it is
+a record type). If no type representation is given, nothing is
+assumed on the structure of the type besides what is stated in the
+optional type equation.
+
+The type representation @'=' constr-decl { '|' constr-decl }@
+describes a variant type. The constructor declarations
 @constr-decl_1, \ldots, constr-decl_n@ describe the constructors
 associated to this variant type. The constructor
 declaration @ncconstr-name 'of' typexpr@ declares the name
@@ -61,11 +76,8 @@ argument has type @typexpr@. The constructor declaration @cconstr-name@
 declares the name @cconstr-name@ as a constant
 constructor. Constructor names must be capitalized.
 
-\subsubsection*{Record types}
-
-The type definition
-@type-params typeconstr-name '=' '{' label-decl { ';' label-decl } '}'@
-defines a record type. The label declarations @label-decl_1, \ldots,
+The type representation @'=' '{' label-decl { ';' label-decl } '}'@
+describes a record type. The label declarations @label-decl_1, \ldots,
 label-decl_n@ describe the labels associated to this record type.
 The label declaration @label-name ':' typexpr@ declares @label-name@
 as a label whose argument has type @typexpr@.
@@ -74,18 +86,36 @@ The label declaration @'mutable' label-name ':' typexpr@
 behaves similarly; in addition, it allows physical modification over
 the argument to this label.
 
-\subsubsection*{Type abbreviations}
+The two components of a type definition, the optional equation and the
+optional representation, can be combined independently, giving
+rise to four typical situations:
 
-The type definition @type-params typeconstr-name '=' typexpr@ defines the type
-constructor @typeconstr-name@ as an abbreviation for the type expression
-@typexpr@. 
+\begin{description}
+\item[Abstract type]: no equation, no representation. \\
+When appearing in a module signature, this definition specifies
+nothing on the type constructor, besides its number of parameters: 
+its representation is hidden and it is assumed incompatible with any
+other type.
 
-\subsubsection*{Abstract types}
+\item[Type abbreviation]: an equation, no representation. \\
+This defines the type constructor as an abbreviation for the type
+expression on the right of the @'='@ sign. 
 
-The type definition @type-params typeconstr-name@ declares
-@typeconstr-name@ as an abstract type. When appearing in a module
-signature, this declaration allows exporting a type constructor while
-hiding how it is represented in the structure implementing the signature.
+\item[New variant type or record type]: no equation, a representation. \\
+This generates a new type constructor and defines associated
+constructors or labels, through which values of that type can be
+directly built or inspected.
+
+\item[Re-exported variant type or record type]: an equation,
+a representation. \\
+In this case, the type constructor is defined as an abbreviation for
+the type expression given in the equation, but in addition the
+constructors or labels given in the representation remain attached to
+the defined type constructor. The type expression in the equation part
+must agree with the representation: it must be of the same kind
+(record or variant) and have exactly the same constructors or labels,
+in the same order, with the same arguments. 
+\end{description}
 
 \subsection{Exception definitions} \label{s:excdef}
 \ikwd{exception\@\verb`exception`}
