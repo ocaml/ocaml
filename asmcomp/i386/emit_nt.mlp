@@ -750,6 +750,8 @@ let emit_item = function
       `	WORD	{emit_int n}\n`
   | Cint n ->
       `	DWORD	{emit_nativeint n}\n`
+  | Cint32 n ->
+      `	DWORD	{emit_nativeint n}\n`
   | Csingle f ->
       `	REAL4	{emit_float f}\n`
   | Cdouble f ->

@@ -754,6 +754,8 @@ let emit_item = function
       `	.byte	{emit_int n}\n`
   | Cint16 n ->
       `	{emit_string word_dir}	{emit_int n}\n`
+  | Cint32 n ->
+      `	.long	{emit_nativeint n}\n`
   | Cint n ->
       `	.long	{emit_nativeint n}\n`
   | Csingle f ->

@@ -614,6 +614,8 @@ let emit_item = function
       `	.byte	{emit_int n}\n`
   | Cint16 n ->
       `	.half	{emit_int n}\n`
+  | Cint32 n ->
+      `	.word	{emit_nativeint n}\n`
   | Cint n ->
       `	.word	{emit_nativeint n}\n`
   | Csingle f ->
