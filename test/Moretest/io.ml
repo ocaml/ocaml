@@ -82,19 +82,20 @@ let make_lines ofile =
 (* The test *)
 
 let _ =
-  test "16-byte chunks" (copy_file 16) "/vmunix" "/tmp/testio";
-  test "256-byte chunks" (copy_file 256) "/vmunix" "/tmp/testio";
-  test "4096-byte chunks" (copy_file 4096) "/vmunix" "/tmp/testio";
-  test "65536-byte chunks" (copy_file 65536) "/vmunix" "/tmp/testio";
-  test "19-byte chunks" (copy_file 19) "/vmunix" "/tmp/testio";
-  test "263-byte chunks" (copy_file 263) "/vmunix" "/tmp/testio";
-  test "4011-byte chunks" (copy_file 4011) "/vmunix" "/tmp/testio";
-  test "0...8192 byte chunks" (copy_random 8192) "/vmunix" "/tmp/testio";
+  let src = Sys.argv.(1) in
+  test "16-byte chunks" (copy_file 16) src "/tmp/testio";
+  test "256-byte chunks" (copy_file 256) src "/tmp/testio";
+  test "4096-byte chunks" (copy_file 4096) src "/tmp/testio";
+  test "65536-byte chunks" (copy_file 65536) src "/tmp/testio";
+  test "19-byte chunks" (copy_file 19) src "/tmp/testio";
+  test "263-byte chunks" (copy_file 263) src "/tmp/testio";
+  test "4011-byte chunks" (copy_file 4011) src "/tmp/testio";
+  test "0...8192 byte chunks" (copy_random 8192) src "/tmp/testio";
   test "line per line, short lines" copy_line "/etc/hosts" "/tmp/testio";
   make_lines "/tmp/lines";
   test "line per line, short and long lines" copy_line "/tmp/lines" "/tmp/testio";
-  test "backwards, 4096-byte chunks" (copy_seek 4096) "/vmunix" "/tmp/testio"; 
-  test "backwards, 64-byte chunks" (copy_seek 64) "/vmunix" "/tmp/testio"; 
+  test "backwards, 4096-byte chunks" (copy_seek 4096) src "/tmp/testio"; 
+  test "backwards, 64-byte chunks" (copy_seek 64) src "/tmp/testio"; 
   Sys.remove "/tmp/lines";
   Sys.remove "/tmp/testio";
   exit 0
