@@ -27,6 +27,10 @@ let apply_load () =
         flush stdout;
         exit 0
       end
+    else if s = "-version" then
+      begin
+        print_string Sys.ocaml_version; print_newline (); flush stdout; exit 0
+      end
     else if s = "--" then begin incr i; stop := true; () end
     else if String.length s > 0 && s.[0] == '-' then stop := true
     else if
