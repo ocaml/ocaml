@@ -48,6 +48,13 @@ let normalize_num = function
 let cautious_normalize_num_when_printing n =
  if (!normalize_ratio_when_printing_flag) then (normalize_num n) else n
 
+let num_of_ratio r = 
+ normalize_ratio r; 
+ if not (is_integer_ratio r) then Ratio r
+ else if is_int_big_int (numerator_ratio r) then
+        Int (int_of_big_int (numerator_ratio r))
+ else Big_int (numerator_ratio r)
+
 (* Operations on num *)
 
 let add_num a b = match (a,b) with
@@ -73,7 +80,7 @@ let add_num a b = match (a,b) with
   | ((Ratio r), (Big_int bi)) ->
       Ratio (add_big_int_ratio bi r)
 
-  | ((Ratio r1), (Ratio r2)) -> Ratio (add_ratio r1 r2)
+  | ((Ratio r1), (Ratio r2)) -> num_of_ratio (add_ratio r1 r2)
 
 let ( +/ ) = add_num
 
@@ -101,20 +108,20 @@ let mult_num a b = match (a,b) with
      num_of_big_int (mult_int_big_int i bi)
 
  | ((Int i), (Ratio r)) ->
-     Ratio (mult_int_ratio i r)
+     num_of_ratio (mult_int_ratio i r)
  | ((Ratio r), (Int i)) ->
-     Ratio (mult_int_ratio i r)
+     num_of_ratio (mult_int_ratio i r)
 
  | ((Big_int bi1), (Big_int bi2)) -> 
      num_of_big_int (mult_big_int bi1 bi2)
 
  | ((Big_int bi), (Ratio r)) ->
-     Ratio (mult_big_int_ratio bi r)
+     num_of_ratio (mult_big_int_ratio bi r)
  | ((Ratio r), (Big_int bi)) ->
-     Ratio (mult_big_int_ratio bi r)
+     num_of_ratio (mult_big_int_ratio bi r)
 
  | ((Ratio r1), (Ratio r2)) ->
-     Ratio (mult_ratio r1 r2)
+     num_of_ratio (mult_ratio r1 r2)
 
 let ( */ ) = mult_num
 
@@ -125,31 +132,27 @@ let square_num = function
  | Big_int bi -> Big_int (square_big_int bi)
  | Ratio r -> Ratio (square_ratio r)
 
-let div_num a b = match (a,b) with
-   ((Int int1), (Int int2)) -> 
-     Ratio (create_ratio (big_int_of_int int1) (big_int_of_int int2))
+let div_num n1 n2 =
+ match n1 with
+ | Int i1 ->
+    begin match n2 with
+    | Int i2 ->
+       num_of_ratio (create_ratio (big_int_of_int i1) (big_int_of_int i2))
+    | Big_int bi2 -> num_of_ratio (create_ratio (big_int_of_int i1) bi2)
+    | Ratio r2 -> num_of_ratio (div_int_ratio i1 r2) end
 
- | ((Int i), (Big_int bi)) ->
-     Ratio (create_ratio (big_int_of_int i) bi)
+ | Big_int bi1 ->
+     begin match n2 with
+     | Int i2 -> num_of_ratio (create_ratio bi1 (big_int_of_int i2))
+     | Big_int bi2 -> num_of_ratio (create_ratio bi1 bi2)
+     | Ratio r2 -> num_of_ratio (div_big_int_ratio bi1 r2) end
 
- | ((Big_int bi), (Int i)) ->
-     Ratio (create_ratio bi (big_int_of_int i))
-
- | ((Int i), (Ratio r)) ->
-     Ratio (div_int_ratio i r)
- | ((Ratio r), (Int i)) ->
-     Ratio (div_ratio_int r i)
-
- | ((Big_int bi1), (Big_int bi2)) ->
-     Ratio (create_ratio bi1 bi2)
-
- | ((Big_int bi), (Ratio r)) -> 
-     Ratio (div_big_int_ratio bi r)
- | ((Ratio r), (Big_int bi)) -> 
-     Ratio (div_ratio_big_int r bi)
-
- | ((Ratio r1), (Ratio r2)) -> 
-     Ratio (div_ratio r1 r2)
+ | Ratio r1 ->
+     begin match n2 with
+     | Int i2 -> num_of_ratio (div_ratio_int r1 i2)
+     | Big_int bi2 -> num_of_ratio (div_ratio_big_int r1 bi2)
+     | Ratio r2 -> num_of_ratio (div_ratio r1 r2) end
+;;
 
 let ( // ) = div_num
 
@@ -322,14 +325,7 @@ let big_int_of_num = function
 let ratio_of_num = function
   Int i -> ratio_of_int i
 | Big_int bi -> ratio_of_big_int bi
-| Ratio r -> r
-
-and num_of_ratio r = 
- normalize_ratio r; 
- if not (is_integer_ratio r) then Ratio r
- else if is_int_big_int (numerator_ratio r) then
-        Int (int_of_big_int (numerator_ratio r))
- else Big_int (numerator_ratio r)
+| Ratio r -> r;;
 
 let string_of_big_int_for_num bi =
   if !approx_printing_flag 
