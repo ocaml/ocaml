@@ -11,9 +11,7 @@
 struct longjmp_buffer * external_raise;
 value exn_bucket;
 
-static void mlraise P((value)) Noreturn;
-
-static void mlraise(v)
+void mlraise(v)
      value v;
 {
   leave_blocking_section();

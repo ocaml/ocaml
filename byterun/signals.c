@@ -116,7 +116,7 @@ void leave_blocking_section()
 #define SIGTTOU 0
 #endif
 
-static int posix_signals[] = {
+int posix_signals[] = {
   SIGABRT, SIGALRM, SIGFPE, SIGHUP, SIGILL, SIGINT, SIGKILL, SIGPIPE,
   SIGQUIT, SIGSEGV, SIGTERM, SIGUSR1, SIGUSR2, SIGCHLD, SIGCONT,
   SIGSTOP, SIGTSTP, SIGTTIN, SIGTTOU

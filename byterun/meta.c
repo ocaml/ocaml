@@ -1,6 +1,7 @@
 /* Primitives for the toplevel */
 
 #include "alloc.h"
+#include "fix_code.h"
 #include "interp.h"
 #include "major_gc.h"
 #include "memory.h"

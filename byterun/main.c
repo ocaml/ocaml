@@ -8,6 +8,7 @@
 #include "alloc.h"
 #include "exec.h"
 #include "fail.h"
+#include "fix_code.h"
 #include "gc_ctrl.h"
 #include "interp.h"
 #include "intext.h"

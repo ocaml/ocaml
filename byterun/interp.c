@@ -714,10 +714,10 @@ value interprete(prog, prog_size)
         if (signal_number) {
           /* Push a return frame to the current code location */
           sp -= 4;
-          sp[0] = (value) pc;
-          sp[1] = env;
-          sp[2] = Val_long(extra_args);
-          sp[3] = Val_int(signal_number);
+          sp[0] = Val_int(signal_number);
+          sp[1] = (value) pc;
+          sp[2] = env;
+          sp[3] = Val_long(extra_args);
           pc = Code_val(Field(signal_handlers, signal_number));
           env = Env_val(Field(signal_handlers, signal_number));
           extra_args = 0;

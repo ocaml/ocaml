@@ -22,6 +22,7 @@ struct longjmp_buffer {
 extern struct longjmp_buffer * external_raise;
 extern value exn_bucket;
 
+void mlraise P((value bucket)) Noreturn;
 void raise_constant P((value tag)) Noreturn;
 void raise_with_arg P((value tag, value arg)) Noreturn;
 void raise_with_string P((value tag, char * msg)) Noreturn;

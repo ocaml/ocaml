@@ -25,8 +25,9 @@ camlrund: $(DOBJS) prims.o
 
 install:
 	cp camlrun $(BINDIR)/cslrun
+	rm -f $(LIBDIR)/libcamlrun.a
 	ar rc $(LIBDIR)/libcamlrun.a $(OBJS)
-	$(RANLIB) $(LIBDIR)/libcamlrun.a
+	cd $(LIBDIR); $(RANLIB) libcamlrun.a
 	test -d $(LIBDIR)/caml || mkdir $(LIBDIR)/caml
 	cp mlvalues.h alloc.h misc.h $(LIBDIR)/caml
 	sed -e '/#include ".*\/m.h/r ../config/m.h' \
