@@ -58,9 +58,6 @@ let rec name_pattern default = function
 let any_pat =
   {pat_desc = Tpat_any; pat_loc = Location.none; pat_type = Ctype.none}
 
-let rec any_pat_list n =
-  if n <= 0 then [] else any_pat :: any_pat_list (n-1)
-
 let simplify_matching m =
   match m.args with
     [] -> m
@@ -151,7 +148,7 @@ let divide_tuple arity {cases = cl; args = al} =
       ({pat_desc = Tpat_tuple args} :: patl, action) :: rem ->
         add_line (args @ patl, action) (divide rem)
     | ({pat_desc = Tpat_any} :: patl, action) :: rem ->
-        add_line (any_pat_list arity @ patl, action) (divide rem)
+        add_line (replicate_list any_pat arity @ patl, action) (divide rem)
     | _ ->
         make_tuple_matching arity al
   in divide cl
@@ -356,7 +353,8 @@ let for_multiple_match loc paraml pat_act_list =
       ({pat_desc = Tpat_tuple args} :: _, action) :: rem ->
         (args, action) :: flatten_patterns rem
     | ({pat_desc = Tpat_any} :: patl, action) :: rem ->
-        (any_pat_list(List.length paraml), action) :: flatten_patterns rem
+        (replicate_list any_pat (List.length paraml), action) ::
+        flatten_patterns rem
     | _ ->
         [] in
   let pm3 =

@@ -222,8 +222,8 @@ let link objfiles =
   if not !Clflags.custom_runtime then
     link_bytecode objfiles !Clflags.exec_name true
   else begin
-    let bytecode_name = temp_file "camlcode" "" in
-    let prim_name = temp_file "camlprim" ".c" in
+    let bytecode_name = Filename.temp_file "camlcode" "" in
+    let prim_name = Filename.temp_file "camlprim" ".c" in
     try
       link_bytecode objfiles bytecode_name false;
       Symtable.output_primitives prim_name;
