@@ -1009,6 +1009,32 @@ let prepare_expansion (t, t') =
   mark_loops t; if t != t' then mark_loops t';
   (t, t')
 
+let explanation unif t3 t4 ppf =
+  match t3.desc, t4.desc with
+  | Tfield _, Tvar | Tvar, Tfield _ ->
+      fprintf ppf "@,Self type cannot escape its class"
+  | Tconstr (p, _, _), Tvar
+    when unif && t4.level < Path.binding_time p ->
+      fprintf ppf
+        "@,@[The type constructor@;<1 2>%a@ would escape its scope@]"
+        path p
+  | Tvar, Tconstr (p, _, _)
+    when unif && t3.level < Path.binding_time p ->
+      fprintf ppf
+        "@,@[The type constructor@;<1 2>%a@ would escape its scope@]"
+        path p
+  | Tfield ("*dummy method*", _, _, _), _
+  | _, Tfield ("*dummy method*", _, _, _) ->
+      fprintf ppf
+        "@,Self type cannot be unified with a closed object type"
+  | Tfield (l, _, _, _), _ ->
+      fprintf ppf
+        "@,@[Only the first object type has a method %s@]" l
+  | _, Tfield (l, _, _, _) ->
+      fprintf ppf
+        "@,@[Only the second object type has a method %s@]" l
+  | _ -> ()
+
 let unification_error unif tr txt1 ppf txt2 =
   reset ();
   let tr = List.map (fun (t, t') -> (t, hide_variant_name t')) tr in
@@ -1022,31 +1048,6 @@ let unification_error unif tr txt1 ppf txt2 =
       print_labels := not !Clflags.classic;
       let tr = filter_trace tr in
       let tr = List.map prepare_expansion tr in
-      let explanation ppf =
-        match t3.desc, t4.desc with
-        | Tfield _, Tvar | Tvar, Tfield _ ->
-            fprintf ppf "@,Self type cannot escape its class"
-        | Tconstr (p, _, _), Tvar
-            when unif && t4.level < Path.binding_time p ->
-            fprintf ppf
-              "@,@[The type constructor@;<1 2>%a@ would escape its scope@]"
-              path p
-        | Tvar, Tconstr (p, _, _)
-            when unif && t3.level < Path.binding_time p ->
-            fprintf ppf
-              "@,@[The type constructor@;<1 2>%a@ would escape its scope@]"
-              path p
-        | Tfield ("*dummy method*", _, _, _), _
-        | _, Tfield ("*dummy method*", _, _, _) ->
-            fprintf ppf
-              "@,Self type cannot be unified with a closed object type"
-        | Tfield (l, _, _, _), _ ->
-            fprintf ppf
-              "@,@[Only the first object type has a method %s@]" l
-        | _, Tfield (l, _, _, _) ->
-            fprintf ppf
-              "@,@[Only the second object type has a method %s@]" l
-        | _ -> () in
       fprintf ppf
         "@[<v>\
           @[%t@;<1 2>%a@ \
@@ -1056,7 +1057,7 @@ let unification_error unif tr txt1 ppf txt2 =
         txt1 (type_expansion t1) t1'
         txt2 (type_expansion t2) t2'
         (trace false "is not compatible with type") tr
-        explanation;
+        (explanation unif t3 t4);
       print_labels := true
     with exn ->
       print_labels := true;
@@ -1068,11 +1069,20 @@ let report_unification_error ppf tr txt1 txt2 =
 let trace fst txt ppf tr =
   print_labels := not !Clflags.classic;
   try match tr with
-    t1 :: t2 :: tr ->
-      trace fst txt ppf (t1 :: t2 :: filter_trace tr);
+    t1 :: t2 :: tr' ->
+      if fst then trace fst txt ppf (t1 :: t2 :: filter_trace tr')
+      else trace fst txt ppf (filter_trace tr);
       print_labels := true
   | _ -> ()
   with exn ->
     print_labels := true;
     raise exn
 
+let report_subtyping_error ppf tr1 txt1 tr2 =
+  reset ();
+  let tr1 = List.map prepare_expansion tr1
+  and tr2 = List.map prepare_expansion tr2 in
+  trace true txt1 ppf tr1;
+  let t3, t4 = mismatch tr2 in
+  trace false "is not compatible with type" ppf tr2;
+  explanation true t3 t4 ppf

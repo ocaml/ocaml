@@ -1526,11 +1526,7 @@ let report_error ppf = function
   | Instance_variable_not_mutable v ->
       fprintf ppf "The instance variable %s is not mutable" v
   | Not_subtype(tr1, tr2) ->
-      reset ();
-      let tr1 = List.map prepare_expansion tr1
-      and tr2 = List.map prepare_expansion tr2 in
-      trace true "is not a subtype of type" ppf tr1;
-      trace false "is not compatible with type" ppf tr2
+      report_subtyping_error ppf tr1 "is not a subtype of type" tr2
   | Outside_class ->
       fprintf ppf "This object duplication occurs outside a method definition"
   | Value_multiply_overridden v ->
