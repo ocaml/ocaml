@@ -22,9 +22,16 @@ type dbm_flag =
 
 exception Dbm_error of string
 
-external opendbm : string -> open_flag list -> int -> t 
+external raw_opendbm : string -> open_flag list -> int -> t 
               = "caml_dbm_open"
- (* this one is exported as val, so that we are sure to link in this
+
+let opendbm file flags mode =
+  try
+    raw_opendbm file flags mode
+  with Dbm_error msg ->
+    raise(Dbm_error("Can't open file " ^ file))
+
+ (* By exporting opendbm as val, we are sure to link in this
     file (we must register the exception). Since t is abstract, programs
     have to call it in order to do anything *)
 
