@@ -482,6 +482,8 @@ val flush : out_channel -> unit
            performing all pending writes on that channel.
            Interactive programs must be careful about flushing standard
            output and standard error at the right time. *)
+val flush_all : unit -> unit
+        (* Flush all opened output channels. *)
 val output_char : out_channel -> char -> unit
         (* Write the character on the given output channel. *)
 val output_string : out_channel -> string -> unit

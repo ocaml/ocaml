@@ -72,8 +72,8 @@ static void open_connection(void)
   if (dbg_socket == -1 ||
       connect(dbg_socket, &sock_addr.s_gen, sock_addr_len) == -1)
     fatal_error("cannot connect to debugger");
-  dbg_in = open_descriptor(dbg_socket);
-  dbg_out = open_descriptor(dbg_socket);
+  dbg_in = open_descriptor_in(dbg_socket);
+  dbg_out = open_descriptor_out(dbg_socket);
   if (!debugger_in_use) putword(dbg_out, -1); /* first connection */
   putword(dbg_out, getpid());
   flush(dbg_out);

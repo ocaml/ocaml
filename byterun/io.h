@@ -32,6 +32,10 @@ struct channel {
   char * curr;                  /* Current position in the buffer */
   char * max;                   /* Logical end of the buffer (for input) */
   void * mutex;                 /* Placeholder for mutex (for systhreads) */
+  struct channel * next;        /* Linear chaining of channels (flush_all) */
+  int revealed;                 /* For Cash only */
+  int old_revealed;             /* For Cash only */
+  int refcount;                 /* For Cash only */
   char buff[IO_BUFFER_SIZE];    /* The buffer itself */
 };
 
@@ -54,7 +58,8 @@ struct channel {
    ? refill(channel)                                                        \
    : (unsigned char) *((channel))->curr++)
 
-CAMLextern struct channel * open_descriptor (int);
+CAMLextern struct channel * open_descriptor_in (int);
+CAMLextern struct channel * open_descriptor_out (int);
 CAMLextern void close_channel (struct channel *);
 CAMLextern int channel_binary_mode (struct channel *);
 

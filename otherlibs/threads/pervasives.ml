@@ -178,7 +178,7 @@ let string_of_bool b =
 let bool_of_string = function
   | "true" -> true
   | "false" -> false
-  | _ -> invalid_arg "string_of_bool"
+  | _ -> invalid_arg "bool_of_string"
 
 let string_of_int n =
   format_int "%d" n
@@ -202,8 +202,8 @@ let rec (@) l1 l2 =
 type in_channel
 type out_channel
 
-external open_descriptor_out: int -> out_channel = "caml_open_descriptor"
-external open_descriptor_in: int -> in_channel = "caml_open_descriptor"
+external open_descriptor_out: int -> out_channel = "caml_open_descriptor_out"
+external open_descriptor_in: int -> in_channel = "caml_open_descriptor_in"
 
 let stdin = open_descriptor_in 0
 let stdout = open_descriptor_out 1
@@ -255,6 +255,21 @@ let rec flush oc =
     with Sys_blocked_io ->
       wait_outchan oc (-1); false in
   if success then () else flush oc
+
+external out_channels_list : unit -> out_channel list 
+                           = "caml_out_channels_list"
+
+let flush_all () = 
+  let rec iter = function
+      [] -> ()
+    | a::l ->
+        begin try
+            flush a
+        with Sys_error _ ->
+          () (* ignore channels closed during a preceding flush. *)
+        end;
+        iter l
+  in iter (out_channels ())
 
 external unsafe_output_partial : out_channel -> string -> int -> int -> int
                         = "caml_output_partial"
@@ -451,7 +466,7 @@ let read_float () = float_of_string(read_line())
 
 external sys_exit : int -> 'a = "sys_exit"
 
-let exit_function = ref (fun () -> flush stdout; flush stderr)
+let exit_function = ref flush_all
 
 let at_exit f =
   let g = !exit_function in

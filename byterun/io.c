@@ -48,13 +48,16 @@ CAMLexport void (*channel_mutex_lock) (struct channel *) = NULL;
 CAMLexport void (*channel_mutex_unlock) (struct channel *) = NULL;
 CAMLexport void (*channel_mutex_unlock_exn) (void) = NULL;
 
+/* List of opened channels */
+CAMLexport struct channel * all_opened_channels = NULL;
+
 /* Basic functions over type struct channel *.
    These functions can be called directly from C.
    No locking is performed. */
 
 /* Functions shared between input and output */
 
-CAMLexport struct channel * open_descriptor(int fd)
+CAMLexport struct channel * open_descriptor_in(int fd)
 {
   struct channel * channel;
 
@@ -64,13 +67,39 @@ CAMLexport struct channel * open_descriptor(int fd)
   channel->curr = channel->max = channel->buff;
   channel->end = channel->buff + IO_BUFFER_SIZE;
   channel->mutex = NULL;
+  channel->revealed = 0;
+  channel->old_revealed = 0;
+  channel->refcount = 0;
+  channel->next = all_opened_channels;
+  all_opened_channels = channel;
   return channel;
+}
+
+CAMLexport struct channel * open_descriptor_out(int fd)
+{
+  struct channel * channel;
+
+  channel = open_descriptor_in(fd);
+  channel->max = NULL;
+  return channel;
+}
+
+static void unlink_channel(struct channel *channel)
+{
+  struct channel ** cp = &all_opened_channels;
+  
+  while (*cp != channel && *cp != NULL)
+    cp = &(*cp)->next;
+  if (*cp != NULL)
+    *cp = (*cp)->next;
 }
 
 CAMLexport void close_channel(struct channel *channel)
 {
   close(channel->fd);
+  if (channel->refcount > 0) return;
   if (channel_mutex_free != NULL) (*channel_mutex_free)(channel);
+  unlink_channel(channel);
   stat_free(channel);
 }
 
@@ -196,7 +225,6 @@ CAMLexport int putblock(struct channel *channel, char *p, long int len)
       memmove(channel->buff, channel->buff + written, towrite - written);
     channel->offset += written;
     channel->curr = channel->end - written;
-    channel->max = channel->end - written;
     return free;
   }
 }
@@ -369,10 +397,12 @@ CAMLexport long input_scan_line(struct channel *channel)
    objects into a heap-allocated object.  Perform locking
    and unlocking around the I/O operations. */
 
-static void finalize_channel(value vchan)
+CAMLexport void finalize_channel(value vchan)
 {
   struct channel * chan = Channel(vchan);
+  if (--chan->refcount > 0) return;
   if (channel_mutex_free != NULL) (*channel_mutex_free)(chan);
+  unlink_channel(chan);
   stat_free(chan);
 }
 
@@ -392,17 +422,47 @@ static struct custom_operations channel_operations = {
   custom_deserialize_default
 };
 
-static value alloc_channel(struct channel *chan)
+CAMLexport value alloc_channel(struct channel *chan)
 {
   value res = alloc_custom(&channel_operations, sizeof(struct channel *),
                            1, 1000);
   Channel(res) = chan;
+  chan->refcount++;
   return res;
 }
 
-CAMLprim value caml_open_descriptor(value fd)
+CAMLprim value caml_open_descriptor_in(value fd)
 {
-  return alloc_channel(open_descriptor(Int_val(fd)));
+  return alloc_channel(open_descriptor_in(Int_val(fd)));
+}
+
+CAMLprim value caml_open_descriptor_out(value fd)
+{
+  return alloc_channel(open_descriptor_out(Int_val(fd)));
+}
+
+#define Pair_tag 0
+
+CAMLprim value caml_out_channels_list (value unit)
+{
+  CAMLparam0 ();
+  CAMLlocal3 (res, tail, chan);
+  struct channel * channel;
+
+  res = Val_emptylist;
+  for (channel = all_opened_channels;
+       channel != NULL;
+       channel = channel->next) 
+    /* Testing channel->fd >= 0 looks unnecessary, as
+       caml_close_channel changes max when setting fd to -1. */
+    if (channel->max == NULL) {
+      chan = alloc_channel (channel);
+      tail = res;
+      res = alloc_small (2, Pair_tag);
+      Field (res, 0) = chan;
+      Field (res, 1) = tail;
+    }
+  CAMLreturn (res);
 }
 
 CAMLprim value channel_descriptor(value vchannel)
@@ -444,9 +504,7 @@ CAMLprim value caml_flush_partial(value vchannel)
 {
   struct channel * channel = Channel(vchannel);
   int res;
-  /* Don't fail if channel is closed, this causes problem with flush on
-     stdout and stderr at exit.  Revise when "flushall" is implemented. */
-  if (channel->fd == -1) return Val_true;
+
   Lock(channel);
   res = flush_partial(channel);
   Unlock(channel);
@@ -456,9 +514,7 @@ CAMLprim value caml_flush_partial(value vchannel)
 CAMLprim value caml_flush(value vchannel)
 {
   struct channel * channel = Channel(vchannel);
-  /* Don't fail if channel is closed, this causes problem with flush on
-     stdout and stderr at exit.  Revise when "flushall" is implemented. */
-  if (channel->fd == -1) return Val_unit;
+
   Lock(channel);
   flush(channel);
   Unlock(channel);

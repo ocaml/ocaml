@@ -93,7 +93,7 @@ static value read_debug_info(void)
     close(fd);
     CAMLreturn(Val_false);
   }
-  chan = open_descriptor(fd);
+  chan = open_descriptor_in(fd);
   num_events = getword(chan);
   events = alloc(num_events, 0);
   for (i = 0; i < num_events; i++) {

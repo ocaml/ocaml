@@ -188,8 +188,8 @@ let write fd buf ofs len =
 
 (* Interfacing with the standard input/output library *)
 
-external open_read_descriptor : int -> in_channel = "caml_open_descriptor"
-external open_write_descriptor : int -> out_channel = "caml_open_descriptor"
+external open_read_descriptor : int -> in_channel = "caml_open_descriptor_in"
+external open_write_descriptor : int -> out_channel = "caml_open_descriptor_out"
 external fd_of_in_channel : in_channel -> int = "channel_descriptor"
 external fd_of_out_channel : out_channel -> int = "channel_descriptor"
 

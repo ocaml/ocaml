@@ -188,8 +188,8 @@ let rec (@) l1 l2 =
 type in_channel
 type out_channel
 
-external open_descriptor_out: int -> out_channel = "caml_open_descriptor"
-external open_descriptor_in: int -> in_channel = "caml_open_descriptor"
+external open_descriptor_out: int -> out_channel = "caml_open_descriptor_out"
+external open_descriptor_in: int -> in_channel = "caml_open_descriptor_in"
 
 let stdin = open_descriptor_in 0
 let stdout = open_descriptor_out 1
@@ -214,6 +214,15 @@ let open_out_bin name =
   open_out_gen [Open_wronly; Open_creat; Open_trunc; Open_binary] 0o666 name
 
 external flush : out_channel -> unit = "caml_flush"
+
+external out_channels_list : unit -> out_channel list 
+                           = "caml_out_channels_list"
+
+let flush_all () = 
+  let rec iter = function
+      [] -> ()
+    | a::l -> flush a; iter l
+  in iter (out_channels_list ())
 
 external unsafe_output : out_channel -> string -> int -> int -> unit
                        = "caml_output"
@@ -345,7 +354,7 @@ external decr: int ref -> unit = "%decr"
 
 external sys_exit : int -> 'a = "sys_exit"
 
-let exit_function = ref (fun () -> flush stdout; flush stderr)
+let exit_function = ref flush_all
 
 let at_exit f =
   let g = !exit_function in

@@ -102,7 +102,7 @@ static void intern_cleanup(void)
   if (intern_extra_block != NULL) {
     /* free newly allocated heap chunk */
     free_for_heap(intern_extra_block); 
-  } else if (intern_block != NULL) {
+  } else if (intern_block != 0) {
     /* restore original header for heap block, otherwise GC is confused */
     Hd_val(intern_block) = intern_header;
   }
@@ -286,7 +286,7 @@ static void intern_alloc(mlsize_t whsize, mlsize_t num_objects)
   if (whsize == 0) {
     intern_obj_table = NULL;
     intern_extra_block = NULL;
-    intern_block = NULL;
+    intern_block = 0;
     return;
   }
   wosize = Wosize_whsize(whsize);

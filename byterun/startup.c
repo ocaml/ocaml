@@ -371,7 +371,7 @@ CAMLexport void caml_main(char **argv)
   stat_free(req_prims);
   /* Load the globals */
   seek_section(fd, &trail, "DATA");
-  chan = open_descriptor(fd);
+  chan = open_descriptor_in(fd);
   global_data = input_val(chan);
   close_channel(chan); /* this also closes fd */
   stat_free(trail.section);
