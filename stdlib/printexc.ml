@@ -11,22 +11,24 @@
 
 (* $Id$ *)
 
-let prerr_loc file first_char last_char msg =
-  prerr_string "File \"";
-  prerr_string file;
-  prerr_string "\", line 0, characters "; prerr_int first_char;
-  prerr_char '-'; prerr_int last_char; prerr_string ": ";
-  prerr_string msg; prerr_char '\n'
+open Printf;;
+
+let locfmt =
+  match Sys.os_type with
+  | "MacOS" -> ("File \"%s\"; line %d; characters %d to %d ### %s\n"
+                : ('a, 'b, 'c) format)
+  | _ -> ("File \"%s\", line %d, characters %d-%d: %s\n" : ('a, 'b, 'c) format)
+;;
 
 let print_exn = function
     Out_of_memory ->
-      prerr_string "Out of memory\n"
+      prerr_string "Out of memory\n";
   | Stack_overflow ->
-      prerr_string "Stack overflow\n"
+      prerr_string "Stack overflow\n";
   | Match_failure(file, first_char, last_char) ->
-      prerr_loc file first_char last_char "Pattern matching failed";
+      eprintf locfmt file first_char last_char "Pattern matching failed";
   | Assert_failure(file, first_char, last_char) ->
-      prerr_loc file first_char last_char "Assertion failed";
+      eprintf locfmt file first_char last_char "Assertion failed";
   | x ->
       prerr_string "Uncaught exception: ";
       prerr_string (Obj.magic(Obj.field (Obj.field (Obj.repr x) 0) 0));
