@@ -22,7 +22,7 @@ exception Bad_profile
 
 let dump_counters () =
   begin try 
-    let ic = open_in_bin "cslprof.dump" in
+    let ic = open_in_bin "ocamlprof.dump" in
     let prevl = (input_value ic : profiling_counters) in
     close_in ic;
     List.iter2
@@ -41,7 +41,7 @@ let dump_counters () =
   with _ -> ()
   end;
   begin try
-    let oc = open_out_bin "cslprof.dump" in
+    let oc = open_out_bin "ocamlprof.dump" in
     output_value oc !counters;
     close_out oc
   with _ -> ()

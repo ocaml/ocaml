@@ -314,7 +314,7 @@ let set_flags s =
 (* Command-line options *)
 
 let modes = ref "fm"
-let dumpfile = ref "cslprof.dump"
+let dumpfile = ref "ocamlprof.dump"
 
 (* Process a file *)
 
