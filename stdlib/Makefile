@@ -24,12 +24,12 @@ OPTCOMPFLAGS=
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 
 OBJS=pervasives.cmo list.cmo char.cmo string.cmo array.cmo sys.cmo \
-  hashtbl.cmo sort.cmo filename.cmo marshal.cmo obj.cmo \
+  hashtbl.cmo sort.cmo marshal.cmo obj.cmo \
   lexing.cmo parsing.cmo \
   set.cmo map.cmo stack.cmo queue.cmo stream.cmo \
   buffer.cmo printf.cmo format.cmo arg.cmo printexc.cmo gc.cmo \
   digest.cmo random.cmo oo.cmo genlex.cmo callback.cmo weak.cmo \
-  lazy.cmo
+  lazy.cmo filename.cmo
 
 all: stdlib.cma std_exit.cmo camlheader camlheader_ur
 

@@ -62,3 +62,7 @@ val temp_file: string -> string -> string
            Under MacOS, the name of the temporary directory is given
            by the environment variable [TempFolder]; if not set,
            temporary files are created in the current directory. *)
+val quote: string -> string;;
+        (* Return a quoted version of a file name, suitable for use as
+		   one argument in a shell command line, escaping any shell
+		   meta-characters. *)

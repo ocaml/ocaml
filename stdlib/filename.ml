@@ -66,8 +66,7 @@ let wnt_is_implicit n =
   && (String.length n < 3 || String.sub n 0 3 <> "..\\")
 ;;
 
-let contains_colon n = String.contains n ':'
-;;
+let contains_colon n = String.contains n ':' ;;
 
 let mac_is_relative n =
   (String.length n >= 1 && n.[0] = ':')
@@ -201,3 +200,20 @@ let temp_file prefix suffix =
     end
   in try_name 0
 
+let quote s =
+  let quotechar = match Sys.os_type with "MacOS" -> '\182' | _ -> '\\' in
+  if Sys.os_type = "Win32" then s else         (* XXX *)
+  let l = String.length s in
+  let b = Buffer.create (l + 20) in
+  Buffer.add_char b '\'';
+  for i = 0 to l - 1 do
+    Buffer.add_char b s.[i];
+    if s.[i] = '\'' then begin
+      Buffer.add_char b s.[i];
+      Buffer.add_char b quotechar;
+      Buffer.add_char b s.[i];
+    end;
+  done;
+  Buffer.add_char b '\'';
+  Buffer.contents b
+;;
