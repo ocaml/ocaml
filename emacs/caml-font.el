@@ -91,18 +91,19 @@
          (setq font-lock-keywords-only t)
          (font-lock-mode 1)))
 
-(setq inferior-caml-mode-hooks
-      '(lambda ()
-         (cond
-          ((fboundp 'global-font-lock-mode)
-           (make-local-variable 'font-lock-defaults)
-           (setq font-lock-defaults
-                 '(inferior-caml-font-lock-keywords
-                   nil nil ((?' . "w") (?_ . "w")))))
-          (t
-           (setq font-lock-keywords inferior-caml-font-lock-keywords)))
-         (make-local-variable 'font-lock-keywords-only)
-         (setq font-lock-keywords-only t)
-         (font-lock-mode 1)))
+(defun inferior-caml-mode-font-hook ()
+  (cond
+   ((fboundp 'global-font-lock-mode)
+    (make-local-variable 'font-lock-defaults)
+    (setq font-lock-defaults
+          '(inferior-caml-font-lock-keywords
+            nil nil ((?' . "w") (?_ . "w")))))
+   (t
+    (setq font-lock-keywords inferior-caml-font-lock-keywords)))
+  (make-local-variable 'font-lock-keywords-only)
+  (setq font-lock-keywords-only t)
+  (font-lock-mode 1))
+
+(add-hook 'inferior-caml-mode-hooks 'inferior-caml-mode-font-hook)
 
 (provide 'caml-font)
