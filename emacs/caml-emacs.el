@@ -10,6 +10,5 @@
 (defun caml-event-point-end (e) (posn-point (event-end e)))
 (defalias 'caml-track-mouse 'track-mouse)
 (defalias 'caml-read-event 'read-event)
-(defun caml-mouse-movement-p mouse-mouvement)
 
 (provide 'caml-emacs)

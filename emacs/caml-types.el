@@ -176,6 +176,16 @@ See `caml-types-location-re' for annotation file format.
       (and (= (car date1) (car date2))
            (< (nth 1 date1) (nth 1 date2)))))
 
+
+; we use an obarray for hash-consing the strings within each tree
+
+(defun caml-types-make-hash-table ()
+  (make-vector 255 0))
+
+(defun caml-types-hcons (elem table)
+  (symbol-name (intern elem table)))
+
+
 ; tree of intervals
 ; each node is a vector
 ; [ pos-left pos-right type-info child child child... ]
@@ -183,13 +193,10 @@ See `caml-types-location-re' for annotation file format.
 ;  () if this node does not correspond to an annotated interval
 ;  (type-start . type-end)  address of the annotation in the .annot file
 
-(defun caml-types-hcons (elem table)
-  (or (cl-gethash elem table) (cl-puthash elem elem table) elem))
-
 (defun caml-types-build-tree (target-file)
   (let ((stack ())
         (accu ())
-        (table (make-hash-table :test 'equal))
+        (table (caml-types-make-hash-table))
         (type-info ()))
     (while (re-search-forward caml-types-location-re () t)
       (let ((l-file (file-name-nondirectory (match-string 1)))
@@ -389,9 +396,9 @@ and its type is displayed in the minibuffer, until the move is released."
                                         ; (message "Drag the mouse to explore types")
     (unwind-protect
         (caml-track-mouse
-         (setq region (caml-types-typed-region
-                       target-buf
-                       (caml-event-point-start event)))
+         ;(setq region (caml-types-typed-region
+         ;              target-buf
+         ;              (caml-event-point-start event)))
          (while (and event
                      (integer-or-marker-p
                       (setq cnum (caml-event-point-end event))))
@@ -430,8 +437,8 @@ and its type is displayed in the minibuffer, until the move is released."
            )
          )
       (delete-overlay caml-types-expr-ovl)
-      (if unlocked (font-lock-mode 1)
-        (remove-text-properties (car region) (cdr region) '(face)))
+      ;(if unlocked (font-lock-mode 1)
+      ;  (remove-text-properties (car region) (cdr region) '(face)))
       )))
 
 (defun caml-types-typed-region (target-buf pos)

@@ -19,11 +19,11 @@ SCRIPTDIR = $(BINDIR)
 # Command for byte-compiling the files
 COMPILECMD=(progn \
               (setq load-path (cons "." load-path)) \
+              (byte-compile-file "caml-xemacs.el") \
+	      (byte-compile-file "caml-emacs.el") \
               (byte-compile-file "caml.el") \
               (byte-compile-file "inf-caml.el") \
               (byte-compile-file "caml-help.el") \
-              (byte-compile-file "caml-types.el") \
-              (byte-compile-file "caml-xemacs.el") \
               (byte-compile-file "camldebug.el"))
 
 install:
