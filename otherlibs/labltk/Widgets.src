@@ -733,7 +733,10 @@ module Font {
 					options(font) list]
 ##endif
   function () configure ["font"; "configure"; font; options(font) list]
-  function (font) create ["font"; "create"; options(font) list]
+  function (font) create ["font"; "create"; ?name:[string]; options(font) list]
+##ifdef CAMLTK
+  function (font) create_named ["font"; "create"; string; options(font) list]
+##endif
   function () delete ["font"; "delete"; font]
   function (string list) families ["font"; "families";
 	                        ?displayof:["-displayof"; widget]] 
