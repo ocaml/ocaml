@@ -41,10 +41,14 @@ extern char * caml_exception_pointer;
 void mlraise(v)
      value v;
 {
+#ifdef POSIX_SIGNALS
   sigset_t mask;
-  leave_blocking_section();
   sigemptyset(&mask);
   sigprocmask(SIG_SETMASK, &mask, NULL);
+#else
+  sigsetmask(0);
+#endif
+  leave_blocking_section();
 #ifndef Stack_grows_upwards
   while (local_roots != NULL && 
          (char *) local_roots < caml_exception_pointer) {
