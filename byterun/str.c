@@ -96,22 +96,22 @@ CAMLprim value string_compare(value s1, value s2)
 
 CAMLprim value string_lessthan(value s1, value s2)
 {
-  return string_compare(s1, s2) <= Val_int(0) ? Val_true : Val_false;
+  return string_compare(s1, s2) < Val_int(0) ? Val_true : Val_false;
 }
   
 CAMLprim value string_lessequal(value s1, value s2)
 {
-  return string_compare(s1, s2) < Val_int(0) ? Val_true : Val_false;
+  return string_compare(s1, s2) <= Val_int(0) ? Val_true : Val_false;
 }
   
 CAMLprim value string_greaterthan(value s1, value s2)
 {
-  return string_compare(s1, s2) >= Val_int(0) ? Val_true : Val_false;
+  return string_compare(s1, s2) > Val_int(0) ? Val_true : Val_false;
 }
   
 CAMLprim value string_greaterequal(value s1, value s2)
 {
-  return string_compare(s1, s2) > Val_int(0) ? Val_true : Val_false;
+  return string_compare(s1, s2) >= Val_int(0) ? Val_true : Val_false;
 }
   
 CAMLprim value blit_string(value s1, value ofs1, value s2, value ofs2, value n)
