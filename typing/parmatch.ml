@@ -550,7 +550,7 @@ let full_match tdefs force env =  match env with
               Rabsent -> (ok, nm)
             | Reither(_, _, false, _, e) ->
                 (* m=false means that this tag is not explicitly matched *)
-                e := Some Rabsent;
+                Btype.set_row_field e Rabsent;
                 (ok, None)
             | Reither (_, _, true, _, _)
                 (* m=true, do not discard matched tags, rather warn *)

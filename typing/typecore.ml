@@ -496,20 +496,20 @@ let finalize_variant pat =
       begin match field with
       | Rabsent -> assert false
       | Reither (true, [], _, tpl, e) when not row.row_closed ->
+          set_row_field e (Rpresent None);
           List.iter
             (fun (t1,t2) -> unify_pat pat.pat_env {pat with pat_type=t1} t2)
-            tpl;
-          e := Some (Rpresent None)
+            tpl
       | Reither (false, ty::tl, _, tpl, e) when not row.row_closed ->
+          set_row_field e (Rpresent (Some ty));
           List.iter
             (fun (t1,t2) -> unify_pat pat.pat_env {pat with pat_type=t1} t2)
             tpl;
-          e := Some (Rpresent (Some ty));
           begin match opat with None -> assert false
           | Some pat -> List.iter (unify_pat pat.pat_env pat) (ty::tl)
           end
       | Reither (c, l, true, tpl, e) when not row.row_fixed ->
-          e := Some (Reither (c, [], false, [], ref None))
+          set_row_field e (Reither (c, [], false, [], ref None))
       | _ -> ()
       end;
       (* Force check of well-formedness *)
@@ -732,7 +732,7 @@ let check_univars env kind exp ty_expected vars =
         let t = repr t in
         generalize t;
         if t.desc = Tvar && t.level = generic_level then
-          (t.desc <- Tunivar; true)
+          (log_type t; t.desc <- Tunivar; true)
         else false)
       vars in
   if List.length vars = List.length vars' then () else
@@ -1738,7 +1738,8 @@ and type_cases ?in_function ?(multi=false)
                 Reither (c, _, m, _, e) ->
                   let ty_res' = Btype.newty2 (row_more row).level Tvar in
                   let tv = Btype.newty2 ty_res'.level Tvar in
-                  e := Some(Reither (c, [], m, [ty_res, ty_res'], ref None));
+                  set_row_field e
+                    (Reither (c, [], m, [ty_res, ty_res'], ref None));
                   unify_pat ext_env {pat with pat_type=tv} ty_res;
                   ty_res'
               | _ -> ty_res
@@ -1768,7 +1769,8 @@ and type_cases ?in_function ?(multi=false)
                 let fi = List.assoc lab (row_repr row).row_fields in
                 begin match row_field_repr fi with
                   Reither (c, _, m, _, e) ->
-                    e := Some(Reither (c, [], m, [ty_res, ty'], ref None));
+                    set_row_field e
+                      (Reither (c, [], m, [ty_res, ty'], ref None));
                     let tv = Btype.newty2 (row_more row).level Tvar in
                     unify_exp ext_env {exp with exp_type=ty'} tv
                 | _ ->
