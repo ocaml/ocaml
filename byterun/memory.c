@@ -300,11 +300,12 @@ CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
 
 /* Dependent memory is all memory blocks allocated out of the heap
    that depend on the GC (and finalizers) for deallocation.
-   For the GC to take dependent memory in its automatic speed setting,
+   For the GC to take dependent memory into account when computing
+   its automatic speed setting,
    you must call [caml_alloc_dependent_memory] when you alloate some
    dependent memory, and [caml_free_dependent_memory] when you
-   free it.  In both cases, you pass as argument the size of the
-   block being allocated or freed.
+   free it.  In both cases, you pass as argument the size (in bytes)
+   of the block being allocated or freed.
 */
 CAMLexport void caml_alloc_dependent_memory (mlsize_t nbytes)
 {
