@@ -11,6 +11,8 @@
 
 (* $Id$ *)
 
+#ifdef WIN32
+
 type t = { mut: Mutex.t; mutable waiting: Thread.t list }
 
 let create () = 
@@ -45,3 +47,12 @@ let broadcast cond =
   Mutex.unlock cond.mut;
   List.iter wakeup w
 
+#else
+
+type t
+external create: unit -> t = "caml_condition_new"
+external wait: t -> Mutex.t -> unit = "caml_condition_wait"
+external signal: t -> unit = "caml_condition_signal"
+external broadcast: t -> unit = "caml_condition_broadcast"
+
+#endif

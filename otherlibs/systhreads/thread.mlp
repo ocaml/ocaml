@@ -13,8 +13,6 @@
 
 (* User-level threads *)
 
-open ThreadIO
-
 type t
 
 external thread_initialize : unit -> unit = "caml_thread_initialize"
@@ -26,7 +24,6 @@ external id : t -> int = "caml_thread_id"
 external exit : unit -> unit = "caml_thread_exit"
 external join : t -> unit = "caml_thread_join"
 external detach : t -> unit = "caml_thread_detach"
-external delay: float -> unit = "caml_thread_delay"
 external kill : t -> unit = "caml_thread_kill"
 
 (* For new, make sure the function passed to thread_new never
@@ -36,7 +33,7 @@ let create fn arg =
   thread_new
     (fun () ->
       try
-        ThreadPrintexc.print fn arg; exit()
+        Printexc.print fn arg; exit()
       with x ->
         flush stdout; flush stderr; exit())
 
@@ -46,13 +43,36 @@ let preempt signal = yield()
 
 (* Initialization of the scheduler *)
 
+#ifdef WIN32
+#define PREEMPT_SIGNAL 1
+#else
+#define PREEMPT_SIGNAL Sys.sigvtalrm
+#endif
+
 let _ =
-  Sys.signal 1 (Sys.Signal_handle preempt);
+  Sys.signal PREEMPT_SIGNAL (Sys.Signal_handle preempt);
   thread_initialize()
+
+(* Wait functions *)
+
+#ifdef WIN32
+external delay: float -> unit = "caml_thread_delay"
+#else
+let delay time = Unix.select [] [] [] time; ()
+#endif
 
 let wait_read fd = ()
 let wait_write fd = ()
+
+#ifdef WIN32
 let wait_timed_read fd delay = true
 let wait_timed_write fd delay = true
+#else
+let wait_timed_read fd d =
+  match Unix.select [fd] [] [] d with ([], _, _) -> false | (_, _, _) -> true
+let wait_timed_write fd d =
+  match Unix.select [] [fd] [] d with (_, [], _) -> false | (_, _, _) -> true
+#endif
 
 let wait_pid p = Unix.waitpid [] p
+

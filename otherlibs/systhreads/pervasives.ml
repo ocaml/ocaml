@@ -157,33 +157,33 @@ let stderr = Iolock.add(open_descriptor_out 2)
 
 let wrap1 fn chan =
   let m = Iolock.find chan in
-  Mutex.lock m;
+  Iolock.lock m;
   try
     let res = fn chan in
-    Mutex.unlock m;
+    Iolock.unlock m;
     res
   with x ->
-    Mutex.unlock m; raise x
+    Iolock.unlock m; raise x
 
 let wrap2 fn chan arg =
   let m = Iolock.find chan in
-  Mutex.lock m;
+  Iolock.lock m;
   try
     let res = fn chan arg in
-    Mutex.unlock m;
+    Iolock.unlock m;
     res
   with x ->
-    Mutex.unlock m; raise x
+    Iolock.unlock m; raise x
 
 let wrap4 fn chan arg1 arg2 arg3 =
   let m = Iolock.find chan in
-  Mutex.lock m;
+  Iolock.lock m;
   try
     let res = fn chan arg1 arg2 arg3 in
-    Mutex.unlock m;
+    Iolock.unlock m;
     res
   with x ->
-    Mutex.unlock m; raise x
+    Iolock.unlock m; raise x
 
 (* General output functions *)
 
@@ -203,14 +203,15 @@ let open_out name =
 let open_out_bin name =
   open_out_gen [Open_wronly; Open_creat; Open_trunc; Open_binary] 0o666 name
 
-external flush : out_channel -> unit = "flush"
-let flush = wrap1 flush
+external flush_unlocked : out_channel -> unit = "flush"
+let flush = wrap1 flush_unlocked
 
-external unsafe_output : out_channel -> string -> int -> int -> unit = "output"
-let unsafe_output = wrap4 unsafe_output
+external unsafe_output_unlocked : out_channel -> string -> int -> int -> unit
+                                = "output"
+let unsafe_output = wrap4 unsafe_output_unlocked
 
-external output_char : out_channel -> char -> unit = "output_char"
-let output_char = wrap2 output_char
+external output_char_unlocked : out_channel -> char -> unit = "output_char"
+let output_char = wrap2 output_char_unlocked
 
 let output_string oc s =
   unsafe_output oc s 0 (string_length s)
@@ -220,27 +221,27 @@ let output oc s ofs len =
   then invalid_arg "output"
   else unsafe_output oc s ofs len
 
-external output_byte : out_channel -> int -> unit = "output_char"
-let output_byte = wrap2 output_byte
+external output_byte_unlocked : out_channel -> int -> unit = "output_char"
+let output_byte = wrap2 output_byte_unlocked
 
-external output_binary_int : out_channel -> int -> unit = "output_int"
-let output_binary_int = wrap2 output_binary_int
+external output_binary_int_unlocked : out_channel -> int -> unit = "output_int"
+let output_binary_int = wrap2 output_binary_int_unlocked
 
-external output_value : out_channel -> 'a -> unit = "output_value"
-let output_value oc v = wrap2 output_value oc v
+external output_value_unlocked : out_channel -> 'a -> unit = "output_value"
+let output_value oc v = wrap2 output_value_unlocked oc v
 
-external seek_out : out_channel -> int -> unit = "seek_out"
-let seek_out = wrap2 seek_out
+external seek_out_unlocked : out_channel -> int -> unit = "seek_out"
+let seek_out = wrap2 seek_out_unlocked
 
-external pos_out : out_channel -> int = "pos_out"
-let pos_out = wrap1 pos_out
+external pos_out_unlocked : out_channel -> int = "pos_out"
+let pos_out = wrap1 pos_out_unlocked
 
-external out_channel_length : out_channel -> int = "channel_size"
-let out_channel_length = wrap1 out_channel_length
+external out_channel_length_unlocked : out_channel -> int = "channel_size"
+let out_channel_length = wrap1 out_channel_length_unlocked
 
-external close_out_channel : out_channel -> unit = "close_channel"
-let close_out_channel = wrap1 close_out_channel
-let close_out oc = flush oc; close_out_channel oc; Iolock.remove oc
+external close_out_channel_unlocked : out_channel -> unit = "close_channel"
+let close_out oc =
+  flush oc; wrap1 close_out_channel_unlocked oc; Iolock.remove oc
 
 (* General input functions *)
 
@@ -253,11 +254,12 @@ let open_in name =
 let open_in_bin name =
   open_in_gen [Open_rdonly; Open_binary] 0 name
 
-external input_char : in_channel -> char = "input_char"
-let input_char = wrap1 input_char
+external input_char_unlocked : in_channel -> char = "input_char"
+let input_char = wrap1 input_char_unlocked
 
-external unsafe_input : in_channel -> string -> int -> int -> int = "input"
-let unsafe_input = wrap4 unsafe_input
+external unsafe_input_unlocked : in_channel -> string -> int -> int -> int
+                               = "input"
+let unsafe_input = wrap4 unsafe_input_unlocked
 
 let input ic s ofs len =
   if ofs < 0 or ofs + len > string_length s
@@ -279,46 +281,46 @@ let really_input ic s ofs len =
 
 external input_scan_line : in_channel -> int = "input_scan_line"
 
-let rec input_line chan =
+let rec input_line_unlocked chan =
   let n = input_scan_line chan in
   if n = 0 then                         (* n = 0: we are at EOF *)
     raise End_of_file
   else if n > 0 then begin              (* n > 0: newline found in buffer *)
     let res = string_create (n-1) in
-    unsafe_input chan res 0 (n-1);
-    input_char chan;                    (* skip the newline *)
+    unsafe_input_unlocked chan res 0 (n-1);
+    input_char_unlocked chan;                    (* skip the newline *)
     res
   end else begin                        (* n < 0: newline not found *)
     let beg = string_create (-n) in
-    unsafe_input chan beg 0 (-n);
+    unsafe_input_unlocked chan beg 0 (-n);
     try
-      beg ^ input_line chan
+      beg ^ input_line_unlocked chan
     with End_of_file ->
       beg
   end
 
-let input_line = wrap1 input_line
+let input_line = wrap1 input_line_unlocked
 
-external input_byte : in_channel -> int = "input_char"
-let input_byte = wrap1 input_byte
+external input_byte_unlocked : in_channel -> int = "input_char"
+let input_byte = wrap1 input_byte_unlocked
 
-external input_binary_int : in_channel -> int = "input_int"
-let input_binary_int = wrap1 input_binary_int
+external input_binary_int_unlocked : in_channel -> int = "input_int"
+let input_binary_int = wrap1 input_binary_int_unlocked
 
-external input_value : in_channel -> 'a = "input_value"
-let input_value ic = wrap1 input_value ic
+external input_value_unlocked : in_channel -> 'a = "input_value"
+let input_value ic = wrap1 input_value_unlocked ic
 
-external seek_in : in_channel -> int -> unit = "seek_in"
-let seek_in = wrap2 seek_in
+external seek_in_unlocked : in_channel -> int -> unit = "seek_in"
+let seek_in = wrap2 seek_in_unlocked
 
-external pos_in : in_channel -> int = "pos_in"
-let pos_in = wrap1 pos_in
+external pos_in_unlocked : in_channel -> int = "pos_in"
+let pos_in = wrap1 pos_in_unlocked
 
-external in_channel_length : in_channel -> int = "channel_size"
-let in_channel_length = wrap1 in_channel_length
+external in_channel_length_unlocked : in_channel -> int = "channel_size"
+let in_channel_length = wrap1 in_channel_length_unlocked
 
-external close_in : in_channel -> unit = "close_channel"
-let close_in ic = wrap1 close_in ic; Iolock.remove ic
+external close_in_unlocked : in_channel -> unit = "close_channel"
+let close_in ic = wrap1 close_in_unlocked ic; Iolock.remove ic
 
 (* Output functions on standard output *)
 

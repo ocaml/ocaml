@@ -11,6 +11,13 @@
 
 (* $Id$ *)
 
-value add : 'a -> 'a
-value remove : 'a -> unit
-value find : 'a -> Mutex.t
+(* Locking on I/O channels. *)
+
+type mutex
+
+val add : 'a -> 'a
+val remove : 'a -> unit
+val find : 'a -> mutex
+val lock : mutex -> unit
+val unlock : mutex -> unit
+
