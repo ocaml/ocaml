@@ -12,6 +12,12 @@ Objective Caml 1.06:
 
 * Language: a new keyword was added: "assert".
 
+* Standard library:
+  - Printexc: added to_string.
+  - Filename: is_absolute is superseded by is_implicit and is_relative.
+    To adapt old programs, change "is_absolute x" to "not (is_implicit x)"
+    (the new is_relative is NOT the opposite of the old is_absolute).
+
 Objective Caml 1.05:
 --------------------
 
