@@ -242,5 +242,6 @@ int caml_main(argc, argv)
     fatal_error_arg("Fatal error: uncaught exception %s.\n",
                     String_val(Field(Field(exn_bucket, 0), 0)));
   }
+  return 0; /* never reached */
 }
 

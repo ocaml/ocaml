@@ -87,9 +87,9 @@ value channel_size(channel)      /* ML */
   long end;
 
   end = lseek(channel->fd, 0, SEEK_END);
-  if (end == -1) sys_error(NULL);
+  if (end == -1) sys_error(NO_ARG);
   if (lseek(channel->fd, channel->offset, SEEK_SET) != channel->offset) 
-    sys_error(NULL);
+    sys_error(NO_ARG);
   return Val_long(end);
 }
 
@@ -133,7 +133,7 @@ again:
     }
   }
 #endif
-  if (retcode == -1) sys_error(NULL);
+  if (retcode == -1) sys_error(NO_ARG);
   return retcode;
 }
 
@@ -269,7 +269,7 @@ value seek_out(channel, pos)    /* ML */
   long dest;
   dest = Long_val(pos);
   flush(channel);
-  if (lseek(channel->fd, dest, 0) != dest) sys_error(NULL);
+  if (lseek(channel->fd, dest, 0) != dest) sys_error(NO_ARG);
   channel->offset = dest;
   return Val_unit;
 }
@@ -301,7 +301,7 @@ static int do_read(fd, p, n)
 #endif
 #endif
   leave_blocking_section();
-  if (retcode == -1) sys_error(NULL);
+  if (retcode == -1) sys_error(NO_ARG);
   return retcode;
 }
 
@@ -416,7 +416,7 @@ value seek_in(channel, pos)     /* ML */
       dest <= channel->offset) {
     channel->curr = channel->max - (channel->offset - dest);
   } else {
-    if (lseek(channel->fd, dest, SEEK_SET) != dest) sys_error(NULL);
+    if (lseek(channel->fd, dest, SEEK_SET) != dest) sys_error(NO_ARG);
     channel->offset = dest;
     channel->curr = channel->max = channel->buff;
   }

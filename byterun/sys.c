@@ -30,6 +30,8 @@
 #include "mlvalues.h"
 #include "signals.h"
 #include "stacks.h"
+#include "str.h"
+#include "sys.h"
 #ifdef HAS_UI
 #include "ui.h"
 #endif
@@ -61,22 +63,24 @@ char * error_message()
 #endif /* HAS_STRERROR */
 
 void sys_error(arg)
-     char * arg;
+     value arg;
 {
   char * err = error_message();
-  int err_len = strlen(err);
-  int arg_len;
   value str;
-
-  if (arg == NULL) {
-    str = alloc_string(err_len);
-    bcopy(err, &Byte(str, 0), err_len);
+  
+  if (arg == NO_ARG) {
+    str = copy_string(err);
   } else {
-    arg_len = strlen(arg);
+    int err_len = strlen(err);
+    int arg_len = string_length(arg);
+    Push_roots(r, 1);
+    r[0] = arg;
     str = alloc_string(arg_len + 2 + err_len);
-    bcopy(arg, &Byte(str, 0), arg_len);
+    arg = r[0];
+    bcopy(String_val(arg), &Byte(str, 0), arg_len);
     bcopy(": ", &Byte(str, arg_len), 2);
     bcopy(err, &Byte(str, arg_len + 2), err_len);
+    Pop_roots();
   }
   raise_sys_error(str);
 }
@@ -117,7 +121,7 @@ value sys_open(path, flags, perm) /* ML */
   int ret;
   ret = open(String_val(path), convert_flag_list(flags, sys_open_flags),
              Int_val(perm));
-  if (ret == -1) sys_error(String_val(path));
+  if (ret == -1) sys_error(path);
   return Val_long(ret);
 }
 
@@ -133,7 +137,7 @@ value sys_remove(name)          /* ML */
 {
   int ret;
   ret = unlink(String_val(name));
-  if (ret != 0) sys_error(String_val(name));
+  if (ret != 0) sys_error(name);
   return Val_unit;
 }
 
@@ -141,14 +145,14 @@ value sys_rename(oldname, newname) /* ML */
      value oldname, newname;
 {
   if (rename(String_val(oldname), String_val(newname)) != 0)
-    sys_error(String_val(oldname));
+    sys_error(oldname);
   return Val_unit;
 }
 
 value sys_chdir(dirname)        /* ML */
      value dirname;
 {
-  if (chdir(String_val(dirname)) != 0) sys_error(String_val(dirname));
+  if (chdir(String_val(dirname)) != 0) sys_error(dirname);
   return Val_unit;
 }
 
@@ -157,9 +161,9 @@ value sys_getcwd(unit)		/* ML */
 {
   char buff[4096];
 #ifdef HAS_GETCWD
-  if (getcwd(buff, sizeof(buff)) == 0) sys_error(NULL);
+  if (getcwd(buff, sizeof(buff)) == 0) sys_error(NO_ARG);
 #else
-  if (getwd(buff) == 0) sys_error(NULL);
+  if (getwd(buff) == 0) sys_error(NO_ARG);
 #endif
   return copy_string(buff);
 }
@@ -192,7 +196,7 @@ value sys_system_command(command)   /* ML */
      value command;
 {
   int retcode = system(String_val(command));
-  if (retcode == -1) sys_error(String_val(command));
+  if (retcode == -1) sys_error(command);
   return Val_int(retcode);
 }
 

@@ -57,9 +57,6 @@ minor_gc.o: minor_gc.c config.h ../config/m.h ../config/s.h fail.h \
 misc.o: misc.c config.h ../config/m.h ../config/s.h misc.h
 obj.o: obj.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h major_gc.h freelist.h memory.h gc.h minor_gc.h prims.h
-oldintern.o: oldintern.c alloc.h misc.h config.h ../config/m.h \
- ../config/s.h mlvalues.h fail.h gc.h intext.h io.h memory.h \
- major_gc.h freelist.h minor_gc.h reverse.h
 parsing.o: parsing.c config.h ../config/m.h ../config/s.h mlvalues.h \
  misc.h memory.h gc.h major_gc.h freelist.h minor_gc.h alloc.h
 prims.o: prims.c mlvalues.h config.h ../config/m.h ../config/s.h \
@@ -79,9 +76,10 @@ str.o: str.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h
 sys.o: sys.c config.h ../config/m.h ../config/s.h alloc.h misc.h \
  mlvalues.h fail.h instruct.h signals.h stacks.h memory.h gc.h \
- major_gc.h freelist.h minor_gc.h
+ major_gc.h freelist.h minor_gc.h str.h sys.h
 terminfo.o: terminfo.c config.h ../config/m.h ../config/s.h alloc.h \
  misc.h mlvalues.h fail.h io.h
+wincmdline.o: wincmdline.c
 alloc.d.o: alloc.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h major_gc.h freelist.h memory.h gc.h minor_gc.h stacks.h
 array.d.o: array.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
@@ -142,9 +140,6 @@ minor_gc.d.o: minor_gc.c config.h ../config/m.h ../config/s.h fail.h \
 misc.d.o: misc.c config.h ../config/m.h ../config/s.h misc.h
 obj.d.o: obj.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h major_gc.h freelist.h memory.h gc.h minor_gc.h prims.h
-oldintern.d.o: oldintern.c alloc.h misc.h config.h ../config/m.h \
- ../config/s.h mlvalues.h fail.h gc.h intext.h io.h memory.h \
- major_gc.h freelist.h minor_gc.h reverse.h
 parsing.d.o: parsing.c config.h ../config/m.h ../config/s.h mlvalues.h \
  misc.h memory.h gc.h major_gc.h freelist.h minor_gc.h alloc.h
 prims.d.o: prims.c mlvalues.h config.h ../config/m.h ../config/s.h \
@@ -164,6 +159,7 @@ str.d.o: str.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h fail.h
 sys.d.o: sys.c config.h ../config/m.h ../config/s.h alloc.h misc.h \
  mlvalues.h fail.h instruct.h signals.h stacks.h memory.h gc.h \
- major_gc.h freelist.h minor_gc.h
+ major_gc.h freelist.h minor_gc.h str.h sys.h
 terminfo.d.o: terminfo.c config.h ../config/m.h ../config/s.h alloc.h \
  misc.h mlvalues.h fail.h io.h
+wincmdline.d.o: wincmdline.c

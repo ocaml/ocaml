@@ -16,9 +16,10 @@
 
 #include "misc.h"
 
-void sys_error P((char *));
+#define NO_ARG Val_int(0)
+void sys_error P((value));
 void sys_init P((char **));
-void sys_exit P((value)) Noreturn;
+value sys_exit P((value));
 char * searchpath P((char * name));
 
 #endif /* _sys_ */
