@@ -20,8 +20,6 @@ class reload_generic (unit) =
   method makereg : Reg.t -> Reg.t
     (* Can be overriden to avoid creating new registers of some class
        (i.e. if all "registers" of that class are actually on stack) *)
-  method makereg1 : Reg.t array -> Reg.t array
-  method makeregs : Reg.t array -> Reg.t array
-  method reload : Mach.instruction -> Mach.instruction
   method fundecl : Mach.fundecl -> Mach.fundecl * bool
+    (* The entry point *)
 end

@@ -117,7 +117,7 @@ method oper_in_basic_block = function
 
 (* Determine whether an instruction ends a basic block or not *)
 
-method instr_in_basic_block instr =
+method protected instr_in_basic_block instr =
   match instr.desc with
     Lop op -> self#oper_in_basic_block op
   | Lreloadretaddr -> true
@@ -129,7 +129,7 @@ virtual oper_latency : Mach.operation -> int
 
 (* Estimate the delay needed to evaluate an instruction *)
 
-method instr_latency instr =
+method protected instr_latency instr =
   match instr.desc with
     Lop op ->
       self#oper_latency op
@@ -144,7 +144,7 @@ virtual oper_issue_cycles : Mach.operation -> int
 
 (* Estimate the number of cycles consumed by emitting an instruction. *)
 
-method instr_issue_cycles instr =
+method protected instr_issue_cycles instr =
   match instr.desc with
     Lop op ->
       self#oper_issue_cycles op
@@ -155,7 +155,7 @@ method instr_issue_cycles instr =
 
 (* Add an instruction to the code dag *)
 
-method add_instruction ready_queue instr =
+method protected add_instruction ready_queue instr =
   let delay = self#instr_latency instr in
   let node =
     { instr = instr;
@@ -206,7 +206,7 @@ method add_instruction ready_queue instr =
    maximal distance to result.  If we can't find any, return None.
    This does not take multiple issues into account, though. *)
 
-method ready_instruction date queue =
+method protected ready_instruction date queue =
   let rec extract best = function
     [] ->
       if best == dummy_node then None else Some best
@@ -220,7 +220,7 @@ method ready_instruction date queue =
 (* Schedule a basic block, adding its instructions in front of the given
    instruction sequence *)
 
-method reschedule ready_queue date cont =
+method protected reschedule ready_queue date cont =
   if ready_queue = [] then cont else begin
     match self#ready_instruction date ready_queue with
       None ->

@@ -53,13 +53,13 @@ method makereg r =
       newr.spill_cost <- 100000;
       newr
 
-method makeregs rv =
+method protected makeregs rv =
   let n = Array.length rv in
   let newv = Array.create n Reg.dummy in
   for i = 0 to n-1 do newv.(i) <- self#makereg rv.(i) done;
   newv
 
-method makereg1 rv =
+method protected makereg1 rv =
   let newv = Array.copy rv in
   newv.(0) <- self#makereg rv.(0);
   newv
@@ -83,7 +83,7 @@ method reload_operation op arg res =
 method reload_test tst args =
   self#makeregs args
 
-method reload i =
+method protected reload i =
   match i.desc with
     (* For function calls, returns, etc: the arguments and results are
        already at the correct position (e.g. on stack for some arguments).
