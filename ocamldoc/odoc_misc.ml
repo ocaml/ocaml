@@ -41,6 +41,13 @@ let string_of_type_expr t =
   Printtyp.mark_loops t;
   Printtyp.type_scheme_max ~b_reset_names: false fmt t;
   Format.pp_print_flush fmt () ;
+  let s = Buffer.contents b in
+  Buffer.reset b;
+  for i = 0 to String.length s - 1 do
+    match s.[i] with
+      '\n' -> Buffer.add_string b "\n  "
+    | c -> Buffer.add_char b c
+  done;
   Buffer.contents b
 
 (** Return the given module type where methods and vals have been removed
