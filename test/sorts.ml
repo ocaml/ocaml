@@ -1,3 +1,6 @@
+(* Test bench for sorting algorithms. *)
+
+
 (*
   ocamlopt -noassert sorts.ml -cclib -lunix
 *)
@@ -4362,8 +4365,8 @@ let anonymous x = raise (Arg.Bad ("unrecognised option "^x));;
 let main () =
   Arg.parse options anonymous usage;
 
-  Printf.printf "Command line is:";
-  for i = 0 to Array.length Sys.argv - 1 do
+  Printf.printf "Command line arguments are:";
+  for i = 1 to Array.length Sys.argv - 1 do
     Printf.printf " %s" Sys.argv.(i);
   done;
   Printf.printf "\n";
