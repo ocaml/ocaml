@@ -25,19 +25,6 @@ let rec build_closure_env env_param pos = function
       Tbl.add id (Uprim(Pfield pos, [Uvar env_param])) 
               (build_closure_env env_param (pos+1) rem)
 
-(* Auxiliaries for compiling recursive definitions *)
-
-type fun_analysis =
-  { fa_desc: function_description;
-    fa_params: Ident.t list;
-    fa_body: lambda;
-    fa_cenv: (Ident.t, ulambda) Tbl.t;
-    fa_clos: ulambda list }
-
-type rec_approximation =
-    Rec_function of fun_analysis
-  | Rec_other of lambda
-
 (* Uncurry an expression and explicitate closures.
    Also return the approximation of the expression.
    The approximation environment [fenv] maps idents to approximations.
@@ -45,14 +32,19 @@ type rec_approximation =
    The closure environment [cenv] maps idents to [ulambda] terms.
    It is used to substitute environment accesses for free identifiers. *)
 
+let close_var cenv id =
+  try Tbl.find id cenv with Not_found -> Uvar id
+
+let approx_var fenv id =
+  try Tbl.find id fenv with Not_found -> Value_unknown 
+
 let rec close fenv cenv = function
     Lvar id ->
-      (begin try Tbl.find id cenv with Not_found -> Uvar id end,
-       begin try Tbl.find id fenv with Not_found -> Value_unknown end)
+      (close_var cenv id, approx_var fenv id)
   | Lconst cst ->
       (Uconst cst, Value_unknown)
   | Lfunction(param, body) as funct ->
-      close_function fenv cenv (Ident.new "fun") funct
+      close_one_function fenv cenv (Ident.new "fun") funct
   | Lapply(funct, args) ->
       let nargs = List.length args in
       begin match close fenv cenv funct with
@@ -76,45 +68,40 @@ let rec close fenv cenv = function
           (Ugeneric_apply(ufunct, close_list fenv cenv args), Value_unknown)
       end
   | Llet(id, lam, body) ->
-      let (ulam, alam) = close_named  fenv cenv id lam in
+      let (ulam, alam) = close_named fenv cenv id lam in
       let (ubody, abody) = close (Tbl.add id alam fenv) cenv body in
       (Ulet(id, ulam, ubody), abody)
-  | Lletrec([id, (Lfunction(_, _) as funct)], body) ->
-      let funapp = close_analyze_function_rec1 fenv cenv id funct in
-      let (ufunct, approx) =
-        close_build_function
-          (Tbl.add id (Value_closure(funapp.fa_desc, Value_unknown)) fenv)
-          funapp in
-      let (ubody, approx) = close (Tbl.add id approx fenv) cenv body in
-      (Ulet(id, ufunct, ubody), approx)
-  | Lletrec(decls, body) ->
-      let rec make_rec_fenv = function
-        [] -> (fenv, [])
-      | (id, lam) :: rem ->
-          let (new_fenv, precomp) = make_rec_fenv rem in
-          match lam with
-            Lfunction(param, body) ->
-              let funapp = close_analyze_function fenv cenv id lam in
-              (Tbl.add id (Value_closure(funapp.fa_desc, Value_unknown))
-                       new_fenv,
-               (id, Rec_function funapp) :: precomp)
-          | _ ->
-              (new_fenv, (id, Rec_other lam) :: precomp) in
-      let (rec_fenv, precomp) = make_rec_fenv decls in
-      let rec close_decls = function
-        [] -> (fenv, [])
-      | (id, pre) :: rem ->
-          let (new_fenv, urem) = close_decls rem in
-          match pre with
-            Rec_function funapp ->
-              let (ulam, approx) = close_build_function rec_fenv funapp in
-              (Tbl.add id approx new_fenv, (id, ulam) :: urem)
-          | Rec_other lam ->
-              let (ulam, approx) = close rec_fenv cenv lam in
-              (Tbl.add id approx new_fenv, (id, ulam) :: urem) in
-      let (body_fenv, udecls) = close_decls precomp in
-      let (ubody, approx) = close body_fenv cenv body in
-      (Uletrec(udecls, ubody), approx)
+  | Lletrec(defs, body) ->
+      if List.for_all
+           (function (id, Lfunction(_, _)) -> true | _ -> false)
+           defs
+      then begin
+        (* Simple case: only function definitions *)
+        let (clos, infos) = close_functions fenv cenv defs in
+        let clos_ident = Ident.new "clos" in
+        let fenv_body =
+          List.fold_right
+            (fun (id, pos, approx) fenv -> Tbl.add id approx fenv)
+            infos fenv in
+        let cenv_body =
+          List.fold_right
+            (fun (id, pos, approx) cenv ->
+              Tbl.add id (Uoffset(Uvar clos_ident, pos)) cenv)
+            infos cenv in
+        let (ubody, approx) = close fenv_body cenv_body body in
+        (Ulet(clos_ident, clos, ubody), approx)
+      end else begin
+        (* General case: recursive definition of values *)
+        let rec clos_defs = function
+          [] -> ([], fenv)
+        | (id, lam) :: rem ->
+            let (udefs, fenv_body) = clos_defs rem in
+            let (ulam, approx) = close fenv cenv lam in
+            ((id, ulam) :: udefs, Tbl.add id approx fenv_body) in
+        let (udefs, fenv_body) = clos_defs defs in
+        let (ubody, approx) = close fenv_body cenv body in
+        (Uletrec(udefs, ubody), approx)
+      end
   | Lprim(Pgetglobal id, []) ->
       (Uprim(Pgetglobal id, []), Compilenv.global_approx id)
   | Lprim(Psetglobal id, [lam]) ->
@@ -177,61 +164,71 @@ and close_list fenv cenv = function
 
 and close_named fenv cenv id = function
     Lfunction(param, body) as funct ->
-      close_function fenv cenv id funct
+      close_one_function fenv cenv id funct
   | lam ->
       close fenv cenv lam
 
-(* Build a function closure with the given name *)
+(* Build a shared closure for a set of mutually recursive functions *)
 
-and close_function fenv cenv id funct =
-  close_build_function fenv (close_analyze_function fenv cenv id funct)
-  
-(* Return preliminary information for a function closure *)
+and close_functions fenv cenv fun_defs =
+  (* Determine the free variables of the functions *)
+  let fv =
+    IdentSet.elements (free_variables (Lletrec(fun_defs, lambda_unit))) in
+  (* Uncurry the definitions and build their fundesc *)
+  let uncurried_defs =
+    List.map
+      (fun (id, def) ->
+        let label =
+          Compilenv.current_unit_name() ^ "_" ^ Ident.unique_name id in
+        let (params, body) = uncurry_fun def in
+        let fundesc =
+          {fun_label = Compilenv.current_unit_name() ^ "_" ^
+                       Ident.unique_name id;
+           fun_arity = List.length params;
+           fun_closed = IdentSet.is_empty(free_variables def)} in
+        (id, params, body, fundesc))
+      fun_defs in
+  (* Build an approximate fenv for compiling the functions *)
+  let fenv_rec =
+    List.fold_right
+      (fun (id, params, body, fundesc) fenv ->
+        Tbl.add id (Value_closure(fundesc, Value_unknown)) fenv)
+      uncurried_defs fenv in
+  (* Determine the offsets of each function's closure in the shared block *)
+  let env_pos = ref (-1) in
+  let clos_offsets =
+    List.map
+      (fun (id, params, body, fundesc) ->
+        let pos = !env_pos + 1 in
+        env_pos := !env_pos + 1 + (if fundesc.fun_arity > 1 then 3 else 2);
+        pos)
+      uncurried_defs in
+  let fv_pos = !env_pos in
+  (* Translate each function definition *)
+  let clos_fundef (id, params, body, fundesc) env_pos =
+    let env_param = Ident.new "env" in
+    let cenv_fv =
+      build_closure_env env_param (fv_pos - env_pos) fv in
+    let cenv_body =
+      List.fold_right2
+        (fun (id, params, arity, body) pos env ->
+          Tbl.add id (Uoffset(Uvar env_param, pos - env_pos)) env)
+        uncurried_defs clos_offsets cenv_fv in
+    let (ubody, approx) = close fenv_rec cenv_body body in
+    ((fundesc.fun_label, fundesc.fun_arity, params @ [env_param], ubody),
+     (id, env_pos, Value_closure(fundesc, approx))) in
+  (* Translate all function definitions. Return the Uclosure node and
+     the list of all identifiers defined, with offsets and approximations. *)
+  let (clos, infos) =
+    List.split (List.map2 clos_fundef uncurried_defs clos_offsets) in
+  (Uclosure(clos, List.map (close_var cenv) fv), infos)
 
-and close_analyze_function fenv cenv id funct =
-  let fv = IdentSet.elements(free_variables funct) in
-  let label = Compilenv.current_unit_name() ^ "_" ^ Ident.unique_name id in
-  let (params, body) = uncurry_fun funct in
-  let arity = List.length params in
-  let env_param = Ident.new "env" in
-  let cenv_body =
-    build_closure_env env_param (if arity > 1 then 3 else 2) fv in
-  {fa_desc = {fun_label = label; fun_arity = arity; fun_closed = (fv=[])};
-   fa_params = params @ [env_param];
-   fa_body = body;
-   fa_cenv = cenv_body;
-   fa_clos = close_list fenv cenv (List.map (fun id -> Lvar id) fv)}
+(* Same, for one function *)
 
-(* Same, but for a simply recursive function. In this case, the closure for
-   the function itself is in its environment parameter. *)
-
-and close_analyze_function_rec1 fenv cenv id funct =
-  let fv = IdentSet.elements(IdentSet.remove id (free_variables funct)) in
-  let label = Compilenv.current_unit_name() ^ "_" ^ Ident.unique_name id in
-  let (params, body) = uncurry_fun funct in
-  let arity = List.length params in
-  let env_param = Ident.new "env" in
-  let cenv_body =
-    Tbl.add id (Uvar env_param)
-      (build_closure_env env_param (if arity > 1 then 3 else 2) fv) in
-  (* Even if fv = [], env may be used inside to refer to the functional
-     value of the function. Not detected here. *)
-  {fa_desc = {fun_label = label; fun_arity = arity; fun_closed = false};
-   fa_params = params @ [env_param];
-   fa_body = body;
-   fa_cenv = cenv_body;
-   fa_clos = close_list fenv cenv (List.map (fun id -> Lvar id) fv)}
-
-(* Actually build the function closure based on infos returned by
-   [close_analyze_function] *)
-
-and close_build_function fenv funapp =
-  (* No need to add [params] to [fenv] since their approximations are
-     unknown anyway *)
-  let (ubody, approx) = close fenv funapp.fa_cenv funapp.fa_body in
-  (Uclosure(funapp.fa_desc.fun_label, funapp.fa_desc.fun_arity,
-            funapp.fa_params, ubody, funapp.fa_clos),
-   Value_closure(funapp.fa_desc, approx))
+and close_one_function fenv cenv id funct =
+  match close_functions fenv cenv [id, funct] with
+      (clos, (id, pos, approx) :: _) -> (clos, approx)
+    | _ -> fatal_error "Closure.close_one_function"
 
 (* Close a switch, preserving sharing between cases. *)
 

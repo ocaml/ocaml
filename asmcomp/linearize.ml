@@ -23,9 +23,9 @@ and instruction_desc =
   | Lbranch of label
   | Lcondbranch of test * label
   | Lswitch of label array
-  | Lpushtrap of label
+  | Lsetuptrap of label
+  | Lpushtrap
   | Lpoptrap
-  | Lentertrap
   | Lraise
 
 type fundecl =
@@ -162,12 +162,12 @@ let rec linear i n =
   | Iexit ->
       add_branch !exit_label (linear i.Mach.next n)
   | Itrywith(body, handler) ->
-      let (lbl_end, n1) = get_label(linear i.Mach.next n) in
-      let (lbl_handler, n2) =
-        get_label(cons_instr Lentertrap (linear handler n1)) in
-      cons_instr (Lpushtrap lbl_handler)
-        (linear body
-          (cons_instr Lpoptrap (add_branch lbl_end n2)))
+      let (lbl_join, n1) = get_label (linear i.Mach.next n) in
+      let (lbl_body, n2) =
+        get_label (cons_instr Lpushtrap
+                    (linear body (cons_instr Lpoptrap n1))) in
+      cons_instr (Lsetuptrap lbl_body)
+        (linear handler (add_branch lbl_join n2))
   | Iraise ->
       copy_instr Lraise i n
 

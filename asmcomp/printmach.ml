@@ -39,6 +39,15 @@ let regset s =
       reg r)
     s
 
+let regsetaddr s =
+  let first = ref true in
+  Reg.Set.iter
+    (fun r ->
+      if !first then first := false else print_space();
+      reg r;
+      match r.typ with Addr -> print_string "*" | _ -> ())
+    s
+
 let intcomp = function
     Isigned c -> print_string " "; Printcmm.comparison c; print_string "s "
   | Iunsigned c -> print_string " "; Printcmm.comparison c; print_string "u "
@@ -119,7 +128,7 @@ let rec instr i =
   if !print_live then begin
     open_hovbox 1;
     print_string "{";
-    regset i.live;
+    regsetaddr i.live;
     if Array.length i.arg > 0 then begin
       print_space(); print_string "+"; print_space(); regs i.arg
     end;
@@ -139,9 +148,9 @@ let rec instr i =
       instr ifso;
       begin match ifnot.desc with
         Iend -> ()
-      | _ -> print_break(0, -2); print_string "else"; print_cut(); instr ifnot
+      | _ -> print_break 0 (-2); print_string "else"; print_cut(); instr ifnot
       end;
-      print_break(0, -2); print_string "endif";
+      print_break 0 (-2); print_string "endif";
       close_box()
   | Iswitch(index, cases) ->
       print_string "switch "; reg i.arg.(0);
@@ -163,16 +172,16 @@ let rec instr i =
   | Iloop(body) ->
       open_vbox 2;
       print_string "loop"; print_cut();
-      instr body; print_break(0, -2); 
+      instr body; print_break 0 (-2); 
       print_string "endloop ";
       close_box()
   | Icatch(body, handler) ->
       open_vbox 2;
       print_string "catch"; print_cut();
       instr body;
-      print_break(0, -2);  print_string "with"; print_cut();
+      print_break 0 (-2);  print_string "with"; print_cut();
       instr handler;
-      print_break(0, -2); print_string "endcatch";
+      print_break 0 (-2); print_string "endcatch";
       close_box()
   | Iexit ->
       print_string "exit"
@@ -180,9 +189,9 @@ let rec instr i =
       open_vbox 2;
       print_string "try"; print_cut();
       instr body;
-      print_break(0, -2);  print_string "with"; print_cut();
+      print_break 0 (-2);  print_string "with"; print_cut();
       instr handler;
-      print_break(0, -2); print_string "endtry";
+      print_break 0 (-2); print_string "endtry";
       close_box()
   | Iraise ->
       print_string "raise "; reg i.arg.(0)

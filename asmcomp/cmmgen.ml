@@ -7,12 +7,25 @@ open Lambda
 open Clambda
 open Cmm
 
-(* Block headers *)
+(* Block headers. Meaning of the tag field:
+       0xFF: infix header
+       0xFE: finalized
+       0xFD: abstract
+       0xFC: string
+       0xFB: float
+       0xFA: closure
+       0 - 0xF9: regular blocks *)
 
-let block_header tag sz = (sz lsl 10) + tag
-let closure_header sz = block_header 251 sz
-let float_header = block_header 254 (size_float / size_addr)
-let string_header len = block_header 253 ((len + size_addr) / size_addr)
+let block_header tag sz = (sz lsl 11) + tag
+let closure_header sz = block_header 0xFA sz
+let infix_header ofs = block_header 0xFF ofs
+let float_header = block_header 0xFB (size_float / size_addr)
+let string_header len = block_header 0xFC ((len + size_addr) / size_addr)
+
+let modified = 1 lsl 10
+let alloc_block_header tag sz = Cconst_int((block_header tag sz) lor modified)
+let alloc_closure_header sz = Cconst_int((closure_header sz) lor modified)
+let alloc_infix_header ofs = Cconst_int(infix_header ofs)
 
 (* Integers *)
 
@@ -153,11 +166,19 @@ let array_indexing ptr ofs =
       Cop(Cadda, [ptr; add_const (lsl_const ofs (log2_size_addr - 1))
                                  ((-1) lsl (log2_size_addr - 1))])
 
-(* To compile "let rec" *)
+(* To compile "let rec" over values *)
+
+let fundecls_size fundecls =
+  let sz = ref (-1) in
+  List.iter
+    (fun (label, arity, params, body) ->
+      sz := !sz + 1 + (if arity = 1 then 2 else 3))
+    fundecls;
+  !sz
 
 let rec expr_size = function
-    Uclosure(lbl, arity, params, body, clos_vars) ->
-      (if arity = 1 then 2 else 3) + List.length clos_vars
+    Uclosure(fundecls, clos_vars) ->
+      fundecls_size fundecls + List.length clos_vars
   | Uprim(Pmakeblock tag, args) ->
       List.length args
   | Ulet(id, exp, body) ->
@@ -166,13 +187,9 @@ let rec expr_size = function
       fatal_error "Cmmgen.expr_size"
 
 let dummy_block size =
-  if size > 4 then
-    Cop(Cextcall("alloc_dummy", typ_addr), [Cconst_int size])
-  else begin
-    let rec init_val i =
-      if i >= size then [] else Cconst_int 0 :: init_val(i+1) in
-    Cop(Calloc, Cconst_int(block_header 0 size) :: init_val 0)
-  end
+  let rec init_val i =
+    if i >= size then [] else Cconst_int 0 :: init_val(i+1) in
+  Cop(Calloc, alloc_block_header 0 size :: init_val 0)
 
 let rec store_contents ptr = function
     Cop(Calloc, fields) ->
@@ -241,21 +258,32 @@ let rec transl = function
       Cvar id
   | Uconst sc ->
       transl_constant sc
-  | Uclosure(lbl, arity, params, body, clos_vars) ->
-      Queue.add (lbl, params, body) functions;
-      if arity = 1 then
-        Cop(Calloc,
-            Cconst_int(closure_header(2 + List.length clos_vars)) ::
-            Cconst_symbol lbl ::
+  | Uclosure(fundecls, clos_vars) ->
+      let block_size =
+        fundecls_size fundecls + List.length clos_vars in
+      let rec transl_fundecls pos = function
+        [] ->
+          List.map transl clos_vars
+      | (label, arity, params, body) :: rem ->
+          Queue.add (label, params, body) functions;
+          let header =
+            if pos = 0
+            then alloc_closure_header block_size
+            else alloc_infix_header pos in
+          if arity = 1 then
+            header ::
+            Cconst_symbol label ::
             int_const 1 ::
-            List.map transl clos_vars)
-      else
-        Cop(Calloc,
-            Cconst_int(closure_header(3 + List.length clos_vars)) ::
+            transl_fundecls (pos + 3) rem
+          else
+            header ::
             Cconst_symbol(curry_function arity) ::
             int_const arity ::
-            Cconst_symbol(lbl) ::
-            List.map transl clos_vars)
+            Cconst_symbol label ::
+            transl_fundecls (pos + 4) rem in
+      Cop(Calloc, transl_fundecls 0 fundecls)
+  | Uoffset(arg, offset) ->
+      field_address (transl arg) offset
   | Udirect_apply(lbl, args) ->
       Cop(Capply typ_addr, Cconst_symbol lbl :: List.map transl args)
   | Ugeneric_apply(clos, [arg]) ->
@@ -289,7 +317,7 @@ let rec transl = function
   | Uprim(Pmakeblock tag, []) ->
       transl_constant(Const_block(tag, []))
   | Uprim(Pmakeblock tag, args) ->
-      Cop(Calloc, Cconst_int(block_header tag (List.length args)) ::
+      Cop(Calloc, alloc_block_header tag (List.length args) ::
                   List.map transl args)
   | Uprim(Pfield n, [arg]) ->
       get_field (transl arg) n
@@ -369,7 +397,8 @@ let rec transl = function
                       [add_int (transl arg1) (untag_int(transl arg2));
                        transl arg3]))
   | Uprim(Pvectlength, [arg]) ->
-      tag_int(Cop(Clsr, [get_field (transl arg) (-1); Cconst_int 10]))
+      Cop(Cor, [Cop(Clsr, [get_field (transl arg) (-1); Cconst_int 10]);
+                Cconst_int 1])
   | Uprim(Pgetvectitem, [arg1; arg2]) ->
       Cop(Cload typ_addr, [array_indexing (transl arg1) (transl arg2)])
   | Uprim(Psetvectitem, [arg1; arg2; arg3]) ->
@@ -657,7 +686,7 @@ let rec intermediate_curry_functions arity num =
      {fun_name = name2;
       fun_args = [arg, typ_addr; clos, typ_addr];
       fun_body = Cop(Calloc,
-                     [Cconst_int(closure_header 4); 
+                     [alloc_closure_header 4; 
                       Cconst_symbol(name1 ^ "_" ^ string_of_int (num+1));
                       int_const 1; Cvar arg; Cvar clos]);
       fun_fast = true}

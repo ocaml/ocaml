@@ -1,6 +1,7 @@
 (* Pretty-printing of linearized machine code *)
 
 open Format
+open Mach
 open Printmach
 open Linearize
 
@@ -11,6 +12,16 @@ let instr i =
   match i.desc with
     Lend -> ()
   | Lop op ->
+      begin match op with
+        Ialloc _ | Icall_ind | Icall_imm _ | Iextcall _ ->
+          open_hovbox 1;
+          print_string "{";
+          regsetaddr i.live;
+          print_string "}";
+          close_box();
+          print_cut()
+      | _ -> ()
+      end;
       operation op i.arg i.res
   | Lreturn ->
       print_string "return "; regs i.arg
@@ -28,12 +39,12 @@ let instr i =
         print_string ": goto "; label lblv.(i)
       done;
       print_cut(); print_string "endswitch"
-  | Lpushtrap lbl ->
-      print_string "push trap "; label lbl
+  | Lsetuptrap lbl ->
+      print_string "setup trap "; label lbl
+  | Lpushtrap ->
+      print_string "push trap"
   | Lpoptrap ->
       print_string "pop trap"
-  | Lentertrap ->
-      print_string "enter trap"
   | Lraise ->
       print_string "raise "; reg i.arg.(0)
 

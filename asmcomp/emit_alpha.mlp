@@ -44,6 +44,36 @@ let emit_addressing addr r n =
   | Ibased(s, ofs) ->
       `{emit_symbol s} + {emit_int ofs}`
 
+(* Communicate live registers at call points to the assembler *)
+
+let int_reg_number = [|
+  0; 1; 2; 3; 4; 5; 6; 7; 8; 9; 10; 11; 12;
+  16; 17; 18; 19; 20; 21; 22; 23
+|]
+  
+let float_reg_number = [|
+  0; 1; 2; 3; 4; 5; 6; 7; 8; 9; 10; 11; 12; 13; 14; 15;
+  16; 17; 18; 19; 20; 21; 22; 23; 24; 25; 26; 27; 28; 29
+|]
+
+let liveregs instr extra_msk =
+  (* $13, $14, $15, $26 always live *)
+  let int_mask = ref(0x00070020 lor extra_msk)
+  and float_mask = ref 0 in
+  let add_register = function
+      {loc = Reg r; typ = (Int | Addr)} ->
+        int_mask := !int_mask lor (1 lsl (31 - int_reg_number.(r)))
+    | {loc = Reg r; typ = Float} ->
+        float_mask := !float_mask lor (1 lsl (31 - float_reg_number.(r - 100)))
+    | _ -> () in
+  Reg.Set.iter add_register instr.live;
+  Array.iter add_register instr.arg;
+  emit_printf "	.livereg 0x%08x, 0x%08x\n" !int_mask !float_mask
+
+let live_24 = 1 lsl (31 - 24)
+let live_25 = 1 lsl (31 - 25)
+let live_27 = 1 lsl (31 - 27)
+
 (* Record live pointers at call points *)
 
 type frame_descr =
@@ -59,7 +89,7 @@ let record_frame_label live =
   Reg.Set.iter
     (function
         {typ = Addr; loc = Reg r} ->
-          live_offset := (-1 - r) :: !live_offset
+          live_offset := (-1 - int_reg_number.(r)) :: !live_offset
       | {typ = Addr; loc = Stack s} as reg ->
           live_offset := slot_offset s (register_class reg) :: !live_offset
       | _ -> ())
@@ -83,47 +113,13 @@ let emit_frame fd =
     fd.fd_live_offset;
   `	.align	3\n`
 
-(* Communicate live registers at call points to the assembler *)
-
-let int_reg_number = [|
-  (* 0-8 *)    0; 1; 2; 3; 4; 5; 6; 7; 8;
-  (* 9-12 *)   9; 10; 11; 12;
-  (* 13-18 *)  16; 17; 18; 19; 20; 21;
-  (* 19-21 *)  22; 23; 31
-|]
-  
-let float_reg_number = [|
-  (* 100-107 *) 0; 1; 10; 11; 12; 13; 14; 15;
-  (* 108-115 *) 2; 3; 4; 5; 6; 7; 8; 9;
-  (* 116-121 *) 16; 17; 18; 19; 20; 21;
-  (* 122-127 *) 22; 23; 24; 25; 26; 27;
-  (* 128-129 *) 28; 29
-|]
-
-let liveregs instr extra_msk =
-  (* $13, $14, $15, $26 always live *)
-  let int_mask = ref(0x00070020 lor extra_msk)
-  and float_mask = ref 0 in
-  let add_register = function
-      {loc = Reg r; typ = (Int | Addr)} ->
-        int_mask := !int_mask lor (1 lsl (31 - int_reg_number.(r)))
-    | {loc = Reg r; typ = Float} ->
-        float_mask := !float_mask lor (1 lsl (31 - float_reg_number.(r - 100)))
-    | _ -> () in
-  Reg.Set.iter add_register instr.live;
-  Array.iter add_register instr.arg;
-  emit_printf "	.livereg 0x%08x, 0x%08x\n" !int_mask !float_mask
-
-let live_24 = 1 lsl (31 - 24)
-let live_25 = 1 lsl (31 - 25)
-let live_27 = 1 lsl (31 - 27)
-
 (* Record calls to the GC -- we've moved them out of the way *)
 
 type gc_call =
   { gc_lbl: label;                      (* Entry label *)
     gc_return_lbl: label;               (* Where to branch after GC *)
     gc_desired_size: int;               (* Required block size *)
+    gc_frame: label;                    (* Label of frame descriptor *)
     gc_instr: instruction }             (* Record live registers *)
 
 let call_gc_sites = ref ([] : gc_call list)
@@ -131,7 +127,7 @@ let call_gc_sites = ref ([] : gc_call list)
 let emit_call_gc gc =
   `{emit_label gc.gc_lbl}:	ldiq	$25, {emit_int gc.gc_desired_size}\n`;
   liveregs gc.gc_instr 0;
-  `	bsr	caml_call_gc\n`;
+  `{emit_label gc.gc_frame}:	bsr	caml_call_gc\n`;
   `	br	{emit_label gc.gc_return_lbl}\n`
 
 (* Record calls to caml_fast_modify -- we've moved then out of the way *)
@@ -294,11 +290,11 @@ let emit_instr i =
           try
             let entry_point = Hashtbl.find nogp_entry_points s in
             liveregs i 0;
-            `	br	{emit_label entry_point}\n`
+            `	br	{emit_label entry_point} # {emit_symbol s}\n`
           with Not_found ->
             `	lda	$27, {emit_symbol s}\n`;
             liveregs i live_27;
-            `	jmp	{emit_symbol s}\n`
+            `	br      {emit_symbol s}\n`
         end
     | Lop(Iextcall s) ->
         `	lda	$25, {emit_symbol s}\n`;
@@ -330,12 +326,14 @@ let emit_instr i =
           let lbl_cont = new_label() in
           `	subq	$13, {emit_int n}, $13\n`;
           `	cmpult	$13, $14, $25\n`;
-          let lbl_call_gc = record_frame_label i.live in
+          let lbl_call_gc = new_label() in
+          let lbl_frame = record_frame_label i.live in
           `	bne	$25, {emit_label lbl_call_gc}\n`;
           call_gc_sites :=
             { gc_lbl = lbl_call_gc;
               gc_return_lbl = lbl_cont;
               gc_desired_size = n;
+              gc_frame = lbl_frame;
               gc_instr = i } :: !call_gc_sites;
           `{emit_label lbl_cont}:	addq	$13, 8, {emit_reg i.res.(0)}\n`
         end else begin
@@ -484,10 +482,17 @@ let emit_instr i =
             done;
             `	.text\n`
         end
-    | Lpushtrap lbl ->
+    | Lsetuptrap lbl ->
+        `	br	$25, {emit_label lbl}\n`;
+        (* This global label helps pixie understand what's going up *)
+        let handler_label =
+          Compilenv.current_unit_name() ^ "_exception_" ^ string_of_int lbl in
+        `	.globl	{emit_symbol handler_label}\n`;
+        `{emit_symbol handler_label}:\n`;
+        `	ldgp	$gp, 0($27)\n`
+    | Lpushtrap ->
         stack_offset := !stack_offset + 16;
         `	lda	$sp, -16($sp)\n`;
-        `	lda	$25, {emit_label lbl}\n`;
         `	stq	$15, 0($sp)\n`;
         `	stq	$25, 8($sp)\n`;
         `	mov	$sp, $15\n`
@@ -495,15 +500,14 @@ let emit_instr i =
         `	ldq	$15, 0($sp)\n`;
         `	lda	$sp, 16($sp)\n`;
         stack_offset := !stack_offset - 16
-    | Lentertrap ->
-        `	ldgp	$gp, 0($27)\n`
     | Lraise ->
         `	mov	$15, $sp\n`;
         `	ldq	$15, 0($sp)\n`;
         `	ldq	$27, 8($sp)\n`;
         `	lda	$sp, 16($sp)\n`;
         liveregs i 0;
-        `	jmp	($27)\n`
+        `	jmp	$26, ($27)\n`
+        (* Keep address of raise in $26 for debugging purposes *)
 
 let rec emit_all i =
   match i.desc with Lend -> () | _ -> emit_instr i; emit_all i.next
@@ -584,13 +588,28 @@ let data l =
 
 (* Beginning / end of an assembly file *)
 
-let begin_assembly() = ()
+let begin_assembly() =
+  (* There are really two groups of registers:
+      $sp and $15 always point to stack locations
+      $0 - $14, $16-$23 never point to stack locations. *)
+  `	.noalias $0,$sp;  .noalias $0,$15;  .noalias $1,$sp;  .noalias $1,$15\n`;
+  `	.noalias $2,$sp;  .noalias $2,$15;  .noalias $3,$sp;  .noalias $3,$15\n`;
+  `	.noalias $4,$sp;  .noalias $4,$15;  .noalias $5,$sp;  .noalias $5,$15\n`;
+  `	.noalias $6,$sp;  .noalias $6,$15;  .noalias $7,$sp;  .noalias $7,$15\n`;
+  `	.noalias $8,$sp;  .noalias $8,$15;  .noalias $9,$sp;  .noalias $9,$15\n`;
+  `	.noalias $10,$sp; .noalias $10,$15; .noalias $11,$sp; .noalias $11,$15\n`;
+  `	.noalias $12,$sp; .noalias $12,$15; .noalias $13,$sp; .noalias $13,$15\n`;
+  `	.noalias $14,$sp; .noalias $14,$15; .noalias $16,$sp; .noalias $16,$15\n`;
+  `	.noalias $17,$sp; .noalias $17,$15; .noalias $18,$sp; .noalias $18,$15\n`;
+  `	.noalias $19,$sp; .noalias $19,$15; .noalias $20,$sp; .noalias $20,$15\n`;
+  `	.noalias $21,$sp; .noalias $21,$15; .noalias $22,$sp; .noalias $22,$15\n`;
+  `	.noalias $23,$sp; .noalias $23,$15\n\n`
 
 let end_assembly () =
   let lbl = Compilenv.current_unit_name() ^ "_frametable" in
   `	.rdata\n`;
   `	.globl	{emit_symbol lbl}\n`;
   `{emit_symbol lbl}:\n`;
+  `	.quad	{emit_int (List.length !frame_descriptors)}\n`;
   List.iter emit_frame !frame_descriptors;
-  frame_descriptors := [];
-  `	.quad	0\n`
+  frame_descriptors := []

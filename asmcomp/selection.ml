@@ -524,26 +524,37 @@ let rec emit_tail env exp seq =
       let (new_op, new_args) = sel_operation op simple_args in
       begin match new_op with
         Icall_ind ->
-          Proc.contains_calls := true;
           let r1 = emit_tuple env new_args seq in
           let rarg = Array.sub r1 1 (Array.length r1 - 1) in
           let (loc_arg, stack_ofs) = Proc.loc_arguments rarg in
-          if stack_ofs <> 0 then
-            emit_return env exp seq
-          else begin
+          if stack_ofs = 0 then begin
             insert_moves rarg loc_arg seq;
             insert (Iop Itailcall_ind)
                    (Array.append [|r1.(0)|] loc_arg) [||] seq
+          end else begin
+            Proc.contains_calls := true;
+            let rd = Reg.newv ty in
+            let loc_res = Proc.loc_results rd in
+            insert_move_args rarg loc_arg stack_ofs seq;
+            insert (Iop Icall_ind)
+                   (Array.append [|r1.(0)|] loc_arg) loc_res seq;
+            insert(Iop(Istackoffset(-stack_ofs))) [||] [||] seq;
+            insert Ireturn loc_res [||] seq
           end
       | Icall_imm lbl ->
-          Proc.contains_calls := true;
           let r1 = emit_tuple env new_args seq in
           let (loc_arg, stack_ofs) = Proc.loc_arguments r1 in
-          if stack_ofs <> 0 then
-            emit_return env exp seq
-          else begin
+          if stack_ofs = 0 then begin
             insert_moves r1 loc_arg seq;
             insert (Iop(Itailcall_imm lbl)) loc_arg [||] seq
+          end else begin
+            Proc.contains_calls := true;
+            let rd = Reg.newv ty in
+            let loc_res = Proc.loc_results rd in
+            insert_move_args r1 loc_arg stack_ofs seq;
+            insert (Iop(Icall_imm lbl)) loc_arg loc_res seq;
+            insert(Iop(Istackoffset(-stack_ofs))) [||] [||] seq;
+            insert Ireturn loc_res [||] seq
           end
       | _ -> fatal_error "Selection.emit_tail"
       end

@@ -11,7 +11,9 @@ type ulambda =
   | Uconst of structured_constant
   | Udirect_apply of function_label * ulambda list
   | Ugeneric_apply of ulambda * ulambda list
-  | Uclosure of function_label * int * Ident.t list * ulambda * ulambda list
+  | Uclosure of (function_label * int * Ident.t list * ulambda) list
+              * ulambda list
+  | Uoffset of ulambda * int
   | Ulet of Ident.t * ulambda * ulambda
   | Uletrec of (Ident.t * ulambda) list * ulambda
   | Uprim of primitive * ulambda list

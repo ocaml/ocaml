@@ -73,17 +73,19 @@ let rec live i finally =
       (* i.live remains empty since no regs are live across *)
       Reg.add_set_array !live_at_raise i.arg
   | _ ->
-      let across = Reg.diff_set_array (live i.next finally) i.res in
+      let across_after = Reg.diff_set_array (live i.next finally) i.res in
+      let across =
+        match i.desc with
+          Iop(Icall_ind) | Iop(Icall_imm _) | Iop(Iextcall _)->
+            (* The function call may raise an exception, branching to the
+               nearest enclosing try ... with. Hence, everything that must
+               be live at the beginning of the exception handler must also
+               be live across the call. *)
+             Reg.Set.union across_after !live_at_raise
+         | _ ->
+             across_after in
       i.live <- across;
-      match i.desc with
-        Iop(Icall_ind) | Iop(Icall_imm _) | Iop(Iextcall _)->
-          (* The function call may raise an exception, branching to the
-             nearest enclosing try ... with. Hence, everything that must
-             be live at the beginning of the exception handler must also
-             be live just before the call. *)
-           Reg.add_set_array (Reg.Set.union across !live_at_raise) i.arg
-       | _ ->
-           Reg.add_set_array across i.arg
+      Reg.add_set_array across i.arg
 
 let fundecl f =
   live f.fun_body Reg.Set.empty; ()

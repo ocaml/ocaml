@@ -18,9 +18,9 @@ and instruction_desc =
   | Lbranch of label
   | Lcondbranch of Mach.test * label
   | Lswitch of label array
-  | Lpushtrap of label
+  | Lsetuptrap of label
+  | Lpushtrap
   | Lpoptrap
-  | Lentertrap
   | Lraise
 
 type fundecl =

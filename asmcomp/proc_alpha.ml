@@ -54,38 +54,33 @@ let is_immediate (n:int) = true
 
 (* Register map:
     $0 - $7     0 - 7       function results
-    $8          8           general purpose
-    $9 - $12    9 - 12      function arguments ($9 - $15 are preserved by C)
+    $8 - $12    8 - 12      general purpose ($9 - $15 are preserved by C)
     $13                     allocation pointer
     $14                     allocation limit
     $15                     trap pointer
-    $16 - $21   13 - 18     more function arguments, C function arguments
-    $22 - $23   19 - 20     more function arguments
+    $16 - $23   13 - 20     function arguments
     $24, $25                temporaries
     $26-$30                 stack ptr, global ptr, etc
     $31         21          always zero
 
-    $f0 - $f1   100 - 101   function results
-    $f10 - $f15 102 - 107   more function results
-    $f2 - $f9   108 - 115   function arguments ($f2 - $f9 preserved by C)
-    $f16 - $f21 116 - 121   C function arguments
-    $f22 - $f29 122 - 129   general purpose
+    $f0 - $f7   100 - 107   function results
+    $f8 - $f15  108 - 115   general purpose ($f2 - $f9 preserved by C)
+    $f16 - $f23 116 - 123   function arguments
+    $f24 - $f29 124 - 129   general purpose
     $f30                    temporary
     $f31                    always zero *)
 
 let int_reg_name = [|
-  (* 0-8 *)    "$0"; "$1"; "$2"; "$3"; "$4"; "$5"; "$6"; "$7"; "$8";
-  (* 9-12 *)   "$9"; "$10"; "$11"; "$12";
-  (* 13-18 *)  "$16"; "$17"; "$18"; "$19"; "$20"; "$21";
-  (* 19-21 *)  "$22"; "$23"; "$31"
+  (* 0-7 *)    "$0"; "$1"; "$2"; "$3"; "$4"; "$5"; "$6"; "$7";
+  (* 8-12 *)   "$8"; "$9"; "$10"; "$11"; "$12";
+  (* 13-20 *)  "$16"; "$17"; "$18"; "$19"; "$20"; "$21"; "$22"; "$23"
 |]
   
 let float_reg_name = [|
-  (* 100-107 *)"$f0"; "$f1"; "$f10"; "$f11"; "$f12"; "$f13"; "$f14"; "$f15";
-  (* 108-115 *)"$f2"; "$f3"; "$f4"; "$f5"; "$f6"; "$f7"; "$f8"; "$f9";
-  (* 116-121 *)"$f16"; "$f17"; "$f18"; "$f19"; "$f20"; "$f21";
-  (* 122-127 *)"$f22"; "$f23"; "$f24"; "$f25"; "$f26"; "$f27";
-  (* 128-129 *)"$f28"; "$f29"
+  (* 100-107 *) "$f0"; "$f1"; "$f2"; "$f3"; "$f4"; "$f5"; "$f6"; "$f7";
+  (* 108-115 *) "$f8"; "$f9"; "$f10"; "$f11"; "$f12"; "$f13"; "$f14"; "$f15";
+  (* 116-123 *) "$f16"; "$f17"; "$f18"; "$f19"; "$f20"; "$f21"; "$f22"; "$f23";
+  (* 124-129 *) "$f24"; "$f25"; "$f26"; "$f27"; "$f28"; "$f29"
 |]
 
 let num_register_classes = 2
@@ -158,9 +153,9 @@ let outgoing ofs = Outgoing ofs
 let not_supported ofs = fatal_error "Proc.loc_results: cannot call"
 
 let loc_arguments arg =
-  calling_conventions 9 20 108 115 outgoing arg
+  calling_conventions 13 18 116 123 outgoing arg
 let loc_parameters arg =
-  let (loc, ofs) = calling_conventions 9 20 108 115 incoming arg in loc
+  let (loc, ofs) = calling_conventions 13 18 116 123 incoming arg in loc
 let loc_results res =
   let (loc, ofs) = calling_conventions 0 7 100 107 not_supported res in loc
 
@@ -240,4 +235,4 @@ let slot_offset loc class =
 (* Calling the assembler *)
 
 let assemble_file infile outfile =
-  Sys.command ("as -O2 -o " ^ outfile ^ " " ^ infile)
+  Sys.command ("as -nocpp -O2 -o " ^ outfile ^ " " ^ infile)

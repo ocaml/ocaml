@@ -64,7 +64,9 @@ let compile_implementation prefixname lam =
     Emit.end_assembly();
     close_out oc
   with x ->
-    close_out oc; (*remove_file asmfile;*) raise x
+    close_out oc;
+    if !assembler_only then () else remove_file asmfile;
+    raise x
   end;
   if !assembler_only then () else begin
     if Proc.assemble_file asmfile (prefixname ^ ".o") <> 0

@@ -3,6 +3,7 @@
 val reg: Reg.t -> unit
 val regs: Reg.t array -> unit
 val regset: Reg.Set.t -> unit
+val regsetaddr: Reg.Set.t -> unit
 val operation: Mach.operation -> Reg.t array -> Reg.t array -> unit
 val test: Mach.test -> Reg.t array -> unit
 val instr: Mach.instruction -> unit

@@ -170,7 +170,7 @@ let rec expression = function
       open_hovbox 2;
       print_string "(catch";
       print_space(); sequence e1;
-      print_break(1, -2); print_string "with";
+      print_break 1 (-2); print_string "with";
       print_space(); sequence e2;
       print_string ")"; close_box()
   | Cexit ->
@@ -179,7 +179,7 @@ let rec expression = function
       open_hovbox 2;
       print_string "(try";
       print_space(); sequence e1;
-      print_break(1, -2); print_string "with "; Ident.print id;
+      print_break 1 (-2); print_string "with "; Ident.print id;
       print_space(); sequence e2;
       print_string ")"; close_box()
 
@@ -191,7 +191,7 @@ and sequence = function
 
 let fundecl f =
   open_hovbox 1;
-  print_string "(function "; print_string f.fun_name; print_break(1,4);
+  print_string "(function "; print_string f.fun_name; print_break 1 4;
   open_hovbox 1;
   print_string "(";
   let first = ref true in

@@ -506,6 +506,6 @@ let end_assembly() =
   `	.data\n`;
   `	.globl	{emit_symbol lbl}\n`;
   `{emit_symbol lbl}:\n`;
+  `	.long	{emit_int (List.length !frame_descriptors)}\n`;
   List.iter emit_frame !frame_descriptors;
-  frame_descriptors := [];
-  `	.long	0\n`
+  frame_descriptors := []
