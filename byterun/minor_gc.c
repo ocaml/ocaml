@@ -74,7 +74,7 @@ static value oldify_todo_list = 0;
 
 void oldify_one (value v, value *p)
 {
-  value result, field0;
+  value result;
   header_t hd;
   mlsize_t sz, i;
   tag_t tag;
@@ -88,6 +88,8 @@ void oldify_one (value v, value *p)
     }else{
       tag = Tag_hd (hd);
       if (tag < Infix_tag){
+        value field0;
+
         sz = Wosize_hd (hd);
         result = alloc_shr (sz, tag);
         *p = result;
@@ -116,9 +118,28 @@ void oldify_one (value v, value *p)
         oldify_one (v - offset, p);   /* This cannot recurse deeper than 1. */
         *p += offset;
       }else{
+        value f = Forward_val (v);
+        tag_t ft = 0;
+
         Assert (tag == Forward_tag);
-        v = Forward_val (v);          /* Follow the forwarding */
-        goto tail_call;               /*  then oldify. */
+        if (Is_block (f) && (Is_young (f) || Is_in_heap (f))){
+          ft = Tag_val (Hd_val (f) == 0 ? Field (f, 0) : f);
+        }
+        if (ft == Forward_tag || ft == Lazy_tag){
+          /* Keep the forward block; copy it as a normal block
+             (no short-circuit). */
+          Assert (Wosize_hd (hd) == 1);
+          result = alloc_shr (1, Forward_tag);
+          *p = result;
+          Hd_val (v) = 0;             /* Set (GC) forward flag */
+          Field (v, 0) = result;      /*  and forward pointer. */
+          p = &Field (result, 0);
+          v = f;
+          goto tail_call;
+        }else{
+          v = f;                        /* Follow the forwarding */
+          goto tail_call;               /*  then oldify. */
+        }
       }
     }
   }else{

@@ -132,3 +132,23 @@ CAMLprim value obj_truncate (value v, value newsize)
   Hd_val (v) = Make_header (new_wosize, tag, color);
   return Val_unit;
 }
+
+
+/* [lazy_is_forward] and [lazy_follow_forward] are used in stdlib/lazy.ml.
+   They are not written in O'Caml because they must be atomic with respect
+   to the GC.
+ */
+
+CAMLprim value lazy_is_forward (value v)
+{
+  return Val_bool (Is_block (v) && Tag_val (v) == Forward_tag);
+}
+
+CAMLprim value lazy_follow_forward (value v)
+{
+  if (Is_block (v) && Tag_val (v) == Forward_tag){
+    return Forward_val (v);
+  }else{
+    return v;
+  }
+}

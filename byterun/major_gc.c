@@ -122,14 +122,20 @@ static void mark_slice (long work)
       hd = Hd_val(v);
       Assert (Is_gray_hd (hd));
       Hd_val (v) = Blackhd_hd (hd);
-      size = Wosize_hd(hd);
+      size = Wosize_hd (hd);
       if (Tag_hd (hd) < No_scan_tag){
         for (i = 0; i < size; i++){
           child = Field (v, i);
           if (Is_block (child) && Is_in_heap (child)) {
-            hd = Hd_val(child);
+            hd = Hd_val (child);
             if (Tag_hd (hd) == Forward_tag){
-              Field (v, i) = Forward_val (child);
+              value f = Forward_val (child);
+              if (Is_block (f) && (Is_young (f) || Is_in_heap (f))
+                  && (Tag_val (f) == Forward_tag || Tag_val (f) == Lazy_tag)){
+                /* Do not short-circuit the pointer. */
+              }else{
+                Field (v, i) = f;
+              }
             }
             else if (Tag_hd(hd) == Infix_tag) {
               child -= Infix_offset_val(child);
@@ -192,10 +198,14 @@ static void mark_slice (long work)
            weak_again:
             if (curfield != 0 && Is_block (curfield) && Is_in_heap (curfield)){
               if (Tag_val (curfield) == Forward_tag){
-                value v = Forward_val (curfield);
-                if (Is_block (v) && Is_in_heap (v)){
-                  Field (cur, i) = curfield = v;
-                  goto weak_again;
+                value f = Forward_val (curfield);
+                if (Is_block (f) && (Is_young (f) || Is_in_heap (f))){
+                  if (Tag_val (f) == Forward_tag || Tag_val (f) == Lazy_tag){
+                    /* Do not short-circuit the pointer. */
+                  }else{
+                    Field (cur, i) = curfield = f;
+                    goto weak_again;
+                  }
                 }
               }
               if (Is_white_val (curfield)){

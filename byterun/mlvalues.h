@@ -188,8 +188,8 @@ typedef opcode_t * code_t;
 #define Closure_tag 247
 #define Code_val(val) (((code_t *) (val)) [0])     /* Also an l-value. */
 
-/* This tag is not special for the runtime, but it must not be used
-   for any constructor.  See stdlib/lazy.ml. */
+/* This tag is used (with Forward_tag) to implement lazy values.
+   See major_gc.c and stdlib/lazy.ml. */
 #define Lazy_tag 246
 
 /* Another special case: variants */

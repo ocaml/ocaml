@@ -45,10 +45,13 @@ exception Undefined;;
 
 let raise_undefined = Obj.repr (fun () -> raise Undefined);;
 
+external is_forward : Obj.t -> bool = "lazy_is_forward";;
+external follow_forward : Obj.t -> 'a = "lazy_follow_forward";;
+
 let force (l : 'arg t) =
   let x = Obj.repr l in
-  if Obj.is_int x then (Obj.obj x : 'arg)
-  else if Obj.tag x = Obj.forward_tag then (Obj.obj (Obj.field x 0) : 'arg)
+  if is_forward x then (follow_forward x : 'arg)
+  else if Obj.is_int x then (Obj.obj x : 'arg)
   else if Obj.tag x <> Obj.lazy_tag then (Obj.obj x : 'arg)
   else begin
     let closure = (Obj.obj (Obj.field x 0) : unit -> 'arg) in
@@ -66,8 +69,8 @@ let force (l : 'arg t) =
 
 let force_val (l : 'arg t) =
   let x = Obj.repr l in
-  if Obj.is_int x then (Obj.obj x : 'arg)
-  else if Obj.tag x = Obj.forward_tag then (Obj.obj (Obj.field x 0) : 'arg)
+  if is_forward x then (follow_forward x : 'arg)
+  else if Obj.is_int x then (Obj.obj x : 'arg)
   else if Obj.tag x <> Obj.lazy_tag then (Obj.obj x : 'arg)
   else begin
     let closure = (Obj.obj (Obj.field x 0) : unit -> 'arg) in
@@ -89,5 +92,5 @@ let lazy_from_val (v : 'arg) = (Obj.magic v : 'arg t);;
 
 let lazy_is_val (l : 'arg t) =
   let x = Obj.repr l in
-  Obj.is_int x || Obj.tag x <> Obj.lazy_tag
+  is_forward x || Obj.is_int x || Obj.tag x <> Obj.lazy_tag
 ;;
