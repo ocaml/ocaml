@@ -154,7 +154,6 @@ EXTEND
       | "#"; n = lident; dp = dir_param -> Node "StDir" [Loc; n; dp]
       | e = expr -> Node "StExp" [Loc; e] ] ]
   ;
-
   rebind_exn:
     [ [ "="; sl = mod_ident -> sl
       | -> List [] ] ]
@@ -168,8 +167,7 @@ EXTEND
       | "="; me = module_expr -> me ] ]
   ;
   module_type:
-    [ [ "functor"; "("; i = a_UIDENT; ":"; t = SELF; ")"; "->";
-        mt = SELF ->
+    [ [ "functor"; "("; i = a_UIDENT; ":"; t = SELF; ")"; "->"; mt = SELF ->
           Node "MtFun" [Loc; i; t; mt] ]
     | [ mt = SELF; "with"; wcl = SLIST1 with_constr SEP "and" ->
           Node "MtWit" [Loc; mt; wcl] ]
@@ -177,32 +175,35 @@ EXTEND
           Node "MtSig" [Loc; sg] ]
     | [ m1 = SELF; m2 = SELF -> Node "MtApp" [Loc; m1; m2] ]
     | [ m1 = SELF; "."; m2 = SELF -> Node "MtAcc" [Loc; m1; m2] ]
-    | [ i = UIDENT -> Node "MtUid" [Loc; Str i]
-      | i = LIDENT -> Node "MtLid" [Loc; Str i]
-      | a = anti_uid -> Node "MtUid" [Loc; a]
-      | a = anti_lid -> Node "MtLid" [Loc; a]
-      | a = anti_ -> a
+    | [ a = a_module_type -> a
+      | i = a_UIDENT -> Node "MtUid" [Loc; i]
+      | i = a_LIDENT -> Node "MtLid" [Loc; i]
       | "("; mt = SELF; ")" -> mt ] ]
   ;
   sig_item:
-    [ [ "declare"; st = SLIST0 [ s = sig_item; ";" -> s ]; "end" ->
+    [ "top"
+      [ a = a_sig_item -> a
+      | "declare"; st = SLIST0 [ s = sig_item; ";" -> s ]; "end" ->
           Node "SgDcl" [Loc; st]
       | "exception"; ctl = constructor_declaration ->
-          match ctl with
-          [ Tuple [Loc; c; tl] -> Node "SgExc" [Loc; c; tl]
-          | _ -> match () with [] ]
-      | "external"; i = lident; ":"; t = ctyp; "="; p = SLIST1 string ->
-          Node "SgExt" [Loc; i; t; p]
+          let (_, c, tl) =
+            match ctl with
+            [ Tuple [xx1; xx2; xx3] -> (xx1, xx2, xx3)
+            | _ -> match () with [] ]
+          in
+          Node "SgExc" [Loc; c; tl]
+      | "external"; i = a_LIDENT; ":"; t = ctyp; "="; pd = SLIST1 a_STRING ->
+          Node "SgExt" [Loc; i; t; pd]
       | "include"; mt = module_type -> Node "SgInc" [Loc; mt]
       | "module"; i = a_UIDENT; mt = module_declaration ->
           Node "SgMod" [Loc; i; mt]
       | "module"; "type"; i = a_UIDENT; "="; mt = module_type ->
           Node "SgMty" [Loc; i; mt]
-      | "open"; m = mod_ident -> Node "SgOpn" [Loc; m]
-      | "type"; l = SLIST1 type_declaration SEP "and" -> Node "SgTyp" [Loc; l]
-      | "value"; i = lident; ":"; t = ctyp -> Node "SgVal" [Loc; i; t]
-      | "#"; n = lident; dp = dir_param -> Node "SgDir" [Loc; n; dp]
-      | a = anti_ -> a ] ]
+      | "open"; i = mod_ident -> Node "SgOpn" [Loc; i]
+      | "type"; tdl = SLIST1 type_declaration SEP "and" ->
+          Node "SgTyp" [Loc; tdl]
+      | "value"; i = a_LIDENT; ":"; t = ctyp -> Node "SgVal" [Loc; i; t]
+      | "#"; n = lident; dp = dir_param -> Node "SgDir" [Loc; n; dp] ] ]
   ;
   module_declaration:
     [ RIGHTA
@@ -211,8 +212,8 @@ EXTEND
           Node "MtFun" [Loc; i; t; mt] ] ]
   ;
   with_constr:
-    [ [ "type"; i = mod_ident; tp = SLIST0 type_parameter; "="; t = ctyp ->
-          Node "WcTyp" [Loc; i; tp; t]
+    [ [ "type"; i = mod_ident; tpl = SLIST0 type_parameter; "="; t = ctyp ->
+          Node "WcTyp" [Loc; i; tpl; t]
       | "module"; i = mod_ident; "="; mt = module_type ->
           Node "WcMod" [Loc; i; mt] ] ]
   ;
@@ -223,53 +224,80 @@ EXTEND
   ;
   expr:
     [ "top" RIGHTA
-      [ "let"; r = rec_flag; l = SLIST1 let_binding SEP "and"; "in";
+      [ "let"; r = SOPT "rec"; l = SLIST1 let_binding SEP "and"; "in";
         x = SELF ->
-          Node "ExLet" [Loc; r; l; x]
-      | "let"; "module"; m = a_UIDENT; mb = module_binding; "in";
-        x = SELF ->
-          Node "ExLmd" [Loc; m; mb; x]
+          Node "ExLet" [Loc; o2b r; l; x]
+      | "let"; "module"; m = a_UIDENT; mb = module_binding; "in"; e = SELF ->
+          Node "ExLmd" [Loc; m; mb; e]
       | "fun"; "["; l = SLIST0 match_case SEP "|"; "]" ->
           Node "ExFun" [Loc; l]
       | "fun"; p = ipatt; e = fun_def ->
           Node "ExFun" [Loc; List [Tuple [p; Option None; e]]]
       | "match"; e = SELF; "with"; "["; l = SLIST0 match_case SEP "|"; "]" ->
           Node "ExMat" [Loc; e; l]
-      | "match"; x = SELF; "with"; p = ipatt; "->"; e = SELF ->
-          Node "ExMat" [Loc; x; List [Tuple [p; Option None; e]]]
+      | "match"; e = SELF; "with"; p1 = ipatt; "->"; e1 = SELF ->
+          Node "ExMat" [Loc; e; List [Tuple [p1; Option None; e1]]]
       | "try"; e = SELF; "with"; "["; l = SLIST0 match_case SEP "|"; "]" ->
           Node "ExTry" [Loc; e; l]
-      | "try"; x = SELF; "with"; p = ipatt; "->"; e = SELF ->
-          Node "ExTry" [Loc; x; List [Tuple [p; Option None; e]]]
+      | "try"; e = SELF; "with"; p1 = ipatt; "->"; e1 = SELF ->
+          Node "ExTry" [Loc; e; List [Tuple [p1; Option None; e1]]]
       | "if"; e1 = SELF; "then"; e2 = SELF; "else"; e3 = SELF ->
           Node "ExIfe" [Loc; e1; e2; e3]
-      | "do"; "{"; seq = SLIST0 expr SEP ";"; "}" -> Node "ExSeq" [Loc; seq]
-      | "for"; i = lident; "="; e1 = SELF; df = direction_flag; e2 = SELF;
-        "do"; "{"; seq = SLIST0 [ e = expr; ";" -> e ]; "}" ->
+      | "do"; "{"; seq = sequence; "}" -> Node "ExSeq" [Loc; seq]
+      | "for"; i = a_LIDENT; "="; e1 = SELF; df = direction_flag; e2 = SELF;
+        "do"; "{"; seq = sequence; "}" ->
           Node "ExFor" [Loc; i; e1; e2; df; seq]
-      | "while"; e = SELF; "do"; "{"; seq = SLIST0 [ e = expr; ";" -> e ];
-        "}" ->
+      | "while"; e = SELF; "do"; "{"; seq = sequence; "}" ->
           Node "ExWhi" [Loc; e; seq] ]
-    | NONA
+    | "where"
+      [ e = SELF; "where";
+        rf =
+          [ a = anti_opt -> a | o = OPT [ x = "rec" -> Str x ] -> Option o ];
+        lb = let_binding ->
+          Node "ExLet" [Loc; o2b rf; List [lb]; e] ]
+    | ":=" NONA
       [ e1 = SELF; ":="; e2 = SELF; dummy -> Node "ExAss" [Loc; e1; e2] ]
-    | RIGHTA
-      [ e1 = SELF; f = "||"; e2 = SELF ->
+    | "||" RIGHTA
+      [ e1 = SELF; "||"; e2 = SELF ->
           Node "ExApp"
-            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str f]; e1]; e2] ]
-    | RIGHTA
-      [ e1 = SELF; f = "&&"; e2 = SELF ->
+            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "||"]; e1]; e2] ]
+    | "&&" RIGHTA
+      [ e1 = SELF; "&&"; e2 = SELF ->
           Node "ExApp"
-            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str f]; e1]; e2] ]
-    | LEFTA
-      [ e1 = SELF; f = [ "<" | ">" | "<=" | ">=" | "=" | "<>" | "==" | "!=" ];
-        e2 = SELF ->
+            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "&&"]; e1]; e2] ]
+    | "<" LEFTA
+      [ e1 = SELF; "<"; e2 = SELF ->
           Node "ExApp"
-            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str f]; e1]; e2] ]
-    | RIGHTA
-      [ e1 = SELF; f = [ "^" | "@" ]; e2 = SELF ->
+            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "<"]; e1]; e2]
+      | e1 = SELF; ">"; e2 = SELF ->
           Node "ExApp"
-            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str f]; e1]; e2] ]
-    | LEFTA
+            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str ">"]; e1]; e2]
+      | e1 = SELF; "<="; e2 = SELF ->
+          Node "ExApp"
+            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "<="]; e1]; e2]
+      | e1 = SELF; ">="; e2 = SELF ->
+          Node "ExApp"
+            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str ">="]; e1]; e2]
+      | e1 = SELF; "="; e2 = SELF ->
+          Node "ExApp"
+            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "="]; e1]; e2]
+      | e1 = SELF; "<>"; e2 = SELF ->
+          Node "ExApp"
+            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "<>"]; e1]; e2]
+      | e1 = SELF; "=="; e2 = SELF ->
+          Node "ExApp"
+            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "=="]; e1]; e2]
+      | e1 = SELF; "!="; e2 = SELF ->
+          Node "ExApp"
+            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "!="]; e1]; e2] ]
+    | "^" RIGHTA
+      [ e1 = SELF; "^"; e2 = SELF ->
+          Node "ExApp"
+            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "^"]; e1]; e2]
+      | e1 = SELF; "@"; e2 = SELF ->
+          Node "ExApp"
+            [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str "@"]; e1]; e2] ]
+    | "+" LEFTA
       [ e1 = SELF; f = [ "+" | "-" | "+." | "-." ]; e2 = SELF ->
           Node "ExApp"
             [Loc; Node "ExApp" [Loc; Node "ExLid" [Loc; Str f]; e1]; e2] ]
@@ -344,7 +372,7 @@ EXTEND
     [ [ "do"; seq = SLIST0 [ e = expr; ";" -> e ]; "return"; e = SELF ->
           let _ = warning_seq () in
           Node "ExSeq" [Loc; Append seq e]
-      | "for"; i = lident; "="; e1 = SELF; df = direction_flag; e2 = SELF;
+      | "for"; i = a_LIDENT; "="; e1 = SELF; df = direction_flag; e2 = SELF;
         "do"; seq = SLIST0 [ e = expr; ";" -> e ]; "done" ->
           let _ = warning_seq () in
           Node "ExFor" [Loc; i; e1; e2; df; seq]
@@ -355,6 +383,9 @@ EXTEND
   ;
   dummy:
     [ [ -> () ] ]
+  ;
+  sequence:
+    [ [ seq = SLIST0 expr SEP ";" -> seq ] ]
   ;
   let_binding:
     [ [ p = ipatt; e = fun_binding -> Tuple [p; e] ] ]
@@ -563,10 +594,6 @@ EXTEND
       | "downto" -> Bool False
       | a = anti_to -> a ] ]
   ;
-  string:
-    [ [ s = STRING -> Str s
-      | a = anti_ -> a ] ]
-  ;
   rec_flag:
     [ [ a = anti_rec -> a
       | "rec" -> Bool True
@@ -593,6 +620,14 @@ EXTEND
   ;
   a_str_item:
     [ [ a = ANTIQUOT "str_item" -> antiquot "str_item" loc a
+      | a = ANTIQUOT "" -> antiquot "" loc a ] ]
+  ;
+  a_module_type:
+    [ [ a = ANTIQUOT "module_type" -> antiquot "module_type" loc a
+      | a = ANTIQUOT "" -> antiquot "" loc a ] ]
+  ;
+  a_sig_item:
+    [ [ a = ANTIQUOT "sig_item" -> antiquot "sig_item" loc a
       | a = ANTIQUOT "" -> antiquot "" loc a ] ]
   ;
   a_UIDENT:

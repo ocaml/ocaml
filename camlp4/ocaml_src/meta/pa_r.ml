@@ -630,8 +630,8 @@ Grammar.extend
          (Grammar.Entry.obj (sequence : 'sequence Grammar.Entry.e));
        Gramext.Stoken ("", "}")],
       Gramext.action
-        (fun _ (el : 'sequence) _ _ (e : 'expr) _ (loc : int * int) ->
-           (MLast.ExWhi (loc, e, el) : 'expr));
+        (fun _ (seq : 'sequence) _ _ (e : 'expr) _ (loc : int * int) ->
+           (MLast.ExWhi (loc, e, seq) : 'expr));
       [Gramext.Stoken ("", "for"); Gramext.Stoken ("LIDENT", "");
        Gramext.Stoken ("", "="); Gramext.Sself;
        Gramext.Snterm
@@ -642,9 +642,9 @@ Grammar.extend
          (Grammar.Entry.obj (sequence : 'sequence Grammar.Entry.e));
        Gramext.Stoken ("", "}")],
       Gramext.action
-        (fun _ (el : 'sequence) _ _ (e2 : 'expr) (df : 'direction_flag)
+        (fun _ (seq : 'sequence) _ _ (e2 : 'expr) (df : 'direction_flag)
            (e1 : 'expr) _ (i : string) _ (loc : int * int) ->
-           (MLast.ExFor (loc, i, e1, e2, df, el) : 'expr));
+           (MLast.ExFor (loc, i, e1, e2, df, seq) : 'expr));
       [Gramext.Stoken ("", "do"); Gramext.Stoken ("", "{");
        Gramext.Snterm
          (Grammar.Entry.obj (sequence : 'sequence Grammar.Entry.e));
@@ -726,9 +726,9 @@ Grammar.extend
           Gramext.Stoken ("", "and"));
        Gramext.Stoken ("", "in"); Gramext.Sself],
       Gramext.action
-        (fun (x : 'expr) _ (l : 'let_binding list) (o : string option) _
+        (fun (x : 'expr) _ (l : 'let_binding list) (r : string option) _
            (loc : int * int) ->
-           (MLast.ExLet (loc, o2b o, l, x) : 'expr))];
+           (MLast.ExLet (loc, o2b r, l, x) : 'expr))];
      Some "where", None,
      [[Gramext.Sself; Gramext.Stoken ("", "where");
        Gramext.Sopt (Gramext.Stoken ("", "rec"));
@@ -747,16 +747,16 @@ Grammar.extend
      Some "||", Some Gramext.RightA,
      [[Gramext.Sself; Gramext.Stoken ("", "||"); Gramext.Sself],
       Gramext.action
-        (fun (e2 : 'expr) (f : string) (e1 : 'expr) (loc : int * int) ->
+        (fun (e2 : 'expr) _ (e1 : 'expr) (loc : int * int) ->
            (MLast.ExApp
-              (loc, MLast.ExApp (loc, MLast.ExLid (loc, f), e1), e2) :
+              (loc, MLast.ExApp (loc, MLast.ExLid (loc, "||"), e1), e2) :
             'expr))];
      Some "&&", Some Gramext.RightA,
      [[Gramext.Sself; Gramext.Stoken ("", "&&"); Gramext.Sself],
       Gramext.action
-        (fun (e2 : 'expr) (f : string) (e1 : 'expr) (loc : int * int) ->
+        (fun (e2 : 'expr) _ (e1 : 'expr) (loc : int * int) ->
            (MLast.ExApp
-              (loc, MLast.ExApp (loc, MLast.ExLid (loc, f), e1), e2) :
+              (loc, MLast.ExApp (loc, MLast.ExLid (loc, "&&"), e1), e2) :
             'expr))];
      Some "<", Some Gramext.LeftA,
      [[Gramext.Sself; Gramext.Stoken ("", "!="); Gramext.Sself],

@@ -277,7 +277,7 @@
             ((list (Sexpr _ sel1) :: sel2)
              (let* ((lbs (List.map let_binding_se sel1))
                     (e (progn_se loc sel2)))
-               <:expr< let $rec:r$ $list:lbs$ in $e$ >>))
+               <:expr< let $opt:r$ $list:lbs$ in $e$ >>))
             ((list se :: _) (error se "let_binding"))
             ((_) (error_loc loc "let_binding")))))
   ((Sexpr loc (list (Satom _ Alid "let*") :: sel))

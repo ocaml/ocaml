@@ -263,9 +263,9 @@ EXTEND
   ;
   expr:
     [ "top" RIGHTA
-      [ "let"; o = OPT "rec"; l = LIST1 let_binding SEP "and"; "in";
+      [ "let"; r = OPT "rec"; l = LIST1 let_binding SEP "and"; "in";
         x = SELF ->
-          <:expr< let $rec:o2b o$ $list:l$ in $x$ >>
+          <:expr< let $opt:o2b r$ $list:l$ in $x$ >>
       | "let"; "module"; m = UIDENT; mb = module_binding; "in"; e = SELF ->
           <:expr< let module $m$ = $mb$ in $e$ >>
       | "fun"; "["; l = LIST0 match_case SEP "|"; "]" ->
@@ -286,19 +286,19 @@ EXTEND
           [ [e] -> e
           | _ -> <:expr< do { $list:seq$ } >> ]
       | "for"; i = LIDENT; "="; e1 = SELF; df = direction_flag; e2 = SELF;
-        "do"; "{"; el = sequence; "}" ->
-          <:expr< for $i$ = $e1$ $to:df$ $e2$ do { $list:el$ } >>
-      | "while"; e = SELF; "do"; "{"; el = sequence; "}" ->
-          <:expr< while $e$ do { $list:el$ } >> ]
+        "do"; "{"; seq = sequence; "}" ->
+          <:expr< for $i$ = $e1$ $to:df$ $e2$ do { $list:seq$ } >>
+      | "while"; e = SELF; "do"; "{"; seq = sequence; "}" ->
+          <:expr< while $e$ do { $list:seq$ } >> ]
     | "where"
       [ e = SELF; "where"; rf = OPT "rec"; lb = let_binding ->
-          <:expr< let $rec:o2b rf$ $list:[lb]$ in $e$ >> ]
+          <:expr< let $opt:o2b rf$ $list:[lb]$ in $e$ >> ]
     | ":=" NONA
       [ e1 = SELF; ":="; e2 = SELF; dummy -> <:expr< $e1$ := $e2$ >> ]
     | "||" RIGHTA
-      [ e1 = SELF; f = "||"; e2 = SELF -> <:expr< $lid:f$ $e1$ $e2$ >> ]
+      [ e1 = SELF; "||"; e2 = SELF -> <:expr< $e1$ || $e2$ >> ]
     | "&&" RIGHTA
-      [ e1 = SELF; f = "&&"; e2 = SELF -> <:expr< $lid:f$ $e1$ $e2$ >> ]
+      [ e1 = SELF; "&&"; e2 = SELF -> <:expr< $e1$ && $e2$ >> ]
     | "<" LEFTA
       [ e1 = SELF; "<"; e2 = SELF -> <:expr< $e1$ < $e2$ >>
       | e1 = SELF; ">"; e2 = SELF -> <:expr< $e1$ > $e2$ >>
@@ -405,7 +405,7 @@ EXTEND
             [ [e] -> e
             | _ -> <:expr< do { $list:el$ } >> ]
           in
-          [ <:expr< let $rec:o2b o$ $list:l$ in $e$ >>]
+          [ <:expr< let $opt:o2b o$ $list:l$ in $e$ >>]
       | e = expr; ";"; el = SELF -> [e :: el]
       | e = expr; ";" -> [e]
       | e = expr -> [e] ] ]
