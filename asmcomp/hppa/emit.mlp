@@ -130,18 +130,19 @@ let call_symbol s =
   end
 
 (* An external symbol is code if either it is branched to, or
-   it does not start with an uppercase letter (for calls to
-   runtime functions).  We need to special-case a few data symbols
-   that start with a lower case. *)
+   it is one of the caml_apply* caml_curry* caml_tuplify* special functions. *)
 
-let data_imports =
-  ["caml_globals_inited"; "nativeint_ops"; "int32_ops"; "int64_ops"]
+let code_imports = ["caml_apply"; "caml_curry"; "caml_tuplify"]
+
+let match_prefix s pref =
+  String.length s >= String.length pref
+  && String.sub s 0 (String.length pref) = pref
 
 let emit_import s =
   if not(StringSet.mem s !defined_symbols) then begin
     `	.import	{emit_symbol s}`;
-    if (StringSet.mem s !called_symbols || s.[0] < 'A' || s.[0] > 'Z')
-    && not (List.mem s data_imports)
+    if StringSet.mem s !called_symbols
+    || List.exists (match_prefix s) code_imports
     then `, code\n`
     else `, data\n`
   end
@@ -508,8 +509,8 @@ let rec emit_instr i dslot =
           else `	ldo	{emit_int(-n)}(%r30), %r30\n`
         end
     | Lop(Iextcall(s, alloc)) ->
+        call_symbol s;
         if alloc then begin
-          call_symbol s;
           if hpux then begin
             `	ldil	LR'{emit_symbol s}, %r22\n`;
             describe_call i.arg;
@@ -1037,8 +1038,7 @@ let emit_item = function
   | Cdouble f ->
       `	.double	{emit_string f}\n`
   | Csymbol_address s ->
-      if hpux && String.length s >= 5 && String.sub s 0 5 = "caml_" then
-        `	.import	{emit_symbol s}, code\n`;
+      use_symbol s;
       `	.long	{emit_symbol s}\n`
   | Clabel_address lbl ->
       `	.long	{emit_label(lbl + 100000)}\n`
