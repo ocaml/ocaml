@@ -238,9 +238,9 @@ type stats =
     st_gid : int;
     st_rdev : int;
     st_size : int;
-    st_atime : int;
-    st_mtime : int;
-    st_ctime : int }
+    st_atime : float;
+    st_mtime : float;
+    st_ctime : float }
 
 external stat : string -> stats = "unix_stat"
 let lstat = stat
@@ -371,17 +371,17 @@ type tm =
     tm_yday : int;
     tm_isdst : bool }
 
-external time : unit -> int = "unix_time"
+external time : unit -> float = "unix_time"
 external gettimeofday : unit -> float = "unix_gettimeofday"
-external gmtime : int -> tm = "unix_gmtime"
-external localtime : int -> tm = "unix_localtime"
-external mktime : tm -> int * tm = "unix_mktime"
+external gmtime : float -> tm = "unix_gmtime"
+external localtime : float -> tm = "unix_localtime"
+external mktime : tm -> float * tm = "unix_mktime"
 let alarm n = invalid_arg "Unix.alarm not implemented"
 external sleep : int -> unit = "unix_sleep"
 let times () =
   { tms_utime = Sys.time(); tms_stime = 0.0;
     tms_cutime = 0.0; tms_cstime = 0.0 }
-external utimes : string -> int -> int -> unit = "unix_utimes"
+external utimes : string -> float -> float -> unit = "unix_utimes"
 
 type interval_timer =
     ITIMER_REAL
@@ -644,7 +644,7 @@ let open_connection sockaddr =
   let sock =
     socket domain SOCK_STREAM 0 in
   connect sock sockaddr;
-  (in_channel_of_descr_bin sock, out_channel_of_descr_bin sock)
+  (in_channel_of_descr sock, out_channel_of_descr sock)
 
 let shutdown_connection inchan =
   shutdown (descr_of_in_channel inchan) SHUTDOWN_SEND

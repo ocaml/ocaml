@@ -29,8 +29,8 @@ TYPING=typing\ident.cmo typing\path.cmo \
   typing\btype.cmo \
   typing\subst.cmo typing\predef.cmo \
   typing\datarepr.cmo typing\env.cmo \
-  typing\typedtree.cmo \
-  typing\ctype.cmo typing\printtyp.cmo \
+  typing\typedtree.cmo typing\ctype.cmo \
+  typing\printtyp.cmo typing\includeclass.cmo \
   typing\mtype.cmo typing\includecore.cmo \
   typing\includemod.cmo typing\parmatch.cmo \
   typing\typetexp.cmo typing\typecore.cmo \
@@ -81,8 +81,8 @@ OPTOBJS=$(OPTUTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) $(OPTDRIVER)
 
 EXPUNGEOBJS=utils\misc.cmo utils\tbl.cmo \
   utils\config.cmo utils\clflags.cmo \
-  typing\ident.cmo typing\types.cmo typing\btype.cmo typing\predef.cmo \
-  bytecomp\runtimedef.cmo bytecomp\symtable.cmo \
+  typing\ident.cmo typing\path.cmo typing\types.cmo typing\btype.cmo \
+  typing\predef.cmo bytecomp\runtimedef.cmo bytecomp\symtable.cmo \
   toplevel\expunge.cmo
 
 PERVASIVES=arg array callback char digest filename format gc hashtbl \
@@ -100,7 +100,7 @@ all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml otherlibraries
 world: coldstart all
 
 # Set up the configuration files
-configure:
+configure: FORCE
 	cp config\m-nt.h config\m.h
 	cp config\s-nt.h config\s.h
 	cp config\Makefile.nt config\Makefile
@@ -512,3 +512,5 @@ depend: beforedepend
 alldepend:: depend
 
 !include .depend
+
+FORCE:

@@ -29,7 +29,7 @@ static unsigned long read_size(char * ptr)
 static char * read_runtime_path(HANDLE h)
 {
   char buffer[TRAILER_SIZE];
-  char runtime_path[MAX_PATH];
+  static char runtime_path[MAX_PATH];
   DWORD nread;
   struct exec_trailer tr;
   long size;
@@ -44,7 +44,7 @@ static char * read_runtime_path(HANDLE h)
   tr.symbol_size = read_size(buffer + 16);
   tr.debug_size = read_size(buffer + 20);
   if (tr.path_size >= MAX_PATH) return NULL;
-  if (tr.path_size == 0) return default_runtime_path;
+  if (tr.path_size == 0) return default_runtime_name;
   size = tr.path_size + tr.code_size + tr.prim_size +
          tr.data_size + tr.symbol_size + tr.debug_size + TRAILER_SIZE;
   if (SetFilePointer(h, -size, NULL, FILE_END) == -1) return NULL;

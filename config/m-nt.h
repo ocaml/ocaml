@@ -16,4 +16,7 @@
 #undef ARCH_SIXTYFOUR
 #undef ARCH_BIG_ENDIAN
 #undef ARCH_ALIGN_DOUBLE
+#define SIZEOF_INT 4
+#define SIZEOF_LONG 4
+#define SIZEOF_SHORT 2
 

@@ -14,6 +14,7 @@
 /* Thread interface for Win32 threads */
 
 #include <windows.h>
+#include <signal.h>
 #include "alloc.h"
 #include "callback.h"
 #include "fail.h"
@@ -586,21 +587,22 @@ static void caml_wait_signal_handler(int signo)
   SetEvent(wait_signal_event[signo]);
 }
 
+typedef void (*sighandler_type)(int);
+
 value caml_wait_signal(value sigs)
 {
   HANDLE event;
   int res, s, retcode;
   value l;
-  void (*)(int) oldsignals[NSIG];
+  sighandler_type oldsignals[NSIG];
 
   Begin_root(sigs);
-  event = CreateEvent(NULL, FALSE, 0, NULL);
+  event = CreateEvent(NULL, FALSE, FALSE, NULL);
   if (event == NULL)
     caml_wthread_error("Thread.wait_signal (CreateEvent)");
   res = 0;
   for (l = sigs; l != Val_int(0); l = Field(l, 1)) {
     s = convert_signal_number(Int_val(Field(l, 0)));
-    if (s < 0) s = posix_signals[-s-1];
     oldsignals[s] = signal(s, caml_wait_signal_handler);
     if (oldsignals[s] == SIG_ERR) {
       CloseHandle(event);
@@ -618,7 +620,7 @@ value caml_wait_signal(value sigs)
   }
   CloseHandle(event);
   End_roots();
-  if (retcode == WAIT_FAILED || retcode == WAIT_ABANDONED)
+  if (retcode == WAIT_FAILED)
     caml_wthread_error("Thread.wait_signal (WaitForSingleObject)");
   return Val_int(res);
 }
