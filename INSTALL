@@ -114,6 +114,11 @@ environment variable, or set it to /bin/sh.
 * gcc 2.6.0 has been reported to generate incorrect code for the
 runtime system in -O mode. Upgrade to 2.6.3 or newer.
 
+* If you're using gcc on the I386 or Motorola 680x0, make sure to set
+the -fno-defer-pop option in $(BYTECCCOMPOPTS). Otherwise, there's a
+bug in gcc that causes the bytecode interpreter to push stack frames
+without popping them, causing stack overflows for long-running
+bytecode programs.
 
 MACHINE-SPECIFIC HINTS:
 
