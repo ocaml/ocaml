@@ -69,8 +69,4 @@ CAMLextern void init_exceptions (void);
 CAMLextern void array_bound_error (void) Noreturn;
 CAMLextern void raise_sys_blocked_io (void) Noreturn;
 
-/* <private> */
-CAMLextern void (*caml_reset_sigmask)(void);
-/* </private> */
-
 #endif /* _fail_ */
