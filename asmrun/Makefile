@@ -8,7 +8,8 @@ DFLAGS=$(FLAGS) -g -DDEBUG $(NATIVECCCOMPOPTS)
 COBJS=main.o fail.o roots.o signals.o \
   misc.o freelist.o major_gc.o minor_gc.o memory.o alloc.o compare.o ints.o \
   floats.o str.o array.o io.o extern.o intern.o hash.o sys.o parsing.o \
-  gc_ctrl.o terminfo.o md5.o obj.o
+  gc_ctrl.o terminfo.o md5.o obj.o lexing.o
+
 ASMOBJS=$(ARCH).o
 
 OBJS=$(COBJS) $(ASMOBJS)
@@ -70,6 +71,8 @@ md5.c: ../byterun/md5.c
 	ln -s ../byterun/md5.c md5.c
 obj.c: ../byterun/obj.c
 	ln -s ../byterun/obj.c obj.c
+lexing.c: ../byterun/lexing.c
+	ln -s ../byterun/lexing.c lexing.c
 
 .SUFFIXES: .asm .S .d.o
 
