@@ -704,6 +704,12 @@ let class_type ppf cty =
   prepare_class_type [] cty;
   !Oprint.out_class_type ppf (tree_of_class_type false [] cty)
 
+let tree_of_class_param param variance =
+  (match tree_of_typexp true param with
+    Otyp_var (_, s) -> s
+  | _ -> "?"),
+  if (repr param).desc = Tvar then (true, true) else variance
+
 let tree_of_class_params params =
   let tyl = tree_of_typlist true params in
   List.map (function Otyp_var (_, s) -> s | _ -> "?") tyl
@@ -723,7 +729,7 @@ let tree_of_class_declaration id cl rs =
   let vir_flag = cl.cty_new = None in
   Osig_class
     (vir_flag, Ident.name id,
-     List.combine (tree_of_class_params params) cl.cty_variance,
+     List.map2 tree_of_class_param params cl.cty_variance,
      tree_of_class_type true params cl.cty_type,
      tree_of_rec rs)
 
@@ -754,7 +760,7 @@ let tree_of_cltype_declaration id cl rs =
 
   Osig_class_type
     (virt, Ident.name id,
-     List.combine (tree_of_class_params params) cl.clty_variance,
+     List.map2 tree_of_class_param params cl.clty_variance,
      tree_of_class_type true params cl.clty_type,
      tree_of_rec rs)
 
