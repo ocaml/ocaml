@@ -45,7 +45,8 @@ int bigarray_element_size[] =
   1 /*SINT8*/, 1 /*UINT8*/,
   2 /*SINT16*/, 2 /*UINT16*/,
   4 /*INT32*/, 8 /*INT64*/,
-  sizeof(value) /*CAML_INT*/, sizeof(value) /*NATIVE_INT*/
+  sizeof(value) /*CAML_INT*/, sizeof(value) /*NATIVE_INT*/,
+  8 /*COMPLEX32*/, 16 /*COMPLEX64*/
 };
 
 /* Compute the number of bytes for the elements of a big array */
@@ -174,6 +175,16 @@ static long bigarray_offset(struct caml_bigarray * b, long * index)
   return offset;
 }
 
+/* Helper function to allocate a record of two double floats */
+
+static value copy_two_doubles(double d0, double d1)
+{
+  value res = alloc_small(2 * Double_wosize, Double_array_tag);
+  Store_double_field(res, 0, d0);
+  Store_double_field(res, 1, d1);
+  return res;
+}
+
 /* Generic code to read from a big array */
 
 value bigarray_get_N(value vb, value * vind, int nind)
@@ -192,6 +203,8 @@ value bigarray_get_N(value vb, value * vind, int nind)
   offset = bigarray_offset(b, index);
   /* Perform read */
   switch ((b->flags) & BIGARRAY_KIND_MASK) {
+  default:
+    Assert(0);
   case BIGARRAY_FLOAT32:
     return copy_double(((float *) b->data)[offset]);
   case BIGARRAY_FLOAT64:
@@ -210,10 +223,14 @@ value bigarray_get_N(value vb, value * vind, int nind)
     return copy_int64(((int64 *) b->data)[offset]);
   case BIGARRAY_NATIVE_INT:
     return copy_nativeint(((long *) b->data)[offset]);
-  default:
-    Assert(0);
   case BIGARRAY_CAML_INT:
     return Val_long(((long *) b->data)[offset]);
+  case BIGARRAY_COMPLEX32:
+    { float * p = ((float *) b->data) + offset * 2;
+      return copy_two_doubles(p[0], p[1]); }
+  case BIGARRAY_COMPLEX64:
+    { double * p = ((double *) b->data) + offset * 2;
+      return copy_two_doubles(p[0], p[1]); }
   }
 }
 
@@ -287,6 +304,8 @@ static value bigarray_set_aux(value vb, value * vind, long nind, value newval)
   offset = bigarray_offset(b, index);
   /* Perform write */
   switch (b->flags & BIGARRAY_KIND_MASK) {
+  default:
+    Assert(0);
   case BIGARRAY_FLOAT32:
     ((float *) b->data)[offset] = Double_val(newval); break;
   case BIGARRAY_FLOAT64:
@@ -303,10 +322,18 @@ static value bigarray_set_aux(value vb, value * vind, long nind, value newval)
     ((int64 *) b->data)[offset] = Int64_val(newval); break;
   case BIGARRAY_NATIVE_INT:
     ((long *) b->data)[offset] = Nativeint_val(newval); break;
-  default:
-    Assert(0);
   case BIGARRAY_CAML_INT:
     ((long *) b->data)[offset] = Long_val(newval); break;
+  case BIGARRAY_COMPLEX32:
+    { float * p = ((float *) b->data) + offset * 2;
+      p[0] = Double_field(newval, 0);
+      p[1] = Double_field(newval, 1);
+      break; }
+  case BIGARRAY_COMPLEX64:
+    { double * p = ((double *) b->data) + offset * 2;
+      p[0] = Double_field(newval, 0);
+      p[1] = Double_field(newval, 1);
+      break; }
   }
   return Val_unit;
 }
@@ -451,8 +478,12 @@ static int bigarray_compare(value v1, value v2)
   }
 
   switch (b1->flags & BIGARRAY_KIND_MASK) {
+  case BIGARRAY_COMPLEX32:
+    num_elts *= 2; /*fallthrough*/
   case BIGARRAY_FLOAT32:
     DO_COMPARISON(float);
+  case BIGARRAY_COMPLEX64:
+    num_elts *= 2; /*fallthrough*/
   case BIGARRAY_FLOAT64:
     DO_COMPARISON(double);
   case BIGARRAY_SINT8:
@@ -510,6 +541,7 @@ static long bigarray_hash(value v)
     break;
   }
   case BIGARRAY_FLOAT32:
+  case BIGARRAY_COMPLEX32:
   case BIGARRAY_INT32:
 #ifndef ARCH_SIXTYFOUR
   case BIGARRAY_CAML_INT:
@@ -521,6 +553,7 @@ static long bigarray_hash(value v)
     break;
   }
   case BIGARRAY_FLOAT64:
+  case BIGARRAY_COMPLEX64:
   case BIGARRAY_INT64:
 #ifdef ARCH_SIXTYFOUR
   case BIGARRAY_CAML_INT:
@@ -599,9 +632,13 @@ static void bigarray_serialize(value v,
   case BIGARRAY_FLOAT32:
   case BIGARRAY_INT32:
     serialize_block_4(b->data, num_elts); break;
+  case BIGARRAY_COMPLEX32:
+    serialize_block_4(b->data, num_elts * 2); break;
   case BIGARRAY_FLOAT64:
   case BIGARRAY_INT64:
     serialize_block_8(b->data, num_elts); break;
+  case BIGARRAY_COMPLEX64:
+    serialize_block_8(b->data, num_elts * 2); break;
   case BIGARRAY_CAML_INT:
     bigarray_serialize_longarray(b->data, num_elts, -0x40000000, 0x3FFFFFFF);
     break;
@@ -648,7 +685,7 @@ unsigned long bigarray_deserialize(void * dst)
   /* Compute total number of elements */
   num_elts = bigarray_num_elts(b);
   /* Determine element size in bytes */
-  if ((b->flags & BIGARRAY_KIND_MASK) > BIGARRAY_NATIVE_INT)
+  if ((b->flags & BIGARRAY_KIND_MASK) > BIGARRAY_COMPLEX64)
     deserialize_error("input_value: bad bigarray kind");
   elt_size = bigarray_element_size[b->flags & BIGARRAY_KIND_MASK];
   /* Allocate room for data */
@@ -666,9 +703,13 @@ unsigned long bigarray_deserialize(void * dst)
   case BIGARRAY_FLOAT32:
   case BIGARRAY_INT32:
     deserialize_block_4(b->data, num_elts); break;
+  case BIGARRAY_COMPLEX32:
+    deserialize_block_4(b->data, num_elts * 2); break;
   case BIGARRAY_FLOAT64:
   case BIGARRAY_INT64:
     deserialize_block_8(b->data, num_elts); break;
+  case BIGARRAY_COMPLEX64:
+    deserialize_block_8(b->data, num_elts * 2); break;
   case BIGARRAY_CAML_INT:
   case BIGARRAY_NATIVE_INT:
     bigarray_deserialize_longarray(b->data, num_elts); break;
@@ -816,6 +857,8 @@ CAMLprim value bigarray_fill(value vb, value vinit)
   long num_elts = bigarray_num_elts(b);
 
   switch (b->flags & BIGARRAY_KIND_MASK) {
+  default:
+    Assert(0);
   case BIGARRAY_FLOAT32: {
     float init = Double_val(vinit);
     float * p;
@@ -860,13 +903,25 @@ CAMLprim value bigarray_fill(value vb, value vinit)
     for (p = b->data; num_elts > 0; p++, num_elts--) *p = init;
     break;
   }
-  default:
-    Assert(0);
   case BIGARRAY_CAML_INT: {
     long init = Long_val(vinit);
     long * p;
     for (p = b->data; num_elts > 0; p++, num_elts--) *p = init;
     break;
+  case BIGARRAY_COMPLEX32: {
+    float init0 = Double_field(vinit, 0);
+    float init1 = Double_field(vinit, 1);
+    float * p;
+    for (p = b->data; num_elts > 0; num_elts--) { *p++ = init0; *p++ = init1; }
+    break;
+  }
+  case BIGARRAY_COMPLEX64: {
+    double init0 = Double_field(vinit, 0);
+    double init1 = Double_field(vinit, 1);
+    double * p;
+    for (p = b->data; num_elts > 0; num_elts--) { *p++ = init0; *p++ = init1; }
+    break;
+  }
   }
   }
   return Val_unit;

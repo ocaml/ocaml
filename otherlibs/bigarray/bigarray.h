@@ -32,6 +32,8 @@ enum caml_bigarray_kind {
   BIGARRAY_INT64,               /* Signed 64-bit integers */
   BIGARRAY_CAML_INT,            /* Caml-style integers (signed 31 or 63 bits) */
   BIGARRAY_NATIVE_INT,      /* Platform-native long integers (32 or 64 bits) */
+  BIGARRAY_COMPLEX32,           /* Single-precision complex */
+  BIGARRAY_COMPLEX64,           /* Double-precision complex */
   BIGARRAY_KIND_MASK = 0xFF     /* Mask for kind in flags field */
 };
 

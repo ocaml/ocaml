@@ -114,7 +114,9 @@ let kind_table =
    "int32_elt", Pbigarray_int32;
    "int64_elt", Pbigarray_int64;
    "int_elt", Pbigarray_caml_int;
-   "nativeint_elt", Pbigarray_native_int]
+   "nativeint_elt", Pbigarray_native_int;
+   "complex32_elt", Pbigarray_complex32;
+   "complex64_elt", Pbigarray_complex64]
 
 let layout_table =
   ["c_layout", Pbigarray_c_layout;

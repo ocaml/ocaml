@@ -39,6 +39,10 @@
    ({!Bigarray.float32_elt}),
 - IEEE double precision (64 bits) floating-point numbers
    ({!Bigarray.float64_elt}),
+- IEEE single precision (2 * 32 bits) floating-point complex numbers
+   ({!Bigarray.complex32_elt}),
+- IEEE double precision (2 * 64 bits) floating-point complex numbers
+   ({!Bigarray.complex64_elt}),
 - 8-bit integers (signed or unsigned)
    ({!Bigarray.int8_signed_elt} or {!Bigarray.int8_unsigned_elt}),
 - 16-bit integers (signed or unsigned)
@@ -56,6 +60,8 @@
 
 type float32_elt
 type float64_elt
+type complex32_elt
+type complex64_elt
 type int8_signed_elt
 type int8_unsigned_elt
 type int16_signed_elt
@@ -88,6 +94,12 @@ val float32 : (float, float32_elt) kind
 val float64 : (float, float64_elt) kind
 (** See {!Bigarray.char}. *)
 
+val complex32 : (Complex.t, complex32_elt) kind
+(** See {!Bigarray.char}. *)
+
+val complex64 : (Complex.t, complex64_elt) kind
+(** See {!Bigarray.char}. *)
+
 val int8_signed : (int, int8_signed_elt) kind
 (** See {!Bigarray.char}. *)
 
@@ -115,7 +127,9 @@ val nativeint : (nativeint, nativeint_elt) kind
 val char : (char, int8_unsigned_elt) kind
 (** As shown by the types of the values above,
    big arrays of kind [float32_elt] and [float64_elt] are
-   accessed using the Caml type [float].  Big arrays of
+   accessed using the Caml type [float].  Big arrays of complex kinds
+   [complex32_elt], [complex64_elt] are accessed with the Caml type
+   {!Complex.t}.  Big arrays of
    integer kinds are accessed using the smallest Caml integer
    type large enough to represent the array elements:
    [int] for 8- and 16-bit integer bigarrays, as well as Caml-integer

@@ -170,6 +170,15 @@ let unbox_float = function
     Cop(Calloc, [header; c]) -> c
   | c -> Cop(Cload Double_u, [c])
 
+(* Complex *)
+
+let box_complex c_re c_im =
+  Cop(Calloc, [alloc_floatarray_header 2; c_re; c_im])
+
+let complex_re c = Cop(Cload Double_u, [c])
+let complex_im c = Cop(Cload Double_u,
+                       [Cop(Cadda, [c; Cconst_int size_float])])
+
 (* Unit *)
 
 let return_unit c = Csequence(c, Cconst_pointer 1)
@@ -441,6 +450,21 @@ let unbox_unsigned_int bi arg =
 
 (* Big arrays *)
 
+let bigarray_elt_size = function
+    Pbigarray_unknown -> assert false
+  | Pbigarray_float32 -> 4
+  | Pbigarray_float64 -> 8
+  | Pbigarray_sint8 -> 1
+  | Pbigarray_uint8 -> 1
+  | Pbigarray_sint16 -> 2
+  | Pbigarray_uint16 -> 2
+  | Pbigarray_int32 -> 4
+  | Pbigarray_int64 -> 8
+  | Pbigarray_caml_int -> size_int
+  | Pbigarray_native_int -> size_int
+  | Pbigarray_complex32 -> 8
+  | Pbigarray_complex64 -> 16
+
 let bigarray_indexing elt_kind layout b args =
   let rec ba_indexing dim_ofs delta_ofs = function
     [] -> assert false
@@ -467,18 +491,7 @@ let bigarray_indexing elt_kind layout b args =
     | Pbigarray_fortran_layout ->
         ba_indexing 5 1 (List.map (fun idx -> sub_int idx (Cconst_int 2)) args)
   and elt_size =
-    match elt_kind with
-      Pbigarray_unknown -> assert false
-    | Pbigarray_float32 -> 4
-    | Pbigarray_float64 -> 8
-    | Pbigarray_sint8 -> 1
-    | Pbigarray_uint8 -> 1
-    | Pbigarray_sint16 -> 2
-    | Pbigarray_uint16 -> 2
-    | Pbigarray_int32 -> 4
-    | Pbigarray_int64 -> 8
-    | Pbigarray_caml_int -> size_int
-    | Pbigarray_native_int -> size_int in
+    bigarray_elt_size elt_kind in
   let byte_offset =
     if elt_size = 1
     then offset
@@ -497,14 +510,36 @@ let bigarray_word_kind = function
   | Pbigarray_int64 -> Word
   | Pbigarray_caml_int -> Word
   | Pbigarray_native_int -> Word
+  | Pbigarray_complex32 -> Single
+  | Pbigarray_complex64 -> Double
 
 let bigarray_get elt_kind layout b args =
-  Cop(Cload (bigarray_word_kind elt_kind),
-      [bigarray_indexing elt_kind layout b args])
+  match elt_kind with
+    Pbigarray_complex32 | Pbigarray_complex64 ->
+      let kind = bigarray_word_kind elt_kind in
+      let sz = bigarray_elt_size elt_kind / 2 in
+      bind "addr" (bigarray_indexing elt_kind layout b args) (fun addr ->
+        box_complex
+          (Cop(Cload kind, [addr]))
+          (Cop(Cload kind, [Cop(Cadda, [addr; Cconst_int sz])])))
+  | _ ->
+      Cop(Cload (bigarray_word_kind elt_kind),
+          [bigarray_indexing elt_kind layout b args])
 
 let bigarray_set elt_kind layout b args newval =
-  Cop(Cstore (bigarray_word_kind elt_kind),
-      [bigarray_indexing elt_kind layout b args; newval])
+  match elt_kind with
+    Pbigarray_complex32 | Pbigarray_complex64 ->
+      let kind = bigarray_word_kind elt_kind in
+      let sz = bigarray_elt_size elt_kind / 2 in
+      bind "newval" newval (fun newv ->
+      bind "addr" (bigarray_indexing elt_kind layout b args) (fun addr ->
+        Csequence(
+          Cop(Cstore kind, [addr; complex_re newv]),
+          Cop(Cstore kind,
+              [Cop(Cadda, [addr; Cconst_int sz]); complex_im newv]))))
+  | _ ->
+      Cop(Cstore (bigarray_word_kind elt_kind),
+          [bigarray_indexing elt_kind layout b args; newval])
 
 (* Simplification of some primitives into C calls *)
 
@@ -810,6 +845,7 @@ let rec transl = function
               (transl arg1) (List.map transl argl) in
           begin match elt_kind with
             Pbigarray_float32 | Pbigarray_float64 -> box_float elt
+          | Pbigarray_complex32 | Pbigarray_complex64 -> elt
           | Pbigarray_int32 -> box_int Pint32 elt
           | Pbigarray_int64 -> box_int Pint64 elt
           | Pbigarray_native_int -> box_int Pnativeint elt
@@ -824,6 +860,7 @@ let rec transl = function
             (match elt_kind with
               Pbigarray_float32 | Pbigarray_float64 ->
                 transl_unbox_float argnewval
+            | Pbigarray_complex32 | Pbigarray_complex64 -> transl argnewval
             | Pbigarray_int32 -> transl_unbox_int Pint32 argnewval
             | Pbigarray_int64 -> transl_unbox_int Pint64 argnewval
             | Pbigarray_native_int -> transl_unbox_int Pnativeint argnewval

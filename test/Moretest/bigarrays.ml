@@ -1,5 +1,6 @@
 open Bigarray
 open Printf
+open Complex
 
 (* Test harness *)
 
@@ -121,6 +122,19 @@ let _ =
                   -0.5, -0.5;
                   1.2345678, 1.2345678;
                   3.1415e10, 3.1415e10]);
+  test 11 true
+    (test_setget complex32
+                 [Complex.zero, Complex.zero;
+                  Complex.one, Complex.one;
+                  Complex.i, Complex.i;
+                  {im = 0.5; re = -2.0}, {im = 0.5; re = -2.0}]);
+  test 12 true
+    (test_setget complex64
+                 [Complex.zero, Complex.zero;
+                  Complex.one, Complex.one;
+                  Complex.i, Complex.i;
+                  {im=0.5;re= -2.0}, {im=0.5;re= -2.0};
+                  {im=3.1415;re=1.2345678}, {im=3.1415;re=1.2345678}]);
 
   let from_list kind vals =
     let a = Array1.create kind c_layout (List.length vals) in
@@ -149,6 +163,18 @@ let _ =
   for i = 1 to 3 do test (5 + i) b.{i} (float i) done;
   test 8 true (try b.{4}; false with Invalid_argument _ -> true);
   test 9 true (try b.{0}; false with Invalid_argument _ -> true);
+
+  let c = Array1.create complex64 c_layout 3 in
+  for i = 0 to 2 do c.{i} <- {re=float i; im=0.0} done;
+  for i = 0 to 2 do test (10 + i) c.{i} {re=float i; im=0.0} done;
+  test 13 true (try c.{3}; false with Invalid_argument _ -> true);
+  test 14 true (try c.{-1}; false with Invalid_argument _ -> true);
+
+  let d = Array1.create complex32 fortran_layout 3 in
+  for i = 1 to 3 do d.{i} <- {re=float i; im=0.0} done;
+  for i = 1 to 3 do test (14 + i) d.{i} {re=float i; im=0.0} done;
+  test 18 true (try d.{4}; false with Invalid_argument _ -> true);
+  test 19 true (try d.{0}; false with Invalid_argument _ -> true);
 
   testing_function "comparisons";
   let normalize_comparison n =
@@ -259,6 +285,26 @@ let _ =
      (from_list float64 [0.0; 2.718; -4.0])
      (from_list float64 [0.0; 0.25; 3.14159])));
 
+  test 44 0 (normalize_comparison (compare
+     (from_list complex32 [Complex.zero; Complex.one; Complex.i])
+     (from_list complex32 [Complex.zero; Complex.one; Complex.i])));
+  test 45 (-1) (normalize_comparison (compare
+     (from_list complex32 [Complex.zero; Complex.one; Complex.i])
+     (from_list complex32 [Complex.zero; Complex.one; Complex.one])));
+  test 46 1 (normalize_comparison (compare
+     (from_list complex32 [Complex.zero; Complex.one; Complex.one])
+     (from_list complex32 [Complex.zero; Complex.one; Complex.i])));
+
+  test 47 0 (normalize_comparison (compare
+     (from_list complex64 [Complex.zero; Complex.one; Complex.i])
+     (from_list complex64 [Complex.zero; Complex.one; Complex.i])));
+  test 48 (-1) (normalize_comparison (compare
+     (from_list complex64 [Complex.zero; Complex.one; Complex.i])
+     (from_list complex64 [Complex.zero; Complex.one; Complex.one])));
+  test 49 1 (normalize_comparison (compare
+     (from_list complex64 [Complex.zero; Complex.one; Complex.one])
+     (from_list complex64 [Complex.zero; Complex.one; Complex.i])));
+
   testing_function "dim";
   test 1 (Array1.dim (from_list int [1;2;3;4;5])) 5;
   test 2 (Array1.dim (from_list_fortran int [1;2;3])) 3;
@@ -316,6 +362,10 @@ let _ =
                              0.25 3 2);
   test 10 true (test_blit_fill float64 [1.0;2.0;5.0;8.123;-100.456;212e19]
                              3.1415 3 2);
+  test 11 true (test_blit_fill complex32 [Complex.zero; Complex.one; Complex.i]
+                             Complex.i 1 1);
+  test 12 true (test_blit_fill complex64 [Complex.zero; Complex.one; Complex.i]
+                             Complex.i 1 1);
 
 (* Bi-dimensional arrays *)
 
@@ -366,6 +416,19 @@ let _ =
   test 10 true
     (check_array2 (make_array2 float64 fortran_layout 1 10 20 float)
                   1 10 20 float);
+  let makecomplex i = {re = float i; im = float (-i)} in
+  test 11 true
+    (check_array2 (make_array2 complex32 c_layout 0 10 20 makecomplex)
+                  0 10 20 makecomplex);
+  test 12 true
+    (check_array2 (make_array2 complex64 c_layout 0 10 20 makecomplex)
+                  0 10 20 makecomplex);
+  test 13 true
+    (check_array2 (make_array2 complex32 fortran_layout 1 10 20 makecomplex)
+                  1 10 20 makecomplex);
+  test 14 true
+    (check_array2 (make_array2 complex64 fortran_layout 1 10 20 makecomplex)
+                  1 10 20 makecomplex);
 
   testing_function "set/get (specialized)";
   let a = Array2.create int16_signed c_layout 3 3 in
@@ -490,6 +553,19 @@ let _ =
   test 10 true
     (check_array3 (make_array3 float64 fortran_layout 1 4 5 6 float)
                   1 4 5 6 float);
+  test 11 true
+    (check_array3 (make_array3 complex32 c_layout 0 4 5 6 makecomplex)
+                  0 4 5 6 makecomplex);
+  test 12 true
+    (check_array3 (make_array3 complex64 c_layout 0 4 5 6 makecomplex)
+                  0 4 5 6 makecomplex);
+  test 13 true
+    (check_array3 (make_array3 complex32 fortran_layout 1 4 5 6 makecomplex)
+                  1 4 5 6 makecomplex);
+  test 14 true
+    (check_array3 (make_array3 complex64 fortran_layout 1 4 5 6 makecomplex)
+                  1 4 5 6 makecomplex);
+
 
   testing_function "set/get (specialized)";
   let a = Array3.create int32 c_layout 2 3 4 in
@@ -584,6 +660,8 @@ let _ =
   test_structured_io 10 (make_array2 float64 fortran_layout 1 200 200 float);
   test_structured_io 11 (make_array3 int32 c_layout 0 20 30 40 Int32.of_int);
   test_structured_io 12 (make_array3 float32 fortran_layout 1 10 50 100 float);
+  test_structured_io 13 (make_array2 complex32 c_layout 0 100 100 makecomplex);
+  test_structured_io 14 (make_array3 complex64 fortran_layout 1 10 20 30 makecomplex);
 
   testing_function "map_file";
   let mapped_file = Filename.temp_file "bigarray" ".data" in
