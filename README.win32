@@ -75,9 +75,8 @@ In addition to Visual C++ 4.0 and MASM 6, you will also need a healthy
 set of Unix / GNU utilities that understands long file names
 (see e.g. ftp://ftp.cc.utexas.edu/microlib/nt/gnu/).
 
-The sources for the toplevel graphical user interface are currently
-not available to the general public.  Contact us if you think you need
-them.
+The sources for the toplevel graphical user interface are not currently
+available to the general public.  Contact us if you think you need them.
 
 
 RANDOM NOTES:
@@ -92,7 +91,7 @@ Caml.
 * Libraries available under Win32: "num", "str", "threads", "graph",
 and large parts of "unix". 
 "graph" works only under the toplevel application.
-"camltk4" still requires considerable work to run under Win32.
+"camltk4" still requires some work to run under Win32.
 
 
 CREDITS:

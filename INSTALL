@@ -1,8 +1,5 @@
 PREREQUISITES
 
-* Perl version 4 or 5 is required for building the Objective Caml
-  native-code compiler.
-
 * The GNU C compiler gcc is recommended, as the bytecode
   interpreter takes advantage of gcc-specific features to enhance
   performance. Versions 2.5.8, 2.6.3, 2.7.0 and 2.7.2 have all been
@@ -88,7 +85,7 @@ The "make bootstrap" checks that the bytecode programs compiled with
 the new compiler are identical to the bytecode programs compiled with
 the old compiler. If this is the case, you can be pretty sure the
 system has been correctly compiled. Otherwise, this does not
-necessarily means something went wrong. The best thing to do is to try
+necessarily mean something went wrong. The best thing to do is to try
 a second bootstrapping phase: just do "make bootstrap" again.  It will
 either crash almost immediately, or re-re-compile everything correctly
 and reach the fixpoint.
@@ -113,17 +110,29 @@ following commands (in the binary directory selected during autoconfiguration):
         ocaml            the interactive, toplevel-based system
         ocamlmktop       a tool to make toplevel systems that integrate
                          user-defined C primitives and Caml code
+        ocamldebug       the source-level replay debugger
         ocamldep         output "make" dependencies for Caml sources
         ocamlprof        execution count profiler
         ocamlcp          the bytecode compiler in profiling mode
 
 From the top directory, become superuser and do:
 
-        umask 022       # make sure to give read permission to all
+        umask 022       # make sure to give read & execute permission to all
         make install
 
 6- Installation is complete. Time to clean up. From the toplevel
 directory, do "make clean".
+
+7- The emacs/ subdirectory contains Emacs-Lisp files for an Objective Caml
+editing mode and an interface for the debugger.  To install these
+files, change to the emacs/ subdirectory and do
+
+        make DEST=<directory where to install the files> install
+or
+        make install
+
+In the latter case, the destination directory defaults to the
+"site-lisp" directory of your Emacs installation.
 
 
 IF SOMETHING GOES WRONG:
@@ -155,7 +164,7 @@ pinpoint the problem.
 COMMON PROBLEMS:
 
 * The Makefiles use the "include" directive, which is not supported by
-all versions of make. Use GNU make instead.
+all versions of make. Use GNU make if this is a problem.
 
 * The Makefiles assume that make execute commands by calling /bin/sh. They
 won't work if /bin/csh is called instead. You may have to unset the SHELL

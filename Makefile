@@ -84,7 +84,8 @@ PERVASIVES=arg array char digest filename format gc hashtbl lexing list map \
   stack string stream sys oo genlex topdirs
 
 # Recompile the system using the bootstrap compiler
-all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml otherlibraries
+all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
+  otherlibraries $(DEBUGGER)
 
 # The compilation of ocaml will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
@@ -186,6 +187,7 @@ install:
 	cd man; for i in *.m; do cp $$i $(MANDIR)/`basename $$i .m`.$(MANEXT); done
 	for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) install); done
 	if test -f ocamlopt; then $(MAKE) installopt; else :; fi
+	if test -f debugger/ocamldebug; then (cd debugger; $(MAKE) install); else :; fi
 
 # Installation of the native-code compiler
 installopt:
@@ -281,9 +283,9 @@ beforedepend:: parsing/linenum.ml
 
 # ocamlc.opt: $(COMPOBJS:.cmo=.cmx)
 #	$(CAMLOPT) $(LINKFLAGS) -o ocamlc.opt $(COMPOBJS:.cmo=.cmx)
-
-partialclean::
-	rm -f ocamlc.opt
+#
+#partialclean::
+#	rm -f ocamlc.opt
 
 # The native-code compiler compiled with itself
 
@@ -437,6 +439,15 @@ clean::
 	for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) clean); done
 alldepend::
 	for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) depend); done
+
+# The replay debugger
+
+ocamldebugger:
+	cd debugger; $(MAKE) all
+partialclean::
+	cd debugger; $(MAKE) clean
+alldepend::
+	cd debugger; $(MAKE) depend
 
 # Default rules
 
