@@ -239,6 +239,9 @@ and rewrite_annotate_exp_list l =
       rewrite_exp scond; 
       insert_profile sbody.pexp_loc;
       rewrite_exp sbody
+    | {pexp_desc = Pexp_constraint(sbody, _, _)} -> (* let f x : t = e *)
+      insert_profile sbody.pexp_loc;
+      rewrite_exp sbody
     | sexp ->
       insert_profile sexp.pexp_loc;
       rewrite_exp sexp)
