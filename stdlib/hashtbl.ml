@@ -210,7 +210,7 @@ module Make(H: HashedType): (S with type key = H.t) =
           false
       | Cons(k, d, rest) ->
           H.equal k key || mem_in_bucket rest in
-      mem_in_bucket h.data.((hash_param 10 100 key) mod (Array.length h.data))
+      mem_in_bucket h.data.((H.hash key) mod (Array.length h.data))
 
 
     let iter = iter
