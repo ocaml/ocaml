@@ -32,8 +32,7 @@ OTHERS=array.cmo list.cmo char.cmo string.cmo sys.cmo \
   set.cmo map.cmo stack.cmo queue.cmo stream.cmo buffer.cmo \
   printf.cmo format.cmo scanf.cmo \
   arg.cmo printexc.cmo gc.cmo \
-  digest.cmo random.cmo callback.cmo \
-  camlinternalOO.cmo oo.cmo camlinternalMod.cmo \
+  digest.cmo random.cmo callback.cmo camlinternalOO.cmo oo.cmo \
   genlex.cmo weak.cmo \
   lazy.cmo filename.cmo complex.cmo \
   arrayLabels.cmo listLabels.cmo stringLabels.cmo moreLabels.cmo stdLabels.cmo
@@ -55,8 +54,9 @@ stdlib.cmxa: $(OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o stdlib.cmxa $(OBJS:.cmo=.cmx)
 
 camlheader camlheader_ur: headernt.c ../config/Makefile
-	$(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -o camlheader.exe headernt.c
-	mv camlheader.exe camlheader.
+	$(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -o tmpheader.exe headernt.c
+	rm -f camlheader.exe
+	mv tmpheader.exe camlheader
 	cp camlheader camlheader_ur
 
 clean::
