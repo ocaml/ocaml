@@ -348,6 +348,7 @@ have caml-electric-indent on, which see.")
       (define-key map [separator-types] '("---"))
 
       ;; others
+      (define-key map [camldebug] '("Call debugger..." . camldebug))
       (define-key map [run-caml] '("Start subshell..." . run-caml))
       (define-key map [compile] '("Compile..." . compile))
       (define-key map [switch-view]
