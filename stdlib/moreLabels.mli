@@ -38,6 +38,7 @@ module Hashtbl : sig
   val fold :
       f:(key:'a -> data:'b -> 'c -> 'c) ->
         ('a, 'b) t -> init:'c -> 'c
+  val length : ('a, 'b) t -> int
   module type HashedType = Hashtbl.HashedType
   module type S =
     sig
@@ -56,6 +57,7 @@ module Hashtbl : sig
       val fold :
           f:(key:key -> data:'a -> 'b -> 'b) ->
           'a t -> init:'b -> 'b
+      val length : 'a t -> int
     end
   module Make : functor (H : HashedType) -> S with type key = H.t
   val hash : 'a -> int
