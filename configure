@@ -389,6 +389,7 @@ fi
 if sh hasgot select; then
   echo "select() found."
   echo "#define HAS_SELECT" >> s.h
+  has_select=yes
 fi
 
 if test -f /usr/include/sys/select.h; then
@@ -437,6 +438,7 @@ fi
 if sh hasgot setitimer; then
   echo "setitimer() found."
   echo "#define HAS_SETITIMER" >> s.h
+  has_setitimer="yes"
 fi
 
 if sh hasgot gethostname; then
@@ -452,6 +454,7 @@ fi
 if sh hasgot gettimeofday; then
   echo "gettimeofday() found."
   echo "#define HAS_GETTIMEOFDAY" >> s.h
+  has_gettimeofday="yes"
 fi
 
 # Determine the target architecture for the "num" library
@@ -465,9 +468,18 @@ case "$host" in
   *) bignum_arch=C
 esac
 
-echo "Target architecture for the \"num\" library: $bignum_arch"
-
 echo "BIGNUM_ARCH=$bignum_arch" >> Makefile
+
+# Determine if the threads library is supported
+
+if test "$has_select" = "yes" \
+&& test "$has_setitimer" = "yes" \
+&& test "$has_gettimeofday" = "yes"; then
+  echo "Threads library supported"
+  otherlibraries="$otherlibraries threads"
+else
+  echo "No threads library (missing system calls)"
+fi
 
 # Determine the location of X include files and libraries
 
@@ -522,63 +534,6 @@ else
   otherlibraries="$otherlibraries graph"
 fi
 
-# Determine the location of POSIX threads
-
-pthreads_include="not found"
-pthreads_link="not found"
-
-case "$host" in
-  alpha-*-osf*)
-    # Dec OSF/1 has its own non-standard-but-quite threads
-    pthreads_include=/usr/include
-    pthreads_link="-cclib -lpthreads -cclib -lmach -cclib -lc_r"
-    pthreads_ld="-lpthreads -lmach -lc_r"
-    ;;
-  *)
-    for dir in \
-      /usr/include /usr/local/include /usr/local/pthreads/include \
-      /usr/local/lib/pthreads/include
-    do
-      if test -f $dir/pthread.h; then
-        pthreads_include=$dir
-        break
-      fi
-    done
-    for dir in \
-      /usr/lib /usr/local/lib /usr/local/pthreads/lib /usr/local/lib/pthreads
-    do
-      if test -f $dir/libpthread.a || \
-         test -f $dir/libpthread.so || \
-         test -f $dir/libpthread.sa; then
-        pthreads_link="-cclib -L$dir -cclib -lpthread"
-        pthreads_ld="-L$dir -lpthread"
-        break
-      fi
-    done
-    ;;
-esac
-
-if test "$pthreads_include" = "not found" || \
-   test "$pthreads_link" = "not found"
-then
-  echo "POSIX threads not found, the \"threads\" library will not be supported"
-else
-  echo "PTHREADS_INCLUDES=$pthreads_include" >> Makefile
-  echo "PTHREADS_LINK=$pthreads_link" >> Makefile
-  echo "Location of POSIX threads include files: $pthreads_include"
-  echo "Options for linking with POSIX threads: $pthreads_link"
-  otherlibraries="$otherlibraries threads"
-
-  # Test for pthread_yield
-  if sh hasgot $pthreads_ld pthread_yield; then
-    echo "pthread_yield() found"
-    echo "#define HAS_PTHREAD_YIELD" >> s.h
-  elif sh hasgot $pthreads_ld thr_yield; then
-    echo "thr_yield() found"
-    echo "#define HAS_THR_YIELD" >> s.h
-  fi
-fi
-
 # Finish generated files
 
 cclibs="$cclibs -lm"
@@ -625,16 +580,12 @@ fi
 echo "Configuration for the external libraries:"
 echo "	libraries supported....... $otherlibraries"
 
+echo "The \"num\" library:"
+echo "	target architecture ...... $bignum_arch"
+
 if test "$x11_include" != "not found" && test "$x11_lib" != "not found"; then
 echo "The \"graph\" library:"
 echo "	options for compiling .... -I$x11_include"
 echo "	options for linking ...... $x11_link"
-fi
-
-if test "$pthreads_include" != "not found" && \
-   test "$pthreads_lib" != "not found"; then
-echo "The \"threads\" library:"
-echo "	options for compiling .... -I$pthreads_include"
-echo "	options for linking ...... $pthreads_link"
 fi
 

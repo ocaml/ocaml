@@ -196,13 +196,3 @@ BIGNUM_ARCH=C
 # For SunOS with OpenLook:
 #X11_LINK=-cclib -L$(X11_LIB) -cclib -lX11
 
-### Location of the include directory containing the POSIX pthread.h includes
-# Needed for the "threads" package
-#PTHREADS_INCLUDES=/usr/include
-
-### Link-time options to cslc or cslopt for linking with pthreads
-# Needed for the "threads" package
-# Usually:
-#PTHREADS_LINK=-cclib -lpthread
-
-
