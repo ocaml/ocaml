@@ -200,19 +200,21 @@ let make_test_sequence tst arg const_lambda_list =
       Lifthenelse(Lprim(tst, [arg; Lconst(Const_base c)]), act, rem))
     const_lambda_list Lstaticfail
 
+let make_translated_switch arg int_lambda_list =
+  let (transl_table, actions, num_actions) =
+    Dectree.make_decision_tree int_lambda_list in
+  Lswitch(Lprim(Ptranslate transl_table, [arg]), num_actions, actions, 0, [])
+
 let combine_constant arg cst (const_lambda_list, total1) (lambda2, total2) =
   let lambda1 =
     match cst with
       Const_int _ ->
-        make_test_sequence (Pintcomp Ceq) arg const_lambda_list
+        make_translated_switch arg
+          (List.map (fun (Const_int n, l) -> (n, l)) const_lambda_list)
     | Const_char _ ->
-        let casel =
-          List.map (fun (Const_char c, l) -> (Char.code c, l))
-                   const_lambda_list in
-        let (transl_table, actions, num_actions) =
-          Dectree.make_decision_tree casel in
-        Lswitch(Lprim(Ptranslate transl_table, [arg]),
-                num_actions, actions, 0, [])
+        make_translated_switch arg
+          (List.map (fun (Const_char c, l) -> (Char.code c, l))
+                    const_lambda_list)
     | Const_string _ ->
         make_test_sequence
           (Pccall{prim_name = "string_equal";
