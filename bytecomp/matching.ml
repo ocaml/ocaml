@@ -376,11 +376,11 @@ let pretty_cases cases =
           prerr_string " " ;
           prerr_string (Format.flush_str_formatter ()))
         ps ;
-(*
+
       prerr_string " -> " ;
       Printlambda.lambda Format.str_formatter l ;
       prerr_string (Format.flush_str_formatter ()) ;
-*)
+
       prerr_endline "")
     cases
 
@@ -777,7 +777,7 @@ let rebuild_nexts arg nexts k =
 (*
   Split a matching.
     Splitting is first directed by or-patterns, then by
-    must test (e.g. constructors)/variable transitions.
+    tests (e.g. constructors)/variable transitions.
 
     The approach is greedy, every split function attempt to
     raise rows as much as possible in the top matrix,
@@ -1777,13 +1777,21 @@ let mk_res get_key env last_choice idef cant_fail ctx =
   fail, klist, jumps
     
 
-(* Aucune optimisation, reflechir apres la release *)
+(*
+     Following two ``failaction'' function compute n, the trap handler
+    to jump to in case of failure of elementary tests
+*)
+
 let mk_failaction_neg partial ctx def = match partial with
 | Partial ->
     begin match def with
     | (_,idef)::_ ->
         Some (Lstaticraise (idef,[])),[],jumps_singleton idef ctx
-    | _ -> assert false
+    | _ ->
+       (* Act as Total, this means
+          If no appropriate default matrix exists,
+          then this switch cannot fail *)
+        None, [], jumps_empty
     end
 | Total ->
     None, [], jumps_empty
@@ -2283,7 +2291,7 @@ and do_compile_matching_pr repr partial ctx arg x =
   prerr_string "COMPILE: " ;
   prerr_endline (match partial with Partial -> "Partial" | Total -> "Total") ;
   prerr_endline "MATCH" ;
-  pretty_ext x ;
+  pretty_precompiled x ;
   prerr_endline "CTX" ;
   pretty_ctx ctx ;
   let (_, jumps) as r =  do_compile_matching repr partial ctx arg x in
