@@ -6,13 +6,13 @@ OTHERS=../..
 
 include $(TOPDIR)/config/Makefile
 
-LABLTKDIR=$(LIBDIR)/labltk
+LABLTKDIR=$(LIBDIR)/mltk
 
 ## Tools from the Objective Caml distribution
 
 CAMLRUN=$(TOPDIR)/boot/ocamlrun
 LABLC=$(CAMLRUN) $(TOPDIR)/ocamlc -I $(TOPDIR)/stdlib
-LABLCOMP=$(LABLC) -c
+LABLCOMP=$(LABLC) -c -warn-error A
 LABLYACC=$(TOPDIR)/boot/ocamlyacc -v
 LABLLEX=$(CAMLRUN) $(TOPDIR)/boot/ocamllex
 LABLLIBR=$(LABLC) -a
