@@ -121,7 +121,6 @@ method select_operation op args =
 method private select_imul_imm arg n =
   let l = Misc.log2 n in
   if n = 1 lsl l then (Iintop_imm(Ilsl, l), [arg])
-  else if n >= 3 && n <= 15 then (Iintop_imm(Imul, n), [arg])
   else (Iintop Imul, [arg; Cconst_int n])
 
 (* To palliate the lack of addressing with displacement, multiple
@@ -143,11 +142,7 @@ method private select_imul_imm arg n =
 method emit_stores env data regs_addr =
   let t1 = Reg.create Addr and t2 = Reg.create Addr in
   self#insert (Iop(Iintop_imm(Iadd, -8))) regs_addr [|t1|];
-  (* We can't put a move from regs_addr to t2 here, because that would
-     allow t2 to be put in the same register as regs_addr.  (The dependency
-     analysis doesn't know that Istoreincr modifies its index register.)
-     So, put an add immediate 0 instead... *)
-  self#insert (Iop(Iintop_imm(Iadd, 0))) regs_addr [|t2|];
+  self#insert (Iop Imove) regs_addr [|t2|];
   (* Store components by batch of 2 *)
   let backlog = ref None in
   let do_store r =
@@ -155,8 +150,8 @@ method emit_stores env data regs_addr =
       None -> (* keep it for later *)
         backlog := Some r
     | Some r' -> (* store r' at t1 and r at t2 *)
-        self#insert (Iop(Ispecific(Istoreincr 16))) [| r'; t1 |] [||];
-        self#insert (Iop(Ispecific(Istoreincr 16))) [| r ; t2 |] [||];
+        self#insert (Iop(Ispecific(Istoreincr 16))) [| r'; t1 |] [|r'|];
+        self#insert (Iop(Ispecific(Istoreincr 16))) [| r ; t2 |] [|r|];
         backlog := None in
   List.iter
     (fun exp -> Array.iter do_store (self#emit_expr env exp))
