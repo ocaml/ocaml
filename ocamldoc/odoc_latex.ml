@@ -473,15 +473,21 @@ class latex =
         ((Latex (self#make_label (self#exception_label e.ex_name))) :: 
          (to_text#text_of_exception e))
 
-    (** Return the LaTeX code for the given module. *)
-    method latex_of_module ?(with_link=true) m =
+    (** Return the LaTeX code for the given module. 
+       @param for_detail indicate if we must print the type ([false]) or just ["sig"] ([true]).*)
+    method latex_of_module ?(for_detail=false) ?(with_link=true) m =
       let buf = Buffer.create 32 in
       let f = Format.formatter_of_buffer buf in
       let father = Name.father m.m_name in
       let t = 
         Format.fprintf f "module %s" (Name.simple m.m_name);
-        Format.fprintf f " = %s"
-          (self#normal_module_type father m.m_type);
+        Format.fprintf f " : %s"
+          (
+	   if for_detail 
+	   then "sig" 
+	   else (self#normal_module_type father m.m_type)
+	  );
+          
         Format.pp_print_flush f ();
 
         (CodePre (Buffer.contents buf)) ::
@@ -493,8 +499,9 @@ class latex =
       in
       self#latex_of_text t
 
-    (** Return the LaTeX code for the given module type. *)
-    method latex_of_module_type ?(with_link=true) mt =
+    (** Return the LaTeX code for the given module type. 
+       @param for_detail indicate if we must print the type ([false]) or just ["sig"] ([true]).*)
+    method latex_of_module_type ?(for_detail=false) ?(with_link=true) mt =
       let buf = Buffer.create 32 in
       let f = Format.formatter_of_buffer buf in
       let father = Name.father mt.mt_name in
@@ -504,7 +511,11 @@ class latex =
           None -> ()
         | Some mtyp -> 
             Format.fprintf f " = %s"
-              (self#normal_module_type father mtyp)
+              (
+	       if for_detail 
+	       then "sig" 
+	       else (self#normal_module_type father mtyp)
+	      )
         );
 
         Format.pp_print_flush f ();
@@ -528,8 +539,9 @@ class latex =
                               | Some (Modtype mt) -> mt.mt_name)
                           ] )
 
-    (** Return the LaTeX code for the given class. *)
-    method latex_of_class ?(with_link=true) c =
+    (** Return the LaTeX code for the given class. 
+       @param for_detail indicate if we must print the type ([false]) or just ["object"] ([true]).*)
+    method latex_of_class ?(for_detail=false) ?(with_link=true) c =
       Odoc_info.reset_type_names () ;
       let buf = Buffer.create 32 in
       let f = Format.formatter_of_buffer buf in
@@ -545,8 +557,14 @@ class latex =
              let s1 = self#normal_type_list father ", " l in
              Format.fprintf f "%s] " s1
         );
-        Format.fprintf f "%s : " (Name.simple c.cl_name);
-        Format.fprintf f "%s" (self#normal_class_type father c.cl_type);
+        Format.fprintf f "%s : %s" 
+	  (Name.simple c.cl_name)
+          (
+	   if for_detail then
+	     "object"
+	   else
+	     self#normal_class_type father c.cl_type
+	  );
 
         Format.pp_print_flush f ();
         
@@ -559,8 +577,9 @@ class latex =
       in
       self#latex_of_text t
 
-    (** Return the LaTeX code for the given class type. *)
-    method latex_of_class_type ?(with_link=true) ct =
+    (** Return the LaTeX code for the given class type. 
+       @param for_detail indicate if we must print the type ([false]) or just ["object"] ([true]).*)
+    method latex_of_class_type ?(for_detail=false) ?(with_link=true) ct =
       Odoc_info.reset_type_names () ;
       let buf = Buffer.create 32 in
       let f = Format.formatter_of_buffer buf in
@@ -576,8 +595,13 @@ class latex =
              let s1 = self#normal_type_list father ", " l in
              Format.fprintf f "%s] " s1
         );
-        Format.fprintf f "%s = " (Name.simple ct.clt_name);
-        Format.fprintf f "%s" (self#normal_class_type father ct.clt_type);
+        Format.fprintf f "%s = %s" 
+	  (Name.simple ct.clt_name)
+          (if for_detail then
+	    "object"
+	  else
+	    self#normal_class_type father ct.clt_type
+	  );
 
         Format.pp_print_flush f ();
         (CodePre (Buffer.contents buf)) ::
@@ -690,7 +714,7 @@ class latex =
                  ] 
       in
       output_string chanout (self#latex_of_text text);
-      output_string chanout ((self#latex_of_class ~with_link: false c)^"\n\n") ;
+      output_string chanout ((self#latex_of_class ~for_detail: true ~with_link: false c)^"\n\n") ;
       let s_name = Name.simple c.cl_name in
       output_string chanout
         (self#latex_of_text [Latex ("\\index{"^(self#class_label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")]);
@@ -705,7 +729,9 @@ class latex =
 
       List.iter 
         (fun ele -> output_string chanout ((self#latex_of_class_element c.cl_name ele)^"\\vspace{0.1cm}\n\n"))
-        (Class.class_elements ~trans: false c)
+        (Class.class_elements ~trans: false c);
+
+      output_string chanout (self#latex_of_text [ CodePre "end"])
 
     (** Generate the LaTeX code for the given class type, in the given out channel. *)
     method generate_for_class_type chanout ct =
@@ -721,7 +747,7 @@ class latex =
       in
 
       output_string chanout (self#latex_of_text text);
-      output_string chanout ((self#latex_of_class_type ~with_link: false ct)^"\n\n") ;
+      output_string chanout ((self#latex_of_class_type ~for_detail: true ~with_link: false ct)^"\n\n") ;
       let s_name = Name.simple ct.clt_name in
       output_string chanout
         (self#latex_of_text [Latex ("\\index{"^(self#class_type_label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")]);
@@ -732,7 +758,9 @@ class latex =
 
       List.iter 
         (fun ele -> output_string chanout ((self#latex_of_class_element ct.clt_name ele)^"\\vspace{0.1cm}\n\n"))
-        (Class.class_type_elements ~trans: false ct)
+        (Class.class_type_elements ~trans: false ct);
+
+      output_string chanout (self#latex_of_text [ CodePre "end"])
 
     (** Generate the LaTeX code for the given module type, in the given out channel. *)
     method generate_for_module_type chanout mt =
@@ -748,7 +776,7 @@ class latex =
       in
       output_string chanout (self#latex_of_text text);
       if depth > 1 then
-        output_string chanout ((self#latex_of_module_type ~with_link: false mt)^"\n\n");
+        output_string chanout ((self#latex_of_module_type ~for_detail: true ~with_link: false mt)^"\n\n");
       let s_name = Name.simple mt.mt_name in
       output_string chanout
         (self#latex_of_text [Latex ("\\index{"^(self#module_type_label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")]);
@@ -764,6 +792,10 @@ class latex =
       List.iter 
         (fun ele -> output_string chanout ((self#latex_of_module_element mt.mt_name ele)^"\\vspace{0.1cm}\n\n"))
         (Module.module_type_elements ~trans: false mt);
+
+      if depth > 1 then 
+	output_string chanout (self#latex_of_text [ CodePre "end"]);
+
       (* create sub parts for modules, module types, classes and class types *)
       let rec iter ele =
         match ele with
@@ -789,7 +821,7 @@ class latex =
       in
       output_string chanout (self#latex_of_text text);
       if depth > 1 then
-        output_string chanout ((self#latex_of_module ~with_link: false m)^"\n\n");
+        output_string chanout ((self#latex_of_module ~for_detail:true ~with_link: false m)^"\n\n");
       let s_name = Name.simple m.m_name in
       output_string chanout
         (self#latex_of_text [Latex ("\\index{"^(self#module_label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")]);
@@ -805,6 +837,10 @@ class latex =
       List.iter 
         (fun ele -> output_string chanout ((self#latex_of_module_element m.m_name ele)^"\\vspace{0.1cm}\n\n"))
         (Module.module_elements ~trans: false m);
+
+      if depth > 1 then 
+	output_string chanout (self#latex_of_text [ CodePre "end"]);
+
       (* create sub parts for modules, module types, classes and class types *)
       let rec iter ele =
         match ele with
