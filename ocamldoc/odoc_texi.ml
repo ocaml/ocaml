@@ -65,6 +65,10 @@ type subparts = [
   | `Module_type of Odoc_info.Module.t_module_type
   | `Class of Odoc_info.Class.t_class
   | `Class_type of Odoc_info.Class.t_class_type
+  ]
+
+type menu_data = [ 
+  | subparts 
   | `Blank
   | `Comment of string
   | `Texi of string
@@ -379,6 +383,8 @@ class texi =
     val minus  = Verbatim " @minus{} "
     val linebreak =  Verbatim "@*\n"
 
+    val mutable indices_to_build = [ `Module ]
+
     method node depth name = 
       if depth <= maxdepth 
       then Verbatim ("@node " ^ (Texi.fix_nodename name) ^ ",\n")
@@ -386,10 +392,11 @@ class texi =
 
     method index (ind : indices) ent = 
       Verbatim 
-        (if !with_index
-        then (String.concat "" 
-                [ "@" ; indices ind ; "index " ; 
-                  Texi.escape (Name.simple ent) ; "\n" ])
+        (if !with_index 
+        then (assert(List.mem ind indices_to_build) ;
+	      String.concat "" 
+		[ "@" ; indices ind ; "index " ; 
+		  Texi.escape (Name.simple ent) ; "\n" ])
         else "")
       
 
@@ -912,14 +919,14 @@ class texi =
         puts chanout (self#texi_of_info mt.mt_info)
       end ;
 
-      let mt_ele = Module.module_type_elements ~trans:false mt in
+      let mt_ele = Module.module_type_elements ~trans:true mt in
       let subparts = module_subparts mt_ele in
       if depth < maxdepth && subparts <> []
       then begin
         let menu = Texi.ifinfo 
             ( self#heading (succ depth) [ Raw "Subparts" ]) in
         puts chanout menu ;
-        Texi.generate_menu chanout (subparts :> subparts)
+        Texi.generate_menu chanout (subparts :> menu_data)
       end ;
 
       let intf = [ Title (succ depth, None, 
@@ -943,6 +950,7 @@ class texi =
     (** Generate the Texinfo code for the given module, 
        in the given out channel. *)
     method generate_for_module chanout m =
+      Odoc_info.verbose ("Generate for module " ^ m.m_name) ;
       let depth = Name.depth m.m_name in
       let title = [ 
         self#node depth m.m_name ;
@@ -959,14 +967,14 @@ class texi =
         puts chanout (self#texi_of_info m.m_info)
       end ;
       
-      let m_ele = Module.module_elements ~trans:false m in
+      let m_ele = Module.module_elements ~trans:true m in
       let subparts = module_subparts m_ele in
       if depth < maxdepth && subparts <> []
       then begin
         let menu = Texi.ifinfo 
             ( self#heading (succ depth) [ Raw "Subparts" ]) in
         puts chanout menu ;
-        Texi.generate_menu chanout (subparts :> subparts)
+        Texi.generate_menu chanout (subparts :> menu_data)
       end ;
 
       let intf = [ Title (succ depth, None, 
@@ -1036,9 +1044,15 @@ class texi =
       Texi.generate_menu chan 
         ((List.map (fun m -> `Module m) m_list) @
          (if !with_index then
-           [ `Blank ; `Comment "Indices :" ] @
-             (List.map
-                (fun (longname, _) -> `Index (longname ^ " index"))
+	   let indices_names_to_build = List.map indices indices_to_build in
+           List.rev 
+	     (List.fold_left
+                (fun acc -> 
+		  function (longname, shortname) 
+		      when List.mem shortname indices_names_to_build -> 
+			(`Index (longname ^ " index")) :: acc
+		    | _ -> acc)
+		[ `Comment "Indices :" ; `Blank ]
                 indices_names )
          else [] ))
       
@@ -1048,32 +1062,81 @@ class texi =
       nl chan ; 
       if !with_index
       then 
+	let indices_names_to_build = List.map indices indices_to_build in
         List.iter (puts_nl chan)
           (List.flatten
              (List.map 
                 (fun (longname, shortname) ->
-                  [ "@node " ^ longname ^ " index," ;
-                    "@unnumbered " ^ longname ^ " index" ;
-                    "@printindex " ^ shortname ; ])
+		  if List.mem shortname indices_names_to_build
+		  then [ "@node " ^ longname ^ " index," ;
+			 "@unnumbered " ^ longname ^ " index" ;
+			 "@printindex " ^ shortname ; ]
+		  else [])
                 indices_names )) ;
       if !Args.with_toc 
       then puts_nl chan "@contents" ;
       puts_nl chan "@bye"
 
 
+    method do_index it =
+      if not (List.mem it indices_to_build)
+      then indices_to_build <- it :: indices_to_build
+				      
+   (** Scan the whole module information to know which indices need to be build *)
+    method scan_for_index : subparts -> unit = function
+      | `Module m ->
+          let m_ele = Module.module_elements ~trans:true m in
+	  List.iter self#scan_for_index_in_mod m_ele
+      | `Module_type mt ->	  
+          let m_ele = Module.module_type_elements ~trans:true mt in
+	  List.iter self#scan_for_index_in_mod m_ele
+      | `Class c ->
+          let c_ele = Class.class_elements ~trans:true c in
+	  List.iter self#scan_for_index_in_class c_ele
+      | `Class_type ct ->
+          let c_ele = Class.class_type_elements ~trans:true ct in
+	  List.iter self#scan_for_index_in_class c_ele
+	    
+    method scan_for_index_in_mod = function
+	(* no recusrion *)
+      | Element_value _ -> self#do_index `Value
+      | Element_exception _ -> self#do_index `Exception
+      | Element_type _ -> self#do_index `Type
+      | Element_included_module _
+      | Element_module_comment _ -> ()
+	 (* recursion *)
+      | Element_module m -> self#do_index `Module ;
+	  self#scan_for_index (`Module m)
+      | Element_module_type mt -> self#do_index `Module_type ;
+	  self#scan_for_index (`Module_type mt)
+      | Element_class c -> self#do_index `Class ;
+	  self#scan_for_index (`Class c)
+      | Element_class_type ct -> self#do_index `Class_type ;
+	  self#scan_for_index (`Class_type ct)
+
+    method scan_for_index_in_class = function
+      | Class_attribute _ -> self#do_index `Class_att
+      | Class_method _ -> self#do_index `Method
+      | Class_comment _ -> ()
+
 
     (** Generate the Texinfo file from a module list, 
        in the {!Odoc_info.Args.out_file} file. *)
     method generate module_list =
+      let filename = 
+	if !Args.out_file = Odoc_messages.default_out_file
+	then "ocamldoc.texi"
+	else !Args.out_file in
+      if !with_index
+      then List.iter self#scan_for_index 
+	  (List.map (fun m -> `Module m) module_list) ;
       try
         let chanout = open_out 
-            (Filename.concat !Args.target_dir !Args.out_file) in
+            (Filename.concat !Args.target_dir filename) in
         if !Args.with_header 
         then self#generate_texi_header chanout module_list ;
         List.iter 
-          (fun modu ->
-            Odoc_info.verbose ("Generate for module " ^ modu.m_name) ;
-            self#generate_for_module chanout modu) 
+          (self#generate_for_module chanout) 
           module_list ;
         if !Args.with_trailer 
         then self#generate_texi_trailer chanout ;
@@ -1084,4 +1147,3 @@ class texi =
           prerr_endline s ;
           incr Odoc_info.errors 
   end
-
