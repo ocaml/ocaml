@@ -83,7 +83,7 @@ install:
 	cp $(INTF) "$(LIBDIR)/camlp4/."
 	cp lib.sml "$(LIBDIR)/camlp4/."
 	cp camlp4o$(EXE) camlp4sch$(EXE) "$(BINDIR)/."
-	if test -f camlp4o.opt; then cp camlp4o.opt "$(BINDIR)/."; cp $(OBJSX) $(OBJSX:.cmx=.o) "$(LIBDIR)/camlp4/."; fi
+	if test -f camlp4o.opt; then cp camlp4o.opt "$(BINDIR)/camlp4o.opt$(EXE)"; cp $(OBJSX) $(OBJSX:.cmx=.o) "$(LIBDIR)/camlp4/."; fi
 	cp mkcamlp4.sh "$(BINDIR)/mkcamlp4"
 	chmod a+x "$(BINDIR)/mkcamlp4"
 

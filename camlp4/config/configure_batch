@@ -66,6 +66,8 @@ for i in utils parsing otherlibs/dynlink; do
 done
 
 echo "EXE=$EXE" >> Makefile.cnf
+echo "O=o" >> Makefile.cnf
+echo "A=a" >> Makefile.cnf
 echo "OPT=" >> Makefile.cnf
 echo "OTOP=$ocaml_top" >> Makefile.cnf
 
