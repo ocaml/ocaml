@@ -1,5 +1,4 @@
-Trash/selection.cmi: typing/ident.cmi asmcomp/cmm.cmi asmcomp/mach.cmi 
-Trash/sequence.cmi: asmcomp/mach.cmi asmcomp/cmm.cmi 
+Trash/translmod.cmi: bytecomp/lambda.cmi typing/typedtree.cmi 
 asmcomp/asmgen.cmi: bytecomp/lambda.cmi asmcomp/cmm.cmi 
 asmcomp/clambda.cmi: typing/ident.cmi bytecomp/lambda.cmi \
     parsing/asttypes.cmi 
@@ -25,14 +24,12 @@ asmcomp/spill.cmi: asmcomp/mach.cmi
 asmcomp/split.cmi: asmcomp/mach.cmi 
 bytecomp/bytegen.cmi: bytecomp/lambda.cmi bytecomp/instruct.cmi 
 bytecomp/bytelink.cmi: bytecomp/symtable.cmi bytecomp/emitcode.cmi 
-bytecomp/codegen.cmi: bytecomp/lambda.cmi bytecomp/instruct.cmi 
 bytecomp/dectree.cmi: bytecomp/lambda.cmi 
 bytecomp/emitcode.cmi: typing/ident.cmi bytecomp/lambda.cmi \
     bytecomp/instruct.cmi utils/config.cmi 
 bytecomp/instruct.cmi: typing/ident.cmi bytecomp/lambda.cmi 
 bytecomp/lambda.cmi: typing/ident.cmi typing/path.cmi parsing/asttypes.cmi 
 bytecomp/librarian.cmi: utils/config.cmi 
-bytecomp/linker.cmi: bytecomp/symtable.cmi bytecomp/emitcode.cmi 
 bytecomp/matching.cmi: typing/ident.cmi bytecomp/lambda.cmi \
     typing/typedtree.cmi parsing/location.cmi 
 bytecomp/printinstr.cmi: bytecomp/instruct.cmi 
@@ -43,13 +40,16 @@ bytecomp/translcore.cmi: typing/ident.cmi bytecomp/lambda.cmi \
 bytecomp/translmod.cmi: bytecomp/lambda.cmi typing/typedtree.cmi 
 driver/compile.cmi: typing/env.cmi 
 driver/optcompile.cmi: typing/env.cmi 
+essais/approx.cmi: typing/ident.cmi utils/tbl.cmi 
+essais/cfa.cmi: typing/ident.cmi utils/tbl.cmi 
+essais/xlambda.cmi: typing/ident.cmi utils/misc.cmi bytecomp/lambda.cmi \
+    parsing/asttypes.cmi 
 lex/lexer.cmi: parsing/parser.cmi 
 parsing/lexer.cmi: parsing/parser.cmi 
 parsing/parse.cmi: parsing/parsetree.cmi 
 parsing/parser.cmi: parsing/parsetree.cmi 
 parsing/parsetree.cmi: parsing/location.cmi parsing/longident.cmi \
     parsing/asttypes.cmi 
-testasmcomp/parsecmm.cmi: asmcomp/cmm.cmi 
 testasmcomp/parsecmmaux.cmi: typing/ident.cmi 
 toplevel/printval.cmi: typing/path.cmi typing/typedtree.cmi typing/env.cmi 
 toplevel/topdirs.cmi: parsing/longident.cmi 
@@ -82,11 +82,9 @@ typing/typemod.cmi: parsing/parsetree.cmi typing/includemod.cmi \
     parsing/longident.cmi 
 typing/typetexp.cmi: parsing/parsetree.cmi typing/typedtree.cmi \
     parsing/location.cmi typing/env.cmi parsing/longident.cmi 
-Trash/selection.cmo: Trash/selection.cmi typing/ident.cmi utils/misc.cmi \
-    asmcomp/proc.cmi asmcomp/selection.cmi asmcomp/mach.cmi asmcomp/cmm.cmi 
-Trash/sequence.cmo: Trash/sequence.cmi asmcomp/reg.cmi asmcomp/proc.cmi \
-    asmcomp/selection.cmi utils/tbl.cmi asmcomp/mach.cmi asmcomp/cmm.cmi \
-    utils/misc.cmi typing/ident.cmi asmcomp/arch.cmo 
+Trash/translmod.cmo: Trash/translmod.cmi bytecomp/translmod.cmi \
+    typing/ident.cmi utils/misc.cmi bytecomp/translcore.cmi \
+    bytecomp/lambda.cmi typing/typedtree.cmi 
 asmcomp/arch_sparc.cmo: utils/misc.cmi 
 asmcomp/asmgen.cmo: asmcomp/asmgen.cmi asmcomp/printcmm.cmi asmcomp/reg.cmi \
     asmcomp/printmach.cmi asmcomp/proc.cmi asmcomp/selection.cmi \
@@ -118,16 +116,17 @@ asmcomp/coloring.cmo: asmcomp/coloring.cmi asmcomp/reg.cmi asmcomp/proc.cmi
 asmcomp/compilenv.cmo: asmcomp/compilenv.cmi typing/ident.cmi \
     utils/misc.cmi utils/crc.cmi typing/env.cmi asmcomp/clambda.cmi \
     utils/config.cmi 
-asmcomp/emit.cmo: asmcomp/emit.cmi asmcomp/reg.cmi asmcomp/proc.cmi \
-    asmcomp/mach.cmi asmcomp/cmm.cmi utils/misc.cmi asmcomp/arch.cmo \
-    asmcomp/linearize.cmi asmcomp/emitaux.cmi 
+asmcomp/emit.cmo: asmcomp/emit.cmi asmcomp/reg.cmi utils/misc.cmi \
+    asmcomp/proc.cmi asmcomp/arch.cmo asmcomp/compilenv.cmi \
+    asmcomp/emit.cmi asmcomp/emitaux.cmi asmcomp/linearize.cmi \
+    asmcomp/mach.cmi asmcomp/cmm.cmi 
 asmcomp/emitaux.cmo: asmcomp/emitaux.cmi 
-asmcomp/gluecode.cmo: asmcomp/cmm.cmi 
 asmcomp/interf.cmo: asmcomp/interf.cmi asmcomp/reg.cmi asmcomp/proc.cmi \
     asmcomp/mach.cmi 
 asmcomp/linearize.cmo: asmcomp/linearize.cmi asmcomp/reg.cmi \
     asmcomp/proc.cmi asmcomp/cmm.cmi asmcomp/mach.cmi 
-asmcomp/liveness.cmo: asmcomp/liveness.cmi asmcomp/reg.cmi asmcomp/mach.cmi 
+asmcomp/liveness.cmo: asmcomp/liveness.cmi asmcomp/reg.cmi asmcomp/proc.cmi \
+    asmcomp/mach.cmi 
 asmcomp/mach.cmo: asmcomp/mach.cmi asmcomp/reg.cmi asmcomp/arch.cmo \
     asmcomp/cmm.cmi 
 asmcomp/printcmm.cmo: asmcomp/printcmm.cmi typing/ident.cmi asmcomp/cmm.cmi 
@@ -138,8 +137,8 @@ asmcomp/printmach.cmo: asmcomp/printmach.cmi asmcomp/printcmm.cmi \
     asmcomp/cmm.cmi 
 asmcomp/proc.cmo: asmcomp/proc.cmi asmcomp/reg.cmi utils/misc.cmi \
     asmcomp/proc.cmi asmcomp/arch.cmo asmcomp/mach.cmi asmcomp/cmm.cmi 
-asmcomp/proc_alpha.cmo: asmcomp/reg.cmi asmcomp/proc.cmi asmcomp/mach.cmi \
-    asmcomp/cmm.cmi utils/misc.cmi asmcomp/arch.cmo 
+asmcomp/proc_alpha.cmo: asmcomp/reg.cmi utils/misc.cmi asmcomp/proc.cmi \
+    asmcomp/arch.cmo asmcomp/mach.cmi asmcomp/cmm.cmi 
 asmcomp/proc_i386.cmo: asmcomp/reg.cmi utils/misc.cmi asmcomp/proc.cmi \
     asmcomp/arch.cmo asmcomp/mach.cmi asmcomp/cmm.cmi 
 asmcomp/proc_sparc.cmo: asmcomp/reg.cmi utils/misc.cmi asmcomp/proc.cmi \
@@ -152,17 +151,13 @@ asmcomp/selection.cmo: asmcomp/selection.cmi typing/ident.cmi \
     asmcomp/selection.cmi utils/tbl.cmi asmcomp/mach.cmi asmcomp/cmm.cmi 
 asmcomp/spill.cmo: asmcomp/spill.cmi asmcomp/reg.cmi asmcomp/proc.cmi \
     asmcomp/mach.cmi 
-asmcomp/split.cmo: asmcomp/split.cmi asmcomp/printmach.cmi asmcomp/reg.cmi \
-    asmcomp/mach.cmi 
+asmcomp/split.cmo: asmcomp/split.cmi asmcomp/reg.cmi asmcomp/mach.cmi 
 bytecomp/bytegen.cmo: bytecomp/bytegen.cmi asmcomp/codegen.cmi \
     bytecomp/lambda.cmi utils/misc.cmi typing/ident.cmi \
     bytecomp/instruct.cmi parsing/asttypes.cmi 
 bytecomp/bytelink.cmo: bytecomp/bytelink.cmi utils/config.cmi \
     utils/misc.cmi typing/ident.cmi utils/clflags.cmo bytecomp/symtable.cmi \
     bytecomp/emitcode.cmi bytecomp/opcodes.cmo 
-bytecomp/codegen.cmo: bytecomp/codegen.cmi asmcomp/codegen.cmi \
-    bytecomp/lambda.cmi utils/misc.cmi typing/ident.cmi \
-    bytecomp/instruct.cmi parsing/asttypes.cmi 
 bytecomp/dectree.cmo: bytecomp/dectree.cmi bytecomp/lambda.cmi 
 bytecomp/emitcode.cmo: bytecomp/emitcode.cmi utils/meta.cmi \
     bytecomp/lambda.cmi utils/config.cmi utils/misc.cmi typing/ident.cmi \
@@ -174,12 +169,10 @@ bytecomp/lambda.cmo: bytecomp/lambda.cmi typing/ident.cmi typing/path.cmi \
     parsing/asttypes.cmi 
 bytecomp/librarian.cmo: bytecomp/librarian.cmi utils/misc.cmi \
     bytecomp/emitcode.cmi utils/config.cmi 
-bytecomp/linker.cmo: bytecomp/linker.cmi utils/config.cmi utils/misc.cmi \
-    typing/ident.cmi utils/clflags.cmo bytecomp/symtable.cmi \
-    bytecomp/emitcode.cmi bytecomp/opcodes.cmo 
 bytecomp/matching.cmo: bytecomp/matching.cmi typing/predef.cmi \
-    bytecomp/lambda.cmi typing/typedtree.cmi parsing/location.cmi \
-    bytecomp/dectree.cmi typing/ctype.cmi parsing/asttypes.cmi 
+    bytecomp/lambda.cmi typing/typedtree.cmi bytecomp/matching.cmi \
+    parsing/location.cmi utils/misc.cmi bytecomp/dectree.cmi \
+    typing/ctype.cmi parsing/asttypes.cmi 
 bytecomp/printinstr.cmo: bytecomp/printinstr.cmi bytecomp/printlambda.cmi \
     typing/ident.cmi bytecomp/lambda.cmi bytecomp/instruct.cmi 
 bytecomp/printlambda.cmo: bytecomp/printlambda.cmi bytecomp/lambda.cmi \
@@ -192,9 +185,8 @@ bytecomp/symtable.cmo: bytecomp/symtable.cmi typing/predef.cmi \
     parsing/asttypes.cmi 
 bytecomp/translcore.cmo: bytecomp/translcore.cmi typing/predef.cmi \
     bytecomp/lambda.cmi typing/typedtree.cmi bytecomp/matching.cmi \
-    parsing/location.cmi typing/ident.cmi utils/misc.cmi \
-    bytecomp/translcore.cmi typing/ctype.cmi typing/path.cmi \
-    parsing/asttypes.cmi 
+    parsing/location.cmi typing/ident.cmi utils/misc.cmi typing/ctype.cmi \
+    bytecomp/translcore.cmi typing/path.cmi parsing/asttypes.cmi 
 bytecomp/translmod.cmo: bytecomp/translmod.cmi bytecomp/translmod.cmi \
     typing/ident.cmi utils/misc.cmi bytecomp/translcore.cmi \
     bytecomp/lambda.cmi typing/typedtree.cmi 
@@ -218,13 +210,23 @@ driver/optcompile.cmo: driver/optcompile.cmi bytecomp/printlambda.cmi \
     utils/clflags.cmo typing/includemod.cmi asmcomp/compilenv.cmi \
     typing/env.cmi 
 driver/opterrors.cmo: driver/opterrors.cmi typing/typemod.cmi \
-    typing/typedecl.cmi asmcomp/asmgen.cmi parsing/parse.cmi \
-    parsing/location.cmi bytecomp/translcore.cmi parsing/lexer.cmi \
-    typing/includemod.cmi asmcomp/compilenv.cmi typing/env.cmi \
-    typing/typecore.cmi typing/typetexp.cmi 
-driver/optmain.cmo: asmcomp/printmach.cmi driver/optcompile.cmi \
-    driver/opterrors.cmi bytecomp/librarian.cmi utils/config.cmi \
-    utils/clflags.cmo bytecomp/bytelink.cmi 
+    typing/typedecl.cmi asmcomp/asmlink.cmi asmcomp/asmgen.cmi \
+    parsing/parse.cmi parsing/location.cmi bytecomp/translcore.cmi \
+    parsing/lexer.cmi typing/includemod.cmi asmcomp/compilenv.cmi \
+    typing/env.cmi typing/typecore.cmi typing/typetexp.cmi 
+driver/optmain.cmo: asmcomp/printmach.cmi asmcomp/asmlink.cmi \
+    driver/optcompile.cmi driver/opterrors.cmi bytecomp/librarian.cmi \
+    utils/config.cmi utils/clflags.cmo 
+essais/all.cmo: bytecomp/lambda.cmi 
+essais/analyze.cmo: bytecomp/lambda.cmi 
+essais/approx.cmo: essais/approx.cmi typing/ident.cmi utils/misc.cmi \
+    bytecomp/lambda.cmi utils/tbl.cmi 
+essais/cfa.cmo: essais/cfa.cmi typing/ident.cmi utils/misc.cmi \
+    bytecomp/lambda.cmi utils/tbl.cmi 
+essais/readlambda.cmo: essais/readlambda.cmi typing/ident.cmi \
+    bytecomp/lambda.cmi utils/tbl.cmi 
+essais/xlambda.cmo: essais/xlambda.cmi bytecomp/lambda.cmi utils/misc.cmi \
+    typing/ident.cmi parsing/asttypes.cmi 
 lex/lexer.cmo: lex/lexer.cmi parsing/parser.cmi 
 lex/main.cmo: parsing/parser.cmi parsing/lexer.cmi 
 lex/parser.cmo: lex/parser.cmi 
@@ -256,11 +258,13 @@ stdlib/sort.cmo: stdlib/sort.cmi
 stdlib/stack.cmo: stdlib/stack.cmi 
 stdlib/string.cmo: stdlib/string.cmi 
 stdlib/sys.cmo: stdlib/sys.cmi 
-testasmcomp/lexcmm.cmo: testasmcomp/lexcmm.cmi utils/misc.cmi 
+testasm/equations.cmo: testasm/equations.cmi 
+testasm/kb.cmo: testasm/kb.cmi 
+testasm/list.cmo: testasm/list.cmi 
+testasm/orderings.cmo: testasm/orderings.cmi 
+testasm/terms.cmo: testasm/terms.cmi 
 testasmcomp/main.cmo: asmcomp/printmach.cmi asmcomp/asmgen.cmi \
     utils/clflags.cmo 
-testasmcomp/parsecmm.cmo: testasmcomp/parsecmm.cmi utils/misc.cmi \
-    asmcomp/arch.cmo asmcomp/cmm.cmi 
 testasmcomp/parsecmmaux.cmo: testasmcomp/parsecmmaux.cmi typing/ident.cmi 
 tools/dumpapprox.cmo: asmcomp/compilenv.cmi asmcomp/clambda.cmi \
     utils/config.cmi 

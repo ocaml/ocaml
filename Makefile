@@ -82,25 +82,23 @@ world: coldstart all
 
 # Complete bootstrapping cycle
 bootstrap:
+# Save the original bootstrap compiler
 	$(MAKE) backup
+# Promote the new compiler but keep the old runtime
+# This compiler runs on boot/camlrun and produces bytecode for byterun/camlrun
 	$(MAKE) promote-cross
+# Rebuild camlc and camllex (run on byterun/camlrun)
 	$(MAKE) clean
 	$(MAKE) camlc camllex
+# Rebuild the library (using byterun/camlrun ./camlc)
 	$(MAKE) library-cross
+# Promote the new compiler and the new runtime
 	$(MAKE) promote
+# Rebuild everything, including camltop
 	$(MAKE) clean
 	$(MAKE) all
+# Check if fixpoint reached
 	$(MAKE) compare
-
-# backup        save the bootstrap compiler
-# promote-cross promote the new compiler but keep the old runtime
-#               (runs on boot/camlrun, produces code for byterun/camlrun)
-# clean camlc camllex
-#               rebuild the compiler (runs on byterun/camlrun)
-# library-cross rebuild the library (using byterun/camlrun camlc)
-# promote       promote the new compiler and the new runtime
-# clean all     rebuild everything
-# compare       check fixpoint
 
 # Start up the system from the distribution compiler
 coldstart:
