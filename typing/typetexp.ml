@@ -181,9 +181,15 @@ let rec transl_type env policy rowvar styp =
       with Unify trace ->
         raise (Error(styp.ptyp_loc, Type_mismatch trace))
       end;
+      let unify_param =
+        match decl.type_manifest with
+          None -> unify_var
+        | Some ty ->
+            if (repr ty).level = Btype.generic_level then unify_var else unify
+      in
       List.iter2
         (fun (sty, ty) ty' ->
-           try unify_var env ty' ty with Unify trace ->
+           try unify_param env ty' ty with Unify trace ->
              raise (Error(sty.ptyp_loc, Type_mismatch (swap_list trace))))
         (List.combine stl args) params;
       cstr
