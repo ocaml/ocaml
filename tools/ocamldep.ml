@@ -57,6 +57,10 @@ and add_field_type bv ft =
     Pfield(name, ty) -> add_type bv ty
   | Pfield_var -> ()
 
+(* DYN *)
+let add_type_constraint bv (lv,ty) = add_type bv ty
+(* /DYN *)
+
 let add_opt add_fn bv = function
     None -> ()
   | Some x -> add_fn bv x
@@ -107,7 +111,7 @@ let rec add_pattern bv pat =
       List.iter (fun (lbl, p) -> add bv lbl; add_pattern bv p) pl
   | Ppat_array pl -> List.iter (add_pattern bv) pl
   | Ppat_or(p1, p2) -> add_pattern bv p1; add_pattern bv p2
-  | Ppat_constraint(p, ty) -> add_pattern bv p; add_type bv ty
+  | Ppat_constraint(p, ty) -> add_pattern bv p; add_type_constraint bv ty (* DYN *)
   | Ppat_variant(_, op) -> add_opt add_pattern bv op
   | Ppat_type (li) -> add bv li
 
@@ -138,8 +142,8 @@ let rec add_expr bv exp =
       add_expr bv e1; add_expr bv e2; add_expr bv e3
   | Pexp_constraint(e1, oty2, oty3) ->
       add_expr bv e1;
-      add_opt add_type bv oty2;
-      add_opt add_type bv oty3
+      add_opt add_type_constraint bv oty2; (* DYN *)
+      add_opt add_type_constraint bv oty3  (* DYN *)
   | Pexp_when(e1, e2) -> add_expr bv e1; add_expr bv e2
   | Pexp_send(e, m) -> add_expr bv e
   | Pexp_new l -> add bv l
@@ -149,6 +153,10 @@ let rec add_expr bv exp =
       add_module bv m; add_expr (StringSet.add id bv) e
   | Pexp_assert (e) -> add_expr bv e
   | Pexp_assertfalse -> ()
+(* DYN *)
+  | Pexp_dynamic (e) -> add_expr bv e
+  | Pexp_import (e) -> add_expr bv e
+(* /DYN *)
 
 and add_pat_expr_list bv pel =
   List.iter (fun (p, e) -> add_pattern bv p; add_expr bv e) pel

@@ -17,13 +17,14 @@ type 'a val_type =
   | Rtyp_constr of 'a * 'a val_type list
 ;;
 
-type run_type = (run_ident * string) val_type
+type digest_type = string val_type
+;;
+
+type run_type = (run_ident * digest_type) val_type
 ;;
 
 val string_of_digest : string -> string
 val string_of_run_type : run_type -> string
-
-val is_instance : ('a -> 'a -> bool) -> 'a val_type -> 'a val_type -> bool
 
 exception Type_match_failure of run_type * run_type * string * int * int
 val dynamic_comp : run_type array -> 'a -> 'a * run_type
