@@ -144,7 +144,8 @@ let primitives_table = create_hashtable 31 [
   "%array_unsafe_set", Parraysetu Pgenarray;
   "%obj_size", Parraylength Pgenarray;
   "%obj_field", Parrayrefu Pgenarray;
-  "%obj_set_field", Parraysetu Pgenarray
+  "%obj_set_field", Parraysetu Pgenarray;
+  "%obj_is_int", Pisint
 ]
 
 let prim_makearray =
