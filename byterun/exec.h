@@ -14,6 +14,9 @@
 
 /* exec.h : format of executable bytecode files */
 
+#ifndef _exec_
+#define _exec_
+
 /* Executable bytecode files are composed of a number of sections,
    identified by 4-character names.  A table of contents at the
    end of the file lists the section names along with their sizes,
@@ -54,3 +57,5 @@ struct exec_trailer {
 
 #define EXEC_MAGIC "Caml1999X006"
 
+
+#endif

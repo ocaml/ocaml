@@ -17,6 +17,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include "backtrace.h"
+#include "debugger.h"
 #include "fail.h"
 #include "misc.h"
 #include "mlvalues.h"
@@ -100,6 +102,7 @@ void fatal_uncaught_exception(value exn)
   fprintf(stderr, "Fatal error: uncaught exception %s\n", msg);
 #endif
   free(msg);
+  if (backtrace_active && !debugger_in_use) print_exception_backtrace();
 #ifdef HAS_UI
   ui_exit(2);
 #else

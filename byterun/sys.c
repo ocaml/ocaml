@@ -215,16 +215,16 @@ value sys_getenv(value var)           /* ML */
   return copy_string(res);
 }
 
-static char ** main_argv;
+char ** caml_main_argv;
 
 value sys_get_argv(value unit)        /* ML */
 {
-  return copy_string_array((char const **) main_argv);
+  return copy_string_array((char const **) caml_main_argv);
 }
 
 void sys_init(char **argv)
 {
-  main_argv = argv;
+  caml_main_argv = argv;
 }
 
 #if !(defined(WIFEXITED) && defined(WEXITSTATUS))

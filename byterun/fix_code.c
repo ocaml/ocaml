@@ -147,3 +147,11 @@ void set_instruction(code_t pos, opcode_t instr)
 #endif
 }
 
+int is_instruction(opcode_t instr1, opcode_t instr2)
+{
+#ifdef THREADED_CODE
+  return instr1 == (opcode_t)(instr_table[instr2] - instr_base);
+#else
+  return instr1 == instr2;
+#endif
+}

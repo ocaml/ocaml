@@ -26,6 +26,7 @@
 #include <windows.h>
 #endif
 #include "alloc.h"
+#include "backtrace.h"
 #include "callback.h"
 #include "custom.h"
 #include "debugger.h"
@@ -33,6 +34,7 @@
 #include "fail.h"
 #include "fix_code.h"
 #include "gc_ctrl.h"
+#include "instrtrace.h"
 #include "interp.h"
 #include "intext.h"
 #include "io.h"
@@ -45,6 +47,7 @@
 #include "signals.h"
 #include "stacks.h"
 #include "sys.h"
+#include "startup.h"
 
 #ifndef O_BINARY
 #define O_BINARY 0
@@ -66,9 +69,6 @@ static void init_atoms(void)
 
 /* Read the trailer of a bytecode file */
 
-#define FILE_NOT_FOUND (-1)
-#define BAD_BYTECODE (-2)
-
 static void fixup_endianness_trailer(uint32 * p)
 {
 #ifndef ARCH_BIG_ENDIAN
@@ -88,8 +88,8 @@ static int read_trailer(int fd, struct exec_trailer *trail)
     return BAD_BYTECODE;
 }
 
-static int attempt_open(char **name, struct exec_trailer *trail,
-                        int do_open_script)
+int attempt_open(char **name, struct exec_trailer *trail,
+                 int do_open_script)
 {
   char * truename;
   int fd;
@@ -124,7 +124,7 @@ static int attempt_open(char **name, struct exec_trailer *trail,
 
 /* Read the section descriptors */
 
-static void read_section_descriptors(int fd, struct exec_trailer *trail)
+void read_section_descriptors(int fd, struct exec_trailer *trail)
 {
   int toc_size, i;
 
@@ -139,9 +139,10 @@ static void read_section_descriptors(int fd, struct exec_trailer *trail)
 }
 
 /* Position fd at the beginning of the section having the given name.
-   Return the length of the section data in bytes. */
+   Return the length of the section data in bytes, or -1 if no section
+   found with that name. */
 
-static int32 seek_section(int fd, struct exec_trailer *trail, char *name)
+int32 seek_optional_section(int fd, struct exec_trailer *trail, char *name)
 {
   long ofs;
   int i;
@@ -154,8 +155,18 @@ static int32 seek_section(int fd, struct exec_trailer *trail, char *name)
       return trail->section[i].len;
     }
   }
-  fatal_error_arg("Fatal_error: section `%s' is missing\n", name);
-  return 0; /* not reached */
+  return -1;
+}
+
+/* Position fd at the beginning of the section having the given name.
+   Return the length of the section data in bytes. */
+
+int32 seek_section(int fd, struct exec_trailer *trail, char *name)
+{
+  int32 len = seek_optional_section(fd, trail, name);
+  if (len == -1) 
+    fatal_error_arg("Fatal_error: section `%s' is missing\n", name);
+  return len;
 }
 
 /* Check the primitives used by the bytecode file against the table of
@@ -215,7 +226,6 @@ static unsigned long minor_heap_init = Minor_heap_def;
 static unsigned long heap_chunk_init = Heap_chunk_def;
 static unsigned long heap_size_init = Init_heap_def;
 static unsigned long max_stack_init = Max_stack_def;
-extern int trace_flag;
 
 /* Parse options on the command line */
 
@@ -241,6 +251,9 @@ static int parse_command_line(char **argv)
       for (j = 0; names_of_cprim[j] != NULL; j++)
         printf("%s\n", names_of_cprim[j]);
       exit(0);
+      break;
+    case 'b':
+      backtrace_active = 1;
       break;
     default:
       fatal_error_arg("Unknown option %s.\n", argv[i]);
@@ -280,6 +293,7 @@ static void parse_camlrunparam(void)
       case 'o': scanmult (opt, &percent_free_init); break;
       case 'O': scanmult (opt, &max_percent_free_init); break;
       case 'v': scanmult (opt, &verb_gc); break;
+      case 'b': backtrace_active = 1; break;
       }
     }
   }
@@ -368,8 +382,10 @@ void caml_main(char **argv)
   res = interprete(start_code, code_size);
   if (Is_exception_result(res)) {
     exn_bucket = Extract_exception(res);
-    extern_sp = &exn_bucket; /* The debugger needs the exception value. */
-    debugger(UNCAUGHT_EXC);
+    if (debugger_in_use) {
+      extern_sp = &exn_bucket; /* The debugger needs the exception value. */
+      debugger(UNCAUGHT_EXC);
+    }
     fatal_uncaught_exception(exn_bucket);
   }
 }
