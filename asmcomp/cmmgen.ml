@@ -3,6 +3,7 @@
 open Misc
 open Arch
 open Asttypes
+open Typedtree
 open Lambda
 open Clambda
 open Cmm
@@ -134,11 +135,15 @@ let set_field ptr n newval =
   Cop(Cstore, [field_address ptr n; newval])
 
 let tag_offset =
-  if big_endian then -1 else -size_addr
+  if big_endian then -1 else -size_int
 
 let get_tag ptr =
-  Cop(Cloadchunk Byte_unsigned,
-      [Cop(Cadda, [ptr; Cconst_int(tag_offset)])])
+  if Proc.word_addressed then           (* If byte loads are slow *)
+    Cop(Cand, [Cop(Cload typ_int, [Cop(Cadda, [ptr; Cconst_int(-size_int)])]);
+               Cconst_int 255])
+  else                                  (* If byte loads are efficient *)
+    Cop(Cloadchunk Byte_unsigned,
+        [Cop(Cadda, [ptr; Cconst_int(tag_offset)])])
 
 (* Array indexing *)
 
@@ -318,8 +323,9 @@ let rec transl = function
                         [field_address (transl loc) n; transl newval]))
       else
         return_unit(set_field (transl loc) n (transl newval))
-  | Uprim(Pccall(lbl, arity, alloc), args) ->
-      Cop(Cextcall(lbl, typ_addr, alloc), List.map transl args)
+  | Uprim(Pccall prim, args) ->
+      Cop(Cextcall(prim.prim_name, typ_addr, prim.prim_alloc),
+          List.map transl args)
   | Uprim(Praise, [arg]) ->
       Cop(Craise, [transl arg])
   | Uprim(Psequand, [arg1; arg2]) ->

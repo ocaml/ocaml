@@ -210,6 +210,8 @@ let pseudoregs_for_operation op arg res =
 
 let is_immediate (n: int) = true
 
+let word_addressed = false
+
 (* Calling conventions *)
 
 let calling_conventions first_int last_int first_float last_float make_stack

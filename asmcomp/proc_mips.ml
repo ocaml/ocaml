@@ -32,6 +32,8 @@ let pseudoregs_for_operation op arg res = raise Use_default
 
 let is_immediate (n:int) = true
 
+let word_addressed = false
+
 (* Registers available for register allocation *)
 
 (* Register map:

@@ -16,6 +16,7 @@ val pseudoregs_for_operation:
       Mach.operation -> Reg.t array -> Reg.t array ->
         Reg.t array * Reg.t array
 val is_immediate: int -> bool
+val word_addressed: bool
 
 (* Registers available for register allocation *)
 val num_register_classes: int
