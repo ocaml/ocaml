@@ -29,8 +29,6 @@ type error =
   | Signature_expected
   | Structure_expected of module_type
   | With_no_component of Longident.t
-  | With_not_abstract of string
-  | With_arity_mismatch of string
   | Repeated_name of string * string
   | Non_generalizable of type_expr
 
@@ -66,10 +64,6 @@ let merge_constraint env loc sg lid constr =
     | (Tsig_type(id, decl) :: rem, [s], Pwith_type sdecl)
       when Ident.name id = s ->
         let newdecl = Typedecl.transl_with_constraint env sdecl in
-        if decl.type_manifest <> None then
-          raise(Error(loc, With_not_abstract s));
-        if newdecl.type_arity <> decl.type_arity then
-          raise(Error(loc, With_arity_mismatch s));
         Tsig_type(id, newdecl) :: rem
     | (Tsig_module(id, mty) :: rem, [s], Pwith_module lid)
       when Ident.name id = s ->
@@ -371,13 +365,6 @@ let report_error = function
   | With_no_component lid ->
       print_string "The signature constrained by `with' has no component named";
       print_space(); longident lid
-  | With_not_abstract s ->
-      print_string "In `with' constraint over type "; print_string s;
-      print_string ":"; print_space();
-      print_string "this type is already manifest"
-  | With_arity_mismatch s ->
-      print_string "Arity mismatch in `with' constraint over type ";
-      print_string s
   | Repeated_name(kind, name) ->
       open_hovbox 0;
       print_string "Multiple definition of the "; print_string kind;

@@ -31,8 +31,6 @@ type error =
   | Signature_expected
   | Structure_expected of module_type
   | With_no_component of Longident.t
-  | With_not_abstract of string
-  | With_arity_mismatch of string
   | Repeated_name of string * string
   | Non_generalizable of type_expr
 
