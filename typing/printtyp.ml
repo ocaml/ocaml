@@ -171,7 +171,13 @@ let rec typexp sch prio0 ty =
         if prio >= 2 then begin open_box 1; print_string "(" end
                      else open_box 0;
 	print_label l;
-        typexp sch 2 ty1;
+	if is_optional l then
+	  match (repr ty1).desc with
+	    Tconstr(path, [ty], _) when path = Predef.path_option ->
+	      typexp sch 2 ty
+	  | _ -> assert false
+	else
+          typexp sch 2 ty1;
         print_string " ->"; print_space();
         typexp sch 1 ty2;
         if prio >= 2 then print_string ")";
@@ -517,7 +523,14 @@ let rec perform_class_type sch params =
   | Tcty_fun (l, ty, cty) ->
       open_box 0;
       print_label l;
-      typexp sch 2 ty; print_string " ->";
+      if is_optional l then
+	match (repr ty).desc with
+	  Tconstr(path, [ty], _) when path = Predef.path_option ->
+	    typexp sch 2 ty
+	| _ -> assert false
+      else
+        typexp sch 2 ty;
+      print_string " ->";
       print_space ();
       perform_class_type sch params cty;
       close_box ()

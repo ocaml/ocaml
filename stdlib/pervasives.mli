@@ -41,7 +41,7 @@
         (* The type of arrays whose elements have type ['a]. *)
 (*- type 'a list = [] | :: of 'a * 'a list *)
         (* The type of lists whose elements have type ['a]. *)
-type 'a option = None | Some of 'a
+(* type 'a option = None | Some of 'a *)
         (* The type of optional values. *)
 (*- type ('a, 'b, 'c) format *)
         (* The type of format strings. ['a] is the type of the parameters

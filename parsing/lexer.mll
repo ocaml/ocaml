@@ -275,6 +275,7 @@ rule token = parse
   | "[<" { LBRACKETLESS }
   | "]"  { RBRACKET }
   | "{"  { LBRACE }
+  | "{=" { LBRACEEQUAL }
   | "{<" { LBRACELESS }
   | "|"  { BAR }
   | "||" { BARBAR }

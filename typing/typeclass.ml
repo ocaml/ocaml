@@ -539,9 +539,32 @@ and class_expr cl_num val_env met_env scl =
       {cl_desc = Tclass_structure desc;
        cl_loc = scl.pcl_loc;
        cl_type = Tcty_signature ty}
+  | Pcl_fun (l, Some default, spat, sbody) ->
+      let loc = default.pexp_loc in
+      let scases =
+	[{ppat_loc = loc; ppat_desc =
+	  Ppat_construct(Longident.Lident"Some",
+			 Some{ppat_loc = loc; ppat_desc = Ppat_var"*sth*"},
+			 false)},
+	 {pexp_loc = loc; pexp_desc = Pexp_ident(Longident.Lident"*sth*")};
+	 {ppat_loc = loc; ppat_desc =
+	  Ppat_construct(Longident.Lident"None", None, false)},
+	 default] in
+      let smatch =
+	{pexp_loc = loc; pexp_desc =
+	 Pexp_match({pexp_loc = loc; pexp_desc =
+		     Pexp_ident(Longident.Lident"*opt*")},
+		    scases)} in
+      let sfun =
+	{pcl_loc = scl.pcl_loc; pcl_desc =
+	 Pcl_fun(l, None, {ppat_loc = loc; ppat_desc = Ppat_var"*opt*"},
+		 {pcl_loc = scl.pcl_loc; pcl_desc =
+		  Pcl_let(Nonrecursive, [spat, smatch], sbody)})}
+      in
+      class_expr cl_num val_env met_env sfun
   | Pcl_fun (l, _, spat, scl') ->
       let (pat, pv, val_env, met_env) =
-        Typecore.type_class_arg_pattern cl_num val_env met_env spat
+        Typecore.type_class_arg_pattern cl_num val_env met_env l spat
       in
       let pv =
         List.map
@@ -552,6 +575,11 @@ and class_expr cl_num val_env met_env scl =
                 pexp_loc = Location.none}))
           pv
       in
+      let rec all_labeled = function
+	  Tcty_fun ("", _, _) -> false
+	| Tcty_fun (_, _, ty_fun) -> all_labeled ty_fun
+	| _ -> true
+      in
       Parmatch.check_partial pat.pat_loc
         [pat, (* Dummy expression *)
               {exp_desc = Texp_constant (Asttypes.Const_int 1);
@@ -561,26 +589,51 @@ and class_expr cl_num val_env met_env scl =
       Ctype.raise_nongen_level ();
       let cl = class_expr cl_num val_env met_env scl' in
       Ctype.end_def ();
+      if Btype.is_optional l && all_labeled cl.cl_type then
+	Location.print_warning pat.pat_loc
+	  (Warnings.Other "This optional argument cannot be erased");
       {cl_desc = Tclass_fun (pat, pv, cl);
        cl_loc = scl.pcl_loc;
        cl_type = Tcty_fun (l, pat.pat_type, cl.cl_type)}
   | Pcl_apply (scl', sargs) ->
       let cl = class_expr cl_num val_env met_env scl' in
-      let rec type_args ty_fun =
-        function
-          [] ->
-            ([], ty_fun)
-        | (l1, sarg1) :: sargl ->
-            begin match ty_fun with
-              Tcty_fun (l2, ty, cty) when l1 = l2 ->
-                let arg1 = type_expect val_env sarg1 ty in
-                let (argl, ty_res) = type_args cty sargl in
-                (arg1 :: argl, ty_res)
-            | _ ->
-                raise(Error(cl.cl_loc, Cannot_apply cl.cl_type))
-            end
+      let rec type_args args omitted ty_fun sargs =
+	match ty_fun with
+	| Tcty_fun (l, ty, ty_fun) when sargs <> [] ->
+	    if sargs = [] then print_endline "sargs = []";
+	    let name = Btype.label_name l in
+	    let sargs, sarg =
+	      try
+		let (l', sarg0, sargs) = Btype.extract_label name sargs in
+		sargs,
+		if Btype.is_optional l' || not (Btype.is_optional l) then
+		  Some sarg0
+		else
+		  Some { pexp_loc = sarg0.pexp_loc;
+			 pexp_desc = Pexp_construct (Longident.Lident "Some",
+						     Some sarg0, false) }
+	      with Not_found ->
+		sargs,
+		if Btype.is_optional l && List.mem_assoc "" sargs then
+		  Some { pexp_loc = Location.none;
+			 pexp_desc = Pexp_construct (Longident.Lident "None",
+						     None, false) }
+		else None
+	    in
+	    let arg, omitted =
+	      match sarg with None -> None, (l,ty) :: omitted
+	      |	Some sarg -> Some (type_expect val_env sarg ty), omitted
+	    in
+	    type_args (arg::args) omitted ty_fun sargs
+	| _ ->
+	    if sargs <> [] then
+              raise(Error(cl.cl_loc, Cannot_apply cl.cl_type));
+            (List.rev args,
+	     List.fold_left
+	       (fun ty_fun (l,ty) -> Tcty_fun(l,ty,ty_fun))
+	       ty_fun omitted)
       in
-      let (args, cty) = type_args cl.cl_type sargs in
+      let (args, cty) = type_args [] [] cl.cl_type sargs in
       {cl_desc = Tclass_apply (cl, args);
        cl_loc = scl.pcl_loc;
        cl_type = cty}

@@ -29,6 +29,8 @@ val list_remove: 'a -> 'a list -> 'a list
         (* [list_remove x l] returns a copy of [l] with the first
            element equal to [x] removed *)
 
+val may_map: ('a -> 'b) -> 'a option -> 'b option
+
 val find_in_path: string list -> string -> string
         (* Search a file in a list of directories. *)
 val remove_file: string -> unit

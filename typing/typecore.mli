@@ -29,7 +29,7 @@ val type_let:
 val type_expression:
         Env.t -> Parsetree.expression -> Typedtree.expression
 val type_class_arg_pattern:
-        string -> Env.t -> Env.t -> Parsetree.pattern ->
+        string -> Env.t -> Env.t -> label -> Parsetree.pattern ->
         Typedtree.pattern * (Ident.t * Ident.t * type_expr) list *
         Env.t * Env.t
 val type_self_pattern:

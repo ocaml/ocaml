@@ -200,6 +200,7 @@ let unclosed opening_name opening_num closing_name closing_num =
 %token <string> LABEL
 %token LAZY
 %token LBRACE
+%token LBRACEEQUAL
 %token LBRACELESS
 %token LBRACKET
 %token LBRACKETBAR
@@ -653,8 +654,8 @@ seq_expr:
   | expr SEMI seq_expr            { mkexp(Pexp_sequence($1, $3)) }
 ;
 labeled_simple_pattern:
-    QUESTION LPAREN seq_expr RPAREN LABEL simple_pattern
-      { ("?" ^ $5, Some $3, $6) }
+    QUESTION LABEL simple_pattern LBRACEEQUAL seq_expr RBRACE
+      { ("?" ^ $2, Some $5, $3) }
   | QUESTION LABEL simple_pattern
       { ("?" ^ $2, None, $3) }
   | labeled simple_pattern
@@ -820,6 +821,8 @@ simple_expr:
 simple_labeled_expr_list:
     labeled simple_expr
       { [$1, $2] }
+  | QUESTION LABEL simple_expr
+      { ["?" ^ $2, $3] }
   | simple_labeled_expr_list labeled simple_expr
       { ($2,$3) :: $1 }
 ;

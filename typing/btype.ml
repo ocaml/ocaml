@@ -174,3 +174,23 @@ let rec forget_abbrev_rec mem path =
 
 let forget_abbrev mem path =
   try mem := forget_abbrev_rec !mem path with Exit -> ()
+
+
+                  (**********************************)
+                  (*  Utilities for labels          *)
+                  (**********************************)
+
+let is_optional l =
+  String.length l > 0 && l.[0] = '?'
+
+let label_name l =
+  if is_optional l then String.sub l 1 (String.length l - 1)
+                   else l
+
+let rec extract_label_aux hd l = function
+    [] -> raise Not_found
+  | (l',t as p) :: ls ->
+      if label_name l' = l then (l', t, List.rev_append hd ls)
+      else extract_label_aux (p::hd) l ls
+
+let extract_label l ls = extract_label_aux [] l ls

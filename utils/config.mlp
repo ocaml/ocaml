@@ -11,7 +11,7 @@
 
 (* $Id$ *)
 
-let version = "2.02 / olabl branch"
+let version = "2.02 / olabl branch (99/11/01)"
 
 let standard_library =
   try

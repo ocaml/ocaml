@@ -53,6 +53,12 @@ let rec list_remove x = function
   | hd :: tl ->
       if hd = x then tl else hd :: list_remove x tl
 
+(* Options *)
+
+let may_map f = function
+    Some x -> Some (f x)
+  | None -> None
+
 (* File functions *)
 
 let find_in_path path name =

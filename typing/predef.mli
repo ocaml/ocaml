@@ -24,6 +24,7 @@ val type_unit: type_expr
 val type_exn: type_expr
 val type_array: type_expr -> type_expr
 val type_list: type_expr -> type_expr
+val type_option: type_expr -> type_expr
 
 val path_int: Path.t
 val path_char: Path.t
@@ -35,6 +36,7 @@ val path_exn: Path.t
 val path_array: Path.t
 val path_list: Path.t
 val path_format: Path.t
+val path_option: Path.t
 
 val path_match_failure: Path.t
 

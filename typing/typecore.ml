@@ -68,6 +68,11 @@ let type_constant = function
   | Const_string _ -> instance Predef.type_string
   | Const_float _ -> instance Predef.type_float
 
+(* Specific version of type_option, using newty rather than newgenty *)
+
+let type_option ty =
+  newty (Tconstr(Predef.path_option,[ty], ref Mnil))
+
 (* Typing of patterns *)
 
 let unify_pat env pat expected_ty =
@@ -215,9 +220,10 @@ let type_pattern_list env spatl =
   let new_env = add_pattern_variables env in
   (patl, new_env)
 
-let type_class_arg_pattern cl_num val_env met_env spat =
+let type_class_arg_pattern cl_num val_env met_env l spat =
   pattern_variables := [];
   let pat = type_pat val_env spat in
+  if is_optional l then unify_pat val_env pat (type_option (newvar ()));
   let (pv, met_env) =
     List.fold_right
       (fun (id, ty) (pv, env) ->
@@ -394,8 +400,12 @@ let rec type_exp env sexp =
         exp_loc = sexp.pexp_loc;
         exp_type = body.exp_type;
         exp_env = env }
-  | Pexp_function (l, _, caselist) ->
-      let ty_arg = newvar() and ty_res = newvar() in
+  | Pexp_function (_, Some _, _) ->	(* defined in type_expect *)
+      type_expect env sexp (newvar())
+  | Pexp_function (l, None, caselist) ->
+      let ty_arg =
+	if is_optional l then type_option(newvar()) else newvar()
+      and ty_res = newvar() in
       let cases = type_cases env ty_arg ty_res caselist in
       Parmatch.check_unused cases;
       Parmatch.check_partial sexp.pexp_loc cases;
@@ -405,9 +415,12 @@ let rec type_exp env sexp =
         exp_env = env }
   | Pexp_apply(sfunct, sargs) ->
       let funct = type_exp env sfunct in
-      let rec type_args ty_fun = function
+      let rec type_unknown_args args omitted ty_fun = function
         [] ->
-          ([], ty_fun)
+          (List.rev args,
+	   List.fold_left
+	     (fun ty_fun (l,ty,lv) -> newty2 lv (Tarrow(l,ty,ty_fun)))
+	     ty_fun omitted)
       | (l1, sarg1) :: sargl ->
           let (ty1, ty2) =
             try
@@ -420,9 +433,39 @@ let rec type_exp env sexp =
 		  raise(Error(sfunct.pexp_loc,
                               Apply_non_function funct.exp_type)) in
           let arg1 = type_expect env sarg1 ty1 in
-          let (argl, ty_res) = type_args ty2 sargl in
-          (arg1 :: argl, ty_res) in
-      let (args, ty_res) = type_args funct.exp_type sargs in
+          type_unknown_args (Some arg1 :: args) omitted ty2 sargl
+      in
+      let rec type_args args omitted ty_fun sargs =
+	match repr ty_fun with
+	  {desc=Tarrow (l, ty, ty_fun); level=lv} when sargs <> [] ->
+	    let name = label_name l in
+	    let sargs, sarg =
+	      try
+		let (l', sarg0, sargs) = extract_label name sargs in
+		sargs,
+		if is_optional l' || not (is_optional l) then
+		  Some sarg0
+		else
+		  Some { pexp_loc = sarg0.pexp_loc;
+			 pexp_desc = Pexp_construct (Longident.Lident "Some",
+						     Some sarg0, false) }
+	      with Not_found ->
+		sargs,
+		if is_optional l && List.mem_assoc "" sargs then
+		  Some { pexp_loc = Location.none;
+			 pexp_desc = Pexp_construct (Longident.Lident "None",
+						     None, false) }
+		else None
+	    in
+	    let arg, omitted =
+	      match sarg with None -> None, (l,ty,lv) :: omitted
+	      |	Some sarg -> Some (type_expect env sarg ty), omitted
+	    in
+	    type_args (arg::args) omitted ty_fun sargs
+	| _ ->
+	    type_unknown_args args omitted ty_fun sargs
+      in
+      let (args, ty_res) = type_args [] [] funct.exp_type sargs in
       { exp_desc = Texp_apply(funct, args);
         exp_loc = sexp.pexp_loc;
         exp_type = ty_res;
@@ -668,10 +711,10 @@ let rec type_exp env sexp =
                                 exp_loc = sexp.pexp_loc;
                                 exp_type = method_type;
                                 exp_env = env },
-                              [{exp_desc = Texp_ident(path, desc);
-                                 exp_loc = obj.exp_loc;
-                                 exp_type = desc.val_type;
-                                 exp_env = env }]),
+                              [Some {exp_desc = Texp_ident(path, desc);
+                                     exp_loc = obj.exp_loc;
+                                     exp_type = desc.val_type;
+                                     exp_env = env }]),
                    typ)
               |  _ ->
                   assert false
@@ -813,11 +856,38 @@ and type_expect env sexp ty_expected =
         exp_loc = sexp.pexp_loc;
         exp_type = exp2.exp_type;
         exp_env = env }
+  | Pexp_function (l, Some default, [spat, sbody]) ->
+      let loc = default.pexp_loc in
+      let scases =
+	[{ppat_loc = loc; ppat_desc =
+	  Ppat_construct(Longident.Lident"Some",
+			 Some{ppat_loc = loc; ppat_desc = Ppat_var"*sth*"},
+			 false)},
+	 {pexp_loc = loc; pexp_desc = Pexp_ident(Longident.Lident"*sth*")};
+	 {ppat_loc = loc; ppat_desc =
+	  Ppat_construct(Longident.Lident"None", None, false)},
+	 default] in
+      let smatch =
+	{pexp_loc = loc; pexp_desc =
+	 Pexp_match({pexp_loc = loc; pexp_desc =
+		     Pexp_ident(Longident.Lident"*opt*")},
+		    scases)} in
+      let sfun =
+	{pexp_loc = sexp.pexp_loc; pexp_desc =
+	 Pexp_function(l, None,[{ppat_loc = loc; ppat_desc = Ppat_var"*opt*"},
+				{pexp_loc = sexp.pexp_loc; pexp_desc =
+				 Pexp_let(Nonrecursive,[spat,smatch],sbody)}])}
+      in
+      type_expect env sfun ty_expected
   | Pexp_function (l, _, caselist) ->
       let (ty_arg, ty_res) =
         try filter_arrow env ty_expected l with Unify _ ->
           raise(Error(sexp.pexp_loc, Too_many_arguments))
       in
+      if is_optional l then begin
+	try unify env ty_arg (type_option(newvar()))
+	with Unify _ -> assert false
+      end;
       let cases =
         List.map
           (fun (spat, sexp) ->
@@ -827,6 +897,15 @@ and type_expect env sexp ty_expected =
              (pat, exp))
           caselist
       in
+      let rec all_labeled ty =
+	match (repr ty).desc with
+	  Tarrow ("", _, _) | Tvar -> false
+	| Tarrow (_, _, ty) -> all_labeled ty
+	| _ -> true
+      in
+      if is_optional l && all_labeled ty_res then
+	Location.print_warning (fst (List.hd cases)).pat_loc
+	  (Warnings.Other "This optional argument cannot be erased");
       Parmatch.check_unused cases;
       Parmatch.check_partial sexp.pexp_loc cases;
       { exp_desc = Texp_function cases;

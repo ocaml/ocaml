@@ -13,6 +13,7 @@
 
 (* Basic operations on core types *)
 
+open Asttypes
 open Types
 
 val generic_level: int
@@ -73,3 +74,10 @@ val memorize_abbrev:
 val forget_abbrev:
         abbrev_memo ref -> Path.t -> unit
         (* Remove an abbreviation from the cache *)
+
+(**** Utilities for labels ****)
+
+val is_optional : label -> bool
+val label_name : label -> label
+val extract_label :
+    label -> (label * 'a) list -> label * 'a * (label * 'a) list
