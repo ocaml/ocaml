@@ -115,17 +115,19 @@ a special allocation function:
 let new_adjusted_point x_init = new point ((x_init / 10) * 10);;
 \end{caml_example}
 However, the former pattern is generally more appropriate, since 
-the initialization code is part of the definition of the class and will
-remain in subclasses.
+the code for adjustment is part of the definition of the class and will be
+inherited.
 
 This ability provides class constructors as can be found in other
 languages. Several constructors can be defined this way to build
-objects of the same class but with different initialization values.
+objects of the same class but with different initialialization patterns.
+
 
 \subsection*{Reference to self}
 
-A method can also send messages to self (that is, the current object).
-For that, self must be explicitly bound, here to the variable "s".
+A method can also send messages to self (that is, the current object).  For
+that, self must be explicitly bound, here to the variable "s" ("s" could be
+any identifier, even though we will oftenr choose the name "self".)
 \begin{caml_example}
 class printable_point x_init =
   object (s)
@@ -137,9 +139,9 @@ class printable_point x_init =
 let p = new printable_point 7;;
 p#print;;
 \end{caml_example}
-Dynamically, the variable "s" is bound at the invocation of a method.
-In particular, when the class "printable_point" will be inherited, the
-variable "s" will be correctly bound to the object of the subclass.
+Dynamically, the variable "s" is bound at the invocation of a method.  In
+particular, when the class "printable_point" will be inherited, the variable
+"s" will be correctly bound to the object of the subclass.  
 
 \subsection*{Initializers}
 
@@ -151,11 +153,11 @@ access self and the instance variables.
 \begin{caml_example}
 class printable_point x_init =
   let origin = (x_init / 10) * 10 in
-  object (s)
+  object (self)
     val mutable x = origin
     method get_x = x
     method move d = x <- x + d
-    method print = print_int s#get_x
+    method print = print_int self#get_x
     initializer print_string "new point at "; s#print; print_newline()
   end;;
 let p = new printable_point 17;;
@@ -167,7 +169,8 @@ It is possible to declare a method without actually defining it, using
 the keyword "virtual".  This method will be provided latter in
 subclasses. A class containing virtual methods must be flagged
 virtual, and cannot be instantiated (that is, no object of this class
-can be created). It still defines abbreviations.
+can be created). It still defines abbreviations (treating virtual methods
+as other methods.)
 \begin{caml_example}
 class virtual abstract_point x_init =
   object (self)
@@ -200,8 +203,8 @@ let p = new restricted_point 0;;
 p#move 10;;
 p#bump;;
 \end{caml_example}
-Private methods are inherited (they will still be visible in the subclass).
-They can be hidden by signature matching, as described below.
+Private methods are inherited (they are by default visible in subclasses), 
+unless they are hidden by signature matching, as described below.
 
 %XXX Parler de private virtual ?
 
@@ -215,17 +218,19 @@ declarations, they also define a new type constructor.
 \begin{caml_example}
 class type restricted_point_type = 
   object 
-    val mutable x : int
     method get_x : int
-    method private move : int -> unit
     method bump : unit
 end;;
-fun (x : restrict_point_type) -> x;;
+fun (x : restricted_point_type) -> x;;
 \end{caml_example}
-These class interfaces can for instance be used to constrain the type
-of a class:
+In addition to documentation, these class interfaces can be used to
+constrain the type of a class. Both instance variables and private methods
+can be hidden by a class type constraint. Regular methods, however, cannot. 
 \begin{caml_example}
 class restricted_point' = (restricted_point : int -> restricted_point_type);;
+\end{caml_example}
+Or, equivalently:
+\begin{caml_example}
 class restricted_point' x = (restricted_point x : restricted_point_type);;
 \end{caml_example}
 The interface of a class can also be specified in a module
@@ -234,9 +239,7 @@ signature, and used to restrict the inferred signature of a module.
 module type POINT = sig 
   class restricted_point' : int ->
     object    
-      val mutable x : int
       method get_x : int
-      method private move : int -> unit
       method bump : unit
     end 
 end;;
@@ -434,7 +437,7 @@ seen as a colored point.
 (p : point :> colored_point);;
 \end{caml_example}
 Indeed, backward coercions are unsafe, and should be combined with a type case,
-possibly raising a runtime error.  However, there is not such operation
+possibly raising a runtime error.  However, there is no such operation
 available in the language. 
 
 Be aware that subtyping and inheritance are not related.  Inheritance is a
@@ -456,7 +459,7 @@ let to_point cp = (cp :> point);;
 In this case, the function "colored_point_to_point" is an instance of the 
 function "to_point". This is not always true, however. The fully
 explicit coercion  is more precise and is sometimes  unavoidable. 
-Here is an example:
+Here is an example where the shorter form fails:
 \begin{caml_example}
 class virtual c  = object method virtual m : c end;;
 class c'  =
@@ -600,9 +603,19 @@ subclass.
 \subsection*{Cloning objects}
 
 Objects can also be cloned, whether they are functional or imperative.
-The library function "Oo.copy" makes a shallow copy of an object. Its
-type is "< .. > as 'a -> 'a" (which is parsed as "(< .. > as 'a) ->
-'a").  The keyword "as" in that type binds the type variable "'a" to
+The library function "Oo.copy" makes a shallow copy of an object. That is, 
+it returns an object that is equal to the previous one. The 
+instance variables have been copied but their contents are shared.
+Assigning a new value to an instance variable of the copy (using a method
+call) will not affect instance variables of the original, and conversely. 
+A deeper assigned (for example if the instance variable if a reference cell) 
+will of course affect both the original and the copy. 
+
+The type of "Oo.copy" is the following:
+\begin{caml_example}
+Oo.copy;;
+\end{caml_example}
+The keyword "as" in that type binds the type variable "'a" to
 the object type "< .. >".  Therefore, "Oo.copy" takes an object with
 any methods (represented by the ellipsis), and returns an object of
 the same type. The type of "Oo.copy" is different from type "< .. > ->
@@ -821,106 +834,112 @@ module Set : SET =
 
 \subsection*{The subject/observer pattern}
 
-XXX text need to be improved here
-
 The following example, known as the subject/observer pattern, is often
 presented in the litterature as a difficult inheritance problem with
 inter-connected classes.
+The general pattern amounts to the definition a pair of two
+classes that recusively interact with one another.  
 
-The general subject/observer pattern amounts to the definition a pair of two
-classes that recusively interact with one another.  The class "subject", is
-a class of objects that have a distinguished method notify.
+The class "observer"  has a distinguished method "notify" that requires 
+two arguments, a  subject and an event to  excecute an action. 
 \begin{caml_example}
 class virtual ['subject, 'event] observer =
   object
     method virtual notify : 'subject ->  'event -> unit
   end;;
 \end{caml_example}
-The class observers has a distinguished message oberver that remembers a
-list of obervers to which all notify request are broadcasted.
+The class "subject" remembers a list of oberservers in an instance variable,
+and has a distinguished method "notify_observers" to broadcast the message
+"notify" to all observers with a particular event "e". 
 \begin{caml_example}
 class ['observer, 'event] subject =
   object (self)
     val mutable observers = ([]:'observer list)
     method add_observer obs = observers <- (obs :: observers)
-    method notify_observer (e : 'event) = 
-        List.map (fun x -> x#notify self e) observers
+    method notify_observers (e : 'event) = 
+        List.iter (fun x -> x#notify self e) observers
   end;;
 \end{caml_example}
-The difficulty is in general to define instances of the above pattern
-using inheritance. This can be done in a natural and obvious manner in
-Ocaml, as show by the following example.
+The difficulty usually relies  in defining instances of the above pattern
+by inheritance. This can be done in a natural and obvious manner in
+Ocaml, as shown on the following example manipulating windows.
 \begin{caml_example}
-class ['subject] window_observer =
-  object 
-    inherit ['subject, int] observer
-    method notify s e = s#raise
-  end;;
-class ['o] window_subject = 
-  object (self) 
-    inherit ['o, int] subject
-    val mutable top_window = false
-    method raise = top_window <- true
-    method update = self#notify_observer 0
-  end;; 
-\end{caml_example}
-
-\begin{caml_example}
-let ws = new window_subject;;
-let wo = new window_observer;;
-ws#add_observer wo;;
-\end{caml_example}
-
-Unsurprisingly the type of ws is recursive. This can be observed by
-\begin{caml_example}
-ws;;
-\end{caml_example}
-However, the classes themselves need not be defined recursively. 
-
-Below is another more complicated instance of the same pattern.
-\begin{caml_example}
-class ['subject] sampler_observer = 
-  object 
-    inherit ['subject, int] observer
-    val mutable sum_1 = 0
-    val mutable prod_2 = 1
-    method notify s e =
-      match e with
-          1 -> sum_1  <- sum_1 + s#sample 1
-        | 2 -> prod_2 <- prod_2 * s#sample 2
-        | _ -> () 
-  end;;
-class ['observer] sensor_subject =
+type event = Raise | Resize | Move;;
+let string_of_event = function
+    Raise -> "Raise" | Resize -> "Resize" | Move -> "Move";;
+let count = ref 0;;
+class ['observer] window_subject =
+  let id = count := succ !count; !count in
   object (self)
-    inherit ['observer, int] subject
-    val mutable value1 = 1
-    val mutable value2 = 1
-    method sample sensor = match sensor with 1 -> 42 | 2 -> 13 | _ -> 0
-    method sense1 = value1 <- value1 + 2 ; self#notify_observer 1
-    method sense2 = value2 <- value2 + 3 ; self#notify_observer 2
-  end;;  
-let ss = new  sensor_subject;;
-let so = new  sampler_observer;;
-ss#add_observer so;;
+    inherit ['observer, event] subject
+    val mutable position = 0
+    method identity = id
+    method move x = position <- position + x; self#notify_observers Move
+    method draw = Printf.printf "{Postion = %d}\n"  position;
+  end;;
+class ['subject] window_observer =
+  object
+    inherit ['subject, event] observer
+    method notify s e = s#draw
+  end;;
 \end{caml_example}
-The two intances can still be combined by mutiple inheritance in 
-an obvious way.
-%XXX Pas vrai : l'un des des notify ecrase l'autre !
+Unsurprisingly the type of "window" is recursive. 
 \begin{caml_example}
-class ['observer] window_sensor_subject  =
-  object
-    inherit ['observer] sensor_subject
-    inherit ['observer] window_subject
-  end;;
-class ['subject] window_sampler_observer =
-  object
-    inherit ['subject] sampler_observer
-    inherit ['subject] window_observer
-  end;;
-let ss = new sensor_subject;;
-let so = new sampler_observer;;
-ss#add_observer so;;
+let window = new window_subject;;
 \end{caml_example}
+However, the two classes of "window_subject" and "window_observer" are not
+recursive themselves. 
+\begin{caml_example}
+let window_observer = new window_observer;;
+window#add_observer window_observer;;
+window#move 1;;
+\end{caml_example}
+
+Classes "window_observer" and "window_subject" can still be extended by
+inheritance. For instance, one may enrich the "subject" with new
+behaviors and refined the behavior of the observer. 
+\begin{caml_example}
+class ['observer] richer_window_subject =
+  object (self)
+    inherit ['observer] window_subject
+    val mutable size = 1
+    method resize x = size <- size + x; self#notify_observers Resize
+    val mutable top = false
+    method raise x = top <- true; self#notify_observers Raise
+    method draw = Printf.printf "{Postion = %d; Size = %d}\n"  position size;
+  end;;
+class ['subject] richer_window_observer =
+  object 
+    inherit ['subject] window_observer as super
+    method notify s e = s#raise; super#notify s e
+  end;;
+\end{caml_example}
+We can also create a different kind of observer: 
+\begin{caml_example}
+class ['subject] trace_observer = 
+  object 
+    inherit ['subject, event] observer
+    method notify s e =
+      Printf.printf
+        "<Window %d <== %s>\n" s#identity (string_of_event e)
+  end;;
+\end{caml_example}
+and combine them as follows:
+\begin{caml_example}
+let window = new richer_window_subject;;
+window#add_observer (new richer_window_observer);;
+window#add_observer (new trace_observer);;
+window#move 1; window#resize 2;;
+\end{caml_example}
+
+
+%\section {Combination classes and modules}
+%
+% to be filled for next release...
+%
+% an example of stateless objects used to provide inheritance in modules
+%
+
 
 % LocalWords:  Caml objectexamples bsection init caml val int Oo succ incr ref
 % LocalWords:  typecheck leq bool cp eval sig struct ABSPOINT Abspoint iter
