@@ -94,7 +94,7 @@ value callback3_exn(value closure, value arg1, value arg2, value arg3)
 
 #else
 
-/* Native-code callbacks.  callback_exn[123] are implemented in asm. */
+/* Native-code callbacks.  callback[123]_exn are implemented in asm. */
 
 value callbackN_exn(value closure, int narg, value args[])
 {
@@ -113,12 +113,12 @@ value callbackN_exn(value closure, int narg, value args[])
       i += 1;
       break;
     case 2:
-      res = callback2(res, args[i], args[i + 1]);
+      res = callback2_exn(res, args[i], args[i + 1]);
       if (Is_exception_result(res)) CAMLreturn (res);
       i += 2;
       break;
     default:
-      res = callback3(res, args[i], args[i + 1], args[i + 2]);
+      res = callback3_exn(res, args[i], args[i + 1], args[i + 2]);
       if (Is_exception_result(res)) CAMLreturn (res);
       i += 3;
       break;
