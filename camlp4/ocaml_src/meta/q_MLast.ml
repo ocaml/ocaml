@@ -153,7 +153,9 @@ let a_FLOAT = Grammar.Entry.create gram "a_FLOAT";;
 let a_STRING = Grammar.Entry.create gram "a_STRING";;
 let a_CHAR = Grammar.Entry.create gram "a_CHAR";;
 let a_TILDEIDENT = Grammar.Entry.create gram "a_TILDEIDENT";;
+let a_LABEL = Grammar.Entry.create gram "a_LABEL";;
 let a_QUESTIONIDENT = Grammar.Entry.create gram "a_QUESTIONIDENT";;
+let a_OPTLABEL = Grammar.Entry.create gram "a_OPTLABEL";;
 
 let o2b =
   function
@@ -626,7 +628,7 @@ Grammar.extend
                 Qast.Tuple [xx1; xx2; xx3] -> xx1, xx2, xx3
               | _ ->
                   match () with
-                  _ -> raise (Match_failure ("q_MLast.ml", 300, 19))
+                  _ -> raise (Match_failure ("q_MLast.ml", 302, 19))
             in
             Qast.Node ("StExc", [Qast.Loc; c; tl; b]) :
             'str_item));
@@ -896,7 +898,7 @@ Grammar.extend
                 Qast.Tuple [xx1; xx2; xx3] -> xx1, xx2, xx3
               | _ ->
                   match () with
-                  _ -> raise (Match_failure ("q_MLast.ml", 358, 19))
+                  _ -> raise (Match_failure ("q_MLast.ml", 360, 19))
             in
             Qast.Node ("SgExc", [Qast.Loc; c; tl]) :
             'sig_item));
@@ -3345,15 +3347,27 @@ Grammar.extend
         (fun (l : 'class_longident) _ (m : 'a_UIDENT) (loc : int * int) ->
            (Qast.Cons (m, l) : 'class_longident))]];
     Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e),
-    Some (Gramext.After "arrow"),
-    [None, Some Gramext.NonA,
+    Some (Gramext.Level "arrow"),
+    [None, Some Gramext.RightA,
      [[Gramext.Snterm
+         (Grammar.Entry.obj (a_OPTLABEL : 'a_OPTLABEL Grammar.Entry.e));
+       Gramext.Sself],
+      Gramext.action
+        (fun (t : 'ctyp) (i : 'a_OPTLABEL) (loc : int * int) ->
+           (Qast.Node ("TyOlb", [Qast.Loc; i; t]) : 'ctyp));
+      [Gramext.Snterm
          (Grammar.Entry.obj
             (a_QUESTIONIDENT : 'a_QUESTIONIDENT Grammar.Entry.e));
        Gramext.Stoken ("", ":"); Gramext.Sself],
       Gramext.action
         (fun (t : 'ctyp) _ (i : 'a_QUESTIONIDENT) (loc : int * int) ->
            (Qast.Node ("TyOlb", [Qast.Loc; i; t]) : 'ctyp));
+      [Gramext.Snterm
+         (Grammar.Entry.obj (a_LABEL : 'a_LABEL Grammar.Entry.e));
+       Gramext.Sself],
+      Gramext.action
+        (fun (t : 'ctyp) (i : 'a_LABEL) (loc : int * int) ->
+           (Qast.Node ("TyLab", [Qast.Loc; i; t]) : 'ctyp));
       [Gramext.Snterm
          (Grammar.Entry.obj (a_TILDEIDENT : 'a_TILDEIDENT Grammar.Entry.e));
        Gramext.Stoken ("", ":"); Gramext.Sself],
@@ -3518,6 +3532,30 @@ Grammar.extend
         (fun (i : 'a_QUESTIONIDENT) (loc : int * int) ->
            (Qast.Node ("PaOlb", [Qast.Loc; i; Qast.Option None]) : 'patt));
       [Gramext.Snterm
+         (Grammar.Entry.obj (a_OPTLABEL : 'a_OPTLABEL Grammar.Entry.e));
+       Gramext.Stoken ("", "(");
+       Gramext.Snterm
+         (Grammar.Entry.obj (patt_tcon : 'patt_tcon Grammar.Entry.e));
+       Gramext.srules
+         [[Gramext.Sopt
+             (Gramext.Snterm
+                (Grammar.Entry.obj (eq_expr : 'eq_expr Grammar.Entry.e)))],
+          Gramext.action
+            (fun (a : 'eq_expr option) (loc : int * int) ->
+               (Qast.Option a : 'a_opt));
+          [Gramext.Snterm
+             (Grammar.Entry.obj (a_opt : 'a_opt Grammar.Entry.e))],
+          Gramext.action
+            (fun (a : 'a_opt) (loc : int * int) -> (a : 'a_opt))];
+       Gramext.Stoken ("", ")")],
+      Gramext.action
+        (fun _ (eo : 'a_opt) (p : 'patt_tcon) _ (i : 'a_OPTLABEL)
+           (loc : int * int) ->
+           (Qast.Node
+              ("PaOlb",
+               [Qast.Loc; i; Qast.Option (Some (Qast.Tuple [p; eo]))]) :
+            'patt));
+      [Gramext.Snterm
          (Grammar.Entry.obj
             (a_QUESTIONIDENT : 'a_QUESTIONIDENT Grammar.Entry.e));
        Gramext.Stoken ("", ":"); Gramext.Stoken ("", "(");
@@ -3547,6 +3585,13 @@ Grammar.extend
       Gramext.action
         (fun (i : 'a_TILDEIDENT) (loc : int * int) ->
            (Qast.Node ("PaLab", [Qast.Loc; i; Qast.Option None]) : 'patt));
+      [Gramext.Snterm
+         (Grammar.Entry.obj (a_LABEL : 'a_LABEL Grammar.Entry.e));
+       Gramext.Sself],
+      Gramext.action
+        (fun (p : 'patt) (i : 'a_LABEL) (loc : int * int) ->
+           (Qast.Node ("PaLab", [Qast.Loc; i; Qast.Option (Some p)]) :
+            'patt));
       [Gramext.Snterm
          (Grammar.Entry.obj (a_TILDEIDENT : 'a_TILDEIDENT Grammar.Entry.e));
        Gramext.Stoken ("", ":"); Gramext.Sself],
@@ -3606,6 +3651,30 @@ Grammar.extend
         (fun (i : 'a_QUESTIONIDENT) (loc : int * int) ->
            (Qast.Node ("PaOlb", [Qast.Loc; i; Qast.Option None]) : 'ipatt));
       [Gramext.Snterm
+         (Grammar.Entry.obj (a_OPTLABEL : 'a_OPTLABEL Grammar.Entry.e));
+       Gramext.Stoken ("", "(");
+       Gramext.Snterm
+         (Grammar.Entry.obj (ipatt_tcon : 'ipatt_tcon Grammar.Entry.e));
+       Gramext.srules
+         [[Gramext.Sopt
+             (Gramext.Snterm
+                (Grammar.Entry.obj (eq_expr : 'eq_expr Grammar.Entry.e)))],
+          Gramext.action
+            (fun (a : 'eq_expr option) (loc : int * int) ->
+               (Qast.Option a : 'a_opt));
+          [Gramext.Snterm
+             (Grammar.Entry.obj (a_opt : 'a_opt Grammar.Entry.e))],
+          Gramext.action
+            (fun (a : 'a_opt) (loc : int * int) -> (a : 'a_opt))];
+       Gramext.Stoken ("", ")")],
+      Gramext.action
+        (fun _ (eo : 'a_opt) (p : 'ipatt_tcon) _ (i : 'a_OPTLABEL)
+           (loc : int * int) ->
+           (Qast.Node
+              ("PaOlb",
+               [Qast.Loc; i; Qast.Option (Some (Qast.Tuple [p; eo]))]) :
+            'ipatt));
+      [Gramext.Snterm
          (Grammar.Entry.obj
             (a_QUESTIONIDENT : 'a_QUESTIONIDENT Grammar.Entry.e));
        Gramext.Stoken ("", ":"); Gramext.Stoken ("", "(");
@@ -3635,6 +3704,13 @@ Grammar.extend
       Gramext.action
         (fun (i : 'a_TILDEIDENT) (loc : int * int) ->
            (Qast.Node ("PaLab", [Qast.Loc; i; Qast.Option None]) : 'ipatt));
+      [Gramext.Snterm
+         (Grammar.Entry.obj (a_LABEL : 'a_LABEL Grammar.Entry.e));
+       Gramext.Sself],
+      Gramext.action
+        (fun (p : 'ipatt) (i : 'a_LABEL) (loc : int * int) ->
+           (Qast.Node ("PaLab", [Qast.Loc; i; Qast.Option (Some p)]) :
+            'ipatt));
       [Gramext.Snterm
          (Grammar.Entry.obj (a_TILDEIDENT : 'a_TILDEIDENT Grammar.Entry.e));
        Gramext.Stoken ("", ":"); Gramext.Sself],
@@ -3669,6 +3745,13 @@ Grammar.extend
         (fun (i : 'a_QUESTIONIDENT) (loc : int * int) ->
            (Qast.Node ("ExOlb", [Qast.Loc; i; Qast.Option None]) : 'expr));
       [Gramext.Snterm
+         (Grammar.Entry.obj (a_OPTLABEL : 'a_OPTLABEL Grammar.Entry.e));
+       Gramext.Sself],
+      Gramext.action
+        (fun (e : 'expr) (i : 'a_OPTLABEL) (loc : int * int) ->
+           (Qast.Node ("ExOlb", [Qast.Loc; i; Qast.Option (Some e)]) :
+            'expr));
+      [Gramext.Snterm
          (Grammar.Entry.obj
             (a_QUESTIONIDENT : 'a_QUESTIONIDENT Grammar.Entry.e));
        Gramext.Stoken ("", ":"); Gramext.Sself],
@@ -3681,6 +3764,13 @@ Grammar.extend
       Gramext.action
         (fun (i : 'a_TILDEIDENT) (loc : int * int) ->
            (Qast.Node ("ExLab", [Qast.Loc; i; Qast.Option None]) : 'expr));
+      [Gramext.Snterm
+         (Grammar.Entry.obj (a_LABEL : 'a_LABEL Grammar.Entry.e));
+       Gramext.Sself],
+      Gramext.action
+        (fun (e : 'expr) (i : 'a_LABEL) (loc : int * int) ->
+           (Qast.Node ("ExLab", [Qast.Loc; i; Qast.Option (Some e)]) :
+            'expr));
       [Gramext.Snterm
          (Grammar.Entry.obj (a_TILDEIDENT : 'a_TILDEIDENT Grammar.Entry.e));
        Gramext.Stoken ("", ":"); Gramext.Sself],
@@ -4427,6 +4517,11 @@ Grammar.extend
      Gramext.action
        (fun (a : string) _ (loc : int * int) ->
           (antiquot "" loc a : 'a_TILDEIDENT))]];
+   Grammar.Entry.obj (a_LABEL : 'a_LABEL Grammar.Entry.e), None,
+   [None, None,
+    [[Gramext.Stoken ("LABEL", "")],
+     Gramext.action
+       (fun (s : string) (loc : int * int) -> (Qast.Str s : 'a_LABEL))]];
    Grammar.Entry.obj (a_QUESTIONIDENT : 'a_QUESTIONIDENT Grammar.Entry.e),
    None,
    [None, None,
@@ -4437,7 +4532,12 @@ Grammar.extend
      [Gramext.Stoken ("", "?"); Gramext.Stoken ("ANTIQUOT", "")],
      Gramext.action
        (fun (a : string) _ (loc : int * int) ->
-          (antiquot "" loc a : 'a_QUESTIONIDENT))]]];;
+          (antiquot "" loc a : 'a_QUESTIONIDENT))]];
+   Grammar.Entry.obj (a_OPTLABEL : 'a_OPTLABEL Grammar.Entry.e), None,
+   [None, None,
+    [[Gramext.Stoken ("OPTLABEL", "")],
+     Gramext.action
+       (fun (s : string) (loc : int * int) -> (Qast.Str s : 'a_OPTLABEL))]]];;
 
 let apply_entry e =
   let f s = Grammar.Entry.parse e (Stream.of_string s) in
