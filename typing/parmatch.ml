@@ -940,7 +940,7 @@ let rec exhaust variants tdefs pss n = match pss with
     let q0 = discr_pat omega pss in
     begin match filter_all q0 pss with
           (* first column of pss is made of variables only *)
-      [] ->
+    | [] ->
         begin match exhaust variants tdefs (filter_extra pss) (n-1) with
         | Rsome r -> Rsome (q0::r)
         | r -> r
@@ -956,19 +956,27 @@ let rec exhaust variants tdefs pss n = match pss with
         if full_match None false constrs
         then try_many variants try_non_omega constrs
         else
-          match exhaust variants tdefs (filter_extra pss) (n-1) with
-          | Rnone ->   try_many variants try_non_omega constrs
+          (*
+             D = filter_extra pss is the default matrix
+             as it is included in pss, one can avoid
+             recursive calls on specialized matrices,
+             Essentially :
+             * D exhaustive => pss exhaustive
+             * D non-exhaustive => we have a non-filtered value
+          *)
+          let r =  exhaust variants tdefs (filter_extra pss) (n-1) in
+           (* but we try all constructors anyway, for variant typing ! *)
+           (* Note: it may impact dramatically on cost *)
+          if variants then
+            ignore (try_many variants try_non_omega constrs) ;
+          match r with
+          | Rnone -> Rnone
           | Rsome r ->
-              (* try all constructors anyway, for variant typing ! *)
-              (* Note: it may impact dramatically on cost *)
-              if variants then
-                ignore (try_many variants try_non_omega constrs) ;
               try
                 Rsome (build_other constrs::r)
               with
       (* cannot occur, since constructors don't make a full signature *)
               | Empty -> fatal_error "Parmatch.exhaust"
-
     end
 
 let rec pressure_variants tdefs = function
