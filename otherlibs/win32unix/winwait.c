@@ -37,7 +37,7 @@ static value alloc_process_status(pid, status)
   return res;
 }
 
-value win_waitpid(flags, vpid_req)
+value win_waitpid(flags, vpid_req) /* ML */
      value flags, vpid_req;
 {
   int status, pid_req;

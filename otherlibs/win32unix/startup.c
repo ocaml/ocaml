@@ -17,7 +17,7 @@
 
 value val_process_id;
 
-value win_startup(unit)
+value win_startup(unit)         /* ML */
      value unit;
 {
   WSADATA wsaData;
@@ -33,7 +33,7 @@ value win_startup(unit)
   return Val_unit;
 }
 
-value win_cleanup(unit)
+value win_cleanup(unit)         /* ML */
      value unit;
 {
   (void) WSACleanup();

@@ -34,7 +34,7 @@ static regexp alloc_regexp()
 
 static char * case_fold_table = NULL;
 
-value str_compile_regexp(src, fold)
+value str_compile_regexp(src, fold) /* ML */
      value src, fold;
 {
   regexp expr;
@@ -70,7 +70,7 @@ static regoff_t start_regs[10], end_regs[10];
 
 static struct re_registers match_regs = { 10, start_regs, end_regs };
 
-value str_string_match(expr, text, pos)
+value str_string_match(expr, text, pos) /* ML */
      regexp expr;
      value text, pos;
 {
@@ -85,7 +85,7 @@ value str_string_match(expr, text, pos)
   }
 }
 
-value str_search_forward(expr, text, pos)
+value str_search_forward(expr, text, pos) /* ML */
      regexp expr;
      value text, pos;
 {
@@ -103,7 +103,7 @@ value str_search_forward(expr, text, pos)
   }
 }
 
-value str_search_backward(expr, text, pos)
+value str_search_backward(expr, text, pos) /* ML */
      regexp expr;
      value text, pos;
 {
@@ -121,19 +121,19 @@ value str_search_backward(expr, text, pos)
   }
 }
 
-value str_beginning_group(ngroup)
+value str_beginning_group(ngroup) /* ML */
      value ngroup;
 {
   return Val_int(start_regs[Int_val(ngroup)]);
 }
 
-value str_end_group(ngroup)
+value str_end_group(ngroup)     /* ML */
      value ngroup;
 {
   return Val_int(end_regs[Int_val(ngroup)]);
 }
 
-value str_replacement_text(repl, orig)
+value str_replacement_text(repl, orig) /* ML */
      value repl, orig;
 {
   value res;

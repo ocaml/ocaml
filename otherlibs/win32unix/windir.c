@@ -41,7 +41,7 @@ value win_findfirst(name)             /* ML */
   return v;
 }
 
-value win_findnext(valh)
+value win_findnext(valh)        /* ML */
      value valh;
 {
   int retcode;
@@ -52,7 +52,7 @@ value win_findnext(valh)
   return copy_string(fileinfo.name);
 }	
 
-value win_findclose(valh)
+value win_findclose(valh)       /* ML */
 	value valh;
 {
   if (_findclose(Int_val(valh)) != 0) uerror("closedir", Nothing);

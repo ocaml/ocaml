@@ -46,7 +46,7 @@ value win_create_process_native(cmd, cmdline, env, fd1, fd2, fd3)
   return Val_int(pi.hProcess);
 }
 
-value win_create_process(argv, argn)
+value win_create_process(argv, argn) /* ML */
 	value * argv;
 	int argn;
 {

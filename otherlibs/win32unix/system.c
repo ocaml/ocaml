@@ -18,7 +18,7 @@
 #include <process.h>
 #include <stdio.h>
 
-value win_system(cmd)
+value win_system(cmd)           /* ML */
      value cmd;
 {
   int ret;
