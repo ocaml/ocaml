@@ -68,7 +68,7 @@ static long parse_long(char * p)
   if (d < 0) failwith("int_of_string");
   for (p++, res = d; /*nothing*/; p++) {
     d = parse_digit(p);
-    if (d < 0) break;
+    if (d < 0 || d >= base) break;
     res = base * res + d;
   }
   if (*p != 0) failwith("int_of_string");
@@ -406,7 +406,7 @@ value int64_of_string(value s)          /* ML */
   p = parse_sign_and_base(String_val(s), &base, &sign);
   for (res = 0; /*nothing*/; p++) {
     d = parse_digit(p);
-    if (d < 0) break;
+    if (d < 0 || d >= base) break;
     res = base * res + d;
   }
   if (*p != 0) failwith("int_of_string");
