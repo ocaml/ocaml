@@ -1,10 +1,21 @@
-INSTALLATIONS INSTRUCTIONS IN UNIX MACHINES
+IMPORTANT REMARK
 
-1- For the compilation, you need the Objective Caml compiler, "ocamlc"
-   installed in your machine, and its library "dynlink" installed too
-   (which is the default).
+The present sources distribution already compiles and installs Camlp4:
+everything in the OCaml directory above.
 
-2- From the top directory, do:
+Except for the native win32 compilation using Visual C++!!!
+
+If you are compiling OCaml for this distribution, you need to compile
+Camlp4 afterwards, following the instructions below. Otherwise nothing
+has to be done.
+
+INSTALLATIONS INSTRUCTIONS FOR NATIVE WIN32
+
+1- For the compilation, you need the OCaml compiler, "ocamlc" installed
+   in your machine. Use the Cygwin environment, a development tool for
+   Windows made by Cygnus. Find information and download in the Web.
+
+2- From this directory, type:
         ./configure
    and follow the instructions
 
@@ -26,32 +37,9 @@ INSTALLATIONS INSTRUCTIONS IN UNIX MACHINES
         make opt
 
 6- You can now install the camlp4 system. This will create the command
-   "camlp4" and install library files. Become root and do:
+   "camlp4" and some other commands and install library files. Do:
         make install
 
-7- Test the system by pretty printing your Objective Caml source files:
+7- Test the system by pretty printing your OCaml source files:
         camlp4o pr_o.cmo foo.ml
-   "foo.ml" being one of your Objective Caml source files.
-
-
-INSTALLATIONS INSTRUCTIONS IN WINDOWS
-
-The better way to compile camlp4 is to use Gnu-Win32, a development
-tool for Windows NT/95 made by Cygnus. You can find informations and
-download it at location:
-
-      http://www.cygnus.com/misc/gnu-win32/
-
-Then edit the file "config/Makefile.tpl" and change the line
-      EXE=
-into:
-      EXE=.exe
-
-Then follow the same instructions than for unix above.
-
-Possible problems:
-
-- When you type "./configure" (point 2 above), the second question may
-be skipped without asking. This is a (known) bug of Cygnus Beta 19. To
-go around this problem, edit the file "configure" and change the line
-"read r" into "read r; read s" and try again.
+   "foo.ml" being one of your OCaml source files.
