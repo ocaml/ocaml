@@ -49,13 +49,15 @@ let dynamics_type loc name =
 exception Unimplemented of string
 
 
-let dummy_ty = {desc = Tvar; level = -1; id = -1}
-let dummy_type_decl =
-  { type_params = [];
-    type_arity = 0;
-    type_kind = Type_abstract;
-    type_manifest = Some dummy_ty;
-    type_variance = [] }
+let var_path_name path =
+  let rec aux acc = function
+    | Path.Pident ident ->
+        Ident.unique_name ident :: acc
+    | Path.Pdot (path, string, _) ->
+        aux (string :: acc) path
+    | Path.Papply _ -> assert false
+  in
+  String.concat ":" (aux [] path)
 
 let extract_type_definitions whole_env ty0 =
   let r_env = ref Env.empty and r_sig = ref [] in
@@ -67,7 +69,9 @@ let extract_type_definitions whole_env ty0 =
     let path' = Path.Pident id in
     begin try
       let _ = Env.find_type path' !r_env in ()
+        ; Printf.eprintf "  (saw         %s)\n" (var_path_name path); flush stderr;
     with Not_found ->
+      Printf.eprintf "  (encountered %s, munged as %s)\n" (var_path_name path) (var_path_name path'); flush stderr;
       let decl =
         Env.find_type path whole_env
       in
@@ -78,7 +82,11 @@ let extract_type_definitions whole_env ty0 =
           type_kind = Type_abstract;
           type_manifest =
             begin match decl.type_manifest with
-            | Some ty -> all ty; decl.type_manifest
+            | Some ty ->
+                let ty1 = Ctype.correct_levels ty in
+                Ctype.normalize_type whole_env ty1;
+                all ty1;
+                Some ty1
             | None ->
                 match decl.type_kind with
                 | Type_abstract ->
@@ -115,12 +123,14 @@ let extract_type_definitions whole_env ty0 =
 (* From a type expression, produce code that builds a value that describes
    this type expression. Said value has the type Dynamics.type_bytes. *)
 let make_type_repr_code whole_env ty0 =
+  Printf.eprintf "<Transldyn.make_type_repr_code>\n"; flush stderr;
   let ty1 = Ctype.correct_levels ty0 in
   Ctype.normalize_type whole_env ty1;
   let sg = extract_type_definitions whole_env ty1 in
   let bytes =
     Marshal.to_string (sg : reified_type_data) []
   in
+  Printf.eprintf "</Transldyn.make_type_repr_code>\n"; flush stderr;
   Lconst (Const_base (Const_string bytes))
 
 
