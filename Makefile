@@ -24,7 +24,7 @@ PARSING=parsing/location.cmo parsing/parser.cmo parsing/lexer.cmo \
 
 TYPING=typing/ident.cmo typing/path.cmo typing/typedtree.cmo \
   typing/subst.cmo typing/printtyp.cmo \
-  typing/predef.cmo typing/env.cmo \
+  typing/predef.cmo typing/datarepr.cmo typing/env.cmo \
   typing/ctype.cmo typing/mtype.cmo \
   typing/includecore.cmo typing/includemod.cmo typing/parmatch.cmo \
   typing/typetexp.cmo typing/typecore.cmo \
@@ -40,9 +40,9 @@ BYTECOMP=bytecomp/meta.cmo bytecomp/instruct.cmo bytecomp/bytegen.cmo \
   bytecomp/symtable.cmo bytecomp/bytelibrarian.cmo bytecomp/bytelink.cmo
 
 ASMCOMP=asmcomp/arch.cmo asmcomp/cmm.cmo asmcomp/printcmm.cmo \
+  asmcomp/reg.cmo asmcomp/mach.cmo asmcomp/proc.cmo \
   asmcomp/clambda.cmo asmcomp/compilenv.cmo \
   asmcomp/closure.cmo asmcomp/cmmgen.cmo \
-  asmcomp/reg.cmo asmcomp/mach.cmo asmcomp/proc.cmo \
   asmcomp/printmach.cmo asmcomp/selection.cmo \
   asmcomp/liveness.cmo asmcomp/spill.cmo asmcomp/split.cmo \
   asmcomp/interf.cmo asmcomp/coloring.cmo asmcomp/reload.cmo \
