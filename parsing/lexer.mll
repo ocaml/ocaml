@@ -379,9 +379,22 @@ and string = parse
   | '\\' _
       { if in_comment ()
         then string lexbuf
+(*
         else raise (Error (Illegal_escape (Lexing.lexeme lexbuf),
                            Lexing.lexeme_start lexbuf,
                            Lexing.lexeme_end lexbuf))
+*)
+        else begin
+          let loc = { Location.loc_start = Lexing.lexeme_start lexbuf;
+                      Location.loc_end = Lexing.lexeme_end lexbuf;
+                      Location.loc_ghost = false }
+          and warn = Warnings.Other "Illegal backslash escape in string"
+          in
+          Location.prerr_warning loc warn;
+          store_string_char (Lexing.lexeme_char lexbuf 0);
+          store_string_char (Lexing.lexeme_char lexbuf 1);
+          string lexbuf
+        end
       }
   | eof
       { raise (Error (Unterminated_string,

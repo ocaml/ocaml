@@ -37,28 +37,22 @@ let bind_nonvar name arg fn =
   | Cconst_pointer _ | Cconst_natpointer _ -> fn arg
   | _ -> let id = Ident.create name in Clet(id, arg, fn (Cvar id))
 
-(* Block headers. Meaning of the tag field:
-       0 - 248: regular blocks
-       249: infix closure
-       250: closures
-       251: abstract
-       252: string
-       253: float
-       254: float array
-       255: finalized *)
+(* Block headers. Meaning of the tag field: see stdlib/obj.ml *)
 
-let float_tag = Cconst_int 253
-let floatarray_tag = Cconst_int 254
+let float_tag = Cconst_int Obj.double_tag
+let floatarray_tag = Cconst_int Obj.double_array_tag
 
 let block_header tag sz =
   Nativeint.add (Nativeint.shift_left (Nativeint.of_int sz) 10)
                 (Nativeint.of_int tag)
-let closure_header sz = block_header 250 sz
-let infix_header ofs = block_header 249 ofs
-let float_header = block_header 253 (size_float / size_addr)
-let floatarray_header len = block_header 254 (len * size_float / size_addr)
-let string_header len = block_header 252 ((len + size_addr) / size_addr)
-let boxedint_header = block_header 255 2
+let closure_header sz = block_header Obj.closure_tag sz
+let infix_header ofs = block_header Obj.infix_tag ofs
+let float_header = block_header Obj.double_tag (size_float / size_addr)
+let floatarray_header len =
+      block_header Obj.double_array_tag (len * size_float / size_addr)
+let string_header len =
+      block_header Obj.string_tag ((len + size_addr) / size_addr)
+let boxedint_header = block_header Obj.custom_tag 2
 
 let alloc_block_header tag sz = Cconst_natint(block_header tag sz)
 let alloc_float_header = Cconst_natint(float_header)

@@ -17,8 +17,6 @@ open Obj
 
 (**** Object representation ****)
 
-let object_tag = 248
-
 let last_id = ref 0
 let new_id () =
   let id = !last_id in incr last_id; id
@@ -397,7 +395,7 @@ let init_class table =
 
 let create_object table =
   (* XXX Appel de [obj_block] *)
-  let obj = Obj.new_block object_tag table.size in
+  let obj = Obj.new_block Obj.object_tag table.size in
   (* XXX Appel de [modify] *)
   Obj.set_field obj 0 (Obj.repr table.buckets);
   set_id obj last_id;

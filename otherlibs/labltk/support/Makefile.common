@@ -12,7 +12,7 @@ LABLTKDIR=$(LIBDIR)/labltk
 
 CAMLRUN=$(TOPDIR)/boot/ocamlrun
 LABLC=$(CAMLRUN) $(TOPDIR)/ocamlc -I $(TOPDIR)/stdlib
-LABLCOMP=$(LABLC) -c
+LABLCOMP=$(LABLC) -c -warn-error A
 LABLYACC=$(TOPDIR)/boot/ocamlyacc -v
 LABLLEX=$(CAMLRUN) $(TOPDIR)/boot/ocamllex
 LABLLIBR=$(LABLC) -a

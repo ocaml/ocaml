@@ -60,23 +60,25 @@ struct
     "-a", Arg.Unit F._a, " Build a library";
     "-c", Arg.Unit F._c, " Compile only (do not link)";
     "-cc", Arg.String F._cc,
-           "<comp>  Use <comp> as the C compiler and linker";
+           "<command>  Use <command> as the C compiler and linker";
     "-cclib", Arg.String F._cclib, "<opt>  Pass option <opt> to the C linker";
     "-ccopt", Arg.String F._ccopt,
-                      "<opt>  Pass option <opt> to the C compiler and linker";
+           "<opt>  Pass option <opt> to the C compiler and linker";
     "-custom", Arg.Unit F._custom, " Link in custom mode";
-    "-dllib", Arg.String F._dllib, "<lib>  Use the dynamically-loaded library <lib>";
-    "-dllpath", Arg.String F._dllpath, "<dir>  Add <dir> to the run-time search path for shared libraries";
+    "-dllib", Arg.String F._dllib,
+           "<lib>  Use the dynamically-loaded library <lib>";
+    "-dllpath", Arg.String F._dllpath,
+           "<dir>  Add <dir> to the run-time search path for shared libraries";
     "-g", Arg.Unit F._g, " Save debugging information";
     "-i", Arg.Unit F._i, " Print the types";
     "-I", Arg.String F._I,
-                       "<dir>  Add <dir> to the list of include directories";
+           "<dir>  Add <dir> to the list of include directories";
     "-impl", Arg.String F._impl, "<file>  Compile <file> as a .ml file";
     "-intf", Arg.String F._intf, "<file>  Compile <file> as a .mli file";
     "-intf-suffix", Arg.String F._intf_suffix,
-           "<file>  Suffix for interface files (default: .mli)";
+           "<string>  Suffix for interface files (default: .mli)";
     "-intf_suffix", Arg.String F._intf_suffix,
-           "<file>  (deprecated) same as -intf-suffix";
+           "<string>  (deprecated) same as -intf-suffix";
     "-labels", Arg.Unit F._labels, " Use commuting label mode";
     "-linkall", Arg.Unit F._linkall, " Link all modules, even unused ones";
     "-make-runtime", Arg.Unit F._make_runtime,
@@ -90,21 +92,21 @@ struct
     "-nolabels", Arg.Unit F._nolabels, " Ignore non-optional labels in types";
     "-o", Arg.String F._o, "<file>  Set output file name to <file>";
     "-output-obj", Arg.Unit F._output_obj,
-                          " Output a C object file instead of an executable";
+           " Output a C object file instead of an executable";
     "-pp", Arg.String F._pp,
-                    "<command>  Pipe sources through preprocessor <command>";
+           "<command>  Pipe sources through preprocessor <command>";
     "-rectypes", Arg.Unit F._rectypes, " Allow arbitrary recursive types";
     "-thread", Arg.Unit F._thread, " Use thread-safe standard library";
     "-unsafe", Arg.Unit F._unsafe,
-                            " No bounds checking on array and string access";
+           " No bounds checking on array and string access";
     "-use-runtime", Arg.String F._use_runtime,
-                  "<path>  Generate bytecode for the given runtime system";
+           "<file>  Generate bytecode for the given runtime system";
     "-use_runtime", Arg.String F._use_runtime,
-                  "<path>  (deprecated) same as -use-runtime";
+           "<file>  (deprecated) same as -use-runtime";
     "-v", Arg.Unit F._v, " Print compiler version number and exit";
     "-verbose", Arg.Unit F._verbose, " Print calls to external commands";
     "-w", Arg.String F._w,
-          "<flags>  Enable or disable warnings according to <flags>:\n\
+      "<flags>  Enable or disable warnings according to <flags>:\n\
       \032    A/a enable/disable all warnings\n\
       \032    C/c enable/disable suspicious comment\n\
       \032    D/d enable/disable deprecated features\n\
@@ -119,10 +121,10 @@ struct
       \032    default setting is \"Al\" (all warnings but labels enabled)";
     "-warn-error" , Arg.String F._warn_error,
       "<flags>  Treat the warnings enabled by <flags> as errors.\n\
-        \032    See option -w for the list of flags.\n\
-        \032    Default setting is \"a\" (warnings are not errors)";
+      \032    See option -w for the list of flags.\n\
+      \032    Default setting is \"a\" (warnings are not errors)";
     "-where", Arg.Unit F._where,
-      " Print location of standard library and exit";
+           " Print location of standard library and exit";
     "-nopervasives", Arg.Unit F._nopervasives, " (undocumented)";
     "-dparsetree", Arg.Unit F._dparsetree, " (undocumented)";
     "-drawlambda", Arg.Unit F._drawlambda, " (undocumented)";
@@ -131,6 +133,6 @@ struct
     "-use-prims", Arg.String F._use_prims, "<file>  (undocumented)";
 
     "-", Arg.String F.anonymous,
-          "<file>  Treat <file> as a file name (even if it starts with `-')";
+           "<file>  Treat <file> as a file name (even if it starts with `-')";
   ]
 end;;

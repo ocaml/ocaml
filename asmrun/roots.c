@@ -119,7 +119,7 @@ void oldify_local_roots (void)
        i++) {
     glob = caml_globals[i];
     for (j = 0; j < Wosize_val(glob); j++){
-      oldify_one (Field(glob, j), &Field(glob, j));
+      Oldify (&Field (glob, j));
     }
   }
   caml_globals_scanned = caml_globals_inited;
@@ -147,7 +147,7 @@ void oldify_local_roots (void)
           } else {
             root = (value *)(sp + ofs);
           }
-          oldify_one (*root, root);
+          Oldify (root);
         }
         /* Move to next frame */
 #ifndef Stack_grows_upwards
@@ -179,13 +179,13 @@ void oldify_local_roots (void)
     for (i = 0; i < lr->ntables; i++){
       for (j = 0; j < lr->nitems; j++){
         root = &(lr->tables[i][j]);
-        oldify_one (*root, root);
+        Oldify (root);
       }
     }
   }
   /* Global C roots */
   for (gr = caml_global_roots.forward[0]; gr != NULL; gr = gr->forward[0]) {
-    oldify_one (*(gr->root), gr->root);
+    Oldify (gr->root);
   }
   /* Finalised values */
   final_do_young_roots (&oldify_one);

@@ -786,6 +786,8 @@ and search_pos_expr ~pos exp =
   | Texp_assertfalse -> ()
   | Texp_assert exp ->
       search_pos_expr exp ~pos
+  | Texp_lazy exp ->
+      search_pos_expr exp ~pos
   end;
   add_found_str (`Exp(`Expr, exp.exp_type)) ~env:exp.exp_env ~loc:exp.exp_loc
   end

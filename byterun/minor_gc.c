@@ -148,7 +148,7 @@ void oldify_mopup (void)
     for (i = 1; i < Wosize_val (new_v); i++){
       f = Field (v, i);
       if (Is_block (f) && Is_young (f)){
-        oldify_one (Field (v, i), &Field (new_v, i));
+        oldify_one (f, &Field (new_v, i));
       }else{
         Field (new_v, i) = f;
       }
