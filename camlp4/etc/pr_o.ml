@@ -681,7 +681,11 @@ and class_type_parameters (loc, tpl) =
 and type_parameter tp dg k = HVbox [: `S LO "'"; `S LR (fst tp); k :]
 and class_expr ce k =
   match ce with
-  [ MLast.CeLet _ rf lb ce ->
+  [ MLast.CeFun _ p ce ->
+      HVbox
+        [: `S LR "fun"; `simple_patt p "" [: `S LR "->" :];
+           `class_expr ce k :]
+  | MLast.CeLet _ rf lb ce ->
       HVbox
         [: `HVbox [: :];
            `bind_list [: `S LR "let"; rec_flag rf :] lb "" [: `S LR "in" :];
@@ -706,6 +710,8 @@ and class_expr2 ce k =
       HVbox
         [: `S LO "("; `class_expr ce [: `S LR ":" :];
            `class_type ct [: `S RO ")"; k :] :]
+  | MLast.CeFun _ _ _ ->
+      HVbox [: `S LO "("; `class_expr ce [: `S RO ")"; k :] :]
   | _ -> HVbox [: `not_impl "class_expr" ce; k :] ]
 and class_structure b cf k =
   BEbox
