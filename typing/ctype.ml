@@ -947,8 +947,7 @@ let rec non_recursive_abbrev env ty =
         begin try
           non_recursive_abbrev env (try_expand_head env ty)
         with Cannot_expand ->
-          if not !Clflags.recursive_types then
-            iter_type_expr (non_recursive_abbrev env) ty
+          iter_type_expr (non_recursive_abbrev env) ty
         end
     | Tobject (_, _) ->
         ()
@@ -957,12 +956,14 @@ let rec non_recursive_abbrev env ty =
   end
 
 let correct_abbrev env ident params ty =
-  visited := [];
-  non_recursive_abbrev env
-    (subst env generic_level
-       (ref (Mcons (Path.Pident ident, none, none, Mnil))) None
-       [] [] ty);
-  visited := []
+  if not !Clflags.recursive_types then begin
+    visited := [];
+    non_recursive_abbrev env
+      (subst env generic_level
+         (ref (Mcons (Path.Pident ident, none, none, Mnil))) None
+         [] [] ty);
+    visited := []
+  end
 
 let rec occur_rec env visited ty0 ty =
   if ty == ty0  then raise Occur;
@@ -976,7 +977,7 @@ let rec occur_rec env visited ty0 ty =
         if ty == ty0 || List.memq ty' visited then raise Occur;
         iter_type_expr (occur_rec env (ty'::visited) ty0) ty'
       with Cannot_expand ->
-        if not !Clflags.recursive_types then raise Occur
+        raise Occur
       end
   | Tobject (_, _) ->
       ()
@@ -984,7 +985,8 @@ let rec occur_rec env visited ty0 ty =
       iter_type_expr (occur_rec env visited ty0) ty
 
 let occur env ty0 ty =
-  try occur_rec env [] ty0 ty with Occur -> raise (Unify [])
+  if not !Clflags.recursive_types then 
+    try occur_rec env [] ty0 ty with Occur -> raise (Unify [])
 
 
                               (*****************)
@@ -1810,28 +1812,30 @@ let match_class_declarations env patt_params patt_type subj_params subj_type =
 
 let subtypes = ref []
 
-let rec build_subtype env t =
+let rec build_subtype env visited t =
   let t = repr t in
   match t.desc with
     Tlink t' ->                         (* Redundant ! *)
-      build_subtype env t'
+      build_subtype env visited t'
   | Tvar ->
       (t, false)
   | Tarrow(t1, t2) ->
+      if List.memq t visited then (t, false) else
       let (t1', c1) = (t1, false) in
-      let (t2', c2) = build_subtype env t2 in
+      let (t2', c2) = build_subtype env (t::visited) t2 in
       if c1 or c2 then (newty (Tarrow(t1', t2')), true)
       else (t, false)
   | Ttuple tlist ->
+      if List.memq t visited then (t, false) else
       let (tlist', clist) =
-        List.split (List.map (build_subtype env) tlist)
+        List.split (List.map (build_subtype env (t::visited)) tlist)
       in
       if List.exists (function c -> c) clist then
         (newty (Ttuple tlist'), true)
       else (t, false)
   | Tconstr(p, tl, abbrev) when generic_abbrev env p ->
       let t' = expand_abbrev env t in
-      let (t'', c) = build_subtype env t' in
+      let (t'', c) = build_subtype env visited t' in
       if c then (t'', true)
       else (t, false)
   | Tconstr(p, tl, abbrev) ->
@@ -1844,14 +1848,14 @@ let rec build_subtype env t =
        with Not_found ->
          let t' = newvar () in
          subtypes := (t, t')::!subtypes;
-         let (t1', _) = build_subtype env t1 in
+         let (t1', _) = build_subtype env visited t1 in
          t'.desc <- Tobject (t1', ref None);
          t'
        end,
        true)
   | Tfield(s, _, t1, t2) (* Always present *) ->
-      let (t1', _) = build_subtype env t1 in
-      let (t2', _) = build_subtype env t2 in
+      let (t1', _) = build_subtype env visited t1 in
+      let (t2', _) = build_subtype env visited t2 in
       (newty (Tfield(s, Fpresent, t1', t2')), true)
   | Tnil ->
       let v = newvar () in
@@ -1859,7 +1863,7 @@ let rec build_subtype env t =
 
 let enlarge_type env ty =
   subtypes := [];
-  let (ty', _) = build_subtype env ty in
+  let (ty', _) = build_subtype env [] ty in
   subtypes := [];
   ty'
 
