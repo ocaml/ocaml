@@ -10,7 +10,7 @@ OBJS=interp.obj misc.obj stacks.obj fix_code.obj startup.obj main.obj \
   meta.obj parsing.obj gc_ctrl.obj terminfo.obj md5.obj obj.obj lexing.obj \
   wincmdline.obj printexc.obj callback.obj debugger.obj weak.obj compact.obj
 
-PRIMS=array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
+PRIMS=alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
   intern.c interp.c ints.c io.c lexing.c md5.c meta.c obj.c parsing.c \
   signals.c str.c sys.c terminfo.c callback.c weak.c
 

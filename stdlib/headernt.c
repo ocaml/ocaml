@@ -26,7 +26,7 @@ static unsigned long read_size(char * ptr)
          ((unsigned long) p[2] << 8) + p[3];
 }
 
-static int read_runtime_path(HANDLE h, char *runtime_path)
+static int read_runtime_path(HANDLE h, char *runtime_path, int path_len)
 {
   char buffer[TRAILER_SIZE];
   DWORD nread;
@@ -34,7 +34,7 @@ static int read_runtime_path(HANDLE h, char *runtime_path)
   long size;
 
   if (SetFilePointer(h, -TRAILER_SIZE, NULL, FILE_END) == -1) return -1;
-  if (! ReadFile(h, buffer, TRAILER_SIZE, nread, NULL)) return -1;
+  if (! ReadFile(h, buffer, TRAILER_SIZE, &nread, NULL)) return -1;
   if (nread != TRAILER_SIZE) return -1;
   tr.path_size = read_size(buffer);
   tr.code_size = read_size(buffer + 4);
@@ -42,10 +42,10 @@ static int read_runtime_path(HANDLE h, char *runtime_path)
   tr.data_size = read_size(buffer + 12);
   tr.symbol_size = read_size(buffer + 16);
   tr.debug_size = read_size(buffer + 20);
-  if (tr.path_size > sizeof(runtime_path)) return -1;
+  if (tr.path_size >= path_len) return -1;
   size = tr.path_size + tr.code_size + tr.prim_size +
          tr.data_size + tr.symbol_size + tr.debug_size + TRAILER_SIZE;
-  if (SetFilePointer(h, -size, FILE_END) == -1) return -1;
+  if (SetFilePointer(h, -size, NULL, FILE_END) == -1) return -1;
   if (! ReadFile(h, runtime_path, tr.path_size, &nread, NULL)) return -1;
   if (nread != tr.path_size) return -1;
   runtime_path[tr.path_size - 1] = 0;
@@ -61,16 +61,21 @@ static void errwrite(char * msg)
 
 int main(int argc, char ** argv)
 {
-  char * truename = GetModuleFileName();
+  char truename[MAXPATHLEN];
   char * cmdline = GetCommandLine();
   char runtime_path[MAXPATHLEN];
+  HANDLE h;
+  int retcode;
 
+  GetModuleFileName(NULL, truename, sizeof(truename));
   h = CreateFile(truename, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
-  if (h == INVALID_HANDLE_VALUE || read_runtime_path(h, runtime_path) == -1) {
+  if (h == INVALID_HANDLE_VALUE ||
+      read_runtime_path(h, runtime_path, sizeof(runtime_path)) == -1) {
     errwrite(truename);
     errwrite(" not found or is not a bytecode executable file\r\n");
     return 2;
   }
+  CloseHandle(h);
   retcode = spawnlp(P_WAIT, runtime_path, cmdline, NULL);
   /* We use P_WAIT instead of P_OVERLAY here because under NT,
      P_OVERLAY returns to the command interpreter, displaying the prompt

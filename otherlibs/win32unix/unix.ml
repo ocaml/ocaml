@@ -21,79 +21,82 @@ let _ = startup(); at_exit cleanup
 (* Errors *)
 
 type error =
-    E2BIG
-  | EACCESS
-  | EAGAIN
-  | EBADF
-  | EBUSY
-  | ECHILD
-  | EDEADLK
-  | EDOM
-  | EEXIST
-  | EFAULT
-  | EFBIG
-  | EINTR
-  | EINVAL
-  | EIO
-  | EISDIR
-  | EMFILE
-  | EMLINK
-  | ENAMETOOLONG
-  | ENFILE
-  | ENODEV
-  | ENOENT
-  | ENOEXEC
-  | ENOLCK
-  | ENOMEM
-  | ENOSPC
-  | ENOSYS
-  | ENOTDIR
-  | ENOTEMPTY
-  | ENOTTY
-  | ENXIO
-  | EPERM
-  | EPIPE
-  | ERANGE
-  | EROFS
-  | ESPIPE
-  | ESRCH
-  | EXDEV
-  | EWOULDBLOCK
-  | EINPROGRESS
-  | EALREADY
-  | ENOTSOCK
-  | EDESTADDRREQ
-  | EMSGSIZE
-  | EPROTOTYPE
-  | ENOPROTOOPT
-  | EPROTONOSUPPORT
-  | ESOCKTNOSUPPORT
-  | EOPNOTSUPP
-  | EPFNOSUPPORT
-  | EAFNOSUPPORT
-  | EADDRINUSE
-  | EADDRNOTAVAIL
-  | ENETDOWN
-  | ENETUNREACH
-  | ENETRESET
-  | ECONNABORTED
-  | ECONNRESET
-  | ENOBUFS
-  | EISCONN
-  | ENOTCONN
-  | ESHUTDOWN
-  | ETOOMANYREFS
-  | ETIMEDOUT
-  | ECONNREFUSED
-  | EHOSTDOWN
-  | EHOSTUNREACH
-  | ELOOP
-  | EUNKNOWNERR of int
+  (* Errors defined in the POSIX standard *)
+    E2BIG               (* Argument list too long *)
+  | EACCES              (* Permission denied *)
+  | EAGAIN              (* Resource temporarily unavailable; try again *)
+  | EBADF               (* Bad file descriptor *)
+  | EBUSY               (* Resource unavailable *)
+  | ECHILD              (* No child process *)
+  | EDEADLK             (* Resource deadlock would occur *)
+  | EDOM                (* Domain error for math functions, etc. *)
+  | EEXIST              (* File exists *)
+  | EFAULT              (* Bad address *)
+  | EFBIG               (* File too large *)
+  | EINTR               (* Function interrupted by signal *)
+  | EINVAL              (* Invalid argument *)
+  | EIO                 (* Hardware I/O error *)
+  | EISDIR              (* Is a directory *)
+  | EMFILE              (* Too many open files by the process *)
+  | EMLINK              (* Too many links *)
+  | ENAMETOOLONG        (* Filename too long *)
+  | ENFILE              (* Too many open files in the system *)
+  | ENODEV              (* No such device *)
+  | ENOENT              (* No such file or directory *)
+  | ENOEXEC             (* Not an executable file *)
+  | ENOLCK              (* No locks available *)
+  | ENOMEM              (* Not enough memory *)
+  | ENOSPC              (* No space left on device *)
+  | ENOSYS              (* Function not supported *)
+  | ENOTDIR             (* Not a directory *)
+  | ENOTEMPTY           (* Directory not empty *)
+  | ENOTTY              (* Inappropriate I/O control operation *)
+  | ENXIO               (* No such device or address *)
+  | EPERM               (* Operation not permitted *)
+  | EPIPE               (* Broken pipe *)
+  | ERANGE              (* Result too large *)
+  | EROFS               (* Read-only file system *)
+  | ESPIPE              (* Invalid seek e.g. on a pipe *)
+  | ESRCH               (* No such process *)
+  | EXDEV               (* Invalid link *)
+  (* Additional errors, mostly BSD *)
+  | EWOULDBLOCK         (* Operation would block *)
+  | EINPROGRESS         (* Operation now in progress *)
+  | EALREADY            (* Operation already in progress *)
+  | ENOTSOCK            (* Socket operation on non-socket *)
+  | EDESTADDRREQ        (* Destination address required *)
+  | EMSGSIZE            (* Message too long *)
+  | EPROTOTYPE          (* Protocol wrong type for socket *)
+  | ENOPROTOOPT         (* Protocol not available *)
+  | EPROTONOSUPPORT     (* Protocol not supported *)
+  | ESOCKTNOSUPPORT     (* Socket type not supported *)
+  | EOPNOTSUPP          (* Operation not supported on socket *)
+  | EPFNOSUPPORT        (* Protocol family not supported *)
+  | EAFNOSUPPORT        (* Address family not supported by protocol family *)
+  | EADDRINUSE          (* Address already in use *)
+  | EADDRNOTAVAIL       (* Can't assign requested address *)
+  | ENETDOWN            (* Network is down *)
+  | ENETUNREACH         (* Network is unreachable *)
+  | ENETRESET           (* Network dropped connection on reset *)
+  | ECONNABORTED        (* Software caused connection abort *)
+  | ECONNRESET          (* Connection reset by peer *)
+  | ENOBUFS             (* No buffer space available *)
+  | EISCONN             (* Socket is already connected *)
+  | ENOTCONN            (* Socket is not connected *)
+  | ESHUTDOWN           (* Can't send after socket shutdown *)
+  | ETOOMANYREFS        (* Too many references: can't splice *)
+  | ETIMEDOUT           (* Connection timed out *)
+  | ECONNREFUSED        (* Connection refused *)
+  | EHOSTDOWN           (* Host is down *)
+  | EHOSTUNREACH        (* No route to host *)
+  | ELOOP               (* Too many levels of symbolic links *)
+  (* All other errors are mapped to EUNKNOWNERR *)
+  | EUNKNOWNERR of int  (* Unknown error *)
 
 exception Unix_error of error * string * string
 
 let _ = Callback.register_exception "Unix.Unix_error"
-                                    (Unix_error(EUNKNOWNERR, "", ""))
+                                    (Unix_error(E2BIG, "", ""))
 
 external error_message : error -> string = "unix_error_message"
 
@@ -115,6 +118,8 @@ let handle_unix_error f arg =
     exit 2
 
 external environment : unit -> string array = "unix_environment"
+external getenv: string -> string = "sys_getenv"
+external putenv: string -> string -> unit = "unix_putenv"
 
 type process_status =
     WEXITED of int
@@ -130,14 +135,16 @@ type file_descr
 external execv : string -> string array -> unit = "unix_execv"
 external execve : string -> string array -> string array -> unit = "unix_execve"
 external execvp : string -> string array -> unit = "unix_execvp"
+external execvpe : string -> string array -> string array -> unit = "unix_execvpe"
 
 external waitpid : wait_flag list -> int -> int * process_status
                  = "win_waitpid"
 external getpid : unit -> int = "unix_getpid"
 
-let wait () = invalid_arg("Unix.wait not implemented") 
-
-let getppid () = invalid_arg("Unix.getppid not implemented")
+let fork () = invalid_arg "Unix.fork not implemented"
+let wait () = invalid_arg "Unix.wait not implemented" 
+let getppid () = invalid_arg "Unix.getppid not implemented"
+let nice prio = invalid_arg "Unix.nice not implemented"
 
 (* Basic file input/output *)
 
@@ -329,15 +336,32 @@ let rewinddir d =
   closedir d;
   try
     let (first_entry, handle) = findfirst (d.dirname ^ "\\*.*") in
-    d.handle <- handle; d.entry_read <- Dir_read first_entry }
+    d.handle <- handle; d.entry_read <- Dir_read first_entry
   with End_of_file ->
     d.handle <- 0; d.entry_read <- Dir_empty
 
-(* Pipes and directories *)
+(* Pipes *)
 
 external pipe : unit -> file_descr * file_descr = "unix_pipe"
 
 let mkfifo name perm = invalid_arg "Unix.mkfifo not implemented"
+
+(* Symbolic links *)
+
+let readlink path = invalid_arg "Unix.readlink not implemented"
+let symlink path1 path2 = invalid_arg "Unix.symlink not implemented"
+
+(* Locking *)
+
+type lock_command =
+    F_ULOCK
+  | F_LOCK
+  | F_TLOCK
+  | F_TEST
+
+let lockf fd cmd exten = invalid_arg "Unix.lockf not implemented"
+let kill pid signo = invalid_arg "Unix.kill not implemented"
+let pause () = invalid_arg "Unix.pause not implemented"
 
 (* Time functions *)
 
@@ -389,7 +413,7 @@ let geteuid = getuid
 let setuid id = invalid_arg "Unix.setuid not implemented"
 
 let getgid () = 1
-let getegid () = getgid
+let getegid = getgid
 let setgid id = invalid_arg "Unix.setgid not implemented"
 
 let getgroups () = [|1|]
@@ -462,7 +486,7 @@ type socket_option =
 
 external socket : socket_domain -> socket_type -> int -> file_descr
                                   = "unix_socket"
-
+let socketpair dom ty proto = invalid_arg "Unix.socketpair not implemented"
 external accept : file_descr -> file_descr * sockaddr = "unix_accept"
 external bind : file_descr -> sockaddr -> unit = "unix_bind"
 external connect : file_descr -> sockaddr -> unit = "unix_connect"

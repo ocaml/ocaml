@@ -24,3 +24,4 @@
 #define HAS_DUP2
 #define HAS_GETHOSTNAME
 #define HAS_MKTIME
+#define HAS_PUTENV

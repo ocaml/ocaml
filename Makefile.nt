@@ -243,6 +243,7 @@ partialclean::
 utils\config.ml: utils\config.mlp config\Makefile.nt
 	@rm -f utils\config.ml
 	sed -e "s|%%%%LIBDIR%%%%|$(LIBDIR:\=/)|" \
+            -e "s|%%%%BYTERUN%%%%|ocamlrun|" \
             -e "s|%%%%BYTECC%%%%|$(BYTECC) $(BYTECCLINKOPTS)|" \
             -e "s|%%%%NATIVECC%%%%|$(NATIVECC) $(NATIVECCLINKOPTS)|" \
             -e "s|%%%%PARTIALLD%%%%|lib /nologo /debugtype:cv|" \

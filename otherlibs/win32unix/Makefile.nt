@@ -20,7 +20,7 @@ WIN_OBJS = accept.obj bind.obj channels.obj close.obj \
 UNIX_FILES = access.c addrofstr.c chdir.c cst2constr.c \
   cstringv.c envir.c errmsg.c execv.c execve.c execvp.c \
   exit.c getcwd.c gethost.c gethostname.c getproto.c \
-  getserv.c gmtime.c rename.c rmdir.c \
+  getserv.c gmtime.c putenv.c rename.c rmdir.c \
   socketaddr.c stat.c strofaddr.c time.c unlink.c utimes.c
 
 UNIX_OBJS = $(UNIX_FILES:.c=.obj)
@@ -35,7 +35,7 @@ all: libunix.lib unix.cma
 allopt: libunix.lib unix.cmxa
 
 libunix.lib: copy_unix_files io.h $(C_OBJS)
-	rm -f libthreads.lib
+	rm -f libunix.lib
 	$(MKLIB)libunix.lib $(C_OBJS)
 
 copy_unix_files:

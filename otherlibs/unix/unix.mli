@@ -96,7 +96,7 @@ exception Unix_error of error * string * string
            is the function name; the third component is the string parameter
            to the function, if it has one, or the empty string otherwise. *)
 
-external error_message : error -> string = "unix_error_message"
+val error_message : error -> string
         (* Return a string describing the given error code. *)
 
 val handle_unix_error : ('a -> 'b) -> 'a -> 'b
@@ -107,14 +107,14 @@ val handle_unix_error : ('a -> 'b) -> 'a -> 'b
 
 (*** Access to the process environment *)
 
-external environment : unit -> string array = "unix_environment"
+val environment : unit -> string array
         (* Return the process environment, as an array of strings
            with the format ``variable=value''. *)
-external getenv: string -> string = "sys_getenv"
+val getenv: string -> string
         (* Return the value associated to a variable in the process
            environment. Raise [Not_found] if the variable is unbound.
            (This function is identical to [Sys.getenv].) *)
-external putenv: string -> string -> unit = "unix_putenv"
+val putenv: string -> string -> unit
         (* [Unix.putenv name value] sets the value associated to a
            variable in the process environment.
            [name] is the name of the environment variable,
@@ -144,24 +144,23 @@ type wait_flag =
            [WUNTRACED] means report also the children that receive stop
            signals. *)
 
-external execv : string -> string array -> unit = "unix_execv"
+val execv : string -> string array -> unit
         (* [execv prog args] execute the program in file [prog], with
            the arguments [args], and the current process environment. *)
-external execve : string -> string array -> string array -> unit = "unix_execve"
+val execve : string -> string array -> string array -> unit
         (* Same as [execv], except that the third argument provides the
            environment to the program executed. *)
-external execvp : string -> string array -> unit = "unix_execvp"
-external execvpe : string -> string array -> string array -> unit = "unix_execvpe"
+val execvp : string -> string array -> unit
+val execvpe : string -> string array -> string array -> unit
         (* Same as [execv] and [execvp] respectively, except that
            the program is searched in the path. *)
-external fork : unit -> int = "unix_fork"
+val fork : unit -> int
         (* Fork a new process. The returned integer is 0 for the child
            process, the pid of the child process for the parent process. *)
-external wait : unit -> int * process_status = "unix_wait"
+val wait : unit -> int * process_status
         (* Wait until one of the children processes die, and return its pid
            and termination status. *)
-external waitpid : wait_flag list -> int -> int * process_status
-           = "unix_waitpid"
+val waitpid : wait_flag list -> int -> int * process_status
         (* Same as [wait], but waits for the process whose pid is given.
            A pid of [-1] means wait for any child.
            A pid of [0] means wait for any child in the same process group
@@ -175,11 +174,11 @@ val system : string -> process_status
            [/bin/sh] and therefore can contain redirections, quotes, variables,
            etc. The result [WEXITED 127] indicates that the shell couldn't
            be executed. *)
-external getpid : unit -> int = "unix_getpid"
+val getpid : unit -> int
         (* Return the pid of the process. *)
-external getppid : unit -> int = "unix_getppid"
+val getppid : unit -> int
         (* Return the pid of the parent process. *)
-external nice : int -> int = "unix_nice"
+val nice : int -> int
         (* Change the process priority. The integer argument is added to the
            ``nice'' value. (Higher values of the ``nice'' value mean
            lower priorities.) Return the new nice value. *)
@@ -211,12 +210,11 @@ type open_flag =
 type file_perm = int
         (* The type of file access rights. *)
 
-external openfile : string -> open_flag list -> file_perm -> file_descr
-   = "unix_open"
+val openfile : string -> open_flag list -> file_perm -> file_descr
         (* Open the named file with the given flags. Third argument is
            the permissions to give to the file if it is created. Return
            a file descriptor on the named file. *)
-external close : file_descr -> unit = "unix_close"
+val close : file_descr -> unit
         (* Close a file descriptor. *)
 val read : file_descr -> string -> int -> int -> int
         (* [read fd buff ofs len] reads [len] characters from descriptor
@@ -231,16 +229,12 @@ val write : file_descr -> string -> int -> int -> int
 
 (*** Interfacing with the standard input/output library. *)
 
-external in_channel_of_descr : file_descr -> in_channel 
-                             = "caml_open_descriptor"
+val in_channel_of_descr : file_descr -> in_channel 
         (* Create an input channel reading from the given descriptor. *)
-external out_channel_of_descr : file_descr -> out_channel
-                              = "caml_open_descriptor"
+val out_channel_of_descr : file_descr -> out_channel
         (* Create an output channel writing on the given descriptor. *)
-external in_channel_of_descr_bin : file_descr -> in_channel 
-                             = "caml_open_descriptor"
-external out_channel_of_descr_bin : file_descr -> out_channel
-                              = "caml_open_descriptor"
+val in_channel_of_descr_bin : file_descr -> in_channel 
+val out_channel_of_descr_bin : file_descr -> out_channel
         (* Same as [in_channel_of_descr] and
            [out_channel_of_descr_bin], except that the channel
            is created in binary mode (no translation).
@@ -249,10 +243,9 @@ external out_channel_of_descr_bin : file_descr -> out_channel
            end-of-lines may take place).  This makes no difference under
            Unix, where text mode and binary mode are identical,
            but this matters under Windows. *)
-external descr_of_in_channel : in_channel -> file_descr = "channel_descriptor"
+val descr_of_in_channel : in_channel -> file_descr
         (* Return the descriptor corresponding to an input channel. *)
-external descr_of_out_channel : out_channel -> file_descr
-                              = "channel_descriptor"
+val descr_of_out_channel : out_channel -> file_descr
         (* Return the descriptor corresponding to an output channel. *)
 
 
@@ -268,11 +261,11 @@ type seek_command =
            the current position, [SEEK_END] relative to the end of the
            file. *)
 
-external lseek : file_descr -> int -> seek_command -> int = "unix_lseek"
+val lseek : file_descr -> int -> seek_command -> int
         (* Set the current position for a file descriptor *)
-external truncate : string -> int -> unit = "unix_truncate"
+val truncate : string -> int -> unit
         (* Truncates the named file to the given size. *)
-external ftruncate : file_descr -> int -> unit = "unix_ftruncate"
+val ftruncate : file_descr -> int -> unit
         (* Truncates the file corresponding to the given descriptor
            to the given size. *)
 
@@ -304,23 +297,23 @@ type stats =
 
         (* The informations returned by the [stat] calls. *)
 
-external stat : string -> stats = "unix_stat"
+val stat : string -> stats
         (* Return the information for the named file. *)
-external lstat : string -> stats = "unix_lstat"
+val lstat : string -> stats
         (* Same as [stat], but in case the file is a symbolic link,
            return the information for the link itself. *)
-external fstat : file_descr -> stats = "unix_fstat"
+val fstat : file_descr -> stats
         (* Return the information for the file associated with the given
            descriptor. *)
 
 
 (*** Operations on file names *)
 
-external unlink : string -> unit = "unix_unlink"
+val unlink : string -> unit
         (* Removes the named file *)
-external rename : string -> string -> unit = "unix_rename"
+val rename : string -> string -> unit
         (* [rename old new] changes the name of a file from [old] to [new]. *)
-external link : string -> string -> unit = "unix_link"
+val link : string -> string -> unit
         (* [link source dest] creates a hard link named [dest] to the file
            named [new]. *)
 
@@ -335,39 +328,39 @@ type access_permission =
 
         (* Flags for the [access] call. *)
 
-external chmod : string -> file_perm -> unit = "unix_chmod"
+val chmod : string -> file_perm -> unit
         (* Change the permissions of the named file. *) 
-external fchmod : file_descr -> file_perm -> unit = "unix_fchmod"
+val fchmod : file_descr -> file_perm -> unit
         (* Change the permissions of an opened file. *) 
-external chown : string -> int -> int -> unit = "unix_chown"
+val chown : string -> int -> int -> unit
         (* Change the owner uid and owner gid of the named file. *) 
-external fchown : file_descr -> int -> int -> unit = "unix_fchown"
+val fchown : file_descr -> int -> int -> unit
         (* Change the owner uid and owner gid of an opened file. *) 
-external umask : int -> int = "unix_umask"
+val umask : int -> int
         (* Set the process creation mask, and return the previous mask. *)
-external access : string -> access_permission list -> unit = "unix_access"
+val access : string -> access_permission list -> unit
         (* Check that the process has the given permissions over the named
            file. Raise [Unix_error] otherwise. *)
 
 
 (*** Operations on file descriptors *)
 
-external dup : file_descr -> file_descr = "unix_dup"
+val dup : file_descr -> file_descr
         (* Return a new file descriptor referencing the same file as
            the given descriptor. *)
-external dup2 : file_descr -> file_descr -> unit = "unix_dup2"
+val dup2 : file_descr -> file_descr -> unit
         (* [dup2 fd1 fd2] duplicates [fd1] to [fd2], closing [fd2] if already
            opened. *)
-external set_nonblock : file_descr -> unit = "unix_set_nonblock"
-external clear_nonblock : file_descr -> unit = "unix_clear_nonblock"
+val set_nonblock : file_descr -> unit
+val clear_nonblock : file_descr -> unit
         (* Set or clear the ``non-blocking'' flag on the given descriptor.
            When the non-blocking flag is set, reading on a descriptor
            on which there is temporarily no data available raises the
            [EAGAIN] or [EWOULDBLOCK] error instead of blocking;
            writing on a descriptor on which there is temporarily no room
            for writing also raises [EAGAIN] or [EWOULDBLOCK]. *)
-external set_close_on_exec : file_descr -> unit = "unix_set_close_on_exec"
-external clear_close_on_exec : file_descr -> unit = "unix_clear_close_on_exec"
+val set_close_on_exec : file_descr -> unit
+val clear_close_on_exec : file_descr -> unit
         (* Set or clear the ``close-on-exec'' flag on the given descriptor.
            A descriptor with the close-on-exec flag is automatically
            closed when the current process starts another program with
@@ -376,13 +369,13 @@ external clear_close_on_exec : file_descr -> unit = "unix_clear_close_on_exec"
 
 (*** Directories *)
 
-external mkdir : string -> file_perm -> unit = "unix_mkdir"
+val mkdir : string -> file_perm -> unit
         (* Create a directory with the given permissions. *)
-external rmdir : string -> unit = "unix_rmdir"
+val rmdir : string -> unit
         (* Remove an empty directory. *)
-external chdir : string -> unit = "unix_chdir"
+val chdir : string -> unit
         (* Change the process working directory. *)
-external getcwd : unit -> string = "unix_getcwd"
+val getcwd : unit -> string
         (* Return the name of the current working directory. *)
 
 
@@ -390,26 +383,26 @@ type dir_handle
 
         (* The type of descriptors over opened directories. *)
 
-external opendir : string -> dir_handle = "unix_opendir"
+val opendir : string -> dir_handle
         (* Open a descriptor on a directory *)
-external readdir : dir_handle -> string = "unix_readdir"
+val readdir : dir_handle -> string
         (* Return the next entry in a directory.
            Raise [End_of_file] when the end of the directory has been 
            reached. *)
-external rewinddir : dir_handle -> unit = "unix_rewinddir"
+val rewinddir : dir_handle -> unit
         (* Reposition the descriptor to the beginning of the directory *)
-external closedir : dir_handle -> unit = "unix_closedir"
+val closedir : dir_handle -> unit
         (* Close a directory descriptor. *)
 
 
 (*** Pipes and redirections *)
 
-external pipe : unit -> file_descr * file_descr = "unix_pipe"
+val pipe : unit -> file_descr * file_descr
         (* Create a pipe. The first component of the result is opened
            for reading, that's the exit to the pipe. The second component is
            opened for writing, that's the entrance to the pipe. *) 
 
-external mkfifo : string -> file_perm -> unit = "unix_mkfifo"
+val mkfifo : string -> file_perm -> unit
         (* Create a named pipe with the given permissions. *)
 
 
@@ -459,19 +452,18 @@ val close_process: in_channel * out_channel -> process_status
 
 (*** Symbolic links *)
 
-external symlink : string -> string -> unit = "unix_symlink"
+val symlink : string -> string -> unit
         (* [symlink source dest] creates the file [dest] as a symbolic link
            to the file [source]. *)
-external readlink : string -> string = "unix_readlink"
+val readlink : string -> string
         (* Read the contents of a link. *)
 
 
 (*** Polling *)
 
-external select :
+val select :
   file_descr list -> file_descr list -> file_descr list -> float ->
-        file_descr list * file_descr list * file_descr list = "unix_select"
-
+        file_descr list * file_descr list * file_descr list
         (* Wait until some input/output operations become possible on
            some channels. The three list arguments are, respectively, a set
            of descriptors to check for reading (first argument), for writing
@@ -493,7 +485,7 @@ type lock_command =
 
         (* Commands for [lockf]. *)
 
-external lockf : file_descr -> lock_command -> int -> unit = "unix_lockf"
+val lockf : file_descr -> lock_command -> int -> unit
 
         (* [lockf fd cmd size] puts a lock on a region of the file opened
            as [fd]. The region starts at the current read/write position for
@@ -503,10 +495,10 @@ external lockf : file_descr -> lock_command -> int -> unit = "unix_lockf"
 
 (*** Signals *)
 
-external kill : int -> int -> unit = "unix_kill"
+val kill : int -> int -> unit
         (* [kill pid sig] sends signal number [sig] to the process
            with id [pid]. *)
-external pause : unit -> unit = "unix_pause"
+val pause : unit -> unit
         (* Wait until a non-ignored signal is delivered. *)
 
 
@@ -533,31 +525,30 @@ type tm =
 
         (* The type representing wallclock time and calendar date. *)
 
-external time : unit -> int = "unix_time"
+val time : unit -> int
         (* Return the current time since 00:00:00 GMT, Jan. 1, 1970,
            in seconds. *)
-external gettimeofday : unit -> float = "unix_gettimeofday"
+val gettimeofday : unit -> float
         (* Same as [time], but with resolution better than 1 second. *)
-external gmtime : int -> tm = "unix_gmtime"
+val gmtime : int -> tm
         (* Convert a time in seconds, as returned by [time], into a date and
            a time. Assumes Greenwich meridian time zone, also known as UTC. *)
-external localtime : int -> tm = "unix_localtime"
+val localtime : int -> tm
         (* Convert a time in seconds, as returned by [time], into a date and
            a time. Assumes the local time zone. *)
-external mktime : tm -> int * tm = "unix_mktime"
+val mktime : tm -> int * tm
         (* Convert a date and time, specified by the [tm] argument, into
            a time in seconds, as returned by [time]. Also return a normalized
            copy of the given [tm] record, with the [tm_wday], [tm_yday],
            and [tm_isdst] fields recomputed from the other fields.
            The [tm] argument is interpreted in the local time zone. *)
-external alarm : int -> int = "unix_alarm"
+val alarm : int -> int
         (* Schedule a [SIGALRM] signals after the given number of seconds. *)
-external sleep : int -> unit = "unix_sleep"
+val sleep : int -> unit
         (* Stop execution for the given number of seconds. *)
-external times : unit -> process_times =
-              "unix_times_bytecode" "unix_times_native"
+val times : unit -> process_times
         (* Return the execution times of the process. *)
-external utimes : string -> int -> int -> unit = "unix_utimes"
+val utimes : string -> int -> int -> unit
         (* Set the last access time (second arg) and last modification time
            (third arg) for a file. Times are expressed in seconds from
            00:00:00 GMT, Jan. 1, 1970. *)
@@ -580,12 +571,10 @@ type interval_timer_status =
     it_value: float }                   (* Current value of the timer *)
         (* The type describing the status of an interval timer *)
 
-external getitimer: interval_timer -> interval_timer_status
-   = "unix_getitimer" "unix_getitimer_native"
+val getitimer: interval_timer -> interval_timer_status
         (* Return the current status of the given interval timer. *)
-external setitimer:
+val setitimer:
   interval_timer -> interval_timer_status -> interval_timer_status
-  = "unix_setitimer" "unix_setitimer_native"
         (* [setitimer t s] sets the interval timer [t] and returns
            its previous status. The [s] argument is interpreted as follows:
            [s.it_value], if nonzero, is the time to the next timer expiration;
@@ -597,19 +586,19 @@ external setitimer:
 
 (*** User id, group id *)
 
-external getuid : unit -> int = "unix_getuid"
+val getuid : unit -> int
         (* Return the user id of the user executing the process. *)
-external geteuid : unit -> int = "unix_geteuid"
+val geteuid : unit -> int
         (* Return the effective user id under which the process runs. *)
-external setuid : int -> unit = "unix_setuid"
+val setuid : int -> unit
         (* Set the real user id and effective user id for the process. *)
-external getgid : unit -> int = "unix_getgid"
+val getgid : unit -> int
         (* Return the group id of the user executing the process. *)
-external getegid : unit -> int = "unix_getegid"
+val getegid : unit -> int
         (* Return the effective group id under which the process runs. *)
-external setgid : int -> unit = "unix_setgid"
+val setgid : int -> unit
         (* Set the real group id and effective group id for the process. *)
-external getgroups : unit -> int array = "unix_getgroups"
+val getgroups : unit -> int array
         (* Return the list of groups to which the user executing the process
            belongs. *)
 
@@ -631,18 +620,18 @@ type group_entry =
     gr_mem : string array }
         (* Structure of entries in the [groups] database. *)
 
-external getlogin : unit -> string = "unix_getlogin"
+val getlogin : unit -> string
         (* Return the login name of the user executing the process. *)
-external getpwnam : string -> passwd_entry = "unix_getpwnam"
+val getpwnam : string -> passwd_entry
         (* Find an entry in [passwd] with the given name, or raise
            [Not_found]. *)
-external getgrnam : string -> group_entry = "unix_getgrnam"
+val getgrnam : string -> group_entry
         (* Find an entry in [group] with the given name, or raise
            [Not_found]. *)
-external getpwuid : int -> passwd_entry = "unix_getpwuid"
+val getpwuid : int -> passwd_entry
         (* Find an entry in [passwd] with the given user id, or raise
            [Not_found]. *)
-external getgrgid : int -> group_entry = "unix_getgrgid"
+val getgrgid : int -> group_entry
         (* Find an entry in [group] with the given group id, or raise
            [Not_found]. *)
 
@@ -652,10 +641,8 @@ external getgrgid : int -> group_entry = "unix_getgrgid"
 type inet_addr
         (* The abstract type of Internet addresses. *)
 
-external inet_addr_of_string : string -> inet_addr
-                                    = "unix_inet_addr_of_string"
-external string_of_inet_addr : inet_addr -> string
-                                    = "unix_string_of_inet_addr"
+val inet_addr_of_string : string -> inet_addr
+val string_of_inet_addr : inet_addr -> string
         (* Conversions between string with the format [XXX.YYY.ZZZ.TTT]
            and Internet addresses. [inet_addr_of_string] raises [Failure]
            when given a string that does not match this format. *)
@@ -691,24 +678,22 @@ type sockaddr =
            domain; [addr] is the Internet address of the machine, and
            [port] is the port number. *)
 
-external socket : socket_domain -> socket_type -> int -> file_descr
-        = "unix_socket"
+val socket : socket_domain -> socket_type -> int -> file_descr
         (* Create a new socket in the given domain, and with the
            given kind. The third argument is the protocol type; 0 selects
            the default protocol for that kind of sockets. *)
-external socketpair :
+val socketpair :
         socket_domain -> socket_type -> int -> file_descr * file_descr
-        = "unix_socketpair"
         (* Create a pair of unnamed sockets, connected together. *)
-external accept : file_descr -> file_descr * sockaddr = "unix_accept"
+val accept : file_descr -> file_descr * sockaddr
         (* Accept connections on the given socket. The returned descriptor
            is a socket connected to the client; the returned address is
            the address of the connecting client. *)
-external bind : file_descr -> sockaddr -> unit = "unix_bind"
+val bind : file_descr -> sockaddr -> unit
         (* Bind a socket to an address. *)
-external connect : file_descr -> sockaddr -> unit = "unix_connect"
+val connect : file_descr -> sockaddr -> unit
         (* Connect a socket to an address. *)
-external listen : file_descr -> int -> unit = "unix_listen"
+val listen : file_descr -> int -> unit
         (* Set up a socket for receiving connection requests. The integer
            argument is the maximal number of pending requests. *)
 
@@ -718,16 +703,16 @@ type shutdown_command =
   | SHUTDOWN_ALL                        (* Close both *)
         (* The type of commands for [shutdown]. *)
 
-external shutdown : file_descr -> shutdown_command -> unit = "unix_shutdown" 
+val shutdown : file_descr -> shutdown_command -> unit
         (* Shutdown a socket connection. [SHUTDOWN_SEND] as second argument
            causes reads on the other end of the connection to return
            an end-of-file condition.
            [SHUTDOWN_RECEIVE] causes writes on the other end of the connection
            to return a closed pipe condition ([SIGPIPE] signal). *)
 
-external getsockname : file_descr -> sockaddr = "unix_getsockname"
+val getsockname : file_descr -> sockaddr
         (* Return the address of the given socket. *)
-external getpeername : file_descr -> sockaddr = "unix_getpeername"
+val getpeername : file_descr -> sockaddr
         (* Return the address of the host connected to the given socket. *)
 
 type msg_flag =
@@ -754,10 +739,9 @@ type socket_option =
   | SO_OOBINLINE           (* Leave out-of-band data in line *)
         (* The socket options settable with [setsockopt]. *)
 
-external getsockopt : file_descr -> socket_option -> bool = "unix_getsockopt"
+val getsockopt : file_descr -> socket_option -> bool
         (* Return the current status of an option in the given socket. *)
-external setsockopt : file_descr -> socket_option -> bool -> unit
-                                                          = "unix_setsockopt"
+val setsockopt : file_descr -> socket_option -> bool -> unit
         (* Set or clear an option in the given socket. *)
 
 (*** High-level network connection functions *)
@@ -801,28 +785,24 @@ type service_entry =
     s_proto : string }
           (* Structure of entries in the [services] database. *)
 
-external gethostname : unit -> string = "unix_gethostname"
+val gethostname : unit -> string
         (* Return the name of the local host. *)
-external gethostbyname : string -> host_entry = "unix_gethostbyname"
+val gethostbyname : string -> host_entry
         (* Find an entry in [hosts] with the given name, or raise
            [Not_found]. *)
-external gethostbyaddr : inet_addr -> host_entry = "unix_gethostbyaddr"
+val gethostbyaddr : inet_addr -> host_entry
         (* Find an entry in [hosts] with the given address, or raise
            [Not_found]. *)
-external getprotobyname : string -> protocol_entry
-                                         = "unix_getprotobyname"
+val getprotobyname : string -> protocol_entry
         (* Find an entry in [protocols] with the given name, or raise
            [Not_found]. *)
-external getprotobynumber : int -> protocol_entry
-                                         = "unix_getprotobynumber"
+val getprotobynumber : int -> protocol_entry
         (* Find an entry in [protocols] with the given protocol number,
            or raise [Not_found]. *)
-external getservbyname : string -> string -> service_entry
-                                         = "unix_getservbyname"
+val getservbyname : string -> string -> service_entry
         (* Find an entry in [services] with the given name, or raise
            [Not_found]. *)
-external getservbyport : int -> string -> service_entry
-                                         = "unix_getservbyport"
+val getservbyport : int -> string -> service_entry
         (* Find an entry in [services] with the given service number,
            or raise [Not_found]. *)
 
@@ -882,14 +862,13 @@ type terminal_io = {
     mutable c_vstop: char    (* Stop character (usually ctrl-S). *)
   }
 
-external tcgetattr: file_descr -> terminal_io = "unix_tcgetattr"
+val tcgetattr: file_descr -> terminal_io
         (* Return the status of the terminal referred to by the given
            file descriptor. *)
 
 type setattr_when = TCSANOW | TCSADRAIN | TCSAFLUSH
 
-external tcsetattr: file_descr -> setattr_when -> terminal_io -> unit
-               = "unix_tcsetattr"
+val tcsetattr: file_descr -> setattr_when -> terminal_io -> unit
         (* Set the status of the terminal referred to by the given
            file descriptor. The second argument indicates when the
            status change takes place: immediately ([TCSANOW]),
@@ -899,18 +878,18 @@ external tcsetattr: file_descr -> setattr_when -> terminal_io -> unit
            the output parameters; [TCSAFLUSH], when changing the input
            parameters. *)
 
-external tcsendbreak: file_descr -> int -> unit = "unix_tcsendbreak"
+val tcsendbreak: file_descr -> int -> unit
         (* Send a break condition on the given file descriptor.
            The second argument is the duration of the break, in 0.1s units;
            0 means standard duration (0.25s). *)
 
-external tcdrain: file_descr -> unit = "unix_tcdrain"
+val tcdrain: file_descr -> unit
         (* Waits until all output written on the given file descriptor
            has been transmitted. *)
 
 type flush_queue = TCIFLUSH | TCOFLUSH | TCIOFLUSH
 
-external tcflush: file_descr -> flush_queue -> unit = "unix_tcflush"
+val tcflush: file_descr -> flush_queue -> unit
         (* Discard data written on the given file descriptor but not yet
            transmitted, or data received but not yet read, depending on the
            second argument: [TCIFLUSH] flushes data received but not read,
@@ -919,13 +898,13 @@ external tcflush: file_descr -> flush_queue -> unit = "unix_tcflush"
 
 type flow_action = TCOOFF | TCOON | TCIOFF | TCION
 
-external tcflow: file_descr -> flow_action -> unit = "unix_tcflow"
+val tcflow: file_descr -> flow_action -> unit
         (* Suspend or restart reception or transmission of data on
            the given file descriptor, depending on the second argument:
            [TCOOFF] suspends output, [TCOON] restarts output,
            [TCIOFF] transmits a STOP character to suspend input,
            and [TCION] transmits a START character to restart input. *)
 
-external setsid : unit -> int = "unix_setsid"
+val setsid : unit -> int
         (* Put the calling process in a new session and detach it from
            its controlling terminal. *)

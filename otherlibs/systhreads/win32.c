@@ -537,7 +537,7 @@ value caml_condition_signal(value cond)           /* ML */
 
   if (Condition_val(cond)->count > 0) {
     Condition_val(cond)->count --;
-    Begin_roots(cond)           /* prevent deallocation of cond */
+    Begin_root(cond)           /* prevent deallocation of cond */
       enter_blocking_section();
       /* Increment semaphore by 1, waking up one waiter */
       ReleaseSemaphore(s, 1, NULL);
@@ -554,7 +554,7 @@ value caml_condition_broadcast(value cond)           /* ML */
 
   if (c > 0) {
     Condition_val(cond)->count = 0;
-    Begin_roots(cond)           /* prevent deallocation of cond */
+    Begin_root(cond)           /* prevent deallocation of cond */
       enter_blocking_section();
       /* Increment semaphore by c, waking up all waiters */
       ReleaseSemaphore(s, c, NULL);

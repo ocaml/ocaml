@@ -38,7 +38,7 @@ memory.c: ../byterun/memory.c
 alloc.c: ../byterun/alloc.c
 	cp ../byterun/alloc.c alloc.c
 array.c: ../byterun/array.c
-	ln -s ../byterun/array.c array.c
+	cp ../byterun/array.c array.c
 compare.c: ../byterun/compare.c
 	cp ../byterun/compare.c compare.c
 ints.c: ../byterun/ints.c
