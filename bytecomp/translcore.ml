@@ -1080,7 +1080,8 @@ and  build_channels autos k =
 and do_transl_def some_loc autos body =
 
   let trivial_joinmatch auto =
-    let trivial_clause (pats, e) =
+    let trivial_clause jc = match jc.jclause_desc with 
+      (pats, e) ->
       let new_pats =
         List.map
           (fun jp -> match jp.jpat_desc with
@@ -1093,13 +1094,12 @@ and do_transl_def some_loc autos body =
               (new_jpat, to_match))
           pats in
       Joinmatch.Reaction
-        ([List.map fst new_pats], (List.map snd new_pats, e)) in
-    () in
+        ([List.map fst new_pats], (List.map snd new_pats, e)) in    
+    { auto with
+      jauto_desc = Array.map trivial_clause auto.jauto_desc } in
 
-(* let autos  = List.map Joinmatch.transform autos in*)
-(* Joinmatch.transform: joinpattern joinautomaton -> joinpattern list joinautomaton*)
-(* then the build_matches should be changed to take joinpattern list*)
-    let cautos = List.map Transljoin.build_matches autos in    
+  let _  = List.map trivial_joinmatch autos in
+  let cautos = List.map Transljoin.build_matches autos in    
     create_autos some_loc cautos
       (build_channels autos
          (build_autos some_loc cautos body))
