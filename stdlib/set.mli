@@ -64,6 +64,9 @@ module type S =
     val equal: t -> t -> bool
         (* [equal s1 s2] tests whether the sets [s1] and [s2] are
            equal, that is, contain the same elements. *)
+    val subset: t -> t -> bool
+        (* [subset s1 s2] tests whether the set [s1] is a subset of
+           the set [s2]. *)
     val iter: (elt -> 'a) -> t -> unit
         (* [iter f s] applies [f] in turn to all elements of [s], and
            discards the results. The elements of [s] are presented to [f]
