@@ -43,7 +43,7 @@ all:
 	$(MAKE) manual plaintext
 	$(MAKE) html
 clean:
-	rm $(FILES)
+	rm -f $(FILES)
 	cd refman; $(MAKE) clean
 	cd library; $(MAKE) clean
 	cd cmds; $(MAKE) clean

@@ -41,7 +41,8 @@ Here is a short listing, by theme, of the standard library modules.
 "Map" & p.~\pageref{s:Map} & association tables over ordered types \\
 "Oo" & p.~\pageref{s:Oo} & useful functions on objects \\
 "Stack" & p.~\pageref{s:Stack} & last-in first-out stacks \\
-"Queue" & p.~\pageref{s:Queue} & first-in first-out queues
+"Queue" & p.~\pageref{s:Queue} & first-in first-out queues \\
+"Weak" & p.~\pageref{s:Weak} & references that don't prevent objects from being garbage-collected \\
 \end{tabular}
 \subsubsection{Input/output:}
 \begin{tabular}{lll}
@@ -91,4 +92,5 @@ Here is a short listing, by theme, of the standard library modules.
 \input stream.tex
 \input string.tex
 \input sys.tex
+\input weak.tex
 \end{library}
