@@ -156,15 +156,16 @@ value use_file cs =
             | _ -> (pl, False) ]
           else (pl, True)
       in
-      let r =
-        if eoi then pl0
+      let pl =
+        if eoi then []
         else
           loop () where rec loop () =
             let (pl, stopped_at_directive) =
               Grammar.Entry.parse Pcaml.use_file cs
             in
-            if stopped_at_directive then pl @ loop () else pl0 @ pl
+            if stopped_at_directive then pl @ loop () else pl
       in
+      let r = pl0 @ pl in
       let r = List.map ast2pt_phrase r in
       do { restore (); r }
     with e ->

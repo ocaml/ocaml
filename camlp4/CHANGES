@@ -1,8 +1,8 @@
 Camlp4 Version 3.04+1
 ---------------------
 
-- [28 Jan 02] Fixed bug in pa_o.cmo: some case of bad recognition in
-  a class_type.
+- [28 Jan 02] Fixed bug in OCaml toplevel when loading camlp4: the directives
+  were not applied in the good order.
 - [26 Jan 02] The printer pr_extend.cmo try now also to rebuild GEXTEND
   statements (before it tried only the EXTEND).
 - [23 Jan 02] The empty functional stream "fstream [: :]" is now of type

@@ -238,8 +238,8 @@ value test_not_class_signature =
              match stream_peek_nth lev strm with
              [ Some ("", "]") ->
                  match stream_peek_nth (lev + 1) strm with
-                 [ Some ("UIDENT" | "LIDENT", _) -> ()
-                 | _ -> raise Stream.Failure ]
+                 [ Some ("UIDENT" | "LIDENT", _) -> raise Stream.Failure
+                 | _ -> () ]
              | Some _ -> test (lev + 1)
              | None -> raise Stream.Failure ]
        | _ -> () ])
