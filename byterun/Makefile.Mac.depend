@@ -342,6 +342,7 @@
                          config.h ¶
                          ::config:sm-Mac.h ¶
                          mlvalues.h ¶
+                         fail.h ¶
                          fix_code.h ¶
                          interp.h ¶
                          major_gc.h ¶
@@ -877,6 +878,7 @@
                          config.h ¶
                          ::config:sm-Mac.h ¶
                          mlvalues.h ¶
+                         fail.h ¶
                          fix_code.h ¶
                          interp.h ¶
                          major_gc.h ¶

@@ -12,7 +12,7 @@
 /* $Id$ */
 
 /* Main entry point (can be overriden by a user-provided main()
-   function that calls caml_startup() later. */
+   function that calls caml_main() later. */
 
 #include "misc.h"
 #include "mlvalues.h"
@@ -42,4 +42,3 @@ int main(int argc, char **argv)
   sys_exit(Val_int(0));
   return 0; /* not reached */
 }
-
