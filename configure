@@ -28,6 +28,7 @@ mathlib='-lm'
 dllib=''
 x11_include_dir=''
 x11_lib_dir=''
+tk_wanted=yes
 tk_defs=''
 tk_libs=''
 posix_threads=no
@@ -68,6 +69,8 @@ while : ; do
         x11_lib_dir=$2; shift;;
     -with-pthread*|--with-pthread*)
         posix_threads=yes;;
+    -notk|--notk)
+        tk_wanted=no;;
     -tkdefs*|--tkdefs*)
         tk_defs=$2; shift;;
     -tklibs*|--tklibs*)
@@ -1001,7 +1004,9 @@ fi
 
 echo "Configuring LablTk..."
 
-if test "$ostype" = "Cygwin"; then
+if test $tk_wanted = no; then
+  has_tk=false
+elif  "$ostype" = "Cygwin"; then
   has_tk=true
 elif test "$x11_include" = "not found" || test "$x11_link" = "not found"; then
   echo "X11 not found."
