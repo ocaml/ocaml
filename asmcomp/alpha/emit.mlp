@@ -186,6 +186,10 @@ let emit_addressing addr r n =
       if ofs > 0 then ` + {emit_int ofs}`;
       if ofs < 0 then ` - {emit_int(-ofs)}`
 
+(* Immediate operands *)
+
+let is_immediate n = digital_asm || (n >= 0 && n <= 255)
+
 (* Communicate live registers at call points to the assembler *)
 
 let int_reg_number = [|
@@ -505,12 +509,22 @@ let emit_instr i =
         `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
     | Lop(Iintop_imm(Idiv, n)) when n = 1 lsl (Misc.log2 n) ->
         let l = Misc.log2 n in
-        `	addq	{emit_reg i.arg.(0)}, {emit_int(n-1)}, $25\n`;
+        if is_immediate n then
+          `	addq	{emit_reg i.arg.(0)}, {emit_int(n-1)}, $25\n`
+        else begin
+          `	ldiq	$25, {emit_int n}\n`;
+          `	addq	{emit_reg i.arg.(0)}, $25, $25\n`
+        end;
         `	cmovge	{emit_reg i.arg.(0)}, {emit_reg i.arg.(0)}, $25\n`;
         `	sra	$25, {emit_int l}, {emit_reg i.res.(0)}\n`
     | Lop(Iintop_imm(Imod, n)) when n = 1 lsl (Misc.log2 n) ->
         let l = Misc.log2 n in
-        `	and	{emit_reg i.arg.(0)}, {emit_int(n-1)}, $25\n`;
+        if is_immediate n then
+          `	and	{emit_reg i.arg.(0)}, {emit_int(n-1)}, $25\n`;
+        else begin
+          `	ldiq	$25, {emit_int n}\n`;
+          `	and	{emit_reg i.arg.(0)}, $25, $25\n`;
+        end;
         `	subq	$25, {emit_int n}, $24\n`;
         `	cmovge	{emit_reg i.arg.(0)}, $25, $24\n`;
         `	cmoveq	$25, $25, $24\n`;

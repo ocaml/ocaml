@@ -66,3 +66,10 @@ let print_specific_operation printreg op arg =
   | Isub4 -> printreg arg.(0); print_string " * 4 - "; printreg arg.(1)
   | Isub8 -> printreg arg.(0); print_string " * 8 - "; printreg arg.(1)
   | Ireloadgp _ -> print_string "ldgp"
+
+(* Distinguish between the Digital assembler and other assemblers (e.g. gas) *)
+
+let digital_asm =
+  match Config.system with
+    "digital" -> true
+  | _ -> false
