@@ -49,6 +49,8 @@ let rec print_struct_const = function
       printf "\"%s\"" (String.escaped s)
   | Const_base(Const_char c) ->
       printf "'%s'" (Char.escaped c)
+  | Const_pointer n ->
+      printf "%da" n
   | Const_block(tag, args) ->
       printf "<%d>" tag;
       begin match args with

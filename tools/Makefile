@@ -1,5 +1,5 @@
 CAMLC=../boot/camlrun ../boot/camlc -I ../boot
-INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp
+INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp
 COMPFLAGS=$(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
@@ -25,6 +25,12 @@ clean::
 	rm -f opnames.ml
 
 beforedepend:: opnames.ml
+
+dumpapprox: dumpapprox.cmo
+	$(CAMLC) $(LINKFLAGS) -o dumpapprox config.cmo dumpapprox.cmo
+
+clean::
+	rm -f dumpapprox
 
 .SUFFIXES:
 .SUFFIXES: .ml .cmo .mli .cmi
