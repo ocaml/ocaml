@@ -243,7 +243,7 @@ method select_operation op args =
   | (Ccheckbound, _) -> self#select_arith Icheckbound args
   | _ -> fatal_error "Selection.select_oper"
 
-method select_arith_comm op = function
+private method select_arith_comm op = function
     [arg; Cconst_int n] when self#is_immediate n ->
       (Iintop_imm(op, n), [arg])
   | [arg; Cconst_pointer n] when self#is_immediate n ->
@@ -255,7 +255,7 @@ method select_arith_comm op = function
   | args ->
       (Iintop op, args)
 
-method select_arith op = function
+private method select_arith op = function
     [arg; Cconst_int n] when self#is_immediate n ->
       (Iintop_imm(op, n), [arg])
   | [arg; Cconst_pointer n] when self#is_immediate n ->
@@ -263,13 +263,13 @@ method select_arith op = function
   | args ->
       (Iintop op, args)
 
-method select_shift op = function
+private method select_shift op = function
     [arg; Cconst_int n] when n >= 0 & n < Arch.size_int * 8 ->
       (Iintop_imm(op, n), [arg])
   | args ->
       (Iintop op, args)
 
-method select_arith_comp cmp = function
+private method select_arith_comp cmp = function
     [arg; Cconst_int n] when self#is_immediate n ->
       (Iintop_imm(Icomp cmp, n), [arg])
   | [arg; Cconst_pointer n] when self#is_immediate n ->
@@ -496,12 +496,12 @@ method emit_expr env exp =
         [||] [||];
       r
 
-method emit_sequence env exp =
+private method emit_sequence env exp =
   let s = {< instr_seq = dummy_instr >} in
   let r = s#emit_expr env exp in
   (r, s)
 
-method emit_let env v e1 =
+private method emit_let env v e1 =
   let r1 = self#emit_expr env e1 in
   if all_regs_anonymous r1 then begin
     name_regs v r1;
@@ -514,7 +514,7 @@ method emit_let env v e1 =
     Tbl.add v rv env
   end
 
-method emit_parts env exp =
+private method emit_parts env exp =
   if is_simple_expr exp then
     (exp, env)
   else begin
@@ -536,7 +536,7 @@ method emit_parts env exp =
     end
   end
 
-method emit_parts_list env exp_list =
+private method emit_parts_list env exp_list =
   match exp_list with
     [] -> ([], env)
   | exp :: rem ->
@@ -546,7 +546,7 @@ method emit_parts_list env exp_list =
       let (new_exp, fin_env) = self#emit_parts new_env exp in
       (new_exp :: new_rem, fin_env)
 
-method emit_tuple env exp_list =
+private method emit_tuple env exp_list =
   let rec emit_list = function
     [] -> []
   | exp :: rem ->
@@ -562,7 +562,7 @@ method emit_extcall_args env args =
   self#insert_move_args r1 loc_arg stack_ofs;
   arg_stack
 
-method emit_stores env data regs_addr addr =
+private method emit_stores env data regs_addr addr =
   let a = ref addr in
   List.iter
     (fun e ->
@@ -574,7 +574,7 @@ method emit_stores env data regs_addr addr =
 
 (* Same, but in tail position *)
 
-method emit_return env exp =
+private method emit_return env exp =
   let r = self#emit_expr env exp in
   let loc = Proc.loc_results r in
   self#insert_moves r loc;
@@ -663,7 +663,7 @@ method emit_tail env exp =
   | _ ->
       self#emit_return env exp
 
-method emit_tail_sequence env exp =
+private method emit_tail_sequence env exp =
   let s = {< instr_seq = dummy_instr >} in
   s#emit_tail env exp;
   s#extract
