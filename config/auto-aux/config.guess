@@ -462,7 +462,7 @@ main ()
 #endif
 
 #if defined (NeXT)
-  char * architecture;
+  char * arch;
   int version;
 #if !defined (__ARCHITECTURE__)
   arch = "m68k"
