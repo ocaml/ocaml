@@ -91,7 +91,7 @@ Drawing is clipped to the screen.
 
 \ifouthtml
 \begin{rawhtml}
-<a HREF=libref/Graphics.html> Module <tt>Graphics</tt>: machine-independent graphics primitives</a>
+<a HREF="libref/Graphics.html"> Module <tt>Graphics</tt>: machine-independent graphics primitives</a>
 \end{rawhtml}
 
 \else

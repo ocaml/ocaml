@@ -53,11 +53,11 @@ the standard library (see chapter~\ref{c:camlc}).
 \ifouthtml
 \begin{rawhtml}
 <ul>
-<li><a HREF=libref/Thread.html> Module <tt>Thread</tt>: lightweight threads</a></li>
-<li><a HREF=libref/Mutex.html> Module <tt>Mutex</tt>: locks for mutual exclusion</a></li>
-<li><a HREF=libref/Condition.html> Module <tt>Condition</tt>: condition variables to synchronize between threads</a></li>
-<li><a HREF=libref/Event.html> Module <tt>Event</tt>: first-class synchronous communication</a></li>
-<li><a HREF=libref/ThreadUnix.html> Module <tt>ThreadUnix</tt>: thread-compatible system calls</a></li>
+<li><a HREF="libref/Thread.html"> Module <tt>Thread</tt>: lightweight threads</a></li>
+<li><a HREF="libref/Mutex.html"> Module <tt>Mutex</tt>: locks for mutual exclusion</a></li>
+<li><a HREF="libref/Condition.html"> Module <tt>Condition</tt>: condition variables to synchronize between threads</a></li>
+<li><a HREF="libref/Event.html"> Module <tt>Event</tt>: first-class synchronous communication</a></li>
+<li><a HREF="libref/ThreadUnix.html"> Module <tt>ThreadUnix</tt>: thread-compatible system calls</a></li>
 </ul>
 \end{rawhtml}
 \else

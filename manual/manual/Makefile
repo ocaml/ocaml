@@ -9,7 +9,7 @@ OCAMLDOC=$(CSLDIR)/ocamldoc/ocamldoc.opt
 HEVEA=hevea -v -fix -exec xxdate.exe
 HACHA=hacha
 INFO=-info -w 79
-HTML=
+HTML=-O
 TEXT=-text -w 79
 
 CSLDIR2=../$(CSLDIR)

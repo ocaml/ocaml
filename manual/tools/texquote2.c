@@ -59,7 +59,8 @@ int main(argc, argv)
     if (inverbatim) {
       fputs(line, stdout);
       if (isprefix(line, "\\end{verbatim")
-          || isprefix(line, "\\end{caml_")) inverbatim = 0;
+          || isprefix(line, "\\end{caml_")
+          || isprefix(line, "\\end{rawhtml}")) inverbatim = 0;
       continue;
     }
     if (incaml) {
@@ -68,7 +69,8 @@ int main(argc, argv)
       continue;
     }
     if (isprefix(line, "\\begin{verbatim")
-        || isprefix(line, "\\begin{caml_")) {
+        || isprefix(line, "\\begin{caml_")
+        || isprefix(line, "\\begin{rawhtml}")) {
       fputs(line, stdout);
       inverbatim = 1;
       continue;

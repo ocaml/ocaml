@@ -21,7 +21,7 @@ start "ocaml" and type "#load \"str.cma\";;".
 
 \ifouthtml
 \begin{rawhtml}
-<a HREF=libref/Str.html> Module <tt>Str</tt>: regular expressions and string processing</a>
+<a HREF="libref/Str.html"> Module <tt>Str</tt>: regular expressions and string processing</a>
 \end{rawhtml}
 
 \else

@@ -80,7 +80,7 @@ Tcl "man" page of their name.
 
 \ifouthtml
 \begin{rawhtml}
-<a HREF=libref/Tk.html> The <tt>Tk</tt> library: Basic functions and types for LablTk</a>
+<a HREF="libref/Tk.html"> The <tt>Tk</tt> library: Basic functions and types for LablTk</a>
 \end{rawhtml}
 
 \else

@@ -94,8 +94,7 @@ The following environment variables are also consulted:
   nine options, six of which correspond to the fields of the
   "control" record documented in 
 \ifouthtml
- \begin{rawhtml}<a HREF=libref/Gc.html>Module <tt>Gc</tt></a>.
- \end{rawhtml}
+ \ahref{libref/Gc.html}{Module \texttt{Gc}}.
 \else
  section~\ref{Gc}.
 \fi

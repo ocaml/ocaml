@@ -116,3 +116,5 @@
 
 \def\@savedlistI{}
 
+%pour ocamldocdescription
+\newcommand{\moduleref}[1]{\ifouthtml\ahref{libref/#1.html}{\texttt{#1}}}

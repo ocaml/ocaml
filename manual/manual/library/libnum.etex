@@ -26,9 +26,9 @@ start "ocaml" and type "#load \"nums.cma\";;".
 \ifouthtml
 \begin{rawhtml}
 <ul>
-<li><a HREF=libref/Num.html> Module <tt>Num</tt>: operation on arbitrary-precision numbers</a></li>
-<li><a HREF=libref/Big_int.html> Module <tt>Big_int</tt>: operations on arbitrary-precision integers</a></li>
-<li><a HREF=libref/Arith_status.html> Module <tt>Arith_status</tt>: flags that control rational arithmetic</a></li>
+<li><a HREF="libref/Num.html"> Module <tt>Num</tt>: operation on arbitrary-precision numbers</a></li>
+<li><a HREF="libref/Big_int.html"> Module <tt>Big_int</tt>: operations on arbitrary-precision integers</a></li>
+<li><a HREF="libref/Arith_status.html"> Module <tt>Arith_status</tt>: flags that control rational arithmetic</a></li>
 </ul>
 \end{rawhtml}
 

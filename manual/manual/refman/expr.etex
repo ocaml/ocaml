@@ -685,12 +685,8 @@ identity, as this type abbreviation is not yet completely defined.
 
 An object can be duplicated using the library function "Oo.copy"
 (see 
-\ifouthtml
- \begin{rawhtml}<a HREF=libref/Oo.html>Module <tt>Oo</tt></a>
- \end{rawhtml}
-\else
-section~\ref{Oo}
-\fi). Inside a method, the expression
+\ifouthtml \ahref{libref/Oo.hml}{Module \texttt{Oo}}\else
+section~\ref{Oo}\fi). Inside a method, the expression
 @ '{<' inst-var-name '=' expr { ';' inst-var-name '=' expr } '>}'@
 returns a copy of self with the given instance variables replaced by
 the values of the associated expressions; other instance variables

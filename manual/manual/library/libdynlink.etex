@@ -15,7 +15,7 @@ Dynamic linking is available only to bytecode programs compiled with
 
 \ifouthtml
 \begin{rawhtml}
-<a HREF=libref/Dynlink.html> Module <tt>Dynlink</tt>: dynamic loading of bytecode object files</a>
+<a HREF="libref/Dynlink.html"> Module <tt>Dynlink</tt>: dynamic loading of bytecode object files</a>
 \end{rawhtml}
 
 \else

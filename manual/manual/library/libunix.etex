@@ -38,8 +38,8 @@ more information on the functions that are not supported under Windows.
 \ifouthtml
 \begin{rawhtml}
 <ul>
-<li><a HREF=libref/Unix.html> Module <tt>Unix</tt>: Unix system calls</a></li>
-<li><a HREF=libref/UnixLabels.html> Module <tt>UnixLabels</tt>: Labeled Unix system calls</a></li>
+<li><a HREF="libref/Unix.html"> Module <tt>Unix</tt>: Unix system calls</a></li>
+<li><a HREF="libref/UnixLabels.html"> Module <tt>UnixLabels</tt>: Labeled Unix system calls</a></li>
 </ul>
 \end{rawhtml}
 

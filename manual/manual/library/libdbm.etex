@@ -28,7 +28,7 @@ This library is not available.
 
 \ifouthtml
 \begin{rawhtml}
-<a HREF=libref/Dbm.html> Module <tt>Dbm</tt>: interface to the NDBM database</a>
+<a HREF="libref/Dbm.html"> Module <tt>Dbm</tt>: interface to the NDBM database</a>
 \end{rawhtml}
 
 \else

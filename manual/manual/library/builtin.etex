@@ -97,7 +97,7 @@ type ('a, 'b, 'c) format
   The type of format strings. "'a" is the type of the parameters
   of the format, "'c" is the result type for the "printf"-style
   function, and "'b" is the type of the first argument given to
-  "\%a" and "\%t" printing functions (see module "Printf"[\ref{Printf}]).
+  "\%a" and "\%t" printing functions (see module "Printf"[\moduleref{Printf}]).
 \end{ocamldocdescription}
 
 \begin{ocamldoccode}
@@ -105,7 +105,7 @@ type 'a lazy_t
 \end{ocamldoccode}
 \index{lazyt@\verb`lazy_t`}
 \begin{ocamldocdescription}
- This type is used to implement the "Lazy"[\ref{Lazy}] module.
+ This type is used to implement the "Lazy"[\moduleref{Lazy}] module.
  It should not be used directly.
 \end{ocamldocdescription}
 

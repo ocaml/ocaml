@@ -55,13 +55,9 @@ be performed the first time "Lazy.force" is applied to the value
 \var{v}, returning the actual value of @expr@. Subsequent applications
 of "Lazy.force" to \var{v} do not evaluate @expr@ again.
 For more information, see the description of module "Lazy" in the
-standard library
+standard library (see
 \ifouthtml
- (\begin{rawhtml}<a HREF=libref/Lazy.html>Module <tt>Lazy</tt></a>
- \end{rawhtml}).
-\else
-(section~\ref{Lazy}).
-\fi
+\ahref{libref/Lazy.html}{Module \texttt{Lazy}}\else section~\ref{Lazy}\fi).
 %
 \index{Lazy (module)\@\verb`Lazy` (module)}%
 \index{force\@\verb`force`}%

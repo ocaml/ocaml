@@ -5,10 +5,9 @@ The "bigarray" library implements large, multi-dimensional, numerical
 arrays.  These arrays are called ``big arrays'' to distinguish them
 from the standard Caml arrays described in 
 \ifouthtml
- \begin{rawhtml}<a HREF=libref/Array.html>Module <tt>Array</tt></a>.
- \end{rawhtml}
+\ahref{libref/Array.html}{Module \texttt{Array}}.
 \else
- section~\ref{Array}.
+section~\ref{Array}.
 \fi
 The main differences between ``big arrays''  and standard Caml arrays
 are as follows:
@@ -53,7 +52,7 @@ start "ocaml" and type "#load \"bigarray.cma\";;".
 \ifouthtml
 \section{Module {\tt Bigarray}: large, multi-dimensional, numerical arrays}
 \begin{rawhtml}
-<br><a HREF=libref/Bigarray.html>Module <tt>Bigarray</tt></a>
+<br><a HREF="libref/Bigarray.html">Module <tt>Bigarray</tt></a>
 \end{rawhtml}
 
 \else
