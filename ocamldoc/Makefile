@@ -42,7 +42,7 @@ INSTALL_LIBDIR=$(OCAMLLIB)/ocamldoc
 INSTALL_BINDIR=$(OCAMLBIN)
 INSTALL_MANODIR=$(MANDIR)/mano
 
-INSTALL_MLIS=odoc_info.mli
+INSTALL_MLIS=odoc_info.mli odoc_args.mli
 INSTALL_CMIS=$(INSTALL_MLIS:.mli=.cmi)
 
 # Compilation
