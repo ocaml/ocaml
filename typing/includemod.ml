@@ -136,7 +136,8 @@ and try_modtypes env mty1 mty2 =
       let cc_arg =
         modtypes env arg2 arg1 in
       let cc_res =
-        Ident.identify param2 param1
+        (* param1 must be left inchanged: it has the right binding time *)
+        Ident.identify param1 param2
           (fun () -> modtypes (Env.add_module param1 arg1 env) res1 res2) in
       begin match (cc_arg, cc_res) with
           (Tcoerce_none, Tcoerce_none) -> Tcoerce_none
@@ -185,6 +186,7 @@ and signatures env sig1 sig2 =
         let (id2, name2) = item_ident_name item2 in
         begin try
           let (id1, item1, pos1) = Tbl.find name2 comps1 in
+          (* id1 must be left inchanged: it has the right binding time *)
           Ident.identify id1 id2
             (fun () ->
               pair_components ((item1, item2, pos1) :: paired) unpaired rem)

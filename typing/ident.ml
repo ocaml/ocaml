@@ -45,17 +45,17 @@ let binding_time i = i.stamp
 let current_time() = !currentstamp
 
 let identify i1 i2 f =
-  let name1 = i1.name and stamp1 = i1.stamp in
+  let name2 = i2.name and stamp2 = i2.stamp in
   try
-    i1.name <- i2.name;
-    i1.stamp <- i2.stamp;
+    i2.name <- i1.name;
+    i2.stamp <- i1.stamp;
     let res = f () in
-    i1.name <- name1;
-    i1.stamp <- stamp1;
+    i2.name <- name2;
+    i2.stamp <- stamp2;
     res
   with x ->
-    i1.name <- name1;
-    i1.stamp <- stamp1;
+    i2.name <- name2;
+    i2.stamp <- stamp2;
     raise x
 
 let hide i =

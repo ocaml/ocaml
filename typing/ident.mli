@@ -29,8 +29,9 @@ val same: t -> t -> bool
            [new], or if they are both persistent and have the same
            name. *)
 val identify: t -> t -> (unit -> 'a) -> 'a
-        (* [identify id1 id2 f] temporarily makes [id1] and [id2] the same
-           during the evaluation of [f ()]. *)
+        (* [identify id1 id2 f] temporarily makes [id1] and [id2] the
+           same during the evaluation of [f ()]. More precisely, [id1]
+           is unchanged, while [id2] is made a copy of [id1]. *)
 val hide: t -> t
         (* Return an identifier with same name as the given identifier,
            but stamp different from any stamp returns by new.
