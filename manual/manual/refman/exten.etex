@@ -1,12 +1,9 @@
 \chapter{Language extensions} \label{c:extensions}
 \pdfchapter{Language extensions}
 
-This chapter describes the language features that are implemented in
-Objective Caml, but not described in the Objective Caml
-reference manual. In contrast with the fairly stable kernel language
-that is described in the reference manual, the extensions presented
-here are still experimental, and may be removed or changed in the
-future.
+This chapter describes syntactic extensions and convenience features
+that are implemented in Objective Caml, but not described in the
+Objective Caml reference manual.
 
 \section{Streams and stream parsers}
 \label{s:streams}
@@ -57,17 +54,14 @@ evaluated at this point in the program.  Instead, its evaluation will
 be performed the first time "Lazy.force" is applied to the value
 \var{v}, returning the actual value of @expr@. Subsequent applications
 of "Lazy.force" to \var{v} do not evaluate @expr@ again.
-
-The expression @"lazy" expr@ is equivalent to
-@"ref"("Lazy.Delayed"("fun" "()" "->" expr))@.
 For more information, see the description of module "Lazy" in the
-standard library (
+standard library
 \ifouthtml
- \begin{rawhtml}<a HREF=libref/Lazy.html>Module <tt>Lazy</tt></a>
- \end{rawhtml}
+ (\begin{rawhtml}<a HREF=libref/Lazy.html>Module <tt>Lazy</tt></a>
+ \end{rawhtml}).
 \else
-section~\ref{Lazy}
-\fi).
+(section~\ref{Lazy}).
+\fi
 %
 \index{Lazy (module)\@\verb`Lazy` (module)}%
 \index{force\@\verb`force`}%
