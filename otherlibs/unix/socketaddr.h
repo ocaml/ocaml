@@ -11,7 +11,7 @@ union {
 
 int sock_addr_len;
 
-#ifdef ANSI
+#ifdef __STDC__
 void get_sockaddr(value);
 value alloc_sockaddr(void);
 value alloc_inet_addr(unsigned long);

@@ -1,14 +1,14 @@
 #define Nothing ((value) 0)
 
 #ifndef NULL
-#ifdef ANSI
+#ifdef __STDC__
 #define NULL ((void *) 0)
 #else
 #define NULL ((char *) 0)
 #endif
 #endif
 
-#ifdef ANSI
+#ifdef __STDC__
 extern void unix_error(int errcode, char * cmdname, value arg);
 extern void uerror(char * cmdname, value arg);
 #else
