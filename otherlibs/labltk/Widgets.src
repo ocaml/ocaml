@@ -150,8 +150,6 @@ subtype option(bitmapimage) {
 
 module Imagebitmap {
   function (ImageBitmap) create ["image"; "create"; "bitmap"; ?name:[ImageBitmap]; option(bitmapimage) list]
-#  function (ImageBitmap) create ["image"; "create"; "bitmap"; option(bitmapimage) list]
-#  function (ImageBitmap) create_named ["image"; "create"; "bitmap"; name: ImageBitmap; option(bitmapimage) list]
   function () configure [ImageBitmap; "configure"; option(bitmapimage) list]
   function (string) configure_get [ImageBitmap; "configure"]
   # Functions inherited from the "image" TK class
@@ -1534,7 +1532,7 @@ widget text {
    function (bool) compare [widget(text); "compare"; index: TextIndex; op: Comparison; index: TextIndex]
    function () configure [widget(text); "configure"; option(text) list]
    function (string) configure_get [widget(text); "configure"]
-   function () debug [widget(text); "debug"; switch: bool]
+   function () debug [widget(text); "debug"; bool]
    function () delete [widget(text); "delete"; start: TextIndex; stop: TextIndex]
    function () delete_char [widget(text); "delete"; index: TextIndex]
    function (int, int, int, int, int) dlineinfo [widget(text); "dlineinfo"; index: TextIndex]
@@ -1562,7 +1560,7 @@ widget text {
    function () see [widget(text); "see"; index: TextIndex]
    # Tags
    function () tag_add [widget(text); "tag"; "add"; tag: TextTag; start: TextIndex; stop: TextIndex]
-   function () tag_add_char [widget(text); "tag"; "add"; tag: TextTag; at: TextIndex]
+   function () tag_add_char [widget(text); "tag"; "add"; tag: TextTag; index: TextIndex]
    external tag_bind "builtin/text_tag_bind"
    function () tag_configure [widget(text); "tag"; "configure"; tag: TextTag; option(texttag) list]
    function () tag_delete [widget(text); "tag"; "delete"; TextTag list]
@@ -1578,7 +1576,7 @@ widget text {
 #   function () tag_raise_top [widget(text); "tag"; "raise"; tag: TextTag ]
    function (Index(text) as "[>`Linechar of int * int]" list) tag_ranges [widget(text); "tag"; "ranges"; tag: TextTag]
    function () tag_remove [widget(text); "tag"; "remove"; tag: TextTag; start: TextIndex; stop: TextIndex]
-   function () tag_remove_char [widget(text); "tag"; "remove"; tag: TextTag; at: TextIndex]
+   function () tag_remove_char [widget(text); "tag"; "remove"; tag: TextTag; index: TextIndex]
    function () window_configure [widget(text); "window"; "configure"; tag: TextTag; option(embeddedw) list]
    function () window_create [widget(text); "window"; "create"; index: TextIndex; option(embeddedw) list]
    function (widget list) window_names [widget(text); "window"; "names"]
@@ -1681,7 +1679,7 @@ module Winfo {
 #   unsafe function (widget) containing_displayof ["winfo"; "containing"; "-displayof"; displayof: widget; x: int; y: int]
    function (int) depth ["winfo"; "depth"; widget]
    function (bool) exists ["winfo"; "exists"; widget]
-   function (float) fpixels ["winfo"; "fpixels"; widget; distance: Units]
+   function (float) fpixels ["winfo"; "fpixels"; widget; length: Units]
    function (string) geometry ["winfo"; "geometry"; widget]
    function (int) height ["winfo"; "height"; widget]
    unsafe function (string) id ["winfo"; "id"; widget]
@@ -1695,7 +1693,7 @@ module Winfo {
    unsafe function (widget) pathname ["winfo"; "pathname"; ?displayof:["-displayof"; widget]; string]
 #   unsafe function (widget) pathname ["winfo"; "pathname"; string]
 #   unsafe function (widget) pathname_displayof ["winfo"; "pathname"; "-displayof"; displayof: widget; string]
-   function (int) pixels ["winfo"; "pixels"; widget; distance: Units]
+   function (int) pixels ["winfo"; "pixels"; widget; length: Units]
    function (int) pointerx ["winfo"; "pointerx"; widget]
    function (int) pointery ["winfo"; "pointery"; widget]
    function (int, int) pointerxy ["winfo"; "pointerxy"; widget]
@@ -1750,24 +1748,24 @@ module Wm {
    function (string) client_get ["wm"; "client"; widget]
 ### WM_COLORMAP_WINDOWS
    function () colormapwindows_set 
-        ["wm"; "colormapwindows"; widget; [widgets: widget list]]
+        ["wm"; "colormapwindows"; widget; [windows: widget list]]
    unsafe function (widget list) colormapwindows_get
         ["wm"; "colormapwindows"; widget]
 ### WM_COMMAND
    function () command_clear ["wm"; "command"; widget; ""]
-   function () command_set ["wm"; "command"; widget; [commands: string list]]
+   function () command_set ["wm"; "command"; widget; [string list]]
    function (string list) command_get ["wm"; "command"; widget]
 
    function () deiconify ["wm"; "deiconify"; widget]
 
 ### Focus model
-   function () focusmodel_set ["wm"; "focusmodel"; widget; model: FocusModel]
+   function () focusmodel_set ["wm"; "focusmodel"; widget; FocusModel]
    function (FocusModel) focusmodel_get ["wm"; "focusmodel"; widget]
 
    function (string) frame ["wm"; "frame"; widget]
 
 ### Geometry
-   function () geometry_set ["wm"; "geometry"; widget; geometry: string]
+   function () geometry_set ["wm"; "geometry"; widget; string]
    function (string) geometry_get ["wm"; "geometry"; widget]
 
 ### Grid
@@ -1781,18 +1779,18 @@ module Wm {
    unsafe function (widget) group_get ["wm"; "group"; widget]
 ### Icon bitmap
    function () iconbitmap_clear ["wm"; "iconbitmap"; widget; ""]
-   function () iconbitmap_set ["wm"; "iconbitmap"; widget; bitmap: Bitmap]
+   function () iconbitmap_set ["wm"; "iconbitmap"; widget; Bitmap]
    function (Bitmap) iconbitmap_get ["wm"; "iconbitmap"; widget]
 
    function () iconify ["wm"; "iconify"; widget]
 
 ### Icon mask
    function () iconmask_clear ["wm"; "iconmask"; widget; ""]
-   function () iconmask_set ["wm"; "iconmask"; widget; bitmap: Bitmap]
+   function () iconmask_set ["wm"; "iconmask"; widget; Bitmap]
    function (Bitmap) iconmask_get ["wm"; "iconmask"; widget]
 
 ### Icon name
-   function () iconname_set ["wm"; "iconname"; widget; name: string]
+   function () iconname_set ["wm"; "iconname"; widget; string]
    function (string) iconname_get ["wm"; "iconname"; widget]
 ### Icon position
    function () iconposition_clear ["wm"; "iconposition"; widget; ""; ""]
@@ -1813,7 +1811,7 @@ module Wm {
    function (bool) overrideredirect_get ["wm"; "overrideredirect"; widget]
 ### Position
    function () positionfrom_clear ["wm"; "positionfrom"; widget; ""]
-   function () positionfrom_set ["wm"; "positionfrom"; widget; who: WmFrom]
+   function () positionfrom_set ["wm"; "positionfrom"; widget; WmFrom]
    function (WmFrom) positionfrom_get ["wm"; "positionfrom"; widget]
 ### Protocols
    function () protocol_set ["wm"; "protocol"; widget; name: string; command: function()]
@@ -1824,14 +1822,14 @@ module Wm {
    function (bool, bool) resizable_get ["wm"; "resizable"; widget(toplevel)]
 ### Sizefrom
    function () sizefrom_clear ["wm"; "sizefrom"; widget; ""]
-   function () sizefrom_set ["wm"; "sizefrom"; widget; who: WmFrom]
+   function () sizefrom_set ["wm"; "sizefrom"; widget; WmFrom]
    function (WmFrom) sizefrom_get ["wm"; "sizefrom"; widget]
 
    function (string) state ["wm"; "state"; widget]
 
 ### Title
    function (string) title_get ["wm"; "title"; widget]
-   function () title_set ["wm"; "title"; widget; title: string]
+   function () title_set ["wm"; "title"; widget; string]
 ### Transient
    function () transient_clear ["wm"; "transient"; widget; ""]
    function () transient_set ["wm"; "transient"; widget; master: widget(toplevel)]

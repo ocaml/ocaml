@@ -60,8 +60,8 @@ let put ~on: w ~ms: millisec mesg =
         Message.configure !popupw ~text: mesg; 
         raise_window !topw;
         Wm.geometry_set !topw (* 9 & 8 are some kind of magic... *)
-          ~geometry: ("+"^(string_of_int (ev.ev_RootX + 9))^
-                     "+"^(string_of_int (ev.ev_RootY + 8)));
+          ("+"^(string_of_int (ev.ev_RootX + 9))^
+           "+"^(string_of_int (ev.ev_RootY + 8)));
         Wm.deiconify !topw;
         cursor := cget w `Cursor;
         configure_cursor w "hand2"))

@@ -72,7 +72,9 @@ let write_function_type ~w def =
       replace_args ~u:[] ~l:[] ~o:[] (List.rev tys)
   in
   let counter = ref 0 in
-  List.iter (ls @ os @ us) ~f:
+  let params =
+    if os = [] then us @ ls else ls @ os @ us in
+  List.iter params ~f:
     begin fun (l, t) ->
       if l <> "" then w (l ^ ":");
       w (ppMLtype t ~counter);

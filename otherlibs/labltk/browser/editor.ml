@@ -517,7 +517,7 @@ class editor ~top ~menus = object (self)
     bind top ~events:[`Destroy] ~breakable:true ~fields:[`Widget] ~action:
       begin fun ev ->
         if Widget.name ev.ev_Widget = Widget.name top
-        then self#quit ()
+        then (break (); self#quit ())
       end;
 
     (* File menu *)

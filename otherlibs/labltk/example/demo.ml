@@ -25,7 +25,7 @@ let _ =
 (* Initialize Tk *)
 let top = openTk () in 
 (* Title setting *)
-Wm.title_set top ~title:"LablTk demo";
+Wm.title_set top "LablTk demo";
 
 (* Base frame *)
 let base = Frame.create top in
@@ -118,7 +118,7 @@ pack [bar] ~fill: `X;
 
   (* Toplevel *)
   let top2 = Toplevel.create top in
-  Wm.title_set top2 ~title:"LablTk demo control";
+  Wm.title_set top2 "LablTk demo control";
   let defcol = `Color "#dfdfdf" in
   let selcol = `Color "#ffdfdf" in
   let buttons = 

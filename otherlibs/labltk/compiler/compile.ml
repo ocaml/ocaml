@@ -653,6 +653,8 @@ let write_function ~w def =
     in
       replace_args ~u:[] ~l:[] ~o:[] (List.rev (variables @ variables2))
   in
+  let has_opts = (ov <> [] || co <> "") in
+  if not has_opts then List.iter uv ~f:(fun x -> w " "; w x);
   List.iter (lv@ov) ~f:(fun (l, v) -> w " "; w (labelstring l); w v);
   if co <> "" then begin
     if lv = [] && ov = [] then w (" ?" ^ lbl ^ ":eta");
@@ -660,12 +662,12 @@ let write_function ~w def =
     w (co ^ "_optionals");
     if lv = [] && ov = [] then w (" ?" ^ lbl ^ ":eta");
     w " (fun opts";
-    if uv = [] then w " ()"
-    else List.iter uv ~f:(fun x -> w " "; w x);
+    if uv = [] then w " ()" else
+    if has_opts then List.iter uv ~f:(fun x -> w " "; w x);
     w " ->\n"
   end else begin
-    List.iter uv ~f:(fun x -> w " "; w x);
-    if (ov <> [] || lv = []) && uv = [] then w " ()";
+    if (ov <> [] || lv = []) && uv = [] then w " ()" else
+    if has_opts then List.iter uv ~f:(fun x -> w " "; w x);
     w " =\n"
   end;
   begin match def.result with

@@ -84,7 +84,8 @@ let ask ~title ?master text =
       ~command:(fun () -> r := `yes; destroy tl) 
   and refuse = Button.create fw ~text:"No"
       ~command:(fun () -> r := `no; destroy tl)
-  and cancel = Jg_button.create_destroyer tl ~parent:fw ~text:"Cancel"
+  and cancel = Button.create fw ~text:"Cancel"
+      ~command:(fun () -> r := `cancel; destroy tl)
   in
   bind tl ~events:[`Destroy] ~extend:true
     ~action:(fun _ -> Textvariable.set sync "1");

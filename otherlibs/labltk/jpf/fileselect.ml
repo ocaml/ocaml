@@ -183,7 +183,7 @@ let f ~title ~action:proc ~filter:deffilter ~file:deffile ~multi ~sync =
   
   let tl = Toplevel.create default_toplevel in
   Focus.set tl;
-  Wm.title_set tl ~title;
+  Wm.title_set tl title;
 
   let filter_var = Textvariable.create ~on:tl () (* new_temporary *)
   and selection_var = Textvariable.create ~on:tl ()

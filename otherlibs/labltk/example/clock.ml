@@ -82,8 +82,8 @@ class clock ~parent = object (self)
 
   (* Redraw everything *)
   method redraw =
-    Canvas.coords_set ~coords:[ 1; 1; width - 2; height - 2 ]
-      canvas (`Tag "cadran");
+    Canvas.coords_set canvas (`Tag "cadran")
+      ~coords:[ 1; 1; width - 2; height - 2 ];
     self#draw_figures;
     self#draw_arrows (Unix.localtime (Unix.time ()))
 
@@ -107,22 +107,19 @@ class clock ~parent = object (self)
     let hangle =
       float (rflag * (tm.Unix.tm_hour * 60 + tm.Unix.tm_min) - 180)
         *. pi /. 360. in
-    Canvas.coords_set
+    Canvas.coords_set canvas (`Tag "hours")
       ~coords:[ self#x 0.; self#y 0.;
-                self#x (cos hangle /. 2.); self#y (sin hangle /. 2.) ]
-      canvas (`Tag "hours");
+                self#x (cos hangle /. 2.); self#y (sin hangle /. 2.) ];
     Canvas.configure_line ~width:(min width height / 50)
       canvas (`Tag "minutes");
     let mangle = float (rflag * tm.Unix.tm_min - 15) *. pi /. 30. in
-    Canvas.coords_set
+    Canvas.coords_set canvas (`Tag "minutes")
       ~coords:[ self#x 0.; self#y 0.;
-                self#x (cos mangle /. 1.5); self#y (sin mangle /. 1.5) ]
-      canvas (`Tag "minutes");
+                self#x (cos mangle /. 1.5); self#y (sin mangle /. 1.5) ];
     let sangle = float (rflag * tm.Unix.tm_sec - 15) *. pi /. 30. in
-    Canvas.coords_set
+    Canvas.coords_set canvas (`Tag "seconds")
       ~coords:[ self#x 0.; self#y 0.;
                 self#x (cos sangle /. 1.25); self#y (sin sangle /. 1.25) ]
-      canvas (`Tag "seconds")
 end
 
 (* Initialize the Tcl interpreter *)
