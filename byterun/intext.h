@@ -67,26 +67,12 @@
 #define CODE_DOUBLE_ARRAY32_NATIVE CODE_DOUBLE_ARRAY32_LITTLE
 #endif
 
-/* Initial sizes of data structures for extern */
+/* Size-ing data structures for extern.  Chosen so that
+   sizeof(struct trail_block) and sizeof(struct output_block)
+   are slightly below 8Kb. */
 
-#ifndef INITIAL_EXTERN_BLOCK_SIZE
-#define INITIAL_EXTERN_BLOCK_SIZE 8192
-#endif
-
-#ifndef INITIAL_EXTERN_TABLE_SIZE_LOG2
-#define INITIAL_EXTERN_TABLE_SIZE_LOG2 11
-#endif
-
-#define INITIAL_EXTERN_TABLE_SIZE (1UL << INITIAL_EXTERN_TABLE_SIZE_LOG2)
-
-/* Maximal value of initial_ofs above which we should start again with
-   initial_ofs = 1. Should be low enough to prevent rollover of initial_ofs
-   next time we extern a structure. Since a structure contains at most 
-   2^N / (2 * sizeof(value)) heap objects (N = 32 or 64 depending on target),
-   any value below 2^N - (2^N / (2 * sizeof(value))) suffices.
-   We just take 2^(N-1) for simplicity. */
-
-#define INITIAL_OFFSET_MAX (1UL << (8 * sizeof(value) - 1))
+#define ENTRIES_PER_TRAIL_BLOCK  1025
+#define SIZE_EXTERN_OUTPUT_BLOCK 8100
 
 /* The entry points */
 
