@@ -37,7 +37,7 @@ val create : ('a -> 'b) -> 'a -> t
 val self : unit -> t
 (** Return the thread currently executing. *)
 
-external id : t -> int = "thread_id"
+external id : t -> int = "caml_thread_id"
 (** Return the identifier of the given thread. A thread identifier
    is an integer that identifies uniquely the thread.
    It can be used to build data structures indexed by threads. *)

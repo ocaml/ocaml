@@ -36,15 +36,15 @@ type resumption_status =
   | Resumed_select of file_descr list * file_descr list * file_descr list
   | Resumed_wait of int * process_status
 
-external thread_initialize : unit -> unit = "thread_initialize"
-external thread_wait_read : file_descr -> unit = "thread_wait_read"
-external thread_wait_write : file_descr -> unit = "thread_wait_write"
+external thread_initialize : unit -> unit = "caml_thread_initialize"
+external thread_wait_read : file_descr -> unit = "caml_thread_wait_read"
+external thread_wait_write : file_descr -> unit = "caml_thread_wait_write"
 external thread_select :
   file_descr list * file_descr list * file_descr list * float
        -> resumption_status
-  = "thread_select"
-external thread_wait_pid : int -> resumption_status = "thread_wait_pid"
-external thread_delay : float -> unit = "thread_delay"
+  = "caml_thread_select"
+external thread_wait_pid : int -> resumption_status = "caml_thread_wait_pid"
+external thread_delay : float -> unit = "caml_thread_delay"
 
 let wait_read fd = thread_wait_read fd
 let wait_write fd = thread_wait_write fd

@@ -14,55 +14,136 @@
 
 open Printf
 
-let verbose = false
 
-let debug source msg =
-  if verbose then begin
+let verbose =
+  try
+    int_of_string (Sys.getenv "VERBOSE")
+  with
+  | _ -> 0
+
+
+let debug_mutex = Mutex.create ()
+
+let debug lvl source msg =
+  if verbose >= lvl then begin
+    Mutex.lock debug_mutex ;
     eprintf "%s: %s\n" source msg ;
-    flush stderr
+    flush stderr ;
+    Mutex.unlock debug_mutex
   end
+
+let debug1 = debug 1
+and debug2 = debug 2
+and debug3 = debug 3
 
 let nthreads_mutex = Mutex.create ()
 and nthreads_condition = Condition.create ()
-and nthreads = ref 1
+and nthreads = ref 1 (* Real threads devoted to join *)
+and in_pool = ref 0  (* Count of such waiting in pool *)
+and pool_kont = ref [] (* work available for pool processes *)
 
 let exit_hook () =
   Mutex.lock nthreads_mutex ;
   decr nthreads ;
-  let r = !nthreads in
-  Mutex.unlock nthreads_mutex ;  
-  if r > 0 then
+  if !nthreads > !in_pool then
     Condition.wait nthreads_condition nthreads_mutex
+  else
+    Mutex.unlock nthreads_mutex
 
 let _ = at_exit exit_hook
 
-external thread_new : (unit -> unit) -> Thread.t = "thread_new"
-external thread_uncaught_exception : exn -> unit = "thread_uncaught_exception"
+external thread_new : (unit -> unit) -> Thread.t = "caml_thread_new"
+external thread_uncaught_exception : exn -> unit = "caml_thread_uncaught_exception"
+
+(***************)
+(* Thread pool *)
+(***************)
+
 
 (* To be called whenever a join-thread exits *)
-let exit_thread () =
+let really_exit_thread () =
   Mutex.lock nthreads_mutex ;
   decr nthreads ;
-  if !nthreads = 0 then Condition.signal nthreads_condition ;
+  debug1 "REAL EXIT"
+    (sprintf "%i nthread=%i pool=%i"
+       (Thread.id (Thread.self ()))
+       !nthreads !in_pool) ;
+  if !nthreads <= !in_pool && !pool_kont = [] then
+    Condition.signal nthreads_condition ;
   Mutex.unlock nthreads_mutex ;
   Thread.exit ()
-  
-let create_process f =
-(* One new join thread *)
+
+(* Note: really_create_process
+   uses thread_new, to short-circuit handling of exceptions by Thread *)  
+
+let really_create_process f =
   Mutex.lock nthreads_mutex ;
   incr nthreads ;
   Mutex.unlock nthreads_mutex ;
+  let t = Thread.id (thread_new f) in
+  debug1 "REAL FORK"
+    (sprintf "%i nthread=%i pool=%i" t !nthreads !in_pool)
 
-(* Be sure to call my exit_thread *)
+
+
+(****************)
+(* Thread cache *)
+(****************)
+
+let pool_condition = Condition.create ()
+and pool_size =
+  try
+    int_of_string (Sys.getenv "POOLSIZE")
+  with
+  | _ -> 10
+
+(* nthreads_mutex  is now locked *)
+let rec do_pool_enter () =
+  match !pool_kont with
+  | f::rem ->
+      pool_kont := rem ;
+      debug2 "POOL RUN" (sprintf "%i" (Thread.id (Thread.self()))) ;
+      Mutex.unlock nthreads_mutex ;
+      f ()
+  | [] ->
+      incr in_pool ;
+      if !nthreads <= !in_pool then Condition.signal nthreads_condition ;
+      debug2 "POOL SLEEP" (sprintf "%i" (Thread.id (Thread.self()))) ;
+      Condition.wait pool_condition nthreads_mutex ;
+      debug2 "POOL AWAKE" (sprintf "%i" (Thread.id (Thread.self()))) ;
+      decr in_pool ;
+      do_pool_enter ()
+
+let pool_enter () =
+  Mutex.lock nthreads_mutex ;
+  debug2 "POOL ENTER" (sprintf "%i" (Thread.id (Thread.self()))) ;
+  do_pool_enter ()
+
+let exit_thread () =
+  if !in_pool >= pool_size then
+    really_exit_thread ()
+  else
+    pool_enter ()
+
+let create_process f =
+(* Wapper around f, to be sure to call my exit_thread *)  
   let g () = 
-    try f () ; exit_thread ()
+    begin try f ()
     with e ->
-      flush stdout; flush stderr;
-      thread_uncaught_exception e;
-      exit_thread () in
+        flush stdout; flush stderr;
+        thread_uncaught_exception e
+    end ;
+    exit_thread () in
 
-(* use thread_new, to short-circuit handling of exceptions by Thread *)
-  debug "FORK" (sprintf "%i" (Thread.id (thread_new g)))
+  Mutex.lock nthreads_mutex ;
+  if !in_pool = 0 then begin
+    Mutex.unlock nthreads_mutex ;
+    really_create_process g
+  end else begin
+    pool_kont := g :: !pool_kont ;
+    Condition.signal pool_condition ;
+    Mutex.unlock nthreads_mutex
+  end
 
 type queue = Obj.t list
 
@@ -185,7 +266,7 @@ let rec attempt_match auto reactions i =
   end
 
 let send_async auto idx a =
-  debug "SEND_ASYNC" (sprintf "channel %i" idx) ;
+  debug3 "SEND_ASYNC" (sprintf "channel %i" idx) ;
 (* Acknowledge new message by altering queue and status *)
   Mutex.lock auto.mutex ;
   let old_status = auto.status in
@@ -193,7 +274,7 @@ let send_async auto idx a =
   put_queue auto idx a ;
   auto.status <- new_status ;
   if old_status = new_status then begin
-    debug "SEND_ASYNC" (sprintf "Return: %i" auto.status) ;
+    debug3 "SEND_ASYNC" (sprintf "Return: %i" auto.status) ;
     Mutex.unlock auto.mutex
   end else begin
     attempt_match auto (Obj.magic auto.matches) 0
@@ -201,7 +282,7 @@ let send_async auto idx a =
 
   
 let reply_to v k =
-  debug "REPLY" (sprintf "%i" (Obj.magic v)) ;
+  debug3 "REPLY" (sprintf "%i" (Obj.magic v)) ;
   Mutex.lock k.kmutex ;
   k.kval <- Ret v ;
   Condition.signal k.kcondition ;
@@ -226,7 +307,7 @@ let rec attempt_match_sync idx kont auto reactions i =
   end
 
 let send_sync auto idx a =
-  debug "SEND_SYNC" (sprintf "channel %i" idx) ;
+  debug3 "SEND_SYNC" (sprintf "channel %i" idx) ;
 (* Acknowledge new message by altering queue and status *)
   Mutex.lock auto.mutex ;
   let old_status = auto.status in
@@ -235,7 +316,7 @@ let send_sync auto idx a =
   put_queue auto idx (Obj.magic (kont,a)) ;
   auto.status <- new_status ;
   if old_status = new_status then begin
-    debug "SEND_SYNC" (sprintf "Return: %i" auto.status) ;
+    debug3 "SEND_SYNC" (sprintf "Return: %i" auto.status) ;
     kont_suspend kont
   end else begin
     attempt_match_sync idx kont auto (Obj.magic auto.matches) 0

@@ -63,7 +63,7 @@ thread.ml: thread_posix.ml
 	ln -s thread_posix.ml thread.ml
 
 join.ml: ../threads/join.ml
-	sed -e 's|"thread_|"caml_thread_|g' < ../threads/join.ml > join.ml
+	cp ../threads/join.ml .
 
 
 join.mli: ../threads/join.mli
