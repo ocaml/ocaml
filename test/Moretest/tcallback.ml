@@ -26,10 +26,36 @@ let tripwire () =
   let s = String.make 5 'a' in
   mypushroot s trapexit ()
 
+(* Test callbacks performed to handle signals *)
+
+let sighandler signo =
+  print_string "Got signal, triggering garbage collection...";
+  print_newline();
+  (* Thoroughly wipe the minor heap *)
+  tak (18, 12, 6);
+  ()
+
+external unix_getpid : unit -> int = "unix_getpid" "noalloc"
+external unix_kill : int -> int -> unit = "unix_kill" "noalloc"
+
+let callbacksig () =
+  let pid = unix_getpid() in
+  (* Allocate a block in the minor heap *)
+  let s = String.make 5 'b' in
+  (* Send a signal to self.  We want s to remain in a register and
+     not be spilled on the stack, hence we declare unix_kill
+     "noalloc". *)
+  unix_kill pid Sys.sigusr1;
+  (* Allocate some more so that the signal will be tested *)
+  let u = (s, s) in
+  fst u
+
 let _ =
   print_int(mycallback1 tak (18, 12, 6)); print_newline();
   print_int(mycallback2 tak2 18 (12, 6)); print_newline();
   print_int(mycallback3 tak3 18 12 6); print_newline();
   print_int(trapexit ()); print_newline();
-  print_string(tripwire ()); print_newline()
+  print_string(tripwire ()); print_newline();
+  Sys.signal Sys.sigusr1 (Sys.Signal_handle sighandler);
+  print_string(callbacksig ()); print_newline()
 

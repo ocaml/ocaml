@@ -8,9 +8,9 @@ CAMLRUN=../../byterun/ocamlrun
 CODERUNPARAMS=CAMLRUNPARAM='o=100'
 
 callback.byt: callback.cmo callbackprim.o
-	$(CAMLC) -o callback.byt -custom callback.cmo callbackprim.o
+	$(CAMLC) -o callback.byt -custom callback.cmo callbackprim.o ../../otherlibs/unix/libunix.a
 callback.out: callback.cmx callbackprim.o
-	$(CAMLOPT) -o callback.out callback.cmx callbackprim.o
+	$(CAMLOPT) -o callback.out callback.cmx callbackprim.o ../../otherlibs/unix/libunix.a
 
 manyargs.byt: manyargs.cmo manyargsprim.o
 	$(CAMLC) -o manyargs.byt -custom manyargs.cmo manyargsprim.o
