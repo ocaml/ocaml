@@ -224,7 +224,6 @@ static void intern_alloc(whsize, num_objects)
       intern_block = alloc(wosize, String_tag);
     } else {
       intern_block = alloc_shr(wosize, String_tag);
-      intern_block = check_urgent_gc (intern_block);
     }
     intern_header = Hd_val(intern_block);
     intern_color = Color_hd(intern_header);
