@@ -511,11 +511,11 @@ and print_out_sig_item ppf =
   function
   | Osig_class (vir_flag, name, params, clt) ->
       fprintf ppf "@[<2>class%s@ %a%s@ :@ %a@]"
-        (if vir_flag then "virtual " else "")
+        (if vir_flag then " virtual" else "")
         print_out_class_params params name print_out_class_type clt
   | Osig_class_type (vir_flag, name, params, clt) ->
       fprintf ppf "@[<2>class type%s@ %a%s@ =@ %a@]"
-        (if vir_flag then "virtual " else "")
+        (if vir_flag then " virtual" else "")
         print_out_class_params params name print_out_class_type clt
   | Osig_exception (id, tyl) ->
       fprintf ppf "@[<2>exception %a@]" print_out_constr (id, tyl)
