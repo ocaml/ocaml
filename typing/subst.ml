@@ -72,154 +72,156 @@ let type_path s = function
   | Papply(p1, p2) ->
       fatal_error "Subst.type_path"
 
-(* From Ctype *)
-let rec repr = function
-    {desc = Tlink ty} as t ->
-      let r = repr ty in
-      if r != ty then t.desc <- Tlink r;
-      r
+(**** From Ctype... ****)
+
+let generic_level = (-1)
+(* Used to mark a type during a traversal. *)
+let lowest_level = generic_level
+let pivot_level = 2 * lowest_level - 1
+    (* pivot_level - lowest_level < lowest_level *)
+
+let newmarkedvar ()    = { desc = Tvar; level = pivot_level - generic_level }
+
+let rec repr =
+  function
+    {desc = Tlink t'} ->
+      (* 
+         We do no path compression. Path compression does not seem to
+         improve notably efficiency, and it prevents from changing a
+         [Tlink] into another type (for instance, for undoing a
+         unification).
+      *)
+      repr t'
   | t -> t
 
-(* From Ctype *)
-let rec opened ty =
-  match (repr ty).desc with
-    Tfield(_, _, t) -> opened t
-  | Tvar            -> true
-  | Tnil            -> false
-  | _               -> fatal_error "Subst.opened"
+let saved_desc = ref []
+  (* Saved association of generic nodes with their description. *)
 
-let generic_level = -1
+(* Restored type descriptions *)
+let cleanup_types () =
+  List.iter (fun (ty, desc) -> ty.desc <- desc) !saved_desc;
+  saved_desc := []
 
-let newgenty desc =
-  {desc = desc; level = generic_level}
-
-let new_val = ref []
-
-type 'a visited = Zero | One | Many of 'a
-
-let rec typexp visited s ty =
+(* Remove marks from a type. *)
+let rec unmark_type ty =
   let ty = repr ty in
-  if ty.desc = Tvar then ty else
-  try
-    match List.assq ty visited with
-      {contents = Zero} as v ->
-      	let t = newgenty Tvar in
-	v := Many t;
-	let ty' = typexp_2 visited s ty v in
-	t.desc <- ty'.desc;
-	t
-    | {contents = One} as v ->
-        let t = newgenty Tvar in
-        v := Many t;
-        t
-    | {contents = Many t} ->
-        t
-  with Not_found ->
-    let v = ref One in
-    let ty' = typexp_2 ((ty, v)::visited) s ty v in
-    match v with
-      {contents = Many t} ->
-      	t.desc <- ty'.desc;
-	t
-    | _ ->
-      	ty'
+  if ty.level < lowest_level then begin
+    ty.level <- pivot_level - ty.level;
+    iter_type_expr unmark_type ty
+  end
 
-and typexp_2 visited s ty v =
-  match ty.desc with
-    Tvar ->
-      ty
-  | Tarrow(t1, t2) ->
-      newgenty(Tarrow(typexp visited s t1, typexp visited s t2))
-  | Ttuple tl ->
-      newgenty(Ttuple(List.map (typexp visited s) tl))
-  | Tconstr(p, [], _) ->
-      newgenty(Tconstr(type_path s p, [], ref Mnil))
-  | Tconstr(p, tl, _) ->
-      newgenty(Tconstr(type_path s p, List.map (typexp visited s) tl,
-                       ref Mnil))
-  | Tobject (t1, name) ->
-      let ty' () =
-      	let name' =
-          match !name with
-            None -> None
-          | Some (p, tl) ->
-              Some (type_path s p, List.map (typexp visited s) tl)
-	in
-        newgenty(Tobject (typexp visited s t1, ref name'))
-      in
-      if opened t1 then
-        try
-          List.assq ty !new_val
-        with Not_found ->
-          if v = ref One then begin
-            let t = newgenty Tvar in
-    	    v := Many t;
-            new_val := (ty, t):: !new_val
-          end;
-          ty' ()
-      else
-        ty' ()
-  | Tfield(n, t1, t2) ->
-      newgenty(Tfield(n, typexp visited s t1, typexp visited s t2))
-  | Tnil ->
-      newgenty Tnil
-  | Tlink _ ->
-      fatal_error "Subst.typexp"
+(**** Not from Ctype... ****)
+
+(* Similar to [Ctype.nondep_type_rec]. *)
+let rec typexp s ty =
+  let ty = repr ty in
+  if (ty.desc = Tvar) || (ty.level < lowest_level) then
+    ty
+  else begin
+    let desc = ty.desc in
+    saved_desc := (ty, desc)::!saved_desc;
+    let ty' = newmarkedvar () in        (* Stub *)
+    ty.desc <- Tlink ty';
+    ty'.desc <-
+      begin match desc with
+        Tvar | Tlink _ ->
+          fatal_error "Subst.typexp"
+      | Tarrow(t1, t2) ->
+          Tarrow(typexp s t1, typexp s t2)
+      | Ttuple tl ->
+          Ttuple(List.map (typexp s) tl)
+      | Tconstr(p, tl, abbrev) ->
+          Tconstr(type_path s p, List.map (typexp s) tl, ref Mnil)
+      | Tobject (t1, name) ->
+          Tobject (typexp s t1,
+                 ref (match !name with
+                        None -> None
+                      | Some (p, tl) ->
+                          Some (type_path s p, List.map (typexp s) tl)))
+      | Tfield(label, t1, t2) ->
+          Tfield(label, typexp s t1, typexp s t2)
+      | Tnil ->
+          Tnil
+      end;
+    ty'
+  end
 
 let type_expr s ty =
-  new_val := [];
-  let ty = typexp [] s ty in
-  new_val := [];
-  ty
+  let ty' = typexp s ty in
+  cleanup_types ();
+  unmark_type ty';
+  ty'
+
+let type_declaration s decl =
+  let decl =
+    { type_params = List.map (typexp s) decl.type_params;
+      type_arity = decl.type_arity;
+      type_kind =
+        begin match decl.type_kind with
+          Type_abstract -> Type_abstract
+        | Type_variant cstrs ->
+            Type_variant(
+              List.map (fun (n, args) -> (n, List.map (typexp s) args))
+                       cstrs)
+        | Type_record lbls ->
+            Type_record(
+              List.map (fun (n, mut, arg) -> (n, mut, typexp s arg))
+                       lbls)
+        end;
+      type_manifest =
+        begin match decl.type_manifest with
+          None -> None
+        | Some ty -> Some(typexp s ty)
+        end
+    }
+  in
+  cleanup_types ();
+  List.iter unmark_type decl.type_params;
+  begin match decl.type_kind with
+    Type_abstract -> ()
+  | Type_variant cstrs ->
+      List.iter (fun (c, tl) -> List.iter unmark_type tl) cstrs
+  | Type_record lbls ->
+      List.iter (fun (c, mut, t) -> unmark_type t) lbls
+  end;
+  begin match decl.type_manifest with
+    None    -> ()
+  | Some ty -> unmark_type ty
+  end;
+  decl
+
+let class_type s decl =
+  let decl =
+    { cty_params = List.map (typexp s) decl.cty_params;
+      cty_args = List.map (typexp s) decl.cty_args;
+      cty_vars =
+        Vars.fold (fun l (m, t) -> Vars.add l (m, typexp s t))
+          decl.cty_vars Vars.empty;
+      cty_self = typexp s decl.cty_self;
+      cty_concr = decl.cty_concr;
+      cty_new =
+        begin match decl.cty_new with
+      	  None    -> None
+        | Some ty -> Some (typexp s ty)
+      	end }
+  in
+  cleanup_types ();
+  List.iter unmark_type decl.cty_params;
+  List.iter unmark_type decl.cty_args;
+  Vars.iter (fun l (m, t) -> unmark_type t) decl.cty_vars;
+  unmark_type decl.cty_self;
+  begin match decl.cty_new with
+    None    -> ()
+  | Some ty -> unmark_type ty
+  end;
+  decl
 
 let value_description s descr =
   { val_type = type_expr s descr.val_type;
     val_kind = descr.val_kind }
 
-let type_declaration s decl =
-  { type_params = decl.type_params;
-    type_arity = decl.type_arity;
-    type_kind =
-      begin match decl.type_kind with
-        Type_abstract -> Type_abstract
-      | Type_variant cstrs ->
-          Type_variant(
-            List.map (fun (n, args) -> (n, List.map (type_expr s) args))
-                     cstrs)
-      | Type_record lbls ->
-          Type_record(
-            List.map (fun (n, mut, arg) -> (n, mut, type_expr s arg))
-                     lbls)
-      end;
-    type_manifest =
-      begin match decl.type_manifest with
-        None -> None
-      | Some ty -> Some(type_expr s ty)
-      end
-  }
-
 let exception_declaration s tyl =
   List.map (type_expr s) tyl
-
-let class_type s decl =
-  new_val := [];
-  let params = List.map (function p -> (repr p, ref Zero)) decl.cty_params in
-  let decl =
-    { cty_params = List.map (typexp params s) decl.cty_params;
-      cty_args = List.map (typexp params s) decl.cty_args;
-      cty_vars =
-        Vars.fold (fun l (m, t) -> Vars.add l (m, typexp params s t))
-          decl.cty_vars Vars.empty;
-      cty_self = typexp params s decl.cty_self;
-      cty_concr = decl.cty_concr;
-      cty_new =
-        begin match decl.cty_new with
-      	  None    -> None
-        | Some ty -> Some (typexp params s ty)
-      	end }
-  in
-    new_val := [];
-    decl
 
 let rec modtype s = function
     Tmty_ident p as mty ->
