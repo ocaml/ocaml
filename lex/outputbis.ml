@@ -156,25 +156,30 @@ let output_automata oc auto =
 let output_entry sourcefile ic oc tr e =
   let init_num, init_moves = e.auto_initial_state in
   fprintf oc "%s %alexbuf =
- __ocaml_lex_init_lexbuf lexbuf %d; %a  match __ocaml_lex_state%d lexbuf with\n"
+  __ocaml_lex_init_lexbuf lexbuf %d; %a
+  let __ocaml_lex_result = __ocaml_lex_state%d lexbuf in
+  lexbuf.Lexing.lex_start_p <- lexbuf.Lexing.lex_curr_p;
+  lexbuf.Lexing.lex_curr_p <- {lexbuf.Lexing.lex_curr_p with
+    Lexing.pos_cnum = lexbuf.Lexing.lex_abs_pos + lexbuf.Lexing.lex_curr_pos};
+  match __ocaml_lex_result with\n"
       e.auto_name output_args e.auto_args
       e.auto_mem_size (output_memory_actions "  ") init_moves init_num ;
   List.iter
     (fun (num, env, loc) ->
       fprintf oc "  | ";
-      fprintf oc "%d -> (\n" num;
+      fprintf oc "%d ->\n" num;
       output_env oc env ;
-      copy_chunk sourcefile ic oc tr loc;
-      fprintf oc ")\n")
+      copy_chunk sourcefile ic oc tr loc true;
+      fprintf oc "\n")
     e.auto_actions;
-  fprintf oc "  | _ -> raise (Failure \"lexing: empty token\") \n\n\n"
+  fprintf oc "  | _ -> raise (Failure \"lexing: empty token\")\n\n\n"
 
 
 (* Main output function *)
 
 let output_lexdef sourcefile ic oc tr header entry_points transitions trailer =
 
-  copy_chunk sourcefile ic oc tr header;
+  copy_chunk sourcefile ic oc tr header false;
   output_automata oc transitions ;
   begin match entry_points with
     [] -> ()
@@ -185,4 +190,4 @@ let output_lexdef sourcefile ic oc tr header entry_points transitions trailer =
         entries;
       output_string oc ";;\n\n";
   end;
-  copy_chunk sourcefile ic oc tr trailer
+  copy_chunk sourcefile ic oc tr trailer false

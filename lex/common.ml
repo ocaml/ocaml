@@ -68,12 +68,18 @@ let copy_chars =
     "Win32" | "Cygwin" -> copy_chars_win32
   | _       -> copy_chars_unix
 
-let copy_chunk sourcefile ic oc trl loc =
+let copy_chunk sourcefile ic oc trl loc add_parens =
   if loc.start_pos < loc.end_pos then begin
     fprintf oc "# %d \"%s\"\n" loc.start_line sourcefile;
-    for i = 1 to loc.start_col do output_char oc ' ' done;
+    if add_parens then begin
+      for i = 1 to loc.start_col - 1 do output_char oc ' ' done;
+      output_char oc '(';
+    end else begin
+      for i = 1 to loc.start_col do output_char oc ' ' done;
+    end;
     seek_in ic loc.start_pos;
     copy_chars ic oc loc.start_pos loc.end_pos;
+    if add_parens then output_char oc ')';
     update_tracker trl;
   end
 
