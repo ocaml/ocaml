@@ -250,6 +250,7 @@ let mktype_kind vflag kind =
 %token OPEN
 %token <string> OPTLABEL
 %token OR
+%token PARSER
 %token PLUS
 %token <string> PREFIXOP
 %token PRIVATE
