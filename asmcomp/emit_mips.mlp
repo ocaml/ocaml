@@ -31,14 +31,6 @@ let pic =
   | "irix" -> true
   | _ -> fatal_error "Emit_mips.pic"
 
-(* Determine the endianness in which the procesor is running *)
-
-let big_endian =
-  match Config.system with
-    "ultrix" -> false
-  | "irix" -> true
-  | _ -> fatal_error "Emit_mips.big_endian"
-
 (* Tradeoff between code size and code speed *)
 
 let fastcode_flag = ref true
@@ -177,7 +169,7 @@ let record_frame live =
   `{emit_label lbl}:`
 
 let emit_frame fd =
-  `	.word	{emit_label fd.fd_lbl} + 8\n`;
+  `	.word	{emit_label fd.fd_lbl}\n`;
   `	.half	{emit_int fd.fd_frame_size}\n`;
   `	.half	{emit_int (List.length fd.fd_live_offset)}\n`;
   List.iter
@@ -304,11 +296,13 @@ let emit_instr i =
         liveregs i 0;
         if pic then
           `	move	$25, {emit_reg i.arg.(0)}\n`;
-        `{record_frame i.live}	jal	{emit_reg i.arg.(0)}\n`;
+        `	jal	{emit_reg i.arg.(0)}\n`;
+        `{record_frame i.live}\n`;
         reload_gp()
     | Lop(Icall_imm s) ->
         liveregs i 0;
-        `{record_frame i.live}	jal	{emit_symbol s}\n`;
+        `	jal	{emit_symbol s}\n`;
+        `{record_frame i.live}\n`;
         reload_gp()
     | Lop(Itailcall_ind) ->
         let n = frame_size() in
@@ -336,7 +330,8 @@ let emit_instr i =
         if alloc then begin
           `	la	$24, {emit_symbol s}\n`;
           liveregs i live_24;
-          `{record_frame i.live}	jal	caml_c_call\n`
+          `	jal	caml_c_call\n`;
+          `{record_frame i.live}\n`
         end else begin
           `	jal	{emit_symbol s}\n`
         end;
@@ -383,21 +378,23 @@ let emit_instr i =
           `	.set	noreorder\n`;
           `	subu	$22, $22, {emit_int n}\n`;
           `	subu	$24, $22, $23\n`;
-          `{record_frame i.live}	bltzal	$24, {emit_label !call_gc_label}\n`;
+          `	bltzal	$24, {emit_label !call_gc_label}\n`;
           `	addu	{emit_reg i.res.(0)}, $22, 4\n`;
+          `{record_frame i.live}\n`;
           `	.set	reorder\n`
         end else begin
           begin match n with
             8  -> liveregs i 0;
-                  `{record_frame i.live}	jal	caml_alloc1\n`
+                  `	jal	caml_alloc1\n`
           | 12 -> liveregs i 0;
-                  `{record_frame i.live}	jal	caml_alloc2\n`
+                  `	jal	caml_alloc2\n`
           | 16 -> liveregs i 0;
-                  `{record_frame i.live}	jal	caml_alloc3\n`
+                  `	jal	caml_alloc3\n`
           | _  -> `	li	$24, {emit_int n}\n`;
                   liveregs i live_24;
-                  `{record_frame i.live}	jal	caml_alloc\n`
+                  `	jal	caml_alloc\n`
           end;
+          `{record_frame i.live}\n`;
           `	addu	{emit_reg i.res.(0)}, $22, 4\n`
         end
     | Lop(Iintop(Icheckbound)) ->
@@ -513,7 +510,7 @@ let emit_instr i =
         `	lw	$30, 0($sp)\n`;
         `	addu	$sp, $sp, 8\n`;
         liveregs i 0;
-        `	j	$25\n`
+        `	jal	$25\n` (* Keep retaddr in $31 for debugging *)
 
 let rec emit_all i =
   match i.desc with Lend -> () | _ -> emit_instr i; emit_all i.next
@@ -607,6 +604,9 @@ let begin_assembly() =
   `	.noalias $16,$sp; .noalias $16,$30; .noalias $17,$sp; .noalias $17,$30\n`;
   `	.noalias $18,$sp; .noalias $18,$30; .noalias $19,$sp; .noalias $19,$30\n`;
   `	.noalias $20,$sp; .noalias $20,$30; .noalias $21,$sp; .noalias $21,$30\n\n`;
+  (* The following .file directive is intended to prevent the generation
+     of line numbers for the debugger, since they make .o files larger. *)
+  `	.file	1 \"{emit_string !Location.input_name}\"\n\n`;
   let lbl_begin = Compilenv.current_unit_name() ^ "_begin" in
   `	.data\n`;
   `	.globl	{emit_symbol lbl_begin}\n`;

@@ -62,7 +62,7 @@ cm.out:
 	$(CAMLOPT) $(OPTFLAGS) -c $<
 
 .c.o:
-	$(NATIVECC) -I../../byterun -c $<
+	$(NATIVECC) $(NATIVECCCOMPOPTS) -I../../byterun -c $<
 
 clean::
 	rm -f *.byt *.out

@@ -241,11 +241,7 @@ $110:
 
 caml_c_call:
     /* Function to call is in $24 */
-#ifdef _PIC
-        .set    noreorder
-        .cpload $25
-        .set    reorder
-#endif
+#ifndef _PIC
     /* Record lowest stack address and return address */
         sw      $31, caml_last_return_address
         sw      $sp, caml_bottom_of_stack
@@ -253,16 +249,7 @@ caml_c_call:
         sw      $22, young_ptr
         sw      $30, caml_exception_pointer
     /* Call the function */
-#ifdef _PIC
-        move    $25, $24
-#endif
         jal     $24
-#ifdef _PIC
-    /* Reload $gp based on return address */
-        .set    noreorder
-        .cpload $31
-        .set    reorder
-#endif
     /* Reload alloc ptr and alloc limit */
         lw      $22, young_ptr
         lw      $23, young_limit
@@ -272,7 +259,27 @@ caml_c_call:
         sw      $0, caml_last_return_address
     /* Return */
         j       $31
-
+#else
+    /* Slightly optimized form of the above when referencing
+       global variables is expensive */
+        .set    noreorder
+        .cpload $25
+        .set    reorder
+	la	$16, caml_last_return_address
+	la	$17, young_ptr
+	la	$18, young_limit
+        sw      $31, 0($16)	/* caml_last_return_address */
+        sw      $sp, caml_bottom_of_stack
+        sw      $22, 0($17)	/* young_ptr */
+        sw      $30, caml_exception_pointer
+        move    $25, $24
+        jal     $24
+        lw      $31, 0($16)	/* caml_last_return_address */
+        lw      $22, 0($17)	/* young_ptr */
+        lw      $23, 0($18)	/* young_limit */
+        sw      $0, 0($16)	/* caml_last_return_address */
+        j       $31
+#endif
         .end    caml_c_call
 
 /* Start the Caml program */

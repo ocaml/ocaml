@@ -156,15 +156,18 @@ esac
 bytecc="$cc"
 bytecccompopts=""
 bytecclinkopts=""
-if test $gcc = yes; then
-  bytecccompopts="-fno-defer-pop -Wall"
-  case "$host" in
-    *-*-nextstep*)
-      bytecccompopts="$bytecccompopts -U__GNUC__ -D_POSIX_SOURCE";;
-    alpha-*-osf*)
-      bytecclinkopts="-Xlinker -taso";;
-  esac
-fi
+
+case "$bytecc,$host" in
+  gcc,*-*-nextstep*)
+    bytecccompopts="-fno-defer-pop -Wall -U__GNUC__ -D_POSIX_SOURCE";;
+  gcc,alpha-*-osf*)
+    bytecccompopts="-fno-defer-pop -Wall"
+    bytecclinkopts="-Xlinker -taso";;
+  gcc*)
+    bytecccompopts="-fno-defer-pop -Wall";;
+  cc*,mips-*-irix*)
+    bytecclinkopts="-Wl,-woff,84";;
+esac
 
 echo "BYTECC=$bytecc" >> Makefile
 echo "BYTECCCOMPOPTS=$bytecccompopts" >> Makefile
@@ -202,16 +205,17 @@ case "$arch" in
   *) nativecc="$bytecc";;
 esac
 
+nativecccompopts=''
+nativecclinkopts=''
+
 case "$arch,$nativecc,$system" in
   alpha,cc,*)     nativecccompopts=-std1;;
-  mips,cc,irix)   nativecccompopts=-32; nativecclinkopts=-32;;
+  mips,cc,irix)   nativecccompopts=-32
+                  nativecclinkopts="-32 -Wl,-woff,84";;
   mips,cc,ultrix) nativecccompopts=-std;;
   *,*,nextstep)   nativecccompopts="-Wall -D_POSIX_SOURCE";;
   *,gcc,*)        nativecccompopts=-Wall;;
-  *)              nativecccompopts='';;
 esac
-
-nativecclinkopts=''
 
 asflags=''
 aspp='$(AS)'

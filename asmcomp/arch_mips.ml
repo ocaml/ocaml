@@ -28,7 +28,11 @@ type specific_operation = unit          (* none *)
 
 (* Sizes, endianness *)
 
-let big_endian = false
+let big_endian =
+  match Config.system with
+    "ultrix" -> false
+  | "irix" -> true
+  | _ -> fatal_error "Arch_mips.big_endian"
 
 let size_addr = 4
 let size_int = 4
