@@ -373,14 +373,5 @@ is not included in
   val f : < m : 'a. 'a * ('a * < m : 'c. 'c * 'b > as 'b) > -> unit
 #     module M : sig type 'a t type u = < m : 'a. 'a t > end
 #   module M : sig type 'a t val f : < m : 'a. 'a t > -> int end
-#     Characters 104-144:
-Signature mismatch:
-Modules do not match:
-  sig type 'a t = int val f : < m : 'a; .. > -> 'a end
-is not included in
-  sig type 'a t val f : < m : 'a. 'a t > -> int end
-Values do not match:
-  val f : < m : 'a; .. > -> 'a
-is not included in
-  val f : < m : 'a. 'a t > -> int
+#     module M : sig type 'a t val f : < m : 'a. 'a t > -> int end
 # 

@@ -1253,7 +1253,7 @@ module TypeMap = Map.Make (TypeOps)
 
 (* Test the occurence of free univars in a type *)
 (* that's way too expansive. Must do some kind of cacheing *)
-let occur_univar ty =
+let occur_univar env ty =
   let visited = ref TypeMap.empty in
   let rec occur_rec bound ty =
     let ty = repr ty in
@@ -1276,6 +1276,16 @@ let occur_univar ty =
       | Tpoly (ty, tyl) ->
           let bound = List.fold_right TypeSet.add (List.map repr tyl) bound in
           occur_rec bound  ty
+      | Tconstr (_, [], _) -> ()
+      | Tconstr (p, tl, _) ->
+          begin try
+            let td = Env.find_type p env in
+            List.iter2
+              (fun t (pos,neg,_) -> if pos || neg then occur_rec bound t)
+              tl td.type_variance
+          with Not_found ->
+            List.iter (occur_rec bound) tl
+          end
       | _ -> iter_type_expr (occur_rec bound) ty
   in
   try
@@ -1432,11 +1442,11 @@ let rec unify env t1 t2 =
     | (Tconstr _, Tvar) when deep_occur t2 t1 ->
         unify2 env t1 t2
     | (Tvar, _) ->
-        occur env t1 t2; occur_univar t2;
+        occur env t1 t2; occur_univar env t2;
         update_level env t1.level t2;
         link_type t1 t2
     | (_, Tvar) ->
-        occur env t2 t1; occur_univar t1;
+        occur env t2 t1; occur_univar env t1;
         update_level env t2.level t1;
         link_type t2 t1
     | (Tunivar, Tunivar) ->
@@ -1489,11 +1499,11 @@ and unify3 env t1 t1' t2 t2' =
   try
     begin match (d1, d2) with
       (Tvar, _) ->
-        occur_univar t2
+        occur_univar env t2
     | (_, Tvar) ->
         let td1 = newgenty d1 in
         occur env t2' td1;
-        occur_univar td1;
+        occur_univar env td1;
         if t1 == t1' then begin
           (* The variable must be instantiated... *)
           let ty = newty2 t1'.level d1 in
@@ -1933,7 +1943,7 @@ let moregen_occur env level ty =
     unmark_type ty; raise (Unify [])
   end;
   (* also check for free univars *)
-  occur_univar ty;
+  occur_univar env ty;
   update_level env level ty
 
 let rec moregen inst_nongen type_pairs env t1 t2 =
