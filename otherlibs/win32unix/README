@@ -11,7 +11,7 @@ We've had to modify and recompile the Visual C++ standard C library to
 work around the following problems:
 
 - There's a bug in the library function _pipe() that can result in a
-deadlock (the library function attempts to lock the wrong file descriptor).
+  deadlock (the library function attempts to lock the wrong file descriptor).
 
 - Windows 95 classifies socket handles as "unknown", while Windows NT
   classifies them as "pipes". Thus, opening a file descriptor on a
