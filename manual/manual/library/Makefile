@@ -50,7 +50,7 @@ all: libs
 libs: $(FILES)
 
 $(INTF): $(MLIS)
-	ocamldoc -latex -I $(CSLDIR)/stdlib  \
+	$(CSLDIR)/ocamldoc/ocamldoc.opt -latex -I $(CSLDIR)/stdlib  \
 	-I $(CSLDIR)/otherlibs/bigarray \
 	-I $(CSLDIR)/otherlibs/dbm \
 	-I $(CSLDIR)/otherlibs/dynlink \
