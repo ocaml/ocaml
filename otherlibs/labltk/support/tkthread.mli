@@ -20,8 +20,10 @@
 val start : unit -> Thread.t
 (** The actual function executed in the new thread *)
 val thread_main : unit -> unit
+(** The toplevel widget (an alias of [Widget.default_toplevel]) *)
+val top : Widget.toplevel Widget.widget
 
-(* Jobs are needed for Windows, as you cannot do GTK work from
+(* Jobs are needed for Windows, as you cannot do GUI work from
    another thread.
    Even under Unix some calls need to come from the main thread.
    The basic idea is to either use async (if you don't need a result)
