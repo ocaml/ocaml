@@ -149,11 +149,11 @@ let main () =
          \032    X/x enable/disable all other warnings\n\
          \032    default setting is \"Al\" (all warnings but labels enabled)";
        "-warn-error" , Arg.String (Warnings.parse_options true),
-         "<flags>  Enable or disable fatal warnings according to <flags>\n\
-           \032    (see option -w for the list of flags)\n\
-           \032    default setting is a (all warnings are non-fatal)";
-    "-where", Arg.Unit print_standard_library,
-      " Print location of standard library and exit";
+         "<flags>  Treat the warnings enabled by <flags> as errors.\n\
+         \032    See option -w for the list of flags.\n\
+         \032    Default setting is \"a\" (warnings are not errors)";
+       "-where", Arg.Unit print_standard_library,
+         " Print location of standard library and exit";
 
        "-nopervasives", Arg.Set nopervasives, " (undocumented)";
        "-dparsetree", Arg.Set dump_parsetree, " (undocumented)";
