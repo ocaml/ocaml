@@ -15,30 +15,38 @@
 
 include ../config/Makefile
 
-CC=cl /nologo
-CFLAGS=/MT -O /Zi
+CC=$(BYTECC)
+CFLAGS=$(BYTECCCOMPOPTS)
 
-OBJS=startocaml.obj ocaml.res ocaml.obj menu.obj
+OBJS=startocaml.$(O) ocamlres.$(O) ocaml.$(O) menu.$(O)
 
-LIBS=kernel32.lib advapi32.lib gdi32.lib user32.lib comdlg32.lib comctl32.lib
+LIBS=$(call SYSLIB,kernel32) $(call SYSLIB,advapi32) $(call SYSLIB,gdi32) \
+     $(call SYSLIB,user32) $(call SYSLIB,comdlg32) $(call SYSLIB,comctl32)
 
 all: ocamlwin.exe
 
 ocamlwin.exe: $(OBJS)
 	$(CC) $(CFLAGS) -o ocamlwin.exe $(OBJS) $(LIBS)
 
-ocaml.res: ocaml.rc ocaml.ico
+ocamlres.$(O): ocaml.rc ocaml.ico
+ifeq ($(TOOLCHAIN),msvc)
 	rc ocaml.rc
+	cvtres /out:$@ ocaml.res
+	rm -f ocaml.res
+endif
+ifeq ($(TOOLCHAIN),mingw)
+	windres -i ocaml.rc -o ocamlres.o
+endif
 
 $(OBJS): inria.h inriares.h
 
 clean:
-	rm -f ocamlwin.exe ocaml.res *.obj *.pdb ocamlwin.ilk
+	rm -f ocamlwin.exe *.$(O) *.pdb ocamlwin.ilk
 
 install:
 	cp ocamlwin.exe $(PREFIX)/OCamlWin.exe
 
-.SUFFIXES: .c .obj
+.SUFFIXES: .c .$(O)
 
-.c.obj:
+.c.$(O):
 	$(CC) $(CFLAGS) -c $*.c

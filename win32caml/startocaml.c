@@ -16,8 +16,8 @@
 #include <stdio.h>
 #include <windows.h>
 #include <direct.h>
+#include <io.h>
 #include "inria.h"
-extern int _get_osfhandle(int);
 PROCESS_INFORMATION pi;
 #define BUFSIZE 4096
 STARTUPINFO startInfo;
