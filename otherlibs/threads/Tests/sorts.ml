@@ -17,15 +17,19 @@ type graphic_context =
 
 (* Array assignment and exchange with screen update *)
 
+let screen_mutex = Mutex.new()
+
 let draw gc i v =
   fill_rect (gc.x0 + (gc.width * i) / gc.nelts)
             (gc.y0 + (gc.height * v) / gc.maxval)
             gc.rad gc.rad
 
 let assign gc i v =
+  Mutex.lock screen_mutex;
   set_color background; draw gc i gc.array.(i);
   set_color foreground; draw gc i v;
-  gc.array.(i) <- v
+  gc.array.(i) <- v;
+  Mutex.unlock screen_mutex
 
 let exchange gc i j =
   let val_i = gc.array.(i) in
