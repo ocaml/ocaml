@@ -16,18 +16,6 @@ compact.o: compact.c config.h ../config/m.h ../config/s.h finalise.h \
 compare.o: compare.c custom.h mlvalues.h config.h ../config/m.h \
  ../config/s.h misc.h fail.h memory.h gc.h major_gc.h freelist.h \
  minor_gc.h
-comparegr.o: comparegr.c custom.h mlvalues.h config.h ../config/m.h \
- ../config/s.h misc.h fail.h memory.h gc.h major_gc.h freelist.h \
- minor_gc.h
-comparegraph.o: comparegraph.c custom.h mlvalues.h config.h \
- ../config/m.h ../config/s.h misc.h fail.h memory.h gc.h major_gc.h \
- freelist.h minor_gc.h
-comparesafe.o: comparesafe.c custom.h mlvalues.h config.h \
- ../config/m.h ../config/s.h misc.h fail.h memory.h gc.h major_gc.h \
- freelist.h minor_gc.h
-comparest.o: comparest.c custom.h mlvalues.h config.h ../config/m.h \
- ../config/s.h misc.h fail.h memory.h gc.h major_gc.h freelist.h \
- minor_gc.h
 custom.o: custom.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
  mlvalues.h custom.h fail.h memory.h gc.h major_gc.h freelist.h \
  minor_gc.h
@@ -144,18 +132,6 @@ compact.d.o: compact.c config.h ../config/m.h ../config/s.h finalise.h \
  roots.h misc.h memory.h gc.h mlvalues.h major_gc.h freelist.h \
  minor_gc.h gc_ctrl.h weak.h
 compare.d.o: compare.c custom.h mlvalues.h config.h ../config/m.h \
- ../config/s.h misc.h fail.h memory.h gc.h major_gc.h freelist.h \
- minor_gc.h
-comparegr.d.o: comparegr.c custom.h mlvalues.h config.h ../config/m.h \
- ../config/s.h misc.h fail.h memory.h gc.h major_gc.h freelist.h \
- minor_gc.h
-comparegraph.d.o: comparegraph.c custom.h mlvalues.h config.h \
- ../config/m.h ../config/s.h misc.h fail.h memory.h gc.h major_gc.h \
- freelist.h minor_gc.h
-comparesafe.d.o: comparesafe.c custom.h mlvalues.h config.h \
- ../config/m.h ../config/s.h misc.h fail.h memory.h gc.h major_gc.h \
- freelist.h minor_gc.h
-comparest.d.o: comparest.c custom.h mlvalues.h config.h ../config/m.h \
  ../config/s.h misc.h fail.h memory.h gc.h major_gc.h freelist.h \
  minor_gc.h
 custom.d.o: custom.c alloc.h misc.h config.h ../config/m.h ../config/s.h \

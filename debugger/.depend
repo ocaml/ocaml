@@ -93,13 +93,13 @@ lexer.cmx: parser.cmx primitives.cmx
 loadprinter.cmo: ../utils/config.cmi ../typing/ctype.cmi debugger_config.cmi \
     ../otherlibs/dynlink/dynlink.cmi ../typing/env.cmi ../typing/ident.cmi \
     ../parsing/longident.cmi ../utils/misc.cmi ../typing/path.cmi \
-    ../typing/predef.cmi ../typing/printtyp.cmi printval.cmi \
-    ../bytecomp/symtable.cmi ../typing/types.cmi loadprinter.cmi 
+    ../typing/printtyp.cmi printval.cmi ../bytecomp/symtable.cmi \
+    ../typing/types.cmi loadprinter.cmi 
 loadprinter.cmx: ../utils/config.cmx ../typing/ctype.cmx debugger_config.cmx \
     ../otherlibs/dynlink/dynlink.cmx ../typing/env.cmx ../typing/ident.cmx \
     ../parsing/longident.cmx ../utils/misc.cmx ../typing/path.cmx \
-    ../typing/predef.cmx ../typing/printtyp.cmx printval.cmx \
-    ../bytecomp/symtable.cmx ../typing/types.cmx loadprinter.cmi 
+    ../typing/printtyp.cmx printval.cmx ../bytecomp/symtable.cmx \
+    ../typing/types.cmx loadprinter.cmi 
 main.cmo: checkpoints.cmi command_line.cmi ../utils/config.cmi \
     debugger_config.cmi exec.cmi frames.cmi input_handling.cmi \
     ../utils/misc.cmi parameters.cmi primitives.cmi program_management.cmi \
@@ -125,11 +125,13 @@ pattern_matching.cmx: ../typing/ctype.cmx debugcom.cmx debugger_config.cmx \
 primitives.cmo: ../otherlibs/unix/unix.cmi primitives.cmi 
 primitives.cmx: ../otherlibs/unix/unix.cmx primitives.cmi 
 printval.cmo: debugcom.cmi ../toplevel/genprintval.cmi ../utils/misc.cmi \
-    parser_aux.cmi ../typing/path.cmi ../typing/printtyp.cmi \
-    ../bytecomp/symtable.cmi ../typing/types.cmi printval.cmi 
+    ../typing/outcometree.cmi parser_aux.cmi ../typing/path.cmi \
+    ../typing/printtyp.cmi ../bytecomp/symtable.cmi ../typing/types.cmi \
+    printval.cmi 
 printval.cmx: debugcom.cmx ../toplevel/genprintval.cmx ../utils/misc.cmx \
-    parser_aux.cmi ../typing/path.cmx ../typing/printtyp.cmx \
-    ../bytecomp/symtable.cmx ../typing/types.cmx printval.cmi 
+    ../typing/outcometree.cmi parser_aux.cmi ../typing/path.cmx \
+    ../typing/printtyp.cmx ../bytecomp/symtable.cmx ../typing/types.cmx \
+    printval.cmi 
 program_loading.cmo: debugger_config.cmi input_handling.cmi ../utils/misc.cmi \
     parameters.cmi primitives.cmi ../otherlibs/unix/unix.cmi unix_tools.cmi \
     program_loading.cmi 
