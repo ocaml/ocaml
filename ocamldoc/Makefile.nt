@@ -96,10 +96,10 @@ CMOFILES= odoc_config.cmo \
 	odoc_control.cmo\
 	odoc_inherit.cmo\
 	odoc_search.cmo\
+	odoc_scan.cmo\
 	odoc_cross.cmo\
 	odoc_dep.cmo\
 	odoc_analyse.cmo\
-	odoc_scan.cmo\
 	odoc_info.cmo
 
 

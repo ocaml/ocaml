@@ -32,6 +32,12 @@ OK - odoc_man: use buffers instead of string concatenation
 OK - odoc_cross.ml: use hash tables modified on the fly to resolve 
     (module | module type | exception) name aliases
 OK - odoc_html: replace some calls to Str. by specific functions on strings
+OK - odoc_cross.ml: use a Map to associate a complete name to
+    the known elements with this name, instead of searching each time
+    through the whole list of modules -> a gain of more than 90% in speed
+    for cross-referecing (Odoc_cross.associate)
+
+
 ======
 
 Release 3.05 :

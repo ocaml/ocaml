@@ -175,6 +175,7 @@ module P_lookup =
 module Search_by_complete_name = Odoc_search.Search (P_lookup)
 
 let rec lookup_module module_list name =
+  prerr_endline (Printf.sprintf "lookup_module: %s" name);
   let l = List.filter
       (fun res ->
         match res with
@@ -188,6 +189,7 @@ let rec lookup_module module_list name =
   | _ -> raise Not_found
 
 let rec lookup_module_type module_list name =
+  prerr_endline (Printf.sprintf "lookup_module_type: %s" name);
   let l = List.filter
       (fun res ->
         match res with
@@ -201,6 +203,7 @@ let rec lookup_module_type module_list name =
   | _ -> raise Not_found
 
 let rec lookup_class module_list name =
+  prerr_endline (Printf.sprintf "lookup_class: %s" name);
   let l = List.filter
       (fun res ->
         match res with
@@ -214,6 +217,7 @@ let rec lookup_class module_list name =
   | _ -> raise Not_found
 
 let rec lookup_class_type module_list name =
+  prerr_endline (Printf.sprintf "lookup_class_type: %s" name);
   let l = List.filter
       (fun res ->
         match res with
@@ -227,6 +231,7 @@ let rec lookup_class_type module_list name =
   | _ -> raise Not_found
 
 let rec lookup_exception module_list name =
+  prerr_endline (Printf.sprintf "lookup_exception: %s" name);
   let l = List.filter
       (fun res ->
         match res with
@@ -534,6 +539,92 @@ and associate_in_class_type module_list (acc_b_modif, acc_incomplete_top_module_
   in
   iter_kind (acc_b_modif, acc_incomplete_top_module_names, acc_names_not_found) ct.clt_kind
 
+(*** TEST WITH MAPS *)
+
+module Map_ord =
+  struct
+    type t = string 
+    let compare = Pervasives.compare
+  end
+
+module Ele_map = Map.Make (Map_ord)
+
+let known_elements = ref Ele_map.empty
+let add_known_element name k = 
+  try
+    let l = Ele_map.find name !known_elements in
+    let s = Ele_map.remove name !known_elements in
+    known_elements := Ele_map.add name (k::l) s
+  with
+    Not_found ->
+      known_elements := Ele_map.add name [k] !known_elements
+
+let get_known_elements name =
+  try Ele_map.find name !known_elements
+  with Not_found -> []
+
+let kind_name_exists kind =
+  let pred = 
+    match kind with
+      RK_module -> (fun e -> match e with Odoc_search.Res_module _ -> true | _ -> false)
+    | RK_module_type -> (fun e -> match e with Odoc_search.Res_module_type _ -> true | _ -> false)
+    | RK_class -> (fun e -> match e with Odoc_search.Res_class_type _ -> true | _ -> false)
+    | RK_class_type -> (fun e -> match e with Odoc_search.Res_class_type _ -> true | _ -> false)
+    | RK_value -> (fun e -> match e with Odoc_search.Res_value _ -> true | _ -> false)
+    | RK_type -> (fun e -> match e with Odoc_search.Res_type _ -> true | _ -> false)
+    | RK_exception -> (fun e -> match e with Odoc_search.Res_exception _ -> true | _ -> false)
+    | RK_attribute -> (fun e -> match e with Odoc_search.Res_attribute _ -> true | _ -> false)
+    | RK_method -> (fun e -> match e with Odoc_search.Res_method _ -> true | _ -> false)
+    | RK_section _ -> assert false
+  in
+  fun name ->
+    try List.exists pred (get_known_elements name)
+    with Not_found -> false
+
+let module_exists = kind_name_exists RK_module
+let module_type_exists = kind_name_exists RK_module_type
+let class_exists = kind_name_exists RK_class
+let class_type_exists = kind_name_exists RK_class_type
+let value_exists = kind_name_exists RK_value
+let type_exists = kind_name_exists RK_type
+let exception_exists = kind_name_exists RK_exception
+let attribute_exists = kind_name_exists RK_attribute
+let method_exists = kind_name_exists RK_method
+
+class scan =
+  object
+    inherit Odoc_scan.scanner
+    method scan_value v = 
+      add_known_element v.val_name (Odoc_search.Res_value v)
+    method scan_type t = 
+      add_known_element t.ty_name (Odoc_search.Res_type t)
+    method scan_exception e =
+      add_known_element e.ex_name (Odoc_search.Res_exception e)
+    method scan_attribute a =
+      add_known_element a.att_value.val_name
+	(Odoc_search.Res_attribute a)
+    method scan_method m =
+      add_known_element m.met_value.val_name
+	(Odoc_search.Res_method m)
+    method scan_class_pre c =
+      add_known_element c.cl_name (Odoc_search.Res_class c);
+      true
+    method scan_class_type_pre c =
+      add_known_element c.clt_name (Odoc_search.Res_class_type c);
+      true
+    method scan_module_pre m =
+      add_known_element m.m_name (Odoc_search.Res_module m);
+      true
+    method scan_module_type_pre m =
+      add_known_element m.mt_name (Odoc_search.Res_module_type m);
+      true
+
+  end
+
+let init_known_elements_map module_list =
+  let c = new scan in
+  c#scan_module_list module_list
+
 (*************************************************************)
 (** Association of types to elements referenced in comments .*)
 
@@ -562,14 +653,22 @@ let rec assoc_comments_text_elements module_list t_ele =
     | Link (s, t) -> Link (s, (assoc_comments_text module_list t))
     | Ref (name, None) ->
 	(
-	 (* we look for the first element with this name *)
-         let re = Str.regexp ("^"^(Str.quote name)^"$") in
-         let res = Odoc_search.Search_by_name.search module_list re in
-         match res with
-           [] ->
-             Odoc_messages.pwarning (Odoc_messages.cross_element_not_found name);
-             t_ele
-         | ele :: _ ->
+	 match get_known_elements name with
+	   [] ->
+	     (
+	      try
+		let re = Str.regexp ("^"^(Str.quote name)^"$") in
+		let t = Odoc_search.find_section module_list re in
+		let v2 = (name, Some (RK_section t)) in
+		add_verified v2 ;
+		Ref (name, Some (RK_section t))
+	      with
+		Not_found ->
+		  Odoc_messages.pwarning (Odoc_messages.cross_element_not_found name);
+		  Ref (name, None)
+	     )
+	 | ele :: _ ->
+	   (* we look for the first element with this name *)
              let kind = 
                match ele with
                  Odoc_search.Res_module _ -> RK_module
@@ -581,23 +680,22 @@ let rec assoc_comments_text_elements module_list t_ele =
                | Odoc_search.Res_exception _ -> RK_exception
                | Odoc_search.Res_attribute _ -> RK_attribute
                | Odoc_search.Res_method _ -> RK_method
-               | Odoc_search.Res_section (_ ,t)-> RK_section t
+               | Odoc_search.Res_section (_ ,t)-> assert false
              in
              add_verified (name, Some kind) ;
 	     Ref (name, Some kind)
 	)
     | Ref (name, Some kind) -> 
 	let v = (name, Some kind) in
-	(** we just verify that we find an element of this kind with this name *)
-	let re = Str.regexp ("^"^(Str.quote name)^"$") in
-        let res = Odoc_search.Search_by_name.search module_list re in
 	if was_verified v then
 	  Ref (name, Some kind)
 	else
 	  match kind with
 	  | RK_section _ ->
 	      (
+	       (** we just verify that we find an element of this kind with this name *)
 	       try
+		 let re = Str.regexp ("^"^(Str.quote name)^"$") in
 		 let t = Odoc_search.find_section module_list re in
 		 let v2 = (name, Some (RK_section t)) in
 		 add_verified v2 ;
@@ -610,18 +708,18 @@ let rec assoc_comments_text_elements module_list t_ele =
 	  | _ ->
 	      let (f,f_mes) = 
 		match kind with
-		  RK_module -> Odoc_search.module_exists, Odoc_messages.cross_module_not_found
-		| RK_module_type -> Odoc_search.module_type_exists, Odoc_messages.cross_module_type_not_found
-		| RK_class -> Odoc_search.class_exists, Odoc_messages.cross_class_not_found
-		| RK_class_type -> Odoc_search.class_type_exists, Odoc_messages.cross_class_type_not_found
-		| RK_value -> Odoc_search.value_exists, Odoc_messages.cross_value_not_found
-		| RK_type -> Odoc_search.type_exists, Odoc_messages.cross_type_not_found
-		| RK_exception -> Odoc_search.exception_exists, Odoc_messages.cross_exception_not_found
-		| RK_attribute -> Odoc_search.attribute_exists, Odoc_messages.cross_attribute_not_found
-		| RK_method -> Odoc_search.method_exists, Odoc_messages.cross_method_not_found
+		  RK_module -> module_exists, Odoc_messages.cross_module_not_found
+		| RK_module_type -> module_type_exists, Odoc_messages.cross_module_type_not_found
+		| RK_class -> class_exists, Odoc_messages.cross_class_not_found
+		| RK_class_type -> class_type_exists, Odoc_messages.cross_class_type_not_found
+		| RK_value -> value_exists, Odoc_messages.cross_value_not_found
+		| RK_type -> type_exists, Odoc_messages.cross_type_not_found
+		| RK_exception -> exception_exists, Odoc_messages.cross_exception_not_found
+		| RK_attribute -> attribute_exists, Odoc_messages.cross_attribute_not_found
+		| RK_method -> method_exists, Odoc_messages.cross_method_not_found
 		| RK_section _ -> assert false
 	      in
-	      if f module_list re then
+	      if f name then
 		(
 		 add_verified v ;
 		 Ref (name, Some kind)
@@ -818,10 +916,11 @@ let associate module_list =
       (* we may be able to associate something else *)
       iter remaining_modules
     else
-      (* nothing changed, we won' be able to associate any more *)
+      (* nothing changed, we won't be able to associate any more *)
       acc_names_not_found
   in
   let names_not_found = iter module_list in
+  init_known_elements_map module_list;
   (
    match names_not_found with
      [] ->
@@ -845,8 +944,7 @@ let associate module_list =
   ) ;
 
   (* Find a type for each name of element which is referenced in comments. *)
-  let _ = associate_type_of_elements_in_comments module_list in
-  ()
+  ignore (associate_type_of_elements_in_comments module_list)
         
 
 (* eof $Id$ *)
