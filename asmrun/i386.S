@@ -158,6 +158,11 @@ G(caml_start_program):
         pushl   %esi
         pushl   %edi
         pushl   %ebp
+    /* Initialize floating-point unit -- IEEE conformance, no traps
+       except for register stack overflow */
+        pushl   $0x137E
+        fldcw   (%esp)
+        popl    %eax
     /* Build an exception handler */
         pushl   $L104
         pushl   $0
