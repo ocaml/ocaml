@@ -284,7 +284,14 @@ beforedepend ÄÄ :parsing:parser.mli :parsing:parser.ml
 # The lexer
 
 :parsing:lexer.ml Ä :parsing:lexer.mll
-    {CAMLLEX} :parsing:lexer.mll
+    streamedit -e "1,$ replace /¶¶''\223'¶¶'-¶¶''\246'¶¶'/ '' -c °" ¶
+               -e "1,$ replace /¶¶''\248'¶¶'-¶¶''\255'¶¶'/ '' -c °" ¶
+               -e "1,$ replace /¶¶''\192'¶¶'-¶¶''\214'¶¶'/ '' -c °" ¶
+               -e "1,$ replace /¶¶''\216'¶¶'-¶¶''\222'¶¶'/ '' -c °" ¶
+               -e "1,$ replace /¶¶''\216'¶¶'-¶¶''\246'¶¶'/ '' -c °" ¶
+               <:parsing:lexer.mll >:parsing:lexer_tmp.mll
+    {CAMLLEX} :parsing:lexer_tmp.mll
+    rename -y :parsing:lexer_tmp.ml :parsing:lexer.ml
 
 partialclean ÄÄ
     delete -i :parsing:lexer.ml

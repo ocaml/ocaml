@@ -1,5 +1,5 @@
 #*** Dependencies: Cut here ***
-# These dependencies were produced at 14:24:56 on 24 avr 2000 by MakeDepend
+# These dependencies were produced at 15:47:51 on 23 juin 2000 by MakeDepend
 
 :posix.c.x Ä  ¶
  :posix.c ¶
@@ -52,7 +52,7 @@
  "{CIncludes}"DateTimeUtils.h
 
 #*** Dependencies: Cut here ***
-# These dependencies were produced at 14:25:00 on 24 avr 2000 by MakeDepend
+# These dependencies were produced at 15:47:57 on 23 juin 2000 by MakeDepend
 
 :posix.c.o Ä  ¶
  :posix.c ¶
