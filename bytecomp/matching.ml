@@ -621,7 +621,6 @@ let rec explode_or_pat arg patl mk_action rem vars aliases = function
       let env = mk_alpha_env arg aliases vars in      
       (alpha_pat env p::patl,mk_action (List.map snd env))::rem
 
-
 let equiv_pat p q = le_pat p q && le_pat q p
 
 let rec get_equiv p l = match l with
@@ -753,7 +752,11 @@ let insert_or_append p ps act ors no =
     | (q::qs,act_q) as cl::rem ->
         if is_or q then begin
           if compat p q then
-            if equiv_pat p q then (* attempt insert *)
+            if
+              IdentSet.is_empty (extract_vars IdentSet.empty p) &&
+              IdentSet.is_empty (extract_vars IdentSet.empty q) &&
+              equiv_pat p q
+            then (* attempt insert, for equivalent orpats with no variables *)
               let _, not_e = get_equiv q rem in
               if
                 or_ok p ps not_e && (* check append condition for head of O *)
@@ -2065,8 +2068,12 @@ let compile_matching loc repr handler_fun arg pat_act_list partial =
         { cases = List.map (fun (pat, act) -> ([pat], act)) pat_act_list;
           args = [arg, Strict] ;
           default = raise_num,[[[omega]],raise_num]} in
-      let (lambda, total) = compile_match repr partial (start_ctx 1) pm in
-      check_total total lambda raise_num handler_fun
+      begin try
+        let (lambda, total) = compile_match repr partial (start_ctx 1) pm in
+        check_total total lambda raise_num handler_fun
+      with
+      | Unused -> handler_fun()
+      end
   | Total ->
       let pm =
         { cases = List.map (fun (pat, act) -> ([pat], act)) pat_act_list;
@@ -2157,9 +2164,12 @@ let for_tupled_function loc paraml pats_act_list partial =
       args = List.map (fun id -> (Lvar id, Strict)) paraml ;
       default = raise_num,[omegas,raise_num]
     } in
-  let (lambda, total) = compile_match None partial
-      (start_ctx (List.length paraml)) pm in
-  check_total total lambda raise_num (partial_function loc)
+  try
+    let (lambda, total) = compile_match None partial
+        (start_ctx (List.length paraml)) pm in
+    check_total total lambda raise_num (partial_function loc)
+  with
+  | Unused -> partial_function loc ()
 
 let for_multiple_match loc paraml pat_act_list partial =
   let repr = None in
@@ -2176,6 +2186,7 @@ let for_multiple_match loc paraml pat_act_list partial =
         args = [Lprim(Pmakeblock(0, Immutable), paraml), Strict] ;
         default = -1,[] } in
       
+  try
   try
 
     let next,nexts = separe None pm1 in
@@ -2204,6 +2215,13 @@ let for_multiple_match loc paraml pat_act_list partial =
 
   with Cannot_flatten ->
     let (lambda, total) = compile_match None partial (start_ctx 1) pm1 in
-    check_total total lambda raise_num (partial_function loc)
-
+    begin match partial with
+    | Partial ->
+        check_total total lambda raise_num (partial_function loc)
+    | Total ->
+        assert (jumps_is_empty total) ;
+        lambda
+    end
+  with Unused ->
+    partial_function loc ()
 

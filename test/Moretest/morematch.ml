@@ -622,3 +622,18 @@ test "jerome_constr"
 test "jerome_constr" 
    replicaContent2shortString (`ABSENT, `PropsChanged) "assert false" ;
 ;;
+
+(* Ohl's bug *)
+
+type ab = A of int | B of int
+type cd = C | D
+
+let ohl = function
+  | (A (p) | B (p)), C -> p
+  | (A (p) | B (p)), D -> p
+;;
+
+test "ohl" ohl (A 0,C) 0 ;
+test "ohl" ohl (B 0,D) 0 ; ()
+;;
+
