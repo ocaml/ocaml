@@ -52,7 +52,7 @@ let float_reg_name = [|
   (* 106-111 *) "%fr10"; "%fr11"; "%fr12"; "%fr13"; "%fr14"; "%fr15";
   (* 112-117 *) "%fr16"; "%fr17"; "%fr18"; "%fr19"; "%fr20"; "%fr21";
   (* 118-123 *) "%fr22"; "%fr23"; "%fr24"; "%fr25"; "%fr26"; "%fr27"; 
-  (* 124-126 *) "%fr28"; "%fr29"; "%fr30"
+  (* 124-127 *) "%fr28"; "%fr29"; "%fr30"; "%fr31"
 |]
 
 let num_register_classes = 2
@@ -80,8 +80,8 @@ let hard_int_reg =
   v
 
 let hard_float_reg =
-  let v = Array.create 27 Reg.dummy in
-  for i = 0 to 26 do v.(i) <- Reg.at_location Float (Reg(100 + i)) done;
+  let v = Array.create 28 Reg.dummy in
+  for i = 0 to 27 do v.(i) <- Reg.at_location Float (Reg(100 + i)) done;
   v
 
 let all_phys_regs =
@@ -217,8 +217,5 @@ let contains_calls = ref false
 (* Calling the assembler *)
 
 let assemble_file infile outfile =
-  if Config.system = "hpux"
-  (* Use the GNU assembler, since /bin/as is too buggy *)
-  then Ccomp.command ("gcc -c -o " ^ outfile ^ " " ^ infile)
-  else Ccomp.command ("as -o " ^ outfile ^ " " ^ infile)
+  Ccomp.command ("as -o " ^ outfile ^ " " ^ infile)  
 

@@ -129,12 +129,15 @@ let call_symbol s =
   end
 
 (* An external symbol is code if either it is branched to, or
-   it does not start with an uppercase letter. *)
+   it does not start with an uppercase letter (for calls to
+   runtime functions).  We need to special-case "caml_globals_inited"
+   as a data symbol, though. *)
 
 let emit_import s =
   if not(StringSet.mem s !defined_symbols) then begin
     `	.import	{emit_symbol s}`;
-    if StringSet.mem s !called_symbols or s.[0] < 'A' or s.[0] > 'Z'
+    if (StringSet.mem s !called_symbols || s.[0] < 'A' or s.[0] > 'Z')
+    && s <> "caml_globals_inited"
     then `, code\n`
     else `, data\n`
   end
@@ -190,24 +193,28 @@ let emit_store instr addr arg src =
 
 (* Output a floating-point load / store *)
 
-let emit_float_load addr arg dst =
+let emit_float_load addr arg dst doubleword =
   match addr with
     Ibased(s, 0) ->
         use_symbol s;
         load_symbol_high s;
         `	ldo	{emit_symbol_low s}(%r1), %r1\n`;
         `	fldws	0(%r1), {emit_reg dst}L\n`;
-        `	fldws	4(%r1), {emit_reg dst}R\n`
+        if doubleword then
+          `	fldws	4(%r1), {emit_reg dst}R\n`
   | Ibased(s, ofs) ->
         use_symbol s;
         load_symbol_offset_high s ofs;
         `	ldo	{emit_symbol_low s}+{emit_int ofs}(%r1), %r1\n`;
         `	fldws	0(%r1), {emit_reg dst}L\n`;
-        `	fldws	4(%r1), {emit_reg dst}R\n`
+        if doubleword then
+          `	fldws	4(%r1), {emit_reg dst}R\n`
   | Iindexed ofs ->
-      if is_immediate ofs & is_immediate (ofs+4) then begin
+      if is_immediate ofs && (is_immediate (ofs+4) || not doubleword)
+      then begin
         `	fldws	{emit_int ofs}({emit_reg arg.(0)}), {emit_reg dst}L\n`;
-        `	fldws	{emit_int (ofs+4)}({emit_reg arg.(0)}), {emit_reg dst}R\n`
+        if doubleword then
+          `	fldws	{emit_int (ofs+4)}({emit_reg arg.(0)}), {emit_reg dst}R\n`
       end else begin
         if is_offset ofs then
           `	ldo	{emit_int ofs}({emit_reg arg.(0)}), %r1\n`
@@ -216,27 +223,32 @@ let emit_float_load addr arg dst =
           `	ldo	{emit_int_low ofs}(%r1), %r1\n`
         end;
         `	fldws	0(%r1), {emit_reg dst}L\n`;
-        `	fldws	4(%r1), {emit_reg dst}R\n`
+        if doubleword then
+          `	fldws	4(%r1), {emit_reg dst}R\n`
       end
 
-let emit_float_store addr arg src =
+let emit_float_store addr arg src doubleword =
   match addr with
     Ibased(s, 0) ->
         use_symbol s;
         load_symbol_high s;
         `	ldo	{emit_symbol_low s}(%r1), %r1\n`;
         `	fstws	{emit_reg src}L, 0(%r1)\n`;
-        `	fstws	{emit_reg src}R, 4(%r1)\n`
+        if doubleword then
+          `	fstws	{emit_reg src}R, 4(%r1)\n`
   | Ibased(s, ofs) ->
         use_symbol s;
         load_symbol_offset_high s ofs;
         `	ldo	{emit_symbol_low s}+{emit_int ofs}(%r1), %r1\n`;
         `	fstws	{emit_reg src}L, 0(%r1)\n`;
-        `	fstws	{emit_reg src}R, 4(%r1)\n`
+        if doubleword then
+          `	fstws	{emit_reg src}R, 4(%r1)\n`
   | Iindexed ofs ->
-      if is_immediate ofs & is_immediate (ofs+4) then begin
+      if is_immediate ofs && (is_immediate (ofs+4) || not doubleword)
+      then begin
         `	fstws	{emit_reg src}L, {emit_int ofs}({emit_reg arg.(1)})\n`;
-        `	fstws	{emit_reg src}R, {emit_int(ofs+4)}({emit_reg arg.(1)})\n`
+        if doubleword then
+          `	fstws	{emit_reg src}R, {emit_int(ofs+4)}({emit_reg arg.(1)})\n`
       end else begin
         if is_offset ofs then
           `	ldo	{emit_int ofs}({emit_reg arg.(1)}), %r1\n`
@@ -245,7 +257,8 @@ let emit_float_store addr arg src =
           `	ldo	{emit_int_low ofs}(%r1), %r1\n`
         end;
         `	fstws	{emit_reg src}L, 0(%r1)\n`;
-        `	fstws	{emit_reg src}R, 4(%r1)\n`
+        if doubleword then
+          `	fstws	{emit_reg src}R, 4(%r1)\n`
       end
 
 (* Output an align directive.
@@ -513,35 +526,40 @@ let rec emit_instr i dslot =
         `	ldo	{emit_int n}(%r30), %r30\n`;
         stack_offset := !stack_offset + n
     | Lop(Iload(chunk, addr)) ->
-        begin match i.res.(0).typ with
-          Int | Addr ->
-            let loadinstr =
-              match chunk with
-                Word -> "ldw"
-              | Byte_unsigned | Byte_signed -> "ldb"
-              | Sixteen_unsigned | Sixteen_signed -> "ldh" in
-            emit_load loadinstr addr i.arg i.res.(0);
-            begin match chunk with
-              Byte_signed ->
-                `	extrs	{emit_reg i.res.(0)}, 31, 8, {emit_reg i.res.(0)}\n`
-            | Sixteen_signed ->
-                `	extrs	{emit_reg i.res.(0)}, 31, 16, {emit_reg i.res.(0)}\n`
-            | _ -> ()
-            end
-        | Float ->
-            emit_float_load addr i.arg i.res.(0)
+	let dest = i.res.(0) in
+        begin match chunk with
+          Byte_unsigned ->
+            emit_load "ldb" addr i.arg dest
+        | Byte_signed ->
+            emit_load "ldb" addr i.arg dest;
+            `	extrs	{emit_reg dest}, 31, 8, {emit_reg dest}\n`
+        | Sixteen_unsigned ->
+            emit_load "ldh" addr i.arg dest
+        | Sixteen_signed ->
+            emit_load "ldh" addr i.arg dest;
+            `	extrs	{emit_reg dest}, 31, 16, {emit_reg dest}\n`
+        | Single ->
+            emit_float_load addr i.arg dest false;
+            `	fcnvff,sgl,dbl {emit_reg dest}L, {emit_reg dest}\n`
+        | Double ->
+            emit_float_load addr i.arg dest true
+        | _ ->
+            emit_load "ldw" addr i.arg dest
         end
     | Lop(Istore(chunk, addr)) ->
-        begin match i.arg.(0).typ with
-          Int | Addr ->
-            let storeinstr =
-              match chunk with
-                Word -> "stw"
-              | Byte_unsigned | Byte_signed -> "stb"
-              | Sixteen_unsigned | Sixteen_signed -> "sth" in
-            emit_store storeinstr addr i.arg i.arg.(0)
-        | Float ->
-            emit_float_store addr i.arg i.arg.(0)
+        let src = i.arg.(0) in
+        begin match chunk with
+          Byte_unsigned | Byte_signed ->
+            emit_store "stb" addr i.arg src
+        | Sixteen_unsigned | Sixteen_signed ->
+            emit_store "sth" addr i.arg src
+        | Single ->
+            `	fcnvff,dbl,sgl	{emit_reg src}, %fr31L\n`;
+            emit_float_store addr i.arg (phys_reg 127) (* %fr31 *) false
+        | Double ->
+            emit_float_store addr i.arg src true
+        | _ ->
+            emit_store "stw" addr i.arg src
         end
     | Lop(Ialloc n) ->
         if !fastcode_flag then begin
@@ -1004,9 +1022,13 @@ let emit_item = function
       `	.byte	{emit_int n}\n`
   | Cint16 n ->
       `	.short	{emit_int n}\n`
+  | Cint32 n ->
+      `	.long	{emit_nativeint n}\n`
   | Cint n ->
       `	.long	{emit_nativeint n}\n`
-  | Cfloat f ->
+  | Csingle f ->
+      `	.float	{emit_string f}\n`
+  | Cdouble f ->
       `	.double	{emit_string f}\n`
   | Csymbol_address s ->
       if hpux && String.length s >= 5 && String.sub s 0 5 = "caml_" then
