@@ -82,7 +82,7 @@ clean: partialclean
 install:
 	cp dllunix.dll $(STUBLIBDIR)/dllunix.dll
 	cp libunix.$(A) $(LIBDIR)/libunix.$(A)
-	cp $(CAML_OBJS:.cmo=.cmi) unix.cma $(LIBDIR)
+	cp $(CAML_OBJS:.cmo=.cmi) unix.cma $(CAML_OBJS:.cmo=.mli) $(LIBDIR)
 
 installopt:
 	cp unix.cmxa $(CAML_OBJS:.cmo=.cmx) unix.$(A) $(LIBDIR)
