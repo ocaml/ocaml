@@ -34,8 +34,7 @@ module type OrderedType =
           [f e1 e2] is strictly negative if [e1] is smaller than [e2],
           and [f e1 e2] is strictly positive if [e1] is greater than [e2].
           Example: a suitable ordering function is the generic structural
-          comparison function {!Pervasives.compare}, provided there are
-          no floating-point NaN values in the data. *)
+          comparison function {!Pervasives.compare}. *)
   end
 (** Input signature of the functor {!Set.Make}. *)
 
