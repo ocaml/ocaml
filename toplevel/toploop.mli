@@ -18,7 +18,8 @@ val loop: unit -> unit
 
 (* Read and execute a script from the given file *)
 
-val run_script: string -> bool (* true if successful, false if error *)
+val run_script: string -> string array -> bool
+        (* true if successful, false if error *)
 
 (* Interface with toplevel directives *)
 

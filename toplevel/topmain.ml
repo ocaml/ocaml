@@ -14,10 +14,10 @@
 
 open Clflags
 
-let usage = "Usage: ocaml <options>\noptions are:"
+let usage = "Usage: ocaml <options> [script-file]\noptions are:"
 
 let file_argument name =
-  exit (if Toploop.run_script name then 0 else 2)
+  exit (if Toploop.run_script name Sys.argv then 0 else 2)
 
 let main () =
   Arg.parse [

@@ -316,7 +316,16 @@ let loop() =
 
 (* Execute a script *)
 
-let run_script name =
+let run_script name args =
+  let rec find n =
+    if n >= Array.length args then invalid_arg "Toploop.run_script";
+    if args.(n) = name then n else find (n+1) 
+  in
+  let pos = find 0 in
+  let len = Array.length args - pos in
+  if Array.length Sys.argv < len then invalid_arg "Toploop.run_script";
+  Array.blit args pos Sys.argv 0 len;
+  Obj.truncate (Obj.repr Sys.argv) len;
   Compile.init_path();
   toplevel_env := Compile.initial_env();
   Formatmsg.set_output Format.err_formatter;
