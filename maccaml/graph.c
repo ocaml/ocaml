@@ -193,6 +193,19 @@ value gr_create_image (value vw, value vh);
 value gr_blit_image (value vimage, value vx, value vy);
 value gr_wait_event (value veventlist);
 value gr_sound (value vfreq, value vdur);
+value gr_set_window_title (value title);
+
+#define UNIMPLEMENTED(f, args) \
+value f args; \
+value f args \
+{ \
+  failwith ("not implemented: " #f); \
+  return Val_unit;  /* not reached */ \
+}
+
+UNIMPLEMENTED (gr_window_id, (value unit))
+UNIMPLEMENTED (gr_open_subwindow, (value x, value y, value w, value h))
+UNIMPLEMENTED (gr_close_subwindow, (value id))
 
 
 /**** Ancillary macros and function */
@@ -1096,8 +1109,8 @@ value gr_wait_event (value veventlist)
       motion_oldx = pt.h;
       motion_oldy = pt.v;
     }
-	GetAndProcessEvents (askmotion ? waitMove : waitEvent,
-	                     motion_oldx, motion_oldy);
+    GetAndProcessEvents (askmotion ? waitMove : waitEvent,
+                         motion_oldx, motion_oldy);
   }
 
   gotevent:
@@ -1151,5 +1164,15 @@ value gr_sound (value vfreq, value vdur)
     gr_fail ("sound: cannot play sound (error code %ld)", (void *) (long) err);
   }
 
+  return Val_unit;
+}
+
+value gr_set_window_title (value title)
+{
+  Str255 ptitle;
+  
+  strcpy ((char *) ptitle, String_val (title));
+  c2pstr ((char *) ptitle);
+  SetWTitle (winGraphics, ptitle);
   return Val_unit;
 }

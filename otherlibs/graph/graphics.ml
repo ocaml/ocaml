@@ -89,7 +89,12 @@ and foreground = black
 (* Drawing *)
 
 external plot : int -> int -> unit = "gr_plot"
-external plots : (int * int) array -> unit = "gr_plots"
+let plots points =
+  for i = 0 to Array.length points - 1 do
+    let (x, y) = points.(i) in
+    plot x y;
+  done
+;;
 external point_color : int -> int -> color = "gr_point_color"
 external moveto : int -> int -> unit = "gr_moveto"
 external current_x : unit -> int = "gr_current_x"
@@ -99,9 +104,29 @@ external lineto : int -> int -> unit = "gr_lineto"
 let rlineto x y = lineto (current_x () + x) (current_y () + y)
 let rmoveto x y = moveto (current_x () + x) (current_y () + y)
 external draw_rect : int -> int -> int -> int -> unit = "gr_draw_rect"
-external draw_poly : (int * int) array -> unit = "gr_draw_poly"
-external draw_poly_line : (int * int) array -> unit = "gr_draw_poly_line"
-external draw_segments : (int * int * int * int) array -> unit = "gr_draw_segments"
+let draw_poly, draw_poly_line =
+  let dodraw close_flag points =
+    if Array.length points > 0 then begin
+      let (savex, savey) = current_point () in
+      moveto (fst points.(0)) (snd points.(0));
+      for i = 1 to Array.length points - 1 do
+        let (x, y) = points.(i) in
+        lineto x y;
+      done;
+      if close_flag then lineto (fst points.(0)) (snd points.(0));
+      moveto savex savey;
+    end;
+  in dodraw true, dodraw false
+;;
+let draw_segments segs =
+  let (savex, savey) = current_point () in
+  for i = 0 to Array.length segs - 1 do
+    let (x1, y1, x2, y2) = segs.(i) in
+    moveto x1 y1;
+    lineto x2 y2;
+  done;
+  moveto savex savey;
+;;
 external draw_arc : int -> int -> int -> int -> int -> int -> unit
                = "gr_draw_arc" "gr_draw_arc_nat"
 let draw_ellipse x y rx ry = draw_arc x y rx ry 0 360

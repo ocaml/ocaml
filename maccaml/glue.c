@@ -332,7 +332,7 @@ int ui_read (int fd, char *buffer, unsigned int nCharsDesired)
     for (i = wintopfrontier; i < len; i++){
       if (p[i] == '\n') goto gotit;
     }
-	GetAndProcessEvents (waitEvent, 0, 0);
+    GetAndProcessEvents (waitEvent, 0, 0);
   }
 
   gotit:

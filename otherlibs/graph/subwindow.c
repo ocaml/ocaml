@@ -20,9 +20,9 @@ value gr_open_subwindow(value x, value y, value width, value height)
 
   gr_check_open();
   win = XCreateSimpleWindow(grdisplay, grwindow.win,
-			    Int_val(x), Int_val(y), 
-			    Int_val(width), Int_val(height),
-			    0, grblack, grbackground);
+                            Int_val(x), Int_val(y), 
+                            Int_val(width), Int_val(height),
+                            0, grblack, grbackground);
   XMapWindow(grdisplay, win);
   XFlush(grdisplay);
   return (id_of_window ( win ));

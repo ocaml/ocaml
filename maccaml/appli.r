@@ -510,7 +510,7 @@ resource 'STR#' (kMiscStrings, purgeable) {
     "Save file as:",
     "",
     "Unable to write to \"",
-	" with error code ",
+    " with error code ",
   }
 };
 

@@ -77,7 +77,7 @@ value gr_draw_rect(value vx, value vy, value vw, value vh)
                    x, Bcvt(y) - h + 1, w, h);
   if(grdisplay_mode) {
     XDrawRectangle(grdisplay, grwindow.win, grwindow.gc,
-		   x, Wcvt(y) - h + 1, w, h);
+                   x, Wcvt(y) - h + 1, w, h);
     XFlush(grdisplay);
   }
   return Val_unit;

@@ -1,11 +1,11 @@
 /*
-	WASTE Demo Project:
-	Macintosh Controls with Long Values
+    WASTE Demo Project:
+    Macintosh Controls with Long Values
 
-	Copyright © 1993-1996 Marco Piovanelli
-	All Rights Reserved
+    Copyright © 1993-1996 Marco Piovanelli
+    All Rights Reserved
 
-	C port by John C. Daub
+    C port by John C. Daub
 */
 
 /***************************************************************************
@@ -28,7 +28,7 @@
 #endif
 
 #include "main.h"                              /* The change */
-#define BSL(A, B)	(((long) (A)) << (B))      /* is here    */
+#define BSL(A, B)    (((long) (A)) << (B))      /* is here    */
 
 
 // long control auxiliary record used for keeping long settings
@@ -36,211 +36,211 @@
 
 struct LCAuxRec
 {
-	long	value;	// long value
-	long	min;	// long min
-	long	max;	// long max
+    long    value;    // long value
+    long    min;    // long min
+    long    max;    // long max
 };
 typedef struct LCAuxRec LCAuxRec, *LCAuxPtr, **LCAuxHandle;
 
 
 OSErr LCAttach( ControlRef control )
 {
-	Handle		aux;
-	LCAuxPtr	pAux;
+    Handle        aux;
+    LCAuxPtr    pAux;
 
-	/*	allocate the auxiliary record that will hold long settings */
+    /*    allocate the auxiliary record that will hold long settings */
 
-	if ( ( aux = NewHandleClear( sizeof( LCAuxRec ) ) ) == nil )
-	{
-		return	MemError( );
-	}
+    if ( ( aux = NewHandleClear( sizeof( LCAuxRec ) ) ) == nil )
+    {
+        return    MemError( );
+    }
 
-	/*	store a handle to the auxiliary record in the contrlRfCon field */
+    /*    store a handle to the auxiliary record in the contrlRfCon field */
 
-	SetControlReference( control, (long) aux );
+    SetControlReference( control, (long) aux );
 
-	/*	copy current control settings into the auxiliary record */
+    /*    copy current control settings into the auxiliary record */
 
-	pAux = * (LCAuxHandle) aux;
-	pAux->value = GetControlValue( control );
-	pAux->min = GetControlMinimum( control );
-	pAux->max = GetControlMaximum( control );
+    pAux = * (LCAuxHandle) aux;
+    pAux->value = GetControlValue( control );
+    pAux->min = GetControlMinimum( control );
+    pAux->max = GetControlMaximum( control );
 
-	return noErr;
+    return noErr;
 }
 
 void LCDetach( ControlRef control )
 {
-	Handle aux;
+    Handle aux;
 
-	if ( ( aux = (Handle) GetControlReference( control ) ) != nil )
-	{
-		SetControlReference( control, 0L );
-		DisposeHandle( aux );
-	}
+    if ( ( aux = (Handle) GetControlReference( control ) ) != nil )
+    {
+        SetControlReference( control, 0L );
+        DisposeHandle( aux );
+    }
 }
 
 void LCSetValue( ControlRef control, long value )
 {
-	LCAuxPtr pAux;
-	short controlMin, controlMax, newControlValue;
+    LCAuxPtr pAux;
+    short controlMin, controlMax, newControlValue;
 
-	pAux = * (LCAuxHandle) GetControlReference( control );
+    pAux = * (LCAuxHandle) GetControlReference( control );
 
-	/*	make sure value is in the range min...max */
+    /*    make sure value is in the range min...max */
 
-	if ( value < pAux->min )
-	{
-		value = pAux->min;
-	}
-	if ( value > pAux->max )
-	{
-		value = pAux->max;
-	}
+    if ( value < pAux->min )
+    {
+        value = pAux->min;
+    }
+    if ( value > pAux->max )
+    {
+        value = pAux->max;
+    }
 
-	/*	save value in auxiliary record */
+    /*    save value in auxiliary record */
 
-	pAux->value = value;
+    pAux->value = value;
 
-	/*	calculate new thumb position */
+    /*    calculate new thumb position */
 
-	controlMin = GetControlMinimum( control );
-	controlMax = GetControlMaximum( control );
-	newControlValue = controlMin + FixRound( FixMul ( FixDiv( value - pAux->min,
-				pAux->max - pAux->min), BSL(controlMax - controlMin, 16 )));
+    controlMin = GetControlMinimum( control );
+    controlMax = GetControlMaximum( control );
+    newControlValue = controlMin + FixRound( FixMul ( FixDiv( value - pAux->min,
+                pAux->max - pAux->min), BSL(controlMax - controlMin, 16 )));
 
-	/*	do nothing if the thumb position hasn't changed */
+    /*    do nothing if the thumb position hasn't changed */
 
-	if ( newControlValue != GetControlValue(control) )
-	{
-		SetControlValue( control, newControlValue );
-	}
+    if ( newControlValue != GetControlValue(control) )
+    {
+        SetControlValue( control, newControlValue );
+    }
 }
 
 void LCSetMin( ControlRef control, long min )
 {
-	LCAuxPtr pAux;
+    LCAuxPtr pAux;
 
-	pAux = * (LCAuxHandle) GetControlReference( control );
+    pAux = * (LCAuxHandle) GetControlReference( control );
 
-	/*	make sure min is less than or equal to max */
+    /*    make sure min is less than or equal to max */
 
-	if ( min > pAux->max )
-	{
-		min = pAux->max;
-	}
+    if ( min > pAux->max )
+    {
+        min = pAux->max;
+    }
 
-	/*	save min in auxiliary record */
+    /*    save min in auxiliary record */
 
-	pAux->min = min;
+    pAux->min = min;
 
-	/*	set control minimum to min or SHRT_MIN, whichever is greater */
+    /*    set control minimum to min or SHRT_MIN, whichever is greater */
 
-	SetControlMinimum( control, ( min >= SHRT_MIN ) ? min : SHRT_MIN );
+    SetControlMinimum( control, ( min >= SHRT_MIN ) ? min : SHRT_MIN );
 
-	/*	reset value */
+    /*    reset value */
 
-	LCSetValue( control, pAux->value );
+    LCSetValue( control, pAux->value );
 }
 
 void LCSetMax( ControlRef control, long max )
 {
-	LCAuxPtr pAux;
+    LCAuxPtr pAux;
 
-	pAux = * (LCAuxHandle) GetControlReference( control );
+    pAux = * (LCAuxHandle) GetControlReference( control );
 
-	/*	make sure max is greater than or equal to min */
+    /*    make sure max is greater than or equal to min */
 
-	if ( max < pAux->min )
-	{
-		max = pAux->min;
-	}
+    if ( max < pAux->min )
+    {
+        max = pAux->min;
+    }
 
-	/*	save max in auxiliary record */
+    /*    save max in auxiliary record */
 
-	pAux->max = max;
+    pAux->max = max;
 
-	/*	set control maximum to max or SHRT_MAX, whichever is less */
+    /*    set control maximum to max or SHRT_MAX, whichever is less */
 
-	SetControlMaximum( control, ( max <= SHRT_MAX ) ? max : SHRT_MAX );
+    SetControlMaximum( control, ( max <= SHRT_MAX ) ? max : SHRT_MAX );
 
-	/*	reset value */
+    /*    reset value */
 
-	LCSetValue( control, pAux->value );
+    LCSetValue( control, pAux->value );
 }
 
-/*	In each of these LCGetXXX() functions, there are 2 ways listed to do things.  They are
-	both the same thing and perform the same stuff, just one is easier to read than the
-	other (IMHO).  I asked Marco about it and he gave me the shorter code (what's commented
-	in each function) and gave me this explanation:
+/*    In each of these LCGetXXX() functions, there are 2 ways listed to do things.  They are
+    both the same thing and perform the same stuff, just one is easier to read than the
+    other (IMHO).  I asked Marco about it and he gave me the shorter code (what's commented
+    in each function) and gave me this explanation:
 
-		This version [the commented code] yields smaller and faster code
-		(try disassembling both versions if you wish), but some people may
-		find it somewhat harder to read.
+        This version [the commented code] yields smaller and faster code
+        (try disassembling both versions if you wish), but some people may
+        find it somewhat harder to read.
 
-	I agree with Marco that his code is better overall, but in the interest of readabilty
-	(since this demo is a learning tool), I left my code in and put Marco's in commented
-	out.  Pick whichever you'd like to use.
+    I agree with Marco that his code is better overall, but in the interest of readabilty
+    (since this demo is a learning tool), I left my code in and put Marco's in commented
+    out.  Pick whichever you'd like to use.
 */
 
 long LCGetValue( ControlRef control )
 {
-	LCAuxPtr	pAux;
+    LCAuxPtr    pAux;
 
-	pAux = *((LCAuxHandle)GetControlReference( control ));
+    pAux = *((LCAuxHandle)GetControlReference( control ));
 
-	return pAux->value;
+    return pAux->value;
 
-//	this is Marco's code.  Remember, this is a little harder to read, but overall
-//	yields tighter code.
+//    this is Marco's code.  Remember, this is a little harder to read, but overall
+//    yields tighter code.
 
-//	return (* (LCAuxHandle) GetControlReference(control)) -> value;
+//    return (* (LCAuxHandle) GetControlReference(control)) -> value;
 
 }
 
 long LCGetMin( ControlRef control )
 {
-	LCAuxPtr	pAux;
+    LCAuxPtr    pAux;
 
-	pAux = *((LCAuxHandle)GetControlReference( control ));
+    pAux = *((LCAuxHandle)GetControlReference( control ));
 
-	return pAux->min;
+    return pAux->min;
 
-//	this is Marco's code.  Remember, this is a little harder to read, but overall
-//	yields tighter code.
+//    this is Marco's code.  Remember, this is a little harder to read, but overall
+//    yields tighter code.
 
-//	return (* (LCAuxHandle)GetControlReference(control)) -> min;
+//    return (* (LCAuxHandle)GetControlReference(control)) -> min;
 
 }
 
 long LCGetMax( ControlRef control )
 {
-	LCAuxPtr	pAux;
+    LCAuxPtr    pAux;
 
-	pAux = *((LCAuxHandle)GetControlReference( control ));
+    pAux = *((LCAuxHandle)GetControlReference( control ));
 
-	return pAux->max;
+    return pAux->max;
 
-//	this is Marco's code.  Remember, this is a little harder to read, but overall
-//	yields tighter code.
+//    this is Marco's code.  Remember, this is a little harder to read, but overall
+//    yields tighter code.
 
-//	return (* (LCAuxHandle)GetControlReference(control)) -> max;
+//    return (* (LCAuxHandle)GetControlReference(control)) -> max;
 
 }
 
 void LCSynch( ControlRef control )
 {
-	LCAuxPtr pAux;
-	short controlMin, controlMax, controlValue;
+    LCAuxPtr pAux;
+    short controlMin, controlMax, controlValue;
 
-	controlMin = GetControlMinimum( control );
-	controlMax = GetControlMaximum( control );
-	controlValue = GetControlValue( control );
-	pAux = * (LCAuxHandle) GetControlReference( control );
+    controlMin = GetControlMinimum( control );
+    controlMax = GetControlMaximum( control );
+    controlValue = GetControlValue( control );
+    pAux = * (LCAuxHandle) GetControlReference( control );
 
-	/*	calculate new long value */
+    /*    calculate new long value */
 
-	pAux->value = pAux->min + FixMul( FixRatio ( controlValue - controlMin,
-				  controlMax - controlMin), pAux->max - pAux->min );
+    pAux->value = pAux->min + FixMul( FixRatio ( controlValue - controlMin,
+                  controlMax - controlMin), pAux->max - pAux->min );
 }
 

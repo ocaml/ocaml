@@ -43,9 +43,9 @@ external size_y : unit -> int = "gr_size_y"
 type window_id = string
 val window_id : unit -> window_id
         (* Return the unique identifier of the window allocated by
-	   the library, where Caml graphics are drawn. Under X Windows, 
-	   the returned string is an unsigned 32 bits integer 
-	   in decimal form. *)
+           the library, where Caml graphics are drawn. Under X Windows, 
+           the returned string is an unsigned 32 bits integer 
+           in decimal form. *)
 
 (*** Colors *)
 
@@ -86,7 +86,7 @@ val foreground: color
 
 external plot : x:int -> y:int -> unit = "gr_plot"
         (* Plot the given point with the current drawing color. *)
-external plots : (int * int) array -> unit = "gr_plots"
+val plots : (int * int) array -> unit
         (* Plot the given points with the current drawing color. *)
 external point_color : x:int -> y:int -> color = "gr_point_color"
         (* Return the color of the given point in the backing store
@@ -116,18 +116,18 @@ external draw_rect : x:int -> y:int -> w:int -> h:int -> unit = "gr_draw_rect"
         (* [draw_rect x y w h] draws the rectangle with lower left corner
            at [x,y], width [w] and height [h].
            The current point is unchanged. *)
-external draw_poly_line : (int * int) array -> unit = "gr_draw_poly_line"
+val draw_poly_line : (int * int) array -> unit
         (* [draw_poly_line points] draws the line that joins the
            points given by the array argument.
            The array contains the coordinates of the vertices of the
-           polygonal line, which has not to be closed.
+           polygonal line, which need not be closed.
            The current point is unchanged. *)
-external draw_poly : (int * int) array -> unit = "gr_draw_poly"
+val draw_poly : (int * int) array -> unit
         (* [draw_poly polygon] draws the given polygon.
            The array contains the coordinates of the vertices of the
            polygon.
            The current point is unchanged. *)
-external draw_segments : (int * int * int * int) array -> unit = "gr_draw_segments"
+val draw_segments : (int * int * int * int) array -> unit
         (* [draw_segments segments] draws the segments given in the array
            argument. Each segment is specified as two points, whose
            coordinates are two integer values.
