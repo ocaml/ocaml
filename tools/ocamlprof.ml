@@ -39,9 +39,6 @@ let cur_point = ref 0
 and inchan = ref stdin
 and outchan = ref stdout
 
-(* In case we forgot something *)
-(*exception Inversion of int * int*)
-
 (* To copy source fragments *)
 let copy_buffer = String.create 256
 
@@ -66,15 +63,11 @@ let copy_chars =
   | _       -> copy_chars_unix
 
 let copy next =
-  if next < !cur_point then begin
-    (*raise (Inversion(!cur_point, next));*)
-    (*fprintf stderr "warning: inversion at %d, %d\n" !cur_point next;*)
-    assert false
-  end else begin
-    seek_in !inchan !cur_point;
-    copy_chars (next - !cur_point);
-    cur_point := next;
-  end
+  assert (next >= !cur_point);
+  seek_in !inchan !cur_point;
+  copy_chars (next - !cur_point);
+  cur_point := next;
+;;
 
 let prof_counter = ref 0;;
 
@@ -411,11 +404,10 @@ let dumpfile = ref "ocamlprof.dump"
 
 (* Process a file *)
 
-let process_file filename =
-  if not (Filename.check_suffix filename ".ml") then
-    null_rewrite filename
-  else
-   let modname = Filename.basename(Filename.chop_suffix filename ".ml") in
+let process_intf_file filename = null_rewrite filename;;
+
+let process_impl_file filename =
+   let modname = Filename.basename(Filename.chop_extension filename) in
    if !instr_mode then begin
      (* Instrumentation mode *)
      set_flags !modes;
@@ -438,6 +430,14 @@ let process_file filename =
      init_rewrite modes modname;
      rewrite_file filename add_val_counter;
    end
+;;
+
+let process_anon_file filename =
+  if Filename.check_suffix filename ".ml" then
+    process_impl_file filename
+  else
+    process_intf_file filename
+;;
 
 (* Main function *)
 
@@ -449,12 +449,16 @@ let main () =
   try
     Arg.parse [
        "-f", Arg.String (fun s -> dumpfile := s),
-             "<file>  Use <file> as dump file (default ocamlprof.dump)";
+             "<file>     Use <file> as dump file (default ocamlprof.dump)";
        "-F", Arg.String (fun s -> special_id := s),
-             "<s>  Insert string <s> with the counts";
-       "-instrument", Arg.Set instr_mode, " (undocumented)";
-       "-m", Arg.String (fun s -> modes := s), "<flags>  (undocumented)"
-      ] process_file usage;
+             "<s>        Insert string <s> with the counts";
+       "-impl", Arg.String process_impl_file,
+                "<file>  Process <file> as a .ml file";
+       "-instrument", Arg.Set instr_mode, "  (undocumented)";
+       "-intf", Arg.String process_intf_file,
+                "<file>  Process <file> as a .mli file";
+       "-m", Arg.String (fun s -> modes := s), "<flags>    (undocumented)"
+      ] process_anon_file usage;
     exit 0
   with x ->
     let report_error ppf = function
@@ -466,11 +470,6 @@ let main () =
         Syntaxerr.report_error err
     | Profiler msg ->
         fprintf ppf "@[%s@]@." msg
-(*
-    | Inversion(pos, next) ->
-        print_string "Internal error: inversion at char "; print_int pos;
-        print_string ", "; print_int next
-*)
     | Sys_error msg ->
         fprintf ppf "@[I/O error:@ %s@]@." msg
     | x -> raise x in

@@ -19,10 +19,21 @@ let profargs = ref ([] : string list)
 let toremove = ref ([] : string list)
 
 let option opt () = compargs := opt :: !compargs
-let option_with_arg opt arg = compargs := arg :: opt :: !compargs
-let process_file filename = compargs := filename :: !compargs
+let option_with_arg opt arg =
+  compargs := (Filename.quote arg) :: opt :: !compargs
+;;
 
-let make_archive = ref false
+let make_archive = ref false;;
+let with_impl = ref false;;
+let with_intf = ref false;;
+let with_mli = ref false;;
+let with_ml = ref false;;
+
+let process_file filename =
+  if Filename.check_suffix filename ".ml" then with_ml := true;
+  if Filename.check_suffix filename ".mli" then with_mli := true;
+  compargs := (Filename.quote filename) :: !compargs
+;;
 
 let usage = "Usage: ocamlcp <options> <files>\noptions are:"
 
@@ -44,8 +55,8 @@ module Options = Main_args.Make_options (struct
   let _g = option "-g"
   let _i = option "-i"
   let _I s = option_with_arg "-I" s
-  let _impl s = option_with_arg "-impl" s
-  let _intf s = option_with_arg "-intf" s
+  let _impl s = with_impl := true; option_with_arg "-impl" s
+  let _intf s = with_intf := true; option_with_arg "-intf" s
   let _intf_suffix s = option_with_arg "-intf-suffix" s
   let _labels = option "-labels"
   let _linkall = option "-linkall"
@@ -76,26 +87,46 @@ module Options = Main_args.Make_options (struct
   let _dlambda = option "-dlambda"
   let _dinstr = option "-dinstr"
   let anonymous = process_file
-end)
+end);;
 
-let _ =
-  let optlist = Options.list @ [
-       "-p", Arg.String(fun s -> profargs := s :: "-m" :: !profargs),
-             "[afilmt]  Profile constructs specified by argument:\n\
-          \032     a  Everything\n\
-          \032     f  Function calls and method calls\n\
-          \032     i  if ... then ... else\n\
-          \032     l  while, for\n\
-          \032     m  match ... with\n\
-          \032     t  try ... with"
-    ]
-  in
-  Arg.parse optlist process_file usage;
-  let status =
-    Sys.command
-      (Printf.sprintf "ocamlc -pp \"ocamlprof %s -instrument %s\" %s %s"
-          !ismultithreaded
-          (String.concat " " (List.rev !profargs))
-          (if !make_archive then "" else "profiling.cmo")
-          (String.concat " " (List.rev !compargs))) in
-  exit status
+let add_profarg s =
+  profargs := (Filename.quote s) :: "-m" :: !profargs
+;;
+
+let optlist =
+    ("-p", Arg.String add_profarg,
+           "[afilmt]  Profile constructs specified by argument:\n\
+        \032     a  Everything\n\
+        \032     f  Function calls and method calls\n\
+        \032     i  if ... then ... else\n\
+        \032     l  while and for loops\n\
+        \032     m  match ... with\n\
+        \032     t  try ... with")
+    :: Options.list
+in
+Arg.parse optlist process_file usage;
+if !with_impl && !with_intf then begin
+  fprintf stderr "ocamlcp cannot deal with both \"-impl\" and \"-intf\"\n";
+  fprintf stderr "please compile interfaces and implementations separately\n";
+  exit 2;
+end else if !with_impl && !with_mli then begin
+  fprintf stderr "ocamlcp cannot deal with both \"-impl\" and .mli files\n";
+  fprintf stderr "please compile interfaces and implementations separately\n";
+  exit 2;
+end else if !with_intf && !with_ml then begin
+  fprintf stderr "ocamlcp cannot deal with both \"-intf\" and .ml files\n";
+  fprintf stderr "please compile interfaces and implementations separately\n";
+  exit 2;
+end;
+if !with_impl then profargs := "-impl" :: !profargs;
+if !with_intf then profargs := "-intf" :: !profargs;
+let status =
+  Sys.command
+    (Printf.sprintf "ocamlc -pp \"ocamlprof %s -instrument %s\" %s %s"
+        !ismultithreaded
+        (String.concat " " (List.rev !profargs))
+        (if !make_archive then "" else "profiling.cmo")
+        (String.concat " " (List.rev !compargs)))
+in
+exit status
+;;
