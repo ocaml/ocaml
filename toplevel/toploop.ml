@@ -298,10 +298,7 @@ let use_file ppf name =
     let ic = open_in_bin filename in
     let lb = Lexing.from_channel ic in
     (* Skip initial #! line if any *)
-    let buffer = String.create 2 in
-    if input ic buffer 0 2 = 2 && buffer = "#!"
-    then ignore(input_line ic)
-    else seek_in ic 0;
+    Lexer.skip_sharp_bang lb;
     let success =
       protect Location.input_name filename (fun () ->
         try
