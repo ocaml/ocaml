@@ -138,8 +138,13 @@ let flatten_fields ty =
   let rec flatten l ty =
     let ty = repr ty in
     match ty.desc with
-      Tfield(s, ty1, ty2) ->
-        flatten ((s, ty1)::l) ty2
+      Tfield(s, kind, ty1, ty2) ->
+        begin match field_kind_repr kind with
+          Fabsent ->
+            flatten l ty2
+        | k ->
+            flatten ((s, k, ty1)::l) ty2
+        end
     | _ ->
         (l, ty)
   in
@@ -147,7 +152,7 @@ let flatten_fields ty =
       (List.rev l, r)
 
 let build_fields =
-  List.fold_right (fun (s, ty1) ty2 -> newty (Tfield(s, ty1, ty2)))
+  List.fold_right (fun (s, k, ty1) ty2 -> newty (Tfield(s, k, ty1, ty2)))
 
 let associate_fields fields1 fields2 =
   let rec associate p s s' =
@@ -156,13 +161,13 @@ let associate_fields fields1 fields2 =
         (List.rev p, (List.rev s) @ l, List.rev s')
     | ([], l') ->
         (List.rev p, List.rev s, (List.rev s') @ l')
-    | ((n, t)::r, (n', t')::r') when n = n' ->
-        associate ((t, t')::p) s s' (r, r')
-    | ((n, t)::r, ((n', t')::_ as l')) when n < n' ->
-        associate p ((n, t)::s) s' (r, l')
-    | (((n, t)::r as l), (n', t')::r') (* when n > n' *) ->
-        associate p s ((n', t')::s') (l, r')
-  in let sort = Sort.list (fun (n, _) (n', _) -> n < n') in
+    | ((n, k, t)::r, (n', k', t')::r') when n = n' ->
+        associate ((k, t, k', t')::p) s s' (r, r')
+    | ((n, k, t)::r, ((n', k', t')::_ as l')) when n < n' ->
+        associate p ((n, k, t)::s) s' (r, l')
+    | (((n, k, t)::r as l), (n', k', t')::r') (* when n > n' *) ->
+        associate p s ((n', k', t')::s') (l, r')
+  in let sort = Sort.list (fun (n, _, _) (n', _, _) -> n < n') in
   associate [] [] [] (sort fields1, sort fields2)
 
 (**** Check whether an object is open ****)
@@ -170,10 +175,10 @@ let associate_fields fields1 fields2 =
 (* +++ Il faudra penser a eventuellement expanser l'abreviation *)
 let rec opened_object ty =
   match (repr ty).desc with
-    Tobject (t, _)  -> opened_object t
-  | Tfield(_, _, t) -> opened_object t
-  | Tvar            -> true
-  | _               -> false
+    Tobject (t, _)     -> opened_object t
+  | Tfield(_, _, _, t) -> opened_object t
+  | Tvar               -> true
+  | _                  -> false
 
 (**** Close an object ****)
 
@@ -181,10 +186,16 @@ let close_object ty =
   let rec close ty =
     let ty = repr ty in
     match ty.desc with
-      Tvar              -> ty.desc <- Tlink {desc = Tnil; level = ty.level}
-    | Tfield(_, _, ty') -> close ty'
-    | Tnil              -> ()
-    | _                 -> fatal_error "Ctype.close_object (1)"
+      Tvar                 -> ty.desc <- Tlink {desc = Tnil; level = ty.level}
+    | Tfield(_, k, _, ty') ->
+       close ty';
+       let k = field_kind_repr k in
+       begin match k with
+         Fvar r -> r := Some Fabsent
+       | _      -> ()
+       end
+    | Tnil                 -> ()
+    | _                    -> fatal_error "Ctype.close_object (1)"
   in
   match (repr ty).desc with
     Tobject (ty, _)   -> close ty
@@ -198,10 +209,10 @@ let close_object ty =
 let rec row_variable ty =
   let ty = repr ty in
   match ty.desc with
-    Tfield (_, _, ty) -> row_variable ty
-  | Tvar              -> ty
-  | Tnil              -> raise Not_found
-  | _                 -> fatal_error "Ctype.row_variable"
+    Tfield (_, _, _, ty) -> row_variable ty
+  | Tvar                 -> ty
+  | Tnil                 -> raise Not_found
+  | _                    -> fatal_error "Ctype.row_variable"
 
 let set_object_name ty params id =
   match (repr ty).desc with
@@ -221,6 +232,23 @@ let remove_object_name ty =
     Tobject (_, nm)   -> nm := None
   | Tconstr (_, _, _) -> ()
   | _                 -> fatal_error "Ctype.remove_object_name"
+
+(**** Hiding of private methods ****)
+
+let hide_private_methods ty =
+  let ty = repr ty in
+  match ty.desc with
+    Tobject (f, _) ->
+      let (fl, _) = flatten_fields f in
+      List.iter
+        (function (_, k, _) ->
+           let k = field_kind_repr k in
+           match k with
+             Fvar r -> r := Some Fabsent
+           | _      -> ())
+        fl
+  | _ ->
+      ()
 
 
                          (*****************************)
@@ -359,8 +387,13 @@ let rec copy ty =
                 Some (p, List.map copy tl)
           in
           Tobject (copy t1, ref name')
-      | Tfield (label, t1, t2) ->
-          Tfield (label, copy t1, copy t2)
+      | Tfield (label, kind, t1, t2) ->
+          begin match field_kind_repr kind with
+            Fpresent ->
+              Tfield (label, Fpresent, copy t1, copy t2)
+          | _ ->
+              Tlink (copy t2)
+          end
       | Tnil ->
           Tnil
       | Tlink t -> (* Actually unused *)
@@ -416,18 +449,15 @@ let instance_parameterized_type_2 sch_args sch_lst sch =
 let instance_class cl =
   let params = List.map copy cl.cty_params in
   let args = List.map copy cl.cty_args in
-  let vars =
-    Vars.fold
-      (fun lab (mut, ty) ->
-         Vars.add lab (mut, copy ty))
-      cl.cty_vars
-      Vars.empty in
+  let vars = Vars.map (function (mut, ty) -> (mut, copy ty)) cl.cty_vars in
+  let mets = Meths.map copy cl.cty_meths in
   let self = copy cl.cty_self in
   cleanup_types ();
   List.iter unmark_type params; List.iter unmark_type args;
   Vars.iter (fun l (m, t) -> unmark_type t) vars;
+  Meths.iter (fun l t -> unmark_type t) mets;
   unmark_type self;
-  (params, args, vars, self)
+  (params, args, vars, mets, self)
 
 (**** Instantiation with parameter substitution ****)
 
@@ -605,25 +635,30 @@ let correct_abbrev env ident params ty =
   visited := []
 
 let occur env ty0 ty =
-  let visited = ref ([] : type_expr list) in
   let rec occur_rec ty =
-    if ty == ty0 then raise Occur;
-    match ty.desc with
-      Tconstr(p, tl, abbrev) ->
-        if not (List.memq ty !visited) then begin
-          visited := ty :: !visited;
-          try List.iter occur_rec tl with Occur ->
-          try
+    if ty == ty0  then raise Occur;
+    if ty.level >= lowest_level then
+      match ty.desc with
+        Tlink ty' ->
+          occur_rec ty'
+      | Tconstr(p, tl, abbrev) ->
+          ty.level <- pivot_level - ty.level;
+          begin try
+            List.iter occur_rec tl
+          with Occur -> try
             let ty' = expand_abbrev env p tl abbrev ty.level in
             occur_rec ty'
-          with Cannot_expand -> ()
-        end
-    | Tobject (_, _) ->
-        ()
-    | _ ->
-        iter_type_expr occur_rec ty
+          with Cannot_expand -> () end
+      | Tobject (_, _) ->
+          ()
+      | _ ->
+          ty.level <- pivot_level - ty.level;
+          iter_type_expr occur_rec ty
   in
-    occur_rec ty
+  try
+    occur_rec ty; unmark_type ty
+  with Occur ->
+    unmark_type ty; raise Occur
 
 
                               (*****************)
@@ -779,14 +814,27 @@ and unify3 env t1 t1' t2 t2' =
         unify_list env tl1 tl2
     | (Tconstr (p1, tl1, _), Tconstr (p2, tl2, _)) when Path.same p1 p2 ->
         unify_list env tl1 tl2
-    | (Tobject (fi1, nm1), Tobject (fi2, nm2)) ->
+    | (Tobject (fi1, nm1), Tobject (fi2, _)) ->
         unify_fields env fi1 fi2;
-        begin match !nm2 with
-          Some (_, va::_) when (repr va).desc = Tvar -> ()
-        | _                                          -> nm2 := !nm1
+        (* Type [t2'] may have been instantiated by [unify_fields] *)
+        (* XXX One should do some kind of unification... *)
+        begin match (repr t2').desc with
+          Tobject (_, {contents = Some (_, va::_)})
+                when (repr va).desc = Tvar ->
+            ()  
+        | Tobject (_, nm2) ->
+            nm2 := !nm1
+        | _ ->
+            ()
         end
     | (Tfield _, Tfield _) ->           (* Actually unused *)
-        unify_fields env t1 t2
+        unify_fields env t1' t2'
+    | (Tfield (_, kind, _, t1''), _) ->
+        unify_kind kind Fabsent;
+        unify env t1'' t2'
+    | (_, Tfield (_, kind, _, t2'')) ->
+        unify_kind kind Fabsent;
+        unify env t1' t2''
     | (Tnil, Tnil) ->
         ()
     | (_, _) ->
@@ -832,7 +880,16 @@ and unify_fields env ty1 ty2 =          (* Optimization *)
   let va = newvar () in
   unify env rest1 (build_fields miss2 va);
   unify env (build_fields miss1 va) rest2;
-  List.iter (fun (t1, t2) -> unify env t1 t2) pairs
+  List.iter (fun (k1, t1, k2, t2) -> unify_kind k1 k2; unify env t1 t2) pairs
+
+and unify_kind k1 k2 =
+  let k1 = field_kind_repr k1 in
+  let k2 = field_kind_repr k2 in
+  match k1, k2 with
+    (Fvar r, _)                               -> r := Some k2
+  | (_, Fvar r)                               -> r := Some k1
+  | (Fabsent, Fabsent) | (Fpresent, Fpresent) -> ()
+  | _                                         -> raise (Unify [])
 
 let unify env ty1 ty2 =
   try
@@ -871,25 +928,36 @@ let rec filter_arrow env t =
       raise (Unify [])
 
 (* Used by [filter_method]. *)
-let rec filter_method_field env name ty =
+let rec filter_method_field env name priv ty =
   let ty = repr ty in
   match ty.desc with
     Tvar ->
       let ty1 = newvar () and ty2 = newvar () in
-      let ty' = newty (Tfield (name, ty1, ty2)) in
+      let ty' = newty (Tfield (name,
+                               begin match priv with
+                                 Private -> Fvar (ref None)
+                               | Public  -> Fpresent
+                               end,
+                               ty1, ty2))
+      in
       update_level env ty.level ty';
       ty.desc <- Tlink ty';
       ty1
-  | Tfield(n, ty1, ty2) ->
-      if n = name then
+  | Tfield(n, kind, ty1, ty2) ->
+      let kind = field_kind_repr kind in
+      if (n = name) && (kind <> Fabsent) then begin
+        if priv = Public then
+          unify_kind kind Fpresent;
         ty1
-      else
-        filter_method_field env name ty2
+      end else
+        filter_method_field env name priv ty2
+  | _ when priv = Private ->
+      newvar ()
   | _ ->
       raise (Unify [])
 
 (* Unify [ty] and [< name : 'a; .. >]. Return ['a]. *)
-let rec filter_method env name ty =
+let rec filter_method env name priv ty =
   let ty = repr ty in
   match ty.desc with
     Tvar ->
@@ -897,12 +965,12 @@ let rec filter_method env name ty =
       let ty' = newobj ty1 in
       update_level env ty.level ty';
       ty.desc <- Tlink ty';
-      filter_method_field env name ty1
+      filter_method_field env name priv ty1
   | Tobject(f, _) ->
-      filter_method_field env name f
+      filter_method_field env name priv f
   | Tconstr(p, tl, abbrev) ->
       begin try
-        filter_method env name (expand_abbrev env p tl abbrev ty.level)
+        filter_method env name priv (expand_abbrev env p tl abbrev ty.level)
       with Cannot_expand ->
         raise (Unify [])
       end
@@ -985,7 +1053,13 @@ let moregeneral env inst_nongen pat_sch subj_sch =
           | (Tobject (fi1, nm1), Tobject (fi2, nm2)) ->
               moregen_fields env fi1 fi2
           | (Tfield _, Tfield _) ->           (* Actually unused *)
-              moregen_fields env t1 t2
+              moregen_fields env t1' t2'
+          | (Tfield (_, kind, _, t1''), _) ->
+              moregen_kind kind Fabsent;
+              moregen env t1'' t2'
+          | (_, Tfield (_, kind, _, t2'')) ->
+              moregen_kind Fabsent kind;
+              moregen env t1' t2''
           | (Tnil, Tnil) ->
               ()
           | (_, _) ->
@@ -1003,7 +1077,17 @@ let moregeneral env inst_nongen pat_sch subj_sch =
     let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
     if miss1 <> [] then raise (Unify []);
     moregen env rest1 (build_fields miss2 rest2);
-    List.iter (fun (t1, t2) -> moregen env t1 t2) pairs
+    List.iter
+      (fun (k1, t1, k2, t2) -> moregen_kind k1 k2; moregen env t1 t2)
+      pairs
+
+  and moregen_kind level k1 k2 =
+    let k1 = field_kind_repr k1 in
+    let k2 = field_kind_repr k2 in
+    match k1, k2 with
+      (Fvar r, _)                               -> r := Some k2
+    | (Fabsent, Fabsent) | (Fpresent, Fpresent) -> ()
+    | _                                         -> raise (Unify [])
 
   in
   let old_level = !current_level in
@@ -1079,6 +1163,12 @@ let equal env rename tyl1 tyl2 =
               eqtype_fields fi1 fi2
           | (Tfield _, Tfield _) ->       (* Actually unused *)
               eqtype_fields t1 t2
+          | (Tfield (_, kind, _, t1'), _)
+                when field_kind_repr kind = Fabsent ->
+              eqtype t1' t2
+          | (_, Tfield (_, kind, _, t2'))
+                when field_kind_repr kind = Fabsent ->
+              eqtype t1 t2'
           | (Tnil, Tnil) ->
               true
           | (_, _) ->
@@ -1098,7 +1188,7 @@ let equal env rename tyl1 tyl2 =
       &&
     (miss1 = []) && (miss2 = [])
       &&
-    List.for_all (function (t1, t2) -> eqtype t1 t2) pairs
+    List.for_all (function (k1, t1, k2, t2) -> eqtype t1 t2) pairs
 
   in
     eqtype_list tyl1 tyl2
@@ -1153,10 +1243,10 @@ let rec build_subtype env t =
          t'
        end,
        true)
-  | Tfield(s, t1, t2) ->
+  | Tfield(s, _, t1, t2) (* Always present *) ->
       let (t1', _) = build_subtype env t1 in
       let (t2', _) = build_subtype env t2 in
-      (new_global_ty (Tfield(s, t1', t2')), true)
+      (new_global_ty (Tfield(s, Fpresent, t1', t2')), true)
   | Tnil ->
       let v = new_global_var () in
       (v, true)
@@ -1244,7 +1334,9 @@ and subtype_fields env trace ty1 ty2 =
   end
     @
   (List.fold_left
-     (fun cstrs (t1, t2) -> cstrs @ (subtype_rec env ((t1, t2)::trace) t1 t2))
+     (fun cstrs (k1, t1, k2, t2) ->
+        (* Theses fields are always present *)
+        cstrs @ (subtype_rec env ((t1, t2)::trace) t1 t2))
      [] pairs)
 
 let subtype env ty1 ty2 =
@@ -1350,8 +1442,14 @@ let rec nondep_type_rec env id ty =
                       | Some (p, tl) ->
                           if Path.isfree id p then None
                           else Some (p, List.map (nondep_type_rec env id) tl)))
-      | Tfield(label, t1, t2) ->
-          Tfield(label, nondep_type_rec env id t1, nondep_type_rec env id t2)
+      | Tfield(label, kind, t1, t2) ->
+          begin match field_kind_repr kind with
+            Fpresent ->
+              Tfield(label, Fpresent, nondep_type_rec env id t1,
+                     nondep_type_rec env id t2)
+          | _ ->
+              Tlink (nondep_type_rec env id t2)
+          end
       | Tnil ->
           Tnil
       | Tlink ty ->                    (* Actually unused *)
@@ -1428,8 +1526,9 @@ let nondep_class_type env id decl =
       { cty_params = List.map (nondep_type_rec env id) decl.cty_params;
         cty_args = List.map (nondep_type_rec env id) decl.cty_args;
         cty_vars =
-          Vars.fold (fun l (m, t) -> Vars.add l (m, nondep_type_rec env id t))
-            decl.cty_vars Vars.empty;
+          Vars.map (function (m, t) -> (m, nondep_type_rec env id t))
+            decl.cty_vars;
+        cty_meths = Meths.map (nondep_type_rec env id) decl.cty_meths;
         cty_self = nondep_type_rec env id decl.cty_self;
         cty_concr = decl.cty_concr;
         cty_new =
@@ -1442,6 +1541,7 @@ let nondep_class_type env id decl =
     List.iter unmark_type decl.cty_params;
     List.iter unmark_type decl.cty_args;
     Vars.iter (fun l (m, t) -> unmark_type t) decl.cty_vars;
+    Meths.iter (fun l t -> unmark_type t) decl.cty_meths;
     unmark_type decl.cty_self;
     begin match decl.cty_new with
       None    -> ()
@@ -1474,8 +1574,9 @@ let rec closed_schema_rec row ty =
         List.iter (closed_schema_rec false) p
     | Tobject(f, _) ->
         closed_schema_rec true f
-    | Tfield(_, t1, t2) ->
-        closed_schema_rec false t1;
+    | Tfield(_, kind, t1, t2) ->
+        if field_kind_repr kind = Fpresent then
+          closed_schema_rec false t1;
         closed_schema_rec true t2
     | _ ->
         iter_type_expr (closed_schema_rec false) ty

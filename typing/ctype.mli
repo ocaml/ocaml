@@ -45,13 +45,15 @@ val none: type_expr
 val repr: type_expr -> type_expr
         (* Return the canonical representative of a type. *)
 
-val flatten_fields : type_expr -> (string * type_expr) list * type_expr
+val flatten_fields :
+        type_expr -> (string * field_kind * type_expr) list * type_expr
       	(* Transform a field type into a list of pairs label-type *)
 val opened_object: type_expr -> bool
 val close_object: type_expr -> unit
 val set_object_name:
       	type_expr -> type_expr list -> Ident.t -> unit
 val remove_object_name: type_expr -> unit
+val hide_private_methods: type_expr -> unit
 
 val generalize: type_expr -> unit
         (* Generalize in-place the given type *)
@@ -76,8 +78,8 @@ val instance_parameterized_type_2:
         type_expr list * type_expr list * type_expr
 val instance_class:
       	class_type ->
-        type_expr list * type_expr list *
-        (mutable_flag * type_expr) Vars.t * type_expr
+        type_expr list * type_expr list * (mutable_flag * type_expr) Vars.t *
+        type_expr Meths.t * type_expr
 val apply:
         Env.t -> type_expr list -> type_expr -> type_expr list -> type_expr
         (* [apply [p1...pN] t [a1...aN]] match the arguments [ai] to
@@ -95,7 +97,7 @@ val unify: Env.t -> type_expr -> type_expr -> unit
         (* Unify the two types given. Raise [Unify] if not possible. *)
 val filter_arrow: Env.t -> type_expr -> type_expr * type_expr
         (* A special case of unification (with 'a -> 'b). *)
-val filter_method: Env.t -> string -> type_expr -> type_expr
+val filter_method: Env.t -> string -> private_flag -> type_expr -> type_expr
       	(* A special case of unification (with {m : 'a; 'b}). *)
 
 val moregeneral: Env.t -> bool -> type_expr -> type_expr -> bool
