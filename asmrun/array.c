@@ -35,10 +35,12 @@ value make_vect(len, init)
     wsize = size * Double_wosize;
     if (wsize > Max_wosize)
       invalid_argument("Array.new");
-    if (wsize < Max_young_wosize)
+    if (wsize < Max_young_wosize) {
       res = alloc(wsize, Double_array_tag);
-    else
+    } else {
       res = alloc_shr(wsize, Double_array_tag);
+      res = check_urgent_gc (res);
+    }
     for (i = 0; i < size; i++) {
       Store_double_field(res, i, d);
     }
@@ -60,12 +62,14 @@ value make_vect(len, init)
       res = alloc_shr(size, 0);
       init = root[0];
       for (i = 0; i < size; i++) Field(res, i) = init;
+      res = check_urgent_gc (res);
     }
     else {
       root[0] = init;
       res = alloc_shr(size, 0);
       init = root[0];
       for (i = 0; i < size; i++) initialize(&Field(res, i), init);
+      res = check_urgent_gc (res);
     }
     Pop_roots();
   }
@@ -93,10 +97,12 @@ value make_array(init)
         Pop_roots();
         invalid_argument("Array.new");
       }
-      if (wsize < Max_young_wosize)
+      if (wsize < Max_young_wosize) {
         res = alloc(wsize, Double_array_tag);
-      else
+      } else {
         res = alloc_shr(wsize, Double_array_tag);
+        res = check_urgent_gc (res);
+      }
       init = root[0];
       for (i = 0; i < size; i++) {
         Store_double_field(res, i, Double_val(Field(init, i)));

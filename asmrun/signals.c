@@ -17,6 +17,7 @@
 #include <asm/sigcontext.h>
 #endif
 #include "alloc.h"
+#include "callback.h"
 #include "memory.h"
 #include "minor_gc.h"
 #include "misc.h"
