@@ -1,5 +1,6 @@
 Objective Caml 1.03:
 --------------------
+
 * Typing:
   - bug with type names escaping their scope via unification with
     non-generalized type variables '_a completely fixed;
@@ -18,6 +19,33 @@ Objective Caml 1.03:
 
 * Compilation (ocamlc and ocamlopt):
   - fixed bug in compilation of classes.
+
+* Native-code compilation:
+  - optimization of functions taking tuples of arguments;
+  - code emitter for the Motorola 680x0 processors (retrocomputing week);
+  - Alpha/OSF1: generate frame descriptors, avoids crashes when e.g.
+    exp() or log() cause a domain error; fixed bug with
+    String.length "literal";
+  - Sparc, Mips, HPPA: removed marking of scanned stack frames
+    (benefits do not outweight cost).
+
+* Standard library:
+  - Arg.parse now prints documentation for command-line options;
+  - I/O buffers (types in_channel and out_channel) now heap-allocated,
+    avoids crashing when closing a channel several times;
+  - Overflow bug in compare() fixed;
+  - GC bug in raising Sys_error from I/O functions fixed;
+  - Parsing.symbol_start works even for epsilon productions.
+
+* Foreign interface: main() in C now working, fixed bug in library
+  order at link time.
+
+* Thread library: guard against calling thread functions before Thread.create.
+
+* Unix library: fixed getsockopt, setsockopt, open_process_{in,out}.
+
+* Perl-free, cpp-free, cholesterol-free installation procedure.
+
 
 Objective Caml 1.02:
 --------------------
