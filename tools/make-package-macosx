@@ -15,18 +15,25 @@
 # $Id$
 
 cd package-macosx
-rm -f ocaml.pkg ocaml.dmg
+rm -rf ocaml.pkg ocaml-rw.dmg ocaml.dmg
 
 package root ocaml.info
 
 size=`du -s ocaml.pkg | cut -f 1`
-size=`expr \( $size \* 11 \) / 10 + 500`
+size=`expr $size + 8192`
 
-hdiutil create -sectors $size ocaml.dmg
-name=`hdid -nomount ocaml.dmg | grep Apple_HFS | cut -d ' ' -f 1`
+hdiutil create -sectors $size ocaml-rw.dmg
+name=`hdid -nomount ocaml-rw.dmg | grep Apple_HFS | cut -d ' ' -f 1`
 newfs_hfs -v 'Objective Caml' $name
 hdiutil detach $name
 
-name=`hdid ocaml.dmg | grep Apple_HFS | cut -d ' ' -f 1`
-ditto -rsrcFork ocaml.pkg "/Volumes/Objective Caml/ocaml.pkg"
+name=`hdid ocaml-rw.dmg | grep Apple_HFS | cut -d ' ' -f 1`
+if test -d '/Volumes/Objective Caml'; then
+  ditto -rsrcFork ocaml.pkg "/Volumes/Objective Caml/ocaml.pkg"
+else
+  echo 'Unable to mount the disk image as "/Volumes/Objective Caml"' >&2
+  exit 3
+fi
 hdiutil detach $name
+
+hdiutil convert ocaml-rw.dmg -format UDZO -o ocaml.dmg
