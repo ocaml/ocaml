@@ -48,6 +48,7 @@ val add_class: Ident.t -> class_type -> t -> t
 
 (* Insertion of all fields of a signature. *)
 
+val add_item: signature_item -> t -> t
 val add_signature: signature -> t -> t
 
 (* Insertion of all fields of a signature, relative to the given path.

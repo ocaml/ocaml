@@ -31,6 +31,7 @@ type error =
   | Signature_expected
   | Structure_expected of module_type
   | With_no_component of Longident.t
+  | With_mismatch of Longident.t * Includemod.error list
   | Repeated_name of string * string
   | Non_generalizable of type_expr
   | Non_generalizable_class of Ident.t * class_type

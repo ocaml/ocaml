@@ -560,7 +560,7 @@ and enter_class = enter store_class
 
 (* Insertion of all components of a signature *)
 
-let add_signature_component env comp =
+let add_item comp env =
   match comp with
     Tsig_value(id, decl) -> add_value id decl env
   | Tsig_type(id, decl) -> add_type id decl env
@@ -569,8 +569,10 @@ let add_signature_component env comp =
   | Tsig_modtype(id, decl) -> add_modtype id decl env
   | Tsig_class(id, decl) -> add_class id decl env
 
-let add_signature sg env =
-  List.fold_left add_signature_component env sg
+let rec add_signature sg env =
+  match sg with
+    [] -> env
+  | comp :: rem -> add_signature rem (add_item comp env)
 
 (* Open a signature path *)
 

@@ -29,6 +29,7 @@ type error =
   | Signature_expected
   | Structure_expected of module_type
   | With_no_component of Longident.t
+  | With_mismatch of Longident.t * Includemod.error list
   | Repeated_name of string * string
   | Non_generalizable of type_expr
   | Non_generalizable_class of Ident.t * class_type
@@ -58,25 +59,31 @@ let type_module_path env loc lid =
 
 (* Merge one "with" constraint in a signature *)
 
-let merge_constraint env loc sg lid constr =
-  let rec merge sg namelist =
+let merge_constraint initial_env loc sg lid constr =
+  let rec merge env sg namelist =
     match (sg, namelist, constr) with
       ([], _, _) ->
         raise(Error(loc, With_no_component lid))
     | (Tsig_type(id, decl) :: rem, [s], Pwith_type sdecl)
       when Ident.name id = s ->
-        let newdecl = Typedecl.transl_with_constraint env sdecl in
+        let newdecl = Typedecl.transl_with_constraint initial_env sdecl in
+        Includemod.type_declarations env id newdecl decl;
         Tsig_type(id, newdecl) :: rem
     | (Tsig_module(id, mty) :: rem, [s], Pwith_module lid)
       when Ident.name id = s ->
-        let (path, mty') = type_module_path env loc lid in
-        Tsig_module(id, Mtype.strengthen env mty' path) :: rem
+        let (path, mty') = type_module_path initial_env loc lid in
+        let newmty = Mtype.strengthen env mty' path in
+        Includemod.modtypes env newmty mty;
+        Tsig_module(id, newmty) :: rem
     | (Tsig_module(id, mty) :: rem, s :: namelist, _) when Ident.name id = s ->
-        let newsg = merge (extract_sig env loc mty) namelist in
+        let newsg = merge env (extract_sig env loc mty) namelist in
         Tsig_module(id, Tmty_signature newsg) :: rem
     | (item :: rem, _, _) ->
-        item :: merge rem namelist in
-  merge sg (Longident.flatten lid)
+        item :: merge (Env.add_item item env) rem namelist in
+  try
+    merge initial_env sg (Longident.flatten lid)
+  with Includemod.Error explanation ->
+    raise(Error(loc, With_mismatch(lid, explanation)))
 
 (* Check and translate a module type expression *)
 
@@ -418,8 +425,21 @@ let report_error = function
       print_space(); modtype mty;
       close_box()
   | With_no_component lid ->
+      open_hovbox 0;
       print_string "The signature constrained by `with' has no component named";
-      print_space(); longident lid
+      print_space(); longident lid;
+      close_box()
+  | With_mismatch(lid, explanation) ->
+      open_vbox 0;
+      open_hovbox 0;
+      print_string "In this `with' constraint, the new definition of";
+      print_space(); longident lid; print_space();
+      print_string "does not match its original definition";
+      print_space(); print_string "in the constrained signature:";
+      close_box();
+      print_space();
+      Includemod.report_error explanation;
+      close_box()
   | Repeated_name(kind, name) ->
       open_hovbox 0;
       print_string "Multiple definition of the "; print_string kind;
