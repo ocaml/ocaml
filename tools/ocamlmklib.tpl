@@ -46,8 +46,8 @@ while :; do
         c_libs="$c_libs $1"
         c_libs_caml="$c_libs_caml -cclib $1";;
     -L*)
-        c_opts="$c_libs $1"
-        c_opts_caml="$c_libs_caml -ccopt $1";;
+        c_opts="$c_opts $1"
+        c_opts_caml="$c_opts_caml -ccopt $1";;
     -I)
         caml_opts="$caml_opts $1 $2"
         shift;;
@@ -67,9 +67,9 @@ while :; do
         output_c="$2"
         shift;;
     -*)
-        echo "Unknown option `$1', ignored" 1>&2;;
+        echo "Unknown option '$1', ignored" 1>&2;;
     *)
-        echo "Don't know what to do with `$1', ignored" 1>&2;;
+        echo "Don't know what to do with '$1', ignored" 1>&2;;
     esac
     shift
 done
