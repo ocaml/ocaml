@@ -500,7 +500,14 @@ method emit_expr env exp =
               alloc_state <- None;
               rd
           | Some(ralloc, ofs) ->
-              ignore(self#insert_op (Iintop_imm(Iadd, ofs)) ralloc rd);
+              if self#is_immediate ofs then
+                ignore(self#insert_op (Iintop_imm(Iadd, ofs)) ralloc rd)
+              else begin
+                let r = Reg.createv typ_int in
+                ignore(self#insert_op (Iconst_int(Nativeint.from ofs)) [||] r);
+                ignore(self#insert_op (Iintop Iadd)
+                                      (Array.append ralloc r) rd)
+              end;
               alloc_state <- Some(ralloc, ofs + size);
               self#emit_stores env new_args ralloc
                                (Arch.offset_addressing header_addressing ofs);
