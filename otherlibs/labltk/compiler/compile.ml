@@ -464,7 +464,6 @@ let rec converterCAMLtoTK ~context_widget argname ty =
         ["]"])
  | Function _ -> fatal_error "unexpected function type in converterCAMLtoTK"
  | Unit -> fatal_error "unexpected unit type in converterCAMLtoTK"
- | Product _ -> fatal_error "unexpected product type in converterCAMLtoTK"
  | Record _ -> fatal_error "unexpected product type in converterCAMLtoTK"
  | List ty -> fatal_error "unexpected list type in converterCAMLtoTK"
 
