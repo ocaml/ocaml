@@ -141,7 +141,7 @@ val bscanf :
      mentioned in the range of characters [range] (or not mentioned in
      it, if the range starts with [^]). Returns a [string] that can be
      empty, if no character in the input matches the range. Hence,
-     [\['0'-'9'\]] returns a string representing a decimal number or an empty
+     [\[0-9\]] returns a string representing a decimal number or an empty
      string if no decimal digit is found. 
      If a closing bracket appears in a range, it must occur as the
      first character of the range (or just after the [^] in case of
@@ -149,7 +149,7 @@ val bscanf :
      [\[^\]\]] matches any character that is not [\]].
    - [l]: applies [f] to the number of lines read so far.
    - [n]: applies [f] to the number of characters read so far.
-   - [N]: applies [f] to the number of tokens read so far.
+   - [N] or [L]: applies [f] to the number of tokens read so far.
    - [!]: matches the end of input condition.
    - [%]: matches one [%] character in the input.
 
