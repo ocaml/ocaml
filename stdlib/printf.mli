@@ -14,6 +14,7 @@
 
 (** Formatted output functions. *)
 
+val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
 (** [fprintf outchan format arg1 ... argN] formats the arguments
    [arg1] to [argN] according to the format string [format],
    and outputs the resulting string on the channel [outchan].
@@ -83,29 +84,27 @@
    prints [x=1 y=2 3] instead of the expected
    [x=1 y=2 x=1 y=3].  To get the expected behavior, do
    [List.iter (fun y -> printf "x=%d y=%d " 1 y) [2;3]]. *)
-val fprintf: out_channel -> ('a, out_channel, unit) format -> 'a
 
+val printf : ('a, out_channel, unit) format -> 'a
 (** Same as {!Printf.fprintf}, but output on [stdout]. *)
-val printf: ('a, out_channel, unit) format -> 'a
 
+val eprintf : ('a, out_channel, unit) format -> 'a
 (** Same as {!Printf.fprintf}, but output on [stderr]. *)
-val eprintf: ('a, out_channel, unit) format -> 'a
 
+val sprintf : ('a, unit, string) format -> 'a
 (** Same as {!Printf.fprintf}, but instead of printing on an output channel,
    return a string containing the result of formatting
    the arguments. *)
-val sprintf: ('a, unit, string) format -> 'a
 
+val bprintf : Buffer.t -> ('a, Buffer.t, unit) format -> 'a
 (** Same as {!Printf.fprintf}, but instead of printing on an output channel,
    append the formatted arguments to the given extensible buffer
    (see module {!Buffer}). *)
-val bprintf: Buffer.t -> ('a, Buffer.t, unit) format -> 'a
 
 (**/**)
 
 (* For system use only.  Don't call directly. *)
 
-val scan_format:
-  string -> int -> (string -> int -> 'a)
-                -> ('b ->'c -> int -> 'a)
-                -> ('e -> int -> 'a) -> 'a
+val scan_format :
+  string -> int -> (string -> int -> 'a) -> ('b -> 'c -> int -> 'a) ->
+    ('e -> int -> 'a) -> 'a

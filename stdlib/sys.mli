@@ -14,138 +14,157 @@
 
 (** System interface. *)
 
+val argv : string array
 (** The command line arguments given to the process.
    The first element is the command name used to invoke the program.
    The following elements are the command-line arguments
    given to the program. *)
-val argv: string array
 
+external file_exists : string -> bool = "sys_file_exists"
 (** Test if a file with the given name exists. *)
-external file_exists: string -> bool = "sys_file_exists"
 
+external remove : string -> unit = "sys_remove"
 (** Remove the given file name from the file system. *)
-external remove: string -> unit = "sys_remove"
 
+external rename : string -> string -> unit = "sys_rename"
 (** Rename a file. The first argument is the old name and the
    second is the new name. *)
-external rename: string -> string -> unit = "sys_rename"
 
+external getenv : string -> string = "sys_getenv"
 (** Return the value associated to a variable in the process
    environment. Raise [Not_found] if the variable is unbound. *)
-external getenv: string -> string = "sys_getenv"
 
+external command : string -> int = "sys_system_command"
 (** Execute the given shell command and return its exit code. *)
-external command: string -> int = "sys_system_command"
 
+external time : unit -> float = "sys_time"
 (** Return the processor time, in seconds, used by the program
    since the beginning of execution. *)
-external time: unit -> float = "sys_time"
 
+external chdir : string -> unit = "sys_chdir"
 (** Change the current working directory of the process. *)
-external chdir: string -> unit = "sys_chdir"
 
+external getcwd : unit -> string = "sys_getcwd"
 (** Return the current working directory of the process. *)
-external getcwd: unit -> string = "sys_getcwd"
 
+val interactive : bool ref
 (** This reference is initially set to [false] in standalone
    programs and to [true] if the code is being executed under
    the interactive toplevel system [ocaml]. *)
-val interactive: bool ref
 
+val os_type : string
 (** Operating system currently executing the Caml program.
    One of ["Unix"], ["Win32"], ["Cygwin"] or ["MacOS"]. *)
-val os_type: string
 
+val word_size : int
 (** Size of one word on the machine currently executing the Caml
    program, in bits: 32 or 64. *)
-val word_size: int
 
+val max_string_length : int
 (** Maximum length of a string. *)
-val max_string_length: int
 
+val max_array_length : int
 (** Maximum length of an array. *)
-val max_array_length: int
 
 
 (** {2 Signal handling} *)
 
 
+type signal_behavior =
+    Signal_default
+  | Signal_ignore 
+  | Signal_handle of (int -> unit)
 (** What to do when receiving a signal:
    - [Signal_default]: take the default behavior
      (usually: abort the program)
    - [Signal_ignore]: ignore the signal
    - [Signal_handle f]: call function [f], giving it the signal
    number as argument. *)
-type signal_behavior =
-    Signal_default
-  | Signal_ignore
-  | Signal_handle of (int -> unit)
 
-
+external signal :
+  int -> signal_behavior -> signal_behavior = "install_signal_handler"
 (** Set the behavior of the system on receipt of a given signal.
    The first argument is the signal number.  Return the behavior
    previously associated with the signal. *)
-external signal: int -> signal_behavior -> signal_behavior
-      = "install_signal_handler"
 
+val set_signal : int -> signal_behavior -> unit
 (** Same as {!Sys.signal} but return value is ignored. *)
-val set_signal: int -> signal_behavior -> unit
 
 
 (** {3 Signal numbers for the standard POSIX signals.} *) 
 
+val sigabrt : int
 (** Abnormal termination *)
-val sigabrt: int   
+
+val sigalrm : int
 (** Timeout *)
-val sigalrm: int
+
+val sigfpe : int
 (** Arithmetic exception *)
-val sigfpe: int    
+
+val sighup : int
 (** Hangup on controlling terminal *)
-val sighup: int    
+
+val sigill : int
 (** Invalid hardware instruction *)
-val sigill: int    
+
+val sigint : int
 (** Interactive interrupt (ctrl-C) *)
-val sigint: int    
+
+val sigkill : int
 (** Termination (cannot be ignored) *)
-val sigkill: int   
+
+val sigpipe : int
 (** Broken pipe *)
-val sigpipe: int   
+
+val sigquit : int
 (** Interactive termination *)
-val sigquit: int   
+
+val sigsegv : int
 (** Invalid memory reference *)
-val sigsegv: int   
+
+val sigterm : int
 (** Termination *)
-val sigterm: int   
+
+val sigusr1 : int
 (** Application-defined signal 1 *)
-val sigusr1: int   
+
+val sigusr2 : int
 (** Application-defined signal 2 *)
-val sigusr2: int   
+
+val sigchld : int
 (** Child process terminated *)
-val sigchld: int   
+
+val sigcont : int
 (** Continue *)
-val sigcont: int   
+
+val sigstop : int
 (** Stop *)
-val sigstop: int   
+
+val sigtstp : int
 (** Interactive stop *)
-val sigtstp: int   
+
+val sigttin : int
 (** Terminal read from background process *)
-val sigttin: int   
+
+val sigttou : int
 (** Terminal write from background process *)
-val sigttou: int   
+
+val sigvtalrm : int
 (** Timeout in virtual time *)
-val sigvtalrm: int 
+
+val sigprof : int
 (** Profiling interrupt *)
-val sigprof: int   
 
 
+exception Break
 (** Exception raised on interactive interrupt if {!Sys.catch_break}
    is on. *)
-exception Break
 
 
+val catch_break : bool -> unit
 (** [catch_break] governs whether interactive interrupt (ctrl-C)
    terminates the program or raises the [Break] exception. 
    Call [catch_break true] to enable raising [Break],
    and [catch_break false] to let the system
    terminate the program on user interrupt. *)
-val catch_break: bool -> unit
