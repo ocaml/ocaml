@@ -61,8 +61,8 @@ val iter_type_expr: (type_expr -> unit) -> type_expr -> unit
 val iter_row: (type_expr -> unit) -> row_desc -> unit
         (* Iteration on types in a row *)
 
-val map_type_paths : (Path.t -> Path.t) -> type_expr -> type_expr
-        (* Map the paths in a type *)
+val iter_type_paths : (Path.t -> Path.t) -> type_expr -> unit
+        (* Map the paths in a type. Modify the type in place. *)
 
 val copy_type_desc: (type_expr -> type_expr) -> type_desc -> type_desc
         (* Copy on types *)

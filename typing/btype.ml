@@ -141,64 +141,64 @@ let iter_type_expr f ty =
   | Tlink ty            -> f ty
   | Tsubst ty           -> f ty
 
-let rec map_type_paths f ty =
-  let new_desc =
-    match ty.desc with
-    | Tvar -> Tvar
-    | Tarrow (label, dom, im, commutable) ->
-        Tarrow (label, map_type_paths f dom, map_type_paths f im, commutable)
-    | Ttuple tys ->
-        Ttuple (List.map (map_type_paths f) tys)
-    | Tconstr (path, tys, abbrev) ->
-      (* TODO: abbrev? *)
-        let path' = f path in
-        Tconstr (path', List.map (map_type_paths f) tys, ref Mnil)
-    | Tobject (ty1, r) ->
-        let o' = match !r with
-        | None -> None
-        | Some (path, tys) ->
-            let path' = f path in
-            Some (path', List.map (map_type_paths f) tys)
-        in
-        Tobject (map_type_paths f ty1, ref o')
-    | Tfield (label, kind, ty1, ty2) ->
-        Tfield (label, kind, map_type_paths f ty1, map_type_paths f ty2)
-    | Tnil -> Tnil
-    | Tlink ty1 -> Tlink (map_type_paths f ty1)
-    | Tsubst ty1 -> Tsubst (map_type_paths f ty1)
-    | Tvariant row -> Tvariant (map_row_paths f row)
-  in
-  {ty with desc = new_desc}
+let rec iter_ty_paths f ty =
+  match ty.desc with
+  | Tvar -> ()
+  | Tarrow (label, dom, im, commutable) ->
+      iter_ty_paths f dom;
+      iter_ty_paths f im
+  | Ttuple tys ->
+      List.iter (iter_ty_paths f) tys
+  | Tconstr (path, tys, abbrev) ->
+      let path' = f path in
+      ty.desc <- Tconstr (path', tys, abbrev);
+      abbrev := Mnil;
+      List.iter (iter_ty_paths f) tys
+  | Tobject (ty1, r) ->
+      begin match !r with
+      | None -> ()
+      | Some (path, tys) ->
+          let path' = f path in
+          r := Some (path', tys);
+          List.iter (iter_ty_paths f) tys
+      end;
+      iter_ty_paths f ty1
+  | Tfield (label, kind, ty1, ty2) ->
+      iter_ty_paths f ty1;
+      iter_ty_paths f ty2
+  | Tnil -> ()
+  | Tlink ty1 -> iter_ty_paths f ty1
+  | Tsubst ty1 -> iter_ty_paths f ty1
+  | Tvariant row ->
+      let row' = iter_row_paths f row in
+      if row != row' then ty.desc <- Tvariant row'
 
-and map_row_paths f row =
-  { row_fields =
-      (List.map
-         (function (label, row_field) ->
-           label, map_row_field_paths f row_field)
-         row.row_fields);
-    row_more = map_type_paths f row.row_more;
-    row_bound = List.map (map_type_paths f) row.row_bound;
-    row_closed = row.row_closed;
-    row_name =
-      (match row.row_name with
-       | None -> None
-       | Some (path, tys) ->
-           let path' = f path in
-           Some (path', List.map (map_type_paths f) tys))
-  }
+and iter_row_paths f row =
+  List.iter
+    (function (label, row_field) -> iter_row_field_paths f row_field)
+    row.row_fields;
+  iter_ty_paths f row.row_more;
+  List.iter (iter_ty_paths f) row.row_bound;
+  begin match row.row_name with
+  | None -> row
+  | Some (path, tys) ->
+      let path' = f path in
+      List.iter (iter_ty_paths f) tys;
+      { row with row_name = Some (path', tys) }
+  end
 
-and map_row_field_paths f = function
-  | Rpresent (Some ty) -> Rpresent (Some (map_type_paths f ty))
-  | Rpresent None -> Rpresent None
+and iter_row_field_paths f = function
+  | Rpresent (Some ty) -> iter_ty_paths f ty
+  | Rpresent None -> ()
   | Reither (c, tys, b, r) ->
-      let tys' = List.map (map_type_paths f) tys in
-      let o' =
-        match !r with
-        | None -> None
-        | Some row_field -> Some (map_row_field_paths f row_field)
-      in
-      Reither (c, tys, b, ref o')
-  | Rabsent -> Rabsent
+      List.iter (iter_ty_paths f) tys;
+      begin match !r with
+      | None -> ()
+      | Some row_field -> iter_row_field_paths f row_field
+      end
+  | Rabsent -> ()
+
+let iter_type_paths f ty = iter_ty_paths f ty
 
 let copy_row f row keep more =
   let fields = List.map
