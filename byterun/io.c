@@ -52,7 +52,7 @@ void (*channel_mutex_unlock_exn) (void) = NULL;
    No locking is performed. */
 
 /* Functions shared between input and output */
- 
+
 struct channel * open_descriptor(int fd)
 {
   struct channel * channel;
@@ -71,7 +71,7 @@ void close_channel(struct channel *channel)
   close(channel->fd);
   if (channel_mutex_free != NULL) (*channel_mutex_free)(channel);
   stat_free(channel);
-}  
+}
 
 long channel_size(struct channel *channel)
 {
@@ -356,7 +356,7 @@ long input_scan_line(struct channel *channel)
       n = do_read(channel->fd, channel->max, channel->end - channel->max);
       if (n == 0) {
         /* End-of-file encountered. Return the number of characters in the
-           buffer, with negative sign since we haven't encountered 
+           buffer, with negative sign since we haven't encountered
            a newline. */
         return -(channel->max - channel->curr);
       }
@@ -479,11 +479,11 @@ value caml_output(value vchannel, value buff, value start, value length) /* ML *
   long len = Long_val(length);
 
   Lock(channel);
-	while (len > 0) {
-	  int written = putblock(channel, &Byte(buff, pos), len);
-	  pos += written;
-	  len -= written;
-	}
+    while (len > 0) {
+      int written = putblock(channel, &Byte(buff, pos), len);
+      pos += written;
+      len -= written;
+    }
   Unlock(channel);
   CAMLreturn (Val_unit);
 }
@@ -563,4 +563,3 @@ value caml_input_scan_line(value vchannel)       /* ML */
   Unlock(channel);
   return Val_long(res);
 }
-

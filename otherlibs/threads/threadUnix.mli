@@ -42,7 +42,7 @@ val timed_read :
 val timed_write :
       Unix.file_descr ->
       buffer:string -> pos:int -> len:int -> timeout:float -> int
-      (* Behave as [read] and [write], except that 
+      (* Behave as [read] and [write], except that
          [Unix_error(ETIMEDOUT,_,_)] is raised if no data is
          available for reading or ready for writing after [d] seconds.
          The delay [d] is given in the fifth argument, in seconds. *)
@@ -67,13 +67,13 @@ val sleep : int -> unit
 (*** Sockets *)
 
 val socket : domain:Unix.socket_domain ->
-      	     type:Unix.socket_type -> proto:int -> Unix.file_descr
+             type:Unix.socket_type -> proto:int -> Unix.file_descr
 val socketpair : domain:Unix.socket_domain -> type:Unix.socket_type ->
-      	       	 proto:int -> Unix.file_descr * Unix.file_descr
+                 proto:int -> Unix.file_descr * Unix.file_descr
 val accept : Unix.file_descr -> Unix.file_descr * Unix.sockaddr
 val connect : Unix.file_descr -> Unix.sockaddr -> unit
 val recv : Unix.file_descr -> buffer:string ->
-      	   pos:int -> len:int -> flags:Unix.msg_flag list -> int
+           pos:int -> len:int -> flags:Unix.msg_flag list -> int
 val recvfrom : Unix.file_descr -> buffer:string -> pos:int -> len:int ->
                flags:Unix.msg_flag list -> int * Unix.sockaddr
 val send : Unix.file_descr -> buffer:string -> pos:int -> len:int ->
@@ -84,4 +84,3 @@ val open_connection : Unix.sockaddr -> in_channel * out_channel
 val establish_server :
       fun:(in:in_channel -> out:out_channel -> 'a) ->
       addr:Unix.sockaddr -> unit
-

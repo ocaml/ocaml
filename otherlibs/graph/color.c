@@ -61,8 +61,8 @@ unsigned long gr_pixel_rgb(int rgb)
   if (direct_rgb){
     switch ( bits_per_pixel ){
     case 16:
-	tmp = ((r >> 3) << 11) + ((g >> 2) << 5) + ((b >> 3) << 0);
-	return (unsigned long) tmp;
+      tmp = ((r >> 3) << 11) + ((g >> 2) << 5) + ((b >> 3) << 0);
+      return (unsigned long) tmp;
     case 32:
       return (r << 16) + (g << 8) + (b << 0);
     }
@@ -75,13 +75,13 @@ unsigned long gr_pixel_rgb(int rgb)
     if (color_cache[i].rgb == rgb) return color_cache[i].pixel;
     i = (i + 1) & (Color_cache_size - 1);
     if (i == h) {
-	/* Cache is full.  Instead of inserting at slot h, which causes
-	   thrashing if many colors hash to the same value,
-	   insert at h + n where n is pseudo-random and
-	   smaller than Color_cache_slack */
-	int slack = num_overflows++ & (Color_cache_slack - 1);
-	i = (i + slack) & (Color_cache_size - 1);
-	break;
+      /* Cache is full.  Instead of inserting at slot h, which causes
+         thrashing if many colors hash to the same value,
+         insert at h + n where n is pseudo-random and
+         smaller than Color_cache_slack */
+      int slack = num_overflows++ & (Color_cache_slack - 1);
+      i = (i + slack) & (Color_cache_size - 1);
+      break;
     }
   }
   color.red = r * 0x101;

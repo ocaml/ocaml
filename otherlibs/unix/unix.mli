@@ -230,7 +230,7 @@ val write : file_descr -> buf:string -> pos:int -> len:int -> int
 
 (*** Interfacing with the standard input/output library. *)
 
-val in_channel_of_descr : file_descr -> in_channel 
+val in_channel_of_descr : file_descr -> in_channel
         (* Create an input channel reading from the given descriptor.
            The channel is initially in binary mode; use
            [set_binary_mode_in ic false] if text mode is desired. *)
@@ -324,13 +324,13 @@ type access_permission =
         (* Flags for the [access] call. *)
 
 val chmod : name:string -> perm:file_perm -> unit
-        (* Change the permissions of the named file. *) 
+        (* Change the permissions of the named file. *)
 val fchmod : file_descr -> perm:file_perm -> unit
-        (* Change the permissions of an opened file. *) 
+        (* Change the permissions of an opened file. *)
 val chown : name:string -> uid:int -> gid:int -> unit
-        (* Change the owner uid and owner gid of the named file. *) 
+        (* Change the owner uid and owner gid of the named file. *)
 val fchown : file_descr -> uid:int -> gid:int -> unit
-        (* Change the owner uid and owner gid of an opened file. *) 
+        (* Change the owner uid and owner gid of an opened file. *)
 val umask : int -> int
         (* Set the process creation mask, and return the previous mask. *)
 val access : name:string -> perm:access_permission list -> unit
@@ -384,7 +384,7 @@ val opendir : string -> dir_handle
         (* Open a descriptor on a directory *)
 val readdir : dir_handle -> string
         (* Return the next entry in a directory.
-           Raise [End_of_file] when the end of the directory has been 
+           Raise [End_of_file] when the end of the directory has been
            reached. *)
 val rewinddir : dir_handle -> unit
         (* Reposition the descriptor to the beginning of the directory *)
@@ -397,7 +397,7 @@ val closedir : dir_handle -> unit
 val pipe : unit -> file_descr * file_descr
         (* Create a pipe. The first component of the result is opened
            for reading, that's the exit to the pipe. The second component is
-           opened for writing, that's the entrance to the pipe. *) 
+           opened for writing, that's the entrance to the pipe. *)
 
 val mkfifo : string -> perm:file_perm -> unit
         (* Create a named pipe with the given permissions. *)
@@ -410,7 +410,7 @@ val create_process :
   stdin:file_descr -> stdout:file_descr -> stderr:file_descr -> int
         (* [create_process prog args new_stdin new_stdout new_stderr]
            forks a new process that executes the program
-           in file [prog], with arguments [args]. The pid of the new 
+           in file [prog], with arguments [args]. The pid of the new
            process is returned immediately; the new process executes
            concurrently with the current process.
            The standard input and outputs of the new process are connected
@@ -425,7 +425,7 @@ val create_process :
            outputs. *)
 
 val create_process_env :
-  name:string -> args:string array -> env:string array -> 
+  name:string -> args:string array -> env:string array ->
   stdin:file_descr -> stdout:file_descr -> stderr:file_descr -> int
         (* [create_process_env prog args env new_stdin new_stdout new_stderr]
            works as [create_process], except that the extra argument
@@ -759,16 +759,16 @@ type msg_flag =
 
 val recv :
         file_descr -> buf:string -> pos:int -> len:int
-      	  -> mode:msg_flag list -> int
+          -> mode:msg_flag list -> int
 val recvfrom :
         file_descr -> buf:string -> pos:int -> len:int
-      	  -> mode:msg_flag list -> int * sockaddr
+          -> mode:msg_flag list -> int * sockaddr
         (* Receive data from an unconnected socket. *)
 val send : file_descr -> buf:string -> pos:int -> len:int
-      	  -> mode:msg_flag list -> int
+          -> mode:msg_flag list -> int
 val sendto :
         file_descr -> buf:string -> pos:int -> len:int
-      	  -> mode:msg_flag list -> addr:sockaddr -> int
+          -> mode:msg_flag list -> addr:sockaddr -> int
         (* Send data over an unconnected socket. *)
 
 type socket_option =
@@ -797,7 +797,7 @@ val shutdown_connection : in_channel -> unit
            that is, transmit an end-of-file condition to the server reading
            on the other side of the connection. *)
 val establish_server : fun:(in:in_channel -> out:out_channel -> unit) ->
-              	       addr:sockaddr -> unit
+                       addr:sockaddr -> unit
         (* Establish a server on the given address.
            The function given as first argument is called for each connection
            with two buffered channels connected to the client. A new process

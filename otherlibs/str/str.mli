@@ -57,23 +57,23 @@ val regexp_string_case_fold: string -> regexp
 (*** String matching and searching *)
 
 external string_match: pat:regexp -> string -> pos:int -> bool
-	 = "str_string_match"
+         = "str_string_match"
         (* [string_match r s start] tests whether the characters in [s]
            starting at position [start] match the regular expression [r].
            The first character of a string has position [0], as usual. *)
 external search_forward: pat:regexp -> string -> pos:int -> int
-	 = "str_search_forward"
+         = "str_search_forward"
         (* [search_forward r s start] searchs the string [s] for a substring
            matching the regular expression [r]. The search starts at position
            [start] and proceeds towards the end of the string.
            Return the position of the first character of the matched
            substring, or raise [Not_found] if no substring matches. *)
 external search_backward: pat:regexp -> string -> pos:int -> int
-	 = "str_search_backward"
+         = "str_search_backward"
         (* Same as [search_forward], but the search proceeds towards the
            beginning of the string. *)
 external string_partial_match: pat:regexp -> string -> pos:int -> bool
-	 = "str_string_partial_match"
+         = "str_string_partial_match"
         (* Similar to [string_match], but succeeds whenever the argument
            string is a prefix of a string that matches.  This includes
            the case of a true complete match. *)
@@ -169,15 +169,14 @@ val bounded_full_split: sep:regexp -> string -> int -> split_result list
 
 val string_before: string -> pos:int -> string
         (* [string_before s n] returns the substring of all characters of [s]
-           that precede position [n] (excluding the character at 
+           that precede position [n] (excluding the character at
            position [n]). *)
 val string_after: string -> pos:int -> string
         (* [string_after s n] returns the substring of all characters of [s]
-           that follow position [n] (including the character at 
+           that follow position [n] (including the character at
            position [n]). *)
 val first_chars: string -> pos:int -> string
         (* [first_chars s n] returns the first [n] characters of [s].
            This is the same function as [string_before]. *)
 val last_chars: string -> pos:int -> string
         (* [last_chars s n] returns the last [n] characters of [s]. *)
-

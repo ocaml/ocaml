@@ -87,7 +87,7 @@ external lineto : x:int -> y:int -> unit = "gr_lineto"
         (* Draw a line with endpoints the current point and the given point,
            and move the current point to the given point. *)
 external draw_arc :
-	x:int -> y:int -> rx:int -> ry:int -> start:int -> stop:int -> unit
+        x:int -> y:int -> rx:int -> ry:int -> start:int -> stop:int -> unit
                = "gr_draw_arc" "gr_draw_arc_nat"
         (* [draw_arc x y rx ry a1 a2] draws an elliptical arc with center
            [x,y], horizontal radius [rx], vertical radius [ry], from angle
