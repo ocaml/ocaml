@@ -110,7 +110,7 @@ Caml_call_gc:
     /* Allocate space on stack for caml_context structure and float regs */
         sub     %sp, 20*4 + 15*8, %sp
     /* Save int regs on stack and save it into caml_gc_regs */
-        add     %sp, 96 + 15*8, %g2
+L100:   add     %sp, 96 + 15*8, %g2
         std     %o0, [%g2]
         std     %o2, [%g2 + 0x8]
         std     %o4, [%g2 + 0x10]
@@ -176,7 +176,11 @@ Caml_call_gc:
         Load(Young_ptr, Alloc_ptr)
     /* Allocate space for block */
         Load(Caml_required_size, %g2)
+        ld      [Alloc_limit], %g1
         sub     Alloc_ptr, %g2, Alloc_ptr
+        cmp     Alloc_ptr, %g1      /* Check that we have enough free space */
+        blu     L100                /* If not, call GC again */
+        nop
     /* Return to caller */
         Load(Caml_last_return_address, %o7)
         retl

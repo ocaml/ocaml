@@ -115,7 +115,7 @@ G(caml_call_gc):
 ; 0x1C0 = 4 * 32 (int regs) + 8 * 32 (float regs) + 64 (for calling C)
         ldo     0x1C0(%r30), %r30
 ; Save caml_gc_regs
-        ldo     -(64 + 4*32)(%r30), %r31
+L100:   ldo     -(64 + 4*32)(%r30), %r31
         LOADHIGH(G(caml_gc_regs))
         stw     %r31, LOW(G(caml_gc_regs))(%r1)
 ; Save all regs used by the code generator
@@ -239,8 +239,11 @@ G(caml_call_gc):
         ldw     LOW(G(young_ptr))(%r1), %r3
 ; Allocate space for block
         LOADHIGH(G(caml_required_size))
-        ldw     LOW(G(caml_required_size))(%r1), %r1
-        sub     %r3, %r1, %r3
+        ldw     LOW(G(caml_required_size))(%r1), %r29
+        ldw     0(%r4), %r1
+        sub     %r3, %r29, %r3
+        comb,<< %r3, %r1, L100
+        nop
 ; Return to caller
         LOADHIGH(G(caml_last_return_address))
         ldw     LOW(G(caml_last_return_address))(%r1), %r2

@@ -101,7 +101,7 @@ $103:   ldgp    $gp, 0($27)
         lda     $24, 0x100($sp)
         stq     $24, caml_gc_regs
     /* Save current allocation pointer for debugging purposes */
-        stq     $13, young_ptr
+$113:   stq     $13, young_ptr
     /* Save trap pointer in case an exception is raised (e.g. sighandler) */
         stq     $15, caml_exception_pointer
     /* Save all integer regs used by the code generator in the context */
@@ -201,6 +201,8 @@ $103:   ldgp    $gp, 0($27)
     /* Allocate space for the block */
         ldq     $25, 0x1E8($sp)
         subq    $13, $25, $13
+        cmpult  $13, $14, $25   /* Check that we have enough free space */
+        bne     $25, $113       /* If not, call GC again */
     /* Say that we are back into Caml code */
         stq     $31, caml_last_return_address
     /* Return to caller */
