@@ -638,6 +638,10 @@ replaced by "CAMLreturn0".  If your C function is a procedure (i.e. if
 it returns void), you must insert "CAMLreturn0" at the end (to replace
 C's implicit "return").
 
+{\bf Note:} some C compilers give bogus warnings about unused
+variables "caml__dummy_xxx" at each use of "CAMLparam" and
+"CAMLlocal".  You should ignore them.
+
 \goodbreak
 
 Example:
@@ -682,7 +686,7 @@ value bar (value v1, value v2, value v3)
 
 \begin{gcrule}
 Assignments to the fields of structured blocks must be done with the
-"Store_field" macro.
+"Store_field" macro.  Other assignments must not use "Store_field".
 \end{gcrule}
 
 "Store_field ("\var{b}", "\var{n}", "\var{v}")" stores the value
