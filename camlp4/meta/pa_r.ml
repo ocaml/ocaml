@@ -807,7 +807,11 @@ EXTEND
         e = expr; ")" ->
           <:patt< ? $i$ : ( $p$ : $t$ = $e$ ) >>
       | i = QUESTIONIDENT ->
-          <:patt< ? $i$ >> ] ]
+          <:patt< ? $i$ >>
+      | "?"; "("; i = LIDENT; "="; e = expr; ")" ->
+          <:patt< ? ( $i$ = $e$ ) >>
+      | "?"; "("; i = LIDENT; ":"; t = ctyp; "="; e = expr; ")" ->
+          <:patt< ? ( $i$ : $t$ = $e$ ) >> ] ]
   ;
   ipatt:
     [ [ i = TILDEIDENTCOLON; p = SELF ->
@@ -824,7 +828,11 @@ EXTEND
         e = expr; ")" ->
           <:patt< ? $i$ : ( $p$ : $t$ = $e$ ) >>
       | i = QUESTIONIDENT ->
-          <:patt< ? $i$ >> ] ]
+          <:patt< ? $i$ >>
+      | "?"; "("; i = LIDENT; "="; e = expr; ")" ->
+          <:patt< ? ( $i$ = $e$ ) >>
+      | "?"; "("; i = LIDENT; ":"; t = ctyp; "="; e = expr; ")" ->
+          <:patt< ? ( $i$ : $t$ = $e$ ) >> ] ]
   ;
   expr: AFTER "apply"
     [ "label"

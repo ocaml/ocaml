@@ -1472,7 +1472,29 @@ Grammar.extend
         (fun (p2 : 'patt) _ (p1 : 'patt) (loc : int * int) ->
            (Node ("PaAcc", [p1; p2]) : 'patt))];
      None, Some Gramext.NonA,
-     [[Gramext.Stoken ("", "?");
+     [[Gramext.Stoken ("", "?"); Gramext.Stoken ("", "(");
+       Gramext.Snterm (Grammar.Entry.obj (lident : 'lident Grammar.Entry.e));
+       Gramext.Stoken ("", ":");
+       Gramext.Snterm (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e));
+       Gramext.Stoken ("", "=");
+       Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e));
+       Gramext.Stoken ("", ")")],
+      Gramext.action
+        (fun _ (e : 'expr) _ (t : 'ctyp) _ (i : 'lident) _ _
+           (loc : int * int) ->
+           (let p = Node ("PaTyc", [Node ("PaLid", [i]); t]) in
+            Node ("PaOlb", [i; p; Option (Some e)]) :
+            'patt));
+      [Gramext.Stoken ("", "?"); Gramext.Stoken ("", "(");
+       Gramext.Snterm (Grammar.Entry.obj (lident : 'lident Grammar.Entry.e));
+       Gramext.Stoken ("", "=");
+       Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e));
+       Gramext.Stoken ("", ")")],
+      Gramext.action
+        (fun _ (e : 'expr) _ (i : 'lident) _ _ (loc : int * int) ->
+           (Node ("PaOlb", [i; Node ("PaLid", [i]); Option (Some e)]) :
+            'patt));
+      [Gramext.Stoken ("", "?");
        Gramext.Snterm (Grammar.Entry.obj (lident : 'lident Grammar.Entry.e))],
       Gramext.action
         (fun (i : 'lident) _ (loc : int * int) ->

@@ -2360,7 +2360,26 @@ Grammar.extend
     Grammar.Entry.obj (patt : 'patt Grammar.Entry.e),
     Some (Gramext.Level "simple"),
     [None, None,
-     [[Gramext.Stoken ("QUESTIONIDENT", "")],
+     [[Gramext.Stoken ("", "?"); Gramext.Stoken ("", "(");
+       Gramext.Stoken ("LIDENT", ""); Gramext.Stoken ("", ":");
+       Gramext.Snterm (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e));
+       Gramext.Stoken ("", "=");
+       Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e));
+       Gramext.Stoken ("", ")")],
+      Gramext.action
+        (fun _ (e : 'expr) _ (t : 'ctyp) _ (i : string) _ _
+           (loc : int * int) ->
+           (MLast.PaOlb
+              (loc, i, MLast.PaTyc (loc, MLast.PaLid (loc, i), t), Some e) :
+            'patt));
+      [Gramext.Stoken ("", "?"); Gramext.Stoken ("", "(");
+       Gramext.Stoken ("LIDENT", ""); Gramext.Stoken ("", "=");
+       Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e));
+       Gramext.Stoken ("", ")")],
+      Gramext.action
+        (fun _ (e : 'expr) _ (i : string) _ _ (loc : int * int) ->
+           (MLast.PaOlb (loc, i, MLast.PaLid (loc, i), Some e) : 'patt));
+      [Gramext.Stoken ("QUESTIONIDENT", "")],
       Gramext.action
         (fun (i : string) (loc : int * int) ->
            (MLast.PaOlb (loc, i, MLast.PaLid (loc, i), None) : 'patt));
@@ -2414,7 +2433,26 @@ Grammar.extend
            (MLast.PaVrn (loc, s) : 'patt))]];
     Grammar.Entry.obj (ipatt : 'ipatt Grammar.Entry.e), None,
     [None, None,
-     [[Gramext.Stoken ("QUESTIONIDENT", "")],
+     [[Gramext.Stoken ("", "?"); Gramext.Stoken ("", "(");
+       Gramext.Stoken ("LIDENT", ""); Gramext.Stoken ("", ":");
+       Gramext.Snterm (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e));
+       Gramext.Stoken ("", "=");
+       Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e));
+       Gramext.Stoken ("", ")")],
+      Gramext.action
+        (fun _ (e : 'expr) _ (t : 'ctyp) _ (i : string) _ _
+           (loc : int * int) ->
+           (MLast.PaOlb
+              (loc, i, MLast.PaTyc (loc, MLast.PaLid (loc, i), t), Some e) :
+            'ipatt));
+      [Gramext.Stoken ("", "?"); Gramext.Stoken ("", "(");
+       Gramext.Stoken ("LIDENT", ""); Gramext.Stoken ("", "=");
+       Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e));
+       Gramext.Stoken ("", ")")],
+      Gramext.action
+        (fun _ (e : 'expr) _ (i : string) _ _ (loc : int * int) ->
+           (MLast.PaOlb (loc, i, MLast.PaLid (loc, i), Some e) : 'ipatt));
+      [Gramext.Stoken ("QUESTIONIDENT", "")],
       Gramext.action
         (fun (i : string) (loc : int * int) ->
            (MLast.PaOlb (loc, i, MLast.PaLid (loc, i), None) : 'ipatt));

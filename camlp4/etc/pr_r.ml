@@ -1492,12 +1492,22 @@ pr_patt.pr_levels :=
                    k :] :] ]
       | <:patt< ? $i$ : ($p$ : $t$ = $e$) >> ->
           fun curr next _ k ->
-            [: `S LO ("?" ^ i ^ ":"); `S LO "("; `patt p [: `S LR ":" :];
-               `ctyp t [: `S LR "=" :]; `expr e [: `S RO ")"; k :] :]
+            match p with
+            [ <:patt< $lid:x$ >> when i = x ->
+                [: `S LO "?"; `S LO "("; `patt p [: `S LR ":" :];
+                   `ctyp t [: `S LR "=" :]; `expr e [: `S RO ")"; k :] :]
+            | _ ->
+                [: `S LO ("?" ^ i ^ ":"); `S LO "("; `patt p [: `S LR ":" :];
+                   `ctyp t [: `S LR "=" :]; `expr e [: `S RO ")"; k :] :] ]
       | <:patt< ? $i$ : ($p$ = $e$) >> ->
           fun curr next _ k ->
-            [: `S LO ("?" ^ i ^ ":"); `S LO "("; `patt p [: `S LR "=" :];
-               `expr e [: `S RO ")"; k :] :]
+            match p with
+            [ <:patt< $lid:x$ >> when i = x ->
+                [: `S LO "?"; `S LO "("; `patt p [: `S LR "=" :];
+                   `expr e [: `S RO ")"; k :] :]
+            | _ ->
+                [: `S LO ("?" ^ i ^ ":"); `S LO "("; `patt p [: `S LR "=" :];
+                   `expr e [: `S RO ")"; k :] :] ]
       | <:patt< _ >> -> fun curr next _ k -> [: `S LR "_"; k :]
       | <:patt< $_$ $_$ >> | <:patt< $_$ .. $_$ >>
       | <:patt< $_$ | $_$ >> as p ->

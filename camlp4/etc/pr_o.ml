@@ -1656,19 +1656,31 @@ pr_patt.pr_levels :=
       | <:patt< ~ $i$ : $p$ >> ->
           fun curr next dg k ->
             [: `S LO ("~" ^ i ^ ":"); `simple_patt p "" k :]
-      | <:patt< ? $i$ : ($lid:j$) >> when i = j ->
-          fun curr next dg k -> [: `S LR ("?" ^ i); k :]
       | <:patt< ? $i$ : ($p$) >> ->
           fun curr next dg k ->
-            [: `S LO ("?" ^ i ^ ":"); `simple_patt p "" k :]
-      | <:patt< ? $i$ : ($lid:j$ = $e$) >> when i = j ->
-          fun curr next dg k ->
-            [: `S LO "?"; `S LO "("; `S LR j; `S LR "=";
-               `expr e "" [: `S RO ")"; k :] :]
+            match p with
+            [ <:patt< $lid:x$ >> when i = x -> [: `S LR ("?" ^ i); k :]
+            | _ -> [: `S LO ("?" ^ i ^ ":"); `simple_patt p "" k :] ]
       | <:patt< ? $i$ : ($p$ = $e$) >> ->
           fun curr next dg k ->
-            [: `S LO ("?" ^ i ^ ":"); `S LO "("; `patt p "" [: `S LR "=" :];
-               `expr e "" [: `S RO ")"; k :] :]
+            match p with
+            [ <:patt< $lid:x$ >> when i = x ->
+                [: `S LO "?"; `S LO "("; `patt p "" [: `S LR "=" :];
+                   `expr e "" [: `S RO ")"; k :] :]
+            | _ ->
+                [: `S LO ("?" ^ i ^ ":"); `S LO "(";
+                   `patt p "" [: `S LR "=" :];
+                   `expr e "" [: `S RO ")"; k :] :] ]
+      | <:patt< ? $i$ : ($p$ : $t$ = $e$) >> ->
+          fun curr next dg k ->
+            match p with
+            [ <:patt< $lid:x$ >> when i = x ->
+                [: `S LO "?"; `S LO "("; `patt p "" [: `S LR "=" :];
+                   `expr e "" [: `S RO ")"; k :] :]
+            | _ ->
+                [: `S LO ("?" ^ i ^ ":"); `S LO "(";
+                   `patt p "" [: `S LR "=" :];
+                   `expr e "" [: `S RO ")"; k :] :] ]
       | <:patt< _ >> -> fun curr next dg k -> [: `S LR "_"; k :]
       | <:patt< $_$ $_$ >> | <:patt< ($_$ as $_$) >> | <:patt< $_$ | $_$ >> |
         <:patt< ($list:_$) >> | <:patt< $_$ .. $_$ >> as p ->

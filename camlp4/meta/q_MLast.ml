@@ -400,7 +400,12 @@ EXTEND
           let p = Node "PaTyc" [p; t] in
           Node "PaOlb" [i; p; Option e]
       | "?"; i = lident ->
-          Node "PaOlb" [i; Node "PaLid" [i]; Option None] ]
+          Node "PaOlb" [i; Node "PaLid" [i]; Option None]
+      | "?"; "("; i = lident; "="; e = expr; ")" ->
+          Node "PaOlb" [i; Node "PaLid" [i]; Option (Some e)]
+      | "?"; "("; i = lident; ":"; t = ctyp; "="; e = expr; ")" ->
+          let p = Node "PaTyc" [Node "PaLid" [i]; t] in
+          Node "PaOlb" [i; p; Option (Some e) ] ]
     | "simple"
       [ v = LIDENT -> Node "PaLid" [Str v]
       | v = UIDENT -> Node "PaUid" [Str v]
