@@ -410,7 +410,11 @@ value thread_outchan_ready(chan, vsize) /* ML */
   if (size < 0) {
     return Val_bool(chan->curr == chan->buff);
   } else {
-    return Val_bool(chan->curr + size <= chan->end);
+    int free = chan->end - chan->curr;
+    if (chan->curr == chan->buff)
+      return Val_bool(size < free);
+    else
+      return Val_bool(size <= free);
   }
 }
 
