@@ -13,6 +13,7 @@
 /* $Id$ */
 
 #include "libgraph.h"
+#include <X11/Xatom.h>
 
 /* Cache to speed up the translation rgb -> pixel value. */
 
@@ -30,10 +31,106 @@ static struct color_cache_entry color_cache[Color_cache_size];
 
 static int num_overflows = 0;
 
+/* rgb -> pixel conversion *without* display connection */
+
 Bool direct_rgb = False;
-int byte_order;
-int bitmap_unit;
-int bits_per_pixel;
+int red_l, red_r;
+int green_l, green_r;
+int blue_l, blue_r;
+unsigned long red_mask, green_mask, blue_mask;
+
+/* rgb -> pixel table */
+unsigned long red_vals[256];
+unsigned long green_vals[256];
+unsigned long blue_vals[256];
+
+void get_shifts( unsigned long mask, int *lsl, int *lsr )
+{
+  int l = 0;
+  int r = 0;
+  int bit = 1;
+  if ( mask == 0 ){ *lsl = -1; *lsr = -1; return; }
+
+  for( l = 0; l < 32; l++ ){
+    if( bit & mask ){ break; }
+    bit = bit << 1;
+  }
+  for( r = l; r < 32; r++ ){
+    if( ! (bit & mask) ){ break; }
+    bit = bit << 1;
+  }
+  /* fix r */
+  if ( r == 32 ) { r = 31; }
+  *lsl = l;
+  *lsr = 16 - (r - l);
+}
+
+void gr_init_direct_rgb_to_pixel(void)
+{
+  Visual *visual;
+  int i;
+ 
+  visual = DefaultVisual(grdisplay,grscreen);
+  
+  if ( visual->class == TrueColor || visual->class == DirectColor ){
+    int lsl, lsr;
+
+    red_mask = visual->red_mask;
+    green_mask = visual->green_mask;
+    blue_mask = visual->blue_mask;
+ 
+#ifdef QUICKCOLORDEBUG
+    fprintf(stderr, "visual %lx %lx %lx\n", 
+	    red_mask, 
+	    green_mask, 
+	    blue_mask);
+#endif
+
+    get_shifts(red_mask, &red_l, &red_r); 
+#ifdef QUICKCOLORDEBUG
+    fprintf(stderr, "red %d %d\n", red_l, red_r);
+#endif
+    for(i=0; i<256; i++){
+      red_vals[i] = (((i << 8) + i) >> red_r) << red_l;
+    }
+
+    get_shifts(green_mask, &green_l, &green_r); 
+#ifdef QUICKCOLORDEBUG
+    fprintf(stderr, "green %d %d\n", green_l, green_r);
+#endif
+    for(i=0; i<256; i++){
+      green_vals[i] = (((i << 8) + i) >> green_r) << green_l;
+    }
+
+    get_shifts(blue_mask, &blue_l, &blue_r); 
+#ifdef QUICKCOLORDEBUG
+    fprintf(stderr, "blue %d %d\n", blue_l, blue_r);
+#endif
+    for(i=0; i<256; i++){
+      blue_vals[i] = (((i << 8) + i) >> blue_r) << blue_l;
+    }
+    
+    if( red_l < 0 || red_r < 0 || 
+	green_l < 0 || green_r < 0 || 
+	blue_l < 0 || blue_r < 0 ){
+#ifdef QUICKCOLORDEBUG
+      fprintf(stderr, "Damn, boost failed\n");
+#endif
+      direct_rgb = False;
+    } else {
+#ifdef QUICKCOLORDEBUG
+      fprintf(stderr, "Boost ok\n");
+#endif
+      direct_rgb = True;
+    }
+  } else {
+    /* we cannot use direct_rgb_to_pixel */
+#ifdef QUICKCOLORDEBUG
+    fprintf(stderr, "No boost!\n");
+#endif
+    direct_rgb = False;
+  }
+}
 
 void gr_init_color_cache(void)
 {
@@ -59,13 +156,7 @@ unsigned long gr_pixel_rgb(int rgb)
   b = rgb & 0xFF;
 
   if (direct_rgb){
-    switch ( bits_per_pixel ){
-    case 16:
-        tmp = ((r >> 3) << 11) + ((g >> 2) << 5) + ((b >> 3) << 0);
-        return (unsigned long) tmp;
-    case 32:
-      return (r << 16) + (g << 8) + (b << 0);
-    }
+    return red_vals[r] | green_vals[g] | blue_vals[b];
   }
 
   h = Hash_rgb(r, g, b);
@@ -95,8 +186,17 @@ unsigned long gr_pixel_rgb(int rgb)
 
 int gr_rgb_pixel(long unsigned int pixel)
 {
+  register int r,g,b;
+ 
   XColor color;
   int i;
+
+  if (direct_rgb) {
+    r = (((pixel & red_mask) >> red_l) << 8) >> (16 - red_r);
+    g = (((pixel & green_mask) >> green_l) << 8) >> (16 - green_r);
+    b = (((pixel & blue_mask) >> blue_l) << 8) >> (16 - blue_r);
+    return (r << 16) + (g << 8) + b;
+  }
 
   if (pixel == grblack) return 0;
   if (pixel == grwhite) return 0xFFFFFF;

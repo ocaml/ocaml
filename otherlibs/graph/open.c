@@ -192,6 +192,7 @@ value gr_open_graph(value arg)
   gry = 0;
   /* Reset the color cache */
   gr_init_color_cache();
+  gr_init_direct_rgb_to_pixel();
   return Val_unit;
 }
 
@@ -257,6 +258,7 @@ value gr_clear_graph(void)
     XFlush(grdisplay);
   }
   gr_init_color_cache();
+  gr_init_direct_rgb_to_pixel();
   return Val_unit;
 }
 
