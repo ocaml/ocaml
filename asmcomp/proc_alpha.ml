@@ -56,6 +56,8 @@ let select_oper op args =
       (Ispecific(if mult = 4 then Iadd4 else Iadd8), [arg1; arg2])
   | (Csubi, [Cop(Clsl, [arg1; Cconst_int(2|3 as shift)]); arg2]) ->
       (Ispecific(if shift = 2 then Isub4 else Isub8), [arg1; arg2])
+  | (Csubi, [Cop(Cmuli, [Cconst_int(4|8 as mult); arg1]); arg2]) ->
+      (Ispecific(if mult = 4 then Isub4 else Isub8), [arg1; arg2])
   | _ ->
       raise Use_default
 

@@ -19,6 +19,8 @@ let emit_string s = output_string !output_channel s
 
 let emit_int n = output_string !output_channel (string_of_int n)
 
+let emit_char c = output_char !output_channel c
+
 let emit_printf fmt =
   Printf.fprintf !output_channel fmt
 

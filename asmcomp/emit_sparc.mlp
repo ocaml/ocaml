@@ -572,10 +572,10 @@ let is_one_instr i =
         Imove | Ispill | Ireload -> i.arg.(0).typ = i.res.(0).typ
       | Iconst_int n -> is_immediate n
       | Istackoffset _ -> true
-      | Iload(_, Iindexed n) -> is_immediate n
-      | Iload(_, Iindexed2 n) -> n = 0
-      | Istore(_, Iindexed n) -> is_immediate n
-      | Istore(_, Iindexed2 n) -> n = 0
+      | Iload(_, Iindexed n) -> i.res.(0).typ <> Float & is_immediate n
+      | Iload(_, Iindexed2 n) -> i.res.(0).typ <> Float & n = 0
+      | Istore(_, Iindexed n) -> i.arg.(0).typ <> Float & is_immediate n
+      | Istore(_, Iindexed2 n) -> i.arg.(0).typ <> Float & n = 0
       | Iintop(op) -> is_one_instr_op op
       | Iintop_imm(op, _) -> is_one_instr_op op
       | Iaddf | Isubf | Imulf | Idivf -> true

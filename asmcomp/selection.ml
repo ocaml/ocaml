@@ -101,6 +101,11 @@ let rec sel_operation op args =
       if n = 1 lsl l
       then (Iintop_imm(Ilsl, l), [arg1])
       else sel_arith_comm Imul args
+  | (Cmuli, [Cconst_int n; arg1]) ->
+      let l = Misc.log2 n in
+      if n = 1 lsl l
+      then (Iintop_imm(Ilsl, l), [arg1])
+      else sel_arith_comm Imul args
   | (Cmuli, _) -> sel_arith_comm Imul args
   | (Cdivi, _) -> sel_arith Idiv args
   | (Cmodi, _) -> sel_arith_comm Imod args

@@ -19,3 +19,4 @@ val emit_int: int -> unit
 val emit_symbol: string -> unit
 val emit_string_literal: string -> unit
 val emit_printf: ('a, out_channel, unit) format -> 'a
+val emit_char: char -> unit
