@@ -624,8 +624,11 @@ let open_connection sockaddr =
     match sockaddr with ADDR_UNIX _ -> PF_UNIX | ADDR_INET(_,_) -> PF_INET in
   let sock =
     socket domain SOCK_STREAM 0 in
-  connect sock sockaddr;
-  (in_channel_of_descr sock, out_channel_of_descr sock)
+  try
+    connect sock sockaddr;
+    (in_channel_of_descr sock, out_channel_of_descr sock)
+  with exn ->
+    close sock; raise exn
 
 let shutdown_connection inchan =
   shutdown (descr_of_in_channel inchan) SHUTDOWN_SEND

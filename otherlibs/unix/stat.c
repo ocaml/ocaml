@@ -57,8 +57,8 @@ static value stat_aux(struct stat *buf)
     Field (v, 7) = Val_int (buf->st_rdev);
     Field (v, 8) = Val_int (buf->st_size);
     Field (v, 9) = atime;
-    Field (v, 10) = ctime;
-    Field (v, 11) = mtime;
+    Field (v, 10) = mtime;
+    Field (v, 11) = ctime;
   End_roots();
   return v;
 }
