@@ -20,7 +20,13 @@
    This integer type has exactly the same width as that of a [long]
    integer type in the C compiler.  All arithmetic operations over
    [nativeint] are taken modulo $2^{32}$ or $2^{64}$ depending
-   on the word size of the architecture. *)
+   on the word size of the architecture.
+
+   Performance notice: values of type [nativeint] occupy more memory
+   space than values of type [int], and arithmetic operations on
+   [nativeint] are generally slower than those on [int].  Use [nativeint]
+   only when the application requires the extra bit of precision
+   over the [int] type. *)
 
 val zero: nativeint
 val one: nativeint
@@ -55,8 +61,8 @@ val pred: nativeint -> nativeint
 val abs: nativeint -> nativeint
       (* Return the absolute value of its argument. *)
 val size: int
-      (* The size in bits of a native integer.  This is equal to 32
-         on a 32-bit platform and to 64 on a 64-bit platform. *)
+      (* The size in bits of a native integer.  This is equal to [32]
+         on a 32-bit platform and to [64] on a 64-bit platform. *)
 val max_int: nativeint
       (* The greatest representable native integer,
          either $2^{31} - 1$ on a 32-bit platform,
@@ -75,16 +81,21 @@ external logxor: nativeint -> nativeint -> nativeint = "%nativeint_xor"
 val lognot: nativeint -> nativeint
       (* Bitwise logical negation *)
 external shift_left: nativeint -> int -> nativeint = "%nativeint_lsl"
-      (* [Nativeint.shift_left x y] shifts [x] to the left by [y] bits. *)
+      (* [Nativeint.shift_left x y] shifts [x] to the left by [y] bits.
+         The result is unspecified if [y < 0] or [y >= bitsize],
+         where [bitsize] is [32] on a 32-bit platform and
+         [64] on a 64-bit platform. *)
 external shift_right: nativeint -> int -> nativeint = "%nativeint_asr"
       (* [Nativeint.shift_right x y] shifts [x] to the right by [y] bits.
          This is an arithmetic shift: the sign bit of [x] is replicated
-         and inserted in the vacated bits. *)
+         and inserted in the vacated bits.
+         The result is unspecified if [y < 0] or [y >= bitsize]. *)
 external shift_right_logical: nativeint -> int -> nativeint = "%nativeint_lsr"
       (* [Nativeint.shift_right_logical x y] shifts [x] to the right
          by [y] bits.
          This is a logical shift: zeroes are inserted in the vacated bits
-         regardless of the sign of [x]. *)
+         regardless of the sign of [x].
+         The result is unspecified if [y < 0] or [y >= bitsize]. *)
 
 external of_int: int -> nativeint = "%nativeint_of_int"
       (* Convert the given integer (type [int]) to a native integer

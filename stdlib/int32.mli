@@ -18,7 +18,12 @@
    of signed 32-bit integers.  Unlike the built-in [int] type,
    the type [int32] is guaranteed to be exactly 32-bit wide on all
    platforms.  All arithmetic operations over [int32] are taken
-   modulo $2^{32}$. *)
+   modulo $2^{32}$.
+
+   Performance notice: values of type [int32] occupy more memory
+   space than values of type [int], and arithmetic operations on
+   [int32] are generally slower than those on [int].  Use [int32]
+   only when the application requires exact 32-bit arithmetic. *)
 
 val zero : int32
 val one : int32
@@ -45,9 +50,9 @@ external rem : int32 -> int32 -> int32 = "%int32_mod"
            If [x < 0] or [y < 0], the result of [Int32.rem x y] is
            not specified and depends on the platform. *)
 val succ : int32 -> int32
-      (* Successor.  [Int32.succ x] is [Int32.add x 1i]. *)
+      (* Successor.  [Int32.succ x] is [Int32.add x Int32.one]. *)
 val pred : int32 -> int32
-      (* Predecessor.  [Int32.pred x] is [Int32.sub x 1i]. *)
+      (* Predecessor.  [Int32.pred x] is [Int32.sub x Int32.one]. *)
 val abs : int32 -> int32
       (* Return the absolute value of its argument. *)
 val max_int : int32
@@ -64,15 +69,18 @@ external logxor : int32 -> int32 -> int32 = "%int32_xor"
 val lognot : int32 -> int32
       (* Bitwise logical negation *)
 external shift_left : int32 -> int -> int32 = "%int32_lsl"
-      (* [Int32.shift_left x y] shifts [x] to the left by [y] bits. *)
+      (* [Int32.shift_left x y] shifts [x] to the left by [y] bits.
+         The result is unspecified if [y < 0] or [y >= 32]. *)
 external shift_right : int32 -> int -> int32 = "%int32_asr"
       (* [Int32.shift_right x y] shifts [x] to the right by [y] bits.
          This is an arithmetic shift: the sign bit of [x] is replicated
-         and inserted in the vacated bits. *)
+         and inserted in the vacated bits.
+         The result is unspecified if [y < 0] or [y >= 32]. *)
 external shift_right_logical : int32 -> int -> int32 = "%int32_lsr"
       (* [Int32.shift_right_logical x y] shifts [x] to the right by [y] bits.
          This is a logical shift: zeroes are inserted in the vacated bits
-         regardless of the sign of [x]. *)
+         regardless of the sign of [x].
+         The result is unspecified if [y < 0] or [y >= 32]. *)
 
 external of_int : int -> int32 = "%int32_of_int"
       (* Convert the given integer (type [int]) to a 32-bit integer
