@@ -321,12 +321,6 @@ CAMLprim caml_thread_initialize(value unit)
     channel_mutex_unlock = caml_io_mutex_unlock;
     channel_mutex_unlock_exn = caml_io_mutex_unlock_exn;
     /* Fork the tick thread */
-#if 0
-    tick_thread =
-      CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)&caml_thread_tick,
-                   NULL, 0, &tick_id);
-    if (tick_thread == NULL) caml_wthread_error("Thread.init");
-#endif
     tick_thread = (HANDLE) _beginthread(caml_thread_tick, 0, NULL);
     if (tick_thread == (HANDLE)(-1)) caml_wthread_error("Thread.init");
     CloseHandle(tick_thread);
