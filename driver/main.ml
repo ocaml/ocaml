@@ -72,10 +72,10 @@ module Options = Main_args.Make_options (struct
   let _a = set make_archive
   let _c = set compile_only
   let _cc s = c_compiler := s; c_linker := s
-  let _cclib s = ccobjs := s :: !ccobjs
+  let _cclib s = ccobjs := Misc.rev_split_words s @ !ccobjs
   let _ccopt s = ccopts := s :: !ccopts
   let _custom = set custom_runtime
-  let _dllib s = dllibs := s :: !dllibs
+  let _dllib s = dllibs := Misc.rev_split_words s @ !dllibs
   let _dllpath s = dllpaths := !dllpaths @ [s]
   let _g = set debug
   let _i = set print_types
