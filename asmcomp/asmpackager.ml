@@ -192,10 +192,13 @@ let build_package_cmx units unit_names target symbols_to_rename cmxfile =
   let mapping =
     List.fold_left (fun tbl s -> Tbl.add s (target ^ "__" ^ s) tbl)
                    Tbl.empty symbols_to_rename in
+  let defines =
+    map_end (fun s -> target ^ "__" ^ s)
+            (List.concat (List.map (fun info -> info.ui_defines) units))
+            [target] in
   let pkg_infos =
     { ui_name = target;
-      ui_defines =
-        map_end (fun s -> target ^ "__" ^ s) unit_names [target];
+      ui_defines = defines;
       ui_imports_cmi = filter(Asmlink.extract_crc_interfaces());
       ui_imports_cmx = filter(Asmlink.extract_crc_implementations());
       ui_approx =
