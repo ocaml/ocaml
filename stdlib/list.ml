@@ -62,7 +62,7 @@ let rec fold_right f l accu =
 let rec map2 f l1 l2 =
   match (l1, l2) with
     ([], []) -> []
-  | (a1::l1, a2::l2) -> f a1 a2 :: map2 f l1 l2
+  | (a1::l1, a2::l2) -> let r = f a1 a2 in r :: map2 f l1 l2
   | (_, _) -> invalid_arg "List.map2"
 
 let rec iter2 f l1 l2 =
