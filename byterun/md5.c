@@ -28,7 +28,7 @@ struct MD5Context {
 static void MD5Init P((struct MD5Context *context));
 static void MD5Update P((struct MD5Context *context, unsigned char *buf,
 	       unsigned len));
-static void MD5Final P((unsigned char digest[16], struct MD5Context *context));
+static void MD5Final P((unsigned char digest[16], struct MD5Context *ctx));
 static void MD5Transform P((uint32 buf[4], uint32 in[16]));
 
 value md5_string(str, ofs, len) /* ML */
@@ -171,7 +171,7 @@ static void MD5Update(ctx, buf, len)
  * Final wrapup - pad to 64-byte boundary with the bit pattern 
  * 1 0* (64-bit count of bits processed, MSB-first)
  */
-void MD5Final(digest, ctx)
+static void MD5Final(digest, ctx)
      unsigned char digest[16];
      struct MD5Context *ctx;
 {
