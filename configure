@@ -574,7 +574,7 @@ for dir in $x11_include_dir \
   /opt/X11R6/include /opt/X11R5/include
 do
   if test -f $dir/X11/X.h; then
-    x11_include=$dir/X11
+    x11_include=$dir
     break
   fi
 done
@@ -604,11 +604,16 @@ if test "$x11_include" = "not found" || test "$x11_link" = "not found"
 then
   echo "X11 not found, the \"graph\" library will not be supported."
 else
-  echo "X11_INCLUDES=$x11_include" >> Makefile
-  echo "X11_LINK=$x11_link" >> Makefile
-  echo "Location of X11 include files: $x11_include"
+  echo "Location of X11 include files: $x11_include/X11"
   echo "Options for linking with X11: $x11_link"
   otherlibraries="$otherlibraries graph"
+  if test "$x11_include" = "/usr/include"; then
+    x11_include=""
+  else
+    x11_include="-I$x11_include"
+  fi
+  echo "X11_INCLUDES=$x11_include" >> Makefile
+  echo "X11_LINK=$x11_link" >> Makefile
 fi
 
 # See if we can compile the dbm library
@@ -680,7 +685,7 @@ echo "	target architecture ...... $bignum_arch"
 
 if test "$x11_include" != "not found" && test "$x11_lib" != "not found"; then
 echo "The \"graph\" library:"
-echo "	options for compiling .... -I$x11_include"
+echo "	options for compiling .... $x11_include"
 echo "	options for linking ...... $x11_link"
 fi
 

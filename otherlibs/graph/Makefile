@@ -3,7 +3,7 @@
 include ../../config/Makefile
 
 CC=$(BYTECC)
-CFLAGS=-I../../byterun -I$(X11_INCLUDES) -O $(BYTECCCOMPOPTS)
+CFLAGS=-I../../byterun $(X11_INCLUDES) -O $(BYTECCCOMPOPTS)
 
 CAMLC=../../boot/ocamlrun ../../boot/ocamlc -I ../../stdlib
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
