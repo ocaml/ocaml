@@ -36,7 +36,7 @@ COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
 BYTECOMP=bytecomp/instruct.cmo bytecomp/bytegen.cmo \
   bytecomp/printinstr.cmo bytecomp/opcodes.cmo bytecomp/emitcode.cmo \
   bytecomp/runtimedef.cmo bytecomp/symtable.cmo \
-  bytecomp/librarian.cmo bytecomp/bytelink.cmo
+  bytecomp/bytelibrarian.cmo bytecomp/bytelink.cmo
 
 ASMCOMP=asmcomp/arch.cmo asmcomp/cmm.cmo asmcomp/printcmm.cmo \
   asmcomp/clambda.cmo asmcomp/compilenv.cmo \
@@ -46,7 +46,8 @@ ASMCOMP=asmcomp/arch.cmo asmcomp/cmm.cmo asmcomp/printcmm.cmo \
   asmcomp/liveness.cmo asmcomp/spill.cmo asmcomp/split.cmo \
   asmcomp/interf.cmo asmcomp/coloring.cmo asmcomp/reload.cmo \
   asmcomp/linearize.cmo asmcomp/printlinear.cmo asmcomp/emitaux.cmo \
-  asmcomp/emit.cmo asmcomp/asmgen.cmo asmcomp/asmlink.cmo
+  asmcomp/emit.cmo asmcomp/asmgen.cmo \
+  asmcomp/asmlink.cmo asmcomp/asmlibrarian.cmo
 
 DRIVER=driver/errors.cmo driver/compile.cmo driver/main.cmo
 
