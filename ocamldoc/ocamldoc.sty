@@ -45,13 +45,19 @@
   \let\dospecials\@new@specials
   }
 
+\newenvironment {ocamldoclist}[1]
+  {\list{}{#1}\global \advance \@listdepth -\m@ne\raggedright\item[]\relax}
+  {\global \advance \@listdepth -\@ne
+   \ifvmode \edef \@tmp {\the\everypar}\ifx \@tmp \@empty 
+   \else \leavevmode \global \@newlistfalse \fi \fi
+   \endlist}
+
 \newenvironment{ocamldocdescription}
-{\list{}{\rightmargin0pt \topsep0pt}\raggedright\item\relax}
-{\endlist\medskip}
+  {\ocamldoclist{\parsep 0pt\rightmargin 0pt \topsep 0\topsep}}
+  {\medskip \endocamldoclist}
 
 \newenvironment{ocamldoccomment}
-{\list{}{\leftmargin 2\leftmargini \rightmargin0pt \topsep0pt}\raggedright\item\relax}
-{\endlist}
-
+  {\ocamldoclist{\parsep 0pt\rightmargin 0pt \topsep 0\topsep}}
+  {\medskip \endocamldoclist}
 \endinput
 
