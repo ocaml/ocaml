@@ -748,11 +748,11 @@ let imported_units() =
 
 let save_signature sg modname filename =
   Btype.cleanup_abbrev ();
-  let oc = open_out_bin filename in
-  output_string oc cmi_magic_number;
   let comps =
     components_of_module empty Subst.identity
        (Pident(Ident.create_persistent modname)) (Tmty_signature sg) in
+  let oc = open_out_bin filename in
+  output_string oc cmi_magic_number;
   output_value oc (modname, sg, comps);
   flush oc;
   let crc = Digest.file filename in
