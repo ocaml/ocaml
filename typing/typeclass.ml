@@ -390,7 +390,7 @@ let rec class_field cl_num self_type meths vars
             (val_env, met_env, par_env)
       in
       (val_env, met_env, par_env,
-       Cf_inher (parent, inh_vars, inh_meths)::fields,
+       lazy(Cf_inher (parent, inh_vars, inh_meths))::fields,
        concr_meths, inh_vals)
 
   | Pcf_val (lab, mut, sexp, loc) ->
@@ -403,7 +403,7 @@ let rec class_field cl_num self_type meths vars
       let (id, val_env, met_env, par_env) =
         enter_val cl_num vars lab mut exp.exp_type val_env met_env par_env
       in
-      (val_env, met_env, par_env, Cf_val (lab, id, exp) :: fields,
+      (val_env, met_env, par_env, lazy(Cf_val (lab, id, exp)) :: fields,
        concr_meths, inh_vals)
 
   | Pcf_virt (lab, priv, sty, loc) ->
@@ -411,7 +411,7 @@ let rec class_field cl_num self_type meths vars
       (val_env, met_env, par_env, fields, concr_meths, inh_vals)
 
   | Pcf_meth (lab, priv, expr, loc)  ->
-      let expr = make_method cl_num expr in
+      let meth_expr = make_method cl_num expr in
       Ctype.raise_nongen_level ();
       let (_, ty) =
         Ctype.filter_self_method val_env lab priv meths self_type
@@ -420,9 +420,19 @@ let rec class_field cl_num self_type meths vars
       let (obj_ty, res_ty) = Ctype.filter_arrow val_env meth_type "" in
       Ctype.unify val_env obj_ty self_type;
       Ctype.unify val_env res_ty ty;
-      let texp = type_expect met_env expr meth_type in
+      let ty' = type_approx met_env expr in
+      begin try Ctype.unify met_env ty' res_ty with Ctype.Unify trace ->
+	raise(Typecore.Error(expr.pexp_loc, Expr_type_clash(trace)))
+      end;
       Ctype.end_def ();
-      (val_env, met_env, par_env, Cf_meth (lab, texp)::fields,
+      let field =
+	lazy begin
+	  Ctype.raise_nongen_level ();
+	  let texp = type_expect met_env meth_expr meth_type in
+	  Ctype.end_def ();
+	  Cf_meth (lab, texp)
+	end in
+      (val_env, met_env, par_env, field::fields,
        Concr.add lab concr_meths, inh_vals)
 
   | Pcf_cstr (sty, sty', loc) ->
@@ -456,7 +466,7 @@ let rec class_field cl_num self_type meths vars
           (let_bound_idents defs)
           ([], met_env, par_env)
       in
-      (val_env, met_env, par_env, Cf_let (rec_flag, defs, vals)::fields,
+      (val_env, met_env, par_env, lazy(Cf_let(rec_flag, defs, vals))::fields,
        concr_meths, inh_vals)
 
   | Pcf_init expr ->
@@ -466,9 +476,15 @@ let rec class_field cl_num self_type meths vars
       let (obj_ty, res_ty) = Ctype.filter_arrow val_env meth_type "" in
       Ctype.unify val_env obj_ty self_type;
       Ctype.unify val_env res_ty (Ctype.instance Predef.type_unit);
-      let texp = type_expect met_env expr meth_type in
       Ctype.end_def ();
-      (val_env, met_env, par_env, Cf_init texp::fields, concr_meths, inh_vals)
+      let field =
+	lazy begin
+	  Ctype.raise_nongen_level ();
+	  let texp = type_expect met_env expr meth_type in
+	  Ctype.end_def ();
+	  Cf_init texp
+	end in
+      (val_env, met_env, par_env, field::fields, concr_meths, inh_vals)
 
 and class_structure cl_num val_env met_env (spat, str) =
   (* Environment for substructures *)
@@ -498,7 +514,7 @@ and class_structure cl_num val_env met_env (spat, str) =
       str
   in
 
-  {cl_field = List.rev fields;
+  {cl_field = List.rev_map Lazy.force fields;
    cl_meths = Meths.map (function (id, ty) -> id) !meths},
 
   {cty_self = self_type;
