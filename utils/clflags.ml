@@ -73,9 +73,9 @@ let keep_startup_file = ref false       (* -dstartup *)
 let dump_combine = ref false            (* -dcombine *)
 
 let native_code = ref false             (* set to true under ocamlopt *)
-
 let inline_threshold = ref 10
 
+let dont_write_files = ref false        (* set to true under ocamldoc *)
 
 let std_include_flag prefix =
   if !no_std_include then ""
