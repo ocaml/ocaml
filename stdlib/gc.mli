@@ -105,6 +105,7 @@ type control = {
 -            [0x20] Change of GC parameters.
 -            [0x40] Computation of major GC slice size.
 -            [0x80] Calling of finalisation functions.
+-            [0x100] Bytecode executable search at start-up.
              Default: 0.
 -     [stack_limit]  The maximum size of the stack (in words).  This is only
              relevant to the byte-code runtime, as the native code runtime
