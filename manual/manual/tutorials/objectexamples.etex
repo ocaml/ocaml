@@ -45,7 +45,7 @@ represents a different set of methods. Ellipsis actually behaves as a
 type variable.
 \begin{caml_example}
 let q = Oo.copy p;;
-q#move 7; p#get_x, q#get_x;;
+q#move 7; (p#get_x, q#get_x);;
 \end{caml_example}
 
 \subsection*{Inheritance}
@@ -94,7 +94,7 @@ class ref x_init =
   method set y = x <- y
 end;;
 \end{caml_example}
-The reason why this definition does not to typecheck is that at least one
+The reason why this definition does not typecheck is that at least one
 of the methods has a polymorphic type (here, the type of the value
 stored in the reference cell), thus the class should be parametric.  A
 monomorphic instance of the class could be defined by:
