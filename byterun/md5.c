@@ -45,12 +45,20 @@ CAMLprim value md5_chan(value vchan, value len)
   Lock(chan);
   MD5Init(&ctx);
   toread = Long_val(len);
-  while (toread > 0) {
-    read = getblock(chan, buffer,
-                    toread > sizeof(buffer) ? sizeof(buffer) : toread);
-    if (read == 0) raise_end_of_file();
-    MD5Update(&ctx, (unsigned char *) buffer, read);
-    toread -= read;
+  if (toread < 0){
+    while (1){
+      read = getblock (chan, buffer, sizeof(buffer));
+      if (read == 0) break;
+      MD5Update (&ctx, (unsigned char *) buffer, read);
+    }
+  }else{
+    while (toread > 0) {
+      read = getblock(chan, buffer,
+                      toread > sizeof(buffer) ? sizeof(buffer) : toread);
+      if (read == 0) raise_end_of_file();
+      MD5Update(&ctx, (unsigned char *) buffer, read);
+      toread -= read;
+    }
   }
   res = alloc_string(16);
   MD5Final(&Byte_u(res, 0), &ctx);

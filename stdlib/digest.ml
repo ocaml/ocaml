@@ -30,7 +30,7 @@ let substring str ofs len =
 
 let file filename =
   let ic = open_in_bin filename in
-  let d = channel ic (in_channel_length ic) in
+  let d = channel ic (-1) in
   close_in ic;
   d
 
@@ -41,3 +41,11 @@ let input chan =
   let digest = String.create 16 in
   really_input chan digest 0 16;
   digest
+
+let to_hex d =
+  let result = String.create 32 in
+  for i = 0 to 15 do
+    String.blit (Printf.sprintf "%02x" (int_of_char d.[i])) 0 result (2*i) 2;
+  done;
+  result
+;;
