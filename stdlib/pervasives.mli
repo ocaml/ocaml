@@ -625,7 +625,9 @@ val seek_out : out_channel -> int -> unit
    the behavior is unspecified. *)
 
 val pos_out : out_channel -> int
-(** Return the current writing position for the given channel. *)
+(** Return the current writing position for the given channel.  Does
+    not work on channels opened with the [Open_append] flag (returns
+    unspecified results). *)
 
 val out_channel_length : out_channel -> int
 (** Return the total length (number of characters) of the
