@@ -5,8 +5,8 @@ let test msg producer consumer src dst =
   let ic = open_in_bin src in
   let oc = open_out_bin dst in
   let (in_fd, out_fd) = ThreadUnix.pipe() in
-  let ipipe = ThreadUnix.in_channel_of_descr in_fd in
-  let opipe = ThreadUnix.out_channel_of_descr out_fd in
+  let ipipe = Unix.in_channel_of_descr in_fd in
+  let opipe = Unix.out_channel_of_descr out_fd in
   let prod = Thread.create producer (ic, opipe) in
   let cons = Thread.create consumer (ipipe, oc) in
   Thread.join prod;

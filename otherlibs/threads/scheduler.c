@@ -124,15 +124,14 @@ static void thread_scan_roots(action)
      scanning_action action;
 {
   thread_t th;
-  register value * sp;
+
   /* Scan all active descriptors */
   (*action)((value) curr_thread, (value *) &curr_thread);
-  /* Don't scan curr_thread->sp, this has already been done */
+  /* Don't scan curr_thread->sp, this has already been done.
+     Don't scan local roots either, for the same reason. */
   for (th = curr_thread->next; th != curr_thread; th = th->next) {
     (*action)((value) th, (value *) &th);
-    for (sp = th->sp; sp < th->stack_high; sp++) {
-      (*action)(*sp, sp);
-    }
+    do_local_roots(action, th->sp, th->stack_high, NULL);
   }
   /* Hook */
   if (prev_scan_roots_hook != NULL) (*prev_scan_roots_hook)(action);
@@ -456,16 +455,17 @@ value thread_select(arg)        /* ML */
 
 /* Primitives to implement suspension on buffered channels */
 
-value thread_inchan_ready(chan) /* ML */
-     struct channel * chan;
+value thread_inchan_ready(vchan) /* ML */
+     value vchan;
 {
+  struct channel * chan = Channel(vchan);
   return Val_bool(chan->curr < chan->max);
 }
 
-value thread_outchan_ready(chan, vsize) /* ML */
-     struct channel * chan;
-     value vsize;
+value thread_outchan_ready(vchan, vsize) /* ML */
+     value vchan, vsize;
 {
+  struct channel * chan = Channel(vchan);
   long size = Long_val(vsize);
   /* Negative size means we want to flush the buffer entirely */
   if (size < 0) {

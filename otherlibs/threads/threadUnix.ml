@@ -70,13 +70,6 @@ let timed_write fd buff ofs len timeout =
 
 let select = Thread.select
 
-(*** Interfacing with the standard input/output library *)
-
-external in_channel_of_descr : Unix.file_descr -> in_channel
-                             = "open_descriptor"
-external out_channel_of_descr : Unix.file_descr -> out_channel
-                              = "open_descriptor"
-
 (*** Pipes *)
 
 let pipe() =

@@ -158,8 +158,8 @@ let rec (@) l1 l2 =
 type in_channel
 type out_channel
 
-external open_descriptor_out: int -> out_channel = "open_descriptor"
-external open_descriptor_in: int -> in_channel = "open_descriptor"
+external open_descriptor_out: int -> out_channel = "caml_open_descriptor"
+external open_descriptor_in: int -> in_channel = "caml_open_descriptor"
 
 let stdin = open_descriptor_in 0
 let stdout = open_descriptor_out 1
@@ -205,14 +205,14 @@ let open_out name =
 let open_out_bin name =
   open_out_gen [Open_wronly; Open_creat; Open_trunc; Open_binary] 0o666 name
 
-external flush_partial : out_channel -> bool = "flush_partial"
+external flush_partial : out_channel -> bool = "caml_flush_partial"
 
 let rec flush oc =
   wait_outchan oc (-1);
   if flush_partial oc then () else flush oc
 
 external unsafe_output_partial : out_channel -> string -> int -> int -> int
-                        = "output_partial"
+                        = "caml_output_partial"
 
 let rec unsafe_output oc buf pos len =
   if len > 0 then begin
@@ -221,8 +221,9 @@ let rec unsafe_output oc buf pos len =
     unsafe_output oc buf (pos + written) (len - written)
   end
 
-external output_char_blocking : out_channel -> char -> unit = "output_char"
-external output_byte_blocking : out_channel -> int -> unit = "output_char"
+external output_char_blocking : out_channel -> char -> unit 
+                              = "caml_output_char"
+external output_byte_blocking : out_channel -> int -> unit = "caml_output_char"
 
 let output_char oc c = wait_outchan oc 1; output_char_blocking oc c
 
@@ -242,16 +243,18 @@ let output_binary_int oc n =
   output_byte oc (n asr 8);
   output_byte oc n
 
-external marshal_to_string : 'a -> unit list -> string = "output_value_to_string"
+external marshal_to_string : 'a -> unit list -> string 
+                           = "output_value_to_string"
+
 let output_value oc v = output_string oc (marshal_to_string v [])
 
-external seek_out_blocking : out_channel -> int -> unit = "seek_out"
+external seek_out_blocking : out_channel -> int -> unit = "caml_seek_out"
 
 let seek_out oc pos = flush oc; seek_out_blocking oc pos
 
-external pos_out : out_channel -> int = "pos_out"
-external out_channel_length : out_channel -> int = "channel_size"
-external close_out_channel : out_channel -> unit = "close_channel"
+external pos_out : out_channel -> int = "caml_pos_out"
+external out_channel_length : out_channel -> int = "caml_channel_size"
+external close_out_channel : out_channel -> unit = "caml_close_channel"
 
 let close_out oc = flush oc; close_out_channel oc
 
@@ -266,13 +269,13 @@ let open_in name =
 let open_in_bin name =
   open_in_gen [Open_rdonly; Open_binary] 0 name
 
-external input_char_blocking : in_channel -> char = "input_char"
-external input_byte_blocking : in_channel -> int = "input_char"
+external input_char_blocking : in_channel -> char = "caml_input_char"
+external input_byte_blocking : in_channel -> int = "caml_input_char"
 
 let input_char ic = wait_inchan ic; input_char_blocking ic
 
 external unsafe_input_blocking : in_channel -> string -> int -> int -> int
-                               = "input"
+                               = "caml_input"
 
 let unsafe_input ic s ofs len =
   wait_inchan ic; unsafe_input_blocking ic s ofs len
@@ -336,10 +339,10 @@ let input_value ic =
   really_input ic buffer 20 bsize;
   unmarshal buffer 0
 
-external seek_in : in_channel -> int -> unit = "seek_in"
-external pos_in : in_channel -> int = "pos_in"
-external in_channel_length : in_channel -> int = "channel_size"
-external close_in : in_channel -> unit = "close_channel"
+external seek_in : in_channel -> int -> unit = "caml_seek_in"
+external pos_in : in_channel -> int = "caml_pos_in"
+external in_channel_length : in_channel -> int = "caml_channel_size"
+external close_in : in_channel -> unit = "caml_close_channel"
 
 (* Output functions on standard output *)
 
