@@ -90,6 +90,16 @@ let wait_pid pid =
     Resumed_wait(pid, status) -> (pid, status)
   | _ -> invalid_arg "Thread.wait_pid"
 
+let wait_signal sigs =
+  let gotsig = ref 0 in
+  let self = thread_self() in
+  let sighandler s = gotsig := s; wakeup self in
+  let oldhdlrs =
+    List.map (fun s -> Sys.signal s (Sys.Signal_handle sighandler)) sigs in
+  if !gotsig = 0 then sleep();
+  List.iter2 (fun s act -> Sys.signal s act; ()) sigs oldhdlrs;
+  !gotsig
+
 (* For Thread.create, make sure the function passed to thread_new
    always terminates by calling Thread.exit. *)
 

@@ -14,6 +14,8 @@ mutex.cmo: thread.cmi mutex.cmi
 mutex.cmx: thread.cmx mutex.cmi 
 pervasives.cmo: pervasives.cmi 
 pervasives.cmx: pervasives.cmi 
+semaphore.cmo: condition.cmi mutex.cmi semaphore.cmi 
+semaphore.cmx: condition.cmx mutex.cmx semaphore.cmi 
 thread.cmo: thread.cmi 
 thread.cmx: thread.cmi 
 threadUnix.cmo: thread.cmi threadUnix.cmi 

@@ -79,6 +79,13 @@ val wait_pid : int -> int * Unix.process_status
            as the current process. Negative pid arguments represent
            process groups. Returns the pid of the child caught and
            its termination status, as per [Unix.wait]. *)
+val wait_signal : int list -> int
+        (* [wait_signal sigs] suspends the execution of the calling thread
+           until the process receives one of the signals specified in the
+           list [sigs].  It then returns the number of the signal received.
+           Signal handlers attached to the signals in [sigs] will not
+           be invoked.  Do not call [wait_signal] concurrently 
+           from several threads on the same signals. *)
 (*--*)
 
 (* The following primitives provide the basis for implementing 

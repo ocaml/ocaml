@@ -6,7 +6,8 @@ CAMLC=../../boot/ocamlrun ../../boot/ocamlc -I ../../stdlib -I ../unix
 
 C_OBJS=scheduler.o
 
-CAML_OBJS=thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo
+CAML_OBJS=thread.cmo mutex.cmo condition.cmo semaphore.cmo event.cmo \
+  threadUnix.cmo
 
 LIB=../../stdlib
 
