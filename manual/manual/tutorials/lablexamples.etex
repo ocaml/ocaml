@@ -80,12 +80,14 @@ If you define inline a function with labels, they are checked against the
 labels expected by the enclosing function.
 
 \begin{caml_example}
-List.fold_left;;
-let sum = List.fold_left fun:(fun :acc x -> acc + x) acc:0;;
-let sum = List.fold_left fun:(fun x :acc -> acc + x) acc:0;;
+Hashtbl.iter;;
+let print_all tbl =
+  Hashtbl.iter f:(fun :key :data -> Printf.printf "%s: %s\n" key data) tbl;;
+let print_all tbl =
+  Hashtbl.iter f:(fun :data :key -> Printf.printf "%s: %s\n" key data) tbl;;
 \end{caml_example}
 
-\subsection{Modern mode}
+\subsection{Commuting label mode}
 
 You can switch to {\em commuting label} mode giving the "-labels" flag to the
 various Objective Caml compilers. You can also switch from classic
@@ -106,7 +108,7 @@ argument, creating a new function of the remaining parameters.
 
 \begin{caml_example}
 f y:2 x:3;;
-List.fold_left [1;2;3] acc:0 fun:(fun :acc x -> acc + x);;
+List.fold_left [1;2;3] init:0 f:(+);;
 List.fold_left [1;2;3];;
 \end{caml_example}
 
@@ -235,14 +237,14 @@ the compiler will attempt to transform the argument to have it match
 the expected type, by passing "None" for all optional parameters.
 
 \begin{caml_example}
-let twice f x = f(f x);;
+let twice f (x : int) = f(f x);;
 twice bump 2;;
 \end{caml_example}
 
-This transformation is coherent with the intended semantics. That is,
-if the application of optional parameters shall produce side-effects,
-these are delayed until the received function is really applied to an
-non-labeled argument.
+This transformation is coherent with the intended semantics,
+includeing side-effects. That is, if the application of optional
+parameters shall produce side-effects, these are delayed until the
+received function is really applied to a non-labeled argument.
 
 \subsection{Suggestions for labeling}
 
@@ -255,7 +257,8 @@ good labeling is a labeling which
 \item when possible, allows useful partial applications.
 \end{itemize}
 
-We explain here the rules we applied when labeling the standard library.
+We explain here the rules we applied when labeling Objective Caml
+libraries.
 
 To speak in an ``object-oriented'' way, one can consider that each
 function has a main argument, its {\em object}, and other arguments
@@ -268,14 +271,14 @@ role. When this is not possible the role is to prefer, since the nature will
 often be given by the type itself. Obscure abbreviations should be
 avoided.
 \caml
-\:List.map : fun:('a -> 'b) -> 'a list -> 'b list
+\:List.map : f:('a -> 'b) -> 'a list -> 'b list
 \:output : out_channel -> buf:string -> pos:int -> len:int -> unit
 \endcaml
 
 When there are several objects of same nature and role, they are all
 left unlabeled.
 \caml
-\:List.iter2 : fun:('a -> 'b -> 'c) -> 'a list -> 'b list -> unit
+\:List.iter2 : f:('a -> 'b -> 'c) -> 'a list -> 'b list -> unit
 \endcaml
 
 When there is no preferable object, all arguments are labeled.
@@ -289,24 +292,22 @@ However, when there is only one argument, it is often left unlabeled.
 \caml
 \:Format.open_hvbox : int -> unit
 \endcaml
+In the standard library, this principle also applies to functions of
+two or three arguments, as long as their role is clear from the
+function's name.
 
-Here are some of the label names you will find throughout the standard
-library.
+Here are some of the label names you will find throughout the
+libraries.
 
 \begin{tableau}{|l|l|}{Label}{Meaning}
-\entree{"pos:"}{a position in a list, string or array}
+\entree{"f:"}{a function to be applied}
+\entree{"pos:"}{a position in a string or array}
 \entree{"len:"}{a length}
 \entree{"buf:"}{a string used as buffer}
 \entree{"src:"}{the source of an operation}
 \entree{"dst:"}{the destination of an operation}
-\entree{"fun:"}{a function to be applied}
-\entree{"pred:"}{a boolean predicate}
-\entree{"acc:"}{an accumulator}
-\entree{"to:"}{an output channel}
-\entree{"item:"}{a value in a collection}
 \entree{"key:"}{a value used as index}
 \entree{"data:"}{a value associated to an index}
-\entree{"size:"}{a size parameter}
 \entree{"mode:"}{an operation mode or a flag list}
 \entree{"perm:"}{file permissions}
 \end{tableau}
@@ -350,7 +351,7 @@ to prefix their names with a backquote character "`".
 [`On; `Off];;
 `Number 1;;
 let f = function `On -> 1 | `Off -> 0 | `Number n -> n;;
-List.map fun:f [`On; `Off];;
+List.map :f [`On; `Off];;
 \end{caml_example}
 "[>`Off|`On] list" means that to match this list, you should at
 least be able to match "`Off" and "`On", without argument.
@@ -372,9 +373,9 @@ just like in a normal datatype definition. For conciseness, "of" is
 omitted in polymorphic variant types.
 \begin{caml_example}
 type 'a vlist = [`Nil | `Cons 'a * 'a vlist];;
-let rec map fun:f : 'a vlist -> 'b vlist = function
+let rec map :f : 'a vlist -> 'b vlist = function
   | `Nil -> `Nil
-  | `Cons(a, l) -> `Cons(f a, map fun:f l)
+  | `Cons(a, l) -> `Cons(f a, map :f l)
 ;;
 \end{caml_example}
 
