@@ -1,8 +1,8 @@
 #  Copyright     Digital Equipment Corporation & INRIA     1988, 1989, 1992
 
 C = sc
-COptions = -opt speed -model far -i :h: -d CAML_LIGHT
-LinkOptions = -state nouse -compact
+COptions = -model far -i :h: -d CAML_LIGHT
+LinkOptions = -state nouse -compact -model far
 Libs = "{libraries}IntEnv.far.o" "{libraries}MacRuntime.o" ¶
        "{clibraries}StdCLib.far.o" "{libraries}MathLib.far.o" ¶
        "{libraries}ToolLibs.o" "{libraries}Interface.o"
@@ -12,7 +12,7 @@ PPCCOptions = -i :h: -d CAML_LIGHT -w 30
 PPCLinkOptions =
 PPCLibs = "{sharedlibraries}MathLib" "{ppclibraries}PPCCRuntime.o" ¶
           "{ppclibraries}PPCToolLibs.o" "{sharedlibraries}StdCLib" ¶
-		  "{ppclibraries}StdCRuntime.o" "{sharedlibraries}InterfaceLib"
+	  "{ppclibraries}StdCRuntime.o" "{sharedlibraries}InterfaceLib"
 
 LIB = libbignum.o
 OBJECT = :o:KerN.o :o:bnInit.o :o:bnMult.o :o:bnDivide.o :o:bnCmp.o :o:bzf.o ¶
@@ -42,7 +42,7 @@ all Ä {LIB} {PPCLIB}
 scratch Ä
 	delete -i :o:Å.[ox] || set status 0
 	delete -i libbignum.o libbignum.x
-	delete -i bztest brtest testKerN
+	delete -i bztest testKerN
 
 # build the BigNum library
 {LIB} Ä {OBJECT}
@@ -67,7 +67,7 @@ C Ä scratch
 .x Ä .c {KERNH}
 	{PPCC} {PPCCOptions} {depdir}{default}.c -o {targdir}{default}.x
 
-:o: Ä :c: :c:bn: :c:bz: :c:br: :c:bzf:
+:o: Ä :c: :c:bn:
 
 # Level N
 :o:bnInit.o :o:bnInit.x Ä {KERNH}
@@ -77,9 +77,6 @@ C Ä scratch
 
 # Level Z
 :o:bz.o :o:bz.x Ä :h:BigZ.h {KERNH}
-
-# level R
-:o:br.o :o:br.x Ä :h:BigR.h :h:BigZ.h {KERNH}
 
 # Some functions built with BigZ
 :o:bzf.o :o:bzf.x Ä :h:BigZ.h {KERNH}
@@ -103,13 +100,3 @@ bztest ÄÄ :o:bztest.x {PPCLIB}
 	        -o bztest {PPCLibs}
 
 :o:bztest.o :o:bztest.x Ä :h:BigZ.h {KERNH}
-
-# Tests Of BigR
-brtest ÄÄ :o:brtest.o {LIB}
-	ilink -c 'MPS ' -t MPST :o:brtest.o {LIB} {LinkOptions} -o brtest {Libs}
-
-brtest ÄÄ :o:brtest.x {PPCLIB}
-	ppclink -c 'MPS ' -t MPST :o:brtest.x {PPCLIB} {PPCLinkOptions} ¶
-	        -o brtest {PPCLibs}
-
-:o:brtest.o :o:brtest.x Ä :h:BigR.h :h:BigZ.h {KERNH}
