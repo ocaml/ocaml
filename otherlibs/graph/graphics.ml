@@ -33,17 +33,12 @@ let unix_close_graph () =
   Sys.signal (sigio_signal()) Sys.Signal_ignore;
   raw_close_graph ()
 ;;
-let open_graph =
+let (open_graph, close_graph) =
   match os_type with
-  | "Unix" -> unix_open_graph
-  | "Win32" -> raw_open_graph
-  | "MacOS" -> raw_open_graph
-;;
-let close_graph =
-  match os_type with
-  | "Unix" -> unix_close_graph
-  | "Win32" -> raw_close_graph
-  | "MacOS" -> raw_close_graph
+  | "Unix" -> (unix_open_graph, unix_close_graph)
+  | "Win32" -> (raw_open_graph, raw_close_graph)
+  | "MacOS" -> (raw_open_graph, raw_close_graph)
+  | _ -> failwith ("Graphics: unknown OS type: " ^ os_type)
 ;;
 
 external clear_graph : unit -> unit = "gr_clear_graph"
