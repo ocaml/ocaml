@@ -99,7 +99,7 @@ struct caml__roots_block {
   value *tables [5];
 };
 
-extern struct caml__roots_block *local_roots;  /* defined in roots.h */
+extern struct caml__roots_block *local_roots;  /* defined in roots.c */
 
 #define Begin_root Begin_roots1
 
