@@ -40,8 +40,8 @@ UNIX_OBJS = $(UNIX_FILES:.c=.obj)
 
 C_OBJS=$(WIN_OBJS) $(UNIX_OBJS)
 
-CAML_OBJS=unix.cmo
-CAMLOPT_OBJS=unix.cmx
+CAML_OBJS=unix.cmo unixLabels.cmo
+CAMLOPT_OBJS=$(CAML_OBJS:.cmo=.cmx)
 
 all: libunix.dll libunix.lib unix.cma
 
@@ -59,7 +59,7 @@ libunix.lib: copy_unix_files io.h $(C_OBJS:.obj=.sobj)
 copy_unix_files:
 	@- cd ..\unix & cp -p -u -v $(UNIX_FILES) ../win32unix
 # This requires GNU cp
-	@cp ../unix/unix.mli unix.mli
+	@cp ../unix/unix.mli ../unix/unixLabels.ml* .
 
 io.h: "$(SYSTEM_INCLUDES)\io.h"
 	copy "$(SYSTEM_INCLUDES)\io.h" io.h
@@ -88,6 +88,9 @@ install:
 installopt:
 	cp unix.cmxa unix.cmx unix.lib $(LIBDIR)
 
+unixLabels.cmo: unixLabels.ml
+	$(CAMLC) -c $(COMPFLAGS) -nolabels unixLabels.ml
+
 .SUFFIXES: .ml .mli .cmo .cmi .cmx .dobj .sobj
 
 .mli.cmi:
@@ -108,8 +111,5 @@ installopt:
 	mv $*.obj $*.sobj
 
 depend:
-
-unix.cmi: unix.mli
-unix.cmo: unix.cmi
 
 !include .depend

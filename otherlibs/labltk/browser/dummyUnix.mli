@@ -24,9 +24,3 @@ module Thread : sig
   type t
   external create : ('a -> 'b) -> 'a -> t = "caml_input"
 end
-
-module ThreadUnix : sig
-  open Unix
-  external read : file_descr -> buf:string -> pos:int -> len:int -> int
-      = "caml_input"
-end

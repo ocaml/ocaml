@@ -196,7 +196,7 @@ object (self)
       let fileinput_thread fd =
         let buf = String.create 1024 in
         let len = ref 0 in
-        try while len := ThreadUnix.read fd ~buf ~pos:0 ~len:1024; !len > 0 do
+        try while len := Unix.read fd ~buf ~pos:0 ~len:1024; !len > 0 do
           Mutex.lock imutex;
           Buffer.add_substring ibuffer buf 0 !len;
           Mutex.unlock imutex

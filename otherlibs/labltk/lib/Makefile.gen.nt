@@ -9,6 +9,7 @@ tkgen.ml: ..\Widgets.src ..\compiler\tkcompiler
 
 tk.ml .depend: tkgen.ml ..\builtin\report.ml #../builtin/builtin_*.ml
 	type << > tk.ml
+open StdLabels
 open Widget
 open Protocol
 open Support

@@ -81,7 +81,7 @@ AFLAGS=/coff /Cp
 
 ############# Configuration for the contributed libraries
 
-OTHERLIBRARIES=win32unix systhreads str num graph dynlink bigarray #labltk
+OTHERLIBRARIES=win32unix systhreads str num graph dynlink bigarray labltk
 
 ### Name of the target architecture for the "num" library
 BIGNUM_ARCH=C

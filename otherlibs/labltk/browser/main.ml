@@ -19,7 +19,7 @@ open Tk
 
 let _ =
   let path = ref [] in
-  let st = ref false in
+  let st = ref true in
   Arg.parse
     [ "-I", Arg.String (fun s -> path := s :: !path),
       "<dir>  Add <dir> to the list of include directories";
@@ -28,7 +28,7 @@ let _ =
       " Ignore non-optional labels in types";
       "-rectypes", Arg.Set Clflags.recursive_types,
       " Allow arbitrary recursive types";
-      "-st", Arg.Set st, " Smalltalk-like one-box browsing";
+      "-oldui", Arg.Clear st, " Revert back to old UI";
       "-w", Arg.String (fun s -> Shell.warnings := s),
       "<flags>  Enable or disable warnings according to <flags>:\n\
         \032    A/a enable/disable all warnings\n\
