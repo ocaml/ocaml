@@ -58,9 +58,10 @@ let action_arg s sl =
         | [] -> None
       else begin r := float_of_string s; Some sl end
   | Arg.Symbol (syms, f) ->
-      match if s = "" then sl else s :: sl with
+      begin match if s = "" then sl else s :: sl with
         s :: sl when List.mem s syms -> f s; Some sl
-      | _ -> None
+      | _ -> None end
+  | _ -> assert false
 ;;
 
 let common_start s1 s2 =

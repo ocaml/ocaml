@@ -3,9 +3,19 @@
 
 open Printf;
 
-value action_arg s sl =
+value rec action_arg s sl =
   fun
   [ Arg.Unit f -> if s = "" then do { f (); Some sl } else None
+  | Arg.Bool f ->
+      if s = "" then
+        match sl with
+        [ [s :: sl] ->
+            try do { f (bool_of_string s); Some sl } with
+            [ Invalid_argument "bool_of_string" -> None ]
+        | [] -> None ]
+      else
+        try do { f (bool_of_string s); Some sl } with
+        [ Invalid_argument "bool_of_string" -> None ]
   | Arg.Set r -> if s = "" then do { r.val := True; Some sl } else None
   | Arg.Clear r -> if s = "" then do { r.val := False; Some sl } else None
   | Arg.Rest f -> do { List.iter f [s :: sl]; Some [] }
@@ -53,6 +63,18 @@ value action_arg s sl =
         [ [s :: sl] -> do { r.val := (float_of_string s); Some sl }
         | [] -> None ]
       else do { r.val := (float_of_string s); Some sl }
+  | Arg.Tuple specs ->
+      let rec action_args s sl =
+        fun
+        [ [] -> Some sl
+        | [spec :: spec_list] ->
+             match action_arg s sl spec with
+             [ None -> action_args "" [] spec_list
+             | Some [s :: sl] -> action_args s sl spec_list
+             | Some sl -> action_args "" sl spec_list
+             ]
+        ] in
+      action_args s sl specs
   | Arg.Symbol syms f ->
       match (if s = "" then sl else [s :: sl]) with
       [ [s :: sl] when List.mem s syms -> do { f s; Some sl }
