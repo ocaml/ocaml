@@ -34,11 +34,6 @@
 ;   or on a semicolon, or on the :: constructor
 ; . Even if type checking fails, you can still look at the types
 ;   in the file, up to and including where the type checker failed.
-; . The system doesn't "see" parentheses and begin/end.  If you
-;   put the cursor on a parenthesis, you will have the type of
-;   the expression that contains the parenthesized expression.
-;   If you want the parenthesized expression, you need to put the
-;   cursor inside it (for example, in a space between its words).
 ; . To get rid of the highlighting, put the cursor in a comment
 ;   and type C-c C-t.
 ; . The mark in the .types file is set to the beginning of the

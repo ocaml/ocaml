@@ -41,6 +41,9 @@ let mkclass d =
 let mkcty d =
   { pcty_desc = d; pcty_loc = symbol_rloc() }
 
+let reloc_pat x = { x with ppat_loc = symbol_rloc () };;
+let reloc_exp x = { x with pexp_loc = symbol_rloc () };;
+
 let mkoperator name pos =
   { pexp_desc = Pexp_ident(Lident name); pexp_loc = rhs_loc pos }
 
@@ -98,8 +101,7 @@ let rec mktailexp = function
                loc_end = exp_el.pexp_loc.loc_end;
                loc_ghost = true}
       in
-      let arg = {pexp_desc = Pexp_tuple [e1; exp_el];
-                 pexp_loc = {l with loc_ghost = true} } in
+      let arg = {pexp_desc = Pexp_tuple [e1; exp_el]; pexp_loc = l} in
       {pexp_desc = Pexp_construct(Lident "::", Some arg, false); pexp_loc = l}
 
 let rec mktailpat = function
@@ -109,13 +111,12 @@ let rec mktailpat = function
       let pat_pl = mktailpat pl in
       let l = {loc_start = p1.ppat_loc.loc_start;
                loc_end = pat_pl.ppat_loc.loc_end;
-               loc_ghost = false}
+               loc_ghost = true}
       in
-      let arg = {ppat_desc = Ppat_tuple [p1; pat_pl];
-                 ppat_loc = {l with loc_ghost = true} } in
+      let arg = {ppat_desc = Ppat_tuple [p1; pat_pl]; ppat_loc = l} in
       {ppat_desc = Ppat_construct(Lident "::", Some arg, false); ppat_loc = l}
 
-let mkstrexp e =
+let ghstrexp e =
   { pstr_desc = Pstr_eval e; pstr_loc = {e.pexp_loc with loc_ghost = true} }
 
 let array_function str name =
@@ -129,8 +130,7 @@ let rec deep_mkrangepat c1 c2 =
 let rec mkrangepat c1 c2 =
   if c1 > c2 then mkrangepat c2 c1 else
   if c1 = c2 then mkpat(Ppat_constant(Const_char c1)) else
-  mkpat(Ppat_or(ghpat(Ppat_constant(Const_char c1)),
-                deep_mkrangepat (Char.chr(Char.code c1 + 1)) c2))
+  reloc_pat (deep_mkrangepat c1 c2)
 
 let syntax_error () =
   raise Syntaxerr.Escape_error
@@ -373,7 +373,7 @@ interface:
 ;
 toplevel_phrase:
     top_structure SEMISEMI               { Ptop_def $1 }
-  | seq_expr SEMISEMI                    { Ptop_def[mkstrexp $1] }
+  | seq_expr SEMISEMI                    { Ptop_def[ghstrexp $1] }
   | toplevel_directive SEMISEMI          { $1 }
   | EOF                                  { raise End_of_file }
 ;
@@ -383,12 +383,12 @@ top_structure:
 ;
 use_file:
     use_file_tail                        { $1 }
-  | seq_expr use_file_tail               { Ptop_def[mkstrexp $1] :: $2 }
+  | seq_expr use_file_tail               { Ptop_def[ghstrexp $1] :: $2 }
 ;
 use_file_tail:
     EOF                                         { [] }
   | SEMISEMI EOF                                { [] }
-  | SEMISEMI seq_expr use_file_tail             { Ptop_def[mkstrexp $2] :: $3 }
+  | SEMISEMI seq_expr use_file_tail             { Ptop_def[ghstrexp $2] :: $3 }
   | SEMISEMI structure_item use_file_tail       { Ptop_def[$2] :: $3 }
   | SEMISEMI toplevel_directive use_file_tail   { $2 :: $3 }
   | structure_item use_file_tail                { Ptop_def[$1] :: $2 }
@@ -421,12 +421,12 @@ module_expr:
 ;
 structure:
     structure_tail                              { $1 }
-  | seq_expr structure_tail                     { mkstrexp $1 :: $2 }
+  | seq_expr structure_tail                     { ghstrexp $1 :: $2 }
 ;
 structure_tail:
     /* empty */                                 { [] }
   | SEMISEMI                                    { [] }
-  | SEMISEMI seq_expr structure_tail            { mkstrexp $2 :: $3 }
+  | SEMISEMI seq_expr structure_tail            { ghstrexp $2 :: $3 }
   | SEMISEMI structure_item structure_tail      { $2 :: $3 }
   | structure_item structure_tail               { $1 :: $2 }
 ;
@@ -586,7 +586,7 @@ class_structure:
 ;
 class_self_pattern:
     LPAREN pattern RPAREN
-      { $2 }
+      { reloc_pat $2 }
   | LPAREN pattern COLON core_type RPAREN
       { mkpat(Ppat_constraint($2, $4)) }
   | /* empty */
@@ -737,7 +737,7 @@ class_type_declaration:
 
 seq_expr:
   | expr        %prec below_SEMI  { $1 }
-  | expr SEMI                     { $1 }
+  | expr SEMI                     { reloc_exp $1 }
   | expr SEMI seq_expr            { mkexp(Pexp_sequence($1, $3)) }
 ;
 labeled_simple_pattern:
@@ -890,11 +890,11 @@ simple_expr:
   | name_tag %prec prec_constant_constructor
       { mkexp(Pexp_variant($1, None)) }
   | LPAREN seq_expr RPAREN
-      { $2 }
+      { reloc_exp $2 }
   | LPAREN seq_expr error
       { unclosed "(" 1 ")" 3 }
   | BEGIN seq_expr END
-      { $2 }
+      { reloc_exp $2 }
   | BEGIN END
       { mkexp (Pexp_construct (Lident "()", None, false)) }
   | BEGIN seq_expr error
@@ -928,7 +928,7 @@ simple_expr:
   | LBRACKETBAR BARRBRACKET
       { mkexp(Pexp_array []) }
   | LBRACKET expr_semi_list opt_semi RBRACKET
-      { mkexp (mktailexp (List.rev $2)).pexp_desc }
+      { reloc_exp (mktailexp (List.rev $2)) }
   | LBRACKET expr_semi_list opt_semi error
       { unclosed "[" 1 "]" 4 }
   | PREFIXOP simple_expr
@@ -1089,7 +1089,7 @@ simple_pattern:
   | LBRACE lbl_pattern_list opt_semi error
       { unclosed "{" 1 "}" 4 }
   | LBRACKET pattern_semi_list opt_semi RBRACKET
-      { mkpat (mktailpat (List.rev $2)).ppat_desc }
+      { reloc_pat (mktailpat (List.rev $2)) }
   | LBRACKET pattern_semi_list opt_semi error
       { unclosed "[" 1 "]" 4 }
   | LBRACKETBAR pattern_semi_list opt_semi BARRBRACKET
@@ -1099,7 +1099,7 @@ simple_pattern:
   | LBRACKETBAR pattern_semi_list opt_semi error
       { unclosed "[|" 1 "|]" 4 }
   | LPAREN pattern RPAREN
-      { $2 }
+      { reloc_pat $2 }
   | LPAREN pattern error
       { unclosed "(" 1 ")" 3 }
   | LPAREN pattern COLON core_type RPAREN
