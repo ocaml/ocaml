@@ -22,7 +22,7 @@ static void free_regexp(value vexpr)
 {
   regexp expr = (regexp) Bp_val(vexpr);
   expr->re.translate = NULL;
-  regfree(&(expr->re));
+  re_free(&(expr->re));
 }
 
 static struct custom_operations regexp_ops = {
