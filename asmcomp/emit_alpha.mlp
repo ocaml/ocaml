@@ -559,10 +559,10 @@ let fundecl fundecl =
   if n > 0 then
     `	lda	$sp, -{emit_int n}($sp)\n`;
   if !uses_gp then begin
-    `	stq	$gp, {emit_int(n - 16)}($sp)\n`;
     let lbl = new_label() in
     `	br	$27, {emit_label lbl}\n`;
-    `{emit_label lbl}:	ldgp	$gp, 0($27)\n`
+    `{emit_label lbl}:	stq	$gp, {emit_int(n - 16)}($sp)\n`;
+    `	ldgp	$gp, 4($27)\n`
   end;
   if !contains_calls then begin
     `	stq	$26, {emit_int(n - 8)}($sp)\n`;
