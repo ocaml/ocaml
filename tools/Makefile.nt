@@ -16,7 +16,7 @@
 
 CAMLRUN=..\boot\ocamlrun
 CAMLC=$(CAMLRUN) ..\boot\ocamlc -I ..\boot
-CAMLOPT==$(CAMLRUN) ../ocamlopt
+CAMLOPT=$(CAMLRUN) ..\ocamlopt
 CAMLLEX=$(CAMLRUN) ..\boot\ocamllex
 INCLUDES=-I ..\utils -I ..\parsing -I ..\typing -I ..\bytecomp -I ..\asmcomp \
          -I ..\driver
