@@ -283,11 +283,12 @@ let format_pp_token state size = function
             then break_new_line state off width else
            (* break the line here leads to new indentation ? *)
            if state.pp_current_indent > state.pp_margin - width + off
-           then break_new_line state off width else break_same_line state n
+           then break_new_line state off width
+           else break_same_line state n
         | Pp_hvbox -> break_new_line state off width
         | Pp_fits -> break_same_line state n
-        | Pp_vbox  -> break_new_line state off width
-        | Pp_hbox  -> break_same_line state n
+        | Pp_vbox -> break_new_line state off width
+        | Pp_hbox -> break_same_line state n
         end
      | _ -> () (* No opened block *)
      end;;
@@ -365,11 +366,9 @@ let scan_push state b tok =
     state.pp_scan_stack <-
      Scan_elem (state.pp_right_total, tok) :: state.pp_scan_stack;;
 
-(*
-  To open a new block :
-  the user may set the depth bound pp_max_boxes
-  any text nested deeper is printed as the ellipsis string
-*)
+(* To open a new block :
+   the user may set the depth bound pp_max_boxes
+   any text nested deeper is printed as the ellipsis string *)
 let pp_open_box_gen state indent br_ty =
     state.pp_curr_depth <- state.pp_curr_depth + 1;
     if state.pp_curr_depth < state.pp_max_boxes then
@@ -626,8 +625,10 @@ let make_formatter f g = pp_make_formatter f g display_newline display_blanks;;
 let formatter_of_out_channel oc =
  make_formatter (output oc) (fun () -> flush oc);;
 
+let unit_out () = ();;
+
 let formatter_of_buffer b =
-  make_formatter (Buffer.add_substring b) (fun () -> ());;
+ make_formatter (Buffer.add_substring b) unit_out;;
 
 let stdbuf = Buffer.create 512;;
 
@@ -697,8 +698,8 @@ and get_all_formatter_output_functions =
 
 (* Printf implementation. *)
 
-external format_int: string -> int -> string = "format_int"
-external format_float: string -> float -> string = "format_float"
+external format_int : string -> int -> string = "format_int";;
+external format_float : string -> float -> string = "format_float";;
 
 let format_invalid_arg s c = invalid_arg (s ^ String.make 1 c);;
 
@@ -865,8 +866,6 @@ let get_buffer_out b =
 let string_out b ppf () =
  pp_flush_queue ppf false;
  get_buffer_out b;;
-
-let unit_out () = ();;
 
 let fprintf ppf = fprintf_out false unit_out ppf;;
 let printf f = fprintf_out false unit_out std_formatter f;;
