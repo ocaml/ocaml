@@ -276,3 +276,9 @@ is written
 \begin{verbatim}
         functor (A: S) (B: S with type t = A.t) ...
 \end{verbatim}
+
+Constraints are added left to right.  After each constraint has been
+applied, the resulting signature must be a subtype of the signature
+before the constraint was applied.  Thus, the @'with'@ operator can
+only add information on the type components of a signature, but never
+remove information.
