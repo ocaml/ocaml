@@ -228,7 +228,7 @@ library file ".cma" or ".cmxa".  For instance, consider a Caml library
 which reference C code in "libmylib.a".  If the library is
 built as follows:
 \begin{alltt}
-        ocamlc -o mylib.cma -custom a.cmo b.cmo -cclib -lmylib
+        ocamlc -a -o mylib.cma -custom a.cmo b.cmo -cclib -lmylib
 \end{alltt}
 users of the library can simply link with "mylib.cma":
 \begin{alltt}
@@ -242,7 +242,7 @@ and the system will automatically add the "-custom" and "-cclib
 The alternative, of course, is to build the library without extra
 options:
 \begin{alltt}
-        ocamlc -o mylib.cma a.cmo b.cmo
+        ocamlc -a -o mylib.cma a.cmo b.cmo
 \end{alltt}
 and then ask users to provide the "-custom" and "-cclib -lmylib"
 options themselves at link-time:
