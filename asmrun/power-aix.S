@@ -19,7 +19,7 @@
 .caml_call_gc:
     # Set up stack frame
         stwu    1, -0x1C0(1)
-    # 0x1A0 = 4*32 (int regs) + 8*32 (float regs) + 64 (space for C call)
+    # 0x1C0 = 4*32 (int regs) + 8*32 (float regs) + 64 (space for C call)
     # Record last return address into Caml code
         lwz     11, L..caml_last_return_address(2)
         stw     0, 0(11)
@@ -28,11 +28,11 @@
         stw     0, 0x1C0+8(1)
     # Record lowest stack address
         lwz     11, L..caml_bottom_of_stack(2)
-        addic   0, 1, 0x1C0
+        addi    0, 1, 0x1C0
         stw     0, 0(11)
     # Record pointer to register array
         lwz     11, L..caml_gc_regs(2)
-        addic   0, 1, 8*32 + 64
+        addi    0, 1, 8*32 + 64
         stw     0, 0(11)
     # Save current allocation pointer for debugging purposes
         lwz     11, L..young_ptr(2)
@@ -41,7 +41,7 @@
         lwz     11, L..caml_exception_pointer(2)
         stw     29, 0(11)
     # Save all registers used by the code generator
-        addic   11, 1, 8*32 + 64 - 4
+        addi    11, 1, 8*32 + 64 - 4
         stwu    3, 4(11)
         stwu    4, 4(11)
         stwu    5, 4(11)
@@ -65,7 +65,7 @@
         stwu    26, 4(11)
         stwu    27, 4(11)
         stwu    28, 4(11)
-        addic   11, 11, 64 - 8
+        addi    11, 1, 64 - 8
         stfdu   1, 8(11)
         stfdu   2, 8(11)
         stfdu   3, 8(11)
@@ -106,7 +106,7 @@
         lwz     11, L..young_limit(2)
         lwz     30, 0(11)
     # Restore all regs used by the code generator
-        addic   11, 1, 8*32 + 64 - 4
+        addi    11, 1, 8*32 + 64 - 4
         lwzu    3, 4(11)
         lwzu    4, 4(11)
         lwzu    5, 4(11)
@@ -130,7 +130,7 @@
         lwzu    26, 4(11)
         lwzu    27, 4(11)
         lwzu    28, 4(11)
-        addic   11, 11, 64 - 8
+        addi    11, 1, 64 - 8
         lfdu    1, 8(11)
         lfdu    2, 8(11)
         lfdu    3, 8(11)
@@ -298,13 +298,13 @@ L..102:
         addi    1, 1, -24
         lwz     9, L..caml_bottom_of_stack(2)
         lwz     10, L..caml_last_return_address(2)
-        lwz     11, L..caml_gc_regs(2)
+        lwz     12, L..caml_gc_regs(2)
         lwz     9, 0(9)
         lwz     10, 0(10)
-        lwz     11, 0(11)
+        lwz     12, 0(12)
         stw     9, 0(1)
         stw     10, 4(1)
-        stw     11, 8(1)
+        stw     12, 8(1)
     # Build an exception handler to catch exceptions escaping out of Caml
         bl      L..103
         b       L..104

@@ -135,14 +135,14 @@ void handle_signal(int sig)
         context->sc_regs[23] = (int) young_limit;
 #endif
 #ifdef TARGET_power
-      /* Cached in register 31 */
+      /* Cached in register 30 */
 #ifdef _AIX
       if (caml_last_return_address == 0)
-        context->sc_jmpbuf.jmp_context.gpr[31] = (ulong_t) young_limit;
+        context->sc_jmpbuf.jmp_context.gpr[30] = (ulong_t) young_limit;
 #endif
 #ifdef __linux
       if (caml_last_return_address == 0)
-        context->gpr[31] = (unsigned long) young_limit;
+        context->gpr[30] = (unsigned long) young_limit;
 #endif
 #endif
   }
