@@ -5,7 +5,7 @@
 (*                                                                     *)
 (*        Daniel de Rauglaudre, projet Cristal, INRIA Rocquencourt     *)
 (*                                                                     *)
-(*  Copyright 2001 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2002 Institut National de Recherche en Informatique et   *)
 (*  Automatique.  Distributed only by permission.                      *)
 (*                                                                     *)
 (***********************************************************************)
@@ -278,36 +278,39 @@ value rec print_out_module_type ppf =
   fun
   [ Omty_ident id -> fprintf ppf "%a" print_ident id
   | Omty_signature sg ->
-      fprintf ppf "@[<hv 2>sig@ %a@;<1 -2>end@]" print_signature_body sg
+      fprintf ppf "@[<hv 2>sig@ %a@;<1 -2>end@]"
+        Toploop.print_out_signature.val sg
   | Omty_functor name mty_arg mty_res ->
       fprintf ppf "@[<2>functor@ (%s : %a) ->@ %a@]" name
         print_out_module_type mty_arg print_out_module_type mty_res
   | Omty_abstract -> () ]
-and print_signature_body ppf =
+and print_out_signature ppf =
   fun
   [ [] -> ()
   | [item] -> fprintf ppf "%a;" Toploop.print_out_sig_item.val item
   | [item :: items] ->
       fprintf ppf "%a;@ %a" Toploop.print_out_sig_item.val item
-        print_signature_body items ]
+        print_out_signature items ]
 and print_out_sig_item ppf =
   fun
   [ Osig_class vir_flag name params clt ->
       fprintf ppf "@[<2>class%s@ %a%s@ :@ %a@]"
         (if vir_flag then " virtual" else "") print_out_class_params params
-        name print_out_class_type clt
+        name Toploop.print_out_class_type.val clt
   | Osig_class_type vir_flag name params clt ->
       fprintf ppf "@[<2>class type%s@ %a%s@ =@ %a@]"
         (if vir_flag then " virtual" else "") print_out_class_params params
-        name print_out_class_type clt
+        name Toploop.print_out_class_type.val clt
   | Osig_exception id tyl ->
       fprintf ppf "@[<2>exception %a@]" print_out_constr (id, tyl)
   | Osig_modtype name Omty_abstract ->
       fprintf ppf "@[<2>module type %s@]" name
   | Osig_modtype name mty ->
-      fprintf ppf "@[<2>module type %s =@ %a@]" name print_out_module_type mty
+      fprintf ppf "@[<2>module type %s =@ %a@]" name
+        Toploop.print_out_module_type.val mty
   | Osig_module name mty ->
-      fprintf ppf "@[<2>module %s :@ %a@]" name print_out_module_type mty
+      fprintf ppf "@[<2>module %s :@ %a@]" name
+        Toploop.print_out_module_type.val mty
   | Osig_type tdl -> print_out_type_decl_list ppf tdl
   | Osig_value name ty prims ->
       let kwd = if prims = [] then "value" else "external" in
@@ -393,5 +396,8 @@ value print_out_phrase ppf =
 
 Toploop.print_out_value.val := print_out_value;
 Toploop.print_out_type.val := print_out_type;
+Toploop.print_out_class_type.val := print_out_class_type;
+Toploop.print_out_module_type.val := print_out_module_type;
 Toploop.print_out_sig_item.val := print_out_sig_item;
+Toploop.print_out_signature.val := print_out_signature;
 Toploop.print_out_phrase.val := print_out_phrase;
