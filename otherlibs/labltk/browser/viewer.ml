@@ -152,6 +152,14 @@ let choose_symbol_ref = ref choose_symbol
 
 (* Search, both by type and name *)
 
+let guess_search_mode s : [`Type | `Long | `Pattern] =
+  let is_type = ref false and is_long = ref false in
+  for i = 0 to String.length s - 2 do
+    if s.[i] = '-' && s.[i+1] = '>' then is_type := true;
+    if s.[i] = '.' then is_long := true
+  done;
+  if !is_type then `Type else if !is_long then `Long else `Pattern
+
 let search_which = ref "itself"
 
 let search_symbol () =
@@ -176,7 +184,12 @@ let search_symbol () =
       try if text = "" then () else      
         let l =
           match !search_which with
-            "itself" -> search_string_symbol text
+            "itself" ->
+              begin match guess_search_mode text with
+                `Long -> search_string_symbol text
+              | `Pattern -> search_pattern_symbol text
+              | `Type -> search_string_type text ~mode:`included
+              end
           | "iotype" -> search_string_type text ~mode:`included
           | "exact" -> search_string_type text ~mode:`exact
           | _ -> assert false
@@ -326,22 +339,19 @@ let f ?(dir=Unix.getcwd()) ?on () =
   let search = Button.create buttons ~text:"Search" ~pady:1 ~command:
     begin fun () ->
       let s = Entry.get ew in
-      let is_type = ref false and is_long = ref false in
-      for i = 0 to String.length s - 2 do
-        if s.[i] = '-' && s.[i+1] = '>' then is_type := true;
-        if s.[i] = '.' then is_long := true
-      done;
+      let mode = guess_search_mode s in
       let l =
-        if !is_type then try
-          search_string_type ~mode:`included s
-        with Searchid.Error (start,stop) ->
-          Entry.icursor ew ~index:(`Num start); []
-        else if !is_long then
-          search_string_symbol s
-        else
-          search_pattern_symbol s in
+        match mode with
+        | `Long -> search_string_symbol s
+        | `Pattern ->  search_pattern_symbol s
+        | `Type ->
+            try  search_string_type ~mode:`included s
+            with Searchid.Error (start,stop) ->
+              Entry.icursor ew ~index:(`Num start); []
+      in
       match l with [] -> ()
-      | [lid,kind] when !is_long -> view_symbol lid ~kind ~env:!start_env
+      | [lid,kind] when mode = `Long ->
+          view_symbol lid ~kind ~env:!start_env
       | _ -> choose_symbol ~title:"Choose symbol" ~env:!start_env l
     end
   and close =
