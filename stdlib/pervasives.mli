@@ -164,6 +164,10 @@ external (mod) : int -> int -> int = "%modint"
            platform-dependent. *)
 val abs : int -> int
         (* Return the absolute value of the argument. *)
+val max_int: int
+val min_int: int
+        (* The greatest and smallest representable integers. *)
+
 
 (** Bitwise operations *)
 

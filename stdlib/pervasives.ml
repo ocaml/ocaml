@@ -65,6 +65,9 @@ external (lsl) : int -> int -> int = "%lslint"
 external (lsr) : int -> int -> int = "%lsrint"
 external (asr) : int -> int -> int = "%asrint"
 
+let min_int = if 1 lsl 31 = 0 then 1 lsl 30 else 1 lsl 62
+let max_int = min_int - 1
+
 (* Floating-point operations *)
 
 external (~-.) : float -> float = "%negfloat"
