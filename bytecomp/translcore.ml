@@ -882,7 +882,7 @@ and guarded_proc_as_fun cl_loc sync jpats p =
   let params, body = transl_guarded_proc cl_loc sync jpats p in
   Lfunction (Curried, params, body)
 
-(* transl_spawn separetes e into a forked part and a part to execute now *)
+(* transl_spawn separates e into a forked part and a part to execute now *)
 and transl_spawn sync some_loc e =
   let psync, seqs, forks = Transljoin.as_procs sync e in
   let lam_end = match psync with

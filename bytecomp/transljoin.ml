@@ -27,32 +27,37 @@ open Lambda
   Jprims module.
 *)
 
-let env = lazy begin
-  try
-    Env.open_pers_signature "Jprims" Env.empty
+let get_signature name =
+  lazy begin
+    try
+      Env.open_pers_signature name Env.empty
   with Not_found ->
-    fatal_error "module Jprims not found"
+    fatal_error ("transjoin: module "^name^" not found")
 end
 
-let transl_name name =
+let env_jprims = get_signature "Jprims"
+and env_join = get_signature "Join"
+
+let transl_name env name =
   try
     Env.lookup_value (Lident name) (Lazy.force env)
   with
   | Not_found ->
       fatal_error ("Join primitive: "^name^" not found")
 
-let mk_lambda name = lazy (transl_name name)
-let lambda_exit = mk_lambda "exit"
-let lambda_create_location = mk_lambda "create_location"
-let lambda_create_process = mk_lambda "create_process"
-let lambda_create_process_location = mk_lambda "create_process_location"
-let lambda_send_sync = mk_lambda "send_sync"
-let lambda_send_async = mk_lambda "send_async"
-let lambda_create_automaton = mk_lambda "create_automaton"
-let lambda_create_automaton_location = mk_lambda "create_automaton_location"
-let lambda_patch_match = mk_lambda "patch_match"
-let lambda_patch_guard = mk_lambda "patch_guard"
-let lambda_reply_to = mk_lambda "reply_to"
+let mk_lambda env name = lazy (transl_name env name)
+let lambda_exit = mk_lambda env_jprims "exit"
+let lambda_create_location = mk_lambda env_jprims "create_location"
+let lambda_create_process = mk_lambda env_join "create_process"
+let lambda_create_process_location =
+  mk_lambda env_jprims "create_process_location"
+let lambda_send_sync = mk_lambda env_jprims "send_sync"
+let lambda_send_async = mk_lambda env_jprims "send_async"
+let lambda_create_automaton = mk_lambda env_join "create_automaton"
+let lambda_create_automaton_location = mk_lambda env_jprims "create_automaton_location"
+let lambda_patch_match = mk_lambda env_jprims "patch_match"
+let lambda_patch_guard = mk_lambda env_jprims "patch_guard"
+let lambda_reply_to = mk_lambda env_jprims "reply_to"
 
 let mk_apply f args = match Lazy.force f with
 | _,{val_kind=Val_prim p}  -> Lprim (Pccall p,args)
@@ -98,11 +103,12 @@ let do_spawn some_loc p =
   if p = lambda_unit then
     p
   else
+    let param = Ident.create "x" in
     match some_loc with
     | None ->
-        create_process (Lfunction (Curried, [], p))
+        create_process (Lfunction (Curried, [param], p))
     | Some id_loc ->
-        create_process_location id_loc (Lfunction (Curried, [], p))
+        create_process_location id_loc (Lfunction (Curried, [param], p))
 
 
 (*
@@ -346,10 +352,8 @@ let transl_jpat sync {jpat_desc=_,arg} = match sync,arg.pat_desc with
       
 
 let transl_jpats sync jpats = List.map (transl_jpat sync) jpats
-         
 
 let build_matches {jauto_name=name ; jauto_names=names ; jauto_desc = cls} =
-  let r = Array.create (List.length names) [] in
 
   let rec build_clauses i = function
     | [] -> []
@@ -374,10 +378,7 @@ let build_matches {jauto_name=name ; jauto_names=names ; jauto_desc = cls} =
           List.fold_left
             (fun r num -> r lor (1 lsl num))
             0
-            nums
-        and principal_pat =  match sync with
-        | None -> 0
-        | Some id -> 1 lsl get_num names id in
+            nums in
           
         (* add automaton entries for jpats *)
         List.iter

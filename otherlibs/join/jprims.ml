@@ -244,8 +244,8 @@ let create_process_location l f =
           Condition.signal thread.condition;
           Mutex.unlock join_lock
           
-let create_process f =
-  create_process_location (self_location ()) f
+let create_process f = ignore (Thread.create f ())
+
 
 let halt_condition = Condition.create ()
 let halt_locations = ref []

@@ -653,6 +653,9 @@ jocp: ocamlc camlp4out
 alldepend::
 	set -e; cd jocparsing ; $(MAKE) depend
 
+clean::
+	set -e; cd jocparsing ; $(MAKE) clean
+
 # Check that the stack limit is reasonable.
 
 checkstack:

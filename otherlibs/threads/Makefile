@@ -23,7 +23,7 @@ COMPFLAGS=-warn-error A
 
 C_OBJS=scheduler.o
 
-CAML_OBJS=thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo
+CAML_OBJS=thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo join.cmo
 
 LIB=../../stdlib
 
@@ -103,8 +103,8 @@ install:
 	mkdir -p $(LIBDIR)/vmthreads
 	cp libvmthreads.a $(LIBDIR)/vmthreads/libvmthreads.a
 	cd $(LIBDIR)/vmthreads; $(RANLIB) libvmthreads.a
-	cp thread.cmi mutex.cmi condition.cmi event.cmi threadUnix.cmi threads.cma stdlib.cma unix.cma $(LIBDIR)/vmthreads
-	cp thread.mli mutex.mli condition.mli event.mli threadUnix.mli $(LIBDIR)/vmthreads
+	cp thread.cmi mutex.cmi condition.cmi event.cmi threadUnix.cmi join.cmi threads.cma stdlib.cma unix.cma $(LIBDIR)/vmthreads
+	cp thread.mli mutex.mli condition.mli event.mli threadUnix.mli join.mli $(LIBDIR)/vmthreads
 
 installopt:
 

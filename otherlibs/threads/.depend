@@ -14,6 +14,8 @@ condition.cmo: mutex.cmi thread.cmi condition.cmi
 condition.cmx: mutex.cmx thread.cmx condition.cmi 
 event.cmo: condition.cmi mutex.cmi event.cmi 
 event.cmx: condition.cmx mutex.cmx event.cmi 
+join.cmo: thread.cmi join.cmi 
+join.cmx: thread.cmx join.cmi 
 marshal.cmo: pervasives.cmi marshal.cmi 
 marshal.cmx: pervasives.cmx marshal.cmi 
 mutex.cmo: thread.cmi mutex.cmi 
