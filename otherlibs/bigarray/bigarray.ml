@@ -24,14 +24,14 @@ type int_elt
 type int32_elt
 type int64_elt
 type nativeint_elt
-type float4_elt
-type float8_elt
+type float32_elt
+type float64_elt
 
 (* Keep those constants in sync with the caml_bigarray_kind enumeration
    in bigarray.h *)
 
-let float4 = 0
-let float8 = 1
+let float32 = 0
+let float64 = 1
 let int8_signed = 2
 let int8_unsigned = 3
 let int16_signed = 4

@@ -14,6 +14,7 @@
 
 #include <stddef.h>
 #include <stdarg.h>
+#include <string.h>
 #include "alloc.h"
 #include "bigarray.h"
 #include "custom.h"
@@ -36,7 +37,7 @@ static long bigarray_num_elts(struct caml_bigarray * b)
 /* Size in bytes of a bigarray element, indexed by bigarray kind */
 
 static int bigarray_element_size[] =
-{ 4 /*FLOAT4*/, 8 /*FLOAT8*/,
+{ 4 /*FLOAT32*/, 8 /*FLOAT64*/,
   1 /*SINT8*/, 1 /*UINT8*/,
   2 /*SINT16*/, 2 /*UINT16*/,
   4 /*INT32*/, 8 /*INT64*/,
@@ -108,8 +109,12 @@ value bigarray_create(value vkind, value vlayout, value vdim)
 
   num_dims = Wosize_val(vdim);
   if (num_dims < 1 || num_dims > MAX_NUM_DIMS)
-    invalid_argument("Bigarray.alloc: bad number of dimensions");
-  for (i = 0; i < num_dims; i++) dim[i] = Long_val(Field(vdim, i));
+    invalid_argument("Bigarray.create: bad number of dimensions");
+  for (i = 0; i < num_dims; i++) {
+    dim[i] = Long_val(Field(vdim, i));
+    if (dim[i] < 0 || dim[i] > 0x7FFFFFFFL)
+      invalid_argument("Bigarray.create: negative dimension");
+  }
   flags = Int_val(vkind) | Int_val(vlayout);
   return alloc_bigarray(flags, num_dims, NULL, dim);
 }
@@ -160,9 +165,9 @@ value bigarray_get_N(value vb, value * vind, int nind)
   offset = bigarray_offset(b, index);
   /* Perform read */
   switch ((b->flags) & BIGARRAY_KIND_MASK) {
-  case BIGARRAY_FLOAT4:
+  case BIGARRAY_FLOAT32:
     return copy_double(((float *) b->data)[offset]);
-  case BIGARRAY_FLOAT8:
+  case BIGARRAY_FLOAT64:
     return copy_double(((double *) b->data)[offset]);
   case BIGARRAY_SINT8:
     return Val_int(((schar *) b->data)[offset]);
@@ -255,9 +260,9 @@ static value bigarray_set_aux(value vb, value * vind, long nind, value newval)
   offset = bigarray_offset(b, index);
   /* Perform write */
   switch (b->flags & BIGARRAY_KIND_MASK) {
-  case BIGARRAY_FLOAT4:
+  case BIGARRAY_FLOAT32:
     ((float *) b->data)[offset] = Double_val(newval); break;
-  case BIGARRAY_FLOAT8:
+  case BIGARRAY_FLOAT64:
     ((double *) b->data)[offset] = Double_val(newval); break;
   case BIGARRAY_SINT8:
   case BIGARRAY_UINT8:
@@ -381,11 +386,7 @@ static int bigarray_compare(value v1, value v2)
   long n, num_elts;
   int i;
 
-  /* Compare kind and layout */
-  int flags1 = b1->flags & (BIGARRAY_KIND_MASK | BIGARRAY_LAYOUT_MASK);
-  int flags2 = b2->flags & (BIGARRAY_KIND_MASK | BIGARRAY_LAYOUT_MASK);
-  if (flags1 != flags2) return flags2 - flags1;
-  /* Same kind and layout: compare number of dimensions */
+  /* Compare number of dimensions */
   if (b1->num_dims != b2->num_dims) return b2->num_dims - b1->num_dims;
   /* Same number of dimensions: compare dimensions lexicographically */
   for (i = 0; i < b1->num_dims; i++) {
@@ -406,9 +407,9 @@ static int bigarray_compare(value v1, value v2)
   }
 
   switch (b1->flags & BIGARRAY_KIND_MASK) {
-  case BIGARRAY_FLOAT4:
+  case BIGARRAY_FLOAT32:
     DO_COMPARISON(float);
-  case BIGARRAY_FLOAT8:
+  case BIGARRAY_FLOAT64:
     DO_COMPARISON(double);
   case BIGARRAY_SINT8:
     DO_COMPARISON(schar);
@@ -464,7 +465,7 @@ static long bigarray_hash(value v)
     for (n = 0; n < num_elts; n++) h = COMBINE(h, *p++);
     break;
   }
-  case BIGARRAY_FLOAT4:
+  case BIGARRAY_FLOAT32:
   case BIGARRAY_INT32:
 #ifndef ARCH_SIXTYFOUR
   case BIGARRAY_CAML_INT:
@@ -475,7 +476,7 @@ static long bigarray_hash(value v)
     for (n = 0; n < num_elts; n++) h = COMBINE(h, *p++);
     break;
   }
-  case BIGARRAY_FLOAT8:
+  case BIGARRAY_FLOAT64:
   case BIGARRAY_INT64:
 #ifdef ARCH_SIXTYFOUR
   case BIGARRAY_CAML_INT:
@@ -551,10 +552,10 @@ static void bigarray_serialize(value v,
   case BIGARRAY_SINT16:
   case BIGARRAY_UINT16:
     serialize_block_2(b->data, num_elts); break;
-  case BIGARRAY_FLOAT4:
+  case BIGARRAY_FLOAT32:
   case BIGARRAY_INT32:
     serialize_block_4(b->data, num_elts); break;
-  case BIGARRAY_FLOAT8:
+  case BIGARRAY_FLOAT64:
   case BIGARRAY_INT64:
     serialize_block_8(b->data, num_elts); break;
   case BIGARRAY_CAML_INT:
@@ -617,10 +618,10 @@ unsigned long bigarray_deserialize(void * dst)
   case BIGARRAY_SINT16:
   case BIGARRAY_UINT16:
     deserialize_block_2(b->data, num_elts); break;
-  case BIGARRAY_FLOAT4:
+  case BIGARRAY_FLOAT32:
   case BIGARRAY_INT32:
     deserialize_block_4(b->data, num_elts); break;
-  case BIGARRAY_FLOAT8:
+  case BIGARRAY_FLOAT64:
   case BIGARRAY_INT64:
     deserialize_block_8(b->data, num_elts); break;
   case BIGARRAY_CAML_INT:
@@ -676,8 +677,7 @@ value bigarray_slice(value vb, value vind)
   char * sub_data;
   value res;
 
-  /* Check number of indices < number of dimensions of array
-     (maybe not necessary if ML typing guarantees this) */
+  /* Check number of indices < number of dimensions of array */
   num_inds = Wosize_val(vind);
   if (num_inds >= b->num_dims)
     invalid_argument("Bigarray.slice: too many indices");
@@ -732,7 +732,7 @@ value bigarray_sub(value vb, value vofs, value vlen)
     changed_dim = b->num_dims - 1;
     ofs--;                      /* Fortran arrays start at 1 */
   }
-  if (ofs < 0 || len <= 0 || ofs + len > b->dim[changed_dim])
+  if (ofs < 0 || len < 0 || ofs + len > b->dim[changed_dim])
     invalid_argument("Bigarray.sub: bad sub-array");
   sub_data =
     (char *) b->data +
@@ -780,13 +780,13 @@ value bigarray_fill(value vb, value vinit)
   long num_elts = bigarray_num_elts(b);
 
   switch (b->flags & BIGARRAY_KIND_MASK) {
-  case BIGARRAY_FLOAT4: {
+  case BIGARRAY_FLOAT32: {
     float init = Double_val(vinit);
     float * p;
     for (p = b->data; num_elts > 0; p++, num_elts--) *p = init;
     break;
   }
-  case BIGARRAY_FLOAT8: {
+  case BIGARRAY_FLOAT64: {
     double init = Double_val(vinit);
     double * p;
     for (p = b->data; num_elts > 0; p++, num_elts--) *p = init;
