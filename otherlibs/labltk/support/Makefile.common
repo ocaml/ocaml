@@ -4,7 +4,7 @@ TOPDIR=../../..
 ## Path to the otherlibs subdirectory
 OTHERS=../..
 
-LIBNAME=mltk
+LIBNAME=labltk
 
 include $(TOPDIR)/config/Makefile
 
