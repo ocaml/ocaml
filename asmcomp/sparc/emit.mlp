@@ -115,18 +115,6 @@ let emit_load instr addr arg dst =
         `	or	%g1, %lo({emit_int ofs}), %g1\n`;
         `	{emit_string instr}	[{emit_reg arg.(0)} + %g1], {emit_reg dst}\n`
       end
-  | Iindexed2 ofs ->
-      if ofs = 0 then
-        `	{emit_string instr}	[{emit_reg arg.(0)} + {emit_reg arg.(1)}], {emit_reg dst}\n`
-      else if is_immediate ofs then begin
-        `	add	{emit_reg arg.(1)}, {emit_int ofs}, %g1\n`;
-        `	{emit_string instr}	[{emit_reg arg.(0)} + %g1], {emit_reg dst}\n`
-      end else begin
-        `	sethi	%hi({emit_int ofs}), %g1\n`;
-        `	or	%g1, %lo({emit_int ofs}), %g1\n`;
-        `	add	{emit_reg arg.(1)}, %g1, %g1\n`;
-        `	{emit_string instr}	[{emit_reg arg.(0)} + %g1], {emit_reg dst}\n`
-      end
 
 (* Output a store *)
 
@@ -144,18 +132,6 @@ let emit_store instr addr arg src =
       else begin
         `	sethi	%hi({emit_int ofs}), %g1\n`;
         `	or	%g1, %lo({emit_int ofs}), %g1\n`;
-        `	{emit_string instr}	{emit_reg src}, [{emit_reg arg.(1)} + %g1]\n`
-      end
-  | Iindexed2 ofs ->
-      if ofs = 0 then
-        `	{emit_string instr}	{emit_reg src}, [{emit_reg arg.(1)} + {emit_reg arg.(2)}]\n`
-      else if is_immediate ofs then begin
-        `	add	{emit_reg arg.(2)}, {emit_int ofs}, %g1\n`;
-        `	{emit_string instr}	{emit_reg src}, [{emit_reg arg.(1)} + %g1]\n`
-      end else begin
-        `	sethi	%hi({emit_int ofs}), %g1\n`;
-        `	or	%g1, %lo({emit_int ofs}), %g1\n`;
-        `	add	{emit_reg arg.(2)}, %g1, %g1\n`;
         `	{emit_string instr}	{emit_reg src}, [{emit_reg arg.(1)} + %g1]\n`
       end
 
@@ -550,9 +526,7 @@ let is_one_instr i =
       | Iconst_int n -> is_native_immediate n
       | Istackoffset _ -> true
       | Iload(_, Iindexed n) -> i.res.(0).typ <> Float & is_immediate n
-      | Iload(_, Iindexed2 n) -> i.res.(0).typ <> Float & n = 0
       | Istore(_, Iindexed n) -> i.arg.(0).typ <> Float & is_immediate n
-      | Istore(_, Iindexed2 n) -> i.arg.(0).typ <> Float & n = 0
       | Iintop(op) -> is_one_instr_op op
       | Iintop_imm(op, _) -> is_one_instr_op op
       | Iaddf | Isubf | Imulf | Idivf -> true

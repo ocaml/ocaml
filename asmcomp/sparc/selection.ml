@@ -19,44 +19,23 @@ open Reg
 open Arch
 open Mach
 
-(* Recognition of addressing modes *)
-
-type addressing_expr =
-    Asymbol of string
-  | Alinear of expression
-  | Aadd of expression * expression
-
-let rec select_addr = function
-    Cconst_symbol s ->
-      (Asymbol s, 0)
-  | Cop((Caddi | Cadda), [arg; Cconst_int m]) ->
-      let (a, n) = select_addr arg in (a, n + m)
-  | Cop((Caddi | Cadda), [Cconst_int m; arg]) ->
-      let (a, n) = select_addr arg in (a, n + m)
-  | Cop((Caddi | Cadda), [arg1; arg2]) ->
-      begin match (select_addr arg1, select_addr arg2) with
-          ((Alinear e1, n1), (Alinear e2, n2)) ->
-              (Aadd(e1, e2), n1 + n2)
-        | _ ->
-              (Aadd(arg1, arg2), 0)
-      end
-  | exp ->
-      (Alinear exp, 0)
-
 class selector = object (self)
 
 inherit Selectgen.selector_generic as super
 
 method is_immediate n = (n <= 4095) && (n >= -4096)
 
-method select_addressing exp =
-  match select_addr exp with
-    (Asymbol s, d) ->
-      (Ibased(s, d), Ctuple [])
-  | (Alinear e, d) ->
-      (Iindexed d, e)
-  | (Aadd(e1, e2), d) ->
-      (Iindexed2 d, Ctuple[e1; e2])
+method select_addressing = function
+    Cconst_symbol s ->
+      (Ibased(s, 0), Ctuple [])
+  | Cop(Cadda, [Cconst_symbol s; Cconst_int n]) ->
+      (Ibased(s, n), Ctuple [])
+  | Cop(Cadda, [arg; Cconst_int n]) ->
+      (Iindexed n, arg)
+  | Cop(Cadda, [arg1; Cop(Caddi, [arg2; Cconst_int n])]) ->
+      (Iindexed n, Cop(Cadda, [arg1; arg2]))
+  | arg ->
+      (Iindexed 0, arg)
 
 method select_operation op args =
   match (op, args) with
