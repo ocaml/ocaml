@@ -171,9 +171,10 @@ void empty_minor_heap (void)
       oldify_one (**r, *r);
     }
     oldify_mopup ();
-    if (young_ptr < young_limit) young_ptr = young_limit;
+    if (young_ptr < young_start) young_ptr = young_start;
     stat_minor_words += Wsize_bsize (young_end - young_ptr);
     young_ptr = young_end;
+    young_limit = young_start;
     ref_table_ptr = ref_table;
     ref_table_limit = ref_table_threshold;
     gc_message (0x02, ">", 0);
