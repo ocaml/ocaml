@@ -50,6 +50,8 @@ module type S =
     val add: elt -> t -> t
         (* [add x s] returns a set containing all elements of [s],
            plus [x]. If [x] was already in [s], [s] is returned unchanged. *)
+    val singleton: elt -> t
+        (* [singleton x] returns the one-element set containing only [x]. *)
     val remove: elt -> t -> t
         (* [remove x s] returns a set containing all elements of [s],
            except [x]. If [x] was not in [s], [s] is returned unchanged. *)

@@ -27,6 +27,7 @@ module type S =
     val is_empty: t -> bool
     val mem: elt -> t -> bool
     val add: elt -> t -> t
+    val singleton: elt -> t
     val remove: elt -> t -> t
     val union: t -> t -> t
     val inter: t -> t -> t
@@ -161,6 +162,8 @@ module Make(Ord: OrderedType) =
           if c = 0 then t else
           if c < 0 then bal (add x l) v r else bal l v (add x r)
 
+    let singleton x = Node(Empty, x, Empty, 1)
+
     let rec remove x = function
         Empty -> Empty
       | Node(l, v, r, _) ->
@@ -172,9 +175,17 @@ module Make(Ord: OrderedType) =
       match (s1, s2) with
         (Empty, t2) -> t2
       | (t1, Empty) -> t1
-      | (Node(l1, v1, r1, _), t2) ->
-          let (l2, _, r2) = split v1 t2 in
-          join (union l1 l2) v1 (union r1 r2)
+      | (Node(l1, v1, r1, h1), Node(l2, v2, r2, h2)) ->
+          if h1 >= h2 then
+            if h2 = 1 then add v2 s1 else begin
+              let (l2, _, r2) = split v1 s2 in
+              join (union l1 l2) v1 (union r1 r2)
+            end
+          else
+            if h1 = 1 then add v1 s2 else begin
+              let (l1, _, r1) = split v2 s1 in
+              join (union l1 l2) v2 (union r1 r2)
+            end
 
     let rec inter s1 s2 =
       match (s1, s2) with
