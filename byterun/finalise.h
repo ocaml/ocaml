@@ -19,5 +19,5 @@ void final_do_calls (void);
 void final_do_strong_roots (scanning_action f);
 void final_do_weak_roots (scanning_action f);
 void final_do_young_roots (scanning_action f);
-void final_minor_gc_done (void);
+void final_empty_young (void);
 value final_register (value f, value v);

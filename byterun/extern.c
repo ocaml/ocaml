@@ -508,7 +508,8 @@ void serialize_block_1(void * data, long len)
 
 void serialize_block_2(void * data, long len)
 {
-  unsigned char * p, * q;
+  unsigned char * p;
+  char * q;
   if (extern_ptr + 2 * len > extern_limit) resize_extern_block(2 * len);
 #ifndef ARCH_BIG_ENDIAN
   for (p = data, q = extern_ptr; len > 0; len--, p += 2, q += 2)
@@ -522,7 +523,8 @@ void serialize_block_2(void * data, long len)
 
 void serialize_block_4(void * data, long len)
 {
-  unsigned char * p, * q;
+  unsigned char * p;
+  char * q;
   if (extern_ptr + 4 * len > extern_limit) resize_extern_block(4 * len);
 #ifndef ARCH_BIG_ENDIAN
   for (p = data, q = extern_ptr; len > 0; len--, p += 4, q += 4)
@@ -536,7 +538,8 @@ void serialize_block_4(void * data, long len)
 
 void serialize_block_8(void * data, long len)
 {
-  unsigned char * p, * q;
+  unsigned char * p;
+  char * q;
   if (extern_ptr + 8 * len > extern_limit) resize_extern_block(8 * len);
 #ifndef ARCH_BIG_ENDIAN
   for (p = data, q = extern_ptr; len > 0; len--, p += 8, q += 8)
