@@ -739,12 +739,18 @@ external win_create_process : string -> string -> string option ->
                               file_descr -> file_descr -> file_descr -> int
                             = "win_create_process" "win_create_process_native"
 
+let make_cmdline args =
+  let maybe_quote f =
+    if String.contains f ' ' || String.contains f '\"'
+    then Filename.quote f
+    else f in
+  String.concat " " (List.map maybe_quote (Array.to_list args))
+
 let create_process prog args fd1 fd2 fd3 =
-  win_create_process prog (String.concat " " (Array.to_list args)) None
-                     fd1 fd2 fd3
+  win_create_process prog (make_cmdline args) None fd1 fd2 fd3
 
 let create_process_env prog args env fd1 fd2 fd3 =
-  win_create_process prog (String.concat " " (Array.to_list args))
+  win_create_process prog (make_cmdline args)
                      (Some(String.concat "\000" (Array.to_list env) ^ "\000"))
                      fd1 fd2 fd3 
 
