@@ -1519,7 +1519,8 @@ class html =
 	   (self#html_of_class ~with_link: false cl)
 	  );
 	(* parameters *)
-	output_string chanout (self#html_of_parameter_list (Name.father cl.cl_name) cl.cl_parameters);
+	output_string chanout 
+	  (self#html_of_described_parameter_list (Name.father cl.cl_name) cl.cl_parameters);
         (* class inheritance *)
 	self#generate_class_inheritance_info chanout cl;
 	(* a horizontal line *)
