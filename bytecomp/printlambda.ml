@@ -137,7 +137,7 @@ let rec lambda = function
       open_hovbox 2;
       print_string "(function"; print_space(); Ident.print param;
       print_space(); lambda body; print_string ")"; close_box()
-  | Llet(id, arg, body) ->
+  | Llet(str, id, arg, body) ->
       open_hovbox 2;
       print_string "(let"; print_space();
       open_hvbox 1;
@@ -149,13 +149,15 @@ let rec lambda = function
   | Lletrec(id_arg_list, body) ->
       open_hovbox 2;
       print_string "(letrec"; print_space();
-      open_hvbox 1;
       print_string "(";
+      open_hvbox 1;
       let spc = ref false in
       List.iter
         (fun (id, l) ->
           if !spc then print_space() else spc := true;
-          Ident.print id; print_string " "; lambda l)
+          open_hovbox 2;
+          Ident.print id; print_space(); lambda l;
+          close_box())
         id_arg_list;
       close_box();
       print_string ")";
@@ -251,7 +253,7 @@ and sequence = function
       lambda l
 
 and letbody = function
-    Llet(id, arg, body) ->
+    Llet(str, id, arg, body) ->
       print_space();
       open_hovbox 2; Ident.print id; print_space(); lambda arg;
       close_box();

@@ -18,10 +18,9 @@ open Asttypes
 open Typedtree
 open Lambda
 
-val transl_exp: compilenv -> expression -> lambda
+val transl_exp: expression -> lambda
 val transl_let:
-        compilenv -> rec_flag -> (pattern * expression) list ->
-          compilenv * (lambda -> lambda)
+      rec_flag -> (pattern * expression) list -> lambda -> lambda
 val transl_primitive: Primitive.description -> lambda
 val transl_exception: Ident.t -> exception_declaration -> lambda
 

@@ -71,37 +71,36 @@ let primitive_declarations = ref ([] : string list)
 
 (* Compile a module expression *)
 
-let rec transl_module env cc mexp =
+let rec transl_module cc mexp =
   match mexp.mod_desc with
     Tmod_ident path ->
       apply_coercion cc (transl_path path)
   | Tmod_structure str ->
-      transl_structure env [] cc str
+      transl_structure [] cc str
   | Tmod_functor(param, mty, body) ->
       begin match cc with
         Tcoerce_none ->
-          Lfunction(param, transl_module env Tcoerce_none body)
+          Lfunction(param, transl_module Tcoerce_none body)
       | Tcoerce_functor(ccarg, ccres) ->
           let param' = Ident.new "funarg" in
           Lfunction(param',
-            Llet(param, apply_coercion ccarg (Lvar param'),
-              transl_module env ccres body))
+            Llet(Alias, param, apply_coercion ccarg (Lvar param'),
+              transl_module ccres body))
       | _ ->
           fatal_error "Translmod.transl_module"
       end
   | Tmod_apply(funct, arg, ccarg) ->
       apply_coercion cc
-        (Lapply(transl_module env Tcoerce_none funct,
-                [transl_module env ccarg arg]))
+        (Lapply(transl_module Tcoerce_none funct, [transl_module ccarg arg]))
   | Tmod_constraint(arg, mty, ccarg) ->
-      transl_module env (compose_coercions cc ccarg) arg
+      transl_module (compose_coercions cc ccarg) arg
 
-and transl_structure env fields cc = function
+and transl_structure fields cc = function
     [] ->
       begin match cc with
         Tcoerce_none ->
           Lprim(Pmakeblock(0, Immutable),
-                List.map (fun id -> transl_access env id) (List.rev fields))
+                List.map (fun id -> Lvar id) (List.rev fields))
       | Tcoerce_structure pos_cc_list ->
           let v = Array.of_list (List.rev fields) in
           Lprim(Pmakeblock(0, Immutable),
@@ -109,43 +108,42 @@ and transl_structure env fields cc = function
                   (fun (pos, cc) ->
                     match cc with
                       Tcoerce_primitive p -> transl_primitive p
-                    | _ -> apply_coercion cc (transl_access env v.(pos)))
+                    | _ -> apply_coercion cc (Lvar v.(pos)))
                   pos_cc_list)
       | _ ->
           fatal_error "Translmod.transl_structure"
       end
   | Tstr_eval expr :: rem ->
-      Lsequence(transl_exp env expr, transl_structure env fields cc rem)
+      Lsequence(transl_exp expr, transl_structure fields cc rem)
   | Tstr_value(rec_flag, pat_expr_list) :: rem ->
       let ext_fields = let_bound_idents pat_expr_list @ fields in
-      let (ext_env, add_let) = transl_let env rec_flag pat_expr_list in
-      add_let(transl_structure ext_env ext_fields cc rem)
+      transl_let rec_flag pat_expr_list (transl_structure ext_fields cc rem)
   | Tstr_primitive(id, descr) :: rem ->
       begin match descr.val_prim with
         None -> ()
       | Some p -> primitive_declarations :=
                     p.Primitive.prim_name :: !primitive_declarations
       end;
-      transl_structure env fields cc rem
+      transl_structure fields cc rem
   | Tstr_type(decls) :: rem ->
-      transl_structure env fields cc rem
+      transl_structure fields cc rem
   | Tstr_exception(id, decl) :: rem ->
-      Llet(id, transl_exception id decl,
-           transl_structure env (id :: fields) cc rem)
+      Llet(Strict, id, transl_exception id decl,
+           transl_structure (id :: fields) cc rem)
   | Tstr_module(id, modl) :: rem ->
-      Llet(id, transl_module env Tcoerce_none modl,
-           transl_structure env (id :: fields) cc rem)
+      Llet(Strict, id, transl_module Tcoerce_none modl,
+           transl_structure (id :: fields) cc rem)
   | Tstr_modtype(id, decl) :: rem ->
-      transl_structure env fields cc rem
+      transl_structure fields cc rem
   | Tstr_open path :: rem ->
-      transl_structure env fields cc rem
+      transl_structure fields cc rem
 
 (* Compile an implementation *)
 
 let transl_implementation module_name str cc =
   primitive_declarations := [];
   let module_id = Ident.new_persistent module_name in
-  Lprim(Psetglobal module_id, [transl_structure empty_env [] cc str])
+  Lprim(Psetglobal module_id, [transl_structure [] cc str])
 
 (* Compile a sequence of expressions *)
 
@@ -158,16 +156,12 @@ let rec make_sequence fn = function
 
 let transl_toplevel_item = function
     Tstr_eval expr ->
-      transl_exp empty_env expr
+      transl_exp expr
   | Tstr_value(rec_flag, pat_expr_list) ->
       let idents = let_bound_idents pat_expr_list in
-      let (env, add_lets) = transl_let empty_env rec_flag pat_expr_list in
-      let lam =
-        add_lets(make_sequence
-                  (fun id -> Lprim(Psetglobal id, [transl_access env id]))
-                  idents) in
       List.iter Ident.make_global idents;
-      lam
+      transl_let rec_flag pat_expr_list
+        (make_sequence (fun id -> Lprim(Psetglobal id, [Lvar id])) idents)
   | Tstr_primitive(id, descr) ->
       lambda_unit
   | Tstr_type(decls) ->
@@ -177,7 +171,7 @@ let transl_toplevel_item = function
       Lprim(Psetglobal id, [transl_exception id decl])
   | Tstr_module(id, modl) ->
       Ident.make_global id;
-      Lprim(Psetglobal id, [transl_module empty_env Tcoerce_none modl])
+      Lprim(Psetglobal id, [transl_module Tcoerce_none modl])
   | Tstr_modtype(id, decl) ->
       lambda_unit
   | Tstr_open path ->

@@ -111,7 +111,7 @@ let rec size_of_lambda = function
       1 + IdentSet.cardinal(free_variables funct)
   | Lprim(Pmakeblock(tag, mut), args) ->
       List.length args
-  | Llet(id, arg, body) ->
+  | Llet(str, id, arg, body) ->
       size_of_lambda body
   | _ ->
       fatal_error "Codegen.size_of_lambda"
@@ -175,7 +175,7 @@ let rec comp_expr env exp sz cont =
       Stack.push (param, body, lbl, fv) functions_to_compile;
       comp_args env (List.map (fun n -> Lvar n) fv) sz
         (Kclosure(lbl, List.length fv) :: cont)
-  | Llet(id, arg, body) ->
+  | Llet(str, id, arg, body) ->
       comp_expr env arg sz
         (Kpush :: comp_expr (add_var id (sz+1) env) body (sz+1)
           (add_pop 1 cont))
@@ -352,8 +352,6 @@ let rec comp_expr env exp sz cont =
               Kbranchif lbl_loop ::
               add_const_unit (add_pop 2 cont))))
   | Lswitch(arg, num_consts, consts, num_blocks, blocks) ->
-      (* To ensure stack balancing, we must have either sz = !sz_staticfail
-         or none of the actv.(i) contains an unguarded Lstaticfail. *)
       let (branch, cont1) = make_branch cont in
       let c = ref (discard_dead_code cont1) in
       let act_consts = Array.new num_consts Lstaticfail in
@@ -379,10 +377,17 @@ let rec comp_expr env exp sz cont =
       begin match !lblref with
         None ->
           let (lbl, cont1) = label_code(comp_expr env expr sz cont) in
-          lblref := Some lbl;
+          lblref := Some [sz, lbl];
           cont1
-      | Some lbl ->
-          Kbranch lbl :: discard_dead_code cont
+      | Some specializations ->
+          begin try
+            let lbl = List.assoc sz specializations in
+            Kbranch lbl :: discard_dead_code cont
+          with Not_found ->
+            let (lbl, cont1) = label_code(comp_expr env expr sz cont) in
+            lblref := Some ((sz, lbl) :: specializations);
+            cont1
+          end
       end
   | Lassign(id, expr) ->
       begin try

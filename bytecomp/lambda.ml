@@ -68,12 +68,16 @@ type structured_constant =
   | Const_block of int * structured_constant list
   | Const_float_array of string list
 
+type let_kind = Strict | Alias
+
+type shared_code = (int * int) list
+
 type lambda =
     Lvar of Ident.t
   | Lconst of structured_constant
   | Lapply of lambda * lambda list
   | Lfunction of Ident.t * lambda
-  | Llet of Ident.t * lambda * lambda
+  | Llet of let_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list
   | Lswitch of lambda * int * (int * lambda) list * int * (int * lambda) list
@@ -84,7 +88,7 @@ type lambda =
   | Lsequence of lambda * lambda
   | Lwhile of lambda * lambda
   | Lfor of Ident.t * lambda * lambda * direction_flag * lambda
-  | Lshared of lambda * int option ref
+  | Lshared of lambda * shared_code option ref
   | Lassign of Ident.t * lambda
 
 let const_unit = Const_base(Const_int 0)
@@ -98,7 +102,7 @@ let share_lambda = function
 let name_lambda arg fn =
   match arg with
     Lvar id -> fn id
-  | _ -> let id = Ident.new "let" in Llet(id, arg, fn id)
+  | _ -> let id = Ident.new "let" in Llet(Strict, id, arg, fn id)
 
 let name_lambda_list args fn =
   let rec name_list names = function
@@ -107,7 +111,7 @@ let name_lambda_list args fn =
       name_list (arg :: names) rem
   | arg :: rem ->
       let id = Ident.new "let" in
-      Llet(id, arg, name_list (Lvar id :: names) rem) in
+      Llet(Strict, id, arg, name_list (Lvar id :: names) rem) in
   name_list [] args
 
 module IdentSet =
@@ -126,7 +130,7 @@ let free_variables l =
       freevars fn; List.iter freevars args
   | Lfunction(param, body) ->
       freevars body; fv := IdentSet.remove param !fv
-  | Llet(id, arg, body) ->
+  | Llet(str, id, arg, body) ->
       freevars arg; freevars body; fv := IdentSet.remove id !fv
   | Lletrec(decl, body) ->
       freevars body;
@@ -162,22 +166,8 @@ let free_variables l =
 let rec is_guarded = function
     Lifthenelse(cond, body, Lstaticfail) -> true
   | Lshared(lam, lbl) -> is_guarded lam
-  | Llet(id, lam, body) -> is_guarded body
+  | Llet(str, id, lam, body) -> is_guarded body
   | _ -> false
-
-type compilenv = lambda Ident.tbl
-
-let empty_env = Ident.empty
-
-let add_env = Ident.add
-
-let find_env = Ident.find_same
-
-let transl_access env id =
-  try
-    find_env id env
-  with Not_found ->
-    if Ident.global id then Lprim(Pgetglobal id, []) else Lvar id
 
 let rec transl_path = function
     Pident id ->

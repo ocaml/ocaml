@@ -68,12 +68,16 @@ type structured_constant =
   | Const_block of int * structured_constant list
   | Const_float_array of string list
 
+type let_kind = Strict | Alias
+
+type shared_code = (int * int) list     (* stack size -> code label *)
+
 type lambda =
     Lvar of Ident.t
   | Lconst of structured_constant
   | Lapply of lambda * lambda list
   | Lfunction of Ident.t * lambda
-  | Llet of Ident.t * lambda * lambda
+  | Llet of let_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda
   | Lprim of primitive * lambda list
   | Lswitch of lambda * int * (int * lambda) list * int * (int * lambda) list
@@ -84,7 +88,7 @@ type lambda =
   | Lsequence of lambda * lambda
   | Lwhile of lambda * lambda
   | Lfor of Ident.t * lambda * lambda * direction_flag * lambda
-  | Lshared of lambda * int option ref
+  | Lshared of lambda * shared_code option ref
   | Lassign of Ident.t * lambda
 
 val const_unit: structured_constant
@@ -96,11 +100,5 @@ val is_guarded: lambda -> bool
 
 module IdentSet: Set.S with type elt = Ident.t
 val free_variables: lambda -> IdentSet.t
-
-type compilenv
-
-val empty_env: compilenv
-val add_env: Ident.t -> lambda -> compilenv -> compilenv
-val transl_access: compilenv -> Ident.t -> lambda
 
 val transl_path: Path.t -> lambda

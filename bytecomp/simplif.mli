@@ -11,16 +11,8 @@
 
 (* $Id$ *)
 
-(* Compilation of pattern-matching *)
+(* Elimination of useless Llet(Alias) bindings *)
 
-open Typedtree
 open Lambda
 
-val for_function:
-        Location.t -> lambda -> (pattern * lambda) list -> lambda
-val for_trywith:
-        lambda -> (pattern * lambda) list -> lambda
-val for_let:
-        Location.t -> lambda -> pattern -> lambda -> lambda
-val for_multiple_match:
-        Location.t -> lambda list -> (pattern * lambda) list -> lambda
+val simplify_lambda: lambda -> lambda
