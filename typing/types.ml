@@ -26,11 +26,16 @@ and type_desc =
     Tvar
   | Tarrow of type_expr * type_expr
   | Ttuple of type_expr list
-  | Tconstr of Path.t * type_expr list * (Path.t * type_expr) list ref
+  | Tconstr of Path.t * type_expr list * abbrev_memo ref
   | Tobject of type_expr * (Path.t * type_expr list) option ref
   | Tfield of string * type_expr * type_expr
   | Tnil
   | Tlink of type_expr
+
+and abbrev_memo =
+    Mnil
+  | Mcons of Path.t * type_expr * abbrev_memo
+  | Mlink of abbrev_memo ref
 
 (* Value descriptions *)
 
@@ -123,6 +128,8 @@ and modtype_declaration =
     Tmodtype_abstract
   | Tmodtype_manifest of module_type
 
+(* Iteration on types *)
+
 let iter_type_expr f ty =
   match ty.desc with
     Tvar               -> ()
@@ -135,3 +142,20 @@ let iter_type_expr f ty =
   | Tfield (_, ty1, ty2) -> f ty1; f ty2
   | Tnil               -> ()
   | Tlink ty           -> f ty
+
+(* Memorization of abbreviation expansion *)
+(* Must be here rather than in ctype.ml, because used by
+   Env.save_signature *)
+
+let memo = ref []
+        (* Contains the list of saved abbreviation expansions. *)
+
+let cleanup_abbrev () =
+        (* Remove all memorized abbreviation expansions. *)
+  List.iter (fun abbr -> abbr := Mnil) !memo;
+  memo := []
+
+let memorize_abbrev mem path v =
+        (* Memorize the expansion of an abbreviation. *)
+  mem := Mcons (path, v, !mem);
+  memo := mem :: !memo

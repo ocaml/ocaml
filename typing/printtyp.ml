@@ -160,7 +160,7 @@ let rec typexp sch prio ty =
       typlist sch 2 " *" tyl;
       if prio >= 2 then print_string ")";
       close_box()
-  | Tconstr(p, tyl, _) ->
+  | Tconstr(p, tyl, abbrev) ->
       open_hovbox 0;
       begin try
         List.assq ty !names;
@@ -290,7 +290,7 @@ let rec type_declaration id decl =
   reset();
   open_hvbox 2;
   print_string "type ";
-  type_expr {desc = Tconstr(Pident id, decl.type_params, ref []);
+  type_expr {desc = Tconstr(Pident id, decl.type_params, ref Mnil);
   	     level = generic_level};
   begin match decl.type_manifest with
     None -> ()
@@ -436,7 +436,7 @@ let class_type id cl_ty =
     print_string "virtual ";
   if not (opened_object self) then
     print_string "closed ";
-  type_sch {desc = Tconstr(Pident id, params, ref []); level = 0};
+  type_sch {desc = Tconstr(Pident id, params, ref Mnil); level = 0};
   if List.memq self !aliased then
     (name_of_type self; ());
   List.iter class_arg args;

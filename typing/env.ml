@@ -328,7 +328,7 @@ let constructors_of_type ty_path decl =
   match decl.type_kind with
     Type_variant cstrs ->
       Datarepr.constructor_descrs
-        {desc = Tconstr(ty_path, decl.type_params, ref []);
+        {desc = Tconstr(ty_path, decl.type_params, ref Mnil);
       	 level = -1 (* generic_level *)}
         cstrs
   | _ -> []
@@ -339,7 +339,7 @@ let labels_of_type ty_path decl =
   match decl.type_kind with
     Type_record labels ->
       Datarepr.label_descrs
-        {desc = Tconstr(ty_path, decl.type_params, ref []);
+        {desc = Tconstr(ty_path, decl.type_params, ref Mnil);
          level = -1 (* generic_level *)}
         labels
   | _ -> []
@@ -666,6 +666,7 @@ let read_signature modname filename =
 (* Save a signature to a file *)
 
 let save_signature sg modname filename =
+  Types.cleanup_abbrev ();
   let ps =
     { ps_name = modname;
       ps_sig = sg;

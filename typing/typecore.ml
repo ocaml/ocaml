@@ -247,7 +247,7 @@ let type_format loc fmt =
         end
     | _ -> scan_format (i+1) in
   newty
-    (Tconstr(Predef.path_format, [scan_format 0; ty_input; ty_result], ref []))
+    (Tconstr(Predef.path_format, [scan_format 0; ty_input; ty_result], ref Mnil))
 
 (* Typing of expressions *)
 

@@ -57,7 +57,7 @@ val instance_class:
         type_expr list * type_expr list *
         (mutable_flag * type_expr) Vars.t * type_expr
 val expand_abbrev:
-        Env.t -> Path.t -> type_expr list -> (Path.t * type_expr) list ref ->
+        Env.t -> Path.t -> type_expr list -> Types.abbrev_memo ref ->
 	int -> type_expr
 	(* Expand an abbreviation *)
 val full_expand: Env.t -> type_expr -> type_expr

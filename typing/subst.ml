@@ -133,9 +133,10 @@ and typexp_2 visited s ty v =
   | Ttuple tl ->
       newgenty(Ttuple(List.map (typexp visited s) tl))
   | Tconstr(p, [], _) ->
-      newgenty(Tconstr(type_path s p, [], ref []))
+      newgenty(Tconstr(type_path s p, [], ref Mnil))
   | Tconstr(p, tl, _) ->
-      newgenty(Tconstr(type_path s p, List.map (typexp visited s) tl, ref []))
+      newgenty(Tconstr(type_path s p, List.map (typexp visited s) tl,
+                       ref Mnil))
   | Tobject (t1, name) ->
       let ty' () =
       	let name' =

@@ -62,7 +62,7 @@ let type_declarations env id decl1 decl2 =
         Ctype.equal env decl1.type_params ty1 decl2.type_params ty2
     | (None, Some ty2) ->
         let ty1 =
-	  {desc = Tconstr(Pident id, decl2.type_params, ref []);
+	  {desc = Tconstr(Pident id, decl2.type_params, ref Mnil);
 	   level = Ctype.generic_level }
 	in
           Ctype.equal env [] ty1 [] ty2

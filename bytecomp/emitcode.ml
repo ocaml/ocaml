@@ -305,6 +305,8 @@ let to_file outchan unit_name crc_interface code =
       cu_force_link = false;
       cu_events = !events } in
   init();                               (* Free out_buffer and reloc_info *)
+  Types.cleanup_abbrev ();              (* Remove any cached abbreviation
+                                           expansion before saving *)
   let pos_compunit = pos_out outchan in
   output_value outchan compunit;
   seek_out outchan pos_depl;
@@ -322,4 +324,3 @@ let to_memory init_code fun_code =
   and code_size = !out_position in
   init();
   (code, code_size, reloc)
-

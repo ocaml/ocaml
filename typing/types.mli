@@ -25,11 +25,16 @@ and type_desc =
     Tvar
   | Tarrow of type_expr * type_expr
   | Ttuple of type_expr list
-  | Tconstr of Path.t * type_expr list * (Path.t * type_expr) list ref
+  | Tconstr of Path.t * type_expr list * abbrev_memo ref
   | Tobject of type_expr * (Path.t * type_expr list) option ref
   | Tfield of string * type_expr * type_expr
   | Tnil
   | Tlink of type_expr
+
+and abbrev_memo =
+    Mnil
+  | Mcons of Path.t * type_expr * abbrev_memo
+  | Mlink of abbrev_memo ref
 
 (* Value descriptions *)
 
@@ -124,3 +129,13 @@ and modtype_declaration =
 (* Iteration on types *)
 
 val iter_type_expr: (type_expr -> unit) -> type_expr -> unit
+
+(* Memorization of abbreviation expansions *)
+
+val cleanup_abbrev: unit -> unit
+        (* Flush the cache of abbreviation expansions.
+           When some types are saved (using [output_value]), this
+           function MUST be called just before. *)
+
+val memorize_abbrev: abbrev_memo ref -> Path.t -> type_expr -> unit
+        (* Add an expansion in the cache *)

@@ -117,7 +117,7 @@ let rec transl_type env policy styp =
         begin match alias with
       	  None ->
 	    let tl = List.map (transl_type env policy) stl in
-              (newty (Tconstr(path, tl, ref [])), tl)
+              (newty (Tconstr(path, tl, ref Mnil)), tl)
         | Some alias ->
             let cstr = newvar () in
             begin try
@@ -132,12 +132,12 @@ let rec transl_type env policy styp =
 	    let tl = List.map (transl_type env policy) stl in
 	    begin try
               occur env cstr
-      	       	(Ctype.expand_abbrev env path tl (ref []) cstr.level)
+      	       	(Ctype.expand_abbrev env path tl (ref Mnil) cstr.level)
             with
 	      Unify _       -> raise(Error(styp.ptyp_loc, Recursive_type))
 	    | Cannot_expand -> ()
 	    end;
-	    cstr.desc <- Tconstr(path, tl, ref []);
+	    cstr.desc <- Tconstr(path, tl, ref Mnil);
 	    (cstr, tl)
         end
       in
@@ -190,7 +190,7 @@ let rec transl_type env policy styp =
         begin match alias with
       	  None ->
 	    let tl = List.map (transl_type env policy) stl in
-	    (expand_abbrev env path tl (ref []) v.level, tl)
+	    (expand_abbrev env path tl (ref Mnil) v.level, tl)
         | Some alias ->
             begin try
               Tbl.find alias !type_variables;
@@ -202,7 +202,7 @@ let rec transl_type env policy styp =
       	      aliases := Tbl.add alias v !aliases
 	    end;
 	    let tl = List.map (transl_type env policy) stl in
-	    let cstr = expand_abbrev env path tl (ref []) v.level in
+	    let cstr = expand_abbrev env path tl (ref Mnil) v.level in
 	    v.desc <- Tlink cstr;
 	    (v, tl)
         end

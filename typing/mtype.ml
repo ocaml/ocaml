@@ -53,7 +53,7 @@ and strengthen_sig env sg p =
               type_manifest = Some(Ctype.newgenty(
 	       		           Tconstr(Pdot(p, Ident.name id, nopos),
                                            decl.type_params,
-					   ref []))) }
+					   ref Mnil))) }
         | _ -> decl in
       Tsig_type(id, newdecl) :: strengthen_sig env rem p
   | (Tsig_exception(id, d) as sigelt) :: rem ->

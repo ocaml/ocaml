@@ -137,14 +137,14 @@ let make_stub env (cl, obj_id, cl_id) =
       type_manifest = Some temp_obj }
   in let temp_env = Env.add_type obj_id obj_temp_abbrev env
   in let abbrev =
-    Ctype.newty (Tconstr (Path.Pident obj_id, temp_obj_params, ref []))
+    Ctype.newty (Tconstr (Path.Pident obj_id, temp_obj_params, ref Mnil))
   in
 
   (* Temporary class type *)
   let (temp_cl_params, temp_cl) =
     if cl.pcl_closed = Closed then
       (temp_obj_params,
-       Ctype.newty (Tconstr(Path.Pident obj_id, temp_obj_params, ref [])))
+       Ctype.newty (Tconstr(Path.Pident obj_id, temp_obj_params, ref Mnil)))
     else begin
       let params = List.map (fun _ -> Ctype.newvar ()) (fst cl.pcl_param) in
       let ty = Ctype.instance self in
@@ -159,7 +159,7 @@ let make_stub env (cl, obj_id, cl_id) =
       type_manifest = Some temp_cl }
   in let temp_env = Env.add_type cl_id cl_temp_abbrev temp_env
   in let cl_abbrev =
-    Ctype.newty (Tconstr (Path.Pident cl_id, temp_cl_params, ref []))
+    Ctype.newty (Tconstr (Path.Pident cl_id, temp_cl_params, ref Mnil))
   in
 
   (* Temporary type for new *)
@@ -439,7 +439,7 @@ let transl_class temp_env env
     raise(Error(cl.pcl_loc,
       	  Bad_parameters (cl_id, cl_abbrev,
       	                  Ctype.newty (Tconstr (Path.Pident cl_id, cl_params,
-      	       	       	       	       	        ref [])))))
+      	       	       	       	       	        ref Mnil)))))
   end;
 
   (* Object abbreviation and arguments for new *)
@@ -455,7 +455,7 @@ let transl_class temp_env env
     raise(Error(cl.pcl_loc,
           Bad_parameters (obj_id, abbrev,
        	       	          Ctype.newty (Tconstr (Path.Pident obj_id, obj_params,
-      	       	       	       	       	        ref [])))))
+      	       	       	       	       	        ref Mnil)))))
   end;
   Ctype.close_object temp_obj;
   List.iter2
@@ -549,7 +549,7 @@ let make_abbrev env
       type_kind = Type_abstract;
       type_manifest = Some
         (if cl.pcl_closed = Closed then
-	  Ctype.newgenty (Tconstr(Path.Pident obj_id, cl_ty_params, ref []))
+	  Ctype.newgenty (Tconstr(Path.Pident obj_id, cl_ty_params, ref Mnil))
         else begin
           Ctype.set_object_name cl_ty cl_ty_params obj_id;
 	  cl_ty
@@ -838,7 +838,7 @@ let build_abbrevs temp_env env (cl, obj_id, cl_id) =
       type_kind = Type_abstract;
       type_manifest = Some
         (if cl.pcty_closed = Closed then
-	  Ctype.newgenty (Tconstr(Path.Pident obj_id, params, ref []))
+	  Ctype.newgenty (Tconstr(Path.Pident obj_id, params, ref Mnil))
         else begin
           Ctype.set_object_name self params obj_id;
 	  self
@@ -944,7 +944,7 @@ let build_class_type env
       Ctype.begin_def ();
       let (params, args, _, self) = Ctype.instance_class cl_sig in
       let abbrev =
-        Ctype.newty (Tconstr (Path.Pident obj_id, params, ref []))
+        Ctype.newty (Tconstr (Path.Pident obj_id, params, ref Mnil))
       in
       Ctype.unify env self abbrev;
       let ty_new =
@@ -1015,7 +1015,7 @@ let report_error = function
       end;
       print_break 1 2;
       open_box 0;
-      Printtyp.type_expr (Ctype.newty (Tconstr(Path.Pident id, args, ref [])));
+      Printtyp.type_expr (Ctype.newty (Tconstr(Path.Pident id, args, ref Mnil)));
       print_space (); print_string "="; print_space ();
       Printtyp.type_expr typ;
       close_box ();

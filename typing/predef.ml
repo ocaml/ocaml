@@ -42,15 +42,15 @@ and path_array = Pident ident_array
 and path_list = Pident ident_list
 and path_format = Pident ident_format
 
-let type_int = newgenty (Tconstr(path_int, [], ref []))
-and type_char = newgenty (Tconstr(path_char, [], ref []))
-and type_string = newgenty (Tconstr(path_string, [], ref []))
-and type_float = newgenty (Tconstr(path_float, [], ref []))
-and type_bool = newgenty (Tconstr(path_bool, [], ref []))
-and type_unit = newgenty (Tconstr(path_unit, [], ref []))
-and type_exn = newgenty (Tconstr(path_exn, [], ref []))
-and type_array t = newgenty (Tconstr(path_array, [t], ref []))
-and type_list t = newgenty (Tconstr(path_list, [t], ref []))
+let type_int = newgenty (Tconstr(path_int, [], ref Mnil))
+and type_char = newgenty (Tconstr(path_char, [], ref Mnil))
+and type_string = newgenty (Tconstr(path_string, [], ref Mnil))
+and type_float = newgenty (Tconstr(path_float, [], ref Mnil))
+and type_bool = newgenty (Tconstr(path_bool, [], ref Mnil))
+and type_unit = newgenty (Tconstr(path_unit, [], ref Mnil))
+and type_exn = newgenty (Tconstr(path_exn, [], ref Mnil))
+and type_array t = newgenty (Tconstr(path_array, [t], ref Mnil))
+and type_list t = newgenty (Tconstr(path_list, [t], ref Mnil))
 
 let ident_match_failure = Ident.create "Match_failure"
 and ident_out_of_memory = Ident.create "Out_of_memory"

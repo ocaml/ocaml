@@ -162,7 +162,7 @@ let close_object ty =
 
 
 (**** Object name manipulation ****)
-(* XXX Obsolete *)
+(* XXX Bientot obsolete *)
 
 let rec row_variable ty =
   let ty = repr ty in
@@ -197,10 +197,6 @@ let rec generalize ty =
   let ty = repr ty in
   if ty.level > !current_level then begin
     ty.level <- generic_level;
-    begin match ty.desc with
-      Tconstr(_, tl, ab) -> ab := []
-    | _                  -> ()
-    end;
     iter_type_expr generalize ty
   end
 
@@ -223,6 +219,7 @@ let make_nongen ty = update_level !current_level ty
                               (*  Instantiation  *)
                               (*******************)
 
+
 (*
    Generic nodes are duplicated, while non-generic nodes are left
    as-is. The instance cannot be generic.
@@ -236,7 +233,7 @@ let make_nongen ty = update_level !current_level ty
 
 let saved_desc = ref []
   (* Saved association of generic node with their description. *)
-let abbreviations = ref []
+let abbreviations = ref (ref Mnil)
   (* Abbreviation memorized. *)
 
 let rec copy =
@@ -256,10 +253,20 @@ let rec copy =
             Tarrow (copy t1, copy t2)
         | Ttuple tl ->
             Ttuple (List.map copy tl)
-        | Tconstr (p, [], _) ->
-            Tconstr (p, [], ref !abbreviations)
         | Tconstr (p, tl, _) ->
-            Tconstr (p, List.map copy tl, ref !abbreviations)
+            (*
+               One must allocate a new reference, so that abbrevia-
+               tions belonging to different branches of a type are
+               independent.
+               Moreover, a reference containing a [Mcons] must be
+               shared, so that the memorized expansion of an
+               abbreviation can be released just by changing the
+               content of a reference.
+            *)
+            Tconstr (p, List.map copy tl,
+                     ref (match ! !abbreviations with
+                            Mcons _ -> Mlink !abbreviations
+                          | abbrev  -> abbrev))
         | Tobject (t1, {contents = name}) ->
             let name' =
               match name with
@@ -338,7 +345,7 @@ let rec subst abbrev params args body =
     List.iter2 bind_param params args;
     abbreviations := abbrev;
     let ty = copy body in
-    abbreviations := [];
+    abbreviations := ref Mnil;
     cleanup_types ();
     ty
   end else begin
@@ -352,7 +359,7 @@ let rec subst abbrev params args body =
     ty
   end
 
-let substitute params args body = subst [] params args body
+let substitute params args body = subst (ref Mnil) params args body
 
 
                               (****************************)
@@ -365,17 +372,27 @@ exception Cannot_expand
 (* Search whether the abbreviation has been memorized. *)
 let rec find_expans p1 =
   function
-    [] ->
+    Mnil ->
       None
-  | (p2, ty)::l ->
+  | Mcons (p2, ty, rem) ->
       if Path.same p1 p2 then
         Some ty
       else
-        find_expans p1 l
+        find_expans p1 rem
+  | Mlink {contents = rem} ->
+      find_expans p1 rem
+
+let previous_env = ref Env.empty
 
 (* Expand an abbreviation.
    The expansion is memorized. *)
 let expand_abbrev env path args abbrev level =
+  (* If the environnement has changed, memorized expansions might not
+     be correct anymore, and so we flush the cache. *)
+  if env != !previous_env then begin
+    cleanup_abbrev ();
+    previous_env := env
+  end;
   match find_expans path !abbrev with
     Some ty ->
       update_level level ty;
@@ -386,10 +403,10 @@ let expand_abbrev env path args abbrev level =
       match decl.type_manifest with
         Some body ->
           let v = newvar () in
-          abbrev := (path, v)::!abbrev;
+          memorize_abbrev abbrev path v;
           let old_level = !current_level in
           current_level := level;
-          let ty = subst !abbrev decl.type_params args body in
+          let ty = subst abbrev decl.type_params args body in
           current_level := old_level;
           v.desc <- Tlink ty;
           ty
@@ -436,28 +453,6 @@ let generic_abbrev env path =
       false
 
 
-(**** Remove abbreviations from generalized types ****)
-
-let visited = ref ([] : type_expr list)
-
-(* XXX Est-ce utile ? Desactive pour l'instant, et ca a l'air de
-   toujours marcher... *)
-let remove_abbrev ty =
-  let rec remove ty =
-    let ty = repr ty in
-    if ty.level = generic_level & not (List.memq ty !visited) then begin
-      visited := ty :: !visited;
-      begin match ty.desc with
-        Tconstr(_, tl, ab) -> ab := []
-      | _ -> ()
-      end;
-      iter_type_expr remove ty
-    end
-  in
-    remove ty;
-    visited := []
-
-
                               (*****************)
                               (*  Unification  *)
                               (*****************)
@@ -498,7 +493,7 @@ let occur env ty0 ty =
     occur_rec ty
 
 (**** Transform error trace ****)
-(* XXX Move it somewhere else ? *)
+(* XXX Move it to some other place ? *)
 
 let expand_trace env trace =
   List.fold_right
@@ -872,11 +867,9 @@ let moregeneral env sch1 sch2 =
   begin_def();
   try
     moregen env (instance sch1) sch2;
-(*     remove_abbrev sch2; *)
     end_def();
     true
   with Unify _ ->
-(*     remove_abbrev sch2; *)
     end_def();
     false
 
@@ -963,9 +956,7 @@ let equal env params1 ty1 params2 ty2 =
            fields2)
       fields1
   in
-    let eq = eqtype ty1 ty2 in
-(*     remove_abbrev ty1; remove_abbrev ty2; *)
-    eq
+    eqtype ty1 ty2
 
 
                               (***************)
@@ -1034,6 +1025,18 @@ let enlarge_type env ty =
   ty'
 
 (**** Check whether a type is a subtype of another type. ****)
+
+(*
+    During the traversal, a trace of visited types is maintain. It is
+    printed in case of error.
+    Constraints (pairs of types that must be equals) are accumulated
+    rather than being enforced straight. Indeed, the result would
+    otherwise depend on the order in which these constraints are
+    enforced.
+    A function enforcing these constraints is returned. That way, type
+    variables can be bound to their actual values before this function
+    is called.
+*)
 
 let subtypes = ref [];;
 
@@ -1162,7 +1165,7 @@ let rec nondep_type_rec env id ty =
               raise Not_found
             end
           else
-            Tconstr(p, List.map (nondep_type_rec env id) tl, ref [])
+            Tconstr(p, List.map (nondep_type_rec env id) tl, ref Mnil)
       | Tobject (t1, name) ->
           Tobject (nondep_type_rec env id t1,
                  ref (match !name with
@@ -1239,7 +1242,7 @@ let rec prune_rec top cstr ty =
         let ty' = newvar() in
         inst_subst := (ty, ty') :: !inst_subst;
         let ty'' = 
-          newty (Tconstr(p, List.map (prune_rec false cstr) tl, ref []))
+          newty (Tconstr(p, List.map (prune_rec false cstr) tl, ref Mnil))
         in
           ty'.desc <- Tlink ty'';
           ty''
@@ -1398,19 +1401,20 @@ let correct_abbrev env ident params ty =
     visited_abbrevs := [];
     linear_abbrev env path params [] ty;
     visited_abbrevs := []
-  end;
-(*   remove_abbrev ty *)
-()
+  end
+
+
                               (*******************)
                               (*  Miscellaneous  *)
                               (*******************)
+
 
 let unroll_abbrev id tl ty =
   let ty = repr ty in
   match ty.desc with
     Tobject (fi, nm) ->
       ty.desc <-
-        Tlink {desc = Tconstr (Path.Pident id, tl, ref []);
+        Tlink {desc = Tconstr (Path.Pident id, tl, ref Mnil);
                level = generic_level};
       {desc = Tobject (fi, nm); level = ty.level}
   | _ ->
