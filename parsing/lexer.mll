@@ -233,9 +233,8 @@ rule token = parse
         lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_curr_pos - 1;
         STAR
       }
-  | "#" ("line")? [' ' '\t']* ['0'-'9']+ [^ '\n' '\r'] *
-    ('\n' | '\r' | "\r\n")
-      (* # linenum ... or #line linenum ... *)
+  | "#" [' ' '\t']* ['0'-'9']+ [^ '\n' '\r'] * ('\n' | '\r' | "\r\n")
+      (* # linenum ...  *)
       { token lexbuf }
   | "#"  { SHARP }
   | "&"  { AMPERSAND }
