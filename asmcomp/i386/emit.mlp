@@ -112,7 +112,7 @@ let emit_reg = function
     { loc = Reg r } ->
       emit_string (register_name r)
   | { loc = Stack(Incoming n | Outgoing n) } when n < 0 ->
-      `caml_extra_params + {emit_int (n + 64)}`
+      `{emit_symbol "caml_extra_params"} + {emit_int (n + 64)}`
   | { loc = Stack s } as r ->
       let ofs = slot_offset s (register_class r) in
       `{emit_int ofs}(%esp)`
