@@ -105,14 +105,18 @@ let interface ppf sourcefile =
   let prefixname = Filename.chop_extension sourcefile in
   let modulename = String.capitalize(Filename.basename prefixname) in
   let inputfile = preprocess sourcefile in
-  let ast = parse_file inputfile Parse.interface ast_intf_magic_number in
-  if !Clflags.dump_parsetree then fprintf ppf "%a@." Printast.interface ast;
-  let sg = Typemod.transl_signature (initial_env()) ast in
-  if !Clflags.print_types
-    then fprintf std_formatter "%a@." Printtyp.signature sg;
-  Warnings.check_fatal ();
-  Env.save_signature sg modulename (prefixname ^ ".cmi");
-  remove_preprocessed inputfile
+  try
+    let ast = parse_file inputfile Parse.interface ast_intf_magic_number in
+    if !Clflags.dump_parsetree then fprintf ppf "%a@." Printast.interface ast;
+    let sg = Typemod.transl_signature (initial_env()) ast in
+    if !Clflags.print_types
+      then fprintf std_formatter "%a@." Printtyp.signature sg;
+    Warnings.check_fatal ();
+    Env.save_signature sg modulename (prefixname ^ ".cmi");
+    remove_preprocessed inputfile
+  with e ->
+    remove_preprocessed inputfile;
+    raise e
 
 (* Compile a .ml file *)
 
@@ -147,6 +151,7 @@ let implementation ppf sourcefile =
   with x ->
     close_out oc;
     remove_file objfile;
+    remove_preprocessed;
     raise x
 
 let c_file name =
