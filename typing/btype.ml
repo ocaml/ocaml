@@ -97,6 +97,15 @@ let rec mark_type ty =
     iter_type_expr mark_type ty
   end
 
+let mark_type_node ty =
+  let ty = repr ty in
+  if ty.level >= lowest_level then begin
+    ty.level <- pivot_level - ty.level;
+  end
+
+let mark_type_params ty =
+  iter_type_expr mark_type ty
+
 (* Remove marks from a type. *)
 let rec unmark_type ty =
   let ty = repr ty in

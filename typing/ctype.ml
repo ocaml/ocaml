@@ -421,13 +421,14 @@ let closed_class params sign =
           raise (Failure (CC_Value (ty0, lab, ty))))
       sign.cty_vars;
 *)
+    mark_type_node (repr sign.cty_self);
     List.iter
       (fun (lab, kind, ty) ->
         if field_kind_repr kind = Fpresent then
         try closed_type ty with Non_closed ty0 ->
           raise (Failure (CC_Method (ty0, lab, ty))))
       fields;
-    mark_type sign.cty_self;
+    mark_type_params (repr sign.cty_self);
     List.iter unmark_type params;
     unmark_class_signature sign;
     None
@@ -1177,8 +1178,8 @@ and unify_fields env ty1 ty2 =          (* Optimization *)
   and (fields2, rest2) = flatten_fields ty2 in
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
   let va = newvar () in
-  unify env (build_fields ty1.level miss1 va) rest2;
-  unify env rest1 (build_fields ty2.level miss2 va);
+  unify env (build_fields (repr ty1).level miss1 va) rest2;
+  unify env rest1 (build_fields (repr ty2).level miss2 va);
   List.iter
     (fun (n, k1, t1, k2, t2) ->
        unify_kind k1 k2;
@@ -1363,7 +1364,7 @@ and moregen_fields inst_nongen type_pairs env ty1 ty2 =
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
   if miss1 <> [] then raise (Unify []);
   moregen inst_nongen type_pairs env rest1
-    (build_fields ty2.level miss2 rest2);
+    (build_fields (repr ty2).level miss2 rest2);
   List.iter
     (fun (n, k1, t1, k2, t2) ->
        moregen_kind k1 k2;
@@ -1698,6 +1699,7 @@ let rec equal_clty trace type_pairs subst env cty1 cty2 =
       raise (Failure (CM_Class_type_mismatch (cty1, cty2)::error))
 
 (* XXX On pourrait autoriser l'instantiation du type des parametres... *)
+(* XXX Correct ? (variables de type dans parametres et corps de classe *)
 let match_class_declarations env patt_params patt_type subj_params subj_type =
   let type_pairs = TypePairs.create 53 in
   let subst = ref [] in
@@ -1911,11 +1913,11 @@ and subtype_fields env trace ty1 ty2 cstrs =
   let (fields1, rest1) = flatten_fields ty1 in
   let (fields2, rest2) = flatten_fields ty2 in
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
-  [(trace, rest1, build_fields ty2.level miss2 (newvar ()))]
+  [(trace, rest1, build_fields (repr ty2).level miss2 (newvar ()))]
     @
   begin match rest2.desc with
     Tnil   -> []
-  | _      -> [(trace, build_fields ty1.level miss1 rest1, rest2)]
+  | _      -> [(trace, build_fields (repr ty1).level miss1 rest1, rest2)]
   end
     @
   (List.fold_left
