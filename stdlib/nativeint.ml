@@ -39,7 +39,8 @@ let minus_one = of_int (-1)
 let succ n = add n one
 let pred n = sub n one
 let abs n = if n >= zero then n else neg n
-let min_int = shift_left one (Sys.word_size - 1)
+let size = Sys.word_size
+let min_int = shift_left one (size - 1)
 let max_int = sub min_int one
 let lognot n = logxor n minus_one
 

@@ -47,11 +47,16 @@ external rem: nativeint -> nativeint -> nativeint = "%nativeint_mod"
            If [x < 0] or [y < 0], the result of [Nativeint.rem x y] is
            not specified and depends on the platform. *)
 val succ: nativeint -> nativeint
-      (* Successor.  [Nativeint.succ x] is [Nativeint.add x 1n]. *)
+      (* Successor.
+         [Nativeint.succ x] is [Nativeint.add x Nativeint.one]. *)
 val pred: nativeint -> nativeint
-      (* Predecessor.  [Nativeint.pred x] is [Nativeint.sub x 1n]. *)
+      (* Predecessor.
+         [Nativeint.pred x] is [Nativeint.sub x Nativeint.one]. *)
 val abs: nativeint -> nativeint
       (* Return the absolute value of its argument. *)
+val size: int
+      (* The size in bits of a native integer.  This is equal to 32
+         on a 32-bit platform and to 64 on a 64-bit platform. *)
 val max_int: nativeint
       (* The greatest representable native integer,
          either $2^{31} - 1$ on a 32-bit platform,
