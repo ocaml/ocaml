@@ -151,13 +151,11 @@ let nice prio = invalid_arg "Unix.nice not implemented"
 
 (* Basic file input/output *)
 
-type standard_handle = STD_INPUT | STD_OUTPUT | STD_ERROR
+external filedescr_of_fd : int -> file_descr = "win_handle_fd"
 
-external stdhandle : standard_handle -> file_descr = "win_stdhandle"
-
-let stdin = stdhandle STD_INPUT
-let stdout = stdhandle STD_OUTPUT
-let stderr = stdhandle STD_ERROR
+let stdin = filedescr_of_fd 0
+let stdout = filedescr_of_fd 1
+let stderr = filedescr_of_fd 2
 
 type open_flag =
     O_RDONLY
@@ -200,7 +198,6 @@ external fd_of_in_channel : in_channel -> int = "channel_descriptor"
 external fd_of_out_channel : out_channel -> int = "channel_descriptor"
 
 external open_handle : file_descr -> int = "win_fd_handle"
-external filedescr_of_fd : int -> file_descr = "win_handle_fd"
 
 let in_channel_of_descr handle =
   open_read_descriptor(open_handle handle)

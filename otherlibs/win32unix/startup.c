@@ -41,12 +41,3 @@ CAMLprim value win_cleanup(unit)
   (void) WSACleanup();
   return Val_unit;
 }
-
-static int std_handles[3] = {
-  STD_INPUT_HANDLE, STD_OUTPUT_HANDLE, STD_ERROR_HANDLE
-};
-
-CAMLprim value win_stdhandle(value nhandle)
-{
-  return win_alloc_handle_or_socket(GetStdHandle(std_handles[Int_val(nhandle)]));
-}

@@ -52,6 +52,7 @@ value win_alloc_handle(HANDLE h)
   value res = alloc_custom(&win_handle_ops, sizeof(struct filedescr), 0, 1);
   Handle_val(res) = h;
   Descr_kind_val(res) = KIND_HANDLE;
+  CRT_fd_val(res) = NO_CRT_FD;
   return res;
 }
 

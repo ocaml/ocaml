@@ -31,16 +31,19 @@ struct filedescr {
     SOCKET socket;
   } fd;
   enum { KIND_HANDLE, KIND_SOCKET } kind;
+  int crt_fd;
 };
 
 #define Handle_val(v) (((struct filedescr *) Data_custom_val(v))->fd.handle)
 #define Socket_val(v) (((struct filedescr *) Data_custom_val(v))->fd.socket)
 #define Descr_kind_val(v) (((struct filedescr *) Data_custom_val(v))->kind)
+#define CRT_fd_val(v) (((struct filedescr *) Data_custom_val(v))->crt_fd)
 
 extern value win_alloc_handle_or_socket(HANDLE);
 extern value win_alloc_handle(HANDLE);
 extern value win_alloc_socket(SOCKET);
 
+#define NO_CRT_FD (-1)
 #define Nothing ((value) 0)
 
 extern void win32_maperr(unsigned long errcode);

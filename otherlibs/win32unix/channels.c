@@ -18,14 +18,26 @@
 #include "unixsupport.h"
 #include <fcntl.h>
 
+extern long _get_osfhandle(int);
+extern int _open_osfhandle(long, int);
+
 CAMLprim value win_fd_handle(value handle)
 {
-  int fd = _open_osfhandle((long) Handle_val(handle), O_BINARY);
-  if (fd == -1) uerror("channel_of_descr", Nothing);
+  int fd;
+  if (CRT_fd_val(handle) != NO_CRT_FD) {
+    fd = CRT_fd_val(handle);
+  } else {
+    fd = _open_osfhandle((long) Handle_val(handle), O_BINARY);
+    if (fd == -1) uerror("channel_of_descr", Nothing);
+    CRT_fd_val(handle) = fd;
+  }
   return Val_int(fd);
 }
 
-CAMLprim value win_handle_fd(value fd)
+CAMLprim value win_handle_fd(value vfd)
 {
-  return win_alloc_handle_or_socket((HANDLE) _get_osfhandle(Int_val(fd)));
+  int crt_fd = Int_val(vfd);
+  value res = win_alloc_handle_or_socket((HANDLE) _get_osfhandle(crt_fd));
+  CRT_fd_val(res) = crt_fd;
+  return res;
 }
