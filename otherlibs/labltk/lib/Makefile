@@ -37,12 +37,12 @@ labltk: Makefile $(TOPDIR)/config/Makefile
 labltklink: Makefile $(TOPDIR)/config/Makefile
 	@echo Generate $@
 	@echo "#!/bin/sh" > $@
-	@echo 'exec ocamlc -I $(LABLTKDIR) -cclib -L$(LABLTKDIR) tk41.cma "$$@"' >> $@
+	@echo 'exec ocamlc -I $(LABLTKDIR) -ccopt -L$(LABLTKDIR) tk41.cma "$$@"' >> $@
 
 labltkopt: Makefile $(TOPDIR)/config/Makefile
 	@echo Generate $@
 	@echo "#!/bin/sh" > $@
-	@echo 'exec ocamlopt -I $(LABLTKDIR) -cclib -L$(LABLTKDIR) tk41.cmxa "$$@" ' >> $@
+	@echo 'exec ocamlopt -I $(LABLTKDIR) -ccopt -L$(LABLTKDIR) tk41.cmxa "$$@" ' >> $@
 
 # All .{ml,mli} files are generated in this directory
 clean : 

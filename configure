@@ -924,7 +924,8 @@ fi
 
 if test $has_tk = true; then
   echo "TK_DEFS=$tk_defs" >> Makefile
-  echo "TK_LINK=$tk_libs" | sed -e 's/-[lL]/-cclib &/g' >> Makefile
+  echo "TK_LINK=$tk_libs" \
+    | sed -e 's/-l/-cclib &/g' -e 's/-L/-ccopt &/g' >> Makefile
   otherlibraries="$otherlibraries labltk"
 else
   echo "Configuration failed, LablTk will not be built."
