@@ -98,7 +98,7 @@ TOPLIB=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(BYTECOMP) $(TOPLEVEL)
 
 TOPOBJS=$(TOPLEVELLIB) $(TOPLEVELMAIN)
 
-JOCAMLLIBS=otherlibs/dyntypes/dynamics.cmo
+JOCAMLLIBS=otherlibs/dyntypes/dynamics.cma
 JOCAMLEXTRATOPOBJS=toplevel/be_join.cmo \
   $(JOCAMLLIBS) \
   camlp4/top/camlp4o.cma jocparsing/pa_joc.cmo
