@@ -102,9 +102,9 @@ let build_graph fundecl =
         interf i.next
     | Iloop body ->
         interf body; interf i.next
-    | Icatch(body, handler) ->
+    | Icatch(_, body, handler) ->
         interf body; interf handler; interf i.next
-    | Iexit ->
+    | Iexit _ ->
         ()
     | Itrywith(body, handler) ->
         add_interf_set Proc.destroyed_at_raise handler.live;    
@@ -175,9 +175,9 @@ let build_graph fundecl =
         (* Avoid overflow of weight and spill_cost *)
         prefer (if weight < 1000 then 8 * weight else weight) body;
         prefer weight i.next
-    | Icatch(body, handler) ->
+    | Icatch(_, body, handler) ->
         prefer weight body; prefer weight handler; prefer weight i.next
-    | Iexit ->
+    | Iexit _ ->
         ()
     | Itrywith(body, handler) ->
         prefer weight body; prefer weight handler; prefer weight i.next

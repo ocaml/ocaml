@@ -100,8 +100,8 @@ type expression =
   | Cifthenelse of expression * expression * expression
   | Cswitch of expression * int array * expression array
   | Cloop of expression
-  | Ccatch of expression * expression
-  | Cexit
+  | Ccatch of int * expression * expression
+  | Cexit of int
   | Ctrywith of expression * Ident.t * expression
 
 type fundecl =

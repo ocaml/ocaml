@@ -113,7 +113,12 @@ let merge_subst_array subv instr =
 
 (* First pass: rename registers at reload points *)
 
-let exit_subst = ref (None: subst option)
+let exit_subst = ref []
+
+let find_exit_subst k =
+  try
+    List.assoc k !exit_subst with
+  | Not_found -> Misc.fatal_error "Split.find_exit_subst"
 
 let rec rename i sub =
   match i.desc with
@@ -159,19 +164,20 @@ let rec rename i sub =
       let (new_next, sub_next) = rename i.next (merge_substs sub sub_body i) in
       (instr_cons (Iloop(new_body)) [||] [||] new_next,
        sub_next)
-  | Icatch(body, handler) ->
-      let saved_exit_subst = !exit_subst in
-      exit_subst := None;
+  | Icatch(nfail, body, handler) ->
+      let new_subst = ref None in
+      exit_subst := (nfail, new_subst) :: !exit_subst ;
       let (new_body, sub_body) = rename body sub in
-      let sub_entry_handler = !exit_subst in
-      exit_subst := saved_exit_subst;
+      let sub_entry_handler = !new_subst in
+      exit_subst := List.tl !exit_subst;
       let (new_handler, sub_handler) = rename handler sub_entry_handler in
       let (new_next, sub_next) =
         rename i.next (merge_substs sub_body sub_handler i.next) in
-      (instr_cons (Icatch(new_body, new_handler)) [||] [||] new_next,
+      (instr_cons (Icatch(nfail, new_body, new_handler)) [||] [||] new_next,
        sub_next)
-  | Iexit ->
-      exit_subst := merge_substs !exit_subst sub i;
+  | Iexit nfail ->
+      let r = find_exit_subst nfail in
+      r := merge_substs !r sub i;
       (i, None)
   | Itrywith(body, handler) ->
       let (new_body, sub_body) = rename body sub in

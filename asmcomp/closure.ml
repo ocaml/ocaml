@@ -52,8 +52,8 @@ let occurs_var var u =
     | Uswitch(arg, s) ->
         occurs arg or occurs_array s.us_cases_consts
                    or occurs_array s.us_cases_blocks
-    | Ustaticfail -> false
-    | Ucatch(body, hdlr) -> occurs body or occurs hdlr
+    | Ustaticfail _ -> false
+    | Ucatch(_, body, hdlr) -> occurs body or occurs hdlr
     | Utrywith(body, exn, hdlr) -> occurs body or occurs hdlr
     | Uifthenelse(cond, ifso, ifnot) ->
         occurs cond or occurs ifso or occurs ifnot
@@ -131,8 +131,8 @@ let lambda_smaller lam threshold =
         lambda_size lam;
         lambda_array_size cases.us_cases_consts;
         lambda_array_size cases.us_cases_blocks
-    | Ustaticfail -> ()
-    | Ucatch(body, handler) ->
+    | Ustaticfail _ -> ()
+    | Ucatch(_, body, handler) ->
         incr size; lambda_size body; lambda_size handler
     | Utrywith(body, id, handler) ->
         size := !size + 8; lambda_size body; lambda_size handler
@@ -260,13 +260,12 @@ let substitute sb ulam =
         res
     | Uswitch(arg, sw) ->
         Uswitch(subst arg,
-                { us_index_consts = sw.us_index_consts;
+                { sw with
                   us_cases_consts = Array.map subst sw.us_cases_consts;
-                  us_index_blocks = sw.us_index_blocks;
                   us_cases_blocks = Array.map subst sw.us_cases_blocks;
-                  us_checked = sw.us_checked })
-    | Ustaticfail -> Ustaticfail
-    | Ucatch(u1, u2) -> Ucatch(subst u1, subst u2)
+                 })
+    | Ustaticfail _ as u -> u
+    | Ucatch(nfail, u1, u2) -> Ucatch(nfail, subst u1, subst u2)
     | Utrywith(u1, id, u2) -> Utrywith(subst u1, id, subst u2)
     | Uifthenelse(u1, u2, u3) ->
         begin match subst u1 with
@@ -493,22 +492,28 @@ let rec close fenv cenv = function
   | Lswitch(arg, sw) ->
       let (uarg, _) = close fenv cenv arg in
       let (const_index, const_cases) =
-        close_switch fenv cenv sw.sw_numconsts sw.sw_consts in
+        close_switch fenv cenv  sw.sw_nofail sw.sw_numconsts sw.sw_consts in
       let (block_index, block_cases) =
-        close_switch fenv cenv sw.sw_numblocks sw.sw_blocks in
+        close_switch fenv cenv  sw.sw_nofail sw.sw_numblocks sw.sw_blocks in
       (Uswitch(uarg, 
                {us_index_consts = const_index;
                 us_cases_consts = const_cases;
                 us_index_blocks = block_index;
                 us_cases_blocks = block_cases;
-                us_checked = sw.sw_checked}),
+                us_checked = sw.sw_checked && not sw.sw_nofail}),
        Value_unknown)
   | Lstaticfail ->
-      (Ustaticfail, Value_unknown)
+      (Ustaticfail 0, Value_unknown)
+  | Lstaticraise i ->
+      (Ustaticfail i, Value_unknown)
   | Lcatch(body, handler) ->
       let (ubody, _) = close fenv cenv body in
       let (uhandler, _) = close fenv cenv handler in
-      (Ucatch(ubody, uhandler), Value_unknown)
+      (Ucatch(0, ubody, uhandler), Value_unknown)
+  | Lstaticcatch(body, i, handler) ->
+      let (ubody, _) = close fenv cenv body in
+      let (uhandler, _) = close fenv cenv handler in
+      (Ucatch(i, ubody, uhandler), Value_unknown)
   | Ltrywith(body, id, handler) ->
       let (ubody, _) = close fenv cenv body in
       let (uhandler, _) = close fenv cenv handler in
@@ -649,14 +654,19 @@ and close_one_function fenv cenv id funct =
 
 (* Close a switch *)
 
-and close_switch fenv cenv num_keys cases =
+and close_switch fenv cenv nofail num_keys cases =
+  match cases, nofail with
+  | [], true ->
+      [| |], [| |] (* no need to switch here *)
+  | _,_      -> 
   let index = Array.create num_keys 0 in
   let ucases = ref []
   and num_cases = ref 0 in
-  if List.length cases < num_keys then begin
+(* if nofail holds, then static fail is replaced by a random branch *)
+  if List.length cases < num_keys && not nofail then begin
     num_cases := 1;
-    ucases := [Ustaticfail]
-  end;
+    ucases := [Ustaticfail 0]
+  end  ;
   List.iter
     (function (key, lam) ->
         let (ulam, _) = close fenv cenv lam in

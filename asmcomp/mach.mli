@@ -69,8 +69,8 @@ and instruction_desc =
   | Iifthenelse of test * instruction * instruction
   | Iswitch of int array * instruction array
   | Iloop of instruction
-  | Icatch of instruction * instruction
-  | Iexit
+  | Icatch of int * instruction * instruction
+  | Iexit of int 
   | Itrywith of instruction * instruction
   | Iraise
 

@@ -17,7 +17,13 @@
 
 open Mach
 
-let live_at_exit = ref Reg.Set.empty
+let live_at_exit = ref []
+let find_live_at_exit k =
+  try
+    List.assoc k !live_at_exit
+  with
+  | Not_found -> Misc.fatal_error "Spill.find_live_at_exit"
+
 let live_at_break = ref Reg.Set.empty
 let live_at_raise = ref Reg.Set.empty
 
@@ -62,18 +68,20 @@ let rec live i finally =
       end;
       i.live <- !at_top;
       !at_top
-  | Icatch(body, handler) ->
+  | Icatch(nfail, body, handler) ->
       let at_join = live i.next finally in
       let before_handler = live handler at_join in
-      let saved_live_at_exit = !live_at_exit in
-      live_at_exit := before_handler;
-      let before_body = live body at_join in
-      live_at_exit := saved_live_at_exit;
+      let before_body =
+          live_at_exit := (nfail,before_handler) :: !live_at_exit ;
+          let before_body = live body at_join in
+          live_at_exit := List.tl !live_at_exit ;
+          before_body in
       i.live <- before_body;
       before_body
-  | Iexit ->
-      i.live <- !live_at_exit;          (* These regs are live across *)
-      !live_at_exit
+  | Iexit nfail ->
+      let this_live = find_live_at_exit nfail in
+      i.live <- this_live ;
+      this_live
   | Itrywith(body, handler) ->
       let at_join = live i.next finally in
       let before_handler = live handler at_join in

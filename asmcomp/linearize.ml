@@ -124,9 +124,15 @@ let add_branch lbl n =
     Llabel lbl1 when lbl1 = lbl -> n1
   | _ -> cons_instr (Lbranch lbl) n1
 
-(* Current label for exit handler *)
+(* Current labels for exit handler *)
 
-let exit_label = ref None
+let exit_label = ref []
+
+let find_exit_label k =
+  try
+    List.assoc k !exit_label
+  with
+  | Not_found -> Misc.fatal_error "Linearize.find_exit_label"
 
 (* Linearize an instruction [i]: add it in front of the continuation [n] *)
 
@@ -152,16 +158,14 @@ let rec linear i n =
           copy_instr (Lcondbranch(test, lbl)) i (linear ifnot n1)
       | _, Iend, Lbranch lbl ->
           copy_instr (Lcondbranch(invert_test test, lbl)) i (linear ifso n1)
-      | Iexit, _, _ ->
+      | Iexit nfail, _, _ ->
           let n2 = linear ifnot n1 in
-          begin match !exit_label with None -> n2
-          | Some lbl -> copy_instr (Lcondbranch(test, lbl)) i n2
-          end
-      | _,  Iexit, _ ->
+          let lbl = find_exit_label nfail in
+          copy_instr (Lcondbranch(test, lbl)) i n2
+      | _,  Iexit nfail, _ ->
           let n2 = linear ifso n1 in
-          begin match !exit_label with None -> n2
-          | Some lbl -> copy_instr (Lcondbranch(invert_test test, lbl)) i n2
-          end
+          let lbl = find_exit_label nfail in
+          copy_instr (Lcondbranch(invert_test test, lbl)) i n2
       | Iend, _, _ ->
           let (lbl_end, n2) = get_label n1 in
           copy_instr (Lcondbranch(test, lbl_end)) i (linear ifnot n2)
@@ -203,19 +207,17 @@ let rec linear i n =
       let n1 = linear i.Mach.next n in
       let n2 = linear body (cons_instr (Lbranch lbl_head) n1) in
       cons_instr (Llabel lbl_head) n2
-  | Icatch(body, handler) ->
+  | Icatch(io, body, handler) ->
       let (lbl_end, n1) = get_label(linear i.Mach.next n) in
       let (lbl_handler, n2) = get_label(linear handler n1) in
-      let saved_exit_label = !exit_label in
-      exit_label := Some lbl_handler;
+      exit_label := (io, lbl_handler) :: !exit_label ;
       let n3 = linear body (add_branch lbl_end n2) in
-      exit_label := saved_exit_label;
+      exit_label := List.tl !exit_label;
       n3
-  | Iexit ->
+  | Iexit nfail ->
       let n1 = linear i.Mach.next n in
-      begin match !exit_label with None -> n1
-      | Some lbl -> add_branch lbl n1
-      end
+      let lbl = find_exit_label nfail in
+      add_branch lbl n1
   | Itrywith(body, handler) ->
       let (lbl_join, n1) = get_label (linear i.Mach.next n) in
       let (lbl_body, n2) =

@@ -206,7 +206,7 @@ let subst_boxed_float boxed_id unboxed_id exp =
     | Cswitch(arg, index, cases) ->
         Cswitch(subst arg, index, Array.map subst cases)
     | Cloop e -> Cloop(subst e)
-    | Ccatch(e1, e2) -> Ccatch(subst e1, subst e2)
+    | Ccatch(io, e1, e2) -> Ccatch(io, subst e1, subst e2)
     | Ctrywith(e1, id, e2) -> Ctrywith(subst e1, id, subst e2)
     | e -> e in
   let res = subst exp in
@@ -225,8 +225,8 @@ let rec remove_unit = function
       Cifthenelse(cond, remove_unit ifso, remove_unit ifnot)
   | Cswitch(sel, index, cases) ->
       Cswitch(sel, index, Array.map remove_unit cases)
-  | Ccatch(body, handler) ->
-      Ccatch(remove_unit body, remove_unit handler)
+  | Ccatch(io, body, handler) ->
+      Ccatch(io, remove_unit body, remove_unit handler)
   | Ctrywith(body, exn, handler) ->
       Ctrywith(remove_unit body, exn, remove_unit handler)
   | Clet(id, c1, c2) ->
@@ -235,7 +235,7 @@ let rec remove_unit = function
       Cop(Capply typ_void, args)
   | Cop(Cextcall(proc, mty, alloc), args) ->
       Cop(Cextcall(proc, typ_void, alloc), args)
-  | Cexit -> Cexit
+  | Cexit _ as c -> c
   | Ctuple [] as c -> c
   | c -> Csequence(c, Ctuple [])
 
@@ -766,7 +766,7 @@ let rec transl = function
             Cifthenelse(
               Cop(Ccmpa Cge,
                   [idx; Cconst_pointer(Array.length s.us_index_consts)]),
-              Cexit,
+              Cexit 0,
               transl_switch idx s.us_index_consts s.us_cases_consts))
         else
           transl_switch (untag_int (transl arg))
@@ -780,42 +780,45 @@ let rec transl = function
             Cop(Cand, [arg; Cconst_int 1]),
             transl_switch (untag_int arg) s.us_index_consts s.us_cases_consts,
             transl_switch (get_tag arg) s.us_index_blocks s.us_cases_blocks))
-  | Ustaticfail ->
-      Cexit
-  | Ucatch(body, handler) ->
-      Ccatch(transl body, transl handler)
+  | Ustaticfail nfail -> Cexit nfail
+  | Ucatch(nfail, body, handler) ->
+      Ccatch(nfail, transl body, transl handler)
   | Utrywith(body, exn, handler) ->
       Ctrywith(transl body, exn, transl handler)
   | Uifthenelse(Uprim(Pnot, [arg]), ifso, ifnot) ->
       transl (Uifthenelse(arg, ifnot, ifso))
-  | Uifthenelse(cond, ifso, Ustaticfail) ->
-      exit_if_false cond (transl ifso)
-  | Uifthenelse(cond, Ustaticfail, ifnot) ->
-      exit_if_true cond (transl ifnot)
+  | Uifthenelse(cond, ifso, Ustaticfail io) ->
+      exit_if_false cond (transl ifso) io
+  | Uifthenelse(cond, Ustaticfail io, ifnot) ->
+      exit_if_true cond io (transl ifnot)
   | Uifthenelse(Uprim(Psequand, _) as cond, ifso, ifnot) ->
-      Ccatch(exit_if_false cond (transl ifso), transl ifnot)
+      Ccatch(0, exit_if_false cond (transl ifso) 0, transl ifnot)
   | Uifthenelse(Uprim(Psequor, _) as cond, ifso, ifnot) ->
-      Ccatch(exit_if_true cond (transl ifnot), transl ifso)
+      Ccatch(0, exit_if_true cond 0 (transl ifnot), transl ifso)
   | Uifthenelse(cond, ifso, ifnot) ->
       Cifthenelse(test_bool(transl cond), transl ifso, transl ifnot)
   | Usequence(exp1, exp2) ->
       Csequence(remove_unit(transl exp1), transl exp2)
   | Uwhile(cond, body) ->
-      return_unit(Ccatch(Cloop(exit_if_false cond (remove_unit(transl body))),
-                         Ctuple []))
+      return_unit
+        (Ccatch
+           (0,
+            Cloop(exit_if_false cond (remove_unit(transl body)) 0),
+            Ctuple []))
   | Ufor(id, low, high, dir, body) ->
       let tst = match dir with Upto -> Cgt   | Downto -> Clt in
       let inc = match dir with Upto -> Caddi | Downto -> Csubi in
       return_unit
         (Clet(id, transl low,
           bind_nonvar "bound" (transl high) (fun high ->
-            Ccatch(
-              Cifthenelse(Cop(Ccmpi tst, [Cvar id; high]), Cexit,
+            Ccatch
+              (0,
+               Cifthenelse(Cop(Ccmpi tst, [Cvar id; high]), Cexit 0,
                 Cloop(
                   Csequence(remove_unit(transl body),
                     Csequence(Cassign(id, Cop(inc, [Cvar id; Cconst_int 2])),
                       Cifthenelse(Cop(Ccmpi tst, [Cvar id; high]),
-                                  Cexit, Ctuple []))))),
+                                  Cexit 0, Ctuple []))))),
               Ctuple []))))
   | Uassign(id, exp) ->
       return_unit(Cassign(id, transl exp))
@@ -1143,31 +1146,31 @@ and transl_unbox_int bi = function
       Cconst_int i
   | exp -> unbox_int bi (transl exp)
 
-and exit_if_true cond otherwise =
+and exit_if_true cond nfail otherwise =
   match cond with
     Uprim(Psequor, [arg1; arg2]) ->
-      exit_if_true arg1 (exit_if_true arg2 otherwise)
+      exit_if_true arg1 nfail (exit_if_true arg2 nfail otherwise)
   | Uprim(Psequand, [arg1; arg2]) ->
-      Csequence(Ccatch(exit_if_true arg1 (Ctuple []),
-                       exit_if_true arg2 (Ctuple [])),
+      Csequence(Ccatch(nfail, exit_if_true arg1 nfail (Ctuple []),
+                       exit_if_true arg2 nfail (Ctuple [])),
                 otherwise)
   | Uprim(Pnot, [arg]) ->
-      exit_if_false arg otherwise
+      exit_if_false arg otherwise nfail
   | _ ->
-      Cifthenelse(test_bool(transl cond), Cexit, otherwise)
+      Cifthenelse(test_bool(transl cond), Cexit nfail, otherwise)
 
-and exit_if_false cond otherwise =
+and exit_if_false cond otherwise nfail =
   match cond with
     Uprim(Psequand, [arg1; arg2]) ->
-      exit_if_false arg1 (exit_if_false arg2 otherwise)
+      exit_if_false arg1 (exit_if_false arg2 otherwise nfail) nfail
   | Uprim(Psequor, [arg1; arg2]) ->
-      Csequence(Ccatch(exit_if_false arg1 (Ctuple []),
-                       exit_if_false arg2 (Ctuple [])),
+      Csequence(Ccatch(0, exit_if_false arg1 (Ctuple []) 0,
+                       exit_if_false arg2 (Ctuple []) 0),
                 otherwise)
   | Uprim(Pnot, [arg]) ->
-      exit_if_true arg otherwise
+      exit_if_true arg nfail otherwise
   | _ ->
-      Cifthenelse(test_bool(transl cond), otherwise, Cexit)
+      Cifthenelse(test_bool(transl cond), otherwise, Cexit nfail)
 
 and transl_switch arg index cases =
   match Array.length index with
@@ -1175,24 +1178,24 @@ and transl_switch arg index cases =
   | 2 -> Cifthenelse(arg, transl cases.(index.(1)), transl cases.(index.(0)))
   | _ ->
       (* Determine whether all actions minus one or two are equal to
-         Ustaticfail *)
+         Ustaticfail 0 *)
       let num_fail = ref 0 in
       let key1 = ref (-1) in
       let key2 = ref (-1) in
       for i = 0 to Array.length index - 1 do
-        if cases.(index.(i)) = Ustaticfail then incr num_fail
+        if cases.(index.(i)) = Ustaticfail 0 then incr num_fail
         else if !key1 < 0 then key1 := i
         else if !key2 < 0 then key2 := i
       done;
       match Array.length index - !num_fail with
-        0 -> Csequence(arg, Cexit)
+        0 -> Csequence(arg, Cexit 0)
       | 1 -> Cifthenelse(Cop(Ccmpi Ceq, [arg; Cconst_int !key1]),
-                         transl cases.(index.(!key1)), Cexit)
+                         transl cases.(index.(!key1)), Cexit 0)
       | 2 -> bind "test" arg (fun a ->
                Cifthenelse(Cop(Ccmpi Ceq, [a; Cconst_int !key1]),
                            transl cases.(index.(!key1)),
                            Cifthenelse(Cop(Ccmpi Ceq, [a; Cconst_int !key2]),
-                                       transl cases.(index.(!key2)), Cexit)))
+                                       transl cases.(index.(!key2)), Cexit 0)))
       | _ -> Cswitch(arg, index, Array.map transl cases)
 
 and transl_letrec bindings cont =

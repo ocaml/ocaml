@@ -32,8 +32,8 @@ type ulambda =
   | Uletrec of (Ident.t * ulambda) list * ulambda
   | Uprim of primitive * ulambda list
   | Uswitch of ulambda * ulambda_switch
-  | Ustaticfail
-  | Ucatch of ulambda * ulambda
+  | Ustaticfail of int
+  | Ucatch of int * ulambda * ulambda
   | Utrywith of ulambda * Ident.t * ulambda
   | Uifthenelse of ulambda * ulambda * ulambda
   | Usequence of ulambda * ulambda

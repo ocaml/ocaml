@@ -120,11 +120,12 @@ method private reload i =
           (self#reload i.next))
   | Iloop body ->
       instr_cons (Iloop(self#reload body)) [||] [||] (self#reload i.next)
-  | Icatch(body, handler) ->
-      instr_cons (Icatch(self#reload body, self#reload handler)) [||] [||]
+  | Icatch(nfail, body, handler) ->
+      instr_cons
+        (Icatch(nfail, self#reload body, self#reload handler)) [||] [||]
         (self#reload i.next)
-  | Iexit ->
-      instr_cons Iexit [||] [||] dummy_instr
+  | Iexit i ->
+      instr_cons (Iexit i) [||] [||] dummy_instr
   | Itrywith(body, handler) ->
       instr_cons (Itrywith(self#reload body, self#reload handler)) [||] [||]
         (self#reload i.next)

@@ -29,7 +29,7 @@ let allocated_size = function
 
 let rec combine i allocstate =
   match i.desc with
-    Iend | Ireturn | Iexit | Iraise ->
+    Iend | Ireturn | Iexit _ | Iraise ->
       (i, allocated_size allocstate)
   | Iop(Ialloc sz) ->
       begin match allocstate with
@@ -71,11 +71,11 @@ let rec combine i allocstate =
       let newbody = combine_restart body in
       (instr_cons (Iloop(newbody)) i.arg i.res i.next,
        allocated_size allocstate)
-  | Icatch(body, handler) ->
+  | Icatch(io, body, handler) ->
       let (newbody, sz) = combine body allocstate in
       let newhandler = combine_restart handler in
       let newnext = combine_restart i.next in
-      (instr_cons (Icatch(newbody, newhandler)) i.arg i.res newnext, sz)
+      (instr_cons (Icatch(io, newbody, newhandler)) i.arg i.res newnext, sz)
   | Itrywith(body, handler) ->
       let (newbody, sz) = combine body allocstate in
       let newhandler = combine_restart handler in

@@ -144,10 +144,12 @@ let rec expr ppf = function
       fprintf ppf "@[<v 0>@[<2>(switch@ %a@ @]%t)@]" expr e1 print_cases 
   | Cloop e ->
       fprintf ppf "@[<2>(loop@ %a)@]" sequence e
-  | Ccatch(e1, e2) ->
-      fprintf ppf "@[<2>(catch@ %a@;<1 -2>with@ %a)@]" sequence e1 sequence e2
-  | Cexit ->
-      fprintf ppf "exit"
+  | Ccatch(i, e1, e2) ->
+      fprintf ppf
+        "@[<2>(catch@ %a@;<1 -2>with(%d)@ %a)@]"
+        sequence e1 i sequence e2
+  | Cexit i ->
+      fprintf ppf "exit(%d)" i
   | Ctrywith(e1, id, e2) ->
       fprintf ppf "@[<2>(try@ %a@;<1 -2>with@ %a@ %a)@]"
              sequence e1 Ident.print id sequence e2

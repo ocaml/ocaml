@@ -477,14 +477,14 @@ method emit_expr env exp =
       let (rarg, sbody) = self#emit_sequence env ebody in
       self#insert (Iloop(sbody#extract)) [||] [||];
       [||]
-  | Ccatch(e1, e2) ->
+  | Ccatch(nfail, e1, e2) ->
       let (r1, s1) = self#emit_sequence env e1 in
       let (r2, s2) = self#emit_sequence env e2 in
       let r = join r1 s1 r2 s2 in
-      self#insert (Icatch(s1#extract, s2#extract)) [||] [||];
+      self#insert (Icatch(nfail, s1#extract, s2#extract)) [||] [||];
       r
-  | Cexit ->
-      self#insert Iexit [||] [||];
+  | Cexit nfail ->
+      self#insert (Iexit nfail) [||] [||];
       [||]
   | Ctrywith(e1, v, e2) ->
       Proc.contains_calls := true;
@@ -662,12 +662,12 @@ method emit_tail env exp =
       self#insert
         (Iswitch(index, Array.map (self#emit_tail_sequence env) ecases))
         rsel [||]
-  | Ccatch(e1, e2) ->
-      self#insert (Icatch(self#emit_tail_sequence env e1,
+  | Ccatch(io, e1, e2) ->
+      self#insert (Icatch(io, self#emit_tail_sequence env e1,
                           self#emit_tail_sequence env e2))
                   [||] [||]
-  | Cexit ->
-      self#insert Iexit [||] [||]
+  | Cexit io ->
+      self#insert (Iexit io) [||] [||]
   | Ctrywith(e1, v, e2) ->
       Proc.contains_calls := true;
       let (r1, s1) = self#emit_sequence env e1 in

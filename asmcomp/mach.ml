@@ -69,8 +69,8 @@ and instruction_desc =
   | Iifthenelse of test * instruction * instruction
   | Iswitch of int array * instruction array
   | Iloop of instruction
-  | Icatch of instruction * instruction
-  | Iexit
+  | Icatch of int * instruction * instruction
+  | Iexit of int
   | Itrywith of instruction * instruction
   | Iraise
 
@@ -117,9 +117,9 @@ let rec instr_iter f i =
           instr_iter f i.next
       | Iloop(body) ->
           instr_iter f body; instr_iter f i.next
-      | Icatch(body, handler) ->
+      | Icatch(_, body, handler) ->
           instr_iter f body; instr_iter f handler; instr_iter f i.next
-      | Iexit -> ()
+      | Iexit _ -> ()
       | Itrywith(body, handler) ->
           instr_iter f body; instr_iter f handler; instr_iter f i.next
       | Iraise -> ()

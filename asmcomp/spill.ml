@@ -123,7 +123,14 @@ let add_reloads regset i =
     (fun r i -> instr_cons (Iop Ireload) [|spill_reg r|] [|r|] i)
     regset i
 
-let reload_at_exit = ref Reg.Set.empty
+let reload_at_exit = ref []
+
+let find_reload_at_exit k =
+  try
+    List.assoc k !reload_at_exit
+  with
+  | Not_found -> Misc.fatal_error "Spill.find_reload_at_exit"
+        
 let reload_at_break = ref Reg.Set.empty
 
 let rec reload i before =
@@ -211,19 +218,20 @@ let rec reload i before =
       let (new_next, finally) = reload i.next Reg.Set.empty in
       (instr_cons (Iloop(!final_body)) i.arg i.res new_next,
        finally)
-  | Icatch(body, handler) ->
-      let saved_reload_at_exit = !reload_at_exit in
-      reload_at_exit := Reg.Set.empty;
+  | Icatch(nfail, body, handler) ->
+      let new_set = ref Reg.Set.empty in
+      reload_at_exit := (nfail, new_set) :: !reload_at_exit ;
       let (new_body, after_body) = reload body before in
-      let at_exit = !reload_at_exit in
-      reload_at_exit := saved_reload_at_exit;
+      let at_exit = !new_set in
+      reload_at_exit := List.tl !reload_at_exit ;
       let (new_handler, after_handler) = reload handler at_exit in
       let (new_next, finally) =
         reload i.next (Reg.Set.union after_body after_handler) in
-      (instr_cons (Icatch(new_body, new_handler)) i.arg i.res new_next,
+      (instr_cons (Icatch(nfail, new_body, new_handler)) i.arg i.res new_next,
        finally)
-  | Iexit ->
-      reload_at_exit := Reg.Set.union !reload_at_exit before;
+  | Iexit nfail ->
+      let set = find_reload_at_exit nfail in
+      set := Reg.Set.union !set before;
       (i, Reg.Set.empty)
   | Itrywith(body, handler) ->
       let (new_body, after_body) = reload body before in
@@ -245,7 +253,13 @@ let rec reload i before =
    This strategy is turned off in loops, as it may prevent a spill from
    being lifted up all the way out of the loop. *)
 
-let spill_at_exit = ref Reg.Set.empty
+let spill_at_exit = ref []
+let find_spill_at_exit k =
+  try
+    List.assoc k !spill_at_exit
+  with
+  | Not_found -> Misc.fatal_error "Spill.find_spill_at_exit"
+
 let spill_at_raise = ref Reg.Set.empty
 let inside_loop = ref false
 
@@ -332,17 +346,16 @@ let rec spill i finally =
       inside_loop := saved_inside_loop;
       (instr_cons (Iloop(!final_body)) i.arg i.res new_next,
        !at_head)
-  | Icatch(body, handler) ->
+  | Icatch(nfail, body, handler) ->
       let (new_next, at_join) = spill i.next finally in
       let (new_handler, at_exit) = spill handler at_join in
-      let saved_spill_at_exit = !spill_at_exit in
-      spill_at_exit := at_exit;
+      spill_at_exit := (nfail, at_exit) :: !spill_at_exit ;
       let (new_body, before) = spill body at_join in
-      spill_at_exit := saved_spill_at_exit;
-      (instr_cons (Icatch(new_body, new_handler)) i.arg i.res new_next,
+      spill_at_exit := List.tl !spill_at_exit;
+      (instr_cons (Icatch(nfail, new_body, new_handler)) i.arg i.res new_next,
        before)
-  | Iexit ->
-      (i, !spill_at_exit)
+  | Iexit nfail ->
+      (i, find_spill_at_exit nfail)
   | Itrywith(body, handler) ->
       let (new_next, at_join) = spill i.next finally in
       let (new_handler, before_handler) = spill handler at_join in

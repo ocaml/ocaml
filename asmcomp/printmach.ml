@@ -42,7 +42,7 @@ let regs ppf v =
   | 0 -> ()
   | 1 -> reg ppf v.(0)
   | n -> reg ppf v.(0);
-         for i = 1 to n-1 do fprintf ppf " %a" reg v.(i) done
+         for i = 1 to n-1 do fprintf ppf "@ %a" reg v.(i) done
 
 let regset ppf s =
   let first = ref true in
@@ -170,11 +170,12 @@ let rec instr ppf i =
       fprintf ppf "@,endswitch"
   | Iloop(body) ->
       fprintf ppf "@[<v 2>loop@,%a@;<0 -2>endloop@]" instr body
-  | Icatch(body, handler) ->
-      fprintf ppf "@[<v 2>catch@,%a@;<0 -2>with@,%a@;<0 -2>endcatch@]"
-             instr body instr handler
-  | Iexit ->
-      fprintf ppf "exit"
+  | Icatch(i, body, handler) ->
+      fprintf
+        ppf "@[<v 2>catch@,%a@;<0 -2>with(%d)@,%a@;<0 -2>endcatch@]"
+        instr body i instr handler
+  | Iexit i ->
+      fprintf ppf "exit(%d)" i
   | Itrywith(body, handler) ->
       fprintf ppf "@[<v 2>try@,%a@;<0 -2>with@,%a@;<0 -2>endtry@]"
              instr body instr handler
