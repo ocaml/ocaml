@@ -13,13 +13,10 @@
 
 /* $Id$ */
 
-#include <stdio.h>
 #include <signal.h>
+#include <stdio.h>
 #if defined(TARGET_sparc) && defined(SYS_solaris)
 #include <ucontext.h>
-#endif
-#if defined(TARGET_power) && defined(SYS_rhapsody) && defined(DARWIN_VERSION_6)
-#include <sys/ucontext.h>
 #endif
 #include "alloc.h"
 #include "callback.h"
@@ -47,26 +44,66 @@ extern sighandler win32_signal(int sig, sighandler action);
 #endif
 
 #if defined(TARGET_power) && defined(SYS_rhapsody)
+
+  #include <sys/utsname.h>
+
+  #define STRUCT_SIGCONTEXT void
+  #define CONTEXT_GPR(ctx, regno) (*context_gpr_p ((ctx), (regno)))
+  #define CONTEXT_PC(ctx) CONTEXT_GPR ((ctx), -2)
+  static int ctx_version = 0;
+  static void init_ctx (void)
+  {
+    struct utsname name;
+    if (uname (&name) == 0){
+      if (name.release[1] == '.' && name.release[0] <= '5'){
+        ctx_version = 1;
+      }else{
+        ctx_version = 2;
+      }
+    }else{
+      fatal_error ("cannot determine SIGCONTEXT format");
+    }
+  }
+
   #ifdef DARWIN_VERSION_6
-    /* cf. xnu/bsd/dev/ppc/unix_signal.c
-           xnu/osfmk/mach/ppc/thread_status.h
-           xnu/bsd/sys/ucontext.h
-           xnu/bsd/ppc/signal.h
-           etc. etc. etc.
-    */
-    #define STRUCT_SIGCONTEXT struct ucontext
-    #define CONTEXT_GPR(ctx, regno) \
-      (((unsigned long *)&((ctx)->uc_mcontext->ss))[2 + (regno)])
-    #define CONTEXT_PC(ctx) \
-      (((unsigned long *)&((ctx)->uc_mcontext->ss))[0])
+    #include <sys/ucontext.h>
+    static unsigned long *context_gpr_p (void *ctx, int regno)
+    {
+      unsigned long *regs;
+      if (ctx_version == 0) init_ctx ();
+      if (ctx_version == 1){
+        /* old-style context (10.0 and 10.1) */
+        regs = (unsigned long *)(((struct sigcontext *)ctx)->sc_regs);
+      }else{
+        Assert (ctx_version == 2);
+        /* new-style context (10.2) */
+        regs = (unsigned long *)&(((struct ucontext *)ctx)->uc_mcontext->ss);
+      }
+      return &(regs[2 + regno]);
+    }
   #else
-    /* Confer machdep/ppc/unix_signal.c and mach/ppc/thread_status.h
-       in the Darwin sources */
-    #define STRUCT_SIGCONTEXT struct sigcontext
-    #define CONTEXT_GPR(ctx, regno) \
-      (((unsigned long *)((ctx)->sc_regs))[2 + (regno)])
-    #define CONTEXT_PC(ctx) \
-      (((unsigned long *)((ctx)->sc_regs))[0])
+    struct ucontext {
+      int       uc_onstack;
+      sigset_t  uc_sigmask;
+      stack_t   uc_stack;
+      struct ucontext   *uc_link;
+      size_t    uc_mcsize;
+      long      *uc_mcontext;  /* hack ! */
+    };
+    static unsigned long *context_gpr_p (void *ctx, int regno)
+    {
+      unsigned long *regs;
+      if (ctx_version == 0) init_ctx ();
+      if (ctx_version == 1){
+        /* old-style context (10.0 and 10.1) */
+        regs = (unsigned long *)(((struct sigcontext *)ctx)->sc_regs);
+      }else{
+        Assert (ctx_version == 2);
+        /* new-style context (10.2) */
+        regs = (unsigned long *)&(((struct ucontext *)ctx)->uc_mcontext) + 8;
+      }
+      return &(regs[2 + regno]);
+    }
   #endif
 #endif
 
