@@ -474,7 +474,7 @@ let parse s =
     if i >= len then failwith "[ class not closed by ]";
     if s.[i] = ']' && i > start then i+1 else begin
       let c1 = s.[i] in
-      if i+2 < len && s.[i+1] = '-' then begin
+      if i+2 < len && s.[i+1] = '-' && s.[i+2] <> ']' then begin
         let c2 = s.[i+2] in
         Charset.add_range c c1 c2;
         regexpclass2 c start (i+3)
