@@ -67,12 +67,14 @@ let add_type_declaration bv td =
     (fun (ty1, ty2, _) -> add_type bv ty1; add_type bv ty2)
     td.ptype_cstrs;
   add_opt add_type bv td.ptype_manifest;
-  match td.ptype_kind with
+  let rec add_tkind = function
     Ptype_abstract -> ()
   | Ptype_variant cstrs ->
       List.iter (fun (c, args) -> List.iter (add_type bv) args) cstrs
   | Ptype_record lbls ->
       List.iter (fun (l, mut, ty) -> add_type bv ty) lbls
+  | Ptype_virtual tkind -> add_tkind tkind in
+  add_tkind td.ptype_kind
 
 let rec add_class_type bv cty =
   match cty.pcty_desc with

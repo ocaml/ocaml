@@ -170,7 +170,7 @@ module Analyser =
     let merge_infos = Odoc_merge.merge_info_opt Odoc_types.all_merge_options 
 
     let name_comment_from_type_kind pos_start pos_end pos_limit tk =
-      match tk with
+      let rec comment_from_tkind = function
         Parsetree.Ptype_abstract ->
           (0, [])
       | Parsetree.Ptype_variant cons_core_type_list_list -> 
@@ -236,8 +236,12 @@ module Analyser =
           in
           (0, f name_mutable_type_list)
 
+      | Parsetree.Ptype_virtual tkind -> comment_from_tkind tkind in
+
+     comment_from_tkind tk
+
     let get_type_kind env name_comment_list type_kind =
-      match type_kind with
+      let rec get_tkind = function
         Types.Type_abstract ->
           Odoc_type.Type_abstract
 
@@ -275,6 +279,11 @@ module Analyser =
             } 
           in
           Odoc_type.Type_record (List.map f l)
+
+      | Types.Type_virtual tkind -> get_tkind tkind in
+
+     get_tkind type_kind
+
 
     (** Analysis of the elements of a class, from the information in the parsetree and in the class
        signature. @return the couple (inherited_class list, elements).*)

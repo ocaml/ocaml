@@ -154,7 +154,8 @@ let type_declaration s decl =
     { type_params = List.map (typexp s) decl.type_params;
       type_arity = decl.type_arity;
       type_kind =
-        begin match decl.type_kind with
+        begin
+        let rec kind_of_tkind = function
           Type_abstract -> Type_abstract
         | Type_variant cstrs ->
             Type_variant(
@@ -165,6 +166,8 @@ let type_declaration s decl =
               List.map (fun (n, mut, arg) -> (n, mut, typexp s arg))
                        lbls,
               rep)
+        | Type_virtual tkind -> Type_virtual (kind_of_tkind tkind) in
+        kind_of_tkind decl.type_kind
         end;
       type_manifest =
         begin match decl.type_manifest with

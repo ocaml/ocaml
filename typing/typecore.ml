@@ -42,6 +42,8 @@ type error =
   | Undefined_inherited_method of string
   | Unbound_class of Longident.t
   | Virtual_class of Longident.t
+  | Virtual_type of string
+  | Virtual_type_setfield of Longident.t * string
   | Unbound_instance_variable of string
   | Instance_variable_not_mutable of string
   | Not_subtype of (type_expr * type_expr) list * (type_expr * type_expr) list
@@ -93,19 +95,37 @@ let extract_option_type env ty =
     when Path.same path Predef.path_option -> ty
   | _ -> assert false
 
-let rec extract_label_names env ty =
+let rec extract_label_names sexp env ty =
+  let ty = repr ty in
+  match ty.desc with
+  | Tconstr (path, _, _) ->
+      let td = Env.find_type path env in
+      let rec extract = function
+      | Type_record (fields, _) -> List.map (fun (name, _, _) -> name) fields
+      | Type_abstract when td.type_manifest <> None ->
+          extract_label_names sexp env (expand_head env ty)
+      | Type_virtual tkind ->
+          raise (Error(sexp.pexp_loc, Virtual_type (Path.name path)))
+      | _ -> assert false in
+      extract td.type_kind
+  | _ ->
+      assert false
+
+let check_virtual get_exc loc env ty =
   let ty = repr ty in
   match ty.desc with
   | Tconstr (path, _, _) ->
       let td = Env.find_type path env in
       begin match td.type_kind with
-      | Type_record (fields, _) -> List.map (fun (name, _, _) -> name) fields
-      | Type_abstract when td.type_manifest <> None ->
-          extract_label_names env (expand_head env ty)
-      | _ -> assert false
-      end
+      | Type_virtual tkind ->
+          raise (Error(loc, get_exc (Path.name path)))
+      | _ -> () end
   | _ ->
       assert false
+
+let check_virtual_type = check_virtual (fun s -> Virtual_type s)
+let check_virtual_type_setfield lid =
+  check_virtual (fun s -> Virtual_type_setfield (lid, s))
 
 (* Typing of patterns *)
 
@@ -632,7 +652,7 @@ let type_format loc fmt =
     and scan_conversion i j =
       if j >= len then incomplete i else
       match fmt.[j] with
-      | '%' -> scan_format (j + 1)
+      | '%' | '$' -> scan_format (j + 1)
       | 's' | 'S' | '[' -> conversion j Predef.type_string
       | 'c' | 'C' -> conversion j Predef.type_char
       | 'b' | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' | 'N' ->
@@ -913,7 +933,7 @@ let rec type_exp env sexp =
       if opt_sexp = None && List.length lid_sexp_list <> !num_fields then begin
         let present_indices =
           List.map (fun (lbl, _) -> lbl.lbl_pos) lbl_exp_list in
-        let label_names = extract_label_names env ty in
+        let label_names = extract_label_names sexp env ty in
         let rec missing_labels n = function
             [] -> []
           | lbl :: rem ->
@@ -923,6 +943,7 @@ let rec type_exp env sexp =
         let missing = missing_labels 0 label_names in
         raise(Error(sexp.pexp_loc, Label_missing missing))
       end;
+      check_virtual_type sexp.pexp_loc env ty;
       { exp_desc = Texp_record(lbl_exp_list, opt_exp);
         exp_loc = sexp.pexp_loc;
         exp_type = ty;
@@ -957,6 +978,7 @@ let rec type_exp env sexp =
       if vars <> [] && not (is_nonexpansive newval) then
         generalize_expansive env newval.exp_type;
       check_univars env "field value" newval label.lbl_arg vars;
+      check_virtual_type_setfield lid sexp.pexp_loc env ty_res;
       { exp_desc = Texp_setfield(record, label, newval);
         exp_loc = sexp.pexp_loc;
         exp_type = instance Predef.type_unit;
@@ -1530,6 +1552,7 @@ and type_construct env loc lid sarg explicit_arity ty_expected =
       exp_env = env } in
   unify_exp env texp ty_expected;
   let args = List.map2 (type_argument env) sargs ty_args in
+  check_virtual_type loc env ty_res;
   { texp with exp_desc = Texp_construct(constr, args) }
 
 (* Typing of an expression with an expected type.
@@ -1866,7 +1889,7 @@ let report_error ppf = function
       fprintf ppf "Unbound class %a" longident cl
   | Virtual_class cl ->
       fprintf ppf "One cannot create instances of the virtual class %a"
-      longident cl
+        longident cl
   | Unbound_instance_variable v ->
       fprintf ppf "Unbound instance variable %s" v
   | Instance_variable_not_mutable v ->
@@ -1919,6 +1942,11 @@ let report_error ppf = function
         "The instance variable %a@ \
          cannot be accessed from the definition of another instance variable"
         longident lid
+  | Virtual_type ty ->
+      fprintf ppf "One cannot create values of the virtual type %s" ty
+  | Virtual_type_setfield (lid, ty) ->
+      fprintf ppf "Cannot assign field %a of the virtual type %s"
+        longident lid ty
   | Not_a_variant_type lid ->
       fprintf ppf "The type %a@ is not a variant type" longident lid
   | Incoherent_label_order ->

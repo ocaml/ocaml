@@ -938,7 +938,7 @@ let fprintf_out str out ppf format =
     else
       match format.[i] with
       | '%' ->
-          Printf.scan_format format i cont_s cont_a cont_t
+          Printf.scan_format format i cont_s cont_a cont_t cont_f
       | '@' ->
           let i = succ i in
           if i >= limit then invalid_format format i else
@@ -998,6 +998,8 @@ let fprintf_out str out ppf format =
     else
       printer ppf;
     doprn i
+  and cont_f i =
+    pp_print_flush ppf (); doprn i
 
   and get_int i c =
    if i >= limit then invalid_integer format i else
@@ -1006,8 +1008,9 @@ let fprintf_out str out ppf format =
    | '%' ->
       let cont_s s i = c (format_int_of_string format i s) i
       and cont_a printer arg i = invalid_integer format i
-      and cont_t printer i = invalid_integer format i in
-      Printf.scan_format format i cont_s cont_a cont_t
+      and cont_t printer i = invalid_integer format i
+      and cont_f i = invalid_integer format i in
+      Printf.scan_format format i cont_s cont_a cont_t cont_f
    | _ ->
       let rec get j =
        if j >= limit then invalid_integer format j else
@@ -1064,8 +1067,10 @@ let fprintf_out str out ppf format =
          let s =
            if str then (Obj.magic printer) ()
            else exstring (fun ppf () -> printer ppf) () in
-         get (s :: s0 :: accu) i i in
-       Printf.scan_format format j cont_s cont_a cont_t
+         get (s :: s0 :: accu) i i
+       and cont_f i =
+         format_invalid_arg "bad tag name specification" format i in
+       Printf.scan_format format j cont_s cont_a cont_t cont_f
     | c -> get accu i (succ j) in
    get [] i i
 

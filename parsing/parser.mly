@@ -168,6 +168,10 @@ let bigarray_set arr arg newval =
                        ["", arr; 
                         "", ghexp(Pexp_array coords);
                         "", newval]))
+
+let mktype_kind vflag kind =
+  if vflag = Virtual && kind != Ptype_abstract then Ptype_virtual kind else kind
+
 %}
 
 /* Tokens */
@@ -1120,6 +1124,7 @@ type_declarations:
     type_declaration                            { [$1] }
   | type_declarations AND type_declaration      { $3 :: $1 }
 ;
+
 type_declaration:
     type_parameters LIDENT type_kind constraints
       { let (params, variance) = List.split $1 in
@@ -1138,18 +1143,18 @@ constraints:
 type_kind:
     /*empty*/
       { (Ptype_abstract, None) }
-  | EQUAL core_type
-      { (Ptype_abstract, Some $2) }
-  | EQUAL constructor_declarations
-      { (Ptype_variant(List.rev $2), None) }
-  | EQUAL BAR constructor_declarations
-      { (Ptype_variant(List.rev $3), None) }
-  | EQUAL LBRACE label_declarations opt_semi RBRACE
-      { (Ptype_record(List.rev $3), None) }
-  | EQUAL core_type EQUAL opt_bar constructor_declarations
-      { (Ptype_variant(List.rev $5), Some $2) }
-  | EQUAL core_type EQUAL LBRACE label_declarations opt_semi RBRACE
-      { (Ptype_record(List.rev $5), Some $2) }
+  | EQUAL virtual_flag core_type
+      { (mktype_kind $2 Ptype_abstract, Some $3) }
+  | EQUAL virtual_flag constructor_declarations
+      { (mktype_kind $2 (Ptype_variant(List.rev $3)), None) }
+  | EQUAL virtual_flag BAR constructor_declarations
+      { (mktype_kind $2 (Ptype_variant(List.rev $4)), None) }
+  | EQUAL virtual_flag LBRACE label_declarations opt_semi RBRACE
+      { (mktype_kind $2 (Ptype_record(List.rev $4)), None) }
+  | EQUAL virtual_flag core_type EQUAL opt_bar constructor_declarations
+      { (mktype_kind $2 (Ptype_variant(List.rev $6)), Some $3) }
+  | EQUAL virtual_flag core_type EQUAL LBRACE label_declarations opt_semi RBRACE
+      { (mktype_kind $2 (Ptype_record(List.rev $6)), Some $3) }
 ;
 type_parameters:
     /*empty*/                                   { [] }

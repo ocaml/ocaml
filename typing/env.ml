@@ -363,7 +363,7 @@ and lookup_class =
   lookup (fun env -> env.classes) (fun sc -> sc.comp_classes)
 and lookup_cltype =
   lookup (fun env -> env.cltypes) (fun sc -> sc.comp_cltypes)
-  
+
 (* Expand manifest module type names at the top of the given module type *)
 
 let rec scrape_modtype mty env =
@@ -379,22 +379,27 @@ let rec scrape_modtype mty env =
 (* Compute constructor descriptions *)
 
 let constructors_of_type ty_path decl =
-  match decl.type_kind with
+  let rec constructors_of_tkind = function
     Type_variant cstrs ->
       Datarepr.constructor_descrs
         (Btype.newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
         cstrs
-  | _ -> []
+  | Type_virtual tkind -> constructors_of_tkind tkind
+  | _ -> [] in
+  constructors_of_tkind decl.type_kind
+
 
 (* Compute label descriptions *)
 
 let labels_of_type ty_path decl =
-  match decl.type_kind with
+  let rec labels_of_tkind = function
     Type_record(labels, rep) ->
       Datarepr.label_descrs
         (Btype.newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
         labels rep
-  | _ -> []
+  | Type_virtual tkind -> labels_of_tkind tkind
+  | _ -> [] in
+  labels_of_tkind decl.type_kind
 
 (* Given a signature and a root path, prefix all idents in the signature
    by the root path and build the corresponding substitution. *)

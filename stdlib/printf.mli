@@ -119,4 +119,4 @@ val kprintf : (string -> 'a) -> ('b, unit, string, 'a) format -> 'b
 
 val scan_format :
   string -> int -> (string -> int -> 'a) -> ('b -> 'c -> int -> 'a) ->
-    ('e -> int -> 'a) -> 'a
+    ('e -> int -> 'a) -> (int -> 'a) -> 'a

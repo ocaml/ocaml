@@ -35,7 +35,7 @@ let parse_format format =
         parse true (succ i)
     | _ ->
         parse neg (succ i) in
-    try parse false 1 with Failure _ -> bad_format format 0
+  try parse false 1 with Failure _ -> bad_format format 0
 
 (* Pad a (sub) string into a blank string of length [p],
    on the right if [neg] is true, on the left otherwise. *)
@@ -53,31 +53,6 @@ let pad_string pad_char p neg s i len =
 let format_string format s =
   let (p, neg) = parse_format format in
   pad_string ' ' p neg s 0 (String.length s)
-
-(* Format a string given a %s format, e.g. %40s or %-20s.
-   To do: ignore other flags (#, +, etc)? *)
-
-let format_string format s =
-  let rec parse_format neg i =
-    if i >= String.length format then (0, neg) else
-    match String.unsafe_get format i with
-    | '1'..'9' ->
-        (int_of_string (String.sub format i (String.length format - i - 1)),
-         neg)
-    | '-' ->
-        parse_format true (succ i)
-    | _ ->
-        parse_format neg (succ i) in
-  let (p, neg) =
-    try parse_format false 1 with Failure _ -> bad_format format 0 in
-  if String.length s < p then begin
-    let res = String.make p ' ' in
-    if neg
-    then String.blit s 0 res 0 (String.length s)
-    else String.blit s 0 res (p - String.length s) (String.length s);
-    res
-  end else
-    s
 
 (* Format a [%b] format: write a binary representation of an integer. *)
 let format_binary_int format n =
@@ -97,7 +72,7 @@ let format_binary_int format n =
     match String.unsafe_get format i with
     | '0' -> '0'
     | '1' .. '9' -> ' '
-    | _ ->  find_pad_char (i + 1) len in
+    | _ -> find_pad_char (i + 1) len in
   let add_sharp s i =
     String.unsafe_set s i '0';
     String.unsafe_set s (i + 1) 'b' in
@@ -161,7 +136,7 @@ let format_int_with_conv conv fmt i =
    caught by the [_ -> bad_format] clauses below.
    Don't do this at home, kids. *)
 
-let scan_format fmt pos cont_s cont_a cont_t =
+let scan_format fmt pos cont_s cont_a cont_t cont_f =
   let rec scan_flags widths i =
     match String.unsafe_get fmt i with
     | '*' ->
@@ -237,6 +212,8 @@ let scan_format fmt pos cont_s cont_a cont_t =
         | _ ->
             bad_format fmt pos
         end
+    | '$' ->
+        Obj.magic (cont_f (succ i))
     | _ ->
         bad_format fmt pos
   in scan_flags [] (pos + 1)
@@ -249,7 +226,7 @@ let fprintf chan fmt =
   let rec doprn i =
     if i >= len then Obj.magic () else
     match String.unsafe_get fmt i with
-    | '%' -> scan_format fmt i cont_s cont_a cont_t
+    | '%' -> scan_format fmt i cont_s cont_a cont_t cont_f
     |  c  -> output_char chan c; doprn (succ i)
   and cont_s s i =
     output_string chan s; doprn i
@@ -257,6 +234,8 @@ let fprintf chan fmt =
     printer chan arg; doprn i
   and cont_t printer i =
     printer chan; doprn i
+  and cont_f i =
+    flush chan; doprn i
   in doprn 0
 
 let printf fmt = fprintf stdout fmt
@@ -273,7 +252,7 @@ let kprintf kont fmt =
       Obj.magic (kont res)
     end else
     match String.unsafe_get fmt i with
-    | '%' -> scan_format fmt i cont_s cont_a cont_t
+    | '%' -> scan_format fmt i cont_s cont_a cont_t cont_f
     |  c  -> Buffer.add_char dest c; doprn (succ i)
   and cont_s s i =
     Buffer.add_string dest s; doprn i
@@ -281,6 +260,7 @@ let kprintf kont fmt =
     Buffer.add_string dest (printer () arg); doprn i
   and cont_t printer i =
     Buffer.add_string dest (printer ()); doprn i
+  and cont_f i = doprn i
   in doprn 0
 
 let sprintf fmt = kprintf (fun x -> x) fmt;;
@@ -291,7 +271,7 @@ let bprintf dest fmt =
   let rec doprn i =
     if i >= len then Obj.magic () else
     match String.unsafe_get fmt i with
-    | '%' -> scan_format fmt i cont_s cont_a cont_t
+    | '%' -> scan_format fmt i cont_s cont_a cont_t cont_f
     |  c  -> Buffer.add_char dest c; doprn (succ i)
   and cont_s s i =
     Buffer.add_string dest s; doprn i
@@ -299,6 +279,7 @@ let bprintf dest fmt =
     printer dest arg; doprn i
   and cont_t printer i =
     printer dest; doprn i
+  and cont_f i = doprn i
   in doprn 0
 
 

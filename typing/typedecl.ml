@@ -103,7 +103,7 @@ let transl_declaration env (name, sdecl) id =
     { type_params = params;
       type_arity = List.length params;
       type_kind =
-        begin match sdecl.ptype_kind with
+        begin let rec get_tkind = function
           Ptype_abstract ->
             Type_abstract
         | Ptype_variant cstrs ->
@@ -140,7 +140,9 @@ let transl_declaration env (name, sdecl) id =
               then Record_float
               else Record_regular in
             Type_record(lbls', rep)
-        end;
+        | Ptype_virtual kind -> Type_virtual (get_tkind kind) in
+        get_tkind sdecl.ptype_kind
+      end;
       type_manifest =
         begin match sdecl.ptype_manifest with
           None -> None
@@ -167,14 +169,16 @@ let transl_declaration env (name, sdecl) id =
 
 let generalize_decl decl =
   List.iter Ctype.generalize decl.type_params;
-  begin match decl.type_kind with
+  let rec gen = function
     Type_abstract ->
       ()
   | Type_variant v ->
       List.iter (fun (_, tyl) -> List.iter Ctype.generalize tyl) v
   | Type_record(r, rep) ->
       List.iter (fun (_, _, ty) -> Ctype.generalize ty) r
-  end;
+  | Type_virtual tkind ->
+      gen tkind in
+  gen decl.type_kind;
   begin match decl.type_manifest with
     None    -> ()
   | Some ty -> Ctype.generalize ty
@@ -216,12 +220,15 @@ let rec check_constraints_rec env loc visited ty =
 
 let check_constraints env (_, sdecl) (_, decl) =
   let visited = ref TypeSet.empty in
-  begin match decl.type_kind with
+  let rec check = function
   | Type_abstract -> ()
   | Type_variant l ->
-      let pl =
-        match sdecl.ptype_kind with Ptype_variant pl -> pl | _ -> assert false
+      let rec find_pl = function
+          Ptype_variant pl -> pl
+        | Ptype_virtual tkind -> find_pl tkind
+        | Ptype_record _ | Ptype_abstract -> assert false
       in
+      let pl = find_pl sdecl.ptype_kind in
       List.iter
         (fun (name, tyl) ->
           let styl = try List.assoc name pl with Not_found -> assert false in
@@ -230,9 +237,12 @@ let check_constraints env (_, sdecl) (_, decl) =
             styl tyl)
         l
   | Type_record (l, _) ->
-      let pl =
-        match sdecl.ptype_kind with Ptype_record pl -> pl | _ -> assert false
+      let rec find_pl = function
+          Ptype_record pl -> pl
+        | Ptype_virtual tkind -> find_pl tkind
+        | Ptype_variant _ | Ptype_abstract -> assert false
       in
+      let pl = find_pl sdecl.ptype_kind in
       let rec get_loc name = function
           [] -> assert false
         | (name', _, sty) :: tl ->
@@ -242,7 +252,8 @@ let check_constraints env (_, sdecl) (_, decl) =
         (fun (name, _, ty) ->
           check_constraints_rec env (get_loc name pl) visited ty)
         l
-  end;
+  | Type_virtual tkind -> check tkind in
+  check decl.type_kind;
   begin match decl.type_manifest with
   | None -> ()
   | Some ty ->
@@ -403,7 +414,7 @@ let compute_variance_decl env decl (required, loc) =
   else
   let tvl = List.map (fun ty -> (Btype.repr ty, ref false, ref false))
       decl.type_params in
-  begin match decl.type_kind with
+  let rec variance_tkind = function
     Type_abstract ->
       begin match decl.type_manifest with
         None -> assert false
@@ -417,7 +428,8 @@ let compute_variance_decl env decl (required, loc) =
       List.iter
         (fun (_, mut, ty) -> compute_variance env tvl true (mut = Mutable) ty)
         ftl
-  end;
+  | Type_virtual tkind -> variance_tkind tkind in
+  variance_tkind decl.type_kind;
   List.map2
     (fun (_, co, cn) (c, n) ->
       if c && !cn || n && !co then raise (Error(loc, Bad_variance));

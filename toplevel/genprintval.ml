@@ -236,7 +236,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
           | Tconstr(path, ty_list, _) ->
               begin try
                 let decl = Env.find_type path env in
-                match decl with
+                let rec tree_decl = function
                 | {type_kind = Type_abstract; type_manifest = None} ->
                     Oval_stuff "<abstr>"
                 | {type_kind = Type_abstract; type_manifest = Some body} ->
@@ -259,7 +259,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
                     tree_of_constr_with_args (tree_of_constr env path)
                                            constr_name 0 depth obj ty_args
                 | {type_kind = Type_record(lbl_list, rep)} ->
-                    match check_depth depth obj ty with
+                    begin match check_depth depth obj ty with
                       Some x -> x
                     | None ->
                         let rec tree_of_fields pos = function
@@ -279,6 +279,10 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
                               (lid, v) :: tree_of_fields (pos + 1) remainder
                         in
                         Oval_record (tree_of_fields 0 lbl_list)
+                    end
+                | {type_kind = Type_virtual tkind} ->
+                    tree_decl {decl with type_kind = tkind} in
+                tree_decl decl
               with
                 Not_found ->                (* raised by Env.find_type *)
                   Oval_stuff "<abstr>"

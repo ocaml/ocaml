@@ -165,14 +165,15 @@ let search_pos_type_decl td ~pos ~env =
       Some t -> search_pos_type t ~pos ~env
     | None -> ()
     end;
-    begin match td.ptype_kind with
+    let rec search_tkind = function
       Ptype_abstract -> ()
     | Ptype_variant dl ->
         List.iter dl
           ~f:(fun (_, tl) -> List.iter tl ~f:(search_pos_type ~pos ~env))
     | Ptype_record dl ->
         List.iter dl ~f:(fun (_, _, t) -> search_pos_type t ~pos ~env)
-    end;
+    | Ptype_virtual tkind -> search_tkind tkind in
+    search_tkind td.ptype_kind;
     List.iter td.ptype_cstrs ~f:
       begin fun (t1, t2, _) ->
         search_pos_type t1 ~pos ~env;
