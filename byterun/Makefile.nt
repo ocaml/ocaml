@@ -32,6 +32,14 @@ PRIMS=alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
 PUBLIC_INCLUDES=mlvalues.h alloc.h misc.h callback.h fail.h custom.h
 
 all: ocamlrun.exe
+	if not exist ..\stdlib\caml mkdir ..\stdlib\caml
+	cp $(PUBLIC_INCLUDES) ..\stdlib\caml
+	sed -e "/#include .*\/m.h/r ..\config\m.h" \
+            -e "/#include .*\/s.h/r ..\config\s.h" \
+            -e "/#include /d" config.h > ..\stdlib\caml\config.h
+	sed -e "/#include .*gc\.h/d" \
+	    -e "/#define Alloc_small/,/^}/d" \
+	    -e "/Modify/,/^}/d" memory.h > ..\stdlib\caml\memory.h
 
 ocamlrun.exe: libcamlrun.lib prims.obj
 	$(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -o ocamlrun.exe prims.obj libcamlrun.lib $(CCLIBS)
