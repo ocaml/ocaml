@@ -32,86 +32,87 @@ let base = Frame.create top in
 pack [base];
 
 (* Menu bar *)
-let bar = Frame.create base ~borderwidth: 2 ~relief: `Raised  in 
-pack [bar] ~fill: `X;
+let bar = Frame.create ~borderwidth:2 ~relief:`Raised  base in 
+pack ~fill:`X [bar];
 
   (* Menu and Menubutton *)
-  let meb = Menubutton.create bar ~text: "Menu" in
+  let meb = Menubutton.create ~text:"Menu" bar in
   let men = Menu.create meb in
-  Menu.add_command men ~label: "Quit" ~command: (fun () -> closeTk (); exit 0);
-  Menubutton.configure meb ~menu: men; 
+  Menu.add_command ~label:"Quit" ~command:(fun () -> closeTk (); exit 0) men;
+  Menubutton.configure ~menu:men meb;
   
   (* Frames *)
   let base2 = Frame.create base in
   let left = Frame.create base2 in
   let right = Frame.create base2 in
   pack [base2];
-  pack [left; right] ~side: `Left;
+  pack ~side:`Left [left; right];
   
     (* Widgets on left and right *)
     
     (* Button *)
-    let but = Button.create left ~text: "Welcome to LablTk" in
+    let but = Button.create ~text:"Welcome to LablTk" left in
     
     (* Canvas *)
-    let can = Canvas.create left ~width: 100
-      ~height: 100 ~borderwidth: 1 ~relief: `Sunken
+    let can =
+      Canvas.create ~width:100 ~height:100 ~borderwidth:1 ~relief:`Sunken left
     in
-    Canvas.create_oval can ~x1: 10 ~y1: 10 
-                           ~x2: 90 ~y2: 90
-                           ~fill:`Red; 
+    let oval = Canvas.create_oval ~x1: 10 ~y1: 10 
+                                  ~x2: 90 ~y2: 90
+                                  ~fill: `Red
+                                  can
+    in ignore oval;
 
     (* Check button *)
-    let che = Checkbutton.create left ~text: "Check" in
+    let che = Checkbutton.create ~text:"Check" left in
     
     (* Entry *)
-    let ent = Entry.create left ~width: 10 in 
+    let ent = Entry.create ~width:10 left in 
     
     (* Label *)
-    let lab = Label.create left ~text: "Welcome to LablTk" in
+    let lab = Label.create ~text:"Welcome to LablTk" left in
     
     (* Listbox *)
     let lis = Listbox.create left in
-    Listbox.insert lis ~index: `End ~texts: ["This"; "is"; "Listbox"];
+    Listbox.insert lis ~index:`End ~texts:["This"; "is"; "Listbox"];
     
     (* Message *)
-    let mes = Message.create left
-      ~text: "Hello this is a message widget with very long text, but ..." in
+    let mes = Message.create
+        ~text: "Hello this is a message widget with very long text, but ..."
+        left in
     
     (* Radio buttons *)
     let tv = Textvariable.create () in
     Textvariable.set tv "One";
     let radf = Frame.create right in
     let rads = List.map
-        ~f:(fun t -> Radiobutton.create radf ~text: t ~value: t ~variable: tv)
+        ~f:(fun t -> Radiobutton.create ~text:t ~value:t ~variable:tv radf)
         ["One"; "Two"; "Three"] in
     
     (* Scale *)
-    let sca = Scale.create right ~label: "Scale" ~length: 100
-      ~showvalue: true in
+    let sca = Scale.create ~label:"Scale" ~length:100 ~showvalue:true right in
     
     (* Text and scrollbar *)
     let texf = Frame.create right in 
     
       (* Text *)
-      let tex = Text.create texf ~width: 20 ~height: 8 in
-      Text.insert tex ~text: "This is a text widget." ~index: (`End,[])
-         ~tags: [];
+      let tex = Text.create ~width:20 ~height:8 texf in
+      Text.insert ~index:(`End,[]) ~text:"This is a text widget." tex;
       
       (* Scrollbar *)
       let scr = Scrollbar.create texf in
       
       (* Text and Scrollbar widget link *)
       let scroll_link sb tx =
-        Text.configure tx ~yscrollcommand: (Scrollbar.set sb);
-        Scrollbar.configure sb ~command: (Text.yview tx) in
+        Text.configure ~yscrollcommand:(Scrollbar.set sb) tx;
+        Scrollbar.configure ~command:(Text.yview tx) sb in
       scroll_link scr tex;
       
-      pack [scr] ~side: `Right ~fill: `Y;
-      pack [tex] ~side: `Left ~fill: `Both ~expand: true;
+      pack ~side:`Right ~fill:`Y [scr];
+      pack ~side:`Left ~fill:`Both ~expand:true [tex];
        
     (* Pack them *)
-    pack [meb] ~side: `Left;
+    pack ~side:`Left [meb];
     pack [coe but; coe can; coe che; coe ent; coe lab; coe lis; coe mes]; 
     pack [coe radf; coe sca; coe texf];
     pack rads;
@@ -123,40 +124,40 @@ pack [bar] ~fill: `X;
   let selcol = `Color "#ffdfdf" in
   let buttons = 
     List.map ~f:(fun (w, t, c, a) ->
-        let b = Button.create top2 ~text:t ~command:c in
-        bind b ~events: [`Enter] ~action:(fun _ -> a selcol);
-        bind b ~events: [`Leave] ~action:(fun _ -> a defcol);
+        let b = Button.create ~text:t ~command:c top2 in
+        bind ~events:[`Enter] ~action:(fun _ -> a selcol) b;
+        bind ~events:[`Leave] ~action:(fun _ -> a defcol) b;
         b)
       [coe bar, "Frame", (fun () -> ()),
-       (fun background -> Frame.configure bar ~background);
+       (fun background -> Frame.configure ~background bar);
        coe meb, "Menubutton", (fun () -> ()),
-       (fun background -> Menubutton.configure meb ~background);
+       (fun background -> Menubutton.configure ~background meb);
        coe but, "Button", (fun () -> ()),
-       (fun background -> Button.configure but ~background);
+       (fun background -> Button.configure ~background but);
        coe can, "Canvas", (fun () -> ()),
-       (fun background -> Canvas.configure can ~background);
+       (fun background -> Canvas.configure ~background can);
        coe che, "CheckButton", (fun () -> ()),
-       (fun background -> Checkbutton.configure che ~background);
+       (fun background -> Checkbutton.configure ~background che);
        coe ent, "Entry", (fun () -> ()),
-       (fun background -> Entry.configure ent ~background);
+       (fun background -> Entry.configure ~background ent);
        coe lab, "Label", (fun () -> ()),
-       (fun background -> Label.configure lab ~background);
+       (fun background -> Label.configure ~background lab);
        coe lis, "Listbox", (fun () -> ()),
-       (fun background -> Listbox.configure lis ~background);
+       (fun background -> Listbox.configure ~background lis);
        coe mes, "Message", (fun () -> ()),
-       (fun background -> Message.configure mes ~background);
+       (fun background -> Message.configure ~background mes);
        coe radf, "Radiobox", (fun () -> ()),
        (fun background ->
-         List.iter rads ~f:(fun b -> Radiobutton.configure b ~background));
+         List.iter ~f:(fun b -> Radiobutton.configure ~background b) rads);
        coe sca, "Scale", (fun () -> ()),
-       (fun background -> Scale.configure sca ~background);
+       (fun background -> Scale.configure ~background sca);
        coe tex, "Text", (fun () -> ()),
-       (fun background -> Text.configure tex ~background);
+       (fun background -> Text.configure ~background tex);
        coe scr, "Scrollbar", (fun () -> ()),
-       (fun background -> Scrollbar.configure scr ~background)
+       (fun background -> Scrollbar.configure ~background scr)
       ]
   in
-    pack buttons ~fill: `X;
+    pack ~fill:`X buttons;
 
 (* Main Loop *)
 Printexc.print mainLoop () 

@@ -1,19 +1,20 @@
 $Id$
 
 Some examples for LablTk.
-Only demo.ml and tetris.ml really need to be compiled with the -labels option.
+They are written in classic mode, except testris.ml which uses label
+commutation.
 You may either compile them here, or just run them as scripts with
-        labltk -labels example.ml
+        labltk example.ml
 
 hello.ml        A very simple example of CamlTk
 hello.tcl       The same programme in Tcl/Tk
 
-demo.ml         A demonstration using many widget classes  (use -labels)
+demo.ml         A demonstration using many widget classes
 
 eyes.ml         A "bind" test
 
 calc.ml         A little calculator
 
-clock.ml        An analog clock  (use unix.cma)
+clock.ml        An analog clock  (uses unix.cma)
 
-tetris.ml       You NEED a game also (use -labels)
+tetris.ml       You NEED a game also (uses -labels)
