@@ -235,7 +235,7 @@ utils\config.ml: utils\config.mlp config\Makefile.nt
 	sed -e "s|%%%%LIBDIR%%%%|$(LIBDIR:\=/)|" \
             -e "s|%%%%BYTECC%%%%|$(BYTECC) $(BYTECCLINKOPTS)|" \
             -e "s|%%%%NATIVECC%%%%|$(NATIVECC) $(NATIVECCLINKOPTS)|" \
-            -e "s|%%PARTIALLD%%|lib /nologo /debugtype:cv|' \
+            -e "s|%%PARTIALLD%%|lib /nologo /debugtype:cv|" \
             -e "s|%%%%CCLIBS%%%%|$(CCLIBS)|" \
             -e "s|%%%%ARCH%%%%|$(ARCH)|" \
             -e "s|%%%%MODEL%%%%|$(MODEL)|" \
