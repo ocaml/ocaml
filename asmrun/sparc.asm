@@ -57,7 +57,7 @@
         .common young_limit, 4, 4
         .common young_end, 4, 4
         .common young_ptr, 4, 4
-        .common gc_entry_regs, 22 * 4, 4
+        .common gc_entry_regs, 22 * 4, 8
         .common gc_entry_float_regs, 30 * 4, 8
         .common caml_top_of_stack, 4, 4
         .common caml_bottom_of_stack, 4, 4
