@@ -20,6 +20,9 @@ Objective Caml 1.06:
   - Array, Hashtbl, List, Map, Queue, Set, Stack, Stream:
     the "iter" functions now take as argument a unit-returning function.
   - New library: Lazy (delayed computations).
+  - Format: added "printf" interface to the formatter (see the documentation).
+    Revised behaviour of simple boxes: no more than one new line is output
+    when consecutive break hints should lead to multiple line breaks.
 
 Objective Caml 1.05:
 --------------------
