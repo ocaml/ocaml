@@ -216,6 +216,7 @@ let use_file name =
         try
           List.iter
             (fun ph ->
+              if !Clflags.dump_parsetree then Printast.top_phrase ph;
               if execute_phrase !use_print_results ph then () else raise Exit)
             (!parse_use_file lb);
           true
@@ -299,6 +300,7 @@ let loop() =
       Location.reset();
       first_line := true;
       let phr = try !parse_toplevel_phrase lb with Exit -> raise PPerror in
+      if !Clflags.dump_parsetree then Printast.top_phrase phr;
       ignore(execute_phrase true phr)
     with
       End_of_file -> exit 0

@@ -104,6 +104,7 @@ let interface sourcefile =
   let modulename = String.capitalize(Filename.basename prefixname) in
   let inputfile = preprocess sourcefile (prefixname ^ ".ppi") in
   let ast = parse_file inputfile Parse.interface ast_intf_magic_number in
+  if !Clflags.dump_parsetree then (Printast.interface ast; print_newline ());
   let sg = Typemod.transl_signature (initial_env()) ast in
   if !Clflags.print_types then (Printtyp.signature sg; print_newline());
   Env.save_signature sg modulename (prefixname ^ ".cmi");
@@ -125,6 +126,7 @@ let implementation sourcefile =
   let env = initial_env() in
   Compilenv.reset modulename;
   parse_file inputfile Parse.implementation ast_impl_magic_number
+  ++ print_if Clflags.dump_parsetree Printast.implementation
   ++ Typemod.type_implementation sourcefile prefixname modulename env
   ++ Translmod.transl_store_implementation modulename
   +++ print_if Clflags.dump_rawlambda Printlambda.lambda
