@@ -525,20 +525,24 @@ let rec emit_instr i dslot =
     | Lop(Iload(chunk, addr)) ->
         let loadinstr =
           match chunk with
-            Word -> if i.res.(0).typ = Float then "lfd" else "lwz"
-          | Byte_unsigned -> "lbz"
+            Byte_unsigned -> "lbz"
           | Byte_signed -> "lbz"
           | Sixteen_unsigned -> "lhz"
-          | Sixteen_signed -> "lha" in
+          | Sixteen_signed -> "lha"
+          | Single -> "lfs"
+          | Double -> "lfd"
+          | _ -> "lwz" in
         emit_load_store loadinstr addr i.arg 0 i.res.(0);
         if chunk = Byte_signed then
           `	extsb	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
     | Lop(Istore(chunk, addr)) ->
         let storeinstr =
           match chunk with
-            Word -> if i.arg.(0).typ = Float then "stfd" else "stw"
-          | Byte_unsigned | Byte_signed -> "stb"
-          | Sixteen_unsigned | Sixteen_signed -> "sth" in
+            Byte_unsigned | Byte_signed -> "stb"
+          | Sixteen_unsigned | Sixteen_signed -> "sth"
+          | Single -> "stfs"
+          | Double -> "stfd"
+          | _ -> "stw" in
         emit_load_store storeinstr addr i.arg 1 i.arg.(0)
     | Lop(Ialloc n) ->
         if !call_gc_label = 0 then call_gc_label := new_label();
@@ -867,9 +871,13 @@ let emit_item = function
       `	.byte	{emit_int n}\n`
   | Cint16 n ->
       `	.short	{emit_int n}\n`
+  | Cint32 n ->
+      `	.long	{emit_nativeint n}\n`
   | Cint n ->
       `	.long	{emit_nativeint n}\n`
-  | Cfloat f ->
+  | Csingle f ->
+      `	.float	0d{emit_string f}\n`
+  | Cdouble f ->
       `	.double	0d{emit_string f}\n`
   | Csymbol_address s ->
       `	.long	{emit_symbol s}\n`
