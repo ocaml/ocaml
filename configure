@@ -173,7 +173,7 @@ esac
 bytecc="$cc"
 bytecccompopts=""
 bytecclinkopts=""
-os_type="Unix"
+ostype="Unix"
 exe=""
 
 case "$bytecc,$host" in

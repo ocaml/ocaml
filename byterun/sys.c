@@ -92,7 +92,6 @@ void sys_error(value arg)
   char * err;
   CAMLlocal1 (str);
   
-  printf("System error %d (%s)\n", errno, strerror(errno)); fflush(stdout);
   if (errno == EAGAIN || errno == EWOULDBLOCK) {
     raise_sys_blocked_io();
   } else {
