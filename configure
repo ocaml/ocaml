@@ -165,6 +165,9 @@ case "$bytecc,$host" in
     bytecclinkopts="-Xlinker -taso";;
   gcc*)
     bytecccompopts="-fno-defer-pop -Wall";;
+  cc,mips-*-irix*)
+    bytecccompopts="-32"
+    bytecclinkopts="-Wl,-woff,84";;
   cc*,mips-*-irix*)
     bytecclinkopts="-Wl,-woff,84";;
 esac
