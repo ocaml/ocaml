@@ -197,10 +197,40 @@ let scan_string stp max ib =
     if List.mem c stp then max else loop (Scanning.store_char ib c max) in 
   loop max;;
 
+let scan_String stp max ib =
+  let rec loop esc max =
+    if max = 0 || Scanning.end_of_input ib then max else
+    let c = Scanning.peek_char ib in
+    if stp = [] then
+      match c with
+      | '"' (* '"' helping Emacs *) ->
+         let max = Scanning.store_char ib c max in
+         if esc then loop false max else max 
+      | '\\' ->
+         if esc then loop false (Scanning.store_char ib c max) else
+         loop true max
+      | c -> loop false (Scanning.store_char ib c max) else
+    if List.mem c stp then max else loop false (Scanning.store_char ib c max) in
+  loop true max;;
+
 let scan_char max ib =
   if max = 0 || Scanning.end_of_input ib then bad_input ib "a char" else
   let c = Scanning.peek_char ib in
   Scanning.store_char ib c max;;
+
+let scan_Char max ib =
+  let rec loop esc max =
+   if max = 0 || Scanning.end_of_input ib then bad_input ib "a char" else
+   let c = Scanning.peek_char ib in
+   match c with
+   | '\'' -> 
+      let max = Scanning.store_char ib c max in
+      if esc then loop false max else max 
+   | '\\' -> 
+      if esc then loop false (Scanning.store_char ib c max) else
+      loop true max
+   | c -> loop false (Scanning.store_char ib c max) in
+  loop true max;;
 
 let scan_bool max ib =
   let m =
@@ -278,13 +308,15 @@ let rec skip_whites ib =
   | ' ' | '\r' | '\t' | '\n' -> Scanning.next_char ib; skip_whites ib
   | _ -> ();;
 
+external string_of_format : ('a, 'b, 'c) format -> string = "%identity";;
+
 (* Main scanning function:
    it takes an input buffer, a format and a function.
    Then it scans the format and the buffer in parallel to find out
    values as specified by the format. When it founds some it applies it
-   to function f in turn and continue. *) 
-let scanf_fun ib (fmt : ('a, 'b, 'c) format) f =
-  let fmt = (Obj.magic fmt : string) in
+   to the function f and continue. *) 
+let bscanf ib (fmt : ('a, Scanning.scanbuf, 'c) format) f =
+  let fmt = string_of_format fmt in
   let lim = String.length fmt - 1 in
 
   let return v = Obj.magic v () in
@@ -329,8 +361,8 @@ let scanf_fun ib (fmt : ('a, 'b, 'c) format) f =
   and scan_conversion spc max f i =
     if i > lim then bad_format fmt i fmt.[lim - 1] else
     match fmt.[i] with
-    | 'c' ->
-        let x = scan_char max ib in
+    | 'c' | 'C' as conv ->
+        let x = if conv = 'c' then scan_char max ib else scan_Char max ib in
         scan true (stack f (token_char ib)) (i + 1)
     | c ->
        if spc then skip_whites ib;
@@ -345,12 +377,15 @@ let scanf_fun ib (fmt : ('a, 'b, 'c) format) f =
        | 'f' | 'g' | 'G' | 'e' | 'E' ->
            let x = scan_float max ib in
            scan true (stack f (token_float ib)) (i + 1)
-       | 's' ->
+       | 's' | 'S' as conv ->
            let i, stp = scan_stoppers (i + 1) in
-           let x = scan_string stp max ib in
+           let x =
+             if conv = 's'
+             then scan_string stp max ib
+             else scan_String stp max ib in
            scan true (stack f (token_string ib)) (i + 1)
        | 'b' ->
-           let x = scan_bool 5 ib in
+           let x = scan_bool max ib in
            scan true (stack f (token_bool ib)) (i + 1)
        | '[' ->
            let i, char_set = read_char_set fmt (i + 1) in
@@ -371,6 +406,11 @@ let scanf_fun ib (fmt : ('a, 'b, 'c) format) f =
        | 'N' ->
            let x = Scanning.char_count ib in
            scan true (stack f x) (i + 1)
+       | 'r' ->
+           Obj.magic (fun reader arg ->
+             let x = reader ib arg in
+             scan spc (stack f x) (succ i))
+
        | c -> bad_format fmt i c
 
   and scan_stoppers i =
@@ -382,18 +422,8 @@ let scanf_fun ib (fmt : ('a, 'b, 'c) format) f =
   Scanning.reset_token ib;
   scan true (fun () -> f) 0;;
 
-let bscanf ib =
- (Obj.magic scanf_fun :
-  Scanning.scanbuf ->
-  ('a, Scanning.scanbuf, 'b) format ->
-  ('a -> 'b)) ib;;
-
-let fscanf ic fmt =
-  let ib = Scanning.from_channel ic in
-  bscanf ib fmt;;
+let fscanf ic = bscanf (Scanning.from_channel ic);;
 
 let scanf fmt = fscanf stdin fmt;;
 
-let sscanf s fmt =
-  let ib = Scanning.from_string s in
-  bscanf ib fmt;;
+let sscanf s = bscanf (Scanning.from_string s);;
