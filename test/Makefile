@@ -131,7 +131,7 @@ codetest:
         for prog in $(CODE_EXE:.out=); do \
           echo $$prog; \
           if test -f Results/$$prog.runtest; then \
-            sh Results/$$prog.runtest test $$prog.out; \
+            sh Results/$$prog.runtest test ./$$prog.out; \
           else \
             ./$$prog.out | cmp - Results/$$prog.out; \
           fi; \
@@ -160,9 +160,9 @@ codebench:
         for prog in $(CODE_EXE:.out=); do \
           echo -n "$$prog		"; \
           if test -f Results/$$prog.runtest; then \
-            $(CODERUNPARAMS) sh Results/$$prog.runtest bench $$prog.out; \
+            $(CODERUNPARAMS) sh Results/$$prog.runtest bench ./$$prog.out; \
           else \
-            $(CODERUNPARAMS) xtime -repeat 3 -o /dev/null -e /dev/null $$prog.out; \
+            $(CODERUNPARAMS) xtime -repeat 3 -o /dev/null -e /dev/null ./$$prog.out; \
           fi; \
         done
 
