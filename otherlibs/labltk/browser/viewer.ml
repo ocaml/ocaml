@@ -511,10 +511,14 @@ object (self)
     let _, box = List.nth boxes n in
     Listbox.delete box ~first:(`Num 0) ~last:`End;
     Listbox.insert box ~index:`End ~texts:nl;
-    Jg_box.add_completion box ~double:false ~action:
-      begin fun index ->
-        let `Num pos = Listbox.index box ~index in
+
+    let current = ref None in
+    let display index =
+      let `Num pos = Listbox.index box ~index in
+      try
         let li, k = List.nth l pos in
+        self#hide_after (n+1);
+        if !current = Some (li,k) then () else
         let path =
           match path, li with
             None, Ldot (lip, _) ->
@@ -524,13 +528,20 @@ object (self)
               end
           | _ -> path
         in
-        view_symbol li ~kind:k ~env ?path;
-      end;
+        current := Some (li,k);
+        view_symbol li ~kind:k ~env ?path
+      with Failure "nth" -> ()
+    in
+    Jg_box.add_completion box ~double:false ~action:display;
+    bind box ~events:[`KeyRelease] ~fields:[`Char]
+      ~action:(fun ev -> display `Active);
+
     begin match signature with
       None -> ()
     | Some signature ->
         Button.configure all ~command:
           begin fun () ->
+            current := None;
             view_signature signature ~title ~env ?path
           end;
         pack [all] ~side:`Right ~fill:`X ~expand:true

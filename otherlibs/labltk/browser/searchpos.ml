@@ -317,7 +317,7 @@ let rec view_signature ?title ?path ?(env = !start_env) ?(detach=false) sign =
         Button.configure mw.mw_detach
           ~command:(fun () -> view_signature sign ~title ~env ~detach:true);
         pack [mw.mw_detach] ~side:`Left;
-        Pack.forget [mw.mw_edit; mw.mw_intf];
+        let repack = ref false in
         List.iter2 [mw.mw_edit; mw.mw_intf] [".ml"; ".mli"] ~f:
           begin fun button ext ->
             try
@@ -327,12 +327,14 @@ let rec view_signature ?title ?path ?(env = !start_env) ?(detach=false) sign =
                   (String.uncapitalize (Ident.name id) ^ ext) in
               Button.configure button
                 ~command:(fun () -> edit_source ~file ~path ~sign);
+              if !repack then Pack.forget [button] else
+              if not (Winfo.viewable button) then repack := true;
               pack [button] ~side:`Left
-            with Not_found -> ()
+            with Not_found ->
+              Pack.forget [button]
           end;
         let top = Winfo.toplevel mw.mw_frame in
         if not (Winfo.ismapped top) then Wm.deiconify top;
-        Focus.set top;
         List.iter ~f:destroy (Winfo.children mw.mw_frame);
         Jg_message.formatted ~title ~on:mw.mw_frame ~maxheight:15 ()
     with Not_found ->
