@@ -86,6 +86,24 @@ let merge_constraint initial_env loc sg lid constr =
   with Includemod.Error explanation ->
     raise(Error(loc, With_mismatch(lid, explanation)))
 
+(* Auxiliaries for checking uniqueness of names in signatures and structures *)
+
+module StringSet = Set.Make(struct type t = string let compare = compare end)
+
+let check cl loc set_ref name =
+  if StringSet.mem name !set_ref
+  then raise(Error(loc, Repeated_name(cl, name)))
+  else set_ref := StringSet.add name !set_ref
+
+let check_sig_item type_names module_names modtype_names loc = function
+    Tsig_type(id, _) ->
+      check "type" loc type_names (Ident.name id)
+  | Tsig_module(id, _) ->
+      check "module" loc module_names (Ident.name id)
+  | Tsig_modtype(id, _) ->
+      check "module type" loc modtype_names (Ident.name id)
+  | _ -> ()
+
 (* Check and translate a module type expression *)
 
 let rec transl_modtype env smty =
@@ -115,61 +133,85 @@ let rec transl_modtype env smty =
       Tmty_signature final_sg
       
 and transl_signature env sg =
-  Ctype.init_def(Ident.current_time());
-  match sg with
-    [] -> []
-  | {psig_desc = Psig_value(name, sdesc)} :: srem ->
-      let desc = Typedecl.transl_value_decl env sdesc in
-      let (id, newenv) = Env.enter_value name desc env in
-      let rem = transl_signature newenv srem in
-      Tsig_value(id, desc) :: rem
-  | {psig_desc = Psig_type sdecls} :: srem ->
-      let (decls, newenv) = Typedecl.transl_type_decl env sdecls in
-      let rem = transl_signature newenv srem in
-      map_end (fun (id, info) -> Tsig_type(id, info)) decls rem
-  | {psig_desc = Psig_exception(name, sarg)} :: srem ->
-      let arg = Typedecl.transl_exception env sarg in
-      let (id, newenv) = Env.enter_exception name arg env in
-      let rem = transl_signature newenv srem in
-      Tsig_exception(id, arg) :: rem
-  | {psig_desc = Psig_module(name, smty)} :: srem ->
-      let mty = transl_modtype env smty in
-      let (id, newenv) = Env.enter_module name mty env in
-      let rem = transl_signature newenv srem in
-      Tsig_module(id, mty) :: rem
-  | {psig_desc = Psig_modtype(name, sinfo)} :: srem ->
-      let info = transl_modtype_info env sinfo in
-      let (id, newenv) = Env.enter_modtype name info env in
-      let rem = transl_signature newenv srem in
-      Tsig_modtype(id, info) :: rem
-  | {psig_desc = Psig_open lid; psig_loc = loc} :: srem ->
-      let (path, mty) = type_module_path env loc lid in
-      let sg = extract_sig_open env loc mty in
-      let newenv = Env.open_signature path sg env in
-      transl_signature newenv srem
-  | {psig_desc = Psig_include smty} :: srem ->
-      let mty = transl_modtype env smty in
-      let sg = extract_sig env smty.pmty_loc mty in
-      let newenv = Env.add_signature sg env in
-      let rem = transl_signature newenv srem in
-      sg @ rem
-  | {psig_desc = Psig_class cl} :: srem ->
-      let (classes, newenv) = Typeclass.class_descriptions env cl in
-      let rem = transl_signature newenv srem in
-      List.flatten
-        (map_end
-           (fun (i, d, i', d', i'', d'', i''', d''', _, _, _) ->
-              [Tsig_class(i, d);    Tsig_cltype(i', d');
-               Tsig_type(i'', d''); Tsig_type(i''', d''')])
-           classes [rem])
-  | {psig_desc = Psig_class_type cl} :: srem ->
-      let (classes, newenv) = Typeclass.class_type_declarations env cl in
-      let rem = transl_signature newenv srem in
-      List.flatten
-        (map_end
-           (fun (i, d, i', d', i'', d'') ->
-              [Tsig_cltype(i, d); Tsig_type(i', d'); Tsig_type(i'', d'')])
-           classes [rem])
+  let type_names = ref StringSet.empty
+  and module_names = ref StringSet.empty
+  and modtype_names = ref StringSet.empty in
+  let rec transl_sig env sg =
+    Ctype.init_def(Ident.current_time());
+    match sg with
+      [] -> []
+    | item :: srem ->
+        match item.psig_desc with
+        | Psig_value(name, sdesc) ->
+            let desc = Typedecl.transl_value_decl env sdesc in
+            let (id, newenv) = Env.enter_value name desc env in
+            let rem = transl_sig newenv srem in
+            Tsig_value(id, desc) :: rem
+        | Psig_type sdecls ->
+            List.iter
+              (fun (name, decl) -> check "type" item.psig_loc type_names name)
+              sdecls;
+            let (decls, newenv) = Typedecl.transl_type_decl env sdecls in
+            let rem = transl_sig newenv srem in
+            map_end (fun (id, info) -> Tsig_type(id, info)) decls rem
+        | Psig_exception(name, sarg) ->
+            let arg = Typedecl.transl_exception env sarg in
+            let (id, newenv) = Env.enter_exception name arg env in
+            let rem = transl_sig newenv srem in
+            Tsig_exception(id, arg) :: rem
+        | Psig_module(name, smty) ->
+            check "module type" item.psig_loc modtype_names name;
+            let mty = transl_modtype env smty in
+            let (id, newenv) = Env.enter_module name mty env in
+            let rem = transl_sig newenv srem in
+            Tsig_module(id, mty) :: rem
+        | Psig_modtype(name, sinfo) ->
+            let info = transl_modtype_info env sinfo in
+            let (id, newenv) = Env.enter_modtype name info env in
+            let rem = transl_sig newenv srem in
+            Tsig_modtype(id, info) :: rem
+        | Psig_open lid ->
+            let (path, mty) = type_module_path env item.psig_loc lid in
+            let sg = extract_sig_open env item.psig_loc mty in
+            let newenv = Env.open_signature path sg env in
+            transl_sig newenv srem
+        | Psig_include smty ->
+            let mty = transl_modtype env smty in
+            let sg = extract_sig env smty.pmty_loc mty in
+            List.iter
+              (check_sig_item type_names module_names modtype_names
+                              item.psig_loc)
+              sg;
+            let newenv = Env.add_signature sg env in
+            let rem = transl_sig newenv srem in
+            sg @ rem
+        | Psig_class cl ->
+            List.iter
+              (fun {pci_name = name} ->
+                 check "type" item.psig_loc type_names name)
+              cl;
+            let (classes, newenv) = Typeclass.class_descriptions env cl in
+            let rem = transl_sig newenv srem in
+            List.flatten
+              (map_end
+                 (fun (i, d, i', d', i'', d'', i''', d''', _, _, _) ->
+                    [Tsig_class(i, d);    Tsig_cltype(i', d');
+                     Tsig_type(i'', d''); Tsig_type(i''', d''')])
+                 classes [rem])
+        | Psig_class_type cl ->
+            List.iter
+              (fun {pci_name = name} ->
+                 check "type" item.psig_loc type_names name)
+              cl;
+            let (classes, newenv) = Typeclass.class_type_declarations env cl in
+            let rem = transl_sig newenv srem in
+            List.flatten
+              (map_end
+                 (fun (i, d, i', d', i'', d'') ->
+                    [Tsig_cltype(i, d);
+                     Tsig_type(i', d'); Tsig_type(i'', d'')])
+                 classes [rem])
+    in transl_sig env sg
 
 and transl_modtype_info env sinfo =
   match sinfo with
@@ -192,16 +234,10 @@ let rec path_of_module mexp =
 (* Check that all type and module identifiers in a structure have
    distinct names (so that access by named paths is unambiguous). *)
 
-module StringSet = Set.Make(struct type t = string let compare = compare end)
-
 let check_unique_names sg =
   let type_names = ref StringSet.empty
   and module_names = ref StringSet.empty
   and modtype_names = ref StringSet.empty in
-  let check cl loc set_ref name =
-    if StringSet.mem name !set_ref
-    then raise(Error(loc, Repeated_name(cl, name)))
-    else set_ref := StringSet.add name !set_ref in
   let check_item item =
     match item.pstr_desc with
       Pstr_eval exp -> ()
@@ -505,7 +541,7 @@ let report_error = function
       print_string "Multiple definition of the "; print_string kind;
       print_string " name "; print_string name; print_string ".";
       print_space();
-      print_string "Names must be unique in a given structure.";
+      print_string "Names must be unique in a given structure or signature.";
       close_box()
   | Non_generalizable typ ->
       open_box 0;
