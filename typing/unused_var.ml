@@ -31,7 +31,7 @@ let rm_vars tbl (vll1, vll2) =
 let w_lax x = Warnings.Unused_var x;;
 let w_strict x = Warnings.Unused_var_strict x;;
 let w_either x =
-  if Warnings.is_active (w_strict x) then w_strict x else w_lax x
+  if Warnings.is_active (w_lax x) then w_lax x else w_strict x
 ;;
 
 let check_rm_vars ppf tbl (vlul_pat, vlul_as) =
@@ -45,25 +45,21 @@ let check_rm_vars ppf tbl (vlul_pat, vlul_as) =
 ;;
 
 let check_rm_let ppf tbl vlulpl =
-  if Warnings.is_active (w_strict "") then begin
-    List.iter (check_rm_vars ppf tbl) vlulpl;
-  end else begin
-    let check_rm_one flag (v, loc, used) =
-      Hashtbl.remove tbl v;
-      flag && (silent v || not !used)
-    in
-    let warn_var (v, loc, used) =
-      if not (silent v) && not !used
-      then Location.print_warning loc ppf (w_lax v)
-    in
-    let check_rm_pat (def, def_as) =
-      let def_unused = List.fold_left check_rm_one true def in
-      let all_unused = List.fold_left check_rm_one def_unused def_as in
-      if all_unused then List.iter warn_var def;
-      List.iter warn_var def_as;
-    in
-    List.iter check_rm_pat vlulpl;
-  end;
+  let check_rm_one flag (v, loc, used) =
+    Hashtbl.remove tbl v;
+    flag && (silent v || not !used)
+  in
+  let warn_var w_kind (v, loc, used) =
+    if not (silent v) && not !used
+    then Location.print_warning loc ppf (w_kind v)
+  in
+  let check_rm_pat (def, def_as) =
+    let def_unused = List.fold_left check_rm_one true def in
+    let all_unused = List.fold_left check_rm_one def_unused def_as in
+    List.iter (warn_var (if all_unused then w_lax else w_strict)) def;
+    List.iter (warn_var w_lax) def_as;
+  in
+  List.iter check_rm_pat vlulpl;
 ;;
 
 let rec get_vars ((vacc, asacc) as acc) p =

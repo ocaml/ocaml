@@ -227,7 +227,7 @@ let print_warning loc ppf w =
       num_loc_lines := !num_loc_lines + n
     in
     fprintf ppf "%a" print loc;
-    fprintf ppf "Warning: %a@." printw w;
+    fprintf ppf "Warning %a@." printw w;
     pp_print_flush ppf ();
     incr num_loc_lines;
   end

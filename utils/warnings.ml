@@ -23,8 +23,7 @@ type t =                             (* A is all *)
   | Method_override of string list   (* M *)
   | Partial_match of string          (* P *)
   | Statement_type                   (* S *)
-  | Unused_match                     (* U *)
-  | Unused_pat                       (* U *)
+  | Unused_match | Unused_pat        (* U *)
   | Hide_instance_variable of string (* V *)
   | Other of string                  (* X *)
   | Unused_var of string             (* Y *)
@@ -40,7 +39,7 @@ let letter = function        (* 'a' is all *)
   | Method_override _ ->        'm'
   | Partial_match _ ->          'p'
   | Statement_type ->           's'
-  | Unused_match|Unused_pat ->  'u'
+  | Unused_match | Unused_pat ->'u'
   | Hide_instance_variable _ -> 'v'
   | Other _ ->                  'x'
   | Unused_var _ ->             'y'
@@ -125,6 +124,7 @@ let nerrors = ref 0;;
 
 let print ppf w =
   let msg = message w in
+  let flag = Char.uppercase (letter w) in
   let newlines = ref 0 in
   for i = 0 to String.length msg - 1 do
     if msg.[i] = '\n' then incr newlines;
@@ -134,7 +134,7 @@ let print ppf w =
   in
   let countnewline x = incr newlines; newline x in
   Format.pp_set_all_formatter_output_functions ppf out flush countnewline space;
-  Format.fprintf ppf "%s" msg;
+  Format.fprintf ppf "%c: %s" flag msg;
   Format.pp_print_flush ppf ();
   Format.pp_set_all_formatter_output_functions ppf out flush newline space;
   let (n, _) = translate (letter w) in
