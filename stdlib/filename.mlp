@@ -1,0 +1,142 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                         Caml Special Light                          *)
+(*                                                                     *)
+(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(*                                                                     *)
+(*  Copyright 1995 Institut National de Recherche en Informatique et   *)
+(*  Automatique.  Distributed only by permission.                      *)
+(*                                                                     *)
+(***********************************************************************)
+
+(* $Id$ *)
+
+let current_dir_name = "."
+
+#ifdef UNIX
+let concat dirname filename =
+  let l = String.length dirname in
+  if l = 0 or dirname.[l-1] = '/'
+  then dirname ^ filename
+  else dirname ^ "/" ^ filename
+#endif
+#ifdef WIN32
+let concat dirname filename =
+  let l = String.length dirname in
+  if l = 0 or (let c = dirname.[l-1] in c = '/' or c = '\\' or c = ':')
+  then dirname ^ filename
+  else dirname ^ "\\" ^ filename
+#endif
+
+#ifdef UNIX
+let is_absolute n =
+     (String.length n >= 1 & String.sub n 0 1 = "/")
+  or (String.length n >= 2 & String.sub n 0 2 = "./")
+  or (String.length n >= 3 & String.sub n 0 3 = "../")
+#endif
+#ifdef WIN32
+let is_absolute n =
+     (String.length n >= 1 &
+       (let s = String.sub n 0 1 in s = "/" or s = "\\"))
+  or (String.length n >= 2 &
+       (let s = String.sub n 0 2 in s = "./" or s = ".\\"))
+  or (String.length n >= 3 &
+       (let s = String.sub n 0 3 in s = "../" or s = "..\\"))
+  or (String.length n >= 2 & String.get n 1 = ':')
+#endif
+
+let rindex s c =
+  let rec pos i =
+    if i < 0 then raise Not_found
+    else if s.[i] = c then i
+    else pos (i - 1)
+  in pos (String.length s - 1)
+
+#ifdef UNIX
+let check_suffix name suff =
+ String.length name >= String.length suff &
+ String.sub name (String.length name - String.length suff) (String.length suff)
+    = suff
+#endif
+#ifdef WIN32
+let lowercase s =
+  let l = String.length s in
+  let n = String.create l in
+  for i = 0 to l - 1 do
+    let c = s.[i] in
+    n.[i] <- (if c >= 'A' & c <= 'Z' then Char.chr(Char.code c + 32) else c)
+  done;
+  n
+let check_suffix name suff =
+ String.length name >= String.length suff &
+ (let s = String.sub name (String.length name - String.length suff)
+                          (String.length suff) in
+  lowercase s = lowercase suff)
+#endif
+
+let chop_suffix name suff =
+  let n = String.length name - String.length suff in
+  if n < 0 then invalid_arg "Filename.chop_suffix" else String.sub name 0 n
+
+let chop_extension name =
+  try
+    String.sub name 0 (rindex name '.')
+  with Not_found ->
+    invalid_arg "Filename.chop_extension"
+
+#ifdef UNIX
+let basename name =
+  try
+    let p = rindex name '/' + 1 in
+    String.sub name p (String.length name - p)
+  with Not_found ->
+    name
+
+let dirname name =
+  try
+    match rindex name '/' with
+      0 -> "/"
+    | n -> String.sub name 0 n
+  with Not_found ->
+    "."
+#endif
+#ifdef WIN32
+let rindexsep s =
+  let rec pos i =
+    if i < 0 then raise Not_found
+    else if (let c = s.[i] in c = '/' or c = '\\' or c = ':') then i
+    else pos (i - 1)
+  in pos (String.length s - 1)
+
+let basename name =
+  try
+    let p = rindexsep + 1 in
+    String.sub name p (String.length name - p)
+  with Not_found ->
+    name
+
+let dirname name =
+  try
+    match rindexsep name with
+      0 -> "\\"
+    | n -> String.sub name 0 n
+  with Not_found ->
+    "."
+#endif
+
+#ifdef UNIX
+let temporary_directory =
+  try Sys.getenv "TMPDIR" with Not_found -> "/tmp"
+#endif
+#ifdef WIN32
+let temporary_directory =
+  try Sys.getenv "TEMP" with Not_found -> "C:\\temp"
+#endif
+
+let temp_file prefix suffix =
+  let rec try_name counter =
+    let name =
+      concat temporary_directory (prefix ^ string_of_int counter ^ suffix) in
+    if Sys.file_exists name then try_name (counter + 1) else name
+  in try_name 0
+
