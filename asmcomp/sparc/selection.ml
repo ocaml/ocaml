@@ -81,6 +81,24 @@ method select_operation op args =
   | _ ->
       super#select_operation op args
 
+(* Override insert_move_args to deal correctly with floating-point
+   arguments being passed into pairs of integer registers. *)
+method insert_move_args arg loc stacksize =
+  if stacksize <> 0 then self#insert (Iop(Istackoffset stacksize)) [||] [||];
+  let locpos = ref 0 in
+  for i = 0 to Array.length arg - 1 do
+    let src = arg.(i) in
+    let dst = loc.(!locpos) in
+    match (src, dst) with
+      ({typ = Float}, {typ = Int}) ->
+        let dst2 = loc.(!locpos + 1) in
+        self#insert (Iop Imove) [|src|] [|dst; dst2|];
+        locpos := !locpos + 2
+    | (_, _) ->
+        self#insert_move src dst;
+        incr locpos
+  done
+
 end
 
 let fundecl f = (new selector ())#emit_fundecl f

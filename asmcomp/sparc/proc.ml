@@ -143,21 +143,26 @@ let loc_results res =
    are passed in %o0..%o5, then on the stack *)
 
 let loc_external_arguments arg =
-  let loc = Array.create (Array.length arg) Reg.dummy in
+  let loc = ref [] in
   let reg = ref 0 (* %o0 *) in
   let ofs = ref (-4) in              (* start at sp + 92 = sp + 96 - 4 *)
   for i = 0 to Array.length arg - 1 do
     if !reg <= 5 (* %o5 *) then begin
-      loc.(i) <- phys_reg !reg;
       match arg.(i).typ with
-        Int | Addr -> incr reg
-      | Float -> reg := !reg + 2
+        Int | Addr ->
+          loc := phys_reg !reg :: !loc;
+          incr reg
+      | Float ->
+          if !reg = 5 then fatal_error "Proc_sparc: cannot call";
+          loc := phys_reg (!reg + 1) :: phys_reg !reg :: !loc;
+          reg := !reg + 2
     end else begin
-      loc.(i) <- stack_slot (outgoing !ofs) arg.(i).typ;
+      loc := stack_slot (outgoing !ofs) arg.(i).typ :: !loc;
       ofs := !ofs + size_component arg.(i).typ
     end
   done;
-  (loc, Misc.align (!ofs + 4) 8)     (* Keep stack 8-aligned *)
+  (* Keep stack 8-aligned *)
+  (Array.of_list(List.rev !loc), Misc.align (!ofs + 4) 8)
 
 let loc_external_results res =
   let (loc, ofs) = calling_conventions 0 0 100 100 not_supported res in loc
