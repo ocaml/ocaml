@@ -51,7 +51,7 @@ val sync: 'a event -> 'a
            value of that communication is returned. *)
 val select: 'a event list -> 'a
         (* ``Synchronize'' on an alternative of events.
-           [select evl] is shorthand for [sync(choose el)]. *)
+           [select evl] is shorthand for [sync(choose evl)]. *)
 val poll: 'a event -> 'a option
         (* Non-blocking version of [sync]: offer all the communication 
            possibilities specified in the event to the outside world,

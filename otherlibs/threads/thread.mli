@@ -50,9 +50,14 @@ val wait_inchan : in_channel -> unit
            on [ic] would block all threads in the program until data is
            available on the channel. See the module [ThreadIO] for
            higher-level input functions compatible with threads. *)
-val wait_descr : Unix.file_descr -> unit
+val wait_read : Unix.file_descr -> unit
+val wait_write : Unix.file_descr -> unit
         (* Similar to [wait_inchan], but operates on a file descriptor
-           from the [Unix] library instead of an input channel. *)
+           from the [Unix] library instead of an input channel.
+           [wait_read] suspends the thread until at least one
+           character is available for reading; [wait_write] suspends the
+           thread until at least one character can be written without
+           blocking. *)
 val join : t -> unit
         (* [join th] suspends the execution of the calling thread
            until the thread [th] has terminated. *)

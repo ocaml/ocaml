@@ -48,7 +48,7 @@ struct thread_struct {
   value * stack_threshold;
   value * sp;
   value * trapsp;
-  value runnable;               /* RUNNABLE, STOPPED or KILLED */
+  value status;                 /* RUNNABLE, KILLED. etc (see below) */
   value fd;               /* File descriptor on which this thread is waiting */
   value delay;                  /* Time until which this thread is blocked */
   value joining;                /* Thread we're trying to join */
@@ -56,23 +56,22 @@ struct thread_struct {
 
 typedef struct thread_struct * thread_t;
 
-#define STOPPED Val_int(0)
-#define RUNNABLE Val_int(1)
-#define KILLED Val_int(2)
-#define NO_FD Val_int(-1)
-#define NO_DELAY Val_int(0)
-#define NO_JOINING Val_int(0)
+#define RUNNABLE Val_int(0)
+#define KILLED Val_int(1)
+#define SUSPENDED Val_int(2)
+#define BLOCKED_READ Val_int(3)
+#define BLOCKED_WRITE Val_int(4)
+#define BLOCKED_DELAY Val_int(5)
+#define BLOCKED_JOIN Val_int(6)
+
+#define NO_FD Val_unit
+#define NO_DELAY Val_unit
+#define NO_JOINING Val_unit
 
 #define DELAY_INFTY 1E30        /* +infty, for this purpose */
 
 /* The thread currently active */
 static thread_t curr_thread = NULL;
-/* Number of threads waiting on file descrs. */
-static int num_waiting_on_fd;
-/* Number of threads waiting on the timer */
-static int num_waiting_on_timer;
-/* Number of threads waiting on a join op. */
-static int num_waiting_on_join;
 /* Identifier for next thread creation */
 static value next_ident = Val_int(0);
 
@@ -118,14 +117,10 @@ value thread_initialize(unit)       /* ML */
   curr_thread->stack_threshold = stack_threshold;
   curr_thread->sp = extern_sp;
   curr_thread->trapsp = trapsp;
-  curr_thread->runnable = RUNNABLE;
+  curr_thread->status = RUNNABLE;
   curr_thread->fd = NO_FD;
   curr_thread->delay = NO_DELAY;
   curr_thread->joining = NO_JOINING;
-  /* Initialize scheduling */
-  num_waiting_on_fd = 0;
-  num_waiting_on_timer = 0;
-  num_waiting_on_join = 0;
   /* Initialize GC */
   prev_scan_roots_hook = scan_roots_hook;
   scan_roots_hook = thread_scan_roots;
@@ -168,7 +163,7 @@ value thread_new(clos)          /* ML */
   th->sp--;
   th->sp[0] = Val_unit;         /* a dummy environment */
   /* The thread is initially runnable */
-  th->runnable = RUNNABLE;
+  th->status = RUNNABLE;
   th->fd = NO_FD;
   th->delay = NO_DELAY;
   th->joining = NO_JOINING;
@@ -198,6 +193,9 @@ double timeofday()
 void schedule_thread()
 {
   thread_t run_thread, th;
+  fd_set readfds, writefds;
+  double delay, now;
+  int need_select;
 
   /* Save the status of the current thread */
   curr_thread->stack_low = stack_low;
@@ -206,95 +204,103 @@ void schedule_thread()
   curr_thread->sp = extern_sp;
   curr_thread->trapsp = trapsp;
 
-  /* See if some join operations succeeded */
-  if (num_waiting_on_join > 0) {
-    FOREACH_THREAD(th)
-      if (th->joining != NO_JOINING &&
-          ((thread_t)(th->joining))->runnable == KILLED) {
-        th->runnable = RUNNABLE;
-        th->joining = NO_JOINING;
-        num_waiting_on_join--;
-      }
-    END_FOREACH(th);
-  }
-  /* Find the next runnable thread */
-  run_thread = NULL;
+try_again:
+  /* Build fdsets and delay for select.
+     See if some join operation succeeded. */
+  FD_ZERO(&readfds);
+  FD_ZERO(&writefds);
+  delay = DELAY_INFTY;
+  now = -1.0;
+  need_select = 0;
+
   FOREACH_THREAD(th)
-    if (th->runnable == RUNNABLE) { run_thread = th; break; }
+    switch (th->status) {
+    case BLOCKED_READ:
+      FD_SET(Int_val(th->fd), &readfds);
+      need_select = 1;
+      break;
+    case BLOCKED_WRITE:
+      FD_SET(Int_val(th->fd), &writefds);
+      need_select = 1;
+      break;
+    case BLOCKED_DELAY:
+      { double th_delay = Double_val(th->delay);
+        if (now < 0.0) now = timeofday();
+        if (th_delay < now) {
+          th->status = RUNNABLE;
+          Assign(th->delay, NO_DELAY);
+        } else {
+          if (th_delay < delay) delay = th_delay;
+        }
+        break;
+      }
+    case BLOCKED_JOIN:
+      if (((thread_t)(th->joining))->status == KILLED) {
+        th->status = RUNNABLE;
+        Assign(th->joining, NO_JOINING);
+      }
+      break;
+    }
   END_FOREACH(th);
 
-  if (num_waiting_on_fd > 0 || num_waiting_on_timer > 0) {
-    fd_set readfds;
-    struct timeval delay_tv, * delay_ptr;
-    double delay, now;
-    int retcode;
+  /* Find if a thread is runnable. */
+  run_thread = NULL;
+  FOREACH_THREAD(th)
+    if (th->status == RUNNABLE) { run_thread = th; break; }
+  END_FOREACH(th);
 
-    do {
-      /* If some threads are blocked on I/O,  get ready to select on all
-         descriptors they are waiting for */
-      FD_ZERO(&readfds);
-      if (num_waiting_on_fd > 0) {
-        FOREACH_THREAD(th)
-          if (th->fd != NO_FD) FD_SET(Int_val(th->fd), &readfds);
-        END_FOREACH(th);
-      }
-      /* If some threads are blocked on the timer, activate those for which the
-         time has elapsed, and compute the minimal delay until one gets
-         ready. */
-      delay = DELAY_INFTY;
-      if (num_waiting_on_timer > 0) {
-        now = timeofday();
-        FOREACH_THREAD(th)
-          if (th->delay != NO_DELAY) {
-            double th_delay = Double_val(th->delay);
-            if (th_delay <= now) {
-              th->runnable = 1;
-              th->delay = NO_DELAY;
-              num_waiting_on_timer--;
-              if (run_thread == NULL) run_thread = th; /* Found one. */
-            } else {
-              if (th_delay < delay) delay = th_delay;
-            }
-          }
-        END_FOREACH(th);
-        delay -= now;
-      }
-      /* Do the select if needed */
-      if (num_waiting_on_fd > 0 || run_thread == NULL) {
-        /* Convert delay to a timeval */
-        /* If a thread is runnable, just poll */
-        if (run_thread != NULL) {
-          delay_tv.tv_sec = 0;
-          delay_tv.tv_usec = 0;
-          delay_ptr = &delay_tv;
-        }
-        else if (delay == DELAY_INFTY) {
-          delay_ptr = NULL;
-        } else {
-          delay_tv.tv_sec = (unsigned int) delay;
-          delay_tv.tv_usec = (delay - (double) delay_tv.tv_sec) * 1E6;
-          delay_ptr = &delay_tv;
-        }
-        retcode = select(FD_SETSIZE, &readfds, NULL, NULL, delay_ptr);
-        if (retcode > 0) {
-          /* Some descriptors are ready. 
-             Make the corresponding threads runnable. */
-          FOREACH_THREAD(th)
-            if (th->fd != NO_FD && FD_ISSET(Int_val(th->fd), &readfds)) {
+  /* Do the select if needed */
+  if (need_select || run_thread == NULL) {
+    struct timeval delay_tv, * delay_ptr;
+    int retcode;
+    /* Convert delay to a timeval */
+    /* If a thread is runnable, just poll */
+    if (run_thread != NULL) {
+      delay_tv.tv_sec = 0;
+      delay_tv.tv_usec = 0;
+      delay_ptr = &delay_tv;
+    }
+    else if (delay == DELAY_INFTY) {
+      delay_ptr = NULL;
+    } else {
+      delay = delay - now;
+      delay_tv.tv_sec = (unsigned int) delay;
+      delay_tv.tv_usec = (delay - (double) delay_tv.tv_sec) * 1E6;
+      delay_ptr = &delay_tv;
+    }
+    retcode = select(FD_SETSIZE, &readfds, &writefds, NULL, delay_ptr);
+    if (retcode > 0) {
+      /* Some descriptors are ready. 
+         Mark the corresponding threads runnable. */
+      FOREACH_THREAD(th)
+        switch (th->status) {
+          case BLOCKED_READ:
+            if (FD_ISSET(Int_val(th->fd), &readfds)) {
               /* Wake up only one thread per fd. */
               FD_CLR(Int_val(th->fd), &readfds);
-              th->runnable = RUNNABLE;
+              th->status = RUNNABLE;
               th->fd = NO_FD;
-              num_waiting_on_fd--;
               if (run_thread == NULL) run_thread = th; /* Found one. */
             }
-          END_FOREACH(th);
+            break;
+          case BLOCKED_WRITE:
+            if (FD_ISSET(Int_val(th->fd), &writefds)) {
+              /* Wake up only one thread per fd. */
+              FD_CLR(Int_val(th->fd), &writefds);
+              th->status = RUNNABLE;
+              th->fd = NO_FD;
+              if (run_thread == NULL) run_thread = th; /* Found one. */
+            }
+            break;
         }
-      }
-      /* The delays for some of the threads should have expired.
-         Go through the loop once more, to check the delays. */
-    } while (run_thread == NULL && delay != DELAY_INFTY);
+      END_FOREACH(th);
+    }
+    /* If we get here with run_thread still NULL, some of the delays 
+       have expired. We go through the loop once more to make the
+       corresponding threads runnable. */
+    if (run_thread == NULL && delay != DELAY_INFTY) goto try_again;
   }
+
   /* If we haven't something to run at that point, we're in big trouble. */
   if (run_thread == NULL) invalid_argument("Thread: deadlock");
 
@@ -321,19 +327,27 @@ value thread_yield(unit)        /* ML */
 value thread_sleep(unit)        /* ML */
      value unit;
 {
-  curr_thread->runnable = STOPPED;
+  curr_thread->status = SUSPENDED;
   schedule_thread();
   return Val_unit;
 }
 
 /* Suspend the current thread on a Unix file descriptor */
 
-value thread_wait_descr(fd)        /* ML */
+value thread_wait_read(fd)        /* ML */
      value fd;
 {
-  curr_thread->runnable = STOPPED;
+  curr_thread->status = BLOCKED_READ;
   curr_thread->fd = fd;
-  num_waiting_on_fd++;
+  schedule_thread();
+  return Val_unit;
+}
+
+value thread_wait_write(fd)        /* ML */
+     value fd;
+{
+  curr_thread->status = BLOCKED_WRITE;
+  curr_thread->fd = fd;
   schedule_thread();
   return Val_unit;
 }
@@ -345,9 +359,8 @@ value thread_wait_inchan(vchan)       /* ML */
 {
   struct channel * chan = (struct channel *) vchan;
   if (chan->curr < chan->max) return Val_unit;
-  curr_thread->runnable = STOPPED;
+  curr_thread->status = BLOCKED_READ;
   curr_thread->fd = Val_int(chan->fd);
-  num_waiting_on_fd++;
   schedule_thread();
   return Val_unit;
 }
@@ -358,9 +371,8 @@ value thread_wait_for(time)          /* ML */
      value time;
 {
   double date = timeofday() + Double_val(time);
-  curr_thread->runnable = STOPPED;
+  curr_thread->status = BLOCKED_DELAY;
   Assign(curr_thread->delay, copy_double(date));
-  num_waiting_on_timer++;
   schedule_thread();
   return Val_unit;
 }
@@ -370,10 +382,9 @@ value thread_wait_for(time)          /* ML */
 value thread_join(th)          /* ML */
      value th;
 {
-  if (((thread_t)th)->runnable == KILLED) return Val_unit;
-  curr_thread->runnable = STOPPED;
+  if (((thread_t)th)->status == KILLED) return Val_unit;
+  curr_thread->status = BLOCKED_JOIN;
   Assign(curr_thread->joining, th);
-  num_waiting_on_join++;
   schedule_thread();
   return Val_unit;
 }
@@ -384,18 +395,17 @@ value thread_wakeup(thread)     /* ML */
      value thread;
 {
   thread_t th = (thread_t) thread;
-  if (th->runnable == KILLED) failwith("Thread.wakeup: killed thread");
-  /* The thread is no longer waiting on anything */
-  if (th->fd != NO_FD) {
-    th->fd = NO_FD; num_waiting_on_fd--;
+  switch (th->status) {
+  case SUSPENDED:
+    th->status = RUNNABLE;
+    break;
+  case KILLED:
+    failwith("Thread.wakeup: killed thread");
+    break;
+  default:
+    failwith("Thread.wakeup: thread was not suspended");
+    break;
   }
-  if (th->delay != NO_DELAY) {
-    th->delay = NO_DELAY; num_waiting_on_timer--;
-  }
-  if (th->joining != NO_JOINING) {
-    th->joining = NO_JOINING; num_waiting_on_join--;
-  }
-  th->runnable = RUNNABLE;
   return Val_unit;
 }
 
@@ -416,10 +426,9 @@ value thread_kill(thread)       /* ML */
   /* Don't paint ourselves in a corner */
   if (th == th->next) failwith("Thread.kill: cannot kill the last thread");
   /* This thread is no longer waiting on anything */
-  if (th->fd != NO_FD) { num_waiting_on_fd--; }
-  if (th->delay != NO_DELAY) { num_waiting_on_timer--; }
-  if (th->joining != NO_JOINING) { num_waiting_on_join--; }
-  th->runnable = KILLED;
+  th->status = KILLED;
+  Assign(th->delay, NO_DELAY);
+  Assign(th->joining, NO_JOINING);
   /* If this is the current thread, activate another one */
   if (th == curr_thread) schedule_thread();
   /* Remove thread from the doubly-linked list */

@@ -1,4 +1,4 @@
-include ../../Makefile.config
+include ../../config/Makefile
 
 # Compilation options
 CC=$(BYTECC)

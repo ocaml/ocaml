@@ -29,7 +29,9 @@ external thread_initialize : unit -> unit = "thread_initialize"
 external thread_new : (unit -> unit) -> t = "thread_new"
 external thread_yield : unit -> unit = "thread_yield"
 external thread_sleep : unit -> unit = "thread_sleep"
-external thread_wait_descr : Unix.file_descr -> unit = "thread_wait_descr"
+external thread_wait_read : Unix.file_descr -> unit = "thread_wait_read"
+external thread_wait_write : Unix.file_descr -> unit =
+  "thread_wait_write"
 external thread_wait_inchan : in_channel -> unit = "thread_wait_inchan"
 external thread_join : t -> unit = "thread_join"
 external thread_delay : float -> unit = "thread_wait_for"
@@ -42,7 +44,8 @@ external thread_kill : t -> unit = "thread_kill"
    making all other operations atomic. *)
 
 let sleep () = critical_section := false; thread_sleep()
-let wait_descr fd = thread_wait_descr fd
+let wait_read fd = thread_wait_read fd
+let wait_write fd = thread_wait_write fd
 let wait_inchan ic = thread_wait_inchan ic
 let delay duration = thread_delay duration
 let join th = thread_join th
