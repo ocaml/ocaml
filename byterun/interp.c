@@ -32,6 +32,12 @@
 #include "signals.h"
 #include "stacks.h"
 
+#ifdef __STDC__
+const char caml_interp_ident[] = 
+  "$Id$"
+  " on " __DATE__ " at " __TIME__ ;
+#endif
+
 /* Registers for the abstract machine:
         pc         the code pointer
         sp         the stack pointer (grows downward)
@@ -1068,6 +1074,15 @@ value caml_interprete(code_t prog, asize_t prog_size)
   }
 #endif
 }
+
+void caml_prepare_bytecode(code_t prog, asize_t prog_size) {
+  /* other implementations of the interpreter (such as an hypothetical
+     JIT translator) might want to do something with a bytecode before
+     running it */
+  Assert(prog);
+  Assert(prog_size>0);
+  /* actually, the threading of the bytecode might be done here */
+} 
 
 void caml_release_bytecode(code_t prog, asize_t prog_size) {
   /* other implementations of the interpreter (such as an hypothetical
