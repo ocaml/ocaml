@@ -89,11 +89,13 @@ let dir_load name =
       String.unsafe_set code (compunit.cu_codesize + 1) '\000';
       String.unsafe_set code (compunit.cu_codesize + 2) '\000';
       String.unsafe_set code (compunit.cu_codesize + 3) '\000';
+      let initial_symtable = Symtable.current_state() in
       Symtable.patch_object code compunit.cu_reloc;
       Symtable.update_global_table();
       begin try
         Meta.execute_bytecode code code_size; ()
       with exn ->
+        Symtable.restore_state initial_symtable;
         print_exception_outcome exn
       end
     end;
