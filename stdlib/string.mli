@@ -138,10 +138,10 @@ val lowercase : string -> string
    Latin-1 (8859-1) character set. *)
 
 val capitalize : string -> string
-(** Return a copy of the argument, with the first letter set to uppercase. *)
+(** Return a copy of the argument, with the first character set to uppercase. *)
 
 val uncapitalize : string -> string
-(** Return a copy of the argument, with the first letter set to lowercase. *)
+(** Return a copy of the argument, with the first character set to lowercase. *)
 
 type t = string
 (** An alias for the type of strings. *)
