@@ -155,7 +155,7 @@ let filter_all pat0 pss =
 let full_match env =
   match env with
     ({pat_desc = Tpat_construct(c,_)},_) :: _ ->
-      List.length env = c.cstr_span
+      List.length env = c.cstr_consts + c.cstr_nonconsts
   | ({pat_desc = Tpat_constant(Const_char _)},_) :: _ ->
       List.length env = 256
   | ({pat_desc = Tpat_constant(_)},_) :: _ -> false

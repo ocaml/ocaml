@@ -30,10 +30,12 @@ type constructor_description =
     cstr_args: type_expr list;          (* Type of the arguments *)
     cstr_arity: int;                    (* Number of arguments *)
     cstr_tag: constructor_tag;          (* Tag for heap blocks *)
-    cstr_span: int }                    (* Number of constructors in type *)
+    cstr_consts: int;                   (* Number of constant constructors *)
+    cstr_nonconsts: int }               (* Number of non-const constructors *)
 
 and constructor_tag =
-    Cstr_tag of int                     (* Regular constructor *)
+    Cstr_constant of int                (* Constant constructor (an int) *)
+  | Cstr_block of int                   (* Regular constructor (a block) *)
   | Cstr_exception of Path.t            (* Exception constructor *)
 
 (* Record label descriptions *)
