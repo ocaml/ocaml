@@ -35,6 +35,21 @@ static void raise_dbm(char *errmsg)
   raise_with_string(*dbm_exn, errmsg);
 }
 
+#define DBM_val(v) *((DBM **) &Field(v, 0))
+
+static value alloc_dbm(DBM * db)
+{
+  value res = alloc_small(1, Abstract_tag);
+  DBM_val(res) = db;
+  return res;
+}
+
+static DBM * extract_dbm(value vdb)
+{
+  if (DBM_val(vdb) == NULL) raise_dbm("DBM has been closed");
+  return DBM_val(vdb);
+}
+
 /* Dbm.open : string -> Sys.open_flag list -> int -> t */
 value caml_dbm_open(value vfile, value vflags, value vmode) /* ML */
 {
@@ -46,13 +61,14 @@ value caml_dbm_open(value vfile, value vflags, value vmode) /* ML */
   if (db == NULL) 
     raise_dbm("Can't open file");
   else
-    return ((value)db);
+    return (alloc_dbm(db));
 }
 
 /* Dbm.close: t -> unit */
 value caml_dbm_close(value vdb)       /* ML */
 {
-  dbm_close((DBM *)vdb);
+  dbm_close(extract_dbm(vdb));
+  DBM_val(vdb) = NULL;
   return Val_unit;
 }
 
@@ -62,7 +78,7 @@ value caml_dbm_fetch(value vdb, value vkey)  /* ML */
   datum key,answer;
   key.dptr = String_val(vkey);
   key.dsize = string_length(vkey);
-  answer = dbm_fetch((DBM *)vdb, key);
+  answer = dbm_fetch(extract_dbm(vdb), key);
   if (answer.dptr) {
     value res = alloc_string(answer.dsize);
     bcopy(answer.dptr,String_val(res),answer.dsize);
@@ -80,7 +96,7 @@ value caml_dbm_insert(value vdb, value vkey, value vcontent) /* ML */
   content.dptr = String_val(vcontent);
   content.dsize = string_length(vcontent);
 
-  switch(dbm_store((DBM *)vdb, key, content, DBM_INSERT)) {
+  switch(dbm_store(extract_dbm(vdb), key, content, DBM_INSERT)) {
   case 0:
     return Val_unit;
   case 1:                       /* DBM_INSERT and already existing */
@@ -99,7 +115,7 @@ value caml_dbm_replace(value vdb, value vkey, value vcontent) /* ML */
   content.dptr = String_val(vcontent);
   content.dsize = string_length(vcontent);
 
-  switch(dbm_store((DBM *)vdb, key, content, DBM_REPLACE)) {
+  switch(dbm_store(extract_dbm(vdb), key, content, DBM_REPLACE)) {
   case 0:
     return Val_unit;
   default:
@@ -113,14 +129,14 @@ value caml_dbm_delete(value vdb, value vkey)         /* ML */
   key.dptr = String_val(vkey);
   key.dsize = string_length(vkey);
 
-  if (dbm_delete((DBM *)vdb, key) < 0)
+  if (dbm_delete(extract_dbm(vdb), key) < 0)
     raise_dbm("dbm_delete");
   else return Val_unit;
 }
 
 value caml_dbm_firstkey(value vdb)            /* ML */
 {
-  datum key = dbm_firstkey((DBM *)vdb);
+  datum key = dbm_firstkey(extract_dbm(vdb));
 
   if (key.dptr) {
     value res = alloc_string(key.dsize);
@@ -132,7 +148,7 @@ value caml_dbm_firstkey(value vdb)            /* ML */
 
 value caml_dbm_nextkey(value vdb)             /* ML */
 {
-  datum key = dbm_nextkey((DBM *)vdb);
+  datum key = dbm_nextkey(extract_dbm(vdb));
 
   if (key.dptr) {
     value res = alloc_string(key.dsize);
