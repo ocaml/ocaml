@@ -37,7 +37,18 @@ This script work like "labltklink", but is a replacement for "ocamlopt".
 \end{unix}
 
 \begin{windows}
-The "labltk" library is not yet ported to Windows.
+The "labltk" library has been precompiled for use with Tcl/Tk 8.0.
+You must first have it installed on your system.
+It can be downloaded from \\
+"http://www.scriptics.com/products/tcltk/8.0.html".
+After installing it, you must put the dynamically loaded libraries
+"tcl80.dll" and "tk80.dll" (from the "bin" directory of the Tcl
+installation) in a directory included in you path.
+
+The toplevel is available as "labltk", but other utility scripts
+are not available on Windows. Also, you need to explicitly add the
+"labltk" library directory to your load path with the "#directory"
+directive.
 \end{windows}
 
 The "labltk" library is composed of a large number of modules.
