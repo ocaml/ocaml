@@ -91,6 +91,7 @@ clean:
 	cd refman; $(MAKE) clean
 	cd library; $(MAKE) clean
 	cd cmds; $(MAKE) clean
+	cd tutorials; $(MAKE) clean
 	-rm -f texstuff/*
 	cd htmlman; rm -f index.html manual*.html *.haux *.hind
 	cd textman; rm -f manual.txt *.haux *.hind
