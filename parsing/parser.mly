@@ -865,7 +865,7 @@ simple_expr:
   | BEGIN seq_expr END
       { $2 }
   | BEGIN END
-      { mkexp (Pexp_ident (Lident "()")) }
+      { mkexp (Pexp_construct (Lident "()", None, false)) }
   | BEGIN seq_expr error
       { unclosed "begin" 1 "end" 3 }
   | LPAREN seq_expr type_constraint RPAREN
