@@ -97,10 +97,11 @@ let close_connection () =
 let loaded = ref false
 
 let kill_program () =
+  Breakpoints.remove_all_breakpoints ();
+  History.empty_history ()
+  kill_all_checkpoints ();
   loaded := false;
   close_connection ();
-  kill_all_checkpoints ();
-  History.empty_history ()
 
 let ask_kill_program () =
   if not !loaded then
