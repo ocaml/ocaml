@@ -32,13 +32,15 @@ let output_array v =
   <:expr< $str:s$ >>
 
 let output_byte_array v =
-  let b =  Buffer.create (Array.length v * 2) in
+  let b = Buffer.create (Array.length v * 2) in
   for i = 0 to Array.length v - 1 do
     output_byte b (v.(i) land 0xFF);
-    if i land 15 = 15 then Buffer.add_string b  "\\\n    "
+    if i land 15 = 15 then Buffer.add_string b "\\\n    "
   done;
   let s = Buffer.contents b in
   <:expr< $str:s$ >>
+
+
 
 (* Output the tables *)
 
@@ -71,37 +73,80 @@ let abstraction =
 let application =
   List.fold_left (fun f (_,a) -> <:expr< $f$ $lid:a$ >>)
 
-let get_num (num,code) =
-  assert (code=[]) ;
-  num
+let int i = <:expr< $int:string_of_int i$ >>
+
+let output_memory_actions acts = 
+  let aux = function
+    | Copy (tgt, src) -> 
+	<:expr< lexbuf.Lexing.lex_mem.($int tgt$) := 
+      lexbuf.Lexing.lex_mem.($int src$) >>
+    | Set tgt ->
+        <:expr< lexbuf.Lexing.lex_mem.($int tgt$) := 
+      lexbuf.Lexing.lex_curr_pos >>
+  in
+  <:expr< do { $list:List.map aux acts$ } >>
+
+let output_base_mem = function
+  | Mem i -> <:expr< lexbuf.Lexing.lex_mem.($int i$) >>
+  | Start -> <:expr< lexbuf.Lexing.lex_start_pos >>
+  | End   -> <:expr< lexbuf.Lexing.lex_curr_pos >>
+
+let output_tag_access = function
+  | Sum (a,0) -> output_base_mem a
+  | Sum (a,i) -> <:expr< $output_base_mem a$ + $int i$ >>
+
+let rec output_env e = function
+  | [] -> e
+  | (x, Ident_string (o,nstart,nend)) :: rem ->
+      <:expr< 
+	  let $lid:x$ = 
+	    Lexing.$lid:if o then "sub_lexeme_opt" else "sub_lexeme"$
+	    lexbuf $output_tag_access nstart$ $output_tag_access nend$
+          in $output_env e rem$
+      >>
+  | (x, Ident_char (o,nstart)) :: rem ->
+      <:expr< 
+	  let $lid:x$ = 
+	    Lexing.$lid: if o then "sub_lexeme_char_opt" else "Lexing.sub_lexeme_char"$
+	    lexbuf $output_tag_access nstart$
+          in $output_env e rem$
+      >>
 
 let output_entry e =
+  let init_num, init_moves = e.auto_initial_state in
   let args = make_alias 0 (<:patt< lexbuf >> :: e.auto_args) in
   let f = "__ocaml_lex_rec_" ^ e.auto_name ^ "_rec" in
   let call_f = application <:expr< $lid:f$ >> args in
-  let inistate = <:expr< $int:string_of_int (get_num e.auto_initial_state)$ >> in
+  let body_wrapper = 
+    <:expr< 
+      do {
+	lexbuf.Lexing.lex_mem := Array.create $int e.auto_mem_size$ (-1) ;
+	$output_memory_actions init_moves$;
+        $call_f$ $int init_num$
+      } >> in
   let cases = 
     List.map
-      (fun (num, t_env, (loc,e)) ->
-         assert (t_env=[]) ;
-         <:patt< $int:string_of_int num$ >>,
-         None, (* when ... *)
-         e
+      (fun (num, env, (loc,e)) ->
+         <:patt< $int:string_of_int num$ >>, 
+	 None, 
+	 output_env <:expr< $e$ >> env
+	     (* Note: the <:expr<...>> above is there to set the location *)
       ) e.auto_actions @
     [ <:patt< __ocaml_lex_n >>,
       None,
       <:expr< do 
         { lexbuf.Lexing.refill_buff lexbuf; $call_f$ __ocaml_lex_n  }>> ]
   in
+  let engine = 
+    if e.auto_mem_size = 0 
+    then <:expr< Lexing.engine >>
+    else <:expr< Lexing.new_engine >> in
+  let body = 
+    <:expr< fun state ->
+      match $engine$ lex_tables state lexbuf with [ $list:cases$ ] >> in
   [
-    <:patt< $lid:e.auto_name$ >>,
-    (abstraction args <:expr< $call_f$ $inistate$ >>);
-
-    <:patt< $lid:f$ >>,
-    (abstraction args <:expr< 
-       fun state -> 
-       match Lexing.engine lex_tables state lexbuf with 
-       [ $list:cases$ ] >>)
+    <:patt< $lid:e.auto_name$ >>, (abstraction args body_wrapper);
+    <:patt< $lid:f$ >>, (abstraction args body) 
   ]
 
 (* Main output function *)
@@ -110,7 +155,7 @@ exception Table_overflow
 
 let output_lexdef tables entry_points =
   Printf.eprintf 
-    "pa_ocamllex: found lexer; %d states, %d transitions, table size %d bytes\n"
+    "pa_ocamllex: lexer found; %d states, %d transitions, table size %d bytes\n"
     (Array.length tables.tbl_base)
     (Array.length tables.tbl_trans)
     (2 * (Array.length tables.tbl_base + Array.length tables.tbl_backtrk +
@@ -124,7 +169,8 @@ let output_lexdef tables entry_points =
           Array.length tables.tbl_check_code) +
     Array.length tables.tbl_code) in
   if  size_groups > 0 then
-    Printf.eprintf "%d additional bytes used for bindings\n" size_groups ;
+    Printf.eprintf "pa_ocamllex: %d additional bytes used for bindings\n" 
+      size_groups ;
   flush stderr;
   if Array.length tables.tbl_trans > 0x8000 then raise Table_overflow;
 
@@ -157,6 +203,13 @@ let char_class c1 c2 = Cset.interval c1 c2
 
 let all_chars = Cset.all_chars
 
+let rec remove_as = function
+  | Bind (e,_) -> remove_as e
+  | Epsilon|Eof|Characters _ as e -> e
+  | Sequence (e1, e2) -> Sequence (remove_as e1, remove_as e2)
+  | Alternative (e1, e2) -> Alternative (remove_as e1, remove_as e2)
+  | Repetition e -> Repetition (remove_as e)
+
 let () =
   Hashtbl.add named_regexps "eof" (Characters Cset.eof)
 
@@ -186,11 +239,11 @@ EXTEND
           let tables = compact_tables transitions in
           let output = output_lexdef tables entries in
           <:str_item< declare $list: output$ end >> 
-        with
-       | Table_overflow ->
-          failwith "Transition table overflow in lexer, automaton is too big"
-       | Lexgen.Memory_overflow ->
-          failwith "Position memory overflow in lexer, to many as variables")
+        with 
+	  |Table_overflow ->
+             failwith "Transition table overflow in lexer, automaton is too big"
+	  | Lexgen.Memory_overflow ->
+              failwith "Position memory overflow in lexer, too many as variables")
    ]
  ];
 
@@ -203,9 +256,10 @@ EXTEND
  ];
  
  definition: [
-   [ x=LIDENT; pl = LIST0 Pcaml.patt; "="; LIDENT "parse"; 
+   [ x=LIDENT; pl = LIST0 Pcaml.patt; "=";  
+     short=[ LIDENT "parse" -> false | LIDENT "shortest" -> true ];
      OPT "|"; l = LIST0 [ r=regexp; a=action -> (r,a) ] SEP "|" ->
-     {name=x ; shortest=false ; args=pl ; clauses = l} ]
+     { name=x ; shortest=short ; args=pl ; clauses = l } ]
  ];
 
  action: [
@@ -225,11 +279,12 @@ EXTEND
  ];
 
  regexp: [
-   [ r1 = regexp; "|"; r2 = regexp -> Alternative(r1,r2) ]
+   [ r = regexp; "as"; i = LIDENT -> Bind (r,i) ]
+ | [ r1 = regexp; "|"; r2 = regexp -> Alternative(r1,r2) ]
  | [ r1 = regexp; r2 = regexp -> Sequence(r1,r2) ]
  | [ r = regexp; "*" -> Repetition r
-   | r = regexp; "+" -> Sequence(r, Repetition r)
-   | r = regexp; "?" -> Alternative(r, Epsilon)
+   | r = regexp; "+" -> Sequence(Repetition (remove_as r), r)
+   | r = regexp; "?" -> Alternative(Epsilon, r)
    | "("; r = regexp; ")" -> r
    | "_" -> Characters all_chars
    | c = CHAR -> Characters (Cset.singleton (char c))

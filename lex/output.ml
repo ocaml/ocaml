@@ -74,8 +74,12 @@ let output_tables oc tbl =
 let output_entry sourcefile ic oc e =
   let init_num, init_moves = e.auto_initial_state in
   fprintf oc "%s lexbuf =
-  lexbuf.Lexing.lex_mem <- Array.create %d (-1) ; %a  __ocaml_lex_%s_rec lexbuf %d\n"
-    e.auto_name e.auto_mem_size
+  %a%a  __ocaml_lex_%s_rec lexbuf %d\n"
+    e.auto_name
+    (fun oc x ->
+      if x > 0 then
+        fprintf oc "lexbuf.Lexing.lex_mem <- Array.create %d (-1) ; " x)
+    e.auto_mem_size
     (output_memory_actions "  ") init_moves e.auto_name init_num;
   fprintf oc "and __ocaml_lex_%s_rec lexbuf state =\n" e.auto_name;
   fprintf oc "  match Lexing.%sengine lex_tables state lexbuf with\n    "
