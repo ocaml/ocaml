@@ -157,7 +157,7 @@ external ( mod ) : int -> int -> int = "%modint"
 (** Integer remainder.  If [y] is not zero, the result
    of [x mod y] satisfies the following properties:
    [x = (x / y) * y + x mod y] and
-   [abs(x mod y) < abs(y)].
+   [abs(x mod y) <= abs(y)-1].
    If [y = 0], [x mod y] raises [Division_by_zero].
    Notice that [x mod y] is negative if and only if [x < 0]. *)
 
