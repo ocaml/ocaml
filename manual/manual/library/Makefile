@@ -3,7 +3,7 @@ CORE_INTF=pervasives.tex
 STDLIB_INTF=arg.tex array.tex char.tex digest.tex filename.tex format.tex \
   gc.tex hashtbl.tex lexing.tex list.tex map.tex parsing.tex \
   printexc.tex printf.tex queue.tex set.tex sort.tex \
-  stack.tex string.tex sys.tex
+  stack.tex stream.tex string.tex sys.tex
 
 OTHERLIB_INTF=unix.tex str.tex num.tex arithstatus.tex graphics.tex
 

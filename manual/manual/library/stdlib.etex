@@ -81,6 +81,7 @@ Here is a short listing, by theme, of the standard library modules.
 \input set.tex
 \input sort.tex
 \input stack.tex
+\input stream.tex
 \input string.tex
 \input sys.tex
 \end{library}
