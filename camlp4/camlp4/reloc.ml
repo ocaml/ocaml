@@ -43,10 +43,12 @@ value rec ctyp floc sh =
           (List.map (fun (x1, x2) -> (x1, List.map self x2)) x1)
     | TyTup loc x1 -> TyTup (floc loc) (List.map self x1)
     | TyUid loc x1 -> TyUid (floc loc) x1
-    | TyVrn loc x1 x2 ->
-        TyVrn (floc loc)
-          (List.map (fun (x1, x2, x3) -> (x1, x2, List.map self x3)) x1) x2
+    | TyVrn loc x1 x2 -> TyVrn (floc loc) (List.map (row_field floc sh) x1) x2
     | TyXnd loc x1 x2 -> TyXnd (floc loc) x1 (self x2) ]
+and row_field floc sh =
+  fun
+  [ RfTag x1 x2 x3 -> RfTag x1 x2 (List.map (ctyp floc sh) x3)
+  | RfInh x1 -> RfInh (ctyp floc sh x1) ]
 ;
 
 value class_infos a floc sh x =

@@ -56,7 +56,10 @@ value rec ctyp =
   | x -> not_impl "ctyp" x ]
 and constr_decl (_, tl) = list ctyp tl
 and label_decl (_, _, t) = ctyp t
-and variant (_, _, tl) = list ctyp tl
+and variant =
+  fun
+  [ RfTag _ _ tl -> list ctyp tl
+  | RfInh t -> ctyp t ]
 and ctyp_module =
   fun
   [ TyAcc _ t _ -> ctyp_module t

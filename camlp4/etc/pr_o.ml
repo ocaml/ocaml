@@ -208,14 +208,18 @@ and variant b (c, tl) _ k =
 ;
 
 value rec row_fields b rfl _ k = listwbws row_field b (S LR "|") rfl "" k
-and row_field b (c, ao, tl) _ k =
-  let c = "`" ^ c in
-  match tl with
-  [ [] -> HVbox [: b; `HOVbox [: `S LR c; k :] :]
-  | _ ->
-      let ao = if ao then [: `S LR "&" :] else [: :] in
-      HVbox
-        [: b; `HOVbox [: `S LR c; `S LR "of"; ao; ctyp_list tl "" k :] :] ]
+and row_field b rf _ k =
+  match rf with
+  [ MLast.RfTag c ao tl ->
+      let c = "`" ^ c in
+      match tl with
+      [ [] -> HVbox [: b; `HOVbox [: `S LR c; k :] :]
+      | _ ->
+          let ao = if ao then [: `S LR "&" :] else [: :] in
+          HVbox
+            [: b; `HOVbox [: `S LR c; `S LR "of"; ao; ctyp_list tl "" k :] :] ]
+  | MLast.RfInh t ->
+      HVbox [: b; `ctyp t "" k :] ]
 ;
 
 value rec get_type_args t tl =
@@ -322,7 +326,7 @@ simple_ctyp_f.val :=
                     [: `HVbox [: :];
                        row_fields [: `S LR "[>" :] rfl "" [: `S LR "]" :];
                        k :] :]
-          | <:ctyp< [| < $list:rfl$ $dd:clos$ > $list:sl$ |] >> ->
+          | <:ctyp< [| < $list:rfl$ > $list:sl$ |] >> ->
               let k1 = [: `S LR "]" :] in
               let k1 =
                 match sl with
@@ -331,7 +335,6 @@ simple_ctyp_f.val :=
                     [: `S LR ">";
                        list (fun x _ k -> HVbox [: `S LR x; k :]) l "" k1 :] ]
               in
-              let k1 = if clos then k1 else [: `S LR "|"; `S LR ".."; k1 :] in
               [: `HVbox
                     [: `HVbox [: :]; row_fields [: `S LR "[<" :] rfl "" k1;
                        k :] :]

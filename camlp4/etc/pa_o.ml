@@ -1092,9 +1092,10 @@ EXTEND
           <:ctyp< [| < $list:rfl$ > $list:ntl$ |] >> ] ]
   ;
   row_field:
-    [ [ "`"; i = ident -> (i, False, [])
+    [ [ "`"; i = ident -> MLast.RfTag i True []
       | "`"; i = ident; "of"; ao = OPT "&"; l = LIST1 ctyp SEP "&" ->
-          (i, o2b ao, l) ] ]
+          MLast.RfTag i (o2b ao) l
+      | t = ctyp -> MLast.RfInh t ] ]
   ;
   name_tag:
     [ [ "`"; i = ident -> i ] ]

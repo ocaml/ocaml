@@ -502,25 +502,14 @@ EXTEND
           Node "TyVrn" [rfl; Option None]
       | "[|"; ">"; rfl = SLIST1 row_field SEP "|"; "|]" ->
           Node "TyVrn" [rfl; Option (Some (Option None))]
-      | "[|"; "<"; (rfl, clos) = row_field_list_dd; sl = opt_tag_list; "|]" ->
+      | "[|"; "<"; rfl = SLIST1 row_field SEP "|"; sl = opt_tag_list; "|]" ->
           Node "TyVrn"
-            [rfl; Option (Some (Option (Some (Tuple [clos; sl]))))] ] ]
+            [rfl; Option (Some (Option (Some sl)))] ] ]
   ;
   row_field:
     [ [ "`"; i = lident -> Tuple [i; Bool True; List []]
       | "`"; i = lident; "of"; oa = OPT "&"; l = SLIST1 ctyp SEP "&" ->
           Tuple [i; Bool (oa <> None); l] ] ]
-  ;
-  row_field_list_dd:
-    [ [ a = anti_list; clos = clos -> (a, clos)
-      | a = anti_list -> (a, Bool True)
-      | rf = row_field; clos = clos -> (rf, clos)
-      | rf = row_field -> (rf, Bool True)
-      | rf = row_field; "|"; (rfl, clos) = SELF -> (Cons rf rfl, clos) ] ]
-  ;
-  clos:
-    [ [ a = anti_dd -> a
-      | "|"; ".." -> Bool False ] ]
   ;
   opt_tag_list:
     [ [ ">"; sl = SLIST1 lident -> sl
@@ -595,9 +584,6 @@ EXTEND
   ;
   anti_chr:
     [ [ a = ANTIQUOT "chr" -> antiquot "chr" loc a ] ]
-  ;
-  anti_dd:
-    [ [ a = ANTIQUOT "dd" -> antiquot "dd" loc a ] ]
   ;
   anti_exp:
     [ [ a = ANTIQUOT "exp" -> antiquot "exp" loc a ] ]

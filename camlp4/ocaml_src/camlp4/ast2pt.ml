@@ -169,15 +169,20 @@ let rec ctyp =
   | TyTup (loc, tl) -> mktyp loc (Ptyp_tuple (List.map ctyp tl))
   | TyUid (loc, s) -> mktyp loc (Ptyp_constr (lident s, []))
   | TyVrn (loc, catl, ool) ->
-      let catl = List.map (fun (c, a, t) -> c, a, List.map ctyp t) catl in
+      let catl =
+        List.map
+          (function
+             RfTag (c, a, t) -> Rtag (c, a, List.map ctyp t)
+           | RfInh t -> Rinherit (ctyp t))
+          catl
+      in
       let (clos, sl) =
         match ool with
-          None -> true, List.map (fun (c, _, _) -> c) catl
-        | Some None -> false, List.map (fun (c, _, _) -> c) catl
-        | Some (Some (clos, sl)) -> clos, sl
+          None -> true, None
+        | Some None -> false, None
+        | Some (Some sl) -> true, Some sl
       in
-      let catl = List.map (fun (c, a, t) -> Rtag (c, a, t)) catl in
-      mktyp loc (Ptyp_variant (catl, clos, Some sl))
+      mktyp loc (Ptyp_variant (catl, clos, sl))
   | TyXnd (loc, c, _) ->
       error loc ("type \"" ^ c ^ "\" (extension) not allowed here")
 and meth_list loc fl v =
@@ -547,7 +552,7 @@ let rec expr =
         function
           [] -> expr (ExUid (loc, "()"))
         | [e] -> expr e
-        | e :: el -> mkexp (loc_of_expr e) (Pexp_sequence (expr e, loop el))
+        | e :: el -> mkexp loc (Pexp_sequence (expr e, loop el))
       in
       loop el
   | ExSnd (loc, e, s) -> mkexp loc (Pexp_send (expr e, s))

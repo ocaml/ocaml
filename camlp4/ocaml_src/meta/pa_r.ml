@@ -2220,8 +2220,7 @@ Grammar.extend
    in
    let row_field : 'row_field Grammar.Entry.e =
      grammar_entry_create "row_field"
-   and row_field_list_dd : 'row_field_list_dd Grammar.Entry.e =
-     grammar_entry_create "row_field_list_dd"
+   and name_tag : 'name_tag Grammar.Entry.e = grammar_entry_create "name_tag"
    and ident : 'ident Grammar.Entry.e = grammar_entry_create "ident" in
    [Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e),
     Some (Gramext.After "arrow"),
@@ -2238,13 +2237,28 @@ Grammar.extend
     Some (Gramext.Level "simple"),
     [None, None,
      [[Gramext.Stoken ("", "[|"); Gramext.Stoken ("", "<");
-       Gramext.Snterm
-         (Grammar.Entry.obj
-            (row_field_list_dd : 'row_field_list_dd Grammar.Entry.e));
+       Gramext.Slist1sep
+         (Gramext.Snterm
+            (Grammar.Entry.obj (row_field : 'row_field Grammar.Entry.e)),
+          Gramext.Stoken ("", "|"));
+       Gramext.Stoken ("", ">");
+       Gramext.Slist1
+         (Gramext.Snterm
+            (Grammar.Entry.obj (name_tag : 'name_tag Grammar.Entry.e)));
        Gramext.Stoken ("", "|]")],
       Gramext.action
-        (fun _ (rfl, clos : 'row_field_list_dd) _ _ (loc : int * int) ->
-           (MLast.TyVrn (loc, rfl, Some (Some (clos, []))) : 'ctyp));
+        (fun _ (ntl : 'name_tag list) _ (rfl : 'row_field list) _ _
+           (loc : int * int) ->
+           (MLast.TyVrn (loc, rfl, Some (Some ntl)) : 'ctyp));
+      [Gramext.Stoken ("", "[|"); Gramext.Stoken ("", "<");
+       Gramext.Slist1sep
+         (Gramext.Snterm
+            (Grammar.Entry.obj (row_field : 'row_field Grammar.Entry.e)),
+          Gramext.Stoken ("", "|"));
+       Gramext.Stoken ("", "|]")],
+      Gramext.action
+        (fun _ (rfl : 'row_field list) _ _ (loc : int * int) ->
+           (MLast.TyVrn (loc, rfl, Some (Some [])) : 'ctyp));
       [Gramext.Stoken ("", "[|"); Gramext.Stoken ("", ">");
        Gramext.Slist1sep
          (Gramext.Snterm
@@ -2265,7 +2279,10 @@ Grammar.extend
            (MLast.TyVrn (loc, rfl, None) : 'ctyp))]];
     Grammar.Entry.obj (row_field : 'row_field Grammar.Entry.e), None,
     [None, None,
-     [[Gramext.Stoken ("", "`");
+     [[Gramext.Snterm (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e))],
+      Gramext.action
+        (fun (t : 'ctyp) (loc : int * int) -> (MLast.RfInh t : 'row_field));
+      [Gramext.Stoken ("", "`");
        Gramext.Snterm (Grammar.Entry.obj (ident : 'ident Grammar.Entry.e));
        Gramext.Stoken ("", "of"); Gramext.Sopt (Gramext.Stoken ("", "&"));
        Gramext.Slist1sep
@@ -2274,34 +2291,18 @@ Grammar.extend
       Gramext.action
         (fun (l : 'ctyp list) (ao : string option) _ (i : 'ident) _
            (loc : int * int) ->
-           (i, o2b ao, l : 'row_field));
+           (MLast.RfTag (i, o2b ao, l) : 'row_field));
       [Gramext.Stoken ("", "`");
        Gramext.Snterm (Grammar.Entry.obj (ident : 'ident Grammar.Entry.e))],
       Gramext.action
         (fun (i : 'ident) _ (loc : int * int) ->
-           (i, false, [] : 'row_field))]];
-    Grammar.Entry.obj
-      (row_field_list_dd : 'row_field_list_dd Grammar.Entry.e),
-    None,
+           (MLast.RfTag (i, true, []) : 'row_field))]];
+    Grammar.Entry.obj (name_tag : 'name_tag Grammar.Entry.e), None,
     [None, None,
-     [[Gramext.Snterm
-         (Grammar.Entry.obj (row_field : 'row_field Grammar.Entry.e));
-       Gramext.Stoken ("", "|"); Gramext.Sself],
+     [[Gramext.Stoken ("", "`");
+       Gramext.Snterm (Grammar.Entry.obj (ident : 'ident Grammar.Entry.e))],
       Gramext.action
-        (fun (rfl, dd : 'row_field_list_dd) _ (rf : 'row_field)
-           (loc : int * int) ->
-           (rf :: rfl, dd : 'row_field_list_dd));
-      [Gramext.Snterm
-         (Grammar.Entry.obj (row_field : 'row_field Grammar.Entry.e));
-       Gramext.Stoken ("", "|"); Gramext.Stoken ("", "..")],
-      Gramext.action
-        (fun _ _ (rf : 'row_field) (loc : int * int) ->
-           ([rf], false : 'row_field_list_dd));
-      [Gramext.Snterm
-         (Grammar.Entry.obj (row_field : 'row_field Grammar.Entry.e))],
-      Gramext.action
-        (fun (rf : 'row_field) (loc : int * int) ->
-           ([rf], true : 'row_field_list_dd))]];
+        (fun (i : 'ident) _ (loc : int * int) -> (i : 'name_tag))]];
     Grammar.Entry.obj (patt : 'patt Grammar.Entry.e),
     Some (Gramext.Level "simple"),
     [None, None,

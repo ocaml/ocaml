@@ -1632,20 +1632,21 @@ EXTEND
           <:ctyp< [| $list:rfl$ |] >>
       | "["; ">"; OPT "|"; rfl = LIST1 row_field SEP "|"; "]" ->
           <:ctyp< [| > $list:rfl$ |] >>
-      | "[<"; OPT "|"; (rfl, clos) = row_field_list_dd; "]" ->
-          <:ctyp< [| < $list:rfl$ $dd:clos$ |] >> ] ]
+      | "[<"; OPT "|"; rfl = LIST1 row_field SEP "|"; "]" ->
+          <:ctyp< [| < $list:rfl$ |] >>
+      | "[<"; OPT "|"; rfl = LIST1 row_field SEP "|"; ">";
+        ntl = LIST1 name_tag; "]" ->
+          <:ctyp< [| < $list:rfl$ > $list:ntl$ |] >> ] ]
   ;
   row_field:
-    [ [ "`"; i = ident -> (i, False, [])
+    [ [ "`"; i = ident -> MLast.RfTag i False []
       | "`"; i = ident; "of"; ao = OPT "&"; l = LIST1 ctyp SEP "&" ->
-          (i, o2b ao, l)
-      | "`"; i = ident; "&"; l = LIST1 ctyp SEP "&" -> (i, True, l)
-      | "`"; i = ident; l = LIST1 ctyp SEP "&" -> (i, False, l) ] ]
+          MLast.RfTag i (o2b ao) l
+      | "`"; i = ident; "&"; l = LIST1 ctyp SEP "&" -> MLast.RfTag i True l
+      | "`"; i = ident; l = LIST1 ctyp SEP "&" -> MLast.RfTag i False l ] ]
   ;
-  row_field_list_dd:
-    [ [ rf = row_field -> ([rf], True)
-      | rf = row_field; "|"; ".." -> ([rf], False)
-      | rf = row_field; "|"; (rfl, dd) = SELF -> ([rf :: rfl], dd) ] ]
+  name_tag:
+    [ [ "`"; i = ident -> i ] ]
   ;
   expr: LEVEL "expr1"
     [ [ "fun"; p = labeled_patt; e = fun_def -> <:expr< fun $p$ -> $e$ >> ] ]

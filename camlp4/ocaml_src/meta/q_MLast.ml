@@ -157,9 +157,6 @@ Grammar.extend
      grammar_entry_create "type_parameter"
    and row_field : 'row_field Grammar.Entry.e =
      grammar_entry_create "row_field"
-   and row_field_list_dd : 'row_field_list_dd Grammar.Entry.e =
-     grammar_entry_create "row_field_list_dd"
-   and clos : 'clos Grammar.Entry.e = grammar_entry_create "clos"
    and opt_tag_list : 'opt_tag_list Grammar.Entry.e =
      grammar_entry_create "opt_tag_list"
    and constructor_declaration : 'constructor_declaration Grammar.Entry.e =
@@ -184,7 +181,6 @@ Grammar.extend
      grammar_entry_create "anti_anti"
    and anti_as : 'anti_as Grammar.Entry.e = grammar_entry_create "anti_as"
    and anti_chr : 'anti_chr Grammar.Entry.e = grammar_entry_create "anti_chr"
-   and anti_dd : 'anti_dd Grammar.Entry.e = grammar_entry_create "anti_dd"
    and anti_exp : 'anti_exp Grammar.Entry.e = grammar_entry_create "anti_exp"
    and anti_flo : 'anti_flo Grammar.Entry.e = grammar_entry_create "anti_flo"
    and anti_int : 'anti_int Grammar.Entry.e = grammar_entry_create "anti_int"
@@ -1472,15 +1468,6 @@ Grammar.extend
       Gramext.action
         (fun (i : 'lident) _ (loc : int * int) ->
            (Node ("PaOlb", [i; Node ("PaLid", [i]); Option None]) : 'patt));
-      [Gramext.Stoken ("", "?"); Gramext.Stoken ("", "(");
-       Gramext.Snterm (Grammar.Entry.obj (lident : 'lident Grammar.Entry.e));
-       Gramext.Stoken ("", "=");
-       Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e));
-       Gramext.Stoken ("", ")")],
-      Gramext.action
-        (fun _ (e : 'expr) _ (j : 'lident) _ _ (loc : int * int) ->
-           (Node ("PaOlb", [j; Node ("PaLid", [j]); Option (Some e)]) :
-            'patt));
       [Gramext.Stoken ("", "?");
        Gramext.Snterm (Grammar.Entry.obj (lident : 'lident Grammar.Entry.e));
        Gramext.Stoken ("", ":"); Gramext.Stoken ("", "("); Gramext.Sself;
@@ -1919,19 +1906,23 @@ Grammar.extend
            (Node ("TyAcc", [t1; t2]) : 'ctyp))];
      Some "simple", None,
      [[Gramext.Stoken ("", "[|"); Gramext.Stoken ("", "<");
-       Gramext.Snterm
-         (Grammar.Entry.obj
-            (row_field_list_dd : 'row_field_list_dd Grammar.Entry.e));
+       Gramext.srules
+         [[Gramext.Slist1sep
+             (Gramext.Snterm
+                (Grammar.Entry.obj (row_field : 'row_field Grammar.Entry.e)),
+              Gramext.Stoken ("", "|"))],
+          Gramext.action
+            (fun (l : 'row_field list) (loc : int * int) -> (list l : 'anti));
+          [Gramext.Snterm
+             (Grammar.Entry.obj (anti_list : 'anti_list Grammar.Entry.e))],
+          Gramext.action
+            (fun (a : 'anti_list) (loc : int * int) -> (a : 'anti))];
        Gramext.Snterm
          (Grammar.Entry.obj (opt_tag_list : 'opt_tag_list Grammar.Entry.e));
        Gramext.Stoken ("", "|]")],
       Gramext.action
-        (fun _ (sl : 'opt_tag_list) (rfl, clos : 'row_field_list_dd) _ _
-           (loc : int * int) ->
-           (Node
-              ("TyVrn",
-               [rfl; Option (Some (Option (Some (Tuple [clos; sl]))))]) :
-            'ctyp));
+        (fun _ (sl : 'opt_tag_list) (rfl : ast) _ _ (loc : int * int) ->
+           (Node ("TyVrn", [rfl; Option (Some (Option (Some sl)))]) : 'ctyp));
       [Gramext.Stoken ("", "[|"); Gramext.Stoken ("", ">");
        Gramext.srules
          [[Gramext.Slist1sep
@@ -2079,46 +2070,6 @@ Grammar.extend
       Gramext.action
         (fun (i : 'lident) _ (loc : int * int) ->
            (Tuple [i; Bool true; List []] : 'row_field))]];
-    Grammar.Entry.obj
-      (row_field_list_dd : 'row_field_list_dd Grammar.Entry.e),
-    None,
-    [None, None,
-     [[Gramext.Snterm
-         (Grammar.Entry.obj (row_field : 'row_field Grammar.Entry.e));
-       Gramext.Stoken ("", "|"); Gramext.Sself],
-      Gramext.action
-        (fun (rfl, clos : 'row_field_list_dd) _ (rf : 'row_field)
-           (loc : int * int) ->
-           (Cons (rf, rfl), clos : 'row_field_list_dd));
-      [Gramext.Snterm
-         (Grammar.Entry.obj (row_field : 'row_field Grammar.Entry.e))],
-      Gramext.action
-        (fun (rf : 'row_field) (loc : int * int) ->
-           (rf, Bool true : 'row_field_list_dd));
-      [Gramext.Snterm
-         (Grammar.Entry.obj (row_field : 'row_field Grammar.Entry.e));
-       Gramext.Snterm (Grammar.Entry.obj (clos : 'clos Grammar.Entry.e))],
-      Gramext.action
-        (fun (clos : 'clos) (rf : 'row_field) (loc : int * int) ->
-           (rf, clos : 'row_field_list_dd));
-      [Gramext.Snterm
-         (Grammar.Entry.obj (anti_list : 'anti_list Grammar.Entry.e))],
-      Gramext.action
-        (fun (a : 'anti_list) (loc : int * int) ->
-           (a, Bool true : 'row_field_list_dd));
-      [Gramext.Snterm
-         (Grammar.Entry.obj (anti_list : 'anti_list Grammar.Entry.e));
-       Gramext.Snterm (Grammar.Entry.obj (clos : 'clos Grammar.Entry.e))],
-      Gramext.action
-        (fun (clos : 'clos) (a : 'anti_list) (loc : int * int) ->
-           (a, clos : 'row_field_list_dd))]];
-    Grammar.Entry.obj (clos : 'clos Grammar.Entry.e), None,
-    [None, None,
-     [[Gramext.Stoken ("", "|"); Gramext.Stoken ("", "..")],
-      Gramext.action (fun _ _ (loc : int * int) -> (Bool false : 'clos));
-      [Gramext.Snterm
-         (Grammar.Entry.obj (anti_dd : 'anti_dd Grammar.Entry.e))],
-      Gramext.action (fun (a : 'anti_dd) (loc : int * int) -> (a : 'clos))]];
     Grammar.Entry.obj (opt_tag_list : 'opt_tag_list Grammar.Entry.e), None,
     [None, None,
      [[], Gramext.action (fun (loc : int * int) -> (List [] : 'opt_tag_list));
@@ -2306,12 +2257,6 @@ Grammar.extend
       Gramext.action
         (fun (a : string) (loc : int * int) ->
            (antiquot "chr" loc a : 'anti_chr))]];
-    Grammar.Entry.obj (anti_dd : 'anti_dd Grammar.Entry.e), None,
-    [None, None,
-     [[Gramext.Stoken ("ANTIQUOT", "dd")],
-      Gramext.action
-        (fun (a : string) (loc : int * int) ->
-           (antiquot "dd" loc a : 'anti_dd))]];
     Grammar.Entry.obj (anti_exp : 'anti_exp Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Stoken ("ANTIQUOT", "exp")],

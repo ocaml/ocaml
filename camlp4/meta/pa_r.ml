@@ -756,18 +756,20 @@ EXTEND
           <:ctyp< [| $list:rfl$ |] >>
       | "[|"; ">"; rfl = LIST1 row_field SEP "|"; "|]" ->
           <:ctyp< [| > $list:rfl$ |] >>
-      | "[|"; "<"; (rfl, clos) = row_field_list_dd; "|]" ->
-          <:ctyp< [| < $list:rfl$ $dd:clos$ |] >> ] ]
+      | "[|"; "<"; rfl = LIST1 row_field SEP "|"; "|]" ->
+          <:ctyp< [| < $list:rfl$ |] >>
+      | "[|"; "<"; rfl = LIST1 row_field SEP "|"; ">";
+        ntl = LIST1 name_tag; "|]" ->
+          <:ctyp< [| < $list:rfl$ > $list:ntl$ |] >> ] ]
   ;
   row_field:
-    [ [ "`"; i = ident -> (i, False, [])
+    [ [ "`"; i = ident -> MLast.RfTag i True []
       | "`"; i = ident; "of"; ao = OPT "&"; l = LIST1 ctyp SEP "&" ->
-          (i, o2b ao, l) ] ]
+          MLast.RfTag i (o2b ao) l
+      | t = ctyp -> MLast.RfInh t ] ]
   ;
-  row_field_list_dd:
-    [ [ rf = row_field -> ([rf], True)
-      | rf = row_field; "|"; ".." -> ([rf], False)
-      | rf = row_field; "|"; (rfl, dd) = SELF -> ([rf :: rfl], dd) ] ]
+  name_tag:
+    [ [ "`"; i = ident -> i ] ]
   ;
   patt: LEVEL "simple"
     [ [ "`"; s = ident -> <:patt< ` $s$ >>
