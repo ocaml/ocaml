@@ -101,6 +101,12 @@ ocaml299to3: $(OCAML299TO3)
 lexer299.ml: lexer299.mll
 	$(CAMLLEX) lexer299.mll
 
+#install::
+#	cp ocaml299to3 $(BINDIR)/ocaml299to3$(EXE)
+
+clean::
+	rm -f ocaml299to3 lexer299.ml
+
 # Label remover for interface files (upgrade 3.02 to 3.03)
 
 SCRAPELABELS= lexer301.cmo scrapelabels.cmo
@@ -111,11 +117,21 @@ scrapelabels: $(SCRAPELABELS)
 lexer301.ml: lexer301.mll
 	$(CAMLLEX) lexer301.mll
 
-#install::
-#	cp ocaml299to3 $(BINDIR)/ocaml299to3$(EXE)
+clean::
+	rm -f scrapelabels lexer301.ml
+
+# Insert labels following an interface file (upgrade 3.02 to 3.03)
+
+ADDLABELS_IMPORTS=misc.cmo config.cmo clflags.cmo terminfo.cmo \
+  linenum.cmo warnings.cmo location.cmo longident.cmo \
+  syntaxerr.cmo parser.cmo lexer.cmo parse.cmo
+
+addlabels: addlabels.ml
+	$(CAMLC) $(LINKFLAGS) -w sl -o addlabels \
+		$(ADDLABELS_IMPORTS) addlabels.ml
 
 clean::
-	rm -f ocaml299to3 lexer299.ml
+	rm -f addlabels
 
 # The preprocessor for asm generators
 

@@ -5,6 +5,7 @@ Language:
 - Switched the default behaviour to labels mode (labels are compulsory),
   but allows omitting labels when a function application is complete.
   -nolabels mode is available but deprecated for programming.
+  (See also scrapelabels and addlabels tools lower)
 - Removed all labels in the standard libraries, except labltk.
   Labelized versions are kept for ArrayLabels, ListLabels, StringLabels
   and UnixLabels. "open StdLabels" gives access to the first three.
@@ -34,8 +35,10 @@ Toplevel environment:
 
 Tools:
 - New tool ocamlmklib to help build mixed Caml/C libraries.
-- New tool scrapelabels to remove (non-optional) labels in interfaces,
-  providing a quick and dirty transition from ocaml 3.02.
+- New tool scrapelabels and addlabels, to either remove (non-optional)
+  labels in interfaces, or automatically add them in the definitions.
+  They provide easy transition from classic mode ocaml 3.02 sources,
+  depending on whether you want to keep labels or not.
 - ocamldep: added -pp option to handle preprocessed source files.
 
 Run-time system:
