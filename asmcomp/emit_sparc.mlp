@@ -42,15 +42,25 @@ let next_in_pair = function
   | {loc = Reg r; typ = Float} -> phys_reg (r + 15)
   | _ -> fatal_error "Emit.next_in_pair"
 
-(* Symbols are prefixed with _ *)
+(* Symbols are prefixed with _ under SunOS but not under Solaris *)
+
+let symbol_prefix =
+  match Config.system with
+    "sunos" -> "_"
+  | "solaris" -> ""
 
 let emit_symbol s =
-  emit_string "_"; Emitaux.emit_symbol s
+  emit_string symbol_prefix; Emitaux.emit_symbol s
 
 (* Output a label *)
 
+let label_prefix =
+  match Config.system with
+    "sunos" -> "L"
+  | "solaris" -> ".L"
+
 let emit_label lbl =
-  emit_string "L"; emit_int lbl
+  emit_string label_prefix; emit_int lbl
 
 (* Output a pseudo-register *)
 
@@ -171,6 +181,7 @@ let float_constants = ref ([] : (int * string) list)
 
 let emit_float_constant (lbl, cst) =
   `	.data\n`;
+  `	.align	8\n`;
   `{emit_label lbl}:	.double	0r{emit_string cst}\n`
 
 (* Names of various instructions *)
@@ -291,7 +302,7 @@ let emit_instr i =
     | Lop(Iextcall(s, alloc)) ->
         if alloc then begin
           `	sethi	%hi({emit_symbol s}), %g4\n`;
-          `{record_frame i.live}	call	_caml_c_call\n`;
+          `{record_frame i.live}	call	{emit_symbol "caml_c_call"}\n`;
           `	or	%g4, %lo({emit_symbol s}), %g4\n`
         end else begin
           `	call	{emit_symbol s}\n`;
@@ -335,12 +346,12 @@ let emit_instr i =
           `	cmp	%g6, %g7\n`;
           `	bgeu	{emit_label lbl_cont}\n`;
           `	add	%g6, 4, {emit_reg i.res.(0)}\n`;
-          `{record_frame i.live}	call	_caml_call_gc\n`;
+          `{record_frame i.live}	call	{emit_symbol "caml_call_gc"}\n`;
           `	mov	{emit_int n}, %g4\n`;
           `	add	%g6, 4, {emit_reg i.res.(0)}\n`;
           `{emit_label lbl_cont}:\n`
         end else begin
-          `{record_frame i.live}	call	_caml_alloc\n`;
+          `{record_frame i.live}	call	{emit_symbol "caml_alloc"}\n`;
           `	mov	{emit_int n}, %g4\n`;
           `	add	%g6, 4, {emit_reg i.res.(0)}\n`
         end

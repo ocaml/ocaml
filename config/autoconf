@@ -97,16 +97,10 @@ fi
 
 # For the terminfo module
 
-if sh hasgot -lcurses setupterm tigetstr tigetnum tputs; then
-  echo "terminfo functions found."
-  echo "#define HAS_TERMINFO" >> s.h
-  echo "TERMINFOLIBS=-lcurses" >> Makefile.h
-fi
-
 if sh hasgot -lcurses -ltermcap tgetent tgetstr tgetnum tputs; then
   echo "termcap functions found."
   echo "#define HAS_TERMCAP" >> s.h
-  echo "TERMINFOLIBS=-lcurses -ltermcap" >> Makefile.h
+  echo "TERMCAPLIBS=-lcurses -ltermcap" >> Makefile.h
 fi
 
 # For the Unix library

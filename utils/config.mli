@@ -31,3 +31,8 @@ val cmxa_magic_number: string
 
 val max_tag: int
         (* Biggest tag that can be stored in the header of a block. *)
+
+val architecture: string
+        (* Name of processor type for the native-code compiler *)
+val system: string
+        (* Name of operating system for the native-code compiler *)

@@ -1,15 +1,70 @@
 /* Asm part of the runtime system for the Sparc processor.  */
+/* Must be preprocessed by cpp */
 
-        .common _young_start, 4, "data"
-        .common _young_end, 4, "data"
-        .common _young_ptr, 4, "data"
-        .common _gc_entry_regs, 22 * 4, "data"
-        .common _gc_entry_float_regs, 30 * 4, "data"
-        .common _caml_top_of_stack, 4, "data"
-        .common _caml_bottom_of_stack, 4, "data"
-        .common _caml_last_return_address, 4, "data"
-        .common _caml_exception_pointer, 4, "data"
-        .common _caml_required_size, 4, "data"
+/* SunOS 4 prefixes identifiers with _, Solaris does not */
+
+#ifdef SYS_sunos
+
+        .common _young_start, 4, "bss"
+        .common _young_ptr, 4, "bss"
+        .common _gc_entry_regs, 22 * 4, "bss"
+        .common _gc_entry_float_regs, 30 * 4, "bss"
+        .common _caml_top_of_stack, 4, "bss"
+        .common _caml_bottom_of_stack, 4, "bss"
+        .common _caml_last_return_address, 4, "bss"
+        .common _caml_exception_pointer, 4, "bss"
+        .common _caml_required_size, 4, "bss"
+
+#define Young_start _young_start
+#define Young_ptr _young_ptr
+#define Gc_entry_regs _gc_entry_regs
+#define Gc_entry_float_regs _gc_entry_float_regs
+#define Caml_top_of_stack _caml_top_of_stack
+#define Caml_bottom_of_stack _caml_bottom_of_stack
+#define Caml_last_return_address _caml_last_return_address
+#define Caml_exception_pointer _caml_exception_pointer
+#define Caml_required_size _caml_required_size
+#define Caml_alloc _caml_alloc
+#define Caml_call_gc _caml_call_gc
+#define Minor_collection _minor_collection
+#define Caml_c_call _caml_c_call
+#define Caml_start_program _caml_start_program
+#define Caml_program _caml_program
+#define Raise_caml_exception _raise_caml_exception
+
+#endif
+
+#ifdef SYS_solaris
+
+        .common young_start, 4, 4
+        .common young_end, 4, 4
+        .common young_ptr, 4, 4
+        .common gc_entry_regs, 22 * 4, 4
+        .common gc_entry_float_regs, 30 * 4, 8
+        .common caml_top_of_stack, 4, 4
+        .common caml_bottom_of_stack, 4, 4
+        .common caml_last_return_address, 4, 4
+        .common caml_exception_pointer, 4, 4
+        .common caml_required_size, 4, 4
+
+#define Young_start young_start
+#define Young_ptr young_ptr
+#define Gc_entry_regs gc_entry_regs
+#define Gc_entry_float_regs gc_entry_float_regs
+#define Caml_top_of_stack caml_top_of_stack
+#define Caml_bottom_of_stack caml_bottom_of_stack
+#define Caml_last_return_address caml_last_return_address
+#define Caml_exception_pointer caml_exception_pointer
+#define Caml_required_size caml_required_size
+#define Caml_alloc caml_alloc
+#define Caml_call_gc caml_call_gc
+#define Minor_collection minor_collection
+#define Caml_c_call caml_c_call
+#define Caml_start_program caml_start_program
+#define Caml_program caml_program
+#define Raise_caml_exception raise_caml_exception
+
+#endif
 
 /* libc functions appear to clobber %g2 ... %g7 */
 /* Remember to save and restore %g5 %g6 %g7. */
@@ -20,33 +75,33 @@
 /* Allocation functions */
 
         .text
-        .global _caml_alloc
-        .global _caml_call_gc
+        .global Caml_alloc
+        .global Caml_call_gc
 
 /* Required size in %g4 */
-_caml_alloc:
+Caml_alloc:
         sub     %g6, %g4, %g6
         cmp     %g6, %g7
-        blu     _caml_call_gc
+        blu     Caml_call_gc
         nop
         retl
         nop
 
 /* Required size in %g4 */
-_caml_call_gc:
+Caml_call_gc:
     /* Save %g4 (required size) */
-        Store(%g4, _caml_required_size)
+        Store(%g4, Caml_required_size)
     /* Save %g5 (exception pointer) */
-        Store(%g5, _caml_exception_pointer)
+        Store(%g5, Caml_exception_pointer)
     /* Save current allocation pointer for debugging purposes */
-        Store(%g6, _young_ptr)
+        Store(%g6, Young_ptr)
     /* Record lowest stack address */
-        Store(%sp, _caml_bottom_of_stack)
+        Store(%sp, Caml_bottom_of_stack)
     /* Record last return address */
-        Store(%o7, _caml_last_return_address)
+        Store(%o7, Caml_last_return_address)
     /* Save all regs used by the code generator */
-        sethi   %hi(_gc_entry_regs), %g1
-        or      %g1, %lo(_gc_entry_regs), %g1
+        sethi   %hi(Gc_entry_regs), %g1
+        or      %g1, %lo(Gc_entry_regs), %g1
         std     %l0, [%g1]
         std     %l2, [%g1 + 0x8]
         std     %l4, [%g1 + 0x10]
@@ -58,8 +113,8 @@ _caml_call_gc:
         std     %i2, [%g1 + 0x40]
         std     %i4, [%g1 + 0x48]
         std     %g2, [%g1 + 0x50]
-        sethi   %hi(_gc_entry_float_regs), %g1
-        or      %g1, %lo(_gc_entry_float_regs), %g1
+        sethi   %hi(Gc_entry_float_regs), %g1
+        or      %g1, %lo(Gc_entry_float_regs), %g1
         std     %f0, [%g1]
         std     %f2, [%g1 + 0x8]
         std     %f4, [%g1 + 0x10]
@@ -76,11 +131,11 @@ _caml_call_gc:
         std     %f26, [%g1 + 0x68]
         std     %f28, [%g1 + 0x70]
     /* Call the garbage collector */
-        call    _minor_collection
+        call    Minor_collection
         nop
     /* Restore all regs used by the code generator */
-        sethi   %hi(_gc_entry_regs), %g1
-        or      %g1, %lo(_gc_entry_regs), %g1
+        sethi   %hi(Gc_entry_regs), %g1
+        or      %g1, %lo(Gc_entry_regs), %g1
         ldd     [%g1], %l0
         ldd     [%g1 + 0x8], %l2
         ldd     [%g1 + 0x10], %l4
@@ -92,8 +147,8 @@ _caml_call_gc:
         ldd     [%g1 + 0x40], %i2
         ldd     [%g1 + 0x48], %i4
         ldd     [%g1 + 0x50], %g2
-        sethi   %hi(_gc_entry_float_regs), %g1
-        or      %g1, %lo(_gc_entry_float_regs), %g1
+        sethi   %hi(Gc_entry_float_regs), %g1
+        or      %g1, %lo(Gc_entry_float_regs), %g1
         ldd     [%g1], %f0
         ldd     [%g1 + 0x8], %f2
         ldd     [%g1 + 0x10], %f4
@@ -110,45 +165,45 @@ _caml_call_gc:
         ldd     [%g1 + 0x68], %f26
         ldd     [%g1 + 0x70], %f28
     /* Reload %g5 - %g7 registers */
-        Load(_caml_exception_pointer, %g5)
-        Load(_young_ptr, %g6)
-        Load(_young_start, %g7)
+        Load(Caml_exception_pointer, %g5)
+        Load(Young_ptr, %g6)
+        Load(Young_start, %g7)
     /* Allocate space for block */
-        Load(_caml_required_size, %g4)
+        Load(Caml_required_size, %g4)
         sub     %g6, %g4, %g6
     /* Return to caller */
-        Load(_caml_last_return_address, %o7)
+        Load(Caml_last_return_address, %o7)
         retl
         nop
 
 /* Call a C function from Caml */
 
-        .global _caml_c_call
+        .global Caml_c_call
 /* Function to call is in %g4 */
-_caml_c_call:
+Caml_c_call:
     /* Record lowest stack address and return address */
-        Store(%sp, _caml_bottom_of_stack)
-        Store(%o7, _caml_last_return_address)
+        Store(%sp, Caml_bottom_of_stack)
+        Store(%o7, Caml_last_return_address)
     /* Save the exception handler and alloc pointer */
-        Store(%g5, _caml_exception_pointer)
-        sethi   %hi(_young_ptr), %g1
+        Store(%g5, Caml_exception_pointer)
+        sethi   %hi(Young_ptr), %g1
     /* Call the C function */
         call    %g4
-        st      %g6, [%g1 + %lo(_young_ptr)]            /* in delay slot */
+        st      %g6, [%g1 + %lo(Young_ptr)]        /* in delay slot */
     /* Reload return address */
-        Load(_caml_last_return_address, %o7)
+        Load(Caml_last_return_address, %o7)
     /* Reload %g5 - %g7 */
-        Load(_caml_exception_pointer, %g5)
-        Load(_young_ptr, %g6)
-        sethi   %hi(_young_start), %g1
+        Load(Caml_exception_pointer, %g5)
+        Load(Young_ptr, %g6)
+        sethi   %hi(Young_start), %g1
     /* Return to caller */
         retl
-        ld      [%g1 + %lo(_young_start)], %g7          /* in delay slot */
+        ld      [%g1 + %lo(Young_start)], %g7      /* in delay slot */
 
 /* Start the Caml program */
 
-        .global _caml_start_program
-_caml_start_program:
+        .global Caml_start_program
+Caml_start_program:
     /* Save all callee-save registers */
         save    %sp, -96, %sp
     /* Build an exception handler */
@@ -160,12 +215,12 @@ L100:   sub     %sp, 8, %sp
         st      %o7, [%sp + 96]
         mov     %sp, %g5
     /* Record highest stack address */
-        Store(%sp, _caml_top_of_stack)
+        Store(%sp, Caml_top_of_stack)
     /* Initialize allocation registers */
-        Load(_young_ptr, %g6)
-        Load(_young_start, %g7)
+        Load(Young_ptr, %g6)
+        Load(Young_start, %g7)
     /* Go for it */
-        call    _caml_program
+        call    Caml_program
         nop
     /* Pop handler */
         add     %sp, 8, %sp
@@ -176,12 +231,12 @@ L101:   ret
 
 /* Raise an exception from C */
 
-        .global _raise_caml_exception
-_raise_caml_exception:
+        .global Raise_caml_exception
+Raise_caml_exception:
     /* Reload %g5 - %g7 */
-        Load(_caml_exception_pointer, %g5)
-        Load(_young_ptr, %g6)
-        Load(_young_start, %g7)
+        Load(Caml_exception_pointer, %g5)
+        Load(Young_ptr, %g6)
+        Load(Young_start, %g7)
     /* Save exception bucket in a register outside the reg windows */
         mov     %o0, %g4
     /* Pop some frames until the trap pointer is in the current frame. */
