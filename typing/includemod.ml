@@ -128,12 +128,10 @@ let rec modtypes env subst mty1 mty2 =
 
 and try_modtypes env subst mty1 mty2 =
   match (mty1, mty2) with
-    (Tmty_ident p1, Tmty_ident p2) when Path.same p1 p2 ->
-      Tcoerce_none
+    (_, Tmty_ident p2) ->
+      try_modtypes2 env mty1 (Subst.modtype subst mty2)
   | (Tmty_ident p1, _) ->
       try_modtypes env subst (expand_module_path env p1) mty2
-  | (_, Tmty_ident p2) ->
-      try_modtypes env subst mty1 (expand_module_path env p2)
   | (Tmty_signature sig1, Tmty_signature sig2) ->
       signatures env subst sig1 sig2
   | (Tmty_functor(param1, arg1, res1), Tmty_functor(param2, arg2, res2)) ->
@@ -150,6 +148,16 @@ and try_modtypes env subst mty1 mty2 =
       end
   | (_, _) ->
       raise Dont_match
+
+and try_modtypes2 env mty1 mty2 =
+  (* mty2 is an identifier *)
+  match (mty1, mty2) with
+    (Tmty_ident p1, Tmty_ident p2) when Path.same p1 p2 ->
+      Tcoerce_none
+  | (_, Tmty_ident p2) ->
+      try_modtypes env Subst.identity mty1 (expand_module_path env p2)
+  | (_, _) ->
+      fatal_error "Includemod.try_modtypes2"
 
 (* Inclusion between signatures *)
 
