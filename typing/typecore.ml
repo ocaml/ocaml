@@ -1019,11 +1019,10 @@ let rec type_exp env sexp =
        }
 
 and type_argument env sarg ty_expected =
-  let rec no_labels ty =
+  let no_arrow ty =
     let ty = expand_head env ty in
     match ty.desc with
       Tvar -> false
-    | Tarrow ("",_, ty) -> no_labels ty
     | Tarrow _ -> false
     | _ -> true
   in
@@ -1031,7 +1030,7 @@ and type_argument env sarg ty_expected =
   | _, {pexp_desc = Pexp_function(l,_,_)} when not (is_optional l) ->
       type_expect env sarg ty_expected
   | {desc = Tarrow("",ty_arg,ty_res)}, _
-    when !Clflags.classic || no_labels ty_res ->
+    when no_arrow ty_res ->
       (* apply optional arguments when expected type is "" *)
       (* we must be very careful about not breaking the semantics *)
       let texp = type_exp env sarg in
