@@ -258,7 +258,8 @@ let rec transl_type env policy styp =
           in
           let row = { row_closed = true; row_fields = fields;
                       row_bound = !bound; row_name = Some (path, args);
-                      row_fixed = false; row_more = newvar () } in
+                      row_fixed = false; row_more = newvar ();
+                      row_object = [] } in
           let static = Btype.static_row row in
           let row =
             if static then row else
@@ -319,7 +320,7 @@ let rec transl_type env policy styp =
       let mkfield l f =
         newty (Tvariant {row_fields=[l,f]; row_more=newvar();
                          row_bound=[]; row_closed=true;
-                         row_fixed=false; row_name=None}) in
+                         row_fixed=false; row_name=None; row_object=[]}) in
       let add_typed_field loc l f fields =
         try
           let f' = List.assoc l fields in
@@ -405,7 +406,7 @@ let rec transl_type env policy styp =
       let row =
         { row_fields = List.rev fields; row_more = newvar ();
           row_bound = !bound; row_closed = closed;
-          row_fixed = false; row_name = !name } in
+          row_fixed = false; row_name = !name; row_object = [] } in
       let static = Btype.static_row row in
       let row =
         if static then row else

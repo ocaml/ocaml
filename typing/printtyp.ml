@@ -247,7 +247,10 @@ let rec mark_loops_rec visited ty =
             visited_objects := px :: !visited_objects;
           match row.row_name with
           | Some(p, tyl) when namable_row row ->
-              List.iter (mark_loops_rec visited) tyl
+              List.iter (mark_loops_rec visited) tyl;
+              if not (static_row row) then
+                List.iter (fun (s,k,t) -> mark_loops_rec visited t)
+                  row.row_object
           | _ ->
               iter_row (mark_loops_rec visited) {row with row_bound = []}
          end
@@ -346,25 +349,27 @@ let rec tree_of_typexp sch ty =
                | _ -> false)
             fields in
         let all_present = List.length present = List.length fields in
+        let static = row.row_closed && all_present in
+        let obj =
+          if static then [] else
+          List.map (fun (s,k,t) -> (s, tree_of_typexp sch t)) row.row_object
+        in
+        let tags = if all_present then None else Some (List.map fst present) in
         begin match row.row_name with
         | Some(p, tyl) when namable_row row ->
             let id = tree_of_path p in
             let args = tree_of_typlist sch tyl in
-            if row.row_closed && all_present then
+            if static then
               Otyp_constr (id, args)
             else
               let non_gen = is_non_gen sch px in
-              let tags =
-                if all_present then None else Some (List.map fst present) in
               Otyp_variant (non_gen, Ovar_name(tree_of_path p, args),
-                            row.row_closed, tags)
+                            row.row_closed, tags, obj)
         | _ ->
-            let non_gen =
-              not (row.row_closed && all_present) && is_non_gen sch px in
+            let non_gen = not static && is_non_gen sch px in
             let fields = List.map (tree_of_row_field sch) fields in
-            let tags =
-              if all_present then None else Some (List.map fst present) in
-            Otyp_variant (non_gen, Ovar_fields fields, row.row_closed, tags)
+            Otyp_variant (non_gen, Ovar_fields fields, row.row_closed,
+                          tags, obj)
         end
     | Tobject (fi, nm) ->
         tree_of_typobject sch fi nm

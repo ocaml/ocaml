@@ -155,7 +155,8 @@ let rec iter_row f row =
     Tvariant row -> iter_row f row
   | Tvar | Tnil | Tunivar | Tsubst _ ->
       Misc.may (fun (_,l) -> List.iter f l) row.row_name;
-      List.iter f row.row_bound
+      List.iter f row.row_bound;
+      List.iter (fun (s,k,t) -> f t) row.row_object
   | _ -> assert false
 
 let iter_type_expr f ty =
@@ -202,7 +203,9 @@ let copy_row f fixed row keep more =
     | Some (path, tl) -> Some (path, List.map f tl) in
   { row_fields = fields; row_more = more;
     row_bound = !bound; row_fixed = row.row_fixed && fixed;
-    row_closed = row.row_closed; row_name = name; }
+    row_closed = row.row_closed; row_name = name;
+    row_object = List.map (fun (s,k,t) -> (s,k,f t)) row.row_object;
+  }
 
 let rec copy_kind = function
     Fvar{contents = Some k} -> copy_kind k

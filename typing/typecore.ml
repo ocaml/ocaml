@@ -169,7 +169,8 @@ let finalize_variant pat =
       (* Force check of well-formedness *)
       unify_pat pat.pat_env pat
         (newty(Tvariant{row_fields=[]; row_more=newvar(); row_closed=false;
-                        row_bound=[]; row_fixed=false; row_name=None}));
+                        row_bound=[]; row_fixed=false; row_name=None;
+                        row_object=[]}));
   | _ -> ()
 
 let rec iter_pattern f p =
@@ -250,7 +251,7 @@ let rec build_as_type env p =
       let ty = may_map (build_as_type env) p' in
       newty (Tvariant{row_fields=[l, Rpresent ty]; row_more=newvar();
                       row_bound=[]; row_name=None;
-                      row_fixed=false; row_closed=false})
+                      row_fixed=false; row_closed=false; row_object=[]})
   | Tpat_record lpl ->
       let lbl = fst(List.hd lpl) in
       let ty = newvar () in
@@ -316,7 +317,8 @@ let build_or_pat env loc lid =
       ([],[]) fields in
   let row =
     { row_fields = List.rev fields; row_more = newvar(); row_bound = !bound;
-      row_closed = false; row_fixed = false; row_name = Some (path, tyl) }
+      row_closed = false; row_fixed = false; row_name = Some (path, tyl);
+      row_object = [] }
   in
   let ty = newty (Tvariant row) in
   let gloc = {loc with Location.loc_ghost=true} in
@@ -410,7 +412,8 @@ let rec type_pat env sp =
                   row_closed = false;
                   row_more = newvar ();
                   row_fixed = false;
-                  row_name = None } in
+                  row_name = None;
+                  row_object = [] } in
       rp {
         pat_desc = Tpat_variant(l, arg, row);
         pat_loc = sp.ppat_loc;
@@ -901,7 +904,8 @@ let rec type_exp env sexp =
                                   row_bound = [];
                                   row_closed = false;
                                   row_fixed = false;
-                                  row_name = None});
+                                  row_name = None;
+                                  row_object = []});
         exp_env = env }
   | Pexp_record(lid_sexp_list, opt_sexp) ->
       let ty = newvar() in
@@ -1181,8 +1185,30 @@ let rec type_exp env sexp =
                   assert false
               end
           | _ ->
-              (Texp_send(obj, Tmeth_name met),
-               filter_method env met Public obj.exp_type)
+              let obj, met_ty =
+                match expand_head env obj.exp_type with
+                  {desc = Tvariant _} ->
+                    let exp_ty = newvar () in
+                    let met_ty = filter_method env met Public exp_ty in
+                    let row =
+                      {row_fields=[]; row_more=newvar();
+                       row_bound=[]; row_closed=false;
+                       row_fixed=false; row_name=None;
+                       row_object=[met, Fpresent, met_ty]} in
+                    unify_exp env obj (newty (Tvariant row));
+                    let prim = Primitive.parse_declaration 1 ["%field1"] in
+                    let ty = newty(Tarrow("", obj.exp_type, exp_ty, Cok)) in
+                    let vd = {val_type = ty; val_kind = Val_prim prim} in
+                    let esnd =
+                      {exp_desc=Texp_ident(Path.Pident(Ident.create"snd"), vd);
+                       exp_loc = Location.none; exp_type = ty; exp_env = env}
+                    in
+                    ({obj with exp_type = exp_ty;
+                      exp_desc = Texp_apply(esnd,[Some obj, Required])},
+                     met_ty)
+                | _ -> (obj, filter_method env met Public obj.exp_type)
+              in
+              (Texp_send(obj, Tmeth_name met), met_ty)
         in
         if !Clflags.principal then begin
           end_def ();

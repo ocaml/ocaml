@@ -1604,7 +1604,8 @@ and unify_row env row1 row2 =
     newgenty
       (Tvariant
          {row_fields = fields; row_closed = closed; row_more = newvar();
-          row_bound = []; row_fixed = false; row_name = None }) in
+          row_bound = []; row_fixed = false; row_name = None; row_object = []})
+  in
   let empty fields =
     List.for_all (fun (_,f) -> row_field_repr f = Rabsent) fields in
   (* Check whether we are going to build an empty type *)
@@ -1624,8 +1625,11 @@ and unify_row env row1 row2 =
     else None
   in
   let bound = row1.row_bound @ row2.row_bound in
+  let opairs, _, miss2 = associate_fields row1.row_object row2.row_object in
+  let row_object = row1.row_object @ miss2 in
   let row0 = {row_fields = []; row_more = more; row_bound = bound;
-              row_closed = closed; row_fixed = fixed; row_name = name} in
+              row_closed = closed; row_fixed = fixed; row_name = name;
+              row_object = row_object } in
   let set_more row rest =
     let rest =
       if closed then
@@ -1655,6 +1659,18 @@ and unify_row env row1 row2 =
       (fun (l,f1,f2) ->
         unify_row_field env row1.row_fixed row2.row_fixed undo l f1 f2)
       pairs;
+    List.iter (fun (s,_,ty1,_,ty2) -> unify env ty1 ty2) opairs;
+    if row_object <> [] then begin
+      List.iter
+        (fun (l,f) ->
+          match row_field_repr f with
+            Rpresent (Some ty) ->
+              let fi = build_fields generic_level row_object (newgenvar()) in
+              unify env (newgenty (Tobject (fi, ref None))) ty
+          | Rpresent None -> raise (Unify [])
+          | _ -> ())
+        (row_repr row1).row_fields
+    end;
     (* Special case when there is only one field left *)
     if row0.row_closed then begin
       match filter_row_fields false (row_repr row1).row_fields with [l, fi] ->
@@ -2709,7 +2725,8 @@ let rec build_subtype env visited loops posi level t =
       let row =
         { row_fields = List.map fst fields; row_more = newvar();
           row_bound = !bound; row_closed = posi; row_fixed = false;
-          row_name = if c > Unchanged then None else row.row_name }
+          row_name = if c > Unchanged then None else row.row_name;
+          row_object = [] }
       in
       (newty (Tvariant row), Changed)
   | Tobject (t1, _) ->

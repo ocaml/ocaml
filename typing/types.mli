@@ -43,7 +43,9 @@ and row_desc =
       row_bound: type_expr list;
       row_closed: bool;
       row_fixed: bool;
-      row_name: (Path.t * type_expr list) option }
+      row_name: (Path.t * type_expr list) option;
+      row_object: (string * field_kind * type_expr) list;
+    }
 
 and row_field =
     Rpresent of type_expr option
