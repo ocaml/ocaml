@@ -28,7 +28,8 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
    Conversion specifications consist in the [%] character, followed
    by optional flags and field widths, followed by one or two conversion
    character. The conversion characters and their meanings are:
-   - [d], [i], [n], or [N]: convert an integer argument to signed decimal.
+   - [d], [i], [n], [l], [L], or [N]: convert an integer argument to
+     signed decimal.
    - [u]: convert an integer argument to unsigned decimal.
    - [x]: convert an integer argument to unsigned hexadecimal,
      using lowercase letters.
