@@ -178,6 +178,10 @@ static int parse_command_line(char **argv)
     case 't':
       trace_flag = 1;
       break;
+    case 'P':
+      { extern int parser_trace;
+        parser_trace = 1;
+        break; }
 #endif
     case 'v':
       verbose_init = 1+4+8+16+32;

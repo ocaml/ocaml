@@ -15,7 +15,6 @@
 
 #include "mlvalues.h"
 #include "memory.h"
-#include "str.h"
 
 static unsigned long hash_accu;
 static long hash_univ_limit, hash_univ_count;

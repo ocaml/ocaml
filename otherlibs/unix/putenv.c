@@ -16,7 +16,6 @@
 
 #include <memory.h>
 #include <mlvalues.h>
-#include <str.h>
 
 #include "unixsupport.h"
 

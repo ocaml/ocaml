@@ -16,7 +16,6 @@
 #include "fail.h"
 #include "mlvalues.h"
 #include "stacks.h"
-#include "str.h"
 
 struct lexer_buffer {
   value refill_buff;

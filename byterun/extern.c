@@ -23,7 +23,6 @@
 #include "misc.h"
 #include "mlvalues.h"
 #include "reverse.h"
-#include "str.h"
 
 /* To keep track of sharing in externed objects */
 

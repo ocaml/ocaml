@@ -202,6 +202,7 @@ typedef opcode_t * code_t;
 /* Strings. */
 #define String_tag 252
 #define String_val(x) ((char *) Bp_val(x))
+mlsize_t string_length (value);
 
 /* Floating-point numbers. */
 #define Double_tag 253

@@ -18,7 +18,6 @@
 #include "memory.h"
 #include "misc.h"
 #include "mlvalues.h"
-#include "str.h"
 
 value int_of_string(value s)          /* ML */
 {

@@ -15,7 +15,6 @@
 #include "memory.h"
 #include "misc.h"
 #include "mlvalues.h"
-#include "str.h"
 
 /* Structural comparison on trees.
    May loop on cyclic structures. */

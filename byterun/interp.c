@@ -28,7 +28,6 @@
 #include "prims.h"
 #include "signals.h"
 #include "stacks.h"
-#include "str.h"
 
 #if macintosh
 #include "rotatecursor.h"

@@ -18,7 +18,6 @@
 #include <alloc.h>
 #include <memory.h>
 #include <fail.h>
-#include <str.h>
 #include <callback.h>
 
 /* Quite close to sys_open_flags, but we need RDWR */

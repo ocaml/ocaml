@@ -15,7 +15,6 @@
 #include <alloc.h>
 #include <memory.h>
 #include <fail.h>
-#include <str.h>
 #include <callback.h>
 
 

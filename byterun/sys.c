@@ -38,7 +38,6 @@
 #include "mlvalues.h"
 #include "signals.h"
 #include "stacks.h"
-#include "str.h"
 #include "sys.h"
 #ifdef HAS_UI
 #include "ui.h"

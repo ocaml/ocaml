@@ -17,7 +17,6 @@
 #include "memory.h"
 #include "mlvalues.h"
 #include "signals.h"
-#include "str.h"
 
 #include "main.h"      /* Include main.h last or Assert will not work. */
 

@@ -9,7 +9,6 @@
 #include <alloc.h>
 #include <fail.h>
 #include <memory.h>
-#include <str.h>
 
 struct regexp_struct {
   final_fun finalization;
