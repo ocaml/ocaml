@@ -7,6 +7,12 @@ opt: $(LIBNAME).cmxa
 clean: 
 	rm -f $(LIBNAME)top$(EXE) $(LIBNAME) *.cm* *.a
 
+superclean:
+	- if test -f tk.cmo; then \
+	  echo We have changes... Now lib directory has no .cmo files; \
+	  rm -f *.cm* *.o; \
+	fi
+
 include ../labltk/modules
 LABLTKOBJS=tk.cmo $(WIDGETOBJS)
 
@@ -22,14 +28,14 @@ TKOBJS=$(SUPPORT) $(LABLTKOBJS) $(CAMLTKOBJS)
 
 TOPDEPS = $(TOPDIR)/toplevel/toplevellib.cma $(TOPDIR)/toplevel/topmain.cmo
 
-$(LIBNAME).cma: $(SUPPORT)
+$(LIBNAME).cma: superclean $(SUPPORT)
 	cd ../labltk; $(MAKE)
 	cd ../camltk; $(MAKE)
 	$(MKLIB) -ocamlc '$(CAMLC)' -o $(LIBNAME) -oc $(LIBNAME) \
           -I ../labltk -I ../camltk $(TKOBJS) \
           $(TK_LINK) $(X11_LINK)
 
-$(LIBNAME).cmxa: $(SUPPORT:.cmo=.cmx)
+$(LIBNAME).cmxa: superclean $(SUPPORT:.cmo=.cmx)
 	cd ../labltk; $(MAKE) opt
 	cd ../camltk; $(MAKE) opt
 	$(MKLIB) -ocamlopt '$(CAMLOPT)' -o $(LIBNAME) -oc $(LIBNAME) \

@@ -1,5 +1,8 @@
 # Top Makefile for mlTk
 
+SUBDIRS=compiler support lib jpf frx tkanim examples_labltk \
+	camltk labltk examples_camltk browser
+
 all:
 	cd support; $(MAKE)
 	cd compiler; $(MAKE)
@@ -65,10 +68,6 @@ installopt:
 	cd tkanim; $(MAKE) installopt
 
 partialclean clean: 
-	for d in compiler support lib jpf frx tkanim \
-	  examples_labltk examples_camltk browser; do \
-	    cd $$d; $(MAKE) clean; cd ..; \
-	done
-	for d in camltk labltk; do \
-	    cd $$d; $(MAKE) -f Makefile.gen clean; cd ..; \
+	for d in $(SUBDIRS); do \
+	    cd $$d; $(MAKE) -f Makefile clean; cd ..; \
 	done
