@@ -282,7 +282,7 @@ and type_struct env = function
       let (defs, newenv) =
         Typecore.type_binding env rec_flag sdefs in
       let (str_rem, sig_rem, final_env) = type_struct newenv srem in
-      let bound_idents = List.rev(let_bound_idents defs) in
+      let bound_idents = let_bound_idents defs in
       let make_sig_value id =
         Tsig_value(id, Env.find_value (Pident id) newenv) in
       (Tstr_value(rec_flag, defs) :: str_rem,

@@ -194,10 +194,12 @@ let rec bound_idents pat =
 let pat_bound_idents pat =
   idents := []; bound_idents pat; let res = !idents in idents := []; res
 
-let let_bound_idents pat_expr_list =
+let rev_let_bound_idents pat_expr_list =
   idents := [];
   List.iter (fun (pat, expr) -> bound_idents pat) pat_expr_list;
   let res = !idents in idents := []; res
 
+let let_bound_idents pat_expr_list =
+  List.rev(rev_let_bound_idents pat_expr_list)
 
       
