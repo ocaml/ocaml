@@ -114,20 +114,18 @@
 
         .section ".text"
 
-/* Invoke the garbage collector. r0 contains the return address */
+/* Invoke the garbage collector. */
 
         .globl  caml_call_gc
         .type   caml_call_gc, @function
 caml_call_gc:
     /* Set up stack frame for calling the garbage collector */
-        stwu    1, -64(1)
-    /* Record last return address into Caml code */
-        Storeglobal(0, caml_last_return_address, 11)
-    /* Record return address into call_gc stub code */
+        stwu    1, -32(1)
+    /* Record return address into Caml code */
         mflr    0
-        stw     0, 72(1)
+        Storeglobal(0, caml_last_return_address, 11)
     /* Record lowest stack address */
-	addic	0, 1, 64
+	addic	0, 1, 32
         Storeglobal(0, caml_bottom_of_stack, 11)
     /* Save current allocation pointer for debugging purposes */
         Storeglobal(31, young_ptr, 11)
@@ -254,17 +252,14 @@ caml_call_gc:
         lfdu    29, 8(11)
         lfdu    30, 8(11)
         lfdu    31, 8(11)
-    /* Return to caller (the stub code), leaving return address into */
-    /* Caml code in the link register */
-        lwz     0, 72(1)
-        mtctr   0
+    /* Return to caller, restarting the allocation */
         Loadglobal(0, caml_last_return_address, 11)
         addic   0, 0, -16     /* Restart the allocation (4 instructions) */
         mtlr    0
     /* Deallocate stack frame */
-        addi    1, 1, 64
+        addi    1, 1, 32
     /* Return */
-        bctr
+        blr
 
 /* Call a C function from Caml */
 
