@@ -13,7 +13,6 @@ CAMLDEP=boot\ocamlrun tools\ocamldep
 DEPFLAGS=$(INCLUDES)
 CAMLRUN=byterun\ocamlrun
 
-
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver -I toplevel
 
 UTILS=utils\misc.cmo utils\tbl.cmo utils\config.cmo \
@@ -361,10 +360,15 @@ clean::
 
 # The runtime system for the bytecode compiler
 
-runtime:
+runtime: makeruntime stdlib\libcamlrun.lib
+
+makeruntime:
 	cd byterun & $(MAKEREC) all
+stdlib\libcamlrun.lib: asmrun\libcamlrun.lib
+	cp byterun\libcamlrun.lib stdlib\libcamlrun.lib
 realclean::
 	cd byterun & $(MAKEREC) clean
+	rm -f stdlib\libcamlrun.lib
 alldepend::
 	cd byterun & $(MAKEREC) depend
 
@@ -378,6 +382,7 @@ stdlib\libasmrun.lib: asmrun\libasmrun.lib
 	cp asmrun\libasmrun.lib stdlib\libasmrun.lib
 realclean::
 	cd asmrun & $(MAKEREC) clean
+	rm -f stdlib\libasmrun.lib
 alldepend::
 	cd asmrun & $(MAKEREC) depend
 

@@ -359,8 +359,11 @@ clean::
 
 runtime:
 	cd byterun; $(MAKE) all
+	if test -f stdlib/libcamlrun.a; then :; else \
+          ln -s ../byterun/libcamlrun.a stdlib/libcamlrun.a; fi
 realclean::
 	cd byterun; $(MAKE) clean
+	rm -f stdlib/libcamlrun.a
 alldepend::
 	cd byterun; $(MAKE) depend
 
@@ -372,6 +375,7 @@ runtimeopt:
           ln -s ../asmrun/libasmrun.a stdlib/libasmrun.a; fi
 realclean::
 	cd asmrun; $(MAKE) clean
+	rm -f stdlib/libasmrun.a
 alldepend::
 	cd asmrun; $(MAKE) depend
 

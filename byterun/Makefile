@@ -19,16 +19,15 @@ PRIMS=array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
 
 all: ocamlrun
 
-ocamlrun: $(OBJS) prims.o
-	$(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -o ocamlrun prims.o $(OBJS) $(CCLIBS)
+ocamlrun: libcamlrun.a prims.o
+	$(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -o ocamlrun prims.o libcamlrun.a $(CCLIBS)
 
-ocamlrund: $(DOBJS) prims.o
-	$(BYTECC) -g $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -o ocamlrund prims.o $(DOBJS) $(CCLIBS)
+ocamlrund: libcamlrund.a prims.o
+	$(BYTECC) -g $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -o ocamlrund prims.o libcamlrund.a $(CCLIBS)
 
 install:
 	cp ocamlrun $(BINDIR)/ocamlrun
-	rm -f $(LIBDIR)/libcamlrun.a
-	ar rc $(LIBDIR)/libcamlrun.a $(OBJS)
+	cp libcamlrun.a $(LIBDIR)/libcamlrun.a
 	cd $(LIBDIR); $(RANLIB) libcamlrun.a
 	if test -d $(LIBDIR)/caml; then : ; else mkdir $(LIBDIR)/caml; fi
 	cp mlvalues.h alloc.h misc.h callback.h $(LIBDIR)/caml
@@ -39,8 +38,13 @@ install:
 	    -e '/#define Alloc_small/,/^}/d' \
 	    -e '/Modify/,/^}/d' memory.h > $(LIBDIR)/caml/memory.h
 
+libcamlrun.a: $(OBJS)
+	ar rc libcamlrun.a $(OBJS)
+	$(RANLIB) libcamlrun.a
+
 libcamlrund.a: $(DOBJS)
 	ar rc libcamlrund.a $(DOBJS)
+	$(RANLIB) libcamlrund.a
 
 clean:
 	rm -f ocamlrun ocamlrund *.o lib*.a

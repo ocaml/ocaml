@@ -16,13 +16,12 @@ PRIMS=array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
 
 all: ocamlrun.exe
 
-ocamlrun.exe: $(OBJS) prims.obj
-	$(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -o ocamlrun.exe prims.obj $(OBJS) $(CCLIBS)
+ocamlrun.exe: libcamlrun.lib prims.obj
+	$(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -o ocamlrun.exe prims.obj libcamlrun.lib $(CCLIBS)
 
 install:
 	cp ocamlrun.exe $(BINDIR)\ocamlrun.exe
-	rm -f $(LIBDIR)\libcamlrun.lib
-	$(MKLIB)$(LIBDIR)\libcamlrun.lib $(OBJS)
+	cp libcamlrun.lib $(LIBDIR)\libcamlrun.lib
 	if not exist $(LIBDIR)\caml mkdir $(LIBDIR)\caml
 	cp mlvalues.h alloc.h misc.h $(LIBDIR)\caml
 	sed -e "/#include .*\/m.h/r ..\config\m.h" \
@@ -31,6 +30,9 @@ install:
 	sed -e "/#include .*gc\.h/d" \
 	    -e "/#define Alloc_small/,/^}/d" \
 	    -e "/Modify/,/^}/d" memory.h > $(LIBDIR)\caml\memory.h
+
+libcamlrun.lib: $(OBJS)
+	$(MKLIB)libcamlrun.a $(OBJS)
 
 clean:
 	rm -f ocamlrun.exe *.obj *.lib
