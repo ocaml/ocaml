@@ -22,6 +22,8 @@ Both compilers:
 * A compile-time error is signaled if an integer literal exceeds the
   range of representable integers.
 - Fixed code generation error for "module rec" definitions.
+- The combination of options -c -o sets the name of the generated
+  .cm[iox] files.
 
 Bytecode compiler:
 - Option -output-obj is now compatible with Dynlink and 
@@ -46,7 +48,7 @@ Standard library:
 * String-to-integer conversions now fail if the result overflows
   the range of integers representable in the result type.
 * All array and string access functions now raise
-  (Invalid_argument "index out of bounds") when a bounds check fails.
+  Invalid_argument("index out of bounds") when a bounds check fails.
   In earlier releases, different exceptions were raised
   in bytecode and native-code.
 - Module Buffer: new functions Buffer.sub, Buffer.nth

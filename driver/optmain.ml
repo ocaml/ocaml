@@ -15,22 +15,32 @@
 open Config
 open Clflags
 
+let output_prefix name =
+  let oname =
+    match !output_name with
+    | None -> name
+    | Some n -> if !compile_only then (output_name := None; n) else name in
+  Misc.chop_extension_if_any oname
+
 let process_interface_file ppf name =
-  Optcompile.interface ppf name
+  Optcompile.interface ppf name (output_prefix name)
 
 let process_implementation_file ppf name =
-  Optcompile.implementation ppf name;
-  objfiles := (Misc.chop_extension_if_any name ^ ".cmx") :: !objfiles
+  let opref = output_prefix name in
+  Optcompile.implementation ppf name opref;
+  objfiles := (opref ^ ".cmx") :: !objfiles
 
 let process_file ppf name =
   if Filename.check_suffix name ".ml"
   || Filename.check_suffix name ".mlt" then begin
-    Optcompile.implementation ppf name;
-    objfiles := (Misc.chop_extension_if_any name ^ ".cmx") :: !objfiles
+    let opref = output_prefix name in
+    Optcompile.implementation ppf name opref;
+    objfiles := (opref ^ ".cmx") :: !objfiles
   end
   else if Filename.check_suffix name !Config.interface_suffix then begin
-    Optcompile.interface ppf name;
-    if !make_package then objfiles := name :: !objfiles
+    let opref = output_prefix name in
+    Optcompile.interface ppf name opref;
+    if !make_package then objfiles := (opref ^ ".cmi") :: !objfiles
   end
   else if Filename.check_suffix name ".cmx" 
        || Filename.check_suffix name ".cmxa" then
@@ -43,7 +53,7 @@ let process_file ppf name =
   else if Filename.check_suffix name ".c" then begin
     Optcompile.c_file name;
     ccobjs := (Filename.chop_suffix (Filename.basename name) ".c" ^ ext_obj)
-    :: !ccobjs
+              :: !ccobjs
   end
   else
     raise(Arg.Bad("don't know what to do with " ^ name))

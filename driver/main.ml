@@ -15,22 +15,32 @@
 open Config
 open Clflags
 
+let output_prefix name =
+  let oname =
+    match !output_name with
+    | None -> name
+    | Some n -> if !compile_only then (output_name := None; n) else name in
+  Misc.chop_extension_if_any oname
+
 let process_interface_file ppf name =
-  Compile.interface ppf name
+  Compile.interface ppf name (output_prefix name)
 
 let process_implementation_file ppf name =
-  Compile.implementation ppf name;
-  objfiles := (Misc.chop_extension_if_any name ^ ".cmo") :: !objfiles
+  let opref = output_prefix name in
+  Compile.implementation ppf name opref;
+  objfiles := (opref ^ ".cmo") :: !objfiles
 
 let process_file ppf name =
   if Filename.check_suffix name ".ml"
   || Filename.check_suffix name ".mlt" then begin
-    Compile.implementation ppf name;
-    objfiles := (Misc.chop_extension_if_any name ^ ".cmo") :: !objfiles
+    let opref = output_prefix name in
+    Compile.implementation ppf name opref;
+    objfiles := (opref ^ ".cmo") :: !objfiles
   end
   else if Filename.check_suffix name !Config.interface_suffix then begin
-    Compile.interface ppf name;
-    if !make_package then objfiles := name :: !objfiles
+    let opref = output_prefix name in
+    Compile.interface ppf name opref;
+    if !make_package then objfiles := (opref ^ ".cmi") :: !objfiles
   end
   else if Filename.check_suffix name ".cmo"
        || Filename.check_suffix name ".cma" then
