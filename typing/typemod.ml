@@ -529,7 +529,7 @@ let report_error ppf = function
         longident lid
   | With_mismatch(lid, explanation) ->
       fprintf ppf
-        "@[<v>
+        "@[<v>\
            @[In this `with' constraint, the new definition of %a@ \
              does not match its original definition@ \
              in the constrained signature:@]@ \
