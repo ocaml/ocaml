@@ -115,7 +115,7 @@ type function_kind = Curried | Tupled
 
 type let_kind = Strict | Alias | StrictOpt | Variable
 
-type meth_kind = Self | Public
+type meth_kind = Self | Public | Cached
 
 type shared_code = (int * int) list
 

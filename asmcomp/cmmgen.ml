@@ -312,8 +312,25 @@ let string_length exp =
 
 (* Message sending *)
 
-let lookup_label kind obj lab =
-  if kind = Public then assert false else
+let lookup_tag_cache obj tag cache n =
+  bind "tag" tag (fun tag -> bind "cache" cache (fun cache ->
+    let cache n =
+      if n = 0 then cache else Cop(Cadda, [cache; Cconst_int (n * size_addr)])
+    in
+    let meths = Ident.create "meths" and tags = Ident.create "tags" in
+    Clet(meths, Cop(Cload Word, [obj]),
+    Clet(tags, Cop(Cload Word, [Cvar meths]),
+    Cifthenelse(Cop(Ccmpa Cne, [Cop(Cload Word, [cache n]); Cvar tags]),
+		Cop(Cextcall("oo_cache_public_method", typ_addr, false),
+		    [Cvar meths; tag; cache n]),
+		addr_array_ref (Cvar meths) (Cop(Cload Word,[cache (n+1)])))
+	))))
+
+let lookup_tag obj tag =
+  bind "tag" tag (fun tag ->
+    Cop(Cextcall("oo_get_public_method", typ_addr, false), [obj; tag]))
+
+let lookup_label obj lab =
   bind "lab" lab (fun lab ->
     let table = Cop (Cload Word, [obj]) in
     addr_array_ref table lab)
@@ -802,17 +819,23 @@ let rec transl = function
       let cargs = Cconst_symbol(apply_function arity) ::
         List.map transl (args @ [clos]) in
       Cop(Capply typ_addr, cargs)
-  | Usend(kind, met, obj, []) ->
-      bind "obj" (transl obj) (fun obj ->
-        bind "met" (lookup_label kind obj (transl met)) (fun clos ->
-          Cop(Capply typ_addr, [get_field clos 0; obj; clos])))
   | Usend(kind, met, obj, args) ->
-      let arity = List.length args + 1 in
+      let call_met obj args clos =
+	if args = [] then Cop(Capply typ_addr,[get_field clos 0;obj;clos]) else
+	let arity = List.length args + 1 in
+        let cargs = Cconst_symbol(apply_function arity) :: obj ::
+	  (List.map transl args) @ [clos] in
+        Cop(Capply typ_addr, cargs)
+      in
       bind "obj" (transl obj) (fun obj ->
-        bind "met" (lookup_label kind obj (transl met)) (fun clos ->
-          let cargs = Cconst_symbol(apply_function arity) ::
-            obj :: (List.map transl args) @ [clos] in
-          Cop(Capply typ_addr, cargs)))
+	let met, args =
+	  match kind, args with
+	    Self, args -> lookup_label obj (transl met), args
+	  | Cached, Uprim(Pfield n, [cache]) :: args ->
+	      lookup_tag_cache obj (transl met) (transl cache) n, args
+	  | _ -> lookup_tag obj (transl met), args
+	in
+        bind "met" met (call_met obj args))
   | Ulet(id, exp, body) ->
       begin match is_unboxed_number exp with
         No_unboxing ->

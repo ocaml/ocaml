@@ -124,7 +124,7 @@ type let_kind = Strict | Alias | StrictOpt | Variable
       we can discard e if x does not appear in e'
     Variable: the variable x is assigned later in e' *)
 
-type meth_kind = Self | Public
+type meth_kind = Self | Public | Cached
 
 type shared_code = (int * int) list     (* stack size -> code label *)
 
