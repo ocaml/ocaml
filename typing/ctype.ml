@@ -730,8 +730,7 @@ let rec moregen env t1 t2 =
         end
     | (Tobject(f1, _), Tobject(f2, _)) ->
         t1.desc <- Tlink t2;
-        moregen_fields env f1 f2;
-        t1.desc <- d1
+        moregen_fields env f1 f2
     | (Tconstr(p1, tl1, abbrev1), _) ->
         begin try
           moregen env (expand_abbrev env p1 tl1 abbrev1 t1.level) t2
