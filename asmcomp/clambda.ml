@@ -62,3 +62,4 @@ type value_approximation =
     Value_closure of function_description * value_approximation
   | Value_tuple of value_approximation array
   | Value_unknown
+  | Value_integer of int

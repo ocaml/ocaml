@@ -186,6 +186,47 @@ let direct_apply fundesc funct ufunct uargs =
   then app
   else Usequence(ufunct, app)
 
+(* Simplify primitive operations on integers *)
+
+let make_const_int n = (Uconst(Const_base(Const_int n)), Value_integer n)
+let make_const_ptr n = (Uconst(Const_pointer n), Value_unknown)
+
+let simplif_prim p (args, approxs) =
+  match approxs with
+    [Value_integer x] ->
+      begin match p with
+        Pidentity -> make_const_int x
+      | Pnegint -> make_const_int (-x)
+      | Poffsetint y -> make_const_int (x + y)
+      | _ -> (Uprim(p, args), Value_unknown)
+      end
+  | [Value_integer x; Value_integer y] ->
+      begin match p with
+        Paddint -> make_const_int(x + y)
+      | Psubint -> make_const_int(x - y)
+      | Pmulint -> make_const_int(x * y)
+      | Pdivint when y <> 0 -> make_const_int(x / y)
+      | Pmodint when y <> 0 -> make_const_int(x mod y)
+      | Pandint -> make_const_int(x land y)
+      | Porint -> make_const_int(x lor y)
+      | Pxorint -> make_const_int(x lxor y)
+      | Plslint -> make_const_int(x lsl y)
+      | Plsrint -> make_const_int(x lsr y)
+      | Pasrint -> make_const_int(x asr y)
+      | Pintcomp cmp ->
+          let result = match cmp with
+              Ceq -> x = y
+            | Cneq -> x <> y
+            | Clt -> x < y
+            | Cgt -> x > y
+            | Cle -> x <= y
+            | Cge -> x >= y in
+          make_const_ptr(if result then 1 else 0)
+      | _ -> (Uprim(p, args), Value_unknown)
+      end
+  | _ ->
+      (Uprim(p, args), Value_unknown)
+      
 (* Maintain the approximation of the global structure being defined *)
 
 let global_approx = ref([||] : value_approximation array)
@@ -197,17 +238,27 @@ let global_approx = ref([||] : value_approximation array)
    The closure environment [cenv] maps idents to [ulambda] terms.
    It is used to substitute environment accesses for free identifiers. *)
 
-let close_var cenv id =
-  try Tbl.find id cenv with Not_found -> Uvar id
+let close_approx_var fenv cenv id =
+  let approx = try Tbl.find id fenv with Not_found -> Value_unknown in
+  match approx with
+    Value_integer n ->
+      make_const_int n
+  | approx ->
+      let subst = try Tbl.find id cenv with Not_found -> Uvar id in
+      (subst, approx)
 
-let approx_var fenv id =
-  try Tbl.find id fenv with Not_found -> Value_unknown 
+let close_var fenv cenv id =
+  let (ulam, app) = close_approx_var fenv cenv id in ulam
 
 let rec close fenv cenv = function
     Lvar id ->
-      (close_var cenv id, approx_var fenv id)
+      close_approx_var fenv cenv id
   | Lconst cst ->
-      (Uconst cst, Value_unknown)
+      begin match cst with
+        Const_base(Const_int n) -> (Uconst cst, Value_integer n)
+      | Const_base(Const_char c) -> (Uconst cst, Value_integer(Char.code c))
+      | _ -> (Uconst cst, Value_unknown)
+      end
   | Lfunction(kind, params, body) as funct ->
       close_one_function fenv cenv (Ident.create "fun") funct
   | Lapply(funct, args) ->
@@ -235,8 +286,16 @@ let rec close fenv cenv = function
       (Usend(umet, uobj, close_list fenv cenv args), Value_unknown)
   | Llet(str, id, lam, body) ->
       let (ulam, alam) = close_named fenv cenv id lam in
-      let (ubody, abody) = close (Tbl.add id alam fenv) cenv body in
-      (Ulet(id, ulam, ubody), abody)
+      begin match (str, alam) with
+        (Variable, _) ->
+          let (ubody, abody) = close fenv cenv body in
+          (Ulet(id, ulam, ubody), abody)
+      | (_, Value_integer n) ->
+          close (Tbl.add id alam fenv) cenv body
+      | (_, _) ->
+          let (ubody, abody) = close (Tbl.add id alam fenv) cenv body in
+          (Ulet(id, ulam, ubody), abody)
+      end
   | Lletrec(defs, body) ->
       if List.for_all
            (function (id, Lfunction(_, _, _)) -> true | _ -> false)
@@ -269,7 +328,10 @@ let rec close fenv cenv = function
         (Uletrec(udefs, ubody), approx)
       end
   | Lprim(Pgetglobal id, []) ->
-      (Uprim(Pgetglobal id, []), Compilenv.global_approx id)
+      begin match Compilenv.global_approx id with
+        Value_integer n -> make_const_int n
+      | app -> (Uprim(Pgetglobal id, []), app)
+      end
   | Lprim(Pmakeblock(tag, mut) as prim, lams) ->
       let (ulams, approxs) = List.split (List.map (close fenv cenv) lams) in
       (Uprim(prim, ulams),
@@ -279,17 +341,18 @@ let rec close fenv cenv = function
        end)
   | Lprim(Pfield n, [lam]) ->
       let (ulam, approx) = close fenv cenv lam in
-      (Uprim(Pfield n, [ulam]),
-       match approx with
-           Value_tuple a when n < Array.length a -> a.(n)
-         | _ -> Value_unknown)
+      let fieldapprox =
+        match approx with
+          Value_tuple a when n < Array.length a -> a.(n)
+        | _ -> Value_unknown in
+      (Uprim(Pfield n, [ulam]), fieldapprox)
   | Lprim(Psetfield(n, _), [Lprim(Pgetglobal id, []); lam]) ->
       let (ulam, approx) = close fenv cenv lam in
       (!global_approx).(n) <- approx;
       (Uprim(Psetfield(n, false), [Uprim(Pgetglobal id, []); ulam]),
        Value_unknown)
   | Lprim(p, args) ->
-      (Uprim(p, close_list fenv cenv args), Value_unknown)
+      simplif_prim p (close_list_approx fenv cenv args)
   | Lswitch(arg, sw) ->
       let (uarg, _) = close fenv cenv arg in
       let (const_index, const_cases) =
@@ -341,6 +404,13 @@ and close_list fenv cenv = function
   | lam :: rem ->
       let (ulam, _) = close fenv cenv lam in
       ulam :: close_list fenv cenv rem
+
+and close_list_approx fenv cenv = function
+    [] -> ([], [])
+  | lam :: rem ->
+      let (ulam, approx) = close fenv cenv lam in
+      let (ulams, approxs) = close_list_approx fenv cenv rem in
+      (ulam :: ulams, approx :: approxs)
 
 and close_named fenv cenv id = function
     Lfunction(kind, params, body) as funct ->
@@ -421,7 +491,7 @@ and close_functions fenv cenv fun_defs =
   (* Return the Uclosure node and the list of all identifiers defined,
      with offsets and approximations. *)
   let (clos, infos) = List.split clos_info_list in
-  (Uclosure(clos, List.map (close_var cenv) fv), infos)
+  (Uclosure(clos, List.map (close_var fenv cenv) fv), infos)
 
 (* Same, for one non-recursive function *)
 
