@@ -104,7 +104,8 @@ value nth_patt_of_act (e, n) =
   let patt_list =
     loop e where rec loop =
       fun
-      [ <:expr< fun (loc : (Lexing.position * Lexing.position)) -> $_$ >> -> []
+      [ <:expr< fun (_loc : (Lexing.position * Lexing.position)) -> $_$ >> ->
+        []
       | <:expr< fun ($p$ : $_$) -> $e$ >> -> [p :: loop e]
       | <:expr< fun $p$ -> $e$ >> -> [p :: loop e]
       | _ -> failwith "nth_patt_of_act" ]
@@ -114,14 +115,16 @@ value nth_patt_of_act (e, n) =
 
 value rec last_patt_of_act =
   fun
-  [ <:expr< fun ($p$ : $_$) (loc : (Lexing.position * Lexing.position)) -> $_$ >> -> p
+  [ <:expr< fun ($p$ : $_$) (_loc : (Lexing.position * Lexing.position)) ->
+    $_$ >> -> p
   | <:expr< fun $_$ -> $e$ >> -> last_patt_of_act e
   | _ -> failwith "last_patt_of_act" ]
 ;
 
 value rec final_action =
   fun
-  [ <:expr< fun (loc : (Lexing.position * Lexing.position)) -> ($e$ : $_$) >> -> e
+  [ <:expr< fun (_loc : (Lexing.position * Lexing.position)) ->
+    ($e$ : $_$) >> -> e
   | <:expr< fun $_$ -> $e$ >> -> final_action e
   | _ -> failwith "final_action" ]
 ;
@@ -153,7 +156,7 @@ value rec contain_loc =
   | _ -> True ]
 ;
 
-value gen_let_loc loc e =
+value gen_let_loc _loc e =
   if contain_loc e then <:expr< let _loc = P.gloc bp strm__ in $e$ >> else e
 ;
 
@@ -229,7 +232,7 @@ and parse_symbol entry nlevn s rkont fkont ending_act =
       parse_symbol_no_failure e rkont fkont ending_act
   | Stree tree ->
       let kont = <:expr< raise Stream.Failure >> in
-      let act_kont _ act = gen_let_loc loc (final_action act) in
+      let act_kont _ act = gen_let_loc _loc (final_action act) in
       let e = parse_tree phony_entry 0 0 (tree, True) act_kont kont in
       parse_standard_symbol <:expr< fun strm__ -> $e$ >> rkont fkont ending_act
   | Snterm e ->
@@ -355,10 +358,10 @@ value rec start_parser_of_levels entry clevn levs =
                 (e, pel) ]
           in
           let act_kont end_with_self act =
-            if lev.lsuffix = DeadEnd then gen_let_loc loc (final_action act)
+            if lev.lsuffix = DeadEnd then gen_let_loc _loc (final_action act)
             else
               let ncont = entry.ename ^ "_" ^ string_of_int clevn ^ "_cont" in
-              gen_let_loc loc
+              gen_let_loc _loc
                 <:expr< $lid:ncont$ bp $final_action act$ strm__ >>
           in
           let curr =
@@ -396,13 +399,13 @@ value rec continue_parser_of_levels entry clevn levs =
             [ RightA | NonA ->
                 <:expr<
                   let $p$ = a__ in
-                  $gen_let_loc loc (final_action act)$
+                  $gen_let_loc _loc (final_action act)$
                 >>
             | LeftA ->
                 let ncont =
                   entry.ename ^ "_" ^ string_of_int clevn ^ "_cont"
                 in
-                gen_let_loc loc
+                gen_let_loc _loc
                   <:expr<
                     let $p$ = a__ in
                     $lid:ncont$ bp $final_action act$ strm__
