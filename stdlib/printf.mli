@@ -63,8 +63,22 @@ val fprintf : out_channel -> ('a, out_channel, unit, unit) format -> 'a
      in the output of [fprintf] at the current point.
    - [t]: same as [%a], but takes only one argument (with type
      [out_channel -> unit]) and apply it to [outchan].
+   - [$]: variable substitution in strings. Takes two arguments: a
+     function mapping from variable names to string values and a
+     string pattern. After proper substitution, outputs the resulting
+     string pattern. The substitution process looks for variables into
+     the pattern and substitutes each variable name by its value, as
+     obtained by applying the mapping to the variable name. Inside the
+     string pattern, a variable name immediately follows a non-escaped
+     [$] character and is one of the following:
+      - a non empty sequence of alphanumeric or [_] characters,
+      - an arbitrary sequence of characters enclosed by a pair of
+     matching parentheses or curly brackets.
+     An escaped [$] character is a [$] immediately preceded by a backslash
+     character. Into the string pattern, an escaped [$] character is
+     equivalent to any other [$] character that does not introduce a
+     variable name: it stands for a plain [$] character.
    - [!]: take no argument and flush the output.
-   - [$]: take two arguments.
    - [%]: take no argument and output one [%] character.
 
    The optional flags include:
