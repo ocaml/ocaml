@@ -27,10 +27,10 @@ let powerpc =
   | "rs6000" -> false
   | _ -> fatal_error "wrong $(MODEL)"
 
-(* Distinguish between the AIX/MacOS TOC-based model 
-   and the ELF/SVR4 absolute-address based model. *)
+(* Distinguish between the PowerOpen (AIX, MacOS) relative-addressing model
+   and the SVR4 (Solaris, MkLinux) absolute-addressing model. *)
 
-let elf =
+let svr4 =
   match Config.system with
     "aix" -> false
   | "elf" -> true
@@ -48,7 +48,7 @@ type addressing_expr =
   | Aadd of expression * expression
 
 let rec select_addr = function
-    Cconst_symbol s when elf -> (* don't recognize this mode in the TOC-based model *)
+    Cconst_symbol s when svr4 -> (* don't recognize this mode in the TOC-based model *)
       (Asymbol s, 0)
   | Cop((Caddi | Cadda), [arg; Cconst_int m]) ->
       let (a, n) = select_addr arg in (a, n + m)
@@ -130,7 +130,7 @@ let word_addressed = false
 (* Integer register map:
     0                   temporary, null register for some operations
     1                   stack pointer
-    2                   pointer to table of constants
+    2                   pointer to table of contents
     3 - 10              function arguments and results
     11 - 12             temporaries
     13                  pointer to small data area
@@ -219,10 +219,10 @@ let calling_conventions
           ofs := !ofs + size_float
         end
   done;
-  let final_ofs = if not elf && !ofs > 0 then !ofs + 24 else !ofs in
+  let final_ofs = if not svr4 && !ofs > 0 then !ofs + 24 else !ofs in
   (loc, Misc.align final_ofs 8)
   (* Keep stack 8-aligned. 
-     Under AIX/MacOS, keep a free 24 byte linkage area at the bottom
+     Under PowerOpen, keep a free 24 byte linkage area at the bottom
      if we need to stack-allocate some arguments. *)
 
 let incoming ofs = Incoming ofs
@@ -236,18 +236,22 @@ let loc_parameters arg =
 let loc_results res =
   let (loc, ofs) = calling_conventions 0 7 100 112 not_supported 0 res in loc
 
-(* C calling conventions under AIX/MacOS:
+(* C calling conventions under PowerOpen:
      use GPR 3-10 and FPR 1-13 just like ML calling
      conventions, but always reserve stack space for all arguments.
      Also, using a float register automatically reserves two int registers.
+     (If we were to call a non-prototyped C function, each float argument
+      would have to go both in a float reg and in the matching pair
+      of integer regs.)
 
-   C calling conventions under SVR4/Solaris/Mklinux:
+   C calling conventions under SVR4:
      use GPR 3-10 and FPR 1-8 just like ML calling conventions.
      Using a float register does not affect the int registers.
      Always reserve 8 bytes at bottom of stack, plus whatever is needed
      to hold the overflow arguments. *)
 
-let aix_external_conventions first_int last_int first_float last_float arg =
+let poweropen_external_conventions first_int last_int
+                                   first_float last_float arg =
   let loc = Array.create (Array.length arg) Reg.dummy in
   let int = ref first_int in
   let float = ref first_float in
@@ -275,9 +279,9 @@ let aix_external_conventions first_int last_int first_float last_float arg =
   (loc, Misc.align !ofs 8) (* Keep stack 8-aligned *)
 
 let loc_external_arguments arg =
-  if elf
+  if svr4
   then calling_conventions 0 7 100 107 outgoing 8 arg
-  else aix_external_conventions 0 7 100 112 arg
+  else poweropen_external_conventions 0 7 100 112 arg
 
 let extcall_use_push = false
 
@@ -328,7 +332,7 @@ let oper_latency = function
     Ireload -> 2
   | Iload(_, _) -> 2
   | Iconst_float _ -> 2 (* turned into a load *)
-  | Iconst_symbol _ -> if elf then 1 else 2 (* turned into a load *)
+  | Iconst_symbol _ -> if svr4 then 1 else 2 (* turned into a load *)
   | Iintop Imul -> 9
   | Iintop_imm(Imul, _) -> 5
   | Iintop(Idiv | Imod) -> 36

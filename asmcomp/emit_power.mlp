@@ -24,7 +24,7 @@ open Mach
 open Linearize
 open Emitaux
 
-(* Distinguish between the PowerPC and the Power/RS6000 submodels *)
+(* Distinguish between the PowerPC and the RS6000 submodels *)
 
 let powerpc =
   match Config.model with
@@ -32,8 +32,8 @@ let powerpc =
   | "rs6000" -> false
   | _ -> fatal_error "wrong $(MODEL)"
 
-(* Distinguish between the AIX/MacOS TOC-based model 
-   and the ELF/SVR4 absolute-address based model. *)
+(* Distinguish between the PowerOpen (AIX, MacOS) relative-addressing model
+   and the SVR4 (Solaris, MkLinux) absolute-addressing model. *)
 
 let toc =
   match Config.system with
