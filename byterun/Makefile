@@ -38,6 +38,9 @@ install:
 	    -e '/#define Alloc_small/,/^}/d' \
 	    -e '/Modify/,/^}/d' memory.h > $(LIBDIR)/caml/memory.h
 
+libcamlrund.a: $(DOBJS)
+	ar rc libcamlrund.a $(DOBJS)
+
 clean:
 	rm -f ocamlrun ocamlrund *.o *.a
 	rm -f primitives prims.c opnames.h jumptbl.h
