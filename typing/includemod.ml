@@ -113,17 +113,15 @@ let item_ident_name = function
 
 (* Simplify a structure coercion *)
 
-let simplify_structure_coercion cc =
-  let pos = ref 0 in
-  try
-    List.iter
-      (fun (n, c) ->
-        if n <> !pos || c <> Tcoerce_none then raise Exit;
-        incr pos)
-      cc;
-    Tcoerce_none
-  with Exit ->
-    Tcoerce_structure cc
+let simplify_structure_coercion init_size cc =
+  let rec is_identity_coercion pos = function
+  | [] ->
+      pos = init_size
+  | (n, c) :: rem ->
+      n = pos && c = Tcoerce_none && is_identity_coercion (pos + 1) rem in
+  if is_identity_coercion 0 cc
+  then Tcoerce_none
+  else Tcoerce_structure cc
 
 (* Inclusion between module types. 
    Return the restriction that transforms a value of the smaller type
@@ -178,7 +176,7 @@ and signatures env subst sig1 sig2 =
   (* Build a table of the components of sig1, along with their positions.
      The table is indexed by kind and name of component *)
   let rec build_component_table pos tbl = function
-      [] -> tbl
+      [] -> (tbl, pos)
     | item :: rem ->
         let (id, name) = item_ident_name item in
         let nextpos =
@@ -193,7 +191,7 @@ and signatures env subst sig1 sig2 =
           | Tsig_class(_, _) -> pos+1 in
         build_component_table nextpos
                               (Tbl.add name (id, item, pos) tbl) rem in
-  let comps1 =
+  let (comps1, size1) =
     build_component_table 0 Tbl.empty sig1 in
   (* Pair each component of sig2 with a component of sig1,
      identifying the names along the way.
@@ -227,7 +225,7 @@ and signatures env subst sig1 sig2 =
           pair_components subst paired (Missing_field id2 :: unpaired) rem
         end in
   (* Do the pairing and checking, and return the final coercion *)
-  simplify_structure_coercion(pair_components subst [] [] sig2)
+  simplify_structure_coercion size1 (pair_components subst [] [] sig2)
 
 (* Inclusion between signature components *)
 
