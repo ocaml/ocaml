@@ -1285,14 +1285,14 @@ let filter_self_method env lab priv meths ty =
                         (***********************************)
 
 (*
-   Update the level of [ty]. First check that the levels of variables
-   from the subject are not lowered.
+   Update the level of [ty]. First check that the levels of generic
+   variables from the subject are not lowered.
 *)
 let moregen_occur env level ty = 
   let rec occur ty =
     let ty = repr ty in
     if ty.level > level then begin
-      if ty.desc = Tvar then raise Occur;
+      if ty.desc = Tvar && ty.level >= generic_level - 1 then raise Occur;
       ty.level <- pivot_level - ty.level;
       iter_type_expr occur ty
     end
@@ -1567,7 +1567,7 @@ let rec moregen_clty trace type_pairs env cty1 cty2 =
       Vars.iter
         (fun lab (mut, ty) ->
            let (mut', ty') = Vars.find lab sign1.cty_vars in
-           try moregen true type_pairs env ty ty' with Unify trace ->
+           try moregen true type_pairs env ty' ty with Unify trace ->
              raise (Failure [CM_Val_type_mismatch
                                 (lab, expand_trace env trace)]))
         sign2.cty_vars
