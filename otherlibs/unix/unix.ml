@@ -385,6 +385,8 @@ type socket_option =
 
 external socket : socket_domain -> socket_type -> int -> file_descr
                                   = "unix_socket"
+external async_socket : socket_domain -> socket_type -> int -> file_descr
+                                  = "unix_socket"
 external socketpair :
         socket_domain -> socket_type -> int -> file_descr * file_descr
                                   = "unix_socketpair"
@@ -651,6 +653,6 @@ let establish_server server_fun sockaddr =
             server_fun inchan outchan;
             close_in inchan;
             close_out outchan
-    | id -> close s; let _ = waitpid [] id (* Reclaim the son *) in ()
+    | id -> close s; ignore(waitpid [] id) (* Reclaim the son *)
   done
 
