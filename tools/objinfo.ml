@@ -21,18 +21,7 @@ let print_digest d =
     Printf.printf "%02x" (Char.code d.[i])
   done
 
-let dump_obj filename =
-  print_string "File "; print_string filename; print_newline();
-  let ic = open_in_bin filename in
-  let buffer = String.create (String.length cmo_magic_number) in
-  really_input ic buffer 0 (String.length cmo_magic_number);
-  if buffer <> cmo_magic_number then begin
-    prerr_endline "Not an object file"; exit 2
-  end;
-  let cu_pos = input_binary_int ic in
-  seek_in ic cu_pos;
-  let cu = (input_value ic : compilation_unit) in
-  close_in ic;
+let print_info cu =
   print_string "  Unit name: "; print_string cu.cu_name; print_newline();
   print_string "  Digest of interface implemented: ";
   print_digest cu.cu_interface; print_newline();
@@ -51,6 +40,28 @@ let dump_obj filename =
           List.iter
             (fun name -> print_string "\t"; print_string name; print_newline())
             l
+  end
+
+let dump_obj filename =
+  print_string "File "; print_string filename; print_newline();
+  let ic = open_in_bin filename in
+  let buffer = String.create (String.length cmo_magic_number) in
+  really_input ic buffer 0 (String.length cmo_magic_number);
+  if buffer = cmo_magic_number then begin
+    let cu_pos = input_binary_int ic in
+    seek_in ic cu_pos;
+    let cu = (input_value ic : compilation_unit) in
+    close_in ic;
+    print_info cu
+  end else
+  if buffer = cma_magic_number then begin
+    let toc_pos = input_binary_int ic in
+    seek_in ic toc_pos;
+    let toc = (input_value ic : compilation_unit list) in
+    close_in ic;
+    List.iter print_info toc
+  end else begin
+    prerr_endline "Not an object file"; exit 2
   end
 
 let main() =
