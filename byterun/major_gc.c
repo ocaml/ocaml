@@ -286,10 +286,17 @@ long major_collection_slice (long howmuch)
   /*
      Free memory at the start of the GC cycle (garbage + free list) (assumed):
                  FM = stat_heap_size * percent_free / (100 + percent_free)
-     Proportion of free memory consumed since the previous slice:
-                 PH = allocated_words / FM
-                    = allocated_words * (100 + percent_free)
-                      / (stat_heap_size * percent_free)
+
+     Assuming steady state and enforcing a constant allocation rate, then
+     FM is divided in 2/3 for garbage and 1/3 for free list.
+                 G = 2 * FM / 3
+     G is also the amount of memory that will be used during this slice
+     (still assuming steady state).
+
+     Proportion of G consumed since the previous slice:
+                 PH = allocated_words / G
+                    = allocated_words * 3 * (100 + percent_free)
+                      / (2 * stat_heap_size * percent_free)
      Proportion of extra-heap memory consumed since the previous slice:
                  PE = extra_heap_memory
      Proportion of total work to do in this slice:
@@ -309,8 +316,8 @@ long major_collection_slice (long howmuch)
 
   if (gc_phase == Phase_idle) start_cycle ();
 
-  p = (double) allocated_words * (100 + percent_free)
-      / Wsize_bsize (stat_heap_size) / percent_free;
+  p = (double) allocated_words * 3.0 * (100 + percent_free)
+      / Wsize_bsize (stat_heap_size) / percent_free / 2.0;
   if (p < extra_heap_memory) p = extra_heap_memory;
 
   gc_message (0x40, "allocated_words = %lu\n", allocated_words);
