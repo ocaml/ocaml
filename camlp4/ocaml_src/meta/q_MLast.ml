@@ -227,14 +227,10 @@ Grammar.extend
      grammar_entry_create "class_longident"
    and virtual_flag : 'virtual_flag Grammar.Entry.e =
      grammar_entry_create "virtual_flag"
-   and private_flag : 'private_flag Grammar.Entry.e =
-     grammar_entry_create "private_flag"
    and as_ident_opt : 'as_ident_opt Grammar.Entry.e =
      grammar_entry_create "as_ident_opt"
    and anti_virt : 'anti_virt Grammar.Entry.e =
      grammar_entry_create "anti_virt"
-   and anti_priv : 'anti_priv Grammar.Entry.e =
-     grammar_entry_create "anti_priv"
    in
    [Grammar.Entry.obj (module_expr : 'module_expr Grammar.Entry.e), None,
     [None, None,
@@ -2659,17 +2655,14 @@ Grammar.extend
         (fun (fb : 'fun_binding) (l : 'label) _ _ (loc : int * int) ->
            (Node ("CrMth", [l; Bool true; fb]) : 'class_str_item));
       [Gramext.Stoken ("", "method"); Gramext.Stoken ("", "virtual");
-       Gramext.Snterm
-         (Grammar.Entry.obj (private_flag : 'private_flag Grammar.Entry.e));
        Gramext.Snterm (Grammar.Entry.obj (label : 'label Grammar.Entry.e));
        Gramext.Stoken ("", ":");
        Gramext.Snterm (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e))],
       Gramext.action
-        (fun (t : 'ctyp) _ (l : 'label) (pf : 'private_flag) _ _
-           (loc : int * int) ->
-           (Node ("CrVir", [l; pf; t]) : 'class_str_item));
-      [Gramext.Stoken ("", "method"); Gramext.Stoken ("", "private");
-       Gramext.Stoken ("", "virtual");
+        (fun (t : 'ctyp) _ (l : 'label) _ _ (loc : int * int) ->
+           (Node ("CrVir", [l; Bool false; t]) : 'class_str_item));
+      [Gramext.Stoken ("", "method"); Gramext.Stoken ("", "virtual");
+       Gramext.Stoken ("", "private");
        Gramext.Snterm (Grammar.Entry.obj (label : 'label Grammar.Entry.e));
        Gramext.Stoken ("", ":");
        Gramext.Snterm (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e))],
@@ -2870,17 +2863,14 @@ Grammar.extend
         (fun (t : 'ctyp) _ (l : 'label) _ _ (loc : int * int) ->
            (Node ("CgMth", [l; Bool true; t]) : 'class_sig_item));
       [Gramext.Stoken ("", "method"); Gramext.Stoken ("", "virtual");
-       Gramext.Snterm
-         (Grammar.Entry.obj (private_flag : 'private_flag Grammar.Entry.e));
        Gramext.Snterm (Grammar.Entry.obj (label : 'label Grammar.Entry.e));
        Gramext.Stoken ("", ":");
        Gramext.Snterm (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e))],
       Gramext.action
-        (fun (t : 'ctyp) _ (l : 'label) (pf : 'private_flag) _ _
-           (loc : int * int) ->
-           (Node ("CgVir", [l; pf; t]) : 'class_sig_item));
-      [Gramext.Stoken ("", "method"); Gramext.Stoken ("", "private");
-       Gramext.Stoken ("", "virtual");
+        (fun (t : 'ctyp) _ (l : 'label) _ _ (loc : int * int) ->
+           (Node ("CgVir", [l; Bool false; t]) : 'class_sig_item));
+      [Gramext.Stoken ("", "method"); Gramext.Stoken ("", "virtual");
+       Gramext.Stoken ("", "private");
        Gramext.Snterm (Grammar.Entry.obj (label : 'label Grammar.Entry.e));
        Gramext.Stoken ("", ":");
        Gramext.Snterm (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e))],
@@ -3141,16 +3131,6 @@ Grammar.extend
          (Grammar.Entry.obj (anti_virt : 'anti_virt Grammar.Entry.e))],
       Gramext.action
         (fun (a : 'anti_virt) (loc : int * int) -> (a : 'virtual_flag))]];
-    Grammar.Entry.obj (private_flag : 'private_flag Grammar.Entry.e), None,
-    [None, None,
-     [[],
-      Gramext.action (fun (loc : int * int) -> (Bool false : 'private_flag));
-      [Gramext.Stoken ("", "private")],
-      Gramext.action (fun _ (loc : int * int) -> (Bool true : 'private_flag));
-      [Gramext.Snterm
-         (Grammar.Entry.obj (anti_priv : 'anti_priv Grammar.Entry.e))],
-      Gramext.action
-        (fun (a : 'anti_priv) (loc : int * int) -> (a : 'private_flag))]];
     Grammar.Entry.obj (as_ident_opt : 'as_ident_opt Grammar.Entry.e), None,
     [None, None,
      [[],
@@ -3169,13 +3149,7 @@ Grammar.extend
      [[Gramext.Stoken ("ANTIQUOT", "virt")],
       Gramext.action
         (fun (a : string) (loc : int * int) ->
-           (antiquot "virt" loc a : 'anti_virt))]];
-    Grammar.Entry.obj (anti_priv : 'anti_priv Grammar.Entry.e), None,
-    [None, None,
-     [[Gramext.Stoken ("ANTIQUOT", "priv")],
-      Gramext.action
-        (fun (a : string) (loc : int * int) ->
-           (antiquot "priv" loc a : 'anti_priv))]]]);;
+           (antiquot "virt" loc a : 'anti_virt))]]]);;
 
 let loc = 0, 0;;
 

@@ -690,10 +690,10 @@ EXTEND
           Node "CrDcl" [st]
       | "inherit"; ce = class_expr; pb = as_ident_opt -> Node "CrInh" [ce; pb]
       | "value"; (lab, mf, e) = cvalue -> Node "CrVal" [lab; mf; e]
-      | "method"; "private"; "virtual"; l = label; ":"; t = ctyp ->
+      | "method"; "virtual"; "private"; l = label; ":"; t = ctyp ->
           Node "CrVir" [l; Bool True; t]
-      | "method"; "virtual"; pf = private_flag; l = label; ":"; t = ctyp ->
-          Node "CrVir" [l; pf; t]
+      | "method"; "virtual"; l = label; ":"; t = ctyp ->
+          Node "CrVir" [l; Bool False; t]
       | "method"; "private"; l = label; fb = fun_binding ->
           Node "CrMth" [l; Bool True; fb]
       | "method"; l = label; fb = fun_binding ->
@@ -739,10 +739,10 @@ EXTEND
       | "inherit"; cs = class_type -> Node "CgInh" [cs]
       | "value"; mf = mutable_flag; l = label; ":"; t = ctyp ->
           Node "CgVal" [l; mf; t]
-      | "method"; "private"; "virtual"; l = label; ":"; t = ctyp ->
+      | "method"; "virtual"; "private"; l = label; ":"; t = ctyp ->
           Node "CgVir" [l; Bool True; t]
-      | "method"; "virtual"; pf = private_flag; l = label; ":"; t = ctyp ->
-          Node "CgVir" [l; pf; t]
+      | "method"; "virtual"; l = label; ":"; t = ctyp ->
+          Node "CgVir" [l; Bool False; t]
       | "method"; "private"; l = label; ":"; t = ctyp ->
           Node "CgMth" [l; Bool True; t]
       | "method"; l = label; ":"; t = ctyp -> Node "CgMth" [l; Bool False; t]
@@ -825,11 +825,6 @@ EXTEND
       | "virtual" -> Bool True
       | -> Bool False ] ]
   ;
-  private_flag:
-    [ [ a = anti_priv -> a
-      | "private" -> Bool True
-      | -> Bool False ] ]
-  ;
   as_ident_opt:
     [ [ "as"; p = lident -> Option (Some p)
       | a = anti_as -> a
@@ -837,9 +832,6 @@ EXTEND
   ;
   anti_virt:
     [ [ a = ANTIQUOT "virt" -> antiquot "virt" loc a ] ]
-  ;
-  anti_priv:
-    [ [ a = ANTIQUOT "priv" -> antiquot "priv" loc a ] ]
   ;
 END;
 

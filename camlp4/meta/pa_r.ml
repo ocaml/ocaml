@@ -631,10 +631,10 @@ EXTEND
           <:class_str_item< inherit $ce$ $as:pb$ >>
       | "value"; (lab, mf, e) = cvalue ->
           <:class_str_item< value $mut:mf$ $lab$ = $e$ >>
-      | "method"; "private"; "virtual"; l = label; ":"; t = ctyp ->
-          <:class_str_item< method private virtual $l$ : $t$ >>
-      | "method"; "virtual"; pf = OPT "private"; l = label; ":"; t = ctyp ->
-          <:class_str_item< method virtual $priv:o2b pf$ $l$ : $t$ >>
+      | "method"; "virtual"; "private"; l = label; ":"; t = ctyp ->
+          <:class_str_item< method virtual private $l$ : $t$ >>
+      | "method"; "virtual"; l = label; ":"; t = ctyp ->
+          <:class_str_item< method virtual $l$ : $t$ >>
       | "method"; "private"; l = label; fb = fun_binding ->
           <:class_str_item< method private $l$ = $fb$ >>
       | "method"; l = label; fb = fun_binding ->
@@ -676,10 +676,10 @@ EXTEND
     [ [ "inherit"; cs = class_type -> <:class_sig_item< inherit $cs$ >>
       | "value"; mf = OPT "mutable"; l = label; ":"; t = ctyp ->
           <:class_sig_item< value $mut:o2b mf$ $l$ : $t$ >>
-      | "method"; "private"; "virtual"; l = label; ":"; t = ctyp ->
-          <:class_sig_item< method private virtual $l$ : $t$ >>
-      | "method"; "virtual"; pf = OPT "private"; l = label; ":"; t = ctyp ->
-          <:class_sig_item< method virtual $priv:o2b pf$ $l$ : $t$ >>
+      | "method"; "virtual"; "private"; l = label; ":"; t = ctyp ->
+          <:class_sig_item< method virtual private $l$ : $t$ >>
+      | "method"; "virtual"; l = label; ":"; t = ctyp ->
+          <:class_sig_item< method virtual $l$ : $t$ >>
       | "method"; "private"; l = label; ":"; t = ctyp ->
           <:class_sig_item< method private $l$ : $t$ >>
       | "method"; l = label; ":"; t = ctyp ->

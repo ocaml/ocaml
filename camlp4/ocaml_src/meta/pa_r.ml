@@ -1833,16 +1833,14 @@ Grammar.extend
         (fun (fb : 'fun_binding) (l : 'label) _ _ (loc : int * int) ->
            (MLast.CrMth (loc, l, true, fb) : 'class_str_item));
       [Gramext.Stoken ("", "method"); Gramext.Stoken ("", "virtual");
-       Gramext.Sopt (Gramext.Stoken ("", "private"));
        Gramext.Snterm (Grammar.Entry.obj (label : 'label Grammar.Entry.e));
        Gramext.Stoken ("", ":");
        Gramext.Snterm (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e))],
       Gramext.action
-        (fun (t : 'ctyp) _ (l : 'label) (pf : string option) _ _
-           (loc : int * int) ->
-           (MLast.CrVir (loc, l, o2b pf, t) : 'class_str_item));
-      [Gramext.Stoken ("", "method"); Gramext.Stoken ("", "private");
-       Gramext.Stoken ("", "virtual");
+        (fun (t : 'ctyp) _ (l : 'label) _ _ (loc : int * int) ->
+           (MLast.CrVir (loc, l, false, t) : 'class_str_item));
+      [Gramext.Stoken ("", "method"); Gramext.Stoken ("", "virtual");
+       Gramext.Stoken ("", "private");
        Gramext.Snterm (Grammar.Entry.obj (label : 'label Grammar.Entry.e));
        Gramext.Stoken ("", ":");
        Gramext.Snterm (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e))],
@@ -2000,16 +1998,14 @@ Grammar.extend
         (fun (t : 'ctyp) _ (l : 'label) _ _ (loc : int * int) ->
            (MLast.CgMth (loc, l, true, t) : 'class_sig_item));
       [Gramext.Stoken ("", "method"); Gramext.Stoken ("", "virtual");
-       Gramext.Sopt (Gramext.Stoken ("", "private"));
        Gramext.Snterm (Grammar.Entry.obj (label : 'label Grammar.Entry.e));
        Gramext.Stoken ("", ":");
        Gramext.Snterm (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e))],
       Gramext.action
-        (fun (t : 'ctyp) _ (l : 'label) (pf : string option) _ _
-           (loc : int * int) ->
-           (MLast.CgVir (loc, l, o2b pf, t) : 'class_sig_item));
-      [Gramext.Stoken ("", "method"); Gramext.Stoken ("", "private");
-       Gramext.Stoken ("", "virtual");
+        (fun (t : 'ctyp) _ (l : 'label) _ _ (loc : int * int) ->
+           (MLast.CgVir (loc, l, false, t) : 'class_sig_item));
+      [Gramext.Stoken ("", "method"); Gramext.Stoken ("", "virtual");
+       Gramext.Stoken ("", "private");
        Gramext.Snterm (Grammar.Entry.obj (label : 'label Grammar.Entry.e));
        Gramext.Stoken ("", ":");
        Gramext.Snterm (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e))],
