@@ -23,7 +23,7 @@
 CAMLextern value alloc (mlsize_t, tag_t);
 CAMLextern value alloc_small (mlsize_t, tag_t);
 CAMLextern value alloc_tuple (mlsize_t);
-CAMLextern value alloc_string (mlsize_t);
+CAMLextern value alloc_string (mlsize_t);  /* size in bytes */
 CAMLextern value copy_string (char const *);
 CAMLextern value copy_string_array (char const **);
 CAMLextern value copy_double (double);
@@ -34,7 +34,7 @@ CAMLextern value alloc_array (value (*funct) (char const *),
                               char const ** array);
 
 typedef void (*final_fun)(value);
-CAMLextern value alloc_final (mlsize_t /*size in words*/,
+CAMLextern value alloc_final (mlsize_t, /*size in words*/
                               final_fun, /*finalization function*/
                               mlsize_t, /*resources consumed*/
                               mlsize_t  /*max resources*/);

@@ -212,7 +212,7 @@ CAMLextern value hash_variant(char * tag);
 /* Strings. */
 #define String_tag 252
 #define String_val(x) ((char *) Bp_val(x))
-CAMLextern mlsize_t string_length (value);
+CAMLextern mlsize_t string_length (value);   /* size in bytes */
 
 /* Floating-point numbers. */
 #define Double_tag 253

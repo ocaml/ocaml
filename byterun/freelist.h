@@ -22,7 +22,7 @@
 #include "misc.h"
 #include "mlvalues.h"
 
-extern asize_t fl_cur_size;
+extern asize_t fl_cur_size;     /* size in words */
 
 char *fl_allocate (mlsize_t);
 void fl_init_merge (void);
