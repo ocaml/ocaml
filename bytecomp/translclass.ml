@@ -192,7 +192,6 @@ let build_object_init_0 cl_table params cl copy_env subst_env top ids =
   let env = Ident.create "env" in
   let (inh_init, obj_init) =
     build_object_init_0 cl_table params cl (copy_env env) top ids in
-  let obj_init = subst_env env obj_init in
   let obj_init =
     if top then obj_init else
     let i = ref (List.length inh_init + 1) in
@@ -200,7 +199,7 @@ let build_object_init_0 cl_table params cl copy_env subst_env top ids =
       (fun (obj_init, env_init, _) init ->
 	decr i;
 	Llet(Strict, obj_init, Lapply(Lvar env_init, [lfield env !i]), init))
-      inh_init obj_init
+      inh_init (subst_env env obj_init)
   in
   (inh_init, lfunction [env] obj_init)
 
@@ -452,6 +451,7 @@ let transl_class ids cl_id arity pub_meths cl =
     Lifused(env2, Lprim(Parraysetu Paddrarray,
                         [Lvar self; Lvar env2; lfield env1 0]))
   and subst_env envs lam =
+    if top then lam else
     Llet(Alias, env1, lfield envs 0,
 	 subst_lambda (subst env1 lam 1 new_ids_init) lam)
   in
