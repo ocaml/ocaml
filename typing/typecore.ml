@@ -49,10 +49,10 @@ exception Error of Location.t * error
 (* Typing of constants *)
 
 let type_constant = function
-    Const_int _ -> Predef.type_int
-  | Const_char _ -> Predef.type_char
-  | Const_string _ -> Predef.type_string
-  | Const_float _ -> Predef.type_float
+    Const_int _ -> instance Predef.type_int
+  | Const_char _ -> instance Predef.type_char
+  | Const_string _ -> instance Predef.type_string
+  | Const_float _ -> instance Predef.type_float
 
 (* Typing of patterns *)
 
@@ -221,15 +221,15 @@ let type_format loc fmt =
           '%' ->
             scan_format (j+1)
         | 's' ->
-            newty (Tarrow(Predef.type_string, scan_format (j+1)))
+            newty (Tarrow(instance Predef.type_string, scan_format (j+1)))
         | 'c' ->
-            newty (Tarrow(Predef.type_char, scan_format (j+1)))
+            newty (Tarrow(instance Predef.type_char, scan_format (j+1)))
         | 'd' | 'o' | 'x' | 'X' | 'u' ->
-            newty (Tarrow(Predef.type_int, scan_format (j+1)))
+            newty (Tarrow(instance Predef.type_int, scan_format (j+1)))
         | 'f' | 'e' | 'E' | 'g' | 'G' ->
-            newty (Tarrow(Predef.type_float, scan_format (j+1)))
+            newty (Tarrow(instance Predef.type_float, scan_format (j+1)))
         | 'b' ->
-            newty (Tarrow(Predef.type_bool, scan_format (j+1)))
+            newty (Tarrow(instance Predef.type_bool, scan_format (j+1)))
         | 'a' ->
             let ty_arg = newvar() in
             newty (Tarrow (newty (Tarrow(ty_input,
@@ -321,7 +321,8 @@ let rec type_exp env sexp =
         exp_type = ty_res }
   | Pexp_try(sbody, caselist) ->
       let body = type_exp env sbody in
-      let cases = type_cases env Predef.type_exn body.exp_type caselist in
+      let cases =
+        type_cases env (instance Predef.type_exn) body.exp_type caselist in
       Parmatch.check_unused cases;
       { exp_desc = Texp_try(body, cases);
         exp_loc = sexp.pexp_loc;
@@ -407,21 +408,21 @@ let rec type_exp env sexp =
       let newval = type_expect env snewval ty_arg in
       { exp_desc = Texp_setfield(record, label, newval);
         exp_loc = sexp.pexp_loc;
-        exp_type = Predef.type_unit }
+        exp_type = instance Predef.type_unit }
   | Pexp_array(sargl) ->
       let ty = newvar() in
       let argl = List.map (fun sarg -> type_expect env sarg ty) sargl in
       { exp_desc = Texp_array argl;
         exp_loc = sexp.pexp_loc;
-        exp_type = Predef.type_array ty }
+        exp_type = instance (Predef.type_array ty) }
   | Pexp_ifthenelse(scond, sifso, sifnot) ->
-      let cond = type_expect env scond Predef.type_bool in
+      let cond = type_expect env scond (instance Predef.type_bool) in
       begin match sifnot with
         None ->
-          let ifso = type_expect env sifso Predef.type_unit in
+          let ifso = type_expect env sifso (instance Predef.type_unit) in
           { exp_desc = Texp_ifthenelse(cond, ifso, None);
             exp_loc = sexp.pexp_loc;
-            exp_type = Predef.type_unit }
+            exp_type = instance Predef.type_unit }
       | Some sexp ->
           let ifso = type_exp env sifso in
           let ifnot = type_expect env sexp ifso.exp_type in
@@ -436,21 +437,21 @@ let rec type_exp env sexp =
         exp_loc = sexp.pexp_loc;
         exp_type = exp2.exp_type }
   | Pexp_while(scond, sbody) ->
-      let cond = type_expect env scond Predef.type_bool in
+      let cond = type_expect env scond (instance Predef.type_bool) in
       let body = type_statement env sbody in
       { exp_desc = Texp_while(cond, body);
         exp_loc = sexp.pexp_loc;
-        exp_type = Predef.type_unit }
+        exp_type = instance Predef.type_unit }
   | Pexp_for(param, slow, shigh, dir, sbody) ->
-      let low = type_expect env slow Predef.type_int in
-      let high = type_expect env shigh Predef.type_int in
+      let low = type_expect env slow (instance Predef.type_int) in
+      let high = type_expect env shigh (instance Predef.type_int) in
       let (id, new_env) =
-        Env.enter_value param {val_type = Predef.type_int;
+        Env.enter_value param {val_type = instance Predef.type_int;
                                 val_kind = Val_reg} env in
       let body = type_statement new_env sbody in
       { exp_desc = Texp_for(id, low, high, dir, body);
         exp_loc = sexp.pexp_loc;
-        exp_type = Predef.type_unit }
+        exp_type = instance Predef.type_unit }
   | Pexp_constraint(sarg, sty, sty') ->
       let (ty, ty') =
         match (sty, sty') with
@@ -475,7 +476,7 @@ let rec type_exp env sexp =
         exp_loc = arg.exp_loc;
         exp_type = ty' }
   | Pexp_when(scond, sbody) ->
-      let cond = type_expect env scond Predef.type_bool in
+      let cond = type_expect env scond (instance Predef.type_bool) in
       let body = type_exp env sbody in
       { exp_desc = Texp_when(cond, body);
         exp_loc = sexp.pexp_loc;
@@ -535,7 +536,7 @@ let rec type_exp env sexp =
             in
             { exp_desc = Texp_setinstvar(path_self, path, newval);
               exp_loc = sexp.pexp_loc;
-              exp_type = Predef.type_unit }
+              exp_type = instance Predef.type_unit }
 	| Val_ivar _ ->
       	    raise(Error(sexp.pexp_loc, Instance_variable_not_mutable name))
 	| _ ->
@@ -594,7 +595,7 @@ and type_expect env sexp ty_expected =
             match (repr ty_expected).desc with
               Tconstr(path, _, _) when Path.same path Predef.path_format ->
                 type_format sexp.pexp_loc s
-            | _ -> Predef.type_string } in
+            | _ -> instance Predef.type_string } in
       unify_exp env exp ty_expected;
       exp
   | Pexp_let(rec_flag, spat_sexp_list, sbody) ->
