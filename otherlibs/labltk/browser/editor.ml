@@ -113,20 +113,6 @@ let select_shell txt =
   pack [frame] side:`Bottom fill:`X expand:true;
   pack [ok;cancel] side:`Left fill:`X expand:true
 
-let send_region txt =
-  if txt.shell = None then begin
-    match Shell.get_all () with [] -> ()
-    | [sh] -> txt.shell <- Some sh
-    | l ->  select_shell txt
-  end;
-  match txt.shell with None -> ()
-  | Some (_,sh) ->
-      try
-        let i1,i2 = Text.tag_nextrange txt.tw tag:"sel" start:tstart in
-        sh#send (Text.get txt.tw start:(i1,[]) end:(i2,[]));
-        sh#send";;\n"
-      with _ -> ()
-
 open Parser
 
 let send_phrase txt =
@@ -540,7 +526,7 @@ class editor :top :menus = object (self)
     edit_menu#add_command "Search..." accelerator:"C-s"
       command:(fun () -> Jg_text.search_string current_tw);
     edit_menu#add_command "To shell" accelerator:"M-x"
-      command:(fun () -> send_region (List.hd windows));
+      command:(fun () -> send_phrase (List.hd windows));
     edit_menu#add_command "Select shell..."
       command:(fun () -> select_shell (List.hd windows));
 
