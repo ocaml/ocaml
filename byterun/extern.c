@@ -400,9 +400,11 @@ void output_val(struct channel *chan, value v, value flags)
 value output_value(value vchan, value v, value flags) /* ML */
 {
   struct channel * channel = Channel(vchan);
-  Lock(channel);
-  output_val(channel, v, flags);
-  Unlock(channel);
+  Begin_root(v)
+    Lock(channel);
+    output_val(channel, v, flags);
+    Unlock(channel);
+  End_roots();
   return Val_unit;
 }
 

@@ -296,11 +296,13 @@ value input_val(struct channel *chan)
 value input_value(value vchan)        /* ML */
 {
   struct channel * chan = Channel(vchan);
-  value res;
+  value res = Val_unit;
 
-  Lock(chan);
-  res = input_val(chan);
-  Unlock(chan);
+  Begin_root(res)
+    Lock(chan);
+    res = input_val(chan);
+    Unlock(chan);
+  End_roots();
   return res;
 }
 
