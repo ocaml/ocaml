@@ -61,7 +61,7 @@ let rec loadfiles name =
   try
     let filename = find_in_path !Config.load_path name in
     use_debugger_symtable Dynlink.loadfile filename;
-    print_string "File "; print_string name; print_string " loaded";
+    print_string "File "; print_string filename; print_string " loaded";
     print_newline ();
     true
   with
