@@ -26,6 +26,7 @@ extern int bigarray_element_size[];  /* from bigarray_stubs.c */
 #include <unistd.h>
 #endif
 #ifdef HAS_MMAP
+#include <sys/types.h>
 #include <sys/mman.h>
 #endif
 
