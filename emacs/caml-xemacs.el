@@ -40,8 +40,8 @@
 
 
 (defun caml-sit-for (sec &optional mili)
-  (sit-for (+ sec (if mili (* 0.001 mili)))))
-                  
+  (sit-for (+ sec (if mili (* 0.001 mili) 0))))
+
 
 
 (defmacro caml-track-mouse (&rest body) (cons 'progn body))
