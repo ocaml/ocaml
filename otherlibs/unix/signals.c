@@ -55,10 +55,14 @@ value unix_sigprocmask(value vaction, value vset) /* ML */
 {
   int how;
   sigset_t set, oldset;
+  int retcode;
 
   how = sigprocmask_cmd[Int_val(vaction)];
   decode_sigset(vset, &set);
-  if (sigprocmask(how, &set, &oldset) == -1) uerror("sigprocmask", Nothing);
+  enter_blocking_section();
+  retcode = sigprocmask(how, &set, &oldset);
+  leave_blocking_section();
+  if (retcode == -1) uerror("sigprocmask", Nothing);
   return encode_sigset(&oldset);
 }
 
@@ -72,8 +76,12 @@ value unix_sigpending(value unit) /* ML */
 value unix_sigsuspend(value vset) /* ML */
 {
   sigset_t set;
+  int retcode;
   decode_sigset(vset, &set);
-  if (sigsuspend(&set) == -1 && errno != EINTR) uerror("sigsuspend", Nothing);
+  enter_blocking_section();
+  retcode = sigsuspend(&set);
+  leave_blocking_section();
+  if (retcode == -1 && errno != EINTR) uerror("sigsuspend", Nothing);
   return Val_unit;
 }
 
