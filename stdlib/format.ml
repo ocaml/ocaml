@@ -392,14 +392,14 @@ let print_if_newline () =
    If line is broken then offset is added to the indentation of the current
     block else (the value of) width blanks are printed.
    To do (?) : add a maximum width and offset value *)
-let print_break (width, offset) =
+let print_break width offset =
     if !pp_curr_depth < !pp_max_boxes then 
       scan_push true
        {elem_size = (- !pp_right_total); token = Pp_break (width,offset);
         length = width}
 
-let print_space () = print_break (1,0)
-and print_cut () = print_break (0,0)
+let print_space () = print_break 1 0
+and print_cut () = print_break 0 0
 
 let open_tbox () =
     incr pp_curr_depth;
@@ -416,13 +416,13 @@ let close_tbox () =
     decr pp_curr_depth end
 
 (* Print a tabulation break *)
-let print_tbreak (width, offset) =
+let print_tbreak width offset =
     if !pp_curr_depth < !pp_max_boxes then
       scan_push true
        {elem_size = (- !pp_right_total); token = Pp_tbreak (width,offset); 
         length = width}
 
-let print_tab () = print_tbreak (0,0)
+let print_tab () = print_tbreak 0 0
 
 let set_tab () =
     if !pp_curr_depth < !pp_max_boxes

@@ -159,14 +159,14 @@ let rec lambda = function
   | Lcatch(lbody, lhandler) ->
       open_hovbox 2;
       print_string "(catch"; print_space();
-      lambda lbody; print_break(1, -1);
+      lambda lbody; print_break 1 (-1);
       print_string "with"; print_space(); lambda lhandler;
       print_string ")";
       close_box()
   | Ltrywith(lbody, param, lhandler) ->
       open_hovbox 2;
       print_string "(try"; print_space();
-      lambda lbody; print_break(1, -1);
+      lambda lbody; print_break 1 (-1);
       print_string "with "; Ident.print param; print_space();
       lambda lhandler;
       print_string ")";

@@ -107,14 +107,14 @@ let rec type_declaration id decl =
   | Type_manifest ty ->
       print_string " ="; print_space(); type_expr ty
   | Type_variant (cstr1 :: cstrs) ->
-      print_string " ="; print_break(1,2);
+      print_string " ="; print_break 1 2;
       constructor cstr1;
       List.iter (fun cstr -> print_space(); print_string "| "; constructor cstr)
               cstrs
   | Type_record (lbl1 :: lbls) ->
       print_string " ="; print_space();
       print_string "{ "; label lbl1;
-      List.iter (fun lbl -> print_string ";"; print_break(1,2); label lbl)
+      List.iter (fun lbl -> print_string ";"; print_break 1 2; label lbl)
               lbls;
       print_string " }"
   | _ ->
@@ -172,7 +172,7 @@ let rec modtype = function
       List.iter
         (fun item -> print_space(); signature_item item)
       rem;
-      print_break(1, -2); print_string "end";
+      print_break 1 (-2); print_string "end";
       close_box()
   | Tmty_functor(param, ty_arg, ty_res) ->
       open_hovbox 2;

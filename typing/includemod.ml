@@ -210,7 +210,7 @@ let include_err = function
       open_hvbox 2;
       print_string "Values do not match:"; print_space();
       value_description id d1; 
-      print_break(1, -2);
+      print_break 1 (-2);
       print_string "is not included in"; print_space();
       value_description id d2;
       close_box()
@@ -218,7 +218,7 @@ let include_err = function
       open_hvbox 2;
       print_string "Type declarations do not match:"; print_space();
       type_declaration id d1; 
-      print_break(1, -2);
+      print_break 1 (-2);
       print_string "is not included in"; print_space();
       type_declaration id d2;
       close_box()
@@ -226,7 +226,7 @@ let include_err = function
       open_hvbox 2;
       print_string "Exception declarations do not match:"; print_space();
       exception_declaration id d1; 
-      print_break(1, -2);
+      print_break 1 (-2);
       print_string "is not included in"; print_space();
       exception_declaration id d2;
       close_box()
@@ -234,7 +234,7 @@ let include_err = function
       open_hvbox 2;
       print_string "Modules do not match:"; print_space();
       modtype mty1;
-      print_break(1, -2);
+      print_break 1 (-2);
       print_string "is not included in"; print_space();
       modtype mty2;
       close_box()
@@ -242,7 +242,7 @@ let include_err = function
       open_hvbox 2;
       print_string "Module type declarations do not match:"; print_space();
       modtype_declaration id d1; 
-      print_break(1, -2);
+      print_break 1 (-2);
       print_string "is not included in"; print_space();
       modtype_declaration id d2;
       close_box()

@@ -56,20 +56,20 @@ val print_bool : bool -> unit
         (* Print an boolean in the current box. *)
 
 (*** Break hints *)
-val print_break : int * int -> unit
+val print_break : int -> int -> unit
         (* Insert a break hint in a pretty-printing box.
-           [print_break (nspaces, offset)] indicates that the line may
+           [print_break nspaces offset] indicates that the line may
            be List.split (a newline character is printed) at this point,
            if the contents of the current box does not fit on one line.
            If the line is List.split at that point, [offset] is added to
            the current indentation. If the line is not List.split,
            [nspaces] spaces are printed. *)
 val print_cut : unit -> unit
-        (* [print_cut ()] is equivalent to [print_break (0,0)].
+        (* [print_cut ()] is equivalent to [print_break 0 0].
            This allows line splitting at the current point, without printing
            spaces or adding indentation. *)
 val print_space : unit -> unit
-        (* [print_space ()] is equivalent to [print_break (1,0)].
+        (* [print_space ()] is equivalent to [print_break 1 0].
            This either prints one space or splits the line at that point. *)
 val force_newline : unit -> unit
         (* Force a newline in the current box. *)
@@ -89,9 +89,9 @@ val open_tbox : unit -> unit
         (* Open a tabulation box. *)
 val close_tbox : unit -> unit
         (* Close the most recently opened tabulation box. *)
-val print_tbreak : int * int -> unit
+val print_tbreak : int -> int -> unit
         (* Break hint in a tabulation box.
-           [print_tbreak (spaces, offset)] moves the insertion point to
+           [print_tbreak spaces offset] moves the insertion point to
            the next tabulation ([spaces] being added to this position).
            Nothing occurs if insertion point is already on a
            tabulation mark.
