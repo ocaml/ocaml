@@ -1726,7 +1726,8 @@ and eqtype_row rename type_pairs subst env row1 row2 =
   || not row1.row_closed && (r1 <> [] || r2 <> [])
   || filter_row_fields false (r1 @ r2) <> []
   then raise (Unify []);
-  eqtype rename type_pairs subst env row1.row_more row2.row_more;
+  if not (static_row row1) then
+    eqtype rename type_pairs subst env row1.row_more row2.row_more;
   List.iter
     (fun (_,f1,f2) ->
       match row_field_repr f1, row_field_repr f2 with
