@@ -107,6 +107,10 @@ compilation. Source code files are turned into compiled files, but no
 executable file is produced. This option is useful to
 compile modules separately.
 
+\item["-cc" \var{ccomp}]
+Use \var{ccomp} as the C linker called by "ocamlc -custom"
+and as the C compiler for compiling ".c" source files.
+
 \item["-cclib" "-l"\var{libname}]
 Pass the "-l"\var{libname} option to the C linker when linking in
 ``custom runtime'' mode (see the "-custom" option). This causes the
@@ -222,6 +226,25 @@ See section~\ref{s:custom-runtime} for more information.
 \item["-v"]
 Print the version number of the compiler.
 
+\item["-w" \var{warning-list}]
+Enable or disable warnings according to the argument
+\var{warning-list}.  The argument is a string of one or several
+characters, with the following meaning for each character:
+\begin{options}
+\item["A"/"a"] enable/disable all warnings
+\item["F"/"f"] enable/disable warnings for partially applied functions
+(i.e. "f x; "\var{expr} where the application "f x" has a function type).
+\item["M"/"m"] enable/disable warnings for overriden methods.
+\item["P"/"p"] enable/disable warnings for partial matches (missing cases
+in pattern matchings).
+\item["S"/"s"] enable/disable warnings for statements that do not have
+type "unit" (e.g. \var{expr1}"; "\var{expr2} when \var{expr1} does not
+have type "unit").
+\item["U"/"u"] enable/disable warnings for unused (redundant) match cases.
+\item["V"/"v"] enable/disable warnings for hidden instance variables.
+\item["X"/"x"] enable/disable all other warnings.
+\end{options}
+The default setting is "-w A" (all warnings enabled).
 \end{options}
 
 \section{Modules and the file system}

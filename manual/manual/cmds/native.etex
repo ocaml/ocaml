@@ -102,6 +102,10 @@ compilation. Source code files are turned into compiled files, but no
 executable file is produced. This option is useful to
 compile modules separately.
 
+\item["-cc" \var{ccomp}]
+Use \var{ccomp} as the C linker called to build the final executable
+and as the C compiler for compiling ".c" source files.
+
 \item["-cclib" "-l"\var{libname}]
 Pass the "-l"\var{libname} option to the linker. This causes the given
 C library to be linked with the program.
@@ -213,6 +217,25 @@ array or string outside of its bounds.
 \item["-v"]
 Print the version number of the compiler.
 
+\item["-w" \var{warning-list}]
+Enable or disable warnings according to the argument
+\var{warning-list}.  The argument is a string of one or several
+characters, with the following meaning for each character:
+\begin{options}
+\item["A"/"a"] enable/disable all warnings
+\item[F/f] enable/disable warnings for partially applied functions
+(i.e. "f x; "\var{expr} where the application "f x" has a function type).
+\item[M/m] enable/disable warnings for overriden methods.
+\item[P/p] enable/disable warnings for partial matches (missing cases
+in pattern matchings).
+\item[S/s] enable/disable warnings for statements that do not have
+type "unit" (e.g. \var{expr1}"; "\var{expr2} when \var{expr1} does not
+have type "unit").
+\item[U/u] enable/disable warnings for unused (redundant) match cases.
+\item[V/v] enable/disable warnings for hidden instance variables.
+\item[X/x] enable/disable all other warnings.
+\end{options}
+The default setting is "-w A" (all warnings enabled).
 \end{options}
 
 \section{Common errors}
@@ -232,7 +255,6 @@ compilers should generate code that behave identically.
 an error message or just via an hardware trap or fatal Unix signal)
 instead of raising an exception:
 \begin{itemize}
-\item out-of bounds accesses to arrays and strings;
 \item integer division by zero, modulus by zero;
 \item stack overflow;
 \item on the Alpha processor only, floating-point operations involving
@@ -243,17 +265,6 @@ In particular, notice that stack overflow caused by excessively deep
 recursion is reported by most Unix kernels as a ``segmentation
 violation'' signal.
 
-\item The following library functions print a fatal error message and
-abort the program instead of raising the "Invalid_argument" exception:
-\begin{itemize}
-\item structural comparisons "(=)", "(<>)", etc., when encountering a
-functional value;
-\item "Array.create" and "String.create" when the requested size is
-negative or exceeds the memory manager limits;
-\item "output_value" when encountering a functional value or pointers
-outside the Caml heap (such as input-output buffers).
-\end{itemize}
-
 \item Signals are detected only when the program performs an
 allocation in the heap. That is, if a signal is delivered while in a
 piece of code that does not allocate, its handler will not be called
@@ -262,8 +273,8 @@ until the next heap allocation.
 \end{itemize}
 
 The best way to avoid running into those incompatibilities is to {\em
-never} trap the "Invalid_argument", "Division_by_zero", and
+never} trap the "Division_by_zero" and
 "Stack_overflow" exceptions, thus also treating them as fatal errors
 with the bytecode compiler as well as with the native-code compiler.
-Test the divisor or array/string index before performing
+Test the divisor before performing
 the operation instead of trapping the exception afterwards.
