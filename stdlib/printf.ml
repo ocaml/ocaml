@@ -95,64 +95,64 @@ and eprintf fmt = fprintf stderr fmt
 
 let sprintf format =
   let format = (Obj.magic format : string) in
-  let res = ref [] in
-  let rec doprn start i =
+  let rec doprn start i accu =
     if i >= String.length format then begin
-      if i > start then res := String.sub format start (i-start) :: !res;
-      Obj.magic(String.concat "" (List.rev !res))
+      let res = 
+        if i > start    
+        then String.sub format start (i-start) :: accu
+        else accu in
+      Obj.magic(String.concat "" (List.rev res))
     end else
       if String.unsafe_get format i <> '%' then
-        doprn start (i+1)
+        doprn start (i+1) accu
       else begin
-        if i > start then res := String.sub format start (i-start) :: !res;
+        let accu1 =
+          if i > start then
+          String.sub format start (i-start) :: accu
+          else accu in
         let j = skip_args (succ i) in
         match String.unsafe_get format j with
           '%' ->
-            doprn j (succ j)
+            doprn j (succ j) accu1
         | 's' ->
             Obj.magic(fun s ->
-              if j <= i+1 then
-                res := s :: !res
-              else begin
-                let p =
-                  try
-                    int_of_string (String.sub format (i+1) (j-i-1))
-                  with _ ->
-                    invalid_arg "fprintf: bad %s format" in
-                if p > 0 & String.length s < p then begin
-                  res := String.make (p - String.length s) ' ' :: !res;
-                  res := s :: !res
-                end else if p < 0 & String.length s < -p then begin
-                  res := s :: !res;
-                  res := String.make (-p - String.length s) ' ' :: !res
-                end else
-                  res := s :: !res
-              end;
-              doprn (succ j) (succ j))
+              let accu2 =
+                if j <= i+1 then
+                  s :: accu1
+                else begin
+                  let p =
+                    try
+                      int_of_string (String.sub format (i+1) (j-i-1))
+                    with _ ->
+                      invalid_arg "fprintf: bad %s format" in
+                  if p > 0 & String.length s < p then
+                    s :: String.make (p - String.length s) ' ' :: accu1
+                  else if p < 0 & String.length s < -p then
+                    String.make (-p - String.length s) ' ' :: s :: accu1
+                  else
+                    s :: accu1
+                end in
+              doprn (succ j) (succ j) accu2)
         | 'c' ->
             Obj.magic(fun c ->
-              res := String.make 1 c :: !res;
-              doprn (succ j) (succ j))
+              doprn (succ j) (succ j) (String.make 1 c :: accu1))
         | 'd' | 'o' | 'x' | 'X' | 'u' ->
             Obj.magic(fun n ->
-              res := format_int (String.sub format i (j-i+1)) n :: !res;
-              doprn (succ j) (succ j))
+              doprn (succ j) (succ j)
+                    (format_int (String.sub format i (j-i+1)) n :: accu1))
         | 'f' | 'e' | 'E' | 'g' | 'G' ->
             Obj.magic(fun f ->
-              res := format_float (String.sub format i (j-i+1)) f :: !res;
-              doprn (succ j) (succ j))
+              doprn (succ j) (succ j)
+                    (format_float (String.sub format i (j-i+1)) f :: accu1))
         | 'b' ->
             Obj.magic(fun b ->
-              res := string_of_bool b :: !res;
-              doprn (succ j) (succ j))
+              doprn (succ j) (succ j) (string_of_bool b :: accu1))
         | 'a' ->
             Obj.magic(fun printer arg ->
-              res := printer () arg :: !res;
-              doprn (succ j) (succ j))
+              doprn (succ j) (succ j) (printer () arg :: accu1))
         | 't' ->
             Obj.magic(fun printer ->
-              res := printer () :: !res;
-              doprn (succ j) (succ j))
+              doprn (succ j) (succ j) (printer () :: accu1))
         | c ->
             invalid_arg ("sprintf: unknown format")
       end
@@ -162,4 +162,4 @@ let sprintf format =
       '0' .. '9' | ' ' | '.' | '-' -> skip_args (succ j)
     | c -> j
 
-  in doprn 0 0
+  in doprn 0 0 []
