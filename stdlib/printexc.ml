@@ -26,9 +26,9 @@ let print_exn = function
   | Stack_overflow ->
       prerr_string "Stack overflow\n";
   | Match_failure(file, first_char, last_char) ->
-      eprintf locfmt file first_char last_char "Pattern matching failed";
+      eprintf locfmt file 0 first_char last_char "Pattern matching failed";
   | Assert_failure(file, first_char, last_char) ->
-      eprintf locfmt file first_char last_char "Assertion failed";
+      eprintf locfmt file 0 first_char last_char "Assertion failed";
   | x ->
       prerr_string "Uncaught exception: ";
       prerr_string (Obj.magic(Obj.field (Obj.field (Obj.repr x) 0) 0));
