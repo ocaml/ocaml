@@ -107,7 +107,7 @@ module Win32 = struct
     with Not_found ->
       "."
   let temporary_directory =
-    try Sys.getenv "TEMP" with Not_found -> "C:\\temp"
+    try Sys.getenv "TEMP" with Not_found -> "."
   let quote s =
     let l = String.length s in
     let b = Buffer.create (l + 20) in
