@@ -633,11 +633,10 @@ let type_format loc fmt =
   let rec type_in_format fmt =
     let len = String.length fmt in
 
-    let bad_format i len =
-      raise (Error (loc, Bad_format (String.sub fmt i len))) in
-    let bad_conversion i len =
+    let bad_conversion fmt i c =
       raise (Error (loc, Bad_conversion (fmt, String.sub fmt i len))) in
-    let incomplete i = bad_format i (len - i) in
+    let incomplete i =
+      raise (Error (loc, Bad_format (String.sub fmt i (len - i)))) in
 
     let ty_input = newvar ()
     and ty_result = newvar ()
@@ -719,14 +718,16 @@ let type_format loc fmt =
         | '{' | '(' as c ->
           let j = j + 1 in
           if j >= len then incomplete i else
-          let sj = Printf.sub_format c fmt j in
+          let sj =
+            Printf.sub_format
+              (fun fmt -> incomplete 0) bad_conversion c fmt j in
           let sfmt = String.sub fmt j (sj - j - 1) in
           let ty_sfmt = type_in_format sfmt in
           begin match c with
           | '{' -> conversion sj ty_sfmt
           | _ -> incr meta; conversion (j - 1) ty_sfmt end
         | ')' when !meta > 0 -> decr meta; scan_format (j + 1)
-        | c -> bad_conversion i (j - i + 1) in
+        | c -> bad_conversion fmt i c in
       scan_flags i j in
 
     let ty_ares, ty_res = scan_format 0 in
