@@ -77,12 +77,10 @@ val reset_cache: unit -> unit
 
 (* Read, save a signature to/from a file *)
 
-val read_signature: string -> string -> signature * Digest.t
-        (* Arguments: module name, file name.
-           Results: signature, CRC. *)
-val save_signature: signature -> string -> string -> Digest.t
-        (* Arguments: signature, module name, file name.
-           Result: CRC. *)
+val read_signature: string -> string -> signature
+        (* Arguments: module name, file name. Results: signature. *)
+val save_signature: signature -> string -> string -> unit
+        (* Arguments: signature, module name, file name. *)
 
 (* Return the set of compilation units imported, with their CRC *)
 
@@ -109,6 +107,7 @@ type error =
     Not_an_interface of string
   | Corrupted_interface of string
   | Illegal_renaming of string * string
+  | Inconsistent_import of string * string * string
 
 exception Error of error
 
