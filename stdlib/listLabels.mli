@@ -279,5 +279,5 @@ val merge : cmp:('a -> 'a -> int) -> 'a list -> 'a list -> 'a list
     sorted list containting all the elements of [l1] and [l2].
     If several elements compare equal, the elements of [l1] will be
     before the elements of [l2].
-    Not tail-recursive (sum of the lenghts of the arguments).
+    Not tail-recursive (sum of the lengths of the arguments).
 *)
