@@ -197,7 +197,7 @@ let build_libs () =
   end;
   if !bytecode_objs <> [] then
     scommand
-      (sprintf "%s -a %s -o %s.cma %s %s -dllib -l%s -cclib -l%s %s %s %s"
+      (sprintf "%s -a %s -o %s.cma %s %s -dllib -l%s -cclib -l%s %s %s %s %s"
                   !ocamlc
                   (if !dynlink then "" else "-custom")
                   !output
@@ -207,10 +207,11 @@ let build_libs () =
                   !output_c
                   (String.concat " " (prefix_list "-ccopt " !c_opts))
                   (make_rpath_ccopt bytecc_rpath)
-                  (String.concat " " (prefix_list "-cclib " !c_libs)));
+                  (String.concat " " (prefix_list "-cclib " !c_libs))
+                  (String.concat " " !caml_libs));
   if !native_objs <> [] then
     scommand
-      (sprintf "%s -a -o %s.cmxa %s %s -cclib -l%s %s %s %s"
+      (sprintf "%s -a -o %s.cmxa %s %s -cclib -l%s %s %s %s %s"
                   !ocamlopt
                   !output
                   (String.concat " " !caml_opts)
@@ -218,7 +219,8 @@ let build_libs () =
                   !output_c
                   (String.concat " " (prefix_list "-ccopt " !c_opts))
                   (make_rpath_ccopt nativecc_rpath)
-                  (String.concat " " (prefix_list "-cclib " !c_libs)))
+                  (String.concat " " (prefix_list "-cclib " !c_libs))
+                  (String.concat " " !caml_libs))
 
 let _ =
   try
