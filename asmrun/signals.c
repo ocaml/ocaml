@@ -75,7 +75,7 @@ void leave_blocking_section()
   async_signal_mode = 0;
 }
 
-#ifdef TARGET_alpha
+#if defined(TARGET_alpha) || defined(TARGET_mips)
 void handle_signal(sig, code, context)
      int sig, code;
      struct sigcontext * context;
@@ -108,6 +108,11 @@ void handle_signal(sig)
     /* Cached in register $14 */
     if (caml_last_return_address == NULL)
       context->sc_regs[14] = (long) young_limit;
+#endif
+#ifdef TARGET_mips
+    /* Cached in register $23 */
+    if (caml_last_return_address == NULL)
+      context->sc_regs[23] = (int) young_limit;
 #endif
   }
 }

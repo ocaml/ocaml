@@ -13,7 +13,7 @@
 
 /* Asm part of the runtime system, Mips processor */
 
-        .comm   young_start, 4
+        .comm   young_limit, 4
         .comm   young_end, 4
         .comm   young_ptr, 4
         .comm   gc_entry_regs, 4 * 32
@@ -116,7 +116,7 @@ caml_call_gc:
         FSAVE(28)
         FSAVE(30)
     /* Call the garbage collector */
-        jal     minor_collection
+        jal     garbage_collection
     /* Restore all regs used by the code generator */
         LOAD(2)
         LOAD(3)
@@ -155,10 +155,12 @@ caml_call_gc:
         FLOAD(30)
     /* Reload new allocation pointer and allocation limit */
         lw      $22, young_ptr
-        lw      $23, young_start
+        lw      $23, young_limit
     /* Allocate space for the block */
         lw      $25, 16($sp)
         subu    $22, $22, $25
+    /* Say that we are back into Caml code */
+        sw      $0, caml_last_return_address
     /* Return to caller */
         lw	$31, 20($sp)
         addu    $sp, $sp, 24
@@ -181,10 +183,14 @@ caml_c_call:
         sw      $30, caml_exception_pointer
     /* Call the function */
         jal     $25
-    /* Reload alloc ptr */
+    /* Reload alloc ptr and alloc limit */
         lw      $22, young_ptr
-    /* Return */
+        lw      $23, young_limit
+    /* Reload return address */
         lw      $31, caml_last_return_address
+    /* Say that we are back into Caml code */
+        sw      $0, caml_last_return_address
+    /* Return */
         j       $31
 
         .end    caml_c_call
@@ -221,7 +227,7 @@ caml_start_program:
         sw      $sp, caml_top_of_stack
     /* Initialize allocation registers */
 	lw	$22, young_ptr
-	lw	$23, young_start
+	lw	$23, young_limit
     /* Go for it */
         jal     caml_program
     /* Pop handler */
@@ -258,7 +264,7 @@ stray_exn_handler:
 raise_caml_exception:
         move    $2, $4
         lw      $22, young_ptr
-        lw      $23, young_start
+        lw      $23, young_limit
         lw      $sp, caml_exception_pointer
         lw      $30, 0($sp)
         lw      $25, 4($sp)
@@ -311,7 +317,9 @@ $103:
         sw      $3, 4($sp)
     /* Reload allocation pointers */
 	lw	$22, young_ptr
-	lw	$23, young_start
+	lw	$23, young_limit
+    /* Say that we are back into Caml code */
+        sw      $0, caml_last_return_address
     /* Call the Caml code */
 $104:   jal     $24
     /* Pop the callback link,

@@ -209,6 +209,8 @@ $103:   ldgp    $gp, 0($27)
     /* Allocate space for the block */
         ldq     $25, 16($sp)
         subq    $13, $25, $13
+    /* Say that we are back into Caml code */
+        stq     $31, caml_last_return_address
     /* Return to caller */
         ldq     $26, 0($sp)
         ldq     $gp, 8($sp)
