@@ -37,7 +37,7 @@ camlp4.cmxa: $(CAMLP4_XOBJS)
 	$(OCAMLOPT) $(LINKFLAGS) $(CAMLP4_XOBJS) -a -o camlp4.cmxa
 
 clean::
-	rm -f *.cm* *.pp[io] *.o *.bak .*.bak *.out *.opt
+	rm -f *.cm* *.pp[io] *.o *.a *.bak .*.bak *.out *.opt
 	rm -f $(CAMLP4)
 
 depend:
