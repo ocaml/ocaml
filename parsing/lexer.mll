@@ -143,9 +143,8 @@ let char_for_decimal_code lexbuf i =
   Char.chr(c land 0xFF)
 
 (* To store the position of the beginning of a string and comment *)
-let string_start_pos = ref 0
-and comment_start_pos = ref []
-;;
+let string_start_pos = ref 0;;
+let comment_start_pos = ref [];;
 
 (* Error report *)
 
@@ -176,7 +175,7 @@ let hex_literal = '0' ['x' 'X'] ['0'-'9' 'A'-'F' 'a'-'f']+
 let oct_literal = '0' ['o' 'O'] ['0'-'7']+
 let bin_literal = '0' ['b' 'B'] ['0'-'1']+
 let float_literal =
-  ['0'-'9']+ ('.' ['0'-'9']*)? (['e' 'E'] ['+' '-']? ['0'-'9']+)?
+  ['0'-'9']+ ('.' ['0'-'9']* )? (['e' 'E'] ['+' '-']? ['0'-'9']+)?
 
 rule token = parse
     blank +
