@@ -26,7 +26,7 @@ let usage = "usage: ocamlex [options] sourcefile"
 let _ =
   Arg.parse
     ["-ml", Arg.Set ml_automata,
-           " Output code that does not use the Lexing module";
+           " Output code that does not use the Lexing module built-in automata interpreter";
      "-o", Arg.String (fun x -> source_name := x),
            " <file>  Set output file name to <file>";
     ] 

@@ -216,8 +216,8 @@ let f = function
 | (x,(0 as y)) | (y,x) -> y-x
 ;;
 
-test "foo" f (1,0) (-1);
-test "foo" f (1,2) (-1)
+test "foo1" f (1,0) (-1);
+test "foo1" f (1,2) (-1)
 ;;
 
 
@@ -378,9 +378,9 @@ let foo (k1, k2) = match k1,k2 with
 | _, (A|B|C) -> 4
 ;;
 
-test "foo" foo (D A,A) 1 ;
-test "foo" foo (D A,B) 4 ;
-test "foo" foo (A,A) 4 ; ()
+test "foo2" foo (D A,A) 1 ;
+test "foo2" foo (D A,B) 4 ;
+test "foo2" foo (A,A) 4 ; ()
 ;;
 
 type yaya = A | B
