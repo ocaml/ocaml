@@ -411,6 +411,7 @@ let process_intf_file filename = null_rewrite filename;;
 
 let process_impl_file filename =
    let modname = Filename.basename(Filename.chop_extension filename) in
+       (* FIXME should let modname = String.capitalize modname *)
    if !instr_mode then begin
      (* Instrumentation mode *)
      set_flags !modes;
