@@ -164,9 +164,12 @@ file.)
 \item Directories specified in the file "ld.conf".  This file resides
 in the Objective Caml standard library directory, and lists directory
 names (one per line) to be searched.  Typically, it contains only one
-line naming the Objective Caml standard library directory.  Users can
-add there the names of other directories containing
-frequently-used shared libraries.
+line naming the "stublibs" subdirectory of the Objective Caml standard
+library directory.  Users can add there the names of other directories
+containing frequently-used shared libraries; however, for consistency
+of installation, we recommend that shared libraries are installed
+directly in the system "stublibs" directory, rather than adding lines
+to the "ld.conf" file.
 \item Default directories searched by the system dynamic loader.
 Under Unix, these generally include "/lib" and "/usr/lib", plus the
 directories listed in the file "/etc/ld.so.conf" and the environment

@@ -38,14 +38,16 @@ of characters of an identifier.
 
 \begin{syntax}
 integer-literal:
-          ["-"] {{ "0"\ldots"9" }}
-        | ["-"] ("0x"||"0X") {{ "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f" }}
-        | ["-"] ("0o"||"0O") {{ "0"\ldots"7" }}
-        | ["-"] ("0b"||"0B") {{ "0"\ldots"1" }}
+          ["-"] {{ "0"\ldots"9" || "_" }}
+        | ["-"] ("0x"||"0X") {{ "0"\ldots"9"||"A"\ldots"F"||"a"\ldots"f" || "_"}}
+        | ["-"] ("0o"||"0O") {{ "0"\ldots"7" || "_"}}
+        | ["-"] ("0b"||"0B") {{ "0"\ldots"1" || "_"}}
 \end{syntax}
 
 An integer literal is a sequence of one or more digits, optionally
-preceded by a minus sign. By default, integer literals are in decimal
+preceded by a minus sign.  The character "_" (underscore) can be used
+to separate groups of digits; it is ignored.  
+By default, integer literals are in decimal
 (radix 10). The following prefixes select a different radix:
 \begin{tableau}{|l|l|}{Prefix}{Radix}
 \entree{"0x", "0X"}{hexadecimal (radix 16)}
@@ -60,8 +62,8 @@ representable integer values is undefined.
 
 \begin{syntax}
 float-literal:
-          ["-"] {{ "0"\ldots"9" }} ["." { "0"\ldots"9" }]
-          [("e"||"E") ["+"||"-"] {{ "0"\ldots"9" }}]
+          ["-"] {{ "0"\ldots"9" || "_" }} ["." { "0"\ldots"9" || "_" }]
+          [("e"||"E") ["+"||"-"] {{ "0"\ldots"9" || "_" }}]
 \end{syntax}
 
 Floating-point decimals consist in an integer part, a decimal part and
@@ -71,9 +73,10 @@ decimal point followed by zero, one or more digits.
 The exponent part is the character "e" or "E" followed by an
 optional "+" or "-" sign, followed by one or more digits.
 The decimal part or the exponent part can be omitted, but not both to
-avoid ambiguity with integer literals.
-The interpretation of floating-point literals that fall outside the
-range of representable floating-point values is undefined.
+avoid ambiguity with integer literals.  The character "_" (underscore)
+can be used to separate groups of digits; it is ignored.  The
+interpretation of floating-point literals that fall outside the range
+of representable floating-point values is undefined.
 
 \subsubsection*{Character literals}
 \label{s:characterliteral}

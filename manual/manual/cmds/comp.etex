@@ -246,6 +246,21 @@ callable from any C program. See chapter~\ref{c:intf-c},
 section~\ref{s:embedded-code}. The name of the output object file is
 "camlprog.o" by default; it can be set with the "-o" option.
 
+\item["-pack"]
+Build a bytecode object file (".cmo" file) and its associated compiled
+interface (".cmi") that combines the object
+files given on the command line, making them appear as sub-modules of
+the output ".cmo" file.  The name of the output ".cmo" file must be
+given with the "-o" option.  For instance,
+\begin{verbatim}
+        ocamlc -pack -o p.cmo a.cmo b.cmo c.cmo
+\end{verbatim}
+generates compiled files "p.cmo" and "p.cmi" describing a compilation
+unit having three sub-modules "A", "B" and "C", corresponding to the
+contents of the object files "a.cmo", "b.cmo" and "c.cmo".  These
+contents can be referenced as "P.A", "P.B" and "P.C" in the remainder
+of the program.
+
 \item["-pp" \var{command}]
 Cause the compiler to call the given \var{command} as a preprocessor
 for each source file. The output of \var{command} is redirected to

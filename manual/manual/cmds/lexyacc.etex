@@ -82,7 +82,17 @@ In following regular expressions, the identifier
 \subsection{Entry points}
 
 The names of the entry points must be valid identifiers for Caml
-values (starting with a lowercase letter).
+values (starting with a lowercase letter).  Each entry point becomes a
+Caml function that takes one argument of type "Lexing.lexbuf".
+Characters are read from the "Lexing.lexbuf" argument and matched
+against the regular expressions provided in the rule, until a prefix
+of the input matches one of the rule.  The corresponding action is
+then evaluated and returned as the result of the function.
+
+If several regular expressions match a prefix of the input, the
+``longest match'' rule applies: the regular expression that matches
+the longest prefix of the input is selected.  In case of tie, the
+regular expression that occurs earlier in the rule is selected.
 
 \subsection{Regular expressions}
 
@@ -100,7 +110,7 @@ constants. Match the denoted character.
 
 \item["eof"]
 Match the end of the lexer input.\\
-{\bf Note:} On some systems, with interactive input, and end-of-file
+{\bf Note:} On some systems, with interactive input, an end-of-file
 may be followed by more characters.  However, "ocamllex" will not
 correctly handle regular expressions that contain "eof" followed by
 something else.

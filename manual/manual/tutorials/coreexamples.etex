@@ -306,9 +306,10 @@ let (:=) r newval = r.contents <- newval;;
 \end{caml_example}
 
 In some special cases, you may need to store a polymorphic function in
-a data structure, keeping its polymorphism.  Usual typing does not
-allow that, as polymorphism is only introduced on a global level, but
-you can give explicitly polymorphic types to record fields.
+a data structure, keeping its polymorphism.  Without user-provided
+type annotations, this is not allowed, as polymorphism is only
+introduced on a global level.  However, you can give explicitly
+polymorphic types to record fields.
 \begin{caml_example}
 type idref = { mutable id: 'a. 'a -> 'a };;
 let r = {id = fun x -> x};;

@@ -49,7 +49,11 @@ the above 3 modules \\
 "Queue" & p.~\pageref{Queue} & first-in first-out queues \\
 "Buffer" & p.~\pageref{Buffer} & string buffers that grow on demand \\
 "Lazy"  & p.~\pageref{Lazy} & delayed evaluation \\
-"Weak" & p.~\pageref{Weak} & references that don't prevent objects from being garbage-collected \\
+"Weak" & p.~\pageref{Weak} & references that don't prevent objects
+from being garbage-collected
+\end{tabular}
+\subsubsection*{Arithmetic:}
+\begin{tabular}{lll}
 "Complex" & p.~\pageref{Complex} & Complex numbers \\
 "Int32" & p.~\pageref{Int32} & operations on 32-bit integers \\
 "Int64" & p.~\pageref{Int64} & operations on 64-bit integers \\

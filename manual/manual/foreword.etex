@@ -40,7 +40,7 @@ NT, 2000).
 \section*{License}
 
 The Objective Caml system is copyright \copyright\ 1996, 1997, 1998,
-1999, 2000, 2001 Institut National de Recherche en Informatique et en
+1999, 2000, 2001, 2002 Institut National de Recherche en Informatique et en
 Automatique (INRIA).
 INRIA holds all ownership rights to the Objective Caml system. 
 
@@ -72,17 +72,13 @@ citation is given.
 
 \begin{latexonly}
 The complete Objective Caml distribution can be accessed via the Web
-site "http://caml.inria.fr/", or directly via anonymous FTP at
-"ftp://ftp.inria.fr/lang/caml-light/".  The Web site
-"http://caml.inria.fr/" contains a lot of additional information on
-the Caml family of languages.
+site "http://caml.inria.fr/".  This Web site contains a lot of
+additional information on Objective Caml.
 \end{latexonly}
 
 \begin{htmlonly}
 The complete Objective Caml distribution can be accessed via the 
-\url{http://caml.inria.fr/}{Caml Web site}, or directly on the
-\url{ftp://ftp.inria.fr/lang/caml-light/}{anonymous FTP archive}.
+\url{http://caml.inria.fr/}{Caml Web site}.
 The \url{http://caml.inria.fr/}{Caml Web site}
-contains a lot of additional information on the Caml family of
-languages.
+contains a lot of additional information on Objective Caml.
 \end{htmlonly}

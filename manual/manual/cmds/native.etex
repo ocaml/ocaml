@@ -217,6 +217,25 @@ profile (no call graph information, only a time profile).
 The "-p" option does not work under Windows.
 \end{windows}
 
+\item["-pack"]
+Build an object file (".cmx"/".o" file) and its associated compiled
+interface (".cmi") that combines the ".cmx" object
+files given on the command line, making them appear as sub-modules of
+the output ".cmx" file.  The name of the output ".cmx" file must be
+given with the "-o" option.  For instance,
+\begin{verbatim}
+        ocamlopt -pack -o p.cmx a.cmx b.cmx c.cmx
+\end{verbatim}
+generates compiled files "p.cmx", "p.o" and "p.cmi" describing a
+compilation unit having three sub-modules "A", "B" and "C",
+corresponding to the contents of the object files "a.cmx", "b.cmx" and
+"c.cmx".  These contents can be referenced as "P.A", "P.B" and "P.C"
+in the remainder of the program.
+
+\begin{unix} The "-pack" option is available only under platforms that
+provide the GNU "binutils" tools "nm" and "objcopy".
+\end{unix}
+
 \item["-pp" \var{command}]
 Cause the compiler to call the given \var{command} as a preprocessor
 for each source file. The output of \var{command} is redirected to
@@ -300,6 +319,7 @@ The error messages are almost identical to those of "ocamlc".
 See section~\ref{s:comp-errors}.
 
 \section{Compatibility with the bytecode compiler}
+\label{s:compat-native-bytecode}
 
 This section lists the known incompatibilities between the bytecode
 compiler and the native-code compiler. Except on those points, the two
@@ -307,9 +327,8 @@ compilers should generate code that behave identically.
 
 \begin{itemize}
 
-\item The following operations abort the program (either by printing
-an error message or just via an hardware trap or fatal Unix signal)
-instead of raising an exception:
+\item The following operations abort the program (via an hardware trap
+or fatal Unix signal) instead of raising an exception:
 \begin{itemize}
 \item integer division by zero, modulus by zero;
 \item stack overflow;
@@ -332,5 +351,5 @@ The best way to avoid running into those incompatibilities is to {\em
 never} trap the "Division_by_zero" and
 "Stack_overflow" exceptions, thus also treating them as fatal errors
 with the bytecode compiler as well as with the native-code compiler.
-Test the divisor before performing
-the operation instead of trapping the exception afterwards.
+Often, it is feasible to test the divisor before performing
+the operation, instead of trapping the exception afterwards.
