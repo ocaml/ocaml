@@ -290,6 +290,28 @@ val err_formatter : formatter;;
            output to standard error. It is defined as
            [formatter_of_out_channel stderr]. *)
 
+val formatter_of_buffer : Buffer.t -> formatter * (unit -> string);;
+        (* [formatter_of_buffer b] returns the pair [(ppf, flush)],
+           where [ppf] is a new formatter writing to the corresponding
+           buffer [b], and a [flush] is a function to 
+           get the material printed to the formatter.
+           When [flush] is called, the pending material is printed,
+           the buffer is reset (according to [Buffer.reset]) and its
+           contents is returned. *)
+
+val stdbuf : Buffer.t;;
+        (* The string buffer in which [str_formatter] writes. *)
+
+val str_formatter : formatter;;
+        (* A formatter to use with formatting functions below for
+           output to a string buffer. *)
+
+val flush_str_formatter : unit -> string;;
+        (* Returns the material printed with [str_formatter], flushes
+           the formatter and reset the corresponding buffer.
+           [str_formatter] and [flush_str_formatter] are defined as
+           [formatter_of_buffer stdbuf]. *)
+
 val make_formatter :
         (string -> int -> int -> unit) -> (unit -> unit) -> formatter;;
         (* [make_formatter out flush] returns a new formatter that
@@ -396,4 +418,8 @@ val printf : ('a, formatter, unit) format -> 'a;;
         (* Same as [fprintf], but output on [std_formatter]. *)
 val eprintf: ('a, formatter, unit) format -> 'a;;
         (* Same as [fprintf], but output on [err_formatter]. *)
+val sprintf: ('a, unit, string) format -> 'a;;
+        (* Same as [printf], but instead of printing on a formatter,
+           return a string containing the result of formatting
+           the arguments. *)
 

@@ -409,13 +409,12 @@ let pp_rinit state =
     pp_open_sys_box state;;
 
 (* Flushing pretty-printer queue. *)
-let pp_flush state b =
+let pp_flush_queue state b =
     while state.pp_curr_depth > 1 do
      pp_close_box state ()
     done;
     state.pp_right_total <- pp_infinity; advance_left state;
     if b then pp_output_newline state;
-    state.pp_flush_function ();
     pp_rinit state;;
 
 (**************************************************************
@@ -454,8 +453,10 @@ and pp_open_box state indent = pp_open_box_gen state indent Pp_box;;
 
 (* Print a new line after printing all queued text
    (same for print_flush but without a newline)    *)
-let pp_print_newline state () = pp_flush state true
-and pp_print_flush state () = pp_flush state false;;
+let pp_print_newline state () =
+    pp_flush_queue state true; state.pp_flush_function ()
+and pp_print_flush state () =
+    pp_flush_queue state false; state.pp_flush_function ();;
 
 (* To get a newline when one does not want to close the current block *)
 let pp_force_newline state () =
@@ -624,8 +625,26 @@ let make_formatter f g = pp_make_formatter f g display_newline display_blanks;;
 let formatter_of_out_channel oc =
  make_formatter (output oc) (fun () -> flush oc);;
 
-let std_formatter = formatter_of_out_channel stdout;;
+let get_out b =
+ let s = Buffer.contents b in
+ Buffer.reset b;
+ s;;
 
+let string_out b ppf () =
+ pp_flush_queue ppf false;
+ get_out b;;
+
+let formatter_of_buffer b =
+ let ppf =
+  make_formatter (Buffer.output b) (fun () -> ()) in
+ pp_set_formatter_output_functions
+  ppf (Buffer.output b) (fun () -> pp_flush_queue ppf false);
+ ppf, string_out b ppf;;
+
+let stdbuf = Buffer.create 1024;;
+
+let str_formatter, flush_str_formatter = formatter_of_buffer stdbuf;;
+let std_formatter = formatter_of_out_channel stdout;;
 let err_formatter = formatter_of_out_channel stderr;;
 
 let open_hbox = pp_open_hbox std_formatter
@@ -686,7 +705,7 @@ external format_float: string -> float -> string = "format_float"
 
 let format_invalid_arg s c = invalid_arg (s ^ String.make 1 c);;
 
-let fprintf ppf format =
+let fprintf_out out ppf format =
   let format = (Obj.magic format : string) in
   let limit = String.length format in
 
@@ -707,7 +726,7 @@ let fprintf ppf format =
 
   let rec doprn i =
     if i >= limit then
-      Obj.magic ()
+      Obj.magic (out ())
     else
       match format.[i] with
       | '@' ->
@@ -782,7 +801,7 @@ let fprintf ppf format =
               Obj.magic(fun c ->
                 pp_print_as_char ppf c;
                 doprn (succ j))
-          | 'd' | 'o' | 'x' | 'X' | 'u' ->
+          | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
               Obj.magic(fun n ->
                 pp_print_as_string ppf
                                 (format_int (String.sub format i (j-i+1)) n);
@@ -878,8 +897,12 @@ let fprintf ppf format =
   in doprn 0
 ;;
 
-let printf f = fprintf std_formatter f;;
-let eprintf f = fprintf err_formatter f;;
+
+let unit_out () = ();;
+
+let fprintf f = fprintf_out unit_out f;;
+let printf f = fprintf_out unit_out std_formatter f;;
+let eprintf f = fprintf_out unit_out err_formatter f;;
+let sprintf f = fprintf_out flush_str_formatter str_formatter f;;
 
 let _ = at_exit print_flush;;
-
