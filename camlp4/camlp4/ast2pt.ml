@@ -48,8 +48,22 @@ value mkloc (bp, ep) =
    Location.loc_ghost = False}
 ;
 
+value mkghloc (bp, ep) =
+  let loc_at n = {
+        Lexing.pos_fname = "";
+        Lexing.pos_lnum = 1;
+        Lexing.pos_bol = 0;
+        Lexing.pos_cnum = n
+      }
+  in
+  {Location.loc_start = loc_at bp;
+   Location.loc_end = loc_at ep;
+   Location.loc_ghost = True}
+;
+
 value mktyp loc d = {ptyp_desc = d; ptyp_loc = mkloc loc};
 value mkpat loc d = {ppat_desc = d; ppat_loc = mkloc loc};
+value mkghpat loc d = {ppat_desc = d; ppat_loc = mkghloc loc};
 value mkexp loc d = {pexp_desc = d; pexp_loc = mkloc loc};
 value mkmty loc d = {pmty_desc = d; pmty_loc = mkloc loc};
 value mksig loc d = {psig_desc = d; psig_loc = mkloc loc};
@@ -297,10 +311,10 @@ value rec patt_fa al =
 
 value rec mkrangepat loc c1 c2 =
   if c1 > c2 then mkrangepat loc c2 c1
-  else if c1 = c2 then mkpat loc (Ppat_constant (Const_char c1))
+  else if c1 = c2 then mkghpat loc (Ppat_constant (Const_char c1))
   else
-    mkpat loc
-      (Ppat_or (mkpat loc (Ppat_constant (Const_char c1)))
+    mkghpat loc
+      (Ppat_or (mkghpat loc (Ppat_constant (Const_char c1)))
          (mkrangepat loc (Char.chr (Char.code c1 + 1)) c2))
 ;
 
