@@ -69,6 +69,8 @@ def_macro "\\noindent" [];
 def_macro "\\begin{flushleft}" [Print "<blockquote>"];
 def_macro "\\end{flushleft}" [Print "</blockquote>"];
 def_macro "\\\\" [Print "<br>"];
+def_macro "\\begin{htmlonly}" [];
+def_macro "\\end{htmlonly}" [];
 ();;
 
 (* Macros specific to the Caml manual *)
@@ -120,5 +122,10 @@ def_macro "\\entreeoperateur"
 def_macro "\\fromoneto"
   [Print "<i>"; Print_arg; Print "</i> = 1, ..., <i>";
    Print_arg; Print "</i>"];
+def_macro "\\caml" [Print "<pre>"];
+def_macro "\\endcaml" [Print "</pre>"];
+def_macro "\\?" [];
+def_macro "\\:" [];
+def_macro "\\;" [];
 ();;
 

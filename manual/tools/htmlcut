@@ -10,25 +10,40 @@ $infile = $ARGV[0];
 
 # Find URL's for the links
 
+$level0 = 0;
 $level1 = 0;
+$uselabel = 1;
 open(INPUT, $infile);
 while(<INPUT>) {
+  if (m|^<H0>(.*)</H0>|) {
+    $level0++;
+    $currfile = "node" . ($level1 + 1) . ".html";
+    $lblnum = $level0;
+    $uselabel = 0;
+  }
   if (m|^<H1>(.*)</H1>|) {
     $level1++;
     $level2 = 0;
-    $currfile = "node$level1.html";
+    $currfile = "node$level1.html"; 
+    $lblnum = $level1;
+    $uselabel = 1;
   }
-  if ($split2[$level1] && m|^<H2>(.*)</H2>|) {
+  if (m|^<H2>(.*)</H2>|) {
     $level2++;
-    $currfile = "node$level1.$level2.html";
+    if ($split2[$level1]) { $currfile = "node$level1.$level2.html"; }
+    $lblnum = "$level1.$level2";
   }
   s|<A NAME="([^"]*)"></A>|do set_url($1)|ige;
 }
 
 sub set_url {
   local ($lbl) = @_;
-  $url{$lbl} = "$currfile#$lbl";
-#  print STDERR "$lbl -> $currfile#$lbl", "\n";
+  if ($uselabel) {
+      $url{$lbl} = "$currfile#$lbl";
+  } else {
+      $url{$lbl} = $currfile;
+  }
+  $label{$lbl} = $lblnum;
 }
 
 # Cut the file
@@ -64,7 +79,7 @@ while(<INPUT>) {
     select(FILE2);
     &print_title($1);
   }
-  s|<A HREF="#([^"]*)">X</A>|'<A HREF="' . $url{$1} . '"><IMG SRC="cross_ref_motif.gif"></A>'|ige;
+  s|<A HREF="#([^"]*)">X</A>|'<A HREF="' . $url{$1} . '">' . $label{$1} . '</A>'|ige;
   print $_;
 }
 
