@@ -24,14 +24,17 @@ type position = {
   pos_cnum : int;
 }
 (** A value of type [position] describes a point in a source file.
-    [pos_fname] is the file name; [pos_lnum] is the line number;
-    [pos_bol] is the number of characters between the beginning of the
-    lexbuf and the beginning of the line; [pos_cnum] is offset of the
-    position from the beginning of the file.
+   [pos_fname] is the file name; [pos_lnum] is the line number;
+   [pos_bol] is the offset of the beginning of the line (number
+   of characters between the beginning of the file and the beginning
+   of the line); [pos_cnum] is the offset of the position (number of
+   characters between the beginning of the file and the position).
  *)
 
 val dummy_pos : position;;
-(** An arbitrary value of type [position]. *)
+(** A value of type [position], guaranteed to be different from any
+   valid position.
+ *)
 
 
 (** {6 Lexer buffers} *)
