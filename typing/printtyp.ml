@@ -441,6 +441,10 @@ let rec prepare_class_type path =
       let sty = repr sign.cty_self in
       (* Self may have a name *)
       visited_objects := sty :: !visited_objects;
+      let (fields, _) =
+        Ctype.flatten_fields (Ctype.object_fields sign.cty_self)
+      in
+      List.iter (fun (_, _, ty) -> mark_loops ty) fields;
       begin match sty.desc with
         Tobject (fi, _) -> mark_loops fi
       | _               -> assert false
@@ -498,7 +502,7 @@ let rec perform_class_type sch p params =
       close_box()
   | Tcty_fun (ty, cty) ->
       open_box 0;
-      typexp sch 0 ty; print_string " ->";
+      typexp sch 2 ty; print_string " ->";
       print_space ();
       perform_class_type sch p params cty;
       close_box ()
@@ -777,7 +781,7 @@ let unification_error unif tr txt1 txt2 =
 let trace fst txt tr =
   match tr with
     (t1, t1')::(t2, t2')::tr ->
-      trace fst txt ((t1, t1')::(t2, t2')::filter_trace tr)
+      trace fst txt (filter_trace tr)
   | _ ->
       ()
 
