@@ -128,7 +128,7 @@ CAMLextern struct caml__roots_block *local_roots;  /* defined in roots.c */
    Use [CAMLlocalN] to declare an array of [value]s.
 
    Your function may raise and exception or return a [value] with the
-   [CAMLreturn1] macro.  Its argument is simply the [value] returned by
+   [CAMLreturn] macro.  Its argument is simply the [value] returned by
    your function.  Do NOT directly return a [value] with the [return]
    keyword.  If your function returns void, use [CAMLreturn0].
 
