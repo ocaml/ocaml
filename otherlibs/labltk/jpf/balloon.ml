@@ -29,11 +29,10 @@ and popupw = ref (Obj.magic dummy : message widget)
 
 let configure_cursor w cursor = 
   (* DDDDDDDDDIIIIIIIRRRRRRRRTTTTTTTTYYYYYYY *)
-  Protocol.tkEval [| TkToken (name w); 
+  Protocol.tkCommand [| TkToken (name w); 
                     TkToken "configure";
                     TkToken "-cursor";
-                    TkToken cursor |];
-  ()
+                    TkToken cursor |]
 
 let put on: w ms: millisec mesg = 
   let t = ref None in
