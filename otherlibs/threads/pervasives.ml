@@ -198,13 +198,14 @@ let valid_float_lexem s =
   let l = string_length s in
   let rec loop i =
     if i >= l then s ^ "." else
-    if s.[i] = '.' || s.[i] = 'e' then s
-    else loop (i+1)
+    match s.[i] with
+    | '0' .. '9' | '-' -> loop (i+1)
+    | _ -> s
   in
   loop 0
 ;;
 
-let string_of_float f = valid_float_lexem (format_float "%.17g" f);;
+let string_of_float f = valid_float_lexem (format_float "%.12g" f);;
 
 external float_of_string : string -> float = "float_of_string"
 
