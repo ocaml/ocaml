@@ -26,16 +26,18 @@ JG =	jg_tk.cmo	jg_config.cmo	jg_bind.cmo	 jg_completion.cmo \
 .mli.cmi:
 	$(CAMLCOMP) $(INCLUDES) $<
 
-.c.obj:
+y.c.obj:
 	$(BYTECC) $(BYTECCCOMPOPTS) $(CCFLAGS) -c $<
 
-all: ocamlbrowser
+all: ocamlbrowser.exe
 
-ocamlbrowser: $(TOPDIR)/toplevel/toplevellib.cma jglib.cma $(OBJ) winmain.obj
-	$(CAMLC) -o ocamlbrowser -custom $(INCLUDES) \
+ocamlbrowser.exe: $(TOPDIR)/toplevel/toplevellib.cma \
+	..\support\lib$(LIBNAME).lib
+ocamlbrowser.exe: jglib.cma $(OBJ) winmain.obj
+	$(CAMLC) -o ocamlbrowser.exe -custom $(INCLUDES) \
 		$(TOPDIR)/toplevel/toplevellib.cma \
 		unix.cma threads.cma str.cma $(LIBNAME).cma jglib.cma $(OBJ) \
-		$(TK_LINK) winmain.obj
+		winmain.obj -cclib "/subsystem:windows"
 
 jglib.cma: $(JG)
 	$(CAMLCOMP) -a -o jglib.cma $(JG) 

@@ -127,7 +127,8 @@ let rec search_pos_type t ~pos ~env =
   | Ptyp_class (lid, tl, _) ->
       List.iter tl ~f:(search_pos_type ~pos ~env);
       add_found_sig (`Type, lid) ~env ~loc:t.ptyp_loc
-  | Ptyp_alias (t, _) -> search_pos_type ~pos ~env t
+  | Ptyp_alias (t, _)
+  | Ptyp_poly (_, t) -> search_pos_type ~pos ~env t
   end
 
 let rec search_pos_class_type cl ~pos ~env =
