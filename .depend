@@ -131,8 +131,8 @@ typing/predef.cmo: typing/btype.cmi typing/ident.cmi typing/path.cmi \
     typing/types.cmi typing/predef.cmi 
 typing/predef.cmx: typing/btype.cmx typing/ident.cmx typing/path.cmx \
     typing/types.cmx typing/predef.cmi 
-typing/primitive.cmo: typing/primitive.cmi 
-typing/primitive.cmx: typing/primitive.cmi 
+typing/primitive.cmo: utils/misc.cmi typing/primitive.cmi 
+typing/primitive.cmx: utils/misc.cmx typing/primitive.cmi 
 typing/printtyp.cmo: parsing/asttypes.cmi typing/btype.cmi typing/ctype.cmi \
     typing/ident.cmi parsing/longident.cmi utils/misc.cmi typing/path.cmi \
     typing/primitive.cmi typing/types.cmi typing/printtyp.cmi 
@@ -386,14 +386,14 @@ asmcomp/asmlibrarian.cmo: utils/ccomp.cmi asmcomp/clambda.cmi \
 asmcomp/asmlibrarian.cmx: utils/ccomp.cmx asmcomp/clambda.cmx \
     utils/clflags.cmx asmcomp/compilenv.cmx utils/config.cmx utils/misc.cmx \
     asmcomp/asmlibrarian.cmi 
-asmcomp/asmlink.cmo: asmcomp/asmgen.cmi utils/clflags.cmo asmcomp/cmmgen.cmi \
-    asmcomp/compilenv.cmi utils/config.cmi asmcomp/emit.cmi \
-    asmcomp/emitaux.cmi parsing/location.cmi utils/misc.cmi asmcomp/proc.cmi \
-    bytecomp/runtimedef.cmi asmcomp/asmlink.cmi 
-asmcomp/asmlink.cmx: asmcomp/asmgen.cmx utils/clflags.cmx asmcomp/cmmgen.cmx \
-    asmcomp/compilenv.cmx utils/config.cmx asmcomp/emit.cmx \
-    asmcomp/emitaux.cmx parsing/location.cmx utils/misc.cmx asmcomp/proc.cmx \
-    bytecomp/runtimedef.cmx asmcomp/asmlink.cmi 
+asmcomp/asmlink.cmo: asmcomp/asmgen.cmi utils/ccomp.cmi utils/clflags.cmo \
+    asmcomp/cmmgen.cmi asmcomp/compilenv.cmi utils/config.cmi \
+    asmcomp/emit.cmi asmcomp/emitaux.cmi parsing/location.cmi utils/misc.cmi \
+    asmcomp/proc.cmi bytecomp/runtimedef.cmi asmcomp/asmlink.cmi 
+asmcomp/asmlink.cmx: asmcomp/asmgen.cmx utils/ccomp.cmx utils/clflags.cmx \
+    asmcomp/cmmgen.cmx asmcomp/compilenv.cmx utils/config.cmx \
+    asmcomp/emit.cmx asmcomp/emitaux.cmx parsing/location.cmx utils/misc.cmx \
+    asmcomp/proc.cmx bytecomp/runtimedef.cmx asmcomp/asmlink.cmi 
 asmcomp/clambda.cmo: parsing/asttypes.cmi typing/ident.cmi \
     bytecomp/lambda.cmi asmcomp/clambda.cmi 
 asmcomp/clambda.cmx: parsing/asttypes.cmi typing/ident.cmx \
@@ -474,42 +474,42 @@ asmcomp/printmach.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi asmcomp/mach.cmi \
 asmcomp/printmach.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx asmcomp/mach.cmx \
     utils/nativeint.cmx asmcomp/printcmm.cmx asmcomp/proc.cmx asmcomp/reg.cmx \
     asmcomp/printmach.cmi 
-asmcomp/proc.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi asmcomp/mach.cmi \
-    utils/misc.cmi asmcomp/reg.cmi asmcomp/proc.cmi 
-asmcomp/proc.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx asmcomp/mach.cmx \
-    utils/misc.cmx asmcomp/reg.cmx asmcomp/proc.cmi 
-asmcomp/proc_alpha.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi asmcomp/mach.cmi \
-    utils/misc.cmi asmcomp/reg.cmi 
-asmcomp/proc_alpha.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx asmcomp/mach.cmx \
-    utils/misc.cmx asmcomp/reg.cmx 
-asmcomp/proc_hppa.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi utils/config.cmi \
+asmcomp/proc.cmo: asmcomp/arch.cmo utils/ccomp.cmi asmcomp/cmm.cmi \
+    asmcomp/mach.cmi utils/misc.cmi asmcomp/reg.cmi asmcomp/proc.cmi 
+asmcomp/proc.cmx: asmcomp/arch.cmx utils/ccomp.cmx asmcomp/cmm.cmx \
+    asmcomp/mach.cmx utils/misc.cmx asmcomp/reg.cmx asmcomp/proc.cmi 
+asmcomp/proc_alpha.cmo: asmcomp/arch.cmo utils/ccomp.cmi asmcomp/cmm.cmi \
     asmcomp/mach.cmi utils/misc.cmi asmcomp/reg.cmi 
-asmcomp/proc_hppa.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx utils/config.cmx \
+asmcomp/proc_alpha.cmx: asmcomp/arch.cmx utils/ccomp.cmx asmcomp/cmm.cmx \
     asmcomp/mach.cmx utils/misc.cmx asmcomp/reg.cmx 
-asmcomp/proc_i386.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi asmcomp/mach.cmi \
-    utils/misc.cmi asmcomp/reg.cmi 
-asmcomp/proc_i386.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx asmcomp/mach.cmx \
-    utils/misc.cmx asmcomp/reg.cmx 
-asmcomp/proc_i386nt.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi asmcomp/mach.cmi \
-    utils/misc.cmi asmcomp/reg.cmi 
-asmcomp/proc_i386nt.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx asmcomp/mach.cmx \
-    utils/misc.cmx asmcomp/reg.cmx 
-asmcomp/proc_m68k.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi asmcomp/mach.cmi \
-    utils/misc.cmi asmcomp/reg.cmi 
-asmcomp/proc_m68k.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx asmcomp/mach.cmx \
-    utils/misc.cmx asmcomp/reg.cmx 
-asmcomp/proc_mips.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi utils/config.cmi \
+asmcomp/proc_hppa.cmo: asmcomp/arch.cmo utils/ccomp.cmi asmcomp/cmm.cmi \
+    utils/config.cmi asmcomp/mach.cmi utils/misc.cmi asmcomp/reg.cmi 
+asmcomp/proc_hppa.cmx: asmcomp/arch.cmx utils/ccomp.cmx asmcomp/cmm.cmx \
+    utils/config.cmx asmcomp/mach.cmx utils/misc.cmx asmcomp/reg.cmx 
+asmcomp/proc_i386.cmo: asmcomp/arch.cmo utils/ccomp.cmi asmcomp/cmm.cmi \
     asmcomp/mach.cmi utils/misc.cmi asmcomp/reg.cmi 
-asmcomp/proc_mips.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx utils/config.cmx \
+asmcomp/proc_i386.cmx: asmcomp/arch.cmx utils/ccomp.cmx asmcomp/cmm.cmx \
     asmcomp/mach.cmx utils/misc.cmx asmcomp/reg.cmx 
-asmcomp/proc_power.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi utils/config.cmi \
+asmcomp/proc_i386nt.cmo: asmcomp/arch.cmo utils/ccomp.cmi asmcomp/cmm.cmi \
     asmcomp/mach.cmi utils/misc.cmi asmcomp/reg.cmi 
-asmcomp/proc_power.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx utils/config.cmx \
+asmcomp/proc_i386nt.cmx: asmcomp/arch.cmx utils/ccomp.cmx asmcomp/cmm.cmx \
     asmcomp/mach.cmx utils/misc.cmx asmcomp/reg.cmx 
-asmcomp/proc_sparc.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi asmcomp/mach.cmi \
-    utils/misc.cmi asmcomp/reg.cmi 
-asmcomp/proc_sparc.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx asmcomp/mach.cmx \
-    utils/misc.cmx asmcomp/reg.cmx 
+asmcomp/proc_m68k.cmo: asmcomp/arch.cmo utils/ccomp.cmi asmcomp/cmm.cmi \
+    asmcomp/mach.cmi utils/misc.cmi asmcomp/reg.cmi 
+asmcomp/proc_m68k.cmx: asmcomp/arch.cmx utils/ccomp.cmx asmcomp/cmm.cmx \
+    asmcomp/mach.cmx utils/misc.cmx asmcomp/reg.cmx 
+asmcomp/proc_mips.cmo: asmcomp/arch.cmo utils/ccomp.cmi asmcomp/cmm.cmi \
+    utils/config.cmi asmcomp/mach.cmi utils/misc.cmi asmcomp/reg.cmi 
+asmcomp/proc_mips.cmx: asmcomp/arch.cmx utils/ccomp.cmx asmcomp/cmm.cmx \
+    utils/config.cmx asmcomp/mach.cmx utils/misc.cmx asmcomp/reg.cmx 
+asmcomp/proc_power.cmo: asmcomp/arch.cmo utils/ccomp.cmi asmcomp/cmm.cmi \
+    utils/config.cmi asmcomp/mach.cmi utils/misc.cmi asmcomp/reg.cmi 
+asmcomp/proc_power.cmx: asmcomp/arch.cmx utils/ccomp.cmx asmcomp/cmm.cmx \
+    utils/config.cmx asmcomp/mach.cmx utils/misc.cmx asmcomp/reg.cmx 
+asmcomp/proc_sparc.cmo: asmcomp/arch.cmo utils/ccomp.cmi asmcomp/cmm.cmi \
+    asmcomp/mach.cmi utils/misc.cmi asmcomp/reg.cmi 
+asmcomp/proc_sparc.cmx: asmcomp/arch.cmx utils/ccomp.cmx asmcomp/cmm.cmx \
+    asmcomp/mach.cmx utils/misc.cmx asmcomp/reg.cmx 
 asmcomp/reg.cmo: asmcomp/cmm.cmi asmcomp/reg.cmi 
 asmcomp/reg.cmx: asmcomp/cmm.cmx asmcomp/reg.cmi 
 asmcomp/reload.cmo: asmcomp/mach.cmi utils/misc.cmi asmcomp/proc.cmi \

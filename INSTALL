@@ -128,7 +128,7 @@ directory, do "make clean".
 editing mode and an interface for the debugger.  To install these
 files, change to the emacs/ subdirectory and do
 
-        make DEST=<directory where to install the files> install
+        make EMACSDIR=<directory where to install the files> install
 or
         make install
 
