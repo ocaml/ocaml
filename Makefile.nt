@@ -2,7 +2,7 @@
 
 !include config\Makefile.nt
 
-OTHERLIBRARIES=str num
+OTHERLIBRARIES=str num graph
 
 CAMLC=boot\cslrun boot\cslc -I boot
 CAMLOPT=boot\cslrun .\cslopt -I stdlib
@@ -183,8 +183,8 @@ installbyt:
 	cp toplevel\toploop.cmi $(LIBDIR)\toploop.cmi
 	cp toplevel\topdirs.cmi $(LIBDIR)\topdirs.cmi
 	cd tools & $(MAKEREC) install
-	cd otherlibs\str & $(MAKEREC) install
 	for %i in ($(OTHERLIBRARIES)) do (cd otherlibs\%i & $(MAKEREC) install & cd ..\..)
+	cd wingui & $(MAKEREC) install
 	cp README.win32 $(DISTRIB)\Readme.txt
 	cp LICENSE $(DISTRIB)\License.txt
 	cp Changes $(DISTRIB)\Changes.txt
