@@ -236,9 +236,9 @@ val out_channel_of_descr : file_descr -> out_channel
 val in_channel_of_descr_bin : file_descr -> in_channel 
 val out_channel_of_descr_bin : file_descr -> out_channel
         (* Same as [in_channel_of_descr] and
-           [out_channel_of_descr_bin], except that the channel
+           [out_channel_of_descr], except that the channel
            is created in binary mode (no translation).
-           In contrast, [in_channel_of_descr] and [out_channel_of_descr_bin]
+           In contrast, [in_channel_of_descr] and [out_channel_of_descr]
            return channels that are set to text mode (translation of
            end-of-lines may take place).  This makes no difference under
            Unix, where text mode and binary mode are identical,
