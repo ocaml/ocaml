@@ -330,6 +330,7 @@ let run_script ppf name args =
   if Array.length Sys.argv < len then invalid_arg "Toploop.run_script";
   Array.blit args pos Sys.argv 0 len;
   Obj.truncate (Obj.repr Sys.argv) len;
+  Arg.current := 0;
   Compile.init_path();
   toplevel_env := Compile.initial_env();
   use_silently ppf name
