@@ -27,7 +27,7 @@ CAML_OBJS=thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo join.cmo
 
 LIB=../../stdlib
 
-OCAMLPP=-pp '../../ocamldoc/remove_DEBUG'
+#OCAMLPP=-pp '../../ocamldoc/remove_DEBUG'
 
 LIB_OBJS=pervasives.cmo \
   $(LIB)/array.cmo $(LIB)/list.cmo $(LIB)/char.cmo $(LIB)/string.cmo \

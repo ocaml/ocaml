@@ -19,7 +19,7 @@ CAMLC=../../ocamlcomp.sh -I ../unix
 CAMLOPT=../../ocamlcompopt.sh -I ../unix
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
 COMPFLAGS=-warn-error A
-OCAMLPP=-pp '../../ocamldoc/remove_DEBUG'
+#OCAMLPP=-pp '../../ocamldoc/remove_DEBUG'
 
 BYTECODE_C_OBJS=posix_b.o
 NATIVECODE_C_OBJS=posix_n.o
