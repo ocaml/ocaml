@@ -149,13 +149,8 @@ value use_file cs =
 ;
 
 Toploop.parse_toplevel_phrase.val :=
-  fun lb ->
-    do {
-      Printf.eprintf "\tCamlp4 Parsing version %s\n\n" Pcaml.version;
-      flush stderr;
-      Toploop.parse_toplevel_phrase.val := wrap toplevel_phrase (fun _ -> 0);
-      Toploop.parse_toplevel_phrase.val lb
-    };
+  wrap toplevel_phrase (fun _ -> 0)
+;
 
 Toploop.parse_use_file.val :=
   wrap use_file (fun lb -> lb.lex_curr_pos - lb.lex_start_pos)
@@ -165,3 +160,6 @@ Pcaml.warning.val :=
   fun loc txt ->
     Toploop.print_warning (Ast2pt.mkloc loc) Format.err_formatter
       (Warnings.Other txt);
+
+Printf.eprintf "\tCamlp4 Parsing version %s\n\n" Pcaml.version;
+flush stderr;
