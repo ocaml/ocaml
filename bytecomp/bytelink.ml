@@ -415,6 +415,7 @@ let build_custom_runtime prim_name exec_name =
           runtime_lib
           Config.c_libraries)
   | "Win32" ->
+      let retcode =
       Ccomp.command
        (Printf.sprintf
           "%s /Fe%s -I%s %s %s %s %s %s"
@@ -426,7 +427,10 @@ let build_custom_runtime prim_name exec_name =
           (String.concat " " (List.map Ccomp.expand_libname
                                        (List.rev !Clflags.ccobjs)))
           runtime_lib
-          Config.c_libraries)
+          Config.c_libraries) in
+      (* C compiler doesn't clean up after itself *)
+      remove_file (Filename.chop_suffix prim_name ".c" ^ ".obj");
+      retcode
   | "MacOS" ->
       let c68k = "sc"
       and libs68k = "\"{libraries}IntEnv.far.o\" \
