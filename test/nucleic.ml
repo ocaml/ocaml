@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -349,18 +349,19 @@ nuc_p_o3'_60_tfo
   = p_o3'_60_tfo
 
 let
-rA_N9  
-(N(dgf_base_tfo,p_o3'_275_tfo,p_o3'_180_tfo,p_o3'_60_tfo,
-   p,o1p,o2p,o5',c5',h5',h5'',c4',h4',o4',c1',h1',c2',h2'',o2',h2',
-   c3',h3',o3',n1,n3,c2,c4,c5,c6,A (n6,n7,n9,c8,h2,h61,h62,h8)))
-  = n9
+rA_N9 = function
+| (N(dgf_base_tfo,p_o3'_275_tfo,p_o3'_180_tfo,p_o3'_60_tfo,
+     p,o1p,o2p,o5',c5',h5',h5'',c4',h4',o4',c1',h1',c2',h2'',o2',h2',
+     c3',h3',o3',n1,n3,c2,c4,c5,c6,A (n6,n7,n9,c8,h2,h61,h62,h8))) -> n9
+| _ -> assert false
+
 
 let
-rG_N9  
-(N(dgf_base_tfo,p_o3'_275_tfo,p_o3'_180_tfo,p_o3'_60_tfo,
-   p,o1p,o2p,o5',c5',h5',h5'',c4',h4',o4',c1',h1',c2',h2'',o2',h2',
-   c3',h3',o3',n1,n3,c2,c4,c5,c6,G (n2,n7,n9,c8,o6,h1,h21,h22,h8)))
-  = n9
+rG_N9   = function
+| (N(dgf_base_tfo,p_o3'_275_tfo,p_o3'_180_tfo,p_o3'_60_tfo,
+     p,o1p,o2p,o5',c5',h5',h5'',c4',h4',o4',c1',h1',c2',h2'',o2',h2',
+     c3',h3',o3',n1,n3,c2,c4,c5,c6,G (n2,n7,n9,c8,o6,h1,h21,h22,h8))) -> n9
+| _ -> assert false
 
 (* Database of nucleotide conformations: *)
 
@@ -2868,8 +2869,9 @@ let absolute_pos v p = tfo_apply v.t p
 
 let atom_pos atom v = absolute_pos v (atom v.n)
 
-let rec get_var id (v::lst) =
-  if id = v.id then v else get_var id lst
+let rec get_var id = function
+ | (v::lst) -> if id = v.id then v else get_var id lst
+ | _ -> assert false
 
 (* -- SEARCH ----------------------------------------------------------------*)
 
@@ -3194,12 +3196,14 @@ let list_of_atoms = function
   -> [|p;o1p;o2p;o5';c5';h5';h5'';c4';h4';o4';c1';h1';c2';h2'';o2';h2';c3';
      h3';o3';n1;n3;c2;c4;c5;c6;o2;o4;h3;h5;h6|]
 
-let maximum (x::xs) =
-  let rec iter m = function
-    [] -> m
-  | (a::b) -> iter (if a > m then a else m) b
-  in
-    iter x xs
+let maximum = function
+  | x::xs ->
+     let rec iter m = function
+       [] -> m
+     | (a::b) -> iter (if a > m then a else m) b
+     in
+       iter x xs
+  | _ -> assert false
 
 let
 var_most_distant_atom v =

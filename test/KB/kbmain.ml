@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -63,6 +63,7 @@ let group_rank = function
   | "B" -> 3
   | "C" -> 4
   | "A" -> 5
+  | _ -> assert false
 
 let group_precedence op1 op2 =
   let r1 = group_rank op1

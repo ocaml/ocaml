@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -158,7 +158,7 @@ let test np =
   print_newline();
   for i=0 to 15 do Printf.printf "%d  %f  %f\n" i pxr.(i+1) pxi.(i+1) done;
 **)
-  fft pxr pxi np;
+  let _ = fft pxr pxi np in
 (**
   for i=0 to 15 do Printf.printf "%d  %f  %f\n" i pxr.(i+1) pxi.(i+1) done;
 **)

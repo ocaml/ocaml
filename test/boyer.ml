@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -43,8 +43,10 @@ let get name =
         entry
   in get_rec !lemmas
 
-let add_lemma (Prop(_, [(Prop(headl,_) as left); right])) =
-  headl.props <- (left, right) :: headl.props
+let add_lemma = function
+ | Prop(_, [(Prop(headl,_) as left); right]) ->
+     headl.props <- (left, right) :: headl.props
+ | _ -> assert false
 
 (* Substitutions *)
 
@@ -815,6 +817,7 @@ let rec tautologyp x true_lst false_lst =
                tautologyp no true_lst (test::false_lst)
         else
           false
+   | _ -> assert false
   end
 
 

@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -62,12 +62,15 @@ let reduce l m r =
 
 (* Test whether m can be reduced by l, i.e. m contains an instance of l. *)
 
+let can_match l m =
+  try let _ = matching l m in true
+  with Failure _ -> false
+
 let rec reducible l m =
-  try
-    matching l m; true
-  with Failure _ ->
-    match m with Term(_,sons) -> List.exists (reducible l) sons
-              |         _     -> false
+  can_match l m ||
+   (match m with
+    | Term(_,sons) -> List.exists (reducible l) sons
+    |         _     -> false)
 
 (* Top-level rewriting with multiple rules. *)
 

@@ -1,3 +1,19 @@
+(***********************************************************************)
+(*                                                                     *)
+(*                           Objective Caml                            *)
+(*                                                                     *)
+(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(*                                                                     *)
+(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  Distributed only by permission.                   *)
+(*                                                                     *)
+(***********************************************************************)
+
+(* $Id$ *)
+
+(* Translated to Caml by Xavier Leroy *)
+(* Original code written in SML by ... *)
+
 type bdd = One | Zero | Node of bdd * int * int * bdd
 
 let rec eval bdd vars =
@@ -27,13 +43,14 @@ let resize newSize =
       let rec copyBucket bucket =
                 match bucket with 
                   []     -> ()
-                | n ::ns ->  
+                | n :: ns ->  
                     match n with 
-                      Node(l,v,_,h) ->
-                    let ind = hashVal (getId l) (getId h) v land newSz_1
-                    in
-                      newArr.(ind) <- (n :: newArr.(ind));
-                      copyBucket ns
+                    | Node(l,v,_,h) ->
+                       let ind = hashVal (getId l) (getId h) v land newSz_1
+                       in
+                       newArr.(ind) <- (n :: newArr.(ind));
+                       copyBucket ns
+                    | _ -> assert false
                     in
       for n = 0 to !sz_1 do
         copyBucket(arr.(n))
@@ -75,8 +92,9 @@ let mkNode low v high =
                              insert (getId low) (getId high) v ind bucket n; n
                     | n :: ns -> 
                         match n with
-                          Node(l,v',id,h) -> if v=v' & idl=getId l & idh=getId h
+                        | Node(l,v',id,h) -> if v=v' & idl=getId l & idh=getId h
                                              then n else lookup ns
+                        | _ -> assert false
            in
              lookup bucket
 
