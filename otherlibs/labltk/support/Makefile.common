@@ -20,6 +20,6 @@ LABLDEP=$(CAMLRUN) $(TOPDIR)/tools/ocamldep
 COMPFLAGS=
 LINKFLAGS=
 
-CAMLOPT=$(CAMLRUN) $(TOPDIR)/ocamlopt -w l -I $(TOPDIR)/stdlib -labels
+CAMLOPT=$(CAMLRUN) $(TOPDIR)/ocamlopt -I $(TOPDIR)/stdlib -labels
 CAMLOPTLIBR=$(CAMLOPT) -a
 MKLIB=$(TOPDIR)/tools/ocamlmklib
