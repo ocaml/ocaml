@@ -13,7 +13,7 @@
 /* $Id$ */
 
 /* Main entry point (can be overriden by a user-provided main()
-   function that calls caml_main() later. */
+   function that calls caml_main() later). */
 
 #include "misc.h"
 #include "mlvalues.h"
