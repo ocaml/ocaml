@@ -49,7 +49,65 @@ let rec highlight_locations loc1 loc2 =
     Terminfo.Uninitialised ->
       status := Terminfo.setup stdout; highlight_locations loc1 loc2
   | Terminfo.Bad_term ->
-      false
+      begin match !input_lexbuf with
+        None -> false
+      | Some lb ->
+          try
+            (* Char 0 is at offset -lb.lex_abs_pos in lb.lex_buffer. *)
+            let pos0 = -lb.lex_abs_pos in
+            (* Do nothing if the buffer does not contain the whole phrase. *)
+            if pos0 < 0 then raise Exit;
+            (* Count number of lines in phrase *)
+            let lines = ref !num_loc_lines in
+            for i = pos0 to String.length lb.lex_buffer - 1 do
+              if lb.lex_buffer.[i] = '\n' then incr lines
+            done;
+            let pos_at_bol = ref 0 in
+            print_string "Toplevel input:\n# ";
+            (* Print the input, switching to standout for the location *)
+            for pos = 0 to String.length lb.lex_buffer - pos0 - 1 do
+              let c = lb.lex_buffer.[pos + pos0] in
+              if c = '\n' then begin
+                if !pos_at_bol <= loc1.loc_start && loc1.loc_end <= pos then
+                begin
+                  print_string "\n  ";
+                  for i = !pos_at_bol to loc1.loc_start - 1 do
+                    print_char ' '
+                  done;
+                  for i = loc1.loc_start to loc1.loc_end - 1 do
+                    print_char '^'
+                  done;
+                  print_char '\n'
+                end
+                else if !pos_at_bol <= loc1.loc_start && loc1.loc_start < pos
+                then begin
+                  print_char '\r';
+                  print_char (if !pos_at_bol = 0 then '#' else ' ');
+                  print_char ' ';
+                  for i = !pos_at_bol to loc1.loc_start - 1 do
+                    print_char '.'
+                  done;
+                  print_char '\n'
+                end
+                else if !pos_at_bol <= loc1.loc_end && loc1.loc_end < pos
+                then begin
+                  for i = pos - 1 downto loc1.loc_end do
+                    print_string "\b.\b";
+                  done;
+                  print_char '\n';
+                end
+                else print_char '\n';
+                pos_at_bol := pos + 1;
+                if pos < String.length lb.lex_buffer - pos0 - 1 then
+                  print_string "  "
+                else ();
+              end
+              else print_char c;
+            done;
+            flush stdout;
+            true;
+          with Exit -> false
+      end
   | Terminfo.Good_term num_lines ->
       match !input_lexbuf with
         None -> false
