@@ -212,11 +212,6 @@ on some Intel x86 platforms (e.g. Linux RedHat 4.1 and 4.2).
 If this causes a problem, the solution is to downgrade to 2.7.2, or
 upgrade to 2.7.2.2 or above; both work all right.
 
-* gcc 2.6.0 has been reported to generate incorrect code for the
-runtime system in -O mode. Upgrade to a newer version.
-
-MACHINE-SPECIFIC HINTS:
-
 * On HP 9000/700 machines under HP/UX 9.  Some versions of cc are
 unable to compile correctly the runtime system (wrong code is
 generated for (x - y) where x is a pointer and y an integer).
