@@ -43,6 +43,10 @@ method reload_operation op arg res =
       if stackp arg.(0) && stackp arg.(1)
       then ([|arg.(0); self#makereg arg.(1)|], res)
       else (arg, res)
+  | Iintop_imm(Iadd, _) when arg.(0).loc <> res.(0).loc ->
+      (* This add will be turned into a lea; args and results must be
+         in registers *)
+      super#reload_operation op arg res
   | Iintop(Ilsl|Ilsr|Iasr) | Iintop_imm(_, _) | Ifloatofint | Iintoffloat |
     Ispecific(Ipush) ->
       (* The argument(s) can be either in register or on stack *)
