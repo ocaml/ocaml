@@ -871,7 +871,7 @@ if test "$posix_threads" = "yes"; then
     *-*-solaris*)
         pthread_link="-lpthread -lposix4";;
     *-*-freebsd*)
-        pthread_link="-pthread"
+        pthread_link="-pthread -lc_r"
         bytecccompopts="$bytecccompopts -D_THREAD_SAFE"
         nativecccompopts="$nativecccompopts -D_THREAD_SAFE";;
     *-*-openbsd*)
