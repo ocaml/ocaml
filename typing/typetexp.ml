@@ -152,12 +152,17 @@ let rec transl_type env policy styp =
       let (path, decl, is_variant) =
         try
           let (path, decl) = Env.lookup_type lid env in
-          match decl.type_manifest with
-            None -> raise Not_found
-          | Some ty ->
-              match (repr ty).desc with
-                Tvariant row when Btype.static_row row -> (path, decl, true)
-              | _ -> raise Not_found
+          let rec check decl =
+            match decl.type_manifest with
+              None -> raise Not_found
+            | Some ty ->
+                match (repr ty).desc with
+                  Tvariant row when Btype.static_row row -> ()
+                | Tconstr (path, _, _) ->
+                    check (Env.find_type path env)
+                | _ -> raise Not_found
+          in check decl;
+          (path, decl,true)
         with Not_found -> try
           if present <> [] then raise Not_found;
           let lid2 =
