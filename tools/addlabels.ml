@@ -293,7 +293,7 @@ let rec add_labels_class ~text ~classes ~values ~methods cl =
               SMap.removes [s] values
           | Pcf_meth (s, _, e, _) ->
               begin try
-                let labels = List.assoc s ~map:methods in
+                let labels = List.assoc s methods in
                 insert_labels ~labels ~text e
               with Not_found -> ()
               end;
