@@ -19,12 +19,12 @@ type big_int =
      abs_value : nat }
 
 let create_big_int sign nat =  
- if sign = 1 or sign = -1 or
-    (sign = 0 &
+ if sign = 1 || sign = -1 ||
+    (sign = 0 &&
      is_zero_nat nat 0 (num_digits_nat nat 0 (length_nat nat)))
  then { sign = sign; 
          abs_value = nat }
-  else invalid_arg "create_big_int"
+ else invalid_arg "create_big_int"
 
 (* Sign of a big_int *)
 let sign_big_int bi = bi.sign
@@ -60,7 +60,7 @@ let abs_big_int bi =
         -1 if bi < bi2
 *)
 let compare_big_int bi1 bi2 =
-  if bi1.sign = 0 & bi2.sign = 0 then 0
+  if bi1.sign = 0 && bi2.sign = 0 then 0
   else if bi1.sign < bi2.sign then -1
   else if bi1.sign > bi2.sign then 1
   else if bi1.sign = 1 then
@@ -241,7 +241,7 @@ let quomod_big_int bi1 bi2 =
             let not_null_mod = not (is_zero_nat r 0 size_bi2) in
 
             (* correct the signs, adjusting the quotient and remainder *)
-            if bi1_negatif & not_null_mod
+            if bi1_negatif && not_null_mod
              then 
               (* bi1<0, r>0, noting r for (r, size_bi2) the remainder,      *)
               (* we have |bi1|=q * |bi2| + r with 0 < r < |bi2|,            *)
@@ -301,19 +301,23 @@ let gcd_big_int bi1 bi2 =
 
 (* Coercion operators *)
 
-let int_of_big_int bi = 
-  try bi.sign * int_of_nat bi.abs_value
+let monster_big_int = big_int_of_int monster_int;;
+
+let monster_nat = monster_big_int.abs_value;;
+
+let is_int_big_int bi =
+  num_digits_big_int bi == 1 &&
+  match compare_nat bi.abs_value 0 1 monster_nat 0 1 with
+  | 0 -> bi.sign == -1
+  | -1 -> true
+  | _ -> false;;
+
+let int_of_big_int bi =
+  try let n = int_of_nat bi.abs_value in
+      if bi.sign = -1 then - n else n
   with Failure _ ->
-    if eq_big_int bi (big_int_of_int monster_int) 
-    then monster_int 
-    else failwith "int_of_big_int"
-
-let is_int_big_int bi = 
-   is_nat_int (bi.abs_value) 0 (num_digits_big_int bi)
-or (bi.sign = -1 & num_digits_big_int bi = 1 &
-    num_leading_zero_bits_in_digit (bi.abs_value) 0 >= 1)
-
-(* XL: le "1" provient de "pred (length_of_digit - length_of_int))" *)
+    if eq_big_int bi monster_big_int then monster_int
+    else failwith "int_of_big_int";;
 
 (* Coercion with nat type *)
 let nat_of_big_int bi = 
@@ -499,7 +503,7 @@ let base_power_big_int base n bi =
            and len_bi = num_digits_big_int bi in
              if len_bi < len_nat then
                invalid_arg "base_power_big_int"
-             else if len_bi = len_nat &
+             else if len_bi = len_nat &&
                      compare_digits_nat (bi.abs_value) len_bi nat len_nat = -1
                then invalid_arg "base_power_big_int"
              else
