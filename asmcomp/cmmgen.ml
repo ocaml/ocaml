@@ -137,13 +137,21 @@ let is_unboxed_float = function
       end
   | _ -> false
 
+exception Cannot_subst_float
+
 let subst_boxed_float boxed_id unboxed_id exp =
   let need_boxed = ref false in
+  let assigned = ref false in
   let rec subst = function
       Cvar id as e ->
         if Ident.same id boxed_id then need_boxed := true; e
     | Clet(id, arg, body) -> Clet(id, subst arg, subst body)
-    | Cassign(id, arg) -> Cassign(id, subst arg)
+    | Cassign(id, arg) -> 
+        if Ident.same id boxed_id then begin
+          assigned := true;
+          Cassign(unboxed_id, unbox_float arg)
+        end else
+          Cassign(id, subst arg)
     | Ctuple argl -> Ctuple(List.map subst argl)
     | Cop(Cload _, [Cvar id]) as e ->
         if Ident.same id boxed_id then Cvar unboxed_id else e
@@ -157,7 +165,7 @@ let subst_boxed_float boxed_id unboxed_id exp =
     | Ctrywith(e1, id, e2) -> Ctrywith(subst e1, id, subst e2)
     | e -> e in
   let res = subst exp in
-  (res, !need_boxed)  
+  (res, !need_boxed, !assigned)  
 
 (* Unit *)
 
@@ -176,6 +184,8 @@ let rec remove_unit = function
       Ccatch(remove_unit body, remove_unit handler)
   | Ctrywith(body, exn, handler) ->
       Ctrywith(remove_unit body, exn, remove_unit handler)
+  | Clet(id, c1, c2) ->
+      Clet(id, c1, remove_unit c2)
   | c -> c
 
 (* Access to block fields *)
@@ -388,15 +398,18 @@ let rec transl = function
           Cconst_symbol(apply_function arity) ::
           List.map transl (args @ [clos]))
   | Ulet(id, exp, body) ->
-      if is_unboxed_float exp then
+      if is_unboxed_float exp then begin
         let unboxed_id = Ident.new (Ident.name id) in
-        let (tr_body, need_boxed) =
+        let (tr_body, need_boxed, is_assigned) =
           subst_boxed_float id unboxed_id (transl body) in
-        Clet(unboxed_id, transl_unbox_float exp,
-             if need_boxed
-             then Clet(id, box_float(Cvar unboxed_id), tr_body)
-             else tr_body)
-      else
+        if need_boxed & is_assigned then
+          Clet(id, transl exp, transl body)
+        else
+          Clet(unboxed_id, transl_unbox_float exp,
+               if need_boxed
+               then Clet(id, box_float(Cvar unboxed_id), tr_body)
+               else tr_body)
+      end else
         Clet(id, transl exp, transl body)
   | Uletrec(bindings, body) ->
       transl_letrec bindings (transl body)
@@ -725,6 +738,8 @@ let rec transl = function
                            Cassign(id, Cop(inc, 
                                            [Cvar id; Cconst_int 2]))))),
               Ctuple []))))
+  | Uassign(id, exp) ->
+      return_unit(Cassign(id, transl exp))
 
 and transl_unbox_float = function
     Uconst(Const_base(Const_float f)) -> Cconst_float f

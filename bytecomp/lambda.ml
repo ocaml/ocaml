@@ -85,6 +85,7 @@ type lambda =
   | Lwhile of lambda * lambda
   | Lfor of Ident.t * lambda * lambda * direction_flag * lambda
   | Lshared of lambda * int option ref
+  | Lassign of Ident.t * lambda
 
 let const_unit = Const_base(Const_int 0)
 
@@ -152,6 +153,8 @@ let free_variables l =
       freevars e1; freevars e2; freevars e3; fv := IdentSet.remove v !fv
   | Lshared(e, lblref) ->
       freevars e
+  | Lassign(id, e) ->
+      fv := IdentSet.add id !fv; freevars e
   in freevars l; !fv
 
 (* Check if an action has a "when" guard *)

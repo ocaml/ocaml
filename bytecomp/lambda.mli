@@ -85,6 +85,7 @@ type lambda =
   | Lwhile of lambda * lambda
   | Lfor of Ident.t * lambda * lambda * direction_flag * lambda
   | Lshared of lambda * int option ref
+  | Lassign of Ident.t * lambda
 
 val const_unit: structured_constant
 val lambda_unit: lambda

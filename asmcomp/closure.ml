@@ -63,6 +63,7 @@ let occurs_var var u =
     | Usequence(u1, u2) -> occurs u1 or occurs u2
     | Uwhile(cond, body) -> occurs cond or occurs body
     | Ufor(id, lo, hi, dir, body) -> occurs lo or occurs hi or occurs body
+    | Uassign(id, u) -> id = var or occurs u
   and occurs_array a =
     try
       for i = 0 to Array.length a - 1 do
@@ -219,6 +220,9 @@ let rec close fenv cenv = function
       (Ufor(id, ulo, uhi, dir, ubody), Value_unknown)
   | Lshared(lam, _) ->
       close fenv cenv lam
+  | Lassign(id, lam) ->
+      let (ulam, _) = close fenv cenv lam in
+      (Uassign(id, ulam), Value_unknown)
 
 and close_list fenv cenv = function
     [] -> []

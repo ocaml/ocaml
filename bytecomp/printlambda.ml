@@ -237,6 +237,12 @@ let rec lambda = function
       close_box()
   | Lshared(l, lbl) ->
       lambda l
+  | Lassign(id, expr) ->
+      open_hovbox 2;
+      print_string "(assign"; print_space();
+      Ident.print id; print_space();
+      lambda expr; print_string ")";
+      close_box()
 
 and sequence = function
     Lsequence(l1, l2) ->

@@ -307,11 +307,11 @@ let outgoing ofs = Outgoing ofs
 let not_supported ofs = fatal_error "Proc.loc_results: cannot call"
 
 let loc_arguments arg =
-  calling_conventions 0 3 100 103 outgoing arg
+  calling_conventions 0 5 100 103 outgoing arg
 let loc_parameters arg =
-  let (loc, ofs) = calling_conventions 0 3 100 103 incoming arg in loc
+  let (loc, ofs) = calling_conventions 0 5 100 103 incoming arg in loc
 let loc_results res =
-  let (loc, ofs) = calling_conventions 0 3 100 103 not_supported res in loc
+  let (loc, ofs) = calling_conventions 0 5 100 103 not_supported res in loc
 let loc_external_arguments arg =
   calling_conventions 0 (-1) 100 99 outgoing arg
 let loc_external_results res =

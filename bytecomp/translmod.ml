@@ -111,7 +111,7 @@ and transl_structure env fields cc = function
                       Tcoerce_primitive p -> transl_primitive p
                     | _ -> apply_coercion cc (transl_access env v.(pos)))
                   pos_cc_list)
-      | Tcoerce_functor(_, _) ->
+      | _ ->
           fatal_error "Translmod.transl_structure"
       end
   | Tstr_eval expr :: rem ->

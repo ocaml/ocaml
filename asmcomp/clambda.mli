@@ -38,6 +38,7 @@ type ulambda =
   | Usequence of ulambda * ulambda
   | Uwhile of ulambda * ulambda
   | Ufor of Ident.t * ulambda * ulambda * direction_flag * ulambda
+  | Uassign of Ident.t * ulambda
 
 (* Description of known functions *)
 

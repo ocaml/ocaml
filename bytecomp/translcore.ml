@@ -337,6 +337,59 @@ let name_pattern_list default = function
     [] -> Ident.new default
   | (p, e) :: _ -> name_pattern default p
 
+(* To transform let-bound references into variables *)
+
+exception Real_reference
+
+let rec eliminate_ref id = function
+    Lvar v as lam ->
+      if Ident.same v id then raise Real_reference else lam
+  | Lconst cst as lam -> lam
+  | Lapply(e1, el) -> 
+      Lapply(eliminate_ref id e1, List.map (eliminate_ref id) el)
+  | Lfunction(param, body) as lam ->
+      if IdentSet.mem id (free_variables lam)
+      then raise Real_reference
+      else lam
+  | Llet(v, e1, e2) ->
+      Llet(v, eliminate_ref id e1, eliminate_ref id e2)
+  | Lletrec(idel, e2) ->
+      Lletrec(List.map (fun (v, e) -> (v, eliminate_ref id e)) idel,
+              eliminate_ref id e2)
+  | Lprim(Pfield 0, [Lvar v]) when Ident.same v id ->
+      Lvar id
+  | Lprim(Psetfield(0, _), [Lvar v; e]) when Ident.same v id ->
+      Lassign(id, eliminate_ref id e)
+  | Lprim(Poffsetref delta, [Lvar v]) when Ident.same v id ->
+      Lassign(id, Lprim(Poffsetint delta, [Lvar id]))
+  | Lprim(p, el) ->
+      Lprim(p, List.map (eliminate_ref id) el)
+  | Lswitch(e, n1, cases1, n2, cases2) ->
+      Lswitch(eliminate_ref id e,
+        n1, List.map (fun (n, e) -> (n, eliminate_ref id e)) cases1,
+        n2, List.map (fun (n, e) -> (n, eliminate_ref id e)) cases2)
+  | Lstaticfail ->
+      Lstaticfail
+  | Lcatch(e1, e2) ->
+      Lcatch(eliminate_ref id e1, eliminate_ref id e2)
+  | Ltrywith(e1, v, e2) ->
+      Ltrywith(eliminate_ref id e1, v, eliminate_ref id e2)
+  | Lifthenelse(e1, e2, e3) ->
+      Lifthenelse(eliminate_ref id e1,
+                  eliminate_ref id e2,
+                  eliminate_ref id e3)
+  | Lsequence(e1, e2) ->
+      Lsequence(eliminate_ref id e1, eliminate_ref id e2)
+  | Lwhile(e1, e2) ->
+      Lwhile(eliminate_ref id e1, eliminate_ref id e2)
+  | Lfor(v, e1, e2, dir, e3) ->
+      Lfor(v, eliminate_ref id e1, eliminate_ref id e2,
+           dir, eliminate_ref id e3)
+  | Lshared(e, lbl) ->
+      Lshared(eliminate_ref id e, lbl)
+  | Lassign(v, e) ->
+      Lassign(v, eliminate_ref id e)
+
 (* Translation of expressions *)
 
 let rec transl_exp env e =
@@ -492,11 +545,26 @@ and transl_let env rec_flag pat_expr_list =
             bind_pattern body_env pat (Lvar id) Immutable in
           let (final_env, add_let_fun) =
             transl ext_env rem in
-          (final_env,
-           fun e -> Llet(id, transl_exp env expr,
-                         Matching.for_let pat.pat_loc id pat
-                           (bind_fun(add_let_fun e)))) in
-      transl env pat_expr_list
+          let lexpr =
+            transl_exp env expr in
+          (* If this is let pat = ref expr in expr, try to transform
+             the ref into a local variable *)
+          match lexpr with
+            Lprim(Pmakeblock(0, Mutable), [linit]) ->
+              (final_env,
+               fun e ->
+                  let lbody =
+                    Matching.for_let pat.pat_loc id pat
+                                     (bind_fun(add_let_fun e)) in
+                  try
+                    Llet(id, linit, eliminate_ref id lbody)
+                  with Real_reference ->
+                    Llet(id, lexpr, lbody))
+          | _ ->
+              (final_env,
+               fun e -> Llet(id, lexpr, Matching.for_let pat.pat_loc id pat
+                                                 (bind_fun(add_let_fun e))))
+      in transl env pat_expr_list
   | Recursive ->
       let transl_case (pat, expr) =
         let id = 

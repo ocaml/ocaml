@@ -384,6 +384,14 @@ let rec comp_expr env exp sz cont =
       | Some lbl ->
           Kbranch lbl :: discard_dead_code cont
       end
+  | Lassign(id, expr) ->
+      begin try
+        let pos = Ident.find_same id env.ce_stack in
+        comp_expr env expr sz (Kassign(sz - pos) :: cont)
+      with Not_found ->
+        fatal_error "Codegen.comp_expr: assign"
+      end
+
 
 (* Compile a list of arguments [e1; ...; eN] to a primitive operation.
    The values of eN ... e2 are pushed on the stack, e2 at top of stack,
