@@ -27,6 +27,7 @@ type error =
   | Duplicate_label of string
   | Recursive_abbrev of string
   | Definition_mismatch of type_expr
+  | Constraint_failed of Path.t * type_expr * type_expr
   | Unconsistent_constraint
   | Type_clash of (type_expr * type_expr) list
   | Null_arity_external
@@ -38,24 +39,15 @@ exception Error of Location.t * error
 
 (* Enter all declared types in the environment as abstract types *)
 
-let rec enter_types env = function
-    ([], []) ->
-      (env, [])
-  | ((name, sdecl) :: srem, id :: irem) ->
-      let decl =
-        { type_params = List.map (fun _ -> Ctype.newvar ()) sdecl.ptype_params;
-          type_arity = List.length sdecl.ptype_params;
-          type_kind = Type_abstract;
-          type_manifest =
-            match sdecl.ptype_manifest with
-              None -> None
-            | Some _ -> Some (Ctype.newvar ()) }
-      in
-      let extenv = Env.add_type id decl env in
-      let (ext_env, decl_rem) = enter_types extenv (srem, irem) in
-      (ext_env, (id, decl) :: decl_rem)
-  | _ ->
-      fatal_error "Typedecl.enter_types"
+let enter_type env (name, sdecl) id =
+  let decl =
+    { type_params =
+        List.map (fun _ -> Btype.newgenvar ()) sdecl.ptype_params;
+      type_arity = List.length sdecl.ptype_params;
+      type_kind = Type_abstract;
+      type_manifest = None }
+  in
+  Env.add_type id decl env
 
 (* Determine if a type is (an abbreviation for) the type "float" *)
 
@@ -72,63 +64,14 @@ module StringSet =
     let compare = compare
   end)
 
-(* First pass: parameters, constraints and expansion *)
-let transl_declaration env (name, sdecl) (id, decl) =
-  reset_type_variables();
-  begin try
-    List.iter2
-      (fun ty sty -> Ctype.unify env ty (enter_type_variable true sty))
-      decl.type_params sdecl.ptype_params
-  with Already_bound ->
-    raise(Error(sdecl.ptype_loc, Repeated_parameter))
-  end;
-
-  begin match sdecl.ptype_manifest with
-    None ->
-      ()
-  | Some sty ->
-      let ty = transl_simple_type env true sty in
-      if Ctype.cyclic_abbrev env id ty then
-        raise(Error(sdecl.ptype_loc, Recursive_abbrev name));
-      begin try
-        Ctype.unify env ty (Ctype.newconstr (Path.Pident id) decl.type_params) 
-      with Ctype.Unify trace ->
-        raise(Error(sdecl.ptype_loc, Type_clash trace))
-      end
-  end;
-
-  List.iter
-    (function (sty, sty', loc) ->
-       try
-         Ctype.unify env (transl_simple_type env false sty)
-                         (transl_simple_type env false sty')
-       with Ctype.Unify _ ->
-         raise(Error(loc, Unconsistent_constraint)))
-    sdecl.ptype_cstrs;
-
-  (id, decl)
-
-(* Second pass: representation *)
-let transl_declaration2 env (name, sdecl) (id, decl) =
-  let (params, typ) =
-    match decl.type_manifest with
-      None -> (Ctype.instance_list decl.type_params, None)
-    | Some typ ->
-        let (params, typ) =
-          Ctype.instance_parameterized_type decl.type_params typ
-        in
-        (params, Some typ)
-  in
-
+let transl_declaration env (name, sdecl) id =
   (* Bind type parameters *)
   reset_type_variables();
-  List.iter2
-    (fun ty sty -> Ctype.unify env ty (enter_type_variable true sty))
-    params sdecl.ptype_params;
+  let params = List.map (enter_type_variable true) sdecl.ptype_params in
 
-  let decl' =
+  let decl =
     { type_params = params;
-      type_arity = decl.type_arity;
+      type_arity = List.length params;
       type_kind =
         begin match sdecl.ptype_kind with
           Ptype_abstract ->
@@ -167,8 +110,27 @@ let transl_declaration2 env (name, sdecl) (id, decl) =
               else Record_regular in
             Type_record(lbls', rep)
         end;
-      type_manifest = typ } in
-  (id, decl')
+      type_manifest =
+        begin match sdecl.ptype_manifest with
+          None -> None
+        | Some sty ->
+            let ty = transl_simple_type env true sty in
+            if Ctype.cyclic_abbrev env id ty then
+              raise(Error(sdecl.ptype_loc, Recursive_abbrev name));
+            Some ty
+        end; } in
+
+  (* Check constraints *)
+  List.iter
+    (function (sty, sty', loc) ->
+       try
+         Ctype.unify env (transl_simple_type env false sty)
+                         (transl_simple_type env false sty')
+       with Ctype.Unify _ ->
+         raise(Error(loc, Unconsistent_constraint)))
+    sdecl.ptype_cstrs;
+
+  (id, decl)
 
 (* Generalize a type declaration *)
 
@@ -185,6 +147,65 @@ let generalize_decl decl =
   begin match decl.type_manifest with
     None    -> ()
   | Some ty -> Ctype.generalize ty
+  end
+
+(* Check that all constraints are enforced *)
+
+let rec check_constraints_rec env loc ty =
+  let ty = Ctype.repr ty in
+  match ty.desc with
+  | Tconstr (path, args, _) ->
+      Ctype.begin_def ();
+      let args' = List.map (fun _ -> Ctype.newvar ()) args in
+      let ty' = Ctype.newty (Tconstr(path, args', ref Mnil)) in
+      begin try Ctype.enforce_constraints env ty'
+      with Ctype.Unify _ -> assert false
+      end;
+      Ctype.end_def ();
+      Ctype.generalize ty';
+      List.iter2
+        (fun ty ty' ->
+          if not (Ctype.moregeneral env false ty' ty) then
+            raise (Error(loc, Constraint_failed (path, ty, ty'))))
+        args args';
+      List.iter (check_constraints_rec env loc) args
+  | _ ->
+      Btype.iter_type_expr (check_constraints_rec env loc) ty
+
+let check_constraints env (_, sdecl) (_, decl) =
+  begin match decl.type_kind with
+  | Type_abstract -> ()
+  | Type_variant l ->
+      let pl =
+        match sdecl.ptype_kind with Ptype_variant pl -> pl | _ -> assert false
+      in
+      List.iter
+        (fun (name, tyl) ->
+          let styl = try List.assoc name pl with Not_found -> assert false in
+          List.iter2
+            (fun sty ty -> check_constraints_rec env sty.ptyp_loc ty)
+            styl tyl)
+        l
+  | Type_record (l, _) ->
+      let pl =
+        match sdecl.ptype_kind with Ptype_record pl -> pl | _ -> assert false
+      in
+      let rec get_loc name = function
+          [] -> assert false
+        | (name', _, sty) :: tl ->
+            if name = name' then sty.ptyp_loc else get_loc name tl
+      in
+      List.iter
+        (fun (name, _, ty) -> check_constraints_rec env (get_loc name pl) ty)
+        l
+  end;
+  begin match decl.type_manifest with
+  | None -> ()
+  | Some ty ->
+      let sty =
+        match sdecl.ptype_manifest with Some sty -> sty | _ -> assert false
+      in
+      check_constraints_rec env sty.ptyp_loc ty
   end
 
 (*
@@ -242,25 +263,11 @@ let transl_type_decl env name_sdecl_list =
   Ctype.init_def(Ident.current_time());
   Ctype.begin_def();
   (* Enter types. *)
-  let (temp_env, temp_decl) = enter_types env (name_sdecl_list, id_list) in
+  let temp_env = List.fold_left2 enter_type env name_sdecl_list id_list in
   (* Translate each declaration. *)
   let decls =
-    List.map2 (transl_declaration temp_env) name_sdecl_list temp_decl in
-  (* Generalize intermediate type declarations. *)
-  Ctype.end_def();
-  List.iter (function (_, decl) -> generalize_decl decl) decls;
-  (* Build an env. containing type expansions *)
-  let temp_env =
-    List.fold_right
-      (fun (id, decl) env -> Env.add_type id decl env)
-      decls env
-  in
-  (* Check for recursive abbrevs *)
-  List.iter2 (check_recursive_abbrev temp_env) name_sdecl_list decls;
-  Ctype.begin_def();
-  let decls =
-    List.map2 (transl_declaration2 temp_env) name_sdecl_list decls in
-  (* Generalize final type declarations. *)
+    List.map2 (transl_declaration temp_env) name_sdecl_list id_list in
+  (* Generalize type declarations. *)
   Ctype.end_def();
   List.iter (function (_, decl) -> generalize_decl decl) decls;
   (* Build the final env. *)
@@ -269,6 +276,8 @@ let transl_type_decl env name_sdecl_list =
       (fun (id, decl) env -> Env.add_type id decl env)
       decls env
   in
+  (* Check for recursive abbrevs *)
+  List.iter2 (check_recursive_abbrev newenv) name_sdecl_list decls;
   (* Check that all type variable are closed *)
   List.iter2
     (fun (_, sdecl) (id, decl) ->
@@ -278,6 +287,8 @@ let transl_type_decl env name_sdecl_list =
     name_sdecl_list decls;
   (* Check re-exportation *)
   List.iter2 (check_abbrev newenv) name_sdecl_list decls;
+  (* Check that constraints are enforced *)
+  List.iter2 (check_constraints newenv) name_sdecl_list decls;
   (* Done *)
   (decls, newenv)
 
@@ -368,6 +379,14 @@ let report_error ppf = function
       fprintf ppf
         "The variant or record definition does not match that of type@ %a"
         Printtyp.type_expr ty
+  | Constraint_failed (path, ty, ty') ->
+      fprintf ppf
+        "Constraints are not satisfied for type constructor %a.@."
+        Printtyp.path path;
+      Printtyp.reset_and_mark_loops ty;
+      Printtyp.mark_loops ty';
+      fprintf ppf "@[<hv>Type@ %a should be an instance of@ %a.@]"
+        Printtyp.type_expr ty Printtyp.type_expr ty'
   | Unconsistent_constraint ->
       fprintf ppf "The type constraints are not consistent"
   | Type_clash trace ->
