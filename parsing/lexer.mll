@@ -43,7 +43,7 @@ let keyword_table =
     "do", DO;
     "done", DONE;
     "downto", DOWNTO;
-    "dynamic", DYNAMIC; (* DYN *) 
+    "dyn", DYNAMIC; (* DYN *) 
     "else", ELSE;
     "end", END;
     "exception", EXCEPTION;
