@@ -141,9 +141,13 @@ let send_phrase txt =
         and after = ref false in
         while !pend = -1 do
           let token = Lexer.token buffer in
-          let pos = Lexing.lexeme_start buffer in
+          let pos =
+            if token = SEMISEMI then Lexing.lexeme_end buffer
+            else Lexing.lexeme_start buffer
+          in
+          let bol = (pos = 0) || text.[pos-1] = '\n' in
           if not !after &&
-            Text.compare txt.tw index:(tpos pos) op:`Gt
+            Text.compare txt.tw index:(tpos pos) op:(if bol then `Gt else `Ge)
               index:(`Mark"insert",[])
           then begin
             after := true;
@@ -152,7 +156,6 @@ let send_phrase txt =
               block_start := []
             end
           end;
-          let bol = (pos = 0) || text.[pos-1] = '\n' in
           match token with
             CLASS | EXTERNAL | EXCEPTION | FUNCTOR
           | LET | MODULE | OPEN | TYPE | VAL | SHARP when bol ->
@@ -160,10 +163,10 @@ let send_phrase txt =
                 if !after then pend := pos else start := pos
               else block_start := pos :: List.tl !block_start
           | SEMISEMI ->
-              let pos' = Lexing.lexeme_end buffer in
               if !block_start = [] then
-                if !after then pend := pos else start := pos'
-              else block_start := pos' :: List.tl !block_start
+                if !after then pend := Lexing.lexeme_start buffer
+                else start := pos
+              else block_start := pos :: List.tl !block_start
           | BEGIN | OBJECT | STRUCT | SIG ->
               block_start := Lexing.lexeme_end buffer :: !block_start
           | END ->
