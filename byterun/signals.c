@@ -134,16 +134,20 @@ CAMLexport void enter_blocking_section(void)
 CAMLexport void leave_blocking_section(void)
 {
 #ifdef _WIN32
+  int signal_number;
+#endif
+
+  if (leave_blocking_section_hook != NULL) leave_blocking_section_hook();
+#ifdef _WIN32
   /* Under Win32, asynchronous signals such as ctrl-C are not processed
      immediately (see ctrl_handler in win32.c), but simply set
      pending_signal and let the system call run to completion.
      Hence, test pending_signal here and act upon it, before we get
      a chance to process the result of the system call. */
-  int signal_number = pending_signal;
+  signal_number = pending_signal;
   pending_signal = 0;
   if (signal_number) execute_signal(signal_number, 1);
 #endif
-  if (leave_blocking_section_hook != NULL) leave_blocking_section_hook();
   Assert(async_signal_mode);
   async_signal_mode = 0;
 }
