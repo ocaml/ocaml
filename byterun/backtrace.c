@@ -186,7 +186,8 @@ static void print_location(value events, int index)
     int lnum = Int_val (Field (ev_char, POS_LNUM));
     int chr = Int_val (Field (ev_char, POS_CNUM))
               - Int_val (Field (ev_char, POS_BOL));
-    fprintf(stderr, "%s module %s, line %d, char %d\n", info, fname, lnum, chr);
+    fprintf (stderr, "%s file \"%s\", line %d, character %d\n", info, fname,
+             lnum, chr);
   }
 }
 
