@@ -936,6 +936,7 @@ CAMLprim value bigarray_fill(value vb, value vinit)
     long * p;
     for (p = b->data; num_elts > 0; p++, num_elts--) *p = init;
     break;
+  }
   case BIGARRAY_COMPLEX32: {
     float init0 = Double_field(vinit, 0);
     float init1 = Double_field(vinit, 1);
@@ -949,7 +950,6 @@ CAMLprim value bigarray_fill(value vb, value vinit)
     double * p;
     for (p = b->data; num_elts > 0; num_elts--) { *p++ = init0; *p++ = init1; }
     break;
-  }
   }
   }
   return Val_unit;
