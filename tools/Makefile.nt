@@ -41,7 +41,7 @@ cslprof: $(CSLPROF) profiling.cmo
 
 install::
 	cp cslprof $(BINDIR)\cslprof.exe
-	cp cslcp $(BINDIR)\cslcp
+	cp cslcp $(BINDIR)\cslcp.sh
 	cp profiling.cmi profiling.cmo $(LIBDIR)
 
 clean::
@@ -50,7 +50,7 @@ clean::
 # To make custom toplevels
 
 install::
-	cp cslmktop $(BINDIR)\cslmktop
+	cp cslmktop $(BINDIR)\cslmktop.sh
 
 # The bytecode disassembler
 
