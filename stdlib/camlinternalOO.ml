@@ -492,6 +492,25 @@ let lookup_tables root keys =
   else
     build_path (Array.length keys - 1) keys root
 
+(**** builtin methods ****)
+
+let ret_const x obj = x
+let ret_var n (obj : obj) = Array.unsafe_get obj n
+let ret_env env n obj = Obj.field (Array.unsafe_get obj env) n
+let ret_meth n (obj : obj) = Obj.repr (send obj n)
+let set_var n (obj : obj) x = Array.unsafe_set obj n x
+let app_const f x obj = f x
+let app_var f n (obj : obj) = f (Array.unsafe_get obj n)
+let app_env f env n obj = f (Obj.field (Array.unsafe_get obj env) n)
+let app_meth f n obj = f (Obj.repr (send obj n))
+let app_const_const f x y obj = f x y
+let app_const_var f x n obj = f x (Array.unsafe_get obj n)
+let app_const_env f x env n obj = f x (Obj.field (Array.unsafe_get obj env) n)
+let app_const_meth f x n obj = f x (Obj.repr (send obj n))
+let app_var_const f n x (obj : obj) = f (Array.unsafe_get obj n) x
+let app_env_const f env n x obj = f (Obj.field (Array.unsafe_get obj env) n) x
+let app_meth_const f n x obj = f (Obj.repr (send obj n)) x
+
 (**** Statistics ****)
 
 type stats =

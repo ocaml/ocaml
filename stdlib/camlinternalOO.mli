@@ -56,6 +56,26 @@ val send : obj -> label -> t
 type tables
 val lookup_tables : tables -> table array -> tables
 
+(** {6 Builtin methods} *)
+
+open Obj
+val ret_const : t -> obj -> t
+val ret_var : int -> obj -> t
+val ret_env : int -> int -> obj -> t
+val ret_meth : label -> obj -> t
+val set_var : int -> obj -> t -> unit
+val app_const : (t -> t) -> t -> obj -> t
+val app_var : (t -> t) -> int -> obj -> t
+val app_env : (t -> t) -> int -> int -> obj -> t
+val app_meth : (t -> t) -> label -> obj -> t
+val app_const_const : (t -> t -> t) -> t -> t -> obj -> t
+val app_const_var : (t -> t -> t) -> t -> int -> obj -> t
+val app_const_env : (t -> t -> t) -> t -> int -> int -> obj -> t
+val app_const_meth : (t -> t -> t) -> t -> label -> obj -> t
+val app_var_const : (t -> t -> t) -> int -> t -> obj -> t
+val app_env_const : (t -> t -> t) -> int -> int -> t -> obj -> t
+val app_meth_const : (t -> t -> t) -> label -> t -> obj -> t
+
 (** {6 Parameters} *)
 
 type params =

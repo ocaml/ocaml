@@ -27,6 +27,7 @@ type error = Illegal_class_expr
 exception Error of Location.t * error
 
 let lfunction params body =
+  if params = [] then body else
   match body with
     Lfunction (Curried, params', body') ->
       Lfunction (Curried, params @ params', body')
@@ -400,6 +401,60 @@ let transl_class_rebind ids cl =
   with Exit ->
     lambda_unit
 
+(* Rewrite a closure using builtins. Improves native code size. *)
+
+let rec module_path = function
+    Lvar id ->
+      let s = Ident.name id in s <> "" && s.[0] >= 'A' && s.[0] <= 'Z'
+  | Lprim(Pfield _, [p])    -> module_path p
+  | Lprim(Pgetglobal _, []) -> true
+  | _                       -> false
+
+let const_path local = function
+    Lvar id -> not (List.mem id local)
+  | Lconst _ -> true
+  | Lfunction (Curried, _, body) ->
+      let fv = free_variables body in
+      List.for_all (fun x -> not (IdentSet.mem x fv)) local
+  | p -> module_path p
+
+let rec builtin_meths self env env2 body =
+  let const_path = const_path (env::self) in
+  let conv = function
+    (* Lvar s when List.mem s self ->  "_self", [] *)
+    | p when const_path p -> "_const", [p]
+    | Lprim(Parrayrefu _, [Lvar s; Lvar n]) when List.mem s self ->
+        "_var", [Lvar n]
+    | Lprim(Pfield n, [Lvar e]) when Ident.same e env ->
+        "_env", [Lvar env2; Lconst(Const_pointer n)]
+    | Lsend(Lvar n, Lvar s, []) when List.mem s self ->
+        "_meth", [Lvar n]
+    | _ -> raise Not_found
+  in
+  match body with
+  | Llet(Alias, s', Lvar s, body) when List.mem s self ->
+      builtin_meths self env env2 body
+  | Lapply(f, [arg]) when const_path f ->
+      let s, args = conv arg in Lapply(oo_prim ("app"^s), f :: args)
+  | Lapply(f, [arg; p]) when const_path f && const_path p ->
+      let s, args = conv arg in
+      Lapply(oo_prim ("app"^s^"_const"), f :: args @ [p])
+  | Lapply(f, [p; arg]) when const_path f && const_path p ->
+      let s, args = conv arg in
+      Lapply(oo_prim ("app_const"^s), f :: p :: args)
+  | Lfunction (Curried, [x], body) ->
+      let rec enter self = function
+        | Lprim(Parraysetu _, [Lvar s; Lvar n; Lvar x'])
+          when Ident.same x x' && List.mem s self ->
+            Lapply(oo_prim "set_var", [Lvar n])
+        | Llet(Alias, s', Lvar s, body) when List.mem s self ->
+            enter (s'::self) body
+        | _ -> raise Not_found
+      in enter self body
+  | Lfunction _ -> raise Not_found
+  | _ ->
+      let s, args = conv body in Lapply(oo_prim ("ret"^s), args)
+
 (*
    XXX
    Exploiter le fait que les methodes sont definies dans l'ordre pour
@@ -423,7 +478,7 @@ let transl_class ids cl_id arity pub_meths cl =
     let fv = free_variables lam in
     let fv = List.fold_right IdentSet.remove !new_ids' fv in
     let fv =
-      IdentSet.filter (fun id -> List.exists (Ident.same id) new_ids) fv in
+      IdentSet.filter (fun id -> List.mem id new_ids) fv in
     new_ids' := !new_ids' @ IdentSet.elements fv;
     let i = ref (i0-1) in
     List.fold_left
@@ -432,16 +487,22 @@ let transl_class ids cl_id arity pub_meths cl =
       Ident.empty !new_ids'
   in
   let new_ids_meths = ref [] in
-  let msubst =
-    if new_ids = [] then fun x -> x else
-    function
-        Lfunction (Curried, self :: args, body) ->
-          let env = Ident.create "env" in
-          Lfunction (
-          Curried, self :: args,
-          Llet(Alias, env,
-               Lprim(Parrayrefu Paddrarray, [Lvar self; Lvar env2]),
-               subst_lambda (subst env body 0 new_ids_meths) body))
+  let msubst = function
+      Lfunction (Curried, self :: args, body) ->
+        let env = Ident.create "env" in
+        let body' =
+          if new_ids = [] then body else
+          subst_lambda (subst env body 0 new_ids_meths) body in
+        begin try
+          (* Doesn't seem to improve size for bytecode *)
+          (* if not !Clflags.native_code then raise Not_found; *)
+          builtin_meths [self] env env2 (lfunction args body')
+        with Not_found ->
+          lfunction (self :: args)
+            (if not (IdentSet.mem env (free_variables body')) then body' else
+             Llet(Alias, env,
+                  Lprim(Parrayrefu Paddrarray, [Lvar self; Lvar env2]), body'))
+          end
       | _ -> assert false
   in
   let new_ids_init = ref [] in
@@ -527,8 +588,7 @@ let transl_class ids cl_id arity pub_meths cl =
   and cached = Ident.create "cached" in
   let inh_paths =
     List.filter
-      (fun (_,_,path) -> List.exists (Ident.same (Path.head path)) new_ids)
-      inh_init in
+      (fun (_,_,path) -> List.mem (Path.head path) new_ids) inh_init in
   let inh_keys =
     List.map (fun (_,_,p) -> Lprim(Pfield 2, [transl_path p])) inh_paths in
   let lclass lam =
