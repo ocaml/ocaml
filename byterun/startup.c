@@ -58,8 +58,9 @@ static void init_atoms(void)
 
 /* Read the trailer of a bytecode file */
 
-static unsigned long read_size(unsigned char *p)
+static unsigned long read_size(char * ptr)
 {
+  unsigned char * p = (unsigned char *) ptr;
   return ((unsigned long) p[0] << 24) + ((unsigned long) p[1] << 16) +
          ((unsigned long) p[2] << 8) + p[3];
 }

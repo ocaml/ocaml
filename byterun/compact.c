@@ -212,9 +212,9 @@ void compact_heap (void)
         while (Ecolor (q) == 0) q = * (word *) q;
         sz = Wosize_ehd (q);
         for (i = 1; i < sz; i++){
-          if (Field (p,i) != 0) invert_pointer_at (&(Field (p,i)));
+          if (Field (p,i) != 0) invert_pointer_at ((word *) &(Field (p,i)));
         }
-        invert_pointer_at (pp);
+        invert_pointer_at ((word *) pp);
         pp = &Field (p, 0);
       }
     }
