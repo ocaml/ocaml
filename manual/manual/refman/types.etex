@@ -20,9 +20,6 @@ typexpr:
       | '#' class-path
       | typexpr '#' class-path
       | '(' typexpr { ',' typexpr } ) '#' class-path
-      | '#' typeconstr-path [ tag-list ]
-      | typexpr '#' typeconstr-path [ tag-list ]
-      | '(' typexpr { ',' typexpr } ) '#' typeconstr-path [ tag-list ]
 ;
 method-type:
     method-name ':' typexpr
@@ -114,9 +111,12 @@ variant-type:
 ;
 tag-spec:
         '`'tag-name [ "of" typexpr ]
+      | typexpr
 ;
 tag-spec-full:
         '`'tag-name [ "of" typexpr ] { '&' typexpr }
+      | typexpr
+;
 \end{syntax}
 
 Variant types describe the values a polymorphic variant may take.
@@ -138,6 +138,12 @@ all the possible tags and their associated types, and which tags are
 known to potentially appear in values. The above exact variant type is
 just an abbreviation for a closed variant type where all possible tags
 are also potentially present.
+
+In all three cases, tags may be either specified directly in the
+{\it `tag-name \rm [\dots]} form, or indirectly through a type
+expression. In this last case, the type expression must expand to an
+exact variant type, whose tag specifications are inserted in its
+place.
 
 Full specification of variant tags are only used for non-exact closed
 types. They can be understood as a conjunctive type for the argument:
@@ -175,16 +181,13 @@ In particular, it vanishes when the ellipsis gets instantiated.
 %
 Each type expression @'#' class-path@ defines a new type variable, so
 type @'#' class-path '->' '#' class-path@ is usually not the same as
-type @'#' class-path 'as' "'" ident '->' "'" ident@.
+type @('#' class-path 'as' "'" ident) '->' "'" ident@.
 %
 
-\#-types can also be used to abbreviate variant types. Similarly they
-express the presence of a row variable, allowing further refinement of
-the type. Precisely, if "t" has been defined as the type
-@"[" "`tag"_1 a_1 "|" \dots "|`tag"_n a_n"]"@ then "#t" is the type
-@"[<" "`tag"_1 a_1 "|" \dots"|`tag"_n a_n"]"@, and
-@"#t[>" "`tag"_1 \dots"`tag"_k"]"@ is the type
-@"[<" "`tag"_1 a_1 "|" \dots"|`tag"_n a_n ">" "`tag"_1 \dots"`tag"_k"]"@.
+Use of \#-types to abbreviate variant types is deprecated.
+If "t" is an exact variant type then "#t" translates to "[< t]",
+and @"#t[>" "`tag"_1 \dots"`tag"_k"]"@ translates to 
+@"[<" "t" ">" "`tag"_1 \dots"`tag"_k"]"@
 
 \subsubsection*{Variant and record types}
 
