@@ -16,6 +16,7 @@
 open Misc
 open Asttypes
 open Types
+open Btype
 
 (*
    Type manipulation after type inference
@@ -24,7 +25,7 @@ open Types
    instance, during code generation or in the debugger), one must
    first make sure that the type levels are correct, using the
    function [correct_levels]. Then, this type can be correctely
-   manipulated by [substitute], [expand_abbrev] and [moregeneral].
+   manipulated by [apply], [expand_abbrev] and [moregeneral].
 *)
 
 (*
@@ -52,12 +53,9 @@ open Types
 (*
    A faire
    =======
-   - Renommer [substitute] en [apply]
    - Revoir affichage des types.
-   - Types recursifs sans limitation.
    - Etendre la portee d'un alias [... as 'a] a tout le type englobant.
    - #-type implementes comme de vraies abreviations.
-   - Deplacer Ctype.repr dans Types ?
    - Niveaux plus fins pour les identificateurs :
        Champ [global] renomme en [level];
        Niveau -1 : global
@@ -96,7 +94,6 @@ exception Recursive_abbrev
 
 (**** Type level management ****)
 
-let generic_level = (-1)
 let current_level = ref 0
 let global_level = ref 1
 
@@ -107,21 +104,19 @@ let end_def () = decr current_level
 let reset_global_level () =
   global_level := !current_level + 1
 
-(* Used to mark a type during a traversal. *)
-let lowest_level = generic_level
-let pivot_level = 2 * lowest_level - 1
-    (* pivot_level - lowest_level < lowest_level *)
-
 (**** Some type creators ****)
 
+(* Re-export generic type creators *)
+
 let newty desc         = { desc = desc; level = !current_level }
-let newgenty desc      = { desc = desc; level = generic_level }
+let newgenty           = newgenty
 let new_global_ty desc = { desc = desc; level = !global_level }
 
 let newvar ()          = { desc = Tvar; level = !current_level }
-let newgenvar ()       = newgenty Tvar
+let newmarkedvar () = { desc = Tvar; level = pivot_level - !current_level }
+let newgenvar          = newgenvar
 let new_global_var ()  = new_global_ty Tvar
-let newmarkedvar ()    = { desc = Tvar; level = pivot_level - generic_level }
+let newmarkedgenvar    = newmarkedgenvar
 
 let newobj fields      = newty (Tobject (fields, ref None))
 
@@ -129,40 +124,8 @@ let none = newty (Ttuple [])                (* Clearly ill-formed type *)
 
 (**** Representative of a type ****)
 
-let rec repr =
-  function
-    {desc = Tlink t'} ->
-      (* 
-         We do no path compression. Path compression does not seem to
-         improve notably efficiency, and it prevents from changing a
-         [Tlink] into another type (for instance, for undoing a
-         unification).
-      *)
-      repr t'
-  | t -> t
-
-
-                  (**********************************)
-                  (*  Utilities for type traversal  *)
-                  (**********************************)
-
-
-let saved_desc = ref []
-  (* Saved association of generic nodes with their description. *)
-
-(* Restored type descriptions *)
-let cleanup_types () =
-  List.iter (fun (ty, desc) -> ty.desc <- desc) !saved_desc;
-  saved_desc := []
-
-(* Remove marks from a type. *)
-let rec unmark_type ty =
-  let ty = repr ty in
-  if ty.level < lowest_level then begin
-    ty.level <- pivot_level - ty.level;
-    iter_type_expr unmark_type ty
-  end
-
+(* Re-export repr *)
+let repr = repr
 
                   (**********************************************)
                   (*  Miscellaneous operations on object types  *)
@@ -273,7 +236,7 @@ let remove_object_name ty =
 *)
 let rec generalize ty =
   let ty = repr ty in
-  if ty.level > !current_level then begin
+  if (ty.level > !current_level) && (ty.level <> generic_level) then begin
     ty.level <- generic_level;
     begin match ty.desc with
       Tconstr (_, _, abbrev) ->
@@ -288,28 +251,6 @@ and generalize_expans =
     Mnil              ->  ()
   | Mcons(_, ty, rem) ->  generalize ty; generalize_expans rem
   | Mlink rem         ->  generalize_expans !rem
-
-(*
-   Lower in-place the level of a generic type. That way, [subst] can
-   do "unification" on generic types.
-*)
-let rec ungeneralize ty =
-  let ty = repr ty in
-  if ty.level = generic_level then begin
-    ty.level <- !current_level;
-    begin match ty.desc with
-      Tconstr (_, _, abbrev) ->
-        ungeneralize_expans !abbrev
-    | _ -> ()
-    end;
-    iter_type_expr ungeneralize ty
-  end
-
-and ungeneralize_expans =
-  function
-    Mnil              ->  ()
-  | Mcons(_, ty, rem) ->  ungeneralize ty; ungeneralize_expans rem
-  | Mlink rem         ->  ungeneralize_expans !rem
 
 let expand_abbrev' = (* Forward declaration *)
   ref (fun env path args abbrev level -> raise Cannot_expand)
@@ -355,8 +296,8 @@ let rec update_level env level ty =
 let make_nongen ty = update_level Env.empty !current_level ty
 
 (* Correct the levels of type [ty]. *)
-let correct_levels env ty =
-  Subst.type_expr (Subst.limit_level (Env.level env) Subst.identity) ty
+let correct_levels ty =
+  Subst.type_expr Subst.identity ty
 
 
                               (*******************)
@@ -366,12 +307,13 @@ let correct_levels env ty =
 
 (*
    Generic nodes are duplicated, while non-generic nodes are left
-   as-is. The instance cannot be generic.
+   as-is.
    During instantiation, the description of a generic node is first
-   replaced by a link to a stub ([Tlink (newvar ())]). Once the copy
-   is made, it replaces the stub.
+   replaced by a link to a stub ([Tlink (newmarkedvar ())]). Once the
+   copy is made, it replaces the stub.
    After instantiation, the description of generic node, which was
-   stored in [saved_desc], must be put back, using [cleanup_types].
+   stored by [save_desc], must be put back, using [cleanup_types].
+   Marked on the copy are removed by [unmark].
 *)
 
 let abbreviations = ref (ref Mnil)
@@ -383,8 +325,8 @@ let rec copy ty =
     ty
   else begin
     let desc = ty.desc in
-    saved_desc := (ty, desc)::!saved_desc;
-    let t = newvar () in              (* Stub *)
+    save_desc ty desc;
+    let t = newmarkedvar () in          (* Stub *)
     ty.desc <- Tlink t;
     t.desc <-
       begin match desc with
@@ -432,29 +374,34 @@ let rec copy ty =
 let instance sch =
   let ty = copy sch in
   cleanup_types ();
+  unmark_type ty;
   ty
 
 let instance_list schl =
   let tyl = List.map copy schl in
   cleanup_types ();
+  List.iter unmark_type tyl;
   tyl
 
 let instance_constructor cstr =
   let ty_res = copy cstr.cstr_res in
   let ty_args = List.map copy cstr.cstr_args in
   cleanup_types ();
+  List.iter unmark_type ty_args; unmark_type ty_res;
   (ty_args, ty_res)
 
 let instance_label lbl =
   let ty_res = copy lbl.lbl_res in
   let ty_arg = copy lbl.lbl_arg in
   cleanup_types ();
+  unmark_type ty_arg; unmark_type ty_res;
   (ty_arg, ty_res)
 
 let instance_parameterized_type sch_args sch =
   let ty_args = List.map copy sch_args in
   let ty = copy sch in
   cleanup_types ();
+  List.iter unmark_type ty_args; unmark_type ty;
   (ty_args, ty)
 
 let instance_parameterized_type_2 sch_args sch_lst sch =
@@ -462,6 +409,8 @@ let instance_parameterized_type_2 sch_args sch_lst sch =
   let ty_lst = List.map copy sch_lst in
   let ty = copy sch in
   cleanup_types ();
+  List.iter unmark_type ty_args; List.iter unmark_type ty_lst;
+  unmark_type ty;  
   (ty_args, ty_lst, ty)
 
 let instance_class cl =
@@ -475,6 +424,9 @@ let instance_class cl =
       Vars.empty in
   let self = copy cl.cty_self in
   cleanup_types ();
+  List.iter unmark_type params; List.iter unmark_type args;
+  Vars.iter (fun l (m, t) -> unmark_type t) vars;
+  unmark_type self;
   (params, args, vars, self)
 
 (**** Instantiation with parameter substitution ****)
@@ -483,9 +435,9 @@ let unify' = (* Forward declaration *)
   ref (fun env ty1 ty2 -> raise (Unify []))
 
 let rec subst env level abbrev path params args body =
-  if level <> generic_level then begin
-    let old_level = !current_level in
-    current_level := level;
+  let old_level = !current_level in
+  current_level := level;
+  try
     let body0 = newvar () in          (* Stub *)
     begin match path with
       None      -> ()
@@ -498,22 +450,9 @@ let rec subst env level abbrev path params args body =
     List.iter2 (!unify' env) params' args;
     current_level := old_level;
     body'
-  end else begin
-    (* One cannot expand directly to a generic type. *)
-    begin_def ();
-    (* Make sure [!current_level] is high enough. *)
-    current_level := max !current_level (Env.level env);
-    (*
-       Arguments cannot be generic either, as they are unified to the
-       parameters.
-    *)
-    List.iter ungeneralize args;
-    let ty = subst env !current_level abbrev path params args body in
-    end_def ();
-    generalize ty;
-    List.iter generalize args;
-    ty
-  end
+  with Unify _ as exn ->
+    current_level := old_level;
+    raise exn
 
 (*
    Only the shape of the type matters, not whether is is generic or
@@ -641,35 +580,33 @@ let generic_abbrev env path =
 
 exception Occur
 
-let marked_types = ref []
+(* The marks are already used by [expand_abbrev]... *)
+let visited = ref []
 
-let rec non_recursive_abbrev env path ty =
+let rec non_recursive_abbrev env ty =
   let ty = repr ty in
-  if ty.level >= lowest_level then begin
+  if ty == none then raise Recursive_abbrev;
+  if not (List.memq ty !visited) then begin
     let level = ty.level in
-    ty.level <- pivot_level - level;
+    visited := ty :: !visited;
     match ty.desc with
-      Tconstr(p, _, _) when Path.same path p ->
-        raise Recursive_abbrev
-    | Tconstr(p, args, abbrev) ->
+      Tconstr(p, args, abbrev) ->
         begin try
           let ty' = repr (expand_abbrev env p args abbrev level) in
-          if ty'.level >= lowest_level then begin
-            marked_types := ty' :: !marked_types;
-            non_recursive_abbrev env path ty'
-          end
+          non_recursive_abbrev env ty'
         with Cannot_expand -> () end
     | Tobject (_, _) ->
         ()
     | _ ->
-        iter_type_expr (non_recursive_abbrev env path) ty
+        iter_type_expr (non_recursive_abbrev env) ty
   end
 
 let correct_abbrev env ident params ty =
-  marked_types := [ty];
-  non_recursive_abbrev env (Path.Pident ident) ty;
-  List.iter unmark_type !marked_types;
-  marked_types := []
+  visited := [];
+  non_recursive_abbrev env
+    (subst env generic_level (ref (Mcons (Path.Pident ident, none, Mnil))) None
+       [] [] ty);
+  visited := []
 
 let occur env ty0 ty =
   let visited = ref ([] : type_expr list) in
@@ -795,8 +732,11 @@ and unify2 env t1 t2 =
   (* Second step: expansion of abbreviations *)
   let t1' = expand_head env t1 in
   let t2' = expand_head env t2 in
+  (* Expansion may have changed the representative of the types... *)
+  let t1' = repr t1' and t2' = repr t2' in
   if t1' == t2' then () else
 
+  let t1 = repr t1 and t2 = repr t2 in
   if (t1 == t1') || (t2 != t2') then
     unify3 env t1 t1' t2 t2'
   else
@@ -864,13 +804,13 @@ and unify3 env t1 t1' t2 t2' =
     if t1 != t1' (* && t2 != t2' *) then begin
       match (t1.desc, t2.desc) with
         (Tconstr (p, ty::_, _), _)
-            when ((repr ty).desc != Tvar)
+            when ((repr ty).desc <> Tvar)
               && weak_abbrev p
               && not (deep_occur t1 t2) ->
           update_level env t1.level t2;
           t1.desc <- Tlink t2
       | (_, Tconstr (p, ty::_, _))
-            when ((repr ty).desc != Tvar)
+            when ((repr ty).desc <> Tvar)
               && weak_abbrev p
               && not (deep_occur t2 t1) ->
           update_level env t2.level t1;
@@ -980,8 +920,8 @@ let rec filter_method env name ty =
 
 (*
    Levels:
-       !current_level     : generic variables from the pattern
-       !current_level - 1 : generic variables from the subject
+       generic_level     : generic variables from the pattern
+       generic_level - 1 : generic variables from the subject
 
    A generic variable from the subject cannot be instantiated, and its
    level must remain unchanged.  A generic variable from the pattern
@@ -999,14 +939,14 @@ let rec filter_method env name ty =
 let moregen_occur env level ty =
   let rec occur_rec ty =
     let ty = repr ty in
-    if ty.level >= !current_level - 1 then begin
-      if (ty.desc = Tvar) && (ty.level = !current_level - 1) then
+    if ty.level >= generic_level - 1 then begin
+      if (ty.desc = Tvar) && (ty.level = generic_level - 1) then
         raise Occur;
       ty.level <- pivot_level - ty.level;
       iter_type_expr occur_rec ty
     end
   in
-  if level < !current_level - 1 then begin
+  if level < generic_level - 1 then begin
     begin try
       occur_rec ty; unmark_type ty
     with Occur ->
@@ -1026,14 +966,14 @@ let rec moregen env t1 t2 =
   t2.desc <- Tlink t1;
   try
     begin match (t1.desc, !d2) with
-      (Tvar, _) when t1.level <> !current_level - 1 ->
+      (Tvar, _) when t1.level <> generic_level - 1 ->
         t2.desc <- !d2;
         begin try occur env t1 t2 with Occur ->
             raise (Unify [])
         end;
         moregen_occur env t1.level t2;
         t1.desc <- Tlink t2
-    | (_, Tvar) when t2.level <> !current_level - 1 ->
+    | (_, Tvar) when t2.level <> generic_level - 1 ->
         begin try occur env t2 t1 with Occur ->
           raise (Unify [])
         end;
@@ -1110,20 +1050,17 @@ and moregen_fields env ty1 ty2 =
   List.iter (fun (t1, t2) -> moregen env t1 t2) pairs
 
 let moregeneral env sch1 sch2 =
-  (* Make sure [!current_level] is high enough. *)
-  current_level := max !current_level (Env.level env);
-  begin_def ();
+  let old_level = !current_level in
+  current_level := generic_level - 1;
   let ty2 = instance sch2 in
-  begin_def ();
+  current_level := generic_level;
   let ty1 = instance sch1 in
   try
     moregen env ty1 ty2;
-    end_def ();
-    end_def ();
+    current_level := old_level;
     true
   with Unify _ ->
-    end_def ();
-    end_def ();
+    current_level := old_level;
     false
 
 
@@ -1414,11 +1351,11 @@ let rec arity ty =
    Variables are left unchanged. Other type nodes are duplicated, with
    levels set to generic level.
    During copying, the description of a (non-variable) node is first
-   replaced by a link to a marked stub ([Tlink (newmarkedvar
-   ())]). The mark allows to differentiate the original type from the
-   copy.  Once the copy is made, it replaces the stub.
-   After copying, the description of node, which was stored in
-   [saved_desc], must be put back, using [cleanup_types], and the
+   replaced by a link to a marked stub ([Tlink (newmarkedgenvar ())]).
+   The mark allows to differentiate the original type from the copy.
+   Once the copy is made, it replaces the stub.
+   After copying, the description of node, which was stored by
+   [save_desc], must be put back, using [cleanup_types], and the
    marks on the copy must be removed.
 *)
 
@@ -1428,8 +1365,8 @@ let rec nondep_type_rec env id ty =
     ty
   else begin
     let desc = ty.desc in
-    saved_desc := (ty, desc)::!saved_desc;
-    let ty' = newmarkedvar () in        (* Stub *)
+    save_desc ty desc;
+    let ty' = newmarkedgenvar () in        (* Stub *)
     ty.desc <- Tlink ty';
     ty'.desc <-
       begin match desc with
@@ -1579,7 +1516,7 @@ let rec closed_schema_rec row ty =
     let level = ty.level in
     ty.level <- pivot_level - level;
     match ty.desc with
-      Tvar when level != generic_level ->
+      Tvar when level <> generic_level ->
         raise (Failed (if row then Row_var ty else Var ty))
     | Tobject(f, {contents = Some (_, p)}) ->
         closed_schema_rec true f;
