@@ -30,21 +30,21 @@ labltktop : $(TOPDEPS) $(WIDGETOBJS) $(SUPPORT)
 labltk: Makefile $(TOPDIR)/config/Makefile
 	@echo Generate $@
 	@echo "#!/bin/sh" > $@
-	@echo "exec $(LABLTKDIR)/labltktop -I $(LABLTKDIR) $$""*" >> $@
+	@echo 'exec $(LABLTKDIR)/labltktop -I $(LABLTKDIR) "$$@"' >> $@
 
 labltklink: Makefile $(TOPDIR)/config/Makefile
 	@echo Generate $@
 	@echo "#!/bin/sh" > $@
-	@echo "exec ocamlc -custom -I $(LABLTKDIR) tk41.cma $$""*" >> $@
-	@echo "	-cclib \"-L$(LABLTKDIR) -llabltk41 $(TK_LINK)\"" >> $@
-	@echo "	$(X11_LINK) -cclib \"$(CCLIBS) $(DLLIB)\"" >> $@
+	@echo 'exec ocamlc -custom -I $(LABLTKDIR) tk41.cma "$$@"\\' >> $@
+	@echo '	-cclib "-L$(LABLTKDIR) -llabltk41 $(TK_LINK)"\\' >> $@
+	@echo '	$(X11_LINK) -cclib "$(CCLIBS) $(DLLIB)"' >> $@
 
 labltkopt: Makefile $(TOPDIR)/config/Makefile
 	@echo Generate $@
 	@echo "#!/bin/sh" > $@
-	@echo "exec ocamlopt -custom -I $(LABLTKDIR) tk41.cmxa $$""*" >> $@
-	@echo "	-cclib \"-L$(LABLTKDIR) -llabltk41 $(TK_LINK)\"" >> $@
-	@echo "	$(X11_LINK) -cclib \"$(CCLIBS) $(DLLIB)\"" >> $@
+	@echo 'exec ocamlopt -custom -I $(LABLTKDIR) tk41.cmxa "$$@"\\' >> $@
+	@echo '	-cclib "-L$(LABLTKDIR) -llabltk41 $(TK_LINK)"\\' >> $@
+	@echo '	$(X11_LINK) -cclib "$(CCLIBS) $(DLLIB)"' >> $@
 
 # All .{ml,mli} files are generated in this directory
 clean : 
