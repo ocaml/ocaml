@@ -13,6 +13,10 @@
 
 (* Module [Oo]: object-oriented extension *)
 
+val copy : < .. > as 'a -> 'a
+        (* [Oo.copy o] returns a copy of object [o], that is a fresh
+           object with the same methods and instance variables as [o]  *)
+
 (*--*)
 
 (*** For system use only, not for the casual user *)
@@ -46,7 +50,6 @@ val create_object: table -> obj
 val run_initializers: obj -> table -> unit
 val object_from_struct: class_info -> obj
 val send:   obj -> label -> t
-val copy : < .. > as 'a -> 'a
 
 (* Parameters *)
 type params = {

@@ -55,7 +55,6 @@ Objective Caml 2.00:
   - Module Arg: added option Rest.
   - Module Filename: temp_file no longer loops if temp dir doesn't exist.
   - Module List: added rev_append (tail-rec alternative to @).
-  - Oo.copy removed.
   - Module Set: tell the truth about "elements" returning a sorted list;
     added min_elt, max_elt, singleton.
   - Module Sys: added Sys.time for simple measuring of CPU time.
