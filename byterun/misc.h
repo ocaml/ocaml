@@ -45,11 +45,11 @@ typedef char * addr;
 
 #ifdef DEBUG
 #define Assert(x) if (!(x)) failed_assert ( #x , __FILE__, __LINE__)
+void failed_assert (char *, char *, int) Noreturn;
 #else
 #define Assert(x)
 #endif
 
-void failed_assert (char *, char *, int) Noreturn;
 void fatal_error (char *) Noreturn;
 void fatal_error_arg (char *, char *) Noreturn;
 
