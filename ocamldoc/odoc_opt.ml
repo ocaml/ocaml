@@ -19,6 +19,7 @@ open Misc
 open Format
 open Typedtree
 
+let _ = Odoc_args.bytecode_mode := false
 
 
 let html_generator = new Odoc_html.html

@@ -210,3 +210,5 @@ module Dep =
     let kernel_deps_of_modules = Odoc_dep.kernel_deps_of_modules
     let deps_of_types = Odoc_dep.deps_of_types
   end
+
+module Args = Odoc_args

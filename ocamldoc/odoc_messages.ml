@@ -31,7 +31,7 @@ let verbose_mode = " verbose mode"
 let include_dirs = "<dir>  Add <dir> to the list of include directories"
 let rectypes = " Allow arbitrary recursive types"
 let preprocess = "<command>  Pipe sources through preprocessor <command>"
-let load_file = "<file.cm[o|a]>  Load file defining a new documentation generator"
+let load_file = "<file.cm[o|a]>  Load file defining a new documentation generator (bytecode version only)"
 let nolabels = " Ignore non-optional labels in types"
 let werr = "Treat ocamldoc warnings as errors"
 let target_dir = "<dir>  Generate files in directory <dir>, rather than in current directory (for man and HTML generators)"
@@ -45,6 +45,8 @@ let generate_latex = " Generate LaTeX documentation"
 let generate_texinfo = " Generate TeXinfo documentation"
 let generate_man = " Generate man pages"
 let generate_dot = " Generate dot code of top modules dependencies"
+
+let option_not_in_native_code op = "Option "^op^" not available in native code version."
 
 let default_out_file = "ocamldoc.out"
 let out_file = "<file> Set the ouput file name, used by texi, latex and dot generators "^

@@ -30,7 +30,7 @@ class text =
        and with the given latex code. *)
     method section_style level s =
       try 
-        let sec = List.assoc level !Odoc_args.latex_titles in
+        let sec = List.assoc level !Args.latex_titles in
         "\\"^sec^"{"^s^"}\n"
       with Not_found -> s
 
@@ -131,31 +131,31 @@ class text =
       Buffer.contents buf
 
     (** Make a correct label from a value name. *)
-    method value_label ?no_ name = self#label ?no_ (!Odoc_args.latex_value_prefix^name)
+    method value_label ?no_ name = self#label ?no_ (!Args.latex_value_prefix^name)
 
     (** Make a correct label from an attribute name. *)
-    method attribute_label ?no_ name = self#label ?no_ (!Odoc_args.latex_attribute_prefix^name)
+    method attribute_label ?no_ name = self#label ?no_ (!Args.latex_attribute_prefix^name)
 
     (** Make a correct label from a method name. *)
-    method method_label ?no_ name = self#label ?no_ (!Odoc_args.latex_method_prefix^name)
+    method method_label ?no_ name = self#label ?no_ (!Args.latex_method_prefix^name)
 
     (** Make a correct label from a class name. *)
-    method class_label ?no_ name = self#label ?no_ (!Odoc_args.latex_class_prefix^name)
+    method class_label ?no_ name = self#label ?no_ (!Args.latex_class_prefix^name)
 
     (** Make a correct label from a class type name. *)
-    method class_type_label ?no_ name = self#label ?no_ (!Odoc_args.latex_class_type_prefix^name)
+    method class_type_label ?no_ name = self#label ?no_ (!Args.latex_class_type_prefix^name)
 
     (** Make a correct label from a module name. *)
-    method module_label ?no_ name = self#label ?no_ (!Odoc_args.latex_module_prefix^name)
+    method module_label ?no_ name = self#label ?no_ (!Args.latex_module_prefix^name)
 
     (** Make a correct label from a module type name. *)
-    method module_type_label ?no_ name = self#label ?no_ (!Odoc_args.latex_module_type_prefix^name)
+    method module_type_label ?no_ name = self#label ?no_ (!Args.latex_module_type_prefix^name)
 
     (** Make a correct label from an exception name. *)
-    method exception_label ?no_ name = self#label ?no_ (!Odoc_args.latex_exception_prefix^name)
+    method exception_label ?no_ name = self#label ?no_ (!Args.latex_exception_prefix^name)
 
     (** Make a correct label from a type name. *)
-    method type_label ?no_ name = self#label ?no_ (!Odoc_args.latex_type_prefix^name)
+    method type_label ?no_ name = self#label ?no_ (!Args.latex_type_prefix^name)
 
     (** Return latex code for the label of a given label. *)
     method make_label label = "\\label{"^label^"}"
@@ -861,22 +861,22 @@ class latex =
       "\\usepackage{url} \n"^
       "\\usepackage{ocamldoc}\n"^
       (
-       match !Odoc_args.title with 
+       match !Args.title with 
          None -> ""
        | Some s -> "\\title{"^(self#escape s)^"}\n"
       )^
       "\\begin{document}\n"^
-      (match !Odoc_args.title with None -> "" | Some _ -> "\\maketitle\n")^
-      (if !Odoc_args.with_toc then "\\tableofcontents\n" else "")
+      (match !Args.title with None -> "" | Some _ -> "\\maketitle\n")^
+      (if !Args.with_toc then "\\tableofcontents\n" else "")
 
-    (** Generate the LaTeX file from a module list, in the {!Odoc_args.out_file} file. *)
+    (** Generate the LaTeX file from a module list, in the {!Args.out_file} file. *)
     method generate module_list =
-      if !Odoc_args.separate_files then
+      if !Args.separate_files then
         (
          let f m =
            try
              let chanout = 
-               open_out ((Filename.concat !Odoc_args.target_dir (Name.simple m.m_name))^".tex")
+               open_out ((Filename.concat !Args.target_dir (Name.simple m.m_name))^".tex")
              in
              self#generate_for_module chanout m ;
              close_out chanout
@@ -890,16 +890,16 @@ class latex =
         );
       
       try
-        let chanout = open_out (Filename.concat !Odoc_args.target_dir !Odoc_args.out_file) in
-        let _ = if !Odoc_args.with_header then output_string chanout self#latex_header else () in
+        let chanout = open_out (Filename.concat !Args.target_dir !Args.out_file) in
+        let _ = if !Args.with_header then output_string chanout self#latex_header else () in
         List.iter 
-          (fun m -> if !Odoc_args.separate_files then
+          (fun m -> if !Args.separate_files then
             output_string chanout ("\\input{"^((Name.simple m.m_name))^".tex}\n")
           else
             self#generate_for_module chanout m
           ) 
           module_list ;
-        let _ = if !Odoc_args.with_trailer then output_string chanout "\\end{document}" else () in
+        let _ = if !Args.with_trailer then output_string chanout "\\end{document}" else () in
         close_out chanout
       with
         Failure s

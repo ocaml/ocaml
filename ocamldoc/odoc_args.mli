@@ -14,7 +14,11 @@
 
 (** The include_dirs in the OCaml compiler. *)
 val include_dirs : string list ref
-    
+
+(** Indicate if we are in bytecode mode or not. 
+   (For the [ocamldoc] command).*)
+val bytecode_mode : bool ref
+
 (** The class type of documentation generators. *)
 class type doc_generator =
   object method generate : Odoc_module.t_module list -> unit end
@@ -155,12 +159,13 @@ val set_doc_generator : doc_generator option -> unit
 (** Add an option specification. *)
 val add_option : string * Arg.spec * string -> unit
     
-(** Parse the args. *)
+(** Parse the args. 
+   [byte] indicate if we are in bytecode mode (default is [true]).*)
 val parse :
     html_generator:doc_generator -> 
       latex_generator:doc_generator -> 
         texi_generator:doc_generator -> 
           man_generator:doc_generator -> 
-              dot_generator:doc_generator -> 
-                unit
+            dot_generator:doc_generator -> 
+              unit
             

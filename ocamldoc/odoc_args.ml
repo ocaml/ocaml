@@ -15,6 +15,8 @@ open Clflags
 
 let include_dirs = Clflags.include_dirs
 
+let bytecode_mode = ref true
+
 class type doc_generator =
     object
       method generate : Odoc_module.t_module list -> unit
@@ -190,7 +192,7 @@ let default_man_generator = ref (None : doc_generator option)
 let default_dot_generator = ref (None : doc_generator option)
 
 (** The default option list *)
-let options  = ref [
+let options = ref [
   "-version", Arg.Unit (fun () -> print_string Odoc_messages.message_version ; print_newline () ; exit 0) , Odoc_messages.option_version ;
   "-v", Arg.Unit (fun () -> verbose := true), Odoc_messages.verbose_mode ;
   "-I", Arg.String (fun s -> include_dirs := (Misc.expand_directory Config.standard_library s) :: !include_dirs), Odoc_messages.include_dirs ;
@@ -218,9 +220,10 @@ let options  = ref [
   "-html", Arg.Unit (fun () -> set_doc_generator !default_html_generator), Odoc_messages.generate_html ;
   "-latex", Arg.Unit (fun () -> set_doc_generator !default_latex_generator), Odoc_messages.generate_latex ;
   "-texi", Arg.Unit (fun () -> set_doc_generator !default_texi_generator), Odoc_messages.generate_texinfo ;
-  "-man", Arg.Unit (fun () -> set_doc_generator !default_man_generator), Odoc_messages.generate_man ;
+  "-man", Arg.Unit (fun () -> set_doc_generator !default_man_generator), Odoc_messages.generate_man ;    
   "-dot", Arg.Unit (fun () -> set_doc_generator !default_dot_generator), Odoc_messages.generate_dot ;
-  "-g", Arg.String (fun s -> ()), Odoc_messages.load_file^"\n" ;
+  "-g", Arg.String (fun s -> if !bytecode_mode then () else (prerr_endline (Odoc_messages.option_not_in_native_code "-g"); exit 1)),
+        Odoc_messages.load_file^"\n" ;
 
 (* html only options *)
   "-all-params", Arg.Set with_parameter_list, Odoc_messages.with_parameter_list ;

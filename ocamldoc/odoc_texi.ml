@@ -22,8 +22,8 @@ open Module
 
 (** {2 Command-line options} *)
 
-let with_index = Odoc_args.with_index
-let esc_8bits = Odoc_args.esc_8bits
+let with_index = Args.with_index
+let esc_8bits = Args.esc_8bits
 
 (** {2 Some small helper functions} *)
 
@@ -992,7 +992,7 @@ class texi =
     (** Writes the header of the TeX document. *)
     method generate_texi_header chan m_list =
       let title, filename = 
-       match !Odoc_args.title with 
+       match !Args.title with 
        | None -> ("", "doc.info")
        | Some s -> 
            let s' = self#escape s in 
@@ -1056,26 +1056,26 @@ class texi =
                     "@unnumbered " ^ longname ^ " index" ;
                     "@printindex " ^ shortname ; ])
                 indices_names )) ;
-      if !Odoc_args.with_toc 
+      if !Args.with_toc 
       then puts_nl chan "@contents" ;
       puts_nl chan "@bye"
 
 
 
     (** Generate the Texinfo file from a module list, 
-       in the {!Odoc_args.out_file} file. *)
+       in the {!Args.out_file} file. *)
     method generate module_list =
       try
         let chanout = open_out 
-            (Filename.concat !Odoc_args.target_dir !Odoc_args.out_file) in
-        if !Odoc_args.with_header 
+            (Filename.concat !Args.target_dir !Args.out_file) in
+        if !Args.with_header 
         then self#generate_texi_header chanout module_list ;
         List.iter 
           (fun modu ->
             Odoc_info.verbose ("Generate for module " ^ modu.m_name) ;
             self#generate_for_module chanout modu) 
           module_list ;
-        if !Odoc_args.with_trailer 
+        if !Args.with_trailer 
         then self#generate_texi_trailer chanout ;
         close_out chanout
       with

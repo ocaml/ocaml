@@ -192,13 +192,13 @@ class text =
     method html_of_Raw s = self#escape s
 
     method html_of_Code s =
-      if !Odoc_args.colorize_code then
+      if !Args.colorize_code then
         self#html_of_code ~with_pre: false s
       else
         "<code class=\""^Odoc_ocamlhtml.code_class^"\">"^(self#escape s)^"</code>"
 
     method html_of_CodePre s =
-      if !Odoc_args.colorize_code then
+      if !Args.colorize_code then
         "<pre></pre>"^(self#html_of_code s)^"<pre></pre>"
       else
         "<pre><code class=\""^Odoc_ocamlhtml.code_class^"\">"^(self#escape s)^"</code></pre>"
@@ -525,12 +525,12 @@ class html =
 
     (** Init the style. *)
     method init_style =
-      (match !Odoc_args.css_style with
+      (match !Args.css_style with
         None -> 
           let default_style = String.concat "\n" default_style_options in
           (
            try
-             let chanout = open_out (Filename.concat !Odoc_args.target_dir style_file) in
+             let chanout = open_out (Filename.concat !Args.target_dir style_file) in
              output_string chanout default_style ;
              flush chanout ;
              close_out chanout
@@ -545,7 +545,7 @@ class html =
       style <- "<link rel=\"stylesheet\" href=\""^style_file^"\" type=\"text/css\">\n"
 
     (** Get the title given by the user *)
-    method title = match !Odoc_args.title with None -> "" | Some t -> self#escape t
+    method title = match !Args.title with None -> "" | Some t -> self#escape t
 
     (** Get the title given by the user completed with the given subtitle. *)
     method inner_title s = 
@@ -805,12 +805,12 @@ class html =
         None -> Name.simple v.val_name
       | Some c -> 
           let file = Naming.file_code_value_complete_target v in
-          self#output_code v.val_name (Filename.concat !Odoc_args.target_dir file) c;
+          self#output_code v.val_name (Filename.concat !Args.target_dir file) c;
           "<a href=\""^file^"\">"^(Name.simple v.val_name)^"</a>"
       )^" : "^
       (self#html_of_type_expr (Name.father v.val_name) v.val_type)^"</pre>"^
       (self#html_of_info v.val_info)^
-      (if !Odoc_args.with_parameter_list then
+      (if !Args.with_parameter_list then
         self#html_of_parameter_list (Name.father v.val_name) v.val_parameters
       else
         self#html_of_described_parameter_list (Name.father v.val_name) v.val_parameters
@@ -953,7 +953,7 @@ class html =
         None -> Name.simple a.att_value.val_name
       | Some c -> 
           let file = Naming.file_code_attribute_complete_target a in
-          self#output_code a.att_value.val_name (Filename.concat !Odoc_args.target_dir file) c;
+          self#output_code a.att_value.val_name (Filename.concat !Args.target_dir file) c;
           "<a href=\""^file^"\">"^(Name.simple a.att_value.val_name)^"</a>"
       )^" : "^
       (self#html_of_type_expr module_name  a.att_value.val_type)^"</pre>"^
@@ -971,12 +971,12 @@ class html =
         None -> Name.simple m.met_value.val_name
       | Some c -> 
           let file = Naming.file_code_method_complete_target m in
-          self#output_code m.met_value.val_name (Filename.concat !Odoc_args.target_dir file) c;
+          self#output_code m.met_value.val_name (Filename.concat !Args.target_dir file) c;
           "<a href=\""^file^"\">"^(Name.simple m.met_value.val_name)^"</a>"
       )^" : "^
       (self#html_of_type_expr module_name m.met_value.val_type)^"</pre>"^
       (self#html_of_info m.met_value.val_info)^
-      (if !Odoc_args.with_parameter_list then
+      (if !Args.with_parameter_list then
         self#html_of_parameter_list module_name m.met_value.val_parameters
       else
         self#html_of_described_parameter_list module_name m.met_value.val_parameters
@@ -1333,7 +1333,7 @@ class html =
               ('a -> string) -> string -> string -> unit =
     fun elements name info target title simple_file ->
       try
-        let chanout = open_out (Filename.concat !Odoc_args.target_dir simple_file) in
+        let chanout = open_out (Filename.concat !Args.target_dir simple_file) in
         output_string chanout 
           (
            "<html>\n"^
@@ -1400,7 +1400,7 @@ class html =
       let (html_file, _) = Naming.html_files cl.cl_name in
       let type_file = Naming.file_type_class_complete_target cl.cl_name in
       try
-        let chanout = open_out (Filename.concat !Odoc_args.target_dir html_file) in
+        let chanout = open_out (Filename.concat !Args.target_dir html_file) in
         let pre_name = opt (fun c -> c.cl_name) pre in
         let post_name = opt (fun c -> c.cl_name) post in
         output_string chanout
@@ -1444,7 +1444,7 @@ class html =
         (* generate the file with the complete class type *)
         self#output_class_type 
           cl.cl_name
-          (Filename.concat !Odoc_args.target_dir type_file)
+          (Filename.concat !Args.target_dir type_file)
           cl.cl_type
       with
         Sys_error s ->
@@ -1456,7 +1456,7 @@ class html =
       let (html_file, _) = Naming.html_files clt.clt_name in
       let type_file = Naming.file_type_class_complete_target clt.clt_name in
       try
-        let chanout = open_out (Filename.concat !Odoc_args.target_dir html_file) in
+        let chanout = open_out (Filename.concat !Args.target_dir html_file) in
         let pre_name = opt (fun ct -> ct.clt_name) pre in
         let post_name = opt (fun ct -> ct.clt_name) post in
         output_string chanout
@@ -1497,7 +1497,7 @@ class html =
         (* generate the file with the complete class type *)
         self#output_class_type 
           clt.clt_name
-          (Filename.concat !Odoc_args.target_dir type_file)
+          (Filename.concat !Args.target_dir type_file)
           clt.clt_type
       with
         Sys_error s ->
@@ -1509,7 +1509,7 @@ class html =
       try
         let (html_file, _) = Naming.html_files mt.mt_name in
         let type_file = Naming.file_type_module_complete_target mt.mt_name in
-        let chanout = open_out (Filename.concat !Odoc_args.target_dir html_file) in
+        let chanout = open_out (Filename.concat !Args.target_dir html_file) in
         let pre_name = opt (fun mt -> mt.mt_name) pre in
         let post_name = opt (fun mt -> mt.mt_name) post in
         output_string chanout
@@ -1578,7 +1578,7 @@ class html =
            None -> ()
          | Some mty -> self#output_module_type 
                mt.mt_name
-               (Filename.concat !Odoc_args.target_dir type_file) 
+               (Filename.concat !Args.target_dir type_file) 
                mty
         )
       with
@@ -1592,7 +1592,7 @@ class html =
         Odoc_info.verbose ("Generate for module "^modu.m_name);
         let (html_file, _) = Naming.html_files modu.m_name in
         let type_file = Naming.file_type_module_complete_target modu.m_name in
-        let chanout = open_out (Filename.concat !Odoc_args.target_dir html_file) in
+        let chanout = open_out (Filename.concat !Args.target_dir html_file) in
         let pre_name = opt (fun m -> m.m_name) pre in
         let post_name = opt (fun m -> m.m_name) post in
         output_string chanout
@@ -1656,7 +1656,7 @@ class html =
         (* generate the file with the complete module type *)
         self#output_module_type 
           modu.m_name
-          (Filename.concat !Odoc_args.target_dir type_file)
+          (Filename.concat !Args.target_dir type_file)
           modu.m_type
       with
         Sys_error s ->
@@ -1666,13 +1666,13 @@ class html =
        @raise Failure if an error occurs.*)
     method generate_index module_list =
       try
-        let title = match !Odoc_args.title with None -> "" | Some t -> self#escape t in
+        let title = match !Args.title with None -> "" | Some t -> self#escape t in
         let index_if_not_empty l url m =
           match l with
             [] -> ""
           | _ -> "<a href=\""^url^"\">"^m^"</a><br>\n"
         in
-        let chanout = open_out (Filename.concat !Odoc_args.target_dir index) in
+        let chanout = open_out (Filename.concat !Args.target_dir index) in
         output_string chanout 
           (
            "<html>\n"^
@@ -1834,7 +1834,7 @@ class html =
       let module_names = List.map (fun m -> m.m_name) modules in
       known_modules_names <- module_type_names @ module_names ;
       (* generate html for each module *)
-      if not !Odoc_args.index_only then 
+      if not !Args.index_only then 
         self#generate_elements self#generate_for_module module_list ;
 
       try

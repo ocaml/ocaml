@@ -145,7 +145,7 @@ class man =
 
     (** Get a file name from a complete name. *)
     method file_name name = 
-      let s = Printf.sprintf "%s.%s" name !Odoc_args.man_suffix in
+      let s = Printf.sprintf "%s.%s" name !Args.man_suffix in
       Str.global_replace re_slash "slash" s
 
     (** Escape special sequences of characters in a string. *)
@@ -153,7 +153,7 @@ class man =
 
     (** Open a file for output. Add the target directory.*)
     method open_out file =
-      let f = Filename.concat !Odoc_args.target_dir file in
+      let f = Filename.concat !Args.target_dir file in
       open_out f
       
     (** Return the groff string for a text, without correction of blanks. *)
@@ -532,7 +532,7 @@ class man =
            cl.cl_name^" "^
            "\""^(Odoc_misc.string_of_date ~hour: false date)^"\" "^ 
            "OCamldoc "^
-           "\""^(match !Odoc_args.title with Some t -> t | None -> "")^"\"\n");
+           "\""^(match !Args.title with Some t -> t | None -> "")^"\"\n");
 
         output_string chanout
           (
@@ -584,7 +584,7 @@ class man =
            ct.clt_name^" "^
            "\""^(Odoc_misc.string_of_date ~hour: false date)^"\" "^ 
            "OCamldoc "^
-           "\""^(match !Odoc_args.title with Some t -> t | None -> "")^"\"\n");
+           "\""^(match !Args.title with Some t -> t | None -> "")^"\"\n");
 
         output_string chanout
           (
@@ -632,7 +632,7 @@ class man =
            mt.mt_name^" "^
            "\""^(Odoc_misc.string_of_date ~hour: false date)^"\" "^ 
            "OCamldoc "^
-           "\""^(match !Odoc_args.title with Some t -> t | None -> "")^"\"\n");
+           "\""^(match !Args.title with Some t -> t | None -> "")^"\"\n");
 
         output_string chanout
           (
@@ -702,7 +702,7 @@ class man =
            m.m_name^" "^
            "\""^(Odoc_misc.string_of_date ~hour: false date)^"\" "^ 
            "OCamldoc "^
-           "\""^(match !Odoc_args.title with Some t -> t | None -> "")^"\"\n");
+           "\""^(match !Args.title with Some t -> t | None -> "")^"\"\n");
 
         output_string chanout
           (
@@ -821,7 +821,7 @@ class man =
            "man "^
            "\""^(Odoc_misc.string_of_date ~hour: false date)^"\" "^ 
            "OCamldoc "^
-           "\""^(match !Odoc_args.title with Some t -> t | None -> "")^"\"\n");
+           "\""^(match !Args.title with Some t -> t | None -> "")^"\"\n");
 
         let f ele =
           match ele with
@@ -877,7 +877,7 @@ class man =
         | [Res_class cl] -> self#generate_for_class cl
         | [Res_class_type ct] -> self#generate_for_class_type ct
         | l ->
-            if !Odoc_args.man_mini then 
+            if !Args.man_mini then 
               ()
             else
               self#generate_for_group l
