@@ -78,7 +78,7 @@ let make_branch cont =
 
 let rec discard_dead_code = function
     [] -> []
-  | (Klabel _ | Krestart) :: _ as cont -> cont
+  | (Klabel _ | Krestart | Ksetglobal _) :: _ as cont -> cont
   | _ :: cont -> discard_dead_code cont
 
 (* Check if we're in tailcall position *)
