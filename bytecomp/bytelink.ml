@@ -114,15 +114,21 @@ let scan_file obj_name tolink =
 let crc_interfaces = (Hashtbl.new 17 : (string, string * int) Hashtbl.t)
 
 let check_consistency file_name cu =
-  List.iter
-    (fun (name, crc) ->
-      try
-        let (auth_name, auth_crc) = Hashtbl.find crc_interfaces name in
-        if crc <> auth_crc then
-          raise(Error(Inconsistent_import(name, file_name, auth_name)))
-      with Not_found ->
-        Hashtbl.add crc_interfaces name (file_name, crc))
-    cu.cu_interfaces
+  match cu.cu_interfaces with
+    [] -> raise(Error(Not_an_object_file file_name))
+  | (unit_name, unit_crc) :: imports ->
+      List.iter
+        (fun (name, crc) ->
+          try
+            let (auth_name, auth_crc) = Hashtbl.find crc_interfaces name in
+            if crc <> auth_crc then
+              raise(Error(Inconsistent_import(name, file_name, auth_name)))
+          with Not_found ->
+            (* Can only happen for unit for which only a .cmi file was used,
+               but no .cmo is provided *)
+            Hashtbl.add crc_interfaces name (file_name, crc))
+        imports;
+      Hashtbl.add crc_interfaces unit_name (file_name, unit_crc)
 
 (* Link in a compilation unit *)
 

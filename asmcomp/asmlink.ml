@@ -35,15 +35,22 @@ let crc_interfaces = (Hashtbl.new 17 : (string, string * int) Hashtbl.t)
 let crc_implementations = (Hashtbl.new 17 : (string, string * int) Hashtbl.t)
 
 let check_consistency file_name unit crc =
-  List.iter
-    (fun (name, crc) ->
-      try
-        let (auth_name, auth_crc) = Hashtbl.find crc_interfaces name in
-        if crc <> auth_crc then
-          raise(Error(Inconsistent_interface(name, file_name, auth_name)))
-      with Not_found ->
-        Hashtbl.add crc_interfaces name (file_name, crc))
-    unit.ui_interfaces;
+  begin match unit.ui_interfaces with
+    [] -> raise(Error(Not_an_object_file file_name))
+  | (unit_name, unit_crc) :: imports ->
+      List.iter
+        (fun (name, crc) ->
+          try
+            let (auth_name, auth_crc) = Hashtbl.find crc_interfaces name in
+            if crc <> auth_crc then
+              raise(Error(Inconsistent_interface(name, file_name, auth_name)))
+          with Not_found ->
+            (* Can only happen for unit for which only a .cmi file was used,
+               but no .cmo is provided *)
+            Hashtbl.add crc_interfaces name (file_name, crc))
+        imports;
+      Hashtbl.add crc_interfaces unit_name (file_name, unit_crc)
+  end;
   List.iter
     (fun (name, crc) ->
       try
@@ -52,7 +59,8 @@ let check_consistency file_name unit crc =
           raise(Error(Inconsistent_implementation(name, file_name, auth_name)))
       with Not_found ->
         Hashtbl.add crc_implementations name (file_name, crc))
-    ((unit.ui_name, crc) :: unit.ui_imports)
+    unit.ui_imports;
+  Hashtbl.add crc_implementations unit.ui_name (file_name, crc)
 
 (* First pass: determine which units are needed *)
 

@@ -209,9 +209,9 @@ void unused_rules()
 
     if (nunused)
 	if (nunused == 1)
-	    fprintf(stderr, "%s: 1 rule never reduced\n", myname);
+	    fprintf(stderr, "1 rule never reduced\n");
 	else
-	    fprintf(stderr, "%s: %d rules never reduced\n", myname, nunused);
+	    fprintf(stderr, "%d rules never reduced\n", nunused);
 }
 
 
@@ -292,7 +292,6 @@ void remove_conflicts()
 
 void total_conflicts()
 {
-    fprintf(stderr, "%s: ", myname);
     if (SRtotal == 1)
 	fprintf(stderr, "1 shift/reduce conflict");
     else if (SRtotal > 1)
