@@ -19,7 +19,16 @@ Pcaml.no_constructors_arity := false;;
 
 let help_sequences () =
   Printf.eprintf "\
-New syntax:     do {e1; e2; ... ; en}     while e do {e1; e2; ... ; en}     for v = v1 to/downto v2 do {e1; e2; ... ; en}Old (discouraged) syntax:     do e1; e2; ... ; en-1; return en     while e do e1; e2; ... ; en; done     for v = v1 to/downto v2 do e1; e2; ... ; en; doneTo avoid compilation warning use the new syntax.";
+New syntax:
+     do {e1; e2; ... ; en}
+     while e do {e1; e2; ... ; en}
+     for v = v1 to/downto v2 do {e1; e2; ... ; en}
+Old (discouraged) syntax:
+     do e1; e2; ... ; en-1; return en
+     while e do e1; e2; ... ; en; done
+     for v = v1 to/downto v2 do e1; e2; ... ; en; done
+To avoid compilation warning use the new syntax.
+";
   flush stderr;
   exit 1
 ;;

@@ -297,7 +297,14 @@ let print_usage_list l =
 
 let usage ini_sl ext_sl =
   eprintf "\
-Usage: camlp4 [load-options] [--] [other-options]Load options:  -I directory  Add directory in search patch for object files.  -where        Print camlp4 library directory and exit.  -nolib        No automatic search for object files in library directory.  <object-file> Load this file in Camlp4 core.Other options:  <file>        Parse this file.\n";
+Usage: camlp4 [load-options] [--] [other-options]
+Load options:
+  -I directory  Add directory in search patch for object files.
+  -where        Print camlp4 library directory and exit.
+  -nolib        No automatic search for object files in library directory.
+  <object-file> Load this file in Camlp4 core.
+Other options:
+  <file>        Parse this file.\n";
   print_usage_list ini_sl;
   begin
     let rec loop =
@@ -317,7 +324,9 @@ Usage: camlp4 [load-options] [--] [other-options]Load options:  -I directory  Ad
 
 let warn_noassert () =
   eprintf "\
-camlp4 warning: option -noassert is obsoleteYou should give the -noassert option to the ocaml compiler instead."
+camlp4 warning: option -noassert is obsolete
+You should give the -noassert option to the ocaml compiler instead.
+"
 ;;
 
 let initial_spec_list =

@@ -316,7 +316,18 @@ value next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
   and string bp len =
     parser
     [ [: `'"' :] -> len
-    | [: `'\\'; `c; s :] ep  -> string bp (store (store len '\\') c) s
+    | [: `'\\'; `c; s :] ep  ->
+        let len = store len '\\' in
+        match c with [
+          '\010' -> do { bolpos.val := ep; incr lnum; string bp (store len c) s }
+        | '\013' ->
+            let (len, ep) =
+              match Stream.peek s with [
+                Some '\010' -> do { Stream.junk s; (store (store len '\013') '\010', ep+1) }
+              | _ -> (store len '\013', ep) ] in
+            do { bolpos.val := ep; incr lnum; string bp len s }
+        | c -> string bp (store len c) s
+        ]
     | [: `'\010'; s :] ep -> do { bolpos.val := ep; incr lnum; string bp (store len '\010') s }
     | [: `'\013'; s :] ep ->
         let (len, ep) =
