@@ -27,7 +27,6 @@ open Emitaux
 let fastcode_flag = ref true
 
 let stack_offset = ref 0
-let fp_offset = ref 0
 
 (* Layout of the stack frame *)
 
@@ -72,6 +71,17 @@ let emit_align =
     "linux_elf" -> (fun n -> `	.align	{emit_int n}\n`)
   | _           -> (fun n -> `	.align	{emit_int(Misc.log2 n)}\n`)
   
+(* Track the position of the floating-point stack *)
+
+let fp_offset = ref 0
+
+let push_fp () =
+  incr fp_offset;
+  if !fp_offset > 4 then fatal_error "Emit: float expression too complex"
+
+let pop_fp () =
+  decr fp_offset
+
 (* Output a pseudo-register *)
 
 let emit_reg = function
@@ -208,6 +218,8 @@ let instr_for_floatop = function
   | Isubf -> "fsub"
   | Imulf -> "fmul"
   | Idivf -> "fdiv"
+  | Ispecific Isubfrev -> "fsubr"
+  | Ispecific Idivfrev -> "fdivr"
   | _ -> fatal_error "Emit_i386: instr_for_floatop"
 
 let instr_for_floatop_reversed = function
@@ -215,14 +227,18 @@ let instr_for_floatop_reversed = function
   | Isubf -> "fsubr"
   | Imulf -> "fmul"
   | Idivf -> "fdivr"
-  | _ -> fatal_error "Emit_i386: instr_for_floatop"
+  | Ispecific Isubfrev -> "fsub"
+  | Ispecific Idivfrev -> "fdiv"
+  | _ -> fatal_error "Emit_i386: instr_for_floatop_reversed"
 
 let instr_for_floatop_pop = function
     Iaddf -> "faddp"
   | Isubf -> "fsubp"
   | Imulf -> "fmulp"
   | Idivf -> "fdivp"
-  | _ -> fatal_error "Emit_i386: instr_for_floatop"
+  | Ispecific Isubfrev -> "fsubrp"
+  | Ispecific Idivfrev -> "fdivrp"
+  | _ -> fatal_error "Emit_i386: instr_for_floatop_pop"
 
 let instr_for_floatarithmem = function
     Ifloatadd -> "faddl"
@@ -278,14 +294,14 @@ let emit_instr i =
               begin match i.arg.(0).loc with
                 Reg 100 ->              (* top of FP stack *)
                   `	fstpl	{emit_reg i.res.(0)}\n`;
-                  decr fp_offset
+                  pop_fp()
               | Reg 101 when !fp_offset = 0 -> (* %st(0) *)
                   `	fstl	{emit_reg i.res.(0)}\n`
               | _ ->
                   `	fldl	{emit_reg i.arg.(0)}\n`;
-                  incr fp_offset;
+                  push_fp();
                   `	fstpl	{emit_reg i.res.(0)}\n`;
-                  decr fp_offset
+                  pop_fp()
               end
         end
     | Lop(Iconst_int 0) ->
@@ -306,7 +322,7 @@ let emit_instr i =
           float_constants := (lbl, s) :: !float_constants;
           `	fldl	{emit_label lbl}\n`
         end;
-        incr fp_offset
+        push_fp()
     | Lop(Iconst_symbol s) ->
         `	movl	${emit_symbol s}, {emit_reg i.res.(0)}\n`
     | Lop(Icall_ind) ->
@@ -368,7 +384,7 @@ let emit_instr i =
             end
         | Float ->
             `	fldl	{emit_addressing addr i.arg 0}\n`;
-            incr fp_offset
+            push_fp()
         end
     | Lop(Istore(Word, addr)) ->
         begin match i.arg.(0).typ with
@@ -378,7 +394,7 @@ let emit_instr i =
             begin match i.arg.(0).loc with
               Reg 100 ->                (* top of FP stack *)
                 `	fstpl	{emit_addressing addr i.arg 1}\n`;
-                decr fp_offset
+                pop_fp()
             | Reg 101 when !fp_offset = 0 -> (* %st(0) *)
                 `	fstl	{emit_addressing addr i.arg 1}\n`
             | _ ->
@@ -466,18 +482,19 @@ let emit_instr i =
     | Lop(Iintop_imm(op, n)) ->
         (* We have i.arg.(0) = i.res.(0) *)
         `	{emit_string(instr_for_intop op)}	${emit_int n}, {emit_reg i.res.(0)}\n`
-    | Lop(Iaddf | Isubf | Imulf | Idivf as floatop) ->
+    | Lop(Iaddf | Isubf | Imulf | Idivf | Ispecific(Isubfrev | Idivfrev)
+          as floatop) ->
         begin match (i.arg.(0).loc, i.arg.(1).loc) with
           (Reg 100, Reg 100) ->         (* both operands on top of FP stack *)
             `	{emit_string(instr_for_floatop_pop floatop)}	%st(0), %st(1)\n`;
-            decr fp_offset
+            pop_fp()
         | (Reg 100, _) ->               (* first operand on stack *)
             `	{emit_string(instr_for_floatop floatop)}{emit_float_operand i.arg.(1)}\n`
         | (_, Reg 100) ->               (* second operand on stack *)
             `	{emit_string(instr_for_floatop_reversed floatop)}{emit_float_operand i.arg.(0)}\n`
         | (_, _) ->                     (* both in regs or on stack *)
             `	fldl	{emit_reg i.arg.(0)}\n`;
-            incr fp_offset;
+            push_fp();
             `	{emit_string(instr_for_floatop floatop)}{emit_float_operand i.arg.(1)}\n`
         end
     | Lop(Ifloatofint) ->
@@ -489,11 +506,11 @@ let emit_instr i =
             `	fildl	(%esp)\n`;
             `	addl	$4, %esp\n`
         end;
-        incr fp_offset
+        push_fp()
     | Lop(Iintoffloat) ->
         if i.arg.(0).loc <> Reg 100 then begin
           `	fldl	{emit_reg i.arg.(0)}\n`;
-          incr fp_offset
+          push_fp()
         end;
         stack_offset := !stack_offset - 8;
         `	subl	$8, %esp\n`;
@@ -509,7 +526,7 @@ let emit_instr i =
             `	fistpl	(%esp)\n`;
             `	movl	(%esp), {emit_reg i.res.(0)}\n`
         end;
-        decr fp_offset;
+        pop_fp();
         `	fldcw	4(%esp)\n`;
         `	addl	$8, %esp\n`;
         stack_offset := !stack_offset + 8
@@ -524,7 +541,7 @@ let emit_instr i =
     | Lop(Ispecific(Ifloatarithmem(op, addr))) ->
         if i.arg.(0).loc <> Reg 100 then begin
           `	fldl	{emit_reg i.arg.(0)}\n`;
-          incr fp_offset
+          push_fp()
         end;
         `	{emit_string(instr_for_floatarithmem op)}	{emit_addressing addr i.arg 1}\n`
     | Lreloadretaddr ->
@@ -570,17 +587,17 @@ let emit_instr i =
                   cmp
               | (Reg 100, _) ->           (* first arg on top of FP stack *)
                   `	{emit_string instr}p{emit_float_operand i.arg.(1)}\n`;
-                  decr fp_offset;
+                  pop_fp();
                   cmp
               | (_, Reg 100) ->           (* second arg on top of FP stack *)
                   `	{emit_string instr}p{emit_float_operand i.arg.(0)}\n`;
-                  decr fp_offset;
+                  pop_fp();
                   Cmm.swap_comparison cmp
               | (_, _) ->
                   `	fldl	{emit_reg i.arg.(0)}\n`;
-                  incr fp_offset;
+                  push_fp();
                   `	{emit_string instr}p{emit_float_operand i.arg.(1)}\n`;
-                  decr fp_offset;
+                  pop_fp();
                   cmp in
             `	fnstsw	%ax\n`;
             begin match actual_cmp with

@@ -25,6 +25,7 @@ type specific_operation =
   | Istore_int of int * addressing_mode (* Store an integer constant *)
   | Istore_symbol of string * addressing_mode (* Store a symbol *)
   | Ioffset_loc of int * addressing_mode (* Add a constant to a location *)
+  | Isubfrev | Idivfrev                 (* Reversed float sub and div *)
   | Ifloatarithmem of float_operation * addressing_mode (* float arith w/mem *)
 
 and float_operation =
@@ -93,6 +94,10 @@ let print_specific_operation printreg op arg =
   | Ioffset_loc(n, addr) ->
       print_string "["; print_addressing printreg addr arg;
       print_string "] +:= "; print_int n
+  | Isubfrev ->
+      printreg arg.(0); print_string " -f(rev) "; printreg arg.(1)
+  | Idivfrev ->
+      printreg arg.(0); print_string " /f(rev) "; printreg arg.(1)
   | Ifloatarithmem(op, addr) ->
       printreg arg.(0);
       begin match op with

@@ -162,16 +162,22 @@ let select_addressing exp =
   | (Ascaledadd(e1, e2, scale), d) ->
       (Iindexed2scaled(scale, d), Ctuple[e1; e2])
 
-(* Make float operations associate to the right as much as possible. *)
+(* Estimate number of float temporaries needed to evaluate expression
+   (Ershov's algorithm) *)
 
-let rec reassociate oldop newop = function
-    [Cop(op, [arg1; arg2]); arg3] when op = oldop ->
-      reassociate oldop newop [arg1; Cop(newop, [arg2; arg3])]
-  | args -> args
+let rec float_needs = function
+    Cop((Caddf | Csubf | Cmulf | Cdivf), [arg1; arg2]) ->
+      let n1 = float_needs arg1 in
+      let n2 = float_needs arg2 in
+      if n1 = n2 then 1 + n1 else max n1 n2
+  | Cop(Cfloatofint, [arg]) ->
+      float_needs arg
+  | _ ->
+      1
 
 (* Recognize float arithmetic with mem *)
 
-let select_floatarith regular_op mem_op mem_rev_op args =
+let select_floatarith regular_op reversed_op mem_op mem_rev_op args =
   match args with
     [arg1; Cop(Cload _, [loc2])] ->
       let (addr, arg2) = select_addressing loc2 in
@@ -179,8 +185,15 @@ let select_floatarith regular_op mem_op mem_rev_op args =
   | [Cop(Cload _, [loc1]); arg2] ->
       let (addr, arg1) = select_addressing loc1 in
       (Ispecific(Ifloatarithmem(mem_rev_op, addr)), [arg2; arg1])
+  | [arg1; arg2] ->
+      (* Evaluate bigger subexpression first to minimize stack usage.
+         Because of right-to-left evaluation, rightmost arg is evaluated
+         first *)
+      if float_needs arg1 <= float_needs arg2
+      then (regular_op, [arg1; arg2])
+      else (reversed_op, [arg2; arg1])
   | _ ->
-      (regular_op, args)
+      fatal_error "Proc_i386: select_floatarith"
 
 (* Main instruction selection functions *)
 
@@ -209,14 +222,15 @@ let select_oper op args =
       | _ -> (Iintop Imod, args)
       end
   (* Recognize float arithmetic with memory.
-     In passing, change associativity of some float operations *)
-  | Caddf -> select_floatarith Iaddf Ifloatadd Ifloatadd
-                               (reassociate Caddf Caddf args)
-  | Csubf -> select_floatarith Isubf Ifloatsub Ifloatsubrev
-                               (reassociate Csubf Caddf args)
-  | Cmulf -> select_floatarith Imulf Ifloatmul Ifloatmul
-                               (reassociate Cmulf Cmulf args)
-  | Cdivf -> select_floatarith Idivf Ifloatdiv Ifloatdivrev args
+     In passing, apply Ershov's algorithm to reduce stack usage *)
+  | Caddf ->
+      select_floatarith Iaddf Iaddf Ifloatadd Ifloatadd args
+  | Csubf ->
+      select_floatarith Isubf (Ispecific Isubfrev) Ifloatsub Ifloatsubrev args
+  | Cmulf ->
+      select_floatarith Imulf Imulf Ifloatmul Ifloatmul args
+  | Cdivf ->
+      select_floatarith Idivf (Ispecific Idivfrev) Ifloatdiv Ifloatdivrev args
   (* Recognize store instructions *)
   | Cstore ->
       begin match args with
@@ -270,7 +284,7 @@ let pseudoregs_for_operation op arg res =
   (* For floating-point operations, the result is always left at the
      top of the floating-point stack *)
   | Iconst_float _ | Iaddf | Isubf | Imulf | Idivf | Ifloatofint |
-    Ispecific(Ifloatarithmem(_, _)) ->
+    Ispecific(Isubfrev | Idivfrev | Ifloatarithmem(_, _)) ->
       (arg, [| tos |], false)           (* don't move it immediately *)
   (* Same for a floating-point load *)
   | Iload(Word, addr) when res.(0).typ = Float ->
