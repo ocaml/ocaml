@@ -1,4 +1,4 @@
-Next release :
+Release 3.05 :
  - added link tags in html header to reference sections and subsections
    in each page (for browser which handle those tags)
  - no titles nor lists in first sentence of text in indexes and latex titles
