@@ -25,43 +25,23 @@
 
 (** {2 Predefined types} 
 These are predefined types :
-{[ type int ]}   The type of integer numbers.
+{[ type int]}    The type of integer numbers.
 {[ type char]}   The type of characters.
-*)
-(*
-{- [type char ]
-
-   The type of characters. }
-{-  [type string]
-
-   The type of character strings.}
-{-  [type float]
-
-   The type of floating-point numbers. }
-{-  [type bool]
-
-   The type of booleans (truth values).}
-{-  [type unit = ()]
-
-   The type of the unit value.}
-{-  [type exn]
-
-   The type of exception values.}
-{-  [type 'a array] 
-
-   The type of arrays whose elements have type ['a]. }
-{-  [type 'a list = [] | :: of 'a * 'a list]
-
-   The type of lists whose elements have type ['a].}
-{-  [type 'a option = None | Some of 'a]
-
-   The type of optional values. }
-{-  [type ('a, 'b, 'c) format]
-
-   The type of format strings. ['a] is the type of the parameters
-   of the format, ['c] is the result type for the [printf]-style
-   function, and ['b] is the type of the first argument given to
-   [%a] and [%t] printing functions (see module {!Printf}). }}
+{[ type string]} The type of character strings.
+{[ type float]}  The type of floating-point numbers.
+{[ type bool]}   The type of booleans (truth values).
+{[ type unit = ()]} The type of the unit value.
+{[ type exn]}    The type of exception values.
+{[ type 'a array]}  The type of arrays whose elements have type ['a].
+{[ type 'a list = [] | :: of 'a * 'a list]}
+                 The type of lists whose elements have type ['a].
+{[type 'a option = None | Some of 'a]}
+                 The type of optional values. 
+{[type ('a, 'b, 'c) format]}
+                 The type of format strings. ['a] is the type of the parameters
+                 of the format, ['c] is the result type for the [printf]-style
+                 function, and ['b] is the type of the first argument given to
+                 [%a] and [%t] printing functions (see module {!Printf}).
 *)
 
 (** {2 Exceptions} *)
@@ -70,67 +50,55 @@ These are predefined types :
 external raise : exn -> 'a = "%raise"
         
 (** These are predefined exceptions :
-{ul
-{- [exception Match_failure of (string * int * int)]
-
-Exception raised when none of the cases of a pattern-matching
+{[exception Match_failure of (string * int * int)]}
+   Exception raised when none of the cases of a pattern-matching
    apply. The arguments are the location of the pattern-matching
    in the source code (file name, position of first character,
    position of last character).
-}
-{- [exception Assert_failure of (string * int * int)]
 
-Exception raised when an assertion fails.  The arguments are
+{[exception Assert_failure of (string * int * int)]}
+   Exception raised when an assertion fails.  The arguments are
    the location of the pattern-matching in the source code
    (file name, position of first character, position of last
    character).
-}
-{- [exception Invalid_argument of string]
 
-Exception raised by library functions to signal that the given
+{[exception Invalid_argument of string]}
+   Exception raised by library functions to signal that the given
    arguments do not make sense.
-}
-{- [exception Failure of string]
 
-Exception raised by library functions to signal that they are
+{[exception Failure of string]}
+   Exception raised by library functions to signal that they are
    undefined on the given arguments. 
-}
-{- [exception Not_found]
 
-Exception raised by search functions when the desired object
+{[exception Not_found]}
+   Exception raised by search functions when the desired object
    could not be found.
-}
-{- [exception Out_of_memory]
 
-Exception raised by the garbage collector
+{[exception Out_of_memory]}
+   Exception raised by the garbage collector
    when there is insufficient memory to complete the computation.
-}
-{- [exception Stack_overflow]
 
-Exception raised by the bytecode interpreter when the evaluation
+{[exception Stack_overflow]}
+   Exception raised by the bytecode interpreter when the evaluation
    stack reaches its maximal size. This often indicates infinite
    or excessively deep recursion in the user's program.
-}
-{- [exception Sys_error of string]
 
-Exception raised by the input/output functions to report
+{[exception Sys_error of string]}
+   Exception raised by the input/output functions to report
    an operating system error.
-}
-{- [exception End_of_file]
 
-Exception raised by input functions to signal that the
+{[exception End_of_file]}
+   Exception raised by input functions to signal that the
    end of file has been reached.
-}
-{- [exception Division_by_zero]
 
-Exception raised by division and remainder operations
+{[exception Division_by_zero]}
+   Exception raised by division and remainder operations
    when their second argument is null.
-}
-{- [exception Sys_blocked_io]
 
-A special case of [Sys_error] raised when no I/O is possible
+{[exception Sys_blocked_io]}
+   A special case of [Sys_error] raised when no I/O is possible
    on a non-blocking I/O channel.
-}}
+
 *)
 
 (** The [Exit] exception is not raised by any library function.  It is
@@ -854,7 +822,7 @@ val exit : int -> 'a
 val at_exit: (unit -> unit) -> unit
 
 
-(*--*)
+(**/**)
 
 (** {2 For system use only, not for the casual user} *)
 

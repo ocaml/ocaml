@@ -176,6 +176,7 @@ val sort : cmp:('a -> 'a -> int) -> 'a array -> unit;;
 *)
 val stable_sort : cmp:('a -> 'a -> int) -> 'a array -> unit;;
 
+(**/**)
 
 (** {2 Undocumented functions} *)
 

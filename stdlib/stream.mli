@@ -87,7 +87,7 @@ val count : 'a t -> int;;
    elements are available. *)
 val npeek : int -> 'a t -> 'a list;;
 
-(*--*)
+(**/**)
 
 (** {2 For system use only, not for the casual user} *)
 

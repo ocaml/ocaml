@@ -142,7 +142,7 @@ val capitalize: string -> string
 val uncapitalize: string -> string
 
 
-(*--*)
+(**/**)
 
 external unsafe_get : string -> int -> char = "%string_unsafe_get"
 external unsafe_set : string -> int -> char -> unit = "%string_unsafe_set"

@@ -83,7 +83,7 @@ val lexeme_start : lexbuf -> int
    string. The first character of the stream has position 0. *)
 val lexeme_end : lexbuf -> int
 
-(*--*)
+(**/**)
 
 (** {2  } *)
 

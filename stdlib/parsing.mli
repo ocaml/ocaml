@@ -47,7 +47,7 @@ val clear_parser : unit -> unit
 exception Parse_error
 
 
-(*--*)
+(**/**)
 
 (** {2  } *)
 

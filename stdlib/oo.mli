@@ -19,7 +19,7 @@
 val copy : (< .. > as 'a) -> 'a
         
 
-(*--*)
+(**/**)
 
 (** {2 For system use only, not for the casual user} *)
 

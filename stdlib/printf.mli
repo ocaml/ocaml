@@ -101,7 +101,7 @@ val sprintf: ('a, unit, string) format -> 'a
    (see module {!Buffer}). *)
 val bprintf: Buffer.t -> ('a, Buffer.t, unit) format -> 'a
 
-(*--*)
+(**/**)
 
 (* For system use only.  Don't call directly. *)
 

@@ -175,7 +175,7 @@ val sort : ('a -> 'a -> int) -> 'a array -> unit;;
 *)
 val stable_sort : ('a -> 'a -> int) -> 'a array -> unit;;
 
-
+(**/**)
 (** {2 Undocumented functions} *)
 
 external unsafe_get: 'a array -> int -> 'a = "%array_unsafe_get"

@@ -33,6 +33,6 @@ val lowercase: char -> char
 (** Convert the given character to its equivalent uppercase character. *)
 val uppercase: char -> char
 
-(*-*)
+(**/**)
 
 external unsafe_chr: int -> char = "%identity"
