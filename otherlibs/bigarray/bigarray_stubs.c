@@ -87,7 +87,7 @@ value alloc_bigarray(int flags, int num_dims, void * data, long * dim)
   struct caml_bigarray * b;
 
   Assert(num_dims >= 1 && num_dims <= MAX_NUM_DIMS);
-  Assert((flags & BIGARRAY_KIND_MASK) <= BIGARRAY_NATIVE_INT);
+  Assert((flags & BIGARRAY_KIND_MASK) <= BIGARRAY_COMPLEX64);
   size = 0;
   if (data == NULL) {
     num_elts = 1;
