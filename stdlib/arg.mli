@@ -47,7 +47,7 @@ type spec =
 
 val parse : (string * spec * string) list -> (string -> unit) -> string -> unit
 (*
-    [parse speclist anonfun errmsg] parses the command line.
+    [parse speclist anonfun usage_msg] parses the command line.
     [speclist] is a list of triples [(key, spec, doc)].
     [key] is the option keyword, it must start with a [-].
     [spec] gives the option type and the function to call when this option
@@ -60,14 +60,14 @@ val parse : (string * spec * string) list -> (string -> unit) -> string -> unit
     If an error occurs, [parse] exits the program, after printing an error
     message as follows:
 -   The reason for the error: unknown option, invalid or missing argument, etc.
--   [errmsg]
+-   [usage_msg]
 -   The list of options, each followed by the corresponding [doc] string.
 
     For the user to be able to specify anonymous arguments starting with a
     [-], include for example [("--", String anonfun, doc)] in [speclist].
 
     By default, [parse] recognizes a unit option [-help], which will
-    display [errmsg] and the list of options, and exit the program.
+    display [usage_msg] and the list of options, and exit the program.
     You can override this behaviour by specifying your own [-help]
     option in [speclist].
 *)
@@ -78,8 +78,8 @@ exception Bad of string
 
 val usage: (string * spec * string) list -> string -> unit
 (*
-    [usage speclist errmsg]
-    [speclist] and [errmsg] are the same as for [parse].  [usage]
+    [usage speclist usage_msg]
+    [speclist] and [usage_msg] are the same as for [parse].  [usage]
     prints the same error message that [parse] prints in case of
     error.
 *)
