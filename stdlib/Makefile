@@ -19,7 +19,7 @@ OBJS=pervasives.cmo list.cmo char.cmo string.cmo array.cmo sys.cmo \
 
 all: stdlib.cma std_exit.cmo camlheader camlheader_ur
 
-allopt: stdlib.cmxa std_exit.cmx
+allopt: stdlib.cmxa std_exit.cmx stdlib.p.cmxa std_exit.p.cmx
 
 install:
 	cp stdlib.cma std_exit.cmo *.cmi *.mli *.ml camlheader camlheader_ur $(LIBDIR)
@@ -33,6 +33,9 @@ stdlib.cma: $(OBJS)
 
 stdlib.cmxa: $(OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o stdlib.cmxa $(OBJS:.cmo=.cmx)
+
+stdlib.p.cmxa: $(OBJS:.cmo=.p.cmx)
+	$(CAMLOPT) -a -o stdlib.p.cmxa $(OBJS:.cmo=.p.cmx)
 
 camlheader camlheader_ur: header.c ../config/Makefile
 	if $(SHARPBANGSCRIPTS); then \
@@ -56,11 +59,20 @@ pervasives.cmo: pervasives.ml
 pervasives.cmx: pervasives.ml
 	$(CAMLOPT) $(OPTCOMPFLAGS) -nopervasives -c pervasives.ml
 
+pervasives.p.cmx: pervasives.ml
+	@if test -f pervasives.cmx; then mv pervasives.cmx pervasives.n.cmx; else :; fi
+	@if test -f pervasives.o; then mv pervasives.o pervasives.n.o; else :; fi
+	$(CAMLOPT) $(OPTCOMPFLAGS) -p -nopervasives -c pervasives.ml
+	mv pervasives.cmx pervasives.p.cmx
+	mv pervasives.o pervasives.p.o
+	@if test -f pervasives.n.cmx; then mv pervasives.n.cmx pervasives.cmx; else :; fi
+	@if test -f pervasives.n.o; then mv pervasives.n.o pervasives.o; else :; fi
+
 # oo.cmi must be compiled with -nopervasives for applets
 oo.cmi: oo.mli
 	$(CAMLC) $(COMPFLAGS) -nopervasives -c oo.mli
 
-.SUFFIXES: .mli .ml .cmi .cmo .cmx
+.SUFFIXES: .mli .ml .cmi .cmo .cmx .p.cmx
 
 .mli.cmi:
 	$(CAMLC) $(COMPFLAGS) -c $<
@@ -71,12 +83,19 @@ oo.cmi: oo.mli
 .ml.cmx:
 	$(CAMLOPT) $(OPTCOMPFLAGS) -c $<
 
-$(OBJS) std_exit.cmo: pervasives.cmi
-$(OBJS:.cmo=.cmx) std_exit.cmx: pervasives.cmi
+.ml.p.cmx:
+	@if test -f $*.cmx; then mv $*.cmx $*.n.cmx; else :; fi
+	@if test -f $*.o; then mv $*.o $*.n.o; else :; fi
+	$(CAMLOPT) $(OPTCOMPFLAGS) -p -c $<
+	mv $*.cmx $*.p.cmx
+	mv $*.o $*.p.o
+	@if test -f $*.n.cmx; then mv $*.n.cmx $*.cmx; else :; fi
+	@if test -f $*.n.o; then mv $*.n.o $*.o; else :; fi
 
-$(OBJS) std_exit.cmo: $(COMPILER)
+$(OBJS) std_exit.cmo: pervasives.cmi $(COMPILER)
+$(OBJS:.cmo=.cmx) std_exit.cmx: pervasives.cmi $(OPTCOMPILER)
+$(OBJS:.cmo=.p.cmx) std_exit.p.cmx: pervasives.cmi $(OPTCOMPILER)
 $(OBJS:.cmo=.cmi) std_exit.cmi: $(COMPILER)
-$(OBJS:.cmo=.cmx) std_exit.cmx: $(OPTCOMPILER)
 
 clean::
 	rm -f *.cm* *.o *.a

@@ -13,6 +13,12 @@
 
 /* Asm part of the runtime system, Alpha processor */
 
+#if defined(PROFILING) && defined(SYS_digital)
+#define PROFILE nop; unop; nop; unop
+#else
+#define PROFILE
+#endif
+
 /* Allocation */
 
         .text
@@ -27,6 +33,7 @@
         .globl  caml_alloc1
         .ent    caml_alloc1
         .align  3
+        PROFILE
 caml_alloc1:
         .prologue 0
         subq    $13, 16, $13
@@ -40,6 +47,7 @@ $100:   ldiq    $25, 16
         .globl  caml_alloc2
         .ent    caml_alloc2
         .align  3
+        PROFILE
 caml_alloc2:
         .prologue 0
         subq    $13, 24, $13
@@ -53,6 +61,7 @@ $101:   ldiq    $25, 24
         .globl  caml_alloc3
         .ent    caml_alloc3
         .align  3
+        PROFILE
 caml_alloc3:
         .prologue 0
         subq    $13, 32, $13
@@ -66,6 +75,7 @@ $102:   ldiq    $25, 32
         .globl  caml_alloc
         .ent    caml_alloc
         .align  3
+        PROFILE
 caml_alloc:
         .prologue 0
         subq    $13, $25, $13
@@ -79,6 +89,7 @@ caml_alloc:
         .globl  caml_call_gc
         .ent    caml_call_gc
         .align  3
+        PROFILE
 caml_call_gc:
         .prologue 0
         ldiq    $25, 0
@@ -213,6 +224,7 @@ $103:   ldgp    $gp, 0($27)
         .globl  caml_c_call
         .ent    caml_c_call
         .align  3
+        PROFILE
 caml_c_call:
         .prologue 0
     /* Preserve return address and caller's $gp in callee-save registers */
@@ -249,6 +261,7 @@ $104:   ldgp    $gp, 0($25)
         .globl  caml_start_program
         .ent    caml_start_program
         .align  3
+        PROFILE
 caml_start_program:
         ldgp    $gp, 0($27)
         lda     $25, caml_program
@@ -359,6 +372,7 @@ $109:   ldgp    $gp, 0($26)
         .globl  raise_caml_exception
         .ent    raise_caml_exception
         .align  3
+        PROFILE
 raise_caml_exception:
         ldgp    $gp, 0($27)
         mov     $16, $0                         /* Move exn bucket */
@@ -377,6 +391,7 @@ raise_caml_exception:
         .globl  callback
         .ent    callback
         .align  3
+        PROFILE
 callback:
     /* Initial shuffling of arguments */
         ldgp    $gp, 0($27)
@@ -390,6 +405,7 @@ callback:
         .globl  callback2
         .ent    callback2
         .align  3
+        PROFILE
 callback2:
         ldgp    $gp, 0($27)
         mov     $16, $25
@@ -403,6 +419,7 @@ callback2:
         .globl  callback3
         .ent    callback3
         .align  3
+        PROFILE
 callback3:
         ldgp    $gp, 0($27)
         mov     $16, $25

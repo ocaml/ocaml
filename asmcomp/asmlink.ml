@@ -171,7 +171,10 @@ let make_startup_file filename info_list =
   close_out oc
 
 let call_linker file_list startup_file =
-  let libname = "libasmrun" ^ ext_lib in
+  let libname =
+    if !Clflags.gprofile
+    then "libasmrunp" ^ ext_lib
+    else "libasmrun" ^ ext_lib in
   let runtime_lib =
     try
       find_in_path !load_path libname
@@ -199,8 +202,9 @@ let call_linker file_list startup_file =
             (String.concat " " (List.rev file_list))
     | _ ->
         if not !Clflags.output_c_object then
-          Printf.sprintf "%s -o %s -I%s %s %s %s -L%s %s %s %s"
+          Printf.sprintf "%s %s -o %s -I%s %s %s %s -L%s %s %s %s"
             Config.native_c_compiler
+            (if !Clflags.gprofile then "-pg" else "")
             !Clflags.exec_name
             Config.standard_library
             (String.concat " " (List.rev !Clflags.ccopts))
@@ -234,7 +238,10 @@ let object_file_name name =
 (* Main entry point *)
 
 let link objfiles =
-  let objfiles = "stdlib.cmxa" :: (objfiles @ ["std_exit.cmx"]) in
+  let objfiles =
+    if !Clflags.gprofile
+    then "stdlib.p.cmxa" :: (objfiles @ ["std_exit.p.cmx"])
+    else "stdlib.cmxa" :: (objfiles @ ["std_exit.cmx"]) in
   let units_tolink = List.fold_right scan_file objfiles [] in
   Array.iter remove_required Runtimedef.builtin_exceptions;
   if not (StringSet.is_empty !missing_globals) then

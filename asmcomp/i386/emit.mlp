@@ -693,6 +693,21 @@ let emit_float_constant (lbl, cst) =
   `	.data\n`;
   `{emit_label lbl}:	.double	{emit_string cst}\n`
 
+(* Emission of the profiling prelude *)
+
+let emit_profile () =
+  match Config.system with
+    "linux_elf" ->
+      `	pushl	%eax\n`;
+      `	movl	%esp, %ebp\n`;
+      `	pushl	%ecx\n`;
+      `	pushl	%edx\n`;
+      `	call	{emit_symbol "mcount"}\n`;
+      `	popl	%edx\n`;
+      `	popl	%ecx\n`;
+      `	popl	%eax\n`
+  | _ -> () (*unsupported yet*)
+
 (* Emission of a function declaration *)
 
 let fundecl fundecl =
@@ -707,6 +722,7 @@ let fundecl fundecl =
   emit_align 4;
   `	.globl	{emit_symbol fundecl.fun_name}\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
+  if !Clflags.gprofile then emit_profile();
   let n = frame_size() - 4 in
   if n > 0 then
     `	subl	${emit_int n}, %esp\n`;

@@ -63,7 +63,7 @@ let main () =
              "<opt>  Pass option <opt> to the C compiler and linker";
        "-compact", Arg.Clear optimize_for_speed,
              " Optimize code size rather than speed";
-       "-i", Arg.Set print_types, " Print the types";
+       "-i", Arg.Set print_types, " Print the inferred types";
        "-I", Arg.String(fun dir -> include_dirs := dir :: !include_dirs),
              "<dir>  Add <dir> to the list of include directories";
        "-impl", Arg.String process_implementation_file,
@@ -82,7 +82,10 @@ let main () =
                                  object_name := s),
              "<file>  Set output file name to <file> (default a.out)";
        "-output-obj", Arg.Unit(fun () -> output_c_object := true),
-             "Output a C object file instead of an executable";
+             " Output a C object file instead of an executable";
+       "-p", Arg.Set gprofile,
+             " Compile and link with profiling support for \"gprof\"\n\
+               \t(not supported on all platforms)";
        "-pp", Arg.String(fun s -> preprocessor := Some s),
              "<command>  Pipe sources through preprocessor <command>";
        "-S", Arg.Set keep_asm_file, " Keep intermediate assembly file";

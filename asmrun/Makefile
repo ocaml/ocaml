@@ -4,6 +4,7 @@ CC=$(NATIVECC)
 FLAGS=-I../byterun -DNATIVE_CODE -DTARGET_$(ARCH) -DSYS_$(SYSTEM) 
 CFLAGS=$(FLAGS) -O $(NATIVECCCOMPOPTS)
 DFLAGS=$(FLAGS) -g -DDEBUG $(NATIVECCCOMPOPTS)
+PFLAGS=$(FLAGS) -pg -DPROFILING $(NATIVECCCOMPOPTS)
 
 COBJS=startup.o main.o fail.o roots.o signals.o \
   misc.o freelist.o major_gc.o minor_gc.o memory.o alloc.o compare.o ints.o \
@@ -15,8 +16,9 @@ ASMOBJS=$(ARCH).o
 
 OBJS=$(COBJS) $(ASMOBJS)
 DOBJS=$(COBJS:.o=.d.o) $(ASMOBJS)
+POBJS=$(COBJS:.o=.p.o) $(ASMOBJS:.o=.p.o)
 
-all: libasmrun.a
+all: libasmrun.a libasmrunp.a
 
 libasmrun.a: $(OBJS)
 	rm -f libasmrun.a
@@ -28,9 +30,14 @@ libasmrund.a: $(DOBJS)
 	ar rc libasmrund.a $(DOBJS)
 	$(RANLIB) libasmrund.a
 
+libasmrunp.a: $(POBJS)
+	rm -f libasmrunp.a
+	ar rc libasmrunp.a $(POBJS)
+	$(RANLIB) libasmrunp.a
+
 install:
-	cp libasmrun.a $(LIBDIR)
-	cd $(LIBDIR); $(RANLIB) libasmrun.a
+	cp libasmrun.a libasmrunp.a $(LIBDIR)
+	cd $(LIBDIR); $(RANLIB) libasmrun.a libasmrunp.a
 
 power.o: power-$(SYSTEM).o
 	cp power-$(SYSTEM).o power.o
@@ -100,15 +107,24 @@ LINKEDFILES=misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c array.c \
 clean::
 	rm -f $(LINKEDFILES)
 
-.SUFFIXES: .S .d.o
+.SUFFIXES: .S .d.o .p.o
 
 .S.o:
 	$(ASPP) $(ASPPFLAGS) -o $*.o $*.S
+
+.S.p.o:
+	$(ASPP) $(ASPPFLAGS) -DPROFILING -o $*.p.o $*.S
 
 .c.d.o:
 	@ if test -f $*.o; then mv $*.o $*.f.o; else :; fi
 	$(CC) -c $(DFLAGS) $<
 	mv $*.o $*.d.o
+	@ if test -f $*.f.o; then mv $*.f.o $*.o; else :; fi
+
+.c.p.o:
+	@ if test -f $*.o; then mv $*.o $*.f.o; else :; fi
+	$(CC) -c $(PFLAGS) $<
+	mv $*.o $*.p.o
 	@ if test -f $*.f.o; then mv $*.f.o $*.o; else :; fi
 
 clean::
