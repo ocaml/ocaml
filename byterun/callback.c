@@ -32,7 +32,10 @@
 
 CAMLexport int caml_callback_depth = 0;
 
+#ifndef LOCAL_CALLBACK_BYTECODE
 static opcode_t callback_code[] = { ACC, 0, APPLY, 0, POP, 1, STOP };
+#endif 
+
 
 #ifdef THREADED_CODE
 
@@ -68,16 +71,20 @@ CAMLexport value caml_callbackN_exn(value closure, int narg, value args[])
 
   caml_extern_sp -= narg + 4;
   for (i = 0; i < narg; i++) caml_extern_sp[i] = args[i]; /* arguments */
+#ifndef LOCAL_CALLBACK_BYTECODE
   caml_extern_sp[narg] = (value) (callback_code + 4); /* return address */
   caml_extern_sp[narg + 1] = Val_unit;    /* environment */
   caml_extern_sp[narg + 2] = Val_long(0); /* extra args */
   caml_extern_sp[narg + 3] = closure;
-#ifndef LOCAL_CALLBACK_BYTECODE
   Init_callback();
   callback_code[1] = narg + 3;
   callback_code[3] = narg;
   res = caml_interprete(callback_code, sizeof(callback_code));
 #else /*have LOCAL_CALLBACK_BYTECODE*/
+  caml_extern_sp[narg] = (value) (local_callback_code + 4); /* return address */
+  caml_extern_sp[narg + 1] = Val_unit;    /* environment */
+  caml_extern_sp[narg + 2] = Val_long(0); /* extra args */
+  caml_extern_sp[narg + 3] = closure;
   local_callback_code[0] = ACC;
   local_callback_code[1] = narg + 3;
   local_callback_code[2] = APPLY;
