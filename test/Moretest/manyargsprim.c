@@ -1,4 +1,4 @@
-#include "../byterun/mlvalues.h"
+#include "mlvalues.h"
 
 value manyargs(a,b,c,d,e,f,g,h,i,j,k)
      value a,b,c,d,e,f,g,h,i,j,k;

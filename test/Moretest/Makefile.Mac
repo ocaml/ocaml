@@ -1,0 +1,42 @@
+CAMLC = :::boot:ocamlrun :::ocamlc -I :::stdlib:
+CAMLDEP = :::boot:ocamlrun :::tools:ocamldep
+CAMLRUN = :::byterun:ocamlrun
+
+callback.byt Ä callback.cmo callbackprim.c.o callbackprim.c.x
+	alias ocamlc "{CAMLC}"
+	:::tools:ocamlc-custom -o callback.byt callback.cmo callbackprim.c.[ox]
+
+manyargs.byt Ä manyargs.cmo manyargsprim.c.o manyargsprim.c.x
+	alias ocamlc "{CAMLC}"
+	:::tools:ocamlc-custom -o manyargs.byt manyargs.cmo manyargsprim.c.[ox]
+
+# Common rules
+
+.byt Ä .ml
+	{CAMLC} -o {default}.byt {default}.ml
+
+.fast.byt Ä .ml
+	{CAMLC} -unsafe -o {default}.fast.byt {default}.ml
+
+.cmi Ä .mli
+	{CAMLC} -c {default}.mli
+
+.cmo Ä .ml
+	{CAMLC} -c {default}.ml
+
+.c.o Ä .c
+	sc -w 7 -i :::byterun: {default}.c -o {default}.c.o
+
+.c.x Ä .c
+	mrc -w 35 -i :::byterun: {default}.c -o {default}.c.x
+
+clean ÄÄ
+	delete -i Å.byt || set status 0
+	delete -i Å.cm[io] || set status 0
+	delete -i Å.c.[ox] || set status 0
+	delete -i intext.data
+
+# Dependencies
+
+depend Ä
+	{CAMLDEP} Å.mli Å.ml > Makefile.Mac.depend

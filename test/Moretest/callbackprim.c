@@ -1,5 +1,5 @@
-#include "../byterun/mlvalues.h"
-#include "../byterun/memory.h"
+#include "mlvalues.h"
+#include "memory.h"
 
 value mycallback1(fun, arg)
      value fun, arg;
