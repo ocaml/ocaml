@@ -39,7 +39,7 @@ let fmt_constant f x =
   | Const_int (i) -> fprintf f "Const_int %d" i;
   | Const_char (c) -> fprintf f "Const_char %02x" (Char.code c);
   | Const_string (s) ->
-      fprintf f "Const_string \"%s\"" (String.escaped s);
+      fprintf f "Const_string %S" s;
   | Const_float (s) -> fprintf f "Const_float %s" s;
 ;;
 

@@ -22,9 +22,9 @@ open Lambda
 let rec struct_const ppf = function
   | Const_base(Const_int n) -> fprintf ppf "%i" n
   | Const_base(Const_char c) ->
-      fprintf ppf "'%s'" (Char.escaped c)
+      fprintf ppf "%C" c
   | Const_base(Const_string s) ->
-      fprintf ppf "\"%s\"" (String.escaped s)
+      fprintf ppf "%S" s
   | Const_base(Const_float s) ->
       fprintf ppf "%s" s
   | Const_pointer n -> fprintf ppf "%ia" n

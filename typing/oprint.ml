@@ -55,9 +55,9 @@ let print_out_value ppf tree =
     function
       Oval_int i -> fprintf ppf "%i" i
     | Oval_float f -> fprintf ppf "%s" (string_of_float f)
-    | Oval_char c -> fprintf ppf "'%s'" (Char.escaped c)
+    | Oval_char c -> fprintf ppf "%C" c
     | Oval_string s ->
-        begin try fprintf ppf "\"%s\"" (String.escaped s) with
+        begin try fprintf ppf "%S" s with
           Invalid_argument "String.create" -> fprintf ppf "<huge string>"
         end
     | Oval_list tl ->

@@ -85,9 +85,9 @@ let rec print_struct_const = function
   | Const_base(Const_float f) ->
       print_float f
   | Const_base(Const_string s) ->
-      printf "\"%s\"" (String.escaped s)
+      printf "%S" s
   | Const_base(Const_char c) ->
-      printf "'%s'" (Char.escaped c)
+      printf "%C" c
   | Const_pointer n ->
       printf "%da" n
   | Const_block(tag, args) ->
@@ -112,7 +112,7 @@ let rec print_obj x =
   if Obj.is_block x then begin
     match Obj.tag x with
       252 ->                            (* string *)
-        printf "\"%s\"" (String.escaped (Obj.magic x : string))
+        printf "%S" (Obj.magic x : string)
     | 253 ->                            (* float *)
         printf "%.12g" (Obj.magic x : float)
     | 254 ->                            (* float array *)

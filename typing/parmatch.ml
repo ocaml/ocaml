@@ -157,9 +157,9 @@ let rec pretty_val ppf v = match v.pat_desc with
   | Tpat_var x -> Ident.print ppf x
   | Tpat_constant (Const_int i) -> fprintf ppf "%d" i
   | Tpat_constant (Const_char c) ->
-      fprintf ppf "'%s'"  (Char.escaped c)
+      fprintf ppf "%C" c
   | Tpat_constant (Const_string s) ->
-      fprintf ppf "\"%s\"" (String.escaped s)
+      fprintf ppf "%S" s
   | Tpat_constant (Const_float s) ->
       fprintf ppf "%s" s
   | Tpat_tuple vs ->
