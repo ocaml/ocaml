@@ -74,6 +74,7 @@ type operation =
   | Ccmpi of comparison
   | Cadda | Csuba
   | Ccmpa of comparison
+  | Cnegf | Cabsf
   | Caddf | Csubf | Cmulf | Cdivf
   | Cfloatofint | Cintoffloat
   | Ccmpf of comparison

@@ -50,7 +50,7 @@ type operation =
   | Ialloc of int
   | Iintop of integer_operation
   | Iintop_imm of integer_operation * int
-  | Iaddf | Isubf | Imulf | Idivf
+  | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
   | Ifloatofint | Iintoffloat
   | Ispecific of Arch.specific_operation
 

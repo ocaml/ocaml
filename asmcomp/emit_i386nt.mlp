@@ -214,7 +214,9 @@ let instr_for_intop = function
   | _ -> fatal_error "Emit: instr_for_intop"
 
 let instr_for_floatop = function
-    Iaddf -> "fadd"
+    Inegf -> "fchs"
+  | Iabsf -> "fabs"
+  | Iaddf -> "fadd"
   | Isubf -> "fsub"
   | Imulf -> "fmul"
   | Idivf -> "fdiv"
@@ -475,6 +477,12 @@ let emit_instr i =
     | Lop(Iintop_imm(op, n)) ->
         (* We have i.arg.(0) = i.res.(0) *)
         `	{emit_string(instr_for_intop op)}	{emit_reg i.res.(0)}, {emit_int n}\n`
+    | Lop(Inegf | Iabsf as floatop) ->
+        if i.arg.(0).loc <> Reg 100 then begin
+          `	fld	{emit_reg i.arg.(0)}\n`;
+          push_fp()
+        end;
+        `	{emit_string(instr_for_floatop floatop)}\n`
     | Lop(Iaddf | Isubf | Imulf | Idivf | Ispecific(Isubfrev | Idivfrev)
           as floatop) ->
         begin match (i.arg.(0).loc, i.arg.(1).loc) with

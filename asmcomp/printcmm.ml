@@ -71,6 +71,8 @@ let operation = function
   | Cadda -> print_string "+a"
   | Csuba -> print_string "-a"
   | Ccmpa c -> comparison c; print_string "a"
+  | Cnegf -> print_string "~f"
+  | Cabsf -> print_string "absf"
   | Caddf -> print_string "+f"
   | Csubf -> print_string "-f"
   | Cmulf -> print_string "*f"

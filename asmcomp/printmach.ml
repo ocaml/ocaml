@@ -134,6 +134,8 @@ let operation op arg res =
   | Ialloc n -> print_string "alloc "; print_int n
   | Iintop(op) -> reg arg.(0); intop op; reg arg.(1)
   | Iintop_imm(op, n) -> reg arg.(0); intop op; print_int n
+  | Inegf -> print_string "-f "; reg arg.(0)
+  | Iabsf -> print_string "absf "; reg arg.(0)
   | Iaddf -> reg arg.(0); print_string " +f "; reg arg.(1)
   | Isubf -> reg arg.(0); print_string " -f "; reg arg.(1)
   | Imulf -> reg arg.(0); print_string " *f "; reg arg.(1)

@@ -215,7 +215,9 @@ let name_for_int_operation = function
   | _ -> Misc.fatal_error "Emit.name_for_int_operation"
 
 let name_for_float_operation = function
-    Iaddf -> "faddd"
+    Inegf -> "fnegs"
+  | Iabsf -> "fabss"
+  | Iaddf -> "faddd"
   | Isubf -> "fsubd"
   | Imulf -> "fmuld"
   | Idivf -> "fdivd"
@@ -418,6 +420,10 @@ let rec emit_instr i dslot =
     | Lop(Iintop_imm(op, n)) ->
         let instr = name_for_int_operation op in
         `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_int n}, {emit_reg i.res.(0)}\n`
+    | Lop(Inegf | Iabsf as op) ->
+        let instr = name_for_float_operation op in
+        `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_reg i.res.(0)}\n`;
+        `	fmovs	{emit_reg(next_in_pair i.arg.(0))}, {emit_reg(next_in_pair i.res.(0))}\n`
     | Lop(Iaddf | Isubf | Imulf | Idivf as op) ->
         let instr = name_for_float_operation op in
         `	{emit_string instr}	{emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`

@@ -552,6 +552,10 @@ let rec emit_instr i dslot =
     | Lop(Iaddf | Isubf | Imulf | Idivf as op) ->
         let instr = name_for_float_operation op in
         `	{emit_string instr} {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.res.(0)}\n`
+    | Lop(Inegf) ->
+        `	fsub,dbl 0, {emit_reg i.arg.(0)}, {emit_reg i.res.(0)}\n`
+    | Lop(Iabsf) ->
+        `	fabs,dbl {emit_reg i.arg.(0)}, {emit_reg i.res.(0)}\n`
     | Lop(Ifloatofint) ->
         `	stws,ma	{emit_reg i.arg.(0)}, 8(%r30)\n`;
         `	fldws,mb -8(%r30), %fr31L\n`;
@@ -666,7 +670,7 @@ let is_one_instr i =
       | Istore(_, Iindexed n) -> i.arg.(0).typ <> Float & is_offset n
       | Iintop(Iadd | Isub | Iand | Ior | Ixor | Icheckbound) -> true
       | Iintop_imm((Iadd | Isub | Ilsl | Ilsr | Iasr | Icheckbound), _) -> true
-      | Iaddf | Isubf | Imulf | Idivf -> true
+      | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf -> true
       | Ispecific _ -> true
       | _ -> false
       end

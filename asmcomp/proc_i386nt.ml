@@ -281,8 +281,8 @@ let pseudoregs_for_operation op arg res =
       ([| edx |], [| edx |], true)
   (* For floating-point operations, the result is always left at the
      top of the floating-point stack *)
-  | Iconst_float _ | Iaddf | Isubf | Imulf | Idivf | Ifloatofint |
-    Ispecific(Isubfrev | Idivfrev | Ifloatarithmem(_, _)) ->
+  | Iconst_float _ | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf
+  | Ifloatofint |Ispecific(Isubfrev | Idivfrev | Ifloatarithmem(_, _)) ->
       (arg, [| tos |], false)           (* don't move it immediately *)
   (* Same for a floating-point load *)
   | Iload(Word, addr) when res.(0).typ = Float ->
@@ -400,7 +400,7 @@ let reload_operation makereg op arg res =
       then ([|arg.(0); makereg arg.(1)|], res)
       else (arg, res)
   | Iintop(Ilsl|Ilsr|Iasr) | Iintop_imm(_, _) | Ifloatofint | Iintoffloat |
-    Iaddf | Isubf | Imulf | Idivf ->
+    Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf ->
       (* The argument(s) can be either in register or on stack *)
       (arg, res)
   | Ispecific(Ifloatarithmem(_, _)) ->

@@ -33,7 +33,7 @@ let oper_result_type = function
   | Cand | Cor | Cxor | Clsl | Clsr | Casr
   | Ccmpi _ | Ccmpa _ | Ccmpf _ -> typ_int
   | Cadda | Csuba -> typ_addr
-  | Caddf | Csubf | Cmulf | Cdivf -> typ_float
+  | Cnegf | Cabsf | Caddf | Csubf | Cmulf | Cdivf -> typ_float
   | Cfloatofint -> typ_float
   | Cintoffloat -> typ_int
   | Craise -> typ_void
@@ -120,6 +120,8 @@ let rec sel_operation op args =
   | (Cadda, _) -> sel_arith_comm Iadd args
   | (Csuba, _) -> sel_arith Isub args
   | (Ccmpa comp, _) -> sel_arith_comp (Iunsigned comp) args
+  | (Cnegf, _) -> (Inegf, args)
+  | (Cabsf, _) -> (Iabsf, args)
   | (Caddf, _) -> (Iaddf, args)
   | (Csubf, _) -> (Isubf, args)  
   | (Cmulf, _) -> (Imulf, args)  

@@ -130,7 +130,7 @@ let is_unboxed_float = function
   | Uprim(p, _) ->
       begin match p with
           Pccall p -> p.prim_native_float
-        | Pfloatfield _ | Pfloatofint | Pnegfloat
+        | Pfloatfield _ | Pfloatofint | Pnegfloat | Pabsfloat
         | Paddfloat | Psubfloat | Pmulfloat | Pdivfloat
         | Parrayrefu Pfloatarray | Parrayrefs Pfloatarray -> true
         | _ -> false
@@ -514,8 +514,9 @@ let rec transl = function
   | Uprim(Pintoffloat, [arg]) ->
      tag_int(Cop(Cintoffloat, [transl_unbox_float arg]))
   | Uprim(Pnegfloat, [arg]) ->
-      box_float(Cop(Csubf, [Cconst_float "0.0";
-                            transl_unbox_float arg]))
+      box_float(Cop(Cnegf, [transl_unbox_float arg]))
+  | Uprim(Pabsfloat, [arg]) ->
+      box_float(Cop(Cabsf, [transl_unbox_float arg]))
   | Uprim(Paddfloat, [arg1; arg2]) ->
       box_float(Cop(Caddf, [transl_unbox_float arg1; transl_unbox_float arg2]))
   | Uprim(Psubfloat, [arg1; arg2]) ->

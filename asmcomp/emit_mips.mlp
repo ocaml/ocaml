@@ -191,7 +191,9 @@ let name_for_int_operation = function
   | _ -> Misc.fatal_error "Emit.name_for_int_operation"
 
 let name_for_float_operation = function
-    Iaddf -> "add.d"
+    Inegf -> "neg.d"
+  | Iabsf -> "abs.d"
+  | Iaddf -> "add.d"
   | Isubf -> "sub.d"
   | Imulf -> "mul.d"
   | Idivf -> "div.d"
@@ -346,6 +348,9 @@ let emit_instr i =
     | Lop(Iintop_imm(op, n)) ->
         let instr = name_for_int_operation op in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_int n}\n`
+    | Lop(Inegf | Iabsf as op) ->
+        let instr = name_for_float_operation op in
+        `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`
     | Lop(Iaddf | Isubf | Imulf | Idivf as op) ->
         let instr = name_for_float_operation op in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`

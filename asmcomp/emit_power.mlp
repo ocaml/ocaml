@@ -442,6 +442,13 @@ let rec emit_instr i dslot =
           | Iasr -> "srawi"
           | _ -> Misc.fatal_error "Emit.Intop_imm" in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_int n}\n`
+    | Lop(Inegf | Iabsf as op) ->
+        let instr =
+          match op with
+            Inegf -> "fneg"
+          | Iabsf -> "fabs"
+          | _ -> Misc.fatal_error "Emit.Iopf1" in
+        `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`
     | Lop(Iaddf | Isubf | Imulf | Idivf as op) ->
         let instr =
           match op with
@@ -449,7 +456,7 @@ let rec emit_instr i dslot =
           | Isubf -> "fsub"
           | Imulf -> "fmul"
           | Idivf -> "fdiv"
-          | _ -> Misc.fatal_error "Emit.Iopf" in
+          | _ -> Misc.fatal_error "Emit.Iopf2" in
         `	{emit_string instr}	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
     | Lop(Ifloatofint) ->
         let lbl = label_float "\067\048\000\000\128\000\000\000" in
