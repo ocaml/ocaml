@@ -44,6 +44,14 @@ type t
 type object
 val send:	object -> label -> t
 
+(* Parameters *)
+
+val compact_table : bool ref
+val copy_parent : bool ref
+val clean_when_copying : bool ref
+val retry_count : int ref
+val bucket_small_size : int ref
+
 (* Statistics *)
 type stats =
   { classes: int; labels: int; methods: int; inst_vars: int; buckets: int;
