@@ -1006,7 +1006,11 @@ let rec type_exp env sexp =
                 r := sexp.pexp_loc :: !r;
                 force ()
             | _ ->
-                let ty = enlarge_type sexp.pexp_loc env ty' in
+                let ty, b = enlarge_type env ty' in
+		if b then Location.prerr_warning sexp.pexp_loc
+		    (Warnings.Other "Simple coercions only expand up to 2 \
+		       levels of abbreviations\ninvolving objects/variants. \
+                       Consider using double coercions.");
                 force ();
                 begin try Ctype.unify env arg.exp_type ty with Unify trace ->
                   raise(Error(sarg.pexp_loc,
@@ -1850,7 +1854,10 @@ let report_error ppf = function
              "This expression cannot be coerced to type@;<1 2>%a;@ it has type"
            (type_expansion ty) ty')
         (function ppf ->
-           fprintf ppf "but is here used with type")
+           fprintf ppf "but is here used with type");
+      fprintf ppf "%s@ %s"
+        "Simple coercions are not complete."
+        "Consider using double coercions."
   | Too_many_arguments (in_function, ty) ->
       reset_and_mark_loops ty;
       if in_function then begin

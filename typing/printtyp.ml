@@ -372,16 +372,11 @@ let tree_of_type_scheme ty = reset_and_mark_loops ty; tree_of_typexp true ty
 
 (* Print one type declaration *)
 
-let constrain ppf ty =
-  let ty' = unalias ty in
-  if ty != ty'
-  then fprintf ppf "@ @[<2>constraint %a =@ %a@]" type_sch ty type_sch ty'
-
 let tree_of_constraints params =
   List.fold_right
     (fun ty list ->
        let ty' = unalias ty in
-       if ty != ty' then
+       if proxy ty != proxy ty' then
          let tr = tree_of_typexp true ty in
          (tr, tree_of_typexp true ty') :: list
        else list)
@@ -646,7 +641,7 @@ let tree_of_cltype_declaration id cl =
   let params = List.map repr cl.clty_params in
 
   reset ();
-  aliased := params @ !aliased;
+  List.iter add_alias params;
   prepare_class_type params cl.clty_type;
   let sty = self_type cl.clty_type in
   List.iter mark_loops params;
