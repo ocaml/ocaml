@@ -54,6 +54,13 @@ let rec name_pattern default = function
       end
   | _ -> Ident.create default
 
+(* To let-bind expressions to variables *)
+
+let bind str var exp body =
+  match exp with
+    Lvar var' when Ident.same var var' -> body
+  | _ -> Llet(str, var, exp, body)
+
 (* To remove aliases and bind named components *)
 
 let any_pat =
@@ -68,10 +75,10 @@ let simplify_matching m =
         (pat :: patl, action as patl_action) :: rem ->
           begin match pat.pat_desc with
             Tpat_var id ->
-              (any_pat :: patl, Llet(Alias, id, arg, action)) ::
+              (any_pat :: patl, bind Alias id arg action) ::
               simplify rem
           | Tpat_alias(p, id) ->
-              simplify ((p :: patl, Llet(Alias, id, arg, action)) :: rem)
+              simplify ((p :: patl, bind Alias id arg action) :: rem)
           | _ ->
               patl_action :: simplify rem
           end
@@ -463,7 +470,7 @@ let rec compile_match repr m =
                 fatal_error "Matching.compile_match1"
             end
         | _ -> fatal_error "Matching.compile_match2" in
-      (Llet(str, v, arg, lam), total)
+      (bind str v arg lam, total)
   | _ -> assert false
 
 (* The entry points *)
