@@ -35,7 +35,7 @@ caml_call_gc:
         mflr    0
         Storeglobal(0, caml_last_return_address, 11)
     /* Record lowest stack address */
-        addi    0, 1, 32
+        addi    0, 1, 0x1A0
         Storeglobal(0, caml_bottom_of_stack, 11)
     /* Record pointer to register array */
         addi    0, 1, 8*32 + 32
@@ -201,7 +201,6 @@ caml_c_call:
         li      12, 0
         Storeglobal(12, caml_last_return_address, 11)
     /* Return to caller */
-        addi    1, 8, 1
         blr
         
 /* Raise an exception from C */
