@@ -157,6 +157,19 @@ let closed_class cty =
     &&
   closed_class_type cty.cty_type
 
+let rec limited_generalize rv =
+  function
+    Tcty_constr (path, params, cty) ->
+      List.iter (Ctype.limited_generalize rv) params;
+      limited_generalize rv cty
+  | Tcty_signature sign ->
+      Ctype.limited_generalize rv sign.cty_self;
+      Vars.iter (fun _ (_, ty) -> Ctype.limited_generalize rv ty)
+        sign.cty_vars
+  | Tcty_fun (ty, cty) ->
+      Ctype.limited_generalize rv ty;
+      limited_generalize rv cty
+
                 (***********************************)
                 (*  Primitives for typing classes  *)
                 (***********************************)
@@ -279,7 +292,9 @@ and class_signature env sty sign =
   (* Check that the binder is a correct type, and introduce a dummy
      method preventing self type from being closed. *)
   begin try
-    Ctype.check_filter_method env dummy_method Private self_type
+    Ctype.unify env
+      (Ctype.filter_method env dummy_method Private self_type)
+      (Ctype.newty (Ttuple []))
   with Ctype.Unify _ ->
     raise(Error(sty.ptyp_loc, Pattern_type_clash self_type))
   end;
@@ -463,7 +478,9 @@ and class_structure cl_num val_env met_env (spat, str) =
   (* Check that the binder has a correct type, and introduce a dummy
      method preventing self type from being closed. *)
   let ty = Ctype.newvar () in
-  Ctype.check_filter_method val_env dummy_method Private ty;
+  Ctype.unify val_env
+      (Ctype.filter_method val_env dummy_method Private ty)
+      (Ctype.newty (Ttuple []));
   begin try Ctype.unify val_env self_type ty with
     Ctype.Unify _ ->
       raise(Error(pat.pat_loc, Pattern_type_clash self_type))
@@ -608,8 +625,11 @@ and class_expr cl_num val_env met_env scl =
       let clty = class_type val_env scty in
       Typetexp.widen ();
       Ctype.end_def ();
-      generalize_class_type cl.cl_type;
-      generalize_class_type clty;
+
+      limited_generalize (Ctype.row_variable (Ctype.self_type cl.cl_type))
+          cl.cl_type;
+      limited_generalize (Ctype.row_variable (Ctype.self_type clty)) clty;
+
       begin match Includeclass.class_types val_env cl.cl_type clty with
         []    -> ()
       | error -> raise(Error(cl.cl_loc, Class_match_failure error))
@@ -676,17 +696,6 @@ let rec initial_env define_class (res, env) (cl, id, ty_id, obj_id, cl_id) =
     constr_type, dummy_class)::res,
    env)
 
-let hide_dummy_method ty =
-  let (fl, _) = Ctype.flatten_fields (Ctype.object_fields ty) in
-  List.iter
-    (function (l, k, _) ->
-       if l = dummy_method then
-       let k = Btype.field_kind_repr k in
-       match k with
-         Fvar r -> r := Some Fabsent
-       | _      -> ())
-    fl
-
 let class_infos define_class kind
     (cl, id, ty_id,
      obj_id, obj_params, obj_ty,
@@ -714,19 +723,6 @@ let class_infos define_class kind
 
   (* Generalize the row variable *)
   let rv = Ctype.row_variable sty in
-  let rec limited_generalize rv =
-    function
-      Tcty_constr (path, params, cty) ->
-        List.iter (Ctype.limited_generalize rv) params;
-        limited_generalize rv cty
-    | Tcty_signature sign ->
-        Ctype.limited_generalize rv sign.cty_self;
-        Vars.iter (fun _ (_, ty) -> Ctype.limited_generalize rv ty)
-          sign.cty_vars
-    | Tcty_fun (ty, cty) ->
-        Ctype.limited_generalize rv ty;
-        limited_generalize rv cty
-  in
   List.iter (Ctype.limited_generalize rv) params;
   limited_generalize rv typ;
 
