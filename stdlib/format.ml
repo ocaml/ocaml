@@ -150,7 +150,7 @@ type formatter = {
  **************************************************************)
 
 
-(* Qeues auxilliaries. *)
+(* Queues auxilliaries. *)
 let make_queue () = {insert = Nil; body = Nil};;
 
 let clear_queue q = q.insert <- Nil; q.body <- Nil;;
@@ -186,7 +186,7 @@ let pp_clear_queue state =
 
 (* Large value for default tokens size *)
 (* Could be 1073741823 that is 2^30 - 1, that is the minimal upper bound
-   of integers *)
+   of integers; now that max_int is defined, could also be max_int - 1. *)
 let pp_infinity = 999999999;;
 
 (* Output functions for the formatter *)
@@ -635,8 +635,7 @@ and pp_get_ellipsis_text state () = state.pp_ellipsis;;
 
 (* To set the margin of pretty-printer *)
 let pp_set_min_space_left state n =
-  if n >= 1 && n < pp_infinity then
-   begin
+  if n >= 1 && n < pp_infinity then begin
     state.pp_min_space_left <- n;
     state.pp_max_indent <- state.pp_margin - state.pp_min_space_left;
     pp_rinit state end;;
@@ -649,8 +648,7 @@ let pp_set_max_indent state n =
 let pp_get_max_indent state () = state.pp_max_indent;;
 
 let pp_set_margin state n =
-  if n >= 1 && n < pp_infinity then
-   begin
+  if n >= 1 && n < pp_infinity then begin
     state.pp_margin <- n;
     let new_max_indent =
         (* Try to maintain max_indent to its actual value *)
