@@ -822,7 +822,8 @@ must not be declared (they have types "value *" and "int").
 \begin{gcrule}
 Local variables of type "value" must be declared with one of the
 "CAMLlocal" macros.  Arrays of "value"s are declared with
-"CAMLlocalN".
+"CAMLlocalN".  These macros must be used at the beginning of the
+function, not in a nested block.
 \end{gcrule}
 
 The macros "CAMLlocal1" to "CAMLlocal5" declare and initialize one to
@@ -830,8 +831,7 @@ five local variables of type "value".  The variable names are given as
 arguments to the macros.  "CAMLlocalN("\var{x}", "\var{n}")" declares
 and initializes a local variable of type "value ["\var{n}"]".  You can
 use several calls to these macros if you have more than 5 local
-variables.  You can also use them in nested C blocks within the
-function.
+variables.
 
 Example:
 \begin{verbatim}
