@@ -1151,13 +1151,13 @@ EXTEND
   ctyp: LEVEL "arrow"
     [ RIGHTA
       [ i = lident_colon; t1 = ctyp LEVEL "star"; "->"; t2 = SELF ->
-          <:ctyp< ~ $i$ : $t1$ -> $t2$ >>
+          <:ctyp< ( ~ $i$ : $t1$ ) -> $t2$ >>
       | i = OPTLABEL; t1 = ctyp LEVEL "star"; "->"; t2 = SELF ->
-          <:ctyp< ? $i$ : $t1$ -> $t2$ >>
+          <:ctyp< ( ? $i$ : $t1$ ) -> $t2$ >>
       | i = QUESTIONIDENT; ":"; t1 = ctyp LEVEL "star"; "->"; t2 = SELF ->
-          <:ctyp< ? $i$ : $t1$ -> $t2$ >>
+          <:ctyp< ( ? $i$ : $t1$ ) -> $t2$ >>
       | "?"; i=lident_colon;t1 = ctyp LEVEL "star"; "->"; t2 = SELF ->
-          <:ctyp< ? $i$ : $t1$ -> $t2$ >> ] ]
+          <:ctyp< ( ? $i$ : $t1$ ) -> $t2$ >> ] ]
   ;
   ctyp: LEVEL "simple"
     [ [ "["; OPT "|"; rfl = LIST1 row_field SEP "|"; "]" ->
