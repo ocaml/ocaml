@@ -62,6 +62,8 @@ expr:
   | '(' expr ':>' typexpr ')'
   | '(' expr ':' typexpr ':>' typexpr ')'
   | '{<' inst-var-name '=' expr { ';' inst-var-name '=' expr } '>}'
+  | 'assert' expr
+  | 'lazy' expr
 ;
 argument:
     expr
@@ -109,7 +111,7 @@ precedence come first. For infix and prefix symbols, we write
 \begin{tableau}{|l|l|}{Construction or operator}{Associativity}
 \entree{prefix-symbol}{--}
 \entree{".   .(    .["}{--}
-\entree{function application}{left}
+\entree{function application "  assert  lazy"}{left}
 \entree{constructor application}{--}
 \entree{"-   -." (prefix)}{--}
 \entree{"**"\ldots}{right}
