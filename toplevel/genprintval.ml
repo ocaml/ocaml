@@ -19,6 +19,7 @@ open Format
 open Longident
 open Path
 open Types
+open Outcometree
 
 module type OBJ =
   sig
@@ -44,10 +45,12 @@ module type S =
     val install_printer :
           Path.t -> Types.type_expr -> (formatter -> t -> unit) -> unit
     val remove_printer : Path.t -> unit
-    val print_untyped_exception : formatter -> t -> unit
-    val print_value :
-          int -> int -> (int -> t -> Types.type_expr -> bool) ->
-          Env.t -> t -> formatter -> type_expr -> unit
+    val outval_of_untyped_exception : t -> Outcometree.out_value
+    val outval_of_value :
+          int -> int ->
+          (int -> t -> Types.type_expr -> Outcometree.out_value option) ->
+          Env.t -> t -> type_expr -> Outcometree.out_value
+    val print_outval : formatter -> Outcometree.out_value -> unit
   end
 
 module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
@@ -58,67 +61,62 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
        hence we cannot print its arguments in general.
        Here, we do a feeble attempt to print
        integer, string and float arguments... *)
-
-    let print_untyped_exception_args obj ppf start_offset =
+    let outval_of_untyped_exception_args obj start_offset =
       if O.size obj > start_offset then begin
-        fprintf ppf "@[<1>(";
+        let list = ref [] in
         for i = start_offset to O.size obj - 1 do
-          if i > start_offset then fprintf ppf ",@ ";
           let arg = O.field obj i in
           if not (O.is_block arg) then
-            fprintf ppf "%i" (O.obj arg : int)
+            list := Oval_int (O.obj arg : int) :: !list
                (* Note: this could be a char or a constant constructor... *)
           else if O.tag arg = Obj.string_tag then
-            fprintf ppf "\"%s\"" (String.escaped (O.obj arg : string))
+            list :=
+              Oval_string (String.escaped (O.obj arg : string)) :: !list
           else if O.tag arg = Obj.double_tag then
-            fprintf ppf "%.12g" (O.obj arg : float)
+            list := Oval_float (O.obj arg : float) :: !list
           else
-            fprintf ppf "_"
+            list := Oval_constr (Oide_ident "_", []) :: !list
         done;
-        fprintf ppf ")@]"
+        List.rev !list
       end
+      else []
 
-    let print_untyped_exception ppf bucket =
+    let outval_of_untyped_exception bucket =
       let name = (O.obj(O.field(O.field bucket 0) 0) : string) in
-      if (name = "Match_failure" || name = "Assert_failure")
-      && O.size bucket = 2
-      && O.tag(O.field bucket 1) = 0
-      then fprintf ppf "%s%a" name
-                       (print_untyped_exception_args (O.field bucket 1)) 0
-      else fprintf ppf "%s%a" name
-                       (print_untyped_exception_args bucket) 1
+      let args =
+        if (name = "Match_failure" || name = "Assert_failure")
+        && O.size bucket = 2
+        && O.tag(O.field bucket 1) = 0
+        then outval_of_untyped_exception_args (O.field bucket 1) 0
+        else outval_of_untyped_exception_args bucket 1 in
+      Oval_constr (Oide_ident name, args)
 
     (* The user-defined printers. Also used for some builtin types. *)
 
     let printers = ref ([
       Pident(Ident.create "print_int"), Predef.type_int,
-        (fun ppf x -> fprintf ppf "%i" (O.obj x : int));
+        (fun x -> Oval_int (O.obj x : int));
       Pident(Ident.create "print_float"), Predef.type_float,
-        (fun ppf x -> fprintf ppf "%.12g" (O.obj x : float));
+        (fun x -> Oval_float (O.obj x : float));
       Pident(Ident.create "print_char"), Predef.type_char,
-        (fun ppf x ->
-          fprintf ppf "'%s'" (Char.escaped (O.obj x : char)));
+        (fun x -> Oval_char (O.obj x : char));
       Pident(Ident.create "print_string"), Predef.type_string,
-        (fun ppf x ->
-          fprintf ppf "\"%s\"" (String.escaped (O.obj x : string)));
+        (fun x -> Oval_string (O.obj x : string));
       Pident(Ident.create "print_int32"), Predef.type_int32,
-        (fun ppf x ->
-          fprintf ppf "<int32 %s>" (Int32.to_string (O.obj x : int32)));
+        (fun x -> Oval_string (Int32.to_string (O.obj x : int32)));
       Pident(Ident.create "print_nativeint"), Predef.type_nativeint,
-        (fun ppf x ->
-          fprintf ppf "<nativeint %s>"
-            (Nativeint.to_string (O.obj x : nativeint)));
+        (fun x -> Oval_string (Nativeint.to_string (O.obj x : nativeint)));
       Pident(Ident.create "print_int64"), Predef.type_int64,
-        (fun ppf x -> 
-          fprintf ppf "<int64 %s>" (Int64.to_string (O.obj x : int64)));
-    ] : (Path.t * type_expr * (Format.formatter -> O.t -> unit)) list)
+        (fun x -> Oval_string (Int64.to_string (O.obj x : int64)))
+    ] : (Path.t * type_expr * (O.t -> Outcometree.out_value)) list)
 
     let install_printer path ty fn =
       let print_val ppf obj =
         try fn ppf obj with
         | exn ->
            fprintf ppf "<printer %a raised an exception>" Printtyp.path path in
-      printers := (path, ty, print_val) :: !printers
+      let printer obj = Oval_printer (fun ppf -> print_val ppf obj) in
+      printers := (path, ty, printer) :: !printers
 
     let remove_printer path =
       let rec remove = function
@@ -139,28 +137,38 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
     (* Print a constructor or label, giving it the same prefix as the type
        it comes from. Attempt to omit the prefix if the type comes from
        a module that has been opened. *)
+    let ident_pervasive = Ident.create_persistent "Pervasives"
+    let rec tree_of_type_path = function
+      | Pident id ->
+          Oide_ident (Ident.name id)
+      | Pdot(Pident id, s, pos) when Ident.same id ident_pervasive ->
+          Oide_ident s
+      | Pdot(p, s, pos) ->
+          Oide_dot (tree_of_type_path p, s)
+      | Papply(p1, p2) ->
+          Oide_apply (tree_of_type_path p1, tree_of_type_path p2)
 
-    let print_qualified lookup_fun env ty_path ppf name =
+    let tree_of_qualified lookup_fun env ty_path name =
       match ty_path with
       | Pident id ->
-          fprintf ppf "%s" name
+          Oide_ident name
       | Pdot(p, s, pos) ->
           if try
                match (lookup_fun (Lident name) env).desc with
                | Tconstr(ty_path', _, _) -> Path.same ty_path ty_path'
                | _ -> false
              with Not_found -> false
-          then fprintf ppf "%s" name
-          else fprintf ppf "%a.%s" Printtyp.path p name
+          then Oide_ident name
+          else Oide_dot (tree_of_type_path p, name)
       | Papply(p1, p2) ->
-          Printtyp.path ppf ty_path
+          tree_of_type_path ty_path
 
-    let print_constr =
-      print_qualified
+    let tree_of_constr =
+      tree_of_qualified
         (fun lid env -> (Env.lookup_constructor lid env).cstr_res)
 
-    and print_label =
-      print_qualified (fun lid env -> (Env.lookup_label lid env).lbl_res)
+    and tree_of_label =
+      tree_of_qualified (fun lid env -> (Env.lookup_label lid env).lbl_res)
 
     (* An abstract type *)
 
@@ -169,70 +177,72 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
 
     (* The main printing function *)
 
-    exception Ellipsis
-
-    let cautious f ppf arg = try f arg with Ellipsis -> fprintf ppf "..."
-
-    let print_value max_steps max_depth check_depth env obj ppf ty =
+    let outval_of_value max_steps max_depth check_depth env obj ty =
 
       let printer_steps = ref max_steps in
 
-      let rec print_val prio depth obj ppf ty =
+      let rec tree_of_val depth obj ty =
         decr printer_steps;
-        if !printer_steps < 0 || depth < 0 then raise Ellipsis;
+        if !printer_steps < 0 || depth < 0 then Oval_ellipsis
+        else begin
         try
-          find_printer env ty ppf obj
+          find_printer env ty obj
         with Not_found ->
           match (Ctype.repr ty).desc with
           | Tvar ->
-              fprintf ppf "<poly>"
+              Oval_stuff "<poly>"
           | Tarrow(_, ty1, ty2, _) ->
-              fprintf ppf "<fun>"
+              Oval_stuff "<fun>"
           | Ttuple(ty_list) ->
-              if check_depth depth obj ty then begin
-                if prio > 0
-                then
-                  fprintf ppf "@[<1>(%a)@]" 
-                          (print_val_list 1 0 depth obj) ty_list
-                else fprintf ppf "@[%a@]"
-                          (print_val_list 1 0 depth obj) ty_list
-              end
+              Oval_tuple (tree_of_val_list 0 depth obj ty_list)
           | Tconstr(path, [], _) when Path.same path Predef.path_exn ->
-              print_exception prio depth ppf obj
-          | Tconstr(path, [ty_arg], _) when Path.same path Predef.path_list ->
-              if O.is_block obj then begin
-                if check_depth depth obj ty then begin
-                  let rec print_conses ppf cons =
-                    print_val 0 (depth - 1) (O.field cons 0) ppf ty_arg;
-                    let next_obj = O.field cons 1 in
-                    if O.is_block next_obj then
-                      fprintf ppf ";@ %a" print_conses next_obj
-                  in
-                  fprintf ppf "@[<1>[%a]@]" (cautious (print_conses ppf)) obj
-                end
-              end else
-                fprintf ppf "[]"
-          | Tconstr(path, [ty_arg], _) when Path.same path Predef.path_array ->
+              tree_of_exception depth obj
+          | Tconstr(path, [ty_arg], _)
+            when Path.same path Predef.path_list ->
+              if O.is_block obj then
+                match check_depth depth obj ty with
+                  Some x -> x
+                | None ->
+                    let rec tree_of_conses tree_list obj =
+                      if !printer_steps < 0 || depth < 0 then
+                        Oval_ellipsis :: tree_list
+                      else if O.is_block obj then
+                        let tree =
+                          tree_of_val (depth - 1) (O.field obj 0) ty_arg in
+                        let next_obj = O.field obj 1 in
+                        tree_of_conses (tree :: tree_list) next_obj
+                      else tree_list
+                    in
+                    Oval_list (List.rev (tree_of_conses [] obj))
+              else
+                Oval_list []
+          | Tconstr(path, [ty_arg], _)
+            when Path.same path Predef.path_array ->
               let length = O.size obj in
-              if length = 0 then
-                fprintf ppf "[||]"
-              else if check_depth depth obj ty then begin
-                let rec print_items ppf i =
-                  if i < length then begin
-                    if i > 0 then fprintf ppf ";@ ";
-                    print_val 0 (depth - 1) (O.field obj i) ppf ty_arg;
-                    print_items ppf (i + 1)
-                  end in
-                fprintf ppf "@[<2>[|%a|]@]" (cautious (print_items ppf)) 0;
-              end
+              if length > 0 then
+                match check_depth depth obj ty with
+                  Some x -> x
+                | None ->
+                    let rec tree_of_items tree_list i =
+                      if !printer_steps < 0 || depth < 0 then
+                        Oval_ellipsis :: tree_list
+                      else if i < length then
+                        let tree =
+                          tree_of_val (depth - 1) (O.field obj i) ty_arg in
+                        tree_of_items (tree :: tree_list) (i + 1)
+                      else tree_list
+                    in
+                    Oval_array (List.rev (tree_of_items [] 0))
+              else
+                Oval_array []
           | Tconstr(path, ty_list, _) ->
               begin try
                 let decl = Env.find_type path env in
                 match decl with
                 | {type_kind = Type_abstract; type_manifest = None} ->
-                    fprintf ppf "<abstr>"
+                    Oval_stuff "<abstr>"
                 | {type_kind = Type_abstract; type_manifest = Some body} ->
-                    print_val prio depth obj ppf
+                    tree_of_val depth obj
                       (try Ctype.apply env decl.type_params body ty_list with
                          Ctype.Cannot_apply -> abstract_type)
                 | {type_kind = Type_variant constr_list} ->
@@ -248,99 +258,83 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
                            try Ctype.apply env decl.type_params ty ty_list with
                              Ctype.Cannot_apply -> abstract_type)
                         constr_args in
-                    print_constr_with_args (print_constr env path) constr_name
-                                           prio 0 depth obj ppf ty_args
+                    tree_of_constr_with_args (tree_of_constr env path)
+                                           constr_name 0 depth obj ty_args
                 | {type_kind = Type_record(lbl_list, rep)} ->
-                    if check_depth depth obj ty then begin
-                      let rec print_fields pos ppf = function
-                      | [] -> ()
-                      | (lbl_name, _, lbl_arg) :: remainder ->
-                          let ty_arg =
-                            try
-                              Ctype.apply env decl.type_params lbl_arg ty_list
-                            with
-                              Ctype.Cannot_apply -> abstract_type in
-                          if pos > 0 then fprintf ppf ";@ ";
-                          fprintf ppf "@[<1>%a=@,%a@]"
-                          (print_label env path) lbl_name
-                          (cautious (print_val 0 (depth - 1)
-                                     (O.field obj pos) ppf))
-                          ty_arg;
-                          (print_fields (pos + 1)) ppf remainder in
-
-                      fprintf ppf "@[<1>{%a}@]"
-                      (cautious (print_fields 0 ppf)) lbl_list;
-                    end
+                    match check_depth depth obj ty with
+                      Some x -> x
+                    | None ->
+                        let rec tree_of_fields pos = function
+                          | [] -> []
+                          | (lbl_name, _, lbl_arg) :: remainder ->
+                              let ty_arg =
+                                try
+                                  Ctype.apply env decl.type_params lbl_arg
+                                    ty_list
+                                with
+                                  Ctype.Cannot_apply -> abstract_type in
+                              let lid = tree_of_label env path lbl_name in
+                              let v =
+                                tree_of_val (depth - 1) (O.field obj pos)
+                                  ty_arg
+                              in
+                              (lid, v) :: tree_of_fields (pos + 1) remainder
+                        in
+                        Oval_record (tree_of_fields 0 lbl_list)
               with
                 Not_found ->                (* raised by Env.find_type *)
-                  fprintf ppf "<abstr>"
+                  Oval_stuff "<abstr>"
               | Datarepr.Constr_not_found -> (* raised by find_constr_by_tag *)
-                  fprintf ppf "<unknown constructor>"
+                  Oval_stuff "<unknown constructor>"
               end
           | Tvariant row ->
               let row = Btype.row_repr row in
-              if O.is_block obj then begin
+              if O.is_block obj then
                 let tag : int = O.obj (O.field obj 0) in
-                (if prio > 1
-                 then fprintf ppf "@[<2>(`%a)@]"
-                 else fprintf ppf "`%a")
-                (fun ppf ->
-                  List.iter
-                   (fun (l, f) -> if Btype.hash_variant l = tag then
-                     match Btype.row_field_repr f with
-                     | Rpresent(Some ty) ->
-                        fprintf ppf "%s@ %a" l
-                        (cautious (print_val 2 (depth - 1) (O.field obj 1) ppf))
-                        ty
-                     | _ -> ()))
-                  row.row_fields;
-              end else begin
+                let rec find = function
+                  | (l, f) :: fields ->
+                      if Btype.hash_variant l = tag then
+                        match Btype.row_field_repr f with
+                        | Rpresent(Some ty) ->
+                            let args =
+                              tree_of_val (depth - 1) (O.field obj 1) ty in
+                            Oval_variant (l, Some args)
+                        | _ -> find fields
+                      else find fields
+                  | [] -> Oval_stuff "<variant>" in
+                find row.row_fields
+              else
                 let tag : int = O.obj obj in
-                let pr_rows ppf =
-                  List.iter
-                  (fun (l, _) ->
-                    if Btype.hash_variant l = tag then fprintf ppf "%s" l) in
-                fprintf ppf "`%a" pr_rows row.row_fields
-              end
+                let rec find = function
+                  | (l, _) :: fields ->
+                      if Btype.hash_variant l = tag then
+                        Oval_variant (l, None)
+                      else find fields
+                  | [] -> Oval_stuff "<variant>" in
+                find row.row_fields
           | Tobject (_, _) ->
-              fprintf ppf "<obj>"
+              Oval_stuff "<obj>"
           | Tsubst ty ->
-              print_val prio (depth - 1) obj ppf ty
+              tree_of_val (depth - 1) obj ty
           | Tfield(_, _, _, _) | Tnil | Tlink _ ->
-              fatal_error "Printval.print_value"
+              fatal_error "Printval.outval_of_value"
+        end
 
-      and print_val_list prio start depth obj ppf ty_list =
-        let rec print_list i = function
-          |  [] -> ()
+      and tree_of_val_list start depth obj ty_list =
+        let rec tree_list i = function
+          | [] -> []
           | ty :: ty_list ->
-              if i > start then fprintf ppf ",@ ";
-              print_val prio (depth - 1) (O.field obj i) ppf ty;
-              print_list (i + 1) ty_list in
-      cautious (print_list start) ppf ty_list
+              let tree = tree_of_val (depth - 1) (O.field obj i) ty in
+              tree :: tree_list (i + 1) ty_list in
+      tree_list start ty_list
 
-      and print_constr_with_args
-             print_cstr cstr_name prio start depth obj ppf ty_args =
-        match ty_args with
-          [] ->
-            print_cstr ppf cstr_name
-        | [ty1] ->
-            if check_depth depth obj ty then
-              (if prio > 1
-              then fprintf ppf "@[<2>(%a@ %a)@]"
-              else fprintf ppf "@[<1>%a@ %a@]")
-              print_cstr cstr_name
-              (cautious
-                 (print_val 2 (depth - 1) (O.field obj start) ppf))
-              ty1;
-        | tyl ->
-            if check_depth depth obj ty then
-              (if prio > 1
-              then fprintf ppf "@[<2>(%a@ @[<1>(%a)@])@]"
-              else fprintf ppf "@[<1>%a@ @[<1>(%a)@]@]")
-              print_cstr cstr_name
-              (print_val_list 1 start depth obj) tyl;
+      and tree_of_constr_with_args
+             tree_of_cstr cstr_name start depth obj ty_args =
+        let lid = tree_of_cstr cstr_name in
+        let args = tree_of_val_list start depth obj ty_args in
+        Oval_constr (lid, args)
 
-    and print_exception prio depth ppf bucket =
+    and tree_of_exception depth bucket =
       let name = (O.obj(O.field(O.field bucket 0) 0) : string) in
       let lid = Longident.parse name in
       try
@@ -351,19 +345,84 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
           match cstr.cstr_tag with
             Cstr_exception p -> p | _ -> raise Not_found in
         (* Make sure this is the right exception and not an homonym,
-           by evaluating the exception found and comparing with the identifier
-           contained in the exception bucket *)
+           by evaluating the exception found and comparing with the
+           identifier contained in the exception bucket *)
         if not (EVP.same_value (O.field bucket 0) (EVP.eval_path path))
         then raise Not_found;
-        print_constr_with_args
-           pp_print_string name prio 1 depth bucket ppf cstr.cstr_args
+        tree_of_constr_with_args
+           (fun x -> Oide_ident x) name 1 depth bucket cstr.cstr_args
       with Not_found | EVP.Error ->
-        if check_depth depth obj ty then begin
-          if prio > 1
-          then fprintf ppf "@[<2>(%a)@]" print_untyped_exception obj
-          else fprintf ppf "@[<1>%a@]" print_untyped_exception obj
-        end
+        match check_depth depth obj ty with
+          Some x -> x
+        | None -> outval_of_untyped_exception obj
 
-    in cautious (print_val 0 max_depth obj ppf) ppf ty
+    in tree_of_val max_depth obj ty
+
+    exception Ellipsis
+
+    let cautious f ppf arg = try f arg with Ellipsis -> fprintf ppf "..."
+
+    let print_outval ppf tree =
+      let rec print_ident ppf =
+        function
+          Oide_ident s -> fprintf ppf "%s" s
+        | Oide_dot (id, s) -> fprintf ppf "%a.%s" print_ident id s
+        | Oide_apply (id1, id2) ->
+            fprintf ppf "%a(%a)" print_ident id1 print_ident id2
+      in
+      let rec print_tree ppf =
+        function
+          Oval_tuple tree_list ->
+            fprintf ppf "@[%a@]" (print_tree_list print_tree_1 ",") tree_list
+        | tree -> print_tree_1 ppf tree
+      and print_tree_1 ppf =
+        function
+          Oval_constr (name, [param]) ->
+            fprintf ppf "@[<1>%a@ %a@]" print_ident name print_simple_tree
+              param
+        | Oval_constr (name, (_ :: _ as params)) ->
+            fprintf ppf "@[<1>%a@ (%a)@]" print_ident name
+              (print_tree_list print_tree_1 ",") params
+        | Oval_variant (name, Some param) ->
+            fprintf ppf "@[<2>`%s@ %a@]" name print_simple_tree param
+        | tree -> print_simple_tree ppf tree
+      and print_simple_tree ppf =
+        function
+          Oval_int i -> fprintf ppf "%i" i
+        | Oval_float f -> fprintf ppf "%.12g" f
+        | Oval_char c -> fprintf ppf "'%s'" (Char.escaped c)
+        | Oval_string s -> fprintf ppf "\"%s\"" (String.escaped s)
+        | Oval_list tl ->
+            fprintf ppf "@[<1>[%a]@]" (print_tree_list print_tree_1 ";") tl
+        | Oval_array tl ->
+            fprintf ppf "@[<2>[|%a|]@]" (print_tree_list print_tree_1 ";") tl
+        | Oval_constr (name, []) -> print_ident ppf name
+        | Oval_variant (name, None) -> fprintf ppf "`%s" name
+        | Oval_stuff s -> fprintf ppf "%s" s
+        | Oval_record fel ->
+            fprintf ppf "@[<1>{%a}@]" (cautious (print_fields true ppf)) fel
+        | Oval_ellipsis -> raise Ellipsis
+        | Oval_printer f -> f ppf
+        | tree -> fprintf ppf "@[<1>(%a)@]" print_tree tree
+      and print_fields first ppf =
+        function
+          [] -> ()
+        | (name, tree) :: fields ->
+            if not first then fprintf ppf ";@ ";
+            fprintf ppf "@[<1>%a=@,%a@]" print_ident name
+              (cautious (print_tree ppf)) tree;
+            print_fields false ppf fields
+      and print_tree_list print_item sep ppf tree_list =
+        let rec print_list first =
+          function
+            [] -> ()
+          | tree :: tree_list ->
+              if not first then fprintf ppf "%s@ " sep;
+              print_item ppf tree;
+              print_list false tree_list
+        in
+        cautious (print_list true) ppf tree_list
+      in
+      cautious (print_tree ppf) ppf tree
 
 end

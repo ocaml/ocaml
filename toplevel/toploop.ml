@@ -22,6 +22,7 @@ open Misc
 open Parsetree
 open Types
 open Typedtree
+open Outcometree
 
 type directive_fun =
    | Directive_none of (unit -> unit)
@@ -76,10 +77,15 @@ module Printer = Genprintval.Make(Obj)(EvalPath)
 let max_printer_depth = ref 100
 let max_printer_steps = ref 300
 
-let print_untyped_exception = Printer.print_untyped_exception
-let print_value env obj ty =
-  Printer.print_value !max_printer_steps !max_printer_depth
-    (fun _ _ _ -> true) env obj ty
+let print_out_value = ref Printer.print_outval
+
+let print_untyped_exception ppf obj =
+  !print_out_value ppf (Printer.outval_of_untyped_exception obj)
+let outval_of_value env obj ty =
+  Printer.outval_of_value !max_printer_steps !max_printer_depth
+    (fun _ _ _ -> None) env obj ty
+let print_value env obj ppf ty =
+  !print_out_value ppf (outval_of_value env obj ty)
 
 let install_printer = Printer.install_printer
 let remove_printer = Printer.remove_printer
@@ -209,9 +215,10 @@ let execute_phrase print_outcome ppf phr =
           if print_outcome then begin
             match str with
             | [Tstr_eval exp] ->
+                let outv = outval_of_value newenv v exp.exp_type in
                 fprintf ppf "@[- : %a@ =@ %a@]@."
                 Printtyp.type_scheme exp.exp_type
-                (print_value newenv v) exp.exp_type
+                !print_out_value outv
             | [] -> ()
             | _ ->
                 fprintf ppf "@[<v>%a@]@."

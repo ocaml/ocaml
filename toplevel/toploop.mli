@@ -69,13 +69,15 @@ val remove_printer : Path.t -> unit
 val max_printer_depth: int ref
 val max_printer_steps: int ref
 
-(* Hooks for an external parser *)
+(* Hooks for external parsers and printers *)
 
 val parse_toplevel_phrase : (Lexing.lexbuf -> Parsetree.toplevel_phrase) ref
 val parse_use_file : (Lexing.lexbuf -> Parsetree.toplevel_phrase list) ref
 val print_location : formatter -> Location.t -> unit
 val print_warning : Location.t -> formatter -> Warnings.t -> unit
 val input_name : string ref
+
+val print_out_value : (formatter -> Outcometree.out_value -> unit) ref
 
 (* Used by Trace module *)
 

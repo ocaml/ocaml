@@ -41,10 +41,12 @@ module type S =
     val install_printer :
           Path.t -> Types.type_expr -> (formatter -> t -> unit) -> unit
     val remove_printer : Path.t -> unit
-    val print_untyped_exception : formatter -> t -> unit
-    val print_value :
-          int -> int -> (int -> t -> Types.type_expr -> bool) ->
-          Env.t -> t -> formatter -> type_expr -> unit
+    val outval_of_untyped_exception : t -> Outcometree.out_value
+    val outval_of_value :
+          int -> int ->
+          (int -> t -> Types.type_expr -> Outcometree.out_value option) ->
+          Env.t -> t -> type_expr -> Outcometree.out_value
+    val print_outval : formatter -> Outcometree.out_value -> unit
   end
 
 module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) :

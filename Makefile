@@ -107,7 +107,7 @@ EXPUNGEOBJS=utils/misc.cmo utils/tbl.cmo \
 PERVASIVES=arg array buffer callback char digest filename format gc hashtbl \
   lexing list map obj parsing pervasives printexc printf queue random \
   set sort stack string stream sys oo genlex topdirs toploop weak lazy \
-  marshal int32 int64 nativeint
+  marshal int32 int64 nativeint outcometree
 
 # Recompile the system using the bootstrap compiler
 all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
@@ -219,6 +219,7 @@ install: FORCE
 	cp yacc/ocamlyacc$(EXE) $(BINDIR)/ocamlyacc$(EXE)
 	cp toplevel/toplevellib.cma $(LIBDIR)/toplevellib.cma
 	cp expunge $(LIBDIR)/expunge$(EXE)
+	cp typing/outcometree.cmi $(LIBDIR)
 	cp toplevel/topmain.cmo $(LIBDIR)
 	cp toplevel/toploop.cmi toplevel/topdirs.cmi $(LIBDIR)
 	cd tools; $(MAKE) install

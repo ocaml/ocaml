@@ -44,9 +44,8 @@ let find_named_value name =
 let check_depth ppf depth obj ty =
   if depth <= 0 then begin
     let n = name_value obj ty in
-    fprintf ppf "$%i" n;
-    false
-  end else true
+    Some (Outcometree.Oval_stuff ("$" ^ string_of_int n))
+  end else None
 
 module EvalPath =
   struct
@@ -85,11 +84,15 @@ let remove_printer = Printer.remove_printer
 let max_printer_depth = ref 20
 let max_printer_steps = ref 300
 
-let print_exception = Printer.print_untyped_exception
+let print_exception ppf obj =
+  let t = Printer.outval_of_untyped_exception obj in
+  Printer.print_outval ppf t
 
 let print_value max_depth env obj (ppf : Format.formatter) ty =
-  Printer.print_value !max_printer_steps max_depth
-   (check_depth ppf) env obj ppf ty
+  let t =
+    Printer.outval_of_value !max_printer_steps max_depth
+      (check_depth ppf) env obj ty in
+  Printer.print_outval ppf t
 
 let print_named_value max_depth exp env obj ppf ty =
   let print_value_name ppf = function

@@ -637,11 +637,12 @@ driver/optmain.cmx: asmcomp/asmlibrarian.cmx asmcomp/asmlink.cmx \
     utils/clflags.cmx utils/config.cmx driver/optcompile.cmx \
     driver/opterrors.cmx asmcomp/printmach.cmx utils/warnings.cmx \
     driver/optmain.cmi 
-toplevel/genprintval.cmi: typing/env.cmi typing/path.cmi typing/types.cmi 
+toplevel/genprintval.cmi: typing/env.cmi typing/outcometree.cmi \
+    typing/path.cmi typing/types.cmi 
 toplevel/topdirs.cmi: parsing/longident.cmi 
 toplevel/toploop.cmi: typing/env.cmi parsing/location.cmi \
-    parsing/longident.cmi parsing/parsetree.cmi typing/path.cmi \
-    typing/types.cmi utils/warnings.cmi 
+    parsing/longident.cmi typing/outcometree.cmi parsing/parsetree.cmi \
+    typing/path.cmi typing/types.cmi utils/warnings.cmi 
 toplevel/trace.cmi: typing/env.cmi parsing/longident.cmi typing/path.cmi \
     typing/types.cmi 
 toplevel/expunge.cmo: bytecomp/bytesections.cmi typing/ident.cmi \
@@ -649,7 +650,8 @@ toplevel/expunge.cmo: bytecomp/bytesections.cmi typing/ident.cmi \
 toplevel/expunge.cmx: bytecomp/bytesections.cmx typing/ident.cmx \
     utils/misc.cmx bytecomp/runtimedef.cmx bytecomp/symtable.cmx 
 toplevel/genprintval.cmo: typing/btype.cmi typing/ctype.cmi \
-    typing/datarepr.cmi typing/env.cmi typing/ident.cmi parsing/longident.cmi \
+    typing/datarepr.cmi typing/env.cmi typing/ident.cmi \
+    typing/outcometree.cmi parsing/longident.cmi \
     utils/misc.cmi typing/path.cmi typing/predef.cmi typing/printtyp.cmi \
     typing/types.cmi toplevel/genprintval.cmi 
 toplevel/genprintval.cmx: typing/btype.cmx typing/ctype.cmx \
