@@ -56,21 +56,28 @@ let ghpat d = { ppat_desc = d; ppat_loc = symbol_gloc () };;
 let ghtyp d = { ptyp_desc = d; ptyp_loc = symbol_gloc () };;
 
 let mkassert e =
-  let {loc_start = st; loc_end = en} = symbol_rloc () in
+  let l = symbol_rloc () in
   let triple = ghexp (Pexp_tuple
                        [ghexp (Pexp_constant (Const_string !input_name));
-                        ghexp (Pexp_constant (Const_int st));
-                        ghexp (Pexp_constant (Const_int en))]) in
-  let ex = Ldot (Lident "Pervasives", "Assert_failure") in
-  let bucket = ghexp (Pexp_construct (ex, Some triple, false)) in
-  let ra = Ldot (Lident "Pervasives", "raise") in
-  let raiser = ghexp (Pexp_apply (ghexp (Pexp_ident ra), [bucket])) in
-  let un = ghexp (Pexp_construct (Lident "()", None, false)) in
+                        ghexp (Pexp_constant (Const_int l.loc_start));
+                        ghexp (Pexp_constant (Const_int l.loc_end))])
+  in
+  let excep = Ldot (Lident "Pervasives", "Assert_failure") in
+  let bucket = ghexp (Pexp_construct (excep, Some triple, false)) in
+  let raise_ = ghexp (Pexp_ident (Ldot (Lident "Pervasives", "raise"))) in
+  let raise_af = ghexp (Pexp_apply (raise_, [bucket])) in
+
+  let under = ghpat Ppat_any in
+  let false_ = ghexp (Pexp_construct (Lident "false", None, false)) in
+  let try_e = ghexp (Pexp_try (e, [(under, false_)])) in
+
+  let not_ = ghexp (Pexp_ident (Ldot (Lident "Pervasives", "not"))) in
+  let not_try_e = ghexp (Pexp_apply (not_, [try_e])) in
   match e with
-  | {pexp_desc = Pexp_construct (Lident "false", None, false) } -> raiser
+  | {pexp_desc = Pexp_construct (Lident "false", None, false) } -> raise_af
   | _ -> if !Clflags.noassert
          then mkexp (Pexp_construct (Lident "()", None, false))
-         else mkexp (Pexp_ifthenelse (e, un, Some raiser))
+         else mkexp (Pexp_ifthenelse (not_try_e, raise_af, None))
 ;;
 
 let mklazy e =
