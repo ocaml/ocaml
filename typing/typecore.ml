@@ -49,6 +49,7 @@ type error =
   | Value_multiply_overridden of string
   | Coercion_failure of type_expr * type_expr * (type_expr * type_expr) list
   | Too_many_arguments
+  | Abstract_wrong_label of label * type_expr
   | Scoping_let_module of string * type_expr
   | Masked_instance_variable of Longident.t
 
@@ -1070,12 +1071,8 @@ and type_expect env sexp ty_expected =
         try filter_arrow env ty_expected l
         with Unify _ ->
           match expand_head env ty_expected with
-            {desc = Tarrow _} ->
-              let ty_fun = newty (Tarrow(l, newvar(), newvar())) in
-              raise(Error(sexp.pexp_loc,
-                          Expr_type_clash
-                            [ty_fun, ty_fun;
-                             ty_expected, full_expand env ty_expected]))
+            {desc = Tarrow _} as ty ->
+              raise(Error(sexp.pexp_loc, Abstract_wrong_label(l, ty)))
           | _ ->
               raise(Error(sexp.pexp_loc, Too_many_arguments))
       in
@@ -1315,6 +1312,20 @@ let report_error = function
            print_string "but is here used with type")
   | Too_many_arguments ->
       print_string "This function expects too many arguments"
+  | Abstract_wrong_label (l, ty) ->
+      reset (); mark_loops ty;
+      open_vbox 0;
+      open_box 2;
+      print_string "This function should have type";
+      print_space ();
+      type_expr ty;
+      close_box ();
+      print_cut ();
+      if l = "" then
+        print_string "but its argument is not labeled"
+      else
+        printf "but its argument is labeled %s:" l;
+      close_box ()
   | Scoping_let_module(id, ty) ->
       reset (); mark_loops ty;
       print_string "This `let module' expression has type";

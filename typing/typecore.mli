@@ -73,6 +73,7 @@ type error =
   | Value_multiply_overridden of string
   | Coercion_failure of type_expr * type_expr * (type_expr * type_expr) list
   | Too_many_arguments
+  | Abstract_wrong_label of label * type_expr
   | Scoping_let_module of string * type_expr
   | Masked_instance_variable of Longident.t
 

@@ -78,8 +78,10 @@ let print_name_of_type t =
 let check_name_of_type t =
   ignore(name_of_type t)
 
+(*
 let remove_name_of_type t =
   names := List.remove_assq t !names
+*)
 
 let visited_objects = ref ([] : type_expr list)
 let aliased = ref ([] : type_expr list)
@@ -170,8 +172,10 @@ let reset_loop_marks () =
 let reset () =
   reset_names (); reset_loop_marks ()
 
+(* disabled in classic mode when printing an unification error *)
+let print_labels = ref true
 let print_label l =
-  if l <> "" then begin
+  if !print_labels && l <> "" then begin
     print_string l;
     print_char ':'
   end
@@ -864,6 +868,8 @@ let unification_error unif tr txt1 txt2 =
     [] | _::[] ->
       assert false
   | (t1, t1')::(t2, t2')::tr ->
+    try
+      print_labels := not !Clflags.classic;
       open_vbox 0;
       let tr = filter_trace tr in
       let mark (t, t') = mark_loops t; if t != t' then mark_loops t' in
@@ -913,7 +919,10 @@ let unification_error unif tr txt1 txt2 =
       | _ ->
           ()
       end;
-      close_box ()
+      close_box ();
+      print_labels := true
+    with exn ->
+      print_labels := true
 
 let trace fst txt tr =
 (*  match tr with
