@@ -26,7 +26,7 @@ moderate memory requirements of the bytecode compiler. The native-code
 compiler currently runs on the following platforms:
 
     Alpha processors: DecStation 3000 under OSF1 (a.k.a. Digital Unix)
-    Sparc processors: Sun Sparcstation under SunOS 4.1 or Solaris 2
+    Sparc processors: Sun Sparcstation under SunOS 4.1, Solaris 2, NetBSD
     Intel 486 and Pentium processors: PCs under Linux, NextStep, FreeBSD
     Mips processors: DecStation 3100 and 5000 under Ultrix 4
     HP PA-RISC processors: HP 9000/700 under NextStep (no HPUX yet)

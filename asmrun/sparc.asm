@@ -14,9 +14,9 @@
 /* Asm part of the runtime system for the Sparc processor.  */
 /* Must be preprocessed by cpp */
 
-/* SunOS 4 prefixes identifiers with _, Solaris does not */
+/* SunOS 4 and BSD prefix identifiers with _, Solaris does not */
 
-#ifdef SYS_sunos
+#ifndef SYS_solaris
 
         .common _young_limit, 4, "bss"
         .common _young_ptr, 4, "bss"
@@ -52,9 +52,7 @@
 #define Mlraise _mlraise
 #define System_frametable _system_frametable
 
-#endif
-
-#ifdef SYS_solaris
+#else
 
         .common young_limit, 4, 4
         .common young_end, 4, 4

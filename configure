@@ -175,6 +175,7 @@ case "$host" in
   alpha-*-osf*)                 arch=alpha;;
   sparc-*-sunos4.*)             arch=sparc; system=sunos;;
   sparc-*-solaris2.*)           arch=sparc; system=solaris;;
+  sparc-*-*bsd*)                arch=sparc; system=bsd;;
   i[3456]86-*-linuxaout)        arch=i386; system=linux;;
   i[3456]86-*-linuxoldld)       arch=i386; system=linux;;
   i[3456]86-*-linux)            arch=i386; system=linux_elf;;
@@ -200,9 +201,15 @@ esac
 
 nativecclinkopts=''
 
+as='as'
+
 case "$arch" in
   alpha|mips)   asflags='-O2';;
-  sparc)        asflags='-P -DSYS_$(SYSTEM)';;
+  sparc)
+    case "$system" in
+      bsd)      as='gcc -x assembler-with-cpp -c'; asflags='-DSYS_$(SYSTEM)';;
+        *)      asflags='-P -DSYS_$(SYSTEM)';;
+    esac;;
   i386)         asflags='-DSYS_$(SYSTEM)';;
   hppa)         asflags='';;
   power)
@@ -218,6 +225,7 @@ echo "SYSTEM=$system" >> Makefile
 echo "NATIVECC=$nativecc" >> Makefile
 echo "NATIVECCCOMPOPTS=$nativecccompopts" >> Makefile
 echo "NATIVECCLINKOPTS=$nativecclinkopts" >> Makefile
+echo "AS=$as" >> Makefile
 echo "ASFLAGS=$asflags" >> Makefile
 
 # Checking how to invoke cpp
@@ -465,6 +473,7 @@ case "$host" in
   i960*) bignum_arch=i960;;
   sparc-*-sunos*) bignum_arch=supersparc;;
   sparc-*-solaris*) bignum_arch=supersparc-solaris;;
+  sparc-*-*bsd*) bignum_arch=sparc;;
   *) bignum_arch=C
 esac
 
@@ -574,7 +583,7 @@ else
   echo "	C compiler used........... $nativecc"
   echo "	options for compiling..... $nativecccompopts"
   echo "	options for linking....... $nativecclinkopts $cclibs"
-  echo "	assembler flags........... $asflags"
+  echo "	assembler ................ $as $asflags"
 fi
 
 echo "Configuration for the external libraries:"

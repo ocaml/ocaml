@@ -196,11 +196,14 @@ void handle_signal(sig)
 #ifndef SIGVTALRM
 #define SIGVTALRM -1
 #endif
+#ifndef SIGPROF
+#define SIGPROF -1
+#endif
 
 int posix_signals[] = {
   SIGABRT, SIGALRM, SIGFPE, SIGHUP, SIGILL, SIGINT, SIGKILL, SIGPIPE,
   SIGQUIT, SIGSEGV, SIGTERM, SIGUSR1, SIGUSR2, SIGCHLD, SIGCONT,
-  SIGSTOP, SIGTSTP, SIGTTIN, SIGTTOU, SIGVTALRM
+  SIGSTOP, SIGTSTP, SIGTTIN, SIGTTOU, SIGVTALRM, SIGPROF
 };
 
 #ifndef NSIG
@@ -286,6 +289,14 @@ static void trap_handler(sig, info, context)
 }
 #endif
 
+#if defined(TARGET_sparc) && defined(SYS_bsd)
+static void trap_handler(sig)
+     int sig;
+{
+  array_bound_error();
+}
+#endif
+
 #if defined(TARGET_power)
 static void trap_handler(sig)
      int sig;
@@ -298,7 +309,7 @@ static void trap_handler(sig)
 
 void init_signals()
 {
-#if defined(TARGET_sparc) && defined(SYS_sunos)
+#if defined(TARGET_sparc) && (defined(SYS_sunos) || defined(SYS_bsd))
   signal(SIGILL, trap_handler);
 #endif
 #if defined(TARGET_sparc) && defined(SYS_solaris)
