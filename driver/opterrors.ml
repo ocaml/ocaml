@@ -34,6 +34,8 @@ let report_error exn =
       Asmgen.report_error code
   | Asmlink.Error code ->
       Asmlink.report_error code
+  | Asmlibrarian.Error code ->
+      Asmlibrarian.report_error code
   | Sys_error msg ->
       print_string "I/O error: "; print_string msg
   | x ->

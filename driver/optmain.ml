@@ -56,13 +56,11 @@ let main () =
        "-v", Arg.Unit print_version_number;
        "-", Arg.String process_file]
       process_file;
-(***
     if !make_archive then begin
       Optcompile.init_path();
-      Librarian.create_archive (List.rev !objfiles) !archive_name
+      Asmlibrarian.create_archive (List.rev !objfiles) !archive_name
     end
-****)
-    if not !compile_only & !objfiles <> [] then begin
+    else if not !compile_only & !objfiles <> [] then begin
       Optcompile.init_path();
       Asmlink.link (List.rev !objfiles)
     end;

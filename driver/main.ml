@@ -48,7 +48,7 @@ let main () =
       process_file;
     if !make_archive then begin
       Compile.init_path();
-      Librarian.create_archive (List.rev !objfiles) !archive_name
+      Bytelibrarian.create_archive (List.rev !objfiles) !archive_name
     end
     else if not !compile_only & !objfiles <> [] then begin
       Compile.init_path();

@@ -32,8 +32,8 @@ let report_error exn =
       Symtable.report_error code
   | Bytelink.Error code ->
       Bytelink.report_error code
-  | Librarian.Error code ->
-      Librarian.report_error code
+  | Bytelibrarian.Error code ->
+      Bytelibrarian.report_error code
   | Sys_error msg ->
       print_string "I/O error: "; print_string msg
   | x ->
