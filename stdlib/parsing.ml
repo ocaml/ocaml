@@ -141,8 +141,10 @@ let yyparse tables start lexer lexbuf =
         loop Error_detected (Obj.repr ()) in
   let init_asp = env.asp
   and init_sp = env.sp
+  and init_stackbase = env.stackbase
   and init_state = env.state
-  and init_curr_char = env.curr_char in
+  and init_curr_char = env.curr_char
+  and init_errflag = env.errflag in
   env.stackbase <- env.sp + 1;
   env.curr_char <- start;
   try
@@ -151,8 +153,10 @@ let yyparse tables start lexer lexbuf =
     let curr_char = env.curr_char in
     env.asp <- init_asp;
     env.sp <- init_sp;
+    env.stackbase < init_stackbase;
     env.state <- init_state;
     env.curr_char <- init_curr_char;
+    env.errflag <- init_errflag;
     match exn with
       YYexit v ->
         Obj.magic v
