@@ -290,7 +290,25 @@ extern short final_state;
 extern char *allocate();
 extern bucket *lookup();
 extern bucket *make_bucket();
-
+extern action *parse_actions();
+extern action *get_shifts();
+extern action *add_reductions();
+extern action *add_reduce();
+extern void closure (), create_symbol_table (), default_action_error ();
+extern void done (), entry_without_type (), fatal (), finalize_closure ();
+extern void free_parser (), free_symbol_table (), free_symbols ();
+extern void illegal_character (), illegal_token_ref (), lalr (), lr0 ();
+extern void make_parser (), no_grammar (), no_space (), open_error ();
+extern void output (), over_unionized (), prec_redeclared (), reader ();
+extern void reflexive_transitive_closure (), reprec_warning ();
+extern void retyped_warning (), revalued_warning (), set_first_derives ();
+extern void syntax_error (), terminal_lhs (), terminal_start ();
+extern void tokenized_start (), too_many_entries (), undefined_goal ();
+extern void undefined_symbol_warning (), unexpected_EOF (), unknown_rhs ();
+extern void unterminated_action (), unterminated_comment ();
+extern void unterminated_string (), unterminated_text ();
+extern void unterminated_union (), used_reserved ();
+extern void verbose (), write_section ();
 
 /* system variables */
 

@@ -4,7 +4,19 @@
 
 static short *null_rules;
 
-verbose()
+
+void print_state ();
+void log_unused ();
+void log_conflicts ();
+void print_conflicts ();
+void print_core ();
+void print_nulls ();
+void print_actions ();
+void print_shifts ();
+void print_reductions ();
+void print_gotos ();
+
+void verbose()
 {
     register int i;
 
@@ -28,7 +40,7 @@ verbose()
 }
 
 
-log_unused()
+void log_unused()
 {
     register int i;
     register short *p;
@@ -47,7 +59,7 @@ log_unused()
 }
 
 
-log_conflicts()
+void log_conflicts()
 {
     register int i;
 
@@ -75,8 +87,8 @@ log_conflicts()
 }
 
 
-print_state(state)
-int state;
+void print_state(state)
+        int state;
 {
     if (state)
 	fprintf(verbose_file, "\n\n");
@@ -89,8 +101,8 @@ int state;
 }
 
 
-print_conflicts(state)
-int state;
+void print_conflicts(state)
+        int state;
 {
     register int symbol, act, number;
     register action *p;
@@ -137,8 +149,8 @@ int state;
 }
 
 
-print_core(state)
-int state;
+void print_core(state)
+        int state;
 {
     register int i;
     register int k;
@@ -173,8 +185,8 @@ int state;
 }
 
 
-print_nulls(state)
-int state;
+void print_nulls(state)
+        int state;
 {
     register action *p;
     register int i, j, k, nnulls;
@@ -217,8 +229,8 @@ int state;
 }
 
 
-print_actions(stateno)
-int stateno;
+void print_actions(stateno)
+        int stateno;
 {
     register action *p;
     register shifts *sp;
@@ -244,8 +256,8 @@ int stateno;
 }
 
 
-print_shifts(p)
-register action *p;
+void print_shifts(p)
+        register action *p;
 {
     register int count;
     register action *q;
@@ -269,9 +281,9 @@ register action *p;
 }
 
 
-print_reductions(p, defred)
-register action *p;
-register int defred;
+void print_reductions(p, defred)
+        register action *p;
+        register int defred;
 {
     register int k, anyreds;
     register action *q;
@@ -307,8 +319,8 @@ register int defred;
 }
 
 
-print_gotos(stateno)
-int stateno;
+void print_gotos(stateno)
+        int stateno;
 {
     register int i, k;
     register int as;

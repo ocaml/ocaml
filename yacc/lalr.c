@@ -34,7 +34,23 @@ static short *VERTICES;
 static int top;
 
 
-lalr()
+
+void set_state_table ();
+void set_accessing_symbol ();
+void set_shift_table ();
+void set_reduction_table ();
+void set_maxrhs ();
+void initialize_LA ();
+void set_goto_map ();
+void initialize_F ();
+void build_relations ();
+void compute_FOLLOWS ();
+void compute_lookaheads ();
+void digraph ();
+void add_lookback_edge ();
+void traverse ();
+
+void lalr()
 {
     tokensetsize = WORDSIZE(ntokens);
 
@@ -53,7 +69,7 @@ lalr()
 
 
 
-set_state_table()
+void set_state_table()
 {
     register core *sp;
 
@@ -64,7 +80,7 @@ set_state_table()
 
 
 
-set_accessing_symbol()
+void set_accessing_symbol()
 {
     register core *sp;
 
@@ -75,7 +91,7 @@ set_accessing_symbol()
 
 
 
-set_shift_table()
+void set_shift_table()
 {
     register shifts *sp;
 
@@ -86,7 +102,7 @@ set_shift_table()
 
 
 
-set_reduction_table()
+void set_reduction_table()
 {
     register reductions *rp;
 
@@ -97,7 +113,7 @@ set_reduction_table()
 
 
 
-set_maxrhs()
+void set_maxrhs()
 {
   register short *itemp;
   register short *item_end;
@@ -125,7 +141,7 @@ set_maxrhs()
 
 
 
-initialize_LA()
+void initialize_LA()
 {
   register int i, j, k;
   register reductions *rp;
@@ -162,7 +178,7 @@ initialize_LA()
 }
 
 
-set_goto_map()
+void set_goto_map()
 {
   register shifts *sp;
   register int i;
@@ -233,8 +249,8 @@ set_goto_map()
 
 int
 map_goto(state, symbol)
-int state;
-int symbol;
+        int state;
+        int symbol;
 {
     register int high;
     register int low;
@@ -260,7 +276,7 @@ int symbol;
 
 
 
-initialize_F()
+void initialize_F()
 {
   register int i;
   register int j;
@@ -337,7 +353,7 @@ initialize_F()
 
 
 
-build_relations()
+void build_relations()
 {
   register int i;
   register int j;
@@ -429,8 +445,10 @@ build_relations()
 }
 
 
-add_lookback_edge(stateno, ruleno, gotono)
-int stateno, ruleno, gotono;
+void add_lookback_edge(stateno, ruleno, gotono)
+        int stateno;
+        int ruleno;
+        int gotono;
 {
     register int i, k;
     register int found;
@@ -458,8 +476,8 @@ int stateno, ruleno, gotono;
 
 short **
 transpose(R, n)
-short **R;
-int n;
+        short int **R;
+        int n;
 {
   register short **new_R;
   register short **temp_R;
@@ -514,13 +532,13 @@ int n;
 
 
 
-compute_FOLLOWS()
+void compute_FOLLOWS()
 {
   digraph(includes);
 }
 
 
-compute_lookaheads()
+void compute_lookaheads()
 {
   register int i, n;
   register unsigned *fp1, *fp2, *fp3;
@@ -554,8 +572,8 @@ compute_lookaheads()
 }
 
 
-digraph(relation)
-short **relation;
+void digraph(relation)
+        short int **relation;
 {
   register int i;
 
@@ -581,8 +599,8 @@ short **relation;
 
 
 
-traverse(i)
-register int i;
+void traverse(i)
+        register int i;
 {
   register unsigned *fp1;
   register unsigned *fp2;

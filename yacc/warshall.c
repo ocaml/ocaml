@@ -1,8 +1,8 @@
 #include "defs.h"
 
-transitive_closure(R, n)
-unsigned *R;
-int n;
+void transitive_closure(R, n)
+        unsigned int *R;
+        int n;
 {
     register int rowsize;
     register unsigned mask;
@@ -53,9 +53,9 @@ int n;
     }
 }
 
-reflexive_transitive_closure(R, n)
-unsigned *R;
-int n;
+void reflexive_transitive_closure(R, n)
+        unsigned int *R;
+        int n;
 {
     register int rowsize;
     register unsigned mask;

@@ -1,4 +1,5 @@
 #include <signal.h>
+#include <string.h>
 #include "defs.h"
 
 char dflag;
@@ -73,8 +74,8 @@ extern char *mktemp();
 extern char *getenv();
 
 
-done(k)
-int k;
+void done(k)
+        int k;
 {
     if (action_file) { fclose(action_file); unlink(action_file_name); }
     if (entry_file) { fclose(entry_file); unlink(entry_file_name); }
@@ -91,13 +92,13 @@ int k;
 
 
 void onintr(dummy)
-     int dummy;
+        int dummy;
 {
     done(1);
 }
 
 
-set_signals()
+void set_signals()
 {
 #ifdef SIGINT
     if (signal(SIGINT, SIG_IGN) != SIG_IGN)
@@ -114,16 +115,16 @@ set_signals()
 }
 
 
-usage()
+void usage()
 {
     fprintf(stderr, "usage: %s [-vs] [-b file_prefix] filename\n",
             myname);
     exit(1);
 }
 
-getargs(argc, argv)
-int argc;
-char *argv[];
+void getargs(argc, argv)
+        int argc;
+        char **argv;
 {
     register int i;
     register char *s;
@@ -209,7 +210,7 @@ no_more_options:;
 
 char *
 allocate(n)
-unsigned n;
+        unsigned int n;
 {
     register char *p;
 
@@ -223,7 +224,7 @@ unsigned n;
 }
 
 
-create_file_names()
+void create_file_names()
 {
     int i, len;
     char *tmpdir;
@@ -310,7 +311,7 @@ create_file_names()
 }
 
 
-open_files()
+void open_files()
 {
     create_file_names();
 
@@ -370,9 +371,9 @@ open_files()
 }
 
 
-main(argc, argv)
-int argc;
-char *argv[];
+void main(argc, argv)
+        int argc;
+        char **argv;
 {
     set_signals();
     getargs(argc, argv);
