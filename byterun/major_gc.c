@@ -203,7 +203,8 @@ static void update_weak_pointers (void)
       sz = Wosize_val (cur);
       for (i = 1; i < sz; i++){
         curfield = Field (cur, i);
-        if (curfield != 0 && Is_block (curfield) && Is_white_val (curfield)){
+        if (curfield != 0 && Is_block (curfield) && Is_in_heap (curfield)
+            && Is_white_val (curfield)){
           Field (cur, i) = 0;
         }
       }

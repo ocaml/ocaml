@@ -137,7 +137,9 @@ value make_vect(value len, value init) /* ML */
   if (size == 0) {
     res = Atom(0);
   }
-  else if (Is_block(init) && Tag_val(init) == Double_tag) {
+  else if (Is_block(init)
+           && (Is_atom(init) || Is_young(init) || Is_in_heap(init))
+           && Tag_val(init) == Double_tag) {
     d = Double_val(init);
     wsize = size * Double_wosize;
     if (wsize > Max_wosize) invalid_argument("Array.make");
@@ -177,7 +179,9 @@ value make_array(value init)    /* ML */
     CAMLreturn (init);
   } else {
     v = Field(init, 0);
-    if (Is_long(v) || Tag_val(v) != Double_tag) {
+    if (Is_long(v)
+        || (!Is_atom(v) && !Is_young(v) && !Is_in_heap(v))
+        || Tag_val(v) != Double_tag) {
       CAMLreturn (init);
     } else {
       Assert(size < Max_young_wosize);
