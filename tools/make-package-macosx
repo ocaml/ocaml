@@ -130,5 +130,5 @@ fi
 open "/Volumes/Objective Caml"
 hdiutil detach $name
 
-rm -rf "ocaml${VERSION}.dmg"
+rm -rf "ocaml-${VERSION}.dmg"
 hdiutil convert ocaml-rw.dmg -format UDZO -o "ocaml${VERSION}.dmg"
