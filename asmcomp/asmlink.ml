@@ -39,16 +39,19 @@ let crc_implementations =
 let check_consistency file_name unit crc =
   List.iter
     (fun (name, crc) ->
-      try
-        let (auth_name, auth_crc) = Hashtbl.find crc_interfaces name in
-        if crc <> auth_crc then
-          raise(Error(Inconsistent_interface(name, file_name, auth_name)))
-      with Not_found ->
-        (* Can only happen for unit for which only a .cmi file was used,
-           but no .cmo is provided *)
-        Hashtbl.add crc_interfaces name (file_name, crc))
+      if name = unit.ui_name then begin
+        Hashtbl.add crc_interfaces name (file_name, crc)
+      end else begin
+        try
+          let (auth_name, auth_crc) = Hashtbl.find crc_interfaces name in
+          if crc <> auth_crc then
+            raise(Error(Inconsistent_interface(name, file_name, auth_name)))
+        with Not_found ->
+          (* Can only happen for unit for which only a .cmi file was used,
+             but no .cmo is provided *)
+          Hashtbl.add crc_interfaces name (file_name, crc)
+      end)
     unit.ui_imports_cmi;
-  Hashtbl.add crc_interfaces unit.ui_name (file_name, unit.ui_interface);
   List.iter
     (fun (name, crc) ->
       if crc <> cmx_not_found_crc then begin
@@ -133,7 +136,7 @@ let make_startup_file filename info_list =
   let oc = open_out filename in
   Emitaux.output_channel := oc;
   Location.input_name := "startup"; (* set the name of the "current" input *)
-  Compilenv.reset "startup" ""; (* set the name of the "current" compunit *)
+  Compilenv.reset "startup"; (* set the name of the "current" compunit *)
   Emit.begin_assembly();
   let name_list = List.map (fun ui -> ui.ui_name) info_list in
   Asmgen.compile_phrase(Cmmgen.entry_point name_list);
@@ -212,7 +215,7 @@ let call_linker file_list startup_file =
             !Clflags.object_name
             startup_file
             (String.concat " " (List.rev file_list))
-  in if Sys.command cmd <> 0 then raise(Error Linking_error)
+  in if Ccomp.command cmd <> 0 then raise(Error Linking_error)
 
 let object_file_name name =
   let file_name =

@@ -17,7 +17,6 @@ open Clambda
 
 type unit_infos =
   { mutable ui_name: string;                    (* Name of unit implemented *)
-    mutable ui_interface: Digest.t;             (* CRC of interface impl. *)
     mutable ui_imports_cmi: (string * Digest.t) list; (* Interfaces imported *)
     mutable ui_imports_cmx: (string * Digest.t) list; (* Infos imported *)
     mutable ui_approx: value_approximation;     (* Approx of the structure *)
@@ -25,10 +24,9 @@ type unit_infos =
     mutable ui_apply_fun: int list;             (* Apply functions needed *)
     mutable ui_force_link: bool }               (* Always linked *)
 
-val reset: string -> Digest.t -> unit
+val reset: string -> unit
         (* Reset the environment and record the name of the unit being
-           compiled (first arg) and the CRC of the matching interface
-           (second arg) *)
+           compiled (arg). *)
 
 val current_unit_name: unit -> string
         (* Return the name of the unit being compiled *)

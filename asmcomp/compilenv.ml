@@ -36,7 +36,6 @@ exception Error of error
 
 type unit_infos =
   { mutable ui_name: string;                    (* Name of unit implemented *)
-    mutable ui_interface: Digest.t;             (* CRC of interface impl. *)
     mutable ui_imports_cmi: (string * Digest.t) list; (* Interfaces imported *)
     mutable ui_imports_cmx: (string * Digest.t) list; (* Infos imported *)
     mutable ui_approx: value_approximation;     (* Approx of the structure *)
@@ -49,7 +48,6 @@ let global_approx_table =
 
 let current_unit =
   { ui_name = "";
-    ui_interface = "";
     ui_imports_cmi = [];
     ui_imports_cmx = [];
     ui_approx = Value_unknown;
@@ -57,10 +55,9 @@ let current_unit =
     ui_apply_fun = [];
     ui_force_link = false }
 
-let reset name crc_intf =
+let reset name =
   Hashtbl.clear global_approx_table;
   current_unit.ui_name <- name;
-  current_unit.ui_interface <- crc_intf;
   current_unit.ui_imports_cmi <- [];
   current_unit.ui_imports_cmx <- [];
   current_unit.ui_curry_fun <- [];

@@ -320,6 +320,6 @@ let contains_calls = ref false
 let assemble_file infile outfile =
   if Config.system = "hpux"
   (* Use the GNU assembler, since /bin/as is too buggy *)
-  then Sys.command ("gcc -c -o " ^ outfile ^ " " ^ infile)
-  else Sys.command ("as -o " ^ outfile ^ " " ^ infile)
+  then Ccomp.command ("gcc -c -o " ^ outfile ^ " " ^ infile)
+  else Ccomp.command ("as -o " ^ outfile ^ " " ^ infile)
 

@@ -241,5 +241,5 @@ let asm_command =
   | _ -> fatal_error "Proc_mips.asm_command"
 
 let assemble_file infile outfile =
-  Sys.command (asm_command ^ outfile ^ " " ^ infile)
+  Ccomp.command (asm_command ^ outfile ^ " " ^ infile)
 

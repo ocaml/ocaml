@@ -350,5 +350,5 @@ let contains_calls = ref false
 
 let assemble_file infile outfile =
   let proc = if powerpc then "ppc" else "pwr" in
-  Sys.command ("as -u -m " ^ proc ^ " -o " ^ outfile ^ " " ^ infile)
+  Ccomp.command ("as -u -m " ^ proc ^ " -o " ^ outfile ^ " " ^ infile)
 

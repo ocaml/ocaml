@@ -282,5 +282,5 @@ let contains_calls = ref false
 (* Calling the assembler and the archiver *)
 
 let assemble_file infile outfile =
-  Sys.command ("as -o " ^ outfile ^ " " ^ infile)
+  Ccomp.command ("as -o " ^ outfile ^ " " ^ infile)
 
