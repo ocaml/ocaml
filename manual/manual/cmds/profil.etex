@@ -42,6 +42,12 @@ if\ldots then\ldots else\ldots, loops and pattern matching.
 Calling "ocamlcp" without the "-p" option defaults to "-p fm", meaning
 that only function calls and pattern matching are profiled.
 
+{\bf Note:} Due to the implementation of streams and stream patterns as
+syntactic sugar, it is hard to predict what parts of stream expressions
+and patterns will be profiled by a given flag.  To profile a program with
+streams, we recommend using "ocamlcp -p a".
+
+
 \section{Profiling an execution}
 
 Running a bytecode executable file that has been compiled with "ocamlcp"
@@ -77,8 +83,9 @@ Specifies an alternate dump file of profiling information
 \item["-F" \var{string}]
 Specifies an additional string to be output with profiling information.
 By default, "ocamlprof" will annotate programs with comments of the form
-{\tt (* {\it n} *)} where {\it n} is the counter value for a profiling
-point. With option {\tt -F s}, the annotation will be {\tt (* {\it s n} *)}.
+{\tt (* \var{n} *)} where \var{n} is the counter value for a profiling
+point. With option {\tt -F \var{s}}, the annotation will be
+{\tt (* \var{s}\var{n} *)}.
 \end{options}
 
 \section{Time profiling}
