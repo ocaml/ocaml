@@ -59,17 +59,22 @@ let append a1 a2 =
   end
 
 let concat_aux init al =
-  let size = List.fold_left (fun sz a -> sz + length a) 0 al in
-  let res = create size init in
-  let pos = ref 0 in
-  List.iter
-    (fun a ->
-      for i = 0 to length a - 1 do
-        unsafe_set res !pos (unsafe_get a i);
-        incr pos
-      done)
-    al;
+  let rec size accu = function
+    | [] -> accu
+    | h::t -> size (accu + length h) t
+  in
+  let res = create (size 0 al) init in
+  let rec fill pos = function
+    | [] -> ()
+    | h::t -> 
+        for i = 0 to length h - 1 do
+          unsafe_set res (pos + i) (unsafe_get h i);
+        done;
+        fill (pos + length h) t;
+  in
+  fill 0 al;
   res
+;;
 
 let concat al =
   let rec find_init = function
@@ -138,10 +143,15 @@ let to_list a =
     if i < 0 then res else tolist (i - 1) (unsafe_get a i :: res) in
   tolist (length a - 1) []
 
+let rec list_length accu = function
+  | [] -> accu
+  | h::t -> list_length (succ accu) t
+;;
+
 let of_list = function
     [] -> [||]
-  | hd::tl ->
-      let a = create (List.length tl + 1) hd in
+  | hd::tl as l ->
+      let a = create (list_length 0 l) hd in
       let rec fill i = function
           [] -> a
         | hd::tl -> unsafe_set a i hd; fill (i+1) tl in
@@ -160,3 +170,106 @@ let fold_right f a x =
     r := f (unsafe_get a i) !r
   done;
   !r
+
+exception Bottom of int;;
+let sort cmp a =
+  let maxson l i =
+    let i31 = i+i+i+1 in
+    let x = ref i31 in
+    if i31+2 < l then begin
+      if cmp a.(i31) a.(i31+1) < 0 then x := i31+1;
+      if cmp a.(!x) a.(i31+2) < 0 then x := i31+2;
+      !x
+    end else
+      if i31+1 < l && cmp a.(i31) a.(i31+1) < 0
+      then i31+1
+      else if i31 < l then i31 else raise (Bottom i)
+  in
+  let rec trickledown l i e =
+    let j = maxson l i in
+    if cmp a.(j) e > 0 then begin
+      a.(i) <- a.(j);
+      trickledown l j e;
+    end else begin
+      a.(i) <- e;
+    end;
+  in
+  let rec trickle l i e = try trickledown l i e with Bottom i -> a.(i) <- e in
+  let rec bubbledown l i =
+    let j = maxson l i in
+    a.(i) <- a.(j);
+    bubbledown l j;
+  in
+  let bubble l i = try bubbledown l i with Bottom i -> i in
+  let rec trickleup i e =
+    let father = (i - 1) / 3 in
+    assert (i <> father);
+    if cmp a.(father) e < 0 then begin
+      a.(i) <- a.(father);
+      if father > 0 then trickleup father e else a.(0) <- e;
+    end else begin
+      a.(i) <- e;
+    end;
+  in
+  let l = length a in
+  for i = (l + 1) / 3 - 1 downto 0 do trickle l i a.(i); done;
+  for i = l - 1 downto 2 do
+    let e = a.(i) in
+    a.(i) <- a.(0);
+    trickleup (bubble i 0) e;
+  done;
+  if l > 1 then (let e = a.(1) in a.(1) <- a.(0); a.(0) <- e);
+;;
+
+let cutoff = 5;;
+let stable_sort cmp a =
+  let merge src1ofs src1len src2 src2ofs src2len dst dstofs =
+    let src1r = src1ofs + src1len and src2r = src2ofs + src2len in
+    let rec loop i1 s1 i2 s2 d =
+      if cmp s1 s2 <= 0 then begin
+        dst.(d) <- s1;
+        let i1 = i1 + 1 in
+        if i1 < src1r then
+          loop i1 a.(i1) i2 s2 (d + 1)
+        else
+          blit src2 i2 dst (d + 1) (src2r - i2)
+      end else begin
+        dst.(d) <- s2;
+        let i2 = i2 + 1 in
+        if i2 < src2r then
+          loop i1 s1 i2 src2.(i2) (d + 1)
+        else
+          blit a i1 dst (d + 1) (src1r - i1)
+      end
+    in loop src1ofs a.(src1ofs) src2ofs src2.(src2ofs) dstofs;
+  in
+  let isortto srcofs dst dstofs len =
+    for i = 0 to len - 1 do
+      let e = a.(srcofs + i) in
+      let j = ref (dstofs + i - 1) in
+      while (!j >= dstofs && cmp dst.(!j) e > 0) do
+        dst.(!j + 1) <- dst.(!j);
+        decr j;
+      done;
+      dst.(!j + 1) <- e;
+    done;
+  in
+  let rec sortto srcofs dst dstofs len =
+    if len <= cutoff then isortto srcofs dst dstofs len else begin
+      let l1 = len / 2 in
+      let l2 = len - l1 in
+      sortto (srcofs + l1) dst (dstofs + l1) l2;
+      sortto srcofs a (srcofs + l2) l1;
+      merge (srcofs + l2) l1 dst (dstofs + l1) l2 dst dstofs;
+    end;
+  in
+  let l = length a in
+  if l <= cutoff then isortto 0 a 0 l else begin
+    let l1 = l / 2 in
+    let l2 = l - l1 in
+    let t = make l2 a.(0) in
+    sortto l1 t 0 l2;
+    sortto 0 a l2 l1;
+    merge l2 l1 t 0 l2 a 0;
+  end;
+;;

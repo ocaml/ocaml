@@ -117,8 +117,32 @@ val fold_right: f:('b -> 'a -> 'a) -> 'b array -> init:'a -> 'a
         (* [Array.fold_right f a x] computes
            [f a.(0) (f a.(1) ( ... (f a.(n-1) x) ...))],
            where [n] is the length of the array [a]. *)
+
+(** Sorting *)
+val sort : cmp:('a -> 'a -> int) -> 'a array -> unit;;
+        (* Sort an array in increasing order according to a comparison
+           function.  The comparison function must return 0 if it arguments
+           compare as equal, a positive integer if the first is greater,
+           and a negative integer if the first is smaller.  For example,
+           the [compare] function is a suitable comparison function.
+           After calling [Array.sort], the array is sorted in place in
+           increasing order.
+           [Array.sort] is guaranteed to run in constant heap space
+           and logarithmic stack space.
+
+           The current implementation uses Heap Sort.  It runs in constant
+           stack space.
+        *)
+
+val stable_sort : cmp:('a -> 'a -> int) -> 'a array -> unit;;
+        (* Same as [Array.sort], but the sorting algorithm is stable and
+           not guaranteed to use a fixed amount of heap memory.
+           The current implementation is Merge Sort. It uses [n/2]
+           words of heap space, where [n] is the length of the array.
+           It is faster than the current implementation of [Array.sort].
+        *)
+
 (*--*)
 
 external unsafe_get: 'a array -> int -> 'a = "%array_unsafe_get"
 external unsafe_set: 'a array -> int -> 'a -> unit = "%array_unsafe_set"
-

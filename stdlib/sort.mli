@@ -14,6 +14,11 @@
 
 (* Module [Sort]: sorting and merging lists *)
 
+(* This module is obsolete and exists only for backward compatibility.
+   The sorting functions in [Array] and [List] should be used instead.
+   The new functions are faster and use less memory.
+*)
+
 val list : order:('a -> 'a -> bool) -> 'a list -> 'a list
         (* Sort a list in increasing order according to an ordering predicate.
            The predicate should return [true] if its first argument is

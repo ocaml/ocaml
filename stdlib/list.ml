@@ -191,3 +191,30 @@ let rec combine l1 l2 =
     ([], []) -> []
   | (a1::l1, a2::l2) -> (a1, a2) :: combine l1 l2
   | (_, _) -> invalid_arg "List.combine"
+
+(** sorting *)
+
+external obj_truncate : 'a array -> int -> unit = "obj_truncate"
+
+let array_to_list_in_place a =
+  let l = Array.length a in
+  let rec loop accu n p =
+    if p <= 0 then accu else begin
+      if p = n then begin
+        obj_truncate a p;
+        loop (a.(p-1) :: accu) (n-1000) (p-1)
+      end else begin
+        loop (a.(p-1) :: accu) n (p-1)
+      end
+    end
+  in
+  loop [] l l
+;;
+
+let stable_sort cmp l =
+  let a = Array.of_list l in
+  Array.stable_sort cmp a;
+  array_to_list_in_place a
+;;
+
+let sort = stable_sort;;
