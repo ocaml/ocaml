@@ -193,7 +193,7 @@ OTHERLIBRARIES=unix str num threads graph dynlink
 # See the file otherlibs/num/README for more explanations.
 # If you don't know, leave BIGNUM_ARCH=C, which selects a portable
 # C implementation of these routines.
-BIGNUM_ARCH=C
+BIGNUM_ARCH=alpha
 
 ### Location of the include directory containing the X11/*.h includes
 # Needed for the "graph" package

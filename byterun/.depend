@@ -69,7 +69,8 @@ minor_gc.o: minor_gc.c config.h ../config/m.h ../config/s.h fail.h \
  minor_gc.h roots.h signals.h
 misc.o: misc.c config.h ../config/m.h ../config/s.h misc.h
 obj.o: obj.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
- mlvalues.h major_gc.h freelist.h memory.h gc.h minor_gc.h prims.h
+ mlvalues.h fail.h gc.h major_gc.h freelist.h memory.h minor_gc.h \
+ prims.h
 parsing.o: parsing.c config.h ../config/m.h ../config/s.h mlvalues.h \
  misc.h memory.h gc.h major_gc.h freelist.h minor_gc.h alloc.h
 prims.o: prims.c mlvalues.h config.h ../config/m.h ../config/s.h \
@@ -81,7 +82,7 @@ roots.o: roots.c memory.h config.h ../config/m.h ../config/s.h gc.h \
 rotatecursor.o: rotatecursor.c rotatecursor.h
 signals.o: signals.c alloc.h misc.h config.h ../config/m.h \
  ../config/s.h mlvalues.h callback.h fail.h memory.h gc.h major_gc.h \
- freelist.h minor_gc.h roots.h signals.h
+ freelist.h minor_gc.h roots.h signals.h sys.h
 stacks.o: stacks.c config.h ../config/m.h ../config/s.h fail.h misc.h \
  mlvalues.h stacks.h memory.h gc.h major_gc.h freelist.h minor_gc.h
 startup.o: startup.c config.h ../config/m.h ../config/s.h alloc.h \
@@ -170,7 +171,8 @@ minor_gc.d.o: minor_gc.c config.h ../config/m.h ../config/s.h fail.h \
  minor_gc.h roots.h signals.h
 misc.d.o: misc.c config.h ../config/m.h ../config/s.h misc.h
 obj.d.o: obj.c alloc.h misc.h config.h ../config/m.h ../config/s.h \
- mlvalues.h major_gc.h freelist.h memory.h gc.h minor_gc.h prims.h
+ mlvalues.h fail.h gc.h major_gc.h freelist.h memory.h minor_gc.h \
+ prims.h
 parsing.d.o: parsing.c config.h ../config/m.h ../config/s.h mlvalues.h \
  misc.h memory.h gc.h major_gc.h freelist.h minor_gc.h alloc.h
 prims.d.o: prims.c mlvalues.h config.h ../config/m.h ../config/s.h \
@@ -182,7 +184,7 @@ roots.d.o: roots.c memory.h config.h ../config/m.h ../config/s.h gc.h \
 rotatecursor.d.o: rotatecursor.c rotatecursor.h
 signals.d.o: signals.c alloc.h misc.h config.h ../config/m.h \
  ../config/s.h mlvalues.h callback.h fail.h memory.h gc.h major_gc.h \
- freelist.h minor_gc.h roots.h signals.h
+ freelist.h minor_gc.h roots.h signals.h sys.h
 stacks.d.o: stacks.c config.h ../config/m.h ../config/s.h fail.h misc.h \
  mlvalues.h stacks.h memory.h gc.h major_gc.h freelist.h minor_gc.h
 startup.d.o: startup.c config.h ../config/m.h ../config/s.h alloc.h \
