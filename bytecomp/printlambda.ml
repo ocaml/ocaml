@@ -57,6 +57,8 @@ let primitive = function
   | Pintcomp(Cge) -> print_string ">="
   | Poffsetint n -> print_int n; print_string "+"
   | Poffsetref n -> print_int n; print_string "+:="
+  | Pintoffloat -> print_string "int_of_float"
+  | Pfloatofint -> print_string "float_of_int"
   | Pnegfloat -> print_string "~."
   | Paddfloat -> print_string "+."
   | Psubfloat -> print_string "-."

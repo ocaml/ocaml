@@ -18,6 +18,7 @@ type primitive =
   | Pintcomp of comparison
   | Poffsetint of int
   | Poffsetref of int
+  | Pintoffloat | Pfloatofint
   | Pnegfloat | Paddfloat | Psubfloat | Pmulfloat | Pdivfloat
   | Pfloatcomp of comparison
   | Pstringlength | Pgetstringchar | Psetstringchar

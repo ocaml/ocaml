@@ -150,6 +150,8 @@ let primitives_table = create_hashtable 31 [
   "%geint", Pintcomp Cge;
   "%incr", Poffsetref(1);
   "%decr", Poffsetref(-1);
+  "%intoffloat", Pintoffloat;
+  "%floatofint", Pfloatofint;
   "%negfloat", Pnegfloat;
   "%addfloat", Paddfloat;
   "%subfloat", Psubfloat;

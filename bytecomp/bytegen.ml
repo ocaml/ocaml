@@ -258,6 +258,8 @@ let rec comp_expr env exp sz cont =
         | Pasrint -> Kasrint
         | Poffsetint n -> Koffsetint n
         | Poffsetref n -> Koffsetref n
+        | Pintoffloat -> Kccall("int_of_float", 1)
+        | Pfloatofint -> Kccall("float_of_int", 1)
         | Pnegfloat -> Kccall("neg_float", 1)
         | Paddfloat -> Kccall("add_float", 2)
         | Psubfloat -> Kccall("sub_float", 2)
