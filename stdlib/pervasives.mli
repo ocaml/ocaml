@@ -212,8 +212,7 @@ external (-.) : float -> float -> float = "%subfloat"
 external ( *. ) : float -> float -> float = "%mulfloat"
         (* Floating-point multiplication *)
 external (/.) : float -> float -> float = "%divfloat"
-        (* Floating-point division. Raise [Division_by_zero] if second
-           argument is null. *)
+        (* Floating-point division. *)
 external ( ** ) : float -> float -> float = "power_float" "pow" "float"
         (* Exponentiation *)
 external exp : float -> float = "exp_float" "exp" "float"

@@ -19,6 +19,6 @@ int main(argc, argv)
      char ** argv;
 {
   execvp(runtime_name, argv);
-  write(2, errmsg, sizeof(errmsg)-1);
+  write(2, errmsg, strlen(errmsg));
   return 2;
 }
