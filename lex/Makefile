@@ -13,8 +13,8 @@
 # $Id$
 
 # The lexer generator
-CAMLC=../boot/ocamlrun ../boot/ocamlc -I ../boot
-CAMLOPT=../boot/ocamlrun ../ocamlopt -I ../stdlib
+CAMLC=../boot/ocamlrun ../boot/ocamlc -nostdlib -I ../boot
+CAMLOPT=../boot/ocamlrun ../ocamlopt -nostdlib -I ../stdlib
 COMPFLAGS=-warn-error A
 CAMLYACC=../boot/ocamlyacc
 YACCFLAGS=-v
