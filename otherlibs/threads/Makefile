@@ -91,7 +91,7 @@ partialclean:
 	rm -f *.cm*
 
 clean: partialclean
-	rm -f libthreads.a *.o
+	rm -f libthreads.a dllthreads.so *.o
 	rm -f pervasives.mli marshal.mli unix.mli
 
 install:

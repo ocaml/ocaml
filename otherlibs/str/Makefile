@@ -47,7 +47,7 @@ partialclean:
 	rm -f *.cm*
 
 clean: partialclean
-	rm -f *.a *.o
+	rm -f *.a *.so *.o
 	cd $(REGEXLIB); if test -f Makefile; then $(MAKE) distclean; else exit 0; fi
 
 install:
