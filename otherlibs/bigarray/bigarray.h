@@ -68,8 +68,14 @@ struct caml_bigarray {
 
 #define Data_bigarray_val(v) (Bigarray_val(v)->data)
 
-CAMLextern value alloc_bigarray(int flags, int num_dims, void * data, long * dim);
-CAMLextern value alloc_bigarray_dims(int flags, int num_dims, void * data,
+#if defined(IN_OCAML_BIGARRAY)
+#define CAMLBAextern CAMLexport
+#else
+#define CAMLBAextern CAMLextern
+#endif
+
+CAMLBAextern value alloc_bigarray(int flags, int num_dims, void * data, long * dim);
+CAMLBAextern value alloc_bigarray_dims(int flags, int num_dims, void * data,
                                  ... /*dimensions, with type long */);
 
 #endif
