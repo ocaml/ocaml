@@ -48,6 +48,7 @@ module type S =
     val min_elt: t -> elt
     val max_elt: t -> elt
     val choose: t -> elt
+    val split: elt -> t -> t * bool * t
   end
 
 module Make(Ord: OrderedType) =
