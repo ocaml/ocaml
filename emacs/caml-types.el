@@ -71,13 +71,16 @@ For the moment, the only possible keyword is \"type\"."
 (if (not (face-differs-from-default-p 'caml-types-face))
     (set-face-background 'caml-types-face "#88FF44"))
 
-(make-face 'caml-typed-face)
-(set-face-doc-string 'caml-typed-face
+(defvar caml-types-typed-ovl (make-overlay 1 1))
+
+(make-face 'caml-types-typed-face)
+(set-face-doc-string 'caml-types-typed-face
                      "face for hilighting typed expressions")
-(if (not (face-differs-from-default-p 'caml-typed-face))
-    (set-face-background 'caml-typed-face "#FF8844"))
+(if (not (face-differs-from-default-p 'caml-types-typed-face))
+    (set-face-background 'caml-types-typed-face "#FF8844"))
 
 (overlay-put caml-types-expr-ovl 'face 'caml-types-face)
+(overlay-put caml-types-typed-ovl 'face 'caml-types-typed-face)
 
 
 (defvar caml-types-annotation-tree nil)
@@ -149,7 +152,8 @@ See `caml-types-location-re' for annotation file format.
         (display-buffer caml-types-buffer))
     (unwind-protect
         (sit-for 60)
-      (delete-overlay caml-types-expr-ovl))))
+      (delete-overlay caml-types-expr-ovl)
+      )))
 
 (defun caml-types-preprocess (type-file)
   (let* ((type-date (nth 5 (file-attributes type-file)))
@@ -392,81 +396,77 @@ and its type is displayed in the minibuffer, until the move is released."
          target-pos
          Left Right limits cnum node mes type
          (tree caml-types-annotation-tree)
-         (unlocked font-lock-mode)
          region
          )
     (caml-types-preprocess type-file)
     (unless caml-types-buffer 
       (setq caml-types-buffer (get-buffer-create caml-types-buffer-name)))
-                                        ; (message "Drag the mouse to explore types")
+      ;; (message "Drag the mouse to explore types")
     (unwind-protect
         (caml-track-mouse
-         ;(setq region (caml-types-typed-region
-         ;              target-buf
-         ;              (caml-event-point-start event)))
+         (setq region
+               (caml-types-typed-make-overlay target-buf
+                                        (caml-event-point-start event)))
          (while (and event
                      (integer-or-marker-p
                       (setq cnum (caml-event-point-end event))))
-           (if (and limits (>= cnum (car limits)) (< cnum (cdr limits)))
-               (message mes)
-             (setq target-bol
-                   (save-excursion (goto-char cnum)
-                                   (caml-line-beginning-position)))
-             (setq target-line
-                   (1+ (count-lines (point-min) target-bol)))
-             (setq target-pos (vector target-file target-line target-bol cnum))
-             (save-excursion
-               (setq node (caml-types-find-location target-pos () tree))
-               (set-buffer caml-types-buffer)
-               (erase-buffer)
-               (cond
-                (node
-                 (setq Left (caml-types-get-pos target-buf (elt node 0)))
-                 (setq Right (caml-types-get-pos target-buf (elt node 1)))
-                 (move-overlay caml-types-expr-ovl Left Right target-buf)
-                 (setq limits (caml-types-find-interval target-buf target-pos
-                                                        node))
-                 (setq type (elt node 2))
-                 )
-                (t
-                 (delete-overlay caml-types-expr-ovl)
-                 (setq type "*no type information*")
-                 (setq limits (caml-types-find-interval target-buf target-pos
-                                                        tree))
-                 ))
-               (message (setq mes (format "type: %s" type)))
-               (insert type)
-               ))
-           (setq event (caml-read-event))
-           (unless (mouse-movement-p event) (setq event nil))
-           )
+           (if (and region (<= (car region) cnum) (<= cnum (cdr region)))
+               (if (and limits (>= cnum (car limits)) (< cnum (cdr limits)))
+                   (message mes)
+                 (setq target-bol
+                       (save-excursion (goto-char cnum)
+                                       (caml-line-beginning-position)))
+                 (setq target-line
+                       (1+ (count-lines (point-min) target-bol)))
+                 (setq target-pos (vector target-file target-line target-bol cnum))
+                 (save-excursion
+                   (setq node (caml-types-find-location target-pos () tree))
+                   (set-buffer caml-types-buffer)
+                   (erase-buffer)
+                   (cond
+                    (node
+                     (setq Left (caml-types-get-pos target-buf (elt node 0)))
+                     (setq Right (caml-types-get-pos target-buf (elt node 1)))
+                     (move-overlay caml-types-expr-ovl Left Right target-buf)
+                     (setq limits (caml-types-find-interval target-buf target-pos
+                                                            node))
+                     (setq type (elt node 2))
+                     )
+                    (t
+                     (delete-overlay caml-types-expr-ovl)
+                     (setq type "*no type information*")
+                     (setq limits (caml-types-find-interval target-buf target-pos
+                                                            tree))
+                     ))
+                   (message (setq mes (format "type: %s" type)))
+                   (insert type)
+                   )))
+             (setq event (caml-read-event))
+             (unless (mouse-movement-p event) (setq event nil))
+             )
          )
       (delete-overlay caml-types-expr-ovl)
-      ;(if unlocked (font-lock-mode 1)
-      ;  (remove-text-properties (car region) (cdr region) '(face)))
+      (delete-overlay caml-types-typed-ovl)
       )))
 
-(defun caml-types-typed-region (target-buf pos)
+(defun caml-types-typed-make-overlay (target-buf pos)
   (interactive "p")
-  (if  (functionp 'caml-find-phrase)
-      (save-excursion
-        (goto-char pos)
-        (setq start (caml-find-phrase))
-        (setq end (point)))
-    (setq  start (point-min))
-    (setq end (point-max)))
-  (message "%S %S" start end)
-  (let (len node)
+  (let ((start pos) (end pos) len node left right)
       (setq len (length caml-types-annotation-tree))
-      (if font-lock-mode (font-lock-mode 0))
       (while (> len 3)
         (setq len (- len 1))
         (setq node (aref caml-types-annotation-tree len))
-        (if (caml-types-pos-contains start end node)
-            (put-text-property
-             (caml-types-get-pos target-buf (elt node 0))
-             (caml-types-get-pos target-buf (elt node 1))
-             'face 'caml-typed-face))))
-    (cons start end))
+        (if (and (equal target-buf (current-buffer))
+                 (setq left (caml-types-get-pos target-buf (elt node 0))
+                       right (caml-types-get-pos target-buf (elt node 1)))
+                 (<= left pos) (>= right pos)
+                 )
+            (setq start (min start left)
+                  end (max end right))
+             ))
+      (move-overlay caml-types-typed-ovl
+                    (max (point-min) (- start 1))
+                    (min (point-max) (+ end 1)) target-buf)
+    (cons start end)))
 
 (provide 'caml-types)
