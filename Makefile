@@ -20,6 +20,8 @@ INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver -I tople
 UTILS=utils/misc.cmo utils/tbl.cmo utils/config.cmo \
   utils/clflags.cmo utils/terminfo.cmo utils/ccomp.cmo
 
+OPTUTILS=$(UTILS) utils/nativeint.cmo
+
 PARSING=parsing/linenum.cmo parsing/location.cmo parsing/longident.cmo \
   parsing/pstream.cmo parsing/parser.cmo parsing/lexer.cmo parsing/parse.cmo
 
@@ -71,7 +73,7 @@ TOPLIB=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(BYTECOMP) $(TOPLEVEL)
 
 TOPOBJS=$(TOPLIB) $(TOPLEVELMAIN)
 
-OPTOBJS=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) $(OPTDRIVER)
+OPTOBJS=$(OPTUTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) $(OPTDRIVER)
 
 EXPUNGEOBJS=utils/misc.cmo utils/tbl.cmo \
   utils/config.cmo utils/clflags.cmo \
