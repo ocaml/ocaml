@@ -57,6 +57,7 @@ pervasives.cmx: pervasives.ml
 	$(CAMLOPT) $(COMPFLAGS) -c $<
 
 $(OBJS) std_exit.cmo: pervasives.cmi
+$(OBJS:.cmo=.cmx) std_exit.cmx: pervasives.cmi
 
 $(OBJS): $(COMPILER)
 $(OBJS:.cmo=.cmi): $(COMPILER)

@@ -280,7 +280,7 @@ let read_float () = float_of_string(read_line())
 (* References *)
 
 type 'a ref = { mutable contents: 'a }
-external ref: 'a -> 'a ref = "%makeblock"
+external ref: 'a -> 'a ref = "%makemutable"
 external (!): 'a ref -> 'a = "%field0"
 external (:=): 'a ref -> 'a -> unit = "%setfield0"
 external incr: int ref -> unit = "%incr"

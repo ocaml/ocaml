@@ -494,7 +494,7 @@ external close_in : in_channel -> unit = "close_in"
 type 'a ref = { mutable contents: 'a }
         (* The type of references (mutable indirection cells) containing
            a value of type ['a]. *)
-external ref : 'a -> 'a ref = "%makeblock"
+external ref : 'a -> 'a ref = "%makemutable"
         (* Return a fresh reference containing the given value. *)
 external (!) : 'a ref -> 'a = "%field0"
         (* [!r] returns the current contents of reference [r].
