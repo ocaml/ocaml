@@ -1,6 +1,5 @@
 # $Id$
 
-EXE=
 CAMLP4_COMM=OTOP=$(OTOP) OPT=$(OPT) EXE=$(EXE) ../tools/camlp4_comm.sh
 OCAMLC=@OTOP=$(OTOP) OPT=$(OPT) ../tools/ocamlc.sh
 OCAMLOPT=@OTOP=$(OTOP) OPT=$(OPT) ../tools/ocamlopt.sh
