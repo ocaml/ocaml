@@ -147,6 +147,7 @@ extern int caml_at_work;
 void Caml_working (int newstate);
 void GlueInterrupt (void);
 OSErr launch_caml_main (void);
+void DisplayRotatingCursor (void);
 
 /* graph.c */
 void GraphGotEvent (EventRecord *evt);

@@ -3,7 +3,7 @@
 MacVersion = "Mac{MAJOR}.{MINOR}{STAGE}{REV}"
 
 CAMLC = :boot:ocamlrun :boot:ocamlc -I :boot:
-COMPFLAGS = {INCLUDES}
+COMPFLAGS = -w s {INCLUDES}
 LINKFLAGS =
 CAMLYACC = :boot:ocamlyacc
 YACCFLAGS =

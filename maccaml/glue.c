@@ -402,12 +402,14 @@ pascal void InitCursorCtl (acurHandle newCursors)
 /* In O'Caml, counter is always a multiple of 32. */
 pascal void RotateCursor (long counter)
 {
-  if (FrontWindow () == winToplevel){
-    (*acurh)->current += (*acurh)->nframes + (counter >= 0 ? 1 : -1);
-    (*acurh)->current %= (*acurh)->nframes;
-    SetCursor (*((*acurh)->frames[(*acurh)->current].h));
-  }
+  (*acurh)->current += (*acurh)->nframes + (counter >= 0 ? 1 : -1);
+  (*acurh)->current %= (*acurh)->nframes;
   GetAndProcessEvents (noWait, 0, 0);
+}
+
+void DisplayRotatingCursor (void)
+{
+  SetCursor (*((*acurh)->frames[(*acurh)->current].h));
 }
 
 /***

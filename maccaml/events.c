@@ -16,17 +16,23 @@
 UInt32 evtSleep = 0;
 static RgnHandle mouseRegion = NULL;
 static RgnHandle pointRegion = NULL;
+static long cursor_timeout;
 
 static void AdjustCursor (Point mouse, RgnHandle mouseRegion)
 {
   WindowPtr w = FrontWindow ();
   WEHandle we = WinGetWE (w);
   int k = WinGetKind (w);
+  Boolean res;
 
-  if (caml_at_work && w == winToplevel) return;
+  if (caml_at_work && TickCount () > cursor_timeout){
+    DisplayRotatingCursor ();
+    return;
+  }
   SetRectRgn (mouseRegion, -SHRT_MAX, -SHRT_MAX, SHRT_MAX, SHRT_MAX);
   if (we != NULL && k != kWinAbout){
-    if (WEAdjustCursor (mouse, mouseRegion, we)) return;
+    res = WEAdjustCursor (mouse, mouseRegion, we);
+    if (res) return;
   }
   SetCursor (&qd.arrow);
 }
@@ -229,9 +235,16 @@ static void DoDialogEvent (EventRecord *evt)
   }
 }
 
+Point latestpos = {-1, -1};
+
 static pascal Boolean ProcessEvent (EventRecord *evt, long *sleep,
                                     RgnHandle *rgn)
 {
+  if (evt->what != nullEvent
+      || evt->where.h != latestpos.h || evt->where.v != latestpos.v){
+    latestpos = evt->where;
+    cursor_timeout = TickCount () + 60;
+  }
   if (evt->what <= osEvt) AdjustCursor (evt->where, mouseRegion);
   if (IsDialogEvent (evt)){
     DoDialogEvent (evt);
