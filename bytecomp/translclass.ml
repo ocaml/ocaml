@@ -534,7 +534,7 @@ open M
     class_init: fonction d'heritage (table -> env_init)
       (une seule par code source)
     env_init: parametrage par l'environnement local (env -> params -> obj_init)
-      (une par combinaison d'env_init herites)
+      (une par combinaison de class_init herites)
     env: environnement local
    Si ids=0 (objet immediat), alors on ne conserve que env_init.
 *)
@@ -622,14 +622,22 @@ let transl_class ids cl_id arity pub_meths cl =
   (* Simplest case: an object defined at toplevel (ids=[]) *)
   if top && ids = [] then llets (ltable cla (ldirect obj_init)) else
 
-  let lclass lam =
-    Llet(Strict, class_init, Lfunction(Curried, [cla], cl_init), lam)
-  and lbody =
+  let concrete =
+    ids = [] ||
+    Typeclass.virtual_methods (Ctype.signature_of_class_type cl.cl_type) = []
+  and lclass lam =
+    Llet(Strict, class_init, Lfunction(Curried, [cla], cl_init),
+         lam class_init)
+  and lbody class_init =
     Lapply (oo_prim "make_class",
             [transl_meth_list pub_meths; Lvar class_init])
+  and lbody_virt lenvs =
+    Lprim(Pmakeblock(0, Immutable),
+          [lambda_unit; Lfunction(Curried,[cla], cl_init); lambda_unit; lenvs])
   in
   (* Still easy: a class defined at toplevel *)
-  if top then llets (lclass lbody) else
+  if top && concrete then llets (lclass lbody) else
+  if top then llets (lbody_virt lambda_unit) else
 
   (* Now for the hard stuff: prepare for table cacheing *)
   let env_index = Ident.create "env_index"
@@ -664,7 +672,7 @@ let transl_class ids cl_id arity pub_meths cl =
     List.filter
       (fun (_,path) -> List.mem (Path.head path) new_ids) inh_init in
   let inh_keys =
-    List.map (fun (_,p) -> Lprim(Pfield 2, [transl_path p])) inh_paths in
+    List.map (fun (_,p) -> Lprim(Pfield 1, [transl_path p])) inh_paths in
   let lclass lam =
     Llet(Strict, class_init,
          Lfunction(Curried, [cla], def_ids cla cl_init), lam)
@@ -682,12 +690,15 @@ let transl_class ids cl_id arity pub_meths cl =
       (Llet(Strict, env_init, def_ids cla cl_init,
             Lsequence(Lapply (oo_prim "init_class", [Lvar cla]),
                       lset cached 0 (Lvar env_init))))
+  and lclass_virt () =
+    lset cached 0 (Lfunction(Curried, [cla], def_ids cla cl_init))
   in
   llets (
   lcache (
   Lsequence(
   Lifthenelse(lfield cached 0, lambda_unit,
               if ids = [] then ldirect () else
+              if not concrete then lclass_virt () else
               lclass (
               Lapply (oo_prim "make_class_store",
                       [transl_meth_list pub_meths;
@@ -695,10 +706,13 @@ let transl_class ids cl_id arity pub_meths cl =
   make_envs (
   if ids = [] then Lapply(lfield cached 0, [lenvs]) else
   Lprim(Pmakeblock(0, Immutable),
-        [Lapply(lfield cached 0, [lenvs]);
-         lfield cached 1;
-         lfield cached 0;
-         lenvs])))))
+        if concrete then
+          [Lapply(lfield cached 0, [lenvs]);
+           lfield cached 1;
+           lfield cached 0;
+           lenvs]
+        else [lambda_unit; lfield cached 0; lambda_unit; lenvs]
+       )))))
 
 (* Dummy for recursive modules *)
 
