@@ -2,7 +2,6 @@
 (* $Id$ *)
 
 #load "q_MLast.cmo";
-#load "pa_extend.cmo";
 
 open Gramext;
 
@@ -421,22 +420,18 @@ value empty_entry ename =
 value start_parser_of_entry entry =
   match entry.edesc with
   [ Dlevels [] -> empty_entry entry.ename
-  | Dlevels [_ :: elev] when entry.ename = "implem" ->
-      start_parser_of_levels entry 0 elev
   | Dlevels elev -> start_parser_of_levels entry 0 elev
   | Dparser p -> [] ]
 ;
 
 value continue_parser_of_entry entry =
   match entry.edesc with
-  [ Dlevels [_ :: elev] when entry.ename = "implem" ->
-      continue_parser_of_levels entry 0 elev
-  | Dlevels elev -> continue_parser_of_levels entry 0 elev
+  [ Dlevels elev -> continue_parser_of_levels entry 0 elev
   | Dparser p -> [] ]
 ;
 
 value continue_parser_of_entry_again entry =
-  if strict_parsing.val || entry.ename = "implem" then []
+  if strict_parsing.val then []
   else
     match entry.edesc with
     [ Dlevels ([_; _ :: _] as levs) ->
@@ -561,13 +556,7 @@ value compile () =
   ([(si1, loc); (si2, loc)], False)
 ;
 
-Grammar.Unsafe.reinit_gram Pcaml.gram (Plexer.make ());
-
-EXTEND
-  Pcaml.implem: FIRST
-    [ [ -> compile () ] ]
-  ;
-END;
+Pcaml.parse_implem.val := fun _ -> compile ();
 
 Pcaml.add_option "-strict_parsing" (Arg.Set strict_parsing)
   ": don't generate error recovering by trying continuations or first levels"
