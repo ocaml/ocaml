@@ -26,16 +26,23 @@ let bad_format fmt i fc =
     (Printf.sprintf
        "scanf: bad format %c, at char number %i of format %s" fc i fmt);;
 
-let int_token ib =
+let token_int ib =
  let s = Scanning.token ib in
  try Pervasives.int_of_string s
  with Failure "int_of_string" -> bad_input ib s;;
 
-let bool_token ib =
+let token_bool ib =
   match Scanning.token ib with
   | "true" -> true
   | "false" -> false
   | s -> bad_input ib ("a boolean, found " ^ s);;
+
+let token_char ib =
+  (Scanning.token ib).[0];;
+
+let token_float ib =
+  let s = Scanning.token ib in
+  float_of_string s;;
 
 (* Scanning numbers. *)
 
@@ -121,28 +128,28 @@ let scan_optionally_signed_int max ib =
   scan_unsigned_int max ib;;
 
 let read_optionally_signed_decimal_int max ib =
-  let max = scan_optionally_signed_decimal_int in
-  int_token ib;;
+  let max = scan_optionally_signed_decimal_int max ib in
+  token_int ib;;
 
 let read_unsigned_decimal_int max ib =
-  let max = scan_unsigned_decimal_int in
-  int_token ib;;
+  let max = scan_unsigned_decimal_int max ib in
+  token_int ib;;
 
 let read_optionally_signed_int max ib =
   let max = scan_optionally_signed_int max ib in
-  int_token ib;;
+  token_int ib;;
 
 let read_unsigned_octal_int max ib =
  let max = scan_octal_digits max ib in
- int_token ib;;
+ token_int ib;;
 
 let read_unsigned_hexadecimal_int max ib =
   let max = scan_hexadecimal_digits max ib in
-  int_token ib;;
+  token_int ib;;
 
 let read_unsigned_Hexadecimal_int max ib =
  let max = scan_Hexadecimal_digits max ib in
- int_token ib;;
+ token_int ib;;
 
 (* Scanning floating point numbers. *)
 let scan_frac_part max ib = scan_unsigned_decimal_int max ib;;
@@ -168,7 +175,7 @@ let scan_float max ib =
 
 let read_float max ib =
   let max = scan_float max ib in
-  float_of_string (Scanning.token ib);;
+  token_float ib;;
 
 let rec scan_string max ib =
   if max = 0 || Scanning.end_of_input ib then max else
@@ -187,7 +194,7 @@ let scan_char max ib =
 
 let read_char max ib =
   let max = scan_char max ib in
-  (Scanning.token ib).[0];;
+  token_char ib;;
 
 let scan_bool max ib =
   let m =
@@ -199,7 +206,7 @@ let scan_bool max ib =
 
 let read_bool max ib =
   let max = scan_bool max ib in
-  bool_token ib;;
+  token_bool ib;;
 
 type char_set = Pos_set of string | Neg_set of string;;
 
