@@ -879,14 +879,14 @@ type msg_flag =
    {!Unix.send} and {!Unix.sendto}. *)
 
 val recv : file_descr -> string -> int -> int -> msg_flag list -> int
-(** Receive data from an unconnected socket. *)
+(** Receive data from a connected socket. *)
 
 val recvfrom :
   file_descr -> string -> int -> int -> msg_flag list -> int * sockaddr
 (** Receive data from an unconnected socket. *)
 
 val send : file_descr -> string -> int -> int -> msg_flag list -> int
-(** Send data over an unconnected socket. *)
+(** Send data over a connected socket. *)
 
 val sendto :
   file_descr -> string -> int -> int -> msg_flag list -> sockaddr -> int
