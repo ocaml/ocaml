@@ -133,7 +133,7 @@ let parse_argv ?(current=current) argv speclist anonfun errmsg =
       begin try
         let rec treat_action = function
         | Unit f -> f ();
-        | Bool f ->
+        | Bool f when !current + 1 < l ->
             let arg = argv.(!current + 1) in
             begin try f (bool_of_string arg)
             with Invalid_argument "bool_of_string" ->
