@@ -140,7 +140,9 @@ value hash_variant(char * tag)
   /* Same hashing algorithm as in ../typing/btype.ml, function hash_variant */
   for (accu = Val_int(0); *tag != 0; tag++) 
     accu = Val_int(223 * Int_val(accu) + *((unsigned char *) tag));
-  accu = accu & Val_int((1 << 31) - 1);
+#ifdef ARCH_SIXTYFOUR
+  accu = accu & Val_int(0x7FFFFFFF);
+#endif
   /* Force sign extension of bit 31 for compatibility between 32 and 64-bit
      platforms */
   return (int32) accu;
