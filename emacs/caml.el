@@ -597,7 +597,6 @@ from an error message produced by camlc.")
 ;; Wrapper around next-error.
 
 (defvar caml-error-overlay nil)
-(defvar caml-emacs-twenty (string-match "20\." (emacs-version)))
 
 ;;itz 04-21-96 somebody didn't get the documetation for next-error
 ;;right. When the optional argument is a number n, it should move
@@ -630,7 +629,7 @@ possible."
 		     (string-to-int
 		      (buffer-substring (match-beginning 2) (match-end 2)))))))
        (cond (beg
-              (if caml-emacs-twenty (beginning-of-line))
+              (beginning-of-line)
 	      (setq beg (+ (point) beg)
 		    end (+ (point) end))
 	      (goto-char beg)
