@@ -565,7 +565,7 @@ let report_error ppf = function
       Symtable.report_error err
   | Inconsistent_import(intf, file1, file2) ->
       fprintf ppf
-        "@[<hv 0>Files %s and %s@ \
+        "@[<hov>Files %s@ and %s@ \
                  make inconsistent assumptions over interface %s@]"
         file1 file2 intf
   | Custom_runtime ->
