@@ -58,7 +58,7 @@ let ldot l s = Ldot (l, s);;
 let conv_con =
   let t = Hashtbl.create 73 in
   List.iter (fun (s, s') -> Hashtbl.add t s s')
-    ["True", "true"; "False", "false"];
+    ["True", "true"; "False", "false"; " True", "True"; " False", "False"];
   fun s ->
     try Hashtbl.find t s with
       Not_found -> s

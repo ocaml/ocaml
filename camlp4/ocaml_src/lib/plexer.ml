@@ -655,20 +655,39 @@ let check_keyword s =
     _ -> false
 ;;
 
+let error_no_respect_rules p_con p_prm =
+  raise
+    (Token.Error
+       ("the token " ^
+          (if p_con = "" then "\"" ^ p_prm ^ "\""
+           else if p_prm = "" then p_con
+           else p_con ^ " \"" ^ p_prm ^ "\"") ^
+          " does not respect Plexer rules"))
+;;
+
 let using_token kwd_table (p_con, p_prm) =
   match p_con with
     "" ->
       begin try let _ = Hashtbl.find kwd_table p_prm in () with
         Not_found ->
           if check_keyword p_prm then Hashtbl.add kwd_table p_prm p_prm
-          else
-            raise
-              (Token.Error
-                 ("\
-the token \"" ^ p_prm ^
-                    "\" does not respect Plexer rules"))
+          else error_no_respect_rules p_con p_prm
       end
-  | "LIDENT" | "UIDENT" | "TILDEIDENT" | "TILDEIDENTCOLON" | "QUESTIONIDENT" |
+  | "LIDENT" ->
+      if p_prm = "" then ()
+      else
+        begin match p_prm.[0] with
+          'A'..'Z' -> error_no_respect_rules p_con p_prm
+        | _ -> ()
+        end
+  | "UIDENT" ->
+      if p_prm = "" then ()
+      else
+        begin match p_prm.[0] with
+          'a'..'z' -> error_no_respect_rules p_con p_prm
+        | _ -> ()
+        end
+  | "TILDEIDENT" | "TILDEIDENTCOLON" | "QUESTIONIDENT" |
     "QUESTIONIDENTCOLON" | "INT" | "FLOAT" | "CHAR" | "STRING" | "QUOTATION" |
     "ANTIQUOT" | "LOCATE" | "EOI" ->
       ()

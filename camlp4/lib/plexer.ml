@@ -436,6 +436,16 @@ value check_keyword s =
   try check_keyword_stream (Stream.of_string s) with _ -> False
 ;
 
+value error_no_respect_rules p_con p_prm =
+  raise
+     (Token.Error
+         ("the token " ^
+          (if p_con = "" then "\"" ^ p_prm ^ "\""
+           else if p_prm = "" then p_con
+           else p_con ^ " \"" ^ p_prm ^ "\"") ^
+          " does not respect Plexer rules"))
+;
+
 value using_token kwd_table (p_con, p_prm) =
   match p_con with
   [ "" ->
@@ -445,13 +455,20 @@ value using_token kwd_table (p_con, p_prm) =
       with
       [ Not_found ->
           if check_keyword p_prm then Hashtbl.add kwd_table p_prm p_prm
-          else
-            raise
-              (Token.Error
-                 ("\
-the token \"" ^ p_prm ^
-                    "\" does not respect Plexer rules")) ]
-  | "LIDENT" | "UIDENT" | "TILDEIDENT" | "TILDEIDENTCOLON" | "QUESTIONIDENT" |
+          else error_no_respect_rules p_con p_prm ]
+  | "LIDENT" ->
+      if p_prm = "" then ()
+      else
+        match p_prm.[0] with
+        [ 'A'..'Z' -> error_no_respect_rules p_con p_prm
+        | _ -> () ]
+  | "UIDENT" ->
+      if p_prm = "" then ()
+      else
+        match p_prm.[0] with
+        [ 'a'..'z' -> error_no_respect_rules p_con p_prm
+        | _ -> () ]
+  | "TILDEIDENT" | "TILDEIDENTCOLON" | "QUESTIONIDENT" |
     "QUESTIONIDENTCOLON" | "INT" | "FLOAT" | "CHAR" | "STRING" | "QUOTATION" |
     "ANTIQUOT" | "LOCATE" | "EOI" ->
       ()

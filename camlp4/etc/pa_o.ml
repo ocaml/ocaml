@@ -592,6 +592,8 @@ EXTEND
       | s = FLOAT -> <:expr< $flo:s$ >>
       | s = STRING -> <:expr< $str:s$ >>
       | c = CHAR -> <:expr< $chr:c$ >>
+      | UIDENT "True" -> <:expr< $uid:" True"$ >>
+      | UIDENT "False" -> <:expr< $uid:" False"$ >>
       | i = expr_ident -> i
       | s = "false" -> <:expr< False >>
       | s = "true" -> <:expr< True >>
