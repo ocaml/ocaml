@@ -406,3 +406,6 @@ type g = int;;
 type 'a t = unit constraint 'a = g;;
 type 'a u = 'a and 'a v = 'a u t;;
 type 'a u = 'a and 'a v = 'a u t constraint 'a = int;;
+
+(* Example of wrong expansion *)
+type 'a u = < m : 'a v > and 'a v = 'a list u;;

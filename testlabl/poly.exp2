@@ -254,4 +254,6 @@ Constraints are not satisfied in this type.
 Type 'a u t should be an instance of g t
 # type 'a u = 'a constraint 'a = g
 type 'a v = 'a u t constraint 'a = int
+#     Characters 38-58:
+In the definition of v, type 'a list u should be 'a u
 # 
