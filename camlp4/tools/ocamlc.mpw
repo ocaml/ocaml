@@ -1,0 +1,3 @@
+# $Id$
+
+"{OTOP}boot:ocamlrun" "{OTOP}ocamlc" -I "{OTOP}stdlib:" {"parameters"}
