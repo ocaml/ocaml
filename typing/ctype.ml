@@ -1626,12 +1626,14 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
       | Reither(c1, tl1, _, e1), Reither(c2, tl2, _, e2) ->
           if c1 && not c2 then raise(Unify []);
           e1 := Some f2;
-          begin match tl2 with
-            [t2] when tl1 <> [] -> List.iter
-                (fun t1 -> moregen inst_nongen type_pairs env t1 t2) tl1
-          | _ ->
-              if List.length tl1 <> List.length tl2 then raise (Unify []);
-              List.iter2 (moregen inst_nongen type_pairs env) tl1 tl2
+          if List.length tl1 = List.length tl2 then
+            List.iter2 (moregen inst_nongen type_pairs env) tl1 tl2
+          else begin match tl2 with
+            t2 :: _ ->
+              List.iter (fun t1 -> moregen inst_nongen type_pairs env t1 t2)
+                tl1
+          | [] ->
+              if tl1 <> [] then raise (Unify [])
           end
       | Reither(true, [], _, e1), Rpresent None -> e1 := Some f2
       | Reither(_, _, _, e1), Rabsent -> e1 := Some f2
@@ -1776,9 +1778,18 @@ and eqtype_row rename type_pairs subst env row1 row2 =
       match row_field_repr f1, row_field_repr f2 with
         Rpresent(Some t1), Rpresent(Some t2) ->
           eqtype rename type_pairs subst env t1 t2
-      | Reither(c1, tl1, _, _), Reither(c2, tl2, _, _)
-        when c1 = c2 && List.length tl1 = List.length tl2 ->
-          List.iter2 (eqtype rename type_pairs subst env) tl1 tl2
+      | Reither(true, [], _, _), Reither(true, [], _, _) ->
+          ()
+      | Reither(false, t1::tl1, _, _), Reither(false, t2::tl2, _, _) ->
+          eqtype rename type_pairs subst env t1 t2;
+          if List.length tl1 = List.length tl2 then
+            (* if same length allow different types (meaning?) *)
+            List.iter2 (eqtype rename type_pairs subst env) tl1 tl2
+          else begin
+            (* otherwise everything must be equal *)
+            List.iter (eqtype rename type_pairs subst env t1) tl2;
+            List.iter (fun t1 -> eqtype rename type_pairs subst env t1 t2) tl1
+          end
       | Rpresent None, Rpresent None -> ()
       | Rabsent, Rabsent -> ()
       | _ -> raise (Unify []))
