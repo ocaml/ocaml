@@ -1,4 +1,5 @@
 Current :
+OK - add: new ocamldoc man page, thanks to Smauel Mimram
 OK - fix: useless parenthesis around agruments of arguments of a type constructor in
      type definitions, and aournd arguments of exceptions in exception definitions.
 OK - fix: blank lines in verbatim, latex, code pre, code and ele ref modes

@@ -310,7 +310,7 @@ install: dummy
 	$(MKDIR) -p $(INSTALL_BINDIR)
 	$(MKDIR) -p $(INSTALL_LIBDIR)
 	$(CP) $(OCAMLDOC) $(INSTALL_BINDIR)/$(OCAMLDOC).exe
-	$(CP) ocamldoc.hva *.cmi $(GENERATORS) $(OCAMLDOC_LIBCMA) $(INSTALL_LIBDIR)
+	$(CP) ocamldoc.hva *.cmi $(OCAMLDOC_LIBCMA) $(INSTALL_LIBDIR)
 	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_LIBDIR)
 
 installopt:
