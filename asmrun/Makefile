@@ -50,8 +50,6 @@ floats.c: ../byterun/floats.c
 	ln -s ../byterun/floats.c floats.c
 str.c: ../byterun/str.c
 	ln -s ../byterun/str.c str.c
-array.c: ../byterun/array.c
-	ln -s ../byterun/array.c array.c
 io.c: ../byterun/io.c
 	ln -s ../byterun/io.c io.c
 extern.c: ../byterun/extern.c
