@@ -1,3 +1,30 @@
+Release 1.15:
+-------------
+
+* Caml Special Light now runs under Windows NT and 95. Many thanks to
+Kevin Gallo (Microsoft Research) who contributed his initial port.
+
+* csllex now generates tables for a table-driven automaton.
+The resulting lexers are smaller and run faster.
+
+* Completely automatic configuration script.
+
+* Typing: more stringent checking of module type definitions against
+manifest module type specifications.
+
+* Toplevel: recursive definitions of values now working.
+
+* Native-code compiler, all platforms:
+        toplevel "let"s with refutable patterns now working;
+        fixed bug in assignment to float record fields.
+
+* Native-code compiler, x86: fixed bug with tail calls (with more than
+4 arguments) from a function with a one-word stack frame.
+
+* Native-code compiler, Sparc: problem with -compact fixed.
+
+* Thread library: support for non-blocking writes; scheduler revised.
+
 Release 1.14:
 -------------
 

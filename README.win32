@@ -11,19 +11,15 @@ The base bytecode system (cslc, csltop, csllex, cslyacc, ...) runs without
 any additional tools.
 
 Linking Caml bytecode with C code (cslc -custom) requires the
-Microsoft Visual C++ compiler version 4.0.
+Microsoft Visual C++ compiler.
 
-The native-code compiler (cslopt) requires Visual C++ version 4.0
-and the Microsoft assembler MASM version 5.
-
-The cslmktop and cslcp commands are Bourne shell scripts.
-They can be run with the Korn shell available at
-ftp://ftp.winsite.com/pub/pc/winnt/misc/ntsh01.zip.
+The native-code compiler (cslopt) requires Visual C++ and the
+Microsoft assembler MASM version 5.
 
 
 INSTALLATION:
 
-The binary  distribution consists of a .zip archive file. This .zip
+The binary distribution consists in a .zip archive file. This .zip
 contains long filenames and cannot therefore be unpacked with pkunzip
 version 2. Use either Winzip (shareware) or the NT/95 version of unzip
 (freeware):
@@ -104,7 +100,7 @@ Unix system calls and require considerable work to run under Win32.
 CREDITS:
 
 The initial port of Caml Special Light to Windows NT was done by Kevin
-Gallo at Microsoft Research, who kindly contributed its changes to the
+Gallo at Microsoft Research, who kindly contributed his changes to the
 Caml Special Light project.
 
 The graphical user interface for the toplevel is due to Jean-Marie

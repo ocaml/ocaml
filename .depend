@@ -286,7 +286,7 @@ asmcomp/arch_mips.cmx: utils/misc.cmx
 asmcomp/arch_sparc.cmo: utils/misc.cmi 
 asmcomp/arch_sparc.cmx: utils/misc.cmx 
 asmcomp/asmgen.cmo: utils/clflags.cmo asmcomp/closure.cmi asmcomp/cmm.cmi \
-    asmcomp/cmmgen.cmi asmcomp/coloring.cmi asmcomp/emit.cmi \
+    asmcomp/cmmgen.cmi asmcomp/coloring.cmi utils/config.cmi asmcomp/emit.cmi \
     asmcomp/emitaux.cmi asmcomp/interf.cmi asmcomp/linearize.cmi \
     asmcomp/liveness.cmi utils/misc.cmi asmcomp/printcmm.cmi \
     asmcomp/printlinear.cmi asmcomp/printmach.cmi asmcomp/proc.cmi \
@@ -294,7 +294,7 @@ asmcomp/asmgen.cmo: utils/clflags.cmo asmcomp/closure.cmi asmcomp/cmm.cmi \
     asmcomp/selection.cmi asmcomp/spill.cmi asmcomp/split.cmi \
     asmcomp/asmgen.cmi 
 asmcomp/asmgen.cmx: utils/clflags.cmx asmcomp/closure.cmx asmcomp/cmm.cmx \
-    asmcomp/cmmgen.cmx asmcomp/coloring.cmx asmcomp/emit.cmx \
+    asmcomp/cmmgen.cmx asmcomp/coloring.cmx utils/config.cmx asmcomp/emit.cmx \
     asmcomp/emitaux.cmx asmcomp/interf.cmx asmcomp/linearize.cmx \
     asmcomp/liveness.cmx utils/misc.cmx asmcomp/printcmm.cmx \
     asmcomp/printlinear.cmx asmcomp/printmach.cmx asmcomp/proc.cmx \
@@ -403,10 +403,18 @@ asmcomp/proc_i386.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi asmcomp/mach.cmi \
     utils/misc.cmi asmcomp/reg.cmi 
 asmcomp/proc_i386.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx asmcomp/mach.cmx \
     utils/misc.cmx asmcomp/reg.cmx 
+asmcomp/proc_i386nt.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi asmcomp/mach.cmi \
+    utils/misc.cmi asmcomp/reg.cmi 
+asmcomp/proc_i386nt.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx asmcomp/mach.cmx \
+    utils/misc.cmx asmcomp/reg.cmx 
 asmcomp/proc_mips.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi asmcomp/mach.cmi \
     utils/misc.cmi asmcomp/reg.cmi 
 asmcomp/proc_mips.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx asmcomp/mach.cmx \
     utils/misc.cmx asmcomp/reg.cmx 
+asmcomp/proc_power.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi utils/config.cmi \
+    asmcomp/mach.cmi utils/misc.cmi asmcomp/reg.cmi 
+asmcomp/proc_power.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx utils/config.cmx \
+    asmcomp/mach.cmx utils/misc.cmx asmcomp/reg.cmx 
 asmcomp/proc_sparc.cmo: asmcomp/arch.cmo asmcomp/cmm.cmi utils/config.cmi \
     asmcomp/mach.cmi utils/misc.cmi asmcomp/reg.cmi 
 asmcomp/proc_sparc.cmx: asmcomp/arch.cmx asmcomp/cmm.cmx utils/config.cmx \
