@@ -126,7 +126,7 @@ defaultentry:
 
 # Recompile the system using the bootstrap compiler
 all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
-  otherlibraries camlp4out $(DEBUGGER) ocamldoc
+  otherlibraries $(DEBUGGER) ocamldoc
 
 # The compilation of ocaml will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
@@ -226,12 +226,12 @@ cleanboot:
 
 # Compile the native-code compiler
 opt-core:runtimeopt ocamlopt libraryopt
-opt: runtimeopt ocamlopt libraryopt otherlibrariesopt camlp4opt
+opt: runtimeopt ocamlopt libraryopt otherlibrariesopt
 
 # Native-code versions of the tools
-opt.opt: checkstack core ocaml opt-core ocamlc.opt otherlibraries camlp4out \
+opt.opt: checkstack core ocaml opt-core ocamlc.opt otherlibraries \
 	 $(DEBUGGER) ocamldoc ocamlopt.opt otherlibrariesopt \
-	 camlp4opt ocamllex.opt ocamltoolsopt.opt camlp4optopt ocamldoc.opt
+	 ocamllex.opt ocamltoolsopt.opt ocamldoc.opt
 
 # Installation
 install: FORCE
@@ -262,7 +262,6 @@ install: FORCE
         done
 	cd ocamldoc; $(MAKE) install
 	if test -f ocamlopt; then $(MAKE) installopt; else :; fi
-	cd camlp4; $(MAKE) install BINDIR=$(BINDIR) LIBDIR=$(LIBDIR) MANDIR=$(MANDIR)
 	if test -f debugger/ocamldebug; then (cd debugger; $(MAKE) install); \
 	   else :; fi
 
@@ -600,19 +599,6 @@ partialclean::
 	cd debugger; $(MAKE) clean
 alldepend::
 	cd debugger; $(MAKE) depend
-
-# Camlp4
-
-camlp4out: ocamlc
-	cd camlp4; $(MAKE) all
-camlp4opt: ocamlopt
-	cd camlp4; $(MAKE) opt
-camlp4optopt: ocamlopt
-	cd camlp4; $(MAKE) opt.opt
-partialclean::
-	cd camlp4; $(MAKE) clean
-alldepend::
-	cd camlp4; $(MAKE) depend
 
 # Check that the stack limit is reasonable.
 

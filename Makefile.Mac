@@ -90,7 +90,7 @@ PERVASIVES = arg array buffer callback char digest filename format gc hashtbl ¶
 
 # Recompile the system using the bootstrap compiler
 all Ä runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml ¶
-      otherlibraries camlp4out maccaml
+      otherlibraries maccaml
 
 # The compilation of ocaml will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
@@ -212,10 +212,6 @@ install Ä $OutOfDate
     duplicate -y :toplevel:toploop.cmi :toplevel:topdirs.cmi "{LIBDIR}"
     directory :tools:
     domake install
-    directory ::
-    directory :camlp4:
-    execute :config:config.mpw
-    domake install -d LIBDIR="{LIBDIR}camlp4:"
     directory ::
     duplicate -y :man:ocaml.help "{HELPFILE}"
     for i in {OTHERLIBRARIES}
@@ -422,26 +418,6 @@ alldepend ÄÄ
       directory :otherlibs:{i}; domake depend; directory :::
     end
 
-
-# Camlp4
-
-camlp4out Ä ocamlc
-    directory :camlp4:
-    execute :config:config.mpw
-    domake all
-    directory ::
-
-partialclean ÄÄ
-    directory :camlp4:
-    execute :config:config.mpw
-    domake clean
-    directory ::
-
-alldepend ÄÄ
-    directory :camlp4:
-    execute :config:config.mpw
-    domake depend
-    directory ::
 
 # The standalone application
 
