@@ -35,11 +35,14 @@ let rec nth l n =
       if n > 0 then nth l (n-1) else
       invalid_arg "List.nth"
 
-let rec rev_append accu = function
-    [] -> accu
-  | a::l -> rev_append (a :: accu) l
+let append = (@)
 
-let rev l = rev_append [] l
+let rec rev_append l1 l2 =
+  match l1 with
+    [] -> l2
+  | a :: l -> rev_append l (a :: l2)
+
+let rev l = rev_append l []
 
 let rec flatten = function
     [] -> []
@@ -91,31 +94,31 @@ let rec fold_right2 f l1 l2 accu =
 
 let rec for_all p = function
     [] -> true
-  | a::l -> p a & for_all p l
+  | a::l -> p a && for_all p l
 
 let rec exists p = function
     [] -> false
-  | a::l -> p a or exists p l
+  | a::l -> p a || exists p l
 
 let rec for_all2 p l1 l2 =
   match (l1, l2) with
     ([], []) -> true
-  | (a1::l1, a2::l2) -> p a1 a2 & for_all2 p l1 l2
+  | (a1::l1, a2::l2) -> p a1 a2 && for_all2 p l1 l2
   | (_, _) -> invalid_arg "List.for_all2"
 
 let rec exists2 p l1 l2 =
   match (l1, l2) with
     ([], []) -> false
-  | (a1::l1, a2::l2) -> p a1 a2 or exists2 p l1 l2
+  | (a1::l1, a2::l2) -> p a1 a2 || exists2 p l1 l2
   | (_, _) -> invalid_arg "List.exists2"
 
 let rec mem x = function
     [] -> false
-  | a::l -> a = x or mem x l
+  | a::l -> a = x || mem x l
 
 let rec memq x = function
     [] -> false
-  | a::l -> a == x or memq x l
+  | a::l -> a == x || memq x l
 
 let rec assoc x = function
     [] -> raise Not_found
@@ -123,7 +126,7 @@ let rec assoc x = function
 
 let rec mem_assoc x = function
     [] -> false
-  | (a,b)::l -> a = x or mem_assoc x l
+  | (a,b)::l -> a = x || mem_assoc x l
 
 let rec assq x = function
     [] -> raise Not_found
