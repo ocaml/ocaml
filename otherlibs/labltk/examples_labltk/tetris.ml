@@ -643,7 +643,7 @@ let _ =
     bind w ~events:[`KeyPress] ~fields:[`KeySymString] ~action:
       begin fun e -> 
         match e.ev_KeySymString with
-        | "i"|"Left" ->
+        | "h"|"Left" ->
             let m = copy_block current in
             m.x <- m.x - 1;
             ignore (try_to_move m)
