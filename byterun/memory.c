@@ -26,6 +26,9 @@
 /* Allocate more memory from malloc for the heap.
    Return a block of at least the requested size (in words).
    Return NULL when out of memory.
+
+   Faudrait nettoyer tout ca pour decoupler heap_start de heap_base
+   et pour simplifier l'agrandissement de page_table.
 */
 static char *expand_heap (request)
      mlsize_t request;
@@ -35,25 +38,26 @@ static char *expand_heap (request)
   asize_t new_page_table_size;
   asize_t malloc_request;
   asize_t i, more_pages;
+  void *block;
 
   malloc_request = round_heap_chunk_size (Bhsize_wosize (request));
-  gc_message ("Growing heap to %ldk\n",
+  gc_message ("Growing heap to %luk bytes\n",
 	      (stat_heap_size + malloc_request) / 1024);
   mem = aligned_malloc (malloc_request + sizeof (heap_chunk_head),
-                        sizeof (heap_chunk_head));
+                        sizeof (heap_chunk_head), &block);
   if (mem == NULL){
     gc_message ("No room for growing heap\n", 0);
     return NULL;
   }
   mem += sizeof (heap_chunk_head);
-  (((heap_chunk_head *) mem) [-1]).size = malloc_request;
+  Chunk_size (mem) = malloc_request;
+  Chunk_block (mem) = block;
   Assert (Wosize_bhsize (malloc_request) >= request);
   Hd_hp (mem) = Make_header (Wosize_bhsize (malloc_request), 0, Blue);
 
   if (mem < heap_start){
     more_pages = -Page (mem);
   }else if (Page (mem + malloc_request) > page_table_size){
-    Assert (mem >= heap_end);
     more_pages = Page (mem + malloc_request) - page_table_size;
   }else{
     more_pages = 0;
@@ -81,13 +85,13 @@ static char *expand_heap (request)
     }
     bcopy (page_table, new_page_table + more_pages,
            page_table_size * sizeof(page_table_entry));
-    (((heap_chunk_head *) mem) [-1]).next = heap_start;
+    Chunk_next (mem) = heap_start;
     heap_start = mem;
   }else{
     char **last;
     char *cur;
 
-    if (mem >= heap_end) heap_end = mem + malloc_request;
+    if (mem + malloc_request > heap_end) heap_end = mem + malloc_request;
     if (more_pages != 0){
       for (i = page_table_size; i < new_page_table_size; i++){
         new_page_table [i] = Not_in_heap;
@@ -98,10 +102,10 @@ static char *expand_heap (request)
     last = &heap_start;
     cur = *last;
     while (cur != NULL && cur < mem){
-      last = &((((heap_chunk_head *) cur) [-1]).next);
+      last = &(Chunk_next (cur));
       cur = *last;
     }
-    (((heap_chunk_head *) mem) [-1]).next = cur;
+    Chunk_next (mem) = cur;
     *last = mem;
   }
 
@@ -116,6 +120,49 @@ static char *expand_heap (request)
   }
   stat_heap_size += malloc_request;
   return Bp_hp (mem);
+}
+
+/* Remove the heap chunk [chunk] from the heap and give the memory back
+   to [malloc].
+*/
+void shrink_heap (chunk)
+     char *chunk;
+{
+  char **cp;
+  int i;
+
+  /* Never deallocate the first block, because heap_start is both the
+     first block and the base address for page numbers, and we don't
+     want to shift the page table, it's too messy (see above).
+     It will never happen anyway, because of the way compaction works.
+     (see compact.c)
+  */
+  if (chunk == heap_start) return;
+
+  stat_heap_size -= Chunk_size (chunk);
+  gc_message ("Shrinking heap to %luk bytes\n", stat_heap_size / 1024);
+
+#ifdef DEBUG
+  {
+    mlsize_t i;
+    for (i = 0; i < Wsize_bsize (Chunk_size (chunk)); i++){
+      ((value *) chunk) [i] = not_random ();
+    }
+  }
+#endif
+
+  /* Remove [chunk] from the list of chunks. */
+  cp = &heap_start;
+  while (*cp != chunk) cp = &(Chunk_next (*cp));
+  *cp = Chunk_next (chunk);
+
+  /* Remove the pages of [chunk] from the page table. */
+  for (i = Page (chunk); i < Page (chunk + Chunk_size (chunk)); i++){
+    page_table [i] = Not_in_heap;
+  }
+
+  /* Free the [malloc]ed block that contains [chunk]. */
+  free (Chunk_block (chunk));
 }
 
 value alloc_shr (wosize, tag)
@@ -139,9 +186,12 @@ value alloc_shr (wosize, tag)
 
   Assert (Is_in_heap (Val_hp (hp)));
 
-  if (gc_phase == Phase_mark || (addr)hp >= (addr)gc_sweep_hp){
+  if (gc_phase == Phase_mark
+      || gc_phase == Phase_sweep && (addr)hp >= (addr)gc_sweep_hp){
     Hd_hp (hp) = Make_header (wosize, tag, Black);
   }else{
+    Assert (gc_phase == Phase_idle
+	    || gc_phase == Phase_sweep && (addr)hp < (addr)gc_sweep_hp);
     Hd_hp (hp) = Make_header (wosize, tag, White);
   }
   allocated_words += Whsize_wosize (wosize);

@@ -16,10 +16,12 @@
 
 #include "misc.h"
 
+typedef void (*scanning_action) P((value, value *));
+
 void oldify_local_roots P((void));
 void darken_all_roots P((void));
+void do_roots P((scanning_action));
 
-typedef void (*scanning_action) ();
 extern void (*scan_roots_hook) P((scanning_action));
 
 #endif /* _roots_ */

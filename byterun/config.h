@@ -70,9 +70,8 @@ typedef char schar;
 /* Minimum free size of stack (bytes); below that, it is reallocated. */
 #define Stack_threshold (256 * sizeof(value))
 
-/* Maximum sizes for the stack (bytes). */
-   
-#define Max_stack_size (131072 * sizeof(value))
+/* Default maximum size of the stack (words). */
+#define Max_stack_def (256 * 1024)
 
 
 /* Maximum size of a block allocated in the young generation (words). */
@@ -106,11 +105,18 @@ typedef char schar;
    Must be a multiple of [Page_size / sizeof (value)]. */
 #define Heap_chunk_def (62 * Page_size / sizeof (value))
 
+/* Default initial size of the major heap (bytes);
+   same constraints as for Heap_chunk_def. */
+#define Init_heap_def (62 * Page_size / sizeof (value))
+
 
 /* Default speed setting for the major GC.  The heap will grow until
    the dead objects and the free list represent this percentage of the
    heap size.  The rest of the heap is live objects. */
 #define Percent_free_def 30
+
+/* Default setting for the compacter: off */
+#define Max_percent_free_def 0
 
 
 #endif /* _config_ */

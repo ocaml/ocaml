@@ -24,24 +24,28 @@ type stat = {
   free_words : int;
   free_blocks : int;
   largest_free : int;
-  fragments : int
-}
+  fragments : int;
+  compactions : int
+};;
 
 type control = {
   mutable minor_heap_size : int;
   mutable major_heap_increment : int;
   mutable space_overhead : int;
-  mutable verbose : bool
-}
+  mutable verbose : bool;
+  mutable max_overhead : int;
+  mutable stack_limit : int
+};;
 
-external stat : unit -> stat = "gc_stat"
-external get : unit -> control = "gc_get"
-external set : control -> unit = "gc_set"
-external minor : unit -> unit = "gc_minor"
-external major : unit -> unit = "gc_major"
-external full_major : unit -> unit = "gc_full_major"
+external stat : unit -> stat = "gc_stat";;
+external get : unit -> control = "gc_get";;
+external set : control -> unit = "gc_set";;
+external minor : unit -> unit = "gc_minor";;
+external major : unit -> unit = "gc_major";;
+external full_major : unit -> unit = "gc_full_major";;
+external compact : unit -> unit = "gc_compaction";;
 
-open Printf
+open Printf;;
 
 let print_stat c =
   let st = stat () in
@@ -57,4 +61,6 @@ let print_stat c =
   fprintf c "free_words: %d\n" st.free_words;
   fprintf c "free_blocks: %d\n" st.free_blocks;
   fprintf c "largest_free: %d\n" st.largest_free;
-  fprintf c "fragments: %d\n" st.fragments
+  fprintf c "fragments: %d\n" st.fragments;
+  fprintf c "compactions: %d\n" st.compactions;
+;;

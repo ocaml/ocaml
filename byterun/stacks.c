@@ -28,7 +28,10 @@ value * trapsp;
 value * trap_barrier;
 value global_data;
 
-void init_stack()
+unsigned long max_stack_size;
+
+void init_stack (initial_max_size)
+     unsigned long initial_max_size;
 {
   stack_low = (value *) stat_alloc(Stack_size);
   stack_high = stack_low + Stack_size / sizeof (value);
@@ -36,6 +39,7 @@ void init_stack()
   extern_sp = stack_high;
   trapsp = stack_high;
   trap_barrier = stack_high + 1;
+  max_stack_size = initial_max_size;
 }
 
 void realloc_stack()
@@ -46,11 +50,10 @@ void realloc_stack()
 
   Assert(extern_sp >= stack_low);
   size = stack_high - stack_low;
-  if (size >= Max_stack_size)
-    raise_out_of_memory();
+  if (size >= max_stack_size) raise_out_of_memory();
   size *= 2;
-  gc_message ("Growing stack to %ld kB.\n",
-	      (long) size * sizeof(value) / 1024);
+  gc_message ("Growing stack to %luk bytes\n",
+	      (unsigned long) size * sizeof(value) / 1024);
   new_low = (value *) stat_alloc(size * sizeof(value));
   new_high = new_low + size;
 
@@ -74,3 +77,13 @@ void realloc_stack()
 #undef shift
 }
 
+void change_max_stack_size (new_max_size)
+     unsigned long new_max_size;
+{
+  asize_t size = stack_high - extern_sp + Stack_threshold / sizeof (value);
+
+  if (new_max_size < size) new_max_size = size;
+  gc_message ("Changing stack limit to %luk bytes\n",
+	      new_max_size * sizeof (value) / 1024);
+  max_stack_size = new_max_size;
+}

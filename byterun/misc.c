@@ -158,15 +158,17 @@ void memmov (dst, src, length)
 
 #endif /* USING_MEMMOV */
 
-char *aligned_malloc (size, modulo)
+char *aligned_malloc (size, modulo, block)
      asize_t size;
      int modulo;
+     void **block;      /* output */
 {
   char *raw_mem;
   unsigned long aligned_mem;
                                                  Assert (modulo < Page_size);
   raw_mem = (char *) malloc (size + Page_size);
   if (raw_mem == NULL) return NULL;
+  *block = raw_mem;
   raw_mem += modulo;		/* Address to be aligned */
   aligned_mem = (((unsigned long) raw_mem / Page_size + 1) * Page_size);
   return (char *) (aligned_mem - modulo);

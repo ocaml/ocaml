@@ -90,27 +90,33 @@ void oldify_local_roots ()
 
 void darken_all_roots ()
 {
+  do_roots (darken);
+}
+
+void do_roots (f)
+     scanning_action f;
+{
   register value * sp;
   value * block;
   struct global_root * gr;
 
   /* Global variables */
-  darken(global_data);
+  f(global_data, &global_data);
 
   /* The stack */
   for (sp = extern_sp; sp < stack_high; sp++) {
-    darken (*sp);
+    f (*sp, sp);
   }
   /* Local C roots */
   for (block = local_roots; block != NULL; block = (value *) block [1]){
     for (sp = block - (long) block [0]; sp < block; sp++){
-      darken (*sp);
+      f (*sp, sp);
     }
   }
   /* Global C roots */
   for (gr = global_roots; gr != NULL; gr = gr->next) {
-    darken (*(gr->root));
+    f (*(gr->root), gr->root);
   }
   /* Hook */
-  if (scan_roots_hook != NULL) (*scan_roots_hook)(darken);
+  if (scan_roots_hook != NULL) (*scan_roots_hook)(f);
 }

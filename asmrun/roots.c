@@ -220,6 +220,12 @@ void oldify_local_roots ()
 
 void darken_all_roots ()
 {
+  do_roots (darken);
+}
+
+void do_roots (f)
+     scanning_action f;
+{
   char * sp;
   unsigned long retaddr;
   frame_descr * d;
@@ -234,7 +240,7 @@ void darken_all_roots ()
   for (i = 0; caml_globals[i] != 0; i++) {
     glob = caml_globals[i];
     for (j = 0; j < Wosize_val(glob); j++)
-      darken(Field(glob, j));
+      f (Field (glob, j), &Field (glob, j));
   }
 
   /* The stack */
@@ -255,9 +261,9 @@ void darken_all_roots ()
       for (p = d->live_ofs, n = d->num_live; n > 0; n--, p++) {
         ofs = *p;
         if (ofs & 1) {
-          darken(gc_entry_regs[ofs >> 1]);
+          f (gc_entry_regs[ofs >> 1], &gc_entry_regs[ofs >> 1]);
         } else {
-          darken(*((value *)(sp + ofs)));
+          f (*(value *)(sp + ofs), (value *)(sp + ofs));
         }
       }
       /* Move to next frame */
@@ -280,14 +286,13 @@ void darken_all_roots ()
   /* Local C roots */
   for (block = local_roots; block != NULL; block = (value *) block [1]){
     for (root = block - (long) block [0]; root < block; root++){
-      darken (*root);
+      f (*root, root);
     }
   }
   /* Global C roots */
   for (gr = global_roots; gr != NULL; gr = gr->next) {
-    darken (*(gr->root));
+    f (*(gr->root), gr->root);
   }
   /* Hook */
-  if (scan_roots_hook != NULL) (*scan_roots_hook)(darken);
+  if (scan_roots_hook != NULL) (*scan_roots_hook)(f);
 }
-

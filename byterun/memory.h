@@ -33,6 +33,7 @@ char * stat_alloc P((asize_t));	             /* Size in bytes. */
 void stat_free P((char *));
 char * stat_resize P((char *, asize_t));     /* Size in bytes. */
 
+/* void shrink_heap P((char *));       Only used in compact.c */
 
 #ifdef NATIVE_CODE
 #define Garbage_collection_function garbage_collection
@@ -61,7 +62,7 @@ char * stat_resize P((char *, asize_t));     /* Size in bytes. */
   value _old_ = *(fp);                                                      \
   *(fp) = (val);                                                            \
   if (Is_in_heap (fp)){                                                     \
-    if (gc_phase == Phase_mark) darken (_old_);                             \
+    if (gc_phase == Phase_mark) darken (_old_, NULL);                       \
     if (Is_block (val) && Is_young (val)                                    \
 	&& ! (Is_block (_old_) && Is_young (_old_))){                       \
       *ref_table_ptr++ = (fp);                                              \

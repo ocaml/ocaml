@@ -19,9 +19,16 @@
 #include "misc.h"
 
 typedef struct {
-  asize_t size;
+  void *block;           /* address of the malloced block this chunk live in */
+  asize_t alloc;         /* in bytes, used for compaction */
+  asize_t size;          /* in bytes */
   char *next;
 } heap_chunk_head;
+
+#define Chunk_size(c) (((heap_chunk_head *) (c)) [-1]).size
+#define Chunk_alloc(c) (((heap_chunk_head *) (c)) [-1]).alloc
+#define Chunk_next(c) (((heap_chunk_head *) (c)) [-1]).next
+#define Chunk_block(c) (((heap_chunk_head *) (c)) [-1]).block
 
 extern int gc_phase;
 extern unsigned long allocated_words;
@@ -29,6 +36,7 @@ extern unsigned long extra_heap_memory;
 
 #define Phase_mark 0
 #define Phase_sweep 1
+#define Phase_idle 2
 
 #ifdef __alpha
 typedef int page_table_entry;
@@ -52,7 +60,7 @@ extern char *gc_sweep_hp;
 
 void init_major_heap P((asize_t));
 asize_t round_heap_chunk_size P((asize_t));
-void darken P((value));
+void darken P((value, value *));
 void major_collection_slice P((void));
 void major_collection P((void));
 void finish_major_cycle P((void));

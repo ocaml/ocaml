@@ -26,7 +26,8 @@ type stat = {
   free_words : int;
   free_blocks : int;
   largest_free : int;
-  fragments : int
+  fragments : int;
+  compactions : int
 }
   (* The memory management counters are returned in a [stat] record.
      All the numbers are computed since the start of the program.
@@ -51,6 +52,7 @@ type stat = {
              1-words free blocks placed between two live objects.  They
              cannot be inserted in the free list, thus they are not available
              for allocation.
+-     [compactions]  Number of heap compactions.
 
      The total amount of memory allocated by the program is (in words)
      [minor_words + major_words - promoted_words].  Multiply by
@@ -62,7 +64,9 @@ type control = {
   mutable minor_heap_size : int;
   mutable major_heap_increment : int;
   mutable space_overhead : int;
-  mutable verbose : bool
+  mutable verbose : bool;
+  mutable max_overhead : int;
+  mutable stack_limit : int
 }
 
   (* The GC parameters are given as a [control] record.  The fields are:
@@ -77,7 +81,17 @@ type control = {
              objects more eagerly) if [space_overhead] is smaller.
              The computation of the GC speed assumes that the amount
              of live data is constant.
+-     [max_overhead]  Heap compaction is triggered when the estimated amount
+             of free memory is more than [max_overhead] percent of the amount
+             of live data.  If [max_overhead] is set to 0, heap compaction
+             is never triggered.  If [max_overhead] is set to 1, heap
+             compaction is triggered at the end of each major GC cycle
+	     (this last setting is intended for testing purposes only).
+	     The default is 0 (i.e. compaction is never triggered).
 -     [verbose]  This flag controls the GC messages on standard error output.
+-     [stack_limit]  The maximum size of the stack (in words).  This is only
+             relevant to the byte-code runtime, as the native code runtime
+             uses the operating system's stack.
   *)
 
 external stat : unit -> stat = "gc_stat"
@@ -104,3 +118,6 @@ external major : unit -> unit = "gc_major"
 external full_major : unit -> unit = "gc_full_major"
   (* Finish the current major collection cycle and perform a complete
      new cycle.  This will collect all currently unreachable objects. *)
+external compact : unit -> unit = "gc_compaction";;
+  (* Perform a full major collection and compact the heap.  Note that heap
+     compaction is a lengthy operation. *)

@@ -130,10 +130,15 @@ Algorithm:
 
 */
 
-/* Configuration parameters flags */
+/* Configuration parameters and flags */
 
-static int verbose_init = 0, percent_free_init = Percent_free_def;
-static long minor_heap_init = Minor_heap_def, heap_chunk_init = Heap_chunk_def;
+static int verbose_init = 0;
+static int percent_free_init = Percent_free_def;
+static int max_percent_free_init = Max_percent_free_def;
+static unsigned long minor_heap_init = Minor_heap_def;
+static unsigned long heap_chunk_init = Heap_chunk_def;
+static unsigned long heap_size_init = Init_heap_def;
+static unsigned long max_stack_init = Max_stack_def;
 extern int trace_flag;
 
 /* Parse options on the command line */
@@ -162,7 +167,20 @@ static int parse_command_line(argv)
 
 /* Parse the CAMLRUNPARAM variable */
 /* The option letter for each runtime option is the first letter of the
-   last word of the ML name of the option (see [stdlib/gc.mli]). */
+   last word of the ML name of the option (see [stdlib/gc.mli]).
+   Except for l (maximum stack size) and h (initial heap size).
+*/
+
+static void scanmult (opt, var)
+     char *opt;
+     unsigned long *var;
+{
+  char mult = ' ';
+  sscanf (opt, "=%lu%c", var, &mult);
+  if (mult == 'k') *var = *var * 1024;
+  if (mult == 'M') *var = *var * (1024 * 1024);
+  if (mult == 'G') *var = *var * (1024 * 1024 * 1024);
+}
 
 static void parse_camlrunparam()
 {
@@ -170,9 +188,12 @@ static void parse_camlrunparam()
   if (opt != NULL){
     while (*opt != '\0'){
       switch (*opt++){
-      case 's': sscanf (opt, "=%ld", &minor_heap_init); break;
-      case 'i': sscanf (opt, "=%ld", &heap_chunk_init); break;
+      case 's':	scanmult (opt, &minor_heap_init); break;
+      case 'i': scanmult (opt, &heap_chunk_init); break;
+      case 'h': scanmult (opt, &heap_size_init); break;
+      case 'l': scanmult (opt, &max_stack_init); break;
       case 'o': sscanf (opt, "=%d", &percent_free_init); break;
+      case 'O': sscanf (opt, "=%d", &max_percent_free_init); break;
       case 'v': sscanf (opt, "=%d", &verbose_init); break;
       }
     }
@@ -222,9 +243,9 @@ void caml_main(argv)
   if (sigsetjmp(raise_buf.buf, 1) == 0) {
     external_raise = &raise_buf;
     /* Initialize the abstract machine */
-    init_gc (minor_heap_init, heap_chunk_init, percent_free_init,
-	     verbose_init);
-    init_stack();
+    init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
+             percent_free_init, max_percent_free_init, verbose_init);
+    init_stack (max_stack_init);
     init_atoms();
     /* Initialize the interpreter */
     interprete(NULL, 0);
@@ -275,9 +296,9 @@ void caml_startup_code(code, code_size, data, argv)
   if (sigsetjmp(raise_buf.buf, 1) == 0) {
     external_raise = &raise_buf;
     /* Initialize the abstract machine */
-    init_gc (minor_heap_init, heap_chunk_init, percent_free_init,
-	     verbose_init);
-    init_stack();
+    init_gc (minor_heap_init, heap_size_init, heap_chunk_init,
+	     percent_free_init, max_percent_free_init, verbose_init);
+    init_stack (max_stack_init);
     init_atoms();
     /* Initialize the interpreter */
     interprete(NULL, 0);

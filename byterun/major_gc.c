@@ -11,6 +11,7 @@
 
 /* $Id$ */
 
+#include "compact.h"
 #include "config.h"
 #include "fail.h"
 #include "freelist.h"
@@ -58,7 +59,7 @@ static void realloc_gray_vals ()
 
   Assert (gray_vals_cur == gray_vals_end);
   if (gray_vals_size < stat_heap_size / 128){
-    gc_message ("Growing gray_vals to %ldk\n",
+    gc_message ("Growing gray_vals to %luk bytes\n",
 		(long) gray_vals_size * sizeof (value) / 512);
     new = (value *) realloc ((char *) gray_vals,
                              2 * gray_vals_size * sizeof (value));
@@ -78,8 +79,9 @@ static void realloc_gray_vals ()
   }
 }
 
-void darken (v)
+void darken (v, p)
      value v;
+     value *p;  /* not used */
 {
   if (Is_block (v) && Is_in_heap (v)) {
     if (Tag_val(v) == Infix_tag) v -= Infix_offset_val(v);
@@ -93,6 +95,7 @@ void darken (v)
 
 static void start_cycle ()
 {
+  Assert (gc_phase == Phase_idle);
   Assert (gray_vals_cur == gray_vals);
   darken_all_roots();
   gc_phase = Phase_mark;
@@ -102,7 +105,7 @@ static void start_cycle ()
 static void mark_slice (work)
      long work;
 {
-  value * gray_vals_ptr;  /* Local copy of gray_vals_cur */
+  value *gray_vals_ptr;  /* Local copy of gray_vals_cur */
   value v, child;
   header_t hd;
   mlsize_t size, i;
@@ -139,12 +142,12 @@ static void mark_slice (work)
       work -= Whsize_wosize(size);
     }else if (markhp != NULL){
       if (markhp == limit){
-	chunk = (((heap_chunk_head *) chunk) [-1]).next;
+	chunk = Chunk_next (chunk);
 	if (chunk == NULL){
 	  markhp = NULL;
 	}else{
 	  markhp = chunk;
-	  limit = chunk + (((heap_chunk_head *) chunk) [-1]).size;
+	  limit = chunk + Chunk_size (chunk);
 	}
       }else{
 	if (Is_gray_val (Val_hp (markhp))){
@@ -157,7 +160,7 @@ static void mark_slice (work)
       heap_is_pure = 1;
       chunk = heap_start;
       markhp = chunk;
-      limit = chunk + (((heap_chunk_head *) chunk) [-1]).size;
+      limit = chunk + Chunk_size (chunk);
     }else{
       /* Marking is done. */
 
@@ -170,7 +173,7 @@ static void mark_slice (work)
       gc_phase = Phase_sweep;
       chunk = heap_start;
       gc_sweep_hp = chunk;
-      limit = chunk + (((heap_chunk_head *) chunk) [-1]).size;
+      limit = chunk + Chunk_size (chunk);
       work = 0;
     }
   }
@@ -237,23 +240,24 @@ static void sweep_slice (work)
       }
       Assert (gc_sweep_hp <= limit);
     }else{
-      chunk = (((heap_chunk_head *) chunk) [-1]).next;
+      chunk = Chunk_next (chunk);
       if (chunk == NULL){
-	/* Sweeping is done.  Start the next cycle. */
+	/* Sweeping is done. */
         ++ stat_major_collections;
-	work = 0;
-	start_cycle ();
+        work = 0;
+        gc_phase = Phase_idle;
       }else{
 	gc_sweep_hp = chunk;
-	limit = chunk + (((heap_chunk_head *) chunk) [-1]).size;
+	limit = chunk + Chunk_size (chunk);
       }
     }
   }
 }
 
+/* The main entry point for the GC.  Called at each minor GC. */
 void major_collection_slice ()
 {
-  /* Free memory at the start of the GC cycle:
+  /* Free memory at the start of the GC cycle (assumed):
                  FM = stat_heap_size * percent_free / 100 * 2/3
      Proportion of free memory consumed since the previous slice:
                  PH = allocated_words / FM
@@ -279,6 +283,8 @@ void major_collection_slice ()
 
 #define Margin 100  /* Make it a little faster to be on the safe side. */
 
+  if (gc_phase == Phase_idle) start_cycle ();
+
   if (gc_phase == Phase_mark){
     mark_slice (2 * (100 - percent_free)
 		* (allocated_words * 3 / percent_free / 2
@@ -292,17 +298,26 @@ void major_collection_slice ()
 		 + Margin);
     gc_message ("$", 0);
   }
+
+  if (gc_phase == Phase_idle) compact_heap_maybe ();
+
   stat_major_words += allocated_words;
   allocated_words = 0;
   extra_heap_memory = 0;
 }
 
 /* The minor heap must be empty when this function is called. */
+/* This does not call compact_heap_maybe because the estimations of
+   free and live memory are only valid for a cycle done incrementally.
+   Besides, this function is called by compact_heap_maybe.
+*/
 void finish_major_cycle ()
 {
+  if (gc_phase == Phase_idle) start_cycle ();
   if (gc_phase == Phase_mark) mark_slice (LONG_MAX);
   Assert (gc_phase == Phase_sweep);
   sweep_slice (LONG_MAX);
+  Assert (gc_phase == Phase_idle);
   stat_major_words += allocated_words;
   allocated_words = 0;
 }
@@ -325,17 +340,19 @@ void init_major_heap (heap_size)
      asize_t heap_size;
 {
   asize_t i;
+  void *block;
 
   stat_heap_size = round_heap_chunk_size (heap_size);
   Assert (stat_heap_size % Page_size == 0);
   heap_start = aligned_malloc (stat_heap_size + sizeof (heap_chunk_head),
-			       sizeof (heap_chunk_head));
+			       sizeof (heap_chunk_head), &block);
   if (heap_start == NULL)
     fatal_error ("Fatal error: not enough memory for the initial heap.\n");
   heap_start += sizeof (heap_chunk_head);
   Assert ((unsigned long) heap_start % Page_size == 0);
-  (((heap_chunk_head *) heap_start) [-1]).size = stat_heap_size;
-  (((heap_chunk_head *) heap_start) [-1]).next = NULL;
+  Chunk_size (heap_start) = stat_heap_size;
+  Chunk_next (heap_start) = NULL;
+  Chunk_block (heap_start) = block;
   heap_end = heap_start + stat_heap_size;
   Assert ((unsigned long) heap_end % Page_size == 0);
   page_table_size = 4 * stat_heap_size / Page_size;
@@ -352,9 +369,7 @@ void init_major_heap (heap_size)
   Hd_hp (heap_start) = Make_header (Wosize_bhsize (stat_heap_size), 0, Blue);
   fl_init_merge ();
   fl_merge_block (Bp_hp (heap_start));
-  /* We start the major GC in the marking phase, just after the roots have been
-     darkened. (Since there are no roots, we don't have to darken anything.) */
-  gc_phase = Phase_mark;
+  gc_phase = Phase_idle;
   gray_vals_size = 2048;
   gray_vals = (value *) malloc (gray_vals_size * sizeof (value));
   if (gray_vals == NULL)

@@ -8,7 +8,7 @@ COBJS=startup.obj main.obj fail.obj roots.obj signals.obj \
   compare.obj ints.obj floats.obj str.obj array.obj io.obj extern.obj \
   intern.obj hash.obj sys.obj parsing.obj gc_ctrl.obj terminfo.obj \
   md5.obj obj.obj lexing.obj wincmdline.obj printexc.obj callback.obj \
-  weak.obj
+  weak.obj compact.obj
 
 ASMOBJS=$(ARCH)nt.obj
 
@@ -73,6 +73,8 @@ callback.c: ../byterun/callback.c
 	cp ../byterun/callback.c callback.c
 weak.c: ../byterun/weak.c
 	cp ../byterun/weak.c weak.c
+compact.c: ../byterun/compact.c
+	cp ../byterun/compact.c compact.c
 
 LINKEDFILES=misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c \
   compare.c ints.c floats.c str.c io.c extern.c intern.c hash.c sys.c \

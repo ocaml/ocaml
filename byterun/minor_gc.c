@@ -171,7 +171,7 @@ void realloc_ref_table ()
 
     ref_table_size *= 2;
     sz = (ref_table_size + ref_table_reserve) * sizeof (value *);
-    gc_message ("Growing ref_table to %ldk\n", (long) sz / 1024);
+    gc_message ("Growing ref_table to %ldk bytes\n", (long) sz / 1024);
     ref_table = (value **) realloc ((char *) ref_table, sz);
     if (ref_table == NULL) fatal_error ("Fatal error: ref_table overflow\n");
     ref_table_end = ref_table + ref_table_size + ref_table_reserve;

@@ -93,7 +93,11 @@ void gc_message P((char *, unsigned long));
 /* Memory routines */
 
 void memmov P((char *, char *, unsigned long));
-char * aligned_malloc P((asize_t, int));
+char *aligned_malloc P((asize_t, int, void **));
+
+#ifdef DEBUG
 unsigned long not_random P((void));
+#endif
+
 
 #endif /* _misc_ */

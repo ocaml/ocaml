@@ -22,9 +22,10 @@ extern long
      stat_major_words,
      stat_minor_collections,
      stat_major_collections,
-     stat_heap_size;
+     stat_heap_size,
+     stat_compactions;
 
-void init_gc P((long, long, int, int));
+void init_gc P((unsigned long, unsigned long, unsigned long, int, int, int));
 
 
 #endif /* _gc_ctrl_ */

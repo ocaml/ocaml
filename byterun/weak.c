@@ -66,7 +66,7 @@ value weak_get (ar, n)        /* ML */
     res = None_val;
   }else{
     r[0] = Field (ar, offset);
-    darken (r[0]);
+    darken (r[0], NULL);
     Alloc_small (res, 1, Some_tag);
     Field (res, 0) = r[0];
   }

@@ -165,6 +165,8 @@ typedef opcode_t * code_t;
 
 /* If tag == Infix_tag : an infix header inside a closure */
 /* Infix_tag must be odd so that the infix header is scanned as an integer */
+/* Infix_tag must be 1 modulo 4 and infix headers can only occur in objects
+   with tag Closure_tag (see compact.c). */
 
 #define Infix_tag 249
 #define Infix_offset_hd(hd) (Bosize_hd(hd))

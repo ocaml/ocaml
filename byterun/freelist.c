@@ -43,6 +43,8 @@ static char *fl_last = NULL;     /* Last block in the list.  Only valid
                                     just after fl_allocate returned NULL. */
 char *fl_merge = Fl_head;        /* Current insertion pointer.  Managed
                                     jointly with [sweep_slice]. */
+asize_t fl_cur_size = 0;         /* How many free words were added since
+				    the latest fl_init_merge. */
 
 #define Next(b) (((block *) (b))->next_bp)
 
@@ -143,9 +145,18 @@ char *fl_allocate (wo_sz)
 void fl_init_merge ()
 {
   fl_merge = Fl_head;
+  fl_cur_size = 0;
 #ifdef DEBUG
   fl_check ();
 #endif
+}
+
+/* This is called by compact_heap. */
+void fl_reset ()
+{
+  Next (Fl_head) = 0;
+  fl_prev = Fl_head;
+  fl_init_merge ();
 }
 
 /* [fl_merge_block] returns the head pointer of the next block after [bp],
@@ -155,6 +166,8 @@ char *fl_merge_block (bp)
 {
   char *prev, *cur, *adj;
   header_t hd = Hd_bp (bp);
+
+  fl_cur_size += Whsize_hd (hd);
   
 #ifdef DEBUG
   {

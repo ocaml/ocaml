@@ -12,26 +12,28 @@
 /* $Id$ */
 
 #include "alloc.h"
+#include "compact.h"
 #include "gc.h"
 #include "gc_ctrl.h"
 #include "major_gc.h"
 #include "minor_gc.h"
 #include "misc.h"
 #include "mlvalues.h"
+#include "stacks.h"
 
 long stat_minor_words = 0,
      stat_promoted_words = 0,
      stat_major_words = 0,
      stat_minor_collections = 0,
      stat_major_collections = 0,
-     stat_heap_size = 0;           /* bytes */
+     stat_heap_size = 0,           /* bytes */
+     stat_compactions = 0;
 
 extern asize_t major_heap_increment;  /* bytes; cf. major_gc.c */
 extern int percent_free;              /*        cf. major_gc.c */
+extern int percent_max;               /*        cf. compact.c */
 extern int verb_gc;                   /*        cf. misc.c */
 
-#define Chunk_size(c) (((heap_chunk_head *) (c)) [-1]).size
-#define Chunk_next(c) (((heap_chunk_head *) (c)) [-1]).next
 #define Next(hp) ((hp) + Bhsize_hp (hp))
 
 /* This will also thoroughly verify the heap if compiled in DEBUG mode. */
@@ -112,6 +114,7 @@ value gc_stat(v) /* ML */
   Field (res, 10) = Val_long (free_blocks);
   Field (res, 11) = Val_long (largest_free);
   Field (res, 12) = Val_long (fragments);
+  Field (res, 13) = Val_long (stat_compactions);
   return res;
 }
 
@@ -129,11 +132,18 @@ value gc_get(v) /* ML */
   return res;
 }
 
+#define Max(x,y) ((x) < (y) ? (y) : (x))
+
 static int norm_pfree (p)
      int p;
 {
-  if (p < 1) p = 1;
-  return p;
+  return Max (p, 1);
+}
+
+static int norm_pmax (p)
+     int p;
+{
+  return Max (p, 0);
 }
 
 static long norm_heapincr (i)
@@ -156,11 +166,15 @@ static long norm_minsize (s)
 value gc_set(v) /* ML */
     value v;
 {
-  int newpf;
+  int newpf, newpm;
   asize_t newheapincr;
   asize_t newminsize;
 
   verb_gc = Bool_val (Field (v, 3));
+
+#ifndef NATIVE_CODE
+  change_max_stack_size (Long_val (Field (v, 5)));
+#endif
 
   newpf = norm_pfree (Long_val (Field (v, 2)));
   if (newpf != percent_free){
@@ -168,17 +182,24 @@ value gc_set(v) /* ML */
     gc_message ("New space overhead: %d%%\n", percent_free);
   }
 
+  newpm = norm_pmax (Long_val (Field (v, 4)));
+  if (newpm != percent_max){
+    percent_max = newpm;
+    gc_message ("New max overhead: %d%%\n", percent_max);
+  }
+
   newheapincr = norm_heapincr (Bsize_wsize (Long_val (Field (v, 1))));
   if (newheapincr != major_heap_increment){
     major_heap_increment = newheapincr;
-    gc_message ("New heap increment size: %ldk\n", major_heap_increment/1024);
+    gc_message ("New heap increment size: %luk bytes\n",
+		major_heap_increment/1024);
   }
 
     /* Minor heap size comes last because it will trigger a minor collection
        (thus invalidating [v]) and it can raise [Out_of_memory]. */
   newminsize = norm_minsize (Bsize_wsize (Long_val (Field (v, 0))));
   if (newminsize != minor_heap_size){
-    gc_message ("New minor heap size: %ldk\n", newminsize/1024);
+    gc_message ("New minor heap size: %luk bytes\n", newminsize/1024);
     set_minor_heap_size (newminsize);
   }
   return Val_unit;
@@ -208,12 +229,25 @@ value gc_full_major(v) /* ML */
   return Val_unit;
 }
 
-void init_gc (minor_size, major_incr, percent_fr, verb)
-     long minor_size;
-     long major_incr;
+value gc_compaction(v) /* ML */
+     value v;
+{                                                    Assert (v == Val_unit);
+  minor_collection ();
+  finish_major_cycle ();
+  finish_major_cycle ();
+  compact_heap ();
+  return Val_unit;
+}
+
+void init_gc (minor_size, major_size, major_incr, percent_fr, percent_m, verb)
+     unsigned long minor_size;
+     unsigned long major_size;
+     unsigned long major_incr;
      int percent_fr;
+     int percent_m;
      int verb;
 {
+  unsigned long major_heap_size = Bsize_wsize (norm_heapincr (major_size));
 #ifdef DEBUG
   verb_gc = 1;
   gc_message ("*** O'Caml runtime: debug mode ***\n", 0);
@@ -222,8 +256,12 @@ void init_gc (minor_size, major_incr, percent_fr, verb)
   set_minor_heap_size (Bsize_wsize (norm_minsize (minor_size)));
   major_heap_increment = Bsize_wsize (norm_heapincr (major_incr));
   percent_free = norm_pfree (percent_fr);
-  init_major_heap (major_heap_increment);
+  percent_max = norm_pmax (percent_m);
+  init_major_heap (major_heap_size);
+  gc_message ("Initial minor heap size: %luk bytes\n", minor_heap_size / 1024);
+  gc_message ("Initial major heap size: %luk bytes\n", major_heap_size / 1024);
   gc_message ("Initial space overhead: %d%%\n", percent_free);
-  gc_message ("Initial heap increment: %ldk\n", major_heap_increment / 1024);
-  gc_message ("Initial minor heap size: %ldk\n", minor_heap_size / 1024);
+  gc_message ("Initial max overhead: %d%%\n", percent_max);
+  gc_message ("Initial heap increment: %ldk bytes\n",
+	      major_heap_increment / 1024);
 }
