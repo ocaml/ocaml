@@ -61,8 +61,8 @@ copy_unix_files:
 # This requires GNU cp
 	@cp ../unix/unix.mli unix.mli
 
-io.h: $(SYSTEM_INCLUDES)\io.h
-	copy $(SYSTEM_INCLUDES)\io.h io.h
+io.h: "$(SYSTEM_INCLUDES)\io.h"
+	copy "$(SYSTEM_INCLUDES)\io.h" io.h
 
 unix.cma: $(CAML_OBJS)
 	$(CAMLC) -a -linkall -o unix.cma $(CAML_OBJS) \
