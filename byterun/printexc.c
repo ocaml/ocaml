@@ -18,6 +18,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "backtrace.h"
+#include "callback.h"
 #include "debugger.h"
 #include "fail.h"
 #include "misc.h"
@@ -96,16 +97,38 @@ CAMLexport char * format_caml_exception(value exn)
 
 void fatal_uncaught_exception(value exn)
 {
-  char * msg = format_caml_exception(exn);
+  char * msg;
+  value * at_exit;
+#ifndef NATIVE_CODE
+  int saved_backtrace_active, saved_backtrace_pos;
+#endif
+  /* Build a string representation of the exception */
+  msg = format_caml_exception(exn);
+  /* Perform "at_exit" processing, ignoring all exceptions that may
+     be triggered by this */
+#ifndef NATIVE_CODE
+  saved_backtrace_active = backtrace_active;
+  saved_backtrace_pos = backtrace_pos;
+  backtrace_active = 0;
+#endif
+  at_exit = caml_named_value("Pervasives.do_at_exit");
+  if (at_exit != NULL) callback_exn(*at_exit, Val_unit);
+#ifndef NATIVE_CODE
+  backtrace_active = saved_backtrace_active;
+  backtrace_pos = saved_backtrace_pos;
+#endif
+  /* Display the uncaught exception */
 #ifdef HAS_UI
   ui_print_stderr("Fatal error: uncaught exception %s\n", msg);
 #else
   fprintf(stderr, "Fatal error: uncaught exception %s\n", msg);
 #endif
   free(msg);
+  /* Display the backtrace if available */
 #ifndef NATIVE_CODE
   if (backtrace_active && !debugger_in_use) print_exception_backtrace();
 #endif
+  /* Terminate the process */
 #ifdef HAS_UI
   ui_exit(2);
 #else
