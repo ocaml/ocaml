@@ -20,3 +20,5 @@ val output_lexdef:
       Lexgen.automata_entry list ->
       Syntax.location ->
       unit
+
+exception Table_overflow

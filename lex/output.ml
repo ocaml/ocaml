@@ -97,6 +97,8 @@ let output_entry sourcefile ic oc e =
 
 (* Main output function *)
 
+exception Table_overflow
+
 let output_lexdef sourcefile ic oc header tables entry_points trailer =
   Printf.printf "%d states, %d transitions, table size %d bytes\n"
     (Array.length tables.tbl_base)
@@ -105,6 +107,7 @@ let output_lexdef sourcefile ic oc header tables entry_points trailer =
           Array.length tables.tbl_default + Array.length tables.tbl_trans +
           Array.length tables.tbl_check));
   flush stdout;
+  if Array.length tables.tbl_trans > 0x8000 then raise Table_overflow;
   copy_chunk sourcefile ic oc header;
   output_tables oc tables;
   begin match entry_points with
