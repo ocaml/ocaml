@@ -36,4 +36,4 @@ let read_int () = int_of_string(read_line())
 let read_float () = float_of_string(read_line())
 
 let lexing_from_channel ic =
-  from_function (fun buf n -> input ic buf 0 n)
+  Lexing.from_function (fun buf n -> input ic buf 0 n)
