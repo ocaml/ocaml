@@ -11,13 +11,14 @@
 
 /* $Id$ */
 
+#include <string.h>
+#include <fcntl.h>
 #include <ndbm.h>
 #include <mlvalues.h>
 #include <alloc.h>
 #include <memory.h>
 #include <fail.h>
-
-#include <fcntl.h>
+#include <str.h>
 
 /* Quite close to sys_open_flags, but we need RDWR */
 static int dbm_open_flags[] = {
@@ -34,7 +35,9 @@ value caml_dbm_install_exn(bucket) /* ML */
   return Val_unit;
 }
 
-void raise_dbm(errmsg)
+static void raise_dbm P((char *errmsg)) Noreturn;
+
+static void raise_dbm(errmsg)
      char *errmsg;
 {
   raise_with_string(dbm_exn, errmsg);

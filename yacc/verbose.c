@@ -123,6 +123,8 @@ void print_conflicts(state)
     register action *p;
 
     symbol = -1;
+    act = 0;
+    number = 0;
     for (p = parser[state]; p; p = p->next)
     {
 	if (p->suppressed == 2)

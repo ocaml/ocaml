@@ -225,6 +225,7 @@ void remove_conflicts()
     RRtotal = 0;
     SRconflicts = NEW2(nstates, short);
     RRconflicts = NEW2(nstates, short);
+    pref = NULL;
     for (i = 0; i < nstates; i++)
     {
 	SRcount = 0;

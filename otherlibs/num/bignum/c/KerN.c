@@ -519,42 +519,28 @@ BigNum mm; BigNumLength ml; BigNum nn; BigNumLength nl; BigNumCarry carryin;
 
 {
     register BigNumProduct c = carryin;
+    register BigNumProduct save;
 
 
     ml -= nl;
-    /* test computed at compile time */
-    if (sizeof (BigNumProduct) > sizeof (BigNumDigit))
-    {
-	while (nl > 0)
-	{
-	    c += ((BigNumProduct)*mm) + *(nn++);
-	    *(mm++) = c;
-	    c >>= BN_DIGIT_SIZE;
-	    nl--;
-	}
-    }
-    else 
-    {
-	register BigNumProduct save;
 
-	while (nl > 0)
-	{
-	    save = *mm;
-	    c += save;
-	    if (c < save) 
-	    {
-		*(mm++) = *(nn++);
-		c = 1;
-	    }
-	    else
-	    {
-		save = *(nn++);
-		c += save;
-		*(mm++) = c;
-		c = (c < save) ? 1 : 0;
-	    }
-	    nl--;
-	}
+    while (nl > 0)
+    {
+        save = *mm;
+        c += save;
+        if (c < save) 
+        {
+            *(mm++) = *(nn++);
+            c = 1;
+        }
+        else
+        {
+            save = *(nn++);
+            c += save;
+            *(mm++) = c;
+            c = (c < save) ? 1 : 0;
+        }
+        nl--;
     }
 
     return (BnnAddCarry (mm, ml, (BigNumCarry) c));
@@ -611,44 +597,29 @@ BigNum mm; BigNumLength ml; BigNum nn; BigNumLength nl; BigNumCarry carryin;
 {
     register BigNumProduct 	c = carryin;
     register BigNumDigit 	invn;
+    register BigNumProduct save;
 
 
     ml -= nl;
-    /* test computed at compile time */
-    if (sizeof (BigNumProduct) > sizeof (BigNumDigit))
-    {
-	while (nl > 0) 
-	{
-	    invn = *(nn++) ^ -1;
-	    c += ((BigNumProduct)*mm) + invn;
-	    *(mm++) = c;
-	    c >>= BN_DIGIT_SIZE;
-	    nl--;
-	}
-    }
-    else
-    {
-	register BigNumProduct save;
 
-	while (nl > 0) 
-	{
-	    save = *mm;
-	    invn = *(nn++) ^ -1;
-	    c += save;
+    while (nl > 0) 
+    {
+        save = *mm;
+        invn = *(nn++) ^ -1;
+        c += save;
 
-	    if (c < save)
-	    {
-		*(mm++) = invn;
-		c = 1;
-	    }
-	    else
-	    {
-		c += invn;
- 		*(mm++) = c;
- 		c = (c < invn) ? 1 : 0;
-	    }
-	    nl--;
- 	}
+        if (c < save)
+        {
+            *(mm++) = invn;
+            c = 1;
+        }
+        else
+        {
+            c += invn;
+            *(mm++) = c;
+            c = (c < invn) ? 1 : 0;
+        }
+        nl--;
     }
 
     return (BnnSubtractBorrow (mm, ml, (BigNumCarry) c)); }
@@ -687,28 +658,7 @@ BigNum pp; BigNumLength pl; BigNum mm; BigNumLength ml; BigNumDigit d;
         return (BnnAdd (pp, pl, mm, ml, (BigNumCarry) 0));
 
     pl -= ml;
-    /* test computed at compile time */
-    if (sizeof (BigNumProduct) > sizeof (BigNumDigit)) 
-    {
-	while (ml != 0) 
-	{
-	    ml--;
-	    c += *pp + (((BigNumProduct)d) * (*(mm++)));
-	    *(pp++) = c;
-	    c >>= BN_DIGIT_SIZE;
-	} 
 
-	while (pl != 0) 
-	{
-	    pl--;
-	    c += *pp;
-	    *(pp++) = c;
-	    c >>= BN_DIGIT_SIZE;
-	}
-
-	return (c);
-    }
-    else
     {
 /* help for stupid compilers--may actually be counter
    productive on pipelined machines with decent register allocation!! */
@@ -814,28 +764,6 @@ BigNum qq; BigNum nn; BigNumLength nl; BigNumDigit d;
  */
 
 {
-    /* test computed at compile time */
-    if (sizeof (BigNumProduct) > sizeof (BigNumDigit))
-    {
-	register BigNumProduct quad;
-
-
-	nn += nl;
-	nl--;
-	qq += nl;
-	quad = *(--nn);
-
-	while (nl != 0)
-	{
-	    nl--;
-	    quad = (quad << BN_DIGIT_SIZE) | *(--nn);
-	    *(--qq) = quad / d;
-	    quad = quad % d;
-	} 
-
-	return (quad);
-    }
-    else
     {
 	int 		k;
 	BigNumLength	orig_nl;

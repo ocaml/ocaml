@@ -16,9 +16,9 @@
 #include <assert.h>
 #include <ctype.h>
 #include <stdio.h>
-#ifdef __STDC__
 #include <stdlib.h>
-#endif
+#include <errno.h>
+#include "../config/s.h"
 
 #if macintosh
 #include "::byterun:rotatecursor.h"
@@ -315,6 +315,13 @@ extern short final_state;
 
 /* global functions */
 
+#ifdef __GNUC__
+/* Works only in GCC 2.5 and later */
+#define Noreturn __attribute ((noreturn))
+#else
+#define Noreturn
+#endif
+
 extern char *allocate();
 extern bucket *lookup();
 extern bucket *make_bucket();
@@ -323,14 +330,15 @@ extern action *get_shifts();
 extern action *add_reductions();
 extern action *add_reduce();
 extern void closure (), create_symbol_table (), default_action_error ();
-extern void done (), entry_without_type (), fatal (), finalize_closure ();
+extern void done () Noreturn, entry_without_type ();
+extern void fatal (), finalize_closure ();
 extern void free_parser (), free_symbol_table (), free_symbols ();
 extern void illegal_character (), illegal_token_ref (), lalr (), lr0 ();
 extern void make_parser (), no_grammar (), no_space (), open_error ();
 extern void output (), over_unionized (), prec_redeclared (), reader ();
 extern void reflexive_transitive_closure (), reprec_warning ();
 extern void retyped_warning (), revalued_warning (), set_first_derives ();
-extern void syntax_error (), terminal_lhs (), terminal_start ();
+extern void syntax_error () Noreturn, terminal_lhs (), terminal_start ();
 extern void tokenized_start (), too_many_entries (), undefined_goal ();
 extern void undefined_symbol_warning (), unexpected_EOF (), unknown_rhs ();
 extern void unterminated_action (), unterminated_comment ();
@@ -338,19 +346,3 @@ extern void unterminated_string (), unterminated_text ();
 extern void unterminated_union (), used_reserved ();
 extern void verbose (), write_section ();
 
-/* system variables */
-
-extern int errno;
-
-
-/* system functions */
-
-#ifndef __STDC__
-
-extern void free();
-extern char *calloc();
-extern char *malloc();
-extern char *realloc();
-extern char *strcpy();
-
-#endif

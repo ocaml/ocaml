@@ -16,6 +16,9 @@
 #include <signal.h>
 #include <string.h>
 #include "defs.h"
+#ifdef HAS_UNISTD
+#include <unistd.h>
+#endif
 
 char dflag;
 char lflag;

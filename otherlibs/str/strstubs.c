@@ -3,11 +3,13 @@
 #else
 #include <SizeTDef.h>
 #endif
+#include <string.h>
 #include <regex.h>
 #include <mlvalues.h>
 #include <alloc.h>
 #include <fail.h>
 #include <memory.h>
+#include <str.h>
 
 struct regexp_struct {
   final_fun finalization;
