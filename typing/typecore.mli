@@ -66,7 +66,7 @@ type error =
   | Apply_non_function of type_expr
   | Apply_wrong_label of label * type_expr
   | Label_multiply_defined of Longident.t
-  | Label_missing
+  | Label_missing of string list
   | Label_not_mutable of Longident.t
   | Bad_format of string
   | Undefined_method of type_expr * string
