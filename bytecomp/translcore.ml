@@ -504,17 +504,13 @@ let assert_failed loc =
 (* Translation of expressions *)
 
 let rec transl_exp e =
-  let const_env =
+  let eval_once =
     (* Whether classes for immediate objects must be cached *)
     match e.exp_desc with
-      Texp_object _ | Texp_construct _ | Texp_tuple _
-    | Texp_variant _ | Texp_record _ | Texp_array _
-    | Texp_lazy _ -> true
-    | Texp_let(rec_flag, pat_expr_list, body) ->
-        List.for_all (fun (_,e) -> Typecore.is_nonexpansive e) pat_expr_list
-    | _ -> false
+      Texp_function _ | Texp_for _ | Texp_while _ -> false
+    | _ -> true
   in
-  if const_env then transl_exp0 e else
+  if eval_once then transl_exp0 e else
   Translobj.oo_wrap e.exp_env true transl_exp0 e
 
 and transl_exp0 e =
