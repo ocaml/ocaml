@@ -115,6 +115,11 @@ void raise_not_found(void)
   raise_constant(Field(global_data, NOT_FOUND_EXN));
 }
 
+void raise_sys_blocked_io(void)
+{
+  raise_constant(Field(global_data, SYS_BLOCKED_IO));
+}
+
 /* Initialization of statically-allocated exception buckets */
 
 void init_exceptions(void)

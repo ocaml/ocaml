@@ -69,24 +69,36 @@ char * error_message(void)
 
 #endif /* HAS_STRERROR */
 
+#ifndef EAGAIN
+#define EAGAIN (-1)
+#endif
+#ifndef EWOULDBLOCK
+#define EWOULDBLOCK (-1)
+#endif
+
 void sys_error(value arg)
 {
-  char * err = error_message();
+  char * err;
   value str;
   
-  if (arg == NO_ARG) {
-    str = copy_string(err);
+  if (errno == EAGAIN || errno == EWOULDBLOCK) {
+    raise_sys_blocked_io();
   } else {
-    int err_len = strlen(err);
-    int arg_len = string_length(arg);
-    Begin_root(arg);
+    err = error_message();
+    if (arg == NO_ARG) {
+      str = copy_string(err);
+    } else {
+      int err_len = strlen(err);
+      int arg_len = string_length(arg);
+      Begin_root(arg);
       str = alloc_string(arg_len + 2 + err_len);
-    End_roots();
-    bcopy(String_val(arg), &Byte(str, 0), arg_len);
-    bcopy(": ", &Byte(str, arg_len), 2);
-    bcopy(err, &Byte(str, arg_len + 2), err_len);
+      End_roots();
+      bcopy(String_val(arg), &Byte(str, 0), arg_len);
+      bcopy(": ", &Byte(str, arg_len), 2);
+      bcopy(err, &Byte(str, arg_len + 2), err_len);
+    }
+    raise_sys_error(str);
   }
-  raise_sys_error(str);
 }
 
 value sys_exit(value retcode)          /* ML */

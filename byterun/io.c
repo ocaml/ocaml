@@ -121,11 +121,12 @@ again:
   leave_blocking_section();
   if (retcode == -1) {
     if (errno == EINTR) goto again;
-    if (errno == EAGAIN || errno == EWOULDBLOCK) {
+    if ((errno == EAGAIN || errno == EWOULDBLOCK) && n > 1) {
       /* We couldn't do a partial write here, probably because
          n <= PIPE_BUF and POSIX says that writes of less than
          PIPE_BUF characters must be atomic.
-         So, we force a partial write of 1 character. */
+         We first try again with a partial write of 1 character.
+         If that fails too, we'll raise Sys_blocked_io below. */
       n = 1; goto again;
     }
   }

@@ -28,6 +28,7 @@
 #define NOT_FOUND_EXN 6         /* "Not_found" */
 #define MATCH_FAILURE_EXN 7     /* "Match_failure" */
 #define STACK_OVERFLOW_EXN 8    /* "Stack_overflow" */
+#define SYS_BLOCKED_IO 9        /* "Sys_blocked_io" */
 
 #ifdef POSIX_SIGNALS
 struct longjmp_buffer {
@@ -58,7 +59,8 @@ void raise_zero_divide (void) Noreturn;
 void raise_not_found (void) Noreturn;
 void fatal_uncaught_exception (value) Noreturn;
 void init_exceptions (void);
-void array_bound_error (void);
+void array_bound_error (void) Noreturn;
+void raise_sys_blocked_io (void) Noreturn;
 
 extern void (*caml_reset_sigmask)(void);
 
