@@ -79,7 +79,7 @@ void do_roots (scanning_action f)
 
   /* Global C roots */
   for (gr = caml_global_roots.forward[0]; gr != NULL; gr = gr->forward[0]) {
-    oldify(*(gr->root), gr->root);
+    f(*(gr->root), gr->root);
   }
   /* Finalised values */
   final_do_strong_roots (f);
