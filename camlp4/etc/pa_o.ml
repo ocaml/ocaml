@@ -595,7 +595,7 @@ EXTEND
               [ <:expr< ( $list:el$ ) >> ->
                   List.fold_left (fun e1 e2 -> <:expr< $e1$ $e2$ >>) e1 el
               | _ -> <:expr< $e1$ $e2$ >> ] ]
-      | "assert"; e = expr LEVEL "simple" ->
+      | "assert"; e = SELF ->
           let f = <:expr< $str:input_file.val$ >> in
           let bp = <:expr< $int:string_of_int (fst loc)$ >> in
           let ep = <:expr< $int:string_of_int (snd loc)$ >> in
@@ -607,16 +607,18 @@ EXTEND
               else <:expr< if $e$ then () else $raiser$ >> ]
       | "lazy"; e = SELF ->
           <:expr< Pervasives.ref (Lazy.Delayed (fun () -> $e$)) >> ]
-    | "simple" LEFTA
+    | "." LEFTA
       [ e1 = SELF; "."; "("; e2 = SELF; ")" -> <:expr< $e1$ .( $e2$ ) >>
       | e1 = SELF; "."; "["; e2 = SELF; "]" -> <:expr< $e1$ .[ $e2$ ] >>
       | e1 = SELF; "."; "{"; e2 = SELF; "}" -> bigarray_get loc e1 e2
-      | e1 = SELF; "."; e2 = SELF -> <:expr< $e1$ . $e2$ >>
-      | "!"; e = SELF -> <:expr< $e$ . val>>
-      | f = [ op = "~-" -> op | op = "~-." -> op | op = prefixop -> op ];
-        e = SELF ->
-          <:expr< $lid:f$ $e$ >>
-      | s = INT -> <:expr< $int:s$ >>
+      | e1 = SELF; "."; e2 = SELF -> <:expr< $e1$ . $e2$ >> ]
+    | "~-" NONA
+      [ "!"; e = SELF -> <:expr< $e$ . val>>
+      | "~-"; e = SELF -> <:expr< ~- $e$ >>
+      | "~-."; e = SELF -> <:expr< ~-. $e$ >>
+      | f = prefixop; e = SELF -> <:expr< $lid:f$ $e$ >> ]
+    | "simple" LEFTA
+      [ s = INT -> <:expr< $int:s$ >>
       | s = FLOAT -> <:expr< $flo:s$ >>
       | s = STRING -> <:expr< $str:s$ >>
       | c = CHAR -> <:expr< $chr:c$ >>
@@ -1068,7 +1070,7 @@ EXTEND
     [ LEFTA
       [ "new"; i = class_longident -> <:expr< new $list:i$ >> ] ]
   ;
-  expr: LEVEL "simple"
+  expr: LEVEL "."
     [ [ e = SELF; "#"; lab = label -> <:expr< $e$ # $lab$ >> ] ]
   ;
   expr: LEVEL "simple"
