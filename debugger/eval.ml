@@ -159,7 +159,7 @@ and find_label lbl env ty path tydesc pos = function
 
 (* Error report *)
 
-open Format
+open Formatmsg
 
 let report_error error =
   open_box 0;

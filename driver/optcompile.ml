@@ -15,7 +15,7 @@
 
 open Misc
 open Config
-open Format
+open Formatmsg
 open Typedtree
 
 (* Initialize the search path.

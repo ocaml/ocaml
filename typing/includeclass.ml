@@ -32,7 +32,7 @@ let class_declarations env cty1 cty2 =
         cty1.cty_params cty1.cty_type
         cty2.cty_params cty2.cty_type
 
-open Format
+open Formatmsg
 open Ctype
 
 let include_err =

@@ -90,7 +90,7 @@ let rec highlight_locations loc1 loc2 =
 
 (* Print the location in some way or another *)
 
-open Format
+open Formatmsg
 
 let reset () =
   num_loc_lines := 0

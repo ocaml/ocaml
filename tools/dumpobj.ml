@@ -5,7 +5,7 @@
 (*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -54,11 +54,17 @@ let objfile = ref false                        (* true if dumping a .zo *)
 
 (* Print a structured constant *)
 
+let print_float f =
+  if String.contains f '.'
+  then printf "%s%s" f
+  else printf "%s.%s" f
+;;
+
 let rec print_struct_const = function
     Const_base(Const_int i) ->
       printf "%d" i
   | Const_base(Const_float f) ->
-      printf "%s" f
+      print_float f
   | Const_base(Const_string s) ->
       printf "\"%s\"" (String.escaped s)
   | Const_base(Const_char c) ->
@@ -78,12 +84,7 @@ let rec print_struct_const = function
       end
   | Const_float_array a ->
       printf "[|";
-      begin match a with
-        [] -> ()
-      | hd :: tl ->
-          printf "%s" hd;
-          List.iter (fun f -> printf ", %s" f) tl
-      end;
+      List.iter (fun f -> print_float f; printf "; ") a
       printf "|]"
 
 (* Print an obj *)
@@ -145,11 +146,11 @@ let print_getglobal_name ic =
     with Not_found ->
       print_string "<no reloc>"
     end;
-    inputu ic; ()
+    ignore (inputu ic);
   end
   else begin
     let n = inputu ic in
-    if n >= Array.length !globals
+    if n >= Array.length !globals || n < 0
     then print_string "<global table overflow>"
     else match !globals.(n) with
            Global id -> print_string(Ident.name id)
@@ -166,11 +167,11 @@ let print_setglobal_name ic =
     with Not_found ->
       print_string "<no reloc>"
     end;
-    inputu ic; ()
+    ignore (inputu ic);
   end
   else begin
     let n = inputu ic in
-    if n >= Array.length !globals
+    if n >= Array.length !globals || n < 0
     then print_string "<global table overflow>"
     else match !globals.(n) with
            Global id -> print_string(Ident.name id)
@@ -186,13 +187,13 @@ let print_primitive ic =
     with Not_found ->
       print_string "<no reloc>"
     end;
-    inputu ic; ()
+    ignore (inputu ic);
   end
   else begin
     let n = inputu ic in
-    if n >= Array.length !primitives
-    then print_string(string_of_int n)
-    else print_string((!primitives).(n))
+    if n >= Array.length !primitives || n < 0
+    then print_int n
+    else print_string !primitives.(n)
   end
 
 (* Disassemble one instruction *)
@@ -200,80 +201,206 @@ let print_primitive ic =
 let currpc ic =
   currpos ic / 4
 
+type shape =
+  | Nothing
+  | Uint
+  | Sint
+  | Uint_Uint
+  | Disp
+  | Uint_Disp
+  | Getglobal
+  | Getglobal_Uint
+  | Setglobal
+  | Primitive
+  | Uint_Primitive
+  | Switch
+  | Closurerec
+;;
+
+let op_shapes = [
+  opACC0, Nothing;
+  opACC1, Nothing;
+  opACC2, Nothing;
+  opACC3, Nothing;
+  opACC4, Nothing;
+  opACC5, Nothing;
+  opACC6, Nothing;
+  opACC7, Nothing;
+  opACC, Uint;
+  opPUSH, Nothing;
+  opPUSHACC0, Nothing;
+  opPUSHACC1, Nothing;
+  opPUSHACC2, Nothing;
+  opPUSHACC3, Nothing;
+  opPUSHACC4, Nothing;
+  opPUSHACC5, Nothing;
+  opPUSHACC6, Nothing;
+  opPUSHACC7, Nothing;
+  opPUSHACC, Uint;
+  opPOP, Uint;
+  opASSIGN, Uint;
+  opENVACC1, Nothing;
+  opENVACC2, Nothing;
+  opENVACC3, Nothing;
+  opENVACC4, Nothing;
+  opENVACC, Uint;
+  opPUSHENVACC1, Nothing;
+  opPUSHENVACC2, Nothing;
+  opPUSHENVACC3, Nothing;
+  opPUSHENVACC4, Nothing;
+  opPUSHENVACC, Uint;
+  opPUSH_RETADDR, Disp;
+  opAPPLY, Uint;
+  opAPPLY1, Nothing;
+  opAPPLY2, Nothing;
+  opAPPLY3, Nothing;
+  opAPPTERM, Uint_Uint;
+  opAPPTERM1, Uint;
+  opAPPTERM2, Uint;
+  opAPPTERM3, Uint;
+  opRETURN, Uint;
+  opRESTART, Nothing;
+  opGRAB, Uint;
+  opCLOSURE, Uint_Disp;
+  opCLOSUREREC, Closurerec;
+  opOFFSETCLOSUREM2, Nothing;
+  opOFFSETCLOSURE0, Nothing;
+  opOFFSETCLOSURE2, Nothing;
+  opOFFSETCLOSURE, Sint;  (* was Uint *)
+  opPUSHOFFSETCLOSUREM2, Nothing;
+  opPUSHOFFSETCLOSURE0, Nothing;
+  opPUSHOFFSETCLOSURE2, Nothing;
+  opPUSHOFFSETCLOSURE, Sint; (* was Nothing *)
+  opGETGLOBAL, Getglobal;
+  opPUSHGETGLOBAL, Getglobal;
+  opGETGLOBALFIELD, Getglobal_Uint;
+  opPUSHGETGLOBALFIELD, Getglobal_Uint;
+  opSETGLOBAL, Setglobal;
+  opATOM0, Nothing;
+  opATOM, Uint;
+  opPUSHATOM0, Nothing;
+  opPUSHATOM, Uint;
+  opMAKEBLOCK, Uint_Uint;
+  opMAKEBLOCK1, Uint;
+  opMAKEBLOCK2, Uint;
+  opMAKEBLOCK3, Uint;
+  opMAKEFLOATBLOCK, Uint;
+  opGETFIELD0, Nothing;
+  opGETFIELD1, Nothing;
+  opGETFIELD2, Nothing;
+  opGETFIELD3, Nothing;
+  opGETFIELD, Uint;
+  opGETFLOATFIELD, Uint;
+  opSETFIELD0, Nothing;
+  opSETFIELD1, Nothing;
+  opSETFIELD2, Nothing;
+  opSETFIELD3, Nothing;
+  opSETFIELD, Uint;
+  opSETFLOATFIELD, Uint;
+  opVECTLENGTH, Nothing;
+  opGETVECTITEM, Nothing;
+  opSETVECTITEM, Nothing;
+  opGETSTRINGCHAR, Nothing;
+  opSETSTRINGCHAR, Nothing;
+  opBRANCH, Disp;
+  opBRANCHIF, Disp;
+  opBRANCHIFNOT, Disp;
+  opSWITCH, Switch;
+  opBOOLNOT, Nothing;
+  opPUSHTRAP, Disp;
+  opPOPTRAP, Nothing;
+  opRAISE, Nothing;
+  opCHECK_SIGNALS, Nothing;
+  opC_CALL1, Primitive;
+  opC_CALL2, Primitive;
+  opC_CALL3, Primitive;
+  opC_CALL4, Primitive;
+  opC_CALL5, Primitive;
+  opC_CALLN, Uint_Primitive;
+  opCONST0, Nothing;
+  opCONST1, Nothing;
+  opCONST2, Nothing;
+  opCONST3, Nothing;
+  opCONSTINT, Sint;
+  opPUSHCONST0, Nothing;
+  opPUSHCONST1, Nothing;
+  opPUSHCONST2, Nothing;
+  opPUSHCONST3, Nothing;
+  opPUSHCONSTINT, Sint;
+  opNEGINT, Nothing;
+  opADDINT, Nothing;
+  opSUBINT, Nothing;
+  opMULINT, Nothing;
+  opDIVINT, Nothing;
+  opMODINT, Nothing;
+  opANDINT, Nothing;
+  opORINT, Nothing;
+  opXORINT, Nothing;
+  opLSLINT, Nothing;
+  opLSRINT, Nothing;
+  opASRINT, Nothing;
+  opEQ, Nothing;
+  opNEQ, Nothing;
+  opLTINT, Nothing;
+  opLEINT, Nothing;
+  opGTINT, Nothing;
+  opGEINT, Nothing;
+  opOFFSETINT, Sint;
+  opOFFSETREF, Sint;
+  opGETMETHOD, Nothing;
+  opSTOP, Nothing;
+  opEVENT, Nothing;
+  opBREAK, Nothing;
+];;
+
 let print_instr ic =
   print_int (currpc ic); print_string "\t";
   let op = inputu ic in
-  print_string
-    (if op >= Array.length names_of_instructions then "???"
-     else names_of_instructions.(op));
+  if op >= Array.length names_of_instructions || op < 0
+  then (print_string "*** unknown opcode : "; print_int op)
+  else print_string names_of_instructions.(op);
   print_string " ";
-  (* One unsigned int *)
-  if op = opATOM or op = opPUSHATOM 
-  or op = opMAKEBLOCK1 or op = opMAKEBLOCK2 or op = opMAKEBLOCK3
-  or op = opACC or op = opPUSHACC or op = opPOP or op = opASSIGN
-  or op = opENVACC or op = opPUSHENVACC
-  or op = opAPPLY or op = opAPPTERM1 or op = opAPPTERM2 or op = opAPPTERM3
-  or op = opRETURN or op = opGRAB or op = opGETFIELD or op = opSETFIELD
-  or op = opGETFLOATFIELD or op = opSETFLOATFIELD or op = opMAKEFLOATBLOCK
-  or op = opOFFSETCLOSURE then
-    (print_int (inputu ic))
-  (* One signed int *)
-  else if op = opCONSTINT or op = opPUSHCONSTINT
-  or op = opOFFSETINT or op = opOFFSETREF then
-    (print_int (inputs ic))
-  (* Two unsigned constants *)
-  else if op = opAPPTERM or op = opMAKEBLOCK then
-    (print_int (inputu ic); print_string ", "; print_int(inputu ic))
-  (* One displacement *)
-  else if op = opPUSH_RETADDR or op = opBRANCH or op = opBRANCHIF
-  or op = opBRANCHIFNOT or op = opPUSHTRAP then
-    (let p = currpc ic in print_int (p + inputs ic))
-  (* One size, one displacement *)
-  else if op = opCLOSURE then
-    (print_int (inputu ic); print_string ", ";
-     let p = currpc ic in print_int (p + inputs ic))
-  (* getglobal *)
-  else if op = opGETGLOBAL or op = opPUSHGETGLOBAL then
-    (print_getglobal_name ic)
-  (* getglobal + unsigned *)
-  else if op = opGETGLOBALFIELD or op = opPUSHGETGLOBALFIELD then
-    (print_getglobal_name ic; print_string ", "; print_int (inputu ic))
-  (* setglobal *)
-  else if op = opSETGLOBAL then
-    (print_setglobal_name ic)
-  (* primitive *)
-  else if op = opC_CALL1 or op = opC_CALL2
-       or op = opC_CALL3 or op = opC_CALL4
-       or op = opC_CALL5 then
-    (print_primitive ic)
-  (* unsigned + primitive *)
-  else if op = opC_CALLN then
-    (print_int(inputu ic); print_string ", "; print_primitive ic)
-  (* switch *)
-  else if op = opSWITCH then
-    (let n = inputu ic in
-     let orig = currpc ic in
-     for i = 0 to (n land 0xFFFF) - 1 do
-       print_string "\n\tint "; print_int i; print_string " -> ";
-       print_int(orig + inputs ic)
-     done;
-     for i = 0 to (n lsr 16) - 1 do
-       print_string "\n\ttag "; print_int i; print_string " -> ";
-       print_int(orig + inputs ic)
-     done)
-  (* closurerec *)
-  else if op = opCLOSUREREC then
-    (let nfuncs = inputu ic in
-     let nvars = inputu ic in
-     let orig = currpc ic in
-     print_int nvars;
-     for i = 0 to nfuncs - 1 do
-       print_string ", ";
-       print_int (orig + inputu ic)
-     done)     
-  (* default *)
-  else ();
-  print_string "\n"
+  begin try match List.assoc op op_shapes with
+  | Uint -> print_int (inputu ic)
+  | Sint -> print_int (inputs ic)
+  | Uint_Uint
+     -> print_int (inputu ic); print_string ", "; print_int (inputu ic)
+  | Disp -> let p = currpc ic in print_int (p + inputs ic)
+  | Uint_Disp
+     -> print_int (inputu ic); print_string ", ";
+        let p = currpc ic in print_int (p + inputs ic)
+  | Getglobal -> print_getglobal_name ic
+  | Getglobal_Uint
+     -> print_getglobal_name ic; print_string ", "; print_int (inputu ic)
+  | Setglobal -> print_setglobal_name ic
+  | Primitive -> print_primitive ic
+  | Uint_Primitive
+     -> print_int(inputu ic); print_string ", "; print_primitive ic
+  | Switch
+     -> let n = inputu ic in
+        let orig = currpc ic in
+        for i = 0 to (n land 0xFFFF) - 1 do
+          print_string "\n\tint "; print_int i; print_string " -> ";
+          print_int(orig + inputs ic);
+        done;
+        for i = 0 to (n lsr 16) - 1 do
+          print_string "\n\ttag "; print_int i; print_string " -> ";
+          print_int(orig + inputs ic);
+        done;
+  | Closurerec
+     -> let nfuncs = inputu ic in
+        let nvars = inputu ic in
+        let orig = currpc ic in
+        print_int nvars;
+        for i = 0 to nfuncs - 1 do
+          print_string ", ";
+          print_int (orig + inputu ic);
+        done;
+  | Nothing -> ()
+  with Not_found -> print_string "(unknown arguments)"
+  end;
+  print_string "\n";
+;;
 
 (* Disassemble a block of code *)
 
@@ -326,7 +453,7 @@ exception Not_exec
 
 let dump_exe ic =
   seek_in ic (in_channel_length ic - 12);
-  if (let buff = String.create 12 in input ic buff 0 12; buff)
+  if (let buff = String.create 12 in ignore (input ic buff 0 12); buff)
      <> exec_magic_number
   then raise Not_exec;
   let trailer_pos = in_channel_length ic - 36 in

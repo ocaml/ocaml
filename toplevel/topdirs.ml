@@ -13,7 +13,7 @@
 
 (* Toplevel directives *)
 
-open Format
+open Formatmsg
 open Misc
 open Longident
 open Path

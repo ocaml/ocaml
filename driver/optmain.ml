@@ -54,7 +54,7 @@ let usage = "Usage: ocamlopt <options> <files>\nOptions are:"
 let main () =
   native_code := true;
   c_compiler := Config.native_c_compiler;
-  Format.set_formatter_out_channel stderr;
+  Formatmsg.set_output Format.err_formatter;
   try
     Arg.parse [
        "-a", Arg.Set make_archive, " Build a library";
@@ -132,6 +132,7 @@ let main () =
        "-dscheduling", Arg.Set dump_scheduling, " (undocumented)";
        "-dlinear", Arg.Set dump_linear, " (undocumented)";
        "-dstartup", Arg.Set keep_startup_file, " (undocumented)";
+       "-rectypes", Arg.Set recursive_types, " (undocumented)";
 
        "-", Arg.String process_file,
             "<file>  Treat <file> as a file name (even if it starts with `-')"

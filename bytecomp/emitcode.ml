@@ -159,7 +159,7 @@ let emit_instr = function
   | Kacc n ->
       if n < 8 then out(opACC0 + n) else (out opACC; out_int n)
   | Kenvacc n ->
-      if n >= 1 && n < 4
+      if n >= 1 && n <= 4
       then out(opENVACC1 + n - 1)
       else (out opENVACC; out_int n)
   | Kpush ->
@@ -207,7 +207,7 @@ let emit_instr = function
       end
   | Kmakeblock(n, t) ->
       if n = 0 then
-        if t < 4 then out (opATOM0 + t) else (out opATOM; out_int t)
+        if t = 0 then out opATOM0 else (out opATOM; out_int t)
       else if n < 4 then (out(opMAKEBLOCK1 + n - 1); out_int t)
       else (out opMAKEBLOCK; out_int n; out_int t)
   | Kgetfield n ->

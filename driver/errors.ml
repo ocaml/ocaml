@@ -13,7 +13,7 @@
 
 (* Error report *)
 
-open Format
+open Formatmsg
 open Location
 
 (* Report an error *)

@@ -15,7 +15,7 @@ INCLUDES=\
 
 OTHEROBJS=\
   ../otherlibs/unix/unix.cma \
-  ../utils/misc.cmo ../utils/config.cmo \
+  ../utils/misc.cmo ../utils/formatmsg.cmo ../utils/config.cmo \
   ../utils/tbl.cmo ../utils/clflags.cmo \
   ../parsing/longident.cmo \
   ../typing/ident.cmo ../typing/path.cmo ../typing/types.cmo \

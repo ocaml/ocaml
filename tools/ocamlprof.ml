@@ -429,7 +429,7 @@ let process_file filename =
 
 (* Main function *)
 
-open Format
+open Formatmsg
 
 let usage = "Usage: ocamlprof <options> <files>\noptions are:"
 
@@ -445,7 +445,7 @@ let main () =
       ] process_file usage;
     exit 0
   with x ->
-    set_formatter_out_channel stderr;
+    set_output Format.err_formatter;
     open_box 0;
     begin match x with
       Lexer.Error(err, start, stop) ->

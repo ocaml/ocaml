@@ -5,7 +5,7 @@
 (* Xavier Leroy and Jerome Vouillon, projet Cristal, INRIA Rocquencourt*)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
-(*  en Automatique.  Distributed only by permission.                      *)
+(*  en Automatique.  Distributed only by permission.                   *)
 (*                                                                     *)
 (***********************************************************************)
 
@@ -915,6 +915,7 @@ let expand_abbrev env ty =
               raise Cannot_expand
           in
           let ty' = subst env level abbrev (Some ty) params args body in
+	  (* Hack to name the variant type *)
 	  begin match repr ty' with
 	    {desc=Tvariant row} as ty when static_row row ->
 	      ty.desc <- Tvariant { row with row_name = Some (path, args) }
@@ -945,6 +946,17 @@ let _ = try_expand_head' := try_expand_head
 (* Fully expand the head of a type. *)
 let rec expand_head env ty =
   try try_expand_head env ty with Cannot_expand -> repr ty
+
+(* Make sure that the type parameters of the type constructor [ty]
+   respect the type constraints *)
+let enforce_constraints env ty =
+  match ty with
+    {desc = Tconstr (path, args, abbrev); level = level} ->
+      let decl = Env.find_type path env in
+      ignore
+        (subst env level (ref Mnil) None decl.type_params args (newvar2 level))
+  | _ ->
+      assert false
 
 (* Recursively expand the head of a type.
    Also expand #-types. *)
@@ -991,7 +1003,8 @@ let rec non_recursive_abbrev env ty =
         begin try
           non_recursive_abbrev env (try_expand_head env ty)
         with Cannot_expand ->
-          iter_type_expr (non_recursive_abbrev env) ty
+          if not !Clflags.recursive_types then
+            iter_type_expr (non_recursive_abbrev env) ty
         end
     | Tobject _ | Tvariant _ ->
         ()
@@ -1016,10 +1029,10 @@ let rec occur_rec env visited ty0 ty =
         iter_type_expr (occur_rec env (ty::visited) ty0) ty
       with Occur -> try
         let ty' = try_expand_head env ty in
-        if List.memq ty' visited then raise Occur;
-        occur_rec env (ty'::visited) ty0 ty'
+        if ty == ty0 || List.memq ty' visited then raise Occur;
+        iter_type_expr (occur_rec env (ty'::visited) ty0) ty'
       with Cannot_expand ->
-        raise Occur
+        if not !Clflags.recursive_types then raise Occur
       end
   | Tobject _ | Tvariant _ ->
       ()
@@ -1906,8 +1919,9 @@ let rec equal_clty trace type_pairs subst env cty1 cty2 =
                                   (lab, expand_trace env trace)]))
           sign2.cty_vars
     | _ ->
-        if not trace then
-          raise (Failure [CM_Class_type_mismatch (cty1, cty2)])
+        raise
+          (Failure (if trace then []
+                    else [CM_Class_type_mismatch (cty1, cty2)]))
   with
     Failure error when trace ->
       raise (Failure (CM_Class_type_mismatch (cty1, cty2)::error))

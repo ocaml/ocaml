@@ -13,7 +13,7 @@
 
 (* Auxiliary type for reporting syntax errors *)
 
-open Format
+open Formatmsg
 
 type error =
     Unclosed of Location.t * string * Location.t * string

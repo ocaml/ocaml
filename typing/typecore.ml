@@ -1018,7 +1018,7 @@ let type_expression env sexp =
 
 (* Error report *)
 
-open Format
+open Formatmsg
 open Printtyp
 
 let report_error = function

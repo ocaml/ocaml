@@ -13,7 +13,7 @@
 
 (* Environment handling *)
 
-open Format
+open Formatmsg
 open Config
 open Misc
 open Asttypes

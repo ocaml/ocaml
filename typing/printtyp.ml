@@ -15,7 +15,7 @@
 
 open Misc
 open Ctype
-open Format
+open Formatmsg
 open Longident
 open Path
 open Asttypes

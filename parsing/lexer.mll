@@ -148,7 +148,7 @@ and comment_start_pos = ref []
 
 (* Error report *)
 
-open Format
+open Formatmsg
 
 let report_error = function
     Illegal_character ->

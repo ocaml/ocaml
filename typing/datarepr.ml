@@ -84,3 +84,20 @@ let label_descrs ty_res lbls =
         all_labels.(num) <- lbl;
         (name, lbl) :: describe_labels (num+1) rest in
   describe_labels 0 lbls
+
+exception Constr_not_found
+
+let rec find_constr tag num_const num_nonconst = function
+    [] ->
+      raise Constr_not_found
+  | (name, [] as cstr) :: rem ->
+      if tag = Cstr_constant num_const
+      then cstr
+      else find_constr tag (num_const + 1) num_nonconst rem
+  | (name, _ as cstr) :: rem ->
+      if tag = Cstr_block num_nonconst
+      then cstr
+      else find_constr tag num_const (num_nonconst + 1) rem
+
+let find_constr_by_tag tag cstrlist =
+  find_constr tag 0 0 cstrlist

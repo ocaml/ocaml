@@ -14,7 +14,7 @@
 (* The interactive toplevel loop *)
 
 open Lexing
-open Format
+open Formatmsg
 open Config
 open Misc
 open Parsetree
@@ -313,5 +313,5 @@ let loop() =
 let run_script name =
   Compile.init_path();
   toplevel_env := Compile.initial_env();
-  Format.set_formatter_out_channel stderr;
+  Formatmsg.set_output Format.err_formatter;
   use_silently name

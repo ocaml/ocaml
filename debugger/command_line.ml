@@ -14,7 +14,7 @@
 
 (************************ Reading and executing commands ***************)
 
-open Format
+open Formatmsg
 open Misc
 open Instruct
 open Unix

@@ -9,7 +9,7 @@ all Ä ocamldep
 
 # The dependency generator
 
-CAMLDEP_IMPORTS = misc.cmo config.cmo clflags.cmo terminfo.cmo ¶
+CAMLDEP_IMPORTS = misc.cmo formatmsg.cmo config.cmo clflags.cmo terminfo.cmo ¶
    linenum.cmo warnings.cmo location.cmo longident.cmo pstream.cmo ¶
    syntaxerr.cmo parser.cmo lexer.cmo parse.cmo
 
@@ -24,10 +24,10 @@ clean ÄÄ
 install ÄÄ
     duplicate -y ocamldep "{BINDIR}ocamldep"
 
-# The profiler  (not available on the Mac for the moment)
+# The profiler  (not available on MacOS for the moment)
 #
 #CSLPROF = ocamlprof.cmo
-#CSLPROF_IMPORTS = misc.cmo config.cmo clflags.cmo terminfo.cmo ¶
+#CSLPROF_IMPORTS = misc.cmo formatmsg.cmo config.cmo clflags.cmo terminfo.cmo ¶
 #  linenum.cmo warnings.cmo location.cmo longident.cmo pstream.cmo ¶
 #  syntaxerr.cmo parser.cmo lexer.cmo parse.cmo
 #
@@ -52,12 +52,12 @@ install ÄÄ
 
 DUMPOBJ = opnames.cmo dumpobj.cmo
 
-DumpCamlObj Ä {DUMPOBJ}
-    {CAMLC} {LINKFLAGS} -o DumpCamlObj misc.cmo tbl.cmo config.cmo ident.cmo ¶
+OCamlDumpObj Ä {DUMPOBJ}
+    {CAMLC} {LINKFLAGS} -o OCamlDumpObj misc.cmo tbl.cmo config.cmo ident.cmo ¶
             opcodes.cmo {DUMPOBJ}
 
 clean ÄÄ
-    delete -i DumpCamlObj
+    delete -i OCamlDumpObj
 
 opnames.ml Ä ::byterun:instruct.h
     streamedit -e '/¶/¶*/ delete' ¶
@@ -101,3 +101,13 @@ clean ÄÄ
 
 depend Ä beforedepend
     {CAMLRUN} :ocamldep {INCLUDES} Å.mli Å.ml > Makefile.Mac.depend
+
+# Scan object files for required primitives
+
+PRIMREQ=primreq.cmo
+
+primreq Ä {PRIMREQ}
+    {CAMLC} {LINKFLAGS} -o primreq config.cmo {PRIMREQ}
+ 
+clean ÄÄ
+    delete -i primreq

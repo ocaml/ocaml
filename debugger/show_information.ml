@@ -13,7 +13,7 @@
 (* $Id$ *)
 
 open Instruct
-open Format
+open Formatmsg
 open Primitives
 open Debugcom
 open Checkpoints
