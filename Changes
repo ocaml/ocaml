@@ -8,9 +8,9 @@ Language features:
   through a class.  (Syntax is "object <field and methods> end".)
 
 Type-checking:
-* When typing records, the module path annotation of the first path
-  annotated label now stands for all of the un-annotated labels of
-  the record.
+- When typing record construction and record patterns, can omit
+  the module qualification on all labels except one.  I.e.
+  { M.l1 = ...; l2 = ... } is interpreted as { M.l1 = ...; M.l2 = ... }
 
 Both compilers:
 - More compact compilation of classes.
@@ -49,7 +49,8 @@ Standard library:
   The polymorphic boolean-valued comparisons (=, <, >, etc) now treat
   NaN as uncomparable, as specified by the IEEE standard.
   The 3-valued comparison (compare) treats NaN as equal to itself
-  and smaller than all other floats.
+  and smaller than all other floats.  As a consequence, x == y
+  no longer implies x = y but still implies compare x y = 0.
 * String-to-integer conversions now fail if the result overflows
   the range of integers representable in the result type.
 * All array and string access functions now raise
@@ -83,7 +84,7 @@ Ports:
 - Native-code compilation supported for HPPA/Linux. Contributed by Guy Martin.
 - Removed support for MacOS9.  Mac OS 9 is obsolete and the port was not
   updated since 3.05.
-- Removed ocamlopt support for HPPA/Nextstep.
+- Removed ocamlopt support for HPPA/Nextstep and Power/AIX.
 
 Ocamllex:
 - #line directives in the input file are now accepted.
