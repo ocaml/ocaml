@@ -239,6 +239,13 @@ let name_for_float_comparison cmp neg =
   | Clt -> if neg then "fbuge" else "fbl"
   | Cge -> if neg then "fbul" else "fbge"
 
+(* Names of special registers *)
+
+let (exn_reg, alloc_reg, limit_reg) =
+  if Config.system = "sunos"
+  then ("%g5", "%g6", "%g7")
+  else ("%g2", "%g3", "%g4")
+
 (* Output the assembly code for an instruction *)
 
 let function_name = ref ""
@@ -318,9 +325,9 @@ let rec emit_instr i dslot =
         end
     | Lop(Iextcall(s, alloc)) ->
         if alloc then begin
-          `	sethi	%hi({emit_symbol s}), %g4\n`;
+          `	sethi	%hi({emit_symbol s}), %l7\n`;
           `{record_frame i.live}	call	{emit_symbol "caml_c_call"}\n`;
-          `	or	%g4, %lo({emit_symbol s}), %g4\n` (* in delay slot *)
+          `	or	%l7, %lo({emit_symbol s}), %l7\n` (* in delay slot *)
         end else begin
           `	call	{emit_symbol s}\n`;
           fill_delay_slot dslot
@@ -359,19 +366,19 @@ let rec emit_instr i dslot =
     | Lop(Ialloc n) ->
         if !fastcode_flag then begin
           let lbl_cont = new_label() in
-          `     ld      [%g7], %g1\n`;
-          `	sub	%g6, {emit_int n}, %g6\n`;
-          `	cmp	%g6, %g1\n`;
+          `     ld      [{emit_string limit_reg}], %g1\n`;
+          `	sub	{emit_string alloc_reg}, {emit_int n}, {emit_string alloc_reg}\n`;
+          `	cmp	{emit_string alloc_reg}, %g1\n`;
           `	bgeu	{emit_label lbl_cont}\n`;
-          `	add	%g6, 4, {emit_reg i.res.(0)}\n`; (* in delay slot *)
+          `	add	{emit_string alloc_reg}, 4, {emit_reg i.res.(0)}\n`; (* in delay slot *)
           `{record_frame i.live}	call	{emit_symbol "caml_call_gc"}\n`;
-          `	mov	{emit_int n}, %g4\n`; (* in delay slot *)
-          `	add	%g6, 4, {emit_reg i.res.(0)}\n`;
+          `	mov	{emit_int n}, %l7\n`; (* in delay slot *)
+          `	add	{emit_string alloc_reg}, 4, {emit_reg i.res.(0)}\n`;
           `{emit_label lbl_cont}:\n`
         end else begin
           `{record_frame i.live}	call	{emit_symbol "caml_alloc"}\n`;
-          `	mov	{emit_int n}, %g4\n`; (* in delay slot *)
-          `	add	%g6, 4, {emit_reg i.res.(0)}\n`
+          `	mov	{emit_int n}, %l7\n`; (* in delay slot *)
+          `	add	{emit_string alloc_reg}, 4, {emit_reg i.res.(0)}\n`
         end
     | Lop(Iintop(Icomp cmp)) ->
         let comp = name_for_int_comparison cmp in
@@ -499,8 +506,8 @@ let rec emit_instr i dslot =
         let lbl_jumptbl = new_label() in
         `	sethi	%hi({emit_label lbl_jumptbl}), %g1\n`;
         `	or	%g1, %lo({emit_label lbl_jumptbl}), %g1\n`;
-        `	sll	{emit_reg i.arg.(0)}, 2, %g4\n`;
-        `	ld	[%g1 + %g4], %g1\n`;
+        `	sll	{emit_reg i.arg.(0)}, 2, %l7\n`;
+        `	ld	[%g1 + %l7], %g1\n`;
         `	jmp	%g1\n`;         (* poor scheduling *)
         `	nop\n`;
         `{emit_label lbl_jumptbl}:`;
@@ -509,20 +516,21 @@ let rec emit_instr i dslot =
         done
     | Lsetuptrap lbl ->
         `	call	{emit_label lbl}\n`;
-        `	mov     %o7, %g4\n`     (* in delay slot *)
+        `	sub	%sp, 8, %sp\n`  (* in delay slot *)
     | Lpushtrap ->
         stack_offset := !stack_offset + 8;
-        `	sub	%sp, 8, %sp\n`;
-        `	std	%g4, [%sp + 96]\n`; (* Write %g4 and %g5 *)
-        `	mov	%sp, %g5\n`
+        `	st	%o7, [%sp + 96]\n`;
+        `	st	{emit_string exn_reg}, [%sp + 100]\n`;
+        `	mov	%sp, {emit_string exn_reg}\n`
     | Lpoptrap ->
-        `	ld	[%sp + 100], %g5\n`;
+        `	ld	[%sp + 100], {emit_string exn_reg}\n`;
         `	add	%sp, 8, %sp\n`;
         stack_offset := !stack_offset - 8
     | Lraise ->
-        `	mov	%g5, %sp\n`;
-        `	ldd	[%sp + 96], %g4\n`; (* Load %g4 and %g5 *)
-        `	jmp	%g4 + 8\n`;         (* poor scheduling *)
+        `	ld	[{emit_string exn_reg} + 96], %g1\n`;
+        `	mov	{emit_string exn_reg}, %sp\n`;
+        `	ld	[%sp + 100], {emit_string exn_reg}\n`;
+        `	jmp	%g1 + 8\n`;
         `	add	%sp, 8, %sp\n`
 
 and fill_delay_slot = function
