@@ -440,9 +440,6 @@ let rec emit_instr i dslot =
         `	ld	[%sp + {emit_int(n - 4 + 96)}], %o7\n`
     | Lreturn ->
         let n = frame_size() in
-        (* Must and the return address even if this is a leaf routine,
-           because it may have been tail-called with a marked retaddr. *)
-        `	andn	%o7, 1, %o7\n`;
         `	retl\n`;
         `	add	%sp, {emit_int n}, %sp\n`
     | Llabel lbl ->

@@ -661,9 +661,6 @@ let rec emit_instr i dslot =
         `	ldw	{emit_int(-n)}(%r30), %r2\n`
     | Lreturn ->
         let n = frame_size() in
-        (* Clear mark bit even if this is a leaf routine,
-           as the return address may come from a tailcall. *)
-        `	depi	0, 0, 1, %r2\n`;
         `	bv	0(%r2)\n`;
         `	ldo	{emit_int(-n)}(%r30), %r30\n` (* in delay slot *)
     | Llabel lbl ->

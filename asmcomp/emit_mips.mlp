@@ -369,9 +369,6 @@ let emit_instr i =
         let n = frame_size() in
         if n > 0 then
           `	addu	$sp, $sp, {emit_int n}\n`;
-        (* Must and the return address even if this is a leaf routine,
-           because it may have been tail-called with a marked retaddr. *)
-        `	and	$31, $31, -2\n`;
         liveregs i 0;
         `	j	$31\n`
     | Llabel lbl ->
