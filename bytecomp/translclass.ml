@@ -424,7 +424,6 @@ let transl_class_rebind ids cl =
 
     let cla = Ident.create "class"
     and new_init = Ident.create "new_init"
-    and arg = Ident.create "arg"
     and env_init = Ident.create "env_init"
     and table = Ident.create "table"
     and envs = Ident.create "envs" in
@@ -689,8 +688,8 @@ let transl_class ids cl_id arity pub_meths cl =
   if top then llets (lbody_virt lambda_unit) else
 
   (* Now for the hard stuff: prepare for table cacheing *)
-  let env_index = Ident.create "env_index"
-  and envs = Ident.create "envs" in
+  let envs = Ident.create "envs"
+  and cached = Ident.create "cached" in
   let lenvs =
     if !new_ids_meths = [] && !new_ids_init = [] && inh_init = []
     then lambda_unit
@@ -717,8 +716,6 @@ let transl_class ids cl_id arity pub_meths cl =
          Lapply (oo_prim "new_variable", [Lvar cla; transl_label ""]),
          lam)
   in
-  let obj_init2 = Ident.create "obj_init"
-  and cached = Ident.create "cached" in
   let inh_paths =
     List.filter
       (fun (_,path) -> List.mem (Path.head path) new_ids) inh_init in

@@ -419,8 +419,8 @@ let rec push_defaults loc bindings pat_expr_list partial =
     [pat, ({exp_desc = Texp_function(pl,partial)} as exp)] ->
       let pl = push_defaults exp.exp_loc bindings pl partial in
       [pat, {exp with exp_desc = Texp_function(pl, partial)}]
-  | [pat, ({exp_desc = Texp_let
-             (Default, cases, ({exp_desc = Texp_function _} as e2))} as e1)] ->
+  | [pat, {exp_desc = Texp_let
+             (Default, cases, ({exp_desc = Texp_function _} as e2))}] ->
       push_defaults loc (cases :: bindings) [pat, e2] partial
   | [pat, exp] ->
       let exp =
@@ -574,7 +574,7 @@ and transl_exp0 e =
       end
   | Texp_apply(funct, oargs) ->
       event_after e (transl_apply (transl_exp funct) oargs)
-  | Texp_match({exp_desc = Texp_tuple argl} as arg, pat_expr_list, partial) ->
+  | Texp_match({exp_desc = Texp_tuple argl}, pat_expr_list, partial) ->
       Matching.for_multiple_match e.exp_loc
         (transl_list argl) (transl_cases pat_expr_list) partial
   | Texp_match(arg, pat_expr_list, partial) ->

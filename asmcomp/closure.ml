@@ -535,7 +535,7 @@ let rec close fenv cenv = function
        Value_unknown)
   | Lprim(p, args) ->
       simplif_prim p (close_list_approx fenv cenv args)
-  | Lswitch(arg, sw) as l ->
+  | Lswitch(arg, sw) ->
 (* NB: failaction might get copied, thus it should be some Lstaticraise *)
       let (uarg, _) = close fenv cenv arg in
       let const_index, const_actions =
@@ -621,7 +621,7 @@ and close_functions fenv cenv fun_defs =
   let uncurried_defs =
     List.map
       (function
-          (id, (Lfunction(kind, params, body) as def)) ->
+          (id, Lfunction(kind, params, body)) ->
             let label = Compilenv.make_symbol (Some (Ident.unique_name id)) in
             let arity = List.length params in
             let fundesc =
