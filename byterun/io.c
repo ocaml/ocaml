@@ -434,9 +434,11 @@ value caml_output_partial(value vchannel, value buff, value start, value length)
 {
   struct channel * channel = Channel(vchannel);
   int res;
-  Lock(channel);
-  res = putblock(channel, &Byte(buff, Long_val(start)), Long_val(length));
-  Unlock(channel);
+  Begin_root(buff)
+    Lock(channel);
+    res = putblock(channel, &Byte(buff, Long_val(start)), Long_val(length));
+    Unlock(channel);
+  End_roots();
   return Val_int(res);
 }
 
@@ -446,15 +448,15 @@ value caml_output(value vchannel, value buff, value start, value length) /* ML *
   long pos = Long_val(start);
   long len = Long_val(length);
 
-  Lock(channel);
   Begin_root(buff)
-    while (len > 0) {
-      int written = putblock(channel, &Byte(buff, pos), len);
-      pos += written;
-      len -= written;
-    }
+    Lock(channel);
+      while (len > 0) {
+        int written = putblock(channel, &Byte(buff, pos), len);
+        pos += written;
+        len -= written;
+      }
+    Unlock(channel);
   End_roots();
-  Unlock(channel);
   return Val_unit;
 }
 
@@ -502,9 +504,11 @@ value caml_input(value vchannel, value buff, value start, value length) /* ML */
   struct channel * channel = Channel(vchannel);
   long res;
 
-  Lock(channel);
-  res = getblock(channel, &Byte(buff, Long_val(start)), Long_val(length));
-  Unlock(channel);
+  Begin_root(buff)
+    Lock(channel);
+    res = getblock(channel, &Byte(buff, Long_val(start)), Long_val(length));
+    Unlock(channel);
+  End_roots();
   return Val_long(res);
 }
 
