@@ -56,8 +56,8 @@ static long compare_val(v1, v2)
     if (d1 < d2) return -1; else if (d1 > d2) return 1; else return 0;
   }
   case Double_array_tag: {
-    mlsize_t sz1 = Wosize_val(v1);
-    mlsize_t sz2 = Wosize_val(v2);
+    mlsize_t sz1 = Wosize_val(v1) / Double_wosize;
+    mlsize_t sz2 = Wosize_val(v2) / Double_wosize;
     mlsize_t i;
     if (sz1 != sz2) return sz1 - sz2;
     for (i = 0; i < sz1; i++) {
