@@ -37,11 +37,9 @@ value mycallback4(value fun, value arg1, value arg2, value arg3, value arg4)
 
 value mypushroot(value v, value fun, value arg)
 {
-  Push_roots(r, 1);
-  r[0] = v;
-  callback(fun, arg);
-  v = r[0];
-  Pop_roots();
+  Begin_root(v)
+    callback(fun, arg);
+  End_roots();
   return v;
 }
 
