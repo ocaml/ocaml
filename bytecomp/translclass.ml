@@ -456,26 +456,29 @@ let rec builtin_meths self env env2 body =
   let const_path = const_path (env::self) in
   let conv = function
     (* Lvar s when List.mem s self ->  "_self", [] *)
-    | p when const_path p -> "_const", [p]
+    | p when const_path p -> "const", [p]
     | Lprim(Parrayrefu _, [Lvar s; Lvar n]) when List.mem s self ->
-        "_var", [Lvar n]
+        "var", [Lvar n]
     | Lprim(Pfield n, [Lvar e]) when Ident.same e env ->
-        "_env", [Lvar env2; Lconst(Const_pointer n)]
+        "env", [Lvar env2; Lconst(Const_pointer n)]
     | Lsend(Lvar n, Lvar s, []) when List.mem s self ->
-        "_meth", [Lvar n]
+        "meth", [Lvar n]
     | _ -> raise Not_found
   in
   match body with
   | Llet(Alias, s', Lvar s, body) when List.mem s self ->
       builtin_meths self env env2 body
   | Lapply(f, [arg]) when const_path f ->
-      let s, args = conv arg in ("app"^s, f :: args)
+      let s, args = conv arg in ("app_"^s, f :: args)
   | Lapply(f, [arg; p]) when const_path f && const_path p ->
       let s, args = conv arg in
-      ("app"^s^"_const", f :: args @ [p])
+      ("app_"^s^"_const", f :: args @ [p])
   | Lapply(f, [p; arg]) when const_path f && const_path p ->
       let s, args = conv arg in
-      ("app_const"^s, f :: p :: args)
+      ("app_const_"^s, f :: p :: args)
+  | Lsend(Lvar n, Lvar s, [arg]) when List.mem s self ->
+      let s, args = conv arg in
+      ("meth_app_"^s, Lvar n :: args)
   | Lfunction (Curried, [x], body) ->
       let rec enter self = function
         | Lprim(Parraysetu _, [Lvar s; Lvar n; Lvar x'])
@@ -487,7 +490,7 @@ let rec builtin_meths self env env2 body =
       in enter self body
   | Lfunction _ -> raise Not_found
   | _ ->
-      let s, args = conv body in ("get"^s, args)
+      let s, args = conv body in ("get_"^s, args)
 
 module M = struct
   open CamlinternalOO
@@ -511,6 +514,10 @@ module M = struct
     | "app_var_const"   -> AppVarConst
     | "app_env_const"   -> AppEnvConst
     | "app_meth_const"  -> AppMethConst
+    | "meth_app_const"  -> MethAppConst
+    | "meth_app_var"    -> MethAppVar
+    | "meth_app_env"    -> MethAppEnv
+    | "meth_app_meth"   -> MethAppMeth
     | _ -> assert false
     in Lconst(Const_pointer(Obj.magic tag)) :: args
 end

@@ -544,6 +544,13 @@ let app_const_env f x e n =
   ret (fun obj -> f x (Obj.field (Array.unsafe_get obj e) n))
 let app_env_const f e n x =
   ret (fun obj -> f (Obj.field (Array.unsafe_get obj e) n) x)
+let meth_app_const n x = ret (fun obj -> (magic (send obj n)) x)
+let meth_app_var n m =
+  ret (fun obj -> (magic (send obj n)) (Array.unsafe_get obj m))
+let meth_app_env n e m =
+  ret (fun obj -> (magic (send obj n)) (Obj.field (Array.unsafe_get obj e) m))
+let meth_app_meth n m =
+  ret (fun obj -> (magic (send obj n)) (send obj m))
 
 type impl =
     GetConst
@@ -562,6 +569,10 @@ type impl =
   | AppVarConst
   | AppEnvConst
   | AppMethConst
+  | MethAppConst
+  | MethAppVar
+  | MethAppEnv
+  | MethAppMeth
   | Closure of Obj.t
 
 let method_impl i arr =
@@ -590,9 +601,17 @@ let method_impl i arr =
       let f = next() and n = next() and x = next() in app_var_const f n x
   | AppEnvConst ->
       let f = next() and e = next () and n = next() and x = next() in
-      app_const_env f e n x
+      app_env_const f e n x
   | AppMethConst ->
       let f = next() and n = next() and x = next() in app_meth_const f n x
+  | MethAppConst ->
+      let n = next() and x = next() in meth_app_const n x
+  | MethAppVar ->
+      let n = next() and m = next() in meth_app_var n m
+  | MethAppEnv ->
+      let n = next() and e = next() and m = next() in meth_app_env n e m
+  | MethAppMeth ->
+      let n = next() and m = next() in meth_app_meth n m
   | Closure _ as clo -> magic clo
 
 let set_methods table methods =
