@@ -351,7 +351,7 @@ let emit_instr i =
         `	mfc1	{emit_reg i.res.(0)}, $f10\n`
     | Lop(Ispecific sop) ->
         fatal_error "Emit_mips: Ispecific"
-    | Lreloadretaddr
+    | Lreloadretaddr ->
         let n = frame_size() in
         `	lw	$31, {emit_int(n - 4)}($sp)\n`
     | Lreturn ->
