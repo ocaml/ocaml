@@ -74,7 +74,7 @@ value lex_engine(tbl, start_state, lexbuf)     /* ML */
     }
     /* See if we need a refill */
     if (lexbuf->lex_curr_pos >= lexbuf->lex_buffer_len){
-      if (lexbuf->lex_eof_reached == Val_int (0)){
+      if (lexbuf->lex_eof_reached == Val_bool (0)){
 	return Val_int(-state - 1);
       }else{
 	c = 256;
@@ -101,7 +101,7 @@ value lex_engine(tbl, start_state, lexbuf)     /* ML */
       /* Erase the EOF condition only if the EOF pseudo-character was
 	 consumed by the automaton (i.e. there was no backtrack above)
        */
-      if (c == 256) lexbuf->lex_eof_reached = Val_int (0);
+      if (c == 256) lexbuf->lex_eof_reached = Val_bool (0);
     }
   }
 }
