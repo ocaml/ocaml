@@ -51,11 +51,11 @@ let usage speclist errmsg =
 
 let current = ref 0;;
 
-let parse speclist anonfun errmsg =
+let parse_array argv speclist anonfun errmsg =
   let initpos = !current in
   let stop error =
     let progname =
-      if initpos < Array.length Sys.argv then Sys.argv.(initpos) else "(?)" in
+      if initpos < Array.length argv then argv.(initpos) else "(?)" in
     begin match error with
       | Unknown "-help" -> ()
       | Unknown "--help" -> ()
@@ -74,10 +74,10 @@ let parse speclist anonfun errmsg =
     then exit 0
     else exit 2
   in
-  let l = Array.length Sys.argv in
+  let l = Array.length argv in
   incr current;
   while !current < l do
-    let s = Sys.argv.(!current) in
+    let s = argv.(!current) in
     if String.length s >= 1 && String.get s 0 = '-' then begin
       let action =
         try assoc3 s speclist
@@ -89,24 +89,24 @@ let parse speclist anonfun errmsg =
         | Set r -> r := true;
         | Clear r -> r := false;
         | String f when !current + 1 < l ->
-            let arg = Sys.argv.(!current+1) in
+            let arg = argv.(!current+1) in
             f arg;
             incr current;
         | Int f when !current + 1 < l ->
-            let arg = Sys.argv.(!current+1) in
+            let arg = argv.(!current+1) in
             begin try f (int_of_string arg)
             with Failure "int_of_string" -> stop (Wrong (s, arg, "an integer"))
             end;
             incr current;
         | Float f when !current + 1 < l ->
-            let arg = Sys.argv.(!current+1) in
+            let arg = argv.(!current+1) in
             begin try f (float_of_string arg);
             with Failure "float_of_string" -> stop (Wrong (s, arg, "a float"))
             end;
             incr current;
         | Rest f ->
             while !current < l-1 do
-              f Sys.argv.(!current+1);
+              f argv.(!current+1);
               incr current;
             done;
         | _ -> stop (Missing s)
@@ -119,3 +119,5 @@ let parse speclist anonfun errmsg =
     end;
   done;
 ;;
+
+let parse = parse_array Sys.argv;;

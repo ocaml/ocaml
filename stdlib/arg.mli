@@ -78,6 +78,11 @@ val parse :
     own [-help] and [--help] options in [speclist].
 *)
 
+val parse_array : string array ->
+  (string * spec * string) list -> (string -> unit) -> string -> unit
+(** [Arg.parse_array a speclist anonfun usage_msg] parses array [a] as
+  if it were the the command line. *)
+
 exception Bad of string
 (** Functions in [spec] or [anonfun] can raise [Arg.Bad] with an error
    message to reject invalid arguments. *)
