@@ -1,4 +1,4 @@
 let main () =
-  latexscan__main (lexing__create_lexer_channel stdin);;
+  Latexscan.main (Lexing.from_channel stdin);;
 
-printexc__f main (); exit 0;;
+Printexc.print main (); exit 0;;

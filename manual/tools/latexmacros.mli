@@ -3,6 +3,6 @@ type action =
   | Print_arg
   | Skip_arg;;
 
-value find_macro: string -> action list;;
+val find_macro: string -> action list;;
 
-value def_macro: string -> action list -> unit;;
+val def_macro: string -> action list -> unit;;

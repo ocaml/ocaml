@@ -5,29 +5,29 @@ all: texquote2 transf htmlquote htmlgen dvi2txt
 dvi2txt:
 	cd dvi_to_txt; ${MAKE}
 
-transf: transf.zo htmltransf.zo transfmain.zo
-	camlc -o transf -g transf.zo htmltransf.zo transfmain.zo
+transf: transf.cmo htmltransf.cmo transfmain.cmo
+	ocamlc -o transf -g transf.cmo htmltransf.cmo transfmain.cmo
 
 transf.ml: transf.mll
-	camllex transf.mll
+	ocamllex transf.mll
 
 htmltransf.ml: htmltransf.mll
-	camllex htmltransf.mll
+	ocamllex htmltransf.mll
 
-htmlgen: latexmacros.zo latexscan.zo latexmain.zo
-	camlc -o htmlgen -g latexmacros.zo latexscan.zo latexmain.zo
+htmlgen: latexmacros.cmo latexscan.cmo latexmain.cmo
+	ocamlc -o htmlgen -g latexmacros.cmo latexscan.cmo latexmain.cmo
 
 latexscan.ml: latexscan.mll
-	camllex latexscan.mll
+	ocamllex latexscan.mll
 
 .SUFFIXES:
-.SUFFIXES: .ml .zo .mli .zi .c
+.SUFFIXES: .ml .cmo .mli .cmi .c
 
-.ml.zo:
-	camlc -c $<
+.ml.cmo:
+	ocamlc -c $<
 
-.mli.zi:
-	camlc -c $<
+.mli.cmi:
+	ocamlc -c $<
 
 .c:
 	$(CC) $(CFLAGS) -o $@ $<
@@ -35,11 +35,11 @@ latexscan.ml: latexscan.mll
 clean:
 	rm -f texquote2 transf htmlquote htmlgen dvi2txt
 	rm -f transf.ml latex.ml
-	rm -f *.o *.zi *.zo *.zix
+	rm -f *.o *.cm? *.cmxa
 	rm -f *~ #*#
 	cd dvi_to_txt; ${MAKE} clean
 
-latexmacros.zo: latexmacros.zi 
-latexmain.zo: latexscan.zo 
-latexscan.zo: latexmacros.zi 
-transfmain.zo: transf.zo htmltransf.zo 
+latexmacros.cmo: latexmacros.cmi 
+latexmain.cmo: latexscan.cmo 
+latexscan.cmo: latexmacros.cmi 
+transfmain.cmo: transf.cmo htmltransf.cmo 

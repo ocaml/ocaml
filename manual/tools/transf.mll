@@ -1,3 +1,5 @@
+{ open Lexing;; }
+
 rule main = parse
     "\\begin{syntax}" {
       print_string "\\begin{syntax}";
@@ -9,7 +11,7 @@ rule main = parse
       print_string "\\synt{";
       syntax lexbuf }
   | _ {
-      print_char (get_lexeme_char lexbuf 0); main lexbuf }
+      print_char (lexeme_char lexbuf 0); main lexbuf }
   | eof {
       () }
 
@@ -20,23 +22,23 @@ and syntax = parse
   | "@" {
       print_string "}";
       main lexbuf }
-  | `'` {
+  | '\'' {
       print_string "\\token{";
       inquote lexbuf }
-  | `"` {
+  | '"' {
       print_string "\\token{";
       indoublequote lexbuf }
   | "epsilon" { print_string "\\emptystring"; syntax lexbuf }
-  | [`a`-`z``-`] + {
+  | ['a'-'z''-'] + {
       print_string "\\nonterm{";
-      print_string (get_lexeme lexbuf);
+      print_string (lexeme lexbuf);
       print_string"}";
       syntax lexbuf }
-  | `\\` [`a`-`z``A`-`Z`] + {
-      print_string (get_lexeme lexbuf);
+  | '\\' ['a'-'z''A'-'Z'] + {
+      print_string (lexeme lexbuf);
       syntax lexbuf }
-  | [`_` `^`] _ {
-      print_string (get_lexeme lexbuf);
+  | ['_' '^'] _ {
+      print_string (lexeme lexbuf);
       syntax lexbuf }
   | "{" { print_string "\\brepet{}"; syntax lexbuf }
   | "}" { print_string "\\erepet{}"; syntax lexbuf }
@@ -51,30 +53,31 @@ and syntax = parse
   | "|" { print_string "\\alt{}"; syntax lexbuf }
   | ";" { print_string "\\sep{}"; syntax lexbuf }
   | _ {
-      print_char (get_lexeme_char lexbuf 0);
+      print_char (lexeme_char lexbuf 0);
       syntax lexbuf }
 
 and inquote = parse
-    [`A`-`Z` `a`-`z` `0`-`9`] {
-      print_char (get_lexeme_char lexbuf 0);
+    ['A'-'Z' 'a'-'z' '0'-'9'] {
+      print_char (lexeme_char lexbuf 0);
       inquote lexbuf }
-  | `'` {
+  | '\'' {
       print_string "}";
       syntax lexbuf }
   | _ {
       print_string "\\char";
-      print_int (int_of_char (get_lexeme_char lexbuf 0));
+      print_int (int_of_char (lexeme_char lexbuf 0));
       inquote lexbuf }
 
 and indoublequote = parse
-    [`A`-`Z` `a`-`z` `0`-`9`] {
-      print_char (get_lexeme_char lexbuf 0);
+    ['A'-'Z' 'a'-'z' '0'-'9'] {
+      print_char (lexeme_char lexbuf 0);
       indoublequote lexbuf }
-  | `"` {
+  | '"' {
       print_string "}";
       syntax lexbuf }
   | _ {
       print_string "\\char";
-      print_int (int_of_char (get_lexeme_char lexbuf 0));
+      print_int (int_of_char (lexeme_char lexbuf 0));
       indoublequote lexbuf }
-;;
+
+

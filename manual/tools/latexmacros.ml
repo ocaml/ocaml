@@ -1,11 +1,16 @@
-let cmdtable = (hashtbl__new 19 : (string, action list) hashtbl__t);;
+type action =
+    Print of string
+  | Print_arg
+  | Skip_arg;;
+
+let cmdtable = (Hashtbl.create 19 : (string, action list) Hashtbl.t);;
 
 let def_macro name action =
-  hashtbl__add cmdtable name action;;
+  Hashtbl.add cmdtable name action;;
 
 let find_macro name =
   try
-    hashtbl__find cmdtable name
+    Hashtbl.find cmdtable name
   with Not_found ->
     prerr_string "Unknown macro: "; prerr_endline name; [];;
 
