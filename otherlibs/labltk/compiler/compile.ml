@@ -119,7 +119,8 @@ let ppMLtype ?(any=false) ?(return=false) ?(def=false) ?(counter=ref 0) =
         Not_found -> Printf.eprintf "ppMLtype %s/%s\n" sup sub; exit (-1)
      end
   | List ty -> (ppMLtype ty) ^ " list"
-  | Product tyl -> String.concat ~sep:" * " (List.map ~f:ppMLtype tyl)
+  | Product tyl ->
+      "(" ^ String.concat ~sep:" * " (List.map ~f:ppMLtype tyl) ^ ")"
   | Record tyl -> 
       String.concat ~sep:" * "
         (List.map tyl ~f:(fun (l, t) -> typelabel l ^ ppMLtype t))
@@ -453,6 +454,14 @@ let rec converterCAMLtoTK ~context_widget argname ty =
            if requires_widget_context s then context_widget ^ " " ^ args
            else args in
        name ^ args
+ | Product tyl ->
+     let vars = varnames ~prefix:"z" (List.length tyl) in
+     String.concat ~sep:" "
+       ("let" :: String.concat ~sep:"," vars :: "=" :: argname ::
+        "in TkTokenList [" ::
+        String.concat ~sep:"; "
+          (List.map2 vars tyl ~f:(converterCAMLtoTK ~context_widget)) ::
+        ["]"])
  | Function _ -> fatal_error "unexpected function type in converterCAMLtoTK"
  | Unit -> fatal_error "unexpected unit type in converterCAMLtoTK"
  | Product _ -> fatal_error "unexpected product type in converterCAMLtoTK"

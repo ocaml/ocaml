@@ -78,6 +78,8 @@ Type1 :
      { Subtype ("options", $3) }
   | Type1 AS STRING
      { As ($1, $3) }
+  | LBRACE Type_list RBRACE
+      { Product $2 }
 ;
 
 /* with list constructors */
@@ -95,14 +97,13 @@ Labeled_type2 :
       { $1, $3 }
 ;
 
-/* products
+/* products */
 Type_list :
     Type2 COMMA Type_list
       { $1 :: $3 }
   | Type2
       { [$1] }
 ;
-*/
 
 /* records */
 Type_record :

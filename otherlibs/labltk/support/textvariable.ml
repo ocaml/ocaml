@@ -68,7 +68,7 @@ let rem_all_handles var =
 
 
 (* Variable trace *)
-let handle vname f =
+let handle vname ~callback:f =
   let id = new_function_id() in
   let wrapped _ =
     clear_callback id;

@@ -403,16 +403,12 @@ widget canvas {
    function (int,int,int,int) bbox [widget(canvas); "bbox"; TagOrId list]
    external bind "builtin/canvas_bind"
    function (float) canvasx [widget(canvas); "canvasx"; x:int; ?spacing:[int]]
-#   function (float) canvasx [widget(canvas); "canvasx"; x:int]
-#   function (float) canvasx_grid [widget(canvas); "canvasx"; x:int; spacing:int]
    function (float) canvasy [widget(canvas); "canvasy"; y:int; ?spacing:[int]]
-#   function (float) canvasy [widget(canvas); "canvasy"; y:int]
-#   function (float) canvasy_grid [widget(canvas); "canvasy"; y:int; spacing:int]
    function () configure [widget(canvas); "configure"; option(canvas) list]
    function (string) configure_get [widget(canvas); "configure"]
    # TODO: check result
    function (float list) coords_get [widget(canvas); "coords"; TagOrId]
-   function () coords_set [widget(canvas); "coords"; TagOrId; coords: int list]
+   function () coords_set [widget(canvas); "coords"; TagOrId; xys: {int, int} list]
    # create variations (see below)
    function () dchars [widget(canvas); "dchars"; TagOrId; first: Index(canvas); last: Index(canvas)]
    function () delete [widget(canvas); "delete"; TagOrId list]
@@ -452,9 +448,9 @@ widget canvas {
    function (TagOrId) create_arc [widget(canvas); "create"; "arc"; x1: int; y1: int; x2: int; y2: int; option(arc) list]
    function (TagOrId) create_bitmap [widget(canvas); "create"; "bitmap"; x: int; y: int; option(bitmap) list]
    function (TagOrId) create_image [widget(canvas); "create"; "image"; x: int; y: int; option(image) list]
-   function (TagOrId) create_line [widget(canvas); "create"; "line"; xys: int list; option(line) list]
+   function (TagOrId) create_line [widget(canvas); "create"; "line"; xys: {int, int} list; option(line) list]
    function (TagOrId) create_oval [widget(canvas); "create"; "oval"; x1: int; y1: int; x2: int; y2: int; option(oval) list]
-   function (TagOrId) create_polygon [widget(canvas); "create"; "polygon"; xys: int list; option(polygon) list]
+   function (TagOrId) create_polygon [widget(canvas); "create"; "polygon"; xys: {int, int} list; option(polygon) list]
    function (TagOrId) create_rectangle [widget(canvas); "create"; "rectangle"; x1: int; y1: int; x2: int; y2: int; option(rectangle) list]
    function (TagOrId) create_text [widget(canvas); "create"; "text"; x: int; y: int; option(canvastext) list]
    function (TagOrId) create_window [widget(canvas); "create"; "window"; x: int; y: int; option(window) list]
@@ -877,8 +873,6 @@ subtype option(menuentry) {
    Font
    Foreground
    Image
-#   ImageBitmap
-#   ImagePhoto
    IndicatorOn
    Label ["-label"; string]
    Menu ["-menu"; widget(menu)]
@@ -886,8 +880,6 @@ subtype option(menuentry) {
    OnValue
    SelectColor
    SelectImage
-#   SelectImageBitmap
-#   SelectImagePhoto
    State
    UnderlinedChar
    Value ["-value"; string]
@@ -898,7 +890,6 @@ subtype option(menuentry) {
 subtype option(menucascade) {
    ActiveBackground ActiveForeground Accelerator
    Background Bitmap Command Font Foreground
-#   ImageBitmap ImagePhoto Label Menu State UnderlinedChar
    Image Label Menu State UnderlinedChar
    }
 
@@ -906,9 +897,7 @@ subtype option(menucascade) {
 subtype option(menuradio) {
    ActiveBackground ActiveForeground Accelerator
    Background Bitmap Command Font Foreground
-#   ImageBitmap ImagePhoto IndicatorOn Label
    Image IndicatorOn Label
-#   SelectColor SelectImageBitmap SelectImagePhoto
    SelectColor SelectImage
    State UnderlinedChar Value Variable
    }
@@ -917,9 +906,7 @@ subtype option(menuradio) {
 subtype option(menucheck) {
    ActiveBackground ActiveForeground Accelerator
    Background Bitmap Command Font Foreground
-#   ImageBitmap ImagePhoto IndicatorOn Label
    Image IndicatorOn Label
-#   OffValue OnValue SelectColor SelectImageBitmap SelectImagePhoto 
    OffValue OnValue SelectColor SelectImage
    State UnderlinedChar Variable
    }
@@ -928,7 +915,6 @@ subtype option(menucheck) {
 subtype option(menucommand) {
    ActiveBackground ActiveForeground Accelerator
    Background Bitmap Command Font Foreground
-#   ImageBitmap ImagePhoto Label State UnderlinedChar
    Image Label State UnderlinedChar
    }
 
@@ -963,12 +949,12 @@ widget menu {
    function (string) configure_get [widget(menu); "configure"]
    # beware of possible callback leak when deleting menu entries
    function () delete [widget(menu); "delete"; first: Index(menu); last: Index(menu)]
-   function () configure_cascade [widget(menu); "entryconfigure"; index: Index(menu); option(menucascade) list]
-   function () configure_checkbutton [widget(menu); "entryconfigure"; index: Index(menu); option(menucheck) list]
-   function () configure_command [widget(menu); "entryconfigure"; index: Index(menu); option(menucommand) list]
-   function () configure_radiobutton [widget(menu); "entryconfigure"; index: Index(menu); option(menuradio) list]
-   function (string) entryconfigure_get [widget(menu); "entryconfigure"; index: Index(menu)]
-   function (int) index [widget(menu); "index"; index: Index(menu)]
+   function () configure_cascade [widget(menu); "entryconfigure"; Index(menu); option(menucascade) list]
+   function () configure_checkbutton [widget(menu); "entryconfigure"; Index(menu); option(menucheck) list]
+   function () configure_command [widget(menu); "entryconfigure"; Index(menu); option(menucommand) list]
+   function () configure_radiobutton [widget(menu); "entryconfigure"; Index(menu); option(menuradio) list]
+   function (string) entryconfigure_get [widget(menu); "entryconfigure"; Index(menu)]
+   function (int) index [widget(menu); "index"; Index(menu)]
    function () insert_cascade [widget(menu); "insert"; index: Index(menu); "cascade"; option(menucascade) list]
    function () insert_checkbutton [widget(menu); "insert"; index: Index(menu); "checkbutton"; option(menucheck) list]
    function () insert_command [widget(menu); "insert"; index: Index(menu); "command"; option(menucommand) list]
@@ -1159,8 +1145,8 @@ subtype option(photoimage) {
   }
 
 subtype photo(copy) {
-  ImgFrom(Src) ["-from"; int; int; int; int]
-  ImgTo(Dst)   ["-to"; int; int; int; int]
+  ImgFrom(Src_area) ["-from"; int; int; int; int]
+  ImgTo(Dst_area)   ["-to"; int; int; int; int]
   Shrink       ["-shrink"]
   Zoom         ["-zoom"; int; int]
   Subsample    ["-subsample"; int; int]
@@ -1174,7 +1160,7 @@ subtype photo(read) {
   ImgFormat ["-format"; string]
   ImgFrom
   Shrink
-  TopLeft(Dst) ["-to"; int; int]
+  TopLeft(Dst_pos) ["-to"; int; int]
   }
 
 subtype photo(write) {
@@ -1186,7 +1172,7 @@ module Imagephoto {
   function () blank [ImagePhoto; "blank"]
   function () configure [ImagePhoto; "configure"; option(photoimage) list]
   function (string) configure_get [ImagePhoto; "configure"]
-  function () copy [ImagePhoto; "copy"; dst: ImagePhoto; photo(copy) list]
+  function () copy [src: ImagePhoto; "copy"; dst: ImagePhoto; photo(copy) list]
   function (int, int, int) get [ImagePhoto; "get"; x: int; y: int]
 # can't express nested lists ?
 #  function () put [ImagePhoto; "put"; [[Color list] list]; photo(put) list]

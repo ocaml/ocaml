@@ -35,7 +35,7 @@ val name : textVariable -> string
 val cCAMLtoTKtextVariable : textVariable -> tkArgs
       (* Internal conversion function *)
 
-val handle : textVariable -> (unit -> unit) -> unit
+val handle : textVariable -> callback:(unit -> unit) -> unit
       (* Callbacks on variable modifications *)
 
 val coerce : string -> textVariable
