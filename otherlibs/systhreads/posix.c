@@ -1,6 +1,6 @@
 /***********************************************************************/
 /*                                                                     */
-/*                         Caml Special Light                          */
+/*                             Objective Caml                          */
 /*                                                                     */
 /*         Xavier Leroy and Damien Doligez, INRIA Rocquencourt         */
 /*                                                                     */
@@ -82,10 +82,10 @@ static pthread_mutex_t caml_mutex;
 
 /* The key used for storing the thread descriptor in the specific data
    of the corresponding Posix thread. */
-pthread_key_t thread_descriptor_key;
+static pthread_key_t thread_descriptor_key;
 
 /* The key used for unlocking I/O channels on exceptions */
-pthread_key_t last_channel_locked_key;
+static pthread_key_t last_channel_locked_key;
 
 /* Identifier for next thread creation */
 static long thread_next_ident = 0;
@@ -297,6 +297,7 @@ value caml_thread_initialize(unit)   /* ML */
     /* Create an info block for the current thread */
     curr_thread =
       (caml_thread_t) stat_alloc(sizeof(struct caml_thread_struct));
+    curr_thread->pthread = pthread_self();
     curr_thread->descr = descr;
     curr_thread->next = curr_thread;
     curr_thread->prev = curr_thread;
@@ -331,7 +332,7 @@ value caml_thread_initialize(unit)   /* ML */
 /* Create a thread */
 
 static void * caml_thread_start(th)
-  caml_thread_t th;
+     caml_thread_t th;
 {
   value clos;
 
@@ -396,7 +397,7 @@ value caml_thread_new(clos)          /* ML */
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_DETACHED);
     caml_pthread_check(
         pthread_create(&th->pthread, &attr, caml_thread_start, (void *) th),
-        "Thread.new");
+        "Thread.create");
   End_roots();
   return descr;
 }
@@ -474,7 +475,8 @@ value caml_mutex_new(unit)        /* ML */
   value mut;
   mut = alloc_final(1 + sizeof(pthread_mutex_t) / sizeof(value),
                     caml_mutex_finalize, 1, Max_mutex_number);
-  caml_pthread_check(pthread_mutex_init(&Mutex_val(mut), NULL), "Mutex.new");
+  caml_pthread_check(pthread_mutex_init(&Mutex_val(mut), NULL),
+                     "Mutex.create");
   return mut;
 }
 
@@ -528,7 +530,7 @@ value caml_condition_new(unit)        /* ML */
   cond = alloc_final(1 + sizeof(pthread_cond_t) / sizeof(value),
                      caml_condition_finalize, 1, Max_condition_number);
   caml_pthread_check(pthread_cond_init(&Condition_val(cond), NULL),
-                     "Condition.new");
+                     "Condition.create");
   return cond;
 }
 

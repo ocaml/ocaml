@@ -9,7 +9,7 @@ NATIVECODE_C_OBJS=posix_n.o
 
 THREAD_OBJS=thread.cmo condition.cmo event.cmo threadUnix.cmo
 
-GENFILES=pervasives.mli thread.ml condition.ml
+GENFILES=thread.ml
 
 all: libthreads.a threads.cma
 
@@ -68,7 +68,6 @@ installopt:
 	@chmod -w $*.ml
 
 thread.ml: thread.mlp
-condition.ml: condition.mlp
 
 depend:
 	gcc -MM -I../../byterun *.c > .depend
