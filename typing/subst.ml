@@ -173,10 +173,11 @@ let type_declaration s decl =
             Type_variant(
               List.map (fun (n, args) -> (n, List.map (typexp s) args))
                        cstrs)
-        | Type_record lbls ->
+        | Type_record(lbls, rep) ->
             Type_record(
               List.map (fun (n, mut, arg) -> (n, mut, typexp s arg))
-                       lbls)
+                       lbls,
+              rep)
         end;
       type_manifest =
         begin match decl.type_manifest with

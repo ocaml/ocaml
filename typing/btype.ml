@@ -172,7 +172,7 @@ let unmark_type_decl decl =
     Type_abstract -> ()
   | Type_variant cstrs ->
       List.iter (fun (c, tl) -> List.iter unmark_type tl) cstrs
-  | Type_record lbls ->
+  | Type_record(lbls, rep) ->
       List.iter (fun (c, mut, t) -> unmark_type t) lbls
   end;
   begin match decl.type_manifest with

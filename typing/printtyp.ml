@@ -389,7 +389,7 @@ let rec type_decl kwd id ppf decl =
   | Type_variant [] -> ()
   | Type_variant cstrs ->
       List.iter (fun (_, args) -> List.iter mark_loops args) cstrs
-  | Type_record l ->
+  | Type_record(l, rep) ->
       List.iter (fun (_, _, ty) -> mark_loops ty) l
   end;
 
@@ -417,7 +417,7 @@ let rec type_decl kwd id ppf decl =
         print_name_args decl
         (print_list constructor (fun () -> fprintf ppf "@ | ")) cstrs
         print_constraints params
-  | Type_record lbls ->
+  | Type_record(lbls, rep) ->
       fprintf ppf "@[<2>@[<hv 2>%a = {%a@;<1 -2>}@]@ %a@]"
         print_name_args decl
         (print_list_init label (fun () -> fprintf ppf "@ ")) lbls

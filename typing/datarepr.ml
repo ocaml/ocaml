@@ -58,21 +58,8 @@ let dummy_label =
   { lbl_res = none; lbl_arg = none; lbl_mut = Immutable;
     lbl_pos = (-1); lbl_all = [||]; lbl_repres = Record_regular }
 
-(* We cannot call Ctype.expand_head directly here, so we rely
-   on label_descrs being passed the partial application
-   (Ctype.expand_head current_env). *)
-
-let is_float expand_fn ty =
-  match expand_fn ty with
-    {desc = Tconstr(p, _, _)} -> Path.same p Predef.path_float
-  | _ -> false
-
-let label_descrs expand_fn ty_res lbls_init lbls =
+let label_descrs ty_res lbls repres =
   let all_labels = Array.create (List.length lbls) dummy_label in
-  let repres =
-    if List.for_all (fun (name, flag, ty) -> is_float expand_fn ty) lbls_init
-    then Record_float
-    else Record_regular in
   let rec describe_labels num = function
       [] -> []
     | (name, mut_flag, ty_arg) :: rest ->

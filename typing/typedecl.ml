@@ -57,6 +57,13 @@ let rec enter_types env = function
   | _ ->
       fatal_error "Typedecl.enter_types"
 
+(* Determine if a type is (an abbreviation for) the type "float" *)
+
+let is_float env ty =
+  match Ctype.repr (Ctype.expand_head env ty) with
+    {desc = Tconstr(p, _, _)} -> Path.same p Predef.path_float
+  | _ -> false
+
 (* Translate one type declaration *)
 
 module StringSet =
@@ -148,10 +155,16 @@ let transl_declaration2 env (name, sdecl) (id, decl) =
                   raise(Error(sdecl.ptype_loc, Duplicate_label name));
                 all_labels := StringSet.add name !all_labels)
               lbls;
-            Type_record(List.map
-              (fun (name, mut, arg) ->
-                      (name, mut, transl_simple_type env true arg))
-              lbls)
+            let lbls' =
+              List.map
+                (fun (name, mut, arg) ->
+                         (name, mut, transl_simple_type env true arg))
+                lbls in
+            let rep =
+              if List.for_all (fun (name, mut, arg) -> is_float env arg) lbls'
+              then Record_float
+              else Record_regular in
+            Type_record(lbls', rep)
         end;
       type_manifest = typ } in
   (id, decl')
@@ -165,7 +178,7 @@ let generalize_decl decl =
       ()
   | Type_variant v ->
       List.iter (fun (_, tyl) -> List.iter Ctype.generalize tyl) v
-  | Type_record r ->
+  | Type_record(r, rep) ->
       List.iter (fun (_, _, ty) -> Ctype.generalize ty) r
   end;
   begin match decl.type_manifest with

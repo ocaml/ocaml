@@ -415,7 +415,7 @@ let closed_type_decl decl =
         ()
     | Type_variant v ->
         List.iter (fun (_, tyl) -> List.iter closed_type tyl) v
-    | Type_record r ->
+    | Type_record(r, rep) ->
         List.iter (fun (_, _, ty) -> closed_type ty) r
     end;
     begin match decl.type_manifest with
@@ -937,8 +937,6 @@ let _ = try_expand_head' := try_expand_head
 (* Fully expand the head of a type. *)
 let rec expand_head env ty =
   try try_expand_head env ty with Cannot_expand -> repr ty
-
-let _ = Env.expand_head := expand_head
 
 (* Make sure that the type parameters of the type constructor [ty]
    respect the type constraints *)
@@ -2456,10 +2454,12 @@ let nondep_type_decl env mid id is_covariant decl =
                 Type_variant(List.map
                   (fun (c, tl) -> (c, List.map (nondep_type_rec env mid) tl))
                   cstrs)
-            | Type_record lbls ->
-                Type_record(List.map
-                  (fun (c, mut, t) -> (c, mut, nondep_type_rec env mid t))
-                  lbls)
+            | Type_record(lbls, rep) ->
+                Type_record(
+                  List.map
+                    (fun (c, mut, t) -> (c, mut, nondep_type_rec env mid t))
+                    lbls,
+                  rep)
           with Not_found when is_covariant ->
             Type_abstract
           end;
@@ -2479,7 +2479,7 @@ let nondep_type_decl env mid id is_covariant decl =
       Type_abstract -> ()
     | Type_variant cstrs ->
         List.iter (fun (c, tl) -> List.iter unmark_type tl) cstrs
-    | Type_record lbls ->
+    | Type_record(lbls, rep) ->
         List.iter (fun (c, mut, t) -> unmark_type t) lbls
     end;
     begin match decl.type_manifest with

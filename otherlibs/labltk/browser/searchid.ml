@@ -228,7 +228,7 @@ let rec search_type_in_signature t in:sign :prefix :mode =
             Type_abstract -> false
           | Type_variant l ->
             List.exists l pred:(fun (_, l) -> List.exists l pred:matches)
-          | Type_record l ->
+          | Type_record(l, rep) ->
             List.exists l pred:(fun (_, _, t) -> matches t)
           end
           then [lid_of_id id, Ptype] else []

@@ -44,7 +44,7 @@ let find_label lbl lbls =
 
 let get_record_labels ty tenv =
   match get_type_descr ty tenv with
-  | {type_kind = Type_record lbls} -> lbls
+  | {type_kind = Type_record(lbls, rep)} -> lbls
   | _ -> fatal_error "Parmatch.get_record_labels"
 
 (*************************************)

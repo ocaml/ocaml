@@ -50,7 +50,8 @@ let type_declarations env id decl1 decl2 =
                                      (ty2::decl2.type_params))
               arg1 arg2)
           cstrs1 cstrs2
-    | (Type_record labels1, Type_record labels2) ->
+    | (Type_record(labels1, rep1), Type_record(labels2, rep2)) ->
+        rep1 = rep2 &&
         for_all2
           (fun (lbl1, mut1, ty1) (lbl2, mut2, ty2) ->
             lbl1 = lbl2 & mut1 = mut2 &

@@ -263,7 +263,7 @@ module Make(O : OBJ) = struct
                           (print_constr env path) constr_name
                           (print_val_list 1 depth obj) tyl;
                     end
-                | {type_kind = Type_record lbl_list} ->
+                | {type_kind = Type_record(lbl_list, rep)} ->
                     if check_depth depth obj ty then begin
                       let rec print_fields pos ppf = function
                       | [] -> ()
