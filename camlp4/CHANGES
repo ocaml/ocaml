@@ -1,6 +1,9 @@
 Camlp4 Version 3.04+1
 ---------------------
 
+- [23 Jan 02] The empty functional stream "fstream [: :]" is now of type
+  'a Fstream.t thanks to the new implementation of lazies allowing to
+  create polymorphic lazy values.
 - [11 Jan 02] Added a test in grammars using Plexer that a keyword is not
   used also as parameter of a LIDENT or a UIDENT.
 - [04 Jan 02] Fixed bug in pa_sml (SML syntax): the function definitions

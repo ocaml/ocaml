@@ -39,13 +39,13 @@ value empty s =
   | None -> Some ((), s) ]
 ;
 
-value nil () = {count = 0; data = Lazy.lazy_from_val Nil};
+value nil = {count = 0; data = lazy Nil};
 value cons a s = Cons a s;
 value app s1 s2 = App s1 s2;
 value flazy f = {count = 0; data = Lazy.lazy_from_fun f};
 
 value of_list l =
-  List.fold_right (fun x s -> flazy (fun () -> cons x s)) l (nil ())
+  List.fold_right (fun x s -> flazy (fun () -> cons x s)) l nil
 ;
 
 value of_string s =

@@ -38,13 +38,13 @@ let empty s =
   | None -> Some ((), s)
 ;;
 
-let nil () = {count = 0; data = Lazy.lazy_from_val Nil};;
+let nil = {count = 0; data = lazy Nil};;
 let cons a s = Cons (a, s);;
 let app s1 s2 = App (s1, s2);;
 let flazy f = {count = 0; data = Lazy.lazy_from_fun f};;
 
 let of_list l =
-  List.fold_right (fun x s -> flazy (fun () -> cons x s)) l (nil ())
+  List.fold_right (fun x s -> flazy (fun () -> cons x s)) l nil
 ;;
 
 let of_string s =

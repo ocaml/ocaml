@@ -53,7 +53,7 @@ val count_unfrozen : 'a t -> int;;
 
 (*--*)
 
-val nil : unit -> 'a t;;
+val nil : 'a t;;
 type 'a data;;
 val cons : 'a -> 'a t -> 'a data;;
 val app : 'a t -> 'a t -> 'a data;;

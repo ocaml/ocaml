@@ -107,7 +107,7 @@ value slazy loc x = <:expr< fun () -> $x$ >>;
 
 value rec cstream loc =
   fun
-  [ [] -> <:expr< Fstream.nil () >>
+  [ [] -> <:expr< Fstream.nil >>
   | [SeTrm loc e :: sel] ->
       let e2 = cstream loc sel in
       let x = <:expr< Fstream.cons $e$ $e2$ >> in
