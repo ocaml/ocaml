@@ -64,8 +64,9 @@ struct caml_thread_struct {
   struct caml_thread_struct * next;  /* Double linking of running threads */
   struct caml_thread_struct * prev;
 #ifdef NATIVE_CODE
-  struct caml_context * last_context;
-                                /* Saved value of caml_last_context */
+  char * bottom_of_stack;       /* Saved value of caml_bottom_of_stack */
+  unsigned long last_retaddr;   /* Saved value of caml_last_return_address */
+  value * gc_regs;              /* Saved value of caml_gc_regs */
   char * exception_pointer;     /* Saved value of caml_exception_pointer */
   struct caml__roots_block * local_roots; /* Saved value of local_roots */
 #else
@@ -96,14 +97,6 @@ static __declspec( thread ) struct channel * last_channel_locked = NULL;
 /* Identifier for next thread creation */
 static long thread_next_ident = 0;
 
-/* These declarations should go in some include file */
-
-#ifdef NATIVE_CODE
-extern char * caml_bottom_of_stack;
-extern unsigned long caml_last_return_address;
-extern char * caml_exception_pointer;
-#endif
-
 /* Forward declarations */
 
 static void caml_wthread_error (char * msg);
@@ -122,8 +115,9 @@ static void caml_thread_scan_roots(scanning_action action)
     /* Don't rescan the stack of the current thread, it was done already */
     if (th != curr_thread) {
 #ifdef NATIVE_CODE
-      if (th->last_context != NULL)
-        do_local_roots(action, th->last_context, th->local_roots);
+      if (th->bottom_of_stack != NULL)
+        do_local_roots(action, th->bottom_of_stack, th->last_retaddr,
+                       th->gc_regs, th->local_roots);
 #else
       do_local_roots(action, th->sp, th->stack_high, th->local_roots);
 #endif
@@ -146,7 +140,9 @@ static void caml_thread_enter_blocking_section(void)
   /* Save the stack-related global variables in the thread descriptor
      of the current thread */
 #ifdef NATIVE_CODE
-  curr_thread->last_context = caml_last_context;
+  curr_thread->bottom_of_stack = caml_bottom_of_stack;
+  curr_thread->last_retaddr = caml_last_return_address;
+  curr_thread->gc_regs = caml_gc_regs;
   curr_thread->exception_pointer = caml_exception_pointer;
   curr_thread->local_roots = local_roots;
 #else
@@ -168,7 +164,9 @@ static void caml_thread_leave_blocking_section(void)
   WaitForSingleObject(caml_mutex, INFINITE);
   /* Restore the stack-related global variables */
 #ifdef NATIVE_CODE
-  caml_last_context = curr_thread->last_context;
+  caml_bottom_of_stack= curr_thread->bottom_of_stack;
+  caml_last_return_address = curr_thread->last_retaddr;
+  caml_gc_regs = curr_thread->gc_regs;
   caml_exception_pointer = curr_thread->exception_pointer;
   local_roots = curr_thread->local_roots;
 #else
@@ -218,7 +216,7 @@ static void caml_io_mutex_unlock_exn(void)
   if (last_channel_locked != NULL) caml_io_mutex_unlock(last_channel_locked);
 }
 
-/* The "tick" thread fakes a SIGVTALRM signal at regular intervals. */
+/* The "tick" thread fakes a signal at regular intervals. */
 
 static void * caml_thread_tick(void)
 {
@@ -347,6 +345,7 @@ value caml_thread_new(value clos)          /* ML */
     th->descr = descr;
 #ifdef NATIVE_CODE
     th->bottom_of_stack = NULL;
+    th->exception_pointer = NULL;
     th->local_roots = NULL;
 #else
     /* Allocate the stacks */
