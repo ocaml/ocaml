@@ -180,8 +180,8 @@ EXTEND
     [ "top"
       [ "declare"; st = LIST0 [ s = str_item; ";" -> s ]; "end" ->
           <:str_item< declare $list:st$ end >>
-      | "exception"; (c, tl) = constructor_declaration ->
-          <:str_item< exception $c$ of $list:tl$ >>
+      | "exception"; (c, tl) = constructor_declaration; b = rebind_exn ->
+          <:str_item< exception $c$ of $list:tl$ = $b$ >>
       | "external"; i = LIDENT; ":"; t = ctyp; "="; pd = LIST1 STRING ->
           <:str_item< external $i$ : $t$ = $list:pd$ >>
       | "include"; me = module_expr -> <:str_item< include $me$ >>
@@ -195,6 +195,10 @@ EXTEND
       | "value"; r = OPT "rec"; l = LIST1 let_binding SEP "and" ->
           <:str_item< value $rec:o2b r$ $list:l$ >>
       | e = expr -> <:str_item< $exp:e$ >> ] ]
+  ;
+  rebind_exn:
+    [ [ "="; sl = mod_ident -> sl
+      | -> [] ] ]
   ;
   module_binding:
     [ RIGHTA
@@ -787,14 +791,21 @@ EXTEND
       | "#"; sl = mod_ident -> <:patt< # $list:sl$ >> ] ]
   ;
   ipatt:
-    [ [ i = TILDEIDENTCOLON; p = SELF -> <:patt< ~ $i$ : $p$ >>
-      | i = TILDEIDENT -> <:patt< ~ $i$ >>
-      | i = QUESTIONIDENTCOLON; j = LIDENT -> <:patt< ? $i$ : $lid:j$ >>
-      | i = QUESTIONIDENTCOLON; "("; j = LIDENT; "="; e = expr; ")" ->
-          <:patt< ? $i$ : ( $lid:j$ = $e$ ) >>
-      | i = QUESTIONIDENT -> <:patt< ? $i$ : $lid:i$ >>
-      | "?"; "("; i = LIDENT; "="; e = expr; ")" ->
-          <:patt< ? $i$ : ( $lid:i$ = $e$ ) >> ] ]
+    [ [ i = TILDEIDENTCOLON; p = SELF ->
+          <:patt< ~ $i$ : $p$ >>
+      | i = TILDEIDENT ->
+          <:patt< ~ $i$ >>
+      | i = QUESTIONIDENTCOLON; "("; p = ipatt; ")" ->
+          <:patt< ? $i$ : ( $p$ ) >>
+      | i = QUESTIONIDENTCOLON; "("; p = ipatt; "="; e = expr; ")" ->
+          <:patt< ? $i$ : ( $p$ = $e$ ) >>
+      | i = QUESTIONIDENTCOLON; "("; p = ipatt; ":"; t = ctyp; ")" ->
+          <:patt< ? $i$ : ( $p$ : $t$ ) >>
+      | i = QUESTIONIDENTCOLON; "("; p = ipatt; ":"; t = ctyp; "=";
+        e = expr; ")" ->
+          <:patt< ? $i$ : ( $p$ : $t$ = $e$ ) >>
+      | i = QUESTIONIDENT ->
+          <:patt< ? $i$ >> ] ]
   ;
   expr: AFTER "apply"
     [ "label"

@@ -636,8 +636,14 @@ and str_item s l =
       mkstr loc (Pstr_class_type (List.map (class_info class_type) ctd)) :: l
   | StDcl (loc, sl) -> List.fold_right str_item sl l
   | StDir (loc, _, _) -> l
-  | StExc (loc, n, tl) ->
-      mkstr loc (Pstr_exception (n, List.map ctyp tl)) :: l
+  | StExc (loc, n, tl, sl) ->
+      let si =
+        match tl, sl with
+          tl, [] -> Pstr_exception (n, List.map ctyp tl)
+        | [], sl -> Pstr_exn_rebind (n, long_id_of_string_list loc sl)
+        | _ -> error loc "bad exception declaration"
+      in
+      mkstr loc si :: l
   | StExp (loc, e) -> mkstr loc (Pstr_eval (expr e)) :: l
   | StExt (loc, n, t, p) ->
       mkstr loc (Pstr_primitive (n, mkvalue_desc t p)) :: l

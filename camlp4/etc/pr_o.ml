@@ -393,7 +393,7 @@ value rec is_irrefut_patt =
       List.for_all (fun (_, p) -> is_irrefut_patt p) fpl
   | <:patt< ($p$ : $_$) >> -> is_irrefut_patt p
   | <:patt< ($list:pl$) >> -> List.for_all is_irrefut_patt pl
-  | <:patt< ? $_$ : $p$ >> -> is_irrefut_patt p
+  | <:patt< ? $_$ : ($p$) >> -> is_irrefut_patt p
   | <:patt< ? $_$ : ($p$ = $_$) >> -> is_irrefut_patt p
   | <:patt< ~ $_$ : $p$ >> -> is_irrefut_patt p
   | _ -> False ]
@@ -872,9 +872,13 @@ pr_str_item.pr_levels :=
                 " *)"
             in
             [: `S LR s :]
-      | <:str_item< exception $c$ of $list:tl$ >> ->
+      | <:str_item< exception $c$ of $list:tl$ = $b$ >> ->
           fun curr next dg k ->
-            [: `variant [: `S LR "exception" :] (c, tl) "" k :]
+             match b with
+            [ [] -> [: `variant [: `S LR "exception" :] (c, tl) "" k :]
+            | _ ->
+                [: `variant [: `S LR "exception" :] (c, tl) "" [: `S LR "=" :];
+                   mod_ident b "" k :] ]
       | <:str_item< include $me$ >> ->
           fun curr next dg k -> [: `S LR "include"; `module_expr me "" k :]
       | <:str_item< type $list:tdl$ >> ->
@@ -1561,9 +1565,9 @@ pr_patt.pr_levels :=
       | <:patt< ~ $i$ : $p$ >> ->
           fun curr next dg k ->
             [: `S LO ("~" ^ i ^ ":"); `simple_patt p "" k :]
-      | <:patt< ? $i$ : $lid:j$ >> when i = j ->
+      | <:patt< ? $i$ : ($lid:j$) >> when i = j ->
           fun curr next dg k -> [: `S LR ("?" ^ i); k :]
-      | <:patt< ? $i$ : $p$ >> ->
+      | <:patt< ? $i$ : ($p$) >> ->
           fun curr next dg k ->
             [: `S LO ("?" ^ i ^ ":"); `simple_patt p "" k :]
       | <:patt< ? $i$ : ($lid:j$ = $e$) >> when i = j ->

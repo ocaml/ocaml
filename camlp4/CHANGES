@@ -5,7 +5,8 @@ Camlp4 Version 3.03
   named "True" of "False" (capitalized, i.e. not like the booleans), it
   did not work.
 - [04 Oct 01] Fixed some revised and quotation syntaxes in objects classes
-  and types (cleaner). Cleaned up also several parts of the parsers.
+  and types (cleaner). Cleaned up also several parts of the parsers. Completed
+  missing cases.
 - [02 Oct 01] In revised syntax, the warning for using old syntax for
   sequences is now by default. To remove it, the option -no-warn-seq
   of camlp4r has been added. Option -warn-seq has been removed.

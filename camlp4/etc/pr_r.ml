@@ -296,7 +296,7 @@ value rec is_irrefut_patt =
       List.for_all (fun (_, p) -> is_irrefut_patt p) fpl
   | <:patt< ($p$ : $_$) >> -> is_irrefut_patt p
   | <:patt< ($list:pl$) >> -> List.for_all is_irrefut_patt pl
-  | <:patt< ? $_$ : $p$ >> -> is_irrefut_patt p
+  | <:patt< ? $_$ : ( $p$ ) >> -> is_irrefut_patt p
   | <:patt< ? $_$ : ($p$ = $_$) >> -> is_irrefut_patt p
   | <:patt< ~ $_$ : $p$ >> -> is_irrefut_patt p
   | _ -> False ]
@@ -324,7 +324,7 @@ value rec get_defined_ident =
   | <:patt< $p1$ .. $p2$ >> -> get_defined_ident p1 @ get_defined_ident p2
   | <:patt< ($p$ : $_$) >> -> get_defined_ident p
   | <:patt< ~ $_$ : $p$ >> -> get_defined_ident p
-  | <:patt< ? $_$ : $p$ >> -> get_defined_ident p
+  | <:patt< ? $_$ : ($p$) >> -> get_defined_ident p
   | <:patt< ? $_$ : ($p$ = $e$) >> -> get_defined_ident p
   | MLast.PaAnt _ p -> get_defined_ident p ]
 ;
@@ -870,9 +870,13 @@ pr_str_item.pr_levels :=
                 " *)"
             in
             [: `S LR s :]
-      | <:str_item< exception $c$ of $list:tl$ >> ->
+      | <:str_item< exception $c$ of $list:tl$ = $b$ >> ->
           fun curr next _ k ->
-            [: `variant [: `S LR "exception" :] (c, tl) k :]
+            match b with
+            [ [] -> [: `variant [: `S LR "exception" :] (c, tl) k :]
+            | _ ->
+                [: `variant [: `S LR "exception" :] (c, tl) [: `S LR "=" :];
+                   mod_ident b k :] ]
       | <:str_item< include $me$ >> ->
           fun curr next _ k -> [: `S LR "include"; `module_expr me k :]
       | <:str_item< type $list:tdl$ >> ->
@@ -1391,18 +1395,19 @@ pr_patt.pr_levels :=
       | <:patt< ` $i$ >> -> fun curr next _ k -> [: `S LR ("`" ^ i); k :]
       | <:patt< # $list:sl$ >> ->
           fun curr next _ k -> [: `S LO "#"; mod_ident sl k :]
-      | <:patt< ~ $i$ : $lid:j$ >> when i = j ->
-          fun curr next _ k -> [: `S LR ("~" ^ i); k :]
       | <:patt< ~ $i$ : $p$ >> ->
           fun curr next _ k -> [: `S LO ("~" ^ i ^ ":"); curr p "" k :]
-      | <:patt< ? $i$ : $lid:j$ >> when i = j ->
-          fun curr next _ k -> [: `S LR ("?" ^ i); k :]
-      | <:patt< ? $i$ : $p$ >> ->
-          fun curr next _ k -> [: `S LO ("?" ^ i ^ ":"); curr p "" k :]
-      | <:patt< ? $i$ : ($lid:j$ = $e$) >> when i = j ->
+      | <:patt< ? $i$ : ($p$ : $t$) >> ->
           fun curr next _ k ->
-            [: `S LO "?"; `S LO "("; `S LR (var_escaped j); `S LR "=";
-               `expr e [: `S RO ")"; k :] :]
+            [: `S LO ("?"^ i ^ ":"); `S LO "("; `patt p [: `S LR ":" :];
+               `ctyp t [: `S RO ")"; k :] :]
+      | <:patt< ? $i$ : ($p$) >> ->
+          fun curr next _ k ->
+            [: `S LO ("?"^ i ^ ":"); `S LO "("; `patt p [: `S RO ")"; k :] :]
+      | <:patt< ? $i$ : ($p$ : $t$ = $e$) >> ->
+          fun curr next _ k ->
+            [: `S LO ("?" ^ i ^ ":"); `S LO "("; `patt p [: `S LR ":" :];
+               `ctyp t [: `S LR "=" :]; `expr e [: `S RO ")"; k :] :]
       | <:patt< ? $i$ : ($p$ = $e$) >> ->
           fun curr next _ k ->
             [: `S LO ("?" ^ i ^ ":"); `S LO "("; `patt p [: `S LR "=" :];

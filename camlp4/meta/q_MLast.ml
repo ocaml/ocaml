@@ -124,9 +124,9 @@ EXTEND
     [ [ "declare"; st = SLIST0 [ s = str_item; ";" -> s ]; "end" ->
           Node "StDcl" [st]
       | "#"; n = lident; dp = dir_param -> Node "StDir" [n; dp]
-      | "exception"; ctl = constructor_declaration ->
+      | "exception"; ctl = constructor_declaration; b = rebind_exn ->
           match ctl with
-          [ Tuple ctl -> Node "StExc" ctl
+          [ Tuple ctl -> Node "StExc" (ctl @ [b])
           | _ -> match () with [] ]
       | "external"; i = lident; ":"; t = ctyp; "="; p = SLIST1 string ->
           Node "StExt" [i; t; p]
@@ -141,6 +141,10 @@ EXTEND
       | a = anti_ -> a
       | e = expr -> Node "StExp" [e]
       | e = anti_exp -> Node "StExp" [e] ] ]
+  ;
+  rebind_exn:
+    [ [ "="; sl = mod_ident -> sl
+      | -> List [] ] ]
   ;
   module_binding:
     [ RIGHTA
@@ -384,12 +388,19 @@ EXTEND
     | [ p1 = SELF; p2 = SELF -> Node "PaApp" [p1; p2] ]
     | [ p1 = SELF; "."; p2 = SELF -> Node "PaAcc" [p1; p2] ]
     | NONA
-      [ "~"; i = lident; ":"; p = SELF -> Node "PaLab" [i; p]
-      | "~"; i = lident -> Node "PaLab" [i; Node "PaLid" [i]]
-      | "?"; i = lident; ":"; p = SELF -> Node "PaOlb" [i; p; Option None]
-      | "?"; i = lident; ":"; "("; p = SELF; "="; e = expr; ")" ->
-          Node "PaOlb" [i; p; Option (Some e)]
-      | "?"; i = lident -> Node "PaOlb" [i; Node "PaLid" [i]; Option None] ]
+      [ "~"; i = lident; ":"; p = SELF ->
+          Node "PaLab" [i; p]
+      | "~"; i = lident ->
+          Node "PaLab" [i; Node "PaLid" [i]]
+      | "?"; i = lident; ":"; "("; p = patt; e = OPT [ "="; e = expr -> e ];
+        ")" ->
+          Node "PaOlb" [i; p; Option e]
+      | "?"; i = lident; ":"; "("; p = patt; ":"; t = ctyp;
+        e = OPT [ "="; e = expr -> e ]; ")" ->
+          let p = Node "PaTyc" [p; t] in
+          Node "PaOlb" [i; p; Option e]
+      | "?"; i = lident ->
+          Node "PaOlb" [i; Node "PaLid" [i]; Option None] ]
     | "simple"
       [ v = LIDENT -> Node "PaLid" [Str v]
       | v = UIDENT -> Node "PaUid" [Str v]

@@ -222,7 +222,8 @@ and str_item floc sh =
         StClt (floc loc, List.map (class_infos class_type floc sh) x1)
     | StDcl (loc, x1) -> StDcl (floc loc, List.map self x1)
     | StDir (loc, x1, x2) -> StDir (floc loc, x1, x2)
-    | StExc (loc, x1, x2) -> StExc (floc loc, x1, List.map (ctyp floc sh) x2)
+    | StExc (loc, x1, x2, x3) ->
+        StExc (floc loc, x1, List.map (ctyp floc sh) x2, x3)
     | StExp (loc, x1) -> StExp (floc loc, expr floc sh x1)
     | StExt (loc, x1, x2, x3) -> StExt (floc loc, x1, ctyp floc sh x2, x3)
     | StInc (loc, x1) -> StInc (floc loc, module_expr floc sh x1)

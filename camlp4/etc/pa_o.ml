@@ -372,8 +372,8 @@ EXTEND
   ;
   str_item:
     [ "top"
-      [ "exception"; (c, tl) = constructor_declaration ->
-          <:str_item< exception $c$ of $list:tl$ >>
+      [ "exception"; (c, tl) = constructor_declaration; b = rebind_exn ->
+          <:str_item< exception $c$ of $list:tl$ = $b$ >>
       | "external"; i = LIDENT; ":"; t = ctyp; "="; pd = LIST1 STRING ->
           <:str_item< external $i$ : $t$ = $list:pd$ >>
       | "external"; "("; i = operator_rparen; ":"; t = ctyp; "=";
@@ -398,6 +398,10 @@ EXTEND
       | "let"; "module"; m = UIDENT; mb = module_binding; "in"; e = expr ->
           <:str_item< let module $m$ = $mb$ in $e$ >>
       | e = expr -> <:str_item< $exp:e$ >> ] ]
+  ;
+  rebind_exn:
+    [ [ "="; sl = mod_ident -> sl
+      | -> [] ] ]
   ;
   module_binding:
     [ RIGHTA
@@ -1118,20 +1122,30 @@ EXTEND
       | "#"; t = mod_ident -> <:patt< # $list:t$ >> ] ]
   ;
   labeled_patt:
-    [ [ i = TILDEIDENTCOLON; p = patt LEVEL "simple" -> <:patt< ~ $i$ : $p$ >>
-      | i = TILDEIDENT -> <:patt< ~ $i$ >>
-      | i = QUESTIONIDENTCOLON; j = LIDENT -> <:patt< ? $i$ : $lid:j$ >>
-      | i = QUESTIONIDENTCOLON; "("; lp = let_pattern; "="; e = expr; ")" ->
-          <:patt< ? $i$ : ( $lp$ = $e$ ) >>
-      | i = QUESTIONIDENT -> <:patt< ? $i$ : $lid:i$ >>
+    [ [ i = TILDEIDENTCOLON; p = patt LEVEL "simple" ->
+           <:patt< ~ $i$ : $p$ >>
+      | i = TILDEIDENT ->
+           <:patt< ~ $i$ >>
+      | "~"; "("; i = LIDENT; ":"; t = ctyp; ")" ->
+           <:patt< ~ $i$ : ($lid:i$ : $t$) >>
+      | i = QUESTIONIDENTCOLON; j = LIDENT ->
+           <:patt< ? $i$ : ($lid:j$) >>
+      | i = QUESTIONIDENTCOLON; "("; p = patt; "="; e = expr; ")" ->
+          <:patt< ? $i$ : ( $p$ = $e$ ) >>
+      | i = QUESTIONIDENTCOLON; "("; p = patt; ":"; t = ctyp; ")" ->
+          <:patt< ? $i$ : ( $p$ : $t$ ) >>
+      | i = QUESTIONIDENTCOLON; "("; p = patt; ":"; t = ctyp; "=";
+        e = expr; ")" ->
+          <:patt< ? $i$ : ( $p$ : $t$ = $e$ ) >>
+      | i = QUESTIONIDENT -> <:patt< ? $i$ : ($lid:i$) >>
       | "?"; "("; i = LIDENT; "="; e = expr; ")" ->
           <:patt< ? $i$ : ( $lid:i$ = $e$ ) >>
       | "?"; "("; i = LIDENT; ":"; t = ctyp; "="; e = expr; ")" ->
-          <:patt< ? $i$ : ( ($lid:i$ : $t$) = $e$ ) >> ] ]
-  ;
-  let_pattern:
-    [ [ p = patt -> p
-      | p = patt; ":"; t = ctyp -> <:patt< ($p$ : $t$) >> ] ]
+          <:patt< ? $i$ : ( $lid:i$ : $t$ = $e$ ) >>
+      | "?"; "("; i = LIDENT; ")" ->
+          <:patt< ? $i$ >>
+      | "?"; "("; i = LIDENT; ":"; t = ctyp; ")" ->
+          <:patt< ? $i$ : ( $lid:i$ : $t$ ) >> ] ]
   ;
   class_type:
     [ [ i = LIDENT; ":"; t = ctyp LEVEL "ctyp1"; "->"; ct = SELF ->

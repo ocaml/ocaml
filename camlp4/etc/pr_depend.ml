@@ -172,7 +172,7 @@ and str_item =
   [ StCls _ cil -> list (fun ci -> class_expr ci.ciExp) cil
   | StDcl _ sil -> list str_item sil
   | StDir _ _ _ -> ()
-  | StExc _ _ tl -> list ctyp tl
+  | StExc _ _ tl _ -> list ctyp tl
   | StExp _ e -> expr e
   | StExt _ _ t _ -> ctyp t
   | StMod _ _ me -> module_expr me

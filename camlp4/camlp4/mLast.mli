@@ -138,7 +138,7 @@ and str_item =
   | StClt of loc and list (class_infos class_type)
   | StDcl of loc and list str_item
   | StDir of loc and string and option expr
-  | StExc of loc and string and list ctyp
+  | StExc of loc and string and list ctyp and list string
   | StExp of loc and expr
   | StExt of loc and string and ctyp and list string
   | StInc of loc and module_expr

@@ -1677,11 +1677,11 @@ EXTEND
   labeled_patt:
     [ [ i = LABEL; p = patt LEVEL "simple" -> <:patt< ~ $i$ : $p$ >>
       | i = ELABEL -> <:patt< ~ $i$ >>
-      | "?"; i = LABEL; j = LIDENT -> <:patt< ? $i$ : $lid:j$ >>
-      | "?"; "("; i = LABEL; j = LIDENT; ")" -> <:patt< ? $i$ : $lid:j$ >>
+      | "?"; i = LABEL; j = LIDENT -> <:patt< ? $i$ : ($lid:j$) >>
+      | "?"; "("; i = LABEL; j = LIDENT; ")" -> <:patt< ? $i$ : ($lid:j$) >>
       | "?"; "("; i = LABEL; j = LIDENT; "="; e = expr; ")" ->
           <:patt< ? $i$ : ( $lid:j$ = $e$ ) >>
-      | "?"; i = ELABEL -> <:patt< ? $i$ : $lid:i$ >>
+      | "?"; i = ELABEL -> <:patt< ? $i$ : ($lid:i$) >>
       | "?"; "("; i = ELABEL; "="; e = expr; ")" ->
           <:patt< ? $i$ : ( $lid:i$ = $e$ ) >> ] ]
   ;
