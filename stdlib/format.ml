@@ -13,9 +13,15 @@
 
 (* $Id$ *)
 
+(**************************************************************
+
+  Data structures definitions.
+
+ **************************************************************)
+
 (* Tokens are one of the following : *)
 
-type pp_token = 
+type pp_token =
 | Pp_text of string            (* normal text *)
 | Pp_break of int * int        (* complete break *)
 | Pp_tbreak of int * int       (* go to next tab *)
@@ -50,12 +56,12 @@ and tblock = Pp_tbox of int list ref  (* Tabulation box *)
 type pp_queue_elem =
 {mutable elem_size : int; token : pp_token; length : int};;
 
-(* Scan stack
+(* Scan stack:
    each element is (left_total, queue element) where left_total
    is the value of pp_left_total when the element has been enqueued *)
 type pp_scan_elem = Scan_elem of int * pp_queue_elem;;
 
-(* Formatting Stack:
+(* Formatting stack:
    used to break the lines while printing tokens.
    The formatting stack contains the description of
    the currently active blocks. *)
@@ -111,7 +117,14 @@ type formatter =
  mutable pp_queue : pp_queue_elem queue
 };;
 
-(* Qeues *)
+(**************************************************************
+
+  Auxilliaries and basic functions.
+
+ **************************************************************)
+
+
+(* Qeues auxilliaries. *)
 let make_queue () = {insert = Nil; body = Nil};;
 
 let clear_queue q = q.insert <- Nil; q.body <- Nil;;
@@ -194,6 +207,12 @@ let pp_skip_token state =
        state.pp_left_total <- state.pp_left_total - len;
        state.pp_space_left <- state.pp_space_left + size;;
 
+(**************************************************************
+
+  The main pretting printing functions.
+
+ **************************************************************)
+
 (* To format a token *)
 let format_pp_token state size = function
 
@@ -233,7 +252,7 @@ let format_pp_token state size = function
 
   | Pp_stab ->
      begin match state.pp_tbox_stack with
-     | Pp_tbox tabs :: _ -> 
+     | Pp_tbox tabs :: _ ->
         let rec add_tab n = function
           | [] -> [n]
           | x :: l as ls -> if n < x then n :: ls else x :: add_tab n l in
@@ -244,7 +263,7 @@ let format_pp_token state size = function
   | Pp_tbreak (n, off) ->
       let insertion_point = state.pp_margin - state.pp_space_left in
       begin match state.pp_tbox_stack with
-      | Pp_tbox tabs :: _ -> 
+      | Pp_tbox tabs :: _ ->
          let rec find n = function
            | x :: l -> if x >= n then x else find n l
            | [] -> raise Not_found in
@@ -274,7 +293,7 @@ let format_pp_token state size = function
      | Format_elem (ty, width) :: _ ->
         begin match ty with
         | Pp_hovbox ->
-           if size > state.pp_space_left 
+           if size > state.pp_space_left
            then break_new_line state off width
            else break_same_line state n
         | Pp_box ->
@@ -474,7 +493,7 @@ let pp_print_if_newline state () =
    block else (the value of) width blanks are printed.
    To do (?) : add a maximum width and offset value *)
 let pp_print_break state width offset =
-  if state.pp_curr_depth < state.pp_max_boxes then 
+  if state.pp_curr_depth < state.pp_max_boxes then
     scan_push state true
      {elem_size = (- state.pp_right_total); token = Pp_break (width, offset);
       length = width};;
@@ -501,7 +520,7 @@ let pp_close_tbox state () =
 let pp_print_tbreak state width offset =
   if state.pp_curr_depth < state.pp_max_boxes then
     scan_push state true
-     {elem_size = (- state.pp_right_total); token = Pp_tbreak (width, offset); 
+     {elem_size = (- state.pp_right_total); token = Pp_tbreak (width, offset);
       length = width};;
 
 let pp_print_tab state () = pp_print_tbreak state 0 0;;
@@ -563,7 +582,7 @@ let pp_get_margin state () = state.pp_margin;;
 
 let pp_set_formatter_output_functions state f g =
   state.pp_output_function <- f; state.pp_flush_function <- g;;
-let pp_get_formatter_output_functions state () = 
+let pp_get_formatter_output_functions state () =
   (state.pp_output_function, state.pp_flush_function);;
 
 let pp_set_all_formatter_output_functions state
@@ -571,7 +590,7 @@ let pp_set_all_formatter_output_functions state
   pp_set_formatter_output_functions state f g;
   state.pp_output_newline <- (function _ -> function () -> h ());
   state.pp_output_spaces <- (function _ -> function n -> i n);;
-let pp_get_all_formatter_output_functions state () = 
+let pp_get_all_formatter_output_functions state () =
   (state.pp_output_function, state.pp_flush_function,
    state.pp_output_newline state, state.pp_output_spaces state);;
 
@@ -579,7 +598,7 @@ let pp_set_formatter_out_channel state os =
   state.pp_output_function <- output os;
   state.pp_flush_function <- (fun () -> flush os);;
 
-let pp_make_formatter f g h i = 
+let pp_make_formatter f g h i =
  (* The initial state of the formatter contains a dummy box *)
  let pp_q = make_queue () in
  let sys_tok =
@@ -697,12 +716,40 @@ and get_all_formatter_output_functions =
     pp_get_all_formatter_output_functions std_formatter;;
 
 
-(* Printf implementation. *)
+(**************************************************************
 
+  Printf implementation.
+
+ **************************************************************)
+
+(* Basic primitive functions to format int and floating point numbers. *)
 external format_int : string -> int -> string = "format_int";;
 external format_float : string -> float -> string = "format_float";;
 
-let format_invalid_arg s c = invalid_arg (s ^ String.make 1 c);;
+(* Error messages when processing formats. *)
+
+(* Trailer: giving up at character number ... *)
+let giving_up mess fmt i =
+  "fprintf: " ^ mess ^ " ``" ^ fmt ^
+  "'', giving up at character number " ^ string_of_int i ^
+  (if i < String.length fmt
+   then " (" ^ String.make 1 fmt.[i] ^ ")."
+   else String.make 1 '.');;
+
+(* When an invalid format deserve a special error explanation. *)
+let format_invalid_arg mess fmt i = invalid_arg (giving_up mess fmt i);;
+
+(* Standard invalid format. *)
+let invalid_format fmt i = format_invalid_arg "bad format" fmt i;;
+
+(* Cannot find a valid integer into that format. *)
+let invalid_integer fmt i =
+  invalid_arg (giving_up "bad integer specification" fmt i);;
+
+(* Finding an integer out of a sub-string of the format. *)
+let format_int_of_string fmt i s =
+  try int_of_string s with
+  | Failure s -> invalid_integer fmt i;;
 
 (* [fprintf_out] is the printf-like function generator: given the
    - [str] flag that tells if we are printing into a string,
@@ -740,15 +787,13 @@ let fprintf_out str out ppf format =
           Printf.scan_format format i cont_s cont_a cont_t
       | '@' ->
           let j = succ i in
-          if j >= limit then invalid_arg ("fprintf: unknown format " ^ format)
-          else
+          if j >= limit then invalid_format format i else
           begin match format.[j] with
           | '@' ->
               pp_print_char ppf '@';
               doprn (succ j)
           | '[' ->
-              let j = do_pp_open ppf (i + 2) in
-              doprn j
+              do_pp_open ppf (succ j)
           | ']' ->
               pp_close_box ppf ();
               doprn (succ j)
@@ -768,16 +813,13 @@ let fprintf_out str out ppf format =
               pp_force_newline ppf ();
               doprn (succ j)
           | ';' ->
-              let j = do_pp_break ppf (i + 2) in
-              doprn j
+              do_pp_break ppf (succ j)
           | '<' ->
-              let size, j =
-                get_int "fprintf: bad print format " format (i + 2) in
-              if format.[pred j] != '>'
-               then invalid_arg ("fprintf: bad print format " ^ format)
-               else print_as := Some size;
-              doprn j
-          | c -> format_invalid_arg "fprintf: unknown format " c
+              let got_size size j =
+                print_as := Some size;
+                doprn (skip_gt j) in
+              get_int (succ j) got_size
+          | c -> invalid_format format j
           end
       | c -> pp_print_as_char c; doprn (succ i)
 
@@ -796,68 +838,76 @@ let fprintf_out str out ppf format =
       printer ppf;
     doprn i
 
-  and get_int s1 s2 i =
-   if i >= limit then invalid_arg (s1 ^ s2) else
+  and get_int i c =
+   if i >= limit then invalid_integer format i else
    match format.[i] with
-   | ' ' -> get_int s1 s2 (succ i)
-   | c ->
+   | ' ' -> get_int (succ i) c
+   | '%' ->
+      let cont_s s i = c (format_int_of_string format i s) i
+      and cont_a printer arg i = invalid_integer format i
+      and cont_t printer i = invalid_integer format i in
+      Printf.scan_format format i cont_s cont_a cont_t
+   | _ ->
       let rec get j =
-       if j >= limit then invalid_arg (s1 ^ s2) else
+       if j >= limit then invalid_integer format j else
        match format.[j] with
        | '0' .. '9' | '-' -> get (succ j)
-       | '>' | ' ' ->
-         if j = i then 0, succ j else
-          begin try int_of_string (String.sub format i (j - i)), succ j
-          with Failure _ -> invalid_arg (s1 ^ s2) end
-       | c -> format_invalid_arg (s1 ^ s2) c in
-       get i
+       | _ ->
+         if j = i then c 0 j else
+         c (format_int_of_string format j (String.sub format i (j - i))) j in
+      get i
 
-  and get_box_kind j =
-   if j >= limit then Pp_box, j else
-   match format.[j] with
+  and skip_gt i =
+   if i >= limit then invalid_format format i else
+   match format.[i] with
+   | ' ' -> skip_gt (succ i)
+   | '>' -> succ i
+   | _ -> invalid_format format i
+
+  and get_box_kind i =
+   if i >= limit then Pp_box, i else
+   match format.[i] with
    | 'h' ->
-      let j = succ j in
-      if j >= limit then Pp_hbox, j else
-      begin match format.[j] with
+      let i = succ i in
+      if i >= limit then Pp_hbox, i else
+      begin match format.[i] with
       | 'o' ->
-         let j = succ j in
-         if j >= limit
-          then invalid_arg ("fprintf: bad box format " ^ format) else
-         begin match format.[j] with
-         | 'v' -> Pp_hovbox, succ j
-         | c -> format_invalid_arg "fprintf: bad box name " c end
-      | 'v' -> Pp_hvbox, succ j
-      | c -> Pp_hbox, j
+         let i = succ i in
+         if i >= limit then format_invalid_arg "bad box format" format i else
+         begin match format.[i] with
+         | 'v' -> Pp_hovbox, succ i
+         | _ -> format_invalid_arg "bad box name ho" format i end
+      | 'v' -> Pp_hvbox, succ i
+      | c -> Pp_hbox, i
       end
-   | 'b' -> Pp_box, succ j
-   | 'v' -> Pp_vbox, succ j
-   | _ -> Pp_box, j
+   | 'b' -> Pp_box, succ i
+   | 'v' -> Pp_vbox, succ i
+   | _ -> Pp_box, i
 
   and do_pp_break ppf i =
-   if i >= limit then begin pp_print_space ppf (); i end else
+   if i >= limit then begin pp_print_space ppf (); doprn i end else
    match format.[i] with
    | '<' ->
-     let nspaces, j =
-       get_int "fprintf: bad break format " format (succ i) in
-     let offset, j =
-       get_int "fprintf: bad break format " format j in
-     if format.[pred j] != '>'
-     then invalid_arg "fprintf: bad break format" format
-     else pp_print_break ppf nspaces offset;
-     j
-   | c -> pp_print_space ppf (); i
+       let rec got_nspaces nspaces j =
+         get_int j (got_offset nspaces)
+       and got_offset nspaces offset j =
+         pp_print_break ppf nspaces offset;
+         doprn (skip_gt j) in
+       get_int (succ i) got_nspaces
+   | c -> pp_print_space ppf (); doprn i
 
   and do_pp_open ppf i =
-   if i >= limit then begin pp_open_box_gen ppf 0 Pp_box; i end else
+   if i >= limit then begin pp_open_box_gen ppf 0 Pp_box; doprn i end else
    match format.[i] with
    | '<' ->
      let kind, j = get_box_kind (succ i) in
-     let size, j = get_int "fprintf: bad box format " format j in
-     pp_open_box_gen ppf size kind;
-     j
-   | c -> pp_open_box_gen ppf 0 Pp_box; i
+     let got_size size j =
+       pp_open_box_gen ppf size kind;
+       doprn (skip_gt j) in
+     get_int j got_size
+   | c -> pp_open_box_gen ppf 0 Pp_box; doprn i in
 
-  in doprn 0;;
+  doprn 0;;
 
 let get_buffer_out b =
  let s = Buffer.contents b in
