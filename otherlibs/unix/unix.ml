@@ -119,10 +119,10 @@ type wait_flag =
     WNOHANG
   | WUNTRACED
 
-external execv : string -> string array -> unit = "unix_execv"
-external execve : string -> string array -> string array -> unit = "unix_execve"
-external execvp : string -> string array -> unit = "unix_execvp"
-external execvpe : string -> string array -> string array -> unit = "unix_execvpe"
+external execv : string -> string array -> 'a = "unix_execv"
+external execve : string -> string array -> string array -> 'a = "unix_execve"
+external execvp : string -> string array -> 'a = "unix_execvp"
+external execvpe : string -> string array -> string array -> 'a = "unix_execvpe"
 external fork : unit -> int = "unix_fork"
 external wait : unit -> int * process_status = "unix_wait"
 external waitpid : wait_flag list -> int -> int * process_status = "unix_waitpid"
@@ -522,8 +522,11 @@ external setsid : unit -> int = "unix_setsid"
 
 let system cmd =
   match fork() with
-     0 -> execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |];
-          exit 127
+     0 -> begin try
+            execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |]
+          with _ ->
+            exit 127
+          end
   | id -> snd(waitpid [] id)
 
 let rec safe_dup fd =
@@ -553,17 +556,23 @@ let perform_redirections new_stdin new_stdout new_stderr =
 let create_process cmd args new_stdin new_stdout new_stderr =
   match fork() with
     0 ->
-      perform_redirections new_stdin new_stdout new_stderr;
-      execvp cmd args;
-      exit 127
+      begin try
+        perform_redirections new_stdin new_stdout new_stderr;
+        execvp cmd args
+      with _ ->
+        exit 127
+      end
   | id -> id
 
 let create_process_env cmd args env new_stdin new_stdout new_stderr =
   match fork() with
     0 ->
-      perform_redirections new_stdin new_stdout new_stderr;
-      execvpe cmd args env;
-      exit 127
+      begin try
+        perform_redirections new_stdin new_stdout new_stderr;
+        execvpe cmd args env
+      with _ ->
+        exit 127
+      end
   | id -> id
 
 type popen_process =
