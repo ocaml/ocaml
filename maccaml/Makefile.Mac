@@ -68,10 +68,10 @@ prims.c Ä appliprims
       echo '#include "mlvalues.h"'
       echo '#include "prims.h"'
       streamedit -e '1,$ change "extern value " . "();"' appliprims
-      echo 'c_primitive cprim [] = {'
+      echo 'c_primitive builtin_cprim [] = {'
       streamedit -e '1,$ change "  " . ","' appliprims
       echo '0 };'
-      echo 'char * names_of_cprim [] = {'
+      echo 'char * names_of_builtin_cprim [] = {'
       streamedit -e '1,$ change "  ¶"" . "¶","' appliprims
       echo '0 };'
     end > prims.c

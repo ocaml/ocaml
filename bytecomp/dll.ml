@@ -136,7 +136,10 @@ let split str sep =
 let ld_library_path_contents () =
   let path_separator =
     match Sys.os_type with
-      "Unix" | "Cygwin" -> ':' | "Win32" -> ';' | _ -> assert false in
+    | "Unix" | "Cygwin" -> ':'
+	| "Win32" -> ';'
+	| "MacOS" -> ','
+	| _ -> assert false in
   try
     split (Sys.getenv "CAML_LD_LIBRARY_PATH") path_separator
   with Not_found ->

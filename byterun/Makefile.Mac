@@ -35,7 +35,8 @@ PPCOBJS = :interp.c.x :misc.c.x :stacks.c.x ¶
 
 PRIMS = alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c ¶
   intern.c interp.c ints.c io.c lexing.c md5.c meta.c obj.c parsing.c ¶
-  signals.c str.c sys.c terminfo.c callback.c weak.c finalise.c stacks.c
+  signals.c str.c sys.c terminfo.c callback.c weak.c finalise.c stacks.c ¶
+  dynlink.c
 
 PUBLIC_INCLUDES = mlvalues.h alloc.h misc.h callback.h fail.h custom.h
 
@@ -85,7 +86,7 @@ clean Ä
     delete -i ocamlrun.xcoff ocamlrun.dbg
 
 primitives Ä {PRIMS}
-    streamedit -d -e "/ ([a-z0-9_]+)¨0 *'('Å'* ML *'/ print ¨0" {PRIMS} ¶
+    streamedit -d -e "/CAMLprim value ([a-z0-9_]+)¨0Å/ print ¨0" {PRIMS} ¶
                > primitives
 
 :prims.c Ä primitives
@@ -93,10 +94,10 @@ primitives Ä {PRIMS}
       echo '#include "mlvalues.h"'
       echo '#include "prims.h"'
       streamedit -e '1,$ change "extern value " . "();"' primitives
-      echo 'c_primitive cprim [] = {'
+      echo 'c_primitive builtin_cprim [] = {'
       streamedit -e '1,$ change "  " . ","' primitives
       echo '0 };'
-      echo 'char * names_of_cprim [] = {'
+      echo 'char * names_of_builtin_cprim [] = {'
       streamedit -e '1,$ change "  ¶"" . "¶","' primitives
       echo '0 };'
     end > prims.c

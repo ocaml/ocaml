@@ -245,9 +245,75 @@ int system (char const *cmd)
     return result;
 }
 
-/* We don't need searchpath on the Macintosh because there are no #! scripts */
+/* We don't need search_exe_in_path on MacOS 9 because there
+   are no #! scripts */
 
-char *searchpath (char * name)
+char *search_exe_in_path (char * name)
 {
   return name;
+}
+
+
+/* O'Caml's use use of dynamic linking is Unix-specific, these are functions
+   from dynlink.c without the dynamic linking stuff.
+*/
+
+#include "misc.h"
+#include "mlvalues.h"
+#include "prims.h"
+
+struct ext_table shared_libs_path;
+struct ext_table prim_table;
+
+static c_primitive lookup_primitive(char * name)
+{
+  int i;
+  void * res;
+
+  for (i = 0; names_of_builtin_cprim[i] != NULL; i++) {
+    if (strcmp(name, names_of_builtin_cprim[i]) == 0)
+      return builtin_cprim[i];
+  }
+  return NULL;
+}
+
+void build_primitive_table(char * lib_path,
+                           char * libs,
+                           char * req_prims)
+{
+  char * p;
+
+  ext_table_init(&prim_table, 0x180);
+  for (p = req_prims; *p != 0; p += strlen(p) + 1) {
+    c_primitive prim = lookup_primitive(p);
+    if (prim == NULL)
+      fatal_error_arg("Fatal error: unknown C primitive `%s'\n", p);
+    ext_table_add(&prim_table, (void *) prim);
+  }
+}
+
+value dynlink_open_lib (value filename)
+{
+  return Val_unit;
+}
+
+value dynlink_close_lib(value handle)
+{
+  return Val_unit;
+}
+
+value dynlink_lookup_symbol(value handle, value symbolname)
+{
+  return Val_unit;
+}
+
+value dynlink_add_primitive(value handle)
+{
+  invalid_argument("dynlink_add_primitive");
+  return Val_unit; /* not reached */
+}
+
+value dynlink_get_current_libs(value unit)
+{
+  return Atom (0);
 }
