@@ -17,9 +17,10 @@ val init : int -> unit
   (* Initialize the generator, using the argument as a seed.
      The same seed will always yield the same sequence of numbers. *)
 val full_init : int array -> unit
-  (* Same as [init] but takes more data as seed.  It is not
-     useful to give more than 55 integers. *)
+  (* Same as [init] but takes more data as seed. *)
 
+val bits : unit -> int
+  (* Return 30 random bits in a nonnegative integer. *)
 val int : int -> int
   (* [Random.int bound] returns a random number between 0 (inclusive)
      and [bound] (exclusive).  [bound] must be positive and smaller

@@ -14,7 +14,7 @@
 (* "Linear feedback shift register" random number generator. *)
 (* References: Robert Sedgewick, "Algorithms", Addison-Wesley *)
 
-(* The PRNG is an additive congruential generator.
+(* The PRNG is a linear feedback shift register.
    It is seeded by a MD5-based PRNG.
 *)
 
@@ -33,27 +33,29 @@ let state = [|
 
 let j = ref 0
 
-(* Returns an integer 0 <= x < 1073741824 *)
-let raw () =
+(* Returns 30 random bits as an integer 0 <= x < 1073741824 *)
+let bits () =
   j := (!j + 1) mod 55;
   let newval =
     Array.unsafe_get state ((!j+24) mod 55) + Array.unsafe_get state !j in
   Array.unsafe_set state !j newval;
-  newval land max_int
+  newval land 0x3FFFFFFF
 
 (* Returns a float 0 <= x < 1 with at most 90 bits of precision. *)
 let rawfloat () =
-  let scale = float max_int +. 1.0
-  and r0 = float (raw ())
-  and r1 = float (raw ())
-  and r2 = float (raw ())
+  let scale = 1073741824.0
+  and r0 = float (bits ())
+  and r1 = float (bits ())
+  and r2 = float (bits ())
   in ((r0 /. scale +. r1) /. scale +. r2) /. scale
 
 let rec intaux n =
-  let r = raw () in
+  let r = bits () in
   if r >= n then intaux n else r
 let int bound =
-  (intaux (max_int / bound * bound)) mod bound
+  if bound > 0x3FFFFFFF
+  then invalid_arg "Random.int"
+  else (intaux (0x3FFFFFFF / bound * bound)) mod bound
 
 let float bound = rawfloat () *. bound
 
@@ -131,7 +133,7 @@ let rec sumsq v i0 i1 =
 
 let chisquare g n r =
   if n <= 10 * r then invalid_arg "chisquare";
-  let f = Array.new r 0 in
+  let f = Array.create r 0 in
   for i = 1 to n do
     let t = g r in
     f.(t) <- f.(t) + 1
