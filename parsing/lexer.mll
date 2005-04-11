@@ -135,7 +135,7 @@ let char_for_backslash = function
 let char_for_decimal_code lexbuf i =
   let c = 100 * (Char.code(Lexing.lexeme_char lexbuf i) - 48) +
            10 * (Char.code(Lexing.lexeme_char lexbuf (i+1)) - 48) +
-                (Char.code(Lexing.lexeme_char lexbuf (i+2)) - 48) in  
+                (Char.code(Lexing.lexeme_char lexbuf (i+2)) - 48) in
   if (c < 0 || c > 255) && not (in_comment ())
   then raise (Error(Illegal_escape (Lexing.lexeme lexbuf),
                     Location.curr lexbuf))
@@ -209,7 +209,7 @@ let newline = ('\010' | '\013' | "\013\010")
 let blank = [' ' '\009' '\012']
 let lowercase = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
 let uppercase = ['A'-'Z' '\192'-'\214' '\216'-'\222']
-let identchar = 
+let identchar =
   ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
 let symbolchar =
   ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
@@ -224,7 +224,7 @@ let bin_literal =
 let int_literal =
   decimal_literal | hex_literal | oct_literal | bin_literal
 let float_literal =
-  ['0'-'9'] ['0'-'9' '_']* 
+  ['0'-'9'] ['0'-'9' '_']*
   ('.' ['0'-'9' '_']* )?
   (['e' 'E'] ['+' '-']? ['0'-'9'] ['0'-'9' '_']*)?
 
@@ -283,7 +283,7 @@ rule token = parse
   | int_literal "n"
       { let s = Lexing.lexeme lexbuf in
         try
-          NATIVEINT 
+          NATIVEINT
             (Nativeint.of_string(String.sub s 0 (String.length s - 1)))
         with Failure _ ->
           raise (Error(Literal_overflow "nativeint", Location.curr lexbuf)) }
