@@ -557,7 +557,7 @@ EXTEND
           <:expr< let module $m$ = $mb$ in $e$ >>
       | "function"; OPT "|"; l = LIST1 match_case SEP "|" ->
           <:expr< fun [ $list:l$ ] >>
-      | "fun"; p = simple_patt; e = fun_def ->
+      | "fun"; p = patt LEVEL "simple"; e = fun_def ->
           <:expr< fun [$p$ -> $e$] >>
       | "match"; e = SELF; "with"; OPT "|"; l = LIST1 match_case SEP "|" ->
           <:expr< match $e$ with [ $list:l$ ] >>
@@ -718,7 +718,7 @@ EXTEND
   ;
   fun_binding:
     [ RIGHTA
-      [ p = simple_patt; e = SELF -> <:expr< fun $p$ -> $e$ >>
+      [ p = patt LEVEL "simple"; e = SELF -> <:expr< fun $p$ -> $e$ >>
       | "="; e = expr -> <:expr< $e$ >>
       | ":"; t = ctyp; "="; e = expr -> <:expr< ($e$ : $t$) >> ] ]
   ;
@@ -741,7 +741,7 @@ EXTEND
   ;
   fun_def:
     [ RIGHTA
-      [ p = simple_patt; e = SELF -> <:expr< fun $p$ -> $e$ >>
+      [ p = patt LEVEL "simple"; e = SELF -> <:expr< fun $p$ -> $e$ >>
       | "->"; e = expr -> <:expr< $e$ >> ] ]
   ;
   expr_ident:
@@ -792,11 +792,7 @@ EXTEND
     | LEFTA
       [ p1 = SELF; "."; p2 = SELF -> <:patt< $p1$ . $p2$ >> ]
     | "simple"
-      [ p = simple_patt -> p ] ]
-  ;
-
-  simple_patt:
-    [ [ s = LIDENT -> <:patt< $lid:s$ >>
+      [ s = LIDENT -> <:patt< $lid:s$ >>
       | s = UIDENT -> <:patt< $uid:s$ >>
       | s = INT -> <:patt< $int:s$ >>
       | s = INT32 -> MLast.PaInt32 _loc s
@@ -991,7 +987,7 @@ EXTEND
     [ [ "="; ce = class_expr -> ce
       | ":"; ct = class_type; "="; ce = class_expr ->
           <:class_expr< ($ce$ : $ct$) >>
-      | p = simple_patt; cfb = SELF ->
+      | p = patt LEVEL "simple"; cfb = SELF ->
           <:class_expr< fun $p$ -> $cfb$ >> ] ]
   ;
   class_type_parameters:
@@ -999,11 +995,11 @@ EXTEND
       | "["; tpl = LIST1 type_parameter SEP ","; "]" -> (_loc, tpl) ] ]
   ;
   class_fun_def:
-    [ [ p = simple_patt; "->"; ce = class_expr ->
+    [ [ p = patt LEVEL "simple"; "->"; ce = class_expr ->
           <:class_expr< fun $p$ -> $ce$ >>
       | p = labeled_patt; "->"; ce = class_expr ->
           <:class_expr< fun $p$ -> $ce$ >>
-      | p = simple_patt; cfd = SELF ->
+      | p = patt LEVEL "simple"; cfd = SELF ->
           <:class_expr< fun $p$ -> $cfd$ >>
       | p = labeled_patt; cfd = SELF ->
           <:class_expr< fun $p$ -> $cfd$ >> ] ]
@@ -1226,7 +1222,7 @@ EXTEND
     [ [ p = labeled_patt; e = SELF -> <:expr< fun $p$ -> $e$ >> ] ]
   ;
   labeled_patt:
-    [ [ i = LABEL; p = simple_patt ->
+    [ [ i = LABEL; p = patt LEVEL "simple" ->
            <:patt< ~ $i$ : $p$ >>
       | i = TILDEIDENT ->
            <:patt< ~ $i$ >>
