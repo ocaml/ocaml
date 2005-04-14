@@ -12,7 +12,10 @@
 
 (* $Id$ *)
 
-value gram = Grammar.gcreate (Plexer.gmake ());
+value (gram, q_position) =
+  let (lexer,pos) = Plexer.make_lexer () in
+  (Grammar.gcreate lexer, pos)
+;
 
 module Qast =
   struct
@@ -56,10 +59,20 @@ module Qast =
       | Record lal -> <:expr< {$list:List.map to_expr_label lal$} >>
       | Loc -> <:expr< $lid:Stdpp.loc_name.val$ >>
       | Antiquot loc s ->
+          let (bolpos,lnum, _) = Pcaml.position.val in
+          let (bolposv,lnumv) = (bolpos.val, lnum.val) in
+          let zero_pos () = do { bolpos.val := 0; lnum.val := 1 } in
+          let restore_pos () = do { bolpos.val := bolposv; lnum.val := lnumv } in
           let e =
-            try Grammar.Entry.parse Pcaml.expr_eoi (Stream.of_string s) with
+            try
+              let _ = zero_pos() in
+              let result = Grammar.Entry.parse Pcaml.expr_eoi (Stream.of_string s) in
+              let _ = restore_pos() in
+              result
+            with
             [ Stdpp.Exc_located (bp, ep) exc ->
-              raise (Stdpp.Exc_located (Reloc.adjust_loc (fst loc) (bp,ep)) exc) ]
+                do { restore_pos() ; raise (Stdpp.Exc_located (Reloc.adjust_loc (fst loc) (bp,ep)) exc) }
+            | exc -> do { restore_pos(); raise exc } ]
           in
           <:expr< $anti:e$ >> ]
     and to_expr_label (l, a) = (<:patt< MLast.$lid:l$ >>, to_expr a);
@@ -83,10 +96,20 @@ module Qast =
       | Record lal -> <:patt< {$list:List.map to_patt_label lal$} >>
       | Loc -> <:patt< _ >>
       | Antiquot loc s ->
+          let (bolpos,lnum, _) = Pcaml.position.val in
+          let (bolposv,lnumv) = (bolpos.val, lnum.val) in
+          let zero_pos () = do { bolpos.val := 0; lnum.val := 1 } in
+          let restore_pos () = do { bolpos.val := bolposv; lnum.val := lnumv } in
           let p =
-            try Grammar.Entry.parse Pcaml.patt_eoi (Stream.of_string s) with
+            try
+              let _ = zero_pos() in
+              let result = Grammar.Entry.parse Pcaml.patt_eoi (Stream.of_string s) in
+              let _ = restore_pos() in
+              result
+             with
             [ Stdpp.Exc_located (bp, ep) exc ->
-                raise (Stdpp.Exc_located (Reloc.adjust_loc (fst loc) (bp, ep)) exc) ]
+                do { restore_pos() ; raise (Stdpp.Exc_located (Reloc.adjust_loc (fst loc) (bp, ep)) exc) }
+            | exc -> do { restore_pos(); raise exc } ]
           in
           <:patt< $anti:p$ >> ]
     and to_patt_label (l, a) = (<:patt< MLast.$lid:l$ >>, to_patt a);
@@ -1401,11 +1424,23 @@ EXTEND
 END;
 
 value apply_entry e =
-  let f s = Grammar.Entry.parse e (Stream.of_string s) in
+  let f s =
+    let (bolpos,lnum,fname) = q_position in
+    let (bolp,ln,_) = (bolpos.val, lnum.val, fname.val) in
+    let zero_position() = do { bolpos.val := 0; lnum.val := 1 } in
+    let restore_position() = do { bolpos.val := bolp; lnum.val := ln } in
+    let _ = zero_position() in
+    try
+      let result =
+        Grammar.Entry.parse e (Stream.of_string s) in
+      let _ = restore_position() in
+      result
+    with exc -> do { restore_position(); raise exc } in
   let expr s = Qast.to_expr (f s) in
   let patt s = Qast.to_patt (f s) in
   Quotation.ExAst (expr, patt)
 ;
+
 
 let sig_item_eoi = Grammar.Entry.create gram "signature item" in
 do {

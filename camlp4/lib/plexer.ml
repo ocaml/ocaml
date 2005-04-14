@@ -131,12 +131,12 @@ value err loc msg = raise_with_loc loc (Token.Error msg);
 
 (* Debugging positions and locations *)
 value eprint_pos msg p =
-   Printf.eprintf "%s: fname=%s; lnum=%d; bol=%d; cnum=%d\n%!"
+   Printf.eprintf "%s: fname=%s; lnum=%d; bol=%d; cnum=%d%!"
      msg p.Lexing.pos_fname p.Lexing.pos_lnum p.Lexing.pos_bol p.Lexing.pos_cnum
 ;
 
 value eprint_loc (bp, ep) =
- do { eprint_pos "P1" bp; eprint_pos "P2" ep }
+ do { eprint_pos "P1=" bp; eprint_pos " --P2=" ep }
 ;
    
 value check_location msg ((bp, ep) as loc) =
@@ -161,6 +161,12 @@ value check_location msg ((bp, ep) as loc) =
        True in
    (ok, loc)
 ;
+
+value debug_token ((kind, tok), loc) = do {
+   Printf.eprintf "%s(%s) at " kind tok;
+   eprint_loc loc;
+   Printf.eprintf "\n%!"
+};
 
 value next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
    let make_pos p =
@@ -219,12 +225,14 @@ value next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
             (tok, loc)
         | _ -> keyword_or_error (bp, Stream.count s) "'" ]
     | [: `'"'; s :] ->
-        let tok = ("STRING", get_buff (string bp 0 s)) in
+        let bpos = make_pos bp in
+        let tok = ("STRING", get_buff (string bpos 0 s)) in
         let loc = mkloc (bp, Stream.count s) in
         (tok, loc)
     | [: `'$'; s :] ->
-        let tok = dollar bp 0 s in
-        let loc = mkloc (bp, Stream.count s) in
+        let bpos = make_pos bp in
+        let tok = dollar bpos 0 s in
+        let loc = (bpos, make_pos (Stream.count s)) in
         (tok, loc)
     | [: `('!' | '=' | '@' | '^' | '&' | '+' | '-' | '*' | '/' | '%' as c);
          s :] ->
@@ -304,39 +312,40 @@ value next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
           let id = get_buff len in
           keyword_or_error (bp, ep) id ]
     else
+      let bpos = make_pos bp in
       match strm with parser
-      [ [: `'<'; len = quotation bp 0 :] ep ->
-          (("QUOTATION", ":" ^ get_buff len), mkloc (bp, ep))
+      [ [: `'<'; len = quotation bpos 0 :] ep ->
+          (("QUOTATION", ":" ^ get_buff len), (bpos, make_pos ep))
       | [: `':'; i = parser [: len = ident 0 :] -> get_buff len;
-           `'<' ? "character '<' expected"; len = quotation bp 0 :] ep ->
-          (("QUOTATION", i ^ ":" ^ get_buff len), mkloc (bp, ep))
+           `'<' ? "character '<' expected"; len = quotation bpos 0 :] ep ->
+          (("QUOTATION", i ^ ":" ^ get_buff len), (bpos, make_pos ep))
       | [: len = ident2 (store 0 '<') :] ep ->
           let id = get_buff len in
           keyword_or_error (bp, ep) id ]
-  and string bp len =
+  and string bpos len =
     parser
     [ [: `'"' :] -> len
     | [: `'\\'; `c; s :] ep  ->
         let len = store len '\\' in
         match c with [
-          '\010' -> do { bolpos.val := ep; incr lnum; string bp (store len c) s }
+          '\010' -> do { bolpos.val := ep; incr lnum; string bpos (store len c) s }
         | '\013' ->
             let (len, ep) =
               match Stream.peek s with [
                 Some '\010' -> do { Stream.junk s; (store (store len '\013') '\010', ep+1) }
               | _ -> (store len '\013', ep) ] in
-            do { bolpos.val := ep; incr lnum; string bp len s }
-        | c -> string bp (store len c) s
+            do { bolpos.val := ep; incr lnum; string bpos len s }
+        | c -> string bpos (store len c) s
         ]
-    | [: `'\010'; s :] ep -> do { bolpos.val := ep; incr lnum; string bp (store len '\010') s }
+    | [: `'\010'; s :] ep -> do { bolpos.val := ep; incr lnum; string bpos (store len '\010') s }
     | [: `'\013'; s :] ep ->
         let (len, ep) =
           match Stream.peek s with
             [ Some '\010' -> do { Stream.junk s; (store (store len '\013') '\010', ep+1) }
             | _ -> (store len '\013', ep) ] in
-        do { bolpos.val := ep; incr lnum; string bp len s }
-    | [: `c; s :] -> string bp (store len c) s
-    | [: :] ep -> err (mkloc (bp, ep)) "string not terminated" ]
+        do { bolpos.val := ep; incr lnum; string bpos len s }
+    | [: `c; s :] -> string bpos (store len c) s
+    | [: :] ep -> err (bpos, make_pos ep) "string not terminated" ]
   and char bp len =
     parser
     [ [: `'''; s :] -> if len = 0 then char bp (store len ''') s else len
@@ -350,127 +359,127 @@ value next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
         do { bolpos.val := bol; incr lnum; char bp (store len '\013') s}
     | [: `c; s :] -> char bp (store len c) s
     | [: :] ep -> err (mkloc (bp, ep)) "char not terminated" ]
-  and dollar bp len s =
+  and dollar bpos len s =
     if no_quotations.val then
       ("", get_buff (ident2 (store 0 '$') s)) 
     else match s with parser
     [ [: `'$' :] -> ("ANTIQUOT", ":" ^ get_buff len)
-    | [: `('a'..'z' | 'A'..'Z' as c); s :] -> antiquot bp (store len c) s
-    | [: `('0'..'9' as c); s :] -> maybe_locate bp (store len c) s
+    | [: `('a'..'z' | 'A'..'Z' as c); s :] -> antiquot bpos (store len c) s
+    | [: `('0'..'9' as c); s :] -> maybe_locate bpos (store len c) s
     | [: `':'; s :] ->
         let k = get_buff len in
-        ("ANTIQUOT", k ^ ":" ^ locate_or_antiquot_rest bp 0 s)
+        ("ANTIQUOT", k ^ ":" ^ locate_or_antiquot_rest bpos 0 s)
     | [: `'\\'; `c; s :] ->
-        ("ANTIQUOT", ":" ^ locate_or_antiquot_rest bp (store len c) s)
+        ("ANTIQUOT", ":" ^ locate_or_antiquot_rest bpos (store len c) s)
     | [: s :] ->
         if dfa then
           match s with parser
           [ [: `c :] ->
-              ("ANTIQUOT", ":" ^ locate_or_antiquot_rest bp (store len c) s)
-          | [: :] ep -> err (mkloc (bp, ep)) "antiquotation not terminated" ]
+              ("ANTIQUOT", ":" ^ locate_or_antiquot_rest bpos (store len c) s)
+          | [: :] ep -> err (bpos, make_pos ep) "antiquotation not terminated" ]
         else ("", get_buff (ident2 (store 0 '$') s)) ]
-  and maybe_locate bp len =
+  and maybe_locate bpos len =
     parser
     [ [: `'$' :] -> ("ANTIQUOT", ":" ^ get_buff len)
-    | [: `('0'..'9' as c); s :] -> maybe_locate bp (store len c) s
+    | [: `('0'..'9' as c); s :] -> maybe_locate bpos (store len c) s
     | [: `':'; s :] ->
-        ("LOCATE", get_buff len ^ ":" ^ locate_or_antiquot_rest bp 0 s)
+        ("LOCATE", get_buff len ^ ":" ^ locate_or_antiquot_rest bpos 0 s)
     | [: `'\\'; `c; s :] ->
-        ("ANTIQUOT", ":" ^ locate_or_antiquot_rest bp (store len c) s)
+        ("ANTIQUOT", ":" ^ locate_or_antiquot_rest bpos (store len c) s)
     | [: `c; s :] ->
-        ("ANTIQUOT", ":" ^ locate_or_antiquot_rest bp (store len c) s)
-    | [: :] ep -> err (mkloc (bp, ep)) "antiquotation not terminated" ]
-  and antiquot bp len =
+        ("ANTIQUOT", ":" ^ locate_or_antiquot_rest bpos (store len c) s)
+    | [: :] ep -> err (bpos, make_pos ep) "antiquotation not terminated" ]
+  and antiquot bpos len =
     parser
     [ [: `'$' :] -> ("ANTIQUOT", ":" ^ get_buff len)
     | [: `('a'..'z' | 'A'..'Z' | '0'..'9' as c); s :] ->
-        antiquot bp (store len c) s
+        antiquot bpos (store len c) s
     | [: `':'; s :] ->
         let k = get_buff len in
-        ("ANTIQUOT", k ^ ":" ^ locate_or_antiquot_rest bp 0 s)
+        ("ANTIQUOT", k ^ ":" ^ locate_or_antiquot_rest bpos 0 s)
     | [: `'\\'; `c; s :] ->
-        ("ANTIQUOT", ":" ^ locate_or_antiquot_rest bp (store len c) s)
+        ("ANTIQUOT", ":" ^ locate_or_antiquot_rest bpos (store len c) s)
     | [: `c; s :] ->
-        ("ANTIQUOT", ":" ^ locate_or_antiquot_rest bp (store len c) s)
-    | [: :] ep -> err (mkloc (bp, ep)) "antiquotation not terminated" ]
-  and locate_or_antiquot_rest bp len =
+        ("ANTIQUOT", ":" ^ locate_or_antiquot_rest bpos (store len c) s)
+    | [: :] ep -> err (bpos, make_pos ep) "antiquotation not terminated" ]
+  and locate_or_antiquot_rest bpos len =
     parser
     [ [: `'$' :] -> get_buff len
-    | [: `'\\'; `c; s :] -> locate_or_antiquot_rest bp (store len c) s
-    | [: `c; s :] -> locate_or_antiquot_rest bp (store len c) s
-    | [: :] ep -> err (mkloc (bp, ep)) "antiquotation not terminated" ]
-  and quotation bp len =
+    | [: `'\\'; `c; s :] -> locate_or_antiquot_rest bpos (store len c) s
+    | [: `c; s :] -> locate_or_antiquot_rest bpos (store len c) s
+    | [: :] ep -> err (bpos, make_pos ep) "antiquotation not terminated" ]
+  and quotation bpos len =
     parser
-    [ [: `'>'; s :] -> maybe_end_quotation bp len s
+    [ [: `'>'; s :] -> maybe_end_quotation bpos len s
     | [: `'<'; s :] ->
-        quotation bp (maybe_nested_quotation bp (store len '<') s) s
+        quotation bpos (maybe_nested_quotation bpos (store len '<') s) s
     | [: `'\\';
          len =
            parser
            [ [: `('>' | '<' | '\\' as c) :] -> store len c
            | [: :] -> store len '\\' ];
          s :] ->
-        quotation bp len s
-    | [: `'\010'; s :] -> do {bolpos.val := bp+1; incr lnum; quotation bp (store len '\010') s}
-    | [: `'\013'; s :] ->
+        quotation bpos len s
+    | [: `'\010'; s :] ep -> do {bolpos.val := ep; incr lnum; quotation bpos (store len '\010') s}
+    | [: `'\013'; s :] ep ->
         let bol =
           match Stream.peek s with
-            [ Some '\010' -> do { Stream.junk s; bp+2 }
-            | _ -> bp+1 ] in
-        do { bolpos.val := bol; incr lnum; quotation bp (store len '\013') s}
-    | [: `c; s :] -> quotation bp (store len c) s
-    | [: :] ep -> err (mkloc (bp, ep)) "quotation not terminated" ]
-  and maybe_nested_quotation bp len =
+            [ Some '\010' -> do { Stream.junk s; ep+1 }
+            | _ -> ep ] in
+        do { bolpos.val := bol; incr lnum; quotation bpos (store len '\013') s}
+    | [: `c; s :] -> quotation bpos (store len c) s
+    | [: :] ep -> err (bpos, make_pos ep) "quotation not terminated" ]
+  and maybe_nested_quotation bpos len =
     parser
-    [ [: `'<'; s :] -> mstore (quotation bp (store len '<') s) ">>"
+    [ [: `'<'; s :] -> mstore (quotation bpos (store len '<') s) ">>"
     | [: `':'; len = ident (store len ':');
          a =
            parser
-           [ [: `'<'; s :] -> mstore (quotation bp (store len '<') s) ">>"
+           [ [: `'<'; s :] -> mstore (quotation bpos (store len '<') s) ">>"
            | [: :] -> len ] :] ->
         a
     | [: :] -> len ]
-  and maybe_end_quotation bp len =
+  and maybe_end_quotation bpos len =
     parser
     [ [: `'>' :] -> len
-    | [: a = quotation bp (store len '>') :] -> a ]
+    | [: a = quotation bpos (store len '>') :] -> a ]
   and left_paren bp =
     parser
-    [ [: `'*'; _ = comment bp; a = next_token True :] -> a
+    [ [: `'*'; _ = comment (make_pos bp); a = next_token True :] -> a
     | [: :] ep -> keyword_or_error (bp, ep) "(" ]
-  and comment bp =
+  and comment bpos =
     parser
-    [ [: `'('; s :] -> left_paren_in_comment bp s
-    | [: `'*'; s :] -> star_in_comment bp s
-    | [: `'"'; _ = string bp 0; s :] -> comment bp s
-    | [: `'''; s :] -> quote_in_comment bp s
-    | [: `'\010'; s :] ep -> do { bolpos.val := ep; incr lnum; comment bp s }
+    [ [: `'('; s :] -> left_paren_in_comment bpos s
+    | [: `'*'; s :] -> star_in_comment bpos s
+    | [: `'"'; _ = string bpos 0; s :] -> comment bpos s
+    | [: `'''; s :] -> quote_in_comment bpos s
+    | [: `'\010'; s :] ep -> do { bolpos.val := ep; incr lnum; comment bpos s }
     | [: `'\013'; s :] ep ->
         let ep =
           match Stream.peek s with
             [ Some '\010' -> do { Stream.junk s; ep+1 }
             | _ -> ep ] in
-        do { bolpos.val := ep; incr lnum; comment bp s }
-                    | [: `c; s :] -> comment bp s
-    | [: :] ep -> err (mkloc (bp, ep)) "comment not terminated" ]
-  and quote_in_comment bp =
+        do { bolpos.val := ep; incr lnum; comment bpos s }
+                    | [: `c; s :] -> comment bpos s
+    | [: :] ep -> err (bpos, make_pos ep) "comment not terminated" ]
+  and quote_in_comment bpos =
     parser
-    [ [: `'''; s :] -> comment bp s
-    | [: `'\\'; s :] -> quote_antislash_in_comment bp 0 s
-    | [: s :] ->
+    [ [: `'''; s :] -> comment bpos s
+    | [: `'\\'; s :] -> quote_antislash_in_comment bpos 0 s
+    | [: s :] ep ->
         do {
           match Stream.npeek 2 s with
           [ [ ( '\013' | '\010' ); '''] ->
-            do { bolpos.val := bp + 1; incr lnum;
+            do { bolpos.val := ep; incr lnum;
                  Stream.junk s; Stream.junk s }
           | [ '\013'; '\010' ] ->
                match Stream.npeek 3 s with
-                 [ [_; _; '''] -> do { bolpos.val := bp + 2; incr lnum;
+                 [ [_; _; '''] -> do { bolpos.val := ep + 1; incr lnum;
                                        Stream.junk s; Stream.junk s; Stream.junk s }
                  | _ -> () ]
           | [_; '''] -> do { Stream.junk s; Stream.junk s }
           | _ -> () ];
-          comment bp s
+          comment bpos s
         } ]
   and quote_any_in_comment bp =
     parser
@@ -491,14 +500,14 @@ value next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
     parser
     [ [: `'0'..'9'; s :] -> quote_any_in_comment bp s
     | [: a = comment bp :] -> a ]
-  and left_paren_in_comment bp =
+  and left_paren_in_comment bpos =
     parser
-    [ [: `'*'; s :] -> do { comment bp s; comment bp s }
-    | [: a = comment bp :] -> a ]
-  and star_in_comment bp =
+    [ [: `'*'; s :] -> do { comment bpos s; comment bpos s }
+    | [: a = comment bpos :] -> a ]
+  and star_in_comment bpos =
     parser
     [ [: `')' :] -> ()
-    | [: a = comment bp :] -> a ]
+    | [: a = comment bpos :] -> a ]
   and linedir n s =
     match stream_peek_nth n s with
     [ Some (' ' | '\t') -> linedir (n + 1) s
@@ -553,6 +562,7 @@ value next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
               glex.tok_comm := Some [comm_loc :: list]
             else ()
         | None -> () ];
+        (* debug_token r; *)
         r
       }
     with

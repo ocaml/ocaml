@@ -15,7 +15,6 @@
 val zero_loc : Lexing.position;;
 val shift_pos : int -> Lexing.position -> Lexing.position;;
 val adjust_loc : Lexing.position -> MLast.loc -> MLast.loc;;
-val linearize : MLast.loc -> MLast.loc;;
 
 val ctyp : (MLast.loc -> MLast.loc) -> 'a -> MLast.ctyp -> MLast.ctyp;;
 val row_field :
