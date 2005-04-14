@@ -97,9 +97,7 @@ let expand_quotation loc expander shift name str =
        try expander str with
          Stdpp.Exc_located (loc, exc) ->
            let exc1 = Qerror (name, Expanding, exc) in
-           raise
-             (Stdpp.Exc_located
-                (Reloc.adjust_loc shift (Reloc.linearize loc), exc1))
+           raise (Stdpp.Exc_located (Reloc.adjust_loc shift loc, exc1))
        | exc ->
            let exc1 = Qerror (name, Expanding, exc) in
            raise (Stdpp.Exc_located (loc, exc1)))

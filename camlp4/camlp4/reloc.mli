@@ -15,7 +15,6 @@
 value zero_loc : Lexing.position;
 value shift_pos : int -> Lexing.position -> Lexing.position;
 value adjust_loc : Lexing.position -> MLast.loc -> MLast.loc;
-value linearize : MLast.loc -> MLast.loc;
 
 value ctyp :           (MLast.loc -> MLast.loc) -> 'a -> MLast.ctyp -> MLast.ctyp;
 value row_field :      (MLast.loc -> MLast.loc) -> 'a -> MLast.row_field -> MLast.row_field;

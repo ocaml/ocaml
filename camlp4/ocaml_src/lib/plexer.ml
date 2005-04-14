@@ -150,11 +150,11 @@ let err loc msg = raise_with_loc loc (Token.Error msg);;
 
 (* Debugging positions and locations *)
 let eprint_pos msg p =
-  Printf.eprintf "%s: fname=%s; lnum=%d; bol=%d; cnum=%d\n%!" msg
+  Printf.eprintf "%s: fname=%s; lnum=%d; bol=%d; cnum=%d%!" msg
     p.Lexing.pos_fname p.Lexing.pos_lnum p.Lexing.pos_bol p.Lexing.pos_cnum
 ;;
 
-let eprint_loc (bp, ep) = eprint_pos "P1" bp; eprint_pos "P2" ep;;
+let eprint_loc (bp, ep) = eprint_pos "P1=" bp; eprint_pos " --P2=" ep;;
    
 let check_location msg (bp, ep as loc) =
   let ok =
@@ -173,6 +173,10 @@ let check_location msg (bp, ep as loc) =
     else true
   in
   ok, loc
+;;
+
+let debug_token ((kind, tok), loc) =
+  Printf.eprintf "%s(%s) at " kind tok; eprint_loc loc; Printf.eprintf "\n%!"
 ;;
 
 let next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
@@ -257,12 +261,14 @@ let next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
         end
     | Some '\"' ->
         Stream.junk strm__;
-        let tok = "STRING", get_buff (string bp 0 strm__) in
+        let bpos = make_pos bp in
+        let tok = "STRING", get_buff (string bpos 0 strm__) in
         let loc = mkloc (bp, Stream.count strm__) in tok, loc
     | Some '$' ->
         Stream.junk strm__;
-        let tok = dollar bp 0 strm__ in
-        let loc = mkloc (bp, Stream.count strm__) in tok, loc
+        let bpos = make_pos bp in
+        let tok = dollar bpos 0 strm__ in
+        let loc = bpos, make_pos (Stream.count strm__) in tok, loc
     | Some ('!' | '=' | '@' | '^' | '&' | '+' | '-' | '*' | '/' | '%' as c) ->
         Stream.junk strm__;
         let id = get_buff (ident2 (store 0 c) strm__) in
@@ -401,16 +407,17 @@ let next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
       let ep = Stream.count strm__ in
       let id = get_buff len in keyword_or_error (bp, ep) id
     else
+      let bpos = make_pos bp in
       let (strm__ : _ Stream.t) = strm in
       match Stream.peek strm__ with
         Some '<' ->
           Stream.junk strm__;
           let len =
-            try quotation bp 0 strm__ with
+            try quotation bpos 0 strm__ with
               Stream.Failure -> raise (Stream.Error "")
           in
           let ep = Stream.count strm__ in
-          ("QUOTATION", ":" ^ get_buff len), mkloc (bp, ep)
+          ("QUOTATION", ":" ^ get_buff len), (bpos, make_pos ep)
       | Some ':' ->
           Stream.junk strm__;
           let i =
@@ -421,18 +428,18 @@ let next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
             Some '<' ->
               Stream.junk strm__;
               let len =
-                try quotation bp 0 strm__ with
+                try quotation bpos 0 strm__ with
                   Stream.Failure -> raise (Stream.Error "")
               in
               let ep = Stream.count strm__ in
-              ("QUOTATION", i ^ ":" ^ get_buff len), mkloc (bp, ep)
+              ("QUOTATION", i ^ ":" ^ get_buff len), (bpos, make_pos ep)
           | _ -> raise (Stream.Error "character '<' expected")
           end
       | _ ->
           let len = ident2 (store 0 '<') strm__ in
           let ep = Stream.count strm__ in
           let id = get_buff len in keyword_or_error (bp, ep) id
-  and string bp len (strm__ : _ Stream.t) =
+  and string bpos len (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
       Some '\"' -> Stream.junk strm__; len
     | Some '\\' ->
@@ -444,7 +451,7 @@ let next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
             let ep = Stream.count strm__ in
             let len = store len '\\' in
             begin match c with
-              '\010' -> bolpos := ep; incr lnum; string bp (store len c) s
+              '\010' -> bolpos := ep; incr lnum; string bpos (store len c) s
             | '\013' ->
                 let (len, ep) =
                   match Stream.peek s with
@@ -452,8 +459,8 @@ let next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
                       Stream.junk s; store (store len '\013') '\010', ep + 1
                   | _ -> store len '\013', ep
                 in
-                bolpos := ep; incr lnum; string bp len s
-            | c -> string bp (store len c) s
+                bolpos := ep; incr lnum; string bpos len s
+            | c -> string bpos (store len c) s
             end
         | _ -> raise (Stream.Error "")
         end
@@ -461,7 +468,7 @@ let next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
         Stream.junk strm__;
         let s = strm__ in
         let ep = Stream.count strm__ in
-        bolpos := ep; incr lnum; string bp (store len '\010') s
+        bolpos := ep; incr lnum; string bpos (store len '\010') s
     | Some '\013' ->
         Stream.junk strm__;
         let s = strm__ in
@@ -472,11 +479,11 @@ let next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
               Stream.junk s; store (store len '\013') '\010', ep + 1
           | _ -> store len '\013', ep
         in
-        bolpos := ep; incr lnum; string bp len s
-    | Some c -> Stream.junk strm__; string bp (store len c) strm__
+        bolpos := ep; incr lnum; string bpos len s
+    | Some c -> Stream.junk strm__; string bpos (store len c) strm__
     | _ ->
         let ep = Stream.count strm__ in
-        err (mkloc (bp, ep)) "string not terminated"
+        err (bpos, make_pos ep) "string not terminated"
   and char bp len (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
       Some '\'' ->
@@ -506,27 +513,27 @@ let next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
     | _ ->
         let ep = Stream.count strm__ in
         err (mkloc (bp, ep)) "char not terminated"
-  and dollar bp len s =
+  and dollar bpos len s =
     if !no_quotations then "", get_buff (ident2 (store 0 '$') s)
     else
       let (strm__ : _ Stream.t) = s in
       match Stream.peek strm__ with
         Some '$' -> Stream.junk strm__; "ANTIQUOT", ":" ^ get_buff len
       | Some ('a'..'z' | 'A'..'Z' as c) ->
-          Stream.junk strm__; antiquot bp (store len c) strm__
+          Stream.junk strm__; antiquot bpos (store len c) strm__
       | Some ('0'..'9' as c) ->
-          Stream.junk strm__; maybe_locate bp (store len c) strm__
+          Stream.junk strm__; maybe_locate bpos (store len c) strm__
       | Some ':' ->
           Stream.junk strm__;
           let k = get_buff len in
-          "ANTIQUOT", k ^ ":" ^ locate_or_antiquot_rest bp 0 strm__
+          "ANTIQUOT", k ^ ":" ^ locate_or_antiquot_rest bpos 0 strm__
       | Some '\\' ->
           Stream.junk strm__;
           begin match Stream.peek strm__ with
             Some c ->
               Stream.junk strm__;
               "ANTIQUOT",
-              ":" ^ locate_or_antiquot_rest bp (store len c) strm__
+              ":" ^ locate_or_antiquot_rest bpos (store len c) strm__
           | _ -> raise (Stream.Error "")
           end
       | _ ->
@@ -536,57 +543,59 @@ let next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
             match Stream.peek strm__ with
               Some c ->
                 Stream.junk strm__;
-                "ANTIQUOT", ":" ^ locate_or_antiquot_rest bp (store len c) s
+                "ANTIQUOT", ":" ^ locate_or_antiquot_rest bpos (store len c) s
             | _ ->
                 let ep = Stream.count strm__ in
-                err (mkloc (bp, ep)) "antiquotation not terminated"
+                err (bpos, make_pos ep) "antiquotation not terminated"
           else "", get_buff (ident2 (store 0 '$') s)
-  and maybe_locate bp len (strm__ : _ Stream.t) =
+  and maybe_locate bpos len (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
       Some '$' -> Stream.junk strm__; "ANTIQUOT", ":" ^ get_buff len
     | Some ('0'..'9' as c) ->
-        Stream.junk strm__; maybe_locate bp (store len c) strm__
+        Stream.junk strm__; maybe_locate bpos (store len c) strm__
     | Some ':' ->
         Stream.junk strm__;
-        "LOCATE", get_buff len ^ ":" ^ locate_or_antiquot_rest bp 0 strm__
+        "LOCATE", get_buff len ^ ":" ^ locate_or_antiquot_rest bpos 0 strm__
     | Some '\\' ->
         Stream.junk strm__;
         begin match Stream.peek strm__ with
           Some c ->
             Stream.junk strm__;
-            "ANTIQUOT", ":" ^ locate_or_antiquot_rest bp (store len c) strm__
+            "ANTIQUOT",
+            ":" ^ locate_or_antiquot_rest bpos (store len c) strm__
         | _ -> raise (Stream.Error "")
         end
     | Some c ->
         Stream.junk strm__;
-        "ANTIQUOT", ":" ^ locate_or_antiquot_rest bp (store len c) strm__
+        "ANTIQUOT", ":" ^ locate_or_antiquot_rest bpos (store len c) strm__
     | _ ->
         let ep = Stream.count strm__ in
-        err (mkloc (bp, ep)) "antiquotation not terminated"
-  and antiquot bp len (strm__ : _ Stream.t) =
+        err (bpos, make_pos ep) "antiquotation not terminated"
+  and antiquot bpos len (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
       Some '$' -> Stream.junk strm__; "ANTIQUOT", ":" ^ get_buff len
     | Some ('a'..'z' | 'A'..'Z' | '0'..'9' as c) ->
-        Stream.junk strm__; antiquot bp (store len c) strm__
+        Stream.junk strm__; antiquot bpos (store len c) strm__
     | Some ':' ->
         Stream.junk strm__;
         let k = get_buff len in
-        "ANTIQUOT", k ^ ":" ^ locate_or_antiquot_rest bp 0 strm__
+        "ANTIQUOT", k ^ ":" ^ locate_or_antiquot_rest bpos 0 strm__
     | Some '\\' ->
         Stream.junk strm__;
         begin match Stream.peek strm__ with
           Some c ->
             Stream.junk strm__;
-            "ANTIQUOT", ":" ^ locate_or_antiquot_rest bp (store len c) strm__
+            "ANTIQUOT",
+            ":" ^ locate_or_antiquot_rest bpos (store len c) strm__
         | _ -> raise (Stream.Error "")
         end
     | Some c ->
         Stream.junk strm__;
-        "ANTIQUOT", ":" ^ locate_or_antiquot_rest bp (store len c) strm__
+        "ANTIQUOT", ":" ^ locate_or_antiquot_rest bpos (store len c) strm__
     | _ ->
         let ep = Stream.count strm__ in
-        err (mkloc (bp, ep)) "antiquotation not terminated"
-  and locate_or_antiquot_rest bp len (strm__ : _ Stream.t) =
+        err (bpos, make_pos ep) "antiquotation not terminated"
+  and locate_or_antiquot_rest bpos len (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
       Some '$' -> Stream.junk strm__; get_buff len
     | Some '\\' ->
@@ -594,20 +603,21 @@ let next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
         begin match Stream.peek strm__ with
           Some c ->
             Stream.junk strm__;
-            locate_or_antiquot_rest bp (store len c) strm__
+            locate_or_antiquot_rest bpos (store len c) strm__
         | _ -> raise (Stream.Error "")
         end
     | Some c ->
-        Stream.junk strm__; locate_or_antiquot_rest bp (store len c) strm__
+        Stream.junk strm__; locate_or_antiquot_rest bpos (store len c) strm__
     | _ ->
         let ep = Stream.count strm__ in
-        err (mkloc (bp, ep)) "antiquotation not terminated"
-  and quotation bp len (strm__ : _ Stream.t) =
+        err (bpos, make_pos ep) "antiquotation not terminated"
+  and quotation bpos len (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
-      Some '>' -> Stream.junk strm__; maybe_end_quotation bp len strm__
+      Some '>' -> Stream.junk strm__; maybe_end_quotation bpos len strm__
     | Some '<' ->
         Stream.junk strm__;
-        quotation bp (maybe_nested_quotation bp (store len '<') strm__) strm__
+        quotation bpos (maybe_nested_quotation bpos (store len '<') strm__)
+          strm__
     | Some '\\' ->
         Stream.junk strm__;
         let len =
@@ -618,28 +628,31 @@ let next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
           with
             Stream.Failure -> raise (Stream.Error "")
         in
-        quotation bp len strm__
+        quotation bpos len strm__
     | Some '\010' ->
         Stream.junk strm__;
         let s = strm__ in
-        bolpos := bp + 1; incr lnum; quotation bp (store len '\010') s
+        let ep = Stream.count strm__ in
+        bolpos := ep; incr lnum; quotation bpos (store len '\010') s
     | Some '\013' ->
         Stream.junk strm__;
         let s = strm__ in
+        let ep = Stream.count strm__ in
         let bol =
           match Stream.peek s with
-            Some '\010' -> Stream.junk s; bp + 2
-          | _ -> bp + 1
+            Some '\010' -> Stream.junk s; ep + 1
+          | _ -> ep
         in
-        bolpos := bol; incr lnum; quotation bp (store len '\013') s
-    | Some c -> Stream.junk strm__; quotation bp (store len c) strm__
+        bolpos := bol; incr lnum; quotation bpos (store len '\013') s
+    | Some c -> Stream.junk strm__; quotation bpos (store len c) strm__
     | _ ->
         let ep = Stream.count strm__ in
-        err (mkloc (bp, ep)) "quotation not terminated"
-  and maybe_nested_quotation bp len (strm__ : _ Stream.t) =
+        err (bpos, make_pos ep) "quotation not terminated"
+  and maybe_nested_quotation bpos len (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
       Some '<' ->
-        Stream.junk strm__; mstore (quotation bp (store len '<') strm__) ">>"
+        Stream.junk strm__;
+        mstore (quotation bpos (store len '<') strm__) ">>"
     | Some ':' ->
         Stream.junk strm__;
         let len =
@@ -650,44 +663,45 @@ let next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
           match Stream.peek strm__ with
             Some '<' ->
               Stream.junk strm__;
-              mstore (quotation bp (store len '<') strm__) ">>"
+              mstore (quotation bpos (store len '<') strm__) ">>"
           | _ -> len
         with
           Stream.Failure -> raise (Stream.Error "")
         end
     | _ -> len
-  and maybe_end_quotation bp len (strm__ : _ Stream.t) =
+  and maybe_end_quotation bpos len (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
       Some '>' -> Stream.junk strm__; len
-    | _ -> quotation bp (store len '>') strm__
+    | _ -> quotation bpos (store len '>') strm__
   and left_paren bp (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
       Some '*' ->
         Stream.junk strm__;
         let _ =
-          try comment bp strm__ with
+          try comment (make_pos bp) strm__ with
             Stream.Failure -> raise (Stream.Error "")
         in
         begin try next_token true strm__ with
           Stream.Failure -> raise (Stream.Error "")
         end
     | _ -> let ep = Stream.count strm__ in keyword_or_error (bp, ep) "("
-  and comment bp (strm__ : _ Stream.t) =
+  and comment bpos (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
-      Some '(' -> Stream.junk strm__; left_paren_in_comment bp strm__
-    | Some '*' -> Stream.junk strm__; star_in_comment bp strm__
+      Some '(' -> Stream.junk strm__; left_paren_in_comment bpos strm__
+    | Some '*' -> Stream.junk strm__; star_in_comment bpos strm__
     | Some '\"' ->
         Stream.junk strm__;
         let _ =
-          try string bp 0 strm__ with
+          try string bpos 0 strm__ with
             Stream.Failure -> raise (Stream.Error "")
         in
-        comment bp strm__
-    | Some '\'' -> Stream.junk strm__; quote_in_comment bp strm__
+        comment bpos strm__
+    | Some '\'' -> Stream.junk strm__; quote_in_comment bpos strm__
     | Some '\010' ->
         Stream.junk strm__;
         let s = strm__ in
-        let ep = Stream.count strm__ in bolpos := ep; incr lnum; comment bp s
+        let ep = Stream.count strm__ in
+        bolpos := ep; incr lnum; comment bpos s
     | Some '\013' ->
         Stream.junk strm__;
         let s = strm__ in
@@ -697,24 +711,26 @@ let next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
             Some '\010' -> Stream.junk s; ep + 1
           | _ -> ep
         in
-        bolpos := ep; incr lnum; comment bp s
-    | Some c -> Stream.junk strm__; comment bp strm__
+        bolpos := ep; incr lnum; comment bpos s
+    | Some c -> Stream.junk strm__; comment bpos strm__
     | _ ->
         let ep = Stream.count strm__ in
-        err (mkloc (bp, ep)) "comment not terminated"
-  and quote_in_comment bp (strm__ : _ Stream.t) =
+        err (bpos, make_pos ep) "comment not terminated"
+  and quote_in_comment bpos (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
-      Some '\'' -> Stream.junk strm__; comment bp strm__
-    | Some '\\' -> Stream.junk strm__; quote_antislash_in_comment bp 0 strm__
+      Some '\'' -> Stream.junk strm__; comment bpos strm__
+    | Some '\\' ->
+        Stream.junk strm__; quote_antislash_in_comment bpos 0 strm__
     | _ ->
         let s = strm__ in
+        let ep = Stream.count strm__ in
         begin match Stream.npeek 2 s with
           ['\013' | '\010'; '\''] ->
-            bolpos := bp + 1; incr lnum; Stream.junk s; Stream.junk s
+            bolpos := ep; incr lnum; Stream.junk s; Stream.junk s
         | ['\013'; '\010'] ->
             begin match Stream.npeek 3 s with
               [_; _; '\''] ->
-                bolpos := bp + 2;
+                bolpos := ep + 1;
                 incr lnum;
                 Stream.junk s;
                 Stream.junk s;
@@ -724,7 +740,7 @@ let next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
         | [_; '\''] -> Stream.junk s; Stream.junk s
         | _ -> ()
         end;
-        comment bp s
+        comment bpos s
   and quote_any_in_comment bp (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
       Some '\'' -> Stream.junk strm__; comment bp strm__
@@ -746,15 +762,15 @@ let next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
     match Stream.peek strm__ with
       Some ('0'..'9') -> Stream.junk strm__; quote_any_in_comment bp strm__
     | _ -> comment bp strm__
-  and left_paren_in_comment bp (strm__ : _ Stream.t) =
+  and left_paren_in_comment bpos (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
       Some '*' ->
-        Stream.junk strm__; let s = strm__ in comment bp s; comment bp s
-    | _ -> comment bp strm__
-  and star_in_comment bp (strm__ : _ Stream.t) =
+        Stream.junk strm__; let s = strm__ in comment bpos s; comment bpos s
+    | _ -> comment bpos strm__
+  and star_in_comment bpos (strm__ : _ Stream.t) =
     match Stream.peek strm__ with
       Some ')' -> Stream.junk strm__; ()
-    | _ -> comment bp strm__
+    | _ -> comment bpos strm__
   and linedir n s =
     match stream_peek_nth n s with
       Some (' ' | '\t') -> linedir (n + 1) s
@@ -1073,11 +1089,11 @@ let make_lexer () =
   let id_table = Hashtbl.create 301 in
   let glexr =
     ref
-      {tok_func = (fun _ -> raise (Match_failure ("", 762, 17)));
-       tok_using = (fun _ -> raise (Match_failure ("", 762, 37)));
-       tok_removing = (fun _ -> raise (Match_failure ("", 762, 60)));
-       tok_match = (fun _ -> raise (Match_failure ("", 763, 18)));
-       tok_text = (fun _ -> raise (Match_failure ("", 763, 37)));
+      {tok_func = (fun _ -> raise (Match_failure ("", 772, 17)));
+       tok_using = (fun _ -> raise (Match_failure ("", 772, 37)));
+       tok_removing = (fun _ -> raise (Match_failure ("", 772, 60)));
+       tok_match = (fun _ -> raise (Match_failure ("", 773, 18)));
+       tok_text = (fun _ -> raise (Match_failure ("", 773, 37)));
        tok_comm = None}
   in
   let (f, pos) = func kwd_table glexr in
@@ -1109,11 +1125,11 @@ let make () =
   let id_table = Hashtbl.create 301 in
   let glexr =
     ref
-      {tok_func = (fun _ -> raise (Match_failure ("", 796, 17)));
-       tok_using = (fun _ -> raise (Match_failure ("", 796, 37)));
-       tok_removing = (fun _ -> raise (Match_failure ("", 796, 60)));
-       tok_match = (fun _ -> raise (Match_failure ("", 797, 18)));
-       tok_text = (fun _ -> raise (Match_failure ("", 797, 37)));
+      {tok_func = (fun _ -> raise (Match_failure ("", 806, 17)));
+       tok_using = (fun _ -> raise (Match_failure ("", 806, 37)));
+       tok_removing = (fun _ -> raise (Match_failure ("", 806, 60)));
+       tok_match = (fun _ -> raise (Match_failure ("", 807, 18)));
+       tok_text = (fun _ -> raise (Match_failure ("", 807, 37)));
        tok_comm = None}
   in
   {func = fst (func kwd_table glexr); using = using_token kwd_table id_table;
