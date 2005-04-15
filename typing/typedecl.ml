@@ -38,7 +38,7 @@ type error =
   | Unbound_type_var
   | Unbound_exception of Longident.t
   | Not_an_exception of Longident.t
-  | Bad_variance
+  | Bad_variance of int
   | Unavailable_type_constructor of Path.t
 
 exception Error of Location.t * error
@@ -430,14 +430,14 @@ let whole_type decl =
         Some ty -> ty
       | _ -> Btype.newgenty (Ttuple [])
 
-let compute_variance_decl env sharp decl (required, loc) =
+let compute_variance_decl env check decl (required, loc) =
   if decl.type_kind = Type_abstract && decl.type_manifest = None then
     List.map (fun (c, n) -> if c || n then (c, n, n) else (true, true, true))
       required
   else
   let params = List.map Btype.repr decl.type_params in
   let tvl0 = List.map make_variance params in
-  let fvl = Ctype.free_variables (whole_type decl) in
+  let fvl = if check then Ctype.free_variables (whole_type decl) else [] in
   let fvl = List.filter (fun v -> not (List.memq v params)) fvl in
   let tvl1 = List.map make_variance fvl in
   let tvl2 = List.map make_variance fvl in
@@ -468,16 +468,17 @@ let compute_variance_decl env sharp decl (required, loc) =
         compute_variance env tvl2 c n n ty
       end)
     tvl0 required;
-  if not sharp then
-    List.iter2
-      (fun (_, c1, n1, t1) (_, c2, n2, t2) ->
-        if !c1 && not !c2 || !n1 && not !n2 ||
-           !t1 && not !t2 && decl.type_kind = Type_abstract
-        then raise (Error(loc, Bad_variance)))
-      tvl1 tvl2;
+  List.iter2
+    (fun (_, c1, n1, t1) (_, c2, n2, t2) ->
+      if !c1 && not !c2 || !n1 && not !n2 ||
+         !t1 && not !t2 && decl.type_kind = Type_abstract
+      then raise (Error(loc, Bad_variance 0)))
+    tvl1 tvl2;
+  let pos = ref 0 in
   List.map2
     (fun (_, co, cn, ct) (c, n) ->
-      if c && !cn || n && !co then raise (Error(loc, Bad_variance));
+      incr pos;
+      if c && !cn || n && !co then raise (Error(loc, Bad_variance !pos));
       let ct = if decl.type_kind = Type_abstract then ct else cn in
       (!co, !cn, !ct))
     tvl0 required
@@ -498,17 +499,22 @@ let rec compute_variance_fixpoint env decls required variances =
   in
   let new_variances =
     List.map2
-      (fun (id, decl) -> compute_variance_decl new_env (is_sharp id) decl)
+      (fun (id, decl) -> compute_variance_decl new_env false decl)
       new_decls required
   in
   let new_variances =
     List.map2
       (List.map2 (fun (c1,n1,t1) (c2,n2,t2) -> c1||c2, n1||n2, t1||t2))
       new_variances variances in
-  if new_variances = variances then
-    new_decls, new_env
-  else
+  if new_variances <> variances then
     compute_variance_fixpoint env decls required new_variances
+  else begin
+    List.iter2
+      (fun (id, decl) req -> if not (is_sharp id) then
+        ignore (compute_variance_decl new_env true decl req))
+      new_decls required;
+    new_decls, new_env
+  end
 
 let init_variance (id, decl) =
   List.map (fun _ -> (false, false, false)) decl.type_params
@@ -747,8 +753,18 @@ let report_error ppf = function
   | Not_an_exception lid ->
       fprintf ppf "The constructor@ %a@ is not an exception"
         Printtyp.longident lid
-  | Bad_variance ->
-      fprintf ppf
-        "In this definition, expected parameter variances are not satisfied"
+  | Bad_variance n ->
+      if n < 1 then
+        fprintf ppf "%s@ %s@ %s@ %s"
+          "In this definition, a type variable"
+          "has a variance that is not reflected"
+          "by its occurence in type parameters."
+          "This may also be caused by \"falsely bound\" type variables."
+      else
+        fprintf ppf "%s@ %s@ %s %d%s %s@ "
+          "In this definition, expected parameter"
+          "variances are not satisfied."
+          "The" n (match n with 1 -> "st" | 2 -> "nd" | 3 -> "rd" | _ -> "th")
+          "type parameter has less variance than expected."
   | Unavailable_type_constructor p ->
       fprintf ppf "The definition of type %a@ is unavailable" Printtyp.path p
