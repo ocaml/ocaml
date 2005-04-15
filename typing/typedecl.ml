@@ -35,10 +35,10 @@ type error =
   | Parameters_differ of Path.t * type_expr * type_expr
   | Null_arity_external
   | Missing_native_external
-  | Unbound_type_var
+  | Unbound_type_var of type_expr * type_declaration
   | Unbound_exception of Longident.t
   | Not_an_exception of Longident.t
-  | Bad_variance of int
+  | Bad_variance of int * (bool*bool) * (bool*bool)
   | Unavailable_type_constructor of Path.t
 
 exception Error of Location.t * error
@@ -460,25 +460,31 @@ let compute_variance_decl env check decl (required, loc) =
 	  compute_variance env tvl true cn cn ty)
         ftl
   end;
+  let required =
+    List.map (fun (c,n as r) -> if c || n then r else (true,true))
+      required
+  in
   List.iter2
     (fun (ty, co, cn, ct) (c, n) ->
       if ty.desc <> Tvar then begin
-        let (c, n) = if c || n then (c, n) else (true, true) in
         co := c; cn := n; ct := n;
         compute_variance env tvl2 c n n ty
       end)
     tvl0 required;
   List.iter2
-    (fun (_, c1, n1, t1) (_, c2, n2, t2) ->
-      if !c1 && not !c2 || !n1 && not !n2 ||
-         !t1 && not !t2 && decl.type_kind = Type_abstract
-      then raise (Error(loc, Bad_variance 0)))
+    (fun (ty, c1, n1, t1) (_, c2, n2, t2) ->
+      if !c1 && not !c2 || !n1 && not !n2
+      (* || !t1 && not !t2 && decl.type_kind = Type_abstract *)
+      then raise (Error(loc,
+                        if not (!c2 || !n2) then Unbound_type_var (ty, decl)
+                        else Bad_variance (0, (!c1,!n1), (!c2,!n2)))))
     tvl1 tvl2;
   let pos = ref 0 in
   List.map2
     (fun (_, co, cn, ct) (c, n) ->
       incr pos;
-      if c && !cn || n && !co then raise (Error(loc, Bad_variance !pos));
+      if !co && not c || !cn && not n
+      then raise (Error(loc, Bad_variance (!pos, (!co,!cn), (c,n))));
       let ct = if decl.type_kind = Type_abstract then ct else cn in
       (!co, !cn, !ct))
     tvl0 required
@@ -567,7 +573,7 @@ let transl_type_decl env name_sdecl_list =
   List.iter2
     (fun (_, sdecl) (id, decl) ->
        match Ctype.closed_type_decl decl with
-         Some _ -> raise(Error(sdecl.ptype_loc, Unbound_type_var))
+         Some ty -> raise(Error(sdecl.ptype_loc, Unbound_type_var(ty,decl)))
        | None   -> ())
     name_sdecl_list decls;
   (* Check re-exportation *)
@@ -652,8 +658,9 @@ let transl_with_constraint env sdecl =
       type_variance = [];
     }
   in
-  if Ctype.closed_type_decl decl <> None then
-    raise(Error(sdecl.ptype_loc, Unbound_type_var));
+  begin match Ctype.closed_type_decl decl with None -> ()
+  | Some ty -> raise(Error(sdecl.ptype_loc, Unbound_type_var(ty,decl)))
+  end;
   let decl =
     {decl with type_variance =
      compute_variance_decl env false decl
@@ -746,25 +753,70 @@ let report_error ppf = function
       fprintf ppf "@[<hv>An external function with more than 5 arguments \
                    requires second stub function@ \
                    for native-code compilation@]"
-  | Unbound_type_var ->
-      fprintf ppf "A type variable is unbound in this type declaration"
+  | Unbound_type_var (ty, decl) ->
+      fprintf ppf "A type variable is unbound in this type declaration";
+      let ty = Ctype.repr ty in
+      let explain tl typ kwd lab =
+        let ti = List.find (fun ti -> Ctype.deep_occur ty (typ ti)) tl in
+        Printtyp.reset_and_mark_loops_list [typ ti;ty];
+        fprintf ppf
+          ".@.@[<hov2>In %s@ %s%a@;<1 -2>the variable %a is unbound@]"
+          kwd (lab ti) Printtyp.type_expr (typ ti) Printtyp.type_expr ty
+      in
+      begin try match decl.type_kind, decl.type_manifest with
+        Type_variant (tl, _), _ ->
+          explain tl (fun (_,tl) -> Btype.newgenty (Ttuple tl))
+            "case" (fun (lab,_) -> lab ^ " of ")
+      | Type_record (tl, _, _), _ ->
+          explain tl (fun (_,_,t) -> t)
+            "field" (fun (lab,_,_) -> lab ^ ": ")
+      | Type_abstract, Some ty' ->
+          let trivial ty =
+            explain [ty] (fun t -> t) "definition" (fun _ -> "") in
+          begin match (Ctype.repr ty').desc with
+            Tobject(fi,_) ->
+              let (tl, rv) = Ctype.flatten_fields fi in
+              if rv == ty then trivial ty' else
+              explain tl (fun (_,_,t) -> t)
+                "method" (fun (lab,_,_) -> lab ^ ": ")
+          | Tvariant row ->
+              let row = Btype.row_repr row in
+              if row.row_more == ty then trivial ty' else
+              explain row.row_fields
+                (fun (l,f) -> match Btype.row_field_repr f with
+                  Rpresent (Some t) -> t
+                | Reither (_,[t],_,_) -> t
+                | Reither (_,tl,_,_) -> Btype.newgenty (Ttuple tl)
+                | _ -> Btype.newgenty (Ttuple[]))
+                "case" (fun (lab,_) -> "`" ^ lab ^ " of ")
+          | _ -> trivial ty'
+          end
+      | _ -> ()
+      with Not_found -> ()
+      end
   | Unbound_exception lid ->
       fprintf ppf "Unbound exception constructor@ %a" Printtyp.longident lid
   | Not_an_exception lid ->
       fprintf ppf "The constructor@ %a@ is not an exception"
         Printtyp.longident lid
-  | Bad_variance n ->
+  | Bad_variance (n, v1, v2) ->
+      let variance = function
+          (true, true)  -> "invariant"
+        | (true, false) -> "covariant"
+        | (false,true)  -> "contravariant"
+        | (false,false) -> "unrestricted"
+      in
       if n < 1 then
-        fprintf ppf "%s@ %s@ %s@ %s"
+        fprintf ppf "%s@ %s@ %s"
           "In this definition, a type variable"
           "has a variance that is not reflected"
           "by its occurence in type parameters."
-          "This may also be caused by \"falsely bound\" type variables."
       else
-        fprintf ppf "%s@ %s@ %s %d%s %s@ "
+        fprintf ppf "%s@ %s@ %s %d%s %s %s,@ %s %s"
           "In this definition, expected parameter"
           "variances are not satisfied."
           "The" n (match n with 1 -> "st" | 2 -> "nd" | 3 -> "rd" | _ -> "th")
-          "type parameter has less variance than expected."
+          "type parameter was expected to be" (variance v2)
+          "but it is" (variance v1)
   | Unavailable_type_constructor p ->
       fprintf ppf "The definition of type %a@ is unavailable" Printtyp.path p
