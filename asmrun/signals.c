@@ -53,7 +53,7 @@ value caml_signal_handlers = 0;
 void (*caml_enter_blocking_section_hook)() = NULL;
 void (*caml_leave_blocking_section_hook)() = NULL;
 
-static int rev_convert_signal_number(int signo);
+int caml_rev_convert_signal_number(int signo);
 
 /* Execute a signal handler immediately. */
 
@@ -66,8 +66,9 @@ void caml_execute_signal(int signal_number, int in_signal_handler)
   sigemptyset(&sigs);
   sigaddset(&sigs, signal_number);
   sigprocmask(SIG_BLOCK, &sigs, &sigs);
-  res = caml_callback_exn(Field(caml_signal_handlers, signal_number),
-                          Val_int(rev_convert_signal_number(signal_number)));
+  res = caml_callback_exn(
+           Field(caml_signal_handlers, signal_number),
+           Val_int(caml_rev_convert_signal_number(signal_number)));
   if (! in_signal_handler) {
     /* Restore the original signal mask */
     sigprocmask(SIG_SETMASK, &sigs, NULL);
@@ -247,7 +248,7 @@ int caml_convert_signal_number(int signo)
     return signo;
 }
 
-static int rev_convert_signal_number(int signo)
+int caml_rev_convert_signal_number(int signo)
 {
   int i;
   for (i = 0; i < sizeof(posix_signals) / sizeof(int); i++)

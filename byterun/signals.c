@@ -59,7 +59,7 @@ void caml_process_event(void)
   if (async_action != NULL) (*async_action)();
 }
 
-static int rev_convert_signal_number(int signo);
+CAMLexport int caml_rev_convert_signal_number(int signo);
 
 void caml_execute_signal(int signal_number, int in_signal_handler)
 {
@@ -72,8 +72,9 @@ void caml_execute_signal(int signal_number, int in_signal_handler)
   sigaddset(&sigs, signal_number);
   sigprocmask(SIG_BLOCK, &sigs, &sigs);
 #endif
-  res = caml_callback_exn(Field(caml_signal_handlers, signal_number),
-                          Val_int(rev_convert_signal_number(signal_number)));
+  res = caml_callback_exn(
+           Field(caml_signal_handlers, signal_number),
+           Val_int(caml_rev_convert_signal_number(signal_number)));
 #ifdef POSIX_SIGNALS
   if (! in_signal_handler) {
     /* Restore the original signal mask */
@@ -228,7 +229,7 @@ CAMLexport int caml_convert_signal_number(int signo)
     return signo;
 }
 
-static int rev_convert_signal_number(int signo)
+CAMLexport int caml_rev_convert_signal_number(int signo)
 {
   int i;
   for (i = 0; i < sizeof(posix_signals) / sizeof(int); i++)
