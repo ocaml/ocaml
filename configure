@@ -1180,6 +1180,7 @@ for dir in \
     $x11_lib_dir          \
     $x11_try_lib_dir      \
                           \
+    /usr/X11R6/lib64      \
     /usr/X11R6/lib        \
     /usr/lib/X11R6        \
     /usr/local/X11R6/lib  \
