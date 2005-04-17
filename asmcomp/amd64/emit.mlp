@@ -442,7 +442,6 @@ let emit_instr fallthrough i =
         `	sarq	${emit_int l}, {emit_reg i.res.(0)}\n`
     | Lop(Iintop_imm(Imod, n)) ->
         (* Note: i.arg.(0) = i.res.(0) = rdx  (cf. selection.ml) *)
-        let l = Misc.log2 n in
         `	movq	{emit_reg i.arg.(0)}, %rax\n`;
         `	testq	%rax, %rax\n`;
         `	leaq	{emit_int(n-1)}(%rax), %rax\n`;
