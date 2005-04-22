@@ -118,6 +118,8 @@ let main () =
              "<file>  Suffix for interface files (default: .mli)";
        "-intf_suffix", Arg.String (fun s -> Config.interface_suffix := s),
              "<file>  (deprecated) same as -intf-suffix";
+       "-impl-suffix", Arg.String (fun s -> Config.implementation_suffix := s),
+             "<file>  Suffix for implementation files (default: .ml)";
        "-labels", Arg.Clear classic, " Use commuting label mode";
        "-linkall", Arg.Set link_everything,
              " Link all modules, even unused ones";
@@ -158,6 +160,7 @@ let main () =
          \032    D/d enable/disable deprecated features\n\
          \032    E/e enable/disable fragile match\n\
          \032    F/f enable/disable partially applied function\n\
+         \032    G/g enable/disable G'Caml related warnings\n\
          \032    L/l enable/disable labels omitted in application\n\
          \032    M/m enable/disable overriden methods\n\
          \032    P/p enable/disable partial match\n\
@@ -176,6 +179,7 @@ let main () =
          " Print location of standard library and exit";
 
        "-nopervasives", Arg.Set nopervasives, " (undocumented)";
+       "-nobuiltintypes", Arg.Set nobuiltintypes, " (undocumented)";
        "-dparsetree", Arg.Set dump_parsetree, " (undocumented)";
        "-drawlambda", Arg.Set dump_rawlambda, " (undocumented)";
        "-dlambda", Arg.Set dump_lambda, " (undocumented)";
@@ -194,6 +198,12 @@ let main () =
        "-dscheduling", Arg.Set dump_scheduling, " (undocumented)";
        "-dlinear", Arg.Set dump_linear, " (undocumented)";
        "-dstartup", Arg.Set keep_startup_file, " (undocumented)";
+
+       "-nogcamllib", Arg.Set no_gcamllib_link,
+	   " do not link the G'Caml special library\n\
+	     \032   automatically enabled when either -nostdlib or -nopervasives\n\
+	     \032   is specified.";
+
        "-", Arg.String (process_file ppf),
             "<file>  Treat <file> as a file name (even if it starts with `-')"
       ]) (process_file ppf) usage;

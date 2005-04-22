@@ -130,6 +130,7 @@ let rec search_pos_type t ~pos ~env =
       add_found_sig (`Type, lid) ~env ~loc:t.ptyp_loc
   | Ptyp_alias (t, _)
   | Ptyp_poly (_, t) -> search_pos_type ~pos ~env t
+  | Ptyp_lident _ | Ptyp_overload _ | Ptyp_konst _ -> (* FIXME *) assert false
   end
 
 let rec search_pos_class_type cl ~pos ~env =
@@ -656,7 +657,7 @@ let add_found_str = add_found ~found:found_str
 let rec search_pos_structure ~pos str =
   List.iter str ~f:
   begin function
-    Tstr_eval exp -> search_pos_expr exp ~pos
+    Tstr_eval (exp,_) -> search_pos_expr exp ~pos
   | Tstr_value (rec_flag, l) ->
       List.iter l ~f:
       begin fun (pat, exp) ->
@@ -730,7 +731,7 @@ and search_pos_class_expr ~pos cl =
 and search_pos_expr ~pos exp =
   if in_loc exp.exp_loc ~pos then begin
   begin match exp.exp_desc with
-    Texp_ident (path, _) ->
+    Texp_ident (path, _, _) ->
       add_found_str (`Exp(`Val path, exp.exp_type))
         ~env:exp.exp_env ~loc:exp.exp_loc
   | Texp_constant v ->
@@ -813,6 +814,7 @@ and search_pos_expr ~pos exp =
       search_pos_expr exp ~pos
   | Texp_object (cls, _, _) ->
       	search_pos_class_structure ~pos cls
+  | Texp_generic _ | Texp_typedecl _ | Texp_rtype _ -> (* FIXME *) assert false
   end;
   add_found_str (`Exp(`Expr, exp.exp_type)) ~env:exp.exp_env ~loc:exp.exp_loc
   end
@@ -841,6 +843,7 @@ and search_pos_pat ~pos ~env pat =
       search_pos_pat a ~pos ~env; search_pos_pat b ~pos ~env
   | Tpat_or (_, _, Some _) ->
       ()
+  | Tpat_rtype _ -> (* FIXME *) assert false
   end;
   add_found_str (`Exp(`Pat, pat.pat_type)) ~env ~loc:pat.pat_loc
   end

@@ -22,7 +22,7 @@ open Types
 type pattern =
   { pat_desc: pattern_desc;
     pat_loc: Location.t;
-    pat_type: type_expr;
+    mutable pat_type: type_expr;  (* FIXME BAD DESIGN *)
     pat_env: Env.t }
 
 and pattern_desc =
@@ -36,18 +36,34 @@ and pattern_desc =
   | Tpat_record of (label_description * pattern) list
   | Tpat_array of pattern list
   | Tpat_or of pattern * pattern * Path.t option
+  | Tpat_rtype of type_expr
 
 type partial = Partial | Total
 type optional = Required | Optional
 
+(* FIXME: maybe moved to types.ml ? *)
+type flow =
+  | Ftype of type_expr
+  | Fkonst of flow_record
+  | Foverload of int * flow
+  | Floop of flow ref
+
+and flow_record = (konst_elem * flow) list
+ 
+type instance_info = 
+  | FA_none
+  | FA_flow of flow
+  | FA_konst of pattern * konst_elem * type_expr
+  | FA_overload of pattern * konst_elem * type_expr
+
 type expression =
   { exp_desc: expression_desc;
     exp_loc: Location.t;
-    exp_type: type_expr;
+    mutable exp_type: type_expr; (* FIXME BAD DESIGN *)
     exp_env: Env.t }
 
 and expression_desc =
-    Texp_ident of Path.t * value_description
+    Texp_ident of Path.t * value_description * instance_info ref
   | Texp_constant of constant
   | Texp_let of rec_flag * (pattern * expression) list * expression
   | Texp_function of (pattern * expression) list * partial
@@ -77,6 +93,9 @@ and expression_desc =
   | Texp_assertfalse
   | Texp_lazy of expression
   | Texp_object of class_structure * class_signature * string list
+  | Texp_rtype of type_expr
+  | Texp_typedecl of Path.t
+  | Texp_generic of (type_expr * expression) list
 
 and meth =
     Tmeth_name of string
@@ -131,7 +150,7 @@ and module_expr_desc =
 and structure = structure_item list
 
 and structure_item =
-    Tstr_eval of expression
+    Tstr_eval of expression * pattern
   | Tstr_value of rec_flag * (pattern * expression) list
   | Tstr_primitive of Ident.t * value_description
   | Tstr_type of (Ident.t * type_declaration) list
@@ -156,6 +175,7 @@ and module_coercion =
 val iter_pattern_desc : (pattern -> unit) -> pattern_desc -> unit
 val map_pattern_desc : (pattern -> pattern) -> pattern_desc -> pattern_desc
 
+val pat_bound_idents: pattern -> Ident.t list
 val let_bound_idents: (pattern * expression) list -> Ident.t list
 val rev_let_bound_idents: (pattern * expression) list -> Ident.t list
 

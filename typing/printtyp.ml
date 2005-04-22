@@ -107,7 +107,7 @@ let rec raw_type ppf ty =
     fprintf ppf "@[<1>{id=%d;level=%d;desc=@,%a}@]" ty.id ty.level
       raw_type_desc ty.desc
   end
-and raw_type_list tl = raw_list raw_type tl
+and raw_type_list ppf = raw_list raw_type ppf (* original is wrong tl must be ppf *)
 and raw_type_desc ppf = function
     Tvar -> fprintf ppf "Tvar"
   | Tarrow(l,t1,t2,c) ->
@@ -155,6 +155,19 @@ and raw_type_desc ppf = function
           match row.row_name with None -> fprintf ppf "None"
           | Some(p,tl) ->
               fprintf ppf "Some(@,%a,@,%a)" path p raw_type_list tl)
+  | Tkonst (konst, ty) ->
+      fprintf ppf "@[<hov1>Tkonst(@,%a,@,%a)@]"
+        raw_konstraint konst
+        raw_type ty
+  | Toverload odesc ->
+      fprintf ppf "@[<1>Toverload @[<hov1>{@[%s@,%a;@]@ @[%s@,%a@]}@]" 
+	"over_aunif="
+	raw_type odesc.over_aunif
+	"over_cases="
+	raw_type_list odesc.over_cases
+  | Tpath p ->
+      fprintf ppf "@[<hov1>Tpath %a@]" path p
+      
 
 and raw_field ppf = function
     Rpresent None -> fprintf ppf "Rpresent None"
@@ -166,6 +179,18 @@ and raw_field ppf = function
           match !e with None -> fprintf ppf " None"
           | Some f -> fprintf ppf "@,@[<1>(%a)@]" raw_field f)
   | Rabsent -> fprintf ppf "Rabsent"
+
+and raw_konstraint ppf = raw_list raw_konst_elem ppf
+
+and option f ppf = function
+  | None -> fprintf ppf "None"
+  | Some v -> fprintf ppf "Some (@[%a@])" f v
+
+and raw_konst_elem ppf kelem =
+  fprintf ppf
+    "@[<hov1>{@[%s@,%a;@]@ @[%s@,%a;@]@}@]"
+    "ktype=" raw_type kelem.ktype
+    "kdepend=" (option raw_type) kelem.kdepend
 
 let raw_type_expr ppf t =
   visited := [];
@@ -188,9 +213,14 @@ let new_name () =
   incr name_counter;
   name
 
+let var_level_debug = try ignore (Sys.getenv "GCAML_VAR_LEVEL"); true with _ -> false
+let var_id_debug = try ignore (Sys.getenv "GCAML_VAR_ID"); true with _ -> false
+
 let name_of_type t =
   try List.assq t !names with Not_found ->
     let name = new_name () in
+    let name = if var_id_debug then name ^ string_of_int t.id else name in
+    let name = if var_level_debug then name ^ "@" ^ string_of_int t.level else name in
     names := (t, name) :: !names;
     name
 
@@ -277,6 +307,21 @@ let rec mark_loops_rec visited ty =
         List.iter (fun t -> add_alias t) tyl;
         mark_loops_rec visited ty
     | Tunivar -> ()
+    | Tkonst (konst, ty) ->
+(* We need not to add aliases
+        List.iter (fun kelem -> 
+	  add_alias kelem.ktype; Misc.may add_alias kelem.kdepend) konst;
+*)
+	List.iter (fun kelem ->
+	  mark_loops_rec visited kelem.ktype;
+	  match kelem.kdepend with
+	  | Some ty -> mark_loops_rec visited ty
+	  | None -> ()) konst;
+        mark_loops_rec visited ty
+    | Toverload odesc -> 
+	List.iter (mark_loops_rec visited) 
+	  (odesc.over_aunif :: odesc.over_cases)
+    | Tpath p -> ()
 
 let mark_loops ty =
   normalize_type Env.empty ty;
@@ -384,12 +429,23 @@ let rec tree_of_typexp sch ty =
         end
     | Tunivar ->
         Otyp_var (false, name_of_type ty)
+    | Tkonst (konst, ty') ->
+	let ktree = tree_of_konstraint sch konst in
+	let tree = tree_of_typexp sch ty' in
+	Otyp_konst (ty.level = generic_level, ktree, tree)
+    | Toverload odesc -> 
+	Otyp_overload (ty.level = generic_level, ty.id,
+		       tree_of_typlist sch odesc.over_cases)
+    | Tpath path -> Otyp_path (tree_of_path path)
   in
-  if List.memq px !delayed then delayed := List.filter ((!=) px) !delayed;
-  if is_aliased px && ty.desc <> Tvar && ty.desc <> Tunivar then begin
-    check_name_of_type px;
-    Otyp_alias (pr_typ (), name_of_type px) end
-  else pr_typ ()
+  let tree = 
+    if List.memq px !delayed then delayed := List.filter ((!=) px) !delayed;
+    if is_aliased px && ty.desc <> Tvar && ty.desc <> Tunivar then begin
+      check_name_of_type px;
+      Otyp_alias (pr_typ (), name_of_type px) end
+    else pr_typ ()
+  in
+  tree
 
 and tree_of_row_field sch (l, f) =
   match row_field_repr f with
@@ -447,6 +503,11 @@ and tree_of_typfields sch rest = function
       let (fields, rest) = tree_of_typfields sch rest l in
       (field :: fields, rest)
 
+and tree_of_konstraint sch konst =
+  List.map (fun kelem ->
+    tree_of_typexp sch kelem.ktype,
+    Misc.may_map (tree_of_typexp sch) kelem.kdepend) konst
+
 let typexp sch prio ppf ty =
   !Oprint.out_type ppf (tree_of_typexp sch ty)
 
@@ -456,13 +517,17 @@ and type_sch ppf ty = typexp true 0 ppf ty
 
 and type_scheme ppf ty = reset_and_mark_loops ty; typexp true 0 ppf ty
 
+let _ = Gdebug.print_type_scheme_ref := type_scheme (* JPF debug *)
+let _ = Gdebug.print_raw_type_expr_ref := raw_type_expr (* JPF debug *)
+
 (* Maxence *)
 let type_scheme_max ?(b_reset_names=true) ppf ty = 
   if b_reset_names then reset_names () ;
   typexp true 0 ppf ty
 (* Fin Maxence *)
 
-let tree_of_type_scheme ty = reset_and_mark_loops ty; tree_of_typexp true ty
+let tree_of_type_scheme ty = 
+  reset_and_mark_loops ty; tree_of_typexp true ty
 
 (* Print one type declaration *)
 

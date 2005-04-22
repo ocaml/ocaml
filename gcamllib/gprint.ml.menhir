@@ -1,0 +1,187 @@
+open Format
+open Rtype
+
+type printer_impl = Rtype.type_expr -> formatter -> Obj.t -> unit
+type printer_extension = printer_impl -> printer_impl
+
+let rec print_list sep f ppf = function
+  | [] -> ()
+  | [x] -> f ppf x
+  | x::xs -> 
+      fprintf ppf "%a%a%a" 
+	f x
+	sep ()
+	(print_list sep f) xs
+
+let print_tuple f ppf v = 
+  print_list (fun ppf () -> fprintf ppf ",@ ") f ppf v
+
+type base_printer = formatter -> Obj.t -> unit
+ 
+let base_printers =
+  [ Builtintypes.int, ((fun _(*[]*) ppf v -> fprintf ppf "%i" (Obj.obj v)) :
+			 base_printer list -> base_printer);
+    Builtintypes.char, (fun _(*[]*) ppf v -> fprintf ppf "%C" (Obj.obj v));
+    Builtintypes.string, (fun _(*[]*) ppf v -> fprintf ppf "%S" (Obj.obj v));
+    Builtintypes.float, (fun _(*[]*) ppf v -> fprintf ppf "%F" (Obj.obj v));
+    Builtintypes.bool, (fun _(*[]*) ppf v -> fprintf ppf "%B" (Obj.obj v));
+    Builtintypes.unit, (fun _(*[]*) ppf v -> fprintf ppf "()");
+    Builtintypes.exn, (fun _(*[]*) ppf v -> fprintf ppf "<exn>");
+    Builtintypes.nativeint, (fun _(*[]*) ppf v -> fprintf ppf "%nd" (Obj.obj v));
+    Builtintypes.int32, (fun _(*[]*) ppf v -> fprintf ppf "%ld" (Obj.obj v));
+    Builtintypes.int64, (fun _(*[]*) ppf v -> fprintf ppf "%Ld" (Obj.obj v));
+    
+    Builtintypes.list, (fun printers ppf v ->
+      match printers with
+      | [printer] ->
+	  fprintf ppf "@[<2>[ %a ]@]" 
+	    (print_list (fun ppf () -> fprintf ppf ";@ ") printer) (Obj.obj v)
+      | _ -> assert false);
+
+    Builtintypes.array, (fun printers ppf v ->
+      match printers with
+      | [printer] ->
+	  fprintf ppf "@[<3>[| %a |]@]" 
+	    (print_list (fun ppf () -> fprintf ppf ";@ ") printer) 
+	    (Array.to_list (Obj.obj v))
+      | _ -> assert false)
+      
+  ]
+
+let rec gen_printer print ty ppf v =
+  match ty.desc with
+  | Tvar -> fprintf ppf "<poly>"
+  | Tarrow (_,_,_) -> fprintf ppf "<fun>"
+  | Ttuple ts -> 
+      (* bind types and values *)
+      let rec bind pos = function
+  	| [] -> []
+  	| t::ts -> (t, Obj.field v pos) :: bind (pos+1) ts
+      in
+      fprintf ppf "(@[%a@])" 
+  	(print_tuple (fun ppf (t,v) -> print t ppf v)) (bind 0 ts)
+  | Tconstr ((_, decl), args) -> 
+      try
+	(* call printers of base types and user custom printers, if exists *)
+	print_base print ppf decl args v
+      with
+      | Not_found ->
+	  match decl.type_kind with
+	  | Type_abstract -> fprintf ppf "<abstr>"
+	  | Type_variant (cnstrs, _) -> 
+	      print_variant print ppf decl args cnstrs v
+	  | Type_record (labels, Record_regular, _) ->
+	      print_regular_record print ppf decl args labels v
+	  | Type_record (labels, Record_float, _) ->
+	      print_float_record print ppf decl args labels v
+
+and print_base print ppf decl args v =
+  let printer = List.assq decl base_printers in
+  let sub_printers = List.map print args in
+  printer sub_printers ppf v
+
+and print_variant print ppf decl args cnstrs v =
+  if Obj.is_int v then
+    let rec find_constr_as_int p = function
+      | [] -> assert false
+      | (cnst,[]) :: cs -> 
+	  if p = 0 then cnst else find_constr_as_int (p-1) cs
+      | _::cs -> find_constr_as_int p cs
+    in
+    let cnst = find_constr_as_int (Obj.obj v : int) cnstrs in
+    fprintf ppf "%s" cnst
+  else begin
+    let sub = List.combine decl.type_params args in
+    let rec find_constr_as_block p = function
+      | [] -> assert false
+      | (cnst,[]) :: cs -> find_constr_as_block p cs
+      | (cnst,args)::cs -> 
+	  if p = 0 then cnst,args
+	  else find_constr_as_block (p-1) cs
+    in
+    let cnst, args = find_constr_as_block (Obj.tag v) cnstrs in
+    let subprinters = 
+      List.map print (List.map (Rtype.subst sub) args)
+    in
+    let fields =
+      let rec get_fields p = function
+	| [] -> []
+	| _::xs -> (Obj.field v p) :: get_fields (p+1) xs
+      in
+      get_fields 0 args
+    in
+    match List.combine subprinters fields with
+    | [sprt, field] -> 
+	fprintf ppf "@[%s (%a)@]" cnst sprt field
+    | sprtfields -> 
+	let rec print_args ppf = function
+	  | [] -> ()
+	  | [p,v] -> p ppf v
+	  | (p,v)::pvs -> 
+	      fprintf ppf "%a,@,%a" 
+		p v 
+		print_args pvs
+	in
+	fprintf ppf "@[%s (@[%a@])@]" cnst
+	  print_args sprtfields
+  end
+
+and print_regular_record print ppf decl args labels v =
+  let sub = List.combine decl.type_params args in
+  (* sub printer prints label and content *)
+  let labels_and_subprinters = 
+    List.map (fun (l,_,t) -> 
+      l, print (Rtype.subst sub t)) labels
+  in
+  let fields =
+    let rec get_fields p = function
+      | [] -> []
+      | _::xs -> (Obj.field v p) :: get_fields (p+1) xs
+    in
+    get_fields 0 labels
+  in
+  fprintf ppf "@[<2>{ %a }@]" 
+    (print_list (fun ppf () -> fprintf ppf ";@ ") 
+       (fun ppf ((l,p),v) ->
+	 fprintf ppf "%s = %a" l p (Obj.repr v)))
+    (List.combine labels_and_subprinters fields)
+
+and print_float_record print ppf decl args labels v =
+  let sub = List.combine decl.type_params args in
+  (* sub printer prints label and content *)
+  let labels_and_subprinters = 
+    List.map (fun (l,_,t) -> 
+      l, print (Rtype.subst sub t)) labels
+  in
+  let values_as_float = 
+    Array.to_list (Obj.obj v : float array) 
+  in
+  fprintf ppf "@[<2>{ %a }@]" 
+    (print_list (fun ppf () -> fprintf ppf ";@ ") 
+       (fun ppf ((l,p),v) ->
+	 fprintf ppf "%s = %a" l p (Obj.repr v)))
+    (List.combine labels_and_subprinters values_as_float)
+    
+let rec ml_printer_impl ty = gen_printer ml_printer_impl ty 
+
+generic val print : {'a} => formatter -> 'a -> unit = ml_printer_impl
+
+let eprint v = Format.eprintf "%a@." print v
+
+(* extension *)
+(* extension example *)
+(*
+let print_tuple print ty ppf v =
+  match ty with
+  | [: ^x * ^y :] -> 
+      print ppf x (fst (Obj.obj v));
+      print ppf x (snd (Obj.obj v))
+  | _ -> print ty ppf v
+
+*)
+
+let make_printer_impl ty impl = impl ty
+
+generic val make_printer : 
+    {'a} => printer_impl -> formatter -> 'a -> unit = make_printer_impl
+

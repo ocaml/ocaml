@@ -124,12 +124,6 @@ parser.cmo: primitives.cmi parser_aux.cmi ../parsing/longident.cmi \
     int64ops.cmi input_handling.cmi parser.cmi 
 parser.cmx: primitives.cmx parser_aux.cmi ../parsing/longident.cmx \
     int64ops.cmx input_handling.cmx parser.cmi 
-pattern_matching.cmo: ../typing/typedtree.cmi parser_aux.cmi \
-    ../utils/misc.cmi debugger_config.cmi debugcom.cmi ../typing/ctype.cmi \
-    pattern_matching.cmi 
-pattern_matching.cmx: ../typing/typedtree.cmx parser_aux.cmi \
-    ../utils/misc.cmx debugger_config.cmx debugcom.cmx ../typing/ctype.cmx \
-    pattern_matching.cmi 
 pos.cmo: source.cmi primitives.cmi ../bytecomp/instruct.cmi pos.cmi 
 pos.cmx: source.cmx primitives.cmx ../bytecomp/instruct.cmx pos.cmi 
 primitives.cmo: ../otherlibs/unix/unix.cmi primitives.cmi 

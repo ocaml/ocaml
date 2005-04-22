@@ -186,3 +186,8 @@ let builtin_values =
        ident_failure; ident_not_found; ident_sys_error; ident_end_of_file;
        ident_division_by_zero; ident_sys_blocked_io;
        ident_assert_failure; ident_undefined_recursive_module ]
+
+let builtin_types = 
+  [path_int; path_char; path_string; path_float; path_bool; path_unit;
+   path_exn; path_array; path_list; path_format4; path_option;
+   path_nativeint; path_int32; path_int64; path_lazy_t]

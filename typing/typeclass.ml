@@ -438,7 +438,7 @@ let rec class_field cl_num self_type meths vars
         Location.prerr_warning loc (Warnings.Hide_instance_variable lab);
       if !Clflags.principal then Ctype.begin_def ();
       let exp =
-        try type_exp val_env sexp with Ctype.Unify [(ty, _)] ->
+        try type_exp val_env (Kset.empty ()) sexp with Ctype.Unify [(ty, _)] -> (* FIXME *)
           raise(Error(loc, Make_nongen_seltype ty))
       in
       if !Clflags.principal then begin
@@ -493,7 +493,7 @@ let rec class_field cl_num self_type meths vars
             Ctype.newty (Tarrow("", self_type, Ctype.instance ty, Cok)) in
           Ctype.raise_nongen_level ();
           vars := vars_local;
-          let texp = type_expect met_env meth_expr meth_type in
+          let texp = type_expect met_env (Kset.empty ()) meth_expr meth_type in (* FIXME *)
           Ctype.end_def ();
           Cf_meth (lab, texp)
         end in
@@ -506,9 +506,10 @@ let rec class_field cl_num self_type meths vars
        inh_vals, inher)
 
   | Pcf_let (rec_flag, sdefs, loc) ->
+      let kset = Kset.empty () in (* FIXME *)
       let (defs, val_env) =
         try
-          Typecore.type_let val_env rec_flag sdefs
+          Typecore.type_let val_env kset rec_flag sdefs
         with Ctype.Unify [(ty, _)] ->
           raise(Error(loc, Make_nongen_seltype ty))
       in
@@ -516,7 +517,7 @@ let rec class_field cl_num self_type meths vars
         List.fold_right
           (fun id (vals, met_env, par_env) ->
              let expr =
-               Typecore.type_exp val_env
+               Typecore.type_exp val_env kset
                  {pexp_desc = Pexp_ident (Longident.Lident (Ident.name id));
                   pexp_loc = Location.none}
              in
@@ -545,7 +546,7 @@ let rec class_field cl_num self_type meths vars
             Ctype.newty
               (Tarrow ("", self_type, Ctype.instance Predef.type_unit, Cok)) in
           vars := vars_local;
-          let texp = type_expect met_env expr meth_type in
+          let texp = type_expect met_env (Kset.empty ()) expr meth_type in (* FIXME *)
           Ctype.end_def ();
           Cf_init texp
         end in
@@ -736,7 +737,7 @@ and class_expr cl_num val_env met_env scl =
         List.map
           (function (id, id', ty) ->
             (id,
-             Typecore.type_exp val_env
+             Typecore.type_exp val_env (Kset.empty ()) (* FIXME *)
                {pexp_desc = Pexp_ident (Longident.Lident (Ident.name id));
                 pexp_loc = Location.none}))
           pv
@@ -764,6 +765,7 @@ and class_expr cl_num val_env met_env scl =
           cl_type = Tcty_fun (l, Ctype.instance pat.pat_type, cl.cl_type);
           cl_env = val_env}
   | Pcl_apply (scl', sargs) ->
+      let kset = Kset.empty () in (* FIXME *)
       let cl = class_expr cl_num val_env met_env scl' in
       let rec nonopt_labels ls ty_fun =
         match ty_fun with
@@ -797,7 +799,7 @@ and class_expr cl_num val_env met_env scl =
                 | _, (l', sarg0)::more_sargs ->
                     if l <> l' && l' <> "" then
                       raise(Error(sarg0.pexp_loc, Apply_wrong_label l'))
-                    else ([], more_sargs, Some(type_argument val_env sarg0 ty))
+                    else ([], more_sargs, Some(type_argument val_env kset sarg0 ty))
                 | _ ->
                     assert false
               end else try
@@ -813,9 +815,9 @@ and class_expr cl_num val_env met_env scl =
                 in
                 sargs, more_sargs,
                 if Btype.is_optional l' || not (Btype.is_optional l) then
-                  Some (type_argument val_env sarg0 ty)
+                  Some (type_argument val_env kset sarg0 ty)
                 else
-                  let arg = type_argument val_env
+                  let arg = type_argument val_env kset
                       sarg0 (extract_option_type val_env ty) in
                   Some (option_some arg)
               with Not_found ->
@@ -852,9 +854,10 @@ and class_expr cl_num val_env met_env scl =
           cl_type = cty;
           cl_env = val_env}
   | Pcl_let (rec_flag, sdefs, scl') ->
+      let kset = Kset.empty () in (* FIXME *)
       let (defs, val_env) =
         try
-          Typecore.type_let val_env rec_flag sdefs
+          Typecore.type_let val_env kset rec_flag sdefs
         with Ctype.Unify [(ty, _)] ->
           raise(Error(scl.pcl_loc, Make_nongen_seltype ty))
       in
@@ -863,15 +866,15 @@ and class_expr cl_num val_env met_env scl =
           (fun id (vals, met_env) ->
              Ctype.begin_def ();
              let expr =
-               Typecore.type_exp val_env
+               Typecore.type_exp val_env kset
                  {pexp_desc = Pexp_ident (Longident.Lident (Ident.name id));
                   pexp_loc = Location.none}
              in
              Ctype.end_def ();
              Ctype.generalize expr.exp_type;
              let desc =
-               {val_type = expr.exp_type; val_kind = Val_ivar (Immutable,
-                                                               cl_num)}
+               {val_type = expr.exp_type; 
+		val_kind = Val_ivar (Immutable, cl_num)}
              in
              let id' = Ident.create (Ident.name id) in
              ((id', expr)

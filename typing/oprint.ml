@@ -160,6 +160,29 @@ let rec print_out_type ppf =
       fprintf ppf "@[<hov 2>%a.@ %a@]"
         pr_vars sl
         print_out_type ty
+(*
+  | Otyp_konst ([], ty) -> print_out_type_1 ppf ty
+*)
+  | Otyp_konst (true, ks, ty) ->
+      fprintf ppf "@[<hov 2>%a@ =>@ %a@]"
+	print_out_konstraint ks
+	print_out_type ty
+  | Otyp_konst (false, ks, ty) -> (* when instantiated *)
+      fprintf ppf "@[<hov 2>_(%a@ =>@ %a)@]"
+	print_out_konstraint ks
+	print_out_type ty
+  | Otyp_overload (gen,id,tys) ->
+      let pr_typs =
+	print_list print_out_type (fun ppf -> fprintf ppf "@ | ")
+      in
+(*
+      fprintf ppf "@[<hov 1>%s(%d)[| %a |]@]" 
+	(if gen then "" else "_")
+	id
+	pr_typs tys
+*)
+      fprintf ppf "@[<hov 1>[| %a |]@]" 
+	pr_typs tys
   | ty ->
       print_out_type_1 ppf ty
 
@@ -207,6 +230,10 @@ and print_simple_out_type ppf =
   | Otyp_alias _ | Otyp_poly _ | Otyp_arrow _ | Otyp_tuple _ as ty ->
       fprintf ppf "@[<1>(%a)@]" print_out_type ty
   | Otyp_abstract | Otyp_sum _ | Otyp_record _ | Otyp_manifest (_, _) -> ()
+  | Otyp_konst _ -> assert false
+  | Otyp_overload _ -> assert false
+  | Otyp_path id -> fprintf ppf ",%a" print_ident id
+
 and print_fields rest ppf =
   function
     [] ->
@@ -243,6 +270,17 @@ and print_typargs ppf =
     [] -> ()
   | [ty1] -> fprintf ppf "%a@ " print_simple_out_type ty1
   | tyl -> fprintf ppf "@[<1>(%a)@]@ " (print_typlist print_out_type ",") tyl
+
+and print_out_konstraint ppf ks =
+  let pr_kelem ppf = function
+    | t, None -> print_out_type ppf t
+    | t, Some t' -> 
+	fprintf ppf "%a < %a" 
+	  print_out_type t 
+	  print_out_type t'
+  in
+  fprintf ppf "{ @[%a@] }"
+    (print_list pr_kelem (fun ppf -> fprintf ppf ",@ ")) ks
 
 let out_type = ref print_out_type
 

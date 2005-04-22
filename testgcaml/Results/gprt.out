@@ -1,0 +1,3 @@
+(1, [ 2; 3 ])
+Some (Some (Some (None)))
+Bar ({ x = 0; y = Some (Bar ({ x = 1; y = Some (Foo (2)) })) })

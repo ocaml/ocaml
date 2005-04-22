@@ -196,6 +196,13 @@ let iter_type_expr f ty =
   | Tsubst ty           -> f ty
   | Tunivar             -> ()
   | Tpoly (ty, tyl)     -> f ty; List.iter f tyl
+  | Tkonst (konst, ty)  -> 
+      List.iter (fun kelem -> 
+	f kelem.ktype; 
+	Misc.may f kelem.kdepend) konst;
+      f ty
+  | Toverload odesc     -> f odesc.over_aunif; List.iter f odesc.over_cases
+  | Tpath _             -> ()
 
 let rec iter_abbrev f = function
     Mnil                   -> ()
@@ -263,7 +270,15 @@ let rec copy_type_desc f = function
   | Tpoly (ty, tyl)     ->
       let tyl = List.map (fun x -> norm_univar (f x)) tyl in
       Tpoly (f ty, tyl)
-
+  | Tkonst (konst, ty)  -> 
+      Tkonst (List.map (fun kelem ->
+		{ ktype= f kelem.ktype; 
+		  kdepend= Misc.may_map f kelem.kdepend }) konst,
+	      f ty)
+  | Toverload odesc     -> 
+      Toverload { over_aunif= f odesc.over_aunif;
+		  over_cases= List.map f odesc.over_cases }
+  | Tpath p            -> Tpath p
 
 (* Utilities for copying *)
 
@@ -275,7 +290,8 @@ let save_desc ty desc =
 
 (* Restored type descriptions. *)
 let cleanup_types () =
-  List.iter (fun (ty, desc) -> ty.desc <- desc) !saved_desc;
+  List.iter (fun (ty, desc) -> 
+    ty.desc <- desc) !saved_desc;
   saved_desc := []
 
 (* Mark a type. *)
@@ -461,6 +477,7 @@ let log_type ty =
 let link_type ty ty' = log_type ty; ty.desc <- Tlink ty'
   (* ; assert (check_memorized_abbrevs ()) *)
   (*  ; check_expans [] ty' *)
+
 let set_level ty level =
   if ty.id <= !last_snapshot then log_change (Clevel (ty, ty.level));
   ty.level <- level

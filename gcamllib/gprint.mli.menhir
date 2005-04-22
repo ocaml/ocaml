@@ -1,0 +1,14 @@
+val print : { 'a } => Format.formatter -> 'a -> unit
+(** default ML value printer *)
+
+val eprint :
+  { Format.formatter -> 'b -> unit < { 'a } => Format.formatter -> 'a -> unit }
+    => 'b -> unit
+(** print an ML value to standard error, then flush it with a new line. *)
+
+type printer_impl = Rtype.type_expr -> Format.formatter -> Obj.t -> unit
+
+val ml_printer_impl : printer_impl
+(** the default ML vaue printer implementation *)
+
+val make_printer : {'a} => printer_impl -> Format.formatter -> 'a -> unit

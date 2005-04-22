@@ -175,7 +175,8 @@ and type_paths_sig env p pos sg =
       let pos' = match decl.val_kind with Val_prim _ -> pos | _ -> pos + 1 in
       type_paths_sig env p pos' rem
   | Tsig_type(id, decl, _) :: rem ->
-      Pdot(p, Ident.name id, nopos) :: type_paths_sig env p pos rem
+      let pos' = pos + 1 in
+      Pdot(p, Ident.name id, pos) :: type_paths_sig env p pos' rem
   | Tsig_module(id, mty, _) :: rem ->
       type_paths env (Pdot(p, Ident.name id, pos)) mty @
       type_paths_sig (Env.add_module id mty env) p (pos+1) rem

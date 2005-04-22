@@ -18,13 +18,13 @@ include ../config/Makefile
 RUNTIME=../boot/ocamlrun
 COMPILER=../ocamlc
 CAMLC=$(RUNTIME) $(COMPILER)
-COMPFLAGS=-g -warn-error A -nostdlib
+COMPFLAGS=-g -warn-error Ag -nostdlib
 OPTCOMPILER=../ocamlopt
 CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
-OPTCOMPFLAGS=-warn-error A -nostdlib
+OPTCOMPFLAGS=-warn-error Ag -nostdlib
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 
-OBJS=pervasives.cmo $(OTHERS)
+OBJS=builtintypes.cmo pervasives.cmo $(OTHERS)
 OTHERS=array.cmo list.cmo char.cmo string.cmo sys.cmo \
   hashtbl.cmo sort.cmo marshal.cmo obj.cmo \
   int32.cmo int64.cmo nativeint.cmo \
@@ -36,7 +36,16 @@ OTHERS=array.cmo list.cmo char.cmo string.cmo sys.cmo \
   camlinternalOO.cmo oo.cmo camlinternalMod.cmo \
   genlex.cmo weak.cmo \
   lazy.cmo filename.cmo complex.cmo \
+  rtype.cmo \
   arrayLabels.cmo listLabels.cmo stringLabels.cmo moreLabels.cmo stdLabels.cmo
+
+# make MODE=migration when you want to port ocaml to the latest ocaml-cvs
+ifeq ($(MODE),migration)
+ifeq ($(CAMLC),../boot/ocamlrun ../boot/ocamlc)
+# migration + coldstart
+OBJS:=pervasives.cmo $(OTHERS)
+endif
+endif
 
 all: stdlib.cma std_exit.cmo camlheader camlheader_ur
 
@@ -79,11 +88,11 @@ stdlib.p.cmxa: $(OBJS:.cmo=.p.cmx)
 
 camlheader camlheader_ur: header.c ../config/Makefile
 	if $(SHARPBANGSCRIPTS); then \
-          echo '#!$(BINDIR)/ocamlrun' > camlheader && \
+          echo '#!$(BINDIR)/gcamlrun' > camlheader && \
           echo '#!' | tr -d '\012' > camlheader_ur; \
         else \
 	  $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) \
-                    -DRUNTIME_NAME='"$(BINDIR)/ocamlrun"' \
+                    -DRUNTIME_NAME='"$(BINDIR)/gcamlrun"' \
                     header.c -o tmpheader$(EXE) && \
           strip tmpheader$(EXE) && \
 	  mv tmpheader$(EXE) camlheader && \
@@ -114,6 +123,7 @@ $(OBJS:.cmo=.cmx) std_exit.cmx: $(OPTCOMPILER)
 $(OBJS:.cmo=.p.cmx) std_exit.p.cmx: $(OPTCOMPILER)
 
 # Dependencies on Pervasives (not tracked by ocamldep)
+pervasives.cmi: builtintypes.cmi
 $(OBJS) std_exit.cmo: pervasives.cmi
 $(OTHERS:.cmo=.cmi) std_exit.cmi: pervasives.cmi
 $(OBJS:.cmo=.cmx) std_exit.cmx: pervasives.cmi

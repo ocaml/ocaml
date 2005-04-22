@@ -28,8 +28,11 @@ let rm_vars tbl (vll1, vll2) =
   List.iter rm_var vll2;
 ;;
 
-let w_suspicious x = Warnings.Unused_var x;;
+let w_lax x = Warnings.Unused_var x;;
 let w_strict x = Warnings.Unused_var_strict x;;
+let w_either x =
+  if Warnings.is_active (w_lax x) then w_lax x else w_strict x
+;;
 
 let check_rm_vars ppf tbl (vlul_pat, vlul_as) =
   let check_rm_var kind (v, loc, used) =
@@ -38,7 +41,7 @@ let check_rm_vars ppf tbl (vlul_pat, vlul_as) =
     Hashtbl.remove tbl v;
   in
   List.iter (check_rm_var w_strict) vlul_pat;
-  List.iter (check_rm_var w_suspicious) vlul_as;
+  List.iter (check_rm_var w_either) vlul_as;
 ;;
 
 let check_rm_let ppf tbl vlulpl =
@@ -53,8 +56,8 @@ let check_rm_let ppf tbl vlulpl =
   let check_rm_pat (def, def_as) =
     let def_unused = List.fold_left check_rm_one true def in
     let all_unused = List.fold_left check_rm_one def_unused def_as in
-    List.iter (warn_var (if all_unused then w_suspicious else w_strict)) def;
-    List.iter (warn_var w_suspicious) def_as;
+    List.iter (warn_var (if all_unused then w_lax else w_strict)) def;
+    List.iter (warn_var w_lax) def_as;
   in
   List.iter check_rm_pat vlulpl;
 ;;
@@ -75,6 +78,10 @@ let rec get_vars ((vacc, asacc) as acc) p =
   | Ppat_or (p1, _p2) -> get_vars acc p1
   | Ppat_constraint (pp, _) -> get_vars acc pp
   | Ppat_type _ -> acc
+  | Ppat_rtype _ -> 
+      Location.prerr_warning Location.none
+	(Warnings.Gcaml_related "rtype is not yet supported in Unused_var.get_vars");
+      acc
 
 and get_vars_option acc po =
   match po with
@@ -105,6 +112,7 @@ and structure_item ppf tbl s =
   | Pstr_class cdl -> List.iter (class_declaration ppf tbl) cdl;
   | Pstr_class_type _ -> ()
   | Pstr_include _ -> ()
+  | Pstr_genprimitive (_,_,_) -> prerr_endline "Unused_var.structure_item"; ()
 
 and expression ppf tbl e =
   match e.pexp_desc with
@@ -172,6 +180,47 @@ and expression ppf tbl e =
   | Pexp_lazy e -> expression ppf tbl e;
   | Pexp_poly (e, _) -> expression ppf tbl e;
   | Pexp_object cs -> class_structure ppf tbl cs;
+  | Pexp_typedecl _ -> ()  
+  | Pexp_rtype t -> rtype ppf tbl t
+  | Pexp_generic _ ->
+      (* FIXME *)
+      Location.prerr_warning e.pexp_loc
+	(Warnings.Gcaml_related "Unused_var.expression: not yet implemented")
+
+and rtype ppf tbl t =
+  match t.ptyp_desc with
+  | Ptyp_any 
+  | Ptyp_var _ -> () 
+  | Ptyp_arrow (_,t1,t2) -> 
+      rtype ppf tbl t1;
+      rtype ppf tbl t2
+  | Ptyp_tuple ts
+  | Ptyp_constr (_,ts)
+  | Ptyp_class (_, ts, _)
+  | Ptyp_overload ts ->
+      List.iter (rtype ppf tbl) ts
+  | Ptyp_object cfts ->
+      List.iter (fun cft -> 
+	match cft.pfield_desc with
+	| Pfield (_,t) -> rtype ppf tbl t
+	| Pfield_var -> ()) cfts
+  | Ptyp_alias (t, _)
+  | Ptyp_poly (_, t) -> 
+      rtype ppf tbl t
+  | Ptyp_variant (rfs, _, _) -> 
+      List.iter (function
+	| Rtag (_,_,ts) -> List.iter (rtype ppf tbl) ts
+	| Rinherit t -> rtype ppf tbl t) rfs
+  | Ptyp_konst (ks, t) ->
+      List.iter (fun (t, topt) ->
+	rtype ppf tbl t;
+	match topt with Some t -> rtype ppf tbl t | None -> ()) ks;
+      rtype ppf tbl t
+  | Ptyp_lident (Longident.Lident id) ->
+      begin try (Hashtbl.find tbl id) := true;
+      with Not_found -> ()
+      end;
+  | Ptyp_lident _ -> ()
 
 and expression_option ppf tbl eo =
   match eo with
@@ -251,7 +300,7 @@ and class_field ppf tbl cf =
 ;;
 
 let warn ppf ast =
-  if Warnings.is_active (w_suspicious "") || Warnings.is_active (w_strict "")
+  if Warnings.is_active (w_lax "") || Warnings.is_active (w_strict "")
   then begin
     let tbl = Hashtbl.create 97 in
     structure ppf tbl ast;

@@ -21,15 +21,18 @@ open Format
 val is_nonexpansive: Typedtree.expression -> bool
 
 val type_binding:
-        Env.t -> rec_flag ->
+        Env.t -> Kset.t -> rec_flag ->
           (Parsetree.pattern * Parsetree.expression) list -> 
           (Typedtree.pattern * Typedtree.expression) list * Env.t
 val type_let:
-        Env.t -> rec_flag ->
+        Env.t -> Kset.t -> rec_flag ->
           (Parsetree.pattern * Parsetree.expression) list -> 
           (Typedtree.pattern * Typedtree.expression) list * Env.t
 val type_expression:
-        Env.t -> Parsetree.expression -> Typedtree.expression
+        Env.t -> Kset.t -> Parsetree.expression -> Typedtree.expression * Typedtree.pattern
+val type_genprimitive:
+        Env.t -> Kset.t -> Parsetree.core_type -> Parsetree.expression ->
+	  type_expr * Typedtree.expression
 val type_class_arg_pattern:
         string -> Env.t -> Env.t -> label -> Parsetree.pattern ->
         Typedtree.pattern * (Ident.t * Ident.t * type_expr) list *
@@ -42,13 +45,13 @@ val type_self_pattern:
         Env.t * Env.t * Env.t
 val type_expect:
         ?in_function:(Location.t * type_expr) ->
-        Env.t -> Parsetree.expression -> type_expr -> Typedtree.expression
+        Env.t -> Kset.t -> Parsetree.expression -> type_expr -> Typedtree.expression
 val type_exp:
-        Env.t -> Parsetree.expression -> Typedtree.expression
+        Env.t -> Kset.t -> Parsetree.expression -> Typedtree.expression
 val type_approx:
         Env.t -> Parsetree.expression -> type_expr
 val type_argument:
-        Env.t -> Parsetree.expression -> type_expr -> Typedtree.expression
+        Env.t -> Kset.t -> Parsetree.expression -> type_expr -> Typedtree.expression
 
 val option_some: Typedtree.expression -> Typedtree.expression
 val option_none: type_expr -> Location.t -> Typedtree.expression
@@ -96,13 +99,18 @@ type error =
   | Not_a_variant_type of Longident.t
   | Incoherent_label_order
   | Less_general of string * (type_expr * type_expr) list
+  | Generic_primitive_type_mismatch of type_expr * type_expr
+  | Not_generic_primitive_type of type_expr
+  | Should_not_be_generic of type_expr * type_expr
+  | Orpat_with_non_linear_tvar of string
+  | Generic_incompatible_type of type_expr * type_expr
 
 exception Error of Location.t * error
 
 val report_error: formatter -> error -> unit
 
 (* Forward declaration, to be filled in by Typemod.type_module *)
-val type_module: (Env.t -> Parsetree.module_expr -> Typedtree.module_expr) ref
+val type_module: (Env.t -> Kset.t -> Parsetree.module_expr -> Typedtree.module_expr) ref
 (* Forward declaration, to be filled in by Typeclass.class_structure *)
 val type_object:
   (Env.t -> Location.t -> Parsetree.class_structure ->

@@ -26,6 +26,9 @@ val transl_simple_type_delayed:
            the type and a function that binds the type variable. *)
 val transl_type_scheme:
         Env.t -> Parsetree.core_type -> Types.type_expr
+val transl_run_time_type:
+    (Location.t -> Longident.t -> Types.type_expr) -> 
+      Env.t -> Parsetree.core_type -> Types.type_expr
 val reset_type_variables: unit -> unit
 val enter_type_variable: bool -> Location.t -> string -> Types.type_expr
 val type_variable: Location.t -> string -> Types.type_expr
@@ -54,6 +57,8 @@ type error =
   | Variant_tags of string * string
   | Invalid_variable_name of string
   | Cannot_quantify of string * Types.type_expr
+  | Cannot_have_etype
+  | Cannot_have_lident
 
 exception Error of Location.t * error
 

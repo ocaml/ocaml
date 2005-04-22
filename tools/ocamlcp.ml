@@ -82,10 +82,14 @@ module Options = Main_args.Make_options (struct
   let _warn_error = option_with_arg "-warn-error"
   let _where = option "-where"
   let _nopervasives = option "-nopervasives"
+  let _nobuiltintypes = option "-nobuiltintypes"
   let _dparsetree = option "-dparsetree"
   let _drawlambda = option "-drawlambda"
   let _dlambda = option "-dlambda"
   let _dinstr = option "-dinstr"
+
+  let _nogcamllib = option "-nogcamllib"
+  
   let anonymous = process_file
 end);;
 

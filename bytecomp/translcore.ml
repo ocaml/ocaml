@@ -28,6 +28,7 @@ type error =
     Illegal_letrec_pat
   | Illegal_letrec_expr
   | Free_super_var
+  | Unsupported_type_constructor
 
 exception Error of Location.t * error
 
@@ -437,7 +438,8 @@ let rec push_defaults loc bindings pat_expr_list partial =
           Texp_match
             ({exp with exp_type = pat.pat_type; exp_desc =
               Texp_ident (Path.Pident param,
-                          {val_type = pat.pat_type; val_kind = Val_reg})},
+                          {val_type = pat.pat_type; val_kind = Val_reg},
+			  ref FA_none)},
              pat_expr_list, partial) }
       in
       push_defaults loc bindings
@@ -503,6 +505,84 @@ let assert_failed loc =
                Const_base(Const_int char)]))])])
 ;;
 
+let path_of_runtime_type_declaration env p =
+  if not (List.mem p Predef.builtin_types) then p
+  else
+    (* FIXME typecore has the same code *)
+    let redirect_to_builtintypes = function
+      | Path.Pident id -> 
+  	  let lid = 
+	    if not !Clflags.nobuiltintypes then
+	      Longident.Ldot (Longident.Lident "Builtintypes", 
+			      Ident.name id)
+	    else begin (* inside builtintypes.ml *)
+	      Longident.Lident (Ident.name id)
+	    end
+	  in
+	  begin try
+	    fst (Env.lookup_value lid env)
+	  with
+	  | Not_found ->
+	      Format.fprintf Format.err_formatter 
+		"Fatal error: failed to resolve type %a in builtintypes.ml@."
+		Printtyp.longident lid;
+	      raise Not_found
+	  end
+      | _ -> assert false
+    in
+    redirect_to_builtintypes p
+
+let transl_type_declaration env name recdefs decl =
+  (* Translation of type declaration *)
+  (* We need the current env to find recursive reference inside 
+     builtintypes.ml *)
+  let rdecl, type_rtype_tbl, dummy_tbl = 
+    Typertype.runtime_type_declaration name recdefs decl in
+  let dummy_tbl = 
+    (* if the path is one of builtin types, 
+       it must be redirected to those of builtintypes.ml *)
+    List.map (fun (d,p) -> 
+      d, path_of_runtime_type_declaration env p) dummy_tbl 
+  in
+  let overrides = 
+    List.map (fun (d,p) -> Obj.repr d, transl_path p) dummy_tbl 
+  in
+  Metacomp.transl_constant overrides (Obj.repr rdecl)
+
+(* weak table for ident => path recovery in Texp_typedecl *)
+module IDPATH = struct
+  type t = Ident.t * Path.t
+  let equal ((i1 : Ident.t),_) ((i2 : Ident.t),_) = i1 = i2 
+  let hash (i,_) = Hashtbl.hash i
+end
+
+module IDPATHTBL = Weak.Make(IDPATH)
+let id_path_tbl = IDPATHTBL.create 17
+
+(* create the unique identifier associated to a pattern *)
+module PATID = struct
+  type t = (pattern * string) * Ident.t
+  let equal ((p1,n1),_) ((p2,n2),_) = p1 == p2 && n1 = n2
+  let hash (pn,_) = Hashtbl.hash pn
+end
+module PATIDTBL = Weak.Make(PATID)
+
+let pat_id_tbl = PATIDTBL.create 17
+let dummy_id = Ident.create "*dummy*"
+
+let make_ident_of_pattern pat name =
+  try snd (PATIDTBL.find pat_id_tbl ((pat, name), dummy_id)) with
+  | Not_found ->
+      let idname =
+	match pat.pat_desc with
+	| Tpat_var id -> name ^ Ident.name id
+	| Tpat_any -> name ^ "_" 
+	| _ -> assert false
+      in
+      let id = Ident.create idname in
+      PATIDTBL.add pat_id_tbl ((pat, name), id);
+      id
+
 let rec cut n l =
   if n = 0 then ([],l) else
   match l with [] -> failwith "Translcore.cut"
@@ -522,7 +602,7 @@ let rec transl_exp e =
 
 and transl_exp0 e =
   match e.exp_desc with
-    Texp_ident(path, {val_kind = Val_prim p}) ->
+    Texp_ident(path, {val_kind = Val_prim p}, _) ->
       let public_send = p.prim_name = "%send" in
       if public_send || p.prim_name = "%sendself" then
         let kind = if public_send then Public else Self in
@@ -535,10 +615,30 @@ and transl_exp0 e =
                   Lsend(Cached, Lvar meth, Lvar obj, [Lvar cache; Lvar pos]))
       else
 	transl_primitive p
-  | Texp_ident(path, {val_kind = Val_anc _}) ->
+  | Texp_ident(path, {val_kind = Val_anc _}, _) ->
       raise(Error(e.exp_loc, Free_super_var))
-  | Texp_ident(path, {val_kind = Val_reg | Val_self _}) ->
-      transl_path path
+  | Texp_ident(path, ({val_kind = Val_reg | Val_self _} as vdesc), instref) ->
+      let path = (* path conversion for typedecl *)
+	match path with
+	| Pident id -> 
+	    begin try
+	      let _,path = IDPATHTBL.find id_path_tbl (id,path (* dummy *)) in
+	      path
+	    with
+	    | Not_found -> path
+	    end
+	| _ -> path 
+      in
+      begin match vdesc.val_type.desc with
+      | Tkonst (_,_) | Toverload _ ->
+	  begin try
+	    transl_flow_application e.exp_env path vdesc e.exp_type !instref
+	  with
+	  | Typertype.Error (_, Typertype.Unsupported) ->
+	      raise (Error (e.exp_loc, Unsupported_type_constructor))
+	  end
+      | _ -> transl_path path
+      end
   | Texp_ident _ -> fatal_error "Translcore.transl_exp: bad Texp_ident"
   | Texp_constant cst ->
       Lconst(Const_base cst)
@@ -552,7 +652,7 @@ and transl_exp0 e =
             transl_function e.exp_loc !Clflags.native_code repr partial pl)
       in
       Lfunction(kind, params, body)
-  | Texp_apply({exp_desc = Texp_ident(path, {val_kind = Val_prim p})}, args)
+  | Texp_apply({exp_desc = Texp_ident(path, {val_kind = Val_prim p}, _)}, args)
     when List.length args >= p.prim_arity
     && List.for_all (fun (arg,_) -> arg <> None) args ->
       let args, args' = cut p.prim_arity args in
@@ -724,6 +824,25 @@ and transl_exp0 e =
           cl_loc = e.exp_loc;
           cl_type = Tcty_signature cty;
           cl_env = e.exp_env }
+  | Texp_rtype ty -> 
+      begin try
+	match transl_type_exprs e.exp_env [] [ty] with
+	| [lam] -> lam
+	| _ -> assert false
+      with
+      | Typertype.Error (loc, Typertype.Unsupported) ->
+	  raise (Error (loc, Unsupported_type_constructor))
+      end
+  | Texp_typedecl path ->
+      (* This is a very special case. It happens only in the compilation
+	 of stdlib/builtintypes.ml, where we have to build the type
+	 declaration code *)
+      transl_type_declaration e.exp_env (Path.name path) [] 
+	(Env.find_type path Env.initial)
+  | Texp_generic cases ->
+      (* FIXME *)
+      lambda_unit
+      
 
 and transl_list expr_list =
   List.map transl_exp expr_list
@@ -824,7 +943,8 @@ and transl_let rec_flag pat_expr_list body =
         [] ->
           body
       | (pat, expr) :: rem ->
-          Matching.for_let pat.pat_loc (transl_exp expr) pat (transl rem)
+	  let lam = transl_flow_abstraction pat transl_exp expr in
+          Matching.for_let pat.pat_loc lam pat (transl rem)
       in transl pat_expr_list
   | Recursive ->
       let idlist =
@@ -835,7 +955,7 @@ and transl_let rec_flag pat_expr_list body =
             | _ -> raise(Error(pat.pat_loc, Illegal_letrec_pat)))
         pat_expr_list in
       let transl_case (pat, expr) id =
-        let lam = transl_exp expr in
+        let lam = transl_flow_abstraction pat transl_exp expr in
         if not (check_recursive_lambda idlist lam) then
           raise(Error(expr.exp_loc, Illegal_letrec_expr));
         (id, lam) in
@@ -909,6 +1029,292 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
     end
   end
 
+(* Generic stuffs *)
+
+and transl_type_exprs env vartbl tys = 
+  let rtys, type_rtype_tbl, decl_path_tbl = 
+    Typertype.runtime_type_exprs tys 
+  in
+  (* type abstracted variables must be replaced by identifiers bound
+     in [vartbl]. *)
+  (* dummy type declarations must be replaced by identifiers bound
+     in [decl_path_tbl]. Note: we must use special paths for builtin 
+     data types. *)
+  let decl_path_tbl =
+    List.map 
+      (fun (decl, path) -> decl, path_of_runtime_type_declaration env path)
+      decl_path_tbl
+  in
+  let overrides_paths =
+    List.fold_left (fun st (ty,rt) ->
+      match ty.desc with
+      | Tpath p -> (Obj.repr rt, transl_path p) :: st
+      | _ -> st) [] type_rtype_tbl
+  in
+  let overrides_type_decls =
+    List.map (fun (decl,path) -> Obj.repr decl, transl_path path) 
+      decl_path_tbl 
+  in
+  let overrides = 
+    List.fold_left (fun st (ty,rt) ->
+      try 
+	(* retrieve the original type variable, in order to recover
+	   the linkage to the generalization *)
+	let t = List.assq ty vartbl in
+	let id = Gtype.find_ident_of_type_variable t in
+	(Obj.repr rt, transl_path (Pident id)) :: st
+      with
+      | Not_found -> st) (overrides_paths @ overrides_type_decls) 
+      type_rtype_tbl
+  in
+  List.map (fun rty -> Metacomp.transl_constant overrides (Obj.repr rty)) rtys
+(*
+  let stys, path_lid_tbl, tabst_ids = Typertype.to_core_types vartbl tys in
+  let lid_path_tbl = List.map (fun (p,lid) -> (lid,p)) path_lid_tbl in
+  let ident_path_tbl = 
+    List.map (fun (lid,p) -> 
+      match lid with
+      | Longident.Lident name -> Ident.create name, p 
+      | _ -> assert false) lid_path_tbl
+  in
+  let sexps = 
+    List.map (Typertype.value_of_type (fun lid ->
+      try List.assoc lid lid_path_tbl with Not_found -> 
+	assert false)) stys
+  in
+  (* add identifiers of type abstractions to the typing env, so that
+     they can be typed correctly *)
+  let vdesc = { val_type= Typertype.get_rtype_type ();
+		val_kind= Val_reg } in
+  let env' = List.fold_left (fun env id -> 
+    Env.add_value id vdesc env) env tabst_ids
+  in
+  let vdesc = { val_type= Typertype.get_rtype_type_declaration ();
+		val_kind= Val_reg }
+  in
+  let env'' = List.fold_left (fun env (id, p) ->
+    Env.add_value id vdesc env) env' ident_path_tbl
+  in
+  let exps = 
+    List.map (fun sexp -> 
+      Typecore.type_expect env'' (Kset.empty ()) sexp 
+	(Typertype.get_rtype_type ())) 
+      sexps
+  in
+  List.iter (fun (id,path) -> 
+    IDPATHTBL.add id_path_tbl (id,path)) ident_path_tbl;
+  List.map transl_exp exps
+*)
+
+and transl_flow env flow = 
+  let transl_flow env flow =
+    let visited = ref [] in
+    let loops = ref [] in
+    let rec find_loop flow = 
+      match flow with
+      | Floop fref -> 
+  	  if not (List.memq !fref !visited) then assert false
+	  else begin
+  	    if not (List.mem_assq !fref !loops) then
+  	      loops := (!fref, Ident.create "loop") :: !loops 
+	  end				
+      | _ ->
+  	visited := flow :: !visited;
+  	match flow with
+  	| Ftype _ -> ()
+  	| Fkonst frecord -> List.iter (fun (_,flow) -> find_loop flow) frecord
+  	| Foverload (_,flow) -> find_loop flow
+  	| _ -> assert false
+    in
+    find_loop flow;
+
+    let make_block tag ll =
+      try
+        Lconst (Const_block (tag, List.map extract_constant ll))
+      with
+        _ -> Lprim (Pmakeblock (tag, Immutable), ll)
+    in
+  
+    let rec transl flow = 
+      try 
+        let id = List.assq flow !loops in
+        Lletrec ([id, transl_norec flow], Lvar id)
+      with
+      | Not_found -> transl_norec flow
+
+    and transl_norec = function
+      | Ftype typ ->
+  	  begin match transl_type_exprs env [] [typ] with
+  	  | [lam] -> lam
+  	  | _ -> assert false
+  	  end
+      | Fkonst frecord ->
+  	  (* already sorted (?) *)
+  	  make_block 0
+  	    (List.map (fun (_,sflow) -> transl sflow) frecord)
+      | Foverload (pos, Fkonst frecord) ->
+  	  make_block 0
+  	    (Lconst (Const_base (Const_int pos)) ::
+  	     List.map (fun (_,sflow) -> transl sflow) frecord)
+      | Foverload _ -> assert false
+      | Floop fref ->
+	  Lvar (List.assq !fref !loops)
+    in
+  
+    let lam = transl flow in
+  (*
+    Format.eprintf "FLOW= %a@." Printlambda.lambda lam;
+  *)
+    lam
+  in
+  try
+    transl_flow env flow
+  with
+  | e -> Format.eprintf "FLOWERROR: %a@." Gtype.print_flow flow; raise e
+
+and transl_flow_application env path vdesc etyp instinfo =
+  match vdesc.val_type.desc with
+  | Tkonst ([kelem],_) -> 
+      (* special case *)
+      let rec match_instinfo = function
+	| FA_flow (Fkonst [_,flow]) -> 
+	    Lapply (transl_path path, [transl_flow env flow])
+	| FA_flow (Floop fref) -> 
+	    (* FIXME: this is not a loop, but a case of a link. *) 
+(*
+	    match_instinfo (FA_flow !fref)
+*)
+	    assert false
+	| FA_flow _ -> assert false
+	| FA_konst (p, ke, t) ->
+	    begin match t.desc with
+	    | Tkonst ([],_) -> assert false
+	    | Tkonst ([_],_) ->
+		let id = make_ident_of_pattern p "kflow*" in
+		let flam = Lvar id in
+		Lapply(transl_path path, [Lprim (Pfield 0, [flam])])
+	    | Tkonst _ ->
+		let pos = Gtype.index_of_flow_record env ke t in
+		let id = make_ident_of_pattern p "kfrec*" in
+		let flam = Lprim (Pfield pos, [Lvar id]) in
+		Lapply(transl_path path, [Lprim (Pfield 0, [flam])])
+	    | _ -> assert false
+	    end
+	| FA_overload (p, ke, t) ->
+	    begin match t.desc with
+	    | Tkonst ([],_) -> assert false
+	    | Tkonst _ ->
+		let pos = Gtype.index_of_flow_record env ke t in
+		let id = make_ident_of_pattern p "ofrec*" in
+		let flam = Lprim (Pfield (pos + 1), [Lvar id]) in
+		Lapply(transl_path path, [Lprim (Pfield 0,[flam])])
+	    | _ -> assert false
+	    end
+	| FA_none -> assert false
+      in
+      match_instinfo instinfo
+  | Tkonst (konst,_) -> 
+      let rec match_instinfo = function
+	| FA_flow (Fkonst _ as flow) -> 
+	    Lapply (transl_path path, [transl_flow env flow])
+	| FA_flow (Floop fref) -> match_instinfo (FA_flow !fref)
+	| FA_flow _ -> assert false
+	| FA_konst (p, ke, t) ->
+	    begin match t.desc with
+	    | Tkonst ([],_) -> assert false
+	    | Tkonst ([_],_) ->
+		let id = make_ident_of_pattern p "kflow*" in
+		let flam = Lvar id in
+		Lapply(transl_path path, [flam])
+	    | Tkonst _ ->
+		let pos = Gtype.index_of_flow_record env ke t in
+		let id = make_ident_of_pattern p "kfrec*" in
+		let flam = Lprim (Pfield pos, [Lvar id]) in
+		Lapply(transl_path path, [flam])
+	    | _ -> assert false
+	    end
+	| FA_overload (p, ke, t) ->
+	    begin match t.desc with
+	    | Tkonst ([],_) -> assert false
+	    | Tkonst _ ->
+		let pos = Gtype.index_of_flow_record env ke t in
+		let id = make_ident_of_pattern p "ofrec*" in
+		let flam = Lprim (Pfield (pos + 1), [Lvar id]) in
+		Lapply(transl_path path, [flam])
+	    | _ -> assert false
+	    end
+	| FA_none -> assert false
+      in
+      match_instinfo instinfo
+  | Toverload odesc ->
+      let rec match_instinfo = function
+        | FA_flow (Foverload (pos, _) as flow) ->
+  	    Lapply (Lprim(Pfield pos, [transl_path path]), 
+  		    [transl_flow env flow])
+        | FA_flow (Floop fref) -> match_instinfo (FA_flow !fref)
+        | FA_flow _ -> assert false
+        | FA_konst (p, ke, t) ->
+  	    begin match t.desc with
+  	    | Tkonst ([],_) -> assert false
+  	    | Tkonst ([_],_) ->
+  		let id = make_ident_of_pattern p "kflow*" in
+  		let flam = Lvar id in
+  		Lapply(Lprim(Parrayrefu Paddrarray, 
+  			     [transl_path path; Lprim (Pfield 0, [flam])]), 
+  		       [flam])
+  	    | Tkonst _ ->
+  		let pos = Gtype.index_of_flow_record env ke t in
+  		let id = make_ident_of_pattern p "kfrec*" in
+  		let flam = Lprim (Pfield pos, [Lvar id]) in  
+  		Lapply(Lprim(Parrayrefu Paddrarray, 
+  			     [transl_path path; Lprim (Pfield 0, [flam])]), 
+  		       [flam])
+  	    | _ -> assert false
+  	    end
+        | FA_overload (p, ke, t) ->
+  	    let pos = Gtype.index_of_flow_record env ke t in
+  	    let id = make_ident_of_pattern p "ofrec*" in
+  	    let flam = Lprim (Pfield (pos+1), [Lvar id]) in
+  	    Lapply(Lprim(Parrayrefu Paddrarray, 
+  			 [transl_path path; Lprim (Pfield 0, [flam])]),
+  		   [flam])
+        | FA_none -> assert false 
+      in
+      match_instinfo instinfo
+  | _ -> assert false
+      
+and transl_flow_abstraction pat compfunc exp =
+  begin match pat.pat_type.desc with
+  | Tkonst _ | Toverload _ -> Etype.normalize_type pat.pat_type
+  | _ -> ()
+  end;
+  match pat.pat_type.desc with
+  | Tkonst([], t) -> assert false
+  | Tkonst([_], t) ->
+      let id = make_ident_of_pattern pat "kflow*" in
+      Lfunction(Curried, [id], compfunc exp) 
+  | Tkonst(konst, t) ->
+      let id = make_ident_of_pattern pat "kfrec*" in
+      Lfunction(Curried, [id], compfunc exp) 
+  | Toverload odesc ->
+      begin match exp.exp_desc with
+      | Texp_generic cases ->
+	  let transl_generic_case compfunc (_,exp) =
+	    match exp.exp_type.desc with
+	    | Tkonst ([], _) -> assert false
+	    | Toverload _ -> assert false
+	    | Tkonst _ | _ ->
+		let id = make_ident_of_pattern pat "ofrec*" in
+		Lfunction(Curried, [id], compfunc exp)
+	  in
+	  Lprim (Pmakeblock (0, Immutable), 
+		 List.map (transl_generic_case compfunc) cases)
+      | _ -> assert false
+      end
+  | _ -> compfunc exp
+
+let transl_eval e pat = transl_flow_abstraction pat transl_exp e
+
 (* Wrapper for class compilation *)
 
 (*
@@ -945,3 +1351,6 @@ let report_error ppf = function
   | Free_super_var ->
       fprintf ppf
         "Ancestor names can only be used to select inherited methods"
+  | Unsupported_type_constructor ->
+      fprintf ppf
+        "Type contains unsupported constructor as a run-time type"

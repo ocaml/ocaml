@@ -203,6 +203,7 @@ let bigarray_set arr arg newval =
 %token COLONCOLON
 %token COLONEQUAL
 %token COLONGREATER
+%token COLONRBRACKET
 %token COMMA
 %token CONSTRAINT
 %token DO
@@ -214,6 +215,7 @@ let bigarray_set arr arg newval =
 %token END
 %token EOF
 %token EQUAL
+%token EQUALGREATER
 %token EXCEPTION
 %token EXTERNAL
 %token FALSE
@@ -222,6 +224,7 @@ let bigarray_set arr arg newval =
 %token FUN
 %token FUNCTION
 %token FUNCTOR
+%token GENERIC
 %token GREATER
 %token GREATERRBRACE
 %token GREATERRBRACKET
@@ -246,6 +249,7 @@ let bigarray_set arr arg newval =
 %token LBRACKETBAR
 %token LBRACKETLESS
 %token LBRACKETGREATER
+%token LBRACKETCOLON
 %token LESS
 %token LESSMINUS
 %token LET
@@ -289,6 +293,7 @@ let bigarray_set arr arg newval =
 %token TRUE
 %token TRY
 %token TYPE
+%token TYPEDECL
 %token <string> UIDENT
 %token UNDERSCORE
 %token VAL
@@ -356,6 +361,7 @@ The precedences must be listed from low to high.
 %nonassoc BACKQUOTE BEGIN CHAR FALSE FLOAT INT INT32 INT64
           LBRACE LBRACELESS LBRACKET LBRACKETBAR LIDENT LPAREN
           NEW NATIVEINT PREFIXOP STRING TRUE UIDENT
+          LBRACKETCOLON 
 
 
 /* Entry points */
@@ -443,8 +449,10 @@ structure_item:
       { match $3 with
           [{ppat_desc = Ppat_any}, exp] -> mkstr(Pstr_eval exp)
         | _ -> mkstr(Pstr_value($2, List.rev $3)) }
-  | EXTERNAL val_ident_colon core_type EQUAL primitive_declaration
+  | EXTERNAL val_ident_colon ext_type EQUAL primitive_declaration
       { mkstr(Pstr_primitive($2, {pval_type = $3; pval_prim = $5})) }
+  | GENERIC VAL val_ident COLON ext_type EQUAL expr
+      { mkstr(Pstr_genprimitive($3, $5, $7)) }
   | TYPE type_declarations
       { mkstr(Pstr_type(List.rev $2)) }
   | EXCEPTION UIDENT constructor_arguments
@@ -507,9 +515,9 @@ signature:
   | signature signature_item SEMISEMI           { $2 :: $1 }
 ;
 signature_item:
-    VAL val_ident_colon core_type
+    VAL val_ident_colon ext_type
       { mksig(Psig_value($2, {pval_type = $3; pval_prim = []})) }
-  | EXTERNAL val_ident_colon core_type EQUAL primitive_declaration
+  | EXTERNAL val_ident_colon ext_type EQUAL primitive_declaration
       { mksig(Psig_value($2, {pval_type = $3; pval_prim = $5})) }
   | TYPE type_declarations
       { mksig(Psig_type(List.rev $2)) }
@@ -888,6 +896,9 @@ expr:
       { mkexp (Pexp_object($2)) }
   | OBJECT class_structure error
       { unclosed "object" 1 "end" 3 }
+  | TYPEDECL val_longident
+      { mkexp(Pexp_typedecl $2) }
+      
 ;
 simple_expr:
     val_longident
@@ -952,6 +963,10 @@ simple_expr:
       { mkexp(Pexp_override []) }
   | simple_expr SHARP label
       { mkexp(Pexp_send($1, $3)) }
+  | LBRACKETCOLON core_type2 COLONRBRACKET
+      { mkexp(Pexp_rtype $2) }
+  | LBRACKETCOLON core_type2 error
+      { unclosed "[:" 1 ":]" 3 }
 ;
 simple_labeled_expr_list:
     labeled_simple_expr
@@ -987,6 +1002,14 @@ let_binding:
       { ({ppat_desc = Ppat_var $1; ppat_loc = rhs_loc 1}, $2) }
   | pattern EQUAL seq_expr
       { ($1, $3) }
+  | val_ident EQUAL GENERIC opt_bar generic_cases
+      { ({ppat_desc = Ppat_var $1; ppat_loc = rhs_loc 1}, 
+	 mkexp(Pexp_generic (List.rev $5)) ) }
+/* FIXME shift reduce!
+  | UNDERSCORE EQUAL GENERIC opt_bar generic_cases
+      { ({ppat_desc = Ppat_any; ppat_loc = rhs_loc 1}, 
+	 mkexp(Pexp_generic (List.rev $5)) ) }
+*/
 ;
 fun_binding:
     strict_binding
@@ -1044,6 +1067,18 @@ type_constraint:
   | COLON error                                 { syntax_error() }
   | COLONGREATER error                          { syntax_error() }
 ;
+generic_cases:
+    seq_expr { [None, $1] }
+  | generic_cases BAR seq_expr { (None, $3) :: $1 }
+  | generic_pattern generic_action                        { [$1, $2] }
+  | generic_cases BAR generic_pattern generic_action      { ($3, $4) :: $1 }
+;
+generic_pattern:
+    COLON core_type   { Some $2 }
+;
+generic_action:
+    EQUALGREATER seq_expr { $2 }
+;
 
 /* Patterns */
 
@@ -1096,6 +1131,10 @@ simple_pattern:
       { mkpat(Ppat_array []) }
   | LBRACKETBAR pattern_semi_list opt_semi error
       { unclosed "[|" 1 "|]" 4 }
+  | LBRACKETCOLON core_type2 COLONRBRACKET
+      { mkpat(Ppat_rtype $2) }
+  | LBRACKETCOLON core_type2 error
+      { unclosed "[:" 1 ":]" 3 }
   | LPAREN pattern RPAREN
       { reloc_pat $2 }
   | LPAREN pattern error
@@ -1276,6 +1315,8 @@ simple_core_type:
 simple_core_type2:
     QUOTE ident
       { mktyp(Ptyp_var $2) }
+  | INFIXOP1 val_longident
+      { if $1 = "^" then mktyp(Ptyp_lident $2) else raise Parse_error }
   | UNDERSCORE
       { mktyp(Ptyp_any) }
   | type_longident
@@ -1362,6 +1403,37 @@ field:
 ;
 label:
     LIDENT                                      { $1 }
+;
+
+/* extensional types */
+
+ext_type:
+    core_type_with_konstraint
+      { $1 }      
+  | LBRACKETBAR overloadtype_list BARRBRACKET
+      { mktyp(Ptyp_overload(List.rev $2)) }
+  | ext_type AS QUOTE ident
+      { mktyp(Ptyp_alias($1, $4)) }
+;
+core_type_with_konstraint:
+    core_type2
+      { $1 }
+  | LBRACE konstraint_list RBRACE EQUALGREATER core_type2
+      { mktyp(Ptyp_konst(List.rev $2, $5)) }
+;
+konstraint_list:
+    konstraint                                  { [$1] }
+  | konstraint_list COMMA konstraint        { $3 :: $1 } 
+;
+konstraint:
+    QUOTE ident
+      { mktyp(Ptyp_var $2), None }
+  | core_type LESS ext_type
+      { $1, Some $3 }
+;
+overloadtype_list:
+    core_type_with_konstraint               { [$1] }
+  | overloadtype_list BAR core_type_with_konstraint { $3 :: $1 }
 ;
 
 /* Constants */

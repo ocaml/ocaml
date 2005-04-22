@@ -98,6 +98,7 @@ module Options = Main_args.Make_options (struct
   let _impl = impl
   let _intf = intf
   let _intf_suffix s = Config.interface_suffix := s
+  let _impl_suffix s = Config.implementation_suffix := s
   let _labels = unset classic
   let _linkall = set link_everything
   let _make_runtime () =
@@ -124,10 +125,12 @@ module Options = Main_args.Make_options (struct
   let _where = print_standard_library
   let _verbose = set verbose
   let _nopervasives = set nopervasives
+  let _nobuiltintypes = set nobuiltintypes
   let _dparsetree = set dump_parsetree
   let _drawlambda = set dump_rawlambda
   let _dlambda = set dump_lambda
   let _dinstr = set dump_instr
+  let _nogcamllib = set no_gcamllib_link
   let anonymous = anonymous
 end)
 

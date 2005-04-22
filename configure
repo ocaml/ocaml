@@ -149,8 +149,8 @@ case "$bindir" in
    *) echo "BINDIR=$bindir" >> Makefile;;
 esac
 case "$libdir" in
-  "") echo 'LIBDIR=$(PREFIX)/lib/ocaml' >> Makefile
-      libdir="$prefix/lib/ocaml";;
+  "") echo 'LIBDIR=$(PREFIX)/lib/gcaml' >> Makefile
+      libdir="$prefix/lib/gcaml";;
    *) echo "LIBDIR=$libdir" >> Makefile;;
 esac
 echo 'STUBLIBDIR=$(LIBDIR)/stublibs' >> Makefile
@@ -1347,6 +1347,15 @@ if test $has_tk = true; then
     esac
   else
     echo "tcl.h and/or tk.h not found."
+    has_tk=false
+  fi
+fi
+
+if test $has_tk = true; then
+  if sh ./hasgot $tk_x11_include $tk_defs -i tk.h; then
+    echo "tk.h found."
+  else
+    echo "tcl.h and tk.h not found."
     has_tk=false
   fi
 fi

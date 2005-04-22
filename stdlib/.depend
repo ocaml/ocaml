@@ -7,6 +7,7 @@ oo.cmi: camlinternalOO.cmi
 parsing.cmi: obj.cmi lexing.cmi 
 printf.cmi: buffer.cmi 
 random.cmi: nativeint.cmi int64.cmi int32.cmi 
+rtype.cmi: format.cmi 
 weak.cmi: hashtbl.cmi 
 arg.cmo: sys.cmi string.cmi printf.cmi list.cmi buffer.cmi array.cmi arg.cmi 
 arg.cmx: sys.cmx string.cmx printf.cmx list.cmx buffer.cmx array.cmx arg.cmi 
@@ -16,6 +17,8 @@ arrayLabels.cmo: array.cmi arrayLabels.cmi
 arrayLabels.cmx: array.cmx arrayLabels.cmi 
 buffer.cmo: sys.cmi string.cmi buffer.cmi 
 buffer.cmx: sys.cmx string.cmx buffer.cmi 
+builtintypes.cmo: builtintypes.cmi 
+builtintypes.cmx: builtintypes.cmi 
 callback.cmo: obj.cmi callback.cmi 
 callback.cmx: obj.cmx callback.cmi 
 camlinternalMod.cmo: obj.cmi camlinternalOO.cmi array.cmi camlinternalMod.cmi 
@@ -80,6 +83,10 @@ random.cmo: string.cmi pervasives.cmi nativeint.cmi int64.cmi int32.cmi \
     digest.cmi char.cmi array.cmi random.cmi 
 random.cmx: string.cmx pervasives.cmx nativeint.cmx int64.cmx int32.cmx \
     digest.cmx char.cmx array.cmx random.cmi 
+rtype.cmo: string.cmi obj.cmi list.cmi format.cmi char.cmi builtintypes.cmi \
+    rtype.cmi 
+rtype.cmx: string.cmx obj.cmx list.cmx format.cmx char.cmx builtintypes.cmx \
+    rtype.cmi 
 scanf.cmo: string.cmi printf.cmi obj.cmi list.cmi hashtbl.cmi buffer.cmi \
     scanf.cmi 
 scanf.cmx: string.cmx printf.cmx obj.cmx list.cmx hashtbl.cmx buffer.cmx \

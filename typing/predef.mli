@@ -63,3 +63,4 @@ val build_initial_env:
 (* To initialize linker tables *)
 
 val builtin_values: (string * Ident.t) list
+val builtin_types: Path.t list

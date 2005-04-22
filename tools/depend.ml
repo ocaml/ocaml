@@ -52,6 +52,13 @@ let rec add_type bv ty =
           | Rinherit sty -> add_type bv sty)
         fl
   | Ptyp_poly(_, t) -> add_type bv t
+  | Ptyp_konst(k, t) -> 
+      List.iter (function (t,topt) ->
+	add_type bv t;
+	match topt with Some t -> add_type bv t | None -> ()) k; 
+      add_type bv t
+  | Ptyp_overload typs -> List.iter (add_type bv) typs
+  | Ptyp_lident li -> add bv li
 
 and add_field_type bv ft =
   match ft.pfield_desc with
@@ -112,6 +119,7 @@ let rec add_pattern bv pat =
   | Ppat_constraint(p, ty) -> add_pattern bv p; add_type bv ty
   | Ppat_variant(_, op) -> add_opt add_pattern bv op
   | Ppat_type (li) -> add bv li
+  | Ppat_rtype ty -> add_type bv ty
 
 let rec add_expr bv exp =
   match exp.pexp_desc with
@@ -156,6 +164,13 @@ let rec add_expr bv exp =
   | Pexp_poly (e, t) -> add_expr bv e; add_opt add_type bv t
   | Pexp_object (pat, fieldl) ->
       add_pattern bv pat; List.iter (add_class_field bv) fieldl
+  | Pexp_rtype t -> add_type bv t
+  | Pexp_typedecl lid -> add bv lid
+  | Pexp_generic cases ->
+      List.iter (fun (po, e) -> 
+	add_opt add_type bv po;
+	add_expr bv e) cases
+
 and add_pat_expr_list bv pel =
   List.iter (fun (p, e) -> add_pattern bv p; add_expr bv e) pel
 
@@ -178,8 +193,7 @@ and add_signature bv = function
 
 and add_sig_item bv item =
   match item.psig_desc with
-    Psig_value(id, vd) ->
-      add_type bv vd.pval_type; bv
+    Psig_value(id, vd) -> add_type bv vd.pval_type; bv
   | Psig_type dcls ->
       List.iter (fun (id, td) -> add_type_declaration bv td) dcls; bv
   | Psig_exception(id, args) ->
@@ -226,8 +240,11 @@ and add_struct_item bv item =
       add_expr bv e; bv
   | Pstr_value(id, pel) ->
       add_pat_expr_list bv pel; bv
-  | Pstr_primitive(id, vd) ->
-      add_type bv vd.pval_type; bv
+  | Pstr_primitive(id, vd) -> add_type bv vd.pval_type; bv
+  | Pstr_genprimitive(id, exttyp, expr) ->
+      add_expr bv expr;
+      add_type bv exttyp;
+      bv
   | Pstr_type dcls ->
       List.iter (fun (id, td) -> add_type_declaration bv td) dcls; bv
   | Pstr_exception(id, args) ->
