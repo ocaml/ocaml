@@ -322,7 +322,7 @@ stdlib_man/Pervasives.3o: $(STDLIB_MLIS)
 	$(MKDIR) stdlib_man
 	$(OCAMLDOC_RUN) -man -d stdlib_man $(INCLUDES) \
 	-t "OCaml library" -man-mini \
-	`echo $(STDLIB_MLIS) | grep -v rtype.mli`
+	`ls $(STDLIB_MLIS) | grep -v rtype.mli`
 
 autotest_stdlib: dummy
 	$(MKDIR) $@
