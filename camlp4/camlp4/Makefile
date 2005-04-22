@@ -98,13 +98,13 @@ mLast.cmo: mLast.mli
 	@$(TEST_DIRECTORY)
 	@$(CAMLP4_COMM) $< -o $*.ppi
 	$(OCAMLC) $(OCAMLCFLAGS) -c -intf $*.ppi
-	rm -f $*.ppo
+	rm -f $*.ppi
 
 mLast.cmx: mLast.mli
 	@$(TEST_DIRECTORY)
 	@$(CAMLP4_COMM) $< -o $*.ppi
 	$(OCAMLOPT) $(OCAMLCFLAGS) -c -intf $*.ppi
-	rm -f $*.ppo
+	rm -f $*.ppi
 
 mLast.p.cmx: mLast.mli
 	@$(TEST_DIRECTORY)
