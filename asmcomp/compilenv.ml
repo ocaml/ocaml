@@ -43,6 +43,7 @@ type unit_infos =
     mutable ui_approx: value_approximation;     (* Approx of the structure *)
     mutable ui_curry_fun: int list;             (* Currying functions needed *)
     mutable ui_apply_fun: int list;             (* Apply functions needed *)
+    mutable ui_send_fun: int list;              (* Send functions needed *)
     mutable ui_force_link: bool }               (* Always linked *)
 
 (* Each .a library has a matching .cmxa file that provides the following
@@ -64,6 +65,7 @@ let current_unit =
     ui_approx = Value_unknown;
     ui_curry_fun = [];
     ui_apply_fun = [];
+    ui_send_fun = [];
     ui_force_link = false }
 
 let reset name =
@@ -74,6 +76,7 @@ let reset name =
   current_unit.ui_imports_cmx <- [];
   current_unit.ui_curry_fun <- [];
   current_unit.ui_apply_fun <- [];
+  current_unit.ui_send_fun <- [];
   current_unit.ui_force_link <- false
 
 let current_unit_name () =
@@ -145,6 +148,10 @@ let need_curry_fun n =
 let need_apply_fun n =
   if not (List.mem n current_unit.ui_apply_fun) then
     current_unit.ui_apply_fun <- n :: current_unit.ui_apply_fun
+
+let need_send_fun n =
+  if not (List.mem n current_unit.ui_send_fun) then
+    current_unit.ui_send_fun <- n :: current_unit.ui_send_fun
 
 (* Write the description of the current unit *)
 

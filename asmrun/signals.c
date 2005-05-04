@@ -109,18 +109,6 @@ extern sighandler caml_win32_signal(int sig, sighandler action);
   #endif
 #endif
 
-#if defined(TARGET_power) && defined(SYS_aix)
-#ifdef _AIXVERSION_430
-#define STRUCT_SIGCONTEXT struct __sigcontext
-#define CONTEXT_GPR(ctx, regno) \
-  ((ctx)->__sc_jmpbuf.__jmp_context.__gpr[(regno)])
-#else
-#define STRUCT_SIGCONTEXT struct sigcontext
-#define CONTEXT_GPR(ctx, regno) \
-  ((ctx)->sc_jmpbuf.jmp_context.gpr[(regno)])
-#endif
-#endif
-
 volatile int caml_async_signal_mode = 0;
 volatile int caml_pending_signal = 0;
 volatile int caml_force_major_slice = 0;
@@ -226,8 +214,6 @@ void caml_leave_blocking_section(void)
 
 #if defined(TARGET_alpha) || defined(TARGET_mips)
 static void handle_signal(int sig, int code, struct sigcontext * context)
-#elif defined(TARGET_power) && defined(SYS_aix)
-static void handle_signal(int sig, int code, STRUCT_SIGCONTEXT * context)
 #elif defined(TARGET_power) && defined(SYS_elf)
 static void handle_signal(int sig, struct sigcontext * context)
 #elif defined(TARGET_power) && defined(SYS_rhapsody)
@@ -268,12 +254,6 @@ static void handle_signal(int sig)
     if (In_code_area(context->sc_pc)) {
       /* Cached in register $23 */
       context->sc_regs[23] = (int) caml_young_limit;
-    }
-#endif
-#if defined(TARGET_power) && defined(SYS_aix)
-    if (caml_last_return_address == 0) {
-      /* Cached in register 30 */
-      CONTEXT_GPR(context, 30) = (ulong_t) caml_young_limit;
     }
 #endif
 #if defined(TARGET_power) && defined(SYS_elf)
@@ -504,22 +484,6 @@ static void trap_handler(int sig)
 }
 #endif
 
-#if defined(TARGET_power) && defined(SYS_aix)
-static void trap_handler(int sig, int code, STRUCT_SIGCONTEXT * context)
-{
-  /* Unblock SIGTRAP */
-  sigset_t mask;
-  sigemptyset(&mask);
-  sigaddset(&mask, SIGTRAP);
-  sigprocmask(SIG_UNBLOCK, &mask, NULL);
-  /* Recover [caml_young_ptr] and [caml_exception_pointer]
-     from registers 31 and 29 */
-  caml_exception_pointer = (char *) CONTEXT_GPR(context, 29);
-  caml_young_ptr = (char *) CONTEXT_GPR(context, 31);
-  caml_array_bound_error();
-}
-#endif
-
 #if defined(TARGET_power) && defined(SYS_elf)
 static void trap_handler(int sig, struct sigcontext * context)
 {
@@ -640,8 +604,6 @@ void caml_init_signals(void)
     sigemptyset(&act.sa_mask);
 #if defined (SYS_rhapsody)
     act.sa_flags = SA_SIGINFO;
-#elif defined (SYS_aix)
-    act.sa_flags = 0;
 #else
     act.sa_flags = SA_NODEFER;
 #endif

@@ -124,6 +124,8 @@ type let_kind = Strict | Alias | StrictOpt | Variable
       we can discard e if x does not appear in e'
     Variable: the variable x is assigned later in e' *)
 
+type meth_kind = Self | Public | Cached
+
 type shared_code = (int * int) list     (* stack size -> code label *)
 
 type lambda =
@@ -143,7 +145,7 @@ type lambda =
   | Lwhile of lambda * lambda
   | Lfor of Ident.t * lambda * lambda * direction_flag * lambda
   | Lassign of Ident.t * lambda
-  | Lsend of lambda * lambda * lambda list
+  | Lsend of meth_kind * lambda * lambda * lambda list
   | Levent of lambda * lambda_event
   | Lifused of Ident.t * lambda
 
@@ -164,6 +166,7 @@ and lambda_event_kind =
   | Lev_after of Types.type_expr
   | Lev_function
 
+val same: lambda -> lambda -> bool
 val const_unit: structured_constant
 val lambda_unit: lambda
 val lambda_int : int -> lambda

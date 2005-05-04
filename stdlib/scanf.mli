@@ -141,8 +141,8 @@ val bscanf :
      mentioned in the range of characters [range] (or not mentioned in
      it, if the range starts with [^]). Returns a [string] that can be
      empty, if no character in the input matches the range. Hence,
-     [\['0'-'9'\]] returns a string representing a decimal number or an empty
-     string if no decimal digit is found. 
+     [\[0-9\]] returns a string representing a decimal number or an empty
+     string if no decimal digit is found.
      If a closing bracket appears in a range, it must occur as the
      first character of the range (or just after the [^] in case of
      range negation); hence [\[\]\]] matches a [\]] character and
@@ -208,7 +208,7 @@ val fscanf : in_channel -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
     after a scan involving a format that necessitates some look ahead
     (such as a format that ends by skipping whitespace in the input).
 
-    To avoid confusion, consider using [bscanf] with an explicitely
+    To avoid confusion, consider using [bscanf] with an explicitly
     created scanning buffer. Use for instance [Scanning.from_file f]
     to allocate the scanning buffer reading from file [f].
 

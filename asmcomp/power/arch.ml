@@ -51,7 +51,7 @@ let offset_addressing addr delta =
   match addr with
     Ibased(s, n) -> Ibased(s, n + delta)
   | Iindexed n -> Iindexed(n + delta)
-  | Iindexed2 -> Misc.fatal_error "Arch_power.offset_addressing"
+  | Iindexed2 -> assert false
 
 let num_args_addressing = function
     Ibased(s, n) -> 0
@@ -82,20 +82,3 @@ let print_specific_operation printreg op ppf arg =
   | Ialloc_far n ->
       fprintf ppf "alloc_far %d" n
 
-(* Distinguish between the PowerPC and the Power/RS6000 submodels *)
-
-let powerpc =
-  match Config.model with
-  | "ppc" -> true
-  | "rs6000" -> false
-  | _ -> Misc.fatal_error "wrong $(MODEL)"
-
-(* Distinguish between the PowerOpen (AIX, MacOS) TOC-based,
-   relative-addressing model and the SVR4 (Solaris, MkLinux, Rhapsody)
-   absolute-addressing model. *)
-
-let toc =
-  match Config.system with
-  | "aix" -> true
-  | "elf" | "rhapsody" | "bsd" -> false
-  | _ -> Misc.fatal_error "wrong $(SYSTEM)"

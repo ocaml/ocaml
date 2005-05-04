@@ -323,7 +323,7 @@ caml_system__frametable:
         .value  0           /* no roots here */
         .align  8
 
-	.section	.rodata.cst8,"aM",@progbits,8
+	.section	.rodata.cst8,"a",@progbits
         .globl  caml_negf_mask
         .type   caml_negf_mask,@object
         .align  16

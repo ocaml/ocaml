@@ -224,6 +224,7 @@ let rec opened_object ty =
     Tobject (t, _)     -> opened_object t
   | Tfield(_, _, _, t) -> opened_object t
   | Tvar               -> true
+  | Tunivar            -> true
   | _                  -> false
 
 (**** Close an object ****)
@@ -371,7 +372,7 @@ let closed_schema ty =
 
 exception Non_closed of type_expr * bool
 
-let free_variables = ref []
+let free_variables_list = ref []
 
 let rec free_vars_rec real ty =
   let ty = repr ty in
@@ -379,7 +380,7 @@ let rec free_vars_rec real ty =
     ty.level <- pivot_level - ty.level;
     begin match ty.desc with
       Tvar ->
-        free_variables := (ty, real) :: !free_variables
+        free_variables_list := (ty, real) :: !free_variables_list
 (* Do not count "virtual" free variables
     | Tobject(ty, {contents = Some (_, p)}) ->
         free_vars_rec false ty; List.iter (free_vars_rec true) p
@@ -398,16 +399,16 @@ let rec free_vars_rec real ty =
   end
 
 let free_vars ty =
-  free_variables := [];
+  free_variables_list := [];
   free_vars_rec true ty;
-  let res = !free_variables in
-  free_variables := [];
+  let res = !free_variables_list in
+  free_variables_list := [];
   res
 
-let free_type_variables ty =
-  let res = List.map fst (free_vars ty) in
+let free_variables ty =
+  let tl = List.map fst (free_vars ty) in
   unmark_type ty;
-  res
+  tl
 
 let rec closed_type ty =
   match free_vars ty with
@@ -1243,21 +1244,21 @@ let occur env ty0 ty =
    be done at meta-level, using bindings in univar_pairs *)
 let rec unify_univar t1 t2 = function
     (cl1, cl2) :: rem ->
-      let repr_univ = List.map (fun (t,o) -> repr t, o) in
-      let cl1 = repr_univ cl1 and cl2 = repr_univ cl2 in
-      begin try
-        let r1 = List.assq t1 cl1 in
-        match !r1 with
-          Some t -> if t2 != repr t then raise (Unify [])
-        | None ->
-            try
-              let r2 = List.assq t2 cl2 in
-              if !r2 <> None then raise (Unify []);
-              set_univar r1 t2; set_univar r2 t1
-            with Not_found ->
-              raise (Unify [])
-      with Not_found ->
-        unify_univar t1 t2 rem
+      let find_univ t cl =
+        try
+          let (_, r) = List.find (fun (t',_) -> t == repr t') cl in
+          Some r
+        with Not_found -> None
+      in
+      begin match find_univ t1 cl1, find_univ t2 cl2 with
+        Some {contents=Some t'2}, Some _ when t2 == repr t'2 ->
+          ()
+      | Some({contents=None} as r1), Some({contents=None} as r2) ->
+          set_univar r1 t2; set_univar r2 t1
+      | None, None ->
+          unify_univar t1 t2 rem
+      | _ ->
+          raise (Unify [])
       end
   | [] -> raise (Unify [])
 
@@ -1567,15 +1568,16 @@ and unify_fields env ty1 ty2 =          (* Optimization *)
   let (fields1, rest1) = flatten_fields ty1
   and (fields2, rest2) = flatten_fields ty2 in
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
+  let l1 = (repr ty1).level and l2 = (repr ty2).level in
   let va =
     if miss1 = [] then rest2
     else if miss2 = [] then rest1
-    else newvar ()
+    else newty2 (min l1 l2) Tvar
   in
   let d1 = rest1.desc and d2 = rest2.desc in
   try
-    unify env (build_fields (repr ty1).level miss1 va) rest2;
-    unify env rest1 (build_fields (repr ty2).level miss2 va);
+    unify env (build_fields l1 miss1 va) rest2;
+    unify env rest1 (build_fields l2 miss2 va);
     List.iter
       (fun (n, k1, t1, k2, t2) ->
         unify_kind k1 k2;

@@ -184,10 +184,25 @@ let pp_clear_queue state =
     state.pp_left_total <- 1; state.pp_right_total <- 1;
     clear_queue state.pp_queue;;
 
-(* Large value for default tokens size. *)
-(* Could be 1073741823 that is 2^30 - 1, that is the minimal upper bound
-   of integers; now that max_int is defined, could also be max_int - 1. *)
-let pp_infinity = 1000000000;;
+(* Pp_infinity: large value for default tokens size.
+
+   Pp_infinity is documented as being greater than 1e10; to avoid
+   confusion about the word ``greater'' we shoose pp_infinity greater
+   than 1e10 + 1; for correct handling of tests in the algorithm
+   pp_infinity must be even one more than that; let's stand on the
+   safe side by choosing 1.e10+10.
+
+   Pp_infinity could probably be 1073741823 that is 2^30 - 1, that is
+   the minimal upper bound of integers; now that max_int is defined,
+   could also be defined as max_int - 1.
+
+   We must carefully double-check all the integer arithmetic
+   operations that involve pp_infinity before setting pp_infinity to
+   something around max_int: otherwise any overflow would wreck havoc
+   the pretty-printing algorithm's invariants.
+   Is it worth the burden ? *)
+
+let pp_infinity = 1000000010;;
 
 (* Output functions for the formatter. *)
 let pp_output_string state s = state.pp_output_function s 0 (String.length s)
@@ -632,11 +647,15 @@ let pp_set_ellipsis_text state s = state.pp_ellipsis <- s
 and pp_get_ellipsis_text state () = state.pp_ellipsis;;
 
 (* To set the margin of pretty-printer. *)
+let pp_limit n =
+  if n < pp_infinity then n else pred pp_infinity;;
+
 let pp_set_min_space_left state n =
-  if n >= 1 && n < pp_infinity then begin
+  if n >= 1 then
+    let n = pp_limit n in
     state.pp_min_space_left <- n;
     state.pp_max_indent <- state.pp_margin - state.pp_min_space_left;
-    pp_rinit state end;;
+    pp_rinit state;;
 
 (* Initially, we have :
   pp_max_indent = pp_margin - pp_min_space_left, and
@@ -646,7 +665,8 @@ let pp_set_max_indent state n =
 let pp_get_max_indent state () = state.pp_max_indent;;
 
 let pp_set_margin state n =
-  if n >= 1 && n < pp_infinity then begin
+  if n >= 1 then
+    let n = pp_limit n in
     state.pp_margin <- n;
     let new_max_indent =
         (* Try to maintain max_indent to its actual value. *)
@@ -658,7 +678,7 @@ let pp_set_margin state n =
          max (max (state.pp_margin - state.pp_min_space_left)
                   (state.pp_margin / 2)) 1 in
     (* Rebuild invariants. *)
-    pp_set_max_indent state new_max_indent end;;
+    pp_set_max_indent state new_max_indent;;
 
 let pp_get_margin state () = state.pp_margin;;
 

@@ -32,6 +32,8 @@
 
 CAMLextern value caml_alloc_shr (mlsize_t, tag_t);
 CAMLextern void caml_adjust_gc_speed (mlsize_t, mlsize_t);
+CAMLextern void caml_alloc_dependent_memory (mlsize_t);
+CAMLextern void caml_free_dependent_memory (mlsize_t);
 CAMLextern void caml_modify (value *, value);
 CAMLextern void caml_initialize (value *, value);
 CAMLextern value caml_check_urgent_gc (value);
@@ -58,8 +60,8 @@ color_t caml_allocation_color (void *hp);
 #define DEBUG_clear(result, wosize)
 #endif
 
-#define Alloc_small(result, wosize, tag) do{      CAMLassert (wosize >= 1); \
-                                            CAMLassert ((tag_t) tag < 256); \
+#define Alloc_small(result, wosize, tag) do{    CAMLassert ((wosize) >= 1); \
+                                          CAMLassert ((tag_t) (tag) < 256); \
                                  CAMLassert ((wosize) <= Max_young_wosize); \
   caml_young_ptr -= Bhsize_wosize (wosize);                                 \
   if (caml_young_ptr < caml_young_limit){                                   \
@@ -127,8 +129,9 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
    call to [CAMLparam] for some other arguments).
 
    If you need local variables of type [value], declare them with one
-   or more calls to the [CAMLlocal] macros.
-   Use [CAMLlocalN] to declare an array of [value]s.
+   or more calls to the [CAMLlocal] macros at the beginning of the
+   function. Use [CAMLlocalN] (at the beginning of the function) to
+   declare an array of [value]s.
 
    Your function may raise an exception or return a [value] with the
    [CAMLreturn] macro.  Its argument is simply the [value] returned by

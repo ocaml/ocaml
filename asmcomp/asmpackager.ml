@@ -85,7 +85,8 @@ let extract_symbols units symbolfile =
       try
         let i = 3 + (try search_substring " T " l 0 with Not_found -> 
                      try search_substring " D " l 0 with Not_found ->
-                     search_substring " R " l 0) in
+                     try search_substring " R " l 0 with Not_found ->
+                     search_substring " S " l 0) in
         let j = try search_substring "__" l i
                 with Not_found -> String.length l in
         let k = if l.[i] = '_' then i + 1 else i in
@@ -121,6 +122,13 @@ let prefix_symbol p s =
     assert (String.length s > 4 && String.sub s 0 4 = "caml");
     "caml" ^ p ^ "__" ^ String.sub s 4 (String.length s - 4)
   end
+
+(* Strip leading _ from a low-level ident *)
+
+let strip_underscore s =
+  if String.length s > 0 && s.[0] = '_'
+  then String.sub s 1 (String.length s - 1)
+  else s
 
 (* return the list of symbols to rename in low-level form
    (with the leading "_caml" or "caml")
@@ -222,8 +230,8 @@ let rename_approx mapping_lbl mapping_id approx =
       Ufor(id, ren_ulambda u1, ren_ulambda u2, dir, ren_ulambda u3)
   | Uassign(id, u) ->
       Uassign(id, ren_ulambda u)
-  | Usend(u1, u2, ul) ->
-      Usend(ren_ulambda u1, ren_ulambda u2, List.map ren_ulambda ul) in
+  | Usend(k, u1, u2, ul) ->
+      Usend(k, ren_ulambda u1, ren_ulambda u2, List.map ren_ulambda ul) in
 
   let rec ren_approx = function
       Value_closure(fd, res) ->
@@ -261,8 +269,10 @@ let build_package_cmx members target symbols_to_rename cmxfile =
     List.fold_left map_id Tbl.empty symbols_to_rename
   in
   let mapping_lbl =
-    List.fold_left (fun tbl s -> Tbl.add s (prefix_symbol target s) tbl)
-                   Tbl.empty symbols_to_rename in
+    List.fold_left
+      (fun tbl s ->
+        let s = strip_underscore s in Tbl.add s (prefix_symbol target s) tbl)
+      Tbl.empty symbols_to_rename in
   let member_defines m =
     match m.pm_kind with PM_intf -> [] | PM_impl info -> info.ui_defines in
   let defines =
@@ -285,6 +295,7 @@ let build_package_cmx members target symbols_to_rename cmxfile =
       ui_approx = rename_approx mapping_lbl mapping_id approx;
       ui_curry_fun = union(List.map (fun info -> info.ui_curry_fun) units);
       ui_apply_fun = union(List.map (fun info -> info.ui_apply_fun) units);
+      ui_send_fun = union(List.map (fun info -> info.ui_send_fun) units);
       ui_force_link = List.exists (fun info -> info.ui_force_link) units
     } in
   Compilenv.write_unit_info pkg_infos cmxfile

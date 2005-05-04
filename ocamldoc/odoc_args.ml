@@ -12,9 +12,14 @@
 (* cvsid $Id$ *)
 
 (** Command-line arguments. *)
+
 open Clflags
 
 module M = Odoc_messages
+
+type source_file =
+    Impl_file of string
+  | Intf_file of string
 
 let include_dirs = Clflags.include_dirs
 
@@ -37,9 +42,10 @@ let dot_types = ref false
 
 let dot_reduce = ref false
 
-let dot_colors  = ref M.default_dot_colors
+let dot_colors  = ref (List.flatten M.default_dot_colors)
 
 let man_suffix = ref M.default_man_suffix
+let man_section = ref M.default_man_section
 
 let man_mini = ref false
 
@@ -71,7 +77,7 @@ let analyse_merge_options s =
     (M.merge_return_value, [Odoc_types.Merge_return_value]) ;
     (M.merge_custom, [Odoc_types.Merge_custom]) ;
     (M.merge_all, Odoc_types.all_merge_options)
-  ] 
+  ]
   in
   analyse_option_string l s
 
@@ -117,9 +123,9 @@ let index_only = ref false
 
 let colorize_code = ref false
 
-let with_header = ref true 
+let with_header = ref true
 
-let with_trailer = ref true 
+let with_trailer = ref true
 
 let separate_files = ref false
 
@@ -131,7 +137,7 @@ let latex_titles = ref [
   5, "subparagraph" ;
 ]
 
-let with_toc = ref true 
+let with_toc = ref true
 
 let with_index = ref true
 
@@ -152,19 +158,19 @@ let f_latex_title s =
     latex_titles := List.remove_assoc n !latex_titles ;
     latex_titles := (n, command) :: !latex_titles
   with
-    Not_found 
-  | Invalid_argument _ -> 
+    Not_found
+  | Invalid_argument _ ->
       incr Odoc_global.errors ;
       prerr_endline (M.wrong_format s)
 
 let add_hidden_modules s =
   let l = Str.split (Str.regexp ",") s in
-  List.iter 
+  List.iter
     (fun n ->
       let name = Str.global_replace (Str.regexp "[ \n\r\t]+") "" n in
       match name with
         "" -> ()
-      | _ -> 
+      | _ ->
           match name.[0] with
             'A'..'Z' -> hidden_modules := name :: !hidden_modules
           | _ ->
@@ -206,6 +212,8 @@ let options = ref [
   "-v", Arg.Unit (fun () -> verbose := true), M.verbose_mode ;
   "-I", Arg.String (fun s -> include_dirs := (Misc.expand_directory Config.standard_library s) :: !include_dirs), M.include_dirs ;
   "-pp", Arg.String (fun s -> preprocessor := Some s), M.preprocess ;
+  "-impl", Arg.String (fun s -> files := !files @ [Impl_file s]), M.option_impl ;
+  "-intf", Arg.String (fun s -> files := !files @ [Intf_file s]), M.option_intf ;
   "-rectypes", Arg.Set recursive_types, M.rectypes ;
   "-nolabels", Arg.Unit (fun () -> classic := true), M.nolabels ;
   "-warn-error", Arg.Set Odoc_global.warn_error, M.werr ;
@@ -224,26 +232,30 @@ let options = ref [
   "-t", Arg.String (fun s -> title := Some s), M.option_title ;
   "-intro", Arg.String (fun s -> intro_file := Some s), M.option_intro ;
   "-hide", Arg.String add_hidden_modules, M.hide_modules ;
-  "-m", Arg.String (fun s -> merge_options := !merge_options @ (analyse_merge_options s)), M.merge_options^"\n" ;
+  "-m", Arg.String (fun s -> merge_options := !merge_options @ (analyse_merge_options s)),
+  M.merge_options ^
+  "\n\n *** choosing a generator ***\n";
 
 (* generators *)
   "-html", Arg.Unit (fun () -> set_doc_generator !default_html_generator), M.generate_html ;
   "-latex", Arg.Unit (fun () -> set_doc_generator !default_latex_generator), M.generate_latex ;
   "-texi", Arg.Unit (fun () -> set_doc_generator !default_texi_generator), M.generate_texinfo ;
-  "-man", Arg.Unit (fun () -> set_doc_generator !default_man_generator), M.generate_man ;    
+  "-man", Arg.Unit (fun () -> set_doc_generator !default_man_generator), M.generate_man ;
   "-dot", Arg.Unit (fun () -> set_doc_generator !default_dot_generator), M.generate_dot ;
   "-customdir", Arg.Unit (fun () -> Printf.printf "%s\n" Odoc_config.custom_generators_path; exit 0),
   M.display_custom_generators_dir ;
   "-i", Arg.String (fun s -> if !bytecode_mode then () else (prerr_endline (M.option_not_in_native_code "-i"); exit 1)),
   M.add_load_dir ;
   "-g", Arg.String (fun s -> if !bytecode_mode then () else (prerr_endline (M.option_not_in_native_code "-g"); exit 1)),
-  M.load_file^"\n" ;
+  M.load_file ^
+  "\n\n *** HTML options ***\n";
 
 (* html only options *)
   "-all-params", Arg.Set with_parameter_list, M.with_parameter_list ;
   "-css-style", Arg.String (fun s -> css_style := Some s), M.css_style ;
   "-index-only", Arg.Set index_only, M.index_only ;
-  "-colorize-code", Arg.Set colorize_code, M.colorize_code^"\n" ;
+  "-colorize-code", Arg.Set colorize_code, M.colorize_code ^
+  "\n\n *** LaTeX options ***\n";
 
 (* latex only options *)
   "-noheader", Arg.Unit (fun () -> with_header := false), M.no_header ;
@@ -259,27 +271,33 @@ let options = ref [
   "-latex-module-type-prefix", Arg.String (fun s -> latex_module_type_prefix := s), M.latex_module_type_prefix ;
   "-latex-class-prefix", Arg.String (fun s -> latex_class_prefix := s), M.latex_class_prefix ;
   "-latex-class-type-prefix", Arg.String (fun s -> latex_class_type_prefix := s), M.latex_class_type_prefix ;
-  "-notoc", Arg.Unit (fun () -> with_toc := false), M.no_toc^"\n" ;
+  "-notoc", Arg.Unit (fun () -> with_toc := false),
+  M.no_toc ^
+  "\n\n *** texinfo options ***\n";
 
 (* tex only options *)
   "-noindex", Arg.Clear with_index, M.no_index ;
   "-esc8", Arg.Set esc_8bits, M.esc_8bits ;
   "-info-section", Arg.String ((:=) info_section), M.info_section ;
-  "-info-entry", Arg.String (fun s -> info_entry := !info_entry @ [ s ]), M.info_entry ;
+  "-info-entry", Arg.String (fun s -> info_entry := !info_entry @ [ s ]),
+  M.info_entry ^
+  "\n\n *** dot options ***\n";
 
 (* dot only options *)
   "-dot-colors", Arg.String (fun s -> dot_colors := Str.split (Str.regexp_string ",") s), M.dot_colors ;
   "-dot-include-all", Arg.Set dot_include_all, M.dot_include_all ;
   "-dot-types", Arg.Set dot_types, M.dot_types ;
-  "-dot-reduce", Arg.Set dot_reduce, M.dot_reduce ;
+  "-dot-reduce", Arg.Set dot_reduce, M.dot_reduce^
+  "\n\n *** man pages options ***\n";
 
 (* man only options *)
   "-man-mini", Arg.Set man_mini, M.man_mini ;
   "-man-suffix", Arg.String (fun s -> man_suffix := s), M.man_suffix ;
+  "-man-section", Arg.String (fun s -> man_section := s), M.man_section ;
 
-] 
+]
 
-let add_option o = 
+let add_option o =
   let (s,_,_) = o in
   let rec iter = function
       [] -> [o]
@@ -292,17 +310,29 @@ let add_option o =
   options := iter !options
 
 let parse ~html_generator ~latex_generator ~texi_generator ~man_generator ~dot_generator =
+  let anonymous f =
+    let sf =
+      if Filename.check_suffix f "ml" then
+	Impl_file f
+      else
+	if Filename.check_suffix f "mli" then
+	  Intf_file f
+	else
+	  failwith (Odoc_messages.unknown_extension f)
+    in
+    files := !files @ [sf]
+  in
   default_html_generator := Some html_generator ;
   default_latex_generator := Some latex_generator ;
   default_texi_generator := Some texi_generator ;
   default_man_generator := Some man_generator ;
   default_dot_generator := Some dot_generator ;
   let _ = Arg.parse !options
-      (fun s -> files := !files @ [s])
+      anonymous
       (M.usage^M.options_are)
   in
   (* we sort the hidden modules by name, to be sure that for example,
-     A.B is before A, so we will match against A.B before A in 
+     A.B is before A, so we will match against A.B before A in
      Odoc_name.hide_modules.*)
   hidden_modules := List.sort (fun a -> fun b -> - (compare a b)) !hidden_modules
 

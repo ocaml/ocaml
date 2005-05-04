@@ -15,6 +15,7 @@
 
 #include <sys/types.h>
 #include <mlvalues.h>
+#include <fail.h>
 #include <io.h>
 #include "unixsupport.h"
 #ifdef HAS_UNISTD

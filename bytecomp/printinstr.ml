@@ -96,6 +96,8 @@ let instruction ppf = function
   | Kisint -> fprintf ppf "\tisint"
   | Kisout -> fprintf ppf "\tisout"
   | Kgetmethod -> fprintf ppf "\tgetmethod"
+  | Kgetpubmet n -> fprintf ppf "\tgetpubmet %i" n
+  | Kgetdynmet -> fprintf ppf "\tgetdynmet"
   | Kstop -> fprintf ppf "\tstop"
   | Kevent ev -> fprintf ppf "\tevent \"%s\" %i" ev.ev_char.Lexing.pos_fname
                                                  ev.ev_char.Lexing.pos_cnum

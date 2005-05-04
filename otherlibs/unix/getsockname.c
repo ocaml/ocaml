@@ -13,6 +13,7 @@
 
 /* $Id$ */
 
+#include <fail.h>
 #include <mlvalues.h>
 #include "unixsupport.h"
 
@@ -29,7 +30,7 @@ CAMLprim value unix_getsockname(value sock)
   addr_len = sizeof(addr);
   retcode = getsockname(Int_val(sock), &addr.s_gen, &addr_len);
   if (retcode == -1) uerror("getsockname", Nothing);
-  return alloc_sockaddr(&addr, addr_len);
+  return alloc_sockaddr(&addr, addr_len, -1);
 }
 
 #else

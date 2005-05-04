@@ -391,9 +391,9 @@ class virtual info =
     method virtual text_of_info : ?block: bool -> Odoc_info.info option -> Odoc_info.text 
 
     (** Print LaTeX code for a description, except for the [i_params] field. *)
-    method latex_of_info fmt info_opt = 
+    method latex_of_info fmt ?(block=false) info_opt = 
       self#latex_of_text fmt 
-        (self#text_of_info ~block: false info_opt)
+        (self#text_of_info ~block info_opt)
   end
 
 (** This class is used to create objects which can generate a simple LaTeX documentation. *)
@@ -455,6 +455,10 @@ class latex =
 	  ps fmt "(";
 	  print_concat fmt ", " print_one t.ty_parameters;
 	  ps fmt ")"
+
+    method latex_of_class_parameter_list fmt father c =
+      self#latex_of_text fmt 
+	(self#text_of_class_params father c)
 
     (** Print LaTeX code for a type. *)
     method latex_of_type fmt t =
@@ -560,7 +564,7 @@ class latex =
               e :: (iter q)
         in
         (iter defs2) @
-        [Latex ("\\index{"^(self#type_label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")] @
+        [Latex ("\\index{"^(self#label s_name)^"@\\verb`"^(self#label ~no_:false s_name)^"`}\n")] @
         (self#text_of_info t.ty_info)
       in
       self#latex_of_text fmt
@@ -587,9 +591,9 @@ class latex =
     method latex_of_module_type_kind fmt father kind =
       match kind with
 	Module_type_struct eles ->
-	  self#latex_of_text fmt [Code "sig\n"];
+	  self#latex_of_text fmt [Latex "\\begin{ocamldocsigend}\n"];
 	  List.iter (self#latex_of_module_element fmt father) eles;
-	  self#latex_of_text fmt [Code "end"]
+	  self#latex_of_text fmt [Latex "\\end{ocamldocsigend}\n"]
       | Module_type_functor (p, k) ->
 	  self#latex_of_module_parameter fmt father p;
 	  self#latex_of_module_type_kind fmt father k
@@ -606,9 +610,9 @@ class latex =
     method latex_of_module_kind fmt father kind =
       match kind with
 	Module_struct eles ->
-	  self#latex_of_text fmt [Code "sig\n"];
+	  self#latex_of_text fmt [Latex "\\begin{ocamldocsigend}\n"];
 	  List.iter (self#latex_of_module_element fmt father) eles;
-	  self#latex_of_text fmt [Code "end"]
+	  self#latex_of_text fmt [Latex "\\end{ocamldocsigend}\n"]
       | Module_alias a ->
 	  self#latex_of_text fmt 
 	    [Code (self#relative_module_idents father a.ma_name)]
@@ -633,23 +637,13 @@ class latex =
 	  (* TODO: on affiche quoi ? *)
 	  self#latex_of_module_kind fmt father k
 
-    method latex_of_class_parameter fmt father p =
-      ps fmt (self#normal_type father (Parameter.typ p))
-
-    method latex_of_class_parameter_list fmt father params =
-      List.iter
-	(fun p -> 
-	  self#latex_of_class_parameter fmt father p;
-	  ps fmt " -> ")
-	params
-
     method latex_of_class_kind fmt father kind =
       match kind with
         Class_structure (inh, eles) -> 
-	  self#latex_of_text fmt [Code "object\n"];
+	  self#latex_of_text fmt [Latex "\\begin{ocamldocobjectend}\n"];
 	  self#generate_inheritance_info fmt inh;
 	  List.iter (self#latex_of_class_element fmt father) eles;
-	  self#latex_of_text fmt [Code "end"]
+	  self#latex_of_text fmt [Latex "\\end{ocamldocobjectend}\n"]
 
       | Class_apply capp ->
 	  (* TODO: afficher le type final à partir du typedtree *)
@@ -694,22 +688,24 @@ class latex =
 	    [Code (self#relative_idents father cta.cta_name)]
 
       | Class_signature (inh, eles) -> 
-	  self#latex_of_text fmt [Code "object\n"];
+	  self#latex_of_text fmt [Latex "\\begin{ocamldocobjectend}\n"];
 	  self#generate_inheritance_info fmt inh;
 	  List.iter (self#latex_of_class_element fmt father) eles;
-	  self#latex_of_text fmt [Code "end"]
+	  self#latex_of_text fmt [Latex "\\end{ocamldocobjectend}\n"]
 
     method latex_for_module_index fmt m =
+      let s_name = Name.simple m.m_name in
       self#latex_of_text fmt 
-	[Latex ("\\index{"^(self#module_label m.m_name)^"@\\verb`"^
-		(self#label ~no_:false m.m_name)^"`}\n"
+	[Latex ("\\index{"^(self#label s_name)^"@\\verb`"^
+		(self#label ~no_:false s_name)^"`}\n"
 	       )
 	]
 
     method latex_for_module_type_index fmt mt =
+      let s_name = Name.simple mt.mt_name in
       self#latex_of_text fmt 
-	[Latex ("\\index{"^(self#module_type_label mt.mt_name)^"@\\verb`"^
-		(self#label ~no_:false mt.mt_name)^"`}\n"
+	[Latex ("\\index{"^(self#label s_name)^"@\\verb`"^
+		(self#label ~no_:false (Name.simple s_name))^"`}\n"
 	       )
 	]
 
@@ -721,16 +717,18 @@ class latex =
 
 
     method latex_for_class_index fmt c =
+      let s_name = Name.simple c.cl_name in
       self#latex_of_text fmt 
-	[Latex ("\\index{"^(self#class_label c.cl_name)^"@\\verb`"^
-		(self#label ~no_:false c.cl_name)^"`}\n"
+	[Latex ("\\index{"^(self#label s_name)^"@\\verb`"^
+		(self#label ~no_:false s_name)^"`}\n"
 	       )
 	]
 
     method latex_for_class_type_index fmt ct =
+      let s_name = Name.simple ct.clt_name in
       self#latex_of_text fmt 
-	[Latex ("\\index{"^(self#class_type_label ct.clt_name)^"@\\verb`"^
-		(self#label ~no_:false ct.clt_name)^"`}\n"
+	[Latex ("\\index{"^(self#label s_name)^"@\\verb`"^
+		(self#label ~no_:false s_name)^"`}\n"
 	       )
 	]
 
@@ -784,7 +782,7 @@ class latex =
 	   );
       );
       self#latex_of_text fmt [Newline];
-      self#latex_of_info fmt m.m_info;
+      self#latex_of_info fmt ~block: true m.m_info;
       p fmt "@]";
 
 
@@ -840,7 +838,7 @@ class latex =
 	   );
       );
       self#latex_of_text fmt [Newline];
-      self#latex_of_info fmt mt.mt_info;
+      self#latex_of_info fmt ~block: true mt.mt_info;
       p fmt "@]";
 
     (** Print the LaTeX code for the given included module. *)
@@ -877,14 +875,25 @@ class latex =
 	] 
       in
       self#latex_of_text fmt t;
-      self#latex_of_class_parameter_list fmt father c.cl_parameters;
+      self#latex_of_class_parameter_list fmt father c;
+      (* avoid a big gap if the kind is a consrt *)
+      (
+       match c.cl_kind with
+	 Class.Class_constr _ ->
+	   self#latex_of_class_kind fmt father c.cl_kind
+       | _ ->
+	   ()
+      );
       self#latex_of_text fmt [ Latex "\\end{ocamldoccode}\n" ];
       self#latex_for_class_label fmt c;
       self#latex_for_class_index fmt c;
       p fmt "@[<h 4>";
-      self#latex_of_class_kind fmt father c.cl_kind;
+      (match c.cl_kind with
+	Class.Class_constr _ -> ()
+      |	_ -> self#latex_of_class_kind fmt father c.cl_kind
+      );
       self#latex_of_text fmt [Newline];
-      self#latex_of_info fmt c.cl_info;
+      self#latex_of_info fmt ~block: true c.cl_info;
       p fmt "@]"
 
     (** Print the LaTeX code for the given class type. *)
@@ -900,7 +909,7 @@ class latex =
 	[
 	  Latex "\\begin{ocamldoccode}\n" ;
 	  Code (Printf.sprintf
-		  "class %s%s%s = "
+		  "class type %s%s%s = "
 		  (if ct.clt_virtual then "virtual " else "")
 		  type_params
 		  (Name.simple ct.clt_name)
@@ -915,7 +924,7 @@ class latex =
       p fmt "@[<h 4>";
       self#latex_of_class_type_kind fmt father ct.clt_kind;
       self#latex_of_text fmt [Newline];
-      self#latex_of_info fmt ct.clt_info;
+      self#latex_of_info fmt ~block: true ct.clt_info;
       p fmt "@]"
 
     (** Print the LaTeX code for the given class element. *)

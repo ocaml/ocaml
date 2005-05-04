@@ -28,8 +28,7 @@ type addressing_expr =
   | Aadd of expression * expression
 
 let rec select_addr = function
-    Cconst_symbol s when not toc ->
-      (* don't recognize this mode in the TOC-based model *)
+    Cconst_symbol s ->
       (Asymbol s, 0)
   | Cop((Caddi | Cadda), [arg; Cconst_int m]) ->
       let (a, n) = select_addr arg in (a, n + m)
@@ -81,9 +80,6 @@ method select_operation op args =
   | (Cand, _) -> self#select_logical Iand args
   | (Cor, _) -> self#select_logical Ior args
   | (Cxor, _) -> self#select_logical Ixor args
-  (* intoffloat goes through a library function on the RS6000 *)
-  | (Cintoffloat, _) when not powerpc ->
-      (Iextcall("itrunc", false), args)
   (* Recognize mult-add and mult-sub instructions *)
   | (Caddf, [Cop(Cmulf, [arg1; arg2]); arg3]) ->
       (Ispecific Imultaddf, [arg1; arg2; arg3])

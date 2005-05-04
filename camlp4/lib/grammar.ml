@@ -461,10 +461,31 @@ value do_recover parser_of_tree entry nlevn alevn bp a s son =
 ;
 
 value strict_parsing = ref False;
+value strict_parsing_warning = ref False;
 
 value recover parser_of_tree entry nlevn alevn bp a s son strm =
   if strict_parsing.val then raise (Stream.Error (tree_failed entry a s son))
-  else do_recover parser_of_tree entry nlevn alevn bp a s son strm
+  else
+    let _ =
+      if strict_parsing_warning.val then
+        do {
+          let msg = tree_failed entry a s son in
+          try
+            let (_,bp2) = floc.val bp in
+            let c =  bp2.Lexing.pos_cnum - bp2.Lexing.pos_bol in
+            match (bp2.Lexing.pos_fname <> "", c > 0) with [
+              (True, True) ->
+                Printf.eprintf "File \"%s\", line %d, character %d:\n"
+                  bp2.Lexing.pos_fname bp2.Lexing.pos_lnum c 
+            | (False, True) -> Printf.eprintf "Character %d:\n" c
+            | _ -> () ]
+          with [ _ -> () ];
+          Printf.eprintf "Warning: trying to recover from syntax error";
+          if entry.ename <> "" then Printf.eprintf " in [%s]\n" entry.ename
+          else Printf.eprintf "\n";
+          Printf.eprintf "%s\n%!" msg
+      } else () in
+    do_recover parser_of_tree entry nlevn alevn bp a s son strm
 ;
 
 value token_count = ref 0;

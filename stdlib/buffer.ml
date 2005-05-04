@@ -105,9 +105,9 @@ let closing = function
   | _ -> assert false;;
 
 (* opening and closing: open and close characters, typically ( and )
-   k balance of opening and closing chars
-   s the string where we are searching
-   start the index where we start the search *)
+   k: balance of opening and closing chars
+   s: the string where we are searching
+   start: the index where we start the search. *)
 let advance_to_closing opening closing k s start =
   let rec advance k i lim =
     if i >= lim then raise Not_found else
@@ -128,7 +128,7 @@ let advance_to_non_alpha s start =
     | _ -> i in
   advance start (String.length s);;
 
-(* We are just at the beginning of an ident in s, starting at start *)
+(* We are just at the beginning of an ident in s, starting at start. *)
 let find_ident s start =
   match s.[start] with
   (* Parenthesized ident ? *)

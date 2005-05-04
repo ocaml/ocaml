@@ -1,3 +1,17 @@
+;(***********************************************************************)
+;(*                                                                     *)
+;(*                           Objective Caml                            *)
+;(*                                                                     *)
+;(*           Xavier Leroy, projet Cristal, INRIA Rocquencourt          *)
+;(*                                                                     *)
+;(*  Copyright 1998 Institut National de Recherche en Informatique et   *)
+;(*  en Automatique.  All rights reserved.  This file is distributed    *)
+;(*  under the terms of the GNU General Public License.                 *)
+;(*                                                                     *)
+;(***********************************************************************)
+
+;(* $Id$ *)
+
 ;; function definitions for old versions of emacs
 
 ;; indent-line-to

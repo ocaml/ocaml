@@ -21,9 +21,9 @@ open Location
 open Misc
 open Parsetree
 
-(* User programs must not use identifiers that start with this prefix. *)
-let idprefix = "__ocaml_prof";;
-
+(* User programs must not use identifiers that start with these prefixes. *)
+let idprefix = "__ocaml_prof_";;
+let modprefix = "OCAML__prof_";;
 
 (* Errors specific to the profiler *)
 exception Profiler of string
@@ -84,12 +84,11 @@ let insert_action st en =
 let add_incr_counter modul (kind,pos) =
    copy pos;
    match kind with
-   | Close -> fprintf !outchan ")";
    | Open ->
-         fprintf !outchan
-                 "(%s_cnt_%s_.(%d) <- Pervasives.succ %s_cnt_%s_.(%d); "
-                 idprefix modul !prof_counter idprefix modul !prof_counter;
+         fprintf !outchan "(%sProfiling.incr %s%s_cnt %d; "
+                 modprefix idprefix modul !prof_counter;
          incr prof_counter;
+   | Close -> fprintf !outchan ")";
 ;;
 
 let counters = ref (Array.create 0 0)
@@ -127,12 +126,13 @@ let pos_len = ref 0
 let init_rewrite modes mod_name =
   cur_point := 0;
   if !instr_mode then begin
-    fprintf !outchan "let %s_cnt_%s_ = Array.create 0000000" idprefix mod_name;
+    fprintf !outchan "module %sProfiling = Profiling;; " modprefix;
+    fprintf !outchan "let %s%s_cnt = Array.create 000000000" idprefix mod_name;
     pos_len := pos_out !outchan;
     fprintf !outchan 
             " 0;; Profiling.counters := \
-              (\"%s\", (\"%s\", %s_cnt_%s_)) :: !Profiling.counters;; "
-            mod_name modes idprefix mod_name
+              (\"%s\", (\"%s\", %s%s_cnt)) :: !Profiling.counters;; "
+            mod_name modes idprefix mod_name;
   end
 
 let final_rewrite add_function =
@@ -142,7 +142,7 @@ let final_rewrite add_function =
   copy (in_channel_length !inchan);
   if !instr_mode then begin
     let len = string_of_int !prof_counter in
-    if String.length len > 7 then raise (Profiler "too many counters");
+    if String.length len > 9 then raise (Profiler "too many counters");
     seek_out !outchan (!pos_len - String.length len);
     output_string !outchan len
   end;
@@ -178,7 +178,7 @@ and rw_exp iflag sexp =
     rewrite_exp iflag sbody
 
   | Pexp_function (_, _, caselist) ->
-    if !instr_fun && not sexp.pexp_loc.loc_ghost then
+    if !instr_fun then
       rewrite_function iflag caselist
     else
       rewrite_patlexp_list iflag caselist

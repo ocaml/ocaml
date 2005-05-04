@@ -142,6 +142,14 @@ val capitalize : string -> string
 val uncapitalize : string -> string
 (** Return a copy of the argument, with the first letter set to lowercase. *)
 
+type t = string
+(** An alias for the type of strings. *)
+
+val compare: t -> t -> int
+(** The comparison function for strings, with the same specification as
+    {!Pervasives.compare}.  Along with the type [t], this function [compare]
+    allows the module [String] to be passed as argument to the functors
+    {!Set.Make} and {!Map.Make}. *)
 
 (**/**)
 

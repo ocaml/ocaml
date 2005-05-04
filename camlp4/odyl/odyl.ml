@@ -28,6 +28,12 @@ value apply_load () =
       flush stdout;
       exit 0
     }
+    else if s = "-version" then do {
+      print_string Sys.ocaml_version;
+      print_newline ();
+      flush stdout;
+      exit 0
+    }
     else if s = "--" then do { incr i; stop.val := True; () }
     else if String.length s > 0 && s.[0] == '-' then stop.val := True
     else if Filename.check_suffix s ".cmo" || Filename.check_suffix s ".cma"

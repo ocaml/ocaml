@@ -124,9 +124,16 @@ value toplevel_phrase cs =
 
 value use_file cs =
   let v = Pcaml.input_file.val in
+  let (bolpos,lnum,fname) = Pcaml.position.val in
+  let restore  =
+    let (bolp,ln,fn) = (bolpos.val, lnum.val, fname.val) in
+    fun () -> do {
+      Pcaml.input_file.val := v;
+      bolpos.val := bolp; lnum.val := ln; fname.val := fn
+    } in
   do {
     Pcaml.input_file.val := Toploop.input_name.val;
-    let restore () = Pcaml.input_file.val := v in
+    bolpos.val := 0; lnum.val := 1; fname.val := Toploop.input_name.val;
     try
       let (pl0, eoi) =
         loop () where rec loop () =

@@ -63,7 +63,7 @@ let content ="
   }
 
 \\newenvironment{ocamldocdescription}
-{\\list{}{\\rightmargin0pt \\topsep0pt}\\raggedright\\item\\noindent\\relax}
+{\\list{}{\\rightmargin0pt \\topsep0pt}\\raggedright\\item\\noindent\\relax\\ignorespaces}
 {\\endlist\\medskip}
 
 \\newenvironment{ocamldoccomment}
@@ -76,6 +76,17 @@ let content ="
 \\def \\subparagraph #1{\\ocamldocsubparagraph {#1}\\noindent}
 
 \\let\\ocamldocvspace\\vspace
+
+\\newenvironment{ocamldocindent}{\\list{}{}\\item\\relax}{\\endlist}
+\\newenvironment{ocamldocsigend}
+     {\\noindent\\quad\\texttt{sig}\\ocamldocindent}
+     {\\endocamldocindent\\vskip -\\lastskip
+      \\noindent\\quad\\texttt{end}\\medskip}
+\\newenvironment{ocamldocobjectend}
+     {\\noindent\\quad\\texttt{object}\\ocamldocindent}
+     {\\endocamldocindent\\vskip -\\lastskip
+      \\noindent\\quad\\texttt{end}\\medskip}
+
 \\endinput
 "
 

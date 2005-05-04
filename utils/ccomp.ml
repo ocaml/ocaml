@@ -25,7 +25,7 @@ let command cmdline =
 let run_command cmdline = ignore(command cmdline)
 
 (* Build @responsefile to work around Windows limitations on 
-   command-length line *)
+   command-line length *)
 let build_diversion lst =
   let (responsefile, oc) = Filename.open_temp_file "camlresp" "" in
   List.iter
@@ -76,7 +76,7 @@ let create_archive archive file_list =
   let quoted_archive = Filename.quote archive in
   match Config.ccomp_type with
     "msvc" ->
-      command(Printf.sprintf "lib /nologo /debugtype:cv /out:%s %s"
+      command(Printf.sprintf "link /lib /nologo /debugtype:cv /out:%s %s"
                              quoted_archive (quote_files file_list))
   | _ ->
       let r1 =

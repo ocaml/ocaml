@@ -42,14 +42,15 @@ static int open_flag_table[] = {
 CAMLprim value unix_open(value path, value flags, value perm)
 {
   CAMLparam3(path, flags, perm);
-  int ret;
+  int ret, cv_flags;
   char * p;
 
+  cv_flags = convert_flag_list(flags, open_flag_table);
   p = stat_alloc(string_length(path) + 1);
   strcpy(p, String_val(path));
   /* open on a named FIFO can block (PR#1533) */
   enter_blocking_section();
-  ret = open(p, convert_flag_list(flags, open_flag_table), Int_val(perm));
+  ret = open(p, cv_flags, Int_val(perm));
   leave_blocking_section();
   stat_free(p);
   if (ret == -1) uerror("open", path);

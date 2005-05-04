@@ -118,6 +118,8 @@ let string_of_variance t (co,cn) = Odoc_str.string_of_variance t (co, cn)
 
 let string_of_type_expr t = Odoc_print.string_of_type_expr t
 
+let string_of_class_params = Odoc_str.string_of_class_params
+
 let string_of_type_list ?par sep type_list = Odoc_str.string_of_type_list ?par sep type_list
 
 let string_of_type_param_list t = Odoc_str.string_of_type_param_list t
@@ -148,9 +150,13 @@ let first_sentence_and_rest_of_text = Odoc_misc.first_sentence_and_rest_of_text
 
 let text_no_title_no_list = Odoc_misc.text_no_title_no_list
 
+let text_concat = Odoc_misc.text_concat
+
 let get_titles_in_text = Odoc_misc.get_titles_in_text
 
 let create_index_lists = Odoc_misc.create_index_lists
+
+let remove_ending_newline = Odoc_misc.remove_ending_newline
 
 let remove_option = Odoc_misc.remove_option
 

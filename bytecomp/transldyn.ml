@@ -121,7 +121,7 @@ let extract_type_definitions whole_env ty0 =
             end;
           type_variance = decl.type_variance }
       in
-      r_sig := Tsig_type (id, decl') :: !r_sig
+      r_sig := Tsig_type (id, decl', Trec_first (* XXX FIXME *)) :: !r_sig
     end;
     path'
   and object_of_record prefix n object_type = function
@@ -147,7 +147,7 @@ let extract_type_definitions whole_env ty0 =
   in
   let ty1 = all ty0 in
   let clean = true in
-  let vars = if clean then Ctype.free_type_variables ty1 else [] in
+  let vars = if clean then Ctype.free_variables ty1 else [] in
   if vars <> [] then raise (Unimplemented "dynamic of a polymorphic value cannot be typed in core Caml");
   (* TODO: check that each of the [vars] is generalisable (i.e., not '_a) *)
   let decl =
@@ -157,7 +157,7 @@ let extract_type_definitions whole_env ty0 =
       type_manifest = Some ty1;
       type_variance = if clean then List.map (fun _ -> true, true, true ) vars (*??*) else [] }
   in
-  Tsig_type (interesting_ident, decl) :: !r_sig
+  Tsig_type (interesting_ident, decl, Trec_first (* XXX FIXME *)) :: !r_sig
 
 
 (* From a type expression, produce code that builds a value that describes

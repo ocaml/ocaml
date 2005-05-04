@@ -102,12 +102,16 @@ let load_file ppf name =
         let toc_pos = input_binary_int ic in  (* Go to table of contents *)
         seek_in ic toc_pos;
         let lib = (input_value ic : library) in
-        begin try
-          Dll.open_dlls (List.map Dll.extract_dll_name lib.lib_dllibs)
-        with Failure reason ->
-          fprintf ppf "Cannot load required shared library: %s.@." reason;
-          raise Load_failed
-        end;
+        List.iter
+          (fun dllib ->
+            let name = Dll.extract_dll_name dllib in
+            try Dll.open_dlls [name]
+            with Failure reason ->
+              fprintf ppf
+                "Cannot load required shared library %s.@.Reason: %s.@."
+                name reason;
+              raise Load_failed)
+          lib.lib_dllibs;
         List.iter (load_compunit ic filename ppf) lib.lib_units;
         true
       end else begin

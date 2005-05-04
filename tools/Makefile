@@ -23,7 +23,7 @@ INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
 COMPFLAGS= -warn-error A $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
-all: ocamldep ocamlprof ocamlcp ocamlmktop ocamlmklib scrapelabels addlabels dumpobj
+all: ocamldep ocamlprof ocamlcp ocamlmktop ocamlmklib scrapelabels addlabels 
 
 opt.opt: ocamldep.opt
 
@@ -111,6 +111,11 @@ beforedepend:: ocamlmklib.ml
 
 clean::
 	rm -f ocamlmklib.ml
+
+# ocamlopt -pack support for Mac OS X: objcopy emulator
+
+install::
+	$(BINUTILS_INSTALL_OBJCOPY) ocaml-objcopy-macosx $(BINUTILS_OBJCOPY)
 
 # Converter olabl/ocaml 2.99 to ocaml 3
 
@@ -223,14 +228,6 @@ objinfo: objinfo.cmo
 
 clean::
 	rm -f objinfo
-
-# Print imported interfaces for .cmi files
-
-intfinfo: intfinfo.cmo
-	$(CAMLC) $(LINKFLAGS) -o intfinfo config.cmo intfinfo.cmo
-
-clean::
-	rm -f intfinfo
 
 # Scan object files for required primitives
 

@@ -32,7 +32,7 @@ type t =                             (* A is all *)
 let letter = function        (* 'a' is all *)
   | Comment _ ->                'c'
   | Deprecated ->               'd'
-  | Fragile_pat _ ->              'e'
+  | Fragile_pat _ ->            'e'
   | Partial_application ->      'f'
   | Labels_omitted ->           'l'
   | Method_override _ ->        'm'
@@ -43,20 +43,16 @@ let letter = function        (* 'a' is all *)
   | Other _ ->                  'x'
 ;;
 
-let check c =
-  try ignore (String.index "acdeflmpsuvxACDEFLMPSUVX" c)
-  with _ -> raise (Arg.Bad (Printf.sprintf "unknown warning option %c" c))
-;;    
-
-let active = Array.create 26 true;;
-let error = Array.create 26 false;;
+let active = Array.create 27 true;;
+let error = Array.create 27 false;;
 
 let translate c =
-  check c;
   if c >= 'A' && c <= 'Z' then
     (Char.code c - Char.code 'A', true)
-  else
+  else if c >= 'a' && c <= 'z' then
     (Char.code c - Char.code 'a', false)
+  else
+    (26, false)
 ;;
 
 let is_active x =

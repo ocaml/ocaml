@@ -28,18 +28,9 @@ load-options
 other-options
 ]
 .br
-.B camlp4sch
-[
-load-options
-] [--] [
-other-options
-]
-.br
 .B camlp4o.cma
 .br
 .B camlp4r.cma
-.br
-.B camlp4sch.cma
 .br
 .B mkcamlp4
 .br
@@ -65,27 +56,23 @@ other-options
 is a Pre-Processor-Pretty-Printer for OCaml, parsing a source
 file and printing some result on standard output.
 .LP
-.B camlp4o,
-.B camlp4r
+.B camlp4o
 and
-.B camlp4sch
+.B camlp4r
 are versions of
 .B camlp4
-with some files already loaded (see further).
+with some files already loaded (see below).
 .LP
-.B camlp4o.cma,
-.B camlp4r.cma
+.B camlp4o.cma
 and
-.B camlp4sch.cma
-are files to be loaded in ocaml toplevel to use the camlp4 machinery
+.B camlp4r.cma
+are files to be loaded in ocaml toplevel to use the camlp4 machinery.
 .LP
 .B mkcamlp4
-creates camlp4 executables with almost the same options than ocamlmktop.
-See further.
+creates camlp4 executables with almost the same options as ocamlmktop (see below).
 .LP
 .B ocpp
-is an universal preprocessor, treating any kind of source file,
-generating the same text with the possible quotations expanded.
+is an universal preprocessor, expanding quotations in any kind of text file.
 .LP
 .B camlp4o.opt
 and
@@ -97,11 +84,11 @@ in all installations of camlp4.
 .SH LOAD OPTIONS
 
 The load options select parsing and printing actions recorded in OCaml
-object files (ending with .cmo or .cma). Several usage of these options
-are authorized. They must precede the other options.
+object files (ending with .cmo or .cma). They must precede other
+options.
 
 .LP
-An optionnal
+An optional
 .B \-\-
 may end the load options.
 
@@ -110,7 +97,7 @@ may end the load options.
 Add
 .I directory
 in the search path for files loaded. Unless the option \-nolib is used,
-the camlp4 library directory is appended to the path. Warning: there is
+the camlp4 library directory is appended to the path. Note that there is
 no automatic search in the current directory: add "\-I ." for this.
 .TP
 .B \-where
@@ -119,8 +106,10 @@ Print camlp4 library directory name and exit.
 .B \-nolib
 No automatic search for objects files in camlp4 library directory.
 .TP
-.BI object-file
-The file is loaded in camlp4 core.
+.I object-file
+Load
+.I object-file
+in the camlp4 core.
 
 .SH OTHER OPTIONS
 
@@ -138,12 +127,12 @@ if it ends with .ml.
 .BI \-intf\  file
 Treat
 .I file
-as an interface file, whatever its extension.
+as an interface file, whatever its extension is.
 .TP
 .BI \-impl\  file
 Treat
 .I file
-as an implementation file, whatever its extension.
+as an implementation file, whatever its extension is.
 .TP
 .B \-unsafe
 Generate unsafe accesses to arrays and strings.
@@ -160,14 +149,16 @@ Dump in
 in case of syntax error in the result of a quotation expansion.
 .TP
 .BI \-o\  out-file
-Print the result on out-file instead of standard output. File is opened
-with open_out_bin (see OCaml library Pervasives).
+Print the result in
+.I out-file
+instead of standard output. File is opened
+with open_out_bin (see the documentation of the Pervasives OCaml library).
 .TP
 .B \-v
 Print the version number and exit.
 .TP
 .B \-help
-Print the available options and exit. This print includes the options
+Print the available options and exit. The output includes the options
 possibly added by the loaded object files.
 
 .LP
@@ -192,7 +183,7 @@ Added by pa_macro.cmo: define the ident.
 Added by pa_macro.cmo: undefine the ident.
 
 .SH "PROVIDED FILES"
-These files are installed in the directory LIBDIR/camlp4.
+These files are installed in LIBDIR/camlp4.
 
 .LP
 Parsing files:
@@ -203,7 +194,6 @@ Parsing files:
 	pa_oop.cmo: streams and parsers (without code optimization)
 	pa_r.cmo: revised syntax
 	pa_rp.cmo: streams and parsers
-	pa_scheme.cmo: scheme syntax
 	pa_extend.cmo: syntax extension for grammars
 	pa_extfold.cmo: extension of pa_extend with FOLD0 and FOLD1
 	pa_extfun.cmo: syntax extension for extensible functions
@@ -220,8 +210,6 @@ Printing files:
 	pr_op.cmo: try to rebuild streams and parsers syntax
 	pr_r.cmo: revised syntax
 	pr_rp.cmo: try to rebuild streams and parsers syntax
-	pr_scheme.cmo: scheme syntax
-	pr_schemep.cmo: try to rebuild streams and parsers syntax
 	pr_extend.cmo: try to rebuild EXTEND statements
 	pr_extfun.cmo: try to rebuild extfun statements
 	pr_dump.cmo: syntax tree
@@ -252,14 +240,6 @@ is a shortcut for:
 	camlp4 pa_r.cmo pa_rp.cmo pr_dump.cmo
 .fi
 .LP
-The command
-.B camlp4sch
-is a shortcut for:
-.nf
-.ta 1c
-	camlp4 pa_scheme.cmo pr_dump.cmo
-.fi
-.LP
 .LP
 The file
 .B camlp4o.cma
@@ -268,10 +248,6 @@ can be loaded in the toplevel to start camlp4 with OCaml syntax.
 The file
 .B camlp4r.cma
 can be loaded in the toplevel to start camlp4 with revised syntax.
-.LP
-The file
-.B camlp4sch.cma
-can be loaded in the toplevel to start camlp4 with Scheme syntax.
 
 .SH "MKCAMLP4"
 
@@ -280,6 +256,7 @@ creates camlp4 executables with almost the same options than ocamlmktop.
 The only difference is that the interfaces to be visible must be explicitly
 added in the command line as ".cmi" files. For example, how to add the
 the OCaml module "str":
+
 .nf
 .ta 1c 2c
 	mkcamlp4 -custom str.cmi str.cma -cclib -lstr \\
@@ -287,7 +264,7 @@ the OCaml module "str":
 .fi
 
 .SH "FILES"
-Camlp4 library directory in the present installation:
+Camlp4 library directory in the current installation:
 .br
 LIBDIR/camlp4
 

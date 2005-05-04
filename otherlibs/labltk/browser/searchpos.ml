@@ -290,12 +290,12 @@ let edit_source ~file ~path ~sign =
       let id, kind =
         match item with
           Tsig_value (id, _) -> id, Pvalue
-        | Tsig_type (id, _) -> id, Ptype
+        | Tsig_type (id, _, _) -> id, Ptype
         | Tsig_exception (id, _) -> id, Pconstructor
-        | Tsig_module (id, _) -> id, Pmodule
+        | Tsig_module (id, _, _) -> id, Pmodule
         | Tsig_modtype (id, _) -> id, Pmodtype
-        | Tsig_class (id, _) -> id, Pclass
-        | Tsig_cltype (id, _) -> id, Pcltype
+        | Tsig_class (id, _, _) -> id, Pclass
+        | Tsig_cltype (id, _, _) -> id, Pcltype
       in
       let prefix = List.tl (list_of_path path) and name = Ident.name id in
       let pos =
@@ -315,6 +315,8 @@ let edit_source ~file ~path ~sign =
 
 (* List of windows to destroy by Close All *)
 let top_widgets = ref []
+
+let dummy_item = Tsig_modtype (Ident.create "dummy", Tmodtype_abstract)
 
 let rec view_signature ?title ?path ?(env = !start_env) ?(detach=false) sign =
   let env =
@@ -438,7 +440,7 @@ and view_module path ~env =
       !view_defined_ref (Searchid.longident_of_path path) ~env
   | modtype ->
       let id = ident_of_path path ~default:"M" in
-      view_signature_item [Tsig_module (id, modtype)] ~path ~env
+      view_signature_item [Tsig_module (id, modtype, Trec_not)] ~path ~env
 
 and view_module_id id ~env =
   let path, _ = lookup_module id env in
@@ -451,11 +453,12 @@ and view_type_decl path ~env =
         {desc = Tobject _} ->
           let clt = find_cltype path env in
           view_signature_item ~path ~env
-            [Tsig_cltype(ident_of_path path ~default:"ct", clt)]
+            [Tsig_cltype(ident_of_path path ~default:"ct", clt, Trec_first);
+             dummy_item; dummy_item]
       | _ -> raise Not_found
   with Not_found ->
     view_signature_item ~path ~env
-      [Tsig_type(ident_of_path path ~default:"t", td)]
+      [Tsig_type(ident_of_path path ~default:"t", td, Trec_first)]
 
 and view_type_id li ~env =
   let path, decl = lookup_type li env in
@@ -464,12 +467,14 @@ and view_type_id li ~env =
 and view_class_id li ~env =
   let path, cl = lookup_class li env in
   view_signature_item ~path ~env
-     [Tsig_class(ident_of_path path ~default:"c", cl)]
+     [Tsig_class(ident_of_path path ~default:"c", cl, Trec_first);
+      dummy_item; dummy_item; dummy_item]
 
 and view_cltype_id li ~env =
   let path, clt = lookup_cltype li env in
   view_signature_item ~path ~env
-     [Tsig_cltype(ident_of_path path ~default:"ct", clt)]
+     [Tsig_cltype(ident_of_path path ~default:"ct", clt, Trec_first);
+      dummy_item; dummy_item]
 
 and view_modtype_id li ~env =
   let path, td = lookup_modtype li env in
@@ -576,19 +581,19 @@ let view_type kind ~env =
       | `New path ->
           let cl = find_class path env in
           view_signature_item ~path ~env
-            [Tsig_class(ident_of_path path ~default:"c", cl)]
+            [Tsig_class(ident_of_path path ~default:"c", cl, Trec_first)]
       end
   | `Class (path, cty) ->
       let cld = { cty_params = []; cty_type = cty;
                   cty_path = path; cty_new = None } in
       view_signature_item ~path ~env
-        [Tsig_class(ident_of_path path ~default:"c", cld)]
+        [Tsig_class(ident_of_path path ~default:"c", cld, Trec_first)]
   | `Module (path, mty) ->
       match mty with
         Tmty_signature sign -> view_signature sign ~path ~env
       | modtype ->
           view_signature_item ~path ~env
-            [Tsig_module(ident_of_path path ~default:"M", mty)]
+            [Tsig_module(ident_of_path path ~default:"M", mty, Trec_not)]
 
 let view_type_menu kind ~env ~parent =
   let title =

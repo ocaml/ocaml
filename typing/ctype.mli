@@ -221,11 +221,11 @@ val correct_abbrev: Env.t -> Path.t -> type_expr list -> type_expr -> unit
 val cyclic_abbrev: Env.t -> Ident.t -> type_expr -> bool
 val normalize_type: Env.t -> type_expr -> unit
 
-val free_type_variables : type_expr -> type_expr list
 val closed_schema: type_expr -> bool
         (* Check whether the given type scheme contains no non-generic
            type variables *)
 
+val free_variables: type_expr -> type_expr list
 val closed_type_decl: type_declaration -> type_expr option
 type closed_class_failure =
     CC_Method of type_expr * bool * string * type_expr

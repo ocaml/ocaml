@@ -256,6 +256,7 @@ let bad_float () = bad_input "no dot or exponent part found in float token";;
 
 (* Checking that the current char is indeed one of range, then skip it. *)
 let check_char_in range ib =
+  if range <> [] && not (Scanning.end_of_input ib) then
   let ci = Scanning.checked_peek_char ib in
   if List.memq ci range then Scanning.next_char ib else
   let sr = String.concat "" (List.map (String.make 1) range) in
@@ -265,8 +266,9 @@ let check_char_in range ib =
 (* Checking that [c] is indeed in the input, then skip it. *)
 let check_char ib c =
   let ci = Scanning.checked_peek_char ib in
-  if ci == c then Scanning.next_char ib else
-  bad_input (Printf.sprintf "looking for %C, found %C" c ci);;
+  if ci != c
+  then bad_input (Printf.sprintf "looking for %C, found %C" c ci)
+  else Scanning.next_char ib;;
 
 (* Extracting tokens from ouput token buffer. *)
 
@@ -485,7 +487,7 @@ let scan_Float max ib =
    characters has been read.*)
 let scan_string stp max ib =
   let rec loop max =
-    if max = 0 || Scanning.eof ib then max else
+    if max = 0 || Scanning.end_of_input ib then max else
     let c = Scanning.checked_peek_char ib in
     if stp == [] then
       match c with
@@ -494,7 +496,7 @@ let scan_string stp max ib =
     if List.mem c stp then max else
     loop (Scanning.store_char ib c max) in
   let max = loop max in
-  if stp != [] then check_char_in stp ib;
+  check_char_in stp ib;
   max;;
 
 (* Scan a char: peek strictly one character in the input, whatsoever. *)
@@ -662,7 +664,7 @@ let make_bv bit set =
     if i <= lim then
     match set.[i] with
     | '-' when rp ->
-       (* if i = 0 then rp is false (since the initial call is loop false 0)
+       (* if i = 0 then rp is false (since the initial call is loop bit false 0)
           hence i >= 1 and the following is safe. *)
        let c1 = set.[i - 1] in
        let i = i + 1 in
@@ -697,6 +699,7 @@ let make_setp stp char_set =
           (fun c -> if c == p1 || c == p2 then 1 else 0)
       | 3 ->
           let p1 = set.[0] and p2 = set.[1] and p3 = set.[2] in
+          if p2 = '-' then make_pred 1 set stp else
           (fun c -> if c == p1 || c == p2 || c == p3 then 1 else 0)
       | n -> make_pred 1 set stp
       end
@@ -711,6 +714,7 @@ let make_setp stp char_set =
           (fun c -> if c != p1 && c != p2 then 1 else 0)
       | 3 ->
           let p1 = set.[0] and p2 = set.[1] and p3 = set.[2] in
+          if p2 = '-' then make_pred 0 set stp else
           (fun c -> if c != p1 && c != p2 && c != p3 then 1 else 0)
       | n -> make_pred 0 set stp
       end;;
@@ -783,16 +787,16 @@ let scan_chars_in_char_set stp char_set max ib =
         | 0 -> loop (fun c -> 0) max
         | 1 -> loop_pos1 set.[0] max
         | 2 -> loop_pos2 set.[0] set.[1] max
-        | 3 -> loop_pos3 set.[0] set.[1] set.[2] max
+        | 3 when set.[1] != '-' -> loop_pos3 set.[0] set.[1] set.[2] max
         | n -> loop (find_setp stp char_set) max end
     | Neg_set set ->
         begin match String.length set with
         | 0 -> loop (fun c -> 1) max
         | 1 -> loop_neg1 set.[0] max
         | 2 -> loop_neg2 set.[0] set.[1] max
-        | 3 -> loop_neg3 set.[0] set.[1] set.[2] max
+        | 3 when set.[1] != '-' -> loop_neg3 set.[0] set.[1] set.[2] max
         | n -> loop (find_setp stp char_set) max end in
-  if stp != [] then check_char_in stp ib;
+  check_char_in stp ib;
   max;;
 
 let get_count t ib =

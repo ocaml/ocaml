@@ -24,3 +24,4 @@ COMPFLAGS=
 LINKFLAGS=
 CAMLOPTLIBR=$(CAMLOPT) -a
 MKLIB=$(CAMLRUN) $(TOPDIR)/tools/ocamlmklib
+CAMLRUNGEN=../../boot/ocamlrun

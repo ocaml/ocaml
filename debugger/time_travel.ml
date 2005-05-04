@@ -385,7 +385,7 @@ let forget_process fd pid =
     find (function c -> c.c_pid = pid) (!current_checkpoint::!checkpoints)
   in
     Printf.eprintf "Lost connection with process %d" pid;
-    if checkpoint = !current_checkpoint then begin
+    if checkpoint == !current_checkpoint then begin
       Printf.eprintf " (active process)\n";
       match !current_checkpoint.c_state with
         C_stopped ->
@@ -403,7 +403,7 @@ let forget_process fd pid =
     checkpoint.c_pid <- -1;             (* Don't exist anymore *)
     if checkpoint.c_parent.c_pid > 0 then
       wait_child checkpoint.c_parent.c_fd;
-    if checkpoint = !current_checkpoint then
+    if checkpoint == !current_checkpoint then
       raise Current_checkpoint_lost
 
 (* Try to recover when the current checkpoint is lost. *)

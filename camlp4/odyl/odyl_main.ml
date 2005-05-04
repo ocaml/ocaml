@@ -20,12 +20,12 @@ value first_arg_no_load () =
     if i < Array.length Sys.argv then
       match Sys.argv.(i) with
       [ "-I" -> loop (i + 2)
-      | "-nolib" -> loop (i + 1)
-      | "-where" -> loop (i + 1)
+      | ("-nolib" | "-where" | "-version") -> loop (i + 1)
       | "--" -> i + 1
       | s ->
           if Filename.check_suffix s ".cmo"
-          || Filename.check_suffix s ".cma" then loop (i + 1)
+          || Filename.check_suffix s ".cma"
+          then loop (i + 1)
           else i ]
     else i
 ;

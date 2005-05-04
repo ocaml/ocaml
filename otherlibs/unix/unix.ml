@@ -161,6 +161,7 @@ external openfile : string -> open_flag list -> file_perm -> file_descr
 external close : file_descr -> unit = "unix_close"
 external unsafe_read : file_descr -> string -> int -> int -> int = "unix_read"
 external unsafe_write : file_descr -> string -> int -> int -> int = "unix_write"
+external unsafe_single_write : file_descr -> string -> int -> int -> int = "unix_single_write"
 
 let read fd buf ofs len =
   if ofs < 0 || len < 0 || ofs > String.length buf - len
@@ -170,6 +171,13 @@ let write fd buf ofs len =
   if ofs < 0 || len < 0 || ofs > String.length buf - len
   then invalid_arg "Unix.write"
   else unsafe_write fd buf ofs len
+(* write misbehaves because it attempts to write all data by making repeated
+   calls to the Unix write function (see comment in write.c and unix.mli).
+   partial_write fixes this by never calling write twice. *)
+let single_write fd buf ofs len =
+  if ofs < 0 || len < 0 || ofs > String.length buf - len
+  then invalid_arg "Unix.single_write"
+  else unsafe_single_write fd buf ofs len
 
 external in_channel_of_descr : file_descr -> in_channel
                              = "caml_ml_open_descriptor_in"
@@ -262,6 +270,11 @@ external set_nonblock : file_descr -> unit = "unix_set_nonblock"
 external clear_nonblock : file_descr -> unit = "unix_clear_nonblock"
 external set_close_on_exec : file_descr -> unit = "unix_set_close_on_exec"
 external clear_close_on_exec : file_descr -> unit = "unix_clear_close_on_exec"
+
+(* FD_CLOEXEC should be supported on all Unix systems these days,
+   but just in case... *)
+let try_set_close_on_exec fd =
+  try set_close_on_exec fd; true with Invalid_argument _ -> false
 
 external mkdir : string -> file_perm -> unit = "unix_mkdir"
 external rmdir : string -> unit = "unix_rmdir"
@@ -786,10 +799,11 @@ type popen_process =
 let popen_processes = (Hashtbl.create 7 : (popen_process, int) Hashtbl.t)
 
 let open_proc cmd proc input output toclose =
+  let cloexec = List.for_all try_set_close_on_exec toclose in
   match fork() with
      0 -> if input <> stdin then begin dup2 input stdin; close input end;
           if output <> stdout then begin dup2 output stdout; close output end;
-          List.iter close toclose;
+          if not cloexec then List.iter close toclose;
           execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |];
           exit 127
   | id -> Hashtbl.add popen_processes proc id
@@ -820,11 +834,12 @@ let open_process cmd =
   (inchan, outchan)
 
 let open_proc_full cmd env proc input output error toclose =
+  let cloexec = List.for_all try_set_close_on_exec toclose in
   match fork() with
      0 -> dup2 input stdin; close input;
           dup2 output stdout; close output;
           dup2 error stderr; close error;
-          List.iter close toclose;
+          if not cloexec then List.iter close toclose;
           execve "/bin/sh" [| "/bin/sh"; "-c"; cmd |] env;
           exit 127
   | id -> Hashtbl.add popen_processes proc id
@@ -851,21 +866,25 @@ let find_proc_id fun_name proc =
   with Not_found ->
     raise(Unix_error(EBADF, fun_name, ""))
 
+let rec waitpid_non_intr pid =
+  try waitpid [] pid 
+  with Unix_error (EINTR, _, _) -> waitpid_non_intr pid
+
 let close_process_in inchan =
   let pid = find_proc_id "close_process_in" (Process_in inchan) in
   close_in inchan;
-  snd(waitpid [] pid)
+  snd(waitpid_non_intr pid)
 
 let close_process_out outchan =
   let pid = find_proc_id "close_process_out" (Process_out outchan) in
   close_out outchan;
-  snd(waitpid [] pid)
+  snd(waitpid_non_intr pid)
 
 let close_process (inchan, outchan) =
   let pid = find_proc_id "close_process" (Process(inchan, outchan)) in
   close_in inchan;
   begin try close_out outchan with Sys_error _ -> () end;
-  snd(waitpid [] pid)
+  snd(waitpid_non_intr pid)
 
 let close_process_full (inchan, outchan, errchan) =
   let pid =
@@ -874,7 +893,7 @@ let close_process_full (inchan, outchan, errchan) =
   close_in inchan;
   begin try close_out outchan with Sys_error _ -> () end;
   close_in errchan;
-  snd(waitpid [] pid)
+  snd(waitpid_non_intr pid)
 
 (* High-level network functions *)
 
@@ -883,6 +902,7 @@ let open_connection sockaddr =
     socket (domain_of_sockaddr sockaddr) SOCK_STREAM 0 in
   try
     connect sock sockaddr;
+    ignore(try_set_close_on_exec sock);
     (in_channel_of_descr sock, out_channel_of_descr sock)
   with exn ->
     close sock; raise exn
@@ -902,6 +922,7 @@ let establish_server server_fun sockaddr =
        leave a zombie process *)
     match fork() with
        0 -> if fork() <> 0 then exit 0; (* The son exits, the grandson works *)
+            ignore(try_set_close_on_exec s);
             let inchan = in_channel_of_descr s in
             let outchan = out_channel_of_descr s in
             server_fun inchan outchan;

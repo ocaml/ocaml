@@ -18,10 +18,13 @@ open Pcaml;
 Pcaml.syntax_name.val := "OCaml";
 Pcaml.no_constructors_arity.val := True;
 
+
 do {
   let odfa = Plexer.dollar_for_antiquotation.val in
   Plexer.dollar_for_antiquotation.val := False;
-  Grammar.Unsafe.gram_reinit gram (Plexer.gmake ());
+  let (lexer, pos) = Plexer.make_lexer () in
+  Pcaml.position.val := pos;
+  Grammar.Unsafe.gram_reinit gram lexer;
   Plexer.dollar_for_antiquotation.val := odfa;
   Grammar.Unsafe.clear_entry interf;
   Grammar.Unsafe.clear_entry implem;
@@ -814,9 +817,11 @@ EXTEND
       | "{"; lpl = lbl_patt_list; "}" -> <:patt< { $list:lpl$ } >>
       | "("; ")" -> <:patt< () >>
       | "("; op = operator_rparen -> <:patt< $lid:op$ >>
-      | "("; p = SELF; ":"; t = ctyp; ")" -> <:patt< ($p$ : $t$) >>
-      | "("; p = SELF; ")" -> <:patt< $p$ >>
+      | "("; p = patt; ":"; t = ctyp; ")" -> <:patt< ($p$ : $t$) >>
+      | "("; p = patt; ")" -> <:patt< $p$ >>
       | "_" -> <:patt< _ >>
+      | "`"; s = ident -> <:patt< ` $s$ >>
+      | "#"; t = mod_ident -> <:patt< # $list:t$ >>
       | x = LOCATE ->
           let x =
             try
@@ -841,6 +846,7 @@ EXTEND
           in
           Pcaml.handle_patt_quotation loc x ] ]
   ;
+
   patt_semi_list:
     [ [ p = patt; ";"; pl = SELF -> [p :: pl]
       | p = patt; ";" -> [p]
@@ -1214,10 +1220,6 @@ EXTEND
   ;
   fun_binding:
     [ [ p = labeled_patt; e = SELF -> <:expr< fun $p$ -> $e$ >> ] ]
-  ;
-  patt: LEVEL "simple"
-    [ [ "`"; s = ident -> <:patt< ` $s$ >>
-      | "#"; t = mod_ident -> <:patt< # $list:t$ >> ] ]
   ;
   labeled_patt:
     [ [ i = LABEL; p = patt LEVEL "simple" ->

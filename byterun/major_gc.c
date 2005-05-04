@@ -42,7 +42,8 @@ static asize_t gray_vals_size;
 static int heap_is_pure;   /* The heap is pure if the only gray objects
                               below [markhp] are also in [gray_vals]. */
 unsigned long caml_allocated_words;
-double caml_extra_heap_memory;
+unsigned long caml_dependent_size, caml_dependent_allocated;
+double caml_extra_heap_resources;
 unsigned long caml_fl_size_at_phase_change = 0;
 
 extern char *caml_fl_merge;  /* Defined in freelist.c. */
@@ -85,6 +86,7 @@ void caml_darken (value v, value *p /* not used */)
 {
   if (Is_block (v) && Is_in_heap (v)) {
     if (Tag_val(v) == Infix_tag) v -= Infix_offset_val(v);
+    CAMLassert (!Is_blue_val (v));
     if (Is_white_val (v)){
       Hd_val (v) = Grayhd_hd (Hd_val (v));
       *gray_vals_cur++ = v;
@@ -294,7 +296,7 @@ static void sweep_slice (long work)
  */
 long caml_major_collection_slice (long howmuch)
 {
-  double p;
+  double p, dp;
   long computed_work;
   /*
      Free memory at the start of the GC cycle (garbage + free list) (assumed):
@@ -304,15 +306,15 @@ long caml_major_collection_slice (long howmuch)
      Assuming steady state and enforcing a constant allocation rate, then
      FM is divided in 2/3 for garbage and 1/3 for free list.
                  G = 2 * FM / 3
-     G is also the amount of memory that will be used during this slice
+     G is also the amount of memory that will be used during this cycle
      (still assuming steady state).
 
      Proportion of G consumed since the previous slice:
                  PH = caml_allocated_words / G
                     = caml_allocated_words * 3 * (100 + caml_percent_free)
                       / (2 * caml_stat_heap_size * caml_percent_free)
-     Proportion of extra-heap memory consumed since the previous slice:
-                 PE = caml_extra_heap_memory
+     Proportion of extra-heap resources consumed since the previous slice:
+                 PE = caml_extra_heap_resources
      Proportion of total work to do in this slice:
                  P  = max (PH, PE)
      Amount of marking work for the GC cycle:
@@ -332,11 +334,18 @@ long caml_major_collection_slice (long howmuch)
 
   p = (double) caml_allocated_words * 3.0 * (100 + caml_percent_free)
       / Wsize_bsize (caml_stat_heap_size) / caml_percent_free / 2.0;
-  if (p < caml_extra_heap_memory) p = caml_extra_heap_memory;
+  if (caml_dependent_size > 0){
+    dp = (double) caml_dependent_allocated * (100 + caml_percent_free)
+         / caml_dependent_size / caml_percent_free;
+  }else{
+    dp = 0.0;
+  }
+  if (p < dp) p = dp;
+  if (p < caml_extra_heap_resources) p = caml_extra_heap_resources;
 
   caml_gc_message (0x40, "allocated_words = %lu\n", caml_allocated_words);
-  caml_gc_message (0x40, "extra_heap_memory = %luu\n",
-                   (unsigned long) (caml_extra_heap_memory * 1000000));
+  caml_gc_message (0x40, "extra_heap_resources = %luu\n",
+                   (unsigned long) (caml_extra_heap_resources * 1000000));
   caml_gc_message (0x40, "amount of work to do = %luu\n",
                    (unsigned long) (p * 1000000));
 
@@ -362,7 +371,8 @@ long caml_major_collection_slice (long howmuch)
 
   caml_stat_major_words += caml_allocated_words;
   caml_allocated_words = 0;
-  caml_extra_heap_memory = 0.0;
+  caml_dependent_allocated = 0;
+  caml_extra_heap_resources = 0.0;
   return computed_work;
 }
 
@@ -458,5 +468,5 @@ void caml_init_major_heap (asize_t heap_size)
   gray_vals_end = gray_vals + gray_vals_size;
   heap_is_pure = 1;
   caml_allocated_words = 0;
-  caml_extra_heap_memory = 0.0;
+  caml_extra_heap_resources = 0.0;
 }

@@ -15,6 +15,7 @@
 
 #include <mlvalues.h>
 #include <alloc.h>
+#include <fail.h>
 #include <memory.h>
 #include "unixsupport.h"
 #include <time.h>
@@ -88,6 +89,7 @@ CAMLprim value unix_mktime(value t)
 
 #else
 
-CAMLprim value unix_mktime(value t) { invalid_argument("mktime not implemented"); }
+CAMLprim value unix_mktime(value t)
+{ invalid_argument("mktime not implemented"); }
 
 #endif

@@ -287,10 +287,10 @@ case "$bytecc,$host" in
   *,alpha*-*-unicos*)
     # For the Cray T3E
     bytecccompopts="-DUMK";;
-  gcc*,powerpc-*-aix4.3*)
+  gcc*,powerpc-*-aix*)
     # Avoid name-space pollution by requiring Unix98-conformant includes
     bytecccompopts="-fno-defer-pop $gcc_warnings -D_XOPEN_SOURCE=500";;
-  *,powerpc-*-aix4.3*)
+  *,powerpc-*-aix*)
     bytecccompopts="-D_XOPEN_SOURCE=500";;
   gcc*,*-*-cygwin*)
     bytecccompopts="-fno-defer-pop $gcc_warnings -U_WIN32"
@@ -408,8 +408,16 @@ case "$host" in
     # On Sparc V9 with certain versions of gcc, determination of double
     # alignment is not reliable (PR#1521), hence force it.
     # Same goes for hppa.
-    echo "Doubles must be doubleword-aligned."
-    echo "#define ARCH_ALIGN_DOUBLE" >> m.h;;
+    # But there's a knack (PR#2572):
+    # if we're in 64-bit mode (sizeof(long) == 8), 
+    # we must not doubleword-align floats...
+    if test $2 = 8; then
+      echo "Doubles can be word-aligned."
+      echo "#undef ARCH_ALIGN_DOUBLE" >> m.h
+    else
+      echo "Doubles must be doubleword-aligned."
+      echo "#define ARCH_ALIGN_DOUBLE" >> m.h
+    fi;;
   *)
     sh ./runtest dblalign.c
     case $? in
@@ -428,8 +436,13 @@ esac
 if $int64_native; then
   case "$host" in
     hppa*-*-*)
-      echo "64-bit integers must be doubleword-aligned."
-      echo "#define ARCH_ALIGN_INT64" >> m.h;;
+      if test $2 = 8; then
+        echo "64-bit integers can be word-aligned."
+        echo "#undef ARCH_ALIGN_INT64" >> m.h
+      else
+        echo "64-bit integers must be doubleword-aligned."
+        echo "#define ARCH_ALIGN_INT64" >> m.h
+      fi;;
     *)
       sh ./runtest int64align.c
       case $? in
@@ -567,8 +580,6 @@ case "$host" in
   hppa1.1-*-hpux*)              arch=hppa; system=hpux;;
   hppa2.0*-*-hpux*)             arch=hppa; system=hpux;;
   hppa*-*-linux*)		arch=hppa; system=linux;;
-  rs6000-*-aix*)                arch=power; model=rs6000; system=aix;;
-  powerpc-*-aix*)               arch=power; model=ppc; system=aix;;
   powerpc-*-linux*)             arch=power; model=ppc; system=elf;;
   powerpc-*-netbsd*)            arch=power; model=ppc; system=bsd;;
   powerpc-*-rhapsody*)          arch=power; model=ppc; system=rhapsody;;
@@ -578,6 +589,7 @@ case "$host" in
   ia64-*-freebsd*)              arch=ia64; system=freebsd;;
   x86_64-*-linux*)              arch=amd64; system=linux;;
   x86_64-*-freebsd*)            arch=amd64; system=freebsd;;
+  x86_64-*-openbsd*)            arch=amd64; system=openbsd;;
 esac
 
 if test -z "$ccoption"; then
@@ -598,15 +610,12 @@ case "$arch,$nativecc,$system,$host_type" in
   alpha,cc*,digital,*) nativecccompopts=-std1;;
   mips,cc*,irix,*)     nativecccompopts=-n32
                        nativecclinkopts="-n32 -Wl,-woff,84";;
-  power,gcc*,aix,*aix4.3*)
-                       nativecccompopts="$gcc_warnings -D_XOPEN_SOURCE=500";;
-  power,*,aix,*aix4.3*)
-                       nativecccompopts="-D_XOPEN_SOURCE=500";;
   *,*,nextstep,*)      nativecccompopts="$gcc_warnings -U__GNUC__ -posix"
                        nativecclinkopts="-posix";;
-  *,*,rhapsody,*darwin6*)
+  *,*,rhapsody,*darwin[1-5].*)
+                       nativecccompopts="$gcc_warnings -DSHRINKED_GNUC";;
+  *,*,rhapsody,*)
                  nativecccompopts="$gcc_warnings -DDARWIN_VERSION_6 $dl_defs";;
-  *,*,rhapsody,*)      nativecccompopts="$gcc_warnings -DSHRINKED_GNUC";;
   *,gcc*,cygwin,*)     nativecccompopts="$gcc_warnings -U_WIN32";;
   *,gcc*,*,*)          nativecccompopts="$gcc_warnings";;
 esac
@@ -633,8 +642,6 @@ case "$arch,$model,$system" in
   i386,*,solaris)   aspp='/usr/ccs/bin/as'; asppflags='-P -DSYS_$(SYSTEM)';;
   i386,*,*)         aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   hppa,*,*)         aspp="$cc"; asppflags='-traditional -c -DSYS_$(SYSTEM)';;
-  power,rs6000,aix) asflags='-u -m pwr -w'; asppflags="$asflags";;
-  power,ppc,aix)    asflags='-u -m ppc -w'; asppflags="$asflags";;
   power,*,elf)      aspp='gcc'; asppflags='-c';;
   power,*,bsd)      aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   power,*,rhapsody) ;;
@@ -659,31 +666,41 @@ esac
 # Where are GNU binutils?
 
 binutils_objcopy=''
+binutils_install_objcopy=':'
 binutils_nm=''
 
-if test "$arch" != "none"; then
-  binutils_path="${binutils_dir}:${PATH}:/usr/libexec/binutils"
-  old_IFS="$IFS"
-  IFS=':'
-  for d in ${binutils_path}; do
-    if test -z "$d"; then continue; fi
-    if test -f "$d/objcopy" && test -f "$d/nm"; then
-      echo "objcopy and nm found in $d"
-      if test `$d/objcopy --help | grep -s -c 'redefine-sym'` -eq 0; then
-        echo "$d/objcopy does not support option --redefine-sym, discarded"
-        continue;
-      fi
-      if test `$d/nm --version | grep -s -c 'GNU nm'` -eq 0; then
-        echo "$d/nm is not from GNU binutils, discarded"
-        continue;
-      fi
-      binutils_objcopy="$d/objcopy"
-      binutils_nm="$d/nm"
-      break
+case "$host" in
+  powerpc-*-darwin*)
+    binutils_objcopy='$(LIBDIR)/ocaml-objcopy'
+    binutils_install_objcopy=cp
+    binutils_nm=/usr/bin/nm
+  ;;
+  *)
+    if test "$arch" != "none"; then
+      binutils_path="${binutils_dir}:${PATH}:/usr/libexec/binutils"
+      old_IFS="$IFS"
+      IFS=':'
+      for d in ${binutils_path}; do
+        if test -z "$d"; then continue; fi
+        if test -f "$d/objcopy" && test -f "$d/nm"; then
+          echo "objcopy and nm found in $d"
+          if test `$d/objcopy --help | grep -s -c 'redefine-sym'` -eq 0; then
+            echo "$d/objcopy does not support option --redefine-sym, discarded"
+            continue;
+          fi
+          if test `$d/nm --version | grep -s -c 'GNU nm'` -eq 0; then
+            echo "$d/nm is not from GNU binutils, discarded"
+            continue;
+          fi
+          binutils_objcopy="$d/objcopy"
+          binutils_nm="$d/nm"
+          break
+        fi
+      done
+      IFS="$old_IFS"
     fi
-  done
-  IFS="$old_IFS"
-fi
+  ;;
+esac
 
 # Where is ranlib?
 
@@ -1059,37 +1076,37 @@ echo "BNG_ASM_LEVEL=$bng_asm_level" >> Makefile
 
 # Determine if the POSIX threads library is supported
 
-case "$host" in
-  *-*-solaris*)  pthread_link="-lpthread -lposix4";;
-  *-*-freebsd*)  pthread_link="-pthread";;
-  *-*-openbsd*)  pthread_link="-pthread";;
-  *)             pthread_link="-lpthread";;
-esac
-
 if test "$pthread_wanted" = "yes"; then
-if ./hasgot -i pthread.h $pthread_link pthread_self; then
-  echo "POSIX threads library supported."
-  otherlibraries="$otherlibraries systhreads"
-  bytecccompopts="$bytecccompopts -D_REENTRANT"
-  nativecccompopts="$nativecccompopts -D_REENTRANT"
   case "$host" in
-    *-*-freebsd*)
-        bytecccompopts="$bytecccompopts -D_THREAD_SAFE"
-        nativecccompopts="$nativecccompopts -D_THREAD_SAFE";;
-    *-*-openbsd*)
-        bytecccompopts="$bytecccompopts -pthread"
-        asppflags="$asppflags -pthread"
-        nativecccompopts="$nativecccompopts -pthread";;
+    *-*-solaris*)  pthread_link="-lpthread -lposix4";;
+    *-*-freebsd*)  pthread_link="-pthread";;
+    *-*-openbsd*)  pthread_link="-pthread";;
+    *)             pthread_link="-lpthread";;
   esac
-  echo "Options for linking with POSIX threads: $pthread_link"
-  echo "PTHREAD_LINK=$pthread_link" >> Makefile
-  if sh ./hasgot $pthread_link sigwait; then
-    echo "sigwait() found"
-    echo "#define HAS_SIGWAIT" >> s.h
+  if ./hasgot -i pthread.h $pthread_link pthread_self; then
+    echo "POSIX threads library supported."
+    otherlibraries="$otherlibraries systhreads"
+    bytecccompopts="$bytecccompopts -D_REENTRANT"
+    nativecccompopts="$nativecccompopts -D_REENTRANT"
+    case "$host" in
+      *-*-freebsd*)
+          bytecccompopts="$bytecccompopts -D_THREAD_SAFE"
+          nativecccompopts="$nativecccompopts -D_THREAD_SAFE";;
+      *-*-openbsd*)
+          bytecccompopts="$bytecccompopts -pthread"
+          asppflags="$asppflags -pthread"
+          nativecccompopts="$nativecccompopts -pthread";;
+    esac
+    echo "Options for linking with POSIX threads: $pthread_link"
+    echo "PTHREAD_LINK=$pthread_link" >> Makefile
+    if sh ./hasgot $pthread_link sigwait; then
+      echo "sigwait() found"
+      echo "#define HAS_SIGWAIT" >> s.h
+    fi
+  else
+    echo "POSIX threads not found."
+    pthread_link=""
   fi
-else
-  echo "POSIX threads not found."
-fi
 fi
 
 # Determine if the bytecode thread library is supported
@@ -1356,11 +1373,12 @@ if test $has_tk = true; then
     *) echo "This version is not known."; has_tk=false ;;
     esac
   else
-    echo "tcl.h not found."
+    echo "tcl.h and/or tk.h not found."
     has_tk=false
   fi
 fi
 
+# FIXME redundant?
 if test $has_tk = true; then
   if sh ./hasgot $tk_x11_include $tk_defs -i tk.h; then
     echo "tk.h found."
@@ -1425,12 +1443,17 @@ else
   echo "Configuration failed, LablTk will not be built."
 fi
 
-# Camlp4
-
+# Begin Camlp4
 (
 cd ../../camlp4/config
-EXE=$exe ./configure_batch -bindir "$bindir" -libdir "$libdir" -mandir "$mandir" -ocaml-top ../.. > /dev/null
+EXE=$exe ./configure_batch -prefix "$prefix" -bindir "$bindir" -libdir "$libdir" -mandir "$mandir" -ocaml-top ../.. > /dev/null
 )
+
+case $? in
+    0) echo "Camlp4 correctly configured.";;
+    *) echo "Warning: Camlp4 configuration terminated with error code $?";;
+esac
+# End Camlp4
 
 # Final twiddling of compiler options to work around known bugs
 
@@ -1470,6 +1493,7 @@ echo "ASPPFLAGS=$asppflags" >> Makefile
 echo "ASPPPROFFLAGS=$asppprofflags" >> Makefile
 echo "PROFILING=$profiling" >> Makefile
 echo "BINUTILS_OBJCOPY=$binutils_objcopy" >> Makefile
+echo "BINUTILS_INSTALL_OBJCOPY=$binutils_install_objcopy" >> Makefile
 echo "BINUTILS_NM=$binutils_nm" >> Makefile
 echo "DYNLINKOPTS=$dllib" >> Makefile
 echo "OTHERLIBRARIES=$otherlibraries" >> Makefile
@@ -1556,5 +1580,9 @@ echo "        use tcl/tk version ....... $tcl_version"
 echo "        options for compiling .... $tk_defs"
 echo "        options for linking ...... $tk_libs"
 else
-echo "The \"labltk\" library: not found"
+echo "The \"labltk\" library: not supported"
 fi
+
+echo
+echo "** Objective Caml configuration completed successfully **"
+echo

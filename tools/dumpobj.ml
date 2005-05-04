@@ -234,6 +234,7 @@ type shape =
   | Uint_Primitive
   | Switch
   | Closurerec
+  | Pubmet
 ;;
 
 let op_shapes = [
@@ -368,6 +369,8 @@ let op_shapes = [
   opOFFSETREF, Sint;
   opISINT, Nothing;
   opGETMETHOD, Nothing;
+  opGETDYNMET, Nothing;
+  opGETPUBMET, Pubmet;
   opBEQ, Sint_Disp;
   opBNEQ, Sint_Disp;
   opBLTINT, Sint_Disp;
@@ -436,6 +439,10 @@ let print_instr ic =
           print_string ", ";
           print_int (orig + inputu ic);
         done;
+  | Pubmet
+     -> let tag = inputs ic in
+        let cache = inputu ic in
+	print_int tag
   | Nothing -> ()
   with Not_found -> print_string "(unknown arguments)"
   end;

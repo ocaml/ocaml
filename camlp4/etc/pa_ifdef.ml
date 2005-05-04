@@ -3,6 +3,10 @@
 
 (* This module is deprecated since version 3.07; use pa_macro.ml instead *)
 
+value _ =
+  prerr_endline "Warning: pa_ifdef is deprecated since OCaml 3.07. Use pa_macro instead."
+;
+
 type item_or_def 'a =
   [ SdStr of 'a | SdDef of string | SdUnd of string | SdNop ]
 ;
@@ -11,7 +15,7 @@ value list_remove x l =
   List.fold_right (fun e l -> if e = x then l else [e :: l]) l []
 ;
 
-value defined = ref ["OCAML_307"; "OCAML_305"; "CAMLP4_300"; "NEWSEQ"];
+value defined = ref ["OCAML_308"; "OCAML_307"; "OCAML_305"; "CAMLP4_300"; "NEWSEQ"];
 value define x = defined.val := [x :: defined.val];
 value undef x = defined.val := list_remove x defined.val;
 

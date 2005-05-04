@@ -23,12 +23,19 @@ let output_name = ref None
 
 let usage = "usage: ocamlex [options] sourcefile"
 
+let print_version_string () =
+  print_string "The Objective Caml lexer generator, version ";
+  print_string Sys.ocaml_version ; print_newline();
+  exit 0
+
 let specs =
   ["-ml", Arg.Set ml_automata,
     " Output code that does not use the Lexing module built-in automata interpreter";
    "-o", Arg.String (fun x -> output_name := Some x),
     " <file>  Set output file name to <file>";
    "-q", Arg.Set Common.quiet_mode, " Do not display informational messages";
+   "-v",  Arg.Unit print_version_string, " Print version and exit";
+   "-version",  Arg.Unit print_version_string, " Print version and exit";
   ] 
 
 let _ =

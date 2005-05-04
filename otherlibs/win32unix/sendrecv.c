@@ -71,7 +71,7 @@ CAMLprim value unix_recvfrom(value sock, value buff, value ofs, value len, value
       uerror("recvfrom", Nothing);
     }
     memmove (&Byte(buff, Long_val(ofs)), iobuf, ret);
-    adr = alloc_sockaddr(&addr, addr_len);
+    adr = alloc_sockaddr(&addr, addr_len, -1);
     res = alloc_small(2, 0);
     Field(res, 0) = Val_int(ret);
     Field(res, 1) = adr;

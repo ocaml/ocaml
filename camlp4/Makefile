@@ -136,10 +136,8 @@ bootstrap_sources:
 		 sed 's/# $$Id.*\$$/# $(TXTGEN)/' ../../$$i/Makefile | \
 		 sed 's-include ../config-include ../../config-g' | \
 		 sed 's-../boot-../../boot-g' > Makefile; \
-		 sed 's/# $$Id.*\$$/# $(TXTGEN)/' ../../$$i/Makefile.Mac | \
-		 sed 's-:boot-::boot-g' > Makefile.Mac; \
 		 cp ../../$$i/.depend . ; \
-		 cp ../../$$i/Makefile.Mac.depend .); \
+		); \
 	 done
 	@-for i in $(FDIRS); do \
 		(cd $$i; \

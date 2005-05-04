@@ -38,6 +38,7 @@ extern int caml_gr_x, caml_gr_y;            /* Coordinates of the current point 
 extern int caml_gr_color;             /* Current *CAML* drawing color (can be -1) */
 extern XFontStruct * caml_gr_font;    /* Current font */
 extern long caml_gr_selected_events;  /* Events we are interested in */
+extern Bool caml_gr_ignore_sigio;     /* Whether to consume events on sigio */
 
 extern Bool caml_gr_direct_rgb;
 extern int caml_gr_byte_order;

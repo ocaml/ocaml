@@ -44,7 +44,8 @@ These executable files are then run by the bytecode interpreter
 The 
 .BR ocamlc (1)
 command has a command-line interface similar to the one of
-most C compilers. It accepts several types of arguments:
+most C compilers. It accepts several types of arguments and processes them
+sequentially:
 
 Arguments ending in .mli are taken to be source files for
 compilation unit interfaces. Interfaces specify the names exported by
@@ -118,7 +119,7 @@ flag is set (see the description of
 .B \-custom
 below).
 
-Arguments ending in .o or.a are assumed to be C object files and
+Arguments ending in .o or .a are assumed to be C object files and
 libraries. They are passed to the C linker when linking in 
 .B \-custom
 mode (see the description of 

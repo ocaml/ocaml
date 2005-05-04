@@ -38,7 +38,7 @@ let (cmo_or_cma_opt, paths) =
     | _ :: q ->
         iter (f_opt, inc) q
   in
-  iter (None, [Odoc_config.custom_generators_path]) arg_list
+  iter (None, []) arg_list
 
 let _ = print_DEBUG "Fin analyse des arguments pour le dynamic load"
 
@@ -50,7 +50,7 @@ let get_real_filename name =
      name
    else
      (
-      let paths = Filename.current_dir_name :: paths in
+      let paths = Filename.current_dir_name :: paths @ [Odoc_config.custom_generators_path] in
       try
 	let d = List.find
 	    (fun d -> Sys.file_exists (Filename.concat d name))

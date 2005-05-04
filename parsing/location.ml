@@ -18,6 +18,16 @@ type t = { loc_start: position; loc_end: position; loc_ghost: bool };;
 
 let none = { loc_start = dummy_pos; loc_end = dummy_pos; loc_ghost = true };;
 
+let in_file name =
+  let loc = {
+    pos_fname = name;
+    pos_lnum = 1;
+    pos_bol = 0;
+    pos_cnum = -1;
+  } in
+  { loc_start = loc; loc_end = loc; loc_ghost = true }
+;;
+
 let curr lexbuf = {
   loc_start = lexbuf.lex_start_p;
   loc_end = lexbuf.lex_curr_p;
@@ -207,6 +217,9 @@ let get_pos_info pos =
 let print ppf loc =
   let (file, line, startchar) = get_pos_info loc.loc_start in
   let endchar = loc.loc_end.pos_cnum - loc.loc_start.pos_cnum + startchar in
+  let (startchar, endchar) =
+    if startchar < 0 then (0, 1) else (startchar, endchar)
+  in
   if file = "" then begin
     if highlight_locations ppf loc none then () else
       fprintf ppf "Characters %i-%i:@."

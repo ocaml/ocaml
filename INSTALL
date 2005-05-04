@@ -11,7 +11,7 @@ PREREQUISITES
   are all *required*.  The vendor-provided compiler, assembler and make
   have major problems.
 
-* Under MacOS X, before you begin, you must raise the limit on the
+* Under MacOS X up to version 10.2.8, you must raise the limit on the
   stack size with one of the following commands:
 
     limit stacksize 64M  # if your shell is zsh or tcsh
@@ -83,6 +83,23 @@ The "configure" script accepts the following options:
 
 -no-pthread
         Do not attempt to use POSIX threads.
+
+-with-pthread
+        Attempt to use POSIX threads (this is the default).
+
+-no-shared-libs
+        Do not configure support for shared libraries
+
+-dldefs <cpp flags>
+-dllibs <flags and libraries>
+        These options specify where to find the libraries for dynamic
+        linking (i.e. use of shared libraries).  "-dldefs" specifies
+        options for finding the header files, and "-dllibs" for finding
+        the C libraries.
+
+-binutils <directory>
+        This option specifies where to find the GNU binutils (objcopy
+        and nm) executables.
 
 -verbose
         Verbose output of the configuration tests. Use it if the outcome
@@ -245,9 +262,13 @@ COMMON PROBLEMS:
 * The Makefiles use the "include" directive, which is not supported by
 all versions of make. Use GNU make if this is a problem.
 
-* The Makefiles assume that make execute commands by calling /bin/sh. They
+* The Makefiles assume that make executes commands by calling /bin/sh. They
 won't work if /bin/csh is called instead. You may have to unset the SHELL
 environment variable, or set it to /bin/sh.
+
+* On some systems, localization causes build problems.  You should
+try to set the C locale (export LC_ALL=C) before compiling if you have
+strange errors while compiling OCaml.
 
 * gcc 2.7.2.1 generates incorrect code for the runtime system in -O mode
 on some Intel x86 platforms (e.g. Linux RedHat 4.1 and 4.2).

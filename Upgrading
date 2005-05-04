@@ -4,7 +4,7 @@
 I Installation
 
 Q1: When compiling the distribution, I am getting strange linking
-    errors in otherlibraries.
+    errors in "otherlibraries".
 
 A1: This is probably a problem with dynamic linking. You can disable
     it with ./configure -no-shared-libs. If you really want to use
@@ -91,7 +91,7 @@ A8: The new default mode is more flexible than the original commuting
     mode, so that you shouldn't see too much differences when using
     labeled libraries. Labels are only compulsory in partial
     applications (including the special case of function with an
-    unkwnown return type), or if you wrote some of them.
+    unknown return type), or if you wrote some of them.
 
     On the other hand, for definitions, labels present in the
     interface must also be present in the implementation.

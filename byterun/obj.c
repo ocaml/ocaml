@@ -66,11 +66,11 @@ CAMLprim value caml_obj_is_block(value arg)
 CAMLprim value caml_obj_tag(value arg)
 {
   if (Is_long (arg)){
-    return 1000;
-  }else if (Is_young (arg) || Is_in_heap (arg)){
+    return Val_int (1000);
+  }else if (Is_young (arg) || Is_in_heap (arg) || Is_atom (arg)){
     return Val_int(Tag_val(arg));
   }else{
-    return 1001;
+    return Val_int (1001);
   }
 }
 
@@ -104,7 +104,7 @@ CAMLprim value caml_obj_dup(value arg)
   tag_t tg;
 
   sz = Wosize_val(arg);
-  if (sz == 0) return arg;
+  if (sz == 0) CAMLreturn (arg);
   tg = Tag_val(arg);
   if (tg >= No_scan_tag) {
     res = caml_alloc(sz, tg);
@@ -169,15 +169,6 @@ CAMLprim value caml_obj_truncate (value v, value newsize)
    to the GC.
  */
 
-/* [lazy_is_forward] is obsolete.  Stays here to make bootstrapping
-   easier for patched versions of 3.07.  To be removed before 3.08. FIXME */
-/*
-CAMLxxprim value lazy_is_forward (value v)
-{
-  return Val_bool (Is_block (v) && Tag_val (v) == Forward_tag);
-}
-*/
-
 CAMLprim value caml_lazy_follow_forward (value v)
 {
   if (Is_block (v) && (Is_young (v) || Is_in_heap (v))
@@ -197,3 +188,59 @@ CAMLprim value caml_lazy_make_forward (value v)
   Modify (&Field (res, 0), v);
   CAMLreturn (res);
 }
+
+/* For camlinternalOO.ml
+   See also GETPUBMET in interp.c
+ */
+
+CAMLprim value caml_get_public_method (value obj, value tag)
+{
+  value meths = Field (obj, 0);
+  int li = 3, hi = Field(meths,0), mi;
+  while (li < hi) {
+    mi = ((li+hi) >> 1) | 1;
+    if (tag < Field(meths,mi)) hi = mi-2;
+    else li = mi;
+  }
+  return Field (meths, li-1);
+}
+
+/* these two functions might be useful to an hypothetical JIT */
+
+#ifdef CAML_JIT
+#ifdef NATIVE_CODE
+#define MARK 1
+#else
+#define MARK 0
+#endif
+value caml_cache_public_method (value meths, value tag, value *cache)
+{
+  int li = 3, hi = Field(meths,0), mi;
+  while (li < hi) {
+    mi = ((li+hi) >> 1) | 1;
+    if (tag < Field(meths,mi)) hi = mi-2;
+    else li = mi;
+  }
+  *cache = (li-3)*sizeof(value) + MARK;
+  return Field (meths, li-1);
+}
+
+value caml_cache_public_method2 (value *meths, value tag, value *cache)
+{
+  value ofs = *cache & meths[1];
+  if (*(value*)(((char*)(meths+3)) + ofs - MARK) == tag)
+    return *(value*)(((char*)(meths+2)) + ofs - MARK);
+  {
+    int li = 3, hi = meths[0], mi;
+    while (li < hi) {
+      mi = ((li+hi) >> 1) | 1;
+      if (tag < meths[mi]) hi = mi-2;
+      else li = mi;
+    }
+    *cache = (li-3)*sizeof(value) + MARK;
+    return meths[li-1];
+  }
+}
+#endif /*CAML_JIT*/
+
+/* eof $Id$ */

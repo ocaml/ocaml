@@ -1,9 +1,24 @@
+;(***********************************************************************)
+;(*                                                                     *)
+;(*                           Objective Caml                            *)
+;(*                                                                     *)
+;(*                Jacques Garrigue and Ian T Zimmerman                 *)
+;(*                                                                     *)
+;(*  Copyright 1997 Institut National de Recherche en Informatique et   *)
+;(*  en Automatique.  All rights reserved.  This file is distributed    *)
+;(*  under the terms of the GNU General Public License.                 *)
+;(*                                                                     *)
+;(***********************************************************************)
+
+;(* $Id$ *)
+
 ;; useful colors
 
 (cond
  ((x-display-color-p)
+  (require 'font-lock)
   (cond
-   ((not (memq 'font-lock-type-face (face-list)))
+   ((not (boundp 'font-lock-type-face))
     ; make the necessary faces
     (make-face 'Firebrick)
     (set-face-foreground 'Firebrick "Firebrick")

@@ -172,11 +172,20 @@ let rec parse_file pa getdir useast =
   in
   clear (); phr
 and use_file pa getdir useast s =
+  let (bolpos, lnum, fname) = !(Pcaml.position) in
   let clear =
     let v_input_file = !(Pcaml.input_file) in
-    fun () -> Pcaml.input_file := v_input_file
+    let (bolp, ln, fn) = !bolpos, !lnum, !fname in
+    fun () ->
+      Pcaml.input_file := v_input_file;
+      bolpos := bolp;
+      lnum := ln;
+      fname := fn
   in
   Pcaml.input_file := s;
+  bolpos := 0;
+  lnum := 1;
+  fname := s;
   try let r = parse_file pa getdir useast in clear (); r with
     e -> clear (); raise e
 ;;
@@ -297,7 +306,14 @@ let print_usage_list l =
 
 let usage ini_sl ext_sl =
   eprintf "\
-Usage: camlp4 [load-options] [--] [other-options]Load options:  -I directory  Add directory in search patch for object files.  -where        Print camlp4 library directory and exit.  -nolib        No automatic search for object files in library directory.  <object-file> Load this file in Camlp4 core.Other options:  <file>        Parse this file.\n";
+Usage: camlp4 [load-options] [--] [other-options]
+Load options:
+  -I directory  Add directory in search patch for object files.
+  -where        Print camlp4 library directory and exit.
+  -nolib        No automatic search for object files in library directory.
+  <object-file> Load this file in Camlp4 core.
+Other options:
+  <file>        Parse this file.\n";
   print_usage_list ini_sl;
   begin
     let rec loop =
@@ -317,7 +333,9 @@ Usage: camlp4 [load-options] [--] [other-options]Load options:  -I directory  Ad
 
 let warn_noassert () =
   eprintf "\
-camlp4 warning: option -noassert is obsoleteYou should give the -noassert option to the ocaml compiler instead."
+camlp4 warning: option -noassert is obsolete
+You should give the -noassert option to the ocaml compiler instead.
+"
 ;;
 
 let initial_spec_list =
@@ -398,7 +416,10 @@ let go () =
           Stdpp.Exc_located ((bp, ep), exc) -> print_location (bp, ep); exc
         | _ -> exc
       in
-      report_error exc; Format.close_box (); Format.print_newline (); exit 2
+      report_error exc;
+      Format.close_box ();
+      Format.print_newline ();
+      raise exc
 ;;
 
 Odyl_main.name := "camlp4";;

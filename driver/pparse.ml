@@ -23,7 +23,9 @@ let preprocess sourcefile =
     None -> sourcefile
   | Some pp ->
       let tmpfile = Filename.temp_file "camlpp" "" in
-      let comm = Printf.sprintf "%s %s > %s" pp sourcefile tmpfile in
+      let comm = Printf.sprintf "%s %s > %s"
+                                pp (Filename.quote sourcefile) tmpfile
+      in
       if Ccomp.command comm <> 0 then begin
         Misc.remove_file tmpfile;
         raise Error;

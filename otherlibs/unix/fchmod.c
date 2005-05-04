@@ -15,6 +15,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <fail.h>
 #include <mlvalues.h>
 #include "unixsupport.h"
 

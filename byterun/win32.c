@@ -83,17 +83,29 @@ char * caml_search_in_path(struct ext_table * path, char * name)
   
 CAMLexport char * caml_search_exe_in_path(char * name)
 {
-#define MAX_PATH_LENGTH 512
-  char * fullname = caml_stat_alloc(512);
-  char * filepart;
+  char * fullname, * filepart;
+  DWORD pathlen, retcode;
 
-  if (! SearchPath(NULL,              /* use system search path */
-                   name,
-                   ".exe",            /* add .exe extension if needed */
-                   MAX_PATH_LENGTH,   /* size of buffer */
-                   fullname,
-                   &filepart))
-    strcpy(fullname, name);
+  pathlen = strlen(name) + 1;
+  if (pathlen < 256) pathlen = 256;
+  while (1) {
+    fullname = stat_alloc(pathlen);
+    retcode = SearchPath(NULL,              /* use system search path */
+			 name,
+			 ".exe",            /* add .exe extension if needed */
+			 pathlen,
+			 fullname,
+			 &filepart);
+    if (retcode == 0) {
+      caml_gc_message(0x100, "%s not found in search path\n",
+		      (unsigned long) name);
+      strcpy(fullname, name);
+      break;
+    }
+    if (retcode < pathlen) break;
+    stat_free(fullname);
+    pathlen = retcode + 1;
+  }
   return fullname;
 }
 

@@ -201,7 +201,10 @@ external openfile : string -> open_flag list -> file_perm -> file_descr
 
 external close : file_descr -> unit = "unix_close"
 external unsafe_read : file_descr -> string -> int -> int -> int = "unix_read"
-external unsafe_write : file_descr -> string -> int -> int -> int = "unix_write"
+external unsafe_write : file_descr -> string -> int -> int -> int
+    = "unix_write"
+external unsafe_single_write : file_descr -> string -> int -> int -> int 
+    = "unix_single_write"
 
 let rec read fd buf ofs len =
   try
@@ -218,6 +221,14 @@ let rec write fd buf ofs len =
     else unsafe_write fd buf ofs len
   with Unix_error((EAGAIN | EWOULDBLOCK), _, _) ->
     wait_write fd; write fd buf ofs len
+
+let rec single_write fd buf ofs len =
+  try
+    if ofs < 0 || len < 0 || ofs > String.length buf - len
+    then invalid_arg "Unix.partial_write"
+    else unsafe_single_write fd buf ofs len
+  with Unix_error((EAGAIN | EWOULDBLOCK), _, _) ->
+    wait_write fd; single_write fd buf ofs len
 
 external in_channel_of_descr : file_descr -> in_channel
                              = "caml_ml_open_descriptor_in"
@@ -1007,21 +1018,25 @@ let find_proc_id fun_name proc =
   with Not_found ->
     raise(Unix_error(EBADF, fun_name, ""))
 
+let rec waitpid_non_intr pid =
+  try waitpid [] pid 
+  with Unix_error (EINTR, _, _) -> waitpid_non_intr pid
+
 let close_process_in inchan =
   let pid = find_proc_id "close_process_in" (Process_in inchan) in
   close_in inchan;
-  snd(waitpid [] pid)
+  snd(waitpid_non_intr pid)
 
 let close_process_out outchan =
   let pid = find_proc_id "close_process_out" (Process_out outchan) in
   close_out outchan;
-  snd(waitpid [] pid)
+  snd(waitpid_non_intr pid)
 
 let close_process (inchan, outchan) =
   let pid = find_proc_id "close_process" (Process(inchan, outchan)) in
   close_in inchan;
   begin try close_out outchan with Sys_error _ -> () end;
-  snd(waitpid [] pid)
+  snd(waitpid_non_intr pid)
 
 let close_process_full (inchan, outchan, errchan) =
   let pid =
@@ -1030,7 +1045,7 @@ let close_process_full (inchan, outchan, errchan) =
   close_in inchan;
   begin try close_out outchan with Sys_error _ -> () end;
   close_in errchan;
-  snd(waitpid [] pid)
+  snd(waitpid_non_intr pid)
 
 (* High-level network functions *)
 

@@ -34,6 +34,7 @@ type unit_infos =
     mutable ui_approx: value_approximation;     (* Approx of the structure *)
     mutable ui_curry_fun: int list;             (* Currying functions needed *)
     mutable ui_apply_fun: int list;             (* Apply functions needed *)
+    mutable ui_send_fun: int list;              (* Send functions needed *)
     mutable ui_force_link: bool }               (* Always linked *)
 
 (* Each .a library has a matching .cmxa file that provides the following
@@ -65,8 +66,9 @@ val set_global_approx: Clambda.value_approximation -> unit
 
 val need_curry_fun: int -> unit
 val need_apply_fun: int -> unit
-        (* Record the need of a currying (resp. application) function
-           with the given arity *)
+val need_send_fun: int -> unit
+        (* Record the need of a currying (resp. application,
+           message sending) function with the given arity *)
 
 val read_unit_info: string -> unit_infos * Digest.t
         (* Read infos and CRC from a [.cmx] file. *)

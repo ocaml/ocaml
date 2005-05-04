@@ -1,19 +1,196 @@
-Objective Caml 3.08:
---------------------
+Objective Caml 3.08.3:
+----------------------
 
-Ocamllex:
-- #line directives in the input file are now accepted
+New features:
+- support for ocamlopt -pack under Mac OS X (PR#2634, PR#3320)
+- ignore unknown warning options for forward and backward compatibility
+- runtime: export caml_compare_unordered (PR#3479)
+- camlp4: install argl.* files (PR#3439)
+- ocamldoc: add -man-section option
+- labltk: add the "solid" relief option (PR#3343)
+- compiler: ocamlc -i now prints variance annotations
 
-Ocamlyacc:
-- #line directives in the input file are now accepted
+Bug fixes:
+- typing: fix unsoundness in type declaration variance inference.
+    Type parameters which are constrained must now have an explicit variant
+    annotation, otherwise they are invariant. This is not backward
+    compatible, so this might break code which either uses subtyping or
+    uses the relaxed value restriction (i.e. was not typable before 3.07)
+- typing: erroneous partial match warning for polymorphic variants (PR#3424)
+- runtime: handle the case of an empty command line (PR#3409, PR#3444)
+- stdlib: make Sys.executable_name an absolute path in native code (PR#3303)
+- runtime: fix memory leak in finalise.c
+- runtime: auto-trigger compaction even if gc is called manually (PR#3392)
+- stdlib: fix segfault in Obj.dup on zero-sized values (PR#3406)
+- camlp4: correct parsing of the $ identifier (PR#3310, PR#3469)
+- windows (MS tools): use link /lib instead of lib (PR#3333)
+- windows (MS tools): change default install destination
+- autoconf: better checking of SSE2 instructions (PR#3329, PR#3330)
+- graphics: make close_graph close the X display as well as the window (PR#3312)
+- num: fix big_int_of_string (empty string) (PR#3483)
+- num: fix big bug on 64-bit architecture (PR#3299)
+- str: better documentation of string_match and string_partial_match (PR#3395)
+- unix: fix file descriptor leak in Unix.accept (PR#3423)
+- unix: miscellaneous clean-ups
+- unix: fix documentation of Unix.tm (PR#3341)
+- graphics: fix problem when allocating lots of images under Windows (PR#3433)
+- compiler: fix error message with -pack when .cmi is missing (PR#3028)
+- cygwin: fix problem with compilation of camlheader (PR#3485)
+- stdlib: Filename.basename doesn't return an empty string any more (PR#3451)
+- stdlib: better documentation of Open_excl flag (PR#3450)
+- ocamlcp: accept -thread option (PR#3511)
+- ocamldep: handle spaces in file names (PR#3370)
+- compiler: remove spurious warning in pattern-matching on variants (PR#3424)
+- windows: better handling of InterpreterPath registry entry (PR#3334, PR#3432)
+
+
+Objective Caml 3.08.2:
+----------------------
+
+Bug fixes:
+- runtime: memory leak when unmarshalling big data structures (PR#3247)
+- camlp4: incorrect line numbers in errors (PR#3188)
+- emacs: xemacs-specific code, wrong call to "sit-for"
+- ocamldoc: "Lexing: empty token" (PR#3173)
+- unix: problem with close_process_* (PR#3191)
+- unix: possible coredumps (PR#3252)
+- stdlib: wrong order in Set.fold (PR#3161)
+- ocamlcp: array out of bounds in profiled programs (PR#3267)
+- yacc: problem with polymorphic variant types for grammar entries (PR#3033)
+
+Misc:
+- export <caml/printexc.h> for caml_format_exception (PR#3080)
+- clean up caml_search_exe_in_path (maybe PR#3079)
+- camlp4: new function "make_lexer" for new-style locations
+- unix: added missing #includes (PR#3088)
+
+
+Objective Caml 3.08.1:
+----------------------
+
+Licence:
+- The emacs files are now under GPL
+- Slightly relaxed some conditions of the QPL
+
+Bug fixes:
+- ld.conf now generated at compile-time instead of install-time
+- fixed -pack on Windows XP (PR#2935)
+- fixed Obj.tag (PR#2946)
+- added support for multiple dlopen in Darwin
+- run ranlib when installing camlp4 libraries (PR#2944)
+- link camlp4opt with -linkall (PR#2949)
+- camlp4 parsing of patterns now conforms to normal parsing (PR#3015)
+- install camlp4 *.cmx files (PR#2955)
+- fixed handling of linefeed in string constants in camlp4 (PR#3074)
+- ocamldoc: fixed display of class parameters in HTML and LaTeX (PR#2994)
+- ocamldoc: fixed display of link to class page in html (PR#2994)
+- Windows toplevel GUI: assorted fixes (including PR#2932)
+
+Misc:
+- added -v option to ocamllex
+- ocamldoc: new -intf and -impl options supported (PR#3036)
+
+Objective Caml 3.08.0:
+----------------------
+
+(Changes that can break existing programs are marked with a "*"  )
+
+Language features:
+- Support for immediate objects, i.e. objects defined without going
+  through a class.  (Syntax is "object <fields and methods> end".)
+
+Type-checking:
+- When typing record construction and record patterns, can omit
+  the module qualification on all labels except one.  I.e.
+  { M.l1 = ...; l2 = ... } is interpreted as { M.l1 = ...; M.l2 = ... }
+
+Both compilers:
+- More compact compilation of classes.
+- Much more efficient handling of class definitions inside functors
+  or local modules.
+- Simpler representation for method tables. Objects can now be marshaled
+  between identical programs with the flag Marshal.Closures.
+- Improved error messages for objects and variants.
+- Improved printing of inferred module signatures (toplevel and ocamlc -i).
+  Recursion between type, class, class type and module definitions is now
+  correctly printed.
+- The -pack option now accepts compiled interfaces (.cmi files) in addition
+  to compiled implementations (.cmo or .cmx).
+* A compile-time error is signaled if an integer literal exceeds the
+  range of representable integers.
+- Fixed code generation error for "module rec" definitions.
+- The combination of options -c -o sets the name of the generated
+  .cmi / .cmo / .cmx files.
+
+Bytecode compiler:
+- Option -output-obj is now compatible with Dynlink and 
+  with embedded toplevels.
+
+Native-code compiler:
+- Division and modulus by zero correctly raise exception Division_by_zero
+  (instead of causing a hardware trap).
+- Improved compilation time for the register allocation phase.
+- The float constant -0.0 was incorrectly treated as +0.0 on some processors.
+- AMD64: fixed bugs in asm glue code for GC invocation and exception raising
+  from C.
+- IA64: fixed incorrect code generated for "expr mod 1".
+- PowerPC: minor performance tweaks for the G4 and G5 processors.
+
+Standard library:
+* Revised handling of NaN floats in polymorphic comparisons.
+  The polymorphic boolean-valued comparisons (=, <, >, etc) now treat
+  NaN as uncomparable, as specified by the IEEE standard.
+  The 3-valued comparison (compare) treats NaN as equal to itself
+  and smaller than all other floats.  As a consequence, x == y
+  no longer implies x = y but still implies compare x y = 0.
+* String-to-integer conversions now fail if the result overflows
+  the range of integers representable in the result type.
+* All array and string access functions now raise
+  Invalid_argument("index out of bounds") when a bounds check fails.
+  In earlier releases, different exceptions were raised
+  in bytecode and native-code.
+- Module Buffer: new functions Buffer.sub, Buffer.nth
+- Module Int32: new functions Int32.bits_of_float, Int32.float_of_bits.
+- Module Map: new functions is_empty, compare, equal.
+- Module Set: new function split.
+* Module Gc: in-order finalisation, new function finalise_release.
+
+Other libraries:
+- The Num library: complete reimplementation of the C/asm lowest
+  layer to work around potential licensing problems.
+  Improved speed on the PowerPC and AMD64 architectures.
+- The Graphics library: improved event handling under MS Windows.
+- The Str library: fixed bug in "split" functions with nullable regexps.
+- The Unix library:
+   . Added Unix.single_write.
+   . Added support for IPv6.
+   . Bug fixes in Unix.closedir.
+   . Allow thread switching on Unix.lockf.
 
 Runtime System:
-- All global identifiers are now prefixed with "caml" to avoid name clashes
-  with other libraries.
+* Name space depollution: all global C identifiers are now prefixed
+  with "caml" to avoid name clashes with other libraries.  This
+  includes the "external" primitives of the standard runtime.
 
-Mac OS 9 Port:
-- Removed all MacOS9-specific files.  The Mac OS 9 port is obsolete, it
-  was not updated since 3.05.
+Ports:
+- Windows ports: many improvements in the OCamlWin toplevel application
+  (history, save inputs to file, etc).  Contributed by Christopher A. Watford.
+- Native-code compilation supported for HPPA/Linux. Contributed by Guy Martin.
+- Removed support for MacOS9.  Mac OS 9 is obsolete and the port was not
+  updated since 3.05.
+- Removed ocamlopt support for HPPA/Nextstep and Power/AIX.
+
+Ocamllex:
+- #line directives in the input file are now accepted.
+- Added character set concatenation operator "cset1 # cset2".
+
+Ocamlyacc:
+- #line directives in the input file are now accepted.
+
+Camlp4:
+* Support for new-style locations (line numbers, not just character numbers).
+- See camlp4/CHANGES and camlp4/ICHANGES for more info.
+
 
 Objective Caml 3.07:
 --------------------
@@ -47,7 +224,7 @@ Type-checking:
   type of any subexpression in the source file.  Works even in the case
   of a type error (all the types computed up to the error are available).
   This new feature is also supported by ocamlbrowser.
-- Disable "method is overriden" warning when the method was explicitely
+- Disable "method is overriden" warning when the method was explicitly
   redefined as virtual beforehand (i.e. not through inheritance). Typing
   and semantics are unchanged.
 

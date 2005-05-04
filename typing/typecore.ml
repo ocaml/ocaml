@@ -342,6 +342,22 @@ let build_or_pat env loc lid =
                             pat_loc=gloc; pat_env=env; pat_type=ty})
           pat pats in
       rp { r with pat_loc = loc }
+let rec find_record_qual = function
+  | [] -> None
+  | (Longident.Ldot (modname, _), _) :: _ -> Some modname
+  | _ :: rest -> find_record_qual rest
+
+let type_label_a_list type_lid_a lid_a_list =
+  match find_record_qual lid_a_list with
+  | None -> List.map type_lid_a lid_a_list
+  | Some modname ->
+      List.map
+        (function
+         | (Longident.Lident id), sarg ->
+              type_lid_a (Longident.Ldot (modname, id), sarg)
+         | lid_a -> type_lid_a lid_a)
+        lid_a_list
+
 let rec type_pat env sp =
   match sp.ppat_desc with
     Ppat_any ->
@@ -449,7 +465,7 @@ let rec type_pat env sp =
         (label, arg)
       in
       rp {
-        pat_desc = Tpat_record(List.map type_label_pat lid_sp_list);
+        pat_desc = Tpat_record(type_label_a_list type_label_pat lid_sp_list);
         pat_loc = sp.ppat_loc;
         pat_type = ty;
         pat_env = env }
@@ -756,9 +772,10 @@ let type_format loc fmt =
   and ty_result = newvar ()
   and ty_aresult = newvar () in
   let ty_arrow gty ty = newty (Tarrow ("", instance gty, ty, Cok)) in
-  let bad_format i len =
-    raise (Error (loc, Bad_format (String.sub fmt i len))) in
-  let incomplete i = bad_format i (len - i) in
+
+  let invalid_fmt s = raise (Error (loc, Bad_format s)) in
+  let incomplete i = invalid_fmt (String.sub fmt i (len - i)) in
+  let invalid i j = invalid_fmt (String.sub fmt i (j - i + 1)) in
 
   let rec scan_format i =
     if i >= len then ty_aresult, ty_result else
@@ -820,8 +837,7 @@ let type_format loc fmt =
       | '%' | '!' -> scan_format (j + 1)
       | 's' | 'S' | '[' -> conversion j Predef.type_string
       | 'c' | 'C' -> conversion j Predef.type_char
-      | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' | 'N' ->
-          conversion j Predef.type_int
+      | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' | 'N' -> conversion j Predef.type_int
       | 'f' | 'e' | 'E' | 'g' | 'G' | 'F' -> conversion j Predef.type_float
       | 'B' | 'b' -> conversion j Predef.type_bool
       | 'a' ->
@@ -830,24 +846,24 @@ let type_format loc fmt =
           let ty_aresult, ty_result = conversion j ty_arg in
           ty_aresult, ty_arrow ty_a ty_result
       | 't' -> conversion j (ty_arrow ty_input ty_aresult)
-      | 'n' when j + 1 = len -> conversion j Predef.type_int
-      | 'l' | 'n' | 'L' as conv ->
+      | 'n' | 'l' when j + 1 = len -> conversion j Predef.type_int
+      | 'n' | 'l' | 'L' as c ->
           let j = j + 1 in
           if j >= len then incomplete i else begin
-            match fmt.[j] with
-            | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
-                let ty_arg =
-                 match conv with
-                 | 'l' -> Predef.type_int32
-                 | 'n' -> Predef.type_nativeint
-                 | _ -> Predef.type_int64 in
-                conversion j ty_arg
-            | c ->
-               if conv = 'l' || conv = 'n'
-               then conversion (j - 1) Predef.type_int
-               else bad_format i (j - i)
+          match fmt.[j] with
+          | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
+             let ty_arg =
+               match c with
+               | 'l' -> Predef.type_int32
+               | 'n' -> Predef.type_nativeint
+               | _ -> Predef.type_int64 in
+              conversion j ty_arg
+          | _ ->
+             if c = 'l' || c = 'n'
+             then conversion (j - 1) Predef.type_int
+             else invalid i (j - 1)
           end
-      | c -> bad_format i (j - i + 1) in
+      | c -> invalid i j in
     scan_width i j in
 
   let ty_ares, ty_res = scan_format 0 in
@@ -1156,7 +1172,7 @@ and do_type_exp ctx env sexp =
         if label.lbl_private = Private then
           raise(Error(sexp.pexp_loc, Private_type ty));
         (label, {arg with exp_type = instance arg.exp_type}) in
-      let lbl_exp_list = List.map type_label_exp lid_sexp_list in
+      let lbl_exp_list = type_label_a_list type_label_exp lid_sexp_list in
       let rec check_duplicates seen_pos lid_sexp lbl_exp =
         match (lid_sexp, lbl_exp) with
           ((lid, _) :: rem1, (lbl, _) :: rem2) ->

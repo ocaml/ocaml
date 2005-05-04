@@ -48,10 +48,11 @@ val chop_suffix : string -> string -> string
 
 val chop_extension : string -> string
 (** Return the given file name without its extension. The extension
-   is the shortest suffix starting with a period, [.xyz] for instance.
+   is the shortest suffix starting with a period and not including
+   a directory separator, [.xyz] for instance.
 
    Raise [Invalid_argument] if the given name does not contain
-   a period. *)
+   an extension. *)
 
 val basename : string -> string
 (** Split a file name into directory name / base file name.
@@ -59,7 +60,10 @@ val basename : string -> string
    which is equivalent to [name]. Moreover, after setting the
    current directory to [dirname name] (with {!Sys.chdir}),
    references to [basename name] (which is a relative file name)
-   designate the same file as [name] before the call to {!Sys.chdir}. *)
+   designate the same file as [name] before the call to {!Sys.chdir}.
+
+   The result is not specified if the argument is not a valid file name
+   (for example, under Unix if there is a NUL character in the string). *)
 
 val dirname : string -> string
 (** See {!Filename.basename}. *)

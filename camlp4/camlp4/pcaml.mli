@@ -37,6 +37,11 @@ value parse_implem :
        default, they use the grammars entries [implem] and [interf]
        defined below. *)
 
+value position: ref (ref int * ref int * ref string);
+   (** References holding respectively the character number of the beginning
+       of the current line, the current line number and the name of the file
+       being parsed. *)
+
 value gram : Grammar.g;
    (** Grammar variable of the OCaml language *)
 
@@ -76,9 +81,6 @@ value add_option : string -> Arg.spec -> string -> unit;
    (** Add an option to the command line options. *)
 value no_constructors_arity : ref bool;
    (** [True]: dont generate constructor arity. *)
-(*value no_assert : ref bool;
-   (** [True]: dont generate assertion checks. *)
-*)
 
 value sync : ref (Stream.t char -> unit);
 
@@ -88,10 +90,22 @@ value handle_expr_locate : MLast.loc -> (Lexing.position * string) -> MLast.expr
 value handle_patt_quotation : MLast.loc -> (string * string) -> MLast.patt;
 value handle_patt_locate : MLast.loc -> (Lexing.position * string) -> MLast.patt;
 
-value expr_reloc :
-  (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.expr -> MLast.expr;
-value patt_reloc :
-  (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.patt -> MLast.patt;
+(** Relocation functions for abstract syntax trees *)
+value expr_reloc :           (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.expr -> MLast.expr;
+value patt_reloc :           (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.patt -> MLast.patt;
+
+value ctyp_reloc :           (MLast.loc -> MLast.loc) -> 'a -> MLast.ctyp -> MLast.ctyp;
+value row_field_reloc :      (MLast.loc -> MLast.loc) -> 'a -> MLast.row_field -> MLast.row_field;
+value class_infos_reloc :    ((MLast.loc -> MLast.loc) -> 'a -> 'b -> 'c) ->  (MLast.loc -> MLast.loc) -> 'a -> MLast.class_infos 'b -> MLast.class_infos 'c;
+value module_type_reloc :    (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.module_type -> MLast.module_type;
+value sig_item_reloc :       (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.sig_item -> MLast.sig_item;
+value with_constr_reloc :    (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.with_constr -> MLast.with_constr;
+value module_expr_reloc :    (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.module_expr -> MLast.module_expr;
+value str_item_reloc :       (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.str_item -> MLast.str_item;
+value class_type_reloc :     (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.class_type -> MLast.class_type;
+value class_sig_item_reloc : (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.class_sig_item -> MLast.class_sig_item;
+value class_expr_reloc :     (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.class_expr -> MLast.class_expr;
+value class_str_item_reloc : (MLast.loc -> MLast.loc) -> Lexing.position -> MLast.class_str_item -> MLast.class_str_item;
 
 (** To possibly rename identifiers; parsers may call this function
     when generating their identifiers; default = identity *)

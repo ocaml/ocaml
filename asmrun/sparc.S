@@ -382,6 +382,7 @@ Caml_callback3_exn:
         .data
 #endif
         .global Caml_system__frametable
+        .align  4               /* required for gas? */
 Caml_system__frametable:
         .word   1               /* one descriptor */
         .word   L109            /* return address into callback */

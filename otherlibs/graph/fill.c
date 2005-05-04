@@ -26,10 +26,10 @@ value caml_gr_fill_rect(value vx, value vy, value vw, value vh)
   caml_gr_check_open();
   if(caml_gr_remember_modeflag)
     XFillRectangle(caml_gr_display, caml_gr_bstore.win, caml_gr_bstore.gc,
-                   x, Bcvt(y) - h + 1, w, h);
+                   x, Bcvt(y) - h, w + 1, h + 1);
   if(caml_gr_display_modeflag) {
     XFillRectangle(caml_gr_display, caml_gr_window.win, caml_gr_window.gc,
-           x, Wcvt(y) - h + 1, w, h);
+           x, Wcvt(y) - h, w + 1, h + 1);
     XFlush(caml_gr_display);
   }
   return Val_unit;

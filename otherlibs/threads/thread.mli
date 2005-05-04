@@ -70,7 +70,7 @@ val wait_write : Unix.file_descr -> unit
    on the given Unix file descriptor. *)
 
 val wait_timed_read : Unix.file_descr -> float -> bool
-(** See {!Thread.wait_timed_read}.*)
+(** See {!Thread.wait_timed_write}.*)
 
 val wait_timed_write : Unix.file_descr -> float -> bool
 (** Same as {!Thread.wait_read} and {!Thread.wait_write}, but wait for at most

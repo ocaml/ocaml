@@ -1,4 +1,4 @@
-        Objective Caml version 3.07+18 (2004-05-17)
+        Objective Caml version 3.07+19 (2004-05-26)
 
 #   * * *       #   type 'a t = { t : 'a; }
 # type 'a fold = { fold : 'b. f:('b -> 'a -> 'b) -> init:'b -> 'b; }
@@ -329,9 +329,22 @@ Only the second object type has a method n
 This object is expected to have type < n : int > but has actually type
   < m : 'a >
 Only the first object type has a method n
-#         Characters 80-81:
+#         Characters 66-124:
+This object is expected to have type < x : int; .. > but has actually type
+  < x : int >
+Self type cannot be unified with a closed object type
+#         val o : < x : int > = <obj>
+#         Characters 76-77:
 This expression has type < m : 'b. 'b * < m : 'b * 'a > > as 'a
 but is here used with type
   < m : 'b. 'b * (< m : 'b * < m : 'd. 'd * 'c > > as 'c) >
+Types for method m are incompatible
+#         Characters 176-177:
+This expression has type foo' = < m : 'a. 'a * 'a foo >
+but is here used with type bar' = < m : 'a. 'a * 'a bar >
+Type 'a foo = < m : 'a * 'a foo > is not compatible with type
+  'a bar = < m : 'a * < m : 'b. 'b * 'a bar > > 
+Type 'a foo = < m : 'a * 'a foo > is not compatible with type
+  < m : 'b. 'b * 'a bar > 
 Types for method m are incompatible
 # 

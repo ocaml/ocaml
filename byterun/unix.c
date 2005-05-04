@@ -170,16 +170,57 @@ char * caml_search_dll_in_path(struct ext_table * path, char * name)
 
 static char *dlerror_string = "No error";
 
+/* Need to emulate dlopen behaviour by caching open libraries */
+typedef struct bundle_entry {
+  struct bundle_entry *next;
+  char *name;
+  void *handle;
+  int count;
+} entry_t;
+
+entry_t bundle_list = {NULL,NULL,NULL,0};
+
+entry_t *caml_lookup_bundle(const char *name)
+{
+  entry_t *current = bundle_list.next, *last = &bundle_list;
+
+  while (current !=NULL) {
+    if (!strcmp(name,current->name))
+      return current;
+    last = current;
+    current = current->next;
+  }
+  current = (entry_t*) malloc(sizeof(entry_t)+strlen(name)+1);
+  current->name = (char*)(current+1);
+  strcpy(current->name, name);
+  current->count = 0;
+  current->next = NULL;
+  last->next = current;
+  return current;
+}
+
 void * caml_dlopen(char * libname)
 {
   NSObjectFileImage image;
-  NSObjectFileImageReturnCode retCode =
-    NSCreateObjectFileImageFromFile(libname, &image);
+  entry_t *bentry = caml_lookup_bundle(libname);
+  NSObjectFileImageReturnCode retCode;
+  void *result = NULL;
+
+  if (bentry->count > 0)
+    return bentry->handle;
+
+  retCode = NSCreateObjectFileImageFromFile(libname, &image);
   switch (retCode) {
   case NSObjectFileImageSuccess:
     dlerror_string = NULL;
-    return (void*)NSLinkModule(image, libname, NSLINKMODULE_OPTION_BINDNOW
-			       | NSLINKMODULE_OPTION_RETURN_ON_ERROR);
+    result = (void*)NSLinkModule(image, libname, NSLINKMODULE_OPTION_BINDNOW
+                                 | NSLINKMODULE_OPTION_RETURN_ON_ERROR);
+    if (result != NULL) {
+      bentry->count++;
+      bentry->handle = result;
+    }
+    else NSDestroyObjectFileImage(image);
+    break;
   case NSObjectFileImageAccess:
     dlerror_string = "cannot access this bundle"; break;
   case NSObjectFileImageArch:
@@ -190,13 +231,25 @@ void * caml_dlopen(char * libname)
   default:
     dlerror_string = "could not read object file"; break;
   }
-  return NULL;
+  return result;
 }
 
 void caml_dlclose(void * handle)
 {
+  entry_t *current = bundle_list.next;
+  int close = 1;
+  
   dlerror_string = NULL;
-  NSUnLinkModule((NSModule)handle, NSUNLINKMODULE_OPTION_NONE);
+  while (current != NULL) {
+    if (current->handle == handle) {
+      current->count--;
+      close = (current->count == 0);
+      break;
+    }
+    current = current->next;
+  }
+  if (close)
+    NSUnLinkModule((NSModule)handle, NSUNLINKMODULE_OPTION_NONE);
 }
 
 void * caml_dlsym(void * handle, char * name)

@@ -267,14 +267,27 @@ let test11 () =
      prenom = "Daniel" && nom = "de Rauglaudre" && poids = 66)
 ;;
 
+(* Empty string (end of input) testing. *)
 let test110 () =
  sscanf "" " " (fun x -> x) "" = "" &&
- sscanf "" "%[^\n]" (fun x -> x) = "" &&
- sscanf "" "%[^\n] " (fun x -> x) = "";;
+ sscanf "" "%s" (fun x -> x = "") &&
+ sscanf "" "%s%s" (fun x y -> x = "" && y = "") &&
+ sscanf "" "%s " (fun x -> x = "") &&
+ sscanf "" " %s" (fun x -> x = "") &&
+ sscanf "" " %s " (fun x -> x = "") &&
+ sscanf "" "%[^\n]" (fun x -> x = "") &&
+ sscanf "" "%[^\n] " (fun x -> x = "") &&
+ sscanf " " "%s" (fun x -> x = "") &&
+ sscanf " " "%s%s" (fun x y -> x = "" && y = "") &&
+ sscanf " " " %s " (fun x -> x = "") &&
+ sscanf " " " %s %s" (fun x y -> x = "" && x = y) &&
+ sscanf " " " %s@ %s" (fun x y -> x = "" && x = y) &&
+ sscanf " poi !" " %s@ %s@." (fun x y -> x = "" && y = "poi!") &&
+ sscanf " poi !" " %s@ %s@." (fun x y -> x = "poi" && y = "!") &&
+ sscanf " poi !" "%s@ %s@." (fun x y -> x = "" && y = "poi !");;
 
 let test111 () =
- try (sscanf "" "%[^\n]@\n") (fun x -> false) with
- | End_of_file -> true;;
+ sscanf "" "%[^\n]@\n" (fun s -> s = "");;
 
 test (test11 () && test110 () && test111 ());;
 
@@ -788,6 +801,22 @@ let test42 () =
    s1 = "def" && s2 = "cbaa" && s3 = "ghi");;
 
 test (test42 ());;
+
+let test43 () =
+ let s = "defcbaaghi" in
+ let ib = Scanning.from_string s in
+ bscanf ib "%s@\t" (fun s ->
+   s = "defcbaaghi");;
+
+test (test43 ());;
+
+let test50 () =
+ let s = "12.2" in
+ let ib = Scanning.from_string s in
+ bscanf ib "%[0-9].%[0-9]%s%!" (fun s1 s2 s3 ->
+   s1 = "12" && s2 = "2" && s3 = "");;
+
+test (test50 ());;
 
 (*******
 

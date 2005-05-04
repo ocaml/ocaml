@@ -15,6 +15,7 @@
 
 #include <mlvalues.h>
 #include <alloc.h>
+#include <fail.h>
 #include "unixsupport.h"
 
 #ifdef HAS_SOCKETS
@@ -85,8 +86,8 @@ static int sockopt_optint[] = { SO_LINGER };
 
 static int sockopt_float[] = { SO_RCVTIMEO, SO_SNDTIMEO };
 
-CAMLprim value getsockopt_int(int *sockopt, value socket,
-                              int level, value option)
+CAMLexport value getsockopt_int(int *sockopt, value socket,
+                                int level, value option)
 {
   int optval;
   socklen_param_type optsize;
@@ -98,8 +99,8 @@ CAMLprim value getsockopt_int(int *sockopt, value socket,
   return Val_int(optval);
 }
 
-CAMLprim value setsockopt_int(int *sockopt, value socket, int level,
-                              value option, value status)
+CAMLexport value setsockopt_int(int *sockopt, value socket, int level,
+                                value option, value status)
 {
   int optval = Int_val(status);
   if (setsockopt(Int_val(socket), level, sockopt[Int_val(option)],
@@ -127,8 +128,8 @@ CAMLprim value unix_setsockopt_int(value socket, value option, value status)
  return setsockopt_int(sockopt_int, socket, SOL_SOCKET, option, status);
 }
 
-CAMLprim value getsockopt_optint(int *sockopt, value socket,
-                                 int level, value option)
+CAMLexport value getsockopt_optint(int *sockopt, value socket,
+                                   int level, value option)
 {
   struct linger optval;
   socklen_param_type optsize;
@@ -145,8 +146,8 @@ CAMLprim value getsockopt_optint(int *sockopt, value socket,
   return res;
 }
 
-CAMLprim value setsockopt_optint(int *sockopt, value socket, int level,
-                                 value option, value status)
+CAMLexport value setsockopt_optint(int *sockopt, value socket, int level,
+                                   value option, value status)
 {
   struct linger optval;
 
@@ -169,8 +170,8 @@ CAMLprim value unix_setsockopt_optint(value socket, value option, value status)
   return setsockopt_optint(sockopt_optint, socket, SOL_SOCKET, option, status);
 }
 
-CAMLprim value getsockopt_float(int *sockopt, value socket,
-                                int level, value option)
+CAMLexport value getsockopt_float(int *sockopt, value socket,
+                                  int level, value option)
 {
   struct timeval tv;
   socklen_param_type optsize;
@@ -182,8 +183,8 @@ CAMLprim value getsockopt_float(int *sockopt, value socket,
   return copy_double((double) tv.tv_sec + (double) tv.tv_usec / 1e6);
 }
 
-CAMLprim value setsockopt_float(int *sockopt, value socket, int level,
-                                value option, value status)
+CAMLexport value setsockopt_float(int *sockopt, value socket, int level,
+                                  value option, value status)
 {
   struct timeval tv;
   double tv_f;

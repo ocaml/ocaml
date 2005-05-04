@@ -550,7 +550,7 @@ type open_flag =
   | Open_append      (** open for appending: always write at end of file. *)
   | Open_creat       (** create the file if it does not exist. *)
   | Open_trunc       (** empty the file if it already exists. *)
-  | Open_excl        (** fail if the file already exists. *)
+  | Open_excl        (** fail if Open_creat and the file already exists. *)
   | Open_binary      (** open in binary mode (no conversion). *)
   | Open_text        (** open in text mode (may perform conversions). *)
   | Open_nonblock    (** open in non-blocking mode. *)
@@ -625,12 +625,14 @@ val seek_out : out_channel -> int -> unit
    the behavior is unspecified. *)
 
 val pos_out : out_channel -> int
-(** Return the current writing position for the given channel. *)
+(** Return the current writing position for the given channel.  Does
+    not work on channels opened with the [Open_append] flag (returns
+    unspecified results). *)
 
 val out_channel_length : out_channel -> int
-(** Return the total length (number of characters) of the
-   given channel.  This works only for regular files. On files of
-   other kinds, the result is meaningless. *)
+(** Return the size (number of characters) of the regular file
+   on which the given channel is opened.  If the channel is opened
+    on a file that is not a regular file, the result is meaningless. *)
 
 val close_out : out_channel -> unit
 (** Close the given channel, flushing all buffered write operations.
@@ -736,9 +738,12 @@ val pos_in : in_channel -> int
 (** Return the current reading position for the given channel. *)
 
 val in_channel_length : in_channel -> int
-(** Return the total length (number of characters) of the
-   given channel. This works only for regular files. On files of
-   other kinds, the result is meaningless. *)
+(** Return the size (number of characters) of the regular file
+    on which the given channel is opened.  If the channel is opened
+    on a file that is not a regular file, the result is meaningless.
+    The returned size does not take into account the end-of-line
+    translations that can be performed when reading from a channel
+    opened in text mode. *)
 
 val close_in : in_channel -> unit
 (** Close the given channel.  Input functions raise a [Sys_error]
@@ -817,9 +822,9 @@ type ('a, 'b, 'c) format = ('a, 'b, 'c, 'c) format4
     and ['b] is the type of the first argument given to
     [%a] and [%t] printing functions. *)
 
-external string_of_format :
-  ('a, 'b, 'c, 'd) format4 -> string = "%identity"
+val string_of_format : ('a, 'b, 'c, 'd) format4 -> string
 (** Converts a format string into a string. *)
+
 external format_of_string :
   ('a, 'b, 'c, 'd) format4 -> ('a, 'b, 'c, 'd) format4 = "%identity"
 (** [format_of_string s] returns a format string read from the string

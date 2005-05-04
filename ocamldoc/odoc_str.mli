@@ -34,6 +34,10 @@ val string_of_class_type_param_list : Types.type_expr list -> string
 (** @return a string to describe the given type. *)
 val string_of_type : Odoc_type.t_type -> string
 
+(** @return a string to display the parameters of the given class,
+   in the same form as the compiler. *)
+val string_of_class_params : Odoc_class.t_class -> string
+
 (** @return a string to describe the given exception. *)
 val string_of_exception : Odoc_exception.t_exception -> string
 

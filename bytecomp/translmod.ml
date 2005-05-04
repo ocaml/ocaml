@@ -138,21 +138,21 @@ let init_value modl =
                     [Lvar undef_function_id])
           | _ -> raise Not_found in
         init_v :: init_value_struct env rem
-    | Tsig_type(id, tdecl) :: rem ->
+    | Tsig_type(id, tdecl, _) :: rem ->
         init_value_struct (Env.add_type id tdecl env) rem
     | Tsig_exception(id, edecl) :: rem ->
         transl_exception
           id (Some Predef.path_undefined_recursive_module) edecl ::
         init_value_struct env rem
-    | Tsig_module(id, mty) :: rem ->
+    | Tsig_module(id, mty, _) :: rem ->
         init_value_mod env mty ::
         init_value_struct (Env.add_module id mty env) rem
     | Tsig_modtype(id, minfo) :: rem ->
         init_value_struct (Env.add_modtype id minfo env) rem
-    | Tsig_class(id, cdecl) :: rem ->
+    | Tsig_class(id, cdecl, _) :: rem ->
         Translclass.dummy_class (Lvar undef_function_id) ::
         init_value_struct env rem
-    | Tsig_cltype(id, ctyp) :: rem ->
+    | Tsig_cltype(id, ctyp, _) :: rem ->
         init_value_struct env rem
   in
   try
@@ -568,7 +568,9 @@ let transl_store_implementation module_name (str, restr) =
   primitive_declarations := [];
   let module_id = Ident.create_persistent module_name in
   let (map, prims, size) = build_ident_map restr (defined_idents str) in
-  (size, transl_label_init (transl_store_structure module_id map prims str))
+  transl_store_label_init module_id size
+    (transl_store_structure module_id map prims) str
+  (*size, transl_label_init (transl_store_structure module_id map prims str)*)
 
 (* Compile a toplevel phrase *)
 

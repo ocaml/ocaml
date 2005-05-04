@@ -47,10 +47,10 @@ let initial_env () =
 
 (* Compile a .mli file *)
 
-let interface ppf sourcefile =
+let interface ppf sourcefile outputprefix =
   init_path();
-  let prefixname = Misc.chop_extension_if_any sourcefile in
-  let modulename = String.capitalize(Filename.basename prefixname) in
+  let modulename =
+    String.capitalize(Filename.basename(chop_extension_if_any sourcefile)) in
   let inputfile = Pparse.preprocess sourcefile in
   try
     let ast =
@@ -62,7 +62,7 @@ let interface ppf sourcefile =
                                    (Typemod.simplify_signature sg);
     Warnings.check_fatal ();
     if not !Clflags.print_types then
-      Env.save_signature sg modulename (prefixname ^ ".cmi");
+      Env.save_signature sg modulename (outputprefix ^ ".cmi");
     Pparse.remove_preprocessed inputfile
   with e ->
     Pparse.remove_preprocessed_if_ast inputfile;
@@ -77,10 +77,10 @@ let print_if ppf flag printer arg =
 let (++) x f = f x
 let (+++) (x, y) f = (x, f y)
 
-let implementation ppf sourcefile =
+let implementation ppf sourcefile outputprefix =
   init_path();
-  let prefixname = Misc.chop_extension_if_any sourcefile in
-  let modulename = String.capitalize(Filename.basename prefixname) in
+  let modulename =
+    String.capitalize(Filename.basename(chop_extension_if_any sourcefile)) in
   let inputfile = Pparse.preprocess sourcefile in
   let env = initial_env() in
   Compilenv.reset modulename;
@@ -88,17 +88,17 @@ let implementation ppf sourcefile =
     if !Clflags.print_types then ignore(
       Pparse.file ppf inputfile Parse.implementation ast_impl_magic_number
       ++ print_if ppf Clflags.dump_parsetree Printast.implementation
-      ++ Typemod.type_implementation sourcefile prefixname modulename env)
+      ++ Typemod.type_implementation sourcefile outputprefix modulename env)
     else begin
       Pparse.file ppf inputfile Parse.implementation ast_impl_magic_number
       ++ print_if ppf Clflags.dump_parsetree Printast.implementation
-      ++ Typemod.type_implementation sourcefile prefixname modulename env
+      ++ Typemod.type_implementation sourcefile outputprefix modulename env
       ++ Translmod.transl_store_implementation modulename
       +++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
       +++ Simplif.simplify_lambda
       +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
-      ++ Asmgen.compile_implementation prefixname ppf;
-      Compilenv.save_unit_info (prefixname ^ ".cmx");
+      ++ Asmgen.compile_implementation outputprefix ppf;
+      Compilenv.save_unit_info (outputprefix ^ ".cmx");
     end;
     Warnings.check_fatal ();
     Pparse.remove_preprocessed inputfile
