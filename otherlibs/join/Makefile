@@ -21,7 +21,7 @@ CAMLC=$(RUNTIME) $(COMPILER) $(INCLUDES)
 CAMLOPT=$(RUNTIME) $(OPTCOMPILER) $(INCLUDES)
 MKLIB=$(RUNTIME) ../../tools/ocamlmklib
 CC=$(BYTECC) -g
-CFLAGS=  -I../../byterun -O $(BYTECCCOMPOPTS)
+CFLAGS=  -I../../byterun -fPIC -O $(BYTECCCOMPOPTS)
 
 MLOBJS=weakarray.cmo  weakset.cmo  whashtbl.cmo jprims.cmo
 OBJS=weakarray_c.o  weakset_c.o
