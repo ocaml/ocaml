@@ -350,8 +350,10 @@ value next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
         do { bolpos.val := bol; incr lnum; char bp (store len '\013') s}
     | [: `c; s :] -> char bp (store len c) s
     | [: :] ep -> err (mkloc (bp, ep)) "char not terminated" ]
-  and dollar bp len =
-    parser
+  and dollar bp len s =
+    if no_quotations.val then
+      ("", get_buff (ident2 (store 0 '$') s)) 
+    else match s with parser
     [ [: `'$' :] -> ("ANTIQUOT", ":" ^ get_buff len)
     | [: `('a'..'z' | 'A'..'Z' as c); s :] -> antiquot bp (store len c) s
     | [: `('0'..'9' as c); s :] -> maybe_locate bp (store len c) s

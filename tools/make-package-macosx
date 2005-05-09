@@ -79,7 +79,7 @@ cat >Info.plist <<EOF
         <key>IFPkgFlagAuthorizationAction</key>
         <string>AdminAuthorization</string>
         <key>IFPkgFlagDefaultLocation</key>
-        <string>/</string>
+        <string>/usr/local</string>
         <key>IFPkgFlagInstallFat</key>
         <false/>
         <key>IFPkgFlagIsRequired</key>
@@ -107,6 +107,9 @@ You need Mac OS X 10.3 (panther), with X11 and the
 XCode tools installed.
 EOF
 
+chmod -R g-w root
+sudo chown -R root:admin root
+
 /Developer/Applications/Utilities/PackageMaker.app/Contents/MacOS/PackageMaker \
   -build -p "`pwd`/ocaml.pkg" -f "`pwd`/root" -i "`pwd`/Info.plist" \
   -d "`pwd`/Description.plist" -r "`pwd`/resources"
@@ -131,4 +134,4 @@ open "/Volumes/Objective Caml"
 hdiutil detach $name
 
 rm -rf "ocaml-${VERSION}.dmg"
-hdiutil convert ocaml-rw.dmg -format UDZO -o "ocaml${VERSION}.dmg"
+hdiutil convert ocaml-rw.dmg -format UDZO -o "ocaml-${VERSION}.dmg"

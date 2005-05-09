@@ -75,36 +75,39 @@ void caml_final_update (void)
     if (Is_white_val (final_table[i].val)) ++ todo_count;
   }
 
-  alloc_to_do (todo_count);
-  j = k = 0;
-  for (i = 0; i < old; i++){
-  again:
-    Assert (Is_block (final_table[i].val));
-    Assert (Is_in_heap (final_table[i].val));
-    if (Is_white_val (final_table[i].val)){
-      if (Tag_val (final_table[i].val) == Forward_tag){
-        value fv = Forward_val (final_table[i].val);
-        if (Is_block (fv) && (Is_young (fv) || Is_in_heap (fv))
-            && (Tag_val (fv) == Forward_tag || Tag_val (fv) == Lazy_tag
-                || Tag_val (fv) == Double_tag)){
-          /* Do not short-circuit the pointer. */
-        }else{
-          final_table[i].val = fv;
-          if (Is_block (final_table[i].val) && Is_in_heap (final_table[i].val)){
-            goto again;
+  if (todo_count > 0){
+    alloc_to_do (todo_count);
+    j = k = 0;
+    for (i = 0; i < old; i++){
+    again:
+      Assert (Is_block (final_table[i].val));
+      Assert (Is_in_heap (final_table[i].val));
+      if (Is_white_val (final_table[i].val)){
+        if (Tag_val (final_table[i].val) == Forward_tag){
+          value fv = Forward_val (final_table[i].val);
+          if (Is_block (fv) && (Is_young (fv) || Is_in_heap (fv))
+              && (Tag_val (fv) == Forward_tag || Tag_val (fv) == Lazy_tag
+                  || Tag_val (fv) == Double_tag)){
+            /* Do not short-circuit the pointer. */
+          }else{
+            final_table[i].val = fv;
+            if (Is_block (final_table[i].val)
+                && Is_in_heap (final_table[i].val)){
+              goto again;
+            }
           }
         }
+        to_do_tl->item[k++] = final_table[i];
+      }else{
+        final_table[j++] = final_table[i];
       }
-      to_do_tl->item[k++] = final_table[i];
-    }else{
-      final_table[j++] = final_table[i];
     }
-  }
-  old = young = j;
-  to_do_tl->size = k;
-  for (i = 0; i < k; i++){
-    CAMLassert (Is_white_val (to_do_tl->item[i].val));
-    caml_darken (to_do_tl->item[i].val, NULL);
+    young = old = j;
+    to_do_tl->size = k;
+    for (i = 0; i < k; i++){
+      CAMLassert (Is_white_val (to_do_tl->item[i].val));
+      caml_darken (to_do_tl->item[i].val, NULL);
+    }
   }
 }
 
@@ -123,7 +126,9 @@ void caml_final_do_calls (void)
     caml_gc_message (0x80, "Calling finalisation functions.\n", 0);
     while (1){
       while (to_do_hd != NULL && to_do_hd->size == 0){
-        to_do_hd = to_do_hd->next;
+        struct to_do *next_hd = to_do_hd->next;
+        free (to_do_hd);
+        to_do_hd = next_hd;
         if (to_do_hd == NULL) to_do_tl = NULL;
       }
       if (to_do_hd == NULL) break;
@@ -204,7 +209,6 @@ CAMLprim value caml_final_register (value f, value v)
   if (!(Is_block (v) && (Is_in_heap (v) || Is_young (v)))){
     caml_invalid_argument ("Gc.finalise");
   }
-
   Assert (old <= young);
   
   if (young >= size){

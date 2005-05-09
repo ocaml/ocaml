@@ -60,7 +60,10 @@ val basename : string -> string
    which is equivalent to [name]. Moreover, after setting the
    current directory to [dirname name] (with {!Sys.chdir}),
    references to [basename name] (which is a relative file name)
-   designate the same file as [name] before the call to {!Sys.chdir}. *)
+   designate the same file as [name] before the call to {!Sys.chdir}.
+
+   The result is not specified if the argument is not a valid file name
+   (for example, under Unix if there is a NUL character in the string). *)
 
 val dirname : string -> string
 (** See {!Filename.basename}. *)

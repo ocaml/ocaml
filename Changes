@@ -1,3 +1,49 @@
+Objective Caml 3.08.3:
+----------------------
+
+New features:
+- support for ocamlopt -pack under Mac OS X (PR#2634, PR#3320)
+- ignore unknown warning options for forward and backward compatibility
+- runtime: export caml_compare_unordered (PR#3479)
+- camlp4: install argl.* files (PR#3439)
+- ocamldoc: add -man-section option
+- labltk: add the "solid" relief option (PR#3343)
+- compiler: ocamlc -i now prints variance annotations
+
+Bug fixes:
+- typing: fix unsoundness in type declaration variance inference.
+    Type parameters which are constrained must now have an explicit variant
+    annotation, otherwise they are invariant. This is not backward
+    compatible, so this might break code which either uses subtyping or
+    uses the relaxed value restriction (i.e. was not typable before 3.07)
+- typing: erroneous partial match warning for polymorphic variants (PR#3424)
+- runtime: handle the case of an empty command line (PR#3409, PR#3444)
+- stdlib: make Sys.executable_name an absolute path in native code (PR#3303)
+- runtime: fix memory leak in finalise.c
+- runtime: auto-trigger compaction even if gc is called manually (PR#3392)
+- stdlib: fix segfault in Obj.dup on zero-sized values (PR#3406)
+- camlp4: correct parsing of the $ identifier (PR#3310, PR#3469)
+- windows (MS tools): use link /lib instead of lib (PR#3333)
+- windows (MS tools): change default install destination
+- autoconf: better checking of SSE2 instructions (PR#3329, PR#3330)
+- graphics: make close_graph close the X display as well as the window (PR#3312)
+- num: fix big_int_of_string (empty string) (PR#3483)
+- num: fix big bug on 64-bit architecture (PR#3299)
+- str: better documentation of string_match and string_partial_match (PR#3395)
+- unix: fix file descriptor leak in Unix.accept (PR#3423)
+- unix: miscellaneous clean-ups
+- unix: fix documentation of Unix.tm (PR#3341)
+- graphics: fix problem when allocating lots of images under Windows (PR#3433)
+- compiler: fix error message with -pack when .cmi is missing (PR#3028)
+- cygwin: fix problem with compilation of camlheader (PR#3485)
+- stdlib: Filename.basename doesn't return an empty string any more (PR#3451)
+- stdlib: better documentation of Open_excl flag (PR#3450)
+- ocamlcp: accept -thread option (PR#3511)
+- ocamldep: handle spaces in file names (PR#3370)
+- compiler: remove spurious warning in pattern-matching on variants (PR#3424)
+- windows: better handling of InterpreterPath registry entry (PR#3334, PR#3432)
+
+
 Objective Caml 3.08.2:
 ----------------------
 

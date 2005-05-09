@@ -35,10 +35,10 @@ To avoid compilation warning use the new syntax.
 Pcaml.add_option "-help_seq" (Arg.Unit help_sequences)
   "Print explanations about new sequences and exit.";;
 
-let (lexer, pos) = Plexer.make_lexer ();;
-
 let odfa = !(Plexer.dollar_for_antiquotation) in
 Plexer.dollar_for_antiquotation := false;
+let (lexer, pos) = Plexer.make_lexer () in
+Pcaml.position := pos;
 Grammar.Unsafe.gram_reinit gram lexer;
 Plexer.dollar_for_antiquotation := odfa;
 Grammar.Unsafe.clear_entry interf;
@@ -61,7 +61,6 @@ Grammar.Unsafe.clear_entry class_str_item;;
 
 Pcaml.parse_interf := Grammar.Entry.parse interf;;
 Pcaml.parse_implem := Grammar.Entry.parse implem;;
-Pcaml.position := pos;;
 
 let o2b =
   function

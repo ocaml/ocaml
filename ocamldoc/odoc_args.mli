@@ -21,38 +21,38 @@ type source_file =
 (** The include_dirs in the OCaml compiler. *)
 val include_dirs : string list ref
 
-(** Indicate if we are in bytecode mode or not. 
+(** Indicate if we are in bytecode mode or not.
    (For the [ocamldoc] command).*)
 val bytecode_mode : bool ref
 
 (** The class type of documentation generators. *)
 class type doc_generator =
   object method generate : Odoc_module.t_module list -> unit end
-    
+
 (** The function to be used to create a generator. *)
 val doc_generator : doc_generator option ref
-    
+
 (** The merge options to be used. *)
 val merge_options : Odoc_types.merge_option list ref
 
 (** Classic mode or not. *)
 val classic : bool ref
-    
+
 (** The file used by the generators outputting only one file. *)
 val out_file : string ref
 
 (** The optional file name to dump the collected information into.*)
 val dump : string option ref
-    
+
 (** The list of information files to load. *)
 val load : string list ref
-    
+
 (** Verbose mode or not. *)
 val verbose : bool ref
-    
+
 (** We must sort the list of top modules or not.*)
 val sort_modules : bool ref
-    
+
 (** We must not stop at the stop special comments. Default is false (we stop).*)
 val no_stop : bool ref
 
@@ -67,10 +67,10 @@ val keep_code : bool ref
 
 (** To inverse implementation and interface files when merging. *)
 val inverse_merge_ml_mli : bool ref
-    
+
 (** The optional title to use in the generated documentation. *)
 val title : string option ref
-    
+
 (** The optional file whose content can be used as intro text. *)
 val intro_file : string option ref
 
@@ -83,7 +83,7 @@ val hidden_modules : string list ref
 
 (** The directory where files have to be generated. *)
 val target_dir : string ref
-    
+
 (** An optional file to use where a CSS style is defined (for HTML). *)
 val css_style : string option ref
 
@@ -95,10 +95,10 @@ val colorize_code : bool ref
 
 (** The flag which indicates if we must generate a header (for LaTeX). *)
 val with_header : bool ref
-    
+
 (** The flag which indicates if we must generate a trailer (for LaTeX). *)
 val with_trailer : bool ref
-    
+
 (** The flag to indicate if we must generate one file per module (for LaTeX). *)
 val separate_files : bool ref
 
@@ -162,25 +162,27 @@ val dot_colors : string list ref
 (** The suffix for man pages. *)
 val man_suffix : string ref
 
+(** The section for man pages. *)
+val man_section : string ref
+
 (** The flag to generate all man pages or only for modules and classes.*)
 val man_mini : bool ref
 
 (** The files to be analysed. *)
 val files : source_file list ref
-    
+
 (** To set the documentation generator. *)
 val set_doc_generator : doc_generator option -> unit
-    
+
 (** Add an option specification. *)
 val add_option : string * Arg.spec * string -> unit
-    
-(** Parse the args. 
+
+(** Parse the args.
    [byte] indicate if we are in bytecode mode (default is [true]).*)
 val parse :
-    html_generator:doc_generator -> 
-      latex_generator:doc_generator -> 
-        texi_generator:doc_generator -> 
-          man_generator:doc_generator -> 
-            dot_generator:doc_generator -> 
+    html_generator:doc_generator ->
+      latex_generator:doc_generator ->
+        texi_generator:doc_generator ->
+          man_generator:doc_generator ->
+            dot_generator:doc_generator ->
               unit
-            

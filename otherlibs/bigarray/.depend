@@ -1,10 +1,10 @@
 bigarray_stubs.o: bigarray_stubs.c ../../byterun/alloc.h \
   ../../byterun/compatibility.h ../../byterun/misc.h \
   ../../byterun/config.h ../../config/m.h ../../config/s.h \
-  ../../byterun/mlvalues.h bigarray.h ../../byterun/compare.h \
-  ../../byterun/custom.h ../../byterun/fail.h ../../byterun/intext.h \
-  ../../byterun/io.h ../../byterun/fix_code.h ../../byterun/memory.h \
-  ../../byterun/gc.h ../../byterun/major_gc.h ../../byterun/freelist.h \
+  ../../byterun/mlvalues.h bigarray.h ../../byterun/custom.h \
+  ../../byterun/fail.h ../../byterun/intext.h ../../byterun/io.h \
+  ../../byterun/fix_code.h ../../byterun/memory.h ../../byterun/gc.h \
+  ../../byterun/major_gc.h ../../byterun/freelist.h \
   ../../byterun/minor_gc.h
 mmap_unix.o: mmap_unix.c bigarray.h ../../byterun/mlvalues.h \
   ../../byterun/compatibility.h ../../byterun/config.h ../../config/m.h \

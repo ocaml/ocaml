@@ -57,14 +57,14 @@ and text_element = Odoc_types.text_element =
 and text = text_element list
 
 (** The different forms of references in \@see tags. *)
-type see_ref = Odoc_types.see_ref = 
+type see_ref = Odoc_types.see_ref =
     See_url of string
   | See_file of string
   | See_doc of string
 
 (** Raised when parsing string to build a {!Odoc_info.text}
    structure. [(line, char, string)] *)
-exception Text_syntax of int * int * string 
+exception Text_syntax of int * int * string
 
 (** The information in a \@see tag. *)
 type see = see_ref * text
@@ -87,13 +87,13 @@ type info = Odoc_types.info = {
     i_raised_exceptions : raised_exception list; (** The list of raised exceptions. *)
     i_return_value : text option; (** The description text of the return value. *)
     i_custom : (string * text) list ; (** A text associated to a custom @-tag. *)
-  } 
+  }
 
 (** Location of elements in implementation and interface files. *)
 type location = Odoc_types.location = {
     loc_impl : (string * int) option ; (** implementation file name and position *)
     loc_inter : (string * int) option ; (** interface file name and position *)
-  } 
+  }
 
 (** A dummy location. *)
 val dummy_loc : location
@@ -130,9 +130,9 @@ module Parameter :
           sn_name : string ;
           sn_type : Types.type_expr ;
           mutable sn_text : text option ;
-        } 
+        }
 
-    (** Representation of parameter names. We need it to represent parameter names in tuples. 
+    (** Representation of parameter names. We need it to represent parameter names in tuples.
        The value [Tuple ([], t)] stands for an anonymous parameter.*)
     type param_info = Odoc_parameter.param_info =
         Simple_name of simple_name
@@ -156,55 +156,55 @@ module Parameter :
        @raise Not_found if no description is associated to the given name. *)
     val desc_by_name : parameter -> string -> text option
 
-    (** Access to the type of a specific name. 
+    (** Access to the type of a specific name.
        @raise Not_found if no type is associated to the given name. *)
     val type_by_name : parameter -> string -> Types.type_expr
   end
-   
+
 (** Representation and manipulation of exceptions. *)
 module Exception :
   sig
     (** Used when the exception is a rebind of another exception,
        when we have [exception Ex = Target_ex].*)
-    type exception_alias = Odoc_exception.exception_alias = 
+    type exception_alias = Odoc_exception.exception_alias =
         {
           ea_name : Name.t ; (** The complete name of the target exception. *)
           mutable ea_ex : t_exception option ; (** The target exception, if we found it.*)
-        } 
-          
+        }
+
     and t_exception = Odoc_exception.t_exception =
         {
           ex_name : Name.t ;
           mutable ex_info : info option ; (** Information found in the optional associated comment. *)
           ex_args : Types.type_expr list ; (** The types of the parameters. *)
           ex_alias : exception_alias option ; (** [None] when the exception is not a rebind. *)
-          mutable ex_loc : location ; 
+          mutable ex_loc : location ;
           mutable ex_code : string option ;
-        } 
+        }
   end
 
 (** Representation and manipulation of types.*)
 module Type :
   sig
     (** Description of a variant type constructor. *)
-    type variant_constructor = Odoc_type.variant_constructor = 
+    type variant_constructor = Odoc_type.variant_constructor =
         {
           vc_name : string ; (** Name of the constructor. *)
           vc_args : Types.type_expr list ; (** Arguments of the constructor. *)
           mutable vc_text : text option ; (** Optional description in the associated comment. *)
-        } 
+        }
 
     (** Description of a record type field. *)
-    type record_field = Odoc_type.record_field = 
+    type record_field = Odoc_type.record_field =
         {
           rf_name : string ; (** Name of the field. *)
           rf_mutable : bool ; (** [true] if mutable. *)
           rf_type : Types.type_expr ; (** Type of the field. *)
           mutable rf_text : text option ; (** Optional description in the associated comment.*)
-        } 
+        }
 
     (** The various kinds of a type. *)
-    type type_kind = Odoc_type.type_kind = 
+    type type_kind = Odoc_type.type_kind =
         Type_abstract (** Type is abstract, for example [type t]. *)
       | Type_variant of variant_constructor list * bool
                    (** constructors * bool *)
@@ -212,17 +212,17 @@ module Type :
 	           (** fields * bool *)
 
     (** Representation of a type. *)
-    type t_type = Odoc_type.t_type = 
+    type t_type = Odoc_type.t_type =
         {
           ty_name : Name.t ; (** Complete name of the type. *)
           mutable ty_info : info option ; (** Information found in the optional associated comment. *)
-          ty_parameters : (Types.type_expr * bool * bool) list ; 
+          ty_parameters : (Types.type_expr * bool * bool) list ;
                     (** type parameters: (type, covariant, contravariant) *)
           ty_kind : type_kind ; (** Type kind. *)
           ty_manifest : Types.type_expr option; (** Type manifest. *)
           mutable ty_loc : location ;
           mutable ty_code : string option;
-        } 
+        }
 
   end
 
@@ -230,7 +230,7 @@ module Type :
 module Value :
   sig
     (** Representation of a value. *)
-    type t_value = Odoc_value.t_value = 
+    type t_value = Odoc_value.t_value =
         {
           val_name : Name.t ; (** Complete name of the value. *)
           mutable val_info : info option ; (** Information found in the optional associated comment. *)
@@ -239,23 +239,23 @@ module Value :
           mutable val_parameters : Odoc_parameter.parameter list ; (** The parameters, if any. *)
           mutable val_code : string option ; (** The code of the value, if we had the only the implementation file. *)
           mutable val_loc : location ;
-        } 
+        }
 
     (** Representation of a class attribute. *)
-    type t_attribute = Odoc_value.t_attribute = 
+    type t_attribute = Odoc_value.t_attribute =
         {
           att_value : t_value ; (** an attribute has almost all the same information as a value *)
           att_mutable : bool ;  (** [true] if the attribute is mutable. *)
         }
 
     (** Representation of a class method. *)
-    type t_method = Odoc_value.t_method = 
+    type t_method = Odoc_value.t_method =
         {
           met_value : t_value ; (** a method has almost all the same information as a value *)
           met_private : bool ;  (** [true] if the method is private.*)
           met_virtual : bool ;  (** [true] if the method is virtual. *)
-        } 
-          
+        }
+
     (** Return [true] if the value is a function, i.e. it has a functional type. *)
     val is_function : t_value -> bool
 
@@ -274,34 +274,34 @@ module Class :
       | Class_comment of text
 
     (** Used when we can reference a t_class or a t_class_type. *)
-    type cct = Odoc_class.cct = 
+    type cct = Odoc_class.cct =
         Cl of t_class
       | Cltype of t_class_type * Types.type_expr list (** Class type and type parameters. *)
 
-    and inherited_class = Odoc_class.inherited_class = 
+    and inherited_class = Odoc_class.inherited_class =
         {
           ic_name : Name.t ; (** Complete name of the inherited class. *)
           mutable ic_class : cct option ; (** The associated t_class or t_class_type. *)
           ic_text : text option ; (** The inheritance description, if any. *)
-        } 
+        }
 
-    and class_apply = Odoc_class.class_apply = 
+    and class_apply = Odoc_class.class_apply =
         {
           capp_name : Name.t ; (** The complete name of the applied class. *)
           mutable capp_class : t_class option;  (** The associated t_class if we found it. *)
           capp_params : Types.type_expr list; (** The type of expressions the class is applied to. *)
           capp_params_code : string list ; (** The code of these exprssions. *)
-        } 
-          
-    and class_constr = Odoc_class.class_constr = 
+        }
+
+    and class_constr = Odoc_class.class_constr =
         {
           cco_name : Name.t ; (** The complete name of the applied class. *)
-          mutable cco_class : cct option;  
+          mutable cco_class : cct option;
               (** The associated class or class type if we found it. *)
           cco_type_parameters : Types.type_expr list; (** The type parameters of the class, if needed. *)
-        } 
+        }
 
-    and class_kind = Odoc_class.class_kind = 
+    and class_kind = Odoc_class.class_kind =
         Class_structure of inherited_class list * class_element list
         (** An explicit class structure, used in implementation and interface. *)
       | Class_apply of class_apply
@@ -316,7 +316,7 @@ module Class :
         (** A class definition with a constraint. *)
 
     (** Representation of a class. *)
-    and t_class = Odoc_class.t_class = 
+    and t_class = Odoc_class.t_class =
         {
           cl_name : Name.t ; (** Complete name of the class. *)
           mutable cl_info : info option ; (** Information found in the optional associated comment. *)
@@ -326,21 +326,21 @@ module Class :
           mutable cl_kind : class_kind ; (** The way the class is defined. *)
           mutable cl_parameters : Parameter.parameter list ; (** The parameters of the class. *)
           mutable cl_loc : location ;
-        } 
+        }
 
-    and class_type_alias = Odoc_class.class_type_alias = 
+    and class_type_alias = Odoc_class.class_type_alias =
         {
           cta_name : Name.t ; (** Complete name of the target class type. *)
           mutable cta_class : cct option ;  (** The target t_class or t_class_type, if we found it.*)
           cta_type_parameters : Types.type_expr list ; (** The type parameters. A VOIR : mettre des string ? *)
-        } 
+        }
 
-    and class_type_kind = Odoc_class.class_type_kind = 
+    and class_type_kind = Odoc_class.class_type_kind =
         Class_signature of inherited_class list * class_element list
       | Class_type of class_type_alias (** A class type eventually applied to type args. *)
-            
+
     (** Representation of a class type. *)
-    and t_class_type = Odoc_class.t_class_type = 
+    and t_class_type = Odoc_class.t_class_type =
         {
           clt_name : Name.t ; (** Complete name of the type. *)
           mutable clt_info : info option ; (** Information found in the optional associated comment. *)
@@ -349,7 +349,7 @@ module Class :
           clt_virtual : bool ; (** [true] if the class type is virtual *)
           mutable clt_kind : class_type_kind ; (** The way the class type is defined. *)
           mutable clt_loc : location ;
-        } 
+        }
 
     (** {3 Functions} *)
 
@@ -389,7 +389,7 @@ module Module :
   sig
     (** {3 Types} *)
     (** To keep the order of elements in a module. *)
-    type module_element = Odoc_module.module_element = 
+    type module_element = Odoc_module.module_element =
         Element_module of t_module
       | Element_module_type of t_module_type
       | Element_included_module of included_module
@@ -405,36 +405,36 @@ module Module :
       | Mod of t_module
       | Modtype of t_module_type
 
-    and included_module = Odoc_module.included_module = 
+    and included_module = Odoc_module.included_module =
         {
           im_name : Name.t ; (** Complete name of the included module. *)
           mutable im_module : mmt option ; (** The included module or module type, if we found it. *)
 	  mutable im_info : Odoc_types.info option ; (** comment associated to the includ directive *)
-        } 
-          
-    and module_alias = Odoc_module.module_alias = 
+        }
+
+    and module_alias = Odoc_module.module_alias =
         {
           ma_name : Name.t ; (** Complete name of the target module. *)
           mutable ma_module : mmt option ; (** The real module or module type if we could associate it. *)
-        } 
+        }
 
     and module_parameter = Odoc_module.module_parameter = {
 	mp_name : string ; (** the name *)
 	mp_type : Types.module_type ; (** the type *)
 	mp_type_code : string ; (** the original code *)
 	mp_kind : module_type_kind ; (** the way the parameter was built *)
-      } 
+      }
 
     (** Different kinds of a module. *)
-    and module_kind = Odoc_module.module_kind = 
+    and module_kind = Odoc_module.module_kind =
       | Module_struct of module_element list (** A complete module structure. *)
       | Module_alias of module_alias (** Complete name and corresponding module if we found it *)
-      | Module_functor of module_parameter * module_kind 
+      | Module_functor of module_parameter * module_kind
                      (** A functor, with its parameter and the rest of its definition *)
       | Module_apply of module_kind * module_kind
                      (** A module defined by application of a functor. *)
       | Module_with of module_type_kind * string
-                     (** A module whose type is a with ... constraint. 
+                     (** A module whose type is a with ... constraint.
                         Should appear in interface files only. *)
       | Module_constraint of module_kind * module_type_kind
                      (** A module constraint by a module type. *)
@@ -452,16 +452,16 @@ module Module :
           mutable m_top_deps : Name.t list ; (** The toplevels module names this module depends on. *)
 	  mutable m_code : string option ; (** The whole code of the module *)
 	  mutable m_code_intf : string option ; (** The whole code of the interface of the module *)
-        } 
+        }
 
     and module_type_alias = Odoc_module.module_type_alias =
         {
           mta_name : Name.t ; (** Complete name of the target module type. *)
           mutable mta_module : t_module_type option ; (** The real module type if we could associate it. *)
-        } 
+        }
 
     (** Different kinds of module type. *)
-    and module_type_kind = Odoc_module.module_type_kind = 
+    and module_type_kind = Odoc_module.module_type_kind =
       | Module_type_struct of module_element list (** A complete module signature. *)
       | Module_type_functor of module_parameter * module_type_kind
             (** A functor, with its parameter and the rest of its definition *)
@@ -478,12 +478,12 @@ module Module :
           mt_type : Types.module_type option ; (** [None] means that the module type is abstract. *)
           mt_is_interface : bool ; (** [true] for modules read from interface files. *)
           mt_file : string ; (** The file the module type is defined in. *)
-          mutable mt_kind : module_type_kind option ; 
+          mutable mt_kind : module_type_kind option ;
               (** The way the module is defined. [None] means that module type is abstract.
                  It is always [None] when the module type was extracted from the implementation file.
                  That means module types are only analysed in interface files. *)
           mutable mt_loc : location ;
-        } 
+        }
 
     (** {3 Functions for modules} *)
 
@@ -582,10 +582,10 @@ module Module :
 
 
 (** {3 Getting strings from values} *)
-    
+
 (** This function is used to reset the names of type variables.
    It must be called when printing the whole type of a function,
-   but not when printing the type of its parameters. Same for 
+   but not when printing the type of its parameters. Same for
    classes (call it) and methods and attributes (don't call it).*)
 val reset_type_names : unit -> unit
 
@@ -611,12 +611,12 @@ val string_of_type_list : ?par: bool -> string -> Types.type_expr list -> string
    for the given type. *)
 val string_of_type_param_list : Type.t_type -> string
 
-(** This function returns a string to represent the given list of 
+(** This function returns a string to represent the given list of
    type parameters of a class or class type,
    with a given separator. *)
 val string_of_class_type_param_list : Types.type_expr list -> string
 
-(** This function returns a string representing a [Types.module_type]. 
+(** This function returns a string representing a [Types.module_type].
    @param complete indicates if we must print complete signatures
    or just [sig end]. Default if [false].
    @param code if [complete = false] and the type contains something else
@@ -624,7 +624,7 @@ val string_of_class_type_param_list : Types.type_expr list -> string
 *)
 val string_of_module_type : ?code: string -> ?complete: bool -> Types.module_type -> string
 
-(** This function returns a string representing a [Types.class_type]. 
+(** This function returns a string representing a [Types.class_type].
    @param complete indicates if we must print complete signatures
    or just [object end]. Default if [false].
 *)
@@ -673,12 +673,12 @@ val text_no_title_no_list : text -> text
    the text [sep]. *)
 val text_concat : Odoc_types.text -> Odoc_types.text list -> Odoc_types.text
 
-(** Return the list of titles in a [text]. 
+(** Return the list of titles in a [text].
    A title is a title level, an optional label and a text.*)
 val get_titles_in_text : text -> (int * string option * text) list
 
 (** Take a sorted list of elements, a function to get the name
-   of an element and return the list of list of elements, 
+   of an element and return the list of list of elements,
    where each list group elements beginning by the same letter.
    Since the original list is sorted, elements whose name does not
    begin with a letter should be in the first returned list.*)
@@ -696,16 +696,16 @@ val is_optional : string -> bool
    i.e. removes the beginning '?' if present.*)
 val label_name : string -> string
 
-(** Return the given name where the module name or 
-   part of it was removed, according to the list of modules 
+(** Return the given name where the module name or
+   part of it was removed, according to the list of modules
    which must be hidden (cf {!Odoc_args.hidden_modules})*)
 val use_hidden_modules : Name.t -> Name.t
- 
+
 (** Print the given string if the verbose mode is activated. *)
 val verbose : string -> unit
 
 (** Print a warning message to stderr.
-   If warnings must be treated as errors, then the 
+   If warnings must be treated as errors, then the
    error counter is incremented. *)
 val warning : string -> unit
 
@@ -718,23 +718,23 @@ val errors : int ref
 (** Apply a function to an optional value. *)
 val apply_opt : ('a -> 'b) -> 'a option -> 'b option
 
-(** Apply a function to a first value if it is 
+(** Apply a function to a first value if it is
    not different from a second value. If the two values
    are different, return the second one.*)
 val apply_if_equal : ('a -> 'a) -> 'a -> 'a -> 'a
 
 (** [text_of_string s] returns the text structure from the
-   given string. 
+   given string.
    @raise Text_syntax if a syntax error is encountered. *)
 val text_of_string : string -> text
 
 (** [text_string_of_text text] returns the string representing
    the given [text]. This string can then be parsed again
-   by {!Odoc_info.text_of_string}.*)   
+   by {!Odoc_info.text_of_string}.*)
 val text_string_of_text : text -> string
 
 (** [info_of_string s] parses the given string
-   like a regular ocamldoc comment and return an 
+   like a regular ocamldoc comment and return an
    {!Odoc_info.info} structure.
    @return an empty structure if there was a syntax error. TODO: change this
 *)
@@ -742,11 +742,11 @@ val info_of_string : string -> info
 
 (** [info_string_of_info info] returns the string representing
    the given [info]. This string can then be parsed again
-   by {!Odoc_info.info_of_string}.*)   
+   by {!Odoc_info.info_of_string}.*)
 val info_string_of_info : info -> string
 
 (** [info_of_comment_file file] parses the given file
-   and return an {!Odoc_info.info} structure. The content of the 
+   and return an {!Odoc_info.info} structure. The content of the
    file must have the same syntax as the content of a special comment.
    @raise Failure is the file could not be opened or there is a
    syntax error.
@@ -819,14 +819,14 @@ module Scan :
         method scan_attribute : Value.t_attribute -> unit
         method scan_method : Value.t_method -> unit
         method scan_included_module : Module.included_module -> unit
-            
-      (** Scan of a class. *)    
+
+      (** Scan of a class. *)
 
         (** Scan of a comment inside a class. *)
         method scan_class_comment : text -> unit
 
        (** Override this method to perform controls on the class comment
-          and params. This method is called before scanning the class elements. 
+          and params. This method is called before scanning the class elements.
           @return true if the class elements must be scanned.*)
         method scan_class_pre : Class.t_class -> bool
 
@@ -843,7 +843,7 @@ module Scan :
         method scan_class_type_comment : text -> unit
 
         (** Override this method to perform controls on the class type comment
-           and form. This method is called before scanning the class type elements. 
+           and form. This method is called before scanning the class type elements.
            @return true if the class type elements must be scanned.*)
         method scan_class_type_pre : Class.t_class_type -> bool
 
@@ -860,7 +860,7 @@ module Scan :
         method scan_module_comment : text -> unit
 
         (** Override this method to perform controls on the module comment
-           and form. This method is called before scanning the module elements. 
+           and form. This method is called before scanning the module elements.
            @return true if the module elements must be scanned.*)
         method scan_module_pre : Module.t_module -> bool
 
@@ -877,7 +877,7 @@ module Scan :
         method scan_module_type_comment : text -> unit
 
         (** Override this method to perform controls on the module type comment
-           and form. This method is called before scanning the module type elements. 
+           and form. This method is called before scanning the module type elements.
            @return true if the module type elements must be scanned. *)
         method scan_module_type_pre : Module.t_module_type -> bool
 
@@ -929,13 +929,13 @@ module Args :
 
       (** Verbose mode or not. *)
       val verbose : bool ref
-    
+
       (** The optional title to use in the generated documentation. *)
       val title : string option ref
 
       (** To keep the code while merging, when we have both .ml and .mli files for a module. *)
       val keep_code : bool ref
-    
+
       (** The optional file whose content can be used as intro text. *)
       val intro_file : string option ref
 
@@ -948,7 +948,7 @@ module Args :
 
       (** The directory where files have to be generated. *)
       val target_dir : string ref
-    
+
       (** An optional file to use where a CSS style is defined (for HTML). *)
       val css_style : string option ref
 
@@ -960,10 +960,10 @@ module Args :
 
       (** The flag which indicates if we must generate a header (for LaTeX). *)
       val with_header : bool ref
-    
+
       (** The flag which indicates if we must generate a trailer (for LaTeX). *)
       val with_trailer : bool ref
-    
+
       (** The flag to indicate if we must generate one file per module (for LaTeX). *)
       val separate_files : bool ref
 
@@ -1027,15 +1027,18 @@ module Args :
       (** The suffix for man pages. *)
       val man_suffix : string ref
 
+      (** The section for man pages. *)
+      val man_section : string ref
+
       (** The flag to generate all man pages or only for modules and classes.*)
       val man_mini : bool ref
 
       (** The files to be analysed. *)
       val files : source_file list ref
-    
+
       (** To set the documentation generator. *)
       val set_doc_generator : doc_generator option -> unit
-    
+
       (** Add an option specification. *)
       val add_option : string * Arg.spec * string -> unit
     end
@@ -1053,10 +1056,10 @@ val analyse_files :
                 Args.source_file list ->
                   Module.t_module list
 
-(** Dump of a list of modules into a file. 
+(** Dump of a list of modules into a file.
    @raise Failure if an error occurs.*)
 val dump_modules : string -> Odoc_module.t_module list -> unit
 
-(** Load of a list of modules from a file. 
+(** Load of a list of modules from a file.
    @raise Failure if an error occurs.*)
 val load_modules : string -> Odoc_module.t_module list

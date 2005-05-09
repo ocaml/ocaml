@@ -75,19 +75,46 @@ let find_dependency modname (byt_deps, opt_deps) =
 
 let (depends_on, escaped_eol) = (": ", "\\\n    ")
 
+let print_filename s =
+  if not (String.contains s ' ') then begin
+    print_string s;
+  end else begin
+    let rec count n i =
+      if i >= String.length s then n
+      else if s.[i] = ' ' then count (n+1) (i+1)
+      else count n (i+1)
+    in
+    let spaces = count 0 0 in
+    let result = String.create (String.length s + spaces) in
+    let rec loop i j =
+      if i >= String.length s then ()
+      else if s.[i] = ' ' then begin
+        result.[j] <- '\\';
+        result.[j+1] <- ' ';
+        loop (i+1) (j+2);
+      end else begin
+        result.[j] <- s.[i];
+        loop (i+1) (j+1);
+      end
+    in
+    loop 0 0;
+    print_string result;
+  end
+;;
+
 let print_dependencies target_file deps =
   match deps with
     [] -> ()
   | _ ->
-    print_string target_file; print_string depends_on;
+    print_filename target_file; print_string depends_on;
     let rec print_items pos = function
       [] -> print_string "\n"
     | dep :: rem ->
         if pos + String.length dep <= 77 then begin
-          print_string dep; print_string " ";
+          print_filename dep; print_string " ";
           print_items (pos + String.length dep + 1) rem
         end else begin
-          print_string escaped_eol; print_string dep; print_string " ";
+          print_string escaped_eol; print_filename dep; print_string " ";
           print_items (String.length dep + 5) rem
         end in
     print_items (String.length target_file + 2) deps

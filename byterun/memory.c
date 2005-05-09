@@ -88,6 +88,9 @@ int caml_add_to_heap (char *m)
   /* Should check the contents of the block. */
 #endif /* debug */
 
+  caml_gc_message (0x04, "Growing heap to %luk bytes\n",
+                   (caml_stat_heap_size + Chunk_size (m)) / 1024);
+
   /* Extend the page table as needed. */
   if (Page (m) < caml_page_low){
     page_table_entry *block, *new_page_table;
@@ -177,8 +180,6 @@ static char *expand_heap (mlsize_t request)
   asize_t malloc_request;
 
   malloc_request = caml_round_heap_chunk_size (Bhsize_wosize (request));
-  caml_gc_message (0x04, "Growing heap to %luk bytes\n",
-                   (caml_stat_heap_size + malloc_request) / 1024);
   mem = caml_alloc_for_heap (malloc_request);
   if (mem == NULL){
     caml_gc_message (0x04, "No room for growing heap\n", 0);

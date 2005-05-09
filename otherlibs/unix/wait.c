@@ -61,7 +61,7 @@ static value alloc_process_status(int pid, int status)
   return res;
 }
 
-CAMLprim value unix_wait(void)
+CAMLprim value unix_wait(value unit)
 {
   int pid, status;
 

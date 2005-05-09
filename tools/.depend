@@ -1,48 +1,48 @@
 depend.cmi: ../parsing/parsetree.cmi 
-addlabels.cmo: ../parsing/asttypes.cmi ../parsing/location.cmi \
-    ../parsing/longident.cmi ../parsing/parse.cmi ../parsing/parsetree.cmi 
-addlabels.cmx: ../parsing/asttypes.cmi ../parsing/location.cmx \
-    ../parsing/longident.cmx ../parsing/parse.cmx ../parsing/parsetree.cmi 
-depend.cmo: ../parsing/location.cmi ../parsing/longident.cmi \
-    ../parsing/parsetree.cmi depend.cmi 
-depend.cmx: ../parsing/location.cmx ../parsing/longident.cmx \
-    ../parsing/parsetree.cmi depend.cmi 
-dumpapprox.cmo: ../asmcomp/clambda.cmi ../asmcomp/compilenv.cmi \
-    ../utils/config.cmi 
-dumpapprox.cmx: ../asmcomp/clambda.cmx ../asmcomp/compilenv.cmx \
-    ../utils/config.cmx 
-dumpobj.cmo: ../parsing/asttypes.cmi ../bytecomp/bytesections.cmi \
-    ../utils/config.cmi ../bytecomp/emitcode.cmi ../typing/ident.cmi \
-    ../bytecomp/instruct.cmi ../bytecomp/lambda.cmi ../bytecomp/opcodes.cmo \
-    opnames.cmo ../utils/tbl.cmi 
-dumpobj.cmx: ../parsing/asttypes.cmi ../bytecomp/bytesections.cmx \
-    ../utils/config.cmx ../bytecomp/emitcode.cmx ../typing/ident.cmx \
-    ../bytecomp/instruct.cmx ../bytecomp/lambda.cmx ../bytecomp/opcodes.cmx \
-    opnames.cmx ../utils/tbl.cmx 
-lexer301.cmo: ../parsing/location.cmi ../utils/misc.cmi ../utils/warnings.cmi 
-lexer301.cmx: ../parsing/location.cmx ../utils/misc.cmx ../utils/warnings.cmx 
-objinfo.cmo: ../utils/config.cmi ../bytecomp/emitcode.cmi 
-objinfo.cmx: ../utils/config.cmx ../bytecomp/emitcode.cmx 
+addlabels.cmo: ../parsing/parsetree.cmi ../parsing/parse.cmi \
+    ../parsing/longident.cmi ../parsing/location.cmi ../parsing/asttypes.cmi 
+addlabels.cmx: ../parsing/parsetree.cmi ../parsing/parse.cmx \
+    ../parsing/longident.cmx ../parsing/location.cmx ../parsing/asttypes.cmi 
+depend.cmo: ../parsing/parsetree.cmi ../parsing/longident.cmi \
+    ../parsing/location.cmi depend.cmi 
+depend.cmx: ../parsing/parsetree.cmi ../parsing/longident.cmx \
+    ../parsing/location.cmx depend.cmi 
+dumpapprox.cmo: ../utils/config.cmi ../asmcomp/compilenv.cmi \
+    ../asmcomp/clambda.cmi 
+dumpapprox.cmx: ../utils/config.cmx ../asmcomp/compilenv.cmx \
+    ../asmcomp/clambda.cmx 
+dumpobj.cmo: ../utils/tbl.cmi opnames.cmo ../bytecomp/opcodes.cmo \
+    ../bytecomp/lambda.cmi ../bytecomp/instruct.cmi ../typing/ident.cmi \
+    ../bytecomp/emitcode.cmi ../utils/config.cmi ../bytecomp/bytesections.cmi \
+    ../parsing/asttypes.cmi 
+dumpobj.cmx: ../utils/tbl.cmx opnames.cmx ../bytecomp/opcodes.cmx \
+    ../bytecomp/lambda.cmx ../bytecomp/instruct.cmx ../typing/ident.cmx \
+    ../bytecomp/emitcode.cmx ../utils/config.cmx ../bytecomp/bytesections.cmx \
+    ../parsing/asttypes.cmi 
+lexer301.cmo: ../utils/warnings.cmi ../utils/misc.cmi ../parsing/location.cmi 
+lexer301.cmx: ../utils/warnings.cmx ../utils/misc.cmx ../parsing/location.cmx 
+objinfo.cmo: ../bytecomp/emitcode.cmi ../utils/config.cmi 
+objinfo.cmx: ../bytecomp/emitcode.cmx ../utils/config.cmx 
 ocamlcp.cmo: ../driver/main_args.cmi 
 ocamlcp.cmx: ../driver/main_args.cmx 
-ocamldep.cmo: ../utils/clflags.cmo ../utils/config.cmi depend.cmi \
-    ../parsing/lexer.cmi ../parsing/location.cmi ../parsing/longident.cmi \
-    ../utils/misc.cmi ../parsing/parse.cmi ../parsing/parsetree.cmi \
-    ../parsing/syntaxerr.cmi 
-ocamldep.cmx: ../utils/clflags.cmx ../utils/config.cmx depend.cmx \
-    ../parsing/lexer.cmx ../parsing/location.cmx ../parsing/longident.cmx \
-    ../utils/misc.cmx ../parsing/parse.cmx ../parsing/parsetree.cmi \
-    ../parsing/syntaxerr.cmx 
+ocamldep.cmo: ../parsing/syntaxerr.cmi ../parsing/parsetree.cmi \
+    ../parsing/parse.cmi ../utils/misc.cmi ../parsing/longident.cmi \
+    ../parsing/location.cmi ../parsing/lexer.cmi depend.cmi \
+    ../utils/config.cmi ../utils/clflags.cmo 
+ocamldep.cmx: ../parsing/syntaxerr.cmx ../parsing/parsetree.cmi \
+    ../parsing/parse.cmx ../utils/misc.cmx ../parsing/longident.cmx \
+    ../parsing/location.cmx ../parsing/lexer.cmx depend.cmx \
+    ../utils/config.cmx ../utils/clflags.cmx 
 ocamlmktop.cmo: ../utils/ccomp.cmi 
 ocamlmktop.cmx: ../utils/ccomp.cmx 
-ocamlprof.cmo: ../utils/clflags.cmo ../utils/config.cmi ../parsing/lexer.cmi \
-    ../parsing/location.cmi ../utils/misc.cmi ../parsing/parse.cmi \
-    ../parsing/parsetree.cmi ../parsing/syntaxerr.cmi 
-ocamlprof.cmx: ../utils/clflags.cmx ../utils/config.cmx ../parsing/lexer.cmx \
-    ../parsing/location.cmx ../utils/misc.cmx ../parsing/parse.cmx \
-    ../parsing/parsetree.cmi ../parsing/syntaxerr.cmx 
-primreq.cmo: ../utils/config.cmi ../bytecomp/emitcode.cmi 
-primreq.cmx: ../utils/config.cmx ../bytecomp/emitcode.cmx 
+ocamlprof.cmo: ../parsing/syntaxerr.cmi ../parsing/parsetree.cmi \
+    ../parsing/parse.cmi ../utils/misc.cmi ../parsing/location.cmi \
+    ../parsing/lexer.cmi ../utils/config.cmi ../utils/clflags.cmo 
+ocamlprof.cmx: ../parsing/syntaxerr.cmx ../parsing/parsetree.cmi \
+    ../parsing/parse.cmx ../utils/misc.cmx ../parsing/location.cmx \
+    ../parsing/lexer.cmx ../utils/config.cmx ../utils/clflags.cmx 
+primreq.cmo: ../bytecomp/emitcode.cmi ../utils/config.cmi 
+primreq.cmx: ../bytecomp/emitcode.cmx ../utils/config.cmx 
 profiling.cmo: profiling.cmi 
 profiling.cmx: profiling.cmi 
 scrapelabels.cmo: lexer301.cmo 

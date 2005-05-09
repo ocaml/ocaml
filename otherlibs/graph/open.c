@@ -219,6 +219,8 @@ value caml_gr_close_graph(void)
     XFreeGC(caml_gr_display, caml_gr_bstore.gc);
     XFreePixmap(caml_gr_display, caml_gr_bstore.win);
     XFlush(caml_gr_display);
+    XCloseDisplay (caml_gr_display);
+    caml_gr_display = NULL;
   }
   return Val_unit;
 }

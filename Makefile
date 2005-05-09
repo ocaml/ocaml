@@ -635,12 +635,16 @@ checkstack:
 .PHONY: package-macosx
 
 package-macosx:
-	make BINDIR="`pwd`"/package-macosx/root$(BINDIR) \
-	     LIBDIR="`pwd`"/package-macosx/root$(LIBDIR) \
-	     MANDIR="`pwd`"/package-macosx/root$(MANDIR) install
+	sudo rm -rf package-macosx/root
+	make BINDIR="`pwd`"/package-macosx/root/bin \
+	     LIBDIR="`pwd`"/package-macosx/root/lib/ocaml \
+	     MANDIR="`pwd`"/package-macosx/root/man \
+             install
 	tools/make-package-macosx
+	sudo rm -rf package-macosx/root
+
 clean::
-	rm -rf package-macosx/root package-macosx/*.pkg package-macosx/*.dmg
+	rm -rf package-macosx/*.pkg package-macosx/*.dmg
 
 # Default rules
 
