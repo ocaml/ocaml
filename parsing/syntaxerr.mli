@@ -19,6 +19,7 @@ open Format
 type error =
     Unclosed of Location.t * string * Location.t * string
   | Other of Location.t
+  | Message of Location.t * string
 
 exception Error of error
 exception Escape_error

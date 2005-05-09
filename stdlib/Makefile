@@ -18,11 +18,12 @@ include ../config/Makefile
 RUNTIME=../boot/ocamlrun
 COMPILER=../ocamlc
 CAMLC=$(RUNTIME) $(COMPILER)
-COMPFLAGS=-g -warn-error A -nostdlib
+COMPFLAGS=-g -warn-error As -nostdlib -I cduce
 OPTCOMPILER=../ocamlopt
 CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
-OPTCOMPFLAGS=-warn-error A -nostdlib
+OPTCOMPFLAGS=-warn-error As -nostdlib -I cduce
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
+CC=$(BYTECC)
 
 OBJS=pervasives.cmo $(OTHERS)
 OTHERS=array.cmo list.cmo char.cmo string.cmo sys.cmo \
@@ -35,7 +36,22 @@ OTHERS=array.cmo list.cmo char.cmo string.cmo sys.cmo \
   digest.cmo random.cmo callback.cmo camlinternalOO.cmo oo.cmo \
   genlex.cmo weak.cmo \
   lazy.cmo filename.cmo complex.cmo \
-  arrayLabels.cmo listLabels.cmo stringLabels.cmo moreLabels.cmo stdLabels.cmo
+  arrayLabels.cmo listLabels.cmo stringLabels.cmo moreLabels.cmo stdLabels.cmo \
+  int_misc.cmo string_misc.cmo nat.cmo big_int.cmo arith_flags.cmo \
+  ratio.cmo num.cmo arith_status.cmo \
+  cduce_types.cmo
+
+CDUCE=\
+  cduce/serialize.cmo cduce/custom.cmo cduce/encodings.cmo \
+  cduce/imap.cmo cduce/state.cmo \
+  cduce/pool.cmo cduce/ns.cmo cduce/sortedList.cmo cduce/atoms.cmo \
+  cduce/bool.cmo cduce/chars.cmo cduce/ident.cmo \
+  cduce/intervals.cmo cduce/inttbl.cmo cduce/normal.cmo \
+  cduce/pretty.cmo cduce/stats.cmo \
+  cduce/types.cmo cduce/sequence.cmo cduce/sample.cmo cduce/patterns.cmo \
+  cduce/lambda.cmo \
+  cduce/value.cmo cduce/run_dispatch.cmo cduce/explain.cmo cduce/serial.cmo \
+  cduce/typepat.cmo
 
 all: stdlib.cma std_exit.cmo camlheader camlheader_ur
 
@@ -106,25 +122,50 @@ clean::
 .ml.p.cmx:
 	$(CAMLOPT) $(OPTCOMPFLAGS) `./Compflags $@` -p -c -o $*.p.cmx $<
 
+cduce_types.cmo: $(CDUCE)
+	$(CAMLC) $(COMPFLAGS) -pack -o cduce_types.cmo $(CDUCE)
+
+cduce_types.cmx: $(CDUCE:.cmo=.cmx)
+	$(CAMLOPT) $(OPTCOMPFLAGS) -pack -o cduce_types.cmx $(CDUCE:.cmo=.cmx)
+
+#cduce_types.p.cmx: $(CDUCE:.cmo=.p.cmx)
+#	for i in $(CDUCE:.cmo=.cmi); do \
+#	  cp $$i `echo $$i | sed s/\.cmi/.p.cmi/`; \
+#	done
+#	$(CAMLOPT) $(OPTCOMPFLAGS) -pack -p -o cduce_types.cmx $(CDUCE:.cmo=.p.cmx)
+cduce_types.p.cmx: cduce_types.cmx
+	cp cduce_types.cmx cduce_types.p.cmx
+	cp cduce_types.o cduce_types.p.o
+
 # Dependencies on the compiler
-$(OBJS) std_exit.cmo: $(COMPILER)
-$(OBJS:.cmo=.cmi) std_exit.cmi: $(COMPILER)
-$(OBJS:.cmo=.cmx) std_exit.cmx: $(OPTCOMPILER)
-$(OBJS:.cmo=.p.cmx) std_exit.p.cmx: $(OPTCOMPILER)
+$(OBJS) $(CDUCE) std_exit.cmo: $(COMPILER)
+$(OBJS:.cmo=.cmi) $(CDUCE:.cmo=.cmi) std_exit.cmi: $(COMPILER)
+$(OBJS:.cmo=.cmx) $(CDUCE:.cmo=.cmx) std_exit.cmx: $(OPTCOMPILER)
+$(OBJS:.cmo=.p.cmx) $(CDUCE:.cmo=.p.cmx) std_exit.p.cmx: $(OPTCOMPILER)
 
 # Dependencies on Pervasives (not tracked by ocamldep)
-$(OBJS) std_exit.cmo: pervasives.cmi
-$(OTHERS:.cmo=.cmi) std_exit.cmi: pervasives.cmi
-$(OBJS:.cmo=.cmx) std_exit.cmx: pervasives.cmi
-$(OBJS:.cmo=.p.cmx) std_exit.p.cmx: pervasives.cmi
+$(OBJS) $(CDUCE) std_exit.cmo: pervasives.cmi
+$(OTHERS:.cmo=.cmi) $(CDUCE:.cmo=.cmi) std_exit.cmi: pervasives.cmi
+$(OBJS:.cmo=.cmx) $(CDUCE:.cmo=.cmx) std_exit.cmx: pervasives.cmi
+$(OBJS:.cmo=.p.cmx) $(CDUCE:.cmo=.p.cmx) std_exit.p.cmx: pervasives.cmi
 $(OTHERS:.cmo=.cmx) std_exit.cmx: pervasives.cmx
 $(OTHERS:.cmo=.p.cmx) std_exit.p.cmx: pervasives.cmx
 
 clean::
 	rm -f *.cm* *.o *.a
 	rm -f *~
+	(cd cduce; rm -f *.cm* *.o *.a)
+	(cd cduce; rm -f *~)
 
 include .depend
 
 depend:
-	$(CAMLDEP) *.mli *.ml > .depend
+	$(CAMLDEP) -I cduce *.mli *.ml cduce/*.mli cduce/*.ml > .depend
+
+
+link:
+	ln -f -s ../otherlibs/num/*.ml ../otherlibs/num/*.mli .
+
+link_clean:
+	rm -f arith_flags.mli arith_status.mli big_int.mli int_misc.mli nat.mli num.mli ratio.mli string_misc.mli	
+	rm -f arith_flags.ml arith_status.ml big_int.ml int_misc.ml nat.ml num.ml ratio.ml string_misc.ml

@@ -16,9 +16,60 @@
 
 open Asttypes
 
+(* Type and pattern expressions for CDuce *)
+
+type ext_pattern =
+  { pext_desc: ext_pattern_desc;
+    pext_loc: Location.t }
+
+and ext_pattern_desc =
+    Pext_cst of Cduce_types.Types.t
+  | Pext_ns of string
+  | Pext_or of ext_pattern * ext_pattern
+  | Pext_and of ext_pattern * ext_pattern
+  | Pext_diff of ext_pattern * ext_pattern
+  | Pext_prod of ext_pattern * ext_pattern
+  | Pext_arrow of ext_pattern * ext_pattern
+  | Pext_xml of ext_pattern * ext_pattern
+  | Pext_optional of ext_pattern
+  | Pext_record of bool * (qname * (ext_pattern * ext_pattern option)) list
+  | Pext_bind of string * ext_const
+  | Pext_constant of ext_const
+  | Pext_regexp of ext_regexp
+  | Pext_name of Longident.t
+  | Pext_recurs of ext_pattern * (string * ext_pattern) list
+  | Pext_from_ml of core_type
+  | Pext_concat of ext_pattern * ext_pattern
+  | Pext_merge of ext_pattern * ext_pattern
+
+and ext_regexp =
+    Pext_epsilon
+  | Pext_elem of ext_pattern
+  | Pext_guard of ext_pattern
+  | Pext_seq of ext_regexp * ext_regexp
+  | Pext_alt of ext_regexp * ext_regexp
+  | Pext_star of ext_regexp
+  | Pext_weakstar of ext_regexp
+  | Pext_capture of string * ext_regexp
+
+and ext_const =  
+    { pextcst_desc: ext_const_desc;
+      pextcst_loc: Location.t }
+and ext_const_desc =
+  | Pextcst_pair of ext_const * ext_const
+  | Pextcst_xml of ext_const * ext_const * ext_const
+  | Pextcst_record of (qname * ext_const) list
+  | Pextcst_atom of qname
+  | Pextcst_int of Cduce_types.Intervals.V.t
+  | Pextcst_char of Cduce_types.Encodings.Utf8.t
+  | Pextcst_string of Cduce_types.Encodings.Utf8.t
+  | Pextcst_intern of Cduce_types.Types.Const.t
+and qname = string * Cduce_types.Encodings.Utf8.t
+and utf8 = Cduce_types.Encodings.Utf8.t
+
 (* Type expressions for the core language *)
 
-type core_type =
+and core_type =
   { ptyp_desc: core_type_desc;
     ptyp_loc: Location.t }
 
@@ -33,6 +84,7 @@ and core_type_desc =
   | Ptyp_alias of core_type * string
   | Ptyp_variant of row_field list * bool * label list option
   | Ptyp_poly of string list * core_type
+  | Ptyp_ext of ext_pattern
 
 and core_field_type =
   { pfield_desc: core_field_desc;
@@ -78,7 +130,8 @@ and pattern_desc =
 
 type expression =
   { pexp_desc: expression_desc;
-    pexp_loc: Location.t }
+    pexp_loc: Location.t;
+    mutable pexp_ext: bool }
 
 and expression_desc =
     Pexp_ident of Longident.t
@@ -111,6 +164,22 @@ and expression_desc =
   | Pexp_lazy of expression
   | Pexp_poly of expression * core_type option
   | Pexp_object of class_structure
+  | Pexp_ext of ext_exp
+
+and ext_exp =
+  | Pextexp_cst of ext_const
+  | Pextexp_match of expression * ext_branch list
+  | Pextexp_map of expression * ext_branch list
+  | Pextexp_xmap of expression * ext_branch list
+  | Pextexp_record of (qname * expression) list
+  | Pextexp_removefield of expression * qname
+  | Pextexp_op of string * expression list
+  | Pextexp_namespace of string * utf8 * expression
+  | Pextexp_from_ml of expression
+  | Pextexp_to_ml of expression
+  | Pextexp_check of expression * ext_pattern
+
+and ext_branch = ext_pattern * expression
 
 (* Value descriptions *)
 
@@ -215,6 +284,7 @@ and signature_item_desc =
   | Psig_include of module_type
   | Psig_class of class_description list
   | Psig_class_type of class_type_declaration list
+  | Psig_namespace of string * utf8
 
 and modtype_declaration =
     Pmodtype_abstract
@@ -257,6 +327,7 @@ and structure_item_desc =
   | Pstr_class of class_declaration list
   | Pstr_class_type of class_type_declaration list
   | Pstr_include of module_expr
+  | Pstr_namespace of string * utf8
 
 (* Toplevel phrases *)
 

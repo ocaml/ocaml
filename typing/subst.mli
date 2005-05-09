@@ -32,6 +32,8 @@ type t
 
 val identity: t
 
+val restore: Cduce_types.Serial.G.chunk -> t
+
 val add_type: Ident.t -> Path.t -> t -> t
 val add_module: Ident.t -> Path.t -> t -> t
 val add_modtype: Ident.t -> module_type -> t -> t
@@ -49,3 +51,4 @@ val cltype_declaration: t -> cltype_declaration -> cltype_declaration
 val modtype: t -> module_type -> module_type
 val signature: t -> signature -> signature
 val modtype_declaration: t -> modtype_declaration -> modtype_declaration
+val signature_for_saving: signature -> signature * string

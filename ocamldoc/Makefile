@@ -63,7 +63,6 @@ INCLUDES_NODEP=	-I $(OCAMLSRCDIR)/stdlib \
 	-I $(OCAMLSRCDIR)/otherlibs/str \
 	-I $(OCAMLSRCDIR)/otherlibs/dynlink \
 	-I $(OCAMLSRCDIR)/otherlibs/unix \
-	-I $(OCAMLSRCDIR)/otherlibs/num \
 	-I $(OCAMLSRCDIR)/otherlibs/graph
 
 INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)
@@ -130,7 +129,8 @@ LIBCMXFILES= $(LIBCMOFILES:.cmo=.cmx)
 LIBCMIFILES= $(LIBCMOFILES:.cmo=.cmi)
 
 # Les cmo et cmx de la distrib OCAML
-OCAMLCMOFILES=$(OCAMLSRCDIR)/parsing/printast.cmo \
+OCAMLCMOFILES=\
+	$(OCAMLSRCDIR)/parsing/printast.cmo \
 	$(OCAMLSRCDIR)/typing/ident.cmo \
 	$(OCAMLSRCDIR)/utils/tbl.cmo \
 	$(OCAMLSRCDIR)/utils/misc.cmo \
@@ -158,6 +158,7 @@ OCAMLCMOFILES=$(OCAMLSRCDIR)/parsing/printast.cmo \
 	$(OCAMLSRCDIR)/typing/oprint.cmo \
 	$(OCAMLSRCDIR)/typing/printtyp.cmo \
 	$(OCAMLSRCDIR)/typing/includecore.cmo \
+	$(OCAMLSRCDIR)/typing/typeext.cmo \
 	$(OCAMLSRCDIR)/typing/typetexp.cmo \
 	$(OCAMLSRCDIR)/typing/typedtree.cmo \
 	$(OCAMLSRCDIR)/typing/parmatch.cmo \
@@ -175,6 +176,7 @@ OCAMLCMOFILES=$(OCAMLSRCDIR)/parsing/printast.cmo \
 	$(OCAMLSRCDIR)/bytecomp/switch.cmo \
 	$(OCAMLSRCDIR)/bytecomp/matching.cmo \
 	$(OCAMLSRCDIR)/bytecomp/translobj.cmo \
+	$(OCAMLSRCDIR)/bytecomp/translext.cmo \
 	$(OCAMLSRCDIR)/bytecomp/translcore.cmo \
 	$(OCAMLSRCDIR)/bytecomp/translclass.cmo \
 	$(OCAMLSRCDIR)/tools/depend.cmo
@@ -184,8 +186,7 @@ OCAMLCMXFILES=$(OCAMLCMOFILES:.cmo=.cmx)
 STDLIB_MLIS=../stdlib/*.mli \
 	../otherlibs/unix/unix.mli \
 	../otherlibs/str/str.mli \
-	../otherlibs/bigarray/bigarray.mli \
-	../otherlibs/num/num.mli
+	../otherlibs/bigarray/bigarray.mli
 
 all: exe lib manpages
 exe: $(OCAMLDOC)

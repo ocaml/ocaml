@@ -36,6 +36,18 @@ and type_desc =
   | Tvariant of row_desc
   | Tunivar
   | Tpoly of type_expr * type_expr list
+  | Text of ext_desc
+  | Text_serialized of int
+ 
+and ext_desc =
+    { ext_const: Cduce_types.Types.t option;
+      ext_atoms: (Location.t * ext_atom) list;
+      ext_lb: (Location.t * type_expr) list }
+and ext_atom_res = 
+    Atom_computing | Atom_computed of Cduce_types.Types.t | Atom_start
+and ext_atom = 
+    { mutable ext_atom_v : ext_atom_res; 
+      ext_atom_def : Cduce_types.Types.t -> Cduce_types.Types.t }
 
 and row_desc =
     { row_fields: (label * row_field) list;

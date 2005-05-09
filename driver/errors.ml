@@ -18,6 +18,8 @@
 
 open Format
 
+module CT = Cduce_types.Types
+
 (* Report an error *)
 
 let report_error ppf exn =
@@ -36,6 +38,8 @@ let report_error ppf exn =
        have the same hash value.@ Change one of them." l l'
   | Typecore.Error(loc, err) ->
       Location.print ppf loc; Typecore.report_error ppf err
+  | Typeext.Error(loc, err) ->
+      Location.print ppf loc; Typeext.report_error ppf err
   | Typetexp.Error(loc, err) ->
       Location.print ppf loc; Typetexp.report_error ppf err
   | Typedecl.Error(loc, err) ->

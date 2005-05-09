@@ -132,3 +132,4 @@ let bigarray_kind_and_layout exp =
        bigarray_decode_type layout_type layout_table Pbigarray_unknown_layout)
   | _ ->
       (Pbigarray_unknown, Pbigarray_unknown_layout)
+

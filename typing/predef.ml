@@ -22,6 +22,7 @@ open Btype
 let ident_int = Ident.create "int"
 and ident_char = Ident.create "char"
 and ident_string = Ident.create "string"
+and ident_utf8 = Ident.create "utf8"
 and ident_float = Ident.create "float"
 and ident_bool = Ident.create "bool"
 and ident_unit = Ident.create "unit"
@@ -38,6 +39,7 @@ and ident_lazy_t = Ident.create "lazy_t"
 let path_int = Pident ident_int
 and path_char = Pident ident_char
 and path_string = Pident ident_string
+and path_utf8 = Pident ident_utf8
 and path_float = Pident ident_float
 and path_bool = Pident ident_bool
 and path_unit = Pident ident_unit
@@ -54,6 +56,7 @@ and path_lazy_t = Pident ident_lazy_t
 let type_int = newgenty (Tconstr(path_int, [], ref Mnil))
 and type_char = newgenty (Tconstr(path_char, [], ref Mnil))
 and type_string = newgenty (Tconstr(path_string, [], ref Mnil))
+and type_utf8 = newgenty (Tconstr(path_utf8, [], ref Mnil))
 and type_float = newgenty (Tconstr(path_float, [], ref Mnil))
 and type_bool = newgenty (Tconstr(path_bool, [], ref Mnil))
 and type_unit = newgenty (Tconstr(path_unit, [], ref Mnil))
@@ -175,9 +178,10 @@ let build_initial_env add_type add_exception empty_env =
   add_type ident_bool decl_bool (
   add_type ident_float decl_abstr (
   add_type ident_string decl_abstr (
+  add_type ident_utf8 decl_abstr (
   add_type ident_char decl_abstr (
   add_type ident_int decl_abstr (
-    empty_env)))))))))))))))))))))))))))
+    empty_env))))))))))))))))))))))))))))
 
 let builtin_values =
   List.map (fun id -> Ident.make_global id; (Ident.name id, id))

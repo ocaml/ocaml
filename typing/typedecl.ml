@@ -45,7 +45,11 @@ exception Error of Location.t * error
 
 (* Enter all declared types in the environment as abstract types *)
 
-let enter_type env (name, sdecl) id =
+let enter_type (env,ext) (name, sdecl) id =
+  let ext = match sdecl.ptype_manifest with
+    | Some { ptyp_desc = Ptyp_ext t } -> (id,(name,t))::ext
+    | _ -> ext
+  in
   let decl =
     { type_params =
         List.map (fun _ -> Btype.newgenvar ()) sdecl.ptype_params;
@@ -57,7 +61,7 @@ let enter_type env (name, sdecl) id =
       type_variance = List.map (fun _ -> true, true, true) sdecl.ptype_params;
     }
   in
-  Env.add_type id decl env
+  Env.add_type id decl env, ext
 
 let update_type temp_env env id loc =
   let path = Path.Pident id in
@@ -84,7 +88,7 @@ module StringSet =
     let compare = compare
   end)
 
-let transl_declaration env (name, sdecl) id =
+let transl_declaration env exts (name, sdecl) id =
   (* Bind type parameters *)
   reset_type_variables();
   Ctype.begin_def ();
@@ -144,6 +148,8 @@ let transl_declaration env (name, sdecl) id =
       type_manifest =
         begin match sdecl.ptype_manifest with
           None -> None
+	| Some { ptyp_desc = Ptyp_ext t } ->
+	    Some (List.assq id exts)
         | Some sty ->
             let ty = transl_simple_type env true sty in
             if Ctype.cyclic_abbrev env id ty then
@@ -405,7 +411,8 @@ let compute_variance env tvl nega posi cntr ty =
             (Btype.row_repr row).row_fields
       | Tpoly (ty, _) ->
           compute_same ty
-      | Tvar | Tnil | Tlink _ | Tunivar -> ()
+      | Tvar | Tnil | Tlink _ | Tunivar | Text _ -> ()
+      | Text_serialized _ -> assert false
     end
   in
   compute_variance_rec nega posi cntr ty;
@@ -495,10 +502,19 @@ let transl_type_decl env name_sdecl_list =
   Ctype.init_def(Ident.current_time());
   Ctype.begin_def();
   (* Enter types. *)
-  let temp_env = List.fold_left2 enter_type env name_sdecl_list id_list in
+  let temp_env,exts = 
+    List.fold_left2 enter_type (env,[]) name_sdecl_list id_list in
+  (* XML type declarations. *)
+  let exts_typs = Typeext.transl_type_decl env (List.map snd exts) in
+  let exts = 
+    List.map2 
+      (fun (id,_) t ->
+	 (id,
+	  Btype.newextvar { ext_const = Some t; ext_atoms = []; ext_lb = [] })
+      ) exts exts_typs in
   (* Translate each declaration. *)
   let decls =
-    List.map2 (transl_declaration temp_env) name_sdecl_list id_list in
+    List.map2 (transl_declaration temp_env exts) name_sdecl_list id_list in
   (* Build the final env. *)
   let newenv =
     List.fold_right

@@ -16,8 +16,9 @@
 include ../config/Makefile
 
 CC=$(BYTECC)
-CFLAGS=-DCAML_NAME_SPACE -O $(BYTECCCOMPOPTS)
-DFLAGS=-DCAML_NAME_SPACE -g -DDEBUG $(BYTECCCOMPOPTS)
+CFLAGS=-DCAML_NAME_SPACE $(BYTECCCOMPOPTS) \
+  -DBNG_ARCH_$(BNG_ARCH) -DBNG_ASM_LEVEL=$(BNG_ASM_LEVEL)
+DFLAGS=$(CFLAGS) -g -DDEBUG
 
 OBJS=interp.o misc.o stacks.o fix_code.o startup.o main.o \
   freelist.o major_gc.o minor_gc.o memory.o alloc.o roots.o globroots.o \
@@ -25,14 +26,15 @@ OBJS=interp.o misc.o stacks.o fix_code.o startup.o main.o \
   compare.o ints.o floats.o str.o array.o io.o extern.o intern.o \
   hash.o sys.o meta.o parsing.o gc_ctrl.o terminfo.o md5.o obj.o \
   lexing.o callback.o debugger.o weak.o compact.o finalise.o custom.o \
-  dynlink.o unix.o
+  dynlink.o unix.o bng.o nat_stubs.o
 
 DOBJS=$(OBJS:.o=.d.o) instrtrace.d.o
 
 PRIMS=alloc.c array.c compare.c extern.c floats.c gc_ctrl.c hash.c \
   intern.c interp.c ints.c io.c lexing.c md5.c meta.c obj.c parsing.c \
   signals.c str.c sys.c terminfo.c callback.c weak.c finalise.c stacks.c \
-  dynlink.c
+  dynlink.c \
+  nat_stubs.c
 
 PUBLIC_INCLUDES=alloc.h callback.h config.h custom.h fail.h intext.h \
   memory.h misc.h mlvalues.h printexc.h signals.h compatibility.h
@@ -110,7 +112,13 @@ jumptbl.h : instruct.h
 	@ if test -f $*.f.o; then mv $*.f.o $*.o; else :; fi
 
 depend : prims.c opnames.h jumptbl.h
-	gcc -MM $(BYTECCCOMPOPTS) *.c > .depend
+	gcc -MM $(CFLAGS) *.c > .depend
 	gcc -MM $(BYTECCCOMPOPTS) -DDEBUG *.c | sed -e 's/\.o/.d.o/' >> .depend
 
 include .depend
+
+link:
+	ln -f -s ../otherlibs/num/*.c ../otherlibs/num/*.h .
+
+link_clean:
+	rm -f bng.h nat.h bng*.c nat_stubs.c

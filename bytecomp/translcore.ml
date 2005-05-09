@@ -716,6 +716,8 @@ and transl_exp0 e =
           cl_type = Tcty_signature cty;
           cl_env = e.exp_env }
 
+  | Texp_ext x -> Translext.transl_ext transl_exp e.exp_env e.exp_type x
+
 and transl_list expr_list =
   List.map transl_exp expr_list
 

@@ -155,6 +155,9 @@ and raw_type_desc ppf = function
           match row.row_name with None -> fprintf ppf "None"
           | Some(p,tl) ->
               fprintf ppf "Some(@,%a,@,%a)" path p raw_type_list tl)
+  | Text { ext_const = Some t } -> fprintf ppf "Text(%a)" Cduce_types.Types.Print.print(*_noname*) t
+  | Text { ext_const = None } -> fprintf ppf "Text(?)"
+  | Text_serialized _ -> fprintf ppf "Text_serialized"
 
 and raw_field ppf = function
     Rpresent None -> fprintf ppf "Rpresent None"
@@ -276,6 +279,8 @@ let rec mark_loops_rec visited ty =
         List.iter (fun t -> add_alias t) tyl;
         mark_loops_rec visited ty
     | Tunivar -> ()
+    | Text _ -> ()
+    | Text_serialized _ -> ()
 
 let mark_loops ty =
   normalize_type Env.empty ty;
@@ -381,6 +386,18 @@ let rec tree_of_typexp sch ty =
         end
     | Tunivar ->
         Otyp_var (false, name_of_type ty)
+    | Text { ext_const = Some t; ext_lb = []; ext_atoms = [] } ->
+	let b = Buffer.create 16 in
+	let ppf = Format.formatter_of_buffer b in
+	Format.fprintf ppf "{{%a}}@?" Cduce_types.Types.Print.print(*_noname*) t;
+	let s = Buffer.contents b in
+        Otyp_constr (Oide_ident s, [])
+    | Text _ ->
+        Otyp_constr (Oide_ident "<XML>", [])
+    | Text_serialized _ ->
+	assert false
+
+
   in
   if List.memq px !delayed then delayed := List.filter ((!=) px) !delayed;
   if is_aliased px && ty.desc <> Tvar && ty.desc <> Tunivar then begin
@@ -990,3 +1007,5 @@ let report_subtyping_error ppf tr1 txt1 tr2 =
   let mis = mismatch true tr2 in
   trace false "is not compatible with type" ppf tr2;
   explanation true mis ppf
+
+

@@ -78,7 +78,7 @@ value mkghloc (bp, ep) =
 value mktyp loc d = {ptyp_desc = d; ptyp_loc = mkloc loc};
 value mkpat loc d = {ppat_desc = d; ppat_loc = mkloc loc};
 value mkghpat loc d = {ppat_desc = d; ppat_loc = mkghloc loc};
-value mkexp loc d = {pexp_desc = d; pexp_loc = mkloc loc};
+value mkexp loc d = {pexp_desc = d; pexp_loc = mkloc loc; pexp_ext = False };
 value mkmty loc d = {pmty_desc = d; pmty_loc = mkloc loc};
 value mksig loc d = {psig_desc = d; psig_loc = mkloc loc};
 value mkmod loc d = {pmod_desc = d; pmod_loc = mkloc loc};

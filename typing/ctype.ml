@@ -19,6 +19,21 @@ open Asttypes
 open Types
 open Btype
 
+let extmode = ref true
+let ext_subtype = ref (fun _ _ -> assert false)
+let ext_supertype = ref (fun _ _ -> assert false)
+
+let get_fields rd =              
+  let rd = Btype.row_repr rd in
+  List.map
+    (fun (lab,f) -> 
+       match Btype.row_field_repr f with
+	 | Rpresent (Some t) | Reither(true, [t], _, _) -> (lab, Some t)
+	 | Rpresent None | Reither(true, [], _, _) -> (lab, None)
+	 | _ -> raise Exit)
+    rd.row_fields
+
+
 (*
    Type manipulation after type inference
    ======================================
@@ -332,6 +347,7 @@ let rec filter_row_fields erase = function
         Rabsent -> fi
       | Reither(_,_,false,e) when erase -> set_row_field e Rabsent; fi
       | _ -> p :: fi
+
 
                     (**************************************)
                     (*  Check genericity of type schemes  *)
@@ -1123,7 +1139,8 @@ let rec full_expand env ty =
 let generic_abbrev env path =
   try
     let (_, body) = Env.find_type_expansion path env in
-    (repr body).level = generic_level
+    let t = repr body in
+    (t.level = generic_level) || (t.level = 0)
   with
     Not_found ->
       false
@@ -1349,7 +1366,19 @@ let deep_occur t0 ty =
       abbreviated.  It would be possible to check whether some
       information is indeed lost, but it probably does not worth it.
 *)
-let rec unify env t1 t2 =
+let unify_ext e1 e2 =
+  if !extmode then { ext_const = None; ext_atoms = []; ext_lb = [] }
+  else
+  { ext_const =
+      (match e1.ext_const,e2.ext_const with
+	 | Some s1 as c, Some s2 -> 
+	     if Cduce_types.Types.equiv s1 s2 then c else raise (Unify [])
+	 | (Some _ as c), None | None, (Some _ as c) -> c
+	 | None, None -> None);
+    ext_atoms = e1.ext_atoms @ e2.ext_atoms;
+    ext_lb = e1.ext_lb @ e2.ext_lb }
+
+let rec unify env t1 t2 =	 
   (* First step: special cases (optimizations) *)
   if t1 == t2 then () else
   let t1 = repr t1 in
@@ -1412,12 +1441,11 @@ and unify3 env t1 t1' t2 t2' =
   (* Third step: truly unification *)
   (* Assumes either [t1 == t1'] or [t2 != t2'] *)
   let d1 = t1'.desc and d2 = t2'.desc in
-  
+
   let create_recursion = (t2 != t2') && (deep_occur t1' t2) in
   occur env t1' t2;
   update_level env t1'.level t2;
   link_type t1' t2;
-
   try
     begin match (d1, d2) with
       (Tvar, _) ->
@@ -1437,6 +1465,9 @@ and unify3 env t1 t1' t2 t2' =
           update_level env t2'.level t1;
           link_type t2' t1
         end
+    | (Text e1, Text e2) ->
+	log_type t2;
+	t2.desc <- Text (unify_ext e1 e2)
     | (Tarrow (l1, t1, u1, c1), Tarrow (l2, t2, u2, c2)) when l1 = l2
       || !Clflags.classic && not (is_optional l1 || is_optional l2) ->
         unify env t1 t2; unify env u1 u2;
@@ -1907,6 +1938,10 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
                                           else t1'.level =  generic_level ->
               moregen_occur env t1'.level t2;
               link_type t1' t2
+	  | (Text e1, Text e2) ->
+	      link_type t1 t2;
+	      log_type t2;
+	      t2.desc <- Text (unify_ext e1 e2)
           | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) when l1 = l2
             || !Clflags.classic && not (is_optional l1 || is_optional l2) ->
               moregen inst_nongen type_pairs env t1 t2;
@@ -2165,6 +2200,10 @@ let rec eqtype rename type_pairs subst env t1 t2 =
               with Not_found ->
                 subst := (t1', t2') :: !subst
               end
+	  | Text { ext_const = Some t1 }, Text { ext_const = Some t2 } ->
+	      if not (Cduce_types.Types.equiv t1 t2) then
+		raise (Unify [])
+	  | Text _, Text _ -> assert false
           | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) when l1 = l2
             || !Clflags.classic && not (is_optional l1 || is_optional l2) ->
               eqtype rename type_pairs subst env t1 t2;
@@ -2752,6 +2791,12 @@ let rec build_subtype env visited loops posi level t =
       else (t, Unchanged)
   | Tunivar ->
       (t, Unchanged)
+  | Text _ ->
+      if posi then
+	(!ext_subtype env t, Changed)
+      else
+	(!ext_supertype env t, Changed)
+  | Text_serialized _   -> assert false
 
 let enlarge_type env ty =
   warn := false;
@@ -2860,8 +2905,10 @@ let rec subtype_rec env trace t1 t2 cstrs =
         let cstrs = subtype_rec env trace t1 t2 cstrs in
         univar_pairs := old_univars;
         cstrs
+    | Text _, Text _ ->
+        (trace, t1, !ext_subtype env t2, !univar_pairs)::cstrs
     | (_, _) ->
-        (trace, t1, t2, !univar_pairs)::cstrs
+       (trace, t1, t2, !univar_pairs)::cstrs
   end
 
 and subtype_list env trace tl1 tl2 cstrs =
@@ -3254,3 +3301,5 @@ let rec collapse_conj env visited ty =
 
 let collapse_conj_params env params =
   List.iter (collapse_conj env []) params
+
+

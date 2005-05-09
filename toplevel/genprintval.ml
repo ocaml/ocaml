@@ -52,6 +52,8 @@ module type S =
           Env.t -> t -> type_expr -> Outcometree.out_value
   end
 
+let print_ext = ref (fun ppf v -> Format.fprintf ppf "???")
+
 module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
 
     type t = O.t
@@ -320,6 +322,14 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
               tree_of_val (depth - 1) obj ty
           | Tunivar ->
               Oval_stuff "<poly>"
+	  | Text _ ->
+	      let b = Buffer.create 17 in
+	      let ppf = formatter_of_buffer b in
+	      fprintf ppf "{{%a}}@?" !print_ext (O.obj obj); 
+	      let s = Buffer.contents b in
+	      Oval_stuff s
+	  | Text_serialized _ ->
+	      assert false
         end
 
       and tree_of_val_list start depth obj ty_list =

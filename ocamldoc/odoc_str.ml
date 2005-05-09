@@ -32,7 +32,8 @@ let rec is_arrow_type t =
   | Types.Ttuple _
   | Types.Tconstr _
   | Types.Tvar | Types.Tunivar | Types.Tobject _ | Types.Tpoly _
-  | Types.Tfield _ | Types.Tnil | Types.Tvariant _ -> false
+  | Types.Tfield _ | Types.Tnil | Types.Tvariant _ | Types.Text _ 
+  | Types.Text_serialized _ -> false
 
 let raw_string_of_type_list sep type_list =
   let buf = Buffer.create 256 in
@@ -44,7 +45,8 @@ let raw_string_of_type_list sep type_list =
     | Types.Tconstr _ ->
         false
     | Types.Tvar | Types.Tunivar | Types.Tobject _ | Types.Tpoly _
-    | Types.Tfield _ | Types.Tnil | Types.Tvariant _ -> false
+    | Types.Tfield _ | Types.Tnil | Types.Tvariant _ 
+    | Types.Text _ | Types.Text_serialized _ -> false
   in
   let print_one_type variance t =
     Printtyp.mark_loops t;

@@ -817,7 +817,8 @@ let unify_exp env exp expected_ty =
   | Tags(l1,l2) ->
       raise(Typetexp.Error(exp.exp_loc, Typetexp.Variant_tags (l1, l2)))
 
-let rec type_exp env sexp =
+let rec type_exp env sexp = Typeext.annot env sexp (real_type_exp env sexp)
+and real_type_exp env sexp =
   match sexp.pexp_desc with
     Pexp_ident lid ->
       begin try
@@ -861,7 +862,7 @@ let rec type_exp env sexp =
         exp_type = body.exp_type;
         exp_env = env }
   | Pexp_function _ ->     (* defined in type_expect *)
-      type_expect env sexp (newvar())
+      real_type_expect env sexp (newvar())
   | Pexp_apply(sfunct, sargs) ->
       if !Clflags.principal then begin_def ();
       let funct = type_exp env sfunct in
@@ -1116,6 +1117,7 @@ let rec type_exp env sexp =
                 r := sexp.pexp_loc :: !r;
                 force ()
             | _ ->
+		Typeext.subtype_loc := sarg.pexp_loc;
                 let ty, b = enlarge_type env ty' in
                 force ();
                 begin try Ctype.unify env arg.exp_type ty with Unify trace ->
@@ -1131,6 +1133,7 @@ let rec type_exp env sexp =
               Typetexp.transl_simple_type_delayed env sty'
             in
             begin try
+ 	      Typeext.subtype_loc := sexp.pexp_loc;
               let force'' = subtype env ty ty' in
               force (); force' (); force'' ()
             with Subtype (tr1, tr2) ->
@@ -1362,6 +1365,10 @@ let rec type_exp env sexp =
       }
   | Pexp_poly _ ->
       assert false
+  | Pexp_ext x ->
+      let desc,typ = Typeext.type_expression env sexp.pexp_loc x in
+      { exp_desc = Texp_ext desc; exp_loc = sexp.pexp_loc; exp_type = typ;
+	exp_env = env }
 
 and type_argument env sarg ty_expected' =
   (* ty_expected' may be generic *)
@@ -1633,6 +1640,8 @@ and type_construct env loc lid sarg explicit_arity ty_expected =
    Some constructs are treated specially to provide better error messages. *)
 
 and type_expect ?in_function env sexp ty_expected =
+  Typeext.type_expect ?in_function env sexp ty_expected
+and real_type_expect ?in_function env sexp ty_expected =
   match sexp.pexp_desc with
     Pexp_constant(Const_string s as cst) ->
       let exp =
@@ -1674,19 +1683,21 @@ and type_expect ?in_function env sexp ty_expected =
           Ppat_construct(Longident.Lident"Some",
                          Some{ppat_loc = loc; ppat_desc = Ppat_var"*sth*"},
                          false)},
-         {pexp_loc = loc; pexp_desc = Pexp_ident(Longident.Lident"*sth*")};
+         {pexp_loc = loc; pexp_desc = Pexp_ident(Longident.Lident"*sth*");
+	  pexp_ext = false};
          {ppat_loc = loc; ppat_desc =
           Ppat_construct(Longident.Lident"None", None, false)},
          default] in
       let smatch =
         {pexp_loc = loc; pexp_desc =
-         Pexp_match({pexp_loc = loc; pexp_desc =
+         Pexp_match({pexp_loc = loc; pexp_ext=false; pexp_desc =
                      Pexp_ident(Longident.Lident"*opt*")},
-                    scases)} in
+                    scases); pexp_ext = false} in
       let sfun =
-        {pexp_loc = sexp.pexp_loc; pexp_desc =
+        {pexp_loc = sexp.pexp_loc; pexp_ext = false; pexp_desc =
          Pexp_function(l, None,[{ppat_loc = loc; ppat_desc = Ppat_var"*opt*"},
-                                {pexp_loc = sexp.pexp_loc; pexp_desc =
+                                {pexp_loc = sexp.pexp_loc; pexp_ext=false;
+				 pexp_desc =
                                  Pexp_let(Default, [spat, smatch], sbody)}])}
       in
       type_expect ?in_function env sfun ty_expected
@@ -1753,7 +1764,7 @@ and type_expect ?in_function env sexp ty_expected =
         | _ -> assert false
       end
   | _ ->
-      let exp = type_exp env sexp in
+      let exp = real_type_exp env sexp in
       unify_exp env exp ty_expected;
       exp
 
@@ -2039,3 +2050,6 @@ let report_error ppf = function
       report_unification_error ppf trace
         (fun ppf -> fprintf ppf "This %s has type" kind)
         (fun ppf -> fprintf ppf "which is less general than")
+
+let () =
+  Typeext.real_type_expect := real_type_expect

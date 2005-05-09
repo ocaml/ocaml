@@ -130,6 +130,7 @@ let rec search_pos_type t ~pos ~env =
       add_found_sig (`Type, lid) ~env ~loc:t.ptyp_loc
   | Ptyp_alias (t, _)
   | Ptyp_poly (_, t) -> search_pos_type ~pos ~env t
+  | Ptyp_ext _ -> assert false (* TODO *)
   end
 
 let rec search_pos_class_type cl ~pos ~env =
@@ -220,6 +221,7 @@ let rec search_pos_signature l ~pos ~env =
       (* The last cases should not happen in generated interfaces *) 
       | Psig_open lid -> add_found_sig (`Module, lid) ~env ~loc:pt.psig_loc
       | Psig_include t -> search_pos_module t ~pos ~env
+      | Psig_namespace (_,_) -> ()
       end;
     env
   end)
@@ -393,7 +395,7 @@ let rec view_signature ?title ?path ?(env = !start_env) ?(detach=false) sign =
         let l =
           match e with
             Syntaxerr.Unclosed(l,_,_,_) -> l
-          | Syntaxerr.Other l -> l
+          | Syntaxerr.Other l | Syntaxerr.Message (l,_) -> l
         in
         Jg_text.tag_and_see  tw ~start:(tpos l.loc_start.Lexing.pos_cnum)
           ~stop:(tpos l.loc_end.Lexing.pos_cnum) ~tag:"error"; []
@@ -813,6 +815,7 @@ and search_pos_expr ~pos exp =
       search_pos_expr exp ~pos
   | Texp_object (cls, _, _) ->
       	search_pos_class_structure ~pos cls
+  | Texp_ext _ -> assert false (* TODO *)
   end;
   add_found_str (`Exp(`Expr, exp.exp_type)) ~env:exp.exp_env ~loc:exp.exp_loc
   end

@@ -77,6 +77,24 @@ and expression_desc =
   | Texp_assertfalse
   | Texp_lazy of expression
   | Texp_object of class_structure * class_signature * string list
+  | Texp_ext of ext_exp
+
+and ext_exp =
+  | Textexp_cst of Cduce_types.Types.const
+  | Textexp_match of expression * ext_branch list
+  | Textexp_map of expression * ext_branch list
+  | Textexp_xmap of expression * ext_branch list * type_expr
+  | Textexp_op of string * expression list
+  | Textexp_record of expression Cduce_types.Ident.label_map
+  | Textexp_removefield of expression * Cduce_types.Ident.label
+  | Textexp_namespace of expression
+  | Textexp_from_ml of expression
+  | Textexp_to_ml of expression
+  | Textexp_check of expression
+
+and ext_branch = 
+    Cduce_types.Patterns.node * (Cduce_types.Ident.id * Ident.t) list  * 
+      expression 
 
 and meth =
     Tmeth_name of string

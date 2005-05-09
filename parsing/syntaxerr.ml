@@ -19,6 +19,7 @@ open Format
 type error =
     Unclosed of Location.t * string * Location.t * string
   | Other of Location.t
+  | Message of Location.t * string
 
 exception Error of error
 exception Escape_error
@@ -37,5 +38,7 @@ let report_error ppf = function
       end
   | Other loc ->
       fprintf ppf "%aSyntax error" Location.print loc
+  | Message (loc,s) ->
+      fprintf ppf "%a%s" Location.print loc s
 
 

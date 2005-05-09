@@ -49,8 +49,9 @@ TYPING=typing/ident.cmo typing/path.cmo \
   typing/btype.cmo typing/oprint.cmo \
   typing/subst.cmo typing/predef.cmo \
   typing/datarepr.cmo typing/env.cmo \
-  typing/typedtree.cmo typing/ctype.cmo \
-  typing/printtyp.cmo typing/includeclass.cmo \
+  typing/typedtree.cmo typing/ctype.cmo  \
+  typing/printtyp.cmo typing/typeext.cmo \
+  typing/includeclass.cmo \
   typing/mtype.cmo typing/includecore.cmo \
   typing/includemod.cmo typing/parmatch.cmo \
   typing/typetexp.cmo typing/stypes.cmo typing/typecore.cmo \
@@ -59,7 +60,7 @@ TYPING=typing/ident.cmo typing/path.cmo \
 
 COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/typeopt.cmo bytecomp/switch.cmo bytecomp/matching.cmo \
-  bytecomp/translobj.cmo bytecomp/translcore.cmo \
+  bytecomp/translobj.cmo bytecomp/translext.cmo bytecomp/translcore.cmo \
   bytecomp/translclass.cmo bytecomp/translmod.cmo \
   bytecomp/simplif.cmo bytecomp/runtimedef.cmo
 
@@ -179,6 +180,12 @@ coldstart:
 # Build the core system: the minimum needed to make depend and bootstrap
 core : runtime ocamlc ocamllex ocamlyacc ocamltools library
 
+semi-bootstrap:
+	$(MAKE) coldstart runtime ocamlc ocamllex ocamlyacc library
+	$(MAKE) coreboot
+	$(MAKE) runtime ocamlc ocamllex
+	$(MAKE) compare
+
 # Save the current bootstrap compiler
 MAXSAVED=boot/Saved/Saved.prev/Saved.prev/Saved.prev/Saved.prev/Saved.prev
 backup:
@@ -280,7 +287,7 @@ clean:: partialclean
 # The compiler
 
 ocamlc: $(COMPOBJS)
-	$(CAMLC) $(LINKFLAGS) -o ocamlc $(COMPOBJS)
+	$(CAMLC) -use-prims byterun/primitives $(LINKFLAGS) -o ocamlc $(COMPOBJS)
 	@sed -e 's|@compiler@|$$topdir/boot/ocamlrun $$topdir/ocamlc|' \
 	  driver/ocamlcomp.sh.in > ocamlcomp.sh
 	@chmod +x ocamlcomp.sh
@@ -658,6 +665,7 @@ partialclean::
 	rm -f toplevel/*.cm[iox] toplevel/*.[so] toplevel/*~
 	rm -f tools/*.cm[iox] tools/*.[so] tools/*~
 	rm -f *~
+	(cd tests; $(MAKE) clean)
 
 depend: beforedepend
 	(for d in utils parsing typing bytecomp asmcomp driver toplevel; \
@@ -669,3 +677,28 @@ alldepend:: depend
 FORCE:
 
 include .depend
+
+link_clean:
+	(cd stdlib; $(MAKE) link_clean)
+	(cd stdlib/cduce; $(MAKE) link_clean)
+	(cd byterun; $(MAKE) link_clean)
+
+link:
+	(cd stdlib; $(MAKE) link)
+	(cd stdlib/cduce; $(MAKE) link)
+	(cd byterun; $(MAKE) link)
+
+link_copy:
+	(cd stdlib; $(MAKE) link)
+	(cd stdlib/cduce; $(MAKE) copy)
+	(cd byterun; $(MAKE) link)
+
+clean_boot:
+	mkdir boot.save
+	cp -aR boot/CVS boot/.cvsignore boot/ocamlc boot/ocamllex boot.save/
+	rm -Rf boot
+	mv boot.save boot
+
+make_package:
+	$(MAKE) clean clean_boot link_copy
+	(cd ..; tar czf ocaml-sub.tar.gz ocaml-sub --exclude=CVS --exclude=.cvsignore)

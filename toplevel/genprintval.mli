@@ -17,6 +17,8 @@
 open Types
 open Format
 
+val print_ext: (formatter -> Cduce_types.Value.t -> unit) ref
+
 module type OBJ =
   sig
     type t

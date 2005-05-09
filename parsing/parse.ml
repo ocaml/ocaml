@@ -38,6 +38,7 @@ let maybe_skip_phrase lexbuf =
 
 let wrap parsing_fun lexbuf =
   try
+    Lexer.init ();
     let ast = parsing_fun Lexer.token lexbuf in
     Parsing.clear_parser();
     ast
