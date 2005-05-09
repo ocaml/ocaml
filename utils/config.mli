@@ -109,3 +109,10 @@ val ext_dll: string
 val default_executable_name: string
         (* Name of executable produced by linking if none is given with -o,
            e.g. [a.out] under Unix. *)
+
+val pack_option_supported : bool
+        (* Whether option -pack is implemented *)
+val systhread_supported : bool
+        (* Whether the system thread library is implemented *)
+
+val print_config : out_channel -> unit;;

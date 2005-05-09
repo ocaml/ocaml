@@ -344,7 +344,7 @@ let package_object_files ppf files targetcmx
 (* The entry point *)
 
 let package_files ppf files targetcmx =
-  if Config.binutils_objcopy = "" || Config.binutils_nm = ""
+  if not Config.pack_option_supported
   then raise (Error No_binutils);
   let files =
     List.map

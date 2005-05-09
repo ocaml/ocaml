@@ -15,6 +15,8 @@
 (* The main OCaml version string has moved to stdlib/sys.ml *)
 let version = Sys.ocaml_version
 
+let standard_library_default = "%%LIBDIR%%"
+
 let standard_library =
   try
     Sys.getenv "OCAMLLIB"
@@ -22,7 +24,7 @@ let standard_library =
   try
     Sys.getenv "CAMLLIB"
   with Not_found ->
-    "%%LIBDIR%%"
+    standard_library_default
 
 let standard_runtime = "%%BYTERUN%%"
 let ccomp_type = "%%CCOMPTYPE%%"
@@ -75,3 +77,39 @@ let default_executable_name =
     "Unix" -> "a.out"
   | "Win32" | "Cygwin" -> "camlprog.exe"
   | _ -> "camlprog"
+
+let pack_option_supported = binutils_objcopy <> "" && binutils_nm <> "";;
+let systhread_supported = %%SYSTHREAD_SUPPORT%%;;
+
+let print_config oc =
+  let p name valu = Printf.fprintf oc "%s: %s\n" name valu in
+  let p_bool name valu = Printf.fprintf oc "%s: %B\n" name valu in
+  p "version" version;
+  p "standard_library_default" standard_library_default;
+  p "standard_library" standard_library;
+  p "standard_runtime" standard_runtime;
+  p "ccomp_type" ccomp_type;
+  p "bytecomp_c_compiler" bytecomp_c_compiler;
+  p "bytecomp_c_linker" bytecomp_c_linker;
+  p "bytecomp_c_libraries" bytecomp_c_libraries;
+  p "native_c_compiler" native_c_compiler;
+  p "native_c_linker" native_c_linker;
+  p "native_c_libraries" native_c_libraries;
+  p "native_partial_linker" native_partial_linker;
+  p "ranlib" ranlib;
+  p "binutils_nm" binutils_nm;
+  p "binutils_objcopy" binutils_objcopy;
+  p_bool "pack_option_supported" pack_option_supported;
+  p "cc_profile" cc_profile;
+  p "architecture" architecture;
+  p "model" model;
+  p "system" system;
+  p "ext_obj" ext_obj;
+  p "ext_asm" ext_asm;
+  p "ext_lib" ext_lib;
+  p "ext_dll" ext_dll;
+  p "os_type" Sys.os_type;
+  p "default_executable_name" default_executable_name;
+  p_bool "systhread_supported" systhread_supported;
+  flush oc;
+;;

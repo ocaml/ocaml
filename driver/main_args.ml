@@ -19,6 +19,7 @@ module Make_options (F :
      val _cc : string -> unit
      val _cclib : string -> unit
      val _ccopt : string -> unit
+     val _config : unit -> unit
      val _custom : unit -> unit
      val _dllib : string -> unit
      val _dllpath : string -> unit
@@ -70,6 +71,8 @@ struct
     "-cclib", Arg.String F._cclib, "<opt>  Pass option <opt> to the C linker";
     "-ccopt", Arg.String F._ccopt,
            "<opt>  Pass option <opt> to the C compiler and linker";
+    "-config", Arg.Unit F._config,
+           " print configuration values and exit";
     "-custom", Arg.Unit F._custom, " Link in custom mode";
     "-dllib", Arg.String F._dllib,
            "<lib>  Use the dynamically-loaded library <lib>";
@@ -109,7 +112,8 @@ struct
     "-principal", Arg.Unit F._principal,
            " Check principality of type inference";
     "-rectypes", Arg.Unit F._rectypes, " Allow arbitrary recursive types";
-    "-thread", Arg.Unit F._thread, " Generate code that supports the system threads library";
+    "-thread", Arg.Unit F._thread,
+           " Generate code that supports the system threads library";
     "-unsafe", Arg.Unit F._unsafe,
            " No bounds checking on array and string access";
     "-use-runtime", Arg.String F._use_runtime,
@@ -120,7 +124,8 @@ struct
            " Print compiler version and location of standard library and exit";
     "-version", Arg.Unit F._version, " Print compiler version and exit";
     "-verbose", Arg.Unit F._verbose, " Print calls to external commands";
-    "-vmthread", Arg.Unit F._vmthread, " Generate code that supports the threads library with VM-level scheduling";
+    "-vmthread", Arg.Unit F._vmthread,
+  " Generate code that supports the threads library with VM-level scheduling";
     "-w", Arg.String F._w,
       "<flags>  Enable or disable warnings according to <flags>:\n\
       \032    A/a enable/disable all warnings\n\

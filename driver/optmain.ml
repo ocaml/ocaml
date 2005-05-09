@@ -84,6 +84,11 @@ let default_output = function
 
 let usage = "Usage: ocamlopt <options> <files>\nOptions are:"
 
+let show_config () =
+  Config.print_config stdout;
+  exit 0;
+;;
+
 let main () =
   native_code := true;
   c_compiler := Config.native_c_compiler;
@@ -102,6 +107,8 @@ let main () =
              "<opt>  Pass option <opt> to the C compiler and linker";
        "-compact", Arg.Clear optimize_for_speed,
              " Optimize code size rather than speed";
+       "-config", Arg.Unit show_config,
+             " print configuration values and exit";
        "-dtypes", Arg.Set save_types,
              " Save type information in <filename>.annot";
        "-i", Arg.Unit (fun () -> print_types := true; compile_only := true),
@@ -143,7 +150,8 @@ let main () =
        "-rectypes", Arg.Set recursive_types,
              " Allow arbitrary recursive types";
        "-S", Arg.Set keep_asm_file, " Keep intermediate assembly file";
-       "-thread", Arg.Set use_threads, " Generate code that supports the system threads library";
+       "-thread", Arg.Set use_threads,
+             " Generate code that supports the system threads library";
        "-unsafe", Arg.Set fast,
              " No bounds checking on array and string access";
        "-v", Arg.Unit print_version_and_library,
