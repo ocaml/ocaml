@@ -153,18 +153,3 @@ EXTEND (* join calculus *)
     ]];
 END
 
-
-
-EXTEND (* dynamic typing *)
- expr: LEVEL "apply"
-    [[
-       "dynamic"; "module"; e = module_expr -> ExDtm (loc, e)
-     | "dynamic"; e = expr -> ExDyn (loc, e)
-     | "coerce"; "("; e = SELF; ":"; t=ctyp; ")" -> ExDco (loc, e, t)
-    ]];
-
- module_expr:
-    [[
-      "coerce"; e = expr; ":"; s = module_type -> MeDtm (loc, e, s)
-    ]];
-END

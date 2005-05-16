@@ -50,8 +50,6 @@ let report_error ppf exn =
       Transljoin.report_error ppf e
   | Translcore.Error(loc, err) ->
       Location.print ppf loc; Translcore.report_error ppf err
-  | Transldyn.Unimplemented text ->
-      fprintf ppf "Unimplemented dynamic typing feature:@ %s" text
   | Translclass.Error(loc, err) ->
       Location.print ppf loc; Translclass.report_error ppf err
   | Translmod.Error(loc, err) ->

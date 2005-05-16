@@ -333,16 +333,6 @@ and expression i ppf x =
       line i ppf "Pexp_loc\n";
       joinlocations i ppf d;
       expression i ppf e;
-  | Pexp_dynamic e ->
-      line i ppf "Pexp_dynamic\n";
-      expression i ppf e;
-  | Pexp_coerce (e, ct) ->
-      line i ppf "Pexp_coerce\n";
-      expression i ppf e;
-      core_type i ppf ct;
-  | Pexp_dyntype me ->
-      line i ppf "Pexp_dyntype\n";
-      module_expr i ppf me;
 
 and joindefinition i ppf d = list i joinautomaton ppf d
 
@@ -625,12 +615,6 @@ and module_expr i ppf x =
       line i ppf "Pmod_constraint\n";
       module_expr i ppf me;
       module_type i ppf mt;
-(*> JOCAML *)
-  | Pmod_dyntype (e, mt) ->
-      line i ppf "Pmod_constraint\n";
-      expression i ppf e;
-      module_type i ppf mt;
-(*< JOCAML *)
 
 and structure i ppf x = list i structure_item ppf x
 

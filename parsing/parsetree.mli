@@ -118,9 +118,6 @@ and expression_desc =
   | Pexp_reply of expression * joinident
   | Pexp_def of joinautomaton list * expression
   | Pexp_loc of joinlocation list * expression
-  | Pexp_dynamic of expression
-  | Pexp_coerce of expression * core_type
-  | Pexp_dyntype of module_expr
 
 and joinlocation =
   {pjloc_desc : joinident * joinautomaton list * expression ;
@@ -268,7 +265,6 @@ and module_expr_desc =
   | Pmod_functor of string * module_type * module_expr
   | Pmod_apply of module_expr * module_expr
   | Pmod_constraint of module_expr * module_type
-  | Pmod_dyntype of expression * module_type
 
 and structure = structure_item list
 

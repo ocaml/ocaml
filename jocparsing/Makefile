@@ -36,6 +36,6 @@ clean:
 	/bin/rm -f *~ pa_joc.cmo jocp
 
 depend:
-	$(RUNTIME) ../../tools/ocamldep *.mli *.ml >> .depend
+#	$(RUNTIME) ../tools/ocamldep *.mli *.ml >> .depend
 
 include .depend

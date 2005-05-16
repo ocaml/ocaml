@@ -17,10 +17,10 @@ win32.o: win32.c ../../byterun/alloc.h ../../byterun/compatibility.h \
 condition.cmi: mutex.cmi 
 condition.cmo: mutex.cmi condition.cmi 
 condition.cmx: mutex.cmx condition.cmi 
-event.cmo: condition.cmi mutex.cmi event.cmi 
-event.cmx: condition.cmx mutex.cmx event.cmi 
-join.cmo: condition.cmi mutex.cmi thread.cmi join.cmi 
-join.cmx: condition.cmx mutex.cmx thread.cmx join.cmi 
+event.cmo: mutex.cmi condition.cmi event.cmi 
+event.cmx: mutex.cmx condition.cmx event.cmi 
+join.cmo: thread.cmi mutex.cmi condition.cmi join.cmi 
+join.cmx: thread.cmx mutex.cmx condition.cmx join.cmi 
 mutex.cmo: mutex.cmi 
 mutex.cmx: mutex.cmi 
 thread.cmo: thread.cmi 

@@ -171,7 +171,6 @@ OCAMLCMOFILES=$(OCAMLSRCDIR)/parsing/printast.cmo \
 	$(OCAMLSRCDIR)/typing/mtype.cmo \
 	$(OCAMLSRCDIR)/typing/includemod.cmo \
 	$(OCAMLSRCDIR)/typing/typemod.cmo \
-        $(OCAMLSRCDIR)/typing/typedynt.cmo \
 	$(OCAMLSRCDIR)/bytecomp/lambda.cmo \
 	$(OCAMLSRCDIR)/bytecomp/typeopt.cmo \
 	$(OCAMLSRCDIR)/bytecomp/printlambda.cmo \
@@ -180,7 +179,6 @@ OCAMLCMOFILES=$(OCAMLSRCDIR)/parsing/printast.cmo \
 	$(OCAMLSRCDIR)/bytecomp/translobj.cmo \
 	$(OCAMLSRCDIR)/bytecomp/transljmatch.cmo \
 	$(OCAMLSRCDIR)/bytecomp/transljoin.cmo \
-	$(OCAMLSRCDIR)/bytecomp/transldyn.cmo \
 	$(OCAMLSRCDIR)/bytecomp/translcore.cmo \
 	$(OCAMLSRCDIR)/bytecomp/translclass.cmo \
 	$(OCAMLSRCDIR)/tools/depend.cmo

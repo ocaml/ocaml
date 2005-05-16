@@ -33,8 +33,6 @@ val type_lazy_t: type_expr -> type_expr
 (*> JOCAML *)
 val type_location : type_expr
 val type_process : type_expr
-val type_dyn : type_expr
-val type_dtm : type_expr
 (*< JOCAML *)
 
 val path_int: Path.t
@@ -55,8 +53,6 @@ val path_lazy_t: Path.t
 (*> JOCAML *)
 val path_process : Path.t
 val path_channel : Path.t
-val path_dyn : Path.t
-val path_dtm : Path.t
 val is_predef_type_path : Path.t -> bool
 (*< JOCAML *)
 

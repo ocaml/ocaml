@@ -165,9 +165,6 @@ let rec add_expr bv exp =
       List.iter (add_joinautomaton bv) d ; add_expr bv e
   | Pexp_loc (d, e) ->
       List.iter (add_joinlocation bv) d ; add_expr bv e
-  | Pexp_dynamic e -> add_expr bv e
-  | Pexp_coerce (e,t) -> add_expr bv e ; add_type bv t
-  | Pexp_dyntype m -> add_module bv m
 
 and add_joinlocation bv jloc =
   let (_, autos, e) = jloc.pjloc_desc in
@@ -243,8 +240,6 @@ and add_module bv modl =
       add_module bv mod1; add_module bv mod2
   | Pmod_constraint(modl, mty) ->
       add_module bv modl; add_modtype bv mty
-  | Pmod_dyntype (e,mty) ->
-      add_expr bv e ; add_modtype bv mty
 
 and add_structure bv item_list =
   List.fold_left add_struct_item bv item_list 

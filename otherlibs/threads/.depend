@@ -1,5 +1,4 @@
-scheduler.o: scheduler.c ../../byterun/alloc.h \
-  ../../byterun/compatibility.h ../../byterun/misc.h \
+scheduler.o: scheduler.c ../../byterun/alloc.h ../../byterun/misc.h \
   ../../byterun/config.h ../../config/m.h ../../config/s.h \
   ../../byterun/mlvalues.h ../../byterun/backtrace.h \
   ../../byterun/callback.h ../../byterun/fail.h ../../byterun/io.h \
@@ -10,12 +9,12 @@ scheduler.o: scheduler.c ../../byterun/alloc.h \
 condition.cmi: mutex.cmi 
 thread.cmi: unix.cmi 
 threadUnix.cmi: unix.cmi 
-condition.cmo: mutex.cmi thread.cmi condition.cmi 
-condition.cmx: mutex.cmx thread.cmx condition.cmi 
-event.cmo: condition.cmi mutex.cmi event.cmi 
-event.cmx: condition.cmx mutex.cmx event.cmi 
-join.cmo: thread.cmi join.cmi 
-join.cmx: thread.cmx join.cmi 
+condition.cmo: thread.cmi mutex.cmi condition.cmi 
+condition.cmx: thread.cmx mutex.cmx condition.cmi 
+event.cmo: mutex.cmi condition.cmi event.cmi 
+event.cmx: mutex.cmx condition.cmx event.cmi 
+join.cmo: thread.cmi mutex.cmi condition.cmi join.cmi 
+join.cmx: thread.cmx mutex.cmx condition.cmx join.cmi 
 marshal.cmo: pervasives.cmi marshal.cmi 
 marshal.cmx: pervasives.cmx marshal.cmi 
 mutex.cmo: thread.cmi mutex.cmi 
@@ -24,7 +23,7 @@ pervasives.cmo: unix.cmi pervasives.cmi
 pervasives.cmx: unix.cmx pervasives.cmi 
 thread.cmo: unix.cmi thread.cmi 
 thread.cmx: unix.cmx thread.cmi 
-threadUnix.cmo: thread.cmi unix.cmi threadUnix.cmi 
-threadUnix.cmx: thread.cmx unix.cmx threadUnix.cmi 
+threadUnix.cmo: unix.cmi thread.cmi threadUnix.cmi 
+threadUnix.cmx: unix.cmx thread.cmx threadUnix.cmi 
 unix.cmo: unix.cmi 
 unix.cmx: unix.cmi 

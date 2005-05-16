@@ -280,7 +280,6 @@ and rw_exp iflag sexp =
 (*> JOCAML *)
   | Pexp_loc (_, _)|Pexp_def (_, _)|Pexp_reply (_, _)|Pexp_par (_, _)
   | Pexp_spawn _|Pexp_null
-  | Pexp_dyntype _|Pexp_coerce (_, _)|Pexp_dynamic _
     ->
       assert false (* No profiling in jocaml *)
 (*< JOCAML *)
@@ -365,7 +364,6 @@ and rewrite_mod iflag smod =
   | Pmod_functor(param, smty, sbody) -> rewrite_mod iflag sbody
   | Pmod_apply(smod1, smod2) -> rewrite_mod iflag smod1; rewrite_mod iflag smod2
   | Pmod_constraint(smod, smty) -> rewrite_mod iflag smod
-  | Pmod_dyntype (_, _) -> assert false
 
 and rewrite_str_item iflag item =
   match item.pstr_desc with

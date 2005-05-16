@@ -282,9 +282,6 @@ and expr floc sh =
         ExDef (floc loc, List.map (joinautomaton floc sh) x1, self x2)
     | ExLoc (loc, x1, x2) ->
         ExLoc (floc loc, List.map (joinlocation floc sh) x1, self x2)
-    | ExDyn (loc, x1) -> ExDyn (floc loc, self x1)
-    | ExDco (loc, x1, t1) -> ExDco (loc, self x1, ctyp floc sh t1)
-    | ExDtm (loc, x1) -> ExDtm (floc loc, module_expr floc sh x1)
   in
   self
 and joinlocation floc sh (loc, id, autos, e) =
@@ -382,8 +379,6 @@ and module_expr floc sh =
     | MeTyc (loc, x1, x2) ->
         let nloc = floc loc in MeTyc (nloc, self x1, module_type floc sh x2)
     | MeUid (loc, x1) -> let nloc = floc loc in MeUid (nloc, x1)
-    | MeDtm (loc, x1, x2) ->
-        MeDtm (floc loc, expr floc sh x1, module_type floc sh x2)
   in
   self
 and str_item floc sh =

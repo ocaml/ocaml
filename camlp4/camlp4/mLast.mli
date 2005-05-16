@@ -125,9 +125,6 @@ and expr =
   | ExRep of loc and expr and joinident
   | ExDef of loc and list joinautomaton  and expr
   | ExLoc of loc and list joinlocation  and expr
-  | ExDyn of loc and expr
-  | ExDco of loc and expr and ctyp (* coerce for dynamics *)
-  | ExDtm of loc and module_expr (* dynamically typed module *)
 (*< JOCAML *)
 ]
 (*> JOCAML *)
@@ -176,7 +173,6 @@ and module_expr =
   | MeFun of loc and string and module_type and module_expr
   | MeStr of loc and list str_item
   | MeTyc of loc and module_expr and module_type
-  | MeDtm of loc and expr and module_type (* dynamically typed module *)
   | MeUid of loc and string ]
 and str_item =
   [ StCls of loc and list (class_infos class_expr)

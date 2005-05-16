@@ -56,13 +56,12 @@ TYPING=typing/ident.cmo typing/path.cmo \
   typing/includemod.cmo typing/parmatch.cmo \
   typing/typetexp.cmo typing/stypes.cmo typing/typecore.cmo \
   typing/typedecl.cmo typing/typeclass.cmo \
-  typing/typedynt.cmo \
   typing/typemod.cmo
 
 COMP=bytecomp/lambda.cmo bytecomp/printlambda.cmo \
   bytecomp/typeopt.cmo bytecomp/switch.cmo bytecomp/matching.cmo \
   bytecomp/transljmatch.cmo \
-  bytecomp/transljoin.cmo bytecomp/transldyn.cmo \
+  bytecomp/transljoin.cmo \
   bytecomp/translobj.cmo bytecomp/translcore.cmo \
   bytecomp/translclass.cmo bytecomp/translmod.cmo \
   bytecomp/simplif.cmo bytecomp/runtimedef.cmo
@@ -104,6 +103,12 @@ COMPOBJS=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(BYTECOMP) $(DRIVER)
 TOPLIB=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(BYTECOMP) $(TOPLEVEL)
 
 TOPOBJS=$(TOPLEVELLIB) $(TOPLEVELSTART)
+JOCAMLTOPOBJS=$(TOPLEVELLIB) \
+	      camlp4/top/camlp4o.cma \
+	      jocparsing/pa_joc.cmo \
+	      otherlibs/unix/unix.cma \
+	      otherlibs/systhreads/threads.cma \
+	      $(TOPLEVELSTART)
 
 OPTOBJS=$(OPTUTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) $(OPTDRIVER)
 
@@ -322,8 +327,10 @@ toplevel/toplevellib.cma: $(TOPLIB)
 partialclean::
 	rm -f ocaml jocaml toplevel/toplevellib.cma
 
-jocaml: $(JOCAMLLIBS) $(JOCAMLTOPOBJS) expunge
-	./tools/ocamlmktop $(LINKFLAGS) camlp4/camlp4o.cma jocparsing/pa_joc.cmo -thread unix.cma threads.cma -o jocaml
+jocaml: $(JOCAMLTOPOBJS) expunge
+	$(CAMLC) $(LINKFLAGS) -thread -I otherlibs/unix -I otherlibs/systhreads -linkall -o $@.tmp $(JOCAMLTOPOBJS)
+	- $(CAMLRUN) ./expunge $@.tmp $@ $(PERVASIVES)
+	rm -f $@.tmp
 
 # The configuration file
 
@@ -578,8 +585,6 @@ alldepend::
 
 # The extra libraries
 
-otherlibs/dyntypes/dynamics.cma: ocamlc jocp FORCE
-	cd otherlibs/dyntypes && $(MAKE) dynamics.cma
 dynlink: ocamlc
 	cd otherlibs/dynlink && $(MAKE)
 # OCamldoc

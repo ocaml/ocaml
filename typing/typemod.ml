@@ -523,16 +523,6 @@ let rec type_module anchor env smod =
         mod_type = mty;
         mod_env = env;
         mod_loc = smod.pmod_loc }
-(*> JOCAML *)
-  | Pmod_dyntype(sexpr,smty) ->
-      let di = Ctype.instance Predef.type_dtm in
-      let expr = Typecore.type_expect env sexpr di in
-      let mty = transl_modtype env smty in
-      rm { mod_desc = Tmod_dyntype expr;
-        mod_type = mty;
-        mod_env = env;
-        mod_loc = smod.pmod_loc }
-(*< JOCAML *)
 
 
 and type_structure anchor env sstr =

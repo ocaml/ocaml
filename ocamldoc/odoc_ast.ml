@@ -817,8 +817,6 @@ module Analyser =
       | Typedtree.Tmod_functor _ 
       | Typedtree.Tmod_apply _ ->
           Odoc_messages.struct_end
-      | Typedtree.Tmod_dyntype _ ->
-          Misc.fatal_error "ocamldoc/jocaml"
     (** Get the list of included modules in a module structure of a typed tree. *)
     let tt_get_included_module_list tt_structure =
       let f acc item =
@@ -1543,7 +1541,6 @@ module Analyser =
 	    | Parsetree.Pmod_functor _ -> "Pmod_functor"
 	    | Parsetree.Pmod_apply _ -> "Pmod_apply"
 	    | Parsetree.Pmod_constraint _ -> "Pmod_constraint"
-            | Parsetree.Pmod_dyntype (_, _) -> "Pmod_dyntype"
 	  in
 	  let s_typed = 
             match typedtree with
@@ -1552,7 +1549,6 @@ module Analyser =
 	    | Typedtree.Tmod_functor _ -> "Tmod_functor"
 	    | Typedtree.Tmod_apply _ -> "Tmod_apply"
 	    | Typedtree.Tmod_constraint _ -> "Tmod_constraint"
-            | Typedtree.Tmod_dyntype _ -> "Tmod_dyntype"
 	  in
 	  let code = get_string_of_file pos_start pos_end in
 	  print_DEBUG (Printf.sprintf "code=%s\ns_parse=%s\ns_typed=%s\n" code s_parse s_typed);

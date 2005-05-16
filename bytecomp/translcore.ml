@@ -701,23 +701,6 @@ and transl_exp0 e =
       with Not_constant ->
         Lprim(Pmakearray kind, ll)
       end
-(*> JOCAML *)
-  | Texp_dynamic d ->
-      Lprim (Pmakeblock (0, Immutable),
-             [Transldyn.make_type_repr_code e.exp_env d.exp_type;
-              transl_exp d])
-  | Texp_coerce (d, t) ->
-      let te = (* probably wrong if type variables are involved *)
-        Typetexp.transl_type_scheme e.exp_env t
-      in
-      Lapply (Transldyn.dynamics_prim "coerce_internal",
-              [transl_exp d;
-               Transldyn.make_type_repr_code e.exp_env te])
-  | Texp_dyntype modl ->
-      let me = !transl_module Tcoerce_none None modl
-      and te = Transldyn.make_sig_repr_code e.exp_env modl.mod_type in
-      Lprim (Pmakeblock (0, Immutable), [te; me])
-(*< JOCAML *)
   | Texp_ifthenelse(cond, ifso, Some ifnot) ->
       Lifthenelse(transl_exp cond,
                   event_before ifso (transl_exp ifso),
