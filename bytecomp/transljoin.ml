@@ -90,8 +90,7 @@ let get_signature name =
     fatal_error ("transjoin: module "^name^" not found")
 end
 
-let env_jprims = get_signature "Jprims"
-and env_join = get_signature "Join"
+let env_join = get_signature "Join"
 
 let transl_name env name =
   try
@@ -101,11 +100,7 @@ let transl_name env name =
       fatal_error ("Join primitive: "^name^" not found")
 
 let mk_lambda env name = lazy (transl_name env name)
-let lambda_exit = mk_lambda env_jprims "exit"
-let lambda_create_location = mk_lambda env_jprims "create_location"
 let lambda_create_process = mk_lambda env_join "create_process"
-let lambda_create_process_location =
-  mk_lambda env_jprims "create_process_location"
 (* Synchronous sends, two cases only *)
 let lambda_send_sync = mk_lambda env_join "send_sync"
 and lambda_send_sync_alone = mk_lambda env_join "send_sync_alone"
@@ -130,12 +125,9 @@ let lambda_tail_send_async_alone = mk_lambda env_join "tail_send_async_alone"
 
 let lambda_create_automaton = mk_lambda env_join "create_automaton"
 let lambda_create_automaton_debug = mk_lambda env_join "create_automaton_debug"
-let lambda_create_automaton_location = mk_lambda env_jprims "create_automaton_location"
 let lambda_patch_table = mk_lambda env_join "patch_table"
 let lambda_get_queue = mk_lambda env_join "get_queue"
 let lambda_unlock_automaton = mk_lambda env_join "unlock_automaton"
-let lambda_patch_match = mk_lambda env_jprims "patch_match"
-let lambda_patch_guard = mk_lambda env_jprims "patch_guard"
 let lambda_reply_to = mk_lambda env_join "reply_to"
 
 let mk_apply f args = match Lazy.force f with
@@ -143,11 +135,7 @@ let mk_apply f args = match Lazy.force f with
 | path,_                   -> Lapply (transl_path path, args)
   
 
-let exit () = mk_apply lambda_exit [lambda_unit]
-let create_location () = mk_apply lambda_create_location [lambda_unit]
 let create_process p =  mk_apply lambda_create_process [p]
-let create_process_location id_loc p =
- mk_apply lambda_create_process_location [Lvar id_loc ; p]
 
 let do_send send auto num arg =
  mk_apply send [Lvar auto ; lambda_int  num ; arg]
@@ -186,15 +174,6 @@ let create_automaton some_loc nchans names = match some_loc with
 | Some id_loc -> failwith "NotYet"
 
 
-let patch_match auto i this_match =
- mk_apply lambda_patch_match
-   [Lvar auto ; lambda_int i ;
-   Lconst (Const_block (0, List.map (fun x -> Const_base (Const_int x)) this_match))]
-
-let patch_guard auto i lam =
- mk_apply lambda_patch_guard
-   [Lvar auto ; lambda_int i ; lam]
-
 let reply_to lam1 lam2 =
  mk_apply lambda_reply_to [lam1; lam2]
 
@@ -207,7 +186,7 @@ let do_spawn some_loc p =
    | None ->
        create_process (Lfunction (Curried, [param], p))
    | Some id_loc ->
-       create_process_location id_loc (Lfunction (Curried, [param], p))
+         assert false
 
 let do_get_queue auto num = mk_apply lambda_get_queue [auto ; lambda_int num]
 

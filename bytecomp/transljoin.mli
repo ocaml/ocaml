@@ -24,10 +24,7 @@ val report_error : Format.formatter -> error -> unit
 (* Basic join operations from the module Join *)
 (**********************************************)
 
-val exit : unit -> Lambda.lambda
-val create_location : unit -> Lambda.lambda
 val create_process : Lambda.lambda -> Lambda.lambda
-val create_process_location : Ident.t -> Lambda.lambda -> Lambda.lambda
 val send_async : Lambda.lambda -> Lambda.lambda -> Lambda.lambda
 val send_sync : Ident.t -> int -> int option -> Lambda.lambda -> Lambda.lambda
 val direct_send_async :

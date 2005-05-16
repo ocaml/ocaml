@@ -105,13 +105,6 @@ TOPLIB=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(BYTECOMP) $(TOPLEVEL)
 
 TOPOBJS=$(TOPLEVELLIB) $(TOPLEVELSTART)
 
-JOCAMLLIBS=otherlibs/dyntypes/dynamics.cma
-JOCAMLEXTRATOPOBJS=toplevel/be_join.cmo \
-  $(JOCAMLLIBS) \
-  camlp4/top/camlp4o.cma jocparsing/pa_joc.cmo
-JOCAMLTOPOBJS=$(TOPLEVELLIB) $(JOCAMLEXTRATOPOBJS) $(TOPLEVELSTART)
-
-
 OPTOBJS=$(OPTUTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) $(OPTDRIVER)
 
 EXPUNGEOBJS=utils/misc.cmo utils/tbl.cmo \
@@ -331,9 +324,7 @@ partialclean::
 	rm -f ocaml jocaml toplevel/toplevellib.cma
 
 jocaml: $(JOCAMLLIBS) $(JOCAMLTOPOBJS) expunge
-	$(CAMLC) $(LINKFLAGS) -linkall -o jocaml.tmp $(JOCAMLTOPOBJS)
-	- $(CAMLRUN) ./expunge jocaml.tmp jocaml $(PERVASIVES) dynamics
-	rm -f jocaml.tmp
+	./tools/ocamlmktop $(LINKFLAGS) camlp4/camlp4o.cma jocparsing/pa_joc.cmo -thread unix.cma threads.cma -o jocaml
 
 # The configuration file
 
