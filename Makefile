@@ -252,7 +252,6 @@ install: FORCE
 	cp lex/ocamllex $(BINDIR)/ocamllex$(EXE)
 	cp yacc/ocamlyacc$(EXE) $(BINDIR)/ocamlyacc$(EXE)
 	cp toplevel/toplevellib.cma $(LIBDIR)/toplevellib.cma
-	cp toplevel/be_join.cmo $(LIBDIR)/be_join.cmo
 	cp expunge $(LIBDIR)/expunge$(EXE)
 	cp typing/outcometree.cmi typing/outcometree.mli $(LIBDIR)
 	cp toplevel/topstart.cmo $(LIBDIR)
