@@ -329,7 +329,7 @@ partialclean::
 
 jocaml: $(JOCAMLTOPOBJS) expunge
 	$(CAMLC) $(LINKFLAGS) -thread -I otherlibs/unix -I otherlibs/systhreads -linkall -o $@.tmp $(JOCAMLTOPOBJS)
-	- $(CAMLRUN) ./expunge $@.tmp $@ $(PERVASIVES)
+	- $(CAMLRUN) ./expunge $@.tmp $@ $(PERVASIVES) join
 	rm -f $@.tmp
 
 # The configuration file
