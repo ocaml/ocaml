@@ -1123,7 +1123,6 @@ fi
 
 # Configure for jocaml
 if test "$jocaml" = "yes"; then
-  otherlibraries="$otherlibraries join"
   jocparsing="jocp"
 fi
 
