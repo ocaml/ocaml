@@ -34,7 +34,6 @@ let joinautomaton = Grammar.Entry.create gram "joinautomaton"
 let joinlocation =  Grammar.Entry.create gram "joinlocation"
 let bracedproc = Grammar.Entry.create gram "bracedproc"
 let nullproc = Grammar.Entry.create gram "nullproc"
-let topjpatt = Grammar.Entry.create gram "topjpatt"
 
 EXTEND (* join calculus *)
  joinident:
