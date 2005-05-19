@@ -336,6 +336,7 @@ The precedences must be listed from low to high.
 %nonassoc AND             /* above WITH (module rec A: SIG with ... and ...) */
 %nonassoc THEN                          /* below ELSE (if ... then ...) */
 %nonassoc ELSE                          /* (if ... then ... else ...) */
+%nonassoc SPAWN
 %nonassoc LESSMINUS                     /* below COLONEQUAL (lbl <- x := e) */
 %right    COLONEQUAL                    /* expr (e := e := e) */
 %nonassoc AS
@@ -761,7 +762,6 @@ class_type_declaration:
 
 seq_expr:
   | expr        %prec below_SEMI  { $1 }
-  | seq_expr AMPERAMPER seq_expr  { mkexp(Pexp_par ($1, $3)) }
   | expr SEMI                     { reloc_exp $1 }
   | expr SEMI seq_expr            { mkexp(Pexp_sequence($1, $3)) }
 ;
@@ -808,7 +808,7 @@ let_pattern:
 expr:
     simple_expr %prec below_SHARP
       { $1 }
-  | NULLP simple_expr
+  | NULLP LPAREN RPAREN
       { mkexp(Pexp_null) }
   | simple_expr simple_labeled_expr_list
       { mkexp(Pexp_apply($1, List.rev $2)) }
