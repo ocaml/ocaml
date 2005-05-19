@@ -1538,7 +1538,7 @@ joinpattern:
       { { pjpat_desc=$1,mkpat(Ppat_construct(Lident "()", None, false)) ; pjpat_loc=symbol_rloc () } }
 ;
 joinpattern_list_AMP:
-  | joinpattern_list_AMP AMPERAMPER joinpattern { $3 :: $1 }
+  | joinpattern_list_AMP AMPERSAND joinpattern { $3 :: $1 }
   | joinpattern                                 { [$1] }
 ;
 
