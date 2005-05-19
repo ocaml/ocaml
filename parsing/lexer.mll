@@ -94,6 +94,18 @@ let keyword_table =
     "asr", INFIXOP4("asr")
 ]
 
+let join_keyword_table =
+  let h = Hashtbl.copy keyword_table in
+  Hashtbl.add h "def" DEF;
+  Hashtbl.add h "loc" LOC;
+  Hashtbl.add h "spawn" SPAWN;
+  Hashtbl.add h "reply" REPLY;
+  Hashtbl.add h "nullp" NULLP;
+  h
+
+let keywords () =
+  if !Clflags.join then join_keyword_table else keyword_table
+
 (* To buffer string literals *)
 
 let initial_string_buffer = String.create 256
@@ -241,7 +253,7 @@ rule token = parse
   | "~" lowercase identchar * ':'
       { let s = Lexing.lexeme lexbuf in
         let name = String.sub s 1 (String.length s - 2) in
-        if Hashtbl.mem keyword_table name then
+        if Hashtbl.mem (keywords ()) name then
           raise (Error(Keyword_as_label name, Location.curr lexbuf));
         LABEL name }
   | "?"  { QUESTION }
@@ -249,13 +261,13 @@ rule token = parse
   | "?" lowercase identchar * ':'
       { let s = Lexing.lexeme lexbuf in
         let name = String.sub s 1 (String.length s - 2) in
-        if Hashtbl.mem keyword_table name then
+        if Hashtbl.mem (keywords ()) name then
           raise (Error(Keyword_as_label name, Location.curr lexbuf));
         OPTLABEL name }
   | lowercase identchar *
       { let s = Lexing.lexeme lexbuf in
           try
-            Hashtbl.find keyword_table s
+            Hashtbl.find (keywords ()) s
           with Not_found ->
             LIDENT s }
   | uppercase identchar *

@@ -297,6 +297,12 @@ let bigarray_set arr arg newval =
 %token WHILE
 %token WITH
 
+%token DEF
+%token LOC
+%token REPLY
+%token SPAWN
+%token NULLP
+
 /* Precedences and associativities.
 
 Tokens and rules have precedences.  A reduce/reduce conflict is resolved
@@ -324,6 +330,7 @@ The precedences must be listed from low to high.
 %nonassoc below_SEMI
 %nonassoc SEMI                          /* below EQUAL ({lbl=...; lbl=...}) */
 %nonassoc LET                           /* above SEMI ( ...; let ... in ...) */
+%nonassoc DEF
 %nonassoc below_WITH
 %nonassoc FUNCTION WITH                 /* below BAR  (match ... with ...) */
 %nonassoc AND             /* above WITH (module rec A: SIG with ... and ...) */
@@ -465,6 +472,12 @@ structure_item:
       { mkstr(Pstr_class_type (List.rev $3)) }
   | INCLUDE module_expr
       { mkstr(Pstr_include $2) }
+/*> JOCAML */
+  | DEF joinautomaton_list_AND
+      { mkstr(Pstr_def $2) }
+  | LET LOC joinlocation_list_AND
+      { mkstr(Pstr_loc $3) }
+/*< JOCAML */
 ;
 module_binding:
     EQUAL module_expr
@@ -748,6 +761,7 @@ class_type_declaration:
 
 seq_expr:
   | expr        %prec below_SEMI  { $1 }
+  | seq_expr AMPERAMPER seq_expr  { mkexp(Pexp_par ($1, $3)) }
   | expr SEMI                     { reloc_exp $1 }
   | expr SEMI seq_expr            { mkexp(Pexp_sequence($1, $3)) }
 ;
@@ -794,6 +808,8 @@ let_pattern:
 expr:
     simple_expr %prec below_SHARP
       { $1 }
+  | NULLP simple_expr
+      { mkexp(Pexp_null) }
   | simple_expr simple_labeled_expr_list
       { mkexp(Pexp_apply($1, List.rev $2)) }
   | LET rec_flag let_bindings IN seq_expr
@@ -852,12 +868,8 @@ expr:
       { mkinfix $1 "<" $3 }
   | expr GREATER expr
       { mkinfix $1 ">" $3 }
-  | expr OR expr
-      { mkinfix $1 "or" $3 }
   | expr BARBAR expr
       { mkinfix $1 "||" $3 }
-  | expr AMPERSAND expr
-      { mkinfix $1 "&" $3 }
   | expr AMPERAMPER expr
       { mkinfix $1 "&&" $3 }
   | expr COLONEQUAL expr
@@ -884,6 +896,14 @@ expr:
       { mkexp (Pexp_object($2)) }
   | OBJECT class_structure error
       { unclosed "object" 1 "end" 3 }
+/*> JOCAML */
+/* XXX TODO FIXME [MC] */
+  | REPLY TO joinident                        { mkexp(Pexp_reply(ghexp(Pexp_ident (Lident "()")), $3)) }
+  | REPLY expr TO joinident                   { mkexp(Pexp_reply($2,$4)) }
+  | SPAWN seq_expr                            { mkexp(Pexp_spawn $2) }
+  | DEF joinautomaton_list_AND IN seq_expr    { mkexp(Pexp_def($2,$4)) }
+  | LET LOC joinlocation_list_AND IN seq_expr { mkexp(Pexp_loc($3,$5)) }
+/*< JOCAML */
 ;
 simple_expr:
     val_longident
@@ -1502,5 +1522,48 @@ opt_semi:
 subtractive:
   | MINUS                                       { "-" }
   | MINUSDOT                                    { "-." }
+;
+
+/* JOCAML */
+
+joinident:
+  | LIDENT                                      { { pjident_desc=$1 ; pjident_loc=symbol_rloc () } }
+;
+
+joinpattern:
+  | joinident LPAREN pattern RPAREN
+      { { pjpat_desc=$1,$3 ; pjpat_loc=symbol_rloc () } }
+  | joinident LPAREN RPAREN
+      { { pjpat_desc=$1,mkpat(Ppat_construct(Lident "()", None, false)) ; pjpat_loc=symbol_rloc () } }
+;
+joinpattern_list_AMP:
+  | joinpattern_list_AMP AMPERAMPER joinpattern { $3 :: $1 }
+  | joinpattern                                 { [$1] }
+;
+
+joinclause:
+  | joinpattern_list_AMP EQUAL seq_expr         { { pjclause_desc=$1,$3 ; pjclause_loc=symbol_rloc () } }
+;
+joinclause_list_OR:
+  | joinclause_list_OR OR joinclause            { $3 :: $1 }
+  | joinclause                                  { [$1] }
+;
+
+joinautomaton:
+  | joinclause_list_OR                          { { pjauto_desc=$1 ; pjauto_loc=symbol_rloc () } }
+;
+joinautomaton_list_AND:
+  | joinautomaton_list_AND AND joinautomaton    { $3 :: $1 }
+  | joinautomaton                               { [$1] }
+;
+
+joinlocation:
+  | joinident DEF joinautomaton_list_AND DO seq_expr
+                                                { { pjloc_desc=$1,$3,$5 ; pjloc_loc=symbol_rloc () } }
+  | joinident DO seq_expr                       { { pjloc_desc=$1,[],$3 ; pjloc_loc=symbol_rloc () } }
+;
+joinlocation_list_AND:
+  | joinlocation_list_AND AND joinlocation      { $3 :: $1 }
+  | joinlocation                                { [$1] }
 ;
 %%

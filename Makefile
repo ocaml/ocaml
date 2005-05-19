@@ -1,4 +1,3 @@
-
 #########################################################################
 #                                                                       #
 #                            Objective Caml                             #
@@ -102,13 +101,7 @@ COMPOBJS=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(BYTECOMP) $(DRIVER)
 
 TOPLIB=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(BYTECOMP) $(TOPLEVEL)
 
-TOPOBJS=$(TOPLEVELLIB) $(TOPLEVELSTART)
-JOCAMLTOPOBJS=$(TOPLEVELLIB) \
-	      camlp4/top/camlp4o.cma \
-	      jocparsing/pa_joc.cmo \
-	      otherlibs/unix/unix.cma \
-	      otherlibs/systhreads/threads.cma \
-	      $(TOPLEVELSTART)
+TOPOBJS=$(TOPLEVELLIB) otherlibs/unix/unix.cma otherlibs/systhreads/threads.cma $(TOPLEVELSTART)
 
 OPTOBJS=$(OPTUTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) $(OPTDRIVER)
 
@@ -118,7 +111,7 @@ EXPUNGEOBJS=utils/misc.cmo utils/tbl.cmo \
   typing/predef.cmo bytecomp/runtimedef.cmo bytecomp/bytesections.cmo \
   bytecomp/dll.cmo bytecomp/meta.cmo bytecomp/symtable.cmo toplevel/expunge.cmo
 
-PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop
+PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop join
 
 # For users who don't read the INSTALL file
 defaultentry:
@@ -131,9 +124,9 @@ defaultentry:
 	@echo "should work.  But see the file INSTALL for more details."
 
 # Recompile the system using the bootstrap compiler
-all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
-  otherlibraries camlp4out $(DEBUGGER) $(JOCPARSING) jocaml ocamldoc
-
+all: runtime ocamlc ocamllex ocamlyacc ocamltools library \
+  otherlibraries ocaml camlp4out $(DEBUGGER)
+  #ocamldoc
 
 # The compilation of ocaml will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
@@ -252,7 +245,6 @@ install: FORCE
 	cd byterun; $(MAKE) install
 	cp ocamlc $(BINDIR)/ocamlc$(EXE)
 	cp ocaml $(BINDIR)/ocaml$(EXE)
-	cp jocaml $(BINDIR)/jocaml$(EXE)
 	cd stdlib; $(MAKE) install
 	cp lex/ocamllex $(BINDIR)/ocamllex$(EXE)
 	cp yacc/ocamlyacc$(EXE) $(BINDIR)/ocamlyacc$(EXE)
@@ -266,22 +258,18 @@ install: FORCE
 	for i in $(OTHERLIBRARIES); do \
           (cd otherlibs/$$i; $(MAKE) install) || exit $$?; \
         done
-	cd ocamldoc; $(MAKE) install
+	#cd ocamldoc; $(MAKE) install
 	if test -f ocamlopt; then $(MAKE) installopt; else :; fi
 	cd camlp4; $(MAKE) install BINDIR=$(BINDIR) LIBDIR=$(LIBDIR) MANDIR=$(MANDIR)
 	if test -f debugger/ocamldebug; then (cd debugger; $(MAKE) install); \
 	   else :; fi
-	if test -f jocparsing/jocp; then \
-	  cd jocparsing && $(MAKE) LIBDIR=$(LIBDIR)/camlp4 install; \
-	fi
-
 
 # Installation of the native-code compiler
 installopt:
 	cd asmrun; $(MAKE) install
 	cp ocamlopt $(BINDIR)/ocamlopt$(EXE)
 	cd stdlib; $(MAKE) installopt
-	cd ocamldoc; $(MAKE) installopt
+	#cd ocamldoc; $(MAKE) installopt
 	for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) installopt) || exit $$?; done
 	if test -f ocamlc.opt; \
 	  then cp ocamlc.opt $(BINDIR)/ocamlc.opt$(EXE); else :; fi
@@ -317,7 +305,8 @@ partialclean::
 # The toplevel
 
 ocaml: $(TOPOBJS) expunge
-	$(CAMLC) $(LINKFLAGS) -linkall -o ocaml.tmp $(TOPOBJS)
+	$(CAMLC) $(LINKFLAGS) -thread -I otherlibs/unix -I otherlibs/systhreads \
+		-linkall -o ocaml.tmp $(TOPOBJS)
 	- $(CAMLRUN) ./expunge ocaml.tmp ocaml $(PERVASIVES)
 	rm -f ocaml.tmp
 
@@ -325,12 +314,7 @@ toplevel/toplevellib.cma: $(TOPLIB)
 	$(CAMLC) -a -o $@ $(TOPLIB)
 
 partialclean::
-	rm -f ocaml jocaml toplevel/toplevellib.cma
-
-jocaml: $(JOCAMLTOPOBJS) expunge
-	$(CAMLC) $(LINKFLAGS) -thread -I otherlibs/unix -I otherlibs/systhreads -linkall -o $@.tmp $(JOCAMLTOPOBJS)
-	- $(CAMLRUN) ./expunge $@.tmp $@ $(PERVASIVES) join
-	rm -f $@.tmp
+	rm -f ocaml toplevel/toplevellib.cma
 
 # The configuration file
 
@@ -358,7 +342,6 @@ utils/config.ml: utils/config.mlp config/Makefile
             -e 's|%%EXT_ASM%%|.s|' \
             -e 's|%%EXT_LIB%%|.a|' \
             -e 's|%%EXT_DLL%%|.so|' \
-            -e 's|%%JOINPARSER%%|$(BINDIR)/jocp -impl|' \
             utils/config.mlp > utils/config.ml
 	@chmod -w utils/config.ml
 
@@ -583,27 +566,22 @@ partialclean::
 alldepend::
 	cd tools; $(MAKE) depend
 
+# OCamldoc
+#
+#ocamldoc: ocamlc ocamlyacc ocamllex
+#	cd ocamldoc && $(MAKE) all
+#ocamldoc.opt: ocamlc.opt ocamlyacc ocamllex
+#	cd ocamldoc && $(MAKE) opt.opt
+#partialclean::
+#	cd ocamldoc && $(MAKE) clean
+#alldepend::
+#	cd ocamldoc && $(MAKE) depend
+
 # The extra libraries
 
-dynlink: ocamlc
-	cd otherlibs/dynlink && $(MAKE)
-# OCamldoc
-
-ocamldoc: ocamlc ocamlyacc ocamllex
-	cd ocamldoc && $(MAKE) all
-ocamldoc.opt: ocamlc.opt ocamlyacc ocamllex
-	cd ocamldoc && $(MAKE) opt.opt
-partialclean::
-	cd ocamldoc && $(MAKE) clean
-alldepend::
-	cd ocamldoc && $(MAKE) depend
-
-
-otherlibraries: jocp
-otherlibrariesopt: jocp
 otherlibraries:
 	for i in $(OTHERLIBRARIES); do \
-          (cd otherlibs/$$i; $(MAKE) all) || exit $$?; \
+          (cd otherlibs/$$i; $(MAKE) RUNTIME=$(RUNTIME) all) || exit $$?; \
         done
 otherlibrariesopt:
 	for i in $(OTHERLIBRARIES); do \
@@ -629,7 +607,7 @@ alldepend::
 
 # Camlp4
 
-camlp4out: ocamlc dynlink
+camlp4out: ocamlc
 	cd camlp4; $(MAKE) all
 camlp4opt: ocamlopt
 	cd camlp4; $(MAKE) opt
@@ -639,16 +617,6 @@ partialclean::
 	cd camlp4; $(MAKE) clean
 alldepend::
 	cd camlp4; $(MAKE) depend
-
-# Parser for jocaml
-jocp: ocamlc camlp4out
-	set -e ; cd jocparsing ; $(MAKE) all
-
-alldepend::
-	set -e; cd jocparsing ; $(MAKE) depend
-
-clean::
-	set -e; cd jocparsing ; $(MAKE) clean
 
 # Check that the stack limit is reasonable.
 

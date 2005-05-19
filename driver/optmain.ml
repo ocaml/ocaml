@@ -142,6 +142,9 @@ let main () =
              " Check principality of type inference";
        "-rectypes", Arg.Set recursive_types,
              " Allow arbitrary recursive types";
+(*> JOCAML *)
+       "-join", Arg.Set join, " Be a jocaml compiler";
+(*< JOCAML *)    
        "-S", Arg.Set keep_asm_file, " Keep intermediate assembly file";
        "-thread", Arg.Set use_threads, " Generate code that supports the system threads library";
        "-unsafe", Arg.Set fast,

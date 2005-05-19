@@ -15,7 +15,6 @@
 
 # $Id$
 
-
 configure_options="$*"
 prefix=/usr/local
 bindir=''
@@ -39,10 +38,8 @@ dl_defs=''
 verbose=no
 withcurses=yes
 withsharedlibs=yes
-jocaml=yes
 binutils_dir=''
 gcc_warnings="-Wall"
-
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
 unset LANG
@@ -1121,11 +1118,6 @@ else
   echo "Bytecode threads library not supported (missing system calls)"
 fi
 
-# Configure for jocaml
-if test "$jocaml" = "yes"; then
-  jocparsing="jocp"
-fi
-
 # Determine the location of X include files and libraries
 
 x11_include="not found"
@@ -1497,7 +1489,6 @@ echo "BINUTILS_NM=$binutils_nm" >> Makefile
 echo "DYNLINKOPTS=$dllib" >> Makefile
 echo "OTHERLIBRARIES=$otherlibraries" >> Makefile
 echo "DEBUGGER=$debugger" >> Makefile
-echo "JOCPARSING=$jocparsing" >> Makefile
 echo "CC_PROFILE=$cc_profile" >> Makefile
 
 rm -f tst hasgot.c
