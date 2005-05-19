@@ -47,9 +47,7 @@ let file_argument name =
 
 let magic_join () =
   if !join then (
-    let dir = Config.standard_library ^ "/threads" in
-    print_endline dir;
-    include_dirs := dir :: !include_dirs;
+    include_dirs := (Config.standard_library ^ "/threads") :: !include_dirs;
     file_argument "unix.cma";
     file_argument "threads.cma"
   )
