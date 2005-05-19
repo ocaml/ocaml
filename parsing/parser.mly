@@ -870,6 +870,8 @@ expr:
       { mkinfix $1 ">" $3 }
   | expr BARBAR expr
       { mkinfix $1 "||" $3 }
+  | expr AMPERSAND expr
+      { mkexp(Pexp_par ($1,$3)) }
   | expr AMPERAMPER expr
       { mkinfix $1 "&&" $3 }
   | expr COLONEQUAL expr
@@ -897,10 +899,9 @@ expr:
   | OBJECT class_structure error
       { unclosed "object" 1 "end" 3 }
 /*> JOCAML */
-/* XXX TODO FIXME [MC] */
   | REPLY TO joinident                        { mkexp(Pexp_reply(ghexp(Pexp_ident (Lident "()")), $3)) }
   | REPLY expr TO joinident                   { mkexp(Pexp_reply($2,$4)) }
-  | SPAWN seq_expr                            { mkexp(Pexp_spawn $2) }
+  | SPAWN expr                                { mkexp(Pexp_spawn $2) }
   | DEF joinautomaton_list_AND IN seq_expr    { mkexp(Pexp_def($2,$4)) }
   | LET LOC joinlocation_list_AND IN seq_expr { mkexp(Pexp_loc($3,$5)) }
 /*< JOCAML */
