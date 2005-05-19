@@ -118,17 +118,6 @@ and expr =
   | ExUid of loc * string
   | ExVrn of loc * string
   | ExWhi of loc * expr * expr list
-  | ExSpa of loc * expr
-  | ExPar of loc * expr * expr
-  | ExNul of loc
-  | ExRep of loc * expr * joinident
-  | ExDef of loc * joinautomaton list * expr
-  | ExLoc of loc * joinlocation list * expr
-and joinlocation = loc * joinident * joinautomaton list * expr
-and joinautomaton = loc * joinclause list
-and joinclause = loc * joinpattern list * expr
-and joinpattern = loc * joinident * patt
-and joinident = loc * string
 and module_type =
     MtAcc of loc * module_type * module_type
   | MtApp of loc * module_type * module_type
@@ -179,8 +168,6 @@ and str_item =
   | StTyp of loc * type_decl list
   | StUse of loc * string * (str_item * loc) list
   | StVal of loc * bool * (patt * expr) list
-  | StDef of loc * joinautomaton list
-  | StLoc of loc * joinlocation list
 and type_decl =
   (loc * string) * (string * (bool * bool)) list * ctyp * (ctyp * ctyp) list
 and class_type =

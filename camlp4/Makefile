@@ -23,10 +23,10 @@ boot/camlp4$(EXE): $(COLD_FILES)
 	$(MAKE) clean_cold clean_hot library
 
 clean_hot:
-	set -e; for i in $(DIRS) compile; do (cd $$i; $(MAKE) clean); done
+	for i in $(DIRS) compile; do (cd $$i; $(MAKE) clean); done
 
 depend:
-	set -e; for i in $(DIRS) compile; do (cd $$i; $(MAKE) depend); done
+	for i in $(DIRS) compile; do (cd $$i; $(MAKE) depend); done
 
 install:
 	for i in $(DIRS) compile; do (cd $$i; $(MAKE) install BINDIR="$(BINDIR)" LIBDIR="$(LIBDIR)" MANDIR="$(MANDIR)"); done

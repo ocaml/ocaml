@@ -627,8 +627,6 @@ value rec expr =
       mkexp loc
         (Pexp_function ("?" ^ lab) (option expr eo) [(patt p, when_expr e w)])
   | ExFun loc pel -> mkexp loc (Pexp_function "" None (List.map mkpwe pel))
-  | ExIfe loc e1 e2 (ExUid _ "()") ->
-      mkexp loc (Pexp_ifthenelse (expr e1) (expr e2) None)
   | ExIfe loc e1 e2 e3 ->
       mkexp loc (Pexp_ifthenelse (expr e1) (expr e2) (Some (expr e3)))
   | ExInt loc s -> mkexp loc (Pexp_constant (Const_int (int_of_string s)))
@@ -688,42 +686,7 @@ value rec expr =
   | ExVrn loc s -> mkexp loc (Pexp_variant s None)
   | ExWhi loc e1 el ->
       let e2 = ExSeq loc el in
-      mkexp loc (Pexp_while (expr e1) (expr e2))
-(*> JOCAML *)
-  | ExSpa loc e1 -> mkexp loc (Pexp_spawn (expr e1))
-  | ExPar loc e1 e2 -> mkexp loc (Pexp_par (expr e1) (expr e2))
-  | ExNul loc -> mkexp loc Pexp_null
-  | ExRep loc e id ->
-      mkexp loc (Pexp_reply (expr e) (joinident id))
-  | ExDef loc d e ->
-      mkexp loc (Pexp_def (List.map joinautomaton d) (expr e))
-  | ExLoc loc d e ->
-      mkexp loc (Pexp_loc (List.map joinlocation d) (expr e))
-(*< JOCAML *)
-  ]
-(*> JOCAML *)
-
-and joinlocation (loc, id, autos, e) =
-  {pjloc_loc = mkloc loc ;
-  pjloc_desc =
-    (joinident id, List.map joinautomaton autos, expr e)}
-
-and joinautomaton (loc, cls) =
-  {pjauto_loc = mkloc loc ; pjauto_desc = List.map joinclause cls}
-
-and joinclause (loc, jpats, e) =
-  {pjclause_loc = mkloc loc ;
-   pjclause_desc = (List.map joinpattern jpats, expr e)}
-
-and joinpattern (loc, id, args) =
-  {pjpat_loc = mkloc loc ;
-  pjpat_desc = (joinident id, patt args)}
-
-and joinident (loc, id) =
-  {pjident_loc = mkloc loc ; pjident_desc = id}
-
-(*< JOCAML *)
-
+      mkexp loc (Pexp_while (expr e1) (expr e2)) ]
 and label_expr =
   fun
   [ ExLab loc lab eo -> (lab, expr (expr_of_lab loc lab eo))
@@ -835,14 +798,7 @@ and str_item s l =
       apply_with_var glob_fname fn
         (fun () -> List.fold_right (fun (si, _) -> str_item si) sl l)
   | StVal loc rf pel ->
-      [mkstr loc (Pstr_value (mkrf rf) (List.map mkpe pel)) :: l] 
-(*> JOCAML *)
-  | StDef loc d ->
-      [mkstr loc (Pstr_def (List.map joinautomaton d)) :: l]
-  | StLoc loc d ->
-      [mkstr loc (Pstr_loc (List.map joinlocation d)) :: l]
-(*< JOCAML *)
-]
+      [mkstr loc (Pstr_value (mkrf rf) (List.map mkpe pel)) :: l] ]
 and class_type =
   fun
   [ CtCon loc id tl ->
