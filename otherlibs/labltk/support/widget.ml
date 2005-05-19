@@ -21,4 +21,3 @@
 include Rawwidget
 type 'a widget = 'a raw_widget
 type any = raw_any
-

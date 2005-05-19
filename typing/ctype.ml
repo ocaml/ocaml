@@ -372,7 +372,7 @@ let closed_schema ty =
 
 exception Non_closed of type_expr * bool
 
-let free_variables_list = ref []
+let free_variables = ref []
 
 let rec free_vars_rec real ty =
   let ty = repr ty in
@@ -380,7 +380,7 @@ let rec free_vars_rec real ty =
     ty.level <- pivot_level - ty.level;
     begin match ty.desc with
       Tvar ->
-        free_variables_list := (ty, real) :: !free_variables_list
+        free_variables := (ty, real) :: !free_variables
 (* Do not count "virtual" free variables
     | Tobject(ty, {contents = Some (_, p)}) ->
         free_vars_rec false ty; List.iter (free_vars_rec true) p
@@ -399,10 +399,10 @@ let rec free_vars_rec real ty =
   end
 
 let free_vars ty =
-  free_variables_list := [];
+  free_variables := [];
   free_vars_rec true ty;
-  let res = !free_variables_list in
-  free_variables_list := [];
+  let res = !free_variables in
+  free_variables := [];
   res
 
 let free_variables ty =

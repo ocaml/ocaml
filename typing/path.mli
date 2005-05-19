@@ -32,4 +32,3 @@ val unique_name : t -> string
        e.g., "F_42(X_84).M.foo" *)
 
 val head: t -> Ident.t
-

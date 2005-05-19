@@ -30,7 +30,6 @@ val find_modtype: Path.t -> t -> modtype_declaration
 val find_class: Path.t -> t -> class_declaration
 val find_cltype: Path.t -> t -> cltype_declaration
 
-
 val find_type_expansion: Path.t -> t -> type_expr list * type_expr
 val find_modtype_expansion: Path.t -> t -> Types.module_type
 
@@ -67,6 +66,7 @@ val add_signature: signature -> t -> t
 val add_continuation: Ident.t -> continuation_description -> t -> t
 val remove_continuations: t -> t
 (*< JOCAML *)
+
 (* Insertion of all fields of a signature, relative to the given path.
    Used to implement open. *)
 
@@ -82,8 +82,6 @@ val enter_module: string -> module_type -> t -> Ident.t * t
 val enter_modtype: string -> modtype_declaration -> t -> Ident.t * t
 val enter_class: string -> class_declaration -> t -> Ident.t * t
 val enter_cltype: string -> cltype_declaration -> t -> Ident.t * t
-
-
 
 (* Reset the cache of in-core module interfaces.
    To be called in particular when load_path changes. *)

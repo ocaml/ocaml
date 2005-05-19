@@ -273,7 +273,7 @@ and structure_item =
     pstr_loc: Location.t }
 
 and structure_item_desc =
-  | Pstr_eval of expression
+    Pstr_eval of expression
   | Pstr_value of rec_flag * (pattern * expression) list
   | Pstr_primitive of string * value_description
   | Pstr_type of (string * type_declaration) list

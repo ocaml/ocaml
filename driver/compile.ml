@@ -111,10 +111,10 @@ let implementation ppf sourcefile outputprefix =
       Pparse.remove_preprocessed inputfile;
       close_out oc;
     with x ->
-        close_out oc;
-        remove_file objfile;
-        Pparse.remove_preprocessed_if_ast inputfile;
-        raise x
+      close_out oc;
+      remove_file objfile;
+      Pparse.remove_preprocessed_if_ast inputfile;
+      raise x
   end
 
 let c_file name =

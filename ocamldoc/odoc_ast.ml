@@ -817,6 +817,7 @@ module Analyser =
       | Typedtree.Tmod_functor _ 
       | Typedtree.Tmod_apply _ ->
           Odoc_messages.struct_end
+
     (** Get the list of included modules in a module structure of a typed tree. *)
     let tt_get_included_module_list tt_structure =
       let f acc item =
@@ -1382,6 +1383,7 @@ module Analyser =
           (0, env, [ Element_included_module im ]) (* A VOIR : étendre l'environnement ? avec quoi ? *)
       | Parsetree.Pstr_loc _|Parsetree.Pstr_def _ ->
           fatal_error "ocamldoc/jocaml"
+
      (** Analysis of a [Parsetree.module_expr] and a name to return a [t_module].*)
      and analyse_module env current_module_name module_name comment_opt p_module_expr tt_module_expr =
       let complete_name = Name.concat current_module_name module_name in
