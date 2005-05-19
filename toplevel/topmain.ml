@@ -45,6 +45,15 @@ let file_argument name =
       else exit 2
     end
 
+let magic_join () =
+  if !join then (
+    let dir = Config.standard_library ^ "/threads" in
+    print_endline dir;
+    include_dirs := dir :: !include_dirs;
+    file_argument "unix.cma";
+    file_argument "threads.cma"
+  )
+      
 let main () =
   Arg.parse [
      "-I", Arg.String(fun dir ->
@@ -88,6 +97,7 @@ let main () =
      "-dlambda", Arg.Set dump_lambda, " (undocumented)";
      "-dinstr", Arg.Set dump_instr, " (undocumented)";
     ] file_argument usage;
+  magic_join ();
   if not (prepare Format.err_formatter) then exit 2;
   Toploop.loop Format.std_formatter
 

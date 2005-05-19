@@ -48,92 +48,6 @@ let initial_env () =
   with Not_found ->
     fatal_error "cannot open pervasives.cmi"
 
-
-(*> JOCAML *)
-(* Parse a jocaml file *)
-exception Preprocessor_error
-
-let parse_jocaml inputfile =
-  let tmpfile = Filename.temp_file "camlpp" "" in
-  let comm = Printf.sprintf "%s %s > %s"
-      Config.standard_joinparser inputfile tmpfile in
-  if Ccomp.command comm <> 0 then begin
-    remove_file tmpfile;
-    prerr_endline "Jocaml parsing error";
-    raise Preprocessor_error
-  end;
-  tmpfile
-
-(*< JOCAML *)
-
-(* Optionally preprocess a source file *)
-
-let preprocess sourcefile =
-  match !Clflags.preprocessor with
-    None -> sourcefile
-  | Some pp ->
-      let tmpfile = Filename.temp_file "camlpp" "" in
-      let comm = Printf.sprintf "%s %s > %s" pp sourcefile tmpfile in
-      if Ccomp.command comm <> 0 then begin
-        remove_file tmpfile;
-        prerr_endline "Preprocessing error" ;
-        raise Preprocessor_error
-      end;
-      tmpfile
-
-let remove_preprocessed inputfile =
-  match !Clflags.preprocessor with
-    None -> ()
-  | Some _ -> remove_file inputfile
-
-
-(* Parse a file or get a dumped syntax tree in it *)
-
-exception Outdated_version
-
-let rec parse_file impl inputfile parse_fun ast_magic =
-  let ic = open_in_bin inputfile in
-  let is_ast_file =
-    try
-      let buffer = String.create (String.length ast_magic) in
-      really_input ic buffer 0 (String.length ast_magic);
-      if buffer = ast_magic then true
-      else if String.sub buffer 0 9 = String.sub ast_magic 0 9 then
-        raise Outdated_version
-      else false
-    with
-      Outdated_version ->
-        fatal_error "Ocaml and preprocessor have incompatible versions"
-    | _ -> false
-  in
-  let ast =
-    try
-      if is_ast_file then begin
-        Location.input_name := input_value ic;
-        input_value ic
-      end else if impl && !Clflags.join then begin
-        let joininputfile = parse_jocaml inputfile in
-        let ast =
-          try
-            parse_file impl joininputfile parse_fun ast_magic
-          with x -> remove_file joininputfile ; raise x in
-        remove_file joininputfile ;
-        ast
-      end else begin
-        seek_in ic 0;
-        Location.input_name := inputfile;
-        parse_fun (Lexing.from_channel ic)
-      end
-    with x -> close_in ic;  raise x
-  in
-  close_in ic;
-  ast
-
-let remove_preprocessed_if_ast inputfile =
-  if !Clflags.preprocessor <> None || !Clflags.join then begin
-    if inputfile <> !Location.input_name then remove_file inputfile
-  end
-
 (* Compile a .mli file *)
 
 let interface ppf sourcefile outputprefix =
@@ -196,15 +110,10 @@ let implementation ppf sourcefile outputprefix =
       Warnings.check_fatal ();
       Pparse.remove_preprocessed inputfile;
       close_out oc;
-    with
-    | Preprocessor_error ->
-        close_out oc ;
-        remove_file objfile;
-        exit 2
-    | x ->
+    with x ->
         close_out oc;
         remove_file objfile;
-        remove_preprocessed_if_ast inputfile;
+        Pparse.remove_preprocessed_if_ast inputfile;
         raise x
   end
 
