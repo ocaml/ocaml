@@ -361,9 +361,10 @@ let transl_implementation module_name (str, cc) =
   reset_labels ();
   primitive_declarations := [];
   let module_id = Ident.create_persistent module_name in
+  Translext.enter ();
   Lprim(Psetglobal module_id,
-        [transl_label_init
-            (transl_structure [] cc (global_path module_id) str)])
+        [Translext.leave (transl_label_init
+		  (transl_structure [] cc (global_path module_id) str))])
 
 (* A variant of transl_structure used to compile toplevel structure definitions
    for the native-code compiler. Store the defined values in the fields
@@ -563,9 +564,11 @@ let transl_store_implementation module_name (str, restr) =
   reset_labels ();
   primitive_declarations := [];
   let module_id = Ident.create_persistent module_name in
+  Translext.enter ();
   let (map, prims, size) = build_ident_map restr (defined_idents str) in
-  transl_store_label_init module_id size
-    (transl_store_structure module_id map prims) str
+  let (i,lam) = transl_store_label_init module_id size
+    (transl_store_structure module_id map prims) str in
+  (i, Translext.leave lam)
   (*size, transl_label_init (transl_store_structure module_id map prims str)*)
 
 (* Compile a toplevel phrase *)
@@ -662,7 +665,9 @@ let transl_toplevel_item = function
       Llet(Strict, mid, transl_module Tcoerce_none None modl, set_idents 0 ids)
 
 let transl_toplevel_item_and_close itm =
-  close_toplevel_term (transl_label_init (transl_toplevel_item itm))
+  Translext.enter ();
+  close_toplevel_term 
+    (Translext.leave (transl_label_init (transl_toplevel_item itm)))
 
 let transl_toplevel_definition str =
   reset_labels ();

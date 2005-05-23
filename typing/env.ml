@@ -21,7 +21,6 @@ open Longident
 open Path
 open Types
 
-
 type error =
     Not_an_interface of string
   | Corrupted_interface of string
@@ -51,6 +50,7 @@ type t = {
   components: (Path.t * module_components) Ident.tbl;
   classes: (Path.t * class_declaration) Ident.tbl;
   cltypes: (Path.t * cltype_declaration) Ident.tbl;
+  namespaces: Cduce_types.Ns.table;
 (*> JOCAML *)
   continuations : (Path.t * continuation_description) Ident.tbl;
 (*< JOCAML *)
@@ -89,6 +89,7 @@ let empty = {
   modules = Ident.empty; modtypes = Ident.empty;
   components = Ident.empty; classes = Ident.empty;
   cltypes = Ident.empty;
+  namespaces = Cduce_types.Ns.empty_table;
   continuations = Ident.empty;
   summary = Env_empty }
 
@@ -154,9 +155,12 @@ let read_pers_struct modname filename =
       close_in ic;
       raise(Error(Not_an_interface filename))
     end;
-    let (name, sign) = input_value ic in
+    let (name, sign, chunk) = input_value ic in
+    let chunk = Cduce_types.Serial.G.mk chunk in 
+(*    let (name, sign) = input_value ic in *)
     let crcs = input_value ic in
     close_in ic;
+    let sign = Subst.signature (Subst.restore chunk) sign in
     let comps =
       !components_of_module' empty Subst.identity
                              (Pident(Ident.create_persistent name))
@@ -670,6 +674,19 @@ and enter_modtype = enter store_modtype
 and enter_class = enter store_class
 and enter_cltype = enter store_cltype
 
+(* Namespace *)
+
+module CD = Cduce_types
+
+let add_namespace pr ns env =
+  let pr = CD.Encodings.Utf8.mk_latin1 pr in
+  let ns = CD.Ns.mk ns in
+  { env with namespaces = CD.Ns.add_prefix pr ns env.namespaces }
+
+let find_namespace pr env =
+  let pr = CD.Encodings.Utf8.mk_latin1 pr in
+  CD.Ns.map_prefix env.namespaces pr
+
 (* Insertion of all components of a signature *)
 
 let add_item comp env =
@@ -749,12 +766,11 @@ let imported_units() =
 
 let save_signature_with_imports sg modname filename imports =
   Btype.cleanup_abbrev ();
-  Subst.reset_for_saving ();
-  let sg = Subst.signature (Subst.for_saving Subst.identity) sg in
+  let (sg,chunk) = Subst.signature_for_saving sg in
   let oc = open_out_bin filename in
   try
     output_string oc cmi_magic_number;
-    output_value oc (modname, sg);
+    output_value oc (modname, sg, chunk);
     flush oc;
     let crc = Digest.file filename in
     let crcs = (modname, crc) :: imports in
@@ -788,6 +804,37 @@ let initial = Predef.build_initial_env add_type add_exception empty
 (* Return the environment summary *)
 
 let summary env = env.summary
+
+(* Locally named CDuce types *)
+
+let ident_iter f tbl =
+  List.iter (fun k -> f (Ident.find_same k tbl)) (Ident.keys tbl)
+let exttypes repr env =
+  let res = ref [] in
+  let found p ty = 
+    match (repr ty).desc with
+      | Text { ext_const = Some t } -> res := (p,t) :: !res
+      | _ -> () in
+  let tdecl p ty = 
+    match ty.type_manifest with Some ty -> found p ty | None -> () in
+  let rec sign p =
+    List.iter 
+      (function
+	 | Tsig_type (id,t,_) -> 
+	     tdecl (p ^ (Ident.name id)) t
+	 | Tsig_module (id,Tmty_signature s,_) ->
+	     sign (p ^ (Ident.name id) ^ ".") s
+	 | _ -> ())
+  in
+  ident_iter (fun (p,ty) -> tdecl (Path.name p) ty) env.types;
+  ident_iter (function
+		| (p,Tmty_signature s) -> sign (Path.name p ^ ".") s
+		| _ -> ()) env.modules;
+  Hashtbl.iter
+    (fun m ps -> sign (m ^ ".") ps.ps_sig)
+    persistent_structures;
+  !res
+		    
 
 (* Error report *)
 

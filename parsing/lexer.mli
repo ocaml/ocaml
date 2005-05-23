@@ -14,6 +14,7 @@
 
 (* The lexical analyzer *)
 
+val init: unit -> unit
 val token: Lexing.lexbuf -> Parser.token
 val skip_sharp_bang: Lexing.lexbuf -> unit
 
@@ -25,6 +26,7 @@ type error =
   | Unterminated_string_in_comment
   | Keyword_as_label of string
   | Literal_overflow of string
+  | Illegal_ncname of int
 ;;
 
 exception Error of error * Location.t

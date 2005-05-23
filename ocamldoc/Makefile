@@ -130,7 +130,8 @@ LIBCMXFILES= $(LIBCMOFILES:.cmo=.cmx)
 LIBCMIFILES= $(LIBCMOFILES:.cmo=.cmi)
 
 # Les cmo et cmx de la distrib OCAML
-OCAMLCMOFILES=$(OCAMLSRCDIR)/parsing/printast.cmo \
+OCAMLCMOFILES=\
+	$(OCAMLSRCDIR)/parsing/printast.cmo \
 	$(OCAMLSRCDIR)/typing/ident.cmo \
 	$(OCAMLSRCDIR)/utils/tbl.cmo \
 	$(OCAMLSRCDIR)/utils/misc.cmo \
@@ -160,6 +161,7 @@ OCAMLCMOFILES=$(OCAMLSRCDIR)/parsing/printast.cmo \
 	$(OCAMLSRCDIR)/typing/oprint.cmo \
 	$(OCAMLSRCDIR)/typing/printtyp.cmo \
 	$(OCAMLSRCDIR)/typing/includecore.cmo \
+	$(OCAMLSRCDIR)/typing/typeext.cmo \
 	$(OCAMLSRCDIR)/typing/typetexp.cmo \
 	$(OCAMLSRCDIR)/typing/typedtree.cmo \
 	$(OCAMLSRCDIR)/typing/parmatch.cmo \
@@ -177,6 +179,7 @@ OCAMLCMOFILES=$(OCAMLSRCDIR)/parsing/printast.cmo \
 	$(OCAMLSRCDIR)/bytecomp/switch.cmo \
 	$(OCAMLSRCDIR)/bytecomp/matching.cmo \
 	$(OCAMLSRCDIR)/bytecomp/translobj.cmo \
+	$(OCAMLSRCDIR)/bytecomp/translext.cmo \
 	$(OCAMLSRCDIR)/bytecomp/transljmatch.cmo \
 	$(OCAMLSRCDIR)/bytecomp/transljoin.cmo \
 	$(OCAMLSRCDIR)/bytecomp/translcore.cmo \
@@ -188,8 +191,7 @@ OCAMLCMXFILES=$(OCAMLCMOFILES:.cmo=.cmx)
 STDLIB_MLIS=../stdlib/*.mli \
 	../otherlibs/unix/unix.mli \
 	../otherlibs/str/str.mli \
-	../otherlibs/bigarray/bigarray.mli \
-	../otherlibs/num/num.mli
+	../otherlibs/bigarray/bigarray.mli
 
 all: exe lib manpages
 exe: $(OCAMLDOC)

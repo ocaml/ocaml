@@ -25,7 +25,7 @@ let mktyp d =
 let mkpat d =
   { ppat_desc = d; ppat_loc = symbol_rloc() }
 let mkexp d =
-  { pexp_desc = d; pexp_loc = symbol_rloc() }
+  { pexp_desc = d; pexp_loc = symbol_rloc(); pexp_ext = false }
 let mkmty d =
   { pmty_desc = d; pmty_loc = symbol_rloc() }
 let mksig d =
@@ -45,7 +45,7 @@ let reloc_pat x = { x with ppat_loc = symbol_rloc () };;
 let reloc_exp x = { x with pexp_loc = symbol_rloc () };;
 
 let mkoperator name pos =
-  { pexp_desc = Pexp_ident(Lident name); pexp_loc = rhs_loc pos }
+  { pexp_desc = Pexp_ident(Lident name); pexp_loc = rhs_loc pos; pexp_ext = false }
 
 (*
   Ghost expressions and patterns:
@@ -64,7 +64,7 @@ let mkoperator name pos =
   AST node, then the location must be real; in all other cases,
   it must be ghost.
 *)
-let ghexp d = { pexp_desc = d; pexp_loc = symbol_gloc () };;
+let ghexp d = { pexp_desc = d; pexp_loc = symbol_gloc (); pexp_ext = false };;
 let ghpat d = { ppat_desc = d; ppat_loc = symbol_gloc () };;
 let ghtyp d = { ptyp_desc = d; ptyp_loc = symbol_gloc () };;
 
@@ -107,8 +107,8 @@ let rec mktailexp = function
                loc_end = exp_el.pexp_loc.loc_end;
                loc_ghost = true}
       in
-      let arg = {pexp_desc = Pexp_tuple [e1; exp_el]; pexp_loc = l} in
-      {pexp_desc = Pexp_construct(Lident "::", Some arg, false); pexp_loc = l}
+      let arg = {pexp_desc = Pexp_tuple [e1; exp_el]; pexp_loc = l; pexp_ext = false } in
+      {pexp_desc = Pexp_construct(Lident "::", Some arg, false); pexp_loc = l; pexp_ext = false }
 
 let rec mktailpat = function
     [] ->
@@ -144,6 +144,11 @@ let syntax_error () =
 let unclosed opening_name opening_num closing_name closing_num =
   raise(Syntaxerr.Error(Syntaxerr.Unclosed(rhs_loc opening_num, opening_name,
                                            rhs_loc closing_num, closing_name)))
+
+let error_msg_loc loc msg =
+  raise(Syntaxerr.Error(Syntaxerr.Message (loc, msg)))
+let error_msg num msg =
+  error_msg_loc (rhs_loc num) msg
 
 let bigarray_function str name =
   Ldot(Ldot(Lident "Bigarray", str), name)
@@ -183,6 +188,122 @@ let bigarray_set arr arg newval =
                        ["", arr; 
                         "", ghexp(Pexp_array coords);
                         "", newval]))
+
+(* CDuce *)
+
+module CD = Cduce_types
+module U = CD.Encodings.Utf8
+
+let latin1 = U.mk_latin1
+
+let mkext d = { pext_desc = d; pext_loc = symbol_rloc() }
+let mkextcst d = { pextcst_desc = d; pextcst_loc = symbol_rloc() }
+let ghext d = { pext_desc = d; pext_loc = symbol_gloc () };;
+let real_ghext d = { pext_desc = d; pext_loc = Location.none };;
+let ghextcst d = { pextcst_desc = d; pextcst_loc = symbol_gloc () };;
+let mkextexp d =
+  { pexp_desc = Pexp_ext d; pexp_loc = symbol_rloc(); pexp_ext = false }
+let ghextexp d =
+  { pexp_desc = Pexp_ext d; pexp_loc = symbol_gloc(); pexp_ext = false }
+
+let ext_pair e1 e2 =
+  match e1.pexp_desc, e2.pexp_desc with
+    | Pexp_ext (Pextexp_cst c1), Pexp_ext (Pextexp_cst c2) ->
+	mkextexp (Pextexp_cst (mkextcst (Pextcst_pair (c1,c2))))
+    | _ ->
+	mkextexp (Pextexp_op ("pair",[e1;e2]))
+
+let ext_xml e1 e2 e3 =
+  match e1.pexp_desc, e2.pexp_desc, e3.pexp_desc with
+    | Pexp_ext (Pextexp_cst c1), Pexp_ext (Pextexp_cst c2), 
+      Pexp_ext (Pextexp_cst c3) ->
+	mkextexp (Pextexp_cst (mkextcst (Pextcst_xml (c1,c2,c3))))
+    | _ ->
+	mkextexp (Pextexp_op ("xml",[e1;e2;e3]))
+
+let ext_record el =
+  try
+    let cl = 
+      List.map 
+	(function (l,{ pexp_desc = Pexp_ext (Pextexp_cst c) }) -> (l,c) 
+	   | _ -> raise Exit)
+	el
+    in
+    mkextexp (Pextexp_cst (mkextcst (Pextcst_record cl)))
+  with Exit ->
+    mkextexp (Pextexp_record el)
+
+let gh_nil () = 
+  ghextexp (Pextexp_cst (ghextcst (Pextcst_intern CD.Sequence.nil_cst)))
+
+let rec ext_seq = function
+  | (false,hd)::tl -> ext_pair hd (ext_seq tl)
+  | (true,hd)::tl -> mkextexp(Pextexp_op ("concat",[hd;ext_seq tl]))
+  | [] -> gh_nil ()
+
+let rec ext_tuple_pat = function
+  | [hd] -> hd
+  | hd::tl -> ghext (Pext_prod(hd,ext_tuple_pat tl))
+  | [] -> assert false
+
+let const_of_expr = function
+  | { pexp_desc = Pexp_ext (Pextexp_cst c) } -> c
+  | e -> error_msg_loc e.pexp_loc "Not a constant"
+
+
+let ext_dot e l opt =
+  (* e.l -->  match e with { l=# .. } | <_ l=# ..>_ -> # *)
+  (* e.?l -->  match e with { l=# .. } | <_ l=# ..>_ -> [#] | _ -> [] *)
+  let r = ghext(Pext_record (true, [l, (ghext(Pext_name (Lident "#")),None)])) in
+  let u = ghext(Pext_cst CD.Types.any) in
+  let el = ghext(Pext_xml(u,ghext(Pext_prod(r,u)))) in
+  let p = ghext(Pext_or (r,el)) in
+  let x = ghexp(Pexp_ident (Lident "#")) in
+  let br =
+    if opt then [p, mkextexp (Pextexp_op ("pair",[x;gh_nil ()])); u, gh_nil ()]
+    else [p, x] in
+  mkextexp(Pextexp_match (e, br))
+
+let ext_proj e =
+  (* e/ --> map e with <_ _>x -> x | _ -> [] *)
+  let u = real_ghext(Pext_cst CD.Types.any) in
+  let p=ghext(Pext_xml(u,ghext(Pext_prod(u,ghext(Pext_name (Lident "#")))))) in
+  mkextexp(Pextexp_map(e, [p,ghexp(Pexp_ident (Lident "#"));
+			   u,gh_nil ()]))
+
+let ext_filter e t =
+  (* e.(t) --> match e with [ (x::t | _)* ] -> x *)
+  let u = Pext_elem (ghext(Pext_cst CD.Types.any)) in
+  let s = ghext(Pext_regexp 
+		  (Pext_star (Pext_alt (Pext_capture ("#", Pext_elem t), u))))
+  in
+  mkextexp(Pextexp_match(e, [s, ghexp(Pexp_ident (Lident "#"))]))
+
+let check_ident s =
+  let s = U.to_string s in
+  let rec aux i =
+    if i = String.length s then ()
+    else match s.[i] with
+      | 'A'..'Z' | 'a'..'z' | '_' | '\192'..'\214' | '\216'..'\246' 
+      | '\248'..'\255' | '\'' | '0'..'9' -> aux (succ i)
+      | _ -> error_msg 1 "Invalid OCaml identifier"
+  in
+  match s.[0] with
+    | 'a'..'z' | '\223'..'\246' | '\248'..'\255' | '_' -> aux 1; s
+    | _ -> error_msg 1 "Invalid OCaml identifier"
+
+let check_uident s =
+  let s = U.to_string s in
+  let rec aux i =
+    if i = String.length s then ()
+    else match s.[i] with
+      | 'A'..'Z' | 'a'..'z' | '_' | '\192'..'\214' | '\216'..'\246' 
+      | '\248'..'\255' | '\'' | '0'..'9' -> aux (succ i)
+      | _ -> error_msg 1 "Invalid OCaml identifier"
+  in
+  match s.[0] with
+    | 'A'..'Z' | '\192'..'\214' | '\216'..'\222' -> aux 1; s
+    | _ -> error_msg 1 "Invalid OCaml identifier"
 %}
 
 /* Tokens */
@@ -238,9 +359,10 @@ let bigarray_set arr arg newval =
 %token <int> INT
 %token <int32> INT32
 %token <int64> INT64
+%token <Big_int.big_int> XINT
 %token <string> LABEL
 %token LAZY
-%token LBRACE
+%token LBRACE LBRACEBRACE LBRACECOLON LBRACEBRACENAMESPACE
 %token LBRACELESS
 %token LBRACKET
 %token LBRACKETBAR
@@ -256,8 +378,10 @@ let bigarray_set arr arg newval =
 %token MINUS
 %token MINUSDOT
 %token MINUSGREATER
+%token MINUSGREATERR
 %token MODULE
 %token MUTABLE
+%token NAMESPACE
 %token <nativeint> NATIVEINT
 %token NEW
 %token OBJECT
@@ -272,7 +396,7 @@ let bigarray_set arr arg newval =
 %token QUESTION
 %token QUESTIONQUESTION
 %token QUOTE
-%token RBRACE
+%token RBRACE RCOLONBRACE RBRACEBRACE
 %token RBRACKET
 %token REC
 %token RPAREN
@@ -302,6 +426,24 @@ let bigarray_set arr arg newval =
 %token REPLY
 %token SPAWN
 %token NULLP
+
+%token <Cduce_types.Encodings.Utf8.t> XSTRING2
+%token <Cduce_types.Encodings.Utf8.t> XSTRING1
+%token <Cduce_types.Encodings.Utf8.t> UNCNAME
+%token <Cduce_types.Encodings.Utf8.t> NCNAME
+%token DIV
+%token MOD
+%token CONCAT
+%token COLONQUESTION
+%token MAP
+%token BANG
+%token EQUALQUESTION
+%token SLASH
+%token STARSTAR
+%token DASHDASH
+%token PLUSPLUS
+%token STARQUESTION
+%token PLUSQUESTION
 
 /* Precedences and associativities.
 
@@ -344,14 +486,15 @@ The precedences must be listed from low to high.
 %nonassoc below_COMMA
 %left     COMMA                         /* expr/expr_comma_list (e,e,e) */
 %right    MINUSGREATER                  /* core_type2 (t -> t -> t) */
+%nonassoc above_MINUSGREATER
 %right    OR BARBAR                     /* expr (e || e || e) */
 %right    AMPERSAND AMPERAMPER          /* expr (e && e && e) */
 %nonassoc below_EQUAL
 %left     INFIXOP0 EQUAL LESS GREATER   /* expr (e OP e OP e) */
-%right    INFIXOP1                      /* expr (e OP e OP e) */
+%right    INFIXOP1 CONCAT               /* expr (e OP e OP e) */
 %right    COLONCOLON                    /* expr (e :: e :: e) */
-%left     INFIXOP2 PLUS MINUS MINUSDOT  /* expr (e OP e OP e) */
-%left     INFIXOP3 STAR                 /* expr (e OP e OP e) */
+%left     INFIXOP2 PLUS PLUSPLUS MINUS MINUSDOT  /* expr (e OP e OP e) */
+%left     INFIXOP3 DIV MOD STAR         /* expr (e OP e OP e) */
 %right    INFIXOP4                      /* expr (e OP e OP e) */
 %nonassoc prec_unary_minus              /* unary - */
 %nonassoc prec_constant_constructor     /* cf. simple_expr (C versus C x) */
@@ -363,7 +506,8 @@ The precedences must be listed from low to high.
 /* Finally, the first tokens of simple_expr are above everything else. */
 %nonassoc BACKQUOTE BEGIN CHAR FALSE FLOAT INT INT32 INT64
           LBRACE LBRACELESS LBRACKET LBRACKETBAR LIDENT LPAREN
-          NEW NATIVEINT PREFIXOP STRING TRUE UIDENT
+          NEW NATIVEINT PREFIXOP STRING TRUE UIDENT 
+          LBRACEBRACE LBRACECOLON
 
 
 /* Entry points */
@@ -473,6 +617,8 @@ structure_item:
       { mkstr(Pstr_class_type (List.rev $3)) }
   | INCLUDE module_expr
       { mkstr(Pstr_include $2) }
+  | LBRACEBRACENAMESPACE ext_namespace_decl RBRACEBRACE
+      { let (ns,pr) = $2 in mkstr(Pstr_namespace (ns,pr)) }
 /*> JOCAML */
   | DEF joinautomaton_list_AND
       { mkstr(Pstr_def $2) }
@@ -545,6 +691,8 @@ signature_item:
       { mksig(Psig_class (List.rev $2)) }
   | CLASS TYPE class_type_declarations
       { mksig(Psig_class_type (List.rev $3)) }
+  | LBRACEBRACENAMESPACE ext_namespace_decl RBRACEBRACE
+      { let (ns,pr) = $2 in mksig(Psig_namespace (ns,pr)) }
 ;
 
 module_declaration:
@@ -814,14 +962,23 @@ expr:
       { mkexp(Pexp_apply($1, List.rev $2)) }
   | LET rec_flag let_bindings IN seq_expr
       { mkexp(Pexp_let($2, List.rev $3, $5)) }
+  | LET ext_pat_delim EQUAL seq_expr IN seq_expr
+      { mkextexp(Pextexp_match($4, [$2,$6])) }
   | LET MODULE UIDENT module_binding IN seq_expr
       { mkexp(Pexp_letmodule($3, $4, $6)) }
   | FUNCTION opt_bar match_cases
       { mkexp(Pexp_function("", None, List.rev $3)) }
+  | FUNCTION opt_bar ext_match_cases_ml
+      { 
+	let m = mkextexp(Pextexp_match(ghexp(Pexp_ident (Lident "#")), 
+				       List.rev $3)) in
+	mkexp(Pexp_function("", None, [ ghpat(Ppat_var "#"),m ])) }
   | FUN labeled_simple_pattern fun_def
       { let (l,o,p) = $2 in mkexp(Pexp_function(l, o, [p, $3])) }
   | MATCH seq_expr WITH opt_bar match_cases
       { mkexp(Pexp_match($2, List.rev $5)) }
+  | MATCH seq_expr WITH opt_bar ext_match_cases_ml
+      { mkextexp(Pextexp_match($2, List.rev $5)) }
   | TRY seq_expr WITH opt_bar match_cases
       { mkexp(Pexp_try($2, List.rev $5)) }
   | TRY seq_expr WITH error
@@ -969,6 +1126,10 @@ simple_expr:
       { mkexp(Pexp_override []) }
   | simple_expr SHARP label
       { mkexp(Pexp_send($1, $3)) }
+  | LBRACEBRACE ext_expr RBRACEBRACE
+      { $2 }
+  | LBRACECOLON ext_expr RCOLONBRACE
+      { mkextexp(Pextexp_to_ml $2) }
 ;
 simple_labeled_expr_list:
     labeled_simple_expr
@@ -1316,6 +1477,8 @@ simple_core_type2:
       { mktyp(Ptyp_variant(List.rev $3, true, Some [])) }
   | LBRACKETLESS opt_bar row_field_list GREATER name_tag_list RBRACKET
       { mktyp(Ptyp_variant(List.rev $3, true, Some (List.rev $5))) }
+  | ext_pat_delim
+      { mktyp(Ptyp_ext $1) }
 ;
 row_field_list:
     row_field                                   { [$1] }
@@ -1525,7 +1688,319 @@ subtractive:
   | MINUSDOT                                    { "-." }
 ;
 
-/* JOCAML */
+/* CDuce + JOCAML */
+
+ext_namespace_decl:
+  | ext_lident EQUAL XSTRING2 { $1, $3 }
+  | XSTRING2 { "", $1 } 
+;
+ext_lident:
+    NCNAME { check_ident $1 }
+;
+ext_match_cases:
+    ext_top_pat MINUSGREATER ext_expr               { [$1, $3] } 
+  | ext_match_cases BAR ext_top_pat MINUSGREATER ext_expr { ($3, $5) :: $1 }
+;
+ext_match_cases_ml:
+    ext_pat_delim MINUSGREATER seq_expr               { [$1, $3] }
+  | ext_match_cases_ml BAR ext_pat_delim MINUSGREATER seq_expr { ($3, $5) :: $1 } 
+;
+ext_pat_delim: 
+    LBRACEBRACE ext_top_pat RBRACEBRACE { $2 }
+ext_apply_args:
+    simple_ext_expr { [ ("",$1) ] }
+  | simple_ext_expr ext_apply_args { ("",$1) :: $2 }
+ext_expr:
+    simple_ext_expr { $1 }
+  | simple_ext_expr ext_apply_args { mkexp(Pexp_apply ($1,$2)) } 
+  | ext_expr PLUS ext_expr { mkextexp(Pextexp_op ("add",[$1;$3])) }
+  | ext_expr PLUSPLUS ext_expr { mkextexp(Pextexp_op ("merge",[$1;$3])) }
+  | ext_expr STAR ext_expr { mkextexp(Pextexp_op ("mul",[$1;$3])) }
+  | ext_expr MINUS ext_expr { mkextexp(Pextexp_op ("sub",[$1;$3])) }
+  | ext_expr DIV ext_expr { mkextexp(Pextexp_op ("div",[$1;$3])) }
+  | ext_expr MOD ext_expr { mkextexp(Pextexp_op ("modulo",[$1;$3])) }
+  | ext_expr CONCAT ext_expr {  mkextexp(Pextexp_op ("concat",[$1;$3])) }
+  | LPAREN ext_expr COLONQUESTION ext_pat RPAREN
+      { mkextexp(Pextexp_check ($2,$4)) } 
+  | ext_expr DOT qname { ext_dot $1 $3 false }
+  | ext_expr DOT QUESTION qname { ext_dot $1 $4 true }
+  | simple_ext_expr SLASH { ext_proj $1 }
+  | ext_expr DOT LPAREN ext_pat RPAREN { ext_filter $1 $4 }
+  | ext_expr MINUSDOT qname { mkextexp(Pextexp_removefield ($1,$3)) }
+  | MATCH ext_expr WITH opt_bar ext_match_cases
+      { mkextexp(Pextexp_match($2, List.rev $5)) }
+  | MAP ext_expr WITH opt_bar ext_match_cases
+      { mkextexp(Pextexp_map($2, List.rev $5)) }
+  | MAP STAR ext_expr WITH opt_bar ext_match_cases
+      { mkextexp(Pextexp_xmap($3, List.rev $6)) } 
+  | LET ext_top_pat EQUAL ext_expr IN ext_expr
+      { mkextexp(Pextexp_match($4, [$2,$6])) }
+  | LET NAMESPACE ext_namespace_decl IN ext_expr {
+      let (ns,pr) = $3 in
+      mkextexp(Pextexp_namespace (ns,pr,$5))
+    }
+  | simple_ext_expr LESSMINUS ext_expr { mkextexp(Pextexp_op ("apply",[$1;$3])) } 
+;
+simple_ext_expr:
+  | LBRACEBRACE expr RBRACE RBRACE { ext:= true; $2 }
+  | LBRACECOLON expr RCOLONBRACE { mkextexp(Pextexp_from_ml $2) }
+  | LESS ext_tag_expr ext_attrib_expr GREATER simple_ext_expr 
+      { ext_xml $2 $3 $5 } 
+  | ext_longid { mkexp (Pexp_ident $1) }
+  | LBRACKET ext_expr_list RBRACKET { ext_seq $2 }
+  | LPAREN ext_expr_comma_list RPAREN { 
+      match (List.rev $2) with
+	| hd::tl -> List.fold_left (fun accu x -> ext_pair x accu) hd tl
+	| _ -> assert false
+    } 
+  | LBRACE ext_fields_expr RBRACE { ext_record $2 }  
+  | ext_small_const { mkextexp(Pextexp_cst $1) }
+;
+ext_small_const:
+  | ext_int  { mkextcst(Pextcst_int $1) }
+  | BACKQUOTE qname { mkextcst(Pextcst_atom $2) } 
+  | XSTRING1 { mkextcst(Pextcst_char $1) }
+  | XSTRING2 { mkextcst(Pextcst_string $1) }
+;
+ext_int:
+  | ext_int_cst  { $1 }
+  | LPAREN MINUS ext_int_cst RPAREN { CD.Intervals.V.negat $3 }
+;
+ext_int_cst:
+  | XINT { CD.Intervals.V.from_bigint $1 }
+;
+qname:
+    ext_lident COLON ncname { $1,$3 }   
+  | ncname { "",$1 }
+;
+ncname:
+    NCNAME { $1 }
+  | UNCNAME { $1 }
+  | MAP { U.mk "map" }
+  | MATCH { U.mk "match" }
+  | WITH { U.mk "with" }
+  | LET { U.mk "let" }
+  | IN { U.mk "in" }
+  | NAMESPACE { U.mk "namespace" }
+  | ELSE { U.mk "else" }
+  | DIV { U.mk "div" }
+  | MOD { U.mk "mod" } 
+;
+ext_expr_list:
+    ext_expr_list_elem ext_expr_list { $1 :: $2 } 
+  | /* empty */ { [] }
+;
+ext_expr_list_elem:
+    simple_ext_expr { 
+      match $1 with
+	| { pexp_desc = 
+	      Pexp_ext 
+		(Pextexp_cst 
+		   { pextcst_desc = Pextcst_char s; pextcst_loc = loc } 
+		)}  ->
+	    (true, mkextexp(Pextexp_cst ({ pextcst_desc = Pextcst_string s;
+					   pextcst_loc = loc })))
+	| e -> (false,e)
+    }
+  | BANG simple_ext_expr { (true,$2) }
+;
+ext_longid:
+  | ext_lident { Lident $1 }
+  | ext_modident DOT ext_lident { Ldot ($1,$3) } 
+;
+ext_modident:
+  | UNCNAME { Lident (check_uident $1) }
+  | ext_modident DOT UNCNAME { Ldot ($1, check_uident $3) } 
+;
+ext_expr_comma_list:
+  | ext_expr { [$1] }
+  | ext_expr COMMA ext_expr_comma_list { $1 :: $3 } 
+;
+ext_tag_expr:
+    qname { mkextexp(Pextexp_cst (mkextcst(Pextcst_atom $1))) }
+  | LPAREN ext_expr RPAREN { $2 } 
+;
+ext_fields_expr:
+    qname ext_field_content opt_semi ext_fields_expr { 
+      let c = match $2 with
+	| Some x -> x
+	| None -> ghexp(Pexp_ident (Lident (check_ident (snd $1)))) in
+      ($1,c)::$4 } 
+  | { [] }
+;
+ext_field_content:
+    EQUAL simple_ext_expr { Some $2 }
+  | { None } 
+;
+ext_attrib_expr:
+    ext_fields_expr { ext_record $1 }
+  | LPAREN ext_expr RPAREN { $2 } 
+;
+
+
+ext_top_pat:
+    ext_pat { $1 }
+  | ext_top_pat WITH LBRACE ext_recurs_pat_bindings RBRACE {
+      mkext(Pext_recurs ($1,$4))
+    }  
+;  
+ext_pat:
+    regexp_particle { match $1 with Pext_elem x -> x 
+	       | _ -> error_msg 1 "regexp not allowed here" }
+  | regexp_particle BAR ext_pat { 
+      match $1 with Pext_elem x ->  mkext (Pext_or (x,$3))
+	| _ -> error_msg 1 "regexp not allowed here" }
+;
+ext_recurs_pat_bindings:
+    one_recurs_pat_bindings { [$1] }
+  | ext_recurs_pat_bindings AND one_recurs_pat_bindings { $3::$1 }   
+;
+one_recurs_pat_bindings:
+    ext_lident EQUAL ext_pat { $1,$3 }
+;
+regexp:
+    regexp_term { $1 }
+  | regexp_term BAR regexp {  
+      match $1,$3 with
+	| Pext_elem x, Pext_elem y -> Pext_elem (mkext (Pext_or (x,y)))
+	| x,y -> Pext_alt (x,y)
+    } 
+;
+regexp_term:
+    regexp_particle { $1 }
+  | regexp_particle regexp_term { Pext_seq ($1,$2) }
+;
+regexp_particle:
+    simple_regexp %prec above_MINUSGREATER { $1 }
+  | simple_regexp STAR { Pext_star $1 }
+  | simple_regexp STARQUESTION { Pext_weakstar $1 }
+  | simple_regexp PLUS { Pext_seq ($1, Pext_star $1) }
+  | simple_regexp PLUSQUESTION { Pext_seq ($1, Pext_weakstar $1) }
+  | simple_regexp QUESTION { Pext_alt ($1, Pext_epsilon) }
+  | simple_regexp QUESTIONQUESTION { Pext_alt (Pext_epsilon, $1) }
+  | SLASH simple_regexp { 
+      match $2 with
+	| Pext_elem x -> Pext_guard x
+	| _ -> error_msg 1 "/ is not a regexp operator" 
+    }
+  | simple_regexp MINUSGREATER simple_regexp {
+      match $1,$3 with
+	| Pext_elem x, Pext_elem y -> Pext_elem (mkext (Pext_arrow (x,y)))
+	| _ -> error_msg 2 "-> is not a regexp operator"
+    }  
+  | regexp_particle AMPERSAND simple_regexp {
+      match $1,$3 with
+	| Pext_elem x, Pext_elem y -> Pext_elem (mkext (Pext_and (x,y)))
+	| _ -> error_msg 2 "& is not a regexp operator"
+    }
+  | regexp_particle CONCAT simple_regexp {
+      match $1,$3 with
+	| Pext_elem x, Pext_elem y -> Pext_elem (mkext (Pext_concat (x,y)))
+	| _ -> error_msg 2 "@ is not a regexp operator"
+    }
+  | regexp_particle PLUSPLUS simple_regexp {
+      match $1,$3 with
+	| Pext_elem x, Pext_elem y -> Pext_elem (mkext (Pext_merge (x,y)))
+	| _ -> error_msg 2 "++ is not a regexp operator"
+    }
+  | regexp_particle MINUS simple_regexp {
+      match $1,$3 with
+	| Pext_elem x, Pext_elem y -> Pext_elem (mkext (Pext_diff (x,y)))
+	| _ -> error_msg 2 "- is not a regexp operator"
+    } 
+;
+regexp_list_elem:
+  | regexp { $1 }
+  | ext_lident COLONEQUAL ext_expr { 
+      let c = const_of_expr $3 in
+      Pext_elem (mkext(Pext_bind ($1,c))) } 
+;
+regexp_list:
+  | regexp_list_elem COMMA regexp_list {
+      match $1,$3 with
+	| Pext_elem x, Pext_elem y -> Pext_elem (mkext (Pext_prod (x,y)))
+	| _ -> error_msg 2 ", is not a regexp operator"
+    }
+  | regexp_list_elem { $1 }
+;
+simple_regexp:
+  | ext_lident COLONCOLON simple_regexp  { Pext_capture ($1,$3) }  
+  | simple_ext_pat     { Pext_elem $1 }  
+  | LPAREN regexp_list RPAREN { $2 }  
+;
+simple_ext_pat:
+    ext_patid { mkext(Pext_name $1) }
+  | UNDERSCORE { mkext(Pext_cst CD.Types.any) }
+  | LESS tag_pat ext_attrib GREATER simple_ext_pat
+    { 
+      let tag = $2 in
+      let attr = $3 in
+      let cont = $5 in
+      mkext(Pext_xml(tag,mkext(Pext_prod(attr,cont)))) } 
+  | ext_small_const { mkext(Pext_constant ($1)) }
+  | ext_int DASHDASH ext_int { 
+      mkext(Pext_cst (CD.Types.interval (CD.Intervals.bounded $1 $3))) } 
+  | STARSTAR DASHDASH ext_int {
+      mkext(Pext_cst (CD.Types.interval (CD.Intervals.left $3))) } 
+  | ext_int DASHDASH STARSTAR {
+      mkext(Pext_cst (CD.Types.interval (CD.Intervals.right $1))) }
+  | ext_char DASHDASH ext_char {
+      mkext(Pext_cst (CD.Types.char (CD.Chars.char_class $1 $3))) }
+  | LBRACE ext_fields ext_open_record RBRACE { mkext(Pext_record ($3,$2)) }
+  | LBRACECOLON core_type RCOLONBRACE { mkext(Pext_from_ml $2) }
+  | BACKQUOTE ext_lident COLON STAR { mkext(Pext_ns $2) }  
+  | LBRACKET regexp RBRACKET { mkext(Pext_regexp $2) }
+  | LBRACKET RBRACKET { mkext(Pext_regexp Pext_epsilon) }
+;
+ext_id:
+  | UNCNAME { check_uident $1 }  
+  | ext_lident { $1 } 
+;
+ext_patid:
+  | ext_id { Lident $1 }
+  | ext_patid DOT ext_id { Ldot ($1,$3) } 
+;  
+tag_pat:
+    LPAREN ext_pat RPAREN { $2 }
+  | ext_lident COLON STAR { mkext(Pext_ns $1) }
+  | qname { mkext(Pext_constant (mkextcst(Pextcst_atom $1))) } 
+  | UNDERSCORE { mkext(Pext_cst CD.Types.Atom.any) }
+;
+ext_open_record:
+    DOTDOT { true }
+  | { false } 
+;   
+ext_fields:
+    qname ext_field_pat opt_semi ext_fields { 
+      let c = match $2 with
+	| Some (x,e) -> (x,e)
+        | None -> ghext(Pext_name (Lident (check_ident (snd $1)))), None in
+     ($1,c)::$4 } 
+  | { [] }
+;
+ext_else_clause:
+    BANG ext_pat { Some $2 } 
+  | { None } 
+;
+ext_field_pat:
+    EQUAL ext_pat ext_else_clause { Some ($2,$3) }
+  | EQUALQUESTION ext_pat ext_else_clause { Some (ghext(Pext_optional $2),$3) }
+  | { None } 
+;
+ext_attrib:
+    ext_fields ext_open_record { mkext(Pext_record ($2,$1)) }
+  | LPAREN ext_pat RPAREN { $2 } 
+;
+ext_char:
+    XSTRING1 { 
+      let s = $1 in
+      let idx = U.start_index s in
+      let (i,idx) = U.next s idx in
+      if not (U.equal_index idx (U.end_index s)) then
+        error_msg 1 "Invalid character literal";
+      CD.Chars.V.mk_int i 
+    }
+;
 
 joinident:
   | LIDENT                                      { { pjident_desc=$1 ; pjident_loc=symbol_rloc () } }

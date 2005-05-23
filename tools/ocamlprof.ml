@@ -291,6 +291,18 @@ and rw_exp iflag sexp =
   | Pexp_object (_, fieldl) ->
       List.iter (rewrite_class_field iflag) fieldl
 
+  | Pexp_ext exp -> rewrite_ext_exp iflag exp
+and rewrite_ext_exp iflag = function
+  | Pextexp_cst _ -> ()
+  | Pextexp_match (e,bl) | Pextexp_map (e,bl) | Pextexp_xmap (e,bl) ->
+      rewrite_exp iflag e;
+      rewrite_exp_list iflag (List.map snd bl)
+  | Pextexp_op (_,el) -> List.iter (rewrite_exp iflag) el
+  | Pextexp_record fl -> List.iter (fun (_,e) -> rewrite_exp iflag e) fl
+  | Pextexp_namespace (_,_,e) | Pextexp_removefield (e,_)
+  | Pextexp_from_ml e | Pextexp_to_ml e | Pextexp_check (e,_) -> 
+      rewrite_exp iflag e
+
 and rewrite_ifbody iflag ghost sifbody =
   if !instr_if && not ghost then
     insert_profile rw_exp sifbody

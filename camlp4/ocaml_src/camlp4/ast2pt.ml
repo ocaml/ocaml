@@ -66,7 +66,7 @@ let mkghloc (bp, ep) =
 let mktyp loc d = {ptyp_desc = d; ptyp_loc = mkloc loc};;
 let mkpat loc d = {ppat_desc = d; ppat_loc = mkloc loc};;
 let mkghpat loc d = {ppat_desc = d; ppat_loc = mkghloc loc};;
-let mkexp loc d = {pexp_desc = d; pexp_loc = mkloc loc};;
+let mkexp loc d = {pexp_desc = d; pexp_loc = mkloc loc; pexp_ext = false};;
 let mkmty loc d = {pmty_desc = d; pmty_loc = mkloc loc};;
 let mksig loc d = {psig_desc = d; psig_loc = mkloc loc};;
 let mkmod loc d = {pmod_desc = d; pmod_loc = mkloc loc};;

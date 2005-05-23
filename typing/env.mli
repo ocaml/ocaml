@@ -25,6 +25,7 @@ val diff: t -> t -> Ident.t list
 (* Lookup by paths *)
 
 val find_value: Path.t -> t -> value_description
+val find_type: Path.t -> t -> type_declaration
 val find_module: Path.t -> t -> module_type
 val find_modtype: Path.t -> t -> modtype_declaration
 val find_class: Path.t -> t -> class_declaration
@@ -83,6 +84,11 @@ val enter_modtype: string -> modtype_declaration -> t -> Ident.t * t
 val enter_class: string -> class_declaration -> t -> Ident.t * t
 val enter_cltype: string -> cltype_declaration -> t -> Ident.t * t
 
+(* Namespace *)
+
+val add_namespace: string -> Cduce_types.Encodings.Utf8.t -> t -> t
+val find_namespace: string -> t -> Cduce_types.Ns.t
+
 (* Reset the cache of in-core module interfaces.
    To be called in particular when load_path changes. *)
 
@@ -126,6 +132,11 @@ type summary =
   | Env_open of summary * Path.t
 
 val summary: t -> summary
+
+(* Locally named CDuce types *)
+
+val exttypes: (type_expr -> type_expr) -> t -> 
+  (string * Cduce_types.Types.t) list
 
 (* Error report *)
 

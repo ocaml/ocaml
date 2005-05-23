@@ -320,7 +320,7 @@ module Analyser =
                       in
                       (new_param, func_body2)
                   | _ ->
-                      print_DEBUG3 "Pas le bon filtre pour le paramètre optionnel avec valeur par défaut.";
+                      print_DEBUG3 "Pas le bon filtre pour le paramï¿½re optionnel avec valeur par dï¿½aut.";
                       (parameter, func_body)
                  )
                 )
@@ -425,7 +425,7 @@ module Analyser =
            | l ->
                match l with
                  [] ->
-                   (* cas impossible, on l'a filtré avant *)
+                   (* cas impossible, on l'a filtrï¿½avant *)
                    assert false
                | (pattern_param, exp) :: second_ele :: q ->
                    (* implicit pattern matching -> anonymous parameter *)
@@ -465,7 +465,7 @@ module Analyser =
                                   in
                                   (new_param, body2)
                               | _ ->
-                                  print_DEBUG3 "Pas le bon filtre pour le paramètre optionnel avec valeur par défaut.";
+                                  print_DEBUG3 "Pas le bon filtre pour le paramï¿½re optionnel avec valeur par dï¿½aut.";
                                   (parameter, body)
                              )
                             )
@@ -637,10 +637,10 @@ module Analyser =
               Typedtree.Tclass_ident p -> Name.from_path p 
             | _ ->
                 (* we try to get the name from the environment. *)
-                (* A VOIR : dommage qu'on n'ait pas un Tclass_ident :-( même quand on a class tutu = toto *)
+                (* A VOIR : dommage qu'on n'ait pas un Tclass_ident :-( mï¿½e quand on a class tutu = toto *)
                 Name.from_longident lid
           in
-          (* On n'a pas ici les paramètres de type sous forme de Types.type_expr,
+          (* On n'a pas ici les paramï¿½res de type sous forme de Types.type_expr,
              par contre on peut les trouver dans le class_type *)
           let params = 
             match tt_class_exp.Typedtree.cl_type with
@@ -721,7 +721,7 @@ module Analyser =
             match tt_class_expr2.Typedtree.cl_desc with
               Typedtree.Tclass_ident p -> Name.from_path p (* A VOIR : obtenir le nom complet *)
             | _ -> 
-                (* A VOIR : dommage qu'on n'ait pas un Tclass_ident :-( même quand on a class tutu = toto *)
+                (* A VOIR : dommage qu'on n'ait pas un Tclass_ident :-( mï¿½e quand on a class tutu = toto *)
                 match p_class_expr2.Parsetree.pcl_desc with
                   Parsetree.Pcl_constr (lid, _) ->
                     (* we try to get the name from the environment. *)
@@ -903,6 +903,7 @@ module Analyser =
         Parsetree.Pstr_eval _ ->
           (* don't care *)
           (0, env, [])
+      | Parsetree.Pstr_namespace _ -> assert false
       | Parsetree.Pstr_value (rec_flag, pat_exp_list) ->
           (* of rec_flag * (pattern * expression) list *)
           (* For each value, look for the value name, then look in the
@@ -1149,7 +1150,7 @@ module Analyser =
              let new_env = Odoc_env.add_module env new_module.m_name in
              let new_env2 = 
                match new_module.m_type with
-                 (* A VOIR : cela peut-il être Tmty_ident ? dans ce cas, on aurait pas la signature *)
+                 (* A VOIR : cela peut-il ï¿½re Tmty_ident ? dans ce cas, on aurait pas la signature *)
                  Types.Tmty_signature s -> 
                    Odoc_env.add_signature new_env new_module.m_name
                      ~rel: (Name.simple new_module.m_name) s
@@ -1253,7 +1254,7 @@ module Analyser =
           let new_env = Odoc_env.add_module_type env mt.mt_name in
           let new_env2 =
             match tt_module_type with 
-              (* A VOIR : cela peut-il être Tmty_ident ? dans ce cas, on n'aurait pas la signature *)
+              (* A VOIR : cela peut-il ï¿½re Tmty_ident ? dans ce cas, on n'aurait pas la signature *)
               Types.Tmty_signature s -> 
                 Odoc_env.add_signature new_env mt.mt_name ~rel: (Name.simple mt.mt_name) s
             | _ -> 
@@ -1380,7 +1381,7 @@ module Analyser =
 	      im_info = comment_opt ;
             } 
           in
-          (0, env, [ Element_included_module im ]) (* A VOIR : étendre l'environnement ? avec quoi ? *)
+          (0, env, [ Element_included_module im ]) (* A VOIR : ï¿½endre l'environnement ? avec quoi ? *)
       | Parsetree.Pstr_loc _|Parsetree.Pstr_def _ ->
           fatal_error "ocamldoc/jocaml"
 

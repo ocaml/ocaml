@@ -33,6 +33,15 @@ let newty2 level desc  =
   incr new_id; { desc = desc; level = level; id = !new_id }
 let newgenty desc      = newty2 generic_level desc
 let newgenvar ()       = newgenty Tvar
+
+let extvars = ref []
+let newextvar d       = 
+  let t = newty2 lowest_level (Text d) in
+  extvars := t :: !extvars;
+  t
+let allextvars () = let l = !extvars in extvars := []; l
+  
+
 (*
 let newmarkedvar level =
   incr new_id; { desc = Tvar; level = pivot_level - level; id = !new_id }
@@ -174,6 +183,8 @@ let iter_type_expr f ty =
   | Tsubst ty           -> f ty
   | Tunivar             -> ()
   | Tpoly (ty, tyl)     -> f ty; List.iter f tyl
+  | Text _              -> ()
+  | Text_serialized _   -> assert false
 
 let rec iter_abbrev f = function
     Mnil                   -> ()
@@ -241,6 +252,7 @@ let rec copy_type_desc f = function
   | Tpoly (ty, tyl)     ->
       let tyl = List.map (fun x -> norm_univar (f x)) tyl in
       Tpoly (f ty, tyl)
+  | Text _ | Text_serialized _ as x  -> x
 
 
 (* Utilities for copying *)
@@ -350,6 +362,9 @@ let rec iter_ty_paths f ty =
     | Tpoly (ty, tyl) ->
         iter_ty_paths f ty ;
         List.iter (iter_ty_paths f) tyl
+
+    | Text ty1 -> ()
+    | Text_serialized ty1 -> ()
   end
 
 and iter_row_paths f row =
@@ -509,13 +524,15 @@ let log_change ch =
       Weak.set trail 0 (Some r')
 
 let log_type ty =
-  if ty.id <= !last_snapshot then log_change (Ctype (ty, ty.desc))
+  if (ty.id <= !last_snapshot) || (ty.level = 0)
+  then log_change (Ctype (ty, ty.desc))
 let link_type ty ty' = log_type ty; ty.desc <- Tlink ty'
   (* ; assert (check_memorized_abbrevs ()) *)
   (*  ; check_expans [] ty' *)
 let set_level ty level =
   if ty.id <= !last_snapshot then log_change (Clevel (ty, ty.level));
   ty.level <- level
+(* (match ty.desc with Text _ -> ty.level <- 0 (*???*) | _ -> ty.level <- level *)
 let set_univar rty ty =
   log_change (Cuniv (rty, !rty)); rty := Some ty
 let set_name nm v =
@@ -555,3 +572,4 @@ let backtrack (changes, old) =
       changes := Unchanged;
       last_snapshot := old;
       Weak.set trail 0 (Some changes)
+

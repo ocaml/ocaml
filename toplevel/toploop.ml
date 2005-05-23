@@ -70,6 +70,15 @@ module EvalPath = struct
   exception Error
   let eval_path p = try eval_path p with Symtable.Error _ -> raise Error
   let same_value v1 v2 = (v1 == v2)
+  let () =
+    Genprintval.print_ext := 
+      (fun ppf v ->
+	 let (path, _) = 
+	   Env.lookup_value 
+	     (Longident.parse "Cduce_types.Value.print") Env.empty in
+	 let f = Obj.magic (eval_path path) in
+	 f ppf v)
+    
 end
 
 module Printer = Genprintval.Make(Obj)(EvalPath)
@@ -214,9 +223,20 @@ let execute_phrase print_outcome ppf phr =
   match phr with
   | Ptop_def sstr ->
       let oldenv = !toplevel_env in
+
+      let snap = Btype.snapshot () in
+      Ctype.extmode := true;
       Typecore.reset_delayed_checks ();
       let (str, sg, newenv) = Typemod.type_structure oldenv sstr in
       Typecore.force_delayed_checks ();
+      Typeext.flush_ext_annot newenv;
+      Btype.backtrack snap;
+
+      Ctype.extmode := false;
+      Typecore.reset_delayed_checks ();
+      let (str, sg, newenv) = Typemod.type_structure oldenv sstr in
+      Typecore.force_delayed_checks ();
+      Typeext.solve newenv;
       let lam = Translmod.transl_toplevel_definition str in
       Warnings.check_fatal ();
       begin try

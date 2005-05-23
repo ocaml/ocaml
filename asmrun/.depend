@@ -6,6 +6,8 @@ array.o: array.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
   ../config/m.h ../config/s.h ../byterun/mlvalues.h ../byterun/fail.h \
   ../byterun/memory.h ../byterun/gc.h ../byterun/major_gc.h \
   ../byterun/freelist.h ../byterun/minor_gc.h
+bng.o: bng.c ../byterun/bng.h ../byterun/config.h ../config/m.h \
+  ../config/s.h ../byterun/bng_ia32.c ../byterun/bng_digit.c
 callback.o: callback.c ../byterun/callback.h ../byterun/mlvalues.h \
   ../byterun/config.h ../config/m.h ../config/s.h ../byterun/misc.h \
   ../byterun/fail.h ../byterun/memory.h ../byterun/gc.h \
@@ -119,6 +121,12 @@ misc.o: misc.c ../byterun/config.h ../config/m.h ../config/s.h \
   ../byterun/misc.h ../byterun/memory.h ../byterun/gc.h \
   ../byterun/mlvalues.h ../byterun/major_gc.h ../byterun/freelist.h \
   ../byterun/minor_gc.h
+nat_stubs.o: nat_stubs.c ../byterun/alloc.h ../byterun/misc.h \
+  ../byterun/config.h ../config/m.h ../config/s.h ../byterun/mlvalues.h \
+  ../byterun/custom.h ../byterun/intext.h ../byterun/io.h \
+  ../byterun/fail.h ../byterun/memory.h ../byterun/gc.h \
+  ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h \
+  ../byterun/bng.h ../byterun/nat.h
 obj.o: obj.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
   ../config/m.h ../config/s.h ../byterun/mlvalues.h ../byterun/fail.h \
   ../byterun/gc.h ../byterun/interp.h ../byterun/major_gc.h \
@@ -174,6 +182,8 @@ array.d.o: array.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
   ../config/m.h ../config/s.h ../byterun/mlvalues.h ../byterun/fail.h \
   ../byterun/memory.h ../byterun/gc.h ../byterun/major_gc.h \
   ../byterun/freelist.h ../byterun/minor_gc.h
+bng.d.o: bng.c ../byterun/bng.h ../byterun/config.h ../config/m.h \
+  ../config/s.h ../byterun/bng_ia32.c ../byterun/bng_digit.c
 callback.d.o: callback.c ../byterun/callback.h ../byterun/mlvalues.h \
   ../byterun/config.h ../config/m.h ../config/s.h ../byterun/misc.h \
   ../byterun/fail.h ../byterun/memory.h ../byterun/gc.h \
@@ -287,6 +297,12 @@ misc.d.o: misc.c ../byterun/config.h ../config/m.h ../config/s.h \
   ../byterun/misc.h ../byterun/memory.h ../byterun/gc.h \
   ../byterun/mlvalues.h ../byterun/major_gc.h ../byterun/freelist.h \
   ../byterun/minor_gc.h
+nat_stubs.d.o: nat_stubs.c ../byterun/alloc.h ../byterun/misc.h \
+  ../byterun/config.h ../config/m.h ../config/s.h ../byterun/mlvalues.h \
+  ../byterun/custom.h ../byterun/intext.h ../byterun/io.h \
+  ../byterun/fail.h ../byterun/memory.h ../byterun/gc.h \
+  ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h \
+  ../byterun/bng.h ../byterun/nat.h
 obj.d.o: obj.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
   ../config/m.h ../config/s.h ../byterun/mlvalues.h ../byterun/fail.h \
   ../byterun/gc.h ../byterun/interp.h ../byterun/major_gc.h \
@@ -342,6 +358,8 @@ array.p.o: array.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
   ../config/m.h ../config/s.h ../byterun/mlvalues.h ../byterun/fail.h \
   ../byterun/memory.h ../byterun/gc.h ../byterun/major_gc.h \
   ../byterun/freelist.h ../byterun/minor_gc.h
+bng.p.o: bng.c ../byterun/bng.h ../byterun/config.h ../config/m.h \
+  ../config/s.h ../byterun/bng_ia32.c ../byterun/bng_digit.c
 callback.p.o: callback.c ../byterun/callback.h ../byterun/mlvalues.h \
   ../byterun/config.h ../config/m.h ../config/s.h ../byterun/misc.h \
   ../byterun/fail.h ../byterun/memory.h ../byterun/gc.h \
@@ -455,6 +473,12 @@ misc.p.o: misc.c ../byterun/config.h ../config/m.h ../config/s.h \
   ../byterun/misc.h ../byterun/memory.h ../byterun/gc.h \
   ../byterun/mlvalues.h ../byterun/major_gc.h ../byterun/freelist.h \
   ../byterun/minor_gc.h
+nat_stubs.p.o: nat_stubs.c ../byterun/alloc.h ../byterun/misc.h \
+  ../byterun/config.h ../config/m.h ../config/s.h ../byterun/mlvalues.h \
+  ../byterun/custom.h ../byterun/intext.h ../byterun/io.h \
+  ../byterun/fail.h ../byterun/memory.h ../byterun/gc.h \
+  ../byterun/major_gc.h ../byterun/freelist.h ../byterun/minor_gc.h \
+  ../byterun/bng.h ../byterun/nat.h
 obj.p.o: obj.c ../byterun/alloc.h ../byterun/misc.h ../byterun/config.h \
   ../config/m.h ../config/s.h ../byterun/mlvalues.h ../byterun/fail.h \
   ../byterun/gc.h ../byterun/interp.h ../byterun/major_gc.h \

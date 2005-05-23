@@ -248,3 +248,5 @@ let prerr_warning loc w = print_warning loc err_formatter w;;
 let echo_eof () =
   print_newline ();
   incr num_loc_lines
+
+let ext = ref false

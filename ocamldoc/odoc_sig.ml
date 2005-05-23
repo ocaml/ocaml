@@ -991,6 +991,7 @@ module Analyser =
             in
             (maybe_more, new_env, eles)
 
+        | Parsetree.Psig_namespace _ -> assert false
         | Parsetree.Psig_class_type class_type_declaration_list ->
             (* we start by extending the environment *)
             let new_env =

@@ -155,6 +155,8 @@ let rec core_type i ppf x =
       line i ppf "Ptyp_poly%a\n"
         (fun ppf -> List.iter (fun x -> fprintf ppf " '%s" x)) sl;
       core_type i ppf ct;
+  | Ptyp_ext _ ->
+      line i ppf "Ptyp_ext...\n"
 
 and core_field_type i ppf x =
   line i ppf "core_field_type %a\n" fmt_location x.pfield_loc;
@@ -333,6 +335,41 @@ and expression i ppf x =
       line i ppf "Pexp_loc\n";
       joinlocations i ppf d;
       expression i ppf e;
+  | Pexp_ext x ->
+      extexp i ppf x
+
+and extexp i ppf = function
+  | Pextexp_cst _ ->
+      line i ppf "Pextexp_cst:...\n"
+  | Pextexp_match (e,b) ->
+      line i ppf "Pextexp_match:...\n";
+      expression i ppf e
+  | Pextexp_map (e,b) ->
+      line i ppf "Pextexp_map:...\n";
+      expression i ppf e
+  | Pextexp_xmap (e,b) ->
+      line i ppf "Pextexp_xmap:...\n";
+      expression i ppf e
+  | Pextexp_op (op,el) ->
+      line i ppf "Pexp_op(%s)\n" op;
+      list i expression ppf el;
+  | Pextexp_record fl ->
+      line i ppf "Pextexp_record...\n";
+  | Pextexp_removefield (e,l) ->
+      line i ppf "Pextexp_removefield\n";
+      expression i ppf e
+  | Pextexp_namespace (pr,ns,e) ->
+      line i ppf "Psig_namespace ...\n";
+      expression i ppf e
+  | Pextexp_from_ml e ->
+      line i ppf "Pextexp_from_ml\n";
+      expression i ppf e
+  | Pextexp_to_ml e ->
+      line i ppf "Pextexp_to_ml\n";
+      expression i ppf e
+  | Pextexp_check (e,_) ->
+      line i ppf "Pextexp_check\n";
+      expression i ppf e
 
 and joindefinition i ppf d = list i joinautomaton ppf d
 
@@ -580,6 +617,8 @@ and signature_item i ppf x =
   | Psig_class_type (l) ->
       line i ppf "Psig_class_type\n";
       list i class_type_declaration ppf l;
+  | Psig_namespace (pr,ns) ->
+      line i ppf "Psig_namespace ...\n"
 
 and modtype_declaration i ppf x =
   match x with
@@ -664,6 +703,8 @@ and structure_item i ppf x =
   | Pstr_include me ->
       line i ppf "Pstr_include";
       module_expr i ppf me
+  | Pstr_namespace (pr,ns) ->
+      line i ppf "Psig_namespace ...\n"
 
 and string_x_type_declaration i ppf (s, td) =
   string i ppf s;

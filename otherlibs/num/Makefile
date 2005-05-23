@@ -33,30 +33,46 @@ CMIFILES=big_int.cmi nat.cmi num.cmi ratio.cmi arith_status.cmi
 
 COBJS=bng.o nat_stubs.o
 
-all: libnums.a nums.cma $(CMIFILES)
+all: nums.cma
 
-allopt: libnums.a nums.cmxa $(CMIFILES)
+allopt: nums.cmxa
 
-nums.cma: $(CAMLOBJS)
-	$(MKLIB) -ocamlc '$(CAMLC)' -o nums $(CAMLOBJS)
+nums.cma:
+	$(CAMLC) -a -o nums.cma
 
-nums.cmxa: $(CAMLOBJS:.cmo=.cmx)
-	$(MKLIB) -ocamlopt '$(CAMLOPT)' -o nums $(CAMLOBJS:.cmo=.cmx)
+nums.cmxa:
+	$(CAMLOPT) -a -o nums.cmxa
+
+install:
+	cp nums.cma $(LIBDIR)
+
+installopt:
+	cp nums.cmxa nums.a $(LIBDIR)
+
+#all: libnums.a nums.cma $(CMIFILES)
+#
+#allopt: libnums.a nums.cmxa $(CMIFILES)
+#
+#nums.cma: $(CAMLOBJS)
+#	$(MKLIB) -ocamlc '$(CAMLC)' -o nums $(CAMLOBJS)
+#
+#nums.cmxa: $(CAMLOBJS:.cmo=.cmx)
+#	$(MKLIB) -ocamlopt '$(CAMLOPT)' -o nums $(CAMLOBJS:.cmo=.cmx)
 
 libnums.a: $(COBJS)
 	$(MKLIB) -o nums $(COBJS)
 
 $(CAMLOBJS:.cmo=.cmx): ../../ocamlopt
 
-install:
-	if test -f dllnums.so; then cp dllnums.so $(STUBLIBDIR)/dllnums.so; fi
-	cp libnums.a $(LIBDIR)/libnums.a
-	cd $(LIBDIR); $(RANLIB) libnums.a
-	cp nums.cma $(CMIFILES) $(CMIFILES:.cmi=.mli) $(LIBDIR)
-
-installopt:
-	cp $(CAMLOBJS:.cmo=.cmx) nums.cmxa nums.a $(LIBDIR)
-	cd $(LIBDIR); $(RANLIB) nums.a
+#install:
+#	if test -f dllnums.so; then cp dllnums.so $(STUBLIBDIR)/dllnums.so; fi
+#	cp libnums.a $(LIBDIR)/libnums.a
+#	cd $(LIBDIR); $(RANLIB) libnums.a
+#	cp nums.cma $(CMIFILES) $(CMIFILES:.cmi=.mli) $(LIBDIR)
+#
+#installopt:
+#	cp $(CAMLOBJS:.cmo=.cmx) nums.cmxa nums.a $(LIBDIR)
+#	cd $(LIBDIR); $(RANLIB) nums.a
 
 partialclean:
 	rm -f *.cm*

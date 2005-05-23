@@ -992,11 +992,13 @@ let mk_sapp f args = match args with
    let loc_app = {f.pexp_loc with Location.loc_end = get_loc_end args} in
    {
      pexp_desc = Pexp_apply (f, args) ;
-     pexp_loc = loc_app
+     pexp_loc = loc_app ;
+     pexp_ext = false ;
    } 
 
 (* Plain caml function for typing expressions *)
-let rec type_exp  env sexp = do_type_exp E env sexp 
+let rec type_exp env sexp =
+  Typeext.annot env sexp (do_type_exp E env sexp)
 
 and do_type_exp ctx env sexp =
   match sexp.pexp_desc with
@@ -1045,7 +1047,7 @@ and do_type_exp ctx env sexp =
         exp_env = env }
   | Pexp_function _ ->     (* defined in type_expect *)
       check_expression ctx sexp ;
-      type_expect env sexp (newvar())
+      real_type_expect env sexp (newvar())
   | Pexp_apply(sfunct, sargs) ->
       begin match ctx with
       | E ->
@@ -1367,6 +1369,7 @@ and do_type_exp ctx env sexp =
                 r := sexp.pexp_loc :: !r;
                 force ()
             | _ ->
+		Typeext.subtype_loc := sarg.pexp_loc;
                 let ty, b = enlarge_type env ty' in
                 force ();
                 begin try Ctype.unify env arg.exp_type ty with Unify trace ->
@@ -1382,6 +1385,7 @@ and do_type_exp ctx env sexp =
               Typetexp.transl_simple_type_delayed env sty'
             in
             begin try
+ 	      Typeext.subtype_loc := sexp.pexp_loc;
               let force'' = subtype env ty ty' in
               force (); force' (); force'' ()
             with Subtype (tr1, tr2) ->
@@ -1686,6 +1690,10 @@ and do_type_exp ctx env sexp =
       }
   | Pexp_poly _ ->
       assert false
+  | Pexp_ext x ->
+      let desc,typ = Typeext.type_expression env sexp.pexp_loc x in
+      { exp_desc = Texp_ext desc; exp_loc = sexp.pexp_loc; exp_type = typ;
+	exp_env = env }
 
 
 and type_argument env sarg ty_expected' =
@@ -1958,6 +1966,8 @@ and type_construct env loc lid sarg explicit_arity ty_expected =
    Some constructs are treated specially to provide better error messages. *)
 
 and type_expect ?in_function env sexp ty_expected =
+  Typeext.type_expect ?in_function env sexp ty_expected
+and real_type_expect ?in_function env sexp ty_expected =
   match sexp.pexp_desc with
     Pexp_constant(Const_string s as cst) ->
       let exp =
@@ -1999,19 +2009,21 @@ and type_expect ?in_function env sexp ty_expected =
           Ppat_construct(Longident.Lident"Some",
                          Some{ppat_loc = loc; ppat_desc = Ppat_var"*sth*"},
                          false)},
-         {pexp_loc = loc; pexp_desc = Pexp_ident(Longident.Lident"*sth*")};
+         {pexp_loc = loc; pexp_desc = Pexp_ident(Longident.Lident"*sth*");
+	  pexp_ext = false};
          {ppat_loc = loc; ppat_desc =
           Ppat_construct(Longident.Lident"None", None, false)},
          default] in
       let smatch =
         {pexp_loc = loc; pexp_desc =
-         Pexp_match({pexp_loc = loc; pexp_desc =
+         Pexp_match({pexp_loc = loc; pexp_ext=false; pexp_desc =
                      Pexp_ident(Longident.Lident"*opt*")},
-                    scases)} in
+                    scases); pexp_ext = false} in
       let sfun =
-        {pexp_loc = sexp.pexp_loc; pexp_desc =
+        {pexp_loc = sexp.pexp_loc; pexp_ext = false; pexp_desc =
          Pexp_function(l, None,[{ppat_loc = loc; ppat_desc = Ppat_var"*opt*"},
-                                {pexp_loc = sexp.pexp_loc; pexp_desc =
+                                {pexp_loc = sexp.pexp_loc; pexp_ext=false;
+				 pexp_desc =
                                  Pexp_let(Default, [spat, smatch], sbody)}])}
       in
       type_expect ?in_function env sfun ty_expected
@@ -2573,3 +2585,6 @@ let report_error ppf = function
       report_unification_error ppf trace
         (fun ppf -> fprintf ppf "This %s has type" kind)
         (fun ppf -> fprintf ppf "which is less general than")
+
+let () =
+  Typeext.real_type_expect := real_type_expect

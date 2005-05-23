@@ -41,7 +41,7 @@ static struct custom_operations nat_operations = {
 CAMLprim value initialize_nat(value unit)
 {
   bng_init();
-  register_custom_operations(&nat_operations);
+  caml_register_custom_operations(&nat_operations);
   return Val_unit;
 }
 
@@ -49,7 +49,7 @@ CAMLprim value create_nat(value size)
 {
   mlsize_t sz = Long_val(size);
 
-  return alloc_custom(&nat_operations, sz * sizeof(value), 0, 1);
+  return caml_alloc_custom(&nat_operations, sz * sizeof(value), 0, 1);
 }
 
 CAMLprim value length_nat(value nat)
@@ -333,17 +333,17 @@ static void serialize_nat(value nat,
   if (len >= (1L << 32))
     failwith("output_value: nat too big");
 #endif
-  serialize_int_4((int32) len);
+  caml_serialize_int_4((int32) len);
 #if defined(ARCH_SIXTYFOUR) && defined(ARCH_BIG_ENDIAN)
   { int32 * p;
     mlsize_t i;
     for (i = len, p = Data_custom_val(nat); i > 0; i -= 2, p += 2) {
-      serialize_int_4(p[1]);    /* low 32 bits of 64-bit digit */
-      serialize_int_4(p[0]);    /* high 32 bits of 64-bit digit */
+      caml_serialize_int_4(p[1]);    /* low 32 bits of 64-bit digit */
+      caml_serialize_int_4(p[0]);    /* high 32 bits of 64-bit digit */
     }
   }
 #else
-  serialize_block_4(Data_custom_val(nat), len);
+  caml_serialize_block_4(Data_custom_val(nat), len);
 #endif
   *wsize_32 = len * 4;
   *wsize_64 = len * 4;
@@ -353,17 +353,17 @@ static unsigned long deserialize_nat(void * dst)
 {
   mlsize_t len;
 
-  len = deserialize_uint_4();
+  len = caml_deserialize_uint_4();
 #if defined(ARCH_SIXTYFOUR) && defined(ARCH_BIG_ENDIAN)
   { uint32 * p;
     mlsize_t i;
     for (i = len, p = dst; i > 0; i -= 2, p += 2) {
-      p[1] = deserialize_uint_4();   /* low 32 bits of 64-bit digit */
-      p[0] = deserialize_uint_4();   /* high 32 bits of 64-bit digit */
+      p[1] = caml_deserialize_uint_4();   /* low 32 bits of 64-bit digit */
+      p[0] = caml_deserialize_uint_4();   /* high 32 bits of 64-bit digit */
     }
   }
 #else
-  deserialize_block_4(dst, len);
+  caml_deserialize_block_4(dst, len);
 #endif
   return len * 4;
 }

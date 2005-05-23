@@ -440,6 +440,8 @@ let rec transl_type env policy styp =
       let ty' = Btype.newgenty (Tpoly(ty, List.rev ty_list)) in
       unify_var env (newvar()) ty';
       ty'
+  | Ptyp_ext t ->
+      Typeext.transl_ext_type env t
 
 and transl_fields env policy =
   function
@@ -595,3 +597,7 @@ let report_error ppf = function
         (if v.desc = Tvar then "it escapes this scope" else
          if v.desc = Tunivar then "it is aliased to another variable"
          else "it is not a variable")
+
+let () =
+  Typeext.transl_simple_type := Some transl_simple_type
+

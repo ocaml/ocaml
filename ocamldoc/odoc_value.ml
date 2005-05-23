@@ -83,7 +83,8 @@ let parameter_list_from_arrows typ =
     | Types.Tfield _ 
     | Types.Tnil
     | Types.Tunivar
-    | Types.Tvariant _ ->
+    | Types.Tvariant _ 
+    | Types.Text _ | Types.Text_serialized _ ->
         []
   in
   iter typ

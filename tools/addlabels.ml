@@ -273,15 +273,25 @@ let rec add_labels_expr ~text ~values ~classes expr =
   | Pexp_for (s, e1, e2, _, e3) ->
       add_labels_rec e1; add_labels_rec e2;
       add_labels_rec e3 ~values:(SMap.removes [s] values)
+  | Pexp_ident _ | Pexp_constant _ | Pexp_construct _ | Pexp_variant _
+  | Pexp_new _ | Pexp_assertfalse | Pexp_object _ -> ()
   | Pexp_override lst ->
       List.iter lst ~f:(fun (_,e) -> add_labels_rec e)
-  | Pexp_ident _ | Pexp_constant _ | Pexp_construct _ | Pexp_variant _
-  | Pexp_new _ | Pexp_assertfalse | Pexp_object _ ->
-      ()
+  | Pexp_ext x -> (
+      match x with
+      | Pextexp_match (e,bl) | Pextexp_map (e,bl) | Pextexp_xmap (e,bl) ->
+	  add_labels_rec e; 
+	  List.iter (fun (_,e) -> add_labels_rec e) bl
+      | Pextexp_record l -> List.iter (fun (_,e) -> add_labels_rec e) l
+      | Pextexp_op (_,l) -> List.iter add_labels_rec l
+      | Pextexp_removefield (e,l) -> add_labels_rec e
+      | Pextexp_cst _ -> ()
+    )
   | Pexp_loc (_, _)|Pexp_def (_, _)|Pexp_reply (_, _)
   | Pexp_par (_, _)|Pexp_spawn _|Pexp_null
     ->
       assert false
+
 
 let rec add_labels_class ~text ~classes ~values ~methods cl =
   match cl.pcl_desc with

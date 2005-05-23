@@ -344,6 +344,9 @@ and transl_signature env sg =
                      Tsig_type(i', d', rs);
                      Tsig_type(i'', d'', rs)])
                  classes [rem])
+	| Psig_namespace (pr,ns) ->
+	    transl_sig (Env.add_namespace pr ns env) srem
+   
     in transl_sig env sg
 
 and transl_modtype_info env sinfo =
@@ -372,6 +375,10 @@ and transl_recmodule_modtypes loc env sdecls =
   let final_decl = transition final_env init in
   check_recmod_typedecls final_env sdecls final_decl;
   (final_decl, final_env)
+
+let transl_signature env sg =
+  Ctype.extmode := false;
+  transl_signature env sg
 
 (* Try to convert a module expression to a module path. *)
 
@@ -718,6 +725,8 @@ and type_structure anchor env sstr =
         (Tstr_include (modl, bound_value_identifiers sg) :: str_rem,
          sg @ sig_rem,
          final_env)
+    | {pstr_desc = Pstr_namespace (pr,ns)} :: srem ->
+       type_struct (Env.add_namespace pr ns env) srem
   in
   if !Clflags.save_types
   then List.iter (function {pstr_loc = l} -> Stypes.record_phrase l) sstr;
@@ -779,13 +788,28 @@ and simplify_signature sg =
 (* Typecheck an implementation file *)
 
 let type_implementation sourcefile outputprefix modulename initial_env ast =
+  let snap = Btype.snapshot () in
+  Ctype.extmode := true;
   Typecore.reset_delayed_checks ();
   let (str, sg, finalenv) =
     Misc.try_finally (fun () -> type_structure initial_env ast)
                      (fun () -> Stypes.dump (outputprefix ^ ".annot"))
   in
   Typecore.force_delayed_checks ();
+
+  Typeext.flush_ext_annot finalenv;
+  Btype.backtrack snap;
+
+  Ctype.extmode := false;
+  Typecore.reset_delayed_checks ();
+  let (str, sg, finalenv) =
+    Misc.try_finally (fun () -> type_structure initial_env ast)
+                     (fun () -> Stypes.dump (outputprefix ^ ".annot"))
+  in
+  Typecore.force_delayed_checks ();
+
   if !Clflags.print_types then begin
+    Typeext.solve finalenv;
     fprintf std_formatter "%a@." Printtyp.signature (simplify_signature sg);
     (str, Tcoerce_none)
   end else begin
@@ -799,8 +823,11 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
           with Not_found ->
             raise(Error(Location.none, Interface_not_compiled sourceintf)) in
         let dclsig = Env.read_signature modulename intf_file in
-        Includemod.compunit sourcefile sg intf_file dclsig
-      end else begin
+        let coerc = Includemod.compunit sourcefile sg intf_file dclsig in
+	Typeext.solve finalenv;
+	coerc
+      end else begin	
+	Typeext.solve finalenv;
         check_nongen_schemes finalenv str;
         normalize_signature finalenv sg;
         if not !Clflags.dont_write_files then

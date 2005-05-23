@@ -770,9 +770,11 @@ and transl_exp0 e =
 (*> JOCAML *)
   | Texp_spawn (e) -> transl_spawn None e
 (*< JOCAML *)
+  | Texp_ext x -> Translext.transl_ext transl_exp e.exp_env e.exp_type x
   | _ ->
       Location.print Format.err_formatter e.exp_loc ;
       fatal_error "Translcore.transl_exp"
+
 
 (*> JOCAML *)
 (*

@@ -243,3 +243,9 @@ val arity: type_expr -> int
 
 val collapse_conj_params: Env.t -> type_expr list -> unit
         (* Collapse conjunctive types in class parameters *)
+
+val extmode: bool ref
+        (* true: collapse all CDuce types to a single one *)
+val ext_subtype: (Env.t -> type_expr -> type_expr) ref
+val ext_supertype: (Env.t -> type_expr -> type_expr) ref
+val get_fields: row_desc -> (label * type_expr option) list

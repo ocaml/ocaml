@@ -20,3 +20,4 @@ val array_kind : Typedtree.expression -> Lambda.array_kind
 val array_pattern_kind : Typedtree.pattern -> Lambda.array_kind
 val bigarray_kind_and_layout :
       Typedtree.expression -> Lambda.bigarray_kind * Lambda.bigarray_layout
+

@@ -52,6 +52,7 @@ let rec add_type bv ty =
           | Rinherit sty -> add_type bv sty)
         fl
   | Ptyp_poly(_, t) -> add_type bv t
+  | Ptyp_ext _ -> ()
 
 and add_field_type bv ft =
   match ft.pfield_desc with
@@ -165,6 +166,16 @@ let rec add_expr bv exp =
       List.iter (add_joinautomaton bv) d ; add_expr bv e
   | Pexp_loc (d, e) ->
       List.iter (add_joinlocation bv) d ; add_expr bv e
+  | Pexp_ext x -> add_extexp bv x
+
+and add_extexp bv = function
+  | Pextexp_cst _ -> ()
+  | Pextexp_match (e,bl) | Pextexp_map (e,bl) | Pextexp_xmap (e,bl) -> 
+      add_expr bv e; List.iter (fun (_,e) -> add_expr bv e) bl
+  | Pextexp_record fl -> List.iter (fun (_,e) -> add_expr bv e) fl
+  | Pextexp_op (op,l) -> List.iter (add_expr bv) l
+  | Pextexp_namespace (_,_,e) | Pextexp_removefield (e,_)
+  | Pextexp_from_ml e | Pextexp_to_ml e | Pextexp_check (e,_) -> add_expr bv e
 
 and add_joinlocation bv jloc =
   let (_, autos, e) = jloc.pjloc_desc in
@@ -228,6 +239,7 @@ and add_sig_item bv item =
       List.iter (add_class_description bv) cdl; bv
   | Psig_class_type cdtl ->
       List.iter (add_class_type_declaration bv) cdtl; bv
+  | Psig_namespace _ -> bv
 
 and add_module bv modl =
   match modl.pmod_desc with
@@ -278,6 +290,7 @@ and add_struct_item bv item =
       List.iter (add_class_type_declaration bv) cdtl; bv
   | Pstr_include modl ->
       add_module bv modl; bv
+  | Pstr_namespace _ -> bv
 (*> JOCAML *)
   | Pstr_loc d ->
       List.iter (add_joinlocation bv) d ; bv
