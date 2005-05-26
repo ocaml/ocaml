@@ -41,6 +41,7 @@ let (open_graph, close_graph) =
   | _ -> invalid_arg ("Graphics: unknown OS type: " ^ Sys.os_type)
 
 external set_window_title : string -> unit = "caml_gr_set_window_title"
+external resize_window : int -> int -> unit = "caml_gr_resize_window"
 external clear_graph : unit -> unit = "caml_gr_clear_graph"
 external size_x : unit -> int = "caml_gr_size_x"
 external size_y : unit -> int = "caml_gr_size_y"

@@ -252,6 +252,31 @@ value caml_gr_set_window_title(value n)
   return Val_unit;
 }
 
+value caml_gr_resize_window (value vx, value vy)
+{
+  caml_gr_check_open ();
+
+  caml_gr_window.w = Int_val (vx);
+  caml_gr_window.h = Int_val (vy);
+  XResizeWindow (caml_gr_display, caml_gr_window.win, caml_gr_window.w,
+                 caml_gr_window.h);
+
+  XFreeGC(caml_gr_display, caml_gr_bstore.gc);
+  XFreePixmap(caml_gr_display, caml_gr_bstore.win);
+
+  caml_gr_bstore.w = caml_gr_window.w;
+  caml_gr_bstore.h = caml_gr_window.h;
+  caml_gr_bstore.win =
+    XCreatePixmap(caml_gr_display, caml_gr_window.win, caml_gr_bstore.w,
+                  caml_gr_bstore.h,
+                  XDefaultDepth(caml_gr_display, caml_gr_screen));
+  caml_gr_bstore.gc = XCreateGC(caml_gr_display, caml_gr_bstore.win, 0, NULL);
+  XSetBackground(caml_gr_display, caml_gr_bstore.gc, caml_gr_background);
+
+  caml_gr_clear_graph ();
+  return Val_unit;
+}
+
 value caml_gr_clear_graph(void)
 {
   caml_gr_check_open();

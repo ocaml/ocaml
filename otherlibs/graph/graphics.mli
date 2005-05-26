@@ -35,6 +35,9 @@ val close_graph : unit -> unit
 val set_window_title : string -> unit
 (** Set the title of the graphics window. *)
 
+val resize_window : int -> int -> unit
+(** Resize and erase the graphics window. *)
+
 external clear_graph : unit -> unit = "caml_gr_clear_graph"
 (** Erase the graphics window. *)
 
