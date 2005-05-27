@@ -899,7 +899,10 @@ expr:
   | OBJECT class_structure error
       { unclosed "object" 1 "end" 3 }
 /*> JOCAML */
-  | REPLY TO joinident                        { mkexp(Pexp_reply(ghexp(Pexp_ident (Lident "()")), $3)) }
+  | REPLY TO joinident
+      { mkexp
+          (Pexp_reply
+             (ghexp (Pexp_construct (Lident "()", None, false)), $3)) }
   | REPLY expr TO joinident                   { mkexp(Pexp_reply($2,$4)) }
   | SPAWN expr                                { mkexp(Pexp_spawn $2) }
   | DEF joinautomaton_list_AND IN seq_expr    { mkexp(Pexp_def($2,$4)) }
