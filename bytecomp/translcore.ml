@@ -1120,26 +1120,6 @@ and create_autos some_loc cautos k =
     cautos k
   
 and do_transl_def some_loc autos body =
-(*
-  let trivial_joinmatch auto =
-    let trivial_clause jc = match jc.jclause_desc with 
-      (pats, e) ->
-      let new_pats =
-        List.map
-          (fun jp -> match jp.jpat_desc with
-            (chan, arg) ->
-              let x = Ident.create "jarg" in
-              let new_jpat = 
-                { jp with
-                  jpat_desc = (chan, { arg with pat_desc = Tpat_var x }) }
-              and to_match = x, arg in
-              (new_jpat, to_match))
-          pats in
-      Joinmatch.Reaction
-        ([List.map fst new_pats], (List.map snd new_pats, e)) in    
-    { auto with
-      jauto_desc = Array.map trivial_clause auto.jauto_desc } in
-*)
   let autos1  = List.map Transljmatch.transl_jmatch autos in
 
 (* compile (and name) guarded processes *)
