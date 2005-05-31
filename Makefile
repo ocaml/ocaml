@@ -126,7 +126,8 @@ defaultentry:
 # Recompile the system using the bootstrap compiler
 all: runtime ocamlc
 	$(MAKE) ocamllex ocamlyacc ocamltools
-	$(MAKE) library otherlibraries ocaml
+	$(MAKE) library otherlibraries
+	$(MAKE) ocaml
 	$(MAKE) camlp4out $(DEBUGGER) # ocamldoc
 
 # The compilation of ocaml will fail if the runtime has changed.
