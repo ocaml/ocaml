@@ -18,7 +18,6 @@ open Pcaml;
 Pcaml.syntax_name.val := "OCaml";
 Pcaml.no_constructors_arity.val := True;
 
-
 do {
   let odfa = Plexer.dollar_for_antiquotation.val in
   Plexer.dollar_for_antiquotation.val := False;
@@ -52,6 +51,16 @@ value o2b =
   fun
   [ Some _ -> True
   | None -> False ]
+;
+
+value mkexprident _loc ids = match ids with
+  [ [] -> Stdpp.raise_with_loc _loc (Stream.Error "illegal long identifier")
+  | [ id :: ids ] ->
+      let rec loop m = fun
+        [ [ id :: ids ] -> loop <:expr< $m$ . $id$ >> ids
+        | [] -> m ]
+  in
+  loop id ids ]
 ;
 
 value mkumin _loc f arg =
@@ -665,7 +674,7 @@ EXTEND
       | c = CHAR -> <:expr< $chr:c$ >>
       | UIDENT "True" -> <:expr< $uid:" True"$ >>
       | UIDENT "False" -> <:expr< $uid:" False"$ >>
-      | i = expr_ident -> i
+      | ids = expr_ident -> mkexprident _loc ids
       | s = "false" -> <:expr< False >>
       | s = "true" -> <:expr< True >>
       | "["; "]" -> <:expr< [] >>
@@ -746,17 +755,13 @@ EXTEND
   ;
   expr_ident:
     [ RIGHTA
-      [ i = LIDENT -> <:expr< $lid:i$ >>
-      | i = UIDENT -> <:expr< $uid:i$ >>
-      | i = UIDENT; "."; j = SELF ->
-          let rec loop m =
-            fun
-            [ <:expr< $x$ . $y$ >> -> loop <:expr< $m$ . $x$ >> y
-            | e -> <:expr< $m$ . $e$ >> ]
-          in
-          loop <:expr< $uid:i$ >> j
+      [ i = LIDENT -> [ <:expr< $lid:i$ >> ]
+      | i = UIDENT -> [ <:expr< $uid:i$ >> ]
       | i = UIDENT; "."; "("; j = operator_rparen ->
-          <:expr< $uid:i$ . $lid:j$ >> ] ]
+         [ <:expr< $uid:i$ >> ; <:expr< $lid:j$ >> ]
+      | i = UIDENT; "."; j = SELF -> [ <:expr< $uid:i$ >> :: j ]
+      ]
+    ]
   ;
   (* Patterns *)
   patt:

@@ -136,13 +136,16 @@ let mklistpat _loc last =
   loop true
 ;;
 
-let mkexprident _loc i j =
-  let rec loop m =
-    function
-      MLast.ExAcc (_, x, y) -> loop (MLast.ExAcc (_loc, m, x)) y
-    | e -> MLast.ExAcc (_loc, m, e)
-  in
-  loop (MLast.ExUid (_loc, i)) j
+let mkexprident _loc ids =
+  match ids with
+    [] -> Stdpp.raise_with_loc _loc (Stream.Error "illegal long identifier")
+  | id :: ids ->
+      let rec loop m =
+        function
+          id :: ids -> loop (MLast.ExAcc (_loc, m, id)) ids
+        | [] -> m
+      in
+      loop id ids
 ;;
 
 let mkassert _loc e =
@@ -1207,8 +1210,8 @@ Grammar.extend
       [Gramext.Snterm
          (Grammar.Entry.obj (expr_ident : 'expr_ident Grammar.Entry.e))],
       Gramext.action
-        (fun (i : 'expr_ident) (_loc : Lexing.position * Lexing.position) ->
-           (i : 'expr));
+        (fun (ids : 'expr_ident) (_loc : Lexing.position * Lexing.position) ->
+           (mkexprident _loc ids : 'expr));
       [Gramext.Stoken ("CHAR", "")],
       Gramext.action
         (fun (s : string) (_loc : Lexing.position * Lexing.position) ->
@@ -1373,15 +1376,15 @@ Grammar.extend
       Gramext.action
         (fun (j : 'expr_ident) _ (i : string)
            (_loc : Lexing.position * Lexing.position) ->
-           (mkexprident _loc i j : 'expr_ident));
+           (MLast.ExUid (_loc, i) :: j : 'expr_ident));
       [Gramext.Stoken ("UIDENT", "")],
       Gramext.action
         (fun (i : string) (_loc : Lexing.position * Lexing.position) ->
-           (MLast.ExUid (_loc, i) : 'expr_ident));
+           ([MLast.ExUid (_loc, i)] : 'expr_ident));
       [Gramext.Stoken ("LIDENT", "")],
       Gramext.action
         (fun (i : string) (_loc : Lexing.position * Lexing.position) ->
-           (MLast.ExLid (_loc, i) : 'expr_ident))]];
+           ([MLast.ExLid (_loc, i)] : 'expr_ident))]];
     Grammar.Entry.obj (fun_def : 'fun_def Grammar.Entry.e), None,
     [None, Some Gramext.RightA,
      [[Gramext.Stoken ("", "->");

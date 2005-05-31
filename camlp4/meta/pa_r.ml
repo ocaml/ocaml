@@ -133,13 +133,14 @@ value mklistpat _loc last =
         <:patt< [$p1$ :: $loop False pl$] >> ]
 ;
 
-value mkexprident _loc i j =
-  let rec loop m =
-    fun
-    [ <:expr< $x$ . $y$ >> -> loop <:expr< $m$ . $x$ >> y
-    | e -> <:expr< $m$ . $e$ >> ]
+value mkexprident _loc ids = match ids with
+  [ [] -> Stdpp.raise_with_loc _loc (Stream.Error "illegal long identifier")
+  | [ id :: ids ] ->
+      let rec loop m = fun
+        [ [ id :: ids ] -> loop <:expr< $m$ . $id$ >> ids
+        | [] -> m ]
   in
-  loop <:expr< $uid:i$ >> j
+  loop id ids ]
 ;
 
 value mkassert _loc e =
@@ -391,7 +392,7 @@ EXTEND
       | s = FLOAT -> <:expr< $flo:s$ >>
       | s = STRING -> <:expr< $str:s$ >>
       | s = CHAR -> <:expr< $chr:s$ >>
-      | i = expr_ident -> i
+      | ids = expr_ident -> mkexprident _loc ids
       | "["; "]" -> <:expr< [] >>
       | "["; el = LIST1 expr SEP ";"; last = cons_expr_opt; "]" ->
           mklistexp _loc last el
@@ -446,9 +447,9 @@ EXTEND
   ;
   expr_ident:
     [ RIGHTA
-      [ i = LIDENT -> <:expr< $lid:i$ >>
-      | i = UIDENT -> <:expr< $uid:i$ >>
-      | i = UIDENT; "."; j = SELF -> mkexprident _loc i j ] ]
+      [ i = LIDENT -> [ <:expr< $lid:i$ >> ]
+      | i = UIDENT -> [ <:expr< $uid:i$ >> ]
+      | i = UIDENT; "."; j = SELF -> [ <:expr< $uid:i$ >> :: j ] ] ]
   ;
   fun_def:
     [ RIGHTA

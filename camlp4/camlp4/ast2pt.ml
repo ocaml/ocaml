@@ -132,7 +132,7 @@ value mkli s =
 
 value long_id_of_string_list loc sl =
   match List.rev sl with
-  [ [] -> error loc "bad ast"
+  [ [] -> error loc "bad ast in long ident"
   | [s :: sl] -> mkli s (List.rev sl) ]
 ;
 
@@ -291,7 +291,7 @@ value paolab loc lab peoo =
   let lab =
     match (lab, peoo) with
     [ ("", Some (PaLid _ i | PaTyc _ (PaLid _ i) _, _)) -> i
-    | ("", _) -> error loc "bad ast"
+    | ("", _) -> error loc "bad ast in label"
     | _ -> lab ]
   in
   let (p, eo) =
@@ -555,7 +555,7 @@ value rec expr =
         | [(loc, ml, ExLid _ s) :: l] ->
             (mkexp loc (Pexp_ident (mkli s ml)), l)
         | [(_, [], e) :: l] -> (expr e, l)
-        | _ -> error loc "bad ast" ]
+        | _ -> error loc "bad ast in expression" ]
       in
       let (_, e) =
         List.fold_left
@@ -914,7 +914,7 @@ value directive loc =
           fun
           [ ExLid _ i | ExUid _ i -> [i]
           | ExAcc _ e (ExLid _ i) | ExAcc _ e (ExUid _ i) -> loop e @ [i]
-          | e -> raise_with_loc (loc_of_expr e) (Failure "bad ast") ]
+          | e -> raise_with_loc (loc_of_expr e) (Failure "bad ast in directive") ]
       in
       Pdir_ident (long_id_of_string_list loc sl) ]
 ;
