@@ -231,7 +231,7 @@ cleanboot:
 # Compile the native-code compiler
 opt-core:runtimeopt ocamlopt libraryopt
 opt: runtimeopt ocamlopt
-       $(MAKE) libraryopt otherlibrariesopt camlp4opt
+	$(MAKE) libraryopt otherlibrariesopt camlp4opt
 
 # Native-code versions of the tools
 opt.opt: checkstack core ocaml opt-core ocamlc.opt otherlibraries camlp4out \
