@@ -125,18 +125,21 @@ defaultentry:
 	@echo "should work.  But see the file INSTALL for more details."
 
 # Recompile the system using the bootstrap compiler
-all: runtime ocamlc ocamllex ocamlyacc ocamltools library \
-  otherlibraries ocaml $(DEBUGGER)
-  #camlp4out ocamldoc
+all: runtime ocamlc
+	$(MAKE) ocamllex ocamlyacc ocamltools
+	$(MAKE) library otherlibraries ocaml
+	$(MAKE) $(DEBUGGER) # camlp4out ocamldoc
 
 # The compilation of ocaml will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
 
 # Compile everything the first time
-world: coldstart all
+world: coldstart
+	$(MAKE) all
 
 # Compile also native code compiler and libraries, fast
-world.opt: coldstart opt.opt
+world.opt: coldstart
+	$(MAKE) opt.opt
 
 # Core bootstrapping cycle
 coreboot:
@@ -181,10 +184,11 @@ coldstart:
           ln -s ../byterun stdlib/caml; fi
 
 # Build the core system: the minimum needed to make depend and bootstrap
-core : runtime ocamlc ocamllex ocamlyacc ocamltools library
+core : coldstart
+	$(MAKE) runtime ocamlc ocamllex ocamlyacc ocamltools library
 
-semi-bootstrap:
-	$(MAKE) coldstart runtime ocamlc ocamllex ocamlyacc library
+semi-bootstrap: coldstart 
+	$(MAKE) runtime ocamlc ocamllex ocamlyacc library
 	$(MAKE) coreboot
 	$(MAKE) runtime ocamlc ocamllex
 	$(MAKE) compare
@@ -233,7 +237,8 @@ cleanboot:
 
 # Compile the native-code compiler
 opt-core:runtimeopt ocamlopt libraryopt
-opt: runtimeopt ocamlopt libraryopt otherlibrariesopt camlp4opt
+opt: runtimeopt ocamlopt
+	$(MAKE) libraryopt otherlibrariesopt camlp4opt
 
 # Native-code versions of the tools
 opt.opt: checkstack core ocaml opt-core ocamlc.opt otherlibraries camlp4out \
@@ -615,11 +620,11 @@ alldepend::
 # Camlp4
 
 camlp4out: ocamlc
-	cd camlp4; $(MAKE) all
+	cd camlp4; $(MAKE) -j1 all
 camlp4opt: ocamlopt
-	cd camlp4; $(MAKE) opt
+	cd camlp4; $(MAKE) -j1 opt
 camlp4optopt: ocamlopt
-	cd camlp4; $(MAKE) opt.opt
+	cd camlp4; $(MAKE) -j1 opt.opt
 partialclean::
 	cd camlp4; $(MAKE) clean
 alldepend::
