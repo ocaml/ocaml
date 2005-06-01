@@ -482,6 +482,8 @@ value rec patt =
   | PaRec loc lpl -> mkpat loc (Ppat_record (List.map mklabpat lpl))
   | PaStr loc s ->
       mkpat loc (Ppat_constant (Const_string (string_of_string_token loc s)))
+  | PaTup loc [] -> error loc "empty tuple pattern"
+  | PaTup loc [_] -> error loc "singleton tuple pattern"
   | PaTup loc pl -> mkpat loc (Ppat_tuple (List.map patt pl))
   | PaTyc loc p t -> mkpat loc (Ppat_constraint (patt p) (ctyp t))
   | PaTyp loc sl -> mkpat loc (Ppat_type (long_id_of_string_list loc sl))
@@ -703,6 +705,8 @@ value rec expr =
   | ExStr loc s ->
       mkexp loc (Pexp_constant (Const_string (string_of_string_token loc s)))
   | ExTry loc e pel -> mkexp loc (Pexp_try (expr e) (List.map mkpwe pel))
+  | ExTup loc [] -> error loc "empty tuple"
+  | ExTup loc [e] -> error loc "singleton tuple"
   | ExTup loc el -> mkexp loc (Pexp_tuple (List.map expr el))
   | ExTyc loc e t -> mkexp loc (Pexp_constraint (expr e) (Some (ctyp t)) None)
   | ExUid loc s ->
