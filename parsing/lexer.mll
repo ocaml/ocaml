@@ -28,6 +28,7 @@ type error =
   | Keyword_as_label of string
   | Literal_overflow of string
   | Illegal_ncname of int
+  | Illegal_uchar of int
 ;;
 
 let ext = Location.ext
@@ -126,7 +127,11 @@ let get_stored_string () =
 let unicode_buffer = Buffer.create 1024
 
 module U = Cduce_types.Encodings.Utf8
-let store_uchar = U.store unicode_buffer
+let store_uchar lexbuf i = 
+  if (i > 0x10ffff) then 
+    raise (Error(Illegal_uchar i, Location.curr lexbuf));
+  U.store unicode_buffer i
+
 let store_ucharc c = U.store unicode_buffer (Char.code c)
 
 let reset_unicode_buffer () = Buffer.clear unicode_buffer
@@ -230,6 +235,8 @@ let report_error ppf = function
       fprintf ppf "Integer literal exceeds the range of representable integers of type %s" ty
   | Illegal_ncname i ->
       fprintf ppf "Illegal character in NCNAME (codepoint %i)" i
+  | Illegal_uchar i ->
+      fprintf ppf "Illegal Unicode character (codepoint %i)" i
 
 ;;
 
@@ -364,7 +371,7 @@ let parse_ncname lexbuf =
       | ';' -> 
 	  if not ((if first then namechar_first else namechar) accu) 
 	  then raise (Error(Illegal_ncname accu, Location.curr lexbuf));
-	  store_uchar accu; aux1 false (succ i)
+	  store_uchar lexbuf accu; aux1 false (succ i)
       | _ -> assert false
   in
   aux1 true 0
@@ -689,12 +696,12 @@ and xstring double = parse
   | '\\' ['0'-'9']+ ';'
       { let s = Lexing.lexeme lexbuf in
         let s = String.sub s 1 (String.length s - 2) in
-        store_uchar (int_of_string s);
+        store_uchar lexbuf (int_of_string s);
         xstring double lexbuf }
   | '\\' 'x' ['0'-'9' 'a'-'f' 'A'-'F']+ ';'
       { let s = Lexing.lexeme lexbuf in
         let s = String.sub s 1 (String.length s - 2) in
-        store_uchar (int_of_hex_string s);
+        store_uchar lexbuf (int_of_hex_string s);
         xstring double lexbuf }
   | '\\' _
       { if in_comment ()

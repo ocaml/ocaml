@@ -27,6 +27,7 @@ type error =
   | Keyword_as_label of string
   | Literal_overflow of string
   | Illegal_ncname of int
+  | Illegal_uchar of int
 ;;
 
 exception Error of error * Location.t
