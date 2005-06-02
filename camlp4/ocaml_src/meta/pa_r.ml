@@ -1304,7 +1304,15 @@ Grammar.extend
            (p, e : 'let_binding))]];
     Grammar.Entry.obj (fun_binding : 'fun_binding Grammar.Entry.e), None,
     [None, Some Gramext.RightA,
-     [[Gramext.Stoken ("", ":");
+     [[Gramext.Stoken ("", ":>");
+       Gramext.Snterm (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e));
+       Gramext.Stoken ("", "=");
+       Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e))],
+      Gramext.action
+        (fun (e : 'expr) _ (t : 'ctyp) _
+           (_loc : Lexing.position * Lexing.position) ->
+           (MLast.ExCoe (_loc, e, None, t) : 'fun_binding));
+      [Gramext.Stoken ("", ":");
        Gramext.Snterm (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e));
        Gramext.Stoken ("", "=");
        Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e))],

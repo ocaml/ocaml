@@ -729,7 +729,8 @@ EXTEND
     [ RIGHTA
       [ p = patt LEVEL "simple"; e = SELF -> <:expr< fun $p$ -> $e$ >>
       | "="; e = expr -> <:expr< $e$ >>
-      | ":"; t = ctyp; "="; e = expr -> <:expr< ($e$ : $t$) >> ] ]
+      | ":"; t = ctyp; "="; e = expr -> <:expr< ($e$ : $t$) >> 
+      | ":>"; t = ctyp; "="; e = expr -> <:expr< ($e$ :> $t$) >> ] ]
   ;
   match_case:
     [ [ x1 = patt; w = OPT [ "when"; e = expr -> e ]; "->"; x2 = expr ->

@@ -428,7 +428,8 @@ EXTEND
     [ RIGHTA
       [ p = ipatt; e = SELF -> <:expr< fun $p$ -> $e$ >>
       | "="; e = expr -> <:expr< $e$ >>
-      | ":"; t = ctyp; "="; e = expr -> <:expr< ($e$ : $t$) >> ] ]
+      | ":"; t = ctyp; "="; e = expr -> <:expr< ($e$ : $t$) >> 
+      | ":>"; t = ctyp; "="; e = expr -> <:expr< ($e$ :> $t$) >> ] ]
   ;
   match_case:
     [ [ p = patt; aso = as_patt_opt; w = when_expr_opt; "->"; e = expr ->
