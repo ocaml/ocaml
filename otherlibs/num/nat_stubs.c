@@ -331,7 +331,7 @@ static void serialize_nat(value nat,
 #ifdef ARCH_SIXTYFOUR
   len = len * 2; /* two 32-bit words per 64-bit digit  */
   if (len >= (1L << 32))
-    failwith("output_value: nat too big");
+    caml_failwith("output_value: nat too big");
 #endif
   caml_serialize_int_4((int32) len);
 #if defined(ARCH_SIXTYFOUR) && defined(ARCH_BIG_ENDIAN)
