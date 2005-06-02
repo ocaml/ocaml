@@ -753,7 +753,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
   Typecore.reset_delayed_checks ();
   let (str, sg, finalenv) =
     Misc.try_finally (fun () -> type_structure initial_env ast)
-                     (fun () -> Stypes.dump (outputprefix ^ ".annot"))
+                     (fun () -> Typeext.register_exttypes (); Stypes.dump (outputprefix ^ ".annot"))
   in
   Typecore.force_delayed_checks ();
 
@@ -764,7 +764,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
   Typecore.reset_delayed_checks ();
   let (str, sg, finalenv) =
     Misc.try_finally (fun () -> type_structure initial_env ast)
-                     (fun () -> Stypes.dump (outputprefix ^ ".annot"))
+                     (fun () -> Typeext.register_exttypes (); Stypes.dump (outputprefix ^ ".annot"))
   in
   Typecore.force_delayed_checks ();
 
