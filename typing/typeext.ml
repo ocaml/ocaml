@@ -42,6 +42,13 @@ type t = CT.t
 
 let id x = Cduce_types.Ident.ident (Cduce_types.Ns.empty, U.mk_latin1 x)
 
+type cannot_translate =
+  | TUnregularRecursion
+  | TUnguardedRecursion
+  | TOpen
+  | TOther
+  
+
 type error = 
   | UnboundNamespacePrefix of string
   | DuplicatedLabel
@@ -51,7 +58,7 @@ type error =
   | EmptyType
   | Cyclic
   | NotSubtype of t * t
-  | CannotTranslateML of Types.type_expr
+  | CannotTranslateML of Types.type_expr * cannot_translate
   | InvalidChar
   | PatError of string
 
@@ -90,9 +97,14 @@ let report_error ppf = function
 	(Cduce_types.Sample.get (CT.diff t1 t2))
   | Cyclic ->
       Format.fprintf ppf "Cycle detected: cannot type-check"
-  | CannotTranslateML t ->
+  | CannotTranslateML (t,e) ->
       Format.fprintf ppf "Cannot translate ML type: %a"
-	Printtyp.type_expr t
+	Printtyp.type_expr t;
+      (match e with
+	 | TOpen -> Format.fprintf ppf "@.Type with variables."
+	 | TUnguardedRecursion -> Format.fprintf ppf "@.Unguarded recursion."
+	 | TUnregularRecursion -> Format.fprintf ppf "@.Unregular recursion."
+	 | TOther -> ())
   | InvalidChar ->
       Format.fprintf ppf "Invalid character literal"
   | PatError s ->
@@ -210,13 +222,17 @@ let ml_constr c p =
 	let p = seq (CT.cons (CT.record_fields (false,LabelMap.empty)) :: p) in
 	CT.xml (CT.cons c) p
 
-type from_ml_env = { loc : Location.t; 
+type from_ml_env = { loc : Location.t;
+		     tys : (type_expr * CT.Node.t) list;
 		     seen : type_expr list;
 		     constrs : (Path.t * (type_expr list) * CT.Node.t) list }
 
+exception CannotTranslate of cannot_translate
+
 let rec typ_from_ml env t =
   let t = real_repr t in
-  if List.memq t env.seen then raise Exit
+  if List.mem_assq t env.tys then List.assq t env.tys
+  else if List.memq t env.seen then raise (CannotTranslate TUnguardedRecursion)
   else let env = { env with seen = t :: env.seen } in
   match t.desc with
     | Tconstr (p,_,_) when Path.same p Predef.path_unit ->
@@ -238,7 +254,7 @@ let rec typ_from_ml env t =
     | Tconstr (p,_,_) when Path.name p = "Cduce_types.Value.t" ->
 	CT.any_node
     | Tconstr (p,_,_) when Path.same p Predef.path_exn ->
-	raise Exit
+	raise (CannotTranslate TOther)
     | Ttuple tl ->
 	CT.cons (CT.tuple (List.map (typ_from_ml env) tl))
     | Text _ ->
@@ -249,7 +265,7 @@ let rec typ_from_ml env t =
 	CT.cons (CT.arrow (typ_from_ml env t1) (typ_from_ml env t2))
     | Tvariant rd ->
 	let rd = Btype.row_repr rd in
-	if not rd.row_closed then raise Exit;
+	if not rd.row_closed then raise (CannotTranslate TOpen);
 	let fields = Ctype.get_fields rd in
 	CT.cons 
 	  (List.fold_left
@@ -257,21 +273,26 @@ let rec typ_from_ml env t =
 		CT.cup accu (ml_constr lab (match f with None -> []
 					      | Some t -> [typ_from_ml env t]))
 	     ) CT.empty (Ctype.get_fields rd))
+    | Tvar ->
+	raise (CannotTranslate TOpen)
     | _ -> 
-	raise Exit
+	raise (CannotTranslate TOther)
 
 and typ_from_ml_constr env p args =
+  let args = List.map real_repr args in
+  let ty_args = List.map (typ_from_ml env) args in
+  let env = { env with tys = (List.combine args ty_args) @ env.tys } in
   try 
     let (_,args',n) = 
       List.find (fun (p',_,_) -> Path.same p p') env.constrs in
     List.iter2 (Ctype.unify !solve_env) args args';
-    n 
-  with Ctype.Unify _ -> raise Exit | Not_found -> 
+    n
+  with Ctype.Unify _ -> raise (CannotTranslate TUnregularRecursion) | Not_found -> 
     let n = CT.make () in
     let env = { env with constrs = (p,args,n) :: env.constrs } in
     let decl = 
       try Env.find_type p !solve_env
-      with Not_found -> raise Exit in
+      with Not_found -> raise (CannotTranslate TOther) in
     let inst t =
       let ps,t = Ctype.instance_parameterized_type decl.type_params t  in
       List.iter2 (Ctype.unify !solve_env) ps args;
@@ -299,13 +320,13 @@ and typ_from_ml_constr env p args =
 		       (LabelPool.mk (Ns.empty,U.mk_latin1 lab), t)
 		    ) fields) in
 	    CT.record_fields (false,fields)
-	| _ -> raise Exit in
+	| _ -> raise (CannotTranslate TOther) in
     CT.define n t;
     n
       
 let typ_from_ml loc t = 
-  try CT.descr (typ_from_ml { loc = loc; seen =  []; constrs = [] }  t)
-  with Exit -> error loc (CannotTranslateML t)
+  try CT.descr (typ_from_ml { loc = loc; tys = []; seen =  []; constrs = [] }  t)
+  with CannotTranslate e -> error loc (CannotTranslateML (t,e))
 
 (*********************)
 
