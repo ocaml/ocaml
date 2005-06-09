@@ -1,3 +1,6 @@
+- [09 Jun 04] Moved "-no_quot" option from pa_o to camlp4, enabling to
+  use it indepently fom pa_o.cmo.
+
 - [17 Nov 04] Renamed "loc" into "_loc", introducing an incompatibility
   with existing code (3.08.x and before). Such code can generally run
   unmodified using the -loc option (camlp4 -loc "loc").

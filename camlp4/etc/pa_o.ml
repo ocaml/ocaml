@@ -1310,6 +1310,3 @@ EXTEND
       | "#"; n = LIDENT; dp = OPT expr -> <:str_item< # $n$ $opt:dp$ >> ] ]
   ;
 END;
-
-Pcaml.add_option "-no_quot" (Arg.Set Plexer.no_quotations)
-  "Don't parse quotations, allowing to use, e.g. \"<:>\" as token";

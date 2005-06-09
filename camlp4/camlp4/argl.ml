@@ -357,7 +357,9 @@ value initial_spec_list =
    ("-v", Arg.Unit print_version,
     "Print Camlp4 version and exit.");
    ("-version", Arg.Unit print_version_string,
-    "Print Camlp4 version number and exit.")
+    "Print Camlp4 version number and exit.");
+   ("-no_quot", Arg.Set Plexer.no_quotations,
+    " Don't parse quotations, allowing to use, e.g. \"<:>\" as token")
  ]
 ;
 
