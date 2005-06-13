@@ -1,3 +1,16 @@
+Objective Caml 3.09.0:
+----------------------
+
+Language features:
+- Introduction of private row types, for abstracting the row in object
+  and variant types.
+
+Type checking:
+- Polymorphic variants with at most one constructor [< `A of t] are no
+  longer systematically promoted to the exact type [`A of t]. This was
+  more confusing than useful, and created problems with private row
+  types.
+
 Objective Caml 3.08.3:
 ----------------------
 

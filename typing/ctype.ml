@@ -1734,27 +1734,6 @@ and unify_row env row1 row2 =
           raise (Unify ((mkvariant [l,f1] true,
                          mkvariant [l,f2] true) :: trace)))
       pairs;
-    (* Special case when there is only one field left *)
-    if row0.row_closed then begin
-      match filter_row_fields false (row_repr row1).row_fields with [l, fi] ->
-        begin match row_field_repr fi with
-          Reither(c, t1::tl, _, e) ->
-            let f1' = Rpresent (Some t1) in
-            set_row_field e f1';
-            begin try
-              if c then raise (Unify []);
-              List.iter (unify env t1) tl
-            with exn ->
-              e := None;
-              set_row_field (List.assoc l !undo) f1';
-              raise exn
-            end
-        | Reither(true, [], _, e) ->
-            set_row_field e (Rpresent None);
-        | _ -> ()
-        end
-      | _ -> ()
-    end
   with exn ->
     log_type rm1; rm1.desc <- md1; log_type rm2; rm2.desc <- md2; raise exn
   end
@@ -2764,18 +2743,17 @@ let rec build_subtype env visited loops posi level t =
         t :: if level' < level then [] else filter_visited visited in
       let bound = ref row.row_bound in
       let fields = filter_row_fields false row.row_fields in
-      let short = posi && List.length fields <= 1 in
       let fields =
         List.map
           (fun (l,f as orig) -> match row_field_repr f with
             Rpresent None ->
-              if posi && not short then
+              if posi then
                 (l, Reither(true, [], false, ref None)), Unchanged
               else
                 orig, Unchanged
           | Rpresent(Some t) ->
               let (t', c) = build_subtype env visited loops posi level' t in
-              if posi && level > 0 && not short then begin
+              if posi && level > 0 then begin
                 bound := t' :: !bound;
                 (l, Reither(false, [t'], false, ref None)), c
               end else
@@ -2784,7 +2762,6 @@ let rec build_subtype env visited loops posi level t =
           fields
       in
       let c = collect fields in
-      if short && c = Unchanged then (t, Unchanged) else
       let row =
         { row_fields = List.map fst fields; row_more = newvar();
           row_bound = !bound; row_closed = posi; row_fixed = false;
@@ -3060,7 +3037,7 @@ let rec normalize_type_rec env ty =
                     then tyl else ty::tyl)
                   [ty] tyl
               in
-              if List.length tyl' < List.length tyl + 1 then
+              if List.length tyl' <= List.length tyl then
                 let f = Reither(b, List.rev tyl', m, ref None) in
                 set_row_field e f;
                 f

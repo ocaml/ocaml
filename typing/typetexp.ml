@@ -241,9 +241,7 @@ let rec transl_type env policy styp =
               raise(Error(styp.ptyp_loc, Present_has_no_type l)))
             present;
           let bound = ref row.row_bound in
-          let single = List.length row.row_fields = 1 in
           let fields =
-            if single then row.row_fields else
             List.map
               (fun (l,f) -> l,
                 if List.mem l present then f else
@@ -329,13 +327,11 @@ let rec transl_type env policy styp =
         with Not_found ->
           (l, f) :: fields
       in
-      (* closed and only one field: make it present anyway *)
-      let single = closed && List.length fields = 1 in
       let rec add_field fields = function
           Rtag (l, c, stl) ->
             name := None;
             let f = match present with
-              Some present when not (single || List.mem l present) ->
+              Some present when not (List.mem l present) ->
                 let tl = List.map (transl_type env policy) stl in
                 bound := tl @ !bound;
                 Reither(c, tl, false, ref None)
@@ -363,11 +359,10 @@ let rec transl_type env policy styp =
             | _ ->
                 raise(Error(sty.ptyp_loc, Not_a_variant ty))
             in
-            let single = single && List.length fl = 1 in
             List.fold_left
               (fun fields (l, f) ->
                 let f = match present with
-                  Some present when not (single || List.mem l present) ->
+                  Some present when not (List.mem l present) ->
                     begin match f with
                       Rpresent(Some ty) ->
                         bound := ty :: !bound;
