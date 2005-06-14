@@ -271,7 +271,7 @@ function component of a safe module is applied during this computation
 (which corresponds to an ill-founded recursive definition), the
 "Undefined_recursive_module" exception is raised.
 
-\section{Private structural types} \label{s-recursive-modules}
+\section{Private row types} \label{s-recursive-modules}
 \ikwd{private\@\texttt{private}}
 
 \begin{syntax}
@@ -279,7 +279,7 @@ type-equation:
           ...
         | '=' 'private' typexpr
 \end{syntax}
-Private structural types are type abbreviations where part of the
+Private row types are type abbreviations where part of the
 structure of the type is left abstract. Concretely @typexpr@ in the
 above should denote either an object type or a polymorphic variant
 type, with some possibility of refinement left. If the private
@@ -295,7 +295,7 @@ may either provide a ground instance, or a refined private type.
 This declaration does more than hiding the "y" method, it also makes
 the type "c" incompatible with any other closed object type, meaning
 that only "o" will be of type "c". In that respect it behaves
-similarly to private record types. But private structural types are
+similarly to private record types. But private row types are
 more flexible with respect to incremental refinement. This feature can
 be used in combination with functors.
 \begin{verbatim}
