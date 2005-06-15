@@ -126,7 +126,7 @@ if !with_impl then profargs := "-impl" :: !profargs;
 if !with_intf then profargs := "-intf" :: !profargs;
 let status =
   Sys.command
-    (Printf.sprintf "ocamlc -pp \"ocamlprof -instrument %s\" %s %s"
+    (Printf.sprintf "gcamlc -pp \"ocamlprof -instrument %s\" %s %s"
         (String.concat " " (List.rev !profargs))
         (if !make_archive then "" else "profiling.cmo")
         (String.concat " " (List.rev !compargs)))
