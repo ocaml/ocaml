@@ -17,10 +17,7 @@ let version = Sys.ocaml_version
 
 let standard_library =
   try
-    Sys.getenv "OCAMLLIB"
-  with Not_found ->
-  try
-    Sys.getenv "CAMLLIB"
+    Sys.getenv "GCAMLLIB"
   with Not_found ->
     "%%LIBDIR%%"
 
