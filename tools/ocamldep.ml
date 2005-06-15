@@ -238,10 +238,10 @@ let file_dependencies source_file =
 
 (* Entry point *)
 
-let usage = "Usage: ocamldep [-I <dir>] [-native] <files>"
+let usage = "Usage: gcamldep [-I <dir>] [-native] <files>"
 
 let print_version () =
-  printf "ocamldep, version %s@." Sys.ocaml_version;
+  printf "gcamldep, version %s@." Sys.ocaml_version;
   exit 0;
 ;;
 
