@@ -118,9 +118,11 @@ value has_special_chars v =
 ;
 
 value var_escaped v =
-  if v = "" then "$lid:\"\"$"
-  else if has_special_chars v || is_infix v then "( " ^ v ^ " )"
-  else if is_keyword v then v ^ "__"
+  if v = "" then "$lid:\"\"$" else
+  if v = "val" then "contents" else
+  if v = "contents" then "contents__" else
+  if has_special_chars v || is_infix v then "( " ^ v ^ " )" else
+  if is_keyword v then v ^ "__"
   else v
 ;
 
@@ -135,11 +137,7 @@ value conv_con =
   | x -> x ]
 ;
 
-value conv_lab =
-  fun
-  [ "val" -> "contents"
-  | x -> var_escaped x ]
-;
+value conv_lab = var_escaped;
 
 (* default global loc *)
 
@@ -148,6 +146,8 @@ value _loc = (Token.nowhere, Token.nowhere);
 value id_var s =
   if has_special_chars s || is_infix s then
     HVbox [: `S LR "("; `S LR s; `S LR ")" :]
+  else if s = "val" then HVbox [: `S LR "contents" :]
+  else if s = "contents" then HVbox [: `S LR "contents__" :]
   else if is_keyword s then HVbox [: `S LR (s ^ "__") :]
   else HVbox [: `S LR s :]
 ;

@@ -191,9 +191,10 @@ value neg_string n =
 
 value mkumin _ f arg =
   match arg with
-  [ Qast.Node "ExInt" [Qast.Loc; Qast.Str n] when int_of_string n > 0 ->
-      let n = neg_string n in
-      Qast.Node "ExInt" [Qast.Loc; Qast.Str n]
+  [ Qast.Node (("ExInt" | "ExInt32" | "ExInt64" | "ExNativeInt") as exi)
+      [Qast.Loc; Qast.Str n] when int_of_string n > 0 ->
+        let n = neg_string n in
+        Qast.Node exi [Qast.Loc; Qast.Str n]
   | Qast.Node "ExFlo" [Qast.Loc; Qast.Str n] when float_of_string n > 0.0 ->
       let n = neg_string n in
       Qast.Node "ExFlo" [Qast.Loc; Qast.Str n]
