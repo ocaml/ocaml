@@ -23,5 +23,4 @@ $OTOP/boot/ocamlrun$EXE ../meta/camlp4r$EXE -I ../meta pa_extend.cmo q_MLast.cmo
 $OTOP/boot/ocamlrun$EXE $OTOP/boot/ocamlc -I $OTOP/boot -I ../lib -I ../camlp4 -c -impl tmp.ppo
 rm tmp.ppo
 > tmp.null
-$OTOP/boot/ocamlrun$EXE ../camlp4/camlp4$EXE ./compile.cmo ./tmp.cmo ../etc/pr_r.cmo ../etc/pr_rp.cmo $ARGS -sep "\n\n" -impl tmp.null
-rm tmp.*
+$OTOP/boot/ocamlrun$EXE ../camlp4/camlp4$EXE ./compile.cmo ./tmp.cmo ../etc/pr_r.cmo ../etc/pr_rp.cmo $ARGS -sep "\n\n" -impl tmp.null && rm tmp.*

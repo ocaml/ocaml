@@ -1179,9 +1179,11 @@ pr_expr.pr_levels :=
           fun curr next _ k ->
             if is_infix n then [: `next e "" k :]
             else [: curr <:expr< $lid:n$ $x$ >> "" [: :]; `next y "" k :]
-      | <:expr< $x$ $y$ >> when  (constructors_are_curried() || (not(data_constructor_app x))) ->
-          fun curr next _ k -> [: curr x "" [: :]; `next y "" k :]
-      | <:expr< $x$ $y$ >> -> match uncurry_expr x y with
+      | <:expr< $x$ $y$ >> ->
+          if (constructors_are_curried() || (not(data_constructor_app x))) then
+            fun curr next _ k -> [: curr x "" [: :]; `next y "" k :]
+          else
+            match uncurry_expr x y with
             [ (f, ( [_;_::_] as args )) ->
                 fun curr next _ k -> 
                   [: curr f "" [: :];
@@ -1337,9 +1339,10 @@ pr_patt.pr_levels :=
       extfun Extfun.empty with
       [ <:patt< [$_$ :: $_$] >> as p ->
           fun curr next _ k -> [: `next p "" k :]
-      | <:patt< $x$ $y$ >> when constructors_are_curried() ->
-            fun curr next _ k -> [: curr x "" [: :]; `next y "" k :]
       | <:patt< $x$ $y$ >> ->
+          if constructors_are_curried() then
+            fun curr next _ k -> [: curr x "" [: :]; `next y "" k :]
+          else
             match uncurry_patt x y with
             [ (constr, ( [_;_::_] as args )) ->
                 fun curr next _ k -> 
