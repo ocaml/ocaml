@@ -1282,11 +1282,13 @@ void copy_action(void)
       if (item->class == TERM && !item->tag) continue;
       fprintf(f, "    let _%d = ", i);
       if (item->tag)
-        fprintf(f, "(peek_val parser_env %d : %s) in\n", n - i, item->tag);
+        fprintf(f, "(Parsing.peek_val parser_env %d : %s) in\n", n - i,
+                item->tag);
       else if (sflag)
-        fprintf(f, "peek_val parser_env %d in\n", n - i);
+        fprintf(f, "Parsing.peek_val parser_env %d in\n", n - i);
       else
-        fprintf(f, "(peek_val parser_env %d : '%s) in\n", n - i, item->name);
+        fprintf(f, "(Parsing.peek_val parser_env %d : '%s) in\n", n - i,
+                item->name);
     }
     fprintf(f, "    Obj.repr(\n");
     fprintf(f, line_format, lineno, input_file_name);
@@ -1762,7 +1764,7 @@ void make_goal(void)
       if (is_polymorphic(bp->tag))
         polymorphic_entry_point(bp->name);
       fprintf(entry_file,
-              "let %s (lexfun : Lexing.lexbuf -> token) (lexbuf : Lexing.lexbuf) =\n   (yyparse yytables %d lexfun lexbuf : %s)\n",
+              "let %s (lexfun : Lexing.lexbuf -> token) (lexbuf : Lexing.lexbuf) =\n   (Parsing.yyparse yytables %d lexfun lexbuf : %s)\n",
               bp->name, bp->entry, bp->tag);
       fprintf(interface_file,
               "val %s :\n  (Lexing.lexbuf  -> token) -> Lexing.lexbuf -> %s\n",
@@ -1772,11 +1774,11 @@ void make_goal(void)
               "(* Entry %s *)\n", bp->name);
       if (sflag)
         fprintf(action_file,
-                "yyact.(%d) <- (fun parser_env -> raise (YYexit (peek_val parser_env 0)))\n",
+                "yyact.(%d) <- (fun parser_env -> raise (Parsing.YYexit (Parsing.peek_val parser_env 0)))\n",
                 ntotalrules);
       else
         fprintf(action_file,
-              "; (fun parser_env -> raise (YYexit (peek_val parser_env 0)))\n");
+              "; (fun parser_env -> raise (Parsing.YYexit (Parsing.peek_val parser_env 0)))\n");
       ntotalrules++;
       last_was_action = 1;
       end_rule();
