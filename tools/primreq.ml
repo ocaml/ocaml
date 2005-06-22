@@ -82,9 +82,9 @@ let main() =
     "Usage: primreq [options] <.cmo and .cma files>\nOptions are:";
   if String.length !exclude_file > 0 then exclude !exclude_file;
   StringSet.iter
-    (fun s -> 
+    (fun s ->
       if s.[0] <> '%' then begin print_string s; print_newline() end)
     !primitives;
   exit 0
 
-let _ = Printexc.catch main (); exit 0
+let _ = main ()
