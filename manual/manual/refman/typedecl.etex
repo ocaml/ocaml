@@ -156,7 +156,7 @@ The type variables appearing as type parameters can optionally be
 prefixed by "+" or "-" to indicate that the type constructor is
 covariant or contravariant with respect to this parameter.  This
 variance information is used to decide subtyping relations when
-checking the validity of @">:"@ coercions (see section \ref{s:objects}).
+checking the validity of @":>"@ coercions (see section \ref{s:objects}).
 
 For instance, "type +'a t" declares "t" as an abstract type that is
 covariant in its parameter; this means that if the type $\tau$ is a
