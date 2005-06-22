@@ -1075,7 +1075,7 @@ To compile this interface:
 
 To implement these functions, we just have to provide the stub code;
 the core functions are already implemented in the "curses" library.
-The stub code file, "curses.o", looks like:
+The stub code file, "curses.c", looks like:
 \begin{verbatim}
 #include <curses.h>
 #include <mlvalues.h>
