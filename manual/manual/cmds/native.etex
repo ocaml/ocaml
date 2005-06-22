@@ -242,7 +242,7 @@ corresponding to the contents of the object files "a.cmx", "b.cmx" and
 in the remainder of the program.
 
 \begin{unix} The "-pack" option is available only under platforms that
-provide the GNU Binutils tools "nm" and "objcopy".
+provide the GNU Binutils tools "nm" and "objcopy" and under Mac OS X.
 \end{unix}
 
 \item["-pp" \var{command}]
