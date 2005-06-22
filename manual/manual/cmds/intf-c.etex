@@ -1433,7 +1433,7 @@ library along with the stub code in "modwrap.c" and the Caml runtime system:
 -output-obj".  In this case, replace "libcamlrun.a" (the bytecode
 runtime library) by "libasmrun.a" (the native-code runtime library).)
 
-Now, we can use the two fonctions "fib" and "format_result" in any C
+Now, we can use the two functions "fib" and "format_result" in any C
 program, just like regular C functions. Just remember to call
 "caml_startup" once before.
 
