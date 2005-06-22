@@ -93,8 +93,7 @@ let dump_obj filename =
 let main() =
   for i = 1 to Array.length Sys.argv - 1 do
     dump_obj Sys.argv.(i)
-  done
+  done;
+  exit 0
 
-let _ = Printexc.catch main (); exit 0
-
-
+let _ = main ()
