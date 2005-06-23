@@ -269,6 +269,8 @@ let class_type_not_found_in_typedtree ct = "Class type "^ct^" was not found in t
 let inherit_classexp_not_found_in_typedtree n = "Inheritance class expression number "^(string_of_int n)^" was not found in typed tree."
 let attribute_not_found_in_typedtree att = "Class attribute "^att^" was not found in typed tree."
 let method_not_found_in_typedtree met = "Class method "^met^" was not found in typed tree."
+let misplaced_comment file pos =
+  Printf.sprintf "Misplaced special comment in file %s, character %d." file pos
 
 let cross_module_not_found n = "Module "^n^" not found"
 let cross_module_type_not_found n = "Module type "^n^" not found"
