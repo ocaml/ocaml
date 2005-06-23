@@ -6,7 +6,7 @@ special comments embedded in source files.  The comments used by OCamldoc
 are of the form "(**"\ldots"*)" and follow the format described
 in section \ref{s:ocamldoc-comments}.
 
-OCamldoc can produce documentation in various formats: HTML, \LaTeX , 
+OCamldoc can produce documentation in various formats: HTML, \LaTeX ,
 TeXinfo, Unix man pages, and "dot" dependency graphs.  Moreover,
 users can add their own custom generators, as explained in
 section \ref{s:ocamldoc-custom-generators}.
@@ -72,7 +72,7 @@ generator.  See section \ref{s:ocamldoc-compilation-and-usage}.  This
 option is supported by the "ocamldoc" command, but not by its
 native-code version "ocamldoc.opt".
 If the given file is a simple one and does not exist in
-the current directory, then ocamldoc looks for it in the custom 
+the current directory, then ocamldoc looks for it in the custom
 generators default directory, and in the directories specified with
 optional "-i" options.
 
@@ -101,16 +101,16 @@ Hide the given complete module names in the generated documentation
  by '","', without blanks.  For instance: "Pervasives,M2.M3".
 
 \item["-inv-merge-ml-mli"]
-Inverse implementations and interfaces when merging. All elements 
+Inverse implementations and interfaces when merging. All elements
 in implementation files are kept, and the {\bf\tt -m} option
 indicates which parts of the comments in interface files are merged
 with the comments in implementation files.
 
 \item["-keep-code"]
 Always keep the source code for values, methods and instance variables,
-when available. 
+when available.
 The source code is always kept when a ".ml"
-file is given, but is by default discarded when a ".mli" is given. 
+file is given, but is by default discarded when a ".mli" is given.
 This option allows to always keep the source code.
 
 \item["-load" \var{file}]
@@ -118,7 +118,7 @@ Load information from \var{file}, which has been produced by
 "ocamldoc -dump".  Several "-load" options can be given.
 
 \item["-m" \var{flags}]
-Specify merge options between interfaces and implementations. 
+Specify merge options between interfaces and implementations.
 (see section \ref{s:ocamldoc-merge} for details).
 \var{flags} can be one or several of the following characters:
 \begin{options}
@@ -153,7 +153,7 @@ Pipe sources through preprocessor \var{command}.
 Sort the list of top-level modules before generating the documentation.
 
 \item["-stars"]
-Remove blank characters until the first asterisk ('"*"') in each 
+Remove blank characters until the first asterisk ('"*"') in each
 line of comments.
 
 \item["-t" \var{title}]
@@ -280,7 +280,7 @@ The following options apply in conjunction with the "-dot" option:
 
 \begin{options}
 \item["-dot-colors" \var{colors}]
-Specify the colors to use in the generated "dot" code. 
+Specify the colors to use in the generated "dot" code.
 When generating module dependencies, "ocamldoc" uses different colors
 for modules, depending on the directories in which they reside.
 When generating types dependencies, "ocamldoc" uses different colors
@@ -309,7 +309,7 @@ The following options apply in conjunction with the "-man" option:
 
 \begin{options}
 \item["-man-mini"]
-Generate man pages only for modules, module types, clases and class 
+Generate man pages only for modules, module types, clases and class
 types, instead of pages for all elements.
 
 \item["-man-suffix"]
@@ -321,32 +321,32 @@ like in "List.o".
 \subsection{Merging of module information}
 \label{s:ocamldoc-merge}
 
-Information on a module can be extracted either from the ".mli" or ".ml" 
-file, or both, depending on the files given on the command line. 
-When both ".mli" and ".ml" files are given for the same module, 
-information extracted from these files is merged according to the 
+Information on a module can be extracted either from the ".mli" or ".ml"
+file, or both, depending on the files given on the command line.
+When both ".mli" and ".ml" files are given for the same module,
+information extracted from these files is merged according to the
 following rules:
 \begin{itemize}
 \item Only elements (values, types, classes, ...) declared in the ".mli"
 file are kept.  In other terms, definitions from the ".ml" file that are
 not exported in the ".mli" file are not documented.
-\item Descriptions of elements and descriptions in @-tags are handled 
+\item Descriptions of elements and descriptions in @-tags are handled
 as follows.  If a description for the same element or in the same
 @-tag of the same element is present in both files, then the
 description of the ".ml" file is concatenated to the one in the ".mli" file,
 if the corresponding "-m" flag is given on the command line.
-If a description is present in the ".ml" file and not in the 
-".mli" file, the ".ml" description is kept.  
+If a description is present in the ".ml" file and not in the
+".mli" file, the ".ml" description is kept.
 In either case, all the information given in the ".mli" file is kept.
 \end{itemize}
 
 \subsection{Coding rules}
 \label{s:ocamldoc-rules}
-The following rules must be respected in order to avoid name clashes 
+The following rules must be respected in order to avoid name clashes
 resulting in cross-reference errors:
 \begin{itemize}
 \item In a module, there must not be two modules, two module types or
-  a module and a module type with the same name. 
+  a module and a module type with the same name.
   In the default HTML generator, modules "ab" and "AB" will be printed
   to the same file on case insensitive file systems.
 \item In a module, there must not be two classes, two class types or
@@ -358,9 +358,9 @@ are not kept by OCamldoc.
 \item Avoid the following construction:
 \begin{verbatim}
 open Foo (* which has a module Bar with a value x *)
-module Foo = 
+module Foo =
   struct
-    module Bar = 
+    module Bar =
       struct
         let x = 1
       end
@@ -388,12 +388,12 @@ locations of comments in ".mli" and ".ml" files are different.
 
 %%%%%%%%%%%%%
 \subsubsection{Comments in ".mli" files}
-A special comment is associated to an element if it is placed before or 
+A special comment is associated to an element if it is placed before or
 after the element.\\
 A special comment before an element is associated to this element if~:
 \begin{itemize}
-\item There is no blank line or another special comment between the special 
-comment and the element. However, a regular comment can occur between 
+\item There is no blank line or another special comment between the special
+comment and the element. However, a regular comment can occur between
 the special comment and the element.
 \item The special comment is not already associated to the previous element.
 \item The special comment is not the first one of a toplevel module.
@@ -406,22 +406,24 @@ element.
 There are two exceptions: for type constructors and record fields in
 type definitions, the associated comment can only be placed after the
 constructor or field definition, without blank lines or other comments
-between them.
+between them. The special comment for a type constructor
+with another type constructor following must be placed before the '|'
+character separating the two constructors.
 
 The following sample interface file "foo.mli" illustrates the
 placement rules for comments in ".mli" files.
 
 \begin{verbatim}
-(** The first special comment of the file is the comment associated 
+(** The first special comment of the file is the comment associated
     with the whole module.*)
 
 
-(** Special comments can be placed between elements and are kept 
+(** Special comments can be placed between elements and are kept
     by the OCamldoc tool, but are not associated to any element.
     @-tags in these comments are ignored.*)
 
 (*******************************************************************)
-(** Comments like the one above, with more than two asterisks, 
+(** Comments like the one above, with more than two asterisks,
     are ignored. *)
 
 (** The comment for function f. *)
@@ -436,12 +438,12 @@ exception My_exception of (int -> int) * int
 (** Comment for type weather  *)
 type weather =
 | Rain of int (** The comment for construtor Rain *)
-| Sun (** The comment for constructor Sun *) 
+| Sun (** The comment for constructor Sun *)
 
 (** Comment for type weather2  *)
 type weather2 =
 | Rain of int (** The comment for construtor Rain *)
-| Sun (** The comment for constructor Sun *) 
+| Sun (** The comment for constructor Sun *)
 (** I can continue the comment for type weather2 here
   because there is already a comment associated to the last constructor.*)
 
@@ -462,7 +464,7 @@ val bar : string
 class my_class :
   object
     (** A comment to describe inheritance from cl *)
-    inherit cl 
+    inherit cl
 
     (** The comment for attribute tutu *)
     val mutable tutu : string
@@ -484,15 +486,15 @@ class my_class :
   end
 
 (** The comment for the class type my_class_type *)
-class type my_class_type = 
+class type my_class_type =
   object
     (** The comment for variable x. *)
     val mutable x : int
-    
+
     (** The commend for method m. *)
     method m : int -> int
 end
-    
+
 (** The comment for module Foo *)
 module Foo =
   struct
@@ -501,7 +503,7 @@ module Foo =
 
     (** A special comment that is kept but not associated to any element *)
   end
-    
+
 (** The comment for module type my_module_type. *)
 module type my_module_type =
   sig
@@ -516,7 +518,7 @@ module type my_module_type =
 
         (* ... *)
       end
-        
+
   end
 
 \end{verbatim}
@@ -530,19 +532,21 @@ element. Meanwhile, there can be a simple comment between the special
 comment and the element. There are two exceptions, for type
 constructors and record fields in type definitions, whose associated
 comment must be placed after the constructor or field definition,
-without blank line between them.
+without blank line between them. The special comment for a type constructor
+with another type constructor following must be placed before the '|'
+character separating the two constructors.
 
 The following example of file "toto.ml" shows where to place comments
 in a ".ml" file.
 
 \begin{verbatim}
-(** The first special comment of the file is the comment associated 
+(** The first special comment of the file is the comment associated
     to the whole module.*)
 
 (** The comment for function f *)
 let f x y = x + y
 
-(** This comment is not attached to any element since there is another 
+(** This comment is not attached to any element since there is another
     special comment just before the next element. *)
 
 (** Comment for exception My_exception, even with a simple comment
@@ -551,9 +555,9 @@ let f x y = x + y
 exception My_exception of (int -> int) * int
 
 (** Comment for type weather  *)
-type weather =  
+type weather =
 | Rain of int (** The comment for constructor Rain *)
-| Sun (** The comment for constructor Sun *) 
+| Sun (** The comment for constructor Sun *)
 
 (** The comment for type my_record *)
 type my_record = {
@@ -561,25 +565,25 @@ type my_record = {
     val bar : string ; (** Comment for field bar *)
   }
 
-(** The comment for class my_class *)  
+(** The comment for class my_class *)
 class my_class =
     object
       (** A comment to describe inheritance from cl *)
-      inherit cl 
+      inherit cl
 
       (** The comment for the instance variable tutu *)
       val mutable tutu = "tutu"
       (** The comment for toto *)
-      val toto = 1 
+      val toto = 1
       val titi = "titi"
       (** Comment for method toto *)
       method toto = tutu ^ "!"
       (** Comment for method m *)
       method m (f : float) = 1
     end
-    
+
 (** The comment for class type my_class_type *)
-class type my_class_type = 
+class type my_class_type =
   object
     (** The comment for the instance variable x. *)
     val mutable x : int
@@ -591,7 +595,7 @@ class type my_class_type =
 module Foo =
   struct
     (** The comment for x *)
-    val x : int 
+    val x : int
     (** A special comment in the class, but not associated to any element. *)
   end
 
@@ -614,7 +618,7 @@ class type foo =
   object
     (** comment for method m *)
     method m : string
-    
+
     (**/**)
 
     (** This method won't appear in the documentation *)
@@ -674,7 +678,7 @@ text descriptions.
 \begin{tabular}{@{}lp{10cm}}
 {\tt | \{[0-9]+ {\it text}\}} & format {\it text} as a section header;
   the integer following "{" indicates the sectioning level. \\
-{\tt | \{[0-9]+:{\it label} {\it text}\}} & 
+{\tt | \{[0-9]+:{\it label} {\it text}\}} &
   same, but also associate the name {\it label} to the current point.
   This point can be referenced by its fully-qualified label in a
   "{!" command, just like any other element. \\
@@ -689,10 +693,10 @@ text descriptions.
 {\tt | \{\{:{\it string}\}{\it text}\}} & put a link to the given address
 (given as a string) on the given text. \\
 {\tt | [{\it string}]} & set the given {\it string} in source code style. \\
-{\tt | \{[{\it string}]\}} & set the given {\it string} in preformatted 
+{\tt | \{[{\it string}]\}} & set the given {\it string} in preformatted
 				source code style.\\
 {\tt | \{v {\it string} v\}} & set the given {\it string} in verbatim style. \\
-{\tt | \{\% {\it string} \%\}} & take the given {\it string} 
+{\tt | \{\% {\it string} \%\}} & take the given {\it string}
 as raw \LaTeX\ code.\\
 {\tt | \{!{\it string}\}} & insert a reference to the element named
 {\it string}. {\it string} must be a fully qualified element name,
@@ -707,7 +711,7 @@ for the given module names. Used in HTML only.\\
 (types, values, modules, ...). Used in HTML only.\\
 {\tt | \{\^{} {\it text}\}} & set text in superscript.\\
 {\tt | \{\_ {\it text}\}} & set text in subscript.\\
-{\tt | {\it escaped\_string}} & typeset the given string as is; 
+{\tt | {\it escaped\_string}} & typeset the given string as is;
 special characters ('{\tt \{}', '{\tt \}}', '{\tt [}', '{\tt ]}' and '{\tt @}')
 must be	escaped by a '{\tt \textbackslash}'\\
 {\tt | {\it blank\_line} } & force a new line.
@@ -728,18 +732,18 @@ The list is ended by the blank line.*)
 \end{verbatim}
 is equivalent to:
 \begin{verbatim}
-(** Here is a {b list} 
+(** Here is a {b list}
 {ul {- item 1}
 {- item 2}
 {- item 3}}
 The list is ended by the blank line.*)
 \end{verbatim}
 
-The same shortcut is available for enumerated lists, using '"+"' 
-instead of '"-"'. 
+The same shortcut is available for enumerated lists, using '"+"'
+instead of '"-"'.
 Note that only one list can be defined by this shortcut in nested lists.
 
-In the description of a value, type, exception, module, module type, class 
+In the description of a value, type, exception, module, module type, class
 or class type, the {\em first sentence} is sometimes used in indexes, or
 when just a part of the description is needed. The first sentence
 is composed of the first characters of the description, until
@@ -767,10 +771,10 @@ The folowing table gives the list of predefined @-tags, with their
 syntax and meaning.\\
 
 \begin{tabular}{|p{5cm}|p{10cm}|}\hline
-"@author "{\em string} & The author of the element. One author by "@author" tag. 
+"@author "{\em string} & The author of the element. One author by "@author" tag.
 There may be several "@author" tags for the same element. \\ \hline
 
-"@deprecated "{\em text} & The {\em text} should describe when the element was 
+"@deprecated "{\em text} & The {\em text} should describe when the element was
 deprecated, what to use as a replacement, and possibly the reason
 for deprecation. \\ \hline
 
@@ -785,10 +789,10 @@ methods, classes and functors. \\ \hline
  its possible values. This tag is used for functions
  and methods. \\ \hline
 
-"@see <url> "{\em text} &  Add a reference to the URL between '"<"' and '">"' 
+"@see <url> "{\em text} &  Add a reference to the URL between '"<"' and '">"'
 with the given text as comment. \\ \hline
 
-"@see 'filename' "{\em text} &  Add a reference to the given file name 
+"@see 'filename' "{\em text} &  Add a reference to the given file name
 (written between single quotes), with the given text as comment. \\ \hline
 
 "@see \"document name\" "{\em text} &  Add a reference to the given
@@ -812,7 +816,7 @@ comment, as in:
 *)
 \end{verbatim}
 
-To handle custom tags, you need to define a custom generator, 
+To handle custom tags, you need to define a custom generator,
 as explained in section \ref{s:ocamldoc-handling-custom-tags}.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -822,14 +826,14 @@ as explained in section \ref{s:ocamldoc-handling-custom-tags}.
 OCamldoc operates in two steps:
 \begin{enumerate}
 \item analysis of the source files;
-\item generation of documentation, through a documentation generator, 
+\item generation of documentation, through a documentation generator,
 	which is an object of class "Odoc_args.class_generator".
 \end{enumerate}
 Users can provide their own documentation generator to be used during
 step 2 instead of the default generators.
 All the information retrieved during the analysis step is available through
 the "Odoc_info" module, which gives access to all the types and functions
- representing the elements found in the given modules, with their associated 
+ representing the elements found in the given modules, with their associated
 description.
 
 The files you can used to define custom generators are installed in the
@@ -837,7 +841,7 @@ The files you can used to define custom generators are installed in the
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{The generator class}
-A generator class is a class of type "Odoc_args.doc_generator". 
+A generator class is a class of type "Odoc_args.doc_generator".
 It has only one method\\
 "generator : Odoc_info.Module.t_module list -> unit"\\
 This method will be called with the list of analysed and possibly
@@ -848,14 +852,14 @@ Of course the class can have other methods, but the object of this
 "Odoc_args.set_doc_generator : Odoc_args.doc_generator -> unit"\\
 which installs the new documentation generator.
 
-The following example shows how to define and install a new documentation generator. 
+The following example shows how to define and install a new documentation generator.
 See the "odoc_fhtml" generator (in the Ocamldoc Hump) for a complete example.
 \begin{verbatim}
-class my_doc_gen = 
+class my_doc_gen =
   object
     (* ... *)
 
-    method generate module_list = 
+    method generate module_list =
       (* ... *)
       ()
 
@@ -868,7 +872,7 @@ let _ = Odoc_args.set_doc_generator (my_generator :> Odoc_args.doc_generator)
 
 Note: The new class can inherit from "Odoc_html.html", "Odoc_latex.latex",
 "Odoc_man.man", "Odoc_texi.texi" or "Odoc_dot.dot", and
-redefine only some methods to benefit from the existing methods. 
+redefine only some methods to benefit from the existing methods.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 \subsection{Handling custom tags}
@@ -883,7 +887,7 @@ Here is how to develop a HTML generator handling your custom tags.
 The class "Odoc_html.html" inherits
 from the class "Odoc_html.info", containing a field "tag_functions" which is a
 list pairs composed of a custom tag (e.g. 'foo') and a function taking a "text"
-and returning HTML code (of type "string"). 
+and returning HTML code (of type "string").
 To handle a new tag "bar", create a HTML generator class from the existing one
  and complete the "tag_functions" field:
 \begin{verbatim}
@@ -892,10 +896,10 @@ class my_gen =
     inherit Odoc_html.html
 
     (** Return HTML code for the given text of a bar tag. *)
-    method html_of_bar t = (* your code here *) 
-    
+    method html_of_bar t = (* your code here *)
+
     initializer
-      tag_functions <- ("bar", self#html_of_bar) :: tag_functions 
+      tag_functions <- ("bar", self#html_of_bar) :: tag_functions
   end
 \end{verbatim}
 
@@ -907,12 +911,12 @@ prints a warning message on "stderr".
 \subsubsection{For other generators}
 As for the HTML custom generator, you can define a new \LaTeX
 (resp. "man") generator by inheriting from the class
-"Odoc_latex.latex" (resp. "Odoc_man.man") and  
+"Odoc_latex.latex" (resp. "Odoc_man.man") and
 adding your own tag handler to the field "tag_functions".
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 \section{Adding command line options}
-The command line analysis is performed after loading the module containing the 
+The command line analysis is performed after loading the module containing the
 documentation generator, thus allowing command line options to be added to the
  list of existing ones. Adding an option can be done with the function\\
 "Odoc_args.add_option : string * Arg.spec * string -> unit"\\
@@ -939,7 +943,7 @@ It is possible to define a generator class in several modules, which
 are defined in several files "file1.ml[i]", "file2.ml[i]", ...,
 "fileN.ml[i]". A ".cma" library file must
 be created, including all these files.\\
-The following commands create the "custom.cma" file from files "file1.ml[i]", ..., 
+The following commands create the "custom.cma" file from files "file1.ml[i]", ...,
 "fileN.ml[i]"~:\\
 {\tt
 ocamlc -I +ocamldoc -c file1.ml[i]\\
@@ -952,5 +956,3 @@ Then, the following command uses {\tt custom.cma} as custom generator:\\
 Again, it is important not to give the {\bf\tt -html} or any other option selecting a
 built in generator to {\tt ocamldoc},
 which would result in using this generator instead of the one you just loaded.
-
-
