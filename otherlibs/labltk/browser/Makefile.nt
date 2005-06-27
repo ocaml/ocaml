@@ -7,7 +7,7 @@ INCLUDES=$(OTHERSLIB) $(LABLTKLIB) $(OCAMLTOPLIB)
 CCFLAGS=-I../../../byterun $(TK_DEFS)
 
 ifeq ($(CCOMPTYPE),cc)
-WINDOWS_APP=
+WINDOWS_APP=-cclib "-Wl,--subsystem,windows"
 else
 WINDOWS_APP=-cclib "/link /subsystem:windows"
 endif
