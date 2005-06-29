@@ -1716,7 +1716,14 @@ Grammar.extend
         (fun (t2 : 'ctyp) _ (t1 : 'ctyp)
            (_loc : Lexing.position * Lexing.position) ->
            (MLast.TyMan (_loc, t1, t2) : 'ctyp))];
-     None, Some Gramext.LeftA,
+     None, Some Gramext.NonA,
+     [[Gramext.Stoken ("", "private");
+       Gramext.Snterml
+         (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e), "alias")],
+      Gramext.action
+        (fun (t : 'ctyp) _ (_loc : Lexing.position * Lexing.position) ->
+           (MLast.TyPrv (_loc, t) : 'ctyp))];
+     Some "alias", Some Gramext.LeftA,
      [[Gramext.Sself; Gramext.Stoken ("", "as"); Gramext.Sself],
       Gramext.action
         (fun (t2 : 'ctyp) _ (t1 : 'ctyp)
@@ -1784,7 +1791,7 @@ Grammar.extend
       Gramext.action
         (fun _ (ldl : 'label_declaration list) _
            (_loc : Lexing.position * Lexing.position) ->
-           (MLast.TyRec (_loc, false, ldl) : 'ctyp));
+           (MLast.TyRec (_loc, ldl) : 'ctyp));
       [Gramext.Stoken ("", "[");
        Gramext.Slist0sep
          (Gramext.Snterm
@@ -1796,30 +1803,7 @@ Grammar.extend
       Gramext.action
         (fun _ (cdl : 'constructor_declaration list) _
            (_loc : Lexing.position * Lexing.position) ->
-           (MLast.TySum (_loc, false, cdl) : 'ctyp));
-      [Gramext.Stoken ("", "private"); Gramext.Stoken ("", "{");
-       Gramext.Slist1sep
-         (Gramext.Snterm
-            (Grammar.Entry.obj
-               (label_declaration : 'label_declaration Grammar.Entry.e)),
-          Gramext.Stoken ("", ";"));
-       Gramext.Stoken ("", "}")],
-      Gramext.action
-        (fun _ (ldl : 'label_declaration list) _ _
-           (_loc : Lexing.position * Lexing.position) ->
-           (MLast.TyRec (_loc, true, ldl) : 'ctyp));
-      [Gramext.Stoken ("", "private"); Gramext.Stoken ("", "[");
-       Gramext.Slist0sep
-         (Gramext.Snterm
-            (Grammar.Entry.obj
-               (constructor_declaration :
-                'constructor_declaration Grammar.Entry.e)),
-          Gramext.Stoken ("", "|"));
-       Gramext.Stoken ("", "]")],
-      Gramext.action
-        (fun _ (cdl : 'constructor_declaration list) _ _
-           (_loc : Lexing.position * Lexing.position) ->
-           (MLast.TySum (_loc, true, cdl) : 'ctyp));
+           (MLast.TySum (_loc, cdl) : 'ctyp));
       [Gramext.Stoken ("", "("); Gramext.Sself; Gramext.Stoken ("", ")")],
       Gramext.action
         (fun _ (t : 'ctyp) _ (_loc : Lexing.position * Lexing.position) ->

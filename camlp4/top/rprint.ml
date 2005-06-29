@@ -366,15 +366,20 @@ and print_out_type_decl kwd ppf (name, args, ty, priv, constraints) =
     | _ ->
         fprintf ppf "%s@ %a" name
           (print_list type_parameter (fun ppf -> fprintf ppf "@ ")) args ]
-  and print_private ppf =
-  fun
-  [ Asttypes.Public -> ()
-  | Asttypes.Private -> fprintf ppf " private"
-  ]
+  and print_kind ppf ty =
+    fprintf ppf "%s@ %a"
+      (if priv = Asttypes.Private then " private" else "")
+      Toploop.print_out_type.val ty
   in
-  fprintf ppf "@[<2>@[<hv 2>@[%s %t@] =%a@ %a@]%a@]" kwd type_defined
-    print_private priv
-    Toploop.print_out_type.val ty print_constraints constraints
+  let print_types ppf = fun
+    [ Otyp_manifest ty1 ty2 ->
+        fprintf ppf "@ @[<2>%a ==%a@]"
+          Toploop.print_out_type.val ty1
+          print_kind ty2
+    | ty -> print_kind ppf ty ]
+  in
+  fprintf ppf "@[<2>@[<hv 2>@[%s %t@] =%a@]%a@]" kwd type_defined
+    print_types ty print_constraints constraints
 ;
 
 (* Phrases *)

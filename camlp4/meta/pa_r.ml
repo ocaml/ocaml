@@ -541,7 +541,9 @@ EXTEND
   ctyp:
     [ LEFTA
       [ t1 = SELF; "=="; t2 = SELF -> <:ctyp< $t1$ == $t2$ >> ]
-    | LEFTA
+    | NONA
+      [ "private"; t = ctyp LEVEL "alias" -> <:ctyp< private $t$ >> ]
+    | "alias" LEFTA
       [ t1 = SELF; "as"; t2 = SELF -> <:ctyp< $t1$ as $t2$ >> ]
     | LEFTA
       [ "!"; pl = LIST1 typevar; "."; t = ctyp ->
@@ -565,14 +567,12 @@ EXTEND
       | "("; t = SELF; "*"; tl = LIST1 ctyp SEP "*"; ")" ->
           <:ctyp< ( $list:[t::tl]$ ) >>
       | "("; t = SELF; ")" -> <:ctyp< $t$ >>
-      | "private"; "["; cdl = LIST0 constructor_declaration SEP "|"; "]" ->
-          <:ctyp< private [ $list:cdl$ ] >>
-      | "private"; "{"; ldl = LIST1 label_declaration SEP ";"; "}" ->
-          <:ctyp< private { $list:ldl$ } >>
       | "["; cdl = LIST0 constructor_declaration SEP "|"; "]" ->
           <:ctyp< [ $list:cdl$ ] >>
+          (* MLast.TySum _loc cdl *)
       | "{"; ldl = LIST1 label_declaration SEP ";"; "}" ->
-          <:ctyp< { $list:ldl$ } >> ] ]
+          <:ctyp< { $list:ldl$ } >>
+          (* MLast.TyRec _loc ldl *) ] ]
   ;
   constructor_declaration:
     [ [ ci = UIDENT; "of"; cal = LIST1 ctyp SEP "and" -> (_loc, ci, cal)

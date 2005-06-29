@@ -210,8 +210,9 @@ value rec ctyp =
   | TyOlb loc lab _ -> error loc "labelled type not allowed here"
   | TyPol loc pl t -> mktyp loc (Ptyp_poly pl (ctyp t))
   | TyQuo loc s -> mktyp loc (Ptyp_var s)
-  | TyRec loc _ _ -> error loc "record type not allowed here"
-  | TySum loc _ _ -> error loc "sum type not allowed here"
+  | TyRec loc _ -> error loc "record type not allowed here"
+  | TySum loc _ -> error loc "sum type not allowed here"
+  | TyPrv loc _ -> error loc "private type not allowed here"
   | TyTup loc tl -> mktyp loc (Ptyp_tuple (List.map ctyp tl))
   | TyUid loc s as t -> error (loc_of_ctyp t) "invalid type"
   | TyVrn loc catl ool ->
@@ -246,26 +247,33 @@ value mkprivate m = if m then Private else Public;
 value mktrecord (loc, n, m, t) =
   (n, mkmutable m, ctyp (mkpolytype t), mkloc loc);
 value mkvariant (loc, c, tl) = (c, List.map ctyp tl, mkloc loc);
-value type_decl tl cl =
+value rec type_decl tl cl loc m pflag =
   fun
-  [ TyMan loc t (TyRec _ pflag ltl) ->
-      mktype loc tl cl (Ptype_record (List.map mktrecord ltl) (mkprivate pflag))
-        (Some (ctyp t))
-  | TyMan loc t (TySum _ pflag ctl) ->
-      mktype loc tl cl (Ptype_variant (List.map mkvariant ctl) (mkprivate pflag))
-        (Some (ctyp t))
-  | TyRec loc pflag ltl ->
-      mktype loc tl cl (Ptype_record (List.map mktrecord ltl) (mkprivate pflag)) None
-  | TySum loc pflag ctl ->
-      mktype loc tl cl (Ptype_variant (List.map mkvariant ctl) (mkprivate pflag)) None
+  [ TyMan _ t1 t2 ->
+      type_decl tl cl loc (Some (ctyp t1)) pflag t2
+  | TyPrv _ t ->
+      type_decl tl cl loc m True t
+  | TyRec _ ltl ->
+      mktype loc tl cl
+        (Ptype_record (List.map mktrecord ltl) (mkprivate pflag))
+        m
+  | TySum _ ctl ->
+      mktype loc tl cl
+        (Ptype_variant (List.map mkvariant ctl) (mkprivate pflag))
+        m
   | t ->
+      if m <> None then
+        error loc "only one manifest type allowed by definition" else
       let m =
         match t with
         [ TyQuo _ s -> if List.mem_assoc s tl then Some (ctyp t) else None
         | _ -> Some (ctyp t) ]
       in
-      mktype (loc_of_ctyp t) tl cl Ptype_abstract m ]
+      let k = if pflag then Ptype_private else Ptype_abstract in
+      mktype loc tl cl k m ]
 ;
+
+value type_decl tl cl t = type_decl tl cl (loc_of_ctyp t) None False t;
 
 value mkvalue_desc t p = {pval_type = ctyp t; pval_prim = p};
 

@@ -827,7 +827,9 @@ EXTEND
   ctyp:
     [ LEFTA
       [ t1 = SELF; "=="; t2 = SELF -> Qast.Node "TyMan" [Qast.Loc; t1; t2] ]
-    | LEFTA
+    | NONA
+      [ "private"; t = ctyp LEVEL "alias" -> Qast.Node "TyPrv" [Qast.Loc; t] ]
+    | "alias" LEFTA
       [ t1 = SELF; "as"; t2 = SELF -> Qast.Node "TyAli" [Qast.Loc; t1; t2] ]
     | LEFTA
       [ "!"; pl = SLIST1 typevar; "."; t = SELF ->
@@ -853,14 +855,10 @@ EXTEND
       | "("; t = SELF; "*"; tl = SLIST1 ctyp SEP "*"; ")" ->
           Qast.Node "TyTup" [Qast.Loc; Qast.Cons t tl]
       | "("; t = SELF; ")" -> t
-      | "private"; "["; cdl = SLIST0 constructor_declaration SEP "|"; "]" ->
-          Qast.Node "TySum" [Qast.Loc; Qast.Bool True; cdl]
-      | "private"; "{"; ldl = SLIST1 label_declaration SEP ";"; "}" ->
-          Qast.Node "TyRec" [Qast.Loc; Qast.Bool True; ldl]
       | "["; cdl = SLIST0 constructor_declaration SEP "|"; "]" ->
-          Qast.Node "TySum" [Qast.Loc; Qast.Bool False; cdl]
+          Qast.Node "TySum" [Qast.Loc; cdl]
       | "{"; ldl = SLIST1 label_declaration SEP ";"; "}" ->
-          Qast.Node "TyRec" [Qast.Loc; Qast.Bool False; ldl] ] ]
+          Qast.Node "TyRec" [Qast.Loc; ldl] ] ]
   ;
   constructor_declaration:
     [ [ ci = a_UIDENT; "of"; cal = SLIST1 ctyp SEP "and" ->
