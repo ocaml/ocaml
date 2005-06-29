@@ -120,7 +120,6 @@ value has_special_chars v =
 value var_escaped v =
   if v = "" then "$lid:\"\"$" else
   if v = "val" then "contents" else
-  if v = "contents" then "contents__" else
   if has_special_chars v || is_infix v then "( " ^ v ^ " )" else
   if is_keyword v then v ^ "__"
   else v
@@ -147,7 +146,6 @@ value id_var s =
   if has_special_chars s || is_infix s then
     HVbox [: `S LR "("; `S LR s; `S LR ")" :]
   else if s = "val" then HVbox [: `S LR "contents" :]
-  else if s = "contents" then HVbox [: `S LR "contents__" :]
   else if is_keyword s then HVbox [: `S LR (s ^ "__") :]
   else HVbox [: `S LR s :]
 ;
@@ -1649,27 +1647,17 @@ pr_ctyp.pr_levels :=
           fun curr next dg k -> [: `S LR (var_escaped s); k :]
       | <:ctyp< $uid:s$ >> -> fun curr next dg k -> [: `S LR s; k :]
       | <:ctyp< _ >> -> fun curr next dg k -> [: `S LR "_"; k :]
-      | <:ctyp< private { $list:ftl$ } >> as t ->
-          fun curr next dg k ->
-            let loc = MLast.loc_of_ctyp t in
-              [: `HVbox
-                 [: `HVbox [:`S LR "private" :];
-                    `HVbox [: labels loc [:`S LR "{" :]
-                                ftl "" [: `S LR "}"  :] :];
-                     k :] :]
       | <:ctyp< { $list:ftl$ } >> as t ->
           fun curr next dg k ->
             let loc = MLast.loc_of_ctyp t in
             [: `HVbox
                   [: labels loc [: `S LR "{" :] ftl "" [: `S LR "}" :];
                      k :] :]
-      | <:ctyp< private [ $list:ctl$ ] >> as t ->
+      | <:ctyp< private $ty$ >> ->
           fun curr next dg k ->
-            let loc = MLast.loc_of_ctyp t in
-            [: `Vbox
-                  [: `HVbox [: `S LR "private" :];
-                      variants loc [: `S LR " " :] ctl "" [: :];
-                     k :] :]
+            [: `HVbox
+               [: `HVbox [:`S LR "private" :];
+                  `ctyp ty "" k :] :]
       | <:ctyp< [ $list:ctl$ ] >> as t ->
           fun curr next dg k ->
             let loc = MLast.loc_of_ctyp t in
