@@ -225,8 +225,11 @@ let neg_string n =
 
 let mkumin _ f arg =
   match arg with
-    Qast.Node ("ExInt", [Qast.Loc; Qast.Str n]) when int_of_string n > 0 ->
-      let n = neg_string n in Qast.Node ("ExInt", [Qast.Loc; Qast.Str n])
+    Qast.Node
+      (("ExInt" | "ExInt32" | "ExInt64" | "ExNativeInt" as exi),
+       [Qast.Loc; Qast.Str n])
+    when int_of_string n > 0 ->
+      let n = neg_string n in Qast.Node (exi, [Qast.Loc; Qast.Str n])
   | Qast.Node ("ExFlo", [Qast.Loc; Qast.Str n])
     when float_of_string n > 0.0 ->
       let n = neg_string n in Qast.Node ("ExFlo", [Qast.Loc; Qast.Str n])
@@ -685,7 +688,7 @@ Grammar.extend
            (let (_, c, tl) =
               match ctl with
                 Qast.Tuple [xx1; xx2; xx3] -> xx1, xx2, xx3
-              | _ -> match () with _ -> raise (Match_failure ("", 331, 19))
+              | _ -> match () with _ -> raise (Match_failure ("", 332, 19))
             in
             Qast.Node ("StExc", [Qast.Loc; c; tl; b]) :
             'str_item));
@@ -979,7 +982,7 @@ Grammar.extend
            (let (_, c, tl) =
               match ctl with
                 Qast.Tuple [xx1; xx2; xx3] -> xx1, xx2, xx3
-              | _ -> match () with _ -> raise (Match_failure ("", 389, 19))
+              | _ -> match () with _ -> raise (Match_failure ("", 390, 19))
             in
             Qast.Node ("SgExc", [Qast.Loc; c; tl]) :
             'sig_item));
