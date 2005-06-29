@@ -120,7 +120,6 @@ value has_special_chars v =
 value var_escaped v =
   if v = "" then "$lid:\"\"$" else
   if v = "val" then "contents" else
-  if v = "contents" then "contents__" else
   if has_special_chars v || is_infix v then "( " ^ v ^ " )" else
   if is_keyword v then v ^ "__"
   else v
