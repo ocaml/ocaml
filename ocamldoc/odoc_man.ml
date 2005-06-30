@@ -203,6 +203,7 @@ class man =
       for i = 0 to len - 1 do
 	match s.[i] with
 	  '\\' -> Buffer.add_string b "\\(rs"
+	| '.' -> Buffer.add_string b "\\."
 	| c -> Buffer.add_char b c
       done;
       Buffer.contents b
