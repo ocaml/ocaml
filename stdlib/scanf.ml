@@ -533,7 +533,7 @@ let scan_string stp max ib =
     if Scanning.eof ib then max else
     if stp == [] then
       match c with
-      | ' ' | '\t' | '\n' | '\r' -> Scanning.skip_char ib max
+      | ' ' | '\t' | '\n' | '\r' -> max
       | c -> loop (Scanning.store_char ib c max) else
     if List.memq c stp then Scanning.skip_char ib max else
     loop (Scanning.store_char ib c max) in
