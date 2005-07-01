@@ -915,6 +915,25 @@ let test50 () = go () = 100;;
 
 test (test50 ());;
 
+(* Simple tests may also fail! *)
+let test51 () =
+ sscanf "Hello\n" "%s\n" id = "Hello" &&
+ sscanf "Hello\n" "%s%s\n" (fun s1 s2 ->
+   s1 = "Hello" && s2 = "") &&
+ sscanf "Hello\nWorld" "%s\n%s%!" (fun s1 s2 ->
+   s1 = "Hello" && s2 = "World") &&
+ sscanf "Hello\nWorld!" "%s\n%s" (fun s1 s2 ->
+   s1 = "Hello" && s2 = "World!") &&
+ sscanf "Hello\n" "%s@\n%s" (fun s1 s2 ->
+   s1 = "Hello" && s2 = "") &&
+ sscanf "Hello \n" "%s@\n%s" (fun s1 s2 ->
+   s1 = "Hello " && s2 = "")
+;;
+
+test (test51 ());;
+
+
+
 (*******
 
 To be continued.
