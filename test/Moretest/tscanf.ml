@@ -901,7 +901,7 @@ let rec reader =
       writer ib ob))
 
 and writer ib ob =
-  Scanf.bscanf ib "%s" (function
+  Scanf.bscanf ib "%s\n" (function
     | "start" -> send_string ob "Hello World!"; reader ib ob
     | "stop" -> Scanf.bscanf ib "%i" (function i -> i)
     | s -> send_int ob (int_of_string s); reader ib ob);;
