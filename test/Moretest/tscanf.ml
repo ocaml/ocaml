@@ -50,7 +50,7 @@ let test b =
 let test_raises_exc_p pred f x =
  next_test ();
  try
-   let b = f x in
+   ignore (f x);
    print_failure_test_succeed ();
    false
  with
@@ -282,7 +282,6 @@ let test110 () =
  sscanf " " " %s " (fun x -> x = "") &&
  sscanf " " " %s %s" (fun x y -> x = "" && x = y) &&
  sscanf " " " %s@ %s" (fun x y -> x = "" && x = y) &&
- sscanf " poi !" " %s@ %s@." (fun x y -> x = "" && y = "poi!") &&
  sscanf " poi !" " %s@ %s@." (fun x y -> x = "poi" && y = "!") &&
  sscanf " poi !" "%s@ %s@." (fun x y -> x = "" && y = "poi !");;
 
@@ -419,7 +418,6 @@ and scan_rest ib accu =
             scan_rest ib (i :: accu)))
     | ']' -> accu
     | _ -> failwith "scan_rest");;
-
 
 let scan_int_list ib = List.rev (scan_elems ib []);;
 
@@ -758,9 +756,14 @@ test (test37 ());;
 
 (* Testing end of input condition. *)
 let test38 () =
+  sscanf "a" "a%!" true &&
+  sscanf "a" "a%!%!" true &&
+  sscanf " a" " a%!" true &&
+  sscanf "a " "a %!" true &&
+  sscanf "" "%!" true &&
   sscanf " " " %!" true &&
   sscanf "" " %!" true &&
-  sscanf "" "%!" true;;
+  sscanf "" " %!%!" true;;
 
 test (test38 ());;
 
@@ -837,17 +840,82 @@ let test46, test47 =
 test (test46 () = "1 spells one, in english.");;
 test (test47 () = "1 ,%s, in english.");;
 
-let test48 ()=
+let test48 () =
   sscanf "12 \"%i\"89 " "%i %{%d%}%s %!"
     (fun i f s -> i=12 && f="%i" && s="89");;
 
 test (test48 ());;
 
-(*******
+(* Testing stoppers after ranges. *)
+let test49 () =
+  sscanf "as" "%[\\]" (fun s -> s = "") &&
+  sscanf "as" "%[\\]%s" (fun s t -> s = "" && t = "as") &&
+  sscanf "as" "%[\\]%s%!" (fun s t -> s = "" && t = "as") &&
+  sscanf "as" "%[a..z]" (fun s -> s = "a") &&
+  sscanf "as" "%[a-z]" (fun s -> s = "as") &&
+  sscanf "as" "%[a..z]%s" (fun s t -> s = "a" && t = "s") &&
+  sscanf "as" "%[a-z]%s" (fun s t -> s = "as" && t = "") &&
+  sscanf "-as" "%[-a-z]" (fun s -> s = "-as") &&
+  sscanf "-as" "%[-a-z]@s" (fun s -> s = "-a") &&
+  sscanf "-as" "-%[a]@s" (fun s -> s = "a") &&   
+  sscanf "-asb" "-%[a]@sb%!" (fun s -> s = "a") &&
+  sscanf "-asb" "-%[a]@s%s" (fun s t -> s = "a" && t = "b");; 
 
-print_string "Test number is "; 
-print_int !test_num; print_string ". It should be 42.";
-print_newline();;
+test (test49 ());;
+
+
+(* Testing buffers defined via functions +
+   co-routines that read and write from the same buffers
+   + range chars and proper handling of \n (and of the end of file
+   condition). *)
+let next_char ob () =
+  let s = Buffer.contents ob in
+  let len = String.length s in
+  if len = 0 then raise End_of_file else
+  let c = s.[0] in
+  Buffer.clear ob;
+  Buffer.add_string ob (String.sub s 1 (len - 1));
+  (*prerr_endline (Printf.sprintf "giving %C" c);*)
+  c;;
+
+let send_string ob s =
+  (*prerr_endline (Printf.sprintf "adding %s\n" s);*)
+  Buffer.add_string ob s; Buffer.add_char ob '\n';;
+let send_int ob i = send_string ob (string_of_int i);;
+
+let rec reader =
+  let count = ref 0 in
+  (fun ib ob ->
+    if Scanf.Scanning.beginning_of_input ib then begin
+      count := 0; send_string ob "start"; writer ib ob end else
+    Scanf.bscanf ib "%[^\n]\n" (function
+    | "stop" -> send_string ob "stop"; writer ib ob
+    | s ->
+      let l = String.length s in
+      count := l + !count;
+      if !count >= 100 then begin
+        send_string ob "stop";
+        send_int ob !count
+        end else
+      send_int ob l;
+      writer ib ob))
+
+and writer ib ob =
+  Scanf.bscanf ib "%s" (function
+    | "start" -> send_string ob "Hello World!"; reader ib ob
+    | "stop" -> Scanf.bscanf ib "%i" (function i -> i)
+    | s -> send_int ob (int_of_string s); reader ib ob);;
+
+let go () =
+  let ob = Buffer.create 17 in
+  let ib = Scanf.Scanning.from_function (next_char ob) in
+  reader ib ob;;
+
+let test50 () = go () = 100;;
+
+test (test50 ());;
+
+(*******
 
 To be continued.
 
@@ -857,8 +925,7 @@ let digest () =
   let digest_line s = print_endline (s ^ "#" ^ digest s) in
   try
    while true do scan_line digest_line done
-  with End_of_file -> ()
-;;
+  with End_of_file -> ();;
 
 (* Trying to scan records. *)
 let rec scan_fields ib scan_field accu =
@@ -868,13 +935,12 @@ let rec scan_fields ib scan_field accu =
       let accu = i :: accu in
       kscanf ib (fun ib exc -> accu)
        " %1[;] "
-       (fun s -> if s = "" then accu else scan_fields ib scan_field accu))
-;;
+       (fun s ->
+          if s = "" then accu else scan_fields ib scan_field accu));;
 
 let scan_record scan_field ib =
   bscanf ib "{ " ();
   let accu = scan_fields ib scan_field [] in
   bscanf ib " }" ();
-  List.rev accu
-;;
+  List.rev accu;;
 ***********)
