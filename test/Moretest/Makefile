@@ -117,9 +117,21 @@ tscanf.byt: tscanf.cmo
 tscanf.out: tscanf.cmx
 	${CAMLOPT} -o tscanf.out tscanf.cmx
 
-scanf: tscanf.byt tscanf.out
+tscanf2.byt: tscanf2_io.cmo tscanf2_slave.cmo tscanf2_master.cmo
+	${CAMLC} -o tscanf2_slave.byt tscanf2_io.cmo tscanf2_slave.cmo
+	${CAMLC} -o tscanf2_master.byt unix.cma \
+		tscanf2_io.cmo tscanf2_master.cmo
+
+tscanf2.out: tscanf2_io.cmx tscanf2_slave.cmx tscanf2_master.cmx
+	${CAMLOPT} -o tscanf2_slave.out tscanf2_io.cmx tscanf2_slave.cmx
+	${CAMLOPT} -o tscanf2_master.out unix.cmxa \
+		tscanf2_io.cmx tscanf2_master.cmx
+
+scanf: tscanf.byt tscanf.out tscanf2.byt tscanf2.out
 	./tscanf.byt
 	./tscanf.out
+	./tscanf2_master.byt ./tscanf2_slave.byt
+	./tscanf2_master.out ./tscanf2_slave.out
 
 regexp.byt: ../../otherlibs/str/str.cma regexp.ml
 	$(CAMLC) -custom -I ../../otherlibs/str -o regexp.byt str.cma regexp.ml
