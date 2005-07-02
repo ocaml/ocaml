@@ -283,9 +283,9 @@ let format_mismatch fmt1 fmt2 ib =
 
 (* Checks that the current char is indeed one of the stopper characters,
    then skips it.
-   Be careful that if ib has no more character this should just do
-   nothing (since %s@c defaults to the entire rest of the buffer is no
-   character c can be found in the input). *)
+   Be careful that if ib has no more character this procedure should
+   just do nothing (since %s@c defaults to the entire rest of the
+   buffer, when no character c can be found in the input). *)
 let ignore_stopper stp ib =
   if stp <> [] && not (Scanning.eof ib) then
   let ci = Scanning.peek_char ib in
@@ -294,11 +294,13 @@ let ignore_stopper stp ib =
   bad_input
     (Printf.sprintf "looking for one of range %S, found %C" sr ci);;
 
-(* Checking that [c] is indeed in the input, then skip it. *)
+(* Checking that [c] is indeed in the input, then skip it.
+   In this case the character c has been explicitely specified in the
+   format as being mandatory in the input; hence we should fail with
+   End_of_file in case of end_of_input.
+   That's why we use checked_peek_char here. *)
 let check_char ib c =
-  let ci = Scanning.peek_char ib in
-  if Scanning.eof ib then
-    bad_input (Printf.sprintf "looking for %C, found end of file" c) else
+  let ci = Scanning.checked_peek_char ib in
   if ci != c then
     bad_input (Printf.sprintf "looking for %C, found %C" c ci) else
   Scanning.invalidate_current_char ib;;
@@ -868,6 +870,9 @@ let rec skip_whites ib =
     | _ -> ()
   end;;
 
+external format_to_string :
+ ('a, 'b, 'c, 'd) format4 -> string = "%identity";;
+
 (* The [kscanf] main scanning function.
    It takes as arguments:
      - an input buffer [ib] from which to read characters,
@@ -888,7 +893,7 @@ let rec skip_whites ib =
    aborts and applies the scanning buffer and a string that explains
    the error to the error handling function [ef] (the error continuation). *)
 let kscanf ib ef fmt f =
-  let fmt = string_of_format fmt in
+  let fmt = format_to_string fmt in
   let lim = String.length fmt - 1 in
 
   let return v = Obj.magic v () in
