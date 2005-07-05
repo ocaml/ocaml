@@ -117,5 +117,13 @@ let implementation ppf sourcefile outputprefix =
       raise x
   end
 
+let interface ppf sourcefile outputprefix =
+  Cduce_types.Compunit.wrap (interface ppf sourcefile) outputprefix
+
+let implementation ppf sourcefile outputprefix =
+  Cduce_types.Compunit.wrap (implementation ppf sourcefile) outputprefix
+    
+
+
 let c_file name =
   if Ccomp.compile_file name <> 0 then exit 2

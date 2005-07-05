@@ -842,7 +842,8 @@ let package_units objfiles cmifile modulename =
         (fun (name, crc) -> not (List.mem name unit_names))
         (Env.imported_units()) in
     (* Write packaged signature *)
-    Env.save_signature_with_imports sg modulename cmifile imports;
+    Cduce_types.Compunit.wrap
+      (Env.save_signature_with_imports sg modulename cmifile) imports;
     Tcoerce_none
   end
 

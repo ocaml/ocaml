@@ -106,5 +106,11 @@ let implementation ppf sourcefile outputprefix =
     Pparse.remove_preprocessed_if_ast inputfile;
     raise x
 
+let interface ppf sourcefile outputprefix =
+  Cduce_types.Compunit.wrap (interface ppf sourcefile) outputprefix
+
+let implementation ppf sourcefile outputprefix =
+  Cduce_types.Compunit.wrap (implementation ppf sourcefile) outputprefix
+ 
 let c_file name =
   if Ccomp.compile_file name <> 0 then exit 2

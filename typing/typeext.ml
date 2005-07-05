@@ -30,7 +30,7 @@ module CEnv = Cduce_types.Ident.Env
 module IdSet = Cduce_types.Ident.IdSet
 module Patterns = Cduce_types.Patterns
 module LabelMap = Cduce_types.Ident.LabelMap
-module LabelPool = Cduce_types.Ident.LabelPool
+module Label = Cduce_types.Ident.Label
 
 let real_type_expect = ref (fun ?in_function _ _ _ -> assert false)
 let transl_simple_type = ref None
@@ -69,7 +69,7 @@ let register_exttypes () =
   List.iter 
     (fun (p,ty) ->
        CT.Print.register_global
-	 CT.CompUnit.pervasives
+	 ""
 	 (Cduce_types.Ns.empty,
 	  Cduce_types.Encodings.Utf8.mk_latin1 p)
 	 ty) types
@@ -133,7 +133,7 @@ let builtin_types = [
 let built_ins =
   List.fold_left (
     fun accu (name,t) ->
-      CT.Print.register_global CT.CompUnit.pervasives 
+      CT.Print.register_global ""
 	(Ns.empty, U.mk_latin1 name) t;
       CEnv.add (id name) t accu
   ) CEnv.empty builtin_types
@@ -214,7 +214,7 @@ let rec seq = function
   | hd::tl -> CT.cons (CT.times hd (seq tl))
   
 let ml_constr c p =
-  let c = Cduce_types.Atoms.V.mk Ns.empty (U.mk_latin1 c) in
+  let c = Cduce_types.Atoms.V.mk (Ns.empty,U.mk_latin1 c) in
   let c = CT.atom (Cduce_types.Atoms.atom c) in
   match p with
     | [] -> c
@@ -250,6 +250,8 @@ let rec typ_from_ml env t =
     | Tconstr (p,_,_) when Path.same p Predef.path_utf8 ->
 	CT.cons SEQ.string
     | Tconstr (p,[t],_) when Path.same p Predef.path_list ->
+	SEQ.star_node (typ_from_ml env t)
+    | Tconstr (p,[t],_) when Path.same p Predef.path_array ->
 	SEQ.star_node (typ_from_ml env t)
     | Tconstr (p,_,_) when Path.name p = "Cduce_types.Value.t" ->
 	CT.any_node
@@ -317,7 +319,7 @@ and typ_from_ml_constr env p args =
 		  List.map
 		    (fun (lab,_,t) ->
 		       let t = typ_from_ml env (inst t) in
-		       (LabelPool.mk (Ns.empty,U.mk_latin1 lab), t)
+		       (Label.mk (Ns.empty,U.mk_latin1 lab), t)
 		    ) fields) in
 	    CT.record_fields (false,fields)
 	| _ -> raise (CannotTranslate TOther) in
@@ -338,11 +340,11 @@ let parse_ns env loc pr =
 
 let parse_atom env loc (pr,l) =
   let ns = parse_ns env loc pr in
-  Cduce_types.Atoms.V.mk ns l
+  Cduce_types.Atoms.V.mk (ns,l)
  
 let transl_label env loc (pr,l) =
   let ns = if (pr = "") then Ns.empty else parse_ns env loc pr in
-  Cduce_types.Ident.LabelPool.mk (ns,l)
+  Cduce_types.Ident.Label.mk (ns,l)
 
 let transl_record (env : Env.t) loc f r :
     'a Cduce_types.Ident.label_map =
@@ -535,7 +537,7 @@ let transl_type_decl env b =
 	 t) b' in
   List.iter2 
     (fun (v,_) t -> 
-       CT.Print.register_global CT.CompUnit.pervasives (Ns.empty, U.mk_latin1 v) t) 
+       CT.Print.register_global "" (Ns.empty, U.mk_latin1 v) t) 
     b ts;
   ts)
 

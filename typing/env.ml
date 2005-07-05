@@ -122,6 +122,7 @@ type pers_struct =
   { ps_name: string;
     ps_sig: signature;
     ps_comps: module_components;
+    ps_cduce: Cduce_types.Compunit.t;
     ps_crcs: (string * Digest.t) list;
     ps_filename: string }
 
@@ -151,12 +152,15 @@ let read_pers_struct modname filename =
       close_in ic;
       raise(Error(Not_an_interface filename))
     end;
-    let (name, sign, chunk) = input_value ic in
-    let chunk = Cduce_types.Serial.G.mk chunk in 
+    let (name, sign, cduce_cu, pools) = 
+      try input_value ic
+      with Failure s -> Printf.eprintf "ERR:%s\n" s; failwith s in
+    Cduce_types.Value.intract_all pools;
+    Cduce_types.Compunit.register cduce_cu filename;
 (*    let (name, sign) = input_value ic in *)
     let crcs = input_value ic in
     close_in ic;
-    let sign = Subst.signature (Subst.restore chunk) sign in
+    let sign = Subst.signature (Subst.restore ()) sign in
     let comps =
       !components_of_module' empty Subst.identity
                              (Pident(Ident.create_persistent name))
@@ -164,6 +168,7 @@ let read_pers_struct modname filename =
     let ps = { ps_name = name;
                ps_sig = sign;
                ps_comps = comps;
+	       ps_cduce = cduce_cu;
                ps_crcs = crcs;
                ps_filename = filename } in
     if ps.ps_name <> modname then
@@ -171,9 +176,13 @@ let read_pers_struct modname filename =
     check_consistency filename ps.ps_crcs;
     Hashtbl.add persistent_structures modname ps;
     ps
-  with End_of_file | Failure _ ->
+  with Failure s ->
     close_in ic;
+    Printf.eprintf "ERR:%s\n" s; flush stderr;
     raise(Error(Corrupted_interface(filename)))
+    | End_of_file ->
+	close_in ic;
+	raise(Error(Corrupted_interface(filename)))
 
 let find_pers_struct name =
   try
@@ -657,7 +666,7 @@ module CD = Cduce_types
 
 let add_namespace pr ns env =
   let pr = CD.Encodings.Utf8.mk_latin1 pr in
-  let ns = CD.Ns.mk ns in
+  let ns = CD.Ns.Uri.mk ns in
   { env with namespaces = CD.Ns.add_prefix pr ns env.namespaces }
 
 let find_namespace pr env =
@@ -743,11 +752,27 @@ let imported_units() =
 
 let save_signature_with_imports sg modname filename imports =
   Btype.cleanup_abbrev ();
-  let (sg,chunk) = Subst.signature_for_saving sg in
+  let sg = Subst.signature_for_saving sg in
+  
+  (* Create the final value for the CDuce compilation unit descriptor *)
+  let h = Hashtbl.hash_param 1000 10000 sg in
+  let max_rank = 
+    List.fold_left
+      (fun accu (name,_) -> 
+	 try 
+	   let d = Hashtbl.find persistent_structures name in
+	   max accu (fst (Cduce_types.Compunit.get_hash d.ps_cduce))
+	 with Not_found -> accu) 0 imports in
+  let cduce_cu = Cduce_types.Compunit.current () in
+  Cduce_types.Compunit.set_hash cduce_cu (succ max_rank) h;
+  Cduce_types.Compunit.register cduce_cu filename;
+  (* TODO: check collision for this descriptor *)
+  let pools = Cduce_types.Value.extract_all () in
+
   let oc = open_out_bin filename in
   try
     output_string oc cmi_magic_number;
-    output_value oc (modname, sg, chunk);
+    output_value oc (modname, sg, cduce_cu, pools);
     flush oc;
     let crc = Digest.file filename in
     let crcs = (modname, crc) :: imports in
@@ -762,6 +787,7 @@ let save_signature_with_imports sg modname filename imports =
       { ps_name = modname;
         ps_sig = sg;
         ps_comps = comps;
+	ps_cduce = cduce_cu;
         ps_crcs = crcs;
         ps_filename = filename } in
     Hashtbl.add persistent_structures modname ps;

@@ -1,12 +1,11 @@
 CDUCE_DIR=../../../cduce
 
 SRC = \
- misc/serialize.ml \
  misc/custom.ml \
  misc/encodings.ml \
  misc/imap.ml \
  misc/state.ml \
- misc/pool.ml \
+ misc/upool.ml \
  misc/ns.ml \
  types/sortedList.ml \
  types/atoms.ml \
@@ -18,16 +17,17 @@ SRC = \
  types/normal.ml \
  misc/pretty.ml \
  misc/stats.ml \
+ types/compunit.ml \
  types/types.ml \
  types/sequence.ml \
  types/sample.ml \
+ compile/auto_pat.ml \
  types/patterns.ml \
- compile/lambda.ml \
  runtime/value.ml \
  runtime/run_dispatch.ml \
  runtime/explain.ml \
- runtime/serial.ml \
- typing/typepat.ml
+ typing/typepat.ml \
+ runtime/serial.ml
 
 QSRC=$(SRC:%=$(CDUCE_DIR)/%)
 

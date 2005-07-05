@@ -38,7 +38,6 @@ and type_desc =
   | Tunivar
   | Tpoly of type_expr * type_expr list
   | Text of ext_desc
-  | Text_serialized of int
 
 and ext_desc =
     { ext_const: Cduce_types.Types.t option;

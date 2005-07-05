@@ -2801,7 +2801,6 @@ let rec build_subtype env visited loops posi level t =
 	(!ext_subtype env t, Changed)
       else
 	(!ext_supertype env t, Changed)
-  | Text_serialized _   -> assert false
 
 let enlarge_type env ty =
   warn := false;

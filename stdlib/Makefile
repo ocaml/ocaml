@@ -42,16 +42,18 @@ OTHERS=array.cmo list.cmo char.cmo string.cmo sys.cmo \
   cduce_types.cmo
 
 CDUCE=\
-  cduce/serialize.cmo cduce/custom.cmo cduce/encodings.cmo \
-  cduce/imap.cmo cduce/state.cmo \
-  cduce/pool.cmo cduce/ns.cmo cduce/sortedList.cmo cduce/atoms.cmo \
+  cduce/custom.cmo cduce/encodings.cmo \
+  cduce/imap.cmo cduce/upool.cmo \
+  cduce/ns.cmo cduce/sortedList.cmo cduce/atoms.cmo \
   cduce/bool.cmo cduce/chars.cmo cduce/ident.cmo \
   cduce/intervals.cmo cduce/inttbl.cmo cduce/normal.cmo \
   cduce/pretty.cmo cduce/stats.cmo \
-  cduce/types.cmo cduce/sequence.cmo cduce/sample.cmo cduce/patterns.cmo \
-  cduce/lambda.cmo \
-  cduce/value.cmo cduce/run_dispatch.cmo cduce/explain.cmo cduce/serial.cmo \
-  cduce/typepat.cmo
+  cduce/compunit.cmo \
+  cduce/types.cmo cduce/sequence.cmo cduce/sample.cmo \
+  cduce/auto_pat.cmo cduce/patterns.cmo \
+  cduce/value.cmo cduce/run_dispatch.cmo cduce/explain.cmo \
+  cduce/typepat.cmo \
+  cduce/serial.cmo
 
 all: stdlib.cma std_exit.cmo camlheader camlheader_ur
 

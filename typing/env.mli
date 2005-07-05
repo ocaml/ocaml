@@ -79,7 +79,7 @@ val enter_cltype: string -> cltype_declaration -> t -> Ident.t * t
 (* Namespace *)
 
 val add_namespace: string -> Cduce_types.Encodings.Utf8.t -> t -> t
-val find_namespace: string -> t -> Cduce_types.Ns.t
+val find_namespace: string -> t -> Cduce_types.Ns.Uri.t
 
 (* Reset the cache of in-core module interfaces.
    To be called in particular when load_path changes. *)
@@ -91,10 +91,10 @@ val reset_cache: unit -> unit
 val read_signature: string -> string -> signature
         (* Arguments: module name, file name. Results: signature. *)
 val save_signature: signature -> string -> string -> unit
-        (* Arguments: signature, module name, file name. *)
+        (* Arguments: signature, module name, file name, cduce unit descriptor. *)
 val save_signature_with_imports:
-            signature -> string -> string -> (string * Digest.t) list -> unit
-        (* Arguments: signature, module name, file name, 
+  signature -> string -> string -> (string * Digest.t) list -> unit
+        (* Arguments: signature, module name, file name, cduce unit descriptor,
            imported units with their CRCs. *)
 
 (* Return the CRC of the interface of the given compilation unit *)

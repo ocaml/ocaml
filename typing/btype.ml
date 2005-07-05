@@ -184,7 +184,6 @@ let iter_type_expr f ty =
   | Tunivar             -> ()
   | Tpoly (ty, tyl)     -> f ty; List.iter f tyl
   | Text _              -> ()
-  | Text_serialized _   -> assert false
 
 let rec iter_abbrev f = function
     Mnil                   -> ()
@@ -252,7 +251,7 @@ let rec copy_type_desc f = function
   | Tpoly (ty, tyl)     ->
       let tyl = List.map (fun x -> norm_univar (f x)) tyl in
       Tpoly (f ty, tyl)
-  | Text _ | Text_serialized _ as x  -> x
+  | Text _ as x  -> x
 
 
 (* Utilities for copying *)

@@ -39,7 +39,10 @@ let get_ext_type exp =
 let builtin_id f = 
   try
     transl_path (fst (Env.lookup_value (Longident.parse f) Env.empty))
-  with Not_found -> assert false
+  with Not_found -> 
+    Printf.eprintf "Cannot find builtin %s\n" f; flush stderr;
+    assert false
+
 
 let builtin f args =
   Lapply (builtin_id f, args)
@@ -57,6 +60,7 @@ let chunk = ref None
 let chunk_used = ref false
 let pchunk = ref None
 let rec_defs = ref []
+let globals = ref []
 
 module PathHash = 
   Hashtbl.Make(struct
@@ -93,6 +97,8 @@ let leave e = match !chunk,!pchunk with
   | Some c, Some p ->
       let e = if !rec_defs == [] then e else Lletrec (!rec_defs,e) in
       let e = 
+	List.fold_left (fun e (x,d) -> Llet (StrictOpt, x, d ,e)) e !globals in
+      let e = 
 	if !chunk_used then
 	  let s = S.P.mk p in
 	  chunk_used := false;
@@ -103,87 +109,84 @@ let leave e = match !chunk,!pchunk with
 	else
 	  e
       in
-      rec_defs := []; chunk := None; pchunk := None;
+      globals := []; rec_defs := []; chunk := None; pchunk := None;
       PathHash.clear from_ml_funs;
       PathHash.clear to_ml_funs;
       e
   | _ -> assert false
       
+
+let global v =
+  let i = S.P.put (get_pchunk ()) v in
+  let x = Ident.create "cduce_data" in
+  globals := (x, Lprim (Pfield i, [ get_chunk () ])) :: !globals;
+  Lvar x
       
 module CT = Cduce_types.Types
 
 let transl_ext_match transl_exp partial arg arg_ty bl = 
-  let pats = List.map (fun (p,_,_) -> p) bl in
-  let pm = S.P.pm (get_pchunk ()) (arg_ty,pats) in
+  let disp,rhs = Cduce_types.Patterns.Compile.make_branches arg_ty
+    (List.map (fun (p,binds,e) -> (p,(binds,e))) bl) in
+
   let result = Ident.create "result" in
   let bindings = Ident.create "bindings" in
 
-  let no_brs = ref 0 in
-  let extract_vars (p,binds,e) =
-    incr no_brs;
-    let rec rank i fv x =
-      match fv with
-	| [] -> assert false
-	| (y::_) when Cduce_types.Ident.Id.equal x y -> i
-	| _::tl -> rank (succ i) tl x in
-    let fv = Cduce_types.Patterns.fv p in
-    pred !no_brs,
-    List.fold_left
-      (fun e (x,id) -> 
-	 let r = rank 0 fv x in
-	 Llet (Strict,id, Lprim(Pfield r, [Lvar bindings]),e))
-      (transl_exp e) binds in
-  
-  let brs = List.map extract_vars bl in
-  let failaction = 
-    if partial 
-    then Some (value_absent ())
-    else None
-  in
+  let map_rhs = function
+    | Cduce_types.Auto_pat.Fail -> value_absent ()
+    | Cduce_types.Auto_pat.Match (arity,(binds,e)) ->
+	assert(arity = List.length binds);
+	let binds = 
+	  List.sort (fun (x1,_) (x2,_) -> Cduce_types.Ident.Id.compare x1 x2) 
+	    binds in
+	let pos = ref (-1) in
+	List.fold_left
+	  (fun e (_,id) -> 
+	     incr pos;
+	     Llet (StrictOpt,id, Lprim(Pfield !pos, [Lvar bindings]),e))
+	  (transl_exp e) binds
+  in	
+	
+
   let switch =
-    Lswitch 
-      (Lprim(Pfield 0, [Lvar result]),
-       { sw_numconsts = !no_brs + 1;
-	 sw_consts = brs;
-	 sw_numblocks = 0;
-	 sw_blocks = [];
-	 sw_failaction = failaction }) in
-  Llet (Strict,result,
-	builtin "Cduce_types.Serial.G.pm" 
-	  [get_chunk ();
-	   Lconst(Const_pointer pm); 
-	   arg ],
-	Llet (Strict,bindings,
-	      Lprim(Pfield 1, [Lvar result]), switch))
+    match Array.length rhs with
+      | 0 -> assert false
+      | 1 ->
+	  map_rhs rhs.(0)
+      | n ->
+	  Lswitch 
+	    (Lprim(Pfield 0, [Lvar result]),
+	     { sw_numconsts = n;
+	       sw_consts = 
+		 Array.to_list (Array.mapi (fun i x -> (i,map_rhs x)) rhs);
+	       sw_numblocks = 0;
+	       sw_blocks = [];
+	       sw_failaction = None }) in
+  Llet (Alias,result,
+	builtin "Cduce_types.Run_dispatch.run_dispatcher" [ global disp; arg ],
+	Llet (Alias,bindings, Lprim(Pfield 1, [Lvar result]), switch))
 
 let transl_label lab =
-  Cduce_types.Ident.LabelPool.mk 
+  Cduce_types.Ident.Label.mk 
     (Cduce_types.Ns.empty,Cduce_types.Encodings.Utf8.mk_latin1 lab)
 
 let transl_record labels fields =
-  let labels = S.P.label_array (get_pchunk ()) (Array.of_list labels) in
+  let labels = global (Array.of_list labels) in
   let fields = Lprim (Pmakeblock(0, Immutable), fields) in
-  builtin "Cduce_types.Serial.G.record" [ 
-    get_chunk ();
-    Lconst (Const_pointer labels); 
-    fields
-  ] 
+  builtin "Cduce_types.Value.mk_record" [ labels; fields ] 
 
 
 let mk_atom s = 
   let t = Cduce_types.Encodings.Utf8.mk_latin1 s in
-  Cduce_types.Atoms.V.mk Cduce_types.Ns.empty t
+  Cduce_types.Atoms.V.mk (Cduce_types.Ns.empty,t)
 
 let ml_constr t args =
-  let t = S.P.tag (get_pchunk ()) (mk_atom t) in
+  let t = global (Cduce_types.Value.Atom (mk_atom t)) in
   match args with
     | [] ->
-	builtin "Cduce_types.Serial.G.constr_const" 
-	  [ get_chunk (); Lconst(Const_pointer t) ]
+	t
     | _ ->
-	builtin "Cduce_types.Serial.G.constr" 
-	  [ get_chunk (); Lconst(Const_pointer t);
-	    Lprim (Pmakeblock(0, Immutable), args) ]
+	builtin "Cduce_types.Value.ocaml2cduce_constr" 
+	  [ t; Lprim (Pmakeblock(0, Immutable), args) ]
 
 let switch e consts blocks =
   let sw = {
@@ -263,6 +266,9 @@ let rec transl_from_ml args env t e =
 	builtin "Cduce_types.Value.ocaml2cduce_string_utf8" [ e ]
     | Tconstr (p,[t],_) when Path.same p Predef.path_list ->
 	builtin "Cduce_types.Value.ocaml2cduce_list" 
+	  [ transl_from_ml_fun args env t; e ]
+    | Tconstr (p,[t],_) when Path.same p Predef.path_array ->
+	builtin "Cduce_types.Value.ocaml2cduce_array" 
 	  [ transl_from_ml_fun args env t; e ]
     | Tconstr (p,_,_) when Path.name p = "Cduce_types.Value.t" ->
 	e
@@ -408,6 +414,9 @@ and transl_to_ml args env t e =
     | Tconstr (p,[t],_) when Path.same p Predef.path_list ->
 	builtin "Cduce_types.Value.cduce2ocaml_list" 
 	  [ transl_to_ml_fun args env t; e ]
+    | Tconstr (p,[t],_) when Path.same p Predef.path_array ->
+	builtin "Cduce_types.Value.cduce2ocaml_array" 
+	  [ transl_to_ml_fun args env t; e ]
     | Tconstr (p,_,_) when Path.name p = "Cduce_types.Value.t" ->
 	e
     | Ttuple tl ->
@@ -470,21 +479,21 @@ and transl_to_ml args env t e =
 	  let newval = 
 	    transl_to_ml args env t (Lprim(Pfield 1, [Lvar interm])) in
 	  Lprim (Psetfield (1,true), [Lvar interm; newval]) in
-	let cstr (transl,map) = function 
-	  | (c,None) ->
-	      (mk_atom c, Btype.hash_variant c) :: transl, map
-	  | (c,Some t) ->
-	      let n = Btype.hash_variant c in
-	      (mk_atom c, n) :: transl, (n, conv t) :: map in
-	let (transl,map) = List.fold_left cstr ([],[]) fields in
-	let m = S.P.tag_array (get_pchunk ()) (Array.of_list transl) in
-	Llet (Strict, v, e,
-	      Llet (Strict, interm,
-		    builtin "Cduce_types.Serial.G.dvariant"
-		      [ get_chunk (); Lconst(Const_pointer m); Lvar v ],
-		    Lsequence (dispatch_variant (Lvar interm) 
-				 [(0,Lconst(Const_pointer 0))]
-				 map, Lvar interm)))
+	let cstr map = function 
+	  | (c,None) -> map
+	  | (c,Some t) -> (Btype.hash_variant c, conv t) :: map in
+	let map = List.fold_left cstr [] fields in
+	let transl = List.map 
+	  (fun (c,_) ->
+	     let a = mk_atom c in
+	     (Cduce_types.Atoms.atom a, Btype.hash_variant c)) fields in
+	let transl = Cduce_types.Atoms.mk_map transl in
+	Llet (Strict, interm,
+	      builtin "Cduce_types.Value.cduce2ocaml_variant"
+		[ global transl; e ],
+	      Lsequence (dispatch_variant (Lvar interm) 
+			   [(0,Lconst(Const_pointer 0))]
+			   map, Lvar interm))
     | _ -> assert false
 
 and transl_to_ml_fun args env t =
@@ -518,25 +527,28 @@ and transl_to_ml_decl env p =
 	builtin "Pervasives.failwith"
 	  [ Lconst (Const_base (Const_string (Path.name p))) ]
     | Type_variant (cstrs,priv), _ ->
-	let cstr (transl,map) = function 
+	let cstr map = function 
 	  | (c,{ cstr_tag = Cstr_constant n }) ->
-	      (mk_atom c,n) :: transl, map
+	      map
 	  | (c,{ cstr_tag = Cstr_block n; cstr_args = args }) ->
 	      let action = 
 		match mapi arg 0 args with
 		  | hd::tl -> 
 		      List.fold_left (fun x y -> Lsequence (x,y)) hd tl
 		  | _ -> assert false in
-	      (mk_atom c,n) :: transl, (n, action) :: map
+	      (n, action) :: map
 	  | _ -> assert false in
 	let cstrs = Datarepr.constructor_descrs (Ctype.newvar()) cstrs priv in
-	let (transl,map) = List.fold_left cstr ([],[]) cstrs in
-	let m = 
-	  S.P.tag_array (get_pchunk ())
-	    (Array.of_list transl) in
+	let map = List.fold_left cstr [] cstrs in
+	let transl = 
+	  List.map (
+	    function (c,{ cstr_tag = Cstr_constant n | Cstr_block n}) -> 
+	      (Cduce_types.Atoms.atom (mk_atom c), n)
+	      | _ -> assert false) cstrs in
+	let transl = Cduce_types.Atoms.mk_map transl in
 	Llet (Strict, interm,
-	      builtin "Cduce_types.Serial.G.dconstr"
-		[ get_chunk (); Lconst(Const_pointer m); Lvar v ],
+	      builtin "Cduce_types.Value.cduce2ocaml_constr"
+		[ global transl; Lvar v ],
 	      Lsequence (switch_block (Lvar interm) map, Lvar interm))
     | Type_record (fields,repr,priv), _ ->
 	let fields= Datarepr.label_descrs (Ctype.newvar ()) fields repr priv in
@@ -547,11 +559,10 @@ and transl_to_ml_decl env p =
 	  | Record_float -> Pmakearray Pfloatarray in
 	let fields = 
 	  List.map (fun (lab,l) -> 
-		      let lab = S.P.label (get_pchunk ()) (transl_label lab) in
-		      let v = builtin "Cduce_types.Serial.G.get_field" [
-			get_chunk ();
-			Lconst(Const_pointer lab); 
-			Lvar v
+		      let v = builtin "Cduce_types.Value.get_field" [
+			Lvar v;
+			Lconst(Const_pointer (Cduce_types.Upool.int 
+						(transl_label lab)))
 		      ] in
 		      transl_to_ml funs env (inst l.lbl_arg) v
 		   ) fields in
@@ -570,9 +581,7 @@ and transl_to_ml_decl env p =
 
 let transl_ext transl_exp env typ = function
   | Textexp_cst c ->
-      let i = S.P.const (get_pchunk ()) c in
-      builtin "Cduce_types.Serial.G.const" 
-	[ get_chunk (); Lconst (Const_pointer i) ]
+      global (Cduce_types.Value.const c)
 
   | Textexp_match (arg,bl) ->
       transl_ext_match transl_exp false (transl_exp arg) (get_ext_type arg) bl
@@ -602,10 +611,8 @@ let transl_ext transl_exp env typ = function
       transl_record labels (List.map transl_exp fields)
 
   | Textexp_removefield (e,l) ->
-      let lab = S.P.label (get_pchunk ()) l in
-      builtin "Cduce_types.Serial.G.remove_label" [
-	get_chunk ();
-	Lconst(Const_pointer lab); 
+      builtin "Cduce_types.Value.remove_field" [
+	Lconst(Const_pointer (Cduce_types.Upool.int l));
 	transl_exp e
       ]
 
@@ -620,10 +627,9 @@ let transl_ext transl_exp env typ = function
       transl_to_ml [] env (Ctype.correct_levels typ) (transl_exp e)
 
   | Textexp_check e ->
-      let i = S.P.typ2 (get_pchunk ()) (get_ext_type e) (get_ext typ) in
-      builtin "Cduce_types.Serial.G.check" [
-	get_chunk ();
-	Lconst(Const_pointer i); 
-	transl_exp e
-      ]
+      let d = 
+	Cduce_types.Patterns.Compile.make_checker 
+	  (get_ext_type e) 
+	  (get_ext typ) in
+      builtin "Cduce_types.Explain.do_check" [ global d; transl_exp e ]
       

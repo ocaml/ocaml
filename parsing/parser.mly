@@ -238,6 +238,13 @@ let gh_nil () =
 
 let rec ext_seq = function
   | (false,hd)::tl -> ext_pair hd (ext_seq tl)
+(*  | (true,{ pexp_desc = 
+	 Pexp_ext 
+	   (Pextexp_cst 
+	      { pextcst_desc = Pextcst_string s; pextcst_loc = loc } 
+	   )})::tl ->
+      assert false *)
+      (* TODO: make [ 1 'abc' 2 ] a constant *)
   | (true,hd)::tl -> mkextexp(Pextexp_op ("concat",[hd;ext_seq tl]))
   | [] -> gh_nil ()
 

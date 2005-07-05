@@ -22,8 +22,8 @@ val type_module:
 val type_structure:
         Env.t -> Parsetree.structure -> Typedtree.structure * signature * Env.t
 val type_implementation:
-        string -> string -> string -> Env.t -> Parsetree.structure ->
-                               Typedtree.structure * Typedtree.module_coercion
+  string -> string -> string -> Env.t -> Parsetree.structure -> 
+        Typedtree.structure * Typedtree.module_coercion
 val transl_signature:
         Env.t -> Parsetree.signature -> signature
 val check_nongen_schemes:

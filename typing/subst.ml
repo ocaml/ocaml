@@ -24,16 +24,13 @@ type t =
     modules: (Ident.t, Path.t) Tbl.t;
     modtypes: (Ident.t, module_type) Tbl.t;
     for_saving: bool;
-    save_chunk: Cduce_types.Serial.P.chunk option;
-    chunk: Cduce_types.Serial.G.chunk option
   }
 
 let identity =
   { types = Tbl.empty; modules = Tbl.empty; modtypes = Tbl.empty;
-    for_saving = false; save_chunk = None; chunk = None }
+    for_saving = false }
 
-let restore chunk =
-  { identity with chunk = Some chunk }
+let restore () = identity
 
 let add_type id p s = { s with types = Tbl.add id p s.types }
 
@@ -41,11 +38,7 @@ let add_module id p s = { s with modules = Tbl.add id p s.modules }
 
 let add_modtype id ty s = { s with modtypes = Tbl.add id ty s.modtypes }
 
-let for_saving s = { s with 
-		       for_saving = true;
-		       save_chunk = Some (Cduce_types.Serial.P.init ()) }
-
-let save_chunk = function { save_chunk = Some c } -> c | _ -> assert false
+let for_saving s = { s with for_saving = true }
 
 let rec module_path s = function
     Pident id as p ->
@@ -75,36 +68,13 @@ let newpersty desc =
 let rec typexp s ty =
   let ty = repr ty in
   match ty.desc with
-    Tvar | Tunivar ->
+    Tvar | Tunivar | Text _ ->
       if s.for_saving || ty.id < 0 then
         let ty' =
           if s.for_saving then newpersty ty.desc else newty2 ty.level ty.desc
         in
         save_desc ty ty.desc; ty.desc <- Tsubst ty'; ty'
       else ty
-  | Text e when s.for_saving ->
-      (match e with 
-	 | { ext_const = Some t; ext_lb = []; ext_atoms = [] } ->
-	     save_desc ty ty.desc;
-	     let c = save_chunk s in
-	     let ty' = newpersty 
-	       (Text_serialized (Cduce_types.Serial.P.typ c t)) in
-	     ty.desc <- Tsubst ty';
-	     ty'
-	 | _ -> assert false)
-  | Text_serialized t ->
-      assert (ty.id < 0);
-      (match s.chunk with
-	 | Some chunk ->
-	     let t = Cduce_types.Serial.G.typ chunk t in
-	     let ty' = Btype.newextvar { ext_const = Some t;
-					 ext_lb = [];
-					 ext_atoms = [] } in
-	     save_desc ty ty.desc;
-	     ty.desc <- Tsubst ty';
-	     ty'
-	 | None -> assert false)
-  | Text e -> ty
   | Tsubst ty ->
       ty
 (* cannot do it, since it would omit subsitution
@@ -334,5 +304,4 @@ and modtype_declaration s = function
 let signature_for_saving sg =
   reset_for_saving ();
   let sub = for_saving identity in
-  let sg = signature sub sg in
-  (sg, Cduce_types.Serial.P.mk (save_chunk sub))
+  signature sub sg

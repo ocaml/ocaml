@@ -328,8 +328,6 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
 	      fprintf ppf "{{%a}}@?" !print_ext (O.obj obj); 
 	      let s = Buffer.contents b in
 	      Oval_stuff s
-	  | Text_serialized _ ->
-	      assert false
         end
 
       and tree_of_val_list start depth obj ty_list =
