@@ -755,7 +755,8 @@ let save_signature_with_imports sg modname filename imports =
   let sg = Subst.signature_for_saving sg in
   
   (* Create the final value for the CDuce compilation unit descriptor *)
-  let h = Hashtbl.hash_param 1000 10000 sg in
+  let h = Hashtbl.hash_param 1000 10000 (modname,sg) in
+(*  Printf.eprintf "Hash for module %s: %i\n" modname h; flush stderr; *)
   let max_rank = 
     List.fold_left
       (fun accu (name,_) -> 
