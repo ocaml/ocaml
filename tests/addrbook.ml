@@ -24,4 +24,8 @@ let e = {{ mkTelList [
 		    <addr>"ZA"
 		  ] }}
 
-let () = print_endline (Xml_values.to_string e)
+let () = 
+  Format.fprintf Format.std_formatter "%a@."
+    Cduce_types.Value.print 
+    (Obj.magic e)
+

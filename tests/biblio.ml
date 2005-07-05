@@ -58,4 +58,7 @@ let bib : biblio = {{
     ] ]
   }}
 
-let () = print_endline (Xml_values.to_string bib)
+let () = 
+  Format.fprintf Format.std_formatter "%a@."
+    Cduce_types.Value.print 
+    (Obj.magic bib)

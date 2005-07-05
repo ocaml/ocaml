@@ -10,4 +10,4 @@ let g (x : t) = {{ map x with x & Int -> [x]  | _ -> [] }}
 let h (x : t) : int list = {: f x :}
 
 
-let s : string = {: match "CDuce + OCaml" with [ (x::'a'..'z' | _)* ] -> x :}
+let s : string = {: match "CDuce + OCaml" with [ (x::'a'--'z' | _)* ] -> x :}
