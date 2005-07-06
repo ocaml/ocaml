@@ -247,8 +247,6 @@ let rec typ_from_ml env t =
 	CT.cons SEQ.char_latin1
     | Tconstr (p,_,_) when Path.same p Predef.path_string ->
 	CT.cons SEQ.string_latin1
-    | Tconstr (p,_,_) when Path.same p Predef.path_utf8 ->
-	CT.cons SEQ.string
     | Tconstr (p,[t],_) when Path.same p Predef.path_list ->
 	SEQ.star_node (typ_from_ml env t)
     | Tconstr (p,[t],_) when Path.same p Predef.path_array ->

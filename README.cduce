@@ -347,10 +347,11 @@ int -> Int   (dynamic check when going back to ML)
 int32 -> Int32
 int64 -> Int64
 string -> Latin1
-utf8 -> String  (utf8 is a new built-in ML type)
 t list -> [T*]
+t array -> [T*]
 unit -> []
 char -> Latin1Char
+{{T}} -> T
 
 Unguarded recursives types are rejected. Recursive type
 declarations (sums, products) are accepted.
@@ -362,7 +363,7 @@ would produce a value of a private type.
 SUPPORT LIBRARY:
 
 There is a companion support library called xml-support:
-http://pauillac.inria.fr/~frisch/ocamlcduce/download/xml-support-0.0.1.tar.gz
+http://pauillac.inria.fr/~frisch/ocamlcduce/download/xml-support-0.0.4.tar.gz
 
 
 OTHER MODIFICATIONS TO OCAML:

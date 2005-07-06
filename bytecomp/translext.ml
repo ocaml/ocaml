@@ -263,8 +263,6 @@ let rec transl_from_ml args env t e =
 	builtin "Cduce_types.Value.ocaml2cduce_char" [ e ]
     | Tconstr (p,_,_) when Path.same p Predef.path_string ->
 	builtin "Cduce_types.Value.ocaml2cduce_string" [ e ]
-    | Tconstr (p,_,_) when Path.same p Predef.path_utf8 ->
-	builtin "Cduce_types.Value.ocaml2cduce_string_utf8" [ e ]
     | Tconstr (p,[t],_) when Path.same p Predef.path_list ->
 	builtin "Cduce_types.Value.ocaml2cduce_list" 
 	  [ transl_from_ml_fun args env t; e ]
@@ -410,8 +408,6 @@ and transl_to_ml args env t e =
 	builtin "Cduce_types.Value.cduce2ocaml_char" [ e ]
     | Tconstr (p,_,_) when Path.same p Predef.path_string ->
 	builtin "Cduce_types.Value.cduce2ocaml_string" [ e ]
-    | Tconstr (p,_,_) when Path.same p Predef.path_utf8 ->
-	builtin "Cduce_types.Value.cduce2ocaml_string_utf8" [ e ]
     | Tconstr (p,[t],_) when Path.same p Predef.path_list ->
 	builtin "Cduce_types.Value.cduce2ocaml_list" 
 	  [ transl_to_ml_fun args env t; e ]
