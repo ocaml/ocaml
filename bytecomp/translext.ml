@@ -149,7 +149,8 @@ let transl_ext_match transl_exp partial arg arg_ty bl =
 
   let switch =
     match Array.length rhs with
-      | 0 -> assert false
+      | 0 ->
+	  Lconst (Const_pointer 0)
       | 1 ->
 	  map_rhs rhs.(0)
       | n ->

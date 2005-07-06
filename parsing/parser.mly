@@ -1935,6 +1935,7 @@ simple_ext_pat:
   | LBRACE ext_fields ext_open_record RBRACE { mkext(Pext_record ($3,$2)) }
   | LBRACECOLON core_type RCOLONBRACE { mkext(Pext_from_ml $2) }
   | BACKQUOTE ext_lident COLON STAR { mkext(Pext_ns $2) }  
+  | BACKQUOTE STAR { mkext(Pext_ns "") }  
   | LBRACKET regexp RBRACKET { mkext(Pext_regexp $2) }
   | LBRACKET RBRACKET { mkext(Pext_regexp Pext_epsilon) }
 ;
