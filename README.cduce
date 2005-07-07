@@ -18,7 +18,6 @@ x-types and x-values (x as extensional). An x-value can be:
 - a record (finite mapping from labels to x-values, where
   labels are qualified names);
 - a triple of x-values, called an x-element.
-- a function
 
 Syntactic sugar is provided to deal with sequences of x-values. They
 are nothing but nested pairs with `nil as terminator (`nil

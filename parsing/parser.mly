@@ -1725,7 +1725,7 @@ ext_expr:
       let (ns,pr) = $3 in
       mkextexp(Pextexp_namespace (ns,pr,$5))
     }
-  | simple_ext_expr LESSMINUS ext_expr { mkextexp(Pextexp_op ("apply",[$1;$3])) } 
+/*  | simple_ext_expr LESSMINUS ext_expr { mkextexp(Pextexp_op ("apply",[$1;$3])) } */
 ;
 simple_ext_expr:
   | LBRACEBRACE expr RBRACE RBRACE { ext:= true; $2 }

@@ -46,6 +46,7 @@ type cannot_translate =
   | TUnregularRecursion
   | TUnguardedRecursion
   | TOpen
+  | TArrow
   | TOther
   
 
@@ -102,6 +103,7 @@ let report_error ppf = function
 	Printtyp.type_expr t;
       (match e with
 	 | TOpen -> Format.fprintf ppf "@.Type with variables."
+	 | TArrow -> Format.fprintf ppf "@.Arrow type."
 	 | TUnguardedRecursion -> Format.fprintf ppf "@.Unguarded recursion."
 	 | TUnregularRecursion -> Format.fprintf ppf "@.Unregular recursion."
 	 | TOther -> ())
@@ -261,8 +263,10 @@ let rec typ_from_ml env t =
 	CT.cons (compute_var env.loc t CT.any)
     | Tconstr (p,args,_) ->
 	typ_from_ml_constr env p args
-    | Tarrow (_,t1,t2,_) ->
-	CT.cons (CT.arrow (typ_from_ml env t1) (typ_from_ml env t2))
+(*    | Tarrow (_,t1,t2,_) ->
+	CT.cons (CT.arrow (typ_from_ml env t1) (typ_from_ml env t2)) *)
+    | Tarrow _ ->
+	raise (CannotTranslate TArrow)
     | Tvariant rd ->
 	let rd = Btype.row_repr rd in
 	if not rd.row_closed then raise (CannotTranslate TOpen);
@@ -782,7 +786,7 @@ let ext_op env loc op tl = match op,tl with
   | "modulo",[t1;t2] -> ext_int2 Cduce_types.Intervals.modulo env loc t1 t2
   | "pair",[t1;t2] -> ext_pair env loc t1 t2
   | "xml",[t1;t2;t3] -> ext_xml env loc t1 t2 t3
-  | "apply",[t1;t2] -> ext_apply env loc t1 t2
+(*  | "apply",[t1;t2] -> ext_apply env loc t1 t2 *)
   | _ -> assert false
 
   

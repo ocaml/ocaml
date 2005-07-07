@@ -310,11 +310,11 @@ let rec transl_from_ml args env t e =
 	    [e] 
 	in
 	Lapply (f, e)
-    | Tarrow (_,t1,t2,_) ->
+(*    | Tarrow (_,t1,t2,_) ->
 	builtin "Cduce_types.Value.ocaml2cduce_fun" 
 	  [ transl_to_ml_fun (swap args) env t1;
 	    transl_from_ml_fun args env t2;
-	    e ]
+	    e ] *)
     | Tvariant rd ->
 	let fields = Ctype.get_fields rd in
 	let v = Ident.create "v" in
@@ -463,11 +463,11 @@ and transl_to_ml args env t e =
 	    [e] 
 	in
 	Lapply (f, e)
-    | Tarrow (_,t1,t2,_) ->
+(*    | Tarrow (_,t1,t2,_) ->
 	builtin "Cduce_types.Value.cduce2ocaml_fun" 
 	  [ transl_from_ml_fun (swap args) env t1;
 	    transl_to_ml_fun args env t2;
-	    e ]
+	    e ] *)
     | Tvariant rd ->
 	let fields = Ctype.get_fields rd in
 	let v = Ident.create "v" in
