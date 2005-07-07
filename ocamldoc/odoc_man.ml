@@ -203,7 +203,7 @@ class man =
       for i = 0 to len - 1 do
 	match s.[i] with
 	  '\\' -> Buffer.add_string b "\\(rs"
-	| '.' -> Buffer.add_string b "\\."
+	| '.' -> Buffer.add_string b "\\&."
 	| c -> Buffer.add_char b c
       done;
       Buffer.contents b
@@ -232,7 +232,7 @@ class man =
     (** Print the groff string for a text element. *)
     method man_of_text_element b te =
       match te with
-      | Odoc_info.Raw s -> bs b s
+      | Odoc_info.Raw s -> bs b (self#escape s)
       | Odoc_info.Code s ->
           bs b "\n.B ";
 	  bs b ((Str.global_replace (Str.regexp "\n") "\n.B " (self#escape s))^"\n")
