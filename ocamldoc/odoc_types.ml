@@ -58,7 +58,7 @@ type see = see_ref * text
 
 type param = (string * text)
 
-type raised_exception = (text * text)
+type raised_exception = (string * text)
 
 type info = {
     i_desc : text option;
