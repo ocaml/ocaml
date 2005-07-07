@@ -77,7 +77,7 @@ let default_dot_colors =
 let dot_colors =
   "<c1,c2,...,cn>\n\t\tUse colors c1,c1,...,cn in the dot output\n"^
   "\t\t(default list is "^
-  (String.concat ",\n\t\t" (List.map (String.concat ", ") default_dot_colors))^")"
+  (String.concat ",\n\t\t" (List.map (String.concat ",") default_dot_colors))^")"
 
 let dot_reduce =
   "\tPerform a transitive reduction on the selected dependency graph\n"^
