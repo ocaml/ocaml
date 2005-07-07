@@ -173,9 +173,6 @@ Local namespace binding:
 Function application:
    E1 E2
 
-X-function application:
-   E1 <- E2
-
 Translating from an OCaml value: {: e :} 
 The type of e must be
 monomorphic. Other restrictions apply (abstract types, objects,
@@ -211,12 +208,9 @@ l1,...,ln (with the correct type). It is possible to make one of
 the fields optional by changing = to =?. It is also possible
 to allow any extra field by adding .. after the fields.
 
-Function type: T1 -> T2. Currently, the only to obtain an x-value
-of a functional type is to translate an OCaml functions, e.g.:
-{{ {:succ:} }}  (it has type {{Int -> Int}}).
-
 Any-in-namespace:  the type `prefix:*  denotes all the qnames whose namespace
-is given by the prefix.
+is given by the prefix; the type `* denotes all the qnames whose namespace
+is the current default namespace.
 
 X-element type: <tag attr>T where tag is either a qname (without the `),
 an any-in-namespace type (without the `), or (T) where T is an x-type.
@@ -257,7 +251,6 @@ Predefined types:
   String (all the Unicode strings)
   Latin1 (all the Unicode strings with only Latin1 characters)
   Latin1Char (all the characters of the Latin 1 character set)
-  Arrow (all the functions)
 
 Integer intervals:
   i  -- j   (integers between i and j included)
@@ -283,7 +276,7 @@ The content is then replaced with the label name considered as
 a capture variable. E.g.  { x y=P } is equivalent to { x=x y=P }.
 
 It is also possible to add an "else" clause:
-{ x = (a,_) else (a:=3) }
+{ x = (a,_)|(a:=3) }
 will accept any record with at-most the field x. If the content
 is a pair, the capture variable a will be bound to its component;
 otherwise, it is set to 3.
@@ -298,8 +291,8 @@ repetition) in a regexp, it is bound to the concatenation of all matched
 subsequences. E.g.:  [ (x::Int | _)* ] will extract in x all
 the elements of type x in the sequence.
 
-The regexp operators +,*,? are greedy by default (they match as long as possible).
-They admit non-gready variants +?,*?,??.
+The regexp operators +,*,? are greedy by default (they match as long
+as possible).  They admit non-gready variants +?,*?,??.
 
 
 
@@ -382,5 +375,4 @@ TODO:
 - examples
 - the pretty-printer uses UTF-8 output for qualified names
 - the pretty-printer don't print the definition of named x-types
-- document the {  x = p ! q } pattern
-- lazy star/plus  *?, +? in regexp
+
