@@ -51,9 +51,10 @@ implementation supports records with up to $2^{22} - 1$ fields
 \subsection{Arrays}
 
 Arrays are finite, variable-sized sequences of values of the same
-type.  The current implementation supports arrays containing to
-$2^{22} - 1$ elements (4194303 elements); on 64-bit platforms, the
-limit is $2^{54} - 1$
+type.  The current implementation supports arrays containing up to
+$2^{22} - 1$ elements (4194303 elements) unless the elements are
+floating-point numbers (2097151 elements in this case); on 64-bit
+platforms, the limit is $2^{54} - 1$ for all arrays.
 
 \subsection{Variant values}
 
