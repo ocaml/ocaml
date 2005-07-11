@@ -425,6 +425,7 @@ let compute_variance env tvl nega posi cntr ty =
       | Tsubst ty ->
           compute_same ty
       | Tvariant row ->
+          let row = Btype.row_repr row in
           List.iter
             (fun (_,f) ->
               match Btype.row_field_repr f with
@@ -433,7 +434,8 @@ let compute_variance env tvl nega posi cntr ty =
               | Reither (_, tyl, _, _) ->
                   List.iter compute_same tyl
               | _ -> ())
-            (Btype.row_repr row).row_fields
+            row.row_fields;
+          compute_same row.row_more
       | Tpoly (ty, _) ->
           compute_same ty
       | Tvar | Tnil | Tlink _ | Tunivar -> ()
