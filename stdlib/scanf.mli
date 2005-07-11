@@ -181,16 +181,16 @@ val bscanf :
    For instance, [%6d] reads an integer, having at most 6 decimal digits;
    and [%4f] reads a float with at most 4 characters.
 
-   Scanning indications appear just after the string conversions [s] and
-   [\[ range \]] to delimit the end of the token. A scanning
+   Scanning indications appear just after the string conversions [s]
+   and [\[ range \]] to delimit the end of the token. A scanning
    indication is introduced by a [@] character, followed by some
    constant character [c]. It means that the string token should end
    just before the next matching [c] (which is skipped). If no [c]
    character is encountered, the string token spreads as much as
    possible. For instance, ["%s@\t"] reads a string up to the next
-   tabulation character. If a scanning indication [\@c] does not
-   follow a string conversion, it is ignored and treated as a plain
-   [c] character.
+   tabulation character or to the end of input. If a scanning
+   indication [\@c] does not follow a string conversion, it is treated
+   as a plain [c] character.
 
    Raise [Scanf.Scan_failure] if the given input does not match the format.
 

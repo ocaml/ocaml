@@ -281,21 +281,8 @@ let format_mismatch fmt1 fmt2 ib =
       "format read %S does not match specification %S" fmt2 fmt1 in
   scanf_bad_input ib (Scan_failure err);;
 
-(* Checks that the current char is indeed one of the stopper characters,
-   then skips it.
-   Be careful that if ib has no more character this procedure should
-   just do nothing (since %s@c defaults to the entire rest of the
-   buffer, when no character c can be found in the input). *)
-let ignore_stopper stp ib =
-  if stp <> [] && not (Scanning.eof ib) then
-  let ci = Scanning.peek_char ib in
-  if List.memq ci stp then Scanning.invalidate_current_char ib else
-  let sr = String.concat "" (List.map (String.make 1) stp) in
-  bad_input
-    (Printf.sprintf "looking for one of range %S, found %C" sr ci);;
-
-(* Checking that [c] is indeed in the input, then skip it.
-   In this case the character c has been explicitely specified in the
+(* Checking that [c] is indeed in the input, then skips it.
+   In this case, the character c has been explicitely specified in the
    format as being mandatory in the input; hence we should fail with
    End_of_file in case of end_of_input.
    That's why we use checked_peek_char here. *)
@@ -304,6 +291,19 @@ let check_char ib c =
   if ci != c then
     bad_input (Printf.sprintf "looking for %C, found %C" c ci) else
   Scanning.invalidate_current_char ib;;
+
+(* Checks that the current char is indeed one of the stopper characters,
+   then skips it.
+   Be careful that if ib has no more character this procedure should
+   just do nothing (since %s@c defaults to the entire rest of the
+   buffer, when no character c can be found in the input). *)
+let ignore_stoppers stps ib =
+  if stps <> [] && not (Scanning.eof ib) then
+  let ci = Scanning.peek_char ib in
+  if List.memq ci stps then Scanning.invalidate_current_char ib else
+  let sr = String.concat "" (List.map (String.make 1) stps) in
+  bad_input
+    (Printf.sprintf "looking for one of range %S, found %C" sr ci);;
 
 (* Extracting tokens from ouput token buffer. *)
 
@@ -852,7 +852,7 @@ let scan_chars_in_char_set stp char_set max ib =
         | 2 -> loop_neg2 set.[0] set.[1] max
         | 3 when set.[1] != '-' -> loop_neg3 set.[0] set.[1] set.[2] max
         | n -> loop (find_setp stp char_set) max end in
-  ignore_stopper stp ib;
+  ignore_stoppers stp ib;
   max;;
 
 let get_count t ib =
