@@ -1409,9 +1409,10 @@ let report_error ppf = function
   | Pattern_type_clash ty ->
       (* XXX Trace *)
       (* XXX Revoir message d'erreur *)
-      fprintf ppf "@[This pattern cannot match self: \
-                    it only matches values of type@ %a@]"
-      Printtyp.type_expr ty
+      Printtyp.reset_and_mark_loops ty;
+      fprintf ppf "@[%s@ %a@]"
+        "This pattern cannot match self: it only matches values of type"
+        Printtyp.type_expr ty
   | Unbound_class cl ->
       fprintf ppf "Unbound class@ %a"
       Printtyp.longident cl
