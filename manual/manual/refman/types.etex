@@ -99,7 +99,9 @@ application of the $n$-ary type constructor @typeconstr@ to the types
 
 The type expression @typexpr 'as' "'" ident@ denotes the same type as
 @typexpr@, and also binds the type variable @ident@ to type @typexpr@ both
-in @typexpr@ and in the remaining part of the type.  If the type variable
+in @typexpr@ and in other types.  In general the scope of an alias is
+the same as for a named type variable, and covers the whole enclosing
+definition. If the type variable
 @ident@ actually occurs in @typexpr@, a recursive type is created. Recursive
 types for which  there exists a recursive path that does not contain
 an object or variant type constructor are rejected, except when the
