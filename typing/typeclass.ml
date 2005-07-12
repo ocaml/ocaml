@@ -327,10 +327,11 @@ and class_signature env sty sign =
   
   (* Check that the binder is a correct type, and introduce a dummy
      method preventing self type from being closed. *)
+  let dummy_obj = Ctype.newvar () in
+  Ctype.unify env (Ctype.filter_method env dummy_method Private dummy_obj)
+    (Ctype.newty (Ttuple []));
   begin try
-    Ctype.unify env
-      (Ctype.filter_method env dummy_method Private self_type)
-      (Ctype.newty (Ttuple []))
+    Ctype.unify env self_type dummy_obj
   with Ctype.Unify _ ->
     raise(Error(sty.ptyp_loc, Pattern_type_clash self_type))
   end;
