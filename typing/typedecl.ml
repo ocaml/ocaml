@@ -87,9 +87,10 @@ let set_fixed_row env loc p decl =
   let rv =
     match tm.desc with
       Tvariant row ->
+        let row = Btype.row_repr row in
 	tm.desc <- Tvariant {row with row_fixed = true};
 	if Btype.static_row row then Btype.newgenty Tnil
-        else Btype.row_more row
+        else row.row_more
     | Tobject (ty, _) ->
 	snd (Ctype.flatten_fields ty)
     | _ ->
