@@ -7,7 +7,10 @@
 \bigskip
 
 \noindent This chapter gives an overview of the object-oriented features of
-Objective Caml.
+Objective Caml. Note that the relation between object, class and type
+in Objective Caml is very different from that in main stream
+object-oriented languages like Java or C++, so that you should not
+assume that similar keywords mean the same thing.
 
 \begin{htmlonly}
 
@@ -331,6 +334,14 @@ let p = new restricted_point 0;;
 p#move 10;;
 p#bump;;
 \end{caml_example}
+Note that this is not the same thing as private and protected methods
+in Java or C++, which can be called from other objects of the same
+class. This is a direct consequence of the independence between types
+and classes in Objective Caml: two unrelated classes may produce
+objects of the same type, and there is no way at the type level to
+ensure that an object comes from a specific class. However a possible
+encoding of friend methods is given in section \ref{ss:friends}.
+
 Private methods are inherited (they are by default visible in subclasses), 
 unless they are hidden by signature matching, as described below.
 
@@ -634,8 +645,14 @@ l#fold (fun s x -> s ^ string_of_int x ^ " ") "";;
 \end{caml_example}
 As you can see in the class type shown by the compiler, while
 polymorphic method types must be fully explicit in class definitions
-(appearing immediately after the method name), they can be left
-implicit in class descriptions.
+(appearing immediately after the method name), quantified type
+variables can be left implicit in class descriptions. Why require types
+to be explicit? The problem is that "(int -> int -> int) -> int ->
+int" would also be a valid type for "fold", and it happens to be
+incompatible with the polymorphic type we gave (automatic
+instantiation only works for toplevel types variables, not for inner
+quantifiers, where it becomes an undecidable problem.) So the compiler
+cannot choose between those two types, and must be helped.
 
 However, the type can be completely omitted in the class definition if
 it is already known, through inheritance or type constraints on self.
@@ -763,7 +780,7 @@ Consider, for example, the following class:
 \begin{caml_example}
 class c0 = object method m = {< >} method n = 0 end;;
 \end{caml_example}
-The object type "c" is an abbreviation for "<m : 'a; n : int> as 'a". 
+The object type "c0" is an abbreviation for "<m : 'a; n : int> as 'a". 
 Consider now the type declaration:
 \begin{caml_example}
 class type c1 =  object method m : c1 end;;
@@ -935,12 +952,8 @@ class bad_functional_point y =
   object 
     val x = y
     method get_x = x
-    method move d = new functional_point (x+d)
+    method move d = new bad_functional_point (x+d)
   end;;
-let p = new functional_point 7;;
-p#get_x;;
-(p#move 3)#get_x;;
-p#get_x;;
 \end{caml_example}
 While objects of either class will behave the same, objects of their
 subclasses will be different. In a subclass of the latter, the method

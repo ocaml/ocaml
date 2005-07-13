@@ -107,10 +107,10 @@ The specification of a method is written
 @'method' ['private'] method-name ':' poly-typexpr@, where
 @method-name@ is the name of the method and @poly-typexpr@ its
 expected type, possibly polymorphic.  The flag @'private'@ indicates
-whether the method can be accessed from outside the class.
+that the method cannot be accessed from outside the object.
 
-The polymorphism may be left implicit in method specifications: any
-type variable which is not bound to a class parameter and does not
+The polymorphism may be left implicit in public method specifications:
+any type variable which is not bound to a class parameter and does not
 appear elsewhere inside the class specification will be assumed to be
 polymorphic, and made explicit in the resulting method type.
 Writing an explicit polymorphic type will disable this behaviour.
@@ -299,7 +299,7 @@ the definition states so.
 
 A private method, @'method' 'private' method-name '=' expr@, is a
 method that can only be invoked on self (from other methods of the
-current class as well as of subclasses of the current class).  This
+same object, defined in this class or one of its subclasses).  This
 invocation is performed using the expression
 @value-name '#' method-name@, where @value-name@ is directly bound to
 self at the beginning of the class definition.  Private methods do

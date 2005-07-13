@@ -27,10 +27,13 @@ provide operations on these integer types.
 \section{Streams and stream parsers}
 \label{s:streams}
 
-Streams and stream parsers are no longer part of the Objective Caml
-language, but available through a Camlp4 syntax extension.  See the
-Camlp4 reference manual for more information.  Objective Caml programs
-that use streams and stream parsers can be compiled with the
+The syntax for streams and stream parsers is no longer part of the
+Objective Caml language, but available through a Camlp4 syntax
+extension.  See the Camlp4 reference manual for more information.
+Support for basic operations on streams is still available through the
+"Stream"[\moduleref{Stream}] module of the standard library.
+Objective Caml programs
+that use the stream parser syntax should be compiled with the
 "-pp camlp4o" option to "ocamlc" and "ocamlopt".  For interactive use,
 run "ocaml" and issue the \verb'#load "camlp4o.cma";;' command.
 
@@ -271,7 +274,7 @@ function component of a safe module is applied during this computation
 (which corresponds to an ill-founded recursive definition), the
 "Undefined_recursive_module" exception is raised.
 
-\section{Private row types} \label{s-recursive-modules}
+\section{Private row types} \label{s-private-rows}
 \ikwd{private\@\texttt{private}}
 
 \begin{syntax}
