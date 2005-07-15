@@ -539,12 +539,14 @@ As a convenience, "caml/mlvalues.h" defines the macros "Val_unit",
 
 \subsection{Objects}
 
-Objects are represented as zero-tagged blocks. The first field of the
-block refers to the object class and associated method suite, in a
-format that cannot easily be exploited from C. The remaining fields of
-the object contain the values of the instance variables of the object.
-Instance variables are stored in the order in which they appear in the
-class definition (taking inherited classes into account).
+Objects are represented as blocks with tag "Object_tag". The first
+field of the block refers to the object class and associated method
+suite, in a format that cannot easily be exploited from C. The second
+field contains a unique object ID, used for comparisons. The remaining
+fields of the object contain the values of the instance variables of
+the object. Instance variables are stored in the order in which they
+appear in the class definition (taking inherited classes into
+account).
 
 One may extract a public method from an object using the C function
 "caml_get_public_method" (declared in "<caml/mlvalues.h>".)
@@ -575,7 +577,7 @@ containing "hash_variant(\"VConstr\")" and field number 1 containing
 Unlike constructed values, variant values taking several arguments are
 not flattened.  That is, "`VConstr("\var{v}", "\var{v'}")" is
 represented by a block of size 2, whose field number 1 contains
-the representation of the pair "("\var{v}", "\var{v'}")", but not as a
+the representation of the pair "("\var{v}", "\var{v'}")", rather than a
 block of size 3 containing \var{v} and \var{v'} in fields 1 and 2.
 
 \section{Operations on values}
