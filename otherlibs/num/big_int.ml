@@ -210,10 +210,14 @@ let quomod_big_int bi1 bi2 =
   and size_bi2 = num_digits_big_int bi2 in
    match compare_nat (bi1.abs_value) 0 size_bi1 
                      (bi2.abs_value) 0 size_bi2 with
-      -1 -> (* 1/2 -> 0, reste 1, -1/2 -> -1, reste 1 *)
-             if bi1.sign = -1
-              then (big_int_of_int(-1), add_big_int bi2 bi1)
-              else (big_int_of_int 0, bi1)
+      -1 -> (* 1/2  -> 0, reste 1, -1/2  -> -1, reste 1 *)
+            (* 1/-2 -> 0, reste 1, -1/-2 -> 1, reste 1 *)
+             if bi1.sign >= 0 then
+               (big_int_of_int 0, bi1)
+             else if bi2.sign >= 0 then
+               (big_int_of_int(-1), add_big_int bi2 bi1)
+             else
+               (big_int_of_int 1, sub_big_int bi1 bi2)
     | 0 -> (big_int_of_int (bi1.sign * bi2.sign), zero_big_int)
     | _ -> let bi1_negatif = bi1.sign = -1 in 
            let size_q =

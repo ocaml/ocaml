@@ -237,6 +237,27 @@ failwith_test 17
 Division_by_zero
 ;;
 
+let (quotient, modulo) = 
+      quomod_big_int (big_int_of_int 10) (big_int_of_int 20) in
+ test 18 eq_big_int (quotient, big_int_of_int 0) &&
+ test 19 eq_big_int (modulo, big_int_of_int 10);;
+
+let (quotient, modulo) = 
+      quomod_big_int (big_int_of_int (-10)) (big_int_of_int 20) in
+ test 20 eq_big_int (quotient, big_int_of_int (-1)) &&
+ test 21 eq_big_int (modulo, big_int_of_int 10);;
+
+let (quotient, modulo) = 
+      quomod_big_int (big_int_of_int 10) (big_int_of_int (-20)) in
+ test 22 eq_big_int (quotient, big_int_of_int 0) &&
+ test 23 eq_big_int (modulo, big_int_of_int 10);;
+
+let (quotient, modulo) = 
+      quomod_big_int (big_int_of_int (-10)) (big_int_of_int (-20)) in
+ test 24 eq_big_int (quotient, big_int_of_int 1) &&
+ test 25 eq_big_int (modulo, big_int_of_int 10);;
+
+
 testing_function "gcd_big_int";;
 
 test 1
