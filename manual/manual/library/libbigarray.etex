@@ -153,7 +153,7 @@ Fortran arrays can be made available to Caml.
     {
       long dims[2];
       dims[0] = 100; dims[1] = 200;
-      return alloc_bigarray(BIGARRAY_NATIVEINT | BIGARRAY_C_LAYOUT,
+      return alloc_bigarray(BIGARRAY_NATIVE_INT | BIGARRAY_C_LAYOUT,
                             2, my_c_array, dims);
     }
 
