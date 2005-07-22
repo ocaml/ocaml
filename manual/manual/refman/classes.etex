@@ -29,8 +29,7 @@ class-body-type:
    |  class-path
    |  '[' typexpr {',' typexpr} ']' class-path
 ;
-\end{syntax}
-\begin{syntax}
+%\end{syntax} \begin{syntax}
 class-field-spec:
       'inherit' class-type
    |  'val' ['mutable'] inst-var-name ':' typexpr
@@ -99,6 +98,7 @@ An instance variable specification will hide any previous
 specification of an instance variable of the same name.
 
 \subsubsection*{Method specification}
+\label{sec-methspec}
 
 \ikwd{method\@\texttt{method}}
 \ikwd{private\@\texttt{private}}
@@ -112,7 +112,7 @@ that the method cannot be accessed from outside the object.
 The polymorphism may be left implicit in public method specifications:
 any type variable which is not bound to a class parameter and does not
 appear elsewhere inside the class specification will be assumed to be
-polymorphic, and made explicit in the resulting method type.
+universal, and made polymorphic in the resulting method type.
 Writing an explicit polymorphic type will disable this behaviour.
 
 Several specification for the same method must have compatible types.
@@ -171,6 +171,7 @@ class-expr:
    |  'let' ['rec'] let-binding {'and' let-binding} 'in' class-expr
    |  'object' ['(' pattern [':' typexpr] ')'] { class-field } 'end'
 ;
+\end{syntax} \begin{syntax}
 class-field:
       'inherit' class-expr ['as' value-name]
    |  'val' ['mutable'] inst-var-name [':' typexpr] '=' expr
@@ -381,7 +382,7 @@ class-definition:
 ;
 class-binding:
           ['virtual'] ['[' type-parameters ']'] class-name
-          {parameter} [':' class-type] '=' class-expr
+          {parameter} [':' class-type] \\ '=' class-expr
 ;
 type-parameters:
           "'" ident { "," "'" ident }

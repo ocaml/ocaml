@@ -69,6 +69,7 @@ expr:
   | 'assert' expr
   | 'lazy' expr
 ;
+\end{syntax} \begin{syntax}
 argument:
     expr
   | '~' label-name
@@ -76,8 +77,7 @@ argument:
   | '?' label-name
   | '?' label-name ':' expr
 ;
-\end{syntax}
-\begin{syntax}
+%\end{syntax} \begin{syntax}
 pattern-matching:
     [ '|' ] pattern ['when' expr] '->' expr
     { '|' pattern ['when' expr] '->' expr }
