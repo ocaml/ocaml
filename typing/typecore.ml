@@ -636,7 +636,27 @@ let type_format loc fmt =
   let incomplete_format fmt =
     raise (Error (loc, Incomplete_format fmt)) in
 
+  let range_closing_index fmt i =
+
+    let len = String.length fmt in    
+    let find_closing j =
+      if j >= len then incomplete_format fmt else
+      try String.index_from fmt j ']' with
+      | Not_found -> incomplete_format fmt in
+    let skip_pos j =
+      if j >= len then incomplete_format fmt else
+      match fmt.[j] with
+      | ']' -> find_closing (j + 1)
+      | c -> find_closing j in
+    let rec skip_neg j =
+      if j >= len then incomplete_format fmt else
+      match fmt.[j] with
+      | '^' -> skip_pos (j + 1)
+      | c -> skip_pos j in
+    find_closing (skip_neg (i + 1)) in
+
   let rec type_in_format fmt =
+
     let len = String.length fmt in
 
     let ty_input = newvar ()
@@ -693,7 +713,10 @@ let type_format loc fmt =
         if j >= len then incomplete_format fmt else
         match fmt.[j] with
         | '%' | '!' -> scan_format (j + 1)
-        | 's' | 'S' | '[' -> conversion j Predef.type_string
+        | 's' | 'S' -> conversion j Predef.type_string
+        | '[' ->
+          let j = range_closing_index fmt j in
+          conversion j Predef.type_string
         | 'c' | 'C' -> conversion j Predef.type_char
         | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' | 'N' ->
           conversion j Predef.type_int
