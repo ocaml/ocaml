@@ -434,7 +434,7 @@ let globalize_used_variables env bindings fixed =
           raise (Error(loc, Type_mismatch trace))
       | Not_found ->
           if fixed && (repr ty).desc = Tvar then
-            raise(Error(loc, Unbound_type_variable name));
+            raise(Error(loc, Unbound_type_variable ("'"^name)));
           let v =
             match bindings with
               Some r ->
