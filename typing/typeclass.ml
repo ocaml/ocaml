@@ -245,18 +245,22 @@ let virtual_method val_env meths self_type lab priv sty loc =
   try Ctype.unify val_env ty ty' with Ctype.Unify trace ->
     raise(Error(loc, Method_type_mismatch (lab, trace)))
 
+let delayed_meth_specs = ref []
+
 let declare_method val_env meths self_type lab priv sty loc =
   let (_, ty') =
      Ctype.filter_self_method val_env lab priv meths self_type
   in
-  let ty =
-    match sty.ptyp_desc, priv with
-      Ptyp_poly ([],sty), Public -> transl_simple_type_univars val_env sty
-    | _                  -> transl_simple_type val_env false sty
+  let unif ty =
+    try Ctype.unify val_env ty ty' with Ctype.Unify trace ->
+      raise(Error(loc, Method_type_mismatch (lab, trace)))
   in
-  begin try Ctype.unify val_env ty ty' with Ctype.Unify trace ->
-    raise(Error(loc, Method_type_mismatch (lab, trace)))
-  end
+  match sty.ptyp_desc, priv with
+    Ptyp_poly ([],sty), Public ->
+      delayed_meth_specs :=
+        lazy (unif (transl_simple_type_univars val_env sty)) ::
+        !delayed_meth_specs
+  | _ -> unif (transl_simple_type val_env false sty)
 
 let type_constraint val_env sty sty' loc =
   let ty  = transl_simple_type val_env false sty in
@@ -379,6 +383,13 @@ and class_type env scty =
       let ty = transl_simple_type env false sty in
       let cty = class_type env scty in
       Tcty_fun (l, ty, cty)
+
+let class_type env scty =
+  delayed_meth_specs := [];
+  let cty = class_type env scty in
+  List.iter Lazy.force (List.rev !delayed_meth_specs);
+  delayed_meth_specs := [];
+  cty
 
 (*******************************)
 

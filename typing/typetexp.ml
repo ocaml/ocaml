@@ -418,39 +418,34 @@ let make_fixed_univars ty =
   make_fixed_univars ty;
   Btype.unmark_type ty
 
-let globalize_used_variables env bindings fixed =
+let globalize_used_variables env fixed =
+  let r = ref [] in
   Tbl.iter
     (fun name (ty, loc) ->
       let v = new_global_var () in
       let snap = Btype.snapshot () in
       if try unify env v ty; true with _ -> Btype.backtrack snap; false
       then try
-        let ty = Tbl.find name !type_variables in
-        match bindings with
-          Some r -> r := (loc, v, ty) :: !r
-        | None   -> unify env v ty
-      with
-        Unify trace ->
-          raise (Error(loc, Type_mismatch trace))
-      | Not_found ->
-          if fixed && (repr ty).desc = Tvar then
-            raise(Error(loc, Unbound_type_variable ("'"^name)));
-          let v =
-            match bindings with
-              Some r ->
-                let v2 = new_global_var () in
-                r := (loc, v, v2) :: !r;
-                v2
-            | None -> v
-          in
-          type_variables := Tbl.add name v !type_variables)
+        r := (loc, v,  Tbl.find name !type_variables) :: !r
+      with Not_found ->
+        if fixed && (repr ty).desc = Tvar then
+          raise(Error(loc, Unbound_type_variable ("'"^name)));
+        let v2 = new_global_var () in
+        r := (loc, v, v2) :: !r;
+        type_variables := Tbl.add name v2 !type_variables)
     !used_variables;
-  used_variables := Tbl.empty
+  used_variables := Tbl.empty;
+  fun () ->
+    List.iter
+      (function (loc, t1, t2) ->
+        try unify env t1 t2 with Unify trace ->
+          raise (Error(loc, Type_mismatch trace)))
+      !r
 
 let transl_simple_type env fixed styp =
   univars := []; used_variables := Tbl.empty;
   let typ = transl_type env (if fixed then Fixed else Extensible) styp in
-  globalize_used_variables env None fixed;
+  globalize_used_variables env fixed ();
   make_fixed_univars typ;
   typ
 
@@ -466,7 +461,7 @@ let transl_simple_type_univars env styp =
       if Tbl.mem name !type_variables then
         used_variables := Tbl.add name p !used_variables)
     new_variables;
-  globalize_used_variables env None false;
+  globalize_used_variables env false ();
   end_def ();
   generalize typ;
   let univs =
@@ -483,15 +478,7 @@ let transl_simple_type_univars env styp =
 let transl_simple_type_delayed env styp =
   univars := []; used_variables := Tbl.empty;
   let typ = transl_type env Extensible styp in
-  let bindings = ref [] in
-  globalize_used_variables env (Some bindings) false;
-  (typ,
-   function () ->
-     List.iter
-       (function (loc, t1, t2) ->
-          try unify env t1 t2 with Unify trace ->
-            raise (Error(loc, Type_mismatch trace)))
-       !bindings)
+  (typ, globalize_used_variables env false)
 
 let transl_type_scheme env styp =
   reset_type_variables();
