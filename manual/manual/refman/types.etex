@@ -51,8 +51,17 @@ In data type definitions, type variables are names for the
 data type parameters. In type constraints, they represent unspecified
 types that can be instantiated by any type to satisfy the type
 constraint.  In general the scope of a named type variable is the
-whole enclosing definition; they can only be generalized when leaving
+whole enclosing definition; and they can only be generalized when leaving
 this scope.  Anonymous variables have no such restriction.
+In the following cases, the scope of named type variables is
+restricted to the type expression where they appear: 1) for universal
+(explicitly polymorphic)  type variables; 2) for type variables that
+only appear in public method specifications (as those variables will
+be made universal, as described in section~\ref{sec-methspec});
+3) for variables used as aliases, when the type they are aliased to
+would be invalid in the scope of the enclosing definition ({\it i.e.}
+when it contains free universal type variables, or locally
+defined types.)
 
 \subsubsection*{Parenthesized types}
 
@@ -119,10 +128,12 @@ variant-type:
       | '[>' [ tag-spec ] { '|' tag-spec } ']'
       | '[<' [ '|' ] tag-spec-full { '|' tag-spec-full } [ '>' {{ '`'tag-name }} ] ']'
 ;
+%\end{syntax} \begin{syntax}
 tag-spec:
         '`'tag-name [ "of" typexpr ]
       | typexpr
 ;
+\end{syntax} \begin{syntax}
 tag-spec-full:
         '`'tag-name [ "of" typexpr ] { '&' typexpr }
       | typexpr
