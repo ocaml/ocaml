@@ -27,7 +27,7 @@ let bad_conversion fmt i c =
 
 let incomplete_format fmt =
   invalid_arg
-    ("printf: premature end of format string ``" ^ fmt ^ "''")
+    ("printf: premature end of format string ``" ^ fmt ^ "''");;
 
 (* Parses a format to return the specified length and the padding direction. *)
 let parse_format fmt =
@@ -116,16 +116,17 @@ let sub_format_for_printf = sub_format incomplete_format bad_conversion;;
 
 (* Returns a string that summarizes the typing information that a given
    format string contains.
-   It also checks the well-formedness of the string format.
+   It also checks the well-formedness of the format string.
    For instance, [summarize_format_type "A number %d\n"] is "%i". *)
 let summarize_format_type fmt =
   let len = String.length fmt in
   let b = Buffer.create len in
-  let add i c = Buffer.add_char b '%'; Buffer.add_char b c; i + 1 in
+  let add i c = Buffer.add_char b c; i + 1 in
+  let add_conv i c = Buffer.add_char b '%'; add i c in
   let rec scan_flags i =
     if i >= len then incomplete_format fmt else
     match String.unsafe_get fmt i with
-    | '*' -> scan_flags (add i '*')
+    | '*' -> scan_flags (add_conv i '*')
     | '#' | '-' | ' ' | '+' -> scan_flags (succ i)
     | '_' -> Buffer.add_char b '_'; scan_flags (i + 1)
     | '0'..'9'
@@ -135,20 +136,20 @@ let summarize_format_type fmt =
     if i >= len then incomplete_format fmt else
     match String.unsafe_get fmt i with
     | '%' | '!' -> succ i
-    | 's' | 'S' | '[' -> add i 's'
+    | 's' | 'S' | '[' -> add_conv i 's'
     | 'c' | 'C' -> add i 'c'
-    | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' | 'N' -> add i 'i'
-    | 'f' | 'e' | 'E' | 'g' | 'G' | 'F' -> add i 'f'
-    | 'B' | 'b' -> add i 'B'
-    | 'a' | 't' as conv -> add i conv
+    | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' | 'N' -> add_conv i 'i'
+    | 'f' | 'e' | 'E' | 'g' | 'G' | 'F' -> add_conv i 'f'
+    | 'B' | 'b' -> add_conv i 'B'
+    | 'a' | 't' as conv -> add_conv i conv
     | 'l' | 'n' | 'L' as conv ->
         let j = i + 1 in
-        if j >= len then add i 'i' else begin
+        if j >= len then add_conv i 'i' else begin
           match fmt.[j] with
-          | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' -> add (add i conv) 'i'
-          | c -> add i 'i' end
-    | '{' | '(' as conv -> add i conv
-    | '}' | ')' as conv -> add i conv
+          | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' -> add (add_conv i conv) 'i'
+          | c -> add_conv i 'i' end
+    | '{' | '(' as conv -> add_conv i conv
+    | '}' | ')' as conv -> add_conv i conv
     | conv -> bad_conversion fmt i conv in
   let lim = len - 1 in
   let rec loop i =
@@ -273,7 +274,7 @@ let rec kfprintf k chan fmt =
     if i >= len then Obj.magic (k chan) else
     match String.unsafe_get fmt i with
     | '%' -> scan_format fmt i cont_s cont_a cont_t cont_f cont_m
-    |  c  -> output_char chan c; doprn (succ i)
+    | c -> output_char chan c; doprn (succ i)
   and cont_s s i =
     output_string chan s; doprn i
   and cont_a printer arg i =
@@ -292,25 +293,25 @@ let fprintf chan fmt = kfprintf (fun _ -> ()) chan fmt
 let printf fmt = fprintf stdout fmt
 let eprintf fmt = fprintf stderr fmt
 
-let rec ksprintf kont fmt =
+let rec ksprintf k fmt =
   let fmt = string_of_format fmt in
   let len = String.length fmt in
-  let dest = Buffer.create (len + 16) in
+  let dst = Buffer.create (len + 16) in
   let rec doprn i =
     if i >= len then begin
-      let res = Buffer.contents dest in
-      Buffer.clear dest; (* just in case ksprintf is partially applied *)
-      Obj.magic (kont res)
+      let res = Buffer.contents dst in
+      Buffer.clear dst; (* just in case ksprintf is partially applied *)
+      Obj.magic (k res)
     end else
     match String.unsafe_get fmt i with
     | '%' -> scan_format fmt i cont_s cont_a cont_t cont_f cont_m
-    |  c  -> Buffer.add_char dest c; doprn (succ i)
+    | c -> Buffer.add_char dst c; doprn (succ i)
   and cont_s s i =
-    Buffer.add_string dest s; doprn i
+    Buffer.add_string dst s; doprn i
   and cont_a printer arg i =
-    Buffer.add_string dest (printer () arg); doprn i
+    Buffer.add_string dst (printer () arg); doprn i
   and cont_t printer i =
-    Buffer.add_string dest (printer ()); doprn i
+    Buffer.add_string dst (printer ()); doprn i
   and cont_f i = doprn i
   and cont_m sfmt i =
     ksprintf (fun res -> Obj.magic (cont_s res i)) sfmt in
@@ -321,22 +322,22 @@ let sprintf fmt = ksprintf (fun x -> x) fmt
 
 let kprintf = ksprintf
 
-let rec bprintf dest fmt =
+let rec bprintf dst fmt =
   let fmt = string_of_format fmt in
   let len = String.length fmt in
   let rec doprn i =
     if i >= len then Obj.magic () else
     match String.unsafe_get fmt i with
     | '%' -> scan_format fmt i cont_s cont_a cont_t cont_f cont_m
-    |  c  -> Buffer.add_char dest c; doprn (succ i)
+    | c -> Buffer.add_char dst c; doprn (succ i)
   and cont_s s i =
-    Buffer.add_string dest s; doprn i
+    Buffer.add_string dst s; doprn i
   and cont_a printer arg i =
-    printer dest arg; doprn i
+    printer dst arg; doprn i
   and cont_t printer i =
-    printer dest; doprn i
+    printer dst; doprn i
   and cont_f i = doprn i
   and cont_m sfmt i =
-    bprintf dest sfmt; doprn i in
+    bprintf dst sfmt; doprn i in
 
   doprn 0

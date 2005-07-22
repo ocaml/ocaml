@@ -118,10 +118,17 @@ val bprintf : Buffer.t -> ('a, Buffer.t, unit) format -> 'a
    append the formatted arguments to the given extensible buffer
    (see module {!Buffer}). *)
 
-val kprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b
-(** [kprintf k format arguments] is the same as [sprintf format arguments],
-    except that the resulting string is passed as argument to [k]; the
-    result of [k] is then returned as the result of [kprintf]. *)
+val kfprintf : (out_channel -> 'a) -> out_channel ->
+              ('b, out_channel, unit, 'a) format4 -> 'b;;
+(** Same as [fprintf], but instead of returning immediately,
+   passes the out channel to its first argument at the end of printing. *)
+
+val ksprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b;;
+(** Same as [sprintf] above, but instead of returning the string,
+   passes it to the first argument. *)
+
+val kprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b;;
+(** A deprecated synonym for [ksprintf]. *)
 
 (**/**)
 
