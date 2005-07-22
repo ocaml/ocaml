@@ -20,7 +20,7 @@
    at specified break hints, and indents lines according to the box
    structure.
 
-   For a gentle introduction to the basics of prety-printing using
+   For a gentle introduction to the basics of pretty-printing using
    [Format], read the FAQ at [http://caml.inria.fr/FAQ/format-eng.html]. 
 
    Warning: the material output by the following functions is delayed
@@ -116,14 +116,14 @@ val print_bool : bool -> unit;;
 
 val print_space : unit -> unit;;
 (** [print_space ()] is used to separate items (typically to print
-   a space between two words). 
+   a space between two words).
    It indicates that the line may be split at this
    point. It either prints one space or splits the line.
    It is equivalent to [print_break 1 0]. *)
 
 val print_cut : unit -> unit;;
 (** [print_cut ()] is used to mark a good break position.
-   It indicates that the line may be split at this 
+   It indicates that the line may be split at this
    point. It either prints nothing or splits the line.
    This allows line splitting at the current
    point, without printing spaces or adding indentation.
@@ -134,7 +134,7 @@ val print_break : int -> int -> unit;;
    [print_break nspaces offset] indicates that the line may
    be split (a newline character is printed) at this point,
    if the contents of the current box does not fit on the
-   current line. 
+   current line.
    If the line is split at that point, [offset] is added to
    the current indentation. If the line is not split,
    [nspaces] spaces are printed. *)
@@ -659,4 +659,4 @@ val ksprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b;;
    passes it to the first argument. *)
 
 val kprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b;;
-(** A deprecated synonym for ksprintf. *)
+(** A deprecated synonym for [ksprintf]. *)
