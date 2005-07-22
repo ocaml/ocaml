@@ -957,6 +957,7 @@ test (test50 ());;
 
 (* Simple tests may also fail! *)
 let test51 () =
+ sscanf "Hello" "%s" id = "Hello" &&
  sscanf "Hello\n" "%s\n" id = "Hello" &&
  sscanf "Hello\n" "%s%s\n" (fun s1 s2 ->
    s1 = "Hello" && s2 = "") &&
@@ -970,6 +971,27 @@ let test51 () =
    s1 = "Hello " && s2 = "");;
 
 test (test51 ());;
+
+(* Tests that indeed %s@c works properly.
+   Also tests the difference between \n and @\n.
+   In particular, tests that if no c character can be found in the
+   input, then the token obtained for %s@c spreads to the end of
+   input. *)
+let test52 () =
+ sscanf "Hello\n" "%s@\n" id = "Hello" &&
+ sscanf "Hello" "%s@\n" id = "Hello" &&
+ sscanf "Hello" "%s%s@\n" (fun s1 s2 ->
+   s1 = "Hello" && s2 = "") &&
+ sscanf "Hello\nWorld" "%s@\n%s%!" (fun s1 s2 ->
+   s1 = "Hello" && s2 = "World") &&
+ sscanf "Hello\nWorld!" "%s@\n%s@\n" (fun s1 s2 ->
+   s1 = "Hello" && s2 = "World!") &&
+ sscanf "Hello\n" "%s@\n%s" (fun s1 s2 ->
+   s1 = "Hello" && s2 = "") &&
+ sscanf "Hello \n" "%s%s@\n" (fun s1 s2 ->
+   s1 = "Hello" && s2 = " ");;
+
+test (test52 ());;
 
 (*******
 
