@@ -25,6 +25,7 @@
 #include "misc.h"
 #include "mlvalues.h"
 #include "fail.h"
+#include "osdeps.h"
 #include "signals.h"
 #include "stack.h"
 #include "sys.h"
@@ -40,12 +41,6 @@ extern char * caml_code_area_start, * caml_code_area_end;
 #define In_code_area(pc) \
   ((char *)(pc) >= caml_code_area_start && (char *)(pc) <= caml_code_area_end)
 
-#ifdef _WIN32
-typedef void (*sighandler)(int sig);
-extern sighandler caml_win32_signal(int sig, sighandler action);
-#define signal(sig,act) caml_win32_signal(sig,act)
-#endif
-
 volatile int caml_async_signal_mode = 0;
 volatile int caml_pending_signal = 0;
 volatile int caml_force_major_slice = 0;
@@ -60,15 +55,18 @@ int caml_rev_convert_signal_number(int signo);
 void caml_execute_signal(int signal_number, int in_signal_handler)
 {
   value res;
+#ifdef POSIX_SIGNALS
   sigset_t sigs;
   /* Block the signal before executing the handler, and record in sigs
      the original signal mask */
   sigemptyset(&sigs);
   sigaddset(&sigs, signal_number);
   sigprocmask(SIG_BLOCK, &sigs, &sigs);
+#endif
   res = caml_callback_exn(
            Field(caml_signal_handlers, signal_number),
            Val_int(caml_rev_convert_signal_number(signal_number)));
+#ifdef POSIX_SIGNALS
   if (! in_signal_handler) {
     /* Restore the original signal mask */
     sigprocmask(SIG_SETMASK, &sigs, NULL);
@@ -77,6 +75,7 @@ void caml_execute_signal(int signal_number, int in_signal_handler)
     sigdelset(&sigs, signal_number);
     sigprocmask(SIG_SETMASK, &sigs, NULL);
   }
+#endif
   if (Is_exception_result(res)) caml_raise(Extract_exception(res));
 }
 
@@ -148,6 +147,9 @@ void caml_leave_blocking_section(void)
 
 DECLARE_SIGNAL_HANDLER(handle_signal)
 {
+#if !defined(POSIX_SIGNALS) && !defined(BSD_SIGNALS)
+  signal(sig, handle_signal);
+#endif
   if (caml_async_signal_mode) {
     /* We are interrupting a C function blocked on I/O.
        Callback the Caml code immediately. */
@@ -260,16 +262,24 @@ int caml_rev_convert_signal_number(int signo)
 #define NSIG 64
 #endif
 
+typedef void (*signal_handler)(int signo);
+
 value caml_install_signal_handler(value signal_number, value action) /* ML */
 {
   CAMLparam2 (signal_number, action);
   int sig;
+  signal_handler oldact;
+#ifdef POSIX_SIGNALS
   struct sigaction sigact, oldsigact;
+#else
+  signal_handler act;
+#endif
   CAMLlocal1 (res);
 
   sig = caml_convert_signal_number(Int_val(signal_number));
   if (sig < 0 || sig >= NSIG) 
     caml_invalid_argument("Sys.signal: unavailable signal");
+#ifdef POSIX_SIGNALS
   switch(action) {
   case Val_int(0):              /* Signal_default */
     sigact.sa_handler = SIG_DFL;
@@ -285,11 +295,27 @@ value caml_install_signal_handler(value signal_number, value action) /* ML */
   }
   sigemptyset(&sigact.sa_mask);
   if (sigaction(sig, &sigact, &oldsigact) == -1) caml_sys_error(NO_ARG);
-  if (oldsigact.sa_handler == (void (*)(int)) handle_signal) {
+  oldact = oldsigact.sa_handler;
+#else
+  switch(action) {
+  case Val_int(0):              /* Signal_default */
+    act = SIG_DFL;
+    break;
+  case Val_int(1):              /* Signal_ignore */
+    act = SIG_IGN;
+    break;
+  default:                      /* Signal_handle */
+    act = handle_signal;
+    break;
+  }
+  oldact = signal(sig, act);
+  if (oldact == SIG_ERR) caml_sys_error(NO_ARG);
+#endif
+  if (oldact == (signal_handler) handle_signal) {
     res = caml_alloc_small(1, 0);          /* Signal_handle */
     Field(res, 0) = Field(caml_signal_handlers, sig);
   }
-  else if (oldsigact.sa_handler == SIG_IGN)
+  else if (oldact == SIG_IGN)
     res = Val_int(1);           /* Signal_ignore */
   else
     res = Val_int(0);           /* Signal_default */
