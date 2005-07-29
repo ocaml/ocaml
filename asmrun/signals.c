@@ -27,6 +27,8 @@
 #include "fail.h"
 #include "osdeps.h"
 #include "signals.h"
+#include "signals_machdep.h"
+#include "signals_osdep.h"
 #include "stack.h"
 #include "sys.h"
 #ifdef HAS_STACK_OVERFLOW_DETECTION
@@ -34,19 +36,53 @@
 #include <sys/resource.h>
 #endif
 
-#include "signals_osdep.h"
+#ifndef NSIG
+#define NSIG 64
+#endif
+
+#ifdef _WIN32
+typedef void (*sighandler)(int sig);
+extern sighandler caml_win32_signal(int sig, sighandler action);
+#define signal(sig,act) caml_win32_signal(sig,act)
+#endif
 
 extern char * caml_code_area_start, * caml_code_area_end;
 
 #define In_code_area(pc) \
-  ((char *)(pc) >= caml_code_area_start && (char *)(pc) <= caml_code_area_end)
+  ((char *)(pc) >= caml_code_area_start && \
+   (char *)(pc) <= caml_code_area_end)
 
-volatile int caml_async_signal_mode = 0;
-volatile int caml_pending_signal = 0;
+volatile long caml_pending_signals[NSIG];
 volatile int caml_force_major_slice = 0;
 value caml_signal_handlers = 0;
-void (*caml_enter_blocking_section_hook)() = NULL;
-void (*caml_leave_blocking_section_hook)() = NULL;
+
+static long volatile caml_async_signal_mode = 0;
+
+static void caml_enter_blocking_section_default(void)
+{
+  Assert (caml_async_signal_mode == 0);
+  caml_async_signal_mode = 1;
+}
+
+static void caml_leave_blocking_section_default(void)
+{
+  Assert (caml_async_signal_mode == 1);
+  caml_async_signal_mode = 0;
+}
+
+static int caml_try_leave_blocking_section_default(void)
+{
+  long res;
+  Read_and_clear(res, caml_async_signal_mode);
+  return res;
+}
+
+CAMLexport void (*caml_enter_blocking_section_hook)(void) =
+   caml_enter_blocking_section_default;
+CAMLexport void (*caml_leave_blocking_section_hook)(void) =
+   caml_leave_blocking_section_default;
+CAMLexport int (*caml_try_leave_blocking_section_hook)(void) =
+   caml_try_leave_blocking_section_default;
 
 int caml_rev_convert_signal_number(int signo);
 
@@ -90,17 +126,17 @@ void caml_execute_signal(int signal_number, int in_signal_handler)
 
 void caml_garbage_collection(void)
 {
-  int sig;
+  int signal_number;
+  long signal_state;
 
-  if (caml_young_ptr < caml_young_start || caml_force_major_slice){
+  caml_young_limit = caml_young_start;
+  if (caml_young_ptr < caml_young_start || caml_force_major_slice) {
     caml_minor_collection();
   }
-  /* If a signal arrives between the following two instructions,
-     it will be lost. */
-  sig = caml_pending_signal;
-  caml_pending_signal = 0;
-  caml_young_limit = caml_young_start;
-  if (sig) caml_execute_signal(sig, 0);
+  for (signal_number = 0; signal_number < NSIG; signal_number++) {
+    Read_and_clear(signal_state, caml_pending_signals[signal_number]);
+    if (signal_state) caml_execute_signal(signal_number, 0);
+  }
 }
 
 /* Trigger a garbage collection as soon as possible */
@@ -117,32 +153,42 @@ void caml_urge_major_slice (void)
 
 void caml_enter_blocking_section(void)
 {
-  int sig;
+  int signal_number;
+  long signal_state, pending;
 
   while (1){
-    Assert (!caml_async_signal_mode);
-    /* If a signal arrives between the next two instructions,
-       it will be lost. */
-    sig = caml_pending_signal;
-    caml_pending_signal = 0;
-    caml_young_limit = caml_young_start;
-    if (sig) caml_execute_signal(sig, 0);
-    caml_async_signal_mode = 1;
-    if (!caml_pending_signal) break;
-    caml_async_signal_mode = 0;
-  }
-  if (caml_enter_blocking_section_hook != NULL){
-    caml_enter_blocking_section_hook();
+    /* Process all pending signals now */
+    for (signal_number = 0; signal_number < NSIG; signal_number++) {
+      Read_and_clear(signal_state, caml_pending_signals[signal_number]);
+      if (signal_state) caml_execute_signal(signal_number, 0);
+    }
+    caml_enter_blocking_section_hook ();
+    /* Check again for pending signals. */
+    pending = 0;
+    for (signal_number = 0; signal_number < NSIG; signal_number++)
+      pending |= caml_pending_signals[signal_number];
+    /* If none, done; otherwise, try again */
+    if (!pending) break;
+    caml_leave_blocking_section_hook ();
   }
 }
 
 void caml_leave_blocking_section(void)
 {
-  if (caml_leave_blocking_section_hook != NULL){
-    caml_leave_blocking_section_hook();
+#ifdef _WIN32
+  int signal_number;
+  long signal_state;
+  /* Under Win32, asynchronous signals such as ctrl-C are not processed
+     immediately (see ctrl_handler in win32.c), but simply set
+     [caml_pending_signal] and let the system call run to completion.
+     Hence, test [caml_pending_signal] here and act upon it, before we get
+     a chance to process the result of the system call. */
+  for (signal_number = 0; signal_number < NSIG; signal_number++) {
+    Read_and_clear(signal_state, caml_pending_signals[signal_number]);
+    if (signal_state) caml_execute_signal(signal_number, 0);
   }
-  Assert(caml_async_signal_mode);
-  caml_async_signal_mode = 0;
+#endif
+  caml_leave_blocking_section_hook ();
 }
 
 DECLARE_SIGNAL_HANDLER(handle_signal)
@@ -150,17 +196,17 @@ DECLARE_SIGNAL_HANDLER(handle_signal)
 #if !defined(POSIX_SIGNALS) && !defined(BSD_SIGNALS)
   signal(sig, handle_signal);
 #endif
-  if (caml_async_signal_mode) {
+  if (sig < 0 || sig >= NSIG) return;
+  if (caml_try_leave_blocking_section_hook ()) {
     /* We are interrupting a C function blocked on I/O.
        Callback the Caml code immediately. */
-    caml_leave_blocking_section();
     caml_execute_signal(sig, 1);
-    caml_enter_blocking_section();
+    caml_enter_blocking_section_hook();
   } else {
     /* We can't execute the signal code immediately.
        Instead, we remember the signal and play with the allocation limit
        so that the next allocation will trigger a garbage collection. */
-    caml_pending_signal = sig;
+    caml_pending_signals[sig] = 1;
     caml_young_limit = caml_young_end;
     /* Some ports cache [caml_young_limit] in a register.
        Use the signal context to modify that register too, but only if
@@ -257,10 +303,6 @@ int caml_rev_convert_signal_number(int signo)
     if (signo == posix_signals[i]) return -i - 1;
   return signo;
 }
-
-#ifndef NSIG
-#define NSIG 64
-#endif
 
 typedef void (*signal_handler)(int signo);
 

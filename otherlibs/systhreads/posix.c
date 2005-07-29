@@ -96,21 +96,17 @@ struct caml_thread_struct {
 
 typedef struct caml_thread_struct * caml_thread_t;
 
+/* The master mutex that protects the Caml runtime system. */
+static pthread_mutex_t caml_runtime_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 /* The descriptor for the currently executing thread */
 static caml_thread_t curr_thread = NULL;
-
-/* Track whether one thread is running Caml code.  There can be
-   at most one such thread at any time. */
-static volatile int caml_runtime_busy = 1;
 
 /* Number of threads waiting to run Caml code. */
 static volatile int caml_runtime_waiters = 0;
 
-/* Mutex that protects the two variables above. */
-static pthread_mutex_t caml_runtime_mutex = PTHREAD_MUTEX_INITIALIZER;
-
-/* Condition signaled when caml_runtime_busy becomes 0 */
-static pthread_cond_t caml_runtime_is_free = PTHREAD_COND_INITIALIZER;
+/* Mutex that protects the variable above. */
+static pthread_mutex_t caml_runtime_waiters_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* The key used for storing the thread descriptor in the specific data
    of the corresponding Posix thread. */
@@ -168,13 +164,8 @@ static void caml_thread_scan_roots(scanning_action action)
 
 /* Hooks for enter_blocking_section and leave_blocking_section */
 
-static void (*prev_enter_blocking_section_hook) () = NULL;
-static void (*prev_leave_blocking_section_hook) () = NULL;
-
 static void caml_thread_enter_blocking_section(void)
 {
-  if (prev_enter_blocking_section_hook != NULL)
-    (*prev_enter_blocking_section_hook)();
   /* Save the stack-related global variables in the thread descriptor
      of the current thread */
 #ifdef NATIVE_CODE
@@ -196,23 +187,11 @@ static void caml_thread_enter_blocking_section(void)
   curr_thread->backtrace_last_exn = backtrace_last_exn;
 #endif
   /* Tell other threads that the runtime is free */
-  pthread_mutex_lock(&caml_runtime_mutex);
-  caml_runtime_busy = 0;
   pthread_mutex_unlock(&caml_runtime_mutex);
-  pthread_cond_signal(&caml_runtime_is_free);
 }
 
-static void caml_thread_leave_blocking_section(void)
+static void caml_thread_reenter_runtime(void)
 {
-  /* Wait until the runtime is free */
-  pthread_mutex_lock(&caml_runtime_mutex);
-  while (caml_runtime_busy) {
-    caml_runtime_waiters++;
-    pthread_cond_wait(&caml_runtime_is_free, &caml_runtime_mutex);
-    caml_runtime_waiters--;
-  }
-  caml_runtime_busy = 1;
-  pthread_mutex_unlock(&caml_runtime_mutex);
   /* Update curr_thread to point to the thread descriptor corresponding
      to the thread currently executing */
   curr_thread = pthread_getspecific(thread_descriptor_key);
@@ -235,8 +214,31 @@ static void caml_thread_leave_blocking_section(void)
   backtrace_buffer = curr_thread->backtrace_buffer;
   backtrace_last_exn = curr_thread->backtrace_last_exn;
 #endif
-  if (prev_leave_blocking_section_hook != NULL)
-    (*prev_leave_blocking_section_hook)();
+}
+
+static void caml_thread_leave_blocking_section(void)
+{
+  /* Say we're waiting */
+  pthread_mutex_lock(&caml_runtime_waiters_mutex);
+  caml_runtime_waiters++;
+  pthread_mutex_unlock(&caml_runtime_waiters_mutex);
+  /* Wait until the runtime is free */
+  pthread_mutex_lock(&caml_runtime_mutex);
+  /* Say we're no longer waiting */
+  pthread_mutex_lock(&caml_runtime_waiters_mutex);
+  caml_runtime_waiters--;
+  pthread_mutex_unlock(&caml_runtime_waiters_mutex);
+  /* Reenter runtime */
+  caml_thread_reenter_runtime();
+}
+
+static int caml_thread_try_leave_blocking_section(void)
+{
+  /* See if the runtime is free */
+  if (pthread_mutex_trylock(&caml_runtime_mutex) != 0) return 0;
+  /* If so, reenter runtime */
+  caml_thread_reenter_runtime();
+  return 1;
 }
 
 /* Hooks for I/O locking */
@@ -303,7 +305,7 @@ static void * caml_thread_tick(void * arg)
     select(0, NULL, NULL, NULL, &timeout);
     /* This signal should never cause a callback, so don't go through
        handle_signal(), tweak the global variable directly. */
-    if (pending_signal == 0) pending_signal = SIGVTALRM;
+    pending_signals[SIGVTALRM] = 1;
 #ifdef NATIVE_CODE
     young_limit = young_end;
 #else
@@ -367,10 +369,9 @@ value caml_thread_initialize(value unit)   /* ML */
     /* Set up the hooks */
     prev_scan_roots_hook = scan_roots_hook;
     scan_roots_hook = caml_thread_scan_roots;
-    prev_enter_blocking_section_hook = enter_blocking_section_hook;
     enter_blocking_section_hook = caml_thread_enter_blocking_section;
-    prev_leave_blocking_section_hook = leave_blocking_section_hook;
     leave_blocking_section_hook = caml_thread_leave_blocking_section;
+    try_leave_blocking_section_hook = caml_thread_try_leave_blocking_section;
 #ifdef NATIVE_CODE
     caml_termination_hook = pthread_exit;
 #endif
@@ -400,11 +401,7 @@ static void caml_thread_stop(void)
   th->next->prev = th->prev;
   th->prev->next = th->next;
   /* Release the runtime system */
-  async_signal_mode = 1;
-  pthread_mutex_lock(&caml_runtime_mutex);
-  caml_runtime_busy = 0;
   pthread_mutex_unlock(&caml_runtime_mutex);
-  pthread_cond_signal(&caml_runtime_is_free);
 #ifndef NATIVE_CODE
   /* Free the memory resources */
   stat_free(th->stack_low);

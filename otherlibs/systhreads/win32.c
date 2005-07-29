@@ -148,13 +148,8 @@ static void caml_thread_scan_roots(scanning_action action)
 
 /* Hooks for enter_blocking_section and leave_blocking_section */
 
-static void (*prev_enter_blocking_section_hook) () = NULL;
-static void (*prev_leave_blocking_section_hook) () = NULL;
-
 static void caml_thread_enter_blocking_section(void)
 {
-  if (prev_enter_blocking_section_hook != NULL)
-    (*prev_enter_blocking_section_hook)();
   /* Save the stack-related global variables in the thread descriptor
      of the current thread */
 #ifdef NATIVE_CODE
@@ -179,10 +174,8 @@ static void caml_thread_enter_blocking_section(void)
   ReleaseMutex(caml_mutex);
 }
 
-static void caml_thread_leave_blocking_section(void)
+static void caml_thread_reenter_runtime(void)
 {
-  /* Re-acquire the global mutex */
-  WaitForSingleObject(caml_mutex, INFINITE);
   /* Update curr_thread to point to the thread descriptor corresponding
      to the thread currently executing */
   curr_thread = TlsGetValue(thread_descriptor_key);
@@ -205,8 +198,19 @@ static void caml_thread_leave_blocking_section(void)
   backtrace_buffer = curr_thread->backtrace_buffer;
   backtrace_last_exn = curr_thread->backtrace_last_exn;
 #endif
-  if (prev_leave_blocking_section_hook != NULL)
-    (*prev_leave_blocking_section_hook)();
+}
+
+static void caml_thread_leave_blocking_section(void)
+{
+  WaitForSingleObject(caml_mutex, INFINITE);
+  caml_thread_reenter_runtime();
+}
+
+static int caml_thread_try_leave_blocking_section(void)
+{
+  if (WaitForSingleObject(caml_mutex, 0) != WAIT_OBJECT_0) return 0;
+  caml_thread_reenter_runtime();
+  return 1;
 }
 
 /* Hooks for I/O locking */
@@ -255,7 +259,7 @@ static void caml_thread_tick(void * arg)
 {
   while(1) {
     Sleep(Thread_timeout);
-    pending_signal = SIGTIMER;
+    pending_signals[SIGTIMER] = 1;
 #ifdef NATIVE_CODE
     young_limit = young_end;
 #else
@@ -315,10 +319,9 @@ CAMLprim value caml_thread_initialize(value unit)
     /* Set up the hooks */
     prev_scan_roots_hook = scan_roots_hook;
     scan_roots_hook = caml_thread_scan_roots;
-    prev_enter_blocking_section_hook = enter_blocking_section_hook;
     enter_blocking_section_hook = caml_thread_enter_blocking_section;
-    prev_leave_blocking_section_hook = leave_blocking_section_hook;
     leave_blocking_section_hook = caml_thread_leave_blocking_section;
+    try_leave_blocking_section_hook = caml_thread_try_leave_blocking_section;
     caml_channel_mutex_free = caml_io_mutex_free;
     caml_channel_mutex_lock = caml_io_mutex_lock;
     caml_channel_mutex_unlock = caml_io_mutex_unlock;
@@ -351,7 +354,6 @@ static void caml_thread_start(void * arg)
   th->next->prev = th->prev;
   th->prev->next = th->next;
   /* Release the main mutex (forever) */
-  async_signal_mode = 1;
   ReleaseMutex(caml_mutex);
 #ifndef NATIVE_CODE
   /* Free the memory resources */

@@ -24,10 +24,9 @@
 
 /* <private> */
 extern value caml_signal_handlers;
-CAMLextern int volatile caml_pending_signal;
+CAMLextern long volatile caml_pending_signals[];
 CAMLextern int volatile caml_something_to_do;
 extern int volatile caml_force_major_slice;
-CAMLextern int volatile caml_async_signal_mode;
 /* </private> */
 
 CAMLextern void caml_enter_blocking_section (void);
@@ -42,6 +41,7 @@ void caml_process_event(void);
 
 CAMLextern void (*caml_enter_blocking_section_hook)(void);
 CAMLextern void (*caml_leave_blocking_section_hook)(void);
+CAMLextern int (*caml_try_leave_blocking_section_hook)(void);
 CAMLextern void (* volatile caml_async_action_hook)(void);
 /* </private> */
 
