@@ -35,9 +35,9 @@
 #elif defined(__GNUC__) && defined(__ppc__)
 
 #define Read_and_clear(dst,src) \
-  asm("0: lwarx %0, 0, %1;" \
-      "   stwcx %2, 0, %1;" \
-      "   bne- 0b" \
+  asm("0: lwarx %0, 0, %1\n\t" \
+      "stwcx. %2, 0, %1\n\t" \
+      "bne- 0b" \
       : "=&r" (dst) \
       : "r" (&(src)), "r" (0) \
       : "cr0", "memory")
