@@ -358,6 +358,11 @@ type bad2 = {mutable bad2 : 'a. 'a option ref option};;
 let bad2 = {bad2 = None};;
 bad2.bad2 <- Some (ref None);;
 
+(* Type variable scope *)
+
+let f (x: <m:'a.<p: 'a * 'b> as 'b>) (y : 'b) = ();;
+let f (x: <m:'a. 'a * (<p:int*'b> as 'b)>) (y : 'b) = ();;
+
 (* PR#1374 *)
 
 type 'a t= [`A of 'a];;

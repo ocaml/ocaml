@@ -1,4 +1,4 @@
-        Objective Caml version 3.09+dev14 (2005-01-21)
+        Objective Caml version 3.09+dev25 (2005-07-22)
 
 #   * * *       #   type 'a t = { t : 'a; }
 # type 'a fold = { fold : 'b. f:('b -> 'a -> 'b) -> init:'b -> 'b; }
@@ -229,6 +229,10 @@ This field value has type 'a option ref which is less general than
 # Characters 13-28:
 This field value has type 'a option ref option which is less general than
   'b. 'b option ref option
+#       val f : < m : 'a. < p : 'a * 'b > as 'b > -> 'c -> unit = <fun>
+# val f :
+  < m : 'a. 'a * (< p : int * 'b > as 'b) > ->
+  (< p : int * 'c > as 'c) -> unit = <fun>
 #       type 'a t = [ `A of 'a ]
 #       class c : object method m : ([> 'a t ] as 'a) -> unit end
 #         class c : object method m : ([> 'a t ] as 'a) -> unit end
@@ -288,20 +292,20 @@ Here is an example of a value that is not matched:
 (_, 0)
 Characters 21-24:
 Warning U: this match case is unused.
-- : [ `B ] * int -> int = <fun>
+- : [< `B ] * int -> int = <fun>
 # Characters 0-29:
 Warning P: this pattern-matching is not exhaustive.
 Here is an example of a value that is not matched:
 (0, _)
 Characters 21-24:
 Warning U: this match case is unused.
-- : int * [ `B ] -> int = <fun>
+- : int * [< `B ] -> int = <fun>
 #       Characters 69-135:
 Constraints are not satisfied in this type.
 Type
 ([> `B of 'a ], 'a) b as 'a
 should be an instance of
-(('b, [> `A of 'b ] as 'c) a as 'b, 'c) b
+(('b, [> `A of ('d, 'c) a as 'd ] as 'c) a as 'b, 'c) b
 #                             class type ['a, 'b] a =
   object
     constraint 'a = ('a, 'b) #a
