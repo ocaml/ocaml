@@ -4,6 +4,12 @@ TODO:
  - utilisation nouvelles infos de Xavier: "début de rec", etc.
 
 =====
+Next release:
+ - some improvements in html display
+ - better error messages for misplaced variant constructors comments
+ - some fixes in man page generation (escaping characters)
+
+=====
 Release 3.08.2:
  - fix: error "Lexing: empty token" (PR#3173)
 
@@ -47,16 +53,16 @@ Release 3.08.0:
  - new module odoc_print, will work when Format.pp_print_flush is fixed
  - odoc_html: use buffers instead of string concatenation
  - odoc_man: use buffers instead of string concatenation
- - odoc_cross.ml: use hash tables modified on the fly to resolve 
+ - odoc_cross.ml: use hash tables modified on the fly to resolve
     (module | module type | exception) name aliases
  - odoc_html: replace some calls to Str. by specific functions on strings
  - odoc_cross.ml: use a Map to associate a complete name to
     the known elements with this name, instead of searching each time
     through the whole list of modules -> a gain of more than 90% in speed
     for cross-referencing (Odoc_cross.associate)
- - fix: Odoc_name.cut printed a '(' instead of a '.' 
+ - fix: Odoc_name.cut printed a '(' instead of a '.'
  - add: new option -customdir
- - add: new option -i (to add a path to the directory where 
+ - add: new option -i (to add a path to the directory where
      to look for custom generators)
  - add: add odoc_config.ml{,i}
  - add: keep_code in Odoc_info.Args interface
@@ -65,7 +71,7 @@ Release 3.08.0:
    only toplevel ones
  - fix: bug preventing to get the code in a .mli
  - fix: missing spaces after carriage return in types (Odoc_misc.string_of_type_expr)
- - fixes: some bugs in the text parser 
+ - fixes: some bugs in the text parser
      ( ]} meaning end of code and somehting else instead of end of precode)
  - add: in Odoc_info: text_of_string, text_string_of_text, info_of_string
  - fix: better output of titles in html (use more the style)
@@ -128,10 +134,10 @@ Pre-release 4 :
  - improved display of variant constructors, record fields and
    their comments in classic HTML
  - blank lines in comments become <p> in HTML instead of <br>
- - bug fix : there can be blanks between the last item 
+ - bug fix : there can be blanks between the last item
    and the ending } of a list
  - new option -latextitles
- - number of errors encountered is displayed 
+ - number of errors encountered is displayed
  - if at least one error occurs, exit code is not 0
  - more precise error messages
  - bug fix : \n and other blanks are accepted after, for example, {i

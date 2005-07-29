@@ -77,7 +77,7 @@ let default_dot_colors =
 let dot_colors =
   "<c1,c2,...,cn>\n\t\tUse colors c1,c1,...,cn in the dot output\n"^
   "\t\t(default list is "^
-  (String.concat ",\n\t\t" (List.map (String.concat ", ") default_dot_colors))^")"
+  (String.concat ",\n\t\t" (List.map (String.concat ",") default_dot_colors))^")"
 
 let dot_reduce =
   "\tPerform a transitive reduction on the selected dependency graph\n"^
@@ -269,6 +269,8 @@ let class_type_not_found_in_typedtree ct = "Class type "^ct^" was not found in t
 let inherit_classexp_not_found_in_typedtree n = "Inheritance class expression number "^(string_of_int n)^" was not found in typed tree."
 let attribute_not_found_in_typedtree att = "Class attribute "^att^" was not found in typed tree."
 let method_not_found_in_typedtree met = "Class method "^met^" was not found in typed tree."
+let misplaced_comment file pos =
+  Printf.sprintf "Misplaced special comment in file %s, character %d." file pos
 
 let cross_module_not_found n = "Module "^n^" not found"
 let cross_module_type_not_found n = "Module type "^n^" not found"

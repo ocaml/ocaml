@@ -327,10 +327,11 @@ and class_signature env sty sign =
   
   (* Check that the binder is a correct type, and introduce a dummy
      method preventing self type from being closed. *)
+  let dummy_obj = Ctype.newvar () in
+  Ctype.unify env (Ctype.filter_method env dummy_method Private dummy_obj)
+    (Ctype.newty (Ttuple []));
   begin try
-    Ctype.unify env
-      (Ctype.filter_method env dummy_method Private self_type)
-      (Ctype.newty (Ttuple []))
+    Ctype.unify env self_type dummy_obj
   with Ctype.Unify _ ->
     raise(Error(sty.ptyp_loc, Pattern_type_clash self_type))
   end;
@@ -1414,9 +1415,10 @@ let report_error ppf = function
   | Pattern_type_clash ty ->
       (* XXX Trace *)
       (* XXX Revoir message d'erreur *)
-      fprintf ppf "@[This pattern cannot match self: \
-                    it only matches values of type@ %a@]"
-      Printtyp.type_expr ty
+      Printtyp.reset_and_mark_loops ty;
+      fprintf ppf "@[%s@ %a@]"
+        "This pattern cannot match self: it only matches values of type"
+        Printtyp.type_expr ty
   | Unbound_class cl ->
       fprintf ppf "Unbound class@ %a"
       Printtyp.longident cl

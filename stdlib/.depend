@@ -126,8 +126,7 @@ cduce/auto_pat.cmi: cduce/types.cmi cduce/ident.cmo cduce/chars.cmi \
 cduce/bool.cmi: cduce/custom.cmo 
 cduce/chars.cmi: format.cmi cduce/custom.cmo 
 cduce/encodings.cmi: format.cmi cduce/custom.cmo buffer.cmi 
-cduce/explain.cmi: cduce/value.cmi cduce/types.cmi format.cmi \
-    cduce/auto_pat.cmi 
+cduce/explain.cmi: cduce/value.cmi format.cmi cduce/auto_pat.cmi 
 cduce/intervals.cmi: int64.cmi int32.cmi format.cmi cduce/custom.cmo \
     big_int.cmi 
 cduce/ns.cmi: cduce/upool.cmi format.cmi cduce/encodings.cmi cduce/custom.cmo 
@@ -160,8 +159,8 @@ cduce/chars.cmo: list.cmi format.cmi cduce/custom.cmo char.cmi \
     cduce/chars.cmi 
 cduce/chars.cmx: list.cmx format.cmx cduce/custom.cmx char.cmx \
     cduce/chars.cmi 
-cduce/compunit.cmo: cduce/compunit.cmi 
-cduce/compunit.cmx: cduce/compunit.cmi 
+cduce/compunit.cmo: printf.cmi hashtbl.cmi cduce/compunit.cmi 
+cduce/compunit.cmx: printf.cmx hashtbl.cmx cduce/compunit.cmi 
 cduce/custom.cmo: string.cmi pervasives.cmi list.cmi format.cmi char.cmi \
     array.cmi 
 cduce/custom.cmx: string.cmx pervasives.cmx list.cmx format.cmx char.cmx \
@@ -222,16 +221,14 @@ cduce/sample.cmo: cduce/types.cmi set.cmi list.cmi cduce/intervals.cmi \
     cduce/ident.cmo cduce/chars.cmi cduce/atoms.cmi cduce/sample.cmi 
 cduce/sample.cmx: cduce/types.cmx set.cmx list.cmx cduce/intervals.cmx \
     cduce/ident.cmx cduce/chars.cmx cduce/atoms.cmx cduce/sample.cmi 
-cduce/sequence.cmo: cduce/types.cmi map.cmi list.cmi cduce/chars.cmi \
-    cduce/atoms.cmi cduce/sequence.cmi 
-cduce/sequence.cmx: cduce/types.cmx map.cmx list.cmx cduce/chars.cmx \
-    cduce/atoms.cmx cduce/sequence.cmi 
-cduce/serial.cmo: obj.cmi cduce/ns.cmi marshal.cmi list.cmi array.cmi \
+cduce/sequence.cmo: cduce/types.cmi map.cmi list.cmi cduce/custom.cmo \
+    cduce/chars.cmi cduce/atoms.cmi cduce/sequence.cmi 
+cduce/sequence.cmx: cduce/types.cmx map.cmx list.cmx cduce/custom.cmx \
+    cduce/chars.cmx cduce/atoms.cmx cduce/sequence.cmi 
+cduce/serial.cmo: cduce/value.cmi obj.cmi marshal.cmi list.cmi array.cmi \
     cduce/serial.cmi 
-cduce/serial.cmx: obj.cmx cduce/ns.cmx marshal.cmx list.cmx array.cmx \
+cduce/serial.cmx: cduce/value.cmx obj.cmx marshal.cmx list.cmx array.cmx \
     cduce/serial.cmi 
-cduce/serialize.cmo: cduce/serialize.cmi 
-cduce/serialize.cmx: cduce/serialize.cmi 
 cduce/sortedList.cmo: list.cmi format.cmi cduce/custom.cmo \
     cduce/sortedList.cmi 
 cduce/sortedList.cmx: list.cmx format.cmx cduce/custom.cmx \
@@ -250,12 +247,14 @@ cduce/types.cmo: cduce/stats.cmi cduce/sortedList.cmi set.cmi \
     cduce/pretty.cmi pervasives.cmi obj.cmi cduce/ns.cmi cduce/normal.cmi \
     map.cmi list.cmi cduce/intervals.cmi cduce/ident.cmo hashtbl.cmi \
     format.cmi cduce/encodings.cmi cduce/custom.cmo cduce/compunit.cmi \
-    cduce/chars.cmi cduce/bool.cmi cduce/atoms.cmi array.cmi cduce/types.cmi 
+    cduce/chars.cmi buffer.cmi cduce/bool.cmi cduce/atoms.cmi array.cmi \
+    cduce/types.cmi 
 cduce/types.cmx: cduce/stats.cmx cduce/sortedList.cmx set.cmx \
     cduce/pretty.cmx pervasives.cmx obj.cmx cduce/ns.cmx cduce/normal.cmx \
     map.cmx list.cmx cduce/intervals.cmx cduce/ident.cmx hashtbl.cmx \
     format.cmx cduce/encodings.cmx cduce/custom.cmx cduce/compunit.cmx \
-    cduce/chars.cmx cduce/bool.cmx cduce/atoms.cmx array.cmx cduce/types.cmi 
+    cduce/chars.cmx buffer.cmx cduce/bool.cmx cduce/atoms.cmx array.cmx \
+    cduce/types.cmi 
 cduce/upool.cmo: hashtbl.cmi cduce/custom.cmo array.cmi cduce/upool.cmi 
 cduce/upool.cmx: hashtbl.cmx cduce/custom.cmx array.cmx cduce/upool.cmi 
 cduce/value.cmo: cduce/upool.cmi cduce/types.cmi string.cmi set.cmi \

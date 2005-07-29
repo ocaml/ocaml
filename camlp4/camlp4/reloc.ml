@@ -107,19 +107,13 @@ value check_location msg ((bp, ep) as loc) =
    (ok, loc)
 ;
 
-(* Change a location into linear positions *)
-value linearize (bp, ep) =
-      ( { (bp) with Lexing.pos_lnum = 1; Lexing.pos_bol = 0 },
-        { (ep) with Lexing.pos_lnum = 1; Lexing.pos_bol = 0 })
-;
-
 value shift_pos n p =
    { (p) with Lexing.pos_cnum = p.Lexing.pos_cnum + n }
 ;
 
 value zero_loc =
-   { (Lexing.dummy_pos) with Lexing.pos_cnum = 0; Lexing.pos_lnum = 0 };
-
+   { (Lexing.dummy_pos) with Lexing.pos_cnum = 0; Lexing.pos_lnum = 0 }
+;
 
 value adjust_pos globpos local_pos =
 {
@@ -147,7 +141,7 @@ value rec patt floc sh =
     [ PaAcc loc x1 x2 -> let nloc = floc loc in PaAcc nloc (self x1) (self x2)
     | PaAli loc x1 x2 -> let nloc = floc loc in PaAli nloc (self x1) (self x2)
     | PaAnt loc x1 -> (* Note that antiquotations are parsed by the OCaml parser, passing line numbers and begs of lines *)
-        patt (fun lloc -> adjust_loc (adjust_pos sh (fst loc)) (linearize lloc)) zero_loc x1
+        patt (fun lloc -> adjust_loc (adjust_pos sh (fst loc)) lloc) zero_loc x1
     | PaAny loc -> let nloc = floc loc in PaAny nloc
     | PaApp loc x1 x2 -> let nloc = floc loc in PaApp nloc (self x1) (self x2)
     | PaArr loc x1 -> let nloc = floc loc in PaArr nloc (List.map self x1)
@@ -179,7 +173,7 @@ and expr floc sh =
     fun
     [ ExAcc loc x1 x2 -> let nloc = floc loc in ExAcc nloc (self x1) (self x2)
     | ExAnt loc x1 -> (* Note that antiquotations are parsed by the OCaml parser, passing line numbers and begs of lines *)
-        expr (fun lloc -> (adjust_loc (adjust_pos sh (fst loc)) (linearize lloc)))
+        expr (fun lloc -> (adjust_loc (adjust_pos sh (fst loc)) lloc))
              zero_loc x1
     | ExApp loc x1 x2 -> let nloc = floc loc in ExApp nloc (self x1) (self x2)
     | ExAre loc x1 x2 -> let nloc = floc loc in ExAre nloc (self x1) (self x2)

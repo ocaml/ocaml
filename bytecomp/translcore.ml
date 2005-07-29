@@ -53,7 +53,8 @@ let comparisons_table = create_hashtable 11 [
               prim_native_name = ""; prim_native_float = false},
        Pbintcomp(Pnativeint, Ceq),
        Pbintcomp(Pint32, Ceq),
-       Pbintcomp(Pint64, Ceq));
+       Pbintcomp(Pint64, Ceq),
+       true);
   "%notequal",
       (Pccall{prim_name = "caml_notequal"; prim_arity = 2; prim_alloc = true;
               prim_native_name = ""; prim_native_float = false},
@@ -64,7 +65,8 @@ let comparisons_table = create_hashtable 11 [
               prim_native_float = false},
        Pbintcomp(Pnativeint, Cneq),
        Pbintcomp(Pint32, Cneq),
-       Pbintcomp(Pint64, Cneq));
+       Pbintcomp(Pint64, Cneq),
+       true);
   "%lessthan",
       (Pccall{prim_name = "caml_lessthan"; prim_arity = 2; prim_alloc = true;
               prim_native_name = ""; prim_native_float = false},
@@ -75,7 +77,8 @@ let comparisons_table = create_hashtable 11 [
               prim_native_float = false},
        Pbintcomp(Pnativeint, Clt),
        Pbintcomp(Pint32, Clt),
-       Pbintcomp(Pint64, Clt));
+       Pbintcomp(Pint64, Clt),
+       false);
   "%greaterthan",
       (Pccall{prim_name = "caml_greaterthan"; prim_arity = 2; prim_alloc = true;
               prim_native_name = ""; prim_native_float = false},
@@ -86,7 +89,8 @@ let comparisons_table = create_hashtable 11 [
               prim_native_float = false},
        Pbintcomp(Pnativeint, Cgt),
        Pbintcomp(Pint32, Cgt),
-       Pbintcomp(Pint64, Cgt));
+       Pbintcomp(Pint64, Cgt),
+       false);
   "%lessequal",
       (Pccall{prim_name = "caml_lessequal"; prim_arity = 2; prim_alloc = true;
               prim_native_name = ""; prim_native_float = false},
@@ -97,7 +101,8 @@ let comparisons_table = create_hashtable 11 [
               prim_native_float = false},
        Pbintcomp(Pnativeint, Cle),
        Pbintcomp(Pint32, Cle),
-       Pbintcomp(Pint64, Cle));
+       Pbintcomp(Pint64, Cle),
+       false);
   "%greaterequal",
       (Pccall{prim_name = "caml_greaterequal"; prim_arity = 2;
               prim_alloc = true;
@@ -109,7 +114,8 @@ let comparisons_table = create_hashtable 11 [
               prim_native_float = false},
        Pbintcomp(Pnativeint, Cge),
        Pbintcomp(Pint32, Cge),
-       Pbintcomp(Pint64, Cge));
+       Pbintcomp(Pint64, Cge),
+       false);
   "%compare",
       (Pccall{prim_name = "caml_compare"; prim_arity = 2; prim_alloc = true;
               prim_native_name = ""; prim_native_float = false},
@@ -130,7 +136,8 @@ let comparisons_table = create_hashtable 11 [
               prim_native_float = false},
        Pccall{prim_name = "caml_int64_compare"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
-              prim_native_float = false})
+              prim_native_float = false},
+       false)
 ]
 
 let primitives_table = create_hashtable 57 [
@@ -262,12 +269,15 @@ let prim_obj_dup =
 let transl_prim prim args =
   try
     let (gencomp, intcomp, floatcomp, stringcomp,
-         nativeintcomp, int32comp, int64comp) =
+         nativeintcomp, int32comp, int64comp,
+         simplify_constant_constructor) =
       Hashtbl.find comparisons_table prim.prim_name in
     begin match args with
-      [arg1; {exp_desc = Texp_construct({cstr_tag = Cstr_constant _}, _)}] ->
+      [arg1; {exp_desc = Texp_construct({cstr_tag = Cstr_constant _}, _)}]
+      when simplify_constant_constructor ->
         intcomp
-    | [{exp_desc = Texp_construct({cstr_tag = Cstr_constant _}, _)}; arg2] ->
+    | [{exp_desc = Texp_construct({cstr_tag = Cstr_constant _}, _)}; arg2]
+      when simplify_constant_constructor ->
         intcomp
     | [arg1; arg2] when has_base_type arg1 Predef.path_int
                      || has_base_type arg1 Predef.path_char ->
@@ -313,7 +323,7 @@ let transl_prim prim args =
 let transl_primitive p =
   let prim =
     try
-      let (gencomp, _, _, _, _, _, _) =
+      let (gencomp, _, _, _, _, _, _, _) =
         Hashtbl.find comparisons_table p.prim_name in
       gencomp
     with Not_found ->

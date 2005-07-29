@@ -210,10 +210,14 @@ let quomod_big_int bi1 bi2 =
   and size_bi2 = num_digits_big_int bi2 in
    match compare_nat (bi1.abs_value) 0 size_bi1 
                      (bi2.abs_value) 0 size_bi2 with
-      -1 -> (* 1/2 -> 0, reste 1, -1/2 -> -1, reste 1 *)
-             if bi1.sign = -1
-              then (big_int_of_int(-1), add_big_int bi2 bi1)
-              else (big_int_of_int 0, bi1)
+      -1 -> (* 1/2  -> 0, reste 1, -1/2  -> -1, reste 1 *)
+            (* 1/-2 -> 0, reste 1, -1/-2 -> 1, reste 1 *)
+             if bi1.sign >= 0 then
+               (big_int_of_int 0, bi1)
+             else if bi2.sign >= 0 then
+               (big_int_of_int(-1), add_big_int bi2 bi1)
+             else
+               (big_int_of_int 1, sub_big_int bi1 bi2)
     | 0 -> (big_int_of_int (bi1.sign * bi2.sign), zero_big_int)
     | _ -> let bi1_negatif = bi1.sign = -1 in 
            let size_q =
@@ -363,7 +367,8 @@ let big_int_of_string s =
   sys_big_int_of_string s 0 (String.length s)
 
 let power_base_nat base nat off len =
-  if is_zero_nat nat off len then nat_of_int 1 else
+  if base = 0 then nat_of_int 0 else
+  if is_zero_nat nat off len || base = 1 then nat_of_int 1 else
   let power_base = make_nat (succ length_of_digit) in
   let (pmax, pint) = make_power_base base power_base in
   let (n, rem) = 
@@ -422,26 +427,23 @@ let power_big_int_positive_int bi n =
          and res2 = make_nat res_len 
          and l = num_bits_int n - 2 in
          let p = ref (1 lsl l) in
-           blit_nat res 0 (bi.abs_value) 0 bi_len;
-           for i = l downto 0 do
-             let len = num_digits_nat res 0 res_len in
-             let len2 = min res_len (2 * len) in
-             let succ_len2 = succ len2 in
-               square_nat res2 0 len2 res 0 len;
-               (if n land !p > 0 
-                   then (set_to_zero_nat res 0 len;
-                         mult_nat res 0 succ_len2 
-                                   res2 0 len2 (bi.abs_value) 0 bi_len;
-                         set_to_zero_nat res2 0 len2)
-                   else blit_nat res 0 res2 0 len2;
-                   set_to_zero_nat res2 0 len2);
-               p := !p lsr 1
-           done;
-           {sign = if bi.sign >=  0
-                      then bi.sign 
-                      else if n land 1 = 0
-                              then 1 
-                              else -1;
+         blit_nat res 0 bi.abs_value 0 bi_len;
+         for i = l downto 0 do
+           let len = num_digits_nat res 0 res_len in
+           let len2 = min res_len (2 * len) in
+           set_to_zero_nat res2 0 len2;
+           square_nat res2 0 len2 res 0 len;
+           if n land !p > 0 then begin
+             let lenp = min res_len (len2 + bi_len) in
+             set_to_zero_nat res 0 lenp;
+             ignore(mult_nat res 0 lenp res2 0 len2 (bi.abs_value) 0 bi_len)
+           end else begin
+             blit_nat res 0 res2 0 len2
+           end;
+           p := !p lsr 1
+         done;
+         {sign = if bi.sign >=  0 then bi.sign 
+                 else if n land 1 = 0 then 1 else -1;
             abs_value = res} 
 
 let power_int_positive_big_int i bi = 
@@ -461,39 +463,21 @@ let power_big_int_positive_big_int bi1 bi2 =
   match sign_big_int bi2 with
     0 -> unit_big_int
   | -1 -> invalid_arg "power_big_int_positive_big_int"
-  | _ -> let nat = bi2.abs_value
-         and off = 0 
-         and len_bi2 = num_digits_big_int bi2 in
-         let bi1_len = num_digits_big_int bi1 in
-         let res_len = int_of_big_int (mult_int_big_int bi1_len bi2) in
-         let res = make_nat res_len 
-         and res2 = make_nat res_len 
-         and l = (len_bi2 * length_of_digit 
-                  - num_leading_zero_bits_in_digit nat (pred len_bi2)) - 2 in
-         let p = ref (1 lsl l) in
-           blit_nat res 0 (bi1.abs_value) 0 bi1_len;
-           for i = l downto 0 do
-             let nat = copy_nat bi2.abs_value 0 len_bi2 in
-             let len = num_digits_nat res 0 res_len in
-             let len2 = min res_len (2 * len) in
-             let succ_len2 = succ len2 in
-               square_nat res2 0 len2 res 0 len;
-               land_digit_nat nat 0 (nat_of_int !p) 0;
-               if is_zero_nat nat 0 len_bi2 
-                  then (blit_nat res 0 res2 0 len2;
-                        set_to_zero_nat res2 0 len2)
-                  else (set_to_zero_nat res 0 len;
-                        mult_nat res 0 succ_len2 
-                                 res2 0 len2 (bi1.abs_value) 0 bi1_len;
-                        set_to_zero_nat res2 0 len2);
-               p := !p lsr 1
-           done;
-           {sign = if bi1.sign >= 0
-                      then bi1.sign 
-                      else if is_digit_odd (bi2.abs_value) 0
-                              then -1 
-                              else 1;
-            abs_value = res} 
+  | _ -> try
+           power_big_int_positive_int bi1 (int_of_big_int bi2)
+         with Failure _ ->
+         try
+           power_int_positive_big_int (int_of_big_int bi1) bi2
+         with Failure _ ->
+           raise Out_of_memory
+           (* If neither bi1 nor bi2 is a small integer, bi1^bi2 is not
+              representable.  Indeed, on a 32-bit platform,
+              |bi1| >= 2 and |bi2| >= 2^30, hence bi1^bi2 has at least
+              2^30 bits = 2^27 bytes, greater than the max size of
+              allocated blocks.  On a 64-bit platform,
+              |bi1| >= 2 and |bi2| >= 2^62, hence bi1^bi2 has at least
+              2^62 bits = 2^59 bytes, greater than the max size of
+              allocated blocks. *)
 
 (* base_power_big_int compute bi*base^n *)
 let base_power_big_int base n bi =

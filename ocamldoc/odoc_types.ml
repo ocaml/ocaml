@@ -11,7 +11,7 @@
 
 (* $Id$ *)
 
-type ref_kind = 
+type ref_kind =
     RK_module
   | RK_module_type
   | RK_class
@@ -23,7 +23,7 @@ type ref_kind =
   | RK_method
   | RK_section of text
 
-and text_element = 
+and text_element =
   | Raw of string
   | Code of string
   | CodePre of string
@@ -49,7 +49,7 @@ and text_element =
 
 and text = text_element list
 
-type see_ref = 
+type see_ref =
     See_url of string
   | See_file of string
   | See_doc of string
@@ -67,11 +67,11 @@ type info = {
     i_sees : see list;
     i_since : string option;
     i_deprecated : text option;
-    i_params : param list; 
+    i_params : param list;
     i_raised_exceptions : raised_exception list;
     i_return_value : text option ;
     i_custom : (string * text) list ;
-  } 
+  }
 
 let dummy_info = {
   i_desc = None ;
@@ -84,12 +84,12 @@ let dummy_info = {
   i_raised_exceptions = [] ;
   i_return_value = None ;
   i_custom = [] ;
-} 
+}
 
 type location = {
     loc_impl : (string * int) option ;
     loc_inter : (string * int) option ;
-  } 
+  }
 
 let dummy_loc = { loc_impl = None ; loc_inter = None }
 
@@ -104,7 +104,7 @@ type merge_option =
   | Merge_raised_exception
   | Merge_return_value
   | Merge_custom
-  
+
 let all_merge_options = [
   Merge_description ;
   Merge_author ;
@@ -116,7 +116,7 @@ let all_merge_options = [
   Merge_raised_exception ;
   Merge_return_value ;
   Merge_custom ;
-] 
+]
 
 type magic = string
 
