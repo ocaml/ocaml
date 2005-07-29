@@ -624,9 +624,11 @@ let transl_ext transl_exp env typ = function
       transl_to_ml [] env (Ctype.correct_levels typ) (transl_exp e)
 
   | Textexp_check e ->
-      let d = 
-	Cduce_types.Patterns.Compile.make_checker 
-	  (get_ext_type e) 
-	  (get_ext typ) in
-      builtin "Cduce_types.Explain.do_check" [ global d; transl_exp e ]
+      let typ_e = get_ext_type e in
+      let typ_res = get_ext typ in
+      let e = transl_exp e in
+      if Cduce_types.Types.subtype typ_e typ_res then e 
+      else
+	let d = Cduce_types.Patterns.Compile.make_checker typ_e typ_res in
+	builtin "Cduce_types.Explain.do_check" [ global d; e ]
       

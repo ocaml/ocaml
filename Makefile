@@ -705,4 +705,4 @@ clean_boot:
 
 make_package:
 	$(MAKE) clean clean_boot link_copy
-	(cd ..; tar czf ocaml-sub.tar.gz ocaml-sub --exclude=CVS --exclude=.cvsignore)
+	(cd ..; tar czf ocaml-sub.tar.gz ocaml-sub)
