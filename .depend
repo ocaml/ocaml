@@ -123,11 +123,13 @@ typing/includeclass.cmo: typing/types.cmi typing/printtyp.cmi \
 typing/includeclass.cmx: typing/types.cmx typing/printtyp.cmx \
     typing/ctype.cmx typing/includeclass.cmi 
 typing/includecore.cmo: typing/types.cmi typing/typedtree.cmi \
-    typing/predef.cmi typing/path.cmi utils/misc.cmi typing/ctype.cmi \
-    typing/btype.cmi parsing/asttypes.cmi typing/includecore.cmi 
+    typing/predef.cmi typing/path.cmi utils/misc.cmi typing/ident.cmi \
+    typing/ctype.cmi typing/btype.cmi parsing/asttypes.cmi \
+    typing/includecore.cmi 
 typing/includecore.cmx: typing/types.cmx typing/typedtree.cmx \
-    typing/predef.cmx typing/path.cmx utils/misc.cmx typing/ctype.cmx \
-    typing/btype.cmx parsing/asttypes.cmi typing/includecore.cmi 
+    typing/predef.cmx typing/path.cmx utils/misc.cmx typing/ident.cmx \
+    typing/ctype.cmx typing/btype.cmx parsing/asttypes.cmi \
+    typing/includecore.cmi 
 typing/includemod.cmo: typing/types.cmi typing/typedtree.cmi utils/tbl.cmi \
     typing/subst.cmi typing/printtyp.cmi typing/path.cmi typing/mtype.cmi \
     utils/misc.cmi typing/includecore.cmi typing/includeclass.cmi \
@@ -234,14 +236,14 @@ typing/typemod.cmo: typing/types.cmi typing/typedtree.cmi typing/typedecl.cmi \
     parsing/parsetree.cmi typing/mtype.cmi utils/misc.cmi \
     parsing/longident.cmi parsing/location.cmi typing/includemod.cmi \
     typing/ident.cmi typing/env.cmi typing/ctype.cmi utils/config.cmi \
-    utils/clflags.cmo typing/typemod.cmi 
+    utils/clflags.cmo typing/btype.cmi typing/typemod.cmi 
 typing/typemod.cmx: typing/types.cmx typing/typedtree.cmx typing/typedecl.cmx \
     typing/typecore.cmx typing/typeclass.cmx typing/subst.cmx \
     typing/stypes.cmx typing/printtyp.cmx typing/path.cmx \
     parsing/parsetree.cmi typing/mtype.cmx utils/misc.cmx \
     parsing/longident.cmx parsing/location.cmx typing/includemod.cmx \
     typing/ident.cmx typing/env.cmx typing/ctype.cmx utils/config.cmx \
-    utils/clflags.cmx typing/typemod.cmi 
+    utils/clflags.cmx typing/btype.cmx typing/typemod.cmi 
 typing/types.cmo: typing/primitive.cmi typing/path.cmi utils/misc.cmi \
     typing/ident.cmi parsing/asttypes.cmi typing/types.cmi 
 typing/types.cmx: typing/primitive.cmx typing/path.cmx utils/misc.cmx \
