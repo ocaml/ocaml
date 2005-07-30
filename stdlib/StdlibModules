@@ -46,4 +46,4 @@ STDLIB_MODULES=\
   sys \
   weak \
   int_misc string_misc nat big_int arith_flags ratio num arith_status \
-  cduce_types
+  cduce_types ocamlduce

@@ -4,6 +4,7 @@ format.cmi: buffer.cmi
 genlex.cmi: stream.cmi 
 moreLabels.cmi: set.cmi map.cmi hashtbl.cmi 
 num.cmi: ratio.cmi nat.cmi big_int.cmi 
+ocamlduce.cmi: format.cmi 
 oo.cmi: camlinternalOO.cmi 
 parsing.cmi: obj.cmi lexing.cmi 
 printf.cmi: buffer.cmi 
@@ -16,10 +17,10 @@ arith_flags.cmo: arith_flags.cmi
 arith_flags.cmx: arith_flags.cmi 
 arith_status.cmo: arith_flags.cmi arith_status.cmi 
 arith_status.cmx: arith_flags.cmx arith_status.cmi 
-array.cmo: array.cmi 
-array.cmx: array.cmi 
 arrayLabels.cmo: array.cmi arrayLabels.cmi 
 arrayLabels.cmx: array.cmx arrayLabels.cmi 
+array.cmo: array.cmi 
+array.cmx: array.cmi 
 big_int.cmo: string.cmi nat.cmi int_misc.cmi char.cmi big_int.cmi 
 big_int.cmx: string.cmx nat.cmx int_misc.cmx char.cmx big_int.cmi 
 buffer.cmo: sys.cmi string.cmi buffer.cmi 
@@ -58,24 +59,32 @@ lazy.cmo: obj.cmi lazy.cmi
 lazy.cmx: obj.cmx lazy.cmi 
 lexing.cmo: sys.cmi string.cmi array.cmi lexing.cmi 
 lexing.cmx: sys.cmx string.cmx array.cmx lexing.cmi 
-list.cmo: list.cmi 
-list.cmx: list.cmi 
 listLabels.cmo: list.cmi listLabels.cmi 
 listLabels.cmx: list.cmx listLabels.cmi 
+list.cmo: list.cmi 
+list.cmx: list.cmi 
 map.cmo: map.cmi 
 map.cmx: map.cmi 
 marshal.cmo: string.cmi marshal.cmi 
 marshal.cmx: string.cmx marshal.cmi 
 moreLabels.cmo: set.cmi map.cmi hashtbl.cmi moreLabels.cmi 
 moreLabels.cmx: set.cmx map.cmx hashtbl.cmx moreLabels.cmi 
-nat.cmo: sys.cmi string.cmi obj.cmi int_misc.cmi int64.cmi char.cmi nat.cmi 
-nat.cmx: sys.cmx string.cmx obj.cmx int_misc.cmx int64.cmx char.cmx nat.cmi 
 nativeint.cmo: sys.cmi pervasives.cmi nativeint.cmi 
 nativeint.cmx: sys.cmx pervasives.cmx nativeint.cmi 
+nat.cmo: sys.cmi string.cmi obj.cmi int_misc.cmi int64.cmi char.cmi nat.cmi 
+nat.cmx: sys.cmx string.cmx obj.cmx int_misc.cmx int64.cmx char.cmx nat.cmi 
 num.cmo: ratio.cmi nat.cmi int_misc.cmi big_int.cmi arith_flags.cmi num.cmi 
 num.cmx: ratio.cmx nat.cmx int_misc.cmx big_int.cmx arith_flags.cmx num.cmi 
 obj.cmo: marshal.cmi obj.cmi 
 obj.cmx: marshal.cmx obj.cmi 
+ocamlduce.cmo: cduce/value.cmi cduce/upool.cmi string.cmi cduce/sequence.cmi \
+    obj.cmi cduce/ns.cmi list.cmi cduce/intervals.cmi cduce/imap.cmi \
+    cduce/ident.cmo format.cmi cduce/encodings.cmi buffer.cmi cduce/atoms.cmi \
+    array.cmi ocamlduce.cmi 
+ocamlduce.cmx: cduce/value.cmx cduce/upool.cmx string.cmx cduce/sequence.cmx \
+    obj.cmx cduce/ns.cmx list.cmx cduce/intervals.cmx cduce/imap.cmx \
+    cduce/ident.cmx format.cmx cduce/encodings.cmx buffer.cmx cduce/atoms.cmx \
+    array.cmx ocamlduce.cmi 
 oo.cmo: camlinternalOO.cmi oo.cmi 
 oo.cmx: camlinternalOO.cmx oo.cmi 
 parsing.cmo: obj.cmi lexing.cmi array.cmi parsing.cmi 
@@ -110,12 +119,12 @@ stdLabels.cmo: stringLabels.cmi listLabels.cmi arrayLabels.cmi stdLabels.cmi
 stdLabels.cmx: stringLabels.cmx listLabels.cmx arrayLabels.cmx stdLabels.cmi 
 stream.cmo: string.cmi obj.cmi list.cmi stream.cmi 
 stream.cmx: string.cmx obj.cmx list.cmx stream.cmi 
-string.cmo: pervasives.cmi list.cmi char.cmi string.cmi 
-string.cmx: pervasives.cmx list.cmx char.cmx string.cmi 
 stringLabels.cmo: string.cmi stringLabels.cmi 
 stringLabels.cmx: string.cmx stringLabels.cmi 
 string_misc.cmo: string.cmi string_misc.cmi 
 string_misc.cmx: string.cmx string_misc.cmi 
+string.cmo: pervasives.cmi list.cmi char.cmi string.cmi 
+string.cmx: pervasives.cmx list.cmx char.cmx string.cmi 
 sys.cmo: sys.cmi 
 sys.cmx: sys.cmi 
 weak.cmo: sys.cmi obj.cmi hashtbl.cmi array.cmi weak.cmi 
@@ -129,9 +138,12 @@ cduce/encodings.cmi: format.cmi cduce/custom.cmo buffer.cmi
 cduce/explain.cmi: cduce/value.cmi format.cmi cduce/auto_pat.cmi 
 cduce/intervals.cmi: int64.cmi int32.cmi format.cmi cduce/custom.cmo \
     big_int.cmi 
+cduce/lambda.cmi: cduce/types.cmi cduce/serialize.cmi cduce/patterns.cmi \
+    obj.cmi cduce/ns.cmi cduce/ident.cmo format.cmi 
 cduce/ns.cmi: cduce/upool.cmi format.cmi cduce/encodings.cmi cduce/custom.cmo 
 cduce/patterns.cmi: cduce/types.cmi cduce/ident.cmo format.cmi \
     cduce/custom.cmo cduce/auto_pat.cmi 
+cduce/pool.cmi: cduce/custom.cmo 
 cduce/run_dispatch.cmi: cduce/value.cmi cduce/auto_pat.cmi 
 cduce/sample.cmi: cduce/types.cmi format.cmi 
 cduce/sequence.cmi: cduce/types.cmi cduce/atoms.cmi 
@@ -189,6 +201,12 @@ cduce/intervals.cmx: obj.cmx nat.cmx list.cmx int64.cmx int32.cmx format.cmx \
     big_int.cmx cduce/intervals.cmi 
 cduce/inttbl.cmo: array.cmi cduce/inttbl.cmi 
 cduce/inttbl.cmx: array.cmx cduce/inttbl.cmi 
+cduce/lambda.cmo: cduce/types.cmi cduce/serialize.cmi cduce/patterns.cmi \
+    obj.cmi cduce/ns.cmi list.cmi cduce/ident.cmo format.cmi array.cmi \
+    cduce/lambda.cmi 
+cduce/lambda.cmx: cduce/types.cmx cduce/serialize.cmx cduce/patterns.cmx \
+    obj.cmx cduce/ns.cmx list.cmx cduce/ident.cmx format.cmx array.cmx \
+    cduce/lambda.cmi 
 cduce/normal.cmo: list.cmi cduce/normal.cmi 
 cduce/normal.cmx: list.cmx cduce/normal.cmi 
 cduce/ns.cmo: cduce/upool.cmi string.cmi printf.cmi map.cmi list.cmi \
@@ -203,8 +221,10 @@ cduce/patterns.cmx: cduce/types.cmx cduce/sortedList.cmx set.cmx \
     cduce/sequence.cmx queue.cmx map.cmx list.cmx cduce/ident.cmx hashtbl.cmx \
     format.cmx cduce/custom.cmx cduce/chars.cmx cduce/auto_pat.cmx \
     cduce/atoms.cmx array.cmx cduce/patterns.cmi 
-cduce/pool.cmo: cduce/pool.cmi 
-cduce/pool.cmx: cduce/pool.cmi 
+cduce/pool.cmo: weak.cmi cduce/state.cmi cduce/serialize.cmi map.cmi \
+    hashtbl.cmi cduce/custom.cmo array.cmi cduce/pool.cmi 
+cduce/pool.cmx: weak.cmx cduce/state.cmx cduce/serialize.cmx map.cmx \
+    hashtbl.cmx cduce/custom.cmx array.cmx cduce/pool.cmi 
 cduce/pretty.cmo: pervasives.cmi list.cmi hashtbl.cmi format.cmi \
     cduce/pretty.cmi 
 cduce/pretty.cmx: pervasives.cmx list.cmx hashtbl.cmx format.cmx \
@@ -225,6 +245,10 @@ cduce/sequence.cmo: cduce/types.cmi map.cmi list.cmi cduce/custom.cmo \
     cduce/chars.cmi cduce/atoms.cmi cduce/sequence.cmi 
 cduce/sequence.cmx: cduce/types.cmx map.cmx list.cmx cduce/custom.cmx \
     cduce/chars.cmx cduce/atoms.cmx cduce/sequence.cmi 
+cduce/serialize.cmo: string.cmi list.cmi char.cmi buffer.cmi array.cmi \
+    cduce/serialize.cmi 
+cduce/serialize.cmx: string.cmx list.cmx char.cmx buffer.cmx array.cmx \
+    cduce/serialize.cmi 
 cduce/serial.cmo: cduce/value.cmi obj.cmi marshal.cmi list.cmi array.cmi \
     cduce/serial.cmi 
 cduce/serial.cmx: cduce/value.cmx obj.cmx marshal.cmx list.cmx array.cmx \

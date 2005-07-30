@@ -170,7 +170,7 @@ coldstart:
 	cp byterun/ocamlrun$(EXE) boot/ocamlrun$(EXE)
 	cd yacc; $(MAKE) all
 	cp yacc/ocamlyacc$(EXE) boot/ocamlyacc$(EXE)
-	cd stdlib; $(MAKE) COMPILER=../boot/ocamlc all
+	cd stdlib; $(MAKE) COMPILER=../boot/ocamlc EXTRA= all
 	cd stdlib; cp $(LIBFILES) ../boot
 	if test -f boot/libcamlrun.a; then :; else \
           ln -s ../byterun/libcamlrun.a boot/libcamlrun.a; fi

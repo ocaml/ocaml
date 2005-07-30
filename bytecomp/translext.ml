@@ -630,5 +630,5 @@ let transl_ext transl_exp env typ = function
       if Cduce_types.Types.subtype typ_e typ_res then e 
       else
 	let d = Cduce_types.Patterns.Compile.make_checker typ_e typ_res in
-	builtin "Cduce_types.Explain.do_check" [ global d; e ]
+	builtin "Cduce_types.Explain.check_failure" [ global d; e ]
       

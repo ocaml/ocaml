@@ -134,8 +134,7 @@ Filtering: E.(t)
 
 Field removal: E -. l
 
-Record concatenation: E1 + E2  (fields in E2 are used in case of conflict).
-(note that + is overloaded)
+Record concatenation: E1 ++ E2.
 
 Dynamic type-check: E :? T where T is an x-type. Returns
 the result of E if it has type T, otherwise raises a Failure
@@ -285,13 +284,13 @@ with the notation  x::R, e.g.:
 
   [ _* x::Int+ _* ]
 
-If the same sequence capture variable appear several times (or below a
+If the same sequence capture variable appears several times (or below a
 repetition) in a regexp, it is bound to the concatenation of all matched
 subsequences. E.g.:  [ (x::Int | _)* ] will extract in x all
-the elements of type x in the sequence.
+the elements of type Int in the sequence.
 
 The regexp operators +,*,? are greedy by default (they match as long
-as possible).  They admit non-gready variants +?,*?,??.
+as possible).  They admit non-greedy variants +?,*?,??.
 
 
 

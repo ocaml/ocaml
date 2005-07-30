@@ -39,7 +39,10 @@ OTHERS=array.cmo list.cmo char.cmo string.cmo sys.cmo \
   arrayLabels.cmo listLabels.cmo stringLabels.cmo moreLabels.cmo stdLabels.cmo \
   int_misc.cmo string_misc.cmo nat.cmo big_int.cmo arith_flags.cmo \
   ratio.cmo num.cmo arith_status.cmo \
-  cduce_types.cmo
+  cduce_types.cmo \
+  $(EXTRA)
+
+EXTRA=ocamlduce.cmo
 
 CDUCE=\
   cduce/custom.cmo cduce/encodings.cmo \
