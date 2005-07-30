@@ -309,7 +309,7 @@ partialclean::
 # The toplevel
 
 ocaml: $(TOPOBJS) expunge
-	$(CAMLC) $(LINKFLAGS) -linkall -o ocaml.tmp $(TOPOBJS)
+	boot/ocamlrun boot/ocamlc $(LINKFLAGS) -linkall -o ocaml.tmp $(TOPOBJS)
 	- $(CAMLRUN) ./expunge ocaml.tmp ocaml $(PERVASIVES)
 	rm -f ocaml.tmp
 
