@@ -1,5 +1,3 @@
-(*<ocamlduce>
-
 open Cduce_types
 open Encodings
 module U = Utf8
@@ -346,4 +344,3 @@ module Load = struct
     loader.stack <- Element ({:v:}, loader.stack)
 end
 
-</ocamlduce>*)
