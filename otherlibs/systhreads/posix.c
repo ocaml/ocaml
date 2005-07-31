@@ -96,17 +96,21 @@ struct caml_thread_struct {
 
 typedef struct caml_thread_struct * caml_thread_t;
 
-/* The master mutex that protects the Caml runtime system. */
-static pthread_mutex_t caml_runtime_mutex = PTHREAD_MUTEX_INITIALIZER;
-
 /* The descriptor for the currently executing thread */
 static caml_thread_t curr_thread = NULL;
+
+/* Track whether one thread is running Caml code.  There can be
+   at most one such thread at any time. */
+static volatile int caml_runtime_busy = 1;
 
 /* Number of threads waiting to run Caml code. */
 static volatile int caml_runtime_waiters = 0;
 
-/* Mutex that protects the variable above. */
-static pthread_mutex_t caml_runtime_waiters_mutex = PTHREAD_MUTEX_INITIALIZER;
+/* Mutex that protects the two variables above. */
+static pthread_mutex_t caml_runtime_mutex = PTHREAD_MUTEX_INITIALIZER;
+
+/* Condition signaled when caml_runtime_busy becomes 0 */
+static pthread_cond_t caml_runtime_is_free = PTHREAD_COND_INITIALIZER;
 
 /* The key used for storing the thread descriptor in the specific data
    of the corresponding Posix thread. */
@@ -187,11 +191,23 @@ static void caml_thread_enter_blocking_section(void)
   curr_thread->backtrace_last_exn = backtrace_last_exn;
 #endif
   /* Tell other threads that the runtime is free */
+  pthread_mutex_lock(&caml_runtime_mutex);
+  caml_runtime_busy = 0;
   pthread_mutex_unlock(&caml_runtime_mutex);
+  pthread_cond_signal(&caml_runtime_is_free);
 }
 
-static void caml_thread_reenter_runtime(void)
+static void caml_thread_leave_blocking_section(void)
 {
+  /* Wait until the runtime is free */
+  pthread_mutex_lock(&caml_runtime_mutex);
+  while (caml_runtime_busy) {
+    caml_runtime_waiters++;
+    pthread_cond_wait(&caml_runtime_is_free, &caml_runtime_mutex);
+    caml_runtime_waiters--;
+  }
+  caml_runtime_busy = 1;
+  pthread_mutex_unlock(&caml_runtime_mutex);
   /* Update curr_thread to point to the thread descriptor corresponding
      to the thread currently executing */
   curr_thread = pthread_getspecific(thread_descriptor_key);
@@ -216,29 +232,13 @@ static void caml_thread_reenter_runtime(void)
 #endif
 }
 
-static void caml_thread_leave_blocking_section(void)
-{
-  /* Say we're waiting */
-  pthread_mutex_lock(&caml_runtime_waiters_mutex);
-  caml_runtime_waiters++;
-  pthread_mutex_unlock(&caml_runtime_waiters_mutex);
-  /* Wait until the runtime is free */
-  pthread_mutex_lock(&caml_runtime_mutex);
-  /* Say we're no longer waiting */
-  pthread_mutex_lock(&caml_runtime_waiters_mutex);
-  caml_runtime_waiters--;
-  pthread_mutex_unlock(&caml_runtime_waiters_mutex);
-  /* Reenter runtime */
-  caml_thread_reenter_runtime();
-}
-
 static int caml_thread_try_leave_blocking_section(void)
 {
-  /* See if the runtime is free */
-  if (pthread_mutex_trylock(&caml_runtime_mutex) != 0) return 0;
-  /* If so, reenter runtime */
-  caml_thread_reenter_runtime();
-  return 1;
+  /* Disable immediate processing of signals (PR#3659).
+     try_leave_blocking_section always fails, forcing the signal to be
+     recorded and processed at the next leave_blocking_section or
+     polling. */
+  return 0;
 }
 
 /* Hooks for I/O locking */
@@ -401,7 +401,10 @@ static void caml_thread_stop(void)
   th->next->prev = th->prev;
   th->prev->next = th->next;
   /* Release the runtime system */
+  pthread_mutex_lock(&caml_runtime_mutex);
+  caml_runtime_busy = 0;
   pthread_mutex_unlock(&caml_runtime_mutex);
+  pthread_cond_signal(&caml_runtime_is_free);
 #ifndef NATIVE_CODE
   /* Free the memory resources */
   stat_free(th->stack_low);
@@ -799,6 +802,56 @@ int caml_threadstatus_wait (value wrapper)
   return retcode;
 }
 
+/* Signal mask */
+
+static void decode_sigset(value vset, sigset_t * set)
+{
+  sigemptyset(set);
+  while (vset != Val_int(0)) {
+    int sig = convert_signal_number(Int_val(Field(vset, 0)));
+    sigaddset(set, sig);
+    vset = Field(vset, 1);
+  }
+}
+
+#ifndef NSIG
+#define NSIG 64
+#endif
+
+static value encode_sigset(sigset_t * set)
+{
+  value res = Val_int(0);
+  int i;
+
+  Begin_root(res)
+    for (i = 1; i < NSIG; i++)
+      if (sigismember(set, i)) {
+        value newcons = alloc_small(2, 0);
+        Field(newcons, 0) = Val_int(i);
+        Field(newcons, 1) = res;
+        res = newcons;
+      }
+  End_roots();
+  return res;
+}
+
+static int sigmask_cmd[3] = { SIG_SETMASK, SIG_BLOCK, SIG_UNBLOCK };
+
+value caml_thread_sigmask(value cmd, value sigs) /* ML */
+{
+  int how;
+  sigset_t set, oldset;
+  int retcode;
+
+  how = sigmask_cmd[Int_val(cmd)];
+  decode_sigset(sigs, &set);
+  enter_blocking_section();
+  retcode = pthread_sigmask(how, &set, &oldset);
+  leave_blocking_section();
+  caml_pthread_check(retcode, "Thread.sigmask");
+  return encode_sigset(&oldset);
+}
+
 /* Synchronous signal wait */
 
 value caml_wait_signal(value sigs) /* ML */
@@ -807,12 +860,7 @@ value caml_wait_signal(value sigs) /* ML */
   sigset_t set;
   int retcode, signo;
 
-  sigemptyset(&set);
-  while (sigs != Val_int(0)) {
-    int sig = convert_signal_number(Int_val(Field(sigs, 0)));
-    sigaddset(&set, sig);
-    sigs = Field(sigs, 1);
-  }
+  decode_sigset(sigs, &set);
   enter_blocking_section();
   retcode = sigwait(&set, &signo);
   leave_blocking_section();

@@ -174,8 +174,9 @@ static void caml_thread_enter_blocking_section(void)
   ReleaseMutex(caml_mutex);
 }
 
-static void caml_thread_reenter_runtime(void)
+static void caml_thread_leave_blocking_section(void)
 {
+  WaitForSingleObject(caml_mutex, INFINITE);
   /* Update curr_thread to point to the thread descriptor corresponding
      to the thread currently executing */
   curr_thread = TlsGetValue(thread_descriptor_key);
@@ -200,17 +201,13 @@ static void caml_thread_reenter_runtime(void)
 #endif
 }
 
-static void caml_thread_leave_blocking_section(void)
-{
-  WaitForSingleObject(caml_mutex, INFINITE);
-  caml_thread_reenter_runtime();
-}
-
 static int caml_thread_try_leave_blocking_section(void)
 {
-  if (WaitForSingleObject(caml_mutex, 0) != WAIT_OBJECT_0) return 0;
-  caml_thread_reenter_runtime();
-  return 1;
+  /* Disable immediate processing of signals (PR#3659).
+     try_leave_blocking_section always fails, forcing the signal to be
+     recorded and processed at the next leave_blocking_section or
+     polling. */
+  return 0;
 }
 
 /* Hooks for I/O locking */
