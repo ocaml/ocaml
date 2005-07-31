@@ -29,7 +29,7 @@ open Typedtree
 let init_path () =
   load_path :=
     "" :: List.rev (Config.standard_library :: !Clflags.include_dirs);
-  Env.reset_cache()
+  Env.reset_cache ()
 
 (** Return the initial environment in which compilation proceeds. *)
 let initial_env () =
@@ -105,10 +105,10 @@ let (++) x f = f x
 (** Analysis of an implementation file. Returns (Some typedtree) if
    no error occured, else None and an error message is printed.*)
 let process_implementation_file ppf sourcefile =
-
-  init_path();
+  init_path ();
   let prefixname = Filename.chop_extension sourcefile in
   let modulename = String.capitalize(Filename.basename prefixname) in
+  Env.set_unit_name modulename;
   let inputfile = preprocess sourcefile in
   let env = initial_env () in
   try
@@ -132,7 +132,10 @@ let process_implementation_file ppf sourcefile =
 (** Analysis of an interface file. Returns (Some signature) if
    no error occured, else None and an error message is printed.*)
 let process_interface_file ppf sourcefile =
-  init_path();
+  init_path ();
+  let prefixname = Filename.chop_extension sourcefile in
+  let modulename = String.capitalize(Filename.basename prefixname) in
+  Env.set_unit_name modulename;
   let inputfile = preprocess sourcefile in
   let ast = parse_file inputfile Parse.interface ast_intf_magic_number in
   let sg = Typemod.transl_signature (initial_env()) ast in

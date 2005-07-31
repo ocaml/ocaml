@@ -115,6 +115,11 @@ let check_modtype_inclusion =
   ref ((fun env mty1 mty2 -> assert false) :
           t -> module_type -> module_type -> unit)
 
+(* The name of the compilation unit currently compiled.
+   "" if outside a compilation unit. *)
+
+let current_unit = ref ""
+
 (* Persistent structure descriptions *)
 
 type pers_struct =
@@ -177,9 +182,13 @@ let find_pers_struct name =
   with Not_found ->
     read_pers_struct name (find_in_path_uncap !load_path (name ^ ".cmi"))
 
-let reset_cache() =
+let reset_cache () =
+  current_unit := "";
   Hashtbl.clear persistent_structures;
   Consistbl.clear crc_units
+
+let set_unit_name name =
+  current_unit := name
 
 (* Lookup by identifier *)
 
@@ -277,6 +286,7 @@ let rec lookup_module_descr lid env =
       begin try
         Ident.find_name s env.components
       with Not_found ->
+        if s = !current_unit then raise Not_found;
         let ps = find_pers_struct s in
         (Pident(Ident.create_persistent s), ps.ps_comps)
       end
@@ -306,6 +316,7 @@ and lookup_module lid env =
       begin try
         Ident.find_name s env.modules
       with Not_found ->
+        if s = !current_unit then raise Not_found;
         let ps = find_pers_struct s in
         (Pident(Ident.create_persistent s), Tmty_signature ps.ps_sig)
       end

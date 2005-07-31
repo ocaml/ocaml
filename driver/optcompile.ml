@@ -32,7 +32,7 @@ let init_path () =
   let exp_dirs =
     List.map (expand_directory Config.standard_library) dirs in
   load_path := "" :: List.rev_append exp_dirs (Clflags.std_include_dir ());
-  Env.reset_cache()
+  Env.reset_cache ()
 
 (* Return the initial environment in which compilation proceeds. *)
 
@@ -48,9 +48,10 @@ let initial_env () =
 (* Compile a .mli file *)
 
 let interface ppf sourcefile outputprefix =
-  init_path();
+  init_path ();
   let modulename =
     String.capitalize(Filename.basename(chop_extension_if_any sourcefile)) in
+  Env.set_unit_name modulename;
   let inputfile = Pparse.preprocess sourcefile in
   try
     let ast =
@@ -78,9 +79,10 @@ let (++) x f = f x
 let (+++) (x, y) f = (x, f y)
 
 let implementation ppf sourcefile outputprefix =
-  init_path();
+  init_path ();
   let modulename =
     String.capitalize(Filename.basename(chop_extension_if_any sourcefile)) in
+  Env.set_unit_name modulename;
   let inputfile = Pparse.preprocess sourcefile in
   let env = initial_env() in
   Compilenv.reset modulename;
