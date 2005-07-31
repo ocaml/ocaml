@@ -141,7 +141,6 @@ static int do_write(int fd, char *p, int n)
 {
   int retcode;
 
-  Assert(!Is_young((value) p));
 again:
   caml_enter_blocking_section();
   retcode = write(fd, p, n);
@@ -254,14 +253,11 @@ CAMLexport int caml_do_read(int fd, char *p, unsigned int n)
 {
   int retcode;
 
-  /*Assert(!Is_young((value) p)); ** Is_young only applies to a true value */
-  caml_enter_blocking_section();
-#ifdef EINTR
-  do { retcode = read(fd, p, n); } while (retcode == -1 && errno == EINTR);
-#else
-  retcode = read(fd, p, n);
-#endif
-  caml_leave_blocking_section();
+  do {
+    caml_enter_blocking_section();
+    retcode = read(fd, p, n);
+    caml_leave_blocking_section();
+  } while (retcode == -1 && errno == EINTR);
   if (retcode == -1) caml_sys_error(NO_ARG);
   return retcode;
 }

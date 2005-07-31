@@ -56,6 +56,17 @@ volatile long caml_pending_signals[NSIG];
 volatile int caml_force_major_slice = 0;
 value caml_signal_handlers = 0;
 
+static void caml_process_pending_signals(void)
+{
+  int signal_num;
+  long signal_state;
+
+  for (signal_num = 0; signal_num < NSIG; signal_num++) {
+    Read_and_clear(signal_state, caml_pending_signals[signal_num]);
+    if (signal_state) caml_execute_signal(signal_num, 0);
+  }
+}
+
 static long volatile caml_async_signal_mode = 0;
 
 static void caml_enter_blocking_section_default(void)
@@ -153,42 +164,26 @@ void caml_urge_major_slice (void)
 
 void caml_enter_blocking_section(void)
 {
-  int signal_number;
-  long signal_state, pending;
+  int i;
+  long pending;
 
   while (1){
     /* Process all pending signals now */
-    for (signal_number = 0; signal_number < NSIG; signal_number++) {
-      Read_and_clear(signal_state, caml_pending_signals[signal_number]);
-      if (signal_state) caml_execute_signal(signal_number, 0);
-    }
+    caml_process_pending_signals();
     caml_enter_blocking_section_hook ();
     /* Check again for pending signals. */
     pending = 0;
-    for (signal_number = 0; signal_number < NSIG; signal_number++)
-      pending |= caml_pending_signals[signal_number];
+    for (i = 0; i < NSIG; i++) pending |= caml_pending_signals[i];
     /* If none, done; otherwise, try again */
     if (!pending) break;
     caml_leave_blocking_section_hook ();
   }
 }
 
-void caml_leave_blocking_section(void)
+CAMLexport void caml_leave_blocking_section(void)
 {
-#ifdef _WIN32
-  int signal_number;
-  long signal_state;
-  /* Under Win32, asynchronous signals such as ctrl-C are not processed
-     immediately (see ctrl_handler in win32.c), but simply set
-     [caml_pending_signal] and let the system call run to completion.
-     Hence, test [caml_pending_signal] here and act upon it, before we get
-     a chance to process the result of the system call. */
-  for (signal_number = 0; signal_number < NSIG; signal_number++) {
-    Read_and_clear(signal_state, caml_pending_signals[signal_number]);
-    if (signal_state) caml_execute_signal(signal_number, 0);
-  }
-#endif
   caml_leave_blocking_section_hook ();
+  caml_process_pending_signals();
 }
 
 DECLARE_SIGNAL_HANDLER(handle_signal)
@@ -368,6 +363,7 @@ value caml_install_signal_handler(value signal_number, value action) /* ML */
     }
     caml_modify(&Field(caml_signal_handlers, sig), Field(action, 0));
   }
+  caml_process_pending_signals();
   CAMLreturn (res);
 }
 
