@@ -37,6 +37,7 @@ exception Error of error
 
 type unit_infos =
   { mutable ui_name: string;                    (* Name of unit implemented *)
+    mutable ui_symbol: string;            (* Prefix for symbols *)
     mutable ui_defines: string list;      (* Unit and sub-units implemented *)
     mutable ui_imports_cmi: (string * Digest.t) list; (* Interfaces imported *)
     mutable ui_imports_cmx: (string * Digest.t) list; (* Infos imported *)
@@ -54,11 +55,12 @@ type library_infos =
     lib_ccobjs: string list;            (* C object files needed *)
     lib_ccopts: string list }           (* Extra opts to C compiler *)
 
-let global_approx_table =
-  (Hashtbl.create 17 : (string, value_approximation) Hashtbl.t)
+let global_infos_table =
+  (Hashtbl.create 17 : (string, unit_infos option) Hashtbl.t)
 
 let current_unit =
   { ui_name = "";
+    ui_symbol = "";
     ui_defines = [];
     ui_imports_cmi = [];
     ui_imports_cmx = [];
@@ -68,10 +70,26 @@ let current_unit =
     ui_send_fun = [];
     ui_force_link = false }
 
-let reset name =
-  Hashtbl.clear global_approx_table;
+let symbolname_for_pack pack name =
+  match pack with
+  | None -> name
+  | Some p ->
+      let b = Buffer.create 64 in
+      for i = 0 to String.length p - 1 do
+        match p.[i] with
+        | '.' -> Buffer.add_string b "__"
+        |  c  -> Buffer.add_char b c
+      done;
+      Buffer.add_string b "__";
+      Buffer.add_string b name;
+      Buffer.contents b
+
+let reset ?packname name =
+  Hashtbl.clear global_infos_table;
+  let symbol = symbolname_for_pack packname name in
   current_unit.ui_name <- name;
-  current_unit.ui_defines <- [name];
+  current_unit.ui_symbol <- symbol;
+  current_unit.ui_defines <- [symbol];
   current_unit.ui_imports_cmi <- [];
   current_unit.ui_imports_cmx <- [];
   current_unit.ui_curry_fun <- [];
@@ -79,10 +97,13 @@ let reset name =
   current_unit.ui_send_fun <- [];
   current_unit.ui_force_link <- false
 
+let current_unit_infos () =
+  current_unit
+
 let current_unit_name () =
   current_unit.ui_name
 
-let make_symbol ?(unitname = current_unit.ui_name) idopt =
+let make_symbol ?(unitname = current_unit.ui_symbol) idopt =
   let prefix = "caml" ^ unitname in
   match idopt with
   | None -> prefix
@@ -105,33 +126,51 @@ let read_unit_info filename =
     close_in ic;
     raise(Error(Corrupted_unit_info(filename)))
 
-(* Return the approximation of a global identifier *)
+(* Read and cache info on global identifiers *)
 
 let cmx_not_found_crc =
   "\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000\000"
 
-let global_approx global_ident =
+let get_global_info global_ident =
   let modname = Ident.name global_ident in
   if modname = current_unit.ui_name then
-    current_unit.ui_approx
+    Some current_unit
   else begin
     try
-      Hashtbl.find global_approx_table modname
+      Hashtbl.find global_infos_table modname
     with Not_found ->
-      let (approx, crc) =
+      let (infos, crc) =
         try
           let filename =
             find_in_path_uncap !load_path (modname ^ ".cmx") in
           let (ui, crc) = read_unit_info filename in
           if ui.ui_name <> modname then
             raise(Error(Illegal_renaming(ui.ui_name, filename)));
-          (ui.ui_approx, crc)
+          (Some ui, crc)
         with Not_found ->
-          (Value_unknown, cmx_not_found_crc) in
+          (None, cmx_not_found_crc) in
       current_unit.ui_imports_cmx <-
         (modname, crc) :: current_unit.ui_imports_cmx;
-      Hashtbl.add global_approx_table modname approx;
-      approx
+      Hashtbl.add global_infos_table modname infos;
+      infos
+  end
+
+(* Return the approximation of a global identifier *)
+
+let global_approx id =
+  match get_global_info id with
+  | None -> Value_unknown
+  | Some ui -> ui.ui_approx
+
+(* Return the symbol used to refer to a global identifier *)
+
+let symbol_for_global id =
+  if Ident.is_predef_exn id then
+    "caml_exn_" ^ Ident.name id
+  else begin
+    match get_global_info id with
+    | None -> make_symbol ~unitname:(Ident.name id) None
+    | Some ui -> make_symbol ~unitname:ui.ui_symbol None
   end
 
 (* Register the approximation of the module being compiled *)

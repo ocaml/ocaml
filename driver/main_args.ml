@@ -79,6 +79,8 @@ struct
     "-dllpath", Arg.String F._dllpath,
            "<dir>  Add <dir> to the run-time search path for shared libraries";
     "-dtypes", Arg.Unit F._dtypes, " Save type information in <filename>.annot";
+     "-for-pack", Arg.String (fun s -> ()),
+           "<ident>  Ignored (for compatibility with ocamlopt)";
     "-g", Arg.Unit F._g, " Save debugging information";
     "-i", Arg.Unit F._i, " Print inferred interface";
     "-I", Arg.String F._I,

@@ -111,6 +111,9 @@ let main () =
              " print configuration values and exit";
        "-dtypes", Arg.Set save_types,
              " Save type information in <filename>.annot";
+       "-for-pack", Arg.String (fun s -> for_package := Some s),
+             "<ident>  Generate code that can later be `packed' with\n
+                       \t\t\tocamlopt -pack -o <ident>.cmx";
        "-i", Arg.Unit (fun () -> print_types := true; compile_only := true),
              " Print inferred interface";
        "-I", Arg.String(fun dir -> include_dirs := dir :: !include_dirs),

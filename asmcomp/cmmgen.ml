@@ -853,10 +853,7 @@ let rec transl = function
   | Uprim(prim, args) ->
       begin match (simplif_primitive prim, args) with
         (Pgetglobal id, []) ->
-          if Ident.is_predef_exn id
-          then Cconst_symbol ("caml_exn_" ^ (Ident.name id))
-          else Cconst_symbol (Compilenv.make_symbol ~unitname:(Ident.name id)
-                                                    None)
+          Cconst_symbol (Compilenv.symbol_for_global id)
       | (Pmakeblock(tag, mut), []) ->
           transl_constant(Const_block(tag, []))
       | (Pmakeblock(tag, mut), args) ->

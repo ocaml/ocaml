@@ -99,10 +99,6 @@ NATIVECCLINKOPTS=/MT
 PARTIALLD=lib /nologo /debugtype:cv
 PACKLD=ld -r --oformat pe-i386
 
-### nm and objcopy are missing
-BINUTILS_NM=nm
-BINUTILS_OBJCOPY=objcopy
-
 ############# Configuration for the contributed libraries
 
 OTHERLIBRARIES=win32unix systhreads str num win32graph dynlink bigarray labltk

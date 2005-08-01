@@ -38,7 +38,6 @@ dl_defs=''
 verbose=no
 withcurses=yes
 withsharedlibs=yes
-binutils_dir=''
 gcc_warnings="-Wall"
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
@@ -99,8 +98,6 @@ while : ; do
         dl_defs="$2"; shift;;
     -dllibs*|--dllibs*)
         dllib="$2"; shift;;
-    -binutils*|--binutils*)
-        binutils_dir=$2; shift;;
     -verbose|--verbose)
         verbose=yes;;
     *) echo "Unknown option \"$1\"." 1>&2; exit 2;;
@@ -658,45 +655,6 @@ case "$arch,$model,$system" in
     case "$nativecc" in gcc*) ;; *) cc_profile='-xpg';; esac;;
   amd64,*,linux) profiling='prof';;
   *) profiling='noprof';;
-esac
-
-# Where are GNU binutils?
-
-binutils_objcopy=''
-binutils_install_objcopy=':'
-binutils_nm=''
-
-case "$host" in
-  powerpc-*-darwin*)
-    binutils_objcopy='$(LIBDIR)/ocaml-objcopy'
-    binutils_install_objcopy=cp
-    binutils_nm=/usr/bin/nm
-  ;;
-  *)
-    if test "$arch" != "none"; then
-      binutils_path="${binutils_dir}:${PATH}:/usr/libexec/binutils"
-      old_IFS="$IFS"
-      IFS=':'
-      for d in ${binutils_path}; do
-        if test -z "$d"; then continue; fi
-        if test -f "$d/objcopy" && test -f "$d/nm"; then
-          echo "objcopy and nm found in $d"
-          if test `$d/objcopy --help | grep -s -c 'redefine-sym'` -eq 0; then
-            echo "$d/objcopy does not support option --redefine-sym, discarded"
-            continue;
-          fi
-          if test `$d/nm --version | grep -s -c 'GNU nm'` -eq 0; then
-            echo "$d/nm is not from GNU binutils, discarded"
-            continue;
-          fi
-          binutils_objcopy="$d/objcopy"
-          binutils_nm="$d/nm"
-          break
-        fi
-      done
-      IFS="$old_IFS"
-    fi
-  ;;
 esac
 
 # Where is ranlib?
@@ -1457,9 +1415,6 @@ echo "ASPP=$aspp" >> Makefile
 echo "ASPPFLAGS=$asppflags" >> Makefile
 echo "ASPPPROFFLAGS=$asppprofflags" >> Makefile
 echo "PROFILING=$profiling" >> Makefile
-echo "BINUTILS_OBJCOPY=$binutils_objcopy" >> Makefile
-echo "BINUTILS_INSTALL_OBJCOPY=$binutils_install_objcopy" >> Makefile
-echo "BINUTILS_NM=$binutils_nm" >> Makefile
 echo "DYNLINKOPTS=$dllib" >> Makefile
 echo "OTHERLIBRARIES=$otherlibraries" >> Makefile
 echo "DEBUGGER=$debugger" >> Makefile
@@ -1513,11 +1468,6 @@ else
   echo "        profiling with gprof ..... supported"
   else
   echo "        profiling with gprof ..... not supported"
-  fi
-  if test -n "$binutils_objcopy" && test -n "$binutils_nm"; then
-  echo "        ocamlopt -pack ........... supported"
-  else
-  echo "        ocamlopt -pack ........... not supported (no binutils)"
   fi
 fi
 

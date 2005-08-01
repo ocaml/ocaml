@@ -99,10 +99,6 @@ NATIVECCLINKOPTS=
 PARTIALLD=ld -r $(NATIVECCLINKOPTS)
 PACKLD=$(PARTIALLD)
 
-### nm and objcopy from GNU binutils
-BINUTILS_NM=nm
-BINUTILS_OBJCOPY=objcopy
-
 ############# Configuration for the contributed libraries
 
 OTHERLIBRARIES=win32unix systhreads str num win32graph dynlink bigarray labltk

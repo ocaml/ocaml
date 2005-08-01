@@ -85,7 +85,7 @@ let implementation ppf sourcefile outputprefix =
   Env.set_unit_name modulename;
   let inputfile = Pparse.preprocess sourcefile in
   let env = initial_env() in
-  Compilenv.reset modulename;
+  Compilenv.reset ?packname:!Clflags.for_package modulename;
   try
     if !Clflags.print_types then ignore(
       Pparse.file ppf inputfile Parse.implementation ast_impl_magic_number
