@@ -40,14 +40,19 @@ allopt: nums.cmxa
 nums.cma:
 	$(CAMLC) -a -o nums.cma
 
+# Workaround: under MacOS X, ar cannot create empty archives
+
 nums.cmxa:
-	$(CAMLOPT) -a -o nums.cmxa
+	touch nums__dummy.ml
+	$(CAMLOPT) -c nums__dummy.ml
+	$(CAMLOPT) -a -o nums.cmxa nums__dummy.cmx
 
 install:
 	cp nums.cma $(LIBDIR)
 
 installopt:
 	cp nums.cmxa nums.a $(LIBDIR)
+	cd $(LIBDIR); $(RANLIB) nums.a
 
 #all: libnums.a nums.cma $(CMIFILES)
 #

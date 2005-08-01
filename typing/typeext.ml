@@ -882,7 +882,7 @@ let type_expression env loc = function
       Textexp_namespace e,
       e.exp_type
   | Pextexp_from_ml e ->
-      let t = newvar () in
+      let t = new_global_var () in (* Prevent generalization *)
       let e = type_expect env e t in
       let t = ext_from_ml env loc t in
       Textexp_from_ml e, t
@@ -890,8 +890,7 @@ let type_expression env loc = function
       let t = new_global_var () in  (* Prevent generalization *)
       let e = type_ext env e in
       ext_to_ml env loc t e.exp_type;
-      Textexp_to_ml e,
-      t
+      Textexp_to_ml e, t
   | Pextexp_check (e,t) ->
       let e = type_ext env e in
       let t = transl_ext_type env t in

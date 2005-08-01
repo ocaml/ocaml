@@ -130,7 +130,11 @@ clean::
 cduce_types.cmo: $(CDUCE)
 	$(CAMLC) $(COMPFLAGS) -pack -o cduce_types.cmo $(CDUCE)
 
+# To make ocamlopt -pack works, under Mac OS X, we need to install
+# this objcopy emulator before the real installation
+
 cduce_types.cmx: $(CDUCE:.cmo=.cmx)
+	$(BINUTILS_INSTALL_OBJCOPY) ocaml-objcopy-macosx $(BINUTILS_OBJCOPY)
 	$(CAMLOPT) $(OPTCOMPFLAGS) -pack -o cduce_types.cmx $(CDUCE:.cmo=.cmx)
 
 #cduce_types.p.cmx: $(CDUCE:.cmo=.p.cmx)
