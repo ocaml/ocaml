@@ -42,8 +42,8 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
    - [C]: insert a character argument in Caml syntax (single quotes, escapes).
    - [f]: convert a floating-point argument to decimal notation,
      in the style [dddd.ddd].
-   - [F]: convert a floating-point argument in Caml syntax ([dddd.ddd]
-     with a mandatory [.]).
+   - [F]: convert a floating-point argument to Caml syntax ([dddd.]
+     or [dddd.ddd] or [d.ddd e+-dd])
    - [e] or [E]: convert a floating-point argument to decimal notation,
      in the style [d.ddd e+-dd] (mantissa and exponent).
    - [g] or [G]: convert a floating-point argument to decimal notation,
