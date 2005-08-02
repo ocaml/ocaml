@@ -134,7 +134,7 @@ cduce_types.cmo: $(CDUCE)
 # this objcopy emulator before the real installation
 
 cduce_types.cmx: $(CDUCE:.cmo=.cmx)
-	$(BINUTILS_INSTALL_OBJCOPY) ocaml-objcopy-macosx $(BINUTILS_OBJCOPY)
+	$(BINUTILS_INSTALL_OBJCOPY) ../tools/ocaml-objcopy-macosx $(BINUTILS_OBJCOPY)
 	$(CAMLOPT) $(OPTCOMPFLAGS) -pack -o cduce_types.cmx $(CDUCE:.cmo=.cmx)
 
 #cduce_types.p.cmx: $(CDUCE:.cmo=.p.cmx)
