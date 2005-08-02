@@ -263,6 +263,29 @@ let check_sig_item type_names module_names modtype_names loc = function
       check "module type" loc modtype_names (Ident.name id)
   | _ -> ()
 
+(* Simplify multiple specifications of a value or an exception in a signature.
+   (Other signature components, e.g. types, modules, etc, are checked for
+   name uniqueness.)  If multiple specifications with the same name,
+   keep only the last (rightmost) one. *)
+
+let simplify_signature sg =
+  let rec simplif val_names exn_names res = function
+    [] -> res
+  | (Tsig_value(id, descr) as component) :: sg ->
+      let name = Ident.name id in
+      simplif (StringSet.add name val_names) exn_names
+              (if StringSet.mem name val_names then res else component :: res)
+              sg
+  | (Tsig_exception(id, decl) as component) :: sg ->
+      let name = Ident.name id in
+      simplif val_names (StringSet.add name exn_names)
+              (if StringSet.mem name exn_names then res else component :: res)
+              sg
+  | component :: sg ->
+      simplif val_names exn_names (component :: res) sg
+  in
+    simplif StringSet.empty StringSet.empty [] (List.rev sg)
+
 (* Check and translate a module type expression *)
 
 let rec transl_modtype env smty =
@@ -721,7 +744,8 @@ and type_structure anchor env sstr =
   in
   if !Clflags.save_types
   then List.iter (function {pstr_loc = l} -> Stypes.record_phrase l) sstr;
-  type_struct env sstr
+  let (str, sg, final_env) = type_struct env sstr in
+  (str, simplify_signature sg, final_env)
 
 let type_module = type_module None
 let type_structure = type_structure None
@@ -744,38 +768,6 @@ and normalize_signature_item env = function
   | Tsig_module(id, mty, _) -> normalize_modtype env mty
   | _ -> ()
 
-(* Simplify multiple specifications of a value or an exception in a signature.
-   (Other signature components, e.g. types, modules, etc, are checked for
-   name uniqueness.)  If multiple specifications with the same name,
-   keep only the last (rightmost) one. *)
-
-let rec simplify_modtype mty =
-  match mty with
-    Tmty_ident path -> mty
-  | Tmty_functor(id, arg, res) -> Tmty_functor(id, arg, simplify_modtype res)
-  | Tmty_signature sg -> Tmty_signature(simplify_signature sg)
-
-and simplify_signature sg =
-  let rec simplif val_names exn_names res = function
-    [] -> res
-  | (Tsig_value(id, descr) as component) :: sg ->
-      let name = Ident.name id in
-      simplif (StringSet.add name val_names) exn_names
-              (if StringSet.mem name val_names then res else component :: res)
-              sg
-  | (Tsig_exception(id, decl) as component) :: sg ->
-      let name = Ident.name id in
-      simplif val_names (StringSet.add name exn_names)
-              (if StringSet.mem name exn_names then res else component :: res)
-              sg
-  | Tsig_module(id, mty, rs) :: sg ->
-      simplif val_names exn_names
-              (Tsig_module(id, simplify_modtype mty, rs) :: res) sg
-  | component :: sg ->
-      simplif val_names exn_names (component :: res) sg
-  in
-    simplif StringSet.empty StringSet.empty [] (List.rev sg)
-
 (* Typecheck an implementation file *)
 
 let type_implementation sourcefile outputprefix modulename initial_env ast =
@@ -786,7 +778,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
   in
   Typecore.force_delayed_checks ();
   if !Clflags.print_types then begin
-    fprintf std_formatter "%a@." Printtyp.signature (simplify_signature sg);
+    fprintf std_formatter "%a@." Printtyp.signature sg;
     (str, Tcoerce_none)
   end else begin
     let coercion =
