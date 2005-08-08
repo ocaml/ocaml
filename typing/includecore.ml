@@ -40,12 +40,11 @@ let value_descriptions env vd1 vd2 =
 let private_flags priv1 priv2 =
   match (priv1, priv2) with (Private, Public) -> false | (_, _) -> true
 
-(* Inclusion between manifest types (particularly for fixed types) *)
+(* Inclusion between manifest types (particularly for private row types) *)
 
 let is_absrow env ty =
   match ty.desc with
     Tconstr(Pident id, _, _) ->
-      Btype.is_row_name (Ident.name id) &&
       begin match Ctype.expand_head env ty with
         {desc=Tobject _|Tvariant _} -> true
       | _ -> false
