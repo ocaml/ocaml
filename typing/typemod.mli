@@ -29,6 +29,8 @@ val transl_signature:
 val check_nongen_schemes:
         Env.t -> Typedtree.structure -> unit
 
+val simplify_signature: signature -> signature
+
 val package_units:
         string list -> string -> string -> Typedtree.module_coercion
 

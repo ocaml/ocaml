@@ -234,7 +234,8 @@ let execute_phrase print_outcome ppf phr =
                     let ty = Printtyp.tree_of_type_scheme exp.exp_type in
                     Ophr_eval (outv, ty)
                 | [] -> Ophr_signature []
-                | _ -> Ophr_signature (item_list newenv sg)
+                | _ -> Ophr_signature (item_list newenv
+                                             (Typemod.simplify_signature sg))
               else Ophr_signature []
           | Exception exn ->
               toplevel_env := oldenv;
