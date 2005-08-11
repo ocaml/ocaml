@@ -91,6 +91,8 @@ value mkpolytype t =
   [ TyPol _ _ _ -> t
   | _ -> TyPol (MLast.loc_of_ctyp t) [] t ]
 ;
+value mkepat loc d = {pext_desc = d; pext_loc = mkloc loc};
+value mkecst loc d = {pextcst_desc = d; pextcst_loc = mkloc loc};
 
 value lident s = Lident s;
 value ldot l s = Ldot l s;
@@ -175,7 +177,60 @@ value ctyp_long_id t =
   | t -> error (loc_of_ctyp t) "invalid type" ]
 ;
 
-value rec ctyp =
+value rec epat =
+  fun
+  [ EPatCst loc t -> mkepat loc (Pext_cst t)
+  | EPatNs loc s -> mkepat loc (Pext_ns s)
+  | EPatOr loc p1 p2 -> mkepat loc (Pext_or (epat p1) (epat p2))
+  | EPatAnd loc p1 p2 -> mkepat loc (Pext_and (epat p1) (epat p2))
+  | EPatDiff loc p1 p2 -> mkepat loc (Pext_diff (epat p1) (epat p2))
+  | EPatProd loc p1 p2 -> mkepat loc (Pext_prod (epat p1) (epat p2))
+  | EPatArrow loc p1 p2 -> mkepat loc (Pext_arrow (epat p1) (epat p2))
+  | EPatXml loc p1 p2 -> mkepat loc (Pext_xml (epat p1) (epat p2))
+  | EPatOptional loc p -> mkepat loc (Pext_optional (epat p))
+  | EPatRecord loc o l ->
+      let l = 
+	List.map (fun [ (q,(p1,p2)) ->
+			  (q,(epat p1,
+			      match p2 with [ None -> None
+			      | Some p -> Some (epat p)])) ]) l in
+      mkepat loc (Pext_record o l)
+  | EPatBind loc x cst -> mkepat loc (Pext_bind x (ecst cst))
+  | EPatConstant loc cst -> mkepat loc (Pext_constant (ecst cst))
+  | EPatRegexp loc re -> mkepat loc (Pext_regexp (erexp re))
+  | EPatName loc li -> mkepat loc (Pext_name li)
+  | EPatRecurs loc p l ->
+      let l = List.map (fun [ (x,p) -> (x,epat p) ]) l in
+      mkepat loc (Pext_recurs (epat p) l)
+  | EPatFrom_ml loc t -> mkepat loc (Pext_from_ml (ctyp t))
+  | EPatConcat loc p1 p2 -> mkepat loc (Pext_concat (epat p1) (epat p2))
+  | EPatMerge loc p1 p2 -> mkepat loc (Pext_concat (epat p1) (epat p2)) ]
+
+ and ecst = 
+  fun
+  [ ECstPair loc c1 c2 -> mkecst loc (Pextcst_pair (ecst c1) (ecst c2))
+  | ECstXml loc c1 c2 c3 -> mkecst loc (Pextcst_xml (ecst c1) (ecst c2) (ecst c3))
+  | ECstRecord loc l ->
+      let l = List.map (fun [ (q,c) -> (q,ecst c) ]) l in
+      mkecst loc (Pextcst_record l)
+  | ECstAtom loc q -> mkecst loc (Pextcst_atom q)
+  | ECstInt loc i -> mkecst loc (Pextcst_int i)
+  | ECstChar loc i -> mkecst loc (Pextcst_char i)
+  | ECstString loc s -> mkecst loc (Pextcst_string s)
+  | ECstIntern loc c -> mkecst loc (Pextcst_intern c) ]
+ 
+ and erexp = 
+  fun
+  [ ERegEpsilon -> Pext_epsilon
+  | ERegElem p -> Pext_elem (epat p)
+  | ERegGuard p -> Pext_guard (epat p)
+  | ERegSeq r1 r2 -> Pext_seq (erexp r1) (erexp r2)
+  | ERegAlt r1 r2 -> Pext_alt (erexp r1) (erexp r2)
+  | ERegStar r -> Pext_star (erexp r)
+  | ERegWeakstar r -> Pext_weakstar (erexp r)
+  | ERegCapture x r -> Pext_capture x (erexp r) ]
+ 
+ and ctyp =
   fun
   [ TyAcc loc _ _ as f ->
       let (is_cls, li) = ctyp_long_id f in
@@ -228,7 +283,9 @@ value rec ctyp =
         | Some None -> (False, None)
         | Some (Some sl) -> (True, Some sl) ]
       in
-      mktyp loc (Ptyp_variant catl clos sl) ]
+      mktyp loc (Ptyp_variant catl clos sl)
+  | TyExt loc t ->
+      mktyp loc (Ptyp_ext (epat t)) ]
 and meth_list loc fl v =
   match fl with
   [ [] -> if v then [mkfield loc Pfield_var] else []

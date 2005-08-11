@@ -21,7 +21,49 @@
 
 type loc = (Lexing.position * Lexing.position);
 
-type ctyp =
+type epat =
+  [ EPatCst of loc and Cduce_types.Types.t
+  | EPatNs of loc and string
+  | EPatOr of loc and epat and epat
+  | EPatAnd of loc and epat and epat
+  | EPatDiff of loc and epat and epat
+  | EPatProd of loc and epat and epat
+  | EPatArrow of loc and epat and epat
+  | EPatXml of loc and epat and epat
+  | EPatOptional of loc and epat
+  | EPatRecord of loc and bool and list (qname * (epat * option epat))
+  | EPatBind of loc and string and ecst
+  | EPatConstant of loc and ecst
+  | EPatRegexp of loc and eregexp
+  | EPatName of loc and Longident.t
+  | EPatRecurs of loc and epat and list (string * epat)
+  | EPatFrom_ml of loc and ctyp
+  | EPatConcat of loc and epat and epat
+  | EPatMerge of loc and epat and epat ]
+
+and eregexp =
+  [ ERegEpsilon
+  | ERegElem of epat
+  | ERegGuard of epat
+  | ERegSeq of eregexp and eregexp
+  | ERegAlt of eregexp and eregexp
+  | ERegStar of eregexp
+  | ERegWeakstar of eregexp
+  | ERegCapture of string and eregexp ]
+
+and ecst = 
+  [ ECstPair of loc and ecst and ecst
+  | ECstXml of loc and ecst and ecst and ecst
+  | ECstRecord of loc and list (qname * ecst)
+  | ECstAtom of loc and qname
+  | ECstInt of loc and Cduce_types.Intervals.V.t
+  | ECstChar of loc and Cduce_types.Encodings.Utf8.t
+  | ECstString of loc and Cduce_types.Encodings.Utf8.t
+  | ECstIntern of loc and Cduce_types.Types.Const.t ]
+
+and qname = (string * Cduce_types.Encodings.Utf8.t)
+
+and ctyp =
   [ TyAcc of loc and ctyp and ctyp
   | TyAli of loc and ctyp and ctyp
   | TyAny of loc
@@ -39,7 +81,8 @@ type ctyp =
   | TySum of loc and bool and list (loc * string * list ctyp)
   | TyTup of loc and list ctyp
   | TyUid of loc and string
-  | TyVrn of loc and list row_field and option (option (list string)) ]
+  | TyVrn of loc and list row_field and option (option (list string))
+  | TyExt of loc and epat ]
 and row_field =
   [ RfTag of string and bool and list ctyp
   | RfInh of ctyp ]

@@ -20,7 +20,11 @@ value option_map f =
   | None -> None ]
 ;
 
-value rec ctyp floc sh =
+value rec epat floc sh =
+  self where rec self =
+    fun [ _ -> assert False ]
+
+and ctyp floc sh =
   self where rec self =
     fun
     [ TyAcc loc x1 x2 -> TyAcc (floc loc) (self x1) (self x2)
@@ -46,7 +50,8 @@ value rec ctyp floc sh =
     | TyTup loc x1 -> TyTup (floc loc) (List.map self x1)
     | TyUid loc x1 -> TyUid (floc loc) x1
     | TyVrn loc x1 x2 ->
-        TyVrn (floc loc) (List.map (row_field floc sh) x1) x2 ]
+        TyVrn (floc loc) (List.map (row_field floc sh) x1) x2
+    | TyExt loc x -> TyExt (floc loc) (epat floc sh x) ]
 and row_field floc sh =
   fun
   [ RfTag x1 x2 x3 -> RfTag x1 x2 (List.map (ctyp floc sh) x3)
