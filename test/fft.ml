@@ -179,10 +179,11 @@ let test np =
          ki := i
       end
   done;
-  let zm = if abs_float !zr < abs_float !zi then !zi else !zr in
-  print_float zm; print_newline()
-
+  if abs_float !zr <= 1e-9 && abs_float !zi <= 1e-9
+  then print_string "ok"
+  else print_string "ERROR";
+  print_newline()
 
 let _ =
-  let np = ref 16 in for i = 1 to 13 do test !np; np := !np*2 done
+  let np = ref 16 in for i = 1 to 16 do test !np; np := !np*2 done
 

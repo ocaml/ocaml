@@ -86,7 +86,7 @@ let test_sort sort_fun size =
 
 
 let main () =
-  test_sort qsort 50000;
-  test_sort qsort2 50000
+  test_sort qsort 500000;
+  test_sort qsort2 500000
 
 let _ = main(); exit 0
