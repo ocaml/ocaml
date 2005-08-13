@@ -11,6 +11,55 @@ Type checking:
   more confusing than useful, and created problems with private row
   types.
 
+
+Objective Caml 3.08.4:
+----------------------
+
+New features:
+- configure: find X11 config in some 64-bit Linux distribs
+- ocamldoc: (**/**) can be canceled with another (**/**) PR#3665
+- graphics: added resize_window
+- graphics: check for invalid arguments to drawing primitives PR#3595
+- lablbrowser: use windows subsystem on mingw
+
+Bug fixes:
+- ocamlopt: code generation problem on AMD64 PR#3640
+- wrong code generated for some classes PR#3576
+- fatal error when compiling some OO code PR#3745
+- problem with comparison on constant constructors PR#3608
+- camlp4: cryptic error message PR#3592
+- camlp4: line numbers in multi-line antiquotations PR#3549
+- camlp4: problem with make depend
+- camlp4: parse error with :> PR#3561
+- camlp4: ident conversion problem with val/contents/contents__
+- camlp4: several small parsing problems PR#3688
+- ocamldebug: handling of spaces in executable file name PR#3736
+- emacs-mode: problem when caml-types-buffer is deleted by user PR#3704
+- ocamldoc: extra backslash in ocamldoc man page PR#3687
+- ocamldoc: improvements to HTML display PR#3698
+- ocamldoc: escaping of @ in info files
+- ocamldoc: escaping of . and \ in man pages PR#3686
+- ocamldoc: better error reporting of misplaced comments
+- graphics: fixed .depend file PR#3558
+- graphics: segfault with threads and graphics PR#3651
+- nums: several bugs: PR#3718, PR#3719, others
+- nums: inline asm problems with gcc 4.0 PR#3604, PR#3637
+- threads: problem with backtrace
+- unix: problem with getaddrinfo PR#3565
+- stdlib: documentation of Int32.rem and Int64.rem PR#3573
+- stdlib: documentation of List.rev_map2 PR#3685
+- stdlib: wrong order in Map.fold PR#3607
+- stdlib: documentation of maximum float array length PR#3714
+- better detection of cycles when using -rectypes
+- missing case of module equality PR#3738
+- better error messages for unbound type variables
+- stack overflow while printing type error message PR#3705
+- assert failure when typing some classes PR#3638
+- bug in type_approx
+- better error messages related to type variance checking
+- yacc: avoid name capture for idents of the Parsing module
+
+
 Objective Caml 3.08.3:
 ----------------------
 
