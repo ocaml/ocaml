@@ -13,8 +13,8 @@ Camlp4 Version 3.08.2
 - [07 Oct 04] Changes in the interfaces plexer.mli and pcaml.mli:
    - plexer.mli: introduced a new lexer building function `make_lexer',
      similar to `gmake', but returning a triple of references in addition
-     (holding respectively the character number of the beginning + of the
-     current line, the current line number and the name of the file + being
+     (holding respectively the character number of the beginning of the
+     current line, the current line number and the name of the file being
      parsed).
    - pcaml.mli: a new value `position'. A global reference to a triple like
      the one mentioned above.

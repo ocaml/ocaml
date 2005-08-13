@@ -129,7 +129,7 @@ and raw_type_desc ppf = function
           | Some(p,tl) ->
               fprintf ppf "(Some(@,%a,@,%a))" path p raw_type_list tl)
   | Tfield (f, k, t1, t2) ->
-      fprintf ppf "@[<hov1>Tfield(@,%s,@,%s,@,%a,@,%a)@]" f
+      fprintf ppf "@[<hov1>Tfield(@,%s,@,%s,@,%a,@;<0 -1>%a)@]" f
         (safe_kind_repr [] k)
         raw_type t1 raw_type t2
   | Tnil -> fprintf ppf "Tnil"  
@@ -213,6 +213,8 @@ let is_aliased ty = List.memq (proxy ty) !aliased
 let add_alias ty =
   let px = proxy ty in
   if not (is_aliased px) then aliased := px :: !aliased
+let aliasable ty =
+  match ty.desc with Tvar | Tunivar | Tpoly _ -> false | _ -> true
 
 let namable_row row =
   row.row_name <> None &&
@@ -227,8 +229,7 @@ let namable_row row =
 let rec mark_loops_rec visited ty =
   let ty = repr ty in
   let px = proxy ty in
-  (* if List.memq px !aliased then () else : need also consider delayed *)
-  if List.memq px visited then aliased := px :: !aliased else
+  if List.memq px visited && aliasable ty then add_alias px else
     let visited = px :: visited in
     match ty.desc with
     | Tvar -> ()
@@ -386,7 +387,7 @@ let rec tree_of_typexp sch ty =
         Otyp_var (false, name_of_type ty)
   in
   if List.memq px !delayed then delayed := List.filter ((!=) px) !delayed;
-  if is_aliased px && ty.desc <> Tvar && ty.desc <> Tunivar then begin
+  if is_aliased px && aliasable ty then begin
     check_name_of_type px;
     Otyp_alias (pr_typ (), name_of_type px) end
   else pr_typ ()

@@ -161,7 +161,7 @@ module Make(Ord: OrderedType) = struct
       match m with
         Empty -> accu
       | Node(l, v, d, r, _) ->
-          fold f l (f v d (fold f r accu))
+          fold f r (f v d (fold f l accu))
 
     type 'a enumeration = End | More of key * 'a * 'a t * 'a enumeration
 

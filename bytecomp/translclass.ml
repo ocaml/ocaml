@@ -503,8 +503,8 @@ let rec builtin_meths self env env2 body =
     | _ -> raise Not_found
   in
   match body with
-  | Llet(Alias, s', Lvar s, body) when List.mem s self ->
-      builtin_meths self env env2 body
+  | Llet(_, s', Lvar s, body) when List.mem s self ->
+      builtin_meths (s'::self) env env2 body
   | Lapply(f, [arg]) when const_path f ->
       let s, args = conv arg in ("app_"^s, f :: args)
   | Lapply(f, [arg; p]) when const_path f && const_path p ->
@@ -529,7 +529,7 @@ let rec builtin_meths self env env2 body =
         | Lprim(Parraysetu _, [Lvar s; Lvar n; Lvar x'])
           when Ident.same x x' && List.mem s self ->
             ("set_var", [Lvar n])
-        | Llet(Alias, s', Lvar s, body) when List.mem s self ->
+        | Llet(_, s', Lvar s, body) when List.mem s self ->
             enter (s'::self) body
         | _ -> raise Not_found
       in enter self body

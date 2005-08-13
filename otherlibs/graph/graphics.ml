@@ -41,6 +41,7 @@ let (open_graph, close_graph) =
   | _ -> invalid_arg ("Graphics: unknown OS type: " ^ Sys.os_type)
 
 external set_window_title : string -> unit = "caml_gr_set_window_title"
+external resize_window : int -> int -> unit = "caml_gr_resize_window"
 external clear_graph : unit -> unit = "caml_gr_clear_graph"
 external size_x : unit -> int = "caml_gr_size_x"
 external size_y : unit -> int = "caml_gr_size_y"
@@ -94,7 +95,13 @@ let current_point () = current_x (), current_y ()
 external lineto : int -> int -> unit = "caml_gr_lineto"
 let rlineto x y = lineto (current_x () + x) (current_y () + y)
 let rmoveto x y = moveto (current_x () + x) (current_y () + y)
-external draw_rect : int -> int -> int -> int -> unit = "caml_gr_draw_rect"
+
+external raw_draw_rect : int -> int -> int -> int -> unit = "caml_gr_draw_rect"
+let draw_rect x y w h =
+  if w < 0 || h < 0 then raise (Invalid_argument "draw_rect")
+  else raw_draw_rect x y w h
+;;
+
 let draw_poly, draw_poly_line =
   let dodraw close_flag points =
     if Array.length points > 0 then begin
@@ -118,16 +125,37 @@ let draw_segments segs =
   done;
   moveto savex savey;
 ;;
-external draw_arc : int -> int -> int -> int -> int -> int -> unit
+
+external raw_draw_arc : int -> int -> int -> int -> int -> int -> unit
                = "caml_gr_draw_arc" "caml_gr_draw_arc_nat"
+let draw_arc x y rx ry a1 a2 =
+  if rx < 0 || ry < 0 then raise (Invalid_argument "draw_arc/ellipse/circle")
+  else raw_draw_arc x y rx ry a1 a2
+;;
+
 let draw_ellipse x y rx ry = draw_arc x y rx ry 0 360
 let draw_circle x y r = draw_arc x y r r 0 360
-external set_line_width : int -> unit = "caml_gr_set_line_width"
 
-external fill_rect : int -> int -> int -> int -> unit = "caml_gr_fill_rect"
+external raw_set_line_width : int -> unit = "caml_gr_set_line_width"
+let set_line_width w =
+  if w < 0 then raise (Invalid_argument "set_line_width")
+  else raw_set_line_width w
+;;
+
+external raw_fill_rect : int -> int -> int -> int -> unit = "caml_gr_fill_rect"
+let fill_rect x y w h =
+  if w < 0 || h < 0 then raise (Invalid_argument "fill_rect")
+  else raw_fill_rect x y w h
+;;
+
 external fill_poly : (int * int) array -> unit = "caml_gr_fill_poly"
-external fill_arc : int -> int -> int -> int -> int -> int -> unit
+external raw_fill_arc : int -> int -> int -> int -> int -> int -> unit
                = "caml_gr_fill_arc" "caml_gr_fill_arc_nat"
+let fill_arc x y rx ry a1 a2 =
+  if rx < 0 || ry < 0 then raise (Invalid_argument "fill_arc/ellipse/circle")
+  else raw_fill_arc x y rx ry a1 a2
+;;
+
 let fill_ellipse x y rx ry = fill_arc x y rx ry 0 360
 let fill_circle x y r = fill_arc x y r r 0 360
 

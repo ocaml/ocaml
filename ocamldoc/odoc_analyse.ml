@@ -261,99 +261,134 @@ let process_file ppf sourcefile =
            None
       )
 
-(** Remove the class elements after the stop special comment. *)
-let rec remove_class_elements_after_stop eles =
+(** Remove the class elements between the stop special comments. *)
+let rec remove_class_elements_between_stop keep eles =
   match eles with
     [] -> []
   | ele :: q ->
       match ele with
-        Odoc_class.Class_comment [ Odoc_types.Raw "/*" ] -> []
+        Odoc_class.Class_comment [ Odoc_types.Raw "/*" ] ->
+          remove_class_elements_between_stop (not keep) q
       | Odoc_class.Class_attribute _
       | Odoc_class.Class_method _
-      | Odoc_class.Class_comment _ -> ele :: (remove_class_elements_after_stop q)
+      | Odoc_class.Class_comment _ ->
+          if keep then
+            ele :: (remove_class_elements_between_stop keep q)
+          else
+            remove_class_elements_between_stop keep q
 
-(** Remove the class elements after the stop special comment in a class kind. *)
-let rec remove_class_elements_after_stop_in_class_kind k =
+(** Remove the class elements between the stop special comments in a class kind. *)
+let rec remove_class_elements_between_stop_in_class_kind k =
   match k with
     Odoc_class.Class_structure (inher, l) ->
-      Odoc_class.Class_structure (inher, remove_class_elements_after_stop l)
+      Odoc_class.Class_structure (inher, remove_class_elements_between_stop true l)
   | Odoc_class.Class_apply _ -> k
   | Odoc_class.Class_constr _ -> k
   | Odoc_class.Class_constraint (k1, ctk) ->
-      Odoc_class.Class_constraint (remove_class_elements_after_stop_in_class_kind k1,
-                        remove_class_elements_after_stop_in_class_type_kind ctk)
+      Odoc_class.Class_constraint (remove_class_elements_between_stop_in_class_kind k1,
+                        remove_class_elements_between_stop_in_class_type_kind ctk)
 
-(** Remove the class elements after the stop special comment in a class type kind. *)
-and remove_class_elements_after_stop_in_class_type_kind tk =
+(** Remove the class elements beetween the stop special comments in a class type kind. *)
+and remove_class_elements_between_stop_in_class_type_kind tk =
   match tk with
     Odoc_class.Class_signature (inher, l) ->
-      Odoc_class.Class_signature (inher, remove_class_elements_after_stop l)
+      Odoc_class.Class_signature (inher, remove_class_elements_between_stop true l)
   | Odoc_class.Class_type _ -> tk
 
 
-(** Remove the module elements after the stop special comment. *)
-let rec remove_module_elements_after_stop eles =
-  let f = remove_module_elements_after_stop in
+(** Remove the module elements between the stop special comments. *)
+let rec remove_module_elements_between_stop keep eles =
+  let f = remove_module_elements_between_stop in
   match eles with
     [] -> []
   | ele :: q ->
       match ele with
-        Odoc_module.Element_module_comment [ Odoc_types.Raw "/*" ] -> []
+        Odoc_module.Element_module_comment [ Odoc_types.Raw "/*" ] ->
+          f (not keep) q
       | Odoc_module.Element_module_comment _ ->
-          ele :: (f q)
+          if keep then
+            ele :: (f keep q)
+          else
+            f keep q
       | Odoc_module.Element_module m ->
-          m.Odoc_module.m_kind <- remove_module_elements_after_stop_in_module_kind m.Odoc_module.m_kind ;
-          (Odoc_module.Element_module m) :: (f q)
+          if keep then
+            (
+             m.Odoc_module.m_kind <- remove_module_elements_between_stop_in_module_kind m.Odoc_module.m_kind ;
+             (Odoc_module.Element_module m) :: (f keep q)
+            )
+          else
+            f keep q
       | Odoc_module.Element_module_type mt ->
-          mt.Odoc_module.mt_kind <- Odoc_misc.apply_opt
-              remove_module_elements_after_stop_in_module_type_kind mt.Odoc_module.mt_kind ;
-          (Odoc_module.Element_module_type mt) :: (f q)
+          if keep then
+            (
+             mt.Odoc_module.mt_kind <- Odoc_misc.apply_opt
+                 remove_module_elements_between_stop_in_module_type_kind mt.Odoc_module.mt_kind ;
+             (Odoc_module.Element_module_type mt) :: (f keep q)
+            )
+          else
+            f keep q
       | Odoc_module.Element_included_module _ ->
-          ele :: (f q)
+          if keep then
+            ele :: (f keep q)
+          else
+            f keep q
       | Odoc_module.Element_class c ->
-          c.Odoc_class.cl_kind <- remove_class_elements_after_stop_in_class_kind c.Odoc_class.cl_kind ;
-          (Odoc_module.Element_class c) :: (f q)
+          if keep then
+            (
+             c.Odoc_class.cl_kind <- remove_class_elements_between_stop_in_class_kind c.Odoc_class.cl_kind ;
+             (Odoc_module.Element_class c) :: (f keep q)
+            )
+          else
+            f keep q
       | Odoc_module.Element_class_type ct ->
-          ct.Odoc_class.clt_kind <- remove_class_elements_after_stop_in_class_type_kind ct.Odoc_class.clt_kind ;
-          (Odoc_module.Element_class_type ct) :: (f q)
+          if keep then
+            (
+             ct.Odoc_class.clt_kind <- remove_class_elements_between_stop_in_class_type_kind ct.Odoc_class.clt_kind ;
+             (Odoc_module.Element_class_type ct) :: (f keep q)
+            )
+          else
+            f keep q
       | Odoc_module.Element_value _
       | Odoc_module.Element_exception _
       | Odoc_module.Element_type _ ->
-          ele :: (f q)
+          if keep then
+            ele :: (f keep q)
+          else
+            f keep q
 
 
-(** Remove the module elements after the stop special comment, in the given module kind. *)
-and remove_module_elements_after_stop_in_module_kind k =
+(** Remove the module elements between the stop special comments, in the given module kind. *)
+and remove_module_elements_between_stop_in_module_kind k =
   match k with
-  | Odoc_module.Module_struct l -> Odoc_module.Module_struct (remove_module_elements_after_stop l)
+  | Odoc_module.Module_struct l -> Odoc_module.Module_struct (remove_module_elements_between_stop true l)
   | Odoc_module.Module_alias _ -> k
   | Odoc_module.Module_functor (params, k2)  ->
-      Odoc_module.Module_functor (params, remove_module_elements_after_stop_in_module_kind k2)
+      Odoc_module.Module_functor (params, remove_module_elements_between_stop_in_module_kind k2)
   | Odoc_module.Module_apply (k1, k2) ->
-      Odoc_module.Module_apply (remove_module_elements_after_stop_in_module_kind k1,
-                    remove_module_elements_after_stop_in_module_kind k2)
+      Odoc_module.Module_apply (remove_module_elements_between_stop_in_module_kind k1,
+                    remove_module_elements_between_stop_in_module_kind k2)
   | Odoc_module.Module_with (mtkind, s) ->
-      Odoc_module.Module_with (remove_module_elements_after_stop_in_module_type_kind mtkind, s)
+      Odoc_module.Module_with (remove_module_elements_between_stop_in_module_type_kind mtkind, s)
   | Odoc_module.Module_constraint (k2, mtkind) ->
-      Odoc_module.Module_constraint (remove_module_elements_after_stop_in_module_kind k2,
-                         remove_module_elements_after_stop_in_module_type_kind mtkind)
+      Odoc_module.Module_constraint (remove_module_elements_between_stop_in_module_kind k2,
+                         remove_module_elements_between_stop_in_module_type_kind mtkind)
 
-(** Remove the module elements after the stop special comment, in the given module type kind. *)
-and remove_module_elements_after_stop_in_module_type_kind tk =
+(** Remove the module elements between the stop special comment, in the given module type kind. *)
+and remove_module_elements_between_stop_in_module_type_kind tk =
   match tk with
-  | Odoc_module.Module_type_struct l -> Odoc_module.Module_type_struct (remove_module_elements_after_stop l)
+  | Odoc_module.Module_type_struct l -> Odoc_module.Module_type_struct (remove_module_elements_between_stop true l)
   | Odoc_module.Module_type_functor (params, tk2) ->
-      Odoc_module.Module_type_functor (params, remove_module_elements_after_stop_in_module_type_kind tk2)
+      Odoc_module.Module_type_functor (params, remove_module_elements_between_stop_in_module_type_kind tk2)
   | Odoc_module.Module_type_alias _ -> tk
   | Odoc_module.Module_type_with (tk2, s) ->
-      Odoc_module.Module_type_with (remove_module_elements_after_stop_in_module_type_kind tk2, s)
+      Odoc_module.Module_type_with (remove_module_elements_between_stop_in_module_type_kind tk2, s)
 
 
-(** Remove elements after the stop special comment. *)
-let remove_elements_after_stop module_list =
+(** Remove elements between the stop special comment. *)
+let remove_elements_between_stop module_list =
   List.map
     (fun m ->
-      m.Odoc_module.m_kind <- remove_module_elements_after_stop_in_module_kind m.Odoc_module.m_kind;
+      m.Odoc_module.m_kind <- remove_module_elements_between_stop_in_module_kind m.Odoc_module.m_kind;
       m
     )
     module_list
@@ -380,12 +415,12 @@ let analyse_files ?(init=[]) files =
        files
     )
   in
-  (* Remove elements after the stop special comments, if needed. *)
+  (* Remove elements between the stop special comments, if needed. *)
   let modules =
     if !Odoc_args.no_stop then
       modules_pre
     else
-      remove_elements_after_stop modules_pre
+      remove_elements_between_stop modules_pre
   in
 
 

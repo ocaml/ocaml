@@ -26,7 +26,8 @@ pa_$D_fast.ml: comp_head.ml $D_fast.ml comp_trail.ml
 	cat $(SRC) | sed -e "s/Plexer.make_lexer *()/P.lexer_pos/" -e "/EXTEND/,/END/d" -e "/Grammar.Entry.of_parser/d" -e "/Grammar.Entry.gcreate/d" | cat comp_head.ml - $D_fast.ml comp_trail.ml > pa_$D_fast.ml
 
 $D_fast.ml: compile.cmo $(SRC)
-	OTOP=$(OTOP) EXE=$(EXE) ./compile.sh $(COMP_OPT) $(SRC) > $D_fast.ml
+	echo '(* camlp4r *)' >$D_fast.ml
+	OTOP=$(OTOP) EXE=$(EXE) ./compile.sh $(COMP_OPT) $(SRC) >> $D_fast.ml
 
 install:
 	if test -f camlp4$D.fast.opt; then cp camlp4$D.fast.opt $(BINDIR)/camlp4$D.opt$(EXE); fi

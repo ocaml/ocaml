@@ -35,6 +35,9 @@ val close_graph : unit -> unit
 val set_window_title : string -> unit
 (** Set the title of the graphics window. *)
 
+val resize_window : int -> int -> unit
+(** Resize and erase the graphics window. *)
+
 external clear_graph : unit -> unit = "caml_gr_clear_graph"
 (** Erase the graphics window. *)
 
@@ -128,10 +131,11 @@ val curveto : int * int -> int * int -> int * int -> unit
    the current point to point [d], with control points [b] and
    [c], and moves the current point to [d]. *)
 
-external draw_rect : int -> int -> int -> int -> unit = "caml_gr_draw_rect"
+val draw_rect : int -> int -> int -> int -> unit
 (** [draw_rect x y w h] draws the rectangle with lower left corner
    at [x,y], width [w] and height [h].
-   The current point is unchanged. *)
+   The current point is unchanged.
+   Raise [Invalid_argument] if [w] or [h] is negative. *)
 
 val draw_poly_line : (int * int) array -> unit
 (** [draw_poly_line points] draws the line that joins the
@@ -153,27 +157,29 @@ val draw_segments : (int * int * int * int) array -> unit
    the coordinates of the end points of the segment.
    The current point is unchanged. *)
 
-external draw_arc :
-  int -> int -> int -> int -> int -> int ->
-    unit = "caml_gr_draw_arc" "caml_gr_draw_arc_nat"
+val draw_arc : int -> int -> int -> int -> int -> int -> unit
 (** [draw_arc x y rx ry a1 a2] draws an elliptical arc with center
    [x,y], horizontal radius [rx], vertical radius [ry], from angle
-   [a1] to angle [a2] (in degrees). The current point is unchanged. *)
+   [a1] to angle [a2] (in degrees). The current point is unchanged.
+   Raise [Invalid_argument] if [rx] or [ry] is negative. *)
 
 val draw_ellipse : int -> int -> int -> int -> unit
 (** [draw_ellipse x y rx ry] draws an ellipse with center
    [x,y], horizontal radius [rx] and vertical radius [ry].
-   The current point is unchanged.  *)
+   The current point is unchanged.
+   Raise [Invalid_argument] if [rx] or [ry] is negative. *)
 
 val draw_circle : int -> int -> int -> unit
 (** [draw_circle x y r] draws a circle with center [x,y] and
-   radius [r]. The current point is unchanged. *)
+   radius [r]. The current point is unchanged.
+   Raise [Invalid_argument] if [r] is negative. *)
 
-external set_line_width : int -> unit = "caml_gr_set_line_width"
+val set_line_width : int -> unit
 (** Set the width of points and lines drawn with the functions above.
    Under X Windows, [set_line_width 0] selects a width of 1 pixel
    and a faster, but less precise drawing algorithm than the one
-   used when [set_line_width 1] is specified. *)
+   used when [set_line_width 1] is specified.
+   Raise [Invalid_argument] if the argument is negative. *)
 
 (** {6 Text drawing} *)
 
@@ -187,12 +193,12 @@ external draw_string : string -> unit = "caml_gr_draw_string"
 
 external set_font : string -> unit = "caml_gr_set_font"
 (** Set the font used for drawing text.
-   The interpretation of the arguments to [set_font] 
+   The interpretation of the argument to [set_font] 
    is implementation-dependent. *)
 
 val set_text_size : int -> unit
 (** Set the character size used for drawing text.
-   The interpretation of the arguments to [set_text_size] 
+   The interpretation of the argument to [set_text_size] 
    is implementation-dependent. *)
 
 external text_size : string -> int * int = "caml_gr_text_size"
@@ -202,17 +208,16 @@ external text_size : string -> int * int = "caml_gr_text_size"
 
 (** {6 Filling} *)
 
-external fill_rect : int -> int -> int -> int -> unit = "caml_gr_fill_rect"
+val fill_rect : int -> int -> int -> int -> unit
 (** [fill_rect x y w h] fills the rectangle with lower left corner
-   at [x,y], width [w] and height [h], with the current color. *)
+   at [x,y], width [w] and height [h], with the current color.
+   Raise [Invalid_argument] if [w] or [h] is negative. *)
 
 external fill_poly : (int * int) array -> unit = "caml_gr_fill_poly"
 (** Fill the given polygon with the current color. The array
    contains the coordinates of the vertices of the polygon. *)
 
-external fill_arc :
-  int -> int -> int -> int -> int -> int ->
-    unit = "caml_gr_fill_arc" "caml_gr_fill_arc_nat"
+val fill_arc : int -> int -> int -> int -> int -> int -> unit
 (** Fill an elliptical pie slice with the current color. The
    parameters are the same as for {!Graphics.draw_arc}. *)
 
@@ -333,21 +338,21 @@ val auto_synchronize : bool -> unit
    on screen, and in a memory area (the ``backing store'').
    The backing store image is used to re-paint the on-screen
    window when necessary.
-   
+
    To avoid flicker during animations, it is possible to turn
    off on-screen drawing, perform a number of drawing operations
    in the backing store only, then refresh the on-screen window
    explicitly.
-   
+
    [auto_synchronize false] turns on-screen drawing off.  All
    subsequent drawing commands are performed on the backing store
    only.
-   
+
    [auto_synchronize true] refreshes the on-screen window from
    the backing store (as per [synchronize]), then turns on-screen
    drawing back on.  All subsequent drawing commands are performed
    both on screen and in the backing store.
-   
+
    The default drawing mode corresponds to [auto_synchronize true]. *)
 
 external synchronize : unit -> unit = "caml_gr_synchronize"

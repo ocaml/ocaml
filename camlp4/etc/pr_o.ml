@@ -146,6 +146,7 @@ value id_var s =
   if has_special_chars s || is_infix s then
     HVbox [: `S LR "("; `S LR s; `S LR ")" :]
   else if s = "val" then HVbox [: `S LR "contents" :]
+  else if s = "contents" then HVbox [: `S LR "contents__" :]
   else if is_keyword s then HVbox [: `S LR (s ^ "__") :]
   else HVbox [: `S LR s :]
 ;

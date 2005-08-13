@@ -21,7 +21,8 @@
    structure.
 
    For a gentle introduction to the basics of pretty-printing using
-   [Format], read the FAQ at [http://caml.inria.fr/FAQ/format-eng.html]. 
+   [Format], read
+   {{:http://caml.inria.fr/resources/doc/guides/format.html}http://caml.inria.fr/resources/doc/guides/format.html}.
 
    Warning: the material output by the following functions is delayed
    in the pretty-printer queue in order to compute the proper line
@@ -41,7 +42,7 @@
    provided by this module. This style is more basic but more verbose
    than the [fprintf] concise formats.
 
-   For instance, the sequence 
+   For instance, the sequence
    [open_box 0; print_string "x ="; print_space (); print_int 1; close_box ()]
    that prints [x = 1] within a pretty-printing box, can be
    abbreviated as [printf "@[%s@ %i@]" "x =" 1], or even shorter
@@ -569,7 +570,7 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a;;
    - [@\[]: open a pretty-printing box. The type and offset of the
      box may be optionally specified with the following syntax:
      the [<] character, followed by an optional box type indication,
-     then an optional integer offset, and the closing [>] character. 
+     then an optional integer offset, and the closing [>] character.
      Box type is one of [h], [v], [hv], [b], or [hov],
      which stand respectively for an horizontal box, a vertical box,
      an ``horizontal-vertical'' box, or an ``horizontal or
@@ -586,7 +587,7 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a;;
    - [@\n]: force a newline, as with [force_newline ()].
    - [@;]: output a good break as with [print_break]. The
      [nspaces] and [offset] parameters of the break may be
-     optionally specified with the following syntax: 
+     optionally specified with the following syntax:
      the [<] character, followed by an integer [nspaces] value,
      then an integer offset, and a closing [>] character.
      If no parameters are provided, the good break defaults to a
@@ -612,7 +613,7 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a;;
    - [@\}]: close the most recently opened tag.
    - [@@]: print a plain [@] character.
 
-   Example: [printf "@[%s@ %d@]" "x =" 1] is equivalent to 
+   Example: [printf "@[%s@ %d@]" "x =" 1] is equivalent to
    [open_box (); print_string "x ="; print_space (); print_int 1; close_box ()].
    It prints [x = 1] within a pretty-printing box.
 *)

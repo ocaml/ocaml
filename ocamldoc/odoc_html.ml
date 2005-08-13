@@ -263,11 +263,37 @@ class virtual text =
 	 bs b "</code>"
 	)
 
-    method html_of_CodePre b s =
+    method html_of_CodePre =
+	let remove_useless_newlines s =
+	  let len = String.length s in
+	  let rec iter_first n =
+	    if n >= len then
+	      None
+	    else
+	      match s.[n] with
+	      |	'\n' -> iter_first (n+1)
+	      | _ -> Some n
+	  in
+	  match iter_first 0 with
+	    None -> ""
+	  | Some first ->
+	      let rec iter_last n =
+		if n <= first then
+		  None
+		else
+		  match s.[n] with
+		    '\t'  -> iter_last (n-1)
+		  | _ -> Some n
+	      in
+	      match iter_last (len-1) with
+		None -> String.sub s first 1
+	      | Some last -> String.sub s first ((last-first)+1)
+	in
+	fun b s ->
       if !Args.colorize_code then
 	(
          bs b "<pre></pre>";
-	 self#html_of_code b s;
+	 self#html_of_code b (remove_useless_newlines s);
 	 bs b "<pre></pre>"
 	)
       else
@@ -275,7 +301,7 @@ class virtual text =
 	 bs b "<pre><code class=\"";
 	 bs b Odoc_ocamlhtml.code_class;
 	 bs b "\">" ;
-	 bs b (self#escape s);
+	 bs b (self#escape (remove_useless_newlines s));
 	 bs b "</code></pre>"
 	)
 
@@ -677,6 +703,7 @@ class html =
         ".string { color : Maroon }" ;
         ".warning { color : Red ; font-weight : bold }" ;
         ".info { margin-left : 3em; margin-right : 3em }" ;
+        ".param_info { margin-top: 4px; margin-left : 3em; margin-right : 3em }" ;
         ".code { color : #465F91 ; }" ;
         "h1 { font-size : 20pt ; text-align: center; }" ;
 
@@ -725,7 +752,7 @@ class html =
 	".paramstable { border-style : hidden ; padding: 5pt 5pt}" ;
         "body { background-color : White }" ;
         "tr { background-color : White }" ;
-	"td.typefieldcomment { background-color : #FFFFFF }" ;
+	"td.typefieldcomment { background-color : #FFFFFF ; font-size: smaller ;}" ;
 	"pre { margin-bottom: 4px }" ;
 
 	"div.sig_block {margin-left: 2em}" ;
@@ -1348,9 +1375,8 @@ class html =
 		 bs b "(*";
 		 bs b "</code></td>";
 		 bs b "<td class=\"typefieldcomment\" align=\"left\" valign=\"top\" >";
-		 bs b "<code>" ;
 		 self#html_of_text b t;
-		 bs b "</code></td>";
+		 bs b "</td>";
 		 bs b "<td class=\"typefieldcomment\" align=\"left\" valign=\"bottom\" >";
 		 bs b "<code>";
 		 bs b "*)";
@@ -1390,9 +1416,7 @@ class html =
                  bs b "(*";
                  bs b "</code></td>";
                  bs b "<td class=\"typefieldcomment\" align=\"left\" valign=\"top\" >";
-                 bs b "<code>";
 		 self#html_of_text b t;
-		 bs b "</code>";
                  bs b "</td><td class=\"typefieldcomment\" align=\"left\" valign=\"bottom\" >";
                  bs b "<code>*)</code></td>";
 	    );
@@ -1496,7 +1520,7 @@ class html =
       match l with
         [] -> ()
       | _ ->
-          bs b "<div class=\"info\">";
+          bs b "<div class=\"param_info\">";
           bs b "<table border=\"0\" cellpadding=\"3\" width=\"100%\">\n";
           bs b "<tr>\n<td align=\"left\" valign=\"top\" width=\"1%\">";
 	  bs b "<b>";
@@ -1532,17 +1556,13 @@ class html =
           l
       in
       let f p =
-        bs b "<div class=\"info\"><code class=\"code\">";
+        bs b "<div class=\"param_info\"><code class=\"code\">";
 	bs b (Parameter.complete_name p);
 	bs b "</code> : " ;
         self#html_of_parameter_description b p;
 	bs b "</div>\n"
       in
-      match l2 with
-        [] -> ()
-      | _ ->
-	  bs b "<br>";
-	  List.iter f l2
+      List.iter f l2
 
     (** Print html code for a list of module parameters. *)
     method html_of_module_parameter_list b m_name l =
@@ -2428,3 +2448,10 @@ class html =
 	  Buffer.contents b
 	)
   end
+<<<<<<< odoc_html.ml
+=======
+
+
+
+(* eof $Id$ *)
+>>>>>>> 1.52.4.3

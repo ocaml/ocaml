@@ -29,10 +29,10 @@ and text_element = Odoc_types.text_element =
   | Raw of string
   | Code of string
   | CodePre of string
-  | Verbatim of string 
+  | Verbatim of string
   | Bold of text
   | Italic of text
-  | Emphasize of text 
+  | Emphasize of text
   | Center of text
   | Left of text
   | Right of text
@@ -74,13 +74,13 @@ type info = Odoc_types.info = {
     i_params : param list;
     i_raised_exceptions : raised_exception list;
     i_return_value : text option ;
-    i_custom : (string * text) list ; 
-  } 
+    i_custom : (string * text) list ;
+  }
 
 type location = Odoc_types.location = {
     loc_impl : (string * int) option ;
     loc_inter : (string * int) option ;
-  } 
+  }
 
 let dummy_loc = { loc_impl = None ; loc_inter = None }
 
@@ -142,7 +142,7 @@ let string_of_value v = Odoc_str.string_of_value v
 
 let string_of_attribute att = Odoc_str.string_of_attribute att
 
-let string_of_method m = Odoc_str.string_of_method m 
+let string_of_method m = Odoc_str.string_of_method m
 
 let first_sentence_of_text = Odoc_misc.first_sentence_of_text
 
@@ -164,11 +164,11 @@ let is_optional = Odoc_misc.is_optional
 
 let label_name = Odoc_misc.label_name
 
-let use_hidden_modules n = 
+let use_hidden_modules n =
   Odoc_name.hide_given_modules !Odoc_args.hidden_modules n
 
-let verbose s = 
-  if !Odoc_args.verbose then 
+let verbose s =
+  if !Odoc_args.verbose then
     (print_string s ; print_newline ())
   else
     ()
@@ -204,11 +204,11 @@ let info_string_of_info i =
   let b = Buffer.create 256 in
   let p = Printf.bprintf in
   (
-   match i.i_desc with 
+   match i.i_desc with
      None -> ()
    | Some t -> p b "%s" (escape_arobas (text_string_of_text t))
   );
-  List.iter 
+  List.iter
     (fun s -> p b "\n@author %s" (escape_arobas s))
     i.i_authors;
   (
@@ -237,10 +237,10 @@ let info_string_of_info i =
    | Some s -> p b "\n@since %s" (escape_arobas s)
   );
   (
-   match i.i_deprecated with 
+   match i.i_deprecated with
      None -> ()
-   | Some t -> 
-       p b "\n@deprecated %s" 
+   | Some t ->
+       p b "\n@deprecated %s"
 	 (escape_arobas (text_string_of_text t))
   );
   List.iter
@@ -258,18 +258,12 @@ let info_string_of_info i =
     )
     i.i_raised_exceptions;
   (
-   match i.i_return_value with 
+   match i.i_return_value with
      None -> ()
-   | Some t -> 
-       p b "\n@return %s" 
+   | Some t ->
+       p b "\n@return %s"
 	 (escape_arobas (text_string_of_text t))
   );
-  List.iter
-    (fun (s, t) ->
-      p b "\n@%s %s" s
-	(escape_arobas (text_string_of_text t))
-    )
-    i.i_raised_exceptions;
   List.iter
     (fun (s, t) ->
       p b "\n@%s %s" s
@@ -292,24 +286,24 @@ let info_of_string s =
       i_raised_exceptions = [] ;
       i_return_value = None ;
       i_custom = [] ;
-    } 
+    }
   in
   let s2 = Printf.sprintf "(** %s *)" s in
   let (_, i_opt) = Odoc_comments.Basic_info_retriever.first_special "-" s2 in
   match i_opt with
     None -> dummy
   | Some i -> i
-      
+
 let info_of_comment_file f =
   try
     let s = Odoc_misc.input_file_as_string f in
     info_of_string s
   with
-    Sys_error s -> 
+    Sys_error s ->
       failwith s
 
-module Search = 
-  struct 
+module Search =
+  struct
     type result_element = Odoc_search.result_element =
           Res_module of Module.t_module
         | Res_module_type of Module.t_module_type

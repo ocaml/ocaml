@@ -186,7 +186,6 @@ module Analyser =
 		in
                 let (len, comment_opt) =  My_ir.just_after_special !file_name s in
                 (len, acc @ [ (name, comment_opt) ])
-
             | (name, core_type_list, loc) :: (name2, core_type_list2, loc2)
               :: q ->
 		let pos_end_first = loc.Location.loc_end.Lexing.pos_cnum in

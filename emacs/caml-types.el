@@ -128,17 +128,14 @@ See `caml-types-location-re' for annotation file format.
          (type-file (concat (file-name-sans-extension (buffer-file-name))
                             ".annot")))
     (caml-types-preprocess type-file)
-    (unless caml-types-buffer 
-      (setq caml-types-buffer (get-buffer-create caml-types-buffer-name)))
+    (setq caml-types-buffer (get-buffer-create caml-types-buffer-name))
     (let* ((targ-loc (vector target-file target-line target-bol target-cnum))
            (node (caml-types-find-location targ-loc ()
                                            caml-types-annotation-tree)))
       (cond
        ((null node)
-        (delete-overlay caml-types-expr-ovl)
-        (message "Point is not within a typechecked expression or pattern.")
-        ; (with-current-buffer type-buf (narrow-to-region 1 1))
-        )
+         (delete-overlay caml-types-expr-ovl)
+         (message "Point is not within a typechecked expression or pattern."))
        (t
         (let ((left (caml-types-get-pos target-buf (elt node 0)))
               (right (caml-types-get-pos target-buf (elt node 1)))
@@ -426,9 +423,7 @@ The function uses two overlays.
         (progn
           (caml-types-preprocess type-file)
           (setq target-tree caml-types-annotation-tree)
-          (unless caml-types-buffer 
-            (setq caml-types-buffer
-                  (get-buffer-create caml-types-buffer-name)))
+          (setq caml-types-buffer (get-buffer-create caml-types-buffer-name))
           ;; (message "Drag the mouse to explore types")
           (unwind-protect
               (caml-track-mouse
@@ -568,5 +563,11 @@ The function uses two overlays.
                     (max (point-min) (- start 1))
                     (min (point-max) (+ end 1)) target-buf)
     (cons start end)))
+
+(defun caml-types-version ()
+  "internal version number of caml-types.el"
+  (interactive)
+  (message "2")
+)
 
 (provide 'caml-types)

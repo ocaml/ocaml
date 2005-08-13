@@ -72,7 +72,7 @@ let type_module =
 let type_object =
   ref (fun env s -> assert false :
        Env.t -> Location.t -> Parsetree.class_structure ->
-	 class_structure * class_signature * string list)
+         class_structure * class_signature * string list)
 
 (*
   Saving and outputting type information.
@@ -100,7 +100,7 @@ let type_constant = function
   | Const_int32 _ -> instance Predef.type_int32
   | Const_int64 _ -> instance Predef.type_int64
   | Const_nativeint _ -> instance Predef.type_nativeint
-  
+
 (* Specific version of type_option, using newty rather than newgenty *)
 
 let type_option ty =
@@ -207,11 +207,11 @@ let sort_pattern_variables vs =
 
 let enter_orpat_variables loc env  p1_vs p2_vs =
   (* unify_vars operate on sorted lists *)
-  
+
   let p1_vs = sort_pattern_variables p1_vs
   and p2_vs = sort_pattern_variables p2_vs in
 
-  let rec unify_vars p1_vs p2_vs = match p1_vs, p2_vs with  
+  let rec unify_vars p1_vs p2_vs = match p1_vs, p2_vs with
       | (x1,t1)::rem1, (x2,t2)::rem2 when Ident.equal x1 x2 ->
           if x1==x2 then
             unify_vars rem1 rem2
@@ -545,7 +545,7 @@ let type_class_arg_pattern cl_num val_env met_env l spat =
 let mkpat d = { ppat_desc = d; ppat_loc = Location.none }
 
 let type_self_pattern cl_num privty val_env met_env par_env spat =
-  let spat = 
+  let spat =
     mkpat (Ppat_alias (mkpat(Ppat_alias (spat, "selfpat-*")),
                        "selfpat-" ^ cl_num))
   in
@@ -596,7 +596,7 @@ let rec is_nonexpansive exp =
   | Texp_record(lbl_exp_list, opt_init_exp) ->
       List.for_all
         (fun (lbl, exp) -> lbl.lbl_mut = Immutable && is_nonexpansive exp)
-        lbl_exp_list 
+        lbl_exp_list
       && is_nonexpansive_opt opt_init_exp
   | Texp_field(exp, lbl) -> is_nonexpansive exp
   | Texp_array [] -> true
@@ -638,7 +638,7 @@ let type_format loc fmt =
 
   let range_closing_index fmt i =
 
-    let len = String.length fmt in    
+    let len = String.length fmt in
     let find_closing j =
       if j >= len then incomplete_format fmt else
       try String.index_from fmt j ']' with
@@ -724,7 +724,7 @@ let type_format loc fmt =
         | 'B' | 'b' -> conversion j Predef.type_bool
         | 'a' ->
           let ty_arg = newvar () in
-          let ty_a = ty_arrow ty_input (ty_arrow ty_arg ty_aresult) in 
+          let ty_a = ty_arrow ty_input (ty_arrow ty_arg ty_aresult) in
           let ty_aresult, ty_result = conversion j ty_arg in
           ty_aresult, ty_arrow ty_a ty_result
         | 't' -> conversion j (ty_arrow ty_input ty_aresult)
@@ -1328,9 +1328,9 @@ let rec type_exp env sexp =
       with
         Not_found ->
           raise(Error(sexp.pexp_loc, Unbound_instance_variable lab))
-      end        
+      end
   | Pexp_override lst ->
-      let _ = 
+      let _ =
        List.fold_right
         (fun (lab, _) l ->
            if List.exists ((=) lab) l then
@@ -1800,7 +1800,7 @@ and type_expect ?in_function env sexp ty_expected =
         | Some sty ->
             let ty = Typetexp.transl_simple_type env false sty in
             repr ty
-      in            
+      in
       let set_type ty =
         unify_exp env
           { exp_desc = Texp_tuple []; exp_loc = sexp.pexp_loc;

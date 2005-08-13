@@ -48,14 +48,13 @@ external mul : int32 -> int32 -> int32 = "%int32_mul"
 (** Multiplication. *)
 
 external div : int32 -> int32 -> int32 = "%int32_div"
-(** Integer division.  Raise [Division_by_zero] if the second 
+(** Integer division.  Raise [Division_by_zero] if the second
    argument is zero.  This division rounds the real quotient of
    its arguments towards zero, as specified for {!Pervasives.(/)}. *)
 
 external rem : int32 -> int32 -> int32 = "%int32_mod"
 (** Integer remainder.  If [y] is not zero, the result
-   of [Int32.rem x y] satisfies the following properties:
-   [Int32.zero <= Int32.rem x y < Int32.abs y] and
+   of [Int32.rem x y] satisfies the following property:
    [x = Int32.add (Int32.mul (Int32.div x y) y) (Int32.rem x y)].
    If [y = 0], [Int32.rem x y] raises [Division_by_zero]. *)
 
@@ -104,7 +103,8 @@ external shift_right_logical : int32 -> int -> int32 = "%int32_lsr"
    The result is unspecified if [y < 0] or [y >= 32]. *)
 
 external of_int : int -> int32 = "%int32_of_int"
-(** Convert the given integer (type [int]) to a 32-bit integer (type [int32]). *)
+(** Convert the given integer (type [int]) to a 32-bit integer
+    (type [int32]). *)
 
 external to_int : int32 -> int = "%int32_to_int"
 (** Convert the given 32-bit integer (type [int32]) to an

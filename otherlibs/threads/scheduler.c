@@ -64,7 +64,7 @@
 
 /* Configuration */
 
-/* Initial size of stack when a thread is created (4 Ko) */
+/* Initial size of stack when a thread is created (4kB) */
 #define Thread_stack_size (Stack_size / 4)
 
 /* Max computation time before rescheduling, in microseconds (50ms) */
@@ -174,7 +174,7 @@ value thread_initialize(value unit)       /* ML */
   curr_thread->trapsp = trapsp;
   curr_thread->backtrace_pos = Val_int(backtrace_pos);
   curr_thread->backtrace_buffer = backtrace_buffer;
-  curr_thread->backtrace_last_exn = backtrace_last_exn;
+  caml_initialize (&curr_thread->backtrace_last_exn, backtrace_last_exn);
   curr_thread->status = RUNNABLE;
   curr_thread->fd = Val_int(0);
   curr_thread->readfds = NO_FDS;
@@ -311,7 +311,7 @@ static value schedule_thread(void)
   curr_thread->trapsp = trapsp;
   curr_thread->backtrace_pos = Val_int(backtrace_pos);
   curr_thread->backtrace_buffer = backtrace_buffer;
-  curr_thread->backtrace_last_exn = backtrace_last_exn;
+  caml_modify (&curr_thread->backtrace_last_exn, backtrace_last_exn);
 
 try_again:
   /* Find if a thread is runnable.

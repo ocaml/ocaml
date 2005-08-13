@@ -1180,12 +1180,12 @@ pr_expr.pr_levels :=
             if is_infix n then [: `next e "" k :]
             else [: curr <:expr< $lid:n$ $x$ >> "" [: :]; `next y "" k :]
       | <:expr< $x$ $y$ >> ->
-          if (constructors_are_curried() || (not(data_constructor_app x))) then
+          if constructors_are_curried() || (not(data_constructor_app x)) then
             fun curr next _ k -> [: curr x "" [: :]; `next y "" k :]
           else
             match uncurry_expr x y with
             [ (f, ( [_;_::_] as args )) ->
-                fun curr next _ k -> 
+                fun curr next _ k ->
                   [: curr f "" [: :];
                      `HOVCbox
                         [: `S LO "(";

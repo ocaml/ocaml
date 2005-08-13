@@ -35,8 +35,12 @@ let frame_required () =
   !contains_calls || num_stack_slots.(0) > 0 || num_stack_slots.(1) > 0
 
 let frame_size () =                     (* includes return address *)
-  let sz = (!stack_offset + 8 * (num_stack_slots.(0) + num_stack_slots.(1)) + 8)
-  in Misc.align sz 16
+  if frame_required() then begin
+    let sz = 
+      (!stack_offset + 8 * (num_stack_slots.(0) + num_stack_slots.(1)) + 8)
+    in Misc.align sz 16
+  end else 
+    !stack_offset + 8
 
 let slot_offset loc cl =
   match loc with
