@@ -72,3 +72,6 @@ end = struct
   let create = new ci
 end
 let f (x : M6.c) = x#move 3; x#x;;
+
+module M : sig type t = private [> `A of bool] end =
+  struct type t = [`A of int] end
