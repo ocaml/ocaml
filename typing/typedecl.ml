@@ -502,11 +502,13 @@ let compute_variance_decl env check decl (required, loc) =
         | _ -> Private
         end
     | Type_variant (_, priv) | Type_record (_, _, priv) -> priv
+  and required =
+    List.map (fun (c,n as r) -> if c || n then r else (true,true))
+      required
   in
   List.iter2
     (fun (ty, co, cn, ct) (c, n) ->
       if ty.desc <> Tvar || priv = Private then begin
-        let (c, n) = if c || n then (c, n) else (true, true) in
         co := c; cn := n; ct := n;
         compute_variance env tvl2 c n n ty
       end)

@@ -684,6 +684,8 @@ let rec tree_of_class_type sch params =
       in
       let all_vars =
         Vars.fold (fun l (m, t) all -> (l, m, t) :: all) sign.cty_vars [] in
+      (* Consequence of PR#3607: order of Map.fold has changed! *)
+      let all_vars = List.rev all_vars in
       let csil =
         List.fold_left
           (fun csil (l, m, t) ->

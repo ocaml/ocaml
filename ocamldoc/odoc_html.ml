@@ -2448,10 +2448,5 @@ class html =
 	  Buffer.contents b
 	)
   end
-<<<<<<< odoc_html.ml
-=======
-
-
 
 (* eof $Id$ *)
->>>>>>> 1.52.4.3
