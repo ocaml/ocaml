@@ -523,3 +523,14 @@ let f x y =
   ignore (x :> <m:'a.'a -> 'c * < > > as 'c);
   ignore (y :> <m:'b.'b -> 'd * < > > as 'd);
   x = y;;
+
+type t = [`A|`B];;
+type v = private [> t];;
+fun x -> (x : t :> v);;
+type u = private [< t];;
+fun x -> (x : u :> v);;
+fun x -> (x : v :> u);;
+type p = <x:p>;;
+type q = private <x:p; ..>;;
+fun x -> (x : q :> p);;
+fun x -> (x : p :> q);;

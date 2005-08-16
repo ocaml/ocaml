@@ -2847,11 +2847,9 @@ let rec subtype_rec env trace t1 t2 cstrs =
         subtype_list env trace tl1 tl2 cstrs
     | (Tconstr(p1, [], _), Tconstr(p2, [], _)) when Path.same p1 p2 ->
         cstrs
-    | (Tconstr(p1, tl1, abbrev1), _)
-      when generic_abbrev env p1 && not (has_constr_row' env t1) ->
+    | (Tconstr(p1, tl1, abbrev1), _) when generic_abbrev env p1 ->
         subtype_rec env trace (expand_abbrev env t1) t2 cstrs
-    | (_, Tconstr(p2, tl2, abbrev2))
-      when generic_abbrev env p2 && not (has_constr_row' env t2) ->
+    | (_, Tconstr(p2, tl2, abbrev2)) when generic_abbrev env p2 ->
         subtype_rec env trace t1 (expand_abbrev env t2) cstrs
     | (Tconstr(p1, tl1, _), Tconstr(p2, tl2, _)) when Path.same p1 p2 ->
         begin try
@@ -2871,7 +2869,7 @@ let rec subtype_rec env trace t1 t2 cstrs =
           (trace, t1, t2, !univar_pairs)::cstrs
         end
     | (Tobject (f1, _), Tobject (f2, _))
-              when opened_object f1 && opened_object f2 ->
+      when opened_object f1 && opened_object f2 || has_constr_row t2 ->
         (* Same row variable implies same object. *)
         (trace, t1, t2, !univar_pairs)::cstrs
     | (Tobject (f1, _), Tobject (f2, _)) ->
@@ -2879,8 +2877,7 @@ let rec subtype_rec env trace t1 t2 cstrs =
     | (Tvariant row1, Tvariant row2) ->
         let row1 = row_repr row1 and row2 = row_repr row2 in
         begin try
-          if not row1.row_closed || row1.row_more.desc <> Tvar
-          || row2.row_more.desc <> Tvar then raise Exit;
+          if not row1.row_closed then raise Exit;
           let r1, r2, pairs =
             merge_row_fields row1.row_fields row2.row_fields in
           if filter_row_fields false r1 <> [] then raise Exit;
