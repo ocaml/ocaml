@@ -219,10 +219,15 @@ let associate_fields fields1 fields2 =
 (**** Check whether an object is open ****)
 
 (* +++ Il faudra penser a eventuellement expanser l'abreviation *)
-let rec opened_object ty =
-  match (repr ty).desc with
-    Tobject (t, _)     -> opened_object t
-  | Tfield(_, _, _, t) -> opened_object t
+let rec object_row ty =
+  let ty = repr ty in
+  match ty.desc with
+    Tobject (t, _)     -> object_row t
+  | Tfield(_, _, _, t) -> object_row t
+  | _ -> ty
+
+let opened_object ty =
+  match (object_row ty).desc with
   | Tvar               -> true
   | Tunivar            -> true
   | Tconstr _          -> true
@@ -2829,7 +2834,7 @@ let subtype_error env trace =
 let rec subtype_rec env trace t1 t2 cstrs =
   let t1 = repr t1 in
   let t2 = repr t2 in
-  if t1 == t2 then [] else
+  if t1 == t2 then cstrs else
   
   begin try
     TypePairs.find subtypes (t1, t2);
@@ -2869,7 +2874,7 @@ let rec subtype_rec env trace t1 t2 cstrs =
           (trace, t1, t2, !univar_pairs)::cstrs
         end
     | (Tobject (f1, _), Tobject (f2, _))
-      when opened_object f1 && opened_object f2 || has_constr_row t2 ->
+      when (object_row f1).desc = Tvar && (object_row f2).desc = Tvar ->
         (* Same row variable implies same object. *)
         (trace, t1, t2, !univar_pairs)::cstrs
     | (Tobject (f1, _), Tobject (f2, _)) ->
@@ -2920,20 +2925,24 @@ and subtype_fields env trace ty1 ty2 cstrs =
   let (fields1, rest1) = flatten_fields ty1 in
   let (fields2, rest2) = flatten_fields ty2 in
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
-  (trace, rest1, build_fields (repr ty2).level miss2 (newvar ()),
-   !univar_pairs)
-    ::
-  begin match rest2.desc with
-    Tnil   -> []
-  | _      ->
-      [trace, build_fields (repr ty1).level miss1 rest1, rest2, !univar_pairs]
-  end
-    @
-  (List.fold_left
-     (fun cstrs (_, k1, t1, k2, t2) ->
-        (* Theses fields are always present *)
-        subtype_rec env ((t1, t2)::trace) t1 t2 cstrs)
-     cstrs pairs)
+  let cstrs =
+    if rest2.desc = Tnil then cstrs else
+    if miss1 = [] then
+      subtype_rec env ((rest1, rest2)::trace) rest1 rest2 cstrs
+    else
+      (trace, build_fields (repr ty1).level miss1 rest1, rest2,
+       !univar_pairs) :: cstrs
+  in
+  let cstrs =
+    if miss2 = [] then cstrs else
+    (trace, rest1, build_fields (repr ty2).level miss2 (newvar ()),
+     !univar_pairs) :: cstrs
+  in
+  List.fold_left
+    (fun cstrs (_, k1, t1, k2, t2) ->
+      (* Theses fields are always present *)
+      subtype_rec env ((t1, t2)::trace) t1 t2 cstrs)
+    cstrs pairs
 
 let subtype env ty1 ty2 =
   TypePairs.clear subtypes;
