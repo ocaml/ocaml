@@ -524,13 +524,33 @@ let f x y =
   ignore (y :> <m:'b.'b -> 'd * < > > as 'd);
   x = y;;
 
+
+(* Subtyping *)
+
 type t = [`A|`B];;
 type v = private [> t];;
 fun x -> (x : t :> v);;
 type u = private [< t];;
 fun x -> (x : u :> v);;
 fun x -> (x : v :> u);;
+type v = private [< t];;
+fun x -> (x : u :> v);;
 type p = <x:p>;;
 type q = private <x:p; ..>;;
 fun x -> (x : q :> p);;
 fun x -> (x : p :> q);;
+
+let f1 x =
+  (x : <m:'a. (<p:int;..> as 'a) -> int>
+    :> <m:'b. (<p:int;q:int;..> as 'b) -> int>);;
+let f2 x =
+  (x : <m:'a. (<p:<a:int>;..> as 'a) -> int>
+    :> <m:'b. (<p:<a:int;b:int>;..> as 'b) -> int>);;
+let f3 x =
+  (x : <m:'a. (<p:<a:int;b:int>;..> as 'a) -> int>
+    :> <m:'b. (<p:<a:int>;..> as 'b) -> int>);;
+let f4 x = (x : <p:<a:int;b:int>;..> :> <p:<a:int>;..>);;
+let f5 x =
+  (x : <m:'a. [< `A of <p:int> ] as 'a> :> <m:'a. [< `A of < > ] as 'a>);;
+let f6 x =
+  (x : <m:'a. [< `A of < > ] as 'a> :> <m:'a. [< `A of <p:int> ] as 'a>);;

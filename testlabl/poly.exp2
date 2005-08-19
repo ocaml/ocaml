@@ -409,7 +409,7 @@ is not included in
 #         val f :
   (< m : 'b. 'b -> (< m : 'b. 'b -> 'c * <  > > as 'c) * < .. >; .. > as 'a) ->
   'a -> bool = <fun>
-#   type t = [ `A | `B ]
+#         type t = [ `A | `B ]
 # type v = private [> t ]
 # - : t -> v = <fun>
 # type u = private [< t ]
@@ -417,9 +417,31 @@ is not included in
 # Characters 9-21:
 Type v = [> `A | `B ] is not a subtype of type u = [< `A | `B ] 
 These two variant types have no intersection
+# type v = private [< t ]
+# Characters 9-21:
+Type u = [< `A | `B ] is not a subtype of type v = [< `A | `B ] 
 # type p = < x : p >
 # type q = private < x : p; .. >
 # - : q -> p = <fun>
 # Characters 9-21:
 Type p = < x : p > is not a subtype of type q = < x : p; .. > 
+#       Characters 14-100:
+Type < m : 'a. (< p : int; .. > as 'a) -> int > is not a subtype of type
+  < m : 'b. (< p : int; q : int; .. > as 'b) -> int > 
+#     val f2 :
+  < m : 'a. (< p : < a : int >; .. > as 'a) -> int > ->
+  < m : 'a. (< p : < a : int; b : int >; .. > as 'a) -> int > = <fun>
+#     Characters 13-107:
+Type < m : 'a. (< p : < a : int; b : int >; .. > as 'a) -> int >
+is not a subtype of type < m : 'a. (< p : < a : int >; .. > as 'a) -> int > 
+# Characters 11-55:
+Type < p : < a : int; b : int >; .. > is not a subtype of type
+  < p : < a : int >; .. > 
+Only the first object type has a method b
+#   val f5 :
+  < m : 'a. [< `A of < p : int > ] as 'a > ->
+  < m : 'a. [< `A of <  > ] as 'a > = <fun>
+#   Characters 13-83:
+Type < m : 'a. [< `A of <  > ] as 'a > is not a subtype of type
+  < m : 'a. [< `A of < p : int > ] as 'a > 
 # 

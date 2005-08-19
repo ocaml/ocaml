@@ -1719,9 +1719,9 @@ and unify_row env row1 row2 =
     end;
     let rm = row_more row in
     if row.row_fixed then
-      if row0.row_more == rm then () else begin
-        link_type rm row0.row_more
-      end
+      if row0.row_more == rm then () else
+      if rm.desc = Tvar then link_type rm row0.row_more else
+      unify env rm row0.row_more
     else
       let ty = newty2 generic_level (Tvariant {row0 with row_fields = rest}) in
       update_level env rm.level ty;
@@ -2880,24 +2880,8 @@ let rec subtype_rec env trace t1 t2 cstrs =
     | (Tobject (f1, _), Tobject (f2, _)) ->
         subtype_fields env trace f1 f2 cstrs
     | (Tvariant row1, Tvariant row2) ->
-        let row1 = row_repr row1 and row2 = row_repr row2 in
         begin try
-          if not row1.row_closed then raise Exit;
-          let r1, r2, pairs =
-            merge_row_fields row1.row_fields row2.row_fields in
-          if filter_row_fields false r1 <> [] then raise Exit;
-          List.fold_left
-            (fun cstrs (_,f1,f2) ->
-              match row_field_repr f1, row_field_repr f2 with
-                (Rpresent None|Reither(true,_,_,_)), Rpresent None ->
-                  cstrs
-              | Rpresent(Some t1), Rpresent(Some t2) ->
-                  subtype_rec env ((t1, t2)::trace) t1 t2 cstrs
-              | Reither(false, t1::_, _, _), Rpresent(Some t2) ->
-                  subtype_rec env ((t1, t2)::trace) t1 t2 cstrs
-              | Rabsent, _ -> cstrs
-              | _ -> raise Exit)
-            cstrs pairs
+          subtype_row env trace row1 row2 cstrs
         with Exit ->
           (trace, t1, t2, !univar_pairs)::cstrs
         end
@@ -2922,6 +2906,7 @@ and subtype_list env trace tl1 tl2 cstrs =
     cstrs tl1 tl2
 
 and subtype_fields env trace ty1 ty2 cstrs =
+  (* Assume that either rest1 or rest2 is not Tvar *)
   let (fields1, rest1) = flatten_fields ty1 in
   let (fields2, rest2) = flatten_fields ty2 in
   let (pairs, miss1, miss2) = associate_fields fields1 fields2 in
@@ -2943,6 +2928,48 @@ and subtype_fields env trace ty1 ty2 cstrs =
       (* Theses fields are always present *)
       subtype_rec env ((t1, t2)::trace) t1 t2 cstrs)
     cstrs pairs
+
+and subtype_row env trace row1 row2 cstrs =
+  let row1 = row_repr row1 and row2 = row_repr row2 in
+  let r1, r2, pairs =
+    merge_row_fields row1.row_fields row2.row_fields in
+  let more1 = repr row1.row_more
+  and more2 = repr row2.row_more in
+  match more1.desc, more2.desc with
+    Tconstr(p1,_,_), Tconstr(p2,_,_) when Path.same p1 p2 ->
+      subtype_rec env ((more1,more2)::trace) more1 more2 cstrs
+  | (Tvar|Tconstr _), (Tvar|Tconstr _)
+    when row1.row_closed && r1 = [] ->
+      List.fold_left
+        (fun cstrs (_,f1,f2) ->
+          match row_field_repr f1, row_field_repr f2 with
+            (Rpresent None|Reither(true,_,_,_)), Rpresent None ->
+              cstrs
+          | Rpresent(Some t1), Rpresent(Some t2) ->
+              subtype_rec env ((t1, t2)::trace) t1 t2 cstrs
+          | Reither(false, t1::_, _, _), Rpresent(Some t2) ->
+              subtype_rec env ((t1, t2)::trace) t1 t2 cstrs
+          | Rabsent, _ -> cstrs
+          | _ -> raise Exit)
+        cstrs pairs
+  | Tunivar, Tunivar
+    when row1.row_closed = row2.row_closed && r1 = [] && r2 = [] ->
+      let cstrs =
+        subtype_rec env ((more1,more2)::trace) more1 more2 cstrs in
+      List.fold_left
+        (fun cstrs (_,f1,f2) ->
+          match row_field_repr f1, row_field_repr f2 with
+            Rpresent None, Rpresent None
+          | Reither(true,[],_,_), Reither(true,[],_,_)
+          | Rabsent, Rabsent ->
+              cstrs
+          | Rpresent(Some t1), Rpresent(Some t2)
+          | Reither(false,[t1],_,_), Reither(false,[t2],_,_) ->
+              subtype_rec env ((t1, t2)::trace) t1 t2 cstrs
+          | _ -> raise Exit)
+        cstrs pairs
+  | _ ->
+      raise Exit
 
 let subtype env ty1 ty2 =
   TypePairs.clear subtypes;
