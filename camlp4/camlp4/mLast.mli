@@ -56,12 +56,13 @@ and ecst =
   | ECstXml of loc and ecst and ecst and ecst
   | ECstRecord of loc and list (qname * ecst)
   | ECstAtom of loc and qname
-  | ECstInt of loc and Cduce_types.Intervals.V.t
-  | ECstChar of loc and Cduce_types.Encodings.Utf8.t
-  | ECstString of loc and Cduce_types.Encodings.Utf8.t
+  | ECstInt of loc and string
+  | ECstChar of loc and utf8
+  | ECstString of loc and string
   | ECstIntern of loc and Cduce_types.Types.Const.t ]
 
-and qname = (string * Cduce_types.Encodings.Utf8.t)
+and qname = (string * utf8)
+and utf8 = Cduce_types.Encodings.Utf8.t
 
 and ctyp =
   [ TyAcc of loc and ctyp and ctyp
@@ -160,7 +161,21 @@ and expr =
   | ExTyc of loc and expr and ctyp
   | ExUid of loc and string
   | ExVrn of loc and string
-  | ExWhi of loc and expr and list expr ]
+  | ExWhi of loc and expr and list expr
+  | ExExtCst of loc and ecst
+  | ExExtMatch of loc and expr and list ebranch
+  | ExExtMap of loc and expr and list ebranch
+  | ExExtXmap of loc and expr and list ebranch
+  | ExExtRecord of loc and list (qname * expr)
+  | ExExtRemovefield of loc and expr and qname 
+  | ExExtOp of loc and string and list expr
+  | ExExtNamespace of loc and string and utf8 and expr
+  | ExExtFrom_ml of loc and expr
+  | ExExtTo_ml of loc and expr
+  | ExExtCheck of loc and expr and epat ]
+
+and ebranch = (epat * expr)
+
 and module_type =
   [ MtAcc of loc and module_type and module_type
   | MtApp of loc and module_type and module_type

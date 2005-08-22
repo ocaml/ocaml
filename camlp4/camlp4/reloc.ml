@@ -24,6 +24,10 @@ value rec epat floc sh =
   self where rec self =
     fun [ _ -> assert False ]
 
+and ecst floc sh = 
+  self where rec self =
+    fun [ _ -> assert False ]
+
 and ctyp floc sh =
   self where rec self =
     fun
@@ -250,7 +254,22 @@ and expr floc sh =
     | ExTyc loc x1 x2 -> let nloc = floc loc in ExTyc nloc (self x1) (ctyp floc sh x2)
     | ExUid loc x1 -> let nloc = floc loc in ExUid nloc x1
     | ExVrn loc x1 -> let nloc = floc loc in ExVrn nloc x1
-    | ExWhi loc x1 x2 -> let nloc = floc loc in ExWhi nloc (self x1) (List.map self x2) ]
+    | ExWhi loc x1 x2 -> let nloc = floc loc in ExWhi nloc (self x1) (List.map self x2)
+    | ExExtCst loc c -> let nloc = floc loc in ExExtCst nloc (ecst floc sh c)
+    | ExExtMatch loc x brs -> let nloc = floc loc in ExExtMatch nloc x (ebrs floc sh brs)
+    | ExExtMap loc x brs -> let nloc = floc loc in ExExtMap nloc (self x) (ebrs floc sh brs)
+    | ExExtXmap loc x brs -> let nloc = floc loc in ExExtXmap nloc (self x) (ebrs floc sh brs)
+    | ExExtRecord loc f ->  let nloc = floc loc in ExExtRecord nloc (List.map (fun [ (q,e) -> (q,self e) ]) f)
+    | ExExtRemovefield loc x l -> let nloc = floc loc in ExExtRemovefield nloc (self x) l
+    | ExExtOp loc op args -> let nloc = floc loc in ExExtOp nloc op (List.map self args)
+    | ExExtNamespace loc pr ns x -> let nloc = floc loc in ExExtNamespace nloc pr ns (self x)
+    | ExExtFrom_ml loc x -> let nloc = floc loc in ExExtFrom_ml nloc (self x)
+    | ExExtTo_ml loc x -> let nloc = floc loc in ExExtTo_ml nloc (self x)
+    | ExExtCheck loc x p -> let nloc = floc loc in ExExtCheck nloc (self x) (epat floc sh p) ]
+
+and ebrs floc sh brs =
+    List.map (fun (p,e) -> (epat floc sh p, expr floc sh e)) brs
+
 and module_type floc sh =
   self where rec self =
     fun

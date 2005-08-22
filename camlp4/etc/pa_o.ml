@@ -1265,6 +1265,14 @@ EXTEND
   class_fun_binding:
     [ [ p = labeled_patt; cfb = SELF -> <:class_expr< fun $p$ -> $cfb$ >> ] ]
   ;
+
+  (* CDuce *)
+  expr: LEVEL "simple"
+    [ [ "{"; "{"; e = ext_expr; "}"; "}"  -> e ] ]
+  ;
+  ext_expr: 
+    [ [ i = INT -> <:xexpr< $int:i$ >> ] ]
+  ;
 END;
 
 (* Main entry points *)

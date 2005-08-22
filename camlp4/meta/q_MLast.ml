@@ -113,6 +113,9 @@ module Qast =
           in
           <:patt< $anti:p$ >> ]
     and to_patt_label (l, a) = (<:patt< MLast.$lid:l$ >>, to_patt a);
+
+    value nodel s l = Node s [Loc :: l];
+
   end
 ;
 
@@ -129,6 +132,7 @@ value str_item = Grammar.Entry.create gram "structure item";
 value ctyp = Grammar.Entry.create gram "type";
 value patt = Grammar.Entry.create gram "pattern";
 value expr = Grammar.Entry.create gram "expression";
+value ext_expr = Grammar.Entry.create gram "CDuce expression";
 
 value module_type = Grammar.Entry.create gram "module type";
 value module_expr = Grammar.Entry.create gram "module expression";
@@ -305,7 +309,7 @@ value warn_sequence _ =
 EXTEND
   GLOBAL: sig_item str_item ctyp patt expr module_type module_expr class_type
     class_expr class_sig_item class_str_item let_binding type_declaration
-    ipatt with_constr row_field;
+    ipatt with_constr row_field ext_expr;
   module_expr:
     [ [ "functor"; "("; i = a_UIDENT; ":"; t = module_type; ")"; "->";
         me = SELF ->
@@ -1275,6 +1279,32 @@ EXTEND
           let _ = warn_antiq loc "3.06+18" in
           Qast.Node "CgVal" [Qast.Loc; l; antiquot "mut" loc mf; t] ] ]
   ;
+
+  (* CDuce extensions *)
+  expr: LEVEL "simple" [
+    [ "{"; "{"; e = ext_expr; "}"; "}" -> e ] ]
+  ;
+  ext_small_const: [
+    [ i = a_INT -> Qast.nodel "ECstInt" [ i ]
+    | i = a_STRING -> Qast.nodel "ECstString" [ i ] ]
+  ];
+  ext_expr: [ "simple" 
+    [ c = ext_small_const -> 
+	Qast.nodel "ExExtCst" [ c ]
+    | "<"; 
+      tag = [
+	q = qname -> Qast.nodel "ExExtCst" [ Qast.nodel "ECstAtom" [ q ] ]
+      | "("; e = ext_expr; ")" -> e
+      ];
+      ">";
+      content = ext_expr LEVEL "simple"
+	-> Qast.nodel "ExExtOp" [ Qast.Str "xml"; 
+				  Qast.List [
+				    tag;
+				    Qast.nodel "ExExtRecord" [ Qast.List [] ];
+				    content ] ]
+    ] ];
+  qname: [ [ id = [ a_LIDENT | a_UIDENT ] -> Qast.Tuple [ Qast.Str ""; id ] ] ];
 END;
 
 EXTEND
@@ -1491,6 +1521,16 @@ do {
     ;
   END;
   Quotation.add "expr" (apply_entry expr_eoi)
+};
+
+let ext_expr_eoi = Grammar.Entry.create gram "CDuce expression" in
+do {
+  EXTEND
+    ext_expr_eoi:
+      [ [ x = ext_expr; EOI -> x ] ]
+    ;
+  END;
+  Quotation.add "xexpr" (apply_entry ext_expr_eoi)
 };
 
 let module_type_eoi = Grammar.Entry.create gram "module type" in

@@ -93,6 +93,7 @@ value mkpolytype t =
 ;
 value mkepat loc d = {pext_desc = d; pext_loc = mkloc loc};
 value mkecst loc d = {pextcst_desc = d; pextcst_loc = mkloc loc};
+value mkeexp loc d = mkexp loc (Pexp_ext d);
 
 value lident s = Lident s;
 value ldot l s = Ldot l s;
@@ -214,9 +215,10 @@ value rec epat =
       let l = List.map (fun [ (q,c) -> (q,ecst c) ]) l in
       mkecst loc (Pextcst_record l)
   | ECstAtom loc q -> mkecst loc (Pextcst_atom q)
-  | ECstInt loc i -> mkecst loc (Pextcst_int i)
+  | ECstInt loc i -> mkecst loc (Pextcst_int (Cduce_types.Intervals.V.mk i))
   | ECstChar loc i -> mkecst loc (Pextcst_char i)
-  | ECstString loc s -> mkecst loc (Pextcst_string s)
+  | ECstString loc s -> mkecst loc (Pextcst_string (Cduce_types.Encodings.Utf8.mk_latin1 s))
+      (* TODO: escape sequences *)
   | ECstIntern loc c -> mkecst loc (Pextcst_intern c) ]
  
  and erexp = 
@@ -747,7 +749,22 @@ value rec expr =
   | ExVrn loc s -> mkexp loc (Pexp_variant s None)
   | ExWhi loc e1 el ->
       let e2 = ExSeq loc el in
-      mkexp loc (Pexp_while (expr e1) (expr e2)) ]
+      mkexp loc (Pexp_while (expr e1) (expr e2))
+  | ExExtCst loc c -> mkeexp loc (Pextexp_cst (ecst c))
+  | ExExtMatch loc e brs -> mkeexp loc (Pextexp_match (expr e) (ebrs brs))
+  | ExExtMap loc e brs -> mkeexp loc (Pextexp_map (expr e) (ebrs brs))
+  | ExExtXmap loc e brs -> mkeexp loc (Pextexp_xmap (expr e) (ebrs brs))
+  | ExExtRecord loc f -> mkeexp loc (Pextexp_record (List.map (fun [(l,e) -> (l,expr e)]) f))
+  | ExExtRemovefield loc e f -> mkeexp loc (Pextexp_removefield (expr e) f)
+  | ExExtOp loc op args -> mkeexp loc (Pextexp_op op (List.map expr args))
+  | ExExtNamespace loc pr ns e -> mkeexp loc (Pextexp_namespace pr ns (expr e))
+  | ExExtFrom_ml loc e -> mkeexp loc (Pextexp_from_ml (expr e))
+  | ExExtTo_ml loc e -> mkeexp loc (Pextexp_to_ml (expr e))
+  | ExExtCheck loc e p -> mkeexp loc (Pextexp_check (expr e) (epat p)) ]
+
+and ebrs brs =
+  List.map (fun [ (p,e) -> (epat p, expr e) ]) brs
+
 and label_expr =
   fun
   [ ExLab loc lab eo -> (lab, expr (expr_of_lab loc lab eo))

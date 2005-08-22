@@ -61,10 +61,10 @@ and ext_const_desc =
   | Pextcst_record of (qname * ext_const) list
   | Pextcst_atom of qname
   | Pextcst_int of Cduce_types.Intervals.V.t
-  | Pextcst_char of Cduce_types.Encodings.Utf8.t
-  | Pextcst_string of Cduce_types.Encodings.Utf8.t
+  | Pextcst_char of utf8
+  | Pextcst_string of utf8
   | Pextcst_intern of Cduce_types.Types.Const.t
-and qname = string * Cduce_types.Encodings.Utf8.t
+and qname = string * utf8
 and utf8 = Cduce_types.Encodings.Utf8.t
 
 (* Type expressions for the core language *)
