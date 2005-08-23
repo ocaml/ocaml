@@ -567,7 +567,7 @@ The function uses two overlays.
 (defun caml-types-version ()
   "internal version number of caml-types.el"
   (interactive)
-  (message "1")
+  (message "2")
 )
 
 (provide 'caml-types)
