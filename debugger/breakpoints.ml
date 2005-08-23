@@ -177,11 +177,16 @@ let rec new_breakpoint =
 (* Remove a breakpoint from lists. *)
 let remove_breakpoint number =
   try
-    let pos = (List.assoc number !breakpoints).ev_pos in
+    let ev = List.assoc number !breakpoints in
+    let pos = ev.ev_pos in
       Exec.protect
         (function () ->
            breakpoints := assoc_remove !breakpoints number;
-           remove_position pos)
+           remove_position pos;
+           printf "Removed breakpoint %d at %d : %s" number ev.ev_pos
+                  (Pos.get_desc ev);
+           print_newline ()
+        )
   with
     Not_found ->
       prerr_endline ("No breakpoint number " ^ (string_of_int number) ^ ".");
