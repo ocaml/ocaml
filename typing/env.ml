@@ -122,7 +122,7 @@ type pers_struct =
   { ps_name: string;
     ps_sig: signature;
     ps_comps: module_components;
-    ps_cduce: Cduce_types.Compunit.t;
+    ps_cduce: Cduce_types.Compunit.t option;
     ps_crcs: (string * Digest.t) list;
     ps_filename: string }
 
@@ -148,19 +148,24 @@ let read_pers_struct modname filename =
   try
     let buffer = String.create (String.length cmi_magic_number) in
     really_input ic buffer 0 (String.length cmi_magic_number);
-    if buffer <> cmi_magic_number then begin
-      close_in ic;
-      raise(Error(Not_an_interface filename))
-    end;
-    let (name, sign, cduce_cu, pools) = 
-      try input_value ic
-      with Failure s -> Printf.eprintf "ERR:%s\n" s; failwith s in
-    Cduce_types.Value.intract_all pools;
-    Cduce_types.Compunit.register cduce_cu filename;
-(*    let (name, sign) = input_value ic in *)
+    let name, sign, cduce_cu =
+      if buffer = cmi_magic_number then
+	let (name, sign, cduce_cu, pools) = 
+	  try input_value ic
+	  with Failure s -> Printf.eprintf "ERR:%s\n" s; failwith s in
+	Cduce_types.Value.intract_all pools;
+	Cduce_types.Compunit.register cduce_cu filename;
+	name, sign, Some cduce_cu
+      else if buffer = ocaml_cmi_magic_number then
+	let (name, sign) = input_value ic in
+	name, sign, None
+      else begin
+	close_in ic;
+	raise(Error(Not_an_interface filename))
+      end
+    in
     let crcs = input_value ic in
     close_in ic;
-    let sign = Subst.signature (Subst.restore ()) sign in
     let comps =
       !components_of_module' empty Subst.identity
                              (Pident(Ident.create_persistent name))
@@ -752,7 +757,7 @@ let imported_units() =
 
 let save_signature_with_imports sg modname filename imports =
   Btype.cleanup_abbrev ();
-  let sg = Subst.signature_for_saving sg in
+  let sg,ext = Subst.signature_for_saving sg in
   
   (* Create the final value for the CDuce compilation unit descriptor *)
   let h = Hashtbl.hash_param 1000 10000 (modname,sg) in
@@ -762,7 +767,8 @@ let save_signature_with_imports sg modname filename imports =
       (fun accu (name,_) -> 
 	 try 
 	   let d = Hashtbl.find persistent_structures name in
-	   max accu (fst (Cduce_types.Compunit.get_hash d.ps_cduce))
+	   match d.ps_cduce with None -> accu | Some cu ->
+	     max accu (fst (Cduce_types.Compunit.get_hash cu))
 	 with Not_found -> accu) 0 imports in
   let cduce_cu = Cduce_types.Compunit.current () in
   Cduce_types.Compunit.set_hash cduce_cu (succ max_rank) h;
@@ -772,8 +778,13 @@ let save_signature_with_imports sg modname filename imports =
 
   let oc = open_out_bin filename in
   try
-    output_string oc cmi_magic_number;
-    output_value oc (modname, sg, cduce_cu, pools);
+    if ext then begin
+      output_string oc cmi_magic_number;
+      output_value oc (modname, sg, cduce_cu, pools);
+    end else begin
+      output_string oc ocaml_cmi_magic_number;
+      output_value oc (modname, sg);
+    end;
     flush oc;
     let crc = Digest.file filename in
     let crcs = (modname, crc) :: imports in
@@ -788,7 +799,7 @@ let save_signature_with_imports sg modname filename imports =
       { ps_name = modname;
         ps_sig = sg;
         ps_comps = comps;
-	ps_cduce = cduce_cu;
+	ps_cduce = if ext then Some cduce_cu else None;
         ps_crcs = crcs;
         ps_filename = filename } in
     Hashtbl.add persistent_structures modname ps;

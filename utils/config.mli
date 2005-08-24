@@ -63,8 +63,10 @@ val interface_suffix: string ref
 
 val exec_magic_number: string
         (* Magic number for bytecode executable files *)
+val ocaml_cmi_magic_number: string
+        (* Magic number for OCaml compiled interface files *)
 val cmi_magic_number: string
-        (* Magic number for compiled interface files *)
+        (* Magic number for OCamlDuce compiled interface files *)
 val cmo_magic_number: string
         (* Magic number for object bytecode files *)
 val cma_magic_number: string

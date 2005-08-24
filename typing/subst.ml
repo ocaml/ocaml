@@ -23,14 +23,13 @@ type t =
   { types: (Ident.t, Path.t) Tbl.t;
     modules: (Ident.t, Path.t) Tbl.t;
     modtypes: (Ident.t, module_type) Tbl.t;
-    for_saving: bool;
-  }
+    for_saving: bool }
 
 let identity =
   { types = Tbl.empty; modules = Tbl.empty; modtypes = Tbl.empty;
     for_saving = false }
 
-let restore () = identity
+let found_ext = ref false
 
 let add_type id p s = { s with types = Tbl.add id p s.types }
 
@@ -73,6 +72,8 @@ let rec typexp s ty =
         let ty' =
           if s.for_saving then newpersty ty.desc else newty2 ty.level ty.desc
         in
+	(match ty.desc with Text _ when s.for_saving -> found_ext := true
+	   | _ -> ());
         save_desc ty ty.desc; ty.desc <- Tsubst ty'; ty'
       else ty
   | Tsubst ty ->
@@ -302,6 +303,8 @@ and modtype_declaration s = function
   | Tmodtype_manifest mty -> Tmodtype_manifest(modtype s mty)
 
 let signature_for_saving sg =
+  found_ext := false;
   reset_for_saving ();
   let sub = for_saving identity in
-  signature sub sg
+  let sg' = signature sub sg in
+  sg', !found_ext
