@@ -625,6 +625,7 @@ let instr_backtrace ppf lexbuf =
             fprintf ppf "(More frames follow)@."
           end;
           !frame_counter < last_frame in
+      fprintf ppf "Backtrace:@.";
       if number = 0 then
         do_backtrace (print_frame 0 max_int)
       else if number > 0 then
