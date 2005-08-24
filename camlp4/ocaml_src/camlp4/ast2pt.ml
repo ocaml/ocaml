@@ -79,6 +79,9 @@ let mkpolytype t =
     TyPol (_, _, _) -> t
   | _ -> TyPol (MLast.loc_of_ctyp t, [], t)
 ;;
+let mkepat loc d = {pext_desc = d; pext_loc = mkloc loc};;
+let mkecst loc d = {pextcst_desc = d; pextcst_loc = mkloc loc};;
+let mkeexp loc d = mkexp loc (Pexp_ext d);;
 
 let lident s = Lident s;;
 let ldot l s = Ldot (l, s);;
@@ -158,7 +161,65 @@ let ctyp_long_id t =
   | t -> error (loc_of_ctyp t) "invalid type"
 ;;
 
-let rec ctyp =
+let rec epat =
+  function
+    EPatCst (loc, t) -> mkepat loc (Pext_cst t)
+  | EPatNs (loc, s) -> mkepat loc (Pext_ns s)
+  | EPatOr (loc, p1, p2) -> mkepat loc (Pext_or (epat p1, epat p2))
+  | EPatAnd (loc, p1, p2) -> mkepat loc (Pext_and (epat p1, epat p2))
+  | EPatDiff (loc, p1, p2) -> mkepat loc (Pext_diff (epat p1, epat p2))
+  | EPatProd (loc, p1, p2) -> mkepat loc (Pext_prod (epat p1, epat p2))
+  | EPatArrow (loc, p1, p2) -> mkepat loc (Pext_arrow (epat p1, epat p2))
+  | EPatXml (loc, p1, p2) -> mkepat loc (Pext_xml (epat p1, epat p2))
+  | EPatOptional (loc, p) -> mkepat loc (Pext_optional (epat p))
+  | EPatRecord (loc, o, l) ->
+      let l =
+        List.map
+          (fun (q, (p1, p2)) ->
+             q,
+             (epat p1,
+              (match p2 with
+                 None -> None
+               | Some p -> Some (epat p))))
+          l
+      in
+      mkepat loc (Pext_record (o, l))
+  | EPatBind (loc, x, cst) -> mkepat loc (Pext_bind (x, ecst cst))
+  | EPatConstant (loc, cst) -> mkepat loc (Pext_constant (ecst cst))
+  | EPatRegexp (loc, re) -> mkepat loc (Pext_regexp (erexp re))
+  | EPatName (loc, li) -> mkepat loc (Pext_name li)
+  | EPatRecurs (loc, p, l) ->
+      let l = List.map (fun (x, p) -> x, epat p) l in
+      mkepat loc (Pext_recurs (epat p, l))
+  | EPatFrom_ml (loc, t) -> mkepat loc (Pext_from_ml (ctyp t))
+  | EPatConcat (loc, p1, p2) -> mkepat loc (Pext_concat (epat p1, epat p2))
+  | EPatMerge (loc, p1, p2) -> mkepat loc (Pext_concat (epat p1, epat p2))
+and ecst =
+  function
+    ECstPair (loc, c1, c2) -> mkecst loc (Pextcst_pair (ecst c1, ecst c2))
+  | ECstXml (loc, c1, c2, c3) ->
+      mkecst loc (Pextcst_xml (ecst c1, ecst c2, ecst c3))
+  | ECstRecord (loc, l) ->
+      let l = List.map (fun (q, c) -> q, ecst c) l in
+      mkecst loc (Pextcst_record l)
+  | ECstAtom (loc, q) -> mkecst loc (Pextcst_atom q)
+  | ECstInt (loc, i) ->
+      mkecst loc (Pextcst_int (Cduce_types.Intervals.V.mk i))
+  | ECstChar (loc, i) -> mkecst loc (Pextcst_char i)
+  | ECstString (loc, s) ->
+      mkecst loc (Pextcst_string (Cduce_types.Encodings.Utf8.mk_latin1 s))
+  | ECstIntern (loc, c) -> mkecst loc (Pextcst_intern c)
+and erexp =
+  function
+    ERegEpsilon -> Pext_epsilon
+  | ERegElem p -> Pext_elem (epat p)
+  | ERegGuard p -> Pext_guard (epat p)
+  | ERegSeq (r1, r2) -> Pext_seq (erexp r1, erexp r2)
+  | ERegAlt (r1, r2) -> Pext_alt (erexp r1, erexp r2)
+  | ERegStar r -> Pext_star (erexp r)
+  | ERegWeakstar r -> Pext_weakstar (erexp r)
+  | ERegCapture (x, r) -> Pext_capture (x, erexp r)
+and ctyp =
   function
     TyAcc (loc, _, _) as f ->
       let (is_cls, li) = ctyp_long_id f in
@@ -212,6 +273,7 @@ let rec ctyp =
         | Some (Some sl) -> true, Some sl
       in
       mktyp loc (Ptyp_variant (catl, clos, sl))
+  | TyExt (loc, t) -> mktyp loc (Ptyp_ext (epat t))
 and meth_list loc fl v =
   match fl with
     [] -> if v then [mkfield loc Pfield_var] else []
@@ -692,6 +754,22 @@ let rec expr =
   | ExVrn (loc, s) -> mkexp loc (Pexp_variant (s, None))
   | ExWhi (loc, e1, el) ->
       let e2 = ExSeq (loc, el) in mkexp loc (Pexp_while (expr e1, expr e2))
+  | ExExtCst (loc, c) -> mkeexp loc (Pextexp_cst (ecst c))
+  | ExExtMatch (loc, e, brs) -> mkeexp loc (Pextexp_match (expr e, ebrs brs))
+  | ExExtMap (loc, e, brs) -> mkeexp loc (Pextexp_map (expr e, ebrs brs))
+  | ExExtXmap (loc, e, brs) -> mkeexp loc (Pextexp_xmap (expr e, ebrs brs))
+  | ExExtRecord (loc, f) ->
+      mkeexp loc (Pextexp_record (List.map (fun (l, e) -> l, expr e) f))
+  | ExExtRemovefield (loc, e, f) ->
+      mkeexp loc (Pextexp_removefield (expr e, f))
+  | ExExtOp (loc, op, args) ->
+      mkeexp loc (Pextexp_op (op, List.map expr args))
+  | ExExtNamespace (loc, pr, ns, e) ->
+      mkeexp loc (Pextexp_namespace (pr, ns, expr e))
+  | ExExtFrom_ml (loc, e) -> mkeexp loc (Pextexp_from_ml (expr e))
+  | ExExtTo_ml (loc, e) -> mkeexp loc (Pextexp_to_ml (expr e))
+  | ExExtCheck (loc, e, p) -> mkeexp loc (Pextexp_check (expr e, epat p))
+and ebrs brs = List.map (fun (p, e) -> epat p, expr e) brs
 and label_expr =
   function
     ExLab (loc, lab, eo) -> lab, expr (expr_of_lab loc lab eo)

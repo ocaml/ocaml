@@ -20,7 +20,9 @@ let option_map f =
   | None -> None
 ;;
 
-let rec ctyp floc sh =
+let rec epat floc sh = let rec self _ = assert false in self
+and ecst floc sh = let rec self _ = assert false in self
+and ctyp floc sh =
   let rec self =
     function
       TyAcc (loc, x1, x2) -> TyAcc (floc loc, self x1, self x2)
@@ -49,6 +51,7 @@ let rec ctyp floc sh =
     | TyUid (loc, x1) -> TyUid (floc loc, x1)
     | TyVrn (loc, x1, x2) ->
         TyVrn (floc loc, List.map (row_field floc sh) x1, x2)
+    | TyExt (loc, x) -> TyExt (floc loc, epat floc sh x)
   in
   self
 and row_field floc sh =
@@ -265,8 +268,32 @@ and expr floc sh =
     | ExVrn (loc, x1) -> let nloc = floc loc in ExVrn (nloc, x1)
     | ExWhi (loc, x1, x2) ->
         let nloc = floc loc in ExWhi (nloc, self x1, List.map self x2)
+    | ExExtCst (loc, c) ->
+        let nloc = floc loc in ExExtCst (nloc, ecst floc sh c)
+    | ExExtMatch (loc, x, brs) ->
+        let nloc = floc loc in ExExtMatch (nloc, x, ebrs floc sh brs)
+    | ExExtMap (loc, x, brs) ->
+        let nloc = floc loc in ExExtMap (nloc, self x, ebrs floc sh brs)
+    | ExExtXmap (loc, x, brs) ->
+        let nloc = floc loc in ExExtXmap (nloc, self x, ebrs floc sh brs)
+    | ExExtRecord (loc, f) ->
+        let nloc = floc loc in
+        ExExtRecord (nloc, List.map (fun (q, e) -> q, self e) f)
+    | ExExtRemovefield (loc, x, l) ->
+        let nloc = floc loc in ExExtRemovefield (nloc, self x, l)
+    | ExExtOp (loc, op, args) ->
+        let nloc = floc loc in ExExtOp (nloc, op, List.map self args)
+    | ExExtNamespace (loc, pr, ns, x) ->
+        let nloc = floc loc in ExExtNamespace (nloc, pr, ns, self x)
+    | ExExtFrom_ml (loc, x) ->
+        let nloc = floc loc in ExExtFrom_ml (nloc, self x)
+    | ExExtTo_ml (loc, x) -> let nloc = floc loc in ExExtTo_ml (nloc, self x)
+    | ExExtCheck (loc, x, p) ->
+        let nloc = floc loc in ExExtCheck (nloc, self x, epat floc sh p)
   in
   self
+and ebrs floc sh brs =
+  List.map (fun (p, e) -> epat floc sh p, expr floc sh e) brs
 and module_type floc sh =
   let rec self =
     function

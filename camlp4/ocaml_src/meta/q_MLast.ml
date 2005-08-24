@@ -148,6 +148,7 @@ module Qast =
       MLast.PaAcc (loc, MLast.PaUid (loc, "MLast"), MLast.PaLid (loc, l)),
       to_patt a
     ;;
+    let nodel s l = Node (s, (Loc :: l));;
   end
 ;;
 
@@ -164,6 +165,7 @@ let str_item = Grammar.Entry.create gram "structure item";;
 let ctyp = Grammar.Entry.create gram "type";;
 let patt = Grammar.Entry.create gram "pattern";;
 let expr = Grammar.Entry.create gram "expression";;
+let ext_expr = Grammar.Entry.create gram "CDuce expression";;
 
 let module_type = Grammar.Entry.create gram "module type";;
 let module_expr = Grammar.Entry.create gram "module expression";;
@@ -369,7 +371,8 @@ Grammar.extend
    and _ = (type_declaration : 'type_declaration Grammar.Entry.e)
    and _ = (ipatt : 'ipatt Grammar.Entry.e)
    and _ = (with_constr : 'with_constr Grammar.Entry.e)
-   and _ = (row_field : 'row_field Grammar.Entry.e) in
+   and _ = (row_field : 'row_field Grammar.Entry.e)
+   and _ = (ext_expr : 'ext_expr Grammar.Entry.e) in
    let grammar_entry_create s =
      Grammar.Entry.create (Grammar.of_entry sig_item) s
    in
@@ -467,7 +470,9 @@ Grammar.extend
      grammar_entry_create "class_longident"
    and direction_flag : 'direction_flag Grammar.Entry.e =
      grammar_entry_create "direction_flag"
-   in
+   and ext_small_const : 'ext_small_const Grammar.Entry.e =
+     grammar_entry_create "ext_small_const"
+   and qname : 'qname Grammar.Entry.e = grammar_entry_create "qname" in
    [Grammar.Entry.obj (module_expr : 'module_expr Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Stoken ("", "struct");
@@ -688,7 +693,7 @@ Grammar.extend
            (let (_, c, tl) =
               match ctl with
                 Qast.Tuple [xx1; xx2; xx3] -> xx1, xx2, xx3
-              | _ -> match () with _ -> raise (Match_failure ("", 332, 19))
+              | _ -> match () with _ -> raise (Match_failure ("", 336, 19))
             in
             Qast.Node ("StExc", [Qast.Loc; c; tl; b]) :
             'str_item));
@@ -982,7 +987,7 @@ Grammar.extend
            (let (_, c, tl) =
               match ctl with
                 Qast.Tuple [xx1; xx2; xx3] -> xx1, xx2, xx3
-              | _ -> match () with _ -> raise (Match_failure ("", 390, 19))
+              | _ -> match () with _ -> raise (Match_failure ("", 394, 19))
             in
             Qast.Node ("SgExc", [Qast.Loc; c; tl]) :
             'sig_item));
@@ -4766,7 +4771,82 @@ Grammar.extend
            (loc : Lexing.position * Lexing.position) ->
            (let _ = warn_antiq loc "3.06+18" in
             Qast.Node ("CgVal", [Qast.Loc; l; antiquot "mut" loc mf; t]) :
-            'class_sig_item))]]]);;
+            'class_sig_item))]];
+    Grammar.Entry.obj (expr : 'expr Grammar.Entry.e),
+    Some (Gramext.Level "simple"),
+    [None, None,
+     [[Gramext.Stoken ("", "{"); Gramext.Stoken ("", "{");
+       Gramext.Snterm
+         (Grammar.Entry.obj (ext_expr : 'ext_expr Grammar.Entry.e));
+       Gramext.Stoken ("", "}"); Gramext.Stoken ("", "}")],
+      Gramext.action
+        (fun _ _ (e : 'ext_expr) _ _
+           (loc : Lexing.position * Lexing.position) ->
+           (e : 'expr))]];
+    Grammar.Entry.obj (ext_small_const : 'ext_small_const Grammar.Entry.e),
+    None,
+    [None, None,
+     [[Gramext.Snterm
+         (Grammar.Entry.obj (a_STRING : 'a_STRING Grammar.Entry.e))],
+      Gramext.action
+        (fun (i : 'a_STRING) (loc : Lexing.position * Lexing.position) ->
+           (Qast.nodel "ECstString" [i] : 'ext_small_const));
+      [Gramext.Snterm (Grammar.Entry.obj (a_INT : 'a_INT Grammar.Entry.e))],
+      Gramext.action
+        (fun (i : 'a_INT) (loc : Lexing.position * Lexing.position) ->
+           (Qast.nodel "ECstInt" [i] : 'ext_small_const))]];
+    Grammar.Entry.obj (ext_expr : 'ext_expr Grammar.Entry.e), None,
+    [Some "simple", None,
+     [[Gramext.Stoken ("", "<");
+       Gramext.srules
+         [[Gramext.Stoken ("", "(");
+           Gramext.Snterm
+             (Grammar.Entry.obj (ext_expr : 'ext_expr Grammar.Entry.e));
+           Gramext.Stoken ("", ")")],
+          Gramext.action
+            (fun _ (e : 'ext_expr) _
+               (loc : Lexing.position * Lexing.position) ->
+               (e : 'e__33));
+          [Gramext.Snterm
+             (Grammar.Entry.obj (qname : 'qname Grammar.Entry.e))],
+          Gramext.action
+            (fun (q : 'qname) (loc : Lexing.position * Lexing.position) ->
+               (Qast.nodel "ExExtCst" [Qast.nodel "ECstAtom" [q]] : 'e__33))];
+       Gramext.Stoken ("", ">");
+       Gramext.Snterml
+         (Grammar.Entry.obj (ext_expr : 'ext_expr Grammar.Entry.e),
+          "simple")],
+      Gramext.action
+        (fun (content : 'ext_expr) _ (tag : 'e__33) _
+           (loc : Lexing.position * Lexing.position) ->
+           (Qast.nodel "ExExtOp"
+              [Qast.Str "xml";
+               Qast.List
+                 [tag; Qast.nodel "ExExtRecord" [Qast.List []]; content]] :
+            'ext_expr));
+      [Gramext.Snterm
+         (Grammar.Entry.obj
+            (ext_small_const : 'ext_small_const Grammar.Entry.e))],
+      Gramext.action
+        (fun (c : 'ext_small_const)
+           (loc : Lexing.position * Lexing.position) ->
+           (Qast.nodel "ExExtCst" [c] : 'ext_expr))]];
+    Grammar.Entry.obj (qname : 'qname Grammar.Entry.e), None,
+    [None, None,
+     [[Gramext.srules
+         [[Gramext.Snterm
+             (Grammar.Entry.obj (a_UIDENT : 'a_UIDENT Grammar.Entry.e))],
+          Gramext.action
+            (fun (x : 'a_UIDENT) (loc : Lexing.position * Lexing.position) ->
+               (x : 'e__34));
+          [Gramext.Snterm
+             (Grammar.Entry.obj (a_LIDENT : 'a_LIDENT Grammar.Entry.e))],
+          Gramext.action
+            (fun (x : 'a_LIDENT) (loc : Lexing.position * Lexing.position) ->
+               (x : 'e__34))]],
+      Gramext.action
+        (fun (id : 'e__34) (loc : Lexing.position * Lexing.position) ->
+           (Qast.Tuple [Qast.Str ""; id] : 'qname))]]]);;
 
 Grammar.extend
   (let _ = (str_item : 'str_item Grammar.Entry.e)
@@ -5228,6 +5308,18 @@ Grammar.extend
        (fun _ (x : 'expr) (loc : Lexing.position * Lexing.position) ->
           (x : 'expr_eoi))]]];
 Quotation.add "expr" (apply_entry expr_eoi);;
+
+let ext_expr_eoi = Grammar.Entry.create gram "CDuce expression" in
+Grammar.extend
+  [Grammar.Entry.obj (ext_expr_eoi : 'ext_expr_eoi Grammar.Entry.e), None,
+   [None, None,
+    [[Gramext.Snterm
+        (Grammar.Entry.obj (ext_expr : 'ext_expr Grammar.Entry.e));
+      Gramext.Stoken ("EOI", "")],
+     Gramext.action
+       (fun _ (x : 'ext_expr) (loc : Lexing.position * Lexing.position) ->
+          (x : 'ext_expr_eoi))]]];
+Quotation.add "xexpr" (apply_entry ext_expr_eoi);;
 
 let module_type_eoi = Grammar.Entry.create gram "module type" in
 Grammar.extend

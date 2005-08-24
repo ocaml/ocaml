@@ -21,7 +21,46 @@
 
 type loc = Lexing.position * Lexing.position;;
 
-type ctyp =
+type epat =
+    EPatCst of loc * Cduce_types.Types.t
+  | EPatNs of loc * string
+  | EPatOr of loc * epat * epat
+  | EPatAnd of loc * epat * epat
+  | EPatDiff of loc * epat * epat
+  | EPatProd of loc * epat * epat
+  | EPatArrow of loc * epat * epat
+  | EPatXml of loc * epat * epat
+  | EPatOptional of loc * epat
+  | EPatRecord of loc * bool * (qname * (epat * epat option)) list
+  | EPatBind of loc * string * ecst
+  | EPatConstant of loc * ecst
+  | EPatRegexp of loc * eregexp
+  | EPatName of loc * Longident.t
+  | EPatRecurs of loc * epat * (string * epat) list
+  | EPatFrom_ml of loc * ctyp
+  | EPatConcat of loc * epat * epat
+  | EPatMerge of loc * epat * epat
+and eregexp =
+    ERegEpsilon
+  | ERegElem of epat
+  | ERegGuard of epat
+  | ERegSeq of eregexp * eregexp
+  | ERegAlt of eregexp * eregexp
+  | ERegStar of eregexp
+  | ERegWeakstar of eregexp
+  | ERegCapture of string * eregexp
+and ecst =
+    ECstPair of loc * ecst * ecst
+  | ECstXml of loc * ecst * ecst * ecst
+  | ECstRecord of loc * (qname * ecst) list
+  | ECstAtom of loc * qname
+  | ECstInt of loc * string
+  | ECstChar of loc * utf8
+  | ECstString of loc * string
+  | ECstIntern of loc * Cduce_types.Types.Const.t
+and qname = string * utf8
+and utf8 = Cduce_types.Encodings.Utf8.t
+and ctyp =
     TyAcc of loc * ctyp * ctyp
   | TyAli of loc * ctyp * ctyp
   | TyAny of loc
@@ -40,6 +79,7 @@ type ctyp =
   | TyTup of loc * ctyp list
   | TyUid of loc * string
   | TyVrn of loc * row_field list * string list option option
+  | TyExt of loc * epat
 and row_field =
     RfTag of string * bool * ctyp list
   | RfInh of ctyp
@@ -118,6 +158,18 @@ and expr =
   | ExUid of loc * string
   | ExVrn of loc * string
   | ExWhi of loc * expr * expr list
+  | ExExtCst of loc * ecst
+  | ExExtMatch of loc * expr * ebranch list
+  | ExExtMap of loc * expr * ebranch list
+  | ExExtXmap of loc * expr * ebranch list
+  | ExExtRecord of loc * (qname * expr) list
+  | ExExtRemovefield of loc * expr * qname
+  | ExExtOp of loc * string * expr list
+  | ExExtNamespace of loc * string * utf8 * expr
+  | ExExtFrom_ml of loc * expr
+  | ExExtTo_ml of loc * expr
+  | ExExtCheck of loc * expr * epat
+and ebranch = epat * expr
 and module_type =
     MtAcc of loc * module_type * module_type
   | MtApp of loc * module_type * module_type
