@@ -157,7 +157,7 @@ and lambda_switch =
     sw_blocks: (int * lambda) list;     (* Tag block cases *)
     sw_failaction : lambda option}      (* Action to take if failure *)
 and lambda_event =
-  { lev_pos: Lexing.position;
+  { lev_loc: Location.t;
     lev_kind: lambda_event_kind;
     lev_repr: int ref option;
     lev_env: Env.summary }
@@ -200,6 +200,6 @@ val next_raise_count : unit -> int
 val staticfail : lambda (* Anticipated static failure *)
 
 (* Check anticipated failure, substitute its final value *)
-val is_guarded: lambda -> bool 
-val patch_guarded : lambda -> lambda -> lambda 
+val is_guarded: lambda -> bool
+val patch_guarded : lambda -> lambda -> lambda
 

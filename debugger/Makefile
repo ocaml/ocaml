@@ -57,8 +57,8 @@ OBJS=\
 	source.cmo \
 	pos.cmo \
 	checkpoints.cmo \
-	symbols.cmo \
 	events.cmo \
+	symbols.cmo \
 	breakpoints.cmo \
 	trap_barrier.cmo \
 	history.cmo \

@@ -248,10 +248,15 @@ representation is simply concatenated with the COMMAND."
   ;accumulate onto previous output
   (setq camldebug-filter-accumulator
         (concat camldebug-filter-accumulator string))
-  (if (not (string-match (concat "\\(\n\\|\\`\\)[ \t]*\\([0-9]+\\)[ \t]+"
-                          camldebug-goto-position
-                          "[ \t]*\\(before\\|after\\)\n")
-                  camldebug-filter-accumulator)) nil
+  (if (not (or (string-match (concat "\\(\n\\|\\`\\)[ \t]*\\([0-9]+\\)[ \t]+"
+                                     camldebug-goto-position
+                                     "-[0-9]+[ \t]*\\(before\\).*\n")
+                             camldebug-filter-accumulator)
+               (string-match (concat "\\(\n\\|\\`\\)[ \t]*\\([0-9]+\\)[ \t]+[0-9]+-"
+                                     camldebug-goto-position
+                                     "[ \t]*\\(after\\).*\n")
+                             camldebug-filter-accumulator)))
+           nil
     (setq camldebug-goto-output
           (match-string 2 camldebug-filter-accumulator))
     (setq camldebug-filter-accumulator
@@ -516,17 +521,24 @@ the camldebug commands `cd DIR' and `directory'."
     ;; Process all the complete markers in this chunk.
     (while (setq begin
                  (string-match
-                  "\032\032\\(H\\|M\\(.+\\):\\(.+\\):\\(before\\|after\\)\\)\n"
+                  "\032\032\\(H\\|M\\(.+\\):\\(.+\\):\\(.+\\):\\(before\\|after\\)\\)\n"
                   camldebug-filter-accumulator))
       (setq camldebug-last-frame
             (if (char-equal ?H (aref camldebug-filter-accumulator
                                      (1+ (1+ begin)))) nil
-              (list (match-string 2 camldebug-filter-accumulator)
-                    (string-to-int
-                     (match-string 3 camldebug-filter-accumulator))
-                    (string= "before"
-                             (match-string 4
-                                           camldebug-filter-accumulator))))
+              (let ((isbefore
+                     (string= "before"
+                              (match-string 5 camldebug-filter-accumulator)))
+                    (startpos (string-to-int
+                               (match-string 3 camldebug-filter-accumulator)))
+                    (endpos (string-to-int
+                             (match-string 4 camldebug-filter-accumulator))))
+                (list (match-string 2 camldebug-filter-accumulator)
+                      (if isbefore startpos endpos)
+                      isbefore
+                      startpos
+                      endpos
+                      )))
             output (concat output
                            (substring camldebug-filter-accumulator
                                       0 begin))
@@ -627,33 +639,36 @@ the camldebug commands `cd DIR' and `directory'."
 
 (defun camldebug-display-frame ()
   "Find, obey and delete the last filename-and-line marker from CDB.
-The marker looks like \\032\\032FILENAME:CHARACTER\\n.
+The marker looks like \\032\\032Mfilename:startchar:endchar:beforeflag\\n.
 Obeying it means displaying in another window the specified file and line."
   (interactive)
   (camldebug-set-buffer)
   (if (not camldebug-last-frame)
       (camldebug-remove-current-event)
-    (camldebug-display-line (car camldebug-last-frame)
-                            (car (cdr camldebug-last-frame))
-                            (car (cdr (cdr camldebug-last-frame)))))
+    (camldebug-display-line (nth 0 camldebug-last-frame)
+                            (nth 3 camldebug-last-frame)
+                            (nth 4 camldebug-last-frame)
+                            (nth 2 camldebug-last-frame)))
   (setq camldebug-last-frame-displayed-p t))
 
 ;; Make sure the file named TRUE-FILE is in a buffer that appears on the screen
 ;; and that its character CHARACTER is visible.
 ;; Put the mark on this character in that buffer.
 
-(defun camldebug-display-line (true-file character kind)
+(defun camldebug-display-line (true-file schar echar kind)
   (let* ((pre-display-buffer-function nil) ; screw it, put it all in one screen
          (pop-up-windows t)
          (buffer (find-file-noselect true-file))
          (window (display-buffer buffer t))
-         (pos))
+         (spos) (epos) (pos))
     (save-excursion
       (set-buffer buffer)
       (save-restriction
         (widen)
-        (setq pos (+ (point-min) character))
-        (camldebug-set-current-event pos (current-buffer) kind))
+        (setq spos (+ (point-min) schar))
+        (setq epos (+ (point-min) echar))
+        (setq pos (if kind spos epos))
+        (camldebug-set-current-event spos epos (current-buffer) kind))
       (cond ((or (< pos (point-min)) (> pos (point-max)))
              (widen)
              (goto-char pos))))
@@ -668,15 +683,15 @@ Obeying it means displaying in another window the specified file and line."
         (delete-overlay camldebug-overlay-under))
     (setq overlay-arrow-position nil)))
 
-(defun camldebug-set-current-event (pos buffer before)
+(defun camldebug-set-current-event (spos epos buffer before)
   (if window-system
       (if before
           (progn
-            (move-overlay camldebug-overlay-event pos (1+ pos) buffer)
+            (move-overlay camldebug-overlay-event spos (1+ spos) buffer)
             (move-overlay camldebug-overlay-under
-                          (+ pos 1) (+ pos 3) buffer))
-        (move-overlay camldebug-overlay-event (1- pos) pos buffer)
-        (move-overlay camldebug-overlay-under (- pos 3) (- pos 1) buffer))
+                          (+ spos 1) epos buffer))
+        (move-overlay camldebug-overlay-event (1- epos) epos buffer)
+        (move-overlay camldebug-overlay-under spos (- epos 1) buffer))
     (save-excursion
       (set-buffer buffer)
       (goto-char pos)

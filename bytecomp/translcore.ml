@@ -461,7 +461,7 @@ let event_before exp lam = match lam with
 | Lstaticraise (_,_) -> lam
 | _ ->
   if !Clflags.debug
-  then Levent(lam, {lev_pos = exp.exp_loc.Location.loc_start;
+  then Levent(lam, {lev_loc = exp.exp_loc;
                     lev_kind = Lev_before;
                     lev_repr = None;
                     lev_env = Env.summary exp.exp_env})
@@ -469,7 +469,7 @@ let event_before exp lam = match lam with
 
 let event_after exp lam =
   if !Clflags.debug
-  then Levent(lam, {lev_pos = exp.exp_loc.Location.loc_end;
+  then Levent(lam, {lev_loc = exp.exp_loc;
                     lev_kind = Lev_after exp.exp_type;
                     lev_repr = None;
                     lev_env = Env.summary exp.exp_env})
@@ -480,7 +480,7 @@ let event_function exp lam =
     let repr = Some (ref 0) in
     let (info, body) = lam repr in
     (info,
-     Levent(body, {lev_pos = exp.exp_loc.Location.loc_start;
+     Levent(body, {lev_loc = exp.exp_loc;
                    lev_kind = Lev_function;
                    lev_repr = repr;
                    lev_env = Env.summary exp.exp_env}))

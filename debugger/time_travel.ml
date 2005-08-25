@@ -263,7 +263,7 @@ let rec stop_on_event report =
     {rep_type = Breakpoint; rep_program_pointer = pc;
      rep_stack_pointer = sp} ->
       last_breakpoint := Some (pc, sp);
-      update_current_event ();
+      Symbols.update_current_event ();
       begin match !current_event with
         None   -> find_event ()
       | Some _ -> ()
@@ -508,7 +508,7 @@ let step duration =
 
 (* Finish current function. *)
 let finish () =
-  update_current_event ();
+  Symbols.update_current_event ();
   match !current_event with
     None ->
       prerr_endline "`finish' not meaningful in outermost frame.";
@@ -545,7 +545,7 @@ let finish () =
                 done))
 
 let next_1 () =
-  update_current_event ();
+  Symbols.update_current_event ();
   match !current_event with
     None ->                             (* Beginning of the program. *)
       step _1
@@ -553,7 +553,7 @@ let next_1 () =
       let (frame1, pc1) = initial_frame() in
       step _1;
       if not !interrupted then begin
-        update_current_event ();
+        Symbols.update_current_event ();
         match !current_event with
           None -> ()
         | Some event2 ->
@@ -575,7 +575,7 @@ let rec next =
 
 (* Run backward until just before current function. *)
 let start () =
-  update_current_event ();
+  Symbols.update_current_event ();
   match !current_event with
     None ->
       prerr_endline "`start not meaningful in outermost frame.";
@@ -613,7 +613,7 @@ let start () =
       done
 
 let previous_1 () =
-  update_current_event ();
+  Symbols.update_current_event ();
   match !current_event with
     None ->                             (* End of the program. *)
       step _minus1
@@ -621,7 +621,7 @@ let previous_1 () =
       let (frame1, pc1) = initial_frame() in
       step _minus1;
       if not !interrupted then begin
-        update_current_event ();
+        Symbols.update_current_event ();
         match !current_event with
           None -> ()
         | Some event2 ->

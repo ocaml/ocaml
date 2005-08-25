@@ -85,8 +85,8 @@ let read_symbols bytecode_file =
         [] -> ()
       | ev :: _ as evl ->
           let md = ev.ev_module in
-          let cmp ev1 ev2 = compare ev1.ev_char.Lexing.pos_cnum
-                                    ev2.ev_char.Lexing.pos_cnum
+          let cmp ev1 ev2 = compare (Events.get_pos ev1).Lexing.pos_cnum
+                                    (Events.get_pos ev2).Lexing.pos_cnum
           in
           let sorted_evl = List.sort cmp evl in
           modules := md :: !modules;
@@ -125,13 +125,15 @@ let events_in_module mdle =
 let find_event ev char =
   let rec bsearch lo hi =
     if lo >= hi then begin
-      if ev.(hi).ev_char.Lexing.pos_cnum < char then raise Not_found;
-      hi
+      if (Events.get_pos ev.(hi)).Lexing.pos_cnum < char
+      then raise Not_found
+      else hi
     end else begin
       let pivot = (lo + hi) / 2 in
       let e = ev.(pivot) in
-      if char <= e.ev_char.Lexing.pos_cnum then bsearch lo pivot
-                                           else bsearch (pivot + 1) hi
+      if char <= (Events.get_pos e).Lexing.pos_cnum
+      then bsearch lo pivot
+      else bsearch (pivot + 1) hi
     end
   in
   bsearch 0 (Array.length ev - 1)
@@ -150,8 +152,8 @@ let event_near_pos md char =
     let pos = find_event ev char in
     (* Desired event is either ev.(pos) or ev.(pos - 1),
        whichever is closest *)
-    if pos > 0 && char - ev.(pos - 1).ev_char.Lexing.pos_cnum
-                  <= ev.(pos).ev_char.Lexing.pos_cnum - char
+    if pos > 0 && char - (Events.get_pos ev.(pos - 1)).Lexing.pos_cnum
+                  <= (Events.get_pos ev.(pos)).Lexing.pos_cnum - char
     then ev.(pos - 1)
     else ev.(pos)
   with Not_found ->
@@ -167,3 +169,26 @@ let set_all_events () =
          Event_pseudo -> ()
        | _            -> Debugcom.set_event ev.ev_pos)
     events_by_pc
+
+
+(* Previous `pc'. *)
+(* Save time if `update_current_event' is called *)
+(* several times at the same point. *)
+let old_pc = ref (None : int option)
+
+(* Recompute the current event *)
+let update_current_event () =
+  match Checkpoints.current_pc () with
+    None ->
+      Events.current_event := None;
+      old_pc := None
+  | (Some pc) as opt_pc when opt_pc <> !old_pc ->
+      Events.current_event :=
+        begin try
+          Some (event_at_pc pc)
+        with Not_found ->
+          None
+        end;
+      old_pc := opt_pc
+  | _ ->
+      ()

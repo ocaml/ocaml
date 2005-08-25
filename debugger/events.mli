@@ -15,17 +15,16 @@
 
 open Instruct
 
+val get_pos : debug_event -> Lexing.position;;
+
 (** Current events. **)
 
 (* The event at current position. *)
 val current_event : debug_event option ref
 
-(* Recompute the current event *)
-val update_current_event : unit -> unit
-
 (* Current position in source. *)
 (* Raise `Not_found' if not on an event (beginning or end of program). *)
-val current_point : unit -> string * int
+val get_current_event : unit -> debug_event
 
 val current_event_is_before : unit -> bool
 

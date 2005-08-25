@@ -144,7 +144,7 @@ let convert_module mdle =
                         else m)
   | None ->
       try
-        let (x, _) = current_point () in x
+        (get_current_event ()).ev_module
       with
       | Not_found ->
           error "Not in a module."
@@ -830,13 +830,14 @@ let info_events ppf lexbuf =
   ensure_loaded ();
   let mdle = convert_module (opt_identifier_eol Lexer.lexeme lexbuf) in
     print_endline ("Module : " ^ mdle);
-    print_endline "   Address  Character      Kind      Repr.";
+    print_endline "   Address  Characters        Kind      Repr.";
     List.iter
       (function ev ->
          Printf.printf
-           "%10d %10d  %10s %10s\n"
+           "%10d %6d-%-6d  %10s %10s\n"
            ev.ev_pos
-           ev.ev_char.Lexing.pos_cnum
+           ev.ev_loc.Location.loc_start.Lexing.pos_cnum
+           ev.ev_loc.Location.loc_end.Lexing.pos_cnum
            ((match ev.ev_kind with
                Event_before   -> "before"
              | Event_after _  -> "after"

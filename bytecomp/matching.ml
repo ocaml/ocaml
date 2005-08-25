@@ -2060,7 +2060,7 @@ let rec event_branch repr lam =
       lam
   | (Levent(lam', ev), Some r) ->
       incr r;
-      Levent(lam', {lev_pos = ev.lev_pos;
+      Levent(lam', {lev_loc = ev.lev_loc;
                     lev_kind = ev.lev_kind;
                     lev_repr = repr;
                     lev_env = ev.lev_env})

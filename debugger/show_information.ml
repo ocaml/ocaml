@@ -37,9 +37,9 @@ let show_current_event ppf =
   | None ->
       fprintf ppf "@.Beginning of program.@.";
       show_no_point ()
-  | Some {rep_type = (Event | Breakpoint); rep_program_pointer = pc} -> 
-     let (mdle, point) = current_point () in
-        fprintf ppf " - module %s@." mdle;
+  | Some {rep_type = (Event | Breakpoint); rep_program_pointer = pc} ->
+        let ev = get_current_event () in
+        fprintf ppf " - module %s@." ev.ev_module;
         (match breakpoints_at_pc pc with
          | [] ->
              ()
@@ -51,7 +51,7 @@ let show_current_event ppf =
                List.iter
                 (function x -> fprintf ppf "%i " x) l)
              (List.sort compare breakpoints));
-        show_point mdle point (current_event_is_before ()) true
+        show_point ev true
   | Some {rep_type = Exited} ->
       fprintf ppf "@.Program exit.@.";
       show_no_point ()
@@ -70,7 +70,8 @@ let show_current_event ppf =
 
 let show_one_frame framenum ppf event =
   fprintf ppf "#%i  Pc : %i  %s char %i@."
-         framenum event.ev_pos event.ev_module event.ev_char.Lexing.pos_cnum
+         framenum event.ev_pos event.ev_module
+         (Events.get_pos event).Lexing.pos_cnum
 
 (* Display information about the current frame. *)
 (* --- `select frame' must have succeded before calling this function. *)
@@ -90,5 +91,4 @@ let show_current_frame ppf selected =
             List.iter (function x -> fprintf ppf "%i " x) l)
           (List.sort compare breakpoints);
       end;
-      show_point sel_ev.ev_module sel_ev.ev_char.Lexing.pos_cnum
-                 (selected_event_is_before ()) selected
+      show_point sel_ev selected

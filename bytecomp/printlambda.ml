@@ -282,12 +282,15 @@ let rec lam ppf = function
         if k = Self then "self" else if k = Cached then "cache" else "" in
       fprintf ppf "@[<2>(send%s@ %a@ %a%a)@]" kind lam obj lam met args largs
   | Levent(expr, ev) ->
-      let kind = 
+      let kind =
        match ev.lev_kind with
        | Lev_before -> "before"
        | Lev_after _  -> "after"
        | Lev_function -> "funct-body" in
-      fprintf ppf "@[<2>(%s %i@ %a)@]" kind ev.lev_pos.Lexing.pos_cnum lam expr
+      fprintf ppf "@[<2>(%s %i-%i@ %a)@]" kind
+              ev.lev_loc.Location.loc_start.Lexing.pos_cnum
+              ev.lev_loc.Location.loc_end.Lexing.pos_cnum
+              lam expr
   | Lifused(id, expr) ->
       fprintf ppf "@[<2>(ifused@ %a@ %a)@]" Ident.print id lam expr
 

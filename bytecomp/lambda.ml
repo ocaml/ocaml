@@ -96,7 +96,7 @@ and bigarray_kind =
   | Pbigarray_float32 | Pbigarray_float64
   | Pbigarray_sint8 | Pbigarray_uint8
   | Pbigarray_sint16 | Pbigarray_uint16
-  | Pbigarray_int32 | Pbigarray_int64 
+  | Pbigarray_int32 | Pbigarray_int64
   | Pbigarray_caml_int | Pbigarray_native_int
   | Pbigarray_complex32 | Pbigarray_complex64
 
@@ -149,7 +149,7 @@ and lambda_switch =
     sw_failaction : lambda option}
 
 and lambda_event =
-  { lev_pos: Lexing.position;
+  { lev_loc: Location.t;
     lev_kind: lambda_event_kind;
     lev_repr: int ref option;
     lev_env: Env.summary }
@@ -201,7 +201,7 @@ let rec same l1 l2 =
   | Lsend(k1, a1, b1, cl1), Lsend(k2, a2, b2, cl2) ->
       k1 = k2 && same a1 a2 && same b1 b2 && samelist same cl1 cl2
   | Levent(a1, ev1), Levent(a2, ev2) ->
-      same a1 a2 && ev1.lev_pos = ev2.lev_pos
+      same a1 a2 && ev1.lev_loc = ev2.lev_loc
   | Lifused(id1, a1), Lifused(id2, a2) ->
       Ident.same id1 id2 && same a1 a2
   | _, _ ->
@@ -270,7 +270,7 @@ let rec iter f = function
       f e1; f e2
   | Lwhile(e1, e2) ->
       f e1; f e2
-  | Lfor(v, e1, e2, dir, e3) -> 
+  | Lfor(v, e1, e2, dir, e3) ->
       f e1; f e2; f e3
   | Lassign(id, e) ->
       f e
@@ -300,10 +300,10 @@ let free_ids get l =
     | Lletrec(decl, body) ->
         List.iter (fun (id, exp) -> fv := IdentSet.remove id !fv) decl
     | Lstaticcatch(e1, (_,vars), e2) ->
-        List.iter (fun id -> fv := IdentSet.remove id !fv) vars        
+        List.iter (fun id -> fv := IdentSet.remove id !fv) vars
     | Ltrywith(e1, exn, e2) ->
         fv := IdentSet.remove exn !fv
-    | Lfor(v, e1, e2, dir, e3) -> 
+    | Lfor(v, e1, e2, dir, e3) ->
         fv := IdentSet.remove v !fv
     | Lassign(id, e) ->
         fv := IdentSet.add id !fv
@@ -386,14 +386,14 @@ let subst_lambda s lam =
                          match sw.sw_failaction with
                          | None -> None
                          | Some l -> Some (subst l)})
-                   
+
   | Lstaticraise (i,args) ->  Lstaticraise (i, List.map subst args)
   | Lstaticcatch(e1, io, e2) -> Lstaticcatch(subst e1, io, subst e2)
   | Ltrywith(e1, exn, e2) -> Ltrywith(subst e1, exn, subst e2)
   | Lifthenelse(e1, e2, e3) -> Lifthenelse(subst e1, subst e2, subst e3)
   | Lsequence(e1, e2) -> Lsequence(subst e1, subst e2)
   | Lwhile(e1, e2) -> Lwhile(subst e1, subst e2)
-  | Lfor(v, e1, e2, dir, e3) -> Lfor(v, subst e1, subst e2, dir, subst e3) 
+  | Lfor(v, e1, e2, dir, e3) -> Lfor(v, subst e1, subst e2, dir, subst e3)
   | Lassign(id, e) -> Lassign(id, subst e)
   | Lsend (k, met, obj, args) ->
       Lsend (k, subst met, subst obj, List.map subst args)
