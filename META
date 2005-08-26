@@ -1,0 +1,6 @@
+version = "3.08.4"
+requires = "num"
+description = "Runtime library for OCamlDuce"
+archive(byte) = "ocamlduce.cma"
+archive(native) = "ocamlduce.cmxa"
+
