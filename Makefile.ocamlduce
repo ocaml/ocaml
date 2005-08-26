@@ -191,7 +191,7 @@ ocamlducec.opt: $(COMPOBJS:.cmo=.cmx)
           asmrun/meta.o asmrun/dynlink.o -cclib "$(BYTECCLIBS)"
 
 clean::
-	rm -f ocamlduce.opt
+	rm -f ocamlducec.opt
 
 # The native-code compiler compiled with itself
 
@@ -377,6 +377,9 @@ ocamlducedep.opt: tools/depend.cmi $(CAMLDEP_OBJ:.cmo=.cmx)
 	           $(CAMLDEP_OBJ:.cmo=.cmx)
 
 
+clean::
+	rm -f ocamlducedep*
+
 
 # OCamldoc
 
@@ -389,10 +392,9 @@ ocamlducedoc.opt:
 	cp ocamldoc/ocamldoc.opt ./ocamlducedoc.opt
 
 
-partialclean::
+clean::
+	rm -f ocamlducedoc*
 	cd ocamldoc && $(MAKE) clean
-alldepend::
-	cd ocamldoc && $(MAKE) depend
 
 
 # Findlib installation
