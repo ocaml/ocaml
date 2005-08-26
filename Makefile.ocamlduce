@@ -278,7 +278,7 @@ clean::
 beforedepend:: asmcomp/emit.ml
 
 tools/cvt_emit: tools/cvt_emit.mll
-	cd tools; $(MAKE) CAMLC="$(CAMLC)" cvt_emit
+	cd tools; $(MAKE) CAMLC="$(CAMLC)" CAMLLEX="$(CAMLLEX)" cvt_emit
 
 # The "expunge" utility
 
