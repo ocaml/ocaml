@@ -403,7 +403,7 @@ INSTALL_FILES= \
  ocamlducec ocamlduce ocamlducedep ocamlducedoc ocamlduce.cma \
  ocamlduceopt ocamlduce.cmxa \
  ocamlducec.opt ocamlduceopt.opt ocamlducedep.opt ocamlducedoc.opt \
- ocamlduce.cmi cduce_types.cmi ocamlduce.mli
+ stdlib/ocamlduce.cmi cduce_types.cmi stdlib/ocamlduce.mli
 
 install: FORCE
 	ocamlfind install ocamlduce META $(wildcard $(INSTALL_FILES))

@@ -30,3 +30,16 @@ b. Using an existing OCaml installation, and producing alternative
 DOCUMENTATION:
 
 http://www.cduce.org/ocaml
+
+
+CHANGE LOG:
+
+3.08.4
+- first version with binary compatibility with OCaml
+
+3.08.4pl1
+- a new build/installation scheme which rely on an working OCaml installation
+
+3.08.4pl2
+- fix a bug in the parser (now it accepts  <a>(...) as a type)
+- fix a bug in Makefile (did not install ocamlduce.{cmi,mli})
