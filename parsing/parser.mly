@@ -1917,12 +1917,15 @@ simple_regexp:
 simple_ext_pat:
     ext_patid { mkext(Pext_name $1) }
   | UNDERSCORE { mkext(Pext_cst CD.Types.any) }
-  | LESS tag_pat ext_attrib GREATER simple_ext_pat
+  | LESS tag_pat ext_attrib GREATER simple_regexp
     { 
       let tag = $2 in
       let attr = $3 in
       let cont = $5 in
-      mkext(Pext_xml(tag,mkext(Pext_prod(attr,cont)))) } 
+      match cont with
+	| Pext_elem cont -> mkext(Pext_xml(tag,mkext(Pext_prod(attr,cont))))
+	| _ -> error_msg 5 "regexp not allowed here" 
+    }
   | ext_small_const { mkext(Pext_constant ($1)) }
   | ext_int DASHDASH ext_int { 
       mkext(Pext_cst (CD.Types.interval (CD.Intervals.bounded $1 $3))) } 
