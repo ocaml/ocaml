@@ -375,6 +375,8 @@ let rec transl_const env c = match c.pextcst_desc with
 
 open Cduce_types.Typepat
 
+let perr p s = error p.pext_loc (PatError s)
+
 (* This environment is used in phase (1) to eliminate recursion *)
 
 type penv = {
@@ -401,18 +403,19 @@ let rec derecurs env p = match p.pext_desc with
   | Pext_cst t -> mk_type t
   | Pext_ns ns -> mk_type 
       (CT.atom (Cduce_types.Atoms.any_in_ns (parse_ns env.penv_tenv p.pext_loc ns)))
-  | Pext_or (p1,p2) -> mk_or (derecurs env p1) (derecurs env p2)
-  | Pext_and (p1,p2) -> mk_and (derecurs env p1) (derecurs env p2)
-  | Pext_diff (p1,p2) -> mk_diff (derecurs env p1) (derecurs env p2)
+  | Pext_or (p1,p2) -> mk_or ~err:(perr p) (derecurs env p1) (derecurs env p2)
+  | Pext_and (p1,p2) -> mk_and ~err:(perr p) (derecurs env p1) (derecurs env p2)
+  | Pext_diff (p1,p2) -> 
+      mk_diff ~err:(perr p) (derecurs env p1) (derecurs env p2)
   | Pext_prod (p1,p2) -> mk_prod (derecurs env p1) (derecurs env p2)
   | Pext_xml (p1,p2) -> mk_xml (derecurs env p1) (derecurs env p2)
   | Pext_arrow (p1,p2) -> mk_arrow (derecurs env p1) (derecurs env p2) 
-  | Pext_optional p -> mk_optional (derecurs env p)
+  | Pext_optional p -> mk_optional ~err:(perr p) (derecurs env p)
   | Pext_record (o,r) -> 
       let aux = function
 	| (p,Some e) -> (derecurs env p, Some (derecurs env e))
 	| (p,None) -> derecurs env p, None in
-      mk_record o (transl_record env.penv_tenv p.pext_loc aux r)
+      mk_record ~err:(perr p) o (transl_record env.penv_tenv p.pext_loc aux r)
   | Pext_bind (x,c) -> 
       mk_constant (id x) (transl_const env.penv_tenv c)
   | Pext_constant c -> mk_type (CT.constant (transl_const env.penv_tenv c))
@@ -424,8 +427,10 @@ let rec derecurs env p = match p.pext_desc with
 	     mk_type (
 	       typ_from_ml p.pext_loc
 		 (f env.penv_tenv true t)))
-  | Pext_concat (p1,p2) ->  mk_concat (derecurs env p1) (derecurs env p2)
-  | Pext_merge (p1,p2) -> mk_merge (derecurs env p1) (derecurs env p2)
+  | Pext_concat (p1,p2) ->  
+      mk_concat ~err:(perr p) (derecurs env p1) (derecurs env p2)
+  | Pext_merge (p1,p2) -> 
+      mk_merge ~err:(perr p) (derecurs env p1) (derecurs env p2)
 
 and derecurs_regexp env = function
   | Pext_epsilon -> mk_epsilon
