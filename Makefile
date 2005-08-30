@@ -126,8 +126,7 @@ defaultentry:
 # Recompile the system using the bootstrap compiler
 all: runtime ocamlc
 	$(MAKE) ocamllex ocamlyacc ocamltools
-	$(MAKE) library otherlibraries
-	$(MAKE) ocaml
+	$(MAKE) library ocaml otherlibraries
 	$(MAKE) camlp4out $(DEBUGGER) # ocamldoc
 
 # The compilation of ocaml will fail if the runtime has changed.
@@ -310,7 +309,17 @@ partialclean::
 
 # The toplevel
 
-ocaml: $(TOPOBJS) expunge
+toplibs:
+	for i in unix systhreads; do \
+          (cd otherlibs/$$i; $(MAKE) RUNTIME=$(RUNTIME) all) || exit $$?; \
+        done
+
+toplibsopt:
+	for i in  unix systhreads; do \
+          (cd otherlibs/$$i; $(MAKE) allopt) || exit $$?; \
+        done
+
+ocaml: toplibs $(TOPOBJS) expunge
 	$(CAMLC) $(LINKFLAGS) -thread -I otherlibs/unix -I otherlibs/systhreads \
 		-linkall -o ocaml.tmp $(TOPOBJS)
 	- $(CAMLRUN) ./expunge ocaml.tmp ocaml $(PERVASIVES)

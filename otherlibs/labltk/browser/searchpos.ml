@@ -814,7 +814,7 @@ and search_pos_expr ~pos exp =
       search_pos_expr exp ~pos
   | Texp_object (cls, _, _) ->
       	search_pos_class_structure ~pos cls
-  | Texp_dyntype _|Texp_coerce (_, _)|Texp_dynamic _|Texp_loc (_, _)
+  | Texp_loc (_, _)
   | Texp_def (_, _)|Texp_reply (_, _)|Texp_par (_, _)|Texp_exec _|Texp_spawn _
   | Texp_asyncsend (_, _)|Texp_null
     -> assert false (* no browser for jocaml *)
@@ -861,7 +861,6 @@ and search_pos_module_expr ~pos m =
     | Tmod_apply (a, b, _) ->
         search_pos_module_expr a ~pos; search_pos_module_expr b ~pos
     | Tmod_constraint (m, _, _) -> search_pos_module_expr m ~pos
-    | Tmod_dyntype _ -> assert false (* no browser for jocaml *)
     end;
     add_found_str (`Module (Pident (Ident.create "M"), m.mod_type))
       ~env:m.mod_env ~loc:m.mod_loc
