@@ -273,34 +273,8 @@ let info_string_of_info i =
 
   Buffer.contents b
 
-let info_of_string s =
-  let dummy =
-    {
-      i_desc = None ;
-      i_authors = [] ;
-      i_version = None ;
-      i_sees = [] ;
-      i_since = None ;
-      i_deprecated = None ;
-      i_params = [] ;
-      i_raised_exceptions = [] ;
-      i_return_value = None ;
-      i_custom = [] ;
-    }
-  in
-  let s2 = Printf.sprintf "(** %s *)" s in
-  let (_, i_opt) = Odoc_comments.Basic_info_retriever.first_special "-" s2 in
-  match i_opt with
-    None -> dummy
-  | Some i -> i
-
-let info_of_comment_file f =
-  try
-    let s = Odoc_misc.input_file_as_string f in
-    info_of_string s
-  with
-    Sys_error s ->
-      failwith s
+let info_of_string = Odoc_comments.info_of_string
+let info_of_comment_file = Odoc_comments.info_of_comment_file
 
 module Search =
   struct

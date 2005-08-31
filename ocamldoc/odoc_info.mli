@@ -919,6 +919,7 @@ module Args :
       type source_file =
 	  Impl_file of string
 	| Intf_file of string
+	| Text_file of string
 
       (** The class type of documentation generators. *)
       class type doc_generator =
