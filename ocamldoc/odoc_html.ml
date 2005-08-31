@@ -778,25 +778,25 @@ class html =
     val mutable known_modules_names = StringSet.empty
 
     (** The main file. *)
-    method index = "index.html"
+    method index = Printf.sprintf "%s.html" (Filename.basename !Odoc_args.out_file)
     (** The file for the index of values. *)
-    method index_values = "index_values.html"
+    method index_values = Printf.sprintf "%s_values.html" (Filename.basename !Odoc_args.out_file)
     (** The file for the index of types. *)
-    method index_types = "index_types.html"
+    method index_types = Printf.sprintf "%s_types.html" (Filename.basename !Odoc_args.out_file)
     (** The file for the index of exceptions. *)
-    method index_exceptions = "index_exceptions.html"
+    method index_exceptions = Printf.sprintf "%s_exceptions.html" (Filename.basename !Odoc_args.out_file)
     (** The file for the index of attributes. *)
-    method index_attributes = "index_attributes.html"
+    method index_attributes = Printf.sprintf "%s_attributes.html" (Filename.basename !Odoc_args.out_file)
     (** The file for the index of methods. *)
-    method index_methods = "index_methods.html"
+    method index_methods = Printf.sprintf "%s_methods.html" (Filename.basename !Odoc_args.out_file)
     (** The file for the index of classes. *)
-    method index_classes = "index_classes.html"
+    method index_classes = Printf.sprintf "%s_classes.html" (Filename.basename !Odoc_args.out_file)
     (** The file for the index of class types. *)
-    method index_class_types = "index_class_types.html"
+    method index_class_types = Printf.sprintf "%s_class_types.html" (Filename.basename !Odoc_args.out_file)
     (** The file for the index of modules. *)
-    method index_modules = "index_modules.html"
+    method index_modules = Printf.sprintf "%s_modules.html" (Filename.basename !Odoc_args.out_file)
     (** The file for the index of module types. *)
-    method index_module_types = "index_module_types.html"
+    method index_module_types = Printf.sprintf "%s_module_types.html" (Filename.basename !Odoc_args.out_file)
 
 
     (** The list of attributes. Filled in the [generate] method. *)
@@ -2246,7 +2246,7 @@ class html =
         Sys_error s ->
           raise (Failure s)
 
-    (** Generate the [index.html] file corresponding to the given module list.
+    (** Generate the [<index_prefix>.html] file corresponding to the given module list.
        @raise Failure if an error occurs.*)
     method generate_index module_list =
       try
@@ -2369,7 +2369,7 @@ class html =
         self#index_module_types
 
     (** Generate all the html files from a module list. The main
-       file is [index.html]. *)
+       file is [<index_prefix>.html]. *)
     method generate module_list =
       (* init the style *)
       self#init_style ;

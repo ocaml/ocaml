@@ -4,7 +4,13 @@ TODO:
  - utilisation nouvelles infos de Xavier: "début de rec", etc.
 
 =====
-Next release:
+Next Release:
+ - -o option is now used by the html generator to indicate the prefix
+   of generated index files (to avoid conflict when a Index module exists
+   on case-insensitive file systems).
+
+=====
+Release 3.08.4:
  - some improvements in html display
  - better error messages for misplaced variant constructors comments
  - some fixes in man page generation (escaping characters)
