@@ -25,8 +25,8 @@ module Texter =
         Odoc_text_parser.main Odoc_text_lexer.main lexbuf
       with
         _ ->
-          raise (Text_syntax (!Odoc_text_lexer.line_number, 
-                              !Odoc_text_lexer.char_number, 
+          raise (Text_syntax (!Odoc_text_lexer.line_number,
+                              !Odoc_text_lexer.char_number,
                               s)
                 )
 
@@ -59,7 +59,7 @@ module Texter =
 	escape_n s '[' (open_brackets - close_brackets)
       else
 	if close_brackets > open_brackets then
-	  escape_n s ']' (close_brackets - open_brackets) 
+	  escape_n s ']' (close_brackets - open_brackets)
 	else
 	  s
 
@@ -98,16 +98,16 @@ module Texter =
       | Right t -> p b "{R " ; p_text b t ; p b "}"
       | List l -> p b "{ul\n"; p_list b l; p b "}"
       | Enum l -> p b "{ol\n"; p_list b l; p b "}"
-      | Newline -> p b "\n" 
+      | Newline -> p b "\n"
       | Block  t -> p_text b t
       | Title (n, l_opt, t) ->
-	  p b "{%d%s " 
+	  p b "{%d%s "
 	    n
 	    (match l_opt with
 	      None -> ""
 	    | Some s -> ":"^s
 	    );
-	  p_text b t ; 
+	  p_text b t ;
 	  p b "}"
       | Latex s -> p b "{%% %s%%}" s
       | Link (s,t) ->
@@ -130,21 +130,24 @@ module Texter =
 	   | RK_method -> "method"
 	   | RK_section _ -> "section"
 	   in
-	   p b "{!%s:%s}" sk s	   
+	   p b "{!%s:%s}" sk s
 	  )
       | Superscript t -> p b "{^" ; p_text b t ; p b "}"
       | Subscript t -> p b "{_" ; p_text b t ; p b "}"
-      | Module_list l -> 
+      | Module_list l ->
 	  p b "{!modules:";
 	  List.iter (fun s -> p b " %s" s) l;
 	  p b "}"
       |	Index_list ->
 	  p b "{!indexlist}"
-	    
+      |	Custom (s,t) ->
+	  p b "{%s " s;
+	  p_text b t;
+	  p b "}"
+
     let string_of_text s =
       let b = Buffer.create 256 in
       p_text b s;
       Buffer.contents b
-	
+
   end
- 

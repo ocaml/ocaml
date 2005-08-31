@@ -13,6 +13,11 @@
 
 (** Miscelaneous functions *)
 
+(** [no_blanks s] returns the given string without any blank
+   characters, i.e. '\n' '\r' ' ' '\t'.
+*)
+val no_blanks : string -> string
+
 (** This function returns a file in the form of one string.*)
 val input_file_as_string : string -> string
 

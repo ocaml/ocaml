@@ -11,6 +11,16 @@
 
 (* $Id$ *)
 
+let no_blanks s =
+  let len = String.length s in
+  let buf = Buffer.create len in
+  for i = 0 to len - 1 do
+    match s.[i] with
+      ' ' | '\n' | '\t' | '\r' -> ()
+    | c -> Buffer.add_char buf c
+  done;
+  Buffer.contents buf
+
 let input_file_as_string nom =
   let chanin = open_in_bin nom in
   let len = 1024 in
@@ -122,6 +132,7 @@ let rec string_of_text t =
 	    )
       |	Odoc_types.Index_list ->
 	  ""
+      |	Odoc_types.Custom (_, t) -> string_of_text t
   in
   String.concat "" (List.map iter t)
 
@@ -262,6 +273,7 @@ let rec text_no_title_no_list t =
 	     l
 	  )
     | Odoc_types.Index_list -> []
+    | Odoc_types.Custom (s,t) -> [Odoc_types.Custom (s, text_no_title_no_list t)]
   in
   List.flatten (List.map iter t)
 
@@ -291,6 +303,7 @@ let get_titles_in_text t =
     | Odoc_types.Subscript t  -> iter_text t
     | Odoc_types.Module_list _ -> ()
     | Odoc_types.Index_list -> ()
+    | Odoc_types.Custom (_, t) -> iter_text t
   and iter_text te =
     List.iter iter_ele te
   in
@@ -382,6 +395,7 @@ and first_sentence_text_ele text_ele =
   | Odoc_types.Subscript _
   | Odoc_types.Module_list _
   | Odoc_types.Index_list -> (false, text_ele, None)
+  | Odoc_types.Custom _ -> (false, text_ele, None)
 
 let first_sentence_of_text t =
   let (_,t2,_) = first_sentence_text t in

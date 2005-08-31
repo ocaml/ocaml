@@ -15,12 +15,12 @@
 
 let print_DEBUG s = print_string s ; print_newline ()
 
-open Odoc_info 
+open Odoc_info
 open Parameter
 open Value
 open Type
 open Exception
-open Class 
+open Class
 open Module
 
 let new_buf () = Buffer.create 1024
@@ -28,7 +28,7 @@ let new_fmt () =
   let b = new_buf () in
   let fmt = Format.formatter_of_buffer b in
   (fmt,
-   fun () -> 
+   fun () ->
     Format.pp_print_flush fmt ();
     let s = Buffer.contents b in
     Buffer.reset b;
@@ -59,7 +59,7 @@ class text =
     (** Return latex code to make a sectionning according to the given level,
        and with the given latex code. *)
     method section_style level s =
-      try 
+      try
         let sec = List.assoc level !Args.latex_titles in
         "\\"^sec^"{"^s^"}\n"
       with Not_found -> s
@@ -103,15 +103,15 @@ class text =
       ("\\\\", "MAXENCE"^"XXX") ;
       ("&", "MAXENCE"^"YYY") ;
       ("\\$", "MAXENCE"^"ZZZ")
-     ] 
+     ]
 
-    val mutable subst_strings_simple =    
-      [ 
+    val mutable subst_strings_simple =
+      [
         ("MAXENCE"^"XXX", "{\\textbackslash}") ;
         "}", "\\}" ;
         "{", "\\{" ;
         ("\\\\", "MAXENCE"^"XXX") ;
-      ] 
+      ]
 
     val mutable subst_strings_code = [
       ("MAXENCE"^"ZZZ", "\\$");
@@ -128,7 +128,7 @@ class text =
       ("&", "MAXENCE"^"YYY") ;
       ("\\$", "MAXENCE"^"ZZZ") ;
       ("\\\\", "MAXENCE"^"XXX") ;
-     ] 
+     ]
 
     method subst l s =
       List.fold_right
@@ -144,7 +144,7 @@ class text =
 
     (** Escape some characters for the code style. *)
     method escape_code s = self#subst subst_strings_code s
-        
+
     (** Make a correct latex label from a name. *)
     (* The following characters are forbidden in LaTeX \index:
        \ { } $ & # ^ _ % ~ ! " @ | (" to close the double quote)
@@ -215,9 +215,9 @@ class text =
     method make_ref label = "\\ref{"^label^"}"
 
     (** Print the LaTeX code corresponding to the [text] parameter.*)
-    method latex_of_text fmt t = 
+    method latex_of_text fmt t =
       List.iter (self#latex_of_text_element fmt) t
-        
+
     (** Print the LaTeX code for the [text_element] in parameter. *)
     method latex_of_text_element fmt te =
       match te with
@@ -226,7 +226,7 @@ class text =
       | Odoc_info.CodePre s -> self#latex_of_CodePre fmt s
       | Odoc_info.Verbatim s -> self#latex_of_Verbatim fmt s
       | Odoc_info.Bold t -> self#latex_of_Bold fmt t
-      | Odoc_info.Italic t -> self#latex_of_Italic fmt t 
+      | Odoc_info.Italic t -> self#latex_of_Italic fmt t
       | Odoc_info.Emphasize t -> self#latex_of_Emphasize fmt t
       | Odoc_info.Center t -> self#latex_of_Center fmt t
       | Odoc_info.Left t -> self#latex_of_Left fmt t
@@ -243,11 +243,14 @@ class text =
       | Odoc_info.Subscript t -> self#latex_of_Subscript fmt t
       |	Odoc_info.Module_list _ -> ()
       |	Odoc_info.Index_list -> ()
+      |	Odoc_info.Custom (s,t) -> self#latex_of_custom_text fmt s t
 
-    method latex_of_Raw fmt s = 
+    method latex_of_custom_text fmt s t = ()
+
+    method latex_of_Raw fmt s =
       ps fmt (self#escape s)
 
-    method latex_of_Code fmt s = 
+    method latex_of_Code fmt s =
       let s2 = self#escape_code s in
       let s3 = Str.global_replace (Str.regexp "\n") ("\\\\\n") s2 in
       p fmt "{\\tt{%s}}" s3
@@ -257,7 +260,7 @@ class text =
       ps fmt (self#escape_simple s);
       ps fmt "\n\\end{ocamldoccode}\n"
 
-    method latex_of_Verbatim fmt s = 
+    method latex_of_Verbatim fmt s =
       ps fmt "\\begin{verbatim}";
       ps fmt s;
       ps fmt "\\end{verbatim}"
@@ -267,7 +270,7 @@ class text =
       self#latex_of_text fmt t;
       ps fmt "}"
 
-    method latex_of_Italic fmt t = 
+    method latex_of_Italic fmt t =
       ps fmt "{\\it ";
       self#latex_of_text fmt t;
       ps fmt "}"
@@ -294,23 +297,23 @@ class text =
 
     method latex_of_List fmt tl =
       ps fmt "\\begin{itemize}\n";
-      List.iter 
-	(fun t -> 
+      List.iter
+	(fun t ->
 	  ps fmt "\\item ";
 	  self#latex_of_text fmt t;
 	  ps fmt "\n"
-	) 
+	)
 	tl;
       ps fmt "\\end{itemize}\n"
 
     method latex_of_Enum fmt tl =
       ps fmt "\\begin{enumerate}\n";
-      List.iter 
-	(fun t -> 
+      List.iter
+	(fun t ->
 	  ps fmt "\\item ";
 	  self#latex_of_text fmt t;
 	  ps fmt "\n"
-	) 
+	)
 	tl;
       ps fmt "\\end{enumerate}\n"
 
@@ -343,14 +346,14 @@ class text =
 
     method latex_of_Ref fmt name ref_opt =
       match ref_opt with
-        None -> 
+        None ->
           self#latex_of_text_element fmt
             (Odoc_info.Code (Odoc_info.use_hidden_modules name))
-      | Some (RK_section _) -> 
+      | Some (RK_section _) ->
           self#latex_of_text_element fmt
             (Latex ("["^(self#make_ref (self#label ~no_:false (Name.simple name)))^"]"))
       | Some kind ->
-          let f_label = 
+          let f_label =
             match kind with
               Odoc_info.RK_module -> self#module_label
             | Odoc_info.RK_module_type -> self#module_type_label
@@ -367,14 +370,14 @@ class text =
             [
               Odoc_info.Code (Odoc_info.use_hidden_modules name) ;
               Latex ("["^(self#make_ref (f_label name))^"]")
-            ] 
+            ]
 
-    method latex_of_Superscript fmt t = 
+    method latex_of_Superscript fmt t =
       ps fmt "$^{";
       self#latex_of_text fmt t;
       ps fmt "}$"
 
-    method latex_of_Subscript fmt t = 
+    method latex_of_Subscript fmt t =
       ps fmt "$_{";
       self#latex_of_text fmt t;
       ps fmt "}$"
@@ -388,11 +391,11 @@ class virtual info =
     method virtual latex_of_text : Format.formatter -> Odoc_info.text -> unit
 
     (** The method used to get a [text] from an optionel info structure. *)
-    method virtual text_of_info : ?block: bool -> Odoc_info.info option -> Odoc_info.text 
+    method virtual text_of_info : ?block: bool -> Odoc_info.info option -> Odoc_info.text
 
     (** Print LaTeX code for a description, except for the [i_params] field. *)
-    method latex_of_info fmt ?(block=false) info_opt = 
-      self#latex_of_text fmt 
+    method latex_of_info fmt ?(block=false) info_opt =
+      self#latex_of_text fmt
         (self#text_of_info ~block info_opt)
   end
 
@@ -413,33 +416,33 @@ class latex =
     method first_and_rest_of_info i_opt =
       match i_opt with
         None -> ([], [])
-      | Some i -> 
+      | Some i ->
             match i.Odoc_info.i_desc with
               None -> ([], self#text_of_info ~block: true i_opt)
-            | Some t -> 
+            | Some t ->
                 let (first,_) = Odoc_info.first_sentence_and_rest_of_text t in
                 let (_, rest) = Odoc_info.first_sentence_and_rest_of_text (self#text_of_info ~block: false i_opt) in
                 (Odoc_info.text_no_title_no_list first, rest)
 
     (** Print LaTeX code for a value. *)
-    method latex_of_value fmt v = 
+    method latex_of_value fmt v =
       Odoc_info.reset_type_names () ;
       let label = self#value_label v.val_name in
       let latex = self#make_label label in
       self#latex_of_text fmt
-        ((Latex latex) :: 
+        ((Latex latex) ::
          (to_text#text_of_value v))
 
     (** Print LaTeX code for a class attribute. *)
     method latex_of_attribute fmt a =
       self#latex_of_text fmt
-        ((Latex (self#make_label (self#attribute_label a.att_value.val_name))) :: 
+        ((Latex (self#make_label (self#attribute_label a.att_value.val_name))) ::
          (to_text#text_of_attribute a))
 
     (** Print LaTeX code for a class method. *)
-    method latex_of_method fmt m = 
+    method latex_of_method fmt m =
       self#latex_of_text fmt
-        ((Latex (self#make_label (self#method_label m.met_value.val_name))) :: 
+        ((Latex (self#make_label (self#method_label m.met_value.val_name))) ::
          (to_text#text_of_method m))
 
     (** Print LaTeX code for the parameters of a type. *)
@@ -451,19 +454,19 @@ class latex =
       match t.ty_parameters with
         [] -> ()
       | [(p,co,cn)] -> print_one (p, co, cn)
-      | l -> 
+      | l ->
 	  ps fmt "(";
 	  print_concat fmt ", " print_one t.ty_parameters;
 	  ps fmt ")"
 
     method latex_of_class_parameter_list fmt father c =
-      self#latex_of_text fmt 
+      self#latex_of_text fmt
 	(self#text_of_class_params father c)
 
     (** Print LaTeX code for a type. *)
     method latex_of_type fmt t =
       let s_name = Name.simple t.ty_name in
-      let text = 
+      let text =
 	let (fmt2, flush2) = new_fmt () in
         Odoc_info.reset_type_names () ;
         let mod_name = Name.father t.ty_name in
@@ -474,35 +477,35 @@ class latex =
 	(
          match t.ty_manifest with
            None -> ()
-         | Some typ -> 
+         | Some typ ->
              p fmt2 " = %s" (self#normal_type mod_name typ)
 	);
-        let s_type3 = 
+        let s_type3 =
           p fmt2
             " %s"
             (
 	     match t.ty_kind with
                Type_abstract -> ""
              | Type_variant (_, priv) -> "="^(if priv then " private" else "")
-             | Type_record (_, priv) -> "= "^(if priv then "private " else "")^"{" 
+             | Type_record (_, priv) -> "= "^(if priv then "private " else "")^"{"
 	    ) ;
           flush2 ()
         in
-        
-        let defs = 
+
+        let defs =
           match t.ty_kind with
             Type_abstract -> []
           | Type_variant (l, _) ->
               (List.flatten
                (List.map
                   (fun constr ->
-                    let s_cons = 
+                    let s_cons =
                       p fmt2 "@[<h 6>  | %s" constr.vc_name;
                       (
 		       match constr.vc_args with
                          [] -> ()
-                       | l -> 
-                           p fmt2 " %s@ %s" 
+                       | l ->
+                           p fmt2 " %s@ %s"
 			     "of"
                              (self#normal_type_list ~par: false mod_name " * " l)
 		      );
@@ -511,8 +514,8 @@ class latex =
                     [ CodePre s_cons ] @
                     (match constr.vc_text with
                       None -> []
-                    | Some t -> 
-			let s = 
+                    | Some t ->
+			let s =
 			  ps fmt2 "\\begin{ocamldoccomment}\n";
 			  self#latex_of_text fmt2 t;
 			  ps fmt2 "\n\\end{ocamldoccomment}\n";
@@ -528,7 +531,7 @@ class latex =
               (List.flatten
                  (List.map
                     (fun r ->
-                      let s_field = 
+                      let s_field =
                         p fmt2
 			  "@[<h 6>  %s%s :@ %s ;"
                           (if r.rf_mutable then "mutable " else "")
@@ -539,8 +542,8 @@ class latex =
                       [ CodePre s_field ] @
                       (match r.rf_text with
                         None -> []
-                      | Some t -> 
-                          let s = 
+                      | Some t ->
+                          let s =
 			    ps fmt2 "\\begin{ocamldoccomment}\n";
 			    self#latex_of_text fmt2 t;
 			    ps fmt2 "\n\\end{ocamldoccomment}\n";
@@ -574,11 +577,11 @@ class latex =
     method latex_of_exception fmt e =
       Odoc_info.reset_type_names () ;
       self#latex_of_text fmt
-        ((Latex (self#make_label (self#exception_label e.ex_name))) :: 
+        ((Latex (self#make_label (self#exception_label e.ex_name))) ::
          (to_text#text_of_exception e))
 
     method latex_of_module_parameter fmt m_name p =
-      self#latex_of_text fmt 
+      self#latex_of_text fmt
 	[
 	  Code "functor (";
 	  Code p.mp_name ;
@@ -598,15 +601,15 @@ class latex =
 	  self#latex_of_module_parameter fmt father p;
 	  self#latex_of_module_type_kind fmt father k
       | Module_type_alias a ->
-	  self#latex_of_text fmt 
+	  self#latex_of_text fmt
 	    [Code (self#relative_module_idents father a.mta_name)]
       | Module_type_with (k, s) ->
 	  self#latex_of_module_type_kind fmt father k;
-	  self#latex_of_text fmt 
-	    [ Code " "; 
+	  self#latex_of_text fmt
+	    [ Code " ";
 	      Code (self#relative_idents father s);
 	    ]
-	    
+
     method latex_of_module_kind fmt father kind =
       match kind with
 	Module_struct eles ->
@@ -614,13 +617,13 @@ class latex =
 	  List.iter (self#latex_of_module_element fmt father) eles;
 	  self#latex_of_text fmt [Latex "\\end{ocamldocsigend}\n"]
       | Module_alias a ->
-	  self#latex_of_text fmt 
+	  self#latex_of_text fmt
 	    [Code (self#relative_module_idents father a.ma_name)]
       | Module_functor (p, k) ->
 	  self#latex_of_module_parameter fmt father p;
 	  self#latex_of_module_kind fmt father k
       | Module_apply (k1, k2) ->
-	  (* TODO: l'application n'est pas correcte dans un .mli. 
+	  (* TODO: l'application n'est pas correcte dans un .mli.
 	     Que faire ? -> afficher le module_type du typedtree  *)
 	  self#latex_of_module_kind fmt father k1;
 	  self#latex_of_text fmt [Code "("];
@@ -629,8 +632,8 @@ class latex =
       | Module_with (k, s) ->
 	  (* TODO: à modifier quand Module_with sera plus détaillé *)
 	  self#latex_of_module_type_kind fmt father k;
-	  self#latex_of_text fmt 
-	    [ Code " "; 
+	  self#latex_of_text fmt
+	    [ Code " ";
 	      Code (self#relative_idents father s) ;
 	    ]
       | Module_constraint (k, tk) ->
@@ -639,7 +642,7 @@ class latex =
 
     method latex_of_class_kind fmt father kind =
       match kind with
-        Class_structure (inh, eles) -> 
+        Class_structure (inh, eles) ->
 	  self#latex_of_text fmt [Latex "\\begin{ocamldocobjectend}\n"];
 	  self#generate_inheritance_info fmt inh;
 	  List.iter (self#latex_of_class_element fmt father) eles;
@@ -648,12 +651,12 @@ class latex =
       | Class_apply capp ->
 	  (* TODO: afficher le type final à partir du typedtree *)
 	  self#latex_of_text fmt [Raw "class application not handled yet"]
-            
+
       | Class_constr cco ->
 	  (
            match cco.cco_type_parameters with
              [] -> ()
-           | l -> 
+           | l ->
                self#latex_of_text fmt
 		 (
 		  Code "[" ::
@@ -673,12 +676,12 @@ class latex =
 
     method latex_of_class_type_kind fmt father kind =
       match kind with
-        Class_type cta -> 
+        Class_type cta ->
           (
            match cta.cta_type_parameters with
              [] -> ()
-           | l -> 
-               self#latex_of_text fmt 
+           | l ->
+               self#latex_of_text fmt
 		 (Code "[" ::
 		  (self#text_of_class_type_param_expr_list father l) @
 		  [Code "] "]
@@ -687,7 +690,7 @@ class latex =
           self#latex_of_text fmt
 	    [Code (self#relative_idents father cta.cta_name)]
 
-      | Class_signature (inh, eles) -> 
+      | Class_signature (inh, eles) ->
 	  self#latex_of_text fmt [Latex "\\begin{ocamldocobjectend}\n"];
 	  self#generate_inheritance_info fmt inh;
 	  List.iter (self#latex_of_class_element fmt father) eles;
@@ -695,7 +698,7 @@ class latex =
 
     method latex_for_module_index fmt m =
       let s_name = Name.simple m.m_name in
-      self#latex_of_text fmt 
+      self#latex_of_text fmt
 	[Latex ("\\index{"^(self#label s_name)^"@\\verb`"^
 		(self#label ~no_:false s_name)^"`}\n"
 	       )
@@ -703,7 +706,7 @@ class latex =
 
     method latex_for_module_type_index fmt mt =
       let s_name = Name.simple mt.mt_name in
-      self#latex_of_text fmt 
+      self#latex_of_text fmt
 	[Latex ("\\index{"^(self#label s_name)^"@\\verb`"^
 		(self#label ~no_:false (Name.simple s_name))^"`}\n"
 	       )
@@ -718,7 +721,7 @@ class latex =
 
     method latex_for_class_index fmt c =
       let s_name = Name.simple c.cl_name in
-      self#latex_of_text fmt 
+      self#latex_of_text fmt
 	[Latex ("\\index{"^(self#label s_name)^"@\\verb`"^
 		(self#label ~no_:false s_name)^"`}\n"
 	       )
@@ -726,7 +729,7 @@ class latex =
 
     method latex_for_class_type_index fmt ct =
       let s_name = Name.simple ct.clt_name in
-      self#latex_of_text fmt 
+      self#latex_of_text fmt
 	[Latex ("\\index{"^(self#label s_name)^"@\\verb`"^
 		(self#label ~no_:false s_name)^"`}\n"
 	       )
@@ -741,7 +744,7 @@ class latex =
     (** Print the LaTeX code for the given module. *)
     method latex_of_module fmt m =
       let father = Name.father m.m_name in
-      let t = 
+      let t =
         [
 	  Latex "\\begin{ocamldoccode}\n" ;
 	  Code "module ";
@@ -766,7 +769,7 @@ class latex =
 	    with
 	      [] -> ()
 	    | l ->
-		let t = 
+		let t =
 		  [ Bold [Raw "Parameters: "];
 		    List
 		      (List.map
@@ -789,17 +792,17 @@ class latex =
     (** Print the LaTeX code for the given module type. *)
     method latex_of_module_type fmt mt =
       let father = Name.father mt.mt_name in
-      let t = 
+      let t =
         [
 	  Latex "\\begin{ocamldoccode}\n" ;
 	  Code "module type " ;
 	  Code (Name.simple mt.mt_name);
-	] 
+	]
       in
       self#latex_of_text fmt t;
       (
        match mt.mt_type, mt.mt_kind with
-       | Some mtyp, Some kind -> 
+       | Some mtyp, Some kind ->
            self#latex_of_text fmt [ Code " = " ];
 	   self#latex_of_text fmt [ Latex "\\end{ocamldoccode}\n" ];
 	   self#latex_for_module_type_label fmt mt;
@@ -822,7 +825,7 @@ class latex =
 	    with
 	      [] -> ()
 	    | l ->
-		let t = 
+		let t =
 		  [ Bold [Raw "Parameters: "];
 		    List
 		      (List.map
@@ -832,7 +835,7 @@ class latex =
 			 )
 			 l
 		      )
-		  ] 
+		  ]
 		in
 		self#latex_of_text fmt t
 	   );
@@ -845,7 +848,7 @@ class latex =
     method latex_of_included_module fmt im =
       self#latex_of_text fmt
 	((Code "include ") ::
-         (Code 
+         (Code
             (match im.im_module with
               None -> im.im_name
             | Some (Mod m) -> m.m_name
@@ -863,7 +866,7 @@ class latex =
           [] -> ""
         | l -> (self#normal_class_type_param_list father l)^" "
       in
-      let t = 
+      let t =
 	[
 	  Latex "\\begin{ocamldoccode}\n" ;
 	  Code (Printf.sprintf
@@ -872,7 +875,7 @@ class latex =
 		  type_params
 		  (Name.simple c.cl_name)
 	       )
-	] 
+	]
       in
       self#latex_of_text fmt t;
       self#latex_of_class_parameter_list fmt father c;
@@ -905,7 +908,7 @@ class latex =
           [] -> ""
         | l -> (self#normal_class_type_param_list father l)^" "
       in
-      let t = 
+      let t =
 	[
 	  Latex "\\begin{ocamldoccode}\n" ;
 	  Code (Printf.sprintf
@@ -914,7 +917,7 @@ class latex =
 		  type_params
 		  (Name.simple ct.clt_name)
 	       )
-	] 
+	]
       in
       self#latex_of_text fmt t;
 
@@ -965,7 +968,7 @@ class latex =
             | Some t -> Newline :: t
             )
         | Some cct ->
-            let label = 
+            let label =
               match cct with
                 Cl _ -> self#class_label inh.ic_name
               | Cltype _ -> self#class_type_label inh.ic_name
@@ -973,7 +976,7 @@ class latex =
             (* we can create the reference *)
 	    Newline ::
             Odoc_info.Code ("inherit "^inh.ic_name) ::
-            (Odoc_info.Latex (" ["^(self#make_ref label)^"]")) :: 
+            (Odoc_info.Latex (" ["^(self#make_ref label)^"]")) ::
             (match inh.ic_text with
               None -> []
             | Some t -> Newline :: t
@@ -983,7 +986,7 @@ class latex =
 
     (** Generate the LaTeX code for the inherited classes of the given class. *)
     method generate_class_inheritance_info fmt cl =
-      let rec iter_kind k = 
+      let rec iter_kind k =
         match k with
           Class_structure ([], _) ->
             ()
@@ -1012,10 +1015,10 @@ class latex =
       let (first_t, rest_t) = self#first_and_rest_of_info m.m_info in
       let text = [ Title (1, None,
                           [ Raw (Odoc_messages.modul^" ") ; Code m.m_name ] @
-                          (match first_t with 
+                          (match first_t with
                             [] -> []
                           | t -> (Raw " : ") :: t)) ;
-                 ] 
+                 ]
       in
       self#latex_of_text fmt text;
       self#latex_for_module_label fmt m;
@@ -1024,8 +1027,8 @@ class latex =
 
       self#latex_of_text fmt [ Newline ] ;
       ps fmt "\\ocamldocvspace{0.5cm}\n\n";
-      List.iter 
-        (fun ele -> 
+      List.iter
+        (fun ele ->
 	  self#latex_of_module_element fmt m.m_name ele;
 	  ps fmt "\n\n"
 	)
@@ -1040,28 +1043,28 @@ class latex =
       ps fmt "\\usepackage{url} \n";
       ps fmt "\\usepackage{ocamldoc}\n";
       (
-       match !Args.title with 
+       match !Args.title with
          None -> ()
-       | Some s -> 
+       | Some s ->
 	   ps fmt "\\title{";
 	   ps fmt (self#escape s);
 	   ps fmt "}\n"
       );
       ps fmt "\\begin{document}\n";
-      (match !Args.title with 
-	None -> () | 
+      (match !Args.title with
+	None -> () |
 	Some _ -> ps fmt "\\maketitle\n"
       );
       if !Args.with_toc then ps fmt "\\tableofcontents\n";
       (
        let info = Odoc_info.apply_opt
-	   Odoc_info.info_of_comment_file !Odoc_info.Args.intro_file 
+	   Odoc_info.info_of_comment_file !Odoc_info.Args.intro_file
        in
        (match info with None -> () | Some _ -> ps fmt "\\vspace{0.2cm}");
        self#latex_of_info fmt info;
        (match info with None -> () | Some _ -> ps fmt "\n\n")
       )
-	
+
 
     (** Generate the LaTeX style file, if it does not exists. *)
     method generate_style_file =
@@ -1092,7 +1095,7 @@ class latex =
         (
          let f m =
            try
-             let chanout = 
+             let chanout =
                open_out ((Filename.concat dir (Name.simple m.m_name))^".tex")
              in
 	     let fmt = Format.formatter_of_out_channel chanout in
@@ -1103,22 +1106,22 @@ class latex =
              Failure s
            | Sys_error s ->
                prerr_endline s ;
-               incr Odoc_info.errors 
+               incr Odoc_info.errors
          in
          List.iter f module_list
         );
-      
+
       try
         let chanout = open_out main_file in
 	let fmt = Format.formatter_of_out_channel chanout in
         if !Args.with_header then self#latex_header fmt;
-        List.iter 
-          (fun m -> 
+        List.iter
+          (fun m ->
 	    if !Args.separate_files then
               ps fmt ("\\input{"^((Name.simple m.m_name))^".tex}\n")
             else
               self#generate_for_top_module fmt m
-          ) 
+          )
           module_list ;
         if !Args.with_trailer then ps fmt "\\end{document}";
 	Format.pp_print_flush fmt ();
@@ -1127,7 +1130,7 @@ class latex =
         Failure s
       | Sys_error s ->
           prerr_endline s ;
-          incr Odoc_info.errors 
+          incr Odoc_info.errors
   end
 
 (* eof $Id$ *)

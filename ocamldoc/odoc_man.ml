@@ -282,6 +282,9 @@ class man =
 	  ()
       |	Odoc_info.Index_list ->
 	  ()
+      |	Odoc_info.Custom (s,t) -> self#man_of_custom_text b s t
+
+    method man_of_custom_text b s t = ()
 
     (** Print groff string to display code. *)
     method man_of_code b s = self#man_of_text b [ Code s ]

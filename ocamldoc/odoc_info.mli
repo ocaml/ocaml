@@ -52,6 +52,7 @@ and text_element = Odoc_types.text_element =
   | Module_list of string list
        (** The table of the given modules with their abstract. *)
   | Index_list (** The links to the various indexes (values, types, ...) *)
+  | Custom of string * text (** to extend \{foo syntax *)
 
 (** A text is a list of [text_element]. The order matters. *)
 and text = text_element list

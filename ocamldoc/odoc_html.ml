@@ -11,7 +11,7 @@
 
 (* $Id$ *)
 
-(** Generation of html documentation. *)
+(** Generation of html documentation.*)
 
 let print_DEBUG s = print_string s ; print_newline ()
 
@@ -248,6 +248,9 @@ class virtual text =
       | Odoc_info.Subscript t -> self#html_of_Subscript b t
       |	Odoc_info.Module_list l -> self#html_of_Module_list b l
       |	Odoc_info.Index_list -> self#html_of_Index_list b
+      |	Odoc_info.Custom (s,t) -> self#html_of_custom_text b s t
+
+    method html_of_custom_text b s t = ()
 
     method html_of_Raw b s = bs b (self#escape s)
 

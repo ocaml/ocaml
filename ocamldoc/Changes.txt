@@ -3,9 +3,9 @@ TODO:
  - latex: types variant polymorphes dépassent de la page quand ils sont trop longs
  - utilisation nouvelles infos de Xavier: "début de rec", etc.
  - xml generator
- - extensible {foo } syntax
 =====
 Next Release:
+ - extensible {foo } syntax
  - user can give .txt files on the command line, containing ocamldoc formatted
    text, to be able to included bigger texts out of source files
  - -o option is now used by the html generator to indicate the prefix
