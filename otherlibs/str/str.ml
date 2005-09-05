@@ -227,7 +227,9 @@ let compile fold_case re =
   (* Add a new instruction *)
   let emit_instr opc arg =
     if !progpos >= Array.length !prog then begin
-      let nprog = Array.make (2 * Array.length !prog) 0 in
+      let newlen = ref (Array.length !prog) in
+      while !progpos >= !newlen do newlen := !newlen * 2 done;
+      let nprog = Array.make !newlen 0 in
       Array.blit !prog 0 nprog 0 (Array.length !prog);
       prog := nprog
     end;
