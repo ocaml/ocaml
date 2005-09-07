@@ -2462,7 +2462,7 @@ let for_tupled_function loc paraml pats_act_list partial =
 
 
 let flatten_pattern size p = match p.pat_desc with
-|  Tpat_tuple args -> args
+| Tpat_tuple args -> args
 | Tpat_any -> omegas size  
 | _ -> raise Cannot_flatten
 
@@ -2470,6 +2470,9 @@ let rec flatten_pat_line size p k = match p.pat_desc with
 | Tpat_any ->  omegas size::k
 | Tpat_tuple args -> args::k
 | Tpat_or (p1,p2,_) ->  flatten_pat_line size p1 (flatten_pat_line size p2 k)
+| Tpat_alias (p,_) -> (* Note: if this 'as' pat is here, then this is a useless
+                         binding, solves PR #3780 *)
+    flatten_pat_line size p k
 | _ -> fatal_error "Matching.flatten_pat_line"
 
 let flatten_cases size cases =
@@ -2480,7 +2483,7 @@ let flatten_cases size cases =
     cases
 
 let flatten_matrix size pss =
- List.fold_right
+  List.fold_right
     (fun ps r -> match ps with
     | [p] -> flatten_pat_line size p r
     | _   -> fatal_error "Matching.flatten_matrix")
