@@ -167,10 +167,10 @@ and print_regular_record self ppf decl args labels v =
     in
     get_fields 0 labels
   in
-  fprintf ppf "@[<2>{ %a }@]" 
+  fprintf ppf "@[<hov2>{ %a }@]" 
     (print_list (fun ppf () -> fprintf ppf ";@ ") 
        (fun ppf ((l,p),v) ->
-	 fprintf ppf "%s = %a" l p (Obj.repr v)))
+	 fprintf ppf "@[<2>%s=@ %a@]" l p (Obj.repr v)))
     (List.combine labels_and_subprinters fields)
 
 and print_float_record self ppf decl args labels v =
@@ -183,10 +183,10 @@ and print_float_record self ppf decl args labels v =
   let values_as_float = 
     Array.to_list (Obj.obj v : float array) 
   in
-  fprintf ppf "@[<2>{ %a }@]" 
+  fprintf ppf "@[<hov2>{ %a }@]" 
     (print_list (fun ppf () -> fprintf ppf ";@ ") 
        (fun ppf ((l,p),v) ->
-	 fprintf ppf "%s = %a" l p (Obj.repr v)))
+	 fprintf ppf "@[<2>%s=@ %a@]" l p (Obj.repr v)))
     (List.combine labels_and_subprinters values_as_float)
 
 let rec printer ty ppf v = gen_print printer ty ppf v
