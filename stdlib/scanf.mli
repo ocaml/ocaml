@@ -140,32 +140,27 @@ val bscanf :
      the format specified by the second letter.
    - [\[ range \]]: reads characters that matches one of the characters
      mentioned in the range of characters [range] (or not mentioned in
-     it, if the range starts with [^]). Returns a [string] that can be
-     empty, if no character in the input matches the range. Hence,
-     [\[0-9\]] returns a string representing a decimal number or an empty
-     string if no decimal digit is found.
+     it, if the range starts with [^]). Reads a [string] that can be
+     empty, if no character in the input matches the range. The set of
+     characters from [c1] to [c2] (inclusively) is denoted by [c1-c2].
+     Hence, [%\[0-9\]] returns a string representing a decimal number
+     or an empty string if no decimal digit is found; similarly,
+     [%\[\\048-\\057\\065-\\070\]] returns a string of hexadecimal digits.
      If a closing bracket appears in a range, it must occur as the
      first character of the range (or just after the [^] in case of
      range negation); hence [\[\]\]] matches a [\]] character and
      [\[^\]\]] matches any character that is not [\]].
-   - [\{ fmt %\}]: reads a format string argument that matches
-     the internal format string specification [fmt].
-     The [fmt] character string defines the conversion
-     specification sequence that in turn states the format type [t] of the
-     argument returned.
-     The argument is read according to the lexical conventions of Caml
-     for format strings, and must have a type compatible with [t],
-     otherwise the exception [Scan_failure] is raised.
+   - [\{ fmt %\}]: reads a format string that must have the same
+     type as the format string [fmt].
+     The argument is read according to the lexical conventions for
+     format strings described here.
      For instance, "%\{%i%\}" reads any format string that can read a value of
      type [int]; hence [Scanf.sscanf "fmt:\\\"number is %u\\\"" "fmt:%\{%i%\}"]
      succeeds and returns the format string ["number is %u"].
-   - [\( fmt %\)]: scanning format insertion.
-     This conversion reads a format string specified by [fmt] with
-     the same conventions as the [\{ fmt %\}] conversion above.
-     After successful reading of a format string compatible with
-     [fmt], the scanning process goes on, first scanning according to
-     the very format string read, then resuming as usual to the
-     following conversions.
+   - [\( fmt %\)]: scanning format substitution.
+     This conversion specifies a format string that should be read in the
+     input to replace [fmt]. The  format string read must have the same
+     type as [fmt].
    - [l]: applies [f] to the number of lines read so far.
    - [n]: applies [f] to the number of characters read so far.
    - [N] or [L]: applies [f] to the number of tokens read so far.
@@ -179,7 +174,9 @@ val bscanf :
    The field widths are composed of an optional integer literal
    indicating the maximal width of the token to read.
    For instance, [%6d] reads an integer, having at most 6 decimal digits;
-   and [%4f] reads a float with at most 4 characters.
+   [%4f] reads a float with at most 4 characters; and [%8\[\\000-\\255\]]
+   returns the next 8 characters (or all the characters still available,
+   if less than 8 characters are available in the input).
 
    Scanning indications appear just after the string conversions [s]
    and [\[ range \]] to delimit the end of the token. A scanning
