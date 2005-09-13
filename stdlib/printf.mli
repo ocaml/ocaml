@@ -66,12 +66,9 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
    - [t]: same as [%a], but takes only one argument (with type
      [out_channel -> unit]) and apply it to [outchan].
    - [\{ fmt %\}]: convert a format string argument to its minimal
-     specification. The argument must match the internal format string
-     specification [fmt] that enumerates the conversion specification
-     sequence that defines the format type of the argument.
-   - [\( fmt %\)]: printing format insertion. This convertion takes a
-     format string argument and substitutes it to the specification
-     [fmt] to print the following arguments.
+     specification. The argument must have the same type as [fmt].
+   - [\( fmt %\)]: printing format substitution. Use a format string
+     argument to replace [fmt]. The argument must have the same type as [fmt].
    - [!]: take no argument and flush the output.
    - [%]: take no argument and output one [%] character.
 

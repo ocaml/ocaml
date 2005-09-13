@@ -150,17 +150,15 @@ val bscanf :
      first character of the range (or just after the [^] in case of
      range negation); hence [\[\]\]] matches a [\]] character and
      [\[^\]\]] matches any character that is not [\]].
-   - [\{ fmt %\}]: reads a format string that must have the same
-     type as the format string [fmt].
-     The argument is read according to the lexical conventions for
-     format strings described here.
+   - [\{ fmt %\}]: reads a format string argument to the format
+     specified by the internal format [fmt]. The format string to be
+     read must have the same type as the internal format [fmt].
      For instance, "%\{%i%\}" reads any format string that can read a value of
      type [int]; hence [Scanf.sscanf "fmt:\\\"number is %u\\\"" "fmt:%\{%i%\}"]
      succeeds and returns the format string ["number is %u"].
    - [\( fmt %\)]: scanning format substitution.
-     This conversion specifies a format string that should be read in the
-     input to replace [fmt]. The  format string read must have the same
-     type as [fmt].
+     Reads a format string to replace [fmt]. The format string read
+     must have the same type as [fmt].
    - [l]: applies [f] to the number of lines read so far.
    - [n]: applies [f] to the number of characters read so far.
    - [N] or [L]: applies [f] to the number of tokens read so far.
