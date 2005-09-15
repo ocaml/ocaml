@@ -37,6 +37,7 @@ type t =                             (* A is all *)
   | Nonreturning_statement
   | Camlp4 of string
   | All_clauses_guarded
+  | Useless_record_with
   | Unused_var of string             (* Y *)
   | Unused_var_strict of string      (* Z *)
 ;;
@@ -63,6 +64,7 @@ let letter = function        (* 'a' is all *)
   | Unused_argument
   | Nonreturning_statement
   | Camlp4 _
+  | Useless_record_with
   | All_clauses_guarded ->      'x'
   | Unused_var _ ->             'y'
   | Unused_var_strict _ ->      'z'
@@ -149,6 +151,9 @@ let message = function
   | Camlp4 s -> s
   | All_clauses_guarded ->
       "bad style, all clauses in this pattern-matching are guarded."
+  | Useless_record_with ->
+      "this record is defined by a `with' expression,\n\
+       but no fields are borrowed from the original."
 ;;
 
 let nerrors = ref 0;;

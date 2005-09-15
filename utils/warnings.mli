@@ -37,6 +37,7 @@ type t =                             (* A is all *)
   | Nonreturning_statement
   | Camlp4 of string
   | All_clauses_guarded
+  | Useless_record_with
   | Unused_var of string             (* Y *)
   | Unused_var_strict of string      (* Z *)
 ;;

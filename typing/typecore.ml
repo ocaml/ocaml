@@ -1049,7 +1049,9 @@ let rec type_exp env sexp =
         in
         let missing = missing_labels 0 label_names in
         raise(Error(sexp.pexp_loc, Label_missing missing))
-      end;
+      end
+      else if opt_sexp <> None && List.length lid_sexp_list = !num_fields then
+        Location.prerr_warning sexp.pexp_loc Warnings.Useless_record_with;
       re {
         exp_desc = Texp_record(lbl_exp_list, opt_exp);
         exp_loc = sexp.pexp_loc;
