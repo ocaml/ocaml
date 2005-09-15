@@ -781,7 +781,15 @@ class html =
     val mutable known_modules_names = StringSet.empty
 
     (** The main file. *)
-    method index = Printf.sprintf "%s.html" (Filename.basename !Odoc_args.out_file)
+    method index =
+      let p =
+	if !Odoc_args.out_file = Odoc_messages.default_out_file then
+	  "index"
+	else
+	  Filename.basename !Odoc_args.out_file
+      in
+      Printf.sprintf "%s.html" p
+
     (** The file for the index of values. *)
     method index_values = Printf.sprintf "%s_values.html" (Filename.basename !Odoc_args.out_file)
     (** The file for the index of types. *)
