@@ -136,8 +136,8 @@ let begin_center = "{C"blank_nl | html_center
 let begin_left = "{L"blank_nl
 let begin_right = "{R"blank_nl
 let begin_italic = "{i"blank_nl | html_italic
-let begin_list = "{ul" | html_list
-let begin_enum = "{ol" | html_enum
+let begin_list = "{ul"blank_nl? | html_list
+let begin_enum = "{ol"blank_nl? | html_enum
 let begin_item = "{li"blank_nl | "{- " | html_item
 let begin_link = "{{:"
 let begin_latex = "{%"blank_nl
@@ -162,7 +162,7 @@ let begin_met_ref = "{!method:"blank_nl | "{!method:"
 let begin_sec_ref = "{!section:"blank_nl | "{!section:"
 let begin_mod_list_ref = "{!modules:"blank_nl | "{!modules:"
 let index_list = "{!indexlist}"
-let begin_custom = "{"['a'-'z''A'-'Z']['a'-'z''A'-'Z''0'-'9']*blank_nl
+let begin_custom = "{"['a'-'z''A'-'Z']['a'-'z''A'-'Z''0'-'9']*
 let begin_superscript = "{^"blank_nl | "{^"
 let begin_subscript = "{_"blank_nl | "{_"
 
@@ -183,6 +183,7 @@ rule main = parse
 
 | end
     {
+      print_DEBUG "end";
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or
         (!open_brackets >= 1) then
@@ -196,6 +197,7 @@ rule main = parse
     }
 | begin_title
     {
+      print_DEBUG "begin_title";
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or
         (!open_brackets >= 1) or !ele_ref_mode then
@@ -306,6 +308,7 @@ rule main = parse
      }
 | begin_list
     {
+      print_DEBUG "LIST";
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or
         (!open_brackets >= 1) or !ele_ref_mode then
@@ -324,6 +327,7 @@ rule main = parse
     }
 | begin_item
     {
+      print_DEBUG "ITEM";
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or
         (!open_brackets >= 1) or !ele_ref_mode then
@@ -747,6 +751,7 @@ rule main = parse
 
 | begin_custom
     {
+      print_DEBUG "begin_custom";
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or
         (!open_brackets >= 1) or !ele_ref_mode then
