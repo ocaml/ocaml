@@ -343,7 +343,7 @@ static void extern_rec(value v)
       extern_invalid_argument("output_value: object value");
       break;
     */
-    case Custom_tag: {
+    case Custom_tag: case JoCustom_tag: {
       unsigned long sz_32, sz_64;
       char * ident = Custom_ops_val(v)->identifier;
       void (*serialize)(value v, unsigned long * wsize_32,

@@ -557,7 +557,7 @@ and transl_exp0 e =
   | Texp_ident(path, {val_kind = Val_anc _}) ->
       raise(Error(e.exp_loc, Free_super_var))
   | Texp_ident(path,
-               {val_kind = Val_reg | Val_self _ | Val_channel (_,_,_)}) ->
+               {val_kind = Val_reg | Val_self _ | Val_channel (_,_)}) ->
       transl_path path
   | Texp_ident _ -> fatal_error "Translcore.transl_exp: bad Texp_ident"
   | Texp_constant cst ->

@@ -605,12 +605,8 @@ let mk_jident id loc ty env =
     jident_env = env;
   }
 
-let add_alone sauto (id, (ty, num)) =
-  (id,(ty, num, None))
-
 let type_auto_lhs env {pjauto_desc=sauto ; pjauto_loc=auto_loc}  =
   reset_auto () ;
-  let alones = ref [] in
   let auto =
     List.map
       (fun cl ->
@@ -630,7 +626,7 @@ let type_auto_lhs env {pjauto_desc=sauto ; pjauto_loc=auto_loc}  =
         jpats, get_ref pattern_variables, get_ref pattern_force)
       sauto in
   let name = Ident.create "auto" in
-  (name, !auto_count, List.map (add_alone sauto) (get_ref auto_chans), auto)
+  (name, !auto_count, get_ref auto_chans, auto)
 
 let rec do_type_autos_lhs env = function
   | [] -> []
@@ -2234,7 +2230,7 @@ and type_clause env names (jpats,pat_vars,pat_force) scl =
         let chan, arg = jpat.jpat_desc in
         let tchan =
           try
-            let (ty,_,_) = List.assoc chan.jident_desc names in
+            let (ty,_) = List.assoc chan.jident_desc names in
             ty
           with Not_found -> assert false in
         let targ = arg.pat_type in
@@ -2274,13 +2270,13 @@ and type_auto env (my_name, nchans, def_names, auto_lhs) sauto =
       (List.map2 (type_clause env def_names) auto_lhs sauto.pjauto_desc) in
   let def_names =
     List.map
-      (fun (chan, (ty, num, alone)) ->
+      (fun (chan, (ty, num)) ->
         match (expand_head env ty).desc with
         | Tarrow (_, _, _, _) ->
-            chan, {jchannel_sync=true; jchannel_alone=alone ;
+            chan, {jchannel_sync=true;
                    jchannel_type=ty ; jchannel_id=num}
         | Tconstr (p, _, _) when Path.same p Predef.path_channel ->
-            chan, {jchannel_sync=false; jchannel_alone=alone ;
+            chan, {jchannel_sync=false;
                    jchannel_type=ty; jchannel_id=num}
       | _ -> assert false)
       def_names in
@@ -2316,9 +2312,9 @@ and generalize_auto env auto =
 
 and add_auto_names env name names =
    List.fold_left
-     (fun env (id,(ty,num,alone)) ->
+     (fun env (id,(ty,num)) ->
          Env.add_value id
-         {val_type = ty; val_kind = Val_channel (name,num,alone)} env)
+         {val_type = ty; val_kind = Val_channel (name,num)} env)
       env names
 
 and type_def env sautos =

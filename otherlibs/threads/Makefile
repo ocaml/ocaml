@@ -21,7 +21,7 @@ CAMLC=../../ocamlcomp.sh -I ../unix
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
 COMPFLAGS=-warn-error A
 
-C_OBJS=scheduler.o
+C_OBJS=scheduler.o join.o
 
 CAML_OBJS=thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo join.cmo
 

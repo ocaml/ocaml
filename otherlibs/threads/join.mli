@@ -27,24 +27,16 @@ type 'a reaction
 
 val patch_table : 'a automaton -> 'a reaction array -> unit
 
+(* Asynchronous channels *)
 type 'a async
 val create_async : 'a automaton -> int -> 'a async
 val create_async_alone : 'a automaton -> int -> 'a async
-
-(* Asynchronous sends *)
-
-val direct_send_async : 'a automaton -> int -> Obj.t -> unit
-val direct_send_async_alone  : 'a automaton -> int -> Obj.t -> unit
 val send_async : 'a async -> Obj.t -> unit
-
-val tail_direct_send_async : 'a automaton -> int -> Obj.t -> unit
-val tail_direct_send_async_alone : 'a automaton -> int -> Obj.t -> unit
 val tail_send_async : 'a async -> Obj.t -> unit
 
-(* Synchornous sends *)
+(* Synchronous channels are plain fonctions *)
+val create_sync : 'a automaton -> int -> (Obj.t -> Obj.t)
 
-val send_sync : 'a automaton -> int -> Obj.t -> Obj.t
-val send_sync_alone : 'a automaton -> int -> Obj.t -> Obj.t
 
 type continuation
 val reply_to : Obj.t -> continuation -> unit

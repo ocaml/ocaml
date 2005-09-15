@@ -198,6 +198,11 @@ CAMLextern value caml_get_public_method (value obj, value tag);
    See major_gc.c and stdlib/lazy.ml. */
 #define Lazy_tag 246
 
+/* >JOCAML */
+/* Behave like custom blocks, but can contain pointers to the heap */
+#define JoCustom_tag 245
+/* <JOCAML */
+
 /* Another special case: variants */
 CAMLextern value caml_hash_variant(char * tag);
 

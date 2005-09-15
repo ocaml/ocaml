@@ -241,12 +241,22 @@ type 'a status =
     includes : 'a -> bool ;
     to_string : unit -> string ; }
 
+(*
+   Data structure for automaton is here seen
+   as a record.
+   In fact, automata are JoCustom blocks.
+   JoCustom blocks are Custom blocks, which undergo
+   standard gc
+*)
+
 type 'a automaton = {
-  status : 'a status ;
+  ops : Obj.t ; (* custom operations *)
+  mutable ident : int ;
+  status : 'a status ; 
   mutex : Mutex.t ;
   queues : queue array ;
   mutable matches : ('a reaction) array ;
-  names : Obj.t ;
+  names : Obj.t ; (* Used for debug : array of channel names *)
 } 
 
 and 'a reaction = 'a * int * (Obj.t -> Obj.t)
@@ -321,16 +331,15 @@ let empty_status nchans =
     Obj.magic (int_ops ())
   else
     Obj.magic (bv_ops nchans)
-    
+
+external alloc_automaton :
+  'a -> Mutex.t -> queue array -> Obj.t -> 'a automaton
+= "caml_alloc_automaton"
+
 let create_automaton_debug nchans names =
-  let status = empty_status nchans in
-  {
-    status = status ;
-    mutex = Mutex.create () ;
-    queues = Array.create nchans [] ;
-    matches = [| |] ;
-    names = names ;
-  } 
+  alloc_automaton
+    (empty_status nchans) (Mutex.create ())
+    (Array.create nchans []) names    
 
 let create_automaton nchans = create_automaton_debug nchans (Obj.magic 0)
 
@@ -562,6 +571,7 @@ and send_sync_alone auto g a =
     fire_suspend k auto (fun () -> f (k,a))
   end
 
+let create_sync auto idx = (fun a -> send_sync auto idx a)
 
 let reply_to v k =
 (*DEBUG*)  debug3 "REPLY" (sprintf "%i" (Obj.magic v)) ;

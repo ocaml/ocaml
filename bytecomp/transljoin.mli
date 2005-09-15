@@ -27,11 +27,6 @@ val report_error : Format.formatter -> error -> unit
 val create_process : Lambda.lambda -> Lambda.lambda
 val send_async : Lambda.lambda -> Lambda.lambda -> Lambda.lambda
 val send_sync : Ident.t -> int -> int option -> Lambda.lambda -> Lambda.lambda
-val direct_send_async :
-  Ident.t -> int -> int option -> Lambda.lambda -> Lambda.lambda
-val send_async : Lambda.lambda -> Lambda.lambda -> Lambda.lambda
-val tail_direct_send_async :
-  Ident.t -> int -> int option -> Lambda.lambda -> Lambda.lambda
 val tail_send_async : Lambda.lambda -> Lambda.lambda -> Lambda.lambda
 
 val reply_to : Lambda.lambda -> Lambda.lambda -> Lambda.lambda

@@ -34,6 +34,7 @@ external set_field : t -> int -> t -> unit = "%obj_set_field"
 external new_block : int -> int -> t = "caml_obj_block"
 external dup : t -> t = "caml_obj_dup"
 
+val jocustom_tag : int
 val lazy_tag : int
 val closure_tag : int
 val object_tag : int

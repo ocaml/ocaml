@@ -97,8 +97,8 @@ and value_kind =
                                         (* Ancestor *)
   | Val_unbound                         (* Unbound variable *)
 (*> JOCAML *)
-  | Val_channel of Ident.t * int * int option
-     (* Channel: automaton, index, guard index where channel appears alone *)
+  | Val_channel of Ident.t * int
+     (* Channel: automaton, index *)
 (*< JOCAML *)
 
 (* Constructor descriptions *)

@@ -21,11 +21,11 @@ MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
 COMPFLAGS=-warn-error A
 #OCAMLPP=-pp '../../ocamldoc/remove_DEBUG'
 
-BYTECODE_C_OBJS=posix_b.o
-NATIVECODE_C_OBJS=posix_n.o
+BYTECODE_C_OBJS=posix_b.o join_b.o
+NATIVECODE_C_OBJS=posix_n.o join_n.o
 THREAD_OBJS= thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo join.cmo
 
-GENFILES=thread.ml join.ml join.mli
+GENFILES=thread.ml join.ml join.mli join.c
 
 all: libthreads.a threads.cma
 
@@ -39,6 +39,11 @@ posix_b.o: posix.c
 	   -c posix.c
 	mv posix.o posix_b.o
 
+join_b.o: join.c
+	$(BYTECC) -DCAML_NAME_SPACE -O -I../../byterun $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) \
+	   -c join.c
+	mv join.o join_b.o
+
 # Dynamic linking with -lpthread is risky on many platforms, so
 # do not create a shared object for libthreadsnat.
 libthreadsnat.a: $(NATIVECODE_C_OBJS)
@@ -47,6 +52,10 @@ libthreadsnat.a: $(NATIVECODE_C_OBJS)
 posix_n.o: posix.c
 	$(NATIVECC) -DCAML_NAME_SPACE -O -I../../asmrun -I../../byterun $(NATIVECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -DNATIVE_CODE -DTARGET_$(ARCH) -DSYS_$(SYSTEM) -c posix.c
 	mv posix.o posix_n.o
+
+join_n.o: join.c
+	$(NATIVECC) -DCAML_NAME_SPACE -O -I../../asmrun -I../../byterun $(NATIVECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -DNATIVE_CODE -DTARGET_$(ARCH) -DSYS_$(SYSTEM) -c join.c
+	mv join.o join_n.o
 
 threads.cma: $(THREAD_OBJS)
 	$(MKLIB) -ocamlc '$(CAMLC)' -o threads $(THREAD_OBJS) \
@@ -69,6 +78,8 @@ join.ml: ../threads/join.ml
 join.mli: ../threads/join.mli
 	cp -f ../threads/join.mli . && chmod -w join.mli
 
+join.c: ../threads/join.c
+	cp -f ../threads/join.c . && chmod -w join.c
 
 partialclean:
 	rm -f *.cm*
