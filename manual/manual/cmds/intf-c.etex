@@ -1040,14 +1040,13 @@ value alloc_list_int(int i1, int i2)
   Field(tail, 0) = Val_int(i2);           /* car = the integer i2 */
   Field(tail, 1) = Val_int(0);            /* cdr = the empty list [] */
   modify(&Field(r, 1), tail);             /* cdr of the result = tail */
-  return r;
+  CAMLreturn (r);
 }
 \end{verbatim}
 It would be incorrect to perform
 "Field(r, 1) = tail" directly, because the allocation of "tail"
-has taken place since "r" was allocated.  "tail" is not registered as
-a root because there is no allocation between the assignment where it
-takes its value and the "modify" statement that uses the value.
+has taken place since "r" was allocated.
+
 
 \section{A complete example}
 \pdfsection{A complete example}
