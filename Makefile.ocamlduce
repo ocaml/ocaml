@@ -401,7 +401,7 @@ clean::
 
 INSTALL_FILES= \
  ocamlducec ocamlduce ocamlducedep ocamlducedoc ocamlduce.cma \
- ocamlduceopt ocamlduce.cmxa \
+ ocamlduceopt ocamlduce.cmxa ocamlduce.a \
  ocamlducec.opt ocamlduceopt.opt ocamlducedep.opt ocamlducedoc.opt \
  stdlib/ocamlduce.cmi cduce_types.cmi stdlib/ocamlduce.mli
 
