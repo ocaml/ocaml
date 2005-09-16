@@ -12,6 +12,7 @@
 
 (* $Id$ *)
 
+open Join_types
 open Printf
 
 (*DEBUG*)let verbose =
@@ -230,16 +231,8 @@ let create_process f =
     put_pool g
   end
 
-type queue = Obj.t list
 
- (* set idx sets status bit idx, it answers true if
-    that bit status changes (ie it was unset) *)
 
-type 'a status =
-  { set : int -> bool ;
-    erase : int -> unit ;
-    includes : 'a -> bool ;
-    to_string : unit -> string ; }
 
 (*
    Data structure for automaton is here seen
@@ -247,19 +240,15 @@ type 'a status =
    In fact, automata are JoCustom blocks.
    JoCustom blocks are Custom blocks, which undergo
    standard gc
+
+   Ident field acts both as a tag to discriminate
+   local and remote automaton and as an identifier
+   for exported threads.
 *)
 
-type 'a automaton = {
-  ops : Obj.t ; (* custom operations *)
-  mutable ident : int ;
-  status : 'a status ; 
-  mutex : Mutex.t ;
-  queues : queue array ;
-  mutable matches : ('a reaction) array ;
-  names : Obj.t ; (* Used for debug : array of channel names *)
-} 
-
-and 'a reaction = 'a * int * (Obj.t -> Obj.t)
+(*********************************)
+(* Queues: implemented as stacks *)
+(*********************************)
 
 let put_queue auto idx a = auto.queues.(idx) <- a :: auto.queues.(idx)
 
@@ -273,6 +262,12 @@ let get_queue auto idx = match auto.queues.(idx) with
     end ;
     a
 
+(*******************)
+(* Automata status *)
+(*******************)
+
+(* int status *)
+
 let int_ops () =
   let me = ref 0 in
   { 
@@ -285,6 +280,8 @@ let int_ops () =
     includes = (fun mask -> !me land mask = mask) ;
     to_string = (fun () -> sprintf "%08x" !me) ;
   }
+
+(* Or bitfields *)
 
 let major i = i / 31
 and minor i =  i mod 31
@@ -326,27 +323,40 @@ let bv_ops nchans =
     to_string = to_string ;
   } 
 
+(* Allocate proper status, depending on number of channels in automata *)
 let empty_status nchans =
   if nchans < 32 then
     Obj.magic (int_ops ())
   else
     Obj.magic (bv_ops nchans)
 
-external alloc_automaton :
-  'a -> Mutex.t -> queue array -> Obj.t -> 'a automaton
-= "caml_alloc_automaton"
+(* Creating local automata *)
+external alloc_stub : 'a t_local -> 'a stub = "caml_alloc_stub"
+
+let wrap_automaton a = alloc_stub (LocalAutomaton a)
 
 let create_automaton_debug nchans names =
-  alloc_automaton
-    (empty_status nchans) (Mutex.create ())
-    (Array.create nchans []) names    
+  let a = 
+    {
+      ident = 0 ;
+      status = empty_status nchans ;
+      mutex = Mutex.create () ;
+      queues = Array.create nchans [] ;
+      matches = [| |] ;
+      names = names ;
+    } in
+  a
 
 let create_automaton nchans = create_automaton_debug nchans (Obj.magic 0)
 
 
 let get_name auto idx = Obj.magic (Obj.field auto.names idx)
 
-let patch_table auto t = auto.matches <- t
+let patch_table a t =  a.matches <- t
+
+(***************************************)
+(* Implementing reply to sync channels *)
+(***************************************)
 
 type kval = Start | Go of (unit -> Obj.t) | Ret of Obj.t
 
@@ -367,8 +377,8 @@ let kont_create auto =
 (**********************)
 
 type 'a async =
-    Async of ('a automaton) * int
-  | Alone of ('a automaton) * int
+    Async of ('a stub) * int
+  | Alone of ('a stub) * int
 
 
 let create_async auto i = Async (auto, i)
@@ -416,7 +426,7 @@ let rec attempt_match tail auto reactions idx i =
       attempt_match tail auto reactions idx (i+1)
   end
 
-let direct_send_async auto idx a =
+let local_send_async auto idx a =
 (*DEBUG*)debug3 "SEND_ASYNC" (sprintf "channel=%s, status=%s"
 (*DEBUG*)  (get_name auto idx) (auto.status.to_string ())) ;
 (* Acknowledge new message by altering queue and status *)
@@ -431,18 +441,20 @@ let direct_send_async auto idx a =
   end
 
 (* Optimize forwarders *)
-and direct_send_async_alone auto g a =
+and local_send_async_alone auto g a =
 (*DEBUG*)  debug3 "SEND_ASYNC_ALONE" (sprintf "match %i" g) ;
   let _,_,f = Obj.magic (Obj.field (Obj.magic auto.matches) g) in
   create_process (fun () -> f a)
 
 
 let send_async chan a = match chan with
-| Async (auto, idx) -> direct_send_async auto idx a
-| Alone (auto, g)   -> direct_send_async_alone auto g a
+| Async ({local=LocalAutomaton auto}, idx) -> local_send_async auto idx a
+| Alone ({local=LocalAutomaton auto}, g)   -> local_send_async_alone auto g a
+| Async ({local=RemoteAutomaton _}, _)
+| Alone ({local=RemoteAutomaton _}, _)
+ -> assert false
 
-
-let tail_direct_send_async auto idx a =
+let local_tail_send_async auto idx a =
 (*DEBUG*)debug3 "TAIL_ASYNC" (sprintf "channel %s, status=%s"
 (*DEBUG*)  (get_name auto idx) (auto.status.to_string ())) ;
 (* Acknowledge new message by altering queue and status *)
@@ -459,14 +471,19 @@ let tail_direct_send_async auto idx a =
 
 (* Optimize forwarders *)
 
-and tail_direct_send_async_alone auto g a =
+and local_tail_send_async_alone auto g a =
 (*DEBUG*)  debug3 "TAIL_ASYNC_ALONE" (sprintf "match %i" g) ;
   let _,_,f = Obj.magic (Obj.field (Obj.magic auto.matches) g) in
   f a
 
 let tail_send_async chan a = match chan with
-| Async (auto, idx) -> tail_direct_send_async auto idx a
-| Alone (auto, g)   -> tail_direct_send_async_alone auto g a
+| Async ({local=LocalAutomaton auto}, idx) ->
+    local_tail_send_async auto idx a
+| Alone ({local=LocalAutomaton auto}, g)   ->
+    local_tail_send_async_alone auto g a
+| Async ({local=RemoteAutomaton _}, _)
+| Alone ({local=RemoteAutomaton _}, _)
+ -> assert false
 
 (*********************)
 (* Synchronous sends *)
@@ -543,7 +560,7 @@ let rec attempt_match_sync idx kont auto reactions i =
     end else attempt_match_sync idx kont auto reactions (i+1)
   end
 
-let send_sync auto idx a =
+let local_send_sync auto idx a =
 (*DEBUG*)  debug3 "SEND_SYNC" (sprintf "channel %s" (get_name auto idx)) ;
 (* Acknowledge new message by altering queue and status *)
   Mutex.lock auto.mutex ;
@@ -557,7 +574,12 @@ let send_sync auto idx a =
     attempt_match_sync idx kont auto (Obj.magic auto.matches) 0
   end
 
-(* Optimize forwarders *)
+let send_sync auto idx arg = match auto.local with
+| LocalAutomaton a -> local_send_sync a idx arg
+| RemoteAutomaton (_,_) -> assert false
+
+(*
+ (* Optimize forwarders *)
 and send_sync_alone auto g a =
 (*DEBUG*)  debug3 "SEND_SYNC_ALONE" (sprintf "match %i" g) ;
   let _,ipri,f = Obj.magic (Obj.field (Obj.magic auto.matches) g) in
@@ -570,7 +592,7 @@ and send_sync_alone auto g a =
     let k = kont_create auto in
     fire_suspend k auto (fun () -> f (k,a))
   end
-
+*)
 let create_sync auto idx = (fun a -> send_sync auto idx a)
 
 let reply_to v k =

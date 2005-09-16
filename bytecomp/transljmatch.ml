@@ -213,7 +213,7 @@ let build_dag pats =
     (match pats with
     | [] -> ()
     | pat::pats' ->
-	do_build_dag pats';
+        do_build_dag pats';
 	let oldnodes = Agraph.nodes dag in
 	let newnode = Agraph.new_node dag pat in
 	let rec draw_edge newn oldns =
@@ -230,7 +230,7 @@ let build_dag pats =
   dag
       
 
-(********************************************************************************)
+(**************************************************************************)
 (*
      Compile join defintion from and to match_automaton format 
   according to one channel. 
@@ -238,8 +238,35 @@ let build_dag pats =
      match_automaton -> Ident.t -> bool -> pattern list -> match_automaton
 
   y match_auto id_ch2be_compiled is_synchornous pat_args
+*)
+(****************************************************************************)
 
-*********************************************************************************)
+let yfinal mauto id sync par dag =
+      let (disp, tbl_node2id) = make_disp id sync dag par in
+      let mcls' = rewrite id mauto.jauto_desc (Some (dag, tbl_node2id)) in
+      let old_jc = List.assoc id mauto.jauto_names in
+      let nchans = ref mauto.jauto_nchans in
+      let new_jauto_names =
+	List.map 
+	  (fun newid ->
+	    nchans := (!nchans)+1;
+	    (newid, {old_jc with jchannel_id = (!nchans) - 1}))
+	  (List.fold_left 
+	     (fun ids (node,id_opt) ->
+	       match id_opt with
+	       | None -> ids
+	       | Some newid -> newid::ids) 
+	     [] tbl_node2id) in
+      let sync,x,z,patids,total = disp in
+      let new_disp =
+        sync,x,z,
+        List.map (fun (p,id) -> p,id,List.assoc id new_jauto_names) patids,
+        total in
+      let new_mcls = Array.append mcls' (Array.make 1 (Dispatcher new_disp)) in
+      {mauto with jauto_desc = new_mcls; 
+        jauto_names = mauto.jauto_names @ new_jauto_names;
+        jauto_nchans = !nchans}
+
 
 let y mauto id sync args =
   (*trim_eq_pat gets rid of equivalent patterns in a pattern list*)
@@ -269,32 +296,14 @@ let y mauto id sync args =
   match pi' with
   | [] -> assert false         (*every channel takes a pat arg*)
   | [pat] ->
-      (match par with
+      begin match par with
       |	Total -> 
 	  let new_mcls = rewrite id mauto.jauto_desc None in
 	  {mauto with jauto_desc = new_mcls; }
       |	Partial ->
 	  let dag = build_dag pi' in
-	  let (disp,tbl_node2id) = make_disp id sync dag par in
-	  let mcls' = rewrite id mauto.jauto_desc (Some (dag, tbl_node2id)) in
-	  let new_mcls = Array.append mcls' (Array.make 1 (Dispatcher disp)) in
-	  let old_jc = List.assoc id mauto.jauto_names in
-	  let nchans = ref mauto.jauto_nchans in
-	  let new_jauto_names =
-	    List.map 
-	      (fun newid ->
-		nchans := (!nchans)+1;
-		(newid, {old_jc with jchannel_id = (!nchans) - 1}))
-	      (List.fold_left 
-		 (fun ids (node,id_opt) ->
-		   match id_opt with
-		   | None -> ids
-		   | Some newid -> newid::ids) 
-		 [] tbl_node2id) in
-	  {mauto with jauto_desc = new_mcls; 
-             jauto_names = mauto.jauto_names @ new_jauto_names;
-             jauto_nchans = !nchans}
-		  )
+	  yfinal mauto id sync par dag
+      end
   | _ -> 
       (* Compute all possible lubs of some patterns fromp pats
          ref. the F function in Step 1
@@ -316,26 +325,7 @@ let y mauto id sync args =
       let gamma = compute_lubs pi' in
       let gamma' = trim_eq_pat gamma in
       let dag = build_dag gamma' in
-      let (disp, tbl_node2id) = make_disp id sync dag par in
-      let mcls' = rewrite id mauto.jauto_desc (Some (dag, tbl_node2id)) in
-      let new_mcls = Array.append mcls' (Array.make 1 (Dispatcher disp)) in
-      let old_jc = List.assoc id mauto.jauto_names in
-      let nchans = ref mauto.jauto_nchans in
-      let new_jauto_names =
-	List.map 
-	  (fun newid ->
-	    nchans := (!nchans)+1;
-	    (newid, {old_jc with jchannel_id = (!nchans) - 1}))
-	  (List.fold_left 
-	     (fun ids (node,id_opt) ->
-	       match id_opt with
-	       | None -> ids
-	       | Some newid -> newid::ids) 
-	     [] tbl_node2id) in
-      {mauto with jauto_desc = new_mcls; 
-        jauto_names = mauto.jauto_names @ new_jauto_names;
-        jauto_nchans = !nchans}
-	
+      yfinal mauto id sync par dag
 
 (*****************************************************************************)  
 (*

@@ -33,6 +33,8 @@ and guard =
   b true/false means synchronous/asyncronous channel
 *)
 and dispatcher =
-    bool * Ident.t * Ident.t * (Typedtree.pattern * Ident.t) list * Typedtree.partial
+    bool * Ident.t * Ident.t *
+    (Typedtree.pattern * Ident.t * Typedtree.joinchannel) list *
+    Typedtree.partial
 
 type automaton = match_clause Typedtree.joinautomaton_gen

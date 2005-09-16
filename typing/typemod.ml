@@ -558,7 +558,7 @@ and type_structure anchor env sstr =
             (fun auto r ->
               map_end (fun (id,_) -> id) auto.jauto_names r)
             defs [] in
-        (Tstr_def(defs) :: str_rem,
+        (Tstr_def (defs) :: str_rem,
          map_end (make_sig_channel_value newenv) bound_idents sig_rem,
          final_env)
     | {pstr_desc = Pstr_loc (sdefs)} :: srem ->

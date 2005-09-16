@@ -34,20 +34,12 @@ static struct custom_operations caml_automaton_ops = {
 
 /* Allocate automaton structure, cf. the automaton type in join.ml */
 
-CAMLprim value caml_alloc_automaton(value status,
-                                    value mutex,
-                                    value queues,
-                                    value names)
+CAMLprim value caml_alloc_stub(value a)
 {
-  CAMLparam4 (status, mutex, queues, names) ;
+  CAMLparam1 (a) ;
   CAMLlocal1 (res) ;
-  res = caml_alloc_small(7, JoCustom_tag) ;
+  res = caml_alloc_small(2, JoCustom_tag) ;
   Field(res, 0) = (value)&caml_automaton_ops ;
-  Field(res, 1) = Val_int(0) ; /* Ident for non exported automata */
-  Field(res, 2) = status ;
-  Field(res, 3) = mutex ;
-  Field(res, 4) = queues ;
-  Field(res, 5) = Atom(0) ; /* Matching structures are set later */
-  Field(res, 6) = names ;
+  Field(res, 1) = a ;
   CAMLreturn (res) ;
 }

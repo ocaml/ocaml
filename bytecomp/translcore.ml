@@ -757,12 +757,12 @@ and transl_exp0 e =
       then lambda_unit
       else Lifthenelse (transl_exp cond, lambda_unit, assert_failed e.exp_loc)
   | Texp_assertfalse -> assert_failed e.exp_loc
-| Texp_lazy e ->
+  | Texp_lazy e ->
     let fn = Lfunction (Curried, [Ident.create "param"], transl_exp e) in
     Lprim(Pmakeblock(Config.lazy_tag, Immutable), [fn])
-| Texp_object (cs, cty, meths) ->
-    let cl = Ident.create "class" in
-    !transl_object cl meths
+  | Texp_object (cs, cty, meths) ->
+      let cl = Ident.create "class" in
+      !transl_object cl meths
       { cl_desc = Tclass_structure cs;
         cl_loc = e.exp_loc;
         cl_type = Tcty_signature cty;
@@ -884,13 +884,13 @@ and transl_simple_proc die sync p = match p.exp_desc with
     make_sequence
       (transl_simple_proc false sync p1)
       (transl_simple_proc die sync p2)
-(*
+
 | Texp_asyncsend
-    ({exp_desc=Texp_ident (_,{val_kind=Val_channel (auto,num,alone)})},e2) ->
-      (if die then Transljoin.tail_direct_send_async
-      else Transljoin.direct_send_async)
-        auto num alone (transl_exp e2)
-*)
+    ({exp_desc=Texp_ident (_,{val_kind=Val_channel (auto,num)})},e2) ->
+      (if die then Transljoin.local_tail_send_async
+      else Transljoin.local_send_async)
+        auto num (transl_exp e2)
+
 | Texp_asyncsend (e1,e2) ->
     (if die then Transljoin.tail_send_async else Transljoin.send_async)
       (transl_exp e1) (transl_exp e2)
@@ -905,13 +905,13 @@ and transl_simple_proc die sync p = match p.exp_desc with
 
 (* Parameter list for a guarded process *)
 
-and transl_reaction  = function
+and transl_reaction  (name,_) = function
   | Joinmatch.Dispatcher (sync, chan, z, patids, partial) ->
       let body =
         if sync then
           let cls =
             List.map
-              (fun (pat, id) ->
+              (fun (pat, id, _) ->
                 (pat,
                  Lapply (Lvar id, [Lvar z])))
               patids in
@@ -919,9 +919,10 @@ and transl_reaction  = function
         else
           let cls =
             List.fold_right
-              (fun (pat, id) r ->
+              (fun (pat, _, chan) r ->
                 (pat,
-                 Transljoin.tail_send_async (Lvar id) (Lvar z))::r)
+                 Transljoin.local_tail_send_async name chan.jchannel_id
+                   (Lvar z))::r)
               patids
               (match partial with
               | Partial -> [Parmatch.omega, lambda_unit]
@@ -1123,7 +1124,8 @@ and do_transl_def some_loc autos body =
 (* compile (and name) guarded processes *)
   let reactions =
     List.map
-      (fun auto -> Array.map transl_reaction auto.jauto_desc)
+      (fun auto ->
+        Array.map (transl_reaction auto.jauto_name) auto.jauto_desc)
       autos1 in
 
 (* compile firing of guarded processes (aka automaton table) *)

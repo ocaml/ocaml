@@ -112,9 +112,13 @@ and lambda_create_sync = mk_lambda env_join "create_sync"
 let lambda_send_async = mk_lambda env_join "send_async"
 and lambda_tail_send_async = mk_lambda env_join "tail_send_async"
 
+let lambda_local_send_async = mk_lambda env_join "local_send_async"
+and lambda_local_tail_send_async = mk_lambda env_join "local_tail_send_async"
+
 
 let lambda_create_automaton = mk_lambda env_join "create_automaton"
 let lambda_create_automaton_debug = mk_lambda env_join "create_automaton_debug"
+let lambda_wrap_automaton = mk_lambda env_join "wrap_automaton"
 let lambda_patch_table = mk_lambda env_join "patch_table"
 let lambda_get_queue = mk_lambda env_join "get_queue"
 let lambda_unlock_automaton = mk_lambda env_join "unlock_automaton"
@@ -139,6 +143,12 @@ and send_async chan arg = mk_apply lambda_send_async [chan ; arg]
 
 and tail_send_async chan arg = mk_apply lambda_tail_send_async [chan ; arg]
 
+and local_send_async auto idx arg =
+  mk_apply lambda_local_send_async [Lvar auto ; lambda_int idx ; arg]
+
+and local_tail_send_async auto idx arg =
+  mk_apply lambda_local_tail_send_async [Lvar auto ; lambda_int idx ; arg]
+
 let  create_sync auto num alone = match alone with
 | None -> mk_apply lambda_create_sync [Lvar auto ; lambda_int num]
 | Some g -> assert false
@@ -155,6 +165,7 @@ let create_automaton some_loc nchans names = match some_loc with
      [lambda_int nchans ; names ]
 | Some id_loc -> failwith "NotYet"
 
+let wrap_automaton id = mk_apply lambda_wrap_automaton [Lvar id]
 
 let reply_to lam1 lam2 =
  mk_apply lambda_reply_to [lam1; lam2]
@@ -511,12 +522,15 @@ let names_block names =
        t [])
 
 let create_auto some_loc
-   { jauto_name=auto_name ; jauto_names = names ; jauto_desc = cls} k =
+   { jauto_name=(auto_name, wrapped_name); jauto_names = names ; jauto_desc = cls} k =
   let nchans = List.length names in
-  Llet (Strict, auto_name ,
-        create_automaton some_loc nchans (names_block names), k)
+  Llet
+    (Strict, auto_name,
+     create_automaton some_loc nchans (names_block names),
+     Llet
+       (Strict, wrapped_name, wrap_automaton auto_name, k))
 
-let create_channels {jauto_name=name ; jauto_names=names} k =
+let create_channels {jauto_name=(_,name) ; jauto_names=names} k =
   List.fold_right
     (fun (id,
           {jchannel_sync=sync ; jchannel_id=num}) k ->
@@ -633,7 +647,7 @@ let rec explode = function
 
 let create_table some_loc auto1 gs r =
   let ngs = Array.length gs
-  and name = auto1.jauto_name
+  and name,_ = auto1.jauto_name
   and names = auto1.jauto_names in
   let n_names = List.length names in
 

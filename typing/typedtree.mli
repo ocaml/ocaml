@@ -93,7 +93,7 @@ and joinlocation =
 
 and 'a joinautomaton_gen =
     {jauto_desc : 'a array ;
-      jauto_name : Ident.t;
+      jauto_name : Ident.t * Ident.t; (* auto name, wrapped auto name *)
       jauto_names : (Ident.t * joinchannel) list ;
       jauto_nchans : int;
      (* names defined, description*)

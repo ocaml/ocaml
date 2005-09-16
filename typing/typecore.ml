@@ -625,8 +625,9 @@ let type_auto_lhs env {pjauto_desc=sauto ; pjauto_loc=auto_loc}  =
             sjpats in
         jpats, get_ref pattern_variables, get_ref pattern_force)
       sauto in
-  let name = Ident.create "auto" in
-  (name, !auto_count, get_ref auto_chans, auto)
+  let name = Ident.create "auto"
+  and name_wrapped = Ident.create "wrapped" in
+  ((name,name_wrapped), !auto_count, get_ref auto_chans, auto)
 
 let rec do_type_autos_lhs env = function
   | [] -> []
@@ -1569,7 +1570,7 @@ and do_type_exp ctx env sexp =
          fails if and only if the prefix condition is violated,
          i.e. if generative types rooted at id show up in the
          type body.exp_type.  Thus, this unification enforces the
-         scoping condition on "let module". *)
+         scoping condition on 'let module'. *)
       begin try
         Ctype.unify new_env body.exp_type ty
       with Unify _ ->
@@ -1646,7 +1647,7 @@ and do_type_exp ctx env sexp =
         exp_type = instance Predef.type_process;
         exp_env  = env; }
   | Pexp_def (sautos, sbody) ->
-      let (autos, new_env) = type_def env sautos in
+      let (autos, new_env) = type_def false env sautos in
       let body = do_type_exp ctx new_env sbody in
       re {
         exp_desc = Texp_def (autos, body);
@@ -1654,7 +1655,7 @@ and do_type_exp ctx env sexp =
         exp_type = body.exp_type;
         exp_env  = env } 
   | Pexp_loc (sdefs, sbody) ->
-      let (defs, new_env) = type_loc env sdefs in
+      let (defs, new_env) = type_loc false env sdefs in
       let body = do_type_exp ctx new_env sbody in
       re {
         exp_desc = Texp_loc (defs, body);
@@ -2263,7 +2264,8 @@ and type_clause env names (jpats,pat_vars,pat_force) scl =
     jclause_desc = (jpats, exp);}
   
 
-and type_auto env (my_name, nchans, def_names, auto_lhs) sauto =
+and type_auto env
+ (my_names, nchans, def_names, auto_lhs) sauto =
   let env = Env.remove_continuations env in
   let cls =
     Array.of_list
@@ -2281,7 +2283,7 @@ and type_auto env (my_name, nchans, def_names, auto_lhs) sauto =
       | _ -> assert false)
       def_names in
   {jauto_desc = cls;
-    jauto_name = my_name;
+    jauto_name = my_names ;
     jauto_nchans = nchans;
     jauto_names = List.rev def_names;
     jauto_loc = sauto.pjauto_loc}
@@ -2317,12 +2319,22 @@ and add_auto_names env name names =
          {val_type = ty; val_kind = Val_channel (name,num)} env)
       env names
 
-and type_def env sautos =
+and add_auto_names_as_regular env names =
+   List.fold_left
+   (fun env (id,(ty,_)) ->
+         Env.add_value id
+         {val_type = ty; val_kind = Val_reg} env)
+      env names
+
+(* Argument toplevel below characterize toplevel definitions,
+   for which the internal automaton name must not escape. *)
+
+and type_def toplevel env sautos =
   begin_def ();
   let names_lhs_list = type_autos_lhs env sautos in
   let new_env =
     List.fold_left
-      (fun env (name, _, names, _) -> add_auto_names env name names)
+      (fun env ((name,_) , _, names, _) -> add_auto_names env name names)
       env names_lhs_list in
   let autos =
     List.map2 (type_auto new_env) names_lhs_list sautos in
@@ -2331,21 +2343,35 @@ and type_def env sautos =
 (* Generalization *)
   List.iter (generalize_auto env) autos ;
 
-  autos, new_env
+(* For toplevel def, should change the bindings of channels,
+   so as to avoid internal automaton name escaping *)
+  let final_env = 
+    if toplevel then
+      List.fold_left
+        (fun env (_ , _, names, _) -> add_auto_names_as_regular env names)
+      env names_lhs_list
+    else
+      new_env in
+  autos, final_env
 
-and type_loc env sdefs =
-  begin_def ();
-  let names_lhs_list = type_locs_lhs env sdefs in
-  let new_env =
-    List.fold_left
+and add_loc_names do_it env names_lhs_list =
+   List.fold_left
       (fun env (jid_loc, autos_lhs) ->
        List.fold_left
-          (fun env (name, _, names,_) -> add_auto_names env name names)
+          do_it
           (Env.add_value
              jid_loc.jident_desc
              {val_type = jid_loc.jident_type; val_kind = Val_reg}
              env)
           autos_lhs)
+    env names_lhs_list
+
+and type_loc toplevel env sdefs =
+  begin_def ();
+  let names_lhs_list = type_locs_lhs env sdefs in
+  let new_env =
+    add_loc_names
+      (fun env ((name,_) , _, names,_) -> add_auto_names env name names)
        env  names_lhs_list in
   let defs =
     List.map2
@@ -2365,7 +2391,14 @@ and type_loc env sdefs =
       let _,autos,_ = loc_def.jloc_desc in
       List.iter (generalize_auto env) autos)
     defs;
-  defs, new_env
+  let final_env =
+    if toplevel then
+      add_loc_names
+        (fun env (_ , _, names,_) -> add_auto_names_as_regular env names)
+       env names_lhs_list
+    else
+      new_env in
+  defs, final_env
 
 (*< JOCAML *)
 
@@ -2391,11 +2424,11 @@ let type_expression env sexp =
 (* Typing of toplevel join-definition *)
 let type_joindefinition env d =
   Typetexp.reset_type_variables();
-  type_def env d
+  type_def true env d
 
 let type_joinlocation env d =
   Typetexp.reset_type_variables();
-  type_loc env d
+  type_loc true env d
 
 (*< JOCAML *)
 (* Error report *)

@@ -21,9 +21,13 @@ CAMLC=../../ocamlcomp.sh -I ../unix
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
 COMPFLAGS=-warn-error A
 
-C_OBJS=scheduler.o join.o
+C_OBJS=scheduler.o
 
-CAML_OBJS=thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo join.cmo
+CAML_OBJS=thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo\
+
+JOIN_C_OBJS=join.o
+
+JOIN_OBJS=join_space.cmo join.cmo
 
 LIB=../../stdlib
 
@@ -50,7 +54,7 @@ UNIXLIB=../unix
 
 UNIXLIB_OBJS=unix.cmo $(UNIXLIB)/unixLabels.cmo
 
-all: libvmthreads.a threads.cma stdlib.cma unix.cma
+all: libvmthreads.a threads.cma stdlib.cma unix.cma libvmjoin.a join.cma
 
 allopt:
 
@@ -65,6 +69,12 @@ stdlib.cma: $(LIB_OBJS)
 
 unix.cma: $(UNIXLIB_OBJS)
 	$(MKLIB) -ocamlc '$(CAMLC)' -o unix -linkall $(UNIXLIB_OBJS)
+
+libvmjoin.a: $(JOIN_C_OBJS)
+	$(MKLIB) -o join -oc vmjoin $(JOIN_C_OBJS)
+
+join.cma: $(JOIN_OBJS)
+	$(MKLIB) -ocamlc '$(CAMLC)' -o join -oc vmjoin $(JOIN_OBJS)
 
 pervasives.cmo: pervasives.mli pervasives.cmi pervasives.ml
 	$(CAMLC) ${COMPFLAGS} -nopervasives -c pervasives.ml
@@ -98,15 +108,19 @@ partialclean:
 
 clean: partialclean
 	rm -f libvmthreads.a dllvmthreads.so *.o
+	rm -f libvmjoin.a dllvmjoin.so *.o
 	rm -f pervasives.mli marshal.mli unix.mli
 
 install:
 	if test -f dllvmthreads.so; then cp dllvmthreads.so $(STUBLIBDIR)/.; fi
+	if test -f dllvmjoin.so; then cp dllvmjoin.so $(STUBLIBDIR)/.; fi
 	mkdir -p $(LIBDIR)/vmthreads
 	cp libvmthreads.a $(LIBDIR)/vmthreads/libvmthreads.a
 	cd $(LIBDIR)/vmthreads; $(RANLIB) libvmthreads.a
-	cp thread.cmi mutex.cmi condition.cmi event.cmi threadUnix.cmi join.cmi threads.cma stdlib.cma unix.cma $(LIBDIR)/vmthreads
-	cp thread.mli mutex.mli condition.mli event.mli threadUnix.mli join.mli $(LIBDIR)/vmthreads
+	cp libvmjoin.a $(LIBDIR)/vmthreads/libvmjoin.a
+	cd $(LIBDIR)/vmthreads; $(RANLIB) libvmjoin.a
+	cp thread.cmi mutex.cmi condition.cmi event.cmi threadUnix.cmi join.cmi threads.cma stdlib.cma unix.cma join.cma $(LIBDIR)/vmthreads
+	cp thread.mli mutex.mli condition.mli event.mli threadUnix.mli $(LIBDIR)/vmthreads
 
 installopt:
 

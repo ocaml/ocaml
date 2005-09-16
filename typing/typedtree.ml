@@ -94,7 +94,7 @@ and joinlocation =
 
 and 'a joinautomaton_gen =
     {jauto_desc : 'a array ;
-      jauto_name : Ident.t;
+      jauto_name : Ident.t * Ident.t ;
       jauto_names : (Ident.t * joinchannel) list ;
       jauto_nchans : int;
      (* names defined, description *)
@@ -267,11 +267,11 @@ let let_bound_idents pat_expr_list =
 (*> JOCAML *)
 let do_def_bound_idents autos r =
   List.fold_right
-    (fun {jauto_name = name ; jauto_names=names} r ->
+    (fun {jauto_names=names} r ->
       List.fold_right
         (fun (name,_) r -> name::r)
         names
-        r)
+        (r))
     autos r
 
 let do_loc_bound_idents locs r =
