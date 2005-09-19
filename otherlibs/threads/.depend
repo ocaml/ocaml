@@ -2,7 +2,8 @@ join.o: join.c ../../byterun/mlvalues.h ../../byterun/config.h \
   ../../config/m.h ../../config/s.h ../../byterun/misc.h \
   ../../byterun/alloc.h ../../byterun/memory.h ../../byterun/gc.h \
   ../../byterun/major_gc.h ../../byterun/freelist.h \
-  ../../byterun/minor_gc.h ../../byterun/custom.h
+  ../../byterun/minor_gc.h ../../byterun/roots.h ../../byterun/custom.h \
+  ../../byterun/intext.h ../../byterun/io.h ../../byterun/fix_code.h
 scheduler.o: scheduler.c ../../byterun/alloc.h ../../byterun/misc.h \
   ../../byterun/config.h ../../config/m.h ../../config/s.h \
   ../../byterun/mlvalues.h ../../byterun/backtrace.h \
@@ -13,25 +14,31 @@ scheduler.o: scheduler.c ../../byterun/alloc.h ../../byterun/misc.h \
   ../../byterun/stacks.h ../../byterun/sys.h
 condition.cmi: mutex.cmi 
 join.cmi: join_types.cmi 
-join_space.cmi: unix.cmo join_types.cmi 
-join_types.cmi: unix.cmo mutex.cmi 
-thread.cmi: unix.cmo 
-threadUnix.cmi: unix.cmo 
+join_space.cmi: unix.cmi marshal.cmi join_types.cmi 
+join_types.cmi: unix.cmi mutex.cmi 
+thread.cmi: unix.cmi 
+threadUnix.cmi: unix.cmi 
 condition.cmo: thread.cmi mutex.cmi condition.cmi 
 condition.cmx: thread.cmx mutex.cmx condition.cmi 
 event.cmo: mutex.cmi condition.cmi event.cmi 
 event.cmx: mutex.cmx condition.cmx event.cmi 
-join.cmo: thread.cmi mutex.cmi join_types.cmi condition.cmi join.cmi 
-join.cmx: thread.cmx mutex.cmx join_types.cmi condition.cmx join.cmi 
-join_space.cmo: unix.cmo join_space.cmi 
-join_space.cmx: unix.cmx join_space.cmi 
-marshal.cmo: pervasives.cmo 
-marshal.cmx: pervasives.cmx 
+join.cmo: thread.cmi mutex.cmi join_types.cmi join_space.cmi condition.cmi \
+    join.cmi 
+join.cmx: thread.cmx mutex.cmx join_types.cmi join_space.cmx condition.cmx \
+    join.cmi 
+join_space.cmo: unix.cmi thread.cmi mutex.cmi marshal.cmi join_types.cmi \
+    join_space.cmi 
+join_space.cmx: unix.cmx thread.cmx mutex.cmx marshal.cmx join_types.cmi \
+    join_space.cmi 
+marshal.cmo: pervasives.cmi marshal.cmi 
+marshal.cmx: pervasives.cmx marshal.cmi 
 mutex.cmo: thread.cmi mutex.cmi 
 mutex.cmx: thread.cmx mutex.cmi 
-pervasives.cmo: unix.cmo 
-pervasives.cmx: unix.cmx 
-thread.cmo: unix.cmo thread.cmi 
+pervasives.cmo: unix.cmi pervasives.cmi 
+pervasives.cmx: unix.cmx pervasives.cmi 
+thread.cmo: unix.cmi thread.cmi 
 thread.cmx: unix.cmx thread.cmi 
-threadUnix.cmo: unix.cmo thread.cmi threadUnix.cmi 
+threadUnix.cmo: unix.cmi thread.cmi threadUnix.cmi 
 threadUnix.cmx: unix.cmx thread.cmx threadUnix.cmi 
+unix.cmo: unix.cmi 
+unix.cmx: unix.cmi 

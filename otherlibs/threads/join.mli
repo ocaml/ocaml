@@ -17,26 +17,28 @@ open Join_types
 val create_process : (unit -> unit) -> unit
 
 
-val get_queue : 'a automaton -> int -> Obj.t
-val create_automaton : int -> 'a automaton
+val get_queue : automaton -> int -> Obj.t
+val create_automaton : int -> automaton
 
 (* create_automaton nchans *)
-val create_automaton_debug : int -> Obj.t -> 'a automaton
-val wrap_automaton : 'a automaton -> 'a stub
-val patch_table : 'a automaton -> 'a reaction array -> unit
+val create_automaton_debug : int -> Obj.t -> automaton
+val wrap_automaton : automaton -> stub
+val patch_table : automaton -> reaction array -> unit
 
 (* Asynchronous channels *)
-type 'a async
-val create_async : 'a stub -> int -> 'a async
-val create_async_alone : 'a stub -> int -> 'a async
-val local_send_async : 'a automaton -> int -> Obj.t -> unit
-val local_tail_send_async : 'a automaton -> int -> Obj.t -> unit
-val send_async : 'a async -> Obj.t -> unit
-val tail_send_async : 'a async -> Obj.t -> unit
+type async
+val create_async : stub -> int -> async
+val create_async_alone : stub -> int -> async
+val local_send_async : automaton -> int -> Obj.t -> unit
+val local_tail_send_async : automaton -> int -> Obj.t -> unit
+val send_async : async -> Obj.t -> unit
+val tail_send_async : async -> Obj.t -> unit
 
 (* Synchronous channels are plain fonctions *)
-val create_sync : 'a stub -> int -> (Obj.t -> Obj.t)
+val create_sync : stub -> int -> (Obj.t -> Obj.t)
 
 
 type continuation
 val reply_to : Obj.t -> continuation -> unit
+
+val t : 'a -> 'a

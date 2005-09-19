@@ -214,7 +214,8 @@ static unsigned long size_64;  /* Size in words of 64-bit block for struct. */
 static int extern_ignore_sharing; /* Flag to ignore sharing */
 static int extern_closures;     /* Flag to allow externing code pointers */
 
-static void extern_invalid_argument(char *msg)
+
+extern void extern_invalid_argument(char *msg)
 {
   if (extern_block_malloced) caml_stat_free(extern_block);
   initial_ofs += obj_counter;
@@ -246,6 +247,7 @@ static void extern_rec(value v)
     tag_t tag = Tag_hd(hd);
     mlsize_t sz = Wosize_hd(hd);
     asize_t h;
+    char ctag ;
 
     if (tag == Forward_tag) {
       value f = Forward_val (v);
@@ -343,7 +345,15 @@ static void extern_rec(value v)
       extern_invalid_argument("output_value: object value");
       break;
     */
-    case Custom_tag: case JoCustom_tag: {
+    case Custom_tag:
+   /* > JOCAML */
+      ctag = CODE_CUSTOM ;
+      goto custom;
+    case JoCustom_tag:
+      ctag = CODE_JOCUSTOM ;
+    custom:
+   /* < JOCAML */
+    {
       unsigned long sz_32, sz_64;
       char * ident = Custom_ops_val(v)->identifier;
       void (*serialize)(value v, unsigned long * wsize_32,
@@ -351,7 +361,7 @@ static void extern_rec(value v)
         = Custom_ops_val(v)->serialize;
       if (serialize == NULL) 
         extern_invalid_argument("output_value: abstract value (Custom)");
-      Write(CODE_CUSTOM);
+      Write(ctag);
       writeblock(ident, strlen(ident) + 1);
       Custom_ops_val(v)->serialize(v, &sz_32, &sz_64);
       size_32 += 2 + ((sz_32 + 3) >> 2);  /* header + ops + data */

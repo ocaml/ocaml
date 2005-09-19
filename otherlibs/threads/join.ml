@@ -331,7 +331,7 @@ let empty_status nchans =
     Obj.magic (bv_ops nchans)
 
 (* Creating local automata *)
-external alloc_stub : 'a t_local -> 'a stub = "caml_alloc_stub"
+external alloc_stub : t_local -> stub = "caml_alloc_stub"
 
 let wrap_automaton a = alloc_stub (LocalAutomaton a)
 
@@ -376,9 +376,9 @@ let kont_create auto =
 (* Asynchronous sends *)
 (**********************)
 
-type 'a async =
-    Async of ('a stub) * int
-  | Alone of ('a stub) * int
+type async =
+    Async of (stub) * int
+  | Alone of (stub) * int
 
 
 let create_async auto i = Async (auto, i)
@@ -642,5 +642,11 @@ let rec exit_hook () =
   ()
 
 
-let _ = at_exit exit_hook
+external init_join : unit -> unit = "caml_init_join"
 
+let _ = init_join () ; at_exit exit_hook
+
+
+let t v =
+  let p = Join_space.marshal_message v [] in
+  Join_space.unmarshal_message p

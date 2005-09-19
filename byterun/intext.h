@@ -56,6 +56,9 @@
 #define CODE_CODEPOINTER 0x10
 #define CODE_INFIXPOINTER 0x11
 #define CODE_CUSTOM 0x12
+/*> JOCAML */
+#define CODE_JOCUSTOM 0x14
+/*< JOCAML */
 
 #if ARCH_FLOAT_ENDIANNESS == 0x76543210
 #define CODE_DOUBLE_NATIVE CODE_DOUBLE_BIG
@@ -108,9 +111,14 @@ CAMLextern long caml_output_value_to_block(value v, value flags,
      in bytes.  Return the number of bytes actually written in buffer.
      Raise [Failure] if buffer is too short. */
 
+CAMLextern value caml_output_value_to_string(value v, value flags) ;
+
+
 /* <private> */
 value caml_input_val (struct channel * chan);
   /* Read a structured value from the channel [chan]. */
+void caml_intern_cleanup(void) ;
+  /* to be called, before failing in deserialize code */
 /* </private> */
 
 CAMLextern value caml_input_val_from_string (value str, long ofs);
@@ -172,5 +180,9 @@ extern char * caml_code_area_start, * caml_code_area_end;
 #endif
 
 /* </private> */
+
+/* >JOCAML */
+extern void extern_invalid_argument(char *msg) ;
+/* <JOCAML */
 
 #endif /* CAML_INTEXT_H */

@@ -90,7 +90,7 @@ $(THREAD_OBJS:.cmo=.cmx) $(JOIN_OBJS:.cmo=.cmx): ../../ocamlopt
 thread.ml: thread_posix.ml
 	ln -s thread_posix.ml thread.ml
 
-join_types.mli:
+join_types.mli: ../threads/join_types.mli
 	cp -f ../threads/join_types.mli . && chmod -w join_types.mli
 
 join.ml: ../threads/join.ml

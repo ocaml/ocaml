@@ -29,16 +29,16 @@ type 'a status =
   } 
 
 (* Local automaton *)
-type 'a automaton = {
+type automaton = {
   mutable ident : int ; 
-  status : 'a status ; 
+  status : Obj.t status ; 
   mutex : Mutex.t ;
   queues : queue array ;
-  mutable matches : ('a reaction) array ;
+  mutable matches : reaction array ;
   names : Obj.t ; (* Used for debug : array of channel names *)
 } 
 
-and 'a reaction = 'a * int * (Obj.t -> Obj.t)
+and reaction = Obj.t * int * (Obj.t -> Obj.t)
 
 (*******************)
 (* Remote pointers *)
@@ -51,12 +51,12 @@ type global_name = space_name * int
 (* Stubs for handling remote pointers,
    they are implemented trough JoCustom blocks *)
 
-type 'a t_local =
-  | LocalAutomaton of 'a automaton
+type t_local =
+  | LocalAutomaton of automaton
   | RemoteAutomaton of global_name
 
-type 'a stub =
+type stub =
   { ops : Obj.t ; (* custom ops, cf. join.c *)
-    local : 'a t_local ;
+    local : t_local ;
   } 
     

@@ -17,4 +17,9 @@ val local_socket : Unix.file_descr
 
 val local_id : Join_types.space_name
 
-val new_uid : unit -> int
+val marshal_message :
+    'a ->  Marshal.extern_flags list -> string * (Join_types.t_local) array
+
+val unmarshal_message :
+    string * (Join_types.t_local) array -> 'a
+
