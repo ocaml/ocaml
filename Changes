@@ -18,6 +18,8 @@ New features:
 
 Bug fixes:
 - printf: partial application is now handled properly.
+- scanf: no more spurious lookahead attempt when the end of file condition
+is set and a correct token has already been read and could be return.
 
 Objective Caml 3.08.4:
 ----------------------
