@@ -281,14 +281,18 @@ let remove_object_name ty =
 (**** Hiding of private methods ****)
 
 let hide_private_methods ty =
-  let (fl, _) = flatten_fields (object_fields ty) in
-  List.iter
-    (function (_, k, _) ->
-       let k = field_kind_repr k in
-       match k with
-         Fvar r -> set_kind r Fabsent
-       | _      -> ())
-    fl
+  match (repr ty).desc with
+    Tobject (fi, nm) ->
+      nm := None;
+      let (fl, _) = flatten_fields fi in
+      List.iter
+        (function (_, k, _) ->
+          match field_kind_repr k with
+            Fvar r -> set_kind r Fabsent
+          | _      -> ())
+        fl
+  | _ ->
+      assert false
 
 
                               (*******************************)
