@@ -2,7 +2,7 @@
 (*                                                                     *)
 (*                           Objective Caml                            *)
 (*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(*  Xavier Leroy and Pierre Weis, projet Cristal, INRIA Rocquencourt   *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
@@ -43,7 +43,7 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
    - [f]: convert a floating-point argument to decimal notation,
      in the style [dddd.ddd].
    - [F]: convert a floating-point argument to Caml syntax ([dddd.]
-     or [dddd.ddd] or [d.ddd e+-dd])
+     or [dddd.ddd] or [d.ddd e+-dd]).
    - [e] or [E]: convert a floating-point argument to decimal notation,
      in the style [d.ddd e+-dd] (mantissa and exponent).
    - [g] or [G]: convert a floating-point argument to decimal notation,
@@ -65,10 +65,12 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
      in the output of [fprintf] at the current point.
    - [t]: same as [%a], but takes only one argument (with type
      [out_channel -> unit]) and apply it to [outchan].
-   - [\{ fmt %\}]: convert a format string argument to its minimal
-     specification. The argument must have the same type as [fmt].
-   - [\( fmt %\)]: printing format substitution. Use a format string
-     argument to replace [fmt]. The argument must have the same type as [fmt].
+   - [\{ fmt %\}]: convert a format string argument. The argument
+     must have the same type as the internal format string [fmt].
+   - [\( fmt %\)]: format string substitution. This convertion takes a
+     format string argument and substitutes it to the specification
+     [fmt] to print following arguments. The format string argument
+     must have the same type as [fmt].
    - [!]: take no argument and flush the output.
    - [%]: take no argument and output one [%] character.
 
@@ -87,17 +89,7 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
    fill at least 6 characters; and [%.4f] prints a float with 4
    fractional digits.  Each or both of the integer literals can also be
    specified as a [*], in which case an extra integer argument is taken
-   to specify the corresponding width or precision.
-   
-   Warning: if too few arguments are provided,
-   for instance because the [printf] function is partially
-   applied, the format is immediately printed up to
-   the conversion of the first missing argument; printing
-   will then resume when the missing arguments are provided.
-   For example, [List.iter (printf "x=%d y=%d " 1) [2;3]]
-   prints [x=1 y=2 3] instead of the expected
-   [x=1 y=2 x=1 y=3].  To get the expected behavior, do
-   [List.iter (fun y -> printf "x=%d y=%d " 1 y) [2;3]]. *)
+   to specify the corresponding width or precision. *)
 
 val printf : ('a, out_channel, unit) format -> 'a
 (** Same as {!Printf.fprintf}, but output on [stdout]. *)
@@ -130,13 +122,20 @@ val kprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b;;
 (**/**)
 
 (* For system use only.  Don't call directly. *)
+type sz;;
 
-val scan_format :
-  string -> int -> (string -> int -> 'a) -> ('b -> 'c -> int -> 'd) ->
-  ('e -> int -> 'f) -> (int -> 'g) ->
-  (('h, 'i, 'j, 'k) format4 -> int -> 'a) -> 'a
+external sz_of_int : int -> sz = "%identity";;
+external int_of_sz : sz -> int = "%identity";;
+
+val scan_format : string -> 'a array -> sz -> int ->
+  (sz -> string -> int -> 'b) ->
+  (sz -> 'c -> 'd -> int -> 'b) ->
+  (sz -> 'e -> int -> 'b) ->
+  (sz -> int -> 'b) ->
+  (sz -> ('h, 'i, 'j, 'k) format4 -> int -> 'b) -> 'b
 
 val sub_format :
   (string -> int) -> (string -> int -> char -> int) ->
   char -> string -> int -> int
 val summarize_format_type : string -> string
+val kapr : (string -> Obj.t array -> 'a) -> string -> 'a

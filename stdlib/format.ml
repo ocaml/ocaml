@@ -19,6 +19,11 @@
 
  **************************************************************)
 
+type size;;
+
+external size_of_int : int -> size = "%identity";;
+external int_of_size : size -> int = "%identity";;
+
 (* Tokens are one of the following : *)
 
 type pp_token =
@@ -58,7 +63,9 @@ and tblock = Pp_tbox of int list ref  (* Tabulation box *)
    elements are tuples (size, token, length), where
    size is set when the size of the block is known
    len is the declared length of the token. *)
-type pp_queue_elem = {mutable elem_size : int; token : pp_token; length : int};;
+type pp_queue_elem = {
+  mutable elem_size : size; token : pp_token; length : int
+};;
 
 (* Scan stack:
    each element is (left_total, queue element) where left_total
@@ -249,7 +256,7 @@ let pp_skip_token state =
     match take_queue state.pp_queue with
     {elem_size = size; length = len} ->
        state.pp_left_total <- state.pp_left_total - len;
-       state.pp_space_left <- state.pp_space_left + size;;
+       state.pp_space_left <- state.pp_space_left + int_of_size size;;
 
 (**************************************************************
 
@@ -379,6 +386,7 @@ let rec advance_left state =
     try
      match peek_queue state.pp_queue with
       {elem_size = size; token = tok; length = len} ->
+       let size = int_of_size size in
        if not
         (size < 0 &&
          (state.pp_right_total - state.pp_left_total < state.pp_space_left))
@@ -393,17 +401,24 @@ let rec advance_left state =
 let enqueue_advance state tok = pp_enqueue state tok; advance_left state;;
 
 (* To enqueue a string : try to advance. *)
-let enqueue_string_as state n s =
-    enqueue_advance state {elem_size = n; token = Pp_text s; length = n};;
+let make_queue_elem size tok len =
+ {elem_size = size; token = tok; length = len};;
 
-let enqueue_string state s = enqueue_string_as state (String.length s) s;;
+let enqueue_string_as state size s =
+  let len = int_of_size size in
+  enqueue_advance state (make_queue_elem size (Pp_text s) len);;
+
+let enqueue_string state s =
+  let len = String.length s in
+  enqueue_string_as state (size_of_int len) s;;
 
 (* Routines for scan stack
    determine sizes of blocks. *)
 
 (* The scan_stack is never empty. *)
 let scan_stack_bottom =
-    [Scan_elem (-1, {elem_size = (-1); token = Pp_text ""; length = 0})];;
+  let q_elem = make_queue_elem (size_of_int (-1)) (Pp_text "") 0 in
+  [Scan_elem (-1, q_elem)];;
 
 (* Set size of blocks on scan stack:
    if ty = true then size of break is set else size of block is set;
@@ -416,21 +431,23 @@ let clear_scan_stack state = state.pp_scan_stack <- scan_stack_bottom;;
    since scan_push is used on breaks and opening of boxes. *)
 let set_size state ty =
     match state.pp_scan_stack with
-    | Scan_elem (left_tot,
-                 ({elem_size = size; token = tok} as queue_elem)) :: t ->
+    | Scan_elem
+        (left_tot,
+         ({elem_size = size; token = tok} as queue_elem)) :: t ->
+       let size = int_of_size size in
        (* test if scan stack contains any data that is not obsolete. *)
        if left_tot < state.pp_left_total then clear_scan_stack state else
         begin match tok with
         | Pp_break (_, _) | Pp_tbreak (_, _) ->
            if ty then
             begin
-             queue_elem.elem_size <- state.pp_right_total + size;
+             queue_elem.elem_size <- size_of_int (state.pp_right_total + size);
              state.pp_scan_stack <- t
             end
         | Pp_begin (_, _) ->
            if not ty then
             begin
-             queue_elem.elem_size <- state.pp_right_total + size;
+             queue_elem.elem_size <- size_of_int (state.pp_right_total + size);
              state.pp_scan_stack <- t
             end
         | _ -> () (* scan_push is only used for breaks and boxes. *)
@@ -450,9 +467,12 @@ let scan_push state b tok =
 let pp_open_box_gen state indent br_ty =
     state.pp_curr_depth <- state.pp_curr_depth + 1;
     if state.pp_curr_depth < state.pp_max_boxes then
-      (scan_push state false
-        {elem_size = (- state.pp_right_total);
-         token = Pp_begin (indent, br_ty); length = 0}) else
+      let elem =
+        make_queue_elem
+          (size_of_int (- state.pp_right_total))
+          (Pp_begin (indent, br_ty))
+          0 in
+      scan_push state false elem else
     if state.pp_curr_depth = state.pp_max_boxes
     then enqueue_string state state.pp_ellipsis;;
 
@@ -465,7 +485,8 @@ let pp_close_box state () =
      begin
       if state.pp_curr_depth < state.pp_max_boxes then
        begin
-        pp_enqueue state {elem_size = 0; token = Pp_end; length = 0};
+        pp_enqueue state
+          {elem_size = size_of_int 0; token = Pp_end; length = 0};
         set_size state true; set_size state false
        end;
       state.pp_curr_depth <- state.pp_curr_depth - 1;
@@ -478,12 +499,13 @@ let pp_open_tag state tag_name =
       state.pp_print_open_tag tag_name end;
     if state.pp_mark_tags then
       pp_enqueue state
-        {elem_size = 0; token = Pp_open_tag tag_name; length = 0};;
+        {elem_size = size_of_int 0; token = Pp_open_tag tag_name; length = 0};;
 
 (* Close a tag, popping it from the tag stack. *)
 let pp_close_tag state () =
     if state.pp_mark_tags then
-      pp_enqueue state {elem_size = 0; token = Pp_close_tag; length = 0};
+      pp_enqueue state
+        {elem_size = size_of_int 0; token = Pp_close_tag; length = 0};
     if state.pp_print_tags then
       begin match state.pp_tag_stack with
       | tag_name :: tags ->
@@ -546,11 +568,15 @@ let pp_flush_queue state b =
  **************************************************************)
 
 (* To format a string. *)
-let pp_print_as state n s =
+let pp_print_as_size state size s =
   if state.pp_curr_depth < state.pp_max_boxes
-  then enqueue_string_as state n s;;
+  then enqueue_string_as state size s;;
 
-let pp_print_string state s = pp_print_as state (String.length s) s;;
+let pp_print_as state isize s =
+  pp_print_as_size state (size_of_int isize) s;;
+
+let pp_print_string state s =
+  pp_print_as state (String.length s) s;;
 
 (* To format an integer. *)
 let pp_print_int state i = pp_print_string state (string_of_int i);;
@@ -563,7 +589,9 @@ let pp_print_bool state b = pp_print_string state (string_of_bool b);;
 
 (* To format a char. *)
 let pp_print_char state c =
-  let s = String.create 1 in s.[0] <- c; pp_print_as state 1 s;;
+  let s = String.create 1 in
+  s.[0] <- c;
+  pp_print_as state 1 s;;
 
 (* Opening boxes. *)
 let pp_open_hbox state () = pp_open_box_gen state 0 Pp_hbox
@@ -583,12 +611,12 @@ and pp_print_flush state () =
 (* To get a newline when one does not want to close the current block. *)
 let pp_force_newline state () =
   if state.pp_curr_depth < state.pp_max_boxes then
-    enqueue_advance state {elem_size = 0; token = Pp_newline; length = 0};;
+    enqueue_advance state (make_queue_elem (size_of_int 0) Pp_newline 0);;
 
 (* To format something if the line has just been broken. *)
 let pp_print_if_newline state () =
   if state.pp_curr_depth < state.pp_max_boxes then
-    enqueue_advance state {elem_size = 0; token = Pp_if_newline; length = 0};;
+    enqueue_advance state (make_queue_elem (size_of_int 0) Pp_if_newline 0);;
 
 (* Breaks: indicate where a block may be broken.
    If line is broken then offset is added to the indentation of the current
@@ -596,9 +624,12 @@ let pp_print_if_newline state () =
    To do (?) : add a maximum width and offset value. *)
 let pp_print_break state width offset =
   if state.pp_curr_depth < state.pp_max_boxes then
-    scan_push state true
-     {elem_size = (- state.pp_right_total); token = Pp_break (width, offset);
-      length = width};;
+    let elem =
+      make_queue_elem
+        (size_of_int (- state.pp_right_total))
+        (Pp_break (width, offset))
+        width in
+    scan_push state true elem;;
 
 let pp_print_space state () = pp_print_break state 1 0
 and pp_print_cut state () = pp_print_break state 0 0;;
@@ -607,29 +638,35 @@ and pp_print_cut state () = pp_print_break state 0 0;;
 let pp_open_tbox state () =
   state.pp_curr_depth <- state.pp_curr_depth + 1;
   if state.pp_curr_depth < state.pp_max_boxes then
-    enqueue_advance state
-      {elem_size = 0;
-       token = Pp_tbegin (Pp_tbox (ref [])); length = 0};;
+    let elem =
+      make_queue_elem (size_of_int 0) (Pp_tbegin (Pp_tbox (ref []))) 0 in
+    enqueue_advance state elem;;
 
 (* Close a tabulation block. *)
 let pp_close_tbox state () =
   if state.pp_curr_depth > 1 then begin
    if state.pp_curr_depth < state.pp_max_boxes then
-    enqueue_advance state {elem_size = 0; token = Pp_tend; length = 0};
-   state.pp_curr_depth <- state.pp_curr_depth - 1 end;;
+     let elem = make_queue_elem (size_of_int 0) Pp_tend 0 in
+     enqueue_advance state elem;
+     state.pp_curr_depth <- state.pp_curr_depth - 1 end;;
 
 (* Print a tabulation break. *)
 let pp_print_tbreak state width offset =
   if state.pp_curr_depth < state.pp_max_boxes then
-    scan_push state true
-     {elem_size = (- state.pp_right_total); token = Pp_tbreak (width, offset);
-      length = width};;
+    let elem =
+      make_queue_elem
+        (size_of_int (- state.pp_right_total))
+        (Pp_tbreak (width, offset))
+        width in
+    scan_push state true elem;;
 
 let pp_print_tab state () = pp_print_tbreak state 0 0;;
 
 let pp_set_tab state () =
-  if state.pp_curr_depth < state.pp_max_boxes
-  then enqueue_advance state {elem_size = 0; token = Pp_stab; length=0};;
+  if state.pp_curr_depth < state.pp_max_boxes then
+    let elem =
+      make_queue_elem (size_of_int 0) Pp_stab 0 in
+    enqueue_advance state elem;;
 
 (**************************************************************
 
@@ -719,7 +756,7 @@ let pp_make_formatter f g h i =
  (* The initial state of the formatter contains a dummy box. *)
  let pp_q = make_queue () in
  let sys_tok =
-     {elem_size = (- 1); token = Pp_begin (0, Pp_hovbox); length = 0} in
+   make_queue_elem (size_of_int (-1)) (Pp_begin (0, Pp_hovbox)) 0 in
  add_queue sys_tok pp_q;
  let sys_scan_stack =
      (Scan_elem (1, sys_tok)) :: scan_stack_bottom in
@@ -774,10 +811,8 @@ let make_formatter f g =
 let formatter_of_out_channel oc =
   make_formatter (output oc) (fun () -> flush oc);;
 
-let unit_out ppf = ();;
-
 let formatter_of_buffer b =
-  make_formatter (Buffer.add_substring b) unit_out;;
+  make_formatter (Buffer.add_substring b) ignore;;
 
 let stdbuf = Buffer.create 512;;
 
@@ -897,8 +932,10 @@ let invalid_integer fmt i =
 
 (* Finding an integer out of a sub-string of the format. *)
 let format_int_of_string fmt i s =
-  try int_of_string s with
-  | Failure s -> invalid_integer fmt i;;
+  let sz =
+    try int_of_string s with
+    | Failure s -> invalid_integer fmt i in
+  size_of_int sz;;
 
 (* Getting strings out of buffers. *)
 let get_buffer_out b =
@@ -926,6 +963,8 @@ let implode_rev s0 = function
   | [] -> s0
   | l -> String.concat "" (List.rev (s0 :: l));;
 
+external format_to_string : ('a, 'b, 'c, 'd) format4 -> string = "%identity";;
+
 (* [fprintf_out] is the printf-like function generator: given the
    - [str] flag that tells if we are printing into a string,
    - the [out] function that has to be called at the end of formatting,
@@ -934,204 +973,216 @@ let implode_rev s0 = function
    according to the format.
    Regular [fprintf]-like functions of this module are obtained via partial
    applications of [fprintf_out]. *)
-let rec fprintf_out str out ppf fmt =
+let mkprintf str get_out =
+  let rec kprintf k fmt =
+    let fmt = format_to_string fmt in
+    let len = String.length fmt in
 
-  let fmt = string_of_format fmt in
-  let limit = String.length fmt in
+    let kpr fmt v =
+      let ppf = get_out fmt in
+      let print_as = ref None in
+      let pp_print_as_char c =
+          match !print_as with
+          | None -> pp_print_char ppf c
+          | Some size ->
+             pp_print_as_size ppf size (String.make 1 c);
+             print_as := None
+      and pp_print_as_string s =
+          match !print_as with
+          | None -> pp_print_string ppf s
+          | Some size ->
+             pp_print_as_size ppf size s;
+             print_as := None in
 
-  let print_as = ref None in
-
-  let pp_print_as_char c =
-      match !print_as with
-      | None -> pp_print_char ppf c
-      | Some size ->
-         pp_print_as ppf size (String.make 1 c);
-         print_as := None
-  and pp_print_as_string s =
-      match !print_as with
-      | None -> pp_print_string ppf s
-      | Some size ->
-         pp_print_as ppf size s;
-         print_as := None in
-
-  let rec doprn i =
-    if i >= limit then Obj.magic (out ppf) else
-    match fmt.[i] with
-    | '%' ->
-        Printf.scan_format fmt i cont_s cont_a cont_t cont_f cont_m
-    | '@' ->
-        let i = succ i in
-        if i >= limit then invalid_format fmt i else
-        begin match fmt.[i] with
-        | '[' ->
-           do_pp_open_box ppf (succ i)
-        | ']' ->
-           pp_close_box ppf ();
-           doprn (succ i)
-        | '{' ->
-           do_pp_open_tag ppf (succ i)
-        | '}' ->
-           pp_close_tag ppf ();
-           doprn (succ i)
-        | ' ' ->
-           pp_print_space ppf ();
-           doprn (succ i)
-        | ',' ->
-           pp_print_cut ppf ();
-           doprn (succ i)
-        | '?' ->
-           pp_print_flush ppf ();
-           doprn (succ i)
-        | '.' ->
-           pp_print_newline ppf ();
-           doprn (succ i)
-        | '\n' ->
-           pp_force_newline ppf ();
-           doprn (succ i)
-        | ';' ->
-           do_pp_break ppf (succ i)
-        | '<' ->
-           let got_size size i =
-             print_as := Some size;
-             doprn (skip_gt i) in
-           get_int (succ i) got_size
-        | '@' as c ->
+      let rec doprn n i =
+        if i >= len then Obj.magic (k ppf) else
+        match fmt.[i] with
+        | '%' ->
+            Printf.scan_format fmt v n i cont_s cont_a cont_t cont_f cont_m
+        | '@' ->
+            let i = succ i in
+            if i >= len then invalid_format fmt i else
+            begin match fmt.[i] with
+            | '[' ->
+               do_pp_open_box ppf n (succ i)
+            | ']' ->
+               pp_close_box ppf ();
+               doprn n (succ i)
+            | '{' ->
+               do_pp_open_tag ppf n (succ i)
+            | '}' ->
+               pp_close_tag ppf ();
+               doprn n (succ i)
+            | ' ' ->
+               pp_print_space ppf ();
+               doprn n (succ i)
+            | ',' ->
+               pp_print_cut ppf ();
+               doprn n (succ i)
+            | '?' ->
+               pp_print_flush ppf ();
+               doprn n (succ i)
+            | '.' ->
+               pp_print_newline ppf ();
+               doprn n (succ i)
+            | '\n' ->
+               pp_force_newline ppf ();
+               doprn n (succ i)
+            | ';' ->
+               do_pp_break ppf n (succ i)
+            | '<' ->
+               let got_size size n i =
+                 print_as := Some size;
+                 doprn n (skip_gt i) in
+               get_int n (succ i) got_size
+            | '@' as c ->
+               pp_print_as_char c;
+               doprn n (succ i)
+            | c -> invalid_format fmt i
+            end
+        | c ->
            pp_print_as_char c;
-           doprn (succ i)
-        | c -> invalid_format fmt i
-        end
-    | c ->
-       pp_print_as_char c;
-       doprn (succ i)
+           doprn n (succ i)
 
-  and cont_s s i =
-    pp_print_as_string s; doprn i
-  and cont_a printer arg i =
-    if str then
-      pp_print_as_string ((Obj.magic printer : unit -> _ -> string) () arg)
-    else
-      printer ppf arg;
-    doprn i
-  and cont_t printer i =
-    if str then
-      pp_print_as_string ((Obj.magic printer : unit -> string) ())
-    else
-      printer ppf;
-    doprn i
-  and cont_f i =
-    pp_print_flush ppf (); doprn i
+      and cont_s n s i =
+        pp_print_as_string s; doprn n i
+      and cont_a n printer arg i =
+        if str then
+          pp_print_as_string ((Obj.magic printer : unit -> _ -> string) () arg)
+        else
+          printer ppf arg;
+        doprn n i
+      and cont_t n printer i =
+        if str then
+          pp_print_as_string ((Obj.magic printer : unit -> string) ())
+        else
+          printer ppf;
+        doprn n i
+      and cont_f n i =
+        pp_print_flush ppf (); doprn n i
 
-  and cont_m sfmt i =
-    fprintf_out str (fun ppf -> Obj.magic doprn i) ppf sfmt
+      and cont_m n sfmt i =
+        kprintf (Obj.magic (fun _ -> doprn n i)) sfmt
 
-  and get_int i c =
-   if i >= limit then invalid_integer fmt i else
-   match fmt.[i] with
-   | ' ' -> get_int (succ i) c
-   | '%' ->
-      let cont_s s i = c (format_int_of_string fmt i s) i
-      and cont_a printer arg i = invalid_integer fmt i
-      and cont_t printer i = invalid_integer fmt i
-      and cont_f i = invalid_integer fmt i in
-      Printf.scan_format fmt i cont_s cont_a cont_t cont_f cont_m
-   | _ ->
-      let rec get j =
-       if j >= limit then invalid_integer fmt j else
-       match fmt.[j] with
-       | '0' .. '9' | '-' -> get (succ j)
+      and get_int n i c =
+       if i >= len then invalid_integer fmt i else
+       match fmt.[i] with
+       | ' ' -> get_int n (succ i) c
+       | '%' ->
+          let cont_s n s i = c (format_int_of_string fmt i s) n i
+          and cont_a n printer arg i = invalid_integer fmt i
+          and cont_t n printer i = invalid_integer fmt i
+          and cont_f n i = invalid_integer fmt i
+          and cont_m n sfmt i = invalid_integer fmt i in
+          Printf.scan_format fmt v n i cont_s cont_a cont_t cont_f cont_m
        | _ ->
-         if j = i then c 0 j else
-         c (format_int_of_string fmt j (String.sub fmt i (j - i))) j in
-      get i
+          let rec get j =
+           if j >= len then invalid_integer fmt j else
+           match fmt.[j] with
+           | '0' .. '9' | '-' -> get (succ j)
+           | _ ->
+             let size =
+             if j = i then size_of_int 0 else
+                format_int_of_string fmt j (String.sub fmt i (j - i)) in
+             c size n j in
+          get i
 
-  and skip_gt i =
-   if i >= limit then invalid_format fmt i else
-   match fmt.[i] with
-   | ' ' -> skip_gt (succ i)
-   | '>' -> succ i
-   | _ -> invalid_format fmt i
+      and skip_gt i =
+       if i >= len then invalid_format fmt i else
+       match fmt.[i] with
+       | ' ' -> skip_gt (succ i)
+       | '>' -> succ i
+       | _ -> invalid_format fmt i
 
-  and get_box_kind i =
-   if i >= limit then Pp_box, i else
-   match fmt.[i] with
-   | 'h' ->
-      let i = succ i in
-      if i >= limit then Pp_hbox, i else
-      begin match fmt.[i] with
-      | 'o' ->
-         let i = succ i in
-         if i >= limit then format_invalid_arg "bad box format" fmt i else
-         begin match fmt.[i] with
-         | 'v' -> Pp_hovbox, succ i
-         | c ->
-            format_invalid_arg
-              ("bad box name ho" ^ String.make 1 c) fmt i end
-      | 'v' -> Pp_hvbox, succ i
-      | c -> Pp_hbox, i
-      end
-   | 'b' -> Pp_box, succ i
-   | 'v' -> Pp_vbox, succ i
-   | _ -> Pp_box, i
+      and get_box_kind i =
+       if i >= len then Pp_box, i else
+       match fmt.[i] with
+       | 'h' ->
+          let i = succ i in
+          if i >= len then Pp_hbox, i else
+          begin match fmt.[i] with
+          | 'o' ->
+             let i = succ i in
+             if i >= len then format_invalid_arg "bad box format" fmt i else
+             begin match fmt.[i] with
+             | 'v' -> Pp_hovbox, succ i
+             | c ->
+                format_invalid_arg
+                  ("bad box name ho" ^ String.make 1 c) fmt i end
+          | 'v' -> Pp_hvbox, succ i
+          | c -> Pp_hbox, i
+          end
+       | 'b' -> Pp_box, succ i
+       | 'v' -> Pp_vbox, succ i
+       | _ -> Pp_box, i
 
-  and get_tag_name i c =
-   let rec get accu i j =
-    if j >= limit
-    then c (implode_rev (String.sub fmt i (j - i)) accu) j else
-    match fmt.[j] with
-    | '>' -> c (implode_rev (String.sub fmt i (j - i)) accu) j
-    | '%' ->
-       let s0 = String.sub fmt i (j - i) in
-       let cont_s s i = get (s :: s0 :: accu) i i
-       and cont_a printer arg i =
-         let s =
-           if str then (Obj.magic printer : unit -> _ -> string) () arg
-                  else exstring printer arg in
-         get (s :: s0 :: accu) i i
-       and cont_t printer i =
-         let s =
-           if str then (Obj.magic printer : unit -> string) ()
-           else exstring (fun ppf () -> printer ppf) () in
-         get (s :: s0 :: accu) i i
-       and cont_f i =
-         format_invalid_arg "bad tag name specification" fmt i in
-       Printf.scan_format fmt j cont_s cont_a cont_t cont_f cont_m
-    | c -> get accu i (succ j) in
-   get [] i i
+      and get_tag_name n i c =
+       let rec get accu n i j =
+        if j >= len
+        then c (implode_rev (String.sub fmt i (j - i)) accu) n j else
+        match fmt.[j] with
+        | '>' -> c (implode_rev (String.sub fmt i (j - i)) accu) n j
+        | '%' ->
+          let s0 = String.sub fmt i (j - i) in
+          let cont_s n s i = get (s :: s0 :: accu) n i i
+          and cont_a n printer arg i =
+            let s =
+              if str
+              then (Obj.magic printer : unit -> _ -> string) () arg
+              else exstring printer arg in
+            get (s :: s0 :: accu) n i i
+          and cont_t n printer i =
+            let s =
+              if str
+              then (Obj.magic printer : unit -> string) ()
+              else exstring (fun ppf () -> printer ppf) () in
+            get (s :: s0 :: accu) n i i
+          and cont_f n i =
+            format_invalid_arg "bad tag name specification" fmt i
+          and cont_m n sfmt i =
+            format_invalid_arg "bad tag name specification" fmt i in
+          Printf.scan_format fmt v n j cont_s cont_a cont_t cont_f cont_m
+        | c -> get accu n i (succ j) in
+       get [] n i i
 
-  and do_pp_break ppf i =
-   if i >= limit then begin pp_print_space ppf (); doprn i end else
-   match fmt.[i] with
-   | '<' ->
-      let rec got_nspaces nspaces i =
-        get_int i (got_offset nspaces)
-      and got_offset nspaces offset i =
-        pp_print_break ppf nspaces offset;
-        doprn (skip_gt i) in
-      get_int (succ i) got_nspaces
-   | c -> pp_print_space ppf (); doprn i
+      and do_pp_break ppf n i =
+       if i >= len then begin pp_print_space ppf (); doprn n i end else
+       match fmt.[i] with
+       | '<' ->
+          let rec got_nspaces nspaces n i =
+            get_int n i (got_offset nspaces)
+          and got_offset nspaces offset n i =
+            pp_print_break ppf (int_of_size nspaces) (int_of_size offset);
+            doprn n (skip_gt i) in
+          get_int n (succ i) got_nspaces
+       | c -> pp_print_space ppf (); doprn n i
 
-  and do_pp_open_box ppf i =
-   if i >= limit then begin pp_open_box_gen ppf 0 Pp_box; doprn i end else
-   match fmt.[i] with
-   | '<' ->
-      let kind, i = get_box_kind (succ i) in
-      let got_size size i =
-        pp_open_box_gen ppf size kind;
-        doprn (skip_gt i) in
-      get_int i got_size
-   | c -> pp_open_box_gen ppf 0 Pp_box; doprn i
+      and do_pp_open_box ppf n i =
+       if i >= len then begin pp_open_box_gen ppf 0 Pp_box; doprn n i end else
+       match fmt.[i] with
+       | '<' ->
+          let kind, i = get_box_kind (succ i) in
+          let got_size size n i =
+            pp_open_box_gen ppf (int_of_size size) kind;
+            doprn n (skip_gt i) in
+          get_int n i got_size
+       | c -> pp_open_box_gen ppf 0 Pp_box; doprn n i
 
-  and do_pp_open_tag ppf i =
-   if i >= limit then begin pp_open_tag ppf ""; doprn i end else
-   match fmt.[i] with
-   | '<' ->
-      let got_name tag_name i =
-        pp_open_tag ppf tag_name;
-        doprn (skip_gt i) in
-      get_tag_name (succ i) got_name
-   | c -> pp_open_tag ppf ""; doprn i in
+      and do_pp_open_tag ppf n i =
+       if i >= len then begin pp_open_tag ppf ""; doprn n i end else
+       match fmt.[i] with
+       | '<' ->
+          let got_name tag_name n i =
+            pp_open_tag ppf tag_name;
+            doprn n (skip_gt i) in
+          get_tag_name n (succ i) got_name
+       | c -> pp_open_tag ppf ""; doprn n i in
 
-  doprn 0;;
+      doprn (Printf.sz_of_int 0) 0 in
+
+   Printf.kapr kpr fmt in
+
+  kprintf;;
 
 (**************************************************************
 
@@ -1139,22 +1190,24 @@ let rec fprintf_out str out ppf fmt =
 
  **************************************************************)
 
-let kfprintf k = fprintf_out false k;;
-let fprintf ppf = kfprintf unit_out ppf;;
-let printf f = fprintf std_formatter f;;
-let eprintf f = fprintf err_formatter f;;
+let kfprintf k ppf = mkprintf false (fun _ -> ppf) k;;
 
-let bprintf b =
- let ppf = formatter_of_buffer b in
- kfprintf (fun ppf -> pp_flush_queue ppf false) ppf;;
+let fprintf ppf = kfprintf ignore ppf;;
+let printf fmt = fprintf std_formatter fmt;;
+let eprintf fmt = fprintf err_formatter fmt;;
+
+let kbprintf k b =
+  mkprintf false (fun _ -> formatter_of_buffer b) k;;
+
+let bprintf b = kbprintf ignore b;;
 
 let ksprintf k =
- let b = Buffer.create 512 in
- let ppf = formatter_of_buffer b in
- fprintf_out true (fun ppf -> k (string_out b ppf)) ppf;;
-
-let sprintf f = ksprintf (fun s -> s) f;;
+  let b = Buffer.create 512 in
+  let k ppf = k (string_out b ppf) in
+  mkprintf true (fun _ -> formatter_of_buffer b) k;;
 
 let kprintf = ksprintf;;
+
+let sprintf fmt = ksprintf (fun s -> s) fmt;;
 
 at_exit print_flush;;

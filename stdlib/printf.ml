@@ -2,7 +2,7 @@
 (*                                                                     *)
 (*                           Objective Caml                            *)
 (*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(*  Xavier Leroy and Pierre Weis, projet Cristal, INRIA Rocquencourt   *)
 (*                                                                     *)
 (*  Copyright 1996 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
@@ -19,6 +19,15 @@ external format_nativeint: string -> nativeint -> string
                          = "caml_nativeint_format"
 external format_int64: string -> int64 -> string = "caml_int64_format"
 external format_float: string -> float -> string = "caml_format_float"
+
+external format_to_string: ('a, 'b, 'c, 'd) format4 -> string = "%identity"
+
+type sz;;
+
+external sz_of_int : int -> sz = "%identity";;
+external int_of_sz : sz -> int = "%identity";;
+
+let succs sz = sz_of_int (succ (int_of_sz sz));;
 
 let bad_conversion fmt i c =
   invalid_arg
@@ -99,20 +108,58 @@ let sub_format incomplete_format bad_conversion conv fmt i =
     let rec sub j =
        if j >= len then incomplete_format fmt else
        match fmt.[j] with
-       | '%' -> sub_sub (j + 1)
-       | _ -> sub (j + 1)
+       | '%' -> sub_sub (succ j)
+       | _ -> sub (succ j)
     and sub_sub j =
        if j >= len then incomplete_format fmt else
        match fmt.[j] with
        | '(' | '{' as c ->
-         let j = sub_fmt c (j + 1) in sub (j + 1)
+         let j = sub_fmt c (succ j) in sub (succ j)
        | ')' | '}' as c ->
          if c = close then j else bad_conversion fmt i c
-       | _ -> sub (j + 1) in
+       | _ -> sub (succ j) in
     sub i in
   sub_fmt conv i;;
 
 let sub_format_for_printf = sub_format incomplete_format bad_conversion;;
+
+let iter_format_args fmt add_conv add_char =
+  let len = String.length fmt in
+  let rec scan_flags skip i =
+    if i >= len then incomplete_format fmt else
+    match String.unsafe_get fmt i with
+    | '*' -> scan_flags skip (add_conv skip i 'i')
+    | '#' | '-' | ' ' | '+' -> scan_flags skip (succ i)
+    | '_' -> scan_flags true (succ i)
+    | '0'..'9'
+    | '.'  -> scan_flags skip (succ i)
+    | _ -> scan_conv skip i
+  and scan_conv skip i =
+    if i >= len then incomplete_format fmt else
+    match String.unsafe_get fmt i with
+    | '%' | '!' -> succ i
+    | 's' | 'S' | '[' -> add_conv skip i 's'
+    | 'c' | 'C' -> add_conv skip i 'c'
+    | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' | 'N' -> add_conv skip i 'i'
+    | 'f' | 'e' | 'E' | 'g' | 'G' | 'F' -> add_conv skip i 'f'
+    | 'B' | 'b' -> add_conv skip i 'B'
+    | 'a' | 't' as conv -> add_conv skip i conv
+    | 'l' | 'n' | 'L' as conv ->
+        let j = succ i in
+        if j >= len then add_conv skip i 'i' else begin
+          match fmt.[j] with
+          | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
+            add_char skip (add_conv skip i conv) 'i'
+          | c -> add_conv skip i 'i' end
+    | '{' | '(' as conv -> add_conv skip i conv
+    | '}' | ')' as conv -> add_conv skip i conv
+    | conv -> bad_conversion fmt i conv in
+  let lim = len - 1 in
+  let rec loop i =
+    if i < lim then
+     if fmt.[i] = '%' then loop (scan_flags false (succ i)) else
+     loop (succ i) in
+  loop 0;;
 
 (* Returns a string that summarizes the typing information that a given
    format string contains.
@@ -121,43 +168,56 @@ let sub_format_for_printf = sub_format incomplete_format bad_conversion;;
 let summarize_format_type fmt =
   let len = String.length fmt in
   let b = Buffer.create len in
-  let add i c = Buffer.add_char b c; i + 1 in
-  let add_conv i c = Buffer.add_char b '%'; add i c in
-  let rec scan_flags i =
-    if i >= len then incomplete_format fmt else
-    match String.unsafe_get fmt i with
-    | '*' -> scan_flags (add_conv i '*')
-    | '#' | '-' | ' ' | '+' -> scan_flags (succ i)
-    | '_' -> Buffer.add_char b '_'; scan_flags (i + 1)
-    | '0'..'9'
-    | '.'  -> scan_flags (succ i)
-    | _ -> scan_conv i
-  and scan_conv i =
-    if i >= len then incomplete_format fmt else
-    match String.unsafe_get fmt i with
-    | '%' | '!' -> succ i
-    | 's' | 'S' | '[' -> add_conv i 's'
-    | 'c' | 'C' -> add i 'c'
-    | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' | 'N' -> add_conv i 'i'
-    | 'f' | 'e' | 'E' | 'g' | 'G' | 'F' -> add_conv i 'f'
-    | 'B' | 'b' -> add_conv i 'B'
-    | 'a' | 't' as conv -> add_conv i conv
-    | 'l' | 'n' | 'L' as conv ->
-        let j = i + 1 in
-        if j >= len then add_conv i 'i' else begin
-          match fmt.[j] with
-          | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' -> add (add_conv i conv) 'i'
-          | c -> add_conv i 'i' end
-    | '{' | '(' as conv -> add_conv i conv
-    | '}' | ')' as conv -> add_conv i conv
-    | conv -> bad_conversion fmt i conv in
-  let lim = len - 1 in
-  let rec loop i =
-    if i < lim then
-     if fmt.[i] = '%' then loop (scan_flags (i + 1)) else
-     loop (i + 1) in
-  loop 0;
+  let add i c = Buffer.add_char b c; succ i in
+  let add_char skip i c =
+    if skip then succ i else add i c
+  and add_conv skip i c =
+    if skip then Buffer.add_string b "%_" else Buffer.add_char b '%';
+    add i c in
+  iter_format_args fmt add_conv add_char;
   Buffer.contents b;;
+
+(* Computes the number of arguments of a format (including flag
+   arguments if any). *)
+let nargs_of_format_type fmt =
+  let num_args = ref 0
+  and skip_args = ref 0 in
+  let add_conv skip i c =
+    let incr_args n = if c = 'a' then n := !n + 2 else n := !n + 1 in
+    if skip then incr_args skip_args else incr_args num_args;
+    succ i
+  and add_char skip i c = succ i in
+  iter_format_args fmt add_conv add_char;
+  !skip_args + !num_args;;
+
+let list_iter_i f l =
+  let rec loop i = function
+  | [] -> ()
+  | x :: xs -> f i x; loop (succ i) xs in
+  loop 0 l;;
+
+(* Abstracting version of kprintf: returns a (curried) function that
+   will print when totally applied. *)
+let kapr kpr fmt =
+
+  let nargs = nargs_of_format_type fmt in
+
+  match nargs with
+  | 0 -> kpr fmt [||]
+  | 1 -> Obj.magic (fun x -> kpr fmt [|x|])
+  | 2 -> Obj.magic (fun x y -> kpr fmt [|x; y|])
+  | 3 -> Obj.magic (fun x y z -> kpr fmt [|x; y; z|])
+  | 4 -> Obj.magic (fun x y z t -> kpr fmt [|x; y; z; t|])
+  | 5 -> Obj.magic (fun x y z t u -> kpr fmt [|x; y; z; t; u|])
+  | 6 -> Obj.magic (fun x y z t u v -> kpr fmt [|x; y; z; t; u; v|])
+  | nargs ->
+    let rec loop i args =
+      if i >= nargs then
+        let v = Array.make nargs (Obj.repr 0) in
+        list_iter_i (fun i arg -> v.(nargs - i - 1) <- arg) args;
+        kpr fmt v
+      else Obj.magic (fun x -> loop (succ i) (x :: args)) in
+    loop 0 [];;
 
 (* Decode a %format and act on it.
    [fmt] is the printf format style, and [pos] points to a [%] character.
@@ -178,166 +238,155 @@ let summarize_format_type fmt =
    caught by the [_ -> bad_conversion] clauses below.
    Don't do this at home, kids. *)
 
-let scan_format fmt pos cont_s cont_a cont_t cont_f cont_m =
-  let rec scan_flags widths i =
+let scan_format fmt args n pos cont_s cont_a cont_t cont_f cont_m =
+
+  let get_arg args n = Obj.magic args.(int_of_sz n) in
+
+  let rec scan_flags n widths i =
     match String.unsafe_get fmt i with
     | '*' ->
-        Obj.magic(fun w -> scan_flags (w :: widths) (succ i))
-    | '0'..'9' | '.' | '#' | '-' | ' ' | '+' -> scan_flags widths (succ i)
-    | _ -> scan_conv widths i
-  and scan_conv widths i =
+      let (width : int) = get_arg args n in
+      scan_flags (succs n) (width :: widths) (succ i)
+    | '0'..'9' | '.' | '#' | '-' | ' ' | '+' -> scan_flags n widths (succ i)
+    | _ -> scan_conv n widths i
+  and scan_conv n widths i =
     match String.unsafe_get fmt i with
     | '%' ->
-        cont_s "%" (succ i)
+      cont_s n "%" (succ i)
     | 's' | 'S' as conv ->
-        Obj.magic (fun (s : string) ->
-          let s = if conv = 's' then s else "\"" ^ String.escaped s ^ "\"" in
-          if i = succ pos (* optimize for common case %s *)
-          then cont_s s (succ i)
-          else cont_s (format_string (extract_format fmt pos i widths) s)
-                      (succ i))
+      let (x : string) = get_arg args n in
+      let x = if conv = 's' then x else "\"" ^ String.escaped x ^ "\"" in
+      let s =
+        (* optimize for common case %s *)
+        if i = succ pos then x else
+        format_string (extract_format fmt pos i widths) x in
+      cont_s (succs n) s (succ i)
     | 'c' | 'C' as conv ->
-        Obj.magic (fun (c : char) ->
-          if conv = 'c'
-          then cont_s (String.make 1 c) (succ i)
-          else cont_s ("'" ^ Char.escaped c ^ "'") (succ i))
+      let (x : char) = get_arg args n in
+      let s =
+        if conv = 'c' then String.make 1 x else "'" ^ Char.escaped x ^ "'" in
+      cont_s (succs n) s (succ i)
     | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' | 'N' as conv ->
-        Obj.magic (fun (n : int) ->
-          cont_s
-            (format_int_with_conv conv (extract_format fmt pos i widths) n)
-            (succ i))
+      let (x : int) = get_arg args n in
+      let s = format_int_with_conv conv (extract_format fmt pos i widths) x in
+      cont_s (succs n) s (succ i)
     | 'f' | 'e' | 'E' | 'g' | 'G' | 'F' as conv ->
-        Obj.magic (fun (f : float) ->
-          let s =
-            if conv = 'F' then string_of_float f else
-            format_float (extract_format fmt pos i widths) f in
-          cont_s s (succ i))
+      let (x : float) = get_arg args n in
+      let s =
+        if conv = 'F' then string_of_float x else
+        format_float (extract_format fmt pos i widths) x in
+      cont_s (succs n) s (succ i)
     | 'B' | 'b' ->
-        Obj.magic (fun (b : bool) ->
-          cont_s (string_of_bool b) (succ i))
+      let (x : bool) = get_arg args n in
+      cont_s (succs n) (string_of_bool x) (succ i)
     | 'a' ->
-        Obj.magic (fun printer arg ->
-          cont_a printer arg (succ i))
+      let printer = get_arg args n in
+      let n = succs n in
+      let arg = get_arg args n in
+      cont_a (succs n) printer arg (succ i)
     | 't' ->
-        Obj.magic (fun printer ->
-          cont_t printer (succ i))
+      let printer = get_arg args n in
+      cont_t (succs n) printer (succ i)
     | 'l' | 'n' | 'L' as conv ->
-        begin match String.unsafe_get fmt (succ i) with
-        | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
-            begin match conv with
-            | 'l' ->
-               Obj.magic (fun (n : int32) ->
-                 cont_s
-                   (format_int32 (extract_format fmt pos (succ i) widths) n)
-                   (i + 2))
-            | 'n' ->
-               Obj.magic (fun (n : nativeint) ->
-                 cont_s
-                   (format_nativeint (extract_format fmt pos (succ i) widths) n)
-                   (i + 2))
-            | _ ->
-               Obj.magic (fun (n : int64) ->
-                 cont_s
-                   (format_int64 (extract_format fmt pos (succ i) widths) n)
-                   (i + 2))
-            end
-        | _ ->
-           Obj.magic (fun (n : int) ->
-              cont_s
-                (format_int_with_conv 'n' (extract_format fmt pos i widths) n)
-                (succ i))
-        end
-    | '!' ->
-        Obj.magic (cont_f (succ i))
-    | '{' | '(' as conv ->
-        Obj.magic (fun xf ->
-          let i = succ i in
-          let j = sub_format_for_printf conv fmt i + 1 in
-          if conv = '{' then
-            (* Just print the format argument as a specification. *)
-            cont_s (summarize_format_type (string_of_format xf)) j else
-            (* Use the format argument instead of the format specification. *)
-            cont_m xf j)
+      begin match String.unsafe_get fmt (succ i) with
+      | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
+        let s =
+          match conv with
+          | 'l' ->
+            let (x : int32) = get_arg args n in
+            format_int32 (extract_format fmt pos (succ i) widths) x
+          | 'n' ->
+            let (x : nativeint) = get_arg args n in
+            format_nativeint (extract_format fmt pos (succ i) widths) x
+          | _ ->
+            let (x : int64) = get_arg args n in
+            format_int64 (extract_format fmt pos (succ i) widths) x in
+        cont_s (succs n) s (i + 2)
+      | _ ->
+        let (x : int) = get_arg args n in
+        cont_s
+          (succs n)
+          (format_int_with_conv 'n' (extract_format fmt pos i widths) x)
+          (succ i)
+      end
+    | '!' -> cont_f n (succ i)
+    | '{' | '(' as conv (* ')' '}' *)->
+      let (xf : ('a, 'b, 'c, 'd) format4) = get_arg args n in
+      let i = succ i in
+      let j = sub_format_for_printf conv fmt i + 1 in
+      if conv = '{' (* '}' *) then
+        (* Just print the format argument as a specification. *)
+        cont_s (succs n) (summarize_format_type (format_to_string xf)) j else
+        (* Use the format argument instead of the format specification. *)
+        cont_m (succs n) xf j
     | ')' ->
-        Obj.magic (cont_s "" (succ i))
+      cont_s n "" (succ i)
     | conv ->
-        bad_conversion fmt i conv in
-  scan_flags [] (pos + 1)
+      bad_conversion fmt i conv in
 
-(* Application to [fprintf], etc.  See also [Format.*printf]. *)
+  scan_flags n [] (succ pos);;
 
-let rec kfprintf k chan fmt =
-  let fmt = string_of_format fmt in
-  let len = String.length fmt in
+let mkprintf str get_out outc outs flush =
+  let rec kprintf k fmt =
+    let fmt = format_to_string fmt in
+    let len = String.length fmt in
 
-  let rec doprn i =
-    if i >= len then Obj.magic (k chan) else
-    match String.unsafe_get fmt i with
-    | '%' -> scan_format fmt i cont_s cont_a cont_t cont_f cont_m
-    | c -> output_char chan c; doprn (succ i)
-  and cont_s s i =
-    output_string chan s; doprn i
-  and cont_a printer arg i =
-    printer chan arg; doprn i
-  and cont_t printer i =
-    printer chan; doprn i
-  and cont_f i =
-    flush chan; doprn i
-  and cont_m sfmt i =
-    kfprintf (Obj.magic (fun _ -> doprn i)) chan sfmt in
+    let kpr fmt v =
+      let out = get_out fmt in
+      let rec doprn n i =
+        if i >= len then Obj.magic (k out) else
+        match String.unsafe_get fmt i with
+        | '%' -> scan_format fmt v n i cont_s cont_a cont_t cont_f cont_m
+        |  c  -> outc out c; doprn n (succ i)
+      and cont_s n s i =
+        outs out s; doprn n i
+      and cont_a n printer arg i =
+        if str then
+          outs out ((Obj.magic printer : unit -> _ -> string) () arg)
+        else
+          printer out arg;
+        doprn n i
+      and cont_t n printer i =
+        if str then
+          outs out ((Obj.magic printer : unit -> string) ())
+        else
+          printer out;
+        doprn n i
+      and cont_f n i =
+        flush out; doprn n i
+      and cont_m n sfmt i =
+        kprintf (Obj.magic (fun _ -> doprn n i)) sfmt in
 
-  doprn 0
+      doprn (sz_of_int 0) 0 in
 
-let fprintf chan fmt = kfprintf (fun _ -> ()) chan fmt
+    kapr kpr fmt in
 
+  kprintf;;
+
+let kfprintf k oc =
+  mkprintf false (fun _ -> oc) output_char output_string flush k
+let fprintf oc = kfprintf ignore oc
 let printf fmt = fprintf stdout fmt
 let eprintf fmt = fprintf stderr fmt
 
-let rec ksprintf k fmt =
-  let fmt = string_of_format fmt in
-  let len = String.length fmt in
-  let dst = Buffer.create (len + 16) in
-  let rec doprn i =
-    if i >= len then begin
-      let res = Buffer.contents dst in
-      Buffer.clear dst; (* just in case ksprintf is partially applied *)
-      Obj.magic (k res)
-    end else
-    match String.unsafe_get fmt i with
-    | '%' -> scan_format fmt i cont_s cont_a cont_t cont_f cont_m
-    | c -> Buffer.add_char dst c; doprn (succ i)
-  and cont_s s i =
-    Buffer.add_string dst s; doprn i
-  and cont_a printer arg i =
-    Buffer.add_string dst (printer () arg); doprn i
-  and cont_t printer i =
-    Buffer.add_string dst (printer ()); doprn i
-  and cont_f i = doprn i
-  and cont_m sfmt i =
-    ksprintf (fun res -> Obj.magic (cont_s res i)) sfmt in
+let kbprintf k b =
+  mkprintf false (fun _ -> b) Buffer.add_char Buffer.add_string ignore k
+let bprintf b = kbprintf ignore b
 
-  doprn 0
+let get_buff fmt =
+  let len = 2 * String.length fmt in
+  Buffer.create len;;
 
-let sprintf fmt = ksprintf (fun x -> x) fmt
+let get_contents b =
+  let s = Buffer.contents b in
+  Buffer.clear b;
+  s;;
 
-let kprintf = ksprintf
+let get_cont k b = k (get_contents b);;
 
-let rec bprintf dst fmt =
-  let fmt = string_of_format fmt in
-  let len = String.length fmt in
-  let rec doprn i =
-    if i >= len then Obj.magic () else
-    match String.unsafe_get fmt i with
-    | '%' -> scan_format fmt i cont_s cont_a cont_t cont_f cont_m
-    | c -> Buffer.add_char dst c; doprn (succ i)
-  and cont_s s i =
-    Buffer.add_string dst s; doprn i
-  and cont_a printer arg i =
-    printer dst arg; doprn i
-  and cont_t printer i =
-    printer dst; doprn i
-  and cont_f i = doprn i
-  and cont_m sfmt i =
-    bprintf dst sfmt; doprn i in
+let ksprintf k =
+  mkprintf true get_buff Buffer.add_char Buffer.add_string ignore (get_cont k);;
 
-  doprn 0
+let kprintf = ksprintf;;
+
+let sprintf fmt = ksprintf (fun s -> s) fmt;;
