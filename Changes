@@ -11,6 +11,13 @@ Type checking:
   more confusing than useful, and created problems with private row
   types.
 
+New features:
+- Scanf: new function sscanf_format to read a format from a
+  string. The type of the resulting format is dynamically checked and
+  should be the type of the template format which is the second argument.
+
+Bug fixes:
+- printf: partial application is now handled properly.
 
 Objective Caml 3.08.4:
 ----------------------

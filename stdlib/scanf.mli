@@ -77,8 +77,8 @@ exception Scan_failure of string;;
 
 val bscanf :
   Scanning.scanbuf -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
-(** [bscanf ib format f] reads tokens from the scanning buffer [ib] according
-   to the format string [format], converts these tokens to values, and
+(** [bscanf ib fmt f] reads tokens from the scanning buffer [ib] according
+   to the format string [fmt], converts these tokens to values, and
    applies the function [f] to these values.
    The result of this application of [f] is the result of the whole construct.
 
@@ -254,3 +254,16 @@ val kscanf :
   some conversion fails, the scanning function aborts and applies the
   error handling function [ef] to the scanning buffer and the
   exception that aborted the scanning process. *)
+
+val bscanf_format :
+  Scanning.scanbuf -> ('a, 'b, 'c, 'd) format4 ->
+    (('a, 'b, 'c, 'd) format4 -> 'e) -> 'e;;
+(** [bscanf_format ib fmt f] reads a [format] argument to the format
+  specified by the second argument. The [format] argument read in
+  buffer [ib] must have the same type as [fmt]. *)
+
+val sscanf_format :
+  string -> ('a, 'b, 'c, 'd) format4 -> ('a, 'b, 'c, 'd) format4;;
+(** [sscanf_format ib fmt f] reads a [format] argument to the format
+  specified by the second argument and returns it. The [format]
+  argument read in string [s] must have the same type as [fmt]. *)

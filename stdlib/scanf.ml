@@ -114,7 +114,7 @@ type file_name = string;;
 type scanbuf = {
   mutable eof : bool;
   mutable current_char : char;
-  mutable current_char_valid : bool;
+  mutable current_char_is_valid : bool;
   mutable char_count : int;
   mutable line_count : int;
   mutable token_count : int;
@@ -132,19 +132,19 @@ let next_char ib =
   try
     let c = ib.get_next_char () in
     ib.current_char <- c;
-    ib.current_char_valid <- true;
+    ib.current_char_is_valid <- true;
     ib.char_count <- ib.char_count + 1;
     if c == '\n' then ib.line_count <- ib.line_count + 1;
     c with
   | End_of_file ->
     let c = null_char in
     ib.current_char <- c;
-    ib.current_char_valid <- false;
+    ib.current_char_is_valid <- false;
     ib.eof <- true;
     c;;
 
 let peek_char ib =
-  if ib.current_char_valid then ib.current_char else next_char ib;;
+  if ib.current_char_is_valid then ib.current_char else next_char ib;;
 
 (* Returns a valid current char for the input buffer. In particular
    no irrelevant null character (as set by [next_char] in case of end
@@ -167,7 +167,7 @@ let name_of_input ib = ib.file_name;;
 let char_count ib = ib.char_count;;
 let line_count ib = ib.line_count;;
 let reset_token ib = Buffer.reset ib.tokbuf;;
-let invalidate_current_char ib = ib.current_char_valid <- false;;
+let invalidate_current_char ib = ib.current_char_is_valid <- false;;
 
 let token ib =
   let tokbuf = ib.tokbuf in
@@ -193,7 +193,7 @@ let default_token_buffer_size = 1024;;
 let create fname next = {
   eof = false;
   current_char = '\000';
-  current_char_valid = false;
+  current_char_is_valid = false;
   char_count = 0;
   line_count = 0;
   token_count = 0;
@@ -275,11 +275,15 @@ let incomplete_format fmt =
 
 let bad_float () = bad_input "no dot or exponent part found in float token";;
 
+let format_mismatch_err fmt1 fmt2 =
+  Printf.sprintf "format read %S does not match specification %S" fmt1 fmt2;;
+
 let format_mismatch fmt1 fmt2 ib =
-  let err =
-    Printf.sprintf
-      "format read %S does not match specification %S" fmt2 fmt1 in
-  scanf_bad_input ib (Scan_failure err);;
+  scanf_bad_input ib (Scan_failure (format_mismatch_err fmt1 fmt2));;
+
+(* Checking that 2 format string are type compatible. *)
+let compatible_format_type fmt1 fmt2 =
+  Printf.summarize_format_type fmt1 = Printf.summarize_format_type fmt2;;
 
 (* Checking that [c] is indeed in the input, then skips it.
    In this case, the character c has been explicitely specified in the
@@ -872,6 +876,8 @@ let rec skip_whites ib =
 
 external format_to_string :
  ('a, 'b, 'c, 'd) format4 -> string = "%identity";;
+external string_to_format :
+ string -> ('a, 'b, 'c, 'd) format4 = "%identity";;
 
 (* The [kscanf] main scanning function.
    It takes as arguments:
@@ -993,8 +999,8 @@ let kscanf ib ef fmt f =
         let mf = String.sub fmt i (j - i - 2) in
         let _x = scan_String max ib in
         let rf = token_string ib in
-        if Printf.summarize_format_type mf <>
-           Printf.summarize_format_type rf then format_mismatch mf rf ib else 
+        if not (compatible_format_type mf rf)
+          then format_mismatch rf mf ib else 
         if conv = '{' then scan_fmt (stack f rf) j else
         let nf = scan_fmt (Obj.magic rf) 0 in
         scan_fmt (stack f nf) j
@@ -1022,3 +1028,16 @@ let fscanf ic = bscanf (Scanning.from_channel ic);;
 let sscanf s = bscanf (Scanning.from_string s);;
 
 let scanf fmt = bscanf Scanning.stdib fmt;;
+
+let bscanf_format ib fmt2 f =
+  let fmt1 = ignore (scan_String max_int ib); token_string ib in
+  let fmt2 = format_to_string fmt2 in
+  if compatible_format_type fmt1 fmt2
+  then let fresh_fmt = String.copy fmt1 in f (string_to_format fresh_fmt)
+  else format_mismatch fmt1 fmt2 ib;;
+
+let sscanf_format s fmt =
+  let fmt = format_to_string fmt in
+  if compatible_format_type s fmt
+  then let fresh_fmt = String.copy s in string_to_format fresh_fmt
+  else bad_input (format_mismatch_err s fmt);;
