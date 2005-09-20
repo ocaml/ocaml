@@ -144,6 +144,9 @@ let built_ins =
 
 let to_eval = ref []
 
+let lazy_force loc l =
+  try Lazy.force l
+  with Lazy.Undefined -> error loc Cyclic
 
 let check loc t ub =
   if CT.subtype t ub then t
@@ -670,13 +673,14 @@ let ext_branch env loc t p a =
 	  Location.prerr_warning loc Warnings.Unused_match;
 	P.filter ta p 
       ) in
-      to_eval := (fun () -> ignore (Lazy.force z)) :: !to_eval; 
+      to_eval := (fun () -> ignore (lazy_force loc z)) :: !to_eval; 
       (* to get a warning for unused
 	 branch without a capture variable *)
       List.map
 	(fun (x,id) ->
 	   id, 
-	   atom loc (fun _ -> CT.descr (Cduce_types.Ident.IdMap.assoc x (Lazy.force z))))
+	   atom loc (fun _ -> CT.descr (Cduce_types.Ident.IdMap.assoc x 
+					  (lazy_force loc z))))
 	ids
   in
   ids, add_values env vars
@@ -738,10 +742,10 @@ let ext_map env loc e0 e1 brs =
       let u = List.fold_left CT.cup CT.empty tl in
       (u,(tl,f))
     ) in
-    unify env e1 (atom loc (fun ub -> fst (Lazy.force z)));
+    unify env e1 (atom loc (fun ub -> fst (lazy_force loc z)));
     atom loc 
       (fun ub ->
-	 let (tl,f) = snd (Lazy.force z) in
+	 let (tl,f) = snd (lazy_force loc z) in
 	 let aux t = 
 	   List.fold_left
 	     (fun accu (s,e) ->
@@ -760,10 +764,10 @@ let ext_xmap env loc domain e0 e1 brs =
       let u, tl,f = SEQ.map_tree_mono domain t0 in
       (u,(tl,f))
     ) in
-    unify env e1 (atom loc (fun ub -> fst (Lazy.force z)));
+    unify env e1 (atom loc (fun ub -> fst (lazy_force loc z)));
     atom loc 
       (fun ub ->
-	 let (tl,f) = snd (Lazy.force z) in
+	 let (tl,f) = snd (lazy_force loc z) in
 	 let aux t = 
 	   List.fold_left
 	     (fun accu (s,e) ->
