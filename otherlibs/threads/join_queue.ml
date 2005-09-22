@@ -12,22 +12,34 @@
 
 (* $Id$ *)
 
-open Printf
+type 'a t = {mutable bag : 'a list ; mutex : Mutex.t ; cond : Condition.t}
 
-(*DEBUG*)let verbose =
-(*DEBUG*)  try int_of_string (Sys.getenv "VERBOSE") with | _ -> 0
-(*DEBUG*)
-(*DEBUG*)let debug_mutex = Mutex.create ()
-(*DEBUG*)
-(*DEBUG*)let debug lvl source msg =
-(*DEBUG*)  if verbose >= lvl then begin
-(*DEBUG*)   Mutex.lock debug_mutex ;
-(*DEBUG*)    eprintf "%s[%i]: %s\n" source (Thread.id (Thread.self ())) msg ;
-(*DEBUG*)    flush stderr ;
-(*DEBUG*)    Mutex.unlock debug_mutex
-(*DEBUG*)  end
-(*DEBUG*)
-(*DEBUG*)let debug0 = debug 0
-(*DEBUG*)let debug1 = debug 1
-(*DEBUG*)and debug2 = debug 2
-(*DEBUG*)and debug3 = debug 3
+let create () =
+  {
+    bag = [] ;
+    mutex = Mutex.create () ;
+    cond = Condition.create () ;
+  } 
+
+let put q x =
+  Mutex.lock q.mutex ;
+  q.bag <- x :: q.bag ;
+  Condition.signal q.cond ;
+  Mutex.unlock q.mutex
+   
+
+let rec hard_get q = match q.bag with
+| [] ->
+    Condition.wait q.cond q.mutex ;
+    hard_get q
+| x::rem ->
+    q.bag <- rem ;
+    x
+
+
+let get q =
+  Mutex.lock q.mutex ;
+  let r = hard_get q in
+  Mutex.unlock q.mutex ;
+  r
+  

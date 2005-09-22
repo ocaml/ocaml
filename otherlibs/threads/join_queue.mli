@@ -12,22 +12,9 @@
 
 (* $Id$ *)
 
-open Printf
+type 'a t
 
-(*DEBUG*)let verbose =
-(*DEBUG*)  try int_of_string (Sys.getenv "VERBOSE") with | _ -> 0
-(*DEBUG*)
-(*DEBUG*)let debug_mutex = Mutex.create ()
-(*DEBUG*)
-(*DEBUG*)let debug lvl source msg =
-(*DEBUG*)  if verbose >= lvl then begin
-(*DEBUG*)   Mutex.lock debug_mutex ;
-(*DEBUG*)    eprintf "%s[%i]: %s\n" source (Thread.id (Thread.self ())) msg ;
-(*DEBUG*)    flush stderr ;
-(*DEBUG*)    Mutex.unlock debug_mutex
-(*DEBUG*)  end
-(*DEBUG*)
-(*DEBUG*)let debug0 = debug 0
-(*DEBUG*)let debug1 = debug 1
-(*DEBUG*)and debug2 = debug 2
-(*DEBUG*)and debug3 = debug 3
+val create : unit -> 'a t
+val put : 'a t -> 'a -> unit
+val get : 'a t -> 'a
+

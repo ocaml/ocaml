@@ -300,6 +300,25 @@ static void intern_rec(value *dest)
         }
         v = (value) (caml_code_area_start + ofs);
         break;
+        /*>JOCAML*/
+      case CODE_SAVEDCODE:
+        v = (value)caml_get_saved_code() ;
+        if (v == (value)NULL) {
+          intern_cleanup() ;
+          caml_failwith("input_value: no code saved");
+        }
+        /* Saved code values are not shared */           
+        break ;
+      case CODE_SAVEDVALUE:
+        v = caml_get_saved_value() ;
+        if (v == (value)NULL) {
+          intern_cleanup() ;
+          caml_failwith("input_value: no value saved");
+        }
+        /* Saved values follow standard sharing mecanism */
+        if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
+        break ;
+        /*<JOCAML*/
       case CODE_INFIXPOINTER:
         ofs = read32u();
         intern_rec(&clos);

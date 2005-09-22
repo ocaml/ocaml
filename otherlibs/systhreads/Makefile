@@ -28,9 +28,13 @@ THREAD_OBJS= thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo
 BYTECODE_JOIN_C_OBJS=join_b.o
 NATIVECODE_JOIN_C_OBJS=join_n.o
 
-JOIN_OBJS=join_space.cmo join.cmo
-GENFILES=thread.ml\
- join_types.mli join_space.mli join_space.ml join.ml join.mli join.c
+JOIN_OBJS=join_debug.cmo join_queue.cmo join_space.cmo join.cmo ns.cmo
+GENFILES=thread.ml join.c join_types.mli\
+ join_debug.mli join_debug.ml\
+ join_queue.mli join_queue.ml\
+ join_space.mli join_space.ml\
+ join.ml join.mli\
+ ns.mli ns.ml\
 
 all: libthreads.a threads.cma libjoin.a join.cma
 
@@ -90,15 +94,32 @@ $(THREAD_OBJS:.cmo=.cmx) $(JOIN_OBJS:.cmo=.cmx): ../../ocamlopt
 thread.ml: thread_posix.ml
 	ln -s thread_posix.ml thread.ml
 
+join_debug.ml: ../threads/join_debug.ml
+	cp -f ../threads/join_debug.ml . && chmod -w join_debug.ml
+
+join_debug.mli: ../threads/join_debug.mli
+	cp -f ../threads/join_debug.mli . && chmod -w join_debug.mli
+
+join_queue.ml: ../threads/join_queue.ml
+	cp -f ../threads/join_queue.ml . && chmod -w join_queue.ml
+
+join_queue.mli: ../threads/join_queue.mli
+	cp -f ../threads/join_queue.mli . && chmod -w join_queue.mli
+
 join_types.mli: ../threads/join_types.mli
 	cp -f ../threads/join_types.mli . && chmod -w join_types.mli
 
 join.ml: ../threads/join.ml
 	cp -f ../threads/join.ml . && chmod -w join.ml
 
-
 join.mli: ../threads/join.mli
 	cp -f ../threads/join.mli . && chmod -w join.mli
+
+ns.ml: ../threads/ns.ml
+	cp -f ../threads/ns.ml . && chmod -w ns.ml
+
+ns.mli: ../threads/ns.mli
+	cp -f ../threads/ns.mli . && chmod -w ns.mli
 
 join_space.ml: ../threads/join_space.ml
 	cp -f ../threads/join_space.ml . && chmod -w join_space.ml
@@ -126,7 +147,7 @@ install:
 	cd $(LIBDIR); $(RANLIB) libjoin.a
 	if test -d $(LIBDIR)/threads; then :; else mkdir $(LIBDIR)/threads; fi
 	cp $(THREAD_OBJS:.cmo=.cmi) threads.cma $(LIBDIR)/threads
-	cp join.cmi join.cma $(LIBDIR)/threads
+	cp join.cmi ns.cmi join.cma $(LIBDIR)/threads
 	rm -f $(LIBDIR)/threads/stdlib.cma
 	cp thread.mli mutex.mli condition.mli event.mli threadUnix.mli $(LIBDIR)
 

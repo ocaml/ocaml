@@ -58,6 +58,8 @@
 #define CODE_CUSTOM 0x12
 /*> JOCAML */
 #define CODE_JOCUSTOM 0x14
+#define CODE_SAVEDCODE 0x15
+#define CODE_SAVEDVALUE 0x16
 /*< JOCAML */
 
 #if ARCH_FLOAT_ENDIANNESS == 0x76543210
@@ -182,7 +184,10 @@ extern char * caml_code_area_start, * caml_code_area_end;
 /* </private> */
 
 /* >JOCAML */
-extern void extern_invalid_argument(char *msg) ;
+CAMLextern void extern_invalid_argument(char *msg) ;
+CAMLextern code_t caml_get_saved_code(void) ;
+CAMLextern value caml_get_saved_value(void) ;
+/*<JOCAML*/
 /* <JOCAML */
 
 #endif /* CAML_INTEXT_H */

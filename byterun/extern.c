@@ -206,6 +206,74 @@ static void writecode64(int code, long val)
 }
 #endif
 
+/*> JOCAML */
+
+static int32 saved_code ;
+static int ncodes_saved = 0 ;
+
+CAMLprim value caml_register_saved_code(value v)
+{
+  if (ncodes_saved++ != 0) {
+    caml_failwith("caml_register_saved_code called more than once\n") ;
+  }
+  saved_code =  ((char *)Code_val(v)) - caml_code_area_start ;
+  return Val_unit ;
+}
+
+static int caml_find_saved_code(code_t c)
+{
+  if (ncodes_saved) {
+    int32 ofs = ((char *)c) - caml_code_area_start ;
+    return saved_code == ofs ;
+  } else {
+    return 0 ;
+  }
+}
+
+CAMLexport code_t caml_get_saved_code(void)
+{
+  if (ncodes_saved) {
+    return (code_t)( caml_code_area_start + saved_code) ;
+  } else {
+    return NULL ;
+  }
+}
+
+static value saved_value ;
+static int nvalues_saved = 0 ;
+
+
+CAMLprim value caml_register_saved_value(value v)
+{
+  if (nvalues_saved++ != 0) {
+    caml_failwith("caml_register_saved_code called more than once\n") ;
+  }
+  saved_value = v ;
+  caml_register_global_root(&saved_value) ;
+  return Val_unit ;
+}
+
+static int caml_find_saved_value(value v)
+{
+  if (nvalues_saved) {
+    return v == saved_value ;
+  } else {
+    return 0 ;
+  }
+}
+
+
+CAMLexport value caml_get_saved_value(void)
+{
+  if (nvalues_saved) {
+    return saved_value ;
+  } else {
+    return (value)NULL ;
+  }
+}
+
+/*< JOCAML */
+
 /* Marshal the given value in the output buffer */
 
 static unsigned long size_32;  /* Size in words of 32-bit block for struct. */
@@ -368,7 +436,14 @@ static void extern_rec(value v)
       size_64 += 2 + ((sz_64 + 7) >> 3);
       break;
     }
-    default: {
+    default:
+    /* >JOCAML */
+    if (caml_find_saved_value(v)) {
+      Write(CODE_SAVEDVALUE) ;
+      return ;
+    }
+    /* <JOCAML */
+     {
       mlsize_t i;
       if (tag < 16 && sz < 8) {
         Write(PREFIX_SMALL_BLOCK + tag + (sz << 4));
@@ -389,6 +464,12 @@ static void extern_rec(value v)
     return;
   }
   if ((char *) v >= caml_code_area_start && (char *) v < caml_code_area_end) {
+    /* >JOCAML */
+    if (caml_find_saved_code((code_t)v)) {
+      Write(CODE_SAVEDCODE) ;
+      return ;
+    }
+    /* <JOCAML */
     if (!extern_closures)
       extern_invalid_argument("output_value: functional value");
     writecode32(CODE_CODEPOINTER, (char *) v - caml_code_area_start);

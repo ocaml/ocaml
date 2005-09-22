@@ -16,214 +16,7 @@ open Join_types
 open Printf
 (*DEBUG*)open Join_debug
 
-(*
-   Active tasks.
-     A task is active when :
-      * running compiled code
-      * or in lib code, doomed to become inactive and not to create
-        other tasks.
-
-     A task is inactive when :
-      * suspended, awaiting synchronous reply
-      * simply finished (ie exit_thread is performed)
-*)
-
-let active_mutex = Mutex.create ()
-and active_condition = Condition.create ()
-and active = ref 1
-and in_pool = ref 0
-and pool_konts = ref 0
-(* Number of threads devoted to join *)
-(*DEBUG*)and nthreads = ref 1
-(*DEBUG*)and suspended = ref 0
-
-let nthreads_mutex = Mutex.create()
-
-let incr_locked m r =
-  Mutex.lock m ;
-  incr r ;
-  Mutex.unlock m
-
-and decr_locked m r =
-  Mutex.lock m ;
-  decr r ;
-  Mutex.unlock m
-
-(*DEBUG*)let tasks_status () =
-(*DEBUG*)sprintf "active=%i, nthread=%i suspended=%i[%i, %i]"
-(*DEBUG*) !active !nthreads !suspended !in_pool !pool_konts
-
-let check_active () =
-(*DEBUG*)debug2 "CHECK" (tasks_status ()) ;
-  if !active <= 0 then Condition.signal active_condition
-
-let become_inactive () =
-  decr_locked nthreads_mutex active ;
- (* if active reaches 0, this cannot change, so we unlock now *)
-  check_active () ;
-
-(* incr_active is performed by task creator or awaker *)
-and incr_active () = incr_locked  nthreads_mutex active
-
-
-(*************************************)
-(* Real threads creation/destruction *)
-(*************************************)
-
-external thread_new : (unit -> unit) -> Thread.t = "caml_thread_new"
-external thread_uncaught_exception : exn -> unit = "caml_thread_uncaught_exception"
-
-
-let pool_size =
-  try
-    int_of_string (Sys.getenv "POOLSIZE")
-  with
-  | _ -> 10
-and runmax =
-   try
-    Some (int_of_string (Sys.getenv "RUNMAX"))
-  with
-  | _ -> None
-
-
-let really_exit_thread () =
-  decr_locked nthreads_mutex nthreads ;
-(*DEBUG*)debug1 "REAL EXIT" (sprintf "nthreads=%i" !nthreads);
-  Thread.exit ()
-
-(* Note: really_create_process
-   uses thread_new, to short-circuit handling of exceptions by Thread *)  
-
-exception MaxRun
-
-let really_create_process f =
-  incr_locked nthreads_mutex nthreads ;
-  try
-    begin match runmax with
-    | Some k when !nthreads - !suspended > k -> raise MaxRun
-    | _ -> ()
-    end ;
-    let t = Thread.id (thread_new f) in
-(*DEBUG*)debug1 "REAL FORK" (sprintf "%i %s" t (tasks_status ())) ;
-    ignore(t) ;
-    true
-  with
-  | e ->
-(*DEBUG*)debug2 "REAL FORK FAILED"
-(*DEBUG*)  (sprintf "%s, %s" (tasks_status ()) (Printexc.to_string e)) ;
-      decr_locked nthreads_mutex nthreads ;
-      false
-      
-
-
-(****************)
-(* Thread cache *)
-(****************)
-
-let pool_condition = Condition.create ()
-and pool_mutex = Mutex.create ()
-and pool_kont = ref [] 
-
-let rec do_pool () =
-  incr in_pool ;
-(*DEBUG*)incr_locked nthreads_mutex suspended ;
-(*DEBUG*)debug2 "POOL SLEEP" (tasks_status ()) ;
-  Condition.wait pool_condition pool_mutex ;
-(*DEBUG*)decr_locked nthreads_mutex suspended ;
-(*DEBUG*)debug2 "POOL AWAKE" (tasks_status ()) ;
-  decr in_pool ;
-  match !pool_kont with
-  | f::rem ->
-      pool_kont := rem ; decr pool_konts ;
-(*DEBUG*)debug2 "POOL RUN" (sprintf "%i" (Thread.id (Thread.self()))) ;
-      Mutex.unlock pool_mutex ;
-      f ()
-  | [] ->
-      do_pool ()
-
-(* Get a chance to avoid suspending *)
-let pool_enter () =
-  Mutex.lock pool_mutex ;
-  match !pool_kont with
-  | f::rem ->
-      pool_kont := rem ; decr pool_konts ;
-      Mutex.unlock pool_mutex ;
-(*DEBUG*)debug2 "POOL FIRST RUN" (sprintf "%i" (Thread.id (Thread.self()))) ;
-      f ()
-  | [] ->
-      do_pool ()
-
-let rec grab_from_pool delay =
-  Mutex.lock pool_mutex ;
-  if !in_pool > 0 then begin
-    Condition.signal pool_condition ;
-    Mutex.unlock pool_mutex
-  end else match !pool_kont with
-  | f::rem ->
-      pool_kont := rem ; decr pool_konts ;
-      Mutex.unlock pool_mutex ;
-      if not (really_create_process f) then begin
-        Mutex.lock pool_mutex ;
-        pool_kont := f :: !pool_kont ; incr pool_konts ;
-        Mutex.unlock pool_mutex ;
-        prerr_endline "Threads exhausted" ;
-        Thread.delay delay ;
-        grab_from_pool (1.0 +. delay)
-      end
-  | [] ->
-      Mutex.unlock pool_mutex
-
-let exit_thread () =
-(*DEBUG*)debug2 "EXIT THREAD" (tasks_status ()) ;
-  become_inactive () ;
-  if !in_pool >= pool_size && !active > !pool_konts then
-    really_exit_thread ()
-  else 
-    pool_enter ()
-
-let put_pool f =
-  Mutex.lock pool_mutex ;
-  pool_kont := f :: !pool_kont ; incr pool_konts ;
-  Condition.signal pool_condition ;
-(*DEBUG*)debug2 "PUT POOL" (tasks_status ()) ;
-  Mutex.unlock pool_mutex
-
-let create_process f =
-(*DEBUG*)debug2 "CREATE_PROCESS" (tasks_status ()) ;
-  incr_active () ;
-(* Wapper around f, to be sure to call my exit_thread *)  
-  let g () = 
-    begin try f ()
-    with e ->
-      flush stdout; flush stderr;
-      thread_uncaught_exception e
-    end ;
-    exit_thread () in
-
-  if !in_pool = 0 then begin
-    if not (really_create_process g) then put_pool g 
-  end else begin
-    put_pool g
-  end
-
-
-
-
-(*
-   Data structure for automaton is here seen
-   as a record.
-   In fact, automata are JoCustom blocks.
-   JoCustom blocks are Custom blocks, which undergo
-   standard gc
-
-   Ident field acts both as a tag to discriminate
-   local and remote automaton and as an identifier
-   for exported threads.
-*)
-
-(*********************************)
-(* Queues: implemented as stacks *)
-(*********************************)
+let create_process f = Join_scheduler.create_process f
 
 let put_queue auto idx a = auto.queues.(idx) <- a :: auto.queues.(idx)
 
@@ -366,7 +159,7 @@ and create_async_alone auto g = Alone (auto, g)
 
 (* Transfert control to frozen principal thread *)
 let kont_go k f =
-  incr_active () ;
+  Join_scheduler.incr_active () ;
 (*DEBUG*)debug2 "KONT_GO" "" ;
   k.kval <- Go f ;
   Condition.signal k.kcondition ;
@@ -376,11 +169,12 @@ let kont_go k f =
 let fire_go auto f =
 (*DEBUG*)debug3 "FIRE_GO" "" ;
   Mutex.unlock auto.mutex ;
-  create_process f
+  Join_scheduler.create_process f
 
 (* Transfer control to current thread
    can be called when send triggers a match in the async case
    in thread-tail position *)
+
 let just_go_async auto f =
 (*DEBUG*)debug3 "JUST_GO_ASYNC" "" ;
   Mutex.unlock auto.mutex ;
@@ -469,7 +263,7 @@ let tail_send_async chan a = match chan with
 
 (* No match was found *)
 let kont_suspend k =
-(*DEBUG*)debug3 "KONT_SUSPEND" (tasks_status ()) ;
+(*DEBUG*)debug3 "KONT_SUSPEND" (Join_scheduler.tasks_status ()) ;
 (*DEBUG*)incr_locked nthreads_mutex suspended ;
   become_inactive () ;
   if !active = !pool_konts then grab_from_pool 0.1 ;      
@@ -478,10 +272,10 @@ let kont_suspend k =
   Mutex.unlock k.kmutex ;
   match k.kval with
   | Go f ->
-(*DEBUG*)debug3 "REACTIVATED" (tasks_status ()) ;
+(*DEBUG*)debug3 "REACTIVATED" (Join_scheduler.tasks_status ()) ;
       f ()
   | Ret v ->
-(*DEBUG*)debug3 "REPLIED" (tasks_status ()) ;
+(*DEBUG*)debug3 "REPLIED" (Join_scheduler.tasks_status ()) ;
       v
   | Start -> assert false
 
@@ -494,7 +288,7 @@ let suspend_for_reply k =
   Mutex.unlock k.kmutex ;
   match k.kval with
   | Ret v ->
-(*DEBUG*)debug3 "REPLIED" (tasks_status ()) ;
+(*DEBUG*)debug3 "REPLIED" (Join_scheduler.tasks_status ()) ;
       v
   | Start|Go _ -> assert false
 
@@ -588,14 +382,16 @@ let create_sync auto idx =
    Inform marshaller about one
    code address and one value that are rebound dynamically
    by marshalling operations *)
+
 type sync = Obj.t -> Obj.t
 external register_value : 'a -> unit = "caml_register_saved_value"
 external register_code : sync -> unit = "caml_register_saved_code"
+external init_join : unit -> unit = "caml_init_join"
 
 let _ =
+  init_join () ;
   register_value send_sync ;
   register_code (create_sync (Obj.magic 0) 0)
-
 
 let reply_to v k =
 (*DEBUG*)  debug3 "REPLY" (sprintf "%i" (Obj.magic v)) ;
@@ -644,9 +440,6 @@ let rec exit_hook () =
   ()
 
 
-external init_join : unit -> unit = "caml_init_join"
-
-let _ = init_join () ; at_exit exit_hook
 
 
 let t v flags =

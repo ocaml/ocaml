@@ -2,7 +2,9 @@ join.o: join.c ../../byterun/mlvalues.h ../../byterun/compatibility.h \
   ../../byterun/config.h ../../config/m.h ../../config/s.h \
   ../../byterun/misc.h ../../byterun/alloc.h ../../byterun/memory.h \
   ../../byterun/gc.h ../../byterun/major_gc.h ../../byterun/freelist.h \
-  ../../byterun/minor_gc.h ../../byterun/custom.h
+  ../../byterun/minor_gc.h ../../byterun/roots.h ../../byterun/custom.h \
+  ../../byterun/intext.h ../../byterun/io.h ../../byterun/fix_code.h \
+  ../../byterun/fail.h
 posix.o: posix.c ../../byterun/alloc.h ../../byterun/compatibility.h \
   ../../byterun/misc.h ../../byterun/config.h ../../config/m.h \
   ../../config/s.h ../../byterun/mlvalues.h ../../byterun/backtrace.h \
@@ -22,17 +24,23 @@ win32.o: win32.c ../../byterun/alloc.h ../../byterun/compatibility.h \
 condition.cmi: mutex.cmi 
 join.cmi: join_types.cmi 
 join_space.cmi: join_types.cmi 
-join_types.cmi: mutex.cmi 
+join_types.cmi: thread.cmi mutex.cmi 
 condition.cmo: mutex.cmi condition.cmi 
 condition.cmx: mutex.cmx condition.cmi 
 event.cmo: mutex.cmi condition.cmi event.cmi 
 event.cmx: mutex.cmx condition.cmx event.cmi 
-join.cmo: thread.cmi mutex.cmi join_types.cmi condition.cmi join.cmi 
-join.cmx: thread.cmx mutex.cmx join_types.cmi condition.cmx join.cmi 
-join_space.cmo: join_space.cmi 
-join_space.cmx: join_space.cmi 
+join.cmo: thread.cmi mutex.cmi join_types.cmi join_space.cmi condition.cmi \
+    join.cmi 
+join.cmx: thread.cmx mutex.cmx join_types.cmi join_space.cmx condition.cmx \
+    join.cmi 
+join_space.cmo: mutex.cmi join_types.cmi join_space.cmi 
+join_space.cmx: mutex.cmx join_types.cmi join_space.cmi 
 mutex.cmo: mutex.cmi 
 mutex.cmx: mutex.cmi 
+ns.cmo: thread.cmi mutex.cmi join_types.cmi join_space.cmi join.cmi \
+    condition.cmi ns.cmi 
+ns.cmx: thread.cmx mutex.cmx join_types.cmi join_space.cmx join.cmx \
+    condition.cmx ns.cmi 
 thread.cmo: thread.cmi 
 thread.cmx: thread.cmi 
 threadUnix.cmo: thread.cmi threadUnix.cmi 

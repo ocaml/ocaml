@@ -51,33 +51,36 @@ type global_name = space_id * int
 type t_global =
   | GlobalAutomaton of global_name
 
+type message =
+  | AsyncSend of int * string * t_global array
 
-type out_handler =
+type out_connection =
   {
+    out_queue : message Join_queue.t ;
     out_channel : out_channel;
     out_thread : Thread.t ;
   }
 
-type out_connection =
-  | NoConnection
-  | Connecting of Thread.t
-  | Connected of out_handler
-
-type in_handler =
+type in_connection =
   { 
     in_channel : in_channel;
     in_thread : Thread.t ;
   }
 
-type in_connection = 
+type link_out =
+  | NoConnection
+  | Connected of out_connection
+
+type link_in =
   | NoHandler
-  | Handler of in_handler
+  | Handler of in_connection
+
 
 type remote_space =
     {
       rspace_id : space_id ;
-      mutable link_in : in_connection ;
-      mutable link_out : out_connection ;
+      mutable link_in : link_in ;
+      mutable link_out : link_out ;
     }  
 
 type t_local =
@@ -93,7 +96,11 @@ type stub =
     ops : Obj.t ; (* custom ops, cf. join.c *)
     local : t_local ;
   } 
-    
+
+type listener =
+  | Deaf of Unix.file_descr
+  | Listen of Thread.t
+
 type space =
   {
     space_id : space_id ;
@@ -101,4 +108,6 @@ type space =
     next_uid : unit -> int ;
     uid2local : (int, automaton) Hashtbl.t ;
     remote_spaces : (space_id, remote_space) Hashtbl.t ;
+    mutable space_listener : listener ;
   } 
+

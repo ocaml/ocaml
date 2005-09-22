@@ -12,6 +12,7 @@
 
 (* $Id$ *)
 
+val debug0 : string -> string -> unit
 val debug1 : string -> string -> unit
 val debug2 : string -> string -> unit
 val debug3 : string -> string -> unit

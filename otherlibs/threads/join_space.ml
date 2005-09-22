@@ -15,6 +15,7 @@
 
 open Unix
 open Printf
+(*DEBUG*)open Join_debug
 
 let creation_time = gettimeofday ();;
 let localname = gethostname ();;
@@ -77,7 +78,7 @@ let rec accept s =
     Unix.accept s
   with
   | Unix_error((EAGAIN|EINTR),_,_) -> 
-      prerr_endline "accept: Try again\n" ;
+(*DEBUG*)debug0 "accept" "try again" ;
       accept s
   end
 
@@ -107,8 +108,52 @@ let local_space = {
     end ;
   uid2local = Hashtbl.create 13 ;
   remote_spaces = Hashtbl.create 13 ;
+  space_listener = Deaf local_socket ;
 } 
 ;;
+
+let do_locked2 lock zyva a b =
+  Mutex.lock lock ;
+  let r =
+    try zyva a b with e -> Mutex.unlock lock ; raise e in
+  Mutex.unlock lock ;
+  r
+;;
+
+let get_remote_space space space_id =
+  try Hashtbl.find space.remote_spaces space_id
+  with Not_found ->
+    let r = {
+      rspace_id = space_id ;
+      link_in = NoHandler ;
+      link_out = NoConnection ;
+      } in
+    Hashtbl.add space.remote_spaces space_id r ;
+    r
+;;
+
+let start_listener space =
+  Mutex.unlock space.space_mutex ;
+  begin match space.space_listener with
+  | Deaf sock ->
+      let listener () =
+        while true do
+          let s,_ = accept sock in
+          shutdown s SHUTDOWN_SEND ;
+          let inc = in_channel_of_descr s in
+          let rspace_id = input_value inc in
+          let rspace = 
+            do_locked2 space.space_mutex
+              get_remote_space space rspace_id in
+          begin match rspace.link_in with
+          | NoHandler ->  assert false
+          | Handler _ -> assert false
+          end
+        done in
+      ()
+  | _ -> assert false
+  end ;
+  Mutex.lock space.space_mutex
 
 let export_stub space local =  match local with
   | LocalAutomaton a ->
@@ -122,7 +167,9 @@ let export_stub space local =  match local with
             GlobalAutomaton (space.space_id, a.ident)
           else begin
             let uid = space.next_uid () in
-(*            eprintf "New uid : %i\n" uid ; flush Pervasives.stderr ; *)
+(* Listener is started  at first export *)
+            if uid = 1 then start_listener space ;
+
             Hashtbl.add space.uid2local uid a ;
             a.ident <- uid ;
             GlobalAutomaton (space.space_id, uid)
@@ -134,24 +181,6 @@ let export_stub space local =  match local with
       GlobalAutomaton (rspace.rspace_id, uid)
 
 external alloc_stub : t_local -> stub = "caml_alloc_stub"
-
-let do_locked2 lock zyva a b =
-  Mutex.lock lock ;
-  let r =
-    try zyva a b with e -> Mutex.unlock lock ; raise e in
-  Mutex.unlock lock ;
-  r
-
-let get_remote_space space space_id =
-  try Hashtbl.find space.remote_spaces space_id
-  with Not_found ->
-    let r = {
-      rspace_id = space_id ;
-      link_in = NoHandler ;
-      link_out = NoConnection ;
-      } in
-    Hashtbl.add space.remote_spaces space_id r ;
-    r
 
 let import_remote_automaton space space_id uid =
   let rspace =
