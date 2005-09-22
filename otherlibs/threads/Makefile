@@ -27,7 +27,7 @@ CAML_OBJS=thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo\
 
 JOIN_C_OBJS=join.o
 
-JOIN_OBJS=join_space.cmo join.cmo
+JOIN_OBJS=join_debug.cmo join_space.cmo join.cmo ns.cmo
 
 LIB=../../stdlib
 
@@ -119,7 +119,7 @@ install:
 	cd $(LIBDIR)/vmthreads; $(RANLIB) libvmthreads.a
 	cp libvmjoin.a $(LIBDIR)/vmthreads/libvmjoin.a
 	cd $(LIBDIR)/vmthreads; $(RANLIB) libvmjoin.a
-	cp thread.cmi mutex.cmi condition.cmi event.cmi threadUnix.cmi join.cmi threads.cma stdlib.cma unix.cma join.cma $(LIBDIR)/vmthreads
+	cp thread.cmi mutex.cmi condition.cmi event.cmi threadUnix.cmi join.cmi ns.cmi threads.cma stdlib.cma unix.cma join.cma $(LIBDIR)/vmthreads
 	cp thread.mli mutex.mli condition.mli event.mli threadUnix.mli $(LIBDIR)/vmthreads
 
 installopt:

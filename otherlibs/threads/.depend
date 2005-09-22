@@ -3,7 +3,8 @@ join.o: join.c ../../byterun/mlvalues.h ../../byterun/config.h \
   ../../byterun/alloc.h ../../byterun/memory.h ../../byterun/gc.h \
   ../../byterun/major_gc.h ../../byterun/freelist.h \
   ../../byterun/minor_gc.h ../../byterun/roots.h ../../byterun/custom.h \
-  ../../byterun/intext.h ../../byterun/io.h ../../byterun/fix_code.h
+  ../../byterun/intext.h ../../byterun/io.h ../../byterun/fix_code.h \
+  ../../byterun/fail.h
 scheduler.o: scheduler.c ../../byterun/alloc.h ../../byterun/misc.h \
   ../../byterun/config.h ../../config/m.h ../../config/s.h \
   ../../byterun/mlvalues.h ../../byterun/backtrace.h \
@@ -13,27 +14,32 @@ scheduler.o: scheduler.c ../../byterun/alloc.h ../../byterun/misc.h \
   ../../byterun/printexc.h ../../byterun/roots.h ../../byterun/signals.h \
   ../../byterun/stacks.h ../../byterun/sys.h
 condition.cmi: mutex.cmi 
-join.cmi: join_types.cmi 
+join.cmi: marshal.cmi join_types.cmi 
 join_space.cmi: unix.cmi marshal.cmi join_types.cmi 
-join_types.cmi: unix.cmi mutex.cmi 
+join_types.cmi: unix.cmi thread.cmi mutex.cmi 
+ns.cmi: unix.cmi 
 thread.cmi: unix.cmi 
 threadUnix.cmi: unix.cmi 
 condition.cmo: thread.cmi mutex.cmi condition.cmi 
 condition.cmx: thread.cmx mutex.cmx condition.cmi 
 event.cmo: mutex.cmi condition.cmi event.cmi 
 event.cmx: mutex.cmx condition.cmx event.cmi 
-join.cmo: thread.cmi mutex.cmi join_types.cmi join_space.cmi condition.cmi \
-    join.cmi 
-join.cmx: thread.cmx mutex.cmx join_types.cmi join_space.cmx condition.cmx \
-    join.cmi 
-join_space.cmo: unix.cmi thread.cmi mutex.cmi marshal.cmi join_types.cmi \
-    join_space.cmi 
-join_space.cmx: unix.cmx thread.cmx mutex.cmx marshal.cmx join_types.cmi \
-    join_space.cmi 
+join_debug.cmo: thread.cmi mutex.cmi join_debug.cmi 
+join_debug.cmx: thread.cmx mutex.cmx join_debug.cmi 
+join.cmo: thread.cmi mutex.cmi join_types.cmi join_space.cmi join_debug.cmi \
+    condition.cmi join.cmi 
+join.cmx: thread.cmx mutex.cmx join_types.cmi join_space.cmx join_debug.cmx \
+    condition.cmx join.cmi 
+join_space.cmo: unix.cmi mutex.cmi marshal.cmi join_types.cmi join_space.cmi 
+join_space.cmx: unix.cmx mutex.cmx marshal.cmx join_types.cmi join_space.cmi 
 marshal.cmo: pervasives.cmi marshal.cmi 
 marshal.cmx: pervasives.cmx marshal.cmi 
 mutex.cmo: thread.cmi mutex.cmi 
 mutex.cmx: thread.cmx mutex.cmi 
+ns.cmo: unix.cmi thread.cmi pervasives.cmi mutex.cmi join_types.cmi \
+    join_space.cmi join.cmi condition.cmi ns.cmi 
+ns.cmx: unix.cmx thread.cmx pervasives.cmx mutex.cmx join_types.cmi \
+    join_space.cmx join.cmx condition.cmx ns.cmi 
 pervasives.cmo: unix.cmi pervasives.cmi 
 pervasives.cmx: unix.cmx pervasives.cmi 
 thread.cmo: unix.cmi thread.cmi 

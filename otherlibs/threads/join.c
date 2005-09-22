@@ -23,14 +23,14 @@
 #include "custom.h"
 #include "intext.h"
 #include "fail.h"
-
+#include "misc.h"
 
 static int join_marshal_initialized = 0 ;
 
 #define INITIAL_SAVED_POINTERS_SIZE 64
 static value *saved_pointers = (value)NULL;
-static int32 saved_pointers_size;
-static int32 nbr_saved_pointers;
+static mlsize_t saved_pointers_size;
+static mlsize_t nbr_saved_pointers;
 
 
 static void (*prev_scan_roots_hook) (scanning_action);
@@ -39,7 +39,7 @@ static void marshal_scan_roots(scanning_action action)
 {
   value *sp = saved_pointers;
   if (sp) {
-    int32 i;
+    mlsize_t i;
     for(i=0;i<nbr_saved_pointers;i++){
       action(*sp,sp);
       sp++;
@@ -57,7 +57,7 @@ static void marshal_scan_roots(scanning_action action)
 /* internal use */
 static void alloc_saved_pointers(void)
 {
-  int32 i;
+  mlsize_t i;
 
   saved_pointers_size = INITIAL_SAVED_POINTERS_SIZE;
   saved_pointers = (value *)caml_stat_alloc(saved_pointers_size*sizeof(value));
@@ -68,17 +68,17 @@ static void alloc_saved_pointers(void)
 /* internal use */
 static void resize_saved_pointers(void)
 {
-  int32 i;
+  mlsize_t i;
 
   saved_pointers_size *= 2;
-  saved_pointers = (value *)caml_stat_resize((char*)saved_pointers,
+  saved_pointers = (value *)caml_stat_resize((void *)saved_pointers,
 			       saved_pointers_size*sizeof(value));
   for(i=nbr_saved_pointers;i<saved_pointers_size;++i)
     Field(saved_pointers,i) = Val_int(0);
 }
 
 /* Called for copying a value to the saved pointers block */
-static int32 reloc_pointer(value v)
+static mlsize_t reloc_pointer(value v)
 {
   if(saved_pointers==(value)NULL) 
     alloc_saved_pointers();
@@ -95,7 +95,7 @@ static void free_saved_pointers(void)
 {
   if (saved_pointers != (value)NULL){
     if (saved_pointers_size > INITIAL_SAVED_POINTERS_SIZE){
-      caml_stat_free((char *) saved_pointers);
+      caml_stat_free((void *)saved_pointers);
       saved_pointers = (value)NULL;
     } else {
       while(nbr_saved_pointers){
@@ -111,6 +111,7 @@ static int inside_join = 0 ;
 
 
 CAMLprim value caml_marshal_message(value v, value flags) {
+  CAMLparam2(v, flags) ;
   CAMLlocal3(str,array,res) ;
     
   if (!join_marshal_initialized) {
@@ -128,7 +129,7 @@ CAMLprim value caml_marshal_message(value v, value flags) {
 
   /* Copy saved pointers to heap array */
   if(nbr_saved_pointers) {
-    int32 i = nbr_saved_pointers;
+    mlsize_t i = nbr_saved_pointers;
     array = caml_alloc(nbr_saved_pointers,0);
     while(i>0){
       i--;
@@ -143,28 +144,28 @@ CAMLprim value caml_marshal_message(value v, value flags) {
   res = caml_alloc_small(2, 0) ;
   Field(res,0)=str;
   Field(res,1)=array;
-  return res ;
+  CAMLreturn (res) ;
 }
 
-static value used_stubs = Val_unit ;
+static value used_pointers = Val_unit ;
 static int unmarshal_initialized = 0 ;
 
-CAMLprim value caml_unmarshal_message(value buff, value stubs) {
-  CAMLparam2(buff, stubs) ;
+CAMLprim value caml_unmarshal_message(value buff, value pointers) {
+  CAMLparam2(buff, pointers) ;
   CAMLlocal1(res) ;
 
   if (!unmarshal_initialized) {
-    caml_register_global_root(&used_stubs) ;
+    caml_register_global_root(&used_pointers) ;
     unmarshal_initialized = 1 ;
   }
 
-  used_stubs = stubs ;
+  caml_modify(&used_pointers, pointers) ;
   inside_join = 1 ;
 
   res = caml_input_val_from_string (buff, 0) ;
 
   inside_join = 0 ;
-  used_stubs = Val_unit ;
+  used_pointers = Val_unit ;
 
   CAMLreturn (res) ;
 }
@@ -173,22 +174,22 @@ static void stub_serialize(value v,
                            unsigned long * wsize_32,
                            unsigned long * wsize_64)
 {
-  int32 pos = 0 ;
+  mlsize_t pos = 0 ;
   if (!inside_join) {
     free_saved_pointers() ;
     extern_invalid_argument("output_value: stub_value");
   }
-  pos = reloc_pointer(v) ;
-  fprintf(stderr, "Reloc -> %i\n", pos) ;
+  pos = reloc_pointer(Field(v,1)) ;
+  /*  fprintf(stderr, "Reloc -> %i\n", (int)pos) ; */
   caml_serialize_int_4(pos);
   *wsize_32 = *wsize_64 = 4 ;
 }
 
 static unsigned long stub_deserialize(void * dst) {
   if (inside_join) {
-    int32 pos = caml_deserialize_uint_4();
-    fprintf(stderr, "Found: %i\n", pos) ;
-    ((value *)dst)[0] = Field(used_stubs, pos) ;
+    mlsize_t pos = caml_deserialize_uint_4();
+    /*    fprintf(stderr, "Found: %i\n", (int)pos) ; */
+    ((value *)dst)[0] = Field(used_pointers, pos) ;
   } else {
     caml_intern_cleanup();
     caml_failwith("input_value: stub value") ;

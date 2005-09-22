@@ -14,24 +14,7 @@
 
 open Join_types
 open Printf
-
-(*DEBUG*)let verbose =
-(*DEBUG*)  try int_of_string (Sys.getenv "VERBOSE") with | _ -> 0
-(*DEBUG*)
-(*DEBUG*)let debug_mutex = Mutex.create ()
-(*DEBUG*)
-(*DEBUG*)let debug lvl source msg =
-(*DEBUG*)  if verbose >= lvl then begin
-(*DEBUG*)   Mutex.lock debug_mutex ;
-(*DEBUG*)    eprintf "%s[%i]: %s\n" source (Thread.id (Thread.self ())) msg ;
-(*DEBUG*)    flush stderr ;
-(*DEBUG*)    Mutex.unlock debug_mutex
-(*DEBUG*)  end
-(*DEBUG*)
-(*DEBUG*)let debug1 = debug 1
-(*DEBUG*)and debug2 = debug 2
-(*DEBUG*)and debug3 = debug 3
-
+(*DEBUG*)open Join_debug
 
 (*
    Active tasks.
@@ -53,37 +36,35 @@ and pool_konts = ref 0
 (* Number of threads devoted to join *)
 (*DEBUG*)and nthreads = ref 1
 (*DEBUG*)and suspended = ref 0
-(*DEBUG*)and nthreads_mutex = Mutex.create()
 
-let incr_locked r =
-  Mutex.lock nthreads_mutex ;
+let nthreads_mutex = Mutex.create()
+
+let incr_locked m r =
+  Mutex.lock m ;
   incr r ;
-  Mutex.unlock nthreads_mutex
+  Mutex.unlock m
 
-and decr_locked r =
-  Mutex.lock nthreads_mutex ;
+and decr_locked m r =
+  Mutex.lock m ;
   decr r ;
-  Mutex.unlock nthreads_mutex
+  Mutex.unlock m
 
+(*DEBUG*)let tasks_status () =
+(*DEBUG*)sprintf "active=%i, nthread=%i suspended=%i[%i, %i]"
+(*DEBUG*) !active !nthreads !suspended !in_pool !pool_konts
 
 let check_active () =
-(*DEBUG*)debug2 "CHECK"
-(*DEBUG*) (sprintf "active=%i, nthreads=%i, suspended=%i[%i,%i]"
-(*DEBUG*)   !active !nthreads !suspended !in_pool !pool_konts) ;
+(*DEBUG*)debug2 "CHECK" (tasks_status ()) ;
   if !active <= 0 then Condition.signal active_condition
 
 let become_inactive () =
-  Mutex.lock active_mutex ;
-  decr active ;
-  Mutex.unlock active_mutex ;
+  decr_locked nthreads_mutex active ;
  (* if active reaches 0, this cannot change, so we unlock now *)
   check_active () ;
 
 (* incr_active is performed by task creator or awaker *)
-and incr_active () =
-  Mutex.lock active_mutex ;
-  incr active ;
-  Mutex.unlock active_mutex
+and incr_active () = incr_locked  nthreads_mutex active
+
 
 (*************************************)
 (* Real threads creation/destruction *)
@@ -103,14 +84,10 @@ and runmax =
     Some (int_of_string (Sys.getenv "RUNMAX"))
   with
   | _ -> None
-(*DEBUG*)let tasks_status () =
-(*DEBUG*)sprintf "active=%i, nthread=%i suspended=%i[%i, %i]"
-(*DEBUG*) !active !nthreads !suspended !in_pool
-(*DEBUG*) (!pool_konts)
 
 
 let really_exit_thread () =
-  decr_locked nthreads ;
+  decr_locked nthreads_mutex nthreads ;
 (*DEBUG*)debug1 "REAL EXIT" (sprintf "nthreads=%i" !nthreads);
   Thread.exit ()
 
@@ -120,23 +97,21 @@ let really_exit_thread () =
 exception MaxRun
 
 let really_create_process f =
-  incr_locked nthreads ;
+  incr_locked nthreads_mutex nthreads ;
   try
     begin match runmax with
     | Some k when !nthreads - !suspended > k -> raise MaxRun
     | _ -> ()
     end ;
     let t = Thread.id (thread_new f) in
-(*DEBUG*)debug1 "REAL FORK"
-(*DEBUG*) (sprintf "%i nthread=%i suspended=%i[%i]"
-(*DEBUG*)   t !nthreads !suspended !in_pool) ;
+(*DEBUG*)debug1 "REAL FORK" (sprintf "%i %s" t (tasks_status ())) ;
     ignore(t) ;
     true
   with
   | e ->
 (*DEBUG*)debug2 "REAL FORK FAILED"
 (*DEBUG*)  (sprintf "%s, %s" (tasks_status ()) (Printexc.to_string e)) ;
-      decr_locked nthreads ;
+      decr_locked nthreads_mutex nthreads ;
       false
       
 
@@ -151,10 +126,10 @@ and pool_kont = ref []
 
 let rec do_pool () =
   incr in_pool ;
-(*DEBUG*)incr_locked suspended ;
+(*DEBUG*)incr_locked nthreads_mutex suspended ;
 (*DEBUG*)debug2 "POOL SLEEP" (tasks_status ()) ;
   Condition.wait pool_condition pool_mutex ;
-(*DEBUG*)decr_locked suspended ;
+(*DEBUG*)decr_locked nthreads_mutex suspended ;
 (*DEBUG*)debug2 "POOL AWAKE" (tasks_status ()) ;
   decr in_pool ;
   match !pool_kont with
@@ -366,11 +341,13 @@ type continuation =
     mutable kval : kval }
 
 
-(* Continuation mutex is automaton mutex *)
-let kont_create auto =
-  {kmutex = auto.mutex ;
+let kont_create0 mutex =
+  {kmutex = mutex ;
    kcondition = Condition.create () ;
    kval = Start}
+
+(* Continuation mutex is automaton mutex *)
+let kont_create auto = kont_create0 auto.mutex
 
 (**********************)
 (* Asynchronous sends *)
@@ -493,11 +470,11 @@ let tail_send_async chan a = match chan with
 (* No match was found *)
 let kont_suspend k =
 (*DEBUG*)debug3 "KONT_SUSPEND" (tasks_status ()) ;
-(*DEBUG*)incr_locked suspended ;
+(*DEBUG*)incr_locked nthreads_mutex suspended ;
   become_inactive () ;
   if !active = !pool_konts then grab_from_pool 0.1 ;      
   Condition.wait k.kcondition k.kmutex ;
-(*DEBUG*)decr_locked suspended ;
+(*DEBUG*)decr_locked nthreads_mutex suspended ;
   Mutex.unlock k.kmutex ;
   match k.kval with
   | Go f ->
@@ -510,10 +487,10 @@ let kont_suspend k =
 
 (* Suspend current thread when some match was found *)
 let suspend_for_reply k =
-(*DEBUG*)incr_locked suspended ;
+(*DEBUG*)incr_locked nthreads_mutex suspended ;
   become_inactive () ;
   Condition.wait k.kcondition k.kmutex ;
-(*DEBUG*)decr_locked suspended ;
+(*DEBUG*)decr_locked nthreads_mutex suspended ;
   Mutex.unlock k.kmutex ;
   match k.kval with
   | Ret v ->
@@ -593,7 +570,32 @@ and send_sync_alone auto g a =
     fire_suspend k auto (fun () -> f (k,a))
   end
 *)
-let create_sync auto idx = (fun a -> send_sync auto idx a)
+
+(* This code must create a one-argument closure,
+   whose code pointer unambiguously characterize
+   closures which synchronous channels.
+   Additionaly the 'send_sync' free name must be registered
+   as a special value for enabling specific marshalling of
+   sync channels *)
+
+let create_sync auto idx = 
+  let r a = send_sync auto idx a in
+  r
+
+
+
+(* HACK :
+   Inform marshaller about one
+   code address and one value that are rebound dynamically
+   by marshalling operations *)
+type sync = Obj.t -> Obj.t
+external register_value : 'a -> unit = "caml_register_saved_value"
+external register_code : sync -> unit = "caml_register_saved_code"
+
+let _ =
+  register_value send_sync ;
+  register_code (create_sync (Obj.magic 0) 0)
+
 
 let reply_to v k =
 (*DEBUG*)  debug3 "REPLY" (sprintf "%i" (Obj.magic v)) ;
@@ -625,7 +627,7 @@ let from_pool () =
 
 let rec exit_hook () =
 (*DEBUG*)debug1 "HOOK" "enter" ;
-(*DEBUG*)decr_locked nthreads ;
+(*DEBUG*)decr_locked nthreads_mutex nthreads ;
   Mutex.lock active_mutex ;
   decr active ;
   begin if !active > 0 then begin
@@ -647,6 +649,6 @@ external init_join : unit -> unit = "caml_init_join"
 let _ = init_join () ; at_exit exit_hook
 
 
-let t v =
-  let p = Join_space.marshal_message v [] in
+let t v flags =
+  let (_,t) as p = Join_space.marshal_message v flags in
   Join_space.unmarshal_message p

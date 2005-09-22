@@ -41,4 +41,4 @@ val create_sync : stub -> int -> (Obj.t -> Obj.t)
 type continuation
 val reply_to : Obj.t -> continuation -> unit
 
-val t : 'a -> 'a
+val t : 'a -> Marshal.extern_flags list -> 'a

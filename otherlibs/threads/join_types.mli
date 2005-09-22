@@ -44,19 +44,61 @@ and reaction = Obj.t * int * (Obj.t -> Obj.t)
 (* Remote pointers *)
 (*******************)
 
-type space_name = Unix.inet_addr * int * float
+type space_id = Unix.inet_addr * int * float
 
-type global_name = space_name * int
+type global_name = space_id * int
+
+type t_global =
+  | GlobalAutomaton of global_name
+
+
+type out_handler =
+  {
+    out_channel : out_channel;
+    out_thread : Thread.t ;
+  }
+
+type out_connection =
+  | NoConnection
+  | Connecting of Thread.t
+  | Connected of out_handler
+
+type in_handler =
+  { 
+    in_channel : in_channel;
+    in_thread : Thread.t ;
+  }
+
+type in_connection = 
+  | NoHandler
+  | Handler of in_handler
+
+type remote_space =
+    {
+      rspace_id : space_id ;
+      mutable link_in : in_connection ;
+      mutable link_out : out_connection ;
+    }  
+
+type t_local =
+  | LocalAutomaton of automaton
+  | RemoteAutomaton of remote_space * int
+
 
 (* Stubs for handling remote pointers,
    they are implemented trough JoCustom blocks *)
 
-type t_local =
-  | LocalAutomaton of automaton
-  | RemoteAutomaton of global_name
-
 type stub =
-  { ops : Obj.t ; (* custom ops, cf. join.c *)
+  {
+    ops : Obj.t ; (* custom ops, cf. join.c *)
     local : t_local ;
   } 
     
+type space =
+  {
+    space_id : space_id ;
+    space_mutex : Mutex.t ;
+    next_uid : unit -> int ;
+    uid2local : (int, automaton) Hashtbl.t ;
+    remote_spaces : (space_id, remote_space) Hashtbl.t ;
+  } 

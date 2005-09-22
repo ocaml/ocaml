@@ -36,7 +36,7 @@ use loopback (127.0.0.1) instead... *)
       localname
     with
       _ -> 
-        printf "WARNING: Using loopback address (127.0.0.1). you will not be able to communicate with other machines. Verify your network connection if this is not normal.";
+        eprintf "WARNING: Using loopback address (127.0.0.1). you will not be able to communicate with other machines. Verify your network connection if this is not normal.";
         print_newline ();
         let localaddr = inet_addr_of_string "127.0.0.1" in
         bind s (ADDR_INET (localaddr, 0));
@@ -52,20 +52,35 @@ let localaddr =
   | _ -> inet_addr_of_string "127.0.0.1"
 ;;
 
+let local_addr = localaddr
+
 let create_port port =
   handle_unix_error
     (fun () ->
       let s = socket PF_INET SOCK_STREAM 0 in
       let _ =
-        setsockopt s SO_REUSEADDR true;
-        bind s (ADDR_INET (localaddr, port));
-        listen s 5;
-        ()
+        try
+          setsockopt s SO_REUSEADDR true;
+          bind s (ADDR_INET (localaddr, port));
+          listen s 5;
+          ()
+        with z -> close s ; raise z
       in
       let saddr = getsockname s in
       match saddr with
         ADDR_INET (_, port) -> port, s
-      | _ -> failwith "not ADDR_INET socket") ()
+      | _ -> assert false) ()
+;;
+
+let rec accept s =
+  begin try
+    Unix.accept s
+  with
+  | Unix_error((EAGAIN|EINTR),_,_) -> 
+      prerr_endline "accept: Try again\n" ;
+      accept s
+  end
+
 
 (* Create site socket *)
 let local_port, local_socket = create_port 0
@@ -79,35 +94,9 @@ let same_space (a1, p1, t1) (a2, p2, t2) =
   a1 = a2 && p1 = p2 && t1 = t2
 ;;
 
-type in_handler =
-    { in_channel : in_channel;
-      in_thread : Thread.t ; }
-
-type in_connection = 
-  | NoHandler
-  | Handler of in_handler
-
-type out_handler =
-  { out_channel : out_channel;
-    out_thread : Thread.t ; }
-
-type out_connection =
-  | NoConnection
-  | Connecting of Thread.t
-  | Connected of out_handler
-
 open Join_types
 
-type space = {
-    space_id : space_name ;
-    space_mutex : Mutex.t ;
-    next_uid : unit -> int ;
-    stubs : (int, stub) Hashtbl.t ;
-    mutable link_in : in_connection ;
-    mutable link_out : out_connection ;
-  } 
-
-(* Allocate a new unique ident for local site *)
+(* Describe site *)
 let local_space = {
   space_id = local_id ;
   space_mutex = Mutex.create () ;
@@ -116,54 +105,76 @@ let local_space = {
       let uid_counter = ref 0 in
       (fun () -> incr uid_counter; !uid_counter)
     end ;
-  stubs = Hashtbl.create 13 ;
-  link_in = NoHandler ;
-  link_out = NoConnection ;
+  uid2local = Hashtbl.create 13 ;
+  remote_spaces = Hashtbl.create 13 ;
 } 
 ;;
 
-let export_stub space stub =
-  let local = stub.local in
-  match local with
+let export_stub space local =  match local with
   | LocalAutomaton a ->
       if a.ident > 0 then
-        RemoteAutomaton (space.space_id, a.ident)
+        GlobalAutomaton (space.space_id, a.ident)
       else begin
         Mutex.lock space.space_mutex ;
         let r =
           (* Race condition *)
           if a.ident > 0 then
-            RemoteAutomaton (space.space_id, a.ident)
+            GlobalAutomaton (space.space_id, a.ident)
           else begin
             let uid = space.next_uid () in
-            eprintf "New uid : %i\n" uid ; flush Pervasives.stderr ;
-            Hashtbl.add space.stubs uid stub ;
+(*            eprintf "New uid : %i\n" uid ; flush Pervasives.stderr ; *)
+            Hashtbl.add space.uid2local uid a ;
             a.ident <- uid ;
-            RemoteAutomaton (space.space_id, uid)
+            GlobalAutomaton (space.space_id, uid)
           end in
         Mutex.unlock space.space_mutex ;
         r
       end
-  | RemoteAutomaton _ -> local
+  | RemoteAutomaton (rspace, uid) ->
+      GlobalAutomaton (rspace.rspace_id, uid)
 
 external alloc_stub : t_local -> stub = "caml_alloc_stub"
 
+let do_locked2 lock zyva a b =
+  Mutex.lock lock ;
+  let r =
+    try zyva a b with e -> Mutex.unlock lock ; raise e in
+  Mutex.unlock lock ;
+  r
+
+let get_remote_space space space_id =
+  try Hashtbl.find space.remote_spaces space_id
+  with Not_found ->
+    let r = {
+      rspace_id = space_id ;
+      link_in = NoHandler ;
+      link_out = NoConnection ;
+      } in
+    Hashtbl.add space.remote_spaces space_id r ;
+    r
+
+let import_remote_automaton space space_id uid =
+  let rspace =
+    do_locked2 space.space_mutex
+      get_remote_space space space_id in
+  RemoteAutomaton (rspace, uid)
+
+let get_local_automaton t uid =
+  try LocalAutomaton (Hashtbl.find t uid)
+  with Not_found -> assert false
+
 let import_stub space local = match local with
-| RemoteAutomaton (msg_space, uid) ->
-    if same_space msg_space space.space_id then begin
-      Mutex.lock space.space_mutex ;
-      eprintf "Receive uid: %i\n" uid ; flush Pervasives.stderr ;
-      let stub =
-        try Hashtbl.find space.stubs uid
-        with Not_found -> assert false in
-      Mutex.unlock space.space_mutex ;
-      stub.local
+| GlobalAutomaton (space_id, uid) ->
+    if same_space space_id space.space_id then begin
+      do_locked2 space.space_mutex
+        get_local_automaton space.uid2local uid
     end else
-      local
-| LocalAutomaton _ -> assert false
+      import_remote_automaton space space_id uid
+
+
   
 external do_marshal_message :
-  'a -> Marshal.extern_flags list -> string * (Join_types.stub) array
+  'a -> Marshal.extern_flags list -> string * (Join_types.t_local) array
   = "caml_marshal_message" 
 
 let marshal_message v flags =
