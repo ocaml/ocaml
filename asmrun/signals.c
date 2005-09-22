@@ -52,14 +52,14 @@ extern char * caml_code_area_start, * caml_code_area_end;
   ((char *)(pc) >= caml_code_area_start && \
    (char *)(pc) <= caml_code_area_end)
 
-volatile long caml_pending_signals[NSIG];
+volatile intnat caml_pending_signals[NSIG];
 volatile int caml_force_major_slice = 0;
 value caml_signal_handlers = 0;
 
 static void caml_process_pending_signals(void)
 {
   int signal_num;
-  long signal_state;
+  intnat signal_state;
 
   for (signal_num = 0; signal_num < NSIG; signal_num++) {
     Read_and_clear(signal_state, caml_pending_signals[signal_num]);
@@ -67,7 +67,7 @@ static void caml_process_pending_signals(void)
   }
 }
 
-static long volatile caml_async_signal_mode = 0;
+static intnat volatile caml_async_signal_mode = 0;
 
 static void caml_enter_blocking_section_default(void)
 {
@@ -83,7 +83,7 @@ static void caml_leave_blocking_section_default(void)
 
 static int caml_try_leave_blocking_section_default(void)
 {
-  long res;
+  intnat res;
   Read_and_clear(res, caml_async_signal_mode);
   return res;
 }
@@ -138,7 +138,7 @@ void caml_execute_signal(int signal_number, int in_signal_handler)
 void caml_garbage_collection(void)
 {
   int signal_number;
-  long signal_state;
+  intnat signal_state;
 
   caml_young_limit = caml_young_start;
   if (caml_young_ptr < caml_young_start || caml_force_major_slice) {
@@ -165,7 +165,7 @@ void caml_urge_major_slice (void)
 void caml_enter_blocking_section(void)
 {
   int i;
-  long pending;
+  intnat pending;
 
   while (1){
     /* Process all pending signals now */
@@ -415,7 +415,7 @@ DECLARE_SIGNAL_HANDLER(segv_handler)
      - faulting address is within the stack
      - we are in Caml code */
   fault_addr = CONTEXT_FAULTING_ADDRESS;
-  if (((long) fault_addr & (sizeof(long) - 1)) == 0
+  if (((uintnat) fault_addr & (sizeof(intnat) - 1)) == 0
       && getrlimit(RLIMIT_STACK, &limit) == 0
       && fault_addr < system_stack_top
       && fault_addr >= system_stack_top - limit.rlim_cur - 0x2000

@@ -74,7 +74,7 @@ struct caml_thread_struct {
   struct caml_thread_struct * prev;
 #ifdef NATIVE_CODE
   char * bottom_of_stack;       /* Saved value of caml_bottom_of_stack */
-  unsigned long last_retaddr;   /* Saved value of caml_last_return_address */
+  uintnat last_retaddr;         /* Saved value of caml_last_return_address */
   value * gc_regs;              /* Saved value of caml_gc_regs */
   char * exception_pointer;     /* Saved value of caml_exception_pointer */
   struct caml__roots_block * local_roots; /* Saved value of local_roots */
@@ -110,7 +110,7 @@ static DWORD thread_descriptor_key;
 static DWORD last_channel_locked_key;
 
 /* Identifier for next thread creation */
-static long thread_next_ident = 0;
+static intnat thread_next_ident = 0;
 
 /* Forward declarations */
 
@@ -277,7 +277,7 @@ CAMLprim value caml_thread_initialize(value unit)
   value vthread = Val_unit;
   value descr;
   HANDLE tick_thread;
-  unsigned long tick_id;
+  uintnat tick_id;
 
   /* Protect against repeated initialization (PR#1325) */
   if (curr_thread != NULL) return Val_unit;
@@ -367,7 +367,7 @@ CAMLprim value caml_thread_new(value clos)
   caml_thread_t th;
   value vthread = Val_unit;
   value descr;
-  unsigned long th_id;
+  uintnat th_id;
 
   Begin_roots2 (clos, vthread)
     /* Create a finalized value to hold thread handle */
@@ -563,7 +563,7 @@ CAMLprim value caml_thread_delay(value val)
 /* Conditions operations */
 
 struct caml_condvar {
-  unsigned long count;          /* Number of waiting threads */
+  uintnat count;          /* Number of waiting threads */
   HANDLE sem;                   /* Semaphore on which threads are waiting */
 };
 
@@ -645,7 +645,7 @@ CAMLprim value caml_condition_signal(value cond)
 CAMLprim value caml_condition_broadcast(value cond)
 {
   HANDLE s = Condition_val(cond)->sem;
-  unsigned long c = Condition_val(cond)->count;
+  uintnat c = Condition_val(cond)->count;
 
   if (c > 0) {
     Condition_val(cond)->count = 0;

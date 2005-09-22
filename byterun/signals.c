@@ -36,7 +36,7 @@ extern sighandler caml_win32_signal(int sig, sighandler action);
 #define signal(sig,act) caml_win32_signal(sig,act)
 #endif
 
-CAMLexport long volatile caml_pending_signals[NSIG];
+CAMLexport intnat volatile caml_pending_signals[NSIG];
 CAMLexport int volatile caml_something_to_do = 0;
 int volatile caml_force_major_slice = 0;
 value caml_signal_handlers = 0;
@@ -45,7 +45,7 @@ CAMLexport void (* volatile caml_async_action_hook)(void) = NULL;
 static void caml_process_pending_signals(void)
 {
   int signal_num;
-  long signal_state;
+  intnat signal_state;
 
   for (signal_num = 0; signal_num < NSIG; signal_num++) {
     Read_and_clear(signal_state, caml_pending_signals[signal_num]);
@@ -64,7 +64,7 @@ void caml_process_event(void)
   if (async_action != NULL) (*async_action)();
 }
 
-static long volatile caml_async_signal_mode = 0;
+static intnat volatile caml_async_signal_mode = 0;
 
 static void caml_enter_blocking_section_default(void)
 {
@@ -80,7 +80,7 @@ static void caml_leave_blocking_section_default(void)
 
 static int caml_try_leave_blocking_section_default(void)
 {
-  long res;
+  intnat res;
   Read_and_clear(res, caml_async_signal_mode);
   return res;
 }
@@ -145,7 +145,7 @@ void caml_urge_major_slice (void)
 CAMLexport void caml_enter_blocking_section(void)
 {
   int i;
-  long pending;
+  intnat pending;
 
   while (1){
     /* Process all pending signals now */

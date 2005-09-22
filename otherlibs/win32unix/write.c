@@ -22,7 +22,7 @@
 
 CAMLprim value unix_write(value fd, value buf, value vofs, value vlen)
 {
-  long ofs, len, written;
+  intnat ofs, len, written;
   DWORD numbytes, numwritten;
   char iobuf[UNIX_BUFFER_SIZE];
 
@@ -65,7 +65,7 @@ CAMLprim value unix_write(value fd, value buf, value vofs, value vlen)
 
 CAMLprim value unix_single_write(value fd, value buf, value vofs, value vlen)
 {
-  long ofs, len, written;
+  intnat ofs, len, written;
   DWORD numbytes, numwritten;
   char iobuf[UNIX_BUFFER_SIZE];
 

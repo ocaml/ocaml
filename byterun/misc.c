@@ -31,9 +31,9 @@ int caml_failed_assert (char * expr, char * file, int line)
 
 #endif /* DEBUG */
 
-unsigned long caml_verb_gc = 0;
+uintnat caml_verb_gc = 0;
 
-void caml_gc_message (int level, char *msg, unsigned long arg)
+void caml_gc_message (int level, char *msg, uintnat arg)
 {
   if (level < 0 || (caml_verb_gc & level) != 0){
     fprintf (stderr, msg, arg);
@@ -64,20 +64,20 @@ CAMLexport void caml_fatal_error_arg2 (char *fmt1, char *arg1,
 char *caml_aligned_malloc (asize_t size, int modulo, void **block)
 {
   char *raw_mem;
-  unsigned long aligned_mem;
+  uintnat aligned_mem;
                                                   Assert (modulo < Page_size);
   raw_mem = (char *) malloc (size + Page_size);
   if (raw_mem == NULL) return NULL;
   *block = raw_mem;
   raw_mem += modulo;                /* Address to be aligned */
-  aligned_mem = (((unsigned long) raw_mem / Page_size + 1) * Page_size);
+  aligned_mem = (((uintnat) raw_mem / Page_size + 1) * Page_size);
 #ifdef DEBUG
   {
-    unsigned long *p;
-    unsigned long *p0 = (void *) *block,
-                  *p1 = (void *) (aligned_mem - modulo),
-                  *p2 = (void *) (aligned_mem - modulo + size),
-                  *p3 = (void *) ((char *) *block + size + Page_size);
+    uintlong *p;
+    uintlong *p0 = (void *) *block,
+             *p1 = (void *) (aligned_mem - modulo),
+             *p2 = (void *) (aligned_mem - modulo + size),
+             *p3 = (void *) ((char *) *block + size + Page_size);
 
     for (p = p0; p < p1; p++) *p = Debug_filler_align;
     for (p = p1; p < p2; p++) *p = Debug_uninit_align;

@@ -239,10 +239,10 @@ static int64 I64_of_int32(int32 x)
 
 #define I64_to_int32(x) ((int32) (x).l)
 
-/* Note: we assume sizeof(long) = 4 here, which is true otherwise
+/* Note: we assume sizeof(intnat) = 4 here, which is true otherwise
    autoconfiguration would have selected native 64-bit integers */
-#define I64_of_long I64_of_int32
-#define I64_to_long I64_to_int32
+#define I64_of_intnat I64_of_int32
+#define I64_to_intnat I64_to_int32
 
 static double I64_to_double(int64 x)
 {

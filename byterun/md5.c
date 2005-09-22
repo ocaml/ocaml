@@ -39,7 +39,7 @@ CAMLprim value caml_md5_chan(value vchan, value len)
   struct channel * chan = Channel(vchan);
   struct MD5Context ctx;
   value res;
-  long toread, read;
+  intnat toread, read;
   char buffer[4096];
 
   Lock(chan);
@@ -118,7 +118,7 @@ CAMLexport void caml_MD5Init(struct MD5Context *ctx)
  * of bytes.
  */
 CAMLexport void caml_MD5Update(struct MD5Context *ctx, unsigned char *buf,
-                               unsigned long len)
+                               uintnat len)
 {
     uint32 t;
 

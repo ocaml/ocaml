@@ -29,7 +29,7 @@ CAMLextern void caml_do_local_roots (scanning_action, value *, value *,
                                      struct caml__roots_block *);
 #else
 CAMLextern void caml_do_local_roots(scanning_action f, char * bottom_of_stack,
-                                    unsigned long last_retaddr, value * gc_regs,
+                                    uintnat last_retaddr, value * gc_regs,
                                     struct caml__roots_block * local_roots);
 #endif
 

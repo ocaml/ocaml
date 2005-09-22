@@ -112,8 +112,8 @@ CAMLprim value caml_format_float(value fmt, value arg)
   char * buf, * src, * dst, * end;
   mlsize_t len, lenvs;
   double d;
-  long flen = Int_val(l);
-  long fidx = Int_val(idx);
+  intnat flen = Long_val(l);
+  intnat fidx = Long_val(idx);
 
   lenvs = caml_string_length(vs);
   len =
@@ -159,7 +159,7 @@ CAMLprim value caml_float_of_string(value vs)
 
 CAMLprim value caml_int_of_float(value f)
 {
-  return Val_long((long) Double_val(f));
+  return Val_long((intnat) Double_val(f));
 }
 
 CAMLprim value caml_float_of_int(value n)

@@ -91,7 +91,7 @@ CAMLprim value camltk_opentk(value argv)
       /* Register cltclinterp for use in other related extensions */
       value *interp = caml_named_value("cltclinterp");
       if (interp != NULL)
-        Store_field(*interp,0,copy_nativeint((long)cltclinterp));
+        Store_field(*interp,0,copy_nativeint((intnat)cltclinterp));
     }
 
     if (Tcl_Init(cltclinterp) != TCL_OK)

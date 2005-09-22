@@ -27,22 +27,41 @@
 #include "compatibility.h"
 #endif
 
-/* Types for signed chars, 16-bit integers, 32-bit integers, 64-bit integers */
+/* Types for signed chars, 32-bit integers, 64-bit integers,
+   native integers (as wide as a pointer type) */
 
 typedef signed char schar;
 
-typedef short int16;            /* FIXME -- not true on the Cray T3E */
-typedef unsigned short uint16;  /* FIXME -- not true on the Cray T3E */
+#if SIZEOF_PTR == SIZEOF_LONG
+typedef long intnat;
+typedef unsigned long uintnat;
+#define ARCH_INTNAT_PRINTF_FORMAT "l"
+#elif SIZEOF_PTR == SIZEOF_INT
+typedef int intnat;
+typedef unsigned int uintnat;
+#define ARCH_INTNAT_PRINTF_FORMAT ""
+#elif SIZEOF_PTR == 8 && defined(ARCH_INT64_TYPE)
+typedef ARCH_INT64_TYPE intnat;
+typedef ARCH_UINT64_TYPE uintnat;
+#define ARCH_INTNAT_PRINTF_FORMAT ARCH_INT64_PRINTF_FORMAT
+#else
+#error "No integer type available to represent pointers"
+#endif
 
 #if SIZEOF_INT == 4
 typedef int int32;
 typedef unsigned int uint32;
+#define ARCH_INT32_PRINTF_FORMAT ""
 #elif SIZEOF_LONG == 4
 typedef long int32;
 typedef unsigned long uint32;
+#define ARCH_INT32_PRINTF_FORMAT "l"
 #elif SIZEOF_SHORT == 4
 typedef short int32;
 typedef unsigned short uint32;
+#define ARCH_INT32_PRINTF_FORMAT ""
+#else
+#error "No 32-bit integer type available"
 #endif
 
 #if defined(ARCH_INT64_TYPE)
@@ -85,7 +104,7 @@ typedef struct { uint32 l, h; } uint64, int64;
 /* Memory model parameters */
 
 /* The size of a page for memory management (in bytes) is [1 << Page_log].
-   It must be a multiple of [sizeof (long)]. */
+   It must be a multiple of [sizeof (value)]. */
 #define Page_log 12             /* A page is 4 kilobytes. */
 
 /* Initial size of stack (bytes). */

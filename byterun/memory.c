@@ -290,7 +290,7 @@ CAMLexport value caml_alloc_shr (mlsize_t wosize, tag_t tag)
   }
 #ifdef DEBUG
   {
-    unsigned long i;
+    uintnat i;
     for (i = 0; i < wosize; i++){
       Field (Val_hp (hp), i) = Debug_uninit_major;
     }

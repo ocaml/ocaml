@@ -346,6 +346,7 @@ fi
 
 echo "#define SIZEOF_INT $1" >> m.h
 echo "#define SIZEOF_LONG $2" >> m.h
+echo "#define SIZEOF_PTR $3" >> m.h
 echo "#define SIZEOF_SHORT $4" >> m.h
 
 if test $2 = 8; then

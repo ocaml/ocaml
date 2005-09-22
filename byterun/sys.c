@@ -226,7 +226,7 @@ CAMLprim value caml_sys_system_command(value command)
   CAMLparam1 (command);
   int status, retcode;
   char *buf;
-  unsigned long len;
+  intnat len;
   
   len = caml_string_length (command);
   buf = caml_stat_alloc (len + 1);
@@ -264,7 +264,7 @@ CAMLprim value caml_sys_time(value unit)
 
 CAMLprim value caml_sys_random_seed (value unit)
 {
-  long seed;
+  intnat seed;
 #ifdef HAS_GETTIMEOFDAY
   struct timeval tv;
   gettimeofday(&tv, NULL);

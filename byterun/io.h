@@ -77,13 +77,13 @@ CAMLextern int caml_channel_binary_mode (struct channel *);
 CAMLextern int caml_flush_partial (struct channel *);
 CAMLextern void caml_flush (struct channel *);
 CAMLextern void caml_putword (struct channel *, uint32);
-CAMLextern int caml_putblock (struct channel *, char *, long);
-CAMLextern void caml_really_putblock (struct channel *, char *, long);
+CAMLextern int caml_putblock (struct channel *, char *, intnat);
+CAMLextern void caml_really_putblock (struct channel *, char *, intnat);
 
 CAMLextern unsigned char caml_refill (struct channel *);
 CAMLextern uint32 caml_getword (struct channel *);
-CAMLextern int caml_getblock (struct channel *, char *, long);
-CAMLextern int caml_really_getblock (struct channel *, char *, long);
+CAMLextern int caml_getblock (struct channel *, char *, intnat);
+CAMLextern int caml_really_getblock (struct channel *, char *, intnat);
 
 /* Extract a struct channel * from the heap object representing it */
 

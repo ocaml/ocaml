@@ -70,12 +70,12 @@ char * caml_search_in_path(struct ext_table * path, char * name)
     strcpy(fullname, (char *)(path->contents[i]));
     strcat(fullname, "\\");
     strcat(fullname, name);
-    caml_gc_message(0x100, "Searching %s\n", (unsigned long) fullname);
+    caml_gc_message(0x100, "Searching %s\n", (uintnat) fullname);
     if (stat(fullname, &st) == 0 && S_ISREG(st.st_mode)) return fullname;
     caml_stat_free(fullname);
   }
  not_found:
-  caml_gc_message(0x100, "%s not found in search path\n", (unsigned long) name);
+  caml_gc_message(0x100, "%s not found in search path\n", (uintnat) name);
   fullname = caml_stat_alloc(strlen(name) + 1);
   strcpy(fullname, name);
   return fullname;
@@ -98,7 +98,7 @@ CAMLexport char * caml_search_exe_in_path(char * name)
 			 &filepart);
     if (retcode == 0) {
       caml_gc_message(0x100, "%s not found in search path\n",
-		      (unsigned long) name);
+		      (uintnat) name);
       strcpy(fullname, name);
       break;
     }
@@ -345,7 +345,7 @@ CAMLexport void caml_expand_command_line(int * argcp, char *** argvp)
 int caml_read_directory(char * dirname, struct ext_table * contents)
 {
   char * template;
-  long h;
+  intptr_t h;
   struct _finddata_t fileinfo;
   char * p;
 

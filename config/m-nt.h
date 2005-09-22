@@ -21,6 +21,7 @@
 #undef ARCH_ALIGN_DOUBLE
 #define SIZEOF_INT 4
 #define SIZEOF_LONG 4
+#define SIZEOF_PTR 4
 #define SIZEOF_SHORT 2
 #ifdef __MINGW32__
 #define ARCH_INT64_TYPE long long

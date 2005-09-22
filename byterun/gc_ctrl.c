@@ -26,23 +26,23 @@
 #include "stacks.h"
 
 #ifndef NATIVE_CODE
-extern unsigned long caml_max_stack_size;    /* defined in stacks.c */
+extern uintnat caml_max_stack_size;    /* defined in stacks.c */
 #endif
 
 double caml_stat_minor_words = 0.0,
        caml_stat_promoted_words = 0.0,
        caml_stat_major_words = 0.0;
 
-long caml_stat_minor_collections = 0,
-     caml_stat_major_collections = 0,
-     caml_stat_heap_size = 0,              /* bytes */
-     caml_stat_top_heap_size = 0,          /* bytes */
-     caml_stat_compactions = 0,
-     caml_stat_heap_chunks = 0;
+intnat caml_stat_minor_collections = 0,
+       caml_stat_major_collections = 0,
+       caml_stat_heap_size = 0,              /* bytes */
+       caml_stat_top_heap_size = 0,          /* bytes */
+       caml_stat_compactions = 0,
+       caml_stat_heap_chunks = 0;
 
 extern asize_t caml_major_heap_increment;  /* bytes; see major_gc.c */
-extern unsigned long caml_percent_free;    /*        see major_gc.c */
-extern unsigned long caml_percent_max;     /*        see compact.c */
+extern uintnat caml_percent_free;    /*        see major_gc.c */
+extern uintnat caml_percent_max;     /*        see compact.c */
 
 #define Next(hp) ((hp) + Bhsize_hp (hp))
 
@@ -116,9 +116,9 @@ static void check_block (char *hp)
 static value heap_stats (int returnstats)
 {
   CAMLparam0 ();
-  long live_words = 0, live_blocks = 0,
-       free_words = 0, free_blocks = 0, largest_free = 0,
-       fragments = 0, heap_chunks = 0;
+  intnat live_words = 0, live_blocks = 0,
+         free_words = 0, free_blocks = 0, largest_free = 0,
+         fragments = 0, heap_chunks = 0;
   char *chunk = caml_heap_start, *chunk_end;
   char *cur_hp, *prev_hp;
   header_t cur_hd;
@@ -203,11 +203,11 @@ static value heap_stats (int returnstats)
                       + (double) Wsize_bsize (caml_young_end - caml_young_ptr);
     double prowords = caml_stat_promoted_words;
     double majwords = caml_stat_major_words + (double) caml_allocated_words;
-    long mincoll = caml_stat_minor_collections;
-    long majcoll = caml_stat_major_collections;
-    long heap_words = Wsize_bsize (caml_stat_heap_size);
-    long cpct = caml_stat_compactions;
-    long top_heap_words = Wsize_bsize (caml_stat_top_heap_size);
+    intnat mincoll = caml_stat_minor_collections;
+    intnat majcoll = caml_stat_major_collections;
+    intnat heap_words = Wsize_bsize (caml_stat_heap_size);
+    intnat cpct = caml_stat_compactions;
+    intnat top_heap_words = Wsize_bsize (caml_stat_top_heap_size);
 
     res = caml_alloc_tuple (15);
     Store_field (res, 0, caml_copy_double (minwords));
@@ -254,12 +254,12 @@ CAMLprim value caml_gc_quick_stat(value v)
                     + (double) Wsize_bsize (caml_young_end - caml_young_ptr);
   double prowords = caml_stat_promoted_words;
   double majwords = caml_stat_major_words + (double) caml_allocated_words;
-  long mincoll = caml_stat_minor_collections;
-  long majcoll = caml_stat_major_collections;
-  long heap_words = caml_stat_heap_size / sizeof (value);
-  long top_heap_words = caml_stat_top_heap_size / sizeof (value);
-  long cpct = caml_stat_compactions;
-  long heap_chunks = caml_stat_heap_chunks;
+  intnat mincoll = caml_stat_minor_collections;
+  intnat majcoll = caml_stat_major_collections;
+  intnat heap_words = caml_stat_heap_size / sizeof (value);
+  intnat top_heap_words = caml_stat_top_heap_size / sizeof (value);
+  intnat cpct = caml_stat_compactions;
+  intnat heap_chunks = caml_stat_heap_chunks;
 
   res = caml_alloc_tuple (15);
   Store_field (res, 0, caml_copy_double (minwords));
@@ -319,17 +319,17 @@ CAMLprim value caml_gc_get(value v)
 
 #define Max(x,y) ((x) < (y) ? (y) : (x))
 
-static unsigned long norm_pfree (long unsigned int p)
+static uintnat norm_pfree (uintnat p)
 {
   return Max (p, 1);
 }
 
-static unsigned long norm_pmax (long unsigned int p)
+static uintnat norm_pmax (uintnat p)
 {
   return p;
 }
 
-static long norm_heapincr (long unsigned int i)
+static intnat norm_heapincr (uintnat i)
 {
 #define Psv (Wsize_bsize (Page_size))
   i = ((i + Psv - 1) / Psv) * Psv;
@@ -337,7 +337,7 @@ static long norm_heapincr (long unsigned int i)
   return i;
 }
 
-static long norm_minsize (long int s)
+static intnat norm_minsize (intnat s)
 {
   if (s < Minor_heap_min) s = Minor_heap_min;
   if (s > Minor_heap_max) s = Minor_heap_max;
@@ -346,7 +346,7 @@ static long norm_minsize (long int s)
 
 CAMLprim value caml_gc_set(value v)
 {
-  unsigned long newpf, newpm;
+  uintnat newpf, newpm;
   asize_t newheapincr;
   asize_t newminsize;
 
@@ -399,8 +399,9 @@ static void test_and_compact (void)
   fp = 100.0 * caml_fl_cur_size
        / (Wsize_bsize (caml_stat_heap_size) - caml_fl_cur_size);
   if (fp > 1000000.0) fp = 1000000.0;
-  caml_gc_message (0x200, "Estimated overhead (lower bound) = %lu%%\n",
-                   (unsigned long) fp);
+  caml_gc_message (0x200, "Estimated overhead (lower bound) = %"
+                          ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
+                   (uintnat) fp);
   if (fp >= caml_percent_max && caml_stat_heap_chunks > 1){
     caml_gc_message (0x200, "Automatic compaction triggered.\n", 0);
     caml_compact_heap ();
@@ -447,11 +448,11 @@ CAMLprim value caml_gc_compaction(value v)
   return Val_unit;
 }
 
-void caml_init_gc (unsigned long minor_size, unsigned long major_size,
-                   unsigned long major_incr, unsigned long percent_fr,
-                   unsigned long percent_m)
+void caml_init_gc (uintnat minor_size, uintnat major_size,
+                   uintnat major_incr, uintnat percent_fr,
+                   uintnat percent_m)
 {
-  unsigned long major_heap_size = Bsize_wsize (norm_heapincr (major_size));
+  uintnat major_heap_size = Bsize_wsize (norm_heapincr (major_size));
 
 #ifdef DEBUG
   caml_gc_message (-1, "### O'Caml runtime: debug mode ###\n", 0);

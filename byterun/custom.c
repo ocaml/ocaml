@@ -22,7 +22,7 @@
 #include "mlvalues.h"
 
 CAMLexport value caml_alloc_custom(struct custom_operations * ops,
-                                   unsigned long size,
+                                   uintnat size,
                                    mlsize_t mem,
                                    mlsize_t max)
 {

@@ -27,7 +27,7 @@ static int msg_flag_table[] = {
 CAMLprim value unix_recv(value sock, value buff, value ofs, value len, value flags)
 {
   int ret;
-  long numbytes;
+  intnat numbytes;
   char iobuf[UNIX_BUFFER_SIZE];
 
   Begin_root (buff);
@@ -49,7 +49,7 @@ CAMLprim value unix_recv(value sock, value buff, value ofs, value len, value fla
 CAMLprim value unix_recvfrom(value sock, value buff, value ofs, value len, value flags)
 {
   int ret;
-  long numbytes;
+  intnat numbytes;
   char iobuf[UNIX_BUFFER_SIZE];
   value res;
   value adr = Val_unit;
@@ -82,7 +82,7 @@ CAMLprim value unix_recvfrom(value sock, value buff, value ofs, value len, value
 CAMLprim value unix_send(value sock, value buff, value ofs, value len, value flags)
 {
   int ret;
-  long numbytes;
+  intnat numbytes;
   char iobuf[UNIX_BUFFER_SIZE];
 
   numbytes = Long_val(len);
@@ -102,7 +102,7 @@ CAMLprim value unix_send(value sock, value buff, value ofs, value len, value fla
 value unix_sendto_native(value sock, value buff, value ofs, value len, value flags, value dest)
 {
   int ret;
-  long numbytes;
+  intnat numbytes;
   char iobuf[UNIX_BUFFER_SIZE];
   union sock_addr_union addr;
   socklen_param_type addr_len;

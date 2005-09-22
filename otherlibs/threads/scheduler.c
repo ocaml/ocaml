@@ -653,7 +653,7 @@ value thread_inchan_ready(value vchan) /* ML */
 value thread_outchan_ready(value vchan, value vsize) /* ML */
 {
   struct channel * chan = Channel(vchan);
-  long size = Long_val(vsize);
+  intnat size = Long_val(vsize);
   /* Negative size means we want to flush the buffer entirely */
   if (size < 0) {
     return Val_bool(chan->curr == chan->buff);

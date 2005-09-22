@@ -75,7 +75,7 @@ struct caml_thread_struct {
   struct caml_thread_struct * prev;
 #ifdef NATIVE_CODE
   char * bottom_of_stack;       /* Saved value of caml_bottom_of_stack */
-  unsigned long last_retaddr;   /* Saved value of caml_last_return_address */
+  uintnat last_retaddr;         /* Saved value of caml_last_return_address */
   value * gc_regs;              /* Saved value of caml_gc_regs */
   char * exception_pointer;     /* Saved value of caml_exception_pointer */
   struct caml__roots_block * local_roots; /* Saved value of local_roots */
@@ -120,7 +120,7 @@ static pthread_key_t thread_descriptor_key;
 static pthread_key_t last_channel_locked_key;
 
 /* Identifier for next thread creation */
-static long thread_next_ident = 0;
+static intnat thread_next_ident = 0;
 
 /* Whether to use sched_yield() or not */
 static int broken_sched_yield = 0;

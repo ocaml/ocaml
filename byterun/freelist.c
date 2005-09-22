@@ -55,7 +55,7 @@ static void fl_check (void)
 {
   char *cur, *prev;
   int prev_found = 0, merge_found = 0;
-  unsigned long size_found = 0;
+  uintnat size_found = 0;
 
   prev = Fl_head;
   cur = Next (prev);

@@ -34,7 +34,7 @@ void (*caml_scan_roots_hook) (scanning_action) = NULL;
 /* The hashtable of frame descriptors */
 
 typedef struct {
-  unsigned long retaddr;
+  uintnat retaddr;
   short frame_size;
   short num_live;
   short live_ofs[1];
@@ -44,14 +44,14 @@ static frame_descr ** frame_descriptors = NULL;
 static int frame_descriptors_mask;
 
 #define Hash_retaddr(addr) \
-  (((unsigned long)(addr) >> 3) & frame_descriptors_mask)
+  (((uintnat)(addr) >> 3) & frame_descriptors_mask)
 
 static void init_frame_descriptors(void)
 {
-  long num_descr, tblsize, i, j, len;
-  long * tbl;
+  intnat num_descr, tblsize, i, j, len;
+  intnat * tbl;
   frame_descr * d;
-  unsigned long h;
+  uintnat h;
 
   /* Count the frame descriptors */
   num_descr = 0;
@@ -81,7 +81,7 @@ static void init_frame_descriptors(void)
       }
       frame_descriptors[h] = d;
       d = (frame_descr *)
-        (((unsigned long)d +
+        (((uintnat)d +
           sizeof(char *) + sizeof(short) + sizeof(short) +
           sizeof(short) * d->num_live + sizeof(frame_descr *) - 1)
          & -sizeof(frame_descr *));
@@ -92,20 +92,20 @@ static void init_frame_descriptors(void)
 /* Communication with [caml_start_program] and [caml_call_gc]. */
 
 char * caml_bottom_of_stack = NULL; /* no stack initially */
-unsigned long caml_last_return_address = 1; /* not in Caml code initially */
+uintnat caml_last_return_address = 1; /* not in Caml code initially */
 value * caml_gc_regs;
-long caml_globals_inited = 0;
-static long caml_globals_scanned = 0;
+intnat caml_globals_inited = 0;
+static intnat caml_globals_scanned = 0;
 
 /* Call [caml_oldify_one] on (at least) all the roots that point to the minor
    heap. */
 void caml_oldify_local_roots (void)
 {
   char * sp;
-  unsigned long retaddr;
+  uintnat retaddr;
   value * regs;
   frame_descr * d;
-  unsigned long h;
+  uintnat h;
   int i, j, n, ofs;
   short * p;
   value glob;
@@ -227,14 +227,14 @@ void caml_do_roots (scanning_action f)
 }
 
 void caml_do_local_roots(scanning_action f, char * bottom_of_stack,
-                         unsigned long last_retaddr, value * gc_regs,
+                         uintnat last_retaddr, value * gc_regs,
                          struct caml__roots_block * local_roots)
 {
   char * sp;
-  unsigned long retaddr;
+  uintnat retaddr;
   value * regs;
   frame_descr * d;
-  unsigned long h;
+  uintnat h;
   int i, j, n, ofs;
   short * p;
   value * root;

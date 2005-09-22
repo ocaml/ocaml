@@ -18,7 +18,7 @@ include ../../../config/Makefile
 CAMLC=../../../boot/ocamlrun ../../../ocamlc -I ../../../stdlib
 CAMLOPT=../../../boot/ocamlrun ../../../ocamlopt -I ../../../stdlib
 CC=$(BYTECC)
-CFLAGS=-I.. $(BYTECCCOMPOPTS)
+CFLAGS=-I.. -I../../../byterun $(BYTECCCOMPOPTS)
 
 test: test.byt test.opt
 	if $(SUPPORTS_SHARED_LIBRARIES); then ../../../byterun/ocamlrun -I .. ./test.byt; else ./test.byt; fi

@@ -29,9 +29,9 @@
 #include "mlvalues.h"
 #include "reverse.h"
 
-static unsigned long obj_counter;  /* Number of objects emitted so far */
-static unsigned long size_32;  /* Size in words of 32-bit block for struct. */
-static unsigned long size_64;  /* Size in words of 64-bit block for struct. */
+static uintnat obj_counter;  /* Number of objects emitted so far */
+static uintnat size_32;  /* Size in words of 32-bit block for struct. */
+static uintnat size_64;  /* Size in words of 64-bit block for struct. */
 
 static int extern_ignore_sharing; /* Flag to ignore sharing */
 static int extern_closures;     /* Flag to allow externing code pointers */
@@ -156,10 +156,10 @@ static void free_extern_output(void)
   extern_output_first = NULL;
 }
 
-static void grow_extern_output(long required)
+static void grow_extern_output(intnat required)
 {
   struct output_block * blk;
-  long extra;
+  intnat extra;
 
   if (extern_userprovided_output != NULL) {
     extern_replay_trail();
@@ -179,10 +179,10 @@ static void grow_extern_output(long required)
   extern_limit = extern_output_block->data + SIZE_EXTERN_OUTPUT_BLOCK + extra;
 }
 
-static long extern_output_length(void)
+static intnat extern_output_length(void)
 {
   struct output_block * blk;
-  long len;
+  intnat len;
 
   if (extern_userprovided_output != NULL) {
     return extern_ptr - extern_userprovided_output;
@@ -215,7 +215,7 @@ static void extern_invalid_argument(char *msg)
   if (extern_ptr >= extern_limit) grow_extern_output(1); \
   *extern_ptr++ = (c)
 
-static void writeblock(char *data, long len)
+static void writeblock(char *data, intnat len)
 {
   if (extern_ptr + len > extern_limit) grow_extern_output(len);
   memmove(extern_ptr, data, len);
@@ -230,7 +230,7 @@ static void writeblock(char *data, long len)
   caml_serialize_block_float_8((data), (ndoubles))
 #endif
 
-static void writecode8(int code, long int val)
+static void writecode8(int code, intnat val)
 {
   if (extern_ptr + 2 > extern_limit) grow_extern_output(2);
   extern_ptr[0] = code;
@@ -238,7 +238,7 @@ static void writecode8(int code, long int val)
   extern_ptr += 2;
 }
 
-static void writecode16(int code, long int val)
+static void writecode16(int code, intnat val)
 {
   if (extern_ptr + 3 > extern_limit) grow_extern_output(3);
   extern_ptr[0] = code;
@@ -247,7 +247,7 @@ static void writecode16(int code, long int val)
   extern_ptr += 3;
 }
 
-static void write32(long int val)
+static void write32(intnat val)
 {
   if (extern_ptr + 4 > extern_limit) grow_extern_output(4);
   extern_ptr[0] = val >> 24;
@@ -257,7 +257,7 @@ static void write32(long int val)
   extern_ptr += 4;
 }
 
-static void writecode32(int code, long int val)
+static void writecode32(int code, intnat val)
 {
   if (extern_ptr + 5 > extern_limit) grow_extern_output(5);
   extern_ptr[0] = code;
@@ -269,7 +269,7 @@ static void writecode32(int code, long int val)
 }
 
 #ifdef ARCH_SIXTYFOUR
-static void writecode64(int code, long val)
+static void writecode64(int code, intnat val)
 {
   int i;
   if (extern_ptr + 9 > extern_limit) grow_extern_output(9);
@@ -284,7 +284,7 @@ static void extern_rec(value v)
 {
  tailcall:
   if (Is_long(v)) {
-    long n = Long_val(v);
+    intnat n = Long_val(v);
     if (n >= 0 && n < 0x40) {
       Write(PREFIX_SMALL_INT + n);
     } else if (n >= -(1 << 7) && n < (1 << 7)) {
@@ -327,7 +327,7 @@ static void extern_rec(value v)
     }
     /* Check if already seen */
     if (Color_hd(hd) == Caml_blue) {
-      unsigned long d = obj_counter - (unsigned long) Field(v, 0);
+      uintnat d = obj_counter - (uintnat) Field(v, 0);
       if (d < 0x100) {
         writecode8(CODE_SHARED8, d);
       } else if (d < 0x10000) {
@@ -389,10 +389,10 @@ static void extern_rec(value v)
       extern_rec(v - Infix_offset_hd(hd));
       break;
     case Custom_tag: {
-      unsigned long sz_32, sz_64;
+      uintnat sz_32, sz_64;
       char * ident = Custom_ops_val(v)->identifier;
-      void (*serialize)(value v, unsigned long * wsize_32,
-                        unsigned long * wsize_64)
+      void (*serialize)(value v, uintnat * wsize_32,
+                        uintnat * wsize_64)
         = Custom_ops_val(v)->serialize;
       if (serialize == NULL) 
         extern_invalid_argument("output_value: abstract value (Custom)");
@@ -445,9 +445,9 @@ static void extern_rec(value v)
 enum { NO_SHARING = 1, CLOSURES = 2 };
 static int extern_flags[] = { NO_SHARING, CLOSURES };
 
-static long extern_value(value v, value flags)
+static intnat extern_value(value v, value flags)
 {
-  long res_len;
+  intnat res_len;
   int fl;
   /* Parse flag list */
   fl = caml_convert_flag_list(flags, extern_flags);
@@ -495,7 +495,7 @@ static long extern_value(value v, value flags)
 
 void caml_output_val(struct channel *chan, value v, value flags)
 {
-  long len;
+  intnat len;
   struct output_block * blk, * nextblk;
 
   if (! caml_channel_binary_mode(chan))
@@ -527,7 +527,7 @@ CAMLprim value caml_output_value(value vchan, value v, value flags)
 
 CAMLprim value caml_output_value_to_string(value v, value flags)
 {
-  long len, ofs;
+  intnat len, ofs;
   value res;
   struct output_block * blk;
 
@@ -546,7 +546,7 @@ CAMLprim value caml_output_value_to_string(value v, value flags)
 CAMLprim value caml_output_value_to_buffer(value buf, value ofs, value len,
                                            value v, value flags)
 {
-  long len_res;
+  intnat len_res;
   extern_userprovided_output = &Byte(buf, Long_val(ofs));
   extern_ptr = extern_userprovided_output;
   extern_limit = extern_userprovided_output + Long_val(len);
@@ -556,9 +556,9 @@ CAMLprim value caml_output_value_to_buffer(value buf, value ofs, value len,
 
 CAMLexport void caml_output_value_to_malloc(value v, value flags,
                                             /*out*/ char ** buf,
-                                            /*out*/ long * len)
+                                            /*out*/ intnat * len)
 {
-  long len_res;
+  intnat len_res;
   char * res;
   struct output_block * blk;
 
@@ -576,10 +576,10 @@ CAMLexport void caml_output_value_to_malloc(value v, value flags,
   free_extern_output();
 }
 
-CAMLexport long caml_output_value_to_block(value v, value flags,
-                                           char * buf, long len)
+CAMLexport intnat caml_output_value_to_block(value v, value flags,
+                                             char * buf, intnat len)
 {
-  long len_res;
+  intnat len_res;
   extern_userprovided_output = buf;
   extern_ptr = extern_userprovided_output;
   extern_limit = extern_userprovided_output + len;
@@ -629,14 +629,14 @@ CAMLexport void caml_serialize_float_8(double f)
   caml_serialize_block_8(&f, 1);
 }
 
-CAMLexport void caml_serialize_block_1(void * data, long len)
+CAMLexport void caml_serialize_block_1(void * data, intnat len)
 {
   if (extern_ptr + len > extern_limit) grow_extern_output(len);
   memmove(extern_ptr, data, len);
   extern_ptr += len;
 }
 
-CAMLexport void caml_serialize_block_2(void * data, long len)
+CAMLexport void caml_serialize_block_2(void * data, intnat len)
 {
   if (extern_ptr + 2 * len > extern_limit) grow_extern_output(2 * len);
 #ifndef ARCH_BIG_ENDIAN
@@ -653,7 +653,7 @@ CAMLexport void caml_serialize_block_2(void * data, long len)
 #endif
 }
 
-CAMLexport void caml_serialize_block_4(void * data, long len)
+CAMLexport void caml_serialize_block_4(void * data, intnat len)
 {
   if (extern_ptr + 4 * len > extern_limit) grow_extern_output(4 * len);
 #ifndef ARCH_BIG_ENDIAN
@@ -670,7 +670,7 @@ CAMLexport void caml_serialize_block_4(void * data, long len)
 #endif
 }
 
-CAMLexport void caml_serialize_block_8(void * data, long len)
+CAMLexport void caml_serialize_block_8(void * data, intnat len)
 {
   if (extern_ptr + 8 * len > extern_limit) grow_extern_output(8 * len);
 #ifndef ARCH_BIG_ENDIAN
@@ -687,7 +687,7 @@ CAMLexport void caml_serialize_block_8(void * data, long len)
 #endif
 }
 
-CAMLexport void caml_serialize_block_float_8(void * data, long len)
+CAMLexport void caml_serialize_block_float_8(void * data, intnat len)
 {
   if (extern_ptr + 8 * len > extern_limit) grow_extern_output(8 * len);
 #if ARCH_FLOAT_ENDIANNESS == 0x01234567

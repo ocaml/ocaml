@@ -179,13 +179,13 @@ sp is a local copy of the global variable caml_extern_sp. */
 /* Division and modulus madness */
 
 #ifdef NONSTANDARD_DIV_MOD
-extern long caml_safe_div(long p, long q);
-extern long caml_safe_mod(long p, long q);
+extern intnat caml_safe_div(intnat p, intnat q);
+extern intnat caml_safe_mod(intnat p, intnat q);
 #endif
 
 
 #ifdef DEBUG
-static long caml_bcodcount;
+static intnat caml_bcodcount;
 #endif
 
 /* The interpreter itself */
@@ -209,7 +209,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #endif
 #endif
   value env;
-  long extra_args;
+  intnat extra_args;
   struct longjmp_buffer * initial_external_raise;
   int initial_sp_offset;
   /* volatile ensures that initial_local_roots and saved_pc
@@ -779,13 +779,12 @@ value caml_interprete(code_t prog, asize_t prog_size)
     Instruct(SWITCH): {
       uint32 sizes = *pc++;
       if (Is_block(accu)) {
-        long index = Tag_val(accu);
-        Assert (index >= 0);
-        Assert (index < (sizes >> 16));
+        intnat index = Tag_val(accu);
+        Assert ((uintnat) index < (sizes >> 16));
         pc += pc[(sizes & 0xFFFF) + index];
       } else {
-        long index = Long_val(accu);
-        Assert ((unsigned long) index < (sizes & 0xFFFF)) ;
+        intnat index = Long_val(accu);
+        Assert ((uintnat) index < (sizes & 0xFFFF)) ;
         pc += pc[index];
       }
       Next;
@@ -939,16 +938,16 @@ value caml_interprete(code_t prog, asize_t prog_size)
 /* Integer arithmetic */
 
     Instruct(NEGINT):
-      accu = (value)(2 - (long)accu); Next;
+      accu = (value)(2 - (intnat)accu); Next;
     Instruct(ADDINT):
-      accu = (value)((long) accu + (long) *sp++ - 1); Next;
+      accu = (value)((intnat) accu + (intnat) *sp++ - 1); Next;
     Instruct(SUBINT):
-      accu = (value)((long) accu - (long) *sp++ + 1); Next;
+      accu = (value)((intnat) accu - (intnat) *sp++ + 1); Next;
     Instruct(MULINT):
       accu = Val_long(Long_val(accu) * Long_val(*sp++)); Next;
 
     Instruct(DIVINT): {
-      long divisor = Long_val(*sp++);
+      intnat divisor = Long_val(*sp++);
       if (divisor == 0) { Setup_for_c_call; caml_raise_zero_divide(); }
 #ifdef NONSTANDARD_DIV_MOD
       accu = Val_long(caml_safe_div(Long_val(accu), divisor));
@@ -958,7 +957,7 @@ value caml_interprete(code_t prog, asize_t prog_size)
       Next;
     }
     Instruct(MODINT): {
-      long divisor = Long_val(*sp++);
+      intnat divisor = Long_val(*sp++);
       if (divisor == 0) { Setup_for_c_call; caml_raise_zero_divide(); }
 #ifdef NONSTANDARD_DIV_MOD
       accu = Val_long(caml_safe_mod(Long_val(accu), divisor));
@@ -968,48 +967,48 @@ value caml_interprete(code_t prog, asize_t prog_size)
       Next;
     }
     Instruct(ANDINT):
-      accu = (value)((long) accu & (long) *sp++); Next;
+      accu = (value)((intnat) accu & (intnat) *sp++); Next;
     Instruct(ORINT):
-      accu = (value)((long) accu | (long) *sp++); Next;
+      accu = (value)((intnat) accu | (intnat) *sp++); Next;
     Instruct(XORINT):
-      accu = (value)(((long) accu ^ (long) *sp++) | 1); Next;
+      accu = (value)(((intnat) accu ^ (intnat) *sp++) | 1); Next;
     Instruct(LSLINT):
-      accu = (value)((((long) accu - 1) << Long_val(*sp++)) + 1); Next;
+      accu = (value)((((intnat) accu - 1) << Long_val(*sp++)) + 1); Next;
     Instruct(LSRINT):
-      accu = (value)((((unsigned long) accu - 1) >> Long_val(*sp++)) | 1);
+      accu = (value)((((uintnat) accu - 1) >> Long_val(*sp++)) | 1);
       Next;
     Instruct(ASRINT):
-      accu = (value)((((long) accu - 1) >> Long_val(*sp++)) | 1); Next;
+      accu = (value)((((intnat) accu - 1) >> Long_val(*sp++)) | 1); Next;
 
-#define Integer_comparison(sign,opname,tst) \
+#define Integer_comparison(typ,opname,tst) \
     Instruct(opname): \
-      accu = Val_int((sign long) accu tst (sign long) *sp++); Next;
+      accu = Val_int((typ) accu tst (typ) *sp++); Next;
 
-    Integer_comparison(signed,EQ, ==)
-    Integer_comparison(signed,NEQ, !=)
-    Integer_comparison(signed,LTINT, <)
-    Integer_comparison(signed,LEINT, <=)
-    Integer_comparison(signed,GTINT, >)
-    Integer_comparison(signed,GEINT, >=)
-    Integer_comparison(unsigned,ULTINT, <)
-    Integer_comparison(unsigned,UGEINT, >=)
+    Integer_comparison(intnat,EQ, ==)
+    Integer_comparison(intnat,NEQ, !=)
+    Integer_comparison(intnat,LTINT, <)
+    Integer_comparison(intnat,LEINT, <=)
+    Integer_comparison(intnat,GTINT, >)
+    Integer_comparison(intnat,GEINT, >=)
+    Integer_comparison(uintnat,ULTINT, <)
+    Integer_comparison(uintnat,UGEINT, >=)
 
-#define Integer_branch_comparison(sign,opname,tst,debug) \
+#define Integer_branch_comparison(typ,opname,tst,debug) \
     Instruct(opname): \
-      if ( *pc++ tst ((sign long)Long_val(accu))) { \
+      if ( *pc++ tst (typ) Long_val(accu)) { \
         pc += *pc ; \
       } else { \
         pc++ ; \
       } ; Next;
 
-    Integer_branch_comparison(signed,BEQ, ==, "==")
-    Integer_branch_comparison(signed,BNEQ, !=, "!=")
-    Integer_branch_comparison(signed,BLTINT, <, "<")
-    Integer_branch_comparison(signed,BLEINT, <=, "<=")
-    Integer_branch_comparison(signed,BGTINT, >, ">")
-    Integer_branch_comparison(signed,BGEINT, >=, ">=")
-    Integer_branch_comparison(unsigned,BULTINT, <, "<")
-    Integer_branch_comparison(unsigned,BUGEINT, >=, ">=")
+    Integer_branch_comparison(intnat,BEQ, ==, "==")
+    Integer_branch_comparison(intnat,BNEQ, !=, "!=")
+    Integer_branch_comparison(intnat,BLTINT, <, "<")
+    Integer_branch_comparison(intnat,BLEINT, <=, "<=")
+    Integer_branch_comparison(intnat,BGTINT, >, ">")
+    Integer_branch_comparison(intnat,BGEINT, >=, ">=")
+    Integer_branch_comparison(uintnat,BULTINT, <, "<")
+    Integer_branch_comparison(uintnat,BUGEINT, >=, ">=")
 
     Instruct(OFFSETINT):
       accu += *pc << 1;
@@ -1120,8 +1119,9 @@ value caml_interprete(code_t prog, asize_t prog_size)
 #if _MSC_VER >= 1200
       __assume(0);
 #else
-      caml_fatal_error_arg("Fatal error: bad opcode (%lx)\n",
-                           (char *)(long)(*(pc-1)));
+      caml_fatal_error_arg("Fatal error: bad opcode (%"
+                           ARCH_INTNAT_PRINTF_FORMAT "x)\n",
+                           (uintnat)(*(pc-1)));
 #endif
     }
   }
