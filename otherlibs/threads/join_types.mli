@@ -16,9 +16,6 @@
 (* Local automata *)
 (******************)
 
-(* Message queues *)
-type queue = Obj.t list
-
 (* Status managers *)
 type 'a status =
   {
@@ -29,13 +26,15 @@ type 'a status =
   } 
 
 (* Local automaton *)
+type queue 
+
 type automaton = {
   mutable ident : int ; 
   status : Obj.t status ; 
   mutex : Mutex.t ;
   queues : queue array ;
   mutable matches : reaction array ;
-  names : Obj.t ; (* Used for debug : array of channel names *)
+  names : string array ; (* For debug, channel names *)
 } 
 
 and reaction = Obj.t * int * (Obj.t -> Obj.t)
@@ -52,7 +51,7 @@ type t_global =
   | GlobalAutomaton of global_name
 
 type message =
-  | AsyncSend of int * string * t_global array
+  | AsyncSend of int * int * (string * t_global array)
 
 type out_connection =
   {
@@ -68,7 +67,8 @@ type in_connection =
   }
 
 type link_out =
-  | NoConnection
+  | NoConnection of Mutex.t
+  | Connecting of message Join_queue.t
   | Connected of out_connection
 
 type link_in =
@@ -106,8 +106,8 @@ type space =
     space_id : space_id ;
     space_mutex : Mutex.t ;
     next_uid : unit -> int ;
-    uid2local : (int, automaton) Hashtbl.t ;
-    remote_spaces : (space_id, remote_space) Hashtbl.t ;
+    uid2local : (int, automaton) Join_hash.t ;
+    remote_spaces : (space_id, remote_space) Join_hash.t ;
     mutable space_listener : listener ;
   } 
 

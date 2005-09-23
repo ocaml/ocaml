@@ -19,30 +19,15 @@ type request =
   | SyncPut of bool * string * (string * Join_types.t_global array)
   | Get of string
 
-let prerr_exc = function
-  | Unix_error(err, fun_name, arg) ->
-    prerr_string Sys.argv.(0);
-    prerr_string ": \"";
-    prerr_string fun_name;
-    prerr_string "\" failed";
-    if String.length arg > 0 then begin
-      prerr_string " on \"";
-      prerr_string arg;
-      prerr_string "\""
-    end;
-    prerr_string ": ";
-    prerr_endline (error_message err)
-  | e -> prerr_endline (Printexc.to_string e)
-
-let local_addr = Join_space.local_addr
+let local_addr = Join_misc.local_addr
 
 let start_server port =
   let t = Hashtbl.create 13 in
-  let _,sacc = Join_space.create_port port in
+  let _,sacc = Join_misc.create_port port in
   Join.create_process
     (fun () ->
       while true do
-        let (s,_) = Join_space.accept sacc in
+        let (s,_) = Join_misc.force_accept sacc in
         begin try
           let inc = in_channel_of_descr s
           and outc = out_channel_of_descr s in
@@ -67,7 +52,7 @@ let start_server port =
         with e ->
           close s ;
           prerr_string "ns_server went wrong: " ;
-          prerr_exc e
+          Join_misc.prerr_exc e
         end ;
         close s
       done)
@@ -77,23 +62,10 @@ type link = Unix.inet_addr * int
 
 let register_client addr port = addr, port
 
-let connect_to_server verbose addr port =
-  let sock = socket PF_INET SOCK_STREAM 0 in
-  try
-    connect sock (ADDR_INET(addr, port)) ;
-    sock
-  with
-  | e ->
-      if verbose then begin
-        prerr_string "connect to ns went wrong: " ;
-        prerr_exc e
-      end ;
-      close sock ;
-      raise e
 
 
 let lookup (addr, port) key =
-  let s = connect_to_server true addr port in
+  let s = Join_misc.connect_to_server addr port in
   try
     let inc = in_channel_of_descr s
     and outc = out_channel_of_descr s in
@@ -107,13 +79,13 @@ let lookup (addr, port) key =
   | Not_found -> raise Not_found
   | e ->
       prerr_string "ns_lookup went wrong: " ;
-      prerr_exc e ;
+      Join_misc.prerr_exc e ;
       close s ;
       raise Not_found
         
 
 let register  (addr, port) key v =
-  let s = connect_to_server true addr port in
+  let s = Join_misc.connect_to_server addr port in
   try
     let outc = out_channel_of_descr s in
     let msg = Join_space.marshal_message v [] in
@@ -122,53 +94,13 @@ let register  (addr, port) key v =
   with
   | e ->
       prerr_string "ns_register went wrong: " ;
-      prerr_exc e ;
+      Join_misc.prerr_exc e ;
       raise e
 
-type 'a cell =
-    {
-      condition : Condition.t ;
-      mutable cell : 'a option ;
-    } 
 
-let create_cell = { condition = Condition.create () ; cell = None ; }
-
-let thread_call f =
-  let mutex = Mutex.create () in
-  let c = create_cell in
-  ignore
-    (Thread.create
-       (fun () ->
-         let r = f () in
-         Mutex.lock mutex ;
-         c.cell <- Some r ;
-         Condition.signal c.condition ;
-         Mutex.unlock mutex)
-    ()) ;
-  Mutex.lock mutex ;
-  Condition.wait c.condition mutex ;
-  Mutex.unlock mutex ;
-  match c.cell with
-  | Some v -> v
-  | None -> assert false
-
-  
-      
-let force_connect addr port =
-  try
-    connect_to_server true addr port
-  with _ ->
-    let rec do_rec d =
-      Thread.delay d ;
-      try
-        connect_to_server false addr port
-      with
-      | _ ->
-          do_rec (if d > 5.0 then d else 2.0 *. d)
-    in do_rec 0.1
         
 let do_sync_register once (addr, port) key v =
-  let s = force_connect addr port in
+  let s = Join_misc.force_connect addr port in
   try
     let outc = out_channel_of_descr s
     and inc = in_channel_of_descr s in
@@ -180,7 +112,7 @@ let do_sync_register once (addr, port) key v =
   with
   | e ->
       prerr_string "ns_register went wrong: " ;
-      prerr_exc e ;
+      Join_misc.prerr_exc e ;
       raise e
 
 let sync_register ns key v =

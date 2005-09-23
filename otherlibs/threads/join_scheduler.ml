@@ -79,6 +79,7 @@ let pool_size =
     int_of_string (Sys.getenv "POOLSIZE")
   with
   | _ -> 10
+
 and runmax =
    try
     Some (int_of_string (Sys.getenv "RUNMAX"))
@@ -103,16 +104,15 @@ let really_create_process f =
     | Some k when !nthreads - !suspended > k -> raise MaxRun
     | _ -> ()
     end ;
-    let t = Thread.id (thread_new f) in
-(*DEBUG*)debug1 "REAL FORK" (sprintf "%i %s" t (tasks_status ())) ;
-    ignore(t) ;
-    true
+    let t = thread_new f in
+(*DEBUG*)debug1 "REAL FORK" (sprintf "%i %s" (Thread.id t) (tasks_status ())) ;
+    Some t
   with
   | e ->
-(*DEBUG*)debug2 "REAL FORK FAILED"
+(*DEBUG*)debug1 "REAL FORK FAILED"
 (*DEBUG*)  (sprintf "%s, %s" (tasks_status ()) (Printexc.to_string e)) ;
       decr_locked nthreads_mutex nthreads ;
-      false
+      None
       
 
 
@@ -162,7 +162,7 @@ let rec grab_from_pool delay =
   | f::rem ->
       pool_kont := rem ; decr pool_konts ;
       Mutex.unlock pool_mutex ;
-      if not (really_create_process f) then begin
+      if really_create_process f = None then begin
         Mutex.lock pool_mutex ;
         pool_kont := f :: !pool_kont ; incr pool_konts ;
         Mutex.unlock pool_mutex ;
@@ -201,10 +201,41 @@ let create_process f =
     exit_thread () in
 
   if !in_pool = 0 then begin
-    if not (really_create_process g) then put_pool g 
+    match really_create_process g with
+    | None -> put_pool g 
+    | Some _ -> ()
   end else begin
     put_pool g
   end
+
+let rec hard_create_real_process f =
+  match really_create_process f with
+  | None ->
+      Thread.delay 0.1 ;
+      hard_create_real_process f
+  | Some t -> t
+  
+let create_real_process f =
+(*DEBUG*)debug2 "CREATE_REAL_PROCESS" (tasks_status ()) ;
+  incr_active () ;
+(* Wapper around f, to be sure to call my exit_thread *)  
+  let g () = 
+    begin try f ()
+    with e ->
+      flush stdout; flush stderr;
+      thread_uncaught_exception e
+    end ;
+    exit_thread () in
+  hard_create_real_process g
+
+  
+let inform_suspend () =
+(*DEBUG*)incr_locked nthreads_mutex suspended ;
+  become_inactive () ;
+  if !active = !pool_konts then grab_from_pool 0.1
+
+and inform_unsuspend () =
+(*DEBUG*)decr_locked nthreads_mutex suspended
 
 (********************************)
 (* Management of initial thread *)
@@ -220,8 +251,8 @@ let from_pool () =
 (*DEBUG*)debug1 "HOOK" "CREATE" ;    
     incr_active () ;
     let b = really_create_process exit_thread in
-(*DEBUG*)debug1 "HOOK" (if b then "PROCESS CREATED" else "FAILED");
-    if not b then begin
+(*DEBUG*)debug1 "HOOK" (if b <> None then "PROCESS CREATED" else "FAILED");
+    if b=None then begin
       prerr_endline "Threads are exhausted, good bye !"
     end
 

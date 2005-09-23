@@ -18,12 +18,15 @@ open Printf
 
 let create_process f = Join_scheduler.create_process f
 
-let put_queue auto idx a = auto.queues.(idx) <- a :: auto.queues.(idx)
+type queue 
 
-let get_queue auto idx = match auto.queues.(idx) with
+let put_queue auto idx a =
+  auto.queues.(idx) <- Obj.magic (a :: Obj.magic (auto.queues.(idx)))
+
+let get_queue auto idx = match Obj.magic (auto.queues.(idx)) with
 | [] -> assert false
 | a::rem ->
-    auto.queues.(idx) <- rem ;
+    auto.queues.(idx) <- Obj.magic rem ;
     begin match rem with
     | [] -> auto.status.erase idx
     | _  -> ()
@@ -109,16 +112,15 @@ let create_automaton_debug nchans names =
       ident = 0 ;
       status = empty_status nchans ;
       mutex = Mutex.create () ;
-      queues = Array.create nchans [] ;
+      queues = Array.create nchans (Obj.magic []) ;
       matches = [| |] ;
       names = names ;
     } in
   a
 
-let create_automaton nchans = create_automaton_debug nchans (Obj.magic 0)
+let create_automaton nchans = create_automaton_debug nchans [| |]
 
-
-let get_name auto idx = Obj.magic (Obj.field auto.names idx)
+let get_name auto idx = auto.names.(idx)
 
 let patch_table a t =  a.matches <- t
 
@@ -158,10 +160,10 @@ and create_async_alone auto g = Alone (auto, g)
 (* Callbacks from compiled code *)
 
 (* Transfert control to frozen principal thread *)
-let kont_go k f =
-  Join_scheduler.incr_active () ;
+let kont_go k (f:unit -> 'a) =
 (*DEBUG*)debug2 "KONT_GO" "" ;
   k.kval <- Go f ;
+  Join_scheduler.incr_active () ;
   Condition.signal k.kcondition ;
   Mutex.unlock k.kmutex
 
@@ -220,10 +222,9 @@ and local_send_async_alone auto g a =
 
 let send_async chan a = match chan with
 | Async ({local=LocalAutomaton auto}, idx) -> local_send_async auto idx a
-| Alone ({local=LocalAutomaton auto}, g)   -> local_send_async_alone auto g a
-| Async ({local=RemoteAutomaton _}, _)
-| Alone ({local=RemoteAutomaton _}, _)
- -> assert false
+| Async ({local=RemoteAutomaton (rspace, uid)}, idx) ->
+    Join_space.remote_send_async rspace uid idx a
+| Alone (_,_) -> assert false
 
 let local_tail_send_async auto idx a =
 (*DEBUG*)debug3 "TAIL_ASYNC" (sprintf "channel %s, status=%s"
@@ -250,10 +251,9 @@ and local_tail_send_async_alone auto g a =
 let tail_send_async chan a = match chan with
 | Async ({local=LocalAutomaton auto}, idx) ->
     local_tail_send_async auto idx a
-| Alone ({local=LocalAutomaton auto}, g)   ->
-    local_tail_send_async_alone auto g a
-| Async ({local=RemoteAutomaton _}, _)
-| Alone ({local=RemoteAutomaton _}, _)
+| Async ({local=RemoteAutomaton (rspace, uid)}, idx) ->
+    Join_space.remote_send_async rspace uid idx a 
+| Alone (_, _)
  -> assert false
 
 (*********************)
@@ -264,11 +264,9 @@ let tail_send_async chan a = match chan with
 (* No match was found *)
 let kont_suspend k =
 (*DEBUG*)debug3 "KONT_SUSPEND" (Join_scheduler.tasks_status ()) ;
-(*DEBUG*)incr_locked nthreads_mutex suspended ;
-  become_inactive () ;
-  if !active = !pool_konts then grab_from_pool 0.1 ;      
+  Join_scheduler.inform_suspend () ;
   Condition.wait k.kcondition k.kmutex ;
-(*DEBUG*)decr_locked nthreads_mutex suspended ;
+  Join_scheduler.inform_unsuspend () ;
   Mutex.unlock k.kmutex ;
   match k.kval with
   | Go f ->
@@ -276,15 +274,14 @@ let kont_suspend k =
       f ()
   | Ret v ->
 (*DEBUG*)debug3 "REPLIED" (Join_scheduler.tasks_status ()) ;
-      v
+      ((Obj.magic v) : 'a)
   | Start -> assert false
 
 (* Suspend current thread when some match was found *)
 let suspend_for_reply k =
-(*DEBUG*)incr_locked nthreads_mutex suspended ;
-  become_inactive () ;
+  Join_scheduler.inform_suspend () ;
   Condition.wait k.kcondition k.kmutex ;
-(*DEBUG*)decr_locked nthreads_mutex suspended ;
+  Join_scheduler.inform_unsuspend () ;
   Mutex.unlock k.kmutex ;
   match k.kval with
   | Ret v ->
@@ -297,8 +294,8 @@ let suspend_for_reply k =
 let kont_go_suspend kme kpri f =
 (*DEBUG*)debug2 "KONT_GO_SUSPEND" "" ;
 (* awake principal *)
-  incr_active () ;
   kpri.kval <- Go f ;
+  Join_scheduler.incr_active () ;
   Condition.signal kpri.kcondition ;
   suspend_for_reply kme
 
@@ -345,25 +342,13 @@ let local_send_sync auto idx a =
     attempt_match_sync idx kont auto (Obj.magic auto.matches) 0
   end
 
+let _ = Join_space.send_async_ref.Join_space.f <- local_send_async
+
+
 let send_sync auto idx arg = match auto.local with
 | LocalAutomaton a -> local_send_sync a idx arg
 | RemoteAutomaton (_,_) -> assert false
 
-(*
- (* Optimize forwarders *)
-and send_sync_alone auto g a =
-(*DEBUG*)  debug3 "SEND_SYNC_ALONE" (sprintf "match %i" g) ;
-  let _,ipri,f = Obj.magic (Obj.field (Obj.magic auto.matches) g) in
-  if ipri >= 0 then begin
-(*DEBUG*)    debug3 "SEND_SYNC_ALONE" "direct" ;
-    f a    
-  end else begin
-(*DEBUG*)    debug3 "SEND_SYNC_ALONE" "fire" ;
-    Mutex.lock auto.mutex ;
-    let k = kont_create auto in
-    fire_suspend k auto (fun () -> f (k,a))
-  end
-*)
 
 (* This code must create a one-argument closure,
    whose code pointer unambiguously characterize
@@ -373,7 +358,7 @@ and send_sync_alone auto g a =
    sync channels *)
 
 let create_sync auto idx = 
-  let r a = send_sync auto idx a in
+  let r a = Obj.obj (send_sync auto idx a) in
   r
 
 
@@ -396,52 +381,13 @@ let _ =
 let reply_to v k =
 (*DEBUG*)  debug3 "REPLY" (sprintf "%i" (Obj.magic v)) ;
   Mutex.lock k.kmutex ;
-  k.kval <- Ret v ;
+  k.kval <- Ret (Obj.repr v) ;
+  Join_scheduler.incr_active () ;
   Condition.signal k.kcondition ;
   Mutex.unlock k.kmutex 
 
-(********************************)
-(* Management of initial thread *)
-(********************************)
-
-
-(* Called when all active tasks are waiting in thread pool *)
-let from_pool () =
-  if !in_pool > 0 then begin
-(*DEBUG*)debug1 "HOOK" "SHOULD PERPHAPS SIGNAL" ;    
-(*    Condition.signal pool_condition  *) ()
-  end else begin (* Create a new thread to enter pool *)
-(*DEBUG*)debug1 "HOOK" "CREATE" ;    
-    incr_active () ;
-    let b = really_create_process exit_thread in
-(*DEBUG*)debug1 "HOOK" (if b then "PROCESS CREATED" else "FAILED");
-    if not b then begin
-      prerr_endline "Threads are exhausted, good bye !"
-    end
-
-  end
-
-let rec exit_hook () =
-(*DEBUG*)debug1 "HOOK" "enter" ;
-(*DEBUG*)decr_locked nthreads_mutex nthreads ;
-  Mutex.lock active_mutex ;
-  decr active ;
-  begin if !active > 0 then begin
-    if !pool_konts = !active then begin
-      Mutex.unlock active_mutex ;
-      from_pool ()
-    end ;
-(*DEBUG*)debug1 "HOOK" "suspend" ;
-    Condition.wait active_condition active_mutex
-  end else
-    Mutex.unlock active_mutex
-  end ;
-(*DEBUG*)debug1 "HOOK" "over" ;
-  ()
-
-
-
-
+(* TEST *)
+open Join_space
 let t v flags =
-  let (_,t) as p = Join_space.marshal_message v flags in
+  let (_,t) as p = marshal_message v flags in
   Join_space.unmarshal_message p

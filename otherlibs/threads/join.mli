@@ -16,11 +16,11 @@ open Join_types
 
 val create_process : (unit -> unit) -> unit
 
-val get_queue : automaton -> int -> Obj.t
+val get_queue : automaton -> int -> 'a
 val create_automaton : int -> automaton
 
 (* create_automaton nchans *)
-val create_automaton_debug : int -> Obj.t -> automaton
+val create_automaton_debug : int -> string array -> automaton
 val wrap_automaton : automaton -> stub
 val patch_table : automaton -> reaction array -> unit
 
@@ -28,16 +28,16 @@ val patch_table : automaton -> reaction array -> unit
 type async
 val create_async : stub -> int -> async
 val create_async_alone : stub -> int -> async
-val local_send_async : automaton -> int -> Obj.t -> unit
-val local_tail_send_async : automaton -> int -> Obj.t -> unit
-val send_async : async -> Obj.t -> unit
+val local_send_async : automaton -> int -> 'a -> unit
+val local_tail_send_async : automaton -> int -> 'a -> unit
+val send_async : async -> 'a -> unit
 val tail_send_async : async -> Obj.t -> unit
 
 (* Synchronous channels are plain fonctions *)
-val create_sync : stub -> int -> (Obj.t -> Obj.t)
+val create_sync : stub -> int -> ('a -> 'b)
 
 
 type continuation
-val reply_to : Obj.t -> continuation -> unit
+val reply_to : 'a -> continuation -> unit
 
 val t : 'a -> Marshal.extern_flags list -> 'a
