@@ -570,7 +570,8 @@ val open_out_bin : string -> out_channel
    mode, this function behaves like {!Pervasives.open_out}. *)
 
 val open_out_gen : open_flag list -> int -> string -> out_channel
-(** Open the named file for writing, as above. The extra argument [mode]
+(** [open_out_gen mode perm filename] opens the named file for writing,
+   as described above. The extra argument [mode]
    specify the opening mode. The extra argument [perm] specifies
    the file permissions, in case the file must be created.
    {!Pervasives.open_out} and {!Pervasives.open_out_bin} are special
@@ -670,7 +671,8 @@ val open_in_bin : string -> in_channel
    mode, this function behaves like {!Pervasives.open_in}. *)
 
 val open_in_gen : open_flag list -> int -> string -> in_channel
-(** Open the named file for reading, as above. The extra arguments
+(** [open_in mode perm filename] opens the named file for reading,
+   as described above. The extra arguments
    [mode] and [perm] specify the opening mode and file permissions.
    {!Pervasives.open_in} and {!Pervasives.open_in_bin} are special
    cases of this function. *)
