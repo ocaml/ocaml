@@ -188,7 +188,7 @@ module Array3 = struct
         if Array.length col <> dim3 then
           invalid_arg("Bigarray.Array3.of_array: non-cubic data");
         for k = 0 to dim3 - 1 do
-          set ba (i + ofs) (j + ofs) (k + ofs) col.(j)
+          set ba (i + ofs) (j + ofs) (k + ofs) col.(k)
         done
       done
     done;
