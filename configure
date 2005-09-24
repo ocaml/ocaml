@@ -323,13 +323,8 @@ set `sh ./runtest sizes.c`
 case "$2,$3" in
   4,4) echo "OK, this is a regular 32 bit architecture."
        echo "#undef ARCH_SIXTYFOUR" >> m.h;;
-  8,8) echo "Wow! A 64 bit architecture!"
-       echo "#define ARCH_SIXTYFOUR" >> m.h;;
   *,8) echo "Wow! A 64 bit architecture!"
-       echo "Unfortunately, Objective Caml cannot work in the case"
-       echo "sizeof(long) != sizeof(long *)."
-       echo "Objective Caml won't run on this architecture."
-       exit 2;;
+       echo "#define ARCH_SIXTYFOUR" >> m.h;;
   *,*) echo "This architecture seems to be neither 32 bits nor 64 bits."
        echo "Objective Caml won't run on this architecture."
        exit 2;;
@@ -378,6 +373,12 @@ else
      echo '#undef ARCH_INT64_PRINTF_FORMAT' >> m.h
      int64_native=false;;
   esac
+fi
+
+if test $3 = 8 && test $int64_native = false; then
+  echo "This architecture has 64-bit pointers but no 64-bit integer type."
+  echo "Objective Caml won't run on this architecture."
+  exit 2
 fi
 
 # Determine endianness
