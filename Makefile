@@ -260,6 +260,7 @@ install: FORCE
 	cd camlp4; $(MAKE) install BINDIR=$(BINDIR) LIBDIR=$(LIBDIR) MANDIR=$(MANDIR)
 	if test -f debugger/ocamldebug; then (cd debugger; $(MAKE) install); \
 	   else :; fi
+	cp config/Makefile $(LIBDIR)/Makefile.config
 
 # Installation of the native-code compiler
 installopt:
