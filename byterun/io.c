@@ -70,6 +70,9 @@ CAMLexport struct channel * caml_open_descriptor_in(int fd)
   channel->old_revealed = 0;
   channel->refcount = 0;
   channel->next = caml_all_opened_channels;
+  channel->prev = NULL;
+  if (caml_all_opened_channels != NULL)
+    caml_all_opened_channels->prev = channel;
   caml_all_opened_channels = channel;
   return channel;
 }
@@ -85,12 +88,15 @@ CAMLexport struct channel * caml_open_descriptor_out(int fd)
 
 static void unlink_channel(struct channel *channel)
 {
-  struct channel ** cp = &caml_all_opened_channels;
-  
-  while (*cp != channel && *cp != NULL)
-    cp = &(*cp)->next;
-  if (*cp != NULL)
-    *cp = (*cp)->next;
+  if (channel->prev == NULL) {
+    Assert (channel == caml_all_opened_channels);
+    caml_all_opened_channels = caml_all_opened_channels->next;
+    if (caml_all_opened_channels != NULL)
+      caml_all_opened_channels->prev = NULL;
+  } else {
+    channel->prev->next = channel->next;
+    if (channel->next != NULL) channel->next->prev = channel->prev;
+  }
 }
 
 CAMLexport void caml_close_channel(struct channel *channel)

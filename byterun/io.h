@@ -43,7 +43,7 @@ struct channel {
   char * curr;                  /* Current position in the buffer */
   char * max;                   /* Logical end of the buffer (for input) */
   void * mutex;                 /* Placeholder for mutex (for systhreads) */
-  struct channel * next;        /* Linear chaining of channels (flush_all) */
+  struct channel * next, * prev;/* Double chaining of channels (flush_all) */
   int revealed;                 /* For Cash only */
   int old_revealed;             /* For Cash only */
   int refcount;                 /* For flush_all and for Cash */
