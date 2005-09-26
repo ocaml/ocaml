@@ -52,7 +52,7 @@ let start_server port =
         with e ->
           close s ;
           prerr_string "ns_server went wrong: " ;
-          Join_misc.prerr_exc e
+          Join_misc.prerr_exn e
         end ;
         close s
       done)
@@ -79,7 +79,7 @@ let lookup (addr, port) key =
   | Not_found -> raise Not_found
   | e ->
       prerr_string "ns_lookup went wrong: " ;
-      Join_misc.prerr_exc e ;
+      Join_misc.prerr_exn e ;
       close s ;
       raise Not_found
         
@@ -94,7 +94,7 @@ let register  (addr, port) key v =
   with
   | e ->
       prerr_string "ns_register went wrong: " ;
-      Join_misc.prerr_exc e ;
+      Join_misc.prerr_exn e ;
       raise e
 
 
@@ -112,7 +112,7 @@ let do_sync_register once (addr, port) key v =
   with
   | e ->
       prerr_string "ns_register went wrong: " ;
-      Join_misc.prerr_exc e ;
+      Join_misc.prerr_exn e ;
       raise e
 
 let sync_register ns key v =

@@ -24,7 +24,9 @@ val protect_write : controler -> ('a -> 'b) -> 'a -> 'b
 
 (* Wrapped socket primitives *)
 
-val prerr_exc : exn -> unit
+val prerr_exn : exn -> unit
+
+val exn_to_string : exn -> string
 
 val local_name : string
 
@@ -37,3 +39,8 @@ val force_accept : Unix.file_descr -> Unix.file_descr * Unix.sockaddr
 val connect_to_server : Unix.inet_addr -> int -> Unix.file_descr
 
 val force_connect : Unix.inet_addr -> int -> Unix.file_descr
+
+(* Why not put this here ! *)
+(* To commit suicide from join managed threads : raise JoinExit *)
+exception JoinExit
+

@@ -99,7 +99,7 @@ let protect_write c writer key =
 
 open Unix
 
-let prerr_exc = function
+let prerr_exn = function
   | Unix_error(err, fun_name, arg) ->
     prerr_string Sys.argv.(0);
     prerr_string ": \"";
@@ -114,6 +114,22 @@ let prerr_exc = function
     prerr_endline (error_message err)
   | e -> prerr_endline (Printexc.to_string e)
 
+let exn_to_string = function
+  | Unix_error(err, fun_name, arg) ->
+    let buff = Buffer.create 80 in
+    Buffer.add_string buff Sys.argv.(0);
+    Buffer.add_string buff ": \"";
+    Buffer.add_string buff fun_name;
+    Buffer.add_string buff "\" failed";
+    if String.length arg > 0 then begin
+      Buffer.add_string buff " on \"";
+      Buffer.add_string buff arg;
+      Buffer.add_string buff "\""
+    end;
+    Buffer.add_string buff ": ";
+    Buffer.add_string buff (error_message err) ;
+    Buffer.contents buff
+  | e -> Printexc.to_string e
 
 let first_addr entry = entry.h_addr_list.(0)
 
@@ -192,7 +208,7 @@ let do_connect_to_server verbose addr port =
   | e ->
       if verbose then begin
         prerr_string "connect went wrong: " ;
-        prerr_exc e
+        prerr_exn e
       end ;
       close sock ;
       raise e
@@ -212,3 +228,6 @@ let force_connect addr port =
       | _ ->
           do_rec (if d > 5.0 then d else 2.0 *. d)
     in do_rec 0.1
+
+exception JoinExit
+

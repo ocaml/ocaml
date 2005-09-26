@@ -67,18 +67,17 @@ type message =
   | ReplySend of
       int (* continuation *) *
       (string * t_global array) (* parameter *)
+  | GoodBye
 
 type out_connection =
   {
     out_queue : message Join_queue.t ;
-    out_channel : out_channel;
-    out_thread : Thread.t ;
+    out_channel : Unix.file_descr ;
   }
 
 type in_connection =
   { 
-    in_channel : in_channel;
-    in_thread : Thread.t ;
+    in_channel :  Unix.file_descr ;
   }
 
 type link_out =

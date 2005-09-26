@@ -365,6 +365,7 @@ let _ =
 
 let reply_to = Join_scheduler.reply_to
 
+let halt = Join_space.halt
 
 (* TEST *)
 

@@ -194,7 +194,10 @@ let create_process f =
 (* Wapper around f, to be sure to call my exit_thread *)  
   let g () = 
     begin try f ()
-    with e ->
+    with
+    | Join_misc.JoinExit -> (* managed technique to suicide join-managed threads *)
+      flush stdout; flush stderr
+    | e ->
       flush stdout; flush stderr;
       thread_uncaught_exception e
     end ;

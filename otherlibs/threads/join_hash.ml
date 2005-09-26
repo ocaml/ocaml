@@ -20,6 +20,8 @@ type ('a,'b) t =
     find : 'a -> 'b ;
     find_remove : 'a -> 'b ;
     get : ('a -> 'b) -> 'a -> 'b ;
+    iter : ('a -> 'b -> unit) -> unit ;
+    remove : 'a -> unit
   } 
 
 let create () =
@@ -41,6 +43,10 @@ let create () =
           let r = d key in
           Hashtbl.add t key r ;
           r) ;
+   iter = protect_read c
+     (fun do_it -> Hashtbl.iter do_it t) ;
+   remove = protect_write c
+     (fun key -> Hashtbl.remove t key) ;
   } 
 
 
@@ -48,3 +54,5 @@ let add t key v = t.add key v
 and find t key = t.find key
 and find_remove t key = t.find_remove key
 and get t d key = t.get d key
+and iter t do_it = t.iter do_it
+and remove t key = t.remove key

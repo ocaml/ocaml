@@ -38,4 +38,6 @@ val create_sync : stub -> int -> ('a -> 'b)
 
 val reply_to : 'a -> continuation -> unit
 
+val halt : unit -> unit
+
 val t : 'a -> Marshal.extern_flags list -> 'a

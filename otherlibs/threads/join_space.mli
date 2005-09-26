@@ -36,3 +36,5 @@ val remote_send_sync :
     Join_types.remote_space ->
       int (* uid *) -> int (* channnel *) -> Join_types.continuation ->
 	'a (* message *) -> 'b
+
+val halt : unit -> unit

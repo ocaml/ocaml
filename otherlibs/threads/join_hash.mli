@@ -24,4 +24,6 @@ val find_remove  : ('a,'b) t -> 'a -> 'b
 
 val get :  ('a,'b) t -> ('a -> 'b) -> 'a -> 'b
 
+val iter : ('a, 'b) t -> ('a -> 'b -> unit) -> unit
 
+val remove : ('a,'b) t -> 'a -> unit

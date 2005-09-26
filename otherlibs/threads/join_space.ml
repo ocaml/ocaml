@@ -93,25 +93,36 @@ let find_local_automaton space uid =
   with Not_found -> assert false
 
 type async_ref =
-  { mutable async : 'a . Join_types.automaton -> int -> 'a -> unit }
+  { mutable async : 'a . automaton -> int -> 'a -> unit }
 let send_async_ref = { async =  (fun _ _ _ -> assert false) }
 
 type sync_ref =
-    { mutable sync : 'a 'b . Join_types.automaton -> int -> 'a -> 'b}
+    { mutable sync : 'a 'b . automaton -> int -> 'a -> 'b}
 let send_sync_ref = { sync = (fun _ _ _ -> assert false) }
 
 external do_marshal_message :
-  'a -> Marshal.extern_flags list -> string * (Join_types.t_local) array
+  'a -> Marshal.extern_flags list -> string * (t_local) array
   = "caml_marshal_message" 
 
 external do_unmarshal_message :
-  string -> (Join_types.t_local) array -> 'a
+  string -> (t_local) array -> 'a
   = "caml_unmarshal_message" 
 
 let space_to_string (addr, port, _) =
   sprintf "%s:%i" (Unix.string_of_inet_addr addr) port
 
 let string_of_space = space_to_string 
+
+let close_link_in = function
+  | NoHandler -> ()
+  | Handler { in_channel = inc } -> Unix.close inc
+
+let close_link_out = function
+  | NoConnection _ | Connecting _ -> ()
+  | Connected {out_channel = fd ; out_queue = queue } ->
+      Join_queue.put queue GoodBye
+
+exception SawGoodBye
   
 let rec start_listener space =
   begin match space.space_listener with
@@ -121,6 +132,7 @@ let rec start_listener space =
 	begin match  space.space_listener with
 	| Deaf (sock,mtx) ->
 	    let listener () =
+	      try
               while true do
 (*DEBUG*)debug1 "LISTENER"
 (*DEBUG*)  (sprintf "now accept on: %s" (space_to_string space.space_id)) ;
@@ -135,12 +147,15 @@ let rec start_listener space =
 		| Handler _ -> assert false
 		| NoHandler ->
 		    rspace.link_in <-
-                      Handler
-			{in_channel = inc ;
-			 in_thread = Join_scheduler.create_real_process
-			   (join_handler space rspace inc) ; }
-		end
-              done in
+                      Handler {in_channel = s ; }
+		end ;
+		Join_scheduler.create_process
+		  (join_handler space rspace inc)
+              done
+	    with
+	      | e ->
+(*DEBUG*)debug1 "LISTENER"
+(*DEBUG*)  (sprintf "died of %s" (Join_misc.exn_to_string e)) in
 	    Join_scheduler.create_process listener ;
 	    space.space_listener <- Listen sock ;
 	    Mutex.unlock mtx
@@ -151,6 +166,7 @@ let rec start_listener space =
   end
 
 and join_handler space rspace inc () =
+  try
   while true do
     let msg = input_value inc in
     match msg with
@@ -169,8 +185,19 @@ and join_handler space rspace inc () =
 	let kont = Join_hash.find_remove rspace.konts kid
         and v = unmarshal_message_rec space v in
 	Join_scheduler.reply_to v kont
+    | GoodBye -> raise SawGoodBye
   done
+  with
+  | SawGoodBye|End_of_file as e ->
+    (* Distant site annouce it halts, or halts without annoucing it *)
+(*DEBUG*)debug1 "HANDLER"
+(*DEBUG*)  (sprintf "site %s halts on %s"
+(*DEBUG*)     (space_to_string rspace.rspace_id) (Join_misc.exn_to_string e)) ;
+      close_link_in rspace.link_in ;
+      close_link_out space rspace ;
+      Join_hash.remove space.remote_spaces rspace.rspace_id
 
+      
 and get_out_queue space rspace =
   match rspace.link_out with
   | Connected {out_queue = queue ; } -> queue
@@ -196,6 +223,10 @@ and get_out_queue space rspace =
 	    queue end in
       do_rec ()
 
+and close_link_out space rspace = 
+  let queue = get_out_queue space rspace in
+  Join_queue.put queue GoodBye
+
 and do_remote_reply_to space rspace kid r =
   let queue = get_out_queue space rspace in
   Join_queue.put queue
@@ -208,8 +239,13 @@ and sender_work rspace queue outc =
     let msg = Join_queue.get queue in
 (*DEBUG*)debug2 "SENDER" ("message for "^string_of_space rspace.rspace_id) ;
     output_value outc msg ; flush outc ;
+    match msg with
+    | GoodBye -> raise SawGoodBye
+    | _ -> ()	
   done
   with
+(* Suicide neatly after announcing it *)
+  | SawGoodBye -> close_out outc
   | e ->
 (*DEBUG*)debug1 "SENDER" ("exception "^Printexc.to_string e) ;
       raise e
@@ -226,8 +262,7 @@ and start_sender_work space rspace queue () =
   rspace.link_out <-
      Connected
        { out_queue = queue ;
-         out_channel = outc ;
-         out_thread = Thread.self () ; } ;
+         out_channel = s ; } ;
   output_value outc space.space_id  ; flush outc ;
 (*DEBUG*)debug1 "SENDER"
 (*DEBUG*)  (sprintf "just sent my name %s" (string_of_space space.space_id)) ;
@@ -301,5 +336,20 @@ let remote_send_sync rspace uid idx kont a =
 (*DEBUG*)debug3 "REMOTE" "SEND SYNC" ;
   do_remote_send_sync local_space rspace uid idx kont a
               
-  
-  
+
+
+let kill_remote_space space rspace =
+  close_link_in rspace.link_in ;
+  close_link_out space rspace
+
+
+
+let do_halt space =
+  let listsock = match space.space_listener with
+  | Deaf (fd,_) | Listen fd -> fd in
+  Unix.close listsock ;
+  Join_hash.iter space.remote_spaces
+    (fun _ rspace -> kill_remote_space space rspace)
+
+let halt () = do_halt local_space
+
