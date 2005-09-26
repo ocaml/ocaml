@@ -1178,7 +1178,7 @@ let mkprintf str get_out =
           get_tag_name n (succ i) got_name
        | c -> pp_open_tag ppf ""; doprn n i in
 
-      doprn (Printf.sz_of_int 0) 0 in
+      doprn (Printf.index_of_int 0) 0 in
 
    Printf.kapr kpr fmt in
 
