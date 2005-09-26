@@ -39,6 +39,13 @@ type automaton = {
 
 and reaction = Obj.t * int * (Obj.t -> Obj.t)
 
+type kval = Start | Go of (unit -> Obj.t) | Ret of Obj.t
+
+type continuation =
+  { kmutex : Mutex.t ;
+    kcondition : Condition.t ;
+    mutable kval : kval }
+
 (*******************)
 (* Remote pointers *)
 (*******************)
@@ -51,7 +58,15 @@ type t_global =
   | GlobalAutomaton of global_name
 
 type message =
-  | AsyncSend of int * int * (string * t_global array)
+  | AsyncSend of
+      int (* uid *) * int (* channel *) *
+      (string * t_global array) (* parameter *)
+  | SyncSend of
+      int (* uid *) * int (* channel *) * int (* continuation *) *
+      (string * t_global array) (* parameter *)
+  | ReplySend of
+      int (* continuation *) *
+      (string * t_global array) (* parameter *)
 
 type out_connection =
   {
@@ -79,6 +94,8 @@ type link_in =
 type remote_space =
     {
       rspace_id : space_id ;
+      next_kid : unit -> int ;
+      konts : (int, continuation) Join_hash.t ;
       mutable link_in : link_in ;
       mutable link_out : link_out ;
     }  
@@ -98,8 +115,8 @@ type stub =
   } 
 
 type listener =
-  | Deaf of Unix.file_descr
-  | Listen of Thread.t
+  | Deaf of Unix.file_descr *  Mutex.t
+  | Listen of Unix.file_descr
 
 type space =
   {

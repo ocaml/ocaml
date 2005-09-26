@@ -237,6 +237,28 @@ let inform_suspend () =
 and inform_unsuspend () =
 (*DEBUG*)decr_locked nthreads_mutex suspended
 
+
+let suspend_for_reply k =
+(*DEBUG*)debug3 "SUSPEND_FOR_REPLY"
+(*DEBUG*)  (tasks_status ()) ;
+  inform_suspend () ;
+  Condition.wait k.kcondition k.kmutex ;
+  inform_unsuspend () ;
+  Mutex.unlock k.kmutex ;
+  match k.kval with
+  | Ret v ->
+(*DEBUG*)debug3 "REPLIED" (tasks_status ()) ;
+      (Obj.obj v)
+  | Start|Go _ -> assert false
+
+let reply_to v k = 
+(*DEBUG*)  debug3 "REPLY" (sprintf "%i" (Obj.magic v)) ;
+  Mutex.lock k.kmutex ;
+  k.kval <- Ret (Obj.repr v) ;
+  incr_active () ; (* The awaken task becomes active *)
+  Condition.signal k.kcondition ;
+  Mutex.unlock k.kmutex 
+
 (********************************)
 (* Management of initial thread *)
 (********************************)

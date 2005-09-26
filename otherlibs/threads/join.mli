@@ -31,13 +31,11 @@ val create_async_alone : stub -> int -> async
 val local_send_async : automaton -> int -> 'a -> unit
 val local_tail_send_async : automaton -> int -> 'a -> unit
 val send_async : async -> 'a -> unit
-val tail_send_async : async -> Obj.t -> unit
+val tail_send_async : async -> 'a -> unit
 
 (* Synchronous channels are plain fonctions *)
 val create_sync : stub -> int -> ('a -> 'b)
 
-
-type continuation
 val reply_to : 'a -> continuation -> unit
 
 val t : 'a -> Marshal.extern_flags list -> 'a

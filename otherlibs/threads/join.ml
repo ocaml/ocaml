@@ -128,14 +128,6 @@ let patch_table a t =  a.matches <- t
 (* Implementing reply to sync channels *)
 (***************************************)
 
-type kval = Start | Go of (unit -> Obj.t) | Ret of Obj.t
-
-type continuation =
-  { kmutex : Mutex.t ;
-    kcondition : Condition.t ;
-    mutable kval : kval }
-
-
 let kont_create0 mutex =
   {kmutex = mutex ;
    kcondition = Condition.create () ;
@@ -219,6 +211,8 @@ and local_send_async_alone auto g a =
   let _,_,f = Obj.magic (Obj.field (Obj.magic auto.matches) g) in
   create_process (fun () -> f a)
 
+let _ = Join_space.send_async_ref.Join_space.async <- local_send_async
+
 
 let send_async chan a = match chan with
 | Async ({local=LocalAutomaton auto}, idx) -> local_send_async auto idx a
@@ -271,23 +265,12 @@ let kont_suspend k =
   match k.kval with
   | Go f ->
 (*DEBUG*)debug3 "REACTIVATED" (Join_scheduler.tasks_status ()) ;
-      f ()
+      Obj.obj (f ())
   | Ret v ->
 (*DEBUG*)debug3 "REPLIED" (Join_scheduler.tasks_status ()) ;
-      ((Obj.magic v) : 'a)
+      (Obj.obj v)
   | Start -> assert false
-
-(* Suspend current thread when some match was found *)
-let suspend_for_reply k =
-  Join_scheduler.inform_suspend () ;
-  Condition.wait k.kcondition k.kmutex ;
-  Join_scheduler.inform_unsuspend () ;
-  Mutex.unlock k.kmutex ;
-  match k.kval with
-  | Ret v ->
-(*DEBUG*)debug3 "REPLIED" (Join_scheduler.tasks_status ()) ;
-      v
-  | Start|Go _ -> assert false
+;;
 
 
 (* Transfert control to frozen principal thread and suspend current thread *)
@@ -297,7 +280,7 @@ let kont_go_suspend kme kpri f =
   kpri.kval <- Go f ;
   Join_scheduler.incr_active () ;
   Condition.signal kpri.kcondition ;
-  suspend_for_reply kme
+  Join_scheduler.suspend_for_reply kme
 
 let just_go k f =
 (*DEBUG*)debug3 "JUST_GO" "" ;
@@ -308,16 +291,17 @@ let just_go k f =
 let fire_suspend k _ f =
 (*DEBUG*)  debug2 "FIRE_SUSPEND" "" ;
   create_process f ;
-  suspend_for_reply k
+  Join_scheduler.suspend_for_reply k
 
-let rec attempt_match_sync idx kont auto reactions i =
+let rec attempt_match_sync idx auto kont reactions i =
   if i >= Obj.size reactions then begin
 (*DEBUG*)debug3 "SYNC ATTEMPT FAILED" (sprintf "%s %s"
 (*DEBUG*)  (get_name auto idx) (auto.status.to_string ())) ;    
     kont_suspend kont
   end else begin
-    let (ipat, ipri, f) = Obj.magic (Obj.field reactions i) in
+    let (ipat, ipri, _) as t = Obj.magic (Obj.field reactions i) in
     if auto.status.includes ipat then begin
+      let (_, _, f) = t in
       if ipri < 0 then
         f (fire_suspend kont)   (* will create other thread *)
       else if ipri = idx then begin
@@ -325,29 +309,31 @@ let rec attempt_match_sync idx kont auto reactions i =
       end else begin
         f (kont_go_suspend kont) (* will awake principal thread *)
       end
-    end else attempt_match_sync idx kont auto reactions (i+1)
+    end else attempt_match_sync idx auto kont reactions (i+1)
   end
 
 let local_send_sync auto idx a =
 (*DEBUG*)  debug3 "SEND_SYNC" (sprintf "channel %s" (get_name auto idx)) ;
+  let kont = kont_create auto in
 (* Acknowledge new message by altering queue and status *)
   Mutex.lock auto.mutex ;
-  let kont = kont_create auto in
   put_queue auto idx (Obj.magic (kont,a)) ;
   if not (auto.status.set idx) then begin
 (*DEBUG*)debug3 "SEND_SYNC" (sprintf "Return: %s"
 (*DEBUG*) (auto.status.to_string ())) ;
     kont_suspend kont
   end else begin
-    attempt_match_sync idx kont auto (Obj.magic auto.matches) 0
+    attempt_match_sync idx auto kont (Obj.magic auto.matches) 0
   end
 
-let _ = Join_space.send_async_ref.Join_space.f <- local_send_async
 
+let _ = Join_space.send_sync_ref.Join_space.sync <-  local_send_sync
 
 let send_sync auto idx arg = match auto.local with
 | LocalAutomaton a -> local_send_sync a idx arg
-| RemoteAutomaton (_,_) -> assert false
+| RemoteAutomaton (rspace, uid) ->
+    let kont = kont_create0 (Mutex.create ()) in
+    Join_space.remote_send_sync rspace uid idx kont arg
 
 
 (* This code must create a one-argument closure,
@@ -378,16 +364,13 @@ let _ =
   register_value send_sync ;
   register_code (create_sync (Obj.magic 0) 0)
 
-let reply_to v k =
-(*DEBUG*)  debug3 "REPLY" (sprintf "%i" (Obj.magic v)) ;
-  Mutex.lock k.kmutex ;
-  k.kval <- Ret (Obj.repr v) ;
-  Join_scheduler.incr_active () ;
-  Condition.signal k.kcondition ;
-  Mutex.unlock k.kmutex 
+let reply_to = Join_scheduler.reply_to
+
 
 (* TEST *)
+
 open Join_space
+
 let t v flags =
   let (_,t) as p = marshal_message v flags in
   Join_space.unmarshal_message p

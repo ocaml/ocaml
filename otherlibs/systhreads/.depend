@@ -34,8 +34,10 @@ join_debug.cmo: thread.cmi mutex.cmi join_debug.cmi
 join_debug.cmx: thread.cmx mutex.cmx join_debug.cmi 
 join_hash.cmo: join_misc.cmi join_hash.cmi 
 join_hash.cmx: join_misc.cmx join_hash.cmi 
-join_misc.cmo: mutex.cmi condition.cmi join_misc.cmi 
-join_misc.cmx: mutex.cmx condition.cmx join_misc.cmi 
+join_misc.cmo: thread.cmi mutex.cmi join_debug.cmi condition.cmi \
+    join_misc.cmi 
+join_misc.cmx: thread.cmx mutex.cmx join_debug.cmx condition.cmx \
+    join_misc.cmi 
 join.cmo: mutex.cmi join_types.cmi join_space.cmi join_scheduler.cmi \
     join_debug.cmi condition.cmi join.cmi 
 join.cmx: mutex.cmx join_types.cmi join_space.cmx join_scheduler.cmx \
@@ -46,14 +48,14 @@ join_scheduler.cmo: thread.cmi mutex.cmi join_types.cmi join_debug.cmi \
     condition.cmi join_scheduler.cmi 
 join_scheduler.cmx: thread.cmx mutex.cmx join_types.cmi join_debug.cmx \
     condition.cmx join_scheduler.cmi 
-join_space.cmo: mutex.cmi join_types.cmi join_scheduler.cmi join_hash.cmi \
-    join_debug.cmi join_space.cmi 
-join_space.cmx: mutex.cmx join_types.cmi join_scheduler.cmx join_hash.cmx \
-    join_debug.cmx join_space.cmi 
+join_space.cmo: thread.cmi mutex.cmi join_types.cmi join_scheduler.cmi \
+    join_queue.cmi join_misc.cmi join_hash.cmi join_debug.cmi join_space.cmi 
+join_space.cmx: thread.cmx mutex.cmx join_types.cmi join_scheduler.cmx \
+    join_queue.cmx join_misc.cmx join_hash.cmx join_debug.cmx join_space.cmi 
 mutex.cmo: mutex.cmi 
 mutex.cmx: mutex.cmi 
-ns.cmo: thread.cmi join_types.cmi join_space.cmi join.cmi ns.cmi 
-ns.cmx: thread.cmx join_types.cmi join_space.cmx join.cmx ns.cmi 
+ns.cmo: join_types.cmi join_space.cmi join_misc.cmi join.cmi ns.cmi 
+ns.cmx: join_types.cmi join_space.cmx join_misc.cmx join.cmx ns.cmi 
 thread.cmo: thread.cmi 
 thread.cmx: thread.cmi 
 threadUnix.cmo: thread.cmi threadUnix.cmi 

@@ -18,6 +18,7 @@ type ('a,'b) t =
   {
     add : 'a -> 'b -> unit ;
     find : 'a -> 'b ;
+    find_remove : 'a -> 'b ;
     get : ('a -> 'b) -> 'a -> 'b ;
   } 
 
@@ -27,6 +28,12 @@ let create () =
   {
     add = protect_write c (fun key v -> Hashtbl.add t key v) ;
     find = protect_read c (fun key -> Hashtbl.find t key) ;
+    find_remove =
+     protect_write c
+       (fun key ->
+	 let r = Hashtbl.find t key in
+	 Hashtbl.remove t key ;
+	 r) ;
     get = protect_write c
       (fun d key ->
         try Hashtbl.find t key
@@ -39,4 +46,5 @@ let create () =
 
 let add t key v = t.add key v
 and find t key = t.find key
+and find_remove t key = t.find_remove key
 and get t d key = t.get d key

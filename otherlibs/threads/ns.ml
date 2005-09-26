@@ -65,7 +65,7 @@ let register_client addr port = addr, port
 
 
 let lookup (addr, port) key =
-  let s = Join_misc.connect_to_server addr port in
+  let s = Join_misc.force_connect addr port in
   try
     let inc = in_channel_of_descr s
     and outc = out_channel_of_descr s in

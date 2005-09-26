@@ -28,7 +28,7 @@ THREAD_OBJS= thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo
 BYTECODE_JOIN_C_OBJS=join_b.o
 NATIVECODE_JOIN_C_OBJS=join_n.o
 
-JOIN_OBJS=join_debug.cmo join_misc.cmo join_queue.cmo join_scheduler.cmo join_space.cmo join.cmo ns.cmo
+JOIN_OBJS=join_debug.cmo join_misc.cmo join_hash.cmo join_queue.cmo join_scheduler.cmo join_space.cmo join.cmo ns.cmo
 
 GENFILES=thread.ml join.c join_types.mli\
  join_debug.mli join_debug.ml\

@@ -20,4 +20,8 @@ val add :  ('a,'b) t -> 'a -> 'b -> unit
 
 val find : ('a,'b) t -> 'a -> 'b
 
+val find_remove  : ('a,'b) t -> 'a -> 'b
+
 val get :  ('a,'b) t -> ('a -> 'b) -> 'a -> 'b
+
+

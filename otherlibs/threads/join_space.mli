@@ -13,9 +13,14 @@
 
 (* $Id$ *)
 
-type poly_ref = { mutable f : 'a . Join_types.automaton -> int -> 'a -> unit }
+type async_ref =
+  { mutable async : 'a . Join_types.automaton -> int -> 'a -> unit }
+val send_async_ref : async_ref
 
-val send_async_ref : poly_ref
+type sync_ref =
+    { mutable sync : 'a 'b . Join_types.automaton -> int -> 'a -> 'b}
+val send_sync_ref : sync_ref
+
 
 val marshal_message :
     'a ->  Marshal.extern_flags list -> string * (Join_types.t_global) array
@@ -26,3 +31,8 @@ val unmarshal_message :
 val remote_send_async :
     Join_types.remote_space ->
       int (* uid *) -> int (* channnel *) -> 'a (* message *) -> unit
+
+val remote_send_sync :
+    Join_types.remote_space ->
+      int (* uid *) -> int (* channnel *) -> Join_types.continuation ->
+	'a (* message *) -> 'b
