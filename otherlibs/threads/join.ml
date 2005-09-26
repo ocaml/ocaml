@@ -270,7 +270,6 @@ let kont_suspend k =
 (*DEBUG*)debug3 "REPLIED" (Join_scheduler.tasks_status ()) ;
       (Obj.obj v)
   | Start -> assert false
-;;
 
 
 (* Transfert control to frozen principal thread and suspend current thread *)
