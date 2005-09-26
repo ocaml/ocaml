@@ -17,17 +17,22 @@
 
 val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
 (** [fprintf outchan format arg1 ... argN] formats the arguments
-   [arg1] to [argN] according to the format string [format],
-   and outputs the resulting string on the channel [outchan].
-   
+   [arg1] to [argN] according to the format string [format], and
+   outputs the resulting string on the channel [outchan].
+
    The format is a character string which contains two types of
-   objects:  plain  characters, which are simply copied to the
-   output channel, and conversion specifications, each of which
-   causes  conversion and printing of one argument.
-   
-   Conversion specifications consist in the [%] character, followed
-   by optional flags and field widths, followed by one or two conversion
-   character. The conversion characters and their meanings are:
+   objects: plain characters, which are simply copied to the output
+   channel, and conversion specifications, each of which causes
+   conversion and printing of arguments.
+
+   Conversion specifications have the following form:
+
+   [% \[positional specifier\] \[flags\] \[width\] \[.precision\] type]
+
+   In short, a conversion specification consists in the [%] character,
+   followed by optional modifiers and a type which is made of one or
+   two characters. The types and their meanings are:
+
    - [d], [i], [n], [l], [L], or [N]: convert an integer argument to
      signed decimal.
    - [u]: convert an integer argument to unsigned decimal.
@@ -57,39 +62,50 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
      the format specified by the second letter.
    - [Ld], [Li], [Lu], [Lx], [LX], [Lo]: convert an [int64] argument to
      the format specified by the second letter.
-   - [a]: user-defined printer. Takes two arguments and apply the first
-     one to [outchan] (the current output channel) and to the second
-     argument. The first argument must therefore have type
+   - [a]: user-defined printer. Takes two arguments and apply the
+     first one to [outchan] (the current output channel) and to the
+     second argument. The first argument must therefore have type
      [out_channel -> 'b -> unit] and the second ['b].
-     The output produced by the function is therefore inserted
-     in the output of [fprintf] at the current point.
+     The output produced by the function is inserted in the output of
+     [fprintf] at the current point.
    - [t]: same as [%a], but takes only one argument (with type
      [out_channel -> unit]) and apply it to [outchan].
-   - [\{ fmt %\}]: convert a format string argument. The argument
-     must have the same type as the internal format string [fmt].
-   - [\( fmt %\)]: format string substitution. This convertion takes a
-     format string argument and substitutes it to the specification
-     [fmt] to print following arguments. The format string argument
-     must have the same type as [fmt].
+   - [\{ fmt %\}]: convert a format string argument. The argument must
+     have the same type as the internal format string [fmt].
+   - [\( fmt %\)]: format string substitution. Takes a format string
+     argument and substitutes it to the internal format string [fmt]
+     to print following arguments. The argument must have the same
+     type as [fmt].
    - [!]: take no argument and flush the output.
    - [%]: take no argument and output one [%] character.
 
-   The optional flags include:
+   The optional [positional specifier] consists of an integer followed
+   by a [$]; the integer indicates which argument to use, the first
+   argument being denoted by 1.
+
+   The optional [flags] are:
    - [-]: left-justify the output (default is right justification).
    - [0]: for numerical conversions, pad with zeroes instead of spaces.
    - [+]: for numerical conversions, prefix number with a [+] sign if positive.
    - space: for numerical conversions, prefix number with a space if positive.
    - [#]: request an alternate formatting style for numbers.
 
-   The field widths are composed of an optional integer literal
-   indicating the minimal width of the result, possibly followed by
-   a dot [.] and another integer literal indicating how many digits
-   follow the decimal point in the [%f], [%e], and [%E] conversions.
-   For instance, [%6d] prints an integer, prefixing it with spaces to
-   fill at least 6 characters; and [%.4f] prints a float with 4
-   fractional digits.  Each or both of the integer literals can also be
-   specified as a [*], in which case an extra integer argument is taken
-   to specify the corresponding width or precision. *)
+   The optional [width] is an integer indicating the minimal
+   width of the result. For instance, [%6d] prints an integer,
+   prefixing it with spaces to fill at least 6 characters.
+
+   The optional [precision] is a dot [.] followed by an integer
+   indicating how many digits follow the decimal point in the [%f],
+   [%e], and [%E] conversions. For instance, [%.4f] prints a [float] with
+   4 fractional digits.
+
+   The integer in a [width] or [precision] can also be specified as
+   [*], in which case an extra integer argument is taken to specify
+   the corresponding [width] or [precision]. This integer argument
+   precedes immediately the argument to print, unless an optional
+   [positional specifier] is given to indicates which argument to
+   use. For instance, [%.*3$f] prints a [float] with as many fractional
+   digits as the value of the third argument. *)
 
 val printf : ('a, out_channel, unit) format -> 'a
 (** Same as {!Printf.fprintf}, but output on [stdout]. *)
@@ -122,17 +138,16 @@ val kprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b;;
 (**/**)
 
 (* For system use only.  Don't call directly. *)
-type sz;;
+type index;;
 
-external sz_of_int : int -> sz = "%identity";;
-external int_of_sz : sz -> int = "%identity";;
+external index_of_int : int -> index = "%identity";;
 
-val scan_format : string -> 'a array -> sz -> int ->
-  (sz -> string -> int -> 'b) ->
-  (sz -> 'c -> 'd -> int -> 'b) ->
-  (sz -> 'e -> int -> 'b) ->
-  (sz -> int -> 'b) ->
-  (sz -> ('h, 'i, 'j, 'k) format4 -> int -> 'b) -> 'b
+val scan_format : string -> 'a array -> index -> int ->
+  (index -> string -> int -> 'b) ->
+  (index -> 'c -> 'd -> int -> 'b) ->
+  (index -> 'e -> int -> 'b) ->
+  (index -> int -> 'b) ->
+  (index -> ('h, 'i, 'j, 'k) format4 -> int -> 'b) -> 'b
 
 val sub_format :
   (string -> int) -> (string -> int -> char -> int) ->

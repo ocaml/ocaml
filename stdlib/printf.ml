@@ -22,12 +22,14 @@ external format_float: string -> float -> string = "caml_format_float"
 
 external format_to_string: ('a, 'b, 'c, 'd) format4 -> string = "%identity"
 
-type sz;;
+type index;;
 
-external sz_of_int : int -> sz = "%identity";;
-external int_of_sz : sz -> int = "%identity";;
+external index_of_int : int -> index = "%identity";;
+external int_of_index : index -> int = "%identity";;
 
-let succs sz = sz_of_int (succ (int_of_sz sz));;
+let succ_index index = index_of_int (succ (int_of_index index));;
+(* Litteral position are One-based (hence pred p instead of p). *)
+let index_of_litteral_position p = index_of_int (pred p);;
 
 let bad_conversion fmt i c =
   invalid_arg
@@ -70,24 +72,34 @@ let format_string fmt s =
   pad_string ' ' p neg s 0 (String.length s)
 
 (* Extract a %format from [fmt] between [start] and [stop] inclusive.
-   '*' in the format are replaced by integers taken from the [widths] list.
-   The function is somewhat optimized for the "no *" case. *)
-
+   '*' in the format are replaced by integers taken from the [widths] list. *)
 let extract_format fmt start stop widths =
-  match widths with
-  | [] -> String.sub fmt start (stop - start + 1)
-  | _  ->
-      let b = Buffer.create (stop - start + 10) in
-      let rec fill_format i w =
-        if i > stop then Buffer.contents b else
-          match (String.unsafe_get fmt i, w) with
-          | ('*', h :: t) ->
-              Buffer.add_string b (string_of_int h); fill_format (succ i) t
-          | ('*', []) ->
-              assert false (* should not happen *)
-          | (c, _) ->
-              Buffer.add_char b c; fill_format (succ i) w
-      in fill_format start (List.rev widths)
+  let skip_positional_spec start =
+    match String.unsafe_get fmt start with
+    | '0'..'9' ->
+      let rec skip_int_litteral i =
+        match String.unsafe_get fmt i with
+        | '0'..'9' -> skip_int_litteral (succ i)
+        | '$' -> succ i
+        | _ -> start in
+      skip_int_litteral (succ start)
+    | _ -> start in
+  let start = skip_positional_spec (succ start) in
+  let b = Buffer.create (stop - start + 10) in
+  Buffer.add_char b '%';
+  let rec fill_format i widths =
+    if i <= stop then
+      match (String.unsafe_get fmt i, widths) with
+      | ('*', h :: t) ->
+        Buffer.add_string b (string_of_int h);
+        let i = skip_positional_spec (succ i) in
+        fill_format i t
+      | ('*', []) ->
+        assert false (* should not happen *)
+      | (c, _) ->
+        Buffer.add_char b c; fill_format (succ i) widths in
+  fill_format start (List.rev widths);
+  Buffer.contents b;;
 
 let format_int_with_conv conv fmt i =
    match conv with
@@ -129,10 +141,11 @@ let iter_format_args fmt add_conv add_char =
     if i >= len then incomplete_format fmt else
     match String.unsafe_get fmt i with
     | '*' -> scan_flags skip (add_conv skip i 'i')
+    | '$' -> scan_flags skip (succ i)
     | '#' | '-' | ' ' | '+' -> scan_flags skip (succ i)
     | '_' -> scan_flags true (succ i)
     | '0'..'9'
-    | '.'  -> scan_flags skip (succ i)
+    | '.' -> scan_flags skip (succ i)
     | _ -> scan_conv skip i
   and scan_conv skip i =
     if i >= len then incomplete_format fmt else
@@ -196,13 +209,10 @@ let list_iter_i f l =
   | x :: xs -> f i x; loop (succ i) xs in
   loop 0 l;;
 
-(* Abstracting version of kprintf: returns a (curried) function that
+(* ``Abstracting'' version of kprintf: returns a (curried) function that
    will print when totally applied. *)
 let kapr kpr fmt =
-
-  let nargs = nargs_of_format_type fmt in
-
-  match nargs with
+  match nargs_of_format_type fmt with
   | 0 -> kpr fmt [||]
   | 1 -> Obj.magic (fun x -> kpr fmt [|x|])
   | 2 -> Obj.magic (fun x y -> kpr fmt [|x; y|])
@@ -218,6 +228,30 @@ let kapr kpr fmt =
         kpr fmt v
       else Obj.magic (fun x -> loop (succ i) (x :: args)) in
     loop 0 [];;
+
+(* To scan a positional parameter specification. *)
+let scan_positional_spec fmt k n i =
+  match String.unsafe_get fmt i with
+  | '0'..'9' as d ->
+    let rec get_int_litteral accu i =
+      match String.unsafe_get fmt i with
+      | '0'..'9' as d ->
+        get_int_litteral (10 * accu + (int_of_char d - 48)) (succ i)
+      | '$' ->
+        k (Some (index_of_litteral_position accu)) None (succ i)
+      | _ -> k None (Some accu) i in
+    get_int_litteral (int_of_char d - 48) (succ i)
+  | _ -> k None None i;;
+
+(* To scan a positional parameter. *)
+let scan_positional fmt scan_flags n i =
+  let got_positional p w i =
+    match p, w with
+    | None, None -> scan_flags n [] i
+    | Some p, None -> scan_flags p [] i
+    | None, Some w -> scan_flags n [w] i
+    | _, _ -> assert false in
+  scan_positional_spec fmt got_positional n i;;
 
 (* Decode a %format and act on it.
    [fmt] is the printf format style, and [pos] points to a [%] character.
@@ -237,18 +271,26 @@ let kapr kpr fmt =
    one past the end of the string.  These "nul" characters are then
    caught by the [_ -> bad_conversion] clauses below.
    Don't do this at home, kids. *)
-
 let scan_format fmt args n pos cont_s cont_a cont_t cont_f cont_m =
 
-  let get_arg args n = Obj.magic args.(int_of_sz n) in
+  let get_arg args n = Obj.magic args.(int_of_index n) in
 
   let rec scan_flags n widths i =
     match String.unsafe_get fmt i with
     | '*' ->
-      let (width : int) = get_arg args n in
-      scan_flags (succs n) (width :: widths) (succ i)
+      let got_positional p w i =
+        match p, w with
+        | None, None ->
+          let (width : int) = get_arg args n in
+          scan_flags (succ_index n) (width :: widths) i
+        | Some p, None ->
+          let (width : int) = get_arg args p in
+          scan_flags n (width :: widths) i
+        | _, _ -> assert false in
+      scan_positional_spec fmt got_positional n (succ i)
     | '0'..'9' | '.' | '#' | '-' | ' ' | '+' -> scan_flags n widths (succ i)
     | _ -> scan_conv n widths i
+
   and scan_conv n widths i =
     match String.unsafe_get fmt i with
     | '%' ->
@@ -260,33 +302,33 @@ let scan_format fmt args n pos cont_s cont_a cont_t cont_f cont_m =
         (* optimize for common case %s *)
         if i = succ pos then x else
         format_string (extract_format fmt pos i widths) x in
-      cont_s (succs n) s (succ i)
+      cont_s (succ_index n) s (succ i)
     | 'c' | 'C' as conv ->
       let (x : char) = get_arg args n in
       let s =
         if conv = 'c' then String.make 1 x else "'" ^ Char.escaped x ^ "'" in
-      cont_s (succs n) s (succ i)
+      cont_s (succ_index n) s (succ i)
     | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' | 'N' as conv ->
       let (x : int) = get_arg args n in
       let s = format_int_with_conv conv (extract_format fmt pos i widths) x in
-      cont_s (succs n) s (succ i)
+      cont_s (succ_index n) s (succ i)
     | 'f' | 'e' | 'E' | 'g' | 'G' | 'F' as conv ->
       let (x : float) = get_arg args n in
       let s =
         if conv = 'F' then string_of_float x else
         format_float (extract_format fmt pos i widths) x in
-      cont_s (succs n) s (succ i)
+      cont_s (succ_index n) s (succ i)
     | 'B' | 'b' ->
       let (x : bool) = get_arg args n in
-      cont_s (succs n) (string_of_bool x) (succ i)
+      cont_s (succ_index n) (string_of_bool x) (succ i)
     | 'a' ->
       let printer = get_arg args n in
-      let n = succs n in
+      let n = succ_index n in
       let arg = get_arg args n in
-      cont_a (succs n) printer arg (succ i)
+      cont_a (succ_index n) printer arg (succ i)
     | 't' ->
       let printer = get_arg args n in
-      cont_t (succs n) printer (succ i)
+      cont_t (succ_index n) printer (succ i)
     | 'l' | 'n' | 'L' as conv ->
       begin match String.unsafe_get fmt (succ i) with
       | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
@@ -301,11 +343,11 @@ let scan_format fmt args n pos cont_s cont_a cont_t cont_f cont_m =
           | _ ->
             let (x : int64) = get_arg args n in
             format_int64 (extract_format fmt pos (succ i) widths) x in
-        cont_s (succs n) s (i + 2)
+        cont_s (succ_index n) s (i + 2)
       | _ ->
         let (x : int) = get_arg args n in
         cont_s
-          (succs n)
+          (succ_index n)
           (format_int_with_conv 'n' (extract_format fmt pos i widths) x)
           (succ i)
       end
@@ -316,15 +358,17 @@ let scan_format fmt args n pos cont_s cont_a cont_t cont_f cont_m =
       let j = sub_format_for_printf conv fmt i + 1 in
       if conv = '{' (* '}' *) then
         (* Just print the format argument as a specification. *)
-        cont_s (succs n) (summarize_format_type (format_to_string xf)) j else
+        cont_s
+          (succ_index n)
+          (summarize_format_type (format_to_string xf)) j else
         (* Use the format argument instead of the format specification. *)
-        cont_m (succs n) xf j
+        cont_m (succ_index n) xf j
     | ')' ->
       cont_s n "" (succ i)
     | conv ->
       bad_conversion fmt i conv in
 
-  scan_flags n [] (succ pos);;
+  scan_positional fmt scan_flags n (succ pos);;
 
 let mkprintf str get_out outc outs flush =
   let rec kprintf k fmt =
@@ -357,7 +401,7 @@ let mkprintf str get_out outc outs flush =
       and cont_m n sfmt i =
         kprintf (Obj.magic (fun _ -> doprn n i)) sfmt in
 
-      doprn (sz_of_int 0) 0 in
+      doprn (index_of_int 0) 0 in
 
     kapr kpr fmt in
 
