@@ -53,14 +53,15 @@ and decr_locked m r =
 (*DEBUG*)sprintf "active=%i, nthread=%i suspended=%i[%i, %i]"
 (*DEBUG*) !active !nthreads !suspended !in_pool !pool_konts
 
-let check_active () =
-(*DEBUG*)debug2 "CHECK" (tasks_status ()) ;
-  if !active <= 0 then Condition.signal active_condition
-
 let become_inactive () =
   decr_locked nthreads_mutex active ;
  (* if active reaches 0, this cannot change, so we unlock now *)
-  check_active () ;
+(*DEBUG*)debug2 "CHECK" (tasks_status ()) ;
+  if !active <= 0 then begin
+    Mutex.lock active_mutex ;
+    Condition.signal active_condition ;
+    Mutex.unlock active_mutex
+  end
 
 (* incr_active is performed by task creator or awaker *)
 and incr_active () = incr_locked  nthreads_mutex active

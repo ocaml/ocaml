@@ -199,9 +199,11 @@ let rec start_listener space =
   end
 
 and join_handler space rspace s inc () =
-  try
+(*DEBUG*)debug1 "HANDLER"
+(*DEBUG*)  ("start recieving from "^string_of_space rspace.rspace_id) ;  try
   while true do
     let msg = input_value inc in
+(*DEBUG*)debug2 "HANDLER" ("message from "^string_of_space rspace.rspace_id) ;
     match msg with
     | AsyncSend (uid, idx, v) ->
         let auto = find_local_automaton space uid
@@ -215,7 +217,9 @@ and join_handler space rspace s inc () =
 	    let r = send_sync_ref.sync auto idx v in
 	    do_remote_reply_to space rspace kid r)
     | ReplySend (kid, v) ->
-	let kont = Join_hash.find_remove rspace.konts kid
+	let kont =
+          try Join_hash.find_remove rspace.konts kid
+          with Not_found -> assert false
         and v = unmarshal_message_rec space v in
 	Join_scheduler.reply_to v kont
     | GoodBye -> raise SawGoodBye
