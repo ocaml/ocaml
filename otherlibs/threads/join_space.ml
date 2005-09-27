@@ -113,9 +113,18 @@ let space_to_string (addr, port, _) =
 
 let string_of_space = space_to_string 
 
+let verbose_close caller fd =  
+(*DEBUG*)debug1 ("CLOSE from "^caller) (sprintf "%i" (Obj.magic fd)) ;
+  try
+    Unix.close fd
+  with e ->
+(*DEBUG*)debug1 ("CLOSE from "^caller)
+(*DEBUG*) (Join_misc.exn_to_string e) ;
+      ()
+
 let close_link_in = function
   | NoHandler -> ()
-  | Handler { in_channel = inc } -> Unix.close inc
+  | Handler { in_channel = inc } -> verbose_close "link_in" inc
 
 let close_link_out = function
   | NoConnection _ | Connecting _ -> ()
@@ -345,11 +354,14 @@ let kill_remote_space space rspace =
 
 
 let do_halt space =
+  Join_hash.iter space.remote_spaces
+    (fun _ rspace -> kill_remote_space space rspace) ;
+(*
   let listsock = match space.space_listener with
   | Deaf (fd,_) | Listen fd -> fd in
-  Unix.close listsock ;
-  Join_hash.iter space.remote_spaces
-    (fun _ rspace -> kill_remote_space space rspace)
+  verbose_close "halt" listsock ;
+*)
+  ()
 
 let halt () = do_halt local_space
 
