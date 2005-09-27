@@ -258,6 +258,7 @@ let tail_send_async chan a = match chan with
 (* No match was found *)
 let kont_suspend k =
 (*DEBUG*)debug3 "KONT_SUSPEND" (Join_scheduler.tasks_status ()) ;
+  assert (k.kval = Start) ;
   Join_scheduler.inform_suspend () ;
   Condition.wait k.kcondition k.kmutex ;
   Join_scheduler.inform_unsuspend () ;
@@ -279,9 +280,12 @@ let kont_suspend k =
 let kont_go_suspend kme kpri f =
 (*DEBUG*)debug2 "KONT_GO_SUSPEND" "" ;
 (* awake principal *)
-  kpri.kval <- Go f ;
   Join_scheduler.incr_active () ;
+  Mutex.lock kpri.kmutex ;
+  assert (kpri.kval = Start) ;
+  kpri.kval <- Go f ;
   Condition.signal kpri.kcondition ;
+  Mutex.unlock kpri.kmutex ;
   Join_scheduler.suspend_for_reply kme
 
 let just_go k f =

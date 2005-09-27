@@ -242,25 +242,40 @@ and inform_unsuspend () =
 (*DEBUG*)decr_locked nthreads_mutex suspended
 
 
+(* Important: k.kmutex is locked ! *)
 let suspend_for_reply k =
 (*DEBUG*)debug3 "SUSPEND_FOR_REPLY"
-(*DEBUG*)  (tasks_status ()) ;
-  inform_suspend () ;
-  Condition.wait k.kcondition k.kmutex ;
-  inform_unsuspend () ;
-  Mutex.unlock k.kmutex ;
+(*DEBUG*)  (tasks_status ()) ;  
   match k.kval with
-  | Ret v ->
+  | Start ->
+      begin
+        inform_suspend () ;
+        Condition.wait k.kcondition k.kmutex ;
+        inform_unsuspend () ;
+        Mutex.unlock k.kmutex ;
+        match k.kval with
+        | Ret v ->
 (*DEBUG*)debug3 "REPLIED" (tasks_status ()) ;
+            (Obj.obj v)
+        | Exn e ->
+(*DEBUG*)debug3 "REPLIED EXN" (tasks_status ()) ;
+            raise e
+        | Start|Go _ -> assert false
+      end
+  | Go _ -> assert false
+  | Ret v ->
+      Mutex.unlock k.kmutex ;
+(*DEBUG*)debug3 "REPLIED IMMEDIATE" (tasks_status ()) ;
       (Obj.obj v)
   | Exn e ->
-(*DEBUG*)debug3 "REPLIED EXN" (tasks_status ()) ;
+      Mutex.unlock k.kmutex ;
+(*DEBUG*)debug3 "REPLIED EXN IMMEDIATE" (tasks_status ()) ;
       raise e
-  | Start|Go _ -> assert false
 
 let reply_to v k = 
-(*DEBUG*)  debug3 "REPLY" (sprintf "%i" (Obj.magic v)) ;
+(*DEBUG*)debug3 "REPLY" (sprintf "%i" (Obj.magic v)) ;
   Mutex.lock k.kmutex ;
+  assert (k.kval = Start) ;
   k.kval <- Ret (Obj.repr v) ;
   incr_active () ; (* The awaken task becomes active *)
   Condition.signal k.kcondition ;
@@ -270,6 +285,7 @@ let reply_to_exn e k =
 (*DEBUG*)debug3 "REPLY EXN"
 (*DEBUG*) (sprintf "%s" (Join_misc.exn_to_string e)) ;
   Mutex.lock k.kmutex ;
+  assert (k.kval = Start) ;
   k.kval <- Exn e ;
   incr_active () ; (* The awaken task becomes active *)
   Condition.signal k.kcondition ;

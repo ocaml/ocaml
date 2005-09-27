@@ -200,7 +200,7 @@ let rec start_listener space =
 
 and join_handler space rspace s inc () =
 (*DEBUG*)debug1 "HANDLER"
-(*DEBUG*)  ("start recieving from "^string_of_space rspace.rspace_id) ;  try
+(*DEBUG*)  ("start receiving from "^string_of_space rspace.rspace_id) ;  try
   while true do
     let msg = input_value inc in
 (*DEBUG*)debug2 "HANDLER" ("message from "^string_of_space rspace.rspace_id) ;
@@ -388,10 +388,11 @@ let remote_send_async rspace uid idx a =
 let do_remote_send_sync space rspace uid idx kont a =
   let kid = rspace.next_kid ()
   and queue = get_out_queue space rspace in
-  if kid = 0 then start_listener space ; (* first continuation exported *)
+(*  if kid = 0 then start_listener space ; (* first continuation exported *) *)
   Join_hash.add rspace.konts kid kont ;
   Join_queue.put queue
     (SyncSend (uid, idx, kid,  marshal_message_rec space a [])) ;
+  Mutex.lock kont.kmutex ;
   Join_scheduler.suspend_for_reply kont
   
 let remote_send_sync rspace uid idx kont a =

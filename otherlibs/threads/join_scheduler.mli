@@ -24,6 +24,7 @@ val tasks_status : unit -> string
 val inform_suspend : unit -> unit
 val inform_unsuspend : unit -> unit
 
+(* Important: continuation mutex must be locked before call *)
 val suspend_for_reply : continuation -> 'a
 
 val reply_to : 'a -> continuation -> unit
