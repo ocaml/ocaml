@@ -14,7 +14,10 @@
 
 val local_addr : Unix.inet_addr
 
-val start_server : int -> unit
+type server
+
+val start_server : int -> server
+val stop_server : server -> unit
 
 type link
 

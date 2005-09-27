@@ -269,6 +269,9 @@ let kont_suspend k =
   | Ret v ->
 (*DEBUG*)debug3 "REPLIED" (Join_scheduler.tasks_status ()) ;
       (Obj.obj v)
+  | Exn e ->
+(*DEBUG*)debug3 "REPLIED EXN" (Join_scheduler.tasks_status ()) ;
+      raise e
   | Start -> assert false
 
 
@@ -366,6 +369,13 @@ let _ =
 let reply_to = Join_scheduler.reply_to
 
 let halt = Join_space.halt
+
+(* Debug from users programs *)
+
+let debug0 = Join_debug.debug0
+and debug1 = Join_debug.debug1
+and debug2 = Join_debug.debug2
+and debug3 = Join_debug.debug3
 
 (* TEST *)
 

@@ -40,4 +40,9 @@ val reply_to : 'a -> continuation -> unit
 
 val halt : unit -> unit
 
+val debug0 : string -> string -> unit
+val debug1 : string -> string -> unit
+val debug2 : string -> string -> unit
+val debug3 : string -> string -> unit
+
 val t : 'a -> Marshal.extern_flags list -> 'a

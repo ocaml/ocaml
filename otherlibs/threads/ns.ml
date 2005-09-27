@@ -13,6 +13,8 @@
 (* $Id$ *)
 
 open Unix
+(*DEBUG*)open Printf
+(*DEBUG*)open Join_debug
 
 type request =
   | Put of string * (string * Join_types.t_global array)
@@ -21,42 +23,59 @@ type request =
 
 let local_addr = Join_misc.local_addr
 
+type server = Unix.file_descr
+
 let start_server port =
   let t = Hashtbl.create 13 in
   let _,sacc = Join_misc.create_port port in
   Join.create_process
     (fun () ->
-      while true do
-        let (s,_) = Join_misc.force_accept sacc in
-        begin try
-          let inc = in_channel_of_descr s
-          and outc = out_channel_of_descr s in
-          let req = input_value inc in
-          begin match req with
-          | Put (key, v) -> Hashtbl.replace t key v
-          | SyncPut (once, key, v) ->
-              let r =
-                if once && Hashtbl.mem t key then
+(*DEBUG*)debug1 "NAME SERVER" "start" ;
+      try
+        while true do
+          let (s,_) = Join_misc.force_accept sacc in
+          begin try
+            let inc = in_channel_of_descr s
+            and outc = out_channel_of_descr s in
+            let req = input_value inc in
+            begin match req with
+            | Put (key, v) -> Hashtbl.replace t key v
+            | SyncPut (once, key, v) ->
+                let r =
+                  if once && Hashtbl.mem t key then
                     false
                   else begin
                     Hashtbl.replace t key v ;
                     true
                   end in
-              output_value outc r  ; Pervasives.flush outc
-          | Get key ->
-              let r =
-                try Some (Hashtbl.find t key)
-                with Not_found -> None in
-              output_value outc r ; flush outc
-          end
-        with e ->
-          close s ;
-          prerr_string "ns_server went wrong: " ;
-          Join_misc.prerr_exn e
-        end ;
-        close s
-      done)
+                output_value outc r  ; Pervasives.flush outc
+            | Get key ->
+                let r =
+                  try Some (Hashtbl.find t key)
+                  with Not_found -> None in
+                output_value outc r ; flush outc
+            end
+          with e ->
+            close s ;
+            prerr_string "ns_server went wrong: " ;
+            Join_misc.prerr_exn e
+          end ;
+          close s
+        done
+      with
+      | Unix.Unix_error((Unix.EBADF|Unix.EINVAL), "accept", _) ->
+(*DEBUG*)debug1 "NAME_SERVER" "saw shutdowned or closed socket" ;
+          ()
+      | e ->
+(*DEBUG*)debug1 "NAME_SERVER"
+(*DEBUG*)  (sprintf "died of %s" (Join_misc.exn_to_string e)) ;
+          ()) ;
+          sacc
 
+let stop_server sacc =
+(*DEBUG*)debug1 "STOP_SERVER" "" ;
+  Unix.shutdown sacc Unix.SHUTDOWN_ALL ;
+  Unix.close sacc
 
 type link = Unix.inet_addr * int
 

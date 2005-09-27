@@ -252,12 +252,24 @@ let suspend_for_reply k =
   | Ret v ->
 (*DEBUG*)debug3 "REPLIED" (tasks_status ()) ;
       (Obj.obj v)
+  | Exn e ->
+(*DEBUG*)debug3 "REPLIED EXN" (tasks_status ()) ;
+      raise e
   | Start|Go _ -> assert false
 
 let reply_to v k = 
 (*DEBUG*)  debug3 "REPLY" (sprintf "%i" (Obj.magic v)) ;
   Mutex.lock k.kmutex ;
   k.kval <- Ret (Obj.repr v) ;
+  incr_active () ; (* The awaken task becomes active *)
+  Condition.signal k.kcondition ;
+  Mutex.unlock k.kmutex 
+
+let reply_to_exn e k = 
+(*DEBUG*)debug3 "REPLY EXN"
+(*DEBUG*) (sprintf "%s" (Join_misc.exn_to_string e)) ;
+  Mutex.lock k.kmutex ;
+  k.kval <- Exn e ;
   incr_active () ; (* The awaken task becomes active *)
   Condition.signal k.kcondition ;
   Mutex.unlock k.kmutex 
@@ -293,7 +305,7 @@ let rec exit_hook () =
       Mutex.unlock active_mutex ;
       from_pool ()
     end ;
-(*DEBUG*)debug1 "HOOK" "suspend" ;
+(*DEBUG*)debug1 "HOOK" (sprintf "suspend %s" (tasks_status ())) ;
     Condition.wait active_condition active_mutex
   end else
     Mutex.unlock active_mutex

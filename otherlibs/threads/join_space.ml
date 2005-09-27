@@ -33,20 +33,30 @@ let same_space (a1, p1, t1) (a2, p2, t2) =
 
 open Join_types
 
-(* Attempt to handle SIGPIPES *)
+(* Attempt to handle SIGPIPE *)
 let _ =
   Sys.set_signal
     Sys.sigpipe
-    Sys.Signal_ignore
+    (Sys.Signal_handle
+       (fun _ ->
+(*DEBUG*)debug1 "SIG HANDLER" "SIGPIPE" ;
+         ()))
 
 (* Describe site *)
 let local_space = {
   space_id = local_id ;
   space_mutex = Mutex.create () ;
+  space_status = SpaceUp ;
   next_uid =
     begin 
-      let uid_counter = ref 0 in
-      (fun () -> incr uid_counter; !uid_counter)
+      let uid_counter = ref 0
+      and uid_mutex = Mutex.create () in
+      (fun () ->
+        Mutex.lock uid_mutex ;
+        incr uid_counter;
+        let r = !uid_counter in
+        Mutex.unlock uid_mutex ;
+        r)
     end ;
   uid2local = Join_hash.create () ;
   remote_spaces =  Join_hash.create () ;
@@ -124,14 +134,23 @@ let verbose_close caller fd =
 
 let close_link_in = function
   | NoHandler -> ()
-  | Handler { in_channel = inc } -> verbose_close "link_in" inc
+  | Handler { in_channel = inc } ->
+      Unix.shutdown inc Unix.SHUTDOWN_RECEIVE ;
+      verbose_close "link_in" inc
 
 let close_link_out = function
   | NoConnection _ | Connecting _ -> ()
   | Connected {out_channel = fd ; out_queue = queue } ->
       Join_queue.put queue GoodBye
 
+and internal_close_link_out = function
+  | NoConnection _ | Connecting _ -> ()
+  | Connected {out_channel = fd ; out_queue = queue } ->
+      Join_queue.put queue Killed
+
+
 exception SawGoodBye
+exception SawKilled
   
 let rec start_listener space =
   begin match space.space_listener with
@@ -159,12 +178,17 @@ let rec start_listener space =
                       Handler {in_channel = s ; }
 		end ;
 		Join_scheduler.create_process
-		  (join_handler space rspace inc)
+		  (join_handler space rspace s inc)
               done
 	    with
+(* 'normal' reaction to closing socket internally *)
+              | Unix.Unix_error((Unix.EBADF|Unix.EINVAL), "accept", _) ->
+(*DEBUG*)debug1 "LISTENER" "saw shutdowned or closed socket" ;
+                  ()
 	      | e ->
-(*DEBUG*)debug1 "LISTENER"
-(*DEBUG*)  (sprintf "died of %s" (Join_misc.exn_to_string e)) in
+(*DEBUG*)debug0 "LISTENER"
+(*DEBUG*)  (sprintf "died of %s" (Join_misc.exn_to_string e)) ;
+                  () in
 	    Join_scheduler.create_process listener ;
 	    space.space_listener <- Listen sock ;
 	    Mutex.unlock mtx
@@ -174,7 +198,7 @@ let rec start_listener space =
   | Listen _ -> ()
   end
 
-and join_handler space rspace inc () =
+and join_handler space rspace s inc () =
   try
   while true do
     let msg = input_value inc in
@@ -195,16 +219,30 @@ and join_handler space rspace inc () =
         and v = unmarshal_message_rec space v in
 	Join_scheduler.reply_to v kont
     | GoodBye -> raise SawGoodBye
+    | Killed -> assert false
   done
   with
   | SawGoodBye|End_of_file as e ->
     (* Distant site annouce it halts, or halts without annoucing it *)
 (*DEBUG*)debug1 "HANDLER"
-(*DEBUG*)  (sprintf "site %s halts on %s"
-(*DEBUG*)     (space_to_string rspace.rspace_id) (Join_misc.exn_to_string e)) ;
-      close_link_in rspace.link_in ;
-      close_link_out space rspace ;
-      Join_hash.remove space.remote_spaces rspace.rspace_id
+(*DEBUG*)  (sprintf "site %s tells it halts with %s"
+(*DEBUG*)     (space_to_string rspace.rspace_id) (Printexc.to_string e)) ;
+      verbose_close "handler self close" s ;
+      internal_close_link_out rspace.link_out ;
+      Join_hash.remove space.remote_spaces rspace.rspace_id ;
+      Join_hash.iter rspace.konts
+        (fun _ k -> Join_scheduler.reply_to_exn JoinExit k) ;
+(*DEBUG*)debug1 "HANDLER" "cleanup is over" ;
+      ()
+        
+  | Sys_error("Bad file descriptor") ->
+(*DEBUG*)debug1 "HANDLER" "Saw closed socket" ;
+      ()
+  | e ->
+(*DEBUG*)debug0 "HANDLER"
+(*DEBUG*)  (sprintf "died of %s" (Join_misc.exn_to_string e)) ;
+      ()
+      
 
       
 and get_out_queue space rspace =
@@ -242,10 +280,14 @@ and do_remote_reply_to space rspace kid r =
     (ReplySend
        (kid, marshal_message_rec space r []))
 
-and sender_work rspace queue outc =
+and sender_work rspace queue s outc =
   try 
   while true do
     let msg = Join_queue.get queue in
+    begin match msg with
+    | Killed -> raise SawKilled
+    | _ -> ()
+    end ;
 (*DEBUG*)debug2 "SENDER" ("message for "^string_of_space rspace.rspace_id) ;
     output_value outc msg ; flush outc ;
     match msg with
@@ -254,10 +296,17 @@ and sender_work rspace queue outc =
   done
   with
 (* Suicide neatly after announcing it *)
-  | SawGoodBye -> close_out outc
+  | SawGoodBye ->
+(*DEBUG*)debug1 "SENDER" "just sent goodbye" ;
+      Unix.shutdown s Unix.SHUTDOWN_SEND ;
+      verbose_close "self close from sender" s
+(* The distant site has halted, no need to shutdown *)
+  | SawKilled ->
+(*DEBUG*)debug1 "SENDER" "just received Killed" ;
+      verbose_close "self close from sender" s
   | e ->
-(*DEBUG*)debug1 "SENDER" ("exception "^Printexc.to_string e) ;
-      raise e
+(*DEBUG*)debug0 "SENDER" ("died of "^Join_misc.exn_to_string e) ;
+      ()
       
 and start_sender_work space rspace queue () =
 (*DEBUG*)debug1 "SENDER"
@@ -275,23 +324,23 @@ and start_sender_work space rspace queue () =
   output_value outc space.space_id  ; flush outc ;
 (*DEBUG*)debug1 "SENDER"
 (*DEBUG*)  (sprintf "just sent my name %s" (string_of_space space.space_id)) ;
-  sender_work rspace queue outc
+  sender_work rspace queue s outc
 
 and export_stub space local =  match local with
   | LocalAutomaton a ->
       if a.ident > 0 then
         GlobalAutomaton (space.space_id, a.ident)
       else begin
-        Mutex.lock space.space_mutex ;
+        Mutex.lock a.mutex ;
         let r =
           (* Race condition *)
           if a.ident > 0 then begin
-            Mutex.unlock space.space_mutex ;
+            Mutex.unlock a.mutex ;
             GlobalAutomaton (space.space_id, a.ident)
           end else begin
             let uid = space.next_uid () in
             a.ident <- uid ;
-            Mutex.unlock space.space_mutex ;            
+            Mutex.unlock a.mutex ;            
 (* Listener is started  at first export *)
             if uid = 1 then start_listener space ;
             Join_hash.add space.uid2local uid a ;
@@ -354,14 +403,21 @@ let kill_remote_space space rspace =
 
 
 let do_halt space =
-  Join_hash.iter space.remote_spaces
-    (fun _ rspace -> kill_remote_space space rspace) ;
-(*
-  let listsock = match space.space_listener with
-  | Deaf (fd,_) | Listen fd -> fd in
-  verbose_close "halt" listsock ;
-*)
-  ()
+  Mutex.lock space.space_mutex ; (* Against double halt, need more probably *)
+  begin match space.space_status with
+  | SpaceDown ->
+      Mutex.unlock space.space_mutex
+  | SpaceUp ->
+      space.space_status <- SpaceDown ;
+      Mutex.unlock space.space_mutex ;
+      Join_hash.iter space.remote_spaces
+        (fun _ rspace -> kill_remote_space space rspace) ;
+      let listsock = match space.space_listener with
+      | Deaf (fd,_) | Listen fd -> fd in
+      Unix.shutdown listsock Unix.SHUTDOWN_ALL ;
+      verbose_close "halt" listsock ;
+      ()
+  end
 
 let halt () = do_halt local_space
 

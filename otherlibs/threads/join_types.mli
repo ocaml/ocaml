@@ -39,7 +39,7 @@ type automaton = {
 
 and reaction = Obj.t * int * (Obj.t -> Obj.t)
 
-type kval = Start | Go of (unit -> Obj.t) | Ret of Obj.t
+type kval = Start | Go of (unit -> Obj.t) | Ret of Obj.t | Exn of exn
 
 type continuation =
   { kmutex : Mutex.t ;
@@ -68,6 +68,7 @@ type message =
       int (* continuation *) *
       (string * t_global array) (* parameter *)
   | GoodBye
+  | Killed
 
 type out_connection =
   {
@@ -117,9 +118,12 @@ type listener =
   | Deaf of Unix.file_descr *  Mutex.t
   | Listen of Unix.file_descr
 
+type space_status = SpaceUp | SpaceDown
+
 type space =
   {
     space_id : space_id ;
+    mutable space_status : space_status ;
     space_mutex : Mutex.t ;
     next_uid : unit -> int ;
     uid2local : (int, automaton) Join_hash.t ;

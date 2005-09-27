@@ -19,6 +19,8 @@ open Printf
 (*DEBUG*)
 (*DEBUG*)let debug_mutex = Mutex.create ()
 (*DEBUG*)
+let debug lvl source msg = ()
+
 (*DEBUG*)let debug lvl source msg =
 (*DEBUG*)  if verbose >= lvl then begin
 (*DEBUG*)   Mutex.lock debug_mutex ;
@@ -27,7 +29,7 @@ open Printf
 (*DEBUG*)    Mutex.unlock debug_mutex
 (*DEBUG*)  end
 (*DEBUG*)
-(*DEBUG*)let debug0 = debug 0
-(*DEBUG*)let debug1 = debug 1
-(*DEBUG*)and debug2 = debug 2
-(*DEBUG*)and debug3 = debug 3
+let debug0 = debug 0
+let debug1 = debug 1
+and debug2 = debug 2
+and debug3 = debug 3
