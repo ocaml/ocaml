@@ -2276,10 +2276,10 @@ and type_auto env
       (fun (chan, (ty, num)) ->
         match (expand_head env ty).desc with
         | Tarrow (_, _, _, _) ->
-            chan, {jchannel_sync=true;
+            chan, {jchannel_sync=true; jchannel_env=env ;
                    jchannel_type=ty ; jchannel_id=num}
         | Tconstr (p, _, _) when Path.same p Predef.path_channel ->
-            chan, {jchannel_sync=false;
+            chan, {jchannel_sync=false; jchannel_env=env ;
                    jchannel_type=ty; jchannel_id=num}
       | _ -> assert false)
       def_names in

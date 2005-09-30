@@ -100,6 +100,7 @@ let transl_name env name =
       fatal_error ("Join primitive: "^name^" not found")
 
 let mk_lambda env name = lazy (transl_name env name)
+let lambda_init_unit_queue = mk_lambda env_join "init_unit_queue"
 let lambda_create_process = mk_lambda env_join "create_process"
 (* Synchronous sends, two cases only *)
 let lambda_send_sync = mk_lambda env_join "send_sync"
@@ -128,6 +129,9 @@ let mk_apply f args = match Lazy.force f with
 | _,{val_kind=Val_prim p}  -> Lprim (Pccall p,args)
 | path,_                   -> Lapply (transl_path path, args)
   
+
+let init_unit_queue auto idx =
+  mk_apply lambda_init_unit_queue [Lvar auto ; lambda_int idx]
 
 let create_process p =  mk_apply lambda_create_process [p]
 
@@ -534,10 +538,10 @@ let create_auto some_loc
      Llet
        (Strict, wrapped_name, wrap_automaton auto_name, k))
 
-let create_channels {jauto_name=(_,name) ; jauto_names=names} k =
+let create_channels {jauto_name=(raw_name, name) ; jauto_names=names} k =
   List.fold_right
     (fun (id,
-          {jchannel_sync=sync ; jchannel_id=num}) k ->
+          ({jchannel_sync=sync ; jchannel_id=num} as jc)) k ->
             Llet
               (StrictOpt, id,
                begin if sync then
@@ -545,7 +549,13 @@ let create_channels {jauto_name=(_,name) ; jauto_names=names} k =
                else
                  create_async name num None
                end,
-               k))
+               if
+                 Typeopt.is_unit_channel_type
+                   jc.jchannel_type
+                   jc.jchannel_env
+               then
+                 Lsequence (init_unit_queue raw_name num, k)
+               else k))
     names k
 
 let get_queue name names jpat =

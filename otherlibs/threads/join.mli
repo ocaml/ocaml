@@ -17,6 +17,8 @@ open Join_types
 val create_process : (unit -> unit) -> unit
 
 val get_queue : automaton -> int -> 'a
+val init_unit_queue : automaton -> int -> unit
+
 val create_automaton : int -> automaton
 
 (* create_automaton nchans *)

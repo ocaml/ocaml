@@ -22,12 +22,16 @@ open Types
 open Typedtree
 open Lambda
 
-let has_base_type exp base_ty_path =
-  let exp_ty =
-    Ctype.expand_head exp.exp_env (Ctype.correct_levels exp.exp_type) in
-  match Ctype.repr exp_ty with
+let is_base_type ty env base_ty_path =
+  let ty =
+    Ctype.expand_head env (Ctype.correct_levels ty) in
+  match Ctype.repr ty with
     {desc = Tconstr(p, _, _)} -> Path.same p base_ty_path
   | _ -> false
+
+let has_base_type exp base_ty_path =
+  is_base_type exp.exp_type exp.exp_env base_ty_path
+
 
 let maybe_pointer exp =
   let exp_ty =
@@ -132,3 +136,13 @@ let bigarray_kind_and_layout exp =
        bigarray_decode_type layout_type layout_table Pbigarray_unknown_layout)
   | _ ->
       (Pbigarray_unknown, Pbigarray_unknown_layout)
+
+let is_unit_channel_type ty env =
+  let channel_ty = Ctype.expand_head env (Ctype.correct_levels ty) in
+  match (Ctype.repr channel_ty).desc with
+  |  Tconstr(p, [msg_ty], _)
+    when Path.same p Predef.path_channel ->
+      is_base_type msg_ty env Predef.path_unit
+  | _ ->
+      (* This can happen with synchronous channels *)
+      false

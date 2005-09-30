@@ -18,18 +18,37 @@ open Printf
 
 let create_process f = Join_scheduler.create_process f
 
-let put_queue auto idx a =
-  auto.queues.(idx) <- Obj.repr (a :: Obj.obj (auto.queues.(idx)))
+(* There are two sort of queues
+   - Unit queues are counters starting from one (1 <=> empty queue)
+   - Standard queues are lists of messages *)
 
-let get_queue auto idx = match Obj.obj (auto.queues.(idx)) with
-| [] -> assert false
-| a::rem ->
-    auto.queues.(idx) <- Obj.repr rem ;
-    begin match rem with
-    | [] -> auto.status.erase idx
-    | _  -> ()
-    end ;
-    a
+let put_queue auto idx a =
+  let qs = auto.queues in
+  let q = Array.unsafe_get qs idx in
+  if Obj.is_int q && Obj.obj q <> 0 then
+    Array.unsafe_set qs idx (Obj.repr (Obj.obj q+1))
+  else
+    Array.unsafe_set qs idx (Obj.repr (a :: Obj.obj q))
+
+let get_queue auto idx =
+  let qs = auto.queues in
+  let q = Array.unsafe_get qs idx in
+  if Obj.is_int q && Obj.obj q <> 0 then begin
+    let count = Obj.obj q-1 in
+    Array.unsafe_set qs idx (Obj.repr count) ;
+    if  count=1 then auto.status.erase idx ;
+    Obj.magic ()
+  end else match Obj.obj q with
+  | [] -> assert false
+  | a::rem ->
+      Array.unsafe_set qs idx (Obj.repr rem) ;
+      begin match rem with
+      | [] -> auto.status.erase idx
+      | _  -> ()
+      end ;
+      a
+
+let init_unit_queue auto idx = Array.unsafe_set auto.queues idx (Obj.repr 1)
 
 (*******************)
 (* Automata status *)

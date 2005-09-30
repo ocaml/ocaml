@@ -103,7 +103,8 @@ and joinautomaton = joinclause joinautomaton_gen
 and joinchannel =
     {jchannel_sync : bool ;
      jchannel_id   : int ;
-     jchannel_type : type_expr;}
+     jchannel_type : type_expr;
+     jchannel_env : Env.t;}
 
 and  joinclause =
     {jclause_desc : joinpattern list * expression ;
