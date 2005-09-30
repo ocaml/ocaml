@@ -210,22 +210,45 @@ let list_iter_i f l =
   loop 0 l;;
 
 (* ``Abstracting'' version of kprintf: returns a (curried) function that
-   will print when totally applied. *)
+   will print when totally applied.
+   Note: in the following, we are careful not to be badly caught
+   by the compiler optimizations on the representation of arrays. *)
 let kapr kpr fmt =
   match nargs_of_format_type fmt with
   | 0 -> kpr fmt [||]
-  | 1 -> Obj.magic (fun x -> kpr fmt [|x|])
-  | 2 -> Obj.magic (fun x y -> kpr fmt [|x; y|])
-  | 3 -> Obj.magic (fun x y z -> kpr fmt [|x; y; z|])
-  | 4 -> Obj.magic (fun x y z t -> kpr fmt [|x; y; z; t|])
-  | 5 -> Obj.magic (fun x y z t u -> kpr fmt [|x; y; z; t; u|])
-  | 6 -> Obj.magic (fun x y z t u v -> kpr fmt [|x; y; z; t; u; v|])
+  | 1 -> Obj.magic (fun x ->
+      let a = Array.make 1 (Obj.repr 0) in
+      a.(0) <- x;
+      kpr fmt a)
+  | 2 -> Obj.magic (fun x y ->
+      let a = Array.make 2 (Obj.repr 0) in
+      a.(0) <- x; a.(1) <- y;
+      kpr fmt a)
+  | 3 -> Obj.magic (fun x y z ->
+      let a = Array.make 3 (Obj.repr 0) in
+      a.(0) <- x; a.(1) <- y; a.(2) <- z;
+      kpr fmt a)
+  | 4 -> Obj.magic (fun x y z t ->
+      let a = Array.make 4 (Obj.repr 0) in
+      a.(0) <- x; a.(1) <- y; a.(2) <- z;
+      a.(3) <- t;
+      kpr fmt a)
+  | 5 -> Obj.magic (fun x y z t u ->
+      let a = Array.make 5 (Obj.repr 0) in
+      a.(0) <- x; a.(1) <- y; a.(2) <- z;
+      a.(3) <- t; a.(4) <- u;
+      kpr fmt a)
+  | 6 -> Obj.magic (fun x y z t u v ->
+      let a = Array.make 6 (Obj.repr 0) in
+      a.(0) <- x; a.(1) <- y; a.(2) <- z;
+      a.(3) <- t; a.(4) <- u; a.(5) <- v;
+      kpr fmt a)
   | nargs ->
     let rec loop i args =
       if i >= nargs then
-        let v = Array.make nargs (Obj.repr 0) in
-        list_iter_i (fun i arg -> v.(nargs - i - 1) <- arg) args;
-        kpr fmt v
+        let a = Array.make nargs (Obj.repr 0) in
+        list_iter_i (fun i arg -> a.(nargs - i - 1) <- arg) args;
+        kpr fmt a
       else Obj.magic (fun x -> loop (succ i) (x :: args)) in
     loop 0 [];;
 
@@ -288,7 +311,8 @@ let scan_format fmt args n pos cont_s cont_a cont_t cont_f cont_m =
           scan_flags n (width :: widths) i
         | _, _ -> assert false in
       scan_positional_spec fmt got_positional n (succ i)
-    | '0'..'9' | '.' | '#' | '-' | ' ' | '+' -> scan_flags n widths (succ i)
+    | '0'..'9'
+    | '.' | '#' | '-' | ' ' | '+' -> scan_flags n widths (succ i)
     | _ -> scan_conv n widths i
 
   and scan_conv n widths i =
