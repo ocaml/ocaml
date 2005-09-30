@@ -329,7 +329,3 @@ let rec exit_hook () =
   end ;
 (*DEBUG*)debug1 "HOOK" "over" ;
   ()
-
-
-
-let _ = at_exit exit_hook

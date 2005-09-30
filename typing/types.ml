@@ -37,6 +37,9 @@ and type_desc =
   | Tvariant of row_desc
   | Tunivar
   | Tpoly of type_expr * type_expr list
+(*>JOCAML*)
+  | Tproc of Ident.t list
+(*<JOCAML*)
 
 and row_desc =
     { row_fields: (label * row_field) list;

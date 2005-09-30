@@ -18,15 +18,13 @@ open Printf
 
 let create_process f = Join_scheduler.create_process f
 
-type queue 
-
 let put_queue auto idx a =
-  auto.queues.(idx) <- Obj.magic (a :: Obj.magic (auto.queues.(idx)))
+  auto.queues.(idx) <- Obj.repr (a :: Obj.obj (auto.queues.(idx)))
 
-let get_queue auto idx = match Obj.magic (auto.queues.(idx)) with
+let get_queue auto idx = match Obj.obj (auto.queues.(idx)) with
 | [] -> assert false
 | a::rem ->
-    auto.queues.(idx) <- Obj.magic rem ;
+    auto.queues.(idx) <- Obj.repr rem ;
     begin match rem with
     | [] -> auto.status.erase idx
     | _  -> ()
@@ -280,12 +278,11 @@ let kont_suspend k =
 let kont_go_suspend kme kpri f =
 (*DEBUG*)debug2 "KONT_GO_SUSPEND" "" ;
 (* awake principal *)
+  assert (kpri.kmutex == kme.kmutex) ;
   Join_scheduler.incr_active () ;
-  Mutex.lock kpri.kmutex ;
   assert (kpri.kval = Start) ;
   kpri.kval <- Go f ;
   Condition.signal kpri.kcondition ;
-  Mutex.unlock kpri.kmutex ;
   Join_scheduler.suspend_for_reply kme
 
 let just_go k f =
@@ -371,6 +368,8 @@ let _ =
   register_code (create_sync (Obj.magic 0) 0)
 
 let reply_to = Join_scheduler.reply_to
+
+let exit_hook = Join_scheduler.exit_hook
 
 let halt = Join_space.halt
 

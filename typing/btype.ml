@@ -174,6 +174,7 @@ let iter_type_expr f ty =
   | Tsubst ty           -> f ty
   | Tunivar             -> ()
   | Tpoly (ty, tyl)     -> f ty; List.iter f tyl
+  | Tproc _             -> ()
 
 let rec iter_abbrev f = function
     Mnil                   -> ()
@@ -241,7 +242,7 @@ let rec copy_type_desc f = function
   | Tpoly (ty, tyl)     ->
       let tyl = List.map (fun x -> norm_univar (f x)) tyl in
       Tpoly (f ty, tyl)
-
+  | Tproc _ -> assert false
 
 (* Utilities for copying *)
 
@@ -350,6 +351,7 @@ let rec iter_ty_paths f ty =
     | Tpoly (ty, tyl) ->
         iter_ty_paths f ty ;
         List.iter (iter_ty_paths f) tyl
+    | Tproc _ -> assert false
   end
 
 and iter_row_paths f row =

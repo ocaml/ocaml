@@ -57,7 +57,7 @@ let report_error ppf = function
       end
   | NonExhaustive loc ->
       Format.fprintf ppf
-        "%aThis non-exhaustive mactching replies to synchronous names"
+        "%aThis non-exhaustive matching replies to synchronous names"
         Location.print loc
 
 (* DEBUG stuff *)
@@ -235,9 +235,9 @@ let rec inter loc xs ys = match xs, ys with
 
 let rec do_principal p = match p.exp_desc with
 (* Base cases processes *)
-| Texp_asyncsend (_,_) | Texp_exec (_) | Texp_null 
+| Texp_asyncsend (_,_) | Texp_null 
  -> []
-| Texp_reply (_, Path.Pident id) -> [id, p.exp_loc]
+| Texp_reply (_, id) -> [id, p.exp_loc]
 (* Recursion *)
 | Texp_par (p1, p2) -> delta (do_principal p1) (do_principal p2)
 | Texp_let (_,_,p) | Texp_def (_,p) | Texp_loc (_,p)
@@ -283,11 +283,11 @@ let principal p = match do_principal p with
 | (x,_)::_ -> Some x
 | []       -> None  
 
-(* Once again for finding back parts of princpal threads *)
+(* Once again for finding back parts of principal threads *)
 let rec is_principal id p = match p.exp_desc with
-|  Texp_asyncsend (_,_) | Texp_exec (_) | Texp_null 
+|  Texp_asyncsend (_,_) | Texp_null 
  -> false
-| Texp_reply (_, Path.Pident kont) -> kont=id
+| Texp_reply (_, kont) -> kont=id
 | Texp_par (p1, p2) ->
    is_principal id p1 || is_principal id p2
 | Texp_let (_,_,p) | Texp_def (_,p) | Texp_loc (_,p)
@@ -370,11 +370,14 @@ let rec simple_exp e = match e.exp_desc with
 | Texp_assert e -> !Clflags.noassert || simple_exp e
 | Texp_assertfalse -> !Clflags.noassert
 (* Who knows ? *)
-| Texp_letmodule (_,_,_) | Texp_override (_,_)
-| Texp_send (_,_) | Texp_while (_,_) | Texp_new (_,_)
- -> false
+| Texp_letmodule (_,_,_) | Texp_override (_,_) | Texp_lazy (_)
+| Texp_send (_,_) | Texp_while (_,_) | Texp_new (_,_) | Texp_try (_,_)
+| Texp_object (_, _, _)
+  -> false
 (* Process constructs are errors *)
-| _ -> fatal_error "Transljoin.simple_proc"
+| Texp_reply (_, _)|Texp_par (_, _)|Texp_asyncsend (_, _)
+| Texp_null
+ -> assert false
 
 and simple_exp_option = function
  | None -> true
@@ -400,11 +403,17 @@ and simple_proc p = match p.exp_desc with
 | Texp_reply (e, _) -> simple_exp e
 | Texp_par (p1, p2) -> simple_proc p1 || simple_proc p2
 | Texp_asyncsend (e1, e2) -> simple_exp e1 && simple_exp e2
-| Texp_exec e -> simple_exp e
 | Texp_null -> true
 (* Plain expressions are errors *)
-| _ -> fatal_error "Transljoin.simple_proc"
-
+| Texp_spawn _|Texp_object (_, _, _)|Texp_lazy _|Texp_assert _|
+  Texp_letmodule (_, _, _)|Texp_override (_, _)|Texp_setinstvar (_, _, _)|
+  Texp_instvar (_, _)|Texp_new (_, _)|Texp_send (_, _)|
+  Texp_for (_, _, _, _, _)|Texp_while (_, _)|Texp_array _|
+  Texp_setfield (_, _, _)|Texp_field (_, _)|Texp_record (_, _)|
+  Texp_variant (_, _)|Texp_construct (_, _)|Texp_tuple _|Texp_try (_, _)|
+  Texp_apply (_, _)|Texp_function (_, _)|Texp_constant _|Texp_ident (_, _)|
+  Texp_assertfalse
+  -> assert false
 
 
 let partition_procs procs = List.partition simple_proc procs
@@ -433,12 +442,7 @@ let as_procs sync e =
      let psync, ps = get_principal id ps in
      Some psync, ps in
  let seqs, forks = partition_procs ps in
- psync,
- List.map
-   (fun p -> match p.exp_desc with
-   | Texp_exec e -> e
-   | _ -> p) seqs,
- forks
+ psync, seqs, forks
 
 
 (*

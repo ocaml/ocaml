@@ -2789,6 +2789,7 @@ let rec build_subtype env visited loops posi level t =
       else (t, Unchanged)
   | Tunivar ->
       (t, Unchanged)
+   | Tproc _ -> assert false
 
 let enlarge_type env ty =
   warn := false;

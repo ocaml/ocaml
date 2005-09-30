@@ -29,3 +29,5 @@ val suspend_for_reply : continuation -> 'a
 
 val reply_to : 'a -> continuation -> unit
 val reply_to_exn : exn -> continuation -> unit
+
+val exit_hook : unit -> unit

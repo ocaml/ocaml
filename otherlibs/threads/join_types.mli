@@ -26,7 +26,7 @@ type 'a status =
   } 
 
 (* Local automaton *)
-type queue 
+type queue = Obj.t
 
 type automaton = {
   mutable ident : int ; 

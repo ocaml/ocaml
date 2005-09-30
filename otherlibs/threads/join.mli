@@ -38,6 +38,8 @@ val create_sync : stub -> int -> ('a -> 'b)
 
 val reply_to : 'a -> continuation -> unit
 
+val exit_hook : unit -> unit
+
 val halt : unit -> unit
 
 val debug0 : string -> string -> unit

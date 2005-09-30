@@ -189,7 +189,9 @@ and print_simple_out_type ppf =
   | Otyp_abstract -> fprintf ppf "'abstract"
   | Otyp_alias _ _ | Otyp_poly _ _
   | Otyp_arrow _ _ _ | Otyp_constr _ [_ :: _] as ty ->
-      fprintf ppf "@[<1>(%a)@]" print_out_type ty ]
+      fprintf ppf "@[<1>(%a)@]" print_out_type ty 
+  | Otyp_proc -> fprintf ppf "proc" ]
+
   and print_private ppf =
   fun
   [ Asttypes.Public -> ()

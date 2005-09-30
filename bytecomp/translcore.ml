@@ -835,11 +835,20 @@ and transl_proc die sync p = match p.exp_desc with
             (List.fold_right (transl_fork None) forks
                (transl_proc false sync psync))
       end
-| Texp_asyncsend (_,_) | Texp_reply (_,_) | Texp_null | Texp_exec (_) ->
+| Texp_asyncsend (_,_) | Texp_reply (_,_) | Texp_null  ->
     transl_simple_proc die sync p
-| _ ->
+| Texp_spawn _|Texp_object (_, _, _)|Texp_lazy _|Texp_assert _|
+  Texp_letmodule (_, _, _)|Texp_override (_, _)|Texp_setinstvar (_, _, _)|
+  Texp_instvar (_, _)|Texp_new (_, _)|Texp_send (_, _)|
+  Texp_for (_, _, _, _, _)|Texp_while (_, _)|Texp_array _|
+  Texp_setfield (_, _, _)|Texp_field (_, _)|Texp_record (_, _)|
+  Texp_variant (_, _)|Texp_construct (_, _)|Texp_tuple _|Texp_try (_, _)|
+  Texp_apply (_, _)|Texp_function (_, _)|Texp_constant _|Texp_ident (_, _)|
+  Texp_assertfalse
+  ->
     Location.print Format.err_formatter p.exp_loc ;
     fatal_error "Translcore.transl_proc"
+
 
 (*
     Simple procs are defined as follows : the code for them does
@@ -879,7 +888,6 @@ and transl_simple_proc die sync p = match p.exp_desc with
       (transl_cases no_event
          (transl_simple_proc die sync) pat_expr_list) partial
 (* Proc constructs *)
-| Texp_exec  (e) -> transl_exp e
 | Texp_par (p1,p2) -> (* We can translate this ``&'' as a sequence *)
     make_sequence
       (transl_simple_proc false sync p1)
@@ -894,14 +902,22 @@ and transl_simple_proc die sync p = match p.exp_desc with
 | Texp_asyncsend (e1,e2) ->
     (if die then Transljoin.tail_send_async else Transljoin.send_async)
       (transl_exp e1) (transl_exp e2)
-| Texp_reply (e, (Pident id as path)) ->
+| Texp_reply (e, id) ->
     begin match sync with
     | Some main_id when main_id = id -> transl_exp e
-    | _ -> Transljoin.reply_to (transl_exp e) (transl_path path)
+    | _ -> Transljoin.reply_to (transl_exp e) (transl_path (Pident id))
     end
 | Texp_null -> lambda_unit
 (* Plain expression are errors *)
-| _ -> fatal_error "Translcore.transl_simple_proc"
+| Texp_spawn _|Texp_object (_, _, _)|Texp_lazy _|Texp_assert _|
+  Texp_letmodule (_, _, _)|Texp_override (_, _)|Texp_setinstvar (_, _, _)|
+  Texp_instvar (_, _)|Texp_new (_, _)|Texp_send (_, _)|
+  Texp_for (_, _, _, _, _)|Texp_while (_, _)|Texp_array _|
+  Texp_setfield (_, _, _)|Texp_field (_, _)|Texp_record (_, _)|
+  Texp_variant (_, _)|Texp_construct (_, _)|Texp_tuple _|Texp_try (_, _)|
+  Texp_apply (_, _)|Texp_function (_, _)|Texp_constant _|Texp_ident (_, _)|
+  Texp_assertfalse
+ -> assert false
 
 (* Parameter list for a guarded process *)
 

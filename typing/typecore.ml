@@ -1025,6 +1025,12 @@ and do_type_exp ctx env sexp =
       with Not_found ->
         raise(Error(sexp.pexp_loc, Unbound_value lid))
       end
+  | Pexp_constant (Const_int 0) when ctx=P ->
+      re {
+        exp_desc = Texp_null;
+        exp_loc = sexp.pexp_loc;
+        exp_type =  Predef.type_process [];
+        exp_env = env; }
   | Pexp_constant cst ->
       check_expression ctx sexp ;
       re {
@@ -1087,7 +1093,7 @@ and do_type_exp ctx env sexp =
               ty in
           re { exp_desc = Texp_asyncsend (funct, arg);
             exp_loc = sexp.pexp_loc;
-            exp_type = instance Predef.type_process;
+            exp_type = Predef.type_process [] ;
             exp_env = env }
       end
   | Pexp_match(sarg, caselist) ->
@@ -1292,7 +1298,7 @@ and do_type_exp ctx env sexp =
               re {
                 exp_desc = Texp_ifthenelse(cond, ifso, None);
                 exp_loc = sexp.pexp_loc;
-                exp_type = instance Predef.type_process;
+                exp_type = Predef.type_process [];
                 exp_env = env }
           | Some sifnot ->
               let ifso = do_type_exp P env sifso in
@@ -1300,7 +1306,7 @@ and do_type_exp ctx env sexp =
               re {
                 exp_desc = Texp_ifthenelse(cond, ifso, Some ifnot);
                 exp_loc = sexp.pexp_loc;
-                exp_type = instance Predef.type_process;
+                exp_type = Predef.type_process [];
                 exp_env = env }
           end  
       end
@@ -1314,7 +1320,6 @@ and do_type_exp ctx env sexp =
         exp_env = env }
   | Pexp_while(scond, sbody) ->
       check_expression ctx sexp;
-      let env = Env.remove_continuations env in
       let cond = type_expect env scond (instance Predef.type_bool) in
       let body = type_statement env sbody in
       re {
@@ -1324,7 +1329,6 @@ and do_type_exp ctx env sexp =
         exp_env = env }
   | Pexp_for(param, slow, shigh, dir, sbody) ->
       check_expression ctx sexp;
-      let env = Env.remove_continuations env in
       let low = type_expect env slow (instance Predef.type_int) in
       let high = type_expect env shigh (instance Predef.type_int) in
       let (id, new_env) =
@@ -1597,23 +1601,21 @@ and do_type_exp ctx env sexp =
         exp_loc = sexp.pexp_loc;
         exp_type = newvar ();
         exp_env = env; }
-  | Pexp_spawn (sarg) -> (* Hum, spawn et exec synonymes dans le source... *)
-      begin match ctx with
-      | E ->
-          let arg = do_type_exp P env sarg in
-          re {
-            exp_desc = Texp_spawn arg;
-            exp_loc = sexp.pexp_loc;
-            exp_type = instance Predef.type_unit;
-            exp_env = env; } 
-      | P ->
-          let arg = type_expect env sarg (instance Predef.type_unit) in
-          re {
-            exp_desc = Texp_exec arg;
-            exp_loc = sexp.pexp_loc;
-            exp_type = instance Predef.type_process;
-            exp_env = env; } 
-      end
+  | Pexp_spawn (sarg) ->
+       check_expression ctx sexp ;
+(*
+  Continuation scope is restricted to P in
+   P & P, let D in P, match E (| p -> P)+, if e then P (else P)?
+   def D in P.
+   To achieve this it suffices to remove continuations from typing env
+   for typing D in def D in _, and for E in spawn E only.
+*)
+       let arg = do_type_exp P (Env.remove_continuations env) sarg in
+       re {
+          exp_desc = Texp_spawn arg;
+          exp_loc = sexp.pexp_loc;
+          exp_type = instance Predef.type_unit;
+          exp_env = env; } 
   | Pexp_par (se1, se2) ->
       let e1 = do_type_exp P env se1
       and e2 = do_type_exp P env se2 in
@@ -1628,7 +1630,7 @@ and do_type_exp ctx env sexp =
       re {
         exp_desc = Texp_null;
         exp_loc = sexp.pexp_loc;
-        exp_type =  instance Predef.type_process;
+        exp_type =  Predef.type_process [];
         exp_env = env; } 
   | Pexp_reply (sres, jid) ->
       check_process ctx sexp ;
@@ -1641,10 +1643,11 @@ and do_type_exp ctx env sexp =
         with Not_found ->
           raise(Error(jid.pjident_loc, Unbound_continuation lid)) in
       let res = type_expect env sres ty in
+      let kid = match path with Path.Pident r -> r | _ -> assert false in
       re {
-        exp_desc = Texp_reply (res, path);
+        exp_desc = Texp_reply (res, kid) ;
         exp_loc  = sexp.pexp_loc;
-        exp_type = instance Predef.type_process;
+        exp_type = Predef.type_process [];
         exp_env  = env; }
   | Pexp_def (sautos, sbody) ->
       let (autos, new_env) = type_def false env sautos in
@@ -2031,11 +2034,8 @@ and type_expect ?in_function env sexp ty_expected =
         try unify env ty_arg (type_option(newvar()))
         with Unify _ -> assert false
       end;
-(*> JOCAML *)
-      let env_noconts = Env.remove_continuations env in
-(*< JOCAML *)      
       let cases, partial =
-        type_cases ~in_function:(loc,ty_fun) E env_noconts ty_arg ty_res
+        type_cases ~in_function:(loc,ty_fun) E env ty_arg ty_res
           (Some sexp.pexp_loc) caselist in
       let all_labeled ty =
         let ls, tvar = list_labels env ty in
@@ -2183,8 +2183,9 @@ and type_let env rec_flag spat_sexp_list =
     pat_list;
   (* Only bind pattern variables after generalizing *)
   List.iter (fun f -> f()) force;
-  let exp_env =
-    match rec_flag with Nonrecursive | Default -> env | Recursive -> new_env in
+  let exp_env = match rec_flag with
+      | Nonrecursive | Default -> env
+      | Recursive -> new_env in
   let exp_list =
     List.map2
       (fun (spat, sexp) pat -> type_expect exp_env sexp pat.pat_type)

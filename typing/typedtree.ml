@@ -81,10 +81,9 @@ and expression_desc =
 (*> JOCAML *)
   | Texp_asyncsend of expression * expression
   | Texp_spawn of expression
-  | Texp_exec  of expression
   | Texp_par of expression * expression
   | Texp_null
-  | Texp_reply of expression * Path.t
+  | Texp_reply of expression * Ident.t
   | Texp_def of joinautomaton list * expression
   | Texp_loc of joinlocation list * expression
 

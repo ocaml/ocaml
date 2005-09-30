@@ -36,7 +36,6 @@ and ident_int64 = Ident.create "int64"
 and ident_lazy_t = Ident.create "lazy_t"
 (*> JOCAML *)
 and ident_channel = Ident.create "channel"
-and ident_process = Ident.create "process"
 and ident_location = Ident.create "location"
 let first_predef_type_stamp = Ident.stamp ident_int
 let last_predef_type_stamp =
@@ -60,7 +59,6 @@ and path_int64 = Pident ident_int64
 and path_lazy_t = Pident ident_lazy_t
 (*> JOCAML *)
 and path_channel = Pident ident_channel
-and path_process = Pident ident_process
 and path_location = Pident ident_location
 
 let is_predef_type_path = function
@@ -85,8 +83,8 @@ and type_int32 = newgenty (Tconstr(path_int32, [], ref Mnil))
 and type_int64 = newgenty (Tconstr(path_int64, [], ref Mnil))
 and type_lazy_t t = newgenty (Tconstr(path_lazy_t, [t], ref Mnil))
 (*> JOCAML *)
-and type_process = newgenty (Tconstr(path_process, [], ref Mnil))
 and type_location = newgenty (Tconstr(path_location, [], ref Mnil))
+and type_process kids = newgenty (Tproc kids)
 (*< JOCAML *)
 
 let ident_match_failure = Ident.create_predef_exn "Match_failure"
@@ -196,7 +194,6 @@ let build_initial_env add_type add_exception empty_env =
                          [newgenty (Ttuple[type_string; type_int; type_int])] (
 (*> JOCAML *)
   add_type ident_channel decl_channel (
-  add_type ident_process decl_abstr (
   add_type ident_location decl_abstr (
 (*< JOCAML *)
   add_type ident_int64 decl_abstr (
@@ -216,7 +213,7 @@ let build_initial_env add_type add_exception empty_env =
   add_type ident_int decl_abstr (
     empty_env)))))))))))))))))))))))))
 (*> JOCAML *)
-    )))))
+    ))))
 (*< JOCAML *)
 
 

@@ -44,14 +44,17 @@ let file_argument name =
       then exit 0
       else exit 2
     end
-
+(*> JOCAML *)
 let magic_join () =
-  if !join then (
-    include_dirs := (Config.standard_library ^ "/threads") :: !include_dirs;
-    file_argument "unix.cma";
-    file_argument "threads.cma"
-  )
-      
+  join := true ;
+  let dir = Misc.expand_directory Config.standard_library "+threads" in
+  include_dirs := dir :: !include_dirs ;
+  file_argument "unix.cma";
+  file_argument "threads.cma" ;
+  file_argument "join.cma";
+  ()
+(*< JOCAML *)         
+
 let main () =
   Arg.parse [
      "-I", Arg.String(fun dir ->
@@ -59,7 +62,7 @@ let main () =
        include_dirs := dir :: !include_dirs),
            "<dir>  Add <dir> to the list of include directories";
 (*> JOCAML *)
-    "-join", Arg.Set join, " Be a jocaml toplevel";
+    "-join", Arg.Unit magic_join, " Be a jocaml toplevel";
 (*< JOCAML *)    
      "-labels", Arg.Clear classic, " Labels commute (default)";
      "-noassert", Arg.Set noassert, " Do not compile assertion checks";
