@@ -64,13 +64,6 @@ let local_space = {
 } 
 ;;
 
-let do_locked2 lock zyva a b =
-  Mutex.lock lock ;
-  let r =
-    try zyva a b with e -> Mutex.unlock lock ; raise e in
-  Mutex.unlock lock ;
-  r
-
 
 let get_remote_space space space_id =
   Join_hash.get space.remote_spaces

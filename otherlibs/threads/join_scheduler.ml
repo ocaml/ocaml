@@ -196,7 +196,8 @@ let create_process f =
   let g () = 
     begin try f ()
     with
-    | Join_misc.JoinExit -> (* managed technique to suicide join-managed threads *)
+    | Join_misc.JoinExit ->
+(* technique to silentely suicide join-managed threads *)
       flush stdout; flush stderr
     | e ->
       flush stdout; flush stderr;
@@ -204,7 +205,7 @@ let create_process f =
     end ;
     exit_thread () in
 
-  if !in_pool = 0 then begin
+  if !in_pool <= 2 then begin
     match really_create_process g with
     | None -> put_pool g 
     | Some _ -> ()

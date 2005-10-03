@@ -15,7 +15,6 @@
 open Join_types
 
 val create_process : (unit -> unit) -> unit
-val create_real_process : (unit -> unit) -> Thread.t
 
 val incr_active : unit -> unit
 
