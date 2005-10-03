@@ -124,6 +124,7 @@ let lambda_patch_table = mk_lambda env_join "patch_table"
 let lambda_get_queue = mk_lambda env_join "get_queue"
 let lambda_unlock_automaton = mk_lambda env_join "unlock_automaton"
 let lambda_reply_to = mk_lambda env_join "reply_to"
+let lambda_reply_to_exn = mk_lambda env_join "reply_to_exn"
 
 let mk_apply f args = match Lazy.force f with
 | _,{val_kind=Val_prim p}  -> Lprim (Pccall p,args)
@@ -171,9 +172,18 @@ let create_automaton some_loc nchans names = match some_loc with
 
 let wrap_automaton id = mk_apply lambda_wrap_automaton [Lvar id]
 
-let reply_to lam1 lam2 =
- mk_apply lambda_reply_to [lam1; lam2]
+let reply_to lam1 lam2 = mk_apply lambda_reply_to [lam1; lam2]
+and reply_to_exn exn kont =
+  mk_apply lambda_reply_to_exn [Lvar exn ; Lvar kont]
 
+let get_replies sync p =
+  let reps = Typejoin.get_replies p in
+  match reps, sync with
+  | (id,_)::rem, Some oid when Ident.same id oid ->
+      true, List.map fst rem
+  | _, _ -> false, List.map fst reps
+
+  
 let do_spawn some_loc p =
  if p = lambda_unit then
    p
@@ -201,6 +211,7 @@ let unlock_automaton lam = mk_apply lambda_unlock_automaton [lam]
  (principal name)
 *)
 
+(*
 let id_lt (x,_) (y,_) = Ident.stamp x < Ident.stamp y
 
 
@@ -234,8 +245,6 @@ let rec inter loc xs ys = match xs, ys with
      raise (MissingRight (fst x))
    else (* x=y *)
      (fst x,loc)::inter loc rx ry
-
-
 
 let rec do_principal p = match p.exp_desc with
 (* Base cases processes *)
@@ -282,8 +291,9 @@ let rec do_principal p = match p.exp_desc with
 | Texp_ifthenelse (_,_,None) -> []
 (* Errors *)
 | _ -> assert false
+*)
 
-let principal p = match do_principal p with
+let principal p = match Typejoin.get_replies p with
 | (x,_)::_ -> Some x
 | []       -> None  
 
@@ -381,7 +391,7 @@ let rec simple_exp e = match e.exp_desc with
 (* Process constructs are errors *)
 | Texp_reply (_, _)|Texp_par (_, _)|Texp_asyncsend (_, _)
 | Texp_null
- -> assert false
+ -> simple_proc e
 
 and simple_exp_option = function
  | None -> true
@@ -408,7 +418,7 @@ and simple_proc p = match p.exp_desc with
 | Texp_par (p1, p2) -> simple_proc p1 || simple_proc p2
 | Texp_asyncsend (e1, e2) -> simple_exp e1 && simple_exp e2
 | Texp_null -> true
-(* Plain expressions are errors *)
+(* Plain expressions no longer are errors *)
 | Texp_spawn _|Texp_object (_, _, _)|Texp_lazy _|Texp_assert _|
   Texp_letmodule (_, _, _)|Texp_override (_, _)|Texp_setinstvar (_, _, _)|
   Texp_instvar (_, _)|Texp_new (_, _)|Texp_send (_, _)|
@@ -417,7 +427,30 @@ and simple_proc p = match p.exp_desc with
   Texp_variant (_, _)|Texp_construct (_, _)|Texp_tuple _|Texp_try (_, _)|
   Texp_apply (_, _)|Texp_function (_, _)|Texp_constant _|Texp_ident (_, _)|
   Texp_assertfalse
-  -> assert false
+  -> simple_exp p
+
+
+let make_sequence lam1 lam2 =
+  if lam1 = lambda_unit then lam1
+  else Lsequence (lam1, lam2)
+
+let reply_handler sync p comp_fun e =
+(* Find actual continuations to reply to *)
+  let pri, kids = get_replies sync p in
+  match kids with
+  | [] -> comp_fun e
+  | _  ->
+      let param = Ident.create "#exn#" in
+      if simple_exp e then
+        comp_fun e
+      else
+        Ltrywith
+          (comp_fun e,
+           param,
+           List.fold_right
+             (fun kid k -> make_sequence (reply_to_exn param kid) k)
+             kids
+             (if pri then Lprim (Praise, [Lvar param]) else lambda_unit))
 
 
 let partition_procs procs = List.partition simple_proc procs

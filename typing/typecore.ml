@@ -66,6 +66,9 @@ type error =
   | Send_non_channel of type_expr
   | Join_pattern_type_clash of (type_expr * type_expr) list
   | Unbound_continuation of Longident.t
+  | DoubleReply of Ident.t * Location.t * Location.t
+  | ExtraReply of Ident.t
+  | MissingReply of Ident.t
 
 exception Error of Location.t * error
 
@@ -1099,18 +1102,27 @@ and do_type_exp ctx env sexp =
   | Pexp_match(sarg, caselist) ->
       let arg = do_type_exp E env sarg in
       let ty_res = newvar() in
-      let cases, partial =
+      let cases, partial, reps =
         type_cases ctx env arg.exp_type ty_res (Some sexp.pexp_loc) caselist
       in
-      re {
-        exp_desc = Texp_match(arg, cases, partial);
-        exp_loc = sexp.pexp_loc;
-        exp_type = ty_res;
-        exp_env = env }
+      begin match ctx with
+      | E ->
+        re {
+          exp_desc = Texp_match(arg, cases, partial);
+          exp_loc = sexp.pexp_loc;
+          exp_type = ty_res;
+          exp_env = env }
+      | P ->
+        re {
+          exp_desc = Texp_match(arg, cases, partial);
+          exp_loc = sexp.pexp_loc;
+          exp_type = Predef.type_process reps ;
+          exp_env = env }
+      end
   | Pexp_try(sbody, caselist) ->
       check_expression ctx sexp ;
       let body = do_type_exp ctx env sbody in
-      let cases, _ =
+      let cases, _, _ =
         type_cases E env (instance Predef.type_exn) body.exp_type None
           caselist in
       re {
@@ -1295,19 +1307,37 @@ and do_type_exp ctx env sexp =
           begin match sifnot with
           | None ->
               let ifso = do_type_exp P env sifso in
-              re {
-                exp_desc = Texp_ifthenelse(cond, ifso, None);
-                exp_loc = sexp.pexp_loc;
-                exp_type = Predef.type_process [];
-                exp_env = env }
+              begin try
+                let rep1 = Typejoin.get_replies ifso in
+                re {
+                  exp_desc = Texp_ifthenelse(cond, ifso, None);
+                  exp_loc = sexp.pexp_loc;
+                  exp_type =
+                    Predef.type_process
+                     (Typejoin.inter  sexp.pexp_loc rep1 []);
+                  exp_env = env }
+              with Typejoin.MissingRight id ->
+                raise (Error (sifso.pexp_loc, ExtraReply id))
+              end
           | Some sifnot ->
               let ifso = do_type_exp P env sifso in
               let ifnot = do_type_exp P env sifnot in
-              re {
-                exp_desc = Texp_ifthenelse(cond, ifso, Some ifnot);
-                exp_loc = sexp.pexp_loc;
-                exp_type = Predef.type_process [];
-                exp_env = env }
+              begin try
+                let repso = Typejoin.get_replies ifso
+                and repnot = Typejoin.get_replies ifnot in
+                re {
+                  exp_desc = Texp_ifthenelse(cond, ifso, Some ifnot);
+                  exp_loc = sexp.pexp_loc;
+                  exp_type =
+                    Predef.type_process
+                     (Typejoin.inter sexp.pexp_loc repso repnot) ;
+                  exp_env = env }
+              with
+              | Typejoin.MissingRight id ->
+                  raise (Error (sifnot.pexp_loc, MissingReply id))
+              | Typejoin.MissingLeft id ->
+                  raise (Error (sifso.pexp_loc, MissingReply id))
+              end
           end  
       end
   | Pexp_sequence(sexp1, sexp2) ->
@@ -1620,11 +1650,17 @@ and do_type_exp ctx env sexp =
       let e1 = do_type_exp P env se1
       and e2 = do_type_exp P env se2 in
       check_process ctx sexp ;
-      re {
-        exp_desc = Texp_par (e1, e2);
-        exp_loc = sexp.pexp_loc;
-        exp_type = e2.exp_type; (* necessarily process *)
-        exp_env = env; } 
+      begin try
+        let konts1 = Typejoin.get_replies e1
+        and konts2 = Typejoin.get_replies e2 in
+        re {
+          exp_desc = Texp_par (e1, e2);
+          exp_loc = sexp.pexp_loc;
+          exp_type = Predef.type_process (Typejoin.delta konts1 konts2) ;
+          exp_env = env; } 
+      with Typejoin.Double (id, loc1, loc2) ->
+        raise (Error (sexp.pexp_loc, DoubleReply (id, loc1, loc2)))
+      end
   | Pexp_null ->
       check_process ctx sexp ;
       re {
@@ -1647,7 +1683,7 @@ and do_type_exp ctx env sexp =
       re {
         exp_desc = Texp_reply (res, kid) ;
         exp_loc  = sexp.pexp_loc;
-        exp_type = Predef.type_process [];
+        exp_type = Predef.type_process [kid, sexp.pexp_loc];
         exp_env  = env; }
   | Pexp_def (sautos, sbody) ->
       let (autos, new_env) = type_def false env sautos in
@@ -2034,7 +2070,7 @@ and type_expect ?in_function env sexp ty_expected =
         try unify env ty_arg (type_option(newvar()))
         with Unify _ -> assert false
       end;
-      let cases, partial =
+      let cases, partial, _ =
         type_cases ~in_function:(loc,ty_fun) E env ty_arg ty_res
           (Some sexp.pexp_loc) caselist in
       let all_labeled ty =
@@ -2131,26 +2167,45 @@ and type_cases ?in_function ctx env ty_arg ty_res partial_loc caselist =
   | (pat, _) :: _ -> unify_pat env pat ty_arg
   end;
   let in_function = if List.length caselist = 1 then in_function else None in
-  let cases = match ctx with
+  let cases, reps = match ctx with
   | E ->
       List.map2
         (fun (pat, ext_env) (_, sexp) ->
           let exp = type_expect ?in_function ext_env sexp ty_res in
           (pat, exp))
-        pat_env_list caselist
+        pat_env_list caselist, []
   | P ->
-      List.map2
-        (fun (pat, ext_env) (_, sexp) ->
-          let exp =  do_type_exp P ext_env sexp in
-          (pat, exp))
-        pat_env_list caselist
+      let cases =
+        List.map2
+          (fun (pat, ext_env) (_, sexp) ->
+            let exp =  do_type_exp P ext_env sexp in
+            (pat, exp))
+          pat_env_list caselist in
+      let reps = match cases with
+        | (_,fst)::rem ->
+            let reps = Typejoin.get_replies fst in
+            List.iter
+              (fun (_, exp) ->
+                try
+                  ignore
+                    (Typejoin.inter exp.exp_loc reps
+                       (Typejoin.get_replies exp))
+                with
+                | Typejoin.MissingLeft id ->
+                  raise (Error (exp.exp_loc, ExtraReply id))
+                | Typejoin.MissingRight id ->
+                  raise (Error (exp.exp_loc, MissingReply id)))
+              rem ;
+            reps
+        | [] -> [] in
+      cases, reps
   in
   let partial =
     match partial_loc with None -> Partial
     | Some loc -> Parmatch.check_partial loc cases
   in
   add_delayed_check (fun () -> Parmatch.check_unused env cases);
-  cases, partial
+  cases, partial, reps
 
 (* Typing of let bindings *)
 
@@ -2598,6 +2653,16 @@ let report_error ppf = function
            fprintf ppf "but the channel is used with type")
   | Unbound_continuation _ ->
       fprintf ppf "This continuation is undefined here"
+  | DoubleReply (id, _, _) ->
+      fprintf ppf "Double reply to: %s" (Ident.name id)
+  | ExtraReply id ->
+      fprintf ppf
+        "Reply to %s cannot occur here, it is missing in some other place"
+        (Ident.name id)
+  | MissingReply id ->
+      fprintf ppf
+        "Reply to %s is missing here"
+        (Ident.name id)
 (*< JOCAML *)      
   | Less_general (kind, trace) ->
       report_unification_error ppf trace

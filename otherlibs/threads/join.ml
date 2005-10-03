@@ -388,6 +388,8 @@ let _ =
 
 let reply_to = Join_scheduler.reply_to
 
+and reply_to_exn = Join_scheduler.reply_to_exn
+
 let exit_hook = Join_scheduler.exit_hook
 
 let halt = Join_space.halt

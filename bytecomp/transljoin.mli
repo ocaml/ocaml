@@ -33,11 +33,22 @@ val tail_send_async : Lambda.lambda -> Lambda.lambda -> Lambda.lambda
 val local_send_async : Ident.t -> int -> Lambda.lambda -> Lambda.lambda
 val local_tail_send_async : Ident.t -> int -> Lambda.lambda -> Lambda.lambda
 
+(* Call reply to primitive *)
 val reply_to : Lambda.lambda -> Lambda.lambda -> Lambda.lambda
+
+(* Insert reply_to_exn for the non-principal continuations *)
+val get_replies :
+    Ident.t option -> Typedtree.expression -> bool * Ident.t list 
+
 val do_spawn : Ident.t option -> Lambda.lambda -> Lambda.lambda
 
 (* Is an expression simple enough (no exception, guaranteed to terminate) ? *)
 val simple_exp : Typedtree.expression -> bool
+
+val reply_handler :
+    Ident.t option ->  Typedtree.expression ->
+      (Typedtree.expression -> Lambda.lambda) ->
+      Typedtree.expression ->  Lambda.lambda
 
 (* Partition a proc expression into
    principal thread, simple, non_simple expressions *)

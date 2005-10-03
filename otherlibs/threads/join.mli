@@ -39,6 +39,7 @@ val tail_send_async : async -> 'a -> unit
 val create_sync : stub -> int -> ('a -> 'b)
 
 val reply_to : 'a -> continuation -> unit
+val reply_to_exn : exn -> continuation -> unit
 
 val exit_hook : unit -> unit
 

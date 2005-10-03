@@ -563,7 +563,8 @@ and transl_exp0 e =
   | Texp_constant cst ->
       Lconst(Const_base cst)
   | Texp_let(rec_flag, pat_expr_list, body) ->
-      transl_let rec_flag pat_expr_list (event_before body (transl_exp body))
+      transl_let transl_exp
+        rec_flag pat_expr_list (event_before body (transl_exp body))
 (*> JOCAML *)
   | Texp_def (d,body) ->
       do_transl_def None d (transl_exp body)
@@ -582,7 +583,7 @@ and transl_exp0 e =
     when List.length args = p.prim_arity
     && List.for_all (fun (arg,_) -> arg <> None) args ->
       let args = List.map (function Some x, _ -> x | _ -> assert false) args in
-      let argl = transl_list args in
+      let argl = transl_list transl_exp args in
       let public_send = p.prim_name = "%send"
         || not !Clflags.native_code && p.prim_name = "%sendcache"in
       if public_send || p.prim_name = "%sendself" then
@@ -603,23 +604,11 @@ and transl_exp0 e =
             then event_after e (Lprim(prim, argl))
             else Lprim(prim, argl)
       end
-(*
-  | Texp_apply
-      ({exp_desc =
-         Texp_ident
-           (path, {val_kind = Val_channel (auto,num,alone)})},
-       ((Some arg,_)::oargs)) ->
-      let lfunct = Transljoin.send_sync auto num alone (transl_exp arg) in
-      event_after e
-        (match oargs with
-        | [] -> lfunct
-        | _  -> transl_apply lfunct oargs)
-*)
   | Texp_apply(funct, oargs) ->
       event_after e (transl_apply (transl_exp funct) oargs)
   | Texp_match({exp_desc = Texp_tuple argl} as arg, pat_expr_list, partial) ->
       Matching.for_multiple_match e.exp_loc
-        (transl_list argl)
+        (transl_list transl_exp argl)
         (transl_cases event_before transl_exp pat_expr_list) partial
   | Texp_match(arg, pat_expr_list, partial) ->
       Matching.for_function e.exp_loc None
@@ -633,14 +622,14 @@ and transl_exp0 e =
            (Lvar id)
            (transl_cases event_before transl_exp pat_expr_list))
   | Texp_tuple el ->
-      let ll = transl_list el in
+      let ll = transl_list transl_exp el in
       begin try
         Lconst(Const_block(0, List.map extract_constant ll))
       with Not_constant ->
         Lprim(Pmakeblock(0, Immutable), ll)
       end
   | Texp_construct(cstr, args) ->
-      let ll = transl_list args in
+      let ll = transl_list transl_exp args in
       begin match cstr.cstr_tag with
         Cstr_constant n ->
           Lconst(Const_pointer n)
@@ -684,7 +673,7 @@ and transl_exp0 e =
       Lprim(access, [transl_exp arg; transl_exp newval])
   | Texp_array expr_list ->
       let kind = array_kind e in
-      let ll = transl_list expr_list in
+      let ll = transl_list transl_exp expr_list in
       begin try
         (* Deactivate constant optimization if array is small enough *)
         if List.length ll <= 4 then raise Not_constant;
@@ -788,31 +777,36 @@ and transl_exp0 e =
 and transl_proc die sync p = match p.exp_desc with
 (* Mixed constructs *)
 | Texp_let(rec_flag, pat_expr_list, body) ->
-    transl_let rec_flag pat_expr_list (transl_proc die sync body)
+    transl_let
+      (fun e -> Transljoin.reply_handler sync p transl_exp e)
+      rec_flag pat_expr_list (transl_proc die sync body)
 | Texp_def (d,body) ->
     do_transl_def None d (transl_proc die sync body)
 | Texp_loc (d,body) ->
     transl_loc d (transl_proc die sync body)
 | Texp_ifthenelse(cond, ifso, Some ifnot) ->
     Lifthenelse
-      (transl_exp cond,
+      (Transljoin.reply_handler sync p transl_exp cond,
        transl_proc die sync ifso,
        transl_proc die sync ifnot)
 | Texp_ifthenelse(cond, ifso, None) ->
-    assert (sync = None) ;
+    assert (sync = None) ; assert (Typejoin.get_replies p = []) ;    
     Lifthenelse (transl_exp cond, transl_proc die sync ifso, lambda_unit)
 | Texp_sequence(e1, p2) ->
-    make_sequence (transl_exp e1) (transl_proc die sync p2)
+    make_sequence
+      (Transljoin.reply_handler sync p transl_exp e1)
+      (transl_proc die sync p2)
 | Texp_when(cond, body) ->
     Lifthenelse
-       (transl_exp cond, transl_proc die sync body, staticfail)
+      (Transljoin.reply_handler sync p transl_exp cond,
+       transl_proc die sync body, staticfail)
 | Texp_match({exp_desc = Texp_tuple argl} as arg, pat_expr_list, partial) ->
     Matching.for_multiple_match p.exp_loc
-      (transl_list argl)
+      (transl_list (Transljoin.reply_handler sync p transl_exp) argl)
       (transl_cases no_event (transl_proc die sync) pat_expr_list) partial
 | Texp_match(arg, pat_expr_list, partial) ->
     Matching.for_function p.exp_loc None
-      (transl_exp arg)
+      (Transljoin.reply_handler sync p transl_exp arg)
       (transl_cases no_event (transl_proc die sync) pat_expr_list) partial
 (* Proc constructs *)
 | Texp_par (e1,e2) ->
@@ -858,7 +852,9 @@ and transl_proc die sync p = match p.exp_desc with
 and transl_simple_proc die sync p = match p.exp_desc with
 (* Mixed constructs *)
 | Texp_let(rec_flag, pat_expr_list, body) ->
-    transl_let rec_flag pat_expr_list (transl_simple_proc die sync body)
+    transl_let
+      transl_exp
+      rec_flag pat_expr_list (transl_simple_proc die sync body)
 | Texp_def (d,body) ->
     do_transl_def None d (transl_simple_proc die sync body)
 | Texp_loc (d,body) ->
@@ -879,7 +875,7 @@ and transl_simple_proc die sync p = match p.exp_desc with
          (transl_exp cond, transl_simple_proc die sync body, staticfail))
 | Texp_match({exp_desc = Texp_tuple argl} as arg, pat_expr_list, partial) ->
     Matching.for_multiple_match p.exp_loc
-      (transl_list argl)
+      (transl_list transl_exp argl)
       (transl_cases no_event
          (transl_simple_proc die sync) pat_expr_list) partial
 | Texp_match(arg, pat_expr_list, partial) ->
@@ -892,7 +888,6 @@ and transl_simple_proc die sync p = match p.exp_desc with
     make_sequence
       (transl_simple_proc false sync p1)
       (transl_simple_proc die sync p2)
-
 | Texp_asyncsend
     ({exp_desc=Texp_ident (_,{val_kind=Val_channel (auto,num)})},e2) ->
       (if die then Transljoin.local_tail_send_async
@@ -1001,7 +996,10 @@ and transl_spawn some_loc e =
 
 (* Do perform a fork *)
 and transl_fork some_loc e k = 
-  make_sequence (Transljoin.do_spawn some_loc (transl_proc true None e)) k
+  make_sequence
+    (Transljoin.do_spawn some_loc
+       (Transljoin.reply_handler None e (transl_proc true None) e))
+    k
 
 (* Sequence for processes *)    
 
@@ -1013,7 +1011,7 @@ and transl_as_seq die es k = match es with
       (transl_simple_proc false None e)
       (transl_as_seq die rem k)
 (*< JOCAML *)
-and transl_list expr_list =  List.map transl_exp expr_list
+and transl_list comp_fun expr_list =  List.map comp_fun expr_list
 
 and transl_cases event_before transl_exp pat_expr_list =
   List.map
@@ -1104,7 +1102,7 @@ and transl_function loc untuplify_fn repr partial pat_expr_list =
        Matching.for_function loc repr (Lvar param)
          (transl_cases event_before transl_exp pat_expr_list) partial)
 
-and transl_let rec_flag pat_expr_list body =
+and transl_let transl_exp rec_flag pat_expr_list body =
   match rec_flag with
     Nonrecursive | Default ->
       let rec transl = function
@@ -1286,20 +1284,11 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
 (*> JOCAML *)
 (* For external usage *)
 let transl_def d k = do_transl_def None d k
+and transl_let = transl_let transl_exp
 (*< JOCAML *)
 
 (* Wrapper for class compilation *)
 
-(*
-let transl_exp = transl_exp_wrap
-
-let transl_let rec_flag pat_expr_list body =
-  match pat_expr_list with
-    [] -> body
-  | (_, expr) :: _ ->
-      Translobj.oo_wrap expr.exp_env false
-        (transl_let rec_flag pat_expr_list) body
-*)
 
 (* Compile an exception definition *)
 

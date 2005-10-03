@@ -37,7 +37,9 @@ and type_desc =
   | Tunivar
   | Tpoly of type_expr * type_expr list
 (*>JOCAML*)
-  | Tproc of Ident.t list
+  | Tproc of kont_locs
+
+and kont_locs = (Ident.t * Location.t) list
 (*<JOCAML*)
 
 and row_desc =

@@ -102,7 +102,7 @@ let really_create_process f =
   incr_locked nthreads_mutex nthreads ;
   try
     begin match runmax with
-    | Some k when !nthreads - !suspended > k -> raise MaxRun
+    | Some k when !nthreads > k -> raise MaxRun
     | _ -> ()
     end ;
     let t = thread_new f in
