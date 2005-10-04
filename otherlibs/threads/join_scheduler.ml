@@ -87,7 +87,6 @@ and runmax =
   with
   | _ -> None
 
-
 let really_exit_thread () =
   decr_locked nthreads_mutex nthreads ;
 (*DEBUG*)debug1 "REAL EXIT" (sprintf "nthreads=%i" !nthreads);

@@ -67,6 +67,9 @@ type message =
   | ReplySend of
       int (* continuation *) *
       (string * t_global array) (* parameter *)
+  | ReplyExn of
+      int (* continuation *) *
+      exn (* exception *)
   | GoodBye
   | Killed
 

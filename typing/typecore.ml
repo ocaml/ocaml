@@ -1358,18 +1358,29 @@ and do_type_exp ctx env sexp =
         exp_type = instance Predef.type_unit;
         exp_env = env }
   | Pexp_for(param, slow, shigh, dir, sbody) ->
-      check_expression ctx sexp;
       let low = type_expect env slow (instance Predef.type_int) in
       let high = type_expect env shigh (instance Predef.type_int) in
       let (id, new_env) =
         Env.enter_value param {val_type = instance Predef.type_int;
                                 val_kind = Val_reg} env in
-      let body = type_statement new_env sbody in
-      re {
-        exp_desc = Texp_for(id, low, high, dir, body);
-        exp_loc = sexp.pexp_loc;
-        exp_type = instance Predef.type_unit;
-        exp_env = env }
+      begin match ctx with
+      | E ->
+          let body = type_statement new_env sbody in
+          re {
+            exp_desc = Texp_for(id, low, high, dir, body);
+            exp_loc = sexp.pexp_loc;
+            exp_type = instance Predef.type_unit;
+            exp_env = env }
+      | P ->
+(* Remove continuation, so as to statically enforce unique replies *)
+          let new_env = Env.remove_continuations new_env in
+          let body = do_type_exp  ctx new_env sbody in
+          re {
+            exp_desc = Texp_for(id, low, high, dir, body);
+            exp_loc = sexp.pexp_loc;
+            exp_type = Predef.type_process [] ;
+            exp_env = env }
+      end
   | Pexp_constraint(sarg, sty, sty') ->
       check_expression ctx sexp;
       let (arg, ty') =

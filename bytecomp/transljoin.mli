@@ -12,13 +12,6 @@
 
 (* $Id$ *)
 
-(**********)
-(* Errors *)
-(**********)
-type error
-exception Error of error
-val report_error : Format.formatter -> error -> unit
-
 
 (**********************************************)
 (* Basic join operations from the module Join *)
@@ -44,6 +37,11 @@ val do_spawn : Ident.t option -> Lambda.lambda -> Lambda.lambda
 
 (* Is an expression simple enough (no exception, guaranteed to terminate) ? *)
 val simple_exp : Typedtree.expression -> bool
+
+(* Insert handler in charge of reply_to_exn'ing *)
+
+val lambda_reply_handler :
+    Ident.t option ->  Typedtree.expression -> Lambda.lambda -> Lambda.lambda 
 
 val reply_handler :
     Ident.t option ->  Typedtree.expression ->

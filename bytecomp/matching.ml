@@ -2407,16 +2407,20 @@ let partial_function loc () =
                Const_base(Const_int line);
                Const_base(Const_int char)]))])])
 
-let for_function loc repr param pat_act_list partial =
-  compile_matching loc repr (partial_function loc) param pat_act_list partial
+let for_function (handler,loc) repr param pat_act_list partial =
+  compile_matching loc repr
+    (fun () -> handler (partial_function loc ()))
+    param pat_act_list partial
 
 (* In the following two cases, exhaustiveness info is not available! *)
 let for_trywith param pat_act_list =
   compile_matching Location.none None (fun () -> Lprim(Praise, [param]))
     param pat_act_list Partial
 
-let for_let loc param pat body =
-  compile_matching loc None (partial_function loc) param [pat, body] Partial
+let for_let (handler,loc) param pat body =
+  compile_matching loc None
+    (fun () -> handler (partial_function loc ()))
+    param [pat, body] Partial
 
 (* Handling of tupled functions and matchings *)
 
@@ -2497,7 +2501,7 @@ let compile_flattened repr partial ctx _ pmh = match pmh with
     compile_orhandlers (compile_match repr partial) lam total ctx hs
 | PmVar _ -> assert false
 
-let for_multiple_match loc paraml pat_act_list partial =
+let for_multiple_match (handler, loc) paraml pat_act_list partial =
   let repr = None in
   let raise_num,pm1 =
     match partial with
@@ -2535,7 +2539,8 @@ let for_multiple_match loc paraml pat_act_list partial =
       List.fold_right2 (bind Strict) idl paraml
         (match partial with
         | Partial ->
-            check_total total lam raise_num (partial_function loc)
+            check_total total lam raise_num
+              (fun () -> handler (partial_function loc ()))
         | Total ->
             assert (jumps_is_empty total) ;
             lam)
@@ -2545,7 +2550,8 @@ let for_multiple_match loc paraml pat_act_list partial =
       let (lambda, total) = compile_match None partial (start_ctx 1) pm1 in
       begin match partial with
       | Partial ->
-          check_total total lambda raise_num (partial_function loc)
+          check_total total lambda raise_num
+            (fun () -> handler (partial_function loc ()))
       | Total ->
           assert (jumps_is_empty total) ;
           lambda

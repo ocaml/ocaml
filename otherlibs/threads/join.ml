@@ -387,8 +387,9 @@ let _ =
   register_code (create_sync (Obj.magic 0) 0)
 
 let reply_to = Join_scheduler.reply_to
-
 and reply_to_exn = Join_scheduler.reply_to_exn
+
+let raise_join_exit () = raise Join_misc.JoinExit
 
 let exit_hook = Join_scheduler.exit_hook
 

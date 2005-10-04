@@ -17,17 +17,20 @@
 open Typedtree
 open Lambda
 
+(* Entry points *)
 val for_function:
-        Location.t -> int ref option -> lambda -> (pattern * lambda) list ->
-        partial -> lambda
+        ((lambda -> lambda) * Location.t)  ->
+          int ref option -> lambda -> (pattern * lambda) list ->
+            partial -> lambda
 val for_trywith:
         lambda -> (pattern * lambda) list -> lambda
 val for_let:
-        Location.t -> lambda -> pattern -> lambda -> lambda
+        ((lambda -> lambda) * Location.t) ->
+          lambda -> pattern -> lambda -> lambda
 val for_multiple_match:
-        Location.t -> lambda list -> (pattern * lambda) list -> partial ->
+        ((lambda -> lambda) * Location.t) -> 
+          lambda list -> (pattern * lambda) list -> partial ->
         lambda
-
 val for_tupled_function:
         Location.t -> Ident.t list -> (pattern list * lambda) list ->
         partial -> lambda

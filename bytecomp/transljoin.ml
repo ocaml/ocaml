@@ -22,44 +22,6 @@ open Env
 open Lambda
 open Joinmatch
 
-(**********)
-(* Errors *)
-(**********)
-
-type error =
-  | Double of Ident.t * Location.t * Location.t
-  | Missing of Ident.t * Location.t
-  | Extra of Ident.t * Location.t
-  | NonExhaustive of Location.t
-
-
-exception Error of error
-
-let report_error ppf = function
-  | Missing (id, loc) ->
-      Format.fprintf ppf
-        "%aReply to '%s' is missing here"
-        Location.print loc (Ident.name id)
-  | Extra (id, loc) ->
-      Format.fprintf ppf
-        "%aReply to '%s' cannot occur here, it is missing in some other clause"
-        Location.print loc (Ident.name id)
-  | Double (id, loc1, loc2) ->
-      if
-        String.length !Location.input_name = 0
-          && Location.highlight_locations ppf loc1 loc2
-      then
-        Format.fprintf ppf "Double reply to '%s'" (Ident.name id)
-      else begin
-        Format.fprintf ppf "%aDouble reply to '%s'@."
-          Location.print loc1 (Ident.name id) ;
-        Format.fprintf ppf "%aOther reply" Location.print loc2
-      end
-  | NonExhaustive loc ->
-      Format.fprintf ppf
-        "%aThis non-exhaustive matching replies to synchronous names"
-        Location.print loc
-
 (* DEBUG stuff *)
 open Printf
 
@@ -125,6 +87,7 @@ let lambda_get_queue = mk_lambda env_join "get_queue"
 let lambda_unlock_automaton = mk_lambda env_join "unlock_automaton"
 let lambda_reply_to = mk_lambda env_join "reply_to"
 let lambda_reply_to_exn = mk_lambda env_join "reply_to_exn"
+let lambda_raise_join_exit =  mk_lambda env_join "raise_join_exit"
 
 let mk_apply f args = match Lazy.force f with
 | _,{val_kind=Val_prim p}  -> Lprim (Pccall p,args)
@@ -175,6 +138,8 @@ let wrap_automaton id = mk_apply lambda_wrap_automaton [Lvar id]
 let reply_to lam1 lam2 = mk_apply lambda_reply_to [lam1; lam2]
 and reply_to_exn exn kont =
   mk_apply lambda_reply_to_exn [Lvar exn ; Lvar kont]
+
+let raise_join_exit () = mk_apply lambda_raise_join_exit [lambda_unit]
 
 let get_replies sync p =
   let reps = Typejoin.get_replies p in
@@ -313,6 +278,7 @@ let rec is_principal id p = match p.exp_desc with
 | Texp_ifthenelse (_,pifso, Some pifno) ->
    is_principal id pifso && is_principal id pifno
 | Texp_ifthenelse (_,_,None) -> false
+| Texp_for (_,_,_,_,_) -> false
 | _ -> assert false
 
 (*
@@ -388,10 +354,10 @@ let rec simple_exp e = match e.exp_desc with
 | Texp_send (_,_) | Texp_while (_,_) | Texp_new (_,_) | Texp_try (_,_)
 | Texp_object (_, _, _)
   -> false
-(* Process constructs are errors *)
+(* Process constructs are not errors *)
 | Texp_reply (_, _)|Texp_par (_, _)|Texp_asyncsend (_, _)
 | Texp_null
- -> simple_proc e
+ -> assert false
 
 and simple_exp_option = function
  | None -> true
@@ -413,6 +379,8 @@ and simple_proc p = match p.exp_desc with
 | Texp_ifthenelse (e, pifso, None) ->
    simple_exp e && simple_proc pifso    
 | Texp_def (_,p)|Texp_loc(_,p) -> simple_proc p
+| Texp_for (_,e1,e2,_,e3) ->
+   simple_exp e1 && simple_exp e2 && simple_proc e3
 (* Process constructs *)
 | Texp_reply (e, _) -> simple_exp e
 | Texp_par (p1, p2) -> simple_proc p1 || simple_proc p2
@@ -422,37 +390,41 @@ and simple_proc p = match p.exp_desc with
 | Texp_spawn _|Texp_object (_, _, _)|Texp_lazy _|Texp_assert _|
   Texp_letmodule (_, _, _)|Texp_override (_, _)|Texp_setinstvar (_, _, _)|
   Texp_instvar (_, _)|Texp_new (_, _)|Texp_send (_, _)|
-  Texp_for (_, _, _, _, _)|Texp_while (_, _)|Texp_array _|
+  Texp_while (_, _)|Texp_array _|
   Texp_setfield (_, _, _)|Texp_field (_, _)|Texp_record (_, _)|
   Texp_variant (_, _)|Texp_construct (_, _)|Texp_tuple _|Texp_try (_, _)|
   Texp_apply (_, _)|Texp_function (_, _)|Texp_constant _|Texp_ident (_, _)|
   Texp_assertfalse
-  -> simple_exp p
+  -> assert false
 
 
-let make_sequence lam1 lam2 =
-  if lam1 = lambda_unit then lam1
-  else Lsequence (lam1, lam2)
+let do_reply_handler pri kids lam =
+  match kids with
+  | [] -> lam
+  | _  ->
+      let param = Ident.create "#exn#" in
+      Ltrywith
+        (lam,
+         param,
+         List.fold_right
+           (fun kid k -> Lsequence (reply_to_exn param kid, k))
+           kids
+           (if pri then Lprim (Praise, [Lvar param]) else
+           raise_join_exit ()))
+
+let lambda_reply_handler sync p lam =
+  let pri, kids = get_replies sync p in
+  do_reply_handler pri kids lam
 
 let reply_handler sync p comp_fun e =
 (* Find actual continuations to reply to *)
   let pri, kids = get_replies sync p in
-  match kids with
-  | [] -> comp_fun e
-  | _  ->
-      let param = Ident.create "#exn#" in
-      if simple_exp e then
-        comp_fun e
-      else
-        Ltrywith
-          (comp_fun e,
-           param,
-           List.fold_right
-             (fun kid k -> make_sequence (reply_to_exn param kid) k)
-             kids
-             (if pri then Lprim (Praise, [Lvar param]) else lambda_unit))
+  if simple_exp e then
+    comp_fun e
+  else
+    do_reply_handler pri kids (comp_fun e)
 
-
+  
 let partition_procs procs = List.partition simple_proc procs
 
 

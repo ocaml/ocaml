@@ -207,14 +207,22 @@ and join_handler space rspace s inc () =
         and v = unmarshal_message_rec space v in
 	Join_scheduler.create_process
 	  (fun () ->
-	    let r = send_sync_ref.sync auto idx v in
-	    do_remote_reply_to space rspace kid r)
+	    try
+              let r = send_sync_ref.sync auto idx v in
+	      do_remote_reply_to space rspace kid r
+            with
+            | e -> do_remote_reply_to_exn space rspace kid e)
     | ReplySend (kid, v) ->
 	let kont =
           try Join_hash.find_remove rspace.konts kid
           with Not_found -> assert false
         and v = unmarshal_message_rec space v in
 	Join_scheduler.reply_to v kont
+    | ReplyExn (kid, e) ->
+	let kont =
+          try Join_hash.find_remove rspace.konts kid
+          with Not_found -> assert false in
+        Join_scheduler.reply_to_exn e kont              
     | GoodBye -> raise SawGoodBye
     | Killed -> assert false
   done
@@ -276,6 +284,10 @@ and do_remote_reply_to space rspace kid r =
   Join_queue.put queue
     (ReplySend
        (kid, marshal_message_rec space r []))
+
+and do_remote_reply_to_exn space rspace kid e =
+  let queue = get_out_queue space rspace in
+  Join_queue.put queue (ReplyExn (kid, e))
 
 and sender_work rspace queue s outc =
   try 

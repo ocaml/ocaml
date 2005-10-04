@@ -38,12 +38,17 @@ val tail_send_async : async -> 'a -> unit
 (* Synchronous channels are plain fonctions *)
 val create_sync : stub -> int -> ('a -> 'b)
 
+(* Explicit reply to continuation *)
 val reply_to : 'a -> continuation -> unit
 val reply_to_exn : exn -> continuation -> unit
 
+(* Silent suicide of a join thread (compiler use only) *)
+val raise_join_exit : unit -> unit
+
+
 val exit_hook : unit -> unit
 
-val halt : unit -> unit
+
 
 val debug0 : string -> string -> unit
 val debug1 : string -> string -> unit

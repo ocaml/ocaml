@@ -98,7 +98,6 @@ let main () =
      "-dlambda", Arg.Set dump_lambda, " (undocumented)";
      "-dinstr", Arg.Set dump_instr, " (undocumented)";
     ] file_argument usage;
-  magic_join ();
   if not (prepare Format.err_formatter) then exit 2;
   Toploop.loop Format.std_formatter
 

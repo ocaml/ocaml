@@ -176,7 +176,8 @@ let rec build_object_init cl_table obj params inh_init obj_init cl =
          let param = name_pattern "param" [pat, ()] in
          Lfunction (Curried, param::params,
                     Matching.for_function
-                      pat.pat_loc None (Lvar param) [pat, rem] partial)
+                      ((fun lam -> lam),pat.pat_loc)
+                      None (Lvar param) [pat, rem] partial)
        in
        begin match obj_init with
          Lfunction (Curried, params, rem) -> build params rem
@@ -379,7 +380,8 @@ let rec transl_class_rebind obj_init cl =
         let param = name_pattern "param" [pat, ()] in
         Lfunction (Curried, param::params,
                    Matching.for_function
-                     pat.pat_loc None (Lvar param) [pat, rem] partial)
+                     ((fun lam -> lam),pat.pat_loc)
+                     None (Lvar param) [pat, rem] partial)
       in
       (path,
        match obj_init with

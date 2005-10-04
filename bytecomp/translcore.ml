@@ -527,6 +527,8 @@ let assert_failed loc =
                Const_base(Const_int char)]))])])
 ;;
 
+let id_lam lam = lam
+
 (* Translation of expressions *)
 
 let rec transl_exp e =
@@ -563,7 +565,7 @@ and transl_exp0 e =
   | Texp_constant cst ->
       Lconst(Const_base cst)
   | Texp_let(rec_flag, pat_expr_list, body) ->
-      transl_let transl_exp
+      transl_let id_lam transl_exp
         rec_flag pat_expr_list (event_before body (transl_exp body))
 (*> JOCAML *)
   | Texp_def (d,body) ->
@@ -607,11 +609,12 @@ and transl_exp0 e =
   | Texp_apply(funct, oargs) ->
       event_after e (transl_apply (transl_exp funct) oargs)
   | Texp_match({exp_desc = Texp_tuple argl} as arg, pat_expr_list, partial) ->
-      Matching.for_multiple_match e.exp_loc
+      Matching.for_multiple_match (id_lam,e.exp_loc)
         (transl_list transl_exp argl)
         (transl_cases event_before transl_exp pat_expr_list) partial
   | Texp_match(arg, pat_expr_list, partial) ->
-      Matching.for_function e.exp_loc None
+      Matching.for_function
+        (id_lam,e.exp_loc) None
         (transl_exp arg)
         (transl_cases event_before transl_exp pat_expr_list) partial
   | Texp_try(body, pat_expr_list) ->
@@ -778,6 +781,7 @@ and transl_proc die sync p = match p.exp_desc with
 (* Mixed constructs *)
 | Texp_let(rec_flag, pat_expr_list, body) ->
     transl_let
+      (Transljoin.lambda_reply_handler sync p)
       (fun e -> Transljoin.reply_handler sync p transl_exp e)
       rec_flag pat_expr_list (transl_proc die sync body)
 | Texp_def (d,body) ->
@@ -801,13 +805,19 @@ and transl_proc die sync p = match p.exp_desc with
       (Transljoin.reply_handler sync p transl_exp cond,
        transl_proc die sync body, staticfail)
 | Texp_match({exp_desc = Texp_tuple argl} as arg, pat_expr_list, partial) ->
-    Matching.for_multiple_match p.exp_loc
+    Matching.for_multiple_match
+      (Transljoin.lambda_reply_handler sync p, p.exp_loc)
       (transl_list (Transljoin.reply_handler sync p transl_exp) argl)
       (transl_cases no_event (transl_proc die sync) pat_expr_list) partial
 | Texp_match(arg, pat_expr_list, partial) ->
-    Matching.for_function p.exp_loc None
+    Matching.for_function
+       (Transljoin.lambda_reply_handler sync p, p.exp_loc)
+      None
       (Transljoin.reply_handler sync p transl_exp arg)
       (transl_cases no_event (transl_proc die sync) pat_expr_list) partial
+| Texp_for(param, low, high, dir, body) ->
+    Lfor(param, transl_exp low, transl_exp high, dir,
+         event_before body (transl_spawn None body))
 (* Proc constructs *)
 | Texp_par (e1,e2) ->
       let psync, seqs, forks = Transljoin.as_procs sync p in
@@ -834,7 +844,7 @@ and transl_proc die sync p = match p.exp_desc with
 | Texp_spawn _|Texp_object (_, _, _)|Texp_lazy _|Texp_assert _|
   Texp_letmodule (_, _, _)|Texp_override (_, _)|Texp_setinstvar (_, _, _)|
   Texp_instvar (_, _)|Texp_new (_, _)|Texp_send (_, _)|
-  Texp_for (_, _, _, _, _)|Texp_while (_, _)|Texp_array _|
+  Texp_while (_, _)|Texp_array _|
   Texp_setfield (_, _, _)|Texp_field (_, _)|Texp_record (_, _)|
   Texp_variant (_, _)|Texp_construct (_, _)|Texp_tuple _|Texp_try (_, _)|
   Texp_apply (_, _)|Texp_function (_, _)|Texp_constant _|Texp_ident (_, _)|
@@ -853,6 +863,7 @@ and transl_simple_proc die sync p = match p.exp_desc with
 (* Mixed constructs *)
 | Texp_let(rec_flag, pat_expr_list, body) ->
     transl_let
+      id_lam
       transl_exp
       rec_flag pat_expr_list (transl_simple_proc die sync body)
 | Texp_def (d,body) ->
@@ -874,15 +885,19 @@ and transl_simple_proc die sync p = match p.exp_desc with
       (Lifthenelse
          (transl_exp cond, transl_simple_proc die sync body, staticfail))
 | Texp_match({exp_desc = Texp_tuple argl} as arg, pat_expr_list, partial) ->
-    Matching.for_multiple_match p.exp_loc
+    Matching.for_multiple_match (id_lam, p.exp_loc)
       (transl_list transl_exp argl)
       (transl_cases no_event
          (transl_simple_proc die sync) pat_expr_list) partial
 | Texp_match(arg, pat_expr_list, partial) ->
-    Matching.for_function p.exp_loc None
+    Matching.for_function (id_lam, p.exp_loc) None
       (transl_exp arg)
       (transl_cases no_event
          (transl_simple_proc die sync) pat_expr_list) partial
+| Texp_for(param, low, high, dir, body) ->
+    assert (sync=None) ;
+    Lfor(param, transl_exp low, transl_exp high, dir,
+         event_before body (transl_simple_proc false None body))
 (* Proc constructs *)
 | Texp_par (p1,p2) -> (* We can translate this ``&'' as a sequence *)
     make_sequence
@@ -893,21 +908,23 @@ and transl_simple_proc die sync p = match p.exp_desc with
       (if die then Transljoin.local_tail_send_async
       else Transljoin.local_send_async)
         auto num (transl_exp e2)
-
 | Texp_asyncsend (e1,e2) ->
     (if die then Transljoin.tail_send_async else Transljoin.send_async)
       (transl_exp e1) (transl_exp e2)
 | Texp_reply (e, id) ->
     begin match sync with
     | Some main_id when main_id = id -> transl_exp e
-    | _ -> Transljoin.reply_to (transl_exp e) (transl_path (Pident id))
+    | _ ->
+        Transljoin.reply_to
+          (Transljoin.reply_handler sync p transl_exp e)
+          (transl_path (Pident id))
     end
 | Texp_null -> lambda_unit
 (* Plain expression are errors *)
 | Texp_spawn _|Texp_object (_, _, _)|Texp_lazy _|Texp_assert _|
   Texp_letmodule (_, _, _)|Texp_override (_, _)|Texp_setinstvar (_, _, _)|
   Texp_instvar (_, _)|Texp_new (_, _)|Texp_send (_, _)|
-  Texp_for (_, _, _, _, _)|Texp_while (_, _)|Texp_array _|
+  Texp_while (_, _)|Texp_array _|
   Texp_setfield (_, _, _)|Texp_field (_, _)|Texp_record (_, _)|
   Texp_variant (_, _)|Texp_construct (_, _)|Texp_tuple _|Texp_try (_, _)|
   Texp_apply (_, _)|Texp_function (_, _)|Texp_constant _|Texp_ident (_, _)|
@@ -926,7 +943,8 @@ and transl_reaction  (name,_) = function
                 (pat,
                  Lapply (Lvar id, [Lvar z])))
               patids in
-          Matching.for_function Location.none None (Lvar z) cls partial
+          Matching.for_function (id_lam,Location.none)
+            None (Lvar z) cls partial
         else
           let cls =
             List.fold_right
@@ -939,7 +957,7 @@ and transl_reaction  (name,_) = function
               | Partial -> [Parmatch.omega, lambda_unit]
               | _ -> []) in
           Matching.for_function
-            Location.none None
+            (id_lam,Location.none) None
             (Lvar z) cls Total in
       let x = Ident.create "guard" in
       let params = [z ; Ident.create "_x"] in
@@ -965,7 +983,7 @@ and transl_reaction  (name,_) = function
         List.fold_right
           (fun (param, pat) lam ->
             Matching.for_function
-              Location.none None (Lvar param) [pat,lam] Total)
+              (id_lam, Location.none) None (Lvar param) [pat,lam] Total)
           idpats
           (transl_proc true sync p) in
       let params =
@@ -997,8 +1015,7 @@ and transl_spawn some_loc e =
 (* Do perform a fork *)
 and transl_fork some_loc e k = 
   make_sequence
-    (Transljoin.do_spawn some_loc
-       (Transljoin.reply_handler None e (transl_proc true None) e))
+    (Transljoin.do_spawn some_loc (transl_proc true None e))
     k
 
 (* Sequence for processes *)    
@@ -1078,7 +1095,8 @@ and transl_function loc untuplify_fn repr partial pat_expr_list =
       let ((_, params), body) =
         transl_function exp.exp_loc false repr partial' pl in
       ((Curried, param :: params),
-       Matching.for_function loc None (Lvar param) [pat, body] partial)
+       Matching.for_function (id_lam,loc)
+         None (Lvar param) [pat, body] partial)
   | ({pat_desc = Tpat_tuple pl}, _) :: _ when untuplify_fn ->
       begin try
         let size = List.length pl in
@@ -1093,23 +1111,24 @@ and transl_function loc untuplify_fn repr partial pat_expr_list =
       with Matching.Cannot_flatten ->
         let param = name_pattern "param" pat_expr_list in
         ((Curried, [param]),
-         Matching.for_function loc repr (Lvar param)
+         Matching.for_function (id_lam,loc) repr (Lvar param)
            (transl_cases event_before transl_exp pat_expr_list) partial)
       end
   | _ ->
       let param = name_pattern "param" pat_expr_list in
       ((Curried, [param]),
-       Matching.for_function loc repr (Lvar param)
+       Matching.for_function (id_lam,loc) repr (Lvar param)
          (transl_cases event_before transl_exp pat_expr_list) partial)
 
-and transl_let transl_exp rec_flag pat_expr_list body =
+and transl_let reply_handler transl_exp rec_flag pat_expr_list body =
   match rec_flag with
     Nonrecursive | Default ->
       let rec transl = function
         [] ->
           body
       | (pat, expr) :: rem ->
-          Matching.for_let pat.pat_loc (transl_exp expr) pat (transl rem)
+          Matching.for_let
+            (reply_handler, pat.pat_loc) (transl_exp expr) pat (transl rem)
       in transl pat_expr_list
   | Recursive ->
       let idlist =
@@ -1284,7 +1303,7 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
 (*> JOCAML *)
 (* For external usage *)
 let transl_def d k = do_transl_def None d k
-and transl_let = transl_let transl_exp
+and transl_let = transl_let id_lam transl_exp
 (*< JOCAML *)
 
 (* Wrapper for class compilation *)
