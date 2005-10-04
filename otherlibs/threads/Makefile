@@ -73,8 +73,8 @@ unix.cma: $(UNIXLIB_OBJS)
 libvmjoin.a: $(JOIN_C_OBJS)
 	$(MKLIB) -o join -oc vmjoin $(JOIN_C_OBJS)
 
-join.cma: $(JOIN_OBJS)
-	$(MKLIB) -ocamlc '$(CAMLC)' -o join -oc vmjoin $(JOIN_OBJS)
+join.cma: $(JOIN_OBJS) unix.cma threads.cma
+	$(MKLIB) -ocamlc '$(CAMLC)' -o join -oc vmjoin unix.cma threads.cma $(JOIN_OBJS)
 
 pervasives.cmo: pervasives.mli pervasives.cmi pervasives.ml
 	$(CAMLC) ${COMPFLAGS} -nopervasives -c pervasives.ml

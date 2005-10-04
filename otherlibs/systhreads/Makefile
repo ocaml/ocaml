@@ -80,8 +80,8 @@ threads.cma: $(THREAD_OBJS)
 	$(MKLIB) -ocamlc '$(CAMLC)' -o threads $(THREAD_OBJS) \
           -cclib -lunix $(PTHREAD_LINK)
 
-join.cma: $(JOIN_OBJS)
-	$(MKLIB) -ocamlc '$(CAMLC)' -o join $(JOIN_OBJS) \
+join.cma: $(JOIN_OBJS) threads.cma ../unix/unix.cma
+	$(MKLIB) -ocamlc '$(CAMLC)' -o join ../unix/unix.cma threads.cma $(JOIN_OBJS) \
           -cclib -lunix $(PTHREAD_LINK)
 
 # See remark above: force static linking of libthreadsnat.a
@@ -89,9 +89,11 @@ threads.cmxa: $(THREAD_OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o threads.cmxa $(THREAD_OBJS:.cmo=.cmx) \
           -cclib -lthreadsnat -cclib -lunix -cclib "$(PTHREAD_LINK)"
 
-join.cmxa: $(JOIN_OBJS:.cmo=.cmx)
-	$(CAMLOPT) -a -o join.cmxa $(JOIN_OBJS:.cmo=.cmx) \
-          -cclib -ljoinnat -cclib -lunix -cclib "$(PTHREAD_LINK)"
+join.cmxa: $(THREAD_OBJS:.cmo=.cmx) $(JOIN_OBJS:.cmo=.cmx)
+	$(CAMLOPT) -a -o join.cmxa  \
+	../unix/unix.cmx ../unix/unixLabels.cmx \
+	$(THREAD_OBJS:.cmo=.cmx) $(JOIN_OBJS:.cmo=.cmx) \
+         -cclib -lthreadsnat -cclib -ljoinnat -cclib -lunix -cclib "$(PTHREAD_LINK)"
 
 $(THREAD_OBJS:.cmo=.cmx) $(JOIN_OBJS:.cmo=.cmx): ../../ocamlopt
 
