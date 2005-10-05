@@ -43,3 +43,8 @@ CHANGE LOG:
 3.08.4pl2
 - fix a bug in the parser (now it accepts  <a>(...) as a type)
 - fix a bug in Makefile (did not install ocamlduce.{cmi,mli})
+
+3.08.4pl3
+- more precise localization of errors in patterns
+- fix a bug in the type checker (translation of ML types to x-types in
+  an invalid environment)
