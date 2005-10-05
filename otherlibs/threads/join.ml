@@ -393,7 +393,9 @@ let raise_join_exit () = raise Join_misc.JoinExit
 
 let exit_hook = Join_scheduler.exit_hook
 
-let halt = Join_space.halt
+let exn_global = Join_space.exn_global
+  
+let flush_space = Join_space.flush_space
 
 (* Debug from users programs *)
 

@@ -45,10 +45,17 @@ val reply_to_exn : exn -> continuation -> unit
 (* Silent suicide of a join thread (compiler use only) *)
 val raise_join_exit : unit -> unit
 
-
+(* Hook for 'at_exit' will somehow control termination of program.
+   More precisely, program terminates when they is no more
+   work to achieve.
+   This does not apply to program engaged in distribution. *)
 val exit_hook : unit -> unit
 
+(* Register an exception as a global one, compiler use *)
+val exn_global : (string * int * int) -> Obj.t -> unit
 
+(* Give message to distant sites a chance to leave *)
+val flush_space : unit -> unit
 
 val debug0 : string -> string -> unit
 val debug1 : string -> string -> unit

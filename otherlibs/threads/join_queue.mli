@@ -12,9 +12,20 @@
 
 (* $Id$ *)
 
+(*****************)
+(* Sender queues *) 
+(*****************)
+
+(*
+   BEWARE: for wait_empty to work, there mute be exactly ONE thread
+           performing get's (and clean ?)
+*)
+
 type 'a t
 
 val create : unit -> 'a t
 val put : 'a t -> 'a -> unit
 val get : 'a t -> 'a
+val wait_empty : 'a t -> unit
+val clean : 'a t -> unit
 

@@ -510,6 +510,7 @@ let primitive_is_ccall = function
 
 (* Assertions *)
 
+
 let assert_failed loc =
   (* [Location.get_pos_info] is too expensive *)
   let fname = match loc.Location.loc_start.Lexing.pos_fname with
@@ -521,13 +522,13 @@ let assert_failed loc =
   let char = pos.Lexing.pos_cnum - pos.Lexing.pos_bol in
   Lprim(Praise, [Lprim(Pmakeblock(0, Immutable),
           [transl_path Predef.path_assert_failure;
-           Lconst(Const_block(0,
-              [Const_base(Const_string fname);
-               Const_base(Const_int line);
-               Const_base(Const_int char)]))])])
+           transl_location loc])])
 ;;
 
+(* do nothing to be used in place of Transljoin.reply_handler,
+   when translation actual expressions (I mean non-processes) *)
 let id_lam lam = lam
+;;
 
 (* Translation of expressions *)
 

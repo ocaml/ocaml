@@ -289,6 +289,7 @@ and structure_item_desc =
 (*> JOCAML *)
   | Pstr_def of joinautomaton list
   | Pstr_loc of joinlocation list
+  | Pstr_exn_global of Longident.t
 (*< JOCAML *)
 
 (* Toplevel phrases *)

@@ -577,6 +577,12 @@ and type_structure anchor env sstr =
         (Tstr_loc(defs) :: str_rem,
          map_end (make_sig_channel_value newenv) bound_idents sig_rem,
          final_env)
+    | {pstr_desc = Pstr_exn_global(longid); pstr_loc = loc} :: srem ->
+        let path = Typedecl.transl_exn_global env loc longid in
+        let (str_rem, sig_rem, final_env) = type_struct env srem in
+        (Tstr_exn_global (loc,path) :: str_rem,
+         sig_rem,
+         final_env)
 (*< JOCAML *)
     | {pstr_desc = Pstr_primitive(name, sdesc)} :: srem ->
         let desc = Typedecl.transl_value_decl env sdesc in

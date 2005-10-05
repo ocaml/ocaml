@@ -196,6 +196,7 @@ and structure_item =
 (*> JOCAML *)
   | Tstr_def of joinautomaton list
   | Tstr_loc of joinlocation list
+  | Tstr_exn_global of Location.t * Path.t
 (*< JOCAML *)
 
 and module_coercion =

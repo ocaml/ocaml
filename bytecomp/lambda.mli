@@ -203,3 +203,5 @@ val staticfail : lambda (* Anticipated static failure *)
 val is_guarded: lambda -> bool 
 val patch_guarded : lambda -> lambda -> lambda 
 
+(* Get a runtime location, ie a tuple (filename, line, pos) *)
+val transl_location : Location.t -> lambda

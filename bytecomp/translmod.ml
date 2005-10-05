@@ -300,6 +300,10 @@ and transl_structure fields cc rootpath = function
   | Tstr_loc d :: rem ->
       let ext_fields = rev_loc_bound_idents d @ fields in
       transl_loc d (transl_structure ext_fields cc rootpath rem)
+  | Tstr_exn_global (loc,path) :: rem ->
+      Lsequence
+        (Transljoin.transl_exn_global loc path,
+         transl_structure fields cc rootpath rem)
 (*< JOCAML *)
   | Tstr_primitive(id, descr) :: rem ->
       begin match descr.val_kind with
@@ -397,6 +401,9 @@ let transl_store_structure glob map prims str =
       let lam = transl_def d (store_idents ids) in
       Lsequence(subst_lambda subst lam,
                 transl_store (add_idents false ids subst) rem)
+  | Tstr_exn_global (loc, path)::rem ->
+      let lam = Transljoin.transl_exn_global loc path in
+      Lsequence (subst_lambda subst lam, transl_store subst rem)
 (*< JOCAML *)
   | Tstr_primitive(id, descr) :: rem ->
       begin match descr.val_kind with
@@ -506,6 +513,7 @@ let rec defined_idents = function
 (*> JOCAML *)
   | Tstr_def d :: rem -> def_bound_idents d @ defined_idents rem
   | Tstr_loc d :: rem -> loc_bound_idents d @ defined_idents rem
+  | Tstr_exn_global (_,_) :: rem -> defined_idents rem
 (*< JOCAML *)
   | Tstr_primitive(id, descr) :: rem -> defined_idents rem
   | Tstr_type decls :: rem -> defined_idents rem
@@ -607,12 +615,16 @@ let transl_toplevel_item = function
       let idents = let_bound_idents pat_expr_list in
       transl_let rec_flag pat_expr_list
                  (make_sequence toploop_setvalue_id idents)
+(*>JOCAML*)
   | Tstr_def (d) ->
       let idents = def_bound_idents d in
       transl_def d (make_sequence toploop_setvalue_id idents)
   | Tstr_loc (d) ->
       let idents = loc_bound_idents d in
       transl_loc d (make_sequence toploop_setvalue_id idents)
+  | Tstr_exn_global (loc,path) ->
+      Transljoin.transl_exn_global loc path
+(*<JOCAML*)
   | Tstr_primitive(id, descr) ->
       lambda_unit
   | Tstr_type(decls) ->

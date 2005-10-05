@@ -400,3 +400,19 @@ and negate_comparison = function
 | Cgt -> Cle | Cge -> Clt
 
 
+(* Get a runtime location, ie a tuple (filename, line, pos) *)
+(* Code moved from translcore, so as to share it *)
+
+let transl_location loc =
+  (* [Location.get_pos_info] is too expensive *)
+  let fname = match loc.Location.loc_start.Lexing.pos_fname with
+              | "" -> !Location.input_name
+              | x -> x
+  in
+  let pos = loc.Location.loc_start in
+  let line = pos.Lexing.pos_lnum in
+  let char = pos.Lexing.pos_cnum - pos.Lexing.pos_bol in
+  Lconst(Const_block(0,
+              [Const_base(Const_string fname);
+               Const_base(Const_int line);
+               Const_base(Const_int char)]))

@@ -628,12 +628,16 @@ and structure_item i ppf x =
   | Pstr_value (rf, l) ->
       line i ppf "Pstr_value %a\n" fmt_rec_flag rf;
       list i pattern_x_expression_def ppf l;
+(*>JOCAML*)
   | Pstr_def d ->
       line i ppf "Pstr_def";
       joindefinition i ppf d;
   | Pstr_loc d ->
       line i ppf "Pstr_loc";
       joinlocations i ppf d;
+  | Pstr_exn_global li ->
+      line i ppf "Pstr_exn_global %a\n"  fmt_longident li
+(*<JOCAML*)
   | Pstr_primitive (s, vd) ->
       line i ppf "Pstr_primitive \"%s\"\n" s;
       value_description i ppf vd;

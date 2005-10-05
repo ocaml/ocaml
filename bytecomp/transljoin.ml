@@ -767,3 +767,15 @@ let create_table some_loc auto1 gs r =
   Lsequence
     (patch_table name (do_guard 0),
      r)
+
+(*********************)
+(* Global exceptions *)
+(*********************)
+
+let lambda_exn_global =  mk_lambda env_join "exn_global"
+
+(* "exn_global" takes a location as a first argument,
+   so as give a source position in case of failure *)
+
+let transl_exn_global loc path =
+  mk_apply lambda_exn_global [transl_location loc ; transl_path path]

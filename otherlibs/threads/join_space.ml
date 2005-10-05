@@ -31,6 +31,52 @@ let same_space (a1, p1, t1) (a2, p2, t2) =
   a1 = a2 && p1 = p2 && t1 = t2
 ;;
 
+(*********************)
+(* Global exceptions *)
+(*********************)
+
+(*
+  Global exceptions look like they are common to all runtimes,
+  This is achieved by a translation when processing ReplyExn messages
+*)
+
+let exn_table = Join_hash.create ()
+
+let get_exn_cstr exn = Obj.field exn 0
+and get_cstr_name cstr = (Obj.obj (Obj.field cstr 0) : string )
+  
+let exn_global (file,line,_) exn_cstr =
+  match Join_hash.add_once exn_table exn_cstr ((file, line), exn_cstr) with
+  | None -> ()
+  | Some ((old_file, old_line), _) ->
+      failwith
+        (sprintf
+           "File \"%s\", line %i: global exception clash %s\n\
+           File  \"%s\", line %i: conflicting declaration\n"
+           file line (get_cstr_name exn_cstr)
+           old_file old_line)
+  
+let localize_exn (exn : exn) =
+  let cstr = get_exn_cstr (Obj.repr exn) in
+  try
+    let _,new_cstr = Join_hash.find exn_table cstr in
+    let o = Obj.repr exn in
+    let r =
+      match Obj.size o with
+      | 1|2 ->
+          let r = Obj.dup o in
+          Obj.set_field r 0 new_cstr ;
+          r
+      | _ -> assert false in
+(*DEBUG*)debug2 "LOCALIZE"
+(*DEBUG*)  (sprintf "successful localization of %s" (get_cstr_name cstr)) ;
+    Obj.obj r
+  with
+  | Not_found ->
+(*DEBUG*)debug2 "LOCALIZE"
+(*DEBUG*)  (sprintf "failed localization of %s" (get_cstr_name cstr)) ;    
+      exn
+
 open Join_types
 
 (* Attempt to handle SIGPIPE *)
@@ -53,7 +99,7 @@ let local_space = {
       and uid_mutex = Mutex.create () in
       (fun () ->
         Mutex.lock uid_mutex ;
-        incr uid_counter;
+        Pervasives.incr uid_counter;
         let r = !uid_counter in
         Mutex.unlock uid_mutex ;
         r)
@@ -77,10 +123,11 @@ let get_remote_space space space_id =
 	    (fun () ->
 	      Mutex.lock kid_mutex ;
 	      let r = !kid_counter in
-	      incr kid_counter ;
+	      Pervasives.incr kid_counter ;
 	      Mutex.unlock kid_mutex ;
 	      r)
 	  end ;
+        replies_pending = counter_create () ;
         konts = Join_hash.create () ;
         link_in = NoHandler ;
         link_out = NoConnection (Mutex.create ()) ;
@@ -207,11 +254,14 @@ and join_handler space rspace s inc () =
         and v = unmarshal_message_rec space v in
 	Join_scheduler.create_process
 	  (fun () ->
-	    try
+            incr rspace.replies_pending ;
+	    begin try
               let r = send_sync_ref.sync auto idx v in
 	      do_remote_reply_to space rspace kid r
-            with
-            | e -> do_remote_reply_to_exn space rspace kid e)
+            with e -> do_remote_reply_to_exn space rspace kid e
+            end ;
+            (* At this point the reply is in queue *)
+            decr rspace.replies_pending)
     | ReplySend (kid, v) ->
 	let kont =
           try Join_hash.find_remove rspace.konts kid
@@ -222,6 +272,7 @@ and join_handler space rspace s inc () =
 	let kont =
           try Join_hash.find_remove rspace.konts kid
           with Not_found -> assert false in
+        let e = localize_exn e in
         Join_scheduler.reply_to_exn e kont              
     | GoodBye -> raise SawGoodBye
     | Killed -> assert false
@@ -235,6 +286,7 @@ and join_handler space rspace s inc () =
       verbose_close "handler self close" s ;
       internal_close_link_out rspace.link_out ;
       Join_hash.remove space.remote_spaces rspace.rspace_id ;
+(* For replies not made *)
       Join_hash.iter rspace.konts
         (fun _ k -> Join_scheduler.reply_to_exn JoinExit k) ;
 (*DEBUG*)debug1 "HANDLER" "cleanup is over" ;
@@ -249,11 +301,12 @@ and join_handler space rspace s inc () =
       ()
       
 
+(* Get out queue for rspace,
+   in case no connection is here yet, create one *)
       
 and get_out_queue space rspace =
   match rspace.link_out with
-  | Connected {out_queue = queue ; } -> queue
-  | Connecting queue -> queue
+  | Connected {out_queue = queue ; } | Connecting queue -> queue
   | NoConnection mtx ->
       (* Outbound connection is set asynchronously,
          hence check race condition, so as to create exactly
@@ -290,8 +343,7 @@ and do_remote_reply_to_exn space rspace kid e =
   Join_queue.put queue (ReplyExn (kid, e))
 
 and sender_work rspace queue s outc =
-  try 
-  while true do
+  begin try while true do
     let msg = Join_queue.get queue in
     begin match msg with
     | Killed -> raise SawKilled
@@ -302,9 +354,8 @@ and sender_work rspace queue s outc =
     match msg with
     | GoodBye -> raise SawGoodBye
     | _ -> ()	
-  done
-  with
-(* Suicide neatly after announcing it *)
+  done with
+(* Acknowledge various reasons for the sender to halt *)
   | SawGoodBye ->
 (*DEBUG*)debug1 "SENDER" "just sent goodbye" ;
       Unix.shutdown s Unix.SHUTDOWN_SEND ;
@@ -316,7 +367,10 @@ and sender_work rspace queue s outc =
   | e ->
 (*DEBUG*)debug0 "SENDER" ("died of "^Join_misc.exn_to_string e) ;
       ()
-      
+  end ;
+(* In any case, empty queue, flush_out_queue may be waiting *)
+  Join_queue.clean queue
+
 and start_sender_work space rspace queue () =
 (*DEBUG*)debug1 "SENDER"
 (*DEBUG*)    (sprintf "connect from %s to %s"
@@ -393,7 +447,7 @@ let remote_send_async rspace uid idx a =
 let do_remote_send_sync space rspace uid idx kont a =
   let kid = rspace.next_kid ()
   and queue = get_out_queue space rspace in
-(*  if kid = 0 then start_listener space ; (* first continuation exported *) *)
+  if kid = 0 then start_listener space ; (* first continuation exported *)
   Join_hash.add rspace.konts kid kont ;
   Join_queue.put queue
     (SyncSend (uid, idx, kid,  marshal_message_rec space a [])) ;
@@ -431,3 +485,41 @@ let do_halt space =
 
 let halt () = do_halt local_space
 
+
+
+(************************************************)
+(* Flush messages to rspace as much as possible *)
+(************************************************)
+
+(*
+  Well, at least all replies are delivered.
+  This will go into deadlock if some remote sync call
+  is pending on local definition.
+
+  Nothing particular is done for other remote message,
+  except that the queue is flushed
+*)
+
+let flush_out_queue space rspace =
+(* First wait for replies to be passed to out queue *)
+(*DEBUG*)debug2 "WAIT PENDING REPLIES" (space_to_string rspace.rspace_id) ;
+  wait_zero rspace.replies_pending ;
+(*DEBUG*)debug2 "NO PENDING REPLIES" (space_to_string rspace.rspace_id) ;
+(* Then wait for sender to discover empty queue *)
+  try
+    let queue =
+      match rspace.link_out with
+      | Connected {out_queue = queue ; } | Connecting queue -> queue
+      | NoConnection _ -> raise Exit in
+    Join_queue.wait_empty queue ;
+(*DEBUG*)debug2 "FLUSHED" (space_to_string rspace.rspace_id) ;
+  with
+  | Exit -> ()
+
+
+let do_flush_out_queues space =
+(*DEBUG*)debug2 "FLUSH SPACE" "enter" ;
+  Join_hash.iter space.remote_spaces
+    (fun _ rspace -> flush_out_queue space rspace)
+
+let flush_space () =  do_flush_out_queues local_space

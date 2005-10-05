@@ -14,6 +14,10 @@
 
 (*DEBUG*)open Join_debug
 
+(****************************)
+(* Readers/writer controler *)
+(****************************)
+
 type controler =
   {
     cond_w : Condition.t ;
@@ -94,7 +98,43 @@ let protect_write c writer key =
   | e ->
       write_return c ;
       raise e
+(*******************************************)
+(* Locked counters, with detection of zero *)
+(*******************************************)
 
+type counter =
+  { mutable cval : int ;
+    cmutex : Mutex.t ;
+    ccond  : Condition.t ; }
+
+let counter_create () =
+  { cval = 0 ; cmutex = Mutex.create () ; ccond = Condition.create () ; }
+
+let incr c =
+  Mutex.lock c.cmutex ;
+  c.cval <- c.cval + 1 ;
+  Mutex.unlock c.cmutex
+
+let decr c =
+  Mutex.lock c.cmutex ;
+  begin match c.cval with
+  | 0 -> assert false
+  | 1 ->
+      Condition.broadcast c.ccond ;
+      c.cval <- 0
+  | v ->
+      c.cval <- v-1
+  end ;
+  Mutex.unlock c.cmutex
+
+let wait_zero c =
+  Mutex.lock c.cmutex ;
+  begin match c.cval with
+  | 0 -> ()
+  | _ -> Condition.wait c.ccond c.cmutex
+  end ;
+  Mutex.unlock c.cmutex
+    
 (* A few wrapping of socket primitives *)
 
 open Unix

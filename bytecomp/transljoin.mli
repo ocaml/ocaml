@@ -74,3 +74,8 @@ val create_table:
           Lambda.lambda ->
             Lambda.lambda
             
+(*********************)
+(* Global exceptions *)
+(*********************)
+
+val transl_exn_global : Location.t -> Path.t -> Lambda.lambda

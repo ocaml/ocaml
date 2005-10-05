@@ -12,32 +12,44 @@
 
 (* $Id$ *)
 
-(* Support for concurrents readers and writers *)
+
+(****************************)
+(* Readers/writer controler *)
+(****************************)
 
 type controler
 
 val controler_create : unit -> controler
-
 val protect_read : controler -> ('a -> 'b) -> 'a -> 'b
-
 val protect_write : controler -> ('a -> 'b) -> 'a -> 'b
 
-(* Wrapped socket primitives *)
+(*******************************************)
+(* Locked counters, with detection of zero *)
+(*******************************************)
+
+type counter
+
+val counter_create : unit -> counter
+val incr : counter -> unit
+val decr : counter -> unit
+val wait_zero : counter -> unit
+
+(*****************************)
+(* Misc stuff for exceptions *)
+(*****************************)
 
 val prerr_exn : exn -> unit
-
 val exn_to_string : exn -> string
 
+(*****************************)
+(* Wrapped socket primitives *)
+(*****************************)
+
 val local_name : string
-
 val local_addr : Unix.inet_addr
-
 val create_port : int -> int * Unix.file_descr
-
 val force_accept : Unix.file_descr -> Unix.file_descr * Unix.sockaddr
-
 val connect_to_server : Unix.inet_addr -> int -> Unix.file_descr
-
 val force_connect : Unix.inet_addr -> int -> Unix.file_descr
 
 (* Why not put this here ! *)

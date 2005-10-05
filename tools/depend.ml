@@ -283,6 +283,8 @@ and add_struct_item bv item =
       List.iter (add_joinlocation bv) d ; bv
   | Pstr_def d ->
       List.iter (add_joinautomaton bv) d ; bv
+  | Pstr_exn_global l ->
+      add bv l; bv
 (*< JOCAML *)
 
 and add_use_file bv top_phrs =

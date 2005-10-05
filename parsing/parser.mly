@@ -478,6 +478,8 @@ structure_item:
       { mkstr(Pstr_def $2) }
   | LET LOC joinlocation_list_AND
       { mkstr(Pstr_loc $3) }
+  | DEF EXCEPTION constr_longident
+      { mkstr(Pstr_exn_global $3) }
 /*< JOCAML */
 ;
 module_binding:

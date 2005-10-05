@@ -600,6 +600,17 @@ let transl_exn_rebind env loc lid =
     Cstr_exception path -> (path, cdescr.cstr_args)
   | _ -> raise(Error(loc, Not_an_exception lid))
 
+(* exception globalization, just check lid is an exception constructor *)
+let transl_exn_global env loc lid =
+  let cdescr =
+    try
+      Env.lookup_constructor lid env
+    with Not_found ->
+      raise(Error(loc, Unbound_exception lid)) in
+  match cdescr.cstr_tag with
+    Cstr_exception path -> path
+  | _ -> raise(Error(loc, Not_an_exception lid))
+
 (* Translate a value declaration *)
 let transl_value_decl env valdecl =
   let ty = Typetexp.transl_type_scheme env valdecl.pval_type in

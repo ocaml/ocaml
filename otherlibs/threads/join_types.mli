@@ -98,6 +98,7 @@ type remote_space =
     {
       rspace_id : space_id ;
       next_kid : unit -> int ;
+      replies_pending : Join_misc.counter ;
       konts : (int, continuation) Join_hash.t ;
       mutable link_in : link_in ;
       mutable link_out : link_out ;

@@ -17,6 +17,7 @@ open Join_misc
 type ('a,'b) t =
   {
     add : 'a -> 'b -> unit ;
+    add_once : 'a -> 'b -> 'b option ;
     find : 'a -> 'b ;
     find_remove : 'a -> 'b ;
     get : ('a -> 'b) -> 'a -> 'b ;
@@ -29,6 +30,15 @@ let create () =
   and c = controler_create () in
   {
     add = protect_write c (fun key v -> Hashtbl.add t key v) ;
+    add_once =
+      protect_write c
+        (fun key v ->
+          try
+            Some (Hashtbl.find t key)
+          with
+          | Not_found ->
+              Hashtbl.add t key v ;
+              None) ;
     find = protect_read c (fun key -> Hashtbl.find t key) ;
     find_remove =
      protect_write c
@@ -51,6 +61,7 @@ let create () =
 
 
 let add t key v = t.add key v
+and add_once t key v = t.add_once key v
 and find t key = t.find key
 and find_remove t key = t.find_remove key
 and get t d key = t.get d key

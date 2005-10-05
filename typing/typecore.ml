@@ -2146,7 +2146,9 @@ and type_statement env sexp =
         exp
 
 (* Typing of match cases *)
-(* Argument ty_res is unused when ctx is P *)
+(* Argument ty_res is unused when ctx is P,
+   instead the list of names replied to is returned,
+   as an additional 'reps' in typed_cases, partial, reps *)
 and type_cases ?in_function ctx env ty_arg ty_res partial_loc caselist =
   let ty_arg' = newvar () in
   let pattern_force = ref [] in
