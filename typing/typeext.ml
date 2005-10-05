@@ -331,9 +331,17 @@ and typ_from_ml_constr env p args =
     CT.define n t;
     n
       
-let typ_from_ml loc t = 
-  try CT.descr (typ_from_ml { loc = loc; tys = []; seen =  []; constrs = [] }  t)
-  with CannotTranslate e -> error loc (CannotTranslateML (t,e))
+let typ_from_ml env loc t =
+  let old_env = !solve_env in
+  solve_env := env;
+  try 
+    let r = 
+      CT.descr 
+	(typ_from_ml { loc = loc; tys = []; seen =  []; constrs = [] }  t) in
+    solve_env := old_env;
+    r
+  with CannotTranslate e -> 
+    solve_env := old_env; error loc (CannotTranslateML (t,e))
 
 (*********************)
 
@@ -428,7 +436,7 @@ let rec derecurs env p = match p.pext_desc with
 	 | None -> assert false
 	 | Some f ->
 	     mk_type (
-	       typ_from_ml p.pext_loc
+	       typ_from_ml env.penv_tenv p.pext_loc
 		 (f env.penv_tenv true t)))
   | Pext_concat (p1,p2) ->  
       mk_concat ~err:(perr p) (derecurs env p1) (derecurs env p2)
@@ -631,11 +639,11 @@ let ext_ub env loc ub e =
 
 let ext_from_ml env loc t =
   if !extmode then anyext_var 
-  else atom loc (fun _ -> typ_from_ml loc t)
+  else atom loc (fun _ -> typ_from_ml env loc t)
 
 let ext_to_ml env loc ml ext =
   if !extmode then ()
-  else ignore (atom loc (fun _ -> compute_var loc ext (typ_from_ml loc ml)))
+  else ignore (atom loc (fun _ -> compute_var loc ext (typ_from_ml env loc ml)))
 
 let ext_int2 f env loc e1 e2 =
   if !extmode then anyext_var 
