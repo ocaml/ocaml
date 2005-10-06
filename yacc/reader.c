@@ -1730,7 +1730,12 @@ static int is_polymorphic(char * s)
 {
   while (*s != 0) {
     char c = *s++;
-    if (c == '\'') return 1;
+    if (c == '\'' || c == '#') return 1;
+    if (c == '[') {
+      c = *s;
+      while (c == ' ' || c == '\t' || c == '\r' || c == '\n') c = *++s;
+      if (c == '<' || c == '>') return 1;
+    }
     if (In_bitmap(caml_ident_start, c)) {
       while (In_bitmap(caml_ident_body, *s)) s++;
     }
