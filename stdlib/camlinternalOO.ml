@@ -120,7 +120,8 @@ let dummy_table =
 
 let table_count = ref 0
 
-let null_item : item = Obj.obj (Obj.field (Obj.repr 0n) 1)
+let dummy_met () = failwith "Undefined method"
+let dummy_met : item = magic dummy_met
 
 let rec fit_size n =
   if n <= 2 then n else
@@ -129,7 +130,7 @@ let rec fit_size n =
 let new_table pub_labels =
   incr table_count;
   let len = Array.length pub_labels in
-  let methods = Array.create (len*2+2) null_item in
+  let methods = Array.create (len*2+2) dummy_met in
   methods.(0) <- magic len;
   methods.(1) <- magic (fit_size len * Sys.word_size / 8 - 1);
   for i = 0 to len - 1 do methods.(i*2+3) <- magic pub_labels.(i) done;
@@ -145,7 +146,7 @@ let new_table pub_labels =
 let resize array new_size =
   let old_size = Array.length array.methods in
   if new_size > old_size then begin
-    let new_buck = Array.create new_size null_item in
+    let new_buck = Array.create new_size dummy_met in
     Array.blit array.methods 0 new_buck 0 old_size;
     array.methods <- new_buck
  end
