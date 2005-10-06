@@ -780,34 +780,35 @@ class html =
        when printing a module type. *)
     val mutable known_modules_names = StringSet.empty
 
+    method index_prefix =
+      if !Odoc_args.out_file = Odoc_messages.default_out_file then
+	"index"
+      else
+	Filename.basename !Odoc_args.out_file
+
     (** The main file. *)
     method index =
-      let p =
-	if !Odoc_args.out_file = Odoc_messages.default_out_file then
-	  "index"
-	else
-	  Filename.basename !Odoc_args.out_file
-      in
+      let p = self#index_prefix in
       Printf.sprintf "%s.html" p
 
     (** The file for the index of values. *)
-    method index_values = Printf.sprintf "%s_values.html" (Filename.basename !Odoc_args.out_file)
+    method index_values = Printf.sprintf "%s_values.html" self#index_prefix
     (** The file for the index of types. *)
-    method index_types = Printf.sprintf "%s_types.html" (Filename.basename !Odoc_args.out_file)
+    method index_types = Printf.sprintf "%s_types.html" self#index_prefix
     (** The file for the index of exceptions. *)
-    method index_exceptions = Printf.sprintf "%s_exceptions.html" (Filename.basename !Odoc_args.out_file)
+    method index_exceptions = Printf.sprintf "%s_exceptions.html" self#index_prefix
     (** The file for the index of attributes. *)
-    method index_attributes = Printf.sprintf "%s_attributes.html" (Filename.basename !Odoc_args.out_file)
+    method index_attributes = Printf.sprintf "%s_attributes.html" self#index_prefix
     (** The file for the index of methods. *)
-    method index_methods = Printf.sprintf "%s_methods.html" (Filename.basename !Odoc_args.out_file)
+    method index_methods = Printf.sprintf "%s_methods.html" self#index_prefix
     (** The file for the index of classes. *)
-    method index_classes = Printf.sprintf "%s_classes.html" (Filename.basename !Odoc_args.out_file)
+    method index_classes = Printf.sprintf "%s_classes.html" self#index_prefix
     (** The file for the index of class types. *)
-    method index_class_types = Printf.sprintf "%s_class_types.html" (Filename.basename !Odoc_args.out_file)
+    method index_class_types = Printf.sprintf "%s_class_types.html" self#index_prefix
     (** The file for the index of modules. *)
-    method index_modules = Printf.sprintf "%s_modules.html" (Filename.basename !Odoc_args.out_file)
+    method index_modules = Printf.sprintf "%s_modules.html" self#index_prefix
     (** The file for the index of module types. *)
-    method index_module_types = Printf.sprintf "%s_module_types.html" (Filename.basename !Odoc_args.out_file)
+    method index_module_types = Printf.sprintf "%s_module_types.html" self#index_prefix
 
 
     (** The list of attributes. Filled in the [generate] method. *)
@@ -1271,11 +1272,11 @@ class html =
       bp b "<a name=\"%s\"></a>" (Naming.value_target v);
       (
        match v.val_code with
-         None -> bs b (Name.simple v.val_name)
+         None -> bs b (self#escape (Name.simple v.val_name))
        | Some c ->
            let file = Naming.file_code_value_complete_target v in
            self#output_code v.val_name (Filename.concat !Args.target_dir file) c;
-           bp b "<a href=\"%s\">%s</a>" file (Name.simple v.val_name)
+           bp b "<a href=\"%s\">%s</a>" file (self#escape (Name.simple v.val_name))
       );
       bs b " : ";
       self#html_of_type_expr b (Name.father v.val_name) v.val_type;
@@ -1977,7 +1978,7 @@ class html =
         let f_ele e =
           let simple_name = Name.simple (name e) in
           let father_name = Name.father (name e) in
-          bp b "<tr><td><a href=\"%s\">%s</a> " (target e) simple_name;
+          bp b "<tr><td><a href=\"%s\">%s</a> " (target e) (self#escape simple_name);
           if simple_name <> father_name && father_name <> "" then
             bp b "[<a href=\"%s\">%s</a>]" (fst (Naming.html_files father_name)) father_name;
           bs b "</td>\n<td>";
