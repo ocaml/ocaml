@@ -48,3 +48,6 @@ CHANGE LOG:
 - more precise localization of errors in patterns
 - fix a bug in the type checker (translation of ML types to x-types in
   an invalid environment)
+
+3.08.4.pl5
+- bug in record concatenation
