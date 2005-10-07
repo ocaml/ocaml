@@ -463,7 +463,6 @@ let rec emit_instr i dslot =
           `	sdiv	{emit_reg i.arg.(0)}, {emit_int n}, {emit_reg i.res.(0)}\n`
         end
     | Lop(Iintop_imm(Imod, n)) ->       (* n is a power of 2 *)
-        let log = Misc.log2 n in
         let lbl = new_label() in
         `	tst	{emit_reg i.arg.(0)}\n`;
         `	bge	{emit_label lbl}\n`;
