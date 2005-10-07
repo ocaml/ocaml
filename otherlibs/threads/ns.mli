@@ -14,18 +14,28 @@
 
 val local_addr : Unix.inet_addr
 
+(* abstract type of running server *)
 type server
 
 val start_server : int -> server
 val stop_server : server -> unit
 
+(* abstract type of connection to name server *)
 type link
 
+(* open connection *)
 val register_client : Unix.inet_addr -> int -> link
+
+(* find value, raise Not_found when not present *)
 val lookup : link -> string -> 'a
 
+(* register binding asynchronously *)
 val register : link -> string -> 'a -> unit
 
+(* register binding, returns when done at server side *)
 val sync_register : link -> string -> 'a -> unit
 
+(* additionaly register binding once,
+   If a binding with the same key already exists,
+   the binding is not changed and function returns false *)
 val sync_register_once : link -> string -> 'a -> bool
