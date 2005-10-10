@@ -105,6 +105,8 @@ and value_kind =
 (*> JOCAML *)
   | Val_channel of Ident.t * int
     (* Channel: automaton, index *)
+  | Val_alone of Ident.t 
+     (* Channel: guard *)
 (*< JOCAML *)
 
 (* Constructor descriptions *)

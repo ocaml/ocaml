@@ -553,13 +553,14 @@ let create_auto some_loc
 
 let create_channels {jauto_name=(raw_name, name) ; jauto_names=names} k =
   match names with
-  | [id,{jchannel_sync=sync}] -> (* Fowarder *)
+(*  | [id,{jchannel_sync=sync}] -> (* Fowarder *)
       let lam =
 	if sync then
 	  create_sync_alone name
 	else
 	  create_alone name in
       Llet (StrictOpt, id, lam, k)
+*)
   | _ ->
       List.fold_right
 	(fun (id,

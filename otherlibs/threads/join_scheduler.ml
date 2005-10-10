@@ -211,27 +211,6 @@ let create_process f =
   end else begin
     put_pool g
   end
-
-let rec hard_create_real_process f =
-  match really_create_process f with
-  | None ->
-      Thread.delay 0.1 ;
-      hard_create_real_process f
-  | Some t -> t
-  
-let create_real_process f =
-(*DEBUG*)debug2 "CREATE_REAL_PROCESS" (tasks_status ()) ;
-  incr_active () ;
-(* Wapper around f, to be sure to call my exit_thread *)  
-  let g () = 
-    begin try f ()
-    with e ->
-      flush stdout; flush stderr;
-      thread_uncaught_exception e
-    end ;
-    exit_thread () in
-  hard_create_real_process g
-
   
 let inform_suspend () =
 (*DEBUG*)incr_locked nthreads_mutex suspended ;
