@@ -118,15 +118,17 @@ let empty_status nchans =
   else
     Obj.magic (bv_ops nchans)
 
-(* Creating local automata *)
-external alloc_stub : t_local -> stub = "caml_alloc_stub"
 
-let wrap_automaton a = alloc_stub (LocalAutomaton a)
+external alloc_stub : stub_val -> stub = "caml_alloc_stub"
+
+let wrap_automaton (a:automaton) = alloc_stub (Obj.magic a : stub_val)
+and wrap_guard (g:'a -> 'b) = alloc_stub (Obj.magic g : stub_val)
+
+(* Creating local automata *)
 
 let create_automaton_debug nchans names =
   let a = 
     {
-      ident = 0 ;
       status = empty_status nchans ;
       mutex = Mutex.create () ;
       queues = Array.create nchans (Obj.magic []) ;
@@ -158,12 +160,12 @@ let kont_create auto = kont_create0 auto.mutex
 (**********************)
 
 type async =
-    Async of (stub) * int
-  | Alone of (stub) * int
+    Async of stub * int
+  | Alone of stub
 
 
 let create_async auto i = Async (auto, i)
-and create_async_alone auto g = Alone (auto, g)
+and create_alone guard = Alone guard
 
 
 (* Callbacks from compiled code *)
@@ -223,19 +225,33 @@ let local_send_async auto idx a =
   end
 
 (* Optimize forwarders *)
-and local_send_async_alone auto g a =
-(*DEBUG*)  debug3 "SEND_ASYNC_ALONE" (sprintf "match %i" g) ;
-  let _,_,f = Obj.magic (Obj.field (Obj.magic auto.matches) g) in
-  create_process (fun () -> f a)
+and local_send_alone g a =
+(*DEBUG*)  debug3 "SEND_ALONE" "" ;
+  create_process (fun () -> g a)
 
 let _ = Join_space.send_async_ref.Join_space.async <- local_send_async
 
 
 let send_async chan a = match chan with
-| Async ({local=LocalAutomaton auto}, idx) -> local_send_async auto idx a
-| Async ({local=RemoteAutomaton (rspace, uid)}, idx) ->
-    Join_space.remote_send_async rspace uid idx a
-| Alone (_,_) -> assert false
+| Async (stub, idx) ->
+    begin match stub.stub_tag with
+    | Local ->
+	let auto = (Obj.magic stub.stub_val : automaton) in
+	local_send_async auto idx a
+    | Remote ->
+	let rspace = (Obj.magic stub.stub_val : space_id) in
+	Join_space.remote_send_async rspace stub.uid idx a
+    end
+| Alone stub ->
+    begin match stub.stub_tag with
+    | Local ->
+	let guard = (Obj.magic stub.stub_val : 'a -> unit) in
+	local_send_alone guard a
+    | Remote ->
+	let rspace = (Obj.magic stub.stub_val : space_id) in
+	Join_space.remote_send_alone rspace stub.uid a
+    end
+    
 
 let local_tail_send_async auto idx a =
 (*DEBUG*)debug3 "TAIL_ASYNC" (sprintf "channel %s, status=%s"
@@ -254,18 +270,30 @@ let local_tail_send_async auto idx a =
 
 (* Optimize forwarders *)
 
-and local_tail_send_async_alone auto g a =
-(*DEBUG*)  debug3 "TAIL_ASYNC_ALONE" (sprintf "match %i" g) ;
-  let _,_,f = Obj.magic (Obj.field (Obj.magic auto.matches) g) in
-  f a
+and local_tail_send_alone g a =
+(*DEBUG*)  debug3 "TAIL_SEND_ALONE" "" ;
+  g a
 
 let tail_send_async chan a = match chan with
-| Async ({local=LocalAutomaton auto}, idx) ->
-    local_tail_send_async auto idx a
-| Async ({local=RemoteAutomaton (rspace, uid)}, idx) ->
-    Join_space.remote_send_async rspace uid idx a 
-| Alone (_, _)
- -> assert false
+| Async (stub, idx) ->
+    begin match stub.stub_tag with
+    | Local ->
+	let auto = (Obj.magic stub.stub_val : automaton) in
+	local_tail_send_async auto idx a
+    | Remote ->
+	let rspace = (Obj.magic stub.stub_val : space_id) in
+	Join_space.remote_send_async rspace stub.uid idx a
+    end
+| Alone stub ->
+    begin match stub.stub_tag with
+    | Local ->
+	let guard = (Obj.magic stub.stub_val : 'a -> unit) in
+	local_tail_send_alone guard a
+    | Remote ->
+	let rspace = (Obj.magic stub.stub_val : space_id) in
+	Join_space.remote_send_alone rspace stub.uid a
+    end
+
 
 (*********************)
 (* Synchronous sends *)
@@ -351,11 +379,23 @@ let local_send_sync auto idx a =
 
 let _ = Join_space.send_sync_ref.Join_space.sync <-  local_send_sync
 
-let send_sync auto idx arg = match auto.local with
-| LocalAutomaton a -> local_send_sync a idx arg
-| RemoteAutomaton (rspace, uid) ->
-    let kont = kont_create0 (Mutex.create ()) in
-    Join_space.remote_send_sync rspace uid idx kont arg
+let send_sync stub idx arg = match stub.stub_tag with
+| Local ->
+    let a = (Obj.magic stub.stub_val : automaton ) in
+    local_send_sync a idx arg
+| Remote ->
+    let kont = kont_create0 (Mutex.create ())
+    and rspace_id = (Obj.magic stub.stub_val : space_id) in
+    Join_space.remote_send_sync rspace_id stub.uid idx kont arg
+
+let send_sync_alone stub arg = match stub.stub_tag with
+| Local ->
+    let g = (Obj.magic stub.stub_val : 'a -> 'b) in
+    g arg
+| Remote ->
+    let kont = kont_create0 (Mutex.create ())
+    and rspace_id = (Obj.magic stub.stub_val : space_id) in
+    Join_space.remote_send_sync_alone rspace_id stub.uid kont arg
 
 
 (* This code must create a one-argument closure,
@@ -369,6 +409,9 @@ let create_sync auto idx =
   let r a = Obj.obj (send_sync auto idx a) in
   r
 
+and create_sync_alone guard = 
+  let r a = Obj.obj (send_sync_alone guard a) in
+  r
 
 
 (* HACK :
@@ -399,15 +442,9 @@ let flush_space = Join_space.flush_space
 
 (* Debug from users programs *)
 
-let debug0 = Join_debug.debug0
+let debug = Join_debug.debug0
+and debug0 = Join_debug.debug0
 and debug1 = Join_debug.debug1
 and debug2 = Join_debug.debug2
 and debug3 = Join_debug.debug3
 
-(* TEST *)
-
-open Join_space
-
-let t v flags =
-  let (_,t) as p = marshal_message v flags in
-  Join_space.unmarshal_message p

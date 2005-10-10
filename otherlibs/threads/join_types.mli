@@ -29,7 +29,6 @@ type 'a status =
 type queue = Obj.t
 
 type automaton = {
-  mutable ident : int ; 
   status : Obj.t status ; 
   mutex : Mutex.t ;
   queues : queue array ;
@@ -52,24 +51,18 @@ type continuation =
 
 type space_id = Unix.inet_addr * int * float
 
-type global_name = space_id * int
+type t_global= space_id * int (* value names in network *)
 
-type t_global =
-  | GlobalAutomaton of global_name
+type chan_id = {auto_id:int ; chan_id:int}
+and  kont_id = int
+and parameter = string * t_global array 
 
-type message =
-  | AsyncSend of
-      int (* uid *) * int (* channel *) *
-      (string * t_global array) (* parameter *)
-  | SyncSend of
-      int (* uid *) * int (* channel *) * int (* continuation *) *
-      (string * t_global array) (* parameter *)
-  | ReplySend of
-      int (* continuation *) *
-      (string * t_global array) (* parameter *)
-  | ReplyExn of
-      int (* continuation *) *
-      exn (* exception *)
+type message = 
+  | AsyncSend of chan_id * parameter
+  | SyncSend of chan_id * kont_id * parameter
+  | ReplySend of kont_id * parameter
+  | ReplyExn of kont_id * exn
+(* Hum, GoodBye and Killed are not really working *)
   | GoodBye
   | Killed
 
@@ -104,19 +97,36 @@ type remote_space =
       mutable link_out : link_out ;
     }  
 
-type t_local =
-  | LocalAutomaton of automaton
-  | RemoteAutomaton of remote_space * int
 
+(* Stubs for handling localized 'values' (eg join-definitions)
+   They are implemented trough JoCustom blocks *)
 
-(* Stubs for handling remote pointers,
-   they are implemented trough JoCustom blocks *)
+(* custom ops, cf join.c *)
+type ops
+
+type stub_tag = Local | Remote
+
+(* Either local value/remote space description *)
+type stub_val
 
 type stub =
   {
-    ops : Obj.t ; (* custom ops, cf. join.c *)
-    local : t_local ;
+    ops : ops ;
+    stub_tag : stub_tag ;
+    stub_val : stub_val ;
+    mutable uid : int ; (* identity in space *)
+    
   } 
+
+(*
+  If stub_tag is Local
+    - The site name (local space) is not present in stub.
+    - stub_val is the localized value (well pointer to it).
+    - uid=0 means that the stub has not been exported yet.
+  If stub_tag is Remote
+    - the stub stands for value uid at (remote) space stub_val
+*)
+
 
 type listener =
   | Deaf of Unix.file_descr *  Mutex.t
@@ -128,9 +138,9 @@ type space =
   {
     space_id : space_id ;
     mutable space_status : space_status ;
-    space_mutex : Mutex.t ;
+    uid_mutex : Mutex.t ;
     next_uid : unit -> int ;
-    uid2local : (int, automaton) Join_hash.t ;
+    uid2local : (int, stub_val) Join_hash.t ;
     remote_spaces : (space_id, remote_space) Join_hash.t ;
     mutable space_listener : listener ;
   } 

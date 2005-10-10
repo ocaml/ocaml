@@ -559,8 +559,9 @@ and transl_exp0 e =
 	transl_primitive p
   | Texp_ident(path, {val_kind = Val_anc _}) ->
       raise(Error(e.exp_loc, Free_super_var))
-  | Texp_ident(path,
-               {val_kind = Val_reg | Val_self _ | Val_channel (_,_)}) ->
+  | Texp_ident
+      (path,
+       {val_kind = Val_reg|Val_self _|Val_channel (_,_)|Val_alone _}) ->
       transl_path path
   | Texp_ident _ -> fatal_error "Translcore.transl_exp: bad Texp_ident"
   | Texp_constant cst ->
@@ -909,6 +910,11 @@ and transl_simple_proc die sync p = match p.exp_desc with
       (if die then Transljoin.local_tail_send_async
       else Transljoin.local_send_async)
         auto num (transl_exp e2)
+| Texp_asyncsend
+    ({exp_desc=Texp_ident (_,{val_kind=Val_alone (guard)})},e2) ->
+      (if die then Transljoin.local_tail_send_alone
+      else Transljoin.local_send_alone)
+        guard (transl_exp e2)
 | Texp_asyncsend (e1,e2) ->
     (if die then Transljoin.tail_send_async else Transljoin.send_async)
       (transl_exp e1) (transl_exp e2)

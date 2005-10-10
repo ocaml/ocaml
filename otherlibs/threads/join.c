@@ -110,7 +110,7 @@ static void free_saved_pointers(void)
 static int inside_join = 0 ;
 
 
-CAMLprim value caml_marshal_message(value v, value flags) {
+CAMLprim value caml_globalize_message(value v, value flags) {
   CAMLparam2(v, flags) ;
   CAMLlocal3(str,array,res) ;
     
@@ -150,7 +150,7 @@ CAMLprim value caml_marshal_message(value v, value flags) {
 static value used_pointers = Val_unit ;
 static int unmarshal_initialized = 0 ;
 
-CAMLprim value caml_unmarshal_message(value buff, value pointers) {
+CAMLprim value caml_localize_message(value buff, value pointers) {
   CAMLparam2(buff, pointers) ;
   CAMLlocal1(res) ;
 
@@ -179,22 +179,28 @@ static void stub_serialize(value v,
     free_saved_pointers() ;
     extern_invalid_argument("output_value: stub_value");
   }
-  pos = reloc_pointer(Field(v,1)) ;
+  pos = reloc_pointer(v) ;
   /*  fprintf(stderr, "Reloc -> %i\n", (int)pos) ; */
   caml_serialize_int_4(pos);
-  *wsize_32 = *wsize_64 = 4 ;
+  /* 3 values */
+  *wsize_32 = 3 << 2 ;
+  *wsize_64 = 3 << 3 ;
 }
 
 static unsigned long stub_deserialize(void * dst) {
   if (inside_join) {
     mlsize_t pos = caml_deserialize_uint_4();
+    value *p = dst ;
+    value *src = (value *)Field(used_pointers, pos) ;
     /*    fprintf(stderr, "Found: %i\n", (int)pos) ; */
-    ((value *)dst)[0] = Field(used_pointers, pos) ;
+    p[0] = src[0] ;
+    p[1] = src[1] ;
+    p[2] = src[2] ;
   } else {
     caml_intern_cleanup();
     caml_failwith("input_value: stub value") ;
   }
-  return sizeof(value) ;
+  return 3*sizeof(value) ;
 }
 
 static struct custom_operations join_stub_ops = {
@@ -207,16 +213,18 @@ static struct custom_operations join_stub_ops = {
 };
 
 
-/* Allocate automaton structure, cf. the stub type type in join_types.ml */
+/* Allocate automaton structure, cf. the stub type type in join_types.mli */
 
 
 CAMLprim value caml_alloc_stub(value a)
 {
   CAMLparam1 (a) ;
   CAMLlocal1 (res) ;
-  res = caml_alloc_small(2, JoCustom_tag) ;
+  res = caml_alloc_small(4, JoCustom_tag) ;
   Field(res, 0) = (value)&join_stub_ops ;
-  Field(res, 1) = a ;
+  Field(res, 1) = Val_int(0) ; /* for constructor Local */
+  Field(res, 2) = a ;
+  Field(res, 3) = Val_int(0) ; /* initial uid <-> not exported yet */
   CAMLreturn (res) ;
 }
 

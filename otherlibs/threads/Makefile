@@ -119,7 +119,7 @@ install:
 	cd $(LIBDIR)/vmthreads; $(RANLIB) libvmthreads.a
 	cp libvmjoin.a $(LIBDIR)/vmthreads/libvmjoin.a
 	cd $(LIBDIR)/vmthreads; $(RANLIB) libvmjoin.a
-	cp thread.cmi mutex.cmi condition.cmi event.cmi threadUnix.cmi join.cmi ns.cmi threads.cma stdlib.cma unix.cma join.cma $(LIBDIR)/vmthreads
+	cp thread.cmi mutex.cmi condition.cmi event.cmi threadUnix.cmi join_space.cmi join.cmi ns.cmi threads.cma stdlib.cma unix.cma join.cma $(LIBDIR)/vmthreads
 	cp thread.mli mutex.mli condition.mli event.mli threadUnix.mli $(LIBDIR)/vmthreads
 
 installopt:

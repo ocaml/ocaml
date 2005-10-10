@@ -24,19 +24,26 @@ val create_automaton : int -> automaton
 (* create_automaton nchans *)
 val create_automaton_debug : int -> string array -> automaton
 val wrap_automaton : automaton -> stub
+val wrap_guard : ('a -> 'b) -> stub
+
 val patch_table : automaton -> reaction array -> unit
 
 (* Asynchronous channels *)
 type async
 val create_async : stub -> int -> async
-val create_async_alone : stub -> int -> async
+val create_alone : stub -> async
+
 val local_send_async : automaton -> int -> 'a -> unit
 val local_tail_send_async : automaton -> int -> 'a -> unit
+val local_send_alone : ('a -> unit) -> 'a -> unit
+val local_tail_send_alone : ('a -> unit) -> 'a -> unit
+
 val send_async : async -> 'a -> unit
 val tail_send_async : async -> 'a -> unit
 
 (* Synchronous channels are plain fonctions *)
 val create_sync : stub -> int -> ('a -> 'b)
+val create_sync_alone : stub -> ('a -> 'b)
 
 (* Explicit reply to continuation *)
 val reply_to : 'a -> continuation -> unit
@@ -57,9 +64,11 @@ val exn_global : (string * int * int) -> Obj.t -> unit
 (* Give message to distant sites a chance to leave *)
 val flush_space : unit -> unit
 
+(* Various levels of debuging as directed by the
+   environment variable VERBOSE *)
+val debug : string -> string -> unit
 val debug0 : string -> string -> unit
 val debug1 : string -> string -> unit
 val debug2 : string -> string -> unit
 val debug3 : string -> string -> unit
 
-val t : 'a -> Marshal.extern_flags list -> 'a

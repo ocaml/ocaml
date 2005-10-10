@@ -19,12 +19,13 @@
 
 val create_process : Lambda.lambda -> Lambda.lambda
 val send_async : Lambda.lambda -> Lambda.lambda -> Lambda.lambda
-val send_sync : Ident.t -> int -> int option -> Lambda.lambda -> Lambda.lambda
 val tail_send_async : Lambda.lambda -> Lambda.lambda -> Lambda.lambda
 
 (* Direct calls *)
 val local_send_async : Ident.t -> int -> Lambda.lambda -> Lambda.lambda
 val local_tail_send_async : Ident.t -> int -> Lambda.lambda -> Lambda.lambda
+val local_send_alone : Ident.t -> Lambda.lambda -> Lambda.lambda
+val local_tail_send_alone : Ident.t -> Lambda.lambda -> Lambda.lambda
 
 (* Call reply to primitive *)
 val reply_to : Lambda.lambda -> Lambda.lambda -> Lambda.lambda

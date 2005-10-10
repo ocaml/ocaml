@@ -68,13 +68,18 @@ let lambda_create_process = mk_lambda env_join "create_process"
 let lambda_send_sync = mk_lambda env_join "send_sync"
 and lambda_send_sync_alone = mk_lambda env_join "send_sync_alone"
 
+(* Channel creation *)
 let lambda_create_async = mk_lambda env_join "create_async"
+and lambda_create_alone = mk_lambda env_join "create_alone"
 and lambda_create_sync = mk_lambda env_join "create_sync"
+and lambda_create_sync_alone = mk_lambda env_join "create_sync_alone"
+
 
 (* Asynchronous sends *)
 let lambda_send_async = mk_lambda env_join "send_async"
 and lambda_tail_send_async = mk_lambda env_join "tail_send_async"
 
+(* Optimized sends *)
 let lambda_local_send_async = mk_lambda env_join "local_send_async"
 and lambda_local_tail_send_async = mk_lambda env_join "local_tail_send_async"
 
@@ -84,7 +89,6 @@ let lambda_create_automaton_debug = mk_lambda env_join "create_automaton_debug"
 let lambda_wrap_automaton = mk_lambda env_join "wrap_automaton"
 let lambda_patch_table = mk_lambda env_join "patch_table"
 let lambda_get_queue = mk_lambda env_join "get_queue"
-let lambda_unlock_automaton = mk_lambda env_join "unlock_automaton"
 let lambda_reply_to = mk_lambda env_join "reply_to"
 let lambda_reply_to_exn = mk_lambda env_join "reply_to_exn"
 let lambda_raise_join_exit =  mk_lambda env_join "raise_join_exit"
@@ -102,10 +106,12 @@ let create_process p =  mk_apply lambda_create_process [p]
 let do_send send auto num arg =
  mk_apply send [Lvar auto ; lambda_int  num ; arg]
 
-let create_async auto num alone = match alone with
-| None -> mk_apply lambda_create_async [Lvar auto ; lambda_int num]
-| Some g -> assert false
-(* mk_apply lambda_create_async_alone [Lvar auto ; lambda_int g] *)
+let create_async auto num =
+  mk_apply lambda_create_async [Lvar auto ; lambda_int num]
+
+and create_alone auto  = 
+  mk_apply lambda_create_alone [Lvar auto]
+
 
 and send_async chan arg = mk_apply lambda_send_async [chan ; arg]
 
@@ -117,15 +123,19 @@ and local_send_async auto idx arg =
 and local_tail_send_async auto idx arg =
   mk_apply lambda_local_tail_send_async [Lvar auto ; lambda_int idx ; arg]
 
-let  create_sync auto num alone = match alone with
-| None -> mk_apply lambda_create_sync [Lvar auto ; lambda_int num]
-| Some g -> assert false
+let local_tail_send_alone guard arg =  Lapply (Lvar guard, [arg])
 
-and send_sync auto num alone arg = match alone with
- | None ->
-     do_send lambda_send_sync auto num  arg
- | Some g ->
-     do_send lambda_send_sync_alone auto g arg
+let local_send_alone guard arg =
+  create_process
+    (Lfunction
+       (Curried, [Ident.create "_x"], local_tail_send_alone guard arg))
+
+let  create_sync auto num =
+  mk_apply lambda_create_sync [Lvar auto ; lambda_int num]
+
+and create_sync_alone guard =
+  mk_apply lambda_create_sync_alone [Lvar guard]
+
 
 let create_automaton some_loc nchans names = match some_loc with
 | None ->
@@ -161,8 +171,6 @@ let do_spawn some_loc p =
          assert false
 
 let do_get_queue auto num = mk_apply lambda_get_queue [auto ; lambda_int num]
-
-let unlock_automaton lam = mk_apply lambda_unlock_automaton [lam]
 
 (*
 
@@ -544,24 +552,33 @@ let create_auto some_loc
        (Strict, wrapped_name, wrap_automaton auto_name, k))
 
 let create_channels {jauto_name=(raw_name, name) ; jauto_names=names} k =
-  List.fold_right
-    (fun (id,
-          ({jchannel_sync=sync ; jchannel_id=num} as jc)) k ->
-            Llet
-              (StrictOpt, id,
-               begin if sync then
-                 create_sync name num None
-               else
-                 create_async name num None
-               end,
-               if
-                 Typeopt.is_unit_channel_type
-                   jc.jchannel_type
-                   jc.jchannel_env
-               then
-                 Lsequence (init_unit_queue raw_name num, k)
-               else k))
-    names k
+  match names with
+  | [id,{jchannel_sync=sync}] -> (* Fowarder *)
+      let lam =
+	if sync then
+	  create_sync_alone name
+	else
+	  create_alone name in
+      Llet (StrictOpt, id, lam, k)
+  | _ ->
+      List.fold_right
+	(fun (id,
+              ({jchannel_sync=sync ; jchannel_id=num} as jc)) k ->
+		Llet
+		  (StrictOpt, id,
+		   begin if sync then
+                     create_sync name num
+		   else
+                     create_async name num
+		   end,
+		   if
+                     Typeopt.is_unit_channel_type
+                       jc.jchannel_type
+                       jc.jchannel_env
+		   then
+                     Lsequence (init_unit_queue raw_name num, k)
+		   else k))
+	names k
 
 let get_queue name names jpat =
  let jid,_ = jpat.jpat_desc in
