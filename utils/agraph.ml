@@ -47,7 +47,7 @@ let new_edge (t,e) n1 n2 =
     end
   with
   | Extarray.Error -> raise (Error "new_edge")
-  | Not_found -> ()
+
 
 let rec interval i j =
   if i >= j then []

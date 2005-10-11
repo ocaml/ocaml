@@ -91,28 +91,42 @@ and joinlocation =
     jloc_loc : Location.t}
 
 and 'a joinautomaton_gen =
-    {jauto_desc : 'a array ;
+    {jauto_desc : 'a ;
       jauto_name : Ident.t * Ident.t; (* auto name, wrapped auto name *)
       jauto_names : (Ident.t * joinchannel) list ;
+      jauto_original : Ident.t list ;
       jauto_nchans : int;
      (* names defined, description*)
       jauto_loc : Location.t}
       
-and joinautomaton = joinclause joinautomaton_gen
-     
+and joinautomaton =
+ (joindispatcher list * joinreaction list * joinforwarder list)
+      joinautomaton_gen
+
+and joindispatcher =
+  Disp of
+    Ident.t * joinchannel * Ident.t * (pattern * joinchannel) list * partial
+
+and joinclause = 
+   Ident.t * joinpattern list * joinpattern list list * 
+  (Ident.t * pattern) list * expression
+
+and joinreaction = Reac of joinclause
+
+and joinforwarder = Fwd of joinclause
+
 and joinchannel =
     {jchannel_sync : bool ;
-     jchannel_id   : int ;
+     jchannel_id   : jchannel_id ;
+     jchannel_ident : Ident.t ;
      jchannel_type : type_expr;
      jchannel_env : Env.t;}
 
-and  joinclause =
-    {jclause_desc : joinpattern list * expression ;
-     jclause_loc : Location.t}
+and jchannel_id = Chan of Ident.t * int | Alone of Ident.t
 
 and joinpattern =
-    { jpat_desc: joinident * pattern ; (* as given in source *)
-      jpat_kont : Ident.t option ;     (* For synchronous channels *)
+    { jpat_desc: joinident * pattern ;  (* as given in source *)
+      jpat_kont : Ident.t option ref ;  (* For synchronous channels, can be shared by several patterns *)
       jpat_loc: Location.t}
 
 and joinident =

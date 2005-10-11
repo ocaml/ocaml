@@ -20,7 +20,6 @@ open Asttypes
 open Typedtree
 open Env
 open Lambda
-open Joinmatch
 
 (* DEBUG stuff *)
 open Printf
@@ -64,15 +63,17 @@ let transl_name env name =
 let mk_lambda env name = lazy (transl_name env name)
 let lambda_init_unit_queue = mk_lambda env_join "init_unit_queue"
 let lambda_create_process = mk_lambda env_join "create_process"
-(* Synchronous sends, two cases only *)
-let lambda_send_sync = mk_lambda env_join "send_sync"
-and lambda_send_sync_alone = mk_lambda env_join "send_sync_alone"
 
 (* Channel creation *)
 let lambda_create_async = mk_lambda env_join "create_async"
 and lambda_create_alone = mk_lambda env_join "create_alone"
+and lambda_alloc_alone = mk_lambda env_join "alloc_alone"
+and lambda_patch_alone = mk_lambda env_join "patch_alone"
 and lambda_create_sync = mk_lambda env_join "create_sync"
 and lambda_create_sync_alone = mk_lambda env_join "create_sync_alone"
+and lambda_alloc_stub_guard = mk_lambda env_join "alloc_stub_guard"
+and lambda_alloc_sync_alone = mk_lambda env_join "alloc_sync_alone"
+and lambda_patch_sync_alone = mk_lambda env_join "patch_sync_alone"
 
 
 (* Asynchronous sends *)
@@ -82,7 +83,7 @@ and lambda_tail_send_async = mk_lambda env_join "tail_send_async"
 (* Optimized sends *)
 let lambda_local_send_async = mk_lambda env_join "local_send_async"
 and lambda_local_tail_send_async = mk_lambda env_join "local_tail_send_async"
-
+and lambda_local_send_sync = mk_lambda env_join "local_send_sync"
 
 let lambda_create_automaton = mk_lambda env_join "create_automaton"
 let lambda_create_automaton_debug = mk_lambda env_join "create_automaton_debug"
@@ -109,9 +110,12 @@ let do_send send auto num arg =
 let create_async auto num =
   mk_apply lambda_create_async [Lvar auto ; lambda_int num]
 
-and create_alone auto  = 
-  mk_apply lambda_create_alone [Lvar auto]
+and create_alone id  = mk_apply lambda_create_alone [Lvar id]
 
+and alloc_alone () = mk_apply lambda_alloc_alone [lambda_unit]
+
+and patch_alone id g =
+  mk_apply lambda_patch_alone [Lvar id ; Lvar g]
 
 and send_async chan arg = mk_apply lambda_send_async [chan ; arg]
 
@@ -123,6 +127,16 @@ and local_send_async auto idx arg =
 and local_tail_send_async auto idx arg =
   mk_apply lambda_local_tail_send_async [Lvar auto ; lambda_int idx ; arg]
 
+and local_tail_send_async2 auto idx arg =
+  mk_apply lambda_local_tail_send_async [Lvar auto ; idx ; arg]
+
+and local_send_sync auto idx arg =
+  mk_apply lambda_local_send_sync [Lvar auto ; lambda_int idx ; arg]
+
+and local_send_sync2 auto idx arg =
+  mk_apply lambda_local_send_sync [Lvar auto ; idx ; arg]
+
+(* Those two are inlined *)
 let local_tail_send_alone guard arg =  Lapply (Lvar guard, [arg])
 
 let local_send_alone guard arg =
@@ -130,18 +144,23 @@ let local_send_alone guard arg =
     (Lfunction
        (Curried, [Ident.create "_x"], local_tail_send_alone guard arg))
 
-let  create_sync auto num =
+let create_sync auto num =
   mk_apply lambda_create_sync [Lvar auto ; lambda_int num]
 
-and create_sync_alone guard =
-  mk_apply lambda_create_sync_alone [Lvar guard]
+and create_sync_alone id =
+  mk_apply lambda_create_sync_alone [Lvar id]
 
+let alloc_stub_guard () =
+  mk_apply lambda_alloc_stub_guard [lambda_unit]
 
-let create_automaton some_loc nchans names = match some_loc with
-| None ->
-   mk_apply lambda_create_automaton_debug
-     [lambda_int nchans ; names ]
-| Some id_loc -> failwith "NotYet"
+and alloc_sync_alone id =
+  mk_apply lambda_alloc_sync_alone [Lvar id]
+
+and patch_sync_alone id stub =
+  mk_apply lambda_patch_sync_alone [Lvar id ; Lvar stub]
+
+let create_automaton nchans names =
+   mk_apply lambda_create_automaton_debug [lambda_int nchans ; names]
 
 let wrap_automaton id = mk_apply lambda_wrap_automaton [Lvar id]
 
@@ -467,59 +486,38 @@ let as_procs sync e =
  Most material is here, other is in Translcore
 *)
 
-let rec get_num_rec id = function
+let rec get_chan_rec id = function
  | [] -> raise Not_found
  | (oid,x)::rem ->
-     if id = oid then x else get_num_rec id rem
+     if id = oid then x else get_chan_rec id rem
 
 let dump_idx fp (id, _) = fprintf fp "%s" (Ident.unique_name id)
 
 let get_num msg names id =
  try
-   let {jchannel_id=num} = get_num_rec id names in
-   num
+   let {jchannel_id=x} = get_chan_rec id names in
+   match x with
+   | Chan (_,num) -> num
+   | _ ->
+     fatal_error
+       (Printf.sprintf "Transljoin.get_num: %s is a forwarder"
+          (Ident.unique_name id))       
  with
  | Not_found ->
      fatal_error
        (Printf.sprintf "Transljoin.get_num: %s" (Ident.unique_name id))
 
+let get_chan msg names id =
+  try
+   let {jchannel_id=x} = get_chan_rec id names in
+   x
+ with
+ | Not_found ->
+     fatal_error
+       (Printf.sprintf "Transljoin.get_chan: %s" (Ident.unique_name id))
 
 
 
-
-
-
-
-(* Intermediate representation of a join-automaton *)
-type clause1 =
- { principal : Ident.t option ; (* Principal name, if any *)
-   me : Joinmatch.match_clause ; }
-
-type phase1 =
- {name1 : Ident.t ;
-  names1 : (Ident.t * Typedtree.joinchannel) list ;
-  clauses1 : clause1 array ; } 
-(*
- Ident.t * (Ident.t * Typedtree.joinchannel) list *
- (Location.t * Ident.t option * int * int list *
-  (Ident.t * bool * int option * Typedtree.pattern) list * Typedtree.expression) array
-*)
-
-
-(*
-let build_matches {jauto_name=name ; jauto_names=names ; jauto_desc = cls} =
-
- let build_clause cl =
-   let sync = match cl with
-   | Reaction (_, (_, p)) -> principal p
-   | Dispatcher (c,_,_,_) ->
-       if get_sync names c then Some c else None in
-   { principal = sync ; me = cl; } in
-
- let guarded = Array.map build_clause cls in
- { name1 = name ;  names1 = names ; clauses1 = guarded ; }
-
-*)
 let patch_table auto t =
  mk_apply
    lambda_patch_table
@@ -531,67 +529,143 @@ let rec principal_param ipri params nums = match params, nums with
    else principal_param ipri params nums
 | _,_ -> assert false
 
-let names_block names =
-  let t = Array.create (List.length names) "" in
+let names_block nchans names =
+  let t = Array.create nchans "" in
   List.iter
-    (fun (id, {jchannel_id=i}) -> t.(i) <- Ident.unique_name id )
+    (fun (id, {jchannel_id=x}) ->match x with
+    | Chan (_,i) -> t.(i) <- Ident.unique_name id
+    | _ -> ())
     names ;
-  Lprim
-    (Pmakeblock (0, Immutable),
-     Array.fold_right
-       (fun s r -> lambda_string s::r)
-       t [])
+  Lconst
+    (Const_block
+       (0, Array.fold_right (fun s r -> Const_base (Const_string s)::r) t []))
 
-let create_auto some_loc
-   { jauto_name=(auto_name, wrapped_name); jauto_names = names ; jauto_desc = cls} k =
-  let nchans = List.length names in
-  Llet
-    (Strict, auto_name,
-     create_automaton some_loc nchans (names_block names),
-     Llet
-       (Strict, wrapped_name, wrap_automaton auto_name, k))
+let create_auto
+   { jauto_name=(auto_name, wrapped_name);
+     jauto_names = names ; jauto_nchans=nchans ; } k =
+  if nchans > 0 then
+    Llet
+      (Strict, auto_name,
+       create_automaton nchans (names_block nchans names),
+       Llet
+         (Strict, wrapped_name, wrap_automaton auto_name, k))
+  else k
 
 let create_channels {jauto_name=(raw_name, name) ; jauto_names=names} k =
-  match names with
-(*  | [id,{jchannel_sync=sync}] -> (* Fowarder *)
-      let lam =
-	if sync then
-	  create_sync_alone name
-	else
-	  create_alone name in
-      Llet (StrictOpt, id, lam, k)
-*)
-  | _ ->
-      List.fold_right
-	(fun (id,
-              ({jchannel_sync=sync ; jchannel_id=num} as jc)) k ->
-		Llet
-		  (StrictOpt, id,
-		   begin if sync then
-                     create_sync name num
-		   else
-                     create_async name num
-		   end,
-		   if
-                     Typeopt.is_unit_channel_type
-                       jc.jchannel_type
-                       jc.jchannel_env
-		   then
-                     Lsequence (init_unit_queue raw_name num, k)
-		   else k))
-	names k
+  List.fold_right
+    (fun (id,jc) k ->
+      let {jchannel_sync=sync ; jchannel_id=x} = jc in
+      match x with
+      | Chan (_,num) ->
+	  Llet
+	    (StrictOpt, id,
+	     begin if sync then
+               create_sync name num
+	     else
+               create_async name num
+	     end,
+	     if
+               Typeopt.is_unit_channel_type
+                 jc.jchannel_type
+                 jc.jchannel_env
+	     then
+               Lsequence (init_unit_queue raw_name num, k)
+	     else k)
+      | _ -> k)
+    names k
 
-let get_queue name names jpat =
+let create_dispatchers disps k =
+  List.fold_right
+    (fun (id,chan,lam) k ->
+      Llet
+        (StrictOpt, id, lam,
+         Llet
+           (StrictOpt, chan.jchannel_ident,
+            (if chan.jchannel_sync then create_sync_alone id
+            else create_alone id),
+            k)))
+    disps k
+
+let make_g chan g =
+  if chan.jchannel_sync then
+    chan.jchannel_ident, (Some (Ident.create "#stub"),g)
+  else
+    chan.jchannel_ident, (None,g)
+
+let create_forwarders autos dispss fwdss r =
+  (* collect all pairs channel ident X (stub_ident option X guard_ident) *)
+  let id2g =
+    List.fold_right
+      (fun disps r ->
+        List.fold_right
+          (fun (g,chan,_) r ->
+            make_g chan g::r)
+          disps r)
+      dispss [] in
+  let id2g =
+    List.fold_right
+      (fun auto r ->
+        List.fold_right
+          (fun (_,chan) r -> match chan.jchannel_id with
+          | Alone g -> make_g chan g::r
+          | Chan (_,_) -> r)
+          auto.jauto_names r)
+      autos id2g in
+(* patch forwarder data structure *)
+   let r =
+     List.fold_right
+      (fun (id,(sync,g)) r ->
+        match sync with
+        | Some stub ->
+            Lsequence (patch_sync_alone stub g, r)
+        | None ->
+            Lsequence (patch_alone id g, r))
+       id2g r in
+(* Big let rec of guards *)
+   let d =
+     List.fold_right
+       (fun disps d ->
+         List.fold_right
+           (fun disp d -> let (x,_,lam) = disp in (x,lam)::d)
+           disps d)
+       dispss [] in
+   let d =
+     List.fold_right
+       (fun fwds d ->
+         List.fold_right (fun fwd d -> fwd::d) fwds d)
+       fwdss d in
+   let r = Lletrec (d, r) in
+(* Allocate forwarders *)
+   let r =
+     List.fold_right
+       (fun (id,(sync,_)) r ->
+         match sync with
+         | Some stub ->
+             Llet
+               (Strict, stub, alloc_stub_guard (),
+                Llet (StrictOpt, id, alloc_sync_alone stub, r))
+         |  None ->
+             Llet (StrictOpt,id,alloc_alone (),r))
+       id2g r in
+   r
+             
+
+
+               
+let get_queue names jpat =
  let jid,_ = jpat.jpat_desc in
  let id = jid.jident_desc in
- let i = get_num "(get_queue)" names id in
- let k = jpat.jpat_kont in
- match k with
- | None ->
-     None, do_get_queue (Lvar name) i
- | Some kid ->
-     let y = Ident.create "_y" in
-     Some y, do_get_queue (Lvar name) i
+ let x = get_chan "(get_queue)" names id in
+ match x with
+ | Alone _ -> assert false
+ | Chan (name, i) ->
+     let k = !(jpat.jpat_kont) in
+     match k with
+     | None ->
+         None, do_get_queue (Lvar name) i
+     | Some kid ->
+         let y = Ident.create "_y" in
+         Some y, do_get_queue (Lvar name) i
 
 
 
@@ -656,9 +730,11 @@ and  build_bv_mask n_names names jpats =
         do_rec
           (set_bit (major i) (minor i) 0 mask) rem in
 
-  Lprim
-    (Pmakearray Pintarray,
-     List.map lambda_int (do_rec (empty nslots) jpats))
+  Lconst
+    (Const_block
+       (0,
+        List.map (fun i -> Const_base (Const_int i))
+          (do_rec (empty nslots) jpats)))
 
 let build_mask n_names names jpats =
   if n_names < 32 then 
@@ -679,112 +755,81 @@ let rec explode = function
         xs
         []
 
+(* gs is a list of compiled guarded processes *)
 
+let create_table auto gs r =
+  let n_chans = auto.jauto_nchans in
+  if n_chans =0 then r
+  else
+    let name,_ = auto.jauto_name (* wrapped name of automaton *)
+    and names = auto.jauto_names in (* all channels *)
 
+    let rec do_guard (Reac reac) (_, sync, _) k =
+      let (g, _, actual, _, _) = reac in
 
-let create_table some_loc auto1 gs r =
-  let ngs = Array.length gs
-  and name,_ = auto1.jauto_name
-  and names = auto1.jauto_names in
-  let n_names = List.length names in
+      let create_reaction jpats r =
+        let ipri = match sync with
+        | None -> -1
+        | Some _ ->
+            let rec find_rec = function
+              | [] -> -1
+              | jpat::rem ->
+                  if !(jpat.jpat_kont) = sync then
+                    let jid,_ = jpat.jpat_desc in
+                    get_num "(real_ipri)" names jid.jident_desc
+                  else
+                    find_rec rem in
+            find_rec jpats in
+        
+        let bds = List.map (get_queue names) jpats in
+        let args =
+          List.fold_right2
+            (fun bd jpat r -> match bd with
+            | None,lam -> lam::r
+            | Some y,_ ->
+                let k = jpat.jpat_kont in
+                if !(jpat.jpat_kont) = sync then
+                  Lprim (Pfield 1, [Lvar y])::r
+                else
+                  Lprim (Pfield 0, [Lvar y])::
+                  Lprim (Pfield 1, [Lvar y])::r)
+            bds jpats [] in
+        let goid = Ident.create "_go" in
+        let real_g =
+          if ipri < 0 then
+            Lfunction
+              (Curried, [goid],
+               build_lets bds
+                 (Lapply
+                    (Lvar goid, [Lvar name ; Lapply (Lvar g, args)])))
+          else
+            let pri_kont =
+              let rec find_rec bds jpats = match bds, jpats with
+              | (Some y,_)::bds, jpat::jpats
+                                          when !(jpat.jpat_kont) = sync ->
+                                            Lprim (Pfield 0, [Lvar y])
+              | _::bds, _::jpats ->
+                  find_rec bds jpats
+              | _, _ -> assert false in
+              find_rec bds jpats in
+            Lfunction
+              (Curried, [goid],
+               build_lets bds
+                 (Lapply
+                    (Lvar goid, [pri_kont ; Lapply (Lvar g, args)]))) in
+        Lprim
+          (Pmakeblock (0, Immutable),
+           [build_mask n_chans names jpats ;
+             lambda_int ipri ; real_g])::r in
 
-  let rec do_guard i =
-    if i >= ngs then []
-    else
-      let g,sync,_ = gs.(i)
-      and reac = auto1.jauto_desc.(i) in
-      match reac with
-      | Dispatcher (sync, c, z, _, _) ->
-          let num = get_num "(do_guard, dispatcher)" names c in
-          let ipri = if sync then num else -1 in
-          let goid = Ident.create "_go" in          
-          let lam =
-            if sync then
-              let y = Ident.create "_y" in
-              Lfunction
-                (Curried, [goid],
-                 Llet
-                   (Strict, y, do_get_queue (Lvar name) num,
-                    Lapply
-                      (Lvar goid,
-                       [Lprim (Pfield 0,[Lvar y]) ;                       
-                         Lapply
-                           (Lvar g,
-                            [Lprim (Pfield 1, [Lvar y])])])))
-            else
-              Lfunction
-                (Curried, [goid],
-                 Lapply
-                   (Lvar goid,
-                    [Lvar name ;
-                      Lapply (Lvar g, [do_get_queue (Lvar name) num])])) in
-          Lprim
-            (Pmakeblock (0, Immutable),
-             [build_singleton n_names num ; lambda_int ipri; lam])
-          ::do_guard (i+1)
-      | Reaction (pats, _) ->
-          let pats = explode pats in
-          let create_reaction jpats r =
+      let pats = explode actual in
+      List.fold_right create_reaction pats k in
 
-            let ipri = match sync with
-            | None -> -1
-            | Some _ ->
-                let rec find_rec = function
-                  | [] -> -1
-                  | jpat::rem ->
-                      if jpat.jpat_kont = sync then
-                        let jid,_ = jpat.jpat_desc in
-                        get_num "(real_ipri)" names jid.jident_desc
-                      else
-                        find_rec rem in
-                find_rec jpats in
-            
-            let bds = List.map (get_queue name names) jpats in
-            let args =
-              List.fold_right2
-                (fun bd jpat r -> match bd with
-                | None,lam -> lam::r
-                | Some y,_ ->
-                    let k = jpat.jpat_kont in
-                    if k = sync then
-                      Lprim (Pfield 1, [Lvar y])::r
-                    else
-                      Lprim (Pfield 0, [Lvar y])::
-                      Lprim (Pfield 1, [Lvar y])::r)
-                bds jpats [] in
-            let goid = Ident.create "_go" in
-            let real_g =
-              if ipri < 0 then
-                Lfunction
-                  (Curried, [goid],
-                   build_lets bds
-                     (Lapply
-                        (Lvar goid, [Lvar name ; Lapply (Lvar g, args)])))
-              else
-                let pri_kont =
-                  let rec find_rec bds jpats = match bds, jpats with
-                  | (Some y,_)::bds, jpat::jpats
-                    when jpat.jpat_kont = sync ->
-                     Lprim (Pfield 0, [Lvar y])
-                  | _::bds, _::jpats ->
-                      find_rec bds jpats
-                  | _, _ -> assert false in
-                  find_rec bds jpats in
-                Lfunction
-                  (Curried, [goid],
-                   build_lets bds
-                     (Lapply
-                        (Lvar goid, [pri_kont ; Lapply (Lvar g, args)]))) in
-            Lprim
-              (Pmakeblock (0, Immutable),
-               [build_mask n_names names jpats ;
-                 lambda_int ipri ; real_g])::r in
-
-          List.fold_right create_reaction pats (do_guard (i+1)) in
-  
-  Lsequence
-    (patch_table name (do_guard 0),
-     r)
+    let _, reacs, _ = auto.jauto_desc in
+    Lsequence
+      (patch_table name
+         (List.fold_right2 do_guard reacs gs []),
+       r)
 
 (*********************)
 (* Global exceptions *)

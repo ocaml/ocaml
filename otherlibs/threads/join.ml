@@ -163,10 +163,15 @@ type async =
     Async of stub * int
   | Alone of stub
 
+(* Oups ! *)
+external field0 : async -> stub = "%field0"
 
 let create_async auto i = Async (auto, i)
-and create_alone guard = Alone guard
-
+and create_alone guard = Alone (wrap_guard guard)
+and alloc_alone () = Alone (wrap_guard (fun _ -> assert false))
+and patch_alone (a:async) (g:'a -> unit) =
+  let stub = field0 a in
+  stub.stub_val <- (Obj.magic g : stub_val)
 
 (* Callbacks from compiled code *)
 
@@ -388,7 +393,9 @@ let send_sync stub idx arg = match stub.stub_tag with
     and rspace_id = (Obj.magic stub.stub_val : space_id) in
     Join_space.remote_send_sync rspace_id stub.uid idx kont arg
 
-let send_sync_alone stub arg = match stub.stub_tag with
+let send_sync_alone stub arg =
+(*DEBUG*)debug2 "SEND SYNC ALONE" "" ;
+match stub.stub_tag with
 | Local ->
     let g = (Obj.magic stub.stub_val : 'a -> 'b) in
     g arg
@@ -405,13 +412,25 @@ let send_sync_alone stub arg = match stub.stub_tag with
    as a special value for enabling specific marshalling of
    sync channels *)
 
-let create_sync auto idx = 
+let create_sync (auto:stub) idx = 
   let r a = Obj.obj (send_sync auto idx a) in
   r
 
-and create_sync_alone guard = 
-  let r a = Obj.obj (send_sync_alone guard a) in
+(* this sync channel creator is shared *)
+let do_create_sync_alone stub =
+  let r a = send_sync_alone stub a in
   r
+
+let create_sync_alone g =
+  do_create_sync_alone (wrap_guard g)
+
+let alloc_stub_guard () = wrap_guard (fun _ -> assert false)
+
+let alloc_sync_alone (stub:stub) =
+  do_create_sync_alone stub
+
+let patch_sync_alone (stub:stub) (g:'a -> 'b) =
+  stub.stub_val <- (Obj.magic g : stub_val)
 
 
 (* HACK :

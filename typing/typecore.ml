@@ -542,12 +542,10 @@ let def_ids = ref []
 let reset_def () = def_ids := []
 
 (* All channels defined by a join definition *)
-let auto_chans = ref []
-and auto_count = ref 0
+let auto_chans = ref ([] : (Ident.t * type_expr) list)
 
 let reset_auto () =
-  auto_chans := [] ;
-  auto_count := 0
+  auto_chans := []
 
 let reaction_chans = ref []
 
@@ -565,13 +563,11 @@ let create_channel chan =
         if List.exists p !def_ids then
           raise (Error (chan.pjident_loc, Multiply_bound_variable)) ;
         let id = Ident.create  chan.pjident_desc
-        and num = !auto_count
         and ty =  newvar() in
-        incr auto_count ;
         def_ids := id :: !def_ids ;
-        auto_chans := (id, (ty, num)) :: !auto_chans ;
+        auto_chans := (id, ty) :: !auto_chans ;
         (id, ty)
-    | (id, (ty, num))::rem ->
+    | (id, ty)::rem ->
         if Ident.name id = name then
           (id, ty)
         else
@@ -609,12 +605,13 @@ let mk_jident id loc ty env =
   }
 
 let type_auto_lhs env {pjauto_desc=sauto ; pjauto_loc=auto_loc}  =
+(* Type patterns *)
   reset_auto () ;
   let auto =
     List.map
       (fun cl ->
         reset_reaction () ;
-        let sjpats, _ = cl.pjclause_desc in
+        let sjpats, g = cl.pjclause_desc in
         let jpats =
           List.map
             (fun sjpat ->
@@ -623,14 +620,73 @@ let type_auto_lhs env {pjauto_desc=sauto ; pjauto_loc=auto_loc}  =
               let chan = mk_jident id schan.pjident_loc ty env
               and arg = type_pat env sarg in
               {jpat_desc = chan, arg;
-               jpat_kont = None ;
+               jpat_kont = ref None ;
                jpat_loc  = sjpat.pjpat_loc;})
             sjpats in
-        jpats, get_ref pattern_variables, get_ref pattern_force)
+        (cl.pjclause_loc,jpats,g),
+        (get_ref pattern_variables, get_ref pattern_force))
       sauto in
-  let name = Ident.create "auto"
-  and name_wrapped = Ident.create "wrapped" in
-  ((name,name_wrapped), !auto_count, get_ref auto_chans, auto)
+(* get orginal channel names now *)
+  let env =  get_ref auto_chans in
+  let original = List.map fst env in
+(* compile algebraic pattern in joinpatterns *)
+  let (disps, reacs), new_names = Joinmatching.compile auto_loc auto in
+(* collect all names *)
+  let get_type id env =
+    try List.assoc id env with Not_found -> assert false in
+  let env =
+    List.fold_right
+      (fun (id, ids) r ->
+        let ty = get_type id env in
+        List.fold_right (fun id r -> (id,ty)::r) ids r)
+      new_names env in
+(* allocate names for guarded processes *)
+  let disps =
+    List.map (fun disp -> Ident.create "#d#", disp) disps
+  and reacs, fwds = match reacs with
+  | [((_,[_],_),_),_ as reac] ->
+      [],[Ident.create "#f", reac]
+  | _ ->
+    List.map (fun reac -> Ident.create "#g#", reac) reacs, [] in
+
+(* collect forwarders *)
+  let alone_env =
+    List.map (fun (d_id,(id,_,_,_)) -> id, d_id) disps in
+  let alone_env =
+    List.fold_right
+      (fun fwd r -> match fwd with
+      | g_id,(_old,(patss,_gd)) ->
+          List.fold_right
+            (fun pats r ->
+              List.fold_right
+                (fun pat r ->
+                  let chan,_ = pat.jpat_desc in
+                  let id = chan.jident_desc in
+                  (id, g_id)::r)
+                pats r)
+            patss alone_env)
+      fwds alone_env in
+  
+(* automaton structure names *)
+  let name = Ident.create "#auto#"
+  and name_wrapped = Ident.create "#wrapped#" in
+(* Allocate channel slots *)
+  let auto_count = ref 0 in
+  let chan_names =
+    List.map
+      (fun (id, ty) ->
+        try
+          let g = List.assoc id alone_env in
+          id,(ty, Alone g)
+        with Not_found ->
+          let num = !auto_count in
+          incr auto_count ;
+          id, (ty, Chan (name,num)))
+      env in
+  auto_loc,
+  (name, name_wrapped),
+  (!auto_count, original, chan_names),
+  (disps, reacs, fwds)
 
 let rec do_type_autos_lhs env = function
   | [] -> []
@@ -2273,7 +2329,23 @@ and type_let env rec_flag spat_sexp_list =
   (List.combine pat_list exp_list, new_env)
 
 (*> JOCAML *)
-and type_clause env names (jpats,pat_vars,pat_force) scl =
+
+and type_dispatcher names disp =
+  let d_id,(chan_id, z, cls, par) = disp in
+
+  let find_channel id =
+    try List.assoc id names
+    with Not_found -> assert false in
+
+  let chan = find_channel chan_id
+  and cls =
+    List.map (fun (p,id) -> p, find_channel id) cls in
+  Disp (d_id, chan, z, cls, par)
+    
+and type_clause env names reac =
+   let g_id,(old,(actual_pats, gd)) = reac in
+   let (loc_clause,jpats,sexp),(pat_vars,pat_force) = old in
+
 (* First build environment for guarded process *)
   let conts = ref [] in
   let add_kont jpat env =
@@ -2287,80 +2359,87 @@ and type_clause env names (jpats,pat_vars,pat_force) scl =
 
   let new_env = List.fold_right add_kont jpats env in
   let new_env = do_add_pattern_variables new_env pat_vars in
-  let _,sexp = scl.pjclause_desc in
 
   assert (pat_force = []) ;
   (* And type guarded process *)
   let exp = do_type_exp P new_env sexp in
 
-  (* Now type defined names, continuations variables are added to patterns *)
-  let jpats =
-    List.map2
-      (fun jpat kdesc ->
-        let chan, arg = jpat.jpat_desc in
-        let tchan =
+  (* Now type defined names, continuations variables are added to patterns,
+     notice that this impact actual_pats, since jpat_kont
+     is a shared reference *)
+  List.iter2
+    (fun jpat kdesc ->
+      let chan, arg = jpat.jpat_desc in
+      let tchan =
+        try
+          let (ty,_) = List.assoc chan.jident_desc names in
+          ty
+        with Not_found -> assert false in
+      let targ = arg.pat_type in
+      let otchan,is_sync =
+        match kdesc with
+        | {continuation_kind=false} -> Ctype.make_channel targ, false
+        | {continuation_type=tres}  ->
+            newty (Tarrow ("", targ, tres, Cok)), true in
+      begin try
+        unify env otchan tchan
+      with Unify trace ->
+        raise(Error(jpat.jpat_loc, Join_pattern_type_clash(trace)))
+      end ;
+      if is_sync then
+        let cont_id =
           try
-            let (ty,_) = List.assoc chan.jident_desc names in
-            ty
+            match
+              Env.lookup_continuation
+                (Longident.parse (Ident.name chan.jident_desc)) new_env
+            with
+            | (Path.Pident id,_) -> id
+            | _ -> assert false
           with Not_found -> assert false in
-        let targ = arg.pat_type in
-        let otchan,is_sync =
-          match kdesc with
-          | {continuation_kind=false} -> Ctype.make_channel targ, false
-          | {continuation_type=tres}  ->
-              newty (Tarrow ("", targ, tres, Cok)), true in
-        begin try
-          unify env otchan tchan
-        with Unify trace ->
-          raise(Error(jpat.jpat_loc, Join_pattern_type_clash(trace)))
-        end ;
-        if is_sync then
-          let cont_id =
-            try
-              match
-                Env.lookup_continuation
-                  (Longident.parse (Ident.name chan.jident_desc)) new_env
-              with
-              | (Path.Pident id,_) -> id
-              | _ -> assert false
-            with Not_found -> assert false in
-          {jpat with jpat_kont = Some cont_id }
-        else
-          jpat)
-    jpats !conts in
+        jpat.jpat_kont := Some cont_id)
+    jpats !conts ;
+  g_id, jpats, actual_pats, gd, exp
 
-  { jclause_loc = scl.pjclause_loc;
-    jclause_desc = (jpats, exp);}
-  
+and type_reac env names reac = Reac (type_clause env names reac)
+
+and type_fwd env names reac = Fwd (type_clause env names reac)
 
 and type_auto env
- (my_names, nchans, def_names, auto_lhs) sauto =
+  (my_loc, my_names,
+   (nchans, original, def_names),
+   (disps,reacs,fwds)) =
   let env = Env.remove_continuations env in
-  let cls =
-    Array.of_list
-      (List.map2 (type_clause env def_names) auto_lhs sauto.pjauto_desc) in
+  let reacs = List.map (type_reac env def_names) reacs
+  and fwds =  List.map (type_fwd env def_names) fwds in
   let def_names =
     List.map
-      (fun (chan, (ty, num)) ->
+      (fun (chan, (ty, id)) ->
         match (expand_head env ty).desc with
         | Tarrow (_, _, _, _) ->
             chan, {jchannel_sync=true; jchannel_env=env ;
-                   jchannel_type=ty ; jchannel_id=num}
+                   jchannel_ident=chan ;
+                   jchannel_type=ty ; jchannel_id=id}
         | Tconstr (p, _, _) when Path.same p Predef.path_channel ->
             chan, {jchannel_sync=false; jchannel_env=env ;
-                   jchannel_type=ty; jchannel_id=num}
-      | _ -> assert false)
+                   jchannel_ident=chan ;
+                   jchannel_type=ty; jchannel_id=id}
+        | _ -> assert false)
       def_names in
-  {jauto_desc = cls;
-    jauto_name = my_names ;
-    jauto_nchans = nchans;
-    jauto_names = List.rev def_names;
-    jauto_loc = sauto.pjauto_loc}
+(* type dispacher second, it needs the new def_name *)
+  let disps = List.map (type_dispatcher def_names) disps in
+
+  {jauto_desc = (disps, reacs, fwds);
+   jauto_name = my_names ;
+   jauto_nchans = nchans ;
+   jauto_names =  def_names;
+   jauto_original = original ;
+   jauto_loc = my_loc }
 
 and generalize_auto env auto =
-  Array.iter
-    (fun cl ->
-      let jpats,_ = cl.jclause_desc in
+  let _,reacs,fwds = auto.jauto_desc in
+  List.iter
+    (fun reac ->
+      let _,jpats,_,_,_ = reac in
       let tys = ref [] in
       List.iter
         (fun jpat ->
@@ -2376,37 +2455,44 @@ and generalize_auto env auto =
           iter_type_expr f chan.jident_type ;
           tys := !newtys @ !tys)
         jpats)
-    auto.jauto_desc;
+    (List.map (fun (Fwd r) -> r) fwds @
+     List.map (fun (Reac r) -> r) reacs) ;
   List.iter
     (fun (id,chan) -> generalize chan.jchannel_type)
     auto.jauto_names
 
-and add_auto_names env name names =
+and add_auto_names p env names =
    List.fold_left
-     (fun env (id,(ty,num)) ->
+     (fun env (id,(ty,nat)) ->
+       if p id then
+         let kind = match nat with
+         | Chan (name,num)-> Val_channel (name,num)
+         | Alone g  -> Val_alone g in
          Env.add_value id
-         {val_type = ty; val_kind = Val_channel (name,num)} env)
+           {val_type = ty; val_kind = kind} env
+       else env)         
       env names
 
-and add_auto_names_as_regular env names =
-   List.fold_left
-   (fun env (id,(ty,_)) ->
-         Env.add_value id
-         {val_type = ty; val_kind = Val_reg} env)
-      env names
+and add_auto_names_as_regular p env names =
+  List.fold_left
+    (fun env (id,(ty,_)) ->
+      if p id then 
+        Env.add_value id {val_type = ty; val_kind = Val_reg} env
+      else env)
+    env names
 
-(* Argument toplevel below characterize toplevel definitions,
-   for which the internal automaton name must not escape. *)
+(* Argument toplevel below characterize toplevel definitions *)
 
 and type_def toplevel env sautos =
   begin_def ();
   let names_lhs_list = type_autos_lhs env sautos in
   let new_env =
     List.fold_left
-      (fun env ((name,_) , _, names, _) -> add_auto_names env name names)
+      (fun env (_, _ , (_,_,names), _) ->
+        add_auto_names (fun _ -> true) env names)
       env names_lhs_list in
   let autos =
-    List.map2 (type_auto new_env) names_lhs_list sautos in
+    List.map (type_auto new_env) names_lhs_list in
   end_def () ;
 
 (* Generalization *)
@@ -2417,57 +2503,19 @@ and type_def toplevel env sautos =
   let final_env = 
     if toplevel then
       List.fold_left
-        (fun env (_ , _, names, _) -> add_auto_names_as_regular env names)
+        (fun env (_ , _, (_,original,names), _) ->
+          let p id = List.mem id original in
+          add_auto_names_as_regular p env names)
       env names_lhs_list
     else
-      new_env in
+      List.fold_left
+        (fun env (_ , _, (_,original,names), _) ->
+          let p id = List.mem id original in
+          add_auto_names p env names)
+      env names_lhs_list in
   autos, final_env
 
-and add_loc_names do_it env names_lhs_list =
-   List.fold_left
-      (fun env (jid_loc, autos_lhs) ->
-       List.fold_left
-          do_it
-          (Env.add_value
-             jid_loc.jident_desc
-             {val_type = jid_loc.jident_type; val_kind = Val_reg}
-             env)
-          autos_lhs)
-    env names_lhs_list
-
-and type_loc toplevel env sdefs =
-  begin_def ();
-  let names_lhs_list = type_locs_lhs env sdefs in
-  let new_env =
-    add_loc_names
-      (fun env ((name,_) , _, names,_) -> add_auto_names env name names)
-       env  names_lhs_list in
-  let defs =
-    List.map2
-      (fun (location, autos_lhs) loc_def ->
-        let (_, sautos,sexp) = loc_def.pjloc_desc in
-        let autos =
-          List.map2 (type_auto new_env) autos_lhs sautos in
-        let exp = do_type_exp P new_env sexp in
-        {jloc_desc= (location, autos, exp);
-         jloc_loc = loc_def.pjloc_loc})
-      names_lhs_list sdefs in
-  end_def ();
-
-(* Generalization *)
-  List.iter
-    (fun loc_def ->
-      let _,autos,_ = loc_def.jloc_desc in
-      List.iter (generalize_auto env) autos)
-    defs;
-  let final_env =
-    if toplevel then
-      add_loc_names
-        (fun env (_ , _, names,_) -> add_auto_names_as_regular env names)
-       env names_lhs_list
-    else
-      new_env in
-  defs, final_env
+and type_loc toplevel env sdefs = assert false
 
 (*< JOCAML *)
 

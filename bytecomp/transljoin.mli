@@ -24,9 +24,14 @@ val tail_send_async : Lambda.lambda -> Lambda.lambda -> Lambda.lambda
 (* Direct calls *)
 val local_send_async : Ident.t -> int -> Lambda.lambda -> Lambda.lambda
 val local_tail_send_async : Ident.t -> int -> Lambda.lambda -> Lambda.lambda
+val local_send_sync : Ident.t -> int -> Lambda.lambda -> Lambda.lambda
 val local_send_alone : Ident.t -> Lambda.lambda -> Lambda.lambda
 val local_tail_send_alone : Ident.t -> Lambda.lambda -> Lambda.lambda
 
+val local_send_sync2 :
+    Ident.t -> Lambda.lambda -> Lambda.lambda -> Lambda.lambda
+val local_tail_send_async2 :
+    Ident.t -> Lambda.lambda -> Lambda.lambda -> Lambda.lambda
 (* Call reply to primitive *)
 val reply_to : Lambda.lambda -> Lambda.lambda -> Lambda.lambda
 
@@ -61,19 +66,26 @@ val principal : Typedtree.expression -> Ident.t option
 (* Building definitions and locations *)
 
 val create_auto : 
-  Ident.t option -> 'a Typedtree.joinautomaton_gen ->
+  'a Typedtree.joinautomaton_gen ->
     Lambda.lambda -> Lambda.lambda
 
 val create_channels :
   'a Typedtree.joinautomaton_gen -> Lambda.lambda -> Lambda.lambda
 
+val create_dispatchers :
+     (Ident.t * Typedtree.joinchannel * Lambda.lambda) list ->
+       Lambda.lambda -> Lambda.lambda
+
+val create_forwarders :
+    'a Typedtree.joinautomaton_gen list ->
+      (Ident.t * Typedtree.joinchannel * Lambda.lambda) list list ->
+         (Ident.t * Lambda.lambda) list list ->
+           Lambda.lambda -> Lambda.lambda
 
 val create_table:
-    Ident.t option ->
-      Joinmatch.automaton ->
-        (Ident.t * Ident.t option * 'a) array ->
-          Lambda.lambda ->
-            Lambda.lambda
+    Typedtree.joinautomaton ->
+      (Ident.t * Ident.t option * 'a) list -> Lambda.lambda ->
+      Lambda.lambda
             
 (*********************)
 (* Global exceptions *)

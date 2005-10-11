@@ -113,7 +113,7 @@ type stub =
   {
     ops : ops ;
     stub_tag : stub_tag ;
-    stub_val : stub_val ;
+    mutable stub_val : stub_val ;
     mutable uid : int ; (* identity in space *)
     
   } 

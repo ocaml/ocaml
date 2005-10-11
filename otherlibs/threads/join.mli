@@ -24,14 +24,16 @@ val create_automaton : int -> automaton
 (* create_automaton nchans *)
 val create_automaton_debug : int -> string array -> automaton
 val wrap_automaton : automaton -> stub
-val wrap_guard : ('a -> 'b) -> stub
+
 
 val patch_table : automaton -> reaction array -> unit
 
 (* Asynchronous channels *)
 type async
 val create_async : stub -> int -> async
-val create_alone : stub -> async
+val create_alone : ('a -> unit) -> async
+val alloc_alone : unit -> async
+val patch_alone : async -> ('a -> unit) -> unit
 
 val local_send_async : automaton -> int -> 'a -> unit
 val local_tail_send_async : automaton -> int -> 'a -> unit
@@ -42,8 +44,15 @@ val send_async : async -> 'a -> unit
 val tail_send_async : async -> 'a -> unit
 
 (* Synchronous channels are plain fonctions *)
+val local_send_sync : automaton -> int -> 'a -> 'b
+
 val create_sync : stub -> int -> ('a -> 'b)
-val create_sync_alone : stub -> ('a -> 'b)
+val create_sync_alone : ('a -> 'b) -> ('a -> 'b)
+
+
+val alloc_stub_guard : unit -> stub
+val alloc_sync_alone : stub -> ('a -> 'b)
+val patch_sync_alone : stub  -> ('a -> 'b) -> unit
 
 (* Explicit reply to continuation *)
 val reply_to : 'a -> continuation -> unit

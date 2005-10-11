@@ -92,28 +92,42 @@ and joinlocation =
       jloc_loc : Location.t}
 
 and 'a joinautomaton_gen =
-    {jauto_desc : 'a array ;
-      jauto_name : Ident.t * Ident.t ;
-      jauto_names : (Ident.t * joinchannel) list ;
-      jauto_nchans : int;
+    {jauto_desc : 'a ;
+     jauto_name : Ident.t * Ident.t ;
+     jauto_names : (Ident.t * joinchannel) list ;
+     jauto_original : Ident.t list ;
+     jauto_nchans : int;
      (* names defined, description *)
-      jauto_loc : Location.t}
+     jauto_loc : Location.t}
 
-and joinautomaton = joinclause joinautomaton_gen
+and joinautomaton =
+ (joindispatcher list * joinreaction list * joinforwarder list)
+      joinautomaton_gen
+
+and joindispatcher =
+  Disp of
+    Ident.t * joinchannel * Ident.t * (pattern * joinchannel) list * partial
+
+and joinclause = 
+   Ident.t * joinpattern list * joinpattern list list * 
+  (Ident.t * pattern) list * expression
+
+and joinreaction = Reac of joinclause
+
+and joinforwarder = Fwd of joinclause
 
 and joinchannel =
     {jchannel_sync : bool ;
-     jchannel_id   : int ;
+     jchannel_id   : jchannel_id ;
+     jchannel_ident : Ident.t ;
      jchannel_type : type_expr;
      jchannel_env : Env.t;}
 
-and joinclause =
-    {jclause_desc : joinpattern list * expression ;   
-     jclause_loc : Location.t}
+and jchannel_id = Chan of Ident.t * int | Alone of Ident.t
 
 and joinpattern =
     { jpat_desc: joinident * pattern ;
-      jpat_kont : Ident.t option ;
+      jpat_kont : Ident.t option ref ;
       jpat_loc: Location.t}
 
 and joinident =
@@ -268,11 +282,7 @@ let let_bound_idents pat_expr_list =
 (*> JOCAML *)
 let do_def_bound_idents autos r =
   List.fold_right
-    (fun {jauto_names=names} r ->
-      List.fold_right
-        (fun (name,_) r -> name::r)
-        names
-        (r))
+    (fun {jauto_original=names} r -> names@r)
     autos r
 
 let do_loc_bound_idents locs r =

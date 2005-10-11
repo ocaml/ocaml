@@ -571,9 +571,8 @@ and transl_exp0 e =
         rec_flag pat_expr_list (event_before body (transl_exp body))
 (*> JOCAML *)
   | Texp_def (d,body) ->
-      do_transl_def None d (transl_exp body)
-  | Texp_loc (d,body) ->
-      transl_loc d (transl_exp body)
+      do_transl_def d (transl_exp body)
+  | Texp_loc (d,body) -> assert false
 (*< JOCAML *)
   | Texp_function (pat_expr_list, partial) ->
       let ((kind, params), body) =
@@ -583,6 +582,19 @@ and transl_exp0 e =
             transl_function e.exp_loc !Clflags.native_code repr partial pl)
       in
       Lfunction(kind, params, body)
+(*>JOCAML*)
+(* two small optimizations *)
+  | Texp_apply
+      ({exp_desc = Texp_ident(path, {val_kind = Val_alone id})},
+       [Some arg,_])
+      ->
+        Lapply (Lvar id,[transl_exp arg])
+  | Texp_apply
+      ({exp_desc = Texp_ident(path, {val_kind = Val_channel (auto,idx)})},
+       [Some arg,_])
+      ->
+        Transljoin.local_send_sync auto idx (transl_exp arg)
+(*<JOCAML*)
   | Texp_apply({exp_desc = Texp_ident(path, {val_kind = Val_prim p})}, args)
     when List.length args = p.prim_arity
     && List.for_all (fun (arg,_) -> arg <> None) args ->
@@ -787,9 +799,8 @@ and transl_proc die sync p = match p.exp_desc with
       (fun e -> Transljoin.reply_handler sync p transl_exp e)
       rec_flag pat_expr_list (transl_proc die sync body)
 | Texp_def (d,body) ->
-    do_transl_def None d (transl_proc die sync body)
-| Texp_loc (d,body) ->
-    transl_loc d (transl_proc die sync body)
+    do_transl_def d (transl_proc die sync body)
+| Texp_loc (d,body) -> assert false
 | Texp_ifthenelse(cond, ifso, Some ifnot) ->
     Lifthenelse
       (Transljoin.reply_handler sync p transl_exp cond,
@@ -869,9 +880,8 @@ and transl_simple_proc die sync p = match p.exp_desc with
       transl_exp
       rec_flag pat_expr_list (transl_simple_proc die sync body)
 | Texp_def (d,body) ->
-    do_transl_def None d (transl_simple_proc die sync body)
-| Texp_loc (d,body) ->
-    transl_loc d (transl_simple_proc die sync body)
+    do_transl_def d (transl_simple_proc die sync body)
+| Texp_loc (d,body) -> assert false
 | Texp_ifthenelse(cond, ifso, Some ifnot) ->
     Lifthenelse
       (transl_exp cond,
@@ -940,77 +950,108 @@ and transl_simple_proc die sync p = match p.exp_desc with
 
 (* Parameter list for a guarded process *)
 
-and transl_reaction  (name,_) = function
-  | Joinmatch.Dispatcher (sync, chan, z, patids, partial) ->
-      let body =
-        if sync then
-          let cls =
-            List.map
-              (fun (pat, id, _) ->
-                (pat,
-                 Lapply (Lvar id, [Lvar z])))
-              patids in
-          Matching.for_function (id_lam,Location.none)
-            None (Lvar z) cls partial
-        else
-          let cls =
-            List.fold_right
-              (fun (pat, _, chan) r ->
-                (pat,
-                 Transljoin.local_tail_send_async name chan.jchannel_id
-                   (Lvar z))::r)
-              patids
-              (match partial with
-              | Partial -> [Parmatch.omega, lambda_unit]
-              | _ -> []) in
-          Matching.for_function
-            (id_lam,Location.none) None
-            (Lvar z) cls Total in
-      let x = Ident.create "guard" in
-      let params = [z ; Ident.create "_x"] in
-      let lam =  Lfunction (Curried, params, body) in
-      x, None, lam
-  | Joinmatch.Reaction (jpats, (idpats, p)) ->
+and transl_reaction (name,_) (Reac reac) =
+  let (x, jpats, actuals, idpats, p) = reac in
 (*
       let dump_oid fp = function
       | Some id -> Printf.fprintf fp "+%s" (Ident.unique_name id)
       | None -> Printf.fprintf fp "-"  in
 *)
-      let exjpats = List.map List.hd jpats in
-      let sync = Transljoin.principal p in
-      let konts = List.map (fun jp -> jp.jpat_kont) exjpats in
+  let sync = Transljoin.principal p in
+  let konts = List.map (fun jp -> !(jp.jpat_kont)) jpats in
 (*
 
       Printf.eprintf "Principal: %a\n" dump_oid sync ;
       List.iter (fun k -> dump_oid stderr k) konts ;
       prerr_endline "" ;
 *)
-      let x = Ident.create "guard" in
-      let body =
-        List.fold_right
-          (fun (param, pat) lam ->
-            Matching.for_function
-              (id_lam, Location.none) None (Lvar param) [pat,lam] Total)
-          idpats
-          (transl_proc true sync p) in
-      let params =
-        try
-          List.fold_right2
-            (fun k (id,_) r ->
-              match k, sync with
-              | Some kid, Some sync_id when not (Ident.equal kid sync_id) ->
-                  kid::id::r
-              | Some kid,None ->
-                  kid::id::r
-              | _,_ -> id::r)
-            konts idpats [Ident.create "_x"]
-        with
-        | Invalid_argument _ ->
-            Printf.eprintf "konts=%i, idpats=%i\n"
-              (List.length konts) (List.length idpats) ;
-            [Ident.create "_x"] in
-      let lam = Lfunction (Curried, params, body) in
-      x, sync, lam
+  let body =
+    List.fold_right
+      (fun (param, pat) lam ->
+        Matching.for_function
+          (id_lam, Location.none) None (Lvar param) [pat,lam] Total)
+      idpats
+      (transl_proc true sync p) in
+  let params =
+    try
+      List.fold_right2
+        (fun k (id,_) r ->
+          match k, sync with
+          | Some kid, Some sync_id when not (Ident.equal kid sync_id) ->
+              kid::id::r
+          | Some kid,None ->
+              kid::id::r
+          | _,_ -> id::r)
+        konts idpats [Ident.create "_x"]
+    with
+    | Invalid_argument _ ->
+        Printf.eprintf "konts=%i, idpats=%i\n"
+          (List.length konts) (List.length idpats) ;
+        [Ident.create "_x"] in
+  let lam = Lfunction (Curried, params, body) in
+  x, sync, lam
+
+and transl_dispatcher disp = 
+  let Disp (d_id, chan, z, cls, partial) = disp in
+
+  let rhs chan =
+    if chan.jchannel_sync then match  chan.jchannel_id with
+    | Chan (name, i) ->
+        Transljoin.local_send_sync name i (Lvar z)
+    | Alone g -> Lapply (Lvar g, [Lvar z])
+    else match chan.jchannel_id with
+    | Chan (name, i) ->
+        Transljoin.local_tail_send_async name i
+          (Lvar z)
+    | Alone g ->
+        Transljoin.local_tail_send_alone g (Lvar z) in
+
+  let body =
+    try
+      let allchans =
+          List.map
+            (fun (p, chan) -> match chan.jchannel_id with
+            | Chan (auto,i) -> auto,(p,i)
+            | Alone _ -> raise Exit)
+            cls in
+        match allchans with
+        | [] -> assert false
+        | (auto,_)::_ ->
+            let cls =
+              List.map (fun (_,(p,i)) -> p,lambda_int i) allchans in
+            (if chan.jchannel_sync then
+              Transljoin.local_send_sync2
+            else
+              Transljoin.local_tail_send_async2)
+              auto
+              (Matching.for_function
+                 (id_lam,Location.none) None (Lvar z)
+                 cls partial)
+              (Lvar z)
+    with Exit ->
+      let cls = List.map (fun (p, chan) -> p, rhs chan) cls in
+      Matching.for_function
+        (id_lam,Location.none) None (Lvar z) cls partial in
+  let params = [z] in
+  let lam =  Lfunction (Curried, params, body) in
+  d_id, chan, lam
+
+and transl_forwarder (Fwd reac) =
+  let (x, jpat, _, idpats, p) = reac in
+  let sync = Transljoin.principal p in
+  let body =
+    List.fold_right
+      (fun (param, pat) lam ->
+        Matching.for_function
+          (id_lam, Location.none) None (Lvar param) [pat,lam] Total)
+      idpats
+      (transl_proc true sync p) in
+  let param = match idpats with
+  | [id,_] -> id
+  | _      -> assert false in
+  let lam = Lfunction (Curried, [param], body) in
+  x, lam
+    
 
 (* transl_spawn separates e into a forked part and a part to execute now *)
 and transl_spawn some_loc e =
@@ -1153,90 +1194,62 @@ and transl_let reply_handler transl_exp rec_flag pat_expr_list body =
       Lletrec(List.map2 transl_case pat_expr_list idlist, body)
 (*> JOCAML *)
 
-and create_autos some_loc cautos k =
-  List.fold_right
-    (Transljoin.create_auto some_loc)
-    cautos k
-  
-and do_transl_def some_loc autos body =
-  let autos1  = List.map Transljmatch.transl_jmatch autos in
-
-(* compile (and name) guarded processes *)
+and do_transl_def autos body =
+      
+(* compile (and name) real guarded processes *)
   let reactions =
     List.map
       (fun auto ->
-        Array.map (transl_reaction auto.jauto_name) auto.jauto_desc)
-      autos1 in
+        if auto.jauto_nchans = 0 then []
+        else
+          let _,reacs,_ = auto.jauto_desc in
+          List.map (transl_reaction auto.jauto_name) reacs)
+      autos in
 
 (* compile firing of guarded processes (aka automaton table) *)
   let r =
     List.fold_right2
-      (Transljoin.create_table some_loc) 
-      autos1 reactions body in
+      Transljoin.create_table
+      autos reactions body in
 
 (* bind guarded processes *)
   let r =
     List.fold_right
       (fun reacs r ->
-        Array.fold_right
+        List.fold_right
           (fun (x,_,lam) r -> Llet (Strict, x, lam, r))
           reacs  r)
       reactions r in
+
+(* create dispatchers *)
+  let disps =
+    List.map
+      (fun auto ->
+        let disps,_,_ = auto.jauto_desc in
+        List.map transl_dispatcher disps)
+      autos
+  and fwds =
+    List.map
+      (fun auto ->
+        let _,_,fwds = auto.jauto_desc in
+        List.map transl_forwarder fwds)
+      autos in
+  let r =
+    if List.for_all
+        (function | [] -> true | _::_ -> false)
+        fwds then
+      List.fold_right Transljoin.create_dispatchers disps r
+    else
+      Transljoin.create_forwarders autos disps fwds r in
+
 (* create channels structures *)
   let r =
-    List.fold_right Transljoin.create_channels autos1 r in
+    List.fold_right Transljoin.create_channels autos r in
 (* create automata structures *)
   let r =
-    List.fold_right (Transljoin.create_auto some_loc) autos1 r in
+    List.fold_right Transljoin.create_auto autos r in
   r
-    
-(*
-  let cautos = List.map Transljoin.build_matches autos1 in    
-    create_autos some_loc cautos
-      (build_channels autos
-         (build_autos some_loc cautos body))
-*)
 
-and transl_loc locs body = failwith "Not Yet"
-(*
-  let clocs =
-    List.map
-      (fun {jloc_desc = (id_loc, autos, e)} ->
-        id_loc.jident_desc,
-        List.map Transljoin.build_matches autos,
-        e)
-      locs in
-
-  let build_autos_locs clocs k =
-    List.fold_right
-      (fun (id_loc,cautos,_) k ->
-        Llet
-          (Strict, id_loc,  Transljoin.create_location (),
-           build_autos (Some id_loc) cautos k))
-      clocs k in
-
-  let build_channels_locs clocs k =
-    List.fold_right
-      (fun {jloc_desc=(_,cautos,_)} k ->
-        build_channels cautos k)
-      clocs k in
-
-  let spawn_locs clocs k =
-    List.fold_right
-      (fun (id_loc, _, e) k ->
-        (*
-          Let us admit some process must be spawned,
-          so as to reflect the change of location.
-          If not needed the code should be
-          transl_spawn (Some id_loc) e
-         *)
-        transl_fork (Some id_loc) e k)
-      clocs k in
-  
-    build_autos_locs clocs
-      (build_channels_locs locs
-         (spawn_locs clocs body))
-*)
 (*< JOCAML *)
 
 and transl_setinstvar self var expr =
@@ -1309,7 +1322,8 @@ and transl_record all_labels repres lbl_expr_list opt_init_expr =
 
 (*> JOCAML *)
 (* For external usage *)
-let transl_def d k = do_transl_def None d k
+let transl_def d k = do_transl_def d k
+and transl_loc d k = assert false
 and transl_let = transl_let id_lam transl_exp
 (*< JOCAML *)
 

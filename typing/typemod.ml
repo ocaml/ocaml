@@ -430,8 +430,10 @@ let rec bound_value_identifiers = function
 (*> JOCAML *)
 (* Channels appear as regular values in signatures *)
 let make_sig_channel_value env id =
-  let desc = Env.find_value (Pident id) env in
-  Tsig_value(id, {desc with val_kind=Val_reg})
+  try
+    let desc = Env.find_value (Pident id) env in
+    Tsig_value(id, {desc with val_kind=Val_reg})
+  with Not_found -> assert false
 (*< JOCAML *)
 
 (* Helpers for typing recursive modules *)
@@ -553,30 +555,11 @@ and type_structure anchor env sstr =
         let (defs, newenv) =
           Typecore.type_joindefinition env sdefs in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
-        let bound_idents =
-          List.fold_right
-            (fun auto r ->
-              map_end (fun (id,_) -> id) auto.jauto_names r)
-            defs [] in
+        let bound_idents = Typedtree.def_bound_idents defs in
         (Tstr_def (defs) :: str_rem,
          map_end (make_sig_channel_value newenv) bound_idents sig_rem,
          final_env)
-    | {pstr_desc = Pstr_loc (sdefs)} :: srem ->
-        let (defs, newenv) =
-          Typecore.type_joinlocation env sdefs in
-        let (str_rem, sig_rem, final_env) = type_struct newenv srem in
-        let bound_idents =
-          List.fold_right
-            (fun loc_def r ->
-              let location,autos,_ = loc_def.jloc_desc in
-              location.jident_desc::
-              List.fold_right
-                (fun auto r -> map_end (fun (id,_) -> id) auto.jauto_names r)
-                autos r)
-            defs [] in
-        (Tstr_loc(defs) :: str_rem,
-         map_end (make_sig_channel_value newenv) bound_idents sig_rem,
-         final_env)
+    | {pstr_desc = Pstr_loc (sdefs)} :: srem -> assert false
     | {pstr_desc = Pstr_exn_global(longid); pstr_loc = loc} :: srem ->
         let path = Typedecl.transl_exn_global env loc longid in
         let (str_rem, sig_rem, final_env) = type_struct env srem in
