@@ -274,8 +274,9 @@ _caml_system__frametable LABEL DWORD
         WORD    -1              ; negative frame size => use callback link 
         WORD    0               ; no roots here 
 
-        END
-
         PUBLIC  _caml_extra_params
 _caml_extra_params LABEL DWORD
         BYTE    64 DUP (?)
+
+        END
+
