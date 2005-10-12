@@ -912,6 +912,10 @@ let open_connection sockaddr =
 let shutdown_connection inchan =
   shutdown (descr_of_in_channel inchan) SHUTDOWN_SEND
 
+let rec accept_non_intr s =
+  try accept s
+  with Unix_error (EINTR, _, _) -> accept_non_intr s
+
 let establish_server server_fun sockaddr =
   let sock =
     socket (domain_of_sockaddr sockaddr) SOCK_STREAM 0 in
@@ -919,11 +923,12 @@ let establish_server server_fun sockaddr =
   bind sock sockaddr;
   listen sock 5;
   while true do
-    let (s, caller) = accept sock in
+    let (s, caller) = accept_non_intr sock in
     (* The "double fork" trick, the process which calls server_fun will not
        leave a zombie process *)
     match fork() with
        0 -> if fork() <> 0 then exit 0; (* The son exits, the grandson works *)
+            close sock;
             ignore(try_set_close_on_exec s);
             let inchan = in_channel_of_descr s in
             let outchan = out_channel_of_descr s in
@@ -932,6 +937,6 @@ let establish_server server_fun sockaddr =
                have done it already, and we are about to exit anyway
                (PR#3794) *)
             exit 0
-    | id -> close s; ignore(waitpid [] id) (* Reclaim the son *)
+    | id -> close s; ignore(waitpid_non_intr id) (* Reclaim the son *)
   done
 
