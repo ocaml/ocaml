@@ -46,7 +46,8 @@ Other libraries:
 - System threads library: added Thread.sigmask; fixed race condition
   in signal handling.
 - Bigarray library: fixed bug in Array3.of_array.
-- Unix library: use canonical signal numbers in results of Unix.wait*
+- Unix library: use canonical signal numbers in results of Unix.wait*;
+  hardened Unix.establish_server against EINTR errors.
 
 Run-time system:
 - Support platforms where sizeof(void *) = 8 and sizeof(long) = 4.
