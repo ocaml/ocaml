@@ -14,7 +14,8 @@ Type checking:
   types.
 
 Both compilers:
-- Added warning 'u' for local variables that are bound but never used.
+- Added warnings 'Y' and 'Z' for local variables that are bound but
+  never used.
 - Pattern matching: more prudent compilation in case of guards; fixed PR#3780.
 - Compilation of classes: reduction in size of generated code.
 - Compilation of "module rec" definitions: fixed a bad interaction with
