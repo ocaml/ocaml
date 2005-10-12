@@ -94,6 +94,8 @@ CAMLexport int (*caml_try_leave_blocking_section_hook)(void) =
 
 CAMLexport int caml_rev_convert_signal_number(int signo);
 
+/* Execute a signal handler immediately */
+
 void caml_execute_signal(int signal_number, int in_signal_handler)
 {
   value res;
@@ -121,6 +123,15 @@ void caml_execute_signal(int signal_number, int in_signal_handler)
   if (Is_exception_result(res)) caml_raise(Extract_exception(res));
 }
 
+/* Record the delivery of a signal, and arrange so that caml_process_event
+   is called as soon as possible. */
+
+void caml_record_signal(int signal_number)
+{
+  caml_pending_signals[signal_number] = 1;
+  caml_something_to_do = 1;
+}
+
 static void handle_signal(int signal_number)
 {
 #if !defined(POSIX_SIGNALS) && !defined(BSD_SIGNALS)
@@ -131,9 +142,8 @@ static void handle_signal(int signal_number)
     caml_execute_signal(signal_number, 1);
     caml_enter_blocking_section_hook();
   }else{
-    caml_pending_signals[signal_number] = 1;
-    caml_something_to_do = 1;
-  }
+    caml_record_signal(signal_number);
+ }
 }
 
 void caml_urge_major_slice (void)

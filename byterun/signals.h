@@ -37,6 +37,7 @@ void caml_urge_major_slice (void);
 CAMLextern int caml_convert_signal_number (int);
 CAMLextern int caml_rev_convert_signal_number (int);
 void caml_execute_signal(int signal_number, int in_signal_handler);
+void caml_record_signal(int signal_number);
 void caml_process_event(void);
 
 CAMLextern void (*caml_enter_blocking_section_hook)(void);

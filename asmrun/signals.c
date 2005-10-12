@@ -126,6 +126,22 @@ void caml_execute_signal(int signal_number, int in_signal_handler)
   if (Is_exception_result(res)) caml_raise(Extract_exception(res));
 }
 
+/* Record the delivery of a signal and play with the allocation limit
+   so that the next allocation will trigger a garbage collection. */
+
+void caml_record_signal(int signal_number)
+{
+  caml_pending_signals[signal_number] = 1;
+  caml_young_limit = caml_young_end;
+  /* Some ports cache [caml_young_limit] in a register.
+     Use the signal context to modify that register too, but only if
+     we are inside Caml code (not inside C code). */
+#if defined(CONTEXT_PC) && defined(CONTEXT_YOUNG_LIMIT)
+  if (In_code_area(CONTEXT_PC))
+    CONTEXT_YOUNG_LIMIT = (context_reg) caml_young_limit;
+#endif
+}
+
 /* This routine is the common entry point for garbage collection
    and signal handling.  It can trigger a callback to Caml code.
    With system threads, this callback can cause a context switch.
@@ -193,23 +209,10 @@ DECLARE_SIGNAL_HANDLER(handle_signal)
 #endif
   if (sig < 0 || sig >= NSIG) return;
   if (caml_try_leave_blocking_section_hook ()) {
-    /* We are interrupting a C function blocked on I/O.
-       Callback the Caml code immediately. */
     caml_execute_signal(sig, 1);
     caml_enter_blocking_section_hook();
   } else {
-    /* We can't execute the signal code immediately.
-       Instead, we remember the signal and play with the allocation limit
-       so that the next allocation will trigger a garbage collection. */
-    caml_pending_signals[sig] = 1;
-    caml_young_limit = caml_young_end;
-    /* Some ports cache [caml_young_limit] in a register.
-       Use the signal context to modify that register too, but only if
-       we are inside Caml code (not inside C code). */
-#if defined(CONTEXT_PC) && defined(CONTEXT_YOUNG_LIMIT)
-    if (In_code_area(CONTEXT_PC))
-      CONTEXT_YOUNG_LIMIT = (context_reg) caml_young_limit;
-#endif
+    caml_record_signal(sig);
   }
 }
 

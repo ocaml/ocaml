@@ -161,7 +161,6 @@ static volatile sighandler ctrl_handler_action = SIG_DFL;
 static BOOL WINAPI ctrl_handler(DWORD event)
 {
   int saved_mode;
-  sighandler action;
 
   /* Only ctrl-C and ctrl-Break are handled */
   if (event != CTRL_C_EVENT && event != CTRL_BREAK_EVENT) return FALSE;
@@ -170,17 +169,10 @@ static BOOL WINAPI ctrl_handler(DWORD event)
   /* Ignore behavior is to do nothing, which we get by claiming that we
      have handled the event */
   if (ctrl_handler_action == SIG_IGN) return TRUE;
-  /* Reset handler to default action for consistency with signal() */
-  action = ctrl_handler_action;
-  ctrl_handler_action = SIG_DFL;
-  /* Call user-provided signal handler.  Win32 doesn't like it when
-     we do a longjmp() at this point (it looks like we're running in
-     a different thread than the main program!).  So, pretend we are not in
-     async signal mode, so that the handler simply records the signal. */
-  saved_mode = caml_async_signal_mode;
-  caml_async_signal_mode = 0;
-  action(SIGINT);
-  caml_async_signal_mode = saved_mode;
+  /* Win32 doesn't like it when we do a longjmp() at this point
+     (it looks like we're running in a different thread than
+     the main program!).  So, just record the signal. */
+  caml_record_signal(SIGINT);
   /* We have handled the event */
   return TRUE;
 }
@@ -385,8 +377,7 @@ void caml_signal_thread(void * lpParam)
     if (!ret || numread != 1) caml_sys_exit(Val_int(2));
     switch (iobuf[0]) {
     case 'C':
-      caml_pending_signal = SIGINT;
-      caml_something_to_do = 1;
+      caml_record_signal(SIGINT);
       break;
     case 'T':
       raise(SIGTERM);
