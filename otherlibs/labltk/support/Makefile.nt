@@ -2,11 +2,11 @@ include Makefile.common.nt
 
 all: support.cmo rawwidget.cmo widget.cmo protocol.cmo \
      textvariable.cmo timer.cmo fileevent.cmo camltkwrap.cmo \
-     dll$(LIBNAME).dll lib$(LIBNAME).$(A)
+     tkthread.cmo dll$(LIBNAME).dll lib$(LIBNAME).$(A)
 
 opt: support.cmx rawwidget.cmx widget.cmx protocol.cmx \
      textvariable.cmx timer.cmx fileevent.cmx camltkwrap.cmx \
-     lib$(LIBNAME).$(A)
+     tkthread.cmx lib$(LIBNAME).$(A)
 
 COBJS=cltkCaml.o cltkUtf.o cltkEval.o cltkEvent.o cltkFile.o \
    cltkMain.o cltkMisc.o cltkTimer.o cltkVar.o cltkWait.o cltkImg.o
