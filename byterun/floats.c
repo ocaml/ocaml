@@ -127,11 +127,14 @@ CAMLprim value caml_format_float(value fmt, value arg)
     if (c != '_') *dst++ = c;
   }
   *dst = 0;
-  if (dst == buf) caml_failwith("float_of_string");
+  if (dst == buf) goto error;
   d = strtod((const char *) buf, &end);
+  if (end != dst) goto error;
   if (buf != parse_buffer) caml_stat_free(buf);
-  if (end != dst) caml_failwith("float_of_string");
   return caml_copy_double(d);
+ error:
+  if (buf != parse_buffer) caml_stat_free(buf);
+  caml_failwith("float_of_string");
 }
 
 CAMLprim value caml_float_of_string(value vs)
@@ -150,11 +153,14 @@ CAMLprim value caml_float_of_string(value vs)
     if (c != '_') *dst++ = c;
   }
   *dst = 0;
-  if (dst == buf) caml_failwith("float_of_string");
+  if (dst == buf) goto error;
   d = strtod((const char *) buf, &end);
+  if (end != dst) goto error;
   if (buf != parse_buffer) caml_stat_free(buf);
-  if (end != dst) caml_failwith("float_of_string");
   return caml_copy_double(d);
+ error:
+  if (buf != parse_buffer) caml_stat_free(buf);
+  caml_failwith("float_of_string");
 }
 
 CAMLprim value caml_int_of_float(value f)
