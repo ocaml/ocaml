@@ -1,6 +1,8 @@
 Objective Caml 3.09.0:
 ----------------------
 
+(Changes that can break existing programs are marked with a "*"  )
+
 Language features:
 - Introduction of private row types, for abstracting the row in object
   and variant types.
@@ -11,15 +13,47 @@ Type checking:
   more confusing than useful, and created problems with private row
   types.
 
-New features:
+Both compilers:
+- Added warning 'u' for local variables that are bound but never used.
+- Pattern matching: more prudent compilation in case of guards; fixed PR#3780.
+- Compilation of classes: reduction in size of generated code.
+- Compilation of "module rec" definitions: fixed a bad interaction with
+  structure coercion (to a more restrictive signature).
+
+Native-code compiler (ocamlopt):
+* Revised implementation of the -pack option (packing of several compilation
+  units into one).  The .cmx files that are to be packed with 
+  "ocamlopt -pack -o P.cmx" must be compiled with "ocamlopt -for-pack P".
+  In exchange for this additional constraint, ocamlopt -pack is now
+  available on all platforms (no need for binutils).
+* Fixed wrong evaluation order for arguments to certain inlined functions.
+- x86 port: support tail-calls for functions with up to 21 arguments.
+- AMD64 port, Linux: recover from system stack overflow.
+- Sparc port: more portable handling of out-of-bound conditions
+  on systems other than Solaris.
+
+Standard library:
+- Pervasives: faster implementation of close_in, close_out.
+- Printf: better handling of partial applications of the printf functions.
 - Scanf: new function sscanf_format to read a format from a
   string. The type of the resulting format is dynamically checked and
   should be the type of the template format which is the second argument.
+- Scanf: no more spurious lookahead attempt when the end of file condition
+  is set and a correct token has already been read and could be returned.
 
-Bug fixes:
-- printf: partial application is now handled properly.
-- scanf: no more spurious lookahead attempt when the end of file condition
-is set and a correct token has already been read and could be return.
+Other libraries:
+- System threads library: added Thread.sigmask; fixed race condition
+  in signal handling.
+- Bigarray library: fixed bug in Array3.of_array.
+- Unix library: use canonical signal numbers in results of Unix.wait*
+
+Run-time system:
+- Support platforms where sizeof(void *) = 8 and sizeof(long) = 4.
+- Improved and cleaned up implementation of signal handling.
+
+Replay debugger:
+- Improved handling of locations in source code.
+
 
 Objective Caml 3.08.4:
 ----------------------
