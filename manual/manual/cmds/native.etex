@@ -135,6 +135,13 @@ all the information inferred by the type-checker before the error.
 The \var{x}".annot" file can be used with the emacs commands given in
 "emacs/caml-types.el" to display types interactively.
 
+\item["-for-pack" \var{module-path}]
+Generate an object file (".cmx"/".o" file) that can later be included
+as a sub-module (with the given access path) of a compilation unit
+constructed with "-pack".  For instance, "ocamlopt -for-pack P -c A.ml"
+will generate "a.cmx" and "a.o" files that can later be used with
+"ocamlopt -pack -o P.cmx a.cmx".
+
 \item["-i"]
 Cause the compiler to print all defined names (with their inferred
 types or their definitions) when compiling an implementation (".ml"
@@ -233,17 +240,29 @@ files given on the command line, making them appear as sub-modules of
 the output ".cmx" file.  The name of the output ".cmx" file must be
 given with the "-o" option.  For instance,
 \begin{verbatim}
-        ocamlopt -pack -o p.cmx a.cmx b.cmx c.cmx
+        ocamlopt -pack -o P.cmx A.cmx B.cmx C.cmx
 \end{verbatim}
-generates compiled files "p.cmx", "p.o" and "p.cmi" describing a
+generates compiled files "P.cmx", "P.o" and "P.cmi" describing a
 compilation unit having three sub-modules "A", "B" and "C",
-corresponding to the contents of the object files "a.cmx", "b.cmx" and
-"c.cmx".  These contents can be referenced as "P.A", "P.B" and "P.C"
+corresponding to the contents of the object files "A.cmx", "B.cmx" and
+"C.cmx".  These contents can be referenced as "P.A", "P.B" and "P.C"
 in the remainder of the program.
 
-\begin{unix} The "-pack" option is available only under platforms that
-provide the GNU Binutils tools "nm" and "objcopy" and under Mac OS X.
-\end{unix}
+The ".cmx" object files being combined must have been compiled with
+the appropriate "-for-pack" option.  In the example above,
+"A.cmx", "B.cmx" and "C.cmx" must have been compiled with
+"ocamlopt -for-pack P".
+
+Multiple levels of packing can be achieved by combining "-pack" with
+"-for-pack".  Consider the following example:
+\begin{verbatim}
+        ocamlopt -for-pack P.Q -c A.ml
+        ocamlopt -pack -o Q.cmx -for-pack P A.cmx
+        ocamlopt -for-pack P -c B.ml
+        ocamlopt -pack -o P.cmx Q.cmx B.cmx
+\end{verbatim}
+The resulting "P.cmx" object file has sub-modules "P.Q", "P.Q.A"
+and "P.B".
 
 \item["-pp" \var{command}]
 Cause the compiler to call the given \var{command} as a preprocessor
