@@ -168,6 +168,12 @@ The native-code compiler (ocamlopt), as well as static linking of
 Caml bytecode with C code (ocamlc -custom), require 
 the Cygwin development tools, available at
         http://sources.redhat.com/cygwin/
+You will need to install at least the following Cygwin packages:
+binutils, gcc-core, gcc-mingw-core, mingw-runtime, w32-api.
+
+Do *not* install the Mingw/MSYS development tools from www.mingw.org:
+these are not compatible with this Caml port (@responsefile not
+recognized on the command line).
 
 The LablTk GUI requires Tcl/Tk 8.3.  Windows binaries are
 available from http://prdownloads.sourceforge.net/tcl/tcl832.exe.
