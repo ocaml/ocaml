@@ -25,7 +25,7 @@ open Typedtree
 type 'a reaction = Location.t * joinpattern list * 'a
 
 type dispatcher =
-  Ident.t * Ident.t * (pattern * Ident.t) list * partial
+  Ident.t * (pattern * Ident.t) list * partial
 
 type ('a, 'b) guard =
   ('a reaction * 'b) * (* old clause *)

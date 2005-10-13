@@ -40,5 +40,8 @@ val get :  ('a,'b) t -> ('a -> 'b) -> 'a -> 'b
 (* iterate over all bindings *)
 val iter : ('a, 'b) t -> ('a -> 'b -> unit) -> unit
 
+(* iterate over all bindings and empty table *)
+val iter_empty : ('a, 'b) t -> ('a -> 'b -> unit) -> unit
+
 (* remove a binding *)
 val remove : ('a,'b) t -> 'a -> unit

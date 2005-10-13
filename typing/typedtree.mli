@@ -105,7 +105,7 @@ and joinautomaton =
 
 and joindispatcher =
   Disp of
-    Ident.t * joinchannel * Ident.t * (pattern * joinchannel) list * partial
+    Ident.t * joinchannel  * (pattern * joinchannel) list * partial
 
 and joinclause = 
    Ident.t * joinpattern list * joinpattern list list * 

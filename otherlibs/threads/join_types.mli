@@ -55,16 +55,16 @@ type t_global= space_id * int (* value names in network *)
 
 type chan_id = {auto_id:int ; chan_id:int}
 and  kont_id = int
+and  alone_id = int
 and parameter = string * t_global array 
 
 type message = 
   | AsyncSend of chan_id * parameter
+  | AloneSend of alone_id * parameter
   | SyncSend of chan_id * kont_id * parameter
+  | AloneSyncSend of alone_id * kont_id * parameter
   | ReplySend of kont_id * parameter
   | ReplyExn of kont_id * exn
-(* Hum, GoodBye and Killed are not really working *)
-  | GoodBye
-  | Killed
 
 type out_connection =
   {
@@ -81,11 +81,12 @@ type link_out =
   | NoConnection of Mutex.t
   | Connecting of message Join_queue.t
   | Connected of out_connection
+  | DeadConnection
 
 type link_in =
   | NoHandler
   | Handler of in_connection
-
+  | DeadHandler
 
 type remote_space =
     {

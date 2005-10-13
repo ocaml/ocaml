@@ -28,7 +28,7 @@ THREAD_OBJS= thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo
 BYTECODE_JOIN_C_OBJS=join_b.o
 NATIVECODE_JOIN_C_OBJS=join_n.o
 
-JOIN_OBJS=join_debug.cmo join_misc.cmo join_hash.cmo join_queue.cmo join_scheduler.cmo join_space.cmo join.cmo ns.cmo
+JOIN_OBJS=join_debug.cmo join_misc.cmo join_hash.cmo join_queue.cmo join_scheduler.cmo join_message.cmo join_space.cmo join.cmo ns.cmo
 
 GENFILES=thread.ml join.c join_types.mli\
  join_debug.mli join_debug.ml\
@@ -36,6 +36,7 @@ GENFILES=thread.ml join.c join_types.mli\
  join_hash.mli join_hash.ml\
  join_queue.mli join_queue.ml\
  join_scheduler.mli join_scheduler.ml\
+ join_message.mli join_message.ml\
  join_space.mli join_space.ml\
  join.ml join.mli\
  ns.mli ns.ml\
@@ -145,9 +146,14 @@ ns.ml: ../threads/ns.ml
 ns.mli: ../threads/ns.mli
 	cp -f ../threads/ns.mli . && chmod -w ns.mli
 
+join_message.ml: ../threads/join_message.ml
+	cp -f ../threads/join_message.ml . && chmod -w join_message.ml
+
+join_message.mli: ../threads/join_message.mli
+	cp -f ../threads/join_message.mli . && chmod -w join_message.mli
+
 join_space.ml: ../threads/join_space.ml
 	cp -f ../threads/join_space.ml . && chmod -w join_space.ml
-
 
 join_space.mli: ../threads/join_space.mli
 	cp -f ../threads/join_space.mli . && chmod -w join_space.mli

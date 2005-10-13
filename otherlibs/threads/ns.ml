@@ -45,10 +45,10 @@ let start_server port =
             let req = input_value inc in
             begin match req with
             | Put (key) ->
-		let v = Join_space.read_parameter inc in
+		let v = Join_message.input_parameter inc in
 		Hashtbl.replace t key v
             | SyncPut (once, key) ->
-		let v = Join_space.read_parameter inc in
+		let v = Join_message.input_parameter inc in
                 let r =
                   if once && Hashtbl.mem t key then
                     false
@@ -62,7 +62,7 @@ let start_server port =
 		begin try
                   let r = Hashtbl.find t key in
 		  output_value outc true ;
-                  Join_space.write_parameter outc r ;
+                  Join_message.output_parameter outc r ;
 (*DEBUG*)debug3 "NS" "server get -> found" ;
 		  ()
 		with Not_found ->
@@ -102,7 +102,9 @@ let stop_server ({fd=sacc ; run=run ; mutex=mutex } as s) =
 
 type link = Unix.inet_addr * int
 
-let register_client addr port = addr, port
+let register_client addr port =
+(*DEBUG*)debug3 "NS" (sprintf "port=%i" port) ;
+  addr, port
 
 let lookup (addr, port) key =
   let s = Join_misc.force_connect addr port in
@@ -114,7 +116,7 @@ let lookup (addr, port) key =
     let found = input_value inc in
 (*DEBUG*)debug3 "NS" (sprintf "client get -> %b" found) ;
     if found then begin
-      let r = Join_space.read_parameter inc in
+      let r = Join_message.input_parameter inc in
       close s ;
       Join_space.localize r
     end else begin
@@ -136,7 +138,7 @@ let do_sync_register once (addr, port) key v =
     let outc = out_channel_of_descr s
     and inc = in_channel_of_descr s in
     output_value outc (SyncPut (once, key)) ;
-    Join_space.write_parameter outc (Join_space.globalize v []) ;
+    Join_message.output_parameter outc (Join_space.globalize v []) ;
     flush outc ;
     let r = input_value inc in
     close s ;

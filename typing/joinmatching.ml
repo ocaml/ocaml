@@ -84,8 +84,7 @@ let make_disp id dag par =
     List.map2
       (fun (_,pat) id -> Parmatch.remove_binders pat, id)
       sorted_pats newids in
-  let z = Ident.create "_z" in
-  (id, z, rules, par), node2id
+  (id, rules, par), node2id
 
 
 (***************************)
@@ -275,7 +274,7 @@ let y auto_loc ((disp, reac, new_names) as auto) id args =
 type 'a reaction = Location.t * joinpattern list * 'a
 
 type dispatcher =
-  Ident.t * Ident.t * (pattern * Ident.t) list * partial
+  Ident.t * (pattern * Ident.t) list * partial
 
 type ('a, 'b) guard =
   ('a reaction * 'b) * (* old clause *)

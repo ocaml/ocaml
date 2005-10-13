@@ -178,16 +178,12 @@ let get_replies sync p =
   | _, _ -> false, List.map fst reps
 
   
-let do_spawn some_loc p =
+let do_spawn p =
  if p = lambda_unit then
    p
  else
    let param = Ident.create "_x" in
-   match some_loc with
-   | None ->
-       create_process (Lfunction (Curried, [param], p))
-   | Some id_loc ->
-         assert false
+   create_process (Lfunction (Curried, [param], p))
 
 let do_get_queue auto num = mk_apply lambda_get_queue [auto ; lambda_int num]
 
@@ -198,92 +194,13 @@ let do_get_queue auto num = mk_apply lambda_get_queue [auto ; lambda_int num]
  Synchronous threads are guarded processes, when one of matched names
  at least is synchronous.
 
- In such case the guarded process is compliled into a function,
+ In such case the guarded process is compiled into a function,
  whose result is the answer to a distinguished synchronous name
  (principal name)
+
+ The list of replied-to ports is computed by the typer.
 *)
 
-(*
-let id_lt (x,_) (y,_) = Ident.stamp x < Ident.stamp y
-
-
-exception MissingLeft of Ident.t
-exception MissingRight of Ident.t
-
-(* Symetrical difference, catches double answers  *)
-
-let rec delta xs ys = match xs, ys with
-| [],_  -> ys
-| _, [] -> xs
-| x::rx, y::ry ->
-   if id_lt x y then
-     x::delta rx ys
-   else if id_lt y x then
-     y::delta xs ry
-   else (* x=y *)
-     let id,loc1 = x
-     and _,loc2 = y in
-     raise (Error (Double (id, loc1, loc2)))
-
-
-let rec inter loc xs ys = match xs, ys with
-| [],(id,_)::_  -> raise (MissingLeft id)
-| (id,_)::_, [] ->  raise (MissingRight id)
-| [],[] -> []
-| x::rx, y::ry ->
-   if id_lt y x then
-     raise (MissingLeft (fst y))
-   else if id_lt x y then
-     raise (MissingRight (fst x))
-   else (* x=y *)
-     (fst x,loc)::inter loc rx ry
-
-let rec do_principal p = match p.exp_desc with
-(* Base cases processes *)
-| Texp_asyncsend (_,_) | Texp_null 
- -> []
-| Texp_reply (_, id) -> [id, p.exp_loc]
-(* Recursion *)
-| Texp_par (p1, p2) -> delta (do_principal p1) (do_principal p2)
-| Texp_let (_,_,p) | Texp_def (_,p) | Texp_loc (_,p)
-| Texp_sequence (_,p) | Texp_when (_,p) -> do_principal p
-| Texp_match (_,cls,partial) ->
-    let syncs =
-      List.map
-        (fun (_,p) -> do_principal p, p.exp_loc)
-        cls in
-    let r =
-      begin match syncs with
-      | (fst,_)::rem ->
-          List.fold_right
-            (fun (here, here_loc) r ->
-              try
-                inter p.exp_loc r here
-              with
-              | MissingLeft id ->
-                  raise (Error (Extra (id, here_loc)))
-              | MissingRight id ->
-                  raise (Error (Missing (id, here_loc))))
-            syncs fst
-      | _ -> []
-      end in
-    begin match r, partial with
-    | _::_, Partial -> raise (Error (NonExhaustive p.exp_loc))
-    | _ -> r
-    end
-| Texp_ifthenelse (_,pifso, Some pifno) ->
-    begin try
-      inter p.exp_loc (do_principal pifso) (do_principal pifno)
-    with
-    | MissingLeft kid ->
-        raise (Error (Missing (kid, pifso.exp_loc)))
-    | MissingRight kid ->
-        raise (Error (Missing (kid, pifno.exp_loc)))
-    end
-| Texp_ifthenelse (_,_,None) -> []
-(* Errors *)
-| _ -> assert false
-*)
 
 let principal p = match Typejoin.get_replies p with
 | (x,_)::_ -> Some x
@@ -329,6 +246,10 @@ let rec is_principal id p = match p.exp_desc with
  Idealy one should use some Partial/Total field, but this
  information is lost.. Does not matter much anyway.
 *)
+
+(* forward declaration, filled by Translcore *)
+let simple_prim = ref ((fun p -> assert false) : Primitive.description -> bool)
+
 let rec simple_pat p = match p.pat_desc with
 | Tpat_any | Tpat_var _ -> true
 | Tpat_alias (p,_) -> simple_pat p
@@ -363,10 +284,10 @@ let rec simple_exp e = match e.exp_desc with
 | Texp_variant (_, Some e) | Texp_field (e,_)
    -> simple_exp e
 | Texp_setfield (e1,_,e2) -> simple_exp e1 && simple_exp e2
-| Texp_apply ({exp_desc=Texp_ident (_, {val_kind=Val_prim p})}, args)
- when p.prim_name <> "%raise" ->
-   List.length args <= p.prim_arity &&
-   List.for_all (fun (eo,_) -> simple_exp_option eo) args
+| Texp_apply ({exp_desc=Texp_ident (_, {val_kind=Val_prim p})}, args) ->
+   List.length args < p.prim_arity || (* will be compiled as function *)
+   (!simple_prim p &&
+   List.for_all (fun (eo,_) -> simple_exp_option eo) args)
 | Texp_apply (_,_) -> false
 | Texp_for (_,e1,e2,_,e3) ->
    simple_exp e1 && simple_exp e2 && simple_exp e3
@@ -406,8 +327,8 @@ and simple_proc p = match p.exp_desc with
 | Texp_ifthenelse (e, pifso, None) ->
    simple_exp e && simple_proc pifso    
 | Texp_def (_,p)|Texp_loc(_,p) -> simple_proc p
-| Texp_for (_,e1,e2,_,e3) ->
-   simple_exp e1 && simple_exp e2 && simple_proc e3
+| Texp_for (_,e1,e2,_,_body) -> (* _body is compiled so a not to fail *)
+   simple_exp e1 && simple_exp e2
 (* Process constructs *)
 | Texp_reply (e, _) -> simple_exp e
 | Texp_par (p1, p2) -> simple_proc p1 || simple_proc p2

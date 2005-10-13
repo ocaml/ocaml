@@ -208,65 +208,71 @@ static void writecode64(int code, long val)
 
 /*> JOCAML */
 
-static int32 saved_code ;
+#define MAX_SAVED 2
+
+static int32 saved_code[MAX_SAVED] ;
 static int ncodes_saved = 0 ;
 
 CAMLprim value caml_register_saved_code(value v)
 {
-  if (ncodes_saved++ != 0) {
-    caml_failwith("caml_register_saved_code called more than once\n") ;
+  if (ncodes_saved >=  MAX_SAVED) {
+    caml_failwith("caml_register_saved_code called too many times\n") ;
   }
-  saved_code =  ((char *)Code_val(v)) - caml_code_area_start ;
+  saved_code[ncodes_saved] =  ((char *)Code_val(v)) - caml_code_area_start ;
+  ncodes_saved++ ;
   return Val_unit ;
 }
 
+/* Return offest in saved code tables or -1 when not present
+   Important: assumes code is not moving */
 static int caml_find_saved_code(code_t c)
 {
-  if (ncodes_saved) {
-    int32 ofs = ((char *)c) - caml_code_area_start ;
-    return saved_code == ofs ;
-  } else {
-    return 0 ;
+  int i ;
+  int32 ofs = ((char *)c) - caml_code_area_start ;
+  for (i = 0 ; i < ncodes_saved ; i++) {
+    if (saved_code[i] == ofs) return i ;
   }
+  return -1 ;
 }
 
-CAMLexport code_t caml_get_saved_code(void)
+CAMLexport code_t caml_get_saved_code(int idx)
 {
-  if (ncodes_saved) {
-    return (code_t)( caml_code_area_start + saved_code) ;
+  if (idx < ncodes_saved) {
+    return (code_t)( caml_code_area_start + saved_code[idx]) ;
   } else {
     return NULL ;
   }
 }
 
-static value saved_value ;
+static value saved_value[MAX_SAVED] ;
 static int nvalues_saved = 0 ;
 
 
 CAMLprim value caml_register_saved_value(value v)
 {
-  if (nvalues_saved++ != 0) {
-    caml_failwith("caml_register_saved_code called more than once\n") ;
+  if (nvalues_saved >= MAX_SAVED) {
+    caml_failwith("caml_register_saved_value called too many times\n") ;
   }
-  saved_value = v ;
-  caml_register_global_root(&saved_value) ;
+  saved_value[nvalues_saved] = v ;
+  caml_register_global_root(&saved_value[nvalues_saved]) ;
+  nvalues_saved++ ;
   return Val_unit ;
 }
 
 static int caml_find_saved_value(value v)
 {
-  if (nvalues_saved) {
-    return v == saved_value ;
-  } else {
-    return 0 ;
+  int i ;
+  for (i = 0 ; i < nvalues_saved ; i++) {
+    if (saved_value[i] == v) return i ;
   }
+  return -1 ;
 }
 
 
-CAMLexport value caml_get_saved_value(void)
+CAMLexport value caml_get_saved_value(int idx)
 {
-  if (nvalues_saved) {
-    return saved_value ;
+  if (idx < nvalues_saved) {
+    return saved_value[idx] ;
   } else {
     return (value)NULL ;
   }
@@ -438,9 +444,13 @@ static void extern_rec(value v)
     }
     default:
     /* >JOCAML */
-    if (caml_find_saved_value(v)) {
-      Write(CODE_SAVEDVALUE) ;
-      return ;
+    {
+      int ofs = caml_find_saved_value(v) ;
+      if (ofs >= 0) {
+        Write(CODE_SAVEDVALUE) ;
+        Write(ofs) ;
+        return ;
+      }
     }
     /* <JOCAML */
      {
@@ -465,8 +475,10 @@ static void extern_rec(value v)
   }
   if ((char *) v >= caml_code_area_start && (char *) v < caml_code_area_end) {
     /* >JOCAML */
-    if (caml_find_saved_code((code_t)v)) {
+    int ofs = caml_find_saved_code((code_t)v) ;
+    if (ofs >= 0) {
       Write(CODE_SAVEDCODE) ;
+      Write(ofs) ;
       return ;
     }
     /* <JOCAML */

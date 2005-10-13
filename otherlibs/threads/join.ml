@@ -421,7 +421,7 @@ let do_create_sync_alone stub =
   let r a = send_sync_alone stub a in
   r
 
-let create_sync_alone g =
+let create_sync_alone (g:'a -> 'b) =
   do_create_sync_alone (wrap_guard g)
 
 let alloc_stub_guard () = wrap_guard (fun _ -> assert false)
@@ -438,15 +438,18 @@ let patch_sync_alone (stub:stub) (g:'a -> 'b) =
    code address and one value that are rebound dynamically
    by marshalling operations *)
 
-type sync = Obj.t -> Obj.t
 external register_value : 'a -> unit = "caml_register_saved_value"
-external register_code : sync -> unit = "caml_register_saved_code"
+external register_code : ('a -> 'b) -> unit = "caml_register_saved_code"
 external init_join : unit -> unit = "caml_init_join"
 
 let _ =
   init_join () ;
   register_value send_sync ;
-  register_code (create_sync (Obj.magic 0) 0)
+  register_code (create_sync (Obj.magic 0:stub) 0) ;
+  register_value send_sync_alone ;
+  register_code (alloc_sync_alone (alloc_stub_guard ())) ;
+  ()
+
 
 let reply_to = Join_scheduler.reply_to
 and reply_to_exn = Join_scheduler.reply_to_exn
@@ -455,7 +458,7 @@ let raise_join_exit () = raise Join_misc.JoinExit
 
 let exit_hook = Join_scheduler.exit_hook
 
-let exn_global = Join_space.exn_global
+let exn_global = Join_message.exn_global
   
 let flush_space = Join_space.flush_space
 

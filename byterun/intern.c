@@ -302,7 +302,8 @@ static void intern_rec(value *dest)
         break;
         /*>JOCAML*/
       case CODE_SAVEDCODE:
-        v = (value)caml_get_saved_code() ;
+        ofs = read8u() ;
+        v = (value)caml_get_saved_code(ofs) ;
         if (v == (value)NULL) {
           intern_cleanup() ;
           caml_failwith("input_value: no code saved");
@@ -310,7 +311,8 @@ static void intern_rec(value *dest)
         /* Saved code values are not shared */           
         break ;
       case CODE_SAVEDVALUE:
-        v = caml_get_saved_value() ;
+        ofs = read8u() ;
+        v = caml_get_saved_value(ofs) ;
         if (v == (value)NULL) {
           intern_cleanup() ;
           caml_failwith("input_value: no value saved");

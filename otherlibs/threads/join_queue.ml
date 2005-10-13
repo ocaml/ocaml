@@ -36,8 +36,8 @@ let put q x =
 
 let rec hard_get q = match q.bag with
 | [] ->
-    assert (not q.sender_waits) ;
     if q.flush_wait > 0 then Condition.broadcast q.flush_cond ;
+    assert (not q.sender_waits) ; (* sender is unique *)
     q.sender_waits <- true ;    
     Condition.wait q.cond q.mutex ;
     q.sender_waits <- false ;
@@ -66,9 +66,11 @@ let wait_empty q =
   q.flush_wait <- q.flush_wait - 1 ;
   Mutex.unlock q.mutex  
 
-let clean q =
+let clean q do_it =
+  assert (not q.sender_waits) ; (* sender is unique *)
   Mutex.lock q.mutex ;
-  q.bag <- [] ; (* Not necessary at the moment, cf first case of hard_empty *)
-  assert (not q.sender_waits) ;
+  let bag = q.bag in
+  q.bag <- [] ;
   if q.flush_wait > 0 then Condition.broadcast q.flush_cond ;
-  Mutex.unlock q.mutex
+  Mutex.unlock q.mutex ;
+  List.iter do_it bag

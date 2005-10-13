@@ -12,20 +12,25 @@
 
 (* $Id$ *)
 
-(*****************)
-(* Sender queues *) 
-(*****************)
+(* Function exn_global loc exn_cstr
+   registers the exception constructor exn_cstr as a global one.
 
-(*
-   BEWARE: for wait_empty to work, there mute be exactly ONE thread
-           performing get's (and clean ?)
-*)
+   It fails if a structurally equivalent constructor have
+   already been globalized, loc is a position in source file for
+   error message *)
 
-type 'a t
+val exn_global : (string * int * int) -> Obj.t -> unit
 
-val create : unit -> 'a t
-val put : 'a t -> 'a -> unit
-val get : 'a t -> 'a
-val wait_empty : 'a t -> unit
-val clean : 'a t -> ('a -> unit) -> unit
+val localize_exn : exn -> exn
+
+open Join_types
+
+(* Specialized input_value/output_value for messages between sites *)
+
+val input_parameter : in_channel -> parameter
+val output_parameter : out_channel -> parameter -> unit
+
+val input_msg : in_channel -> message
+val output_msg : out_channel -> message -> unit
+
 

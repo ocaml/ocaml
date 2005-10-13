@@ -133,8 +133,6 @@ let comparisons_table = create_hashtable 11 [
               prim_native_float = false})
 ]
 
-let raise_name = "%raise"
-
 let primitives_table = create_hashtable 57 [
   "%identity", Pidentity;
   "%ignore", Pignore;
@@ -143,7 +141,7 @@ let primitives_table = create_hashtable 57 [
   "%setfield0", Psetfield(0, true);
   "%makeblock", Pmakeblock(0, Immutable);
   "%makemutable", Pmakeblock(0, Mutable);
-   raise_name, Praise;
+  "%raise", Praise;
   "%sequand", Psequand;
   "%sequor", Psequor;
   "%boolnot", Pnot;
@@ -312,7 +310,7 @@ let transl_prim prim args =
 (*> JOCAML *)
 (*
   Build a sequence if needed, this function is called to put sequence
-  instead of ``&'' in some occasions.
+  instead of '&' in some occasions.
   No debugging information is inserted
 *)
 let make_sequence lam1 lam2 =
@@ -322,6 +320,23 @@ let make_sequence lam1 lam2 =
     lam1
   else
     Lsequence (lam1, lam2)
+
+(* 'simple' primitives cannot fail (ie never raise an exception) *)
+let simple_prim p =
+  let prim =
+    try
+      let (gencomp, _, _, _, _, _, _) =
+        Hashtbl.find comparisons_table p.prim_name in
+      gencomp
+    with Not_found ->
+      try
+        Hashtbl.find primitives_table p.prim_name
+      with Not_found ->
+        Pccall p in
+  not (may_raise prim)
+
+let () = Transljoin.simple_prim := simple_prim
+
 (*< JOCAML *)
 
 (* Eta-expand a primitive without knowing the types of its arguments *)
@@ -774,7 +789,7 @@ and transl_exp0 e =
         cl_type = Tcty_signature cty;
         cl_env = e.exp_env }
 (*> JOCAML *)
-  | Texp_spawn (e) -> transl_spawn None e
+  | Texp_spawn (e) -> transl_spawn e
 (*< JOCAML *)
   | _ ->
       Location.print Format.err_formatter e.exp_loc ;
@@ -829,11 +844,14 @@ and transl_proc die sync p = match p.exp_desc with
       (Transljoin.reply_handler sync p transl_exp arg)
       (transl_cases no_event (transl_proc die sync) pat_expr_list) partial
 | Texp_for(param, low, high, dir, body) ->
-    Lfor(param, transl_exp low, transl_exp high, dir,
-         event_before body (transl_spawn None body))
+    assert (sync = None) ;
+    let lam_low = transl_exp low
+    and lam_high = transl_exp high in
+    Lfor(param, lam_low, lam_high, dir,
+         event_before body (transl_spawn body))
 (* Proc constructs *)
-| Texp_par (e1,e2) ->
-      let psync, seqs, forks = Transljoin.as_procs sync p in
+| Texp_par _ ->
+  let psync, seqs, forks = Transljoin.as_procs sync p in
 (* psync is some expression to compute as a result *)
       begin match psync with
       | None ->
@@ -842,14 +860,14 @@ and transl_proc die sync p = match p.exp_desc with
           | fst::rem,_ ->
               transl_as_seq false seqs
                 (List.fold_right
-                   (transl_fork None)
+                   transl_fork
                    rem (transl_proc die None fst))
           | [],_ ->
               transl_as_seq die seqs lambda_unit
           end
       | Some psync ->
           transl_as_seq false seqs
-            (List.fold_right (transl_fork None) forks
+            (List.fold_right transl_fork forks
                (transl_proc false sync psync))
       end
 | Texp_asyncsend (_,_) | Texp_reply (_,_) | Texp_null  ->
@@ -865,7 +883,6 @@ and transl_proc die sync p = match p.exp_desc with
   ->
     Location.print Format.err_formatter p.exp_loc ;
     fatal_error "Translcore.transl_proc"
-
 
 (*
     Simple procs are defined as follows : the code for them does
@@ -909,7 +926,7 @@ and transl_simple_proc die sync p = match p.exp_desc with
 | Texp_for(param, low, high, dir, body) ->
     assert (sync=None) ;
     Lfor(param, transl_exp low, transl_exp high, dir,
-         event_before body (transl_simple_proc false None body))
+         event_before body (transl_spawn body)) (* loop body should not fail *)
 (* Proc constructs *)
 | Texp_par (p1,p2) -> (* We can translate this ``&'' as a sequence *)
     make_sequence
@@ -951,13 +968,21 @@ and transl_simple_proc die sync p = match p.exp_desc with
 (* Parameter list for a guarded process *)
 
 and transl_reaction (name,_) (Reac reac) =
-  let (x, jpats, actuals, idpats, p) = reac in
+  let (x, _ , actuals, idpats, p) = reac in
 (*
       let dump_oid fp = function
       | Some id -> Printf.fprintf fp "+%s" (Ident.unique_name id)
       | None -> Printf.fprintf fp "-"  in
 *)
+(* Principal continuation, as computed by typing *)
   let sync = Transljoin.principal p in
+(* Important: argument order comes from actual pattern order,
+   as Transljoin.create_table assumes *)
+  let jpats =
+    List.map
+      (fun pats -> match pats with
+      | p::_ -> p | [] -> assert false)
+      actuals in
   let konts = List.map (fun jp -> !(jp.jpat_kont)) jpats in
 (*
 
@@ -992,8 +1017,8 @@ and transl_reaction (name,_) (Reac reac) =
   x, sync, lam
 
 and transl_dispatcher disp = 
-  let Disp (d_id, chan, z, cls, partial) = disp in
-
+  let Disp (d_id, chan, cls, partial) = disp in
+  let z = Ident.create "#z#" in
   let rhs chan =
     if chan.jchannel_sync then match  chan.jchannel_id with
     | Chan (name, i) ->
@@ -1054,16 +1079,16 @@ and transl_forwarder (Fwd reac) =
     
 
 (* transl_spawn separates e into a forked part and a part to execute now *)
-and transl_spawn some_loc e =
+and transl_spawn e =
   let _, seqs, forks = Transljoin.as_procs None e in
   let lforks =
-    List.fold_right (transl_fork some_loc) forks lambda_unit in
+    List.fold_right transl_fork forks lambda_unit in
   transl_as_seq false seqs lforks
 
 (* Do perform a fork *)
-and transl_fork some_loc e k = 
+and transl_fork e k = 
   make_sequence
-    (Transljoin.do_spawn some_loc (transl_proc true None e))
+    (Transljoin.do_spawn (transl_proc true None e))
     k
 
 (* Sequence for processes *)    

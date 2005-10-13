@@ -20,9 +20,6 @@ open Types
 open Typedtree
 open Lambda
 
-(*> JOCAML *)
-val raise_name : string
-(*< JOCAML *)
 val name_pattern: string -> (pattern * 'a) list -> Ident.t
 
 val transl_exp: expression -> lambda

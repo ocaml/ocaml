@@ -185,8 +185,8 @@ extern char * caml_code_area_start, * caml_code_area_end;
 
 /* >JOCAML */
 CAMLextern void extern_invalid_argument(char *msg) ;
-CAMLextern code_t caml_get_saved_code(void) ;
-CAMLextern value caml_get_saved_value(void) ;
+CAMLextern code_t caml_get_saved_code(int idx) ;
+CAMLextern value caml_get_saved_value(int idx) ;
 /*<JOCAML*/
 /* <JOCAML */
 

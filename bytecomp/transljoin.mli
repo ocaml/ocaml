@@ -39,9 +39,10 @@ val reply_to : Lambda.lambda -> Lambda.lambda -> Lambda.lambda
 val get_replies :
     Ident.t option -> Typedtree.expression -> bool * Ident.t list 
 
-val do_spawn : Ident.t option -> Lambda.lambda -> Lambda.lambda
+val do_spawn : Lambda.lambda -> Lambda.lambda
 
 (* Is an expression simple enough (no exception, guaranteed to terminate) ? *)
+val simple_prim :  (Primitive.description -> bool) ref
 val simple_exp : Typedtree.expression -> bool
 
 (* Insert handler in charge of reply_to_exn'ing *)

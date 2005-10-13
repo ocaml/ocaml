@@ -651,7 +651,7 @@ let type_auto_lhs env {pjauto_desc=sauto ; pjauto_loc=auto_loc}  =
 
 (* collect forwarders *)
   let alone_env =
-    List.map (fun (d_id,(id,_,_,_)) -> id, d_id) disps in
+    List.map (fun (d_id,(id,_,_)) -> id, d_id) disps in
   let alone_env =
     List.fold_right
       (fun fwd r -> match fwd with
@@ -2331,7 +2331,7 @@ and type_let env rec_flag spat_sexp_list =
 (*> JOCAML *)
 
 and type_dispatcher names disp =
-  let d_id,(chan_id, z, cls, par) = disp in
+  let d_id,(chan_id, cls, par) = disp in
 
   let find_channel id =
     try List.assoc id names
@@ -2340,7 +2340,7 @@ and type_dispatcher names disp =
   let chan = find_channel chan_id
   and cls =
     List.map (fun (p,id) -> p, find_channel id) cls in
-  Disp (d_id, chan, z, cls, par)
+  Disp (d_id, chan, cls, par)
     
 and type_clause env names reac =
    let g_id,(old,(actual_pats, gd)) = reac in

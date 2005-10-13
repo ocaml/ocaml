@@ -197,8 +197,10 @@ let create_process f =
     with
     | Join_misc.JoinExit ->
 (* technique to silentely suicide join-managed threads *)
+(*DEBUG*)debug2 "PROCESS OVER" "by JoinExit" ;
       flush stdout; flush stderr
     | e ->
+(*DEBUG*)debug2 "PROCESS OVER" "by exception" ;
       flush stdout; flush stderr;
       thread_uncaught_exception e
     end ;
@@ -258,17 +260,19 @@ let reply_to v k =
   k.kval <- Ret (Obj.repr v) ;
   incr_active () ; (* The awaken task becomes active *)
   Condition.signal k.kcondition ;
-  Mutex.unlock k.kmutex 
+  Mutex.unlock k.kmutex
 
 let reply_to_exn e k = 
 (*DEBUG*)debug3 "REPLY EXN"
 (*DEBUG*) (sprintf "%s" (Join_misc.exn_to_string e)) ;
   Mutex.lock k.kmutex ;
-  assert (k.kval = Start) ;
-  k.kval <- Exn e ;
-  incr_active () ; (* The awaken task becomes active *)
-  Condition.signal k.kcondition ;
-  Mutex.unlock k.kmutex 
+  match k.kval with
+  | Start ->
+      k.kval <- Exn e ;
+      incr_active () ; (* The awaken task becomes active *)
+      Condition.signal k.kcondition ;
+      Mutex.unlock k.kmutex
+  | Exn _| Go _|Ret _ -> assert false
 
 (********************************)
 (* Management of initial thread *)
