@@ -133,13 +133,6 @@ void caml_record_signal(int signal_number)
 {
   caml_pending_signals[signal_number] = 1;
   caml_young_limit = caml_young_end;
-  /* Some ports cache [caml_young_limit] in a register.
-     Use the signal context to modify that register too, but only if
-     we are inside Caml code (not inside C code). */
-#if defined(CONTEXT_PC) && defined(CONTEXT_YOUNG_LIMIT)
-  if (In_code_area(CONTEXT_PC))
-    CONTEXT_YOUNG_LIMIT = (context_reg) caml_young_limit;
-#endif
 }
 
 /* This routine is the common entry point for garbage collection
@@ -213,6 +206,13 @@ DECLARE_SIGNAL_HANDLER(handle_signal)
     caml_enter_blocking_section_hook();
   } else {
     caml_record_signal(sig);
+  /* Some ports cache [caml_young_limit] in a register.
+     Use the signal context to modify that register too, but only if
+     we are inside Caml code (not inside C code). */
+#if defined(CONTEXT_PC) && defined(CONTEXT_YOUNG_LIMIT)
+    if (In_code_area(CONTEXT_PC))
+      CONTEXT_YOUNG_LIMIT = (context_reg) caml_young_limit;
+#endif
   }
 }
 
