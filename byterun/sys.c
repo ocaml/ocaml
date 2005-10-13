@@ -116,17 +116,19 @@ static int sys_open_flags[] = {
   O_BINARY, O_TEXT, O_NONBLOCK
 };
 
-CAMLprim value caml_sys_open(value path, value flags, value perm)
+CAMLprim value caml_sys_open(value path, value vflags, value vperm)
 {
-  CAMLparam3(path, flags, perm);
-  int fd;
+  CAMLparam3(path, vflags, vperm);
+  int fd, flags, perm;
   char * p;
 
   p = caml_stat_alloc(caml_string_length(path) + 1);
   strcpy(p, String_val(path));
+  flags = caml_convert_flag_list(vflags, sys_open_flags);
+  perm = Int_val(vperm);
   /* open on a named FIFO can block (PR#1533) */
   caml_enter_blocking_section();
-  fd = open(p, caml_convert_flag_list(flags, sys_open_flags), Int_val(perm));
+  fd = open(p, flags, perm);
   caml_leave_blocking_section();
   caml_stat_free(p);
   if (fd == -1) caml_sys_error(path);
