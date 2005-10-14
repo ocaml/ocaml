@@ -13,38 +13,49 @@
 
 (* $Id$ *)
 
+open Join_types
+
+val local_id : space_id
+
+
 (* Forward pointers for local message sending, set by module Join *)
 type async_ref =
-  { mutable async : 'a . Join_types.automaton -> int -> 'a -> unit }
+  { mutable async : 'a . automaton -> int -> 'a -> unit }
 val send_async_ref : async_ref
 
+type async_gen_ref =
+  { mutable async_gen : 'a.'a async -> 'a -> unit ; }
+val send_async_gen_ref :  async_gen_ref
+
 type sync_ref =
-    { mutable sync : 'a 'b . Join_types.automaton -> int -> 'a -> 'b}
+    { mutable sync : 'a 'b . automaton -> int -> 'a -> 'b}
 val send_sync_ref : sync_ref
 
 (* Change a value to parameter and back *)
 val globalize :
-    'a ->  Marshal.extern_flags list -> Join_types.parameter
-val localize : Join_types.parameter -> 'a
+    'a ->  Marshal.extern_flags list -> parameter
+val localize : parameter -> 'a
 
 val remote_send_async :
-    Join_types.space_id ->
+    space_id ->
       int (* uid *) -> int (* channnel *) -> 'a (* message *) -> unit
 
 val remote_send_alone :
-    Join_types.space_id ->
+    space_id ->
       int (* uid *) -> 'a (* message *) -> unit
 
 val remote_send_sync :
-    Join_types.space_id ->
-      int (* uid *) -> int (* channnel *) -> Join_types.continuation ->
+    space_id ->
+      int (* uid *) -> int (* channnel *) -> continuation ->
 	'a (* message *) -> 'b
 
 val remote_send_sync_alone :
-    Join_types.space_id ->
-      int (* uid *) -> Join_types.continuation ->
+    space_id ->
+      int (* uid *) -> continuation ->
 	'a (* message *) -> 'b
 
 val halt : unit -> unit
+
+val at_fail : space_id -> unit async -> unit
 
 val flush_space : unit -> unit

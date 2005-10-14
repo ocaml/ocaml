@@ -16,6 +16,10 @@ open Join_types
 open Printf
 (*DEBUG*)open Join_debug
 
+type site = space_id
+
+let here = Join_space.local_id
+
 let create_process f = Join_scheduler.create_process f
 
 (* There are two sort of queues
@@ -159,17 +163,14 @@ let kont_create auto = kont_create0 auto.mutex
 (* Asynchronous sends *)
 (**********************)
 
-type async =
-    Async of stub * int
-  | Alone of stub
 
 (* Oups ! *)
-external field0 : async -> stub = "%field0"
+external field0 : 'a async -> stub = "%field0"
 
 let create_async auto i = Async (auto, i)
 and create_alone guard = Alone (wrap_guard guard)
 and alloc_alone () = Alone (wrap_guard (fun _ -> assert false))
-and patch_alone (a:async) (g:'a -> unit) =
+and patch_alone (a : 'a async) (g:'a -> unit) =
   let stub = field0 a in
   stub.stub_val <- (Obj.magic g : stub_val)
 
@@ -257,6 +258,7 @@ let send_async chan a = match chan with
 	Join_space.remote_send_alone rspace stub.uid a
     end
     
+let _ = Join_space.send_async_gen_ref.Join_space.async_gen <- send_async
 
 let local_tail_send_async auto idx a =
 (*DEBUG*)debug3 "TAIL_ASYNC" (sprintf "channel %s, status=%s"
@@ -459,6 +461,9 @@ let raise_join_exit () = raise Join_misc.JoinExit
 let exit_hook = Join_scheduler.exit_hook
 
 let exn_global = Join_message.exn_global
+
+let at_fail site (chan:unit channel) =
+  Join_space.at_fail site (Obj.magic chan : 'a async)
   
 let flush_space = Join_space.flush_space
 

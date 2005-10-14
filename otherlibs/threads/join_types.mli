@@ -66,32 +66,6 @@ type message =
   | ReplySend of kont_id * parameter
   | ReplyExn of kont_id * exn
 
-type out_connection =
-  {
-    out_queue : message Join_queue.t ;
-    out_channel : Unix.file_descr ;
-  }
-
-type in_connection =
-  { 
-    in_channel :  Unix.file_descr ;
-  }
-
-type link =
-  | NoConnection of Mutex.t
-  | Connected of Join_link.t * Mutex.t
-  | DeadConnection
-
-type remote_space =
-    {
-      rspace_id : space_id ;
-      next_kid : unit -> int ;
-      replies_pending : Join_misc.counter ;
-      konts : (int, continuation) Join_hash.t ;
-      mutable link : link ;
-      write_mtx : Mutex.t ;
-    }  
-
 
 (* Stubs for handling localized 'values' (eg join-definitions)
    They are implemented trough JoCustom blocks *)
@@ -121,6 +95,27 @@ type stub =
   If stub_tag is Remote
     - the stub stands for value uid at (remote) space stub_val
 *)
+
+(* internal structure for channels *)
+type 'a async =
+    Async of stub * int
+  | Alone of stub
+
+type link =
+  | NoConnection of Mutex.t
+  | Connected of Join_link.t * Mutex.t
+  | DeadConnection
+
+type remote_space =
+    {
+      rspace_id : space_id ;
+      next_kid : unit -> int ;
+      replies_pending : Join_misc.counter ;
+      konts : (int, continuation) Join_hash.t ;
+      mutable link : link ;
+      write_mtx : Mutex.t ;
+      mutable hooks : unit async list
+    }  
 
 
 type listener =

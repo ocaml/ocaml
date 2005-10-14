@@ -14,6 +14,10 @@
 
 open Join_types
 
+type site
+
+val here : site
+
 val create_process : (unit -> unit) -> unit
 
 val get_queue : automaton -> int -> 'a
@@ -29,19 +33,19 @@ val wrap_automaton : automaton -> stub
 val patch_table : automaton -> reaction array -> unit
 
 (* Asynchronous channels *)
-type async
-val create_async : stub -> int -> async
-val create_alone : ('a -> unit) -> async
-val alloc_alone : unit -> async
-val patch_alone : async -> ('a -> unit) -> unit
+
+val create_async : stub -> int -> 'a async
+val create_alone : ('a -> unit) -> 'a async
+val alloc_alone : unit -> 'a async
+val patch_alone : 'a async -> ('a -> unit) -> unit
 
 val local_send_async : automaton -> int -> 'a -> unit
 val local_tail_send_async : automaton -> int -> 'a -> unit
 val local_send_alone : ('a -> unit) -> 'a -> unit
 val local_tail_send_alone : ('a -> unit) -> 'a -> unit
 
-val send_async : async -> 'a -> unit
-val tail_send_async : async -> 'a -> unit
+val send_async : 'a async -> 'a -> unit
+val tail_send_async : 'a async -> 'a -> unit
 
 (* Synchronous channels are plain fonctions *)
 val local_send_sync : automaton -> int -> 'a -> 'b
@@ -69,6 +73,9 @@ val exit_hook : unit -> unit
 
 (* Register an exception as a global one, compiler use *)
 val exn_global : (string * int * int) -> Obj.t -> unit
+
+(* register a channel to be sent to when site fails *)
+val at_fail : site -> unit channel -> unit
 
 (* Give message to distant sites a chance to leave *)
 val flush_space : unit -> unit
