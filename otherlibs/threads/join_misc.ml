@@ -173,33 +173,9 @@ let exn_to_string = function
 
 let first_addr entry = entry.h_addr_list.(0)
 
-let name = gethostname ()
+let local_name = gethostname ()
 
-let local_name,local_addr =
-(* try to bind a socket to a INET port, if not possible,
-use loopback (127.0.0.1) instead... *)
-  let s = socket PF_INET SOCK_STREAM 0 in
-  setsockopt s SO_REUSEADDR true;  
-  let localaddr = 
-    try
-      first_addr (gethostbyname name)
-    with
-    | _ -> inet_addr_of_string "127.0.0.1"
-    in
-  let localname = 
-    try
-      bind s (ADDR_INET (localaddr, 0));
-      name
-    with
-      _ -> 
-        prerr_endline "WARNING: defaulting to loopback address, verify your network connection" ;
-        bind s (ADDR_INET (localaddr, 0));
-        "localhost"
-  in
-  close s;
-  localname, localaddr
-
-
+let local_addr = first_addr (gethostbyname local_name)
 
 let create_port port =
   handle_unix_error
@@ -208,17 +184,17 @@ let create_port port =
       let _ =
         try
           setsockopt s SO_REUSEADDR true;
-          bind s (ADDR_INET (local_addr, port));
+          bind s (ADDR_INET (inet_addr_any, port));
           listen s 5;
           ()
         with z -> close s ; raise z
       in
       let saddr = getsockname s in
       match saddr with
-        ADDR_INET (_, port) -> port, s
+      |	ADDR_INET (_, port) -> port, s
       | _ -> assert false) ()
-;;
 
+let local_port,_ = create_port 0
 
 let string_of_sockaddr = function
   | ADDR_UNIX s -> s

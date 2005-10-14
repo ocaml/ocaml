@@ -28,11 +28,14 @@ THREAD_OBJS= thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo
 BYTECODE_JOIN_C_OBJS=join_b.o
 NATIVECODE_JOIN_C_OBJS=join_n.o
 
-JOIN_OBJS=join_debug.cmo join_misc.cmo join_hash.cmo join_queue.cmo join_scheduler.cmo join_message.cmo join_space.cmo join.cmo ns.cmo
+JOIN_OBJS=join_debug.cmo join_misc.cmo join_link.cmo join_hash.cmo\
+ join_queue.cmo join_scheduler.cmo join_message.cmo join_space.cmo\
+ join.cmo ns.cmo
 
 GENFILES=thread.ml join.c join_types.mli\
  join_debug.mli join_debug.ml\
  join_misc.mli join_misc.ml\
+ join_link.mli join_link.ml\
  join_hash.mli join_hash.ml\
  join_queue.mli join_queue.ml\
  join_scheduler.mli join_scheduler.ml\
@@ -112,6 +115,12 @@ join_misc.ml: ../threads/join_misc.ml
 
 join_misc.mli: ../threads/join_misc.mli
 	cp -f ../threads/join_misc.mli . && chmod -w join_misc.mli
+
+join_link.ml: ../threads/join_link.ml
+	cp -f ../threads/join_link.ml . && chmod -w join_link.ml
+
+join_link.mli: ../threads/join_link.mli
+	cp -f ../threads/join_link.mli . && chmod -w join_link.mli
 
 join_hash.ml: ../threads/join_hash.ml
 	cp -f ../threads/join_hash.ml . && chmod -w join_hash.ml

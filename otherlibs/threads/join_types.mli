@@ -77,16 +77,10 @@ type in_connection =
     in_channel :  Unix.file_descr ;
   }
 
-type link_out =
+type link =
   | NoConnection of Mutex.t
-  | Connecting of message Join_queue.t
-  | Connected of out_connection
+  | Connected of Join_link.t * Mutex.t
   | DeadConnection
-
-type link_in =
-  | NoHandler
-  | Handler of in_connection
-  | DeadHandler
 
 type remote_space =
     {
@@ -94,8 +88,8 @@ type remote_space =
       next_kid : unit -> int ;
       replies_pending : Join_misc.counter ;
       konts : (int, continuation) Join_hash.t ;
-      mutable link_in : link_in ;
-      mutable link_out : link_out ;
+      mutable link : link ;
+      write_mtx : Mutex.t ;
     }  
 
 

@@ -34,5 +34,6 @@ val register : link -> string -> 'a -> unit
 
 (* additionaly register binding once,
    If a binding with the same key already exists,
-   the binding is not changed and function returns false *)
+   the binding is not changed and function returns false,
+   also returns false in case of failure *)
 val register_once : link -> string -> 'a -> bool

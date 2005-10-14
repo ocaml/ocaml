@@ -70,16 +70,18 @@ let localize_exn (exn : exn) =
 
    This code is inspired from input_value in pervasives.ml,
    it assumes non-blocking really_input *)
+
+open Join_link 
    
 let header_size = Marshal.header_size  (* 20 ! *)
 
-let input_marshalled_string ic =
+let input_marshalled_string  ic =
   let header = String.create header_size in
   really_input ic header 0 header_size ;
   let data_size = Marshal.data_size header 0 in
   let total_size = data_size + header_size in
   let buff = String.create total_size in
-  String.unsafe_blit header 0 buff 0 header_size ;
+  String.blit header 0 buff 0 header_size ;
   really_input ic buff header_size data_size ;
   buff
 

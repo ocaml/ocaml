@@ -15,7 +15,8 @@
 
 open Printf
 open Join_misc
- (*DEBUG*)open Join_debug
+open Join_link
+(*DEBUG*)open Join_debug
 
 let creation_time = Unix.gettimeofday ()
 
@@ -84,8 +85,8 @@ let get_remote_space space space_id =
       end ;
       replies_pending = counter_create () ;
       konts = Join_hash.create () ;
-      link_in = NoHandler ;
-      link_out = NoConnection (Mutex.create ()) ;
+      link = NoConnection (Mutex.create ()) ;
+      write_mtx = Mutex.create () ;
     })
     space_id
 
@@ -144,147 +145,104 @@ let verbose_close caller fd =
       (*DEBUG*) (Join_misc.exn_to_string e) ;
     ()
 
-exception NoQueue
+exception NoLink
 
-let rec start_listener space =
-  begin match space.space_listener with
-  | Deaf (sock,mtx) ->
-      let rec do_rec () =
-	Mutex.lock mtx ;
-	begin match  space.space_listener with
-	| Deaf (sock,mtx) ->
-	    let listener () =
-	      try
-		while true do
-		  (*DEBUG*)debug1 "LISTENER"
-		    (*DEBUG*)  (sprintf "now accept on: %s" (space_to_string space.space_id)) ;
-		  let s,_ = Join_misc.force_accept sock in
-		  (*DEBUG*)debug1 "LISTENER" "someone coming" ;
-		  Unix.shutdown s Unix.SHUTDOWN_SEND ;
-		  let inc = Unix.in_channel_of_descr s in
-		  let rspace_id = input_value inc in
-		  (*DEBUG*)debug1 "LISTENER" ("his name: "^space_to_string rspace_id)  ;
-		  let rspace =  get_remote_space space rspace_id in
-		  begin match rspace.link_in with
-		  | Handler _ -> assert false
-                  | DeadHandler ->
-                      (* Refuse reconnection, which normally does not occur *)
-                      Unix.shutdown s Unix.SHUTDOWN_RECEIVE ;
-                      close_in inc
-		  | NoHandler ->
-		      rspace.link_in <-
-			Handler {in_channel = s ; }
-		  end ;
-		  Join_scheduler.create_process
-		    (join_handler space rspace s inc)
-		done
-	      with
-		(* 'normal' reaction to closing socket internally *)
-	      | Unix.Unix_error((Unix.EBADF|Unix.EINVAL), "accept", _) ->
-		  (*DEBUG*)debug1 "LISTENER" "saw shutdowned or closed socket" ;
-		  ()
-	      | e ->
-		  (*DEBUG*)debug0 "LISTENER"
-		    (*DEBUG*)  (sprintf "died of %s" (Join_misc.exn_to_string e)) ;
-		  () in
-	    Join_scheduler.create_process listener ;
-	    space.space_listener <- Listen sock ;
-	    Mutex.unlock mtx
-	| Listen _ -> ()
-	end in
-      do_rec ()
-  | Listen _ -> ()
-  end
+(* listener is started in several occasions, nevertheless ensure unicity *)
+let rec start_listener space = match space.space_listener with
+| Listen _ -> ()
+| Deaf (sock,mtx) ->
+    Mutex.lock mtx ;
+    match space.space_listener with
+    | Deaf (sock,mtx) ->
+	space.space_listener <- Listen sock ;
+	Mutex.unlock mtx ;
+	Join_scheduler.create_process (listener space sock)
+    | Listen _ ->
+	Mutex.unlock mtx
 
-and join_handler space rspace s inc () =
-  (*DEBUG*)debug1 "HANDLER"
-    (*DEBUG*)  ("start receiving from "^string_of_space rspace.rspace_id) ;  try
-      while true do
-	let msg = Join_message.input_msg inc in
-	(*DEBUG*)debug2 "HANDLER" ("message from "^string_of_space rspace.rspace_id) ;
-	match msg with
-	| AsyncSend (chan, v) ->
-	    let auto = find_automaton space chan.auto_id
-	    and v = localize_rec space v in
-	    send_async_ref.async auto chan.chan_id v
-        | AloneSend (uid,v) ->
-            let g = find_async_forwarder space uid
-            and v = localize_rec space v in
+and listener space sock () =
+  try while true do
+(*DEBUG*)debug1 "LISTENER"
+(*DEBUG*)  (sprintf "now accept on: %s"
+(*DEBUG*)    (space_to_string space.space_id)) ;
+    let s,_ = Join_misc.force_accept sock in
+(*DEBUG*)debug1 "LISTENER" "someone coming" ;
+    let link = Join_link.create s in
+    let rspace_id = (input_value link : space_id) in
+(*DEBUG*)debug1 "LISTENER" ("his name: "^space_to_string rspace_id)  ;
+    output_value link true ; flush link ;
+    let rspace = get_remote_space space rspace_id in
+    open_link space rspace link
+  done  with  e ->
+(*DEBUG*)debug0 "LISTENER"
+(*DEBUG*)  (sprintf "died of %s" (Join_misc.exn_to_string e)) ;
+    ()
+
+and open_link space rspace link =  match rspace.link with
+| Connected _
+| DeadConnection ->
+    close link
+| NoConnection mtx ->
+    Mutex.lock mtx ;
+    match rspace.link with
+    | Connected _
+    | DeadConnection -> (* quite unlikely ! *)
+	close link ;
+	Mutex.unlock mtx
+    | NoConnection _ ->
+	rspace.link <- Connected (link,mtx) ;
+	Mutex.unlock mtx ;
+	Join_scheduler.create_process
+	  (join_handler space rspace link)
+
+and join_handler space rspace link () =
+(*DEBUG*)debug1 "HANDLER"
+(*DEBUG*)  ("start receiving from "^string_of_space rspace.rspace_id) ;  try
+  while true do
+    let msg = Join_message.input_msg link in
+(*DEBUG*)debug2 "HANDLER" ("message from "^string_of_space rspace.rspace_id) ;
+    match msg with
+    | AsyncSend (chan, v) ->
+	let auto = find_automaton space chan.auto_id
+	and v = localize_rec space v in
+	send_async_ref.async auto chan.chan_id v
+    | AloneSend (uid,v) ->
+        let g = find_async_forwarder space uid
+        and v = localize_rec space v in
 (* inlined async call, must match local_send_alone in join.ml *)
-            Join_scheduler.create_process (fun () -> g v)
-	| SyncSend (chan, kid, v) ->
-	    let auto = find_automaton space chan.auto_id
-	    and v = localize_rec space v
-            and idx = chan.chan_id in
-            call_sync space rspace kid
-              (fun v -> send_sync_ref.sync auto idx v) v
-	| AloneSyncSend (uid, kid, v) ->
-            let g = find_sync_forwarder space uid
-            and v = localize_rec space v in
-            call_sync space rspace kid g v
-	| ReplySend (kid, v) ->
-	    let kont =
-	      try Join_hash.find_remove rspace.konts kid
-	      with Not_found -> assert false
-	    and v = localize_rec space v in
-	    Join_scheduler.reply_to v kont
-	| ReplyExn (kid, e) ->
-	    let kont =
-	      try Join_hash.find_remove rspace.konts kid
-	      with Not_found -> assert false in
-	    let e = Join_message.localize_exn e in
-	    Join_scheduler.reply_to_exn e kont              
-      done
-    with
-    | End_of_file as e ->
-	(* Distant site shutdowned *)
-	(*DEBUG*)debug1 "HANDLER"
-        (*DEBUG*) (sprintf "site %s tells it halts with %s"
-        (*DEBUG*) (space_to_string rspace.rspace_id) (Printexc.to_string e)) ;
-        rspace.link_in <- DeadHandler ;
-	verbose_close "handler self close" s ;        
-	(* For replies not made *)
-	Join_hash.iter_empty rspace.konts
-	  (fun _ k -> Join_scheduler.reply_to_exn JoinExit k) ;
-	(*DEBUG*)debug1 "HANDLER" "cleanup is over" ;
-	()
-    | e ->
-	(*DEBUG*)debug0 "HANDLER"
-	  (*DEBUG*)  (sprintf "died of %s" (Join_misc.exn_to_string e)) ;
-	()
+        Join_scheduler.create_process (fun () -> g v)
+    | SyncSend (chan, kid, v) ->
+	let auto = find_automaton space chan.auto_id
+	and v = localize_rec space v
+        and idx = chan.chan_id in
+        call_sync space rspace kid
+          (fun v -> send_sync_ref.sync auto idx v) v
+    | AloneSyncSend (uid, kid, v) ->
+        let g = find_sync_forwarder space uid
+        and v = localize_rec space v in
+        call_sync space rspace kid g v
+    | ReplySend (kid, v) ->
+	let kont =
+	  try Join_hash.find_remove rspace.konts kid
+	  with Not_found -> assert false
+	and v = localize_rec space v in
+	Join_scheduler.reply_to v kont
+    | ReplyExn (kid, e) ->
+	let kont =
+	  try Join_hash.find_remove rspace.konts kid
+	  with Not_found -> assert false in
+	let e = Join_message.localize_exn e in
+	Join_scheduler.reply_to_exn e kont              
+  done
+with
+| Failed ->
+(*DEBUG*)debug1 "HANDLER" "input operation failed" ;
+    close_link rspace
+| e ->
+(*DEBUG*)debug0 "HANDLER"
+(*DEBUG*)  (sprintf "died of %s" (Join_misc.exn_to_string e)) ;
+    ()
 
-
-(* Get out queue for rspace,
-   in case no connection is here yet, create one *)
-and get_out_queue space rspace =
-  match rspace.link_out with
-  | DeadConnection -> raise NoQueue
-  | Connected {out_queue = queue ; } | Connecting queue -> queue
-  | NoConnection mtx ->
-      (* Outbound connection is set asynchronously,
-	 hence check race condition, so as to create exactly
-	 one queue and sender_work process *)
-      Mutex.lock mtx ;
-      match rspace.link_out with
-      | DeadConnection ->
-          Mutex.unlock mtx ;
-          raise NoQueue (* quite unlikely ! *)
-      | Connected  {out_queue = queue ; }
-      | Connecting queue -> (* Other got it ! *)
-	  Mutex.unlock mtx ;
-	  queue
-      | NoConnection _ -> (* Got it ! *)
-	  let queue = Join_queue.create () in
-	  rspace.link_out <- Connecting queue ;
-	  Mutex.unlock mtx ;
-	  Join_scheduler.create_process
-	    (start_sender_work space rspace queue) ;
-	  queue
-
-
-
-(* Perform a sync all on the local site,
-   sending reply to continuation kid of rspace *)
 and call_sync space rspace kid g v =
   Join_scheduler.create_process
     (fun () ->
@@ -294,64 +252,69 @@ and call_sync space rspace kid g v =
 	remote_reply_to space rspace kid r
       with e -> remote_reply_to_exn space rspace kid e
       end ;
-      (* At this point the reply is in queue, or  *)
+      (* At this point the reply is flushed, or the rspace is dead *)
       decr rspace.replies_pending)
 
-and remote_reply_to space rspace kid r =
+and do_remote_send space rspace do_msg a =
   try
-    let queue = get_out_queue space rspace in
-    Join_queue.put queue
-      (ReplySend
-         (kid, globalize_rec space r []))
-  with NoQueue -> ()
+    let link = get_link space rspace in
+    sender_work rspace link (do_msg (globalize_rec space a []))
+  with NoLink -> ()
+
+and remote_reply_to space rspace kid a =
+  do_remote_send space rspace
+    (fun v -> ReplySend (kid, v)) a
 
 and remote_reply_to_exn space rspace kid e =
   try
-    let queue = get_out_queue space rspace in
-    Join_queue.put queue (ReplyExn (kid, e))
-  with NoQueue -> ()
+    let link = get_link space rspace in
+    sender_work rspace link
+      (ReplyExn (kid, e))
+  with NoLink -> ()
 
-and sender_work rspace queue s outc =
-  begin try while true do
-    let msg = Join_queue.get queue in
+and close_link rspace = match rspace.link with
+| NoConnection _ -> assert false
+| DeadConnection -> ()
+| Connected (_, mtx) ->
+    Mutex.lock mtx ;
+    match rspace.link with
+    | NoConnection _ -> assert false
+    | DeadConnection -> Mutex.unlock mtx
+    | Connected (link,_) ->
+	rspace.link <- DeadConnection ;
+	Mutex.unlock mtx ;
+	try
+	  close link ;
+(* For replies not made *)
+	  Join_hash.iter_empty rspace.konts
+	    (fun _ k -> Join_scheduler.reply_to_exn JoinExit k) ;
+(*DEBUG*)debug1 "HANDLER" "cleanup is over" ;
+	  ()
+	with Failed -> assert false
+
+(* Get link for rspace, in case no connection is here yet, create one *)
+and get_link space rspace =  match rspace.link with
+  | DeadConnection -> raise NoLink
+  | Connected (link,_) -> link
+  | NoConnection _ ->
+      let addr,port,_ = rspace.rspace_id in
+      let s = Join_misc.force_connect addr port in
+      let link = Join_link.create s in
+      output_value link space.space_id ; flush link ;
+      ignore (input_value link : bool) ;
+      open_link space rspace link ;
+      get_link space rspace
+
+and sender_work rspace link msg =
 (*DEBUG*)debug2 "SENDER" ("message for "^string_of_space rspace.rspace_id) ;
-    Join_message.output_msg outc msg ; flush outc ;
-  done with
-  | e ->
-      (*DEBUG*)debug0 "SENDER" ("died of "^Join_misc.exn_to_string e) ;
-      ()
-  end ;
-  rspace.link_out <- DeadConnection ;
-  verbose_close "self_close_from sender_work" s ;
-  (* In any case, empty queue, flush_out_queue may be waiting *)
-  (* clean queue should also Join_misc.Exit konts of messages in queue *)
-  Join_queue.clean queue
-    (fun msg -> match msg with
-    | SyncSend (_,kid,_)|AloneSyncSend (_,kid,_) ->
-        begin try
-          let kont = Join_hash.find_remove rspace.konts kid in
-          Join_scheduler.reply_to_exn Join_misc.JoinExit kont
-        with Not_found -> () end
-    | AsyncSend (_,_)|ReplySend (_,_)|ReplyExn (_,_)
-    | AloneSend (_,_) -> ())
-
-and start_sender_work space rspace queue () =
-  (*DEBUG*)debug1 "SENDER"
-    (*DEBUG*)    (sprintf "connect from %s to %s"
-		    (*DEBUG*)       (string_of_space space.space_id)
-		    (*DEBUG*)       (string_of_space rspace.rspace_id)) ;
-  let addr,port,_ = rspace.rspace_id in
-  let s = force_connect addr port in
-  Unix.shutdown s Unix.SHUTDOWN_RECEIVE ;
-  let outc = Unix.out_channel_of_descr s in
-  rspace.link_out <-
-    Connected
-      { out_queue = queue ;
-	out_channel = s ; } ;
-  output_value outc space.space_id  ; flush outc ;
-  (*DEBUG*)debug1 "SENDER"
-    (*DEBUG*)  (sprintf "just sent my name %s" (string_of_space space.space_id)) ;
-  sender_work rspace queue s outc
+  try
+    Mutex.lock rspace.write_mtx ;
+    Join_message.output_msg link msg ; flush link ;
+    Mutex.unlock rspace.write_mtx
+  with Failed ->
+    Mutex.unlock rspace.write_mtx ;
+(*DEBUG*)debug0 "SENDER" "output operation failed" ;
+    close_link rspace
 
 (* returns global identification for stub *)
 and export_stub space stub = match stub.stub_tag with
@@ -359,7 +322,7 @@ and export_stub space stub = match stub.stub_tag with
     let uid = stub.uid in
     if uid <> 0 then space.space_id, uid
     else begin
-      (* race condition, since several threads can be exporting this stub *)
+    (* race condition, since several threads can be exporting this stub *)
       Mutex.lock space.uid_mutex ;
       let uid = stub.uid in
       if uid <> 0 then begin (* lost *)
@@ -383,7 +346,6 @@ and export_stub space stub = match stub.stub_tag with
 (* quasi-reverse of export stub, from global names to
    values, note that the stub is allocated by
    do_localize_message *)
-
 and import_stub space (rspace_id, uid) =
   if same_space rspace_id space.space_id then
     Local, find_local space uid, uid
@@ -402,35 +364,26 @@ and localize_rec space (s,t) =
 (* Various remote message sendings *)
 (***********************************)
 
-(* When outlink is dead, get_tout_queue raises NoQueue,
+(* When outlink is dead, get_tout_queue raises NoLink
    async messages are distroyed silentely *)
 
 let do_remote_send_async space rspace_id uid idx a =
-  let rspace = get_remote_space space rspace_id in
-  try
-    let queue = get_out_queue space rspace in
-    Join_queue.put queue
-      (AsyncSend
-         ({auto_id=uid; chan_id=idx;}, globalize_rec space a []))
-  with NoQueue -> ()
+  do_remote_send space (get_remote_space space rspace_id)
+    (fun v -> AsyncSend ({auto_id=uid; chan_id=idx;}, v)) a
 
 let remote_send_async rspace uid idx a =
 (*DEBUG*)debug3 "REMOTE" "SEND ASYNC" ;
   do_remote_send_async local_space rspace uid idx a
     
 let do_remote_send_alone space rspace_id uid a =
-  let rspace = get_remote_space space rspace_id in
-  try
-    let queue = get_out_queue space rspace in
-    Join_queue.put queue
-      (AloneSend (uid, globalize_rec space a []))
-  with NoQueue -> ()
+  do_remote_send space (get_remote_space space rspace_id)
+    (fun v -> AloneSend (uid, v)) a
 
 let remote_send_alone rspace_id uid a =
 (*DEBUG*)debug3 "REMOTE" "SEND ALONE" ;
   do_remote_send_alone local_space rspace_id uid a
 
-(* When outlink is dead, get_tout_queue raises NoQueue,
+(* When outlink is dead, get_link raises NoLink
    then, sync calls can fail the join way,
    this will make all tasks waiting replies to die silently *)
 
@@ -441,10 +394,12 @@ let do_remote_call space rspace_id do_msg kont a =
 (* There is a race condition with join_handler suicide here,
    the calling task may not get its Join_misc.Exit exception... *)
   Join_hash.add rspace.konts kid kont ;
-  let queue =
-    try get_out_queue space rspace
-    with NoQueue -> raise Join_misc.JoinExit in
-  Join_queue.put queue (do_msg kid (globalize_rec space a [])) ;
+  let link =
+    try get_link space rspace
+    with NoLink ->
+      Join_hash.remove rspace.konts kid ;
+      raise Join_misc.JoinExit in
+  sender_work rspace link (do_msg kid (globalize_rec space a [])) ;
   Mutex.lock kont.kmutex ;
   Join_scheduler.suspend_for_reply kont
 
@@ -519,14 +474,7 @@ let flush_out_queue space rspace =
 (*DEBUG*)debug2 "WAIT PENDING REPLIES" (space_to_string rspace.rspace_id) ;
   wait_zero rspace.replies_pending ;
 (*DEBUG*)debug2 "NO PENDING REPLIES" (space_to_string rspace.rspace_id) ;
-(* Then wait for sender to discover empty queue *)
-  try
-    let queue = get_out_queue space rspace in
-    Join_queue.wait_empty queue ;
-(*DEBUG*)debug2 "FLUSHED" (space_to_string rspace.rspace_id) ;
-  with
-  | NoQueue -> ()
-
+  ()
 
 let do_flush_out_queues space =
 (*DEBUG*)debug2 "FLUSH SPACE" "enter" ;

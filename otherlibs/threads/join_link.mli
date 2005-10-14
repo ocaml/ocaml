@@ -12,25 +12,18 @@
 
 (* $Id$ *)
 
-(* Function exn_global loc exn_cstr
-   registers the exception constructor exn_cstr as a global one.
+exception Failed
 
-   It fails if a structurally equivalent constructor have
-   already been globalized, loc is a position in source file for
-   error message *)
+type t
 
-val exn_global : (string * int * int) -> Obj.t -> unit
+(* does not raise Failed, may raise Out_of_memory, but then *)
+val create : Unix.file_descr -> t
 
-val localize_exn : exn -> exn
+(* all those may raise Failed, and only Failed... *)
+val output_value : t -> 'a -> unit
+val output_string : t -> string -> unit
+val flush : t -> unit
+val input_value : t -> 'a
+val really_input : t -> string -> int -> int -> unit
 
-open Join_types
-
-(* Specialized input_value/output_value for messages between sites *)
-
-val input_parameter : Join_link.t -> parameter
-val output_parameter : Join_link.t -> parameter -> unit
-
-val input_msg : Join_link.t -> message
-val output_msg : Join_link.t -> message -> unit
-
-
+val close : t -> unit

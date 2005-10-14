@@ -18,12 +18,13 @@ open Join_types
 (*DEBUG*)open Join_debug
 
 type request =
-  | Put of string  (* + parameter *)
-  | SyncPut of bool * string (* + parameter *)
+  | Put of bool * string (* + parameter *)
   | Get of string
 
 
 let local_addr = Join_misc.local_addr
+
+open Join_link
 
 type server =
   {fd : Unix.file_descr ;
@@ -39,16 +40,12 @@ let start_server port =
       try
         while true do
           let (s,_) = Join_misc.force_accept sacc in
-          begin try
-            let inc = in_channel_of_descr s
-            and outc = out_channel_of_descr s in
-            let req = input_value inc in
+	  let link = Join_link.create s in
+          try
+            let req = input_value link in
             begin match req with
-            | Put (key) ->
-		let v = Join_message.input_parameter inc in
-		Hashtbl.replace t key v
-            | SyncPut (once, key) ->
-		let v = Join_message.input_parameter inc in
+            | Put (once, key) ->
+		let v = Join_message.input_parameter link in
                 let r =
                   if once && Hashtbl.mem t key then
                     false
@@ -56,43 +53,42 @@ let start_server port =
                     Hashtbl.replace t key v ;
                     true
                   end in
-                output_value outc r  ; flush outc
+                output_value link r  ; flush link
             | Get key ->
-(*DEBUG*)debug3 "NS" (sprintf "server get %s" key) ;		
 		begin try
                   let r = Hashtbl.find t key in
-		  output_value outc true ;
-                  Join_message.output_parameter outc r ;
-(*DEBUG*)debug3 "NS" "server get -> found" ;
+		  output_value link true ;
+                  Join_message.output_parameter link r ;
 		  ()
 		with Not_found ->
-(*DEBUG*)debug3 "NS" "server get -> not found" ;
-		  output_value outc false
+		  output_value link false
 		end ;
-		flush outc
+		flush link
             end (* match *)
-          with e ->
-            prerr_string "ns_server went wrong: " ;
-            Join_misc.prerr_exn e
-          end ; (* try *)
-          close s
+	  with Failed    ->
+	    prerr_endline "ns_lookup went wrong" ;
+	    close link ;
+	    raise Exit
         done
       with
-      | Unix.Unix_error((Unix.EBADF|Unix.EINVAL), "accept", _) ->
-(*DEBUG*)debug1 "NAME_SERVER" "saw shutdowned or closed socket" ;
-          ()
-      | e ->
-(*DEBUG*)debug1 "NAME_SERVER"
+      |	Exit -> ()
+      |	e ->
+(*DEBUG*)debug0 "NAME_SERVER"
 (*DEBUG*)  (sprintf "died of %s" (Join_misc.exn_to_string e)) ;
-          ()) ;
+        ()) ;
   { fd=sacc ; run=true ; mutex=Mutex.create () ; }
 
 let stop_server ({fd=sacc ; run=run ; mutex=mutex } as s) =
   Mutex.lock mutex ;
   if run then begin
 (*DEBUG*)debug1 "STOP_SERVER" "" ;
-    Unix.shutdown sacc Unix.SHUTDOWN_ALL ;
-    Unix.close sacc ;
+    begin try
+      Unix.shutdown sacc Unix.SHUTDOWN_ALL ;
+      Unix.close sacc ;
+    with e ->
+(*DEBUG*)debug0 "STOP SERVER"
+(*DEBUG*)  (sprintf "got %s" (Join_misc.exn_to_string e)) ;
+    end ;
     s.run <- false
   end ;
   Mutex.unlock mutex
@@ -107,48 +103,52 @@ let register_client addr port =
   addr, port
 
 let lookup (addr, port) key =
-  let s = Join_misc.force_connect addr port in
   try
+    let s = Join_misc.force_connect addr port in
 (*DEBUG*)debug3 "NS" (sprintf "client get %s" key) ;
-    let inc = in_channel_of_descr s
-    and outc = out_channel_of_descr s in
-    output_value outc (Get key) ; flush outc ;
-    let found = input_value inc in
+    let link = Join_link.create s in
+    begin try
+      output_value link (Get key) ; flush link ;
+      let found = input_value link in
 (*DEBUG*)debug3 "NS" (sprintf "client get -> %b" found) ;
-    if found then begin
-      let r = Join_message.input_parameter inc in
-      close s ;
-      Join_space.localize r
-    end else begin
-      close s ;
-      raise Not_found
+      if found then begin
+	let r = Join_message.input_parameter link in
+	close link ;
+	Join_space.localize r
+      end else begin
+	close link ;
+	raise Not_found
+      end
+    with
+    | Not_found -> raise Not_found
+    | Failed    ->
+	prerr_endline "ns_lookup went wrong" ;
+	close link ;
+	raise Not_found
     end
-  with
-  | Not_found -> raise Not_found
-  | e ->
-      prerr_string "ns_lookup went wrong: " ;
-      Join_misc.prerr_exn e ;
-      close s ;
-      raise Not_found
-        
+  with e ->
+(*DEBUG*)debug0 "NS LOOKUP" (sprintf "got %s" (Join_misc.exn_to_string e)) ;
+      raise e
 
 let do_sync_register once (addr, port) key v =
-  let s = Join_misc.force_connect addr port in
   try
-    let outc = out_channel_of_descr s
-    and inc = in_channel_of_descr s in
-    output_value outc (SyncPut (once, key)) ;
-    Join_message.output_parameter outc (Join_space.globalize v []) ;
-    flush outc ;
-    let r = input_value inc in
-    close s ;
-    r
-  with
-  | e ->
-      prerr_string "ns_register went wrong: " ;
-      Join_misc.prerr_exn e ;
-      close s ;
-      raise e
+    let s = Join_misc.force_connect addr port in
+    let link = Join_link.create s in
+    try
+      output_value link (Put (once, key)) ;
+      Join_message.output_parameter link (Join_space.globalize v []) ;
+      flush link ;
+      let r = (input_value link : bool ) in
+      close link ;
+      r
+    with
+    | Failed ->
+	prerr_endline "ns_register went wrong: " ;
+	Unix.close s ;
+	false
+  with e ->
+(*DEBUG*)debug0 "NS REGISTER" (sprintf "got %s" (Join_misc.exn_to_string e)) ;
+    raise e
 
 let register ns key v =
   ignore (do_sync_register false ns key v)
