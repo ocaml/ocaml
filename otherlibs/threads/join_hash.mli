@@ -34,9 +34,6 @@ val find : ('a,'b) t -> 'a -> 'b
 (* find and atomically remove a value *)
 val find_remove  : ('a,'b) t -> 'a -> 'b
 
-(* find a value, create it when not present *)
-val get :  ('a,'b) t -> ('a -> 'b) -> 'a -> 'b
-
 (* iterate over all bindings *)
 val iter : ('a, 'b) t -> ('a -> 'b -> unit) -> unit
 

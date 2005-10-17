@@ -103,6 +103,7 @@ type 'a async =
 
 type link =
   | NoConnection of Mutex.t
+  | Connecting of Mutex.t * Condition.t
   | Connected of Join_link.t * Mutex.t
   | DeadConnection
 

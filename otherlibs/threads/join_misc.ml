@@ -82,16 +82,17 @@ let write_return c =
   do_lock c
     (fun c ->
       c.n_read <- 0 ;
-      if c.n_wait > 0 then
+      begin if c.n_wait > 0 then
         Condition.broadcast c.cond_r
       else
-        Condition.signal c.cond_w)
+        Condition.signal c.cond_w end)
+      
       
 
-let protect_write c writer key =
+let protect_write c writer arg =
   write_access c ;
   try
-    let r = writer key in
+    let r = writer arg in
     write_return c ;
     r
   with
