@@ -37,18 +37,6 @@ let create fd =
     | Out_of_memory -> raise e
     | _  -> assert false
 
-let output_value { outc = outc } v =
-  try
-    output_value outc v
-  with
-  | Sys_error _ as e ->
-(*DEBUG*)debug1 "OUTPUT_VALUE"
-(*DEBUG*)  (sprintf "failed on %s" (Join_misc.exn_to_string e)) ;
-      raise Failed
-  | e ->
-(*DEBUG*)debug0 "IO ERROR IN OUTPUT_VALUE"
-(*DEBUG*)  (sprintf "failed on %s" (Join_misc.exn_to_string e)) ;   
-      exit 0
 
 let output_string { outc = outc } v =
   try
@@ -59,9 +47,9 @@ let output_string { outc = outc } v =
 (*DEBUG*)  (sprintf "failed on %s" (Join_misc.exn_to_string e)) ;
       raise Failed
   | e ->
-(*DEBUG*)debug0 "IO ERROR IN OUTPUT_STRING"
+(*DEBUG*)debug0 "FATAL OUTPUT_STRING"
 (*DEBUG*)  (sprintf "failed on %s" (Join_misc.exn_to_string e)) ;   
-      exit 0
+      assert false
  
 
 let flush { outc = outc } =
@@ -73,39 +61,26 @@ let flush { outc = outc } =
 (*DEBUG*)  (sprintf "failed on %s" (Join_misc.exn_to_string e)) ;
       raise Failed
   | e ->
-(*DEBUG*)debug0 "IO ERROR IN FLUSH"
+(*DEBUG*)debug0 "FATAL FLUSH"
 (*DEBUG*)  (sprintf "failed on %s" (Join_misc.exn_to_string e)) ;   
-      exit 0
+      assert false
 
-let input_value { inc = inc } =
-  try
-    input_value inc
-  with 
-  | End_of_file|Failure "input_value: truncated object" as e ->
-(*DEBUG*)debug1 "INPUT_VALUE"
-(*DEBUG*)  (sprintf "failed on %s" (Join_misc.exn_to_string e)) ;
-      raise Failed
-  | e ->
-(*DEBUG*)debug0 "IO ERROR IN INPUT_VALUE"
-(*DEBUG*)  (sprintf "failed on %s" (Join_misc.exn_to_string e)) ;   
-      exit 0
 
 let really_input { inc = inc } buff ofs len =
   try
     really_input inc buff ofs len
   with
-  | End_of_file as e ->
+  | End_of_file|Sys_error _ as e ->
 (*DEBUG*)debug1 "REALLY INPUT"
 (*DEBUG*)  (sprintf "failed on %s" (Join_misc.exn_to_string e)) ;
       raise Failed
   | e ->
-(*DEBUG*)debug0 "IO ERROR IN REALLY INPUT"
+(*DEBUG*)debug0 "FATAL REALLY INPUT"
 (*DEBUG*)  (sprintf "failed on %s" (Join_misc.exn_to_string e)) ;   
-      exit 0
+      assert false
 
 let close {fd=fd} =
   try
-    Unix.shutdown fd Unix.SHUTDOWN_ALL ;
     Unix.close fd
   with
   | Unix.Unix_error (Unix.EBADF,_,_) as e ->

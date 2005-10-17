@@ -25,7 +25,10 @@ val localize_exn : exn -> exn
 
 open Join_types
 
-(* Specialized input_value/output_value for messages between sites *)
+(* Specialized input/output for messages between sites *)
+
+val input_value : Join_link.t -> 'a
+val output_value : Join_link.t -> 'a -> unit
 
 val input_parameter : Join_link.t -> parameter
 val output_parameter : Join_link.t -> parameter -> unit

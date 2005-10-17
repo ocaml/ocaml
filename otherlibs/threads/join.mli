@@ -63,7 +63,7 @@ val reply_to : 'a -> continuation -> unit
 val reply_to_exn : exn -> continuation -> unit
 
 (* Silent suicide of a join thread (compiler use only) *)
-val raise_join_exit : unit -> unit
+val raise_join_exit : unit -> 'a
 
 (* Hook for 'at_exit' will somehow control termination of program.
    More precisely, program terminates when they is no more

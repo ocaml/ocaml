@@ -42,7 +42,7 @@ let start_server port =
           let (s,_) = Join_misc.force_accept sacc in
 	  let link = Join_link.create s in
           try
-            let req = input_value link in
+            let req = Join_message.input_value link in
             begin match req with
             | Put (once, key) ->
 		let v = Join_message.input_parameter link in
@@ -53,15 +53,15 @@ let start_server port =
                     Hashtbl.replace t key v ;
                     true
                   end in
-                output_value link r  ; flush link
+                Join_message.output_value link r  ; flush link
             | Get key ->
 		begin try
                   let r = Hashtbl.find t key in
-		  output_value link true ;
+		  Join_message.output_value link true ;
                   Join_message.output_parameter link r ;
 		  ()
 		with Not_found ->
-		  output_value link false
+		  Join_message.output_value link false
 		end ;
 		flush link
             end (* match *)
@@ -108,8 +108,8 @@ let lookup (addr, port) key =
 (*DEBUG*)debug3 "NS" (sprintf "client get %s" key) ;
     let link = Join_link.create s in
     begin try
-      output_value link (Get key) ; flush link ;
-      let found = input_value link in
+      Join_message.output_value link (Get key) ; flush link ;
+      let found = Join_message.input_value link in
 (*DEBUG*)debug3 "NS" (sprintf "client get -> %b" found) ;
       if found then begin
 	let r = Join_message.input_parameter link in
@@ -135,10 +135,10 @@ let do_sync_register once (addr, port) key v =
     let s = Join_misc.force_connect addr port in
     let link = Join_link.create s in
     try
-      output_value link (Put (once, key)) ;
+      Join_message.output_value link (Put (once, key)) ;
       Join_message.output_parameter link (Join_space.globalize v []) ;
       flush link ;
-      let r = (input_value link : bool ) in
+      let r = (Join_message.input_value link : bool ) in
       close link ;
       r
     with

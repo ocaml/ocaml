@@ -15,7 +15,6 @@
 
 open Printf
 open Join_misc
-open Join_link
 (*DEBUG*)open Join_debug
 
 let creation_time = Unix.gettimeofday ()
@@ -172,9 +171,10 @@ and listener space sock () =
     let s,_ = Join_misc.force_accept sock in
 (*DEBUG*)debug1 "LISTENER" "someone coming" ;
     let link = Join_link.create s in
-    let rspace_id = (input_value link : space_id) in
+    let rspace_id = (Join_message.input_value link : space_id) in
 (*DEBUG*)debug1 "LISTENER" ("his name: "^space_to_string rspace_id)  ;
-    output_value link true ; flush link ;
+    Join_message.output_value link true ;
+    Join_link.flush link ;
     let rspace = get_remote_space space rspace_id in
     open_link space rspace link
   done  with  e ->
@@ -185,13 +185,15 @@ and listener space sock () =
 and open_link space rspace link =  match rspace.link with
 | Connected _
 | DeadConnection ->
-    close link
+    begin try Join_link.close link
+    with Join_link.Failed -> assert false end
 | NoConnection mtx ->
     Mutex.lock mtx ;
     match rspace.link with
-    | Connected _
+    | Connected _       (* lost race *)
     | DeadConnection -> (* quite unlikely ! *)
-	close link ;
+	begin try Join_link.close link
+	with Join_link.Failed -> assert false end ;
 	Mutex.unlock mtx
     | NoConnection _ ->
 	rspace.link <- Connected (link,mtx) ;
@@ -239,7 +241,7 @@ and join_handler space rspace link () =
 	Join_scheduler.reply_to_exn e kont              
   done
 with
-| Failed ->
+| Join_link.Failed ->
 (*DEBUG*)debug1 "HANDLER" "input operation failed" ;
     close_link rspace
 | e ->
@@ -292,9 +294,9 @@ and close_link rspace = match rspace.link with
 	rspace.link <- DeadConnection ;
 	Mutex.unlock mtx ;
 (*DEBUG*)debug1 "CLOSE LINK" "starting" ;
-	begin try
-	  close link (* assumes failure of 'close link' means double call *)
-	with Failed -> assert false end ;
+ (* assumes failure of 'close link' means double call *)
+	begin try Join_link.close link
+	with Join_link.Failed -> assert false end ;
 (* For replies not made *)
 	Join_hash.iter_empty rspace.konts
 	  (fun _ k -> Join_scheduler.reply_to_exn JoinExit k) ;
@@ -314,8 +316,9 @@ and get_link space rspace =  match rspace.link with
       let addr,port,_ = rspace.rspace_id in
       let s = Join_misc.force_connect addr port in
       let link = Join_link.create s in
-      output_value link space.space_id ; flush link ;
-      ignore (input_value link : bool) ;
+      Join_message.output_value link space.space_id ;
+      Join_link.flush link ;
+      ignore (Join_message.input_value link : bool) ;
       open_link space rspace link ;
       get_link space rspace
 
@@ -323,10 +326,11 @@ and sender_work rspace link msg =
 (*DEBUG*)debug2 "SENDER" ("message for "^string_of_space rspace.rspace_id) ;
   try
     Mutex.lock rspace.write_mtx ;
-    Join_message.output_msg link msg ; flush link ;
+    Join_message.output_msg link msg ;
+    Join_link.flush link ;
     Mutex.unlock rspace.write_mtx
   with
-  | Failed -> (* This can happen several times, no big deal *)
+  | Join_link.Failed -> (* This can happen several times, no big deal *)
     Mutex.unlock rspace.write_mtx ;
 (*DEBUG*)debug1 "SENDER" "output operation failed" ;
     close_link rspace (* since close_link is protected to run once only *)

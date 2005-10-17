@@ -20,10 +20,11 @@ type t
 val create : Unix.file_descr -> t
 
 (* all those may raise Failed, and only Failed... *)
-val output_value : t -> 'a -> unit
+
 val output_string : t -> string -> unit
-val flush : t -> unit
-val input_value : t -> 'a
+
 val really_input : t -> string -> int -> int -> unit
+
+val flush : t -> unit
 
 val close : t -> unit

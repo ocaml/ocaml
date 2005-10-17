@@ -86,6 +86,14 @@ let input_marshalled_string  ic =
   buff
 
 and output_marshalled_string oc buff = output_string oc buff
+
+let input_value link =
+  let buff = input_marshalled_string link in
+  Marshal.from_string buff 0 
+
+and output_value link (v:'a) =
+  let buff = Marshal.to_string v [] in
+  output_string link buff
   
 (* read the argument part of a message,
    ie a pair, string * t_global array *)
