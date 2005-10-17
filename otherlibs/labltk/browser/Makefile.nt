@@ -7,9 +7,9 @@ INCLUDES=$(OTHERSLIB) $(LABLTKLIB) $(OCAMLTOPLIB)
 CCFLAGS=-I../../../byterun $(TK_DEFS)
 
 ifeq ($(CCOMPTYPE),cc)
-WINDOWS_APP=-cclib "-Wl,--subsystem,windows"
+WINDOWS_APP=-ccopt "-Wl,--subsystem,windows"
 else
-WINDOWS_APP=-cclib "/link /subsystem:windows"
+WINDOWS_APP=-ccopt "/link /subsystem:windows"
 endif
 
 OBJS =	list2.cmo	useunix.cmo	setpath.cmo	lexical.cmo	\
