@@ -16,6 +16,8 @@ Type checking:
 Both compilers:
 - Added warnings 'Y' and 'Z' for local variables that are bound but
   never used.
+- Added warning for some uses non-returning functions (e.g. raise), when they are
+  passed extra arguments, or followed by extra statements.
 - Pattern matching: more prudent compilation in case of guards; fixed PR#3780.
 - Compilation of classes: reduction in size of generated code.
 - Compilation of "module rec" definitions: fixed a bad interaction with
@@ -65,7 +67,7 @@ New features:
 - ocamldoc: (**/**) can be canceled with another (**/**) PR#3665
 - graphics: added resize_window
 - graphics: check for invalid arguments to drawing primitives PR#3595
-- lablbrowser: use windows subsystem on mingw
+- ocamlbrowser: use windows subsystem on mingw
 
 Bug fixes:
 - ocamlopt: code generation problem on AMD64 PR#3640
