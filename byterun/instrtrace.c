@@ -78,20 +78,15 @@ void caml_disasm_instr(pc)
   fflush (stdout);
 }
 
-
-
-
-char *
-caml_instr_string (code_t pc)
+char * caml_instr_string (code_t pc)
 {
-  static char buf[96];
-  char nambuf[36];
+  static char buf[256];
+  char nambuf[128];
   int instr = *pc;
-  char *nam = 0;
-  memset (buf, 0, sizeof (buf));
-#define bufprintf(Fmt,...) snprintf(buf,sizeof(buf)-1,Fmt,##__VA_ARGS__)
+  char *nam;
+
   nam = (instr < 0 || instr > STOP)
-    ? (snprintf (nambuf, sizeof (nambuf), "???%d", instr), nambuf)
+    ? (sprintf (nambuf, "???%d", instr), nambuf)
     : names_of_instructions[instr];
   pc++;
   switch (instr) {
@@ -132,7 +127,7 @@ caml_instr_string (code_t pc)
   case OFFSETREF:
   case OFFSETCLOSURE:
   case PUSHOFFSETCLOSURE:
-    bufprintf ("%s %d", nam, pc[0]);
+    sprintf(buf, "%s %d", nam, pc[0]);
     break;
     /* Instructions with two operands */
   case APPTERM:
@@ -149,16 +144,16 @@ caml_instr_string (code_t pc)
   case BGEINT:
   case BULTINT:
   case BUGEINT:
-    bufprintf ("%s %d, %d", nam, pc[0], pc[1]);
+    sprintf(buf, "%s %d, %d", nam, pc[0], pc[1]);
     break;
   case SWITCH:
-    bufprintf ("SWITCH sz%#lx=%ld::ntag%ld nint%ld",
-	       (long) pc[0], (long) pc[0], (unsigned long) pc[0] >> 16,
-	       (unsigned long) pc[0] & 0xffff);
+    sprintf(buf, "SWITCH sz%#lx=%ld::ntag%ld nint%ld",
+            (long) pc[0], (long) pc[0], (unsigned long) pc[0] >> 16,
+            (unsigned long) pc[0] & 0xffff);
     break;
     /* Instructions with a C primitive as operand */
   case C_CALLN:
-    bufprintf ("%s %d,", nam, pc[0]);
+    sprintf(buf, "%s %d,", nam, pc[0]);
     pc++;
     /* fallthrough */
   case C_CALL1:
@@ -167,12 +162,12 @@ caml_instr_string (code_t pc)
   case C_CALL4:
   case C_CALL5:
     if (pc[0] < 0 || pc[0] >= caml_prim_name_table.size)
-      bufprintf ("%s unknown primitive %d", nam, pc[0]);
+      sprintf(buf, "%s unknown primitive %d", nam, pc[0]);
     else
-      bufprintf ("%s %s", nam, (char *) caml_prim_name_table.contents[pc[0]]);
+      sprintf(buf, "%s %s", nam, (char *) caml_prim_name_table.contents[pc[0]]);
     break;
   default:
-    bufprintf ("%s", nam);
+    sprintf(buf, "%s", nam);
     break;
   };
   return buf;
@@ -250,7 +245,6 @@ caml_trace_value_file (value v, code_t prog, int proglen, FILE * f)
   }
 }
 
-// added by Basile
 void
 caml_trace_accu_sp_file (value accu, value * sp, code_t prog, int proglen,
 			 FILE * f)
@@ -271,4 +265,3 @@ caml_trace_accu_sp_file (value accu, value * sp, code_t prog, int proglen,
 }
 
 #endif /* DEBUG */
-/* eof $Id$ */
