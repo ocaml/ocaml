@@ -73,11 +73,11 @@ char *caml_aligned_malloc (asize_t size, int modulo, void **block)
   aligned_mem = (((uintnat) raw_mem / Page_size + 1) * Page_size);
 #ifdef DEBUG
   {
-    uintlong *p;
-    uintlong *p0 = (void *) *block,
-             *p1 = (void *) (aligned_mem - modulo),
-             *p2 = (void *) (aligned_mem - modulo + size),
-             *p3 = (void *) ((char *) *block + size + Page_size);
+    uintnat *p;
+    uintnat *p0 = (void *) *block,
+            *p1 = (void *) (aligned_mem - modulo),
+            *p2 = (void *) (aligned_mem - modulo + size),
+            *p3 = (void *) ((char *) *block + size + Page_size);
 
     for (p = p0; p < p1; p++) *p = Debug_filler_align;
     for (p = p1; p < p2; p++) *p = Debug_uninit_align;
