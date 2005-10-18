@@ -89,12 +89,11 @@ prims.c : primitives
 	 echo '	 0 };') > prims.c
 
 opnames.h : instruct.h
-	LANG=C; \
 	sed -e '/\/\*/d' \
 	    -e '/^#/d' \
 	    -e 's/enum /char * names_of_/' \
 	    -e 's/{$$/[] = {/' \
-	    -e 's/\([A-Z][A-Z_0-9]*\)/"\1"/g' instruct.h > opnames.h
+	    -e 's/\([[:upper:]][[:upper:]_0-9]*\)/"\1"/g' instruct.h > opnames.h
 
 # jumptbl.h is required only if you have GCC 2.0 or later
 jumptbl.h : instruct.h
