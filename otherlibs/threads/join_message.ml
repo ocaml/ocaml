@@ -114,7 +114,7 @@ type msg_prefix =
   | PaloneSyncSend of alone_id * kont_id
   | PreplySend of kont_id
   | PreplyExn of (kont_id * exn)
-
+  | Pservice of (string * kont_id)
 
 let input_msg ic = match input_value ic with
 | PasyncSend chan ->
@@ -129,6 +129,8 @@ let input_msg ic = match input_value ic with
     ReplyExn (kont, e)
 | PaloneSend alone ->
     AloneSend (alone, input_parameter ic)
+| Pservice (key, kont) ->
+    Service (key, kont, input_parameter ic)
 
 and output_msg oc = function
   | AsyncSend (chan, arg) ->
@@ -148,3 +150,6 @@ and output_msg oc = function
       output_parameter oc arg
   | ReplyExn (kont, e) ->
       output_value oc (PreplyExn (kont, e))
+  | Service (key, kont, arg) ->
+      output_value oc (Pservice (key, kont)) ;
+      output_parameter oc arg

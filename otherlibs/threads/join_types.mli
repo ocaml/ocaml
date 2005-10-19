@@ -49,7 +49,9 @@ type continuation =
 (* Remote pointers *)
 (*******************)
 
-type space_id = Unix.inet_addr * int * float
+type space_id = Unix.sockaddr
+
+type service = space_id * string
 
 type t_global= space_id * int (* value names in network *)
 
@@ -65,7 +67,8 @@ type message =
   | AloneSyncSend of alone_id * kont_id * parameter
   | ReplySend of kont_id * parameter
   | ReplyExn of kont_id * exn
-
+ (* Like AloneSyncSend, except that function is given by name *)
+  | Service of string * kont_id * parameter
 
 (* Stubs for handling localized 'values' (eg join-definitions)
    They are implemented trough JoCustom blocks *)
@@ -120,19 +123,16 @@ type remote_space =
 
 
 type listener =
-  | Deaf of Unix.file_descr *  Mutex.t
-  | Listen of Unix.file_descr
-
-type space_status = SpaceUp | SpaceDown
+  | Deaf of Mutex.t
+  | Listen of space_id
 
 type space =
   {
-    space_id : space_id ;
-    mutable space_status : space_status ;
     uid_mutex : Mutex.t ;
     next_uid : unit -> int ;
     uid2local : (int, stub_val) Join_hash.t ;
     remote_spaces : (space_id, remote_space) Join_hash.t ;
-    mutable space_listener : listener ;
+    services : (string, int) Join_hash.t ;
+    mutable listener : listener ;
   } 
 

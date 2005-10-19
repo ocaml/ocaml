@@ -24,10 +24,11 @@ win32.o: win32.c ../../byterun/alloc.h ../../byterun/compatibility.h \
 condition.cmi: mutex.cmi 
 join_message.cmi: join_types.cmi join_link.cmi 
 join.cmi: join_types.cmi 
+join_port.cmi: join_types.cmi join_link.cmi 
 join_scheduler.cmi: join_types.cmi 
 join_space.cmi: join_types.cmi 
-join_types.cmi: mutex.cmi join_queue.cmi join_misc.cmi join_link.cmi \
-    join_hash.cmi condition.cmi 
+join_types.cmi: mutex.cmi join_misc.cmi join_link.cmi join_hash.cmi \
+    condition.cmi 
 condition.cmo: mutex.cmi condition.cmi 
 condition.cmx: mutex.cmx condition.cmi 
 event.cmo: mutex.cmi condition.cmi event.cmi 
@@ -42,32 +43,34 @@ join_message.cmo: join_types.cmi join_link.cmi join_hash.cmi join_debug.cmi \
     join_message.cmi 
 join_message.cmx: join_types.cmi join_link.cmx join_hash.cmx join_debug.cmx \
     join_message.cmi 
-join_misc.cmo: thread.cmi mutex.cmi join_debug.cmi condition.cmi \
-    join_misc.cmi 
-join_misc.cmx: thread.cmx mutex.cmx join_debug.cmx condition.cmx \
-    join_misc.cmi 
+join_misc.cmo: mutex.cmi join_debug.cmi condition.cmi join_misc.cmi 
+join_misc.cmx: mutex.cmx join_debug.cmx condition.cmx join_misc.cmi 
 join.cmo: mutex.cmi join_types.cmi join_space.cmi join_scheduler.cmi \
     join_misc.cmi join_message.cmi join_debug.cmi condition.cmi join.cmi 
 join.cmx: mutex.cmx join_types.cmi join_space.cmx join_scheduler.cmx \
     join_misc.cmx join_message.cmx join_debug.cmx condition.cmx join.cmi 
+join_port.cmo: join_scheduler.cmi join_misc.cmi join_link.cmi join_debug.cmi \
+    join_port.cmi 
+join_port.cmx: join_scheduler.cmx join_misc.cmx join_link.cmx join_debug.cmx \
+    join_port.cmi 
 join_queue.cmo: mutex.cmi condition.cmi join_queue.cmi 
 join_queue.cmx: mutex.cmx condition.cmx join_queue.cmi 
 join_scheduler.cmo: thread.cmi mutex.cmi join_types.cmi join_misc.cmi \
     join_debug.cmi condition.cmi join_scheduler.cmi 
 join_scheduler.cmx: thread.cmx mutex.cmx join_types.cmi join_misc.cmx \
     join_debug.cmx condition.cmx join_scheduler.cmi 
-join_space.cmo: mutex.cmi join_types.cmi join_scheduler.cmi join_misc.cmi \
-    join_message.cmi join_link.cmi join_hash.cmi join_debug.cmi \
-    join_space.cmi 
-join_space.cmx: mutex.cmx join_types.cmi join_scheduler.cmx join_misc.cmx \
-    join_message.cmx join_link.cmx join_hash.cmx join_debug.cmx \
-    join_space.cmi 
+join_space.cmo: mutex.cmi join_types.cmi join_scheduler.cmi join_port.cmi \
+    join_misc.cmi join_message.cmi join_link.cmi join_hash.cmi join_debug.cmi \
+    condition.cmi join_space.cmi 
+join_space.cmx: mutex.cmx join_types.cmi join_scheduler.cmx join_port.cmx \
+    join_misc.cmx join_message.cmx join_link.cmx join_hash.cmx join_debug.cmx \
+    condition.cmx join_space.cmi 
 mutex.cmo: mutex.cmi 
 mutex.cmx: mutex.cmi 
-ns.cmo: mutex.cmi join_types.cmi join_space.cmi join_misc.cmi \
-    join_message.cmi join_link.cmi join_debug.cmi join.cmi ns.cmi 
-ns.cmx: mutex.cmx join_types.cmi join_space.cmx join_misc.cmx \
-    join_message.cmx join_link.cmx join_debug.cmx join.cmx ns.cmi 
+ns.cmo: mutex.cmi join_types.cmi join_space.cmi join_port.cmi join_misc.cmi \
+    join_message.cmi join_link.cmi join_debug.cmi ns.cmi 
+ns.cmx: mutex.cmx join_types.cmi join_space.cmx join_port.cmx join_misc.cmx \
+    join_message.cmx join_link.cmx join_debug.cmx ns.cmi 
 thread.cmo: thread.cmi 
 thread.cmx: thread.cmi 
 threadUnix.cmo: thread.cmi threadUnix.cmi 

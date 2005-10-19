@@ -128,12 +128,14 @@ let decr c =
   end ;
   Mutex.unlock c.cmutex
 
+
+let rec hard_wait_zero c = match c.cval with
+| 0 -> ()
+| _ -> Condition.wait c.ccond c.cmutex
+
 let wait_zero c =
   Mutex.lock c.cmutex ;
-  begin match c.cval with
-  | 0 -> ()
-  | _ -> Condition.wait c.ccond c.cmutex
-  end ;
+  hard_wait_zero c ;
   Mutex.unlock c.cmutex
     
 (* A few wrapping of socket primitives *)
@@ -178,73 +180,14 @@ let local_name = gethostname ()
 
 let local_addr = first_addr (gethostbyname local_name)
 
-let create_port port =
-  handle_unix_error
-    (fun () ->
-      let s = socket PF_INET SOCK_STREAM 0 in
-      let _ =
-        try
-          setsockopt s SO_REUSEADDR true;
-          bind s (ADDR_INET (inet_addr_any, port));
-          listen s 5;
-          ()
-        with z -> close s ; raise z
-      in
-      let saddr = getsockname s in
-      match saddr with
-      |	ADDR_INET (_, port) -> port, s
-      | _ -> assert false) ()
-
-let local_port,_ = create_port 0
-
 let string_of_sockaddr = function
   | ADDR_UNIX s -> s
   | ADDR_INET (a,p) ->
       string_of_inet_addr a^":"^string_of_int p
 
-let rec force_accept s =
-  begin try
-(*DEBUG*)debug1 "UNIX" "accept" ;
-    let (_,addr) as r = Unix.accept s in
-(*DEBUG*)debug1 "UNIX" ("accepted: "^string_of_sockaddr addr) ;
-    r
-  with
-  | Unix_error((EAGAIN|EINTR),_,_) -> 
-(*DEBUG*)debug1 "accept" "try again" ;
-      force_accept s
-  end
 
 
-let do_connect_to_server verbose addr port =
-  let sock = socket PF_INET SOCK_STREAM 0 in
-  try
-    connect sock (ADDR_INET(addr, port)) ;
-(*DEBUG*)debug1 "CONNECTED" (string_of_sockaddr (getpeername sock)) ;
-    sock
-  with
-  | e ->
-      if verbose then begin
-        prerr_string "connect went wrong: " ;
-        prerr_exn e
-      end ;
-      close sock ;
-      raise e
 
-let connect_to_server addr port =
-   do_connect_to_server true addr port
-
-let force_connect addr port =
-  try
-    do_connect_to_server true addr port
-  with _ ->
-    let rec do_rec d =
-      Thread.delay d ;
-      try
-        do_connect_to_server false addr port
-      with
-      | _ ->
-          do_rec (if d > 5.0 then d else 2.0 *. d)
-    in do_rec 0.1
 
 exception JoinExit
 

@@ -18,10 +18,11 @@ join_link.cmi: unix.cmi
 join_message.cmi: join_types.cmi join_link.cmi 
 join_misc.cmi: unix.cmi 
 join.cmi: join_types.cmi 
+join_port.cmi: unix.cmi join_types.cmi join_link.cmi 
 join_scheduler.cmi: join_types.cmi 
 join_space.cmi: marshal.cmi join_types.cmi 
-join_types.cmi: unix.cmi mutex.cmi join_queue.cmi join_misc.cmi join_link.cmi \
-    join_hash.cmi condition.cmi 
+join_types.cmi: unix.cmi mutex.cmi join_misc.cmi join_link.cmi join_hash.cmi \
+    condition.cmi 
 ns.cmi: unix.cmi 
 thread.cmi: unix.cmi 
 threadUnix.cmi: unix.cmi 
@@ -47,6 +48,10 @@ join.cmo: mutex.cmi join_types.cmi join_space.cmi join_scheduler.cmi \
     join_misc.cmi join_message.cmi join_debug.cmi condition.cmi join.cmi 
 join.cmx: mutex.cmx join_types.cmi join_space.cmx join_scheduler.cmx \
     join_misc.cmx join_message.cmx join_debug.cmx condition.cmx join.cmi 
+join_port.cmo: unix.cmi join_scheduler.cmi join_misc.cmi join_link.cmi \
+    join_debug.cmi join_port.cmi 
+join_port.cmx: unix.cmx join_scheduler.cmx join_misc.cmx join_link.cmx \
+    join_debug.cmx join_port.cmi 
 join_queue.cmo: mutex.cmi condition.cmi join_queue.cmi 
 join_queue.cmx: mutex.cmx condition.cmx join_queue.cmi 
 join_scheduler.cmo: thread.cmi mutex.cmi join_types.cmi join_misc.cmi \
@@ -54,11 +59,11 @@ join_scheduler.cmo: thread.cmi mutex.cmi join_types.cmi join_misc.cmi \
 join_scheduler.cmx: thread.cmx mutex.cmx join_types.cmi join_misc.cmx \
     join_debug.cmx condition.cmx join_scheduler.cmi 
 join_space.cmo: unix.cmi pervasives.cmi mutex.cmi marshal.cmi join_types.cmi \
-    join_scheduler.cmi join_misc.cmi join_message.cmi join_link.cmi \
-    join_hash.cmi join_debug.cmi join_space.cmi 
+    join_scheduler.cmi join_port.cmi join_misc.cmi join_message.cmi \
+    join_link.cmi join_hash.cmi join_debug.cmi condition.cmi join_space.cmi 
 join_space.cmx: unix.cmx pervasives.cmx mutex.cmx marshal.cmx join_types.cmi \
-    join_scheduler.cmx join_misc.cmx join_message.cmx join_link.cmx \
-    join_hash.cmx join_debug.cmx join_space.cmi 
+    join_scheduler.cmx join_port.cmx join_misc.cmx join_message.cmx \
+    join_link.cmx join_hash.cmx join_debug.cmx condition.cmx join_space.cmi 
 marshal.cmo: pervasives.cmi marshal.cmi 
 marshal.cmx: pervasives.cmx marshal.cmi 
 mutex.cmo: thread.cmi mutex.cmi 

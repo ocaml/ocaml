@@ -15,8 +15,7 @@
 
 open Join_types
 
-val local_id : space_id
-
+val set_local_port : int -> unit
 
 (* Forward pointers for local message sending, set by module Join *)
 type async_ref =
@@ -36,6 +35,8 @@ val globalize :
     'a ->  Marshal.extern_flags list -> parameter
 val localize : parameter -> 'a
 
+val here : unit -> space_id
+
 val remote_send_async :
     space_id ->
       int (* uid *) -> int (* channnel *) -> 'a (* message *) -> unit
@@ -53,6 +54,14 @@ val remote_send_sync_alone :
     space_id ->
       int (* uid *) -> continuation ->
 	'a (* message *) -> 'b
+
+val register_service : string -> stub -> unit
+
+val call_service :
+    space_id ->
+      string (* key *) -> continuation ->
+	'a (* message *) -> 'b
+
 
 val halt : unit -> unit
 

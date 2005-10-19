@@ -17,18 +17,45 @@ open Printf
 open Join_misc
 (*DEBUG*)open Join_debug
 
-let creation_time = Unix.gettimeofday ()
 
-(* Create site socket *)
-let local_port, local_socket = Join_misc.create_port 0
+(* Non initialized *)
+
+type port = NoPort of Mutex.t | Port of int * Mutex.t | PortUsed
+
+let local_port = ref (NoPort (Mutex.create ()))
+
+let get_local_port () = match !local_port with
+| PortUsed -> assert false
+| NoPort mtx|Port (_,mtx) ->
+    Mutex.lock mtx ;
+    match !local_port with
+    | PortUsed -> assert false
+    | NoPort _ ->
+        Mutex.unlock mtx ;
+        0
+    | Port (i,_) ->
+        Mutex.unlock mtx ;
+        i
 
 
-(* And compute global site identifier *)
-let local_id = local_addr, local_port, creation_time
+and set_local_port i =  match !local_port with
+| PortUsed -> failwith "Listener started, cannot set identity"
+| NoPort mtx|Port (_,mtx) ->
+    Mutex.lock mtx ;
+    match !local_port with
+    | PortUsed ->
+        Mutex.unlock mtx ; 
+        failwith "Listener started, cannot set identity"
+    | NoPort _ ->
+        local_port := Port (i, mtx) ;
+        Mutex.unlock mtx
+    | Port (_,_) ->
+        Mutex.unlock mtx ;
+        failwith "Cannot set identity more than once"
 
 
-let same_space (a1, p1, t1) (a2, p2, t2) =
-  a1 = a2 && p1 = p2 && t1 = t2
+
+let same_space s1 s2 = Pervasives.compare s1 s2 = 0
 
 let compare_space s1 s2 = Pervasives.compare s1 s2
  
@@ -45,8 +72,6 @@ let _ =
 
  (* Describe site *)
 let local_space = {
-  space_id = local_id ;
-  space_status = SpaceUp ;
   uid_mutex = Mutex.create () ;
   next_uid =
   begin 
@@ -58,12 +83,12 @@ let local_space = {
   end ;
   uid2local = Join_hash.create () ;
   remote_spaces =  Join_hash.create () ;
-  space_listener = Deaf (local_socket, Mutex.create ())
+  services = Join_hash.create () ;
+  listener = Deaf (Mutex.create ()) ;
 } 
  ;;
 
-let space_to_string (addr, port, _) =
-  sprintf "%s:%i" (Unix.string_of_inet_addr addr) port
+let space_to_string raddr = Join_misc.string_of_sockaddr raddr
 
 let create_remote_space id =
 (*DEBUG*)debug2 "RSPACE CREATE" (space_to_string id) ;
@@ -124,6 +149,16 @@ let find_sync_forwarder space uid =
     with Not_found -> assert false in
   (Obj.magic r : 'a -> 'b)
 
+exception Service_not_found
+
+let find_service space key =
+  try
+    let uid = Join_hash.find space.services key in
+    uid
+  with
+  | Not_found -> raise Service_not_found
+
+
 type async_ref =
     { mutable async : 'a . automaton -> int -> 'a -> unit }
 let send_async_ref = { async =  (fun _ _ _ -> assert false) }
@@ -164,35 +199,39 @@ let verbose_close caller fd =
 exception NoLink
 
 (* listener is started in several occasions, nevertheless ensure unicity *)
-let rec start_listener space = match space.space_listener with
+let rec start_listener space = match space.listener with
 | Listen _ -> ()
-| Deaf (sock,mtx) ->
+| Deaf mtx ->
     Mutex.lock mtx ;
-    match space.space_listener with
-    | Deaf (sock,mtx) ->
-	space.space_listener <- Listen sock ;
-	Mutex.unlock mtx ;
-	Join_scheduler.create_process (listener space sock)
+    match space.listener with
     | Listen _ ->
 	Mutex.unlock mtx
-
-and listener space sock () =
-  try while true do
-(*DEBUG*)debug1 "LISTENER"
-(*DEBUG*)  (sprintf "now accept on: %s"
-(*DEBUG*)    (space_to_string space.space_id)) ;
-    let s,_ = Join_misc.force_accept sock in
-(*DEBUG*)debug1 "LISTENER" "someone coming" ;
-    let link = Join_link.create s in
-    let rspace_id = (Join_message.input_value link : space_id) in
+    | Deaf _ ->
+        let when_accepted link =
+          let rspace_id = (Join_message.input_value link : space_id) in
 (*DEBUG*)debug1 "LISTENER" ("his name: "^space_to_string rspace_id)  ;
-    let rspace = get_remote_space space rspace_id in
-    open_link_accepted space rspace link
-  done  with  e ->
-(*DEBUG*)debug0 "LISTENER"
-(*DEBUG*)  (sprintf "died of %s" (Join_misc.exn_to_string e)) ;
-    ()
+          let rspace = get_remote_space space rspace_id in
+          open_link_accepted space rspace link in
+        begin try
+          let my_id,_ =
+            Join_port.establish_server
+              (get_local_port ()) when_accepted in
+	  space.listener <- Listen my_id ;
+        with
+        | Join_port.Failed ->
+            Mutex.unlock mtx ;
+            exit 2 (* little we can do to repair that *)
+        end ;
+	Mutex.unlock mtx
 
+and get_id space = match space.listener with
+| Listen id -> id
+| Deaf _ ->
+    start_listener space ;
+    get_id space
+
+(* called when a connection is aborted, at moment
+   used only at setup time when ruled out by a more priotary connection *)
 and close_link_accepted link =
   try (* announce partner we failed *)
     Join_message.output_value link false ;
@@ -200,6 +239,7 @@ and close_link_accepted link =
     Join_link.close link
   with Join_link.Failed -> ()
 
+(* terminante the winning connection attempt *)
 and finally_open_link_accepted  space rspace link mtx =
   rspace.link <- Connected (link,mtx) ;
   Mutex.unlock mtx ;
@@ -212,6 +252,7 @@ and finally_open_link_accepted  space rspace link mtx =
 (*DEBUG*)debug1 "OPEN LINK ACCEPTED" "failed" ;
     close_link rspace
 
+(* attempt to initiate communication with rspace, called by listener *)
 and open_link_accepted space rspace link =  match rspace.link with
 | Connected _
 | DeadConnection  -> (* lost race against other connectors *)
@@ -227,7 +268,7 @@ and open_link_accepted space rspace link =  match rspace.link with
     | Connecting (_,cond) -> (* race with partner *)
         (* partner necessarily is in same 'Connecting' state,
            since I have accepted its connect *)
-        let c = compare_space space.space_id rspace.rspace_id in
+        let c = compare_space (get_id space) rspace.rspace_id in
         if c < 0 then begin
           Mutex.unlock mtx ; (* stay in connecting state *)
           close_link_accepted link
@@ -239,6 +280,8 @@ and open_link_accepted space rspace link =  match rspace.link with
     | NoConnection _ ->
         finally_open_link_accepted space rspace link mtx
 
+(* once a connection with rspace is established,
+   treat incomming messages *)
 and join_handler space rspace link () =
 (*DEBUG*)debug1 "HANDLER"
 (*DEBUG*)  ("start receiving from "^string_of_space rspace.rspace_id) ;  try
@@ -263,8 +306,15 @@ and join_handler space rspace link () =
           (fun v -> send_sync_ref.sync auto idx v) v
     | AloneSyncSend (uid, kid, v) ->
         let g = find_sync_forwarder space uid
-       and v = localize_rec space v in
+        and v = localize_rec space v in
         call_sync space rspace kid g v
+    | Service (key, kid, v) ->
+        let v = localize_rec space v
+        and fwd arg =
+          let uid = find_service space key in
+          let g = find_sync_forwarder space uid in
+          g arg in
+        call_sync space rspace kid fwd v
     | ReplySend (kid, v) ->
 	let kont =
 	  try Join_hash.find_remove rspace.konts kid
@@ -276,7 +326,7 @@ and join_handler space rspace link () =
 	  try Join_hash.find_remove rspace.konts kid
 	  with Not_found -> assert false in
 	let e = Join_message.localize_exn e in
-	Join_scheduler.reply_to_exn e kont              
+	Join_scheduler.reply_to_exn e kont
   done
 with
 | Join_link.Failed ->
@@ -363,19 +413,18 @@ and open_link_sender space rspace mtx =  match rspace.link with
       let cond = Condition.create () in
       rspace.link <- Connecting (mtx, cond) ;
       Mutex.unlock mtx ;
-      let addr,port,_ = rspace.rspace_id in
-      let s = Join_misc.force_connect addr port in
-      let link = Join_link.create s in
-      Join_message.output_value link space.space_id ;
+      let r_addr = rspace.rspace_id in
+      let link = Join_port.connect r_addr in
+      Join_message.output_value link (get_id space) ;
       Join_link.flush link ;
       let accepted = (Join_message.input_value link : bool) in
       if accepted then begin
 (*DEBUG*)debug1 "OPEN SENDER" "finally accepted" ;
-	Join_scheduler.create_process (join_handler space rspace link) ;
         Mutex.lock mtx ;
         rspace.link <- Connected (link,mtx) ;
         Condition.broadcast cond ;
         Mutex.unlock mtx ;
+	Join_scheduler.create_process (join_handler space rspace link) ;
         link
       end else begin (* lost race against partner, listener should connect *)
 (*DEBUG*)debug1 "OPEN SENDER" "finally rejected" ;
@@ -408,24 +457,22 @@ and sender_work rspace link msg =
 (* returns global identification for stub *)
 and export_stub space stub = match stub.stub_tag with
 |  Local ->
-    let uid = stub.uid in
-    if uid <> 0 then space.space_id, uid
+    let uid = stub.uid and space_id = get_id space in
+    if uid <> 0 then space_id, uid
     else begin
     (* race condition, since several threads can be exporting this stub *)
       Mutex.lock space.uid_mutex ;
       let uid = stub.uid in
       if uid <> 0 then begin (* lost *)
 	Mutex.unlock space.uid_mutex  ;
-	space.space_id, uid
+        space_id, uid
       end else begin (* won, allocate new uid *)
 	let uid = space.next_uid () in
 	stub.uid <- uid ;
 	Mutex.unlock space.uid_mutex ;	
-	(* Listener is started  at first export *)
-	if uid = 1 then start_listener space ;
 	(* Remember binding uid -> local value *)
 	Join_hash.add space.uid2local uid stub.stub_val ;
-	(space.space_id, uid)
+	space_id, uid
       end
     end
 | Remote ->
@@ -435,8 +482,9 @@ and export_stub space stub = match stub.stub_tag with
 (* quasi-reverse of export stub, from global names to
    values, note that the stub is allocated by
    do_localize_message *)
+
 and import_stub space (rspace_id, uid) =
-  if same_space rspace_id space.space_id then
+  if same_space rspace_id (get_id space) then
     Local, find_local space uid, uid
   else
     Remote, (Obj.magic rspace_id : stub_val), uid
@@ -479,7 +527,6 @@ let remote_send_alone rspace_id uid a =
 let do_remote_call space rspace_id do_msg kont a =
   let rspace = get_remote_space space rspace_id in
   let kid = rspace.next_kid () in
-  if kid = 0 then start_listener space ; (* first continuation exported *)
 (* There is a race condition with link destruction
    But the calling thread looks like it gets its JoinExit exception ? *)
   Join_hash.add rspace.konts kid kont ; (* do it before getting the link *)
@@ -510,6 +557,29 @@ let remote_send_sync_alone rspace_id uid kont a =
 (*DEBUG*)debug3 "REMOTE" "SEND SYNC ALONE" ;
   do_remote_send_sync_alone local_space rspace_id uid kont a
 
+(* Services supply RCP by name
+   the function called must be a sync forwarder *)
+let do_register_service space key stub =
+  assert (stub.stub_tag = Local) ;
+  assert (Obj.tag (Obj.repr stub.stub_val) = Obj.closure_tag) ;
+  let _,uid = export_stub space stub in
+  Join_hash.add space.services key uid
+
+let register_service key stub =
+  do_register_service local_space key stub
+
+let do_call_service space rspace_id key kont a =
+  if same_space (get_id space) rspace_id then
+    let uid = find_service space key in
+    let f = find_sync_forwarder space uid in
+    f a
+  else
+    do_remote_call space rspace_id
+      (fun kid v -> Service (key, kid, v))
+      kont a
+
+let call_service space_id key kont a =
+  do_call_service local_space  space_id key kont a
 
 let kill_remote_space space rspace = assert false
 
@@ -548,8 +618,10 @@ and localize v = localize_rec local_space v
 (* Async hooks on distant site death *)
 (*************************************)
 
+let here () = get_id local_space
+
 let rec do_at_fail space rspace_id (hook : unit async) =
-  if not (same_space local_id rspace_id) then begin
+  if not (same_space (get_id space) rspace_id) then begin
     let rspace = get_remote_space space rspace_id in
     match rspace.link with
     | DeadConnection ->

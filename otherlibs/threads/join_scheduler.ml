@@ -224,7 +224,7 @@ and inform_unsuspend () =
 
 
 (* Important: k.kmutex is locked ! *)
-let suspend_for_reply k =
+let rec suspend_for_reply k =
 (*DEBUG*)debug3 "SUSPEND_FOR_REPLY"
 (*DEBUG*)  (tasks_status ()) ;  
   match k.kval with
@@ -233,17 +233,27 @@ let suspend_for_reply k =
         inform_suspend () ;
         Condition.wait k.kcondition k.kmutex ;
         inform_unsuspend () ;
-        Mutex.unlock k.kmutex ;
         match k.kval with
         | Ret v ->
+            Mutex.unlock k.kmutex ;
 (*DEBUG*)debug3 "REPLIED" (tasks_status ()) ;
             (Obj.obj v)
         | Exn e ->
+            Mutex.unlock k.kmutex ;
 (*DEBUG*)debug3 "REPLIED EXN" (tasks_status ()) ;
             raise e
-        | Start|Go _ -> assert false
+        | Go f ->
+            Mutex.unlock k.kmutex ;
+(*DEBUG*)debug3 "REACTIVATED" (tasks_status ()) ;
+            Obj.obj (f ())
+        | Start -> (* should not happen when properly signaled *)
+(*DEBUG*)debug0 "SPONTANEOUS REPLY" (tasks_status ()) ;
+            suspend_for_reply k
       end
-  | Go _ -> assert false
+  | Go f ->
+      Mutex.unlock k.kmutex ;
+(*DEBUG*)debug3 "REACTIVATED IMMEDIATE" (tasks_status ()) ;
+      Obj.obj (f ())
   | Ret v ->
       Mutex.unlock k.kmutex ;
 (*DEBUG*)debug3 "REPLIED IMMEDIATE" (tasks_status ()) ;

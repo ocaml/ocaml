@@ -16,7 +16,11 @@ open Join_types
 
 type site
 
-val here : site
+val local_addr : Unix.inet_addr
+
+val set_identity : int -> unit
+
+val here : unit -> site
 
 val create_process : (unit -> unit) -> unit
 
@@ -49,6 +53,13 @@ val tail_send_async : 'a async -> 'a -> unit
 
 (* Synchronous channels are plain fonctions *)
 val local_send_sync : automaton -> int -> 'a -> 'b
+
+(* Services provide RPC by name *)
+type service 
+
+val remote_service : Unix.sockaddr -> string -> service
+val register_service : string -> ('a -> 'b) -> unit
+val call_service : service -> 'a -> 'b
 
 val create_sync : stub -> int -> ('a -> 'b)
 val create_sync_alone : ('a -> 'b) -> ('a -> 'b)

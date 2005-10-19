@@ -18,7 +18,11 @@ open Printf
 
 type site = space_id
 
-let here = Join_space.local_id
+let local_addr = Join_misc.local_addr
+
+let set_identity i = Join_space.set_local_port i
+
+let here = Join_space.here
 
 let create_process f = Join_scheduler.create_process f
 
@@ -307,26 +311,6 @@ let tail_send_async chan a = match chan with
 (*********************)
 
 
-(* No match was found *)
-let kont_suspend k =
-(*DEBUG*)debug3 "KONT_SUSPEND" (Join_scheduler.tasks_status ()) ;
-  assert (k.kval = Start) ;
-  Join_scheduler.inform_suspend () ;
-  Condition.wait k.kcondition k.kmutex ;
-  Join_scheduler.inform_unsuspend () ;
-  Mutex.unlock k.kmutex ;
-  match k.kval with
-  | Go f ->
-(*DEBUG*)debug3 "REACTIVATED" (Join_scheduler.tasks_status ()) ;
-      Obj.obj (f ())
-  | Ret v ->
-(*DEBUG*)debug3 "REPLIED" (Join_scheduler.tasks_status ()) ;
-      (Obj.obj v)
-  | Exn e ->
-(*DEBUG*)debug3 "REPLIED EXN" (Join_scheduler.tasks_status ()) ;
-      raise e
-  | Start -> assert false
-
 
 (* Transfert control to frozen principal thread and suspend current thread *)
 let kont_go_suspend kme kpri f =
@@ -339,6 +323,8 @@ let kont_go_suspend kme kpri f =
   Condition.signal kpri.kcondition ;
   Join_scheduler.suspend_for_reply kme
 
+(* we are lucky, message on principal triggers guard,
+   no context switch *)
 let just_go k f =
 (*DEBUG*)debug3 "JUST_GO" "" ;
   Mutex.unlock k.kmutex ;
@@ -354,7 +340,7 @@ let rec attempt_match_sync idx auto kont reactions i =
   if i >= Obj.size reactions then begin
 (*DEBUG*)debug3 "SYNC ATTEMPT FAILED" (sprintf "%s %s"
 (*DEBUG*)  (get_name auto idx) (auto.status.to_string ())) ;    
-    kont_suspend kont
+    Join_scheduler.suspend_for_reply kont
   end else begin
     let (ipat, ipri, _) as t = Obj.magic (Obj.field reactions i) in
     if auto.status.includes ipat then begin
@@ -378,7 +364,7 @@ let local_send_sync auto idx a =
   if not (auto.status.set idx) then begin
 (*DEBUG*)debug3 "SEND_SYNC" (sprintf "Return: %s"
 (*DEBUG*) (auto.status.to_string ())) ;
-    kont_suspend kont
+    Join_scheduler.suspend_for_reply kont
   end else begin
     attempt_match_sync idx auto kont (Obj.magic auto.matches) 0
   end
@@ -406,7 +392,22 @@ match stub.stub_tag with
     and rspace_id = (Obj.magic stub.stub_val : space_id) in
     Join_space.remote_send_sync_alone rspace_id stub.uid kont arg
 
+(* RPC by name *)
+type service = Join_types.service
 
+let remote_service addr key =  addr, key
+
+let register_service key (f : 'a -> 'b) =
+  let o = Obj.repr f in
+  if Obj.tag o = Obj.closure_tag then (* caml function *)
+    Join_space.register_service key (wrap_guard f)
+  else (* jocaml forwarder *)
+    Join_space.register_service key (Obj.magic f : stub)
+  
+let call_service (rspace_id, key) arg =
+  let kont = kont_create0 (Mutex.create ()) in
+  Join_space.call_service rspace_id key kont arg
+  
 (* This code must create a one-argument closure,
    whose code pointer unambiguously characterize
    closures which synchronous channels.
@@ -444,7 +445,8 @@ external register_value : 'a -> unit = "caml_register_saved_value"
 external register_code : ('a -> 'b) -> unit = "caml_register_saved_code"
 external init_join : unit -> unit = "caml_init_join"
 
-let _ =
+let ()  =
+(*DEBUG*)debug1 "JOIN" "init" ;
   init_join () ;
   register_value send_sync ;
   register_code (create_sync (Obj.magic 0:stub) 0) ;
