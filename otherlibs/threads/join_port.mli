@@ -12,12 +12,12 @@
 
 (* $Id$ *)
 
-exception Failed
+exception Failed of string
 
 type server 
 
 val establish_server :
-    int -> (Join_link.t -> unit) -> Join_types.space_id * server
+    Unix.sockaddr -> (Join_link.t -> unit) -> Join_types.space_id * server
 
 (* raise Failed if server already killed *)
 val kill_server : server -> unit

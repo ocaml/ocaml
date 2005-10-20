@@ -20,7 +20,7 @@ open Join_misc
 
 (* Non initialized *)
 
-type port = NoPort of Mutex.t | Port of int * Mutex.t | PortUsed
+type port = NoPort of Mutex.t | Port of Unix.sockaddr * Mutex.t | PortUsed
 
 let local_port = ref (NoPort (Mutex.create ()))
 
@@ -32,7 +32,7 @@ let get_local_port () = match !local_port with
     | PortUsed -> assert false
     | NoPort _ ->
         Mutex.unlock mtx ;
-        0
+        Unix.ADDR_INET (Unix.inet_addr_any, 0)
     | Port (i,_) ->
         Mutex.unlock mtx ;
         i
@@ -218,7 +218,7 @@ let rec start_listener space = match space.listener with
               (get_local_port ()) when_accepted in
 	  space.listener <- Listen my_id ;
         with
-        | Join_port.Failed ->
+        | Join_port.Failed _ ->
             Mutex.unlock mtx ;
             exit 2 (* little we can do to repair that *)
         end ;
@@ -557,13 +557,20 @@ let remote_send_sync_alone rspace_id uid kont a =
 (*DEBUG*)debug3 "REMOTE" "SEND SYNC ALONE" ;
   do_remote_send_sync_alone local_space rspace_id uid kont a
 
-(* Services supply RCP by name
-   the function called must be a sync forwarder *)
-let do_register_service space key stub =
-  assert (stub.stub_tag = Local) ;
-  assert (Obj.tag (Obj.repr stub.stub_val) = Obj.closure_tag) ;
-  let _,uid = export_stub space stub in
-  Join_hash.add space.services key uid
+(* Services supply RCP by name *)
+
+let do_register_service space key f =
+(* Alloc some uid, but without a stub *)
+  Mutex.lock space.uid_mutex ;
+  let uid = space.next_uid () in
+  Mutex.lock space.uid_mutex ;
+  Join_hash.add space.uid2local uid (Obj.magic f : stub_val) ;
+  match Join_hash.add_once space.services key uid with
+  | None -> ()
+  | Some _ ->
+      Join_hash.remove space.uid2local uid ;
+      failwith
+	(sprintf "register_service: %s already exists" key)
 
 let register_service key stub =
   do_register_service local_space key stub

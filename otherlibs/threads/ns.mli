@@ -14,7 +14,7 @@
 
 val local_addr : Unix.inet_addr
 
-exception Failed
+exception Failed of string
 
 (* abstract type of running server *)
 type server

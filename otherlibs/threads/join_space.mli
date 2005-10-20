@@ -15,7 +15,7 @@
 
 open Join_types
 
-val set_local_port : int -> unit
+val set_local_port : Unix.sockaddr -> unit
 
 (* Forward pointers for local message sending, set by module Join *)
 type async_ref =
@@ -55,7 +55,7 @@ val remote_send_sync_alone :
       int (* uid *) -> continuation ->
 	'a (* message *) -> 'b
 
-val register_service : string -> stub -> unit
+val register_service : string -> ('a -> 'b) -> unit
 
 val call_service :
     space_id ->

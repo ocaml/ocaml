@@ -18,7 +18,7 @@ type site
 
 val local_addr : Unix.inet_addr
 
-val set_identity : int -> unit
+val set_identity : Unix.sockaddr -> unit
 
 val here : unit -> site
 

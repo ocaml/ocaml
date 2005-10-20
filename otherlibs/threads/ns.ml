@@ -27,7 +27,7 @@ type request =
 
 let local_addr = Join.local_addr
 
-exception Failed
+exception Failed of string
 
 type server =
   {server : Join_port.server ;
@@ -71,16 +71,17 @@ let do_serve t link =
 let start_server port =
   let t = (Hashtbl.create 13 : (string, parameter) Hashtbl.t) in
   try
+    let port = Unix.ADDR_INET (Unix.inet_addr_any, port) in
     let  _,server = Join_port.establish_server port (do_serve t) in
     { server=server ; run=true ; mutex=Mutex.create () ; }
-  with Join_port.Failed -> raise Failed
+  with Join_port.Failed msg -> raise (Failed msg)
 
 let stop_server ({server=s ; run=run ; mutex=mutex} as x) =
   Mutex.lock mutex ;
   if run then begin
     begin try
       Join_port.kill_server s
-    with Join_port.Failed ->
+    with Join_port.Failed _ ->
       assert false (* assumes Failed means double close *)
     end ;
     x.run <- false
@@ -95,13 +96,13 @@ type link = Unix.sockaddr
 let register_client addr port =
   let ns = Unix.ADDR_INET (addr, port) in
   let rec do_rec d =
-    if d > 2.0 then raise Failed
+    if d > 2.0 then raise (Failed "register_client: timeout")
     else try
       let link = Join_port.connect ns in
       Join_message.output_value link Test ; Join_link.flush link ;
       Join_link.close link
     with
-    | Join_port.Failed|Join_link.Failed ->
+    | Join_port.Failed _ |Join_link.Failed ->
         Thread.delay d ;
         do_rec (2.0 *. d) in
   do_rec 0.2 ;
@@ -127,13 +128,13 @@ let lookup port key =
       end
     with
     | Not_found -> raise Not_found
-    | Join_link.Failed    ->
+    | Join_link.Failed  ->
 	Join_link.close link ;
-	raise Failed
+	raise (Failed "*zorglub*")
     end
   with
   | Not_found -> raise Not_found
-  | Join_port.Failed -> raise Failed
+  | Join_port.Failed msg -> raise (Failed msg)
   | e ->
 (*DEBUG*)debug0 "NS LOOKUP" (sprintf "got %s" (Join_misc.exn_to_string e)) ;
       raise e
@@ -154,7 +155,7 @@ let do_sync_register once port key v =
         Join_link.close link ;
 	false
   with
-  | Join_port.Failed -> raise Failed
+  | Join_port.Failed msg -> raise (Failed msg)
   | e ->
 (*DEBUG*)debug0 "NS REGISTER" (sprintf "got %s" (Join_misc.exn_to_string e)) ;
     raise e

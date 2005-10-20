@@ -398,11 +398,7 @@ type service = Join_types.service
 let remote_service addr key =  addr, key
 
 let register_service key (f : 'a -> 'b) =
-  let o = Obj.repr f in
-  if Obj.tag o = Obj.closure_tag then (* caml function *)
-    Join_space.register_service key (wrap_guard f)
-  else (* jocaml forwarder *)
-    Join_space.register_service key (Obj.magic f : stub)
+  Join_space.register_service key f
   
 let call_service (rspace_id, key) arg =
   let kont = kont_create0 (Mutex.create ()) in
