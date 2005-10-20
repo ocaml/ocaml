@@ -58,6 +58,14 @@ Run-time system:
 Replay debugger:
 - Improved handling of locations in source code.
 
+OCamldoc:
+- extensible {foo } syntax
+- user can give .txt files on the command line, containing ocamldoc formatted
+  text, to be able to include bigger texts out of source files
+- -o option is now used by the html generator to indicate the prefix
+  of generated index files (to avoid conflict when a Index module exists
+  on case-insensitive file systems).
+
 
 Objective Caml 3.08.4:
 ----------------------
