@@ -206,7 +206,7 @@ let create_process f =
     end ;
     exit_thread () in
 
-  if !in_pool <= 2 then begin
+  if !in_pool = 0 then begin
     match really_create_process g with
     | None -> put_pool g 
     | Some _ -> ()

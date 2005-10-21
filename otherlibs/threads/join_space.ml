@@ -215,7 +215,7 @@ and close_link_accepted link =
     Join_link.close link
   with Join_link.Failed -> ()
 
-(* terminante the winning connection attempt *)
+(* terminate the winning connection attempt *)
 and finally_open_link_accepted  space rspace link mtx =
   rspace.link <- Connected (link,mtx) ;
   Mutex.unlock mtx ;
