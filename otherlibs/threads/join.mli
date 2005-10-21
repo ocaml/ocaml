@@ -86,6 +86,9 @@ val exn_global : (string * int * int) -> Obj.t -> unit
 (* start to listen for connections *)
 val listen : Unix.sockaddr -> unit
 
+(* start with connected socket *)
+val connect : Unix.file_descr -> unit
+
 (* register a channel to be sent to when site fails *)
 val at_fail : site -> unit channel -> unit
 

@@ -161,6 +161,10 @@ let verbose_close caller fd =
 
 exception NoLink
 
+let string_of_addr = function
+  | None -> "default"
+  | Some a -> string_of_sockaddr a
+
 let check_addr id addro = match addro with
 | None -> ()
 | Some addr ->
@@ -191,7 +195,9 @@ let rec start_listener space addr = match space.listener with
         with
         | Join_port.Failed msg ->
             Mutex.unlock mtx ;
-            prerr_endline msg ;
+            prerr_endline
+              (sprintf "cannot listen on %s: %s"
+                 (string_of_addr addr) msg) ;
             exit 2 (* little we can do to repair that *)
         end ;
 	Mutex.unlock mtx
@@ -201,7 +207,7 @@ and  get_id space = match space.listener with
 | Deaf _ -> start_listener space None ; get_id space
 
 (* called when a connection is aborted, at moment
-   used only at setup time when ruled out by a more priotary connection *)
+   used only at setup time when ruled out by a more prioritary connection *)
 and close_link_accepted link =
   try (* announce partner we failed *)
     Join_message.output_value link false ;
@@ -355,9 +361,11 @@ and close_link rspace = match rspace.link with
  (* assumes failure of 'close link' means double call *)
 	begin try Join_link.close link
 	with Join_link.Failed -> assert false end ;
+(*DEBUG*)debug1 "CLOSE LINK" "link closed" ;
 (* For replies not made *)
 	Join_hash.iter_empty rspace.konts
 	  (fun _ k -> Join_scheduler.reply_to_exn JoinExit k) ;
+(*DEBUG*)debug1 "CLOSE LINK" "replies flushed" ;
 (* and for async hooks *)
         List.iter
           (fun chan ->  send_async_gen_ref.async_gen chan ())
@@ -600,13 +608,35 @@ let halt () = do_halt local_space
 let globalize v flags = globalize_rec local_space v flags
 and localize v = localize_rec local_space v
 
-(****************************************)
-(* Starting the whole distributed layer *)
-(****************************************)
+(************************)
+(* explicit connections *)
+(************************)
 
 let listen addr = start_listener local_space addr
 
 let here () = get_id local_space
+
+let do_connect space fd =
+  let link = Join_link.create fd in
+  try
+    let id = get_id space in
+    Join_message.output_value link id ; Join_link.flush link ;
+    let oid = Join_message.input_value link in
+    Join_message.output_value link true ; Join_link.flush link ;
+    let accepted = (Join_message.input_value link : bool) in
+    assert accepted ;
+    let rspace = get_remote_space space oid in
+    let mtx =
+      match rspace.link with
+      | NoConnection mtx -> mtx
+      | Connecting (_,_)|Connected (_,_)|DeadConnection -> assert false in
+    rspace.link <- Connected (link,mtx) ;
+    Join_scheduler.create_process (join_handler space rspace link)
+  with e ->
+    failwith (sprintf "connect: %s" (exn_to_string e))
+    
+let connect fd = do_connect local_space fd  
+  
 
 (*************************************)
 (* Async hooks on distant site death *)

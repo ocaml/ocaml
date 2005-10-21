@@ -44,7 +44,7 @@ let create_port porto =
         s
       with e -> close s ; raise e
     with e ->
-(*DEBUG*)debug0 "CREATE PORT" (exn_to_string e) ;
+(*DEBUG*)debug1 "CREATE PORT" (exn_to_string e) ;
         raise (Failed (exn_to_string e)) in
   let sockaddr = 
     let sockaddr = getsockname sock in

@@ -460,6 +460,8 @@ let exn_global = Join_message.exn_global
 
 let listen addr = Join_space.listen (Some addr)
 
+let connect fd = Join_space.connect fd
+
 let at_fail site (chan:unit channel) =
   Join_space.at_fail site (Obj.magic chan : 'a async)
   
