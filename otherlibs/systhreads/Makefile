@@ -43,7 +43,7 @@ GENFILES=thread.ml join.c join_types.mli\
  join_message.mli join_message.ml\
  join_space.mli join_space.ml\
  join.ml join.mli\
- ns.mli ns.ml\
+ ns.mli ns.jml
 
 all: libthreads.a threads.cma libjoin.a join.cma
 
@@ -156,8 +156,8 @@ join.ml: ../threads/join.ml
 join.mli: ../threads/join.mli
 	cp -f ../threads/join.mli . && chmod -w join.mli
 
-ns.ml: ../threads/ns.ml
-	cp -f ../threads/ns.ml . && chmod -w ns.ml
+ns.jml: ../threads/ns.jml
+	cp -f ../threads/ns.jml . && chmod -w ns.jml
 
 ns.mli: ../threads/ns.mli
 	cp -f ../threads/ns.mli . && chmod -w ns.mli
@@ -208,7 +208,7 @@ installopt:
 	cd $(LIBDIR)/threads; $(RANLIB) join.a
 
 
-.SUFFIXES: .ml .mli .cmo .cmi .cmx
+.SUFFIXES: .jml .ml .mli .cmo .cmi .cmx
 
 .mli.cmi:
 	$(CAMLC) -c $(COMPFLAGS) $<
@@ -216,8 +216,14 @@ installopt:
 .ml.cmo:
 	$(CAMLC) -c -g $(COMPFLAGS) $(OCAMLPP) $<
 
+.jml.cmo:
+	$(CAMLC) -join -c -g $(COMPFLAGS) $(OCAMLPP) -impl $<
+
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $(OCAMLPP) $<
+
+.jml.cmx:
+	$(CAMLOPT) -join -c $(COMPFLAGS) $(OCAMLPP) -impl $<
 
 depend: $(GENFILES)
 	gcc -MM -I../../byterun *.c > .depend

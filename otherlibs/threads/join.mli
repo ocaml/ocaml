@@ -18,8 +18,6 @@ type site
 
 val local_addr : Unix.inet_addr
 
-val set_identity : Unix.sockaddr -> unit
-
 val here : unit -> site
 
 val create_process : (unit -> unit) -> unit
@@ -84,6 +82,9 @@ val exit_hook : unit -> unit
 
 (* Register an exception as a global one, compiler use *)
 val exn_global : (string * int * int) -> Obj.t -> unit
+
+(* start to listen for connections *)
+val listen : Unix.sockaddr -> unit
 
 (* register a channel to be sent to when site fails *)
 val at_fail : site -> unit channel -> unit

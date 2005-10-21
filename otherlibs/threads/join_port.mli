@@ -16,8 +16,12 @@ exception Failed of string
 
 type server 
 
+(* Setup of connection acceptor.
+   Either some address is given, or a default inet socket is
+   allocated (and returned as space_id) *)
 val establish_server :
-    Unix.sockaddr -> (Join_link.t -> unit) -> Join_types.space_id * server
+    Unix.sockaddr option ->
+      (Join_link.t -> unit) -> Join_types.space_id * server
 
 (* raise Failed if server already killed *)
 val kill_server : server -> unit

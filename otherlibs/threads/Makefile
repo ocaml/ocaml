@@ -18,6 +18,7 @@ include ../../config/Makefile
 CC=$(BYTECC)
 CFLAGS=-DCAML_NAME_SPACE -I../../byterun -O $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -g
 CAMLC=../../ocamlcomp.sh -I ../unix
+JCC=$(CAMLC) -join
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
 COMPFLAGS=-warn-error A
 
@@ -126,13 +127,16 @@ install:
 
 installopt:
 
-.SUFFIXES: .ml .mli .cmo .cmi .cmx
+.SUFFIXES: .jml .ml .mli .cmo .cmi .cmx
 
 .mli.cmi:
 	$(CAMLC) -c $(COMPFLAGS) $<
 
 .ml.cmo:
 	$(CAMLC) -c $(COMPFLAGS) $(OCAMLPP) $<
+
+.jml.cmo:
+	$(JCC) -c $(COMPFLAGS) $(OCAMLPP) -impl $<
 
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $(OCAMLPP) $<

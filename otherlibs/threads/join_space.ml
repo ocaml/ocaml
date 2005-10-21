@@ -18,43 +18,6 @@ open Join_misc
 (*DEBUG*)open Join_debug
 
 
-(* Non initialized *)
-
-type port = NoPort of Mutex.t | Port of Unix.sockaddr * Mutex.t | PortUsed
-
-let local_port = ref (NoPort (Mutex.create ()))
-
-let get_local_port () = match !local_port with
-| PortUsed -> assert false
-| NoPort mtx|Port (_,mtx) ->
-    Mutex.lock mtx ;
-    match !local_port with
-    | PortUsed -> assert false
-    | NoPort _ ->
-        Mutex.unlock mtx ;
-        Unix.ADDR_INET (Unix.inet_addr_any, 0)
-    | Port (i,_) ->
-        Mutex.unlock mtx ;
-        i
-
-
-and set_local_port i =  match !local_port with
-| PortUsed -> failwith "Listener started, cannot set identity"
-| NoPort mtx|Port (_,mtx) ->
-    Mutex.lock mtx ;
-    match !local_port with
-    | PortUsed ->
-        Mutex.unlock mtx ; 
-        failwith "Listener started, cannot set identity"
-    | NoPort _ ->
-        local_port := Port (i, mtx) ;
-        Mutex.unlock mtx
-    | Port (_,_) ->
-        Mutex.unlock mtx ;
-        failwith "Cannot set identity more than once"
-
-
-
 let same_space s1 s2 = Pervasives.compare s1 s2 = 0
 
 let compare_space s1 s2 = Pervasives.compare s1 s2
@@ -198,14 +161,23 @@ let verbose_close caller fd =
 
 exception NoLink
 
+let check_addr id addro = match addro with
+| None -> ()
+| Some addr ->
+    if not (same_space id addr) then
+      failwith
+        (sprintf "attempt to listen on %s, already running as %s"
+           (string_of_space addr) (string_of_space id))
+
 (* listener is started in several occasions, nevertheless ensure unicity *)
-let rec start_listener space = match space.listener with
-| Listen _ -> ()
+let rec start_listener space addr = match space.listener with
+| Listen id -> check_addr id addr
 | Deaf mtx ->
     Mutex.lock mtx ;
     match space.listener with
-    | Listen _ ->
-	Mutex.unlock mtx
+    | Listen id ->
+	Mutex.unlock mtx ;
+        check_addr id addr
     | Deaf _ ->
         let when_accepted link =
           let rspace_id = (Join_message.input_value link : space_id) in
@@ -214,21 +186,19 @@ let rec start_listener space = match space.listener with
           open_link_accepted space rspace link in
         begin try
           let my_id,_ =
-            Join_port.establish_server
-              (get_local_port ()) when_accepted in
+            Join_port.establish_server addr when_accepted in
 	  space.listener <- Listen my_id ;
         with
-        | Join_port.Failed _ ->
+        | Join_port.Failed msg ->
             Mutex.unlock mtx ;
+            prerr_endline msg ;
             exit 2 (* little we can do to repair that *)
         end ;
 	Mutex.unlock mtx
 
-and get_id space = match space.listener with
+and  get_id space = match space.listener with
 | Listen id -> id
-| Deaf _ ->
-    start_listener space ;
-    get_id space
+| Deaf _ -> start_listener space None ; get_id space
 
 (* called when a connection is aborted, at moment
    used only at setup time when ruled out by a more priotary connection *)
@@ -414,7 +384,16 @@ and open_link_sender space rspace mtx =  match rspace.link with
       rspace.link <- Connecting (mtx, cond) ;
       Mutex.unlock mtx ;
       let r_addr = rspace.rspace_id in
-      let link = Join_port.connect r_addr in
+      let rec attempt_connect d =
+        try Join_port.connect r_addr
+        with Join_port.Failed msg ->
+          if d > 5.0 then 
+            failwith
+              (sprintf "cannot connect to %s: %s"
+                 (string_of_sockaddr r_addr) msg)
+          else
+            Thread.delay d ; attempt_connect (2.0 *. d) in
+      let link = attempt_connect 0.1 in
       Join_message.output_value link (get_id space) ;
       Join_link.flush link ;
       let accepted = (Join_message.input_value link : bool) in
@@ -560,10 +539,11 @@ let remote_send_sync_alone rspace_id uid kont a =
 (* Services supply RCP by name *)
 
 let do_register_service space key f =
+(*DEBUG*)debug1 "REGISTER_SERVICE" key ;
 (* Alloc some uid, but without a stub *)
   Mutex.lock space.uid_mutex ;
   let uid = space.next_uid () in
-  Mutex.lock space.uid_mutex ;
+  Mutex.unlock space.uid_mutex ;
   Join_hash.add space.uid2local uid (Obj.magic f : stub_val) ;
   match Join_hash.add_once space.services key uid with
   | None -> ()
@@ -620,12 +600,17 @@ let halt () = do_halt local_space
 let globalize v flags = globalize_rec local_space v flags
 and localize v = localize_rec local_space v
 
+(****************************************)
+(* Starting the whole distributed layer *)
+(****************************************)
+
+let listen addr = start_listener local_space addr
+
+let here () = get_id local_space
 
 (*************************************)
 (* Async hooks on distant site death *)
 (*************************************)
-
-let here () = get_id local_space
 
 let rec do_at_fail space rspace_id (hook : unit async) =
   if not (same_space (get_id space) rspace_id) then begin

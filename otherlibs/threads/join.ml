@@ -20,8 +20,6 @@ type site = space_id
 
 let local_addr = Join_misc.local_addr
 
-let set_identity i = Join_space.set_local_port i
-
 let here = Join_space.here
 
 let create_process f = Join_scheduler.create_process f
@@ -459,6 +457,8 @@ let raise_join_exit () = raise Join_misc.JoinExit
 let exit_hook = Join_scheduler.exit_hook
 
 let exn_global = Join_message.exn_global
+
+let listen addr = Join_space.listen (Some addr)
 
 let at_fail site (chan:unit channel) =
   Join_space.at_fail site (Obj.magic chan : 'a async)

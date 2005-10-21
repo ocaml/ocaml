@@ -15,8 +15,6 @@
 
 open Join_types
 
-val set_local_port : Unix.sockaddr -> unit
-
 (* Forward pointers for local message sending, set by module Join *)
 type async_ref =
   { mutable async : 'a . automaton -> int -> 'a -> unit }
@@ -64,6 +62,8 @@ val call_service :
 
 
 val halt : unit -> unit
+
+val listen : Unix.sockaddr option -> unit
 
 val at_fail : space_id -> unit async -> unit
 

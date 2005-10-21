@@ -27,9 +27,12 @@ type server =
 
 
 (* Notice when port is zero, then a fresh port is allocated by bind  *)
-let create_port port =
+let create_port porto =
   let sock =
     try
+      let port = match porto with
+      | None -> ADDR_INET (inet_addr_any, 0)
+      | Some p -> p in
       let s =
 	socket
 	  (Unix.domain_of_sockaddr port)
@@ -41,10 +44,17 @@ let create_port port =
         s
       with e -> close s ; raise e
     with e ->
-(*DEBUG*)debug0 "CREATE PORT" (sprintf "failed on %s" (exn_to_string e)) ;
+(*DEBUG*)debug0 "CREATE PORT" (exn_to_string e) ;
         raise (Failed (exn_to_string e)) in
-  let saddr = getsockname sock in
-  {loc_port=saddr ;  loc_sock=sock ; }
+  let sockaddr = 
+    let sockaddr = getsockname sock in
+    match porto with
+    | Some _ -> sockaddr
+    | None -> match sockaddr with
+      | ADDR_INET (_, port) ->
+          ADDR_INET (Join_misc.local_addr, port)
+      | ADDR_UNIX _ -> assert false in
+  {loc_port=sockaddr ;  loc_sock=sock ; }
 
 
 let rec force_accept s =
@@ -106,7 +116,6 @@ let connect sockaddr =
       with z -> close sock ; raise z
     with
     | e ->
-(*DEBUG*)debug1 "CONNECT" (sprintf "failed on %s" (exn_to_string e)) ;
+(*DEBUG*)debug1 "CONNECT" (exn_to_string e) ;
         raise (Failed (exn_to_string e)) in
-  Join_link.create sock
-
+  Join_link.create sock (* Can fail only for OutOfMemory *)
