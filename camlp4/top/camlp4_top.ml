@@ -112,8 +112,7 @@ value toplevel_phrase cs =
   do {
     if Sys.interactive.val && first_phrase.val then do {
       first_phrase.val := False;
-      Printf.eprintf "\tCamlp4 Parsing version %s\n\n" Pcaml.version;
-      flush stderr;
+      Printf.printf "\tCamlp4 Parsing version %s\n\n%!" Pcaml.version;
     }
     else ();
     match Grammar.Entry.parse Pcaml.top_phrase cs with
