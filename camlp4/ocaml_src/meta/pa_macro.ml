@@ -256,11 +256,24 @@ let parse_include_file =
       try List.find (dir_ok file) (!include_dirs @ ["./"]) ^ file with
         Not_found -> file
     in
-    let st = Stream.of_channel (open_in file) in
+    let ch = open_in file in
+    let st = Stream.of_channel ch in
     let old_input = !(Pcaml.input_file) in
+    let (bol_ref, lnum_ref, name_ref) = !(Pcaml.position) in
+    let (old_bol, old_lnum, old_name) = !bol_ref, !lnum_ref, !name_ref in
+    let restore () =
+      close_in ch;
+      bol_ref := old_bol;
+      lnum_ref := old_lnum;
+      name_ref := old_name;
+      Pcaml.input_file := old_input
+    in
+    bol_ref := 0;
+    lnum_ref := 1;
+    name_ref := file;
     Pcaml.input_file := file;
-    let items = Grammar.Entry.parse smlist st in
-    Pcaml.input_file := old_input; items
+    try let items = Grammar.Entry.parse smlist st in restore (); items with
+      exn -> restore (); raise exn
 ;;
 
 let rec execute_macro =

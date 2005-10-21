@@ -122,7 +122,7 @@ value loc_fmt =
 value print_location loc =
   if Pcaml.input_file.val <> "-" then
     let (fname, line, bp, ep) = Stdpp.line_of_loc Pcaml.input_file.val loc in
-    eprintf loc_fmt Pcaml.input_file.val line bp ep
+    eprintf loc_fmt fname line bp ep
   else eprintf "At location %d-%d\n" (fst loc).Lexing.pos_cnum (snd loc).Lexing.pos_cnum
 ;
 

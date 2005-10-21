@@ -529,7 +529,9 @@ value next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
     [ [: _ = skip_spaces; n = line_directive_number 0;
          _ = skip_spaces; _ = line_directive_string;
          _ = any_to_nl :] ep
-       -> do { bolpos.val := ep; lnum.val := n }
+       -> do { (* fname has been updated by by line_directive_string *)
+	 bolpos.val := ep; lnum.val := n 
+       }
     ]
   and skip_spaces = parser
     [ [: `' ' | '\t'; s :] -> skip_spaces s
