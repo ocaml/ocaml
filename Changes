@@ -30,6 +30,8 @@ Native-code compiler (ocamlopt):
   In exchange for this additional constraint, ocamlopt -pack is now
   available on all platforms (no need for binutils).
 * Fixed wrong evaluation order for arguments to certain inlined functions.
+- Modified code generation for "let rec ... and ..." to reduce compilation
+  time (which was quadratic in the number of mutually-recursive functions).
 - x86 port: support tail-calls for functions with up to 21 arguments.
 - AMD64 port, Linux: recover from system stack overflow.
 - Sparc port: more portable handling of out-of-bound conditions
@@ -66,6 +68,9 @@ OCamldoc:
   of generated index files (to avoid conflict when a Index module exists
   on case-insensitive file systems).
 
+Miscellaneous:
+- Configuration information is installed in `ocamlc -where`/Makefile.config
+  and can be used by client Makefiles or shell scripts.
 
 Objective Caml 3.08.4:
 ----------------------
