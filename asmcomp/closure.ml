@@ -240,7 +240,8 @@ let simplif_prim p (args, approxs as args_approxs) =
    clashes with locally-generated identifiers.
    The variables must not be assigned in the term.
    This is used to substitute "trivial" arguments for parameters
-   during inline expansion. *)
+   during inline expansion, and also for the translation of let rec
+   over functions. *)
 
 let approx_ulam = function
     Uconst(Const_base(Const_int n)) -> Value_integer n
@@ -258,15 +259,29 @@ let rec substitute sb ulam =
   | Ugeneric_apply(fn, args) ->
       Ugeneric_apply(substitute sb fn, List.map (substitute sb) args)
   | Uclosure(defs, env) ->
-      (* never present in an inlined function body; painful to get right *)
-      assert false
+      (* Question: should we rename function labels as well?  Otherwise,
+         there is a risk that function labels are not globally unique.
+         This should not happen in the current system because:
+         - Inlined function bodies contain no Uclosure nodes
+           (cf. function [lambda_smaller])
+         - When we substitute offsets for idents bound by let rec
+           in [close], case [Lletrec], we discard the original
+           let rec body and use only the substituted term. *)
+      Uclosure(defs, List.map (substitute sb) env)
   | Uoffset(u, ofs) -> Uoffset(substitute sb u, ofs)
   | Ulet(id, u1, u2) ->
       let id' = Ident.rename id in
       Ulet(id', substitute sb u1, substitute (Tbl.add id (Uvar id') sb) u2)
   | Uletrec(bindings, body) ->
-      (* never present in an inlined function body; painful to get right *)
-      assert false
+      let bindings1 =
+        List.map (fun (id, rhs) -> (id, Ident.rename id, rhs)) bindings in
+      let sb' =
+        List.fold_right 
+          (fun (id, id', _) s -> Tbl.add id (Uvar id') s)
+          bindings1 Tbl.empty in
+      Uletrec(
+        List.map (fun (id, id', rhs) -> (id', substitute sb' rhs)) bindings1,
+        substitute sb' body)
   | Uprim(p, args) ->
       let sargs = List.map (substitute sb) args in
       let (res, _) = simplif_prim p (sargs, List.map approx_ulam sargs) in
@@ -493,11 +508,12 @@ let rec close fenv cenv = function
             (fun (id, pos, approx) fenv -> Tbl.add id approx fenv)
             infos fenv in
         let (ubody, approx) = close fenv_body cenv body in
-        (Ulet(clos_ident, clos,
-              List.fold_right
-                (fun (id, pos, approx) body ->
-                    Ulet(id, Uoffset(Uvar clos_ident, pos), body))
-                infos ubody),
+        let sb =
+          List.fold_right
+            (fun (id, pos, approx) sb ->
+              Tbl.add id (Uoffset(Uvar clos_ident, pos)) sb)
+            infos Tbl.empty in
+        (Ulet(clos_ident, clos, substitute sb ubody),
          approx)
       end else begin
         (* General case: recursive definition of values *)
