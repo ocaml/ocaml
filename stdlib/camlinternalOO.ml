@@ -120,8 +120,10 @@ let dummy_table =
 
 let table_count = ref 0
 
-let dummy_met () = failwith "Undefined method"
-let dummy_met : item = magic dummy_met
+(* dummy_met should be a pointer, so use an atom *)
+let dummy_met : item = obj (Obj.new_block 0 0)
+(* if debugging is needed, this could be a good idea: *)
+(* let dummy_met () = failwith "Undefined method" *)
 
 let rec fit_size n =
   if n <= 2 then n else
