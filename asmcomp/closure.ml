@@ -278,7 +278,7 @@ let rec substitute sb ulam =
       let sb' =
         List.fold_right 
           (fun (id, id', _) s -> Tbl.add id (Uvar id') s)
-          bindings1 Tbl.empty in
+          bindings1 sb in
       Uletrec(
         List.map (fun (id, id', rhs) -> (id', substitute sb' rhs)) bindings1,
         substitute sb' body)
