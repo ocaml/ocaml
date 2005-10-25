@@ -86,12 +86,22 @@ static void realloc_gray_vals (void)
 void caml_darken (value v, value *p /* not used */)
 {
   if (Is_block (v) && Is_in_heap (v)) {
-    if (Tag_val(v) == Infix_tag) v -= Infix_offset_val(v);
-    CAMLassert (!Is_blue_val (v));
-    if (Is_white_val (v)){
-      Hd_val (v) = Grayhd_hd (Hd_val (v));
-      *gray_vals_cur++ = v;
-      if (gray_vals_cur >= gray_vals_end) realloc_gray_vals ();
+    header_t h = Hd_val (v);
+    tag_t t = Tag_hd (h);
+    if (t == Infix_tag){
+      v -= Infix_offset_val(v);
+      h = Hd_val (v);
+      t = Tag_hd (h);
+    }
+    CAMLassert (!Is_blue_hd (h));
+    if (Is_white_hd (h)){
+      if (t < No_scan_tag){
+        Hd_val (v) = Grayhd_hd (h);
+        *gray_vals_cur++ = v;
+        if (gray_vals_cur >= gray_vals_end) realloc_gray_vals ();
+      }else{
+        Hd_val (v) = Blackhd_hd (h);
+      }
     }
   }
 }
