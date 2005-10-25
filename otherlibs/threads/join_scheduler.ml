@@ -153,7 +153,7 @@ let pool_enter () =
   | [] ->
       do_pool ()
 
-let rec grab_from_pool delay =
+let grab_from_pool () =
   Mutex.lock pool_mutex ;
   if !in_pool > 0 then begin
     Condition.signal pool_condition ;
@@ -167,8 +167,6 @@ let rec grab_from_pool delay =
         pool_kont := f :: !pool_kont ; incr pool_konts ;
         Mutex.unlock pool_mutex ;
         prerr_endline "Threads exhausted" ;
-        Thread.delay delay ;
-        grab_from_pool (1.0 +. delay)
       end
   | [] ->
       Mutex.unlock pool_mutex
@@ -181,12 +179,16 @@ let exit_thread () =
   else 
     pool_enter ()
 
-let put_pool f =
-  Mutex.lock pool_mutex ;
+let put_pool_locked f =
   pool_kont := f :: !pool_kont ; incr pool_konts ;
   Condition.signal pool_condition ;
 (*DEBUG*)debug2 "PUT POOL" (tasks_status ()) ;
   Mutex.unlock pool_mutex
+
+let put_pool f =
+  Mutex.lock pool_mutex ;
+  put_pool_locked f
+
 
 let create_process f =
 (*DEBUG*)debug2 "CREATE_PROCESS" (tasks_status ()) ;
@@ -206,18 +208,20 @@ let create_process f =
     end ;
     exit_thread () in
 
+  Mutex.lock pool_mutex ;
   if !in_pool = 0 then begin
+    Mutex.unlock pool_mutex ;
     match really_create_process g with
-    | None -> put_pool g 
+    | None -> put_pool g
     | Some _ -> ()
   end else begin
-    put_pool g
+    put_pool_locked g 
   end
   
 let inform_suspend () =
 (*DEBUG*)incr_locked nthreads_mutex suspended ;
   become_inactive () ;
-  if !active = !pool_konts then grab_from_pool 0.1
+  if !pool_konts > 0 then grab_from_pool ()
 
 and inform_unsuspend () =
 (*DEBUG*)decr_locked nthreads_mutex suspended

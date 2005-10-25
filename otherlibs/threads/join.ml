@@ -170,8 +170,8 @@ let kont_create auto = kont_create0 auto.mutex
 external field0 : 'a async -> stub = "%field0"
 
 let create_async auto i = Async (auto, i)
-and create_alone guard = Alone (wrap_guard guard)
-and alloc_alone () = Alone (wrap_guard (fun _ -> assert false))
+and create_alone guard name = Alone (wrap_guard guard, name)
+and alloc_alone name = Alone (wrap_guard (fun _ -> assert false),name)
 and patch_alone (a : 'a async) (g:'a -> unit) =
   let stub = field0 a in
   stub.stub_val <- (Obj.magic g : stub_val)
@@ -233,9 +233,7 @@ let local_send_async auto idx a =
   end
 
 (* Optimize forwarders *)
-and local_send_alone g a =
-(*DEBUG*)  debug3 "SEND_ALONE" "" ;
-  create_process (fun () -> g a)
+and local_send_alone g a = create_process (fun () -> g a)
 
 let _ = Join_space.send_async_ref.Join_space.async <- local_send_async
 
@@ -250,10 +248,11 @@ let send_async chan a = match chan with
 	let rspace = (Obj.magic stub.stub_val : space_id) in
 	Join_space.remote_send_async rspace stub.uid idx a
     end
-| Alone stub ->
+| Alone (stub,name) ->
     begin match stub.stub_tag with
     | Local ->
 	let guard = (Obj.magic stub.stub_val : 'a -> unit) in
+(*DEBUG*)debug3 "SEND ALONE" name ;
 	local_send_alone guard a
     | Remote ->
 	let rspace = (Obj.magic stub.stub_val : space_id) in
@@ -279,9 +278,7 @@ let local_tail_send_async auto idx a =
 
 (* Optimize forwarders *)
 
-and local_tail_send_alone g a =
-(*DEBUG*)  debug3 "TAIL_SEND_ALONE" "" ;
-  g a
+and local_tail_send_alone g a = g a
 
 let tail_send_async chan a = match chan with
 | Async (stub, idx) ->
@@ -293,9 +290,10 @@ let tail_send_async chan a = match chan with
 	let rspace = (Obj.magic stub.stub_val : space_id) in
 	Join_space.remote_send_async rspace stub.uid idx a
     end
-| Alone stub ->
+| Alone (stub,name) ->
     begin match stub.stub_tag with
     | Local ->
+(*DEBUG*)debug3 "TAIL SEND ALONE" name ;
 	let guard = (Obj.magic stub.stub_val : 'a -> unit) in
 	local_tail_send_alone guard a
     | Remote ->
@@ -379,8 +377,8 @@ let send_sync stub idx arg = match stub.stub_tag with
     and rspace_id = (Obj.magic stub.stub_val : space_id) in
     Join_space.remote_send_sync rspace_id stub.uid idx kont arg
 
-let send_sync_alone stub arg =
-(*DEBUG*)debug2 "SEND SYNC ALONE" "" ;
+let send_sync_alone stub name arg =
+(*DEBUG*)debug2 "SEND SYNC ALONE" name ;
 match stub.stub_tag with
 | Local ->
     let g = (Obj.magic stub.stub_val : 'a -> 'b) in
@@ -414,17 +412,17 @@ let create_sync (auto:stub) idx =
   r
 
 (* this sync channel creator is shared *)
-let do_create_sync_alone stub =
-  let r a = send_sync_alone stub a in
+let do_create_sync_alone stub name =
+  let r a = send_sync_alone stub name a in
   r
 
-let create_sync_alone (g:'a -> 'b) =
-  do_create_sync_alone (wrap_guard g)
+let create_sync_alone (g:'a -> 'b) name =
+  do_create_sync_alone (wrap_guard g) name
 
 let alloc_stub_guard () = wrap_guard (fun _ -> assert false)
 
-let alloc_sync_alone (stub:stub) =
-  do_create_sync_alone stub
+let alloc_sync_alone (stub:stub) name =
+  do_create_sync_alone stub name
 
 let patch_sync_alone (stub:stub) (g:'a -> 'b) =
   stub.stub_val <- (Obj.magic g : stub_val)
@@ -445,7 +443,7 @@ let ()  =
   register_value send_sync ;
   register_code (create_sync (Obj.magic 0:stub) 0) ;
   register_value send_sync_alone ;
-  register_code (alloc_sync_alone (alloc_stub_guard ())) ;
+  register_code (alloc_sync_alone (alloc_stub_guard ()) "bidon") ;
   ()
 
 

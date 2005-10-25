@@ -110,9 +110,10 @@ let do_send send auto num arg =
 let create_async auto num =
   mk_apply lambda_create_async [Lvar auto ; lambda_int num]
 
-and create_alone id  = mk_apply lambda_create_alone [Lvar id]
+and create_alone id  name =
+  mk_apply lambda_create_alone [Lvar id ; lambda_string name]
 
-and alloc_alone () = mk_apply lambda_alloc_alone [lambda_unit]
+and alloc_alone name = mk_apply lambda_alloc_alone [lambda_string name]
 
 and patch_alone id g =
   mk_apply lambda_patch_alone [Lvar id ; Lvar g]
@@ -144,17 +145,19 @@ let local_send_alone guard arg =
     (Lfunction
        (Curried, [Ident.create "_x"], local_tail_send_alone guard arg))
 
+let lambda_string s = Lconst (Const_base (Const_string s))
+
 let create_sync auto num =
   mk_apply lambda_create_sync [Lvar auto ; lambda_int num]
 
-and create_sync_alone id =
-  mk_apply lambda_create_sync_alone [Lvar id]
+and create_sync_alone id name =
+  mk_apply lambda_create_sync_alone [Lvar id; lambda_string name]
 
 let alloc_stub_guard () =
   mk_apply lambda_alloc_stub_guard [lambda_unit]
 
-and alloc_sync_alone id =
-  mk_apply lambda_alloc_sync_alone [Lvar id]
+and alloc_sync_alone id name =
+  mk_apply lambda_alloc_sync_alone [Lvar id ; lambda_string name]
 
 and patch_sync_alone id stub =
   mk_apply lambda_patch_sync_alone [Lvar id ; Lvar stub]
@@ -500,14 +503,16 @@ let create_dispatchers disps k =
     (fun (id,chan,lam) k ->
       Llet
         (StrictOpt, id, lam,
+	 let name = Ident.unique_name chan.jchannel_ident in
          Llet
            (StrictOpt, chan.jchannel_ident,
-            (if chan.jchannel_sync then create_sync_alone id
-            else create_alone id),
-            k)))
+            (if chan.jchannel_sync then create_sync_alone
+	    else create_alone) id name, k)))
     disps k
 
-let make_g chan g =
+let make_g caller chan g =
+(*  Printf.eprintf "make_g %s <%s>\n"
+    caller (Ident.unique_name chan.jchannel_ident) ; *)
   if chan.jchannel_sync then
     chan.jchannel_ident, (Some (Ident.create "#stub"),g)
   else
@@ -515,20 +520,22 @@ let make_g chan g =
 
 let create_forwarders autos dispss fwdss r =
   (* collect all pairs channel ident X (stub_ident option X guard_ident) *)
-  let id2g =
+  let id2g = [] in
+(*
     List.fold_right
       (fun disps r ->
         List.fold_right
           (fun (g,chan,_) r ->
-            make_g chan g::r)
+            make_g "disp" chan g::r)
           disps r)
       dispss [] in
+*)
   let id2g =
     List.fold_right
       (fun auto r ->
         List.fold_right
           (fun (_,chan) r -> match chan.jchannel_id with
-          | Alone g -> make_g chan g::r
+          | Alone g -> make_g "fwd" chan g::r
           | Chan (_,_) -> r)
           auto.jauto_names r)
       autos id2g in
@@ -564,9 +571,11 @@ let create_forwarders autos dispss fwdss r =
          | Some stub ->
              Llet
                (Strict, stub, alloc_stub_guard (),
-                Llet (StrictOpt, id, alloc_sync_alone stub, r))
+                Llet
+		  (StrictOpt,
+		   id, alloc_sync_alone stub (Ident.unique_name id), r))
          |  None ->
-             Llet (StrictOpt,id,alloc_alone (),r))
+             Llet (StrictOpt,id,alloc_alone (Ident.unique_name id),r))
        id2g r in
    r
              

@@ -37,8 +37,8 @@ val patch_table : automaton -> reaction array -> unit
 (* Asynchronous channels *)
 
 val create_async : stub -> int -> 'a async
-val create_alone : ('a -> unit) -> 'a async
-val alloc_alone : unit -> 'a async
+val create_alone : ('a -> unit) -> string -> 'a async
+val alloc_alone : string -> 'a async
 val patch_alone : 'a async -> ('a -> unit) -> unit
 
 val local_send_async : automaton -> int -> 'a -> unit
@@ -60,11 +60,11 @@ val register_service : string -> ('a -> 'b) -> unit
 val call_service : service -> 'a -> 'b
 
 val create_sync : stub -> int -> ('a -> 'b)
-val create_sync_alone : ('a -> 'b) -> ('a -> 'b)
+val create_sync_alone : ('a -> 'b) -> string -> ('a -> 'b)
 
 
 val alloc_stub_guard : unit -> stub
-val alloc_sync_alone : stub -> ('a -> 'b)
+val alloc_sync_alone : stub -> string -> ('a -> 'b)
 val patch_sync_alone : stub  -> ('a -> 'b) -> unit
 
 (* Explicit reply to continuation *)

@@ -102,7 +102,7 @@ type stub =
 (* internal structure for channels *)
 type 'a async =
     Async of stub * int
-  | Alone of stub
+  | Alone of stub * string
 
 type link =
   | NoConnection of Mutex.t
