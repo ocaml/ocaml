@@ -18,7 +18,7 @@
    This module provides functions to compute 128-bit ``digests'' of
    arbitrary-length strings or files. The digests are of cryptographic
    quality: it is very hard, given a digest, to forge a string having
-   that digest. The algorithm used is MD5. 
+   that digest. The algorithm used is MD5.
 *)
 
 type t = string

@@ -36,4 +36,3 @@ val catch : ('a -> 'b) -> 'a -> 'b
    makes it harder to track the location of the exception
    using the debugger or the stack backtrace facility.
    So, do not use [Printexc.catch] in new code.  *)
-

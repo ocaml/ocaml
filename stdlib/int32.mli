@@ -166,4 +166,3 @@ external format : string -> int32 -> string = "caml_int32_format"
    one [%d], [%i], [%u], [%x], [%X] or [%o] conversion specification.
    This function is deprecated; use {!Printf.sprintf} with a [%lx] format
    instead. *)
-

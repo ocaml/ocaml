@@ -70,7 +70,8 @@ val make_matrix : dimx:int -> dimy:int -> 'a -> 'a array array
    size is only [Sys.max_array_length / 2]. *)
 
 val create_matrix : dimx:int -> dimy:int -> 'a -> 'a array array
-(** @deprecated [Array.create_matrix] is an alias for {!ArrayLabels.make_matrix}. *)
+(** @deprecated [Array.create_matrix] is an alias for
+   {!ArrayLabels.make_matrix}. *)
 
 val append : 'a array -> 'a array -> 'a array
 (** [Array.append v1 v2] returns a fresh array containing the
@@ -165,7 +166,7 @@ val sort : cmp:('a -> 'a -> int) -> 'a array -> unit
    [Array.sort] is guaranteed to run in constant heap space
    and logarithmic stack space.
 
-   
+
    The current implementation uses Heap Sort.  It runs in constant
    stack space.
 *)

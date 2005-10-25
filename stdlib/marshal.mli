@@ -41,7 +41,7 @@
    and [Marshal.from_channel] must be opened in binary mode, using e.g.
    [open_out_bin] or [open_in_bin]; channels opened in text mode will
    cause unmarshaling errors on platforms where text channels behave
-   differently than binary channels, e.g. Windows. 
+   differently than binary channels, e.g. Windows.
 *)
 
 type extern_flags =
@@ -54,8 +54,8 @@ val to_channel : out_channel -> 'a -> extern_flags list -> unit
    of [v] on channel [chan]. The [flags] argument is a
    possibly empty list of flags that governs the marshaling
    behavior with respect to sharing and functional values.
-   
-   If [flags] does not contain [Marshal.No_sharing], circularities 
+
+   If [flags] does not contain [Marshal.No_sharing], circularities
    and sharing inside the value [v] are detected and preserved
    in the sequence of bytes produced. In particular, this
    guarantees that marshaling always terminates. Sharing
@@ -66,7 +66,7 @@ val to_channel : out_channel -> 'a -> extern_flags list -> unit
    substructures, but may cause slower marshaling and larger
    byte representations if [v] actually contains sharing,
    or even non-termination if [v] contains cycles.
-   
+
    If [flags] does not contain [Marshal.Closures],
    marshaling fails when it encounters a functional value
    inside [v]: only ``pure'' data structures, containing neither
@@ -119,7 +119,7 @@ val header_size : int
    in characters, of the marshaled value.
    Both {!Marshal.data_size} and {!Marshal.total_size} raise [Failure]
    if [buff], [ofs] does not contain a valid header.
-   
+
    To read the byte representation of a marshaled value into
    a string buffer, the program needs to read first
    {!Marshal.header_size} characters into the buffer,
@@ -134,5 +134,3 @@ val data_size : string -> int -> int
 
 val total_size : string -> int -> int
 (** See {!Marshal.header_size}.*)
-
-

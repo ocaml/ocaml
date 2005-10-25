@@ -53,7 +53,7 @@ type lex_tables =
     lex_base_code : string;
     lex_backtrk_code : string;
     lex_default_code : string;
-    lex_trans_code : string;  
+    lex_trans_code : string;
     lex_check_code : string;
     lex_code: string;}
 
@@ -96,7 +96,7 @@ let lex_refill read_fun aux_buffer lexbuf =
   *)
   if lexbuf.lex_buffer_len + n > String.length lexbuf.lex_buffer then begin
     (* There is not enough space at the end of the buffer *)
-    if lexbuf.lex_buffer_len - lexbuf.lex_start_pos + n 
+    if lexbuf.lex_buffer_len - lexbuf.lex_start_pos + n
        <= String.length lexbuf.lex_buffer
     then begin
       (* But there is enough space if we reclaim the junk at the beginning

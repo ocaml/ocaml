@@ -41,7 +41,7 @@ type params = {
     mutable clean_when_copying : bool;
     mutable retry_count : int;
     mutable bucket_small_size : int
-  } 
+  }
 
 let params = {
   compact_table = true;
@@ -49,7 +49,7 @@ let params = {
   clean_when_copying = true;
   retry_count = 3;
   bucket_small_size = 16
-} 
+}
 
 (**** Parameters ****)
 

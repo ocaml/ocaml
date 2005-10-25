@@ -27,7 +27,7 @@
    space than values of type [int], and arithmetic operations on
    [nativeint] are generally slower than those on [int].  Use [nativeint]
    only when the application requires the extra bit of precision
-   over the [int] type. 
+   over the [int] type.
 *)
 
 val zero : nativeint
@@ -52,7 +52,7 @@ external mul : nativeint -> nativeint -> nativeint = "%nativeint_mul"
 (** Multiplication. *)
 
 external div : nativeint -> nativeint -> nativeint = "%nativeint_div"
-(** Integer division.  Raise [Division_by_zero] if the second 
+(** Integer division.  Raise [Division_by_zero] if the second
    argument is zero.  This division rounds the real quotient of
    its arguments towards zero, as specified for {!Pervasives.(/)}. *)
 
@@ -136,7 +136,7 @@ external of_float : float -> nativeint = "caml_nativeint_of_float"
    The result of the conversion is undefined if, after truncation,
    the number is outside the range
    \[{!Nativeint.min_int}, {!Nativeint.max_int}\]. *)
-       
+
 external to_float : nativeint -> float = "caml_nativeint_to_float"
 (** Convert the given native integer to a floating-point number. *)
 
@@ -183,4 +183,3 @@ external format : string -> nativeint -> string = "caml_nativeint_format"
    one [%d], [%i], [%u], [%x], [%X] or [%o] conversion specification.
    This function is deprecated; use {!Printf.sprintf} with a [%nx] format
    instead. *)
-

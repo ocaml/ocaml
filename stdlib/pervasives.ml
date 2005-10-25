@@ -120,7 +120,7 @@ let min_float =
   float_of_bits 0x00_10_00_00_00_00_00_00L
 let epsilon_float =
   float_of_bits 0x3C_B0_00_00_00_00_00_00L
-  
+
 type fpclass =
     FP_normal
   | FP_subnormal
@@ -234,10 +234,10 @@ let open_out_bin name =
 
 external flush : out_channel -> unit = "caml_ml_flush"
 
-external out_channels_list : unit -> out_channel list 
+external out_channels_list : unit -> out_channel list
                            = "caml_ml_out_channels_list"
 
-let flush_all () = 
+let flush_all () =
   let rec iter = function
       [] -> ()
     | a::l -> (try flush a with _ -> ()); iter l
@@ -287,7 +287,7 @@ let open_in_bin name =
 
 external input_char : in_channel -> char = "caml_ml_input_char"
 
-external unsafe_input : in_channel -> string -> int -> int -> int 
+external unsafe_input : in_channel -> string -> int -> int -> int
                       = "caml_ml_input"
 
 let input ic s ofs len =
@@ -329,7 +329,7 @@ let input_line chan =
       ignore (input_char chan);           (* skip the newline *)
       match accu with
         [] -> res
-      |  _ -> let len = len + n - 1 in 
+      |  _ -> let len = len + n - 1 in
               build_result (string_create len) len (res :: accu)
     end else begin                        (* n < 0: newline not found *)
       let beg = string_create (-n) in

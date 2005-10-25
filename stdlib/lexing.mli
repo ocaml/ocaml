@@ -152,7 +152,7 @@ type lex_tables =
     lex_base_code : string;
     lex_backtrk_code : string;
     lex_default_code : string;
-    lex_trans_code : string;  
+    lex_trans_code : string;
     lex_check_code : string;
     lex_code: string;}
 

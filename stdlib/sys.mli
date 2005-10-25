@@ -112,7 +112,7 @@ val set_signal : int -> signal_behavior -> unit
 (** Same as {!Sys.signal} but return value is ignored. *)
 
 
-(** {7 Signal numbers for the standard POSIX signals.} *) 
+(** {7 Signal numbers for the standard POSIX signals.} *)
 
 val sigabrt : int
 (** Abnormal termination *)
@@ -185,7 +185,7 @@ exception Break
 
 val catch_break : bool -> unit
 (** [catch_break] governs whether interactive interrupt (ctrl-C)
-   terminates the program or raises the [Break] exception. 
+   terminates the program or raises the [Break] exception.
    Call [catch_break true] to enable raising [Break],
    and [catch_break false] to let the system
    terminate the program on user interrupt. *)
