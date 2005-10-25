@@ -36,6 +36,7 @@ type compilation_env =
 
 (* Debugging events *)
 
+(* Warning: when you change these types, check byterun/backtrace.c *)
 type debug_event =
   { mutable ev_pos: int;                (* Position in bytecode *)
     ev_module: string;                  (* Name of defining module *)

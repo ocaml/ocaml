@@ -43,8 +43,13 @@ CAMLexport value caml_backtrace_last_exn = Val_unit;
 /* Location of fields in the Instruct.debug_event record */
 enum { EV_POS = 0,
        EV_MODULE = 1,
-       EV_CHAR = 2,
+       EV_LOC = 2,
        EV_KIND = 3 };
+
+/* Location of fields in the Location.t record. */
+enum { LOC_START = 0,
+       LOC_END = 1,
+       LOC_GHOST = 2 };
 
 /* Location of fields in the Lexing.position record. */
 enum {
@@ -184,13 +189,15 @@ static void print_location(value events, int index)
   if (ev == Val_false) {
     fprintf(stderr, "%s unknown location\n", info);
   } else {
-    value ev_char = Field (ev, EV_CHAR);
-    char *fname = String_val (Field (ev_char, POS_FNAME));
-    int lnum = Int_val (Field (ev_char, POS_LNUM));
-    int chr = Int_val (Field (ev_char, POS_CNUM))
-              - Int_val (Field (ev_char, POS_BOL));
-    fprintf (stderr, "%s file \"%s\", line %d, character %d\n", info, fname,
-             lnum, chr);
+    value ev_start = Field (Field (ev, EV_LOC), LOC_START);
+    char *fname = String_val (Field (ev_start, POS_FNAME));
+    int lnum = Int_val (Field (ev_start, POS_LNUM));
+    int startchr = Int_val (Field (ev_start, POS_CNUM))
+                   - Int_val (Field (ev_start, POS_BOL));
+    int endchr = Int_val (Field (Field (Field (ev, EV_LOC), LOC_END), POS_CNUM))
+                 - Int_val (Field (ev_start, POS_BOL));
+    fprintf (stderr, "%s file \"%s\", line %d, characters %d\n", info, fname,
+             lnum, startchr, endchr);
   }
 }
 
