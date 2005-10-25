@@ -196,7 +196,7 @@ static void print_location(value events, int index)
                    - Int_val (Field (ev_start, POS_BOL));
     int endchr = Int_val (Field (Field (Field (ev, EV_LOC), LOC_END), POS_CNUM))
                  - Int_val (Field (ev_start, POS_BOL));
-    fprintf (stderr, "%s file \"%s\", line %d, characters %d\n", info, fname,
+    fprintf (stderr, "%s file \"%s\", line %d, characters %d-%d\n", info, fname,
              lnum, startchr, endchr);
   }
 }
