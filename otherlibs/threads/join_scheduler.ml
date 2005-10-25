@@ -124,6 +124,20 @@ let pool_condition = Condition.create ()
 and pool_mutex = Mutex.create ()
 and pool_kont = ref [] 
 
+let fork_for_pool () = match !pool_kont with
+| f::rem ->
+    pool_kont := rem ; decr pool_konts ;
+    Mutex.unlock pool_mutex ;
+    if really_create_process f = None then begin
+      Mutex.lock pool_mutex ;
+      pool_kont := f :: !pool_kont ; incr pool_konts ;
+      Mutex.unlock pool_mutex ;
+      prerr_endline "Threads exhausted" ;
+    end
+| [] ->
+    Mutex.unlock pool_mutex
+
+
 let rec do_pool () =
   incr in_pool ;
 (*DEBUG*)incr_locked nthreads_mutex suspended ;
@@ -136,7 +150,10 @@ let rec do_pool () =
   | f::rem ->
       pool_kont := rem ; decr pool_konts ;
 (*DEBUG*)debug2 "POOL RUN" (sprintf "%i" (Thread.id (Thread.self()))) ;
-      Mutex.unlock pool_mutex ;
+      if rem <> [] && !in_pool = 0 then begin
+        fork_for_pool ()
+      end else
+        Mutex.unlock pool_mutex ;
       f ()
   | [] ->
       do_pool ()
@@ -158,18 +175,8 @@ let grab_from_pool () =
   if !in_pool > 0 then begin
     Condition.signal pool_condition ;
     Mutex.unlock pool_mutex
-  end else match !pool_kont with
-  | f::rem ->
-      pool_kont := rem ; decr pool_konts ;
-      Mutex.unlock pool_mutex ;
-      if really_create_process f = None then begin
-        Mutex.lock pool_mutex ;
-        pool_kont := f :: !pool_kont ; incr pool_konts ;
-        Mutex.unlock pool_mutex ;
-        prerr_endline "Threads exhausted" ;
-      end
-  | [] ->
-      Mutex.unlock pool_mutex
+  end else
+    fork_for_pool ()
 
 let exit_thread () =
 (*DEBUG*)debug2 "EXIT THREAD" (tasks_status ()) ;

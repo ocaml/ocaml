@@ -67,13 +67,9 @@ join_space.cmx: thread.cmx mutex.cmx join_types.cmi join_scheduler.cmx \
     join_debug.cmx condition.cmx join_space.cmi 
 mutex.cmo: mutex.cmi 
 mutex.cmx: mutex.cmi 
-ns.cmo: thread.cmi mutex.cmi join_types.cmi join_space.cmi join_port.cmi \
-    join_misc.cmi join_message.cmi join_link.cmi join_debug.cmi join.cmi \
-    ns.cmi 
-ns.cmx: thread.cmx mutex.cmx join_types.cmi join_space.cmx join_port.cmx \
-    join_misc.cmx join_message.cmx join_link.cmx join_debug.cmx join.cmx \
-    ns.cmi 
 thread.cmo: thread.cmi 
 thread.cmx: thread.cmi 
 threadUnix.cmo: thread.cmi threadUnix.cmi 
 threadUnix.cmx: thread.cmx threadUnix.cmi 
+ns.cmo: join_space.cmi join_debug.cmi join.cmi ns.cmi 
+ns.cmx: join_space.cmx join_debug.cmx join.cmx ns.cmi 

@@ -228,5 +228,8 @@ installopt:
 depend: $(GENFILES)
 	gcc -MM -I../../byterun *.c > .depend
 	../../boot/ocamlrun ../../tools/ocamldep *.mli *.ml >> .depend
+	cp ns.jml ns.ml 
+	../../boot/ocamlrun ../../tools/ocamldep -join ns.ml >> .depend
+	/bin/rm -f ns.ml
 
 include .depend
