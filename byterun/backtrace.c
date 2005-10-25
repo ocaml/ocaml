@@ -147,19 +147,22 @@ static value read_debug_info(void)
 static value event_for_location(value events, code_t pc)
 {
   mlsize_t i;
-  value pos, l, ev, ev_pos;
+  value pos, l, ev, ev_pos, best_ev;
 
+  best_ev = 0;
   Assert(pc >= caml_start_code && pc < caml_start_code + caml_code_size);
   pos = Val_long((char *) pc - (char *) caml_start_code);
   for (i = 0; i < Wosize_val(events); i++) {
     for (l = Field(events, i); l != Val_int(0); l = Field(l, 1)) {
       ev = Field(l, 0);
       ev_pos = Field(ev, EV_POS);
+      if (ev_pos == pos) return ev;
       /* ocamlc sometimes moves an event past a following PUSH instruction;
          allow mismatch by 1 instruction. */
-      if (ev_pos == pos || ev_pos == pos + 8) return ev;
+      if (ev_pos == pos + 8) best_ev = ev;
     }
   }
+  if (best_ev != 0) return best_ev;
   return Val_false;
 }
 
