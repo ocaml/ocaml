@@ -1,8 +1,0 @@
-cmcaml.cmo: callback.cmo 
-cmcaml.cmx: callback.cmx 
-multdef.cmo: multdef.cmi 
-multdef.cmx: multdef.cmi 
-recmod.cmo: recmod.cmi 
-recmod.cmx: recmod.cmi 
-usemultdef.cmo: multdef.cmi 
-usemultdef.cmx: multdef.cmx 
