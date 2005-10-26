@@ -39,6 +39,7 @@ Native-code compiler (ocamlopt):
 
 Standard library:
 - Pervasives: faster implementation of close_in, close_out.
+  set_binary_mode_{out,in} now working correctly under Cygwin.
 - Printf: better handling of partial applications of the printf functions.
 - Scanf: new function sscanf_format to read a format from a
   string. The type of the resulting format is dynamically checked and
