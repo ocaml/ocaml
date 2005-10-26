@@ -804,8 +804,9 @@ let open_proc cmd proc input output toclose =
      0 -> if input <> stdin then begin dup2 input stdin; close input end;
           if output <> stdout then begin dup2 output stdout; close output end;
           if not cloexec then List.iter close toclose;
-          execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |];
-          exit 127
+          begin try execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |]
+          with _ -> exit 127
+          end
   | id -> Hashtbl.add popen_processes proc id
 
 let open_process_in cmd =
@@ -840,8 +841,9 @@ let open_proc_full cmd env proc input output error toclose =
           dup2 output stdout; close output;
           dup2 error stderr; close error;
           if not cloexec then List.iter close toclose;
-          execve "/bin/sh" [| "/bin/sh"; "-c"; cmd |] env;
-          exit 127
+          begin try execve "/bin/sh" [| "/bin/sh"; "-c"; cmd |] env
+          with _ -> exit 127
+          end
   | id -> Hashtbl.add popen_processes proc id
 
 let open_process_full cmd env =
@@ -910,6 +912,10 @@ let open_connection sockaddr =
 let shutdown_connection inchan =
   shutdown (descr_of_in_channel inchan) SHUTDOWN_SEND
 
+let rec accept_non_intr s =
+  try accept s
+  with Unix_error (EINTR, _, _) -> accept_non_intr s
+
 let establish_server server_fun sockaddr =
   let sock =
     socket (domain_of_sockaddr sockaddr) SOCK_STREAM 0 in
@@ -917,20 +923,20 @@ let establish_server server_fun sockaddr =
   bind sock sockaddr;
   listen sock 5;
   while true do
-    let (s, caller) = accept sock in
+    let (s, caller) = accept_non_intr sock in
     (* The "double fork" trick, the process which calls server_fun will not
        leave a zombie process *)
     match fork() with
        0 -> if fork() <> 0 then exit 0; (* The son exits, the grandson works *)
+            close sock;
             ignore(try_set_close_on_exec s);
             let inchan = in_channel_of_descr s in
             let outchan = out_channel_of_descr s in
             server_fun inchan outchan;
-            close_out outchan;
-            (* The file descriptor was already closed by close_out.
-               close_in inchan;
-            *)
+            (* Do not close inchan nor outchan, as the server_fun could
+               have done it already, and we are about to exit anyway
+               (PR#3794) *)
             exit 0
-    | id -> close s; ignore(waitpid [] id) (* Reclaim the son *)
+    | id -> close s; ignore(waitpid_non_intr id) (* Reclaim the son *)
   done
 

@@ -74,7 +74,11 @@ static value alloc_host_entry(struct hostent *entry)
     res = alloc_small(4, 0);
     Field(res, 0) = name;
     Field(res, 1) = aliases;
-    Field(res, 2) = entry->h_addrtype == PF_UNIX ? Val_int(0) : Val_int(1);
+    switch (entry->h_addrtype) {
+    case PF_UNIX:          Field(res, 2) = Val_int(0); break;
+    case PF_INET:          Field(res, 2) = Val_int(1); break;
+    default: /*PF_INET6 */ Field(res, 2) = Val_int(2); break;
+    }
     Field(res, 3) = addr_list;
   End_roots();
   return res;

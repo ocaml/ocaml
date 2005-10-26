@@ -47,11 +47,11 @@ static value alloc_process_status(int pid, int status)
   }
   else if (WIFSTOPPED(status)) {
     st = alloc_small(1, TAG_WSTOPPED);
-    Field(st, 0) = Val_int(WSTOPSIG(status));
+    Field(st, 0) = Val_int(caml_rev_convert_signal_number(WSTOPSIG(status)));
   }
   else {
     st = alloc_small(1, TAG_WSIGNALED);
-    Field(st, 0) = Val_int(WTERMSIG(status));
+    Field(st, 0) = Val_int(caml_rev_convert_signal_number(WTERMSIG(status)));
   }
   Begin_root (st);
     res = alloc_small(2, 0);

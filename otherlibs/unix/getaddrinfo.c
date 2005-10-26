@@ -38,9 +38,12 @@ static value convert_addrinfo(struct addrinfo * a)
   CAMLparam0();
   CAMLlocal3(vres,vaddr,vcanonname);
   union sock_addr_union sa;
+  socklen_param_type len;
 
-  memcpy(&sa.s_gen, a->ai_addr, sizeof(struct sockaddr));
-  vaddr = alloc_sockaddr(&sa, sizeof(struct sockaddr), -1);
+  len = a->ai_addrlen;
+  if (len > sizeof(sa)) len = sizeof(sa);
+  memcpy(&sa.s_gen, a->ai_addr, len);
+  vaddr = alloc_sockaddr(&sa, len, -1);
   vcanonname = copy_string(a->ai_canonname == NULL ? "" : a->ai_canonname);
   vres = alloc_small(5, 0);
   Field(vres, 0) = cst_to_constr(a->ai_family, socket_domain_table, 3, 0);
