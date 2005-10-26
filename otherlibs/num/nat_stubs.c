@@ -26,8 +26,8 @@
 
 /* Stub code for the Nat module. */
 
-static void serialize_nat(value, unsigned long *, unsigned long *);
-static unsigned long deserialize_nat(void * dst);
+static void serialize_nat(value, uintnat *, uintnat *);
+static uintnat deserialize_nat(void * dst);
 
 static struct custom_operations nat_operations = {
   "_nat",
@@ -323,8 +323,8 @@ CAMLprim value lxor_digit_nat(value nat1, value ofs1, value nat2, value ofs2)
    of 64-bit words to obtain the correct behavior. */
 
 static void serialize_nat(value nat, 
-                          unsigned long * wsize_32,
-                          unsigned long * wsize_64)
+                          uintnat * wsize_32,
+                          uintnat * wsize_64)
 {
   mlsize_t len = Wosize_val(nat) - 1;
 
@@ -349,7 +349,7 @@ static void serialize_nat(value nat,
   *wsize_64 = len * 4;
 }
 
-static unsigned long deserialize_nat(void * dst)
+static uintnat deserialize_nat(void * dst)
 {
   mlsize_t len;
 
