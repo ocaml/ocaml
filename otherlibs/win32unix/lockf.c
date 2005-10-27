@@ -62,7 +62,7 @@ static void set_file_pointer(HANDLE h, LARGE_INTEGER dest,
   LONG high = dest.HighPart;
   DWORD ret = SetFilePointer(h, dest.LowPart, &high, method);
   if (ret == INVALID_SET_FILE_POINTER) {
-    long err = GetLastError();
+    DWORD err = GetLastError();
     if (err != NO_ERROR) { win32_maperr(err); uerror("lockf", Nothing); }
   }
   if (cur != NULL) { cur->LowPart = ret; cur->HighPart = high; }

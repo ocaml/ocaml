@@ -25,7 +25,7 @@
 #define SEEK_END 2
 #endif
 
-static int seek_command_table[] = {
+static DWORD seek_command_table[] = {
   FILE_BEGIN, FILE_CURRENT, FILE_END
 };
 
@@ -33,23 +33,27 @@ static int seek_command_table[] = {
 #define INVALID_SET_FILE_POINTER (-1)
 #endif
 
+static __int64 caml_set_file_pointer(HANDLE h, __int64 dist, DWORD mode)
+{
+  LARGE_INTEGER i;
+  DWORD err;
+
+  i.QuadPart = dist;
+  i.LowPart = SetFilePointer(h, i.LowPart, &i.HighPart, mode);
+  if (i.LowPart == INVALID_SET_FILE_POINTER) {
+    err = GetLastError();
+    if (err != NO_ERROR) { win32_maperr(err); uerror("lseek", Nothing); }
+  }
+  return i.QuadPart;
+}
+
 CAMLprim value unix_lseek(value fd, value ofs, value cmd)
 {
-  long ret;
-  long ofs_low = Long_val(ofs);
-  long ofs_high = ofs_low >= 0 ? 0 : -1;
-  long err;
+  __int64 ret;
 
-  ret = SetFilePointer(Handle_val(fd), ofs_low, &ofs_high,
-                       seek_command_table[Int_val(cmd)]);
-  if (ret == INVALID_SET_FILE_POINTER) {
-    err = GetLastError();
-    if (err != NO_ERROR) {
-      win32_maperr(err);
-      uerror("lseek", Nothing);
-    }
-  }
-  if (ofs_high != 0 || ret > Max_long) {
+  ret = caml_set_file_pointer(Handle_val(fd), Long_val(ofs),
+			      seek_command_table[Int_val(cmd)]);
+  if (ret > Max_long) {
     win32_maperr(ERROR_ARITHMETIC_OVERFLOW);
     uerror("lseek", Nothing);
   }
@@ -58,19 +62,9 @@ CAMLprim value unix_lseek(value fd, value ofs, value cmd)
 
 CAMLprim value unix_lseek_64(value fd, value ofs, value cmd)
 {
-  long ret;
-  long ofs_low = (long) Int64_val(ofs);
-  long ofs_high = (long) (Int64_val(ofs) >> 32);
-  long err;
+  __int64 ret;
 
-  ret = SetFilePointer(Handle_val(fd), ofs_low, &ofs_high,
-                       seek_command_table[Int_val(cmd)]);
-  if (ret == INVALID_SET_FILE_POINTER) {
-    err = GetLastError();
-    if (err != NO_ERROR) {
-      win32_maperr(err);
-      uerror("lseek", Nothing);
-    }
-  }
-  return copy_int64((int64) ofs_high << 32 | ret);
+  ret = caml_set_file_pointer(Handle_val(fd), Int64_val(ofs),
+			      seek_command_table[Int_val(cmd)]);
+  return copy_int64(ret);
 }
