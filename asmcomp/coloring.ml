@@ -208,77 +208,56 @@ let assign_location reg =
       start_register.(cl) <- (if start+1 >= num_regs then 0 else start+1)
   end else begin
     (* Sorry, we must put the pseudoreg in a stack location *)
-    (* First, check if we have a preference for an incoming location
-       we do not conflict with. *)
-    let best_score = ref 0 and best_incoming_loc = ref (-1) in
+    let nslots = Proc.num_stack_slots.(cl) in
+    let score = Array.create nslots 0 in
+    (* Compute the scores as for registers *)
     List.iter
       (fun (r, w) ->
         match r.loc with
-          Stack(Incoming n) ->
-            if w > !best_score
-             && List.for_all (fun neighbour -> neighbour.loc <> r.loc)
-                            reg.interf
-            then begin
-              best_score := w;
-              best_incoming_loc := n
-            end
+          Stack(Local n) -> if Proc.register_class r = cl then
+                            score.(n) <- score.(n) + w
+        | Unknown ->
+            List.iter
+              (fun neighbour ->
+                match neighbour.loc with
+                  Stack(Local n) ->
+                    if Proc.register_class neighbour = cl
+                    then score.(n) <- score.(n) - w
+                | _ -> ())
+              r.interf
         | _ -> ())
       reg.prefer;
-    if !best_incoming_loc >= 0 then
-      reg.loc <- Stack(Incoming !best_incoming_loc)
-    else begin
-      (* Now, look for a location in the local area *)
-      let nslots = Proc.num_stack_slots.(cl) in
-      let score = Array.create nslots 0 in
-      (* Compute the scores as for registers *)
-      List.iter
-        (fun (r, w) ->
-          match r.loc with
-            Stack(Local n) -> if Proc.register_class r = cl then
-                              score.(n) <- score.(n) + w
-          | Unknown ->
-              List.iter
-                (fun neighbour ->
-                  match neighbour.loc with
-                    Stack(Local n) ->
-                      if Proc.register_class neighbour = cl
-                      then score.(n) <- score.(n) - w
-                  | _ -> ())
-                r.interf
-          | _ -> ())
-        reg.prefer;
-      List.iter
-        (fun neighbour ->
-          begin match neighbour.loc with
-              Stack(Local n) ->
-                if Proc.register_class neighbour = cl then
-                score.(n) <- (-1000000)
-          | _ -> ()
-          end;
-          List.iter
-            (fun (r, w) ->
-              match r.loc with
-                Stack(Local n) -> if Proc.register_class r = cl then
-                                  score.(n) <- score.(n) - w
-              | _ -> ())
-            neighbour.prefer)
-        reg.interf;
-      (* Pick the location with the best score *)
-      let best_score = ref (-1000000) and best_slot = ref (-1) in
-      for n = 0 to nslots - 1 do
-        if score.(n) > !best_score then begin
-          best_score := score.(n);
-          best_slot := n
-        end
-      done;
-      (* Found one? *)
-      if !best_slot >= 0 then
-        reg.loc <- Stack(Local !best_slot)
-      else begin
-        (* Allocate a new stack slot *)
-        reg.loc <- Stack(Local nslots);
-        Proc.num_stack_slots.(cl) <- nslots + 1
+    List.iter
+      (fun neighbour ->
+        begin match neighbour.loc with
+            Stack(Local n) ->
+              if Proc.register_class neighbour = cl then
+              score.(n) <- (-1000000)
+        | _ -> ()
+        end;
+        List.iter
+          (fun (r, w) ->
+            match r.loc with
+              Stack(Local n) -> if Proc.register_class r = cl then
+                                score.(n) <- score.(n) - w
+            | _ -> ())
+          neighbour.prefer)
+      reg.interf;
+    (* Pick the location with the best score *)
+    let best_score = ref (-1000000) and best_slot = ref (-1) in
+    for n = 0 to nslots - 1 do
+      if score.(n) > !best_score then begin
+        best_score := score.(n);
+        best_slot := n
       end
+    done;
+    (* Found one? *)
+    if !best_slot >= 0 then
+      reg.loc <- Stack(Local !best_slot)
+    else begin
+      (* Allocate a new stack slot *)
+      reg.loc <- Stack(Local nslots);
+      Proc.num_stack_slots.(cl) <- nslots + 1
     end
   end;
   (* Cancel the preferences of this register so that they don't influence

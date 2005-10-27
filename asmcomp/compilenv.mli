@@ -28,6 +28,7 @@ open Clambda
 
 type unit_infos =
   { mutable ui_name: string;                    (* Name of unit implemented *)
+    mutable ui_symbol: string;            (* Prefix for symbols *)
     mutable ui_defines: string list;      (* Unit and sub-units implemented *)
     mutable ui_imports_cmi: (string * Digest.t) list; (* Interfaces imported *)
     mutable ui_imports_cmx: (string * Digest.t) list; (* Infos imported *)
@@ -45,9 +46,12 @@ type library_infos =
     lib_ccobjs: string list;            (* C object files needed *)
     lib_ccopts: string list }           (* Extra opts to C compiler *)
 
-val reset: string -> unit
+val reset: ?packname:string -> string -> unit
         (* Reset the environment and record the name of the unit being
-           compiled (arg). *)
+           compiled (arg).  Optional argument is [-for-pack] prefix. *)
+
+val current_unit_infos: unit -> unit_infos
+        (* Return the infos for the unit being compiled *)
 
 val current_unit_name: unit -> string
         (* Return the name of the unit being compiled *)
@@ -58,6 +62,9 @@ val make_symbol: ?unitname:string -> string option -> string
            [make_symbol ~unitname:u (Some id)] returns the asm symbol that
            corresponds to symbol [id] in the compilation unit [u]
            (or the current unit). *)
+
+val symbol_for_global: Ident.t -> string
+        (* Return the asm symbol that refers to the given global identifier *)
 
 val global_approx: Ident.t -> Clambda.value_approximation
         (* Return the approximation for the given global identifier *)

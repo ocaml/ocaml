@@ -465,7 +465,7 @@ let box_int bi arg =
         else arg in
       Cop(Calloc, [alloc_boxedint_header;
                    Cconst_symbol(operations_boxed_int bi);
-                   arg])
+                   arg'])
 
 let unbox_int bi arg =
   match arg with
@@ -853,10 +853,7 @@ let rec transl = function
   | Uprim(prim, args) ->
       begin match (simplif_primitive prim, args) with
         (Pgetglobal id, []) ->
-          if Ident.is_predef_exn id
-          then Cconst_symbol ("caml_exn_" ^ (Ident.name id))
-          else Cconst_symbol (Compilenv.make_symbol ~unitname:(Ident.name id)
-                                                    None)
+          Cconst_symbol (Compilenv.symbol_for_global id)
       | (Pmakeblock(tag, mut), []) ->
           transl_constant(Const_block(tag, []))
       | (Pmakeblock(tag, mut), args) ->
@@ -1119,6 +1116,9 @@ and transl_prim_2 p arg1 arg2 =
   (* Boolean operations *)
   | Psequand ->
       Cifthenelse(test_bool(transl arg1), transl arg2, Cconst_int 1)
+      (* let id = Ident.create "res1" in
+      Clet(id, transl arg1,
+           Cifthenelse(test_bool(Cvar id), transl arg2, Cvar id)) *)
   | Psequor ->
       Cifthenelse(test_bool(transl arg1), Cconst_int 3, transl arg2)
 
@@ -1524,11 +1524,13 @@ let rec transl_all_functions already_translated cont =
 
 (* Emit structured constants *)
 
+let immstrings = Hashtbl.create 17
+
 let rec emit_constant symb cst cont =
   match cst with
     Const_base(Const_float s) ->
       Cint(float_header) :: Cdefine_symbol symb :: Cdouble s :: cont
-  | Const_base(Const_string s) ->
+  | Const_base(Const_string s) | Const_immstring s ->
       Cint(string_header (String.length s)) ::
       Cdefine_symbol symb ::
       emit_string_constant s cont
@@ -1576,6 +1578,16 @@ and emit_constant_field field cont =
       (Clabel_address lbl,
        Cint(string_header (String.length s)) :: Cdefine_label lbl :: 
        emit_string_constant s cont)
+  | Const_immstring s ->
+      begin try
+	(Clabel_address (Hashtbl.find immstrings s), cont)
+      with Not_found ->
+	let lbl = new_const_label() in
+	Hashtbl.add immstrings s lbl;
+	(Clabel_address lbl,
+	 Cint(string_header (String.length s)) :: Cdefine_label lbl :: 
+	 emit_string_constant s cont)
+      end
   | Const_base(Const_int32 n) ->
       let lbl = new_const_label() in
       (Clabel_address lbl,

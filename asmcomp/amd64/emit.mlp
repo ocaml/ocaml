@@ -12,7 +12,7 @@
 
 (* $Id$ *)
 
-(* Emission of Intel 386 assembly code *)
+(* Emission of x86-64 (AMD 64) assembly code *)
 
 open Misc
 open Cmm
@@ -35,8 +35,12 @@ let frame_required () =
   !contains_calls || num_stack_slots.(0) > 0 || num_stack_slots.(1) > 0
 
 let frame_size () =                     (* includes return address *)
-  let sz = (!stack_offset + 8 * (num_stack_slots.(0) + num_stack_slots.(1)) + 8)
-  in Misc.align sz 16
+  if frame_required() then begin
+    let sz = 
+      (!stack_offset + 8 * (num_stack_slots.(0) + num_stack_slots.(1)) + 8)
+    in Misc.align sz 16
+  end else 
+    !stack_offset + 8
 
 let slot_offset loc cl =
   match loc with
@@ -308,7 +312,10 @@ let emit_instr fallthrough i =
           `	movlpd	{emit_label lbl}(%rip), {emit_reg i.res.(0)}\n`
         end
     | Lop(Iconst_symbol s) ->
-        `	movq	${emit_symbol s}, {emit_reg i.res.(0)}\n`
+        if !pic_code then
+          `	leaq	{emit_symbol s}(%rip), {emit_reg i.res.(0)}\n`
+        else
+          `	movq	${emit_symbol s}, {emit_reg i.res.(0)}\n`
     | Lop(Icall_ind) ->
         `	call	*{emit_reg i.arg.(0)}\n`;
         record_frame i.live
@@ -327,7 +334,7 @@ let emit_instr fallthrough i =
         end
     | Lop(Iextcall(s, alloc)) ->
         if alloc then begin
-          `	movq	${emit_symbol s}, %rax\n`;
+          `	leaq	{emit_symbol s}(%rip), %rax\n`;
           `	call	{emit_symbol "caml_c_call"}\n`;
           record_frame i.live
         end else begin
@@ -442,7 +449,6 @@ let emit_instr fallthrough i =
         `	sarq	${emit_int l}, {emit_reg i.res.(0)}\n`
     | Lop(Iintop_imm(Imod, n)) ->
         (* Note: i.arg.(0) = i.res.(0) = rdx  (cf. selection.ml) *)
-        let l = Misc.log2 n in
         `	movq	{emit_reg i.arg.(0)}, %rax\n`;
         `	testq	%rax, %rax\n`;
         `	leaq	{emit_int(n-1)}(%rax), %rax\n`;
@@ -467,6 +473,7 @@ let emit_instr fallthrough i =
     | Lop(Ispecific(Istore_int(n, addr))) ->
         `	movq	${emit_nativeint n}, {emit_addressing addr i.arg 0}\n`
     | Lop(Ispecific(Istore_symbol(s, addr))) ->
+        assert (not !pic_code);
         `	movq	${emit_symbol s}, {emit_addressing addr i.arg 0}\n`
     | Lop(Ispecific(Ioffset_loc(n, addr))) ->
         `	addq	${emit_int n}, {emit_addressing addr i.arg 0}\n`
