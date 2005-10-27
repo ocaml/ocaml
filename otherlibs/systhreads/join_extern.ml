@@ -2,9 +2,9 @@
 (*                                                                     *)
 (*                           Objective Caml                            *)
 (*                                                                     *)
-(*            Xavier Leroy, projet Cristal, INRIA Rocquencourt         *)
+(*            Luc Maranget, projet Moscova, INRIA Rocquencourt         *)
 (*                                                                     *)
-(*  Copyright 1996 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2005 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
@@ -12,20 +12,5 @@
 
 (* $Id$ *)
 
-(* Access paths *)
-
-type t =
-    Pident of Ident.t
-  | Pdot of t * string * int
-  | Papply of t * t
-
-val same: t -> t -> bool
-val isfree: Ident.t -> t -> bool
-val binding_time: t -> int
-
-val nopos: int
-
-val name: t -> string
-    (* Return the print name, e.g., "F(X).M.foo" *)
-
-val head: t -> Ident.t
+external thread_new : (unit -> unit) -> Thread.t = "caml_thread_new"
+external thread_uncaught_exception : exn -> unit = "caml_thread_uncaught_exception"

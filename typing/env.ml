@@ -116,8 +116,13 @@ let components_of_functor_appl' =
           functor_components -> Path.t -> Path.t -> module_components)
 let check_modtype_inclusion =
   (* to be filled with Includemod.check_modtype_inclusion *)
-  ref ((fun env mty1 mty2 -> assert false) :
-          t -> module_type -> module_type -> unit)
+  ref ((fun env mty1 path1 mty2 -> assert false) :
+          t -> module_type -> Path.t -> module_type -> unit)
+
+(* The name of the compilation unit currently compiled.
+   "" if outside a compilation unit. *)
+
+let current_unit = ref ""
 
 (* Persistent structure descriptions *)
 
@@ -181,9 +186,13 @@ let find_pers_struct name =
   with Not_found ->
     read_pers_struct name (find_in_path_uncap !load_path (name ^ ".cmi"))
 
-let reset_cache() =
+let reset_cache () =
+  current_unit := "";
   Hashtbl.clear persistent_structures;
   Consistbl.clear crc_units
+
+let set_unit_name name =
+  current_unit := name
 
 (* Lookup by identifier *)
 
@@ -281,6 +290,7 @@ let rec lookup_module_descr lid env =
       begin try
         Ident.find_name s env.components
       with Not_found ->
+        if s = !current_unit then raise Not_found;
         let ps = find_pers_struct s in
         (Pident(Ident.create_persistent s), ps.ps_comps)
       end
@@ -298,7 +308,7 @@ let rec lookup_module_descr lid env =
       let (p2, mty2) = lookup_module l2 env in
       begin match Lazy.force desc1 with
         Functor_comps f ->
-          !check_modtype_inclusion env mty2 f.fcomp_arg;
+          !check_modtype_inclusion env mty2 p2 f.fcomp_arg;
           (Papply(p1, p2), !components_of_functor_appl' f p1 p2)
       | Structure_comps c ->
           raise Not_found
@@ -310,6 +320,7 @@ and lookup_module lid env =
       begin try
         Ident.find_name s env.modules
       with Not_found ->
+        if s = !current_unit then raise Not_found;
         let ps = find_pers_struct s in
         (Pident(Ident.create_persistent s), Tmty_signature ps.ps_sig)
       end
@@ -328,7 +339,7 @@ and lookup_module lid env =
       let p = Papply(p1, p2) in
       begin match Lazy.force desc1 with
         Functor_comps f ->
-          !check_modtype_inclusion env mty2 f.fcomp_arg;
+          !check_modtype_inclusion env mty2 p2 f.fcomp_arg;
           (p, Subst.modtype (Subst.add_module f.fcomp_param p2 f.fcomp_subst)
                             f.fcomp_res)
       | Structure_comps c ->
@@ -647,14 +658,11 @@ and add_cltype id ty env =
 (*> JOCAML *)
 and add_continuation id desc env  =
   let cont_id = Ident.create (Ident.name id) in
-  let new_conts =  Ident.add cont_id (Pident cont_id, desc) env.continuations in
+  let new_conts = 
+    Ident.add cont_id (Pident cont_id, desc) env.continuations in
   {env with continuations = new_conts}
 
-and remove_continuations t =
-  if Ident.is_empty t.continuations then
-    t
-  else
-    {t with continuations = Ident.empty}
+and remove_continuations t =  {t with continuations = Ident.empty}
 (*< JOCAML *)
 
 (* Insertion of bindings by name *)

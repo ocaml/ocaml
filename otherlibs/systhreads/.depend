@@ -22,6 +22,7 @@ win32.o: win32.c ../../byterun/alloc.h ../../byterun/compatibility.h \
   ../../byterun/minor_gc.h ../../byterun/printexc.h ../../byterun/roots.h \
   ../../byterun/signals.h ../../byterun/stacks.h ../../byterun/sys.h
 condition.cmi: mutex.cmi 
+join_extern.cmi: thread.cmi 
 join_message.cmi: join_types.cmi join_link.cmi 
 join.cmi: join_types.cmi 
 join_port.cmi: join_types.cmi join_link.cmi 
@@ -35,6 +36,8 @@ event.cmo: mutex.cmi condition.cmi event.cmi
 event.cmx: mutex.cmx condition.cmx event.cmi 
 join_debug.cmo: thread.cmi mutex.cmi join_debug.cmi 
 join_debug.cmx: thread.cmx mutex.cmx join_debug.cmi 
+join_extern.cmo: thread.cmi join_extern.cmi 
+join_extern.cmx: thread.cmx join_extern.cmi 
 join_hash.cmo: join_misc.cmi join_hash.cmi 
 join_hash.cmx: join_misc.cmx join_hash.cmi 
 join_link.cmo: join_misc.cmi join_debug.cmi join_link.cmi 
@@ -56,9 +59,9 @@ join_port.cmx: join_scheduler.cmx join_misc.cmx join_link.cmx join_debug.cmx \
 join_queue.cmo: mutex.cmi condition.cmi join_queue.cmi 
 join_queue.cmx: mutex.cmx condition.cmx join_queue.cmi 
 join_scheduler.cmo: thread.cmi mutex.cmi join_types.cmi join_misc.cmi \
-    join_debug.cmi condition.cmi join_scheduler.cmi 
+    join_extern.cmi join_debug.cmi condition.cmi join_scheduler.cmi 
 join_scheduler.cmx: thread.cmx mutex.cmx join_types.cmi join_misc.cmx \
-    join_debug.cmx condition.cmx join_scheduler.cmi 
+    join_extern.cmx join_debug.cmx condition.cmx join_scheduler.cmi 
 join_space.cmo: thread.cmi mutex.cmi join_types.cmi join_scheduler.cmi \
     join_port.cmi join_misc.cmi join_message.cmi join_link.cmi join_hash.cmi \
     join_debug.cmi condition.cmi join_space.cmi 

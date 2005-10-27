@@ -36,10 +36,6 @@ and ident_int64 = Ident.create "int64"
 and ident_lazy_t = Ident.create "lazy_t"
 (*> JOCAML *)
 and ident_channel = Ident.create "channel"
-and ident_location = Ident.create "location"
-let first_predef_type_stamp = Ident.stamp ident_int
-let last_predef_type_stamp =
-  Ident.stamp (Ident.create "unused") - 1
 (*< JOCAML *)
 
 let path_int = Pident ident_int
@@ -59,13 +55,6 @@ and path_int64 = Pident ident_int64
 and path_lazy_t = Pident ident_lazy_t
 (*> JOCAML *)
 and path_channel = Pident ident_channel
-and path_location = Pident ident_location
-
-let is_predef_type_path = function
-  | Pident ident ->
-      let stamp = Ident.stamp ident in
-      first_predef_type_stamp <= stamp && stamp <= last_predef_type_stamp
-  | _ -> false
 (*< JOCAML *)
 
 let type_int = newgenty (Tconstr(path_int, [], ref Mnil))
@@ -82,11 +71,11 @@ and type_nativeint = newgenty (Tconstr(path_nativeint, [], ref Mnil))
 and type_int32 = newgenty (Tconstr(path_int32, [], ref Mnil))
 and type_int64 = newgenty (Tconstr(path_int64, [], ref Mnil))
 and type_lazy_t t = newgenty (Tconstr(path_lazy_t, [t], ref Mnil))
-(*> JOCAML *)
-and type_location = newgenty (Tconstr(path_location, [], ref Mnil))
+(*>JOCAML*)
 and type_process kids = newgenty (Tproc kids)
-(*< JOCAML *)
+and type_channel t = newgenty (Tconstr(path_channel, [t], ref Mnil))
 
+(*<JOCAML*)
 let ident_match_failure = Ident.create_predef_exn "Match_failure"
 and ident_out_of_memory = Ident.create_predef_exn "Out_of_memory"
 and ident_invalid_argument = Ident.create_predef_exn "Invalid_argument"
@@ -166,15 +155,13 @@ let build_initial_env add_type add_exception empty_env =
      type_kind = Type_abstract;
      type_manifest = None;
      type_variance = [true, false, false]}
-(*> JOCAML *)
   and decl_channel =
     let tvar = newgenvar() in
     {type_params = [tvar];
-    type_arity = 1;
-    type_kind = Type_abstract;
-    type_manifest = None;
-    type_variance = [false, true, true]} (* Channels are contravariant *)
-(*< JOCAML *)
+     type_arity = 1;
+     type_kind = Type_abstract;
+     type_manifest = None;
+     type_variance = [true, false, false]}
   in
 
   add_exception ident_match_failure
@@ -192,14 +179,11 @@ let build_initial_env add_type add_exception empty_env =
                          [newgenty (Ttuple[type_string; type_int; type_int])] (
   add_exception ident_undefined_recursive_module
                          [newgenty (Ttuple[type_string; type_int; type_int])] (
-(*> JOCAML *)
-  add_type ident_channel decl_channel (
-  add_type ident_location decl_abstr (
-(*< JOCAML *)
   add_type ident_int64 decl_abstr (
   add_type ident_int32 decl_abstr (
   add_type ident_nativeint decl_abstr (
   add_type ident_lazy_t decl_lazy_t (
+  add_type ident_channel decl_channel (
   add_type ident_option decl_option (
   add_type ident_format4 decl_format4 (
   add_type ident_list decl_list (
@@ -213,7 +197,7 @@ let build_initial_env add_type add_exception empty_env =
   add_type ident_int decl_abstr (
     empty_env)))))))))))))))))))))))))
 (*> JOCAML *)
-    ))))
+    )))
 (*< JOCAML *)
 
 

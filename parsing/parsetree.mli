@@ -114,14 +114,8 @@ and expression_desc =
 (*> JOCAML *)
   | Pexp_spawn of expression
   | Pexp_par of expression * expression
-  | Pexp_null
   | Pexp_reply of expression * joinident
   | Pexp_def of joinautomaton list * expression
-  | Pexp_loc of joinlocation list * expression
-
-and joinlocation =
-  {pjloc_desc : joinident * joinautomaton list * expression ;
-   pjloc_loc : Location.t}
 
 and joinautomaton =
  {pjauto_desc : joinclause list ;
@@ -290,7 +284,6 @@ and structure_item_desc =
   | Pstr_include of module_expr
 (*> JOCAML *)
   | Pstr_def of joinautomaton list
-  | Pstr_loc of joinlocation list
   | Pstr_exn_global of Longident.t
 (*< JOCAML *)
 

@@ -124,9 +124,11 @@ defaultentry:
 	@echo "	make install"
 	@echo "should work.  But see the file INSTALL for more details."
 
+# enough for developping jocaml (et c'est deja pas mal)
+center:runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml otherlibraries
 # Recompile the system using the bootstrap compiler
-all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
-  otherlibraries camlp4out $(DEBUGGER) ocamldoc
+all: center \
+  camlp4out $(DEBUGGER) ocamldoc
 
 # The compilation of ocaml will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
@@ -226,6 +228,7 @@ cleanboot:
 
 # Compile the native-code compiler
 opt-core:runtimeopt ocamlopt libraryopt
+opt-center:opt-core otherlibrariesopt
 opt: runtimeopt ocamlopt libraryopt otherlibrariesopt camlp4opt
 
 # Native-code versions of the tools
@@ -258,7 +261,7 @@ install: FORCE
 	for i in $(OTHERLIBRARIES); do \
           (cd otherlibs/$$i; $(MAKE) install) || exit $$?; \
         done
-	cd ocamldoc; $(MAKE) install
+	-cd ocamldoc; $(MAKE) install
 	if test -f ocamlopt; then $(MAKE) installopt; else :; fi
 	cd camlp4; $(MAKE) install BINDIR=$(BINDIR) LIBDIR=$(LIBDIR) MANDIR=$(MANDIR)
 	if test -f debugger/ocamldebug; then (cd debugger; $(MAKE) install); \

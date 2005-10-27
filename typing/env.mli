@@ -25,6 +25,7 @@ val diff: t -> t -> Ident.t list
 (* Lookup by paths *)
 
 val find_value: Path.t -> t -> value_description
+val find_type: Path.t -> t -> type_declaration
 val find_module: Path.t -> t -> module_type
 val find_modtype: Path.t -> t -> modtype_declaration
 val find_class: Path.t -> t -> class_declaration
@@ -43,7 +44,6 @@ val lookup_module: Longident.t -> t -> Path.t * module_type
 val lookup_modtype: Longident.t -> t -> Path.t * modtype_declaration
 val lookup_class: Longident.t -> t -> Path.t * class_declaration
 val lookup_cltype: Longident.t -> t -> Path.t * cltype_declaration
-val find_type: Path.t -> t -> type_declaration
 (*> JOCAML *)
 val lookup_continuation: Longident.t -> t -> Path.t * continuation_description
 (*< JOCAML *)
@@ -83,10 +83,11 @@ val enter_modtype: string -> modtype_declaration -> t -> Ident.t * t
 val enter_class: string -> class_declaration -> t -> Ident.t * t
 val enter_cltype: string -> cltype_declaration -> t -> Ident.t * t
 
-(* Reset the cache of in-core module interfaces.
-   To be called in particular when load_path changes. *)
-
+(* Initialize the cache of in-core module interfaces. *)
 val reset_cache: unit -> unit
+
+(* Remember the name of the current compilation unit. *)
+val set_unit_name: string -> unit
 
 (* Read, save a signature to/from a file *)
 
@@ -142,5 +143,6 @@ open Format
 val report_error: formatter -> error -> unit
 
 (* Forward declaration to break mutual recursion with Includemod. *)
-val check_modtype_inclusion: (t -> module_type -> module_type -> unit) ref
+val check_modtype_inclusion:
+      (t -> module_type -> Path.t -> module_type -> unit) ref
 

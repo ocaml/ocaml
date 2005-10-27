@@ -278,8 +278,8 @@ let rec add_labels_expr ~text ~values ~classes expr =
   | Pexp_ident _ | Pexp_constant _ | Pexp_construct _ | Pexp_variant _
   | Pexp_new _ | Pexp_assertfalse | Pexp_object _ ->
       ()
-  | Pexp_loc (_, _)|Pexp_def (_, _)|Pexp_reply (_, _)
-  | Pexp_par (_, _)|Pexp_spawn _|Pexp_null
+  |Pexp_def (_, _)|Pexp_reply (_, _)
+  | Pexp_par (_, _)|Pexp_spawn _
     ->
       assert false
 

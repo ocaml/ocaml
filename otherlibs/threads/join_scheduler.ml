@@ -71,8 +71,6 @@ and incr_active () = incr_locked  nthreads_mutex active
 (* Real threads creation/destruction *)
 (*************************************)
 
-external thread_new : (unit -> unit) -> Thread.t = "caml_thread_new"
-external thread_uncaught_exception : exn -> unit = "caml_thread_uncaught_exception"
 
 
 let pool_size =
@@ -104,7 +102,7 @@ let really_create_process f =
     | Some k when !nthreads > k -> raise MaxRun
     | _ -> ()
     end ;
-    let t = thread_new f in
+    let t = Join_extern.thread_new f in
 (*DEBUG*)debug1 "REAL FORK" (sprintf "%i %s" (Thread.id t) (tasks_status ())) ;
     Some t
   with
@@ -211,7 +209,7 @@ let create_process f =
     | e ->
 (*DEBUG*)debug2 "PROCESS OVER" "by exception" ;
       flush stdout; flush stderr;
-      thread_uncaught_exception e
+      Join_extern.thread_uncaught_exception e
     end ;
     exit_thread () in
 

@@ -19,7 +19,8 @@ let get_replies e = match e.exp_type.desc with
 | Tproc konts -> konts
 | _ -> assert false
 
-let id_lt (x,_) (y,_) = Ident.stamp x < Ident.stamp y
+let id_lt (x,_) (y,_) = Pervasives.compare x y < 0
+
 
 
 exception MissingLeft of Ident.t

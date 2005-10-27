@@ -21,9 +21,6 @@ val create_persistent: string -> t
 val create_predef_exn: string -> t
 val rename: t -> t
 val name: t -> string
-(*> JOCAML *)
-val stamp : t -> int
-(*< JOCAML *)
 val unique_name: t -> string
 val unique_toplevel_name: t -> string
 val persistent: t -> bool
@@ -56,10 +53,6 @@ type 'a tbl
         (* Association tables from identifiers to type 'a. *)
 
 val empty: 'a tbl
-(*> JOCAML *)
-val is_empty: 'a tbl -> bool
-val card: 'a tbl -> int
-(*< JOCAML *)
 val add: t -> 'a -> 'a tbl -> 'a tbl
 val find_same: t -> 'a tbl -> 'a
 val find_name: string -> 'a tbl -> 'a

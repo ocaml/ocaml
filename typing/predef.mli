@@ -31,8 +31,8 @@ val type_int32: type_expr
 val type_int64: type_expr
 val type_lazy_t: type_expr -> type_expr
 (*> JOCAML *)
-val type_location : type_expr
 val type_process : kont_locs -> type_expr
+val type_channel : type_expr -> type_expr
 (*< JOCAML *)
 
 val path_int: Path.t
@@ -52,7 +52,6 @@ val path_int64: Path.t
 val path_lazy_t: Path.t
 (*> JOCAML *)
 val path_channel : Path.t
-val is_predef_type_path : Path.t -> bool
 (*< JOCAML *)
 
 val path_match_failure: Path.t

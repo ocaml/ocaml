@@ -24,6 +24,8 @@
 #include "sys.h"
 #include "unixsupport.h"
 
+/* TODO: handle mappings larger than 2^32 bytes on Win64 */
+
 extern int bigarray_element_size[];  /* from bigarray_stubs.c */
 
 static void bigarray_sys_error(void);
@@ -33,10 +35,10 @@ CAMLprim value bigarray_map_file(value vfd, value vkind, value vlayout,
 {
   HANDLE fd, fmap;
   int flags, major_dim, mode, perm;
-  long num_dims, i;
-  long dim[MAX_NUM_DIMS];
-  long currpos, file_size;
-  unsigned long array_size;
+  intnat num_dims, i;
+  intnat dim[MAX_NUM_DIMS];
+  DWORD currpos, file_size;
+  uintnat array_size;
   char c;
   void * addr;
 
@@ -56,9 +58,9 @@ CAMLprim value bigarray_map_file(value vfd, value vkind, value vlayout,
   }
   /* Determine file size */
   currpos = SetFilePointer(fd, 0, NULL, FILE_CURRENT);
-  if (currpos == -1) bigarray_sys_error();
+  if (currpos == INVALID_SET_FILE_POINTER) bigarray_sys_error();
   file_size = SetFilePointer(fd, 0, NULL, FILE_END);
-  if (file_size == -1) bigarray_sys_error();
+  if (file_size == INVALID_SET_FILE_POINTER) bigarray_sys_error();
   /* Determine array size in bytes (or size of array without the major
      dimension if that dimension wasn't specified) */
   array_size = bigarray_element_size[flags & BIGARRAY_KIND_MASK];
@@ -67,9 +69,9 @@ CAMLprim value bigarray_map_file(value vfd, value vkind, value vlayout,
   /* Check if the first/last dimension is unknown */
   if (dim[major_dim] == -1) {
     /* Determine first/last dimension from file size */
-    if ((unsigned long) file_size % array_size != 0)
+    if ((uintnat) file_size % array_size != 0)
       failwith("Bigarray.mmap: file size doesn't match array dimensions");
-    dim[major_dim] = (unsigned long) file_size / array_size;
+    dim[major_dim] = (uintnat) file_size / array_size;
     array_size = file_size;
   }
   /* Restore original file position */
@@ -93,7 +95,7 @@ CAMLprim value bigarray_map_file(value vfd, value vkind, value vlayout,
   return alloc_bigarray(flags | BIGARRAY_MAPPED_FILE, num_dims, addr, dim);
 }
 
-void bigarray_unmap_file(void * addr, unsigned long len)
+void bigarray_unmap_file(void * addr, uintnat len)
 {
   UnmapViewOfFile(addr);
 }
@@ -101,7 +103,7 @@ void bigarray_unmap_file(void * addr, unsigned long len)
 static void bigarray_sys_error(void)
 {
   char buffer[512];
-  unsigned long errnum;
+  DWORD errnum;
   
   errnum = GetLastError();
   if (!FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS,

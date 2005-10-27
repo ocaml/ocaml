@@ -24,7 +24,6 @@ val pretty_matrix : pattern list list -> unit
 val omega : pattern
 val omegas : int -> pattern list
 val omega_list : 'a list -> pattern list
-val remove_binders : pattern -> pattern
 val normalize_pat : pattern -> pattern
 val all_record_args :
     (label_description * pattern) list -> (label_description * pattern) list
@@ -39,7 +38,13 @@ val lubs : pattern list -> pattern list -> pattern list
 
 val get_mins : ('a -> 'a -> bool) -> 'a list -> 'a list
 
+(* Those to functions recombine one pattern and its arguments:
+   For instance:
+     (_,_)::p1::p2::rem -> (p1, p2)::rem
+   The second one will replace mutable arguments by '_'
+*)
 val set_args : pattern -> pattern list -> pattern list
+val set_args_erase_mutable : pattern -> pattern list -> pattern list
 
 val pat_of_constr : pattern -> constructor_description -> pattern
 val complete_constrs :
@@ -49,5 +54,10 @@ val pressure_variants: Env.t -> pattern list -> unit
 val check_partial: Location.t -> (pattern * expression) list -> partial
 val check_unused: Env.t -> (pattern * expression) list -> unit
 
+(*>JOCAML*)
+(* usefullness of all patterns in a list, as a list of booleans *)
 val useful: pattern list -> bool list
 
+(* replace all variables by wildcards (and rewrite p as x into  p) *)
+val remove_binders : pattern -> pattern
+(*<JOCAML*)

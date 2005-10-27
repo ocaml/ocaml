@@ -298,7 +298,6 @@ let bigarray_set arr arg newval =
 %token WITH
 
 %token DEF
-%token LOC
 %token REPLY
 %token SPAWN
 
@@ -476,8 +475,6 @@ structure_item:
 /*> JOCAML */
   | DEF joinautomaton_list_AND
       { mkstr(Pstr_def $2) }
-  | LET LOC joinlocation_list_AND
-      { mkstr(Pstr_loc $3) }
   | DEF EXCEPTION constr_longident
       { mkstr(Pstr_exn_global $3) }
 /*< JOCAML */
@@ -910,7 +907,6 @@ expr:
   | REPLY expr TO joinident                   { mkexp(Pexp_reply($2,$4)) }
   | SPAWN expr                                { mkexp(Pexp_spawn $2) }
   | DEF joinautomaton_list_AND IN seq_expr    { mkexp(Pexp_def($2,$4)) }
-  | LET LOC joinlocation_list_AND IN seq_expr { mkexp(Pexp_loc($3,$5)) }
 /*< JOCAML */
 ;
 simple_expr:
@@ -1575,13 +1571,4 @@ joinautomaton_list_AND:
   | joinautomaton                               { [$1] }
 ;
 
-joinlocation:
-  | joinident DEF joinautomaton_list_AND DO seq_expr
-                                                { { pjloc_desc=$1,$3,$5 ; pjloc_loc=symbol_rloc () } }
-  | joinident DO seq_expr                       { { pjloc_desc=$1,[],$3 ; pjloc_loc=symbol_rloc () } }
-;
-joinlocation_list_AND:
-  | joinlocation_list_AND AND joinlocation      { $3 :: $1 }
-  | joinlocation                                { [$1] }
-;
 %%

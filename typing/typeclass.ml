@@ -245,18 +245,22 @@ let virtual_method val_env meths self_type lab priv sty loc =
   try Ctype.unify val_env ty ty' with Ctype.Unify trace ->
     raise(Error(loc, Method_type_mismatch (lab, trace)))
 
+let delayed_meth_specs = ref []
+
 let declare_method val_env meths self_type lab priv sty loc =
   let (_, ty') =
      Ctype.filter_self_method val_env lab priv meths self_type
   in
-  let ty =
-    match sty.ptyp_desc, priv with
-      Ptyp_poly ([],sty), Public -> transl_simple_type_univars val_env sty
-    | _                  -> transl_simple_type val_env false sty
+  let unif ty =
+    try Ctype.unify val_env ty ty' with Ctype.Unify trace ->
+      raise(Error(loc, Method_type_mismatch (lab, trace)))
   in
-  begin try Ctype.unify val_env ty ty' with Ctype.Unify trace ->
-    raise(Error(loc, Method_type_mismatch (lab, trace)))
-  end
+  match sty.ptyp_desc, priv with
+    Ptyp_poly ([],sty), Public ->
+      delayed_meth_specs :=
+        lazy (unif (transl_simple_type_univars val_env sty)) ::
+        !delayed_meth_specs
+  | _ -> unif (transl_simple_type val_env false sty)
 
 let type_constraint val_env sty sty' loc =
   let ty  = transl_simple_type val_env false sty in
@@ -327,10 +331,11 @@ and class_signature env sty sign =
   
   (* Check that the binder is a correct type, and introduce a dummy
      method preventing self type from being closed. *)
+  let dummy_obj = Ctype.newvar () in
+  Ctype.unify env (Ctype.filter_method env dummy_method Private dummy_obj)
+    (Ctype.newty (Ttuple []));
   begin try
-    Ctype.unify env
-      (Ctype.filter_method env dummy_method Private self_type)
-      (Ctype.newty (Ttuple []))
+    Ctype.unify env self_type dummy_obj
   with Ctype.Unify _ ->
     raise(Error(sty.ptyp_loc, Pattern_type_clash self_type))
   end;
@@ -359,7 +364,6 @@ and class_type env scty =
       let (params, clty) =
         Ctype.instance_class decl.clty_params decl.clty_type
       in
-      let sty = Ctype.self_type clty in
       if List.length params <> List.length styl then
         raise(Error(scty.pcty_loc,
                     Parameter_arity_mismatch (lid, List.length params,
@@ -379,6 +383,13 @@ and class_type env scty =
       let ty = transl_simple_type env false sty in
       let cty = class_type env scty in
       Tcty_fun (l, ty, cty)
+
+let class_type env scty =
+  delayed_meth_specs := [];
+  let cty = class_type env scty in
+  List.iter Lazy.force (List.rev !delayed_meth_specs);
+  delayed_meth_specs := [];
+  cty
 
 (*******************************)
 
@@ -654,12 +665,7 @@ and class_structure cl_num final val_env met_env loc (spat, str) =
   let l1 = names priv_meths and l2 = names pub_meths' in
   let added = List.filter (fun x -> List.mem x l1) l2 in
   if added <> [] then
-    Location.prerr_warning loc
-      (Warnings.Other
-         (String.concat " "
-            ("the following private methods were made public implicitly:\n "
-             :: added)));
-
+    Location.prerr_warning loc (Warnings.Implicit_public_methods added);
   {cl_field = fields; cl_meths = meths}, sign
 
 and class_expr cl_num val_env met_env scl =
@@ -764,7 +770,7 @@ and class_expr cl_num val_env met_env scl =
       Ctype.end_def ();
       if Btype.is_optional l && all_labeled cl.cl_type then
         Location.prerr_warning pat.pat_loc
-          (Warnings.Other "This optional argument cannot be erased");
+          Warnings.Unerasable_optional_argument;
       rc {cl_desc = Tclass_fun (pat, pv, cl, partial);
           cl_loc = scl.pcl_loc;
           cl_type = Tcty_fun (l, Ctype.instance pat.pat_type, cl.cl_type);
@@ -982,6 +988,7 @@ let rec initial_env define_class approx
   in
   let dummy_class =
     {cty_params = [];             (* Dummy value *)
+     cty_variance = [];
      cty_type = dummy_cty;        (* Dummy value *)
      cty_path = unbound_class;
      cty_new =
@@ -992,6 +999,7 @@ let rec initial_env define_class approx
   let env =
     Env.add_cltype ty_id
       {clty_params = [];            (* Dummy value *)
+       clty_variance = [];
        clty_type = dummy_cty;       (* Dummy value *)
        clty_path = unbound_class} (
     if define_class then
@@ -1106,11 +1114,14 @@ let class_infos define_class kind
   end;
 
   (* Class and class type temporary definitions *)
+  let cty_variance = List.map (fun _ -> true, true) params in
   let cltydef =
     {clty_params = params; clty_type = class_body typ;
+     clty_variance = cty_variance;
      clty_path = Path.Pident obj_id}
   and clty =
     {cty_params = params; cty_type = typ;
+     cty_variance = cty_variance;
      cty_path = Path.Pident obj_id;
      cty_new =
        match cl.pci_virt with
@@ -1142,9 +1153,11 @@ let class_infos define_class kind
   let (params', typ') = Ctype.instance_class params typ in
   let cltydef =
     {clty_params = params'; clty_type = class_body typ';
+     clty_variance = cty_variance;
      clty_path = Path.Pident obj_id}
   and clty =
     {cty_params = params'; cty_type = typ';
+     cty_variance = cty_variance;
      cty_path = Path.Pident obj_id;
      cty_new =
        match cl.pci_virt with
@@ -1223,16 +1236,11 @@ let final_decl env define_class
 let extract_type_decls
     (id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
      arity, pub_meths, coe, expr, required) decls =
-  ((obj_id, obj_abbr), required) :: ((cl_id, cl_abbr), required) :: decls
-
-let rec compact = function
-    [] -> []
-  | a :: b :: l -> (a,b) :: compact l
-  | _ -> fatal_error "Typeclass.compact"
+  (obj_id, obj_abbr, cl_abbr, clty, cltydef, required) :: decls
 
 let merge_type_decls
-    (id, clty, ty_id, cltydef, _obj_id, _obj_abbr, _cl_id, _cl_abbr,
-     arity, pub_meths, coe, expr, req) ((obj_id, obj_abbr), (cl_id, cl_abbr)) =
+    (id, _clty, ty_id, _cltydef, obj_id, _obj_abbr, cl_id, _cl_abbr,
+     arity, pub_meths, coe, expr, req) (obj_abbr, cl_abbr, clty, cltydef) =
   (id, clty, ty_id, cltydef, obj_id, obj_abbr, cl_id, cl_abbr,
    arity, pub_meths, coe, expr)
 
@@ -1298,7 +1306,7 @@ let type_classes define_class approx kind env cls =
   let res = List.rev_map (final_decl env define_class) res in
   let decls = List.fold_right extract_type_decls res [] in
   let decls = Typedecl.compute_variance_decls env decls in
-  let res = List.map2 merge_type_decls res (compact decls) in
+  let res = List.map2 merge_type_decls res decls in
   let env = List.fold_left (final_env define_class) env res in
   let res = List.map (check_coercions env) res in
   (res, env)
@@ -1413,9 +1421,10 @@ let report_error ppf = function
   | Pattern_type_clash ty ->
       (* XXX Trace *)
       (* XXX Revoir message d'erreur *)
-      fprintf ppf "@[This pattern cannot match self: \
-                    it only matches values of type@ %a@]"
-      Printtyp.type_expr ty
+      Printtyp.reset_and_mark_loops ty;
+      fprintf ppf "@[%s@ %a@]"
+        "This pattern cannot match self: it only matches values of type"
+        Printtyp.type_expr ty
   | Unbound_class cl ->
       fprintf ppf "Unbound class@ %a"
       Printtyp.longident cl

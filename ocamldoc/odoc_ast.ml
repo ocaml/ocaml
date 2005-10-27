@@ -112,6 +112,9 @@ module Typedtree_search =
       | Typedtree.Tstr_open _ -> ()
       | Typedtree.Tstr_include _ -> ()
       | Typedtree.Tstr_eval _ -> ()
+      | Typedtree.Tstr_exn_global (_, _)
+      | Typedtree.Tstr_loc _
+      | Typedtree.Tstr_def _-> assert false
 
     let tables typedtree =
       let t = Hashtbl.create 13 in
@@ -1198,13 +1201,8 @@ module Analyser =
                 let complete_name = Name.concat current_module_name name in
                 let loc_start = mod_exp.Parsetree.pmod_loc.Location.loc_start.Lexing.pos_cnum in
                 let loc_end =  mod_exp.Parsetree.pmod_loc.Location.loc_end.Lexing.pos_cnum in
-                let pos_limit2 = 
-                  match q with 
-                    [] -> pos_limit
-                  | (_, _, me) :: _ -> me.Parsetree.pmod_loc.Location.loc_start.Lexing.pos_cnum
-                in
-                let tt_mod_exp = 
-                  try Typedtree_search.search_module table name 
+                let tt_mod_exp =
+                  try Typedtree_search.search_module table name
                   with Not_found -> raise (Failure (Odoc_messages.module_not_found_in_typedtree complete_name))
                 in
                 let (com_opt, ele_comments) = (* the comment for the first type was already retrieved *)
@@ -1379,8 +1377,8 @@ module Analyser =
             }
           in
           (0, env, [ Element_included_module im ]) (* A VOIR : étendre l'environnement ? avec quoi ? *)
-      | Parsetree.Pstr_loc _|Parsetree.Pstr_def _ ->
-          fatal_error "ocamldoc/jocaml"
+      | Parsetree.Pstr_def _ | Parsetree.Pstr_exn_global _ ->
+          assert false
 
      (** Analysis of a [Parsetree.module_expr] and a name to return a [t_module].*)
      and analyse_module env current_module_name module_name comment_opt p_module_expr tt_module_expr =

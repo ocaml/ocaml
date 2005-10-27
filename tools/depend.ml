@@ -159,17 +159,9 @@ let rec add_expr bv exp =
 (*> JOCAML *)
   | Pexp_spawn (e) -> add_expr bv e
   | Pexp_par (e1, e2) -> add_expr bv e1; add_expr bv e2
-  | Pexp_null -> ()
   | Pexp_reply (e,_) -> add_expr bv e
   | Pexp_def (d, e) ->
       List.iter (add_joinautomaton bv) d ; add_expr bv e
-  | Pexp_loc (d, e) ->
-      List.iter (add_joinlocation bv) d ; add_expr bv e
-
-and add_joinlocation bv jloc =
-  let (_, autos, e) = jloc.pjloc_desc in
-  List.iter (add_joinautomaton bv) autos ;
-  add_expr bv e
 
 and add_joinautomaton bv jauto =
   let cls = jauto.pjauto_desc in
@@ -279,8 +271,6 @@ and add_struct_item bv item =
   | Pstr_include modl ->
       add_module bv modl; bv
 (*> JOCAML *)
-  | Pstr_loc d ->
-      List.iter (add_joinlocation bv) d ; bv
   | Pstr_def d ->
       List.iter (add_joinautomaton bv) d ; bv
   | Pstr_exn_global l ->

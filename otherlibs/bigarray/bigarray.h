@@ -16,8 +16,17 @@
 #ifndef _bigarray_
 #define _bigarray_
 
-
+#include "config.h"
 #include "mlvalues.h"
+
+typedef signed char int8;
+typedef unsigned char uint8;
+#if SIZEOF_SHORT == 2
+typedef short int16;
+typedef unsigned short uint16;
+#else
+#error "No 16-bit integer type available"
+#endif
 
 #define MAX_NUM_DIMS 16
 
@@ -51,17 +60,17 @@ enum caml_bigarray_managed {
 };
 
 struct caml_bigarray_proxy {
-  long refcount;                /* Reference count */
+  intnat refcount;              /* Reference count */
   void * data;                  /* Pointer to base of actual data */
-  unsigned long size;           /* Size of data in bytes (if mapped file) */
+  uintnat size;                 /* Size of data in bytes (if mapped file) */
 };
 
 struct caml_bigarray {
   void * data;                /* Pointer to raw data */
-  long num_dims;              /* Number of dimensions */
-  long flags;   /* Kind of element array + memory layout + allocation status */
+  intnat num_dims;            /* Number of dimensions */
+  intnat flags;   /* Kind of element array + memory layout + allocation status */
   struct caml_bigarray_proxy * proxy; /* The proxy for sub-arrays, or NULL */
-  long dim[1] /*[num_dims]*/; /* Size in each dimension */
+  intnat dim[1] /*[num_dims]*/; /* Size in each dimension */
 };
 
 #define Bigarray_val(v) ((struct caml_bigarray *) Data_custom_val(v))
@@ -74,8 +83,8 @@ struct caml_bigarray {
 #define CAMLBAextern CAMLextern
 #endif
 
-CAMLBAextern value alloc_bigarray(int flags, int num_dims, void * data, long * dim);
+CAMLBAextern value alloc_bigarray(int flags, int num_dims, void * data, intnat * dim);
 CAMLBAextern value alloc_bigarray_dims(int flags, int num_dims, void * data,
-                                 ... /*dimensions, with type long */);
+                                 ... /*dimensions, with type intnat */);
 
 #endif

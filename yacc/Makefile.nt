@@ -25,8 +25,13 @@ all: ocamlyacc.exe
 ocamlyacc.exe: $(OBJS)
 	$(BYTECC) $(BYTECCCOMPOPTS) -o ocamlyacc.exe $(OBJS)
 
+version.h : ../stdlib/sys.ml
+	sed -n -e 's/;;//' \
+            -e '/let *ocaml_version *= */s//#define OCAML_VERSION /p' \
+            <../stdlib/sys.ml >version.h
+
 clean:
-	rm -f *.$(O) ocamlyacc.exe *~
+	rm -f *.$(O) ocamlyacc.exe *~ version.h
 
 .SUFFIXES: .c .$(O)
 
@@ -39,7 +44,7 @@ closure.$(O): defs.h
 error.$(O): defs.h
 lalr.$(O): defs.h
 lr0.$(O): defs.h
-main.$(O): defs.h
+main.$(O): defs.h version.h
 mkpar.$(O): defs.h
 output.$(O): defs.h
 reader.$(O): defs.h

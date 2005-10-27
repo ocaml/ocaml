@@ -29,8 +29,8 @@ BYTECODE_JOIN_C_OBJS=join_b.o
 NATIVECODE_JOIN_C_OBJS=join_n.o
 
 JOIN_OBJS=join_debug.cmo join_misc.cmo join_link.cmo join_hash.cmo\
- join_queue.cmo join_scheduler.cmo join_port.cmo join_message.cmo\
- join_space.cmo join.cmo ns.cmo
+ join_queue.cmo join_extern.cmo join_scheduler.cmo join_port.cmo\
+ join_message.cmo join_space.cmo join.cmo ns.cmo
 
 GENFILES=thread.ml join.c join_types.mli\
  join_debug.mli join_debug.ml\
@@ -56,7 +56,7 @@ libjoin.a: $(BYTECODE_JOIN_C_OBJS)
 	$(MKLIB) -o join $(BYTECODE_JOIN_C_OBJS)
 
 posix_b.o: posix.c
-	$(BYTECC) -DCAML_NAME_SPACE -O -I../../byterun $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) \
+	$(BYTECC) -O -I../../byterun $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) \
 	   -c posix.c
 	mv posix.o posix_b.o
 
@@ -74,7 +74,7 @@ libjoinnat.a: $(NATIVECODE_JOIN_C_OBJS)
 	$(AR) rc libjoinnat.a $(NATIVECODE_JOIN_C_OBJS)
 
 posix_n.o: posix.c
-	$(NATIVECC) -DCAML_NAME_SPACE -O -I../../asmrun -I../../byterun $(NATIVECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -DNATIVE_CODE -DTARGET_$(ARCH) -DSYS_$(SYSTEM) -c posix.c
+	$(NATIVECC) -O -I../../asmrun -I../../byterun $(NATIVECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -DNATIVE_CODE -DTARGET_$(ARCH) -DSYS_$(SYSTEM) -c posix.c
 	mv posix.o posix_n.o
 
 join_n.o: join.c
@@ -176,7 +176,6 @@ join_space.mli: ../threads/join_space.mli
 
 join.c: ../threads/join.c
 	cp -f ../threads/join.c . && chmod -w join.c
-
 partialclean:
 	rm -f *.cm*
 
@@ -206,7 +205,6 @@ installopt:
 	cd $(LIBDIR)/threads; $(RANLIB) threads.a
 	cp join.cmxa join.a $(LIBDIR)/threads
 	cd $(LIBDIR)/threads; $(RANLIB) join.a
-
 
 .SUFFIXES: .jml .ml .mli .cmo .cmi .cmx
 

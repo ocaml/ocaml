@@ -319,8 +319,6 @@ and expression i ppf x =
       line i ppf "Pexp_par\n";
       expression i ppf e1;
       expression i ppf e2;
-  | Pexp_null ->
-      line i ppf "Pexp_null\n";
   | Pexp_reply (e, id) ->
       line i ppf "Pexp_reply\n";
       expression i ppf e;
@@ -328,10 +326,6 @@ and expression i ppf x =
   | Pexp_def (d,e) ->
       line i ppf "Pexp_def\n";
       joindefinition i ppf d;
-      expression i ppf e;
-  | Pexp_loc (d,e) ->
-      line i ppf "Pexp_loc\n";
-      joinlocations i ppf d;
       expression i ppf e;
 
 and joindefinition i ppf d = list i joinautomaton ppf d
@@ -354,16 +348,6 @@ and joinpattern i ppf jpat =
   let chan,pat = jpat.pjpat_desc in
   joinident i ppf chan ;
   pattern i ppf pat
-  
-and joinlocations i ppf d = list i joinlocation ppf d
-
-and joinlocation i ppf l =
-  line i ppf "joinlocation %a\n" fmt_location l.pjloc_loc;
-  let i = i+1 in
-  let (id,d,p) = l.pjloc_desc in
-  joinident i ppf id;
-  joindefinition i ppf d;
-  expression i ppf p
 (*< JOCAML *)
 
 and value_description i ppf x =
@@ -634,9 +618,6 @@ and structure_item i ppf x =
   | Pstr_def d ->
       line i ppf "Pstr_def";
       joindefinition i ppf d;
-  | Pstr_loc d ->
-      line i ppf "Pstr_loc";
-      joinlocations i ppf d;
   | Pstr_exn_global li ->
       line i ppf "Pstr_exn_global %a\n"  fmt_longident li
 (*<JOCAML*)

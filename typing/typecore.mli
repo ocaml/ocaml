@@ -34,9 +34,6 @@ val type_expression:
 val type_joindefinition:   
     Env.t -> Parsetree.joinautomaton list ->
       (Typedtree.joinautomaton list * Env.t)
-val type_joinlocation:
-    Env.t -> Parsetree.joinlocation list ->
-      (Typedtree.joinlocation list * Env.t)
 (*< JOCAML *)
 
 val type_class_arg_pattern:
@@ -83,7 +80,8 @@ type error =
   | Label_multiply_defined of Longident.t
   | Label_missing of string list
   | Label_not_mutable of Longident.t
-  | Bad_format of string
+  | Incomplete_format of string
+  | Bad_conversion of string * int * char
   | Undefined_method of type_expr * string
   | Undefined_inherited_method of string
   | Unbound_class of Longident.t

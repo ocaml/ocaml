@@ -21,6 +21,8 @@
 #include <unistd.h>
 #endif
 
+#include "version.h"
+
 char dflag;
 char lflag;
 char rflag;
@@ -163,7 +165,13 @@ void getargs(int argc, char **argv)
             goto no_more_options;
 
         case 'v':
-            vflag = 1;
+            if (!strcmp (argv[i], "-version")){
+              printf ("The Objective Caml parser generator, version "
+                      OCAML_VERSION "\n");
+              exit (0);
+            }else{
+              vflag = 1;
+            }
             break;
 
         case 'q':

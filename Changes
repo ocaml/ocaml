@@ -1,3 +1,125 @@
+Objective Caml 3.09.0:
+----------------------
+
+(Changes that can break existing programs are marked with a "*"  )
+
+Language features:
+- Introduction of private row types, for abstracting the row in object
+  and variant types.
+
+Type checking:
+- Polymorphic variants with at most one constructor [< `A of t] are no
+  longer systematically promoted to the exact type [`A of t]. This was
+  more confusing than useful, and created problems with private row
+  types.
+
+Both compilers:
+- Added warnings 'Y' and 'Z' for local variables that are bound but
+  never used.
+- Added warning for some uses non-returning functions (e.g. raise), when they are
+  passed extra arguments, or followed by extra statements.
+- Pattern matching: more prudent compilation in case of guards; fixed PR#3780.
+- Compilation of classes: reduction in size of generated code.
+- Compilation of "module rec" definitions: fixed a bad interaction with
+  structure coercion (to a more restrictive signature).
+
+Native-code compiler (ocamlopt):
+* Revised implementation of the -pack option (packing of several compilation
+  units into one).  The .cmx files that are to be packed with 
+  "ocamlopt -pack -o P.cmx" must be compiled with "ocamlopt -for-pack P".
+  In exchange for this additional constraint, ocamlopt -pack is now
+  available on all platforms (no need for binutils).
+* Fixed wrong evaluation order for arguments to certain inlined functions.
+- Modified code generation for "let rec ... and ..." to reduce compilation
+  time (which was quadratic in the number of mutually-recursive functions).
+- x86 port: support tail-calls for functions with up to 21 arguments.
+- AMD64 port, Linux: recover from system stack overflow.
+- Sparc port: more portable handling of out-of-bound conditions
+  on systems other than Solaris.
+
+Standard library:
+- Pervasives: faster implementation of close_in, close_out.
+- Printf: better handling of partial applications of the printf functions.
+- Scanf: new function sscanf_format to read a format from a
+  string. The type of the resulting format is dynamically checked and
+  should be the type of the template format which is the second argument.
+- Scanf: no more spurious lookahead attempt when the end of file condition
+  is set and a correct token has already been read and could be returned.
+
+Other libraries:
+- System threads library: added Thread.sigmask; fixed race condition
+  in signal handling.
+- Bigarray library: fixed bug in Array3.of_array.
+- Unix library: use canonical signal numbers in results of Unix.wait*;
+  hardened Unix.establish_server against EINTR errors.
+
+Run-time system:
+- Support platforms where sizeof(void *) = 8 and sizeof(long) = 4.
+- Improved and cleaned up implementation of signal handling.
+
+Replay debugger:
+- Improved handling of locations in source code.
+
+OCamldoc:
+- extensible {foo } syntax
+- user can give .txt files on the command line, containing ocamldoc formatted
+  text, to be able to include bigger texts out of source files
+- -o option is now used by the html generator to indicate the prefix
+  of generated index files (to avoid conflict when a Index module exists
+  on case-insensitive file systems).
+
+Miscellaneous:
+- Configuration information is installed in `ocamlc -where`/Makefile.config
+  and can be used by client Makefiles or shell scripts.
+
+Objective Caml 3.08.4:
+----------------------
+
+New features:
+- configure: find X11 config in some 64-bit Linux distribs
+- ocamldoc: (**/**) can be canceled with another (**/**) PR#3665
+- graphics: added resize_window
+- graphics: check for invalid arguments to drawing primitives PR#3595
+- ocamlbrowser: use windows subsystem on mingw
+
+Bug fixes:
+- ocamlopt: code generation problem on AMD64 PR#3640
+- wrong code generated for some classes PR#3576
+- fatal error when compiling some OO code PR#3745
+- problem with comparison on constant constructors PR#3608
+- camlp4: cryptic error message PR#3592
+- camlp4: line numbers in multi-line antiquotations PR#3549
+- camlp4: problem with make depend
+- camlp4: parse error with :> PR#3561
+- camlp4: ident conversion problem with val/contents/contents__
+- camlp4: several small parsing problems PR#3688
+- ocamldebug: handling of spaces in executable file name PR#3736
+- emacs-mode: problem when caml-types-buffer is deleted by user PR#3704
+- ocamldoc: extra backslash in ocamldoc man page PR#3687
+- ocamldoc: improvements to HTML display PR#3698
+- ocamldoc: escaping of @ in info files
+- ocamldoc: escaping of . and \ in man pages PR#3686
+- ocamldoc: better error reporting of misplaced comments
+- graphics: fixed .depend file PR#3558
+- graphics: segfault with threads and graphics PR#3651
+- nums: several bugs: PR#3718, PR#3719, others
+- nums: inline asm problems with gcc 4.0 PR#3604, PR#3637
+- threads: problem with backtrace
+- unix: problem with getaddrinfo PR#3565
+- stdlib: documentation of Int32.rem and Int64.rem PR#3573
+- stdlib: documentation of List.rev_map2 PR#3685
+- stdlib: wrong order in Map.fold PR#3607
+- stdlib: documentation of maximum float array length PR#3714
+- better detection of cycles when using -rectypes
+- missing case of module equality PR#3738
+- better error messages for unbound type variables
+- stack overflow while printing type error message PR#3705
+- assert failure when typing some classes PR#3638
+- bug in type_approx
+- better error messages related to type variance checking
+- yacc: avoid name capture for idents of the Parsing module
+
+
 Objective Caml 3.08.3:
 ----------------------
 
@@ -8,7 +130,6 @@ New features:
 - camlp4: install argl.* files (PR#3439)
 - ocamldoc: add -man-section option
 - labltk: add the "solid" relief option (PR#3343)
-- compiler: ocamlc -i now prints variance annotations
 
 Bug fixes:
 - typing: fix unsoundness in type declaration variance inference.

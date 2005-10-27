@@ -113,7 +113,7 @@ module Array1 = struct
   external fill: ('a, 'b, 'c) t -> 'a -> unit = "bigarray_fill"
   let of_array kind layout data =
     let ba = create kind layout (Array.length data) in
-    let ofs = if (Obj.magic layout : 'a layout) = c_layout then 0 else 1 in
+    let ofs = if layout = c_layout then 0 else 1 in
     for i = 0 to Array.length data - 1 do set ba (i + ofs) data.(i) done;
     ba
   let map_file fd kind layout shared dim =
@@ -140,7 +140,7 @@ module Array2 = struct
     let dim1 = Array.length data in
     let dim2 = if dim1 = 0 then 0 else Array.length data.(0) in
     let ba = create kind layout dim1 dim2 in
-    let ofs = if (Obj.magic layout : 'a layout) = c_layout then 0 else 1 in
+    let ofs = if layout = c_layout then 0 else 1 in
     for i = 0 to dim1 - 1 do
       let row = data.(i) in
       if Array.length row <> dim2 then
@@ -178,7 +178,7 @@ module Array3 = struct
     let dim2 = if dim1 = 0 then 0 else Array.length data.(0) in
     let dim3 = if dim2 = 0 then 0 else Array.length data.(0).(0) in
     let ba = create kind layout dim1 dim2 dim3 in
-    let ofs = if (Obj.magic layout : 'a layout) = c_layout then 0 else 1 in
+    let ofs = if layout = c_layout then 0 else 1 in
     for i = 0 to dim1 - 1 do
       let row = data.(i) in
       if Array.length row <> dim2 then
@@ -188,7 +188,7 @@ module Array3 = struct
         if Array.length col <> dim3 then
           invalid_arg("Bigarray.Array3.of_array: non-cubic data");
         for k = 0 to dim3 - 1 do
-          set ba (i + ofs) (j + ofs) (k + ofs) col.(j)
+          set ba (i + ofs) (j + ofs) (k + ofs) col.(k)
         done
       done
     done;
@@ -218,9 +218,9 @@ let reshape_3 a dim1 dim2 dim3 = reshape a [|dim1;dim2;dim3|]
    to those primitives directly in this file *)
 
 let _ =
-  let getN = Genarray.get in
-  let get1 = Array1.get in
-  let get2 = Array2.get in
-  let get3 = Array3.get in
+  let _ = Genarray.get in
+  let _ = Array1.get in
+  let _ = Array2.get in
+  let _ = Array3.get in
   ()
 

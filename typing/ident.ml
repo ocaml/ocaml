@@ -97,16 +97,6 @@ and 'a data =
 
 let empty = Empty
 
-(*> JOCAML *)
-and is_empty = function
-  | Empty -> true
-  | _     -> false
-
-let rec card = function
-  | Empty -> 0
-  | Node (t1, _, t2, _) -> card t1 + 1 + card t2
-(*< JOCAML *)
-
 (* Inline expansion of height for better speed
  * let height = function
  *     Empty -> 0

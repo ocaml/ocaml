@@ -97,10 +97,8 @@ let keyword_table =
 let join_keyword_table =
   let h = Hashtbl.copy keyword_table in
   Hashtbl.add h "def" DEF;
-  Hashtbl.add h "loc" LOC;
   Hashtbl.add h "spawn" SPAWN;
   Hashtbl.add h "reply" REPLY;
-  Hashtbl.add h "nullp" NULLP;
   h
 
 let keywords () =

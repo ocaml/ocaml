@@ -29,8 +29,8 @@ let (cmo_or_cma_opt, paths) =
   let rec iter (f_opt, inc) = function
       [] | _ :: [] -> (f_opt, inc)
     | "-g" :: file :: q when
-        ((Filename.check_suffix file "cmo") or
-         (Filename.check_suffix file "cma")) &
+        ((Filename.check_suffix file "cmo") ||
+         (Filename.check_suffix file "cma")) &&
         (f_opt = None) ->
           iter (Some file, inc) q
     | "-i" :: dir :: q ->

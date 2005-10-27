@@ -126,17 +126,39 @@ let hash_variant s =
   if !accu > 0x3FFFFFFF then !accu - (1 lsl 31) else !accu
 
 let proxy ty =
-  let ty = repr ty in
-  match ty.desc with
-  | Tvariant row -> row_more row
+  let ty0 = repr ty in
+  match ty0.desc with
+  | Tvariant row when not (static_row row) ->
+      row_more row
   | Tobject (ty, _) ->
       let rec proxy_obj ty =
         match ty.desc with
           Tfield (_, _, _, ty) | Tlink ty -> proxy_obj ty
-        | Tvar | Tnil | Tunivar -> ty
+        | Tvar | Tunivar | Tconstr _ -> ty
+        | Tnil -> ty0
         | _ -> assert false
       in proxy_obj ty
-  | _ -> ty
+  | _ -> ty0
+
+(**** Utilities for private types ****)
+
+let has_constr_row t =
+  match (repr t).desc with
+    Tobject(t,_) ->
+      let rec check_row t =
+        match (repr t).desc with
+          Tfield(_,_,_,t) -> check_row t
+        | Tconstr _ -> true
+        | _ -> false
+      in check_row t
+  | Tvariant row ->
+      (match row_more row with {desc=Tconstr _} -> true | _ -> false)
+  | _ ->
+      false
+
+let is_row_name s =
+  let l = String.length s in
+  if l < 4 then false else String.sub s (l-4) 4 = "#row"
 
 
                   (**********************************)
@@ -153,7 +175,7 @@ let rec iter_row f row =
     row.row_fields;
   match (repr row.row_more).desc with
     Tvariant row -> iter_row f row
-  | Tvar | Tnil | Tunivar | Tsubst _ ->
+  | Tvar | Tunivar | Tsubst _ | Tconstr _ ->
       Misc.may (fun (_,l) -> List.iter f l) row.row_name;
       List.iter f row.row_bound
   | _ -> assert false
@@ -274,10 +296,6 @@ let mark_type_node ty =
 let mark_type_params ty =
   iter_type_expr mark_type ty
 
-let is_marked ty =
-  let ty = repr ty in
-  ty.level < lowest_level
-
 (* Remove marks from a type. *)
 let rec unmark_type ty =
   let ty = repr ty in
@@ -312,77 +330,6 @@ let rec unmark_class_type =
       unmark_class_signature sign
   | Tcty_fun (_, ty, cty) ->
       unmark_type ty; unmark_class_type cty
-
-
-let rec iter_ty_paths f ty =
-  if not (is_marked ty) then begin
-    mark_type_node ty;
-    match ty.desc with
-    | Tvar -> ()
-    | Tarrow (label, dom, im, commutable) ->
-        iter_ty_paths f dom;
-        iter_ty_paths f im
-    | Ttuple tys ->
-        List.iter (iter_ty_paths f) tys
-    | Tconstr (path, tys, abbrev) ->
-        let path' = f path in
-        ty.desc <- Tconstr (path', tys, abbrev);
-        abbrev := Mnil;
-        List.iter (iter_ty_paths f) tys
-    | Tobject (ty1, r) ->
-        begin match !r with
-        | None -> ()
-        | Some (path, tys) ->
-            let path' = f path in
-            r := Some (path', tys);
-            List.iter (iter_ty_paths f) tys
-        end;
-        iter_ty_paths f ty1
-    | Tfield (label, kind, ty1, ty2) ->
-        iter_ty_paths f ty1;
-        iter_ty_paths f ty2
-    | Tnil -> ()
-    | Tlink ty1 -> iter_ty_paths f ty1
-    | Tsubst ty1 -> iter_ty_paths f ty1
-    | Tvariant row ->
-        let row' = iter_row_paths f row in
-        if row != row' then ty.desc <- Tvariant row'
-    | Tunivar -> ()
-    | Tpoly (ty, tyl) ->
-        iter_ty_paths f ty ;
-        List.iter (iter_ty_paths f) tyl
-    | Tproc _ -> assert false
-  end
-
-and iter_row_paths f row =
-  List.iter
-    (function (label, row_field) -> iter_row_field_paths f row_field)
-    row.row_fields;
-  iter_ty_paths f row.row_more;
-  List.iter (iter_ty_paths f) row.row_bound;
-  begin match row.row_name with
-  | None -> row
-  | Some (path, tys) ->
-      let path' = f path in
-      List.iter (iter_ty_paths f) tys;
-      { row with row_name = Some (path', tys) }
-  end
-
-and iter_row_field_paths f = function
-  | Rpresent (Some ty) -> iter_ty_paths f ty
-  | Rpresent None -> ()
-  | Reither (c, tys, b, r) ->
-      List.iter (iter_ty_paths f) tys;
-      begin match !r with
-      | None -> ()
-      | Some row_field -> iter_row_field_paths f row_field
-      end
-  | Rabsent -> ()
-
-let iter_type_paths f ty =
-  iter_ty_paths f ty;
-  unmark_type ty
-
 
 
                   (*******************************************)

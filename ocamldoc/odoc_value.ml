@@ -85,6 +85,7 @@ let parameter_list_from_arrows typ =
     | Types.Tunivar
     | Types.Tvariant _ ->
         []
+    | Types.Tproc _ -> []
   in
   iter typ
 

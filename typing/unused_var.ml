@@ -105,6 +105,10 @@ and structure_item ppf tbl s =
   | Pstr_class cdl -> List.iter (class_declaration ppf tbl) cdl;
   | Pstr_class_type _ -> ()
   | Pstr_include _ -> ()
+(*>JOCAML*)
+  | Pstr_exn_global _ -> ()
+  | Pstr_def d -> join_def ppf tbl d None
+(*<JOCAML*)
 
 and expression ppf tbl e =
   match e.pexp_desc with
@@ -172,6 +176,15 @@ and expression ppf tbl e =
   | Pexp_lazy e -> expression ppf tbl e;
   | Pexp_poly (e, _) -> expression ppf tbl e;
   | Pexp_object cs -> class_structure ppf tbl cs;
+(*>JOCAML*)
+  | Pexp_def (d,e) ->
+      join_def ppf tbl d (Some (fun ppf tbl -> expression ppf tbl e))
+  | Pexp_reply (e, _) -> expression ppf tbl e
+  | Pexp_par (e1, e2) ->
+       expression ppf tbl e1 ;
+       expression ppf tbl e2
+  | Pexp_spawn e -> expression ppf tbl e
+(*<JOCAML*)
 
 and expression_option ppf tbl eo =
   match eo with
@@ -201,6 +214,10 @@ and let_pel ppf tbl recflag pel body =
           f ppf tbl;
           check_rm_let ppf tbl defined;
       end;
+
+(*>JOCAML*)
+and join_def ppf tbl d body = () (* do nothing at the moment *)  
+(*<JOCAML*)
 
 and match_pel ppf tbl pel =
   List.iter (match_pe ppf tbl) pel

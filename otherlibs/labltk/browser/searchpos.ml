@@ -678,6 +678,10 @@ let rec search_pos_structure ~pos str =
       List.iter l ~f:(fun (id, _, _, cl) -> search_pos_class_expr cl ~pos)
   | Tstr_cltype _ -> ()
   | Tstr_include (m, _) -> search_pos_module_expr m ~pos
+(*>JOCAML*)
+  | Tstr_exn_global (_, _) -> ()
+  |Tstr_loc _|Tstr_def _ -> assert false
+(*<JOCAML*)
   end
 
 and search_pos_class_structure ~pos cls =
@@ -815,7 +819,7 @@ and search_pos_expr ~pos exp =
       	search_pos_class_structure ~pos cls
   | Texp_loc (_, _)
   | Texp_def (_, _)|Texp_reply (_, _)|Texp_par (_, _)|Texp_spawn _
-  | Texp_asyncsend (_, _)
+  | Texp_asyncsend (_, _)|Texp_null
     -> assert false (* no browser for jocaml *)
   end;
   add_found_str (`Exp(`Expr, exp.exp_type)) ~env:exp.exp_env ~loc:exp.exp_loc

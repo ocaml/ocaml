@@ -171,8 +171,8 @@ CAMLprim value caml_localize_message(value buff, value pointers) {
 }
 
 static void stub_serialize(value v,
-                           unsigned long * wsize_32,
-                           unsigned long * wsize_64)
+                           intnat * wsize_32,
+                           intnat * wsize_64)
 {
   mlsize_t pos = 0 ;
   if (!inside_join) {
@@ -187,7 +187,7 @@ static void stub_serialize(value v,
   *wsize_64 = 3 << 3 ;
 }
 
-static unsigned long stub_deserialize(void * dst) {
+static intnat stub_deserialize(void * dst) {
   if (inside_join) {
     mlsize_t pos = caml_deserialize_uint_4();
     value *p = dst ;

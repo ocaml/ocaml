@@ -59,16 +59,16 @@ val proxy: type_expr -> type_expr
         (* Return the proxy representative of the type: either itself
            or a row variable *)
 
+(**** Utilities for private types ****)
+val has_constr_row: type_expr -> bool
+val is_row_name: string -> bool
+
 (**** Utilities for type traversal ****)
 
 val iter_type_expr: (type_expr -> unit) -> type_expr -> unit
         (* Iteration on types *)
 val iter_row: (type_expr -> unit) -> row_desc -> unit
         (* Iteration on types in a row *)
-
-val iter_type_paths : (Path.t -> Path.t) -> type_expr -> unit
-        (* Map the paths in a type. Modify the type in place. *)
-
 val iter_abbrev: (type_expr -> unit) -> abbrev_memo -> unit
         (* Iteration on types in an abbreviation list *)
 

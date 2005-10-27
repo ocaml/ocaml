@@ -41,10 +41,10 @@ CAMLprim value bigarray_map_file(value vfd, value vkind, value vlayout,
                                  value vshared, value vdim)
 {
   int fd, flags, major_dim, shared;
-  long num_dims, i;
-  long dim[MAX_NUM_DIMS];
-  long currpos, file_size;
-  unsigned long array_size;
+  intnat num_dims, i;
+  intnat dim[MAX_NUM_DIMS];
+  intnat currpos, file_size;
+  uintnat array_size;
   char c;
   void * addr;
 
@@ -75,9 +75,9 @@ CAMLprim value bigarray_map_file(value vfd, value vkind, value vlayout,
   /* Check if the first/last dimension is unknown */
   if (dim[major_dim] == -1) {
     /* Determine first/last dimension from file size */
-    if ((unsigned long) file_size % array_size != 0)
+    if ((uintnat) file_size % array_size != 0)
       failwith("Bigarray.mmap: file size doesn't match array dimensions");
-    dim[major_dim] = (unsigned long) file_size / array_size;
+    dim[major_dim] = (uintnat) file_size / array_size;
     array_size = file_size;
   } else {
     /* Check that file is large enough, and grow it otherwise */
@@ -109,7 +109,7 @@ value bigarray_map_file(value vfd, value vkind, value vlayout,
 #endif
 
 
-void bigarray_unmap_file(void * addr, unsigned long len)
+void bigarray_unmap_file(void * addr, uintnat len)
 {
 #if defined(HAS_MMAP)
   munmap(addr, len);

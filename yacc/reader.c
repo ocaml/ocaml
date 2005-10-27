@@ -1270,9 +1270,9 @@ void copy_action(void)
             nrules-2, input_file_name, lineno);
             */
     if (sflag)
-      fprintf(f, "yyact.(%d) <- (fun parser_env ->\n", nrules-2);
+      fprintf(f, "yyact.(%d) <- (fun __caml_parser_env ->\n", nrules-2);
     else
-      fprintf(f, "; (fun parser_env ->\n");
+      fprintf(f, "; (fun __caml_parser_env ->\n");
 
     n = 0;
     for (i = nitems - 1; pitem[i]; --i) ++n;
@@ -1282,11 +1282,13 @@ void copy_action(void)
       if (item->class == TERM && !item->tag) continue;
       fprintf(f, "    let _%d = ", i);
       if (item->tag)
-        fprintf(f, "(peek_val parser_env %d : %s) in\n", n - i, item->tag);
+        fprintf(f, "(Parsing.peek_val __caml_parser_env %d : %s) in\n", n - i,
+                item->tag);
       else if (sflag)
-        fprintf(f, "peek_val parser_env %d in\n", n - i);
+        fprintf(f, "Parsing.peek_val __caml_parser_env %d in\n", n - i);
       else
-        fprintf(f, "(peek_val parser_env %d : '%s) in\n", n - i, item->name);
+        fprintf(f, "(Parsing.peek_val __caml_parser_env %d : '%s) in\n", n - i,
+                item->name);
     }
     fprintf(f, "    Obj.repr(\n");
     fprintf(f, line_format, lineno, input_file_name);
@@ -1728,7 +1730,12 @@ static int is_polymorphic(char * s)
 {
   while (*s != 0) {
     char c = *s++;
-    if (c == '\'') return 1;
+    if (c == '\'' || c == '#') return 1;
+    if (c == '[') {
+      c = *s;
+      while (c == ' ' || c == '\t' || c == '\r' || c == '\n') c = *++s;
+      if (c == '<' || c == '>') return 1;
+    }
     if (In_bitmap(caml_ident_start, c)) {
       while (In_bitmap(caml_ident_body, *s)) s++;
     }
@@ -1762,7 +1769,7 @@ void make_goal(void)
       if (is_polymorphic(bp->tag))
         polymorphic_entry_point(bp->name);
       fprintf(entry_file,
-              "let %s (lexfun : Lexing.lexbuf -> token) (lexbuf : Lexing.lexbuf) =\n   (yyparse yytables %d lexfun lexbuf : %s)\n",
+              "let %s (lexfun : Lexing.lexbuf -> token) (lexbuf : Lexing.lexbuf) =\n   (Parsing.yyparse yytables %d lexfun lexbuf : %s)\n",
               bp->name, bp->entry, bp->tag);
       fprintf(interface_file,
               "val %s :\n  (Lexing.lexbuf  -> token) -> Lexing.lexbuf -> %s\n",
@@ -1772,11 +1779,13 @@ void make_goal(void)
               "(* Entry %s *)\n", bp->name);
       if (sflag)
         fprintf(action_file,
-                "yyact.(%d) <- (fun parser_env -> raise (YYexit (peek_val parser_env 0)))\n",
+                "yyact.(%d) <- (fun __caml_parser_env -> raise "
+                "(Parsing.YYexit (Parsing.peek_val __caml_parser_env 0)))\n",
                 ntotalrules);
       else
         fprintf(action_file,
-              "; (fun parser_env -> raise (YYexit (peek_val parser_env 0)))\n");
+                "; (fun __caml_parser_env -> raise "
+                "(Parsing.YYexit (Parsing.peek_val __caml_parser_env 0)))\n");
       ntotalrules++;
       last_was_action = 1;
       end_rule();

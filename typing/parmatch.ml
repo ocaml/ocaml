@@ -255,27 +255,6 @@ let prerr_pat v =
 (* Utilities for matching   *)
 (****************************)
 
-let rec remove_binders p = match p.pat_desc with
-| Tpat_any|Tpat_constant _|Tpat_variant (_, None, _) -> p
-| Tpat_var _ -> { p with  pat_desc = Tpat_any }
-| Tpat_alias (p, _) -> remove_binders p
-| Tpat_tuple ps ->
-    { p with pat_desc = Tpat_tuple (remove_binders_list ps) }
-| Tpat_construct (c, ps) ->
-    { p with pat_desc = Tpat_construct (c, remove_binders_list ps) }
-| Tpat_variant (lab, Some p, row) ->
-    { p with pat_desc = Tpat_variant (lab, Some (remove_binders p), row) }
-| Tpat_record lblps ->
-    { p with pat_desc =
-     Tpat_record (List.map (fun (lbl,p) -> lbl, remove_binders p) lblps) }
-| Tpat_array ps ->
-    { p with pat_desc = Tpat_array (remove_binders_list ps) }
-| Tpat_or (p1, p2, patho) ->
-    { p with pat_desc =
-      Tpat_or (remove_binders p1, remove_binders p2, patho) }
-
-and remove_binders_list ps = List.map remove_binders ps
-
 (* Check top matching *)
 let simple_match p1 p2 = 
   match p1.pat_desc, p2.pat_desc with
@@ -431,7 +410,7 @@ let rec read_args xs r = match xs,r with
 | _,_ ->
     fatal_error "Parmatch.read_args"
 
-let set_args q r = match q with
+let do_set_args erase_mutable q r = match q with
 | {pat_desc = Tpat_tuple omegas} ->
     let args,rest = read_args omegas r in
     make_pat (Tpat_tuple args) q.pat_type q.pat_env::rest
@@ -439,7 +418,16 @@ let set_args q r = match q with
     let args,rest = read_args omegas r in
     make_pat
       (Tpat_record
-         (List.map2 (fun (lbl,_) arg -> lbl,arg) omegas args))
+         (List.map2 (fun (lbl,_) arg ->
+           if
+             erase_mutable &&
+             (match lbl.lbl_mut with
+             | Mutable -> true | Immutable -> false)
+           then
+             lbl, omega
+           else
+             lbl,arg)
+            omegas args))
       q.pat_type q.pat_env::
     rest
 | {pat_desc = Tpat_construct (c,omegas)} ->
@@ -466,6 +454,8 @@ let set_args q r = match q with
     q::r (* case any is used in matching.ml *)
 | _ -> fatal_error "Parmatch.set_args"
 
+let set_args q r = do_set_args false q r
+and set_args_erase_mutable q r = do_set_args true q r
 
 (* filter pss acording to pattern q *)
 let filter_one q pss =
@@ -716,7 +706,7 @@ let build_other_constant proj make first next p env =
 *)
 
 let build_other env =  match env with
-| ({pat_desc = Tpat_construct ({cstr_tag=Cstr_exception _} as c,_)},_) as p
+| ({pat_desc = Tpat_construct ({cstr_tag=Cstr_exception _} as c,_)},_)
   ::_ ->
     make_pat
       (Tpat_construct
@@ -1539,10 +1529,7 @@ let check_partial loc casel =
           *)
       begin match casel with
       | [] -> ()
-      | _  ->
-          Location.prerr_warning loc
-            (Warnings.Other
-               "Bad style, all clauses in this pattern-matching are guarded.")
+      | _  -> Location.prerr_warning loc Warnings.All_clauses_guarded
       end ;
       Partial
   | ps::_  ->      
@@ -1604,7 +1591,7 @@ let check_unused tdefs casel =
   if Warnings.is_active Warnings.Unused_match then
     let rec do_rec pref = function
       | [] -> ()
-      | (q,act as clause)::rem ->
+      | (q,act)::rem ->
           let qs = [q] in
             begin try
               let pss =
@@ -1622,10 +1609,7 @@ let check_unused tdefs casel =
                     ps
               | Used ->
                   check_used_extra pss qs
-            with e -> (* useless ? *)
-              Location.prerr_warning (location_of_clause qs)
-                (Warnings.Other "Fatal Error in Parmatch.check_unused") ;
-              raise e
+            with e -> assert false
             end ;
                    
           if has_guard act then
@@ -1655,3 +1639,24 @@ let useful pats =
         satisfiable pref [pat]::
         do_rec ([pat]::pref) rem in
   do_rec [] pats
+
+let rec remove_binders p = match p.pat_desc with
+| Tpat_any|Tpat_constant _|Tpat_variant (_, None, _) -> p
+| Tpat_var _ -> { p with  pat_desc = Tpat_any }
+| Tpat_alias (p, _) -> remove_binders p
+| Tpat_tuple ps ->
+    { p with pat_desc = Tpat_tuple (remove_binders_list ps) }
+| Tpat_construct (c, ps) ->
+    { p with pat_desc = Tpat_construct (c, remove_binders_list ps) }
+| Tpat_variant (lab, Some p, row) ->
+    { p with pat_desc = Tpat_variant (lab, Some (remove_binders p), row) }
+| Tpat_record lblps ->
+    { p with pat_desc =
+     Tpat_record (List.map (fun (lbl,p) -> lbl, remove_binders p) lblps) }
+| Tpat_array ps ->
+    { p with pat_desc = Tpat_array (remove_binders_list ps) }
+| Tpat_or (p1, p2, patho) ->
+    { p with pat_desc =
+      Tpat_or (remove_binders p1, remove_binders p2, patho) }
+
+and remove_binders_list ps = List.map remove_binders ps
