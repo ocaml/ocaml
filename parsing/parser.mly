@@ -301,7 +301,7 @@ let bigarray_set arr arg newval =
 %token LOC
 %token REPLY
 %token SPAWN
-%token NULLP
+
 
 /* Precedences and associativities.
 
@@ -810,8 +810,6 @@ let_pattern:
 expr:
     simple_expr %prec below_SHARP
       { $1 }
-  | NULLP LPAREN RPAREN
-      { mkexp(Pexp_null) }
   | simple_expr simple_labeled_expr_list
       { mkexp(Pexp_apply($1, List.rev $2)) }
   | LET rec_flag let_bindings IN seq_expr

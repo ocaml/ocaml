@@ -1,3 +1,4 @@
+camlinternalMod.cmi: obj.cmi 
 camlinternalOO.cmi: obj.cmi 
 format.cmi: buffer.cmi 
 genlex.cmi: stream.cmi 
@@ -9,14 +10,16 @@ random.cmi: nativeint.cmi int64.cmi int32.cmi
 weak.cmi: hashtbl.cmi 
 arg.cmo: sys.cmi string.cmi printf.cmi list.cmi buffer.cmi array.cmi arg.cmi 
 arg.cmx: sys.cmx string.cmx printf.cmx list.cmx buffer.cmx array.cmx arg.cmi 
-arrayLabels.cmo: array.cmi arrayLabels.cmi 
-arrayLabels.cmx: array.cmx arrayLabels.cmi 
 array.cmo: array.cmi 
 array.cmx: array.cmi 
+arrayLabels.cmo: array.cmi arrayLabels.cmi 
+arrayLabels.cmx: array.cmx arrayLabels.cmi 
 buffer.cmo: sys.cmi string.cmi buffer.cmi 
 buffer.cmx: sys.cmx string.cmx buffer.cmi 
 callback.cmo: obj.cmi callback.cmi 
 callback.cmx: obj.cmx callback.cmi 
+camlinternalMod.cmo: obj.cmi camlinternalOO.cmi array.cmi camlinternalMod.cmi 
+camlinternalMod.cmx: obj.cmx camlinternalOO.cmx array.cmx camlinternalMod.cmi 
 camlinternalOO.cmo: sys.cmi string.cmi obj.cmi map.cmi list.cmi char.cmi \
     array.cmi camlinternalOO.cmi 
 camlinternalOO.cmx: sys.cmx string.cmx obj.cmx map.cmx list.cmx char.cmx \
@@ -47,10 +50,10 @@ lazy.cmo: obj.cmi lazy.cmi
 lazy.cmx: obj.cmx lazy.cmi 
 lexing.cmo: sys.cmi string.cmi array.cmi lexing.cmi 
 lexing.cmx: sys.cmx string.cmx array.cmx lexing.cmi 
-listLabels.cmo: list.cmi listLabels.cmi 
-listLabels.cmx: list.cmx listLabels.cmi 
 list.cmo: list.cmi 
 list.cmx: list.cmi 
+listLabels.cmo: list.cmi listLabels.cmi 
+listLabels.cmx: list.cmx listLabels.cmi 
 map.cmo: map.cmi 
 map.cmx: map.cmi 
 marshal.cmo: string.cmi marshal.cmi 
@@ -91,10 +94,10 @@ stdLabels.cmo: stringLabels.cmi listLabels.cmi arrayLabels.cmi stdLabels.cmi
 stdLabels.cmx: stringLabels.cmx listLabels.cmx arrayLabels.cmx stdLabels.cmi 
 stream.cmo: string.cmi obj.cmi list.cmi stream.cmi 
 stream.cmx: string.cmx obj.cmx list.cmx stream.cmi 
-stringLabels.cmo: string.cmi stringLabels.cmi 
-stringLabels.cmx: string.cmx stringLabels.cmi 
 string.cmo: pervasives.cmi list.cmi char.cmi string.cmi 
 string.cmx: pervasives.cmx list.cmx char.cmx string.cmi 
+stringLabels.cmo: string.cmi stringLabels.cmi 
+stringLabels.cmx: string.cmx stringLabels.cmi 
 sys.cmo: sys.cmi 
 sys.cmx: sys.cmi 
 weak.cmo: sys.cmi obj.cmi hashtbl.cmi array.cmi weak.cmi 

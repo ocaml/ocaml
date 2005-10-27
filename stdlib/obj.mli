@@ -15,7 +15,7 @@
 
 (** Operations on internal representations of values.
 
-   Not for the casual user. 
+   Not for the casual user.
 *)
 
 type t

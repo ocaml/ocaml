@@ -24,7 +24,7 @@ exception Empty
 type 'a cell = {
     content: 'a;
     mutable next: 'a cell
-  } 
+  }
 
 (* A queue is a reference to either nothing or some cell of a cyclic
    list. By convention, that cell is to be viewed as the last cell in
@@ -42,12 +42,12 @@ type 'a cell = {
 type 'a t = {
     mutable length: int;
     mutable tail: 'a cell
-  } 
+  }
 
 let create () = {
   length = 0;
   tail = Obj.magic None
-} 
+}
 
 let clear q =
   q.length <- 0;
@@ -84,17 +84,15 @@ let top =
   peek
 
 let take q =
-  if q.length = 0 then
-    raise Empty
+  if q.length = 0 then raise Empty;
+  q.length <- q.length - 1;
+  let tail = q.tail in
+  let head = tail.next in
+  if head == tail then
+    q.tail <- Obj.magic None
   else
-    q.length <- q.length - 1;
-    let tail = q.tail in
-    let head = tail.next in
-    if head == tail then
-      q.tail <- Obj.magic None
-    else
-      tail.next <- head.next;
-    head.content
+    tail.next <- head.next;
+  head.content
 
 let pop =
   take
@@ -121,7 +119,7 @@ let copy q =
     {
       length = q.length;
       tail = tail'
-    } 
+    }
 
 let is_empty q =
   q.length = 0
@@ -165,4 +163,3 @@ let transfer q1 q2 =
     end;
     q2.length <- q2.length + length1;
     q2.tail <- tail1
-
