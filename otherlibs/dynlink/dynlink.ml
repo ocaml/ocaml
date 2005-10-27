@@ -114,7 +114,7 @@ let digest_interface unit loadpath =
       close_in ic;
       raise(Error(Corrupted_interface filename))
     end;
-    input_value ic;
+    ignore (input_value ic);
     let crc =
       match input_value ic with
         (_, crc) :: _ -> crc
