@@ -303,7 +303,7 @@ CAMLprim value caml_gr_size_y(void)
 
 CAMLprim value caml_gr_resize_window (value vx, value vy)
 {
-  caml_gr_check_open ();
+  gr_check_open ();
 
   /* FIXME TODO implement this function... */
 
