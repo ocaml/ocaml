@@ -97,9 +97,7 @@ let expand_quotation loc expander shift name str =
        try expander str with
          Stdpp.Exc_located (loc, exc) ->
            let exc1 = Qerror (name, Expanding, exc) in
-           raise
-             (Stdpp.Exc_located
-                (Reloc.adjust_loc shift (Reloc.linearize loc), exc1))
+           raise (Stdpp.Exc_located (Reloc.adjust_loc shift loc, exc1))
        | exc ->
            let exc1 = Qerror (name, Expanding, exc) in
            raise (Stdpp.Exc_located (loc, exc1)))
@@ -181,14 +179,14 @@ Grammar.extend
     [[Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e));
       Gramext.Stoken ("EOI", "")],
      Gramext.action
-       (fun _ (x : 'expr) (loc : Lexing.position * Lexing.position) ->
+       (fun _ (x : 'expr) (_loc : Lexing.position * Lexing.position) ->
           (x : 'expr_eoi))]];
    Grammar.Entry.obj (patt_eoi : 'patt_eoi Grammar.Entry.e), None,
    [None, None,
     [[Gramext.Snterm (Grammar.Entry.obj (patt : 'patt Grammar.Entry.e));
       Gramext.Stoken ("EOI", "")],
      Gramext.action
-       (fun _ (x : 'patt) (loc : Lexing.position * Lexing.position) ->
+       (fun _ (x : 'patt) (_loc : Lexing.position * Lexing.position) ->
           (x : 'patt_eoi))]]];;
 
 let handle_expr_quotation loc x =

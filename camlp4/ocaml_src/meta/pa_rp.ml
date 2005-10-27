@@ -25,11 +25,11 @@ type sexp_comp =
 ;;
 
 let strm_n = "strm__";;
-let peek_fun loc =
-  MLast.ExAcc (loc, MLast.ExUid (loc, "Stream"), MLast.ExLid (loc, "peek"))
+let peek_fun _loc =
+  MLast.ExAcc (_loc, MLast.ExUid (_loc, "Stream"), MLast.ExLid (_loc, "peek"))
 ;;
-let junk_fun loc =
-  MLast.ExAcc (loc, MLast.ExUid (loc, "Stream"), MLast.ExLid (loc, "junk"))
+let junk_fun _loc =
+  MLast.ExAcc (_loc, MLast.ExUid (_loc, "Stream"), MLast.ExLid (_loc, "junk"))
 ;;
 
 (* Parsers. *)
@@ -99,19 +99,19 @@ and is_constr_apply =
 ;;
 
 let rec subst v e =
-  let loc = MLast.loc_of_expr e in
+  let _loc = MLast.loc_of_expr e in
   match e with
     MLast.ExLid (_, x) ->
-      let x = if x = v then strm_n else x in MLast.ExLid (loc, x)
+      let x = if x = v then strm_n else x in MLast.ExLid (_loc, x)
   | MLast.ExUid (_, _) -> e
   | MLast.ExInt (_, _) -> e
   | MLast.ExChr (_, _) -> e
   | MLast.ExStr (_, _) -> e
   | MLast.ExAcc (_, _, _) -> e
   | MLast.ExLet (_, rf, pel, e) ->
-      MLast.ExLet (loc, rf, List.map (subst_pe v) pel, subst v e)
-  | MLast.ExApp (_, e1, e2) -> MLast.ExApp (loc, subst v e1, subst v e2)
-  | MLast.ExTup (_, el) -> MLast.ExTup (loc, List.map (subst v) el)
+      MLast.ExLet (_loc, rf, List.map (subst_pe v) pel, subst v e)
+  | MLast.ExApp (_, e1, e2) -> MLast.ExApp (_loc, subst v e1, subst v e2)
+  | MLast.ExTup (_, el) -> MLast.ExTup (_loc, List.map (subst v) el)
   | _ -> raise Not_found
 and subst_pe v (p, e) =
   match p with
@@ -121,16 +121,16 @@ and subst_pe v (p, e) =
 
 let stream_pattern_component skont ckont =
   function
-    SpTrm (loc, p, wo) ->
+    SpTrm (_loc, p, wo) ->
       MLast.ExMat
-        (loc, MLast.ExApp (loc, peek_fun loc, MLast.ExLid (loc, strm_n)),
-         [MLast.PaApp (loc, MLast.PaUid (loc, "Some"), p), wo,
+        (_loc, MLast.ExApp (_loc, peek_fun _loc, MLast.ExLid (_loc, strm_n)),
+         [MLast.PaApp (_loc, MLast.PaUid (_loc, "Some"), p), wo,
           MLast.ExSeq
-            (loc,
-             [MLast.ExApp (loc, junk_fun loc, MLast.ExLid (loc, strm_n));
+            (_loc,
+             [MLast.ExApp (_loc, junk_fun _loc, MLast.ExLid (_loc, strm_n));
               skont]);
-          MLast.PaAny loc, None, ckont])
-  | SpNtr (loc, p, e) ->
+          MLast.PaAny _loc, None, ckont])
+  | SpNtr (_loc, p, e) ->
       let e =
         match e with
           MLast.ExFun
@@ -144,77 +144,77 @@ let stream_pattern_component skont ckont =
                     MLast.TyAny _)), None, e])
           when v = strm_n ->
             e
-        | _ -> MLast.ExApp (loc, e, MLast.ExLid (loc, strm_n))
+        | _ -> MLast.ExApp (_loc, e, MLast.ExLid (_loc, strm_n))
       in
       if pattern_eq_expression p skont then
         if is_raise_failure ckont then e
         else if handle_failure e then e
         else
           MLast.ExTry
-            (loc, e,
+            (_loc, e,
              [MLast.PaAcc
-                (loc, MLast.PaUid (loc, "Stream"),
-                 MLast.PaUid (loc, "Failure")),
+                (_loc, MLast.PaUid (_loc, "Stream"),
+                 MLast.PaUid (_loc, "Failure")),
               None, ckont])
       else if is_raise_failure ckont then
-        MLast.ExLet (loc, false, [p, e], skont)
+        MLast.ExLet (_loc, false, [p, e], skont)
       else if
         pattern_eq_expression
-          (MLast.PaApp (loc, MLast.PaUid (loc, "Some"), p)) skont
+          (MLast.PaApp (_loc, MLast.PaUid (_loc, "Some"), p)) skont
       then
         MLast.ExTry
-          (loc, MLast.ExApp (loc, MLast.ExUid (loc, "Some"), e),
+          (_loc, MLast.ExApp (_loc, MLast.ExUid (_loc, "Some"), e),
            [MLast.PaAcc
-              (loc, MLast.PaUid (loc, "Stream"),
-               MLast.PaUid (loc, "Failure")),
+              (_loc, MLast.PaUid (_loc, "Stream"),
+               MLast.PaUid (_loc, "Failure")),
             None, ckont])
       else if is_raise ckont then
         let tst =
           if handle_failure e then e
           else
             MLast.ExTry
-              (loc, e,
+              (_loc, e,
                [MLast.PaAcc
-                  (loc, MLast.PaUid (loc, "Stream"),
-                   MLast.PaUid (loc, "Failure")),
+                  (_loc, MLast.PaUid (_loc, "Stream"),
+                   MLast.PaUid (_loc, "Failure")),
                 None, ckont])
         in
-        MLast.ExLet (loc, false, [p, tst], skont)
+        MLast.ExLet (_loc, false, [p, tst], skont)
       else
         MLast.ExMat
-          (loc,
+          (_loc,
            MLast.ExTry
-             (loc, MLast.ExApp (loc, MLast.ExUid (loc, "Some"), e),
+             (_loc, MLast.ExApp (_loc, MLast.ExUid (_loc, "Some"), e),
               [MLast.PaAcc
-                 (loc, MLast.PaUid (loc, "Stream"),
-                  MLast.PaUid (loc, "Failure")),
-               None, MLast.ExUid (loc, "None")]),
-           [MLast.PaApp (loc, MLast.PaUid (loc, "Some"), p), None, skont;
-            MLast.PaAny loc, None, ckont])
-  | SpStr (loc, p) ->
+                 (_loc, MLast.PaUid (_loc, "Stream"),
+                  MLast.PaUid (_loc, "Failure")),
+               None, MLast.ExUid (_loc, "None")]),
+           [MLast.PaApp (_loc, MLast.PaUid (_loc, "Some"), p), None, skont;
+            MLast.PaAny _loc, None, ckont])
+  | SpStr (_loc, p) ->
       try
         match p with
           MLast.PaLid (_, v) -> subst v skont
         | _ -> raise Not_found
       with
         Not_found ->
-          MLast.ExLet (loc, false, [p, MLast.ExLid (loc, strm_n)], skont)
+          MLast.ExLet (_loc, false, [p, MLast.ExLid (_loc, strm_n)], skont)
 ;;
 
-let rec stream_pattern loc epo e ekont =
+let rec stream_pattern _loc epo e ekont =
   function
     [] ->
       begin match epo with
         Some ep ->
           MLast.ExLet
-            (loc, false,
+            (_loc, false,
              [ep,
               MLast.ExApp
-                (loc,
+                (_loc,
                  MLast.ExAcc
-                   (loc, MLast.ExUid (loc, "Stream"),
-                    MLast.ExLid (loc, "count")),
-                 MLast.ExLid (loc, strm_n))],
+                   (_loc, MLast.ExUid (_loc, "Stream"),
+                    MLast.ExLid (_loc, "count")),
+                 MLast.ExLid (_loc, strm_n))],
              e)
       | _ -> e
       end
@@ -224,123 +224,124 @@ let rec stream_pattern loc epo e ekont =
           let str =
             match err with
               Some estr -> estr
-            | _ -> MLast.ExStr (loc, "")
+            | _ -> MLast.ExStr (_loc, "")
           in
           MLast.ExApp
-            (loc, MLast.ExLid (loc, "raise"),
+            (_loc, MLast.ExLid (_loc, "raise"),
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExAcc
-                  (loc, MLast.ExUid (loc, "Stream"),
-                   MLast.ExUid (loc, "Error")),
+                  (_loc, MLast.ExUid (_loc, "Stream"),
+                   MLast.ExUid (_loc, "Error")),
                 str))
         in
-        stream_pattern loc epo e ekont spcl
+        stream_pattern _loc epo e ekont spcl
       in
       let ckont = ekont err in stream_pattern_component skont ckont spc
 ;;
 
-let stream_patterns_term loc ekont tspel =
+let stream_patterns_term _loc ekont tspel =
   let pel =
     List.map
-      (fun (p, w, loc, spcl, epo, e) ->
-         let p = MLast.PaApp (loc, MLast.PaUid (loc, "Some"), p) in
+      (fun (p, w, _loc, spcl, epo, e) ->
+         let p = MLast.PaApp (_loc, MLast.PaUid (_loc, "Some"), p) in
          let e =
            let ekont err =
              let str =
                match err with
                  Some estr -> estr
-               | _ -> MLast.ExStr (loc, "")
+               | _ -> MLast.ExStr (_loc, "")
              in
              MLast.ExApp
-               (loc, MLast.ExLid (loc, "raise"),
+               (_loc, MLast.ExLid (_loc, "raise"),
                 MLast.ExApp
-                  (loc,
+                  (_loc,
                    MLast.ExAcc
-                     (loc, MLast.ExUid (loc, "Stream"),
-                      MLast.ExUid (loc, "Error")),
+                     (_loc, MLast.ExUid (_loc, "Stream"),
+                      MLast.ExUid (_loc, "Error")),
                    str))
            in
-           let skont = stream_pattern loc epo e ekont spcl in
+           let skont = stream_pattern _loc epo e ekont spcl in
            MLast.ExSeq
-             (loc,
-              [MLast.ExApp (loc, junk_fun loc, MLast.ExLid (loc, strm_n));
+             (_loc,
+              [MLast.ExApp (_loc, junk_fun _loc, MLast.ExLid (_loc, strm_n));
                skont])
          in
          p, w, e)
       tspel
   in
-  let pel = pel @ [MLast.PaAny loc, None, ekont ()] in
+  let pel = pel @ [MLast.PaAny _loc, None, ekont ()] in
   MLast.ExMat
-    (loc, MLast.ExApp (loc, peek_fun loc, MLast.ExLid (loc, strm_n)), pel)
+    (_loc, MLast.ExApp (_loc, peek_fun _loc, MLast.ExLid (_loc, strm_n)), pel)
 ;;
 
 let rec group_terms =
   function
-    ((SpTrm (loc, p, w), None) :: spcl, epo, e) :: spel ->
+    ((SpTrm (_loc, p, w), None) :: spcl, epo, e) :: spel ->
       let (tspel, spel) = group_terms spel in
-      (p, w, loc, spcl, epo, e) :: tspel, spel
+      (p, w, _loc, spcl, epo, e) :: tspel, spel
   | spel -> [], spel
 ;;
 
-let rec parser_cases loc =
+let rec parser_cases _loc =
   function
     [] ->
       MLast.ExApp
-        (loc, MLast.ExLid (loc, "raise"),
+        (_loc, MLast.ExLid (_loc, "raise"),
          MLast.ExAcc
-           (loc, MLast.ExUid (loc, "Stream"), MLast.ExUid (loc, "Failure")))
+           (_loc, MLast.ExUid (_loc, "Stream"),
+            MLast.ExUid (_loc, "Failure")))
   | spel ->
       match group_terms spel with
         [], (spcl, epo, e) :: spel ->
-          stream_pattern loc epo e (fun _ -> parser_cases loc spel) spcl
+          stream_pattern _loc epo e (fun _ -> parser_cases _loc spel) spcl
       | tspel, spel ->
-          stream_patterns_term loc (fun _ -> parser_cases loc spel) tspel
+          stream_patterns_term _loc (fun _ -> parser_cases _loc spel) tspel
 ;;
 
-let cparser loc bpo pc =
-  let e = parser_cases loc pc in
+let cparser _loc bpo pc =
+  let e = parser_cases _loc pc in
   let e =
     match bpo with
       Some bp ->
         MLast.ExLet
-          (loc, false,
+          (_loc, false,
            [bp,
             MLast.ExApp
-              (loc,
+              (_loc,
                MLast.ExAcc
-                 (loc, MLast.ExUid (loc, "Stream"),
-                  MLast.ExLid (loc, "count")),
-               MLast.ExLid (loc, strm_n))],
+                 (_loc, MLast.ExUid (_loc, "Stream"),
+                  MLast.ExLid (_loc, "count")),
+               MLast.ExLid (_loc, strm_n))],
            e)
     | None -> e
   in
   let p =
     MLast.PaTyc
-      (loc, MLast.PaLid (loc, strm_n),
+      (_loc, MLast.PaLid (_loc, strm_n),
        MLast.TyApp
-         (loc,
+         (_loc,
           MLast.TyAcc
-            (loc, MLast.TyUid (loc, "Stream"), MLast.TyLid (loc, "t")),
-          MLast.TyAny loc))
+            (_loc, MLast.TyUid (_loc, "Stream"), MLast.TyLid (_loc, "t")),
+          MLast.TyAny _loc))
   in
-  MLast.ExFun (loc, [p, None, e])
+  MLast.ExFun (_loc, [p, None, e])
 ;;
 
-let cparser_match loc me bpo pc =
-  let pc = parser_cases loc pc in
+let cparser_match _loc me bpo pc =
+  let pc = parser_cases _loc pc in
   let e =
     match bpo with
       Some bp ->
         MLast.ExLet
-          (loc, false,
+          (_loc, false,
            [bp,
             MLast.ExApp
-              (loc,
+              (_loc,
                MLast.ExAcc
-                 (loc, MLast.ExUid (loc, "Stream"),
-                  MLast.ExLid (loc, "count")),
-               MLast.ExLid (loc, strm_n))],
+                 (_loc, MLast.ExUid (_loc, "Stream"),
+                  MLast.ExLid (_loc, "count")),
+               MLast.ExLid (_loc, strm_n))],
            pc)
     | None -> pc
   in
@@ -348,14 +349,15 @@ let cparser_match loc me bpo pc =
     MLast.ExLid (_, x) when x = strm_n -> e
   | _ ->
       MLast.ExLet
-        (loc, false,
+        (_loc, false,
          [MLast.PaTyc
-            (loc, MLast.PaLid (loc, strm_n),
+            (_loc, MLast.PaLid (_loc, strm_n),
              MLast.TyApp
-               (loc,
+               (_loc,
                 MLast.TyAcc
-                  (loc, MLast.TyUid (loc, "Stream"), MLast.TyLid (loc, "t")),
-                MLast.TyAny loc)),
+                  (_loc, MLast.TyUid (_loc, "Stream"),
+                   MLast.TyLid (_loc, "t")),
+                MLast.TyAny _loc)),
           me],
          e)
 ;;
@@ -377,82 +379,87 @@ and is_cons_apply_not_computing =
   | _ -> false
 ;;
 
-let slazy loc e =
+let slazy _loc e =
   match e with
     MLast.ExApp (_, f, MLast.ExUid (_, "()")) ->
       begin match f with
         MLast.ExLid (_, _) -> f
-      | _ -> MLast.ExFun (loc, [MLast.PaAny loc, None, e])
+      | _ -> MLast.ExFun (_loc, [MLast.PaAny _loc, None, e])
       end
-  | _ -> MLast.ExFun (loc, [MLast.PaAny loc, None, e])
+  | _ -> MLast.ExFun (_loc, [MLast.PaAny _loc, None, e])
 ;;
 
 let rec cstream gloc =
   function
     [] ->
-      let loc = gloc in
+      let _loc = gloc in
       MLast.ExAcc
-        (loc, MLast.ExUid (loc, "Stream"), MLast.ExLid (loc, "sempty"))
-  | [SeTrm (loc, e)] ->
+        (_loc, MLast.ExUid (_loc, "Stream"), MLast.ExLid (_loc, "sempty"))
+  | [SeTrm (_loc, e)] ->
       if not_computing e then
         MLast.ExApp
-          (loc,
+          (_loc,
            MLast.ExAcc
-             (loc, MLast.ExUid (loc, "Stream"), MLast.ExLid (loc, "ising")),
+             (_loc, MLast.ExUid (_loc, "Stream"),
+              MLast.ExLid (_loc, "ising")),
            e)
       else
         MLast.ExApp
-          (loc,
+          (_loc,
            MLast.ExAcc
-             (loc, MLast.ExUid (loc, "Stream"), MLast.ExLid (loc, "lsing")),
-           slazy loc e)
-  | SeTrm (loc, e) :: secl ->
+             (_loc, MLast.ExUid (_loc, "Stream"),
+              MLast.ExLid (_loc, "lsing")),
+           slazy _loc e)
+  | SeTrm (_loc, e) :: secl ->
       if not_computing e then
         MLast.ExApp
-          (loc,
+          (_loc,
            MLast.ExApp
-             (loc,
+             (_loc,
               MLast.ExAcc
-                (loc, MLast.ExUid (loc, "Stream"),
-                 MLast.ExLid (loc, "icons")),
+                (_loc, MLast.ExUid (_loc, "Stream"),
+                 MLast.ExLid (_loc, "icons")),
               e),
            cstream gloc secl)
       else
         MLast.ExApp
-          (loc,
+          (_loc,
            MLast.ExApp
-             (loc,
+             (_loc,
               MLast.ExAcc
-                (loc, MLast.ExUid (loc, "Stream"),
-                 MLast.ExLid (loc, "lcons")),
-              slazy loc e),
+                (_loc, MLast.ExUid (_loc, "Stream"),
+                 MLast.ExLid (_loc, "lcons")),
+              slazy _loc e),
            cstream gloc secl)
-  | [SeNtr (loc, e)] ->
+  | [SeNtr (_loc, e)] ->
       if not_computing e then e
       else
         MLast.ExApp
-          (loc,
+          (_loc,
            MLast.ExAcc
-             (loc, MLast.ExUid (loc, "Stream"), MLast.ExLid (loc, "slazy")),
-           slazy loc e)
-  | SeNtr (loc, e) :: secl ->
+             (_loc, MLast.ExUid (_loc, "Stream"),
+              MLast.ExLid (_loc, "slazy")),
+           slazy _loc e)
+  | SeNtr (_loc, e) :: secl ->
       if not_computing e then
         MLast.ExApp
-          (loc,
+          (_loc,
            MLast.ExApp
-             (loc,
+             (_loc,
               MLast.ExAcc
-                (loc, MLast.ExUid (loc, "Stream"), MLast.ExLid (loc, "iapp")),
+                (_loc, MLast.ExUid (_loc, "Stream"),
+                 MLast.ExLid (_loc, "iapp")),
               e),
            cstream gloc secl)
       else
         MLast.ExApp
-          (loc,
+          (_loc,
            MLast.ExApp
-             (loc,
+             (_loc,
               MLast.ExAcc
-                (loc, MLast.ExUid (loc, "Stream"), MLast.ExLid (loc, "lapp")),
-              slazy loc e),
+                (_loc, MLast.ExUid (_loc, "Stream"),
+                 MLast.ExLid (_loc, "lapp")),
+              slazy _loc e),
            cstream gloc secl)
 ;;
 
@@ -487,8 +494,8 @@ Grammar.extend
          (Grammar.Entry.obj (parser_case : 'parser_case Grammar.Entry.e))],
       Gramext.action
         (fun (pc : 'parser_case) (po : 'ipatt option) _ _ (e : 'expr) _
-           (loc : Lexing.position * Lexing.position) ->
-           (cparser_match loc e po [pc] : 'expr));
+           (_loc : Lexing.position * Lexing.position) ->
+           (cparser_match _loc e po [pc] : 'expr));
       [Gramext.Stoken ("", "match"); Gramext.Sself;
        Gramext.Stoken ("", "with"); Gramext.Stoken ("", "parser");
        Gramext.Sopt
@@ -502,8 +509,8 @@ Grammar.extend
        Gramext.Stoken ("", "]")],
       Gramext.action
         (fun _ (pcl : 'parser_case list) _ (po : 'ipatt option) _ _
-           (e : 'expr) _ (loc : Lexing.position * Lexing.position) ->
-           (cparser_match loc e po pcl : 'expr));
+           (e : 'expr) _ (_loc : Lexing.position * Lexing.position) ->
+           (cparser_match _loc e po pcl : 'expr));
       [Gramext.Stoken ("", "parser");
        Gramext.Sopt
          (Gramext.Snterm
@@ -512,8 +519,8 @@ Grammar.extend
          (Grammar.Entry.obj (parser_case : 'parser_case Grammar.Entry.e))],
       Gramext.action
         (fun (pc : 'parser_case) (po : 'ipatt option) _
-           (loc : Lexing.position * Lexing.position) ->
-           (cparser loc po [pc] : 'expr));
+           (_loc : Lexing.position * Lexing.position) ->
+           (cparser _loc po [pc] : 'expr));
       [Gramext.Stoken ("", "parser");
        Gramext.Sopt
          (Gramext.Snterm
@@ -526,8 +533,8 @@ Grammar.extend
        Gramext.Stoken ("", "]")],
       Gramext.action
         (fun _ (pcl : 'parser_case list) _ (po : 'ipatt option) _
-           (loc : Lexing.position * Lexing.position) ->
-           (cparser loc po pcl : 'expr))]];
+           (_loc : Lexing.position * Lexing.position) ->
+           (cparser _loc po pcl : 'expr))]];
     Grammar.Entry.obj (parser_case : 'parser_case Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Stoken ("", "[:");
@@ -541,13 +548,13 @@ Grammar.extend
        Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e))],
       Gramext.action
         (fun (e : 'expr) _ (po : 'ipatt option) _ (sp : 'stream_patt) _
-           (loc : Lexing.position * Lexing.position) ->
+           (_loc : Lexing.position * Lexing.position) ->
            (sp, po, e : 'parser_case))]];
     Grammar.Entry.obj (stream_patt : 'stream_patt Grammar.Entry.e), None,
     [None, None,
      [[],
       Gramext.action
-        (fun (loc : Lexing.position * Lexing.position) ->
+        (fun (_loc : Lexing.position * Lexing.position) ->
            ([] : 'stream_patt));
       [Gramext.Snterm
          (Grammar.Entry.obj
@@ -561,14 +568,14 @@ Grammar.extend
           Gramext.Stoken ("", ";"))],
       Gramext.action
         (fun (sp : 'stream_patt_comp_err list) _ (spc : 'stream_patt_comp)
-           (loc : Lexing.position * Lexing.position) ->
+           (_loc : Lexing.position * Lexing.position) ->
            ((spc, None) :: sp : 'stream_patt));
       [Gramext.Snterm
          (Grammar.Entry.obj
             (stream_patt_comp : 'stream_patt_comp Grammar.Entry.e))],
       Gramext.action
         (fun (spc : 'stream_patt_comp)
-           (loc : Lexing.position * Lexing.position) ->
+           (_loc : Lexing.position * Lexing.position) ->
            ([spc, None] : 'stream_patt))]];
     Grammar.Entry.obj
       (stream_patt_comp_err : 'stream_patt_comp_err Grammar.Entry.e),
@@ -583,26 +590,27 @@ Grammar.extend
               Gramext.Snterm
                 (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e))],
              Gramext.action
-               (fun (e : 'expr) _ (loc : Lexing.position * Lexing.position) ->
+               (fun (e : 'expr) _
+                  (_loc : Lexing.position * Lexing.position) ->
                   (e : 'e__1))])],
       Gramext.action
         (fun (eo : 'e__1 option) (spc : 'stream_patt_comp)
-           (loc : Lexing.position * Lexing.position) ->
+           (_loc : Lexing.position * Lexing.position) ->
            (spc, eo : 'stream_patt_comp_err))]];
     Grammar.Entry.obj (stream_patt_comp : 'stream_patt_comp Grammar.Entry.e),
     None,
     [None, None,
      [[Gramext.Snterm (Grammar.Entry.obj (patt : 'patt Grammar.Entry.e))],
       Gramext.action
-        (fun (p : 'patt) (loc : Lexing.position * Lexing.position) ->
-           (SpStr (loc, p) : 'stream_patt_comp));
+        (fun (p : 'patt) (_loc : Lexing.position * Lexing.position) ->
+           (SpStr (_loc, p) : 'stream_patt_comp));
       [Gramext.Snterm (Grammar.Entry.obj (patt : 'patt Grammar.Entry.e));
        Gramext.Stoken ("", "=");
        Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e))],
       Gramext.action
         (fun (e : 'expr) _ (p : 'patt)
-           (loc : Lexing.position * Lexing.position) ->
-           (SpNtr (loc, p, e) : 'stream_patt_comp));
+           (_loc : Lexing.position * Lexing.position) ->
+           (SpNtr (_loc, p, e) : 'stream_patt_comp));
       [Gramext.Stoken ("", "`");
        Gramext.Snterm (Grammar.Entry.obj (patt : 'patt Grammar.Entry.e));
        Gramext.Sopt
@@ -611,18 +619,19 @@ Grammar.extend
               Gramext.Snterm
                 (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e))],
              Gramext.action
-               (fun (e : 'expr) _ (loc : Lexing.position * Lexing.position) ->
+               (fun (e : 'expr) _
+                  (_loc : Lexing.position * Lexing.position) ->
                   (e : 'e__2))])],
       Gramext.action
         (fun (eo : 'e__2 option) (p : 'patt) _
-           (loc : Lexing.position * Lexing.position) ->
-           (SpTrm (loc, p, eo) : 'stream_patt_comp))]];
+           (_loc : Lexing.position * Lexing.position) ->
+           (SpTrm (_loc, p, eo) : 'stream_patt_comp))]];
     Grammar.Entry.obj (ipatt : 'ipatt Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Stoken ("LIDENT", "")],
       Gramext.action
-        (fun (i : string) (loc : Lexing.position * Lexing.position) ->
-           (MLast.PaLid (loc, i) : 'ipatt))]];
+        (fun (i : string) (_loc : Lexing.position * Lexing.position) ->
+           (MLast.PaLid (_loc, i) : 'ipatt))]];
     Grammar.Entry.obj (expr : 'expr Grammar.Entry.e),
     Some (Gramext.Level "simple"),
     [None, None,
@@ -635,17 +644,17 @@ Grammar.extend
        Gramext.Stoken ("", ":]")],
       Gramext.action
         (fun _ (se : 'stream_expr_comp list) _
-           (loc : Lexing.position * Lexing.position) ->
-           (cstream loc se : 'expr))]];
+           (_loc : Lexing.position * Lexing.position) ->
+           (cstream _loc se : 'expr))]];
     Grammar.Entry.obj (stream_expr_comp : 'stream_expr_comp Grammar.Entry.e),
     None,
     [None, None,
      [[Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e))],
       Gramext.action
-        (fun (e : 'expr) (loc : Lexing.position * Lexing.position) ->
-           (SeNtr (loc, e) : 'stream_expr_comp));
+        (fun (e : 'expr) (_loc : Lexing.position * Lexing.position) ->
+           (SeNtr (_loc, e) : 'stream_expr_comp));
       [Gramext.Stoken ("", "`");
        Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e))],
       Gramext.action
-        (fun (e : 'expr) _ (loc : Lexing.position * Lexing.position) ->
-           (SeTrm (loc, e) : 'stream_expr_comp))]]]);;
+        (fun (e : 'expr) _ (_loc : Lexing.position * Lexing.position) ->
+           (SeTrm (_loc, e) : 'stream_expr_comp))]]]);;

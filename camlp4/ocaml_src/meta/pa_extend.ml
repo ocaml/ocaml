@@ -122,7 +122,7 @@ let check_use nl el =
     ht
 ;;
 
-let locate n = let loc = n.loc in n.expr;;
+let locate n = let _loc = n.loc in n.expr;;
 
 let new_type_var =
   let i = ref 0 in fun () -> incr i; "e__" ^ string_of_int !i
@@ -134,13 +134,13 @@ let used_of_rule_list rl =
     rl
 ;;
 
-let retype_rule_list_without_patterns loc rl =
+let retype_rule_list_without_patterns _loc rl =
   try
     List.map
       (function
          {prod = [{pattern = None; symbol = s}]; action = None} ->
-           {prod = [{pattern = Some (MLast.PaLid (loc, "x")); symbol = s}];
-            action = Some (MLast.ExLid (loc, "x"))}
+           {prod = [{pattern = Some (MLast.PaLid (_loc, "x")); symbol = s}];
+            action = Some (MLast.ExLid (_loc, "x"))}
        | {prod = []; action = Some _} as r -> r
        | _ -> raise Exit)
       rl
@@ -161,7 +161,7 @@ module MetaAction =
       in
       failwith (f ^ ", not impl: " ^ desc)
     ;;
-    let loc =
+    let _loc =
       let nowhere =
         {(Lexing.dummy_pos) with Lexing.pos_lnum = 1; Lexing.pos_cnum = 0}
       in
@@ -169,467 +169,474 @@ module MetaAction =
     ;;
     let rec mlist mf =
       function
-        [] -> MLast.ExUid (loc, "[]")
+        [] -> MLast.ExUid (_loc, "[]")
       | x :: l ->
           MLast.ExApp
-            (loc, MLast.ExApp (loc, MLast.ExUid (loc, "::"), mf x),
+            (_loc, MLast.ExApp (_loc, MLast.ExUid (_loc, "::"), mf x),
              mlist mf l)
     ;;
     let moption mf =
       function
-        None -> MLast.ExUid (loc, "None")
-      | Some x -> MLast.ExApp (loc, MLast.ExUid (loc, "Some"), mf x)
+        None -> MLast.ExUid (_loc, "None")
+      | Some x -> MLast.ExApp (_loc, MLast.ExUid (_loc, "Some"), mf x)
     ;;
     let mbool =
       function
-        false -> MLast.ExUid (loc, "False")
-      | true -> MLast.ExUid (loc, "True")
+        false -> MLast.ExUid (_loc, "False")
+      | true -> MLast.ExUid (_loc, "True")
     ;;
     let mloc =
       MLast.ExLet
-        (loc, false,
-         [MLast.PaLid (loc, "nowhere"),
+        (_loc, false,
+         [MLast.PaLid (_loc, "nowhere"),
           MLast.ExRec
-            (loc,
+            (_loc,
              [MLast.PaAcc
-                (loc, MLast.PaUid (loc, "Lexing"),
-                 MLast.PaLid (loc, "pos_lnum")),
-              MLast.ExInt (loc, "1");
+                (_loc, MLast.PaUid (_loc, "Lexing"),
+                 MLast.PaLid (_loc, "pos_lnum")),
+              MLast.ExInt (_loc, "1");
               MLast.PaAcc
-                (loc, MLast.PaUid (loc, "Lexing"),
-                 MLast.PaLid (loc, "pos_cnum")),
-              MLast.ExInt (loc, "0")],
+                (_loc, MLast.PaUid (_loc, "Lexing"),
+                 MLast.PaLid (_loc, "pos_cnum")),
+              MLast.ExInt (_loc, "0")],
              Some
                (MLast.ExAcc
-                  (loc, MLast.ExUid (loc, "Lexing"),
-                   MLast.ExLid (loc, "dummy_pos"))))],
+                  (_loc, MLast.ExUid (_loc, "Lexing"),
+                   MLast.ExLid (_loc, "dummy_pos"))))],
          MLast.ExTup
-           (loc,
-            [MLast.ExLid (loc, "nowhere"); MLast.ExLid (loc, "nowhere")]))
+           (_loc,
+            [MLast.ExLid (_loc, "nowhere"); MLast.ExLid (_loc, "nowhere")]))
     ;;
     let rec mexpr =
       function
-        MLast.ExAcc (loc, e1, e2) ->
+        MLast.ExAcc (_loc, e1, e2) ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExApp
-                  (loc,
+                  (_loc,
                    MLast.ExAcc
-                     (loc, MLast.ExUid (loc, "MLast"),
-                      MLast.ExUid (loc, "ExAcc")),
+                     (_loc, MLast.ExUid (_loc, "MLast"),
+                      MLast.ExUid (_loc, "ExAcc")),
                    mloc),
                 mexpr e1),
              mexpr e2)
-      | MLast.ExApp (loc, e1, e2) ->
+      | MLast.ExApp (_loc, e1, e2) ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExApp
-                  (loc,
+                  (_loc,
                    MLast.ExAcc
-                     (loc, MLast.ExUid (loc, "MLast"),
-                      MLast.ExUid (loc, "ExApp")),
+                     (_loc, MLast.ExUid (_loc, "MLast"),
+                      MLast.ExUid (_loc, "ExApp")),
                    mloc),
                 mexpr e1),
              mexpr e2)
-      | MLast.ExChr (loc, s) ->
+      | MLast.ExChr (_loc, s) ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExAcc
-                  (loc, MLast.ExUid (loc, "MLast"),
-                   MLast.ExUid (loc, "ExChr")),
+                  (_loc, MLast.ExUid (_loc, "MLast"),
+                   MLast.ExUid (_loc, "ExChr")),
                 mloc),
-             MLast.ExStr (loc, s))
-      | MLast.ExFun (loc, pwel) ->
+             MLast.ExStr (_loc, s))
+      | MLast.ExFun (_loc, pwel) ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExAcc
-                  (loc, MLast.ExUid (loc, "MLast"),
-                   MLast.ExUid (loc, "ExFun")),
+                  (_loc, MLast.ExUid (_loc, "MLast"),
+                   MLast.ExUid (_loc, "ExFun")),
                 mloc),
              mlist mpwe pwel)
-      | MLast.ExIfe (loc, e1, e2, e3) ->
+      | MLast.ExIfe (_loc, e1, e2, e3) ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExApp
-                  (loc,
+                  (_loc,
                    MLast.ExApp
-                     (loc,
+                     (_loc,
                       MLast.ExAcc
-                        (loc, MLast.ExUid (loc, "MLast"),
-                         MLast.ExUid (loc, "ExIfe")),
+                        (_loc, MLast.ExUid (_loc, "MLast"),
+                         MLast.ExUid (_loc, "ExIfe")),
                       mloc),
                    mexpr e1),
                 mexpr e2),
              mexpr e3)
-      | MLast.ExInt (loc, s) ->
+      | MLast.ExInt (_loc, s) ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExAcc
-                  (loc, MLast.ExUid (loc, "MLast"),
-                   MLast.ExUid (loc, "ExInt")),
+                  (_loc, MLast.ExUid (_loc, "MLast"),
+                   MLast.ExUid (_loc, "ExInt")),
                 mloc),
-             MLast.ExStr (loc, s))
-      | MLast.ExFlo (loc, s) ->
+             MLast.ExStr (_loc, s))
+      | MLast.ExFlo (_loc, s) ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExAcc
-                  (loc, MLast.ExUid (loc, "MLast"),
-                   MLast.ExUid (loc, "ExFlo")),
+                  (_loc, MLast.ExUid (_loc, "MLast"),
+                   MLast.ExUid (_loc, "ExFlo")),
                 mloc),
-             MLast.ExStr (loc, s))
-      | MLast.ExLet (loc, rf, pel, e) ->
+             MLast.ExStr (_loc, s))
+      | MLast.ExLet (_loc, rf, pel, e) ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExApp
-                  (loc,
+                  (_loc,
                    MLast.ExApp
-                     (loc,
+                     (_loc,
                       MLast.ExAcc
-                        (loc, MLast.ExUid (loc, "MLast"),
-                         MLast.ExUid (loc, "ExLet")),
+                        (_loc, MLast.ExUid (_loc, "MLast"),
+                         MLast.ExUid (_loc, "ExLet")),
                       mloc),
                    mbool rf),
                 mlist mpe pel),
              mexpr e)
-      | MLast.ExLid (loc, s) ->
+      | MLast.ExLid (_loc, s) ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExAcc
-                  (loc, MLast.ExUid (loc, "MLast"),
-                   MLast.ExUid (loc, "ExLid")),
+                  (_loc, MLast.ExUid (_loc, "MLast"),
+                   MLast.ExUid (_loc, "ExLid")),
                 mloc),
-             MLast.ExStr (loc, s))
-      | MLast.ExMat (loc, e, pwel) ->
+             MLast.ExStr (_loc, s))
+      | MLast.ExMat (_loc, e, pwel) ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExApp
-                  (loc,
+                  (_loc,
                    MLast.ExAcc
-                     (loc, MLast.ExUid (loc, "MLast"),
-                      MLast.ExUid (loc, "ExMat")),
+                     (_loc, MLast.ExUid (_loc, "MLast"),
+                      MLast.ExUid (_loc, "ExMat")),
                    mloc),
                 mexpr e),
              mlist mpwe pwel)
-      | MLast.ExRec (loc, pel, eo) ->
+      | MLast.ExRec (_loc, pel, eo) ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExApp
-                  (loc,
+                  (_loc,
                    MLast.ExAcc
-                     (loc, MLast.ExUid (loc, "MLast"),
-                      MLast.ExUid (loc, "ExRec")),
+                     (_loc, MLast.ExUid (_loc, "MLast"),
+                      MLast.ExUid (_loc, "ExRec")),
                    mloc),
                 mlist mpe pel),
              moption mexpr eo)
-      | MLast.ExSeq (loc, el) ->
+      | MLast.ExSeq (_loc, el) ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExAcc
-                  (loc, MLast.ExUid (loc, "MLast"),
-                   MLast.ExUid (loc, "ExSeq")),
+                  (_loc, MLast.ExUid (_loc, "MLast"),
+                   MLast.ExUid (_loc, "ExSeq")),
                 mloc),
              mlist mexpr el)
-      | MLast.ExSte (loc, e1, e2) ->
+      | MLast.ExSte (_loc, e1, e2) ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExApp
-                  (loc,
+                  (_loc,
                    MLast.ExAcc
-                     (loc, MLast.ExUid (loc, "MLast"),
-                      MLast.ExUid (loc, "ExSte")),
+                     (_loc, MLast.ExUid (_loc, "MLast"),
+                      MLast.ExUid (_loc, "ExSte")),
                    mloc),
                 mexpr e1),
              mexpr e2)
-      | MLast.ExStr (loc, s) ->
+      | MLast.ExStr (_loc, s) ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExAcc
-                  (loc, MLast.ExUid (loc, "MLast"),
-                   MLast.ExUid (loc, "ExStr")),
+                  (_loc, MLast.ExUid (_loc, "MLast"),
+                   MLast.ExUid (_loc, "ExStr")),
                 mloc),
-             MLast.ExStr (loc, String.escaped s))
-      | MLast.ExTry (loc, e, pwel) ->
+             MLast.ExStr (_loc, String.escaped s))
+      | MLast.ExTry (_loc, e, pwel) ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExApp
-                  (loc,
+                  (_loc,
                    MLast.ExAcc
-                     (loc, MLast.ExUid (loc, "MLast"),
-                      MLast.ExUid (loc, "ExTry")),
+                     (_loc, MLast.ExUid (_loc, "MLast"),
+                      MLast.ExUid (_loc, "ExTry")),
                    mloc),
                 mexpr e),
              mlist mpwe pwel)
-      | MLast.ExTup (loc, el) ->
+      | MLast.ExTup (_loc, el) ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExAcc
-                  (loc, MLast.ExUid (loc, "MLast"),
-                   MLast.ExUid (loc, "ExTup")),
+                  (_loc, MLast.ExUid (_loc, "MLast"),
+                   MLast.ExUid (_loc, "ExTup")),
                 mloc),
              mlist mexpr el)
-      | MLast.ExTyc (loc, e, t) ->
+      | MLast.ExTyc (_loc, e, t) ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExApp
-                  (loc,
+                  (_loc,
                    MLast.ExAcc
-                     (loc, MLast.ExUid (loc, "MLast"),
-                      MLast.ExUid (loc, "ExTyc")),
+                     (_loc, MLast.ExUid (_loc, "MLast"),
+                      MLast.ExUid (_loc, "ExTyc")),
                    mloc),
                 mexpr e),
              mctyp t)
-      | MLast.ExUid (loc, s) ->
+      | MLast.ExUid (_loc, s) ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExAcc
-                  (loc, MLast.ExUid (loc, "MLast"),
-                   MLast.ExUid (loc, "ExUid")),
+                  (_loc, MLast.ExUid (_loc, "MLast"),
+                   MLast.ExUid (_loc, "ExUid")),
                 mloc),
-             MLast.ExStr (loc, s))
+             MLast.ExStr (_loc, s))
       | x -> not_impl "mexpr" x
     and mpatt =
       function
-        MLast.PaAcc (loc, p1, p2) ->
+        MLast.PaAcc (_loc, p1, p2) ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExApp
-                  (loc,
+                  (_loc,
                    MLast.ExAcc
-                     (loc, MLast.ExUid (loc, "MLast"),
-                      MLast.ExUid (loc, "PaAcc")),
+                     (_loc, MLast.ExUid (_loc, "MLast"),
+                      MLast.ExUid (_loc, "PaAcc")),
                    mloc),
                 mpatt p1),
              mpatt p2)
-      | MLast.PaAny loc ->
+      | MLast.PaAny _loc ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExAcc
-               (loc, MLast.ExUid (loc, "MLast"), MLast.ExUid (loc, "PaAny")),
+               (_loc, MLast.ExUid (_loc, "MLast"),
+                MLast.ExUid (_loc, "PaAny")),
              mloc)
-      | MLast.PaApp (loc, p1, p2) ->
+      | MLast.PaApp (_loc, p1, p2) ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExApp
-                  (loc,
+                  (_loc,
                    MLast.ExAcc
-                     (loc, MLast.ExUid (loc, "MLast"),
-                      MLast.ExUid (loc, "PaApp")),
+                     (_loc, MLast.ExUid (_loc, "MLast"),
+                      MLast.ExUid (_loc, "PaApp")),
                    mloc),
                 mpatt p1),
              mpatt p2)
-      | MLast.PaInt (loc, s) ->
+      | MLast.PaInt (_loc, s) ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExAcc
-                  (loc, MLast.ExUid (loc, "MLast"),
-                   MLast.ExUid (loc, "PaInt")),
+                  (_loc, MLast.ExUid (_loc, "MLast"),
+                   MLast.ExUid (_loc, "PaInt")),
                 mloc),
-             MLast.ExStr (loc, s))
-      | MLast.PaLid (loc, s) ->
+             MLast.ExStr (_loc, s))
+      | MLast.PaLid (_loc, s) ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExAcc
-                  (loc, MLast.ExUid (loc, "MLast"),
-                   MLast.ExUid (loc, "PaLid")),
+                  (_loc, MLast.ExUid (_loc, "MLast"),
+                   MLast.ExUid (_loc, "PaLid")),
                 mloc),
-             MLast.ExStr (loc, s))
-      | MLast.PaOrp (loc, p1, p2) ->
+             MLast.ExStr (_loc, s))
+      | MLast.PaOrp (_loc, p1, p2) ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExApp
-                  (loc,
+                  (_loc,
                    MLast.ExAcc
-                     (loc, MLast.ExUid (loc, "MLast"),
-                      MLast.ExUid (loc, "PaOrp")),
+                     (_loc, MLast.ExUid (_loc, "MLast"),
+                      MLast.ExUid (_loc, "PaOrp")),
                    mloc),
                 mpatt p1),
              mpatt p2)
-      | MLast.PaStr (loc, s) ->
+      | MLast.PaStr (_loc, s) ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExAcc
-                  (loc, MLast.ExUid (loc, "MLast"),
-                   MLast.ExUid (loc, "PaStr")),
+                  (_loc, MLast.ExUid (_loc, "MLast"),
+                   MLast.ExUid (_loc, "PaStr")),
                 mloc),
-             MLast.ExStr (loc, String.escaped s))
-      | MLast.PaTup (loc, pl) ->
+             MLast.ExStr (_loc, String.escaped s))
+      | MLast.PaTup (_loc, pl) ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExAcc
-                  (loc, MLast.ExUid (loc, "MLast"),
-                   MLast.ExUid (loc, "PaTup")),
+                  (_loc, MLast.ExUid (_loc, "MLast"),
+                   MLast.ExUid (_loc, "PaTup")),
                 mloc),
              mlist mpatt pl)
-      | MLast.PaTyc (loc, p, t) ->
+      | MLast.PaTyc (_loc, p, t) ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExApp
-                  (loc,
+                  (_loc,
                    MLast.ExAcc
-                     (loc, MLast.ExUid (loc, "MLast"),
-                      MLast.ExUid (loc, "PaTyc")),
+                     (_loc, MLast.ExUid (_loc, "MLast"),
+                      MLast.ExUid (_loc, "PaTyc")),
                    mloc),
                 mpatt p),
              mctyp t)
-      | MLast.PaUid (loc, s) ->
+      | MLast.PaUid (_loc, s) ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExAcc
-                  (loc, MLast.ExUid (loc, "MLast"),
-                   MLast.ExUid (loc, "PaUid")),
+                  (_loc, MLast.ExUid (_loc, "MLast"),
+                   MLast.ExUid (_loc, "PaUid")),
                 mloc),
-             MLast.ExStr (loc, s))
+             MLast.ExStr (_loc, s))
       | x -> not_impl "mpatt" x
     and mctyp =
       function
-        MLast.TyAcc (loc, t1, t2) ->
+        MLast.TyAcc (_loc, t1, t2) ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExApp
-                  (loc,
+                  (_loc,
                    MLast.ExAcc
-                     (loc, MLast.ExUid (loc, "MLast"),
-                      MLast.ExUid (loc, "TyAcc")),
+                     (_loc, MLast.ExUid (_loc, "MLast"),
+                      MLast.ExUid (_loc, "TyAcc")),
                    mloc),
                 mctyp t1),
              mctyp t2)
       | MLast.TyApp (loc, t1, t2) ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExApp
-                  (loc,
+                  (_loc,
                    MLast.ExAcc
-                     (loc, MLast.ExUid (loc, "MLast"),
-                      MLast.ExUid (loc, "TyApp")),
+                     (_loc, MLast.ExUid (_loc, "MLast"),
+                      MLast.ExUid (_loc, "TyApp")),
                    mloc),
                 mctyp t1),
              mctyp t2)
-      | MLast.TyLid (loc, s) ->
+      | MLast.TyLid (_loc, s) ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExAcc
-                  (loc, MLast.ExUid (loc, "MLast"),
-                   MLast.ExUid (loc, "TyLid")),
+                  (_loc, MLast.ExUid (_loc, "MLast"),
+                   MLast.ExUid (_loc, "TyLid")),
                 mloc),
-             MLast.ExStr (loc, s))
-      | MLast.TyQuo (loc, s) ->
+             MLast.ExStr (_loc, s))
+      | MLast.TyQuo (_loc, s) ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExAcc
-                  (loc, MLast.ExUid (loc, "MLast"),
-                   MLast.ExUid (loc, "TyQuo")),
+                  (_loc, MLast.ExUid (_loc, "MLast"),
+                   MLast.ExUid (_loc, "TyQuo")),
                 mloc),
-             MLast.ExStr (loc, s))
-      | MLast.TyTup (loc, tl) ->
+             MLast.ExStr (_loc, s))
+      | MLast.TyTup (_loc, tl) ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExAcc
-                  (loc, MLast.ExUid (loc, "MLast"),
-                   MLast.ExUid (loc, "TyTup")),
+                  (_loc, MLast.ExUid (_loc, "MLast"),
+                   MLast.ExUid (_loc, "TyTup")),
                 mloc),
              mlist mctyp tl)
-      | MLast.TyUid (loc, s) ->
+      | MLast.TyUid (_loc, s) ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExAcc
-                  (loc, MLast.ExUid (loc, "MLast"),
-                   MLast.ExUid (loc, "TyUid")),
+                  (_loc, MLast.ExUid (_loc, "MLast"),
+                   MLast.ExUid (_loc, "TyUid")),
                 mloc),
-             MLast.ExStr (loc, s))
+             MLast.ExStr (_loc, s))
       | x -> not_impl "mctyp" x
-    and mpe (p, e) = MLast.ExTup (loc, [mpatt p; mexpr e])
+    and mpe (p, e) = MLast.ExTup (_loc, [mpatt p; mexpr e])
     and mpwe (p, w, e) =
-      MLast.ExTup (loc, [mpatt p; moption mexpr w; mexpr e])
+      MLast.ExTup (_loc, [mpatt p; moption mexpr w; mexpr e])
     ;;
   end
 ;;
 
-let mklistexp loc =
+let mklistexp _loc =
   let rec loop top =
     function
-      [] -> MLast.ExUid (loc, "[]")
+      [] -> MLast.ExUid (_loc, "[]")
     | e1 :: el ->
-        let loc = if top then loc else fst (MLast.loc_of_expr e1), snd loc in
+        let _loc =
+          if top then _loc else fst (MLast.loc_of_expr e1), snd _loc
+        in
         MLast.ExApp
-          (loc, MLast.ExApp (loc, MLast.ExUid (loc, "::"), e1), loop false el)
+          (_loc, MLast.ExApp (_loc, MLast.ExUid (_loc, "::"), e1),
+           loop false el)
   in
   loop true
 ;;
 
-let mklistpat loc =
+let mklistpat _loc =
   let rec loop top =
     function
-      [] -> MLast.PaUid (loc, "[]")
+      [] -> MLast.PaUid (_loc, "[]")
     | p1 :: pl ->
-        let loc = if top then loc else fst (MLast.loc_of_patt p1), snd loc in
+        let _loc =
+          if top then _loc else fst (MLast.loc_of_patt p1), snd _loc
+        in
         MLast.PaApp
-          (loc, MLast.PaApp (loc, MLast.PaUid (loc, "::"), p1), loop false pl)
+          (_loc, MLast.PaApp (_loc, MLast.PaUid (_loc, "::"), p1),
+           loop false pl)
   in
   loop true
 ;;
@@ -641,32 +648,32 @@ let rec expr_fa al =
 ;;
 
 let rec quot_expr e =
-  let loc = MLast.loc_of_expr e in
+  let _loc = MLast.loc_of_expr e in
   match e with
     MLast.ExUid (_, "None") ->
       MLast.ExApp
-        (loc,
+        (_loc,
          MLast.ExAcc
-           (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Option")),
-         MLast.ExUid (loc, "None"))
+           (_loc, MLast.ExUid (_loc, "Qast"), MLast.ExUid (_loc, "Option")),
+         MLast.ExUid (_loc, "None"))
   | MLast.ExApp (_, MLast.ExUid (_, "Some"), e) ->
       MLast.ExApp
-        (loc,
+        (_loc,
          MLast.ExAcc
-           (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Option")),
-         MLast.ExApp (loc, MLast.ExUid (loc, "Some"), quot_expr e))
+           (_loc, MLast.ExUid (_loc, "Qast"), MLast.ExUid (_loc, "Option")),
+         MLast.ExApp (_loc, MLast.ExUid (_loc, "Some"), quot_expr e))
   | MLast.ExUid (_, "False") ->
       MLast.ExApp
-        (loc,
+        (_loc,
          MLast.ExAcc
-           (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Bool")),
-         MLast.ExUid (loc, "False"))
+           (_loc, MLast.ExUid (_loc, "Qast"), MLast.ExUid (_loc, "Bool")),
+         MLast.ExUid (_loc, "False"))
   | MLast.ExUid (_, "True") ->
       MLast.ExApp
-        (loc,
+        (_loc,
          MLast.ExAcc
-           (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Bool")),
-         MLast.ExUid (loc, "True"))
+           (_loc, MLast.ExUid (_loc, "Qast"), MLast.ExUid (_loc, "Bool")),
+         MLast.ExUid (_loc, "True"))
   | MLast.ExUid (_, "()") -> e
   | MLast.ExApp
       (_, MLast.ExAcc (_, MLast.ExUid (_, "Qast"), MLast.ExUid (_, "List")),
@@ -682,26 +689,26 @@ let rec quot_expr e =
       e
   | MLast.ExUid (_, "[]") ->
       MLast.ExApp
-        (loc,
+        (_loc,
          MLast.ExAcc
-           (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "List")),
-         MLast.ExUid (loc, "[]"))
+           (_loc, MLast.ExUid (_loc, "Qast"), MLast.ExUid (_loc, "List")),
+         MLast.ExUid (_loc, "[]"))
   | MLast.ExApp
       (_, MLast.ExApp (_, MLast.ExUid (_, "::"), e), MLast.ExUid (_, "[]")) ->
       MLast.ExApp
-        (loc,
+        (_loc,
          MLast.ExAcc
-           (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "List")),
+           (_loc, MLast.ExUid (_loc, "Qast"), MLast.ExUid (_loc, "List")),
          MLast.ExApp
-           (loc, MLast.ExApp (loc, MLast.ExUid (loc, "::"), quot_expr e),
-            MLast.ExUid (loc, "[]")))
+           (_loc, MLast.ExApp (_loc, MLast.ExUid (_loc, "::"), quot_expr e),
+            MLast.ExUid (_loc, "[]")))
   | MLast.ExApp (_, MLast.ExApp (_, MLast.ExUid (_, "::"), e1), e2) ->
       MLast.ExApp
-        (loc,
+        (_loc,
          MLast.ExApp
-           (loc,
+           (_loc,
             MLast.ExAcc
-              (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Cons")),
+              (_loc, MLast.ExUid (_loc, "Qast"), MLast.ExUid (_loc, "Cons")),
             quot_expr e1),
          quot_expr e2)
   | MLast.ExApp (_, _, _) ->
@@ -710,37 +717,40 @@ let rec quot_expr e =
         MLast.ExUid (_, c) ->
           let al = List.map quot_expr al in
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExAcc
-                  (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Node")),
-                MLast.ExStr (loc, c)),
-             mklistexp loc al)
+                  (_loc, MLast.ExUid (_loc, "Qast"),
+                   MLast.ExUid (_loc, "Node")),
+                MLast.ExStr (_loc, c)),
+             mklistexp _loc al)
       | MLast.ExAcc (_, MLast.ExUid (_, "MLast"), MLast.ExUid (_, c)) ->
           let al = List.map quot_expr al in
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExAcc
-                  (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Node")),
-                MLast.ExStr (loc, c)),
-             mklistexp loc al)
+                  (_loc, MLast.ExUid (_loc, "Qast"),
+                   MLast.ExUid (_loc, "Node")),
+                MLast.ExStr (_loc, c)),
+             mklistexp _loc al)
       | MLast.ExAcc (_, MLast.ExUid (_, m), MLast.ExUid (_, c)) ->
           let al = List.map quot_expr al in
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExAcc
-                  (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Node")),
-                MLast.ExStr (loc, (m ^ "." ^ c))),
-             mklistexp loc al)
+                  (_loc, MLast.ExUid (_loc, "Qast"),
+                   MLast.ExUid (_loc, "Node")),
+                MLast.ExStr (_loc, (m ^ "." ^ c))),
+             mklistexp _loc al)
       | MLast.ExLid (_, f) ->
           let al = List.map quot_expr al in
-          List.fold_left (fun f e -> MLast.ExApp (loc, f, e))
-            (MLast.ExLid (loc, f)) al
+          List.fold_left (fun f e -> MLast.ExApp (_loc, f, e))
+            (MLast.ExLid (_loc, f)) al
       | _ -> e
       end
   | MLast.ExRec (_, pel, None) ->
@@ -750,69 +760,70 @@ let rec quot_expr e =
             (fun (p, e) ->
                let lab =
                  match p with
-                   MLast.PaLid (_, c) -> MLast.ExStr (loc, c)
+                   MLast.PaLid (_, c) -> MLast.ExStr (_loc, c)
                  | MLast.PaAcc (_, _, MLast.PaLid (_, c)) ->
-                     MLast.ExStr (loc, c)
+                     MLast.ExStr (_loc, c)
                  | _ -> raise Not_found
                in
-               MLast.ExTup (loc, [lab; quot_expr e]))
+               MLast.ExTup (_loc, [lab; quot_expr e]))
             pel
         in
         MLast.ExApp
-          (loc,
+          (_loc,
            MLast.ExAcc
-             (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Record")),
-           mklistexp loc lel)
+             (_loc, MLast.ExUid (_loc, "Qast"), MLast.ExUid (_loc, "Record")),
+           mklistexp _loc lel)
       with
         Not_found -> e
       end
   | MLast.ExLid (_, s) ->
       if s = !(Stdpp.loc_name) then
-        MLast.ExAcc (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Loc"))
+        MLast.ExAcc
+          (_loc, MLast.ExUid (_loc, "Qast"), MLast.ExUid (_loc, "Loc"))
       else e
   | MLast.ExAcc (_, MLast.ExUid (_, "MLast"), MLast.ExUid (_, s)) ->
       MLast.ExApp
-        (loc,
+        (_loc,
          MLast.ExApp
-           (loc,
+           (_loc,
             MLast.ExAcc
-              (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Node")),
-            MLast.ExStr (loc, s)),
-         MLast.ExUid (loc, "[]"))
+              (_loc, MLast.ExUid (_loc, "Qast"), MLast.ExUid (_loc, "Node")),
+            MLast.ExStr (_loc, s)),
+         MLast.ExUid (_loc, "[]"))
   | MLast.ExAcc (_, MLast.ExUid (_, m), MLast.ExUid (_, s)) ->
       MLast.ExApp
-        (loc,
+        (_loc,
          MLast.ExApp
-           (loc,
+           (_loc,
             MLast.ExAcc
-              (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Node")),
-            MLast.ExStr (loc, (m ^ "." ^ s))),
-         MLast.ExUid (loc, "[]"))
+              (_loc, MLast.ExUid (_loc, "Qast"), MLast.ExUid (_loc, "Node")),
+            MLast.ExStr (_loc, (m ^ "." ^ s))),
+         MLast.ExUid (_loc, "[]"))
   | MLast.ExUid (_, s) ->
       MLast.ExApp
-        (loc,
+        (_loc,
          MLast.ExApp
-           (loc,
+           (_loc,
             MLast.ExAcc
-              (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Node")),
-            MLast.ExStr (loc, s)),
-         MLast.ExUid (loc, "[]"))
+              (_loc, MLast.ExUid (_loc, "Qast"), MLast.ExUid (_loc, "Node")),
+            MLast.ExStr (_loc, s)),
+         MLast.ExUid (_loc, "[]"))
   | MLast.ExStr (_, s) ->
       MLast.ExApp
-        (loc,
+        (_loc,
          MLast.ExAcc
-           (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Str")),
-         MLast.ExStr (loc, s))
+           (_loc, MLast.ExUid (_loc, "Qast"), MLast.ExUid (_loc, "Str")),
+         MLast.ExStr (_loc, s))
   | MLast.ExTup (_, el) ->
       let el = List.map quot_expr el in
       MLast.ExApp
-        (loc,
+        (_loc,
          MLast.ExAcc
-           (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Tuple")),
-         mklistexp loc el)
+           (_loc, MLast.ExUid (_loc, "Qast"), MLast.ExUid (_loc, "Tuple")),
+         mklistexp _loc el)
   | MLast.ExLet (_, r, pel, e) ->
       let pel = List.map (fun (p, e) -> p, quot_expr e) pel in
-      MLast.ExLet (loc, r, pel, quot_expr e)
+      MLast.ExLet (_loc, r, pel, quot_expr e)
   | _ -> e
 ;;
 
@@ -833,7 +844,7 @@ let quotify_action psl act =
     (fun e ps ->
        match ps.pattern with
          Some (MLast.PaTup (_, pl)) ->
-           let loc =
+           let _loc =
              let nowhere =
                {(Lexing.dummy_pos) with Lexing.pos_lnum = 1;
                  Lexing.pos_cnum = 0}
@@ -849,23 +860,23 @@ let quotify_action psl act =
                  ([], 1) pl
              in
              let l = List.rev l in
-             List.map (fun s -> MLast.PaLid (loc, s)) l,
-             List.map (fun s -> MLast.ExLid (loc, s)) l
+             List.map (fun s -> MLast.PaLid (_loc, s)) l,
+             List.map (fun s -> MLast.ExLid (_loc, s)) l
            in
            MLast.ExLet
-             (loc, false,
-              [MLast.PaTup (loc, pl),
+             (_loc, false,
+              [MLast.PaTup (_loc, pl),
                MLast.ExMat
-                 (loc, MLast.ExLid (loc, pname),
+                 (_loc, MLast.ExLid (_loc, pname),
                   [MLast.PaApp
-                     (loc,
+                     (_loc,
                       MLast.PaAcc
-                        (loc, MLast.PaUid (loc, "Qast"),
-                         MLast.PaUid (loc, "Tuple")),
-                      mklistpat loc pl1),
-                   None, MLast.ExTup (loc, el1);
-                   MLast.PaAny loc, None,
-                   MLast.ExMat (loc, MLast.ExUid (loc, "()"), [])])],
+                        (_loc, MLast.PaUid (_loc, "Qast"),
+                         MLast.PaUid (_loc, "Tuple")),
+                      mklistpat _loc pl1),
+                   None, MLast.ExTup (_loc, el1);
+                   MLast.PaAny _loc, None,
+                   MLast.ExMat (_loc, MLast.ExUid (_loc, "()"), [])])],
               e)
        | _ -> e)
     e psl
@@ -873,172 +884,175 @@ let quotify_action psl act =
 
 let rec make_ctyp styp tvar =
   match styp with
-    STlid (loc, s) -> MLast.TyLid (loc, s)
-  | STapp (loc, t1, t2) ->
-      MLast.TyApp (loc, make_ctyp t1 tvar, make_ctyp t2 tvar)
-  | STquo (loc, s) -> MLast.TyQuo (loc, s)
-  | STself (loc, x) ->
+    STlid (_loc, s) -> MLast.TyLid (_loc, s)
+  | STapp (_loc, t1, t2) ->
+      MLast.TyApp (_loc, make_ctyp t1 tvar, make_ctyp t2 tvar)
+  | STquo (_loc, s) -> MLast.TyQuo (_loc, s)
+  | STself (_loc, x) ->
       if tvar = "" then
-        Stdpp.raise_with_loc loc
+        Stdpp.raise_with_loc _loc
           (Stream.Error ("'" ^ x ^ "' illegal in anonymous entry level"))
-      else MLast.TyQuo (loc, tvar)
+      else MLast.TyQuo (_loc, tvar)
   | STtyp t -> t
 ;;
 
 let rec make_expr gmod tvar =
   function
-    TXmeta (loc, n, tl, e, t) ->
+    TXmeta (_loc, n, tl, e, t) ->
       let el =
         List.fold_right
           (fun t el ->
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExApp
-                  (loc, MLast.ExUid (loc, "::"), make_expr gmod "" t),
+                  (_loc, MLast.ExUid (_loc, "::"), make_expr gmod "" t),
                 el))
-          tl (MLast.ExUid (loc, "[]"))
+          tl (MLast.ExUid (_loc, "[]"))
       in
       MLast.ExApp
-        (loc,
+        (_loc,
          MLast.ExApp
-           (loc,
+           (_loc,
             MLast.ExApp
-              (loc,
+              (_loc,
                MLast.ExAcc
-                 (loc, MLast.ExUid (loc, "Gramext"),
-                  MLast.ExUid (loc, "Smeta")),
-               MLast.ExStr (loc, n)),
+                 (_loc, MLast.ExUid (_loc, "Gramext"),
+                  MLast.ExUid (_loc, "Smeta")),
+               MLast.ExStr (_loc, n)),
             el),
          MLast.ExApp
-           (loc,
+           (_loc,
             MLast.ExAcc
-              (loc, MLast.ExUid (loc, "Obj"), MLast.ExLid (loc, "repr")),
-            MLast.ExTyc (loc, e, make_ctyp t tvar)))
-  | TXlist (loc, min, t, ts) ->
+              (_loc, MLast.ExUid (_loc, "Obj"), MLast.ExLid (_loc, "repr")),
+            MLast.ExTyc (_loc, e, make_ctyp t tvar)))
+  | TXlist (_loc, min, t, ts) ->
       let txt = make_expr gmod "" t in
       begin match min, ts with
         false, None ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExAcc
-               (loc, MLast.ExUid (loc, "Gramext"),
-                MLast.ExUid (loc, "Slist0")),
+               (_loc, MLast.ExUid (_loc, "Gramext"),
+                MLast.ExUid (_loc, "Slist0")),
              txt)
       | true, None ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExAcc
-               (loc, MLast.ExUid (loc, "Gramext"),
-                MLast.ExUid (loc, "Slist1")),
+               (_loc, MLast.ExUid (_loc, "Gramext"),
+                MLast.ExUid (_loc, "Slist1")),
              txt)
       | false, Some s ->
           let x = make_expr gmod tvar s in
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExAcc
-                  (loc, MLast.ExUid (loc, "Gramext"),
-                   MLast.ExUid (loc, "Slist0sep")),
+                  (_loc, MLast.ExUid (_loc, "Gramext"),
+                   MLast.ExUid (_loc, "Slist0sep")),
                 txt),
              x)
       | true, Some s ->
           let x = make_expr gmod tvar s in
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExAcc
-                  (loc, MLast.ExUid (loc, "Gramext"),
-                   MLast.ExUid (loc, "Slist1sep")),
+                  (_loc, MLast.ExUid (_loc, "Gramext"),
+                   MLast.ExUid (_loc, "Slist1sep")),
                 txt),
              x)
       end
-  | TXnext loc ->
+  | TXnext _loc ->
       MLast.ExAcc
-        (loc, MLast.ExUid (loc, "Gramext"), MLast.ExUid (loc, "Snext"))
-  | TXnterm (loc, n, lev) ->
+        (_loc, MLast.ExUid (_loc, "Gramext"), MLast.ExUid (_loc, "Snext"))
+  | TXnterm (_loc, n, lev) ->
       begin match lev with
         Some lab ->
           MLast.ExApp
-            (loc,
+            (_loc,
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExAcc
-                  (loc, MLast.ExUid (loc, "Gramext"),
-                   MLast.ExUid (loc, "Snterml")),
+                  (_loc, MLast.ExUid (_loc, "Gramext"),
+                   MLast.ExUid (_loc, "Snterml")),
                 MLast.ExApp
-                  (loc,
+                  (_loc,
                    MLast.ExAcc
-                     (loc,
+                     (_loc,
                       MLast.ExAcc
-                        (loc, MLast.ExUid (loc, gmod),
-                         MLast.ExUid (loc, "Entry")),
-                      MLast.ExLid (loc, "obj")),
+                        (_loc, MLast.ExUid (_loc, gmod),
+                         MLast.ExUid (_loc, "Entry")),
+                      MLast.ExLid (_loc, "obj")),
                    MLast.ExTyc
-                     (loc, n.expr,
+                     (_loc, n.expr,
                       MLast.TyApp
-                        (loc,
+                        (_loc,
                          MLast.TyAcc
-                           (loc,
+                           (_loc,
                             MLast.TyAcc
-                              (loc, MLast.TyUid (loc, gmod),
-                               MLast.TyUid (loc, "Entry")),
-                            MLast.TyLid (loc, "e")),
-                         MLast.TyQuo (loc, n.tvar))))),
-             MLast.ExStr (loc, lab))
+                              (_loc, MLast.TyUid (_loc, gmod),
+                               MLast.TyUid (_loc, "Entry")),
+                            MLast.TyLid (_loc, "e")),
+                         MLast.TyQuo (_loc, n.tvar))))),
+             MLast.ExStr (_loc, lab))
       | None ->
           if n.tvar = tvar then
             MLast.ExAcc
-              (loc, MLast.ExUid (loc, "Gramext"), MLast.ExUid (loc, "Sself"))
+              (_loc, MLast.ExUid (_loc, "Gramext"),
+               MLast.ExUid (_loc, "Sself"))
           else
             MLast.ExApp
-              (loc,
+              (_loc,
                MLast.ExAcc
-                 (loc, MLast.ExUid (loc, "Gramext"),
-                  MLast.ExUid (loc, "Snterm")),
+                 (_loc, MLast.ExUid (_loc, "Gramext"),
+                  MLast.ExUid (_loc, "Snterm")),
                MLast.ExApp
-                 (loc,
+                 (_loc,
                   MLast.ExAcc
-                    (loc,
+                    (_loc,
                      MLast.ExAcc
-                       (loc, MLast.ExUid (loc, gmod),
-                        MLast.ExUid (loc, "Entry")),
-                     MLast.ExLid (loc, "obj")),
+                       (_loc, MLast.ExUid (_loc, gmod),
+                        MLast.ExUid (_loc, "Entry")),
+                     MLast.ExLid (_loc, "obj")),
                   MLast.ExTyc
-                    (loc, n.expr,
+                    (_loc, n.expr,
                      MLast.TyApp
-                       (loc,
+                       (_loc,
                         MLast.TyAcc
-                          (loc,
+                          (_loc,
                            MLast.TyAcc
-                             (loc, MLast.TyUid (loc, gmod),
-                              MLast.TyUid (loc, "Entry")),
-                           MLast.TyLid (loc, "e")),
-                        MLast.TyQuo (loc, n.tvar)))))
+                             (_loc, MLast.TyUid (_loc, gmod),
+                              MLast.TyUid (_loc, "Entry")),
+                           MLast.TyLid (_loc, "e")),
+                        MLast.TyQuo (_loc, n.tvar)))))
       end
-  | TXopt (loc, t) ->
+  | TXopt (_loc, t) ->
       MLast.ExApp
-        (loc,
+        (_loc,
          MLast.ExAcc
-           (loc, MLast.ExUid (loc, "Gramext"), MLast.ExUid (loc, "Sopt")),
+           (_loc, MLast.ExUid (_loc, "Gramext"), MLast.ExUid (_loc, "Sopt")),
          make_expr gmod "" t)
-  | TXrules (loc, rl) ->
+  | TXrules (_loc, rl) ->
       MLast.ExApp
-        (loc,
+        (_loc,
          MLast.ExAcc
-           (loc, MLast.ExUid (loc, "Gramext"), MLast.ExLid (loc, "srules")),
-         make_expr_rules loc gmod rl "")
-  | TXself loc ->
+           (_loc, MLast.ExUid (_loc, "Gramext"),
+            MLast.ExLid (_loc, "srules")),
+         make_expr_rules _loc gmod rl "")
+  | TXself _loc ->
       MLast.ExAcc
-        (loc, MLast.ExUid (loc, "Gramext"), MLast.ExUid (loc, "Sself"))
-  | TXtok (loc, s, e) ->
+        (_loc, MLast.ExUid (_loc, "Gramext"), MLast.ExUid (_loc, "Sself"))
+  | TXtok (_loc, s, e) ->
       MLast.ExApp
-        (loc,
+        (_loc,
          MLast.ExAcc
-           (loc, MLast.ExUid (loc, "Gramext"), MLast.ExUid (loc, "Stoken")),
-         MLast.ExTup (loc, [MLast.ExStr (loc, s); e]))
-and make_expr_rules loc gmod rl tvar =
+           (_loc, MLast.ExUid (_loc, "Gramext"),
+            MLast.ExUid (_loc, "Stoken")),
+         MLast.ExTup (_loc, [MLast.ExStr (_loc, s); e]))
+and make_expr_rules _loc gmod rl tvar =
   List.fold_left
     (fun txt (sl, ac) ->
        let sl =
@@ -1046,68 +1060,68 @@ and make_expr_rules loc gmod rl tvar =
            (fun t txt ->
               let x = make_expr gmod tvar t in
               MLast.ExApp
-                (loc, MLast.ExApp (loc, MLast.ExUid (loc, "::"), x), txt))
-           sl (MLast.ExUid (loc, "[]"))
+                (_loc, MLast.ExApp (_loc, MLast.ExUid (_loc, "::"), x), txt))
+           sl (MLast.ExUid (_loc, "[]"))
        in
        MLast.ExApp
-         (loc,
+         (_loc,
           MLast.ExApp
-            (loc, MLast.ExUid (loc, "::"), MLast.ExTup (loc, [sl; ac])),
+            (_loc, MLast.ExUid (_loc, "::"), MLast.ExTup (_loc, [sl; ac])),
           txt))
-    (MLast.ExUid (loc, "[]")) rl
+    (MLast.ExUid (_loc, "[]")) rl
 ;;
 
-let text_of_action loc psl rtvar act tvar =
-  let locid = MLast.PaLid (loc, !(Stdpp.loc_name)) in
+let text_of_action _loc psl rtvar act tvar =
+  let locid = MLast.PaLid (_loc, !(Stdpp.loc_name)) in
   let act =
     match act with
       Some act -> if !quotify then quotify_action psl act else act
-    | None -> MLast.ExUid (loc, "()")
+    | None -> MLast.ExUid (_loc, "()")
   in
   let e =
     MLast.ExFun
-      (loc,
+      (_loc,
        [MLast.PaTyc
-          (loc, locid,
+          (_loc, locid,
            MLast.TyTup
-             (loc,
+             (_loc,
               [MLast.TyAcc
-                 (loc, MLast.TyUid (loc, "Lexing"),
-                  MLast.TyLid (loc, "position"));
+                 (_loc, MLast.TyUid (_loc, "Lexing"),
+                  MLast.TyLid (_loc, "position"));
                MLast.TyAcc
-                 (loc, MLast.TyUid (loc, "Lexing"),
-                  MLast.TyLid (loc, "position"))])),
-        None, MLast.ExTyc (loc, act, MLast.TyQuo (loc, rtvar))])
+                 (_loc, MLast.TyUid (_loc, "Lexing"),
+                  MLast.TyLid (_loc, "position"))])),
+        None, MLast.ExTyc (_loc, act, MLast.TyQuo (_loc, rtvar))])
   in
   let txt =
     List.fold_left
       (fun txt ps ->
          match ps.pattern with
-           None -> MLast.ExFun (loc, [MLast.PaAny loc, None, txt])
+           None -> MLast.ExFun (_loc, [MLast.PaAny _loc, None, txt])
          | Some p ->
              let t = make_ctyp ps.symbol.styp tvar in
              let p =
                match p with
                  MLast.PaTup (_, pl) when !quotify ->
-                   MLast.PaLid (loc, pname_of_ptuple pl)
+                   MLast.PaLid (_loc, pname_of_ptuple pl)
                | _ -> p
              in
-             MLast.ExFun (loc, [MLast.PaTyc (loc, p, t), None, txt]))
+             MLast.ExFun (_loc, [MLast.PaTyc (_loc, p, t), None, txt]))
       e psl
   in
   let txt =
     if !meta_action then
       MLast.ExApp
-        (loc,
+        (_loc,
          MLast.ExAcc
-           (loc, MLast.ExUid (loc, "Obj"), MLast.ExLid (loc, "magic")),
+           (_loc, MLast.ExUid (_loc, "Obj"), MLast.ExLid (_loc, "magic")),
          MetaAction.mexpr txt)
     else txt
   in
   MLast.ExApp
-    (loc,
+    (_loc,
      MLast.ExAcc
-       (loc, MLast.ExUid (loc, "Gramext"), MLast.ExLid (loc, "action")),
+       (_loc, MLast.ExUid (_loc, "Gramext"), MLast.ExLid (_loc, "action")),
      txt)
 ;;
 
@@ -1119,16 +1133,16 @@ let srules loc t rl tvar =
     rl
 ;;
 
-let expr_of_delete_rule loc gmod n sl =
+let expr_of_delete_rule _loc gmod n sl =
   let sl =
     List.fold_right
       (fun s e ->
          MLast.ExApp
-           (loc,
+           (_loc,
             MLast.ExApp
-              (loc, MLast.ExUid (loc, "::"), make_expr gmod "" s.text),
+              (_loc, MLast.ExUid (_loc, "::"), make_expr gmod "" s.text),
             e))
-      sl (MLast.ExUid (loc, "[]"))
+      sl (MLast.ExUid (_loc, "[]"))
   in
   n.expr, sl
 ;;
@@ -1152,9 +1166,9 @@ let slist loc min sep symb =
   TXlist (loc, min, symb.text, t)
 ;;
 
-let sstoken loc s =
-  let n = mk_name loc (MLast.ExLid (loc, ("a_" ^ s))) in
-  TXnterm (loc, n, None)
+let sstoken _loc s =
+  let n = mk_name _loc (MLast.ExLid (_loc, ("a_" ^ s))) in
+  TXnterm (_loc, n, None)
 ;;
 
 let mk_psymbol p s t =
@@ -1162,27 +1176,27 @@ let mk_psymbol p s t =
   {pattern = Some p; symbol = symb}
 ;;
 
-let sslist loc min sep s =
+let sslist _loc min sep s =
   let rl =
     let r1 =
       let prod =
-        let n = mk_name loc (MLast.ExLid (loc, "a_list")) in
-        [mk_psymbol (MLast.PaLid (loc, "a")) (TXnterm (loc, n, None))
-           (STquo (loc, "a_list"))]
+        let n = mk_name _loc (MLast.ExLid (_loc, "a_list")) in
+        [mk_psymbol (MLast.PaLid (_loc, "a")) (TXnterm (_loc, n, None))
+           (STquo (_loc, "a_list"))]
       in
-      let act = MLast.ExLid (loc, "a") in {prod = prod; action = Some act}
+      let act = MLast.ExLid (_loc, "a") in {prod = prod; action = Some act}
     in
     let r2 =
       let prod =
-        [mk_psymbol (MLast.PaLid (loc, "a")) (slist loc min sep s)
-           (STapp (loc, STlid (loc, "list"), s.styp))]
+        [mk_psymbol (MLast.PaLid (_loc, "a")) (slist _loc min sep s)
+           (STapp (_loc, STlid (_loc, "list"), s.styp))]
       in
       let act =
         MLast.ExApp
-          (loc,
+          (_loc,
            MLast.ExAcc
-             (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "List")),
-           MLast.ExLid (loc, "a"))
+             (_loc, MLast.ExUid (_loc, "Qast"), MLast.ExUid (_loc, "List")),
+           MLast.ExLid (_loc, "a"))
       in
       {prod = prod; action = Some act}
     in
@@ -1194,80 +1208,80 @@ let sslist loc min sep s =
     | None -> s.used
   in
   let used = "a_list" :: used in
-  let text = TXrules (loc, srules loc "a_list" rl "") in
-  let styp = STquo (loc, "a_list") in {used = used; text = text; styp = styp}
+  let text = TXrules (_loc, srules _loc "a_list" rl "") in
+  let styp = STquo (_loc, "a_list") in {used = used; text = text; styp = styp}
 ;;
 
-let ssopt loc s =
+let ssopt _loc s =
   let rl =
     let r1 =
       let prod =
-        let n = mk_name loc (MLast.ExLid (loc, "a_opt")) in
-        [mk_psymbol (MLast.PaLid (loc, "a")) (TXnterm (loc, n, None))
-           (STquo (loc, "a_opt"))]
+        let n = mk_name _loc (MLast.ExLid (_loc, "a_opt")) in
+        [mk_psymbol (MLast.PaLid (_loc, "a")) (TXnterm (_loc, n, None))
+           (STquo (_loc, "a_opt"))]
       in
-      let act = MLast.ExLid (loc, "a") in {prod = prod; action = Some act}
+      let act = MLast.ExLid (_loc, "a") in {prod = prod; action = Some act}
     in
     let r2 =
       let s =
         match s.text with
-          TXtok (loc, "", MLast.ExStr (_, _)) ->
+          TXtok (_loc, "", MLast.ExStr (_, _)) ->
             let rl =
               [{prod =
-                  [{pattern = Some (MLast.PaLid (loc, "x")); symbol = s}];
+                  [{pattern = Some (MLast.PaLid (_loc, "x")); symbol = s}];
                 action =
                   Some
                     (MLast.ExApp
-                       (loc,
+                       (_loc,
                         MLast.ExAcc
-                          (loc, MLast.ExUid (loc, "Qast"),
-                           MLast.ExUid (loc, "Str")),
-                        MLast.ExLid (loc, "x")))}]
+                          (_loc, MLast.ExUid (_loc, "Qast"),
+                           MLast.ExUid (_loc, "Str")),
+                        MLast.ExLid (_loc, "x")))}]
             in
             let t = new_type_var () in
-            {used = []; text = TXrules (loc, srules loc t rl "");
-             styp = STquo (loc, t)}
+            {used = []; text = TXrules (_loc, srules _loc t rl "");
+             styp = STquo (_loc, t)}
         | _ -> s
       in
       let prod =
-        [mk_psymbol (MLast.PaLid (loc, "a")) (TXopt (loc, s.text))
-           (STapp (loc, STlid (loc, "option"), s.styp))]
+        [mk_psymbol (MLast.PaLid (_loc, "a")) (TXopt (_loc, s.text))
+           (STapp (_loc, STlid (_loc, "option"), s.styp))]
       in
       let act =
         MLast.ExApp
-          (loc,
+          (_loc,
            MLast.ExAcc
-             (loc, MLast.ExUid (loc, "Qast"), MLast.ExUid (loc, "Option")),
-           MLast.ExLid (loc, "a"))
+             (_loc, MLast.ExUid (_loc, "Qast"), MLast.ExUid (_loc, "Option")),
+           MLast.ExLid (_loc, "a"))
       in
       {prod = prod; action = Some act}
     in
     [r1; r2]
   in
   let used = "a_opt" :: s.used in
-  let text = TXrules (loc, srules loc "a_opt" rl "") in
-  let styp = STquo (loc, "a_opt") in {used = used; text = text; styp = styp}
+  let text = TXrules (_loc, srules _loc "a_opt" rl "") in
+  let styp = STquo (_loc, "a_opt") in {used = used; text = text; styp = styp}
 ;;
 
-let text_of_entry loc gmod e =
+let text_of_entry _loc gmod e =
   let ent =
     let x = e.name in
-    let loc = e.name.loc in
+    let _loc = e.name.loc in
     MLast.ExTyc
-      (loc, x.expr,
+      (_loc, x.expr,
        MLast.TyApp
-         (loc,
+         (_loc,
           MLast.TyAcc
-            (loc,
+            (_loc,
              MLast.TyAcc
-               (loc, MLast.TyUid (loc, gmod), MLast.TyUid (loc, "Entry")),
-             MLast.TyLid (loc, "e")),
-          MLast.TyQuo (loc, x.tvar)))
+               (_loc, MLast.TyUid (_loc, gmod), MLast.TyUid (_loc, "Entry")),
+             MLast.TyLid (_loc, "e")),
+          MLast.TyQuo (_loc, x.tvar)))
   in
   let pos =
     match e.pos with
-      Some pos -> MLast.ExApp (loc, MLast.ExUid (loc, "Some"), pos)
-    | None -> MLast.ExUid (loc, "None")
+      Some pos -> MLast.ExApp (_loc, MLast.ExUid (_loc, "Some"), pos)
+    | None -> MLast.ExUid (_loc, "None")
   in
   let txt =
     List.fold_right
@@ -1276,31 +1290,31 @@ let text_of_entry loc gmod e =
            match level.label with
              Some lab ->
                MLast.ExApp
-                 (loc, MLast.ExUid (loc, "Some"), MLast.ExStr (loc, lab))
-           | None -> MLast.ExUid (loc, "None")
+                 (_loc, MLast.ExUid (_loc, "Some"), MLast.ExStr (_loc, lab))
+           | None -> MLast.ExUid (_loc, "None")
          in
          let ass =
            match level.assoc with
-             Some ass -> MLast.ExApp (loc, MLast.ExUid (loc, "Some"), ass)
-           | None -> MLast.ExUid (loc, "None")
+             Some ass -> MLast.ExApp (_loc, MLast.ExUid (_loc, "Some"), ass)
+           | None -> MLast.ExUid (_loc, "None")
          in
          let txt =
-           let rl = srules loc e.name.tvar level.rules e.name.tvar in
-           let e = make_expr_rules loc gmod rl e.name.tvar in
+           let rl = srules _loc e.name.tvar level.rules e.name.tvar in
+           let e = make_expr_rules _loc gmod rl e.name.tvar in
            MLast.ExApp
-             (loc,
+             (_loc,
               MLast.ExApp
-                (loc, MLast.ExUid (loc, "::"),
-                 MLast.ExTup (loc, [lab; ass; e])),
+                (_loc, MLast.ExUid (_loc, "::"),
+                 MLast.ExTup (_loc, [lab; ass; e])),
               txt)
          in
          txt)
-      e.levels (MLast.ExUid (loc, "[]"))
+      e.levels (MLast.ExUid (_loc, "[]"))
   in
   ent, pos, txt
 ;;
 
-let let_in_of_extend loc gmod functor_version gl el args =
+let let_in_of_extend _loc gmod functor_version gl el args =
   match gl with
     Some (n1 :: _ as nl) ->
       check_use nl el;
@@ -1318,89 +1332,90 @@ let let_in_of_extend loc gmod functor_version gl el args =
       in
       let globals =
         List.map
-          (fun {expr = e; tvar = x; loc = loc} ->
-             MLast.PaAny loc,
+          (fun {expr = e; tvar = x; loc = _loc} ->
+             MLast.PaAny _loc,
              MLast.ExTyc
-               (loc, e,
+               (_loc, e,
                 MLast.TyApp
-                  (loc,
+                  (_loc,
                    MLast.TyAcc
-                     (loc,
+                     (_loc,
                       MLast.TyAcc
-                        (loc, MLast.TyUid (loc, gmod),
-                         MLast.TyUid (loc, "Entry")),
-                      MLast.TyLid (loc, "e")),
-                   MLast.TyQuo (loc, x))))
+                        (_loc, MLast.TyUid (_loc, gmod),
+                         MLast.TyUid (_loc, "Entry")),
+                      MLast.TyLid (_loc, "e")),
+                   MLast.TyQuo (_loc, x))))
           nl
       in
       let locals =
         List.map
-          (fun {expr = e; tvar = x; loc = loc} ->
+          (fun {expr = e; tvar = x; loc = _loc} ->
              let i =
                match e with
                  MLast.ExLid (_, i) -> i
                | _ -> failwith "internal error in pa_extend"
              in
-             MLast.PaLid (loc, i),
+             MLast.PaLid (_loc, i),
              MLast.ExTyc
-               (loc,
+               (_loc,
                 MLast.ExApp
-                  (loc, MLast.ExLid (loc, "grammar_entry_create"),
-                   MLast.ExStr (loc, i)),
+                  (_loc, MLast.ExLid (_loc, "grammar_entry_create"),
+                   MLast.ExStr (_loc, i)),
                 MLast.TyApp
-                  (loc,
+                  (_loc,
                    MLast.TyAcc
-                     (loc,
+                     (_loc,
                       MLast.TyAcc
-                        (loc, MLast.TyUid (loc, gmod),
-                         MLast.TyUid (loc, "Entry")),
-                      MLast.TyLid (loc, "e")),
-                   MLast.TyQuo (loc, x))))
+                        (_loc, MLast.TyUid (_loc, gmod),
+                         MLast.TyUid (_loc, "Entry")),
+                      MLast.TyLid (_loc, "e")),
+                   MLast.TyQuo (_loc, x))))
           ll
       in
       let e =
         if ll = [] then args
         else if functor_version then
           MLast.ExLet
-            (loc, false,
-             [MLast.PaLid (loc, "grammar_entry_create"),
+            (_loc, false,
+             [MLast.PaLid (_loc, "grammar_entry_create"),
               MLast.ExAcc
-                (loc,
+                (_loc,
                  MLast.ExAcc
-                   (loc, MLast.ExUid (loc, gmod), MLast.ExUid (loc, "Entry")),
-                 MLast.ExLid (loc, "create"))],
-             MLast.ExLet (loc, false, locals, args))
+                   (_loc, MLast.ExUid (_loc, gmod),
+                    MLast.ExUid (_loc, "Entry")),
+                 MLast.ExLid (_loc, "create"))],
+             MLast.ExLet (_loc, false, locals, args))
         else
           MLast.ExLet
-            (loc, false,
-             [MLast.PaLid (loc, "grammar_entry_create"),
+            (_loc, false,
+             [MLast.PaLid (_loc, "grammar_entry_create"),
               MLast.ExFun
-                (loc,
-                 [MLast.PaLid (loc, "s"), None,
+                (_loc,
+                 [MLast.PaLid (_loc, "s"), None,
                   MLast.ExApp
-                    (loc,
+                    (_loc,
                      MLast.ExApp
-                       (loc,
+                       (_loc,
                         MLast.ExAcc
-                          (loc,
+                          (_loc,
                            MLast.ExAcc
-                             (loc, MLast.ExUid (loc, gmod),
-                              MLast.ExUid (loc, "Entry")),
-                           MLast.ExLid (loc, "create")),
+                             (_loc, MLast.ExUid (_loc, gmod),
+                              MLast.ExUid (_loc, "Entry")),
+                           MLast.ExLid (_loc, "create")),
                         MLast.ExApp
-                          (loc,
+                          (_loc,
                            MLast.ExAcc
-                             (loc, MLast.ExUid (loc, gmod),
-                              MLast.ExLid (loc, "of_entry")),
+                             (_loc, MLast.ExUid (_loc, gmod),
+                              MLast.ExLid (_loc, "of_entry")),
                            locate n1)),
-                     MLast.ExLid (loc, "s"))])],
-             MLast.ExLet (loc, false, locals, args))
+                     MLast.ExLid (_loc, "s"))])],
+             MLast.ExLet (_loc, false, locals, args))
       in
-      MLast.ExLet (loc, false, globals, e)
+      MLast.ExLet (_loc, false, globals, e)
   | _ -> args
 ;;
 
-let text_of_extend loc gmod gl el f =
+let text_of_extend _loc gmod gl el f =
   if !split_ext then
     let args =
       List.map
@@ -1408,33 +1423,34 @@ let text_of_extend loc gmod gl el f =
            let (ent, pos, txt) = text_of_entry e.name.loc gmod e in
            let ent =
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExAcc
-                  (loc,
+                  (_loc,
                    MLast.ExAcc
-                     (loc, MLast.ExUid (loc, gmod),
-                      MLast.ExUid (loc, "Entry")),
-                   MLast.ExLid (loc, "obj")),
+                     (_loc, MLast.ExUid (_loc, gmod),
+                      MLast.ExUid (_loc, "Entry")),
+                   MLast.ExLid (_loc, "obj")),
                 ent)
            in
-           let e = MLast.ExTup (loc, [ent; pos; txt]) in
+           let e = MLast.ExTup (_loc, [ent; pos; txt]) in
            MLast.ExLet
-             (loc, false,
-              [MLast.PaLid (loc, "aux"),
+             (_loc, false,
+              [MLast.PaLid (_loc, "aux"),
                MLast.ExFun
-                 (loc,
-                  [MLast.PaUid (loc, "()"), None,
+                 (_loc,
+                  [MLast.PaUid (_loc, "()"), None,
                    MLast.ExApp
-                     (loc, f,
+                     (_loc, f,
                       MLast.ExApp
-                        (loc, MLast.ExApp (loc, MLast.ExUid (loc, "::"), e),
-                         MLast.ExUid (loc, "[]")))])],
+                        (_loc,
+                         MLast.ExApp (_loc, MLast.ExUid (_loc, "::"), e),
+                         MLast.ExUid (_loc, "[]")))])],
               MLast.ExApp
-                (loc, MLast.ExLid (loc, "aux"), MLast.ExUid (loc, "()"))))
+                (_loc, MLast.ExLid (_loc, "aux"), MLast.ExUid (_loc, "()"))))
         el
     in
-    let args = MLast.ExSeq (loc, args) in
-    let_in_of_extend loc gmod false gl el args
+    let args = MLast.ExSeq (_loc, args) in
+    let_in_of_extend _loc gmod false gl el args
   else
     let args =
       List.fold_right
@@ -1442,25 +1458,25 @@ let text_of_extend loc gmod gl el f =
            let (ent, pos, txt) = text_of_entry e.name.loc gmod e in
            let ent =
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExAcc
-                  (loc,
+                  (_loc,
                    MLast.ExAcc
-                     (loc, MLast.ExUid (loc, gmod),
-                      MLast.ExUid (loc, "Entry")),
-                   MLast.ExLid (loc, "obj")),
+                     (_loc, MLast.ExUid (_loc, gmod),
+                      MLast.ExUid (_loc, "Entry")),
+                   MLast.ExLid (_loc, "obj")),
                 ent)
            in
-           let e = MLast.ExTup (loc, [ent; pos; txt]) in
+           let e = MLast.ExTup (_loc, [ent; pos; txt]) in
            MLast.ExApp
-             (loc, MLast.ExApp (loc, MLast.ExUid (loc, "::"), e), el))
-        el (MLast.ExUid (loc, "[]"))
+             (_loc, MLast.ExApp (_loc, MLast.ExUid (_loc, "::"), e), el))
+        el (MLast.ExUid (_loc, "[]"))
     in
-    let args = let_in_of_extend loc gmod false gl el args in
-    MLast.ExApp (loc, f, args)
+    let args = let_in_of_extend _loc gmod false gl el args in
+    MLast.ExApp (_loc, f, args)
 ;;
 
-let text_of_functorial_extend loc gmod gl el =
+let text_of_functorial_extend _loc gmod gl el =
   let args =
     let el =
       List.map
@@ -1468,31 +1484,31 @@ let text_of_functorial_extend loc gmod gl el =
            let (ent, pos, txt) = text_of_entry e.name.loc gmod e in
            let e =
              MLast.ExApp
-               (loc,
+               (_loc,
                 MLast.ExApp
-                  (loc,
+                  (_loc,
                    MLast.ExApp
-                     (loc,
+                     (_loc,
                       MLast.ExAcc
-                        (loc, MLast.ExUid (loc, gmod),
-                         MLast.ExLid (loc, "extend")),
+                        (_loc, MLast.ExUid (_loc, gmod),
+                         MLast.ExLid (_loc, "extend")),
                       ent),
                    pos),
                 txt)
            in
            if !split_ext then
              MLast.ExLet
-               (loc, false,
-                [MLast.PaLid (loc, "aux"),
-                 MLast.ExFun (loc, [MLast.PaUid (loc, "()"), None, e])],
+               (_loc, false,
+                [MLast.PaLid (_loc, "aux"),
+                 MLast.ExFun (_loc, [MLast.PaUid (_loc, "()"), None, e])],
                 MLast.ExApp
-                  (loc, MLast.ExLid (loc, "aux"), MLast.ExUid (loc, "()")))
+                  (_loc, MLast.ExLid (_loc, "aux"), MLast.ExUid (_loc, "()")))
            else e)
         el
     in
-    MLast.ExSeq (loc, el)
+    MLast.ExSeq (_loc, el)
   in
-  let_in_of_extend loc gmod true gl el args
+  let_in_of_extend _loc gmod true gl el args
 ;;
 
 let zero_loc = {(Lexing.dummy_pos) with Lexing.pos_cnum = 0};;
@@ -1557,7 +1573,7 @@ Grammar.extend
        Gramext.Stoken ("", "END")],
       Gramext.action
         (fun _ (e : 'gdelete_rule_body) _
-           (loc : Lexing.position * Lexing.position) ->
+           (_loc : Lexing.position * Lexing.position) ->
            (e : 'expr));
       [Gramext.Stoken ("", "DELETE_RULE");
        Gramext.Snterm
@@ -1566,7 +1582,7 @@ Grammar.extend
        Gramext.Stoken ("", "END")],
       Gramext.action
         (fun _ (e : 'delete_rule_body) _
-           (loc : Lexing.position * Lexing.position) ->
+           (_loc : Lexing.position * Lexing.position) ->
            (e : 'expr));
       [Gramext.Stoken ("", "GEXTEND");
        Gramext.Snterm
@@ -1574,7 +1590,7 @@ Grammar.extend
        Gramext.Stoken ("", "END")],
       Gramext.action
         (fun _ (e : 'gextend_body) _
-           (loc : Lexing.position * Lexing.position) ->
+           (_loc : Lexing.position * Lexing.position) ->
            (e : 'expr));
       [Gramext.Stoken ("", "EXTEND");
        Gramext.Snterm
@@ -1582,7 +1598,7 @@ Grammar.extend
        Gramext.Stoken ("", "END")],
       Gramext.action
         (fun _ (e : 'extend_body) _
-           (loc : Lexing.position * Lexing.position) ->
+           (_loc : Lexing.position * Lexing.position) ->
            (e : 'expr))]];
     Grammar.Entry.obj (extend_body : 'extend_body Grammar.Entry.e), None,
     [None, None,
@@ -1599,12 +1615,12 @@ Grammar.extend
                 (Grammar.Entry.obj (semi_sep : 'semi_sep Grammar.Entry.e))],
              Gramext.action
                (fun _ (e : 'entry)
-                  (loc : Lexing.position * Lexing.position) ->
+                  (_loc : Lexing.position * Lexing.position) ->
                   (e : 'e__1))])],
       Gramext.action
         (fun (el : 'e__1 list) (sl : 'global option) (f : 'efunction)
-           (loc : Lexing.position * Lexing.position) ->
-           (text_of_extend loc "Grammar" sl el f : 'extend_body))]];
+           (_loc : Lexing.position * Lexing.position) ->
+           (text_of_extend _loc "Grammar" sl el f : 'extend_body))]];
     Grammar.Entry.obj (gextend_body : 'gextend_body Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Stoken ("UIDENT", "");
@@ -1619,12 +1635,12 @@ Grammar.extend
                 (Grammar.Entry.obj (semi_sep : 'semi_sep Grammar.Entry.e))],
              Gramext.action
                (fun _ (e : 'entry)
-                  (loc : Lexing.position * Lexing.position) ->
+                  (_loc : Lexing.position * Lexing.position) ->
                   (e : 'e__2))])],
       Gramext.action
         (fun (el : 'e__2 list) (sl : 'global option) (g : string)
-           (loc : Lexing.position * Lexing.position) ->
-           (text_of_functorial_extend loc g sl el : 'gextend_body))]];
+           (_loc : Lexing.position * Lexing.position) ->
+           (text_of_functorial_extend _loc g sl el : 'gextend_body))]];
     Grammar.Entry.obj (delete_rule_body : 'delete_rule_body Grammar.Entry.e),
     None,
     [None, None,
@@ -1637,15 +1653,15 @@ Grammar.extend
             (Grammar.Entry.obj (semi_sep : 'semi_sep Grammar.Entry.e)))],
       Gramext.action
         (fun (sl : 'symbol list) _ (n : 'name)
-           (loc : Lexing.position * Lexing.position) ->
-           (let (e, b) = expr_of_delete_rule loc "Grammar" n sl in
+           (_loc : Lexing.position * Lexing.position) ->
+           (let (e, b) = expr_of_delete_rule _loc "Grammar" n sl in
             MLast.ExApp
-              (loc,
+              (_loc,
                MLast.ExApp
-                 (loc,
+                 (_loc,
                   MLast.ExAcc
-                    (loc, MLast.ExUid (loc, "Grammar"),
-                     MLast.ExLid (loc, "delete_rule")),
+                    (_loc, MLast.ExUid (_loc, "Grammar"),
+                     MLast.ExLid (_loc, "delete_rule")),
                   e),
                b) :
             'delete_rule_body))]];
@@ -1663,15 +1679,15 @@ Grammar.extend
             (Grammar.Entry.obj (semi_sep : 'semi_sep Grammar.Entry.e)))],
       Gramext.action
         (fun (sl : 'symbol list) _ (n : 'name) (g : string)
-           (loc : Lexing.position * Lexing.position) ->
-           (let (e, b) = expr_of_delete_rule loc g n sl in
+           (_loc : Lexing.position * Lexing.position) ->
+           (let (e, b) = expr_of_delete_rule _loc g n sl in
             MLast.ExApp
-              (loc,
+              (_loc,
                MLast.ExApp
-                 (loc,
+                 (_loc,
                   MLast.ExAcc
-                    (loc, MLast.ExUid (loc, g),
-                     MLast.ExLid (loc, "delete_rule")),
+                    (_loc, MLast.ExUid (_loc, g),
+                     MLast.ExLid (_loc, "delete_rule")),
                   e),
                b) :
             'gdelete_rule_body))]];
@@ -1679,17 +1695,17 @@ Grammar.extend
     [None, None,
      [[],
       Gramext.action
-        (fun (loc : Lexing.position * Lexing.position) ->
+        (fun (_loc : Lexing.position * Lexing.position) ->
            (MLast.ExAcc
-              (loc, MLast.ExUid (loc, "Grammar"),
-               MLast.ExLid (loc, "extend")) :
+              (_loc, MLast.ExUid (_loc, "Grammar"),
+               MLast.ExLid (_loc, "extend")) :
             'efunction));
       [Gramext.Stoken ("UIDENT", "FUNCTION"); Gramext.Stoken ("", ":");
        Gramext.Snterm (Grammar.Entry.obj (qualid : 'qualid Grammar.Entry.e));
        Gramext.Snterm
          (Grammar.Entry.obj (semi_sep : 'semi_sep Grammar.Entry.e))],
       Gramext.action
-        (fun _ (f : 'qualid) _ _ (loc : Lexing.position * Lexing.position) ->
+        (fun _ (f : 'qualid) _ _ (_loc : Lexing.position * Lexing.position) ->
            (f : 'efunction))]];
     Grammar.Entry.obj (global : 'global Grammar.Entry.e), None,
     [None, None,
@@ -1700,7 +1716,7 @@ Grammar.extend
          (Grammar.Entry.obj (semi_sep : 'semi_sep Grammar.Entry.e))],
       Gramext.action
         (fun _ (sl : 'name list) _ _
-           (loc : Lexing.position * Lexing.position) ->
+           (_loc : Lexing.position * Lexing.position) ->
            (sl : 'global))]];
     Grammar.Entry.obj (entry : 'entry Grammar.Entry.e), None,
     [None, None,
@@ -1713,55 +1729,56 @@ Grammar.extend
          (Grammar.Entry.obj (level_list : 'level_list Grammar.Entry.e))],
       Gramext.action
         (fun (ll : 'level_list) (pos : 'position option) _ (n : 'name)
-           (loc : Lexing.position * Lexing.position) ->
+           (_loc : Lexing.position * Lexing.position) ->
            ({name = n; pos = pos; levels = ll} : 'entry))]];
     Grammar.Entry.obj (position : 'position Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Stoken ("UIDENT", "LEVEL");
        Gramext.Snterm (Grammar.Entry.obj (string : 'string Grammar.Entry.e))],
       Gramext.action
-        (fun (n : 'string) _ (loc : Lexing.position * Lexing.position) ->
+        (fun (n : 'string) _ (_loc : Lexing.position * Lexing.position) ->
            (MLast.ExApp
-              (loc,
+              (_loc,
                MLast.ExAcc
-                 (loc, MLast.ExUid (loc, "Gramext"),
-                  MLast.ExUid (loc, "Level")),
+                 (_loc, MLast.ExUid (_loc, "Gramext"),
+                  MLast.ExUid (_loc, "Level")),
                n) :
             'position));
       [Gramext.Stoken ("UIDENT", "AFTER");
        Gramext.Snterm (Grammar.Entry.obj (string : 'string Grammar.Entry.e))],
       Gramext.action
-        (fun (n : 'string) _ (loc : Lexing.position * Lexing.position) ->
+        (fun (n : 'string) _ (_loc : Lexing.position * Lexing.position) ->
            (MLast.ExApp
-              (loc,
+              (_loc,
                MLast.ExAcc
-                 (loc, MLast.ExUid (loc, "Gramext"),
-                  MLast.ExUid (loc, "After")),
+                 (_loc, MLast.ExUid (_loc, "Gramext"),
+                  MLast.ExUid (_loc, "After")),
                n) :
             'position));
       [Gramext.Stoken ("UIDENT", "BEFORE");
        Gramext.Snterm (Grammar.Entry.obj (string : 'string Grammar.Entry.e))],
       Gramext.action
-        (fun (n : 'string) _ (loc : Lexing.position * Lexing.position) ->
+        (fun (n : 'string) _ (_loc : Lexing.position * Lexing.position) ->
            (MLast.ExApp
-              (loc,
+              (_loc,
                MLast.ExAcc
-                 (loc, MLast.ExUid (loc, "Gramext"),
-                  MLast.ExUid (loc, "Before")),
+                 (_loc, MLast.ExUid (_loc, "Gramext"),
+                  MLast.ExUid (_loc, "Before")),
                n) :
             'position));
       [Gramext.Stoken ("UIDENT", "LAST")],
       Gramext.action
-        (fun _ (loc : Lexing.position * Lexing.position) ->
+        (fun _ (_loc : Lexing.position * Lexing.position) ->
            (MLast.ExAcc
-              (loc, MLast.ExUid (loc, "Gramext"), MLast.ExUid (loc, "Last")) :
+              (_loc, MLast.ExUid (_loc, "Gramext"),
+               MLast.ExUid (_loc, "Last")) :
             'position));
       [Gramext.Stoken ("UIDENT", "FIRST")],
       Gramext.action
-        (fun _ (loc : Lexing.position * Lexing.position) ->
+        (fun _ (_loc : Lexing.position * Lexing.position) ->
            (MLast.ExAcc
-              (loc, MLast.ExUid (loc, "Gramext"),
-               MLast.ExUid (loc, "First")) :
+              (_loc, MLast.ExUid (_loc, "Gramext"),
+               MLast.ExUid (_loc, "First")) :
             'position))]];
     Grammar.Entry.obj (level_list : 'level_list Grammar.Entry.e), None,
     [None, None,
@@ -1772,7 +1789,7 @@ Grammar.extend
        Gramext.Stoken ("", "]")],
       Gramext.action
         (fun _ (ll : 'level list) _
-           (loc : Lexing.position * Lexing.position) ->
+           (_loc : Lexing.position * Lexing.position) ->
            (ll : 'level_list))]];
     Grammar.Entry.obj (level : 'level Grammar.Entry.e), None,
     [None, None,
@@ -1784,29 +1801,30 @@ Grammar.extend
          (Grammar.Entry.obj (rule_list : 'rule_list Grammar.Entry.e))],
       Gramext.action
         (fun (rules : 'rule_list) (ass : 'assoc option) (lab : string option)
-           (loc : Lexing.position * Lexing.position) ->
+           (_loc : Lexing.position * Lexing.position) ->
            ({label = lab; assoc = ass; rules = rules} : 'level))]];
     Grammar.Entry.obj (assoc : 'assoc Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Stoken ("UIDENT", "NONA")],
       Gramext.action
-        (fun _ (loc : Lexing.position * Lexing.position) ->
+        (fun _ (_loc : Lexing.position * Lexing.position) ->
            (MLast.ExAcc
-              (loc, MLast.ExUid (loc, "Gramext"), MLast.ExUid (loc, "NonA")) :
+              (_loc, MLast.ExUid (_loc, "Gramext"),
+               MLast.ExUid (_loc, "NonA")) :
             'assoc));
       [Gramext.Stoken ("UIDENT", "RIGHTA")],
       Gramext.action
-        (fun _ (loc : Lexing.position * Lexing.position) ->
+        (fun _ (_loc : Lexing.position * Lexing.position) ->
            (MLast.ExAcc
-              (loc, MLast.ExUid (loc, "Gramext"),
-               MLast.ExUid (loc, "RightA")) :
+              (_loc, MLast.ExUid (_loc, "Gramext"),
+               MLast.ExUid (_loc, "RightA")) :
             'assoc));
       [Gramext.Stoken ("UIDENT", "LEFTA")],
       Gramext.action
-        (fun _ (loc : Lexing.position * Lexing.position) ->
+        (fun _ (_loc : Lexing.position * Lexing.position) ->
            (MLast.ExAcc
-              (loc, MLast.ExUid (loc, "Gramext"),
-               MLast.ExUid (loc, "LeftA")) :
+              (_loc, MLast.ExUid (_loc, "Gramext"),
+               MLast.ExUid (_loc, "LeftA")) :
             'assoc))]];
     Grammar.Entry.obj (rule_list : 'rule_list Grammar.Entry.e), None,
     [None, None,
@@ -1817,11 +1835,11 @@ Grammar.extend
        Gramext.Stoken ("", "]")],
       Gramext.action
         (fun _ (rules : 'rule list) _
-           (loc : Lexing.position * Lexing.position) ->
-           (retype_rule_list_without_patterns loc rules : 'rule_list));
+           (_loc : Lexing.position * Lexing.position) ->
+           (retype_rule_list_without_patterns _loc rules : 'rule_list));
       [Gramext.Stoken ("", "["); Gramext.Stoken ("", "]")],
       Gramext.action
-        (fun _ _ (loc : Lexing.position * Lexing.position) ->
+        (fun _ _ (_loc : Lexing.position * Lexing.position) ->
            ([] : 'rule_list))]];
     Grammar.Entry.obj (rule : 'rule Grammar.Entry.e), None,
     [None, None,
@@ -1832,7 +1850,7 @@ Grammar.extend
             (Grammar.Entry.obj (semi_sep : 'semi_sep Grammar.Entry.e)))],
       Gramext.action
         (fun (psl : 'psymbol list)
-           (loc : Lexing.position * Lexing.position) ->
+           (_loc : Lexing.position * Lexing.position) ->
            ({prod = psl; action = None} : 'rule));
       [Gramext.Slist0sep
          (Gramext.Snterm
@@ -1843,13 +1861,13 @@ Grammar.extend
        Gramext.Snterm (Grammar.Entry.obj (expr : 'expr Grammar.Entry.e))],
       Gramext.action
         (fun (act : 'expr) _ (psl : 'psymbol list)
-           (loc : Lexing.position * Lexing.position) ->
+           (_loc : Lexing.position * Lexing.position) ->
            ({prod = psl; action = Some act} : 'rule))]];
     Grammar.Entry.obj (psymbol : 'psymbol Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Snterm (Grammar.Entry.obj (symbol : 'symbol Grammar.Entry.e))],
       Gramext.action
-        (fun (s : 'symbol) (loc : Lexing.position * Lexing.position) ->
+        (fun (s : 'symbol) (_loc : Lexing.position * Lexing.position) ->
            ({pattern = None; symbol = s} : 'psymbol));
       [Gramext.Snterm
          (Grammar.Entry.obj (pattern : 'pattern Grammar.Entry.e));
@@ -1857,7 +1875,7 @@ Grammar.extend
        Gramext.Snterm (Grammar.Entry.obj (symbol : 'symbol Grammar.Entry.e))],
       Gramext.action
         (fun (s : 'symbol) _ (p : 'pattern)
-           (loc : Lexing.position * Lexing.position) ->
+           (_loc : Lexing.position * Lexing.position) ->
            ({pattern = Some p; symbol = s} : 'psymbol));
       [Gramext.Stoken ("LIDENT", "");
        Gramext.Sopt
@@ -1866,14 +1884,14 @@ Grammar.extend
               Gramext.Stoken ("STRING", "")],
              Gramext.action
                (fun (s : string) _
-                  (loc : Lexing.position * Lexing.position) ->
+                  (_loc : Lexing.position * Lexing.position) ->
                   (s : 'e__3))])],
       Gramext.action
         (fun (lev : 'e__3 option) (i : string)
-           (loc : Lexing.position * Lexing.position) ->
-           (let name = mk_name loc (MLast.ExLid (loc, i)) in
-            let text = TXnterm (loc, name, lev) in
-            let styp = STquo (loc, i) in
+           (_loc : Lexing.position * Lexing.position) ->
+           (let name = mk_name _loc (MLast.ExLid (_loc, i)) in
+            let text = TXnterm (_loc, name, lev) in
+            let styp = STquo (_loc, i) in
             let symb = {used = [i]; text = text; styp = styp} in
             {pattern = None; symbol = symb} :
             'psymbol));
@@ -1881,18 +1899,18 @@ Grammar.extend
        Gramext.Snterm (Grammar.Entry.obj (symbol : 'symbol Grammar.Entry.e))],
       Gramext.action
         (fun (s : 'symbol) _ (p : string)
-           (loc : Lexing.position * Lexing.position) ->
-           ({pattern = Some (MLast.PaLid (loc, p)); symbol = s} :
+           (_loc : Lexing.position * Lexing.position) ->
+           ({pattern = Some (MLast.PaLid (_loc, p)); symbol = s} :
             'psymbol))]];
     Grammar.Entry.obj (symbol : 'symbol Grammar.Entry.e), None,
     [Some "top", Some Gramext.NonA,
      [[Gramext.Stoken ("UIDENT", "OPT"); Gramext.Sself],
       Gramext.action
-        (fun (s : 'symbol) _ (loc : Lexing.position * Lexing.position) ->
-           (if !quotify then ssopt loc s
+        (fun (s : 'symbol) _ (_loc : Lexing.position * Lexing.position) ->
+           (if !quotify then ssopt _loc s
             else
-              let styp = STapp (loc, STlid (loc, "option"), s.styp) in
-              let text = TXopt (loc, s.text) in
+              let styp = STapp (_loc, STlid (_loc, "option"), s.styp) in
+              let text = TXopt (_loc, s.text) in
               {used = s.used; text = text; styp = styp} :
             'symbol));
       [Gramext.Stoken ("UIDENT", "LIST1"); Gramext.Sself;
@@ -1903,20 +1921,20 @@ Grammar.extend
                 (Grammar.Entry.obj (symbol : 'symbol Grammar.Entry.e))],
              Gramext.action
                (fun (t : 'symbol) _
-                  (loc : Lexing.position * Lexing.position) ->
+                  (_loc : Lexing.position * Lexing.position) ->
                   (t : 'e__5))])],
       Gramext.action
         (fun (sep : 'e__5 option) (s : 'symbol) _
-           (loc : Lexing.position * Lexing.position) ->
-           (if !quotify then sslist loc true sep s
+           (_loc : Lexing.position * Lexing.position) ->
+           (if !quotify then sslist _loc true sep s
             else
               let used =
                 match sep with
                   Some symb -> symb.used @ s.used
                 | None -> s.used
               in
-              let styp = STapp (loc, STlid (loc, "list"), s.styp) in
-              let text = slist loc true sep s in
+              let styp = STapp (_loc, STlid (_loc, "list"), s.styp) in
+              let text = slist _loc true sep s in
               {used = used; text = text; styp = styp} :
             'symbol));
       [Gramext.Stoken ("UIDENT", "LIST0"); Gramext.Sself;
@@ -1927,26 +1945,26 @@ Grammar.extend
                 (Grammar.Entry.obj (symbol : 'symbol Grammar.Entry.e))],
              Gramext.action
                (fun (t : 'symbol) _
-                  (loc : Lexing.position * Lexing.position) ->
+                  (_loc : Lexing.position * Lexing.position) ->
                   (t : 'e__4))])],
       Gramext.action
         (fun (sep : 'e__4 option) (s : 'symbol) _
-           (loc : Lexing.position * Lexing.position) ->
-           (if !quotify then sslist loc false sep s
+           (_loc : Lexing.position * Lexing.position) ->
+           (if !quotify then sslist _loc false sep s
             else
               let used =
                 match sep with
                   Some symb -> symb.used @ s.used
                 | None -> s.used
               in
-              let styp = STapp (loc, STlid (loc, "list"), s.styp) in
-              let text = slist loc false sep s in
+              let styp = STapp (_loc, STlid (_loc, "list"), s.styp) in
+              let text = slist _loc false sep s in
               {used = used; text = text; styp = styp} :
             'symbol))];
      None, None,
      [[Gramext.Stoken ("", "("); Gramext.Sself; Gramext.Stoken ("", ")")],
       Gramext.action
-        (fun _ (s_t : 'symbol) _ (loc : Lexing.position * Lexing.position) ->
+        (fun _ (s_t : 'symbol) _ (_loc : Lexing.position * Lexing.position) ->
            (s_t : 'symbol));
       [Gramext.Snterm (Grammar.Entry.obj (name : 'name Grammar.Entry.e));
        Gramext.Sopt
@@ -1955,13 +1973,13 @@ Grammar.extend
               Gramext.Stoken ("STRING", "")],
              Gramext.action
                (fun (s : string) _
-                  (loc : Lexing.position * Lexing.position) ->
+                  (_loc : Lexing.position * Lexing.position) ->
                   (s : 'e__7))])],
       Gramext.action
         (fun (lev : 'e__7 option) (n : 'name)
-           (loc : Lexing.position * Lexing.position) ->
-           ({used = [n.tvar]; text = TXnterm (loc, n, lev);
-             styp = STquo (loc, n.tvar)} :
+           (_loc : Lexing.position * Lexing.position) ->
+           ({used = [n.tvar]; text = TXnterm (_loc, n, lev);
+             styp = STquo (_loc, n.tvar)} :
             'symbol));
       [Gramext.Stoken ("UIDENT", ""); Gramext.Stoken ("", ".");
        Gramext.Snterm (Grammar.Entry.obj (qualid : 'qualid Grammar.Entry.e));
@@ -1971,39 +1989,39 @@ Grammar.extend
               Gramext.Stoken ("STRING", "")],
              Gramext.action
                (fun (s : string) _
-                  (loc : Lexing.position * Lexing.position) ->
+                  (_loc : Lexing.position * Lexing.position) ->
                   (s : 'e__6))])],
       Gramext.action
         (fun (lev : 'e__6 option) (e : 'qualid) _ (i : string)
-           (loc : Lexing.position * Lexing.position) ->
+           (_loc : Lexing.position * Lexing.position) ->
            (let n =
-              mk_name loc (MLast.ExAcc (loc, MLast.ExUid (loc, i), e))
+              mk_name _loc (MLast.ExAcc (_loc, MLast.ExUid (_loc, i), e))
             in
-            {used = [n.tvar]; text = TXnterm (loc, n, lev);
-             styp = STquo (loc, n.tvar)} :
+            {used = [n.tvar]; text = TXnterm (_loc, n, lev);
+             styp = STquo (_loc, n.tvar)} :
             'symbol));
       [Gramext.Snterm (Grammar.Entry.obj (string : 'string Grammar.Entry.e))],
       Gramext.action
-        (fun (e : 'string) (loc : Lexing.position * Lexing.position) ->
-           (let text = TXtok (loc, "", e) in
-            {used = []; text = text; styp = STlid (loc, "string")} :
+        (fun (e : 'string) (_loc : Lexing.position * Lexing.position) ->
+           (let text = TXtok (_loc, "", e) in
+            {used = []; text = text; styp = STlid (_loc, "string")} :
             'symbol));
       [Gramext.Stoken ("UIDENT", "");
        Gramext.Snterm (Grammar.Entry.obj (string : 'string Grammar.Entry.e))],
       Gramext.action
         (fun (e : 'string) (x : string)
-           (loc : Lexing.position * Lexing.position) ->
-           (let text = TXtok (loc, x, e) in
-            {used = []; text = text; styp = STlid (loc, "string")} :
+           (_loc : Lexing.position * Lexing.position) ->
+           (let text = TXtok (_loc, x, e) in
+            {used = []; text = text; styp = STlid (_loc, "string")} :
             'symbol));
       [Gramext.Stoken ("UIDENT", "")],
       Gramext.action
-        (fun (x : string) (loc : Lexing.position * Lexing.position) ->
+        (fun (x : string) (_loc : Lexing.position * Lexing.position) ->
            (let text =
-              if !quotify then sstoken loc x
-              else TXtok (loc, x, MLast.ExStr (loc, ""))
+              if !quotify then sstoken _loc x
+              else TXtok (_loc, x, MLast.ExStr (_loc, ""))
             in
-            {used = []; text = text; styp = STlid (loc, "string")} :
+            {used = []; text = text; styp = STlid (_loc, "string")} :
             'symbol));
       [Gramext.Stoken ("", "[");
        Gramext.Slist0sep
@@ -2012,22 +2030,22 @@ Grammar.extend
        Gramext.Stoken ("", "]")],
       Gramext.action
         (fun _ (rl : 'rule list) _
-           (loc : Lexing.position * Lexing.position) ->
-           (let rl = retype_rule_list_without_patterns loc rl in
+           (_loc : Lexing.position * Lexing.position) ->
+           (let rl = retype_rule_list_without_patterns _loc rl in
             let t = new_type_var () in
             {used = used_of_rule_list rl;
-             text = TXrules (loc, srules loc t rl "");
-             styp = STquo (loc, t)} :
+             text = TXrules (_loc, srules _loc t rl "");
+             styp = STquo (_loc, t)} :
             'symbol));
       [Gramext.Stoken ("UIDENT", "NEXT")],
       Gramext.action
-        (fun _ (loc : Lexing.position * Lexing.position) ->
-           ({used = []; text = TXnext loc; styp = STself (loc, "NEXT")} :
+        (fun _ (_loc : Lexing.position * Lexing.position) ->
+           ({used = []; text = TXnext _loc; styp = STself (_loc, "NEXT")} :
             'symbol));
       [Gramext.Stoken ("UIDENT", "SELF")],
       Gramext.action
-        (fun _ (loc : Lexing.position * Lexing.position) ->
-           ({used = []; text = TXself loc; styp = STself (loc, "SELF")} :
+        (fun _ (_loc : Lexing.position * Lexing.position) ->
+           ({used = []; text = TXself _loc; styp = STself (_loc, "SELF")} :
             'symbol))]];
     Grammar.Entry.obj (pattern : 'pattern Grammar.Entry.e), None,
     [None, None,
@@ -2038,20 +2056,20 @@ Grammar.extend
        Gramext.Stoken ("", ")")],
       Gramext.action
         (fun _ (pl : 'patterns_comma) _ (p : 'pattern) _
-           (loc : Lexing.position * Lexing.position) ->
-           (MLast.PaTup (loc, (p :: pl)) : 'pattern));
+           (_loc : Lexing.position * Lexing.position) ->
+           (MLast.PaTup (_loc, (p :: pl)) : 'pattern));
       [Gramext.Stoken ("", "("); Gramext.Sself; Gramext.Stoken ("", ")")],
       Gramext.action
-        (fun _ (p : 'pattern) _ (loc : Lexing.position * Lexing.position) ->
+        (fun _ (p : 'pattern) _ (_loc : Lexing.position * Lexing.position) ->
            (p : 'pattern));
       [Gramext.Stoken ("", "_")],
       Gramext.action
-        (fun _ (loc : Lexing.position * Lexing.position) ->
-           (MLast.PaAny loc : 'pattern));
+        (fun _ (_loc : Lexing.position * Lexing.position) ->
+           (MLast.PaAny _loc : 'pattern));
       [Gramext.Stoken ("LIDENT", "")],
       Gramext.action
-        (fun (i : string) (loc : Lexing.position * Lexing.position) ->
-           (MLast.PaLid (loc, i) : 'pattern))]];
+        (fun (i : string) (_loc : Lexing.position * Lexing.position) ->
+           (MLast.PaLid (_loc, i) : 'pattern))]];
     Grammar.Entry.obj (patterns_comma : 'patterns_comma Grammar.Entry.e),
     None,
     [None, None,
@@ -2060,42 +2078,42 @@ Grammar.extend
          (Grammar.Entry.obj (pattern : 'pattern Grammar.Entry.e))],
       Gramext.action
         (fun (p : 'pattern) _ (pl : 'patterns_comma)
-           (loc : Lexing.position * Lexing.position) ->
+           (_loc : Lexing.position * Lexing.position) ->
            (pl @ [p] : 'patterns_comma))];
      None, None,
      [[Gramext.Snterm
          (Grammar.Entry.obj (pattern : 'pattern Grammar.Entry.e))],
       Gramext.action
-        (fun (p : 'pattern) (loc : Lexing.position * Lexing.position) ->
+        (fun (p : 'pattern) (_loc : Lexing.position * Lexing.position) ->
            ([p] : 'patterns_comma))]];
     Grammar.Entry.obj (name : 'name Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Snterm (Grammar.Entry.obj (qualid : 'qualid Grammar.Entry.e))],
       Gramext.action
-        (fun (e : 'qualid) (loc : Lexing.position * Lexing.position) ->
-           (mk_name loc e : 'name))]];
+        (fun (e : 'qualid) (_loc : Lexing.position * Lexing.position) ->
+           (mk_name _loc e : 'name))]];
     Grammar.Entry.obj (qualid : 'qualid Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Sself; Gramext.Stoken ("", "."); Gramext.Sself],
       Gramext.action
         (fun (e2 : 'qualid) _ (e1 : 'qualid)
-           (loc : Lexing.position * Lexing.position) ->
-           (MLast.ExAcc (loc, e1, e2) : 'qualid))];
+           (_loc : Lexing.position * Lexing.position) ->
+           (MLast.ExAcc (_loc, e1, e2) : 'qualid))];
      None, None,
      [[Gramext.Stoken ("LIDENT", "")],
       Gramext.action
-        (fun (i : string) (loc : Lexing.position * Lexing.position) ->
-           (MLast.ExLid (loc, i) : 'qualid));
+        (fun (i : string) (_loc : Lexing.position * Lexing.position) ->
+           (MLast.ExLid (_loc, i) : 'qualid));
       [Gramext.Stoken ("UIDENT", "")],
       Gramext.action
-        (fun (i : string) (loc : Lexing.position * Lexing.position) ->
-           (MLast.ExUid (loc, i) : 'qualid))]];
+        (fun (i : string) (_loc : Lexing.position * Lexing.position) ->
+           (MLast.ExUid (_loc, i) : 'qualid))]];
     Grammar.Entry.obj (string : 'string Grammar.Entry.e), None,
     [None, None,
      [[Gramext.Stoken ("ANTIQUOT", "")],
       Gramext.action
-        (fun (i : string) (loc : Lexing.position * Lexing.position) ->
-           (let shift = Reloc.shift_pos (String.length "$") (fst loc) in
+        (fun (i : string) (_loc : Lexing.position * Lexing.position) ->
+           (let shift = Reloc.shift_pos (String.length "$") (fst _loc) in
             let e =
               try Grammar.Entry.parse Pcaml.expr_eoi (Stream.of_string i) with
                 Exc_located ((bp, ep), exc) ->
@@ -2106,8 +2124,8 @@ Grammar.extend
             'string));
       [Gramext.Stoken ("STRING", "")],
       Gramext.action
-        (fun (s : string) (loc : Lexing.position * Lexing.position) ->
-           (MLast.ExStr (loc, s) : 'string))]]]);;
+        (fun (s : string) (_loc : Lexing.position * Lexing.position) ->
+           (MLast.ExStr (_loc, s) : 'string))]]]);;
 
 Pcaml.add_option "-quotify" (Arg.Set quotify) "Generate code for quotations";;
 

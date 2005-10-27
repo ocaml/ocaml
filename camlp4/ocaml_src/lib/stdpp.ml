@@ -84,4 +84,4 @@ value line_of_loc fname (bp, ep) =
 ;
 *)
 
-let loc_name = ref "loc";;
+let loc_name = ref "_loc";;

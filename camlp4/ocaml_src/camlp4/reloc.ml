@@ -37,14 +37,15 @@ let rec ctyp floc sh =
     | TyOlb (loc, x1, x2) -> TyOlb (floc loc, x1, self x2)
     | TyPol (loc, x1, x2) -> TyPol (floc loc, x1, self x2)
     | TyQuo (loc, x1) -> TyQuo (floc loc, x1)
-    | TyRec (loc, pflag, x1) ->
+    | TyRec (loc, x1) ->
         TyRec
-          (floc loc, pflag,
+          (floc loc,
            List.map (fun (loc, x1, x2, x3) -> floc loc, x1, x2, self x3) x1)
-    | TySum (loc, pflag, x1) ->
+    | TySum (loc, x1) ->
         TySum
-          (floc loc, pflag,
+          (floc loc,
            List.map (fun (loc, x1, x2) -> floc loc, x1, List.map self x2) x1)
+    | TyPrv (loc, x1) -> TyPrv (floc loc, self x1)
     | TyTup (loc, x1) -> TyTup (floc loc, List.map self x1)
     | TyUid (loc, x1) -> TyUid (floc loc, x1)
     | TyVrn (loc, x1, x2) ->
@@ -104,18 +105,11 @@ let check_location msg (bp, ep as loc) =
   ok, loc
 ;;
 
-(* Change a location into linear positions *)
-let linearize (bp, ep) =
-  {bp with Lexing.pos_lnum = 1; Lexing.pos_bol = 0},
-  {ep with Lexing.pos_lnum = 1; Lexing.pos_bol = 0}
-;;
-
 let shift_pos n p = {p with Lexing.pos_cnum = p.Lexing.pos_cnum + n};;
 
 let zero_loc =
   {(Lexing.dummy_pos) with Lexing.pos_cnum = 0; Lexing.pos_lnum = 0}
 ;;
-
 
 let adjust_pos globpos local_pos =
   {Lexing.pos_fname = globpos.Lexing.pos_fname;
@@ -140,9 +134,8 @@ let rec patt floc sh =
     | PaAli (loc, x1, x2) ->
         let nloc = floc loc in PaAli (nloc, self x1, self x2)
     | PaAnt (loc, x1) ->
-        patt
-          (fun lloc -> adjust_loc (adjust_pos sh (fst loc)) (linearize lloc))
-          zero_loc x1
+        patt (fun lloc -> adjust_loc (adjust_pos sh (fst loc)) lloc) zero_loc
+          x1
     | PaAny loc -> let nloc = floc loc in PaAny nloc
     | PaApp (loc, x1, x2) ->
         let nloc = floc loc in PaApp (nloc, self x1, self x2)
@@ -184,9 +177,8 @@ and expr floc sh =
       ExAcc (loc, x1, x2) ->
         let nloc = floc loc in ExAcc (nloc, self x1, self x2)
     | ExAnt (loc, x1) ->
-        expr
-          (fun lloc -> adjust_loc (adjust_pos sh (fst loc)) (linearize lloc))
-          zero_loc x1
+        expr (fun lloc -> adjust_loc (adjust_pos sh (fst loc)) lloc) zero_loc
+          x1
     | ExApp (loc, x1, x2) ->
         let nloc = floc loc in ExApp (nloc, self x1, self x2)
     | ExAre (loc, x1, x2) ->
