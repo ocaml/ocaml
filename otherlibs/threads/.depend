@@ -1,11 +1,12 @@
-join.o: join.c ../../byterun/mlvalues.h ../../byterun/config.h \
-  ../../config/m.h ../../config/s.h ../../byterun/misc.h \
-  ../../byterun/alloc.h ../../byterun/memory.h ../../byterun/gc.h \
-  ../../byterun/major_gc.h ../../byterun/freelist.h \
+join.o: join.c ../../byterun/mlvalues.h ../../byterun/compatibility.h \
+  ../../byterun/config.h ../../config/m.h ../../config/s.h \
+  ../../byterun/misc.h ../../byterun/alloc.h ../../byterun/memory.h \
+  ../../byterun/gc.h ../../byterun/major_gc.h ../../byterun/freelist.h \
   ../../byterun/minor_gc.h ../../byterun/roots.h ../../byterun/custom.h \
   ../../byterun/intext.h ../../byterun/io.h ../../byterun/fix_code.h \
   ../../byterun/fail.h
-scheduler.o: scheduler.c ../../byterun/alloc.h ../../byterun/misc.h \
+scheduler.o: scheduler.c ../../byterun/alloc.h \
+  ../../byterun/compatibility.h ../../byterun/misc.h \
   ../../byterun/config.h ../../config/m.h ../../config/s.h \
   ../../byterun/mlvalues.h ../../byterun/backtrace.h \
   ../../byterun/callback.h ../../byterun/fail.h ../../byterun/io.h \
@@ -24,7 +25,6 @@ join_space.cmi: unix.cmi marshal.cmi join_types.cmi
 join_types.cmi: unix.cmi mutex.cmi join_misc.cmi join_link.cmi join_hash.cmi \
     condition.cmi 
 ns.cmi: unix.cmi 
-old_ns.cmi: unix.cmi 
 thread.cmi: unix.cmi 
 threadUnix.cmi: unix.cmi 
 condition.cmo: thread.cmi mutex.cmi condition.cmi 
@@ -69,12 +69,6 @@ marshal.cmo: pervasives.cmi marshal.cmi
 marshal.cmx: pervasives.cmx marshal.cmi 
 mutex.cmo: thread.cmi mutex.cmi 
 mutex.cmx: thread.cmx mutex.cmi 
-old_ns.cmo: unix.cmi thread.cmi mutex.cmi join_types.cmi join_space.cmi \
-    join_port.cmi join_misc.cmi join_message.cmi join_link.cmi join_debug.cmi \
-    join.cmi old_ns.cmi 
-old_ns.cmx: unix.cmx thread.cmx mutex.cmx join_types.cmi join_space.cmx \
-    join_port.cmx join_misc.cmx join_message.cmx join_link.cmx join_debug.cmx \
-    join.cmx old_ns.cmi 
 pervasives.cmo: unix.cmi pervasives.cmi 
 pervasives.cmx: unix.cmx pervasives.cmi 
 thread.cmo: unix.cmi thread.cmi 

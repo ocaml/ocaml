@@ -225,14 +225,14 @@ let stderr = open_descriptor_out 2
 
 (* Non-blocking stuff *)
 
-external thread_wait_read_prim : Unix.file_descr -> unit = "caml_thread_wait_read"
-external thread_wait_write_prim : Unix.file_descr -> unit = "caml_thread_wait_write"
+external thread_wait_read_prim : Unix.file_descr -> unit = "thread_wait_read"
+external thread_wait_write_prim : Unix.file_descr -> unit = "thread_wait_write"
 
 let thread_wait_read fd = thread_wait_read_prim fd
 let thread_wait_write fd = thread_wait_write_prim fd
 
-external inchan_ready : in_channel -> bool = "caml_thread_inchan_ready"
-external outchan_ready : out_channel -> int -> bool = "caml_thread_outchan_ready"
+external inchan_ready : in_channel -> bool = "thread_inchan_ready"
+external outchan_ready : out_channel -> int -> bool = "thread_outchan_ready"
 external descr_inchan : in_channel -> Unix.file_descr
                       = "caml_channel_descriptor"
 external descr_outchan : out_channel -> Unix.file_descr

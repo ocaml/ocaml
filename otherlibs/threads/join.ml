@@ -207,11 +207,18 @@ let rec attempt_match tail auto reactions idx i =
 (*DEBUG*)  (get_name auto idx) (auto.status.to_string ())) ;    
     Mutex.unlock auto.mutex
   end else begin
-    let (ipat, iprim, f) = Obj.magic (Obj.field reactions i) in
+    let (ipat, iprim, f) =
+      (Obj.magic (Obj.field reactions i) : (Obj.t * int * Obj.t))
+    in
     if auto.status.includes ipat then
       if iprim < 0 then begin
+        let f = (Obj.obj f :
+                   (Join_types.automaton -> (unit -> unit) -> unit) -> unit) in
         f (if tail then just_go_async else fire_go) (* f will unlock auto's mutex *)
       end else begin
+        let f =
+          (Obj.obj f :
+             (Join_types.continuation -> (unit -> 'a) -> unit) -> unit) in
         f kont_go
       end
     else
@@ -340,12 +347,21 @@ let rec attempt_match_sync idx auto kont reactions i =
   end else begin
     let (ipat, ipri, _) as t = Obj.magic (Obj.field reactions i) in
     if auto.status.includes ipat then begin
-      let (_, _, f) = t in
+      let (_, _, (f:Obj.t)) = t in
       if ipri < 0 then
+        let f =
+          (Obj.obj f :
+             ('a -> (unit -> unit) -> 'b) -> 'c) in
         f (fire_suspend kont)   (* will create other thread *)
       else if ipri = idx then begin
+        let f =
+          (Obj.obj f :
+             (continuation -> (unit -> 'a) -> 'a) -> 'b) in
         f just_go               (* will continue evaluation *)
       end else begin
+        let f =
+          (Obj.obj f :
+             (continuation -> (unit -> Obj.t) -> 'a) -> 'b) in
         f (kont_go_suspend kont) (* will awake principal thread *)
       end
     end else attempt_match_sync idx auto kont reactions (i+1)

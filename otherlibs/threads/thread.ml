@@ -38,33 +38,33 @@ type resumption_status =
    frame size, which means that both the primitives and their ML wrappers
    must take exactly one argument. *)
 
-external thread_initialize : unit -> unit = "caml_thread_initialize"
-external thread_initialize_preemption : unit -> unit = "caml_thread_initialize_preemption"
-external thread_new : (unit -> unit) -> t = "caml_thread_new"
-external thread_yield : unit -> unit = "caml_thread_yield"
-external thread_request_reschedule : unit -> unit = "caml_thread_request_reschedule"
-external thread_sleep : unit -> unit = "caml_thread_sleep"
-external thread_wait_read : Unix.file_descr -> unit = "caml_thread_wait_read"
-external thread_wait_write : Unix.file_descr -> unit = "caml_thread_wait_write"
+external thread_initialize : unit -> unit = "thread_initialize"
+external thread_initialize_preemption : unit -> unit = "thread_initialize_preemption"
+external thread_new : (unit -> unit) -> t = "thread_new"
+external thread_yield : unit -> unit = "thread_yield"
+external thread_request_reschedule : unit -> unit = "thread_request_reschedule"
+external thread_sleep : unit -> unit = "thread_sleep"
+external thread_wait_read : Unix.file_descr -> unit = "thread_wait_read"
+external thread_wait_write : Unix.file_descr -> unit = "thread_wait_write"
 external thread_wait_timed_read :
   Unix.file_descr * float -> resumption_status     (* remember: 1 arg *)
-  = "caml_thread_wait_timed_read"
+  = "thread_wait_timed_read"
 external thread_wait_timed_write :
   Unix.file_descr * float -> resumption_status     (* remember: 1 arg *)
-  = "caml_thread_wait_timed_write"
+  = "thread_wait_timed_write"
 external thread_select :
   Unix.file_descr list * Unix.file_descr list *          (* remember: 1 arg *)
   Unix.file_descr list * float -> resumption_status
-  = "caml_thread_select"
-external thread_join : t -> unit = "caml_thread_join"
-external thread_delay : float -> unit = "caml_thread_delay"
-external thread_wait_pid : int -> resumption_status = "caml_thread_wait_pid"
-external thread_wakeup : t -> unit = "caml_thread_wakeup"
-external thread_self : unit -> t = "caml_thread_self"
-external thread_kill : t -> unit = "caml_thread_kill"
-external thread_uncaught_exception : exn -> unit = "caml_thread_uncaught_exception"
+  = "thread_select"
+external thread_join : t -> unit = "thread_join"
+external thread_delay : float -> unit = "thread_delay"
+external thread_wait_pid : int -> resumption_status = "thread_wait_pid"
+external thread_wakeup : t -> unit = "thread_wakeup"
+external thread_self : unit -> t = "thread_self"
+external thread_kill : t -> unit = "thread_kill"
+external thread_uncaught_exception : exn -> unit = "thread_uncaught_exception"
 
-external id : t -> int = "caml_thread_id"
+external id : t -> int = "thread_id"
 
 (* In sleep() below, we rely on the fact that signals are detected
    only at function applications and beginning of loops,

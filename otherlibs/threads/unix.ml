@@ -36,15 +36,15 @@ type resumption_status =
   | Resumed_select of file_descr list * file_descr list * file_descr list
   | Resumed_wait of int * process_status
 
-external thread_initialize : unit -> unit = "caml_thread_initialize"
-external thread_wait_read : file_descr -> unit = "caml_thread_wait_read"
-external thread_wait_write : file_descr -> unit = "caml_thread_wait_write"
+external thread_initialize : unit -> unit = "thread_initialize"
+external thread_wait_read : file_descr -> unit = "thread_wait_read"
+external thread_wait_write : file_descr -> unit = "thread_wait_write"
 external thread_select :
   file_descr list * file_descr list * file_descr list * float
        -> resumption_status
-  = "caml_thread_select"
-external thread_wait_pid : int -> resumption_status = "caml_thread_wait_pid"
-external thread_delay : float -> unit = "caml_thread_delay"
+  = "thread_select"
+external thread_wait_pid : int -> resumption_status = "thread_wait_pid"
+external thread_delay : float -> unit = "thread_delay"
 
 let wait_read fd = thread_wait_read fd
 let wait_write fd = thread_wait_write fd
@@ -957,8 +957,9 @@ let open_proc cmd proc input output toclose =
      0 -> if input <> stdin then begin dup2 input stdin; close input end;
           if output <> stdout then begin dup2 output stdout; close output end;
           List.iter close toclose;
-          execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |];
-          exit 127
+          begin try execv "/bin/sh" [| "/bin/sh"; "-c"; cmd |]
+          with _ -> exit 127
+          end
   | id -> Hashtbl.add popen_processes proc id
 
 let open_process_in cmd =
@@ -992,8 +993,9 @@ let open_proc_full cmd env proc input output error toclose =
           dup2 output stdout; close output;
           dup2 error stderr; close error;
           List.iter close toclose;
-          execve "/bin/sh" [| "/bin/sh"; "-c"; cmd |] env;
-          exit 127
+          begin try execve "/bin/sh" [| "/bin/sh"; "-c"; cmd |] env
+          with _ -> exit 127
+          end
   | id -> Hashtbl.add popen_processes proc id
 
 let open_process_full cmd env =
