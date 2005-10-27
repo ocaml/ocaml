@@ -31,6 +31,7 @@ val classic : bool ref
 val nopervasives : bool ref
 val preprocessor : string option ref
 val save_types : bool ref
+val join : bool ref
 val use_threads : bool ref
 val use_vmthreads : bool ref
 val noassert : bool ref
