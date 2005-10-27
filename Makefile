@@ -1,3 +1,4 @@
+
 #########################################################################
 #                                                                       #
 #                            Objective Caml                             #
@@ -44,7 +45,7 @@ PARSING=parsing/linenum.cmo parsing/location.cmo parsing/longident.cmo \
   parsing/syntaxerr.cmo parsing/parser.cmo \
   parsing/lexer.cmo parsing/parse.cmo parsing/printast.cmo
 
-TYPING=typing/ident.cmo typing/path.cmo \
+TYPING=typing/unused_var.cmo typing/ident.cmo typing/path.cmo \
   typing/primitive.cmo typing/types.cmo \
   typing/btype.cmo typing/oprint.cmo \
   typing/subst.cmo typing/predef.cmo \
@@ -111,7 +112,7 @@ EXPUNGEOBJS=utils/misc.cmo utils/tbl.cmo \
   typing/predef.cmo bytecomp/runtimedef.cmo bytecomp/bytesections.cmo \
   bytecomp/dll.cmo bytecomp/meta.cmo bytecomp/symtable.cmo toplevel/expunge.cmo
 
-PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop join
+PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop
 
 # For users who don't read the INSTALL file
 defaultentry:
@@ -124,21 +125,17 @@ defaultentry:
 	@echo "should work.  But see the file INSTALL for more details."
 
 # Recompile the system using the bootstrap compiler
-all: runtime ocamlc
-	$(MAKE) ocamllex ocamlyacc ocamltools
-	$(MAKE) library ocaml otherlibraries
-	$(MAKE) camlp4out $(DEBUGGER) # ocamldoc
+all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
+  otherlibraries camlp4out $(DEBUGGER) ocamldoc
 
 # The compilation of ocaml will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
 
 # Compile everything the first time
-world: coldstart
-	$(MAKE) all
+world: coldstart all
 
 # Compile also native code compiler and libraries, fast
-world.opt: coldstart
-	$(MAKE) opt.opt
+world.opt: coldstart opt.opt
 
 # Core bootstrapping cycle
 coreboot:
@@ -183,8 +180,7 @@ coldstart:
           ln -s ../byterun stdlib/caml; fi
 
 # Build the core system: the minimum needed to make depend and bootstrap
-core : coldstart
-	$(MAKE) runtime ocamlc ocamllex ocamlyacc ocamltools library
+core : coldstart ocamlc ocamllex ocamlyacc ocamltools library
 
 # Save the current bootstrap compiler
 MAXSAVED=boot/Saved/Saved.prev/Saved.prev/Saved.prev/Saved.prev/Saved.prev
@@ -230,8 +226,7 @@ cleanboot:
 
 # Compile the native-code compiler
 opt-core:runtimeopt ocamlopt libraryopt
-opt: runtimeopt ocamlopt
-	$(MAKE) libraryopt otherlibrariesopt camlp4opt
+opt: runtimeopt ocamlopt libraryopt otherlibrariesopt camlp4opt
 
 # Native-code versions of the tools
 opt.opt: checkstack core ocaml opt-core ocamlc.opt otherlibraries camlp4out \
@@ -263,18 +258,19 @@ install: FORCE
 	for i in $(OTHERLIBRARIES); do \
           (cd otherlibs/$$i; $(MAKE) install) || exit $$?; \
         done
-	#cd ocamldoc; $(MAKE) install
+	cd ocamldoc; $(MAKE) install
 	if test -f ocamlopt; then $(MAKE) installopt; else :; fi
 	cd camlp4; $(MAKE) install BINDIR=$(BINDIR) LIBDIR=$(LIBDIR) MANDIR=$(MANDIR)
 	if test -f debugger/ocamldebug; then (cd debugger; $(MAKE) install); \
 	   else :; fi
+	cp config/Makefile $(LIBDIR)/Makefile.config
 
 # Installation of the native-code compiler
 installopt:
 	cd asmrun; $(MAKE) install
 	cp ocamlopt $(BINDIR)/ocamlopt$(EXE)
 	cd stdlib; $(MAKE) installopt
-	#cd ocamldoc; $(MAKE) installopt
+	cd ocamldoc; $(MAKE) installopt
 	for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) installopt) || exit $$?; done
 	if test -f ocamlc.opt; \
 	  then cp ocamlc.opt $(BINDIR)/ocamlc.opt$(EXE); else :; fi
@@ -347,9 +343,7 @@ utils/config.ml: utils/config.mlp config/Makefile
             -e 's|%%BYTECCLIBS%%|$(BYTECCLIBS)|' \
             -e 's|%%NATIVECCLIBS%%|$(NATIVECCLIBS)|' \
             -e 's|%%RANLIBCMD%%|$(RANLIBCMD)|' \
-            -e 's|%%BINUTILS_NM%%|$(BINUTILS_NM)|' \
             -e 's|%%CC_PROFILE%%|$(CC_PROFILE)|' \
-            -e 's|%%BINUTILS_OBJCOPY%%|$(BINUTILS_OBJCOPY)|' \
             -e 's|%%ARCH%%|$(ARCH)|' \
             -e 's|%%MODEL%%|$(MODEL)|' \
             -e 's|%%SYSTEM%%|$(SYSTEM)|' \
@@ -357,6 +351,7 @@ utils/config.ml: utils/config.mlp config/Makefile
             -e 's|%%EXT_ASM%%|.s|' \
             -e 's|%%EXT_LIB%%|.a|' \
             -e 's|%%EXT_DLL%%|.so|' \
+            -e 's|%%SYSTHREAD_SUPPORT%%|$(SYSTHREAD_SUPPORT)|' \
             utils/config.mlp > utils/config.ml
 	@chmod -w utils/config.ml
 
@@ -506,7 +501,8 @@ partialclean::
 beforedepend:: asmcomp/emit.ml
 
 tools/cvt_emit: tools/cvt_emit.mll
-	cd tools; $(MAKE) CAMLC="../$(CAMLRUN) ../ocamlc -I ../stdlib" cvt_emit
+	cd tools; \
+	$(MAKE) CAMLC="../$(CAMLRUN) ../boot/ocamlc -I ../stdlib" cvt_emit
 
 # The "expunge" utility
 
@@ -582,15 +578,15 @@ alldepend::
 	cd tools; $(MAKE) depend
 
 # OCamldoc
-#
-#ocamldoc: ocamlc ocamlyacc ocamllex
-#	cd ocamldoc && $(MAKE) all
-#ocamldoc.opt: ocamlc.opt ocamlyacc ocamllex
-#	cd ocamldoc && $(MAKE) opt.opt
-#partialclean::
-#	cd ocamldoc && $(MAKE) clean
-#alldepend::
-#	cd ocamldoc && $(MAKE) depend
+
+ocamldoc: ocamlc ocamlyacc ocamllex
+	cd ocamldoc && $(MAKE) all
+ocamldoc.opt: ocamlc.opt ocamlyacc ocamllex
+	cd ocamldoc && $(MAKE) opt.opt
+partialclean::
+	cd ocamldoc && $(MAKE) clean
+alldepend::
+	cd ocamldoc && $(MAKE) depend
 
 # The extra libraries
 
@@ -623,11 +619,11 @@ alldepend::
 # Camlp4
 
 camlp4out: ocamlc
-	cd camlp4; $(MAKE) -j1 all
+	cd camlp4; $(MAKE) all
 camlp4opt: ocamlopt
-	cd camlp4; $(MAKE) -j1 opt
+	cd camlp4; $(MAKE) opt
 camlp4optopt: ocamlopt
-	cd camlp4; $(MAKE) -j1 opt.opt
+	cd camlp4; $(MAKE) opt.opt
 partialclean::
 	cd camlp4; $(MAKE) clean
 alldepend::
