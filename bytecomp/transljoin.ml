@@ -99,6 +99,9 @@ let mk_apply f args = match Lazy.force f with
 | path,_                   -> Lapply (transl_path path, args)
   
 
+let lambda_int i = Lconst (Const_base (Const_int i))
+and lambda_string s = Lconst (Const_immstring s)
+
 let init_unit_queue auto idx =
   mk_apply lambda_init_unit_queue [Lvar auto ; lambda_int idx]
 
@@ -717,7 +720,6 @@ let create_table auto gs r =
             (fun bd jpat r -> match bd with
             | None,lam -> lam::r
             | Some y,_ ->
-                let k = jpat.jpat_kont in
                 if !(jpat.jpat_kont) = sync then
                   Lprim (Pfield 1, [Lvar y])::r
                 else

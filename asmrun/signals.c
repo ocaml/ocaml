@@ -13,11 +13,11 @@
 
 /* $Id$ */
 
+#if defined(TARGET_amd64) && defined (SYS_linux)
+#define _GNU_SOURCE
+#endif
 #include <signal.h>
 #include <stdio.h>
-#if defined(TARGET_sparc) && defined(SYS_solaris)
-#include <ucontext.h>
-#endif
 #include "alloc.h"
 #include "callback.h"
 #include "memory.h"
@@ -25,7 +25,10 @@
 #include "misc.h"
 #include "mlvalues.h"
 #include "fail.h"
+#include "osdeps.h"
 #include "signals.h"
+#include "signals_machdep.h"
+#include "signals_osdep.h"
 #include "stack.h"
 #include "sys.h"
 #ifdef HAS_STACK_OVERFLOW_DETECTION
@@ -33,10 +36,9 @@
 #include <sys/resource.h>
 #endif
 
-extern char * caml_code_area_start, * caml_code_area_end;
-
-#define In_code_area(pc) \
-  ((char *)(pc) >= caml_code_area_start && (char *)(pc) <= caml_code_area_end)
+#ifndef NSIG
+#define NSIG 64
+#endif
 
 #ifdef _WIN32
 typedef void (*sighandler)(int sig);
@@ -44,79 +46,56 @@ extern sighandler caml_win32_signal(int sig, sighandler action);
 #define signal(sig,act) caml_win32_signal(sig,act)
 #endif
 
-#if defined(TARGET_power) && defined(SYS_rhapsody)
+extern char * caml_code_area_start, * caml_code_area_end;
 
-  #include <sys/utsname.h>
+#define In_code_area(pc) \
+  ((char *)(pc) >= caml_code_area_start && \
+   (char *)(pc) <= caml_code_area_end)
 
-  #define STRUCT_SIGCONTEXT void
-  #define CONTEXT_GPR(ctx, regno) (*context_gpr_p ((ctx), (regno)))
-  #define CONTEXT_PC(ctx) CONTEXT_GPR ((ctx), -2)
-  static int ctx_version = 0;
-  static void init_ctx (void)
-  {
-    struct utsname name;
-    if (uname (&name) == 0){
-      if (name.release[1] == '.' && name.release[0] <= '5'){
-        ctx_version = 1;
-      }else{
-        ctx_version = 2;
-      }
-    }else{
-      caml_fatal_error ("cannot determine SIGCONTEXT format");
-    }
-  }
-
-  #ifdef DARWIN_VERSION_6
-    #include <sys/ucontext.h>
-    static unsigned long *context_gpr_p (void *ctx, int regno)
-    {
-      unsigned long *regs;
-      if (ctx_version == 0) init_ctx ();
-      if (ctx_version == 1){
-        /* old-style context (10.0 and 10.1) */
-        regs = (unsigned long *)(((struct sigcontext *)ctx)->sc_regs);
-      }else{
-        Assert (ctx_version == 2);
-        /* new-style context (10.2) */
-        regs = (unsigned long *)&(((struct ucontext *)ctx)->uc_mcontext->ss);
-      }
-      return &(regs[2 + regno]);
-    }
-  #else
-    #define SA_SIGINFO 0x0040
-    struct ucontext {
-      int       uc_onstack;
-      sigset_t  uc_sigmask;
-      struct sigaltstack uc_stack;
-      struct ucontext   *uc_link;
-      size_t    uc_mcsize;
-      unsigned long     *uc_mcontext;
-    };
-    static unsigned long *context_gpr_p (void *ctx, int regno)
-    {
-      unsigned long *regs;
-      if (ctx_version == 0) init_ctx ();
-      if (ctx_version == 1){
-        /* old-style context (10.0 and 10.1) */
-        regs = (unsigned long *)(((struct sigcontext *)ctx)->sc_regs);
-      }else{
-        Assert (ctx_version == 2);
-        /* new-style context (10.2) */
-        regs = (unsigned long *)((struct ucontext *)ctx)->uc_mcontext + 8;
-      }
-      return &(regs[2 + regno]);
-    }
-  #endif
-#endif
-
-volatile int caml_async_signal_mode = 0;
-volatile int caml_pending_signal = 0;
+volatile intnat caml_pending_signals[NSIG];
 volatile int caml_force_major_slice = 0;
 value caml_signal_handlers = 0;
-void (*caml_enter_blocking_section_hook)() = NULL;
-void (*caml_leave_blocking_section_hook)() = NULL;
 
-static int rev_convert_signal_number(int signo);
+static void caml_process_pending_signals(void)
+{
+  int signal_num;
+  intnat signal_state;
+
+  for (signal_num = 0; signal_num < NSIG; signal_num++) {
+    Read_and_clear(signal_state, caml_pending_signals[signal_num]);
+    if (signal_state) caml_execute_signal(signal_num, 0);
+  }
+}
+
+static intnat volatile caml_async_signal_mode = 0;
+
+static void caml_enter_blocking_section_default(void)
+{
+  Assert (caml_async_signal_mode == 0);
+  caml_async_signal_mode = 1;
+}
+
+static void caml_leave_blocking_section_default(void)
+{
+  Assert (caml_async_signal_mode == 1);
+  caml_async_signal_mode = 0;
+}
+
+static int caml_try_leave_blocking_section_default(void)
+{
+  intnat res;
+  Read_and_clear(res, caml_async_signal_mode);
+  return res;
+}
+
+CAMLexport void (*caml_enter_blocking_section_hook)(void) =
+   caml_enter_blocking_section_default;
+CAMLexport void (*caml_leave_blocking_section_hook)(void) =
+   caml_leave_blocking_section_default;
+CAMLexport int (*caml_try_leave_blocking_section_hook)(void) =
+   caml_try_leave_blocking_section_default;
+
+int caml_rev_convert_signal_number(int signo);
 
 /* Execute a signal handler immediately. */
 
@@ -131,8 +110,9 @@ void caml_execute_signal(int signal_number, int in_signal_handler)
   sigaddset(&sigs, signal_number);
   sigprocmask(SIG_BLOCK, &sigs, &sigs);
 #endif
-  res = caml_callback_exn(Field(caml_signal_handlers, signal_number),
-                          Val_int(rev_convert_signal_number(signal_number)));
+  res = caml_callback_exn(
+           Field(caml_signal_handlers, signal_number),
+           Val_int(caml_rev_convert_signal_number(signal_number)));
 #ifdef POSIX_SIGNALS
   if (! in_signal_handler) {
     /* Restore the original signal mask */
@@ -146,6 +126,15 @@ void caml_execute_signal(int signal_number, int in_signal_handler)
   if (Is_exception_result(res)) caml_raise(Extract_exception(res));
 }
 
+/* Record the delivery of a signal and play with the allocation limit
+   so that the next allocation will trigger a garbage collection. */
+
+void caml_record_signal(int signal_number)
+{
+  caml_pending_signals[signal_number] = 1;
+  caml_young_limit = caml_young_end;
+}
+
 /* This routine is the common entry point for garbage collection
    and signal handling.  It can trigger a callback to Caml code.
    With system threads, this callback can cause a context switch.
@@ -157,17 +146,17 @@ void caml_execute_signal(int signal_number, int in_signal_handler)
 
 void caml_garbage_collection(void)
 {
-  int sig;
+  int signal_number;
+  intnat signal_state;
 
-  if (caml_young_ptr < caml_young_start || caml_force_major_slice){
+  caml_young_limit = caml_young_start;
+  if (caml_young_ptr < caml_young_start || caml_force_major_slice) {
     caml_minor_collection();
   }
-  /* If a signal arrives between the following two instructions,
-     it will be lost. */
-  sig = caml_pending_signal;
-  caml_pending_signal = 0;
-  caml_young_limit = caml_young_start;
-  if (sig) caml_execute_signal(sig, 0);
+  for (signal_number = 0; signal_number < NSIG; signal_number++) {
+    Read_and_clear(signal_state, caml_pending_signals[signal_number]);
+    if (signal_state) caml_execute_signal(signal_number, 0);
+  }
 }
 
 /* Trigger a garbage collection as soon as possible */
@@ -184,104 +173,45 @@ void caml_urge_major_slice (void)
 
 void caml_enter_blocking_section(void)
 {
-  int sig;
+  int i;
+  intnat pending;
 
   while (1){
-    Assert (!caml_async_signal_mode);
-    /* If a signal arrives between the next two instructions,
-       it will be lost. */
-    sig = caml_pending_signal;
-    caml_pending_signal = 0;
-    caml_young_limit = caml_young_start;
-    if (sig) caml_execute_signal(sig, 0);
-    caml_async_signal_mode = 1;
-    if (!caml_pending_signal) break;
-    caml_async_signal_mode = 0;
-  }
-  if (caml_enter_blocking_section_hook != NULL){
-    caml_enter_blocking_section_hook();
+    /* Process all pending signals now */
+    caml_process_pending_signals();
+    caml_enter_blocking_section_hook ();
+    /* Check again for pending signals. */
+    pending = 0;
+    for (i = 0; i < NSIG; i++) pending |= caml_pending_signals[i];
+    /* If none, done; otherwise, try again */
+    if (!pending) break;
+    caml_leave_blocking_section_hook ();
   }
 }
 
-void caml_leave_blocking_section(void)
+CAMLexport void caml_leave_blocking_section(void)
 {
-  if (caml_leave_blocking_section_hook != NULL){
-    caml_leave_blocking_section_hook();
-  }
-  Assert(caml_async_signal_mode);
-  caml_async_signal_mode = 0;
+  caml_leave_blocking_section_hook ();
+  caml_process_pending_signals();
 }
 
-#if defined(TARGET_alpha) || defined(TARGET_mips)
-static void handle_signal(int sig, int code, struct sigcontext * context)
-#elif defined(TARGET_power) && defined(SYS_elf)
-static void handle_signal(int sig, struct sigcontext * context)
-#elif defined(TARGET_power) && defined(SYS_rhapsody)
-static void handle_signal(int sig, int code, STRUCT_SIGCONTEXT * context)
-#elif defined(TARGET_power) && defined(SYS_bsd)
-static void handle_signal(int sig, int code, struct sigcontext * context)
-#elif defined(TARGET_sparc) && defined(SYS_solaris)
-static void handle_signal(int sig, int code, void * context)
-#else
-static void handle_signal(int sig)
-#endif
+DECLARE_SIGNAL_HANDLER(handle_signal)
 {
 #if !defined(POSIX_SIGNALS) && !defined(BSD_SIGNALS)
   signal(sig, handle_signal);
 #endif
-  if (caml_async_signal_mode) {
-    /* We are interrupting a C function blocked on I/O.
-       Callback the Caml code immediately. */
-    caml_leave_blocking_section();
+  if (sig < 0 || sig >= NSIG) return;
+  if (caml_try_leave_blocking_section_hook ()) {
     caml_execute_signal(sig, 1);
-    caml_enter_blocking_section();
+    caml_enter_blocking_section_hook();
   } else {
-    /* We can't execute the signal code immediately.
-       Instead, we remember the signal and play with the allocation limit
-       so that the next allocation will trigger a garbage collection. */
-    caml_pending_signal = sig;
-    caml_young_limit = caml_young_end;
-    /* Some ports cache [caml_young_limit] in a register.
-       Use the signal context to modify that register too, but only if
-       we are inside Caml code (not inside C code). */
-#if defined(TARGET_alpha)
-    if (In_code_area(context->sc_pc)) {
-      /* Cached in register $14 */
-      context->sc_regs[14] = (long) caml_young_limit;
-    }
-#endif
-#if defined(TARGET_mips)
-    if (In_code_area(context->sc_pc)) {
-      /* Cached in register $23 */
-      context->sc_regs[23] = (int) caml_young_limit;
-    }
-#endif
-#if defined(TARGET_power) && defined(SYS_elf)
-    if (caml_last_return_address == 0) {
-      /* Cached in register 30 */
-      context->regs->gpr[30] = (unsigned long) caml_young_limit;
-    }
-#endif
-#if defined(TARGET_power) && defined(SYS_rhapsody)
-    if (In_code_area(CONTEXT_PC(context))) {
-      /* Cached in register 30 */
-      CONTEXT_GPR(context, 30) = (unsigned long) caml_young_limit;
-    }
-#endif
-#if defined(TARGET_power) && defined(SYS_bsd)
-    if (caml_last_return_address == 0) {
-      /* Cached in register 30 */
-      context->sc_frame.fixreg[30] = (unsigned long) caml_young_limit;
-    }
-#endif
-#if defined(TARGET_sparc) && defined(SYS_solaris)
-    { greg_t * gregs = ((ucontext_t *)context)->uc_mcontext.gregs;
-      if (In_code_area(gregs[REG_PC])) {
-      /* Cached in register l7, which is saved on the stack 7 words
-	 after the stack pointer.  */
-        ((long *)(gregs[REG_SP]))[7] = (long) caml_young_limit;
-      }
-    }
+    caml_record_signal(sig);
+  /* Some ports cache [caml_young_limit] in a register.
+     Use the signal context to modify that register too, but only if
+     we are inside Caml code (not inside C code). */
+#if defined(CONTEXT_PC) && defined(CONTEXT_YOUNG_LIMIT)
+    if (In_code_area(CONTEXT_PC))
+      CONTEXT_YOUNG_LIMIT = (context_reg) caml_young_limit;
 #endif
   }
 }
@@ -364,7 +294,7 @@ int caml_convert_signal_number(int signo)
     return signo;
 }
 
-static int rev_convert_signal_number(int signo)
+int caml_rev_convert_signal_number(int signo)
 {
   int i;
   for (i = 0; i < sizeof(posix_signals) / sizeof(int); i++)
@@ -372,23 +302,41 @@ static int rev_convert_signal_number(int signo)
   return signo;
 }
 
-#ifndef NSIG
-#define NSIG 64
-#endif
+typedef void (*signal_handler)(int signo);
 
 value caml_install_signal_handler(value signal_number, value action) /* ML */
 {
   CAMLparam2 (signal_number, action);
   int sig;
-  void (*act)(int signo), (*oldact)(int signo);
+  signal_handler oldact;
 #ifdef POSIX_SIGNALS
   struct sigaction sigact, oldsigact;
+#else
+  signal_handler act;
 #endif
   CAMLlocal1 (res);
 
   sig = caml_convert_signal_number(Int_val(signal_number));
   if (sig < 0 || sig >= NSIG) 
     caml_invalid_argument("Sys.signal: unavailable signal");
+#ifdef POSIX_SIGNALS
+  switch(action) {
+  case Val_int(0):              /* Signal_default */
+    sigact.sa_handler = SIG_DFL;
+    sigact.sa_flags = 0;
+    break;
+  case Val_int(1):              /* Signal_ignore */
+    sigact.sa_handler = SIG_IGN;
+    sigact.sa_flags = 0;
+    break;
+  default:                      /* Signal_handle */
+    SET_SIGACT(sigact, handle_signal);
+    break;
+  }
+  sigemptyset(&sigact.sa_mask);
+  if (sigaction(sig, &sigact, &oldsigact) == -1) caml_sys_error(NO_ARG);
+  oldact = oldsigact.sa_handler;
+#else
   switch(action) {
   case Val_int(0):              /* Signal_default */
     act = SIG_DFL;
@@ -397,24 +345,13 @@ value caml_install_signal_handler(value signal_number, value action) /* ML */
     act = SIG_IGN;
     break;
   default:                      /* Signal_handle */
-    act = (void (*)(int)) handle_signal;
+    act = handle_signal;
     break;
   }
-#ifdef POSIX_SIGNALS
-  sigact.sa_handler = act;
-  sigemptyset(&sigact.sa_mask);
-#if defined(SYS_solaris) || defined(SYS_rhapsody)
-  sigact.sa_flags = SA_SIGINFO;
-#else
-  sigact.sa_flags = 0;
-#endif
-  if (sigaction(sig, &sigact, &oldsigact) == -1) caml_sys_error(NO_ARG);
-  oldact = oldsigact.sa_handler;
-#else
   oldact = signal(sig, act);
   if (oldact == SIG_ERR) caml_sys_error(NO_ARG);
 #endif
-  if (oldact == (void (*)(int)) handle_signal) {
+  if (oldact == (signal_handler) handle_signal) {
     res = caml_alloc_small(1, 0);          /* Signal_handle */
     Field(res, 0) = Field(caml_signal_handlers, sig);
   }
@@ -429,99 +366,39 @@ value caml_install_signal_handler(value signal_number, value action) /* ML */
     }
     caml_modify(&Field(caml_signal_handlers, sig), Field(action, 0));
   }
+  caml_process_pending_signals();
   CAMLreturn (res);
 }
 
 /* Machine- and OS-dependent handling of bound check trap */
 
-#if defined(TARGET_sparc) && defined(SYS_sunos)
-static void trap_handler(int sig, int code, 
-                         struct sigcontext * context, char * address)
+#if defined(TARGET_power) || (defined(TARGET_sparc) && defined(SYS_solaris))
+DECLARE_SIGNAL_HANDLER(trap_handler)
 {
-  int * sp;
-  /* Unblock SIGILL */
-  sigset_t mask;
-  sigemptyset(&mask);
-  sigaddset(&mask, SIGILL);
-  sigprocmask(SIG_UNBLOCK, &mask, NULL);
-  if (code != ILL_TRAP_FAULT(5)) {
-    fprintf(stderr, "Fatal error: illegal instruction, code 0x%x\n", code);
-    exit(100);
-  }
-  /* Recover [caml_young_ptr] and [caml_exception_pointer]
-     from the %l5 and %l6 regs */
-  sp = (int *) context->sc_sp;
-  caml_exception_pointer = (char *) sp[5];
-  caml_young_ptr = (char *) sp[6];
-  caml_array_bound_error();
-}
-#endif
-
-#if defined(TARGET_sparc) && defined(SYS_solaris)
-static void trap_handler(int sig, siginfo_t * info, void * context)
-{
-  long * sp;
-
+#if defined(SYS_solaris)
   if (info->si_code != ILL_ILLTRP) {
-    fprintf(stderr, "Fatal error: illegal instruction, code 0x%x\n",
-            info->si_code);
-    exit(100);
+    /* Deactivate our exception handler and return. */
+    struct sigaction act;
+    act.sa_handler = SIG_DFL;
+    act.sa_flags = 0;
+    sigemptyset(&act.sa_mask);
+    sigaction(sig, &act, NULL);
+    return;
   }
-  /* Recover [caml_young_ptr] and [caml_exception_pointer]
-     from the %l5 and %l6 regs */
-  sp = (long *) (((ucontext_t *)context)->uc_mcontext.gregs[REG_SP]);
-  caml_exception_pointer = (char *) sp[5];
-  caml_young_ptr = (char *) sp[6];
-  caml_array_bound_error();
-}
 #endif
-
-#if defined(TARGET_sparc) && (defined(SYS_bsd) || defined(SYS_linux))
-static void trap_handler(int sig)
-{
-  /* TODO: recover registers from context and call [caml_array_bound_error] */
-  caml_fatal_error("Fatal error: out-of-bound access in array or string\n");
-}
-#endif
-
-#if defined(TARGET_power) && defined(SYS_elf)
-static void trap_handler(int sig, struct sigcontext * context)
-{
-  /* Recover [caml_young_ptr] and [caml_exception_pointer]
-     from registers 31 and 29 */
-  caml_exception_pointer = (char *) context->regs->gpr[29];
-  caml_young_ptr = (char *) context->regs->gpr[31];
-  caml_array_bound_error();
-}
-#endif
-
-#if defined(TARGET_power) && defined(SYS_rhapsody)
-static void trap_handler(int sig, int code, STRUCT_SIGCONTEXT * context)
-{
+#if defined(SYS_rhapsody)
   /* Unblock SIGTRAP */
-  sigset_t mask;
-  sigemptyset(&mask);
-  sigaddset(&mask, SIGTRAP);
-  sigprocmask(SIG_UNBLOCK, &mask, NULL);
-  /* Recover [caml_young_ptr] and [caml_exception_pointer]
-     from registers 31 and 29 */
-  caml_exception_pointer = (char *) CONTEXT_GPR(context, 29);
-  caml_young_ptr = (char *) CONTEXT_GPR(context, 31);
+  { sigset_t mask;
+    sigemptyset(&mask);
+    sigaddset(&mask, SIGTRAP);
+    sigprocmask(SIG_UNBLOCK, &mask, NULL);
+  }
+#endif
+  caml_exception_pointer = (char *) CONTEXT_EXCEPTION_POINTER;
+  caml_young_ptr = (char *) CONTEXT_YOUNG_PTR;
   caml_array_bound_error();
 }
 #endif
-
-#if defined(TARGET_power) && defined(SYS_bsd)
-static void trap_handler(int sig, int code, struct sigcontext * context)
-{
-  /* Recover [caml_young_ptr] and [caml_exception_pointer]
-     from registers 31 and 29 */
-  caml_exception_pointer = (char *) context->sc_frame.fixreg[29];
-  caml_young_ptr = (char *) context->sc_frame.fixreg[31];
-  caml_array_bound_error();
-}
-#endif
-
 
 /* Machine- and OS-dependent handling of stack overflow */
 
@@ -530,46 +407,39 @@ static void trap_handler(int sig, int code, struct sigcontext * context)
 static char * system_stack_top;
 static char sig_alt_stack[SIGSTKSZ];
 
-static int is_stack_overflow(char * fault_addr)
+DECLARE_SIGNAL_HANDLER(segv_handler)
 {
   struct rlimit limit;
   struct sigaction act;
+  char * fault_addr;
 
   /* Sanity checks:
      - faulting address is word-aligned
-     - faulting address is within the stack */
-  if (((long) fault_addr & (sizeof(long) - 1)) == 0 &&
-      getrlimit(RLIMIT_STACK, &limit) == 0 &&
-      fault_addr < system_stack_top &&
-      fault_addr >= system_stack_top - limit.rlim_cur - 0x2000) {
-    /* OK, caller can turn this into a Stack_overflow exception */
-    return 1;
-  } else {
-    /* Otherwise, deactivate our exception handler.  Caller will
-       return, causing fatal signal to be generated at point of error. */
-    act.sa_handler = SIG_DFL;
-    act.sa_flags = 0;
-    sigemptyset(&act.sa_mask);
-    sigaction(SIGSEGV, &act, NULL);
-    return 0;
+     - faulting address is within the stack
+     - we are in Caml code */
+  fault_addr = CONTEXT_FAULTING_ADDRESS;
+  if (((uintnat) fault_addr & (sizeof(intnat) - 1)) == 0
+      && getrlimit(RLIMIT_STACK, &limit) == 0
+      && fault_addr < system_stack_top
+      && fault_addr >= system_stack_top - limit.rlim_cur - 0x2000
+#ifdef CONTEXT_PC
+      && In_code_area(CONTEXT_PC)
+#endif
+      ) {
+    /* Turn this into a Stack_overflow exception */
+#if defined(CONTEXT_YOUNG_PTR) && defined(CONTEXT_EXCEPTION_POINTER)
+    caml_exception_pointer = (char *) CONTEXT_EXCEPTION_POINTER;
+    caml_young_ptr = (char *) CONTEXT_YOUNG_PTR;
+#endif
+    caml_raise_stack_overflow();
   }
+  /* Otherwise, deactivate our exception handler and return,
+     causing fatal signal to be generated at point of error. */
+  act.sa_handler = SIG_DFL;
+  act.sa_flags = 0;
+  sigemptyset(&act.sa_mask);
+  sigaction(SIGSEGV, &act, NULL);
 }
-
-#if defined(TARGET_i386) && defined(SYS_linux_elf)
-static void segv_handler(int signo, struct sigcontext sc)
-{
-  if (is_stack_overflow((char *) sc.cr2))
-    caml_raise_stack_overflow();
-}
-#endif
-
-#if defined(TARGET_i386) && !defined(SYS_linux_elf)
-static void segv_handler(int signo, siginfo_t * info, void * arg)
-{
-  if (is_stack_overflow((char *) info->si_addr))
-    caml_raise_stack_overflow();
-}
-#endif
 
 #endif
 
@@ -578,38 +448,26 @@ static void segv_handler(int signo, siginfo_t * info, void * arg)
 void caml_init_signals(void)
 {
   /* Bound-check trap handling */
-#if defined(TARGET_sparc) && \
-      (defined(SYS_sunos) || defined(SYS_bsd) || defined(SYS_linux))
-  {
-    struct sigaction act;
-    act.sa_handler = (void (*)(int)) trap_handler;
-    sigemptyset(&act.sa_mask);
-    act.sa_flags = 0;
-    sigaction(SIGILL, &act, NULL);
-  }
-#endif
 #if defined(TARGET_sparc) && defined(SYS_solaris)
-  {
-    struct sigaction act;
-    act.sa_sigaction = trap_handler;
+  { struct sigaction act;
     sigemptyset(&act.sa_mask);
-    act.sa_flags = SA_SIGINFO | SA_NODEFER;
+    SET_SIGACT(act, trap_handler);
+    act.sa_flags |= SA_NODEFER;
     sigaction(SIGILL, &act, NULL);
   }
 #endif
+
 #if defined(TARGET_power)
-  {
-    struct sigaction act;
-    act.sa_handler = (void (*)(int)) trap_handler;
+  { struct sigaction act;
     sigemptyset(&act.sa_mask);
-#if defined (SYS_rhapsody)
-    act.sa_flags = SA_SIGINFO;
-#else
-    act.sa_flags = SA_NODEFER;
+    SET_SIGACT(act, trap_handler);
+#if !defined(SYS_rhapsody)
+    act.sa_flags |= SA_NODEFER;
 #endif
     sigaction(SIGTRAP, &act, NULL);
   }
 #endif
+
   /* Stack overflow handling */
 #ifdef HAS_STACK_OVERFLOW_DETECTION
   {
@@ -618,13 +476,8 @@ void caml_init_signals(void)
     stk.ss_sp = sig_alt_stack;
     stk.ss_size = SIGSTKSZ;
     stk.ss_flags = 0;
-#if defined(TARGET_i386) && defined(SYS_linux_elf)
-    act.sa_handler = (void (*)(int)) segv_handler;
-    act.sa_flags = SA_ONSTACK | SA_NODEFER;
-#else
-    act.sa_sigaction = segv_handler;
-    act.sa_flags = SA_SIGINFO | SA_ONSTACK | SA_NODEFER;
-#endif
+    SET_SIGACT(act, segv_handler);
+    act.sa_flags |= SA_ONSTACK | SA_NODEFER;
     sigemptyset(&act.sa_mask);
     system_stack_top = (char *) &act;
     if (sigaltstack(&stk, NULL) == 0) { sigaction(SIGSEGV, &act, NULL); }

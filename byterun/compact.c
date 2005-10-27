@@ -26,7 +26,7 @@
 #include "roots.h"
 #include "weak.h"
 
-extern unsigned long caml_percent_free;             /* major_gc.c */
+extern uintnat caml_percent_free;                   /* major_gc.c */
 extern void caml_shrink_heap (char *);              /* memory.c */
 
 /* Encoded headers: the color is stored in the 2 least significant bits.
@@ -51,12 +51,12 @@ extern void caml_shrink_heap (char *);              /* memory.c */
 #define Tag_ehd(h) (((h) >> 2) & 0xFF)
 #define Ecolor(w) ((w) & 3)
 
-typedef unsigned long word;
+typedef uintnat word;
 
 static void invert_pointer_at (word *p)
 {
   word q = *p;
-                                              Assert (Ecolor ((long) p) == 0);
+                                            Assert (Ecolor ((intnat) p) == 0);
 
   /* Use Ecolor (q) == 0 instead of Is_block (q) because q could be an
      inverted pointer for an infix header (with Ecolor == 2). */
@@ -208,7 +208,7 @@ void caml_compact_heap (void)
           /* Get the original header of this block. */
           infixes = p + sz;
           q = *infixes;
-          while (Ecolor (q) != 3) q = * (word *) (q & ~(unsigned long)3);
+          while (Ecolor (q) != 3) q = * (word *) (q & ~(uintnat)3);
           sz = Whsize_ehd (q);
           t = Tag_ehd (q);
         }
@@ -272,7 +272,7 @@ void caml_compact_heap (void)
             /* Get the original header of this block. */
             infixes = p + sz;
             q = *infixes;                             Assert (Ecolor (q) == 2);
-            while (Ecolor (q) != 3) q = * (word *) (q & ~(unsigned long)3);
+            while (Ecolor (q) != 3) q = * (word *) (q & ~(uintnat)3);
             sz = Whsize_ehd (q);
             t = Tag_ehd (q);
           }
@@ -289,11 +289,11 @@ void caml_compact_heap (void)
           if (infixes != NULL){
             /* Rebuild the infix headers and revert the infix pointers. */
             while (Ecolor ((word) infixes) != 3){
-              infixes = (word *) ((word) infixes & ~(unsigned long) 3);
+              infixes = (word *) ((word) infixes & ~(uintnat) 3);
               q = *infixes;
               while (Ecolor (q) == 2){
                 word next;
-                q = (word) q & ~(unsigned long) 3;
+                q = (word) q & ~(uintnat) 3;
                 next = * (word *) q;
                 * (word *) q = (word) Val_hp ((word *) newadr + (infixes - p));
                 q = next;
@@ -393,7 +393,7 @@ void caml_compact_heap (void)
   caml_gc_message (0x10, "done.\n", 0);
 }
 
-unsigned long caml_percent_max;  /* used in gc_ctrl.c */
+uintnat caml_percent_max;  /* used in gc_ctrl.c */
 
 void caml_compact_heap_maybe (void)
 {
@@ -419,9 +419,12 @@ void caml_compact_heap_maybe (void)
     fp = 100.0 * fw / (Wsize_bsize (caml_stat_heap_size) - fw);
     if (fp > 1000000.0) fp = 1000000.0;
   }
-  caml_gc_message (0x200, "FL size at phase change = %lu\n",
-                   (unsigned long) caml_fl_size_at_phase_change);
-  caml_gc_message (0x200, "Estimated overhead = %lu%%\n", (unsigned long) fp);
+  caml_gc_message (0x200, "FL size at phase change = %"
+                          ARCH_INTNAT_PRINTF_FORMAT "u\n",
+                   (uintnat) caml_fl_size_at_phase_change);
+  caml_gc_message (0x200, "Estimated overhead = %"
+                          ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
+                   (uintnat) fp);
   if (fp >= caml_percent_max){
     caml_gc_message (0x200, "Automatic compaction triggered.\n", 0);
     caml_finish_major_cycle ();
@@ -429,7 +432,9 @@ void caml_compact_heap_maybe (void)
     /* We just did a complete GC, so we can measure the overhead exactly. */
     fw = caml_fl_cur_size;
     fp = 100.0 * fw / (Wsize_bsize (caml_stat_heap_size) - fw);
-    caml_gc_message (0x200, "Measured overhead: %lu%%\n", (unsigned long) fp);
+    caml_gc_message (0x200, "Measured overhead: %"
+                            ARCH_INTNAT_PRINTF_FORMAT "u%%\n",
+                     (uintnat) fp);
 
     caml_compact_heap ();
   }

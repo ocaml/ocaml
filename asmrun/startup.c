@@ -64,12 +64,12 @@ static void init_atoms(void)
 
 /* Configuration parameters and flags */
 
-static unsigned long percent_free_init = Percent_free_def;
-static unsigned long max_percent_free_init = Max_percent_free_def;
-static unsigned long minor_heap_init = Minor_heap_def;
-static unsigned long heap_chunk_init = Heap_chunk_def;
-static unsigned long heap_size_init = Init_heap_def;
-static unsigned long max_stack_init = Max_stack_def;
+static uintnat percent_free_init = Percent_free_def;
+static uintnat max_percent_free_init = Max_percent_free_def;
+static uintnat minor_heap_init = Minor_heap_def;
+static uintnat heap_chunk_init = Heap_chunk_def;
+static uintnat heap_size_init = Init_heap_def;
+static uintnat max_stack_init = Max_stack_def;
 
 /* Parse the CAMLRUNPARAM variable */
 /* The option letter for each runtime option is the first letter of the
@@ -80,14 +80,18 @@ static unsigned long max_stack_init = Max_stack_def;
 
 /* If you change these functions, see also their copy in byterun/startup.c */
 
-static void scanmult (char *opt, long unsigned int *var)
+static void scanmult (char *opt, uintnat *var)
 {
   char mult = ' ';
-  sscanf (opt, "=%lu%c", var, &mult);
-  sscanf (opt, "=0x%lx%c", var, &mult);
-  if (mult == 'k') *var = *var * 1024;
-  if (mult == 'M') *var = *var * (1024 * 1024);
-  if (mult == 'G') *var = *var * (1024 * 1024 * 1024);
+  int val;
+  sscanf (opt, "=%u%c", &val, &mult);
+  sscanf (opt, "=0x%x%c", &val, &mult);
+  switch (mult) {
+  case 'k':   *var = (uintnat) val * 1024; break;
+  case 'M':   *var = (uintnat) val * 1024 * 1024; break;
+  case 'G':   *var = (uintnat) val * 1024 * 1024 * 1024; break;
+  default:    *var = (uintnat) val; break;
+  }
 }
 
 static void parse_camlrunparam(void)

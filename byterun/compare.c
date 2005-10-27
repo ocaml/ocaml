@@ -91,7 +91,7 @@ static struct compare_item * compare_resize_stack(struct compare_item * sp)
       < 0 and > UNORDERED v1 is less than v2
       UNORDERED           v1 and v2 cannot be compared */
 
-static long compare_val(value v1, value v2, int total)
+static intnat compare_val(value v1, value v2, int total)
 {
   struct compare_item * sp;
   tag_t t1, t2;
@@ -132,7 +132,7 @@ static long compare_val(value v1, value v2, int total)
     t2 = Tag_val(v2);
     if (t1 == Forward_tag) { v1 = Forward_val (v1); continue; }
     if (t2 == Forward_tag) { v2 = Forward_val (v2); continue; }
-    if (t1 != t2) return (long)t1 - (long)t2;
+    if (t1 != t2) return (intnat)t1 - (intnat)t2;
     switch(t1) {
     case String_tag: {
       mlsize_t len1, len2, len;
@@ -145,7 +145,7 @@ static long compare_val(value v1, value v2, int total)
              p2 = (unsigned char *) String_val(v2);
            len > 0;
            len--, p1++, p2++)
-        if (*p1 != *p2) return (long)*p1 - (long)*p2;
+        if (*p1 != *p2) return (intnat)*p1 - (intnat)*p2;
       if (len1 != len2) return len1 - len2;
       break;
     }
@@ -191,8 +191,8 @@ static long compare_val(value v1, value v2, int total)
       compare_free_stack();
       caml_invalid_argument("equal: functional value");
     case Object_tag: {
-      long oid1 = Oid_val(v1);
-      long oid2 = Oid_val(v2);
+      intnat oid1 = Oid_val(v1);
+      intnat oid2 = Oid_val(v2);
       if (oid1 != oid2) return oid1 - oid2;
       break;
     }
@@ -237,7 +237,7 @@ static long compare_val(value v1, value v2, int total)
 
 CAMLprim value caml_compare(value v1, value v2)
 {
-  long res = compare_val(v1, v2, 1);
+  intnat res = compare_val(v1, v2, 1);
   /* Free stack if needed */
   if (compare_stack != compare_stack_init) compare_free_stack();
   if (res < 0)
@@ -250,42 +250,42 @@ CAMLprim value caml_compare(value v1, value v2)
 
 CAMLprim value caml_equal(value v1, value v2)
 {
-  long res = compare_val(v1, v2, 0);
+  intnat res = compare_val(v1, v2, 0);
   if (compare_stack != compare_stack_init) compare_free_stack();
   return Val_int(res == 0);
 }
 
 CAMLprim value caml_notequal(value v1, value v2)
 {
-  long res = compare_val(v1, v2, 0);
+  intnat res = compare_val(v1, v2, 0);
   if (compare_stack != compare_stack_init) compare_free_stack();
   return Val_int(res != 0);
 }
 
 CAMLprim value caml_lessthan(value v1, value v2)
 {
-  long res = compare_val(v1, v2, 0);
+  intnat res = compare_val(v1, v2, 0);
   if (compare_stack != compare_stack_init) compare_free_stack();
   return Val_int(res - 1 < -1);
 }
 
 CAMLprim value caml_lessequal(value v1, value v2)
 {
-  long res = compare_val(v1, v2, 0);
+  intnat res = compare_val(v1, v2, 0);
   if (compare_stack != compare_stack_init) compare_free_stack();
   return Val_int(res - 1 <= -1);
 }
 
 CAMLprim value caml_greaterthan(value v1, value v2)
 {
-  long res = compare_val(v1, v2, 0);
+  intnat res = compare_val(v1, v2, 0);
   if (compare_stack != compare_stack_init) compare_free_stack();
   return Val_int(res > 0);
 }
 
 CAMLprim value caml_greaterequal(value v1, value v2)
 {
-  long res = compare_val(v1, v2, 0);
+  intnat res = compare_val(v1, v2, 0);
   if (compare_stack != compare_stack_init) compare_free_stack();
   return Val_int(res >= 0);
 }

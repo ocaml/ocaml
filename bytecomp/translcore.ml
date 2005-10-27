@@ -53,7 +53,8 @@ let comparisons_table = create_hashtable 11 [
               prim_native_name = ""; prim_native_float = false},
        Pbintcomp(Pnativeint, Ceq),
        Pbintcomp(Pint32, Ceq),
-       Pbintcomp(Pint64, Ceq));
+       Pbintcomp(Pint64, Ceq),
+       true);
   "%notequal",
       (Pccall{prim_name = "caml_notequal"; prim_arity = 2; prim_alloc = true;
               prim_native_name = ""; prim_native_float = false},
@@ -64,7 +65,8 @@ let comparisons_table = create_hashtable 11 [
               prim_native_float = false},
        Pbintcomp(Pnativeint, Cneq),
        Pbintcomp(Pint32, Cneq),
-       Pbintcomp(Pint64, Cneq));
+       Pbintcomp(Pint64, Cneq),
+       true);
   "%lessthan",
       (Pccall{prim_name = "caml_lessthan"; prim_arity = 2; prim_alloc = true;
               prim_native_name = ""; prim_native_float = false},
@@ -75,7 +77,8 @@ let comparisons_table = create_hashtable 11 [
               prim_native_float = false},
        Pbintcomp(Pnativeint, Clt),
        Pbintcomp(Pint32, Clt),
-       Pbintcomp(Pint64, Clt));
+       Pbintcomp(Pint64, Clt),
+       false);
   "%greaterthan",
       (Pccall{prim_name = "caml_greaterthan"; prim_arity = 2; prim_alloc = true;
               prim_native_name = ""; prim_native_float = false},
@@ -86,7 +89,8 @@ let comparisons_table = create_hashtable 11 [
               prim_native_float = false},
        Pbintcomp(Pnativeint, Cgt),
        Pbintcomp(Pint32, Cgt),
-       Pbintcomp(Pint64, Cgt));
+       Pbintcomp(Pint64, Cgt),
+       false);
   "%lessequal",
       (Pccall{prim_name = "caml_lessequal"; prim_arity = 2; prim_alloc = true;
               prim_native_name = ""; prim_native_float = false},
@@ -97,7 +101,8 @@ let comparisons_table = create_hashtable 11 [
               prim_native_float = false},
        Pbintcomp(Pnativeint, Cle),
        Pbintcomp(Pint32, Cle),
-       Pbintcomp(Pint64, Cle));
+       Pbintcomp(Pint64, Cle),
+       false);
   "%greaterequal",
       (Pccall{prim_name = "caml_greaterequal"; prim_arity = 2;
               prim_alloc = true;
@@ -109,7 +114,8 @@ let comparisons_table = create_hashtable 11 [
               prim_native_float = false},
        Pbintcomp(Pnativeint, Cge),
        Pbintcomp(Pint32, Cge),
-       Pbintcomp(Pint64, Cge));
+       Pbintcomp(Pint64, Cge),
+       false);
   "%compare",
       (Pccall{prim_name = "caml_compare"; prim_arity = 2; prim_alloc = true;
               prim_native_name = ""; prim_native_float = false},
@@ -130,7 +136,8 @@ let comparisons_table = create_hashtable 11 [
               prim_native_float = false},
        Pccall{prim_name = "caml_int64_compare"; prim_arity = 2;
               prim_alloc = false; prim_native_name = "";
-              prim_native_float = false})
+              prim_native_float = false},
+       false)
 ]
 
 let primitives_table = create_hashtable 57 [
@@ -262,12 +269,15 @@ let prim_obj_dup =
 let transl_prim prim args =
   try
     let (gencomp, intcomp, floatcomp, stringcomp,
-         nativeintcomp, int32comp, int64comp) =
+         nativeintcomp, int32comp, int64comp,
+         simplify_constant_constructor) =
       Hashtbl.find comparisons_table prim.prim_name in
     begin match args with
-      [arg1; {exp_desc = Texp_construct({cstr_tag = Cstr_constant _}, _)}] ->
+      [arg1; {exp_desc = Texp_construct({cstr_tag = Cstr_constant _}, _)}]
+      when simplify_constant_constructor ->
         intcomp
-    | [{exp_desc = Texp_construct({cstr_tag = Cstr_constant _}, _)}; arg2] ->
+    | [{exp_desc = Texp_construct({cstr_tag = Cstr_constant _}, _)}; arg2]
+      when simplify_constant_constructor ->
         intcomp
     | [arg1; arg2] when has_base_type arg1 Predef.path_int
                      || has_base_type arg1 Predef.path_char ->
@@ -325,7 +335,7 @@ let make_sequence lam1 lam2 =
 let simple_prim p =
   let prim =
     try
-      let (gencomp, _, _, _, _, _, _) =
+      let (gencomp, _, _, _, _, _, _, _) =
         Hashtbl.find comparisons_table p.prim_name in
       gencomp
     with Not_found ->
@@ -344,7 +354,7 @@ let () = Transljoin.simple_prim := simple_prim
 let transl_primitive p =
   let prim =
     try
-      let (gencomp, _, _, _, _, _, _) =
+      let (gencomp, _, _, _, _, _, _, _) =
         Hashtbl.find comparisons_table p.prim_name in
       gencomp
     with Not_found ->
@@ -456,8 +466,8 @@ let rec push_defaults loc bindings pat_expr_list partial =
     [pat, ({exp_desc = Texp_function(pl,partial)} as exp)] ->
       let pl = push_defaults exp.exp_loc bindings pl partial in
       [pat, {exp with exp_desc = Texp_function(pl, partial)}]
-  | [pat, ({exp_desc = Texp_let
-             (Default, cases, ({exp_desc = Texp_function _} as e2))} as e1)] ->
+  | [pat, {exp_desc = Texp_let
+             (Default, cases, ({exp_desc = Texp_function _} as e2))}] ->
       push_defaults loc (cases :: bindings) [pat, e2] partial
   | [pat, exp] ->
       let exp =
@@ -488,7 +498,7 @@ let event_before exp lam = match lam with
 | Lstaticraise (_,_) -> lam
 | _ ->
   if !Clflags.debug
-  then Levent(lam, {lev_pos = exp.exp_loc.Location.loc_start;
+  then Levent(lam, {lev_loc = exp.exp_loc;
                     lev_kind = Lev_before;
                     lev_repr = None;
                     lev_env = Env.summary exp.exp_env})
@@ -496,20 +506,18 @@ let event_before exp lam = match lam with
 
 let event_after exp lam =
   if !Clflags.debug
-  then Levent(lam, {lev_pos = exp.exp_loc.Location.loc_end;
+  then Levent(lam, {lev_loc = exp.exp_loc;
                     lev_kind = Lev_after exp.exp_type;
                     lev_repr = None;
                     lev_env = Env.summary exp.exp_env})
   else lam
-
-let no_event exp lam = lam
 
 let event_function exp lam =
   if !Clflags.debug then
     let repr = Some (ref 0) in
     let (info, body) = lam repr in
     (info,
-     Levent(body, {lev_pos = exp.exp_loc.Location.loc_start;
+     Levent(body, {lev_loc = exp.exp_loc;
                    lev_kind = Lev_function;
                    lev_repr = repr;
                    lev_env = Env.summary exp.exp_env}))
@@ -528,13 +536,6 @@ let primitive_is_ccall = function
 
 let assert_failed loc =
   (* [Location.get_pos_info] is too expensive *)
-  let fname = match loc.Location.loc_start.Lexing.pos_fname with
-              | "" -> !Location.input_name
-              | x -> x
-  in
-  let pos = loc.Location.loc_start in
-  let line = pos.Lexing.pos_lnum in
-  let char = pos.Lexing.pos_cnum - pos.Lexing.pos_bol in
   Lprim(Praise, [Lprim(Pmakeblock(0, Immutable),
           [transl_path Predef.path_assert_failure;
            transl_location loc])])
@@ -544,6 +545,11 @@ let assert_failed loc =
    when translation actual expressions (I mean non-processes) *)
 let id_lam lam = lam
 ;;
+
+let rec cut n l =
+  if n = 0 then ([],l) else
+  match l with [] -> failwith "Translcore.cut"
+  | a::l -> let (l1,l2) = cut (n-1) l in (a::l1,l2)
 
 (* Translation of expressions *)
 
@@ -588,7 +594,6 @@ and transl_exp0 e =
   | Texp_def (d,body) ->
       do_transl_def d (transl_exp body)
   | Texp_loc (d,body) -> assert false
-(*< JOCAML *)
   | Texp_function (pat_expr_list, partial) ->
       let ((kind, params), body) =
         event_function e
@@ -611,8 +616,13 @@ and transl_exp0 e =
         Transljoin.local_send_sync auto idx (transl_exp arg)
 (*<JOCAML*)
   | Texp_apply({exp_desc = Texp_ident(path, {val_kind = Val_prim p})}, args)
-    when List.length args = p.prim_arity
+    when List.length args >= p.prim_arity
     && List.for_all (fun (arg,_) -> arg <> None) args ->
+      let args, args' = cut p.prim_arity args in
+      let wrap f =
+        event_after e (if args' = [] then f else transl_apply f args') in
+      let wrap0 f =
+        if args' = [] then f else wrap f in
       let args = List.map (function Some x, _ -> x | _ -> assert false) args in
       let argl = transl_list transl_exp args in
       let public_send = p.prim_name = "%send"
@@ -620,39 +630,38 @@ and transl_exp0 e =
       if public_send || p.prim_name = "%sendself" then
         let kind = if public_send then Public else Self in
 	let obj = List.hd argl in
-	event_after e (Lsend (kind, List.nth argl 1, obj, []))
+	wrap (Lsend (kind, List.nth argl 1, obj, []))
       else if p.prim_name = "%sendcache" then
         match argl with [obj; meth; cache; pos] ->
-          event_after e (Lsend(Cached, meth, obj, [cache; pos]))
+          wrap (Lsend(Cached, meth, obj, [cache; pos]))
         | _ -> assert false
       else begin
         let prim = transl_prim p args in
         match (prim, args) with
           (Praise, [arg1]) ->
-            Lprim(Praise, [event_after arg1 (List.hd argl)])
+            wrap0 (Lprim(Praise, [event_after arg1 (List.hd argl)]))
         | (_, _) ->
-            if primitive_is_ccall prim
-            then event_after e (Lprim(prim, argl))
-            else Lprim(prim, argl)
+            let p = Lprim(prim, argl) in
+            if primitive_is_ccall prim then wrap p else wrap0 p
       end
   | Texp_apply(funct, oargs) ->
       event_after e (transl_apply (transl_exp funct) oargs)
-  | Texp_match({exp_desc = Texp_tuple argl} as arg, pat_expr_list, partial) ->
+  | Texp_match({exp_desc = Texp_tuple argl}, pat_expr_list, partial) ->
       Matching.for_multiple_match (id_lam,e.exp_loc)
         (transl_list transl_exp argl)
-        (transl_cases event_before transl_exp pat_expr_list) partial
+        (transl_cases transl_exp pat_expr_list) partial
   | Texp_match(arg, pat_expr_list, partial) ->
       Matching.for_function
         (id_lam,e.exp_loc) None
         (transl_exp arg)
-        (transl_cases event_before transl_exp pat_expr_list) partial
+        (transl_cases transl_exp pat_expr_list) partial
   | Texp_try(body, pat_expr_list) ->
       let id = name_pattern "exn" pat_expr_list in
       Ltrywith
         (transl_exp body, id,
          Matching.for_trywith
            (Lvar id)
-           (transl_cases event_before transl_exp pat_expr_list))
+           (transl_cases transl_exp pat_expr_list))
   | Texp_tuple el ->
       let ll = transl_list transl_exp el in
       begin try
@@ -731,11 +740,7 @@ and transl_exp0 e =
                   event_before ifso (transl_exp ifso),
                   lambda_unit)
   | Texp_sequence(expr1, expr2) ->
-      let lam1 = transl_exp expr1 in
-      if lam1 = lambda_unit then
-        transl_exp expr2
-      else
-        Lsequence(lam1, event_before expr2 (transl_exp expr2))
+      Lsequence(transl_exp expr1, event_before expr2 (transl_exp expr2))
   | Texp_while(cond, body) ->
       Lwhile(transl_exp cond, event_before body (transl_exp body))
   | Texp_for(param, low, high, dir, body) ->
@@ -779,15 +784,15 @@ and transl_exp0 e =
       else Lifthenelse (transl_exp cond, lambda_unit, assert_failed e.exp_loc)
   | Texp_assertfalse -> assert_failed e.exp_loc
   | Texp_lazy e ->
-    let fn = Lfunction (Curried, [Ident.create "param"], transl_exp e) in
-    Lprim(Pmakeblock(Config.lazy_tag, Immutable), [fn])
+      let fn = Lfunction (Curried, [Ident.create "param"], transl_exp e) in
+      Lprim(Pmakeblock(Config.lazy_tag, Immutable), [fn])
   | Texp_object (cs, cty, meths) ->
       let cl = Ident.create "class" in
       !transl_object cl meths
-      { cl_desc = Tclass_structure cs;
-        cl_loc = e.exp_loc;
-        cl_type = Tcty_signature cty;
-        cl_env = e.exp_env }
+        { cl_desc = Tclass_structure cs;
+          cl_loc = e.exp_loc;
+          cl_type = Tcty_signature cty;
+          cl_env = e.exp_env }
 (*> JOCAML *)
   | Texp_spawn (e) -> transl_spawn e
 (*< JOCAML *)
@@ -832,17 +837,17 @@ and transl_proc die sync p = match p.exp_desc with
     Lifthenelse
       (Transljoin.reply_handler sync p transl_exp cond,
        transl_proc die sync body, staticfail)
-| Texp_match({exp_desc = Texp_tuple argl} as arg, pat_expr_list, partial) ->
+| Texp_match({exp_desc = Texp_tuple argl}, pat_expr_list, partial) ->
     Matching.for_multiple_match
       (Transljoin.lambda_reply_handler sync p, p.exp_loc)
       (transl_list (Transljoin.reply_handler sync p transl_exp) argl)
-      (transl_cases no_event (transl_proc die sync) pat_expr_list) partial
+      (transl_cases (transl_proc die sync) pat_expr_list) partial
 | Texp_match(arg, pat_expr_list, partial) ->
     Matching.for_function
        (Transljoin.lambda_reply_handler sync p, p.exp_loc)
       None
       (Transljoin.reply_handler sync p transl_exp arg)
-      (transl_cases no_event (transl_proc die sync) pat_expr_list) partial
+      (transl_cases (transl_proc die sync) pat_expr_list) partial
 | Texp_for(param, low, high, dir, body) ->
     assert (sync = None) ;
     let lam_low = transl_exp low
@@ -913,15 +918,14 @@ and transl_simple_proc die sync p = match p.exp_desc with
 | Texp_when(cond, body) ->
       (Lifthenelse
          (transl_exp cond, transl_simple_proc die sync body, staticfail))
-| Texp_match({exp_desc = Texp_tuple argl} as arg, pat_expr_list, partial) ->
+| Texp_match({exp_desc = Texp_tuple argl}, pat_expr_list, partial) ->
     Matching.for_multiple_match (id_lam, p.exp_loc)
       (transl_list transl_exp argl)
-      (transl_cases no_event
-         (transl_simple_proc die sync) pat_expr_list) partial
+      (transl_cases (transl_simple_proc die sync) pat_expr_list) partial
 | Texp_match(arg, pat_expr_list, partial) ->
     Matching.for_function (id_lam, p.exp_loc) None
       (transl_exp arg)
-      (transl_cases no_event
+      (transl_cases
          (transl_simple_proc die sync) pat_expr_list) partial
 | Texp_for(param, low, high, dir, body) ->
     assert (sync=None) ;
@@ -969,11 +973,6 @@ and transl_simple_proc die sync p = match p.exp_desc with
 
 and transl_reaction (name,_) (Reac reac) =
   let (x, _ , actuals, idpats, p) = reac in
-(*
-      let dump_oid fp = function
-      | Some id -> Printf.fprintf fp "+%s" (Ident.unique_name id)
-      | None -> Printf.fprintf fp "-"  in
-*)
 (* Principal continuation, as computed by typing *)
   let sync = Transljoin.principal p in
 (* Important: argument order comes from actual pattern order,
@@ -984,12 +983,6 @@ and transl_reaction (name,_) (Reac reac) =
       | p::_ -> p | [] -> assert false)
       actuals in
   let konts = List.map (fun jp -> !(jp.jpat_kont)) jpats in
-(*
-
-      Printf.eprintf "Principal: %a\n" dump_oid sync ;
-      List.iter (fun k -> dump_oid stderr k) konts ;
-      prerr_endline "" ;
-*)
   let body =
     List.fold_right
       (fun (param, pat) lam ->
@@ -1043,7 +1036,10 @@ and transl_dispatcher disp =
         | [] -> assert false
         | (auto,_)::_ ->
             let cls =
-              List.map (fun (_,(p,i)) -> p,lambda_int i) allchans in
+              List.map
+                (fun (_,(p,i)) ->
+                  p,Lconst (Const_base (Const_int i)))
+                allchans in
             (if chan.jchannel_sync then
               Transljoin.local_send_sync2
             else
@@ -1100,13 +1096,15 @@ and transl_as_seq die es k = match es with
     make_sequence
       (transl_simple_proc false None e)
       (transl_as_seq die rem k)
-(*< JOCAML *)
-and transl_list comp_fun expr_list =  List.map comp_fun expr_list
 
-and transl_cases event_before transl_exp pat_expr_list =
+and transl_list transl_exp expr_list =
+  List.map transl_exp expr_list
+
+and transl_cases transl_exp pat_expr_list =
   List.map
     (fun (pat, expr) -> (pat, event_before expr (transl_exp expr)))
     pat_expr_list
+(*< JOCAML *)
 
 and transl_tupled_cases patl_expr_list =
   List.map (fun (patl, expr) -> (patl, transl_exp expr)) patl_expr_list
@@ -1185,13 +1183,13 @@ and transl_function loc untuplify_fn repr partial pat_expr_list =
         let param = name_pattern "param" pat_expr_list in
         ((Curried, [param]),
          Matching.for_function (id_lam,loc) repr (Lvar param)
-           (transl_cases event_before transl_exp pat_expr_list) partial)
+           (transl_cases transl_exp pat_expr_list) partial)
       end
   | _ ->
       let param = name_pattern "param" pat_expr_list in
       ((Curried, [param]),
        Matching.for_function (id_lam,loc) repr (Lvar param)
-         (transl_cases event_before transl_exp pat_expr_list) partial)
+         (transl_cases transl_exp pat_expr_list) partial)
 
 and transl_let reply_handler transl_exp rec_flag pat_expr_list body =
   match rec_flag with
@@ -1275,7 +1273,6 @@ and do_transl_def autos body =
     List.fold_right Transljoin.create_auto autos r in
   r
 
-(*< JOCAML *)
 
 and transl_setinstvar self var expr =
   Lprim(Parraysetu (if maybe_pointer expr then Paddrarray else Pintarray),

@@ -86,6 +86,11 @@ jumptbl.h : instruct.h
 	sed -n -e "/^  /s/ \([A-Z]\)/ \&\&lbl_\1/gp" \
 	       -e "/^}/q" instruct.h > jumptbl.h
 
+version.h : ../stdlib/sys.ml
+	sed -n -e 's/;;//' \
+            -e '/let *ocaml_version *= */s//#define OCAML_VERSION /p' \
+            <../stdlib/sys.ml >version.h
+
 main.$(DO): main.c
 	$(CC) $(DLLCCCOMPOPTS) -c main.c
 	mv main.$(O) main.$(DO)

@@ -96,7 +96,7 @@ and bigarray_kind =
   | Pbigarray_float32 | Pbigarray_float64
   | Pbigarray_sint8 | Pbigarray_uint8
   | Pbigarray_sint16 | Pbigarray_uint16
-  | Pbigarray_int32 | Pbigarray_int64 
+  | Pbigarray_int32 | Pbigarray_int64
   | Pbigarray_caml_int | Pbigarray_native_int
   | Pbigarray_complex32 | Pbigarray_complex64
 
@@ -110,6 +110,7 @@ type structured_constant =
   | Const_pointer of int
   | Const_block of int * structured_constant list
   | Const_float_array of string list
+  | Const_immstring of string
 
 type function_kind = Curried | Tupled
 
@@ -148,7 +149,7 @@ and lambda_switch =
     sw_failaction : lambda option}
 
 and lambda_event =
-  { lev_pos: Lexing.position;
+  { lev_loc: Location.t;
     lev_kind: lambda_event_kind;
     lev_repr: int ref option;
     lev_env: Env.summary }
@@ -162,10 +163,6 @@ and lambda_event_kind =
 let const_unit = Const_pointer 0
 
 let lambda_unit = Lconst const_unit
-
-let lambda_int i = Lconst (Const_base (Const_int i))
-
-let lambda_string s = Lconst (Const_base (Const_string s))
 
 let rec same l1 l2 =
   match (l1, l2) with
@@ -205,7 +202,7 @@ let rec same l1 l2 =
   | Lsend(k1, a1, b1, cl1), Lsend(k2, a2, b2, cl2) ->
       k1 = k2 && same a1 a2 && same b1 b2 && samelist same cl1 cl2
   | Levent(a1, ev1), Levent(a2, ev2) ->
-      same a1 a2 && ev1.lev_pos = ev2.lev_pos
+      same a1 a2 && ev1.lev_loc = ev2.lev_loc
   | Lifused(id1, a1), Lifused(id2, a2) ->
       Ident.same id1 id2 && same a1 a2
   | _, _ ->
@@ -240,63 +237,88 @@ let name_lambda_list args fn =
       Llet(Strict, id, arg, name_list (Lvar id :: names) rem) in
   name_list [] args
 
+let rec iter f = function
+    Lvar _
+  | Lconst _ -> ()
+  | Lapply(fn, args) ->
+      f fn; List.iter f args
+  | Lfunction(kind, params, body) ->
+      f body
+  | Llet(str, id, arg, body) ->
+      f arg; f body
+  | Lletrec(decl, body) ->
+      f body;
+      List.iter (fun (id, exp) -> f exp) decl
+  | Lprim(p, args) ->
+      List.iter f args
+  | Lswitch(arg, sw) ->
+      f arg; 
+      List.iter (fun (key, case) -> f case) sw.sw_consts;
+      List.iter (fun (key, case) -> f case) sw.sw_blocks;
+      begin match sw.sw_failaction with
+      | None -> ()
+      | Some l -> f l
+      end
+  | Lstaticraise (_,args) ->
+      List.iter f args
+  | Lstaticcatch(e1, (_,vars), e2) ->
+      f e1; f e2
+  | Ltrywith(e1, exn, e2) ->
+      f e1; f e2
+  | Lifthenelse(e1, e2, e3) ->
+      f e1; f e2; f e3
+  | Lsequence(e1, e2) ->
+      f e1; f e2
+  | Lwhile(e1, e2) ->
+      f e1; f e2
+  | Lfor(v, e1, e2, dir, e3) ->
+      f e1; f e2; f e3
+  | Lassign(id, e) ->
+      f e
+  | Lsend (k, met, obj, args) ->
+      List.iter f (met::obj::args)
+  | Levent (lam, evt) ->
+      f lam
+  | Lifused (v, e) ->
+      f e
+
 module IdentSet =
   Set.Make(struct
     type t = Ident.t
     let compare = compare
   end)
 
-let free_variables l =
+let free_ids get l =
   let fv = ref IdentSet.empty in
-  let rec freevars = function
-    Lvar id ->
-      fv := IdentSet.add id !fv
-  | Lconst sc -> ()
-  | Lapply(fn, args) ->
-      freevars fn; List.iter freevars args
-  | Lfunction(kind, params, body) ->
-      freevars body;
-      List.iter (fun param -> fv := IdentSet.remove param !fv) params
-  | Llet(str, id, arg, body) ->
-      freevars arg; freevars body; fv := IdentSet.remove id !fv
-  | Lletrec(decl, body) ->
-      freevars body;
-      List.iter (fun (id, exp) -> freevars exp) decl;
-      List.iter (fun (id, exp) -> fv := IdentSet.remove id !fv) decl
-  | Lprim(p, args) ->
-      List.iter freevars args
-  | Lswitch(arg, sw) ->
-      freevars arg; 
-      List.iter (fun (key, case) -> freevars case) sw.sw_consts;
-      List.iter (fun (key, case) -> freevars case) sw.sw_blocks;
-      begin match sw.sw_failaction with
-      | None -> ()
-      | Some l -> freevars l
-      end
-  | Lstaticraise (_,args) ->
-      List.iter freevars args
-  | Lstaticcatch(e1, (_,vars), e2) ->
-      freevars e1; freevars e2 ;
-      List.iter (fun id -> fv := IdentSet.remove id !fv) vars        
-  | Ltrywith(e1, exn, e2) ->
-      freevars e1; freevars e2; fv := IdentSet.remove exn !fv
-  | Lifthenelse(e1, e2, e3) ->
-      freevars e1; freevars e2; freevars e3
-  | Lsequence(e1, e2) ->
-      freevars e1; freevars e2
-  | Lwhile(e1, e2) ->
-      freevars e1; freevars e2
-  | Lfor(v, e1, e2, dir, e3) -> 
-      freevars e1; freevars e2; freevars e3; fv := IdentSet.remove v !fv
-  | Lassign(id, e) ->
-      fv := IdentSet.add id !fv; freevars e
-  | Lsend (k, met, obj, args) ->
-      List.iter freevars (met::obj::args)
-  | Levent (lam, evt) ->
-      freevars lam
-  | Lifused (v, e) ->
-      freevars e
-  in freevars l; !fv
+  let rec free l =
+    iter free l;
+    fv := List.fold_right IdentSet.add (get l) !fv;
+    match l with
+      Lfunction(kind, params, body) ->
+        List.iter (fun param -> fv := IdentSet.remove param !fv) params
+    | Llet(str, id, arg, body) ->
+        fv := IdentSet.remove id !fv
+    | Lletrec(decl, body) ->
+        List.iter (fun (id, exp) -> fv := IdentSet.remove id !fv) decl
+    | Lstaticcatch(e1, (_,vars), e2) ->
+        List.iter (fun id -> fv := IdentSet.remove id !fv) vars
+    | Ltrywith(e1, exn, e2) ->
+        fv := IdentSet.remove exn !fv
+    | Lfor(v, e1, e2, dir, e3) ->
+        fv := IdentSet.remove v !fv
+    | Lassign(id, e) ->
+        fv := IdentSet.add id !fv
+    | Lvar _ | Lconst _ | Lapply _
+    | Lprim _ | Lswitch _ | Lstaticraise _
+    | Lifthenelse _ | Lsequence _ | Lwhile _
+    | Lsend _ | Levent _ | Lifused _ -> ()
+  in free l; !fv
+
+let free_variables l =
+  free_ids (function Lvar id -> [id] | _ -> []) l
+
+let free_methods l =
+  free_ids (function Lsend(Self, Lvar meth, obj, _) -> [meth] | _ -> []) l
 
 (* Check if an action has a "when" guard *)
 let raise_count = ref 0
@@ -365,14 +387,14 @@ let subst_lambda s lam =
                          match sw.sw_failaction with
                          | None -> None
                          | Some l -> Some (subst l)})
-                   
+
   | Lstaticraise (i,args) ->  Lstaticraise (i, List.map subst args)
   | Lstaticcatch(e1, io, e2) -> Lstaticcatch(subst e1, io, subst e2)
   | Ltrywith(e1, exn, e2) -> Ltrywith(subst e1, exn, subst e2)
   | Lifthenelse(e1, e2, e3) -> Lifthenelse(subst e1, subst e2, subst e3)
   | Lsequence(e1, e2) -> Lsequence(subst e1, subst e2)
   | Lwhile(e1, e2) -> Lwhile(subst e1, subst e2)
-  | Lfor(v, e1, e2, dir, e3) -> Lfor(v, subst e1, subst e2, dir, subst e3) 
+  | Lfor(v, e1, e2, dir, e3) -> Lfor(v, subst e1, subst e2, dir, subst e3)
   | Lassign(id, e) -> Lassign(id, subst e)
   | Lsend (k, met, obj, args) ->
       Lsend (k, subst met, subst obj, List.map subst args)

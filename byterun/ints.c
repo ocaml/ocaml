@@ -58,14 +58,14 @@ static int parse_digit(char c)
     return -1;
 }
 
-static long parse_long(value s, int nbits)
+static intnat parse_intnat(value s, int nbits)
 {
   char * p;
-  unsigned long res, threshold;
+  uintnat res, threshold;
   int sign, base, d;
 
   p = parse_sign_and_base(String_val(s), &base, &sign);
-  threshold = ((unsigned long) -1) / base;
+  threshold = ((uintnat) -1) / base;
   d = parse_digit(*p);
   if (d < 0 || d >= base) caml_failwith("int_of_string");
   for (p++, res = d; /*nothing*/; p++) {
@@ -77,7 +77,7 @@ static long parse_long(value s, int nbits)
     if (res > threshold) caml_failwith("int_of_string");
     res = base * res + d;
     /* Detect overflow in addition (base * res) + d */
-    if (res < (unsigned long) d) caml_failwith("int_of_string");
+    if (res < (uintnat) d) caml_failwith("int_of_string");
   }
   if (p != String_val(s) + caml_string_length(s)){
     caml_failwith("int_of_string");
@@ -89,26 +89,26 @@ static long parse_long(value s, int nbits)
   } else {
     /* Unsigned representation expected, allow 0 to 2^nbits - 1
        and tolerate -(2^nbits - 1) to 0 */
-    if (nbits < sizeof(unsigned long) * 8 && res >= 1UL << nbits)
+    if (nbits < sizeof(uintnat) * 8 && res >= 1UL << nbits)
       caml_failwith("int_of_string");
   }
-  return sign < 0 ? -((long) res) : (long) res;
+  return sign < 0 ? -((intnat) res) : (intnat) res;
 }
 
 #ifdef NONSTANDARD_DIV_MOD
-long caml_safe_div(long p, long q)
+intnat caml_safe_div(intnat p, intnat q)
 {
-  unsigned long ap = p >= 0 ? p : -p;
-  unsigned long aq = q >= 0 ? q : -q;
-  unsigned long ar = ap / aq;
+  uintnat ap = p >= 0 ? p : -p;
+  uintnat aq = q >= 0 ? q : -q;
+  uintnat ar = ap / aq;
   return (p ^ q) >= 0 ? ar : -ar;
 }
 
-long caml_safe_mod(long p, long q)
+intnat caml_safe_mod(intnat p, intnat q)
 {
-  unsigned long ap = p >= 0 ? p : -p;
-  unsigned long aq = q >= 0 ? q : -q;
-  unsigned long ar = ap % aq;
+  uintnat ap = p >= 0 ? p : -p;
+  uintnat aq = q >= 0 ? q : -q;
+  uintnat ar = ap % aq;
   return p >= 0 ? ar : -ar;
 }
 #endif
@@ -123,7 +123,7 @@ CAMLprim value caml_int_compare(value v1, value v2)
 
 CAMLprim value caml_int_of_string(value s)
 {
-  return Val_long(parse_long(s, 8 * sizeof(value) - 1));
+  return Val_long(parse_intnat(s, 8 * sizeof(value) - 1));
 }
 
 #define FORMAT_BUFFER_SIZE 32
@@ -199,19 +199,19 @@ static int int32_cmp(value v1, value v2)
   return (i1 > i2) - (i1 < i2);
 }
 
-static long int32_hash(value v)
+static intnat int32_hash(value v)
 {
   return Int32_val(v);
 }
 
-static void int32_serialize(value v, unsigned long * wsize_32,
-                            unsigned long * wsize_64)
+static void int32_serialize(value v, uintnat * wsize_32,
+                            uintnat * wsize_64)
 {
   caml_serialize_int_4(Int32_val(v));
   *wsize_32 = *wsize_64 = 4;
 }
 
-static unsigned long int32_deserialize(void * dst)
+static uintnat int32_deserialize(void * dst)
 {
   *((int32 *) dst) = caml_deserialize_sint_4();
   return 4;
@@ -313,8 +313,9 @@ CAMLprim value caml_int32_format(value fmt, value arg)
   char conv;
   value res;
 
-  buffer = parse_format(fmt, "", format_string, default_format_buffer, &conv);
-  sprintf(buffer, format_string, (long) Int32_val(arg));
+  buffer = parse_format(fmt, ARCH_INT32_PRINTF_FORMAT,
+                        format_string, default_format_buffer, &conv);
+  sprintf(buffer, format_string, Int32_val(arg));
   res = caml_copy_string(buffer);
   if (buffer != default_format_buffer) caml_stat_free(buffer);
   return res;
@@ -322,7 +323,7 @@ CAMLprim value caml_int32_format(value fmt, value arg)
 
 CAMLprim value caml_int32_of_string(value s)
 {
-  return caml_copy_int32(parse_long(s, 32));
+  return caml_copy_int32(parse_intnat(s, 32));
 }
 
 CAMLprim value caml_int32_bits_of_float(value vd)
@@ -366,19 +367,19 @@ static int int64_cmp(value v1, value v2)
   return I64_compare(i1, i2);
 }
 
-static long int64_hash(value v)
+static intnat int64_hash(value v)
 {
-  return I64_to_long(Int64_val(v));
+  return I64_to_intnat(Int64_val(v));
 }
 
-static void int64_serialize(value v, unsigned long * wsize_32,
-                            unsigned long * wsize_64)
+static void int64_serialize(value v, uintnat * wsize_32,
+                            uintnat * wsize_64)
 {
   caml_serialize_int_8(Int64_val(v));
   *wsize_32 = *wsize_64 = 8;
 }
 
-static unsigned long int64_deserialize(void * dst)
+static uintnat int64_deserialize(void * dst)
 {
 #ifndef ARCH_ALIGN_INT64
   *((int64 *) dst) = caml_deserialize_sint_8();
@@ -459,10 +460,10 @@ CAMLprim value caml_int64_shift_right_unsigned(value v1, value v2)
 { return caml_copy_int64(I64_lsr(Int64_val(v1), Int_val(v2))); }
 
 CAMLprim value caml_int64_of_int(value v)
-{ return caml_copy_int64(I64_of_long(Long_val(v))); }
+{ return caml_copy_int64(I64_of_intnat(Long_val(v))); }
 
 CAMLprim value caml_int64_to_int(value v)
-{ return Val_long(I64_to_long(Int64_val(v))); }
+{ return Val_long(I64_to_intnat(Int64_val(v))); }
 
 CAMLprim value caml_int64_of_float(value v)
 { return caml_copy_int64(I64_of_double(Double_val(v))); }
@@ -480,10 +481,10 @@ CAMLprim value caml_int64_to_int32(value v)
 { return caml_copy_int32(I64_to_int32(Int64_val(v))); }
 
 CAMLprim value caml_int64_of_nativeint(value v)
-{ return caml_copy_int64(I64_of_long(Nativeint_val(v))); }
+{ return caml_copy_int64(I64_of_intnat(Nativeint_val(v))); }
 
 CAMLprim value caml_int64_to_nativeint(value v)
-{ return caml_copy_nativeint(I64_to_long(Int64_val(v))); }
+{ return caml_copy_nativeint(I64_to_intnat(Int64_val(v))); }
 
 CAMLprim value caml_int64_compare(value v1, value v2)
 {
@@ -565,20 +566,20 @@ CAMLprim value caml_int64_float_of_bits(value vi)
 
 static int nativeint_cmp(value v1, value v2)
 {
-  long i1 = Nativeint_val(v1);
-  long i2 = Nativeint_val(v2);
+  intnat i1 = Nativeint_val(v1);
+  intnat i2 = Nativeint_val(v2);
   return (i1 > i2) - (i1 < i2);
 }
 
-static long nativeint_hash(value v)
+static intnat nativeint_hash(value v)
 {
   return Nativeint_val(v);
 }
 
-static void nativeint_serialize(value v, unsigned long * wsize_32,
-                            unsigned long * wsize_64)
+static void nativeint_serialize(value v, uintnat * wsize_32,
+                                uintnat * wsize_64)
 {
-  long l = Nativeint_val(v);
+  intnat l = Nativeint_val(v);
 #ifdef ARCH_SIXTYFOUR
   if (l <= 0x7FFFFFFFL && l >= -0x80000000L) {
     caml_serialize_int_1(1);
@@ -595,7 +596,7 @@ static void nativeint_serialize(value v, unsigned long * wsize_32,
   *wsize_64 = 8;
 }
 
-static unsigned long nativeint_deserialize(void * dst)
+static uintnat nativeint_deserialize(void * dst)
 {
   switch (caml_deserialize_uint_1()) {
   case 1:
@@ -623,9 +624,9 @@ CAMLexport struct custom_operations caml_nativeint_ops = {
   nativeint_deserialize
 };
 
-CAMLexport value caml_copy_nativeint(long i)
+CAMLexport value caml_copy_nativeint(intnat i)
 {
-  value res = caml_alloc_custom(&caml_nativeint_ops, sizeof(long), 0, 1);
+  value res = caml_alloc_custom(&caml_nativeint_ops, sizeof(intnat), 0, 1);
   Nativeint_val(res) = i;
   return res;
 }
@@ -644,7 +645,7 @@ CAMLprim value caml_nativeint_mul(value v1, value v2)
 
 CAMLprim value caml_nativeint_div(value v1, value v2)
 {
-  long divisor = Nativeint_val(v2);
+  intnat divisor = Nativeint_val(v2);
   if (divisor == 0) caml_raise_zero_divide();
 #ifdef NONSTANDARD_DIV_MOD
   return caml_copy_nativeint(caml_safe_div(Nativeint_val(v1), divisor));
@@ -655,7 +656,7 @@ CAMLprim value caml_nativeint_div(value v1, value v2)
 
 CAMLprim value caml_nativeint_mod(value v1, value v2)
 {
-  long divisor = Nativeint_val(v2);
+  intnat divisor = Nativeint_val(v2);
   if (divisor == 0) caml_raise_zero_divide();
 #ifdef NONSTANDARD_DIV_MOD
   return caml_copy_nativeint(caml_safe_mod(Nativeint_val(v1), divisor));
@@ -680,7 +681,7 @@ CAMLprim value caml_nativeint_shift_right(value v1, value v2)
 { return caml_copy_nativeint(Nativeint_val(v1) >> Int_val(v2)); }
 
 CAMLprim value caml_nativeint_shift_right_unsigned(value v1, value v2)
-{ return caml_copy_nativeint((unsigned long)Nativeint_val(v1) >> Int_val(v2)); }
+{ return caml_copy_nativeint((uintnat)Nativeint_val(v1) >> Int_val(v2)); }
 
 CAMLprim value caml_nativeint_of_int(value v)
 { return caml_copy_nativeint(Long_val(v)); }
@@ -689,7 +690,7 @@ CAMLprim value caml_nativeint_to_int(value v)
 { return Val_long(Nativeint_val(v)); }
 
 CAMLprim value caml_nativeint_of_float(value v)
-{ return caml_copy_nativeint((long)(Double_val(v))); }
+{ return caml_copy_nativeint((intnat)(Double_val(v))); }
 
 CAMLprim value caml_nativeint_to_float(value v)
 { return caml_copy_double((double)(Nativeint_val(v))); }
@@ -702,8 +703,8 @@ CAMLprim value caml_nativeint_to_int32(value v)
 
 CAMLprim value caml_nativeint_compare(value v1, value v2)
 {
-  long i1 = Nativeint_val(v1);
-  long i2 = Nativeint_val(v2);
+  intnat i1 = Nativeint_val(v1);
+  intnat i2 = Nativeint_val(v2);
   int res = (i1 > i2) - (i1 < i2);
   return Val_int(res);
 }
@@ -716,7 +717,8 @@ CAMLprim value caml_nativeint_format(value fmt, value arg)
   char conv;
   value res;
 
-  buffer = parse_format(fmt, "l", format_string, default_format_buffer, &conv);
+  buffer = parse_format(fmt, ARCH_INTNAT_PRINTF_FORMAT,
+                        format_string, default_format_buffer, &conv);
   sprintf(buffer, format_string, (long) Nativeint_val(arg));
   res = caml_copy_string(buffer);
   if (buffer != default_format_buffer) caml_stat_free(buffer);
@@ -725,5 +727,5 @@ CAMLprim value caml_nativeint_format(value fmt, value arg)
 
 CAMLprim value caml_nativeint_of_string(value s)
 {
-  return caml_copy_nativeint(parse_long(s, 8 * sizeof(value)));
+  return caml_copy_nativeint(parse_intnat(s, 8 * sizeof(value)));
 }

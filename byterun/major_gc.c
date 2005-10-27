@@ -29,8 +29,8 @@
 #include "roots.h"
 #include "weak.h"
 
-unsigned long caml_percent_free;
-long caml_major_heap_increment;
+uintnat caml_percent_free;
+intnat caml_major_heap_increment;
 CAMLexport char *caml_heap_start, *caml_heap_end;
 CAMLexport page_table_entry *caml_page_table;
 asize_t caml_page_low, caml_page_high;
@@ -41,10 +41,10 @@ static value *gray_vals_cur, *gray_vals_end;
 static asize_t gray_vals_size;
 static int heap_is_pure;   /* The heap is pure if the only gray objects
                               below [markhp] are also in [gray_vals]. */
-unsigned long caml_allocated_words;
-unsigned long caml_dependent_size, caml_dependent_allocated;
+uintnat caml_allocated_words;
+uintnat caml_dependent_size, caml_dependent_allocated;
 double caml_extra_heap_resources;
-unsigned long caml_fl_size_at_phase_change = 0;
+uintnat caml_fl_size_at_phase_change = 0;
 
 extern char *caml_fl_merge;  /* Defined in freelist.c. */
 
@@ -62,8 +62,9 @@ static void realloc_gray_vals (void)
 
   Assert (gray_vals_cur == gray_vals_end);
   if (gray_vals_size < caml_stat_heap_size / 128){
-    caml_gc_message (0x08, "Growing gray_vals to %luk bytes\n",
-                     (long) gray_vals_size * sizeof (value) / 512);
+    caml_gc_message (0x08, "Growing gray_vals to %"
+                           ARCH_INTNAT_PRINTF_FORMAT "uk bytes\n",
+                     (intnat) gray_vals_size * sizeof (value) / 512);
     new = (value *) realloc ((char *) gray_vals,
                              2 * gray_vals_size * sizeof (value));
     if (new == NULL){
@@ -109,7 +110,7 @@ static void start_cycle (void)
 #endif
 }
 
-static void mark_slice (long work)
+static void mark_slice (intnat work)
 {
   value *gray_vals_ptr;  /* Local copy of gray_vals_cur */
   value v, child;
@@ -245,7 +246,7 @@ static void mark_slice (long work)
   gray_vals_cur = gray_vals_ptr;
 }
 
-static void sweep_slice (long work)
+static void sweep_slice (intnat work)
 {
   char *hp;
   header_t hd;
@@ -294,10 +295,10 @@ static void sweep_slice (long work)
    [howmuch] is the amount of work to do, 0 to let the GC compute it.
    Return the computed amount of work to do.
  */
-long caml_major_collection_slice (long howmuch)
+intnat caml_major_collection_slice (intnat howmuch)
 {
   double p, dp;
-  long computed_work;
+  intnat computed_work;
   /*
      Free memory at the start of the GC cycle (garbage + free list) (assumed):
                  FM = caml_stat_heap_size * caml_percent_free
@@ -343,17 +344,21 @@ long caml_major_collection_slice (long howmuch)
   if (p < dp) p = dp;
   if (p < caml_extra_heap_resources) p = caml_extra_heap_resources;
 
-  caml_gc_message (0x40, "allocated_words = %lu\n", caml_allocated_words);
-  caml_gc_message (0x40, "extra_heap_resources = %luu\n",
-                   (unsigned long) (caml_extra_heap_resources * 1000000));
-  caml_gc_message (0x40, "amount of work to do = %luu\n",
-                   (unsigned long) (p * 1000000));
+  caml_gc_message (0x40, "allocated_words = %" 
+                         ARCH_INTNAT_PRINTF_FORMAT "u\n",
+                   caml_allocated_words);
+  caml_gc_message (0x40, "extra_heap_resources = %"
+                         ARCH_INTNAT_PRINTF_FORMAT "uu\n",
+                   (uintnat) (caml_extra_heap_resources * 1000000));
+  caml_gc_message (0x40, "amount of work to do = %"
+                         ARCH_INTNAT_PRINTF_FORMAT "uu\n",
+                   (uintnat) (p * 1000000));
 
   if (caml_gc_phase == Phase_mark){
-    computed_work = 2 * (long) (p * Wsize_bsize (caml_stat_heap_size) * 100
+    computed_work = 2 * (intnat) (p * Wsize_bsize (caml_stat_heap_size) * 100
                                 / (100 + caml_percent_free));
   }else{
-    computed_work = 2 * (long) (p * Wsize_bsize (caml_stat_heap_size));
+    computed_work = 2 * (intnat) (p * Wsize_bsize (caml_stat_heap_size));
   }
   caml_gc_message (0x40, "ordered work = %ld words\n", howmuch);
   caml_gc_message (0x40, "computed work = %ld words\n", computed_work);
@@ -438,7 +443,7 @@ void caml_init_major_heap (asize_t heap_size)
     caml_fatal_error ("Fatal error: not enough memory for the initial heap.\n");
   Chunk_next (caml_heap_start) = NULL;
   caml_heap_end = caml_heap_start + caml_stat_heap_size;
-  Assert ((unsigned long) caml_heap_end % Page_size == 0);
+  Assert ((uintnat) caml_heap_end % Page_size == 0);
 
   caml_stat_heap_chunks = 1;
 

@@ -52,6 +52,7 @@
 #include "stacks.h"
 #include "sys.h"
 #include "startup.h"
+#include "version.h"
 
 #ifndef O_BINARY
 #define O_BINARY 0
@@ -105,7 +106,7 @@ int caml_attempt_open(char **name, struct exec_trailer *trail,
   truename = caml_search_exe_in_path(*name);
   *name = truename;
   caml_gc_message(0x100, "Opening bytecode executable %s\n",
-                  (unsigned long) truename);
+                  (uintnat) truename);
   fd = open(truename, O_RDONLY | O_BINARY);
   if (fd == -1) {
     caml_gc_message(0x100, "Cannot open file\n", 0);
@@ -219,12 +220,12 @@ Algorithm:
 
 /* Configuration parameters and flags */
 
-static unsigned long percent_free_init = Percent_free_def;
-static unsigned long max_percent_free_init = Max_percent_free_def;
-static unsigned long minor_heap_init = Minor_heap_def;
-static unsigned long heap_chunk_init = Heap_chunk_def;
-static unsigned long heap_size_init = Init_heap_def;
-static unsigned long max_stack_init = Max_stack_def;
+static uintnat percent_free_init = Percent_free_def;
+static uintnat max_percent_free_init = Max_percent_free_def;
+static uintnat minor_heap_init = Minor_heap_def;
+static uintnat heap_chunk_init = Heap_chunk_def;
+static uintnat heap_size_init = Init_heap_def;
+static uintnat max_stack_init = Max_stack_def;
 
 /* Parse options on the command line */
 
@@ -240,7 +241,12 @@ static int parse_command_line(char **argv)
       break;
 #endif
     case 'v':
-      caml_verb_gc = 0x001+0x004+0x008+0x010+0x020;
+      if (!strcmp (argv[i], "-version")){
+        printf ("The Objective Caml runtime, version " OCAML_VERSION "\n");
+        exit (0);
+      }else{
+        caml_verb_gc = 0x001+0x004+0x008+0x010+0x020;
+      }
       break;
     case 'p':
       for (j = 0; caml_names_of_builtin_cprim[j] != NULL; j++)
@@ -271,14 +277,18 @@ static int parse_command_line(char **argv)
 
 /* If you change these functions, see also their copy in asmrun/startup.c */
 
-static void scanmult (char *opt, long unsigned int *var)
+static void scanmult (char *opt, uintnat *var)
 {
   char mult = ' ';
-  sscanf (opt, "=%lu%c", var, &mult);
-  sscanf (opt, "=0x%lx%c", var, &mult);
-  if (mult == 'k') *var = *var * 1024;
-  if (mult == 'M') *var = *var * 1024 * 1024;
-  if (mult == 'G') *var = *var * 1024 * 1024 * 1024;
+  int val;
+  sscanf (opt, "=%u%c", &val, &mult);
+  sscanf (opt, "=0x%x%c", &val, &mult);
+  switch (mult) {
+  case 'k':   *var = (uintnat) val * 1024; break;
+  case 'M':   *var = (uintnat) val * 1024 * 1024; break;
+  case 'G':   *var = (uintnat) val * 1024 * 1024 * 1024; break;
+  default:    *var = (uintnat) val; break;
+  }
 }
 
 static void parse_camlrunparam(void)
