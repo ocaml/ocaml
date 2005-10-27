@@ -283,7 +283,7 @@ let scan_positional fmt scan_flags n i =
    [cont_s] for outputting a string (args: string, next pos)
    [cont_a] for performing a %a action (args: fn, arg, next pos)
    [cont_t] for performing a %t action (args: fn, next pos)
-   [cont_f] for performing a flush action 
+   [cont_f] for performing a flush action
    [cont_m] for performing a %( action (args: sfmt, next pos)
    "next pos" is the position in [fmt] of the first character following
    the %format in [fmt]. *)

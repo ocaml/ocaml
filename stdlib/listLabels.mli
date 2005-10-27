@@ -256,14 +256,14 @@ val sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
    [List.sort] is guaranteed to run in constant heap space
    (in addition to the size of the result list) and logarithmic
    stack space.
-   
+
    The current implementation uses Merge Sort and is the same as
    {!ListLabels.stable_sort}.
 *)
 
 val stable_sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
 (** Same as {!ListLabels.sort}, but the sorting algorithm is stable.
-   
+
    The current implementation is Merge Sort. It runs in constant
    heap space and logarithmic stack space.
 *)

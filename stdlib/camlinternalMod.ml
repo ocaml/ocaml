@@ -57,4 +57,4 @@ let rec update_mod shape o n =
       assert (Obj.tag n = 0 && Obj.size n >= Array.length comps);
       for i = 0 to Array.length comps - 1 do
         update_mod comps.(i) (Obj.field o i) (Obj.field n i)
-      done      
+      done

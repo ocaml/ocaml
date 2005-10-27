@@ -56,7 +56,7 @@ type spec =
   | Symbol of string list * (string -> unit)
                                (** Take one of the symbols as argument and
                                    call the function with the symbol *)
-  | Rest of (string -> unit)   (** Stop interpreting keywords and call the 
+  | Rest of (string -> unit)   (** Stop interpreting keywords and call the
                                    function with each remaining argument *)
 (** The concrete type describing the behavior associated
    with a keyword. *)

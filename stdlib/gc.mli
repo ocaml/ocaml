@@ -16,7 +16,7 @@
 (** Memory management control and statistics; finalised values. *)
 
 type stat =
-  { minor_words : float; 
+  { minor_words : float;
     (** Number of words allocated in the minor heap since
        the program was started.  This number is accurate in
        byte-code programs, but only an approximation in programs
@@ -208,7 +208,7 @@ val finalise : ('a -> unit) -> 'a -> unit
 
    Instead you should write:
    - [ let f = fun x -> ... ;; let v = ... in Gc.finalise f v ]
-     
+
 
    The [f] function can use all features of O'Caml, including
    assignments that make the value reachable again.  It can also
@@ -219,7 +219,7 @@ val finalise : ('a -> unit) -> 'a -> unit
    the exception will interrupt whatever the program was doing when
    the function was called.
 
-   
+
    [finalise] will raise [Invalid_argument] if [v] is not
    heap-allocated.  Some examples of values that are not
    heap-allocated are integers, constant constructors, booleans,
@@ -233,7 +233,7 @@ val finalise : ('a -> unit) -> 'a -> unit
    stored into arrays, so they can be finalised and collected while
    another copy is still in use by the program.
 
-   
+
    The results of calling {!String.make}, {!String.create},
    {!Array.make}, and {!Pervasives.ref} are guaranteed to be
    heap-allocated and non-constant except when the length argument is [0].

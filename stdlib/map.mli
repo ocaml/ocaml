@@ -20,10 +20,10 @@
    over the keys.
    All operations over maps are purely applicative (no side-effects).
    The implementation uses balanced binary trees, and therefore searching
-   and insertion take time logarithmic in the size of the map. 
+   and insertion take time logarithmic in the size of the map.
 *)
 
-module type OrderedType = 
+module type OrderedType =
   sig
     type t
       (** The type of the map keys. *)
@@ -109,4 +109,3 @@ module type S =
 module Make (Ord : OrderedType) : S with type key = Ord.t
 (** Functor building an implementation of the map structure
    given a totally ordered type. *)
-

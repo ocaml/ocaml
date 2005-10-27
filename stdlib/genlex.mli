@@ -19,7 +19,7 @@
    This module implements a simple ``standard'' lexical analyzer, presented
    as a function from character streams to token streams. It implements
    roughly the lexical conventions of Caml, but is parameterized by the
-   set of keywords of your language. 
+   set of keywords of your language.
 
 
    Example: a lexer suitable for a desk calculator is obtained by
@@ -54,7 +54,7 @@ type token =
   | Float of float
   | String of string
   | Char of char
-           
+
 val make_lexer : string list -> char Stream.t -> token Stream.t
 (** Construct the lexer function. The first argument is the list of
    keywords. An identifier [s] is returned as [Kwd s] if [s]
@@ -64,5 +64,3 @@ val make_lexer : string list -> char Stream.t -> token Stream.t
    [Parse_error]) otherwise. Blanks and newlines are skipped.
    Comments delimited by [(*] and [*)] are skipped as well,
    and can be nested. *)
-
-        

@@ -146,7 +146,7 @@ val params : params
 (** {6 Statistics} *)
 
 type stats =
-  { classes : int; 
-    methods : int; 
+  { classes : int;
+    methods : int;
     inst_vars : int }
 val stats : unit -> stats

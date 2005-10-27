@@ -28,7 +28,7 @@
 
 external raise : exn -> 'a = "%raise"
 (** Raise the given exception value *)
-        
+
 val invalid_arg : string -> 'a
 (** Raise exception [Invalid_argument] with the given string. *)
 
@@ -216,7 +216,7 @@ external ( asr ) : int -> int -> int = "%asrint"
 (** [n asr m] shifts [n] to the right by [m] bits.
    This is an arithmetic shift: the sign bit of [n] is replicated.
    The result is unspecified if [m < 0] or [m >= bitsize]. *)
-    
+
 
 (** {6 Floating-point arithmetic}
 
@@ -228,8 +228,8 @@ external ( asr ) : int -> int -> int = "%asrint"
    [neg_infinity] for [-1.0 /. 0.0], and [nan] (``not a number'')
    for [0.0 /. 0.0].  These special numbers then propagate through
    floating-point computations as expected: for instance,
-   [1.0 /. infinity] is [0.0], and any operation with [nan] as 
-   argument returns [nan] as result. 
+   [1.0 /. infinity] is [0.0], and any operation with [nan] as
+   argument returns [nan] as result.
 *)
 
 external ( ~-. ) : float -> float = "%negfloat"
@@ -451,7 +451,7 @@ external snd : 'a * 'b -> 'b = "%field1"
 
 (** {6 List operations}
 
-   More list operations are provided in module {!List}. 
+   More list operations are provided in module {!List}.
 *)
 
 val ( @ ) : 'a list -> 'a list -> 'a list
@@ -554,8 +554,9 @@ type open_flag =
   | Open_binary      (** open in binary mode (no conversion). *)
   | Open_text        (** open in text mode (may perform conversions). *)
   | Open_nonblock    (** open in non-blocking mode. *)
-(** Opening modes for {!Pervasives.open_out_gen} and {!Pervasives.open_in_gen}. *)
-           
+(** Opening modes for {!Pervasives.open_out_gen} and
+  {!Pervasives.open_in_gen}. *)
+
 val open_out : string -> out_channel
 (** Open the named file for writing, and return a new output channel
    on that file, positionned at the beginning of the file. The
@@ -578,7 +579,7 @@ val open_out_gen : open_flag list -> int -> string -> out_channel
    cases of this function. *)
 
 val flush : out_channel -> unit
-(** Flush the buffer associated with the given output channel, 
+(** Flush the buffer associated with the given output channel,
    performing all pending writes on that channel.
    Interactive programs must be careful about flushing standard
    output and standard error at the right time. *)
@@ -703,7 +704,7 @@ val input : in_channel -> string -> int -> int -> int
    if desired.  (See also {!Pervasives.really_input} for reading
    exactly [len] characters.)
    Exception [Invalid_argument "input"] is raised if [pos] and [len]
-   do not designate a valid substring of [buf]. *)          
+   do not designate a valid substring of [buf]. *)
 
 val really_input : in_channel -> string -> int -> int -> unit
 (** [really_input ic buf pos len] reads [len] characters from channel [ic],
@@ -813,7 +814,7 @@ external decr : int ref -> unit = "%decr"
 
 (** {6 Operations on format strings} *)
 
-(** See modules {!Printf} and {!Scanf} for more operations on 
+(** See modules {!Printf} and {!Scanf} for more operations on
     format strings. *)
 
 type ('a, 'b, 'c) format = ('a, 'b, 'c, 'c) format4

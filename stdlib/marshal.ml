@@ -50,4 +50,4 @@ let from_string buff ofs =
     if ofs > String.length buff - (header_size + len)
     then invalid_arg "Marshal.from_string"
     else from_string_unsafe buff ofs
-  end  
+  end

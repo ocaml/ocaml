@@ -39,4 +39,3 @@ val merge : ('a -> 'a -> bool) -> 'a list -> 'a list -> 'a list
    predicate, [merge] returns a sorted list containing the elements
    from the two lists. The behavior is undefined if the two
    argument lists were not sorted. *)
-

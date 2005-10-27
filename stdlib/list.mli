@@ -247,7 +247,7 @@ val sort : ('a -> 'a -> int) -> 'a list -> 'a list
    [List.sort] is guaranteed to run in constant heap space
    (in addition to the size of the result list) and logarithmic
    stack space.
-   
+
    The current implementation uses Merge Sort. It runs in constant
    heap space and logarithmic stack space.
 *)
@@ -256,7 +256,7 @@ val stable_sort : ('a -> 'a -> int) -> 'a list -> 'a list
 (** Same as {!List.sort}, but the sorting algorithm is guaranteed to
    be stable (i.e. elements that compare equal are kept in their
    original order) .
-   
+
    The current implementation uses Merge Sort. It runs in constant
    heap space and logarithmic stack space.
 *)

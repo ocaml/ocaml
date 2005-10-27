@@ -17,7 +17,7 @@
 
    This module allows Caml values to be registered with the C runtime
    under a symbolic name, so that C code can later call back registered
-   Caml functions, or raise registered Caml exceptions. 
+   Caml functions, or raise registered Caml exceptions.
 *)
 
 val register : string -> 'a -> unit

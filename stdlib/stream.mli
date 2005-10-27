@@ -31,7 +31,7 @@ exception Error of string
 
    Warning: these functions create streams with fast access; it is illegal
    to mix them with streams built with [[< >]]; would raise [Failure]
-   when accessing such mixed streams. 
+   when accessing such mixed streams.
 *)
 
 val from : (int -> 'a option) -> 'a t

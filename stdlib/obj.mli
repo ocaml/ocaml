@@ -56,4 +56,3 @@ val out_of_heap_tag : int
 
 val marshal : t -> string
 val unmarshal : string -> int -> t * int
-
