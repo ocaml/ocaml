@@ -1140,5 +1140,3 @@ void caml_release_bytecode(code_t prog, asize_t prog_size) {
   Assert(prog);
   Assert(prog_size>0);
 }
-
-/* eof $Id$ */

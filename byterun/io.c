@@ -122,7 +122,7 @@ CAMLexport file_offset caml_channel_size(struct channel *channel)
 
 CAMLexport int caml_channel_binary_mode(struct channel *channel)
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__CYGWIN__)
   int oldmode = setmode(channel->fd, O_BINARY);
   if (oldmode == O_TEXT) setmode(channel->fd, O_TEXT);
   return oldmode == O_BINARY;
@@ -513,7 +513,7 @@ CAMLprim value caml_ml_channel_size_64(value vchannel)
 
 CAMLprim value caml_ml_set_binary_mode(value vchannel, value mode)
 {
-#ifdef _WIN32
+#if defined(_WIN32) || defined(__CYGWIN__)
   struct channel * channel = Channel(vchannel);
   if (setmode(channel->fd, Bool_val(mode) ? O_BINARY : O_TEXT) == -1)
     caml_sys_error(NO_ARG);
