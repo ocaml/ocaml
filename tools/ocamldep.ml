@@ -161,7 +161,7 @@ let is_ast_file ic ast_magic =
 
 let parse_use_file ic =
   if is_ast_file ic Config.ast_impl_magic_number then
-    let source_file = input_value ic in
+    let _source_file = input_value ic in
     [Ptop_def (input_value ic : Parsetree.structure)]
   else begin
     seek_in ic 0;
@@ -171,7 +171,7 @@ let parse_use_file ic =
 
 let parse_interface ic =
   if is_ast_file ic Config.ast_intf_magic_number then
-    let source_file = input_value ic in
+    let _source_file = input_value ic in
     (input_value ic : Parsetree.signature)
   else begin
     seek_in ic 0;
@@ -234,6 +234,11 @@ let file_dependencies source_file =
 
 let usage = "Usage: ocamldep [-I <dir>] [-native] <files>"
 
+let print_version () =
+  printf "ocamldep, version %s@." Sys.ocaml_version;
+  exit 0;
+;;
+
 let _ =
   Clflags.classic := false;
   add_to_load_path Filename.current_dir_name;
@@ -245,9 +250,11 @@ let _ =
      "-native", Arg.Set native_only,
        "  Generate dependencies for a pure native-code project \
        (no .cmo files)";
+     "-pp", Arg.String(fun s -> preprocessor := Some s),
+       "<command>  Pipe sources through preprocessor <command>";
      "-slash", Arg.Set force_slash,
        "  (for Windows) Use forward slash / instead of backslash \\ in file paths";
-     "-pp", Arg.String(fun s -> preprocessor := Some s),
-       "<command>  Pipe sources through preprocessor <command>"
+     "-version", Arg.Unit print_version,
+      " Print version and exit";
     ] file_dependencies usage;
   exit (if !error_occurred then 2 else 0)

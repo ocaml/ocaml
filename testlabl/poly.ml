@@ -265,8 +265,10 @@ type 'a foo = 'a foo bar
 fun x -> (x : < m : 'a. 'a * 'b > as 'b)#m;;
 fun x -> (x : < m : 'a. 'b * 'a list> as 'b)#m;;
 let f x = (x : < m : 'a. 'b * (< n : 'a; .. > as 'a) > as 'b)#m;;
-
 fun (x : < p : 'a. < m : 'a ; n : 'b ; .. > as 'a > as 'b) -> x#p;;
+fun (x : <m:'a. 'a * <p:'b. 'b * 'c * 'd> as 'c> as 'd) -> x#m;;
+(* printer is wrong on the next (no official syntax) *)
+fun (x : <m:'a.<p:'a;..> >) -> x#m;;
 
 type sum = T of < id: 'a. 'a -> 'a > ;;
 fun (T x) -> x#id;;
@@ -355,6 +357,11 @@ let bad = {bad = ref None};;
 type bad2 = {mutable bad2 : 'a. 'a option ref option};;
 let bad2 = {bad2 = None};;
 bad2.bad2 <- Some (ref None);;
+
+(* Type variable scope *)
+
+let f (x: <m:'a.<p: 'a * 'b> as 'b>) (y : 'b) = ();;
+let f (x: <m:'a. 'a * (<p:int*'b> as 'b)>) (y : 'b) = ();;
 
 (* PR#1374 *)
 
@@ -486,3 +493,64 @@ type foo' =   <m: 'a. 'a * 'a foo>
 type 'a bar = <m: 'b. 'a * <m: 'c. 'c * 'a bar> >
 type bar' =   <m: 'a. 'a * 'a bar >
 let f (x : foo') = (x : bar');;
+
+fun (x : <m : 'a. 'a * ('a * <m : 'a. 'a * 'foo> as 'foo)>) ->
+  (x : <m : 'b. 'b * ('b * <m : 'c. 'c * ('c * 'bar)>)> as 'bar);;
+fun (x : <m : 'a. 'a * ('a * <m : 'a. 'a * 'foo> as 'foo)>) ->
+  (x : <m : 'b. 'b * ('b * <m : 'c. 'c * ('b * 'bar)>)> as 'bar);;
+fun (x : <m : 'a. 'a * ('a * 'foo)> as 'foo) ->
+  (x : <m : 'b. 'b * ('b * <m:'c. 'c * 'bar> as 'bar)>);;
+let f x =
+    (x : <m : 'a. 'a -> ('a * <m:'c. 'c -> 'bar> as 'bar)>
+       :> <m : 'a. 'a -> ('a * 'foo)> as 'foo);;
+
+module M
+: sig val f : (<m : 'b. 'b * ('b * <m:'c. 'c * 'bar> as 'bar)>) -> unit end
+= struct let f (x : <m : 'a. 'a * ('a * 'foo)> as 'foo) = () end;;
+module M
+: sig type t = <m : 'b. 'b * ('b * <m:'c. 'c * 'bar> as 'bar)> end
+= struct type t = <m : 'a. 'a * ('a * 'foo)> as 'foo end;;
+
+module M : sig type 'a t type u = <m: 'a. 'a t> end
+= struct type 'a t = int type u = <m: int> end;;
+module M : sig type 'a t val f : <m: 'a. 'a t> -> int end
+= struct type 'a t = int let f (x : <m:int>) = x#m end;;
+(* The following should be accepted too! *)
+module M : sig type 'a t val f : <m: 'a. 'a t> -> int end
+= struct type 'a t = int let f x = x#m end;;
+
+let f x y =
+  ignore (x :> <m:'a.'a -> 'c * < > > as 'c);
+  ignore (y :> <m:'b.'b -> 'd * < > > as 'd);
+  x = y;;
+
+
+(* Subtyping *)
+
+type t = [`A|`B];;
+type v = private [> t];;
+fun x -> (x : t :> v);;
+type u = private [< t];;
+fun x -> (x : u :> v);;
+fun x -> (x : v :> u);;
+type v = private [< t];;
+fun x -> (x : u :> v);;
+type p = <x:p>;;
+type q = private <x:p; ..>;;
+fun x -> (x : q :> p);;
+fun x -> (x : p :> q);;
+
+let f1 x =
+  (x : <m:'a. (<p:int;..> as 'a) -> int>
+    :> <m:'b. (<p:int;q:int;..> as 'b) -> int>);;
+let f2 x =
+  (x : <m:'a. (<p:<a:int>;..> as 'a) -> int>
+    :> <m:'b. (<p:<a:int;b:int>;..> as 'b) -> int>);;
+let f3 x =
+  (x : <m:'a. (<p:<a:int;b:int>;..> as 'a) -> int>
+    :> <m:'b. (<p:<a:int>;..> as 'b) -> int>);;
+let f4 x = (x : <p:<a:int;b:int>;..> :> <p:<a:int>;..>);;
+let f5 x =
+  (x : <m:'a. [< `A of <p:int> ] as 'a> :> <m:'a. [< `A of < > ] as 'a>);;
+let f6 x =
+  (x : <m:'a. [< `A of < > ] as 'a> :> <m:'a. [< `A of <p:int> ] as 'a>);;

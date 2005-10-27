@@ -47,6 +47,7 @@ module Options = Main_args.Make_options (struct
   let _cc s = option_with_arg "-cc" s
   let _cclib s = option_with_arg "-cclib" s
   let _ccopt s = option_with_arg "-ccopt" s
+  let _config = option "-config"
   let _custom = option "-custom"
   let _dllib = option_with_arg "-dllib"
   let _dllpath = option_with_arg "-dllpath"
@@ -68,11 +69,9 @@ module Options = Main_args.Make_options (struct
   let _output_obj = option "-output-obj"
   let _pack = option "-pack"
   let _pp s = incompatible "-pp"
-(*> JOCAML *)
-  let _join = incompatible "-join"
-(*< JOCAML *)
   let _principal = option "-principal"
   let _rectypes = option "-rectypes"
+  let _join () = option "-join" ()
   let _thread () = option "-thread" ()
   let _vmthread () = option "-vmthread" ()
   let _unsafe = option "-unsafe"

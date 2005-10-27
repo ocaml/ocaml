@@ -105,6 +105,12 @@ cat >resources/ReadMe.txt <<EOF
 This package installs Objective Caml version ${VERSION}.
 You need Mac OS X 10.3 (panther), with X11 and the
 XCode tools installed.
+
+Files will be installed in the following directories:
+
+/usr/local/bin - command-line executables
+/usr/local/lib/ocaml - library and support files
+/usr/local/man - manual pages
 EOF
 
 chmod -R g-w root

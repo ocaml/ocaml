@@ -65,7 +65,7 @@ let relocate_event orig ev =
   | _                 -> ()
 
 let record_events orig evl =
-  List.iter 
+  List.iter
     (fun ev ->
       relocate_event orig ev;
       Hashtbl.add event_table ev.ev_pos ev)
@@ -83,6 +83,7 @@ let rec print_struct_const = function
     Const_base(Const_int i) -> printf "%d" i
   | Const_base(Const_float f) -> print_float f
   | Const_base(Const_string s) -> printf "%S" s
+  | Const_immstring s -> printf "%S" s
   | Const_base(Const_char c) -> printf "%C" c
   | Const_base(Const_int32 i) -> printf "%ldl" i
   | Const_base(Const_nativeint i) -> printf "%ndn" i
@@ -441,8 +442,8 @@ let print_instr ic =
         done;
   | Pubmet
      -> let tag = inputs ic in
-        let cache = inputu ic in
-	print_int tag
+        let _cache = inputu ic in
+        print_int tag
   | Nothing -> ()
   with Not_found -> print_string "(unknown arguments)"
   end;
@@ -543,4 +544,4 @@ let main() =
   done;
   exit 0
 
-let _ = Printexc.catch main (); exit 0
+let _ = main ()
