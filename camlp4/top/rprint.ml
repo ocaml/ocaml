@@ -135,7 +135,7 @@ and print_out_type_1 ppf =
       fprintf ppf "@[%s%a ->@ %a@]" (if lab <> "" then lab ^ ":" else "")
         print_out_type_2 ty1 print_out_type_1 ty2
   | Otyp_poly sl ty ->
-      fprintf ppf "@[<hov 2>%a.@ %a@]"
+      fprintf ppf "@[<hov 2>!%a.@ %a@]"
         pr_vars sl
         print_out_type ty
   | ty -> print_out_type_2 ppf ty ]
@@ -180,23 +180,16 @@ and print_simple_out_type ppf =
         print_ident id
   | Otyp_manifest ty1 ty2 ->
       fprintf ppf "@[<2>%a ==@ %a@]" print_out_type ty1 print_out_type ty2
-  | Otyp_sum constrs priv ->
-      fprintf ppf "@[<hv>%a[ %a ]@]" print_private priv
+  | Otyp_sum constrs ->
+      fprintf ppf "@[<hv>[ %a ]@]"
         (print_list print_out_constr (fun ppf -> fprintf ppf "@ | ")) constrs
-  | Otyp_record lbls priv ->
-      fprintf ppf "@[<hv 2>%a{ %a }@]" print_private priv
+  | Otyp_record lbls ->
+      fprintf ppf "@[<hv 2>{ %a }@]"
         (print_list print_out_label (fun ppf -> fprintf ppf ";@ ")) lbls
   | Otyp_abstract -> fprintf ppf "'abstract"
   | Otyp_alias _ _ | Otyp_poly _ _
   | Otyp_arrow _ _ _ | Otyp_constr _ [_ :: _] as ty ->
-      fprintf ppf "@[<1>(%a)@]" print_out_type ty 
-  | Otyp_proc -> fprintf ppf "proc" ]
-
-  and print_private ppf =
-  fun
-  [ Asttypes.Public -> ()
-  | Asttypes.Private -> fprintf ppf "private "
-  ]
+      fprintf ppf "@[<1>(%a)@]" print_out_type ty ]
   in
   print_tkind ppf
 and print_out_constr ppf (name, tyl) =
@@ -247,13 +240,17 @@ and print_typargs ppf =
       fprintf ppf "@[<1>(%a)@]@ " (print_typlist print_out_type ",") tyl ]
 ;
 
+value type_parameter ppf (ty, (co, cn)) =
+  fprintf ppf "%s'%s" (if not cn then "+" else if not co then "-" else "")
+    ty
+;
+
 value print_out_class_params ppf =
   fun
   [ [] -> ()
   | tyl ->
       fprintf ppf "@[<1>[%a]@]@ "
-        (print_list (fun ppf x -> fprintf ppf "'%s" x)
-           (fun ppf -> fprintf ppf ", "))
+        (print_list type_parameter (fun ppf -> fprintf ppf ", "))
         tyl ]
 ;
 
@@ -356,16 +353,12 @@ and print_out_sig_item ppf =
       fprintf ppf "@[<2>%s %a :@ %a%a@]" kwd value_ident name
         Toploop.print_out_type.val ty pr_prims prims ]
 
-and print_out_type_decl kwd ppf (name, args, ty, constraints) =
+and print_out_type_decl kwd ppf (name, args, ty, priv, constraints) =
   let constrain ppf (ty, ty') =
     fprintf ppf "@ @[<2>constraint %a =@ %a@]" Toploop.print_out_type.val ty
       Toploop.print_out_type.val ty'
   in
   let print_constraints ppf params = List.iter (constrain ppf) params in
-  let type_parameter ppf (ty, (co, cn)) =
-    fprintf ppf "%s'%s" (if not cn then "+" else if not co then "-" else "")
-      ty
-  in
   let type_defined ppf =
     match args with
     [ [] -> fprintf ppf "%s" name
@@ -373,9 +366,20 @@ and print_out_type_decl kwd ppf (name, args, ty, constraints) =
     | _ ->
         fprintf ppf "%s@ %a" name
           (print_list type_parameter (fun ppf -> fprintf ppf "@ ")) args ]
+  and print_kind ppf ty =
+    fprintf ppf "%s@ %a"
+      (if priv = Asttypes.Private then " private" else "")
+      Toploop.print_out_type.val ty
   in
-  fprintf ppf "@[<2>@[<hv 2>@[%s %t@] =@ %a@]%a@]" kwd type_defined
-    Toploop.print_out_type.val ty print_constraints constraints
+  let print_types ppf = fun
+    [ Otyp_manifest ty1 ty2 ->
+        fprintf ppf "@ @[<2>%a ==%a@]"
+          Toploop.print_out_type.val ty1
+          print_kind ty2
+    | ty -> print_kind ppf ty ]
+  in
+  fprintf ppf "@[<2>@[<hv 2>@[%s %t@] =%a@]%a@]" kwd type_defined
+    print_types ty print_constraints constraints
 ;
 
 (* Phrases *)

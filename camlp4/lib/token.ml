@@ -153,6 +153,7 @@ value rec backslash s i =
     | '\\' -> ('\\', i + 1)
     | '"' -> ('"', i + 1)
     | ''' -> (''', i + 1)
+    | ' ' -> (' ', i + 1)
     | '0'..'9' as c -> backslash1 (valch c) s (i + 1)
     | 'x' -> backslash1h s (i + 1)
     | _ -> raise Not_found ]

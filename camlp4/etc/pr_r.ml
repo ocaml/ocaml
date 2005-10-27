@@ -28,6 +28,12 @@ value gen_where = ref True;
 value old_sequences = ref False;
 value expand_declare = ref False;
 
+value no_curried_constructors = ref False;
+
+value constructors_are_curried () =
+  not no_curried_constructors.val
+;
+
 external is_printable : char -> bool = "caml_is_printable";
 
 value char_escaped =
@@ -127,7 +133,7 @@ value flag n f = if f then [: `S LR n :] else [: :];
 
 (* default global loc *)
 
-value loc = (Token.nowhere, Token.nowhere);
+value _loc = (Token.nowhere, Token.nowhere);
 
 (* extensible printers *)
 
@@ -173,7 +179,14 @@ and label is_last b (loc, f, m, t) k =
        k :]
 ;
 
-value rec ctyp_list tel k = listws ctyp (S LR "and") tel k;
+value rec ctyp_list tel k =
+  if constructors_are_curried() then
+    listws ctyp (S LR "and") tel k else
+  if List.length tel > 1 then
+    [: `S LO "("; listws ctyp (S LR "*") tel [: `S RO ")"; k :] :]
+  else
+    listws ctyp (S LR "*") tel k
+;
 
 value rec variants loc b vl k =
   match vl with
@@ -231,7 +244,28 @@ and field (lab, t) k =
   HVbox [: `S LR (var_escaped lab); `S LR ":"; `ctyp t k :]
 ;
 
+value rec data_constructor_app e = match e with
+  [ <:expr< $uid:_$ >> | <:expr< $uid:_$ $_$ >> -> True
+  | <:expr< $a$ $_$ >> -> data_constructor_app a
+  | _ -> False ]
+;
+
+value uncurry_expr fe last_arg =
+  let rec linearize fe result = match fe with
+  [ <:expr< $f$ $x$ >> -> linearize f [ x :: result ]
+  | _ -> (fe, result) ] in
+  linearize fe [last_arg]
+;
+
 (* patterns *)
+
+value uncurry_patt pat last_arg =
+  let rec linearize pat result = match pat with
+  [ <:patt< $p$ $x$ >> -> linearize p [ x :: result ]
+  | _ -> (pat, result) ] in
+  linearize pat [last_arg]
+;
+
 
 value rec is_irrefut_patt =
   fun
@@ -756,7 +790,7 @@ pr_sig_item.pr_levels :=
           fun curr next _ k -> [: `not_impl "sig_item1" si :]
       | <:sig_item< exception $c$ of $list:tl$ >> ->
           fun curr next _ k ->
-            [: `variant [: `S LR "exception" :] (loc, c, tl) k :]
+            [: `variant [: `S LR "exception" :] (_loc, c, tl) k :]
       | <:sig_item< value $s$ : $t$ >> ->
           fun curr next _ k -> [: `value_description s t k :]
       | <:sig_item< include $mt$ >> ->
@@ -820,9 +854,9 @@ pr_str_item.pr_levels :=
       | <:str_item< exception $c$ of $list:tl$ = $b$ >> ->
           fun curr next _ k ->
             match b with
-            [ [] -> [: `variant [: `S LR "exception" :] (loc, c, tl) k :]
+            [ [] -> [: `variant [: `S LR "exception" :] (_loc, c, tl) k :]
             | _ ->
-                [: `variant [: `S LR "exception" :] (loc, c, tl)
+                [: `variant [: `S LR "exception" :] (_loc, c, tl)
                       [: `S LR "=" :];
                    mod_ident b k :] ]
       | <:str_item< include $me$ >> ->
@@ -1146,7 +1180,19 @@ pr_expr.pr_levels :=
             if is_infix n then [: `next e "" k :]
             else [: curr <:expr< $lid:n$ $x$ >> "" [: :]; `next y "" k :]
       | <:expr< $x$ $y$ >> ->
-          fun curr next _ k -> [: curr x "" [: :]; `next y "" k :]
+          if constructors_are_curried() || (not(data_constructor_app x)) then
+            fun curr next _ k -> [: curr x "" [: :]; `next y "" k :]
+          else
+            match uncurry_expr x y with
+            [ (f, ( [_;_::_] as args )) ->
+                fun curr next _ k ->
+                  [: curr f "" [: :];
+                     `HOVCbox
+                        [: `S LO "(";
+                           listws expr (S RO ",") args [: `S RO ")"; k :] :] :]
+            | (f, [ arg ]) ->
+                fun curr next _ k -> [: curr f "" [: :]; `next arg "" k :]
+            | (f, []) -> failwith "patt@pr_r" ]
       | <:expr< new $list:sl$ >> ->
           fun curr next _ k -> [: `S LR "new"; `class_longident sl k :]
       | e -> fun curr next _ k -> [: `next e "" k :] ]};
@@ -1294,7 +1340,19 @@ pr_patt.pr_levels :=
       [ <:patt< [$_$ :: $_$] >> as p ->
           fun curr next _ k -> [: `next p "" k :]
       | <:patt< $x$ $y$ >> ->
-          fun curr next _ k -> [: curr x "" [: :]; `next y "" k :]
+          if constructors_are_curried() then
+            fun curr next _ k -> [: curr x "" [: :]; `next y "" k :]
+          else
+            match uncurry_patt x y with
+            [ (constr, ( [_;_::_] as args )) ->
+                fun curr next _ k -> 
+                  [: curr constr "" [: :];
+                     `HOVCbox
+                        [: `S LO "(";
+                           listws patt (S RO ",") args [: `S RO ")"; k :] :] :]
+            | (constr, [ arg ]) ->
+                fun curr next _ k -> [: curr constr "" [: :]; `next arg "" k :]
+            | (constr, []) -> failwith "patt@pr_r" ]
       | p -> fun curr next _ k -> [: `next p "" k :] ]};
    {pr_label = ""; pr_box _ x = HOVbox x;
     pr_rules =
@@ -1474,14 +1532,11 @@ pr_ctyp.pr_levels :=
           fun curr next _ k -> [: `S LR (var_escaped s); k :]
       | <:ctyp< $uid:s$ >> -> fun curr next _ k -> [: `S LR s; k :]
       | <:ctyp< _ >> -> fun curr next _ k -> [: `S LR "_"; k :]
-      | <:ctyp< private { $list: ftl$ } >> as t ->
-          fun curr next _ k ->
-            let loc = MLast.loc_of_ctyp t in
-              [: `HVbox
-                 [: `HVbox [:`S LR "private" :];
-                    `HVbox [: labels loc [:`S LR "{" :]
-                                ftl [: `S LR "}" :] :];
-                     k :] :]
+      | <:ctyp< private $ty$ >> ->
+          fun curr next dg k ->
+            [: `HVbox
+               [: `HVbox [:`S LR "private" :];
+                  `ctyp ty k :] :]
       | <:ctyp< { $list: ftl$ } >> as t ->
           fun curr next _ k ->
             let loc = MLast.loc_of_ctyp t in
@@ -1492,12 +1547,6 @@ pr_ctyp.pr_levels :=
             let loc = MLast.loc_of_ctyp t in
             [: `Vbox
                   [: `HVbox [: :];
-                     variants loc [: `S LR "[" :] ctl [: `S LR "]" :]; k :] :]
-      | <:ctyp< private [ $list:ctl$ ] >> as t ->
-          fun curr next _ k ->
-            let loc = MLast.loc_of_ctyp t in
-            [: `Vbox
-                  [: `HVbox [: `S LR "private" :];
                      variants loc [: `S LR "[" :] ctl [: `S LR "]" :]; k :] :]
       | <:ctyp< [ = $list:rfl$ ] >> ->
           fun curr next _ k ->
@@ -1898,3 +1947,6 @@ Pcaml.add_option "-exp_dcl" (Arg.Set expand_declare)
 
 Pcaml.add_option "-tc" (Arg.Clear ncip)
   "Deprecated since version 3.05; equivalent to -cip.";
+
+Pcaml.add_option "-no_curried_constructors" (Arg.Set no_curried_constructors)
+  "Considers all non constant data constructors as unary.";

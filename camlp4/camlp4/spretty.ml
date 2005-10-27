@@ -243,7 +243,7 @@ value rec print_pretty tab pos spc =
   | SL np LO x -> (n_print_string pos spc np x, 0)
   | SL np NO x -> (n_print_string pos 0 np x, 0)
   | SL np LR x -> (n_print_string pos spc np x, 1)
-  | HL x as p -> print_horiz tab pos spc x
+  | HL x -> print_horiz tab pos spc x
   | BL x as p -> print_horiz_vertic tab pos spc (too_long tab (pos, spc) p) x
   | PL x as p -> print_paragraph tab pos spc (too_long tab (pos, spc) p) x
   | QL x as p -> print_sparagraph tab pos spc (too_long tab (pos, spc) p) x

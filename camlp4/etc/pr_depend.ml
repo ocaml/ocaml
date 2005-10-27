@@ -48,8 +48,9 @@ value rec ctyp =
   | TyMan _ t1 t2 -> do { ctyp t1; ctyp t2; }
   | TyOlb _ _ t -> ctyp t
   | TyQuo _ _ -> ()
-  | TyRec _ _ ldl -> list label_decl ldl
-  | TySum _ _ cdl -> list constr_decl cdl
+  | TyRec _ ldl -> list label_decl ldl
+  | TySum _ cdl -> list constr_decl cdl
+  | TyPrv _ t -> ctyp t
   | TyTup _ tl -> list ctyp tl
   | TyVrn _ sbtll _ -> list variant sbtll
   | x -> not_impl "ctyp" x ]

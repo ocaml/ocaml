@@ -224,7 +224,7 @@ value rec name_of_symbol entry =
 
 value rec get_token_list entry tokl last_tok tree =
   match tree with
-  [ Node {node = (Stoken tok as s); son = son; brother = DeadEnd} ->
+  [ Node {node = Stoken tok; son = son; brother = DeadEnd} ->
       get_token_list entry [last_tok :: tokl] tok son
   | _ ->
       if tokl = [] then None
