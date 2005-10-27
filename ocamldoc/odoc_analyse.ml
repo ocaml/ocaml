@@ -29,7 +29,7 @@ open Typedtree
 let init_path () =
   load_path :=
     "" :: List.rev (Config.standard_library :: !Clflags.include_dirs);
-  Env.reset_cache()
+  Env.reset_cache ()
 
 (** Return the initial environment in which compilation proceeds. *)
 let initial_env () =
@@ -105,10 +105,10 @@ let (++) x f = f x
 (** Analysis of an implementation file. Returns (Some typedtree) if
    no error occured, else None and an error message is printed.*)
 let process_implementation_file ppf sourcefile =
-
-  init_path();
+  init_path ();
   let prefixname = Filename.chop_extension sourcefile in
   let modulename = String.capitalize(Filename.basename prefixname) in
+  Env.set_unit_name modulename;
   let inputfile = preprocess sourcefile in
   let env = initial_env () in
   try
@@ -132,9 +132,10 @@ let process_implementation_file ppf sourcefile =
 (** Analysis of an interface file. Returns (Some signature) if
    no error occured, else None and an error message is printed.*)
 let process_interface_file ppf sourcefile =
-  init_path();
+  init_path ();
   let prefixname = Filename.chop_extension sourcefile in
   let modulename = String.capitalize(Filename.basename prefixname) in
+  Env.set_unit_name modulename;
   let inputfile = preprocess sourcefile in
   let ast = parse_file inputfile Parse.interface ast_intf_magic_number in
   let sg = Typemod.transl_signature (initial_env()) ast in
@@ -150,8 +151,8 @@ module Sig_analyser = Odoc_sig.Analyser (Odoc_comments.Basic_info_retriever)
 (** Handle an error. This is a partial copy of the compiler
    driver/error.ml file. We do this because there are
    some differences between the possibly raised exceptions
-   in the bytecode (error.ml) and opt (opterros.ml) compilers 
-   and we don't want to take care of this. Besisdes, this 
+   in the bytecode (error.ml) and opt (opterros.ml) compilers
+   and we don't want to take care of this. Besisdes, this
    differences only concern code generation (i believe).*)
 let process_error exn =
   let report ppf = function
@@ -185,15 +186,15 @@ let process_error exn =
       Location.print ppf loc; Translclass.report_error ppf err
   | Warnings.Errors (n) ->
       fprintf ppf "@.Error: %d error-enabled warnings occurred." n
-  | x -> 
-      fprintf ppf "@]"; 
+  | x ->
+      fprintf ppf "@]";
       fprintf ppf "Compilation error. Use the OCaml compiler to get more details."
   in
   Format.fprintf Format.err_formatter "@[%a@]@." report exn
 
 (** Process the given file, according to its extension. Return the Module.t created, if any.*)
 let process_file ppf sourcefile =
-  if !Odoc_args.verbose then 
+  if !Odoc_args.verbose then
     (
      let f = match sourcefile with Odoc_args.Impl_file f | Odoc_args.Intf_file f -> f in
      print_string (Odoc_messages.analysing f) ;
@@ -209,11 +210,11 @@ let process_file ppf sourcefile =
              None
 	 | Some (parsetree, typedtree) ->
              let file_module = Ast_analyser.analyse_typed_tree file
-		 !Location.input_name parsetree typedtree 
+		 !Location.input_name parsetree typedtree
 	     in
              file_module.Odoc_module.m_top_deps <- Odoc_dep.impl_dependencies parsetree ;
 
-             if !Odoc_args.verbose then 
+             if !Odoc_args.verbose then
                (
 		print_string Odoc_messages.ok;
 		print_newline ()
@@ -221,7 +222,7 @@ let process_file ppf sourcefile =
              remove_preprocessed input_file;
              Some file_module
        with
-       | Sys_error s 
+       | Sys_error s
        | Failure s ->
            prerr_endline s ;
            incr Odoc_global.errors ;
@@ -236,12 +237,12 @@ let process_file ppf sourcefile =
        try
          let (ast, signat, input_file) = process_interface_file ppf file in
          let file_module = Sig_analyser.analyse_signature file
-	     !Location.input_name ast signat 
+	     !Location.input_name ast signat
 	 in
 
          file_module.Odoc_module.m_top_deps <- Odoc_dep.intf_dependencies ast ;
 
-         if !Odoc_args.verbose then 
+         if !Odoc_args.verbose then
            (
             print_string Odoc_messages.ok;
             print_newline ()
@@ -249,7 +250,7 @@ let process_file ppf sourcefile =
          remove_preprocessed input_file;
          Some file_module
        with
-       | Sys_error s 
+       | Sys_error s
        | Failure s ->
            prerr_endline s;
            incr Odoc_global.errors ;
@@ -260,107 +261,142 @@ let process_file ppf sourcefile =
            None
       )
 
-(** Remove the class elements after the stop special comment. *)
-let rec remove_class_elements_after_stop eles =
+(** Remove the class elements between the stop special comments. *)
+let rec remove_class_elements_between_stop keep eles =
   match eles with
     [] -> []
   | ele :: q ->
       match ele with
-        Odoc_class.Class_comment [ Odoc_types.Raw "/*" ] -> []
-      | Odoc_class.Class_attribute _ 
-      | Odoc_class.Class_method _ 
-      | Odoc_class.Class_comment _ -> ele :: (remove_class_elements_after_stop q)
+        Odoc_class.Class_comment [ Odoc_types.Raw "/*" ] ->
+          remove_class_elements_between_stop (not keep) q
+      | Odoc_class.Class_attribute _
+      | Odoc_class.Class_method _
+      | Odoc_class.Class_comment _ ->
+          if keep then
+            ele :: (remove_class_elements_between_stop keep q)
+          else
+            remove_class_elements_between_stop keep q
 
-(** Remove the class elements after the stop special comment in a class kind. *)
-let rec remove_class_elements_after_stop_in_class_kind k =
+(** Remove the class elements between the stop special comments in a class kind. *)
+let rec remove_class_elements_between_stop_in_class_kind k =
   match k with
     Odoc_class.Class_structure (inher, l) ->
-      Odoc_class.Class_structure (inher, remove_class_elements_after_stop l)
+      Odoc_class.Class_structure (inher, remove_class_elements_between_stop true l)
   | Odoc_class.Class_apply _ -> k
   | Odoc_class.Class_constr _ -> k
   | Odoc_class.Class_constraint (k1, ctk) ->
-      Odoc_class.Class_constraint (remove_class_elements_after_stop_in_class_kind k1,
-                        remove_class_elements_after_stop_in_class_type_kind ctk)
+      Odoc_class.Class_constraint (remove_class_elements_between_stop_in_class_kind k1,
+                        remove_class_elements_between_stop_in_class_type_kind ctk)
 
-(** Remove the class elements after the stop special comment in a class type kind. *)
-and remove_class_elements_after_stop_in_class_type_kind tk =
+(** Remove the class elements beetween the stop special comments in a class type kind. *)
+and remove_class_elements_between_stop_in_class_type_kind tk =
   match tk with
     Odoc_class.Class_signature (inher, l) ->
-      Odoc_class.Class_signature (inher, remove_class_elements_after_stop l)
+      Odoc_class.Class_signature (inher, remove_class_elements_between_stop true l)
   | Odoc_class.Class_type _ -> tk
 
 
-(** Remove the module elements after the stop special comment. *)
-let rec remove_module_elements_after_stop eles =
-  let f = remove_module_elements_after_stop in
+(** Remove the module elements between the stop special comments. *)
+let rec remove_module_elements_between_stop keep eles =
+  let f = remove_module_elements_between_stop in
   match eles with
     [] -> []
   | ele :: q ->
       match ele with
-        Odoc_module.Element_module_comment [ Odoc_types.Raw "/*" ] -> []
+        Odoc_module.Element_module_comment [ Odoc_types.Raw "/*" ] ->
+          f (not keep) q
       | Odoc_module.Element_module_comment _ ->
-          ele :: (f q)
+          if keep then
+            ele :: (f keep q)
+          else
+            f keep q
       | Odoc_module.Element_module m ->
-          m.Odoc_module.m_kind <- remove_module_elements_after_stop_in_module_kind m.Odoc_module.m_kind ;
-          (Odoc_module.Element_module m) :: (f q)
+          if keep then
+            (
+             m.Odoc_module.m_kind <- remove_module_elements_between_stop_in_module_kind m.Odoc_module.m_kind ;
+             (Odoc_module.Element_module m) :: (f keep q)
+            )
+          else
+            f keep q
       | Odoc_module.Element_module_type mt ->
-          mt.Odoc_module.mt_kind <- Odoc_misc.apply_opt 
-              remove_module_elements_after_stop_in_module_type_kind mt.Odoc_module.mt_kind ;
-          (Odoc_module.Element_module_type mt) :: (f q)
+          if keep then
+            (
+             mt.Odoc_module.mt_kind <- Odoc_misc.apply_opt
+                 remove_module_elements_between_stop_in_module_type_kind mt.Odoc_module.mt_kind ;
+             (Odoc_module.Element_module_type mt) :: (f keep q)
+            )
+          else
+            f keep q
       | Odoc_module.Element_included_module _ ->
-          ele :: (f q)
+          if keep then
+            ele :: (f keep q)
+          else
+            f keep q
       | Odoc_module.Element_class c ->
-          c.Odoc_class.cl_kind <- remove_class_elements_after_stop_in_class_kind c.Odoc_class.cl_kind ;
-          (Odoc_module.Element_class c) :: (f q)
+          if keep then
+            (
+             c.Odoc_class.cl_kind <- remove_class_elements_between_stop_in_class_kind c.Odoc_class.cl_kind ;
+             (Odoc_module.Element_class c) :: (f keep q)
+            )
+          else
+            f keep q
       | Odoc_module.Element_class_type ct ->
-          ct.Odoc_class.clt_kind <- remove_class_elements_after_stop_in_class_type_kind ct.Odoc_class.clt_kind ;
-          (Odoc_module.Element_class_type ct) :: (f q)
+          if keep then
+            (
+             ct.Odoc_class.clt_kind <- remove_class_elements_between_stop_in_class_type_kind ct.Odoc_class.clt_kind ;
+             (Odoc_module.Element_class_type ct) :: (f keep q)
+            )
+          else
+            f keep q
       | Odoc_module.Element_value _
       | Odoc_module.Element_exception _
       | Odoc_module.Element_type _ ->
-          ele :: (f q)
+          if keep then
+            ele :: (f keep q)
+          else
+            f keep q
 
 
-(** Remove the module elements after the stop special comment, in the given module kind. *)
-and remove_module_elements_after_stop_in_module_kind k =
+(** Remove the module elements between the stop special comments, in the given module kind. *)
+and remove_module_elements_between_stop_in_module_kind k =
   match k with
-  | Odoc_module.Module_struct l -> Odoc_module.Module_struct (remove_module_elements_after_stop l)
+  | Odoc_module.Module_struct l -> Odoc_module.Module_struct (remove_module_elements_between_stop true l)
   | Odoc_module.Module_alias _ -> k
   | Odoc_module.Module_functor (params, k2)  ->
-      Odoc_module.Module_functor (params, remove_module_elements_after_stop_in_module_kind k2)
+      Odoc_module.Module_functor (params, remove_module_elements_between_stop_in_module_kind k2)
   | Odoc_module.Module_apply (k1, k2) ->
-      Odoc_module.Module_apply (remove_module_elements_after_stop_in_module_kind k1, 
-                    remove_module_elements_after_stop_in_module_kind k2)
+      Odoc_module.Module_apply (remove_module_elements_between_stop_in_module_kind k1,
+                    remove_module_elements_between_stop_in_module_kind k2)
   | Odoc_module.Module_with (mtkind, s) ->
-      Odoc_module.Module_with (remove_module_elements_after_stop_in_module_type_kind mtkind, s)
+      Odoc_module.Module_with (remove_module_elements_between_stop_in_module_type_kind mtkind, s)
   | Odoc_module.Module_constraint (k2, mtkind) ->
-      Odoc_module.Module_constraint (remove_module_elements_after_stop_in_module_kind k2, 
-                         remove_module_elements_after_stop_in_module_type_kind mtkind)
+      Odoc_module.Module_constraint (remove_module_elements_between_stop_in_module_kind k2,
+                         remove_module_elements_between_stop_in_module_type_kind mtkind)
 
-(** Remove the module elements after the stop special comment, in the given module type kind. *)
-and remove_module_elements_after_stop_in_module_type_kind tk =
+(** Remove the module elements between the stop special comment, in the given module type kind. *)
+and remove_module_elements_between_stop_in_module_type_kind tk =
   match tk with
-  | Odoc_module.Module_type_struct l -> Odoc_module.Module_type_struct (remove_module_elements_after_stop l)
+  | Odoc_module.Module_type_struct l -> Odoc_module.Module_type_struct (remove_module_elements_between_stop true l)
   | Odoc_module.Module_type_functor (params, tk2) ->
-      Odoc_module.Module_type_functor (params, remove_module_elements_after_stop_in_module_type_kind tk2)
+      Odoc_module.Module_type_functor (params, remove_module_elements_between_stop_in_module_type_kind tk2)
   | Odoc_module.Module_type_alias _ -> tk
   | Odoc_module.Module_type_with (tk2, s) ->
-      Odoc_module.Module_type_with (remove_module_elements_after_stop_in_module_type_kind tk2, s)
+      Odoc_module.Module_type_with (remove_module_elements_between_stop_in_module_type_kind tk2, s)
 
 
-(** Remove elements after the stop special comment. *)
-let remove_elements_after_stop module_list =
+(** Remove elements between the stop special comment. *)
+let remove_elements_between_stop module_list =
   List.map
-    (fun m -> 
-      m.Odoc_module.m_kind <- remove_module_elements_after_stop_in_module_kind m.Odoc_module.m_kind; 
+    (fun m ->
+      m.Odoc_module.m_kind <- remove_module_elements_between_stop_in_module_kind m.Odoc_module.m_kind;
       m
     )
     module_list
 
 (** This function builds the modules from the given list of source files. *)
 let analyse_files ?(init=[]) files =
-  let modules_pre = 
-    init @ 
+  let modules_pre =
+    init @
     (List.fold_left
        (fun acc -> fun file ->
          try
@@ -379,12 +415,12 @@ let analyse_files ?(init=[]) files =
        files
     )
   in
-  (* Remove elements after the stop special comments, if needed. *)
-  let modules = 
+  (* Remove elements between the stop special comments, if needed. *)
+  let modules =
     if !Odoc_args.no_stop then
       modules_pre
     else
-      remove_elements_after_stop modules_pre 
+      remove_elements_between_stop modules_pre
   in
 
 
@@ -399,7 +435,7 @@ let analyse_files ?(init=[]) files =
      print_string Odoc_messages.ok;
      print_newline ();
     );
-  let modules_list = 
+  let modules_list =
     (List.fold_left
        (fun acc -> fun m -> acc @ (Odoc_module.module_all_submodules ~trans: false m))
        merged_modules

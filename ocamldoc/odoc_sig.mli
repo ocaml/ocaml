@@ -133,14 +133,15 @@ module Analyser :
       val get_comments_in_module : int -> int -> 
         (Odoc_types.info option * Odoc_module.module_element list)
 
-      (** This function takes a [Parsetree.type_kind] and returns the list of 
-         (name, optional comment) for the various fields/constructors of the type, 
+      (** [name_comment_from_type_kind pos_end pos_limit type_kind].
+	 This function takes a [Parsetree.type_kind] and returns the list of
+         (name, optional comment) for the various fields/constructors of the type,
          or an empty list for an abstract type.
-         [pos_start] and [pos_end] are the first and last char of the complete type definition.
+         [pos_end] is last char of the complete type definition.
          [pos_limit] is the position of the last char we could use to look for a comment,
          i.e. usually the beginning on the next element.*)
-      val name_comment_from_type_kind : 
-          int -> int -> int -> Parsetree.type_kind -> int * (string * Odoc_types.info option) list
+      val name_comment_from_type_kind :
+          int -> int -> Parsetree.type_kind -> int * (string * Odoc_types.info option) list
 
       (** This function converts a [Types.type_kind] into a [Odoc_type.type_kind],
          by associating the comment found in the parsetree of each constructor/field, if any.*)

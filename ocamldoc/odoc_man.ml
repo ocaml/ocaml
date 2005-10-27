@@ -197,7 +197,16 @@ class man =
       Str.global_replace re_slash "slash" s
 
     (** Escape special sequences of characters in a string. *)
-    method escape (s : string) = s
+    method escape (s : string) =
+      let len = String.length s in
+      let b = Buffer.create len in
+      for i = 0 to len - 1 do
+	match s.[i] with
+	  '\\' -> Buffer.add_string b "\\(rs"
+	| '.' -> Buffer.add_string b "\\&."
+	| c -> Buffer.add_char b c
+      done;
+      Buffer.contents b
 
     (** Open a file for output. Add the target directory.*)
     method open_out file =
@@ -223,7 +232,7 @@ class man =
     (** Print the groff string for a text element. *)
     method man_of_text_element b te =
       match te with
-      | Odoc_info.Raw s -> bs b s
+      | Odoc_info.Raw s -> bs b (self#escape s)
       | Odoc_info.Code s ->
           bs b "\n.B ";
 	  bs b ((Str.global_replace (Str.regexp "\n") "\n.B " (self#escape s))^"\n")
@@ -568,7 +577,7 @@ class man =
       );
       bs b (Name.simple c.cl_name);
       bs b " : " ;
-      self#man_of_class_type_expr b (Name.father c.cl_name) c.cl_type;
+      self#man_of_class_type_expr b father c.cl_type;
       bs b "\n.sp\n";
       self#man_of_info b c.cl_info;
       bs b "\n.sp\n"

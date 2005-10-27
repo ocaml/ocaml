@@ -147,7 +147,7 @@ let char_for_backslash = function
 let char_for_decimal_code lexbuf i =
   let c = 100 * (Char.code(Lexing.lexeme_char lexbuf i) - 48) +
            10 * (Char.code(Lexing.lexeme_char lexbuf (i+1)) - 48) +
-                (Char.code(Lexing.lexeme_char lexbuf (i+2)) - 48) in  
+                (Char.code(Lexing.lexeme_char lexbuf (i+2)) - 48) in
   if (c < 0 || c > 255) && not (in_comment ())
   then raise (Error(Illegal_escape (Lexing.lexeme lexbuf),
                     Location.curr lexbuf))
@@ -221,7 +221,7 @@ let newline = ('\010' | '\013' | "\013\010")
 let blank = [' ' '\009' '\012']
 let lowercase = ['a'-'z' '\223'-'\246' '\248'-'\255' '_']
 let uppercase = ['A'-'Z' '\192'-'\214' '\216'-'\222']
-let identchar = 
+let identchar =
   ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
 let symbolchar =
   ['!' '$' '%' '&' '*' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
@@ -236,7 +236,7 @@ let bin_literal =
 let int_literal =
   decimal_literal | hex_literal | oct_literal | bin_literal
 let float_literal =
-  ['0'-'9'] ['0'-'9' '_']* 
+  ['0'-'9'] ['0'-'9' '_']*
   ('.' ['0'-'9' '_']* )?
   (['e' 'E'] ['+' '-']? ['0'-'9'] ['0'-'9' '_']*)?
 
@@ -295,7 +295,7 @@ rule token = parse
   | int_literal "n"
       { let s = Lexing.lexeme lexbuf in
         try
-          NATIVEINT 
+          NATIVEINT
             (Nativeint.of_string(String.sub s 0 (String.length s - 1)))
         with Failure _ ->
           raise (Error(Literal_overflow "nativeint", Location.curr lexbuf)) }
@@ -311,7 +311,7 @@ rule token = parse
         CHAR (Lexing.lexeme_char lexbuf 1) }
   | "'" [^ '\\' '\'' '\010' '\013'] "'"
       { CHAR(Lexing.lexeme_char lexbuf 1) }
-  | "'\\" ['\\' '\'' '"' 'n' 't' 'b' 'r'] "'"
+  | "'\\" ['\\' '\'' '"' 'n' 't' 'b' 'r' ' '] "'"
       { CHAR(char_for_backslash (Lexing.lexeme_char lexbuf 2)) }
   | "'\\" ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
       { CHAR(char_for_decimal_code lexbuf 2) }
@@ -328,15 +328,14 @@ rule token = parse
         token lexbuf }
   | "(*)"
       { let loc = Location.curr lexbuf in
-        Location.prerr_warning loc (Warnings.Comment "the start of a comment");
+        Location.prerr_warning loc Warnings.Comment_start;
         comment_start_loc := [Location.curr lexbuf];
         comment lexbuf;
         token lexbuf
       }
   | "*)"
       { let loc = Location.curr lexbuf in
-        let warn = Warnings.Comment "not the end of a comment" in
-        Location.prerr_warning loc warn;
+        Location.prerr_warning loc Warnings.Comment_not_end;
         lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_curr_pos - 1;
         let curpos = lexbuf.lex_curr_p in
         lexbuf.lex_curr_p <- { curpos with pos_cnum = curpos.pos_cnum - 1 };
@@ -441,7 +440,7 @@ and comment = parse
       }
   | "'" [^ '\\' '\'' '\010' '\013' ] "'"
       { comment lexbuf }
-  | "'\\" ['\\' '"' '\'' 'n' 't' 'b' 'r'] "'"
+  | "'\\" ['\\' '"' '\'' 'n' 't' 'b' 'r' ' '] "'"
       { comment lexbuf }
   | "'\\" ['0'-'9'] ['0'-'9'] ['0'-'9'] "'"
       { comment lexbuf }
@@ -467,7 +466,7 @@ and string = parse
       { update_loc lexbuf None 1 false (String.length space);
         string lexbuf
       }
-  | '\\' ['\\' '\'' '"' 'n' 't' 'b' 'r']
+  | '\\' ['\\' '\'' '"' 'n' 't' 'b' 'r' ' ']
       { store_string_char(char_for_backslash(Lexing.lexeme_char lexbuf 1));
         string lexbuf }
   | '\\' ['0'-'9'] ['0'-'9'] ['0'-'9']
@@ -485,8 +484,7 @@ and string = parse
                         Location.curr lexbuf))
 *)
           let loc = Location.curr lexbuf in
-          let warn = Warnings.Other "Illegal backslash escape in string" in
-          Location.prerr_warning loc warn;
+          Location.prerr_warning loc Warnings.Illegal_backslash;
           store_string_char (Lexing.lexeme_char lexbuf 0);
           store_string_char (Lexing.lexeme_char lexbuf 1);
           string lexbuf

@@ -192,7 +192,7 @@ STDLIB_MLIS=../stdlib/*.mli \
 	../otherlibs/num/num.mli
 
 all: exe lib
-       $(MAKE) manpages
+	$(MAKE) manpages
 
 exe: $(OCAMLDOC)
 lib: $(OCAMLDOC_LIBCMA) $(OCAMLDOC_LIBCMI) $(ODOC_TEST)

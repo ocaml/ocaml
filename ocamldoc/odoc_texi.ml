@@ -264,8 +264,8 @@ class text =
 
     (** this method is not used here but is virtual
         in a class we will inherit later *)
-    method label ?(no_ : bool option) (_ : string) = 
-      failwith "gni" ; ""
+    method label ?(no_ : bool option) (_ : string) : string = 
+      failwith "gni"
 
     (** Return the Texinfo code corresponding to the [text] parameter.*)
     method texi_of_text t =
