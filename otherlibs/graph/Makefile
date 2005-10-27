@@ -69,7 +69,7 @@ installopt:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 
 depend:
-	gcc -MM $(CFLAGS) *.c > .depend
+	gcc -MM $(CFLAGS) *.c | sed -e 's, /usr[^ ]*\.h,,g' > .depend
 	../../boot/ocamlrun ../../tools/ocamldep *.mli *.ml >> .depend
 
 include .depend
