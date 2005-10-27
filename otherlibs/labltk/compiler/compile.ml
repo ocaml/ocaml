@@ -655,7 +655,7 @@ let code_of_template ~context_widget ?func:(funtemplate=false) template =
   let newvar = ref newvar1 in     
   let rec coderec = function
     StringArg s -> "TkToken \"" ^ s ^ "\""
-  | TypeArg (_, List (Subtype (sup, sub) as ty)) when not !Flags.camltk ->
+  | TypeArg (_, List (Subtype (sup, sub))) when not !Flags.camltk ->
       begin try
         let typdef = Hashtbl.find types_table sup in
         let classdef = List.assoc sub typdef.subtypes in

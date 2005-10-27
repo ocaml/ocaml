@@ -48,6 +48,7 @@ install:
 	cd browser ; $(MAKEREC) install
 
 installopt:
+	cd support ; $(MAKEREC) installopt
 	cd labltk ; $(MAKEREC) installopt
 	cd camltk ; $(MAKEREC) installopt
 	cd lib ; $(MAKEREC) installopt

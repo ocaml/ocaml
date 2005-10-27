@@ -20,5 +20,7 @@ textvariable.cmo: protocol.cmi support.cmi widget.cmi textvariable.cmi
 textvariable.cmx: protocol.cmx support.cmx widget.cmx textvariable.cmi 
 timer.cmo: protocol.cmi support.cmi timer.cmi 
 timer.cmx: protocol.cmx support.cmx timer.cmi 
+tkthread.cmo: protocol.cmi timer.cmi widget.cmi tkthread.cmi 
+tkthread.cmx: protocol.cmx timer.cmx widget.cmx tkthread.cmi 
 widget.cmo: rawwidget.cmi widget.cmi 
 widget.cmx: rawwidget.cmx widget.cmi 

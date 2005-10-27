@@ -148,7 +148,7 @@ let rec included ~prefix t1 t2 =
   | Tvariant row1, Tvariant row2 ->
       let row1 = row_repr row1 and row2 = row_repr row2 in
       let fields1 = filter_row_fields false row1.row_fields
-      and fields2 = filter_row_fields false row1.row_fields
+      and fields2 = filter_row_fields false row2.row_fields
       in
       let r1, r2, pairs = merge_row_fields fields1 fields2 in
       r1 = [] &&

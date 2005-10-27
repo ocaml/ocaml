@@ -166,12 +166,12 @@ let search_pos_type_decl td ~pos ~env =
     | None -> ()
     end;
     let rec search_tkind = function
-      Ptype_abstract -> ()
+      Ptype_abstract | Ptype_private -> ()
     | Ptype_variant (dl, _) ->
         List.iter dl
-          ~f:(fun (_, tl) -> List.iter tl ~f:(search_pos_type ~pos ~env))
+          ~f:(fun (_, tl, _) -> List.iter tl ~f:(search_pos_type ~pos ~env))
     | Ptype_record (dl, _) ->
-        List.iter dl ~f:(fun (_, _, t) -> search_pos_type t ~pos ~env) in
+        List.iter dl ~f:(fun (_, _, t, _) -> search_pos_type t ~pos ~env) in
     search_tkind td.ptype_kind;
     List.iter td.ptype_cstrs ~f:
       begin fun (t1, t2, _) ->
@@ -584,7 +584,7 @@ let view_type kind ~env =
             [Tsig_class(ident_of_path path ~default:"c", cl, Trec_first)]
       end
   | `Class (path, cty) ->
-      let cld = { cty_params = []; cty_type = cty;
+      let cld = { cty_params = []; cty_variance = []; cty_type = cty;
                   cty_path = path; cty_new = None } in
       view_signature_item ~path ~env
         [Tsig_class(ident_of_path path ~default:"c", cld, Trec_first)]
@@ -678,7 +678,6 @@ let rec search_pos_structure ~pos str =
       List.iter l ~f:(fun (id, _, _, cl) -> search_pos_class_expr cl ~pos)
   | Tstr_cltype _ -> ()
   | Tstr_include (m, _) -> search_pos_module_expr m ~pos
-  | Tstr_loc _|Tstr_def _ -> assert false (* No browser for jocaml *)
   end
 
 and search_pos_class_structure ~pos cls =
@@ -815,8 +814,8 @@ and search_pos_expr ~pos exp =
   | Texp_object (cls, _, _) ->
       	search_pos_class_structure ~pos cls
   | Texp_loc (_, _)
-  | Texp_def (_, _)|Texp_reply (_, _)|Texp_par (_, _)|Texp_exec _|Texp_spawn _
-  | Texp_asyncsend (_, _)|Texp_null
+  | Texp_def (_, _)|Texp_reply (_, _)|Texp_par (_, _)|Texp_spawn _
+  | Texp_asyncsend (_, _)
     -> assert false (* no browser for jocaml *)
   end;
   add_found_str (`Exp(`Expr, exp.exp_type)) ~env:exp.exp_env ~loc:exp.exp_loc
