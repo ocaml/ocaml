@@ -84,6 +84,11 @@ let default_output = function
 
 let usage = "Usage: ocamlopt <options> <files>\nOptions are:"
 
+let show_config () =
+  Config.print_config stdout;
+  exit 0;
+;;
+
 let main () =
   native_code := true;
   c_compiler := Config.native_c_compiler;
@@ -102,8 +107,13 @@ let main () =
              "<opt>  Pass option <opt> to the C compiler and linker";
        "-compact", Arg.Clear optimize_for_speed,
              " Optimize code size rather than speed";
+       "-config", Arg.Unit show_config,
+             " print configuration values and exit";
        "-dtypes", Arg.Set save_types,
              " Save type information in <filename>.annot";
+       "-for-pack", Arg.String (fun s -> for_package := Some s),
+             "<ident>  Generate code that can later be `packed' with\n
+                       \t\t\tocamlopt -pack -o <ident>.cmx";
        "-i", Arg.Unit (fun () -> print_types := true; compile_only := true),
              " Print inferred interface";
        "-I", Arg.String(fun dir -> include_dirs := dir :: !include_dirs),
@@ -146,7 +156,8 @@ let main () =
        "-join", Arg.Set join, " Be a jocaml compiler";
 (*< JOCAML *)    
        "-S", Arg.Set keep_asm_file, " Keep intermediate assembly file";
-       "-thread", Arg.Set use_threads, " Generate code that supports the system threads library";
+       "-thread", Arg.Set use_threads,
+             " Generate code that supports the system threads library";
        "-unsafe", Arg.Set fast,
              " No bounds checking on array and string access";
        "-v", Arg.Unit print_version_and_library,
@@ -167,11 +178,12 @@ let main () =
          \032    S/s enable/disable non-unit statement\n\
          \032    U/u enable/disable unused match case\n\
          \032    V/v enable/disable hidden instance variables\n\
+         \032    Y/y enable/disable suspicious unused variables\n\
+         \032    Z/z enable/disable all other unused variables\n\
          \032    X/x enable/disable all other warnings\n\
-         \032    default setting is \"Ale\"\n\
-         \032    (all warnings but labels and fragile match enabled)";
+         \032    default setting is \"Aelz\"";
        "-warn-error" , Arg.String (Warnings.parse_options true),
-         "<flags>  Treat the warnings enabled by <flags> as errors.\n\
+        "<flags>  Treat the warnings of <flags> as errors, if they are enabled.\n\
          \032    See option -w for the list of flags.\n\
          \032    Default setting is \"a\" (warnings are not errors)";
        "-where", Arg.Unit print_standard_library,

@@ -19,6 +19,7 @@ module Make_options (F :
       val _cc : string -> unit
       val _cclib : string -> unit
       val _ccopt : string -> unit
+      val _config : unit -> unit
       val _custom : unit -> unit
       val _dllib : string -> unit
       val _dllpath : string -> unit
@@ -42,10 +43,8 @@ module Make_options (F :
       val _pp : string -> unit
       val _principal : unit -> unit
       val _rectypes : unit -> unit
-      val _thread : unit -> unit
-(*> JOCAML *)
       val _join : unit -> unit
-(*< JOCAML *)
+      val _thread : unit -> unit
       val _vmthread : unit -> unit
       val _unsafe : unit -> unit
       val _use_prims : string -> unit
