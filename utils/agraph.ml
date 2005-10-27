@@ -90,7 +90,7 @@ let iter (t,_) f =
     f i
   done
 
-let debug chan f ((t,_) as g) =
+let debug chan f (t,_) =
   for i=0 to Extarray.size t-1 do
     Printf.fprintf chan "%d ->" i ;
     begin try

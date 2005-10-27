@@ -48,10 +48,6 @@ val native_pack_linker: string
         (* The linker to use for packaging (ocamlopt -pack) *)
 val ranlib: string
         (* Command to randomize a library, or "" if not needed *)
-val binutils_nm: string
-        (* The "nm" command from GNU binutils, or "" if not available *)
-val binutils_objcopy: string
-        (* The "objcopy" command from GNU binutils, or "" if not available *)
 val cc_profile : string
         (* The command line option to the C compiler to enable profiling. *)
 
@@ -109,3 +105,8 @@ val ext_dll: string
 val default_executable_name: string
         (* Name of executable produced by linking if none is given with -o,
            e.g. [a.out] under Unix. *)
+
+val systhread_supported : bool
+        (* Whether the system thread library is implemented *)
+
+val print_config : out_channel -> unit;;
