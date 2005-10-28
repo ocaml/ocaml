@@ -54,8 +54,6 @@ let magic_join () =
   join := true ;
   let dir = Misc.expand_directory Config.standard_library "+threads" in
   include_dirs := dir :: !include_dirs ;
-  file_argument "unix.cma";
-  file_argument "threads.cma" ;
   file_argument "join.cma";
   ()
 (*< JOCAML *)         

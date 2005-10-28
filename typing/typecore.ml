@@ -1436,7 +1436,10 @@ and do_type_exp ctx env sexp =
           end  
       end
   | Pexp_sequence(sexp1, sexp2) ->
-      let exp1 = type_statement env sexp1 in
+      let exp1 =
+        match ctx with
+        | E -> type_statement env sexp1
+        | P -> type_expect env sexp1 (instance Predef.type_unit) in
       let exp2 = do_type_exp ctx env sexp2 in
       re {
         exp_desc = Texp_sequence(exp1, exp2);
