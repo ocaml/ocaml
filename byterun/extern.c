@@ -133,6 +133,7 @@ struct output_block {
 
 static struct output_block * extern_output_first, * extern_output_block;
 
+
 static void init_extern_output(void)
 {
   extern_userprovided_output = NULL;
@@ -491,7 +492,7 @@ static void extern_rec(value v)
       if (ofs >= 0) {
         Write(CODE_SAVEDVALUE) ;
         Write(ofs) ;
-        return ;
+        break ; /* saved values do not follow sharing mechanism */
       }
     }
     /* <JOCAML */

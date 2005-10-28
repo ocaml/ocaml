@@ -30,7 +30,7 @@ NATIVECODE_JOIN_C_OBJS=join_n.o
 
 JOIN_OBJS=join_debug.cmo join_misc.cmo join_link.cmo join_hash.cmo\
  join_queue.cmo join_extern.cmo join_scheduler.cmo join_port.cmo\
- join_message.cmo join_space.cmo join.cmo ns.cmo
+ join_message.cmo join_space.cmo join.cmo ns.cmo join_test.cmo
 
 GENFILES=thread.ml join.c join_types.mli\
  join_debug.mli join_debug.ml\
@@ -43,7 +43,8 @@ GENFILES=thread.ml join.c join_types.mli\
  join_message.mli join_message.ml\
  join_space.mli join_space.ml\
  join.ml join.mli\
- ns.mli ns.jml
+ ns.mli ns.jml\
+ join_test.mli join_test.ml
 
 all: libthreads.a threads.cma libjoin.a join.cma
 
@@ -156,6 +157,12 @@ join.ml: ../threads/join.ml
 join.mli: ../threads/join.mli
 	cp -f ../threads/join.mli . && chmod -w join.mli
 
+join_test.ml: ../threads/join_test.ml
+	cp -f ../threads/join_test.ml . && chmod -w join_test.ml
+
+join_test.mli: ../threads/join_test.mli
+	cp -f ../threads/join_test.mli . && chmod -w join_test.mli
+
 ns.jml: ../threads/ns.jml
 	cp -f ../threads/ns.jml . && chmod -w ns.jml
 
@@ -185,24 +192,28 @@ clean: partialclean
 
 install:
 	if test -f dllthreads.so; then cp dllthreads.so $(STUBLIBDIR)/dllthreads.so; fi
-	if test -f dlljoin.so; then cp dlljoin.so $(STUBLIBDIR)/dlljoin.so; fi
 	cp libthreads.a $(LIBDIR)/libthreads.a
 	cd $(LIBDIR); $(RANLIB) libthreads.a
-	cp libjoin.a $(LIBDIR)/libjoin.a
-	cd $(LIBDIR); $(RANLIB) libjoin.a
 	if test -d $(LIBDIR)/threads; then :; else mkdir $(LIBDIR)/threads; fi
 	cp $(THREAD_OBJS:.cmo=.cmi) threads.cma $(LIBDIR)/threads
 	cp join.cmi ns.cmi join.cma $(LIBDIR)/threads
 	rm -f $(LIBDIR)/threads/stdlib.cma
 	cp thread.mli mutex.mli condition.mli event.mli threadUnix.mli $(LIBDIR)
+#For join lib and friends
+	if test -f dlljoin.so; then cp dlljoin.so $(STUBLIBDIR)/dlljoin.so; fi
+	cp libjoin.a $(LIBDIR)/libjoin.a
+	cd $(LIBDIR); $(RANLIB) libjoin.a
+	cp join.cmi ns.cmi join_test.cmi join.cma $(LIBDIR)/threads
+
 
 installopt:
 	cp libthreadsnat.a $(LIBDIR)/libthreadsnat.a
 	cd $(LIBDIR); $(RANLIB) libthreadsnat.a
-	cp libjoinnat.a $(LIBDIR)/libjoinnat.a
-	cd $(LIBDIR); $(RANLIB) libjoinnat.a
 	cp $(THREAD_OBJS:.cmo=.cmx) threads.cmxa threads.a $(LIBDIR)/threads
 	cd $(LIBDIR)/threads; $(RANLIB) threads.a
+#For join lib and friends
+	cp libjoinnat.a $(LIBDIR)/libjoinnat.a
+	cd $(LIBDIR); $(RANLIB) libjoinnat.a
 	cp join.cmxa join.a $(LIBDIR)/threads
 	cd $(LIBDIR)/threads; $(RANLIB) join.a
 

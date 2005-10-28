@@ -30,7 +30,7 @@ JOIN_C_OBJS=join.o
 
 JOIN_OBJS=join_debug.cmo join_misc.cmo join_link.cmo  join_hash.cmo\
  join_queue.cmo join_extern.cmo join_scheduler.cmo join_port.cmo\
- join_message.cmo join_space.cmo join.cmo ns.cmo
+ join_message.cmo join_space.cmo join.cmo ns.cmo join_test.cmo
 
 LIB=../../stdlib
 
@@ -114,15 +114,17 @@ clean: partialclean
 
 install:
 	if test -f dllvmthreads.so; then cp dllvmthreads.so $(STUBLIBDIR)/.; fi
-	if test -f dllvmjoin.so; then cp dllvmjoin.so $(STUBLIBDIR)/.; fi
 	mkdir -p $(LIBDIR)/vmthreads
 	cp libvmthreads.a $(LIBDIR)/vmthreads/libvmthreads.a
 	cd $(LIBDIR)/vmthreads; $(RANLIB) libvmthreads.a
 	cp thread.cmi mutex.cmi condition.cmi event.cmi threadUnix.cmi threads.cma stdlib.cma unix.cma $(LIBDIR)/vmthreads
+	cp thread.mli mutex.mli condition.mli event.mli threadUnix.mli $(LIBDIR)/vmthreads
+#Install the join library (and friends)
+	if test -f dllvmjoin.so; then cp dllvmjoin.so $(STUBLIBDIR)/.; fi
 	cp libvmjoin.a $(LIBDIR)/vmthreads/libvmjoin.a
 	cd $(LIBDIR)/vmthreads; $(RANLIB) libvmjoin.a
-	cp thread.cmi mutex.cmi condition.cmi event.cmi threadUnix.cmi join_space.cmi join.cmi ns.cmi threads.cma stdlib.cma unix.cma join.cma $(LIBDIR)/vmthreads
-	cp thread.mli mutex.mli condition.mli event.mli threadUnix.mli $(LIBDIR)/vmthreads
+	cp join.cmi ns.cmi join_test.cmi join.cma $(LIBDIR)/vmthreads
+	cp join.mli ns.mli join_test.mli $(LIBDIR)/vmthreads
 
 installopt:
 

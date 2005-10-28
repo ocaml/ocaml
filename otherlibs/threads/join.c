@@ -159,7 +159,7 @@ CAMLprim value caml_localize_message(value buff, value pointers) {
     unmarshal_initialized = 1 ;
   }
 
-  caml_modify(&used_pointers, pointers) ;
+  used_pointers = pointers ;
   inside_join = 1 ;
 
   res = caml_input_val_from_string (buff, 0) ;
@@ -171,8 +171,8 @@ CAMLprim value caml_localize_message(value buff, value pointers) {
 }
 
 static void stub_serialize(value v,
-                           intnat * wsize_32,
-                           intnat * wsize_64)
+                           uintnat * wsize_32,
+                           uintnat * wsize_64)
 {
   mlsize_t pos = 0 ;
   if (!inside_join) {
@@ -183,18 +183,19 @@ static void stub_serialize(value v,
   /*  fprintf(stderr, "Reloc -> %i\n", (int)pos) ; */
   caml_serialize_int_4(pos);
   /* 3 values */
-  *wsize_32 = 3 << 2 ;
-  *wsize_64 = 3 << 3 ;
+  *wsize_32 = 3 * 4 ;
+  *wsize_64 = 3 * 8 ;
 }
 
-static intnat stub_deserialize(void * dst) {
+static uintnat stub_deserialize(void * dst) {
   if (inside_join) {
     mlsize_t pos = caml_deserialize_uint_4();
     value *p = dst ;
     value *src = (value *)Field(used_pointers, pos) ;
     /*    fprintf(stderr, "Found: %i\n", (int)pos) ; */
+    /* Only item at index 1 can be a block, cf. alloc_sub below */
     p[0] = src[0] ;
-    p[1] = src[1] ;
+    caml_initialize(p+1,src[1]) ;
     p[2] = src[2] ;
   } else {
     caml_intern_cleanup();
@@ -209,7 +210,7 @@ static struct custom_operations join_stub_ops = {
   custom_compare_default,
   custom_hash_default,
   stub_serialize,
-  stub_deserialize
+  stub_deserialize,
 };
 
 
@@ -220,10 +221,10 @@ CAMLprim value caml_alloc_stub(value a)
 {
   CAMLparam1 (a) ;
   CAMLlocal1 (res) ;
-  res = caml_alloc_small(4, JoCustom_tag) ;
+  res = caml_alloc_shr(4, JoCustom_tag) ;
   Field(res, 0) = (value)&join_stub_ops ;
   Field(res, 1) = Val_int(0) ; /* for constructor Local */
-  Field(res, 2) = a ;
+  caml_initialize(&Field(res, 2),a) ;
   Field(res, 3) = Val_int(0) ; /* initial uid <-> not exported yet */
   CAMLreturn (res) ;
 }

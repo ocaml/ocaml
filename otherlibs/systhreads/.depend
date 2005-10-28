@@ -28,6 +28,7 @@ join.cmi: join_types.cmi
 join_port.cmi: join_types.cmi join_link.cmi 
 join_scheduler.cmi: join_types.cmi 
 join_space.cmi: join_types.cmi 
+join_test.cmi: join_types.cmi 
 join_types.cmi: mutex.cmi join_misc.cmi join_link.cmi join_hash.cmi \
     condition.cmi 
 condition.cmo: mutex.cmi condition.cmi 
@@ -68,6 +69,8 @@ join_space.cmo: thread.cmi mutex.cmi join_types.cmi join_scheduler.cmi \
 join_space.cmx: thread.cmx mutex.cmx join_types.cmi join_scheduler.cmx \
     join_port.cmx join_misc.cmx join_message.cmx join_link.cmx join_hash.cmx \
     join_debug.cmx condition.cmx join_space.cmi 
+join_test.cmo: join_space.cmi join_test.cmi 
+join_test.cmx: join_space.cmx join_test.cmi 
 mutex.cmo: mutex.cmi 
 mutex.cmx: mutex.cmi 
 thread.cmo: thread.cmi 

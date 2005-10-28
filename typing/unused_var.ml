@@ -86,6 +86,29 @@ let get_pel_vars pel =
   List.map (fun (p, _) -> get_vars ([], []) p) pel
 ;;
 
+(*>JOCAML*)
+let get_jpat_vars acc jpat =
+  let _, p =  jpat.pjpat_desc in
+  get_vars acc p
+
+let get_jpats_vars = List.fold_left get_jpat_vars
+
+let get_jpat_chan (vacc,asacc) jpat =
+  let jident,_ = jpat.pjpat_desc in
+  (jident.pjident_desc, jident.pjident_loc, ref false)::vacc,
+  asacc
+
+let get_clause_chans acc cl =
+  let pats,_ = cl.pjclause_desc in
+  List.fold_left get_jpat_chan acc pats
+
+let get_def_chans acc d =
+  List.fold_left get_clause_chans acc d.pjauto_desc
+
+let get_defs_chans ds =
+  List.map (get_def_chans ([],[])) ds
+(*<JOCAML*)
+
 let rec structure ppf tbl l =
   List.iter (structure_item ppf tbl) l
 
@@ -107,7 +130,7 @@ and structure_item ppf tbl s =
   | Pstr_include _ -> ()
 (*>JOCAML*)
   | Pstr_exn_global _ -> ()
-  | Pstr_def d -> join_def ppf tbl d None
+  | Pstr_def d -> join_defs ppf tbl d None
 (*<JOCAML*)
 
 and expression ppf tbl e =
@@ -178,7 +201,7 @@ and expression ppf tbl e =
   | Pexp_object cs -> class_structure ppf tbl cs;
 (*>JOCAML*)
   | Pexp_def (d,e) ->
-      join_def ppf tbl d (Some (fun ppf tbl -> expression ppf tbl e))
+      join_defs ppf tbl d (Some (fun ppf tbl -> expression ppf tbl e))
   | Pexp_reply (e, _) -> expression ppf tbl e
   | Pexp_par (e1, e2) ->
        expression ppf tbl e1 ;
@@ -216,7 +239,27 @@ and let_pel ppf tbl recflag pel body =
       end;
 
 (*>JOCAML*)
-and join_def ppf tbl d body = () (* do nothing at the moment *)  
+and join_clause ppf tbl cl =
+  let jpats,e = cl.pjclause_desc in
+  let defined = get_jpats_vars ([],[]) jpats in
+  add_vars tbl defined ;
+  expression ppf tbl e ;
+  check_rm_vars ppf tbl defined
+
+and join_def ppf tbl d =
+  List.iter (join_clause ppf tbl) d.pjauto_desc
+
+and join_defs ppf tbl ds body =
+  let defined = get_defs_chans ds in
+  List.iter (add_vars tbl) defined ;
+  List.iter (fun d -> join_def ppf tbl d)  ds ;
+  begin match body with
+  | None ->
+      List.iter (rm_vars tbl) defined
+  | Some f ->
+      f ppf tbl ;
+      check_rm_let ppf tbl defined
+  end
 (*<JOCAML*)
 
 and match_pel ppf tbl pel =

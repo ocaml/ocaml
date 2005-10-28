@@ -317,8 +317,7 @@ static void intern_rec(value *dest)
           intern_cleanup() ;
           caml_failwith("input_value: no value saved");
         }
-        /* Saved values follow standard sharing mecanism */
-        if (intern_obj_table != NULL) intern_obj_table[obj_counter++] = v;
+        /* Saved values are not shared */
         break ;
         /*<JOCAML*/
       case CODE_INFIXPOINTER:
