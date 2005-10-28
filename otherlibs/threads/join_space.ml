@@ -568,11 +568,12 @@ let do_call_service space rspace_id key kont a =
     let uid = find_service space key in
     let f = find_sync_forwarder space uid in
     f a
-  else
+  else begin
+(*DEBUG*)debug2 "RCALL SERVICE" key ;    
     do_remote_call space rspace_id
       (fun kid v -> Service (key, kid, v))
       kont a
-
+  end
 let call_service space_id key kont a =
   do_call_service local_space  space_id key kont a
 

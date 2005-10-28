@@ -100,7 +100,7 @@ let mk_apply f args = match Lazy.force f with
   
 
 let lambda_int i = Lconst (Const_base (Const_int i))
-and lambda_string s = Lconst (Const_immstring s)
+and lambda_string s = Lconst (Const_base (Const_string s))
 
 let init_unit_queue auto idx =
   mk_apply lambda_init_unit_queue [Lvar auto ; lambda_int idx]
