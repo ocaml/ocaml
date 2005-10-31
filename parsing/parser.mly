@@ -983,10 +983,16 @@ let_bindings:
   | let_bindings AND let_binding                { $3 :: $1 }
 ;
 let_binding:
-    val_ident fun_binding
+    val_ident let_fun_binding
       { ({ppat_desc = Ppat_var $1; ppat_loc = rhs_loc 1}, $2) }
   | pattern EQUAL seq_expr
       { ($1, $3) }
+;
+let_fun_binding:
+    fun_binding
+      { $1}
+  | COLON explicit_poly_type EQUAL seq_expr
+      { ghexp(Pexp_constraint($4, Some $2, None)) }
 ;
 fun_binding:
     strict_binding
@@ -1232,14 +1238,16 @@ with_type_binder:
 /* Polymorphic types */
 
 typevar_list:
-        QUOTE ident                             { [$2] }
-      | typevar_list QUOTE ident                { $3 :: $1 }
+    QUOTE ident                             { [$2] }
+  | typevar_list QUOTE ident                { $3 :: $1 }
+;
+explicit_poly_type:
+    typevar_list DOT core_type
+      { mktyp(Ptyp_poly(List.rev $1, $3)) }
 ;
 poly_type:
-        core_type
-          { mktyp(Ptyp_poly([], $1)) }
-      | typevar_list DOT core_type
-          { mktyp(Ptyp_poly(List.rev $1, $3)) }
+    core_type               { mktyp(Ptyp_poly([], $1)) }
+  | explicit_poly_type      { $1 }
 ;
 
 /* Core types */

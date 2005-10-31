@@ -59,6 +59,7 @@ type error =
   | Not_a_variant_type of Longident.t
   | Incoherent_label_order
   | Less_general of string * (type_expr * type_expr) list
+  | Expansive_poly
 
 exception Error of Location.t * error
 
@@ -1901,23 +1902,48 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
 
 and type_let env rec_flag spat_sexp_list =
   begin_def();
-  if !Clflags.principal then begin_def ();
-  let (pat_list, new_env, force) =
-    type_pattern_list env (List.map (fun (spat, sexp) -> spat) spat_sexp_list)
+  let (pat_list, new_env, polys, force) =
+    if rec_flag = Recursive then
+      let (pat_list, new_env, polys, force) =
+        List.fold_left
+          (fun (pat_list, new_env, polys, force) (spat, sexp) ->
+            match sexp.pexp_desc with
+              Pexp_constraint(_, Some({ptyp_desc=Ptyp_poly _} as sty), None) ->
+              let ty = Typetexp.transl_simple_type env false sty in
+              begin match ty.desc with
+                Tpoly(ty0, univars) ->
+                  begin_def ();
+                  let (pat, new_env, force') = type_pattern new_env spat in
+                  let _, ty = instance_poly false univars ty0 in
+                  unify_pat env pat ty;
+                  end_def ();
+                  iter_pattern (fun pat -> generalize pat.pat_type) pat;
+                  ({pat with pat_type = instance ty} :: pat_list,
+                   new_env, Some (ty0, univars) :: polys, force' @ force)
+              | _ ->
+                  assert false
+              end
+          | _ ->
+              if !Clflags.principal then begin_def ();
+              let (pat, new_env, force') = type_pattern new_env spat in
+              unify_pat env pat (type_approx env sexp);
+              let pat =
+                if !Clflags.principal then begin
+                  end_def ();
+                  iter_pattern (fun pat -> generalize_structure pat.pat_type)
+                    pat;
+                  {pat with pat_type = instance pat.pat_type}
+                end else pat in
+              (pat :: pat_list, new_env, None :: polys, force' @ force))
+          ([], env, [], []) spat_sexp_list
+      in
+      (List.rev pat_list, new_env, List.rev polys, force)
+    else
+      let (pat_list, new_env, force) =
+        type_pattern_list env (List.map fst spat_sexp_list)
+      in
+      (pat_list, new_env, List.map (fun _ -> None) pat_list, force)
   in
-  if rec_flag = Recursive then
-    List.iter2
-      (fun pat (_, sexp) -> unify_pat env pat (type_approx env sexp))
-      pat_list spat_sexp_list;
-  let pat_list =
-    if !Clflags.principal then begin
-      end_def ();
-      List.map
-        (fun pat ->
-          iter_pattern (fun pat -> generalize_structure pat.pat_type) pat;
-          {pat with pat_type = instance pat.pat_type})
-        pat_list
-    end else pat_list in
   (* Polymoprhic variant processing *)
   List.iter
     (fun pat ->
@@ -1932,20 +1958,42 @@ and type_let env rec_flag spat_sexp_list =
     match rec_flag with Nonrecursive | Default -> env | Recursive -> new_env in
   let exp_list =
     List.map2
-      (fun (spat, sexp) pat -> type_expect exp_env sexp pat.pat_type)
-      spat_sexp_list pat_list in
-  List.iter2
-    (fun pat exp -> ignore(Parmatch.check_partial pat.pat_loc [pat, exp]))
-    pat_list exp_list;
+      (fun (spat, sexp) (pat, pty) ->
+        if pty = None then Some (type_expect exp_env sexp pat.pat_type)
+        else None)
+      spat_sexp_list (List.combine pat_list polys) in
   end_def();
   List.iter2
     (fun pat exp ->
-       if not (is_nonexpansive exp) then
-         iter_pattern (fun pat -> generalize_expansive env pat.pat_type) pat)
+      match exp with
+        Some exp when not (is_nonexpansive exp) ->
+          iter_pattern (fun pat -> generalize_expansive env pat.pat_type) pat
+      | _ -> ())
     pat_list exp_list;
   List.iter
     (fun pat -> iter_pattern (fun pat -> generalize pat.pat_type) pat)
     pat_list;
+  let exp_list =
+    List.map2
+      (fun (_, sexp) pty_exp ->
+        match pty_exp, sexp.pexp_desc with
+          (None, Some exp), _ -> exp
+        | (Some (ty0, univars), None), Pexp_constraint (sexp,_,_) ->
+            begin_def ();
+            let vars, ty = instance_poly true univars ty0 in
+            let exp = type_expect exp_env sexp ty in
+            end_def ();
+            if not (is_nonexpansive exp) then
+              raise (Error(sexp.pexp_loc, Expansive_poly));
+            check_univars exp_env "recursive definition" exp
+              (newgenty(Tpoly(ty0, univars))) vars;
+            exp
+        | _ -> assert false)
+      spat_sexp_list (List.combine polys exp_list)
+  in
+  List.iter2
+    (fun pat exp -> ignore(Parmatch.check_partial pat.pat_loc [pat, exp]))
+    pat_list exp_list;
   (List.combine pat_list exp_list, new_env)
 
 (* Typing of toplevel bindings *)
@@ -2120,3 +2168,6 @@ let report_error ppf = function
       report_unification_error ppf trace
         (fun ppf -> fprintf ppf "This %s has type" kind)
         (fun ppf -> fprintf ppf "which is less general than")
+  | Expansive_poly ->
+      fprintf ppf "This definition is expansive,@ %s"
+        "it cannot be given a polymorphic type."
