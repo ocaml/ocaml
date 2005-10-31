@@ -1,4 +1,4 @@
-        Objective Caml version 3.09+dev27 (2005-08-13)
+        Objective Caml version 3.10+dev1 (2005-10-26)
 
 #   * * *       #   type 'a t = { t : 'a; }
 # type 'a fold = { fold : 'b. f:('b -> 'a -> 'b) -> init:'b -> 'b; }
@@ -444,4 +444,10 @@ Only the first object type has a method b
 #   Characters 13-83:
 Type < m : 'a. [< `A of <  > ] as 'a > is not a subtype of type
   < m : 'a. [< `A of < p : int > ] as 'a > 
+#     class c : object method id : 'a -> 'a end
+# type u = c option
+# val just : 'a option -> 'a = <fun>
+# val f : c -> 'a -> 'a = <fun>
+#     val g : c -> 'a -> 'a = <fun>
+#     val h : < id : 'a; .. > -> 'a = <fun>
 # 
