@@ -15,7 +15,7 @@ a. Exactly as for a regular OCaml source distribution
    ./configure && make world && make install
 
 b. Using an existing OCaml installation, and producing alternative
-   tools (the fools are named ocamlducec, ocamlduceopt, ocamlduce, ...):
+   tools (the tools are named ocamlducec, ocamlduceopt, ocamlduce, ...):
    ./configure && make -f Makefile.ocamlduce opt
 
    You should give ./configure the same arguments as the one

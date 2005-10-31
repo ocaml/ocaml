@@ -358,6 +358,9 @@ ocamlduce.cmxa: ocamlduceopt cduce_types.cmx stdlib/ocamlduce.cmx
 stdlib/ocamlduce.cmx: ocamlduceopt stdlib/ocamlduce.ml stdlib/ocamlduce.cmi
 	./ocamlduceopt -c -I stdlib stdlib/ocamlduce.ml
 
+clean::
+	rm -f ocamlduce.*
+
 # The dependency generator
 
 CAMLDEP_OBJ=tools/depend.cmo tools/ocamldep.cmo
