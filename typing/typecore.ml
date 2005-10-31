@@ -1903,27 +1903,33 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
 and type_let env rec_flag spat_sexp_list =
   begin_def();
   let (pat_list, new_env, polys, force) =
-    if rec_flag = Recursive then
+    if rec_flag = Recursive then begin
+      begin_class_def (); (* one more level for post-generalization *)
       let (pat_list, new_env, polys, force) =
         List.fold_left
           (fun (pat_list, new_env, polys, force) (spat, sexp) ->
             match sexp.pexp_desc with
               Pexp_constraint(_, Some({ptyp_desc=Ptyp_poly _} as sty), None) ->
-              let ty = Typetexp.transl_simple_type env false sty in
-              begin match ty.desc with
-                Tpoly(ty0, univars) ->
-                  begin_def ();
-                  let (pat, new_env, force') = type_pattern new_env spat in
-                  let _, ty = instance_poly false univars ty0 in
-                  unify_pat env pat ty;
-                  end_def ();
-                  iter_pattern (fun pat -> generalize pat.pat_type) pat;
-                  ({pat with pat_type = instance ty} :: pat_list,
-                   new_env, Some (ty0, univars) :: polys, force' @ force)
-              | _ ->
-                  assert false
-              end
-          | _ ->
+                let ty, force'' =
+                  Typetexp.transl_simple_type_delayed env sty in
+                end_def ();
+                generalize_structure ty;
+                begin_class_def ();
+                begin match ty.desc with
+                  Tpoly(ty0, univars) ->
+                    begin_def ();
+                    let (pat, new_env, force') = type_pattern new_env spat in
+                    let _, ty = instance_poly false univars ty0 in
+                    unify_pat env pat ty;
+                    end_def ();
+                    iter_pattern (fun pat -> generalize pat.pat_type) pat;
+                    ({pat with pat_type = instance ty} :: pat_list,
+                     new_env, Some (ty0, univars) :: polys,
+                     force' @ force'' :: force)
+                | _ ->
+                    assert false
+                end
+            | _ ->
               if !Clflags.principal then begin_def ();
               let (pat, new_env, force') = type_pattern new_env spat in
               unify_pat env pat (type_approx env sexp);
@@ -1938,7 +1944,7 @@ and type_let env rec_flag spat_sexp_list =
           ([], env, [], []) spat_sexp_list
       in
       (List.rev pat_list, new_env, List.rev polys, force)
-    else
+    end else
       let (pat_list, new_env, force) =
         type_pattern_list env (List.map fst spat_sexp_list)
       in
@@ -1970,9 +1976,8 @@ and type_let env rec_flag spat_sexp_list =
           iter_pattern (fun pat -> generalize_expansive env pat.pat_type) pat
       | _ -> ())
     pat_list exp_list;
-  List.iter
-    (fun pat -> iter_pattern (fun pat -> generalize pat.pat_type) pat)
-    pat_list;
+  let iter_pats f = List.iter (iter_pattern f) pat_list in
+  iter_pats (fun pat -> generalize pat.pat_type);
   let exp_list =
     List.map2
       (fun (_, sexp) pty_exp ->
@@ -1991,6 +1996,11 @@ and type_let env rec_flag spat_sexp_list =
         | _ -> assert false)
       spat_sexp_list (List.combine polys exp_list)
   in
+  if rec_flag = Recursive && List.exists (fun x -> x <> None) polys then begin
+    iter_pats (fun pat -> unify_pat env pat (newvar()));
+    end_def (); (* ready for post-generalization *)
+    iter_pats (fun pat -> generalize pat.pat_type)
+  end;
   List.iter2
     (fun pat exp -> ignore(Parmatch.check_partial pat.pat_loc [pat, exp]))
     pat_list exp_list;
