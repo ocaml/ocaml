@@ -59,7 +59,6 @@ type error =
   | Not_a_variant_type of Longident.t
   | Incoherent_label_order
   | Less_general of string * (type_expr * type_expr) list
-  | Expansive_poly
   | Cannot_generalize of type_expr * type_expr
 
 exception Error of Location.t * error
@@ -2001,13 +2000,15 @@ and type_let env rec_flag spat_sexp_list =
         else None)
       spat_sexp_list (List.combine pat_list polys) in
   end_def();
-  List.iter2
-    (fun (pat, _, _) exp ->
-      match exp with
-        Some exp when not (is_nonexpansive exp) ->
-          iter_pattern (fun pat -> generalize_expansive env pat.pat_type) pat
-      | _ -> ())
-    pat_list exp_list;
+  let generalize_expansive_pats =
+    List.iter2
+      (fun (pat, _, _) exp ->
+        match exp with
+          Some exp when not (is_nonexpansive exp) ->
+            iter_pattern (fun pat -> generalize_expansive env pat.pat_type) pat
+        | _ -> ())
+  in
+  generalize_expansive_pats pat_list exp_list;
   let iter_pats f = List.iter (fun (p,_,_) -> iter_pattern f p) pat_list in
   iter_pats (fun pat -> generalize pat.pat_type);
   let exp_list =
@@ -2022,12 +2023,8 @@ and type_let env rec_flag spat_sexp_list =
             let exp = type_expect exp_env sexp ty in
             unify_exp env exp (newvar ());
             end_def ();
-            if not (is_nonexpansive exp) then begin
-              raise (Error(exp.exp_loc, Expansive_poly)); (* XXX *)
-              (* Does not work ?! 
-              prerr_endline "lower levels";
-              generalize_expansive env exp.exp_type; *)
-            end;
+            if not (is_nonexpansive exp) then
+              generalize_expansive env exp.exp_type;
             check_univars exp_env "recursive definition" exp
               (newgenty(Tpoly(ty0, univars))) vars;
             exp
@@ -2038,6 +2035,7 @@ and type_let env rec_flag spat_sexp_list =
   if rec_flag = Recursive then begin
     iter_pats (fun pat -> unify_pat env pat (newvar()));
     end_def (); (* ready for post-generalization *)
+    generalize_expansive_pats pat_list (List.map (fun e -> Some e) exp_list);
     iter_pats (fun pat -> generalize pat.pat_type)
   end;
   List.iter2
@@ -2237,11 +2235,8 @@ let report_error ppf = function
       report_unification_error ppf trace
         (fun ppf -> fprintf ppf "This %s has type" kind)
         (fun ppf -> fprintf ppf "which is less general than")
-  | Expansive_poly ->
-      fprintf ppf "This definition is expansive,@ %s"
-        "it cannot be given a polymorphic type."
   | Cannot_generalize (etv, ty) ->
       reset_and_mark_loops_list [etv; ty];
       add_alias etv;
-      fprintf ppf "In this definition of type@ %a@ the type variable %a %s"
-        type_expr ty type_expr etv "cannot be generalized."
+      fprintf ppf "In this definition whose type is@ %a@ %s %a %s"
+        type_expr ty "the type variable" type_expr etv "cannot be generalized."

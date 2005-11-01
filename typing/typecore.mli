@@ -94,7 +94,6 @@ type error =
   | Not_a_variant_type of Longident.t
   | Incoherent_label_order
   | Less_general of string * (type_expr * type_expr) list
-  | Expansive_poly
   | Cannot_generalize of type_expr * type_expr
 
 exception Error of Location.t * error
