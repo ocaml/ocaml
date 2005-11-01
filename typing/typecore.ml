@@ -60,6 +60,7 @@ type error =
   | Incoherent_label_order
   | Less_general of string * (type_expr * type_expr) list
   | Expansive_poly
+  | Cannot_generalize of type_expr * type_expr
 
 exception Error of Location.t * error
 
@@ -1760,7 +1761,8 @@ and type_expect ?in_function env sexp ty_expected =
         {pexp_loc = sexp.pexp_loc; pexp_desc =
          Pexp_function(l, None,[{ppat_loc = loc; ppat_desc = Ppat_var"*opt*"},
                                 {pexp_loc = sexp.pexp_loc; pexp_desc =
-                                 Pexp_let(Default, [spat, smatch], sbody)}])}
+                                 Pexp_let(Default, [[], spat, smatch],
+                                          sbody)}])}
       in
       type_expect ?in_function env sfun ty_expected
   | Pexp_function (l, _, caselist) ->
@@ -1902,57 +1904,86 @@ and type_cases ?in_function env ty_arg ty_res partial_loc caselist =
 
 and type_let env rec_flag spat_sexp_list =
   begin_def();
+  let ev = !Typetexp.explicit_variables in
   let (pat_list, new_env, polys, force) =
     if rec_flag = Recursive then begin
       begin_class_def (); (* one more level for post-generalization *)
       let (pat_list, new_env, polys, force) =
         List.fold_left
-          (fun (pat_list, new_env, polys, force) (spat, sexp) ->
-            match sexp.pexp_desc with
-              Pexp_constraint(_, Some({ptyp_desc=Ptyp_poly _} as sty), None) ->
+          (fun (pat_list, new_env, polys, force) (evars, spat, sexp) ->
+            let sty = 
+              match sexp.pexp_desc with
+                Pexp_constraint
+                  (_, Some({ptyp_desc=Ptyp_poly _} as sty), None) ->
+                    Some sty
+              | Pexp_constraint (_, Some sty, None) when evars <> [] ->
+                  Some {sty with ptyp_desc = Ptyp_poly([], sty)}
+              | _ -> None
+            in
+            let etvs = List.map (fun _ -> newvar()) evars in
+            let ev' = List.fold_right2 Tbl.add evars etvs ev in
+            Typetexp.explicit_variables := ev';
+            match sty with
+              Some sty ->
                 let ty, force'' =
                   Typetexp.transl_simple_type_delayed env sty in
-                end_def ();
+                end_def (); (* temporarily lower level for sharing *)
+                List.iter generalize etvs;
                 generalize_structure ty;
-                begin_class_def ();
-                begin match ty.desc with
-                  Tpoly(ty0, univars) ->
-                    begin_def ();
-                    let (pat, new_env, force') = type_pattern new_env spat in
-                    let _, ty = instance_poly false univars ty0 in
-                    unify_pat env pat ty;
+                begin_class_def (); (* back to normal level *)
+                let ty0, univars =
+                  match ty.desc with
+                    Tpoly(ty0, univars) -> ty0, univars
+                  | _ -> assert false
+                in
+                begin_def ();
+                let (pat, new_env, force') = type_pattern new_env spat in
+                let _, ty' = instance_poly false univars ty0 in
+                unify_pat env pat ty';
+                end_def ();
+                iter_pattern (fun pat -> generalize pat.pat_type) pat;
+                let pat_ev', poly =
+                  match instance_list (ty::etvs) with
+                    {desc=Tpoly(ty0, univars)} :: etvs ->
+                      let pat = {pat with pat_type = instance ty'} in
+                      let ev' = List.fold_right2 Tbl.add evars etvs ev in
+                      (pat, ev', etvs), Some (ty0, univars)
+                  | _ -> assert false
+                in
+                (pat_ev' :: pat_list, new_env, poly :: polys,
+                 force' @ force'' :: force)
+            | None ->
+                if !Clflags.principal then begin_def ();
+                let (pat, new_env, force') = type_pattern new_env spat in
+                unify_pat env pat (type_approx env sexp);
+                let pat =
+                  if !Clflags.principal then begin
                     end_def ();
-                    iter_pattern (fun pat -> generalize pat.pat_type) pat;
-                    ({pat with pat_type = instance ty} :: pat_list,
-                     new_env, Some (ty0, univars) :: polys,
-                     force' @ force'' :: force)
-                | _ ->
-                    assert false
-                end
-            | _ ->
-              if !Clflags.principal then begin_def ();
-              let (pat, new_env, force') = type_pattern new_env spat in
-              unify_pat env pat (type_approx env sexp);
-              let pat =
-                if !Clflags.principal then begin
-                  end_def ();
-                  iter_pattern (fun pat -> generalize_structure pat.pat_type)
-                    pat;
-                  {pat with pat_type = instance pat.pat_type}
-                end else pat in
-              (pat :: pat_list, new_env, None :: polys, force' @ force))
+                    iter_pattern (fun pat -> generalize_structure pat.pat_type)
+                      pat;
+                    {pat with pat_type = instance pat.pat_type}
+                  end else pat in
+                ((pat, ev', etvs) :: pat_list, new_env,
+                 None :: polys, force' @ force))
           ([], env, [], []) spat_sexp_list
       in
       (List.rev pat_list, new_env, List.rev polys, force)
     end else
       let (pat_list, new_env, force) =
-        type_pattern_list env (List.map fst spat_sexp_list)
+        List.fold_left
+          (fun (pat_list, new_env, force) (evars, spat, sexp) ->
+            let etvs = List.map (fun _ -> newvar()) evars in
+            let ev' = List.fold_right2 Tbl.add evars etvs ev in
+            Typetexp.explicit_variables := ev';
+            let (pat, new_env, force') = type_pattern new_env spat in
+            ((pat, ev', etvs) :: pat_list, new_env, force' @ force))
+          ([], env, []) spat_sexp_list
       in
-      (pat_list, new_env, List.map (fun _ -> None) pat_list, force)
+      (List.rev pat_list, new_env, List.map (fun _ -> None) pat_list, force)
   in
   (* Polymoprhic variant processing *)
   List.iter
-    (fun pat ->
+    (fun (pat, _, _) ->
       if has_variants pat then begin
         Parmatch.pressure_variants env [pat];
         iter_pattern finalize_variant pat
@@ -1964,47 +1995,75 @@ and type_let env rec_flag spat_sexp_list =
     match rec_flag with Nonrecursive | Default -> env | Recursive -> new_env in
   let exp_list =
     List.map2
-      (fun (spat, sexp) (pat, pty) ->
+      (fun (_, spat, sexp) ((pat,ev',_), pty) ->
+        Typetexp.explicit_variables := ev';
         if pty = None then Some (type_expect exp_env sexp pat.pat_type)
         else None)
       spat_sexp_list (List.combine pat_list polys) in
   end_def();
   List.iter2
-    (fun pat exp ->
+    (fun (pat, _, _) exp ->
       match exp with
         Some exp when not (is_nonexpansive exp) ->
           iter_pattern (fun pat -> generalize_expansive env pat.pat_type) pat
       | _ -> ())
     pat_list exp_list;
-  let iter_pats f = List.iter (iter_pattern f) pat_list in
+  let iter_pats f = List.iter (fun (p,_,_) -> iter_pattern f p) pat_list in
   iter_pats (fun pat -> generalize pat.pat_type);
   let exp_list =
     List.map2
-      (fun (_, sexp) pty_exp ->
+      (fun ((_, _, sexp), (pat, ev', _)) pty_exp ->
         match pty_exp, sexp.pexp_desc with
           (None, Some exp), _ -> exp
         | (Some (ty0, univars), None), Pexp_constraint (sexp,_,_) ->
+            Typetexp.explicit_variables := ev';
             begin_def ();
             let vars, ty = instance_poly true univars ty0 in
             let exp = type_expect exp_env sexp ty in
+            unify_exp env exp (newvar ());
             end_def ();
-            if not (is_nonexpansive exp) then
-              raise (Error(sexp.pexp_loc, Expansive_poly));
+            if not (is_nonexpansive exp) then begin
+              raise (Error(exp.exp_loc, Expansive_poly)); (* XXX *)
+              (* Does not work ?! 
+              prerr_endline "lower levels";
+              generalize_expansive env exp.exp_type; *)
+            end;
             check_univars exp_env "recursive definition" exp
               (newgenty(Tpoly(ty0, univars))) vars;
             exp
         | _ -> assert false)
-      spat_sexp_list (List.combine polys exp_list)
+      (List.combine spat_sexp_list pat_list)
+      (List.combine polys exp_list)
   in
-  if rec_flag = Recursive && List.exists (fun x -> x <> None) polys then begin
+  if rec_flag = Recursive then begin
     iter_pats (fun pat -> unify_pat env pat (newvar()));
     end_def (); (* ready for post-generalization *)
     iter_pats (fun pat -> generalize pat.pat_type)
   end;
   List.iter2
-    (fun pat exp -> ignore(Parmatch.check_partial pat.pat_loc [pat, exp]))
+    (fun (pat,_,_) exp ->
+      ignore(Parmatch.check_partial pat.pat_loc [pat, exp]))
     pat_list exp_list;
-  (List.combine pat_list exp_list, new_env)
+  (* Last step: verify that explicit type variables are independent *)
+  let pat_exp_list =
+    List.map2
+      (fun (pat, _, etvs) exp ->
+        List.iter generalize etvs;
+        ignore (
+        List.fold_left
+          (fun seen etv ->
+            let etv = repr etv in
+            if etv.desc <> Tvar
+            || etv.level <> generic_level
+            || List.memq etv seen then
+              raise (Error(exp.exp_loc, Cannot_generalize(etv, exp.exp_type)));
+            etv :: seen)
+          [] etvs);
+        (pat, exp))
+        pat_list exp_list
+  in
+  Typetexp.explicit_variables := ev;
+  (pat_exp_list, new_env)
 
 (* Typing of toplevel bindings *)
 
@@ -2181,3 +2240,8 @@ let report_error ppf = function
   | Expansive_poly ->
       fprintf ppf "This definition is expansive,@ %s"
         "it cannot be given a polymorphic type."
+  | Cannot_generalize (etv, ty) ->
+      reset_and_mark_loops_list [etv; ty];
+      add_alias etv;
+      fprintf ppf "In this definition of type@ %a@ the type variable %a %s"
+        type_expr ty type_expr etv "cannot be generalized."

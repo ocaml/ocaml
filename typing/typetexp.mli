@@ -28,7 +28,9 @@ val transl_type_scheme:
         Env.t -> Parsetree.core_type -> Types.type_expr
 val reset_type_variables: unit -> unit
 val enter_type_variable: bool -> Location.t -> string -> Types.type_expr
-val type_variable: Location.t -> string -> Types.type_expr
+(* val type_variable: Location.t -> string -> Types.type_expr *)
+val explicit_variables: (string, Types.type_expr) Tbl.t ref
+
 
 type variable_context
 val narrow: unit -> variable_context

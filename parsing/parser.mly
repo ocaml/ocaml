@@ -441,7 +441,7 @@ structure_tail:
 structure_item:
     LET rec_flag let_bindings
       { match $3 with
-          [{ppat_desc = Ppat_any}, exp] -> mkstr(Pstr_eval exp)
+          [[], {ppat_desc = Ppat_any}, exp] -> mkstr(Pstr_eval exp)
         | _ -> mkstr(Pstr_value($2, List.rev $3)) }
   | EXTERNAL val_ident_colon core_type EQUAL primitive_declaration
       { mkstr(Pstr_primitive($2, {pval_type = $3; pval_prim = $5})) }
@@ -983,6 +983,12 @@ let_bindings:
   | let_bindings AND let_binding                { $3 :: $1 }
 ;
 let_binding:
+    typevar_list DOT let_val_binding
+      { (List.rev $1, fst $3, snd $3) }
+  | let_val_binding
+      { ([], fst $1, snd $1) }
+;
+let_val_binding:
     val_ident let_fun_binding
       { ({ppat_desc = Ppat_var $1; ppat_loc = rhs_loc 1}, $2) }
   | pattern EQUAL seq_expr

@@ -83,7 +83,7 @@ and get_vars_option acc po =
 ;;
 
 let get_pel_vars pel =
-  List.map (fun (p, _) -> get_vars ([], []) p) pel
+  List.map (fun (_, p, _) -> get_vars ([], []) p) pel
 ;;
 
 let rec structure ppf tbl l =
@@ -183,7 +183,7 @@ and let_pel ppf tbl recflag pel body =
   | Asttypes.Recursive ->
       let defined = get_pel_vars pel in
       List.iter (add_vars tbl) defined;
-      List.iter (fun (_, e) -> expression ppf tbl e) pel;
+      List.iter (fun (_, _, e) -> expression ppf tbl e) pel;
       begin match body with
       | None ->
           List.iter (rm_vars tbl) defined;
@@ -192,7 +192,7 @@ and let_pel ppf tbl recflag pel body =
           check_rm_let ppf tbl defined;
       end;
   | _ ->
-      List.iter (fun (_, e) -> expression ppf tbl e) pel;
+      List.iter (fun (_, _, e) -> expression ppf tbl e) pel;
       begin match body with
       | None -> ()
       | Some f ->

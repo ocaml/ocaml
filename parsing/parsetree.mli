@@ -83,7 +83,7 @@ type expression =
 and expression_desc =
     Pexp_ident of Longident.t
   | Pexp_constant of constant
-  | Pexp_let of rec_flag * (pattern * expression) list * expression
+  | Pexp_let of rec_flag * binding list * expression
   | Pexp_function of label * expression option * (pattern * expression) list
   | Pexp_apply of expression * (label * expression) list
   | Pexp_match of expression * (pattern * expression) list
@@ -111,6 +111,8 @@ and expression_desc =
   | Pexp_lazy of expression
   | Pexp_poly of expression * core_type option
   | Pexp_object of class_structure
+
+and binding = string list * pattern * expression
 
 (* Value descriptions *)
 
@@ -172,7 +174,7 @@ and class_expr_desc =
   | Pcl_structure of class_structure
   | Pcl_fun of label * expression option * pattern * class_expr
   | Pcl_apply of class_expr * (label * expression) list
-  | Pcl_let of rec_flag * (pattern * expression) list * class_expr
+  | Pcl_let of rec_flag * binding list * class_expr
   | Pcl_constraint of class_expr * class_type
 
 and class_structure = pattern * class_field list
@@ -183,7 +185,7 @@ and class_field =
   | Pcf_virt  of (string * private_flag * core_type * Location.t)
   | Pcf_meth  of (string * private_flag * expression * Location.t)
   | Pcf_cstr  of (core_type * core_type * Location.t)
-  | Pcf_let   of rec_flag * (pattern * expression) list * Location.t
+  | Pcf_let   of rec_flag * binding list * Location.t
   | Pcf_init  of expression
 
 and class_declaration = class_expr class_infos
@@ -247,7 +249,7 @@ and structure_item =
 
 and structure_item_desc =
     Pstr_eval of expression
-  | Pstr_value of rec_flag * (pattern * expression) list
+  | Pstr_value of rec_flag * binding list
   | Pstr_primitive of string * value_description
   | Pstr_type of (string * type_declaration) list
   | Pstr_exception of string * exception_declaration

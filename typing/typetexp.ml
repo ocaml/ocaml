@@ -42,7 +42,8 @@ type error =
 
 exception Error of Location.t * error
 
-type variable_context = int * (string, type_expr) Tbl.t
+type variable_context =
+  int * (string, type_expr) Tbl.t * (string, type_expr) Tbl.t
 
 (* Translation of type expressions *)
 
@@ -50,17 +51,20 @@ let type_variables = ref (Tbl.empty : (string, type_expr) Tbl.t)
 let univars        = ref ([] : (string * type_expr) list)
 let pre_univars    = ref ([] : type_expr list)
 let used_variables = ref (Tbl.empty : (string, type_expr * Location.t) Tbl.t)
+let explicit_variables = ref (Tbl.empty : (string, type_expr) Tbl.t)
 
 let reset_type_variables () =
   reset_global_level ();
-  type_variables := Tbl.empty
+  type_variables := Tbl.empty;
+  explicit_variables := Tbl.empty
 
 let narrow () =
-  (increase_global_level (), !type_variables)
+  (increase_global_level (), !type_variables, !explicit_variables)
 
-let widen (gl, tv) =
+let widen (gl, tv, ev) =
   restore_global_level gl;
-  type_variables := tv
+  type_variables := tv;
+  explicit_variables := ev
 
 let enter_type_variable strict loc name =
   try
@@ -74,11 +78,13 @@ let enter_type_variable strict loc name =
     type_variables := Tbl.add name v !type_variables;
     v
 
+(*
 let type_variable loc name =
   try
     Tbl.find name !type_variables
   with Not_found ->
     raise(Error(loc, Unbound_type_variable ("'" ^ name)))
+*)
 
 let wrap_method ty =
   match (Ctype.repr ty).desc with
@@ -103,6 +109,8 @@ let rec transl_type env policy styp =
         raise (Error (styp.ptyp_loc, Invalid_variable_name ("'" ^ name)));
       begin try
         instance (List.assoc name !univars)
+      with Not_found -> try
+        instance (Tbl.find name !explicit_variables)
       with Not_found -> try
         instance (fst(Tbl.find name !used_variables))
       with Not_found ->
@@ -236,6 +244,8 @@ let rec transl_type env policy styp =
           let t =
             try List.assoc alias !univars
             with Not_found ->
+              if Tbl.mem alias !explicit_variables then
+                raise (Error(styp.ptyp_loc, Bound_type_variable alias));
               instance (fst(Tbl.find alias !used_variables))
           in
           let ty = transl_type env policy st in

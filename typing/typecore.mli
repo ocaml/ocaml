@@ -21,12 +21,10 @@ open Format
 val is_nonexpansive: Typedtree.expression -> bool
 
 val type_binding:
-        Env.t -> rec_flag ->
-          (Parsetree.pattern * Parsetree.expression) list -> 
+        Env.t -> rec_flag -> Parsetree.binding list -> 
           (Typedtree.pattern * Typedtree.expression) list * Env.t
 val type_let:
-        Env.t -> rec_flag ->
-          (Parsetree.pattern * Parsetree.expression) list -> 
+        Env.t -> rec_flag -> Parsetree.binding list -> 
           (Typedtree.pattern * Typedtree.expression) list * Env.t
 val type_expression:
         Env.t -> Parsetree.expression -> Typedtree.expression
@@ -97,6 +95,7 @@ type error =
   | Incoherent_label_order
   | Less_general of string * (type_expr * type_expr) list
   | Expansive_poly
+  | Cannot_generalize of type_expr * type_expr
 
 exception Error of Location.t * error
 

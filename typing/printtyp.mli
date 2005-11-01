@@ -27,6 +27,7 @@ val reset: unit -> unit
 val mark_loops: type_expr -> unit
 val reset_and_mark_loops: type_expr -> unit
 val reset_and_mark_loops_list: type_expr list -> unit
+val add_alias: type_expr -> unit
 val type_expr: formatter -> type_expr -> unit
 val tree_of_type_scheme: type_expr -> out_type
 val type_scheme: formatter -> type_expr -> unit
