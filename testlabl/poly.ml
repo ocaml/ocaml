@@ -566,3 +566,19 @@ let g x =
 let h x =
   let none = let y = None in ignore [y;(None:u)]; y in
   let x = List.hd [Some x; none] in (just x)#id;;
+
+(* polymorphic recursion *)
+let rec f : 'a. 'a -> _ = fun x -> 1 and g x = f x;;
+let rec 'a. f : 'a -> _ = fun x -> 1 and g x = f x;;
+type 'a t = Leaf of 'a | Node of ('a * 'a) t;;
+let rec depth : 'a. 'a t -> _ =
+  function Leaf x -> x | Node x -> 1 + depth x;;
+let rec depth : 'a. 'a t -> _ =
+  function Leaf _ -> 1 | Node x -> 1 + d x
+and d x = depth x;;
+let rec 'a. depth : 'a t -> _ =
+  function Leaf _ -> 1 | Node x -> 1 + depth x;;
+let rec 'a. depth : 'a t -> _ =
+  function Leaf x -> x | Node x -> 1 + depth x;;
+let rec r : 'a. 'a list * 'b list ref = [], ref []
+and q () = r;;
