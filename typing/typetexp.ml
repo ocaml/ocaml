@@ -429,12 +429,22 @@ let make_fixed_univars ty =
   Btype.unmark_type ty
 
 let globalize_used_variables env fixed =
+  if !used_variables = Tbl.empty then (fun () -> ()) else
   let r = ref [] in
+  let levels = ref Tbl.empty in
+  Tbl.iter (fun nm ty -> levels := Tbl.add nm (repr ty).level !levels)
+    !explicit_variables;
   Tbl.iter
     (fun name (ty, loc) ->
       let v = new_global_var () in
       let snap = Btype.snapshot () in
-      if try unify env v ty; true with _ -> Btype.backtrack snap; false
+      if try
+	unify env v ty;
+	Tbl.iter (fun nm ty ->
+	    if (repr ty).level <> Tbl.find nm !levels then raise (Unify []))
+	  !explicit_variables;
+	true
+      with _ -> Btype.backtrack snap; false
       then try
         r := (loc, v,  Tbl.find name !type_variables) :: !r
       with Not_found ->
