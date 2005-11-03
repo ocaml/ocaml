@@ -27,3 +27,4 @@ LINKFLAGS=
 
 CAMLOPT=$(CAMLRUN) $(TOPDIR)/ocamlopt -I $(TOPDIR)/stdlib
 CAMLOPTLIBR=$(CAMLOPT) -a
+CAMLRUNGEN=../../boot/ocamlrun

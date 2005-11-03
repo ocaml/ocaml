@@ -70,12 +70,12 @@ char * caml_search_in_path(struct ext_table * path, char * name)
     strcpy(fullname, (char *)(path->contents[i]));
     strcat(fullname, "\\");
     strcat(fullname, name);
-    caml_gc_message(0x100, "Searching %s\n", (unsigned long) fullname);
+    caml_gc_message(0x100, "Searching %s\n", (uintnat) fullname);
     if (stat(fullname, &st) == 0 && S_ISREG(st.st_mode)) return fullname;
     caml_stat_free(fullname);
   }
  not_found:
-  caml_gc_message(0x100, "%s not found in search path\n", (unsigned long) name);
+  caml_gc_message(0x100, "%s not found in search path\n", (uintnat) name);
   fullname = caml_stat_alloc(strlen(name) + 1);
   strcpy(fullname, name);
   return fullname;
@@ -98,7 +98,7 @@ CAMLexport char * caml_search_exe_in_path(char * name)
 			 &filepart);
     if (retcode == 0) {
       caml_gc_message(0x100, "%s not found in search path\n",
-		      (unsigned long) name);
+		      (uintnat) name);
       strcpy(fullname, name);
       break;
     }
@@ -161,7 +161,6 @@ static volatile sighandler ctrl_handler_action = SIG_DFL;
 static BOOL WINAPI ctrl_handler(DWORD event)
 {
   int saved_mode;
-  sighandler action;
 
   /* Only ctrl-C and ctrl-Break are handled */
   if (event != CTRL_C_EVENT && event != CTRL_BREAK_EVENT) return FALSE;
@@ -170,17 +169,10 @@ static BOOL WINAPI ctrl_handler(DWORD event)
   /* Ignore behavior is to do nothing, which we get by claiming that we
      have handled the event */
   if (ctrl_handler_action == SIG_IGN) return TRUE;
-  /* Reset handler to default action for consistency with signal() */
-  action = ctrl_handler_action;
-  ctrl_handler_action = SIG_DFL;
-  /* Call user-provided signal handler.  Win32 doesn't like it when
-     we do a longjmp() at this point (it looks like we're running in
-     a different thread than the main program!).  So, pretend we are not in
-     async signal mode, so that the handler simply records the signal. */
-  saved_mode = caml_async_signal_mode;
-  caml_async_signal_mode = 0;
-  action(SIGINT);
-  caml_async_signal_mode = saved_mode;
+  /* Win32 doesn't like it when we do a longjmp() at this point
+     (it looks like we're running in a different thread than
+     the main program!).  So, just record the signal. */
+  caml_record_signal(SIGINT);
   /* We have handled the event */
   return TRUE;
 }
@@ -345,7 +337,7 @@ CAMLexport void caml_expand_command_line(int * argcp, char *** argvp)
 int caml_read_directory(char * dirname, struct ext_table * contents)
 {
   char * template;
-  long h;
+  intptr_t h;
   struct _finddata_t fileinfo;
   char * p;
 
@@ -385,8 +377,7 @@ void caml_signal_thread(void * lpParam)
     if (!ret || numread != 1) caml_sys_exit(Val_int(2));
     switch (iobuf[0]) {
     case 'C':
-      caml_pending_signal = SIGINT;
-      caml_something_to_do = 1;
+      caml_record_signal(SIGINT);
       break;
     case 'T':
       raise(SIGTERM);

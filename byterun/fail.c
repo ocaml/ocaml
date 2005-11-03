@@ -31,10 +31,6 @@ value caml_exn_bucket;
 
 CAMLexport void caml_raise(value v)
 {
-#ifdef DEBUG
-  extern int volatile caml_async_signal_mode;  /* from signals.c */
-  Assert(! caml_async_signal_mode);
-#endif
   Unlock_exn();
   caml_exn_bucket = v;
   if (caml_external_raise == NULL) caml_fatal_uncaught_exception(v);

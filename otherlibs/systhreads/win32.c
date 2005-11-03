@@ -74,7 +74,7 @@ struct caml_thread_struct {
   struct caml_thread_struct * prev;
 #ifdef NATIVE_CODE
   char * bottom_of_stack;       /* Saved value of caml_bottom_of_stack */
-  unsigned long last_retaddr;   /* Saved value of caml_last_return_address */
+  uintnat last_retaddr;         /* Saved value of caml_last_return_address */
   value * gc_regs;              /* Saved value of caml_gc_regs */
   char * exception_pointer;     /* Saved value of caml_exception_pointer */
   struct caml__roots_block * local_roots; /* Saved value of local_roots */
@@ -110,7 +110,7 @@ static DWORD thread_descriptor_key;
 static DWORD last_channel_locked_key;
 
 /* Identifier for next thread creation */
-static long thread_next_ident = 0;
+static intnat thread_next_ident = 0;
 
 /* Forward declarations */
 
@@ -148,13 +148,8 @@ static void caml_thread_scan_roots(scanning_action action)
 
 /* Hooks for enter_blocking_section and leave_blocking_section */
 
-static void (*prev_enter_blocking_section_hook) () = NULL;
-static void (*prev_leave_blocking_section_hook) () = NULL;
-
 static void caml_thread_enter_blocking_section(void)
 {
-  if (prev_enter_blocking_section_hook != NULL)
-    (*prev_enter_blocking_section_hook)();
   /* Save the stack-related global variables in the thread descriptor
      of the current thread */
 #ifdef NATIVE_CODE
@@ -181,7 +176,6 @@ static void caml_thread_enter_blocking_section(void)
 
 static void caml_thread_leave_blocking_section(void)
 {
-  /* Re-acquire the global mutex */
   WaitForSingleObject(caml_mutex, INFINITE);
   /* Update curr_thread to point to the thread descriptor corresponding
      to the thread currently executing */
@@ -205,8 +199,15 @@ static void caml_thread_leave_blocking_section(void)
   backtrace_buffer = curr_thread->backtrace_buffer;
   backtrace_last_exn = curr_thread->backtrace_last_exn;
 #endif
-  if (prev_leave_blocking_section_hook != NULL)
-    (*prev_leave_blocking_section_hook)();
+}
+
+static int caml_thread_try_leave_blocking_section(void)
+{
+  /* Disable immediate processing of signals (PR#3659).
+     try_leave_blocking_section always fails, forcing the signal to be
+     recorded and processed at the next leave_blocking_section or
+     polling. */
+  return 0;
 }
 
 /* Hooks for I/O locking */
@@ -255,7 +256,7 @@ static void caml_thread_tick(void * arg)
 {
   while(1) {
     Sleep(Thread_timeout);
-    pending_signal = SIGTIMER;
+    pending_signals[SIGTIMER] = 1;
 #ifdef NATIVE_CODE
     young_limit = young_end;
 #else
@@ -276,7 +277,7 @@ CAMLprim value caml_thread_initialize(value unit)
   value vthread = Val_unit;
   value descr;
   HANDLE tick_thread;
-  unsigned long tick_id;
+  uintnat tick_id;
 
   /* Protect against repeated initialization (PR#1325) */
   if (curr_thread != NULL) return Val_unit;
@@ -315,10 +316,9 @@ CAMLprim value caml_thread_initialize(value unit)
     /* Set up the hooks */
     prev_scan_roots_hook = scan_roots_hook;
     scan_roots_hook = caml_thread_scan_roots;
-    prev_enter_blocking_section_hook = enter_blocking_section_hook;
     enter_blocking_section_hook = caml_thread_enter_blocking_section;
-    prev_leave_blocking_section_hook = leave_blocking_section_hook;
     leave_blocking_section_hook = caml_thread_leave_blocking_section;
+    try_leave_blocking_section_hook = caml_thread_try_leave_blocking_section;
     caml_channel_mutex_free = caml_io_mutex_free;
     caml_channel_mutex_lock = caml_io_mutex_lock;
     caml_channel_mutex_unlock = caml_io_mutex_unlock;
@@ -351,7 +351,6 @@ static void caml_thread_start(void * arg)
   th->next->prev = th->prev;
   th->prev->next = th->next;
   /* Release the main mutex (forever) */
-  async_signal_mode = 1;
   ReleaseMutex(caml_mutex);
 #ifndef NATIVE_CODE
   /* Free the memory resources */
@@ -368,7 +367,7 @@ CAMLprim value caml_thread_new(value clos)
   caml_thread_t th;
   value vthread = Val_unit;
   value descr;
-  unsigned long th_id;
+  uintnat th_id;
 
   Begin_roots2 (clos, vthread)
     /* Create a finalized value to hold thread handle */
@@ -564,7 +563,7 @@ CAMLprim value caml_thread_delay(value val)
 /* Conditions operations */
 
 struct caml_condvar {
-  unsigned long count;          /* Number of waiting threads */
+  uintnat count;          /* Number of waiting threads */
   HANDLE sem;                   /* Semaphore on which threads are waiting */
 };
 
@@ -646,7 +645,7 @@ CAMLprim value caml_condition_signal(value cond)
 CAMLprim value caml_condition_broadcast(value cond)
 {
   HANDLE s = Condition_val(cond)->sem;
-  unsigned long c = Condition_val(cond)->count;
+  uintnat c = Condition_val(cond)->count;
 
   if (c > 0) {
     Condition_val(cond)->count = 0;
@@ -658,55 +657,6 @@ CAMLprim value caml_condition_broadcast(value cond)
     End_roots();
   }
   return Val_unit;
-}
-
-/* Synchronous signal wait */
-
-static HANDLE wait_signal_event[NSIG];
-static int * wait_signal_received[NSIG];
-
-static void caml_wait_signal_handler(int signo)
-{
-  *(wait_signal_received[signo]) = signo;
-  SetEvent(wait_signal_event[signo]);
-}
-
-typedef void (*sighandler_type)(int);
-
-CAMLprim value caml_wait_signal(value sigs)
-{
-  HANDLE event;
-  int res, s, retcode;
-  value l;
-  sighandler_type oldsignals[NSIG];
-
-  Begin_root(sigs);
-  event = CreateEvent(NULL, FALSE, FALSE, NULL);
-  if (event == NULL)
-    caml_wthread_error("Thread.wait_signal (CreateEvent)");
-  res = 0;
-  for (l = sigs; l != Val_int(0); l = Field(l, 1)) {
-    s = convert_signal_number(Int_val(Field(l, 0)));
-    oldsignals[s] = signal(s, caml_wait_signal_handler);
-    if (oldsignals[s] == SIG_ERR) {
-      CloseHandle(event);
-      caml_wthread_error("Thread.wait_signal (signal)");
-    }
-    wait_signal_event[s] = event;
-    wait_signal_received[s] = &res;
-  }
-  enter_blocking_section();
-  retcode = WaitForSingleObject(event, INFINITE);
-  leave_blocking_section();
-  for (l = sigs; l != Val_int(0); l = Field(l, 1)) {
-    s = convert_signal_number(Int_val(Field(l, 0)));
-    signal(s, oldsignals[s]);
-  }
-  CloseHandle(event);
-  End_roots();
-  if (retcode == WAIT_FAILED)
-    caml_wthread_error("Thread.wait_signal (WaitForSingleObject)");
-  return Val_int(res);
 }
 
 /* Error report */

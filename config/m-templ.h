@@ -18,9 +18,9 @@
 #define ARCH_SIXTYFOUR
 
 /* Define ARCH_SIXTYFOUR if the processor has a natural word size of 64 bits.
-   That is, both sizeof(long) = 8 and sizeof(char *) = 8.
-   Otherwise, leave ARCH_SIXTYFOUR undefined. This assumes
-   sizeof(long) = sizeof(char *) = 4. */
+   That is, sizeof(char *) = 8.
+   Otherwise, leave ARCH_SIXTYFOUR undefined.
+   This assumes sizeof(char *) = 4. */
 
 #define ARCH_BIG_ENDIAN
 
@@ -44,10 +44,12 @@
 
 #define SIZEOF_INT 4
 #define SIZEOF_LONG 4
+#define SIZEOF_PTR 4
 #define SIZEOF_SHORT 2
 
-/* Define SIZEOF_INT, SIZEOF_LONG and SIZEOF_SHORT to the sizes in byte
-   of the C types "int", "long" and "short", respectively. */
+/* Define SIZEOF_INT, SIZEOF_LONG, SIZEOF_PTR and SIZEOF_SHORT
+   to the sizes in bytes of the C types "int", "long", "char *" and "short",
+   respectively. */
 
 #define ARCH_INT64_TYPE long long
 #define ARCH_UINT64_TYPE unsigned long long

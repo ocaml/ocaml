@@ -75,7 +75,7 @@ value defined = ref [];
 
 value is_defined i = List.mem_assoc i defined.val;
 
-value loc =
+value _loc =
     let nowhere =
       { (Lexing.dummy_pos) with Lexing.pos_lnum = 1; Lexing.pos_cnum = 0 } in
     (nowhere, nowhere);
@@ -149,12 +149,12 @@ value define eo x =
     [ Some ([], e) ->
         EXTEND
           expr: LEVEL "simple"
-            [ [ UIDENT $x$ -> Pcaml.expr_reloc (fun _ -> loc) (fst loc) e ] ]
+            [ [ UIDENT $x$ -> Pcaml.expr_reloc (fun _ -> _loc) (fst _loc) e ] ]
           ;
           patt: LEVEL "simple"
             [ [ UIDENT $x$ ->
-                  let p = substp loc [] e in
-                  Pcaml.patt_reloc (fun _ -> loc) (fst loc) p ] ]
+                  let p = substp _loc [] e in
+                  Pcaml.patt_reloc (fun _ -> _loc) (fst _loc) p ] ]
           ;
         END
     | Some (sl, e) ->
@@ -168,10 +168,10 @@ value define eo x =
                   in
                   if List.length el = List.length sl then
                     let env = List.combine sl el in
-                    let e = subst loc env e in
-                    Pcaml.expr_reloc (fun _ -> loc) (fst loc) e
+                    let e = subst _loc env e in
+                    Pcaml.expr_reloc (fun _ -> _loc) (fst _loc) e
                   else
-                    incorrect_number loc el sl ] ]
+                    incorrect_number _loc el sl ] ]
           ;
           patt: LEVEL "simple"
             [ [ UIDENT $x$; param = SELF ->
@@ -182,10 +182,10 @@ value define eo x =
                   in
                   if List.length pl = List.length sl then
                     let env = List.combine sl pl in
-                    let p = substp loc env e in
-                    Pcaml.patt_reloc (fun _ -> loc) (fst loc) p
+                    let p = substp _loc env e in
+                    Pcaml.patt_reloc (fun _ -> _loc) (fst _loc) p
                   else
-                    incorrect_number loc pl sl ] ]
+                    incorrect_number _loc pl sl ] ]
           ;
         END
     | None -> () ];
@@ -239,12 +239,29 @@ value parse_include_file =
       try (List.find (dir_ok file) (include_dirs.val @ ["./"])) ^ file
       with [ Not_found -> file ]
     in
-    let st = Stream.of_channel (open_in file) in
+    let ch = open_in file in
+    let st = Stream.of_channel ch in
     let old_input = Pcaml.input_file.val in
+    let (bol_ref, lnum_ref, name_ref) = Pcaml.position.val in
+    let (old_bol, old_lnum, old_name) = (bol_ref.val, lnum_ref.val, name_ref.val) in
+    let restore () =
+      do {
+        close_in ch;
+        bol_ref.val := old_bol;
+        lnum_ref.val := old_lnum;
+        name_ref.val := old_name;
+        Pcaml.input_file.val := old_input;
+      }
+    in
     do {
+      bol_ref.val := 0;
+      lnum_ref.val := 1;
+      name_ref.val := file;
       Pcaml.input_file.val := file;
-      let items = Grammar.Entry.parse smlist st in
-      do { Pcaml.input_file.val := old_input; items } }
+      try
+        let items = Grammar.Entry.parse smlist st in
+        do { restore (); items }
+      with [ exn -> do { restore (); raise exn } ] }
 ;
 
 value rec execute_macro = fun
@@ -311,8 +328,8 @@ EXTEND
   expr: LEVEL "simple"
     [ [ LIDENT "__FILE__" -> <:expr< $str:Pcaml.input_file.val$ >>
       | LIDENT "__LOCATION__" ->
-          let bp = string_of_int ((fst loc).Lexing.pos_cnum) in
-          let ep = string_of_int ((snd loc).Lexing.pos_cnum) in
+          let bp = string_of_int ((fst _loc).Lexing.pos_cnum) in
+          let ep = string_of_int ((snd _loc).Lexing.pos_cnum) in
           <:expr< ($int:bp$, $int:ep$) >> ] ]
   ;
   patt:

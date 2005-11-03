@@ -49,15 +49,7 @@ type variable_context = int * (string, type_expr) Tbl.t
 let type_variables = ref (Tbl.empty : (string, type_expr) Tbl.t)
 let univars        = ref ([] : (string * type_expr) list)
 let pre_univars    = ref ([] : type_expr list)
-let local_aliases  = ref ([] : string list)
-
-let used_variables = ref (Tbl.empty : (string, type_expr) Tbl.t)
-let bindings       = ref ([] : (Location.t * type_expr * type_expr) list)
-        (* These two variables are used for the "delayed" policy. *)
-
-let reset_pre_univars () =
-  pre_univars := [];
-  local_aliases := []
+let used_variables = ref (Tbl.empty : (string, type_expr * Location.t) Tbl.t)
 
 let reset_type_variables () =
   reset_global_level ();
@@ -100,7 +92,7 @@ let rec swap_list = function
     x :: y :: l -> y :: x :: swap_list l
   | l -> l
 
-type policy = Fixed | Extensible | Delayed | Univars
+type policy = Fixed | Extensible | Univars
 
 let rec transl_type env policy styp =
   match styp.ptyp_desc with
@@ -111,46 +103,13 @@ let rec transl_type env policy styp =
         raise (Error (styp.ptyp_loc, Invalid_variable_name ("'" ^ name)));
       begin try
         instance (List.assoc name !univars)
+      with Not_found -> try
+        instance (fst(Tbl.find name !used_variables))
       with Not_found ->
-        match policy with
-          Fixed ->
-            begin try
-              instance (Tbl.find name !type_variables)
-            with Not_found ->
-              raise(Error(styp.ptyp_loc, Unbound_type_variable ("'" ^ name)))
-            end
-        | Extensible ->
-            begin try
-              instance (Tbl.find name !type_variables)
-            with Not_found ->
-              let v = new_global_var () in
-              type_variables := Tbl.add name v !type_variables;
-              v
-            end
-        | Univars ->
-            begin try
-              instance (Tbl.find name !type_variables)
-            with Not_found ->
-              let v = new_pre_univar () in
-              type_variables := Tbl.add name v !type_variables;
-              local_aliases := name :: !local_aliases;
-              v
-            end
-        | Delayed ->
-            begin try
-              instance (Tbl.find name !used_variables)
-            with Not_found -> try
-              let v1 = instance (Tbl.find name !type_variables) in
-              let v2 = new_global_var () in
-              used_variables := Tbl.add name v2 !used_variables;
-              bindings := (styp.ptyp_loc, v1, v2)::!bindings;
-              v2
-            with Not_found ->
-              let v = new_global_var () in
-              type_variables := Tbl.add name v !type_variables;
-              used_variables := Tbl.add name v !used_variables;
-              v
-            end
+        let v =
+          if policy = Univars then new_pre_univar () else newvar () in
+        used_variables := Tbl.add name (v, styp.ptyp_loc) !used_variables;
+        v
       end
   | Ptyp_arrow(l, st1, st2) ->
       let ty1 = transl_type env policy st1 in
@@ -241,9 +200,7 @@ let rec transl_type env policy styp =
               raise(Error(styp.ptyp_loc, Present_has_no_type l)))
             present;
           let bound = ref row.row_bound in
-          let single = List.length row.row_fields = 1 in
           let fields =
-            if single then row.row_fields else
             List.map
               (fun (l,f) -> l,
                 if List.mem l present then f else
@@ -279,16 +236,7 @@ let rec transl_type env policy styp =
           let t =
             try List.assoc alias !univars
             with Not_found ->
-              let v1 = instance ( Tbl.find alias !type_variables) in
-              (* Special case if using indirect variable bindings *)
-              if policy = Delayed then
-                try instance (Tbl.find alias !used_variables)
-                with Not_found ->
-                  let v2 = new_global_var () in
-                  used_variables := Tbl.add alias v2 !used_variables;
-                  bindings := (styp.ptyp_loc, v1, v2)::!bindings;
-                  v2
-              else v1
+              instance (fst(Tbl.find alias !used_variables))
           in
           let ty = transl_type env policy st in
           begin try unify_var env t ty with Unify trace ->
@@ -299,19 +247,14 @@ let rec transl_type env policy styp =
         with Not_found ->
           begin_def ();
           let t = newvar () in
-          type_variables := Tbl.add alias t !type_variables;
-          let local = (policy = Univars || !univars <> []) in
-          if local then local_aliases := alias :: !local_aliases;
-          if policy = Delayed then
-            used_variables := Tbl.add alias t !used_variables;
+          used_variables := Tbl.add alias (t, styp.ptyp_loc) !used_variables;
           let ty = transl_type env policy st in
           begin try unify_var env t ty with Unify trace ->
             let trace = swap_list trace in
             raise(Error(styp.ptyp_loc, Alias_type_mismatch trace))
           end;
           end_def ();
-          if local then generalize_structure t
-          else generalize_global t;
+          generalize_structure t;
           instance t
       end
   | Ptyp_variant(fields, closed, present) ->
@@ -329,13 +272,11 @@ let rec transl_type env policy styp =
         with Not_found ->
           (l, f) :: fields
       in
-      (* closed and only one field: make it present anyway *)
-      let single = closed && List.length fields = 1 in
       let rec add_field fields = function
           Rtag (l, c, stl) ->
             name := None;
             let f = match present with
-              Some present when not (single || List.mem l present) ->
+              Some present when not (List.mem l present) ->
                 let tl = List.map (transl_type env policy) stl in
                 bound := tl @ !bound;
                 Reither(c, tl, false, ref None)
@@ -363,11 +304,10 @@ let rec transl_type env policy styp =
             | _ ->
                 raise(Error(sty.ptyp_loc, Not_a_variant ty))
             in
-            let single = single && List.length fl = 1 in
             List.fold_left
               (fun fields (l, f) ->
                 let f = match present with
-                  Some present when not (single || List.mem l present) ->
+                  Some present when not (List.mem l present) ->
                     begin match f with
                       Rpresent(Some ty) ->
                         bound := ty :: !bound;
@@ -447,7 +387,7 @@ and transl_fields env policy =
   function
     [] ->
       newty Tnil
-  | {pfield_desc = Pfield_var} as field::_ ->
+  | {pfield_desc = Pfield_var}::_ ->
       if policy = Univars then new_pre_univar () else newvar ()
   | {pfield_desc = Pfield(s, e)}::l ->
       let ty1 = transl_type env policy e in
@@ -480,18 +420,50 @@ let make_fixed_univars ty =
   make_fixed_univars ty;
   Btype.unmark_type ty
 
+let globalize_used_variables env fixed =
+  let r = ref [] in
+  Tbl.iter
+    (fun name (ty, loc) ->
+      let v = new_global_var () in
+      let snap = Btype.snapshot () in
+      if try unify env v ty; true with _ -> Btype.backtrack snap; false
+      then try
+        r := (loc, v,  Tbl.find name !type_variables) :: !r
+      with Not_found ->
+        if fixed && (repr ty).desc = Tvar then
+          raise(Error(loc, Unbound_type_variable ("'"^name)));
+        let v2 = new_global_var () in
+        r := (loc, v, v2) :: !r;
+        type_variables := Tbl.add name v2 !type_variables)
+    !used_variables;
+  used_variables := Tbl.empty;
+  fun () ->
+    List.iter
+      (function (loc, t1, t2) ->
+        try unify env t1 t2 with Unify trace ->
+          raise (Error(loc, Type_mismatch trace)))
+      !r
+
 let transl_simple_type env fixed styp =
-  univars := []; local_aliases := [];
+  univars := []; used_variables := Tbl.empty;
   let typ = transl_type env (if fixed then Fixed else Extensible) styp in
-  type_variables := List.fold_right Tbl.remove !local_aliases !type_variables;
+  globalize_used_variables env fixed ();
   make_fixed_univars typ;
   typ
 
 let transl_simple_type_univars env styp =
-  univars := [];
-  reset_pre_univars ();
+  univars := []; used_variables := Tbl.empty; pre_univars := [];
   begin_def ();
   let typ = transl_type env Univars styp in
+  (* Only keep already global variables in used_variables *)
+  let new_variables = !used_variables in
+  used_variables := Tbl.empty;
+  Tbl.iter
+    (fun name p ->
+      if Tbl.mem name !type_variables then
+        used_variables := Tbl.add name p !used_variables)
+    new_variables;
+  globalize_used_variables env false ();
   end_def ();
   generalize typ;
   let univs =
@@ -502,26 +474,13 @@ let transl_simple_type_univars env styp =
         else (v.desc <- Tunivar ; v :: acc))
       [] !pre_univars
   in
-  type_variables := List.fold_right Tbl.remove !local_aliases !type_variables;
-  reset_pre_univars ();
   make_fixed_univars typ;
   instance (Btype.newgenty (Tpoly (typ, univs)))
 
 let transl_simple_type_delayed env styp =
-  univars := [];
-  used_variables := Tbl.empty;
-  bindings := [];
-  let typ = transl_type env Delayed styp in
-  let b = !bindings in
-  used_variables := Tbl.empty;
-  bindings := [];
-  (typ,
-   function () ->
-     List.iter
-       (function (loc, t1, t2) ->
-          try unify env t1 t2 with Unify trace ->
-            raise (Error(loc, Type_mismatch trace)))
-       b)
+  univars := []; used_variables := Tbl.empty;
+  let typ = transl_type env Extensible styp in
+  (typ, globalize_used_variables env false)
 
 let transl_type_scheme env styp =
   reset_type_variables();

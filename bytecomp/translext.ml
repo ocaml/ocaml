@@ -417,7 +417,6 @@ and transl_to_ml args env t e =
     | Tconstr (p,_,_) when Path.name p = "Cduce_types.Value.t" ->
 	e
     | Ttuple tl ->
-	let v = Ident.create "v" in
 	let rec aux accu v = function
 	  | [] -> assert false
 	  | [hd] -> 
@@ -470,7 +469,6 @@ and transl_to_ml args env t e =
 	    e ] *)
     | Tvariant rd ->
 	let fields = Ctype.get_fields rd in
-	let v = Ident.create "v" in
 	let interm = Ident.create "interm" in
 	let conv t = 
 	  let newval = 

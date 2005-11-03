@@ -19,5 +19,5 @@ let rec tak x y z =
 let rec repeat n =
   if n <= 0 then 0 else tak 18 12 6 + repeat(n-1)
 
-let _ = print_int (repeat 50); print_newline(); exit 0
+let _ = print_int (repeat 2000); print_newline(); exit 0
 

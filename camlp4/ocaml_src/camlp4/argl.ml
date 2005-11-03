@@ -127,7 +127,7 @@ let loc_fmt =
 let print_location loc =
   if !(Pcaml.input_file) <> "-" then
     let (fname, line, bp, ep) = Stdpp.line_of_loc !(Pcaml.input_file) loc in
-    eprintf loc_fmt !(Pcaml.input_file) line bp ep
+    eprintf loc_fmt fname line bp ep
   else
     eprintf "At location %d-%d\n" (fst loc).Lexing.pos_cnum
       (snd loc).Lexing.pos_cnum
@@ -357,7 +357,9 @@ let initial_spec_list =
    "<file> Output on <file> instead of standard output.";
    "-v", Arg.Unit print_version, "Print Camlp4 version and exit.";
    "-version", Arg.Unit print_version_string,
-   "Print Camlp4 version number and exit."]
+   "Print Camlp4 version number and exit.";
+   "-no_quot", Arg.Set Plexer.no_quotations,
+   " Don't parse quotations, allowing to use, e.g. \"<:>\" as token"]
 ;;
 
 let anon_fun x = Pcaml.input_file := x; file_kind := file_kind_of_name x;;

@@ -19,6 +19,7 @@ module Make_options (F :
      val _cc : string -> unit
      val _cclib : string -> unit
      val _ccopt : string -> unit
+     val _config : unit -> unit
      val _custom : unit -> unit
      val _dllib : string -> unit
      val _dllpath : string -> unit
@@ -70,12 +71,16 @@ struct
     "-cclib", Arg.String F._cclib, "<opt>  Pass option <opt> to the C linker";
     "-ccopt", Arg.String F._ccopt,
            "<opt>  Pass option <opt> to the C compiler and linker";
+    "-config", Arg.Unit F._config,
+           " print configuration values and exit";
     "-custom", Arg.Unit F._custom, " Link in custom mode";
     "-dllib", Arg.String F._dllib,
            "<lib>  Use the dynamically-loaded library <lib>";
     "-dllpath", Arg.String F._dllpath,
            "<dir>  Add <dir> to the run-time search path for shared libraries";
     "-dtypes", Arg.Unit F._dtypes, " Save type information in <filename>.annot";
+     "-for-pack", Arg.String (fun s -> ()),
+           "<ident>  Ignored (for compatibility with ocamlopt)";
     "-g", Arg.Unit F._g, " Save debugging information";
     "-i", Arg.Unit F._i, " Print inferred interface";
     "-I", Arg.String F._I,
@@ -109,7 +114,8 @@ struct
     "-principal", Arg.Unit F._principal,
            " Check principality of type inference";
     "-rectypes", Arg.Unit F._rectypes, " Allow arbitrary recursive types";
-    "-thread", Arg.Unit F._thread, " Generate code that supports the system threads library";
+    "-thread", Arg.Unit F._thread,
+           " Generate code that supports the system threads library";
     "-unsafe", Arg.Unit F._unsafe,
            " No bounds checking on array and string access";
     "-use-runtime", Arg.String F._use_runtime,
@@ -120,7 +126,8 @@ struct
            " Print compiler version and location of standard library and exit";
     "-version", Arg.Unit F._version, " Print compiler version and exit";
     "-verbose", Arg.Unit F._verbose, " Print calls to external commands";
-    "-vmthread", Arg.Unit F._vmthread, " Generate code that supports the threads library with VM-level scheduling";
+    "-vmthread", Arg.Unit F._vmthread,
+  " Generate code that supports the threads library with VM-level scheduling";
     "-w", Arg.String F._w,
       "<flags>  Enable or disable warnings according to <flags>:\n\
       \032    A/a enable/disable all warnings\n\
@@ -134,11 +141,12 @@ struct
       \032    S/s enable/disable non-unit statement\n\
       \032    U/u enable/disable unused match case\n\
       \032    V/v enable/disable hidden instance variable\n\
+      \032    Y/y enable/disable suspicious unused variables\n\
+      \032    Z/z enable/disable all other unused variables\n\
       \032    X/x enable/disable all other warnings\n\
-      \032    default setting is \"Ale\"\n\
-      \032    (all warnings but labels and fragile match enabled)";
+      \032    default setting is \"Aelz\"";
     "-warn-error" , Arg.String F._warn_error,
-      "<flags>  Treat the warnings enabled by <flags> as errors.\n\
+      "<flags>  Treat the warnings of <flags> as errors, if they are enabled.\n\
       \032    See option -w for the list of flags.\n\
       \032    Default setting is \"a\" (warnings are not errors)";
     "-where", Arg.Unit F._where,

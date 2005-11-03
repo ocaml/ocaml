@@ -290,7 +290,7 @@ let next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
               begin match Stream.peek strm__ with
                 Some ':' ->
                   Stream.junk strm__;
-                  let eb = Stream.count strm__ in
+                  let ep = Stream.count strm__ in
                   error_if_keyword (("LABEL", id), (bp, ep))
               | _ -> error_if_keyword (("TILDEIDENT", id), (bp, ep))
               end
@@ -317,7 +317,7 @@ let next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
               begin match Stream.peek strm__ with
                 Some ':' ->
                   Stream.junk strm__;
-                  let eb = Stream.count strm__ in
+                  let ep = Stream.count strm__ in
                   error_if_keyword (("OPTLABEL", id), (bp, ep))
               | _ -> error_if_keyword (("QUESTIONIDENT", id), (bp, ep))
               end
@@ -780,7 +780,7 @@ let next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
     match Stream.peek strm__ with
       Some '\010' ->
         Stream.junk strm__;
-        let s = strm__ in
+        let _s = strm__ in
         let ep = Stream.count strm__ in bolpos := ep; incr lnum
     | Some '\013' ->
         Stream.junk strm__;
@@ -911,7 +911,7 @@ and check (strm__ : _ Stream.t) =
         with
           Stream.Failure -> raise (Stream.Error "")
       in
-      let ep = Stream.count strm__ in ()
+      ()
   | Some ('>' | '|') ->
       Stream.junk strm__;
       let _ =
@@ -1089,11 +1089,11 @@ let make_lexer () =
   let id_table = Hashtbl.create 301 in
   let glexr =
     ref
-      {tok_func = (fun _ -> raise (Match_failure ("", 772, 17)));
-       tok_using = (fun _ -> raise (Match_failure ("", 772, 37)));
-       tok_removing = (fun _ -> raise (Match_failure ("", 772, 60)));
-       tok_match = (fun _ -> raise (Match_failure ("", 773, 18)));
-       tok_text = (fun _ -> raise (Match_failure ("", 773, 37)));
+      {tok_func = (fun _ -> raise (Match_failure ("", 774, 17)));
+       tok_using = (fun _ -> raise (Match_failure ("", 774, 37)));
+       tok_removing = (fun _ -> raise (Match_failure ("", 774, 60)));
+       tok_match = (fun _ -> raise (Match_failure ("", 775, 18)));
+       tok_text = (fun _ -> raise (Match_failure ("", 775, 37)));
        tok_comm = None}
   in
   let (f, pos) = func kwd_table glexr in
@@ -1125,11 +1125,11 @@ let make () =
   let id_table = Hashtbl.create 301 in
   let glexr =
     ref
-      {tok_func = (fun _ -> raise (Match_failure ("", 806, 17)));
-       tok_using = (fun _ -> raise (Match_failure ("", 806, 37)));
-       tok_removing = (fun _ -> raise (Match_failure ("", 806, 60)));
-       tok_match = (fun _ -> raise (Match_failure ("", 807, 18)));
-       tok_text = (fun _ -> raise (Match_failure ("", 807, 37)));
+      {tok_func = (fun _ -> raise (Match_failure ("", 808, 17)));
+       tok_using = (fun _ -> raise (Match_failure ("", 808, 37)));
+       tok_removing = (fun _ -> raise (Match_failure ("", 808, 60)));
+       tok_match = (fun _ -> raise (Match_failure ("", 809, 18)));
+       tok_text = (fun _ -> raise (Match_failure ("", 809, 37)));
        tok_comm = None}
   in
   {func = fst (func kwd_table glexr); using = using_token kwd_table id_table;

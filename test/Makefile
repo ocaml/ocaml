@@ -27,7 +27,7 @@ CODERUNPARAMS=OCAMLRUNPARAM='o=100'
 
 BYTE_EXE=fib.byt takc.byt taku.byt sieve.byt quicksort.byt quicksort.fast.byt \
   fft.byt fft.fast.byt soli.byt soli.fast.byt boyer.byt kb.byt \
-  nucleic.byt genlex.byt bdd.byt hamming.byt sorts.byt \
+  nucleic.byt bdd.byt hamming.byt sorts.byt \
   almabench.byt almabench.fast.byt
 
 CODE_EXE=$(BYTE_EXE:.byt=.out)
@@ -139,22 +139,14 @@ bytetest:
 	set -e; \
         for prog in $(BYTE_EXE:.byt=); do \
           echo $$prog; \
-          if test -f Results/$$prog.runtest; then \
-            sh Results/$$prog.runtest test $(CAMLRUN) $$prog.byt; \
-          else \
-            $(CAMLRUN) $$prog.byt | cmp - Results/$$prog.out; \
-          fi; \
+          $(CAMLRUN) $$prog.byt | cmp - Results/$$prog.out; \
         done
 
 codetest:
 	set -e; \
         for prog in $(CODE_EXE:.out=); do \
           echo $$prog; \
-          if test -f Results/$$prog.runtest; then \
-            sh Results/$$prog.runtest test ./$$prog.out; \
-          else \
-            ./$$prog.out | cmp - Results/$$prog.out; \
-          fi; \
+          ./$$prog.out | cmp - Results/$$prog.out; \
         done
 
 clean::
@@ -168,22 +160,14 @@ bytebench:
 	set -e; \
         for prog in $(BYTE_EXE:.byt=); do \
           echo "$$prog                " | cut -c 1-16 | tr -d '\012'; \
-          if test -f Results/$$prog.runtest; then \
-            sh Results/$$prog.runtest bench $(CAMLRUN) $$prog.byt; \
-          else \
-            xtime -o /dev/null -e /dev/null $(CAMLRUN) $$prog.byt; \
-          fi; \
+          xtime -mintime 5 -o /dev/null -e /dev/null $(CAMLRUN) $$prog.byt; \
         done
 
 codebench:
 	set -e; \
         for prog in $(CODE_EXE:.out=); do \
           echo "$$prog                " | cut -c 1-16 | tr -d '\012'; \
-          if test -f Results/$$prog.runtest; then \
-            $(CODERUNPARAMS) sh Results/$$prog.runtest bench ./$$prog.out; \
-          else \
-            $(CODERUNPARAMS) xtime -repeat 3 -o /dev/null -e /dev/null ./$$prog.out; \
-          fi; \
+          $(CODERUNPARAMS) xtime -mintime 5 -o /dev/null -e /dev/null ./$$prog.out; \
         done
 
 # Dependencies

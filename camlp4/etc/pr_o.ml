@@ -140,7 +140,7 @@ value conv_lab = var_escaped;
 
 (* default global loc *)
 
-value loc = (Token.nowhere, Token.nowhere);
+value _loc = (Token.nowhere, Token.nowhere);
 
 value id_var s =
   if has_special_chars s || is_infix s then
@@ -754,7 +754,7 @@ pr_sig_item.pr_levels :=
           fun curr next dg k -> [: `not_impl "sig_item" si :]
       | <:sig_item< exception $c$ of $list:tl$ >> ->
           fun curr next dg k ->
-            [: `variant [: `S LR "exception" :] (loc, c, tl) "" k :]
+            [: `variant [: `S LR "exception" :] (_loc, c, tl) "" k :]
       | <:sig_item< value $s$ : $t$ >> ->
           fun curr next dg k -> [: `value_description (s, t) "" k :]
       | <:sig_item< external $s$ : $t$ = $list:pl$ >> ->
@@ -817,9 +817,9 @@ pr_str_item.pr_levels :=
       | <:str_item< exception $c$ of $list:tl$ = $b$ >> ->
           fun curr next dg k ->
             match b with
-            [ [] -> [: `variant [: `S LR "exception" :] (loc, c, tl) "" k :]
+            [ [] -> [: `variant [: `S LR "exception" :] (_loc, c, tl) "" k :]
             | _ ->
-                [: `variant [: `S LR "exception" :] (loc, c, tl) ""
+                [: `variant [: `S LR "exception" :] (_loc, c, tl) ""
                       [: `S LR "=" :];
                    mod_ident b "" k :] ]
       | <:str_item< include $me$ >> ->
@@ -1256,7 +1256,7 @@ pr_expr.pr_levels :=
           fun curr next dg k -> [: `S LR "assert"; `next e "" k :]
       | <:expr< $lid:n$ $x$ $y$ >> as e ->
           fun curr next dg k ->
-            let loc = MLast.loc_of_expr e in
+            let _loc = MLast.loc_of_expr e in
             if is_infix n then [: `next e "" k :]
             else [: curr <:expr< $lid:n$ $x$ >> "" [: :]; `next y "" k :]
       | <:expr< $x$ $y$ >> ->
@@ -1648,27 +1648,17 @@ pr_ctyp.pr_levels :=
           fun curr next dg k -> [: `S LR (var_escaped s); k :]
       | <:ctyp< $uid:s$ >> -> fun curr next dg k -> [: `S LR s; k :]
       | <:ctyp< _ >> -> fun curr next dg k -> [: `S LR "_"; k :]
-      | <:ctyp< private { $list:ftl$ } >> as t ->
-          fun curr next dg k ->
-            let loc = MLast.loc_of_ctyp t in
-              [: `HVbox
-                 [: `HVbox [:`S LR "private" :];
-                    `HVbox [: labels loc [:`S LR "{" :]
-                                ftl "" [: `S LR "}"  :] :];
-                     k :] :]
       | <:ctyp< { $list:ftl$ } >> as t ->
           fun curr next dg k ->
             let loc = MLast.loc_of_ctyp t in
             [: `HVbox
                   [: labels loc [: `S LR "{" :] ftl "" [: `S LR "}" :];
                      k :] :]
-      | <:ctyp< private [ $list:ctl$ ] >> as t ->
+      | <:ctyp< private $ty$ >> ->
           fun curr next dg k ->
-            let loc = MLast.loc_of_ctyp t in
-            [: `Vbox
-                  [: `HVbox [: `S LR "private" :];
-                      variants loc [: `S LR " " :] ctl "" [: :];
-                     k :] :]
+            [: `HVbox
+               [: `HVbox [:`S LR "private" :];
+                  `ctyp ty "" k :] :]
       | <:ctyp< [ $list:ctl$ ] >> as t ->
           fun curr next dg k ->
             let loc = MLast.loc_of_ctyp t in

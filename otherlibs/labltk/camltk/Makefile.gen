@@ -32,7 +32,7 @@ cTk.ml camltk.ml .depend: _tkgen.ml ../builtin/report.ml ../compiler/pp #../buil
 	 cat _tkfgen.ml; \
 	 echo ; \
 	) > _cTk.ml
-	../../../boot/ocamlrun ../compiler/pp < _cTk.ml > cTk.ml
+	$(CAMLRUN) ../compiler/pp < _cTk.ml > cTk.ml
 	rm -f _cTk.ml
 	$(CAMLDEP) -I ../support [a-z]*.mli [a-z]*.ml > .depend
 

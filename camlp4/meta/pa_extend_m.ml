@@ -19,8 +19,8 @@ EXTEND
     [ NONA
       [ min = [ UIDENT "SLIST0" -> False | UIDENT "SLIST1" -> True ];
         s = SELF; sep = OPT [ UIDENT "SEP"; t = symbol -> t ] ->
-          sslist loc min sep s
+          sslist _loc min sep s
       | UIDENT "SOPT"; s = SELF ->
-          ssopt loc s ] ]
+          ssopt _loc s ] ]
   ;
 END;

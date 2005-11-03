@@ -348,21 +348,21 @@ char * caml_dlerror(void)
 char *caml_aligned_mmap (asize_t size, int modulo, void **block)
 {
   char *raw_mem;
-  unsigned long aligned_mem;
+  uintnat aligned_mem;
   Assert (modulo < Page_size);
   raw_mem = (char *) mmap(NULL, size + Page_size, PROT_READ | PROT_WRITE,
                           MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
   if (raw_mem == MAP_FAILED) return NULL;
   *block = raw_mem;
   raw_mem += modulo;                /* Address to be aligned */
-  aligned_mem = (((unsigned long) raw_mem / Page_size + 1) * Page_size);
+  aligned_mem = (((uintnat) raw_mem / Page_size + 1) * Page_size);
 #ifdef DEBUG
   {
-    unsigned long *p;
-    unsigned long *p0 = (void *) *block,
-                  *p1 = (void *) (aligned_mem - modulo),
-                  *p2 = (void *) (aligned_mem - modulo + size),
-                  *p3 = (void *) ((char *) *block + size + Page_size);
+    uintnat *p;
+    uintnat *p0 = (void *) *block,
+            *p1 = (void *) (aligned_mem - modulo),
+            *p2 = (void *) (aligned_mem - modulo + size),
+            *p3 = (void *) ((char *) *block + size + Page_size);
 
     for (p = p0; p < p1; p++) *p = Debug_filler_align;
     for (p = p1; p < p2; p++) *p = Debug_uninit_align;

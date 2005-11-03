@@ -43,8 +43,13 @@ CAMLexport value caml_backtrace_last_exn = Val_unit;
 /* Location of fields in the Instruct.debug_event record */
 enum { EV_POS = 0,
        EV_MODULE = 1,
-       EV_CHAR = 2,
+       EV_LOC = 2,
        EV_KIND = 3 };
+
+/* Location of fields in the Location.t record. */
+enum { LOC_START = 0,
+       LOC_END = 1,
+       LOC_GHOST = 2 };
 
 /* Location of fields in the Lexing.position record. */
 enum {
@@ -142,19 +147,22 @@ static value read_debug_info(void)
 static value event_for_location(value events, code_t pc)
 {
   mlsize_t i;
-  value pos, l, ev, ev_pos;
+  value pos, l, ev, ev_pos, best_ev;
 
+  best_ev = 0;
   Assert(pc >= caml_start_code && pc < caml_start_code + caml_code_size);
   pos = Val_long((char *) pc - (char *) caml_start_code);
   for (i = 0; i < Wosize_val(events); i++) {
     for (l = Field(events, i); l != Val_int(0); l = Field(l, 1)) {
       ev = Field(l, 0);
       ev_pos = Field(ev, EV_POS);
+      if (ev_pos == pos) return ev;
       /* ocamlc sometimes moves an event past a following PUSH instruction;
          allow mismatch by 1 instruction. */
-      if (ev_pos == pos || ev_pos == pos + 8) return ev;
+      if (ev_pos == pos + 8) best_ev = ev;
     }
   }
+  if (best_ev != 0) return best_ev;
   return Val_false;
 }
 
@@ -184,13 +192,15 @@ static void print_location(value events, int index)
   if (ev == Val_false) {
     fprintf(stderr, "%s unknown location\n", info);
   } else {
-    value ev_char = Field (ev, EV_CHAR);
-    char *fname = String_val (Field (ev_char, POS_FNAME));
-    int lnum = Int_val (Field (ev_char, POS_LNUM));
-    int chr = Int_val (Field (ev_char, POS_CNUM))
-              - Int_val (Field (ev_char, POS_BOL));
-    fprintf (stderr, "%s file \"%s\", line %d, character %d\n", info, fname,
-             lnum, chr);
+    value ev_start = Field (Field (ev, EV_LOC), LOC_START);
+    char *fname = String_val (Field (ev_start, POS_FNAME));
+    int lnum = Int_val (Field (ev_start, POS_LNUM));
+    int startchr = Int_val (Field (ev_start, POS_CNUM))
+                   - Int_val (Field (ev_start, POS_BOL));
+    int endchr = Int_val (Field (Field (Field (ev, EV_LOC), LOC_END), POS_CNUM))
+                 - Int_val (Field (ev_start, POS_BOL));
+    fprintf (stderr, "%s file \"%s\", line %d, characters %d-%d\n", info, fname,
+             lnum, startchr, endchr);
   }
 }
 

@@ -19,6 +19,7 @@ module Make_options (F :
       val _cc : string -> unit
       val _cclib : string -> unit
       val _ccopt : string -> unit
+      val _config : unit -> unit
       val _custom : unit -> unit
       val _dllib : string -> unit
       val _dllpath : string -> unit

@@ -50,7 +50,7 @@ and ext_regexp =
   | Pext_alt of ext_regexp * ext_regexp
   | Pext_star of ext_regexp
   | Pext_weakstar of ext_regexp
-  | Pext_capture of string * ext_regexp
+  | Pext_capture of string * ext_regexp * Location.t
 
 and ext_const =  
     { pextcst_desc: ext_const_desc;
@@ -179,7 +179,11 @@ and ext_exp =
   | Pextexp_to_ml of expression
   | Pextexp_check of expression * ext_pattern
 
-and ext_branch = ext_pattern * expression
+and ext_branch = 
+    ext_pattern * ((string * Location.t) list option ref) * expression
+    (* The second argument is the list of capture variables.
+       This is computed during type-checking and used
+       in Unused_var. *)
 
 (* Value descriptions *)
 
@@ -199,8 +203,10 @@ and type_declaration =
 
 and type_kind =
     Ptype_abstract
-  | Ptype_variant of (string * core_type list) list * private_flag
-  | Ptype_record of (string * mutable_flag * core_type) list * private_flag
+  | Ptype_variant of (string * core_type list * Location.t) list * private_flag
+  | Ptype_record of
+      (string * mutable_flag * core_type * Location.t) list * private_flag
+  | Ptype_private
 
 and exception_declaration = core_type list
 

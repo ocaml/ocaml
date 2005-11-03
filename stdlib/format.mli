@@ -403,7 +403,8 @@ val get_formatter_tag_functions :
   unit -> formatter_tag_functions;;
 (** Return the current tag functions of the pretty-printer. *)
 
-(** {6 Changing the meaning of pretty printing (indentation, line breaking, and printing material)} *)
+(** {6 Changing the meaning of pretty printing (indentation, line breaking,
+ and printing material)} *)
 
 val set_all_formatter_output_functions :
   out:(string -> int -> int -> unit) ->
@@ -660,4 +661,4 @@ val ksprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b;;
    passes it to the first argument. *)
 
 val kprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b;;
-(** A deprecated synonym for ksprintf. *)
+(** A deprecated synonym for [ksprintf]. *)

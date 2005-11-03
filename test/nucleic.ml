@@ -3231,6 +3231,8 @@ check () = List.length (pseudoknot ())
 let
 run () = most_distant_atom (pseudoknot ())
 
-let main () = Printf.printf "%.4f" (run ()); print_newline()
+let main () =
+  for i = 1 to 50 do ignore(run()) done;
+  Printf.printf "%.4f" (run ()); print_newline()
 
 let _ = main ()

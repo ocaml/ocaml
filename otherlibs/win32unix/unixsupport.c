@@ -33,9 +33,9 @@ static int win_handle_compare(value v1, value v2)
   return h1 == h2 ? 0 : h1 < h2 ? -1 : 1;
 }
 
-static long win_handle_hash(value v)
+static intnat win_handle_hash(value v)
 {
-  return (long) Handle_val(v);
+  return (intnat) Handle_val(v);
 }
 
 static struct custom_operations win_handle_ops = {
@@ -77,7 +77,7 @@ value win_alloc_handle_or_socket(HANDLE h)
 
 /* Mapping of Windows error codes to POSIX error codes */
 
-struct error_entry { unsigned long win_code; int range; int posix_code; };
+struct error_entry { DWORD win_code; int range; int posix_code; };
 
 static struct error_entry win_error_table[] = {
   { ERROR_INVALID_FUNCTION, 0, EINVAL},
@@ -148,7 +148,7 @@ static struct error_entry win_error_table[] = {
   { 0, -1, 0 }
 };
 
-void win32_maperr(unsigned long errcode)
+void win32_maperr(DWORD errcode)
 {
   int i;
 

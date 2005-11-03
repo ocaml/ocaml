@@ -267,24 +267,26 @@ let ext_dot e l opt =
   let p = ghext(Pext_or (r,el)) in
   let x = ghexp(Pexp_ident (Lident "#")) in
   let br =
-    if opt then [p, mkextexp (Pextexp_op ("pair",[x;gh_nil ()])); u, gh_nil ()]
-    else [p, x] in
+    if opt then [p, ref None,
+		 mkextexp (Pextexp_op ("pair",[x;gh_nil ()])); 
+		 u, ref None, gh_nil ()]
+    else [p, ref None, x] in
   mkextexp(Pextexp_match (e, br))
 
 let ext_proj e =
   (* e/ --> map e with <_ _>x -> x | _ -> [] *)
   let u = real_ghext(Pext_cst CD.Types.any) in
   let p=ghext(Pext_xml(u,ghext(Pext_prod(u,ghext(Pext_name (Lident "#")))))) in
-  mkextexp(Pextexp_map(e, [p,ghexp(Pexp_ident (Lident "#"));
-			   u,gh_nil ()]))
+  mkextexp(Pextexp_map(e, [p,ref None,ghexp(Pexp_ident (Lident "#"));
+			   u,ref None,gh_nil ()]))
 
 let ext_filter e t =
   (* e.(t) --> match e with [ (x::t | _)* ] -> x *)
   let u = Pext_elem (ghext(Pext_cst CD.Types.any)) in
   let s = ghext(Pext_regexp 
-		  (Pext_star (Pext_alt (Pext_capture ("#", Pext_elem t), u))))
+		  (Pext_star (Pext_alt (Pext_capture ("#", Pext_elem t, Location.none), u))))
   in
-  mkextexp(Pextexp_match(e, [s, ghexp(Pexp_ident (Lident "#"))]))
+  mkextexp(Pextexp_match(e, [s, ref None, ghexp(Pexp_ident (Lident "#"))]))
 
 let check_ident s =
   let s = U.to_string s in
@@ -954,7 +956,7 @@ expr:
   | LET rec_flag let_bindings IN seq_expr
       { mkexp(Pexp_let($2, List.rev $3, $5)) }
   | LET ext_pat_delim EQUAL seq_expr IN seq_expr
-      { mkextexp(Pextexp_match($4, [$2,$6])) }
+      { mkextexp(Pextexp_match($4, [$2,ref None,$6])) }
   | LET MODULE UIDENT module_binding IN seq_expr
       { mkexp(Pexp_letmodule($3, $4, $6)) }
   | FUNCTION opt_bar match_cases
@@ -991,6 +993,10 @@ expr:
   | expr COLONCOLON expr
       { mkexp(Pexp_construct(Lident "::",
                              Some(ghexp(Pexp_tuple[$1;$3])),
+                             false)) }
+  | LPAREN COLONCOLON RPAREN LPAREN expr COMMA expr RPAREN
+      { mkexp(Pexp_construct(Lident "::",
+                             Some(ghexp(Pexp_tuple[$5;$7])),
                              false)) }
   | expr INFIXOP0 expr
       { mkinfix $1 $2 $3 }
@@ -1225,6 +1231,9 @@ pattern:
   | pattern COLONCOLON pattern
       { mkpat(Ppat_construct(Lident "::", Some(ghpat(Ppat_tuple[$1;$3])),
                              false)) }
+  | LPAREN COLONCOLON RPAREN LPAREN pattern COMMA pattern RPAREN
+      { mkpat(Ppat_construct(Lident "::", Some(ghpat(Ppat_tuple[$5;$7])),
+                             false)) }
   | pattern BAR pattern
       { mkpat(Ppat_or($1, $3)) }
 ;
@@ -1326,6 +1335,8 @@ type_kind:
       { (Ptype_variant(List.rev $6, $4), Some $2) }
   | EQUAL core_type EQUAL private_flag LBRACE label_declarations opt_semi RBRACE
       { (Ptype_record(List.rev $6, $4), Some $2) }
+  | EQUAL PRIVATE core_type
+      { (Ptype_private, Some $3) }
 ;
 type_parameters:
     /*empty*/                                   { [] }
@@ -1349,7 +1360,7 @@ constructor_declarations:
   | constructor_declarations BAR constructor_declaration { $3 :: $1 }
 ;
 constructor_declaration:
-    constr_ident constructor_arguments          { ($1, $2) }
+    constr_ident constructor_arguments          { ($1, $2, symbol_rloc()) }
 ;
 constructor_arguments:
     /*empty*/                                   { [] }
@@ -1360,7 +1371,7 @@ label_declarations:
   | label_declarations SEMI label_declaration   { $3 :: $1 }
 ;
 label_declaration:
-    mutable_flag label COLON poly_type          { ($2, $1, $4) }
+    mutable_flag label COLON poly_type          { ($2, $1, $4, symbol_rloc()) }
 ;
 
 /* "with" constraints (additional type equations over signature components) */
@@ -1370,11 +1381,11 @@ with_constraints:
   | with_constraints AND with_constraint        { $3 :: $1 }
 ;
 with_constraint:
-    TYPE type_parameters label_longident EQUAL core_type constraints
+    TYPE type_parameters label_longident with_type_binder core_type constraints
       { let params, variance = List.split $2 in
         ($3, Pwith_type {ptype_params = params;
                          ptype_cstrs = List.rev $6;
-                         ptype_kind = Ptype_abstract;
+                         ptype_kind = $4;
                          ptype_manifest = Some $5;
                          ptype_variance = variance;
                          ptype_loc = symbol_rloc()}) }
@@ -1382,6 +1393,10 @@ with_constraint:
        functor applications in type path */
   | MODULE mod_longident EQUAL mod_ext_longident
       { ($2, Pwith_module $4) }
+;
+with_type_binder:
+    EQUAL          { Ptype_abstract }
+  | EQUAL PRIVATE  { Ptype_private }
 ;
 
 /* Polymorphic types */
@@ -1580,6 +1595,7 @@ constr_ident:
 /*  | LBRACKET RBRACKET                           { "[]" } */
   | LPAREN RPAREN                               { "()" }
   | COLONCOLON                                  { "::" }
+/*  | LPAREN COLONCOLON RPAREN                    { "::" } */
   | FALSE                                       { "false" }
   | TRUE                                        { "true" }
 ;
@@ -1684,12 +1700,13 @@ ext_lident:
     NCNAME { check_ident $1 }
 ;
 ext_match_cases:
-    ext_top_pat MINUSGREATER ext_expr               { [$1, $3] } 
-  | ext_match_cases BAR ext_top_pat MINUSGREATER ext_expr { ($3, $5) :: $1 }
+    ext_top_pat MINUSGREATER ext_expr               { [$1, ref None, $3] } 
+  | ext_match_cases BAR ext_top_pat MINUSGREATER ext_expr { ($3, ref None, $5) :: $1 }
 ;
 ext_match_cases_ml:
-    ext_pat_delim MINUSGREATER seq_expr               { [$1, $3] }
-  | ext_match_cases_ml BAR ext_pat_delim MINUSGREATER seq_expr { ($3, $5) :: $1 } 
+    ext_pat_delim MINUSGREATER seq_expr               { [$1, ref None, $3] }
+  | ext_match_cases_ml BAR ext_pat_delim MINUSGREATER seq_expr 
+      { ($3, ref None, $5) :: $1 } 
 ;
 ext_pat_delim: 
     LBRACEBRACE ext_top_pat RBRACEBRACE { $2 }
@@ -1720,7 +1737,7 @@ ext_expr:
   | MAP STAR ext_expr WITH opt_bar ext_match_cases
       { mkextexp(Pextexp_xmap($3, List.rev $6)) } 
   | LET ext_top_pat EQUAL ext_expr IN ext_expr
-      { mkextexp(Pextexp_match($4, [$2,$6])) }
+      { mkextexp(Pextexp_match($4, [$2,ref None,$6])) }
   | LET NAMESPACE ext_namespace_decl IN ext_expr {
       let (ns,pr) = $3 in
       mkextexp(Pextexp_namespace (ns,pr,$5))
@@ -1728,7 +1745,7 @@ ext_expr:
 /*  | simple_ext_expr LESSMINUS ext_expr { mkextexp(Pextexp_op ("apply",[$1;$3])) } */
 ;
 simple_ext_expr:
-  | LBRACEBRACE expr RBRACE RBRACE { ext:= true; $2 }
+  | LBRACEBRACE expr RBRACE RBRACE { Xparser.ext:= true; $2 }
   | LBRACECOLON expr RCOLONBRACE { mkextexp(Pextexp_from_ml $2) }
   | LESS ext_tag_expr ext_attrib_expr GREATER simple_ext_expr 
       { ext_xml $2 $3 $5 } 
@@ -1910,7 +1927,7 @@ regexp_list:
   | regexp_list_elem { $1 }
 ;
 simple_regexp:
-  | ext_lident COLONCOLON simple_regexp  { Pext_capture ($1,$3) }  
+  | ext_lident COLONCOLON simple_regexp  { Pext_capture ($1,$3,rhs_loc 1) }  
   | simple_ext_pat     { Pext_elem $1 }  
   | LPAREN regexp_list RPAREN { $2 }  
 ;

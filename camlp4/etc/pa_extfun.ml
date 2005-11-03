@@ -15,7 +15,7 @@ value not_impl name x =
 ;
 
 value rec mexpr p =
-  let loc = MLast.loc_of_patt p in
+  let _loc = MLast.loc_of_patt p in
   match p with
   [ <:patt< $p1$ $p2$ >> ->
       loop <:expr< [$mexpr p2$] >> p1 where rec loop el =
@@ -27,7 +27,7 @@ value rec mexpr p =
         fun
         [ <:patt< $p1$ . $p2$ >> -> loop <:expr< [$mexpr p2$ :: $el$] >> p1
         | p -> <:expr< Extfun.Eacc [$mexpr p$ :: $el$] >> ]
-  | <:patt< ($list:pl$) >> -> <:expr< Extfun.Etup $mexpr_list loc pl$ >>
+  | <:patt< ($list:pl$) >> -> <:expr< Extfun.Etup $mexpr_list _loc pl$ >>
   | <:patt< $uid:id$ >> -> <:expr< Extfun.Econ $str:id$ >>
   | <:patt< ` $id$ >> -> <:expr< Extfun.Econ $str:id$ >>
   | <:patt< $int:s$ >> -> <:expr< Extfun.Eint $str:s$ >>
@@ -36,12 +36,12 @@ value rec mexpr p =
   | <:patt< $lid:_$ >> -> <:expr< Extfun.Evar () >>
   | <:patt< _ >> -> <:expr< Extfun.Evar () >>
   | <:patt< $p1$ | $p2$ >> ->
-      Stdpp.raise_with_loc loc (Failure "or patterns not allowed in extfun")
+      Stdpp.raise_with_loc _loc (Failure "or patterns not allowed in extfun")
   | p -> not_impl "mexpr" p ]
-and mexpr_list loc =
+and mexpr_list _loc =
   fun
   [ [] -> <:expr< [] >>
-  | [e :: el] -> <:expr< [$mexpr e$ :: $mexpr_list loc el$] >> ]
+  | [e :: el] -> <:expr< [$mexpr e$ :: $mexpr_list _loc el$] >> ]
 ;
 
 value rec catch_any =
@@ -61,7 +61,7 @@ value rec catch_any =
 
 value conv (p, wo, e) =
   let tst = mexpr p in
-  let loc = (fst (MLast.loc_of_patt p), snd (MLast.loc_of_expr e)) in
+  let _loc = (fst (MLast.loc_of_patt p), snd (MLast.loc_of_expr e)) in
   let e =
     if wo = None && catch_any p then <:expr< fun $p$ -> Some $e$ >>
     else <:expr< fun [ $p$ $when:wo$ -> Some $e$ | _ -> None ] >>
@@ -77,7 +77,7 @@ value conv (p, wo, e) =
 value rec conv_list tl =
   fun
   [ [pe :: pel] ->
-      let loc = MLast.loc_of_expr tl in
+      let _loc = MLast.loc_of_expr tl in
       <:expr< [$conv pe$ :: $conv_list tl pel$] >>
   | [] -> tl ]
 ;
@@ -88,11 +88,11 @@ value rec split_or =
       split_or [(p1, wo, e); (p2, wo, e) :: pel]
   | [(<:patt< ($p1$ | $p2$ as $p$) >>, wo, e) :: pel] ->
       let p1 =
-        let loc = MLast.loc_of_patt p1 in
+        let _loc = MLast.loc_of_patt p1 in
         <:patt< ($p1$ as $p$) >>
       in
       let p2 =
-        let loc = MLast.loc_of_patt p2 in
+        let _loc = MLast.loc_of_patt p2 in
         <:patt< ($p2$ as $p$) >>
       in
       split_or [(p1, wo, e); (p2, wo, e) :: pel]

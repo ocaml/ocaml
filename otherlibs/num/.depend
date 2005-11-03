@@ -29,9 +29,5 @@ nat.cmo: int_misc.cmi nat.cmi
 nat.cmx: int_misc.cmx nat.cmi 
 num.cmo: ratio.cmi nat.cmi int_misc.cmi big_int.cmi arith_flags.cmi num.cmi 
 num.cmx: ratio.cmx nat.cmx int_misc.cmx big_int.cmx arith_flags.cmx num.cmi 
-ratio.cmo: string_misc.cmi nat.cmi int_misc.cmi big_int.cmi arith_flags.cmi \
-    ratio.cmi 
-ratio.cmx: string_misc.cmx nat.cmx int_misc.cmx big_int.cmx arith_flags.cmx \
-    ratio.cmi 
-string_misc.cmo: string_misc.cmi 
-string_misc.cmx: string_misc.cmi 
+ratio.cmo: nat.cmi int_misc.cmi big_int.cmi arith_flags.cmi ratio.cmi 
+ratio.cmx: nat.cmx int_misc.cmx big_int.cmx arith_flags.cmx ratio.cmi 

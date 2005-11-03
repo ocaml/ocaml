@@ -17,7 +17,7 @@ let _ =
   Sys.signal Sys.sigtstp (Sys.Signal_handle stop_handler);
   begin try
     print_string "Computing like crazy..."; print_newline();
-    for i = 1 to 100 do tak(18,12,6) done;
+    for i = 1 to 1000 do tak(18,12,6) done;
     print_string "Reading on input..."; print_newline();
     for i = 1 to 5 do
       try

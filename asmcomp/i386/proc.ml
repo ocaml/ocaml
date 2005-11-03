@@ -88,12 +88,23 @@ let word_addressed = false
 
 (* Calling conventions *)
 
+(* To supplement the processor's meagre supply of registers, we also
+   use some global memory locations to pass arguments beyond the 6th.
+   These globals are denoted by Incoming and Outgoing stack locations
+   with negative offsets, starting at -64.
+   Unlike arguments passed on stack, arguments passed in globals
+   do not prevent tail-call elimination.  The caller stores arguments
+   in these globals immediately before the call, and the first thing the 
+   callee does is copy them to registers or stack locations.
+   Neither GC nor thread context switches can occur between these two
+   times. *)
+
 let calling_conventions first_int last_int first_float last_float make_stack
                         arg =
   let loc = Array.create (Array.length arg) Reg.dummy in
   let int = ref first_int in
   let float = ref first_float in
-  let ofs = ref 0 in
+  let ofs = ref (-64) in
   for i = 0 to Array.length arg - 1 do
     match arg.(i).typ with
       Int | Addr as ty ->
@@ -113,7 +124,7 @@ let calling_conventions first_int last_int first_float last_float make_stack
           ofs := !ofs + size_float
         end
   done;
-  (loc, !ofs)
+  (loc, max 0 !ofs)
 
 let incoming ofs = Incoming ofs
 let outgoing ofs = Outgoing ofs

@@ -14,11 +14,12 @@
 (* $Id$ *)
 
 open Debugger_config
-open Parameters
+open Instruct
 open Misc
+open Parameters
 open Primitives
-open Source
 open Printf
+open Source
 
 (* Print a line; return the beginning of the next line *)
 let print_line buffer line_number start point before =
@@ -40,12 +41,16 @@ let show_no_point () =
   if !emacs then printf "\026\026H\n"
 
 (* Print the line containing the point *)
-let show_point mdle point before selected =
+let show_point ev selected =
+  let mdle = ev.ev_module in
+  let before = (ev.ev_kind = Event_before) in
   if !emacs && selected then
     begin try
       let source = source_of_module mdle in
-        printf "\026\026M%s:%i" source point;
-        printf "%s\n" (if before then ":before" else ":after")
+      printf "\026\026M%s:%i:%i" source
+             ev.ev_loc.Location.loc_start.Lexing.pos_cnum
+             ev.ev_loc.Location.loc_end.Lexing.pos_cnum;
+      printf "%s\n" (if before then ":before" else ":after")
     with
       Not_found    -> (* get_buffer *)
         prerr_endline ("No source file for " ^ mdle ^ ".");
@@ -54,6 +59,7 @@ let show_point mdle point before selected =
   else
     begin try
       let buffer = get_buffer mdle in
+      let point = (Events.get_pos ev).Lexing.pos_cnum in
       let (start, line_number) = line_of_pos buffer point in
       ignore(print_line buffer line_number start point before)
     with

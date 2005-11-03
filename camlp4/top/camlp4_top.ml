@@ -83,9 +83,9 @@ value wrap f shfn lb =
              lb.lex_curr_pos := lb.lex_curr_pos + 1;
              Some c
            }
-         })
-  in
-  try f cs with
+         }) in
+  let parse_fun = f lb.lex_curr_p in
+  try parse_fun cs with
   [ Exc_located _ (Sys.Break as x) -> raise x
   | End_of_file as x -> raise x
   | x ->
@@ -108,12 +108,11 @@ value wrap f shfn lb =
 
 value first_phrase = ref True;
 
-value toplevel_phrase cs =
+value toplevel_phrase pos cs =
   do {
     if Sys.interactive.val && first_phrase.val then do {
       first_phrase.val := False;
-      Printf.eprintf "\tCamlp4 Parsing version %s\n\n" Pcaml.version;
-      flush stderr;
+      Printf.printf "\tCamlp4 Parsing version %s\n\n%!" Pcaml.version;
     }
     else ();
     match Grammar.Entry.parse Pcaml.top_phrase cs with
@@ -122,7 +121,7 @@ value toplevel_phrase cs =
   }
 ;
 
-value use_file cs =
+value use_file pos cs =
   let v = Pcaml.input_file.val in
   let (bolpos,lnum,fname) = Pcaml.position.val in
   let restore  =
@@ -133,7 +132,7 @@ value use_file cs =
     } in
   do {
     Pcaml.input_file.val := Toploop.input_name.val;
-    bolpos.val := 0; lnum.val := 1; fname.val := Toploop.input_name.val;
+    bolpos.val := pos.pos_bol; lnum.val := pos.pos_lnum; fname.val := Toploop.input_name.val;
     try
       let (pl0, eoi) =
         loop () where rec loop () =
@@ -177,4 +176,4 @@ Toploop.parse_use_file.val :=
 Pcaml.warning.val :=
   fun loc txt ->
     Toploop.print_warning (Ast2pt.mkloc loc) Format.err_formatter
-      (Warnings.Other txt);
+      (Warnings.Camlp4 txt);

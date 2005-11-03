@@ -872,7 +872,7 @@ let shutdown_connection inchan =
   shutdown (descr_of_in_channel inchan) SHUTDOWN_SEND
 
 let establish_server server_fun sockaddr =
-  invalid_arg "Unix.establish_server not implmented"
+  invalid_arg "Unix.establish_server not implemented"
 
 (* Terminal interface *)
 

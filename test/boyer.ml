@@ -881,7 +881,11 @@ let term = cterm_to_term(
               CProp ("implies",[CVar 23; CVar 22])]))
 
 let _ =
-  if tautp (apply_subst subst term) then
+  let ok = ref true in
+  for i = 1 to 50 do
+    if not (tautp (apply_subst subst term)) then ok := false
+  done;
+  if !ok then
     print_string "Proved!\n"
   else
     print_string "Cannot prove!\n";

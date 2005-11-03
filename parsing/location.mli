@@ -55,6 +55,3 @@ val reset: unit -> unit
 
 val highlight_locations: formatter -> t -> t -> bool
 
-
-(* Is the lexer in ext mode ? *)
-val ext: bool ref

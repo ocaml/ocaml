@@ -38,7 +38,7 @@ void caml_oldify_local_roots (void)
   register value * sp;
   struct global_root * gr;
   struct caml__roots_block *lr;
-  long i, j;
+  intnat i, j;
 
   /* The stack */
   for (sp = caml_extern_sp; sp < caml_stack_high; sp++) {

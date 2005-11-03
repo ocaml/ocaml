@@ -27,7 +27,7 @@ struct final {
 };
 
 static struct final *final_table = NULL;
-static unsigned long old = 0, young = 0, size = 0;
+static uintnat old = 0, young = 0, size = 0;
 /* [0..old) : finalisable set
    [old..young) : recent set
    [young..size) : free space
@@ -65,8 +65,8 @@ static void alloc_to_do (int size)
 */
 void caml_final_update (void)
 {
-  unsigned long i, j, k;
-  unsigned long todo_count = 0;
+  uintnat i, j, k;
+  uintnat todo_count = 0;
   
   Assert (young == old);
   for (i = 0; i < old; i++){
@@ -154,7 +154,7 @@ void caml_final_do_calls (void)
 */
 void caml_final_do_strong_roots (scanning_action f)
 {
-  unsigned long i;
+  uintnat i;
   struct to_do *todo;
 
   Assert (old == young);
@@ -174,7 +174,7 @@ void caml_final_do_strong_roots (scanning_action f)
 */
 void caml_final_do_weak_roots (scanning_action f)
 {
-  unsigned long i;
+  uintnat i;
 
   Assert (old == young);
   for (i = 0; i < old; i++) Call_action (f, final_table[i].val);
@@ -185,7 +185,7 @@ void caml_final_do_weak_roots (scanning_action f)
 */
 void caml_final_do_young_roots (scanning_action f)
 {
-  unsigned long i;
+  uintnat i;
   
   Assert (old <= young);
   for (i = old; i < young; i++){
@@ -213,13 +213,13 @@ CAMLprim value caml_final_register (value f, value v)
   
   if (young >= size){
     if (final_table == NULL){
-      unsigned long new_size = 30;
+      uintnat new_size = 30;
       final_table = caml_stat_alloc (new_size * sizeof (struct final));
       Assert (old == 0);
       Assert (young == 0);
       size = new_size;
     }else{
-      unsigned long new_size = size * 2;
+      uintnat new_size = size * 2;
       final_table = caml_stat_resize (final_table,
                                       new_size * sizeof (struct final));
       size = new_size;

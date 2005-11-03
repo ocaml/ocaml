@@ -113,10 +113,10 @@ let item_ident_name = function
 
 (* Simplify a structure coercion *)
 
-let simplify_structure_coercion init_size cc =
+let simplify_structure_coercion cc =
   let rec is_identity_coercion pos = function
   | [] ->
-      pos = init_size
+      true
   | (n, c) :: rem ->
       n = pos && c = Tcoerce_none && is_identity_coercion (pos + 1) rem in
   if is_identity_coercion 0 cc
@@ -176,7 +176,7 @@ and signatures env subst sig1 sig2 =
   (* Build a table of the components of sig1, along with their positions.
      The table is indexed by kind and name of component *)
   let rec build_component_table pos tbl = function
-      [] -> (tbl, pos)
+      [] -> tbl
     | item :: rem ->
         let (id, name) = item_ident_name item in
         let nextpos =
@@ -191,7 +191,7 @@ and signatures env subst sig1 sig2 =
           | Tsig_class(_, _,_) -> pos+1 in
         build_component_table nextpos
                               (Tbl.add name (id, item, pos) tbl) rem in
-  let (comps1, size1) =
+  let comps1 =
     build_component_table 0 Tbl.empty sig1 in
   (* Pair each component of sig2 with a component of sig1,
      identifying the names along the way.
@@ -206,6 +206,15 @@ and signatures env subst sig1 sig2 =
         end
     | item2 :: rem ->
         let (id2, name2) = item_ident_name item2 in
+        let name2, report =
+          match name2 with
+            Field_type s when let l = String.length s in
+            l >= 4 && String.sub s (l-4) 4 = "#row" ->
+              (* Do not report in case of failure,
+                 as the main type will generate an error *)
+              Field_type (String.sub s 0 (String.length s - 4)), false
+          | _ -> name2, true
+        in
         begin try
           let (id1, item1, pos1) = Tbl.find name2 comps1 in
           let new_subst =
@@ -222,10 +231,12 @@ and signatures env subst sig1 sig2 =
           pair_components new_subst
             ((item1, item2, pos1) :: paired) unpaired rem
         with Not_found ->
-          pair_components subst paired (Missing_field id2 :: unpaired) rem
+          let unpaired =
+            if report then Missing_field id2 :: unpaired else unpaired in
+          pair_components subst paired unpaired rem
         end in
   (* Do the pairing and checking, and return the final coercion *)
-  simplify_structure_coercion size1 (pair_components subst [] [] sig2)
+  simplify_structure_coercion (pair_components subst [] [] sig2)
 
 (* Inclusion between signature components *)
 

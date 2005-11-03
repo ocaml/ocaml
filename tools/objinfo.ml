@@ -96,6 +96,4 @@ let main() =
   done;
   exit 0
 
-let _ = Printexc.catch main (); exit 0
-
-
+let _ = main ()

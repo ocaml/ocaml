@@ -244,7 +244,7 @@ value next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
            [ [: `('a'..'z' as c); len = ident (store 0 c); s :] ep ->
                let id = get_buff len in
                match s with parser
-               [ [: `':' :] eb -> error_if_keyword (("LABEL", id), (bp, ep))
+               [ [: `':' :] ep -> error_if_keyword (("LABEL", id), (bp, ep))
                | [: :] -> error_if_keyword (("TILDEIDENT", id), (bp, ep)) ]
            | [: s :] ->
                let id = get_buff (ident2 (store 0 c) s) in
@@ -257,7 +257,7 @@ value next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
            [ [: `('a'..'z' as c); len = ident (store 0 c); s :] ep ->
                let id = get_buff len in
                match s with parser
-               [ [: `':' :] eb -> error_if_keyword (("OPTLABEL", id), (bp,ep))
+               [ [: `':' :] ep -> error_if_keyword (("OPTLABEL", id), (bp,ep))
                | [: :] -> error_if_keyword (("QUESTIONIDENT", id), (bp, ep)) ]
            | [: s :] ->
                let id = get_buff (ident2 (store 0 c) s) in
@@ -515,7 +515,7 @@ value next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
     | _ -> False ]
   and any_to_nl =
     parser
-    [ [: `'\010'; s :] ep ->
+    [ [: `'\010'; _s :] ep ->
         do { bolpos.val := ep; incr lnum }
     | [: `'\013'; s :] ep ->
         let ep =
@@ -529,7 +529,9 @@ value next_token_fun dfa ssd find_kwd fname lnum bolpos glexr =
     [ [: _ = skip_spaces; n = line_directive_number 0;
          _ = skip_spaces; _ = line_directive_string;
          _ = any_to_nl :] ep
-       -> do { bolpos.val := ep; lnum.val := n }
+       -> do { (* fname has been updated by by line_directive_string *)
+	 bolpos.val := ep; lnum.val := n 
+       }
     ]
   and skip_spaces = parser
     [ [: `' ' | '\t'; s :] -> skip_spaces s
@@ -606,7 +608,7 @@ and check =
        _ =
          parser
          [ [: `']' | ':' | '=' | '>' :] -> ()
-         | [: :] -> () ] :] ep ->
+         | [: :] -> () ] :]  ->
       ()
   | [: `'>' | '|';
        _ =

@@ -26,11 +26,11 @@ struct custom_operations {
   char *identifier;
   void (*finalize)(value v);
   int (*compare)(value v1, value v2);
-  long (*hash)(value v);
+  intnat (*hash)(value v);
   void (*serialize)(value v, 
-                    /*out*/ unsigned long * wsize_32 /*size in bytes*/,
-                    /*out*/ unsigned long * wsize_64 /*size in bytes*/);
-  unsigned long (*deserialize)(void * dst);
+                    /*out*/ uintnat * wsize_32 /*size in bytes*/,
+                    /*out*/ uintnat * wsize_64 /*size in bytes*/);
+  uintnat (*deserialize)(void * dst);
 };
 
 #define custom_finalize_default NULL
@@ -42,7 +42,7 @@ struct custom_operations {
 #define Custom_ops_val(v) (*((struct custom_operations **) (v)))
 
 CAMLextern value caml_alloc_custom(struct custom_operations * ops,
-                                   unsigned long size, /*size in bytes*/
+                                   uintnat size, /*size in bytes*/
                                    mlsize_t mem, /*resources consumed*/
                                    mlsize_t max  /*max resources*/);
 

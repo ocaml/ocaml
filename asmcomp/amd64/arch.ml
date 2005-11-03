@@ -14,7 +14,11 @@
 
 (* Machine-specific command-line options *)
 
-let command_line_options = []
+let pic_code = ref false
+
+let command_line_options =
+  [ "-fPIC", Arg.Set pic_code,
+      " Generate position-independent machine code" ]
 
 (* Specific operations for the AMD64 processor *)
 

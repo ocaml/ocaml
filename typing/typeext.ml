@@ -273,7 +273,6 @@ let rec typ_from_ml env t =
     | Tvariant rd ->
 	let rd = Btype.row_repr rd in
 	if not rd.row_closed then raise (CannotTranslate TOpen);
-	let fields = Ctype.get_fields rd in
 	CT.cons 
 	  (List.fold_left
 	     (fun accu (lab,f) -> 
@@ -408,6 +407,8 @@ let pcdata =
   Pext_star (Pext_elem { pext_loc = Location.none;
 			 pext_desc = Pext_cst CT.Char.any })
 
+let captures = ref []
+
 let rec derecurs env p = match p.pext_desc with
   | Pext_name v -> derecurs_var env p.pext_loc v
   | Pext_recurs (p,b) -> derecurs (fst (derecurs_def env b)) p
@@ -428,6 +429,7 @@ let rec derecurs env p = match p.pext_desc with
 	| (p,None) -> derecurs env p, None in
       mk_record ~err:(perr p) o (transl_record env.penv_tenv p.pext_loc aux r)
   | Pext_bind (x,c) -> 
+      captures := (x,p.pext_loc) :: !captures;
       mk_constant (id x) (transl_const env.penv_tenv c)
   | Pext_constant c -> mk_type (CT.constant (transl_const env.penv_tenv c))
   | Pext_regexp r -> rexp (derecurs_regexp env r) 
@@ -453,7 +455,9 @@ and derecurs_regexp env = function
   | Pext_alt (p1,p2) -> mk_alt (derecurs_regexp env p1) (derecurs_regexp env p2)
   | Pext_star p -> mk_star (derecurs_regexp env p)
   | Pext_weakstar p -> mk_weakstar (derecurs_regexp env p) 
-  | Pext_capture (x,p) -> mk_seqcapt (id x) (derecurs_regexp env p)
+  | Pext_capture (x,p,l) -> 
+      captures := (x,l) :: !captures;
+      mk_seqcapt (id x) (derecurs_regexp env p)
 
 and derecurs_var env loc v =
   match v with
@@ -464,7 +468,7 @@ and derecurs_var env loc v =
 	   with Not_found ->
 	     try CEnv.find id env.penv_derec
 	     with Not_found -> derecurs_var' env loc v
-	 with Not_found -> mk_capture id)
+	 with Not_found -> captures := (x,loc) :: !captures; mk_capture id)
     | _ -> 
 	try derecurs_var' env loc v
 	with Not_found -> error loc NotXmlType
@@ -565,9 +569,12 @@ let transl_type_decl env =
 let transl_branches env b =
   let t,l = 
     List.fold_left 
-      (fun (acc,bl) (p,e) -> 
+      (fun (acc,bl) (p,vars,e) -> 
 	 let loc = p.pext_loc in
+	 captures := [];
 	 let p = transl_ext_pat env p in
+	 vars := Some !captures;
+	 captures := [];
 	 let a = CT.descr (Patterns.accept p) in
 	 (CT.cup acc a),(CT.diff a acc,loc,p,e)::bl
       ) (CT.empty,[]) b
@@ -737,7 +744,6 @@ let ext_apply env loc e1 e2 =
        let module A = CT.Arrow in
        let t1 = compute_var loc e1 A.any in
        let t1 = A.get t1 in
-       let dom = A.domain t1 in
        let t2 = compute_var loc e2 (A.domain t1)  in
        A.apply t1 t2)
 

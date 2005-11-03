@@ -124,7 +124,7 @@ value check_use nl el =
   }
 ;
 
-value locate n = let loc = n.loc in <:expr< $n.expr$ >>;
+value locate n = let _loc = n.loc in <:expr< $n.expr$ >>;
 
 value new_type_var =
   let i = ref 0 in fun () -> do { incr i; "e__" ^ string_of_int i.val }
@@ -136,7 +136,7 @@ value used_of_rule_list rl =
     rl
 ;
 
-value retype_rule_list_without_patterns loc rl =
+value retype_rule_list_without_patterns _loc rl =
   try
     List.map
       (fun
@@ -163,7 +163,7 @@ module MetaAction =
       in
       failwith (f ^ ", not impl: " ^ desc)
     ;
-    value loc =
+    value _loc =
         let nowhere =
           { (Lexing.dummy_pos) with Lexing.pos_lnum = 1; Lexing.pos_cnum = 0 } in
         (nowhere, nowhere);
@@ -188,63 +188,63 @@ module MetaAction =
            (nowhere, nowhere) >>;
     value rec mexpr =
       fun
-      [ MLast.ExAcc loc e1 e2 ->
+      [ MLast.ExAcc _loc e1 e2 ->
           <:expr< MLast.ExAcc $mloc$ $mexpr e1$ $mexpr e2$ >>
-      | MLast.ExApp loc e1 e2 ->
+      | MLast.ExApp _loc e1 e2 ->
           <:expr< MLast.ExApp $mloc$ $mexpr e1$ $mexpr e2$ >>
-      | MLast.ExChr loc s -> <:expr< MLast.ExChr $mloc$ $str:s$ >>
-      | MLast.ExFun loc pwel -> <:expr< MLast.ExFun $mloc$ $mlist mpwe pwel$ >>
-      | MLast.ExIfe loc e1 e2 e3 ->
+      | MLast.ExChr _loc s -> <:expr< MLast.ExChr $mloc$ $str:s$ >>
+      | MLast.ExFun _loc pwel -> <:expr< MLast.ExFun $mloc$ $mlist mpwe pwel$ >>
+      | MLast.ExIfe _loc e1 e2 e3 ->
           <:expr< MLast.ExIfe $mloc$ $mexpr e1$ $mexpr e2$ $mexpr e3$ >>
-      | MLast.ExInt loc s -> <:expr< MLast.ExInt $mloc$ $str:s$ >>
-      | MLast.ExFlo loc s -> <:expr< MLast.ExFlo $mloc$ $str:s$ >>
-      | MLast.ExLet loc rf pel e ->
+      | MLast.ExInt _loc s -> <:expr< MLast.ExInt $mloc$ $str:s$ >>
+      | MLast.ExFlo _loc s -> <:expr< MLast.ExFlo $mloc$ $str:s$ >>
+      | MLast.ExLet _loc rf pel e ->
           <:expr< MLast.ExLet $mloc$ $mbool rf$ $mlist mpe pel$ $mexpr e$ >>
-      | MLast.ExLid loc s -> <:expr< MLast.ExLid $mloc$ $str:s$ >>
-      | MLast.ExMat loc e pwel ->
+      | MLast.ExLid _loc s -> <:expr< MLast.ExLid $mloc$ $str:s$ >>
+      | MLast.ExMat _loc e pwel ->
           <:expr< MLast.ExMat $mloc$ $mexpr e$ $mlist mpwe pwel$ >>
-      | MLast.ExRec loc pel eo ->
+      | MLast.ExRec _loc pel eo ->
           <:expr< MLast.ExRec $mloc$ $mlist mpe pel$ $moption mexpr eo$ >>
-      | MLast.ExSeq loc el -> <:expr< MLast.ExSeq $mloc$ $mlist mexpr el$ >>
-      | MLast.ExSte loc e1 e2 ->
+      | MLast.ExSeq _loc el -> <:expr< MLast.ExSeq $mloc$ $mlist mexpr el$ >>
+      | MLast.ExSte _loc e1 e2 ->
           <:expr< MLast.ExSte $mloc$ $mexpr e1$ $mexpr e2$ >>
-      | MLast.ExStr loc s ->
+      | MLast.ExStr _loc s ->
           <:expr< MLast.ExStr $mloc$ $str:String.escaped s$ >>
-      | MLast.ExTry loc e pwel ->
+      | MLast.ExTry _loc e pwel ->
           <:expr< MLast.ExTry $mloc$ $mexpr e$ $mlist mpwe pwel$ >>
-      | MLast.ExTup loc el -> <:expr< MLast.ExTup $mloc$ $mlist mexpr el$ >>
-      | MLast.ExTyc loc e t ->
+      | MLast.ExTup _loc el -> <:expr< MLast.ExTup $mloc$ $mlist mexpr el$ >>
+      | MLast.ExTyc _loc e t ->
           <:expr< MLast.ExTyc $mloc$ $mexpr e$ $mctyp t$ >>
-      | MLast.ExUid loc s -> <:expr< MLast.ExUid $mloc$ $str:s$ >>
+      | MLast.ExUid _loc s -> <:expr< MLast.ExUid $mloc$ $str:s$ >>
       | x -> not_impl "mexpr" x ]
     and mpatt =
       fun
-      [ MLast.PaAcc loc p1 p2 ->
+      [ MLast.PaAcc _loc p1 p2 ->
           <:expr< MLast.PaAcc $mloc$ $mpatt p1$ $mpatt p2$ >>
-      | MLast.PaAny loc -> <:expr< MLast.PaAny $mloc$ >>
-      | MLast.PaApp loc p1 p2 ->
+      | MLast.PaAny _loc -> <:expr< MLast.PaAny $mloc$ >>
+      | MLast.PaApp _loc p1 p2 ->
           <:expr< MLast.PaApp $mloc$ $mpatt p1$ $mpatt p2$ >>
-      | MLast.PaInt loc s -> <:expr< MLast.PaInt $mloc$ $str:s$ >>
-      | MLast.PaLid loc s -> <:expr< MLast.PaLid $mloc$ $str:s$ >>
-      | MLast.PaOrp loc p1 p2 ->
+      | MLast.PaInt _loc s -> <:expr< MLast.PaInt $mloc$ $str:s$ >>
+      | MLast.PaLid _loc s -> <:expr< MLast.PaLid $mloc$ $str:s$ >>
+      | MLast.PaOrp _loc p1 p2 ->
           <:expr< MLast.PaOrp $mloc$ $mpatt p1$ $mpatt p2$ >>
-      | MLast.PaStr loc s ->
+      | MLast.PaStr _loc s ->
           <:expr< MLast.PaStr $mloc$ $str:String.escaped s$ >>
-      | MLast.PaTup loc pl -> <:expr< MLast.PaTup $mloc$ $mlist mpatt pl$ >>
-      | MLast.PaTyc loc p t ->
+      | MLast.PaTup _loc pl -> <:expr< MLast.PaTup $mloc$ $mlist mpatt pl$ >>
+      | MLast.PaTyc _loc p t ->
           <:expr< MLast.PaTyc $mloc$ $mpatt p$ $mctyp t$ >>
-      | MLast.PaUid loc s -> <:expr< MLast.PaUid $mloc$ $str:s$ >>
+      | MLast.PaUid _loc s -> <:expr< MLast.PaUid $mloc$ $str:s$ >>
       | x -> not_impl "mpatt" x ]
     and mctyp =
       fun 
-      [ MLast.TyAcc loc t1 t2 ->
+      [ MLast.TyAcc _loc t1 t2 ->
           <:expr< MLast.TyAcc $mloc$ $mctyp t1$ $mctyp t2$ >>
       | MLast.TyApp loc t1 t2 ->
           <:expr< MLast.TyApp $mloc$ $mctyp t1$ $mctyp t2$ >>
-      | MLast.TyLid loc s -> <:expr< MLast.TyLid $mloc$ $str:s$ >>
-      | MLast.TyQuo loc s -> <:expr< MLast.TyQuo $mloc$ $str:s$ >>
-      | MLast.TyTup loc tl -> <:expr< MLast.TyTup $mloc$ $mlist mctyp tl$ >>
-      | MLast.TyUid loc s -> <:expr< MLast.TyUid $mloc$ $str:s$ >>
+      | MLast.TyLid _loc s -> <:expr< MLast.TyLid $mloc$ $str:s$ >>
+      | MLast.TyQuo _loc s -> <:expr< MLast.TyQuo $mloc$ $str:s$ >>
+      | MLast.TyTup _loc tl -> <:expr< MLast.TyTup $mloc$ $mlist mctyp tl$ >>
+      | MLast.TyUid _loc s -> <:expr< MLast.TyUid $mloc$ $str:s$ >>
       | x -> not_impl "mctyp" x ]
     and mpe (p, e) = <:expr< ($mpatt p$, $mexpr e$) >>
     and mpwe (p, w, e) = <:expr< ($mpatt p$, $moption mexpr w$, $mexpr e$) >>
@@ -252,24 +252,24 @@ module MetaAction =
   end
 ;
 
-value mklistexp loc =
+value mklistexp _loc =
   loop True where rec loop top =
     fun
     [ [] -> <:expr< [] >>
     | [e1 :: el] ->
-        let loc =
-          if top then loc else (fst (MLast.loc_of_expr e1), snd loc)
+        let _loc =
+          if top then _loc else (fst (MLast.loc_of_expr e1), snd _loc)
         in
         <:expr< [$e1$ :: $loop False el$] >> ]
 ;
 
-value mklistpat loc =
+value mklistpat _loc =
   loop True where rec loop top =
     fun
     [ [] -> <:patt< [] >>
     | [p1 :: pl] ->
-        let loc =
-          if top then loc else (fst (MLast.loc_of_patt p1), snd loc)
+        let _loc =
+          if top then _loc else (fst (MLast.loc_of_patt p1), snd _loc)
         in
         <:patt< [$p1$ :: $loop False pl$] >> ]
 ;
@@ -281,7 +281,7 @@ value rec expr_fa al =
 ;
 
 value rec quot_expr e =
-  let loc = MLast.loc_of_expr e in
+  let _loc = MLast.loc_of_expr e in
   match e with
   [ <:expr< None >> -> <:expr< Qast.Option None >>
   | <:expr< Some $e$ >> -> <:expr< Qast.Option (Some $quot_expr e$) >>
@@ -300,13 +300,13 @@ value rec quot_expr e =
       match f with
       [ <:expr< $uid:c$ >> ->
           let al = List.map quot_expr al in
-          <:expr< Qast.Node $str:c$ $mklistexp loc al$ >>
+          <:expr< Qast.Node $str:c$ $mklistexp _loc al$ >>
       | <:expr< MLast.$uid:c$ >> ->
           let al = List.map quot_expr al in
-          <:expr< Qast.Node $str:c$ $mklistexp loc al$ >>
+          <:expr< Qast.Node $str:c$ $mklistexp _loc al$ >>
       | <:expr< $uid:m$.$uid:c$ >> ->
           let al = List.map quot_expr al in
-          <:expr< Qast.Node $str:m ^ "." ^ c$ $mklistexp loc al$ >>
+          <:expr< Qast.Node $str:m ^ "." ^ c$ $mklistexp _loc al$ >>
       | <:expr< $lid:f$ >> ->
           let al = List.map quot_expr al in
           List.fold_left (fun f e -> <:expr< $f$ $e$ >>)
@@ -326,7 +326,7 @@ value rec quot_expr e =
                <:expr< ($lab$, $quot_expr e$) >>)
             pel
         in
-        <:expr< Qast.Record $mklistexp loc lel$>>
+        <:expr< Qast.Record $mklistexp _loc lel$>>
       with
       [ Not_found -> e ]
   | <:expr< $lid:s$ >> ->
@@ -337,7 +337,7 @@ value rec quot_expr e =
   | <:expr< $str:s$ >> -> <:expr< Qast.Str $str:s$ >>
   | <:expr< ($list:el$) >> ->
       let el = List.map quot_expr el in
-      <:expr< Qast.Tuple $mklistexp loc el$ >>
+      <:expr< Qast.Tuple $mklistexp _loc el$ >>
   | <:expr< let $opt:r$ $list:pel$ in $e$ >> ->
       let pel = List.map (fun (p, e) -> (p, quot_expr e)) pel in
       <:expr< let $opt:r$ $list:pel$ in $quot_expr e$ >>
@@ -361,7 +361,7 @@ value quotify_action psl act =
     (fun e ps ->
        match ps.pattern with
        [ Some <:patt< ($list:pl$) >> ->
-           let loc =
+           let _loc =
              let nowhere =
                { (Lexing.dummy_pos) with Lexing.pos_lnum = 1; Lexing.pos_cnum = 0 } in
                (nowhere, nowhere) in
@@ -380,7 +380,7 @@ value quotify_action psl act =
            <:expr<
               let ($list:pl$) =
                 match $lid:pname$ with
-                [ Qast.Tuple $mklistpat loc pl1$ -> ($list:el1$)
+                [ Qast.Tuple $mklistpat _loc pl1$ -> ($list:el1$)
                 | _ -> match () with [] ]
               in $e$ >>
        | _ -> e ])
@@ -389,12 +389,12 @@ value quotify_action psl act =
 
 value rec make_ctyp styp tvar =
   match styp with
-  [ STlid loc s -> <:ctyp< $lid:s$ >>
-  | STapp loc t1 t2 -> <:ctyp< $make_ctyp t1 tvar$ $make_ctyp t2 tvar$ >>
-  | STquo loc s -> <:ctyp< '$s$ >>
-  | STself loc x ->
+  [ STlid _loc s -> <:ctyp< $lid:s$ >>
+  | STapp _loc t1 t2 -> <:ctyp< $make_ctyp t1 tvar$ $make_ctyp t2 tvar$ >>
+  | STquo _loc s -> <:ctyp< '$s$ >>
+  | STself _loc x ->
       if tvar = "" then
-        Stdpp.raise_with_loc loc
+        Stdpp.raise_with_loc _loc
           (Stream.Error ("'" ^ x ^  "' illegal in anonymous entry level"))
       else <:ctyp< '$tvar$ >>
   | STtyp t -> t ]
@@ -402,7 +402,7 @@ value rec make_ctyp styp tvar =
 
 value rec make_expr gmod tvar =
   fun
-  [ TXmeta loc n tl e t ->
+  [ TXmeta _loc n tl e t ->
       let el =
         List.fold_right
           (fun t el -> <:expr< [$make_expr gmod "" t$ :: $el$] >>)
@@ -410,7 +410,7 @@ value rec make_expr gmod tvar =
       in
       <:expr<
         Gramext.Smeta $str:n$ $el$ (Obj.repr ($e$ : $make_ctyp t tvar$)) >>
-  | TXlist loc min t ts ->
+  | TXlist _loc min t ts ->
       let txt = make_expr gmod "" t in
       match (min, ts) with
       [ (False, None) -> <:expr< Gramext.Slist0 $txt$ >>
@@ -421,8 +421,8 @@ value rec make_expr gmod tvar =
       | (True, Some s) ->
           let x = make_expr gmod tvar s in
           <:expr< Gramext.Slist1sep $txt$ $x$ >> ]
-  | TXnext loc -> <:expr< Gramext.Snext >>
-  | TXnterm loc n lev ->
+  | TXnext _loc -> <:expr< Gramext.Snext >>
+  | TXnterm _loc n lev ->
       match lev with
       [ Some lab ->
           <:expr<
@@ -436,12 +436,12 @@ value rec make_expr gmod tvar =
                Gramext.Snterm
                  ($uid:gmod$.Entry.obj
                     ($n.expr$ : $uid:gmod$.Entry.e '$n.tvar$)) >> ]
-  | TXopt loc t -> <:expr< Gramext.Sopt $make_expr gmod "" t$ >>
-  | TXrules loc rl ->
-      <:expr< Gramext.srules $make_expr_rules loc gmod rl ""$ >>
-  | TXself loc -> <:expr< Gramext.Sself >>
-  | TXtok loc s e -> <:expr< Gramext.Stoken ($str:s$, $e$) >> ]
-and make_expr_rules loc gmod rl tvar =
+  | TXopt _loc t -> <:expr< Gramext.Sopt $make_expr gmod "" t$ >>
+  | TXrules _loc rl ->
+      <:expr< Gramext.srules $make_expr_rules _loc gmod rl ""$ >>
+  | TXself _loc -> <:expr< Gramext.Sself >>
+  | TXtok _loc s e -> <:expr< Gramext.Stoken ($str:s$, $e$) >> ]
+and make_expr_rules _loc gmod rl tvar =
   List.fold_left
     (fun txt (sl, ac) ->
        let sl =
@@ -455,7 +455,7 @@ and make_expr_rules loc gmod rl tvar =
     <:expr< [] >> rl
 ;
 
-value text_of_action loc psl rtvar act tvar =
+value text_of_action _loc psl rtvar act tvar =
   let locid = <:patt< $lid:Stdpp.loc_name.val$ >> in
   let act =
     match act with
@@ -496,7 +496,7 @@ value srules loc t rl tvar =
     rl
 ;
 
-value expr_of_delete_rule loc gmod n sl =
+value expr_of_delete_rule _loc gmod n sl =
   let sl =
     List.fold_right
       (fun s e -> <:expr< [$make_expr gmod "" s.text$ :: $e$] >>) sl
@@ -524,9 +524,9 @@ value slist loc min sep symb =
   TXlist loc min symb.text t
 ;
 
-value sstoken loc s =
-  let n = mk_name loc <:expr< $lid:"a_" ^ s$ >> in
-  TXnterm loc n None
+value sstoken _loc s =
+  let n = mk_name _loc <:expr< $lid:"a_" ^ s$ >> in
+  TXnterm _loc n None
 ;
 
 value mk_psymbol p s t =
@@ -534,20 +534,20 @@ value mk_psymbol p s t =
   {pattern = Some p; symbol = symb}
 ;
 
-value sslist loc min sep s =
+value sslist _loc min sep s =
   let rl =
     let r1 =
       let prod =
-        let n = mk_name loc <:expr< a_list >> in
-        [mk_psymbol <:patt< a >> (TXnterm loc n None) (STquo loc "a_list")]
+        let n = mk_name _loc <:expr< a_list >> in
+        [mk_psymbol <:patt< a >> (TXnterm _loc n None) (STquo _loc "a_list")]
       in
       let act = <:expr< a >> in
       {prod = prod; action = Some act}
     in
     let r2 =
       let prod =
-        [mk_psymbol <:patt< a >> (slist loc min sep s)
-           (STapp loc (STlid loc "list") s.styp)]
+        [mk_psymbol <:patt< a >> (slist _loc min sep s)
+           (STapp _loc (STlid _loc "list") s.styp)]
       in
       let act = <:expr< Qast.List a >> in
       {prod = prod; action = Some act}
@@ -560,17 +560,17 @@ value sslist loc min sep s =
     | None -> s.used ]
   in
   let used = ["a_list" :: used] in
-  let text = TXrules loc (srules loc "a_list" rl "") in
-  let styp = STquo loc "a_list" in
+  let text = TXrules _loc (srules _loc "a_list" rl "") in
+  let styp = STquo _loc "a_list" in
   {used = used; text = text; styp = styp}
 ;
 
-value ssopt loc s =
+value ssopt _loc s =
   let rl =
     let r1 =
       let prod =
-        let n = mk_name loc <:expr< a_opt >> in
-        [mk_psymbol <:patt< a >> (TXnterm loc n None) (STquo loc "a_opt")]
+        let n = mk_name _loc <:expr< a_opt >> in
+        [mk_psymbol <:patt< a >> (TXnterm _loc n None) (STquo _loc "a_opt")]
       in
       let act = <:expr< a >> in
       {prod = prod; action = Some act}
@@ -578,19 +578,19 @@ value ssopt loc s =
     let r2 =
       let s =
         match s.text with
-        [ TXtok loc "" <:expr< $str:_$ >> ->
+        [ TXtok _loc "" <:expr< $str:_$ >> ->
             let rl =
               [{prod = [{pattern = Some <:patt< x >>; symbol = s}];
                 action = Some <:expr< Qast.Str x >>}]
             in
             let t = new_type_var () in
-            {used = []; text = TXrules loc (srules loc t rl "");
-             styp = STquo loc t}
+            {used = []; text = TXrules _loc (srules _loc t rl "");
+             styp = STquo _loc t}
         | _ -> s ]
       in
       let prod =
-        [mk_psymbol <:patt< a >> (TXopt loc s.text)
-           (STapp loc (STlid loc "option") s.styp)]
+        [mk_psymbol <:patt< a >> (TXopt _loc s.text)
+           (STapp _loc (STlid _loc "option") s.styp)]
       in
       let act = <:expr< Qast.Option a >> in
       {prod = prod; action = Some act}
@@ -598,15 +598,15 @@ value ssopt loc s =
     [r1; r2]
   in
   let used = ["a_opt" :: s.used] in
-  let text = TXrules loc (srules loc "a_opt" rl "") in
-  let styp = STquo loc "a_opt" in
+  let text = TXrules _loc (srules _loc "a_opt" rl "") in
+  let styp = STquo _loc "a_opt" in
   {used = used; text = text; styp = styp}
 ;
 
-value text_of_entry loc gmod e =
+value text_of_entry _loc gmod e =
   let ent =
     let x = e.name in
-    let loc = e.name.loc in
+    let _loc = e.name.loc in
     <:expr< ($x.expr$ : $uid:gmod$.Entry.e '$x.tvar$) >>
   in
   let pos =
@@ -628,8 +628,8 @@ value text_of_entry loc gmod e =
            | None -> <:expr< None >> ]
          in
          let txt =
-           let rl = srules loc e.name.tvar level.rules e.name.tvar in
-           let e = make_expr_rules loc gmod rl e.name.tvar in
+           let rl = srules _loc e.name.tvar level.rules e.name.tvar in
+           let e = make_expr_rules _loc gmod rl e.name.tvar in
            <:expr< [($lab$, $ass$, $e$) :: $txt$] >>
          in
          txt)
@@ -638,7 +638,7 @@ value text_of_entry loc gmod e =
   (ent, pos, txt)
 ;
 
-value let_in_of_extend loc gmod functor_version gl el args =
+value let_in_of_extend _loc gmod functor_version gl el args =
   match gl with
   [ Some ([n1 :: _] as nl) ->
       do {
@@ -657,13 +657,13 @@ value let_in_of_extend loc gmod functor_version gl el args =
         in
         let globals =
           List.map
-            (fun {expr = e; tvar = x; loc = loc} ->
+            (fun {expr = e; tvar = x; loc = _loc} ->
                (<:patt< _ >>, <:expr< ($e$ : $uid:gmod$.Entry.e '$x$) >>))
             nl
         in
         let locals =
           List.map
-            (fun {expr = e; tvar = x; loc = loc} ->
+            (fun {expr = e; tvar = x; loc = _loc} ->
                let i =
                  match e with
                  [ <:expr< $lid:i$ >> -> i
@@ -691,7 +691,7 @@ value let_in_of_extend loc gmod functor_version gl el args =
   | _ -> args ]
 ;
 
-value text_of_extend loc gmod gl el f =
+value text_of_extend _loc gmod gl el f =
   if split_ext.val then
     let args =
       List.map
@@ -703,7 +703,7 @@ value text_of_extend loc gmod gl el f =
         el
     in
     let args = <:expr< do { $list:args$ } >> in
-    let_in_of_extend loc gmod False gl el args
+    let_in_of_extend _loc gmod False gl el args
   else
     let args =
       List.fold_right
@@ -714,11 +714,11 @@ value text_of_extend loc gmod gl el f =
            <:expr< [$e$ :: $el$] >>)
         el <:expr< [] >>
     in
-    let args = let_in_of_extend loc gmod False gl el args in
+    let args = let_in_of_extend _loc gmod False gl el args in
     <:expr< $f$ $args$ >>
 ;
 
-value text_of_functorial_extend loc gmod gl el =
+value text_of_functorial_extend _loc gmod gl el =
   let args =
     let el =
       List.map
@@ -730,7 +730,7 @@ value text_of_functorial_extend loc gmod gl el =
     in
     <:expr< do { $list:el$ } >>
   in
-  let_in_of_extend loc gmod True gl el args
+  let_in_of_extend _loc gmod True gl el args
 ;
 
 value zero_loc = {(Lexing.dummy_pos) with Lexing.pos_cnum = 0};
@@ -755,20 +755,20 @@ EXTEND
   extend_body:
     [ [ f = efunction; sl = OPT global;
         el = LIST1 [ e = entry; semi_sep -> e ] ->
-          text_of_extend loc "Grammar" sl el f ] ]
+          text_of_extend _loc "Grammar" sl el f ] ]
   ;
   gextend_body:
     [ [ g = UIDENT; sl = OPT global; el = LIST1 [ e = entry; semi_sep -> e ] ->
-          text_of_functorial_extend loc g sl el ] ]
+          text_of_functorial_extend _loc g sl el ] ]
   ;
   delete_rule_body:
     [ [ n = name; ":"; sl = LIST1 symbol SEP semi_sep ->
-          let (e, b) = expr_of_delete_rule loc "Grammar" n sl in
+          let (e, b) = expr_of_delete_rule _loc "Grammar" n sl in
           <:expr< Grammar.delete_rule $e$ $b$ >> ] ]
   ;
   gdelete_rule_body:
     [ [ g = UIDENT; n = name; ":"; sl = LIST1 symbol SEP semi_sep ->
-          let (e, b) = expr_of_delete_rule loc g n sl in
+          let (e, b) = expr_of_delete_rule _loc g n sl in
           <:expr< $uid:g$.delete_rule $e$ $b$ >> ] ]
   ;
   efunction:
@@ -804,7 +804,7 @@ EXTEND
   rule_list:
     [ [ "["; "]" -> []
       | "["; rules = LIST1 rule SEP "|"; "]" -> 
-          retype_rule_list_without_patterns loc rules ] ]
+          retype_rule_list_without_patterns _loc rules ] ]
   ;
   rule:
     [ [ psl = LIST0 psymbol SEP semi_sep; "->"; act = expr ->
@@ -816,9 +816,9 @@ EXTEND
     [ [ p = LIDENT; "="; s = symbol ->
           {pattern = Some <:patt< $lid:p$ >>; symbol = s}
       | i = LIDENT; lev = OPT [ UIDENT "LEVEL"; s = STRING -> s ] ->
-          let name = mk_name loc <:expr< $lid:i$ >> in
-          let text = TXnterm loc name lev in
-          let styp = STquo loc i in
+          let name = mk_name _loc <:expr< $lid:i$ >> in
+          let text = TXnterm _loc name lev in
+          let styp = STquo _loc i in
           let symb = {used = [i]; text = text; styp = styp} in
           {pattern = None; symbol = symb}
       | p = pattern; "="; s = symbol -> {pattern = Some p; symbol = s}
@@ -828,64 +828,64 @@ EXTEND
     [ "top" NONA
       [ UIDENT "LIST0"; s = SELF;
         sep = OPT [ UIDENT "SEP"; t = symbol -> t ] ->
-          if quotify.val then sslist loc False sep s
+          if quotify.val then sslist _loc False sep s
           else
             let used =
               match sep with
               [ Some symb -> symb.used @ s.used
               | None -> s.used ]
             in
-            let styp = STapp loc (STlid loc "list") s.styp in
-            let text = slist loc False sep s in
+            let styp = STapp _loc (STlid _loc "list") s.styp in
+            let text = slist _loc False sep s in
             {used = used; text = text; styp = styp}
       | UIDENT "LIST1"; s = SELF;
         sep = OPT [ UIDENT "SEP"; t = symbol -> t ] ->
-          if quotify.val then sslist loc True sep s
+          if quotify.val then sslist _loc True sep s
           else
             let used =
               match sep with
               [ Some symb -> symb.used @ s.used
               | None -> s.used ]
             in
-            let styp = STapp loc (STlid loc "list") s.styp in
-            let text = slist loc True sep s in
+            let styp = STapp _loc (STlid _loc "list") s.styp in
+            let text = slist _loc True sep s in
             {used = used; text = text; styp = styp}
       | UIDENT "OPT"; s = SELF ->
-          if quotify.val then ssopt loc s
+          if quotify.val then ssopt _loc s
           else
-            let styp = STapp loc (STlid loc "option") s.styp in
-            let text = TXopt loc s.text in
+            let styp = STapp _loc (STlid _loc "option") s.styp in
+            let text = TXopt _loc s.text in
             {used = s.used; text = text; styp = styp} ]
     | [ UIDENT "SELF" ->
-          {used = []; text = TXself loc; styp = STself loc "SELF"}
+          {used = []; text = TXself _loc; styp = STself _loc "SELF"}
       | UIDENT "NEXT" ->
-          {used = []; text = TXnext loc; styp = STself loc "NEXT"}
+          {used = []; text = TXnext _loc; styp = STself _loc "NEXT"}
       | "["; rl = LIST0 rule SEP "|"; "]" ->
-          let rl = retype_rule_list_without_patterns loc rl in
+          let rl = retype_rule_list_without_patterns _loc rl in
           let t = new_type_var () in
           {used = used_of_rule_list rl;
-           text = TXrules loc (srules loc t rl "");
-           styp = STquo loc t}
+           text = TXrules _loc (srules _loc t rl "");
+           styp = STquo _loc t}
       | x = UIDENT ->
           let text =
-            if quotify.val then sstoken loc x
-            else TXtok loc x <:expr< "" >>
+            if quotify.val then sstoken _loc x
+            else TXtok _loc x <:expr< "" >>
           in
-          {used = []; text = text; styp = STlid loc "string"}
+          {used = []; text = text; styp = STlid _loc "string"}
       | x = UIDENT; e = string ->
-          let text = TXtok loc x e in
-          {used = []; text = text; styp = STlid loc "string"}
+          let text = TXtok _loc x e in
+          {used = []; text = text; styp = STlid _loc "string"}
       | e = string ->
-          let text = TXtok loc "" e in
-          {used = []; text = text; styp = STlid loc "string"}
+          let text = TXtok _loc "" e in
+          {used = []; text = text; styp = STlid _loc "string"}
       | i = UIDENT; "."; e = qualid;
         lev = OPT [ UIDENT "LEVEL"; s = STRING -> s ] ->
-          let n = mk_name loc <:expr< $uid:i$ . $e$ >> in
-          {used = [n.tvar]; text = TXnterm loc n lev;
-           styp = STquo loc n.tvar}
+          let n = mk_name _loc <:expr< $uid:i$ . $e$ >> in
+          {used = [n.tvar]; text = TXnterm _loc n lev;
+           styp = STquo _loc n.tvar}
       | n = name; lev = OPT [ UIDENT "LEVEL"; s = STRING -> s ] ->
-          {used = [n.tvar]; text = TXnterm loc n lev;
-           styp = STquo loc n.tvar}
+          {used = [n.tvar]; text = TXnterm _loc n lev;
+           styp = STquo _loc n.tvar}
       | "("; s_t = SELF; ")" -> s_t ] ]
   ;
   pattern:
@@ -900,7 +900,7 @@ EXTEND
     | [ p = pattern -> [p] ] ]
   ;
   name:
-    [ [ e = qualid -> mk_name loc e ] ]
+    [ [ e = qualid -> mk_name _loc e ] ]
   ;
   qualid:
     [ [ e1 = SELF; "."; e2 = SELF -> <:expr< $e1$ . $e2$ >> ]
@@ -910,7 +910,7 @@ EXTEND
   string:
     [ [ s = STRING -> <:expr< $str:s$ >>
       | i = ANTIQUOT ->
-          let shift = Reloc.shift_pos (String.length "$") (fst loc) in
+          let shift = Reloc.shift_pos (String.length "$") (fst _loc) in
           let e =
             try Grammar.Entry.parse Pcaml.expr_eoi (Stream.of_string i) with
             [ Exc_located (bp, ep) exc ->

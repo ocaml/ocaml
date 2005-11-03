@@ -48,7 +48,7 @@ let bal l x d r =
 let rec add x data = function
     Empty ->
       Node(Empty, x, data, Empty, 1)
-  | Node(l, v, d, r, h) as t ->
+  | Node(l, v, d, r, h) ->
       let c = compare x v in
       if c = 0 then
         Node(l, x, data, r, h)
@@ -81,7 +81,7 @@ let rec merge t1 t2 =
 let rec remove x = function
     Empty ->
       Empty
-  | Node(l, v, d, r, h) as t ->
+  | Node(l, v, d, r, h) ->
       let c = compare x v in
       if c = 0 then
         merge l r

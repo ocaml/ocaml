@@ -4,20 +4,20 @@
 open Pcaml;
 open Pa_extend;
 
-value sfold loc n foldfun f e s =
-  let styp = STquo loc (new_type_var ()) in
+value sfold _loc n foldfun f e s =
+  let styp = STquo _loc (new_type_var ()) in
   let e = <:expr< Extfold.$lid:foldfun$ $f$ $e$ >> in
-  let t = STapp loc (STapp loc (STtyp <:ctyp< Extfold.t _ >>) s.styp) styp in
-  {used = s.used; text = TXmeta loc n [s.text] e t; styp = styp}
+  let t = STapp _loc (STapp _loc (STtyp <:ctyp< Extfold.t _ >>) s.styp) styp in
+  {used = s.used; text = TXmeta _loc n [s.text] e t; styp = styp}
 ;
 
-value sfoldsep loc n foldfun f e s sep =
-  let styp = STquo loc (new_type_var ()) in
+value sfoldsep _loc n foldfun f e s sep =
+  let styp = STquo _loc (new_type_var ()) in
   let e = <:expr< Extfold.$lid:foldfun$ $f$ $e$ >> in
   let t =
-    STapp loc (STapp loc (STtyp <:ctyp< Extfold.tsep _ >>) s.styp) styp
+    STapp _loc (STapp _loc (STtyp <:ctyp< Extfold.tsep _ >>) s.styp) styp
   in
-  {used = s.used @ sep.used; text = TXmeta loc n [s.text; sep.text] e t;
+  {used = s.used @ sep.used; text = TXmeta _loc n [s.text; sep.text] e t;
    styp = styp}
 ;
 
@@ -25,15 +25,15 @@ EXTEND
   GLOBAL: symbol;
   symbol: LEVEL "top"
     [ [ UIDENT "FOLD0"; f = simple_expr; e = simple_expr; s = SELF ->
-          sfold loc "FOLD0" "sfold0" f e s
+          sfold _loc "FOLD0" "sfold0" f e s
       | UIDENT "FOLD1"; f = simple_expr; e = simple_expr; s = SELF ->
-          sfold loc "FOLD1" "sfold1" f e s
+          sfold _loc "FOLD1" "sfold1" f e s
       | UIDENT "FOLD0"; f = simple_expr; e = simple_expr; s = SELF;
         UIDENT "SEP"; sep = symbol ->
-          sfoldsep loc "FOLD0 SEP" "sfold0sep" f e s sep
+          sfoldsep _loc "FOLD0 SEP" "sfold0sep" f e s sep
       | UIDENT "FOLD1"; f = simple_expr; e = simple_expr; s = SELF;
         UIDENT "SEP"; sep = symbol ->
-          sfoldsep loc "FOLD1 SEP" "sfold1sep" f e s sep ] ]
+          sfoldsep _loc "FOLD1 SEP" "sfold1sep" f e s sep ] ]
   ;
   simple_expr:
     [ [ i = LIDENT -> <:expr< $lid:i$ >>

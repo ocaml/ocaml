@@ -1,3 +1,4 @@
 ocamlyacc
 *.c.x
 ocamlyacc.xcoff
+version.h

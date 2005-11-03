@@ -20,10 +20,10 @@ val package_files: Format.formatter -> string list -> string -> unit
 type error =
     Illegal_renaming of string * string
   | Forward_reference of string * string
+  | Wrong_for_pack of string * string
   | Linking_error
   | Assembler_error of string
   | File_not_found of string
-  | No_binutils
 
 exception Error of error
 

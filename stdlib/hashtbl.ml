@@ -277,5 +277,3 @@ module Make(H: HashedType): (S with type key = H.t) =
     let fold = fold
     let length = length
   end
-
-(* eof $Id$ *)

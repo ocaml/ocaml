@@ -31,7 +31,7 @@ tk.ml labltk.ml .depend: _tkgen.ml ../builtin/report.ml ../compiler/pp #../built
 	 cat _tkfgen.ml; \
 	 echo ; \
 	) > _tk.ml
-	../../../boot/ocamlrun ../compiler/pp < _tk.ml > tk.ml
+	$(CAMLRUN) ../compiler/pp < _tk.ml > tk.ml
 	rm -f _tk.ml
 	$(CAMLDEP) -I ../support [a-z]*.mli [a-z]*.ml > .depend
 

@@ -217,7 +217,7 @@ void caml_empty_minor_heap (void)
 */
 CAMLexport void caml_minor_collection (void)
 {
-  long prev_alloc_words = caml_allocated_words;
+  intnat prev_alloc_words = caml_allocated_words;
 
   caml_empty_minor_heap ();
 
@@ -254,7 +254,9 @@ void caml_realloc_ref_table (void)
 
     ref_table_size *= 2;
     sz = (ref_table_size + ref_table_reserve) * sizeof (value *);
-    caml_gc_message (0x08, "Growing ref_table to %ldk bytes\n", (long) sz/1024);
+    caml_gc_message (0x08, "Growing ref_table to %" 
+                           ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
+                     (intnat) sz/1024);
     ref_table = (value **) realloc ((char *) ref_table, sz);
     if (ref_table == NULL){
       caml_fatal_error ("Fatal error: ref_table overflow\n");

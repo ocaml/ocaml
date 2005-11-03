@@ -429,8 +429,8 @@ let rec push_defaults loc bindings pat_expr_list partial =
     [pat, ({exp_desc = Texp_function(pl,partial)} as exp)] ->
       let pl = push_defaults exp.exp_loc bindings pl partial in
       [pat, {exp with exp_desc = Texp_function(pl, partial)}]
-  | [pat, ({exp_desc = Texp_let
-             (Default, cases, ({exp_desc = Texp_function _} as e2))} as e1)] ->
+  | [pat, {exp_desc = Texp_let
+             (Default, cases, ({exp_desc = Texp_function _} as e2))}] ->
       push_defaults loc (cases :: bindings) [pat, e2] partial
   | [pat, exp] ->
       let exp =
@@ -461,7 +461,7 @@ let event_before exp lam = match lam with
 | Lstaticraise (_,_) -> lam
 | _ ->
   if !Clflags.debug
-  then Levent(lam, {lev_pos = exp.exp_loc.Location.loc_start;
+  then Levent(lam, {lev_loc = exp.exp_loc;
                     lev_kind = Lev_before;
                     lev_repr = None;
                     lev_env = Env.summary exp.exp_env})
@@ -469,7 +469,7 @@ let event_before exp lam = match lam with
 
 let event_after exp lam =
   if !Clflags.debug
-  then Levent(lam, {lev_pos = exp.exp_loc.Location.loc_end;
+  then Levent(lam, {lev_loc = exp.exp_loc;
                     lev_kind = Lev_after exp.exp_type;
                     lev_repr = None;
                     lev_env = Env.summary exp.exp_env})
@@ -480,7 +480,7 @@ let event_function exp lam =
     let repr = Some (ref 0) in
     let (info, body) = lam repr in
     (info,
-     Levent(body, {lev_pos = exp.exp_loc.Location.loc_start;
+     Levent(body, {lev_loc = exp.exp_loc;
                    lev_kind = Lev_function;
                    lev_repr = repr;
                    lev_env = Env.summary exp.exp_env}))
@@ -512,6 +512,11 @@ let assert_failed loc =
                Const_base(Const_int line);
                Const_base(Const_int char)]))])])
 ;;
+
+let rec cut n l =
+  if n = 0 then ([],l) else
+  match l with [] -> failwith "Translcore.cut"
+  | a::l -> let (l1,l2) = cut (n-1) l in (a::l1,l2)
 
 (* Translation of expressions *)
 
@@ -558,8 +563,13 @@ and transl_exp0 e =
       in
       Lfunction(kind, params, body)
   | Texp_apply({exp_desc = Texp_ident(path, {val_kind = Val_prim p})}, args)
-    when List.length args = p.prim_arity
+    when List.length args >= p.prim_arity
     && List.for_all (fun (arg,_) -> arg <> None) args ->
+      let args, args' = cut p.prim_arity args in
+      let wrap f =
+        event_after e (if args' = [] then f else transl_apply f args') in
+      let wrap0 f =
+        if args' = [] then f else wrap f in
       let args = List.map (function Some x, _ -> x | _ -> assert false) args in
       let argl = transl_list args in
       let public_send = p.prim_name = "%send"
@@ -567,24 +577,23 @@ and transl_exp0 e =
       if public_send || p.prim_name = "%sendself" then
         let kind = if public_send then Public else Self in
 	let obj = List.hd argl in
-	event_after e (Lsend (kind, List.nth argl 1, obj, []))
+	wrap (Lsend (kind, List.nth argl 1, obj, []))
       else if p.prim_name = "%sendcache" then
         match argl with [obj; meth; cache; pos] ->
-          event_after e (Lsend(Cached, meth, obj, [cache; pos]))
+          wrap (Lsend(Cached, meth, obj, [cache; pos]))
         | _ -> assert false
       else begin
         let prim = transl_prim p args in
         match (prim, args) with
           (Praise, [arg1]) ->
-            Lprim(Praise, [event_after arg1 (List.hd argl)])
+            wrap0 (Lprim(Praise, [event_after arg1 (List.hd argl)]))
         | (_, _) ->
-            if primitive_is_ccall prim
-            then event_after e (Lprim(prim, argl))
-            else Lprim(prim, argl)
+            let p = Lprim(prim, argl) in
+            if primitive_is_ccall prim then wrap p else wrap0 p
       end
   | Texp_apply(funct, oargs) ->
       event_after e (transl_apply (transl_exp funct) oargs)
-  | Texp_match({exp_desc = Texp_tuple argl} as arg, pat_expr_list, partial) ->
+  | Texp_match({exp_desc = Texp_tuple argl}, pat_expr_list, partial) ->
       Matching.for_multiple_match e.exp_loc
         (transl_list argl) (transl_cases pat_expr_list) partial
   | Texp_match(arg, pat_expr_list, partial) ->

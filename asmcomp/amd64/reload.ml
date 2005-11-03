@@ -26,7 +26,8 @@ open Mach
                              or S       R
      Iconst_int                 S
      Iconst_float               R
-     Iconst_symbol              S
+     Iconst_symbol (not PIC)    S
+     Iconst_symbol (PIC)        R
      Icall_ind                          R
      Itailcall_ind                      R
      Iload                      R       R       R
@@ -72,7 +73,11 @@ method reload_operation op arg res =
       (* This add will be turned into a lea; args and results must be
          in registers *)
       super#reload_operation op arg res
-  | Iconst_int _ | Iconst_symbol _
+  | Iconst_symbol _ ->
+      if !pic_code
+      then super#reload_operation op arg res
+      else (arg, res)
+  | Iconst_int _
   | Iintop(Idiv | Imod | Ilsl | Ilsr | Iasr)
   | Iintop_imm(_, _) ->
       (* The argument(s) and results can be either in register or on stack *)

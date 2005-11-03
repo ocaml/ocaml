@@ -42,7 +42,7 @@ module Unix = struct
                     (String.length suff) = suff
   let temporary_directory =
     try Sys.getenv "TMPDIR" with Not_found -> "/tmp"
-  let quote = generic_quote "'\\''"  
+  let quote = generic_quote "'\\''"
 end
 
 module Win32 = struct
@@ -106,17 +106,17 @@ let (current_dir_name, parent_dir_name, dir_sep, is_dir_sep, rindex_dir_sep,
      is_relative, is_implicit, check_suffix, temporary_directory, quote) =
   match Sys.os_type with
     "Unix" ->
-      (Unix.current_dir_name, Unix.parent_dir_name, Unix.dir_sep, 
+      (Unix.current_dir_name, Unix.parent_dir_name, Unix.dir_sep,
        Unix.is_dir_sep, Unix.rindex_dir_sep,
        Unix.is_relative, Unix.is_implicit, Unix.check_suffix,
        Unix.temporary_directory, Unix.quote)
   | "Win32" ->
-      (Win32.current_dir_name, Win32.parent_dir_name, Win32.dir_sep, 
+      (Win32.current_dir_name, Win32.parent_dir_name, Win32.dir_sep,
        Win32.is_dir_sep, Win32.rindex_dir_sep,
        Win32.is_relative, Win32.is_implicit, Win32.check_suffix,
        Win32.temporary_directory, Win32.quote)
   | "Cygwin" ->
-      (Cygwin.current_dir_name, Cygwin.parent_dir_name, Cygwin.dir_sep, 
+      (Cygwin.current_dir_name, Cygwin.parent_dir_name, Cygwin.dir_sep,
        Cygwin.is_dir_sep, Cygwin.rindex_dir_sep,
        Cygwin.is_relative, Cygwin.is_implicit, Cygwin.check_suffix,
        Cygwin.temporary_directory, Cygwin.quote)
@@ -169,24 +169,20 @@ let temp_file_name prefix suffix =
 
 let temp_file prefix suffix =
   let rec try_name counter =
-    if counter >= 1000 then
-      invalid_arg "Filename.temp_file: temp dir nonexistent or full";
     let name = temp_file_name prefix suffix in
     try
       close_desc(open_desc name [Open_wronly; Open_creat; Open_excl] 0o600);
       name
-    with Sys_error _ ->
-      try_name (counter + 1)
+    with Sys_error _ as e ->
+      if counter >= 1000 then raise e else try_name (counter + 1)
   in try_name 0
 
 let open_temp_file ?(mode = [Open_text]) prefix suffix =
   let rec try_name counter =
-    if counter >= 1000 then
-      invalid_arg "Filename.open_temp_file: temp dir nonexistent or full";
     let name = temp_file_name prefix suffix in
     try
       (name,
        open_out_gen (Open_wronly::Open_creat::Open_excl::mode) 0o600 name)
-    with Sys_error _ ->
-      try_name (counter + 1)
+    with Sys_error _ as e ->
+      if counter >= 1000 then raise e else try_name (counter + 1)
   in try_name 0

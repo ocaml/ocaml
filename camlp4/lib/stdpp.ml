@@ -85,4 +85,4 @@ value line_of_loc fname (bp, ep) =
 ;
 *)
 
-value loc_name = ref "loc";
+value loc_name = ref "_loc";

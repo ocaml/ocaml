@@ -426,6 +426,8 @@ class virtual text =
       self#html_of_text b t;
       bs b "</sub>"
 
+    method virtual html_of_info_first_sentence : _
+
     method html_of_Module_list b l =
       bs b "<br>\n<table class=\"indextable\">\n";
       List.iter
@@ -2359,7 +2361,6 @@ class html =
 
     (** Generate the module types index in the file [index_module_types.html]. *)
     method generate_module_types_index module_list =
-      let module_types = Odoc_info.Search.module_types module_list in
       self#generate_elements_index
         self#list_module_types
         (fun mt -> mt.mt_name)
@@ -2448,6 +2449,5 @@ class html =
 	)
   end
 
-
-
 (* eof $Id$ *)
+

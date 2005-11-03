@@ -26,7 +26,7 @@
 
   word: Four bytes on 32 and 16 bit architectures,
         eight bytes on 64 bit architectures.
-  long: A C long integer.
+  long: A C integer having the same number of bytes as a word.
   val: The ML representation of something.  A long or a block or a pointer
        outside the heap.  If it is a block, it is the (encoded) address
        of an object.  If it is a long, it is encoded as well.
@@ -53,12 +53,12 @@
          This is for use only by the GC.
 */
 
-typedef long value;
-typedef unsigned long header_t;
-typedef unsigned long mlsize_t;
+typedef intnat value;
+typedef uintnat header_t;
+typedef uintnat mlsize_t;
 typedef unsigned int tag_t;             /* Actually, an unsigned char */
-typedef unsigned long color_t;
-typedef unsigned long mark_t;
+typedef uintnat color_t;
+typedef uintnat mark_t;
 
 /* Longs vs blocks. */
 #define Is_long(x)   (((x) & 1) != 0)
@@ -66,13 +66,13 @@ typedef unsigned long mark_t;
 
 /* Conversion macro names are always of the form  "to_from". */
 /* Example: Val_long as in "Val from long" or "Val of long". */
-#define Val_long(x)     (((long)(x) << 1) + 1)
+#define Val_long(x)     (((intnat)(x) << 1) + 1)
 #define Long_val(x)     ((x) >> 1)
 #define Max_long ((1L << (8 * sizeof(value) - 2)) - 1)
 #define Min_long (-(1L << (8 * sizeof(value) - 2)))
 #define Val_int(x) Val_long(x)
 #define Int_val(x) ((int) Long_val(x))
-#define Unsigned_long_val(x) ((unsigned long)(x) >> 1)
+#define Unsigned_long_val(x) ((uintnat)(x) >> 1)
 #define Unsigned_int_val(x)  ((int) Unsigned_long_val(x))
 
 /* Structure of the header:
@@ -254,7 +254,7 @@ struct custom_operations;       /* defined in [custom.h] */
 /* Int32.t, Int64.t and Nativeint.t are represented as custom blocks. */
 
 #define Int32_val(v) (*((int32 *) Data_custom_val(v)))
-#define Nativeint_val(v) (*((long *) Data_custom_val(v)))
+#define Nativeint_val(v) (*((intnat *) Data_custom_val(v)))
 #ifndef ARCH_ALIGN_INT64
 #define Int64_val(v) (*((int64 *) Data_custom_val(v)))
 #else

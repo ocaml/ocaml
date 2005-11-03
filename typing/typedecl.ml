@@ -40,6 +40,7 @@ type error =
   | Not_an_exception of Longident.t
   | Bad_variance of int * (bool*bool) * (bool*bool)
   | Unavailable_type_constructor of Path.t
+  | Bad_fixed_type of string
 
 exception Error of Location.t * error
 
@@ -80,6 +81,29 @@ let is_float env ty =
     {desc = Tconstr(p, _, _)} -> Path.same p Predef.path_float
   | _ -> false
 
+(* Set the row variable in a fixed type *)
+let set_fixed_row env loc p decl =
+  let tm =
+    match decl.type_manifest with
+      None -> assert false
+    | Some t -> Ctype.expand_head env t
+  in
+  let rv =
+    match tm.desc with
+      Tvariant row ->
+        let row = Btype.row_repr row in
+        tm.desc <- Tvariant {row with row_fixed = true};
+        if Btype.static_row row then Btype.newgenty Tnil
+        else row.row_more
+    | Tobject (ty, _) ->
+        snd (Ctype.flatten_fields ty)
+    | _ ->
+        raise (Error (loc, Bad_fixed_type "is not an object or variant"))
+  in
+  if rv.desc <> Tvar then
+    raise (Error (loc, Bad_fixed_type "has no row variable"));
+  rv.desc <- Tconstr (p, decl.type_params, ref Mnil)
+
 (* Translate one type declaration *)
 
 module StringSet =
@@ -108,34 +132,34 @@ let transl_declaration env exts (name, sdecl) id =
       type_arity = List.length params;
       type_kind =
         begin match sdecl.ptype_kind with
-          Ptype_abstract ->
+          Ptype_abstract | Ptype_private ->
             Type_abstract
         | Ptype_variant (cstrs, priv) ->
             let all_constrs = ref StringSet.empty in
             List.iter
-              (fun (name, args) ->
+              (fun (name, args, loc) ->
                 if StringSet.mem name !all_constrs then
                   raise(Error(sdecl.ptype_loc, Duplicate_constructor name));
                 all_constrs := StringSet.add name !all_constrs)
               cstrs;
-            if List.length (List.filter (fun (name, args) -> args <> []) cstrs)
+            if List.length (List.filter (fun (_, args, _) -> args <> []) cstrs)
                > (Config.max_tag + 1) then
               raise(Error(sdecl.ptype_loc, Too_many_constructors));
             Type_variant(List.map
-              (fun (name, args) ->
+              (fun (name, args, loc) ->
                       (name, List.map (transl_simple_type env true) args))
               cstrs, priv)
         | Ptype_record (lbls, priv) ->
             let all_labels = ref StringSet.empty in
             List.iter
-              (fun (name, mut, arg) ->
+              (fun (name, mut, arg, loc) ->
                 if StringSet.mem name !all_labels then
                   raise(Error(sdecl.ptype_loc, Duplicate_label name));
                 all_labels := StringSet.add name !all_labels)
               lbls;
             let lbls' =
               List.map
-                (fun (name, mut, arg) ->
+                (fun (name, mut, arg, loc) ->
                   let ty = transl_simple_type env true arg in
                   name, mut, match ty.desc with Tpoly(t,[]) -> t | _ -> ty)
                 lbls in
@@ -151,7 +175,8 @@ let transl_declaration env exts (name, sdecl) id =
 	| Some { ptyp_desc = Ptyp_ext t } ->
 	    Some (List.assq id exts)
         | Some sty ->
-            let ty = transl_simple_type env true sty in
+            let ty =
+              transl_simple_type env (sdecl.ptype_kind <> Ptype_private) sty in
             if Ctype.cyclic_abbrev env id ty then
               raise(Error(sdecl.ptype_loc, Recursive_abbrev name));
             Some ty
@@ -166,7 +191,12 @@ let transl_declaration env exts (name, sdecl) id =
         raise(Error(loc, Unconsistent_constraint tr)))
     cstrs;
   Ctype.end_def ();
-
+  if sdecl.ptype_kind = Ptype_private then begin
+    let (p, _) =
+      try Env.lookup_type (Longident.Lident(Ident.name id ^ "#row")) env
+      with Not_found -> assert false in
+    set_fixed_row env sdecl.ptype_loc p decl
+  end;
   (id, decl)
 
 (* Generalize a type declaration *)
@@ -224,12 +254,14 @@ let check_constraints env (_, sdecl) (_, decl) =
   | Type_variant (l, _) ->
       let rec find_pl = function
           Ptype_variant(pl, _) -> pl
-        | Ptype_record _ | Ptype_abstract -> assert false
+        | Ptype_record _ | Ptype_abstract | Ptype_private -> assert false
       in
       let pl = find_pl sdecl.ptype_kind in
       List.iter
         (fun (name, tyl) ->
-          let styl = try List.assoc name pl with Not_found -> assert false in
+          let styl =
+            try let (_,sty,_) = List.find (fun (n,_,_) -> n = name) pl in sty
+            with Not_found -> assert false in
           List.iter2
             (fun sty ty ->
               check_constraints_rec env sty.ptyp_loc visited ty)
@@ -238,12 +270,12 @@ let check_constraints env (_, sdecl) (_, decl) =
   | Type_record (l, _, _) ->
       let rec find_pl = function
           Ptype_record(pl, _) -> pl
-        | Ptype_variant _ | Ptype_abstract -> assert false
+        | Ptype_variant _ | Ptype_abstract | Ptype_private -> assert false
       in
       let pl = find_pl sdecl.ptype_kind in
       let rec get_loc name = function
           [] -> assert false
-        | (name', _, sty) :: tl ->
+        | (name', _, sty, _) :: tl ->
             if name = name' then sty.ptyp_loc else get_loc name tl
       in
       List.iter
@@ -303,20 +335,20 @@ let check_recursion env loc path decl to_check =
       | Tconstr(path', args', _) ->
           if Path.same path path' then begin
             if not (Ctype.equal env false args args') then
-              raise (Error(loc, 
+              raise (Error(loc,
                      Parameters_differ(cpath, ty, Ctype.newconstr path args)))
           end
           (* Attempt to expand a type abbreviation if:
               1- [to_check path'] holds
                  (otherwise the expansion cannot involve [path]);
               2- we haven't expanded this type constructor before
-                 (otherwise we could loop if [path'] is itself 
+                 (otherwise we could loop if [path'] is itself
                  a non-regular abbreviation). *)
           else if to_check path' && not (List.mem path' prev_exp) then begin
             try
               (* Attempt expansion *)
               let (params0, body0) = Env.find_type_expansion path' env in
-              let (params, body) = 
+              let (params, body) =
                 Ctype.instance_parameterized_type params0 body0 in
               begin
                 try List.iter2 (Ctype.unify env) params args'
@@ -386,7 +418,7 @@ let compute_variance env tvl nega posi cntr ty =
                   compute_variance_rec
                     (posi && co || nega && cn)
                     (posi && cn || nega && co)
-		    (cntr || ct)
+                    (cntr || ct)
                     ty)
                 tl decl.type_variance
             with Not_found ->
@@ -459,22 +491,30 @@ let compute_variance_decl env check decl (required, loc) =
   | Type_variant (tll, _) ->
       List.iter
         (fun (_,tl) ->
-	  List.iter (compute_variance env tvl true false false) tl)
+          List.iter (compute_variance env tvl true false false) tl)
         tll
   | Type_record (ftl, _, _) ->
       List.iter
         (fun (_, mut, ty) ->
-	  let cn = (mut = Mutable) in
-	  compute_variance env tvl true cn cn ty)
+          let cn = (mut = Mutable) in
+          compute_variance env tvl true cn cn ty)
         ftl
   end;
-  let required =
+  let priv =
+    match decl.type_kind with
+      Type_abstract ->
+        begin match decl.type_manifest with
+          Some ty when not (Btype.has_constr_row ty) -> Public
+        | _ -> Private
+        end
+    | Type_variant (_, priv) | Type_record (_, _, priv) -> priv
+  and required =
     List.map (fun (c,n as r) -> if c || n then r else (true,true))
       required
   in
   List.iter2
     (fun (ty, co, cn, ct) (c, n) ->
-      if ty.desc <> Tvar then begin
+      if ty.desc <> Tvar || priv = Private then begin
         co := c; cn := n; ct := n;
         compute_variance env tvl2 c n n ty
       end)
@@ -537,13 +577,37 @@ let init_variance (id, decl) =
   List.map (fun _ -> (false, false, false)) decl.type_params
 
 (* for typeclass.ml *)
-let compute_variance_decls env decls =
-  let decls, required = List.split decls in
+let compute_variance_decls env cldecls =
+  let decls, required =
+    List.fold_right
+      (fun (obj_id, obj_abbr, cl_abbr, clty, cltydef, required) (decls, req) ->
+        (obj_id, obj_abbr) :: decls, required :: req)
+      cldecls ([],[])
+  in
   let variances = List.map init_variance decls in
-  fst (compute_variance_fixpoint env decls required variances)
+  let (decls, _) = compute_variance_fixpoint env decls required variances in
+  List.map2
+    (fun (_,decl) (_, _, cl_abbr, clty, cltydef, _) ->
+      let variance = List.map (fun (c,n,t) -> (c,n)) decl.type_variance in
+      (decl, {cl_abbr with type_variance = decl.type_variance},
+       {clty with cty_variance = variance},
+       {cltydef with clty_variance = variance}))
+    decls cldecls
 
 (* Translate a set of mutually recursive type declarations *)
 let transl_type_decl env name_sdecl_list =
+  (* Add dummy types for fixed rows *)
+  let fixed_types =
+    List.filter (fun (_,sd) -> sd.ptype_kind = Ptype_private) name_sdecl_list
+  in
+  let name_sdecl_list =
+    List.map
+      (fun (name,sdecl) ->
+        name^"#row",
+        {sdecl with ptype_kind = Ptype_abstract; ptype_manifest = None})
+      fixed_types
+    @ name_sdecl_list
+  in
   (* Create identifiers. *)
   let id_list =
     List.map (fun (name, _) -> Ident.create name) name_sdecl_list
@@ -650,7 +714,7 @@ let transl_value_decl env valdecl =
 
 (* Translate a "with" constraint -- much simplified version of
     transl_type_decl. *)
-let transl_with_constraint env sdecl =
+let transl_with_constraint env row_path sdecl =
   reset_type_variables();
   Ctype.begin_def();
   let params =
@@ -666,6 +730,7 @@ let transl_with_constraint env sdecl =
        with Ctype.Unify tr ->
          raise(Error(loc, Unconsistent_constraint tr)))
     sdecl.ptype_cstrs;
+  let no_row = sdecl.ptype_kind <> Ptype_private in
   let decl =
     { type_params = params;
       type_arity = List.length params;
@@ -673,11 +738,15 @@ let transl_with_constraint env sdecl =
       type_manifest =
         begin match sdecl.ptype_manifest with
           None -> None
-        | Some sty -> Some(transl_simple_type env true sty)
+        | Some sty ->
+            Some(transl_simple_type env no_row sty)
         end;
       type_variance = [];
     }
   in
+  begin match row_path with None -> ()
+  | Some p -> set_fixed_row env sdecl.ptype_loc p decl
+  end;
   begin match Ctype.closed_type_decl decl with None -> ()
   | Some ty -> raise(Error(sdecl.ptype_loc, Unbound_type_var(ty,decl)))
   end;
@@ -707,7 +776,7 @@ let abstract_type_decl arity =
 
 let approx_type_decl env name_sdecl_list =
   List.map
-    (fun (name, sdecl) -> 
+    (fun (name, sdecl) ->
       (Ident.create name,
        abstract_type_decl (List.length sdecl.ptype_params)))
     name_sdecl_list
@@ -840,3 +909,5 @@ let report_error ppf = function
           "but it is" (variance v1)
   | Unavailable_type_constructor p ->
       fprintf ppf "The definition of type %a@ is unavailable" Printtyp.path p
+  | Bad_fixed_type r ->
+      fprintf ppf "This fixed type %s" r

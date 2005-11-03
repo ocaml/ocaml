@@ -28,7 +28,7 @@ static value alloc_process_status(HANDLE pid, int status)
   Field(st, 0) = Val_int(status);
   Begin_root (st);
     res = alloc_small(2, 0);
-    Field(res, 0) = Val_long((long) pid);
+    Field(res, 0) = Val_long((intnat) pid);
     Field(res, 1) = st;
   End_roots();
   return res;

@@ -106,6 +106,37 @@ CAMLprim value caml_format_float(value fmt, value arg)
   return res;
 }
 
+/*CAMLprim*/ value caml_float_of_substring(value vs, value idx, value l)
+{
+  char parse_buffer[64];
+  char * buf, * src, * dst, * end;
+  mlsize_t len, lenvs;
+  double d;
+  intnat flen = Long_val(l);
+  intnat fidx = Long_val(idx);
+
+  lenvs = caml_string_length(vs);
+  len =
+    fidx >= 0 && fidx < lenvs && flen > 0 && flen <= lenvs - fidx
+    ? flen : 0;
+  buf = len < sizeof(parse_buffer) ? parse_buffer : caml_stat_alloc(len + 1);
+  src = String_val(vs) + fidx;
+  dst = buf;
+  while (len--) {
+    char c = *src++;
+    if (c != '_') *dst++ = c;
+  }
+  *dst = 0;
+  if (dst == buf) goto error;
+  d = strtod((const char *) buf, &end);
+  if (end != dst) goto error;
+  if (buf != parse_buffer) caml_stat_free(buf);
+  return caml_copy_double(d);
+ error:
+  if (buf != parse_buffer) caml_stat_free(buf);
+  caml_failwith("float_of_string");
+}
+
 CAMLprim value caml_float_of_string(value vs)
 {
   char parse_buffer[64];
@@ -122,16 +153,19 @@ CAMLprim value caml_float_of_string(value vs)
     if (c != '_') *dst++ = c;
   }
   *dst = 0;
-  if (dst == buf) caml_failwith("float_of_string");
+  if (dst == buf) goto error;
   d = strtod((const char *) buf, &end);
+  if (end != dst) goto error;
   if (buf != parse_buffer) caml_stat_free(buf);
-  if (end != dst) caml_failwith("float_of_string");
   return caml_copy_double(d);
+ error:
+  if (buf != parse_buffer) caml_stat_free(buf);
+  caml_failwith("float_of_string");
 }
 
 CAMLprim value caml_int_of_float(value f)
 {
-  return Val_long((long) Double_val(f));
+  return Val_long((intnat) Double_val(f));
 }
 
 CAMLprim value caml_float_of_int(value n)

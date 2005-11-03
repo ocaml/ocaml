@@ -93,8 +93,8 @@ extern void caml_ext_table_free(struct ext_table * tbl, int free_entries);
 
 /* GC flags and messages */
 
-extern unsigned long caml_verb_gc;
-void caml_gc_message (int, char *, unsigned long);
+extern uintnat caml_verb_gc;
+void caml_gc_message (int, char *, uintnat);
 
 /* Memory routines */
 
@@ -103,10 +103,10 @@ char *caml_aligned_malloc (asize_t, int, void **);
 #ifdef DEBUG
 #ifdef ARCH_SIXTYFOUR
 #define Debug_tag(x) (0xD700D7D7D700D6D7ul \
-                      | ((unsigned long) (x) << 16) \
-                      | ((unsigned long) (x) << 48))
+                      | ((uintnat) (x) << 16) \
+                      | ((uintnat) (x) << 48))
 #else
-#define Debug_tag(x) (0xD700D6D7ul | ((unsigned long) (x) << 16))
+#define Debug_tag(x) (0xD700D6D7ul | ((uintnat) (x) << 16))
 #endif /* ARCH_SIXTYFOUR */
 
 /*

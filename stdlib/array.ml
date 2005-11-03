@@ -29,7 +29,7 @@ let init l f =
    for i = 1 to pred l do
      unsafe_set res i (f i)
    done;
-   res 
+   res
 
 let make_matrix sx sy init =
   let res = create sx [||] in
@@ -54,8 +54,8 @@ let append a1 a2 =
   let l1 = length a1 and l2 = length a2 in
   if l1 = 0 && l2 = 0 then [||] else begin
     let r = create (l1 + l2) (unsafe_get (if l1 > 0 then a1 else a2) 0) in
-    for i = 0 to l1 - 1 do unsafe_set r i (unsafe_get a1 i) done;  
-    for i = 0 to l2 - 1 do unsafe_set r (i + l1) (unsafe_get a2 i) done;  
+    for i = 0 to l1 - 1 do unsafe_set r i (unsafe_get a1 i) done;
+    for i = 0 to l2 - 1 do unsafe_set r (i + l1) (unsafe_get a2 i) done;
     r
   end
 
@@ -67,7 +67,7 @@ let concat_aux init al =
   let res = create (size 0 al) init in
   let rec fill pos = function
     | [] -> ()
-    | h::t -> 
+    | h::t ->
         for i = 0 to length h - 1 do
           unsafe_set res (pos + i) (unsafe_get h i);
         done;

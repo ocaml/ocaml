@@ -28,10 +28,10 @@ UTILS=cduce_types.cmo utils/misc.cmo utils/tbl.cmo utils/config.cmo \
 OPTUTILS=$(UTILS)
 
 PARSING=parsing/linenum.cmo parsing/location.cmo parsing/longident.cmo \
-  parsing/syntaxerr.cmo parsing/parser.cmo \
+  parsing/syntaxerr.cmo parsing/xparser.cmo parsing/parser.cmo \
   parsing/lexer.cmo parsing/parse.cmo parsing/printast.cmo
 
-TYPING=typing/ident.cmo typing/path.cmo \
+TYPING=typing/unused_var.cmo typing/ident.cmo typing/path.cmo \
   typing/primitive.cmo typing/types.cmo \
   typing/btype.cmo typing/oprint.cmo \
   typing/subst.cmo typing/predef.cmo \
@@ -330,14 +330,19 @@ include .depend.ocamlduce
 # The pack'ed modules from CDuce
 
 cduce_types.cmi cduce_types.cmo:
-	$(MAKE) -f Makefile.ocamlduce INCLUDES="-I stdlib/cduce" $(CDUCE)
+	$(MAKE) -f Makefile.ocamlduce INCLUDES="-I stdlib/cduce" \
+           CAMLC="$(CAMLC) -for-pack Cduce_types" \
+           $(CDUCE)
 	rm -f cduce_types.mli cduce_types.cmi
-	$(CAMLC) -pack -o cduce_types.cmo $(CDUCE)
+	$(CAMLC) -pack -o cduce_types.cmo -I stdlib/cduce $(CDUCE)
 
 cduce_types.cmx:
-	$(MAKE) -f Makefile.ocamlduce INCLUDES="-I stdlib/cduce" $(CDUCE:.cmo=.cmx)
+	$(MAKE) -f Makefile.ocamlduce INCLUDES="-I stdlib/cduce" \
+           CAMLC="$(CAMLC) -for-pack Cduce_types" \
+           CAMLOPT="$(CAMLOPT) -for-pack Cduce_types" \
+           $(CDUCE:.cmo=.cmx)
 	rm -f cduce_types.mli cduce_types.cmi
-	$(CAMLOPT) -pack -o cduce_types.cmx $(CDUCE:.cmo=.cmx)
+	$(CAMLOPT) -pack -o cduce_types.cmx -I stdlib/cduce $(CDUCE:.cmo=.cmx)
 
 clean::
 	rm -f cduce_types.*
@@ -369,7 +374,8 @@ CAMLDEP_IMPORTS=cduce_types.cmo \
   utils/terminfo.cmo \
   parsing/linenum.cmo utils/warnings.cmo parsing/location.cmo \
   parsing/longident.cmo \
-  parsing/syntaxerr.cmo parsing/parser.cmo parsing/lexer.cmo parsing/parse.cmo
+  parsing/syntaxerr.cmo parsing/xparser.cmo \
+  parsing/parser.cmo parsing/lexer.cmo parsing/parse.cmo
 
 ocamlducedep: tools/depend.cmi $(CAMLDEP_OBJ)
 	$(CAMLC) $(LINKFLAGS) -o ocamlducedep nums.cma $(CAMLDEP_IMPORTS) $(CAMLDEP_OBJ)

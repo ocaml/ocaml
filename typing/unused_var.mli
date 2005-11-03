@@ -12,4 +12,8 @@
 
 (* $Id$ *)
 
-val warn : Format.formatter -> Parsetree.structure -> Parsetree.structure;;
+val warn1 : Parsetree.structure -> Parsetree.structure;;
+val warn2 : Format.formatter -> 'a -> 'a
+val warn  : Format.formatter -> Parsetree.structure -> Parsetree.structure
+
+

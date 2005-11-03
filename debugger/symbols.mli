@@ -42,3 +42,5 @@ val event_at_pos : string -> int -> Instruct.debug_event
 (* --- Raise `Not_found' if no such event. *)
 val event_near_pos : string -> int -> Instruct.debug_event
 
+(* Recompute the current event *)
+val update_current_event : unit -> unit

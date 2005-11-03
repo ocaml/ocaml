@@ -143,6 +143,7 @@ OCAMLCMOFILES=\
 	$(OCAMLSRCDIR)/parsing/location.cmo\
 	$(OCAMLSRCDIR)/parsing/longident.cmo \
 	$(OCAMLSRCDIR)/parsing/syntaxerr.cmo \
+	$(OCAMLSRCDIR)/parsing/xparser.cmo \
 	$(OCAMLSRCDIR)/parsing/parser.cmo \
 	$(OCAMLSRCDIR)/parsing/lexer.cmo \
 	$(OCAMLSRCDIR)/parsing/parse.cmo \
@@ -188,7 +189,9 @@ STDLIB_MLIS=../stdlib/*.mli \
 	../otherlibs/str/str.mli \
 	../otherlibs/bigarray/bigarray.mli
 
-all: exe lib manpages
+all: exe lib
+	$(MAKE) manpages
+
 exe: $(OCAMLDOC)
 lib: $(OCAMLDOC_LIBCMA) $(OCAMLDOC_LIBCMI) $(ODOC_TEST)
 

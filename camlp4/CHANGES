@@ -1,3 +1,13 @@
+- [29 Jun 05] Add private row types. Make "private" a type constructor
+  "TyPrv" rather than a flag. (Jacques)
+
+- [09 Jun 04] Moved "-no_quot" option from pa_o to camlp4, enabling to
+  use it indepently fom pa_o.cmo.
+
+- [17 Nov 04] Renamed "loc" into "_loc", introducing an incompatibility
+  with existing code (3.08.x and before). Such code can generally run
+  unmodified using the -loc option (camlp4 -loc "loc").
+
 Camlp4 Version 3.08.2
 ------------------------
 - [07 Oct 04] Changes in the interfaces plexer.mli and pcaml.mli:

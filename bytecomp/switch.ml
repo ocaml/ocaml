@@ -653,7 +653,7 @@ let approx_count cases i j n_actions =
 
 (* Sends back a boolean that says whether is switch is worth or not *)
 
-let dense ({cases=cases ; actions=actions} as s) i j =
+let dense {cases=cases ; actions=actions} i j =
   if i=j then true
   else
     let l,_,_ = cases.(i)
@@ -775,7 +775,6 @@ let make_clusters ({cases=cases ; actions=actions} as s) n_clusters k =
 
   
 let zyva (low,high) konst arg cases actions = 
-  let lcases = Array.length cases in
   let old_ok = !ok_inter in
   ok_inter := (abs low <= inter_limit && abs high <= inter_limit) ;
   if !ok_inter <> old_ok then Hashtbl.clear t ;

@@ -141,7 +141,7 @@ let latex_class_prefix =
   "\t\t(default is \""^default_latex_class_prefix^"\")"
 
 let default_latex_class_type_prefix = "classtype:"
-let latex_class_type_prefix =
+let latex_class_type_prefix = 
   "<string>\n\t\tUse <string> as prefix for the LaTeX labels of class types.\n"^
   "\t\t(default is \""^default_latex_class_type_prefix^"\")"
 

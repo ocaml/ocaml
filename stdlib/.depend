@@ -1,4 +1,5 @@
 big_int.cmi: nat.cmi 
+camlinternalMod.cmi: obj.cmi 
 camlinternalOO.cmi: obj.cmi 
 format.cmi: buffer.cmi 
 genlex.cmi: stream.cmi 
@@ -27,6 +28,8 @@ buffer.cmo: sys.cmi string.cmi buffer.cmi
 buffer.cmx: sys.cmx string.cmx buffer.cmi 
 callback.cmo: obj.cmi callback.cmi 
 callback.cmx: obj.cmx callback.cmi 
+camlinternalMod.cmo: obj.cmi camlinternalOO.cmi array.cmi camlinternalMod.cmi 
+camlinternalMod.cmx: obj.cmx camlinternalOO.cmx array.cmx camlinternalMod.cmi 
 camlinternalOO.cmo: sys.cmi string.cmi obj.cmi map.cmi list.cmi char.cmi \
     array.cmi camlinternalOO.cmi 
 camlinternalOO.cmx: sys.cmx string.cmx obj.cmx map.cmx list.cmx char.cmx \

@@ -120,7 +120,7 @@ let min_float =
   float_of_bits 0x00_10_00_00_00_00_00_00L
 let epsilon_float =
   float_of_bits 0x3C_B0_00_00_00_00_00_00L
-  
+
 type fpclass =
     FP_normal
   | FP_subnormal
@@ -234,10 +234,10 @@ let open_out_bin name =
 
 external flush : out_channel -> unit = "caml_ml_flush"
 
-external out_channels_list : unit -> out_channel list 
+external out_channels_list : unit -> out_channel list
                            = "caml_ml_out_channels_list"
 
-let flush_all () = 
+let flush_all () =
   let rec iter = function
       [] -> ()
     | a::l -> (try flush a with _ -> ()); iter l
@@ -287,7 +287,7 @@ let open_in_bin name =
 
 external input_char : in_channel -> char = "caml_ml_input_char"
 
-external unsafe_input : in_channel -> string -> int -> int -> int 
+external unsafe_input : in_channel -> string -> int -> int -> int
                       = "caml_ml_input"
 
 let input ic s ofs len =
@@ -329,7 +329,7 @@ let input_line chan =
       ignore (input_char chan);           (* skip the newline *)
       match accu with
         [] -> res
-      |  _ -> let len = len + n - 1 in 
+      |  _ -> let len = len + n - 1 in
               build_result (string_create len) len (res :: accu)
     end else begin                        (* n < 0: newline not found *)
       let beg = string_create (-n) in
@@ -401,16 +401,16 @@ external decr: int ref -> unit = "%decr"
 type ('a, 'b, 'c) format = ('a, 'b, 'c, 'c) format4
 external format_of_string :
  ('a, 'b, 'c, 'd) format4 -> ('a, 'b, 'c, 'd) format4 = "%identity"
-external string_of_format_sys :
+external format_to_string :
  ('a, 'b, 'c, 'd) format4 -> string = "%identity"
 external string_to_format : string -> ('a, 'b, 'c, 'd) format4 = "%identity"
 
 let (( ^^ ) : ('a, 'b, 'c, 'd) format4 -> ('d, 'b, 'c, 'e) format4 ->
               ('a, 'b, 'c, 'e) format4) = fun fmt1 fmt2 ->
-  string_to_format (string_of_format_sys fmt1 ^ string_of_format_sys fmt2);;
+  string_to_format (format_to_string fmt1 ^ format_to_string fmt2);;
 
-let string_of_format f =
-  let s = string_of_format_sys f in
+let string_of_format fmt =
+  let s = format_to_string fmt in
   let l = string_length s in
   let r = string_create l in
   string_blit s 0 r 0 l;

@@ -1129,5 +1129,3 @@ class latex =
           prerr_endline s ;
           incr Odoc_info.errors 
   end
-
-(* eof $Id$ *)

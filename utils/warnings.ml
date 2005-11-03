@@ -15,7 +15,8 @@
 (* Please keep them in alphabetical order *)
 
 type t =                             (* A is all *)
-  | Comment of string                (* C *)
+  | Comment_start                    (* C *)
+  | Comment_not_end
   | Deprecated                       (* D *)
   | Fragile_pat of string            (* E *)
   | Partial_application              (* F *)
@@ -24,13 +25,26 @@ type t =                             (* A is all *)
   | Partial_match of string          (* P *)
   | Statement_type                   (* S *)
   | Unused_match                     (* U *)
-  | Unused_pat                       (* U *)
+  | Unused_pat
   | Hide_instance_variable of string (* V *)
-  | Other of string                  (* X *)
+  | Illegal_backslash                (* X *)
+  | Implicit_public_methods of string list
+  | Unerasable_optional_argument
+  | Undeclared_virtual_method of string
+  | Not_principal of string
+  | Without_principality of string
+  | Unused_argument
+  | Nonreturning_statement
+  | Camlp4 of string
+  | All_clauses_guarded
+  | Useless_record_with
+  | Unused_var of string             (* Y *)
+  | Unused_var_strict of string      (* Z *)
 ;;
 
 let letter = function        (* 'a' is all *)
-  | Comment _ ->                'c'
+  | Comment_start
+  | Comment_not_end ->          'c'
   | Deprecated ->               'd'
   | Fragile_pat _ ->            'e'
   | Partial_application ->      'f'
@@ -38,9 +52,22 @@ let letter = function        (* 'a' is all *)
   | Method_override _ ->        'm'
   | Partial_match _ ->          'p'
   | Statement_type ->           's'
-  | Unused_match|Unused_pat ->  'u'
+  | Unused_match
+  | Unused_pat ->               'u'
   | Hide_instance_variable _ -> 'v'
-  | Other _ ->                  'x'
+  | Illegal_backslash
+  | Implicit_public_methods _
+  | Unerasable_optional_argument
+  | Undeclared_virtual_method _
+  | Not_principal _
+  | Without_principality _
+  | Unused_argument
+  | Nonreturning_statement
+  | Camlp4 _
+  | Useless_record_with
+  | All_clauses_guarded ->      'x'
+  | Unused_var _ ->             'y'
+  | Unused_var_strict _ ->      'z'
 ;;
 
 let active = Array.create 27 true;;
@@ -77,7 +104,7 @@ let parse_options iserr s =
   done
 ;;
 
-let () = parse_options false "el";;
+let () = parse_options false "elz";;
 
 let message = function
   | Partial_match "" -> "this pattern-matching is not exhaustive."
@@ -107,15 +134,33 @@ let message = function
        maybe some arguments are missing."
   | Statement_type ->
       "this expression should have type unit."
-  | Comment s -> "this is " ^ s ^ "."
+  | Comment_start -> "this is the start of a comment."
+  | Comment_not_end -> "this is not the end of a comment."
   | Deprecated -> "this syntax is deprecated."
-  | Other s -> s
+  | Unused_var v | Unused_var_strict v -> "unused variable " ^ v ^ "."
+  | Illegal_backslash -> "illegal backslash escape in string."
+  | Implicit_public_methods l ->
+      "the following private methods were made public implicitly:\n "
+      ^ String.concat " " l ^ "."
+  | Unerasable_optional_argument -> "this optional argument cannot be erased."
+  | Undeclared_virtual_method m -> "the virtual method "^m^" is not declared."
+  | Not_principal s -> s^" is not principal."
+  | Without_principality s -> s^" without principality."
+  | Unused_argument -> "this argument will not be used by the function."
+  | Nonreturning_statement -> "this statement never returns."
+  | Camlp4 s -> s
+  | All_clauses_guarded ->
+      "bad style, all clauses in this pattern-matching are guarded."
+  | Useless_record_with ->
+      "this record is defined by a `with' expression,\n\
+       but no fields are borrowed from the original."
 ;;
 
 let nerrors = ref 0;;
 
 let print ppf w =
   let msg = message w in
+  let flag = Char.uppercase (letter w) in
   let newlines = ref 0 in
   for i = 0 to String.length msg - 1 do
     if msg.[i] = '\n' then incr newlines;
@@ -125,7 +170,7 @@ let print ppf w =
   in
   let countnewline x = incr newlines; newline x in
   Format.pp_set_all_formatter_output_functions ppf out flush countnewline space;
-  Format.fprintf ppf "%s" msg;
+  Format.fprintf ppf "%c: %s" flag msg;
   Format.pp_print_flush ppf ();
   Format.pp_set_all_formatter_output_functions ppf out flush newline space;
   let (n, _) = translate (letter w) in

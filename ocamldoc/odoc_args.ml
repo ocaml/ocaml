@@ -335,6 +335,3 @@ let parse ~html_generator ~latex_generator ~texi_generator ~man_generator ~dot_g
      A.B is before A, so we will match against A.B before A in
      Odoc_name.hide_modules.*)
   hidden_modules := List.sort (fun a -> fun b -> - (compare a b)) !hidden_modules
-
-
-(* eof $Id$ *)

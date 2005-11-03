@@ -3,7 +3,7 @@ include ../support/Makefile.common.nt
 all: cTk.ml camltk.ml .depend
 
 _tkgen.ml: ../Widgets.src ../compiler/tkcompiler.exe
-	cd .. ; ../../boot/ocamlrun compiler/tkcompiler.exe -camltk -outdir camltk
+	cd .. ; $(CAMLRUNGEN) compiler/tkcompiler.exe -camltk -outdir camltk
 
 # dependencies are broken: wouldn't work with gmake 3.77
 
@@ -34,7 +34,7 @@ cTk.ml camltk.ml .depend: _tkgen.ml ../builtin/report.ml ../compiler/pp.exe #../
 	 cat _tkfgen.ml; \
 	 echo ; \
 	) > _cTk.ml
-	../../../boot/ocamlrun ../compiler/pp < _cTk.ml > cTk.ml
+	$(CAMLRUN) ../compiler/pp < _cTk.ml > cTk.ml
 	rm -f _cTk.ml
 	$(CAMLDEP) -slash -I ../support [a-z]*.mli [a-z]*.ml > .depend
 

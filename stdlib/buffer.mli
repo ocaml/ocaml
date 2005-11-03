@@ -18,7 +18,7 @@
    This module implements string buffers that automatically expand
    as necessary.  It provides accumulative concatenation of strings
    in quasi-linear time (instead of quadratic time when strings are
-   concatenated pairwise). 
+   concatenated pairwise).
 *)
 
 type t
@@ -104,4 +104,3 @@ val add_channel : t -> in_channel -> int -> unit
 val output_buffer : out_channel -> t -> unit
 (** [output_buffer oc b] writes the current contents of buffer [b]
    on the output channel [oc]. *)
-

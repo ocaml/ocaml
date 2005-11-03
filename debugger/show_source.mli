@@ -14,7 +14,7 @@
 (* $Id$ *)
 
 (* Print the line containing the point *)
-val show_point : string -> int -> bool -> bool -> unit;;
+val show_point : Instruct.debug_event -> bool -> unit;;
 
 (* Tell Emacs we are nowhere in the source. *)
 val show_no_point : unit -> unit;;

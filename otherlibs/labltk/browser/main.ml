@@ -32,7 +32,7 @@ let rec get_incr key = function
     [] -> raise Not_found
   | (k, c, d) :: rem ->
       if k = key then
-        match c with Arg.Set _ | Arg.Clear _ -> false | _ -> true
+        match c with Arg.Set _ | Arg.Clear _ | Arg.Unit _ -> false | _ -> true
       else get_incr key rem
 
 let check ~spec argv =
@@ -47,6 +47,11 @@ let check ~spec argv =
   !i = Array.length argv
 
 open Printf
+
+let print_version () =
+  printf "The Objective Caml browser, version %s\n" Sys.ocaml_version;
+  exit 0;
+;;
 
 let usage ~spec errmsg =
   let b = Buffer.create 1024 in
@@ -68,11 +73,13 @@ let _ =
       "-labels", Arg.Clear Clflags.classic, " <obsolete>";
       "-nolabels", Arg.Set Clflags.classic,
       " Ignore non-optional labels in types";
+      "-oldui", Arg.Clear st, " Revert back to old UI";
       "-pp", Arg.String (fun s -> Clflags.preprocessor := Some s),
       "<command>  Pipe sources through preprocessor <command>";
       "-rectypes", Arg.Set Clflags.recursive_types,
       " Allow arbitrary recursive types";
-      "-oldui", Arg.Clear st, " Revert back to old UI";
+      "-version", Arg.Unit print_version,
+        " Print version and exit";
       "-w", Arg.String (fun s -> Shell.warnings := s),
       "<flags>  Enable or disable warnings according to <flags>:\n\
         \032    A/a enable/disable all warnings\n\

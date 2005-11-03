@@ -25,7 +25,11 @@
 #define IO_BUFFER_SIZE 4096
 #endif
 
-#ifdef HAS_OFF_T
+#if defined(_WIN32)
+typedef __int64 file_offset;
+extern __int64 _lseeki64(int, __int64, int);
+#define lseek(fd,d,m) _lseeki64(fd,d,m)
+#elif defined(HAS_OFF_T)
 #include <sys/types.h>
 typedef off_t file_offset;
 #else
@@ -39,7 +43,7 @@ struct channel {
   char * curr;                  /* Current position in the buffer */
   char * max;                   /* Logical end of the buffer (for input) */
   void * mutex;                 /* Placeholder for mutex (for systhreads) */
-  struct channel * next;        /* Linear chaining of channels (flush_all) */
+  struct channel * next, * prev;/* Double chaining of channels (flush_all) */
   int revealed;                 /* For Cash only */
   int old_revealed;             /* For Cash only */
   int refcount;                 /* For flush_all and for Cash */
@@ -73,13 +77,13 @@ CAMLextern int caml_channel_binary_mode (struct channel *);
 CAMLextern int caml_flush_partial (struct channel *);
 CAMLextern void caml_flush (struct channel *);
 CAMLextern void caml_putword (struct channel *, uint32);
-CAMLextern int caml_putblock (struct channel *, char *, long);
-CAMLextern void caml_really_putblock (struct channel *, char *, long);
+CAMLextern int caml_putblock (struct channel *, char *, intnat);
+CAMLextern void caml_really_putblock (struct channel *, char *, intnat);
 
 CAMLextern unsigned char caml_refill (struct channel *);
 CAMLextern uint32 caml_getword (struct channel *);
-CAMLextern int caml_getblock (struct channel *, char *, long);
-CAMLextern int caml_really_getblock (struct channel *, char *, long);
+CAMLextern int caml_getblock (struct channel *, char *, intnat);
+CAMLextern int caml_really_getblock (struct channel *, char *, intnat);
 
 /* Extract a struct channel * from the heap object representing it */
 

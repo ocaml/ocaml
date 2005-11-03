@@ -15,7 +15,7 @@
 
 (** Hash tables and hash functions.
 
-   Hash tables are hashed association tables, with in-place modification. 
+   Hash tables are hashed association tables, with in-place modification.
 *)
 
 
@@ -93,9 +93,9 @@ val fold : ('a -> 'b -> 'c -> 'c) -> ('a, 'b) t -> 'c -> 'c
 
 
 val length : ('a, 'b) t -> int
-(** [Hashtbl.length tbl] returns the number of bindings in [tbl]. 
-   Multiple bindings are counted multiply, so [Hashtbl.length] 
-   gives the number of times [Hashtbl.iter] calls it first argument. *)
+(** [Hashtbl.length tbl] returns the number of bindings in [tbl].
+   Multiple bindings are counted multiply, so [Hashtbl.length]
+   gives the number of times [Hashtbl.iter] calls its first argument. *)
 
 
 (** {6 Functorial interface} *)
@@ -158,7 +158,7 @@ module Make (H : HashedType) : S with type key = H.t
 val hash : 'a -> int
 (** [Hashtbl.hash x] associates a positive integer to any value of
    any type. It is guaranteed that
-   if [x = y] or [Pervasives.compare x y = 0], then [hash x = hash y]. 
+   if [x = y] or [Pervasives.compare x y = 0], then [hash x = hash y].
    Moreover, [hash] always terminates, even on cyclic
    structures. *)
 
@@ -175,4 +175,3 @@ external hash_param : int -> int -> 'a -> int = "caml_hash_univ_param" "noalloc"
    value, and therefore collisions are less likely to happen.
    However, hashing takes longer. The parameters [m] and [n]
    govern the tradeoff between accuracy and speed. *)
-

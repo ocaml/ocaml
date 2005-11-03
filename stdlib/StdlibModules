@@ -8,6 +8,7 @@ STDLIB_MODULES=\
   arrayLabels \
   buffer \
   callback \
+  camlinternalMod \
   camlinternalOO \
   char \
   complex \

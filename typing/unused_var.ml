@@ -105,6 +105,7 @@ and structure_item ppf tbl s =
   | Pstr_class cdl -> List.iter (class_declaration ppf tbl) cdl;
   | Pstr_class_type _ -> ()
   | Pstr_include _ -> ()
+  | Pstr_namespace _ -> ()
 
 and expression ppf tbl e =
   match e.pexp_desc with
@@ -172,6 +173,7 @@ and expression ppf tbl e =
   | Pexp_lazy e -> expression ppf tbl e;
   | Pexp_poly (e, _) -> expression ppf tbl e;
   | Pexp_object cs -> class_structure ppf tbl cs;
+  | Pexp_ext e -> ext_expr ppf tbl e 
 
 and expression_option ppf tbl eo =
   match eo with
@@ -248,6 +250,26 @@ and class_field ppf tbl cf =
   | Pcf_cstr _ -> ()
   | Pcf_let (recflag, pel, _) -> let_pel ppf tbl recflag pel None;
   | Pcf_init e -> expression ppf tbl e;
+
+and ext_expr ppf tbl = function
+  | Pextexp_cst _ -> ()
+  | Pextexp_match (e,bl) 
+  | Pextexp_map (e,bl)
+  | Pextexp_xmap (e,bl) -> expression ppf tbl e; List.iter (ext_branch ppf tbl) bl
+  | Pextexp_record fl -> List.iter (fun (_,e) -> expression ppf tbl e) fl
+  | Pextexp_removefield (e,_) -> expression ppf tbl e
+  | Pextexp_op (_,el) -> List.iter (expression ppf tbl) el
+  | Pextexp_namespace (_,_,e) 
+  | Pextexp_from_ml e 
+  | Pextexp_to_ml e
+  | Pextexp_check (e,_) -> expression ppf tbl e
+
+and ext_branch ppf tbl (p, vars, e) =
+  let vars = match !vars with None -> assert false | Some v -> v in
+  let defined = ([], List.map (fun (x,l) -> (x,l,ref false)) vars) in
+  add_vars tbl defined;
+  expression ppf tbl e;
+  check_rm_vars ppf tbl defined;
 ;;
 
 let warn ppf ast =
@@ -258,3 +280,14 @@ let warn ppf ast =
   end;
   ast
 ;;
+
+let the_ast = ref None
+
+let warn1 ast =
+  the_ast := Some ast;
+  ast
+
+let warn2 ppf x =
+  match !the_ast with
+    | Some ast -> the_ast := None; ignore (warn ppf ast); x
+    | None -> assert false

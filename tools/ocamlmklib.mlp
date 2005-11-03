@@ -49,6 +49,11 @@ let chop_suffix = Filename.chop_suffix
 
 exception Bad_argument of string
 
+let print_version () =
+  printf "ocamlmklib, version %s\n" Sys.ocaml_version;
+  exit 0;
+;;
+
 let parse_arguments argv =
   let i = ref 1 in
   let next_arg () =
@@ -111,6 +116,8 @@ let parse_arguments argv =
       rpath := chop_prefix s "-Wl,-R" :: !rpath
     else if s = "-v" || s = "-verbose" then
       verbose := true
+    else if s = "-version" then
+      print_version ()
     else if starts_with s "-F" then
       c_opts := s :: !c_opts
     else if s = "-framework" then
@@ -152,6 +159,7 @@ Options are:
   -Wl,-R<dir>          Same as -dllpath <dir>
   -F<dir>        Specify a framework directory (MacOSX)
   -framework <name>    Use framework <name> (MacOSX)
+  -version       Print version and exit
 "
 
 let command cmd =

@@ -51,10 +51,10 @@ examples_camltk:
 	cd examples_camltk; $(MAKE) all
 
 install: 
+	cd support; $(MAKE) install
+	cd lib; $(MAKE) install
 	cd labltk; $(MAKE) install
 	cd camltk; $(MAKE) install
-	cd lib; $(MAKE) install
-	cd support; $(MAKE) install
 	cd compiler; $(MAKE) install
 	cd jpf; $(MAKE) install
 	cd frx; $(MAKE) install
@@ -62,9 +62,10 @@ install:
 	cd browser; $(MAKE) install
 
 installopt:
+	cd support; $(MAKE) installopt
+	cd lib; $(MAKE) installopt
 	cd labltk; $(MAKE) installopt
 	cd camltk; $(MAKE) installopt
-	cd lib; $(MAKE) installopt
 	cd jpf; $(MAKE) installopt
 	cd frx; $(MAKE) installopt
 	cd tkanim; $(MAKE) installopt

@@ -124,7 +124,7 @@ let mkli s =
 
 let long_id_of_string_list loc sl =
   match List.rev sl with
-    [] -> error loc "bad ast"
+    [] -> error loc "bad ast in long ident"
   | s :: sl -> mkli s (List.rev sl)
 ;;
 
@@ -254,8 +254,9 @@ and ctyp =
   | TyOlb (loc, lab, _) -> error loc "labelled type not allowed here"
   | TyPol (loc, pl, t) -> mktyp loc (Ptyp_poly (pl, ctyp t))
   | TyQuo (loc, s) -> mktyp loc (Ptyp_var s)
-  | TyRec (loc, _, _) -> error loc "record type not allowed here"
-  | TySum (loc, _, _) -> error loc "sum type not allowed here"
+  | TyRec (loc, _) -> error loc "record type not allowed here"
+  | TySum (loc, _) -> error loc "sum type not allowed here"
+  | TyPrv (loc, _) -> error loc "private type not allowed here"
   | TyTup (loc, tl) -> mktyp loc (Ptyp_tuple (List.map ctyp tl))
   | TyUid (loc, s) as t -> error (loc_of_ctyp t) "invalid type"
   | TyVrn (loc, catl, ool) ->
@@ -288,32 +289,35 @@ let mktype loc tl cl tk tm =
 ;;
 let mkmutable m = if m then Mutable else Immutable;;
 let mkprivate m = if m then Private else Public;;
-let mktrecord (_, n, m, t) = n, mkmutable m, ctyp (mkpolytype t);;
-let mkvariant (_, c, tl) = c, List.map ctyp tl;;
-let type_decl tl cl =
-  function
-    TyMan (loc, t, TyRec (_, pflag, ltl)) ->
-      mktype loc tl cl
-        (Ptype_record (List.map mktrecord ltl, mkprivate pflag))
-        (Some (ctyp t))
-  | TyMan (loc, t, TySum (_, pflag, ctl)) ->
-      mktype loc tl cl
-        (Ptype_variant (List.map mkvariant ctl, mkprivate pflag))
-        (Some (ctyp t))
-  | TyRec (loc, pflag, ltl) ->
-      mktype loc tl cl
-        (Ptype_record (List.map mktrecord ltl, mkprivate pflag)) None
-  | TySum (loc, pflag, ctl) ->
-      mktype loc tl cl
-        (Ptype_variant (List.map mkvariant ctl, mkprivate pflag)) None
-  | t ->
-      let m =
-        match t with
-          TyQuo (_, s) -> if List.mem_assoc s tl then Some (ctyp t) else None
-        | _ -> Some (ctyp t)
-      in
-      mktype (loc_of_ctyp t) tl cl Ptype_abstract m
+let mktrecord (loc, n, m, t) =
+  n, mkmutable m, ctyp (mkpolytype t), mkloc loc
 ;;
+let mkvariant (loc, c, tl) = c, List.map ctyp tl, mkloc loc;;
+let rec type_decl tl cl loc m pflag =
+  function
+    TyMan (_, t1, t2) -> type_decl tl cl loc (Some (ctyp t1)) pflag t2
+  | TyPrv (_, t) -> type_decl tl cl loc m true t
+  | TyRec (_, ltl) ->
+      mktype loc tl cl
+        (Ptype_record (List.map mktrecord ltl, mkprivate pflag)) m
+  | TySum (_, ctl) ->
+      mktype loc tl cl
+        (Ptype_variant (List.map mkvariant ctl, mkprivate pflag)) m
+  | t ->
+      if m <> None then
+        error loc "only one manifest type allowed by definition"
+      else
+        let m =
+          match t with
+            TyQuo (_, s) ->
+              if List.mem_assoc s tl then Some (ctyp t) else None
+          | _ -> Some (ctyp t)
+        in
+        let k = if pflag then Ptype_private else Ptype_abstract in
+        mktype loc tl cl k m
+;;
+
+let type_decl tl cl t = type_decl tl cl (loc_of_ctyp t) None false t;;
 
 let mkvalue_desc t p = {pval_type = ctyp t; pval_prim = p};;
 
@@ -339,7 +343,7 @@ let paolab loc lab peoo =
   let lab =
     match lab, peoo with
       "", Some ((PaLid (_, i) | PaTyc (_, PaLid (_, i), _)), _) -> i
-    | "", _ -> error loc "bad ast"
+    | "", _ -> error loc "bad ast in label"
     | _ -> lab
   in
   let (p, eo) =
@@ -505,13 +509,34 @@ let rec patt =
   | PaArr (loc, pl) -> mkpat loc (Ppat_array (List.map patt pl))
   | PaChr (loc, s) ->
       mkpat loc (Ppat_constant (Const_char (char_of_char_token loc s)))
-  | PaInt (loc, s) -> mkpat loc (Ppat_constant (Const_int (int_of_string s)))
+  | PaInt (loc, s) ->
+      let i =
+        try int_of_string s with
+          Failure _ ->
+            error loc "Integer literal exceeds the range of representable integers of type int"
+      in
+      mkpat loc (Ppat_constant (Const_int i))
   | PaInt32 (loc, s) ->
-      mkpat loc (Ppat_constant (Const_int32 (Int32.of_string s)))
+      let i32 =
+        try Int32.of_string s with
+          Failure _ ->
+            error loc "Integer literal exceeds the range of representable integers of type int32"
+      in
+      mkpat loc (Ppat_constant (Const_int32 i32))
   | PaInt64 (loc, s) ->
-      mkpat loc (Ppat_constant (Const_int64 (Int64.of_string s)))
+      let i64 =
+        try Int64.of_string s with
+          Failure _ ->
+            error loc "Integer literal exceeds the range of representable integers of type int64"
+      in
+      mkpat loc (Ppat_constant (Const_int64 i64))
   | PaNativeInt (loc, s) ->
-      mkpat loc (Ppat_constant (Const_nativeint (Nativeint.of_string s)))
+      let nati =
+        try Nativeint.of_string s with
+          Failure _ ->
+            error loc "Integer literal exceeds the range of representable integers of type nativeint"
+      in
+      mkpat loc (Ppat_constant (Const_nativeint nati))
   | PaFlo (loc, s) -> mkpat loc (Ppat_constant (Const_float s))
   | PaLab (loc, _, _) -> error loc "labeled pattern not allowed here"
   | PaLid (loc, s) -> mkpat loc (Ppat_var s)
@@ -597,7 +622,7 @@ let rec expr =
         | (loc, ml, ExLid (_, s)) :: l ->
             mkexp loc (Pexp_ident (mkli s ml)), l
         | (_, [], e) :: l -> expr e, l
-        | _ -> error loc "bad ast"
+        | _ -> error loc "bad ast in expression"
       in
       let (_, e) =
         List.fold_left
@@ -689,13 +714,34 @@ let rec expr =
       mkexp loc (Pexp_function ("", None, List.map mkpwe pel))
   | ExIfe (loc, e1, e2, e3) ->
       mkexp loc (Pexp_ifthenelse (expr e1, expr e2, Some (expr e3)))
-  | ExInt (loc, s) -> mkexp loc (Pexp_constant (Const_int (int_of_string s)))
+  | ExInt (loc, s) ->
+      let i =
+        try int_of_string s with
+          Failure _ ->
+            error loc "Integer literal exceeds the range of representable integers of type int"
+      in
+      mkexp loc (Pexp_constant (Const_int i))
   | ExInt32 (loc, s) ->
-      mkexp loc (Pexp_constant (Const_int32 (Int32.of_string s)))
+      let i32 =
+        try Int32.of_string s with
+          Failure _ ->
+            error loc "Integer literal exceeds the range of representable integers of type int32"
+      in
+      mkexp loc (Pexp_constant (Const_int32 i32))
   | ExInt64 (loc, s) ->
-      mkexp loc (Pexp_constant (Const_int64 (Int64.of_string s)))
+      let i64 =
+        try Int64.of_string s with
+          Failure _ ->
+            error loc "Integer literal exceeds the range of representable integers of type int64"
+      in
+      mkexp loc (Pexp_constant (Const_int64 i64))
   | ExNativeInt (loc, s) ->
-      mkexp loc (Pexp_constant (Const_nativeint (Nativeint.of_string s)))
+      let nati =
+        try Nativeint.of_string s with
+          Failure _ ->
+            error loc "Integer literal exceeds the range of representable integers of type nativeint"
+      in
+      mkexp loc (Pexp_constant (Const_nativeint nati))
   | ExLab (loc, _, _) -> error loc "labeled expression not allowed here"
   | ExLaz (loc, e) -> mkexp loc (Pexp_lazy (expr e))
   | ExLet (loc, rf, pel, e) ->
@@ -974,7 +1020,8 @@ let directive loc =
             ExLid (_, i) | ExUid (_, i) -> [i]
           | ExAcc (_, e, ExLid (_, i)) | ExAcc (_, e, ExUid (_, i)) ->
               loop e @ [i]
-          | e -> raise_with_loc (loc_of_expr e) (Failure "bad ast")
+          | e ->
+              raise_with_loc (loc_of_expr e) (Failure "bad ast in directive")
         in
         loop e
       in

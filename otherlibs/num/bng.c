@@ -317,7 +317,7 @@ static bngdigit bng_generic_div_rem_norm_digit
      (bng a/*[len-1]*/, bng b/*[len]*/, bngsize len, bngdigit d)
 {
   bngdigit topdigit, quo, rem;
-  long i;
+  intnat i;
 
   topdigit = b[len - 1];
   for (i = len - 2; i >= 0; i--) {

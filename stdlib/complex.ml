@@ -62,20 +62,20 @@ let arg x = atan2 x.im x.re
 
 let polar n a = { re = cos a *. n; im = sin a *. n }
 
-let sqrt x = 
+let sqrt x =
   if x.re = 0.0 && x.im = 0.0 then { re = 0.0; im = 0.0 }
   else begin
     let r = abs_float x.re and i = abs_float x.im in
     let w =
       if r >= i then begin
-        let q = i /. r in 
-        sqrt(r) *. sqrt(0.5 *. (1.0 +. sqrt(1.0 +. q *. q))) 
+        let q = i /. r in
+        sqrt(r) *. sqrt(0.5 *. (1.0 +. sqrt(1.0 +. q *. q)))
       end else begin
         let q = r /. i in
         sqrt(i) *. sqrt(0.5 *. (q +. sqrt(1.0 +. q *. q)))
-      end in   
+      end in
     if x.re >= 0.0
-    then { re = w;  im = 0.5 *. x.im /. w }  
+    then { re = w;  im = 0.5 *. x.im /. w }
     else { re = 0.5 *. i /. w;  im = if x.im >= 0.0 then w else -. w }
   end
 

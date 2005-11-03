@@ -313,7 +313,7 @@ module Timer = Timer;;
       let cname = realname name in
       output_string oc (Printf.sprintf "module %s = %s;;\n"
                           (String.capitalize name)
-                          (String.capitalize name))) module_table;
+                          (String.capitalize cname))) module_table;
     (* widget typer *)
     output_string oc "\n(** Widget typers *)\n\nopen Widget\n\n";
     Hashtbl.iter (fun name def ->

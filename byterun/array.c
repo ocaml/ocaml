@@ -25,14 +25,14 @@
 
 CAMLprim value caml_array_get_addr(value array, value index)
 {
-  long idx = Long_val(index);
+  intnat idx = Long_val(index);
   if (idx < 0 || idx >= Wosize_val(array)) caml_array_bound_error();
   return Field(array, idx);
 }
 
 CAMLprim value caml_array_get_float(value array, value index)
 {
-  long idx = Long_val(index);
+  intnat idx = Long_val(index);
   double d;
   value res;
 
@@ -58,7 +58,7 @@ CAMLprim value caml_array_get(value array, value index)
 
 CAMLprim value caml_array_set_addr(value array, value index, value newval)
 {
-  long idx = Long_val(index);
+  intnat idx = Long_val(index);
   if (idx < 0 || idx >= Wosize_val(array)) caml_array_bound_error();
   Modify(&Field(array, idx), newval);
   return Val_unit;
@@ -66,7 +66,7 @@ CAMLprim value caml_array_set_addr(value array, value index, value newval)
 
 CAMLprim value caml_array_set_float(value array, value index, value newval)
 {
-  long idx = Long_val(index);
+  intnat idx = Long_val(index);
   if (idx < 0 || idx >= Wosize_val(array) / Double_wosize)
     caml_array_bound_error();
   Store_double_field(array, idx, Double_val(newval));
@@ -106,7 +106,7 @@ CAMLprim value caml_array_unsafe_get(value array, value index)
 
 CAMLprim value caml_array_unsafe_set_addr(value array, value index,value newval)
 {
-  long idx = Long_val(index);
+  intnat idx = Long_val(index);
   Modify(&Field(array, idx), newval);
   return Val_unit;
 }

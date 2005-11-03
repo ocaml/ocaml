@@ -76,7 +76,8 @@ module EvalPath = struct
 	 let (path, _) = 
 	   Env.lookup_value 
 	     (Longident.parse "Cduce_types.Value.print") Env.empty in
-	 let f = Obj.magic (eval_path path) in
+	 let f : formatter -> Cduce_types.Value.t -> unit = 
+	   Obj.magic (eval_path path) in
 	 f ppf v)
     
 end
@@ -157,7 +158,7 @@ let load_lambda ppf lam =
 
 (* Print the outcome of an evaluation *)
 
-let pr_item env = function
+let rec pr_item env = function
   | Tsig_value(id, decl) :: rem ->
       let tree = Printtyp.tree_of_value_description id decl in
       let valopt =
@@ -171,6 +172,8 @@ let pr_item env = function
             Some v
       in
       Some (tree, valopt, rem)
+  | Tsig_type(id, _, _) :: rem when Btype.is_row_name (Ident.name id) ->
+      pr_item env rem
   | Tsig_type(id, decl, rs) :: rem ->
       let tree = Printtyp.tree_of_type_declaration id decl rs in
       Some (tree, None, rem)
@@ -228,6 +231,7 @@ let execute_phrase print_outcome ppf phr =
       Ctype.extmode := true;
       Typecore.reset_delayed_checks ();
       let (str, sg, newenv) = Typemod.type_structure oldenv sstr in
+      let sstr = Unused_var.warn ppf sstr in
       Typecore.force_delayed_checks ();
       Typeext.flush_ext_annot newenv;
       Btype.backtrack snap;
@@ -359,7 +363,8 @@ let read_interactive_input = ref read_input_default
 let refill_lexbuf buffer len =
   if !got_eof then (got_eof := false; 0) else begin
     let prompt =
-      if !first_line then "# "
+      if !Clflags.noprompt then ""
+      else if !first_line then "# "
       else if Lexer.in_comment () then "* "
       else "  "
     in
@@ -387,11 +392,16 @@ let _ =
     crc_intfs
 
 let load_ocamlinit ppf =
-  let home_init = 
-    try Filename.concat (Sys.getenv "HOME") ".ocamlinit"
-    with Not_found -> ".ocamlinit" in
-  if Sys.file_exists ".ocamlinit" then ignore(use_silently ppf ".ocamlinit")
-  else if Sys.file_exists home_init then ignore(use_silently ppf home_init)
+  match !Clflags.init_file with
+  | Some f -> if Sys.file_exists f then ignore (use_silently ppf f)
+              else fprintf ppf "Init file not found: \"%s\".@." f
+  | None ->
+     if Sys.file_exists ".ocamlinit" then ignore (use_silently ppf ".ocamlinit")
+     else try
+       let home_init = Filename.concat (Sys.getenv "HOME") ".ocamlinit" in
+       if Sys.file_exists home_init then ignore (use_silently ppf home_init)
+     with Not_found -> ()
+;;
 
 let set_paths () =
   (* Add whatever -I options have been specified on the command line,

@@ -101,8 +101,12 @@ let  rshift_num n {left=left ; right=right} =
 
 let ctx_rshift_num n ctx = List.map (rshift_num n) ctx
 
+(* Recombination of contexts (eg: (_,_)::p1::p2::rem ->  (p1,p2)::rem)
+  All mutable fields are replaced by '_', since side-effects in
+  guards can alter these fields *)
+
 let combine {left=left ; right=right} = match left with
-| p::ps -> {left=ps ; right=set_args p right}
+| p::ps -> {left=ps ; right=set_args_erase_mutable p right}
 | _ -> assert false
 
 let ctx_combine ctx = List.map combine ctx
@@ -376,11 +380,11 @@ let pretty_cases cases =
           prerr_string " " ;
           prerr_string (Format.flush_str_formatter ()))
         ps ;
-
+(*
       prerr_string " -> " ;
       Printlambda.lambda Format.str_formatter l ;
       prerr_string (Format.flush_str_formatter ()) ;
-
+*)
       prerr_endline "")
     cases
 
@@ -1075,7 +1079,7 @@ let rec matcher_const cst p rem = match p.pat_desc with
 | _ -> raise NoMatch
 
 let get_key_constant caller = function
-  | {pat_desc= Tpat_constant cst} as p -> cst
+  | {pat_desc= Tpat_constant cst} -> cst
   | p ->
       prerr_endline ("BAD: "^caller) ;
       pretty_pat p ;
@@ -1241,7 +1245,7 @@ let get_key_variant p = match p.pat_desc with
 | Tpat_variant(lab, None , _) -> Cstr_constant (Btype.hash_variant lab)
 |  _ -> assert false
 
-let divide_variant row ctx ({cases = cl; args = al; default=def} as pm) =
+let divide_variant row ctx {cases = cl; args = al; default=def} =
   let row = Btype.row_repr row in
   let rec divide = function
       ({pat_desc = Tpat_variant(lab, pato, _)} as p:: patl, action) :: rem ->
@@ -1486,7 +1490,7 @@ let as_int_list cases acts =
   let default = max_vals cases acts in
   let min_key,_,_ = cases.(0)
   and _,max_key,_ = cases.(Array.length cases-1) in
-  let offset = max_key-min_key in
+
   let rec do_rec i k =
     if i >= 0 then
       let low, high, act =  cases.(i) in
@@ -1636,7 +1640,7 @@ let as_interval_canfail fail low high l =
 
   let rec init_rec = function
     | [] -> []
-    | (i,act_i)::rem as all ->
+    | (i,act_i)::rem ->
         let index = store.act_store act_i in
         if index=0 then
           fail_rec low i rem
@@ -1795,6 +1799,7 @@ let mk_failaction_neg partial ctx def = match partial with
     end
 | Total ->
     None, [], jumps_empty
+
       
       
 (* Conforme a l'article et plus simple qu'avant *)
@@ -1894,7 +1899,6 @@ let combine_constructor arg ex_pat cstr partial ctx def
     (tag_lambda_list, total1, pats) =
   if cstr.cstr_consts < 0 then begin
     (* Special cases for exceptions *)    
-    let cstrs = List.map fst tag_lambda_list in
     let fail, to_add, local_jumps =
       mk_failaction_neg partial ctx def in
     let tag_lambda_list = to_add@tag_lambda_list in
@@ -1921,8 +1925,7 @@ let combine_constructor arg ex_pat cstr partial ctx def
     (* Regular concrete type *)
     let ncases = List.length tag_lambda_list
     and nconstrs =  cstr.cstr_consts + cstr.cstr_nonconsts in
-    let sig_complete = ncases = nconstrs
-    and cstrs = List.map fst tag_lambda_list in
+    let sig_complete = ncases = nconstrs in
     let fails,local_jumps =
       if sig_complete then [],jumps_empty
       else
@@ -1998,7 +2001,9 @@ let combine_variant row arg partial ctx def (tag_lambda_list, total1, pats) =
   let sig_complete =  List.length tag_lambda_list = !num_constr
   and one_action = same_actions tag_lambda_list in
   let fail, to_add, local_jumps =
-    if sig_complete || (match partial with Total -> true | _ -> false) then
+    if
+      sig_complete  || (match partial with Total -> true | _ -> false)
+    then
       None, [], jumps_empty
     else
       mk_failaction_neg partial ctx def in
@@ -2055,7 +2060,7 @@ let rec event_branch repr lam =
       lam
   | (Levent(lam', ev), Some r) ->
       incr r;
-      Levent(lam', {lev_pos = ev.lev_pos;
+      Levent(lam', {lev_loc = ev.lev_loc;
                     lev_kind = ev.lev_kind;
                     lev_repr = repr;
                     lev_env = ev.lev_env})
@@ -2299,7 +2304,6 @@ and do_compile_matching_pr repr partial ctx arg x =
   pretty_jumps jumps ;    
   r
 *)
-
 and do_compile_matching repr partial ctx arg pmh = match pmh with
 | Pm pm ->
   let pat = what_is_cases pm.cases in
@@ -2356,8 +2360,24 @@ and compile_no_test divide up_ctx repr partial ctx to_match =
 
 (* The entry points *)
 
+(*
+   If there is a guard in a matching, then
+   set exhaustiveness info to Partial.
+   (because of side effects in guards, assume the worst)
+*)
 
-(* had toplevel handler when appropriate *)
+let check_partial pat_act_list partial =
+  if
+    List.exists
+      (fun (_,lam) -> is_guarded lam)
+       pat_act_list
+  then begin
+    Partial 
+  end else
+    partial
+
+
+(* have toplevel handler when appropriate *)
 
 let start_ctx n = [{left=[] ; right = omegas n}]
 
@@ -2369,6 +2389,7 @@ let check_total total lambda i handler_fun =
   end
 
 let compile_matching loc repr handler_fun arg pat_act_list partial =
+  let partial = check_partial pat_act_list partial in
   match partial with
   | Partial ->
       let raise_num = next_raise_count () in
@@ -2380,7 +2401,7 @@ let compile_matching loc repr handler_fun arg pat_act_list partial =
         let (lambda, total) = compile_match repr partial (start_ctx 1) pm in
         check_total total lambda raise_num handler_fun
       with
-      | Unused -> assert false ; handler_fun()
+      | Unused -> assert false (* ; handler_fun() *)
       end
   | Total ->
       let pm =
@@ -2390,6 +2411,7 @@ let compile_matching loc repr handler_fun arg pat_act_list partial =
       let (lambda, total) = compile_match repr partial (start_ctx 1) pm in
       assert (jumps_is_empty total) ;
       lambda
+
 
 let partial_function loc () =
   (* [Location.get_pos_info] is too expensive *)
@@ -2422,6 +2444,7 @@ let for_let loc param pat body =
 
 (* Easy case since variables are available *)
 let for_tupled_function loc paraml pats_act_list partial =
+  let partial = check_partial pats_act_list partial in
   let raise_num = next_raise_count () in
   let omegas = [List.map (fun _ -> omega) paraml] in
   let pm =
@@ -2439,7 +2462,7 @@ let for_tupled_function loc paraml pats_act_list partial =
 
 
 let flatten_pattern size p = match p.pat_desc with
-|  Tpat_tuple args -> args
+| Tpat_tuple args -> args
 | Tpat_any -> omegas size  
 | _ -> raise Cannot_flatten
 
@@ -2447,6 +2470,9 @@ let rec flatten_pat_line size p k = match p.pat_desc with
 | Tpat_any ->  omegas size::k
 | Tpat_tuple args -> args::k
 | Tpat_or (p1,p2,_) ->  flatten_pat_line size p1 (flatten_pat_line size p2 k)
+| Tpat_alias (p,_) -> (* Note: if this 'as' pat is here, then this is a useless
+                         binding, solves PR #3780 *)
+    flatten_pat_line size p k
 | _ -> fatal_error "Matching.flatten_pat_line"
 
 let flatten_cases size cases =
@@ -2457,7 +2483,7 @@ let flatten_cases size cases =
     cases
 
 let flatten_matrix size pss =
- List.fold_right
+  List.fold_right
     (fun ps r -> match ps with
     | [p] -> flatten_pat_line size p r
     | _   -> fatal_error "Matching.flatten_matrix")
@@ -2499,6 +2525,7 @@ let compile_flattened repr partial ctx _ pmh = match pmh with
 
 let for_multiple_match loc paraml pat_act_list partial =
   let repr = None in
+  let partial = check_partial pat_act_list partial in
   let raise_num,pm1 =
     match partial with
     | Partial ->
@@ -2539,8 +2566,6 @@ let for_multiple_match loc paraml pat_act_list partial =
         | Total ->
             assert (jumps_is_empty total) ;
             lam)
-        
-
     with Cannot_flatten ->
       let (lambda, total) = compile_match None partial (start_ctx 1) pm1 in
       begin match partial with
@@ -2551,5 +2576,5 @@ let for_multiple_match loc paraml pat_act_list partial =
           lambda
       end
   with Unused ->
-    assert false ; partial_function loc ()
+    assert false (* ; partial_function loc () *)
 

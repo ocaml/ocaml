@@ -73,7 +73,7 @@ val arg: t -> float
     negative real axis. *)
 
 val polar: float -> float -> t
-(** [polar norm arg] returns the complex having norm [norm] 
+(** [polar norm arg] returns the complex having norm [norm]
     and argument [arg]. *)
 
 val exp: t -> t

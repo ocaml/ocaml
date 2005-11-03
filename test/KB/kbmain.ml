@@ -77,5 +77,6 @@ let group_order = rpo group_precedence lex_ext
 let greater pair =
   match group_order pair with Greater -> true | _ -> false
 
-let _ = kb_complete greater [] geom_rules
+let _ =
+  for i = 1 to 20 do kb_complete greater [] geom_rules done
 

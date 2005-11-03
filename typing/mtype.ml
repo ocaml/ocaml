@@ -48,11 +48,12 @@ and strengthen_sig env sg p =
   | Tsig_type(id, decl, rs) :: rem ->
       let newdecl =
         match decl.type_manifest with
-          None ->
+          Some ty when not (Btype.has_constr_row ty) -> decl
+        | _ ->
             { decl with type_manifest =
                 Some(Btype.newgenty(Tconstr(Pdot(p, Ident.name id, nopos),
                                             decl.type_params, ref Mnil))) }
-        | _ -> decl in
+      in
       Tsig_type(id, newdecl, rs) :: strengthen_sig env rem p
   | (Tsig_exception(id, d) as sigelt) :: rem ->
       sigelt :: strengthen_sig env rem p

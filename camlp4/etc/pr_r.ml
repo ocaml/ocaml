@@ -133,7 +133,7 @@ value flag n f = if f then [: `S LR n :] else [: :];
 
 (* default global loc *)
 
-value loc = (Token.nowhere, Token.nowhere);
+value _loc = (Token.nowhere, Token.nowhere);
 
 (* extensible printers *)
 
@@ -790,7 +790,7 @@ pr_sig_item.pr_levels :=
           fun curr next _ k -> [: `not_impl "sig_item1" si :]
       | <:sig_item< exception $c$ of $list:tl$ >> ->
           fun curr next _ k ->
-            [: `variant [: `S LR "exception" :] (loc, c, tl) k :]
+            [: `variant [: `S LR "exception" :] (_loc, c, tl) k :]
       | <:sig_item< value $s$ : $t$ >> ->
           fun curr next _ k -> [: `value_description s t k :]
       | <:sig_item< include $mt$ >> ->
@@ -854,9 +854,9 @@ pr_str_item.pr_levels :=
       | <:str_item< exception $c$ of $list:tl$ = $b$ >> ->
           fun curr next _ k ->
             match b with
-            [ [] -> [: `variant [: `S LR "exception" :] (loc, c, tl) k :]
+            [ [] -> [: `variant [: `S LR "exception" :] (_loc, c, tl) k :]
             | _ ->
-                [: `variant [: `S LR "exception" :] (loc, c, tl)
+                [: `variant [: `S LR "exception" :] (_loc, c, tl)
                       [: `S LR "=" :];
                    mod_ident b k :] ]
       | <:str_item< include $me$ >> ->
@@ -1185,7 +1185,7 @@ pr_expr.pr_levels :=
           else
             match uncurry_expr x y with
             [ (f, ( [_;_::_] as args )) ->
-                fun curr next _ k -> 
+                fun curr next _ k ->
                   [: curr f "" [: :];
                      `HOVCbox
                         [: `S LO "(";
@@ -1532,14 +1532,11 @@ pr_ctyp.pr_levels :=
           fun curr next _ k -> [: `S LR (var_escaped s); k :]
       | <:ctyp< $uid:s$ >> -> fun curr next _ k -> [: `S LR s; k :]
       | <:ctyp< _ >> -> fun curr next _ k -> [: `S LR "_"; k :]
-      | <:ctyp< private { $list: ftl$ } >> as t ->
-          fun curr next _ k ->
-            let loc = MLast.loc_of_ctyp t in
-              [: `HVbox
-                 [: `HVbox [:`S LR "private" :];
-                    `HVbox [: labels loc [:`S LR "{" :]
-                                ftl [: `S LR "}" :] :];
-                     k :] :]
+      | <:ctyp< private $ty$ >> ->
+          fun curr next dg k ->
+            [: `HVbox
+               [: `HVbox [:`S LR "private" :];
+                  `ctyp ty k :] :]
       | <:ctyp< { $list: ftl$ } >> as t ->
           fun curr next _ k ->
             let loc = MLast.loc_of_ctyp t in
@@ -1550,12 +1547,6 @@ pr_ctyp.pr_levels :=
             let loc = MLast.loc_of_ctyp t in
             [: `Vbox
                   [: `HVbox [: :];
-                     variants loc [: `S LR "[" :] ctl [: `S LR "]" :]; k :] :]
-      | <:ctyp< private [ $list:ctl$ ] >> as t ->
-          fun curr next _ k ->
-            let loc = MLast.loc_of_ctyp t in
-            [: `Vbox
-                  [: `HVbox [: `S LR "private" :];
                      variants loc [: `S LR "[" :] ctl [: `S LR "]" :]; k :] :]
       | <:ctyp< [ = $list:rfl$ ] >> ->
           fun curr next _ k ->

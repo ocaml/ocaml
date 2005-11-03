@@ -327,7 +327,7 @@ rule token = parse
         token lexbuf }
   | "(*)"
       { let loc = Location.curr lexbuf
-        and warn = Warnings.Comment "the start of a comment"
+        and warn = Warnings.Comment_start
         in
         Location.prerr_warning loc warn;
         comment_start_pos := [Lexing.lexeme_start lexbuf];
@@ -336,7 +336,7 @@ rule token = parse
       }
   | "*)"
       { let loc = Location.curr lexbuf
-        and warn = Warnings.Comment "not the end of a comment"
+        and warn = Warnings.Comment_not_end
         in
         Location.prerr_warning loc warn;
         lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_curr_pos - 1;

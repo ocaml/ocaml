@@ -63,8 +63,8 @@ static value intern_block;
 /* Point to the heap block allocated as destination block.
    Meaningful only if intern_extra_block is NULL. */
 
-#define Sign_extend_shift ((sizeof(long) - 1) * 8)
-#define Sign_extend(x) (((long)(x) << Sign_extend_shift) >> Sign_extend_shift)
+#define Sign_extend_shift ((sizeof(intnat) - 1) * 8)
+#define Sign_extend(x) (((intnat)(x) << Sign_extend_shift) >> Sign_extend_shift)
 
 #define read8u() (*intern_src++)
 #define read8s() Sign_extend(*intern_src++)
@@ -84,9 +84,9 @@ static value intern_block;
    (intern_src[-2] << 8) + intern_src[-1])
 
 #ifdef ARCH_SIXTYFOUR
-static long read64s(void)
+static intnat read64s(void)
 {
-  long res;
+  intnat res;
   int i;
   res = 0;
   for (i = 0; i < 8; i++) res = (res << 8) + intern_src[i];
@@ -443,7 +443,7 @@ CAMLprim value caml_input_value(value vchan)
   CAMLreturn (res);
 }
 
-CAMLexport value caml_input_val_from_string(value str, long int ofs)
+CAMLexport value caml_input_val_from_string(value str, intnat ofs)
 {
   CAMLparam1 (str);
   mlsize_t num_objects, size_32, size_64, whsize;
@@ -498,7 +498,7 @@ static value input_val_from_block(void)
   return obj;
 }
 
-CAMLexport value caml_input_value_from_malloc(char * data, long ofs)
+CAMLexport value caml_input_value_from_malloc(char * data, intnat ofs)
 {
   uint32 magic;
   mlsize_t block_len;
@@ -517,7 +517,7 @@ CAMLexport value caml_input_value_from_malloc(char * data, long ofs)
   return obj;
 }
 
-CAMLexport value caml_input_value_from_block(char * data, long len)
+CAMLexport value caml_input_value_from_block(char * data, intnat len)
 {
   uint32 magic;
   mlsize_t block_len;
@@ -645,13 +645,13 @@ CAMLexport double caml_deserialize_float_8(void)
   return f;
 }
 
-CAMLexport void caml_deserialize_block_1(void * data, long len)
+CAMLexport void caml_deserialize_block_1(void * data, intnat len)
 {
   memmove(data, intern_src, len);
   intern_src += len;
 }
 
-CAMLexport void caml_deserialize_block_2(void * data, long len)
+CAMLexport void caml_deserialize_block_2(void * data, intnat len)
 {
 #ifndef ARCH_BIG_ENDIAN
   unsigned char * p, * q;
@@ -664,7 +664,7 @@ CAMLexport void caml_deserialize_block_2(void * data, long len)
 #endif
 }
 
-CAMLexport void caml_deserialize_block_4(void * data, long len)
+CAMLexport void caml_deserialize_block_4(void * data, intnat len)
 {
 #ifndef ARCH_BIG_ENDIAN
   unsigned char * p, * q;
@@ -677,7 +677,7 @@ CAMLexport void caml_deserialize_block_4(void * data, long len)
 #endif
 }
 
-CAMLexport void caml_deserialize_block_8(void * data, long len)
+CAMLexport void caml_deserialize_block_8(void * data, intnat len)
 {
 #ifndef ARCH_BIG_ENDIAN
   unsigned char * p, * q;
@@ -690,7 +690,7 @@ CAMLexport void caml_deserialize_block_8(void * data, long len)
 #endif
 }
 
-CAMLexport void caml_deserialize_block_float_8(void * data, long len)
+CAMLexport void caml_deserialize_block_float_8(void * data, intnat len)
 {
 #if ARCH_FLOAT_ENDIANNESS == 0x01234567
   memmove(data, intern_src, len * 8);

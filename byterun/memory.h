@@ -51,7 +51,7 @@ color_t caml_allocation_color (void *hp);
 
 #ifdef DEBUG
 #define DEBUG_clear(result, wosize) do{ \
-  unsigned long caml__DEBUG_i; \
+  uintnat caml__DEBUG_i; \
   for (caml__DEBUG_i = 0; caml__DEBUG_i < (wosize); ++ caml__DEBUG_i){ \
     Field ((result), caml__DEBUG_i) = Debug_uninit_minor; \
   } \
@@ -107,8 +107,8 @@ color_t caml_allocation_color (void *hp);
 
 struct caml__roots_block {
   struct caml__roots_block *next;
-  long ntables;
-  long nitems;
+  intnat ntables;
+  intnat nitems;
   value *tables [5];
 };
 
@@ -171,7 +171,7 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
   CAMLxparamN (x, (size))
 
 
-#if defined (__GNUC__)
+#if defined (__GNUC__) && (__GNUC__ > 2 || (__GNUC__ == 2 && __GNUC_MINOR__ > 7))
   #define CAMLunused __attribute__ ((unused))
 #else
   #define CAMLunused

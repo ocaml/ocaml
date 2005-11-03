@@ -75,7 +75,7 @@ struct caml_thread_struct {
   struct caml_thread_struct * prev;
 #ifdef NATIVE_CODE
   char * bottom_of_stack;       /* Saved value of caml_bottom_of_stack */
-  unsigned long last_retaddr;   /* Saved value of caml_last_return_address */
+  uintnat last_retaddr;         /* Saved value of caml_last_return_address */
   value * gc_regs;              /* Saved value of caml_gc_regs */
   char * exception_pointer;     /* Saved value of caml_exception_pointer */
   struct caml__roots_block * local_roots; /* Saved value of local_roots */
@@ -120,7 +120,7 @@ static pthread_key_t thread_descriptor_key;
 static pthread_key_t last_channel_locked_key;
 
 /* Identifier for next thread creation */
-static long thread_next_ident = 0;
+static intnat thread_next_ident = 0;
 
 /* Whether to use sched_yield() or not */
 static int broken_sched_yield = 0;
@@ -168,13 +168,8 @@ static void caml_thread_scan_roots(scanning_action action)
 
 /* Hooks for enter_blocking_section and leave_blocking_section */
 
-static void (*prev_enter_blocking_section_hook) () = NULL;
-static void (*prev_leave_blocking_section_hook) () = NULL;
-
 static void caml_thread_enter_blocking_section(void)
 {
-  if (prev_enter_blocking_section_hook != NULL)
-    (*prev_enter_blocking_section_hook)();
   /* Save the stack-related global variables in the thread descriptor
      of the current thread */
 #ifdef NATIVE_CODE
@@ -235,8 +230,15 @@ static void caml_thread_leave_blocking_section(void)
   backtrace_buffer = curr_thread->backtrace_buffer;
   backtrace_last_exn = curr_thread->backtrace_last_exn;
 #endif
-  if (prev_leave_blocking_section_hook != NULL)
-    (*prev_leave_blocking_section_hook)();
+}
+
+static int caml_thread_try_leave_blocking_section(void)
+{
+  /* Disable immediate processing of signals (PR#3659).
+     try_leave_blocking_section always fails, forcing the signal to be
+     recorded and processed at the next leave_blocking_section or
+     polling. */
+  return 0;
 }
 
 /* Hooks for I/O locking */
@@ -303,7 +305,7 @@ static void * caml_thread_tick(void * arg)
     select(0, NULL, NULL, NULL, &timeout);
     /* This signal should never cause a callback, so don't go through
        handle_signal(), tweak the global variable directly. */
-    if (pending_signal == 0) pending_signal = SIGVTALRM;
+    pending_signals[SIGVTALRM] = 1;
 #ifdef NATIVE_CODE
     young_limit = young_end;
 #else
@@ -367,10 +369,9 @@ value caml_thread_initialize(value unit)   /* ML */
     /* Set up the hooks */
     prev_scan_roots_hook = scan_roots_hook;
     scan_roots_hook = caml_thread_scan_roots;
-    prev_enter_blocking_section_hook = enter_blocking_section_hook;
     enter_blocking_section_hook = caml_thread_enter_blocking_section;
-    prev_leave_blocking_section_hook = leave_blocking_section_hook;
     leave_blocking_section_hook = caml_thread_leave_blocking_section;
+    try_leave_blocking_section_hook = caml_thread_try_leave_blocking_section;
 #ifdef NATIVE_CODE
     caml_termination_hook = pthread_exit;
 #endif
@@ -400,7 +401,6 @@ static void caml_thread_stop(void)
   th->next->prev = th->prev;
   th->prev->next = th->next;
   /* Release the runtime system */
-  async_signal_mode = 1;
   pthread_mutex_lock(&caml_runtime_mutex);
   caml_runtime_busy = 0;
   pthread_mutex_unlock(&caml_runtime_mutex);
@@ -802,6 +802,56 @@ int caml_threadstatus_wait (value wrapper)
   return retcode;
 }
 
+/* Signal mask */
+
+static void decode_sigset(value vset, sigset_t * set)
+{
+  sigemptyset(set);
+  while (vset != Val_int(0)) {
+    int sig = convert_signal_number(Int_val(Field(vset, 0)));
+    sigaddset(set, sig);
+    vset = Field(vset, 1);
+  }
+}
+
+#ifndef NSIG
+#define NSIG 64
+#endif
+
+static value encode_sigset(sigset_t * set)
+{
+  value res = Val_int(0);
+  int i;
+
+  Begin_root(res)
+    for (i = 1; i < NSIG; i++)
+      if (sigismember(set, i)) {
+        value newcons = alloc_small(2, 0);
+        Field(newcons, 0) = Val_int(i);
+        Field(newcons, 1) = res;
+        res = newcons;
+      }
+  End_roots();
+  return res;
+}
+
+static int sigmask_cmd[3] = { SIG_SETMASK, SIG_BLOCK, SIG_UNBLOCK };
+
+value caml_thread_sigmask(value cmd, value sigs) /* ML */
+{
+  int how;
+  sigset_t set, oldset;
+  int retcode;
+
+  how = sigmask_cmd[Int_val(cmd)];
+  decode_sigset(sigs, &set);
+  enter_blocking_section();
+  retcode = pthread_sigmask(how, &set, &oldset);
+  leave_blocking_section();
+  caml_pthread_check(retcode, "Thread.sigmask");
+  return encode_sigset(&oldset);
+}
+
 /* Synchronous signal wait */
 
 value caml_wait_signal(value sigs) /* ML */
@@ -810,12 +860,7 @@ value caml_wait_signal(value sigs) /* ML */
   sigset_t set;
   int retcode, signo;
 
-  sigemptyset(&set);
-  while (sigs != Val_int(0)) {
-    int sig = convert_signal_number(Int_val(Field(sigs, 0)));
-    sigaddset(&set, sig);
-    sigs = Field(sigs, 1);
-  }
+  decode_sigset(sigs, &set);
   enter_blocking_section();
   retcode = sigwait(&set, &signo);
   leave_blocking_section();

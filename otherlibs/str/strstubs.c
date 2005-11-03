@@ -33,9 +33,9 @@ union backtrack_point {
   } undo;
 };
 
-#define Set_tag(p) ((value *) ((long)(p) | 1))
-#define Clear_tag(p) ((value *) ((long)(p) & ~1))
-#define Tag_is_set(p) ((long)(p) & 1)
+#define Set_tag(p) ((value *) ((intnat)(p) | 1))
+#define Clear_tag(p) ((value *) ((intnat)(p) & ~1))
+#define Tag_is_set(p) ((intnat)(p) & 1)
 
 #define BACKTRACK_STACK_BLOCK_SIZE 500
 
@@ -45,8 +45,8 @@ struct backtrack_stack {
 };
 
 #define Opcode(x) ((x) & 0xFF)
-#define Arg(x) ((unsigned long)(x) >> 8)
-#define SignedArg(x) ((long)(x) >> 8)
+#define Arg(x) ((uintnat)(x) >> 8)
+#define SignedArg(x) ((intnat)(x) >> 8)
 
 enum {
   CHAR,       /* match a single character */
@@ -123,7 +123,7 @@ static int re_match(value re,
                     int accept_partial_match)
 {
   register value * pc;
-  long instr;
+  intnat instr;
   struct backtrack_stack * stack;
   union backtrack_point * sp;
   value cpool;

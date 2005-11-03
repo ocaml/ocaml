@@ -111,7 +111,7 @@ value rec unaction =
       let (pl, a) = unaction e in ([p :: pl], a)
   | <:expr< fun _ -> $e$ >> ->
       let (pl, a) = unaction e in
-      (let loc = (Token.nowhere, Token.nowhere) in [<:patt< _ >> :: pl], a)
+      (let _loc = (Token.nowhere, Token.nowhere) in [<:patt< _ >> :: pl], a)
   | _ -> raise Not_found ]
 ;
 
@@ -174,7 +174,7 @@ and unrule =
   [ <:expr< ($e1$, Gramext.action $e2$) >> ->
       let (pl, a) =
         match unaction e2 with
-        [ ([], None) -> let loc = (Token.nowhere, Token.nowhere) in ([], Some <:expr< () >>)
+        [ ([], None) -> let _loc = (Token.nowhere, Token.nowhere) in ([], Some <:expr< () >>)
         | x -> x ]
       in
       let sl = unpsymbol_list (List.rev pl) e1 in

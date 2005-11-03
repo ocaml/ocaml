@@ -8,6 +8,8 @@ OBJS=stdpp.cmo token.cmo plexer.cmo gramext.cmo grammar.cmo extfold.cmo extfun.c
 SHELL=/bin/sh
 TARGET=gramlib.cma
 
+.PHONY: opt all clean depend promote compare install installopt
+
 all: $(TARGET)
 opt: opt$(PROFILING)
 

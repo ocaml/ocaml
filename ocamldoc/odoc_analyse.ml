@@ -29,7 +29,7 @@ open Typedtree
 let init_path () =
   load_path :=
     "" :: List.rev (Config.standard_library :: !Clflags.include_dirs);
-  Env.reset_cache()
+  Env.reset_cache ()
 
 (** Return the initial environment in which compilation proceeds. *)
 let initial_env () =
@@ -105,10 +105,10 @@ let (++) x f = f x
 (** Analysis of an implementation file. Returns (Some typedtree) if
    no error occured, else None and an error message is printed.*)
 let process_implementation_file ppf sourcefile =
-
-  init_path();
+  init_path ();
   let prefixname = Filename.chop_extension sourcefile in
   let modulename = String.capitalize(Filename.basename prefixname) in
+  Env.set_unit_name modulename;
   let inputfile = preprocess sourcefile in
   let env = initial_env () in
   try
@@ -132,9 +132,10 @@ let process_implementation_file ppf sourcefile =
 (** Analysis of an interface file. Returns (Some signature) if
    no error occured, else None and an error message is printed.*)
 let process_interface_file ppf sourcefile =
-  init_path();
+  init_path ();
   let prefixname = Filename.chop_extension sourcefile in
   let modulename = String.capitalize(Filename.basename prefixname) in
+  Env.set_unit_name modulename;
   let inputfile = preprocess sourcefile in
   let ast = parse_file inputfile Parse.interface ast_intf_magic_number in
   let sg = Typemod.transl_signature (initial_env()) ast in
@@ -267,14 +268,14 @@ let rec remove_class_elements_between_stop keep eles =
   | ele :: q ->
       match ele with
         Odoc_class.Class_comment [ Odoc_types.Raw "/*" ] ->
-	  remove_class_elements_between_stop (not keep) q
+          remove_class_elements_between_stop (not keep) q
       | Odoc_class.Class_attribute _
       | Odoc_class.Class_method _
       | Odoc_class.Class_comment _ ->
-	  if keep then
-	    ele :: (remove_class_elements_between_stop keep q)
-	  else
-	    remove_class_elements_between_stop keep q
+          if keep then
+            ele :: (remove_class_elements_between_stop keep q)
+          else
+            remove_class_elements_between_stop keep q
 
 (** Remove the class elements between the stop special comments in a class kind. *)
 let rec remove_class_elements_between_stop_in_class_kind k =
@@ -303,57 +304,57 @@ let rec remove_module_elements_between_stop keep eles =
   | ele :: q ->
       match ele with
         Odoc_module.Element_module_comment [ Odoc_types.Raw "/*" ] ->
-	  f (not keep) q
+          f (not keep) q
       | Odoc_module.Element_module_comment _ ->
           if keep then
-	    ele :: (f keep q)
-	  else
-	    f keep q
-      | Odoc_module.Element_module m ->
-	  if keep then
-            (
-	     m.Odoc_module.m_kind <- remove_module_elements_between_stop_in_module_kind m.Odoc_module.m_kind ;
-             (Odoc_module.Element_module m) :: (f keep q)
-	    )
-	  else
-	    f keep q
-      | Odoc_module.Element_module_type mt ->
-	  if keep then
-	    (
-             mt.Odoc_module.mt_kind <- Odoc_misc.apply_opt
-		 remove_module_elements_between_stop_in_module_type_kind mt.Odoc_module.mt_kind ;
-             (Odoc_module.Element_module_type mt) :: (f keep q)
-	    )
-	  else
-	    f keep q
-      | Odoc_module.Element_included_module _ ->
-	  if keep then
             ele :: (f keep q)
-	  else
-	    f keep q
+          else
+            f keep q
+      | Odoc_module.Element_module m ->
+          if keep then
+            (
+             m.Odoc_module.m_kind <- remove_module_elements_between_stop_in_module_kind m.Odoc_module.m_kind ;
+             (Odoc_module.Element_module m) :: (f keep q)
+            )
+          else
+            f keep q
+      | Odoc_module.Element_module_type mt ->
+          if keep then
+            (
+             mt.Odoc_module.mt_kind <- Odoc_misc.apply_opt
+                 remove_module_elements_between_stop_in_module_type_kind mt.Odoc_module.mt_kind ;
+             (Odoc_module.Element_module_type mt) :: (f keep q)
+            )
+          else
+            f keep q
+      | Odoc_module.Element_included_module _ ->
+          if keep then
+            ele :: (f keep q)
+          else
+            f keep q
       | Odoc_module.Element_class c ->
-	  if keep then
-	    (
+          if keep then
+            (
              c.Odoc_class.cl_kind <- remove_class_elements_between_stop_in_class_kind c.Odoc_class.cl_kind ;
              (Odoc_module.Element_class c) :: (f keep q)
-	    )
-	  else
-	    f keep q
+            )
+          else
+            f keep q
       | Odoc_module.Element_class_type ct ->
           if keep then
-	    (
-	     ct.Odoc_class.clt_kind <- remove_class_elements_between_stop_in_class_type_kind ct.Odoc_class.clt_kind ;
+            (
+             ct.Odoc_class.clt_kind <- remove_class_elements_between_stop_in_class_type_kind ct.Odoc_class.clt_kind ;
              (Odoc_module.Element_class_type ct) :: (f keep q)
-	    )
-	  else
-	    f keep q
+            )
+          else
+            f keep q
       | Odoc_module.Element_value _
       | Odoc_module.Element_exception _
       | Odoc_module.Element_type _ ->
-	  if keep then
+          if keep then
             ele :: (f keep q)
-	  else
-	    f keep q
+          else
+            f keep q
 
 
 (** Remove the module elements between the stop special comments, in the given module kind. *)

@@ -81,10 +81,11 @@ val enter_cltype: string -> cltype_declaration -> t -> Ident.t * t
 val add_namespace: string -> Cduce_types.Encodings.Utf8.t -> t -> t
 val find_namespace: string -> t -> Cduce_types.Ns.Uri.t
 
-(* Reset the cache of in-core module interfaces.
-   To be called in particular when load_path changes. *)
-
+(* Initialize the cache of in-core module interfaces. *)
 val reset_cache: unit -> unit
+
+(* Remember the name of the current compilation unit. *)
+val set_unit_name: string -> unit
 
 (* Read, save a signature to/from a file *)
 
