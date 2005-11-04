@@ -4,11 +4,14 @@ all: ocamlducec ocamlduce ocamlducedep ocamlducedoc ocamlduce.cma
 opt: all ocamlduceopt ocamlducec.opt ocamlduceopt.opt ocamlducedep.opt ocamlducedoc.opt ocamlduce.cmxa
 
 
-include config/Makefile
-include stdlib/StdlibModules
-
 CAMLC=ocamlc.opt
 CAMLOPT=ocamlopt.opt
+
+OCAML_CONFIG=$(shell $(CAMLC) -where)/Makefile.config
+
+include $(OCAML_CONFIG)
+include stdlib/StdlibModules
+
 CAMLYACC=ocamlyacc
 YACCFLAGS=-v
 CAMLLEX=ocamllex
