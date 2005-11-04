@@ -408,6 +408,9 @@ let pcdata =
 			 pext_desc = Pext_cst CT.Char.any })
 
 let captures = ref []
+let add_capture x loc =
+  if List.for_all (fun (y,_) -> x <> y) !captures 
+  then captures := (x,loc) :: !captures
 
 let rec derecurs env p = match p.pext_desc with
   | Pext_name v -> derecurs_var env p.pext_loc v
@@ -429,7 +432,7 @@ let rec derecurs env p = match p.pext_desc with
 	| (p,None) -> derecurs env p, None in
       mk_record ~err:(perr p) o (transl_record env.penv_tenv p.pext_loc aux r)
   | Pext_bind (x,c) -> 
-      captures := (x,p.pext_loc) :: !captures;
+      add_capture x p.pext_loc;
       mk_constant (id x) (transl_const env.penv_tenv c)
   | Pext_constant c -> mk_type (CT.constant (transl_const env.penv_tenv c))
   | Pext_regexp r -> rexp (derecurs_regexp env r) 
@@ -456,7 +459,7 @@ and derecurs_regexp env = function
   | Pext_star p -> mk_star (derecurs_regexp env p)
   | Pext_weakstar p -> mk_weakstar (derecurs_regexp env p) 
   | Pext_capture (x,p,l) -> 
-      captures := (x,l) :: !captures;
+      add_capture x l;
       mk_seqcapt (id x) (derecurs_regexp env p)
 
 and derecurs_var env loc v =
@@ -468,7 +471,7 @@ and derecurs_var env loc v =
 	   with Not_found ->
 	     try CEnv.find id env.penv_derec
 	     with Not_found -> derecurs_var' env loc v
-	 with Not_found -> captures := (x,loc) :: !captures; mk_capture id)
+	 with Not_found -> add_capture x loc; mk_capture id)
     | _ -> 
 	try derecurs_var' env loc v
 	with Not_found -> error loc NotXmlType

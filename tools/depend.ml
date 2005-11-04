@@ -161,7 +161,7 @@ let rec add_expr bv exp =
 and add_extexp bv = function
   | Pextexp_cst _ -> ()
   | Pextexp_match (e,bl) | Pextexp_map (e,bl) | Pextexp_xmap (e,bl) -> 
-      add_expr bv e; List.iter (fun (_,e) -> add_expr bv e) bl
+      add_expr bv e; List.iter (fun (_,_,e) -> add_expr bv e) bl
   | Pextexp_record fl -> List.iter (fun (_,e) -> add_expr bv e) fl
   | Pextexp_op (op,l) -> List.iter (add_expr bv) l
   | Pextexp_namespace (_,_,e) | Pextexp_removefield (e,_)
