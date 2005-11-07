@@ -46,6 +46,7 @@ and text_element =
   | Subscript of text
   | Module_list of string list
   | Index_list
+  | Custom of string * text
 
 and text = text_element list
 

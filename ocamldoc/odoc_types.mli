@@ -14,7 +14,7 @@
 (** Types for the information collected in comments. *)
 
 (** The differents kinds of element references. *)
-type ref_kind = 
+type ref_kind =
     RK_module
   | RK_module_type
   | RK_class
@@ -26,7 +26,7 @@ type ref_kind =
   | RK_method
   | RK_section of text
 
-and text_element = 
+and text_element =
   | Raw of string (** Raw text. *)
   | Code of string (** The string is source code. *)
   | CodePre of string (** The string is pre-formatted source code. *)
@@ -49,15 +49,16 @@ and text_element =
        (** A reference to an element. Complete name and kind. *)
   | Superscript of text (** Superscripts. *)
   | Subscript of text (** Subscripts. *)
-  | Module_list of string list 
+  | Module_list of string list
        (** The table of the given modules with their abstract; *)
   | Index_list (** The links to the various indexes (values, types, ...) *)
+  | Custom of string * text (** to extend \{foo syntax *)
 
 (** [text] is a list of text_elements. The order matters. *)
 and text = text_element list
 
 (** The different forms of references in \@see tags. *)
-type see_ref = 
+type see_ref =
     See_url of string
   | See_file of string
   | See_doc of string
@@ -83,7 +84,7 @@ type info = {
     i_raised_exceptions : raised_exception list; (** The list of raised exceptions. *)
     i_return_value : text option ; (** The description text of the return value. *)
     i_custom : (string * text) list ; (** A text associated to a custom @-tag. *)
-  } 
+  }
 
 (** An empty info structure. *)
 val dummy_info : info
@@ -92,7 +93,7 @@ val dummy_info : info
 type location = {
     loc_impl : (string * int) option ; (** implementation file name and position *)
     loc_inter : (string * int) option ; (** interface file name and position *)
-  } 
+  }
 
 (** A dummy location. *)
 val dummy_loc : location
@@ -111,7 +112,7 @@ type merge_option =
                                and all raised exceptions are kept. *)
   | Merge_return_value (** Information on return value are concatenated. *)
   | Merge_custom (** Merge custom tags (all pairs (tag, text) are kept). *)
-  
+
 (** The list with all merge options. *)
 val all_merge_options : merge_option list
 
@@ -130,4 +131,3 @@ val make_dump : 'a -> 'a dump
 (** Verify that a dump has the correct magic number
    and return its content. *)
 val open_dump : 'a dump -> 'a
-

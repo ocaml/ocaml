@@ -789,14 +789,14 @@ let rec copy ty =
               let keep = more.level <> generic_level in
               let more' =
                 match more.desc with
-		  Tsubst ty -> ty
-		| Tconstr _ ->
-		    if keep then save_desc more more.desc;
-		    copy more
+                  Tsubst ty -> ty
+                | Tconstr _ ->
+                    if keep then save_desc more more.desc;
+                    copy more
                 | Tvar | Tunivar ->
                     save_desc more more.desc;
                     if keep then more else newty more.desc
-		|  _ -> assert false
+                |  _ -> assert false
               in
               (* Register new type first for recursion *)
               more.desc <- Tsubst(newgenty(Ttuple[more';t]));
