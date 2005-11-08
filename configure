@@ -585,6 +585,7 @@ case "$host" in
   ia64-*-freebsd*)              arch=ia64; system=freebsd;;
   x86_64-*-linux*)              arch=amd64; system=linux;;
   x86_64-*-freebsd*)            arch=amd64; system=freebsd;;
+  x86_64-*-netbsd*)             arch=amd64; system=netbsd;;
   x86_64-*-openbsd*)            arch=amd64; system=openbsd;;
 esac
 
@@ -1291,7 +1292,8 @@ if test $has_tk = true; then
     "-I/usr/include/tcl8.3 -I/usr/include/tk8.3" \
     "-I/usr/local/include/tcl8.2 -I/usr/local/include/tk8.2" \
     "-I/usr/include/tcl8.2 -I/usr/include/tk8.2" \
-    "-I/sw/include"
+    "-I/sw/include" \
+    "-I/usr/pkg/include"
   do if test -z "$tcl_version"; then
     tk_defs="$tk_incs"
     tcl_version=`sh ./runtest $tk_defs $tk_x11_include tclversion.c`
@@ -1337,16 +1339,26 @@ if test $has_tk = true; then
   elif sh ./hasgot -L/sw/lib $tk_libs -ltcl$tclmaj.$tclmin $tkauxlibs \
                    Tcl_DoOneEvent
   then tk_libs="-L/sw/lib -ltk$tkmaj.$tkmin -ltcl$tclmaj.$tclmin $dllib"
+  elif sh ./hasgot -L/usr/pkg/lib $tk_libs $tk_x11_libs \
+        -ltk$tkmaj$tkmin -ltcl$tclmaj$tclmin -lpthread $tkauxlibs \
+                   Tcl_DoOneEvent
+  then
+    tk_libs="-L/usr/pkg/lib $tk_libs $tk_x11_libs -ltk$tkmaj$tkmin -ltcl$tclmaj$tclmin -lpthread $tkauxlibs"
   else
     echo "Tcl library not found."
     has_tk=false
   fi
 fi
+
 if test $has_tk = true; then
   if sh ./hasgot $tk_libs $tk_x11_libs $tkauxlibs Tk_SetGrid; then
     echo "Tcl/Tk libraries found."
   elif sh ./hasgot -L/sw/lib $tk_libs $tk_x11_libs $tkauxlibs Tk_SetGrid; then
     tk_libs="-L/sw/lib $tk_libs"
+    echo "Tcl/Tk libraries found."
+  elif sh ./hasgot -L/usr/pkg/lib $tk_libs $tk_x11_libs $tkauxlibs \
+                   Tk_SetGrid; then
+    tk_libs="-L/usr/pkg/lib $tk_libs"
     echo "Tcl/Tk libraries found."
   else
     echo "Tcl library found."
@@ -1503,3 +1515,4 @@ fi
 echo
 echo "** Objective Caml configuration completed successfully **"
 echo
+
