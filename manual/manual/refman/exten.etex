@@ -62,16 +62,16 @@ It will be accepted if each one of @expr_1 \ldots expr_n@ is
 statically constructive with respect to @name_1 \ldots name_n@ and
 not immediately linked to any of @name_1 \ldots name_n@
 
-An expression @e@ is said to be {\em statically constructive
+An expression @@e@@ is said to be {\em statically constructive
 with respect to} the variables @name_1 \ldots name_n@ if at least
 one of the following conditions is true:
 \begin{itemize}
-\item @e@ has no free occurrence of any of @name_1 \ldots name_n@
-\item @e@ is a variable
-\item @e@ has the form @"fun" \ldots "->" \ldots@
-\item @e@ has the form @"function" \ldots "->" \ldots@
-\item @e@ has the form @"lazy" "(" \ldots ")"@
-\item @e@ has one of the following forms, where each one of
+\item @@e@@ has no free occurrence of any of @name_1 \ldots name_n@
+\item @@e@@ is a variable
+\item @@e@@ has the form @"fun" \ldots "->" \ldots@
+\item @@e@@ has the form @"function" \ldots "->" \ldots@
+\item @@e@@ has the form @"lazy" "(" \ldots ")"@
+\item @@e@@ has one of the following forms, where each one of
   @expr_1 \ldots expr_m@ is statically constructive with respect to
   @name_1 \ldots name_n@, and @expr_0@ is statically constructive with
   respect to @name_1 \ldots name_n, xname_1 \ldots xname_m@:
@@ -91,13 +91,13 @@ one of the following conditions is true:
   \end{itemize}
 \end{itemize}
 
-An expression @e@ is said to be {\em immediately linked to} the variable
+An expression @@e@@ is said to be {\em immediately linked to} the variable
 @name@ in the following cases:
 \begin{itemize}
-\item @e@ is @name@
-\item @e@ has the form @expr_1";" \ldots ";" expr_m@ where @expr_m@
+\item @@e@@ is @name@
+\item @@e@@ has the form @expr_1";" \ldots ";" expr_m@ where @expr_m@
    is immediately linked to @name@
-\item @e@ has the form @"let" ["rec"] xname_1 "=" expr_1 "and" \ldots
+\item @@e@@ has the form @"let" ["rec"] xname_1 "=" expr_1 "and" \ldots
    "and" xname_m "=" expr_m "in" expr_0@ where @expr_0@ is immediately
    linked to @name@ or to one of the @xname_i@ such that @expr_i@
    is immediately linked to @name@.
@@ -106,11 +106,11 @@ An expression @e@ is said to be {\em immediately linked to} the variable
 \section{Range patterns}
 
 In patterns, Objective Caml recognizes the form
-@"'" c "'" ".." "'" d "'"@
+@"'" @c@ "'" ".." "'" @d@ "'"@
 (two character literals separated by~"..") as shorthand for the pattern
 \begin{center}
-@"'" c "'" "|" "'" c_1 "'" "|" "'" c_2 "'" "|" \ldots
-        "|" "'" c_n "'" "|" "'" d "'"@
+@"'" @c@ "'" "|" "'" @c@_1 "'" "|" "'" @c@_2 "'" "|" \ldots
+        "|" "'" @c@_n "'" "|" "'" @d@ "'"@
 \end{center}
 where \nth{c}{1}, \nth{c}{2}, \ldots, \nth{c}{n} are the characters
 that occur between \var{c} and \var{d} in the ASCII character set. For
@@ -264,10 +264,10 @@ not final and subject to change in future releases.
 Currently, the compiler requires that all dependency cycles between
 the recursively-defined module identifiers go through at least one
 ``safe'' module.  A module is ``safe'' if all value definitions that
-it contains have function types @ty_1 '->' ty_2@.  Evaluation of a
+it contains have function types @typexpr_1 '->' typexpr_2@.  Evaluation of a
 recursive module definition proceeds by building initial values for
 the safe modules involved, binding all (functional) values to
-@'fun' x '->' 'raise' 'Undefined_recursive_module'@.  The defining
+@'fun' '_' '->' 'raise' 'Undefined_recursive_module'@.  The defining
 module expressions are then evaluated, and the initial values
 for the safe modules are replaced by the values thus computed.  If a
 function component of a safe module is applied during this computation

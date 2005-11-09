@@ -31,10 +31,10 @@ interface or unit implementation must not have any other free variables.
 In other terms, the type-checking and compilation of an interface or
 implementation proceeds in the initial environment
 \begin{center}
-@name_1 ':' 'sig' interface_1 'end' \ldots
- name_n ':' 'sig' interface_n 'end'@
+@name_1 ':' 'sig' specification_1 'end' \ldots
+ name_n ':' 'sig' specification_n 'end'@
 \end{center}
 where @name_1 \ldots name_n@ are the names of the other
 compilation units available in the search path (see
-chapter~\ref{c:camlc} for more details) and @interface_1 \ldots
-interface_n@ are their respective interfaces.
+chapter~\ref{c:camlc} for more details) and @specification_1 \ldots
+specification_n@ are their respective interfaces.

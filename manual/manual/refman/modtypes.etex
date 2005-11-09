@@ -29,8 +29,10 @@ mod-constraint:
           'type' [type-parameters] typeconstr '=' typexpr
         | 'module' module-path '=' extended-module-path
 ;
+%BEGIN LATEX
 \end{syntax}
 \begin{syntax}
+%END LATEX
 specification:
           'val' value-name ':' typexpr
         | 'external' value-name ':' typexpr '=' external-declaration
@@ -95,8 +97,8 @@ written @'type' typedef { 'and' typedef }@ and consists of a sequence
 of mutually recursive definitions of type names.
 
 Each type definition in the signature specifies an optional type
-equation @'=' typexp@ and an optional type representation 
-@'=' constr-decl \ldots@ or @'=' '{' label-decl \ldots '}'@.
+equation @'=' typexpr@ and an optional type representation 
+@'=' constr-decl \ldots@ or @'=' '{' field-decl \ldots '}'@.
 The implementation of the type name in a matching structure must
 be compatible with the type expression specified in the equation (if
 given), and have the specified representation (if given). Conversely,
@@ -118,10 +120,10 @@ right-hand side of the abbreviation will be hidden from the users of the
 structure. Users of the structure consider that type as incompatible
 with any other type: a fresh type has been generated.
 
-\item[Type abbreviation: an equation @'=' typexp@, no representation.] ~ \\
-The type name must be implemented by a type compatible with @typexp@.
+\item[Type abbreviation: an equation @'=' typexpr@, no representation.] ~ \\
+The type name must be implemented by a type compatible with @typexpr@.
 All users of the structure know that the type name is
-compatible with @typexp@.
+compatible with @typexpr@.
 
 \item[New variant type or record type: no equation, a representation.] ~ \\
 The type name must be implemented by a variant type or record type
@@ -255,7 +257,7 @@ Assuming @module-type@ denotes a signature, the expression
 the same signature where type equations have been added to some of the
 type specifications, as described by the constraints following the
 "with" keyword. The constraint @'type' [type-parameters] typeconstr
-'=' typexp@  adds the type equation @'=' typexp@ to the specification
+'=' typexpr@  adds the type equation @'=' typexpr@ to the specification
 of the type component named @typeconstr@ of the constrained signature.
 The constraint @'module' module-path '=' extended-module-path@ adds
 type equations to all type components of the sub-structure denoted by

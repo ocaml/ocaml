@@ -171,7 +171,9 @@ class-expr:
    |  'let' ['rec'] let-binding {'and' let-binding} 'in' class-expr
    |  'object' ['(' pattern [':' typexpr] ')'] { class-field } 'end'
 ;
+%BEGIN LATEX
 \end{syntax} \begin{syntax}
+%END LATEX
 class-field:
       'inherit' class-expr ['as' value-name]
    |  'val' ['mutable'] inst-var-name [':' typexpr] '=' expr
@@ -233,11 +235,12 @@ is a short form for
 The {\tt let} and {\tt let rec} constructs bind value names locally,
 as for the core language expressions.
 
-\subsubsection*{Class body}
-\label{ss:class-body}
-
+\subsubsection*{Class\label{ss:class-body} body}
+\begin{syntax}
+class-body:  ['(' pattern [':' typexpr] ')'] { class-field }
+\end{syntax}
 The expression
-@'object' '(' pattern [':' typexpr] ')' { class-field } 'end'@ denotes
+@'object' class-body 'end'@ denotes
 a class body. This is the prototype for an object : it lists the
 instance variables and methods of an objet of this class.
 
@@ -462,7 +465,7 @@ defines an abbreviation @class-name@ for the class body type
 @class-body-type@.  As for class definitions, two type abbreviations
 @class-name@ and @'#' class-name@ are also defined. The definition can
 be parameterized by some type parameters. If any method in the class
-type body is virtual, the definition must be flagged @virtual@.
+type body is virtual, the definition must be flagged "virtual".
 
 Two class type definitions match if they have the same type parameters
 and the types they expand to match.

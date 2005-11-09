@@ -1,4 +1,4 @@
-\section{Module expressions (module implementations)} \label{s:module-expr}
+\section{Module\label{s:module-expr} expressions (module implementations)}
 \pdfsection{Module expressions (module implementations)}
 
 Module expressions are the module-level equivalent of value

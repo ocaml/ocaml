@@ -21,20 +21,12 @@ toplevel-phrase:
         | expr
         | '#' ident directive-argument
 ;
-definition:
-          'let' ['rec'] let-binding  { 'and' let-binding }
-        | 'external' value-name ':' typexpr '=' external-declaration
-        | type-definition
-        | exception-definition
-        | 'module' module-name [ ':' module-type ] '=' module-expr
-        | 'module' 'type' modtype-name '=' module-type
-        | 'open' module-path
-;
 directive-argument:
-          nothing
+          epsilon
         | string-literal
         | integer-literal
         | value-path
+;
 \end{syntax}
 
 A phrase can consist of a definition, similar to those found in
@@ -90,7 +82,7 @@ easily be used in conjunction with an external line editor such as
 \end{latexonly}
 \begin{htmlonly}
 (see the
-\ahref{http://caml.inria.fr/humps/index_framed_caml.html}{Caml Hump}).
+\ahref{http://caml.inria.fr/humps/index\_framed\_caml.html}{Caml Hump}).
 \end{htmlonly}
 Another option is to use "ocaml" under Gnu Emacs, which gives the
 full editing power of Emacs (command "run-caml" from library "inf-caml").
@@ -249,12 +241,12 @@ type of the function. That is, the toplevel loop will call
 \var{printer-name} when it has such a value to print.
 
 The printing function \var{printer-name} should have type
-@"Format.formatter" "->" t "->" "unit"@, where \var{t} is the
+@"Format.formatter" "->" @t@ "->" "unit"@, where @@t@@ is the
 type for the values to be printed, and should output its textual
-representation for the value of type \var{t} on the given formatter,
+representation for the value of type @@t@@ on the given formatter,
 using the functions provided by the "Format" library.  For backward
 compatibility, \var{printer-name} can also have type
-@t "->" "unit"@ and should then output on the standard
+@@t@ "->" "unit"@ and should then output on the standard
 formatter, but this usage is deprecated.
 
 \item["#remove_printer "\var{printer-name}";;"]

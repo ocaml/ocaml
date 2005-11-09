@@ -133,7 +133,9 @@ tag-spec:
         '`'tag-name [ "of" typexpr ]
       | typexpr
 ;
+%BEGIN LATEX
 \end{syntax} \begin{syntax}
+%END LATEX
 tag-spec-full:
         '`'tag-name [ "of" typexpr ] { '&' typexpr }
       | typexpr

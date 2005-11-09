@@ -359,16 +359,16 @@ are in scope at the selected program point can be accessed.
 Expressions that can be printed are a subset of Objective Caml
 expressions, as described by the following grammar:
 \begin{syntax}
-expr:
+simple-expr:
     lowercase-ident
   | { capitalized-ident '.' } lowercase-ident
   | '*'
   | '$' integer
-  | expr '.' lowercase-ident
-  | expr '.(' integer ')'
-  | expr '.[' integer ']'
-  | '!' expr
-  | '(' expr ')'
+  | simple-expr '.' lowercase-ident
+  | simple-expr '.(' integer ')'
+  | simple-expr '.[' integer ']'
+  | '!' simple-expr
+  | '(' simple-expr ')'
 \end{syntax}
 The first two cases refer to a value identifier, either unqualified or
 qualified by the path to the structure that define it.

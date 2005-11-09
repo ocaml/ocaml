@@ -1,7 +1,6 @@
 \input{book.hva}
 \renewcommand{\@indexsection}[1]{\chapter{#1}}
 \newcommand{\black}{\htmlcolor{#000000}}
-\newcounter{tocdepth}
 \newcommand{\machine}{\tt}
 \newenvironment{camlunder}{\@style{U}}{}
 \newcommand{\caml}{\begin{alltt}\renewcommand{\\}{\char92}\def\<{\begin{camlunder}}\renewcommand{\>}{\end{camlunder}}\activebracefalse}
@@ -9,26 +8,6 @@
 \newcommand{\?}{\black\#\blue }
 \renewcommand{\:}{\maroon}
 \newcommand{\var}[1]{\textit{#1}}
-\newif\ifspace
-\def\addspace{\ifspace\spacefalse\fi}
-\newcommand{\token}[1]{\texttt{\blue#1}}
-\def\nonterm#1{\addspace\texttt{\sl#1}\spacetrue}
-\def\brepet{\addspace\{}
-\def\erepet{\}}
-\def\boption{\addspace[}
-\def\eoption{]}
-\def\brepets{\addspace\{}
-\def\erepets{\}^+}
-\def\bparen{\addspace(}
-\def\eparen{)}
-\def\orelse{\mid\spacefalse}
-\def\is{ & ::= & \spacefalse }
-\def\alt{ \\ & \mid & \spacefalse }
-\def\sep{ \\[2mm] \spacefalse }
-\def\emptystring{\epsilon}
-\def\syntax{$$\begin{array}{rrl}\spacefalse}
-\def\endsyntax{\end{array}$$}
-\def\synt#1{$\spacefalse#1$}
 
 \newenvironment{library}{}{}
 \newcounter{page}
@@ -120,11 +99,9 @@
 \def\event{§§}
 \def\fromoneto#1#2{$#1 = 1,\ldots{} , #2$}
 
-\newcommand{\jobname}{manual}
 \newcommand{\vfill}{}
-
-%\def\number{}
-%\def\year{2003}
+\def\number{}
+\def\year{2005}
 
 % Pour alltt
 

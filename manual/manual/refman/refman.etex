@@ -20,7 +20,7 @@ definitely part of a full formal definition of the language.
 
 The syntax of the language is given in BNF-like notation. Terminal
 symbols are set in typewriter font (@'like' 'this'@).
-Non-terminal symbols are set in italic font (@like that@). 
+Non-terminal symbols are set in italic font (@@like@ @that@@). 
 Square brackets @[\ldots]@ denote optional components. Curly brackets
 @{\ldots}@ denotes zero, one or several repetitions of the enclosed
 components. Curly bracket with a trailing plus sign @{{\ldots}}@

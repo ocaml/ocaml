@@ -2,7 +2,6 @@
 
 (** Basic functions and types for LablTk *)
 
-open Tk
 open Widget
 
 (** {6 Initialization and termination} *)

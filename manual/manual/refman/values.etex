@@ -80,7 +80,7 @@ The current implementation limits each variant type to have at most
 Polymorphic variants are an alternate form of variant values, not
 belonging explicitly to a predefined variant type, and following
 specific typing rules. They can be either constant, written
-@"`"tag-name@, or non-constant, written @"`"tag-name(v)@.
+@"`"tag-name@, or non-constant, written @"`"tag-name@$(v)$.
 
 \subsection{Functions}
 

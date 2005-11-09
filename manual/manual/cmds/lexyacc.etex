@@ -139,32 +139,35 @@ may facilitate the use of "ocamllex" as a simple text processing tool.
 
 The regular expressions are in the style of "lex", with a more
 Caml-like syntax.
-
+\begin{syntax}
+regexp:
+  \ldots
+\end{syntax}
 \begin{options}
 
-\item[@"'" char "'"@]
+\item[@"'" regular-char || escape-sequence "'"@]
 A character constant, with the same syntax as Objective Caml character
 constants. Match the denoted character.
 
 \item["_"]
 (Underscore.) Match any character.
 
-\item["eof"]
+\item[@"eof"@]
 Match the end of the lexer input.\\
 {\bf Note:} On some systems, with interactive input, an end-of-file
 may be followed by more characters.  However, "ocamllex" will not
 correctly handle regular expressions that contain "eof" followed by
 something else.
 
-\item[@'"' string '"'@]
+\item[@'"' { string-character } '"'@]
 A string constant, with the same syntax as Objective Caml string
 constants. Match the corresponding sequence of characters.
 
 \item[@'[' character-set ']'@]
 Match any single character belonging to the given
 character set. Valid character sets are: single
-character constants @"'" c "'"@; ranges of characters
-@"'" c_1 "'" "-" "'" c_2 "'"@ (all characters between $c_1$ and $c_2$,
+character constants @"'" @c@ "'"@; ranges of characters
+@"'" @c@_1 "'" "-" "'" @c@_2 "'"@ (all characters between $c_1$ and $c_2$,
 inclusive); and the union of two or more character sets, denoted by
 concatenation.
 
@@ -266,7 +269,7 @@ alternation of those. Then, the type of @ident@ is "char" (or "char
 option").
 Option types are introduced when overall rule matching does not
 imply matching of the bound sub-pattern. This is in particular the
-case of @'(' regexp 'as' indent')' '?'@ and of
+case of @'(' regexp 'as' ident ')' '?'@ and of
 @regexp_1 '|' '(' regexp_2 'as' ident ')'@.
 
 There is no linearity restriction over "as" bound variables.
@@ -357,20 +360,22 @@ Declarations are given one per line. They all start with a \verb"%" sign.
 
 \begin{options}
 
-\item[@"%token" symbol \ldots symbol@]
-Declare the given symbols as tokens (terminal symbols).  These symbols
+\item[@"%token" constr \ldots constr@]
+Declare the given symbols @constr \ldots constr@
+as tokens (terminal symbols).  These symbols
 are added as constant constructors for the "token" concrete type.
 
-\item[@"%token" "<" type ">" symbol \ldots symbol@]
-Declare the given symbols as tokens with an attached attribute of the
+\item[@"%token" "<" typexpr ">" constr \ldots constr@]
+Declare the given symbols @constr \ldots constr@ as tokens with an
+attached attribute of the
 given type. These symbols are added as constructors with arguments of
-the given type for the "token" concrete type. The @type@ part is
+the given type for the "token" concrete type. The @typexpr@ part is
 an arbitrary Caml type expression, except that all type
 constructor names must be fully qualified (e.g. "Modname.typename")
 for all types except standard built-in types, even if the proper
 \verb|open| directives (e.g. \verb|open Modname|) were given in the
 header section. That's because the header is copied only to the ".ml"
-output file, but not to the ".mli" output file, while the @type@ part
+output file, but not to the ".mli" output file, while the @typexpr@ part
 of a \verb"%token" declaration is copied to both.
 
 \item[@"%start" symbol \ldots symbol@]
@@ -380,12 +385,12 @@ output module. Non-terminals that are not declared as entry points
 have no such parsing function. Start symbols must be given a type with
 the \verb|%type| directive below.
 
-\item[@"%type" "<" type ">" symbol \ldots symbol@]
+\item[@"%type" "<" typexpr ">" symbol \ldots symbol@]
 Specify the type of the semantic attributes for the given symbols.
 This is mandatory for start symbols only. Other nonterminal symbols
 need not be given types by hand: these types will be inferred when
 running the output files through the Objective Caml compiler (unless the
-\verb"-s" option is in effect). The @type@ part is an arbitrary Caml
+\verb"-s" option is in effect). The @typexpr@ part is an arbitrary Caml
 type expression, except that all type constructor names must be
 fully qualified, as explained above for "%token".
 

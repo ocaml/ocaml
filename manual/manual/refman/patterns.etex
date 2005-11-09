@@ -70,7 +70,7 @@ The pattern @"(" pattern_1 ")"@ matches the same values as
 @pattern_1@. A type constraint can appear in a
 parenthesized pattern, as in @"(" pattern_1 ":" typexpr ")"@. This
 constraint forces the type of @pattern_1@ to be compatible with
-@type@.
+@typexpr@.
 
 \subsubsection*{``Or'' patterns}
 
@@ -81,9 +81,9 @@ matches @pattern_2@. The two sub-patterns @pattern_1@ and @pattern_2@
 must bind exactly the same identifiers to values having the same types.
 Matching is performed from left to right.
 More precisely,
-in case some value~@v@ matches @pattern_1 "|" pattern_2@, the bindings 
-performed are those of @pattern_1@ when @v@ matches @pattern_1@.
-Otherwise, value~@v@ matches  @pattern_2@ whose bindings are performed.
+in case some value~$v$ matches @pattern_1 "|" pattern_2@, the bindings 
+performed are those of @pattern_1@ when $v$ matches @pattern_1@.
+Otherwise, value~$v$ matches  @pattern_2@ whose bindings are performed.
 
 
 \subsubsection*{Variant patterns}
@@ -108,18 +108,18 @@ whose tag is equal to @tag-name@, and whose argument matches
 
 \subsubsection*{Variant abbreviation patterns}
 
-If the type @["('a,'b,...)"] typeconstr = "[`tag"_1 t_1 "|"
-\ldots "|" "`tag"_n t_n"]"@ is defined, then the pattern @\#typeconstr@
-is a shorthand for the or-pattern @"(`tag"_1"(_" ":" t_1")" "|"
-\ldots "|" "`tag"_n"(_" ":" t_n"))"@. It matches all values of type
+If the type @["('a,'b,...)"] typeconstr = "[`tag"_1 typexpr_1 "|"
+\ldots "|" "`tag"_n typexpr_n"]"@ is defined, then the pattern @\#typeconstr@
+is a shorthand for the or-pattern @"(`tag"_1"(_" ":" typexpr_1")" "|"
+\ldots "|" "`tag"_n"(_" ":" typexpr_n"))"@. It matches all values of type
 @\#typeconstr@.
 
 \subsubsection*{Tuple patterns}
 
 The pattern @pattern_1 "," \ldots "," pattern_n@ matches $n$-tuples
 whose components match the patterns @pattern_1@ through @pattern_n@. That
-is, the pattern matches the tuple values @(v_1, \ldots, v_n)@ such that
-@pattern_i@ matches @v_i@ for \fromoneto{i}{n}.
+is, the pattern matches the tuple values $(v_1, \ldots, v_n)$ such that
+@pattern_i@ matches $v_i$ for \fromoneto{i}{n}.
 
 \subsubsection*{Record patterns}
 
@@ -134,6 +134,6 @@ into account for matching.
 \subsubsection*{Array patterns}
 
 The pattern @"[|" pattern_1 ";" \ldots ";" pattern_n "|]"@
-matches arrays of length @n@ such that the @i@-th array element
+matches arrays of length $n$ such that the $i$-th array element
 matches the pattern @pattern_i@, for \fromoneto{i}{n}.
 

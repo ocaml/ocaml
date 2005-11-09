@@ -6,11 +6,11 @@ TEXFONTS=../../styles:
 RELEASE=$$HOME/release/$${RELEASENAME}
 CSLDIR=../../cslrel
 OCAMLDOC=$(CSLDIR)/ocamldoc/ocamldoc.opt -hide Pervasives 
-HEVEA=hevea -v -fix -exec xxdate.exe
+HEVEA=hevea
 HACHA=hacha
-INFO=-info -w 79
-HTML=-O
-TEXT=-text -w 79
+INFO=-fix -exec xxdate.exe -info -w 79
+HTML=-fix -exec xxdate.exe -O
+TEXT=-fix -exec xxdate.exe -text -w 79
 
 CSLDIR2=../$(CSLDIR)
 MLIS=$(CSLDIR2)/stdlib/*.mli \

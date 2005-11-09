@@ -29,11 +29,17 @@ and syntax = parse
       print_string "\\token{";
       indoublequote lexbuf }
   | "epsilon" { print_string "\\emptystring"; syntax lexbuf }
-  | ['a'-'z'] ['a'-'z' '0'-'9' '-'] * {
+  | ['a'-'z'] ['a'-'z' '0'-'9' '-'] * as lxm {
       print_string "\\nonterm{";
-      print_string (lexeme lexbuf);
+      print_string lxm ;
       print_string"}";
       syntax lexbuf }
+  | '@' (['a'-'z'] ['a'-'z' '0'-'9' '-'] * as lxm) '@' {
+      print_string "\\nt{";
+      print_string lxm ;
+      print_string"}";
+      syntax lexbuf }
+
   | '\\' ['a'-'z''A'-'Z'] + {
       print_string (lexeme lexbuf);
       syntax lexbuf }

@@ -1,4 +1,4 @@
-\chapter{Interfacing C with Objective Caml} \label{c:intf-c}
+\chapter{Interfacing\label{c:intf-c} C with Objective Caml}
 \pdfchapterfold{-9}{Interfacing C with Objective Caml}
 
 This chapter describes how user-defined primitives, written in C, can
@@ -8,7 +8,6 @@ be linked with Caml code and called from Caml functions.
 \pdfsection{Overview and compilation information}
 
 \subsection{Declaring primitives}
-
 User primitives are declared in an implementation file or
 "struct"\ldots"end" module expression using the "external" keyword:
 \begin{alltt}

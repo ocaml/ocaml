@@ -1,7 +1,8 @@
 \newif\ifspace
 \def\addspace{\ifspace \; \spacefalse \fi}
 \def\token#1{\addspace\hbox{\tt #1} \spacetrue}
-\def\nonterm#1{\addspace\hbox{\sl #1\/} \spacetrue}
+\def\nonterm#1{\addspace\nt{#1} \spacetrue}
+\def\nt#1{\hbox{\sl #1\/}}
 \def\brepet{\addspace\{}
 \def\erepet{\}}
 \def\boption{\addspace[}
