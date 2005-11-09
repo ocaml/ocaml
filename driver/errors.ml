@@ -63,7 +63,7 @@ let report_error ppf exn =
   | Sys_error msg ->
       fprintf ppf "I/O error: %s" msg
   | Warnings.Errors (n) ->
-      fprintf ppf "@.Error: %d error-enabled warnings occurred." n
+      fprintf ppf "@.Error: error-enabled warnings (%d occurrences)" n
   | x -> fprintf ppf "@]"; raise x in
 
   fprintf ppf "@[%a@]@." report exn
