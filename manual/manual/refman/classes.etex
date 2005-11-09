@@ -465,7 +465,7 @@ defines an abbreviation @class-name@ for the class body type
 @class-body-type@.  As for class definitions, two type abbreviations
 @class-name@ and @'#' class-name@ are also defined. The definition can
 be parameterized by some type parameters. If any method in the class
-type body is virtual, the definition must be flagged "virtual".
+type body is virtual, the definition must be flagged @'virtual'@.
 
 Two class type definitions match if they have the same type parameters
 and the types they expand to match.
