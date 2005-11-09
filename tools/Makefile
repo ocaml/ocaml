@@ -20,8 +20,8 @@ CAMLOPT=$(CAMLRUN) ../ocamlopt -nostdlib -I ../stdlib
 CAMLLEX=$(CAMLRUN) ../boot/ocamllex
 INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
          -I ../driver
-COMPFLAGS= -warn-error A $(INCLUDES)
-LINKFLAGS=$(INCLUDES)
+COMPFLAGS= -warn-error Agy $(INCLUDES)
+LINKFLAGS=$(INCLUDES) -nogcamllib
 
 all: ocamldep ocamlprof ocamlcp ocamlmktop ocamlmklib scrapelabels addlabels 
 
@@ -48,9 +48,9 @@ clean::
 	rm -f ocamldep.opt
 
 install::
-	cp ocamldep $(BINDIR)/ocamldep$(EXE)
+	cp ocamldep $(BINDIR)/gcamldep$(EXE)
 	if test -f ocamldep.opt; \
-	  then cp ocamldep.opt $(BINDIR)/ocamldep.opt$(EXE); else :; fi
+	  then cp ocamldep.opt $(BINDIR)/gcamldep.opt$(EXE); else :; fi
 
 # The profiler
 
@@ -66,8 +66,8 @@ ocamlcp: ocamlcp.cmo
 	$(CAMLC) $(LINKFLAGS) -o ocamlcp main_args.cmo ocamlcp.cmo
 
 install::
-	cp ocamlprof $(BINDIR)/ocamlprof$(EXE)
-	cp ocamlcp $(BINDIR)/ocamlcp$(EXE)
+	cp ocamlprof $(BINDIR)/gcamlprof$(EXE)
+	cp ocamlcp $(BINDIR)/gcamlcp$(EXE)
 	cp profiling.cmi profiling.cmo $(LIBDIR)
 
 clean::
@@ -80,7 +80,7 @@ ocamlmktop: ocamlmktop.tpl ../config/Makefile
 	chmod +x ocamlmktop
 
 install::
-	cp ocamlmktop $(BINDIR)/ocamlmktop
+	cp ocamlmktop $(BINDIR)/gcamlmktop
 
 clean::
 	rm -f ocamlmktop
@@ -91,7 +91,7 @@ ocamlmklib: ocamlmklib.cmo
 	$(CAMLC) $(LINKFLAGS) -o ocamlmklib ocamlmklib.cmo
 
 install::
-	cp ocamlmklib $(BINDIR)/ocamlmklib
+	cp ocamlmklib $(BINDIR)/gcamlmklib
 
 clean::
 	rm -f ocamlmklib
@@ -124,7 +124,7 @@ lexer299.ml: lexer299.mll
 	$(CAMLLEX) lexer299.mll
 
 #install::
-#	cp ocaml299to3 $(BINDIR)/ocaml299to3$(EXE)
+#	cp ocaml299to3 $(BINDIR)/gcaml299to3$(EXE)
 
 clean::
 	rm -f ocaml299to3 lexer299.ml

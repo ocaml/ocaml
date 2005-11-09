@@ -32,8 +32,8 @@ and failsafe = ref false    (* whether to fall back on static build only *)
 and c_libs = ref []         (* libs to pass to mksharedlib and ocamlc -cclib *)
 and c_opts = ref []      (* options to pass to mksharedlib and ocamlc -ccopt *)
 and ld_opts = ref []        (* options to pass only to the linker *)
-and ocamlc = ref (Filename.concat bindir "ocamlc")
-and ocamlopt = ref (Filename.concat bindir "ocamlopt")
+and ocamlc = ref (Filename.concat bindir "gcamlc")
+and ocamlopt = ref (Filename.concat bindir "gcamlopt")
 and output = ref "a"        (* Output name for Caml part of library *)
 and output_c = ref ""       (* Output name for C part of library *)
 and rpath = ref []          (* rpath options *)
@@ -50,7 +50,7 @@ let chop_suffix = Filename.chop_suffix
 exception Bad_argument of string
 
 let print_version () =
-  printf "ocamlmklib, version %s\n" Sys.ocaml_version;
+  printf "gcamlmklib, version %s\n" Sys.ocaml_version;
   exit 0;
 ;;
 

@@ -53,6 +53,7 @@ let keyword_table =
     "fun", FUN;
     "function", FUNCTION;
     "functor", FUNCTOR;
+    "generic", GENERIC; 
     "if", IF;
     "in", IN;
     "include", INCLUDE;
@@ -79,6 +80,7 @@ let keyword_table =
     "true", TRUE;
     "try", TRY;
     "type", TYPE;
+    "typedecl", TYPEDECL;
     "val", VAL;
     "virtual", VIRTUAL;
     "when", WHEN;
@@ -345,6 +347,7 @@ rule token = parse
   | "*"  { STAR }
   | ","  { COMMA }
   | "->" { MINUSGREATER }
+  | "=>" { EQUALGREATER }
   | "."  { DOT }
   | ".." { DOTDOT }
   | ":"  { COLON }
@@ -360,6 +363,8 @@ rule token = parse
   | "[|" { LBRACKETBAR }
   | "[<" { LBRACKETLESS }
   | "[>" { LBRACKETGREATER }
+  | "[:" { LBRACKETCOLON }
+  | ":]" { COLONRBRACKET }
   | "]"  { RBRACKET }
   | "{"  { LBRACE }
   | "{<" { LBRACELESS }

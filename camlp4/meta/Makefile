@@ -3,7 +3,7 @@
 include ../config/Makefile
 
 INCLUDES=-I ../camlp4 -I ../boot -I $(OTOP)/utils
-OCAMLCFLAGS=-warn-error A $(INCLUDES)
+OCAMLCFLAGS=-warn-error Agy $(INCLUDES)
 OBJS=q_MLast.cmo pa_r.cmo pa_rp.cmo pa_extend.cmo pa_extend_m.cmo pa_macro.cmo pr_dump.cmo
 OBJSX=$(OBJS:.cmo=.cmx)
 CAMLP4RM=pa_r.cmo pa_rp.cmo pr_dump.cmo
@@ -46,9 +46,9 @@ install:
 	-$(MKDIR) "$(LIBDIR)/camlp4" "$(BINDIR)"
 	cp $(OBJS) "$(LIBDIR)/camlp4/."
 	cp pa_macro.cmi pa_extend.cmi "$(LIBDIR)/camlp4/."
-	cp camlp4r$(EXE) "$(BINDIR)/."
+	cp camlp4r$(EXE) "$(BINDIR)/gcamlp4r$(EXE)"
 	if test -f camlp4r.opt; then \
-	  cp camlp4r.opt "$(BINDIR)/camlp4r.opt$(EXE)" ;\
+	  cp camlp4r.opt "$(BINDIR)/gcamlp4r.opt$(EXE)" ;\
 	  cp $(OBJSX) "$(LIBDIR)/camlp4/."; \
 	  for file in $(OBJSX); do \
 	    cp "`echo $$file | sed -e 's/\.cmx$$/.$(O)/'`" "$(LIBDIR)/camlp4/."; \

@@ -38,6 +38,7 @@ type error =
   | Non_generalizable_module of module_type
   | Implementation_is_required of string
   | Interface_not_compiled of string
+  | Overload_resolution_failed of type_expr * type_expr (* HERE ? *) 
 
 exception Error of Location.t * error
 
@@ -463,6 +464,7 @@ let rec bound_value_identifiers = function
   | Tsig_exception(id, decl) :: rem -> id :: bound_value_identifiers rem
   | Tsig_module(id, mty, _) :: rem -> id :: bound_value_identifiers rem
   | Tsig_class(id, decl, _) :: rem -> id :: bound_value_identifiers rem
+  | Tsig_type(id, _, _) :: rem -> id :: bound_value_identifiers rem
   | _ :: rem -> bound_value_identifiers rem
 
 (* Helpers for typing recursive modules *)
@@ -491,7 +493,7 @@ let enrich_module_type anchor name mty env =
 
 (* Type a module value expression *)
 
-let rec type_module anchor env smod =
+let rec type_module anchor env kset smod =
   match smod.pmod_desc with
     Pmod_ident lid ->
       let (path, mty) = type_module_path env smod.pmod_loc lid in
@@ -500,7 +502,7 @@ let rec type_module anchor env smod =
            mod_env = env;
            mod_loc = smod.pmod_loc }
   | Pmod_structure sstr ->
-      let (str, sg, finalenv) = type_structure anchor env sstr in
+      let (str, sg, finalenv) = type_structure anchor env kset sstr in
       rm { mod_desc = Tmod_structure str;
            mod_type = Tmty_signature sg;
            mod_env = env;
@@ -508,14 +510,14 @@ let rec type_module anchor env smod =
   | Pmod_functor(name, smty, sbody) ->
       let mty = transl_modtype env smty in
       let (id, newenv) = Env.enter_module name mty env in
-      let body = type_module None newenv sbody in
+      let body = type_module None newenv kset sbody in
       rm { mod_desc = Tmod_functor(id, mty, body);
            mod_type = Tmty_functor(id, mty, body.mod_type);
            mod_env = env;
            mod_loc = smod.pmod_loc }
   | Pmod_apply(sfunct, sarg) ->
-      let funct = type_module None env sfunct in
-      let arg = type_module None env sarg in
+      let funct = type_module None env kset sfunct in
+      let arg = type_module None env kset sarg in
       begin match Mtype.scrape env funct.mod_type with
         Tmty_functor(param, mty_param, mty_res) as mty_functor ->
           let coercion =
@@ -543,7 +545,7 @@ let rec type_module anchor env smod =
           raise(Error(sfunct.pmod_loc, Cannot_apply funct.mod_type))
       end        
   | Pmod_constraint(sarg, smty) ->
-      let arg = type_module anchor env sarg in
+      let arg = type_module anchor env kset sarg in
       let mty = transl_modtype env smty in
       let coercion =
         try
@@ -555,7 +557,7 @@ let rec type_module anchor env smod =
            mod_env = env;
            mod_loc = smod.pmod_loc }
 
-and type_structure anchor env sstr =
+and type_structure anchor env kset sstr =
   let type_names = ref StringSet.empty
   and module_names = ref StringSet.empty
   and modtype_names = ref StringSet.empty in
@@ -565,12 +567,12 @@ and type_structure anchor env sstr =
       [] ->
         ([], [], env)
     | {pstr_desc = Pstr_eval sexpr} :: srem ->
-        let expr = Typecore.type_expression env sexpr in
+        let expr, pat = Typecore.type_expression env kset sexpr in
         let (str_rem, sig_rem, final_env) = type_struct env srem in
-        (Tstr_eval expr :: str_rem, sig_rem, final_env)
+        (Tstr_eval (expr, pat) :: str_rem, sig_rem, final_env)
     | {pstr_desc = Pstr_value(rec_flag, sdefs)} :: srem ->
         let (defs, newenv) =
-          Typecore.type_binding env rec_flag sdefs in
+          Typecore.type_binding env kset rec_flag sdefs in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
         let bound_idents = let_bound_idents defs in
         let make_sig_value id =
@@ -584,6 +586,17 @@ and type_structure anchor env sstr =
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
         (Tstr_primitive(id, desc) :: str_rem,
          Tsig_value(id, desc) :: sig_rem,
+         final_env)
+    | {pstr_desc = Pstr_genprimitive(name, setyp, expr)} :: srem ->
+	let etyp, texp = Typecore.type_genprimitive env kset setyp expr in
+	let desc = {val_type= etyp; val_kind= Val_reg} in
+	let (id, newenv) = Env.enter_value name desc env in
+	let pat = {pat_desc = Tpat_var id; pat_loc = Location.none;
+		   pat_type = texp.exp_type; pat_env = env } 
+	in
+        let (str_rem, sig_rem, final_env) = type_struct newenv srem in
+        (Tstr_value(Asttypes.Nonrecursive, [pat, texp]) :: str_rem,
+	 Tsig_value(id, desc) :: sig_rem, 
          final_env)
     | {pstr_desc = Pstr_type sdecls; pstr_loc = loc} :: srem ->
         List.iter
@@ -612,7 +625,7 @@ and type_structure anchor env sstr =
          final_env)
     | {pstr_desc = Pstr_module(name, smodl); pstr_loc = loc} :: srem ->
         check "module" loc module_names name;
-        let modl = type_module  (anchor_submodule name anchor) env smodl in
+        let modl = type_module  (anchor_submodule name anchor) env kset smodl in
         let mty = enrich_module_type anchor name modl.mod_type env in
         let (id, newenv) = Env.enter_module name mty env in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
@@ -628,7 +641,7 @@ and type_structure anchor env sstr =
             (List.map (fun (name, smty, smodl) -> (name, smty)) sbind) in
         let type_recmodule_binding (id, mty) (name, smty, smodl) =
           let modl =
-            type_module (anchor_recmodule id anchor) newenv smodl in
+            type_module (anchor_recmodule id anchor) newenv kset smodl in
           let coercion =
             try
               Includemod.modtypes newenv
@@ -707,7 +720,7 @@ and type_structure anchor env sstr =
               classes [sig_rem]),
          final_env)
     | {pstr_desc = Pstr_include smodl; pstr_loc = loc} :: srem ->
-        let modl = type_module None env smodl in
+        let modl = type_module None env kset smodl in
         (* Rename all identifiers bound by this signature to avoid clashes *)
         let sg = Subst.signature Subst.identity
                    (extract_sig_open env smodl.pmod_loc modl.mod_type) in
@@ -724,7 +737,15 @@ and type_structure anchor env sstr =
   type_struct env sstr
 
 let type_module = type_module None
-let type_structure = type_structure None
+let type_structure env sstr = 
+  let kset = Kset.empty () in
+  let str, sg, finalenv = type_structure None env kset sstr in
+  try
+    Kset.resolve_kset finalenv kset;
+    str, sg, finalenv
+  with
+  | Gtype.Not_instance (t,scm) -> 
+      raise (Error(Location.none, Overload_resolution_failed (t,scm)))
 
 (* Fill in the forward declaration *)
 let _ =
@@ -785,6 +806,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
                      (fun () -> Stypes.dump (outputprefix ^ ".annot"))
   in
   Typecore.force_delayed_checks ();
+  
   if !Clflags.print_types then begin
     fprintf std_formatter "%a@." Printtyp.signature (simplify_signature sg);
     (str, Tcoerce_none)
@@ -917,3 +939,8 @@ let report_error ppf = function
   | Interface_not_compiled intf_name ->
       fprintf ppf
         "@[Could not find the .cmi file for interface@ %s.@]" intf_name
+  | Overload_resolution_failed (t,scm) ->
+      fprintf ppf
+        "@[Type %a@ is not an instance of overloaded type@ %a.@]"
+	type_expr t
+	type_scheme scm

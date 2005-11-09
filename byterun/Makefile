@@ -48,7 +48,7 @@ ocamlrund$(EXE): libcamlrund.a prims.o
 	          prims.o libcamlrund.a $(BYTECCLIBS)
 
 install:
-	cp ocamlrun$(EXE) $(BINDIR)/ocamlrun$(EXE)
+	cp ocamlrun$(EXE) $(BINDIR)/gcamlrun$(EXE)
 	cp libcamlrun.a $(LIBDIR)/libcamlrun.a
 	cd $(LIBDIR); $(RANLIB) libcamlrun.a
 	if test -d $(LIBDIR)/caml; then : ; else mkdir $(LIBDIR)/caml; fi

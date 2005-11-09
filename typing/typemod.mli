@@ -18,7 +18,7 @@ open Types
 open Format
 
 val type_module:
-        Env.t -> Parsetree.module_expr -> Typedtree.module_expr
+        Env.t -> Kset.t -> Parsetree.module_expr -> Typedtree.module_expr
 val type_structure:
         Env.t -> Parsetree.structure -> Typedtree.structure * signature * Env.t
 val type_implementation:
@@ -50,6 +50,7 @@ type error =
   | Non_generalizable_module of module_type
   | Implementation_is_required of string
   | Interface_not_compiled of string
+  | Overload_resolution_failed of type_expr * type_expr (* HERE ? *) 
 
 exception Error of Location.t * error
 

@@ -47,7 +47,7 @@ help.ml:
 
 install:
 	if test -f ocamlbrowser$(EXE); then : ; \
-	  cp ocamlbrowser$(EXE) $(BINDIR); fi
+	  cp ocamlbrowser$(EXE) $(BINDIR)/gcamlbrowser; fi
 
 clean:
 	rm -f *.cm? ocamlbrowser$(EXE) dummy.mli *~ *.orig

@@ -33,7 +33,7 @@ install:
 
 uninstall:
 	rm -rf "$(LIBDIR)/camlp4"
-	cd "$(BINDIR)"; rm -f *camlp4* odyl ocpp
+	cd "$(BINDIR)"; rm -f *gcamlp4* gdyl gcpp
 
 clean::
 	$(MAKE) clean_hot clean_cold

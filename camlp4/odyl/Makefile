@@ -5,7 +5,7 @@ include ../config/Makefile
 SHELL=/bin/sh
 
 INCLUDES=-I $(OTOP)/otherlibs/dynlink
-OCAMLCFLAGS=-warn-error A $(INCLUDES)
+OCAMLCFLAGS=-warn-error Agy $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
 OBJS=odyl_config.cmo odyl_main.cmo
@@ -66,7 +66,7 @@ promote:
 compare:
 
 install:
-	-$(MKDIR) "$(LIBDIR)/camlp4" "$(BINDIR)"
+	-$(MKDIR) "$(LIBDIR)/camlp4" "$(BINDIR)/gcamlp4"
 	cp odyl.cmo odyl.cma odyl_main.cmi $(LIBDIR)/camlp4/.
 	for f in odyl.$(A) odyl.p.$(A)  ; do \
 	   if test -f $$f ; then \

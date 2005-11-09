@@ -229,7 +229,7 @@ let execute_phrase print_outcome ppf phr =
           | Result v ->
               if print_outcome then
                 match str with
-                | [Tstr_eval exp] ->
+                | [Tstr_eval (exp, pat)] ->
                     let outv = outval_of_value newenv v exp.exp_type in
                     let ty = Printtyp.tree_of_type_scheme exp.exp_type in
                     Ophr_eval (outv, ty)
@@ -397,7 +397,7 @@ let initialize_toplevel_env () =
 exception PPerror
 
 let loop ppf =
-  fprintf ppf "        Objective Caml version %s@.@." Config.version;
+  fprintf ppf "        G'Caml version %s@.@." Config.version;
   initialize_toplevel_env ();
   let lb = Lexing.from_function refill_lexbuf in
   Location.input_name := "";

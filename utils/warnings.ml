@@ -20,6 +20,7 @@ type t =                             (* A is all *)
   | Deprecated                       (* D *)
   | Fragile_pat of string            (* E *)
   | Partial_application              (* F *)
+  | Gcaml_related of string          (* G *)
   | Labels_omitted                   (* L *)
   | Method_override of string list   (* M *)
   | Partial_match of string          (* P *)
@@ -48,6 +49,7 @@ let letter = function        (* 'a' is all *)
   | Deprecated ->               'd'
   | Fragile_pat _ ->            'e'
   | Partial_application ->      'f'
+  | Gcaml_related _ ->          'g'
   | Labels_omitted ->           'l'
   | Method_override _ ->        'm'
   | Partial_match _ ->          'p'
@@ -120,6 +122,7 @@ let message = function
       "this pattern is fragile. It would hide\n\
        the addition of new constructors to the data types it matches.\n\
        Here is an example of a more robust pattern:\n" ^ s
+  | Gcaml_related s -> s
   | Labels_omitted ->
       "labels were omitted in the application of this function."
   | Method_override slist ->

@@ -47,6 +47,25 @@ let initial_env () =
 
 (* Compile a .mli file *)
 
+let print_if ppf flag printer arg =
+  if !flag then fprintf ppf "%a@." printer arg;
+  arg
+
+let (++) x f = f x
+let (+++) (x, y) f = (x, f y)
+
+let cmx_of_interface ppf sourcefile outputprefix sg =
+  let modulename =
+    String.capitalize(Filename.basename(chop_extension_if_any sourcefile)) in
+  Compilenv.reset modulename;
+  (fst (Translsig.structure_of_signature (initial_env ()) sg), Tcoerce_none)
+    ++ Translmod.transl_store_implementation modulename
+    +++ print_if ppf Clflags.dump_rawlambda Printlambda.lambda
+    +++ Simplif.simplify_lambda
+    +++ print_if ppf Clflags.dump_lambda Printlambda.lambda
+    ++ Asmgen.compile_implementation outputprefix ppf;
+  Compilenv.save_unit_info (outputprefix ^ ".cmx")
+
 let interface ppf sourcefile outputprefix =
   init_path ();
   let modulename =
@@ -64,19 +83,24 @@ let interface ppf sourcefile outputprefix =
     Warnings.check_fatal ();
     if not !Clflags.print_types then
       Env.save_signature sg modulename (outputprefix ^ ".cmi");
+    (* do we need .cmx ? *)
+    let sourceimpl =
+      Misc.chop_extension_if_any sourcefile ^ !Config.implementation_suffix in
+    if not (Sys.file_exists sourceimpl) then begin
+      try
+	cmx_of_interface ppf sourcefile outputprefix sg;
+	prerr_endline "MLI ONLY MODULE PROVIDED A CMX!"
+      with
+      | Translsig.Not_pure -> 
+	  prerr_endline "MLI ONLY MODULE IS NOT PURE";
+	  ()
+    end;
     Pparse.remove_preprocessed inputfile
   with e ->
     Pparse.remove_preprocessed_if_ast inputfile;
     raise e
 
 (* Compile a .ml file *)
-
-let print_if ppf flag printer arg =
-  if !flag then fprintf ppf "%a@." printer arg;
-  arg
-
-let (++) x f = f x
-let (+++) (x, y) f = (x, f y)
 
 let implementation ppf sourcefile outputprefix =
   init_path ();

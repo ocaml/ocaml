@@ -208,6 +208,12 @@ let file_dependencies source_file =
           let basename = Filename.chop_suffix source_file ".mli" in
           let (byt_deps, opt_deps) =
             Depend.StringSet.fold find_dependency !Depend.free_structure_names ([], []) in
+	  (* G'Caml .mli only module produces .cmo *)
+          if not (Sys.file_exists (basename ^ ".ml")) then begin
+	    let cmi_name = basename ^ ".cmi" in
+	    print_dependencies (basename ^ ".cmo") [cmi_name];
+	    print_dependencies (basename ^ ".cmx") [cmi_name]
+	  end;
           print_dependencies (basename ^ ".cmi") byt_deps
         end else
           ();
@@ -232,10 +238,10 @@ let file_dependencies source_file =
 
 (* Entry point *)
 
-let usage = "Usage: ocamldep [-I <dir>] [-native] <files>"
+let usage = "Usage: gcamldep [-I <dir>] [-native] <files>"
 
 let print_version () =
-  printf "ocamldep, version %s@." Sys.ocaml_version;
+  printf "gcamldep, version %s@." Sys.ocaml_version;
   exit 0;
 ;;
 

@@ -2,4 +2,4 @@
 
 topdir=`dirname $0`
 
-exec @compiler@ -nostdlib -I $topdir/stdlib "$@"
+exec @compiler@ -nostdlib -I $topdir/stdlib -I $topdir/gcamllib "$@"

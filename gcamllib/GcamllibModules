@@ -1,0 +1,11 @@
+# This file lists all gcaml library modules. -*- Makefile -*-
+# It is used in particular to know what to expunge in toplevels.
+# $Id$
+
+GCAMLLIB_MODULES=\
+  gcaml \
+  safevio \
+  gprint \
+  plus \
+  rec \
+  cplus

@@ -5,12 +5,12 @@ include ../config/Makefile
 SHELL=/bin/sh
 
 INCLUDES=-I ../odyl -I ../boot -I $(OTOP)/utils -I $(OTOP)/parsing -I $(OTOP)/otherlibs/dynlink
-OCAMLCFLAGS= $(INCLUDES) -warn-error A $(INCLUDES)
+OCAMLCFLAGS= $(INCLUDES) -warn-error Ag $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 INTERFACES=-I $(OLIBDIR) Arg Array ArrayLabels Buffer Callback CamlinternalOO Char Complex Digest Filename Format Gc Genlex Hashtbl Int32 Int64 Lazy Lexing List ListLabels Map Marshal MoreLabels Nativeint Obj Oo Parsing Pervasives Printexc Printf Queue Random Scanf Set Sort Stack StdLabels Stream String StringLabels Sys Weak -I ../boot Extfold Extfun Fstream Gramext Grammar Plexer Stdpp Token -I $(OTOP)/utils Config Warnings -I $(OTOP)/parsing Asttypes Location Longident Parsetree -I . Ast2pt MLast Pcaml Quotation Spretty
 CAMLP4_INTF=$(OTOP)/utils/config.cmi $(OTOP)/utils/warnings.cmi $(OTOP)/parsing/asttypes.cmi $(OTOP)/parsing/location.cmi $(OTOP)/parsing/longident.cmi $(OTOP)/parsing/parsetree.cmi ast2pt.cmi mLast.cmi pcaml.cmi spretty.cmi quotation.cmi
-CAMLP4_OBJS=../boot/stdpp.cmo ../boot/token.cmo ../boot/plexer.cmo ../boot/gramext.cmo ../boot/grammar.cmo ../boot/extfold.cmo ../boot/extfun.cmo ../boot/fstream.cmo $(OTOP)/utils/config.cmo quotation.cmo spretty.cmo reloc.cmo pcaml.cmo ast2pt.cmo argl.cmo
-CAMLP4_XOBJS=../lib/stdpp.cmx ../lib/token.cmx ../lib/plexer.cmx ../lib/gramext.cmx ../lib/grammar.cmx ../lib/extfold.cmx ../lib/extfun.cmx ../lib/fstream.cmx $(OTOP)/utils/config.cmx quotation.cmx spretty.cmx reloc.cmx pcaml.cmx ast2pt.cmx argl.cmx
+CAMLP4_OBJS=../boot/stdpp.cmo ../boot/token.cmo ../boot/plexer.cmo ../boot/gramext.cmo ../boot/grammar.cmo ../boot/extfold.cmo ../boot/extfun.cmo ../boot/fstream.cmo $(OTOP)/utils/config.cmo mLast.cmo quotation.cmo spretty.cmo reloc.cmo pcaml.cmo ast2pt.cmo argl.cmo
+CAMLP4_XOBJS=../lib/stdpp.cmx ../lib/token.cmx ../lib/plexer.cmx ../lib/gramext.cmx ../lib/grammar.cmx ../lib/extfold.cmx ../lib/extfun.cmx ../lib/fstream.cmx $(OTOP)/utils/config.cmx mLast.cmx quotation.cmx spretty.cmx reloc.cmx pcaml.cmx ast2pt.cmx argl.cmx
 OBJS=../odyl/odyl.cma camlp4.cma
 CAMLP4M=
 
@@ -71,7 +71,7 @@ compare:
 install:
 	-$(MKDIR) "$(BINDIR)"
 	-$(MKDIR) "$(LIBDIR)/camlp4"
-	cp $(CAMLP4) "$(BINDIR)/."
+	cp $(CAMLP4) "$(BINDIR)/g$(CAMLP4)"
 	cp mLast.mli quotation.mli ast2pt.mli pcaml.mli spretty.mli "$(LIBDIR)/camlp4/."
 	cp mLast.cmi quotation.cmi ast2pt.cmi pcaml.cmi spretty.cmi "$(LIBDIR)/camlp4/."
 	cp  argl.cmi argl.cmo "$(LIBDIR)/camlp4/."
@@ -93,3 +93,21 @@ install:
 	done
 
 include .depend
+
+mLast.cmo: mLast.mli
+	@$(TEST_DIRECTORY)
+	@$(CAMLP4_COMM) $< -o $*.ppi
+	$(OCAMLC) $(OCAMLCFLAGS) -c -intf $*.ppi
+	rm -f $*.ppi
+
+mLast.cmx: mLast.mli
+	@$(TEST_DIRECTORY)
+	@$(CAMLP4_COMM) $< -o $*.ppi
+	$(OCAMLOPT) $(OCAMLCFLAGS) -c -intf $*.ppi
+	rm -f $*.ppi
+
+mLast.p.cmx: mLast.mli
+	@$(TEST_DIRECTORY)
+	@$(CAMLP4_COMM) $< -o $*.ppi
+	$(OCAMLOPT) $(OCAMLCFLAGS) -c -p -o $*.p.cmx -intf $*.ppo
+	rm -f $*.ppi

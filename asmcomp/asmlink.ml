@@ -291,14 +291,22 @@ let object_file_name name =
 (* Main entry point *)
 
 let link ppf objfiles output_name =
-  let stdlib =
-    if !Clflags.gprofile then "stdlib.p.cmxa" else "stdlib.cmxa" in
+  let stdlibs =
+    let link_gcamllib = 
+      not !Clflags.no_gcamllib_link && not !Clflags.nopervasives &&
+      not !Clflags.no_std_include
+    in
+    (if !Clflags.gprofile then "stdlib.p.cmxa" else "stdlib.cmxa" ) ::
+    if link_gcamllib then
+      [if !Clflags.gprofile then "gcamllib.p.cmxa" else "gcamllib.cmxa"]
+    else []
+  in
   let stdexit =
     if !Clflags.gprofile then "std_exit.p.cmx" else "std_exit.cmx" in
   let objfiles =
     if !Clflags.nopervasives then objfiles
-    else if !Clflags.output_c_object then stdlib :: objfiles
-    else stdlib :: (objfiles @ [stdexit]) in
+    else if !Clflags.output_c_object then stdlibs @ objfiles
+    else stdlibs @ (objfiles @ [stdexit]) in
   let units_tolink = List.fold_right scan_file objfiles [] in
   Array.iter remove_required Runtimedef.builtin_exceptions;
   begin match extract_missing_globals() with

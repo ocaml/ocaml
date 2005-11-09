@@ -1,0 +1,14 @@
+garith.cmo: garith.cmi 
+garith.cmx: garith.cmi 
+gcaml.cmo: gcaml.cmi 
+gcaml.cmx: gcaml.cmi 
+generic.cmo: generic.cmi 
+generic.cmx: generic.cmi 
+gprint.cmo: gprint.cmi 
+gprint.cmx: gprint.cmi 
+plus.cmo: plus.cmi 
+plus.cmx: plus.cmi 
+rec.cmo: rec.cmi 
+rec.cmx: rec.cmi 
+safevio.cmo: safevio.cmi 
+safevio.cmx: safevio.cmi 

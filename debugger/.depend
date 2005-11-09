@@ -11,6 +11,8 @@ input_handling.cmi: primitives.cmi
 lexer.cmi: parser.cmi 
 loadprinter.cmi: ../parsing/longident.cmi ../otherlibs/dynlink/dynlink.cmi 
 parser.cmi: parser_aux.cmi ../parsing/longident.cmi 
+parser_aux.cmo: parser_aux.cmi 
+parser_aux.cmx: parser_aux.cmi 
 parser_aux.cmi: primitives.cmi ../parsing/longident.cmi 
 pattern_matching.cmi: ../typing/typedtree.cmi parser_aux.cmi debugcom.cmi 
 pos.cmi: ../bytecomp/instruct.cmi 
@@ -162,13 +164,11 @@ program_management.cmx: unix_tools.cmx ../otherlibs/unix/unix.cmx \
     input_handling.cmx history.cmx debugger_config.cmx debugcom.cmx \
     breakpoints.cmx program_management.cmi 
 show_information.cmo: symbols.cmi show_source.cmi printval.cmi primitives.cmi \
-    ../utils/misc.cmi ../parsing/location.cmi ../bytecomp/instruct.cmi \
-    frames.cmi events.cmi debugcom.cmi checkpoints.cmi breakpoints.cmi \
-    show_information.cmi 
+    ../utils/misc.cmi ../bytecomp/instruct.cmi frames.cmi events.cmi \
+    debugcom.cmi checkpoints.cmi breakpoints.cmi show_information.cmi 
 show_information.cmx: symbols.cmx show_source.cmx printval.cmx primitives.cmx \
-    ../utils/misc.cmx ../parsing/location.cmx ../bytecomp/instruct.cmx \
-    frames.cmx events.cmx debugcom.cmx checkpoints.cmx breakpoints.cmx \
-    show_information.cmi 
+    ../utils/misc.cmx ../bytecomp/instruct.cmx frames.cmx events.cmx \
+    debugcom.cmx checkpoints.cmx breakpoints.cmx show_information.cmi 
 show_source.cmo: source.cmi primitives.cmi parameters.cmi ../utils/misc.cmi \
     ../parsing/location.cmi ../bytecomp/instruct.cmi events.cmi \
     debugger_config.cmi show_source.cmi 

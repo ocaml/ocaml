@@ -3,7 +3,7 @@
 include ../config/Makefile
 
 INCLUDES=-I ../camlp4 -I ../boot -I $(OTOP)/lex
-OCAMLCFLAGS=-warn-error A $(INCLUDES)
+OCAMLCFLAGS=-warn-error Ag $(INCLUDES)
 OBJS=q_phony.cmo pa_o.cmo pa_op.cmo pa_oop.cmo pa_ru.cmo pa_extfold.cmo pa_extfun.cmo pa_fstream.cmo pa_ifdef.cmo pr_r.cmo pr_rp.cmo pr_o.cmo pr_op.cmo pr_extend.cmo pr_extfun.cmo pr_null.cmo pr_depend.cmo
 
 OBJSX=$(OBJS:.cmo=.cmx)
@@ -77,16 +77,16 @@ install:
 	-$(MKDIR) "$(LIBDIR)/camlp4" "$(BINDIR)"
 	cp $(OBJS) "$(LIBDIR)/camlp4/."
 	cp $(INTF) "$(LIBDIR)/camlp4/."
-	cp camlp4o$(EXE) "$(BINDIR)/."
+	cp camlp4o$(EXE) "$(BINDIR)/gcamlp4o$(EXE)"
 	if test -f camlp4o.opt; then \
-	  cp camlp4o.opt "$(BINDIR)/camlp4o.opt$(EXE)"; \
+	  cp camlp4o.opt "$(BINDIR)/gcamlp4o.opt$(EXE)"; \
 	  cp $(OBJSX) "$(LIBDIR)/camlp4/."; \
 	  for file in $(OBJSX); do \
 	    cp "`echo $$file | sed -e 's/\.cmx$$/.$(O)/'`" "$(LIBDIR)/camlp4/."; \
 	  done ; \
 	fi
-	cp mkcamlp4.sh "$(BINDIR)/mkcamlp4"
-	chmod a+x "$(BINDIR)/mkcamlp4"
+	cp mkcamlp4.sh "$(BINDIR)/mkgcamlp4"
+	chmod a+x "$(BINDIR)/mkgcamlp4"
 
 pr_extend.cmo: pa_extfun.cmo
 pr_o.cmo: pa_extfun.cmo

@@ -21,6 +21,8 @@ val create_persistent: string -> t
 val create_predef_exn: string -> t
 val rename: t -> t
 val name: t -> string
+val stamp : t -> int
+val create_with_stamp : string -> int -> t
 val unique_name: t -> string
 val unique_toplevel_name: t -> string
 val persistent: t -> bool

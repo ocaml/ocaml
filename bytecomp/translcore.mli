@@ -22,6 +22,8 @@ open Lambda
 
 val name_pattern: string -> (pattern * 'a) list -> Ident.t
 
+val transl_type_declaration : Env.t -> string -> Ident.t list -> type_declaration -> lambda
+
 val transl_exp: expression -> lambda
 val transl_apply: lambda -> (expression option * optional) list -> lambda
 val transl_let:
@@ -29,6 +31,22 @@ val transl_let:
 val transl_primitive: Primitive.description -> lambda
 val transl_exception:
       Ident.t -> Path.t option -> exception_declaration -> lambda
+(*
+val transl_flow_application :
+    Env.t ->
+      Path.t ->
+	Types.value_description ->
+	  Types.type_expr -> Typedtree.instance_info -> Lambda.lambda
+val transl_generic_instance :
+    Env.t ->
+      Path.t -> Types.value_description -> Types.type_expr -> Lambda.lambda
+val transl_type_abstraction :
+  Types.type_expr -> (expression -> Lambda.lambda) -> expression -> Lambda.lambda
+ *)
+
+val transl_eval : expression -> pattern -> lambda
+  (** special version of transl_exp for Tstr_eval, with
+     gcaml type abstraction *)
 
 val check_recursive_lambda: Ident.t list -> lambda -> bool
 
@@ -36,6 +54,7 @@ type error =
     Illegal_letrec_pat
   | Illegal_letrec_expr
   | Free_super_var
+  | Unsupported_type_constructor
 
 exception Error of Location.t * error
 

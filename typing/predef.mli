@@ -49,6 +49,7 @@ val path_lazy_t: Path.t
 
 val path_match_failure: Path.t
 val path_assert_failure : Path.t
+val path_assert_exception : Path.t
 val path_undefined_recursive_module : Path.t
 
 (* To build the initial environment. Since there is a nasty mutual
@@ -63,3 +64,4 @@ val build_initial_env:
 (* To initialize linker tables *)
 
 val builtin_values: (string * Ident.t) list
+val builtin_types: Path.t list

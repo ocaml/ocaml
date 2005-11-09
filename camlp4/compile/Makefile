@@ -30,7 +30,7 @@ $D_fast.ml: compile.cmo $(SRC)
 	OTOP=$(OTOP) EXE=$(EXE) ./compile.sh $(COMP_OPT) $(SRC) >> $D_fast.ml
 
 install:
-	if test -f camlp4$D.fast.opt; then cp camlp4$D.fast.opt $(BINDIR)/camlp4$D.opt$(EXE); fi
+	if test -f camlp4$D.fast.opt; then cp camlp4$D.fast.opt $(BINDIR)/gcamlp4$D.opt$(EXE); fi
 	for TARG in  pa_$D_fast.cmi  pa_$D_fast.cmo pa_$D_fast.cmx ; do if test -f $$TARG; then cp $$TARG "$(LIBDIR)/camlp4/."; fi; done
 
 clean::

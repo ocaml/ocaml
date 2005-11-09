@@ -22,7 +22,7 @@ let standard_library =
     Sys.getenv "OCAMLLIB"
   with Not_found ->
   try
-    Sys.getenv "CAMLLIB"
+    Sys.getenv "GCAMLLIB"
   with Not_found ->
     standard_library_default
 
@@ -51,6 +51,8 @@ and ast_intf_magic_number = "Caml1999N009"
 let load_path = ref ([] : string list)
 
 let interface_suffix = ref ".mli"
+
+let implementation_suffix = ref ".ml"
 
 let max_tag = 245
 (* This is normally the same as in obj.ml, but we have to define it

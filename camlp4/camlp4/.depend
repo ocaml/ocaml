@@ -19,3 +19,4 @@ reloc.cmo: mLast.cmi reloc.cmi
 reloc.cmx: mLast.cmi reloc.cmi 
 spretty.cmo: spretty.cmi 
 spretty.cmx: spretty.cmi 
+mLast.cmo: mLast.cmi

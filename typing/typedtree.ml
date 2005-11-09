@@ -23,7 +23,7 @@ open Types
 type pattern =
   { pat_desc: pattern_desc;
     pat_loc: Location.t;
-    pat_type: type_expr;
+    mutable pat_type: type_expr;
     pat_env: Env.t }
 
 and pattern_desc =
@@ -37,18 +37,34 @@ and pattern_desc =
   | Tpat_record of (label_description * pattern) list
   | Tpat_array of pattern list
   | Tpat_or of pattern * pattern * Path.t option
+  | Tpat_rtype of type_expr
 
 type partial = Partial | Total
 type optional = Required | Optional
 
+(* FIXME: maybe moved to types.ml ? *)
+type flow =
+  | Ftype of type_expr
+  | Fkonst of flow_record
+  | Foverload of int * flow
+  | Floop of flow ref
+
+and flow_record = (konst_elem * flow) list
+ 
+type instance_info = 
+  | FA_none
+  | FA_flow of flow
+  | FA_konst of pattern * konst_elem * type_expr (* should be same as the type of pattern *)
+  | FA_overload of pattern * konst_elem * type_expr
+
 type expression =
   { exp_desc: expression_desc;
     exp_loc: Location.t;
-    exp_type: type_expr;
+    mutable exp_type: type_expr;
     exp_env: Env.t }
 
 and expression_desc =
-    Texp_ident of Path.t * value_description
+    Texp_ident of Path.t * value_description * instance_info ref
   | Texp_constant of constant
   | Texp_let of rec_flag * (pattern * expression) list * expression
   | Texp_function of (pattern * expression) list * partial
@@ -76,8 +92,12 @@ and expression_desc =
   | Texp_letmodule of Ident.t * module_expr * expression
   | Texp_assert of expression
   | Texp_assertfalse
+  | Texp_assertexception of expression
   | Texp_lazy of expression
   | Texp_object of class_structure * class_signature * string list
+  | Texp_rtype of type_expr
+  | Texp_typedecl of Path.t
+  | Texp_generic of (type_expr * expression) list
 
 and meth =
     Tmeth_name of string
@@ -130,7 +150,7 @@ and module_expr_desc =
 and structure = structure_item list
 
 and structure_item =
-    Tstr_eval of expression
+    Tstr_eval of expression * pattern
   | Tstr_value of rec_flag * (pattern * expression) list
   | Tstr_primitive of Ident.t * value_description
   | Tstr_type of (Ident.t * type_declaration) list
@@ -163,6 +183,7 @@ let iter_pattern_desc f = function
   | Tpat_or(p1, p2, _) -> f p1; f p2
   | Tpat_any
   | Tpat_var _
+  | Tpat_rtype _ 
   | Tpat_constant _ -> ()
 
 let map_pattern_desc f d =
@@ -184,6 +205,7 @@ let map_pattern_desc f d =
   | Tpat_var _
   | Tpat_constant _
   | Tpat_any
+  | Tpat_rtype _
   | Tpat_variant (_,None,_) -> d
 
 (* List the identifiers bound by a pattern or a let *)

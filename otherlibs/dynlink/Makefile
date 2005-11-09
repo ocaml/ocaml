@@ -18,13 +18,14 @@
 include ../../config/Makefile
 
 CAMLC=../../boot/ocamlrun ../../ocamlc
-INCLUDES=-I ../../utils -I ../../typing -I ../../bytecomp
+INCLUDES=-I ../../utils -I ../../typing -I ../../bytecomp -I ../../parsing
 COMPFLAGS=-warn-error A -I ../../stdlib $(INCLUDES)
 
 OBJS=dynlink.cmo
 COMPILEROBJS=misc.cmo config.cmo tbl.cmo clflags.cmo consistbl.cmo \
+  asttypes.cmo primitive.cmo \
   ident.cmo path.cmo \
-  types.cmo btype.cmo predef.cmo runtimedef.cmo \
+  types.cmo gdebug.cmo btype.cmo predef.cmo runtimedef.cmo \
   bytesections.cmo dll.cmo meta.cmo symtable.cmo opcodes.cmo
 
 all: dynlink.cma extract_crc
@@ -35,7 +36,7 @@ dynlink.cma: $(OBJS)
 	$(CAMLC) $(COMPFLAGS) -a -o dynlink.cma $(COMPILEROBJS) $(OBJS)
 
 extract_crc: dynlink.cma extract_crc.cmo
-	$(CAMLC) $(COMPFLAGS) -o extract_crc dynlink.cma extract_crc.cmo
+	$(CAMLC) $(COMPFLAGS) -nogcamllib -o extract_crc dynlink.cma extract_crc.cmo
 
 install:
 	cp dynlink.cmi dynlink.cma dynlink.mli extract_crc $(LIBDIR)

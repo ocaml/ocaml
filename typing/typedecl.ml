@@ -439,7 +439,12 @@ let compute_variance env tvl nega posi cntr ty =
           compute_same row.row_more
       | Tpoly (ty, _) ->
           compute_same ty
+      | Tkonst (konst, ty) -> compute_same ty (* FIXME *)
+      | Toverload odesc -> 
+	  compute_same odesc.over_aunif;
+	  List.iter compute_same odesc.over_cases (* FIXME *)
       | Tvar | Tnil | Tlink _ | Tunivar -> ()
+      | Tpath _ -> assert false
     end
   in
   compute_variance_rec nega posi cntr ty;
@@ -679,19 +684,20 @@ let transl_exn_rebind env loc lid =
 
 (* Translate a value declaration *)
 let transl_value_decl env valdecl =
-  let ty = Typetexp.transl_type_scheme env valdecl.pval_type in
+  let pty = valdecl.pval_type in
+  let ty = Typetexp.transl_type_scheme env pty in
   match valdecl.pval_prim with
     [] ->
       { val_type = ty; val_kind = Val_reg }
   | decl ->
       let arity = Ctype.arity ty in
       if arity = 0 then
-        raise(Error(valdecl.pval_type.ptyp_loc, Null_arity_external));
+        raise(Error(pty.ptyp_loc, Null_arity_external));
       let prim = Primitive.parse_declaration arity decl in
       if !Clflags.native_code
       && prim.prim_arity > 5
       && prim.prim_native_name = ""
-      then raise(Error(valdecl.pval_type.ptyp_loc, Missing_native_external));
+      then raise(Error(pty.ptyp_loc, Missing_native_external));
       { val_type = ty; val_kind = Val_prim prim }
 
 (* Translate a "with" constraint -- much simplified version of
