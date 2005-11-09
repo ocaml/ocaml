@@ -35,11 +35,10 @@
 \stx@silent{regular-char-str}%
 \stx@silent{lowercase-ident}%
 \stx@silent{capitalized-ident}%
-%utilities used in many places
+%Used in many places
 \stx@silent{prefix}%
 \stx@silent{name}%
 \stx@silent{xname}%
-\stx@silent{cond}%
 %Not defined
 \stx@silent{external-declaration}%
 \stx@silent{unit-name}%

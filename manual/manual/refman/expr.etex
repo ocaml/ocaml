@@ -293,11 +293,11 @@ $$\begin{array}{rlll}
 
 
 Matching proceeds as described before, except that if the value
-matches some pattern @pattern_i@ which has a guard @cond_i@, then the
-expression @cond_i@ is evaluated (in an environment enriched by the
-bindings performed during matching). If @cond_i@ evaluates to "true",
+matches some pattern @pattern_i@ which has a guard @@cond@_i@, then the
+expression @@cond@_i@ is evaluated (in an environment enriched by the
+bindings performed during matching). If @@cond@_i@ evaluates to "true",
 then @expr_i@ is evaluated and its value returned as the result of the
-matching, as usual. But if @cond_i@ evaluates to "false", the matching
+matching, as usual. But if @@cond@_i@ evaluates to "false", the matching
 is resumed against the patterns following @pattern_i@.
 
 \subsubsection*{Local definitions} \label{s:localdef}
