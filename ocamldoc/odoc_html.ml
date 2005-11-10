@@ -453,7 +453,7 @@ class virtual text =
           bs b "</td></tr>\n"
         )
         l;
-      bs b "</table>\n</body>\n</html>";
+      bs b "</table>\n"
 
     method html_of_Index_list b =
       let index_if_not_empty l url m =
@@ -690,6 +690,11 @@ class html =
     inherit text
     inherit info
 
+    val mutable doctype =
+      "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01 Transitional//EN\">\n"
+    val mutable character_encoding =
+      "<meta content=\"text/html; charset=iso-8859-1\" http-equiv=\"Content-Type\">\n"
+
     (** The default style options. *)
     val mutable default_style_options =
       ["a:visited {color : #416DFF; text-decoration : none; }" ;
@@ -894,6 +899,7 @@ class html =
         in
         bs b "<head>\n";
         bs b style;
+	bs b character_encoding ;
         bs b "<link rel=\"Start\" href=\"";
         bs b self#index;
         bs b "\">\n" ;
@@ -2034,6 +2040,7 @@ class html =
         let b = new_buf () in
         let pre_name = opt (fun c -> c.cl_name) pre in
         let post_name = opt (fun c -> c.cl_name) post in
+	bs b doctype ;
         bs b "<html>\n";
         self#print_header b
           ~nav: (Some (pre_name, post_name, cl.cl_name))
@@ -2080,6 +2087,7 @@ class html =
         let b = new_buf () in
         let pre_name = opt (fun ct -> ct.clt_name) pre in
         let post_name = opt (fun ct -> ct.clt_name) post in
+	bs b doctype ;
         bs b "<html>\n";
         self#print_header b
           ~nav: (Some (pre_name, post_name, clt.clt_name))
@@ -2125,6 +2133,7 @@ class html =
         let b = new_buf () in
         let pre_name = opt (fun mt -> mt.mt_name) pre in
         let post_name = opt (fun mt -> mt.mt_name) post in
+	bs b doctype ;
         bs b "<html>\n";
         self#print_header b
           ~nav: (Some (pre_name, post_name, mt.mt_name))
@@ -2192,6 +2201,7 @@ class html =
         let b = new_buf () in
         let pre_name = opt (fun m -> m.m_name) pre in
         let post_name = opt (fun m -> m.m_name) post in
+	bs b doctype ;
         bs b "<html>\n";
         self#print_header b
           ~nav: (Some (pre_name, post_name, modu.m_name))
@@ -2267,6 +2277,7 @@ class html =
         let chanout = open_out (Filename.concat !Args.target_dir self#index) in
         let b = new_buf () in
         let title = match !Args.title with None -> "" | Some t -> self#escape t in
+	bs b doctype ;
         bs b "<html>\n";
         self#print_header b self#title;
         bs b "<body>\n";
@@ -2282,7 +2293,8 @@ class html =
              self#html_of_Index_list b;
              bs b "<br/>";
              self#html_of_Module_list b
-               (List.map (fun m -> m.m_name) module_list)
+               (List.map (fun m -> m.m_name) module_list);
+	     bs b "</body>\n</html>"
          | Some i -> self#html_of_info ~indent: false b info
         );
         Buffer.output_buffer chanout b;

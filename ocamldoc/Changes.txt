@@ -8,6 +8,7 @@ TODO:
 Next release:
  - fix: remove .TP for generated man pages, use .sp instead
    (.TP caused a lot of odd margins)
+ - fix: html generator now output DOCTYPE and character encoding information.
 
 =====
 Release 3.09:
