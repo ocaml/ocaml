@@ -290,6 +290,7 @@ let process_file ppf sourcefile =
             Odoc_module.m_top_deps = [] ;
             Odoc_module.m_code = None ;
             Odoc_module.m_code_intf = None ;
+	    Odoc_module.m_text_only = true ;
           }
         in
         Some m

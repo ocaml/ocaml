@@ -1013,12 +1013,21 @@ class latex =
     (** Generate the LaTeX code for the given top module, in the given buffer. *)
     method generate_for_top_module fmt m =
       let (first_t, rest_t) = self#first_and_rest_of_info m.m_info in
-      let text = [ Title (1, None,
-                          [ Raw (Odoc_messages.modul^" ") ; Code m.m_name ] @
-                          (match first_t with
-                            [] -> []
-                          | t -> (Raw " : ") :: t)) ;
-                 ]
+      let text =
+	if m.m_text_only then
+	  [ Title (1, None, [Raw m.m_name]  @
+                   (match first_t with
+                     [] -> []
+                   | t -> (Raw " : ") :: t)
+		  ) ;
+	  ]
+	else
+	  [ Title (1, None,
+                   [ Raw (Odoc_messages.modul^" ") ; Code m.m_name ] @
+                   (match first_t with
+                     [] -> []
+                   | t -> (Raw " : ") :: t)) ;
+          ]
       in
       self#latex_of_text fmt text;
       self#latex_for_module_label fmt m;
@@ -1026,7 +1035,7 @@ class latex =
       self#latex_of_text fmt rest_t ;
 
       self#latex_of_text fmt [ Newline ] ;
-      ps fmt "\\ocamldocvspace{0.5cm}\n\n";
+      if not m.m_text_only then ps fmt "\\ocamldocvspace{0.5cm}\n\n";
       List.iter
         (fun ele ->
           self#latex_of_module_element fmt m.m_name ele;

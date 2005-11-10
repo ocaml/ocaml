@@ -1405,6 +1405,7 @@ module Analyser =
           m_top_deps = [] ;
 	  m_code = None ; (* code is set by the caller, after the module is created *)
 	  m_code_intf = m_code_intf ;
+	  m_text_only = false ;
       }
       in
       match (p_module_expr.Parsetree.pmod_desc, tt_module_expr.Typedtree.mod_desc) with
@@ -1586,6 +1587,7 @@ module Analyser =
          m_top_deps = [] ;
 	 m_code = (if !Odoc_args.keep_code then Some !file else None) ;
 	 m_code_intf = None ;
+	 m_text_only = false ;
        }
   end
 

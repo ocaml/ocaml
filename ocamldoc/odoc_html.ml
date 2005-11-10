@@ -2210,22 +2210,27 @@ class html =
         bs b "<body>\n" ;
         self#print_navbar b pre_name post_name modu.m_name ;
         bs b "<center><h1>";
-        bs b
-          (
-           if Module.module_is_functor modu then
-             Odoc_messages.functo
-           else
-             Odoc_messages.modul
-          );
-        bp b " <a href=\"%s\">%s</a>" type_file modu.m_name;
-        (
-         match modu.m_code with
-           None -> ()
-         | Some _ -> bp b " (<a href=\"%s\">.ml</a>)" code_file
-        );
+	if modu.m_text_only then
+	  bs b modu.m_name
+	else
+	  (
+           bs b
+             (
+              if Module.module_is_functor modu then
+		Odoc_messages.functo
+              else
+		Odoc_messages.modul
+             );
+           bp b " <a href=\"%s\">%s</a>" type_file modu.m_name;
+           (
+            match modu.m_code with
+              None -> ()
+            | Some _ -> bp b " (<a href=\"%s\">.ml</a>)" code_file
+           )
+	  );
         bs b "</h1></center>\n<br>\n";
 
-        self#html_of_module b ~with_link: false modu;
+        if not modu.m_text_only then self#html_of_module b ~with_link: false modu;
 
         (* parameters for functors *)
         self#html_of_module_parameter_list b
@@ -2233,7 +2238,7 @@ class html =
           (Module.module_parameters modu);
 
         (* a horizontal line *)
-        bs b "<hr width=\"100%\">\n";
+        if not modu.m_text_only then bs b "<hr width=\"100%\">\n";
 
         (* module elements *)
         List.iter
