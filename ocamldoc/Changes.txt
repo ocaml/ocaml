@@ -3,8 +3,14 @@ TODO:
  - latex: types variant polymorphes dépassent de la page quand ils sont trop longs
  - utilisation nouvelles infos de Xavier: "début de rec", etc.
  - xml generator
+
 =====
-Next Release:
+Next release:
+ - fix: remove .TP for generated man pages, use .sp instead
+   (.TP caused a lot of odd margins)
+
+=====
+Release 3.09:
  - extensible {foo } syntax
  - user can give .txt files on the command line, containing ocamldoc formatted
    text, to be able to include bigger texts out of source files

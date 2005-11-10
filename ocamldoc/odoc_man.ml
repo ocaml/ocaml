@@ -85,7 +85,7 @@ class virtual info =
           bs b "\"\n";
           List.iter
             (fun (ex, desc) ->
-              bs b ".TP\n.B \"";
+              bs b ".sp\n.B \"";
               bs b ex;
               bs b "\"\n";
               self#man_of_text b desc;
@@ -120,7 +120,7 @@ class virtual info =
           bs b "\"\n";
           List.iter
             (fun see ->
-              bs b ".TP\n \"\"\n";
+              bs b ".sp\n";
               self#man_of_see b see;
               bs b "\n"
             )
@@ -250,12 +250,12 @@ class man =
           self#man_of_text2 b t
       | Odoc_info.List tl ->
           List.iter
-            (fun t -> bs b ".TP\n \"\"\n"; self#man_of_text2 b t; bs b "\n")
+            (fun t -> bs b "\n.sp\n \\-"; self#man_of_text2 b t; bs b "\n")
             tl;
           bs b "\n"
       | Odoc_info.Enum tl ->
           List.iter
-            (fun t -> bs b ".TP\n \"\"\n"; self#man_of_text2 b t; bs b "\n")
+            (fun t -> bs b "\n.sp\n \\-"; self#man_of_text2 b t; bs b "\n")
             tl;
           bs b "\n"
       | Odoc_info.Newline ->
@@ -506,7 +506,7 @@ class man =
           bs b ": \n";
           List.iter
             (fun p ->
-              bs b ".TP\n";
+              bs b ".sp\n";
               bs b "\"";
               bs b (Parameter.complete_name p);
               bs b "\"\n";
@@ -551,7 +551,7 @@ class man =
           bs b ":\"\n";
           List.iter
             (fun (p, desc_opt) ->
-              bs b ".TP\n";
+              bs b ".sp\n";
               bs b ("\""^p.mp_name^"\"\n");
               self#man_of_module_type b m_name p.mp_type;
               bs b "\n";
@@ -668,7 +668,7 @@ class man =
         let b = new_buf () in
         bs b (".TH \""^cl.cl_name^"\" ");
         bs b !Odoc_args.man_section ;
-        bs b (" "^(Odoc_misc.string_of_date ~hour: false date)^"\" ");
+        bs b (" "^(Odoc_misc.string_of_date ~hour: false date)^" ");
         bs b "OCamldoc ";
         bs b ("\""^(match !Args.title with Some t -> t | None -> "")^"\"\n");
 
@@ -727,7 +727,7 @@ class man =
         let b = new_buf () in
         bs b (".TH \""^ct.clt_name^"\" ");
         bs b !Odoc_args.man_section ;
-        bs b (" "^(Odoc_misc.string_of_date ~hour: false date)^"\" ");
+        bs b (" "^(Odoc_misc.string_of_date ~hour: false date)^" ");
         bs b "OCamldoc ";
         bs b ("\""^(match !Args.title with Some t -> t | None -> "")^"\"\n");
 
@@ -784,7 +784,7 @@ class man =
         let b = new_buf () in
         bs b (".TH \""^mt.mt_name^"\" ");
         bs b !Odoc_args.man_section ;
-        bs b (" "^(Odoc_misc.string_of_date ~hour: false date)^"\" ");
+        bs b (" "^(Odoc_misc.string_of_date ~hour: false date)^" ");
         bs b "OCamldoc ";
         bs b ("\""^(match !Args.title with Some t -> t | None -> "")^"\"\n");
 
@@ -862,7 +862,7 @@ class man =
         let b = new_buf () in
         bs b (".TH \""^m.m_name^"\" ");
         bs b !Odoc_args.man_section ;
-        bs b (" "^(Odoc_misc.string_of_date ~hour: false date)^"\" ");
+        bs b (" "^(Odoc_misc.string_of_date ~hour: false date)^" ");
         bs b "OCamldoc ";
         bs b ("\""^(match !Args.title with Some t -> t | None -> "")^"\"\n");
 
@@ -989,7 +989,7 @@ class man =
         let b = new_buf () in
         bs b (".TH \""^name^"\" ");
         bs b !Odoc_args.man_section ;
-        bs b (" "^(Odoc_misc.string_of_date ~hour: false date)^"\" ");
+        bs b (" "^(Odoc_misc.string_of_date ~hour: false date)^" ");
         bs b "OCamldoc ";
         bs b ("\""^(match !Args.title with Some t -> t | None -> "")^"\"\n");
         bs b ".SH NAME\n";
