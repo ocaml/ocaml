@@ -698,7 +698,9 @@ let limited_generalize ty0 ty =
       match ty.desc with
         Tvariant row ->
           let more = row_more row in
-          if more.level <> generic_level then generalize_parents more
+          let lv = more.level in
+          if (lv < lowest_level || lv > !current_level)
+          && lv <> generic_level then set_level more generic_level
       | _ -> ()
     end
   in
