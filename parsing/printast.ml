@@ -425,7 +425,7 @@ and class_structure i ppf (p, l) =
 and class_field i ppf x =
   match x with
   | Pcf_inher (ce, so) ->
-      printf "Pcf_inher\n";
+      line i ppf "Pcf_inher\n";
       class_expr (i+1) ppf ce;
       option (i+1) string ppf so;
   | Pcf_val (s, mf, e, loc) ->
