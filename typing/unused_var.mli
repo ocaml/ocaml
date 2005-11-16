@@ -13,3 +13,4 @@
 (* $Id$ *)
 
 val warn : Format.formatter -> Parsetree.structure -> Parsetree.structure;;
+(* Warn on unused variables; return the second argument. *)
