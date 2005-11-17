@@ -14,15 +14,16 @@
 
 (* Disassembler for executable and .cmo object files *)
 
-open Obj
-open Printf
-open Config
 open Asttypes
-open Lambda
+open Config
 open Emitcode
-open Opcodes
 open Instruct
+open Lambda
+open Location
+open Obj
+open Opcodes
 open Opnames
+open Printf
 
 (* Read signed and unsigned integers *)
 
@@ -388,9 +389,11 @@ let op_shapes = [
 ];;
 
 let print_event ev =
-  printf "File \"%s\", line %d, character %d:\n" ev.ev_char.Lexing.pos_fname
-         ev.ev_char.Lexing.pos_lnum
-         (ev.ev_char.Lexing.pos_cnum - ev.ev_char.Lexing.pos_bol)
+  let ls = ev.ev_loc.loc_start in
+  let le = ev.ev_loc.loc_end in
+  printf "File \"%s\", line %d, characters %d-%d:\n" ls.Lexing.pos_fname
+         ls.Lexing.pos_lnum (ls.Lexing.pos_cnum - ls.Lexing.pos_bol)
+         (le.Lexing.pos_cnum - ls.Lexing.pos_bol)
 
 let print_instr ic =
   let pos = currpos ic in
