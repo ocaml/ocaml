@@ -280,19 +280,29 @@ let remove_object_name ty =
 
 (**** Hiding of private methods ****)
 
+let rec hide_private_methods rv ty =
+  let ty = repr ty in
+  if ty.level >= lowest_level then begin
+    mark_type_node ty;
+    begin match ty.desc with
+      Tobject (fi, nm) when object_row fi == rv ->
+        nm := None;
+        let (fl, _) = flatten_fields fi in
+        List.iter
+          (fun (_, k, _) ->
+            match field_kind_repr k with
+              Fvar r -> set_kind r Fabsent
+            | _      -> ())
+          fl
+    | _ -> ()
+    end;
+    iter_type_expr (hide_private_methods rv) ty
+  end
+
 let hide_private_methods ty =
-  match (repr ty).desc with
-    Tobject (fi, nm) ->
-      nm := None;
-      let (fl, _) = flatten_fields fi in
-      List.iter
-        (function (_, k, _) ->
-          match field_kind_repr k with
-            Fvar r -> set_kind r Fabsent
-          | _      -> ())
-        fl
-  | _ ->
-      assert false
+  hide_private_methods (object_row ty) ty;
+  unmark_type ty
+
 
 
                               (*******************************)

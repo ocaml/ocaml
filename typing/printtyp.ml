@@ -96,7 +96,7 @@ let rec safe_repr v = function
 
 let rec list_of_memo = function
     Mnil -> []
-  | Mcons (p, t1, t2, rem) -> (p,t1,t2) :: list_of_memo rem
+  | Mcons (p, t1, t2, rem) -> p :: list_of_memo rem
   | Mlink rem -> list_of_memo !rem
 
 let visited = ref []
@@ -119,9 +119,7 @@ and raw_type_desc ppf = function
   | Tconstr (p, tl, abbrev) ->
       fprintf ppf "@[<hov1>Tconstr(@,%a,@,%a,@,%a)@]" path p
         raw_type_list tl
-        (raw_list (fun ppf (p,t1,t2) ->
-          fprintf ppf "@[%a,@ %a,@ %a@]" path p raw_type t1 raw_type t2))
-        (list_of_memo !abbrev)
+        (raw_list path) (list_of_memo !abbrev)
   | Tobject (t, nm) ->
       fprintf ppf "@[<hov1>Tobject(@,%a,@,@[<1>ref%t@])@]" raw_type t
         (fun ppf ->
