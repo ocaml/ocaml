@@ -38,6 +38,8 @@ let transl_simple_type = ref None
 let solve_env = ref Env.empty
 let real_repr t = repr (expand_head !solve_env t)
 
+let register_env = (:=) solve_env
+
 type t = CT.t
 
 let id x = Cduce_types.Ident.ident (Cduce_types.Ns.empty, U.mk_latin1 x)

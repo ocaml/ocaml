@@ -672,6 +672,7 @@ let transl_type_decl env name_sdecl_list =
   let final_decls, final_env =
     compute_variance_fixpoint env decls required (List.map init_variance decls)
   in
+  Typeext.register_env final_env;
   (* Done *)
   (final_decls, final_env)
 

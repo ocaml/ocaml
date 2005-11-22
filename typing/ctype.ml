@@ -1565,8 +1565,8 @@ and unify3 env t1 t1' t2 t2' =
           link_type t2' t1
         end
     | (Text e1, Text e2) ->
-	log_type t2;
-	t2.desc <- Text (unify_ext e1 e2)
+	log_type t2';
+	t2'.desc <- Text (unify_ext e1 e2)
     | (Tarrow (l1, t1, u1, c1), Tarrow (l2, t2, u2, c2)) when l1 = l2
       || !Clflags.classic && not (is_optional l1 || is_optional l2) ->
         unify env t1 t2; unify env u1 u2;
@@ -1997,9 +1997,7 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
               moregen_occur env t1'.level t2;
               link_type t1' t2
 	  | (Text e1, Text e2) ->
-	      link_type t1 t2;
-	      log_type t2;
-	      t2.desc <- Text (unify_ext e1 e2)
+	      unify env t1 t2
           | (Tarrow (l1, t1, u1, _), Tarrow (l2, t2, u2, _)) when l1 = l2
             || !Clflags.classic && not (is_optional l1 || is_optional l2) ->
               moregen inst_nongen type_pairs env t1 t2;

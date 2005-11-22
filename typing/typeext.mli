@@ -20,6 +20,7 @@ type error
 exception Error of Location.t * error
 val report_error: Format.formatter -> error -> unit
 
+val register_env: Env.t -> unit
 val register_exttypes: unit -> unit
 
 (* CDuce type-checker *)
