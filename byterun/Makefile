@@ -57,7 +57,7 @@ install:
         done
 	cp ld.conf $(LIBDIR)/ld.conf
 
-ld.conf:
+ld.conf: ../config/Makefile
 	echo "$(STUBLIBDIR)" >ld.conf
 	echo "$(LIBDIR)" >>ld.conf
 
