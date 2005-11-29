@@ -65,7 +65,7 @@ let cTKtoCAMLanimatedGif s =
 
 (* check Tkanim package is in the interpreter *)
 let available () =
-  let packages = 
+  let packages =
     splitlist (Protocol.tkEval [| TkToken "package";
                                   TkToken "names" |])
   in
@@ -96,22 +96,22 @@ let image_existence_check img =
   (* But just do some operation. And sometimes it causes Seg-fault.     *)
   (* So, before using Imagephoto.copy, I should check the source image  *)
   (* really exists. *)
-  try ignore (Imagephoto.height img) with 
+  try ignore (Imagephoto.height img) with
     TkError s -> prerr_endline ("tkanim: " ^ s); raise (TkError s)
 
 let imagephoto_copy dst src opts =
   image_existence_check src;
   Imagephoto.copy dst src opts
 
-let animate_gen w i anim = 
+let animate_gen w i anim =
   let length = List.length anim.frames in
   let frames = Array.of_list anim.frames in
   let current = ref 0 in
   let loop = ref anim.loop in
   let f = frames.(!current) in
-    imagephoto_copy i f.imagephoto 
-      [ImgTo (f.left, f.top, f.left + f.frameWidth, 
-                             f.top + f.frameHeight)]; 
+    imagephoto_copy i f.imagephoto
+      [ImgTo (f.left, f.top, f.left + f.frameWidth,
+                             f.top + f.frameHeight)];
   let visible = ref true in
   let animated = ref false in
   let timer = ref None in
@@ -208,9 +208,9 @@ let animate_canvas_item canvas tag anim =
     animate_gen canvas i anim
 
 let gifdata s =
-  let tmp_dir = ref "/tmp" in
+  let tmp_dir = ref Filename.temp_dir_name in
   let mktemp =
-    let cnter = ref 0 
+    let cnter = ref 0
     and pid = Unix.getpid() in
       (function prefx ->
                incr cnter;
@@ -227,4 +227,4 @@ let gifdata s =
           anim
       with
         e -> begin Unix.unlink fname; raise e end
-      
+

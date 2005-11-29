@@ -87,7 +87,7 @@ let test_trunc_line ofile =
 
 let main() =
   let ifile = Sys.argv.(1) in
-  let ofile = "/tmp/testio" in
+  let ofile = Filename.temp_file "testio" "" in
   test "256-byte chunks, 256-byte chunks"
        (copy_file 256) (copy_file 256) ifile ofile;
   test "4096-byte chunks, 4096-byte chunks"
@@ -108,11 +108,12 @@ let main() =
        (copy_random 8192) (copy_random 8192) ifile ofile;
   test "line per line, short lines"
        copy_line copy_line "/etc/hosts" ofile;
-  make_lines "/tmp/lines";
+  let linesfile = Filename.temp_file "lines" "" in
+  make_lines linesfile;
   test "line per line, short and long lines"
-       copy_line copy_line "/tmp/lines" ofile;
+       copy_line copy_line linesfile ofile;
   test_trunc_line ofile;
-  Sys.remove "/tmp/lines";
+  Sys.remove linesfiles;
   Sys.remove ofile;
   exit 0
 
