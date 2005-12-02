@@ -752,9 +752,11 @@ seen as a colored point.
 \begin{caml_example}
 (p : point :> colored_point);;
 \end{caml_example}
-Indeed, narrowing coercions would be unsafe, and could only be combined with
-a type case, possibly raising a runtime error.  However, there is no such
-operation available in the language. 
+Indeed, narrowing coercions without runtime checks would be unsafe.
+Runtime type checks might raise exceptions, and they would require
+the presence of type information at runtime, which is not the case in
+the Objective Caml system.
+For these reasons, there is no such operation available in the language. 
 
 Be aware that subtyping and inheritance are not related.  Inheritance is a
 syntactic relation between classes while subtyping is a semantic relation
@@ -768,7 +770,7 @@ points.
 %function x -> (x : int_comparable :> comparable);;
 %\end{caml_example}
 
-The domain of a coercion can usually be omitted. For instance, one can
+The domain of a coercion can often be omitted. For instance, one can
 define:
 \begin{caml_example}
 let to_point cp = (cp :> point);;
