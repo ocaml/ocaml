@@ -81,6 +81,8 @@ val copy_kind: field_kind -> field_kind
 
 val save_desc: type_expr -> type_desc -> unit
         (* Save a type description *)
+val dup_kind: field_kind option ref -> unit
+        (* Save a None field_kind, and make it point to a fresh Fvar *)
 val cleanup_types: unit -> unit
         (* Restore type descriptions *)
 

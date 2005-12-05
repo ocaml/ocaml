@@ -280,29 +280,19 @@ let remove_object_name ty =
 
 (**** Hiding of private methods ****)
 
-let rec hide_private_methods rv ty =
-  let ty = repr ty in
-  if ty.level >= lowest_level then begin
-    mark_type_node ty;
-    begin match ty.desc with
-      Tobject (fi, nm) when object_row fi == rv ->
-        nm := None;
-        let (fl, _) = flatten_fields fi in
-        List.iter
-          (fun (_, k, _) ->
-            match field_kind_repr k with
-              Fvar r -> set_kind r Fabsent
-            | _      -> ())
-          fl
-    | _ -> ()
-    end;
-    iter_type_expr (hide_private_methods rv) ty
-  end
-
 let hide_private_methods ty =
-  hide_private_methods (object_row ty) ty;
-  unmark_type ty
-
+  match (repr ty).desc with
+    Tobject (fi, nm) ->
+      nm := None;
+      let (fl, _) = flatten_fields fi in
+      List.iter
+        (function (_, k, _) ->
+          match field_kind_repr k with
+            Fvar r -> set_kind r Fabsent
+          | _      -> ())
+        fl
+  | _ ->
+      assert false
 
 
                               (*******************************)
@@ -801,19 +791,27 @@ let rec copy ty =
               let keep = more.level <> generic_level in
               let more' =
                 match more.desc with
-                  Tsubst ty -> ty
-                | Tconstr _ ->
-                    if keep then save_desc more more.desc;
-                    copy more
+		  Tsubst ty -> ty
+		| Tconstr _ ->
+		    if keep then save_desc more more.desc;
+		    copy more
                 | Tvar | Tunivar ->
                     save_desc more more.desc;
                     if keep then more else newty more.desc
-                |  _ -> assert false
+		|  _ -> assert false
               in
               (* Register new type first for recursion *)
               more.desc <- Tsubst(newgenty(Ttuple[more';t]));
               (* Return a new copy *)
               Tvariant (copy_row copy true row keep more')
+          end
+      | Tfield (p, k, ty1, ty2) ->
+          begin match field_kind_repr k with
+            Fabsent  -> Tlink (copy ty2)
+          | Fpresent -> copy_type_desc copy desc
+          | Fvar r ->
+              dup_kind r;
+              copy_type_desc copy desc
           end
       | _ -> copy_type_desc copy desc
       end;

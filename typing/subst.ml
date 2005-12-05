@@ -132,16 +132,8 @@ let rec typexp s ty =
               | None ->
                   Tvariant row
           end
-      | Tfield(label, kind, t1, t2) ->
-          begin match field_kind_repr kind with
-            Fpresent ->
-              Tfield(label, Fpresent, typexp s t1, typexp s t2)
-          | Fabsent ->
-              Tlink (typexp s t2)
-          | Fvar _ (* {contents = None} *) as k ->
-              let k = if s.for_saving then Fvar(ref None) else k in
-              Tfield(label, k, typexp s t1, typexp s t2)
-          end
+      | Tfield(label, kind, t1, t2) when field_kind_repr kind = Fabsent ->
+          Tlink (typexp s t2)
       | _ -> copy_type_desc (typexp s) desc
       end;
     ty'
