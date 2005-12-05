@@ -1599,7 +1599,7 @@ and unify3 env t1 t1' t2 t2' =
           if not (closed_parameterized_type tl t2'') then
             link_type (repr t2) (repr t2')
       | _ ->
-          assert false
+          () (* t2 has already been expanded by update_level *)
     end
 
 (*
