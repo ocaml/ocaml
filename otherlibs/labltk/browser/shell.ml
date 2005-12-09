@@ -279,13 +279,11 @@ let f ~prog ~title =
         if res = "" then may_exec (Filename.concat dir prog) else res) in
   if progpath = "" then program_not_found prog else
   let tl = Jg_toplevel.titled title in
-  let menus = Frame.create tl ~name:"menubar" in
+  let menus = Menu.create tl ~name:"menubar" ~typ:`Menubar in
+  Toplevel.configure tl ~menu:menus;
   let file_menu = new Jg_menu.c "File" ~parent:menus
   and history_menu = new Jg_menu.c "History" ~parent:menus
   and signal_menu = new Jg_menu.c "Signal" ~parent:menus in
-  pack [menus] ~side:`Top ~fill:`X;
-  pack [file_menu#button; history_menu#button; signal_menu#button]
-    ~side:`Left ~ipadx:5 ~anchor:`W;
   let frame, tw, sb = Jg_text.create_with_scrollbar tl in
   Text.configure tw ~background:`White;
   pack [sb] ~fill:`Y ~side:`Right;
