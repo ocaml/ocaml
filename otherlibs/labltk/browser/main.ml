@@ -135,5 +135,5 @@ let _ =
     try
       if is_win32 then mainLoop ()
       else Printexc.print mainLoop ()
-    with Protocol.TkError _ -> ()
+    with Protocol.TkError _ -> flush stderr
   done

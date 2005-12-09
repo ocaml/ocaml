@@ -315,9 +315,9 @@ class editor ~top ~menus = object (self)
       end
 
   method set_file_name txt =
-    Menu.delete menus ~first:`Last ~last:`Last;
-    Menu.add_checkbutton menus ~label:(Filename.basename txt.name)
-      ~variable:txt.modified ~onvalue:"modified" ~offvalue:"unchanged"
+    Menu.configure_checkbutton menus `Last
+      ~label:(Filename.basename txt.name)
+      ~variable:txt.modified
 
   method set_edit txt  =
     if windows <> [] then
