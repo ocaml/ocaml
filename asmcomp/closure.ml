@@ -36,6 +36,15 @@ let rec build_closure_env env_param pos = function
       Tbl.add id (Uprim(Pfield pos, [Uvar env_param]))
               (build_closure_env env_param (pos+1) rem)
 
+(* Auxiliary for accessing globals.  We change the name of the global
+   to the name of the corresponding asm symbol.  This is done here
+   and no longer in Cmmgen so that approximations stored in .cmx files
+   contain the right names if the -for-pack option is active. *)
+
+let getglobal id =
+  Uprim(Pgetglobal (Ident.create_persistent (Compilenv.symbol_for_global id)),
+        [])
+
 (* Check if a variable occurs in a [clambda] term. *)
 
 let occurs_var var u =
@@ -64,7 +73,6 @@ let occurs_var var u =
     | Uassign(id, u) -> id = var || occurs u
     | Usend(_, met, obj, args) ->
         occurs met || occurs obj || List.exists occurs args
-    | Ugetglobal _ -> false
   and occurs_array a =
     try
       for i = 0 to Array.length a - 1 do
@@ -131,8 +139,6 @@ let lambda_smaller lam threshold =
     | Uprim(prim, args) ->
         size := !size + prim_size prim args;
         lambda_list_size args
-    | Ugetglobal _ ->
-       incr size
     | Uswitch(lam, cases) ->
         if Array.length cases.us_actions_consts > 1 then size := !size + 5 ;
         if Array.length cases.us_actions_blocks > 1 then size := !size + 5 ;
@@ -175,7 +181,6 @@ let rec is_pure_clambda = function
            Pccall _ | Praise | Poffsetref _ | Pstringsetu | Pstringsets |
            Parraysetu _ | Parraysets _ | Pbigarrayset _), _) -> false
   | Uprim(p, args) -> List.for_all is_pure_clambda args
-  | Ugetglobal _ -> true
   | _ -> false
 
 (* Simplify primitive operations on integers *)
@@ -327,7 +332,6 @@ let rec substitute sb ulam =
       Uassign(id', substitute sb u)
   | Usend(k, u1, u2, ul) ->
       Usend(k, substitute sb u1, substitute sb u2, List.map (substitute sb) ul)
-  | Ugetglobal _ -> ulam
 
 (* Perform an inline expansion *)
 
@@ -534,7 +538,7 @@ let rec close fenv cenv = function
       end
   | Lprim(Pgetglobal id, []) as lam ->
       check_constant_result lam
-                            (Ugetglobal (Compilenv.symbol_for_global id))
+                            (getglobal id)
                             (Compilenv.global_approx id)
   | Lprim(Pmakeblock(tag, mut) as prim, lams) ->
       let (ulams, approxs) = List.split (List.map (close fenv cenv) lams) in
@@ -553,8 +557,7 @@ let rec close fenv cenv = function
   | Lprim(Psetfield(n, _), [Lprim(Pgetglobal id, []); lam]) ->
       let (ulam, approx) = close fenv cenv lam in
       (!global_approx).(n) <- approx;
-      (Uprim(Psetfield(n, false),
-             [Ugetglobal (Compilenv.symbol_for_global id); ulam]),
+      (Uprim(Psetfield(n, false), [getglobal id; ulam]),
        Value_unknown)
   | Lprim(p, args) ->
       simplif_prim p (close_list_approx fenv cenv args)

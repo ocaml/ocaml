@@ -850,12 +850,10 @@ let rec transl = function
       transl_letrec bindings (transl body)
 
   (* Primitives *)
-  | Ugetglobal id ->
-      Cconst_symbol id
   | Uprim(prim, args) ->
       begin match (simplif_primitive prim, args) with
         (Pgetglobal id, []) ->
-          assert false
+          Cconst_symbol (Ident.name id)
       | (Pmakeblock(tag, mut), []) ->
           transl_constant(Const_block(tag, []))
       | (Pmakeblock(tag, mut), args) ->
