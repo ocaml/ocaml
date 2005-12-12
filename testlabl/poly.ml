@@ -568,17 +568,21 @@ let h x =
   let x = List.hd [Some x; none] in (just x)#id;;
 
 (* polymorphic recursion *)
-let rec f : 'a. 'a -> _ = fun x -> 1 and g x = f x;;
 let rec 'a. f : 'a -> _ = fun x -> 1 and g x = f x;;
 type 'a t = Leaf of 'a | Node of ('a * 'a) t;;
-let rec depth : 'a. 'a t -> _ =
-  function Leaf x -> x | Node x -> 1 + depth x;;
-let rec depth : 'a. 'a t -> _ =
+let rec 'a. depth : 'a t -> _ =
   function Leaf _ -> 1 | Node x -> 1 + d x
 and d x = depth x;;
 let rec 'a. depth : 'a t -> _ =
   function Leaf _ -> 1 | Node x -> 1 + depth x;;
 let rec 'a. depth : 'a t -> _ =
   function Leaf x -> x | Node x -> 1 + depth x;;
-let rec r : 'a. 'a list * 'b list ref = [], ref []
+let rec 'a. depth : 'a t -> _ =
+  function Leaf x -> x | Node x -> depth x;;
+let rec 'a 'b. depth : 'a t -> 'b =
+  function Leaf x -> x | Node x -> depth x;;
+let rec 'a. r : 'a list * 'b list ref = [], ref []
 and q () = r;;
+let rec 'a. f : _ -> _ = fun x -> x;;
+let 'a as [> `Int of int | `B of 'b] 'b. zero : 'a = `Int 0;;
+let 'a as [< `Int of int]. zero : 'a = `Int 0;;
