@@ -17,6 +17,9 @@ PREREQUISITES
     limit stacksize 64M  # if your shell is zsh or tcsh
     ulimit -s 65536      # if your shell is bash
 
+* If you do not have write access to /tmp, you should set the environment
+  variable TMPDIR to the name of some other temporary directory.
+
 
 INSTALLATION INSTRUCTIONS
 

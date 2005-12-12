@@ -714,7 +714,9 @@ let limited_generalize ty0 ty =
       match ty.desc with
         Tvariant row ->
           let more = row_more row in
-          if more.level <> generic_level then generalize_parents more
+          let lv = more.level in
+          if (lv < lowest_level || lv > !current_level)
+          && lv <> generic_level then set_level more generic_level
       | _ -> ()
     end
   in
@@ -818,6 +820,14 @@ let rec copy ty =
               more.desc <- Tsubst(newgenty(Ttuple[more';t]));
               (* Return a new copy *)
               Tvariant (copy_row copy true row keep more')
+          end
+      | Tfield (p, k, ty1, ty2) ->
+          begin match field_kind_repr k with
+            Fabsent  -> Tlink (copy ty2)
+          | Fpresent -> copy_type_desc copy desc
+          | Fvar r ->
+              dup_kind r;
+              copy_type_desc copy desc
           end
       | _ -> copy_type_desc copy desc
       end;
@@ -1620,7 +1630,7 @@ and unify3 env t1 t1' t2 t2' =
           if not (closed_parameterized_type tl t2'') then
             link_type (repr t2) (repr t2')
       | _ ->
-          assert false
+          () (* t2 has already been expanded by update_level *)
     end
 
 (*

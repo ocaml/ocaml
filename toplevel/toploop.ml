@@ -142,14 +142,14 @@ let load_lambda ppf lam =
     may_trace := true;
     let retval = (Meta.reify_bytecode code code_size) () in
     may_trace := false;
-    if can_free then begin 
+    if can_free then begin
       Meta.static_release_bytecode code code_size;
       Meta.static_free code;
     end;
     Result retval
   with x ->
     may_trace := false;
-    if can_free then begin 
+    if can_free then begin
       Meta.static_release_bytecode code code_size;
       Meta.static_free code;
     end;
@@ -215,7 +215,7 @@ let print_exception_outcome ppf exn =
   let outv = outval_of_value !toplevel_env (Obj.repr exn) Predef.type_exn in
   print_out_exception ppf exn outv
 
-(* The table of toplevel directives. 
+(* The table of toplevel directives.
    Filled by functions from module topdirs. *)
 
 let directive_table = (Hashtbl.create 13 : (string, directive_fun) Hashtbl.t)
@@ -274,7 +274,7 @@ let execute_phrase print_outcome ppf phr =
         end
       with x ->
         toplevel_env := oldenv; raise x
-      end      
+      end
   | Ptop_dir(dir_name, dir_arg) ->
       try
         match (Hashtbl.find directive_table dir_name, dir_arg) with
@@ -295,7 +295,7 @@ let execute_phrase print_outcome ppf phr =
 let protect r newval body =
   let oldval = !r in
   try
-    r := newval; 
+    r := newval;
     let res = body() in
     r := oldval;
     res

@@ -144,6 +144,13 @@ static void init_extern_output(void)
   extern_limit = extern_output_block->data + SIZE_EXTERN_OUTPUT_BLOCK;
 }
 
+static void close_extern_output(void)
+{
+  if (extern_userprovided_output == NULL){
+    extern_output_block->end = extern_ptr;
+  }
+}
+
 static void free_extern_output(void)
 {
   struct output_block * blk, * nextblk;
@@ -465,7 +472,7 @@ static intnat extern_value(value v, value flags)
   /* Marshal the object */
   extern_rec(v);
   /* Record end of output */
-  extern_output_block->end = extern_ptr;
+  close_extern_output();
   /* Undo the modifications done on externed blocks */
   extern_replay_trail();
   /* Write the sizes */

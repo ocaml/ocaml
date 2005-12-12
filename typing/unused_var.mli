@@ -13,7 +13,7 @@
 (* $Id$ *)
 
 val warn1 : Parsetree.structure -> Parsetree.structure;;
-val warn2 : Format.formatter -> 'a -> 'a
-val warn  : Format.formatter -> Parsetree.structure -> Parsetree.structure
-
+val warn2 : Format.formatter -> 'a -> 'a;;
+val warn : Format.formatter -> Parsetree.structure -> Parsetree.structure;;
+(* Warn on unused variables; return the second argument. *)
 

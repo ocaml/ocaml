@@ -25,7 +25,7 @@ let b =
   Button.create cvs
     [Text "Save";
      Command
-       (function _ -> 
+       (function _ ->
          let s =
            getSaveFile
              [Title "SAVE FILE TEST";
@@ -33,7 +33,7 @@ let b =
               FileTypes [ { typename= "just test";
                             extensions= [".foo"; ".test"];
                             mactypes= ["FOOO"; "BARR"] } ];
-              InitialDir "/tmp";
+              InitialDir Filename.temp_dir_name;
               InitialFile "hogehoge" ] in
          Label.configure t [Text s])];;
 

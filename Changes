@@ -1,3 +1,11 @@
+Objective Caml 3.09.1:
+----------------------
+
+Native-code compiler (ocamlopt):
+- Fixed bug in ocamlopt -for-pack (bad interaction with inlining,
+  caused undefined global symbols to be referenced) (PR#3825).
+
+
 Objective Caml 3.09.0:
 ----------------------
 

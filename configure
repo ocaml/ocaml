@@ -722,6 +722,11 @@ fi
 
 # For the sys module
 
+if sh ./hasgot getrusage; then
+  echo "getrusage() found."
+  echo "#define HAS_GETRUSAGE" >> s.h
+fi
+
 if sh ./hasgot times; then
   echo "times() found."
   echo "#define HAS_TIMES" >> s.h
