@@ -112,7 +112,7 @@ and expression_desc =
   | Pexp_poly of expression * core_type option
   | Pexp_object of class_structure
 
-and binding = string list * pattern * expression
+and binding = core_type list * pattern * expression
 
 (* Value descriptions *)
 

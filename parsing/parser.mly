@@ -983,22 +983,26 @@ let_bindings:
   | let_bindings AND let_binding                { $3 :: $1 }
 ;
 let_binding:
-    typevar_list DOT let_val_binding
+    type_intro_list DOT let_val_binding
       { (List.rev $1, fst $3, snd $3) }
   | let_val_binding
       { ([], fst $1, snd $1) }
 ;
+type_intro:
+    QUOTE LIDENT
+      { mktyp (Ptyp_var $2) }
+  | QUOTE LIDENT AS core_type2
+      { mktyp (Ptyp_alias ($4, $2)) }
+;
+type_intro_list:
+    type_intro                                  { [$1] }
+  | type_intro_list type_intro                  { $2 :: $1 }
+;
 let_val_binding:
-    val_ident let_fun_binding
+    val_ident fun_binding
       { ({ppat_desc = Ppat_var $1; ppat_loc = rhs_loc 1}, $2) }
   | pattern EQUAL seq_expr
       { ($1, $3) }
-;
-let_fun_binding:
-    fun_binding
-      { $1}
-  | COLON explicit_poly_type EQUAL seq_expr
-      { ghexp(Pexp_constraint($4, Some $2, None)) }
 ;
 fun_binding:
     strict_binding
@@ -1247,13 +1251,11 @@ typevar_list:
     QUOTE ident                             { [$2] }
   | typevar_list QUOTE ident                { $3 :: $1 }
 ;
-explicit_poly_type:
-    typevar_list DOT core_type
-      { mktyp(Ptyp_poly(List.rev $1, $3)) }
-;
 poly_type:
-    core_type               { mktyp(Ptyp_poly([], $1)) }
-  | explicit_poly_type      { $1 }
+    core_type
+      { mktyp(Ptyp_poly([], $1)) }
+  | typevar_list DOT core_type
+      { mktyp(Ptyp_poly(List.rev $1, $3)) }
 ;
 
 /* Core types */

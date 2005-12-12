@@ -634,9 +634,9 @@ and pattern_x_expression_case i ppf (p, e) =
   pattern (i+1) ppf  p;
   expression (i+1) ppf e;
 
-and pattern_x_expression_def i ppf (vl, p, e) =
+and pattern_x_expression_def i ppf (evo, p, e) =
   line i ppf "<def>\n";
-  string (i+1) ppf (String.concat " " vl);
+  (* string (i+1) ppf (String.concat " " vl); *)
   pattern (i+1) ppf p;
   expression (i+1) ppf e;
 
