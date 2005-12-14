@@ -148,7 +148,30 @@ clean::
 # The configuration file
 
 utils/config.ml: utils/config.mlp config/Makefile
-	$(MAKE) utils/config.ml
+	@rm -f utils/config.ml
+	sed -e 's|%%LIBDIR%%|$(LIBDIR)|' \
+            -e 's|%%BYTERUN%%|$(BINDIR)/gcamlrun|' \
+            -e 's|%%CCOMPTYPE%%|cc|' \
+            -e 's|%%BYTECC%%|$(BYTECC) $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)|' \
+            -e 's|%%BYTELINK%%|$(BYTECC) $(BYTECCLINKOPTS)|' \
+            -e 's|%%NATIVECC%%|$(NATIVECC) $(NATIVECCCOMPOPTS)|' \
+            -e 's|%%NATIVELINK%%|$(NATIVECC) $(NATIVECCLINKOPTS)|' \
+            -e 's|%%PARTIALLD%%|ld -r $(NATIVECCLINKOPTS)|' \
+            -e 's|%%PACKLD%%|ld -r $(NATIVECCLINKOPTS)|' \
+            -e 's|%%BYTECCLIBS%%|$(BYTECCLIBS)|' \
+            -e 's|%%NATIVECCLIBS%%|$(NATIVECCLIBS)|' \
+            -e 's|%%RANLIBCMD%%|$(RANLIBCMD)|' \
+            -e 's|%%CC_PROFILE%%|$(CC_PROFILE)|' \
+            -e 's|%%ARCH%%|$(ARCH)|' \
+            -e 's|%%MODEL%%|$(MODEL)|' \
+            -e 's|%%SYSTEM%%|$(SYSTEM)|' \
+            -e 's|%%EXT_OBJ%%|.o|' \
+            -e 's|%%EXT_ASM%%|.s|' \
+            -e 's|%%EXT_LIB%%|.a|' \
+            -e 's|%%EXT_DLL%%|.so|' \
+            -e 's|%%SYSTHREAD_SUPPORT%%|$(SYSTHREAD_SUPPORT)|' \
+            utils/config.mlp > utils/config.ml
+	@chmod -w utils/config.ml
 
 clean::
 	rm -f utils/config.ml
@@ -207,7 +230,8 @@ clean::
 # The numeric opcodes
 
 bytecomp/opcodes.ml: byterun/instruct.h
-	$(MAKE) bytecomp/opcodes.ml
+	sed -n -e '/^enum/p' -e 's/,//g' -e '/^  /p' byterun/instruct.h | \
+        awk -f tools/make-opcodes > bytecomp/opcodes.ml
 
 clean::
 	rm -f bytecomp/opcodes.ml
@@ -220,7 +244,13 @@ byterun/primitives:
 	cd byterun; $(MAKE) primitives
 
 bytecomp/runtimedef.ml: byterun/primitives byterun/fail.h
-	$(MAKE) bytecomp/runtimedef.ml
+	(echo 'let builtin_exceptions = [|'; \
+	 sed -n -e 's|.*/\* \("[A-Za-z_]*"\) \*/$$|  \1;|p' byterun/fail.h | \
+	 sed -e '$$s/;$$//'; \
+         echo '|]'; \
+         echo 'let builtin_primitives = [|'; \
+         sed -e 's/.*/  "&";/' -e '$$s/;$$//' byterun/primitives; \
+	 echo '|]') > bytecomp/runtimedef.ml
 
 clean::
 	rm -f bytecomp/runtimedef.ml
@@ -333,14 +363,14 @@ include .depend.ocamlduce
 # The pack'ed modules from CDuce
 
 cduce_types.cmi cduce_types.cmo:
-	$(MAKE) -f Makefile INCLUDES="-I cduce/src" \
+	$(MAKE) INCLUDES="-I cduce/src" \
            CAMLC="$(CAMLC) -for-pack Cduce_types" \
            $(CDUCE)
 	rm -f cduce_types.mli cduce_types.cmi
 	$(CAMLC) -pack -o cduce_types.cmo -I cduce/src $(CDUCE)
 
 cduce_types.cmx:
-	$(MAKE) -f Makefile INCLUDES="-I cduce/src" \
+	$(MAKE) INCLUDES="-I cduce/src" \
            CAMLC="$(CAMLC) -for-pack Cduce_types" \
            CAMLOPT="$(CAMLOPT) -for-pack Cduce_types" \
            $(CDUCE:.cmo=.cmx)
