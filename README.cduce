@@ -53,7 +53,7 @@ CHANGE LOG:
 - bug in record concatenation
 
 3.09
-- synchronize with OCaml 3.09+1 (CVS version)
+- synchronize with OCaml 3.09.1 (CVS version)
 - drop the stand-alone installation mode
 
 

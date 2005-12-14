@@ -1,6 +1,6 @@
 # Build the OCamlDuce tools using an existing OCaml installation
 
-VERSION=3.09
+VERSION=3.09.1
 
 all: ocamlducec ocamlduce ocamlducedep ocamlducedoc cduce/ocamlduce.cma
 opt: all ocamlduceopt ocamlducec.opt ocamlduceopt.opt ocamlducedep.opt ocamlducedoc.opt cduce/ocamlduce.cmxa
