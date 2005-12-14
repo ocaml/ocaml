@@ -333,14 +333,14 @@ include .depend.ocamlduce
 # The pack'ed modules from CDuce
 
 cduce_types.cmi cduce_types.cmo:
-	$(MAKE) -f Makefile.ocamlduce INCLUDES="-I cduce/src" \
+	$(MAKE) -f Makefile INCLUDES="-I cduce/src" \
            CAMLC="$(CAMLC) -for-pack Cduce_types" \
            $(CDUCE)
 	rm -f cduce_types.mli cduce_types.cmi
 	$(CAMLC) -pack -o cduce_types.cmo -I cduce/src $(CDUCE)
 
 cduce_types.cmx:
-	$(MAKE) -f Makefile.ocamlduce INCLUDES="-I cduce/src" \
+	$(MAKE) -f Makefile INCLUDES="-I cduce/src" \
            CAMLC="$(CAMLC) -for-pack Cduce_types" \
            CAMLOPT="$(CAMLOPT) -for-pack Cduce_types" \
            $(CDUCE:.cmo=.cmx)
