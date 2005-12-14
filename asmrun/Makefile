@@ -140,12 +140,14 @@ unix.c: ../byterun/unix.c
 	ln -s ../byterun/unix.c unix.c
 dynlink.c: ../byterun/dynlink.c
 	ln -s ../byterun/dynlink.c dynlink.c
+../byterun/config.h:
+	cp `ocamlc -where`/caml/config.h ../byterun/config.h
 
 LINKEDFILES=misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c array.c \
   compare.c ints.c floats.c str.c io.c extern.c intern.c hash.c sys.c \
   parsing.c gc_ctrl.c terminfo.c md5.c obj.c lexing.c printexc.c callback.c \
   weak.c compact.c finalise.c meta.c custom.c main.c globroots.c unix.c \
-  dynlink.c
+  dynlink.c ../byterun/config.h
 
 clean::
 	rm -f $(LINKEDFILES)

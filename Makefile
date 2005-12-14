@@ -353,12 +353,12 @@ depend: beforedepend
 	touch cduce_types.ml
 	(for d in utils parsing typing bytecomp asmcomp driver toplevel; \
 	 do $(CAMLDEP) $(DEPFLAGS) $$d/*.mli $$d/*.ml; \
-	 done) > .depend.ocamlduce
-	$(CAMLDEP) -I cduce/src cduce/src/*.ml* >> .depend.ocamlduce
+	 done) > .depend
+	$(CAMLDEP) -I cduce/src cduce/src/*.ml* >> .depend
 
 FORCE:
 
-include .depend.ocamlduce
+include .depend
 
 # The pack'ed modules from CDuce
 
