@@ -1,4 +1,4 @@
-version = "3.08.4"
+version = "3.09"
 requires = "num"
 description = "Runtime library for OCamlDuce"
 archive(byte) = "ocamlduce.cma"
