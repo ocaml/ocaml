@@ -486,7 +486,8 @@ package: clean
 	mkdir config; \
 	mkdir stdlib; \
 	cp ../stdlib/StdlibModules stdlib/; \
-	cp ../README.cduce README)
+	cp ../README.cduce README; \
+	cp ../LICENSE.cduce LICENSE)
 	tar czf ocamlduce-$(VERSION).tar.gz \
           --exclude CVS --exclude ".#*" ocamlduce-$(VERSION)
 	rm -Rf ocamlduce-$(VERSION)
