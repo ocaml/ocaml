@@ -30,12 +30,14 @@ SRC = \
  runtime/serial.ml
 
 link:
+	mkdir -p src
 	(cd src; \
 	for i in $(SRC) $(SRC:.ml=.mli); do \
 	  if test -f $(CDUCE_DIR)/$$i; then ln -f -s $(CDUCE_DIR)/$$i .; else :; fi \
 	done)
 
 copy:
+	mkdir -p src
 	(cd src; \
 	for i in $(SRC) $(SRC:.ml=.mli); do \
 	  if test -f $(CDUCE_DIR)/$$i; then cp --remove-destination $(CDUCE_DIR)/$$i .; else :; fi \
