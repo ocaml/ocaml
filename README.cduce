@@ -1,30 +1,30 @@
-This package is a modified distribution of OCaml with extensions to
-deal with set-theoretic types.
+OVERVIEW:
+
+OCamlDuce is a merger between the Objective Caml and CDuce languages.
+It comes as a modified version of the OCaml tools (toplevel, native
+and bytecode compilers, ocamldoc, ocamldep).
+
 
 AUTHOR:
 
-The extension has been written by Alain Frisch. Parts of the CDuce
-implementation, by the same author, have been reused.
+OCamlDuce has been written by Alain Frisch starting from the OCaml
+and CDuce source trees.
+
+
+REQUIREMENTS:
+
+A working OCaml installation must be available to compile OCamlDuce.
+The version of OCaml must match the version of OCamlDuce.
+
 
 INSTALLATION:
 
-There are two modes:
+make all
+make opt
+make install   # requires findlib
 
-a. Exactly as for a regular OCaml source distribution
-   (the tools are named ocamlc, ocamlopt, ocaml, ...):
-   ./configure && make world && make install
-
-b. Using an existing OCaml installation, and producing alternative
-   tools (the tools are named ocamlducec, ocamlduceopt, ocamlduce, ...):
-   ./configure && make -f Makefile.ocamlduce opt
-
-   You should give ./configure the same arguments as the one
-   given when you installed OCaml.
-
-   Optional findlib-bases installation (it registers a package
-   named ocamlduce):
-
-   make -f Makefile.ocamlduce install
+The OCamlDuce library and tools are installed in a findlib's package
+called ocamlduce.
 
 
 DOCUMENTATION:
@@ -51,3 +51,9 @@ CHANGE LOG:
 
 3.08.4.pl5
 - bug in record concatenation
+
+3.09
+- synchronize with OCaml 3.09+1 (CVS version)
+- drop the stand-alone installation mode
+
+

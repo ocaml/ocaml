@@ -1,22 +1,27 @@
 # Build the OCamlDuce tools using an existing OCaml installation
 
+VERSION=3.09
+
 all: ocamlducec ocamlduce ocamlducedep ocamlducedoc cduce/ocamlduce.cma
 opt: all ocamlduceopt ocamlducec.opt ocamlduceopt.opt ocamlducedep.opt ocamlducedoc.opt cduce/ocamlduce.cmxa
 
 
+# The OCaml tools to use
+
 CAMLC=ocamlc.opt
 CAMLOPT=ocamlopt.opt
+CAMLYACC=ocamlyacc
+YACCFLAGS=-v
+CAMLLEX=ocamllex
+CAMLDEP=ocamldep.opt
+DEPFLAGS=$(INCLUDES)
 
 OCAML_CONFIG=$(shell $(CAMLC) -where)/Makefile.config
 
 include $(OCAML_CONFIG)
 include stdlib/StdlibModules
 
-CAMLYACC=ocamlyacc
-YACCFLAGS=-v
-CAMLLEX=ocamllex
-CAMLDEP=ocamldep.opt
-DEPFLAGS=$(INCLUDES)
+clean:: config/Makefile
 
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver \
          -I toplevel -I tools
@@ -172,6 +177,9 @@ utils/config.ml: utils/config.mlp config/Makefile
             -e 's|%%SYSTHREAD_SUPPORT%%|$(SYSTHREAD_SUPPORT)|' \
             utils/config.mlp > utils/config.ml
 	@chmod -w utils/config.ml
+
+config/Makefile:
+	cp $(OCAML_CONFIG) config/Makefile
 
 clean::
 	rm -f utils/config.ml
@@ -346,7 +354,7 @@ clean::
 	rm -f cduce/*.cm[aiox] cduce/*.[so] cduce/*.a cduce/*.cmxa cduce/*~
 	rm -f cduce/src/*.cm[iox] cduce/src/*.[so] cduce/src/*~
 	rm -f *~
-	(cd tests; $(MAKE) clean)
+	(cd asmrun; make clean)
 
 depend: beforedepend
 	touch cduce_types.mli
@@ -398,7 +406,7 @@ cduce/ocamlduce.cmx: ocamlduceopt cduce/ocamlduce.ml cduce/ocamlduce.cmi
 	./ocamlduceopt -c -I cduce cduce/ocamlduce.ml
 
 clean::
-	rm -f ocamlduce.*
+	rm -f cduce/ocamlduce.cm* cduce/*.o cduce/*.a
 
 # The dependency generator
 
@@ -439,6 +447,8 @@ clean::
 	rm -f ocamlducedoc*
 	cd ocamldoc && $(MAKE) clean
 
+clean::
+	rm -f config/Makefile
 
 # Findlib installation
 
@@ -448,11 +458,35 @@ INSTALL_FILES= \
  ocamlducec.opt ocamlduceopt.opt ocamlducedep.opt ocamlducedoc.opt \
  cduce/ocamlduce.cmi cduce_types.cmi cduce/ocamlduce.mli
 
-install: FORCE
+install: FORCE META
 	ocamlfind install ocamlduce META $(wildcard $(INSTALL_FILES))
 
 uninstall: FORCE
 	ocamlfind remove ocamlduce
 
-config/Makefile:
-	cp $(OCAML_CONFIG) config/Makefile
+META: META.in
+	sed "s/%VER%/$(VERSION)/" META.in > META
+
+clean::
+	rm -f META
+
+# Build package
+
+PACKAGE_FILES= \
+  Makefile .depend META.in \
+  asmcomp asmrun bytecomp byterun cduce driver ocamldoc parsing \
+  toplevel typing utils tools
+
+
+package: clean
+	rm -Rf ocamlduce-$(VERSION)
+	mkdir ocamlduce-$(VERSION)
+	cp -aR $(PACKAGE_FILES) ocamlduce-$(VERSION)/
+	(cd ocamlduce-$(VERSION);  \
+	mkdir config; \
+	mkdir stdlib; \
+	cp ../stdlib/StdlibModules stdlib/; \
+	cp ../README.cduce README)
+	tar czf ocamlduce-$(VERSION).tar.gz \
+          --exclude CVS --exclude ".#*" ocamlduce-$(VERSION)
+	rm -Rf ocamlduce-$(VERSION)
