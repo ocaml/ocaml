@@ -24,10 +24,10 @@ parsing/parsetree.cmi: parsing/longident.cmi parsing/location.cmi \
     cduce_types.cmi parsing/asttypes.cmi 
 parsing/printast.cmi: parsing/parsetree.cmi 
 parsing/syntaxerr.cmi: parsing/location.cmi 
-parsing/lexer.cmo: utils/warnings.cmi parsing/parser.cmi utils/misc.cmi \
-    parsing/location.cmi cduce_types.cmi parsing/lexer.cmi 
-parsing/lexer.cmx: utils/warnings.cmx parsing/parser.cmx utils/misc.cmx \
-    parsing/location.cmx cduce_types.cmx parsing/lexer.cmi 
+parsing/lexer.cmo: parsing/xparser.cmo utils/warnings.cmi parsing/parser.cmi \
+    utils/misc.cmi parsing/location.cmi cduce_types.cmi parsing/lexer.cmi 
+parsing/lexer.cmx: parsing/xparser.cmx utils/warnings.cmx parsing/parser.cmx \
+    utils/misc.cmx parsing/location.cmx cduce_types.cmx parsing/lexer.cmi 
 parsing/linenum.cmo: utils/misc.cmi parsing/linenum.cmi 
 parsing/linenum.cmx: utils/misc.cmx parsing/linenum.cmi 
 parsing/location.cmo: utils/warnings.cmi utils/terminfo.cmi \
@@ -40,12 +40,12 @@ parsing/parse.cmo: parsing/syntaxerr.cmi parsing/parser.cmi \
     parsing/location.cmi parsing/lexer.cmi parsing/parse.cmi 
 parsing/parse.cmx: parsing/syntaxerr.cmx parsing/parser.cmx \
     parsing/location.cmx parsing/lexer.cmx parsing/parse.cmi 
-parsing/parser.cmo: parsing/syntaxerr.cmi parsing/parsetree.cmi \
-    parsing/longident.cmi parsing/location.cmi utils/clflags.cmi \
-    cduce_types.cmi parsing/asttypes.cmi parsing/parser.cmi 
-parsing/parser.cmx: parsing/syntaxerr.cmx parsing/parsetree.cmi \
-    parsing/longident.cmx parsing/location.cmx utils/clflags.cmx \
-    cduce_types.cmx parsing/asttypes.cmi parsing/parser.cmi 
+parsing/parser.cmo: parsing/xparser.cmo parsing/syntaxerr.cmi \
+    parsing/parsetree.cmi parsing/longident.cmi parsing/location.cmi \
+    utils/clflags.cmi cduce_types.cmi parsing/asttypes.cmi parsing/parser.cmi 
+parsing/parser.cmx: parsing/xparser.cmx parsing/syntaxerr.cmx \
+    parsing/parsetree.cmi parsing/longident.cmx parsing/location.cmx \
+    utils/clflags.cmx cduce_types.cmx parsing/asttypes.cmi parsing/parser.cmi 
 parsing/printast.cmo: parsing/parsetree.cmi parsing/longident.cmi \
     parsing/location.cmi parsing/asttypes.cmi parsing/printast.cmi 
 parsing/printast.cmx: parsing/parsetree.cmi parsing/longident.cmx \
@@ -786,30 +786,32 @@ toplevel/topdirs.cmx: utils/warnings.cmx typing/types.cmx toplevel/trace.cmx \
     bytecomp/emitcode.cmx bytecomp/dll.cmx typing/ctype.cmx \
     utils/consistbl.cmx utils/config.cmx utils/clflags.cmx \
     toplevel/topdirs.cmi 
-toplevel/toploop.cmo: utils/warnings.cmi typing/types.cmi typing/typemod.cmi \
-    typing/typeext.cmi typing/typedtree.cmi typing/typecore.cmi \
-    bytecomp/translmod.cmi bytecomp/symtable.cmi bytecomp/simplif.cmi \
-    typing/printtyp.cmi bytecomp/printlambda.cmi bytecomp/printinstr.cmi \
-    parsing/printast.cmi typing/predef.cmi typing/path.cmi \
-    parsing/parsetree.cmi parsing/parse.cmi typing/outcometree.cmi \
-    typing/oprint.cmi utils/misc.cmi bytecomp/meta.cmi parsing/longident.cmi \
-    parsing/location.cmi parsing/lexer.cmi typing/ident.cmi \
-    toplevel/genprintval.cmi driver/errors.cmi typing/env.cmi \
-    bytecomp/emitcode.cmi bytecomp/dll.cmi typing/ctype.cmi \
+toplevel/toploop.cmo: utils/warnings.cmi typing/unused_var.cmi \
+    typing/types.cmi typing/typemod.cmi typing/typeext.cmi \
+    typing/typedtree.cmi typing/typecore.cmi bytecomp/translmod.cmi \
+    bytecomp/symtable.cmi bytecomp/simplif.cmi typing/printtyp.cmi \
+    bytecomp/printlambda.cmi bytecomp/printinstr.cmi parsing/printast.cmi \
+    typing/predef.cmi typing/path.cmi parsing/parsetree.cmi parsing/parse.cmi \
+    typing/outcometree.cmi typing/oprint.cmi utils/misc.cmi bytecomp/meta.cmi \
+    parsing/longident.cmi parsing/location.cmi parsing/lexer.cmi \
+    typing/ident.cmi toplevel/genprintval.cmi driver/errors.cmi \
+    typing/env.cmi bytecomp/emitcode.cmi bytecomp/dll.cmi typing/ctype.cmi \
     utils/consistbl.cmi utils/config.cmi driver/compile.cmi utils/clflags.cmi \
-    bytecomp/bytegen.cmi typing/btype.cmi toplevel/toploop.cmi 
-toplevel/toploop.cmx: utils/warnings.cmx typing/types.cmx typing/typemod.cmx \
-    typing/typeext.cmx typing/typedtree.cmx typing/typecore.cmx \
-    bytecomp/translmod.cmx bytecomp/symtable.cmx bytecomp/simplif.cmx \
-    typing/printtyp.cmx bytecomp/printlambda.cmx bytecomp/printinstr.cmx \
-    parsing/printast.cmx typing/predef.cmx typing/path.cmx \
-    parsing/parsetree.cmi parsing/parse.cmx typing/outcometree.cmi \
-    typing/oprint.cmx utils/misc.cmx bytecomp/meta.cmx parsing/longident.cmx \
-    parsing/location.cmx parsing/lexer.cmx typing/ident.cmx \
-    toplevel/genprintval.cmx driver/errors.cmx typing/env.cmx \
-    bytecomp/emitcode.cmx bytecomp/dll.cmx typing/ctype.cmx \
+    cduce_types.cmi bytecomp/bytegen.cmi typing/btype.cmi \
+    toplevel/toploop.cmi 
+toplevel/toploop.cmx: utils/warnings.cmx typing/unused_var.cmx \
+    typing/types.cmx typing/typemod.cmx typing/typeext.cmx \
+    typing/typedtree.cmx typing/typecore.cmx bytecomp/translmod.cmx \
+    bytecomp/symtable.cmx bytecomp/simplif.cmx typing/printtyp.cmx \
+    bytecomp/printlambda.cmx bytecomp/printinstr.cmx parsing/printast.cmx \
+    typing/predef.cmx typing/path.cmx parsing/parsetree.cmi parsing/parse.cmx \
+    typing/outcometree.cmi typing/oprint.cmx utils/misc.cmx bytecomp/meta.cmx \
+    parsing/longident.cmx parsing/location.cmx parsing/lexer.cmx \
+    typing/ident.cmx toplevel/genprintval.cmx driver/errors.cmx \
+    typing/env.cmx bytecomp/emitcode.cmx bytecomp/dll.cmx typing/ctype.cmx \
     utils/consistbl.cmx utils/config.cmx driver/compile.cmx utils/clflags.cmx \
-    bytecomp/bytegen.cmx typing/btype.cmx toplevel/toploop.cmi 
+    cduce_types.cmx bytecomp/bytegen.cmx typing/btype.cmx \
+    toplevel/toploop.cmi 
 toplevel/topmain.cmo: utils/warnings.cmi toplevel/toploop.cmi \
     toplevel/topdirs.cmi utils/misc.cmi driver/errors.cmi utils/config.cmi \
     utils/clflags.cmi toplevel/topmain.cmi 
@@ -824,144 +826,133 @@ toplevel/trace.cmo: typing/types.cmi toplevel/toploop.cmi typing/printtyp.cmi \
 toplevel/trace.cmx: typing/types.cmx toplevel/toploop.cmx typing/printtyp.cmx \
     typing/predef.cmx typing/path.cmx utils/misc.cmx bytecomp/meta.cmx \
     parsing/longident.cmx typing/ctype.cmx toplevel/trace.cmi 
-stdlib/cduce/atoms.cmi: stdlib/cduce/ns.cmi stdlib/cduce/encodings.cmi \
-    stdlib/cduce/custom.cmo 
-stdlib/cduce/auto_pat.cmi: stdlib/cduce/types.cmi stdlib/cduce/ident.cmo \
-    stdlib/cduce/chars.cmi stdlib/cduce/atoms.cmi 
-stdlib/cduce/bool.cmi: stdlib/cduce/custom.cmo 
-stdlib/cduce/chars.cmi: stdlib/cduce/custom.cmo 
-stdlib/cduce/encodings.cmi: stdlib/cduce/custom.cmo 
-stdlib/cduce/explain.cmi: stdlib/cduce/value.cmi stdlib/cduce/auto_pat.cmi 
-stdlib/cduce/intervals.cmi: stdlib/cduce/custom.cmo 
-stdlib/cduce/ns.cmi: stdlib/cduce/upool.cmi stdlib/cduce/encodings.cmi \
-    stdlib/cduce/custom.cmo 
-stdlib/cduce/patterns.cmi: stdlib/cduce/types.cmi stdlib/cduce/ident.cmo \
-    stdlib/cduce/custom.cmo stdlib/cduce/auto_pat.cmi 
-stdlib/cduce/run_dispatch.cmi: stdlib/cduce/value.cmi \
-    stdlib/cduce/auto_pat.cmi 
-stdlib/cduce/sample.cmi: stdlib/cduce/types.cmi 
-stdlib/cduce/sequence.cmi: stdlib/cduce/types.cmi stdlib/cduce/atoms.cmi 
-stdlib/cduce/sortedList.cmi: stdlib/cduce/custom.cmo 
-stdlib/cduce/typepat.cmi: stdlib/cduce/types.cmi stdlib/cduce/patterns.cmi \
-    stdlib/cduce/ident.cmo 
-stdlib/cduce/types.cmi: stdlib/cduce/ns.cmi stdlib/cduce/intervals.cmi \
-    stdlib/cduce/ident.cmo stdlib/cduce/custom.cmo stdlib/cduce/chars.cmi \
-    stdlib/cduce/atoms.cmi 
-stdlib/cduce/upool.cmi: stdlib/cduce/custom.cmo 
-stdlib/cduce/value.cmi: stdlib/cduce/types.cmi stdlib/cduce/ns.cmi \
-    stdlib/cduce/intervals.cmi stdlib/cduce/imap.cmi stdlib/cduce/ident.cmo \
-    stdlib/cduce/encodings.cmi stdlib/cduce/chars.cmi stdlib/cduce/atoms.cmi 
-stdlib/cduce/atoms.cmo: stdlib/cduce/upool.cmi stdlib/cduce/sortedList.cmi \
-    stdlib/cduce/ns.cmi stdlib/cduce/imap.cmi stdlib/cduce/encodings.cmi \
-    stdlib/cduce/atoms.cmi 
-stdlib/cduce/atoms.cmx: stdlib/cduce/upool.cmx stdlib/cduce/sortedList.cmx \
-    stdlib/cduce/ns.cmx stdlib/cduce/imap.cmx stdlib/cduce/encodings.cmx \
-    stdlib/cduce/atoms.cmi 
-stdlib/cduce/auto_pat.cmo: stdlib/cduce/types.cmi stdlib/cduce/ident.cmo \
-    stdlib/cduce/chars.cmi stdlib/cduce/atoms.cmi stdlib/cduce/auto_pat.cmi 
-stdlib/cduce/auto_pat.cmx: stdlib/cduce/types.cmx stdlib/cduce/ident.cmx \
-    stdlib/cduce/chars.cmx stdlib/cduce/atoms.cmx stdlib/cduce/auto_pat.cmi 
-stdlib/cduce/bool.cmo: stdlib/cduce/custom.cmo stdlib/cduce/bool.cmi 
-stdlib/cduce/bool.cmx: stdlib/cduce/custom.cmx stdlib/cduce/bool.cmi 
-stdlib/cduce/chars.cmo: stdlib/cduce/custom.cmo stdlib/cduce/chars.cmi 
-stdlib/cduce/chars.cmx: stdlib/cduce/custom.cmx stdlib/cduce/chars.cmi 
-stdlib/cduce/compunit.cmo: stdlib/cduce/compunit.cmi 
-stdlib/cduce/compunit.cmx: stdlib/cduce/compunit.cmi 
-stdlib/cduce/encodings.cmo: stdlib/cduce/custom.cmo \
-    stdlib/cduce/encodings.cmi 
-stdlib/cduce/encodings.cmx: stdlib/cduce/custom.cmx \
-    stdlib/cduce/encodings.cmi 
-stdlib/cduce/explain.cmo: stdlib/cduce/value.cmi stdlib/cduce/upool.cmi \
-    stdlib/cduce/types.cmi stdlib/cduce/run_dispatch.cmi \
-    stdlib/cduce/imap.cmi stdlib/cduce/ident.cmo stdlib/cduce/encodings.cmi \
-    stdlib/cduce/chars.cmi stdlib/cduce/auto_pat.cmi stdlib/cduce/atoms.cmi \
-    stdlib/cduce/explain.cmi 
-stdlib/cduce/explain.cmx: stdlib/cduce/value.cmx stdlib/cduce/upool.cmx \
-    stdlib/cduce/types.cmx stdlib/cduce/run_dispatch.cmx \
-    stdlib/cduce/imap.cmx stdlib/cduce/ident.cmx stdlib/cduce/encodings.cmx \
-    stdlib/cduce/chars.cmx stdlib/cduce/auto_pat.cmx stdlib/cduce/atoms.cmx \
-    stdlib/cduce/explain.cmi 
-stdlib/cduce/ident.cmo: stdlib/cduce/sortedList.cmi stdlib/cduce/ns.cmi \
-    stdlib/cduce/encodings.cmi 
-stdlib/cduce/ident.cmx: stdlib/cduce/sortedList.cmx stdlib/cduce/ns.cmx \
-    stdlib/cduce/encodings.cmx 
-stdlib/cduce/imap.cmo: stdlib/cduce/imap.cmi 
-stdlib/cduce/imap.cmx: stdlib/cduce/imap.cmi 
-stdlib/cduce/intervals.cmo: stdlib/cduce/intervals.cmi 
-stdlib/cduce/intervals.cmx: stdlib/cduce/intervals.cmi 
-stdlib/cduce/inttbl.cmo: stdlib/cduce/inttbl.cmi 
-stdlib/cduce/inttbl.cmx: stdlib/cduce/inttbl.cmi 
-stdlib/cduce/normal.cmo: stdlib/cduce/normal.cmi 
-stdlib/cduce/normal.cmx: stdlib/cduce/normal.cmi 
-stdlib/cduce/ns.cmo: stdlib/cduce/upool.cmi stdlib/cduce/encodings.cmi \
-    stdlib/cduce/custom.cmo stdlib/cduce/ns.cmi 
-stdlib/cduce/ns.cmx: stdlib/cduce/upool.cmx stdlib/cduce/encodings.cmx \
-    stdlib/cduce/custom.cmx stdlib/cduce/ns.cmi 
-stdlib/cduce/patterns.cmo: stdlib/cduce/types.cmi stdlib/cduce/sortedList.cmi \
-    stdlib/cduce/sequence.cmi stdlib/cduce/ident.cmo stdlib/cduce/custom.cmo \
-    stdlib/cduce/chars.cmi stdlib/cduce/auto_pat.cmi stdlib/cduce/atoms.cmi \
-    stdlib/cduce/patterns.cmi 
-stdlib/cduce/patterns.cmx: stdlib/cduce/types.cmx stdlib/cduce/sortedList.cmx \
-    stdlib/cduce/sequence.cmx stdlib/cduce/ident.cmx stdlib/cduce/custom.cmx \
-    stdlib/cduce/chars.cmx stdlib/cduce/auto_pat.cmx stdlib/cduce/atoms.cmx \
-    stdlib/cduce/patterns.cmi 
-stdlib/cduce/pretty.cmo: stdlib/cduce/pretty.cmi 
-stdlib/cduce/pretty.cmx: stdlib/cduce/pretty.cmi 
-stdlib/cduce/run_dispatch.cmo: stdlib/cduce/value.cmi stdlib/cduce/upool.cmi \
-    stdlib/cduce/types.cmi stdlib/cduce/imap.cmi stdlib/cduce/ident.cmo \
-    stdlib/cduce/encodings.cmi stdlib/cduce/chars.cmi \
-    stdlib/cduce/auto_pat.cmi stdlib/cduce/atoms.cmi \
-    stdlib/cduce/run_dispatch.cmi 
-stdlib/cduce/run_dispatch.cmx: stdlib/cduce/value.cmx stdlib/cduce/upool.cmx \
-    stdlib/cduce/types.cmx stdlib/cduce/imap.cmx stdlib/cduce/ident.cmx \
-    stdlib/cduce/encodings.cmx stdlib/cduce/chars.cmx \
-    stdlib/cduce/auto_pat.cmx stdlib/cduce/atoms.cmx \
-    stdlib/cduce/run_dispatch.cmi 
-stdlib/cduce/sample.cmo: stdlib/cduce/types.cmi stdlib/cduce/intervals.cmi \
-    stdlib/cduce/ident.cmo stdlib/cduce/chars.cmi stdlib/cduce/atoms.cmi \
-    stdlib/cduce/sample.cmi 
-stdlib/cduce/sample.cmx: stdlib/cduce/types.cmx stdlib/cduce/intervals.cmx \
-    stdlib/cduce/ident.cmx stdlib/cduce/chars.cmx stdlib/cduce/atoms.cmx \
-    stdlib/cduce/sample.cmi 
-stdlib/cduce/sequence.cmo: stdlib/cduce/types.cmi stdlib/cduce/custom.cmo \
-    stdlib/cduce/chars.cmi stdlib/cduce/atoms.cmi stdlib/cduce/sequence.cmi 
-stdlib/cduce/sequence.cmx: stdlib/cduce/types.cmx stdlib/cduce/custom.cmx \
-    stdlib/cduce/chars.cmx stdlib/cduce/atoms.cmx stdlib/cduce/sequence.cmi 
-stdlib/cduce/serial.cmo: stdlib/cduce/value.cmi stdlib/cduce/serial.cmi 
-stdlib/cduce/serial.cmx: stdlib/cduce/value.cmx stdlib/cduce/serial.cmi 
-stdlib/cduce/sortedList.cmo: stdlib/cduce/custom.cmo \
-    stdlib/cduce/sortedList.cmi 
-stdlib/cduce/sortedList.cmx: stdlib/cduce/custom.cmx \
-    stdlib/cduce/sortedList.cmi 
-stdlib/cduce/state.cmo: stdlib/cduce/state.cmi 
-stdlib/cduce/state.cmx: stdlib/cduce/state.cmi 
-stdlib/cduce/stats.cmo: stdlib/cduce/stats.cmi 
-stdlib/cduce/stats.cmx: stdlib/cduce/stats.cmi 
-stdlib/cduce/typepat.cmo: stdlib/cduce/types.cmi stdlib/cduce/sequence.cmi \
-    stdlib/cduce/patterns.cmi stdlib/cduce/ident.cmo stdlib/cduce/chars.cmi \
-    stdlib/cduce/typepat.cmi 
-stdlib/cduce/typepat.cmx: stdlib/cduce/types.cmx stdlib/cduce/sequence.cmx \
-    stdlib/cduce/patterns.cmx stdlib/cduce/ident.cmx stdlib/cduce/chars.cmx \
-    stdlib/cduce/typepat.cmi 
-stdlib/cduce/types.cmo: stdlib/cduce/stats.cmi stdlib/cduce/sortedList.cmi \
-    stdlib/cduce/pretty.cmi stdlib/cduce/ns.cmi stdlib/cduce/normal.cmi \
-    stdlib/cduce/intervals.cmi stdlib/cduce/ident.cmo \
-    stdlib/cduce/encodings.cmi stdlib/cduce/custom.cmo \
-    stdlib/cduce/compunit.cmi stdlib/cduce/chars.cmi stdlib/cduce/bool.cmi \
-    stdlib/cduce/atoms.cmi stdlib/cduce/types.cmi 
-stdlib/cduce/types.cmx: stdlib/cduce/stats.cmx stdlib/cduce/sortedList.cmx \
-    stdlib/cduce/pretty.cmx stdlib/cduce/ns.cmx stdlib/cduce/normal.cmx \
-    stdlib/cduce/intervals.cmx stdlib/cduce/ident.cmx \
-    stdlib/cduce/encodings.cmx stdlib/cduce/custom.cmx \
-    stdlib/cduce/compunit.cmx stdlib/cduce/chars.cmx stdlib/cduce/bool.cmx \
-    stdlib/cduce/atoms.cmx stdlib/cduce/types.cmi 
-stdlib/cduce/upool.cmo: stdlib/cduce/custom.cmo stdlib/cduce/upool.cmi 
-stdlib/cduce/upool.cmx: stdlib/cduce/custom.cmx stdlib/cduce/upool.cmi 
-stdlib/cduce/value.cmo: stdlib/cduce/upool.cmi stdlib/cduce/types.cmi \
-    stdlib/cduce/sequence.cmi stdlib/cduce/ns.cmi stdlib/cduce/intervals.cmi \
-    stdlib/cduce/imap.cmi stdlib/cduce/ident.cmo stdlib/cduce/encodings.cmi \
-    stdlib/cduce/chars.cmi stdlib/cduce/atoms.cmi stdlib/cduce/value.cmi 
-stdlib/cduce/value.cmx: stdlib/cduce/upool.cmx stdlib/cduce/types.cmx \
-    stdlib/cduce/sequence.cmx stdlib/cduce/ns.cmx stdlib/cduce/intervals.cmx \
-    stdlib/cduce/imap.cmx stdlib/cduce/ident.cmx stdlib/cduce/encodings.cmx \
-    stdlib/cduce/chars.cmx stdlib/cduce/atoms.cmx stdlib/cduce/value.cmi 
+cduce/src/atoms.cmo: cduce/src/upool.cmi cduce/src/sortedList.cmi \
+    cduce/src/ns.cmi cduce/src/imap.cmi cduce/src/encodings.cmi \
+    cduce/src/atoms.cmi 
+cduce/src/atoms.cmx: cduce/src/upool.cmx cduce/src/sortedList.cmx \
+    cduce/src/ns.cmx cduce/src/imap.cmx cduce/src/encodings.cmx \
+    cduce/src/atoms.cmi 
+cduce/src/atoms.cmi: cduce/src/ns.cmi cduce/src/encodings.cmi \
+    cduce/src/custom.cmo 
+cduce/src/auto_pat.cmo: cduce/src/types.cmi cduce/src/ident.cmo \
+    cduce/src/chars.cmi cduce/src/atoms.cmi cduce/src/auto_pat.cmi 
+cduce/src/auto_pat.cmx: cduce/src/types.cmx cduce/src/ident.cmx \
+    cduce/src/chars.cmx cduce/src/atoms.cmx cduce/src/auto_pat.cmi 
+cduce/src/auto_pat.cmi: cduce/src/types.cmi cduce/src/ident.cmo \
+    cduce/src/chars.cmi cduce/src/atoms.cmi 
+cduce/src/bool.cmo: cduce/src/custom.cmo cduce/src/bool.cmi 
+cduce/src/bool.cmx: cduce/src/custom.cmx cduce/src/bool.cmi 
+cduce/src/bool.cmi: cduce/src/custom.cmo 
+cduce/src/chars.cmo: cduce/src/custom.cmo cduce/src/chars.cmi 
+cduce/src/chars.cmx: cduce/src/custom.cmx cduce/src/chars.cmi 
+cduce/src/chars.cmi: cduce/src/custom.cmo 
+cduce/src/compunit.cmo: cduce/src/compunit.cmi 
+cduce/src/compunit.cmx: cduce/src/compunit.cmi 
+cduce/src/encodings.cmo: cduce/src/custom.cmo cduce/src/encodings.cmi 
+cduce/src/encodings.cmx: cduce/src/custom.cmx cduce/src/encodings.cmi 
+cduce/src/encodings.cmi: cduce/src/custom.cmo 
+cduce/src/explain.cmo: cduce/src/value.cmi cduce/src/upool.cmi \
+    cduce/src/types.cmi cduce/src/run_dispatch.cmi cduce/src/imap.cmi \
+    cduce/src/ident.cmo cduce/src/encodings.cmi cduce/src/chars.cmi \
+    cduce/src/auto_pat.cmi cduce/src/atoms.cmi cduce/src/explain.cmi 
+cduce/src/explain.cmx: cduce/src/value.cmx cduce/src/upool.cmx \
+    cduce/src/types.cmx cduce/src/run_dispatch.cmx cduce/src/imap.cmx \
+    cduce/src/ident.cmx cduce/src/encodings.cmx cduce/src/chars.cmx \
+    cduce/src/auto_pat.cmx cduce/src/atoms.cmx cduce/src/explain.cmi 
+cduce/src/explain.cmi: cduce/src/value.cmi cduce/src/auto_pat.cmi 
+cduce/src/ident.cmo: cduce/src/sortedList.cmi cduce/src/ns.cmi \
+    cduce/src/encodings.cmi 
+cduce/src/ident.cmx: cduce/src/sortedList.cmx cduce/src/ns.cmx \
+    cduce/src/encodings.cmx 
+cduce/src/imap.cmo: cduce/src/imap.cmi 
+cduce/src/imap.cmx: cduce/src/imap.cmi 
+cduce/src/intervals.cmo: cduce/src/intervals.cmi 
+cduce/src/intervals.cmx: cduce/src/intervals.cmi 
+cduce/src/intervals.cmi: cduce/src/custom.cmo 
+cduce/src/inttbl.cmo: cduce/src/inttbl.cmi 
+cduce/src/inttbl.cmx: cduce/src/inttbl.cmi 
+cduce/src/normal.cmo: cduce/src/normal.cmi 
+cduce/src/normal.cmx: cduce/src/normal.cmi 
+cduce/src/ns.cmo: cduce/src/upool.cmi cduce/src/encodings.cmi \
+    cduce/src/custom.cmo cduce/src/ns.cmi 
+cduce/src/ns.cmx: cduce/src/upool.cmx cduce/src/encodings.cmx \
+    cduce/src/custom.cmx cduce/src/ns.cmi 
+cduce/src/ns.cmi: cduce/src/upool.cmi cduce/src/encodings.cmi \
+    cduce/src/custom.cmo 
+cduce/src/patterns.cmo: cduce/src/types.cmi cduce/src/sortedList.cmi \
+    cduce/src/sequence.cmi cduce/src/ident.cmo cduce/src/custom.cmo \
+    cduce/src/chars.cmi cduce/src/auto_pat.cmi cduce/src/atoms.cmi \
+    cduce/src/patterns.cmi 
+cduce/src/patterns.cmx: cduce/src/types.cmx cduce/src/sortedList.cmx \
+    cduce/src/sequence.cmx cduce/src/ident.cmx cduce/src/custom.cmx \
+    cduce/src/chars.cmx cduce/src/auto_pat.cmx cduce/src/atoms.cmx \
+    cduce/src/patterns.cmi 
+cduce/src/patterns.cmi: cduce/src/types.cmi cduce/src/ident.cmo \
+    cduce/src/custom.cmo cduce/src/auto_pat.cmi 
+cduce/src/pretty.cmo: cduce/src/pretty.cmi 
+cduce/src/pretty.cmx: cduce/src/pretty.cmi 
+cduce/src/run_dispatch.cmo: cduce/src/value.cmi cduce/src/upool.cmi \
+    cduce/src/types.cmi cduce/src/imap.cmi cduce/src/ident.cmo \
+    cduce/src/encodings.cmi cduce/src/chars.cmi cduce/src/auto_pat.cmi \
+    cduce/src/atoms.cmi cduce/src/run_dispatch.cmi 
+cduce/src/run_dispatch.cmx: cduce/src/value.cmx cduce/src/upool.cmx \
+    cduce/src/types.cmx cduce/src/imap.cmx cduce/src/ident.cmx \
+    cduce/src/encodings.cmx cduce/src/chars.cmx cduce/src/auto_pat.cmx \
+    cduce/src/atoms.cmx cduce/src/run_dispatch.cmi 
+cduce/src/run_dispatch.cmi: cduce/src/value.cmi cduce/src/auto_pat.cmi 
+cduce/src/sample.cmo: cduce/src/types.cmi cduce/src/intervals.cmi \
+    cduce/src/ident.cmo cduce/src/chars.cmi cduce/src/atoms.cmi \
+    cduce/src/sample.cmi 
+cduce/src/sample.cmx: cduce/src/types.cmx cduce/src/intervals.cmx \
+    cduce/src/ident.cmx cduce/src/chars.cmx cduce/src/atoms.cmx \
+    cduce/src/sample.cmi 
+cduce/src/sample.cmi: cduce/src/types.cmi 
+cduce/src/sequence.cmo: cduce/src/types.cmi cduce/src/custom.cmo \
+    cduce/src/chars.cmi cduce/src/atoms.cmi cduce/src/sequence.cmi 
+cduce/src/sequence.cmx: cduce/src/types.cmx cduce/src/custom.cmx \
+    cduce/src/chars.cmx cduce/src/atoms.cmx cduce/src/sequence.cmi 
+cduce/src/sequence.cmi: cduce/src/types.cmi cduce/src/atoms.cmi 
+cduce/src/serial.cmo: cduce/src/value.cmi cduce/src/serial.cmi 
+cduce/src/serial.cmx: cduce/src/value.cmx cduce/src/serial.cmi 
+cduce/src/sortedList.cmo: cduce/src/custom.cmo cduce/src/sortedList.cmi 
+cduce/src/sortedList.cmx: cduce/src/custom.cmx cduce/src/sortedList.cmi 
+cduce/src/sortedList.cmi: cduce/src/custom.cmo 
+cduce/src/state.cmo: cduce/src/state.cmi 
+cduce/src/state.cmx: cduce/src/state.cmi 
+cduce/src/stats.cmo: cduce/src/stats.cmi 
+cduce/src/stats.cmx: cduce/src/stats.cmi 
+cduce/src/typepat.cmo: cduce/src/types.cmi cduce/src/sequence.cmi \
+    cduce/src/patterns.cmi cduce/src/ident.cmo cduce/src/chars.cmi \
+    cduce/src/typepat.cmi 
+cduce/src/typepat.cmx: cduce/src/types.cmx cduce/src/sequence.cmx \
+    cduce/src/patterns.cmx cduce/src/ident.cmx cduce/src/chars.cmx \
+    cduce/src/typepat.cmi 
+cduce/src/typepat.cmi: cduce/src/types.cmi cduce/src/patterns.cmi \
+    cduce/src/ident.cmo 
+cduce/src/types.cmo: cduce/src/stats.cmi cduce/src/sortedList.cmi \
+    cduce/src/pretty.cmi cduce/src/ns.cmi cduce/src/normal.cmi \
+    cduce/src/intervals.cmi cduce/src/ident.cmo cduce/src/encodings.cmi \
+    cduce/src/custom.cmo cduce/src/compunit.cmi cduce/src/chars.cmi \
+    cduce/src/bool.cmi cduce/src/atoms.cmi cduce/src/types.cmi 
+cduce/src/types.cmx: cduce/src/stats.cmx cduce/src/sortedList.cmx \
+    cduce/src/pretty.cmx cduce/src/ns.cmx cduce/src/normal.cmx \
+    cduce/src/intervals.cmx cduce/src/ident.cmx cduce/src/encodings.cmx \
+    cduce/src/custom.cmx cduce/src/compunit.cmx cduce/src/chars.cmx \
+    cduce/src/bool.cmx cduce/src/atoms.cmx cduce/src/types.cmi 
+cduce/src/types.cmi: cduce/src/ns.cmi cduce/src/intervals.cmi \
+    cduce/src/ident.cmo cduce/src/custom.cmo cduce/src/chars.cmi \
+    cduce/src/atoms.cmi 
+cduce/src/upool.cmo: cduce/src/custom.cmo cduce/src/upool.cmi 
+cduce/src/upool.cmx: cduce/src/custom.cmx cduce/src/upool.cmi 
+cduce/src/upool.cmi: cduce/src/custom.cmo 
+cduce/src/value.cmo: cduce/src/upool.cmi cduce/src/types.cmi \
+    cduce/src/sequence.cmi cduce/src/ns.cmi cduce/src/intervals.cmi \
+    cduce/src/imap.cmi cduce/src/ident.cmo cduce/src/encodings.cmi \
+    cduce/src/chars.cmi cduce/src/atoms.cmi cduce/src/value.cmi 
+cduce/src/value.cmx: cduce/src/upool.cmx cduce/src/types.cmx \
+    cduce/src/sequence.cmx cduce/src/ns.cmx cduce/src/intervals.cmx \
+    cduce/src/imap.cmx cduce/src/ident.cmx cduce/src/encodings.cmx \
+    cduce/src/chars.cmx cduce/src/atoms.cmx cduce/src/value.cmi 
+cduce/src/value.cmi: cduce/src/types.cmi cduce/src/ns.cmi \
+    cduce/src/intervals.cmi cduce/src/imap.cmi cduce/src/ident.cmo \
+    cduce/src/encodings.cmi cduce/src/chars.cmi cduce/src/atoms.cmi 

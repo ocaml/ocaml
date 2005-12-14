@@ -29,17 +29,17 @@ SRC = \
  typing/typepat.ml \
  runtime/serial.ml
 
-QSRC=$(SRC:%=$(CDUCE_DIR)/%)
-
 link:
-	for i in $(QSRC) $(QSRC:.ml=.mli); do \
-	  if test -f $$i; then ln -f -s $$i .; else :; fi \
-	done
+	(cd src; \
+	for i in $(SRC) $(SRC:.ml=.mli); do \
+	  if test -f $(CDUCE_DIR)/$$i; then ln -f -s $(CDUCE_DIR)/$$i .; else :; fi \
+	done)
 
 copy:
-	for i in $(QSRC) $(QSRC:.ml=.mli); do \
-	  if test -f $$i; then cp --remove-destination $$i .; else :; fi \
-	done
+	(cd src; \
+	for i in $(SRC) $(SRC:.ml=.mli); do \
+	  if test -f $(CDUCE_DIR)/$$i; then cp --remove-destination $(CDUCE_DIR)/$$i .; else :; fi \
+	done)
 
-link_clean:
-	rm -f *.ml *.mli
+clean:
+	cd src; rm -f *.ml *.mli *.cm* *.o

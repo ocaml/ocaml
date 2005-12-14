@@ -1,7 +1,7 @@
 # Build the OCamlDuce tools using an existing OCaml installation
 
-all: ocamlducec ocamlduce ocamlducedep ocamlducedoc ocamlduce.cma
-opt: all ocamlduceopt ocamlducec.opt ocamlduceopt.opt ocamlducedep.opt ocamlducedoc.opt ocamlduce.cmxa
+all: ocamlducec ocamlduce ocamlducedep ocamlducedoc cduce/ocamlduce.cma
+opt: all ocamlduceopt ocamlducec.opt ocamlduceopt.opt ocamlducedep.opt ocamlducedoc.opt cduce/ocamlduce.cmxa
 
 
 CAMLC=ocamlc.opt
@@ -103,18 +103,18 @@ EXPUNGEOBJS=utils/misc.cmo utils/tbl.cmo \
 PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop
 
 CDUCE=\
-  stdlib/cduce/custom.cmo stdlib/cduce/encodings.cmo \
-  stdlib/cduce/imap.cmo stdlib/cduce/upool.cmo \
-  stdlib/cduce/ns.cmo stdlib/cduce/sortedList.cmo stdlib/cduce/atoms.cmo \
-  stdlib/cduce/bool.cmo stdlib/cduce/chars.cmo stdlib/cduce/ident.cmo \
-  stdlib/cduce/intervals.cmo stdlib/cduce/inttbl.cmo stdlib/cduce/normal.cmo \
-  stdlib/cduce/pretty.cmo stdlib/cduce/stats.cmo \
-  stdlib/cduce/compunit.cmo \
-  stdlib/cduce/types.cmo stdlib/cduce/sequence.cmo stdlib/cduce/sample.cmo \
-  stdlib/cduce/auto_pat.cmo stdlib/cduce/patterns.cmo \
-  stdlib/cduce/value.cmo stdlib/cduce/run_dispatch.cmo stdlib/cduce/explain.cmo \
-  stdlib/cduce/typepat.cmo \
-  stdlib/cduce/serial.cmo
+  cduce/src/custom.cmo cduce/src/encodings.cmo \
+  cduce/src/imap.cmo cduce/src/upool.cmo \
+  cduce/src/ns.cmo cduce/src/sortedList.cmo cduce/src/atoms.cmo \
+  cduce/src/bool.cmo cduce/src/chars.cmo cduce/src/ident.cmo \
+  cduce/src/intervals.cmo cduce/src/inttbl.cmo cduce/src/normal.cmo \
+  cduce/src/pretty.cmo cduce/src/stats.cmo \
+  cduce/src/compunit.cmo \
+  cduce/src/types.cmo cduce/src/sequence.cmo cduce/src/sample.cmo \
+  cduce/src/auto_pat.cmo cduce/src/patterns.cmo \
+  cduce/src/value.cmo cduce/src/run_dispatch.cmo cduce/src/explain.cmo \
+  cduce/src/typepat.cmo \
+  cduce/src/serial.cmo
 
 # The compiler
 
@@ -313,7 +313,8 @@ clean::
 	rm -f driver/*.cm[iox] driver/*.[so] driver/*~
 	rm -f toplevel/*.cm[iox] toplevel/*.[so] toplevel/*~
 	rm -f tools/*.cm[iox] tools/*.[so] tools/*~
-	rm -f stdlib/cduce/*.cm[iox] stdlib/cduce/*.[so] stdlib/cduce/*~
+	rm -f cduce/*.cm[aiox] cduce/*.[so] cduce/*.a cduce/*.cmxa cduce/*~
+	rm -f cduce/src/*.cm[iox] cduce/src/*.[so] cduce/src/*~
 	rm -f *~
 	(cd tests; $(MAKE) clean)
 
@@ -323,8 +324,7 @@ depend: beforedepend
 	(for d in utils parsing typing bytecomp asmcomp driver toplevel; \
 	 do $(CAMLDEP) $(DEPFLAGS) $$d/*.mli $$d/*.ml; \
 	 done) > .depend.ocamlduce
-	$(CAMLDEP) -I stdlib/cduce \
-	  stdlib/cduce/*.mli stdlib/cduce/*.ml >> .depend.ocamlduce
+	$(CAMLDEP) -I cduce/src cduce/src/*.ml* >> .depend.ocamlduce
 
 FORCE:
 
@@ -333,38 +333,39 @@ include .depend.ocamlduce
 # The pack'ed modules from CDuce
 
 cduce_types.cmi cduce_types.cmo:
-	$(MAKE) -f Makefile.ocamlduce INCLUDES="-I stdlib/cduce" \
+	$(MAKE) -f Makefile.ocamlduce INCLUDES="-I cduce/src" \
            CAMLC="$(CAMLC) -for-pack Cduce_types" \
            $(CDUCE)
 	rm -f cduce_types.mli cduce_types.cmi
-	$(CAMLC) -pack -o cduce_types.cmo -I stdlib/cduce $(CDUCE)
+	$(CAMLC) -pack -o cduce_types.cmo -I cduce/src $(CDUCE)
 
 cduce_types.cmx:
-	$(MAKE) -f Makefile.ocamlduce INCLUDES="-I stdlib/cduce" \
+	$(MAKE) -f Makefile.ocamlduce INCLUDES="-I cduce/src" \
            CAMLC="$(CAMLC) -for-pack Cduce_types" \
            CAMLOPT="$(CAMLOPT) -for-pack Cduce_types" \
            $(CDUCE:.cmo=.cmx)
 	rm -f cduce_types.mli cduce_types.cmi
-	$(CAMLOPT) -pack -o cduce_types.cmx -I stdlib/cduce $(CDUCE:.cmo=.cmx)
+	$(CAMLOPT) -pack -o cduce_types.cmx -I cduce/src $(CDUCE:.cmo=.cmx)
 
 clean::
 	rm -f cduce_types.*
 
 # The OCamlDuce library
 
-ocamlduce.cma: ocamlducec cduce_types.cmo stdlib/ocamlduce.cmo
-	./ocamlducec -a -o ocamlduce.cma cduce_types.cmo stdlib/ocamlduce.cmo
+cduce/ocamlduce.cma: ocamlducec cduce_types.cmo cduce/ocamlduce.cmo
+	./ocamlducec -a -o cduce/ocamlduce.cma cduce_types.cmo cduce/ocamlduce.cmo
 
-stdlib/ocamlduce.cmo: ocamlducec stdlib/ocamlduce.ml stdlib/ocamlduce.cmi
-	./ocamlducec -c -I stdlib stdlib/ocamlduce.ml
+cduce/ocamlduce.cmo: ocamlducec cduce/ocamlduce.ml cduce/ocamlduce.cmi
+	./ocamlducec -c -I cduce cduce/ocamlduce.ml
 
-stdlib/ocamlduce.cmi: ocamlducec stdlib/ocamlduce.mli
-	./ocamlducec -c stdlib/ocamlduce.mli
+cduce/ocamlduce.cmi: ocamlducec cduce/ocamlduce.mli
+	./ocamlducec -c cduce/ocamlduce.mli
 
-ocamlduce.cmxa: ocamlduceopt cduce_types.cmx stdlib/ocamlduce.cmx
-	./ocamlduceopt -a -o ocamlduce.cmxa cduce_types.cmx stdlib/ocamlduce.cmx
-stdlib/ocamlduce.cmx: ocamlduceopt stdlib/ocamlduce.ml stdlib/ocamlduce.cmi
-	./ocamlduceopt -c -I stdlib stdlib/ocamlduce.ml
+cduce/ocamlduce.cmxa: ocamlduceopt cduce_types.cmx cduce/ocamlduce.cmx
+	./ocamlduceopt -a -o cduce/ocamlduce.cmxa cduce_types.cmx cduce/ocamlduce.cmx
+
+cduce/ocamlduce.cmx: ocamlduceopt cduce/ocamlduce.ml cduce/ocamlduce.cmi
+	./ocamlduceopt -c -I cduce cduce/ocamlduce.ml
 
 clean::
 	rm -f ocamlduce.*
@@ -412,13 +413,16 @@ clean::
 # Findlib installation
 
 INSTALL_FILES= \
- ocamlducec ocamlduce ocamlducedep ocamlducedoc ocamlduce.cma \
- ocamlduceopt ocamlduce.cmxa ocamlduce.a \
+ ocamlducec ocamlduce ocamlducedep ocamlducedoc cduce/ocamlduce.cma \
+ ocamlduceopt cduce/ocamlduce.cmxa cduce/ocamlduce.a \
  ocamlducec.opt ocamlduceopt.opt ocamlducedep.opt ocamlducedoc.opt \
- stdlib/ocamlduce.cmi cduce_types.cmi stdlib/ocamlduce.mli
+ cduce/ocamlduce.cmi cduce_types.cmi cduce/ocamlduce.mli
 
 install: FORCE
 	ocamlfind install ocamlduce META $(wildcard $(INSTALL_FILES))
 
 uninstall: FORCE
 	ocamlfind remove ocamlduce
+
+config/Makefile:
+	cp $(OCAML_CONFIG) config/Makefile
