@@ -1105,8 +1105,9 @@ let expand_abbrev env ty =
   | _ ->
       assert false
 
-(* Fully expand the head of a type. Raise an exception if the type
-   cannot be expanded. *)
+(* Fully expand the head of a type.
+   Raise Cannot_expand if the type cannot be expanded.
+   May raise Unify, if a recursion was hidden in the type. *)
 let rec try_expand_head env ty =
   let ty = repr ty in
   match ty.desc with
@@ -1128,7 +1129,11 @@ let expand_head_once env ty =
 
 (* Fully expand the head of a type. *)
 let rec expand_head env ty =
-  try try_expand_head env ty with Cannot_expand -> repr ty
+  let snap = Btype.snapshot () in
+  try try_expand_head env ty
+  with Cannot_expand | Unify _ -> (* expand_head shall never fail *)
+    Btype.backtrack snap;
+    repr ty
 
 (* Make sure that the type parameters of the type constructor [ty]
    respect the type constraints *)
