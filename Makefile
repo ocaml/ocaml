@@ -355,6 +355,8 @@ clean::
 	rm -f cduce/src/*.cm[iox] cduce/src/*.[so] cduce/src/*~
 	rm -f *~
 	(cd asmrun; make clean)
+	(cd tools; make clean)
+	rm -f tools/*.bak
 
 depend: beforedepend
 	touch cduce_types.mli
