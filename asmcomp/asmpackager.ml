@@ -118,17 +118,17 @@ let build_package_cmx members cmxfile =
           (fun accu n -> if List.mem n accu then accu else n :: accu))
       [] lst in
   let units =
-    List.fold_left
-      (fun accu m ->
+    List.fold_right
+      (fun m accu ->
         match m.pm_kind with PM_intf -> accu | PM_impl info -> info :: accu)
-      [] members in
+      members [] in
   let ui = Compilenv.current_unit_infos() in
   let pkg_infos =
     { ui_name = ui.ui_name;
       ui_symbol = ui.ui_symbol;
       ui_defines =
-          ui.ui_symbol ::
-          union (List.map (fun info -> info.ui_defines) units);
+          List.flatten (List.map (fun info -> info.ui_defines) units) @
+          [ui.ui_symbol];
       ui_imports_cmi =
           (ui.ui_name, Env.crc_of_unit ui.ui_name) ::
           filter(Asmlink.extract_crc_interfaces());
