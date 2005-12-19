@@ -237,7 +237,7 @@ and question =
 and minus kwt =
   parser
   [ [: `'.' :] -> identifier kwt ("-.", False)
-  | [: `('0'..'9' as c); n = number (Buff.store (Buff.store 0 '-') c) :] ep ->
+  | [: `('0'..'9' as c); n = number (Buff.store (Buff.store 0 '-') c) :] ->
       n
   | [: id = ident (Buff.store 0 '-') :] -> identifier kwt id ]
 and less kwt =
