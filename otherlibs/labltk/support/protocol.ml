@@ -51,6 +51,12 @@ external finalizeTk : unit -> unit
 
 let tcl_command s = ignore (tcl_eval s);;
 
+type event_flag =
+  DONT_WAIT | X_EVENTS | FILE_EVENTS | TIMER_EVENTS | IDLE_EVENTS | ALL_EVENTS
+external do_one_event : event_flag list -> bool = "camltk_dooneevent"
+
+let do_pending () = while do_one_event [DONT_WAIT] do () done
+
 exception TkError of string
       (* Raised by the communication functions *)
 let () = Callback.register_exception "tkerror" (TkError "")
@@ -176,15 +182,9 @@ let dispatch_callback id args =
 let protected_dispatch id args =
   try
     dispatch_callback id args
-  with
-  | e ->
-      try
-        Printf.eprintf "Uncaught exception: %s\n" (Printexc.to_string e);
-        flush stderr;
-        (* raise x *)
-      with
-        Out_of_memory -> raise Out_of_memory
-      | Sys.Break -> raise Sys.Break
+  with e ->
+    Printf.eprintf "Uncaught exception: %s\n" (Printexc.to_string e);
+    flush stderr
 
 let _ = Callback.register "camlcb" protected_dispatch
 
