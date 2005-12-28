@@ -131,7 +131,6 @@ struct
       \     scheduling";
     "-w", Arg.String F._w,
       "<flags>  Enable or disable warnings according to <flags>:\n\
-      \032    A/a enable/disable all warnings\n\
       \032    C/c enable/disable suspicious comment\n\
       \032    D/d enable/disable deprecated features\n\
       \032    E/e enable/disable fragile match\n\
@@ -145,6 +144,7 @@ struct
       \032    Y/y enable/disable suspicious unused variables\n\
       \032    Z/z enable/disable all other unused variables\n\
       \032    X/x enable/disable all other warnings\n\
+      \032    A/a enable/disable all warnings\n\
       \032    default setting is \"Aelz\"";
     "-warn-error" , Arg.String F._warn_error,
      "<flags>  Treat the warnings of <flags> as errors, if they are\n\

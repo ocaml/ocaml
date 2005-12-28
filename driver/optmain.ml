@@ -164,7 +164,6 @@ let main () =
        "-verbose", Arg.Set verbose, " Print calls to external commands";
        "-w", Arg.String (Warnings.parse_options false),
              "<flags>  Enable or disable warnings according to <flags>:\n\
-         \032    A/a enable/disable all warnings\n\
          \032    C/c enable/disable suspicious comment\n\
          \032    D/d enable/disable deprecated features\n\
          \032    E/e enable/disable fragile match\n\
@@ -178,6 +177,7 @@ let main () =
          \032    Y/y enable/disable suspicious unused variables\n\
          \032    Z/z enable/disable all other unused variables\n\
          \032    X/x enable/disable all other warnings\n\
+         \032    A/a enable/disable all warnings\n\
          \032    default setting is \"Aelz\"";
        "-warn-error" , Arg.String (Warnings.parse_options true),
         "<flags>  Treat the warnings of <flags> as errors, if they are\n\
