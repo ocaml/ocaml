@@ -13,15 +13,13 @@ while test "" != "$1"; do
     case "$1" in
     -I) INCL="$INCL -I $2"; shift;;
     -version) echo "mkcamlp4, version $VERSION"; exit;;
-    *)
+    [a-zA-Z]*.cmi)
         j=`basename "$1" .cmi`
-        if test "$j.cmi" = "$1"; then
-            first="`expr "$j" : '\(.\)' | tr 'a-z' 'A-Z'`"
-            rest="`expr "$j" : '.\(.*\)'`"
-            INTERFACES="$INTERFACES $first$rest"
-        else
-            OPTS="$OPTS $1"
-        fi;;
+        first="`expr "$j" : '\(.\)' | tr 'a-z' 'A-Z'`"
+        rest="`expr "$j" : '.\(.*\)'`"
+        INTERFACES="$INTERFACES $first$rest"
+        ;;
+    *) OPTS="$OPTS $1";;
     esac
     shift
 done
