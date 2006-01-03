@@ -1315,7 +1315,8 @@ pr_expr.pr_levels :=
         <:expr< while $_$ do { $list:_$ } >> |
         <:expr< let $opt:_$ $list:_$ in $_$ >> |
         <:expr< let module $_$ = $_$ in $_$ >> |
-        <:expr< new $list:_$ >> as e ->
+        <:expr< new $list:_$ >> | 
+        <:expr< assert $_$ >> | <:expr< lazy $_$ >> as e ->
           fun curr next _ k ->
             [: `S LO "("; `expr e [: `HVbox [: `S RO ")"; k :] :] :]
       | e -> fun curr next _ k -> [: `not_impl "expr" e :] ]}];
