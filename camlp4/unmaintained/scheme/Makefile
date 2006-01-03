@@ -77,9 +77,9 @@ pr_schemep.cmo: pr_schp_main.cmo
 
 
 .ml.cmo:
-	$(OCAMLC) $(OCAMLCFLAGS) -pp "$(CAMLP4) $(P4INCLUDES) `awk 'NR == 1 { ORS=" "; for (i=2; i < NF; i++) print $$i; } ' $<`" -c $<
+	$(OCAMLC) $(OCAMLCFLAGS) -pp "$(CAMLP4) $(P4INCLUDES) `awk 'NR == 1 { ORS=" "; for (i=2; i < NF; i++) print $$i; } ' $<` -loc loc" -c $< 
 
 .ml.cmx:
-	$(OCAMLOPT) $(OCAMLCFLAGS) -pp "$(CAMLP4) $(P4INCLUDES)  `awk 'NR == 1 { ORS=" "; for (i=2; i < NF; i++) print $$i; } ' $<`" -c $<
+	$(OCAMLOPT) $(OCAMLCFLAGS) -pp "$(CAMLP4) $(P4INCLUDES)  `awk 'NR == 1 { ORS=" "; for (i=2; i < NF; i++) print $$i; } ' $<` -loc loc" -c $<
 
 include .depend

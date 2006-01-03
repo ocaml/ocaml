@@ -104,7 +104,7 @@ main.$(DO): main.c
 	$(CC) $(CFLAGS) $(BYTECCCOMPOPTS) -c $<
 	mv $*.$(O) $*.$(SO)
 
-.depend.nt:
+.depend.nt: .depend
 	sed -e '/\.d\.o/q' -e 's/^\(.*\)\.o:/\1.$$(DO) \1.$$(SO):/' .depend > .depend.nt
 
 include .depend.nt

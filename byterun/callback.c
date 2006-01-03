@@ -220,6 +220,12 @@ CAMLprim value caml_register_named_value(value vname, value val)
   char * name = String_val(vname);
   unsigned int h = hash_value_name(name);
 
+  for (nv = named_value_table[h]; nv != NULL; nv = nv->next) {
+    if (strcmp(name, nv->name) == 0) {
+      nv->val = val;
+      return Val_unit;
+    }
+  }
   nv = (struct named_value *)
          caml_stat_alloc(sizeof(struct named_value) + strlen(name));
   strcpy(nv->name, name);

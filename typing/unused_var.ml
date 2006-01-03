@@ -153,7 +153,7 @@ and expression ppf tbl e =
   | Pexp_for (id, e1, e2, _, e3) ->
       expression ppf tbl e1;
       expression ppf tbl e2;
-      let defined = ([ (id, e.pexp_loc, ref false) ], []) in
+      let defined = ([ (id, e.pexp_loc, ref true) ], []) in
       add_vars tbl defined;
       expression ppf tbl e3;
       check_rm_vars ppf tbl defined;
