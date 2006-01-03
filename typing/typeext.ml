@@ -69,7 +69,6 @@ type error =
   | ButItIsXml of t
   | ButTag of t * t
   | ButTagAttr of t * t * t
-  | CstIllTyped of CT.const * t
 
 exception Error of Location.t * error
 
@@ -98,12 +97,25 @@ let report_error ppf = function
       Format.fprintf ppf "This definition yields an empty type"
   | NotSubtype (t1,t2) ->
       register_exttypes ();
-      Format.fprintf ppf "Subtyping failed %a <= %a@."
-	CT.Print.print t1
-	CT.Print.print t2;
-      Format.fprintf ppf "Sample:@.%a"
-        Cduce_types.Sample.print
-	(Cduce_types.Sample.get (CT.diff t1 t2))
+      (match Cduce_types.Sample.single_opt t1 with
+	 | Some c ->
+	     (* Type t1 is a singleton type. *)
+	     let v = Cduce_types.Value.const c in
+	     let chk = 
+	       Cduce_types.Patterns.Compile.make_checker CT.any t2 in
+	     let msg = match Cduce_types.Explain.explain chk v with
+	       | None -> assert false
+	       | Some e -> 
+		   Cduce_types.Explain.to_string 
+		     ((*Cduce_types.Explain.simplify*) e) in
+	     Format.fprintf ppf "%s" msg
+	 | None ->
+	     Format.fprintf ppf "Subtyping failed %a <= %a@."
+	       CT.Print.print t1
+	       CT.Print.print t2;
+	     Format.fprintf ppf "Sample:@.%a"
+               Cduce_types.Sample.print
+	       (Cduce_types.Sample.get (CT.diff t1 t2)))
   | Cyclic ->
       Format.fprintf ppf "Cycle detected: cannot type-check"
   | CannotTranslateML (t,e) ->
@@ -143,16 +155,6 @@ let report_error ppf = function
 	CT.Print.print t
 	CT.Print.print t1
 	CT.Print.print t2
-   | CstIllTyped (c,t) ->
-       register_exttypes ();
-       let v = Cduce_types.Value.const c in
-       let chk = 
-	 Cduce_types.Patterns.Compile.make_checker CT.any t in
-       let msg = match Cduce_types.Explain.explain chk v with
-	 | None -> assert false
-	 | Some e -> 
-	     Cduce_types.Explain.to_string ((*Cduce_types.Explain.simplify*) e) in
-       Format.fprintf ppf "%s" msg
 
 let error loc err = raise (Error (loc,err))
 
@@ -684,13 +686,6 @@ let ext_cst env loc c =
 let atom loc f =
   newextvar { anyext with ext_atoms = 
       [ loc, { ext_atom_v = Atom_start; ext_atom_def = f } ] }
-
-let ext_cst env loc c =
-  if !extmode then anyext_var
-  else atom loc (fun ub ->
-		   let t = CT.constant c in
-		   if CT.subtype t ub then t
-		   else error loc (CstIllTyped (c,ub)))
 
 let ext_ub env loc ub e =
   if !extmode then anyext_var 
