@@ -64,6 +64,12 @@ type error =
   | CannotTranslateML of Types.type_expr * cannot_translate
   | InvalidChar
   | PatError of string
+  | ButItIsAPair of t
+  | ButFirstComponent of t * t
+  | ButItIsXml of t
+  | ButTag of t * t
+  | ButTagAttr of t * t * t
+  | CstIllTyped of CT.const * t
 
 exception Error of Location.t * error
 
@@ -113,6 +119,40 @@ let report_error ppf = function
       Format.fprintf ppf "Invalid character literal"
   | PatError s ->
       Format.fprintf ppf "%s" s
+  | ButItIsAPair t ->
+      register_exttypes ();
+      Format.fprintf ppf "This pair expression should have type %a"
+	CT.Print.print t
+  | ButFirstComponent (t,t1) ->
+      register_exttypes ();
+      Format.fprintf ppf "This pair expression should have type %a@.but the first component has type %a"
+	CT.Print.print t
+	CT.Print.print t1
+   | ButItIsXml t ->
+      register_exttypes ();
+      Format.fprintf ppf "This xml expression should have type %a"
+	CT.Print.print t
+   | ButTag (t,t1) ->
+      register_exttypes ();
+      Format.fprintf ppf "This xml expression should have type %a@.but the tag has type %a"
+	CT.Print.print t
+	CT.Print.print t1
+   | ButTagAttr (t,t1,t2) ->
+      register_exttypes ();
+      Format.fprintf ppf "This xml expression should have type %a@.but the tag has type %a@.and the attribute set has type %a"
+	CT.Print.print t
+	CT.Print.print t1
+	CT.Print.print t2
+   | CstIllTyped (c,t) ->
+       register_exttypes ();
+       let v = Cduce_types.Value.const c in
+       let chk = 
+	 Cduce_types.Patterns.Compile.make_checker CT.any t in
+       let msg = match Cduce_types.Explain.explain chk v with
+	 | None -> assert false
+	 | Some e -> 
+	     Cduce_types.Explain.to_string ((*Cduce_types.Explain.simplify*) e) in
+       Format.fprintf ppf "%s" msg
 
 let error loc err = raise (Error (loc,err))
 
@@ -380,7 +420,8 @@ let rec transl_const env c = match c.pextcst_desc with
       if not (U.equal_index idx (U.end_index s)) then 
 	error c.pextcst_loc InvalidChar;
       CT.Char (Cduce_types.Chars.V.mk_int i)
-  | Pextcst_string s -> CT.String (U.start_index s,U.end_index s,s,SEQ.nil_cst)
+  | Pextcst_string (s,r) -> CT.String (U.start_index s,U.end_index s,s,
+				       transl_const env r)
   | Pextcst_intern c -> c
 
 (* Eliminate Recursion, propagate Sequence Capture Variables *)
@@ -644,6 +685,13 @@ let atom loc f =
   newextvar { anyext with ext_atoms = 
       [ loc, { ext_atom_v = Atom_start; ext_atom_def = f } ] }
 
+let ext_cst env loc c =
+  if !extmode then anyext_var
+  else atom loc (fun ub ->
+		   let t = CT.constant c in
+		   if CT.subtype t ub then t
+		   else error loc (CstIllTyped (c,ub)))
+
 let ext_ub env loc ub e =
   if !extmode then anyext_var 
   else atom loc (fun _ -> compute_var loc e ub)
@@ -709,9 +757,12 @@ let ext_pair env loc e1 e2 =
   if !extmode then anyext_var
   else atom loc
     (fun ub ->
-       let t = CT.Product.get ub in
+       let t = CT.Product.normal ub in
+       if CT.Product.is_empty t then error loc (ButItIsAPair ub);
        let t1 = compute_var loc e1 (CT.Product.pi1 t) in
-       let t2 = compute_var loc e2 (CT.Product.pi2 t) in
+       let c2 = CT.Product.constraint_on_2 t t1 in
+       if CT.is_empty c2 then error loc (ButFirstComponent (ub,t1));
+       let t2 = compute_var loc e2 c2 in
        CT.times (CT.cons t1) (CT.cons t2))
 
 let ext_record (env : Env.t) loc fl =
@@ -736,9 +787,15 @@ let ext_xml env loc e1 e2 e3 =
   if !extmode then anyext_var
   else atom loc
     (fun ub ->
-       let t1 = compute_var loc e1 CT.any in
-       let t2 = compute_var loc e2 CT.any in
-       let t3 = compute_var loc e3 CT.any in
+       let t = CT.Product.normal ~kind:`XML ub in
+       if CT.Product.is_empty t then error loc (ButItIsXml ub);
+       let t1 = compute_var loc e1 (CT.Product.pi1 t) in
+       let c2 = CT.Product.normal (CT.Product.constraint_on_2 t t1) in
+       if CT.Product.is_empty c2 then error loc (ButTag (ub,t1));
+       let t2 = compute_var loc e2 (CT.Product.pi1 c2) in
+       let c3 = CT.Product.constraint_on_2 c2 t2 in
+       if CT.is_empty c3 then error loc (ButTagAttr (ub,t1,t2));
+       let t3 = compute_var loc e3 c3 in
        CT.xml
 	 (CT.cons t1) (CT.cons (CT.times (CT.cons t2) (CT.cons t3))))
 

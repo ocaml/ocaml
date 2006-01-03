@@ -233,18 +233,21 @@ let ext_record el =
   with Exit ->
     mkextexp (Pextexp_record el)
 
-let gh_nil () = 
-  ghextexp (Pextexp_cst (ghextcst (Pextcst_intern CD.Sequence.nil_cst)))
+let cst_nil () = ghextcst (Pextcst_intern CD.Sequence.nil_cst)
+
+let gh_nil () = ghextexp (Pextexp_cst (cst_nil ()))
 
 let rec ext_seq = function
   | (false,hd)::tl -> ext_pair hd (ext_seq tl)
-(*  | (true,{ pexp_desc = 
+  | (true,({ pexp_desc = 
 	 Pexp_ext 
 	   (Pextexp_cst 
-	      { pextcst_desc = Pextcst_string s; pextcst_loc = loc } 
-	   )})::tl ->
-      assert false *)
-      (* TODO: make [ 1 'abc' 2 ] a constant *)
+	      { pextcst_desc = Pextcst_string (s,_); pextcst_loc = loc } 
+	   )} as hd))::tl ->
+      (match ext_seq tl with
+	 | { pexp_desc = Pexp_ext (Pextexp_cst tl) } ->
+	     mkextexp (Pextexp_cst (mkextcst (Pextcst_string (s, tl))))
+	 | _ -> mkextexp(Pextexp_op ("concat",[hd;ext_seq tl])))
   | (true,hd)::tl -> mkextexp(Pextexp_op ("concat",[hd;ext_seq tl]))
   | [] -> gh_nil ()
 
@@ -1763,7 +1766,7 @@ ext_small_const:
   | ext_int  { mkextcst(Pextcst_int $1) }
   | BACKQUOTE qname { mkextcst(Pextcst_atom $2) } 
   | XSTRING1 { mkextcst(Pextcst_char $1) }
-  | XSTRING2 { mkextcst(Pextcst_string $1) }
+  | XSTRING2 { mkextcst(Pextcst_string ($1,cst_nil ())) }
 ;
 ext_int:
   | ext_int_cst  { $1 }
@@ -1801,7 +1804,7 @@ ext_expr_list_elem:
 		(Pextexp_cst 
 		   { pextcst_desc = Pextcst_char s; pextcst_loc = loc } 
 		)}  ->
-	    (true, mkextexp(Pextexp_cst ({ pextcst_desc = Pextcst_string s;
+	    (true, mkextexp(Pextexp_cst ({ pextcst_desc = Pextcst_string (s,cst_nil ());
 					   pextcst_loc = loc })))
 	| e -> (false,e)
     }
