@@ -112,8 +112,8 @@ let main () =
        "-dtypes", Arg.Set save_types,
              " Save type information in <filename>.annot";
        "-for-pack", Arg.String (fun s -> for_package := Some s),
-             "<ident>  Generate code that can later be `packed' with\n
-                       \t\t\tocamlopt -pack -o <ident>.cmx";
+             "<ident>  Generate code that can later be `packed' with\n\
+         \     ocamlopt -pack -o <ident>.cmx";
        "-i", Arg.Unit (fun () -> print_types := true; compile_only := true),
              " Print inferred interface";
        "-I", Arg.String(fun dir -> include_dirs := dir :: !include_dirs),
@@ -143,7 +143,7 @@ let main () =
              " Output a C object file instead of an executable";
        "-p", Arg.Set gprofile,
              " Compile and link with profiling support for \"gprof\"\n\
-               \t(not supported on all platforms)";
+         \     (not supported on all platforms)";
        "-pack", Arg.Set make_package,
               " Package the given .cmx files into one .cmx";
        "-pp", Arg.String(fun s -> preprocessor := Some s),
@@ -164,7 +164,6 @@ let main () =
        "-verbose", Arg.Set verbose, " Print calls to external commands";
        "-w", Arg.String (Warnings.parse_options false),
              "<flags>  Enable or disable warnings according to <flags>:\n\
-         \032    A/a enable/disable all warnings\n\
          \032    C/c enable/disable suspicious comment\n\
          \032    D/d enable/disable deprecated features\n\
          \032    E/e enable/disable fragile match\n\
@@ -178,11 +177,12 @@ let main () =
          \032    Y/y enable/disable suspicious unused variables\n\
          \032    Z/z enable/disable all other unused variables\n\
          \032    X/x enable/disable all other warnings\n\
+         \032    A/a enable/disable all warnings\n\
          \032    default setting is \"Aelz\"";
        "-warn-error" , Arg.String (Warnings.parse_options true),
-        "<flags>  Treat the warnings of <flags> as errors, if they are enabled.\n\
-         \032    See option -w for the list of flags.\n\
-         \032    Default setting is \"a\" (warnings are not errors)";
+        "<flags>  Treat the warnings of <flags> as errors, if they are\n\
+         \     enabled.  See option -w for the list of flags.\n\
+         \     Default setting is \"a\" (warnings are not errors)";
        "-where", Arg.Unit print_standard_library,
          " Print location of standard library and exit";
 

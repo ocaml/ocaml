@@ -293,7 +293,10 @@ case "$bytecc,$host" in
   gcc*,x86_64-*-linux*)
     bytecccompopts="-fno-defer-pop $gcc_warnings"
     # Tell gcc that we can use 32-bit code addresses for threaded code
-    echo "#define ARCH_CODE32" >> m.h;;
+    # unless we are compiled for a shared library (-fPIC option)
+    echo "#ifndef __PIC__" >> m.h
+    echo "#  define ARCH_CODE32" >> m.h
+    echo "#endif" >> m.h;;
   gcc*)
     bytecccompopts="-fno-defer-pop $gcc_warnings";;
 esac
@@ -400,7 +403,7 @@ esac
 # Determine alignment constraints
 
 case "$host" in
-  sparc-*-*|hppa*-*-*)
+  sparc*-*-*|hppa*-*-*)
     # On Sparc V9 with certain versions of gcc, determination of double
     # alignment is not reliable (PR#1521), hence force it.
     # Same goes for hppa.
@@ -431,7 +434,7 @@ esac
 
 if $int64_native; then
   case "$host" in
-    hppa*-*-*)
+    sparc*-*-*|hppa*-*-*)
       if test $2 = 8; then
         echo "64-bit integers can be word-aligned."
         echo "#undef ARCH_ALIGN_INT64" >> m.h
@@ -722,6 +725,11 @@ else
 fi
 
 # For the sys module
+
+if sh ./hasgot getrusage; then
+  echo "getrusage() found."
+  echo "#define HAS_GETRUSAGE" >> s.h
+fi
 
 if sh ./hasgot times; then
   echo "times() found."

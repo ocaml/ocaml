@@ -52,7 +52,7 @@ FUNCTION(caml_call_gc)
         pushq   %rdi
         pushq   %rbx
         pushq   %rax
-        movq    %rsp, caml_gc_regs
+        movq    %rsp, caml_gc_regs(%rip)
     /* Save floating-point registers */
         subq    $(16*8), %rsp
         movlpd  %xmm0, 0*8(%rsp)

@@ -141,7 +141,7 @@ regexp:
           let s1 = as_cset $1
           and s2 = as_cset $3 in
           Characters (Cset.diff s1 s2)
-        } 
+        }
   | regexp Tor regexp
         { Alternative($1,$3) }
   | regexp regexp %prec CONCAT
@@ -182,4 +182,3 @@ char_class1:
 ;
 
 %%
-

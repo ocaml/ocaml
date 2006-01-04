@@ -958,18 +958,17 @@ let kscanf ib ef fmt f =
     | 'B' | 'b' ->
         let _x = scan_bool max ib in
         scan_fmt (stack f (token_bool ib)) (i + 1)
-    | 'l' | 'n' | 'L' as conv ->
+    | 'l' | 'n' | 'L' as typ ->
         let i = i + 1 in
-        if i > lim then scan_fmt (stack f (get_count conv ib)) i else begin
-        let ty = conv in
+        if i > lim then scan_fmt (stack f (get_count typ ib)) i else begin
         match fmt.[i] with
         | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv ->
             let _x = scan_int_conv conv max ib in
-            begin match ty with
+            begin match typ with
             | 'l' -> scan_fmt (stack f (token_int32 conv ib)) (i + 1)
             | 'n' -> scan_fmt (stack f (token_nativeint conv ib)) (i + 1)
             | _ -> scan_fmt (stack f (token_int64 conv ib)) (i + 1) end
-        | _ -> scan_fmt (stack f (get_count conv ib)) i end
+        | _ -> scan_fmt (stack f (get_count typ ib)) i end
     | 'N' as conv ->
         scan_fmt (stack f (get_count conv ib)) (i + 1)
     | '!' ->

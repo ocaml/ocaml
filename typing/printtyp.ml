@@ -96,7 +96,7 @@ let rec safe_repr v = function
 
 let rec list_of_memo = function
     Mnil -> []
-  | Mcons (p, t1, t2, rem) -> (p,t1,t2) :: list_of_memo rem
+  | Mcons (p, t1, t2, rem) -> p :: list_of_memo rem
   | Mlink rem -> list_of_memo !rem
 
 let visited = ref []
@@ -119,9 +119,7 @@ and raw_type_desc ppf = function
   | Tconstr (p, tl, abbrev) ->
       fprintf ppf "@[<hov1>Tconstr(@,%a,@,%a,@,%a)@]" path p
         raw_type_list tl
-        (raw_list (fun ppf (p,t1,t2) ->
-          fprintf ppf "@[%a,@ %a,@ %a@]" path p raw_type t1 raw_type t2))
-        (list_of_memo !abbrev)
+        (raw_list path) (list_of_memo !abbrev)
   | Tobject (t, nm) ->
       fprintf ppf "@[<hov1>Tobject(@,%a,@,@[<1>ref%t@])@]" raw_type t
         (fun ppf ->
@@ -591,6 +589,7 @@ let type_declaration id ppf decl =
 (* Print an exception declaration *)
 
 let tree_of_exception_declaration id decl =
+  reset_and_mark_loops_list decl; 
   let tyl = tree_of_typlist false decl in
   Osig_exception (Ident.name id, tyl)
 
@@ -796,8 +795,7 @@ and tree_of_signature = function
       Osig_type(tree_of_type_decl id decl, tree_of_rec rs) ::
       tree_of_signature rem
   | Tsig_exception(id, decl) :: rem ->
-      Osig_exception (Ident.name id, tree_of_typlist false decl) ::
-      tree_of_signature rem
+      tree_of_exception_declaration id decl :: tree_of_signature rem
   | Tsig_module(id, mty, rs) :: rem ->
       Osig_module (Ident.name id, tree_of_modtype mty, tree_of_rec rs) ::
       tree_of_signature rem

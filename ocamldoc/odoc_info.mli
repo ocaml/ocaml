@@ -52,6 +52,7 @@ and text_element = Odoc_types.text_element =
   | Module_list of string list
        (** The table of the given modules with their abstract. *)
   | Index_list (** The links to the various indexes (values, types, ...) *)
+  | Custom of string * text (** to extend \{foo syntax *)
 
 (** A text is a list of [text_element]. The order matters. *)
 and text = text_element list
@@ -452,6 +453,7 @@ module Module :
           mutable m_top_deps : Name.t list ; (** The toplevels module names this module depends on. *)
 	  mutable m_code : string option ; (** The whole code of the module *)
 	  mutable m_code_intf : string option ; (** The whole code of the interface of the module *)
+	  m_text_only : bool ; (** [true] if the module comes from a text file *)
         }
 
     and module_type_alias = Odoc_module.module_type_alias =
@@ -919,6 +921,7 @@ module Args :
       type source_file =
 	  Impl_file of string
 	| Intf_file of string
+	| Text_file of string
 
       (** The class type of documentation generators. *)
       class type doc_generator =

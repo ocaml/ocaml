@@ -77,10 +77,7 @@ val temp_file : string -> string -> string
    (readable and writable only by the file owner).  The file is
    guaranteed to be different from any other file that existed when
    [temp_file] was called.
-   Under Unix, the temporary directory is [/tmp] by default; if set,
-   the value of the environment variable [TMPDIR] is used instead.
-   Under Windows, the name of the temporary directory is the
-   value of the environment variable [TEMP], or [C:\temp] by default. *)
+*)
 
 val open_temp_file :
       ?mode: open_flag list -> string -> string -> string * out_channel
@@ -92,6 +89,14 @@ val open_temp_file :
    [mode] is a list of additional flags to control the opening of the file.
    It can contain one or several of [Open_append], [Open_binary],
    and [Open_text].  The default is [[Open_text]] (open in text mode). *)
+
+val temp_dir_name : string
+(** The name of the temporary directory:
+    Under Unix, the value of the [TMPDIR] environment variable, or "/tmp"
+    if the variable is not set.
+    Under Windows, the value of the [TEMP] environment variable, or "."
+    if the variable is not set.
+*)
 
 val quote : string -> string
 (** Return a quoted version of a file name, suitable for use as

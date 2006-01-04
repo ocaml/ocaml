@@ -127,10 +127,10 @@ struct
     "-version", Arg.Unit F._version, " Print compiler version and exit";
     "-verbose", Arg.Unit F._verbose, " Print calls to external commands";
     "-vmthread", Arg.Unit F._vmthread,
-  " Generate code that supports the threads library with VM-level scheduling";
+           " Generate code that supports the threads library with VM-level\n\
+      \     scheduling";
     "-w", Arg.String F._w,
       "<flags>  Enable or disable warnings according to <flags>:\n\
-      \032    A/a enable/disable all warnings\n\
       \032    C/c enable/disable suspicious comment\n\
       \032    D/d enable/disable deprecated features\n\
       \032    E/e enable/disable fragile match\n\
@@ -144,11 +144,12 @@ struct
       \032    Y/y enable/disable suspicious unused variables\n\
       \032    Z/z enable/disable all other unused variables\n\
       \032    X/x enable/disable all other warnings\n\
+      \032    A/a enable/disable all warnings\n\
       \032    default setting is \"Aelz\"";
     "-warn-error" , Arg.String F._warn_error,
-      "<flags>  Treat the warnings of <flags> as errors, if they are enabled.\n\
-      \032    See option -w for the list of flags.\n\
-      \032    Default setting is \"a\" (warnings are not errors)";
+     "<flags>  Treat the warnings of <flags> as errors, if they are\n\
+      \     enabled.  See option -w for the list of flags.\n\
+      \     Default setting is \"a\" (warnings are not errors)";
     "-where", Arg.Unit F._where,
            " Print location of standard library and exit";
     "-nopervasives", Arg.Unit F._nopervasives, " (undocumented)";

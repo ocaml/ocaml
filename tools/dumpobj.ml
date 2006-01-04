@@ -14,15 +14,16 @@
 
 (* Disassembler for executable and .cmo object files *)
 
-open Obj
-open Printf
-open Config
 open Asttypes
-open Lambda
+open Config
 open Emitcode
-open Opcodes
 open Instruct
+open Lambda
+open Location
+open Obj
+open Opcodes
 open Opnames
+open Printf
 
 (* Read signed and unsigned integers *)
 
@@ -107,6 +108,9 @@ let rec print_struct_const = function
 
 (* Print an obj *)
 
+let same_custom x y =
+  Obj.field x 0 = Obj.field (Obj.repr y) 0
+
 let rec print_obj x =
   if Obj.is_block x then begin
     let tag = Obj.tag x in
@@ -122,7 +126,13 @@ let rec print_obj x =
           printf "%.12g" a.(i)
         done;
         printf "|]"
-    end else if tag < Obj.no_scan_tag then begin
+    end else if tag = Obj.custom_tag && same_custom x 0l then
+        printf "%ldl" (Obj.magic x : int32)
+    else if tag = Obj.custom_tag && same_custom x 0n then
+        printf "%ndn" (Obj.magic x : nativeint)
+    else if tag = Obj.custom_tag && same_custom x 0L then
+        printf "%LdL" (Obj.magic x : int64)
+    else if tag < Obj.no_scan_tag then begin
         printf "<%d>" (Obj.tag x);
         match Obj.size x with
           0 -> ()
@@ -388,9 +398,11 @@ let op_shapes = [
 ];;
 
 let print_event ev =
-  printf "File \"%s\", line %d, character %d:\n" ev.ev_char.Lexing.pos_fname
-         ev.ev_char.Lexing.pos_lnum
-         (ev.ev_char.Lexing.pos_cnum - ev.ev_char.Lexing.pos_bol)
+  let ls = ev.ev_loc.loc_start in
+  let le = ev.ev_loc.loc_end in
+  printf "File \"%s\", line %d, characters %d-%d:\n" ls.Lexing.pos_fname
+         ls.Lexing.pos_lnum (ls.Lexing.pos_cnum - ls.Lexing.pos_bol)
+         (le.Lexing.pos_cnum - ls.Lexing.pos_bol)
 
 let print_instr ic =
   let pos = currpos ic in

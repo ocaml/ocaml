@@ -34,7 +34,7 @@ let ajout_string = Buffer.add_string string_buffer
 let lecture_string () = Buffer.contents string_buffer
 
 
-(** the variable which will contain the description string. 
+(** the variable which will contain the description string.
    Is initialized when we encounter the start of a special comment. *)
 
 let description = ref ""
@@ -44,7 +44,7 @@ let blank = "[ \013\009\012]"
 
 let print_DEBUG s = print_string s; print_newline ()
 
-(** this flag indicates whether we're in a string between begin_code and end_code tokens, to 
+(** this flag indicates whether we're in a string between begin_code and end_code tokens, to
    remember the number of open '[' and handle ']' correctly. *)
 let open_brackets = ref 0
 
@@ -80,13 +80,13 @@ let incr_cpts lexbuf =
   let l = Str.split_delim (Str.regexp_string "\n") s in
   match List.rev l with
     [] -> () (* should not occur *)
-  | [s2] -> (* no newline *)  
+  | [s2] -> (* no newline *)
       char_number := !char_number + (String.length s2)
   | s2 :: _ ->
       line_number := !line_number + ((List.length l) - 1) ;
       char_number := String.length s2
 
-} 
+}
 
 (** html marks, to use as alternative possible special strings *)
 
@@ -118,15 +118,15 @@ let label = ['a'-'z']+['a'-'z' 'A'-'Z' '0'-'9' '_']*
 
 (** special strings *)
 
-let end = "}" 
-  | html_end_bold 
+let end = "}"
+  | html_end_bold
   | html_end_italic
-  | html_end_title 
+  | html_end_title
   | html_end_list
   | html_end_enum
   | html_end_item
   | html_end_center
-let begin_title = 
+let begin_title =
   ("{" ['0'-'9']+(":"label)? blank_nl)
   | html_title
 
@@ -136,16 +136,16 @@ let begin_center = "{C"blank_nl | html_center
 let begin_left = "{L"blank_nl
 let begin_right = "{R"blank_nl
 let begin_italic = "{i"blank_nl | html_italic
-let begin_list = "{ul" | html_list
-let begin_enum = "{ol" | html_enum
+let begin_list = "{ul"blank_nl? | html_list
+let begin_enum = "{ol"blank_nl? | html_enum
 let begin_item = "{li"blank_nl | "{- " | html_item
-let begin_link = "{{:" 
+let begin_link = "{{:"
 let begin_latex = "{%"blank_nl
 let end_latex = "%}"
 let begin_code = "[" | html_code
 let end_code = "]" | html_end_code
 let begin_code_pre = "{["
-let end_code_pre = "]}" 
+let end_code_pre = "]}"
 let begin_verb = "{v"blank_nl
 let end_verb = blank_nl"v}"
 
@@ -162,6 +162,7 @@ let begin_met_ref = "{!method:"blank_nl | "{!method:"
 let begin_sec_ref = "{!section:"blank_nl | "{!section:"
 let begin_mod_list_ref = "{!modules:"blank_nl | "{!modules:"
 let index_list = "{!indexlist}"
+let begin_custom = "{"['a'-'z''A'-'Z']['a'-'z''A'-'Z''0'-'9']*
 let begin_superscript = "{^"blank_nl | "{^"
 let begin_subscript = "{_"blank_nl | "{_"
 
@@ -170,31 +171,33 @@ let shortcut_enum_item = '\n'blank*"+ "
 let end_shortcut_list = '\n'(blank*'\n')+
 
 rule main = parse
-| "\\{" 
-| "\\}" 
-| "\\[" 
+| "\\{"
+| "\\}"
+| "\\["
 | "\\]"
-    { 
+    {
       incr_cpts lexbuf ;
       let s = Lexing.lexeme lexbuf in
-      Char (String.sub s 1 1) 
+      Char (String.sub s 1 1)
     }
 
 | end
     {
+      print_DEBUG "end";
       incr_cpts lexbuf ;
-      if !verb_mode or !latex_mode or !code_pre_mode or 
+      if !verb_mode or !latex_mode or !code_pre_mode or
         (!open_brackets >= 1) then
         Char (Lexing.lexeme lexbuf)
       else
-        let _ = 
+        let _ =
           if !ele_ref_mode then
-            ele_ref_mode := false 
+            ele_ref_mode := false
         in
         END
     }
 | begin_title
     {
+      print_DEBUG "begin_title";
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or
         (!open_brackets >= 1) or !ele_ref_mode then
@@ -210,7 +213,7 @@ rule main = parse
           else
             let (n, l) = (1, (String.length s - 2)) in
             let s2 = String.sub s n l in
-            try 
+            try
               let i = String.index s2 ':' in
               let s_n = String.sub s2 0 i in
               let s_label = String.sub s2 (i+1) (l-i-1) in
@@ -221,34 +224,34 @@ rule main = parse
         with
           _ ->
             Title (1, None)
-    } 
+    }
 | begin_bold
-    { 
-      incr_cpts lexbuf ;
-      if !verb_mode or !latex_mode or !code_pre_mode or 
-        (!open_brackets >= 1) or !ele_ref_mode then
-        Char (Lexing.lexeme lexbuf)
-      else
-        BOLD 
-    } 
-| begin_italic
-    { 
-      incr_cpts lexbuf ;
-      if !verb_mode or !latex_mode or !code_pre_mode or 
-        (!open_brackets >= 1) or !ele_ref_mode then
-        Char (Lexing.lexeme lexbuf)
-      else
-        ITALIC
-    } 
-| begin_link
-    { 
+    {
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or
         (!open_brackets >= 1) or !ele_ref_mode then
         Char (Lexing.lexeme lexbuf)
       else
-        LINK 
-    } 
+        BOLD
+    }
+| begin_italic
+    {
+      incr_cpts lexbuf ;
+      if !verb_mode or !latex_mode or !code_pre_mode or
+        (!open_brackets >= 1) or !ele_ref_mode then
+        Char (Lexing.lexeme lexbuf)
+      else
+        ITALIC
+    }
+| begin_link
+    {
+      incr_cpts lexbuf ;
+      if !verb_mode or !latex_mode or !code_pre_mode or
+        (!open_brackets >= 1) or !ele_ref_mode then
+        Char (Lexing.lexeme lexbuf)
+      else
+        LINK
+    }
 | begin_emp
     {
       incr_cpts lexbuf ;
@@ -256,7 +259,7 @@ rule main = parse
         (!open_brackets >= 1) or !ele_ref_mode then
         Char (Lexing.lexeme lexbuf)
       else
-        EMP 
+        EMP
     }
 | begin_superscript
     {
@@ -265,7 +268,7 @@ rule main = parse
         (!open_brackets >= 1) or !ele_ref_mode then
         Char (Lexing.lexeme lexbuf)
       else
-        SUPERSCRIPT 
+        SUPERSCRIPT
     }
 | begin_subscript
     {
@@ -274,7 +277,7 @@ rule main = parse
         (!open_brackets >= 1) or !ele_ref_mode then
         Char (Lexing.lexeme lexbuf)
       else
-        SUBSCRIPT 
+        SUBSCRIPT
     }
 | begin_center
     {
@@ -297,23 +300,24 @@ rule main = parse
 | begin_right
      {
       incr_cpts lexbuf ;
-       if !verb_mode or !latex_mode or !code_pre_mode 
+       if !verb_mode or !latex_mode or !code_pre_mode
            or (!open_brackets >= 1) or !ele_ref_mode then
          Char (Lexing.lexeme lexbuf)
        else
          RIGHT
      }
 | begin_list
-    { 
+    {
+      print_DEBUG "LIST";
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or
         (!open_brackets >= 1) or !ele_ref_mode then
         Char (Lexing.lexeme lexbuf)
       else
-        LIST 
+        LIST
     }
 | begin_enum
-    { 
+    {
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or
         (!open_brackets >= 1) or !ele_ref_mode then
@@ -323,12 +327,13 @@ rule main = parse
     }
 | begin_item
     {
+      print_DEBUG "ITEM";
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or
         (!open_brackets >= 1) or !ele_ref_mode then
         Char (Lexing.lexeme lexbuf)
       else
-        ITEM 
+        ITEM
     }
 | begin_latex
     {
@@ -358,7 +363,7 @@ rule main = parse
     {
       incr_cpts lexbuf ;
       Char (Lexing.lexeme lexbuf)
-    } 
+    }
 
 | begin_code
     {
@@ -369,7 +374,7 @@ rule main = parse
         if !open_brackets <= 0 then
           (
            open_brackets := 1;
-           CODE 
+           CODE
           )
         else
           (
@@ -378,7 +383,7 @@ rule main = parse
           )
     }
 | end_code
-    { 
+    {
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or !ele_ref_mode then
         Char (Lexing.lexeme lexbuf)
@@ -391,7 +396,7 @@ rule main = parse
         else
           (
            open_brackets := 0;
-           END_CODE 
+           END_CODE
           )
     }
 
@@ -399,8 +404,8 @@ rule main = parse
     {
       incr_cpts lexbuf ;
       Char (Lexing.lexeme lexbuf)
-    } 
-    
+    }
+
 | begin_code_pre
     {
       incr_cpts lexbuf ;
@@ -421,7 +426,7 @@ rule main = parse
 	if !open_brackets >= 1 then
 	  (
 	   lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_curr_pos - 1;
-           lexbuf.Lexing.lex_curr_p <- 
+           lexbuf.Lexing.lex_curr_p <-
 	     { lexbuf.Lexing.lex_curr_p with
 	       pos_cnum = lexbuf.Lexing.lex_curr_p.pos_cnum - 1
 	     } ;
@@ -434,14 +439,14 @@ rule main = parse
 	   else
 	     (
               open_brackets := 0;
-              END_CODE 
+              END_CODE
              )
 	  )
 	else
-          if !code_pre_mode then 
+          if !code_pre_mode then
             (
              code_pre_mode := false;
-             END_CODE_PRE 
+             END_CODE_PRE
             )
           else
             Char (Lexing.lexeme lexbuf)
@@ -451,9 +456,9 @@ rule main = parse
     {
       incr_cpts lexbuf ;
       Char (Lexing.lexeme lexbuf)
-    } 
+    }
 
-| begin_ele_ref    
+| begin_ele_ref
     {
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or !open_brackets >= 1 then
@@ -469,9 +474,9 @@ rule main = parse
            Char (Lexing.lexeme lexbuf)
           )
     }
-    
 
-| begin_val_ref    
+
+| begin_val_ref
     {
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or !open_brackets >= 1 then
@@ -488,7 +493,7 @@ rule main = parse
           )
     }
 
-| begin_typ_ref    
+| begin_typ_ref
     {
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or !open_brackets >= 1 then
@@ -505,7 +510,7 @@ rule main = parse
           )
     }
 
-| begin_exc_ref    
+| begin_exc_ref
     {
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or !open_brackets >= 1 then
@@ -522,7 +527,7 @@ rule main = parse
           )
     }
 
-| begin_mod_ref    
+| begin_mod_ref
     {
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or !open_brackets >= 1 then
@@ -539,7 +544,7 @@ rule main = parse
           )
     }
 
-| begin_modt_ref    
+| begin_modt_ref
     {
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or !open_brackets >= 1 then
@@ -556,7 +561,7 @@ rule main = parse
           )
     }
 
-| begin_cla_ref    
+| begin_cla_ref
     {
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or !open_brackets >= 1 then
@@ -573,7 +578,7 @@ rule main = parse
           )
     }
 
-| begin_clt_ref    
+| begin_clt_ref
     {
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or !open_brackets >= 1 then
@@ -590,7 +595,7 @@ rule main = parse
           )
     }
 
-| begin_att_ref    
+| begin_att_ref
     {
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or !open_brackets >= 1 then
@@ -607,7 +612,7 @@ rule main = parse
           )
     }
 
-| begin_met_ref    
+| begin_met_ref
     {
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or !open_brackets >= 1 then
@@ -624,7 +629,7 @@ rule main = parse
           )
     }
 
-| begin_sec_ref    
+| begin_sec_ref
     {
       incr_cpts lexbuf ;
       if !verb_mode or !latex_mode or !code_pre_mode or !open_brackets >= 1 then
@@ -668,9 +673,9 @@ rule main = parse
           INDEX_LIST
 	else
 	  Char (Lexing.lexeme lexbuf)
-    } 
+    }
 
-| begin_verb    
+| begin_verb
     {
       incr_cpts lexbuf ;
       if !latex_mode or (!open_brackets >= 1) or !code_pre_mode or !ele_ref_mode then
@@ -693,7 +698,7 @@ rule main = parse
         )
     }
 
-| shortcut_list_item 
+| shortcut_list_item
     {
       incr_cpts lexbuf ;
       if !shortcut_list_mode then
@@ -722,7 +727,7 @@ rule main = parse
     {
       incr_cpts lexbuf ;
       lexbuf.Lexing.lex_curr_pos <- lexbuf.Lexing.lex_curr_pos - 1;
-      lexbuf.Lexing.lex_curr_p <- 
+      lexbuf.Lexing.lex_curr_p <-
 	{ lexbuf.Lexing.lex_curr_p with
 	  pos_cnum = lexbuf.Lexing.lex_curr_p.pos_cnum - 1 ;
 	} ;
@@ -730,8 +735,8 @@ rule main = parse
       if !shortcut_list_mode then
         (
          shortcut_list_mode := false;
-                        (* go back one char to re-use the last '\n', so we can 
-                           restart another shortcut-list with a single blank line, 
+                        (* go back one char to re-use the last '\n', so we can
+                           restart another shortcut-list with a single blank line,
                            and not two.*)
          END_SHORTCUT_LIST
         )
@@ -740,22 +745,33 @@ rule main = parse
 	  Char (Lexing.lexeme lexbuf)
 	else
           BLANK_LINE
-    } 
-   
+    }
+
 | eof           { EOF }
 
-|  "{"  
-    { 
+| begin_custom
+    {
+      print_DEBUG "begin_custom";
+      incr_cpts lexbuf ;
+      if !verb_mode or !latex_mode or !code_pre_mode or
+        (!open_brackets >= 1) or !ele_ref_mode then
+        Char (Lexing.lexeme lexbuf)
+      else
+	let s = Lexing.lexeme lexbuf in
+	let tag = Odoc_misc.no_blanks s in
+        CUSTOM tag
+    }
+
+|  "{"
+    {
       incr_cpts lexbuf ;
       if !latex_mode or (!open_brackets >= 1) or !code_pre_mode or !ele_ref_mode then
         Char (Lexing.lexeme lexbuf)
       else
-        ERROR 
+        ERROR
     }
 | _
-    { 
+    {
       incr_cpts lexbuf ;
       Char (Lexing.lexeme lexbuf)
     }
-
-    

@@ -29,7 +29,7 @@ exception Lexical_error of string * string * int * int
 
 let string_buff = Buffer.create 256
 
-let reset_string_buffer () = Buffer.clear string_buff  
+let reset_string_buffer () = Buffer.clear string_buff
 
 let store_string_char c = Buffer.add_char string_buff c
 
@@ -62,7 +62,7 @@ let handle_lexical_error fn lexbuf =
     raise(Lexical_error(msg, file, line, column))
 
 let get_input_name () = Sys.argv.(Array.length Sys.argv - 1)
-  
+
 let warning lexbuf msg =
   let p = Lexing.lexeme_start_p lexbuf in
   Printf.eprintf "ocamllex warning:\nFile \"%s\", line %d, character %d: %s.\n"
@@ -117,7 +117,7 @@ let backslash_escapes =
   ['\\' '"' '\'' 'n' 't' 'b' 'r']
 
 rule main = parse
-    [' ' '\013' '\009' '\012' ] + 
+    [' ' '\013' '\009' '\012' ] +
     { main lexbuf }
   | '\010'
     { incr_loc lexbuf 0;
@@ -128,7 +128,7 @@ rule main = parse
     { update_loc lexbuf name (int_of_string num);
       main lexbuf
     }
-  | "(*" 
+  | "(*"
     { comment_depth := 1;
       handle_lexical_error comment lexbuf;
       main lexbuf }
@@ -143,16 +143,16 @@ rule main = parse
       | "let" -> Tlet
       | "as"  -> Tas
       | s -> Tident s }
-  | '"' 
+  | '"'
     { reset_string_buffer();
       handle_lexical_error string lexbuf;
       Tstring(get_stored_string()) }
-(* note: ''' is a valid character literall (by contrast with the compiler) *)
-  | "'" [^ '\\'] "'" 
+(* note: ''' is a valid character literal (by contrast with the compiler) *)
+  | "'" [^ '\\'] "'"
     { Tchar(Char.code(Lexing.lexeme_char lexbuf 1)) }
-  | "'" '\\' backslash_escapes "'" 
+  | "'" '\\' backslash_escapes "'"
     { Tchar(Char.code(char_for_backslash (Lexing.lexeme_char lexbuf 2))) }
-  | "'" '\\' (['0'-'9'] as c) (['0'-'9'] as d) (['0'-'9'] as u)"'" 
+  | "'" '\\' (['0'-'9'] as c) (['0'-'9'] as d) (['0'-'9'] as u)"'"
     { let v = decimal_code c d u in
       if v > 255 then
         raise_lexical_error lexbuf
@@ -166,7 +166,7 @@ rule main = parse
     { raise_lexical_error lexbuf
         (Printf.sprintf "illegal escape sequence \\%c" c)
     }
-  | '{' 
+  | '{'
     { let p = Lexing.lexeme_end_p lexbuf in
       let n1 = p.Lexing.pos_cnum
       and l1 = p.Lexing.pos_lnum
@@ -196,7 +196,7 @@ rule main = parse
 
 (* String parsing comes from the compiler lexer *)
 and string = parse
-    '"' 
+    '"'
     { () }
    | '\\' ("\010" | "\013" | "\013\010") ([' ' '\009'] * as spaces)
     { incr_loc lexbuf (String.length spaces);
@@ -222,7 +222,7 @@ and string = parse
       store_string_char '\\' ;
       store_string_char c ;
       string lexbuf }
-  | eof 
+  | eof
     { raise(Lexical_error("unterminated string", "", 0, 0)) }
   | '\010'
     { store_string_char '\010';
@@ -239,12 +239,12 @@ and string = parse
 *)
 
 and comment = parse
-    "(*" 
+    "(*"
     { incr comment_depth; comment lexbuf }
-  | "*)" 
+  | "*)"
     { decr comment_depth;
       if !comment_depth = 0 then () else comment lexbuf }
-  | '"' 
+  | '"'
     { reset_string_buffer();
       string lexbuf;
       reset_string_buffer();
@@ -252,22 +252,22 @@ and comment = parse
   | "'"
     { skip_char lexbuf ;
       comment lexbuf }
-  | eof 
+  | eof
     { raise(Lexical_error("unterminated comment", "", 0, 0)) }
   | '\010'
     { incr_loc lexbuf 0;
       comment lexbuf }
-  | _ 
+  | _
     { comment lexbuf }
 
 and action = parse
-    '{' 
+    '{'
     { incr brace_depth;
       action lexbuf }
-  | '}' 
+  | '}'
     { decr brace_depth;
       if !brace_depth = 0 then Lexing.lexeme_start lexbuf else action lexbuf }
-  | '"' 
+  | '"'
     { reset_string_buffer();
       handle_lexical_error string lexbuf;
       reset_string_buffer();
@@ -275,16 +275,16 @@ and action = parse
  | "'"
     { skip_char lexbuf ;
       action lexbuf }
- | "(*" 
+ | "(*"
     { comment_depth := 1;
       comment lexbuf;
       action lexbuf }
-  | eof 
+  | eof
     { raise (Lexical_error("unterminated action", "", 0, 0)) }
   | '\010'
     { incr_loc lexbuf 0;
       action lexbuf }
-  | _ 
+  | _
     { action lexbuf }
 
 and skip_char = parse
@@ -298,4 +298,4 @@ and skip_char = parse
   | '\\' 'x' ['0'-'9' 'a'-'f' 'A'-'F'] ['0'-'9' 'a'-'f' 'A'-'F'] "'"
      {()}
 (* A dieu va ! *)
-  | "" {()} 
+  | "" {()}

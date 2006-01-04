@@ -57,7 +57,7 @@ install:
         done
 	cp ld.conf $(LIBDIR)/ld.conf
 
-ld.conf:
+ld.conf: ../config/Makefile
 	echo "$(STUBLIBDIR)" >ld.conf
 	echo "$(LIBDIR)" >>ld.conf
 
@@ -72,6 +72,7 @@ libcamlrund.a: $(DOBJS)
 clean:
 	rm -f ocamlrun$(EXE) ocamlrund$(EXE) *.o lib*.a
 	rm -f primitives prims.c opnames.h jumptbl.h ld.conf
+	rm -f version.h
 
 primitives : $(PRIMS)
 	sed -n -e "s/CAMLprim value \([a-z0-9_][a-z0-9_]*\).*/\1/p" \

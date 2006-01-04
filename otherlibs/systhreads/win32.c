@@ -252,7 +252,7 @@ static void caml_io_mutex_unlock_exn(void)
 
 /* The "tick" thread fakes a signal at regular intervals. */
 
-static void caml_thread_tick(void * arg)
+static DWORD WINAPI caml_thread_tick(void * arg)
 {
   while(1) {
     Sleep(Thread_timeout);
@@ -277,7 +277,7 @@ CAMLprim value caml_thread_initialize(value unit)
   value vthread = Val_unit;
   value descr;
   HANDLE tick_thread;
-  uintnat tick_id;
+  DWORD th_id;
 
   /* Protect against repeated initialization (PR#1325) */
   if (curr_thread != NULL) return Val_unit;
@@ -324,8 +324,8 @@ CAMLprim value caml_thread_initialize(value unit)
     caml_channel_mutex_unlock = caml_io_mutex_unlock;
     caml_channel_mutex_unlock_exn = caml_io_mutex_unlock_exn;
     /* Fork the tick thread */
-    tick_thread = (HANDLE) _beginthread(caml_thread_tick, 0, NULL);
-    if (tick_thread == (HANDLE)(-1)) caml_wthread_error("Thread.init");
+    tick_thread = CreateThread(NULL, 0, caml_thread_tick, NULL, 0, &th_id);
+    if (tick_thread == NULL) caml_wthread_error("Thread.init");
     CloseHandle(tick_thread);
   End_roots();
   return Val_unit;
@@ -333,7 +333,7 @@ CAMLprim value caml_thread_initialize(value unit)
 
 /* Create a thread */
 
-static void caml_thread_start(void * arg)
+static DWORD WINAPI caml_thread_start(void * arg)
 {
   caml_thread_t th = (caml_thread_t) arg;
   value clos;
@@ -360,6 +360,7 @@ static void caml_thread_start(void * arg)
   /* Free the thread descriptor */
   stat_free(th);
   /* The thread now stops running */
+  return 0;
 }
 
 CAMLprim value caml_thread_new(value clos)
@@ -367,7 +368,7 @@ CAMLprim value caml_thread_new(value clos)
   caml_thread_t th;
   value vthread = Val_unit;
   value descr;
-  uintnat th_id;
+  DWORD th_id;
 
   Begin_roots2 (clos, vthread)
     /* Create a finalized value to hold thread handle */
@@ -406,14 +407,9 @@ CAMLprim value caml_thread_new(value clos)
     curr_thread->next->prev = th;
     curr_thread->next = th;
     /* Fork the new thread */
-#if 0
     th->wthread =
-      CreateThread(NULL,0, (LPTHREAD_START_ROUTINE) caml_thread_start,
-                   (void *) th, 0, &th_id);
+      CreateThread(NULL, 0, caml_thread_start, (void *) th, 0, &th_id);
     if (th->wthread == NULL) {
-#endif
-    th->wthread = (HANDLE) _beginthread(caml_thread_start, 0, (void *) th);
-    if (th->wthread == (HANDLE)(-1)) {
       /* Fork failed, remove thread info block from list of threads */
       th->next->prev = curr_thread;
       curr_thread->next = th->next;
@@ -473,6 +469,7 @@ CAMLprim value caml_thread_yield(value unit)
 CAMLprim value caml_thread_join(value th)
 {
   HANDLE h;
+
   Begin_root(th)                /* prevent deallocation of handle */
     h = Threadhandle(th)->handle;
     enter_blocking_section();

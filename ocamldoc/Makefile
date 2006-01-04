@@ -277,7 +277,7 @@ installopt_really:
 ###########
 test: dummy
 	$(MKDIR) $@
-	$(OCAMLDOC_RUN) -html -colorize-code -sort -d $@ $(INCLUDES) -dump $@/ocamldoc.odoc odoc*.ml odoc*.mli
+	$(OCAMLDOC_RUN) -html -colorize-code -sort -d $@ $(INCLUDES) -dump $@/ocamldoc.odoc test.txt test2.txt odoc*.ml odoc*.mli -v
 
 test_stdlib: dummy
 	$(MKDIR) $@
@@ -292,7 +292,7 @@ test_framed: dummy
 
 test_latex: dummy
 	$(MKDIR) $@
-	$(OCAMLDOC_RUN) -latex -sort -o $@/test.tex -d $@ $(INCLUDES) odoc*.ml odoc*.mli ../stdlib/*.mli ../otherlibs/unix/unix.mli
+	$(OCAMLDOC_RUN) -latex -sort -o $@/test.tex -d $@ $(INCLUDES) odoc*.ml odoc*.mli test2.txt ../stdlib/*.mli ../otherlibs/unix/unix.mli
 
 test_latex_simple: dummy
 	$(MKDIR) $@
