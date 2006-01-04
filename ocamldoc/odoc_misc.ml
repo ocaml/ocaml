@@ -21,6 +21,16 @@ let no_blanks s =
   done;
   Buffer.contents buf
 
+let no_blanks s =
+  let len = String.length s in
+  let buf = Buffer.create len in
+  for i = 0 to len - 1 do
+    match s.[i] with
+      ' ' | '\n' | '\t' | '\r' -> ()
+    | c -> Buffer.add_char buf c
+  done;
+  Buffer.contents buf
+
 let input_file_as_string nom =
   let chanin = open_in_bin nom in
   let len = 1024 in

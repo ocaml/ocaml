@@ -1000,7 +1000,7 @@ let kscanf ib ef fmt f =
         let _x = scan_String max ib in
         let rf = token_string ib in
         if not (compatible_format_type mf rf)
-          then format_mismatch rf mf ib else 
+          then format_mismatch rf mf ib else
         if conv = '{' then scan_fmt (stack f rf) j else
         let nf = scan_fmt (Obj.magic rf) 0 in
         scan_fmt (stack f nf) j
@@ -1029,15 +1029,18 @@ let sscanf s = bscanf (Scanning.from_string s);;
 
 let scanf fmt = bscanf Scanning.stdib fmt;;
 
-let bscanf_format ib fmt2 f =
+let bscanf_format ib fmt f =
+  let fmt = format_to_string fmt in
   let fmt1 = ignore (scan_String max_int ib); token_string ib in
-  let fmt2 = format_to_string fmt2 in
-  if compatible_format_type fmt1 fmt2
-  then let fresh_fmt = String.copy fmt1 in f (string_to_format fresh_fmt)
-  else format_mismatch fmt1 fmt2 ib;;
+  if not (compatible_format_type fmt1 fmt) then
+    format_mismatch fmt1 fmt ib else
+  let fresh_fmt1 = String.copy fmt1 in
+  f (string_to_format fresh_fmt1);;
 
 let sscanf_format s fmt =
   let fmt = format_to_string fmt in
-  if compatible_format_type s fmt
-  then let fresh_fmt = String.copy s in string_to_format fresh_fmt
-  else bad_input (format_mismatch_err s fmt);;
+  let fmt1 = s in
+  if not (compatible_format_type fmt1 fmt) then
+    bad_input (format_mismatch_err fmt1 fmt) else
+  let fresh_fmt1 = String.copy fmt1 in
+  string_to_format fresh_fmt1;;

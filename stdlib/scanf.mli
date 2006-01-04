@@ -258,12 +258,14 @@ val kscanf :
 val bscanf_format :
   Scanning.scanbuf -> ('a, 'b, 'c, 'd) format4 ->
     (('a, 'b, 'c, 'd) format4 -> 'e) -> 'e;;
-(** [bscanf_format ib fmt f] reads a [format] argument to the format
-  specified by the second argument. The [format] argument read in
-  buffer [ib] must have the same type as [fmt]. *)
+
+(** [bscanf_format ib fmt f] reads a format string token in buffer [ib],
+  according to the format string [fmt], and applies the function [f] to the
+  resulting format string value.
+  Raises [Scan_failure] if the format string value read has not the same type
+  as [fmt]. *)
 
 val sscanf_format :
   string -> ('a, 'b, 'c, 'd) format4 -> ('a, 'b, 'c, 'd) format4;;
-(** [sscanf_format ib fmt f] reads a [format] argument to the format
-  specified by the second argument and returns it. The [format]
-  argument read in string [s] must have the same type as [fmt]. *)
+(** Same as {!Scanf.bscanf_format}, but converts the given string to a format
+  string. *)

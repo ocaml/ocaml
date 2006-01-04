@@ -57,3 +57,6 @@ CHANGE LOG:
 - drop the stand-alone installation mode
 
 
+3.09.1
+- synchronize with OCaml 3.09.1 (released version)
+- better error messages

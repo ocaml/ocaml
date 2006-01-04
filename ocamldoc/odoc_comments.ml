@@ -342,4 +342,3 @@ let info_of_comment_file f =
       failwith s
 
 (* eof $Id$ *)
-
