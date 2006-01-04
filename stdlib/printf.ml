@@ -28,7 +28,7 @@ external index_of_int : int -> index = "%identity";;
 external int_of_index : index -> int = "%identity";;
 
 let succ_index index = index_of_int (succ (int_of_index index));;
-(* Litteral position are One-based (hence pred p instead of p). *)
+(* Litteral position are one-based (hence pred p instead of p). *)
 let index_of_litteral_position p = index_of_int (pred p);;
 
 let bad_conversion fmt i c =
@@ -116,7 +116,7 @@ let format_int_with_conv conv fmt i =
 let sub_format incomplete_format bad_conversion conv fmt i =
   let len = String.length fmt in
   let rec sub_fmt c i =
-    let close = if c = '(' then ')' else '}' in
+    let close = if c = '(' then ')' else (* '{' *) '}' in
     let rec sub j =
        if j >= len then incomplete_format fmt else
        match fmt.[j] with
@@ -127,7 +127,7 @@ let sub_format incomplete_format bad_conversion conv fmt i =
        match fmt.[j] with
        | '(' | '{' as c ->
          let j = sub_fmt c (succ j) in sub (succ j)
-       | ')' | '}' as c ->
+       | '}' | ')' as c ->
          if c = close then j else bad_conversion fmt i c
        | _ -> sub (succ j) in
     sub i in
@@ -135,7 +135,7 @@ let sub_format incomplete_format bad_conversion conv fmt i =
 
 let sub_format_for_printf = sub_format incomplete_format bad_conversion;;
 
-let iter_format_args fmt add_conv add_char =
+let iter_on_format_args fmt add_conv add_char =
   let len = String.length fmt in
   let rec scan_flags skip i =
     if i >= len then incomplete_format fmt else
@@ -162,9 +162,21 @@ let iter_format_args fmt add_conv add_char =
         if j >= len then add_conv skip i 'i' else begin
           match fmt.[j] with
           | 'd' | 'i' | 'o' | 'x' | 'X' | 'u' ->
-            add_char skip (add_conv skip i conv) 'i'
+            add_char (add_conv skip i conv) 'i'
           | c -> add_conv skip i 'i' end
-    | '{' | '(' as conv -> add_conv skip i conv
+    | '{' as conv ->
+      (* Just get a regular argument, skipping the specification. *)
+      let i = add_conv skip i conv in
+      let j = sub_format_for_printf conv fmt i in
+      (* Add the meta specification anyway. *)
+      let rec loop i =
+        if i < j - 1 then loop (add_char i fmt.[i]) in
+      loop i;
+      scan_conv skip j
+    | '(' as conv ->
+      (* Use the static format argument specification instead of
+         the runtime format argument value. *)
+      scan_conv false (add_conv skip i conv)
     | '}' | ')' as conv -> add_conv skip i conv
     | conv -> bad_conversion fmt i conv in
   let lim = len - 1 in
@@ -181,13 +193,11 @@ let iter_format_args fmt add_conv add_char =
 let summarize_format_type fmt =
   let len = String.length fmt in
   let b = Buffer.create len in
-  let add i c = Buffer.add_char b c; succ i in
-  let add_char skip i c =
-    if skip then succ i else add i c
-  and add_conv skip i c =
+  let add_char i c = Buffer.add_char b c; succ i in
+  let add_conv skip i c =
     if skip then Buffer.add_string b "%_" else Buffer.add_char b '%';
-    add i c in
-  iter_format_args fmt add_conv add_char;
+    add_char i c in
+  iter_on_format_args fmt add_conv add_char;
   Buffer.contents b;;
 
 (* Computes the number of arguments of a format (including flag
@@ -196,11 +206,13 @@ let nargs_of_format_type fmt =
   let num_args = ref 0
   and skip_args = ref 0 in
   let add_conv skip i c =
+    (* Just finishing a meta format: no additional argument to record. *)
+    if c = ')' || c = '}' then succ i else
     let incr_args n = if c = 'a' then n := !n + 2 else n := !n + 1 in
     if skip then incr_args skip_args else incr_args num_args;
     succ i
-  and add_char skip i c = succ i in
-  iter_format_args fmt add_conv add_char;
+  and add_char i c = succ i in
+  iter_on_format_args fmt add_conv add_char;
   !skip_args + !num_args;;
 
 let list_iter_i f l =
@@ -376,7 +388,7 @@ let scan_format fmt args n pos cont_s cont_a cont_t cont_f cont_m =
           (succ i)
       end
     | '!' -> cont_f n (succ i)
-    | '{' | '(' as conv (* ')' '}' *)->
+    | '{' | '(' as conv (* ')' '}' *) ->
       let (xf : ('a, 'b, 'c, 'd) format4) = get_arg args n in
       let i = succ i in
       let j = sub_format_for_printf conv fmt i + 1 in
@@ -384,17 +396,18 @@ let scan_format fmt args n pos cont_s cont_a cont_t cont_f cont_m =
         (* Just print the format argument as a specification. *)
         cont_s
           (succ_index n)
-          (summarize_format_type (format_to_string xf)) j else
+          (summarize_format_type (format_to_string xf))
+          j else
         (* Use the format argument instead of the format specification. *)
         cont_m (succ_index n) xf j
-    | ')' ->
+    | (* '(' *) ')' ->
       cont_s n "" (succ i)
     | conv ->
       bad_conversion fmt i conv in
 
   scan_positional fmt scan_flags n (succ pos);;
 
-let mkprintf str get_out outc outs flush =
+let mkprintf to_s get_out outc outs flush =
   let rec kprintf k fmt =
     let fmt = format_to_string fmt in
     let len = String.length fmt in
@@ -409,13 +422,13 @@ let mkprintf str get_out outc outs flush =
       and cont_s n s i =
         outs out s; doprn n i
       and cont_a n printer arg i =
-        if str then
+        if to_s then
           outs out ((Obj.magic printer : unit -> _ -> string) () arg)
         else
           printer out arg;
         doprn n i
       and cont_t n printer i =
-        if str then
+        if to_s then
           outs out ((Obj.magic printer : unit -> string) ())
         else
           printer out;

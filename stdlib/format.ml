@@ -966,14 +966,14 @@ let implode_rev s0 = function
 external format_to_string : ('a, 'b, 'c, 'd) format4 -> string = "%identity";;
 
 (* [fprintf_out] is the printf-like function generator: given the
-   - [str] flag that tells if we are printing into a string,
-   - the [out] function that has to be called at the end of formatting,
+   - [to_s] flag that tells if we are printing into a string,
+   - the [get_out] function that has to be called at the end of formatting,
    it generates a [fprintf] function that takes as arguments a [ppf]
    formatter and a printing format to print the rest of arguments
    according to the format.
    Regular [fprintf]-like functions of this module are obtained via partial
    applications of [fprintf_out]. *)
-let mkprintf str get_out =
+let mkprintf to_s get_out =
   let rec kprintf k fmt =
     let fmt = format_to_string fmt in
     let len = String.length fmt in
@@ -1047,20 +1047,19 @@ let mkprintf str get_out =
       and cont_s n s i =
         pp_print_as_string s; doprn n i
       and cont_a n printer arg i =
-        if str then
+        if to_s then
           pp_print_as_string ((Obj.magic printer : unit -> _ -> string) () arg)
         else
           printer ppf arg;
         doprn n i
       and cont_t n printer i =
-        if str then
+        if to_s then
           pp_print_as_string ((Obj.magic printer : unit -> string) ())
         else
           printer ppf;
         doprn n i
       and cont_f n i =
         pp_print_flush ppf (); doprn n i
-
       and cont_m n sfmt i =
         kprintf (Obj.magic (fun _ -> doprn n i)) sfmt
 
@@ -1127,13 +1126,13 @@ let mkprintf str get_out =
           let cont_s n s i = get (s :: s0 :: accu) n i i
           and cont_a n printer arg i =
             let s =
-              if str
+              if to_s
               then (Obj.magic printer : unit -> _ -> string) () arg
               else exstring printer arg in
             get (s :: s0 :: accu) n i i
           and cont_t n printer i =
             let s =
-              if str
+              if to_s
               then (Obj.magic printer : unit -> string) ()
               else exstring (fun ppf () -> printer ppf) () in
             get (s :: s0 :: accu) n i i
