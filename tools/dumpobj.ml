@@ -108,6 +108,9 @@ let rec print_struct_const = function
 
 (* Print an obj *)
 
+let same_custom x y =
+  Obj.field x 0 = Obj.field (Obj.repr y) 0
+
 let rec print_obj x =
   if Obj.is_block x then begin
     let tag = Obj.tag x in
@@ -123,7 +126,13 @@ let rec print_obj x =
           printf "%.12g" a.(i)
         done;
         printf "|]"
-    end else if tag < Obj.no_scan_tag then begin
+    end else if tag = Obj.custom_tag && same_custom x 0l then
+        printf "%ldl" (Obj.magic x : int32)
+    else if tag = Obj.custom_tag && same_custom x 0n then
+        printf "%ndn" (Obj.magic x : nativeint)
+    else if tag = Obj.custom_tag && same_custom x 0L then
+        printf "%LdL" (Obj.magic x : int64)
+    else if tag < Obj.no_scan_tag then begin
         printf "<%d>" (Obj.tag x);
         match Obj.size x with
           0 -> ()
