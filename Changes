@@ -6,7 +6,7 @@ Bug fixes:
 - compilers: assert failure in typeclass.cml PR#3856
 - compilers: assert failure in typing/ctype.ml PR#3909
 - compilers: fatal error exception Ctype.Unify PR#3918
-- compilers: spurious warning Y PR#3868
+- compilers: spurious warning Y in objects PR#3868
 - compilers: spurious warning Z on loop index PR#3907
 - compilers: error message that emacs cannot parse
 - ocamlopt: problems with -for-pack/-pack PR#3825, PR#3826, PR#3919
