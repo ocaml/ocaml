@@ -164,6 +164,7 @@ let new_global_ty desc = newty2 !global_level desc
 let newvar ()          = newty2 !current_level Tvar
 let newvar2 level      = newty2 level Tvar
 let new_global_var ()  = newty2 !global_level Tvar
+let new_nongen_var ()  = newty2 (pred !nongen_level) Tvar
 
 let newobj fields      = newty (Tobject (fields, ref None))
 

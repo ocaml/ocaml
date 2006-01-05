@@ -45,6 +45,7 @@ val newvar: unit -> type_expr
 val new_global_var: unit -> type_expr
         (* Return a fresh variable, bound at toplevel
            (as type variables ['a] in type constraints). *)
+val new_nongen_var: unit -> type_expr
 val newobj: type_expr -> type_expr
 val newconstr: Path.t -> type_expr list -> type_expr
 val none: type_expr
