@@ -359,7 +359,6 @@ let rec filter_row_fields erase = function
       | Reither(_,_,false,e) when erase -> set_row_field e Rabsent; fi
       | _ -> p :: fi
 
-
                     (**************************************)
                     (*  Check genericity of type schemes  *)
                     (**************************************)
@@ -1182,7 +1181,7 @@ let generic_abbrev env path =
   try
     let (_, body) = Env.find_type_expansion path env in
     let t = repr body in
-    (t.level = generic_level) || (t.level = 0)
+    (t.level = generic_level) || (t.level = 0) (* do I need that ? *)
   with
     Not_found ->
       false
@@ -2959,7 +2958,7 @@ let rec subtype_rec env trace t1 t2 cstrs =
     | Text _, Text _ ->
         (trace, t1, !ext_subtype env t2, !univar_pairs)::cstrs
     | (_, _) ->
-       (trace, t1, t2, !univar_pairs)::cstrs
+        (trace, t1, t2, !univar_pairs)::cstrs
   end
 
 and subtype_list env trace tl1 tl2 cstrs =
@@ -3403,5 +3402,3 @@ let rec collapse_conj env visited ty =
 
 let collapse_conj_params env params =
   List.iter (collapse_conj env []) params
-
-

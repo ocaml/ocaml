@@ -129,9 +129,8 @@ and pattern_desc =
   | Ppat_type of Longident.t
 
 type expression =
-  { pexp_desc: expression_desc;
-    pexp_loc: Location.t;
-    mutable pexp_ext: bool }
+  { mutable pexp_desc: expression_desc;
+    pexp_loc: Location.t }
 
 and expression_desc =
     Pexp_ident of Longident.t
@@ -178,6 +177,7 @@ and ext_exp =
   | Pextexp_from_ml of expression
   | Pextexp_to_ml of expression
   | Pextexp_check of expression * ext_pattern
+  | Pextexp_id of expression
 
 and ext_branch = 
     ext_pattern * ((string * Location.t) list option ref) * expression

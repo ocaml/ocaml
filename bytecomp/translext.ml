@@ -611,9 +611,6 @@ let transl_ext transl_exp env typ = function
 	transl_exp e
       ]
 
-  | Textexp_namespace e ->
-      transl_exp e
-
   | Textexp_from_ml e ->
       transl_from_ml 
 	[] e.exp_env (Ctype.correct_levels e.exp_type) (transl_exp e)
@@ -630,3 +627,5 @@ let transl_ext transl_exp env typ = function
 	let d = Cduce_types.Patterns.Compile.make_checker typ_e typ_res in
 	builtin "Cduce_types.Explain.check_failure" [ global d; e ]
       
+  | Textexp_id e ->
+      transl_exp e

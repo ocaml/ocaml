@@ -264,7 +264,8 @@ and ext_expr ppf tbl = function
   | Pextexp_namespace (_,_,e) 
   | Pextexp_from_ml e 
   | Pextexp_to_ml e
-  | Pextexp_check (e,_) -> expression ppf tbl e
+  | Pextexp_check (e,_) 
+  | Pextexp_id e -> expression ppf tbl e
 
 and ext_branch ppf tbl (p, vars, e) =
   let vars = match !vars with None -> assert false | Some v -> v in

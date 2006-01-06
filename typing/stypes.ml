@@ -107,7 +107,7 @@ let print_info pp ti =
       fprintf pp "@.type(@.  ";
       printtyp_reset_maybe loc;
       Printtyp.mark_loops typ;
-      Printtyp.type_expr pp typ;
+      Printtyp.type_sch pp typ;
       fprintf pp "@.)@.";
 ;;
 

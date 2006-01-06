@@ -25,7 +25,7 @@ let mktyp d =
 let mkpat d =
   { ppat_desc = d; ppat_loc = symbol_rloc() }
 let mkexp d =
-  { pexp_desc = d; pexp_loc = symbol_rloc(); pexp_ext = false }
+  { pexp_desc = d; pexp_loc = symbol_rloc() }
 let mkmty d =
   { pmty_desc = d; pmty_loc = symbol_rloc() }
 let mksig d =
@@ -45,7 +45,7 @@ let reloc_pat x = { x with ppat_loc = symbol_rloc () };;
 let reloc_exp x = { x with pexp_loc = symbol_rloc () };;
 
 let mkoperator name pos =
-  { pexp_desc = Pexp_ident(Lident name); pexp_loc = rhs_loc pos; pexp_ext = false }
+  { pexp_desc = Pexp_ident(Lident name); pexp_loc = rhs_loc pos }
 
 (*
   Ghost expressions and patterns:
@@ -64,7 +64,7 @@ let mkoperator name pos =
   AST node, then the location must be real; in all other cases,
   it must be ghost.
 *)
-let ghexp d = { pexp_desc = d; pexp_loc = symbol_gloc (); pexp_ext = false };;
+let ghexp d = { pexp_desc = d; pexp_loc = symbol_gloc () };;
 let ghpat d = { ppat_desc = d; ppat_loc = symbol_gloc () };;
 let ghtyp d = { ptyp_desc = d; ptyp_loc = symbol_gloc () };;
 
@@ -107,8 +107,8 @@ let rec mktailexp = function
                loc_end = exp_el.pexp_loc.loc_end;
                loc_ghost = true}
       in
-      let arg = {pexp_desc = Pexp_tuple [e1; exp_el]; pexp_loc = l; pexp_ext = false } in
-      {pexp_desc = Pexp_construct(Lident "::", Some arg, false); pexp_loc = l; pexp_ext = false }
+      let arg = {pexp_desc = Pexp_tuple [e1; exp_el]; pexp_loc = l} in
+      {pexp_desc = Pexp_construct(Lident "::", Some arg, false); pexp_loc = l}
 
 let rec mktailpat = function
     [] ->
@@ -201,10 +201,8 @@ let mkextcst d = { pextcst_desc = d; pextcst_loc = symbol_rloc() }
 let ghext d = { pext_desc = d; pext_loc = symbol_gloc () };;
 let real_ghext d = { pext_desc = d; pext_loc = Location.none };;
 let ghextcst d = { pextcst_desc = d; pextcst_loc = symbol_gloc () };;
-let mkextexp d =
-  { pexp_desc = Pexp_ext d; pexp_loc = symbol_rloc(); pexp_ext = false }
-let ghextexp d =
-  { pexp_desc = Pexp_ext d; pexp_loc = symbol_gloc(); pexp_ext = false }
+let mkextexp d = { pexp_desc = Pexp_ext d; pexp_loc = symbol_rloc() }
+let ghextexp d = { pexp_desc = Pexp_ext d; pexp_loc = symbol_gloc() }
 
 let ext_pair e1 e2 =
   match e1.pexp_desc, e2.pexp_desc with

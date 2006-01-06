@@ -25,8 +25,6 @@ val newgenty: type_desc -> type_expr
         (* Create a generic type *)
 val newgenvar: unit -> type_expr
         (* Return a fresh generic variable *)
-val newextvar: ext_desc -> type_expr
-val allextvars: unit -> type_expr list
 
 (* Use Tsubst instead
 val newmarkedvar: int -> type_expr
@@ -154,4 +152,3 @@ val set_commu: commutable ref -> commutable -> unit
         (* Set references, logging the old value *)
 val log_type: type_expr -> unit
         (* Log the old value of a type, before modifying it by hand *)
-

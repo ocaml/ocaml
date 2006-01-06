@@ -14,6 +14,8 @@
 
 (* Typechecking for the CDuce extension *)
 
+val newextvar: Types.ext_desc -> Types.type_expr
+
 (* Errors *)
 
 type error
@@ -32,12 +34,7 @@ val type_expression:
   Env.t -> Location.t -> Parsetree.ext_exp -> 
   Typedtree.ext_exp * type_expr
 
-val type_expect: 
-  ?in_function:(Location.t * Types.type_expr) -> Env.t -> 
-  Parsetree.expression -> type_expr -> Typedtree.expression
-
-val annot: 
-  Env.t -> Parsetree.expression -> Typedtree.expression -> Typedtree.expression
+val annot: Env.t -> Parsetree.expression -> Typedtree.expression -> unit
 
 val flush_ext_annot: Env.t -> unit
 
@@ -55,7 +52,7 @@ val solve: Env.t -> unit
 
 (* Forward definitions *)
 
-val real_type_expect: 
+val type_expect_ref: 
   (?in_function:(Location.t * Types.type_expr) -> Env.t -> 
     Parsetree.expression -> type_expr -> Typedtree.expression) ref
 

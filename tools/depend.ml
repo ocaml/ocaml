@@ -165,7 +165,8 @@ and add_extexp bv = function
   | Pextexp_record fl -> List.iter (fun (_,e) -> add_expr bv e) fl
   | Pextexp_op (op,l) -> List.iter (add_expr bv) l
   | Pextexp_namespace (_,_,e) | Pextexp_removefield (e,_)
-  | Pextexp_from_ml e | Pextexp_to_ml e | Pextexp_check (e,_) -> add_expr bv e
+  | Pextexp_from_ml e | Pextexp_to_ml e | Pextexp_check (e,_) 
+  | Pextexp_id e -> add_expr bv e
 and add_pat_expr_list bv pel =
   List.iter (fun (p, e) -> add_pattern bv p; add_expr bv e) pel
 

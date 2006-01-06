@@ -629,7 +629,7 @@ let transl_type_decl env name_sdecl_list =
     List.map2 
       (fun (id,_) t ->
 	 (id,
-	  Btype.newextvar { ext_const = Some t; ext_atoms = []; ext_lb = [] })
+	  Typeext.newextvar { ext_const = Some t; ext_atoms = []; ext_lb = [] })
       ) exts exts_typs in
   (* Translate each declaration. *)
   let decls =

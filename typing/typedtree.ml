@@ -27,7 +27,8 @@ type pattern =
     pat_env: Env.t }
 
 and pattern_desc =
-    Tpat_any  | Tpat_var of Ident.t
+    Tpat_any
+  | Tpat_var of Ident.t
   | Tpat_alias of pattern * Ident.t
   | Tpat_constant of constant
   | Tpat_tuple of pattern list
@@ -87,10 +88,10 @@ and ext_exp =
   | Textexp_op of string * expression list
   | Textexp_record of expression Cduce_types.Ident.label_map
   | Textexp_removefield of expression * Cduce_types.Ident.label
-  | Textexp_namespace of expression
   | Textexp_from_ml of expression
   | Textexp_to_ml of expression
   | Textexp_check of expression
+  | Textexp_id of expression
 
 and ext_branch = 
     Cduce_types.Patterns.node * (Cduce_types.Ident.id * Ident.t) list  * 

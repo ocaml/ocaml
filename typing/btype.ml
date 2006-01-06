@@ -33,15 +33,6 @@ let newty2 level desc  =
   incr new_id; { desc = desc; level = level; id = !new_id }
 let newgenty desc      = newty2 generic_level desc
 let newgenvar ()       = newgenty Tvar
-
-let extvars = ref []
-let newextvar d       = 
-  let t = newty2 lowest_level (Text d) in
-  extvars := t :: !extvars;
-  t
-let allextvars () = let l = !extvars in extvars := []; l
-  
-
 (*
 let newmarkedvar level =
   incr new_id; { desc = Tvar; level = pivot_level - level; id = !new_id }
@@ -479,15 +470,13 @@ let log_change ch =
       Weak.set trail 0 (Some r')
 
 let log_type ty =
-  if (ty.id <= !last_snapshot) || (ty.level = 0)
-  then log_change (Ctype (ty, ty.desc))
+  if ty.id <= !last_snapshot then log_change (Ctype (ty, ty.desc))
 let link_type ty ty' = log_type ty; ty.desc <- Tlink ty'
   (* ; assert (check_memorized_abbrevs ()) *)
   (*  ; check_expans [] ty' *)
 let set_level ty level =
   if ty.id <= !last_snapshot then log_change (Clevel (ty, ty.level));
   ty.level <- level
-(* (match ty.desc with Text _ -> ty.level <- 0 (*???*) | _ -> ty.level <- level *)
 let set_univar rty ty =
   log_change (Cuniv (rty, !rty)); rty := Some ty
 let set_name nm v =
@@ -527,4 +516,3 @@ let backtrack (changes, old) =
       changes := Unchanged;
       last_snapshot := old;
       Weak.set trail 0 (Some changes)
-

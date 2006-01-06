@@ -19,6 +19,13 @@ open Types
 open Btype
 open Ctype
 
+let extvars = ref []
+let newextvar d       = 
+  let t = newty2 lowest_level (Text d) in
+  extvars := t :: !extvars;
+  t
+let allextvars () = let l = !extvars in extvars := []; l
+
 let anyext = { ext_const = None; ext_lb = []; ext_atoms = [] }
 let anyext_var = newextvar anyext
 
@@ -32,7 +39,7 @@ module Patterns = Cduce_types.Patterns
 module LabelMap = Cduce_types.Ident.LabelMap
 module Label = Cduce_types.Ident.Label
 
-let real_type_expect = ref (fun ?in_function _ _ _ -> assert false)
+let type_expect_ref = ref (fun ?in_function _ _ _ -> assert false)
 let transl_simple_type = ref None
 
 let solve_env = ref Env.empty
@@ -584,7 +591,7 @@ let transl_ext_type env p =
   if !extmode then anyext_var
   else
     let t = CT.descr (transl_ext_type_node env p) in
-    Btype.newextvar 
+    newextvar 
       { Types.ext_const = Some t; Types.ext_atoms = []; Types.ext_lb = [] }
 
 let transl_type_decl env b =
@@ -640,17 +647,33 @@ let transl_branches env b =
 
 let exptypes = ref []
 
+let introduce_extid s =
+  match s.Parsetree.pexp_desc with
+    | Parsetree.Pexp_ext 
+	(Parsetree.Pextexp_id _
+	| Parsetree.Pextexp_map _
+	| Parsetree.Pextexp_record _
+	| Parsetree.Pextexp_removefield _
+	| Parsetree.Pextexp_op _
+	| Parsetree.Pextexp_from_ml _
+	| Parsetree.Pextexp_check _
+	) -> ()  (* all these already allow subsumption on the result *)
+    | _ ->
+	let s' = { Parsetree.pexp_desc = s.Parsetree.pexp_desc;
+		   Parsetree.pexp_loc = s.Parsetree.pexp_loc } in
+	s.Parsetree.pexp_desc <- Parsetree.Pexp_ext (Parsetree.Pextexp_id s')
+
 let register_ext_annot env s e =
   match (repr (expand_head env e.Typedtree.exp_type)).desc with
     | Tvar -> exptypes := (s,e) :: !exptypes
-    | Text _ -> s.Parsetree.pexp_ext <- true
+    | Text _ -> introduce_extid s
     | _ -> ()
 
 let flush_ext_annot env =
   List.iter 
     (fun (s,e) ->
        match (repr (expand_head env e.Typedtree.exp_type)).desc with
-	 | Text _ -> s.Parsetree.pexp_ext <- true
+	 | Text _ -> introduce_extid s
 	 | _ -> ()
     ) !exptypes;
   exptypes := []
@@ -875,24 +898,11 @@ let ext_op env loc op tl = match op,tl with
 
 open Typedtree
 
-let type_expect ?in_function env sexp ty_expected =
-  if !extmode then 
-    let e = !real_type_expect ?in_function env sexp ty_expected in
-    register_ext_annot env sexp e; 
-    e
-  else
-    if sexp.pexp_ext 
-    then 
-      let t = ext_subtype env sexp.pexp_loc ty_expected in
-      let e = !real_type_expect ?in_function env sexp t in
-      { e with exp_type = ty_expected }
-    else
-      !real_type_expect ?in_function env sexp ty_expected
-
+let type_expect env e t =
+  !type_expect_ref env e t
 
 let type_ext env e =
-  type_expect env e 
-    (newextvar { ext_const = None; ext_lb = []; ext_atoms = [] })
+  type_expect env e (if !extmode then anyext_var else newextvar anyext)
 
 let type_expression env loc = function
   | Pextexp_cst cst ->
@@ -959,7 +969,7 @@ let type_expression env loc = function
       ext_removefield env loc e.exp_type l
   | Pextexp_namespace (pr,ns,e) ->
       let e = type_expect (Env.add_namespace pr ns env) e (newvar ()) in
-      Textexp_namespace e,
+      Textexp_id e,
       e.exp_type
   | Pextexp_from_ml e ->
       let t = new_nongen_var () in (* Prevent generalization *)
@@ -976,15 +986,15 @@ let type_expression env loc = function
       let t = transl_ext_type env t in
       Textexp_check e,
       t
+  | Pextexp_id e ->
+      assert (not !extmode);
+      let (a,b) = pair_subtype loc in
+      let e = type_expect env e a in
+      Textexp_id e, b
       
 
 let annot env sexp e = 
-  if !extmode then (register_ext_annot env sexp e; e)
-  else (
-    if sexp.pexp_ext 
-    then { e with exp_type = ext_supertype env e.exp_loc e.exp_type }
-    else e
-  )
+  if !extmode then register_ext_annot env sexp e
 
 let subtype_loc = ref Location.none
 

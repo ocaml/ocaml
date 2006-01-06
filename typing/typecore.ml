@@ -863,7 +863,10 @@ let unify_exp env exp expected_ty =
   | Tags(l1,l2) ->
       raise(Typetexp.Error(exp.exp_loc, Typetexp.Variant_tags (l1, l2)))
 
-let rec type_exp env sexp = Typeext.annot env sexp (real_type_exp env sexp)
+let rec type_exp env sexp = 
+  let e = real_type_exp env sexp in 
+  Typeext.annot env sexp e;  
+  e
 and real_type_exp env sexp =
   match sexp.pexp_desc with
     Pexp_ident lid ->
@@ -1712,7 +1715,9 @@ and type_construct env loc lid sarg explicit_arity ty_expected =
    Some constructs are treated specially to provide better error messages. *)
 
 and type_expect ?in_function env sexp ty_expected =
-  Typeext.type_expect ?in_function env sexp ty_expected
+  let e = real_type_expect ?in_function env sexp ty_expected in
+  Typeext.annot env sexp e;
+  e
 and real_type_expect ?in_function env sexp ty_expected =
   match sexp.pexp_desc with
     Pexp_constant(Const_string s as cst) ->
@@ -1755,21 +1760,19 @@ and real_type_expect ?in_function env sexp ty_expected =
           Ppat_construct(Longident.Lident"Some",
                          Some{ppat_loc = loc; ppat_desc = Ppat_var"*sth*"},
                          false)},
-         {pexp_loc = loc; pexp_desc = Pexp_ident(Longident.Lident"*sth*");
-	  pexp_ext = false};
+         {pexp_loc = loc; pexp_desc = Pexp_ident(Longident.Lident"*sth*")};
          {ppat_loc = loc; ppat_desc =
           Ppat_construct(Longident.Lident"None", None, false)},
          default] in
       let smatch =
         {pexp_loc = loc; pexp_desc =
-         Pexp_match({pexp_loc = loc; pexp_ext=false; pexp_desc =
+         Pexp_match({pexp_loc = loc; pexp_desc =
                      Pexp_ident(Longident.Lident"*opt*")},
-                    scases); pexp_ext = false} in
+                    scases)} in
       let sfun =
-        {pexp_loc = sexp.pexp_loc; pexp_ext = false; pexp_desc =
+        {pexp_loc = sexp.pexp_loc; pexp_desc =
          Pexp_function(l, None,[{ppat_loc = loc; ppat_desc = Ppat_var"*opt*"},
-                                {pexp_loc = sexp.pexp_loc; pexp_ext=false;
-				 pexp_desc =
+                                {pexp_loc = sexp.pexp_loc; pexp_desc =
                                  Pexp_let(Default, [spat, smatch], sbody)}])}
       in
       type_expect ?in_function env sfun ty_expected
@@ -2133,4 +2136,4 @@ let report_error ppf = function
         (fun ppf -> fprintf ppf "which is less general than")
 
 let () =
-  Typeext.real_type_expect := real_type_expect
+  Typeext.type_expect_ref := type_expect

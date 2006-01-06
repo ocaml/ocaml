@@ -332,6 +332,10 @@ and extexp i ppf = function
   | Pextexp_check (e,_) ->
       line i ppf "Pextexp_check\n";
       expression i ppf e
+  | Pextexp_id e ->
+      line i ppf "Pextexp_id\n";
+      expression i ppf e
+      
 
 and value_description i ppf x =
   line i ppf "value_description\n";
