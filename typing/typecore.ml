@@ -1796,6 +1796,14 @@ and type_expect ?in_function env sexp ty_expected =
         exp_loc = sexp.pexp_loc;
         exp_type = newty (Tarrow(l, ty_arg, ty_res, Cok));
         exp_env = env }
+  | Pexp_when(scond, sbody) ->
+      let cond = type_expect env scond (instance Predef.type_bool) in
+      let body = type_expect env sbody ty_expected in
+      re {
+        exp_desc = Texp_when(cond, body);
+        exp_loc = sexp.pexp_loc;
+        exp_type = body.exp_type;
+        exp_env = env }
   | Pexp_poly(sbody, sty) ->
       let ty =
         match sty with None -> repr ty_expected
