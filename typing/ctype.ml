@@ -1750,10 +1750,9 @@ and unify_row env row1 row2 =
   begin try
     set_more row1 r2;
     set_more row2 r1;
-    let undo = ref [] in
     List.iter
       (fun (l,f1,f2) ->
-        try unify_row_field env row1.row_fixed row2.row_fixed undo l f1 f2
+        try unify_row_field env row1.row_fixed row2.row_fixed l f1 f2
         with Unify trace ->
           raise (Unify ((mkvariant [l,f1] true,
                          mkvariant [l,f2] true) :: trace)))
@@ -1762,7 +1761,7 @@ and unify_row env row1 row2 =
     log_type rm1; rm1.desc <- md1; log_type rm2; rm2.desc <- md2; raise exn
   end
 
-and unify_row_field env fixed1 fixed2 undo l f1 f2 =
+and unify_row_field env fixed1 fixed2 l f1 f2 =
   let f1 = row_field_repr f1 and f2 = row_field_repr f2 in
   if f1 == f2 then () else
   match f1, f2 with
@@ -1778,7 +1777,7 @@ and unify_row_field env fixed1 fixed2 undo l f1 f2 =
             List.iter (unify env t1) tl;
             !e1 <> None || !e2 <> None
         end in
-      if redo then unify_row_field env fixed1 fixed2 undo l f1 f2 else
+      if redo then unify_row_field env fixed1 fixed2 l f1 f2 else
       let tl1 = List.map repr tl1 and tl2 = List.map repr tl2 in
       let rec remq tl = function [] -> []
         | ty :: tl' ->
@@ -1789,7 +1788,6 @@ and unify_row_field env fixed1 fixed2 undo l f1 f2 =
       let f1' = Reither(c1 || c2, tl1', m1 || m2, e)
       and f2' = Reither(c1 || c2, tl2', m1 || m2, e) in
       set_row_field e1 f1'; set_row_field e2 f2';
-      undo := (l, e2) :: !undo
   | Reither(_, _, false, e1), Rabsent -> set_row_field e1 f2
   | Rabsent, Reither(_, _, false, e2) -> set_row_field e2 f1
   | Rabsent, Rabsent -> ()
