@@ -529,7 +529,7 @@ let rec merge_module_types merge_options mli ml =
                 Element_module m2 -> 
                   if m2.m_name = m.m_name then
                     (
-                     merge_modules merge_options m m2 ;
+                     ignore (merge_modules merge_options m m2);
 (*
                      m.m_info <- merge_info_opt merge_options m.m_info m2.m_info;
                      m.m_loc <- { m.m_loc with loc_impl = m2.m_loc.loc_impl } ;
@@ -772,7 +772,7 @@ and merge_modules merge_options mli ml =
                 Element_module m2 -> 
                   if m2.m_name = m.m_name then
                     (
-                     merge_modules merge_options m m2 ;
+                     ignore (merge_modules merge_options m m2);
 (*
                      m.m_info <- merge_info_opt merge_options m.m_info m2.m_info;
                      m.m_loc <- { m.m_loc with loc_impl = m2.m_loc.loc_impl } ;

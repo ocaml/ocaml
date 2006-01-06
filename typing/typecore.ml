@@ -841,11 +841,15 @@ let check_univars env kind exp ty_expected vars =
                 Less_general(kind, [ty, ty; ty_expected, ty_expected])))
 
 (* Check that a type is not a function *)
-let check_partial_application env exp =
-  match expand_head env exp.exp_type with
-  | {desc = Tarrow _} ->
+let check_application_result env statement exp =
+  match (expand_head env exp.exp_type).desc with
+  | Tarrow _ ->
       Location.prerr_warning exp.exp_loc Warnings.Partial_application
-  | _ -> ()
+  | Tvar -> ()
+  | Tconstr (p, _, _) when Path.same p Predef.path_unit -> ()
+  | _ ->
+      if statement then
+        Location.prerr_warning exp.exp_loc Warnings.Statement_type
 
 (* Hack to allow coercion of self. Will clean-up later. *)
 let self_coercion = ref ([] : (Path.t * Location.t list ref) list)
@@ -1656,7 +1660,7 @@ and type_application env funct sargs =
       | Tarrow _ ->
           Location.prerr_warning exp.exp_loc Warnings.Partial_application
       | Tvar ->
-          add_delayed_check (fun () -> check_partial_application env exp)
+          add_delayed_check (fun () -> check_application_result env false exp)
       | _ -> ()
       end;
       ([Some exp, Required], ty_res)
@@ -1851,7 +1855,7 @@ and type_statement env sexp =
   | Tvar when ty.level > tv.level ->
       Location.prerr_warning sexp.pexp_loc Warnings.Nonreturning_statement
   | Tvar ->
-      add_delayed_check (fun () -> check_partial_application env exp)
+      add_delayed_check (fun () -> check_application_result env true exp)
   | _ ->
       Location.prerr_warning sexp.pexp_loc Warnings.Statement_type
   end;
