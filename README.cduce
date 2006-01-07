@@ -60,3 +60,6 @@ CHANGE LOG:
 3.09.1
 - synchronize with OCaml 3.09.1 (released version)
 - better error messages
+
+3.09.1pl1
+- internal simplifications, minimize diff with OCaml

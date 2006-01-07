@@ -1,6 +1,8 @@
 # Build the OCamlDuce tools using an existing OCaml installation
 
-VERSION=3.09.1
+VERSION=3.09.1pl1
+
+BINDIR=`basename $(shell which $(CAMLC))`
 
 all: ocamlducec ocamlduce ocamlducedep ocamlducedoc cduce/ocamlduce.cma
 opt: all ocamlduceopt ocamlducec.opt ocamlduceopt.opt ocamlducedep.opt ocamlducedoc.opt cduce/ocamlduce.cmxa
@@ -436,11 +438,11 @@ clean::
 
 # OCamldoc
 
-ocamlducedoc:
+ocamlducedoc: ocamlducedep
 	cd ocamldoc && $(MAKE) OCAMLC=$(CAMLC) OCAMLOPT=$(CAMLOPT) OCAMLLEX=$(CAMLLEX) OCAMLYACC=$(CAMLYACC) LINKFLAGS="nums.cma ../cduce_types.cmo" ocamldoc
 	cp ocamldoc/ocamldoc ./ocamlducedoc
 
-ocamlducedoc.opt:
+ocamlducedoc.opt: ocamlducedep.opt
 	cd ocamldoc && $(MAKE) OCAMLC=$(CAMLC) OCAMLOPT=$(CAMLOPT) OCAMLLEX=$(CAMLLEX) OCAMLYACC=$(CAMLYACC) LINKFLAGS="nums.cmxa ../cduce_types.cmx" ocamldoc.opt
 	cp ocamldoc/ocamldoc.opt ./ocamlducedoc.opt
 
@@ -452,18 +454,39 @@ clean::
 clean::
 	rm -f config/Makefile
 
+# HTML documentation
+
+htdoc: cduce/ocamlduce.cmi ocamlducedoc
+	mkdir -p htdoc
+	./ocamlducedoc -html -d htdoc cduce/ocamlduce.mli
+
+clean::
+	rm -Rf htdoc
+
+
 # Findlib installation
 
-INSTALL_FILES= \
- ocamlducec ocamlduce ocamlducedep ocamlducedoc cduce/ocamlduce.cma \
- ocamlduceopt cduce/ocamlduce.cmxa cduce/ocamlduce.a \
- ocamlducec.opt ocamlduceopt.opt ocamlducedep.opt ocamlducedoc.opt \
- cduce/ocamlduce.cmi cduce_types.cmi cduce/ocamlduce.mli
+INSTALL_LIB_FILES= \
+ cduce/ocamlduce.cma cduce/ocamlduce.cmi cduce_types.cmi cduce/ocamlduce.mli \
+ cduce/ocamlduce.cmxa cduce/ocamlduce.o cduce_types.o cduce/ocamlduce.a 
+
+INSTALL_BINARIES= \
+ ocamlducec ocamlduce ocamlducedep ocamlducedoc \
+ ocamlduceopt ocamlducec.opt ocamlduceopt.opt ocamlducedep.opt ocamlducedoc.opt
+
+INSTALL_DOC_FILES= \
+ README LICENSE htdoc
 
 install: FORCE META
-	ocamlfind install ocamlduce META $(wildcard $(INSTALL_FILES))
+	for i in $(INSTALL_BINARIES); do \
+	  cp $$i $(BINDIR)/; \
+	done
+	ocamlfind install ocamlduce META $(wildcard $(INSTALL_LIB_FILES))
 
 uninstall: FORCE
+	for i in $(INSTALL_BINARIES); do \
+	  rm $(BINDIR)/$$i; \
+	done
 	ocamlfind remove ocamlduce
 
 META: META.in
