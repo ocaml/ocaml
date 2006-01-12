@@ -1089,11 +1089,11 @@ let make_lexer () =
   let id_table = Hashtbl.create 301 in
   let glexr =
     ref
-      {tok_func = (fun _ -> raise (Match_failure ("", 774, 17)));
-       tok_using = (fun _ -> raise (Match_failure ("", 774, 37)));
-       tok_removing = (fun _ -> raise (Match_failure ("", 774, 60)));
-       tok_match = (fun _ -> raise (Match_failure ("", 775, 18)));
-       tok_text = (fun _ -> raise (Match_failure ("", 775, 37)));
+      {tok_func = (fun _ -> raise (Match_failure ("plexer.ml", 774, 17)));
+       tok_using = (fun _ -> raise (Match_failure ("plexer.ml", 774, 37)));
+       tok_removing = (fun _ -> raise (Match_failure ("plexer.ml", 774, 60)));
+       tok_match = (fun _ -> raise (Match_failure ("plexer.ml", 775, 18)));
+       tok_text = (fun _ -> raise (Match_failure ("plexer.ml", 775, 37)));
        tok_comm = None}
   in
   let (f, pos) = func kwd_table glexr in
@@ -1125,11 +1125,11 @@ let make () =
   let id_table = Hashtbl.create 301 in
   let glexr =
     ref
-      {tok_func = (fun _ -> raise (Match_failure ("", 808, 17)));
-       tok_using = (fun _ -> raise (Match_failure ("", 808, 37)));
-       tok_removing = (fun _ -> raise (Match_failure ("", 808, 60)));
-       tok_match = (fun _ -> raise (Match_failure ("", 809, 18)));
-       tok_text = (fun _ -> raise (Match_failure ("", 809, 37)));
+      {tok_func = (fun _ -> raise (Match_failure ("plexer.ml", 808, 17)));
+       tok_using = (fun _ -> raise (Match_failure ("plexer.ml", 808, 37)));
+       tok_removing = (fun _ -> raise (Match_failure ("plexer.ml", 808, 60)));
+       tok_match = (fun _ -> raise (Match_failure ("plexer.ml", 809, 18)));
+       tok_text = (fun _ -> raise (Match_failure ("plexer.ml", 809, 37)));
        tok_comm = None}
   in
   {func = fst (func kwd_table glexr); using = using_token kwd_table id_table;

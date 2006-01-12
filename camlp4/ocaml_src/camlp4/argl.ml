@@ -137,6 +137,8 @@ let print_warning loc s = print_location loc; eprintf "%s\n" s;;
 
 let rec parse_file pa getdir useast =
   let name = !(Pcaml.input_file) in
+  let (_, _, fname) = !(Pcaml.position) in
+  let () = fname := name in
   Pcaml.warning := print_warning;
   let ic = if name = "-" then stdin else open_in_bin name in
   let cs = Stream.of_channel ic in
