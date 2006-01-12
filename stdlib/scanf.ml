@@ -958,17 +958,22 @@ let kscanf ib ef fmt f =
     | 'B' | 'b' ->
         let _x = scan_bool max ib in
         scan_fmt (stack f (token_bool ib)) (i + 1)
-    | 'l' | 'n' | 'L' as typ ->
+    | 'l' | 'n' | 'L' as conv ->
         let i = i + 1 in
-        if i > lim then scan_fmt (stack f (get_count typ ib)) i else begin
+        if i > lim then scan_fmt (stack f (get_count conv ib)) i else begin
         match fmt.[i] with
+        (* This is in fact an integer conversion (e.g. %ld, %ni, or %Lo). *)
         | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv ->
             let _x = scan_int_conv conv max ib in
-            begin match typ with
+            (* Look back to the character that triggered the integer conversion
+               (this character is either 'l', 'n' or 'L'), to find the
+               conversion to apply to the integer token read. *)
+            begin match fmt.[i - 1] with
             | 'l' -> scan_fmt (stack f (token_int32 conv ib)) (i + 1)
             | 'n' -> scan_fmt (stack f (token_nativeint conv ib)) (i + 1)
             | _ -> scan_fmt (stack f (token_int64 conv ib)) (i + 1) end
-        | _ -> scan_fmt (stack f (get_count typ ib)) i end
+        (* This is not an integer conversion, but a regular %l, %n or %L. *)
+        | _ -> scan_fmt (stack f (get_count conv ib)) i end
     | 'N' as conv ->
         scan_fmt (stack f (get_count conv ib)) (i + 1)
     | '!' ->
@@ -1037,10 +1042,6 @@ let bscanf_format ib fmt f =
   let fresh_fmt1 = String.copy fmt1 in
   f (string_to_format fresh_fmt1);;
 
-let sscanf_format s fmt =
-  let fmt = format_to_string fmt in
-  let fmt1 = s in
-  if not (compatible_format_type fmt1 fmt) then
-    bad_input (format_mismatch_err fmt1 fmt) else
-  let fresh_fmt1 = String.copy fmt1 in
-  string_to_format fresh_fmt1;;
+let sscanf_format s fmt f = bscanf_format (Scanning.from_string s) fmt f;;
+
+let scan_format s fmt = sscanf_format s fmt (fun x -> x);;

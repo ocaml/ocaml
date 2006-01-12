@@ -258,7 +258,6 @@ val kscanf :
 val bscanf_format :
   Scanning.scanbuf -> ('a, 'b, 'c, 'd) format4 ->
     (('a, 'b, 'c, 'd) format4 -> 'e) -> 'e;;
-
 (** [bscanf_format ib fmt f] reads a format string token in buffer [ib],
   according to the format string [fmt], and applies the function [f] to the
   resulting format string value.
@@ -266,6 +265,11 @@ val bscanf_format :
   as [fmt]. *)
 
 val sscanf_format :
+  string -> ('a, 'b, 'c, 'd) format4 ->
+    (('a, 'b, 'c, 'd) format4 -> 'e) -> 'e;;
+(** Same as {!Scanf.bscanf}, but inputs from the given string. *)
+
+val scan_format :
   string -> ('a, 'b, 'c, 'd) format4 -> ('a, 'b, 'c, 'd) format4;;
-(** Same as {!Scanf.bscanf_format}, but converts the given string to a format
+(** Same as {!Scanf.sscanf_format}, but converts the given string to a format
   string. *)
