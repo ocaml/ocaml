@@ -27,7 +27,7 @@ type 'a channel
 val new_channel : unit -> 'a channel
 (** Return a new channel. *)
 
-type 'a event
+type +'a event
 (** The type of communication events returning a result of type ['a]. *)
 
 (** [send ch v] returns the event consisting in sending the value [v]
