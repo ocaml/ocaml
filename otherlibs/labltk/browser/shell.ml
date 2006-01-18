@@ -152,7 +152,7 @@ object (self)
     if reading then reading <- false
     else Text.mark_set textw ~mark:"input"
         ~index:(`Mark"insert",[`Linestart;`Char 1]);
-    Text.mark_set textw ~mark:"insert"~index:(`Mark"insert",[`Line 1]);
+    Text.mark_set textw ~mark:"insert" ~index:(`Mark"insert",[`Lineend]);
     self#lex ~start:(`Mark"input",[`Linestart]) ();
     let s =
       (* input is one character before real input *)
