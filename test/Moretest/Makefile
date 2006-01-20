@@ -112,16 +112,24 @@ intext.byt: intext.cmo intextaux.o
 intext.out: intext.cmx intextaux.o
 	${CAMLOPT} -o intext.out intext.cmx intextaux.o
 
-tscanf.byt: tscanf.cmo
-	${CAMLC} -o tscanf.byt tscanf.cmo
-tscanf.out: tscanf.cmx
-	${CAMLOPT} -o tscanf.out tscanf.cmx
+tprintf.byt: testing.cmo tprintf.cmo
+	${CAMLC} -o tprintf.byt testing.cmo tprintf.cmo
+tprintf.out: testing.cmx tprintf.cmx
+	${CAMLOPT} -o tprintf.out testing.cmx tprintf.cmx
+
+printf: tprintf.byt tprintf.out
+	./tprintf.byt
+	./tprintf.out
+
+tscanf.byt: testing.cmo tscanf.cmo
+	${CAMLC} -o tscanf.byt testing.cmo tscanf.cmo
+tscanf.out: testing.cmx tscanf.cmx
+	${CAMLOPT} -o tscanf.out testing.cmx tscanf.cmx
 
 tscanf2.byt: tscanf2_io.cmo tscanf2_slave.cmo tscanf2_master.cmo
 	${CAMLC} -o tscanf2_slave.byt tscanf2_io.cmo tscanf2_slave.cmo
 	${CAMLC} -o tscanf2_master.byt unix.cma \
 		tscanf2_io.cmo tscanf2_master.cmo
-
 tscanf2.out: tscanf2_io.cmx tscanf2_slave.cmx tscanf2_master.cmx
 	${CAMLOPT} -o tscanf2_slave.out tscanf2_io.cmx tscanf2_slave.cmx
 	${CAMLOPT} -o tscanf2_master.out unix.cmxa \
@@ -188,8 +196,7 @@ clean::
 
 # Dependencies
 
-depend:
-	$(CAMLDEP) *.mli *.ml > .depend
+#depend:
+#	$(CAMLDEP) *.mli *.ml > .depend
 
 include .depend
-
