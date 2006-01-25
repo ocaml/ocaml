@@ -67,7 +67,7 @@ let _ =
 
   let path = ref [] in
   let st = ref true in
-  (*let spec =
+  let spec =
     [ "-I", Arg.String (fun s -> path := s :: !path),
       "<dir>  Add <dir> to the list of include directories";
       "-labels", Arg.Clear Clflags.classic, " <obsolete>";
@@ -100,7 +100,7 @@ let _ =
   if not (check ~spec Sys.argv) then fatal_error (usage ~spec errmsg);
   Arg.parse spec
     (fun name -> raise(Arg.Bad("don't know what to do with " ^ name)))
-    errmsg;*)
+    errmsg;
   Config.load_path :=
     Sys.getcwd ()
     :: List.rev_map ~f:(Misc.expand_directory Config.standard_library) !path
