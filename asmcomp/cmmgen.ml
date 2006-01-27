@@ -615,21 +615,21 @@ let simplif_primitive_32bits = function
   | Pbintcomp(Pint64, Lambda.Cle) -> Pccall (default_prim "caml_lessequal")
   | Pbintcomp(Pint64, Lambda.Cge) -> Pccall (default_prim "caml_greaterequal")
   | Pbigarrayref(n, Pbigarray_int64, layout) ->
-      Pccall (default_prim ("bigarray_get_" ^ string_of_int n))
+      Pccall (default_prim ("caml_ba_get_" ^ string_of_int n))
   | Pbigarrayset(n, Pbigarray_int64, layout) ->
-      Pccall (default_prim ("bigarray_set_" ^ string_of_int n))
+      Pccall (default_prim ("caml_ba_set_" ^ string_of_int n))
   | p -> p
 
 let simplif_primitive p =
   match p with
     Pbigarrayref(n, Pbigarray_unknown, layout) ->
-      Pccall (default_prim ("bigarray_get_" ^ string_of_int n))
+      Pccall (default_prim ("caml_ba_get_" ^ string_of_int n))
   | Pbigarrayset(n, Pbigarray_unknown, layout) ->
-      Pccall (default_prim ("bigarray_set_" ^ string_of_int n))
+      Pccall (default_prim ("caml_ba_set_" ^ string_of_int n))
   | Pbigarrayref(n, kind, Pbigarray_unknown_layout) ->
-      Pccall (default_prim ("bigarray_get_" ^ string_of_int n))
+      Pccall (default_prim ("caml_ba_get_" ^ string_of_int n))
   | Pbigarrayset(n, kind, Pbigarray_unknown_layout) ->
-      Pccall (default_prim ("bigarray_set_" ^ string_of_int n))
+      Pccall (default_prim ("caml_ba_set_" ^ string_of_int n))
   | p ->
       if size_int = 8 then p else simplif_primitive_32bits p
 

@@ -26,12 +26,12 @@
 
 /* TODO: handle mappings larger than 2^32 bytes on Win64 */
 
-extern int bigarray_element_size[];  /* from bigarray_stubs.c */
+extern int caml_ba_element_size[];  /* from bigarray_stubs.c */
 
-static void bigarray_sys_error(void);
+static void caml_ba_sys_error(void);
 
-CAMLprim value bigarray_map_file(value vfd, value vkind, value vlayout,
-                                 value vshared, value vdim)
+CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
+                                value vshared, value vdim)
 {
   HANDLE fd, fmap;
   int flags, major_dim, mode, perm;
@@ -95,16 +95,16 @@ CAMLprim value bigarray_map_file(value vfd, value vkind, value vlayout,
   return alloc_bigarray(flags | BIGARRAY_MAPPED_FILE, num_dims, addr, dim);
 }
 
-void bigarray_unmap_file(void * addr, uintnat len)
+void caml_ba_unmap_file(void * addr, uintnat len)
 {
   UnmapViewOfFile(addr);
 }
 
-static void bigarray_sys_error(void)
+static void caml_ba_sys_error(void)
 {
   char buffer[512];
   DWORD errnum;
-  
+
   errnum = GetLastError();
   if (!FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS,
                      NULL,

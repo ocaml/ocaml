@@ -250,12 +250,12 @@ let primitives_table = create_hashtable 57 [
   "%int64_to_int32", Pcvtbint(Pint64, Pint32);
   "%int64_of_nativeint", Pcvtbint(Pnativeint, Pint64);
   "%int64_to_nativeint", Pcvtbint(Pint64, Pnativeint);
-  "%bigarray_ref_1", Pbigarrayref(1, Pbigarray_unknown, Pbigarray_c_layout);
-  "%bigarray_ref_2", Pbigarrayref(2, Pbigarray_unknown, Pbigarray_c_layout);
-  "%bigarray_ref_3", Pbigarrayref(3, Pbigarray_unknown, Pbigarray_c_layout);
-  "%bigarray_set_1", Pbigarrayset(1, Pbigarray_unknown, Pbigarray_c_layout);
-  "%bigarray_set_2", Pbigarrayset(2, Pbigarray_unknown, Pbigarray_c_layout);
-  "%bigarray_set_3", Pbigarrayset(3, Pbigarray_unknown, Pbigarray_c_layout)
+  "%caml_ba_ref_1", Pbigarrayref(1, Pbigarray_unknown, Pbigarray_c_layout);
+  "%caml_ba_ref_2", Pbigarrayref(2, Pbigarray_unknown, Pbigarray_c_layout);
+  "%caml_ba_ref_3", Pbigarrayref(3, Pbigarray_unknown, Pbigarray_c_layout);
+  "%caml_ba_set_1", Pbigarrayset(1, Pbigarray_unknown, Pbigarray_c_layout);
+  "%caml_ba_set_2", Pbigarrayset(2, Pbigarray_unknown, Pbigarray_c_layout);
+  "%caml_ba_set_3", Pbigarrayset(3, Pbigarray_unknown, Pbigarray_c_layout)
 ]
 
 let prim_makearray =
