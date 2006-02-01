@@ -351,24 +351,26 @@ have type "unit"), and that are not functions (covered by warning "F").
 \item["V"/"v"] enable/disable warnings for hidden instance variables.
 \item["Y"/"y"] enable/disable warnings for unused variables bound with the
 "let" or "as" keywords and that don't start with an underscore.
-\item["Z"/"z"] enable/disable warnings for all unused variables that don't
-start with an underscore.
-\item["X"/"x"] enable/disable all other warnings.
+\item["Z"/"z"] enable/disable warnings for all other unused variables
+that don't start with an underscore.
+\item["X"/"x"] enable/disable warnings that don't fit in the above
+categories.
 \end{options}
-The default setting is "-w Aelyz" (all warnings enabled except fragile
-matchings, omitted labels, unused variables). Warnings "F" and "S"
+The default setting is "-w Aelz" (all warnings enabled except fragile
+matchings, omitted labels, non-suspicious unused variables).
+Warnings "F" and "S"
 rely on the type system, thus they are not triggered when the
 type of the statement is unknown.
 
 \item["-warn-error" \var{warning-list}]
 Turn the warnings indicated in the argument \var{warning-list} into
-errors.  The compiler will stop on an error as soon as one of these
-warnings is emitted, instead of going on.  The \var{warning-list}
+errors.  The compiler will stop with an error when one of these
+warnings is emitted.  The \var{warning-list}
 is a string of one or several characters, with the same meaning as for
 the "-w" option: an uppercase character turns the corresponding
 warning into an error, a lowercase character leaves it as a warning.
-The default setting is "-warn-error a" (all warnings are not treated
-as errors).
+The default setting is "-warn-error a" (none of the warnings is treated
+as an error).
 
 \item["-where"]
 Print the location of the standard library, then exit.
