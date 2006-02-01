@@ -28,8 +28,8 @@ Identifiers are sequences of letters, digits, "_" (the underscore
 character), and "'" (the single quote), starting with a
 letter or an underscore.
 Letters contain at least the 52 lowercase and uppercase
-letters from the ASCII set. The current implementation (except on
-MacOS 9) also recognizes as letters all accented characters from the ISO
+letters from the ASCII set. The current implementation
+also recognizes as letters all accented characters from the ISO
 8859-1 (``ISO Latin 1'') set. All characters in an identifier are
 meaningful. The current implementation accepts identifiers up to
 16000000 characters in length.
