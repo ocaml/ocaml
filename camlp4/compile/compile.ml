@@ -267,7 +267,7 @@ and parse_symbol entry nlevn s rkont fkont ending_act =
           if fst tok = "ANY" then <:patt< (_, $patt$) >>
           else <:patt< ($str:p_con$, $patt$) >>
         else
-          let p = <:patt< ($str:p_con$, $str:p_prm$) >> in
+          let _p = <:patt< ($str:p_con$, $str:p_prm$) >> in
           match patt with
           [ <:patt< _ >> -> <:patt< ($str:p_con$, $str:p_prm$) >>
           | _ -> <:patt< ($str:p_con$, ($str:p_prm$ as $patt$)) >> ]

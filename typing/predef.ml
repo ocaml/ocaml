@@ -161,7 +161,7 @@ let build_initial_env add_type add_exception empty_env =
      type_arity = 1;
      type_kind = Type_abstract;
      type_manifest = None;
-     type_variance = [true, false, false]}
+     type_variance = [false, false, true]}
   in
 
   add_exception ident_match_failure
