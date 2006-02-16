@@ -3,7 +3,7 @@
 \newcommand{\nextline}{\ }
 \newcommand{\@zyva}{\firstline\renewcommand{\?}{\nextline}}
 \newenvironment{camlunder}{\@style{U}}{}
-\newcommand{\caml}{\begin{alltt}\renewcommand{\\}{\char92}\def\<{\begin{camlunder}}\renewcommand{\>}{\end{camlunder}}\activebracefalse}
+\newcommand{\caml}{\begin{alltt}\renewcommand{\\}{\char92}\def\<{\begin{camlunder}}\def\>{\end{camlunder}}\activebracefalse}
 \let\?=\@zyva
 \newcommand{\endcaml}{\activebracetrue\end{alltt}}
 \renewcommand{\:}{\renewcommand{\?}{\@zyva}\maroon}
