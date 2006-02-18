@@ -774,8 +774,9 @@ let rec approx_type env sty =
       newty (Ttuple (List.map (approx_type env) args))
   | Ptyp_constr (lid, ctl) ->
       begin try
+        let (path, decl) = Env.lookup_type lid env in
+        if List.length ctl <> decl.type_arity then raise Not_found;
         let tyl = List.map (approx_type env) ctl in
-        let (path, _) = Env.lookup_type lid env in
         newconstr path tyl
       with Not_found -> newvar ()
       end
