@@ -147,7 +147,8 @@ let message = function
   | Not_principal s -> s^" is not principal."
   | Without_principality s -> s^" without principality."
   | Unused_argument -> "this argument will not be used by the function."
-  | Nonreturning_statement -> "this statement never returns."
+  | Nonreturning_statement ->
+      "this statement never returns (or has an unsound type.)"
   | Camlp4 s -> s
   | All_clauses_guarded ->
       "bad style, all clauses in this pattern-matching are guarded."
