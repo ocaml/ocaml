@@ -1785,11 +1785,11 @@ and type_expect ?in_function env sexp ty_expected =
       let cases, partial =
         type_cases ~in_function:(loc,ty_fun) env ty_arg ty_res
           (Some sexp.pexp_loc) caselist in
-      let all_labeled ty =
+      let not_function ty =
         let ls, tvar = list_labels env ty in
-        not (tvar || List.exists (fun l -> l = "" || l.[0] = '?') ls)
+        ls = [] && not tvar
       in
-      if is_optional l && all_labeled ty_res then
+      if is_optional l && not_function ty_res then
         Location.prerr_warning (fst (List.hd cases)).pat_loc
           Warnings.Unerasable_optional_argument;
       re {
