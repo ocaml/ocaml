@@ -76,46 +76,6 @@ let size_expr env exp =
         fatal_error "Selection.size_expr"
   in size Tbl.empty exp
 
-(* These are C library functions that are known to be pure
-   (no side effects at all) and worth not pre-computing. *)
-
-let pure_external_functions =
-  ["acos"; "asin"; "atan"; "atan2"; "cos"; "exp"; "log";
-   "log10"; "sin"; "sqrt"; "tan"]
-
-(* Says if an expression is "simple". A "simple" expression has no
-   side-effects and its execution can be delayed until its value
-   is really needed. In the case of e.g. an [alloc] instruction,
-   the non-simple arguments are computed in right-to-left order
-   first, then the block is allocated, then the simple arguments are
-   evaluated and stored. *)
-
-let rec is_simple_expr = function
-    Cconst_int _ -> true
-  | Cconst_natint _ -> true
-  | Cconst_float _ -> true
-  | Cconst_symbol _ -> true
-  | Cconst_pointer _ -> true
-  | Cconst_natpointer _ -> true
-  | Cvar _ -> true
-  | Ctuple el -> List.for_all is_simple_expr el
-  | Clet(id, arg, body) -> is_simple_expr arg && is_simple_expr body
-  | Csequence(e1, e2) -> is_simple_expr e1 && is_simple_expr e2
-  | Cop(op, args) ->
-      begin match op with
-        (* The following may have side effects *)
-      | Capply _ | Calloc | Cstore _ | Craise -> false
-        (* External C functions normally have side effects, unless known *)
-      | Cextcall(fn, _, alloc) ->
-          not alloc &&
-          List.mem fn pure_external_functions &&
-          List.for_all is_simple_expr args
-        (* The remaining operations are simple if their args are *)
-      | _ ->
-          List.for_all is_simple_expr args
-      end
-  | _ -> false
-
 (* Swap the two arguments of an integer comparison *)
 
 let swap_intcomp = function
@@ -200,6 +160,34 @@ let current_function_name = ref ""
 (* The default instruction selection class *)
 
 class virtual selector_generic = object (self)
+
+(* Says if an expression is "simple". A "simple" expression has no
+   side-effects and its execution can be delayed until its value
+   is really needed. In the case of e.g. an [alloc] instruction,
+   the non-simple arguments are computed in right-to-left order
+   first, then the block is allocated, then the simple arguments are
+   evaluated and stored. *)
+
+method is_simple_expr = function
+    Cconst_int _ -> true
+  | Cconst_natint _ -> true
+  | Cconst_float _ -> true
+  | Cconst_symbol _ -> true
+  | Cconst_pointer _ -> true
+  | Cconst_natpointer _ -> true
+  | Cvar _ -> true
+  | Ctuple el -> List.for_all self#is_simple_expr el
+  | Clet(id, arg, body) -> self#is_simple_expr arg && self#is_simple_expr body
+  | Csequence(e1, e2) -> self#is_simple_expr e1 && self#is_simple_expr e2
+  | Cop(op, args) ->
+      begin match op with
+        (* The following may have side effects *)
+      | Capply _ | Cextcall(_, _, _) | Calloc | Cstore _ | Craise -> false
+        (* The remaining operations are simple if their args are *)
+      | _ ->
+          List.for_all self#is_simple_expr args
+      end
+  | _ -> false
 
 (* Says whether an integer constant is a suitable immediate argument *)
 
@@ -591,7 +579,7 @@ method private bind_let env v r1 =
   end
 
 method private emit_parts env exp =
-  if is_simple_expr exp then
+  if self#is_simple_expr exp then
     Some (exp, env)
   else begin
     match self#emit_expr env exp with

@@ -28,6 +28,8 @@ class virtual selector_generic : object
   method virtual select_addressing :
     Cmm.expression -> Arch.addressing_mode * Cmm.expression
     (* Must be defined to select addressing modes *)
+  method is_simple_expr: Cmm.expression -> bool
+    (* Can be overriden to reflect special extcalls known to be pure *)
   method select_operation :
     Cmm.operation ->
     Cmm.expression list -> Mach.operation * Cmm.expression list

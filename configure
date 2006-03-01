@@ -575,6 +575,7 @@ case "$host" in
   i[3456]86-*-solaris*)         arch=i386; system=solaris;;
   i[3456]86-*-beos*)            arch=i386; system=beos;;
   i[3456]86-*-cygwin*)          arch=i386; system=cygwin;;
+  i[3456]86-*-darwin*)          arch=i386; system=macosx;;
   mips-*-irix6*)                arch=mips; system=irix;;
   hppa1.1-*-hpux*)              arch=hppa; system=hpux;;
   hppa2.0*-*-hpux*)             arch=hppa; system=hpux;;
