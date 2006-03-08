@@ -633,6 +633,7 @@ let transl_class ids cl_id arity pub_meths cl =
         begin try
           (* Doesn't seem to improve size for bytecode *)
           (* if not !Clflags.native_code then raise Not_found; *)
+          if !Clflags.debug then raise Not_found;
           builtin_meths arr [self] env env2 (lfunction args body')
         with Not_found ->
           [lfunction (self :: args)
