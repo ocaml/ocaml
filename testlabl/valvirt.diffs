@@ -4,7 +4,7 @@ RCS file: /net/yquem/devel/caml/repository/csl/utils/warnings.ml,v
 retrieving revision 1.23
 diff -u -r1.23 warnings.ml
 --- utils/warnings.ml	15 Sep 2005 03:09:26 -0000	1.23
-+++ utils/warnings.ml	9 Mar 2006 07:19:37 -0000
++++ utils/warnings.ml	10 Mar 2006 01:17:40 -0000
 @@ -26,7 +26,7 @@
    | Statement_type                   (* S *)
    | Unused_match                     (* U *)
@@ -42,7 +42,7 @@ RCS file: /net/yquem/devel/caml/repository/csl/utils/warnings.mli,v
 retrieving revision 1.16
 diff -u -r1.16 warnings.mli
 --- utils/warnings.mli	15 Sep 2005 03:09:26 -0000	1.16
-+++ utils/warnings.mli	9 Mar 2006 07:19:37 -0000
++++ utils/warnings.mli	10 Mar 2006 01:17:40 -0000
 @@ -26,7 +26,7 @@
    | Statement_type                   (* S *)
    | Unused_match                     (* U *)
@@ -58,7 +58,7 @@ RCS file: /net/yquem/devel/caml/repository/csl/parsing/parser.mly,v
 retrieving revision 1.123
 diff -u -r1.123 parser.mly
 --- parsing/parser.mly	23 Mar 2005 03:08:37 -0000	1.123
-+++ parsing/parser.mly	9 Mar 2006 07:19:37 -0000
++++ parsing/parser.mly	10 Mar 2006 01:17:40 -0000
 @@ -623,6 +623,8 @@
        { [] }
    | class_fields INHERIT class_expr parent_binder
@@ -116,7 +116,7 @@ RCS file: /net/yquem/devel/caml/repository/csl/parsing/parsetree.mli,v
 retrieving revision 1.42
 diff -u -r1.42 parsetree.mli
 --- parsing/parsetree.mli	23 Mar 2005 03:08:37 -0000	1.42
-+++ parsing/parsetree.mli	9 Mar 2006 07:19:37 -0000
++++ parsing/parsetree.mli	10 Mar 2006 01:17:40 -0000
 @@ -152,7 +152,7 @@
  
  and class_type_field =
@@ -140,7 +140,7 @@ RCS file: /net/yquem/devel/caml/repository/csl/parsing/printast.ml,v
 retrieving revision 1.29
 diff -u -r1.29 printast.ml
 --- parsing/printast.ml	4 Jan 2006 16:55:50 -0000	1.29
-+++ parsing/printast.ml	9 Mar 2006 07:19:37 -0000
++++ parsing/printast.ml	10 Mar 2006 01:17:40 -0000
 @@ -353,10 +353,11 @@
    | Pctf_inher (ct) ->
        line i ppf "Pctf_inher\n";
@@ -173,7 +173,7 @@ RCS file: /net/yquem/devel/caml/repository/csl/typing/btype.ml,v
 retrieving revision 1.38
 diff -u -r1.38 btype.ml
 --- typing/btype.ml	4 Jan 2006 16:55:50 -0000	1.38
-+++ typing/btype.ml	9 Mar 2006 07:19:37 -0000
++++ typing/btype.ml	10 Mar 2006 01:17:40 -0000
 @@ -330,7 +330,7 @@
  
  let unmark_class_signature sign =
@@ -189,7 +189,7 @@ RCS file: /net/yquem/devel/caml/repository/csl/typing/ctype.ml,v
 retrieving revision 1.200
 diff -u -r1.200 ctype.ml
 --- typing/ctype.ml	6 Jan 2006 02:16:24 -0000	1.200
-+++ typing/ctype.ml	9 Mar 2006 07:19:38 -0000
++++ typing/ctype.ml	10 Mar 2006 01:17:41 -0000
 @@ -857,7 +857,7 @@
          Tcty_signature
            {cty_self = copy sign.cty_self;
@@ -199,7 +199,7 @@ diff -u -r1.200 ctype.ml
             cty_concr = sign.cty_concr;
             cty_inher =
               List.map (fun (p,tl) -> (p, List.map copy tl)) sign.cty_inher}
-@@ -2354,6 +2354,7 @@
+@@ -2354,10 +2354,11 @@
    | CM_Val_type_mismatch of string * (type_expr * type_expr) list
    | CM_Meth_type_mismatch of string * (type_expr * type_expr) list
    | CM_Non_mutable_value of string
@@ -207,6 +207,11 @@ diff -u -r1.200 ctype.ml
    | CM_Missing_value of string
    | CM_Missing_method of string
    | CM_Hide_public of string
+-  | CM_Hide_virtual of string
++  | CM_Hide_virtual of string * string
+   | CM_Public_method of string
+   | CM_Private_method of string
+   | CM_Virtual_method of string
 @@ -2390,8 +2391,8 @@
             end)
          pairs;
@@ -218,6 +223,15 @@ diff -u -r1.200 ctype.ml
             try moregen true type_pairs env ty' ty with Unify trace ->
               raise (Failure [CM_Val_type_mismatch
                                  (lab, expand_trace env trace)]))
+@@ -2437,7 +2438,7 @@
+              end
+            in
+            if Concr.mem lab sign1.cty_concr then err
+-           else CM_Hide_virtual lab::err)
++           else CM_Hide_virtual ("method", lab) :: err)
+         miss1 []
+     in
+     let missing_method = List.map (fun (m, _, _) -> m) miss2 in
 @@ -2455,11 +2456,13 @@
      in
      let error =
@@ -234,7 +248,22 @@ diff -u -r1.200 ctype.ml
              else
                err
            with Not_found ->
-@@ -2516,8 +2519,8 @@
+@@ -2467,6 +2470,14 @@
+         sign2.cty_vars error
+     in
+     let error =
++      Vars.fold
++        (fun lab (_,vr,_) err ->
++          if vr = Virtual && not (Vars.mem lab sign2.cty_vars) then
++            CM_Hide_virtual ("instance variable", lab) :: err
++          else err)
++        sign1.cty_vars error
++    in
++    let error =
+       List.fold_right
+         (fun e l ->
+            if List.mem e missing_method then l else CM_Virtual_method e::l)
+@@ -2516,8 +2527,8 @@
               end)
            pairs;
          Vars.iter
@@ -245,7 +274,16 @@ diff -u -r1.200 ctype.ml
               try eqtype true type_pairs subst env ty ty' with Unify trace ->
                 raise (Failure [CM_Val_type_mismatch
                                    (lab, expand_trace env trace)]))
-@@ -2578,11 +2581,13 @@
+@@ -2554,7 +2565,7 @@
+           end
+         in
+         if Concr.mem lab sign1.cty_concr then err
+-        else CM_Hide_virtual lab::err)
++        else CM_Hide_virtual ("method", lab) :: err)
+       miss1 []
+   in
+   let missing_method = List.map (fun (m, _, _) -> m) miss2 in
+@@ -2578,11 +2589,13 @@
    in
    let error =
      Vars.fold
@@ -261,7 +299,22 @@ diff -u -r1.200 ctype.ml
             else
               err
           with Not_found ->
-@@ -3279,7 +3284,7 @@
+@@ -2590,6 +2603,14 @@
+       sign2.cty_vars error
+   in
+   let error =
++    Vars.fold
++      (fun lab (_,vr,_) err ->
++        if vr = Virtual && not (Vars.mem lab sign2.cty_vars) then
++          CM_Hide_virtual ("instance variable", lab) :: err
++        else err)
++      sign1.cty_vars error
++  in
++  let error =
+     List.fold_right
+       (fun e l ->
+         if List.mem e missing_method then l else CM_Virtual_method e::l)
+@@ -3279,7 +3300,7 @@
  let nondep_class_signature env id sign =
    { cty_self = nondep_type_rec env id sign.cty_self;
      cty_vars =
@@ -276,8 +329,8 @@ RCS file: /net/yquem/devel/caml/repository/csl/typing/ctype.mli,v
 retrieving revision 1.53
 diff -u -r1.53 ctype.mli
 --- typing/ctype.mli	9 Dec 2004 12:40:53 -0000	1.53
-+++ typing/ctype.mli	9 Mar 2006 07:19:38 -0000
-@@ -170,6 +170,7 @@
++++ typing/ctype.mli	10 Mar 2006 01:17:41 -0000
+@@ -170,10 +170,11 @@
    | CM_Val_type_mismatch of string * (type_expr * type_expr) list
    | CM_Meth_type_mismatch of string * (type_expr * type_expr) list
    | CM_Non_mutable_value of string
@@ -285,14 +338,19 @@ diff -u -r1.53 ctype.mli
    | CM_Missing_value of string
    | CM_Missing_method of string
    | CM_Hide_public of string
+-  | CM_Hide_virtual of string
++  | CM_Hide_virtual of string * string
+   | CM_Public_method of string
+   | CM_Private_method of string
+   | CM_Virtual_method of string
 Index: typing/includeclass.ml
 ===================================================================
 RCS file: /net/yquem/devel/caml/repository/csl/typing/includeclass.ml,v
 retrieving revision 1.7
 diff -u -r1.7 includeclass.ml
 --- typing/includeclass.ml	6 Mar 2000 22:11:57 -0000	1.7
-+++ typing/includeclass.ml	9 Mar 2006 07:19:38 -0000
-@@ -78,6 +78,9 @@
++++ typing/includeclass.ml	10 Mar 2006 01:17:41 -0000
+@@ -78,14 +78,17 @@
    | CM_Non_mutable_value lab ->
        fprintf ppf
         "@[The non-mutable instance variable %s cannot become mutable@]" lab
@@ -302,13 +360,23 @@ diff -u -r1.7 includeclass.ml
    | CM_Missing_value lab ->
        fprintf ppf "@[The first class type has no instance variable %s@]" lab
    | CM_Missing_method lab ->
+       fprintf ppf "@[The first class type has no method %s@]" lab
+   | CM_Hide_public lab ->
+      fprintf ppf "@[The public method %s cannot be hidden@]" lab
+-  | CM_Hide_virtual lab ->
+-      fprintf ppf "@[The virtual method %s cannot be hidden@]" lab
++  | CM_Hide_virtual (k, lab) ->
++      fprintf ppf "@[The virtual %s %s cannot be hidden@]" k lab
+   | CM_Public_method lab ->
+       fprintf ppf "@[The public method %s cannot become private" lab
+   | CM_Virtual_method lab ->
 Index: typing/oprint.ml
 ===================================================================
 RCS file: /net/yquem/devel/caml/repository/csl/typing/oprint.ml,v
 retrieving revision 1.22
 diff -u -r1.22 oprint.ml
 --- typing/oprint.ml	23 Mar 2005 03:08:37 -0000	1.22
-+++ typing/oprint.ml	9 Mar 2006 07:19:38 -0000
++++ typing/oprint.ml	10 Mar 2006 01:17:41 -0000
 @@ -291,8 +291,10 @@
        fprintf ppf "@[<2>method %s%s%s :@ %a@]"
          (if priv then "private " else "") (if virt then "virtual " else "")
@@ -328,7 +396,7 @@ RCS file: /net/yquem/devel/caml/repository/csl/typing/outcometree.mli,v
 retrieving revision 1.14
 diff -u -r1.14 outcometree.mli
 --- typing/outcometree.mli	23 Mar 2005 03:08:37 -0000	1.14
-+++ typing/outcometree.mli	9 Mar 2006 07:19:38 -0000
++++ typing/outcometree.mli	10 Mar 2006 01:17:41 -0000
 @@ -71,7 +71,7 @@
  and out_class_sig_item =
    | Ocsg_constraint of out_type * out_type
@@ -344,7 +412,7 @@ RCS file: /net/yquem/devel/caml/repository/csl/typing/printtyp.ml,v
 retrieving revision 1.140
 diff -u -r1.140 printtyp.ml
 --- typing/printtyp.ml	4 Jan 2006 16:55:50 -0000	1.140
-+++ typing/printtyp.ml	9 Mar 2006 07:19:38 -0000
++++ typing/printtyp.ml	10 Mar 2006 01:17:41 -0000
 @@ -650,7 +650,7 @@
          Ctype.flatten_fields (Ctype.object_fields sign.cty_self)
        in
@@ -373,13 +441,24 @@ diff -u -r1.140 printtyp.ml
            csil all_vars
        in
        let csil =
+@@ -763,7 +765,9 @@
+     List.exists
+       (fun (lab, _, ty) ->
+          not (lab = dummy_method || Concr.mem lab sign.cty_concr))
+-      fields in
++      fields
++    || Vars.fold (fun _ (_,vr,_) b -> vr = Virtual || b) sign.cty_vars false
++  in
+ 
+   Osig_class_type
+     (virt, Ident.name id,
 Index: typing/subst.ml
 ===================================================================
 RCS file: /net/yquem/devel/caml/repository/csl/typing/subst.ml,v
 retrieving revision 1.49
 diff -u -r1.49 subst.ml
 --- typing/subst.ml	4 Jan 2006 16:55:50 -0000	1.49
-+++ typing/subst.ml	9 Mar 2006 07:19:38 -0000
++++ typing/subst.ml	10 Mar 2006 01:17:41 -0000
 @@ -178,7 +178,8 @@
  
  let class_signature s sign =
@@ -396,7 +475,7 @@ RCS file: /net/yquem/devel/caml/repository/csl/typing/typeclass.ml,v
 retrieving revision 1.85
 diff -u -r1.85 typeclass.ml
 --- typing/typeclass.ml	22 Jul 2005 06:42:36 -0000	1.85
-+++ typing/typeclass.ml	9 Mar 2006 07:19:38 -0000
++++ typing/typeclass.ml	10 Mar 2006 01:17:41 -0000
 @@ -24,7 +24,7 @@
  
  type error =
@@ -789,7 +868,7 @@ RCS file: /net/yquem/devel/caml/repository/csl/typing/typeclass.mli,v
 retrieving revision 1.18
 diff -u -r1.18 typeclass.mli
 --- typing/typeclass.mli	1 Dec 2003 00:32:11 -0000	1.18
-+++ typing/typeclass.mli	9 Mar 2006 07:19:38 -0000
++++ typing/typeclass.mli	10 Mar 2006 01:17:41 -0000
 @@ -49,7 +49,7 @@
  
  type error =
@@ -822,7 +901,7 @@ RCS file: /net/yquem/devel/caml/repository/csl/typing/typecore.ml,v
 retrieving revision 1.178
 diff -u -r1.178 typecore.ml
 --- typing/typecore.ml	6 Jan 2006 02:25:37 -0000	1.178
-+++ typing/typecore.ml	9 Mar 2006 07:19:38 -0000
++++ typing/typecore.ml	10 Mar 2006 01:17:42 -0000
 @@ -611,11 +611,11 @@
        List.for_all
          (function
@@ -852,7 +931,7 @@ RCS file: /net/yquem/devel/caml/repository/csl/typing/typecore.mli,v
 retrieving revision 1.37
 diff -u -r1.37 typecore.mli
 --- typing/typecore.mli	4 Mar 2005 14:51:31 -0000	1.37
-+++ typing/typecore.mli	9 Mar 2006 07:19:38 -0000
++++ typing/typecore.mli	10 Mar 2006 01:17:42 -0000
 @@ -38,7 +38,8 @@
          string -> type_expr -> Env.t -> Env.t -> Env.t -> Parsetree.pattern ->
          Typedtree.pattern *
@@ -869,7 +948,7 @@ RCS file: /net/yquem/devel/caml/repository/csl/typing/typedtree.ml,v
 retrieving revision 1.36
 diff -u -r1.36 typedtree.ml
 --- typing/typedtree.ml	25 Nov 2003 09:20:43 -0000	1.36
-+++ typing/typedtree.ml	9 Mar 2006 07:19:38 -0000
++++ typing/typedtree.ml	10 Mar 2006 01:17:42 -0000
 @@ -106,7 +106,7 @@
  
  and class_field =
@@ -879,13 +958,23 @@ diff -u -r1.36 typedtree.ml
    | Cf_meth of string * expression
    | Cf_let of rec_flag * (pattern * expression) list *
                (Ident.t * expression) list
+@@ -140,7 +140,8 @@
+   | Tstr_recmodule of (Ident.t * module_expr) list
+   | Tstr_modtype of Ident.t * module_type
+   | Tstr_open of Path.t
+-  | Tstr_class of (Ident.t * int * string list * class_expr) list
++  | Tstr_class of
++      (Ident.t * int * string list * class_expr * virtual_flag) list
+   | Tstr_cltype of (Ident.t * cltype_declaration) list
+   | Tstr_include of module_expr * Ident.t list
+ 
 Index: typing/typedtree.mli
 ===================================================================
 RCS file: /net/yquem/devel/caml/repository/csl/typing/typedtree.mli,v
 retrieving revision 1.34
 diff -u -r1.34 typedtree.mli
 --- typing/typedtree.mli	25 Nov 2003 09:20:43 -0000	1.34
-+++ typing/typedtree.mli	9 Mar 2006 07:19:38 -0000
++++ typing/typedtree.mli	10 Mar 2006 01:17:42 -0000
 @@ -107,7 +107,8 @@
  and class_field =
      Cf_inher of class_expr * (string * Ident.t) list * (string * Ident.t) list
@@ -896,13 +985,50 @@ diff -u -r1.34 typedtree.mli
    | Cf_meth of string * expression
    | Cf_let of rec_flag * (pattern * expression) list *
                (Ident.t * expression) list
+@@ -141,7 +142,8 @@
+   | Tstr_recmodule of (Ident.t * module_expr) list
+   | Tstr_modtype of Ident.t * module_type
+   | Tstr_open of Path.t
+-  | Tstr_class of (Ident.t * int * string list * class_expr) list
++  | Tstr_class of
++      (Ident.t * int * string list * class_expr * virtual_flag) list
+   | Tstr_cltype of (Ident.t * cltype_declaration) list
+   | Tstr_include of module_expr * Ident.t list
+ 
+Index: typing/typemod.ml
+===================================================================
+RCS file: /net/yquem/devel/caml/repository/csl/typing/typemod.ml,v
+retrieving revision 1.73
+diff -u -r1.73 typemod.ml
+--- typing/typemod.ml	8 Aug 2005 09:41:51 -0000	1.73
++++ typing/typemod.ml	10 Mar 2006 01:17:42 -0000
+@@ -17,6 +17,7 @@
+ open Misc
+ open Longident
+ open Path
++open Asttypes
+ open Parsetree
+ open Types
+ open Typedtree
+@@ -667,8 +668,9 @@
+         let (classes, new_env) = Typeclass.class_declarations env cl in
+         let (str_rem, sig_rem, final_env) = type_struct new_env srem in
+         (Tstr_class
+-           (List.map (fun (i, _,_,_,_,_,_,_, s, m, c) ->
+-              (i, s, m, c)) classes) ::
++           (List.map (fun (i, d, _,_,_,_,_,_, s, m, c) ->
++              let vf = if d.cty_new = None then Virtual else Concrete in
++              (i, s, m, c, vf)) classes) ::
+          Tstr_cltype
+            (List.map (fun (_,_, i, d, _,_,_,_,_,_,_) -> (i, d)) classes) ::
+          Tstr_type
 Index: typing/types.ml
 ===================================================================
 RCS file: /net/yquem/devel/caml/repository/csl/typing/types.ml,v
 retrieving revision 1.25
 diff -u -r1.25 types.ml
 --- typing/types.ml	9 Dec 2004 12:40:53 -0000	1.25
-+++ typing/types.ml	9 Mar 2006 07:19:38 -0000
++++ typing/types.ml	10 Mar 2006 01:17:42 -0000
 @@ -90,7 +90,8 @@
    | Val_prim of Primitive.description   (* Primitive *)
    | Val_ivar of mutable_flag * string   (* Instance variable (mutable ?) *)
@@ -929,7 +1055,7 @@ RCS file: /net/yquem/devel/caml/repository/csl/typing/types.mli,v
 retrieving revision 1.25
 diff -u -r1.25 types.mli
 --- typing/types.mli	9 Dec 2004 12:40:53 -0000	1.25
-+++ typing/types.mli	9 Mar 2006 07:19:38 -0000
++++ typing/types.mli	10 Mar 2006 01:17:42 -0000
 @@ -91,7 +91,8 @@
    | Val_prim of Primitive.description   (* Primitive *)
    | Val_ivar of mutable_flag * string   (* Instance variable (mutable ?) *)
@@ -956,7 +1082,7 @@ RCS file: /net/yquem/devel/caml/repository/csl/typing/unused_var.ml,v
 retrieving revision 1.5
 diff -u -r1.5 unused_var.ml
 --- typing/unused_var.ml	4 Jan 2006 16:55:50 -0000	1.5
-+++ typing/unused_var.ml	9 Mar 2006 07:19:38 -0000
++++ typing/unused_var.ml	10 Mar 2006 01:17:42 -0000
 @@ -245,7 +245,7 @@
    match cf with
    | Pcf_inher (ce, _) -> class_expr ppf tbl ce;
@@ -972,7 +1098,7 @@ RCS file: /net/yquem/devel/caml/repository/csl/bytecomp/translclass.ml,v
 retrieving revision 1.38
 diff -u -r1.38 translclass.ml
 --- bytecomp/translclass.ml	13 Aug 2005 20:59:37 -0000	1.38
-+++ bytecomp/translclass.ml	9 Mar 2006 07:19:38 -0000
++++ bytecomp/translclass.ml	10 Mar 2006 01:17:42 -0000
 @@ -133,10 +133,10 @@
                         (fun _ -> lambda_unit) cl
                     in
@@ -1063,13 +1189,129 @@ diff -u -r1.38 translclass.ml
        | _ ->
  	  let core cl_init =
              build_class_init cla true super inh_init cl_init msubst top cl
+@@ -592,7 +580,7 @@
+ *)
+ 
+ 
+-let transl_class ids cl_id arity pub_meths cl =
++let transl_class ids cl_id arity pub_meths cl vflag =
+   (* First check if it is not only a rebind *)
+   let rebind = transl_class_rebind ids cl in
+   if rebind <> lambda_unit then rebind else
+@@ -696,9 +684,7 @@
+   (* Simplest case: an object defined at toplevel (ids=[]) *)
+   if top && ids = [] then llets (ltable cla (ldirect obj_init)) else
+ 
+-  let concrete =
+-    ids = [] ||
+-    Typeclass.virtual_methods (Ctype.signature_of_class_type cl.cl_type) = []
++  let concrete = (vflag = Concrete)
+   and lclass lam =
+     let cl_init = llets (Lfunction(Curried, [cla], cl_init)) in
+     Llet(Strict, class_init, cl_init, lam (free_variables cl_init))
+@@ -800,11 +786,11 @@
+ 
+ (* Wrapper for class compilation *)
+ 
+-let transl_class ids cl_id arity pub_meths cl =
+-  oo_wrap cl.cl_env false (transl_class ids cl_id arity pub_meths) cl
++let transl_class ids cl_id arity pub_meths cl vf =
++  oo_wrap cl.cl_env false (transl_class ids cl_id arity pub_meths cl) vf
+ 
+ let () =
+-  transl_object := (fun id meths cl -> transl_class [] id 0 meths cl)
++  transl_object := (fun id meths cl -> transl_class [] id 0 meths cl Concrete)
+ 
+ (* Error report *)
+ 
+Index: bytecomp/translclass.mli
+===================================================================
+RCS file: /net/yquem/devel/caml/repository/csl/bytecomp/translclass.mli,v
+retrieving revision 1.11
+diff -u -r1.11 translclass.mli
+--- bytecomp/translclass.mli	12 Aug 2004 12:55:11 -0000	1.11
++++ bytecomp/translclass.mli	10 Mar 2006 01:17:42 -0000
+@@ -16,7 +16,8 @@
+ open Lambda
+ 
+ val transl_class :
+-  Ident.t list -> Ident.t -> int -> string list -> class_expr -> lambda;;
++  Ident.t list -> Ident.t ->
++  int -> string list -> class_expr -> Asttypes.virtual_flag -> lambda;;
+ 
+ type error = Illegal_class_expr | Tags of string * string
+ 
+Index: bytecomp/translmod.ml
+===================================================================
+RCS file: /net/yquem/devel/caml/repository/csl/bytecomp/translmod.ml,v
+retrieving revision 1.51
+diff -u -r1.51 translmod.ml
+--- bytecomp/translmod.ml	12 Aug 2004 12:55:11 -0000	1.51
++++ bytecomp/translmod.ml	10 Mar 2006 01:17:42 -0000
+@@ -317,10 +317,10 @@
+   | Tstr_open path :: rem ->
+       transl_structure fields cc rootpath rem
+   | Tstr_class cl_list :: rem ->
+-      let ids = List.map (fun (i, _, _, _) -> i) cl_list in
++      let ids = List.map (fun (i, _, _, _, _) -> i) cl_list in
+       Lletrec(List.map
+-                (fun (id, arity, meths, cl) ->
+-                  (id, transl_class ids id arity meths cl))
++                (fun (id, arity, meths, cl, vf) ->
++                  (id, transl_class ids id arity meths cl vf))
+                 cl_list,
+               transl_structure (List.rev ids @ fields) cc rootpath rem)
+   | Tstr_cltype cl_list :: rem ->
+@@ -414,11 +414,11 @@
+   | Tstr_open path :: rem ->
+       transl_store subst rem
+   | Tstr_class cl_list :: rem ->
+-      let ids = List.map (fun (i, _, _, _) -> i) cl_list in
++      let ids = List.map (fun (i, _, _, _, _) -> i) cl_list in
+       let lam =
+         Lletrec(List.map
+-                  (fun (id, arity, meths, cl) ->
+-                     (id, transl_class ids id arity meths cl))
++                  (fun (id, arity, meths, cl, vf) ->
++                     (id, transl_class ids id arity meths cl vf))
+                   cl_list,
+                 store_idents ids) in
+       Lsequence(subst_lambda subst lam,
+@@ -485,7 +485,7 @@
+   | Tstr_modtype(id, decl) :: rem -> defined_idents rem
+   | Tstr_open path :: rem -> defined_idents rem
+   | Tstr_class cl_list :: rem ->
+-      List.map (fun (i, _, _, _) -> i) cl_list @ defined_idents rem
++      List.map (fun (i, _, _, _, _) -> i) cl_list @ defined_idents rem
+   | Tstr_cltype cl_list :: rem -> defined_idents rem
+   | Tstr_include(modl, ids) :: rem -> ids @ defined_idents rem
+ 
+@@ -603,14 +603,14 @@
+   | Tstr_class cl_list ->
+       (* we need to use unique names for the classes because there might
+          be a value named identically *)
+-      let ids = List.map (fun (i, _, _, _) -> i) cl_list in
++      let ids = List.map (fun (i, _, _, _, _) -> i) cl_list in
+       List.iter set_toplevel_unique_name ids;
+       Lletrec(List.map
+-                (fun (id, arity, meths, cl) ->
+-                   (id, transl_class ids id arity meths cl))
++                (fun (id, arity, meths, cl, vf) ->
++                   (id, transl_class ids id arity meths cl vf))
+                 cl_list,
+               make_sequence
+-                (fun (id, _, _, _) -> toploop_setvalue_id id)
++                (fun (id, _, _, _, _) -> toploop_setvalue_id id)
+                 cl_list)
+   | Tstr_cltype cl_list ->
+       lambda_unit
 Index: driver/main_args.ml
 ===================================================================
 RCS file: /net/yquem/devel/caml/repository/csl/driver/main_args.ml,v
 retrieving revision 1.48
 diff -u -r1.48 main_args.ml
 --- driver/main_args.ml	4 Jan 2006 16:55:49 -0000	1.48
-+++ driver/main_args.ml	9 Mar 2006 07:19:38 -0000
++++ driver/main_args.ml	10 Mar 2006 01:17:42 -0000
 @@ -136,11 +136,11 @@
        \032    E/e enable/disable fragile match\n\
        \032    F/f enable/disable partially applied function\n\
@@ -1090,7 +1332,7 @@ RCS file: /net/yquem/devel/caml/repository/csl/driver/optmain.ml,v
 retrieving revision 1.87
 diff -u -r1.87 optmain.ml
 --- driver/optmain.ml	4 Jan 2006 16:55:49 -0000	1.87
-+++ driver/optmain.ml	9 Mar 2006 07:19:38 -0000
++++ driver/optmain.ml	10 Mar 2006 01:17:42 -0000
 @@ -173,7 +173,7 @@
           \032    P/p enable/disable partial match\n\
           \032    S/s enable/disable non-unit statement\n\
@@ -1106,7 +1348,7 @@ RCS file: /net/yquem/devel/caml/repository/csl/stdlib/camlinternalOO.ml,v
 retrieving revision 1.14
 diff -u -r1.14 camlinternalOO.ml
 --- stdlib/camlinternalOO.ml	25 Oct 2005 18:34:07 -0000	1.14
-+++ stdlib/camlinternalOO.ml	9 Mar 2006 07:19:38 -0000
++++ stdlib/camlinternalOO.ml	10 Mar 2006 01:17:42 -0000
 @@ -206,7 +206,11 @@
       (table.methods_by_name, table.methods_by_label, table.hidden_meths,
        table.vars, virt_meth_labs, vars)
@@ -1180,7 +1422,7 @@ RCS file: /net/yquem/devel/caml/repository/csl/stdlib/camlinternalOO.mli,v
 retrieving revision 1.9
 diff -u -r1.9 camlinternalOO.mli
 --- stdlib/camlinternalOO.mli	25 Oct 2005 18:34:07 -0000	1.9
-+++ stdlib/camlinternalOO.mli	9 Mar 2006 07:19:38 -0000
++++ stdlib/camlinternalOO.mli	10 Mar 2006 01:17:42 -0000
 @@ -46,8 +46,7 @@
  val init_class : table -> unit
  val inherits :
@@ -1213,60 +1455,20 @@ RCS file: /net/yquem/devel/caml/repository/csl/stdlib/sys.ml,v
 retrieving revision 1.141
 diff -u -r1.141 sys.ml
 --- stdlib/sys.ml	24 Jan 2006 11:12:26 -0000	1.141
-+++ stdlib/sys.ml	9 Mar 2006 07:19:39 -0000
++++ stdlib/sys.ml	10 Mar 2006 01:17:42 -0000
 @@ -78,4 +78,4 @@
  
  (* OCaml version string, must be in the format described in sys.mli. *)
  
 -let ocaml_version = "3.10+dev3 (2006-01-24)";;
 +let ocaml_version = "3.10+dev4 (2006-03-09)";;
-Index: tools/depend.ml
-===================================================================
-RCS file: /net/yquem/devel/caml/repository/csl/tools/depend.ml,v
-retrieving revision 1.9
-diff -u -r1.9 depend.ml
---- tools/depend.ml	23 Mar 2005 03:08:37 -0000	1.9
-+++ tools/depend.ml	9 Mar 2006 07:19:39 -0000
-@@ -87,7 +87,7 @@
- 
- and add_class_type_field bv = function
-     Pctf_inher cty -> add_class_type bv cty
--  | Pctf_val(_, _, oty, _) -> add_opt add_type bv oty
-+  | Pctf_val(_, _, _, ty, _) -> add_type bv ty
-   | Pctf_virt(_, _, ty, _) -> add_type bv ty
-   | Pctf_meth(_, _, ty, _) -> add_type bv ty
-   | Pctf_cstr(ty1, ty2, _) -> add_type bv ty1; add_type bv ty2
-@@ -280,6 +280,7 @@
- and add_class_field bv = function
-     Pcf_inher(ce, _) -> add_class_expr bv ce
-   | Pcf_val(_, _, e, _) -> add_expr bv e
-+  | Pcf_valvirt(_, _, ty, _)
-   | Pcf_virt(_, _, ty, _) -> add_type bv ty
-   | Pcf_meth(_, _, e, _) -> add_expr bv e
-   | Pcf_cstr(ty1, ty2, _) -> add_type bv ty1; add_type bv ty2
-Index: tools/ocamlprof.ml
-===================================================================
-RCS file: /net/yquem/devel/caml/repository/csl/tools/ocamlprof.ml,v
-retrieving revision 1.38
-diff -u -r1.38 ocamlprof.ml
---- tools/ocamlprof.ml	24 Mar 2005 17:20:54 -0000	1.38
-+++ tools/ocamlprof.ml	9 Mar 2006 07:19:39 -0000
-@@ -328,7 +328,7 @@
-       rewrite_patexp_list iflag spat_sexp_list
-   | Pcf_init sexp ->
-       rewrite_exp iflag sexp
--  | Pcf_virt _ | Pcf_cstr _  -> ()
-+  | Pcf_valvirt _ | Pcf_virt _ | Pcf_cstr _  -> ()
- 
- and rewrite_class_expr iflag cexpr =
-   match cexpr.pcl_desc with
 Index: otherlibs/labltk/browser/searchpos.ml
 ===================================================================
 RCS file: /net/yquem/devel/caml/repository/csl/otherlibs/labltk/browser/searchpos.ml,v
 retrieving revision 1.48
 diff -u -r1.48 searchpos.ml
 --- otherlibs/labltk/browser/searchpos.ml	23 Mar 2005 03:08:37 -0000	1.48
-+++ otherlibs/labltk/browser/searchpos.ml	9 Mar 2006 07:19:39 -0000
++++ otherlibs/labltk/browser/searchpos.ml	10 Mar 2006 01:17:42 -0000
 @@ -141,9 +141,8 @@
          List.iter cfl ~f:
            begin function
@@ -1278,6 +1480,15 @@ diff -u -r1.48 searchpos.ml
              | Pctf_virt (_, _, ty, loc) ->
                  if in_loc loc ~pos then search_pos_type ty ~pos ~env
              | Pctf_meth (_, _, ty, loc) ->
+@@ -675,7 +674,7 @@
+   | Tstr_modtype _ -> ()
+   | Tstr_open _ -> ()
+   | Tstr_class l ->
+-      List.iter l ~f:(fun (id, _, _, cl) -> search_pos_class_expr cl ~pos)
++      List.iter l ~f:(fun (id, _, _, cl, _) -> search_pos_class_expr cl ~pos)
+   | Tstr_cltype _ -> ()
+   | Tstr_include (m, _) -> search_pos_module_expr m ~pos
+   end
 @@ -685,7 +684,8 @@
      begin function
          Cf_inher (cl, _, _) ->
@@ -1288,13 +1499,121 @@ diff -u -r1.48 searchpos.ml
        | Cf_meth (_, exp) -> search_pos_expr exp ~pos
        | Cf_let (_, pel, iel) ->
            List.iter pel ~f:
+Index: ocamldoc/Makefile
+===================================================================
+RCS file: /net/yquem/devel/caml/repository/csl/ocamldoc/Makefile,v
+retrieving revision 1.61
+diff -u -r1.61 Makefile
+--- ocamldoc/Makefile	4 Jan 2006 16:55:49 -0000	1.61
++++ ocamldoc/Makefile	10 Mar 2006 01:17:42 -0000
+@@ -31,7 +31,7 @@
+ MKDIR=mkdir -p
+ CP=cp -f
+ OCAMLDOC=ocamldoc
+-OCAMLDOC_RUN=sh ./runocamldoc $(SUPPORTS_SHARED_LIBRARIES)
++OCAMLDOC_RUN=./ocamldoc.opt #sh ./runocamldoc $(SUPPORTS_SHARED_LIBRARIES)
+ OCAMLDOC_OPT=$(OCAMLDOC).opt
+ OCAMLDOC_LIBCMA=odoc_info.cma
+ OCAMLDOC_LIBCMI=odoc_info.cmi
+@@ -188,12 +188,12 @@
+ 	../otherlibs/num/num.mli
+ 
+ all: exe lib
+-	$(MAKE) manpages
+ 
+ exe: $(OCAMLDOC)
+ lib: $(OCAMLDOC_LIBCMA) $(OCAMLDOC_LIBCMI) $(ODOC_TEST)
+ 
+ opt.opt: exeopt libopt
++	$(MAKE) manpages
+ exeopt: $(OCAMLDOC_OPT)
+ libopt: $(OCAMLDOC_LIBCMXA) $(OCAMLDOC_LIBCMI)
+ debug:
+Index: ocamldoc/odoc_ast.ml
+===================================================================
+RCS file: /net/yquem/devel/caml/repository/csl/ocamldoc/odoc_ast.ml,v
+retrieving revision 1.27
+diff -u -r1.27 odoc_ast.ml
+--- ocamldoc/odoc_ast.ml	4 Jan 2006 16:55:49 -0000	1.27
++++ ocamldoc/odoc_ast.ml	10 Mar 2006 01:17:42 -0000
+@@ -88,7 +88,7 @@
+             ident_type_decl_list
+       | Typedtree.Tstr_class info_list ->
+           List.iter
+-            (fun ((id,_,_,_) as ci) ->
++            (fun ((id,_,_,_,_) as ci) ->
+               Hashtbl.add table (C (Name.from_ident id))
+                 (Typedtree.Tstr_class [ci]))
+             info_list
+@@ -146,7 +146,7 @@
+ 
+     let search_class_exp table name =
+       match Hashtbl.find table (C name) with
+-      | (Typedtree.Tstr_class [(_,_,_,ce)]) ->
++      | (Typedtree.Tstr_class [(_,_,_,ce,_)]) ->
+           (
+            try
+              let type_decl = search_type_declaration table name in
+@@ -184,7 +184,7 @@
+       let rec iter = function
+         | [] ->
+             raise Not_found
+-        | Typedtree.Cf_val (_, ident, exp) :: q
++        | Typedtree.Cf_val (_, ident, Some exp, _) :: q
+           when Name.from_ident ident = name ->
+             exp.Typedtree.exp_type
+         | _ :: q ->
+@@ -523,7 +523,8 @@
+               p_clexp.Parsetree.pcl_loc.Location.loc_end.Lexing.pos_cnum
+               q
+ 
+-        | (Parsetree.Pcf_val (label, mutable_flag, expression, loc)) :: q ->
++        | (Parsetree.Pcf_val (label, mutable_flag, _, loc) |
++           Parsetree.Pcf_valvirt (label, mutable_flag, _, loc)) :: q ->
+             let complete_name = Name.concat current_class_name label in
+             let (info_opt, ele_comments) = get_comments_in_class last_pos loc.Location.loc_start.Lexing.pos_cnum in
+             let type_exp =
+Index: ocamldoc/odoc_sig.ml
+===================================================================
+RCS file: /net/yquem/devel/caml/repository/csl/ocamldoc/odoc_sig.ml,v
+retrieving revision 1.37
+diff -u -r1.37 odoc_sig.ml
+--- ocamldoc/odoc_sig.ml	4 Jan 2006 16:55:50 -0000	1.37
++++ ocamldoc/odoc_sig.ml	10 Mar 2006 01:17:42 -0000
+@@ -107,7 +107,7 @@
+       | _ -> assert false
+ 
+     let search_attribute_type name class_sig =
+-      let (_, type_expr) = Types.Vars.find name class_sig.Types.cty_vars in
++      let (_, _, type_expr) = Types.Vars.find name class_sig.Types.cty_vars in
+       type_expr
+ 
+     let search_method_type name class_sig =
+@@ -269,7 +269,7 @@
+           [] -> pos_limit
+         | ele2 :: _ ->
+             match ele2 with
+-              Parsetree.Pctf_val (_, _, _, loc)
++              Parsetree.Pctf_val (_, _, _, _, loc)
+             | Parsetree.Pctf_virt (_, _, _, loc)
+             | Parsetree.Pctf_meth (_, _, _, loc)
+             | Parsetree.Pctf_cstr (_, _, loc) -> loc.Location.loc_start.Lexing.pos_cnum
+@@ -330,7 +330,7 @@
+             in
+             ([], ele_comments)
+ 
+-        | Parsetree.Pctf_val (name, mutable_flag, _, loc) :: q ->
++        | Parsetree.Pctf_val (name, mutable_flag, _, _, loc) :: q ->
+             (* of (string * mutable_flag * core_type option * Location.t)*)
+             let (comment_opt, eles_comments) = get_comments_in_class last_pos loc.Location.loc_start.Lexing.pos_cnum in
+             let complete_name = Name.concat current_class_name name in
 Index: camlp4/camlp4/ast2pt.ml
 ===================================================================
 RCS file: /net/yquem/devel/caml/repository/csl/camlp4/camlp4/ast2pt.ml,v
 retrieving revision 1.36
 diff -u -r1.36 ast2pt.ml
 --- camlp4/camlp4/ast2pt.ml	29 Jun 2005 04:11:26 -0000	1.36
-+++ camlp4/camlp4/ast2pt.ml	9 Mar 2006 07:19:39 -0000
++++ camlp4/camlp4/ast2pt.ml	10 Mar 2006 01:17:42 -0000
 @@ -244,6 +244,7 @@
  ;
  value mkmutable m = if m then Mutable else Immutable;
@@ -1331,7 +1650,7 @@ RCS file: /net/yquem/devel/caml/repository/csl/camlp4/camlp4/mLast.mli,v
 retrieving revision 1.18
 diff -u -r1.18 mLast.mli
 --- camlp4/camlp4/mLast.mli	29 Jun 2005 04:11:26 -0000	1.18
-+++ camlp4/camlp4/mLast.mli	9 Mar 2006 07:19:39 -0000
++++ camlp4/camlp4/mLast.mli	10 Mar 2006 01:17:42 -0000
 @@ -180,7 +180,7 @@
    | CgDcl of loc and list class_sig_item
    | CgInh of loc and class_type
@@ -1357,7 +1676,7 @@ RCS file: /net/yquem/devel/caml/repository/csl/camlp4/camlp4/reloc.ml,v
 retrieving revision 1.18
 diff -u -r1.18 reloc.ml
 --- camlp4/camlp4/reloc.ml	29 Jun 2005 04:11:26 -0000	1.18
-+++ camlp4/camlp4/reloc.ml	9 Mar 2006 07:19:39 -0000
++++ camlp4/camlp4/reloc.ml	10 Mar 2006 01:17:42 -0000
 @@ -350,7 +350,7 @@
      | CgDcl loc x1 -> let nloc = floc loc in CgDcl nloc (List.map (class_sig_item floc sh) x1)
      | CgInh loc x1 -> let nloc = floc loc in CgInh nloc (class_type floc sh x1)
@@ -1381,7 +1700,7 @@ RCS file: /net/yquem/devel/caml/repository/csl/camlp4/etc/pa_o.ml,v
 retrieving revision 1.66
 diff -u -r1.66 pa_o.ml
 --- camlp4/etc/pa_o.ml	29 Jun 2005 04:11:26 -0000	1.66
-+++ camlp4/etc/pa_o.ml	9 Mar 2006 07:19:39 -0000
++++ camlp4/etc/pa_o.ml	10 Mar 2006 01:17:42 -0000
 @@ -1037,8 +1037,14 @@
    class_str_item:
      [ [ "inherit"; ce = class_expr; pb = OPT [ "as"; i = LIDENT -> i ] ->
@@ -1417,7 +1736,7 @@ RCS file: /net/yquem/devel/caml/repository/csl/camlp4/etc/pr_o.ml,v
 retrieving revision 1.51
 diff -u -r1.51 pr_o.ml
 --- camlp4/etc/pr_o.ml	5 Jan 2006 10:44:29 -0000	1.51
-+++ camlp4/etc/pr_o.ml	9 Mar 2006 07:19:39 -0000
++++ camlp4/etc/pr_o.ml	10 Mar 2006 01:17:42 -0000
 @@ -1768,10 +1768,11 @@
                    [: `S LR "method"; private_flag pf; `label lab;
                       `S LR ":" :];
@@ -1438,7 +1757,7 @@ RCS file: /net/yquem/devel/caml/repository/csl/camlp4/meta/pa_r.ml,v
 retrieving revision 1.64
 diff -u -r1.64 pa_r.ml
 --- camlp4/meta/pa_r.ml	29 Jun 2005 04:11:26 -0000	1.64
-+++ camlp4/meta/pa_r.ml	9 Mar 2006 07:19:39 -0000
++++ camlp4/meta/pa_r.ml	10 Mar 2006 01:17:42 -0000
 @@ -658,7 +658,9 @@
        | "inherit"; ce = class_expr; pb = OPT as_lident ->
            <:class_str_item< inherit $ce$ $opt:pb$ >>
@@ -1468,7 +1787,7 @@ RCS file: /net/yquem/devel/caml/repository/csl/camlp4/meta/q_MLast.ml,v
 retrieving revision 1.60
 diff -u -r1.60 q_MLast.ml
 --- camlp4/meta/q_MLast.ml	29 Jun 2005 04:11:26 -0000	1.60
-+++ camlp4/meta/q_MLast.ml	9 Mar 2006 07:19:39 -0000
++++ camlp4/meta/q_MLast.ml	10 Mar 2006 01:17:42 -0000
 @@ -947,6 +947,8 @@
            Qast.Node "CrDcl" [Qast.Loc; st]
        | "inherit"; ce = class_expr; pb = SOPT as_lident ->
@@ -1496,7 +1815,7 @@ RCS file: /net/yquem/devel/caml/repository/csl/camlp4/ocaml_src/camlp4/ast2pt.ml
 retrieving revision 1.36
 diff -u -r1.36 ast2pt.ml
 --- camlp4/ocaml_src/camlp4/ast2pt.ml	29 Jun 2005 04:11:26 -0000	1.36
-+++ camlp4/ocaml_src/camlp4/ast2pt.ml	9 Mar 2006 07:19:39 -0000
++++ camlp4/ocaml_src/camlp4/ast2pt.ml	10 Mar 2006 01:17:42 -0000
 @@ -227,6 +227,7 @@
  ;;
  let mkmutable m = if m then Mutable else Immutable;;
@@ -1531,7 +1850,7 @@ RCS file: /net/yquem/devel/caml/repository/csl/camlp4/ocaml_src/camlp4/mLast.mli
 retrieving revision 1.20
 diff -u -r1.20 mLast.mli
 --- camlp4/ocaml_src/camlp4/mLast.mli	29 Jun 2005 04:11:26 -0000	1.20
-+++ camlp4/ocaml_src/camlp4/mLast.mli	9 Mar 2006 07:19:39 -0000
++++ camlp4/ocaml_src/camlp4/mLast.mli	10 Mar 2006 01:17:42 -0000
 @@ -180,7 +180,7 @@
    | CgDcl of loc * class_sig_item list
    | CgInh of loc * class_type
@@ -1555,7 +1874,7 @@ RCS file: /net/yquem/devel/caml/repository/csl/camlp4/ocaml_src/camlp4/reloc.ml,
 retrieving revision 1.20
 diff -u -r1.20 reloc.ml
 --- camlp4/ocaml_src/camlp4/reloc.ml	29 Jun 2005 04:11:26 -0000	1.20
-+++ camlp4/ocaml_src/camlp4/reloc.ml	9 Mar 2006 07:19:39 -0000
++++ camlp4/ocaml_src/camlp4/reloc.ml	10 Mar 2006 01:17:42 -0000
 @@ -430,8 +430,8 @@
          let nloc = floc loc in CgInh (nloc, class_type floc sh x1)
      | CgMth (loc, x1, x2, x3) ->
@@ -1582,7 +1901,7 @@ RCS file: /net/yquem/devel/caml/repository/csl/camlp4/ocaml_src/meta/pa_r.ml,v
 retrieving revision 1.59
 diff -u -r1.59 pa_r.ml
 --- camlp4/ocaml_src/meta/pa_r.ml	29 Jun 2005 04:11:26 -0000	1.59
-+++ camlp4/ocaml_src/meta/pa_r.ml	9 Mar 2006 07:19:39 -0000
++++ camlp4/ocaml_src/meta/pa_r.ml	10 Mar 2006 01:17:43 -0000
 @@ -2161,6 +2161,15 @@
          (fun (t : 'ctyp) _ (l : 'label) (pf : string option) _ _
             (_loc : Lexing.position * Lexing.position) ->
@@ -1623,7 +1942,7 @@ RCS file: /net/yquem/devel/caml/repository/csl/camlp4/ocaml_src/meta/q_MLast.ml,
 retrieving revision 1.65
 diff -u -r1.65 q_MLast.ml
 --- camlp4/ocaml_src/meta/q_MLast.ml	12 Jan 2006 08:54:21 -0000	1.65
-+++ camlp4/ocaml_src/meta/q_MLast.ml	9 Mar 2006 07:19:39 -0000
++++ camlp4/ocaml_src/meta/q_MLast.ml	10 Mar 2006 01:17:43 -0000
 @@ -3152,9 +3152,9 @@
                   Gramext.action
                     (fun (x : string)
@@ -1908,7 +2227,7 @@ RCS file: /net/yquem/devel/caml/repository/csl/camlp4/top/rprint.ml,v
 retrieving revision 1.18
 diff -u -r1.18 rprint.ml
 --- camlp4/top/rprint.ml	29 Jun 2005 04:11:26 -0000	1.18
-+++ camlp4/top/rprint.ml	9 Mar 2006 07:19:39 -0000
++++ camlp4/top/rprint.ml	10 Mar 2006 01:17:43 -0000
 @@ -288,8 +288,9 @@
        fprintf ppf "@[<2>method %s%s%s :@ %a;@]"
          (if priv then "private " else "") (if virt then "virtual " else "")
@@ -1921,93 +2240,3 @@ diff -u -r1.18 rprint.ml
          name Toploop.print_out_type.val ty ]
  ;
  
-Index: ocamldoc/Makefile
-===================================================================
-RCS file: /net/yquem/devel/caml/repository/csl/ocamldoc/Makefile,v
-retrieving revision 1.61
-diff -u -r1.61 Makefile
---- ocamldoc/Makefile	4 Jan 2006 16:55:49 -0000	1.61
-+++ ocamldoc/Makefile	9 Mar 2006 07:19:40 -0000
-@@ -31,7 +31,7 @@
- MKDIR=mkdir -p
- CP=cp -f
- OCAMLDOC=ocamldoc
--OCAMLDOC_RUN=sh ./runocamldoc $(SUPPORTS_SHARED_LIBRARIES)
-+OCAMLDOC_RUN=./ocamldoc.opt #sh ./runocamldoc $(SUPPORTS_SHARED_LIBRARIES)
- OCAMLDOC_OPT=$(OCAMLDOC).opt
- OCAMLDOC_LIBCMA=odoc_info.cma
- OCAMLDOC_LIBCMI=odoc_info.cmi
-@@ -188,12 +188,12 @@
- 	../otherlibs/num/num.mli
- 
- all: exe lib
--	$(MAKE) manpages
- 
- exe: $(OCAMLDOC)
- lib: $(OCAMLDOC_LIBCMA) $(OCAMLDOC_LIBCMI) $(ODOC_TEST)
- 
- opt.opt: exeopt libopt
-+	$(MAKE) manpages
- exeopt: $(OCAMLDOC_OPT)
- libopt: $(OCAMLDOC_LIBCMXA) $(OCAMLDOC_LIBCMI)
- debug:
-Index: ocamldoc/odoc_ast.ml
-===================================================================
-RCS file: /net/yquem/devel/caml/repository/csl/ocamldoc/odoc_ast.ml,v
-retrieving revision 1.27
-diff -u -r1.27 odoc_ast.ml
---- ocamldoc/odoc_ast.ml	4 Jan 2006 16:55:49 -0000	1.27
-+++ ocamldoc/odoc_ast.ml	9 Mar 2006 07:19:40 -0000
-@@ -184,7 +184,7 @@
-       let rec iter = function
-         | [] ->
-             raise Not_found
--        | Typedtree.Cf_val (_, ident, exp) :: q
-+        | Typedtree.Cf_val (_, ident, Some exp, _) :: q
-           when Name.from_ident ident = name ->
-             exp.Typedtree.exp_type
-         | _ :: q ->
-@@ -523,7 +523,8 @@
-               p_clexp.Parsetree.pcl_loc.Location.loc_end.Lexing.pos_cnum
-               q
- 
--        | (Parsetree.Pcf_val (label, mutable_flag, expression, loc)) :: q ->
-+        | (Parsetree.Pcf_val (label, mutable_flag, _, loc) |
-+           Parsetree.Pcf_valvirt (label, mutable_flag, _, loc)) :: q ->
-             let complete_name = Name.concat current_class_name label in
-             let (info_opt, ele_comments) = get_comments_in_class last_pos loc.Location.loc_start.Lexing.pos_cnum in
-             let type_exp =
-Index: ocamldoc/odoc_sig.ml
-===================================================================
-RCS file: /net/yquem/devel/caml/repository/csl/ocamldoc/odoc_sig.ml,v
-retrieving revision 1.37
-diff -u -r1.37 odoc_sig.ml
---- ocamldoc/odoc_sig.ml	4 Jan 2006 16:55:50 -0000	1.37
-+++ ocamldoc/odoc_sig.ml	9 Mar 2006 07:19:40 -0000
-@@ -107,7 +107,7 @@
-       | _ -> assert false
- 
-     let search_attribute_type name class_sig =
--      let (_, type_expr) = Types.Vars.find name class_sig.Types.cty_vars in
-+      let (_, _, type_expr) = Types.Vars.find name class_sig.Types.cty_vars in
-       type_expr
- 
-     let search_method_type name class_sig =
-@@ -269,7 +269,7 @@
-           [] -> pos_limit
-         | ele2 :: _ ->
-             match ele2 with
--              Parsetree.Pctf_val (_, _, _, loc)
-+              Parsetree.Pctf_val (_, _, _, _, loc)
-             | Parsetree.Pctf_virt (_, _, _, loc)
-             | Parsetree.Pctf_meth (_, _, _, loc)
-             | Parsetree.Pctf_cstr (_, _, loc) -> loc.Location.loc_start.Lexing.pos_cnum
-@@ -330,7 +330,7 @@
-             in
-             ([], ele_comments)
- 
--        | Parsetree.Pctf_val (name, mutable_flag, _, loc) :: q ->
-+        | Parsetree.Pctf_val (name, mutable_flag, _, _, loc) :: q ->
-             (* of (string * mutable_flag * core_type option * Location.t)*)
-             let (comment_opt, eles_comments) = get_comments_in_class last_pos loc.Location.loc_start.Lexing.pos_cnum in
-             let complete_name = Name.concat current_class_name name in
