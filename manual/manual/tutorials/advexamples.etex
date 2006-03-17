@@ -311,13 +311,13 @@ A naive definition of strings as objects could be:
 \begin{caml_example}
 class ostring s =
   object
-     method get n = String.get n
-     method set n c = String.set n c
+     method get n = String.get s n
+     method set n c = String.set s n c
      method print = print_string s
      method copy = new ostring (String.copy s)
   end;;
 \end{caml_example}
-However, the method "copy" returns an object of the class "string",
+However, the method "copy" returns an object of the class "ostring",
 and not an objet of the current class. Hence, if the class is further
 extended, the method "copy" will only return an object of the parent
 class.
@@ -335,8 +335,8 @@ containing the representation "s" of the string.
 class better_string s =
   object
      val repr = s
-     method get n = String.get n
-     method set n c = String.set n c
+     method get n = String.get repr n
+     method set n c = String.set repr n c
      method print = print_string repr
      method copy = {< repr = String.copy repr >}
      method sub start len = {< repr = String.sub s  start len >}
@@ -355,8 +355,8 @@ class ostring s =
   object (self : 'mytype)
      val repr = s
      method repr = repr
-     method get n = String.get n
-     method set n c = String.set n c
+     method get n = String.get repr n
+     method set n c = String.set repr n c
      method print = print_string repr
      method copy = {< repr = String.copy repr >}
      method sub start len = {< repr = String.sub s start len >}
