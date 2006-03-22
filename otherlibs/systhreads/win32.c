@@ -256,7 +256,8 @@ static DWORD WINAPI caml_thread_tick(void * arg)
 {
   while(1) {
     Sleep(Thread_timeout);
-    pending_signals[SIGTIMER] = 1;
+    caml_pending_signals[SIGTIMER] = 1;
+    caml_signals_are_pending = 1;
 #ifdef NATIVE_CODE
     young_limit = young_end;
 #else

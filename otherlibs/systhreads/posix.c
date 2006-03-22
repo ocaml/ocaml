@@ -305,7 +305,8 @@ static void * caml_thread_tick(void * arg)
     select(0, NULL, NULL, NULL, &timeout);
     /* This signal should never cause a callback, so don't go through
        handle_signal(), tweak the global variable directly. */
-    pending_signals[SIGVTALRM] = 1;
+    caml_pending_signals[SIGVTALRM] = 1;
+    caml_signals_are_pending = 1;
 #ifdef NATIVE_CODE
     young_limit = young_end;
 #else
