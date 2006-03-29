@@ -26,7 +26,7 @@
 #endif
 
 #if defined(SYS_linux_elf) || defined(SYS_bsd_elf) \
- || defined(SYS_solaris) || defined(SYS_beos)
+ || defined(SYS_solaris) || defined(SYS_beos) || defined(SYS_gnu)
 #define G(x) x
 #define LBL(x) CONCAT(.L,x)
 #else
@@ -36,14 +36,14 @@
 
 #if defined(SYS_linux_elf) || defined(SYS_bsd_elf) \
  || defined(SYS_solaris) || defined(SYS_beos) || defined(SYS_cygwin) \
- || defined(SYS_mingw)
+ || defined(SYS_mingw) || defined(SYS_gnu)
 #define FUNCTION_ALIGN 4
 #else
 #define FUNCTION_ALIGN 2
 #endif
 
 #if defined(PROFILING)
-#if defined(SYS_linux_elf)
+#if defined(SYS_linux_elf) || defined(SYS_gnu)
 #define PROFILE_CAML \
         pushl %ebp; movl %esp, %ebp; pushl %eax; pushl %ecx; pushl %edx; \
         call mcount; \

@@ -62,6 +62,7 @@ let symbol_prefix =
   | "bsd_elf" -> ""
   | "solaris" -> ""
   | "beos" -> ""
+  | "gnu" -> ""
   | _ -> "_"
 
 let emit_symbol s =
@@ -75,6 +76,7 @@ let label_prefix =
   | "bsd_elf" -> ".L"
   | "solaris" -> ".L"
   | "beos" -> ".L"
+  | "gnu" -> ".L"
   | _ -> "L"
 
 let emit_label lbl =
@@ -110,7 +112,7 @@ let macosx =
 
 let emit_align =
   match Config.system with
-    "linux_elf" | "bsd_elf" | "solaris" | "beos" | "cygwin" | "mingw" ->
+    "linux_elf" | "bsd_elf" | "solaris" | "beos" | "cygwin" | "mingw" | "gnu" ->
       (fun n -> `	.align	{emit_int n}\n`)
   | _ ->
       (fun n -> `	.align	{emit_int(Misc.log2 n)}\n`)
@@ -819,7 +821,7 @@ let emit_external_symbols () =
 
 let emit_profile () =
   match Config.system with
-    "linux_elf" ->
+    "linux_elf" | "gnu" ->
       `	pushl	%eax\n`;
       `	movl	%esp, %ebp\n`;
       `	pushl	%ecx\n`;
@@ -844,7 +846,7 @@ let emit_profile () =
 let declare_function_symbol name =
   `	.globl	{emit_symbol name}\n`;
   match Config.system with
-    "linux_elf" | "bsd_elf" ->
+    "linux_elf" | "bsd_elf" | "gnu" ->
       `	.type	{emit_symbol name},@function\n`
   | _ -> ()
 

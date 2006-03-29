@@ -76,7 +76,8 @@ let emit_size lbl =
     `	.size	{emit_symbol lbl},.-{emit_symbol lbl}\n`
 
 let rodata () =
-  if Config.system = "solaris" (* || Config.system = "linux" *) then
+  if Config.system = "solaris" (* || Config.system = "linux" *)
+  (* || Config.system = "gnu" *) then
     `	.section \".rodata\"\n`
   else
     `	.data\n`
