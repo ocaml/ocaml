@@ -23,11 +23,21 @@ type scanbuf;;
    to the scanning functions used by the [scanf] family of functions.
    The scanning buffer holds the current state of the scan, plus
    a function to get the next char from the input, and a token buffer
-   to store the string matched so far. *)
+   to store the string matched so far.
+
+   Note: a scan may often require to examine one character in advance;
+   when this ``lookahead'' character does not belong to the token read, 
+   it is stored back in the scanning buffer and becomes the next
+   character read. *)
 
 val stdib : scanbuf;;
 (** The scanning buffer reading from [stdin].
-    [stdib] is equivalent to [Scanning.from_channel stdin]. *)
+    [stdib] is equivalent to [Scanning.from_channel stdin].
+
+    Note: when input is read interactively from [stdin], the carriage return
+    that triggers the evaluation is incoporated in the input; thus, scanning
+    specifications must properly skip this character (simply add a space
+    as the last character of the format string). *)
 
 val from_string : string -> scanbuf;;
 (** [Scanning.from_string s] returns a scanning buffer which reads
