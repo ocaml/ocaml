@@ -627,6 +627,11 @@ and is_nonexpansive_opt = function
 (* Typing of printf formats.
    (Handling of * modifiers contributed by Thorsten Ohl.) *)
 
+external string_to_format :
+ string -> ('a, 'b, 'c, 'd) format4 = "%identity"
+external format_to_string :
+ ('a, 'b, 'c, 'd) format4 -> string = "%identity"
+
 let type_format loc fmt =
 
   let ty_arrow gty ty = newty (Tarrow ("", instance gty, ty, Cok)) in
@@ -745,7 +750,10 @@ let type_format loc fmt =
           let j = j + 1 in
           if j >= len then incomplete_format fmt else
           let sj =
-            Printf.sub_format incomplete_format bad_conversion c fmt j in
+            Printf.sub_format
+              (fun fmt -> incomplete_format (format_to_string fmt))
+              (fun fmt -> bad_conversion (format_to_string fmt))
+              c (string_to_format fmt) j in
           let sfmt = String.sub fmt j (sj - j - 1) in
           let ty_sfmt = type_in_format sfmt in
           begin match c with
