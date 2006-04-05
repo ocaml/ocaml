@@ -33,10 +33,6 @@ module Sformat = struct
     = "%string_safe_get"
   external unsafe_get : ('a, 'b, 'c, 'd) format4 -> int -> char
     = "%string_unsafe_get"
-(*  external set : ('a, 'b, 'c, 'd) format4 -> int -> char -> unit
-    = "%string_safe_set"
-  external unsafe_set : ('a, 'b, 'c, 'd) format4 -> int -> char -> unit
-    = "%string_unsafe_set" *)
   let sub fmt idx len = String.sub (unsafe_to_string fmt) idx len
   let to_string fmt = sub fmt 0 (length fmt)
 end;;
@@ -457,11 +453,10 @@ let scan_format fmt args n pos cont_s cont_a cont_t cont_f cont_m =
 
   scan_positional n [] (succ pos);;
 
-let mkprintf str get_out outc outs flush k fmt =
+let mkprintf to_s get_out outc outs flush k fmt =
 
-(*  let fmt = Sformat.length fmt in*)
   (* out is global to this invocation of pr, and must be shared by all its
-     recursive calls (fif) any. *)
+     recursive calls (if any). *)
   let out = get_out fmt in
 
   let rec pr k n fmt v =
@@ -476,13 +471,13 @@ let mkprintf str get_out outc outs flush k fmt =
      and cont_s n s i =
        outs out s; doprn n i
      and cont_a n printer arg i =
-       if str then
+       if to_s then
          outs out ((Obj.magic printer : unit -> _ -> string) () arg)
        else
          printer out arg;
        doprn n i
      and cont_t n printer i =
-       if str then
+       if to_s then
          outs out ((Obj.magic printer : unit -> string) ())
        else
          printer out;
