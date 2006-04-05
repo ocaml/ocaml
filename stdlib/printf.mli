@@ -142,15 +142,34 @@ type index;;
 
 external index_of_int : int -> index = "%identity";;
 
-val scan_format : string -> 'a array -> index -> int ->
-  (index -> string -> int -> 'b) ->
-  (index -> 'c -> 'd -> int -> 'b) ->
-  (index -> 'e -> int -> 'b) ->
-  (index -> int -> 'b) ->
-  (index -> ('h, 'i, 'j, 'k) format4 -> int -> 'b) -> 'b
+module Sformat : sig
+  external unsafe_to_string : ('a, 'b, 'c, 'd) format4 -> string
+    = "%identity"
+  external length : ('a, 'b, 'c, 'd) format4 -> int
+    = "%string_length"
+  external get : ('a, 'b, 'c, 'd) format4 -> int -> char
+    = "%string_safe_get"
+  external unsafe_get : ('a, 'b, 'c, 'd) format4 -> int -> char
+    = "%string_unsafe_get"
+  val sub : ('a, 'b, 'c, 'd) format4 -> int -> int -> string
+  val to_string : ('a, 'b, 'c, 'd) format4 -> string
+end
+
+val scan_format : ('a, 'b, 'c, 'd) format4 ->
+    'e array ->
+    index ->
+    int ->
+    (index -> string -> int -> 'f) ->
+    (index -> 'g -> 'h -> int -> 'f) ->
+    (index -> 'i -> int -> 'f) ->
+    (index -> int -> 'f) ->
+    (index -> ('j, 'k, 'l, 'm) format4 -> int -> 'f) -> 'f
 
 val sub_format :
-  (string -> int) -> (string -> int -> char -> int) ->
-  char -> string -> int -> int
-val summarize_format_type : string -> string
-val kapr : (string -> Obj.t array -> 'a) -> string -> 'a
+    (('a, 'b, 'c, 'd) format4 -> int) ->
+    (('a, 'b, 'c, 'd) format4 -> int -> char -> int) ->
+    char -> ('a, 'b, 'c, 'd) format4 -> int -> int
+val summarize_format_type : ('a, 'b, 'c, 'd) format4 -> string
+val kapr :
+    (('a, 'b, 'c, 'd) format4 -> Obj.t array -> 'e) ->
+    ('a, 'b, 'c, 'd) format4 -> 'e

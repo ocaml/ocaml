@@ -910,14 +910,16 @@ and set_tags =
 
  **************************************************************)
 
+module Sformat = Printf.Sformat;;
+
 (* Error messages when processing formats. *)
 
 (* Trailer: giving up at character number ... *)
 let giving_up mess fmt i =
-  "fprintf: " ^ mess ^ " ``" ^ fmt ^ "'', \
+  "fprintf: " ^ mess ^ " ``" ^ Sformat.to_string fmt ^ "'', \
    giving up at character number " ^ string_of_int i ^
-  (if i < String.length fmt
-   then " (" ^ String.make 1 fmt.[i] ^ ")."
+  (if i < Sformat.length fmt
+   then " (" ^ String.make 1 (Sformat.get fmt i) ^ ")."
    else String.make 1 '.');;
 
 (* When an invalid format deserves a special error explanation. *)
@@ -963,8 +965,6 @@ let implode_rev s0 = function
   | [] -> s0
   | l -> String.concat "" (List.rev (s0 :: l));;
 
-external format_to_string : ('a, 'b, 'c, 'd) format4 -> string = "%identity";;
-
 (* [fprintf_out] is the printf-like function generator: given the
    - [to_s] flag that tells if we are printing into a string,
    - the [get_out] function that has to be called at the end of formatting,
@@ -975,8 +975,7 @@ external format_to_string : ('a, 'b, 'c, 'd) format4 -> string = "%identity";;
    applications of [fprintf_out]. *)
 let mkprintf to_s get_out =
   let rec kprintf k fmt =
-    let fmt = format_to_string fmt in
-    let len = String.length fmt in
+    let len = Sformat.length fmt in
 
     let kpr fmt v =
       let ppf = get_out fmt in
@@ -996,13 +995,13 @@ let mkprintf to_s get_out =
 
       let rec doprn n i =
         if i >= len then Obj.magic (k ppf) else
-        match fmt.[i] with
+        match Sformat.get fmt i with
         | '%' ->
             Printf.scan_format fmt v n i cont_s cont_a cont_t cont_f cont_m
         | '@' ->
             let i = succ i in
             if i >= len then invalid_format fmt i else
-            begin match fmt.[i] with
+            begin match Sformat.get fmt i with
             | '[' ->
                do_pp_open_box ppf n (succ i)
             | ']' ->
@@ -1065,7 +1064,7 @@ let mkprintf to_s get_out =
 
       and get_int n i c =
        if i >= len then invalid_integer fmt i else
-       match fmt.[i] with
+       match Sformat.get fmt i with
        | ' ' -> get_int n (succ i) c
        | '%' ->
           let cont_s n s i = c (format_int_of_string fmt i s) n i
@@ -1077,33 +1076,34 @@ let mkprintf to_s get_out =
        | _ ->
           let rec get j =
            if j >= len then invalid_integer fmt j else
-           match fmt.[j] with
+           match Sformat.get fmt j with
            | '0' .. '9' | '-' -> get (succ j)
            | _ ->
              let size =
              if j = i then size_of_int 0 else
-                format_int_of_string fmt j (String.sub fmt i (j - i)) in
+                let s = Sformat.sub fmt i (j - i) in
+                format_int_of_string fmt j s in
              c size n j in
           get i
 
       and skip_gt i =
        if i >= len then invalid_format fmt i else
-       match fmt.[i] with
+       match Sformat.get fmt i with
        | ' ' -> skip_gt (succ i)
        | '>' -> succ i
        | _ -> invalid_format fmt i
 
       and get_box_kind i =
        if i >= len then Pp_box, i else
-       match fmt.[i] with
+       match Sformat.get fmt i with
        | 'h' ->
           let i = succ i in
           if i >= len then Pp_hbox, i else
-          begin match fmt.[i] with
+          begin match Sformat.get fmt i with
           | 'o' ->
              let i = succ i in
              if i >= len then format_invalid_arg "bad box format" fmt i else
-             begin match fmt.[i] with
+             begin match Sformat.get fmt i with
              | 'v' -> Pp_hovbox, succ i
              | c ->
                 format_invalid_arg
@@ -1118,11 +1118,11 @@ let mkprintf to_s get_out =
       and get_tag_name n i c =
        let rec get accu n i j =
         if j >= len
-        then c (implode_rev (String.sub fmt i (j - i)) accu) n j else
-        match fmt.[j] with
-        | '>' -> c (implode_rev (String.sub fmt i (j - i)) accu) n j
+        then c (implode_rev (Sformat.sub fmt i (j - i)) accu) n j else
+        match Sformat.get fmt j with
+        | '>' -> c (implode_rev (Sformat.sub fmt i (j - i)) accu) n j
         | '%' ->
-          let s0 = String.sub fmt i (j - i) in
+          let s0 = Sformat.sub fmt i (j - i) in
           let cont_s n s i = get (s :: s0 :: accu) n i i
           and cont_a n printer arg i =
             let s =
@@ -1146,7 +1146,7 @@ let mkprintf to_s get_out =
 
       and do_pp_break ppf n i =
        if i >= len then begin pp_print_space ppf (); doprn n i end else
-       match fmt.[i] with
+       match Sformat.get fmt i with
        | '<' ->
           let rec got_nspaces nspaces n i =
             get_int n i (got_offset nspaces)
@@ -1158,7 +1158,7 @@ let mkprintf to_s get_out =
 
       and do_pp_open_box ppf n i =
        if i >= len then begin pp_open_box_gen ppf 0 Pp_box; doprn n i end else
-       match fmt.[i] with
+       match Sformat.get fmt i with
        | '<' ->
           let kind, i = get_box_kind (succ i) in
           let got_size size n i =
@@ -1169,7 +1169,7 @@ let mkprintf to_s get_out =
 
       and do_pp_open_tag ppf n i =
        if i >= len then begin pp_open_tag ppf ""; doprn n i end else
-       match fmt.[i] with
+       match Sformat.get fmt i with
        | '<' ->
           let got_name tag_name n i =
             pp_open_tag ppf tag_name;

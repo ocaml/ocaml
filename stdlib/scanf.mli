@@ -269,7 +269,7 @@ val sscanf_format :
     (('a, 'b, 'c, 'd) format4 -> 'e) -> 'e;;
 (** Same as {!Scanf.bscanf}, but inputs from the given string. *)
 
-val scan_format :
+val format_from_string :
   string -> ('a, 'b, 'c, 'd) format4 -> ('a, 'b, 'c, 'd) format4;;
 (** Same as {!Scanf.sscanf_format}, but converts the given string to a format
   string. *)
