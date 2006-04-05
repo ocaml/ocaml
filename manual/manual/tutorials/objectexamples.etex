@@ -291,7 +291,7 @@ Another example can be seen in section \ref{ss:bank-accounts}.
 
 
 \section{Virtual methods}
-\pdfsection{Virtual methods}
+\pdfsection{Virtual methods and variables}
 \label{ss:virtual-methods}
 
 It is possible to declare a method without actually defining it, using
@@ -303,7 +303,6 @@ as other methods.)
 \begin{caml_example}
 class virtual abstract_point x_init =
   object (self)
-    val mutable x = x_init
     method virtual get_x : int
     method get_offset = self#get_x - x_init
     method virtual move : int -> unit
@@ -311,8 +310,25 @@ class virtual abstract_point x_init =
 class point x_init =
   object
     inherit abstract_point x_init
+    val mutable x = x_init
     method get_x = x
     method move d = x <- x + d 
+  end;;
+\end{caml_example}
+
+Instance variables can also be declared as virtual, with the same effect
+as with methods.
+\begin{caml_example}
+class virtual abstract_point2 =
+  object
+    val mutable virtual x : int
+    method move d = x <- x + d 
+  end;;
+class point2 x_init =
+  object
+    inherit abstract_point2
+    val mutable x = x_init
+    method get_offset = x - x_init
   end;;
 \end{caml_example}
 
@@ -402,9 +418,9 @@ end;;
 fun (x : restricted_point_type) -> x;;
 \end{caml_example}
 In addition to program documentation, class interfaces can be used to
-constrain the type of a class. Both instance variables and concrete
-private methods can be hidden by a class type constraint. Public and
-virtual methods, however, cannot. 
+constrain the type of a class. Both concrete instance variables and concrete
+private methods can be hidden by a class type constraint. Public
+methods and virtual members, however, cannot. 
 \begin{caml_example}
 class restricted_point' x = (restricted_point x : restricted_point_type);;
 \end{caml_example}

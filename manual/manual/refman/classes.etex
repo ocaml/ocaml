@@ -32,7 +32,7 @@ class-body-type:
 %\end{syntax} \begin{syntax}
 class-field-spec:
       'inherit' class-type
-   |  'val' ['mutable'] inst-var-name ':' typexpr
+   |  'val' ['mutable'] ['virtual'] inst-var-name ':' typexpr
    |  'method' ['private'] method-name ':' poly-typexpr
    |  'method' ['private'] 'virtual' method-name ':' poly-typexpr
    |  'constraint' typexpr '=' typexpr
@@ -86,13 +86,18 @@ into the current class type.
 
 \ikwd{val\@\texttt{val}}
 \ikwd{mutable\@\texttt{mutable}}
+\ikwd{virtual\@\texttt{virtual}}
 
 A specification of an instance variable is written
-@'val' ['mutable'] inst-var-name ':' typexpr@, where @inst-var-name@
+@'val' ['mutable'] ['virtual'] inst-var-name ':' typexpr@, where
+@inst-var-name@
 is the name of the instance variable and @typexpr@ its expected type.
 %
 The flag @'mutable'@ indicates whether this instance variable can be
 physically modified.
+%
+The flag @'virtual'@ indicates that this instance variable is not
+initialized. It can be initialized later through inheritance.
 
 An instance variable specification will hide any previous
 specification of an instance variable of the same name.
@@ -177,6 +182,7 @@ class-expr:
 class-field:
       'inherit' class-expr ['as' value-name]
    |  'val' ['mutable'] inst-var-name [':' typexpr] '=' expr
+   |  'val' ['mutable'] 'virtual' inst-var-name ':' typexpr
    |  'method' ['private'] method-name {parameter} [':' typexpr] '=' expr
    |  'method' ['private'] method-name ':' poly-typexpr '=' expr
    |  'method' ['private'] 'virtual' method-name ':' poly-typexpr
@@ -282,14 +288,33 @@ The ancestor method may be called from a subclass but only indirectly.
 
 The definition @'val' ['mutable'] inst-var-name '=' expr@ adds an
 instance variable @inst-var-name@ whose initial value is the value of
-expression @expr@.  Several variables of the same name can be defined
-in the same class.
+expression @expr@.
 %
 The flag @'mutable'@ allows physical modification of this variable by
 methods.
 
 An instance variables can only be used in the following methods and
 initializers of the class.
+
+Since version 3.10, redefinitions of a visible instance variable with
+the same name do not create a new variable, but are merged, using the
+last value for initialization.  They must have identical types and
+mutability.
+However, if an instance variable is hidden by
+omitting it from an interface, it will be kept distinct from
+other instance variables with the same name.
+
+\subsubsection*{Virtual instance variable definition}
+
+\ikwd{virtual\@\texttt{virtual}}
+\ikwd{val\@\texttt{val}}
+\ikwd{mutable\@\texttt{mutable}}
+
+Variable specification is written @'val ['mutable] 'virtual'
+inst-var-name ':' typexpr@.  It specifies whether the variable is
+modifiable, and gives its type.
+
+Virtual instance variables were added in version 3.10.
 
 \subsubsection*{Method definition}
 
