@@ -254,7 +254,7 @@ let from_file_bin fname = from_ic_close_at_end fname (open_in_bin fname);;
    scanning buffer. This phenomenon is even worse in case of multiple
    definition of scanning buffers from the same [ic].
 
-   Hence, we do bufferize characters to create a scnning buffer from an input
+   Hence, we do bufferize characters to create a scanning buffer from an input
    channel in order to preserve the same semantics as other from_* functions
    above: two successive calls to the scanner will work appropriately, since
    the bufferized character (if any) will be retained inside the scanning
@@ -267,15 +267,17 @@ let from_file_bin fname = from_ic_close_at_end fname (open_in_bin fname);;
    allocation of scanning buffers reading from the same [ic].
 
    A more ambitious fix could be to have a memo scanning buffer allocation
-   for reading from input channel not allocated from within Scanf. *)
+   for reading from input channel not allocated from within Scanf's input
+   buffer creation functions. *)
 
-let scan_at_end ic = raise End_of_file;;
+let scan_raise_at_end ic = raise End_of_file;;
 
-let from_channel = from_ic scan_at_end "input channel";;
+let from_channel = from_ic scan_raise_at_end "input channel";;
 
 (* The scanning buffer reading from [stdin].
-   One could try to define stdib as from_channel stdin,
-   but unfortunately the toplevel interaction would be wrong.
+   One could try to define stdib as a scanning buffer reading a character at a
+   time (no bufferization at all), but unfortunately the toplevel
+   interaction would be wrong.
    This is due to some kind of ``race condition'' when reading from stdin,
    since the interactive compiler and scanf will simultaneously read the
    material they need from stdin; then, confusion will result from what should
@@ -285,24 +287,7 @@ let from_channel = from_ic scan_at_end "input channel";;
    for the next (scanf) entry, seamingly coming from nowhere.
    Also no End_of_file is raised when reading from stdin: if not enough
    characters have been read, we simply ask to read more. *)
-(*let stdib =
-  let buf = ref ""
-  and len = ref 0 in
-  let mk_buff l =
-    buf := String.create l;
-    len := l in
-  let i = ref 0 in
-  let rec next () =
-    if !i < !len then begin let c = !buf.[!i] in incr i; c end else
-    let s = input_line stdin in
-    let ls = String.length s in
-    if ls > !len then mk_buff ls;
-    String.blit s 0 !buf 0 ls;
-    i := 0;
-    next () in
-  create "stdin" next;;
-*)
-let stdib = from_ic scan_at_end "stdin" stdin;;
+let stdib = from_ic scan_raise_at_end "stdin" stdin;;
 
 end;;
 
