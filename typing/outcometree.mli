@@ -71,7 +71,7 @@ type out_class_type =
 and out_class_sig_item =
   | Ocsg_constraint of out_type * out_type
   | Ocsg_method of string * bool * bool * out_type
-  | Ocsg_value of string * bool * out_type
+  | Ocsg_value of string * bool * bool * out_type
 
 type out_module_type =
   | Omty_abstract

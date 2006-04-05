@@ -141,9 +141,8 @@ let rec search_pos_class_type cl ~pos ~env =
         List.iter cfl ~f:
           begin function
               Pctf_inher cty -> search_pos_class_type cty ~pos ~env
-            | Pctf_val (_, _, Some ty, loc) ->
+            | Pctf_val (_, _, _, ty, loc) ->
                 if in_loc loc ~pos then search_pos_type ty ~pos ~env
-            | Pctf_val _ -> ()
             | Pctf_virt (_, _, ty, loc) ->
                 if in_loc loc ~pos then search_pos_type ty ~pos ~env
             | Pctf_meth (_, _, ty, loc) ->
@@ -675,7 +674,7 @@ let rec search_pos_structure ~pos str =
   | Tstr_modtype _ -> ()
   | Tstr_open _ -> ()
   | Tstr_class l ->
-      List.iter l ~f:(fun (id, _, _, cl) -> search_pos_class_expr cl ~pos)
+      List.iter l ~f:(fun (id, _, _, cl, _) -> search_pos_class_expr cl ~pos)
   | Tstr_cltype _ -> ()
   | Tstr_include (m, _) -> search_pos_module_expr m ~pos
   end
@@ -685,7 +684,8 @@ and search_pos_class_structure ~pos cls =
     begin function
         Cf_inher (cl, _, _) ->
           search_pos_class_expr cl ~pos
-      | Cf_val (_, _, exp) -> search_pos_expr exp ~pos
+      | Cf_val (_, _, Some exp, _) -> search_pos_expr exp ~pos
+      | Cf_val _ -> ()
       | Cf_meth (_, exp) -> search_pos_expr exp ~pos
       | Cf_let (_, pel, iel) ->
           List.iter pel ~f:

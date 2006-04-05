@@ -152,7 +152,7 @@ and class_signature = core_type * class_type_field list
 
 and class_type_field =
     Pctf_inher of class_type
-  | Pctf_val   of (string * mutable_flag * core_type option * Location.t)
+  | Pctf_val of (string * mutable_flag * virtual_flag * core_type * Location.t)
   | Pctf_virt  of (string * private_flag * core_type * Location.t)
   | Pctf_meth  of (string * private_flag * core_type * Location.t)
   | Pctf_cstr  of (core_type * core_type * Location.t)
@@ -179,6 +179,7 @@ and class_structure = pattern * class_field list
 
 and class_field =
     Pcf_inher of class_expr * string option
+  | Pcf_valvirt of (string * mutable_flag * core_type * Location.t)
   | Pcf_val   of (string * mutable_flag * expression * Location.t)
   | Pcf_virt  of (string * private_flag * core_type * Location.t)
   | Pcf_meth  of (string * private_flag * expression * Location.t)

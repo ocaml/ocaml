@@ -2161,6 +2161,15 @@ Grammar.extend
         (fun (t : 'ctyp) _ (l : 'label) (pf : string option) _ _
            (_loc : Lexing.position * Lexing.position) ->
            (MLast.CrVir (_loc, l, o2b pf, t) : 'class_str_item));
+      [Gramext.Stoken ("", "value"); Gramext.Stoken ("", "virtual");
+       Gramext.Sopt (Gramext.Stoken ("", "mutable"));
+       Gramext.Snterm (Grammar.Entry.obj (label : 'label Grammar.Entry.e));
+       Gramext.Stoken ("", ":");
+       Gramext.Snterm (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e))],
+      Gramext.action
+        (fun (t : 'ctyp) _ (l : 'label) (mf : string option) _ _
+           (_loc : Lexing.position * Lexing.position) ->
+           (MLast.CrVvr (_loc, l, o2b mf, t) : 'class_str_item));
       [Gramext.Stoken ("", "value");
        Gramext.Sopt (Gramext.Stoken ("", "mutable"));
        Gramext.Snterm (Grammar.Entry.obj (label : 'label Grammar.Entry.e));
@@ -2338,13 +2347,15 @@ Grammar.extend
            (MLast.CgVir (_loc, l, o2b pf, t) : 'class_sig_item));
       [Gramext.Stoken ("", "value");
        Gramext.Sopt (Gramext.Stoken ("", "mutable"));
+       Gramext.Sopt (Gramext.Stoken ("", "virtual"));
        Gramext.Snterm (Grammar.Entry.obj (label : 'label Grammar.Entry.e));
        Gramext.Stoken ("", ":");
        Gramext.Snterm (Grammar.Entry.obj (ctyp : 'ctyp Grammar.Entry.e))],
       Gramext.action
-        (fun (t : 'ctyp) _ (l : 'label) (mf : string option) _
+        (fun (t : 'ctyp) _ (l : 'label) (vf : string option)
+           (mf : string option) _
            (_loc : Lexing.position * Lexing.position) ->
-           (MLast.CgVal (_loc, l, o2b mf, t) : 'class_sig_item));
+           (MLast.CgVal (_loc, l, o2b mf, o2b vf, t) : 'class_sig_item));
       [Gramext.Stoken ("", "inherit");
        Gramext.Snterm
          (Grammar.Entry.obj (class_type : 'class_type Grammar.Entry.e))],

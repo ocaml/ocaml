@@ -170,10 +170,11 @@ type class_match_failure =
   | CM_Val_type_mismatch of string * (type_expr * type_expr) list
   | CM_Meth_type_mismatch of string * (type_expr * type_expr) list
   | CM_Non_mutable_value of string
+  | CM_Non_concrete_value of string
   | CM_Missing_value of string
   | CM_Missing_method of string
   | CM_Hide_public of string
-  | CM_Hide_virtual of string
+  | CM_Hide_virtual of string * string
   | CM_Public_method of string
   | CM_Private_method of string
   | CM_Virtual_method of string

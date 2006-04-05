@@ -136,11 +136,11 @@ struct
       \032    E/e enable/disable fragile match\n\
       \032    F/f enable/disable partially applied function\n\
       \032    L/l enable/disable labels omitted in application\n\
-      \032    M/m enable/disable overriden method\n\
+      \032    M/m enable/disable overriden methods\n\
       \032    P/p enable/disable partial match\n\
       \032    S/s enable/disable non-unit statement\n\
       \032    U/u enable/disable unused match case\n\
-      \032    V/v enable/disable hidden instance variable\n\
+      \032    V/v enable/disable overriden instance variables\n\
       \032    Y/y enable/disable suspicious unused variables\n\
       \032    Z/z enable/disable all other unused variables\n\
       \032    X/x enable/disable all other warnings\n\

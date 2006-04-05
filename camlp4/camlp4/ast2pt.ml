@@ -244,6 +244,7 @@ value mktype loc tl cl tk tm =
 ;
 value mkmutable m = if m then Mutable else Immutable;
 value mkprivate m = if m then Private else Public;
+value mkvirtual m = if m then Virtual else Concrete;
 value mktrecord (loc, n, m, t) =
   (n, mkmutable m, ctyp (mkpolytype t), mkloc loc);
 value mkvariant (loc, c, tl) = (c, List.map ctyp tl, mkloc loc);
@@ -862,8 +863,8 @@ and class_sig_item c l =
   | CgInh loc ct -> [Pctf_inher (class_type ct) :: l]
   | CgMth loc s pf t ->
       [Pctf_meth (s, mkprivate pf, ctyp (mkpolytype t), mkloc loc) :: l]
-  | CgVal loc s b t ->
-      [Pctf_val (s, mkmutable b, Some (ctyp t), mkloc loc) :: l]
+  | CgVal loc s b v t ->
+      [Pctf_val (s, mkmutable b, mkvirtual v, ctyp t, mkloc loc) :: l]
   | CgVir loc s b t ->
       [Pctf_virt (s, mkprivate b, ctyp (mkpolytype t), mkloc loc) :: l] ]
 and class_expr =
@@ -907,7 +908,9 @@ and class_str_item c l =
       [Pcf_meth (s, mkprivate b, e, mkloc loc) :: l]
   | CrVal loc s b e -> [Pcf_val (s, mkmutable b, expr e, mkloc loc) :: l]
   | CrVir loc s b t ->
-      [Pcf_virt (s, mkprivate b, ctyp (mkpolytype t), mkloc loc) :: l] ]
+      [Pcf_virt (s, mkprivate b, ctyp (mkpolytype t), mkloc loc) :: l]
+  | CrVvr loc s b t ->
+      [Pcf_valvirt (s, mkmutable b, ctyp t, mkloc loc) :: l] ]
 ;
 
 value interf ast = List.fold_right sig_item ast [];

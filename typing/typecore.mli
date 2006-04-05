@@ -38,7 +38,8 @@ val type_self_pattern:
         string -> type_expr -> Env.t -> Env.t -> Env.t -> Parsetree.pattern ->
         Typedtree.pattern *
         (Ident.t * type_expr) Meths.t ref *
-        (Ident.t * Asttypes.mutable_flag * type_expr) Vars.t ref *
+        (Ident.t * Asttypes.mutable_flag * Asttypes.virtual_flag * type_expr)
+            Vars.t ref *
         Env.t * Env.t * Env.t
 val type_expect:
         ?in_function:(Location.t * type_expr) ->

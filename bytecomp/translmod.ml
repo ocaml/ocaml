@@ -317,10 +317,10 @@ and transl_structure fields cc rootpath = function
   | Tstr_open path :: rem ->
       transl_structure fields cc rootpath rem
   | Tstr_class cl_list :: rem ->
-      let ids = List.map (fun (i, _, _, _) -> i) cl_list in
+      let ids = List.map (fun (i, _, _, _, _) -> i) cl_list in
       Lletrec(List.map
-                (fun (id, arity, meths, cl) ->
-                  (id, transl_class ids id arity meths cl))
+                (fun (id, arity, meths, cl, vf) ->
+                  (id, transl_class ids id arity meths cl vf))
                 cl_list,
               transl_structure (List.rev ids @ fields) cc rootpath rem)
   | Tstr_cltype cl_list :: rem ->
@@ -414,11 +414,11 @@ let transl_store_structure glob map prims str =
   | Tstr_open path :: rem ->
       transl_store subst rem
   | Tstr_class cl_list :: rem ->
-      let ids = List.map (fun (i, _, _, _) -> i) cl_list in
+      let ids = List.map (fun (i, _, _, _, _) -> i) cl_list in
       let lam =
         Lletrec(List.map
-                  (fun (id, arity, meths, cl) ->
-                     (id, transl_class ids id arity meths cl))
+                  (fun (id, arity, meths, cl, vf) ->
+                     (id, transl_class ids id arity meths cl vf))
                   cl_list,
                 store_idents ids) in
       Lsequence(subst_lambda subst lam,
@@ -485,7 +485,7 @@ let rec defined_idents = function
   | Tstr_modtype(id, decl) :: rem -> defined_idents rem
   | Tstr_open path :: rem -> defined_idents rem
   | Tstr_class cl_list :: rem ->
-      List.map (fun (i, _, _, _) -> i) cl_list @ defined_idents rem
+      List.map (fun (i, _, _, _, _) -> i) cl_list @ defined_idents rem
   | Tstr_cltype cl_list :: rem -> defined_idents rem
   | Tstr_include(modl, ids) :: rem -> ids @ defined_idents rem
 
@@ -603,14 +603,14 @@ let transl_toplevel_item = function
   | Tstr_class cl_list ->
       (* we need to use unique names for the classes because there might
          be a value named identically *)
-      let ids = List.map (fun (i, _, _, _) -> i) cl_list in
+      let ids = List.map (fun (i, _, _, _, _) -> i) cl_list in
       List.iter set_toplevel_unique_name ids;
       Lletrec(List.map
-                (fun (id, arity, meths, cl) ->
-                   (id, transl_class ids id arity meths cl))
+                (fun (id, arity, meths, cl, vf) ->
+                   (id, transl_class ids id arity meths cl vf))
                 cl_list,
               make_sequence
-                (fun (id, _, _, _) -> toploop_setvalue_id id)
+                (fun (id, _, _, _, _) -> toploop_setvalue_id id)
                 cl_list)
   | Tstr_cltype cl_list ->
       lambda_unit

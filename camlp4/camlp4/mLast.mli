@@ -180,7 +180,7 @@ and class_sig_item =
   | CgDcl of loc and list class_sig_item
   | CgInh of loc and class_type
   | CgMth of loc and string and bool and ctyp
-  | CgVal of loc and string and bool and ctyp
+  | CgVal of loc and string and bool and bool and ctyp
   | CgVir of loc and string and bool and ctyp ]
 and class_expr =
   [ CeApp of loc and class_expr and expr
@@ -196,7 +196,8 @@ and class_str_item =
   | CrIni of loc and expr
   | CrMth of loc and string and bool and expr and option ctyp
   | CrVal of loc and string and bool and expr
-  | CrVir of loc and string and bool and ctyp ]
+  | CrVir of loc and string and bool and ctyp
+  | CrVvr of loc and string and bool and ctyp ]
 ;
 
 external loc_of_ctyp : ctyp -> loc = "%field0";

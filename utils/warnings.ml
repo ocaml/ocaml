@@ -26,7 +26,7 @@ type t =                             (* A is all *)
   | Statement_type                   (* S *)
   | Unused_match                     (* U *)
   | Unused_pat
-  | Hide_instance_variable of string (* V *)
+  | Instance_variable_override of string (* V *)
   | Illegal_backslash                (* X *)
   | Implicit_public_methods of string list
   | Unerasable_optional_argument
@@ -54,7 +54,7 @@ let letter = function        (* 'a' is all *)
   | Statement_type ->           's'
   | Unused_match
   | Unused_pat ->               'u'
-  | Hide_instance_variable _ -> 'v'
+  | Instance_variable_override _ -> 'v'
   | Illegal_backslash
   | Implicit_public_methods _
   | Unerasable_optional_argument
@@ -126,9 +126,9 @@ let message = function
       String.concat " "
         ("the following methods are overriden \
           by the inherited class:\n " :: slist)
-  | Hide_instance_variable lab ->
-      "this definition of an instance variable " ^ lab ^
-      " hides a previously\ndefined instance variable of the same name."
+  | Instance_variable_override lab ->
+      "the instance variable " ^ lab ^ " is overriden.\n" ^
+      "The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)"
   | Partial_application ->
       "this function application is partial,\n\
        maybe some arguments are missing."

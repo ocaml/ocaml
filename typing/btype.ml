@@ -330,7 +330,7 @@ let unmark_type_decl decl =
 
 let unmark_class_signature sign =
   unmark_type sign.cty_self;
-  Vars.iter (fun l (m, t) -> unmark_type t) sign.cty_vars
+  Vars.iter (fun l (m, v, t) -> unmark_type t) sign.cty_vars
 
 let rec unmark_class_type =
   function

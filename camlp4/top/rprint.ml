@@ -288,8 +288,9 @@ and print_out_class_sig_item ppf =
       fprintf ppf "@[<2>method %s%s%s :@ %a;@]"
         (if priv then "private " else "") (if virt then "virtual " else "")
         name Toploop.print_out_type.val ty
-  | Ocsg_value name mut ty ->
-      fprintf ppf "@[<2>value %s%s :@ %a;@]" (if mut then "mutable " else "")
+  | Ocsg_value name mut virt ty ->
+      fprintf ppf "@[<2>value %s%s%s :@ %a;@]"
+        (if mut then "mutable " else "") (if virt then "virtual " else "")
         name Toploop.print_out_type.val ty ]
 ;
 

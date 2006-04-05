@@ -350,7 +350,7 @@ and class_sig_item floc sh =
     | CgDcl loc x1 -> let nloc = floc loc in CgDcl nloc (List.map (class_sig_item floc sh) x1)
     | CgInh loc x1 -> let nloc = floc loc in CgInh nloc (class_type floc sh x1)
     | CgMth loc x1 x2 x3 -> let nloc = floc loc in CgMth nloc x1 x2 (ctyp floc sh x3)
-    | CgVal loc x1 x2 x3 -> let nloc = floc loc in CgVal nloc x1 x2 (ctyp floc sh x3)
+    | CgVal loc x1 x2 x3 x4 -> let nloc = floc loc in CgVal nloc x1 x2 x3 (ctyp floc sh x4)
     | CgVir loc x1 x2 x3 -> let nloc = floc loc in CgVir nloc x1 x2 (ctyp floc sh x3) ]
 and class_expr floc sh =
   self where rec self =
@@ -377,5 +377,6 @@ and class_str_item floc sh =
     | CrMth loc x1 x2 x3 x4 ->
         let nloc = floc loc in CrMth nloc x1 x2 (expr floc sh x3) (option_map (ctyp floc sh) x4)
     | CrVal loc x1 x2 x3 -> let nloc = floc loc in CrVal nloc x1 x2 (expr floc sh x3)
-    | CrVir loc x1 x2 x3 -> let nloc = floc loc in CrVir nloc x1 x2 (ctyp floc sh x3) ]
+    | CrVir loc x1 x2 x3 -> let nloc = floc loc in CrVir nloc x1 x2 (ctyp floc sh x3)
+    | CrVvr loc x1 x2 x3 -> let nloc = floc loc in CrVvr nloc x1 x2 (ctyp floc sh x3) ]
 ;

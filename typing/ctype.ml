@@ -857,7 +857,7 @@ let instance_class params cty =
         Tcty_signature
           {cty_self = copy sign.cty_self;
            cty_vars =
-             Vars.map (function (mut, ty) -> (mut, copy ty)) sign.cty_vars;
+             Vars.map (function (m, v, ty) -> (m, v, copy ty)) sign.cty_vars;
            cty_concr = sign.cty_concr;
            cty_inher =
              List.map (fun (p,tl) -> (p, List.map copy tl)) sign.cty_inher}
@@ -2354,10 +2354,11 @@ type class_match_failure =
   | CM_Val_type_mismatch of string * (type_expr * type_expr) list
   | CM_Meth_type_mismatch of string * (type_expr * type_expr) list
   | CM_Non_mutable_value of string
+  | CM_Non_concrete_value of string
   | CM_Missing_value of string
   | CM_Missing_method of string
   | CM_Hide_public of string
-  | CM_Hide_virtual of string
+  | CM_Hide_virtual of string * string
   | CM_Public_method of string
   | CM_Private_method of string
   | CM_Virtual_method of string
@@ -2390,8 +2391,8 @@ let rec moregen_clty trace type_pairs env cty1 cty2 =
            end)
         pairs;
       Vars.iter
-        (fun lab (mut, ty) ->
-           let (mut', ty') = Vars.find lab sign1.cty_vars in
+        (fun lab (mut, v, ty) ->
+           let (mut', v', ty') = Vars.find lab sign1.cty_vars in
            try moregen true type_pairs env ty' ty with Unify trace ->
              raise (Failure [CM_Val_type_mismatch
                                 (lab, expand_trace env trace)]))
@@ -2437,7 +2438,7 @@ let match_class_types env pat_sch subj_sch =
              end
            in
            if Concr.mem lab sign1.cty_concr then err
-           else CM_Hide_virtual lab::err)
+           else CM_Hide_virtual ("method", lab) :: err)
         miss1 []
     in
     let missing_method = List.map (fun (m, _, _) -> m) miss2 in
@@ -2455,16 +2456,26 @@ let match_class_types env pat_sch subj_sch =
     in
     let error =
       Vars.fold
-        (fun lab (mut, ty) err ->
+        (fun lab (mut, vr, ty) err ->
           try
-            let (mut', ty') = Vars.find lab sign1.cty_vars in
+            let (mut', vr', ty') = Vars.find lab sign1.cty_vars in
             if mut = Mutable && mut' <> Mutable then
               CM_Non_mutable_value lab::err
+            else if vr = Concrete && vr' <> Concrete then
+              CM_Non_concrete_value lab::err
             else
               err
           with Not_found ->
             CM_Missing_value lab::err)
         sign2.cty_vars error
+    in
+    let error =
+      Vars.fold
+        (fun lab (_,vr,_) err ->
+          if vr = Virtual && not (Vars.mem lab sign2.cty_vars) then
+            CM_Hide_virtual ("instance variable", lab) :: err
+          else err)
+        sign1.cty_vars error
     in
     let error =
       List.fold_right
@@ -2516,8 +2527,8 @@ let rec equal_clty trace type_pairs subst env cty1 cty2 =
              end)
           pairs;
         Vars.iter
-          (fun lab (mut, ty) ->
-             let (mut', ty') = Vars.find lab sign1.cty_vars in
+          (fun lab (_, _, ty) ->
+             let (_, _, ty') = Vars.find lab sign1.cty_vars in
              try eqtype true type_pairs subst env ty ty' with Unify trace ->
                raise (Failure [CM_Val_type_mismatch
                                   (lab, expand_trace env trace)]))
@@ -2554,7 +2565,7 @@ let match_class_declarations env patt_params patt_type subj_params subj_type =
           end
         in
         if Concr.mem lab sign1.cty_concr then err
-        else CM_Hide_virtual lab::err)
+        else CM_Hide_virtual ("method", lab) :: err)
       miss1 []
   in
   let missing_method = List.map (fun (m, _, _) -> m) miss2 in
@@ -2578,16 +2589,26 @@ let match_class_declarations env patt_params patt_type subj_params subj_type =
   in
   let error =
     Vars.fold
-      (fun lab (mut, ty) err ->
+      (fun lab (mut, vr, ty) err ->
          try
-           let (mut', ty') = Vars.find lab sign1.cty_vars in
+           let (mut', vr', ty') = Vars.find lab sign1.cty_vars in
            if mut = Mutable && mut' <> Mutable then
              CM_Non_mutable_value lab::err
+           else if vr = Concrete && vr' <> Concrete then
+             CM_Non_concrete_value lab::err
            else
              err
          with Not_found ->
            CM_Missing_value lab::err)
       sign2.cty_vars error
+  in
+  let error =
+    Vars.fold
+      (fun lab (_,vr,_) err ->
+        if vr = Virtual && not (Vars.mem lab sign2.cty_vars) then
+          CM_Hide_virtual ("instance variable", lab) :: err
+        else err)
+      sign1.cty_vars error
   in
   let error =
     List.fold_right
@@ -3279,7 +3300,7 @@ let nondep_type_decl env mid id is_covariant decl =
 let nondep_class_signature env id sign =
   { cty_self = nondep_type_rec env id sign.cty_self;
     cty_vars =
-      Vars.map (function (m, t) -> (m, nondep_type_rec env id t))
+      Vars.map (function (m, v, t) -> (m, v, nondep_type_rec env id t))
         sign.cty_vars;
     cty_concr = sign.cty_concr;
     cty_inher =

@@ -133,10 +133,10 @@ let rec build_object_init cl_table obj params inh_init obj_init cl =
                        (fun _ -> lambda_unit) cl
                    in
                    (inh_init, lsequence obj_init' obj_init, true)
-               | Cf_val (_, id, exp) ->
+               | Cf_val (_, id, Some exp, _) ->
                    (inh_init, lsequence (set_inst_var obj id exp) obj_init,
                     has_init)
-               | Cf_meth _ ->
+               | Cf_meth _ | Cf_val _ ->
                    (inh_init, obj_init, has_init)
                | Cf_init _ ->
                    (inh_init, obj_init, true)
@@ -213,27 +213,17 @@ let bind_methods tbl meths vals cl_init =
   if len < 2 && nvals = 0 then Meths.fold (bind_method tbl) meths cl_init else
   if len = 0 && nvals < 2 then transl_vals tbl true vals cl_init else
   let ids = Ident.create "ids" in
-  let i = ref len in
-  let getter, names, cl_init =
-    match vals with [] -> "get_method_labels", [], cl_init
-    | (_,id0)::vals' ->
-        incr i;
-        let i = ref (List.length vals) in
-        "new_methods_variables",
-        [transl_meth_list (List.map fst vals)],
-        Llet(Strict, id0, lfield ids 0,
-	     List.fold_right
-	       (fun (name,id) rem ->
-	         decr i;
-                 Llet(Alias, id, Lprim(Poffsetint !i, [Lvar id0]), rem))
-	       vals' cl_init)
+  let i = ref (len + nvals) in
+  let getter, names =
+    if nvals = 0 then "get_method_labels", [] else
+    "new_methods_variables", [transl_meth_list (List.map fst vals)]
   in
   Llet(StrictOpt, ids,
        Lapply (oo_prim getter,
                [Lvar tbl; transl_meth_list (List.map fst methl)] @ names),
        List.fold_right
          (fun (lab,id) lam -> decr i; Llet(StrictOpt, id, lfield ids !i, lam))
-         methl cl_init)
+         (methl @ vals) cl_init)
 
 let output_methods tbl methods lam =
   match methods with
@@ -283,8 +273,9 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
                     (vals, meths_super cla str.cl_meths meths)
                     inh_init cl_init msubst top cl in
                 (inh_init, cl_init, [], values)
-            | Cf_val (name, id, exp) ->
-                (inh_init, cl_init, methods, (name, id)::values)
+            | Cf_val (name, id, exp, over) ->
+                let values = if over then values else (name, id) :: values in
+                (inh_init, cl_init, methods, values)
             | Cf_meth (name, exp) ->
                 let met_code = msubst true (transl_exp exp) in
                 let met_code =
@@ -342,27 +333,24 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
 	  assert (Path.same path path');
 	  let lpath = transl_path path in
           let inh = Ident.create "inh"
-          and inh_vals = Ident.create "vals"
-          and inh_meths = Ident.create "meths"
+          and ofs = List.length vals + 1
           and valids, methids = super in
           let cl_init =
             List.fold_left
               (fun init (nm, id, _) ->
-                Llet(StrictOpt, id, lfield inh_meths (index nm concr_meths),
+                Llet(StrictOpt, id, lfield inh (index nm concr_meths + ofs),
                      init))
               cl_init methids in
           let cl_init =
             List.fold_left
               (fun init (nm, id) ->
-                Llet(StrictOpt, id, lfield inh_vals (index nm vals), init))
+                Llet(StrictOpt, id, lfield inh (index nm vals + 1), init))
               cl_init valids in
           (inh_init,
            Llet (Strict, inh, 
 		 Lapply(oo_prim "inherits", narrow_args @
 			[lpath; Lconst(Const_pointer(if top then 1 else 0))]),
-                 Llet(StrictOpt, obj_init, lfield inh 0,
-                 Llet(Alias, inh_vals, lfield inh 1,
-                 Llet(Alias, inh_meths, lfield inh 2, cl_init)))))
+                 Llet(StrictOpt, obj_init, lfield inh 0, cl_init)))
       | _ ->
 	  let core cl_init =
             build_class_init cla true super inh_init cl_init msubst top cl
@@ -397,12 +385,16 @@ let rec get_class_meths cl =
    XXX Il devrait etre peu couteux d'ecrire des classes :
      class c x y = d e f
 *)
-let rec transl_class_rebind obj_init cl =
+let rec transl_class_rebind obj_init cl vf =
   match cl.cl_desc with
     Tclass_ident path ->
+      if vf = Concrete then begin
+        try if (Env.find_class path cl.cl_env).cty_new = None then raise Exit
+        with Not_found -> raise Exit
+      end;
       (path, obj_init)
   | Tclass_fun (pat, _, cl, partial) ->
-      let path, obj_init = transl_class_rebind obj_init cl in
+      let path, obj_init = transl_class_rebind obj_init cl vf in
       let build params rem =
         let param = name_pattern "param" [pat, ()] in
         Lfunction (Curried, param::params,
@@ -414,14 +406,14 @@ let rec transl_class_rebind obj_init cl =
          Lfunction (Curried, params, rem) -> build params rem
        | rem                              -> build [] rem)
   | Tclass_apply (cl, oexprs) ->
-      let path, obj_init = transl_class_rebind obj_init cl in
+      let path, obj_init = transl_class_rebind obj_init cl vf in
       (path, transl_apply obj_init oexprs)
   | Tclass_let (rec_flag, defs, vals, cl) ->
-      let path, obj_init = transl_class_rebind obj_init cl in
+      let path, obj_init = transl_class_rebind obj_init cl vf in
       (path, Translcore.transl_let rec_flag defs obj_init)
   | Tclass_structure _ -> raise Exit
   | Tclass_constraint (cl', _, _, _) ->
-      let path, obj_init = transl_class_rebind obj_init cl' in
+      let path, obj_init = transl_class_rebind obj_init cl' vf in
       let rec check_constraint = function
           Tcty_constr(path', _, _) when Path.same path path' -> ()
         | Tcty_fun (_, _, cty) -> check_constraint cty
@@ -430,21 +422,21 @@ let rec transl_class_rebind obj_init cl =
       check_constraint cl.cl_type;
       (path, obj_init)
 
-let rec transl_class_rebind_0 self obj_init cl =
+let rec transl_class_rebind_0 self obj_init cl vf =
   match cl.cl_desc with
     Tclass_let (rec_flag, defs, vals, cl) ->
-      let path, obj_init = transl_class_rebind_0 self obj_init cl in
+      let path, obj_init = transl_class_rebind_0 self obj_init cl vf in
       (path, Translcore.transl_let rec_flag defs obj_init)
   | _ ->
-      let path, obj_init = transl_class_rebind obj_init cl in
+      let path, obj_init = transl_class_rebind obj_init cl vf in
       (path, lfunction [self] obj_init)
 
-let transl_class_rebind ids cl =
+let transl_class_rebind ids cl vf =
   try
     let obj_init = Ident.create "obj_init"
     and self = Ident.create "self" in
     let obj_init0 = lapply (Lvar obj_init) [Lvar self] in
-    let path, obj_init' = transl_class_rebind_0 self obj_init0 cl in
+    let path, obj_init' = transl_class_rebind_0 self obj_init0 cl vf in
     if not (Translcore.check_recursive_lambda ids obj_init') then
       raise(Error(cl.cl_loc, Illegal_class_expr));
     let id = (obj_init' = lfunction [self] obj_init0) in
@@ -592,9 +584,9 @@ open M
 *)
 
 
-let transl_class ids cl_id arity pub_meths cl =
+let transl_class ids cl_id arity pub_meths cl vflag =
   (* First check if it is not only a rebind *)
-  let rebind = transl_class_rebind ids cl in
+  let rebind = transl_class_rebind ids cl vflag in
   if rebind <> lambda_unit then rebind else
 
   (* Prepare for heavy environment handling *)
@@ -696,9 +688,7 @@ let transl_class ids cl_id arity pub_meths cl =
   (* Simplest case: an object defined at toplevel (ids=[]) *)
   if top && ids = [] then llets (ltable cla (ldirect obj_init)) else
 
-  let concrete =
-    ids = [] ||
-    Typeclass.virtual_methods (Ctype.signature_of_class_type cl.cl_type) = []
+  let concrete = (vflag = Concrete)
   and lclass lam =
     let cl_init = llets (Lfunction(Curried, [cla], cl_init)) in
     Llet(Strict, class_init, cl_init, lam (free_variables cl_init))
@@ -800,11 +790,11 @@ let transl_class ids cl_id arity pub_meths cl =
 
 (* Wrapper for class compilation *)
 
-let transl_class ids cl_id arity pub_meths cl =
-  oo_wrap cl.cl_env false (transl_class ids cl_id arity pub_meths) cl
+let transl_class ids cl_id arity pub_meths cl vf =
+  oo_wrap cl.cl_env false (transl_class ids cl_id arity pub_meths cl) vf
 
 let () =
-  transl_object := (fun id meths cl -> transl_class [] id 0 meths cl)
+  transl_object := (fun id meths cl -> transl_class [] id 0 meths cl Concrete)
 
 (* Error report *)
 

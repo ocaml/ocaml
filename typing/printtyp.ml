@@ -650,7 +650,7 @@ let rec prepare_class_type params = function
         Ctype.flatten_fields (Ctype.object_fields sign.cty_self)
       in
       List.iter (fun met -> mark_loops (method_type met)) fields;
-      Vars.iter (fun _ (_, ty) -> mark_loops ty) sign.cty_vars
+      Vars.iter (fun _ (_, _, ty) -> mark_loops ty) sign.cty_vars
   | Tcty_fun (_, ty, cty) ->
       mark_loops ty;
       prepare_class_type params cty
@@ -682,13 +682,15 @@ let rec tree_of_class_type sch params =
           csil (tree_of_constraints params)
       in
       let all_vars =
-        Vars.fold (fun l (m, t) all -> (l, m, t) :: all) sign.cty_vars [] in
+        Vars.fold (fun l (m, v, t) all -> (l, m, v, t) :: all) sign.cty_vars []
+      in
       (* Consequence of PR#3607: order of Map.fold has changed! *)
       let all_vars = List.rev all_vars in
       let csil =
         List.fold_left
-          (fun csil (l, m, t) ->
-             Ocsg_value (l, m = Mutable, tree_of_typexp sch t) :: csil)
+          (fun csil (l, m, v, t) ->
+            Ocsg_value (l, m = Mutable, v = Virtual, tree_of_typexp sch t)
+            :: csil)
           csil all_vars
       in
       let csil =
@@ -763,7 +765,9 @@ let tree_of_cltype_declaration id cl rs =
     List.exists
       (fun (lab, _, ty) ->
          not (lab = dummy_method || Concr.mem lab sign.cty_concr))
-      fields in
+      fields
+    || Vars.fold (fun _ (_,vr,_) b -> vr = Virtual || b) sign.cty_vars false
+  in
 
   Osig_class_type
     (virt, Ident.name id,

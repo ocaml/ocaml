@@ -1037,8 +1037,14 @@ EXTEND
   class_str_item:
     [ [ "inherit"; ce = class_expr; pb = OPT [ "as"; i = LIDENT -> i ] ->
           <:class_str_item< inherit $ce$ $opt:pb$ >>
-      | "val"; mf = OPT "mutable"; lab = label; e = cvalue_binding ->
-          <:class_str_item< value $opt:o2b mf$ $lab$ = $e$ >>
+      | "val"; "mutable"; lab = label; e = cvalue_binding ->
+          <:class_str_item< value mutable $lab$ = $e$ >>
+      | "val"; lab = label; e = cvalue_binding ->
+          <:class_str_item< value $lab$ = $e$ >>
+      | "val"; "mutable"; "virtual"; lab = label; ":"; t = ctyp ->
+          <:class_str_item< value virtual mutable $lab$ : $t$ >>
+      | "val"; "virtual"; mf = OPT "mutable"; lab = label; ":"; t = ctyp ->
+          <:class_str_item< value virtual $opt:o2b mf$ $lab$ : $t$ >>
       | "method"; "private"; "virtual"; l = label; ":"; t = poly_type ->
           <:class_str_item< method virtual private $l$ : $t$ >>
       | "method"; "virtual"; "private"; l = label; ":"; t = poly_type ->
@@ -1087,8 +1093,9 @@ EXTEND
   ;
   class_sig_item:
     [ [ "inherit"; cs = class_signature -> <:class_sig_item< inherit $cs$ >>
-      | "val"; mf = OPT "mutable"; l = label; ":"; t = ctyp ->
-          <:class_sig_item< value $opt:o2b mf$ $l$ : $t$ >>
+      | "val"; mf = OPT "mutable"; vf = OPT "virtual";
+        l = label; ":"; t = ctyp ->
+          <:class_sig_item< value $opt:o2b mf$ $opt:o2b vf$ $l$ : $t$ >>
       | "method"; "private"; "virtual"; l = label; ":"; t = poly_type ->
           <:class_sig_item< method virtual private $l$ : $t$ >>
       | "method"; "virtual"; "private"; l = label; ":"; t = poly_type ->

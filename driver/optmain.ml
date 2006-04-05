@@ -173,7 +173,7 @@ let main () =
          \032    P/p enable/disable partial match\n\
          \032    S/s enable/disable non-unit statement\n\
          \032    U/u enable/disable unused match case\n\
-         \032    V/v enable/disable hidden instance variables\n\
+         \032    V/v enable/disable overriden instance variables\n\
          \032    Y/y enable/disable suspicious unused variables\n\
          \032    Z/z enable/disable all other unused variables\n\
          \032    X/x enable/disable all other warnings\n\

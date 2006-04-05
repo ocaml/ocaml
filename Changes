@@ -1,3 +1,13 @@
+Objective Caml 3.10.0:
+----------------------
+
+Language features:
+- Added virtual instance variables in classes "val virtual v : t"
+- Changed the behaviour of instance variable overriding; the new
+  definition replaces the old one, rather than creating a new
+  variable.
+
+
 Objective Caml 3.09.1:
 ----------------------
 

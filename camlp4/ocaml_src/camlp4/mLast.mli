@@ -180,7 +180,7 @@ and class_sig_item =
   | CgDcl of loc * class_sig_item list
   | CgInh of loc * class_type
   | CgMth of loc * string * bool * ctyp
-  | CgVal of loc * string * bool * ctyp
+  | CgVal of loc * string * bool * bool * ctyp
   | CgVir of loc * string * bool * ctyp
 and class_expr =
     CeApp of loc * class_expr * expr
@@ -197,6 +197,7 @@ and class_str_item =
   | CrMth of loc * string * bool * expr * ctyp option
   | CrVal of loc * string * bool * expr
   | CrVir of loc * string * bool * ctyp
+  | CrVvr of loc * string * bool * ctyp
 ;;
 
 external loc_of_ctyp : ctyp -> loc = "%field0";;

@@ -611,11 +611,11 @@ let rec is_nonexpansive exp =
       List.for_all
         (function
             Cf_meth _ -> true
-          | Cf_val (_,_,e) -> incr count; is_nonexpansive e
+          | Cf_val (_,_,e,_) -> incr count; is_nonexpansive_opt e
           | Cf_init e -> is_nonexpansive e
           | Cf_inher _ | Cf_let _ -> false)
         fields &&
-      Vars.fold (fun _ (mut,_) b -> decr count; b && mut = Immutable)
+      Vars.fold (fun _ (mut,_,_) b -> decr count; b && mut = Immutable)
         vars true &&
       !count = 0
   | _ -> false
@@ -1356,7 +1356,7 @@ let rec type_exp env sexp =
         (path_self, _) ->
           let type_override (lab, snewval) =
             begin try
-              let (id, _, ty) = Vars.find lab !vars in
+              let (id, _, _, ty) = Vars.find lab !vars in
               (Path.Pident id, type_expect env snewval (instance ty))
             with
               Not_found ->

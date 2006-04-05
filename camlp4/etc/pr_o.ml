@@ -1768,10 +1768,11 @@ pr_class_sig_item.pr_levels :=
                   [: `S LR "method"; private_flag pf; `label lab;
                      `S LR ":" :];
                `ctyp t "" k :]
-      | MLast.CgVal _ lab mf t ->
+      | MLast.CgVal _ lab mf vf t ->
           fun curr next dg k ->
             [: `HVbox
-                  [: `S LR "val"; mutable_flag mf; `label lab; `S LR ":" :];
+                  [: `S LR "val"; mutable_flag mf; virtual_flag vf;
+                     `label lab; `S LR ":" :];
                `ctyp t "" k :]
       | MLast.CgVir _ lab pf t ->
           fun curr next dg k ->

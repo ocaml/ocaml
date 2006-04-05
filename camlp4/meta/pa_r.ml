@@ -658,7 +658,9 @@ EXTEND
       | "inherit"; ce = class_expr; pb = OPT as_lident ->
           <:class_str_item< inherit $ce$ $opt:pb$ >>
       | "value"; mf = OPT "mutable"; lab = label; e = cvalue_binding ->
-          <:class_str_item< value $opt:o2b mf$ $lab$ = $e$ >>
+          <:class_str_item< value $opt:o2b mf$ $lab$ = $e$ >> 
+      | "value"; "virtual"; mf = OPT "mutable"; l = label; ":"; t = ctyp ->
+          <:class_str_item< value virtual $opt:o2b mf$ $l$ : $t$ >>
       | "method"; "virtual"; pf = OPT "private"; l = label; ":"; t = ctyp ->
           <:class_str_item< method virtual $opt:o2b pf$ $l$ : $t$ >>
       | "method"; pf = OPT "private"; l = label; topt = OPT polyt;
@@ -701,8 +703,9 @@ EXTEND
     [ [ "declare"; st = LIST0 [ s = class_sig_item; ";" -> s ]; "end" ->
           <:class_sig_item< declare $list:st$ end >>
       | "inherit"; cs = class_type -> <:class_sig_item< inherit $cs$ >>
-      | "value"; mf = OPT "mutable"; l = label; ":"; t = ctyp ->
-          <:class_sig_item< value $opt:o2b mf$ $l$ : $t$ >>
+      | "value"; mf = OPT "mutable"; vf = OPT "virtual";
+        l = label; ":"; t = ctyp ->
+          <:class_sig_item< value $opt:o2b mf$ $opt:o2b vf$ $l$ : $t$ >>
       | "method"; "virtual"; pf = OPT "private"; l = label; ":"; t = ctyp ->
           <:class_sig_item< method virtual $opt:o2b pf$ $l$ : $t$ >>
       | "method"; pf = OPT "private"; l = label; ":"; t = ctyp ->

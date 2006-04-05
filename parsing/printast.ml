@@ -353,10 +353,11 @@ and class_type_field i ppf x =
   | Pctf_inher (ct) ->
       line i ppf "Pctf_inher\n";
       class_type i ppf ct;
-  | Pctf_val (s, mf, cto, loc) ->
+  | Pctf_val (s, mf, vf, ct, loc) ->
       line i ppf
-        "Pctf_val \"%s\" %a %a\n" s fmt_mutable_flag mf fmt_location loc;
-      option i core_type ppf cto;
+        "Pctf_val \"%s\" %a %a %a\n" s
+        fmt_mutable_flag mf fmt_virtual_flag vf fmt_location loc;
+      core_type (i+1) ppf ct;
   | Pctf_virt (s, pf, ct, loc) ->
       line i ppf
         "Pctf_virt \"%s\" %a %a\n" s fmt_private_flag pf fmt_location loc;
@@ -428,6 +429,10 @@ and class_field i ppf x =
       line i ppf "Pcf_inher\n";
       class_expr (i+1) ppf ce;
       option (i+1) string ppf so;
+  | Pcf_valvirt (s, mf, ct, loc) ->
+      line i ppf
+        "Pcf_valvirt \"%s\" %a %a\n" s fmt_mutable_flag mf fmt_location loc;
+      core_type (i+1) ppf ct;
   | Pcf_val (s, mf, e, loc) ->
       line i ppf
         "Pcf_val \"%s\" %a %a\n" s fmt_mutable_flag mf fmt_location loc;

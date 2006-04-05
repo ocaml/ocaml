@@ -947,6 +947,8 @@ EXTEND
           Qast.Node "CrDcl" [Qast.Loc; st]
       | "inherit"; ce = class_expr; pb = SOPT as_lident ->
           Qast.Node "CrInh" [Qast.Loc; ce; pb]
+      | "value"; "virtual"; mf = SOPT "mutable"; l = label; ":"; t = ctyp ->
+          Qast.Node "CrVvr" [Qast.Loc; l; o2b mf; t]
       | "value"; mf = SOPT "mutable"; lab = label; e = cvalue_binding ->
           Qast.Node "CrVal" [Qast.Loc; lab; o2b mf; e]
       | "method"; "virtual"; pf = SOPT "private"; l = label; ":"; t = ctyp ->
@@ -992,8 +994,9 @@ EXTEND
     [ [ "declare"; st = SLIST0 [ s = class_sig_item; ";" -> s ]; "end" ->
           Qast.Node "CgDcl" [Qast.Loc; st]
       | "inherit"; cs = class_type -> Qast.Node "CgInh" [Qast.Loc; cs]
-      | "value"; mf = SOPT "mutable"; l = label; ":"; t = ctyp ->
-          Qast.Node "CgVal" [Qast.Loc; l; o2b mf; t]
+      | "value"; mf = SOPT "mutable"; vf = SOPT "virtual";
+        l = label; ":"; t = ctyp ->
+          Qast.Node "CgVal" [Qast.Loc; l; o2b mf; o2b vf; t]
       | "method"; "virtual"; pf = SOPT "private"; l = label; ":"; t = ctyp ->
           Qast.Node "CgVir" [Qast.Loc; l; o2b pf; t]
       | "method"; pf = SOPT "private"; l = label; ":"; t = ctyp ->

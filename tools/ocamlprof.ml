@@ -328,7 +328,7 @@ and rewrite_class_field iflag =
       rewrite_patexp_list iflag spat_sexp_list
   | Pcf_init sexp ->
       rewrite_exp iflag sexp
-  | Pcf_virt _ | Pcf_cstr _  -> ()
+  | Pcf_valvirt _ | Pcf_virt _ | Pcf_cstr _  -> ()
 
 and rewrite_class_expr iflag cexpr =
   match cexpr.pcl_desc with

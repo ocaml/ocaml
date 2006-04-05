@@ -88,7 +88,7 @@ module Typedtree_search =
             ident_type_decl_list
       | Typedtree.Tstr_class info_list ->
           List.iter
-            (fun ((id,_,_,_) as ci) ->
+            (fun ((id,_,_,_,_) as ci) ->
               Hashtbl.add table (C (Name.from_ident id))
                 (Typedtree.Tstr_class [ci]))
             info_list
@@ -146,7 +146,7 @@ module Typedtree_search =
 
     let search_class_exp table name =
       match Hashtbl.find table (C name) with
-      | (Typedtree.Tstr_class [(_,_,_,ce)]) ->
+      | (Typedtree.Tstr_class [(_,_,_,ce,_)]) ->
           (
            try
              let type_decl = search_type_declaration table name in
@@ -184,7 +184,7 @@ module Typedtree_search =
       let rec iter = function
         | [] ->
             raise Not_found
-        | Typedtree.Cf_val (_, ident, exp) :: q
+        | Typedtree.Cf_val (_, ident, Some exp, _) :: q
           when Name.from_ident ident = name ->
             exp.Typedtree.exp_type
         | _ :: q ->
@@ -523,7 +523,8 @@ module Analyser =
               p_clexp.Parsetree.pcl_loc.Location.loc_end.Lexing.pos_cnum
               q
 
-        | (Parsetree.Pcf_val (label, mutable_flag, expression, loc)) :: q ->
+        | (Parsetree.Pcf_val (label, mutable_flag, _, loc) |
+           Parsetree.Pcf_valvirt (label, mutable_flag, _, loc)) :: q ->
             let complete_name = Name.concat current_class_name label in
             let (info_opt, ele_comments) = get_comments_in_class last_pos loc.Location.loc_start.Lexing.pos_cnum in
             let type_exp =

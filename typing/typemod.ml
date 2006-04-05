@@ -17,6 +17,7 @@
 open Misc
 open Longident
 open Path
+open Asttypes
 open Parsetree
 open Types
 open Typedtree
@@ -667,8 +668,9 @@ and type_structure anchor env sstr =
         let (classes, new_env) = Typeclass.class_declarations env cl in
         let (str_rem, sig_rem, final_env) = type_struct new_env srem in
         (Tstr_class
-           (List.map (fun (i, _,_,_,_,_,_,_, s, m, c) ->
-              (i, s, m, c)) classes) ::
+           (List.map (fun (i, d, _,_,_,_,_,_, s, m, c) ->
+              let vf = if d.cty_new = None then Virtual else Concrete in
+              (i, s, m, c, vf)) classes) ::
          Tstr_cltype
            (List.map (fun (_,_, i, d, _,_,_,_,_,_,_) -> (i, d)) classes) ::
          Tstr_type
