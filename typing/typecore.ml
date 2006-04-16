@@ -782,8 +782,9 @@ let rec approx_type env sty =
       newty (Ttuple (List.map (approx_type env) args))
   | Ptyp_constr (lid, ctl) ->
       begin try
+        let (path, decl) = Env.lookup_type lid env in
+        if List.length ctl <> decl.type_arity then raise Not_found;
         let tyl = List.map (approx_type env) ctl in
-        let (path, _) = Env.lookup_type lid env in
         newconstr path tyl
       with Not_found -> newvar ()
       end
@@ -1628,7 +1629,7 @@ and type_application env funct sargs =
             else begin
               may_warn sarg0.pexp_loc
                 (Warnings.Not_principal "using an optional argument here");
-              Some (fun () -> option_some (type_argument env sarg0 
+              Some (fun () -> option_some (type_argument env sarg0
                                              (extract_option_type env ty)))
             end
           with Not_found ->
@@ -1796,11 +1797,11 @@ and type_expect ?in_function env sexp ty_expected =
       let cases, partial =
         type_cases ~in_function:(loc,ty_fun) env ty_arg ty_res
           (Some sexp.pexp_loc) caselist in
-      let all_labeled ty =
+      let not_function ty =
         let ls, tvar = list_labels env ty in
-        not (tvar || List.exists (fun l -> l = "" || l.[0] = '?') ls)
+        ls = [] && not tvar
       in
-      if is_optional l && all_labeled ty_res then
+      if is_optional l && not_function ty_res then
         Location.prerr_warning (fst (List.hd cases)).pat_loc
           Warnings.Unerasable_optional_argument;
       re {

@@ -230,7 +230,7 @@ CAMLexport int caml_putblock(struct channel *channel, char *p, intnat len)
   }
 }
 
-CAMLexport void caml_really_putblock(struct channel *channel, 
+CAMLexport void caml_really_putblock(struct channel *channel,
                                      char *p, intnat len)
 {
   int written;
@@ -450,7 +450,7 @@ CAMLprim value caml_ml_out_channels_list (value unit)
   res = Val_emptylist;
   for (channel = caml_all_opened_channels;
        channel != NULL;
-       channel = channel->next) 
+       channel = channel->next)
     /* Testing channel->fd >= 0 looks unnecessary, as
        caml_ml_close_channel changes max when setting fd to -1. */
     if (channel->max == NULL) {
@@ -530,6 +530,7 @@ CAMLprim value caml_ml_set_binary_mode(value vchannel, value mode)
 
 CAMLprim value caml_ml_flush_partial(value vchannel)
 {
+  CAMLparam1 (vchannel);
   struct channel * channel = Channel(vchannel);
   int res;
 
@@ -537,36 +538,41 @@ CAMLprim value caml_ml_flush_partial(value vchannel)
   Lock(channel);
   res = caml_flush_partial(channel);
   Unlock(channel);
-  return Val_bool(res);
+  CAMLreturn (Val_bool(res));
 }
 
 CAMLprim value caml_ml_flush(value vchannel)
 {
+  CAMLparam1 (vchannel);
   struct channel * channel = Channel(vchannel);
 
   if (channel->fd == -1) return Val_unit;
   Lock(channel);
   caml_flush(channel);
   Unlock(channel);
-  return Val_unit;
+  CAMLreturn (Val_unit);
 }
 
 CAMLprim value caml_ml_output_char(value vchannel, value ch)
 {
+  CAMLparam2 (vchannel, ch);
   struct channel * channel = Channel(vchannel);
+
   Lock(channel);
   putch(channel, Long_val(ch));
   Unlock(channel);
-  return Val_unit;
+  CAMLreturn (Val_unit);
 }
 
 CAMLprim value caml_ml_output_int(value vchannel, value w)
 {
+  CAMLparam2 (vchannel, w);
   struct channel * channel = Channel(vchannel);
+
   Lock(channel);
   caml_putword(channel, Long_val(w));
   Unlock(channel);
-  return Val_unit;
+  CAMLreturn (Val_unit);
 }
 
 CAMLprim value caml_ml_output_partial(value vchannel, value buff, value start,
@@ -602,20 +608,24 @@ CAMLprim value caml_ml_output(value vchannel, value buff, value start,
 
 CAMLprim value caml_ml_seek_out(value vchannel, value pos)
 {
+  CAMLparam2 (vchannel, pos);
   struct channel * channel = Channel(vchannel);
+
   Lock(channel);
   caml_seek_out(channel, Long_val(pos));
   Unlock(channel);
-  return Val_unit;
+  CAMLreturn (Val_unit);
 }
 
 CAMLprim value caml_ml_seek_out_64(value vchannel, value pos)
 {
+  CAMLparam2 (vchannel, pos);
   struct channel * channel = Channel(vchannel);
+
   Lock(channel);
   caml_seek_out(channel, File_offset_val(pos));
   Unlock(channel);
-  return Val_unit;
+  CAMLreturn (Val_unit);
 }
 
 CAMLprim value caml_ml_pos_out(value vchannel)
@@ -632,17 +642,19 @@ CAMLprim value caml_ml_pos_out_64(value vchannel)
 
 CAMLprim value caml_ml_input_char(value vchannel)
 {
+  CAMLparam1 (vchannel);
   struct channel * channel = Channel(vchannel);
   unsigned char c;
 
   Lock(channel);
   c = getch(channel);
   Unlock(channel);
-  return Val_long(c);
+  CAMLreturn (Val_long(c));
 }
 
 CAMLprim value caml_ml_input_int(value vchannel)
 {
+  CAMLparam1 (vchannel);
   struct channel * channel = Channel(vchannel);
   intnat i;
 
@@ -652,7 +664,7 @@ CAMLprim value caml_ml_input_int(value vchannel)
 #ifdef ARCH_SIXTYFOUR
   i = (i << 32) >> 32;          /* Force sign extension */
 #endif
-  return Val_long(i);
+  CAMLreturn (Val_long(i));
 }
 
 CAMLprim value caml_ml_input(value vchannel, value buff, value vstart,
@@ -692,20 +704,24 @@ CAMLprim value caml_ml_input(value vchannel, value buff, value vstart,
 
 CAMLprim value caml_ml_seek_in(value vchannel, value pos)
 {
+  CAMLparam2 (vchannel, pos);
   struct channel * channel = Channel(vchannel);
+
   Lock(channel);
   caml_seek_in(channel, Long_val(pos));
   Unlock(channel);
-  return Val_unit;
+  CAMLreturn (Val_unit);
 }
 
 CAMLprim value caml_ml_seek_in_64(value vchannel, value pos)
 {
+  CAMLparam2 (vchannel, pos);
   struct channel * channel = Channel(vchannel);
+
   Lock(channel);
   caml_seek_in(channel, File_offset_val(pos));
   Unlock(channel);
-  return Val_unit;
+  CAMLreturn (Val_unit);
 }
 
 CAMLprim value caml_ml_pos_in(value vchannel)
@@ -722,13 +738,14 @@ CAMLprim value caml_ml_pos_in_64(value vchannel)
 
 CAMLprim value caml_ml_input_scan_line(value vchannel)
 {
+  CAMLparam1 (vchannel);
   struct channel * channel = Channel(vchannel);
   intnat res;
 
   Lock(channel);
   res = caml_input_scan_line(channel);
   Unlock(channel);
-  return Val_long(res);
+  CAMLreturn (Val_long(res));
 }
 
 /* Conversion between file_offset and int64 */

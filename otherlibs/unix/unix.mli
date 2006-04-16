@@ -165,11 +165,11 @@ val execve : string -> string array -> string array -> 'a
    environment to the program executed. *)
 
 val execvp : string -> string array -> 'a
-(** Same as {!Unix.execv} respectively, except that
+(** Same as {!Unix.execv}, except that
    the program is searched in the path. *)
 
 val execvpe : string -> string array -> string array -> 'a
-(** Same as {!Unix.execvp} respectively, except that
+(** Same as {!Unix.execve}, except that
    the program is searched in the path. *)
 
 val fork : unit -> int

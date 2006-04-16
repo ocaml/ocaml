@@ -130,7 +130,7 @@ and raw_type_desc ppf = function
       fprintf ppf "@[<hov1>Tfield(@,%s,@,%s,@,%a,@;<0 -1>%a)@]" f
         (safe_kind_repr [] k)
         raw_type t1 raw_type t2
-  | Tnil -> fprintf ppf "Tnil"  
+  | Tnil -> fprintf ppf "Tnil"
   | Tlink t -> fprintf ppf "@[<1>Tlink@,%a@]" raw_type t
   | Tsubst t -> fprintf ppf "@[<1>Tsubst@,%a@]" raw_type t
   | Tunivar -> fprintf ppf "Tunivar"
@@ -180,7 +180,7 @@ let reset_names () = names := []; name_counter := 0
 let new_name () =
   let name =
     if !name_counter < 26
-    then String.make 1 (Char.chr(97 + !name_counter)) 
+    then String.make 1 (Char.chr(97 + !name_counter))
     else String.make 1 (Char.chr(97 + !name_counter mod 26)) ^
            string_of_int(!name_counter / 26) in
   incr name_counter;
@@ -195,7 +195,7 @@ let name_of_type t =
 let check_name_of_type t = ignore(name_of_type t)
 
 let non_gen_mark sch ty =
-  if sch && ty.desc = Tvar && ty.level <> generic_level then "_" else "" 
+  if sch && ty.desc = Tvar && ty.level <> generic_level then "_" else ""
 
 let print_name_of_type sch ppf t =
   fprintf ppf "'%s%s" (non_gen_mark sch t) (name_of_type t)
@@ -456,7 +456,7 @@ and type_sch ppf ty = typexp true 0 ppf ty
 and type_scheme ppf ty = reset_and_mark_loops ty; typexp true 0 ppf ty
 
 (* Maxence *)
-let type_scheme_max ?(b_reset_names=true) ppf ty = 
+let type_scheme_max ?(b_reset_names=true) ppf ty =
   if b_reset_names then reset_names () ;
   typexp true 0 ppf ty
 (* Fin Maxence *)
@@ -515,7 +515,7 @@ let rec tree_of_type_decl id decl =
         in
         mark_loops ty;
         Some ty
-  in 
+  in
   begin match decl.type_kind with
   | Type_abstract -> ()
   | Type_variant ([], _) -> ()
@@ -564,7 +564,7 @@ let rec tree_of_type_decl id decl =
         begin match ty_manifest with
         | None -> (Otyp_abstract, Public)
         | Some ty ->
-            tree_of_typexp false ty, 
+            tree_of_typexp false ty,
             (if has_constr_row ty then Private else Public)
         end
     | Type_variant(cstrs, priv) ->
@@ -589,7 +589,7 @@ let type_declaration id ppf decl =
 (* Print an exception declaration *)
 
 let tree_of_exception_declaration id decl =
-  reset_and_mark_loops_list decl; 
+  reset_and_mark_loops_list decl;
   let tyl = tree_of_typlist false decl in
   Osig_exception (Ident.name id, tyl)
 
@@ -820,7 +820,7 @@ and tree_of_modtype_declaration id decl =
   in
   Osig_modtype (Ident.name id, mty)
 
-let tree_of_module id mty rs = 
+let tree_of_module id mty rs =
   Osig_module (Ident.name id, tree_of_modtype mty, tree_of_rec rs)
 
 let modtype ppf mty = !Oprint.out_module_type ppf (tree_of_modtype mty)
@@ -839,7 +839,7 @@ let signature ppf sg =
 
 let type_expansion t ppf t' =
   if t == t' then type_expr ppf t else
-  let t' = if proxy t = proxy t' then unalias t' else t' in
+  let t' = if proxy t == proxy t' then unalias t' else t' in
   fprintf ppf "@[<2>%a@ =@ %a@]" type_expr t type_expr t'
 
 let rec trace fst txt ppf = function

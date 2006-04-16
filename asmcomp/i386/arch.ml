@@ -145,3 +145,10 @@ let print_specific_operation printreg op ppf arg =
         printreg ppf arg.(i)
       done
       
+(* Stack alignment constraints *)
+
+let stack_alignment =
+  match Config.system with
+  | "macosx" -> 16
+  | _ -> 4
+

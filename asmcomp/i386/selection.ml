@@ -159,6 +159,15 @@ inherit Selectgen.selector_generic as super
 
 method is_immediate (n : int) = true
 
+method is_simple_expr e =
+  match e with
+  | Cop(Cextcall(fn, _, alloc), args)
+    when !fast_math && List.mem fn inline_float_ops ->
+      (* inlined float ops are simple if their arguments are *)
+      List.for_all self#is_simple_expr args
+  | _ ->
+      super#is_simple_expr e
+
 method select_addressing exp =
   match select_addr exp with
     (Asymbol s, d) ->
@@ -291,18 +300,23 @@ method select_push exp =
   | _ -> (Ispecific(Ipush), exp)
 
 method emit_extcall_args env args =
+  let rec size_pushes = function
+  | [] -> 0
+  | e :: el -> Selectgen.size_expr env e + size_pushes el in
+  let sz1 = size_pushes args in
+  let sz2 = Misc.align sz1 stack_alignment in
   let rec emit_pushes = function
-    [] -> 0
+  | [] ->
+      if sz2 > sz1 then 
+        self#insert (Iop (Istackoffset (sz2 - sz1))) [||] [||]
   | e :: el ->
-      let ofs = emit_pushes el in
+      emit_pushes el;
       let (op, arg) = self#select_push e in
-      begin match self#emit_expr env arg with
-        None -> ofs
-      | Some r ->
-          self#insert (Iop op) r [||];
-          ofs + Selectgen.size_expr env e
-      end
-  in ([||], emit_pushes args)
+      match self#emit_expr env arg with
+      | None -> ()
+      | Some r -> self#insert (Iop op) r [||] in
+  emit_pushes args;
+  ([||], sz2)
 
 end
 

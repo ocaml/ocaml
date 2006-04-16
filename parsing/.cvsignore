@@ -5,3 +5,5 @@ lexer_tmp.mll
 lexer_tmp.ml
 linenum.ml
 parser.output
+parser.automaton
+parser.conflicts

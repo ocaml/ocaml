@@ -296,7 +296,7 @@ let kapr kpr fmt =
       else Obj.magic (fun x -> loop (succ i) (x :: args)) in
     loop 0 [];;
 
-type param_spec = Spec_none | Spec_index of index;; 
+type param_spec = Spec_none | Spec_index of index;;
 
 (* To scan an optional positional parameter specification,
    i.e. an integer followed by a $.

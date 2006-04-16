@@ -180,7 +180,7 @@ let bigarray_set arr arg newval =
                        ["", arr; "", c1; "", c2; "", c3; "", newval]))
   | coords ->
       mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Genarray" "set")),
-                       ["", arr; 
+                       ["", arr;
                         "", ghexp(Pexp_array coords);
                         "", newval]))
 %}
@@ -1308,6 +1308,10 @@ simple_core_type2:
       { mktyp(Ptyp_class($5, List.rev $2, $6)) }
   | LBRACKET tag_field RBRACKET
       { mktyp(Ptyp_variant([$2], true, None)) }
+/* PR#3835: this is not LR(1), would need lookahead=2
+  | LBRACKET simple_core_type2 RBRACKET
+      { mktyp(Ptyp_variant([$2], true, None)) }
+*/
   | LBRACKET BAR row_field_list RBRACKET
       { mktyp(Ptyp_variant(List.rev $3, true, None)) }
   | LBRACKET row_field BAR row_field_list RBRACKET

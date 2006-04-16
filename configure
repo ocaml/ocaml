@@ -42,7 +42,7 @@ gcc_warnings="-Wall"
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
 unset LANG
-unset LC_ALL LC_CTYPE LC_COLLATE LC_MESSAGES LC_MONETARY LC_NUMERIC LC_TIME 
+unset LC_ALL LC_CTYPE LC_COLLATE LC_MESSAGES LC_MONETARY LC_NUMERIC LC_TIME
 
 # Turn off some MacOS X debugging stuff, same reason
 unset RC_TRACE_ARCHIVES RC_TRACE_DYLIBS RC_TRACE_PREBINDING_DISABLED
@@ -408,7 +408,7 @@ case "$host" in
     # alignment is not reliable (PR#1521), hence force it.
     # Same goes for hppa.
     # But there's a knack (PR#2572):
-    # if we're in 64-bit mode (sizeof(long) == 8), 
+    # if we're in 64-bit mode (sizeof(long) == 8),
     # we must not doubleword-align floats...
     if test $2 = 8; then
       echo "Doubles can be word-aligned."
@@ -483,7 +483,7 @@ mksharedlibrpath=''
 
 if test $withsharedlibs = "yes"; then
   case "$host" in
-    *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*)
+    *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*|*-*-gnu*)
       sharedcccompopts="-fPIC"
       mksharedlib="$bytecc -shared -o"
       bytecclinkopts="$bytecclinkopts -Wl,-E"
@@ -562,6 +562,7 @@ system=unknown
 case "$host" in
   alpha*-*-osf*)                arch=alpha; system=digital;;
   alpha*-*-linux*)              arch=alpha; system=linux;;
+  alpha*-*-gnu*)                arch=alpha; system=gnu;;
   alpha*-*-freebsd*)            arch=alpha; system=freebsd;;
   alpha*-*-netbsd*)             arch=alpha; system=netbsd;;
   alpha*-*-openbsd*)            arch=alpha; system=openbsd;;
@@ -569,24 +570,31 @@ case "$host" in
   sparc*-*-solaris2.*)          arch=sparc; system=solaris;;
   sparc*-*-*bsd*)               arch=sparc; system=bsd;;
   sparc*-*-linux*)              arch=sparc; system=linux;;
+  sparc*-*-gnu*)                arch=sparc; system=gnu;;
   i[3456]86-*-linux*)           arch=i386; system=linux_`sh ./runtest elf.c`;;
   i[3456]86-*-*bsd*)            arch=i386; system=bsd_`sh ./runtest elf.c`;;
   i[3456]86-*-nextstep*)        arch=i386; system=nextstep;;
   i[3456]86-*-solaris*)         arch=i386; system=solaris;;
   i[3456]86-*-beos*)            arch=i386; system=beos;;
   i[3456]86-*-cygwin*)          arch=i386; system=cygwin;;
+  i[3456]86-*-darwin*)          arch=i386; system=macosx;;
+  i[3456]86-*-gnu*)             arch=i386; system=gnu;;
   mips-*-irix6*)                arch=mips; system=irix;;
   hppa1.1-*-hpux*)              arch=hppa; system=hpux;;
   hppa2.0*-*-hpux*)             arch=hppa; system=hpux;;
-  hppa*-*-linux*)		arch=hppa; system=linux;;
+  hppa*-*-linux*)               arch=hppa; system=linux;;
+  hppa*-*-gnu*)                 arch=hppa; system=gnu;;
   powerpc-*-linux*)             arch=power; model=ppc; system=elf;;
   powerpc-*-netbsd*)            arch=power; model=ppc; system=bsd;;
   powerpc-*-rhapsody*)          arch=power; model=ppc; system=rhapsody;;
   powerpc-*-darwin*)            arch=power; model=ppc; system=rhapsody;;
   arm*-*-linux*)                arch=arm; system=linux;;
+  arm*-*-gnu*)                  arch=arm; system=gnu;;
   ia64-*-linux*)                arch=ia64; system=linux;;
+  ia64-*-gnu*)                  arch=ia64; system=gnu;;
   ia64-*-freebsd*)              arch=ia64; system=freebsd;;
   x86_64-*-linux*)              arch=amd64; system=linux;;
+  x86_64-*-gnu*)                arch=amd64; system=gnu;;
   x86_64-*-freebsd*)            arch=amd64; system=freebsd;;
   x86_64-*-netbsd*)             arch=amd64; system=netbsd;;
   x86_64-*-openbsd*)            arch=amd64; system=openbsd;;
@@ -629,12 +637,14 @@ case "$arch,$model,$system" in
   alpha,*,digital)  asflags='-O2'; asppflags='-O2 -DSYS_$(SYSTEM)';
                     asppprofflags='-pg -DPROFILING';;
   alpha,*,linux)    aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
+  alpha,*,gnu)      aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   alpha,*,freebsd)  aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   alpha,*,netbsd)   aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   alpha,*,openbsd)  aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   mips,*,irix)      asflags='-n32 -O2'; asppflags="$asflags";;
   sparc,*,bsd)      aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   sparc,*,linux)    aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
+  sparc,*,gnu)      aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   sparc,*,*)        case "$cc" in
                       gcc*) aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
                          *) asppflags='-P -DSYS_$(SYSTEM)';;
@@ -646,6 +656,7 @@ case "$arch,$model,$system" in
   power,*,bsd)      aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   power,*,rhapsody) ;;
   arm,*,linux)      aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
+  arm,*,gnu)        aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   ia64,*,*)         asflags=-xexplicit
                     aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM) -Wa,-xexplicit';;
   amd64,*,*)        aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
@@ -655,11 +666,13 @@ cc_profile='-pg'
 case "$arch,$model,$system" in
   alpha,*,digital) profiling='prof';;
   i386,*,linux_elf) profiling='prof';;
+  i386,*,gnu) profiling='prof';;
   i386,*,bsd_elf) profiling='prof';;
   sparc,*,solaris)
     profiling='prof'
     case "$nativecc" in gcc*) ;; *) cc_profile='-xpg';; esac;;
   amd64,*,linux) profiling='prof';;
+  amd64,*,gnu) profiling='prof';;
   *) profiling='noprof';;
 esac
 
@@ -1242,7 +1255,7 @@ for dir in /usr/include /usr/include/db1 /usr/include/gdbm; do
     elif sh ./hasgot -lgdbm dbm_open; then
       dbm_link="-lgdbm"
     elif sh ./hasgot -lgdbm_compat -lgdbm dbm_open; then
-      dbm_link="-lgdbm_compat -lgdbm" 
+      dbm_link="-lgdbm_compat -lgdbm"
     fi
     break
   fi
@@ -1252,7 +1265,7 @@ for dir in /usr/include /usr/include/db1 /usr/include/gdbm; do
     if sh ./hasgot -lgdbm_compat -lgdbm dbm_open; then
       dbm_link="-lgdbm_compat -lgdbm"
     fi
-    break   
+    break
   fi
 done
 if test "$dbm_include" = "not found" || test "$dbm_link" = "not found"; then
@@ -1523,4 +1536,3 @@ fi
 echo
 echo "** Objective Caml configuration completed successfully **"
 echo
-

@@ -107,7 +107,7 @@ let create_object cl obj init =
          Lsequence(obj_init,
                    if not has_init then Lvar obj' else
                    Lapply (oo_prim "run_initializers_opt",
-			   [obj; Lvar obj'; Lvar cl]))))
+                           [obj; Lvar obj'; Lvar cl]))))
   end
 
 let rec build_object_init cl_table obj params inh_init obj_init cl =
@@ -198,7 +198,7 @@ let rec build_object_init_0 cl_table params cl copy_env subst_env top ids =
       let ((_,inh_init), obj_init) =
         build_object_init cl_table obj params (envs,[]) (copy_env env) cl in
       let obj_init =
-	if ids = [] then obj_init else lfunction [self] obj_init in
+        if ids = [] then obj_init else lfunction [self] obj_init in
       (inh_init, lfunction [env] (subst_env env inh_init obj_init))
 
 
@@ -251,11 +251,11 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
     Tclass_ident path ->
       begin match inh_init with
         (obj_init, path')::inh_init ->
-	  let lpath = transl_path path in
+          let lpath = transl_path path in
           (inh_init,
-           Llet (Strict, obj_init, 
+           Llet (Strict, obj_init,
                  Lapply(Lprim(Pfield 1, [lpath]), Lvar cla ::
-			if top then [Lprim(Pfield 3, [lpath])] else []),
+                        if top then [Lprim(Pfield 3, [lpath])] else []),
                  bind_super cla super cl_init))
       | _ ->
           assert false
@@ -323,15 +323,15 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
         List.filter (fun lab -> not (Concr.mem lab concr_meths)) meths in
       let concr_meths = Concr.elements concr_meths in
       let narrow_args =
-	[Lvar cla;
+        [Lvar cla;
          transl_meth_list vals;
          transl_meth_list virt_meths;
          transl_meth_list concr_meths] in
       let cl = ignore_cstrs cl in
       begin match cl.cl_desc, inh_init with
-	Tclass_ident path, (obj_init, path')::inh_init ->
-	  assert (Path.same path path');
-	  let lpath = transl_path path in
+        Tclass_ident path, (obj_init, path')::inh_init ->
+          assert (Path.same path path');
+          let lpath = transl_path path in
           let inh = Ident.create "inh"
           and ofs = List.length vals + 1
           and valids, methids = super in
@@ -347,15 +347,15 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
                 Llet(StrictOpt, id, lfield inh (index nm vals + 1), init))
               cl_init valids in
           (inh_init,
-           Llet (Strict, inh, 
-		 Lapply(oo_prim "inherits", narrow_args @
-			[lpath; Lconst(Const_pointer(if top then 1 else 0))]),
+           Llet (Strict, inh,
+                 Lapply(oo_prim "inherits", narrow_args @
+                        [lpath; Lconst(Const_pointer(if top then 1 else 0))]),
                  Llet(StrictOpt, obj_init, lfield inh 0, cl_init)))
       | _ ->
-	  let core cl_init =
+          let core cl_init =
             build_class_init cla true super inh_init cl_init msubst top cl
-	  in
-	  if cstr then core cl_init else
+          in
+          if cstr then core cl_init else
           let (inh_init, cl_init) =
             core (Lsequence (Lapply (oo_prim "widen", [Lvar cla]), cl_init))
           in
@@ -625,6 +625,7 @@ let transl_class ids cl_id arity pub_meths cl vflag =
         begin try
           (* Doesn't seem to improve size for bytecode *)
           (* if not !Clflags.native_code then raise Not_found; *)
+          if !Clflags.debug then raise Not_found;
           builtin_meths arr [self] env env2 (lfunction args body')
         with Not_found ->
           [lfunction (self :: args)
@@ -695,7 +696,7 @@ let transl_class ids cl_id arity pub_meths cl vflag =
   and lbody fv =
     if List.for_all (fun id -> not (IdentSet.mem id fv)) ids then
       Lapply (oo_prim "make_class",[transl_meth_list pub_meths;
-				    Lvar class_init])
+                                    Lvar class_init])
     else
       ltable table (
       Llet(
@@ -703,8 +704,8 @@ let transl_class ids cl_id arity pub_meths cl vflag =
       Lsequence(
       Lapply (oo_prim "init_class", [Lvar table]),
       Lprim(Pmakeblock(0, Immutable),
-	    [Lapply(Lvar env_init, [lambda_unit]);
-	     Lvar class_init; Lvar env_init; lambda_unit]))))
+            [Lapply(Lvar env_init, [lambda_unit]);
+             Lvar class_init; Lvar env_init; lambda_unit]))))
   and lbody_virt lenvs =
     Lprim(Pmakeblock(0, Immutable),
           [lambda_unit; Lfunction(Curried,[cla], cl_init); lambda_unit; lenvs])

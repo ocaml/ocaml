@@ -52,18 +52,23 @@ extern char * caml_code_area_start, * caml_code_area_end;
   ((char *)(pc) >= caml_code_area_start && \
    (char *)(pc) <= caml_code_area_end)
 
+intnat volatile caml_signals_are_pending = 0;
 volatile intnat caml_pending_signals[NSIG];
 volatile int caml_force_major_slice = 0;
 value caml_signal_handlers = 0;
 
 static void caml_process_pending_signals(void)
 {
-  int signal_num;
-  intnat signal_state;
+  int i;
 
-  for (signal_num = 0; signal_num < NSIG; signal_num++) {
-    Read_and_clear(signal_state, caml_pending_signals[signal_num]);
-    if (signal_state) caml_execute_signal(signal_num, 0);
+  if (caml_signals_are_pending) {
+    caml_signals_are_pending = 0;
+    for (i = 0; i < NSIG; i++) {
+      if (caml_pending_signals[i]) {
+        caml_pending_signals[i] = 0;
+        caml_execute_signal(i, 0);
+      }
+    }
   }
 }
 
@@ -132,6 +137,7 @@ void caml_execute_signal(int signal_number, int in_signal_handler)
 void caml_record_signal(int signal_number)
 {
   caml_pending_signals[signal_number] = 1;
+  caml_signals_are_pending = 1;
   caml_young_limit = caml_young_end;
 }
 
@@ -153,10 +159,7 @@ void caml_garbage_collection(void)
   if (caml_young_ptr < caml_young_start || caml_force_major_slice) {
     caml_minor_collection();
   }
-  for (signal_number = 0; signal_number < NSIG; signal_number++) {
-    Read_and_clear(signal_state, caml_pending_signals[signal_number]);
-    if (signal_state) caml_execute_signal(signal_number, 0);
-  }
+  caml_process_pending_signals();
 }
 
 /* Trigger a garbage collection as soon as possible */
@@ -173,18 +176,13 @@ void caml_urge_major_slice (void)
 
 void caml_enter_blocking_section(void)
 {
-  int i;
-  intnat pending;
-
   while (1){
     /* Process all pending signals now */
     caml_process_pending_signals();
     caml_enter_blocking_section_hook ();
-    /* Check again for pending signals. */
-    pending = 0;
-    for (i = 0; i < NSIG; i++) pending |= caml_pending_signals[i];
-    /* If none, done; otherwise, try again */
-    if (!pending) break;
+    /* Check again for pending signals.
+       If none, done; otherwise, try again */
+    if (! caml_signals_are_pending) break;
     caml_leave_blocking_section_hook ();
   }
 }

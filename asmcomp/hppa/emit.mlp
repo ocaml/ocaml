@@ -922,7 +922,7 @@ let fundecl fundecl =
     else
       `	.callinfo frame={emit_int n}, no_calls\n`;
     `	.entry\n`
-  | "linux" ->
+  | "linux" | "gnu" ->
     `	.text\n`;
     `	.align	8\n`;
     `	.globl	{emit_symbol fundecl.fun_name}\n`;

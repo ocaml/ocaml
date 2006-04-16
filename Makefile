@@ -226,8 +226,8 @@ opt-core:runtimeopt ocamlopt libraryopt
 opt: runtimeopt ocamlopt libraryopt otherlibrariesopt camlp4opt
 
 # Native-code versions of the tools
-opt.opt: checkstack core ocaml opt-core ocamlc.opt otherlibraries camlp4out \
-	 $(DEBUGGER) ocamldoc ocamlopt.opt otherlibrariesopt \
+opt.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries \
+	 camlp4out $(DEBUGGER) ocamldoc ocamlopt.opt otherlibrariesopt \
 	 camlp4opt ocamllex.opt ocamltoolsopt.opt camlp4optopt ocamldoc.opt
 
 # Installation

@@ -117,7 +117,7 @@ let _ =
            "points to the Objective Caml library."
            Config.standard_library)
   end;
-  
+
   Searchpos.view_defined_ref := (fun s ~env -> Viewer.view_defined s ~env);
   Searchpos.editor_ref := Editor.f;
 
@@ -126,7 +126,7 @@ let _ =
 
   (* bind top ~events:[`Destroy] ~action:(fun _ -> exit 0); *)
   at_exit Shell.kill_all;
-  
+
 
   if !st then Viewer.st_viewer ~on:top ()
   else Viewer.f ~on:top ();
