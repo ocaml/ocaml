@@ -18,13 +18,10 @@
 
 %%venant de macros.tex
 
-\def\versionspecific#1{
-\quad\textsf{#1:}
-\begin{quote}}
-
+\def\versionspecific#1{\begin{quote}\textsf{#1:}\quad}
 \def\unix{\versionspecific{Unix}}
 \def\endunix{\end{quote}}
-\def\macos{\versionspecific{MacOS}}
+\def\macos{\versionspecific{MacOS~9}}
 \def\endmacos{\end{quote}}
 \def\windows{\versionspecific{Windows}}
 \def\endwindows{\end{quote}}

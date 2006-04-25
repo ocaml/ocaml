@@ -90,10 +90,9 @@ Drawing is clipped to the screen.
 %
 
 \ifouthtml
-\begin{rawhtml}
-<a HREF="libref/Graphics.html"> Module <tt>Graphics</tt>: machine-independent graphics primitives</a>
-\end{rawhtml}
-
+\begin{itemize}
+\item \ahref{libref/Graphics.html}{Module \texttt{Graphics}: machine-independent graphics primitives}
+\end{itemize}
 \else
 \input{Graphics.tex}
 \fi

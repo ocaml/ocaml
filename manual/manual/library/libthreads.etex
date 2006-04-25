@@ -41,15 +41,13 @@ option to "ocamlc" (see chapter~\ref{c:camlc}), and be linked as follows:
 \end{alltt}
 
 \ifouthtml
-\begin{rawhtml}
-<ul>
-<li><a HREF="libref/Thread.html"> Module <tt>Thread</tt>: lightweight threads</a></li>
-<li><a HREF="libref/Mutex.html"> Module <tt>Mutex</tt>: locks for mutual exclusion</a></li>
-<li><a HREF="libref/Condition.html"> Module <tt>Condition</tt>: condition variables to synchronize between threads</a></li>
-<li><a HREF="libref/Event.html"> Module <tt>Event</tt>: first-class synchronous communication</a></li>
-<li><a HREF="libref/ThreadUnix.html"> Module <tt>ThreadUnix</tt>: thread-compatible system calls</a></li>
-</ul>
-\end{rawhtml}
+\begin{itemize}
+\item \ahref{libref/Thread.html}{Module \texttt{Thread}: lightweight threads}
+\item \ahref{libref/Mutex.html}{Module \texttt{Mutex}: locks for mutual exclusion}
+\item \ahref{libref/Condition.html}{Module \texttt{Condition}: condition variables to synchronize between threads}
+\item \ahref{libref/Event.html}{Module \texttt{Event}: first-class synchronous communication}
+\item \ahref{libref/ThreadUnix.html}{Module \texttt{ThreadUnix}: thread-compatible system calls}
+\end{itemize}
 \else
 \input{Thread.tex}
 \input{Mutex.tex}

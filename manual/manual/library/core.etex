@@ -27,10 +27,9 @@ indexed at the end of this report.
 
 \ifouthtml
 \section{Module {\tt Pervasives}: the initially opened module}
-\begin{rawhtml}
-<br>
-<a HREF="libref/Pervasives.html"> Module <tt>Pervasives</tt>: the initially opened module</a>
-\end{rawhtml}
+\begin{itemize}
+\item \ahref{libref/Pervasives.html}{Module \texttt{Pervasives}: the initially opened module}
+\end{itemize}
 \else
 \input{Pervasives.tex}
 \fi

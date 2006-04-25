@@ -30,13 +30,10 @@ more information on the functions that are not supported under Windows.
 \end{windows}
 
 \ifouthtml
-\begin{rawhtml}
-<ul>
-<li><a HREF="libref/Unix.html"> Module <tt>Unix</tt>: Unix system calls</a></li>
-<li><a HREF="libref/UnixLabels.html"> Module <tt>UnixLabels</tt>: Labeled Unix system calls</a></li>
-</ul>
-\end{rawhtml}
-
+\begin{itemize}
+\item \ahref{libref/Unix.html}{Module \texttt{Unix}: Unix system calls}
+\item \ahref{libref/UnixLabels.html}{Module \texttt{UnixLabels}: Labeled Unix system calls}
+\end{itemize}
 \else
 \input{Unix.tex}
 

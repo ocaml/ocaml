@@ -51,9 +51,9 @@ start "ocaml" and type "#load \"bigarray.cma\";;".
 
 \ifouthtml
 \section{Module {\tt Bigarray}: large, multi-dimensional, numerical arrays}
-\begin{rawhtml}
-<br><a HREF="libref/Bigarray.html">Module <tt>Bigarray</tt></a>
-\end{rawhtml}
+\begin{itemize}
+\item \ahref{libref/Bigarray.html}{Module \texttt{Bigarray}}
+\end{itemize}
 
 \else
 \input{Bigarray.tex}

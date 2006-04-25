@@ -310,7 +310,7 @@ other instance variables with the same name.
 \ikwd{val\@\texttt{val}}
 \ikwd{mutable\@\texttt{mutable}}
 
-Variable specification is written @'val ['mutable] 'virtual'
+Variable specification is written @'val' ['mutable'] 'virtual'
 inst-var-name ':' typexpr@.  It specifies whether the variable is
 modifiable, and gives its type.
 
