@@ -7,6 +7,7 @@ TODO:
 =====
 Release 3.09.3:
 - fix: PR#4007 (error in merging of top dependencies of modules)
+- fix: PR#3981 (-dot-colors has no effect)
 
 =====
 Release 3.09.1:
