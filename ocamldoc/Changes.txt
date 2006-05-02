@@ -5,6 +5,10 @@ TODO:
  - xml generator
 
 =====
+Release 3.09.3:
+- fix: PR#0003981 (error in merging of top dependencies of modules)
+
+=====
 Release 3.09.1:
  - fix: remove .TP for generated man pages, use .sp instead
    (.TP caused a lot of odd margins)
