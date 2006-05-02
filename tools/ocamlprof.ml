@@ -100,7 +100,7 @@ let special_id = ref ""
 let add_val_counter (kind,pos) =
   if kind = Open then begin
     copy pos;
-    fprintf !outchan "(* %s%d *) " !special_id !counters.(!prof_counter); 
+    fprintf !outchan "(* %s%d *) " !special_id !counters.(!prof_counter);
     incr prof_counter;
   end
 ;;
@@ -129,7 +129,7 @@ let init_rewrite modes mod_name =
     fprintf !outchan "module %sProfiling = Profiling;; " modprefix;
     fprintf !outchan "let %s%s_cnt = Array.create 000000000" idprefix mod_name;
     pos_len := pos_out !outchan;
-    fprintf !outchan 
+    fprintf !outchan
             " 0;; Profiling.counters := \
               (\"%s\", (\"%s\", %s%s_cnt)) :: !Profiling.counters;; "
             mod_name modes idprefix mod_name;
@@ -235,7 +235,7 @@ and rw_exp iflag sexp =
       rewrite_exp iflag scond;
       rewrite_ifbody iflag sexp.pexp_loc.loc_ghost sifso;
       rewrite_ifbody iflag sexp.pexp_loc.loc_ghost sifnot
-      
+
   | Pexp_sequence(sexp1, sexp2) ->
     rewrite_exp iflag sexp1;
     rewrite_exp iflag sexp2
@@ -296,7 +296,7 @@ and rewrite_annotate_exp_list l =
   List.iter
     (function
      | {pexp_desc = Pexp_when(scond, sbody)}
-        -> insert_profile rw_exp scond; 
+        -> insert_profile rw_exp scond;
            insert_profile rw_exp sbody;
      | {pexp_desc = Pexp_constraint(sbody, _, _)} (* let f x : t = e *)
         -> insert_profile rw_exp sbody
@@ -307,7 +307,7 @@ and rewrite_function iflag = function
   | [spat, ({pexp_desc = Pexp_function _} as sexp)] -> rewrite_exp iflag sexp
   | l -> rewrite_funmatching l
 
-and rewrite_funmatching l = 
+and rewrite_funmatching l =
   rewrite_annotate_exp_list (List.map snd l)
 
 and rewrite_trymatching l =
@@ -449,6 +449,11 @@ open Format
 
 let usage = "Usage: ocamlprof <options> <files>\noptions are:"
 
+let print_version () =
+  printf "ocamlprof, version %s@." Sys.ocaml_version;
+  exit 0;
+;;
+
 let main () =
   try
     Arg.parse [
@@ -461,7 +466,9 @@ let main () =
        "-instrument", Arg.Set instr_mode, "  (undocumented)";
        "-intf", Arg.String process_intf_file,
                 "<file>  Process <file> as a .mli file";
-       "-m", Arg.String (fun s -> modes := s), "<flags>    (undocumented)"
+       "-m", Arg.String (fun s -> modes := s), "<flags>    (undocumented)";
+       "-version", Arg.Unit print_version,
+                   "     Print version and exit";
       ] process_anon_file usage;
     exit 0
   with x ->
