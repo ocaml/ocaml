@@ -6,7 +6,7 @@ TODO:
 
 =====
 Release 3.09.3:
-- fix: PR#0003981 (error in merging of top dependencies of modules)
+- fix: PR#4007 (error in merging of top dependencies of modules)
 
 =====
 Release 3.09.1:

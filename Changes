@@ -1,8 +1,8 @@
-Objective Caml 3.09.2:
+Objective Caml 3.09.3:
 ----------------------
 
 Bug fixes:
-- ocamldoc: error in merging of top dependencies of modules PR#3981
+- ocamldoc: error in merging of top dependencies of modules PR#4007
 
 Objective Caml 3.09.2:
 ----------------------
