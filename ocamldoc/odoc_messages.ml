@@ -144,7 +144,7 @@ let latex_class_prefix =
   "\t\t(default is \""^default_latex_class_prefix^"\")"
 
 let default_latex_class_type_prefix = "classtype:"
-let latex_class_type_prefix = 
+let latex_class_type_prefix =
   "<string>\n\t\tUse <string> as prefix for the LaTeX labels of class types.\n"^
   "\t\t(default is \""^default_latex_class_type_prefix^"\")"
 
@@ -286,7 +286,7 @@ let cross_element_not_found n = "Element "^n^" not found"
 let cross_method_not_found n = "Method "^n^" not found"
 let cross_attribute_not_found n = "Attribute "^n^" not found"
 let cross_section_not_found n = "Section "^n^" not found"
-let cross_value_not_found n = "Attribute "^n^" not found"
+let cross_value_not_found n = "Value "^n^" not found"
 let cross_type_not_found n = "Type "^n^" not found"
 
 let object_end = "object ... end"

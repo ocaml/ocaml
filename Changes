@@ -5,6 +5,11 @@ Bug fixes:
 - ocamldoc: error in merging of top dependencies of modules PR#4007
 - ocamldoc: -dot-colors has no effect PR#3981
 
+New features:
+- ocamldoc: name resolution in cross-referencing {!name}: if name is not
+    found, then it is searched in the parent module/class, and in the parent
+    of the parent, and so on until it is found.
+
 Objective Caml 3.09.2:
 ----------------------
 

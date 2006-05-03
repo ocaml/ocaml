@@ -1,5 +1,11 @@
 TODO:
  - need to fix display of type parameters for inherited classes/class types
+ - need to add an environment while generating to print correct links:
+   file foo.mli:
+     type u
+     module type M = sig type u end
+     module N : sig include M val f: u -> unit end
+   Here, in html for example, f in displayed being of type Foo.u instead of Foo.M.u
  - latex: types variant polymorphes dépassent de la page quand ils sont trop longs
  - utilisation nouvelles infos de Xavier: "début de rec", etc.
  - xml generator
@@ -8,6 +14,9 @@ TODO:
 Release 3.09.3:
 - fix: PR#4007 (error in merging of top dependencies of modules)
 - fix: PR#3981 (-dot-colors has no effect)
+- mod: name resolution in cross-referencing: {!name} if name is not
+  found, then it is searched in the parent module/class, and in the parent
+  of the parent, and so on until it is found.
 
 =====
 Release 3.09.1:
