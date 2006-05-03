@@ -652,14 +652,14 @@ let rec assoc_comments_text_elements parent_name module_list t_ele =
 	     match parent_name with
 	       None ->
 		 Odoc_messages.pwarning (Odoc_messages.cross_element_not_found initial_name);
-		 Ref (name, None)
+		 Ref (initial_name, None)
 	     | Some p ->
 		 let parent_name =
 		   match Name.father p with
 		     "" -> None
 		   | s -> Some s
 		 in
-		 iter_parent ?parent_name (Name.concat p (Name.simple name))
+		 iter_parent ?parent_name (Name.concat p initial_name)
        in
        iter_parent ~parent_name initial_name
       )
@@ -713,14 +713,14 @@ let rec assoc_comments_text_elements parent_name module_list t_ele =
 	       match parent_name with
 		 None ->
 		   Odoc_messages.pwarning (not_found_of_kind kind initial_name);
-		   Ref (name, None)
+		   Ref (initial_name, None)
 	       | Some p ->
 		   let parent_name =
 		     match Name.father p with
 		       "" -> None
 		     | s -> Some s
 		   in
-		   iter_parent ?parent_name (Name.concat p (Name.simple name))
+		   iter_parent ?parent_name (Name.concat p initial_name)
        in
        iter_parent ~parent_name initial_name
       )
