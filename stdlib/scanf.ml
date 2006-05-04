@@ -133,8 +133,8 @@ let next_char ib =
     let c = ib.get_next_char () in
     ib.current_char <- c;
     ib.current_char_is_valid <- true;
-    ib.char_count <- ib.char_count + 1;
-    if c == '\n' then ib.line_count <- ib.line_count + 1;
+    ib.char_count <- succ ib.char_count;
+    if c == '\n' then ib.line_count <- succ ib.line_count;
     c with
   | End_of_file ->
     let c = null_char in
@@ -173,7 +173,7 @@ let token ib =
   let tokbuf = ib.tokbuf in
   let tok = Buffer.contents tokbuf in
   Buffer.clear tokbuf;
-  ib.token_count <- ib.token_count + 1;
+  ib.token_count <- succ ib.token_count;
   tok;;
 
 let token_count ib = ib.token_count;;
@@ -709,18 +709,18 @@ let read_char_set fmt i =
     if j > lim then incomplete_format fmt else
     match Sformat.get fmt j with
     | ']' -> j
-    | c -> find_in_set (j + 1)
+    | c -> find_in_set (succ j)
 
   and find_set i =
     if i > lim then incomplete_format fmt else
     match Sformat.get fmt i with
-    | ']' -> find_in_set (i + 1)
+    | ']' -> find_in_set (succ i)
     | c -> find_in_set i in
 
   if i > lim then incomplete_format fmt else
   match Sformat.get fmt i with
   | '^' ->
-     let i = i + 1 in
+     let i = succ i in
      let j = find_set i in
      j, Neg_set (Sformat.sub fmt i (j - i))
   | _ ->
@@ -774,15 +774,15 @@ let make_char_bit_vect bit set =
        (* if i = 0 then rp is false (since the initial call is
           loop bit false 0). Hence i >= 1 and the following is safe. *)
        let c1 = set.[i - 1] in
-       let i = i + 1 in
+       let i = succ i in
        if i > lim then loop bit false (i - 1) else
        let c2 = set.[i] in
        for j = int_of_char c1 to int_of_char c2 do
          set_bit_of_range r j bit done;
-       loop bit false (i + 1)
+       loop bit false (succ i)
     | c ->
        set_bit_of_range r (int_of_char set.[i]) bit;
-       loop bit true (i + 1) in
+       loop bit true (succ i) in
   loop bit false 0;
   r;;
 
@@ -960,56 +960,58 @@ let kscanf ib ef fmt f =
   let rec scan_fmt f i =
     if i > lim then f else
     match Sformat.get fmt i with
-    | ' ' -> skip_whites ib; scan_fmt f (i + 1)
+    | ' ' -> skip_whites ib; scan_fmt f (succ i)
     | '%' ->
         if i > lim then incomplete_format fmt else
-        scan_conversion false max_int f (i + 1)
+        scan_conversion false max_int f (succ i)
     | '@' ->
-        let i = i + 1 in
+        let i = succ i in
         if i > lim then incomplete_format fmt else begin
         check_char ib (Sformat.get fmt i);
-        scan_fmt f (i + 1) end
-    | c -> check_char ib c; scan_fmt f (i + 1)
+        scan_fmt f (succ i) end
+    | c -> check_char ib c; scan_fmt f (succ i)
 
   and scan_conversion skip max f i =
     let stack = if skip then no_stack else stack in
     match Sformat.get fmt i with
     | '%' as conv ->
-        check_char ib conv; scan_fmt f (i + 1)
+        check_char ib conv; scan_fmt f (succ i)
+    | 's' ->
+        let i, stp = scan_fmt_stoppers (succ i) in
+        let _x = scan_string stp max ib in
+        scan_fmt (stack f (token_string ib)) (succ i)
+    | 'S' ->
+        let _x = scan_String max ib in
+        scan_fmt (stack f (token_string ib)) (succ i)
+    | '[' ->
+        let i, char_set = read_char_set fmt (succ i) in
+        let i, stp = scan_fmt_stoppers (succ i) in
+        let _x = scan_chars_in_char_set stp char_set max ib in
+        scan_fmt (stack f (token_string ib)) (succ i)
     | 'c' when max = 0 ->
         let c = Scanning.checked_peek_char ib in
-        scan_fmt (stack f c) (i + 1)
+        scan_fmt (stack f c) (succ i)
     | 'c' | 'C' as conv ->
         if max <> 1 && max <> max_int then bad_conversion fmt i conv else
         let _x =
           if conv = 'c' then scan_char max ib else scan_Char max ib in
-        scan_fmt (stack f (token_char ib)) (i + 1)
+        scan_fmt (stack f (token_char ib)) (succ i)
     | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv ->
         let _x = scan_int_conv conv max ib in
-        scan_fmt (stack f (token_int conv ib)) (i + 1)
-    | 'f' | 'g' | 'G' | 'e' | 'E' ->
+        scan_fmt (stack f (token_int conv ib)) (succ i)
+    | 'N' as conv ->
+        scan_fmt (stack f (get_count conv ib)) (succ i)
+    | 'f' | 'e' | 'E' | 'g' | 'G' ->
         let _x = scan_float max ib in
-        scan_fmt (stack f (token_float ib)) (i + 1)
+        scan_fmt (stack f (token_float ib)) (succ i)
     | 'F' ->
         let _x = scan_Float max ib in
-        scan_fmt (stack f (token_float ib)) (i + 1)
-    | 's' ->
-        let i, stp = scan_fmt_stoppers (i + 1) in
-        let _x = scan_string stp max ib in
-        scan_fmt (stack f (token_string ib)) (i + 1)
-    | '[' ->
-        let i, char_set = read_char_set fmt (i + 1) in
-        let i, stp = scan_fmt_stoppers (i + 1) in
-        let _x = scan_chars_in_char_set stp char_set max ib in
-        scan_fmt (stack f (token_string ib)) (i + 1)
-    | 'S' ->
-        let _x = scan_String max ib in
-        scan_fmt (stack f (token_string ib)) (i + 1)
+        scan_fmt (stack f (token_float ib)) (succ i)
     | 'B' | 'b' ->
         let _x = scan_bool max ib in
-        scan_fmt (stack f (token_bool ib)) (i + 1)
+        scan_fmt (stack f (token_bool ib)) (succ i)
     | 'l' | 'n' | 'L' as conv ->
-        let i = i + 1 in
+        let i = succ i in
         if i > lim then scan_fmt (stack f (get_count conv ib)) i else begin
         match Sformat.get fmt i with
         (* This is in fact an integer conversion (e.g. %ld, %ni, or %Lo). *)
@@ -1019,38 +1021,37 @@ let kscanf ib ef fmt f =
                (this character is either 'l', 'n' or 'L'), to find the
                conversion to apply to the integer token read. *)
             begin match Sformat.get fmt (i - 1) with
-            | 'l' -> scan_fmt (stack f (token_int32 conv ib)) (i + 1)
-            | 'n' -> scan_fmt (stack f (token_nativeint conv ib)) (i + 1)
-            | _ -> scan_fmt (stack f (token_int64 conv ib)) (i + 1) end
+            | 'l' -> scan_fmt (stack f (token_int32 conv ib)) (succ i)
+            | 'n' -> scan_fmt (stack f (token_nativeint conv ib)) (succ i)
+            | _ -> scan_fmt (stack f (token_int64 conv ib)) (succ i) end
         (* This is not an integer conversion, but a regular %l, %n or %L. *)
         | _ -> scan_fmt (stack f (get_count conv ib)) i end
-    | 'N' as conv ->
-        scan_fmt (stack f (get_count conv ib)) (i + 1)
     | '!' ->
-        if Scanning.end_of_input ib then scan_fmt f (i + 1)
+        if Scanning.end_of_input ib then scan_fmt f (succ i)
         else bad_input "end of input not found"
     | '_' ->
         if i > lim then incomplete_format fmt else
-        scan_conversion true max f (i + 1)
+        scan_conversion true max f (succ i)
     | '0' .. '9' as conv ->
         let rec read_width accu i =
           if i > lim then accu, i else
           match Sformat.get fmt i with
           | '0' .. '9' as c ->
              let accu = 10 * accu + int_value_of_char c in
-             read_width accu (i + 1)
+             read_width accu (succ i)
           | _ -> accu, i in
-        let max, i = read_width (int_value_of_char conv) (i + 1) in
+        let max, i = read_width (int_value_of_char conv) (succ i) in
         if i > lim then incomplete_format fmt else begin
         match Sformat.get fmt i with
         | '.' ->
-          let p, i = read_width 0 (i + 1) in
-          scan_conversion skip (max + p + 1) f i
+          let p, i = read_width 0 (succ i) in
+          scan_conversion skip (succ (max + p)) f i
         | _ -> scan_conversion skip max f i end
     | '(' | '{' as conv ->
         let i = succ i in
         let j =
-          Printf.sub_format incomplete_format bad_conversion conv fmt i + 1 in
+          Printf.sub_format
+            incomplete_format bad_conversion conv fmt (succ i) in
         let mf = Sformat.sub fmt i (j - i - 2) in
         let _x = scan_String max ib in
         let rf = token_string ib in
@@ -1064,7 +1065,7 @@ let kscanf ib ef fmt f =
   and scan_fmt_stoppers i =
     if i > lim then i - 1, [] else
     match Sformat.get fmt i with
-    | '@' when i < lim -> let i = i + 1 in i, [Sformat.get fmt i]
+    | '@' when i < lim -> let i = succ i in i, [Sformat.get fmt i]
     | '@' when i = lim -> incomplete_format fmt
     | _ -> i - 1, [] in
 
