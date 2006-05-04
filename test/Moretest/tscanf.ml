@@ -246,7 +246,7 @@ let rec scan_int_list ib =
   bscanf ib "[ " ();
   let accu = scan_elems ib [] in
   bscanf ib " ]" ();
-   List.rev accu;;
+  List.rev accu;;
 
 let test14 () = scan_int_list (ib ()) = [1; 2; 3; 4];;
 
