@@ -83,7 +83,7 @@ static struct compare_item * compare_resize_stack(struct compare_item * sp)
 #define LESS -1
 #define EQUAL 0
 #define GREATER 1
-#define UNORDERED (1L << (8 * sizeof(value) - 1))
+#define UNORDERED ((intnat)1 << (8 * sizeof(value) - 1))
 
 /* The return value of compare_val is as follows:
       > 0                 v1 is greater than v2

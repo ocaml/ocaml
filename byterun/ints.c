@@ -84,12 +84,12 @@ static intnat parse_intnat(value s, int nbits)
   }
   if (base == 10) {
     /* Signed representation expected, allow -2^(nbits-1) to 2^(nbits - 1) */
-    if (res > 1UL << (nbits - 1))
+    if (res > (uintnat)1 << (nbits - 1))
       caml_failwith("int_of_string");
   } else {
     /* Unsigned representation expected, allow 0 to 2^nbits - 1
        and tolerate -(2^nbits - 1) to 0 */
-    if (nbits < sizeof(uintnat) * 8 && res >= 1UL << nbits)
+    if (nbits < sizeof(uintnat) * 8 && res >= (uintnat)1 << nbits)
       caml_failwith("int_of_string");
   }
   return sign < 0 ? -((intnat) res) : (intnat) res;
