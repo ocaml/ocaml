@@ -176,7 +176,8 @@ CAMLprim value caml_format_int(value fmt, value arg)
   char conv;
   value res;
 
-  buffer = parse_format(fmt, "l", format_string, default_format_buffer, &conv);
+  buffer = parse_format(fmt, ARCH_INTNAT_PRINTF_FORMAT,
+			format_string, default_format_buffer, &conv);
   switch (conv) {
   case 'u': case 'x': case 'X': case 'o':
     sprintf(buffer, format_string, Unsigned_long_val(arg));
@@ -600,11 +601,11 @@ static uintnat nativeint_deserialize(void * dst)
 {
   switch (caml_deserialize_uint_1()) {
   case 1:
-    *((long *) dst) = caml_deserialize_sint_4();
+    *((intnat *) dst) = caml_deserialize_sint_4();
     break;
   case 2:
 #ifdef ARCH_SIXTYFOUR
-    *((long *) dst) = caml_deserialize_sint_8();
+    *((intnat *) dst) = caml_deserialize_sint_8();
 #else
     caml_deserialize_error("input_value: native integer value too large");
 #endif
@@ -719,7 +720,7 @@ CAMLprim value caml_nativeint_format(value fmt, value arg)
 
   buffer = parse_format(fmt, ARCH_INTNAT_PRINTF_FORMAT,
                         format_string, default_format_buffer, &conv);
-  sprintf(buffer, format_string, (long) Nativeint_val(arg));
+  sprintf(buffer, format_string, Nativeint_val(arg));
   res = caml_copy_string(buffer);
   if (buffer != default_format_buffer) caml_stat_free(buffer);
   return res;
