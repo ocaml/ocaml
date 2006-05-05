@@ -24,7 +24,7 @@ open Mach
    Operation                    Res     Arg1    Arg2
      Imove                      R       S
                              or S       R
-     Iconst_int                 S
+     Iconst_int                 S if 32-bit signed, R otherwise
      Iconst_float               R
      Iconst_symbol (not PIC)    S
      Iconst_symbol (PIC)        R
@@ -77,7 +77,8 @@ method reload_operation op arg res =
       if !pic_code
       then super#reload_operation op arg res
       else (arg, res)
-  | Iconst_int _
+  | Iconst_int n when n >= -0x80000000n && n <= 0x7FFFFFFFn ->
+      (arg, res)
   | Iintop(Idiv | Imod | Ilsl | Ilsr | Iasr)
   | Iintop_imm(_, _) ->
       (* The argument(s) and results can be either in register or on stack *)

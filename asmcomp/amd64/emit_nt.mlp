@@ -310,22 +310,18 @@ let emit_instr fallthrough i =
             `	mov	{emit_reg dst}, {emit_reg src}\n`
         end
     | Lop(Iconst_int n) ->
-(**
-	`; const_int {emit_nativeint n}\n`;
-	`; n <= 0x7FFFFFFFn {emit_string (if n <= 0x7FFFFFFFn then "true" else "false")}\n`;
-	`; n >= -0x80000000n {emit_string (if n >= -0x80000000n then "true" else "false")}\n`;
-**)
         if n = 0n then begin
           match i.res.(0).loc with
             Reg n -> `	xor	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
           | _     -> `	mov	{emit_reg i.res.(0)}, 0\n`
-(*        end else if n <= 0x7FFFFFFFn && n >= -0x80000000n then
+        end else if n >= -0x80000000n && n <= 0x7FFFFFFFn then
           `	mov	{emit_reg i.res.(0)}, {emit_nativeint n}\n`
+        else if n >= 0x80000000n && n <= 0xFFFFFFFFn  then
+	  (* work around bug in ml64 *)
+          `	mov	{emit_reg32 i.res.(0)}, {emit_nativeint n}\n`
         else
-          `	movabs	{emit_reg i.res.(0)}, {emit_nativeint n}\n`
-*)
-        end else
-          `	mov	{emit_reg i.res.(0)}, {emit_nativeint n}\n`
+	  (* force ml64 to use mov reg, imm64 instruction *)
+          `	mov	{emit_reg i.res.(0)}, {emit_printf "0%nxH" n}\n`
     | Lop(Iconst_float s) ->
         begin match Int64.bits_of_float (float_of_string s) with
         | 0x0000_0000_0000_0000L ->       (* +0.0 *)
@@ -386,7 +382,8 @@ let emit_instr fallthrough i =
               `	movzx	{emit_reg dest}, WORD PTR {emit_addressing addr i.arg 0}\n`
           | Sixteen_signed ->
               `	movsx	{emit_reg dest}, WORD PTR {emit_addressing addr i.arg 0}\n`
-          | Thirtytwo_unsigned -> (* TO CHECK *)
+          | Thirtytwo_unsigned ->
+              (* load to low 32 bits sets high 32 bits to 0 *)
               `	mov	{emit_reg32 dest}, DWORD PTR {emit_addressing addr i.arg 0}\n`
           | Thirtytwo_signed ->
               `	movsxd	{emit_reg dest}, DWORD PTR {emit_addressing addr i.arg 0}\n`
