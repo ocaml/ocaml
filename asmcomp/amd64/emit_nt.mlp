@@ -14,6 +14,9 @@
 
 (* Emission of x86-64 (AMD 64) assembly code, MASM syntax *)
 
+module StringSet =
+  Set.Make(struct type t = string let compare = compare end)
+
 open Misc
 open Cmm
 open Arch
@@ -54,7 +57,7 @@ let slot_offset loc cl =
 (* Symbols *)
 
 let emit_symbol s =
-  emit_string "_"; Emitaux.emit_symbol '$' s
+  Emitaux.emit_symbol '$' s
 
 (* Record symbols used and defined - at the end generate extern for those 
    used but not defined *)
@@ -141,8 +144,8 @@ let emit_addressing addr r n =
       `[{emit_reg r.(n)}+{emit_reg r.(n)}{emit_signed_int d}]`
   | Iscaled(scale, d) ->
       `[{emit_reg r.(n)}*{emit_int scale}{emit_signed_int d}]`
-  | Iscaled(2, d) ->
-      `[{emit_reg r.(n)}+{emit_reg r.(n)}*{emit_int scale}{emit_signed_int d}]`
+  | Iindexed2scaled(scale, d) ->
+      `[{emit_reg r.(n)}+{emit_reg r.(n+1)}*{emit_int scale}{emit_signed_int d}]`
 
 (* Record live pointers at call points *)
 
@@ -304,17 +307,25 @@ let emit_instr fallthrough i =
           if src.typ = Float then
             `	movsd	{emit_reg dst}, {emit_reg src}\n`
           else
-            `	movq	{emit_reg dst}, {emit_reg src}\n`
+            `	mov	{emit_reg dst}, {emit_reg src}\n`
         end
     | Lop(Iconst_int n) ->
+(**
+	`; const_int {emit_nativeint n}\n`;
+	`; n <= 0x7FFFFFFFn {emit_string (if n <= 0x7FFFFFFFn then "true" else "false")}\n`;
+	`; n >= -0x80000000n {emit_string (if n >= -0x80000000n then "true" else "false")}\n`;
+**)
         if n = 0n then begin
           match i.res.(0).loc with
             Reg n -> `	xor	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}\n`
           | _     -> `	mov	{emit_reg i.res.(0)}, 0\n`
-        end else if n <= 0x7FFFFFFFn && n >= -0x80000000n then
+(*        end else if n <= 0x7FFFFFFFn && n >= -0x80000000n then
           `	mov	{emit_reg i.res.(0)}, {emit_nativeint n}\n`
         else
-          `	movabsq	{emit_reg i.res.(0)}, {emit_nativeint n}\n`
+          `	movabs	{emit_reg i.res.(0)}, {emit_nativeint n}\n`
+*)
+        end else
+          `	mov	{emit_reg i.res.(0)}, {emit_nativeint n}\n`
     | Lop(Iconst_float s) ->
         begin match Int64.bits_of_float (float_of_string s) with
         | 0x0000_0000_0000_0000L ->       (* +0.0 *)
@@ -375,10 +386,10 @@ let emit_instr fallthrough i =
               `	movzx	{emit_reg dest}, WORD PTR {emit_addressing addr i.arg 0}\n`
           | Sixteen_signed ->
               `	movsx	{emit_reg dest}, WORD PTR {emit_addressing addr i.arg 0}\n`
-          | Thirtytwo_unsigned ->
-              `	movzx	{emit_reg dest}, DWORD PTR {emit_addressing addr i.arg 0}\n`
+          | Thirtytwo_unsigned -> (* TO CHECK *)
+              `	mov	{emit_reg32 dest}, DWORD PTR {emit_addressing addr i.arg 0}\n`
           | Thirtytwo_signed ->
-              `	movsx	{emit_reg dest}, DWORD PTR {emit_addressing addr i.arg 0}\n`
+              `	movsxd	{emit_reg dest}, DWORD PTR {emit_addressing addr i.arg 0}\n`
           | Single ->
             `	cvtss2sd {emit_reg dest}, REAL4 PTR {emit_addressing addr i.arg 0}\n`
           | Double | Double_u ->
@@ -398,7 +409,7 @@ let emit_instr fallthrough i =
             `	cvtsd2ss xmm15, {emit_reg i.arg.(0)}\n`;
             `	movss	REAL4 PTR {emit_addressing addr i.arg 1}, xmm15\n`
           | Double | Double_u ->
-            `	movlpd	REAL8 PTR {emit_addressing addr i.arg 1}, {emit_reg i.arg.(0)}, {emit_reg i.arg.(0)}\n`
+            `	movlpd	REAL8 PTR {emit_addressing addr i.arg 1}, {emit_reg i.arg.(0)}\n`
         end
     | Lop(Ialloc n) ->
         if !fastcode_flag then begin
@@ -442,16 +453,16 @@ let emit_instr fallthrough i =
         `	cmp	{emit_reg i.arg.(0)}, {emit_int n}\n`;
         `	jbe	{emit_label !range_check_trap}\n`
     | Lop(Iintop(Idiv | Imod)) ->
-        `	cqto\n`;
+        `	cqo\n`;
         `	idiv	{emit_reg i.arg.(1)}\n`
     | Lop(Iintop(Ilsl | Ilsr | Iasr as op)) ->
         (* We have i.arg.(0) = i.res.(0) and i.arg.(1) = %rcx *)
         `	{emit_string(instr_for_intop op)}	{emit_reg i.res.(0)}, cl\n`
     | Lop(Iintop op) ->
         (* We have i.arg.(0) = i.res.(0) *)
-        `	{emit_string(instr_for_intop op)}	{emit_reg i.arg.(0)}, {emit_reg i.res.(1)}\n`
+        `	{emit_string(instr_for_intop op)}	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}\n`
     | Lop(Iintop_imm(Iadd, n)) when i.arg.(0).loc <> i.res.(0).loc ->
-        `	lea	{emit_reg i.res.(0)}, {emit_int n}[{emit_reg i.arg.(0)}], \n`
+        `	lea	{emit_reg i.res.(0)}, {emit_int n}[{emit_reg i.arg.(0)}]\n`
     | Lop(Iintop_imm(Iadd, 1) | Iintop_imm(Isub, -1)) ->
         `	inc	{emit_reg i.res.(0)}\n`
     | Lop(Iintop_imm(Iadd, -1) | Iintop_imm(Isub, 1)) ->
@@ -468,7 +479,7 @@ let emit_instr fallthrough i =
         (* Note: i.arg.(0) = i.res.(0) = rdx  (cf. selection.ml) *)
         `	mov	rax, {emit_reg i.arg.(0)}\n`;
         `	test	rax, rax\n`;
-        `	lea	rax, {emit_int(n-1)}[%rax]\n`;
+        `	lea	rax, {emit_int(n-1)}[rax]\n`;
         `	cmovns	rax, {emit_reg i.arg.(0)}\n`;
         `	and	rax, {emit_int (-n)}\n`;
         `	sub	{emit_reg i.res.(0)}, rax\n`
@@ -480,17 +491,18 @@ let emit_instr fallthrough i =
     | Lop(Iabsf) ->
         `	andpd	{emit_reg i.res.(0)}, {emit_symbol "caml_absf_mask"}\n`
     | Lop(Iaddf | Isubf | Imulf | Idivf as floatop) ->
-        `	{emit_string(instr_for_floatop floatop)}	{emit_reg i.arg.(0)}, {emit_reg i.res.(1)}\n`
+        `	{emit_string(instr_for_floatop floatop)}	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}\n`
     | Lop(Ifloatofint) ->
-        `	cvtsi2sdq	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`
+        `	cvtsi2sd	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`
     | Lop(Iintoffloat) ->
-        `	cvttsd2siq	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`
+        `	cvttsd2si	{emit_reg i.res.(0)}, {emit_reg i.arg.(0)}\n`
     | Lop(Ispecific(Ilea addr)) ->
         `	lea	{emit_reg i.res.(0)}, {emit_addressing addr i.arg 0}\n`
     | Lop(Ispecific(Istore_int(n, addr))) ->
         `	mov	QWORD PTR {emit_addressing addr i.arg 0}, {emit_nativeint n}\n`
     | Lop(Ispecific(Istore_symbol(s, addr))) ->
         assert (not !pic_code);
+	add_used_symbol s;
         `	mov	QWORD PTR {emit_addressing addr i.arg 0}, OFFSET {emit_symbol s}\n`
     | Lop(Ispecific(Ioffset_loc(n, addr))) ->
         `	add	QWORD PTR {emit_addressing addr i.arg 0}, {emit_int n}\n`
@@ -559,7 +571,7 @@ let emit_instr fallthrough i =
         end;
         `	.DATA\n`;
         emit_align 8;
-        `{emit_label lbl}:`;
+        `{emit_label lbl}	LABEL QWORD\n`;
         for i = 0 to Array.length jumptbl - 1 do
           `	QWORD	{emit_label jumptbl.(i)}\n`
         done;
@@ -620,6 +632,7 @@ let fundecl fundecl =
   range_check_trap := 0;
   `	.CODE\n`;
   emit_align 16;
+  add_def_symbol fundecl.fun_name;
   `	PUBLIC	{emit_symbol fundecl.fun_name}\n`;
   `{emit_symbol fundecl.fun_name}:\n`;
   if frame_required() then begin
@@ -678,17 +691,18 @@ let data l =
 (* Beginning / end of an assembly file *)
 
 let begin_assembly() =
-  `	EXTERN _caml_young_ptr: QWORD\n`;
-  `	EXTERN _caml_young_limit: QWORD\n`;
-  `	EXTERN _caml_exception_pointer: QWORD\n`;
-  `	EXTERN _caml_extra_params: QWORD\n`;
-  `	EXTERN _caml_call_gc: PROC\n`;
-  `	EXTERN _caml_c_call: PROC\n`;
-  `	EXTERN _caml_allocN: PROC\n`;
-  `	EXTERN _caml_alloc1: PROC\n`;
-  `	EXTERN _caml_alloc2: PROC\n`;
-  `	EXTERN _caml_alloc3: PROC\n`;
-  `	EXTERN _caml_ml_array_bound_error: PROC\n`;
+  `	EXTRN caml_young_ptr: QWORD\n`;
+  `	EXTRN caml_young_limit: QWORD\n`;
+  `	EXTRN caml_exception_pointer: QWORD\n`;
+  `	EXTRN caml_absf_mask: QWORD\n`;
+  `	EXTRN caml_negf_mask: QWORD\n`;
+  `	EXTRN caml_call_gc: NEAR\n`;
+  `	EXTRN caml_c_call: NEAR\n`;
+  `	EXTRN caml_allocN: NEAR\n`;
+  `	EXTRN caml_alloc1: NEAR\n`;
+  `	EXTRN caml_alloc2: NEAR\n`;
+  `	EXTRN caml_alloc3: NEAR\n`;
+  `	EXTRN caml_ml_array_bound_error: NEAR\n`;
   let lbl_begin = Compilenv.make_symbol (Some "data_begin") in
   add_def_symbol lbl_begin;
   `	.DATA\n`;
@@ -702,13 +716,13 @@ let begin_assembly() =
 
 let end_assembly() =
   let lbl_end = Compilenv.make_symbol (Some "code_end") in
-  add_def_symbol lbl_begin;
+  add_def_symbol lbl_end;
   `	.CODE\n`;
   `	PUBLIC	{emit_symbol lbl_end}\n`;
   `{emit_symbol lbl_end} LABEL QWORD\n`;
   `	.DATA\n`;
   let lbl_end = Compilenv.make_symbol (Some "data_end") in
-  add_def_symbol lbl_begin;
+  add_def_symbol lbl_end;
   `	PUBLIC	{emit_symbol lbl_end}\n`;
   `{emit_symbol lbl_end} LABEL QWORD\n`;
   `	QWORD	0\n`;
@@ -723,7 +737,7 @@ let end_assembly() =
   StringSet.iter
     (fun s ->
       if not (StringSet.mem s !symbols_defined) then
-        `	EXTERN	{emit_symbol s}: PROC\n`)
+        `	EXTRN	{emit_symbol s}: NEAR\n`)
     !symbols_used;
   symbols_used := StringSet.empty;
   symbols_defined := StringSet.empty;

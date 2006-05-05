@@ -32,9 +32,9 @@ LINKEDFILES=misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c array.c \
   dynlink.c
 
 ifeq ($(TOOLCHAIN),mingw)
-ASMOBJS=i386.o
+ASMOBJS=$(ARCH).o
 else
-ASMOBJS=i386nt.obj
+ASMOBJS=$(ARCH)nt.obj
 endif
 
 OBJS=$(COBJS) $(ASMOBJS)
@@ -46,6 +46,9 @@ libasmrun.$(A): $(OBJS)
 
 i386nt.obj: i386nt.asm
 	ml /nologo /coff /Cp /c /Foi386nt.obj i386nt.asm
+
+amd64nt.obj: amd64nt.asm
+	ml64 /nologo /Cp /c /Foamd64nt.obj amd64nt.asm
 
 i386.o: i386.S
 	$(CC) -c -DSYS_$(SYSTEM) i386.S

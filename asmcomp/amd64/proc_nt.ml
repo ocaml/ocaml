@@ -27,8 +27,8 @@ open Mach
     rbx         1               rcx - r9: C function arguments
     rdi         2               rax: Caml and C function results
     rsi         3               rbx, rbp, rsi, rdi r12-r15 are preserved by C
-    rcx         4
-    rdx         5
+    rdx         4
+    rcx         5
     r8          6
     r9          7
     r10		8
@@ -90,8 +90,8 @@ let phys_reg n =
   if n < 100 then hard_int_reg.(n) else hard_float_reg.(n - 100)
 
 let rax = phys_reg 0
-let rcx = phys_reg 4
-let rdx = phys_reg 5
+let rcx = phys_reg 5
+let rdx = phys_reg 4
 let r11 = phys_reg 9
 let rxmm15 = phys_reg 115
 
@@ -143,8 +143,8 @@ let loc_results res =
   let (loc, ofs) = calling_conventions 0 0 100 100 not_supported res in loc
 
 (* C calling conventions (Win64):
-     first integer args in rcx, rdx, r8, r9
-     first float args in xmm0 ... xmm3
+     first integer args in rcx, rdx, r8, r9  (4 - 7)
+     first float args in xmm0 ... xmm3       (100 - 103)
      each integer arg consumes a float reg, and conversely
      remaining args on stack
      always 32 bytes reserved at bottom of stack.
@@ -154,27 +154,31 @@ let loc_results res =
 let loc_external_results res =
   let (loc, ofs) = calling_conventions 0 0 100 100 not_supported res in loc
 
+let int_external_arguments =
+  [| 5 (*rcx*); 4 (*rdx*); 6 (*r8*); 7 (*r9*) |]
+let float_external_arguments =
+  [| 100 (*xmm0*); 101 (*xmm1*); 102 (*xmm2*); 103 (*xmm3*) |]
+
 let loc_external_arguments arg =
   let loc = Array.create (Array.length arg) Reg.dummy in
-  let int = ref 4 (* start with rcx *)
-  and flt = ref 0 (* start with xmm0 *)
+  let reg = ref 0
   and ofs = ref 32 in
   for i = 0 to Array.length arg - 1 do
     match arg.(i).typ with
       Int | Addr as ty ->
-        if !int < 4 then begin
-          loc.(i) <- phys_reg !int;
-          incr int; incr flt
+        if !reg < 4 then begin
+          loc.(i) <- phys_reg int_external_arguments.(!reg);
+          incr reg
         end else begin
-          loc.(i) <- stack_slot (make_stack !ofs) ty;
+          loc.(i) <- stack_slot (Outgoing !ofs) ty;
           ofs := !ofs + size_int
         end
     | Float ->
-        if !flt < 4 then begin
-          loc.(i) <- phys_reg !flt;
-          incr int; incr flt
+        if !reg < 4 then begin
+          loc.(i) <- phys_reg float_external_arguments.(!reg);
+          incr reg
         end else begin
-          loc.(i) <- stack_slot (make_stack !ofs) Float;
+          loc.(i) <- stack_slot (Outgoing !ofs) Float;
           ofs := !ofs + size_float
         end
   done;
@@ -224,9 +228,9 @@ let contains_calls = ref false
 (* Calling the assembler *)
 
 let assemble_file infile outfile =
-  Ccomp.command ("ml64 /nologo /coff /Cp /c /Fo" ^
+  Ccomp.command ("ml64 /nologo /Cp /c /Fo" ^
                  Filename.quote outfile ^ " " ^ 
-                 Filename.quote infile)
+                 Filename.quote infile) (* ^ "> NUL") *)
 
   (* /Cp preserve case of all used identifiers
      /c  assemble only
