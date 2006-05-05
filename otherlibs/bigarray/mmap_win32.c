@@ -58,9 +58,9 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
   }
   /* Determine file size */
   currpos = SetFilePointer(fd, 0, NULL, FILE_CURRENT);
-  if (currpos == INVALID_SET_FILE_POINTER) bigarray_sys_error();
+  if (currpos == INVALID_SET_FILE_POINTER) caml_ba_sys_error();
   file_size = SetFilePointer(fd, 0, NULL, FILE_END);
-  if (file_size == INVALID_SET_FILE_POINTER) bigarray_sys_error();
+  if (file_size == INVALID_SET_FILE_POINTER) caml_ba_sys_error();
   /* Determine array size in bytes (or size of array without the major
      dimension if that dimension wasn't specified) */
   array_size = bigarray_element_size[flags & BIGARRAY_KIND_MASK];
@@ -85,10 +85,10 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
     mode = FILE_MAP_COPY;
   }
   fmap = CreateFileMapping(fd, NULL, perm, 0, array_size, NULL);
-  if (fmap == NULL) bigarray_sys_error();
+  if (fmap == NULL) caml_ba_sys_error();
   /* Map the mapping in memory */
   addr = MapViewOfFile(fmap, mode, 0, 0, array_size);
-  if (addr == NULL) bigarray_sys_error();
+  if (addr == NULL) caml_ba_sys_error();
   /* Close the file mapping */
   CloseHandle(fmap);
   /* Build and return the Caml bigarray */
