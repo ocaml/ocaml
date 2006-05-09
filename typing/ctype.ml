@@ -1105,6 +1105,13 @@ let expand_abbrev env ty =
   | _ ->
       assert false
 
+let safe_abbrev env ty =
+  let snap = Btype.snapshot () in
+  try ignore (expand_abbrev env ty); true
+  with Cannot_expand | Unify _ ->
+    Btype.backtrack snap;
+    false
+
 (* Fully expand the head of a type.
    Raise Cannot_expand if the type cannot be expanded.
    May raise Unify, if a recursion was hidden in the type. *)
@@ -1128,7 +1135,10 @@ let expand_head_once env ty =
   try expand_abbrev env (repr ty) with Cannot_expand -> assert false
 
 (* Fully expand the head of a type. *)
-let rec expand_head env ty =
+let expand_head_unif env ty =
+  try try_expand_head env ty with Cannot_expand -> repr ty
+
+let expand_head env ty =
   let snap = Btype.snapshot () in
   try try_expand_head env ty
   with Cannot_expand | Unify _ -> (* expand_head shall never fail *)
@@ -1506,8 +1516,8 @@ let rec unify env t1 t2 =
 and unify2 env t1 t2 =
   (* Second step: expansion of abbreviations *)
   let rec expand_both t1'' t2'' =
-    let t1' = expand_head env t1 in
-    let t2' = expand_head env t2 in
+    let t1' = expand_head_unif env t1 in
+    let t2' = expand_head_unif env t2 in
     (* Expansion may have changed the representative of the types... *)
     if t1' == t1'' && t2' == t2'' then (t1',t2') else
     expand_both t1' t2'
@@ -1600,7 +1610,7 @@ and unify3 env t1 t1' t2 t2' =
       match t2.desc with
         Tconstr (p, tl, abbrev) ->
           forget_abbrev abbrev p;
-          let t2'' = expand_head env t2 in
+          let t2'' = expand_head_unif env t2 in
           if not (closed_parameterized_type tl t2'') then
             link_type (repr t2) (repr t2')
       | _ ->
@@ -1849,7 +1859,7 @@ let unify env ty1 ty2 =
    (2) the original label is not optional
 *)
 let rec filter_arrow env t l =
-  let t = expand_head env t in
+  let t = expand_head_unif env t in
   match t.desc with
     Tvar ->
       let t1 = newvar () and t2 = newvar () in
@@ -1892,7 +1902,7 @@ let rec filter_method_field env name priv ty =
 
 (* Unify [ty] and [< name : 'a; .. >]. Return ['a]. *)
 let rec filter_method env name priv ty =
-  let ty = expand_head env ty in
+  let ty = expand_head_unif env ty in
   match ty.desc with
     Tvar ->
       let ty1 = newvar () in
@@ -1966,8 +1976,8 @@ let rec moregen inst_nongen type_pairs env t1 t2 =
     | (Tconstr (p1, [], _), Tconstr (p2, [], _)) when Path.same p1 p2 ->
         ()
     | _ ->
-        let t1' = expand_head env t1 in
-        let t2' = expand_head env t2 in
+        let t1' = expand_head_unif env t1 in
+        let t2' = expand_head_unif env t2 in
         (* Expansion may have changed the representative of the types... *)
         let t1' = repr t1' and t2' = repr t2' in
         if t1' == t2' then () else
@@ -2213,8 +2223,8 @@ let rec eqtype rename type_pairs subst env t1 t2 =
     | (Tconstr (p1, [], _), Tconstr (p2, [], _)) when Path.same p1 p2 ->
         ()
     | _ ->
-        let t1' = expand_head env t1 in
-        let t2' = expand_head env t2 in
+        let t1' = expand_head_unif env t1 in
+        let t2' = expand_head_unif env t2 in
         (* Expansion may have changed the representative of the types... *)
         let t1' = repr t1' and t2' = repr t2' in
         if t1' == t2' then () else
@@ -2700,7 +2710,8 @@ let rec build_subtype env visited loops posi level t =
       if c > Unchanged then (newty (Ttuple (List.map fst tlist')), c)
       else (t, Unchanged)
   | Tconstr(p, tl, abbrev)
-    when level > 0 && generic_abbrev env p && not (has_constr_row' env t) ->
+    when level > 0 && generic_abbrev env p && safe_abbrev env t
+    && not (has_constr_row' env t) ->
       let t' = repr (expand_abbrev env t) in
       let level' = pred_expand level in
       begin try match t'.desc with
@@ -2740,7 +2751,8 @@ let rec build_subtype env visited loops posi level t =
       let visited = t :: visited in
       begin try
         let decl = Env.find_type p env in
-        if level = 0 && generic_abbrev env p && not (has_constr_row' env t)
+        if level = 0 && generic_abbrev env p && safe_abbrev env t
+        && not (has_constr_row' env t)
         then warn := true;
         let tl' =
           List.map2
@@ -2871,9 +2883,11 @@ let rec subtype_rec env trace t1 t2 cstrs =
         subtype_list env trace tl1 tl2 cstrs
     | (Tconstr(p1, [], _), Tconstr(p2, [], _)) when Path.same p1 p2 ->
         cstrs
-    | (Tconstr(p1, tl1, abbrev1), _) when generic_abbrev env p1 ->
+    | (Tconstr(p1, tl1, abbrev1), _)
+      when generic_abbrev env p1 && safe_abbrev env t1 ->
         subtype_rec env trace (expand_abbrev env t1) t2 cstrs
-    | (_, Tconstr(p2, tl2, abbrev2)) when generic_abbrev env p2 ->
+    | (_, Tconstr(p2, tl2, abbrev2))
+      when generic_abbrev env p2 && safe_abbrev env t2 ->
         subtype_rec env trace t1 (expand_abbrev env t2) cstrs
     | (Tconstr(p1, tl1, _), Tconstr(p2, tl2, _)) when Path.same p1 p2 ->
         begin try
@@ -3063,8 +3077,9 @@ let cyclic_abbrev env id ty =
         p = Path.Pident id || List.memq ty seen ||
         begin try
           check_cycle (ty :: seen) (expand_abbrev env ty)
-        with Cannot_expand ->
-          false
+        with
+          Cannot_expand -> false
+        | Unify _ -> true
         end
     | _ ->
         false
