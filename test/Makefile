@@ -124,7 +124,7 @@ beforedepend:: Lex/scanner.ml
 $(BYTE_EXE) $(BYTE_KB) $(BYTE_GENLEX): ../ocamlc
 $(BYTE_EXE): ../stdlib/stdlib.cma
 $(CODE_EXE) $(CODE_KB) $(CODE_GENLEX): ../ocamlopt
-$(CODE_EXE): ../stdlib/stdlib.cmxa ../stdlib/libasmrun.a
+$(CODE_EXE): ../stdlib/stdlib.cmxa ../stdlib/libasmrun.$(A)
 
 clean::
 	rm -f *.byt *.out
@@ -139,14 +139,14 @@ bytetest:
 	set -e; \
         for prog in $(BYTE_EXE:.byt=); do \
           echo $$prog; \
-          $(CAMLRUN) $$prog.byt | cmp - Results/$$prog.out; \
+          $(CAMLRUN) $$prog.byt | diff -b -q - Results/$$prog.out; \
         done
 
 codetest:
 	set -e; \
         for prog in $(CODE_EXE:.out=); do \
           echo $$prog; \
-          ./$$prog.out | cmp - Results/$$prog.out; \
+          ./$$prog.out | diff -b -q - Results/$$prog.out; \
         done
 
 clean::
