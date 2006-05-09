@@ -27,12 +27,16 @@ LIBS=$(call SYSLIB,kernel32) $(call SYSLIB,advapi32) $(call SYSLIB,gdi32) \
 all: ocamlwin.exe
 
 ocamlwin.exe: $(OBJS)
-	$(CC) $(CFLAGS) -o ocamlwin.exe $(OBJS) $(LIBS)
+	$(CC) $(CFLAGS) $(call OUTPUTEXE,ocamlwin.exe) $(OBJS) $(LIBS) $(EXTRALIBS)
 
 ocamlres.$(O): ocaml.rc ocaml.ico
 ifeq ($(TOOLCHAIN),msvc)
 	rc ocaml.rc
+ifeq ($(ARCH),amd64)
+	cvtres /nologo /machine:amd64 /out:$@ ocaml.res
+else
 	cvtres /nologo /machine:ix86 /out:$@ ocaml.res
+endif
 	rm -f ocaml.res
 endif
 ifeq ($(TOOLCHAIN),mingw)
