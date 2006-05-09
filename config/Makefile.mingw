@@ -72,6 +72,9 @@ MKLIB=rm -f $(1); ar rcs $(1) $(2)
 ### Canonicalize the name of a system library
 SYSLIB=-l$(1)
 
+### Specify the name of the generated executable when calling the C compiler
+OUTPUTEXE=-o $(1)
+
 ### The ranlib command
 RANLIBCMD=ranlib
 

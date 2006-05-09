@@ -72,6 +72,9 @@ MKLIB=link /lib /nologo /debugtype:CV /out:$(1) $(2)
 ### Canonicalize the name of a system library
 SYSLIB=$(1).lib
 
+### Specify the name of the generated executable when calling the C compiler
+OUTPUTEXE=/Fe$(1)
+
 ### The ranlib command
 RANLIBCMD=
 
