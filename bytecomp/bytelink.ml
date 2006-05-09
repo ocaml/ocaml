@@ -464,7 +464,7 @@ let build_custom_runtime prim_name exec_name =
             (List.rev_map Ccomp.expand_libname !Clflags.ccobjs))
           (Filename.quote (Ccomp.expand_libname "-lcamlrun"))
           Config.bytecomp_c_libraries
-          (String.concat " " (List.rev !Clflags.ccopts))) in
+          (Ccomp.make_link_options !Clflags.ccopts)) in
       (* C compiler doesn't clean up after itself.  Note that the .obj
          file is created in the current working directory. *)
       remove_file

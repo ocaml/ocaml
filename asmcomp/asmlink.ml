@@ -265,7 +265,7 @@ let call_linker file_list startup_file output_name =
               (List.rev_map Ccomp.expand_libname !Clflags.ccobjs))
             (Filename.quote runtime_lib)
             c_lib
-            (String.concat " " (List.rev !Clflags.ccopts))
+            (Ccomp.make_link_options !Clflags.ccopts)
         else
           Printf.sprintf "%s /out:%s %s %s"
             Config.native_partial_linker
