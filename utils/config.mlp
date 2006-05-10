@@ -16,6 +16,7 @@
 let version = Sys.ocaml_version
 
 let standard_library_default = "%%LIBDIR%%"
+let standard_library_ocamlduce = "%%OCAMLDUCELIBDIR%%"
 
 let standard_library =
   try

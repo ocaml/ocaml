@@ -19,6 +19,8 @@ val version: string
 
 val standard_library: string
         (* The directory containing the standard libraries *)
+val standard_library_ocamlduce: string
+        (* The directory containing ocamlduce.cma/ocamlduce.cmi/... *)
 val standard_runtime: string
         (* The full path to the standard bytecode interpreter ocamlrun *)
 val ccomp_type: string

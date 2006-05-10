@@ -16,15 +16,39 @@ REQUIREMENTS:
 A working OCaml installation must be available to compile OCamlDuce.
 The version of OCaml must match the version of OCamlDuce.
 
+A recent version of findlib must also be available.
+
 
 INSTALLATION:
 
 make all
 make opt
-make install   # requires findlib
+make install
 
-The OCamlDuce library and tools are installed in a findlib's package
-called ocamlduce.
+COMPILATION:
+
+The OCamlDuce library is installed in a findlib package called
+"ocamlduce". You need to include this package if you link OCamlduce
+objects with the regular OCaml compiler. The OCamlDuce library
+are available without any further option to the OCamlDuce tools
+(toplevel and compilers).
+
+A script called "ocamlducefind" is a wrapper around ocamlfind
+which force ocamlfind to use the OCamlDuce's toolchain instead of OCaml's.
+
+To compile a unit X which requires the OCamlDuce extensions, you can
+thus simply do:
+
+ocamlducefind ocamlc -c x.ml
+
+To link a project, you can use the regular OCaml compiler, but then
+you need to pass the "-package ocamlduce" option.
+
+ocamlfind ocamlc -o x -package ocamlduce -linkpkg x.cmo
+
+Or you can simply use the OCamlDuce compiler:
+
+ocamlducefind ocamlc -o x x.cmo
 
 
 DOCUMENTATION:
@@ -63,3 +87,8 @@ CHANGE LOG:
 
 3.09.1pl1
 - internal simplifications, minimize diff with OCaml
+
+3.09.2
+- synchronize with OCaml 3.09.2 (released version)
+- add OCamlDuce library as defaults in ocamlduce's tools
+- install the ocamlducefind script

@@ -1,9 +1,13 @@
 .cvsignore
 .depend
 configure
-ocamlc
-ocamlc.opt
-expunge
+ocamlduce
+ocamlducec
+ocamlducedoc
+ocamlducedep
+ocamlducemktop
+expungeduce
+META
 ocaml
 ocamlopt
 ocamlopt.opt

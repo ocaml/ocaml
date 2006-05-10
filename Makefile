@@ -2,9 +2,9 @@
 
 VERSION=3.09.2
 
-BINDIR=`basename $(shell which $(CAMLC))`
+OCAMLDUCELIBDIR=$(shell ocamlfind printconf destdir)/ocamlduce
 
-all: ocamlducec ocamlduce ocamlducedep ocamlducedoc cduce/ocamlduce.cma
+all: ocamlducec ocamlduce ocamlducedep ocamlducedoc cduce/ocamlduce.cma ocamlducemktop
 opt: all ocamlduceopt ocamlducec.opt ocamlduceopt.opt ocamlducedep.opt ocamlducedoc.opt cduce/ocamlduce.cmxa
 
 
@@ -22,8 +22,6 @@ OCAML_CONFIG=$(shell $(CAMLC) -where)/Makefile.config
 
 include $(OCAML_CONFIG)
 include stdlib/StdlibModules
-
-clean:: config/Makefile
 
 INCLUDES=-I utils -I parsing -I typing -I bytecomp -I asmcomp -I driver \
          -I toplevel -I tools
@@ -95,7 +93,7 @@ TOPLEVELSTART=toplevel/topstart.cmo
 
 COMPOBJS=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(BYTECOMP) $(DRIVER)
 
-TOPLIB=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(BYTECOMP) $(TOPLEVEL)
+TOPLIB=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(BYTECOMP) $(TOPLEVEL) cduce/ocamlduce.cma
 
 TOPOBJS=$(TOPLEVELLIB) $(TOPLEVELSTART)
 
@@ -141,22 +139,34 @@ clean::
 
 # The toplevel
 
-ocamlduce: $(TOPOBJS) expunge
-	$(CAMLC) $(LINKFLAGS) -linkall -o ocamlduce.tmp nums.cma $(TOPOBJS)
-	./expunge ocamlduce.tmp ocamlduce $(PERVASIVES)
-	rm -f ocamlduce.tmp
+ocamlduce: $(TOPOBJS) expungeduce
+	sed -e "s|%%OCAMLC_DIR%%|$(BINDIR)|" \
+	    -e "s|%%EXPUNGEDUCE_DIR%%|.|" \
+	    -e "s|%%LIBDIR%%|toplevel/|" \
+	    tools/ocamlducemktop.tpl > mk_top
+	chmod +x mk_top
+	./mk_top -o ocamlduce
+	rm mk_top
 
 toplevel/toplevelducelib.cma: $(TOPLIB)
 	$(CAMLC) -a -o $@ $(TOPLIB)
 
+ocamlducemktop: tools/ocamlmktop.tpl $(TOPOBJS) expungeduce
+	sed -e "s|%%OCAMLC_DIR%%|$(BINDIR)|" \
+	    -e "s|%%EXPUNGEDUCE_DIR%%|$(BINDIR)|" \
+	    -e "s|%%LIBDIR%%|$(OCAMLDUCELIBDIR)/|" \
+	    tools/ocamlducemktop.tpl > ocamlducemktop
+	chmod +x ocamlducemktop
+
 clean::
-	rm -f ocamlduce toplevel/toplevelducelib.cma
+	rm -f ocamlduce toplevel/toplevelducelib.cma ocamlducemktop
 
 # The configuration file
 
-utils/config.ml: utils/config.mlp config/Makefile
+utils/config.ml: utils/config.mlp
 	@rm -f utils/config.ml
 	sed -e 's|%%LIBDIR%%|$(LIBDIR)|' \
+	    -e 's|%%OCAMLDUCELIBDIR%%|$(OCAMLDUCELIBDIR)|' \
             -e 's|%%BYTERUN%%|$(BINDIR)/gcamlrun|' \
             -e 's|%%CCOMPTYPE%%|cc|' \
             -e 's|%%BYTECC%%|$(BYTECC) $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)|' \
@@ -179,9 +189,6 @@ utils/config.ml: utils/config.mlp config/Makefile
             -e 's|%%SYSTHREAD_SUPPORT%%|$(SYSTHREAD_SUPPORT)|' \
             utils/config.mlp > utils/config.ml
 	@chmod -w utils/config.ml
-
-config/Makefile:
-	cp $(OCAML_CONFIG) config/Makefile
 
 clean::
 	rm -f utils/config.ml
@@ -325,11 +332,11 @@ tools/cvt_emit: tools/cvt_emit.mll
 
 # The "expunge" utility
 
-expunge: $(EXPUNGEOBJS)
-	$(CAMLC) $(LINKFLAGS) -o expunge $(EXPUNGEOBJS)
+expungeduce: $(EXPUNGEOBJS)
+	$(CAMLC) $(LINKFLAGS) -o expungeduce $(EXPUNGEOBJS)
 
 clean::
-	rm -f expunge
+	rm -f expungeduce
 
 # Default rules
 
@@ -451,9 +458,6 @@ clean::
 	rm -f ocamlducedoc*
 	cd ocamldoc && $(MAKE) clean
 
-clean::
-	rm -f config/Makefile
-
 # HTML documentation
 
 htdoc: cduce/ocamlduce.cmi ocamlducedoc
@@ -468,11 +472,14 @@ clean::
 
 INSTALL_LIB_FILES= \
  cduce/ocamlduce.cma cduce/ocamlduce.cmi cduce_types.cmi cduce/ocamlduce.mli \
- cduce/ocamlduce.cmxa cduce/ocamlduce.o cduce_types.o cduce/ocamlduce.a 
+ cduce/ocamlduce.cmxa cduce/ocamlduce.o cduce_types.o cduce/ocamlduce.a \
+ $(TOPOBJS)  
 
 INSTALL_BINARIES= \
  ocamlducec ocamlduce ocamlducedep ocamlducedoc \
- ocamlduceopt ocamlducec.opt ocamlduceopt.opt ocamlducedep.opt ocamlducedoc.opt
+ ocamlduceopt \
+ ocamlducec.opt ocamlduceopt.opt ocamlducedep.opt ocamlducedoc.opt \
+ ocamlducemktop expungeduce ocamlducefind
 
 INSTALL_DOC_FILES= \
  README LICENSE htdoc
@@ -481,7 +488,7 @@ install: FORCE META
 	for i in $(INSTALL_BINARIES); do \
 	  cp $$i $(BINDIR)/; \
 	done
-	ocamlfind install ocamlduce META $(wildcard $(INSTALL_LIB_FILES))
+	ocamlfind install ocamlduce META -optional $(INSTALL_LIB_FILES)
 
 uninstall: FORCE
 	for i in $(INSTALL_BINARIES); do \
