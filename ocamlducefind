@@ -1,2 +1,2 @@
 #!/bin/sh
-OCAMLFIND_COMMANDS="ocamlc=ocamlducec ocamlopt=ocamlduceopt ocamldep=ocamlducedep ocamldoc=ocamlducedoc" ocamlfind "$@"
+OCAMLFIND_COMMANDS="ocamlc=ocamlducec.opt ocamlopt=ocamlduceopt.opt ocamldep=ocamlducedep ocamldoc=ocamlducedoc" ocamlfind "$@"

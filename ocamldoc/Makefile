@@ -11,7 +11,7 @@
 
 # $Id$
 
-include ../config/Makefile
+OCAML_CONFIG=$(shell ocamlc -where)/Makefile.config
 
 # Various commands and dir
 ##########################

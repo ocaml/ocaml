@@ -12,7 +12,7 @@
 
 # $Id$
 
-include ../config/Makefile
+include $(shell ocamlc -where)/Makefile.config
 
 CAMLRUN=../boot/ocamlrun
 CAMLC=$(CAMLRUN) ../boot/ocamlc -nostdlib -I ../boot
