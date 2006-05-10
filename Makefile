@@ -505,7 +505,7 @@ clean::
 # Build package
 
 PACKAGE_FILES= \
-  Makefile .depend META.in \
+  Makefile .depend META.in ocamlducefind \
   asmcomp asmrun bytecomp byterun cduce driver ocamldoc parsing \
   toplevel typing utils tools
 
