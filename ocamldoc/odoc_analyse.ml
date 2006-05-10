@@ -186,7 +186,7 @@ let process_error exn =
   | Translclass.Error(loc, err) ->
       Location.print ppf loc; Translclass.report_error ppf err
   | Warnings.Errors (n) ->
-      fprintf ppf "@.Error: %d error-enabled warnings occurred." n
+      fprintf ppf "@.Error: error-enabled warnings (%d occurrences)" n
   | x ->
       fprintf ppf "@]";
       fprintf ppf "Compilation error. Use the OCaml compiler to get more details."
@@ -290,7 +290,7 @@ let process_file ppf sourcefile =
             Odoc_module.m_top_deps = [] ;
             Odoc_module.m_code = None ;
             Odoc_module.m_code_intf = None ;
-	    Odoc_module.m_text_only = true ;
+            Odoc_module.m_text_only = true ;
           }
         in
         Some m

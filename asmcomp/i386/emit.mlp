@@ -14,6 +14,8 @@
 
 (* Emission of Intel 386 assembly code *)
 
+module StringSet = Set.Make(struct type t = string let compare = compare end)
+
 open Location
 open Misc
 open Cmm
@@ -33,7 +35,9 @@ let stack_offset = ref 0
 (* Layout of the stack frame *)
 
 let frame_size () =                     (* includes return address *)
-  !stack_offset + 4 * num_stack_slots.(0) + 8 * num_stack_slots.(1) + 4
+  let sz = 
+    !stack_offset + 4 * num_stack_slots.(0) + 8 * num_stack_slots.(1) + 4
+  in Misc.align sz stack_alignment
 
 let slot_offset loc cl =
   match loc with
@@ -48,6 +52,8 @@ let slot_offset loc cl =
       assert (n >= 0);
       n
 
+let trap_frame_size = Misc.align 8 stack_alignment
+
 (* Prefixing of symbols with "_" *)
 
 let symbol_prefix =
@@ -56,6 +62,7 @@ let symbol_prefix =
   | "bsd_elf" -> ""
   | "solaris" -> ""
   | "beos" -> ""
+  | "gnu" -> ""
   | _ -> "_"
 
 let emit_symbol s =
@@ -69,6 +76,7 @@ let label_prefix =
   | "bsd_elf" -> ".L"
   | "solaris" -> ".L"
   | "beos" -> ".L"
+  | "gnu" -> ".L"
   | _ -> "L"
 
 let emit_label lbl =
@@ -90,13 +98,21 @@ let use_ascii_dir =
     "solaris" -> false
   | _ -> true
 
+(* MacOSX has its own way to reference symbols potentially defined in 
+   shared objects *)
+
+let macosx =
+  match Config.system with
+  | "macosx" -> true
+  | _ -> false
+
 (* Output a .align directive.
    The numerical argument to .align is log2 of alignment size, except
    under ELF, where it is the alignment size... *)
 
 let emit_align =
   match Config.system with
-    "linux_elf" | "bsd_elf" | "solaris" | "beos" | "cygwin" | "mingw" ->
+    "linux_elf" | "bsd_elf" | "solaris" | "beos" | "cygwin" | "mingw" | "gnu" ->
       (fun n -> `	.align	{emit_int n}\n`)
   | _ ->
       (fun n -> `	.align	{emit_int(Misc.log2 n)}\n`)
@@ -378,6 +394,9 @@ let tailrec_entry_point = ref 0
 let range_check_trap = ref 0
 (* Record float literals to be emitted later *)
 let float_constants = ref ([] : (int * string) list)
+(* Record references to external C functions (for MacOSX) *)
+let external_symbols_direct = ref StringSet.empty
+let external_symbols_indirect = ref StringSet.empty
 
 let emit_instr fallthrough i =
     match i.desc with
@@ -439,11 +458,23 @@ let emit_instr fallthrough i =
         end
     | Lop(Iextcall(s, alloc)) ->
         if alloc then begin
-          `	movl	${emit_symbol s}, %eax\n`;
+          if not macosx then
+            `	movl	${emit_symbol s}, %eax\n`
+          else begin
+            external_symbols_indirect :=
+              StringSet.add s !external_symbols_indirect;
+            `	movl	L{emit_symbol s}$non_lazy_ptr, %eax\n`
+          end;
           `	call	{emit_symbol "caml_c_call"}\n`;
           record_frame i.live
         end else begin
-          `	call	{emit_symbol s}\n`
+          if not macosx then
+            `	call	{emit_symbol s}\n`
+          else begin
+            external_symbols_direct :=
+              StringSet.add s !external_symbols_direct;
+            `	call	L{emit_symbol s}$stub\n`
+          end
         end
     | Lop(Istackoffset n) ->
         if n < 0
@@ -734,16 +765,20 @@ let emit_instr fallthrough i =
     | Lsetuptrap lbl ->
         `	call	{emit_label lbl}\n`
     | Lpushtrap ->
+        if trap_frame_size > 8 then
+          `	subl	${emit_int (trap_frame_size - 8)}, %esp\n`;
         `	pushl	{emit_symbol "caml_exception_pointer"}\n`;
         `	movl	%esp, {emit_symbol "caml_exception_pointer"}\n`;
-        stack_offset := !stack_offset + 8
+        stack_offset := !stack_offset + trap_frame_size
     | Lpoptrap ->
         `	popl	{emit_symbol "caml_exception_pointer"}\n`;
-        `	addl	$4, %esp\n`;
-        stack_offset := !stack_offset - 8
+        `	addl	${emit_int (trap_frame_size - 4)}, %esp\n`;
+        stack_offset := !stack_offset - trap_frame_size
     | Lraise ->
         `	movl	{emit_symbol "caml_exception_pointer"}, %esp\n`;
         `	popl    {emit_symbol "caml_exception_pointer"}\n`;
+        if trap_frame_size > 8 then
+          `	addl	${emit_int (trap_frame_size - 8)}, %esp\n`;
         `	ret\n`
 
 let rec emit_all fallthrough i =
@@ -762,11 +797,31 @@ let emit_float_constant (lbl, cst) =
   `	.data\n`;
   `{emit_label lbl}:	.double	{emit_string cst}\n`
 
+(* Emission of external symbol references (for MacOSX) *)
+
+let emit_external_symbol_direct s =
+  `L{emit_symbol s}$stub:\n`;
+  `	.indirect_symbol {emit_symbol s}\n`;
+  `	hlt ; hlt ; hlt ; hlt ; hlt\n`
+
+let emit_external_symbol_indirect s =
+  `L{emit_symbol s}$non_lazy_ptr:\n`;
+  `	.indirect_symbol {emit_symbol s}\n`;
+  `	.long	0\n`
+
+let emit_external_symbols () =
+  `	.section __IMPORT,__pointers,non_lazy_symbol_pointers\n`;
+  StringSet.iter emit_external_symbol_indirect !external_symbols_indirect;
+  external_symbols_indirect := StringSet.empty;
+  `	.section __IMPORT,__jump_table,symbol_stubs,self_modifying_code+pure_instructions,5\n`;
+  StringSet.iter emit_external_symbol_direct !external_symbols_direct;
+  external_symbols_direct := StringSet.empty
+
 (* Emission of the profiling prelude *)
 
 let emit_profile () =
   match Config.system with
-    "linux_elf" ->
+    "linux_elf" | "gnu" ->
       `	pushl	%eax\n`;
       `	movl	%esp, %ebp\n`;
       `	pushl	%ecx\n`;
@@ -791,7 +846,7 @@ let emit_profile () =
 let declare_function_symbol name =
   `	.globl	{emit_symbol name}\n`;
   match Config.system with
-    "linux_elf" | "bsd_elf" ->
+    "linux_elf" | "bsd_elf" | "gnu" ->
       `	.type	{emit_symbol name},@function\n`
   | _ -> ()
 
@@ -886,4 +941,5 @@ let end_assembly() =
   `{emit_symbol lbl}:\n`;
   `	.long	{emit_int (List.length !frame_descriptors)}\n`;
   List.iter emit_frame !frame_descriptors;
-  frame_descriptors := []
+  frame_descriptors := [];
+  if macosx then emit_external_symbols ()

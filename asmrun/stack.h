@@ -34,7 +34,11 @@
 
 #ifdef TARGET_i386
 #define Saved_return_address(sp) *((intnat *)((sp) - 4))
+#ifdef SYS_macosx
+#define Callback_link(sp) ((struct caml_context *)((sp) + 16))
+#else
 #define Callback_link(sp) ((struct caml_context *)((sp) + 8))
+#endif
 #endif
 
 #ifdef TARGET_mips

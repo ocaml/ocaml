@@ -1684,6 +1684,7 @@ let emit_all_constants cont =
     (fun (lbl, cst) -> c := Cdata(emit_constant lbl cst []) :: !c)
     !structured_constants;
   structured_constants := [];
+  Hashtbl.clear immstrings;   (* PR#3979 *)
   List.iter
     (fun (symb, fundecls) ->
         c := Cdata(emit_constant_closure symb fundecls []) :: !c)

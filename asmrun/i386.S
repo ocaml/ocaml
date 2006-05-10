@@ -26,7 +26,7 @@
 #endif
 
 #if defined(SYS_linux_elf) || defined(SYS_bsd_elf) \
- || defined(SYS_solaris) || defined(SYS_beos)
+ || defined(SYS_solaris) || defined(SYS_beos) || defined(SYS_gnu)
 #define G(x) x
 #define LBL(x) CONCAT(.L,x)
 #else
@@ -36,14 +36,14 @@
 
 #if defined(SYS_linux_elf) || defined(SYS_bsd_elf) \
  || defined(SYS_solaris) || defined(SYS_beos) || defined(SYS_cygwin) \
- || defined(SYS_mingw)
+ || defined(SYS_mingw) || defined(SYS_gnu)
 #define FUNCTION_ALIGN 4
 #else
 #define FUNCTION_ALIGN 2
 #endif
 
 #if defined(PROFILING)
-#if defined(SYS_linux_elf)
+#if defined(SYS_linux_elf) || defined(SYS_gnu)
 #define PROFILE_CAML \
         pushl %ebp; movl %esp, %ebp; pushl %eax; pushl %ecx; pushl %edx; \
         call mcount; \
@@ -208,8 +208,12 @@ LBL(106):
         pushl   G(caml_gc_regs)
         pushl   G(caml_last_return_address)
         pushl   G(caml_bottom_of_stack)
+        /* Note: 16-alignment preserved on MacOSX at this point */
     /* Build an exception handler */
         pushl   $ LBL(108)
+#ifdef SYS_macosx
+        subl	$8, %esp     /* 16-alignment */
+#endif
         pushl   G(caml_exception_pointer)
         movl    %esp, G(caml_exception_pointer)
     /* Call the Caml code */
@@ -217,7 +221,11 @@ LBL(106):
 LBL(107):
     /* Pop the exception handler */
         popl    G(caml_exception_pointer)
-        popl    %esi    /* dummy register */
+#ifdef SYS_macosx
+        addl	$12, %esp
+#else
+        addl	$4, %esp
+#endif
 LBL(109):
     /* Pop the callback link, restoring the global variables */
         popl    G(caml_bottom_of_stack)
@@ -245,6 +253,9 @@ G(caml_raise_exception):
         movl    4(%esp), %eax
         movl    G(caml_exception_pointer), %esp
         popl    G(caml_exception_pointer)
+#ifdef SYS_macosx
+        addl	$8, %esp
+#endif
         ret
 
 /* Callback from C to Caml */

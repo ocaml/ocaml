@@ -157,6 +157,7 @@ void getargs(int argc, char **argv)
         {
         case '\0':
             input_file = stdin;
+            file_prefix = "stdin";
             if (i + 1 < argc) usage();
             return;
 

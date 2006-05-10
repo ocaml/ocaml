@@ -132,6 +132,8 @@ value print_warning loc s =
 
 value rec parse_file pa getdir useast =
   let name = Pcaml.input_file.val in
+  let (_,_,fname) = Pcaml.position.val in
+  let () = fname.val := name in
   do {
     Pcaml.warning.val := print_warning;
     let ic = if name = "-" then stdin else open_in_bin name in

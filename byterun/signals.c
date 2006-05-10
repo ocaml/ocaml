@@ -36,6 +36,7 @@ extern sighandler caml_win32_signal(int sig, sighandler action);
 #define signal(sig,act) caml_win32_signal(sig,act)
 #endif
 
+CAMLexport intnat volatile caml_signals_are_pending = 0;
 CAMLexport intnat volatile caml_pending_signals[NSIG];
 CAMLexport int volatile caml_something_to_do = 0;
 int volatile caml_force_major_slice = 0;
@@ -44,12 +45,16 @@ CAMLexport void (* volatile caml_async_action_hook)(void) = NULL;
 
 static void caml_process_pending_signals(void)
 {
-  int signal_num;
-  intnat signal_state;
+  int i;
 
-  for (signal_num = 0; signal_num < NSIG; signal_num++) {
-    Read_and_clear(signal_state, caml_pending_signals[signal_num]);
-    if (signal_state) caml_execute_signal(signal_num, 0);
+  if (caml_signals_are_pending) {
+    caml_signals_are_pending = 0;
+    for (i = 0; i < NSIG; i++) {
+      if (caml_pending_signals[i]) {
+        caml_pending_signals[i] = 0;
+        caml_execute_signal(i, 0);
+      }
+    }
   }
 }
 
@@ -60,8 +65,11 @@ void caml_process_event(void)
   if (caml_force_major_slice) caml_minor_collection ();
                              /* FIXME should be [caml_check_urgent_gc] */
   caml_process_pending_signals();
-  Read_and_clear(async_action, caml_async_action_hook);
-  if (async_action != NULL) (*async_action)();
+  async_action = caml_async_action_hook;
+  if (async_action != NULL) {
+    caml_async_action_hook = NULL;
+    (*async_action)();
+  }
 }
 
 static intnat volatile caml_async_signal_mode = 0;
@@ -129,6 +137,7 @@ void caml_execute_signal(int signal_number, int in_signal_handler)
 void caml_record_signal(int signal_number)
 {
   caml_pending_signals[signal_number] = 1;
+  caml_signals_are_pending = 1;
   caml_something_to_do = 1;
 }
 
@@ -154,18 +163,13 @@ void caml_urge_major_slice (void)
 
 CAMLexport void caml_enter_blocking_section(void)
 {
-  int i;
-  intnat pending;
-
   while (1){
     /* Process all pending signals now */
     caml_process_pending_signals();
     caml_enter_blocking_section_hook ();
-    /* Check again for pending signals. */
-    pending = 0;
-    for (i = 0; i < NSIG; i++) pending |= caml_pending_signals[i];
-    /* If none, done; otherwise, try again */
-    if (!pending) break;
+    /* Check again for pending signals.
+       If none, done; otherwise, try again */
+    if (! caml_signals_are_pending) break;
     caml_leave_blocking_section_hook ();
   }
 }

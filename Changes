@@ -1,3 +1,34 @@
+Objective Caml 3.09.2:
+----------------------
+
+Bug fixes:
+- Makefile: problem with "make world.opt" PR#3954
+- compilers: problem compiling several modules with one command line PR#3979
+- compilers,ocamldoc: error message that Emacs cannot parse
+- compilers: crash when printing type error PR#3968
+- compilers: -dtypes wrong for monomorphic type variables PR#3894
+- compilers: wrong warning on optional arguments PR#3980
+- compilers: crash when wrong use of type constructor in let rec PR#3976
+- compilers: better wording of "statement never returns" warning PR#3889
+- runtime: inefficiency of signal handling PR#3990
+- runtime: crashes with I/O in multithread programs PR#3906
+- camlp4: empty file name in error messages PR#3886
+- camlp4: stack overflow PR#3948
+- otherlibs/labltk: ocamlbrowser ignores its command line options PR#3961
+- otherlibs/unix: Unix.times wrong under Mac OS X PR#3960
+- otherlibs/unix: wrong doc for execvp and execvpe PR#3973
+- otherlibs/win32unix: random crash in Unix.stat PR#3998
+- stdlib: update_mod not found under Windows PR#3847
+- stdlib: Filename.dirname/basename wrong on Win32 PR#3933
+- stdlib: incomplete documentation of Pervasives.abs PR#3967
+- stdlib: Printf bugs PR#3902, PR#3955
+- tools/checkstack.c missing include
+- yacc: crash when given argument "-" PR#3956
+
+New features:
+- ported to MacOS X on Intel PR#3985
+- configure: added support for GNU Hurd PR#3991
+
 Objective Caml 3.09.1:
 ----------------------
 
@@ -6,7 +37,7 @@ Bug fixes:
 - compilers: assert failure in typeclass.cml PR#3856
 - compilers: assert failure in typing/ctype.ml PR#3909
 - compilers: fatal error exception Ctype.Unify PR#3918
-- compilers: spurious warning Y PR#3868
+- compilers: spurious warning Y in objects PR#3868
 - compilers: spurious warning Z on loop index PR#3907
 - compilers: error message that emacs cannot parse
 - ocamlopt: problems with -for-pack/-pack PR#3825, PR#3826, PR#3919

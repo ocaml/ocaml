@@ -496,8 +496,8 @@ asmcomp/selectgen.cmi: utils/tbl.cmi asmcomp/reg.cmi asmcomp/mach.cmi \
 asmcomp/selection.cmi: asmcomp/mach.cmi asmcomp/cmm.cmi 
 asmcomp/spill.cmi: asmcomp/mach.cmi 
 asmcomp/split.cmi: asmcomp/mach.cmi 
-asmcomp/arch.cmo: utils/misc.cmi 
-asmcomp/arch.cmx: utils/misc.cmx 
+asmcomp/arch.cmo: utils/misc.cmi utils/config.cmi 
+asmcomp/arch.cmx: utils/misc.cmx utils/config.cmx 
 asmcomp/asmgen.cmo: asmcomp/split.cmi asmcomp/spill.cmi asmcomp/selection.cmi \
     asmcomp/scheduling.cmi asmcomp/reload.cmi asmcomp/reg.cmi \
     asmcomp/proc.cmi asmcomp/printmach.cmi asmcomp/printlinear.cmi \

@@ -1,6 +1,6 @@
 # Build the OCamlDuce tools using an existing OCaml installation
 
-VERSION=3.09.1pl1
+VERSION=3.09.2
 
 BINDIR=`basename $(shell which $(CAMLC))`
 
