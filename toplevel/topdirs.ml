@@ -19,7 +19,7 @@ open Misc
 open Longident
 open Path
 open Types
-open Emitcode
+open Cmo_format
 open Trace
 open Toploop
 

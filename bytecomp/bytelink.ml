@@ -18,7 +18,7 @@ open Sys
 open Misc
 open Config
 open Instruct
-open Emitcode
+open Cmo_format
 
 type error =
     File_not_found of string

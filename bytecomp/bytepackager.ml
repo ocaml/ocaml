@@ -17,7 +17,7 @@
 
 open Misc
 open Instruct
-open Emitcode
+open Cmo_format
 
 type error =
     Forward_reference of string * Ident.t
