@@ -25,7 +25,7 @@ DEPFLAGS=$(INCLUDES)
 
 INCLUDES=\
   -I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../toplevel \
-  -I ../otherlibs/unix -I ../otherlibs/dynlink
+  -I ../otherlibs/unix
 
 OTHEROBJS=\
   ../otherlibs/unix/unix.cma \
@@ -40,10 +40,11 @@ OTHEROBJS=\
   ../bytecomp/runtimedef.cmo ../bytecomp/bytesections.cmo \
   ../bytecomp/dll.cmo ../bytecomp/meta.cmo ../bytecomp/symtable.cmo \
   ../bytecomp/opcodes.cmo \
-  ../toplevel/genprintval.cmo \
-  ../otherlibs/dynlink/dynlink.cmo
+  ../toplevel/genprintval.cmo
+
 
 OBJS=\
+        dynlink.cmo \
 	int64ops.cmo \
 	primitives.cmo \
 	unix_tools.cmo \
