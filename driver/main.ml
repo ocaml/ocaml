@@ -65,6 +65,10 @@ let print_version_and_library () =
   print_string Config.version; print_newline();
   print_string "Standard library directory: ";
   print_string Config.standard_library; print_newline();
+  print_string "OCamlDuce standard library directory: ";
+  print_string Config.standard_library_ocamlduce; print_newline();
+  print_string "OCaml version used for compiling: ";
+  print_string Sys.ocaml_version; print_newline();
   exit 0
 
 let print_version_string () =

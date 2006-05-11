@@ -92,3 +92,10 @@ CHANGE LOG:
 - synchronize with OCaml 3.09.2 (released version)
 - add OCamlDuce library as defaults in ocamlduce's tools
 - install the ocamlducefind script
+
+3.09.2pl1 
+- allow [ 'abc' ] notation in types
+- predefined namespaces when parsing with Ocamlduce.Load
+- operations on records Ocamlduce.Record
+- don't install ocamlducec and ocamlducec.opt but only the second one
+  (if available), renamed as ocamlducec; same for the other tools

@@ -1,6 +1,6 @@
 # Build the OCamlDuce tools using an existing OCaml installation
 
-VERSION=3.09.2
+VERSION=3.09.2pl1
 
 OCAMLDUCELIBDIR=$(shell ocamlfind printconf destdir)/ocamlduce
 
@@ -105,8 +105,6 @@ EXPUNGEOBJS=utils/misc.cmo utils/tbl.cmo \
   typing/predef.cmo bytecomp/runtimedef.cmo bytecomp/bytesections.cmo \
   bytecomp/dll.cmo bytecomp/meta.cmo bytecomp/symtable.cmo toplevel/expunge.cmo
 
-PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop
-
 CDUCE=\
   cduce/src/custom.cmo cduce/src/encodings.cmo \
   cduce/src/imap.cmo cduce/src/upool.cmo \
@@ -167,6 +165,7 @@ utils/config.ml: utils/config.mlp
 	@rm -f utils/config.ml
 	sed -e 's|%%LIBDIR%%|$(LIBDIR)|' \
 	    -e 's|%%OCAMLDUCELIBDIR%%|$(OCAMLDUCELIBDIR)|' \
+	    -e 's|%%VERSION%%|$(VERSION)|' \
             -e 's|%%BYTERUN%%|$(BINDIR)/gcamlrun|' \
             -e 's|%%CCOMPTYPE%%|cc|' \
             -e 's|%%BYTECC%%|$(BYTECC) $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)|' \
@@ -478,8 +477,10 @@ INSTALL_LIB_FILES= \
 INSTALL_BINARIES= \
  ocamlducec ocamlduce ocamlducedep ocamlducedoc \
  ocamlduceopt \
- ocamlducec.opt ocamlduceopt.opt ocamlducedep.opt ocamlducedoc.opt \
  ocamlducemktop expungeduce ocamlducefind
+
+OPT_VARIANTS= \
+ ocamlducec ocamlduceopt ocamlducedep ocamlducedoc
 
 INSTALL_DOC_FILES= \
  README LICENSE htdoc
@@ -487,6 +488,9 @@ INSTALL_DOC_FILES= \
 install: FORCE META
 	for i in $(INSTALL_BINARIES); do \
 	  cp $$i $(BINDIR)/; \
+	done
+	for i in $(OPT_VARIANTS); do \
+	  cp $$i.opt $(BINDIR)/$$i; \
 	done
 	ocamlfind install ocamlduce META -optional $(INSTALL_LIB_FILES)
 
@@ -511,6 +515,7 @@ PACKAGE_FILES= \
 
 
 package: clean
+	(cd cduce; make copy)
 	rm -Rf ocamlduce-$(VERSION)
 	mkdir ocamlduce-$(VERSION)
 	cp -aR $(PACKAGE_FILES) ocamlduce-$(VERSION)/

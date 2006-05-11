@@ -12,8 +12,8 @@
 
 (* $Id$ *)
 
-(* The main OCaml version string has moved to stdlib/sys.ml *)
-let version = Sys.ocaml_version
+(* The OCamlDuce version may not be the same as Sys.ocaml_version. *)
+let version = "%%VERSION%%"
 
 let standard_library_default = "%%LIBDIR%%"
 let standard_library_ocamlduce = "%%OCAMLDUCELIBDIR%%"
