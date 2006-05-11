@@ -504,6 +504,8 @@ and derecurs_regexp env = function
   | Pext_epsilon -> mk_epsilon
   | Pext_elem { pext_desc = Pext_name (Longident.Lident "PCDATA") } ->
       derecurs_regexp env pcdata
+  | Pext_elem { pext_desc=Pext_constant { pextcst_desc=Pextcst_char s }} ->
+      mk_str s
   | Pext_elem p -> mk_elem (derecurs env p)
   | Pext_guard p -> mk_guard (derecurs env p)
   | Pext_seq (p1,p2) -> mk_seq (derecurs_regexp env p1) (derecurs_regexp env p2)
