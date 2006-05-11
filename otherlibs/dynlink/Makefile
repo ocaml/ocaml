@@ -21,18 +21,48 @@ CAMLC=../../boot/ocamlrun ../../ocamlc
 INCLUDES=-I ../../utils -I ../../typing -I ../../bytecomp
 COMPFLAGS=-warn-error A -I ../../stdlib $(INCLUDES)
 
-OBJS=dynlink.cmo
-COMPILEROBJS=misc.cmo config.cmo tbl.cmo clflags.cmo consistbl.cmo \
-  ident.cmo path.cmo \
-  types.cmo btype.cmo predef.cmo runtimedef.cmo \
-  bytesections.cmo dll.cmo meta.cmo symtable.cmo opcodes.cmo
+OBJS=dynlinkaux.cmo dynlink.cmo
+
+COMPILEROBJS=\
+  ../../utils/misc.cmo ../../utils/config.cmo ../../utils/clflags.cmo \
+  ../../utils/tbl.cmo ../../utils/consistbl.cmo \
+  ../../utils/terminfo.cmo ../../utils/warnings.cmo \
+  ../../parsing/asttypes.cmi ../../parsing/linenum.cmo \
+  ../../parsing/location.cmo ../../parsing/longident.cmo \
+  ../../typing/ident.cmo ../../typing/path.cmo \
+  ../../typing/primitive.cmo ../../typing/types.cmo \
+  ../../typing/btype.cmo ../../typing/subst.cmo ../../typing/predef.cmo \
+  ../../typing/datarepr.cmo ../../typing/env.cmo \
+  ../../bytecomp/lambda.cmo ../../bytecomp/instruct.cmo \
+  ../../bytecomp/cmo_format.cmi ../../bytecomp/opcodes.cmo \
+  ../../bytecomp/runtimedef.cmo ../../bytecomp/bytesections.cmo \
+  ../../bytecomp/dll.cmo ../../bytecomp/meta.cmo \
+  ../../bytecomp/symtable.cmo
+
+#  ../../utils/misc.cmo ../../utils/config.cmo ../../utils/tbl.cmo \
+#  ../../utils/clflags.cmo ../../utils/warnings.cmo ../../utils/consistbl.cmo \
+#  ../../parsing/asttypes.cmi ../../parsing/linenum.cmo \
+#  ../../parsing/location.cmo ../../parsing/longident.cmo \
+#  ../../typing/ident.cmo ../../typing/path.cmo \
+#  ../../typing/primitive.cmo \
+#  ../../typing/types.cmo ../../typing/btype.cmo \
+#  ../../typing/subst.cmo ../../typing/predef.cmo ../../typing/datarepr.cmo \
+#  ../../typing/env.cmo \
+#  ../../bytecomp/lambda.cmo ../../bytecomp/instruct.cmo \
+#  ../../bytecomp/opcodes.cmo ../../bytecomp/emitcode.cmo \
+#  ../../bytecomp/runtimedef.cmo ../../bytecomp/bytesections.cmo \
+#  ../../bytecomp/dll.cmo ../../bytecomp/meta.cmo \
+#  ../../bytecomp/symtable.cmo
 
 all: dynlink.cma extract_crc
 
 allopt:
 
 dynlink.cma: $(OBJS)
-	$(CAMLC) $(COMPFLAGS) -a -o dynlink.cma $(COMPILEROBJS) $(OBJS)
+	$(CAMLC) $(COMPFLAGS) -a -o dynlink.cma $(OBJS)
+
+dynlinkaux.cmo dynlinkaux.cmi: $(COMPILEROBJS)
+	$(CAMLC) $(COMPFLAGS) -pack -o dynlinkaux.cmo $(COMPILEROBJS)
 
 extract_crc: dynlink.cma extract_crc.cmo
 	$(CAMLC) $(COMPFLAGS) -o extract_crc dynlink.cma extract_crc.cmo
@@ -56,6 +86,6 @@ clean: partialclean
 	$(CAMLC) -c $(COMPFLAGS) $<
 
 depend:
-	../../boot/ocamlrun ../../tools/ocamldep $(INCLUDES) *.mli *.ml >.depend
 
-include .depend
+dynlink.cmo: dynlinkaux.cmi dynlink.cmi
+extract_crc.cmo: dynlink.cmi 

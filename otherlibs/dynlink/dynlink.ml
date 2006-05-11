@@ -15,7 +15,8 @@
 
 (* Dynamic loading of .cmo files *)
 
-open Emitcode
+open Dynlinkaux
+open Dynlinkaux.Cmo_format
 
 type linking_error =
     Undefined_global of string
