@@ -47,20 +47,22 @@ end
     are interpreted as being UTF-8 encoded). *)
 module Utf8 : sig
   type t = {{ String }}
+  type repr = string
 
-  val make: string -> t
+  val make: repr -> t
     (** Raises the exception [Failure "Utf8.make"] if the argument
 	is not a valid UTF-8 encoded string. *)
-  val get: t -> string
+  val get: t -> repr
 end
 
 (** Coercions between Latin1 x-strings and OCaml [string] type (whose values
     are interpreted as being iso-8859-1 encoded). *)
 module Latin1 : sig
   type t = {{ Latin1 }}
+  type repr = string
 
-  val make: string -> t
-  val get: t -> string
+  val make: repr -> t
+  val get: t -> repr
 end
 
 
@@ -68,8 +70,9 @@ end
 (** Operations on namespaces. *)
 module Namespace : sig
   type t
-  val make: {{ String }} -> t
-  val get: t -> {{ String }}
+  type repr = {{ String }}
+  val make: repr -> t
+  val get: t -> repr
 
   val empty: t
   val xml: t
@@ -82,9 +85,9 @@ end
 (** Operations on atoms. *)
 module Atom : sig
   type t = {{ Atom }}
-  type qname = Namespace.t * {{ String }}
-  val make: qname -> t
-  val get: t -> qname
+  type repr = Namespace.t * {{ String }}
+  val make: repr -> t
+  val get: t -> repr
 
   val compare: t -> t -> int
   val equal: t -> t -> bool
@@ -95,10 +98,13 @@ end
 (** Operations on prefix->namespace tables. *)
 module NamespaceTable : sig
   type t
+  type repr = ({{ String }} * Namespace.t) list
     (** The type for prefix->namespace tables. *)
 
-  val make: ({{ String }} * Namespace.t) list -> t
-  val get: t -> ({{ String }} * Namespace.t) list
+  val make: repr -> t
+  val get: t -> repr
+
+  val empty: t
 
   val resolve_prefix: t -> {{ String }} -> Namespace.t
   val resolve_qname: t -> {{ String }} -> Atom.t
@@ -140,9 +146,11 @@ module Load : sig
       
   exception Error of string
     
-  val make: ?ns:bool -> unit -> t
+  val make: ?ns:bool -> ?ns_table:NamespaceTable.t -> unit -> t
     (** [make ~ns ()] creates a fresh loader. If [ns] is [true],
-	the loader will attach a namespace bindings to each XML element. *)
+	the loader will attach a namespace bindings to each XML element.
+	The [ns_table] can provide predefined namespace prefixes. *)
+
   val get: t -> anyxml
     (** [get l] is to be called when the whole XML document has been parsed.
 	It returns the root element of the loaded XML documents, or
@@ -216,3 +224,14 @@ module Print : sig
       *)
 end
 
+(** Operations on records. *)
+module Record : sig
+  type t = {{ {..} }}
+  type repr = ({{ Atom }} * {{ Any }}) list
+
+  val make: repr -> t
+    (** Raises an [Invalid_argument] exception if a field label appears
+	several times. *)
+
+  val get: t -> repr
+end

@@ -24,6 +24,7 @@ let mk_utf8 x : {{ String }} = Obj.magic (Value.string_utf8 x)
 
 module Utf8 = struct
   type t = {{ String }}
+  type repr = string
   let make x = match Utf8.mk_check (String.copy x) with 
     | Some x -> mk_utf8 x
     | None -> failwith "Utf8.make"
@@ -33,7 +34,7 @@ end
 
 module Latin1 = struct
   type t = {{ Latin1 }}
-
+  type repr = string
   let get x = Value.get_string_latin1 {: x :}
   let make x : t = Obj.magic (Value.string_latin1 (String.copy x))
 end
@@ -61,6 +62,7 @@ end
 module Namespace = struct
   open Cduce_types.Ns
   type t = Uri.t
+  type repr = {{ String }}
   let make v = Uri.mk (get_utf8 v)
   let get v = mk_utf8 (Uri.value v)
   let empty = empty
@@ -74,15 +76,14 @@ end
 
 module Atom = struct
   type t = {{ Atom }}
-  type qname = Namespace.t * {{ String }}
-  let make (ns,s) = 
-    Obj.magic (Value.Atom (Cduce_types.Atoms.V.mk (ns, get_utf8 s)))
-  let get v = 
-    match ({:v:} : Value.t) with
-      | Value.Atom v -> 
-	  let (ns,s) = Cduce_types.Atoms.V.value v in
-	  (ns,mk_utf8 s)
-      | _ -> assert false
+  type repr = Namespace.t * {{ String }}
+  let of_qname q : t = Obj.magic (Value.Atom (Cduce_types.Atoms.V.mk q))
+  let to_qname (v : t) = match {:v:} with
+    | Value.Atom v -> Cduce_types.Atoms.V.value v
+    | _ -> assert false
+
+  let make (ns,s) = of_qname (ns, get_utf8 s)
+  let get v = let (ns,s) = to_qname v in (ns,mk_utf8 s)
 
   let compare x y = compare x y
   let hash x = hash x
@@ -91,8 +92,11 @@ end
 
 module NamespaceTable = struct
   type t = Ns.table
+  type repr = ({{ String }} * Namespace.t) list
   let make l = Ns.mk_table (List.map (fun (pr,ns) -> get_utf8 pr, ns) l)
   let get t = List.map (fun (pr,ns) -> mk_utf8 pr, ns) (Ns.get_table t)
+
+  let empty = Ns.empty_table
 
   let resolve_prefix t pr = Ns.map_prefix t (get_utf8 pr) 
   let resolve_qname t s =
@@ -261,9 +265,9 @@ module Load = struct
     keep_ns: bool
   }
 
-  let make ?(ns=false) () =
+  let make ?(ns=false) ?(ns_table=Ns.empty_table) () =
     { stack = Empty;
-      ns_table = Ns.empty_table;
+      ns_table = ns_table;
       buffer = String.create 1024;
       pos = 0;
       length = 1024;
@@ -344,3 +348,18 @@ module Load = struct
     loader.stack <- Element ({:v:}, loader.stack)
 end
 
+module Record = struct
+  type t = {{ {..} }}
+  type repr = ({{ Atom }} * {{ Any }}) list
+  let get r =
+    List.map 
+      (fun (l,v) -> Atom.of_qname (Ns.Label.value l),{{ {:v:} }}) 
+      (Value.get_fields {: r :})
+  let make r = 
+    try
+      Obj.magic 
+	(Value.vrecord (
+	   List.map (fun (l,v) -> Ns.Label.mk (Atom.to_qname l), {:v:}) r))
+    with Imap.DuplicateKey ->
+      raise (Invalid_argument "Ocamlduce.Record.make")
+end
