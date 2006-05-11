@@ -496,7 +496,7 @@ install: FORCE META
 
 uninstall: FORCE
 	for i in $(INSTALL_BINARIES); do \
-	  rm $(BINDIR)/$$i; \
+	  rm -f $(BINDIR)/$$i; \
 	done
 	ocamlfind remove ocamlduce
 
