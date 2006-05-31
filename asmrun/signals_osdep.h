@@ -99,7 +99,7 @@
 #ifdef __ppc64__
 
   #define DECLARE_SIGNAL_HANDLER(name) \
-     static void name(int sig, struct __siginfo * code, void * context)
+     static void name(int sig, siginfo_t * info, void * context)
 
   #define SET_SIGACT(sigact,name) \
      sigact.sa_sigaction = (name); \
@@ -115,13 +115,14 @@
   #define CONTEXT_EXCEPTION_POINTER (CONTEXT_STATE.r29)
   #define CONTEXT_YOUNG_LIMIT (CONTEXT_STATE.r30)
   #define CONTEXT_YOUNG_PTR (CONTEXT_STATE.r31)
+  #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
 
 #else
 
   #include <sys/utsname.h>
 
   #define DECLARE_SIGNAL_HANDLER(name) \
-     static void name(int sig, int code, void * context)
+     static void name(int sig, siginfo_t * info, void * context)
 
   #define SET_SIGACT(sigact,name) \
      sigact.sa_handler = (void (*)(int)) (name); \
@@ -133,6 +134,7 @@
   #define CONTEXT_EXCEPTION_POINTER (*context_gpr_p(context, 29))
   #define CONTEXT_YOUNG_LIMIT (*context_gpr_p(context, 30))
   #define CONTEXT_YOUNG_PTR (*context_gpr_p(context, 31))
+  #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
 
   static int ctx_version = 0;
   static void init_ctx (void)
