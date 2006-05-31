@@ -145,7 +145,8 @@ let loc_results res =
 (* C calling conventions under PowerOpen:
      use GPR 3-10 and FPR 1-13 just like ML calling
      conventions, but always reserve stack space for all arguments.
-     Also, using a float register automatically reserves two int registers.
+     Also, using a float register automatically reserves two int registers
+     (in 32-bit mode) or one int register (in 64-bit mode).
      (If we were to call a non-prototyped C function, each float argument
       would have to go both in a float reg and in the matching pair
       of integer regs.)
@@ -161,7 +162,7 @@ let poweropen_external_conventions first_int last_int
   let loc = Array.create (Array.length arg) Reg.dummy in
   let int = ref first_int in
   let float = ref first_float in
-  let ofs = ref 56 in
+  let ofs = ref (14 * size_addr) in
   for i = 0 to Array.length arg - 1 do
     match arg.(i).typ with
       Int | Addr as ty ->
@@ -180,7 +181,7 @@ let poweropen_external_conventions first_int last_int
           loc.(i) <- stack_slot (Outgoing !ofs) Float;
           ofs := !ofs + size_float
         end;
-        int := !int + 2
+        int := !int + (if ppc64 then 1 else 2)
   done;
   (loc, Misc.align !ofs 16) (* Keep stack 16-aligned *)
 
@@ -238,7 +239,9 @@ let assemble_file infile outfile =
   match Config.system with
   | "elf" ->
       Ccomp.command ("as -u -m ppc -o " ^ outfile ^ " " ^ infile)
-  | "rhapsody" | "bsd" ->
+  | "rhapsody" ->
+      Ccomp.command ("as -arch " ^ Config.model ^ " -o " ^ outfile ^ " " ^ infile)
+  | "bsd" ->
       Ccomp.command ("as -o " ^ outfile ^ " " ^ infile)
   | _ -> assert false
 

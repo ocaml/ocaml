@@ -325,9 +325,11 @@ echo "Checking the sizes of integers and pointers..."
 set `sh ./runtest sizes.c`
 case "$2,$3" in
   4,4) echo "OK, this is a regular 32 bit architecture."
-       echo "#undef ARCH_SIXTYFOUR" >> m.h;;
+       echo "#undef ARCH_SIXTYFOUR" >> m.h
+       arch64=false;;
   *,8) echo "Wow! A 64 bit architecture!"
-       echo "#define ARCH_SIXTYFOUR" >> m.h;;
+       echo "#define ARCH_SIXTYFOUR" >> m.h
+       arch64=true;;
   *,*) echo "This architecture seems to be neither 32 bits nor 64 bits."
        echo "Objective Caml won't run on this architecture."
        exit 2;;
@@ -537,7 +539,7 @@ if test $withsharedlibs = "yes"; then
       mksharedlibrpath="-rpath "
       shared_libraries_supported=true;;
     powerpc-apple-darwin*)
-      mksharedlib="cc -bundle -flat_namespace -undefined suppress -o"
+      mksharedlib="$bytecc -bundle -flat_namespace -undefined suppress -o"
       bytecccompopts="$dl_defs $bytecccompopts"
       #sharedcccompopts="-fnocommon"
       dl_needs_underscore=true
@@ -587,7 +589,8 @@ case "$host" in
   powerpc-*-linux*)             arch=power; model=ppc; system=elf;;
   powerpc-*-netbsd*)            arch=power; model=ppc; system=bsd;;
   powerpc-*-rhapsody*)          arch=power; model=ppc; system=rhapsody;;
-  powerpc-*-darwin*)            arch=power; model=ppc; system=rhapsody;;
+  powerpc-*-darwin*)            arch=power; system=rhapsody
+                                if $arch64; then model=ppc64; else model=ppc; fi;;
   arm*-*-linux*)                arch=arm; system=linux;;
   arm*-*-gnu*)                  arch=arm; system=gnu;;
   ia64-*-linux*)                arch=ia64; system=linux;;
@@ -654,7 +657,7 @@ case "$arch,$model,$system" in
   hppa,*,*)         aspp="$cc"; asppflags='-traditional -c -DSYS_$(SYSTEM)';;
   power,*,elf)      aspp='gcc'; asppflags='-c';;
   power,*,bsd)      aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
-  power,*,rhapsody) ;;
+  power,*,rhapsody) aspp="$bytecc"; asppflags='-c';;
   arm,*,linux)      aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   arm,*,gnu)        aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   ia64,*,*)         asflags=-xexplicit
