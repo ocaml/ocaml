@@ -96,6 +96,28 @@
 
 #elif defined(TARGET_power) && defined(SYS_rhapsody)
 
+#ifdef __ppc64__
+
+  #define DECLARE_SIGNAL_HANDLER(name) \
+     static void name(int sig, struct __siginfo * code, void * context)
+
+  #define SET_SIGACT(sigact,name) \
+     sigact.sa_sigaction = (name); \
+     sigact.sa_flags = SA_SIGINFO | SA_64REGSET
+
+  typedef unsigned long long context_reg;
+
+  #include <sys/ucontext.h>
+
+  #define CONTEXT_STATE (((struct ucontext64 *)context)->uc_mcontext64->ss)
+
+  #define CONTEXT_PC (CONTEXT_STATE.srr0)
+  #define CONTEXT_EXCEPTION_POINTER (CONTEXT_STATE.r29)
+  #define CONTEXT_YOUNG_LIMIT (CONTEXT_STATE.r30)
+  #define CONTEXT_YOUNG_PTR (CONTEXT_STATE.r31)
+
+#else
+
   #include <sys/utsname.h>
 
   #define DECLARE_SIGNAL_HANDLER(name) \
@@ -106,6 +128,7 @@
      sigact.sa_flags = SA_SIGINFO
 
   typedef unsigned long context_reg;
+
   #define CONTEXT_PC (*context_gpr_p(context, -2))
   #define CONTEXT_EXCEPTION_POINTER (*context_gpr_p(context, 29))
   #define CONTEXT_YOUNG_LIMIT (*context_gpr_p(context, 30))
@@ -167,6 +190,8 @@
       return &(regs[2 + regno]);
     }
   #endif
+
+#endif
 
 /****************** PowerPC, ELF (Linux) */
 
