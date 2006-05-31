@@ -124,7 +124,7 @@ beforedepend:: Lex/scanner.ml
 $(BYTE_EXE) $(BYTE_KB) $(BYTE_GENLEX): ../ocamlc
 $(BYTE_EXE): ../stdlib/stdlib.cma
 $(CODE_EXE) $(CODE_KB) $(CODE_GENLEX): ../ocamlopt
-$(CODE_EXE): ../stdlib/stdlib.cmxa ../stdlib/libasmrun.$(A)
+$(CODE_EXE): ../stdlib/stdlib.cmxa ../stdlib/libasmrun.a
 
 clean::
 	rm -f *.byt *.out
