@@ -94,9 +94,11 @@ module Genarray = struct
   external blit: ('a, 'b, 'c) t -> ('a, 'b, 'c) t -> unit
      = "caml_ba_blit"
   external fill: ('a, 'b, 'c) t -> 'a -> unit = "caml_ba_fill"
-  external map_file: Unix.file_descr -> ('a, 'b) kind -> 'c layout ->
-                     bool -> int array -> ('a, 'b, 'c) t
-                     = "caml_ba_map_file"
+  external map_subfile: Unix.file_descr -> ('a, 'b) kind -> 'c layout ->
+                     bool -> int array -> int64 -> ('a, 'b, 'c) t
+                     = "caml_ba_map_file_bytecode" "caml_ba_map_file"
+  let map_file fd kind layout shared dims =
+    map_subfile fd kind layout shared dims 0L
 end
 
 module Array1 = struct
@@ -118,6 +120,8 @@ module Array1 = struct
     ba
   let map_file fd kind layout shared dim =
     Genarray.map_file fd kind layout shared [|dim|]
+  let map_subfile fd kind layout shared dim ofs =
+    Genarray.map_subfile fd kind layout shared [|dim|] ofs
 end
 
 module Array2 = struct
@@ -155,6 +159,8 @@ module Array2 = struct
     ba
   let map_file fd kind layout shared dim1 dim2 =
     Genarray.map_file fd kind layout shared [|dim1;dim2|]
+  let map_subfile fd kind layout shared dim1 dim2 ofs =
+    Genarray.map_subfile fd kind layout shared [|dim1;dim2|] ofs
 end
 
 module Array3 = struct
@@ -202,6 +208,8 @@ module Array3 = struct
     ba
   let map_file fd kind layout shared dim1 dim2 dim3 =
     Genarray.map_file fd kind layout shared [|dim1;dim2;dim3|]
+  let map_subfile fd kind layout shared dim1 dim2 dim3 ofs =
+    Genarray.map_subfile fd kind layout shared [|dim1;dim2;dim3|] ofs
 end
 
 external genarray_of_array1: ('a, 'b, 'c) Array1.t -> ('a, 'b, 'c) Genarray.t

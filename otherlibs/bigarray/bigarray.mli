@@ -380,9 +380,9 @@ module Genarray :
      can be achieved by applying [Genarray.fill] to a sub-array
      or a slice of [a]. *)
 
-  external map_file:
+  val map_file:
     Unix.file_descr -> ('a, 'b) kind -> 'c layout ->
-    bool -> int array -> ('a, 'b, 'c) t = "caml_ba_map_file"
+    bool -> int array -> ('a, 'b, 'c) t
   (** Memory mapping of a file as a big array.
      [Genarray.map_file fd kind layout shared dims]
      returns a big array of kind [kind], layout [layout],
@@ -415,6 +415,16 @@ module Genarray :
      mapped to the big array.  If the file is smaller than the big
      array, the file is automatically grown to the size of the big array.
      This requires write permissions on [fd]. *)
+
+  val map_subfile:
+    Unix.file_descr -> ('a, 'b) kind -> 'c layout ->
+    bool -> int array -> int64 -> ('a, 'b, 'c) t
+  (** Memory mapping of a file as a big array.  The file data being mapped
+    starts at the given file offset, instead of the whole file
+   (start offset 0) like [Genarray.map_file] does.
+   In the call [Genarray.map_subfile fd kind layout shared dims ofs],
+   the [ofs] parameter is the starting file offset; the other parameters
+   are as in {!Bigarray.Genarray.map_file}. *)
 
   end
 
@@ -485,6 +495,12 @@ module Array1 : sig
     bool -> int -> ('a, 'b, 'c) t
   (** Memory mapping of a file as a one-dimensional big array.
      See {!Bigarray.Genarray.map_file} for more details. *)
+
+  val map_subfile: Unix.file_descr -> ('a, 'b) kind -> 'c layout ->
+    bool -> int -> int64 -> ('a, 'b, 'c) t
+  (** Memory mapping of a file as a one-dimensional big array,
+     starting at a given file offset.
+     See {!Bigarray.Genarray.map_subfile} for more details. *)
 end
 
 
@@ -578,6 +594,12 @@ module Array2 :
                 bool -> int -> int -> ('a, 'b, 'c) t
   (** Memory mapping of a file as a two-dimensional big array.
      See {!Bigarray.Genarray.map_file} for more details. *)
+
+  val map_subfile: Unix.file_descr -> ('a, 'b) kind -> 'c layout ->
+                bool -> int -> int -> int64 -> ('a, 'b, 'c) t
+  (** Memory mapping of a file as a two-dimensional big array,
+     starting at a given file offset.
+     See {!Bigarray.Genarray.map_subfile} for more details. *)
 
   end
 
@@ -696,6 +718,12 @@ module Array3 :
              bool -> int -> int -> int -> ('a, 'b, 'c) t
   (** Memory mapping of a file as a three-dimensional big array.
      See {!Bigarray.Genarray.map_file} for more details. *)
+
+  val map_subfile: Unix.file_descr -> ('a, 'b) kind -> 'c layout ->
+             bool -> int -> int -> int -> int64 -> ('a, 'b, 'c) t
+  (** Memory mapping of a file as a three-dimensional big array,
+     starting at a given file offset.
+     See {!Bigarray.Genarray.map_subfile} for more details. *)
 
   end
 

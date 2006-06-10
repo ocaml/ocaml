@@ -18,6 +18,7 @@
 #include "bigarray.h"
 #include "custom.h"
 #include "fail.h"
+#include "io.h"
 #include "mlvalues.h"
 #include "sys.h"
 
@@ -38,18 +39,19 @@ extern int caml_ba_element_size[];  /* from bigarray_stubs.c */
 #endif
 
 CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
-                                value vshared, value vdim)
+                                value vshared, value vdim, value vstart)
 {
   int fd, flags, major_dim, shared;
   intnat num_dims, i;
   intnat dim[MAX_NUM_DIMS];
-  intnat currpos, file_size;
-  uintnat array_size;
+  file_offset currpos, startpos, file_size, data_size;
+  uintnat array_size, page, delta;
   char c;
   void * addr;
 
   fd = Int_val(vfd);
   flags = Int_val(vkind) | Int_val(vlayout);
+  startpos = File_offset_val(vstart);
   num_dims = Wosize_val(vdim);
   major_dim = flags & BIGARRAY_FORTRAN_LAYOUT ? num_dims - 1 : 0;
   /* Extract dimensions from Caml array */
@@ -72,27 +74,36 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
   array_size = bigarray_element_size[flags & BIGARRAY_KIND_MASK];
   for (i = 0; i < num_dims; i++)
     if (dim[i] != -1) array_size *= dim[i];
-  /* Check if the first/last dimension is unknown */
+  /* Check if the major dimension is unknown */
   if (dim[major_dim] == -1) {
-    /* Determine first/last dimension from file size */
-    if ((uintnat) file_size % array_size != 0)
+    /* Determine major dimension from file size */
+    if (file_size < startpos)
+      failwith("Bigarray.mmap: file position exceeds file size");
+    data_size = file_size - startpos;
+    dim[major_dim] = (uintnat) (data_size / array_size);
+    array_size = dim[major_dim] * array_size;
+    if (array_size != data_size)
       failwith("Bigarray.mmap: file size doesn't match array dimensions");
-    dim[major_dim] = (uintnat) file_size / array_size;
-    array_size = file_size;
   } else {
     /* Check that file is large enough, and grow it otherwise */
-    if (file_size < array_size) {
-      if (lseek(fd, array_size - 1, SEEK_SET) == -1) sys_error(NO_ARG);
+    if (file_size < startpos + array_size) {
+      if (lseek(fd, startpos + array_size - 1, SEEK_SET) == -1)
+        sys_error(NO_ARG);
       c = 0;
       if (write(fd, &c, 1) != 1) sys_error(NO_ARG);
     }
   }
   /* Restore original file position */
   lseek(fd, currpos, SEEK_SET);
+  /* Determine offset so that the mapping starts at the given file pos */
+  page = getpagesize();
+  delta = (uintnat) (startpos % page);
   /* Do the mmap */
   shared = Bool_val(vshared) ? MAP_SHARED : MAP_PRIVATE;
-  addr = mmap(NULL, array_size, PROT_READ | PROT_WRITE, shared, fd, 0);
+  addr = mmap(NULL, array_size + delta, PROT_READ | PROT_WRITE,
+              shared, fd, startpos - delta);
   if (addr == (void *) MAP_FAILED) sys_error(NO_ARG);
+  addr = (void *) ((uintnat) addr + delta);
   /* Build and return the Caml bigarray */
   return alloc_bigarray(flags | BIGARRAY_MAPPED_FILE, num_dims, addr, dim);
 }
@@ -100,7 +111,7 @@ CAMLprim value caml_ba_map_file(value vfd, value vkind, value vlayout,
 #else
 
 value caml_ba_map_file(value vfd, value vkind, value vlayout,
-                       value vshared, value vdim)
+                       value vshared, value vdim, value vpos)
 {
   invalid_argument("Bigarray.map_file: not supported");
   return Val_unit;
@@ -108,10 +119,17 @@ value caml_ba_map_file(value vfd, value vkind, value vlayout,
 
 #endif
 
+CAMLprim value caml_ba_map_file_bytecode(value * argv, int argn)
+{
+  return caml_ba_map_file(argv[0], argv[1], argv[2],
+                          argv[3], argv[4], argv[5]);
+}
 
 void caml_ba_unmap_file(void * addr, uintnat len)
 {
 #if defined(HAS_MMAP)
-  munmap(addr, len);
+  uintnat page = getpagesize();
+  uintnat delta = (uintnat) addr % page;
+  munmap((void *)((uintnat)addr - delta), len + delta);
 #endif
 }

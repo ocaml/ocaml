@@ -700,7 +700,25 @@ let _ =
         if c.{i,j} <> float (100 * i + j) then ok := false
       done
     done;
-    test 2 !ok true
+    test 2 !ok true;
+    let fd = Unix.openfile mapped_file [Unix.O_RDONLY] 0 in
+    let c = Array2.map_subfile fd float64 c_layout false (-1) 100 800L in
+    Unix.close fd;
+    let ok = ref true in
+    for i = 1 to 99 do
+      for j = 0 to 99 do
+        if c.{i-1,j} <> float (100 * i + j) then ok := false
+      done
+    done;
+    test 3 !ok true;
+    let fd = Unix.openfile mapped_file [Unix.O_RDONLY] 0 in
+    let c = Array2.map_subfile fd float64 c_layout false (-1) 100 79200L in
+    Unix.close fd;
+    let ok = ref true in
+    for j = 0 to 99 do
+      if c.{0,j} <> float (100 * 99 + j) then ok := false
+    done;
+    test 4 !ok true
   end;
   (* Force garbage collection of the mapped bigarrays above, otherwise
      Win32 doesn't let us erase the file.  Notice the begin...end above
