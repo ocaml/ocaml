@@ -127,6 +127,7 @@ Finally, use "make -f Makefile.nt" to build the system, e.g.
         make -f Makefile.nt world
         make -f Makefile.nt bootstrap
         make -f Makefile.nt opt
+        make -f Makefile.nt opt.opt
         make -f Makefile.nt install
 
 
@@ -168,7 +169,8 @@ The native-code compiler (ocamlopt), as well as static linking of
 Caml bytecode with C code (ocamlc -custom), require 
 the Cygwin development tools, available at
         http://sources.redhat.com/cygwin/
-You will need to install at least the following Cygwin packages:
+You will need to install at least the following Cygwin packages (use
+the Setup tool from Cygwin):
 binutils, gcc-core, gcc-mingw-core, mingw-runtime, w32-api.
 
 Do *not* install the Mingw/MSYS development tools from www.mingw.org:
@@ -265,8 +267,9 @@ This port runs under all versions of MS Windows supported by Cygwin.
 
 INSTALLATION:
 
-For technical reasons, no binary distribution of this port is available.
-You need to recompile from the source distribution.
+We do not distribute binaries for this port, but they can be found
+in the Cygwin distribution (use the Setup tool from Cygwin and select
+the OCaml packages).  Alternatively, recompile from the source distribution.
 
 
 RECOMPILATION FROM THE SOURCES:
