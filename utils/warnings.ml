@@ -122,10 +122,13 @@ let message = function
        Here is an example of a more robust pattern:\n" ^ s
   | Labels_omitted ->
       "labels were omitted in the application of this function."
-  | Method_override slist ->
+  | Method_override [lab] ->
+      "the method " ^ lab ^ " is overriden in the same class."
+  | Method_override (cname :: slist) ->
       String.concat " "
-        ("the following methods are overriden \
-          by the inherited class:\n " :: slist)
+        ("the following methods are overriden by the class"
+         :: cname  :: ":\n " :: slist)
+  | Method_override [] -> assert false
   | Instance_variable_override lab ->
       "the instance variable " ^ lab ^ " is overriden.\n" ^
       "The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)"

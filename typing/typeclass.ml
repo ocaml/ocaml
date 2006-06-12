@@ -240,12 +240,18 @@ let inheritance self_type env concr_meths warn_meths loc parent =
 
       let overridings = Concr.inter cl_sig.cty_concr warn_meths in
       if not (Concr.is_empty overridings) then begin
+        let cname =
+          match parent with
+            Tcty_constr (p, _, _) -> Path.name p
+          | _ -> "inherited"
+        in
         Location.prerr_warning loc
-          (Warnings.Method_override (Concr.elements overridings))
+          (Warnings.Method_override (cname :: Concr.elements overridings))
       end;
 
       let concr_meths = Concr.union cl_sig.cty_concr concr_meths in
-      let warn_meths = Concr.union cl_sig.cty_concr warn_meths in
+      (* No need to warn about overriding of inherited methods! *)
+      (* let warn_meths = Concr.union cl_sig.cty_concr warn_meths in *)
 
       (cl_sig, concr_meths, warn_meths)
 
@@ -503,6 +509,8 @@ let rec class_field cl_num self_type meths vars
        warn_vals, inher)
 
   | Pcf_meth (lab, priv, expr, loc)  ->
+      if Concr.mem lab warn_meths then
+        Location.prerr_warning loc (Warnings.Method_override [lab]);
       let (_, ty) =
         Ctype.filter_self_method val_env lab priv meths self_type
       in
