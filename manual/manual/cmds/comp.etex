@@ -242,10 +242,11 @@ applications, and parameter order becomes strict.
 
 \item["-o" \var{exec-file}]
 Specify the name of the output file produced by the linker. The
-default output name is "a.out", in keeping with the Unix tradition. If
-the "-a" option is given, specify the name of the library produced.
-If the "-output-obj" option is given, specify the name of the output
-file produced.
+default output name is "a.out" under Unix and "camlprog.exe" under
+Windows. If the "-a" option is given, specify the name of the library
+produced.  If the "-pack" option is given, specify the name of the
+packed object file produced.  If the "-output-obj" option is given,
+specify the name of the output file produced.
 
 \item["-output-obj"]
 Cause the linker to produce a C object file instead of a bytecode
