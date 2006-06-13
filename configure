@@ -250,6 +250,10 @@ case "$bytecc,$host" in
     # Almost the same as rhapsody
     bytecccompopts="-fno-defer-pop -no-cpp-precomp $gcc_warnings"
     mathlib="";;
+    if $arch64; then
+      # Tell gcc that we can use 32-bit code addresses for threaded code
+      echo "#define ARCH_CODE32" >> m.h
+    fi;;
   *,*-*-beos*)
     bytecccompopts="-fno-defer-pop $gcc_warnings"
     # No -lm library
