@@ -812,6 +812,12 @@ and xtoken = parse
   | xml_uncname { UNCNAME (parse_ncname lexbuf) }
   | xml_ncname { NCNAME (parse_ncname lexbuf) }
   | eof { EOF }
+  | "#" [' ' '\t']* (['0'-'9']+ as num) [' ' '\t']*
+        ("\"" ([^ '\010' '\013' '"' ] * as name) "\"")?
+        [^ '\010' '\013'] * newline
+      { update_loc lexbuf name (int_of_string num) true 0;
+        xtoken lexbuf
+      }
   | "(*"
       { comment_start_loc := [Location.curr lexbuf];
         comment lexbuf;
@@ -840,6 +846,12 @@ and xtoken = parse
 and start_lbracebrace = parse
   | newline
       { update_loc lexbuf None 1 false 0;
+        start_lbracebrace lexbuf
+      }
+  | "#" [' ' '\t']* (['0'-'9']+ as num) [' ' '\t']*
+        ("\"" ([^ '\010' '\013' '"' ] * as name) "\"")?
+        [^ '\010' '\013'] * newline
+      { update_loc lexbuf name (int_of_string num) true 0;
         start_lbracebrace lexbuf
       }
   | blank +
