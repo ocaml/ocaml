@@ -99,3 +99,6 @@ CHANGE LOG:
 - operations on records Ocamlduce.Record
 - don't install ocamlducec and ocamlducec.opt but only the second one
   (if available), renamed as ocamlducec; same for the other tools
+
+Since then
+- support line number directives within {{ ... }}
