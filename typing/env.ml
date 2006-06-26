@@ -27,6 +27,7 @@ type error =
   | Corrupted_interface of string
   | Illegal_renaming of string * string
   | Inconsistent_import of string * string * string
+  | Need_recursive_types of string * string
 
 exception Error of error
 
@@ -122,12 +123,15 @@ let current_unit = ref ""
 
 (* Persistent structure descriptions *)
 
+type pers_flags = Rectypes
+
 type pers_struct =
   { ps_name: string;
     ps_sig: signature;
     ps_comps: module_components;
     ps_crcs: (string * Digest.t) list;
-    ps_filename: string }
+    ps_filename: string;
+    ps_flags: pers_flags list }
 
 let persistent_structures =
   (Hashtbl.create 17 : (string, pers_struct) Hashtbl.t)
@@ -157,6 +161,7 @@ let read_pers_struct modname filename =
     end;
     let (name, sign) = input_value ic in
     let crcs = input_value ic in
+    let flags = input_value ic in
     close_in ic;
     let comps =
       !components_of_module' empty Subst.identity
@@ -166,10 +171,16 @@ let read_pers_struct modname filename =
                ps_sig = sign;
                ps_comps = comps;
                ps_crcs = crcs;
-               ps_filename = filename } in
+               ps_filename = filename;
+               ps_flags = flags } in
     if ps.ps_name <> modname then
       raise(Error(Illegal_renaming(ps.ps_name, filename)));
     check_consistency filename ps.ps_crcs;
+    List.iter
+      (function Rectypes ->
+        if not !Clflags.recursive_types then
+          raise(Error(Need_recursive_types(ps.ps_name, !current_unit))))
+      ps.ps_flags;
     Hashtbl.add persistent_structures modname ps;
     ps
   with End_of_file | Failure _ ->
@@ -747,6 +758,8 @@ let save_signature_with_imports sg modname filename imports =
     let crc = Digest.file filename in
     let crcs = (modname, crc) :: imports in
     output_value oc crcs;
+    let flags = if !Clflags.recursive_types then [Rectypes] else [] in
+    output_value oc flags;
     close_out oc;
     (* Enter signature in persistent table so that imported_unit()
        will also return its crc *)
@@ -758,7 +771,8 @@ let save_signature_with_imports sg modname filename imports =
         ps_sig = sg;
         ps_comps = comps;
         ps_crcs = crcs;
-        ps_filename = filename } in
+        ps_filename = filename;
+        ps_flags = flags } in
     Hashtbl.add persistent_structures modname ps;
     Consistbl.set crc_units modname crc filename
   with exn ->
@@ -793,3 +807,7 @@ let report_error ppf = function
       "@[<hov>The files %s@ and %s@ \
               make inconsistent assumptions@ over interface %s@]"
       source1 source2 name
+  | Need_recursive_types(import, export) ->
+      fprintf ppf
+        "@[<hov>Unit %s imports from %s, which uses recursive types.@ %s@]"
+        import export "The compilation flag -rectypes is required"

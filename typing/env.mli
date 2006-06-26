@@ -128,6 +128,7 @@ type error =
   | Corrupted_interface of string
   | Illegal_renaming of string * string
   | Inconsistent_import of string * string * string
+  | Need_recursive_types of string * string
 
 exception Error of error
 
