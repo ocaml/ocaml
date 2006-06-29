@@ -14,4 +14,4 @@ exclude:
   - Camlp4.ml
   - yam
   - build/camlp4_config.ml
-  - !re \.run$
+  - !re \.(run|opt)$
