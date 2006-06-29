@@ -30,7 +30,9 @@ value iter_and_take_callbacks f =
   let rec loop () = loop (f (Queue.take callbacks)) in
   try loop () with [ Queue.Empty -> () ];
 
-value declare_dyn_module m f = Queue.add (m, f) callbacks;
+value declare_dyn_module m f =
+  (* let () = Format.eprintf "declare_dyn_module: %s@." m in *)
+  Queue.add (m, f) callbacks;
 
 module Plugin (Id : Sig.Id.S) (Maker : functor (Unit : sig end) -> sig end) = struct
   declare_dyn_module Id.name (fun _ -> let module M = Maker (struct end) in ());

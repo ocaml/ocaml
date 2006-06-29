@@ -162,3 +162,5 @@ module Make (Syntax : Sig.Camlp4Syntax.S) : sig
   value print_implem :
     ?input_file: string -> ?output_file: string -> Ast.str_item -> unit;
 end;
+
+value enable : unit -> unit;

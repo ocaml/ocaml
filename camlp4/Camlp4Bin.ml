@@ -120,34 +120,47 @@ type file_kind =
   | ModuleImpl of string
   | IncludeDir of string ];
 
+value rcall_callback = ref (fun () -> ());
+
 value file_name_filter =
   let map = [
     ("pa_r.cmo", "Camlp4Parsers/OCamlr.cmo");
     ("pa_o.cmo", "Camlp4Parsers/OCaml.cmo");
-    (* ("q_MLast.cmo", "Camlp4Parsers/OCamlRevisedQuotation.cmo"); *)
     ("pa_rp.cmo", "Camlp4Parsers/OCamlRevisedParser.cmo");
     ("pa_op.cmo", "Camlp4Parsers/OCamlParser.cmo");
     ("pa_extend.cmo", "Camlp4Parsers/Grammar.cmo");
     ("pa_extend_m.cmo", "Camlp4Parsers/Grammar.cmo");
     ("pa_macro.cmo", "Camlp4Parsers/Macro.cmo");
-    ("pa_extfun.cmo", "Camlp4Parsers/Extfun.cmo");
-    ("pr_dump.cmo", "Camlp4Printers/Dump.cmo");
+    ("pr_dump.cmo", "Camlp4Printers/DumpOCamlAst.cmo");
     ("pr_o.cmo", "Camlp4Printers/OCaml.cmo");
     ("pr_r.cmo", "Camlp4Printers/OCamlr.cmo")
   ] in
   fun file_name ->
-    try List.assoc file_name map with [ Not_found -> file_name ];
-
+    let file_name =
+      try List.assoc file_name map with [ Not_found -> file_name ] in
+    let f g = let () = g () in let () = rcall_callback.val () in None in
+    match file_name with
+    [ "Camlp4Printers/OCaml.cmo" ->
+        f Camlp4.Printers.OCaml.enable
+    | "Camlp4Printers/OCamlr.cmo" ->
+        f Camlp4.Printers.OCamlr.enable
+    | "Camlp4Printers/DumpOCamlAst.cmo" ->
+        f Camlp4.Printers.DumpOCamlAst.enable
+    | "Camlp4Printers/DumpCamlp4Ast.cmo" ->
+        f Camlp4.Printers.DumpCamlp4Ast.enable
+    | _ -> Some file_name ];
 
 value search_stdlib = ref True;
 value print_loaded_modules = ref False;
-value rcall_callback = ref (fun () -> ());
 value dyn_loader = ref None;
 value (task, do_task) =
   let t = ref None
   in (fun f x ->
-         t.val := Some (if t.val = None then (fun _ -> f x)
-                        else (fun usage -> usage ())),
+        match x with
+        [ None -> ()
+        | Some x ->
+            t.val := Some (if t.val = None then (fun _ -> f x)
+                            else (fun usage -> usage ())) ],
       fun usage -> match t.val with [ Some f -> f usage | None -> () ]);
 value input_file x =
   let dyn_loader = match dyn_loader.val with [ None -> assert False | Some d -> d ] in (* FIXME *)
@@ -160,14 +173,20 @@ value input_file x =
         let (f, o) = Filename.open_temp_file "from_string" ".ml";
         output_string o s;
         close_out o;
-        task (process_impl dyn_loader) f;
+        task (process_impl dyn_loader) (Some f);
       }
-    | ModuleImpl file_name -> DynLoader.load dyn_loader (file_name_filter file_name)
+    | ModuleImpl file_name ->
+        match file_name_filter file_name with
+        [ None -> () | Some x -> DynLoader.load dyn_loader x ]
     | IncludeDir dir -> DynLoader.include_dir dyn_loader dir ];
     rcall_callback.val ();
   };
 
 value initial_spec_list =
+  let f x y =
+    match file_name_filter ("Camlp4"^x^"/"^y^".cmo") with
+    [ None -> ()
+    | Some x -> input_file (ModuleImpl x) ] in
   [("-I", Arg.String (fun x -> input_file (IncludeDir x)),
     "<directory>  Add directory in search patch for object files.");
   ("-where", Arg.Unit print_stdlib,
@@ -199,11 +218,11 @@ value initial_spec_list =
   ("-no_quot", Arg.Clear Config.quotations,
     "Don't parse quotations, allowing to use, e.g. \"<:>\" as token.");
   ("-loaded-modules", Arg.Set print_loaded_modules, "Print the list of loaded modules.");
-  ("-parser", Arg.String (fun x -> input_file (ModuleImpl ("Camlp4Parsers/"^x^".cmo"))),
+  ("-parser", Arg.String (fun x -> f "Parsers" x),
     "<name>  Load the parser Camlp4Parsers/<name>.cmo");
-  ("-printer", Arg.String (fun x -> input_file (ModuleImpl ("Camlp4Printers/"^x^".cmo"))),
+  ("-printer", Arg.String (fun x -> f "Printers" x),
     "<name>  Load the printer Camlp4Printers/<name>.cmo");
-  ("-filter", Arg.String (fun x -> input_file (ModuleImpl ("Camlp4Filters/"^x^".cmo"))),
+  ("-filter", Arg.String (fun x -> f "Filters" x),
     "<name>  Load the filter Camlp4Filters/<name>.cmo")
 ];
 
@@ -237,6 +256,7 @@ value main ?(callback = fun _ -> ()) argv =
             eprintf "Use option -help for usage@.";
             exit 2 } ];
     do_task usage;
+    call_callback ();
     if print_loaded_modules.val then do {
       Queue.iter (eprintf "%s@.") loaded_modules;
     } else ()

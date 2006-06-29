@@ -85,22 +85,19 @@ let ocaml_Module_with_meta =
   (fun _ i o ->
     "if test ! -e"^^o^^
        "|| (ruby --version > /dev/null 2> /dev/null"^^
-           "&& test -e ./camlp4boot.run"^^
-           "&& test -e Camlp4Printers/OCaml.cmo);"^^
+           "&& test -e ./camlp4boot.run);"^^
     "then ruby ./build/meta.rb"^^i^^">"^^o^^"; else : ; fi")
 let ocaml_Module_with_genmap =
   generic_ocaml_Module_extension ".genmap.ml"
    (fun _ i o ->
       "if test ! -e"^^o^^
          "|| (test -e ./camlp4boot.run"^^
-             "&& test -e Camlp4Filters/GenerateMap.cmo"^^
-             "&& test -e Camlp4Printers/OCamlr.cmo);"^^
+             "&& test -e Camlp4Filters/GenerateMap.cmo);"^^
       "then (echo 'module Camlp4FiltersGenerateMapTrash = struct';"^^
             "cat Camlp4/Sig/Camlp4Ast.ml; echo 'end;') > Camlp4/Struct/Camlp4Ast.tmp.ml;"^^
            "(echo '(* Generated file! Do not edit by hand *)';"^^
                "../boot/ocamlrun ./camlp4boot.run"^^
-                   "Camlp4Filters/GenerateMap.cmo"^^
-                   "Camlp4Printers/OCamlr.cmo"^^
+                   "Camlp4Filters/GenerateMap.cmo -printer OCamlr"^^
                    i^^" -no_comments) >"^^o^^"; else : ; fi")
 
 let misc_modules = [
@@ -167,7 +164,6 @@ let camlp4_package =
         ocaml_Module "Dynamic";
         ocaml_Module "Static"
       ]);
-      ocaml_IModule "Spretty";
       ocaml_Module "Quotation";
       ocaml_IModule ~ext_includes:[dynlink] "DynLoader";
       ocaml_Module_with_genmap ~flags:"-w z -warn-error z" "Camlp4Ast";
@@ -180,6 +176,8 @@ let camlp4_package =
     ocaml_IModule "PreCast";
     ocaml_IModule "Register";
     ocaml_PackageDir "Printers" (lazy [
+      ocaml_IModule "DumpOCamlAst";
+      ocaml_IModule "DumpCamlp4Ast";
       ocaml_IModule "OCaml";
       ocaml_IModule "OCamlr" ~flags:"-w v -warn-error v";
     ])
@@ -198,7 +196,6 @@ let camlp4_parsers =
     ocaml_Module "Grammar";
     ocaml_Module "Macro";
     ocaml_Module ~o:(options_without_debug ()) "Debug";
-    ocaml_Module "Extfun";
     ocaml_Module "LoadCamlp4Ast";
   ])
 
@@ -239,7 +236,6 @@ let pa_op = ocaml_Module "Camlp4Parsers/OCamlParser"
 let pa_g  = ocaml_Module "Camlp4Parsers/Grammar"
 let pa_macro = ocaml_Module "Camlp4Parsers/Macro"
 let pa_debug = ocaml_Module "Camlp4Parsers/Debug"
-let pa_extfun = ocaml_Module "Camlp4Parsers/Extfun"
 let pr_dump = ocaml_Module "Camlp4Printers/DumpOCamlAst"
 let pr_r = ocaml_Module "Camlp4Printers/OCamlr"
 let pr_o = ocaml_Module "Camlp4Printers/OCaml"
@@ -355,7 +351,6 @@ let doc () =
   let ppf_of_file f = formatter_of_out_channel (open_out f) in
   print_packed_sources (ppf_of_file "doc/Camlp4.ml4") camlp4_package;
   print_packed_sources (ppf_of_file "doc/Camlp4Parsers.ml4") camlp4_parsers;
-  print_packed_sources (ppf_of_file "doc/Camlp4Printers.ml4") camlp4_printers;
   print_packed_sources (ppf_of_file "doc/Camlp4Filters.ml4") camlp4_filters;
   print_packed_sources (ppf_of_file "doc/Camlp4Top.ml4") camlp4_top;
   revised_to_ocaml "doc/Camlp4";
@@ -363,11 +358,10 @@ let doc () =
   sed "___CAMLP4_LEXER___\\*)" "" "doc/Camlp4.ml";
   sed "^ *# [0-9]\\+.*$" "" "doc/Camlp4.ml";
   revised_to_ocaml "doc/Camlp4Parsers";
-  revised_to_ocaml "doc/Camlp4Printers";
   revised_to_ocaml "doc/Camlp4Filters";
   revised_to_ocaml "doc/Camlp4Top";
   ocamldoc "Camlp4 a Pre-Processor-Pretty-Printer for Objective Caml"
-           ["Camlp4.ml"; "Camlp4Parsers.ml"; "Camlp4Printers.ml";
+           ["Camlp4.ml"; "Camlp4Parsers.ml";
             "Camlp4Filters.ml"; "Camlp4Top.ml"]
 
 let other_objs =
@@ -383,7 +377,7 @@ let all =
                 ~byte_flags:("dynlink.cma"^^other_byte_objs) ~opt_flags:other_opt_objs
                 ~flags:"-linkall" "Camlp4" (misc_modules @ [camlp4_package]);
   mk_camlp4 "camlp4" [];
-  mk_camlp4 "camlp4boot" [pa_r; pa_qb; pa_q; pa_rp; pa_g; pa_macro; pa_extfun; pa_debug; pr_o; pr_dump];
+  mk_camlp4 "camlp4boot" [pa_r; pa_qb; pa_q; pa_rp; pa_g; pa_macro; pa_debug; pr_o; pr_dump];
   mk_camlp4 "camlp4r"  [pa_r; pa_rp; pr_dump];
   mk_camlp4 "camlp4rf" [pa_r; pa_qb; pa_q; pa_rp; pa_g; pa_macro; pr_dump];
   mk_camlp4 "camlp4o"  [pa_r; pa_o; pa_rp; pa_op; pr_dump];

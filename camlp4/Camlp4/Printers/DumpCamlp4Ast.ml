@@ -13,7 +13,41 @@
 (****************************************************************************)
 
 (* Authors:
- * - Nicolas Pouillard: initial version
+ * - Daniel de Rauglaudre: initial version
+ * - Nicolas Pouillard: refactoring
  *)
 
-Camlp4.Printers.DumpCamlp4Ast.enable ();
+module Id = struct
+  value name = "Camlp4Printers.DumpCamlp4Ast";
+  value version = "$Id$";
+end;
+
+module Make (Syntax : Sig.Syntax.S)
+: Sig.Printer.S with module Ast = Syntax.Ast
+= struct
+  include Syntax;
+
+  value with_open_out_file x f =
+    match x with
+    [ Some file -> do { let oc = open_out_bin file in f oc;
+                        flush oc;
+                        close_out oc }
+    | None -> do { set_binary_mode_out stdout True; f stdout; flush stdout } ];
+
+  value dump_ast magic ast oc = do {
+    output_string oc magic;
+    output_value oc ast;
+  };
+
+  value print_interf ?input_file:(_) ?output_file ast =
+    with_open_out_file output_file
+      (dump_ast Config.camlp4_ast_intf_magic_number ast);
+
+  value print_implem ?input_file:(_) ?output_file ast =
+    with_open_out_file output_file
+      (dump_ast Config.camlp4_ast_impl_magic_number ast);
+
+end;
+
+value enable () =
+  let module M = Register.Printer Id Make in ();

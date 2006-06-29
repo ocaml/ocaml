@@ -441,6 +441,10 @@ module Make (Loc : Sig.Loc.S) : Sig.Camlp4Ast.S with module Loc = Loc =
     value map_ctyp f ast = (new c_ctyp f)#ctyp ast;
     value map_expr f ast = (new c_expr f)#expr ast;
     value ghost = Loc.ghost;
+    value safe_string_escaped s =
+      if ((String.length s) > 2) && ((s.[0] = '\\') && (s.[1] = '$'))
+      then s
+      else String.escaped s;
     value rec is_module_longident =
       fun
       [ Ast.IdAcc _ _ i -> is_module_longident i
@@ -708,9 +712,5 @@ module Make (Loc : Sig.Loc.S) : Sig.Camlp4Ast.S with module Loc = Loc =
       [ Ast.MbAnd _ x y ->
           list_of_module_binding x (list_of_module_binding y acc)
       | x -> [ x :: acc ] ];
-  value safe_string_escaped s =
-    if String.length s > 2 && s.[0] = '\\' && s.[1] = '$' then s
-    else String.escaped s;
-
   end;
 

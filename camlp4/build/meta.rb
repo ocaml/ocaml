@@ -51,7 +51,7 @@ for line in contents do
     if antiquots.size == 1 and antiquots.first.first == 'anti'
       cur << "#{pre}#{q.gsub(/<:(\w+)</, '<:\1@_loc<').ljust(65)} -> <:meta_kind< $anti:s$ >>#{post}"
     else
-      metaq = `#{camlp4} Camlp4Printers/OCaml.cmo -curry-constr /tmp/metaq.ml`.
+      metaq = `#{camlp4} -printer OCaml -curry-constr /tmp/metaq.ml`.
         gsub(/;\s*\Z/, '').strip.gsub(/\b_?loc\b/, "$meta_loc_meta_kind _loc$")
       abort "abort: #{q}" unless $? == 0
       for antiquot in antiquots do
