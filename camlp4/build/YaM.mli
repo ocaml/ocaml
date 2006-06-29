@@ -87,6 +87,7 @@ val ocaml_Module:
 val ocaml_IModule:
   ?o: options_t ->
   ?flags: string -> ?byte_flags: string -> ?opt_flags: string -> 
+  ?impl_flags: string ->
   ?pp: string -> ?includes: string list -> ?ext_includes: string list -> 
   string -> unit_t
 (** Creates a compilation unit for an OCaml module, with its interface. *)

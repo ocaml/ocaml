@@ -260,9 +260,9 @@ let ocamldepi ~native ~depc ~f ~n =
 let ocamlobj ~bytec ~optc ~f ~n = 
   (select (is_cmx f) (optc, bytec))^" -c "^(ml n), [f; cmi n]
   
-let ocamlobji ~bytec ~optc ~f ~n = 
+let ocamlobji ~bytec ~optc ~impl_flags ~f ~n = 
   if is_cmi f then bytec^" -c "^(mli n), [f]
-              else (select (is_cmx f) (optc, bytec))^" -c "^(ml n), [f]
+              else (select (is_cmx f) (optc, bytec))^^impl_flags^^"-c"^^(ml n), [f]
 
 let for_pack o = if !(o.ocaml_ForPack) = "" then ""
                  else "-for-pack" ^^ !(o.ocaml_ForPack)
@@ -332,7 +332,7 @@ let generic_ocaml_Module_extension extension command =
 
 
 (* module ocaml, avec interface *)
-let ocaml_IModule ?o ?flags ?byte_flags ?opt_flags ?pp ?includes ?ext_includes n =
+let ocaml_IModule ?o ?flags ?byte_flags ?opt_flags ?(impl_flags = "") ?pp ?includes ?ext_includes n =
   let n, depc, bytec, optc = 
     ocaml_options ?o ?flags ?byte_flags ?opt_flags ?pp ?includes ?ext_includes n
   in 
@@ -342,7 +342,7 @@ let ocaml_IModule ?o ?flags ?byte_flags ?opt_flags ?pp ?includes ?ext_includes n
       ~name:n
       ~sources:[ml_n; mli_n] ~targets ~trash:(oo n :: annot n :: targets) ~objects:(cmx_n, cmo_n)  
       ~dependencies:(fun ~native f -> ocamldepi ~native ~depc ~f ~n)
-      ~compile_cmd: (fun f -> ocamlobji ~bytec ~optc ~f ~n)
+      ~compile_cmd: (fun f -> ocamlobji ~bytec ~impl_flags ~optc ~f ~n)
       ~dep_files:   (fun f -> if is_cmi f then [mli_n] else [ml_n])
       ()
 

@@ -114,7 +114,7 @@ let misc_modules = [
 let camlp4_package =
   ocaml_PackageDir "Camlp4" (lazy [
     ocaml_IModule ~includes:[build] "Config";
-    ocaml_IModule ~o:(options_without_debug ()) ~flags:"-rectypes" "Debug";
+    ocaml_IModule ~o:(options_without_debug ()) ~impl_flags:"-rectypes" "Debug";
     ocaml_IModule "Options";
     ocaml_PackageDir "Sig" (lazy [
       ocaml_Interface "Id";
@@ -157,7 +157,7 @@ let camlp4_package =
         ocaml_Module "Structure";
         ocaml_Module "Search";
         ocaml_Module "Tools";
-        ocaml_Module ~flags:"-rectypes" "Print";
+        ocaml_IModule ~impl_flags:"-rectypes" "Print";
         ocaml_Module "Failed";
         ocaml_Module "Parser";
         ocaml_Module "Insert";
