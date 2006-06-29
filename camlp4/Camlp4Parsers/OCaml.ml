@@ -399,10 +399,10 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
       module_binding_quot module_declaration module_expr module_expr_quot
       module_longident module_longident_with_app module_rec_declaration
       module_type module_type_quot more_ctyp name_tags opt_as_lident
-      opt_class_self_patt opt_class_self_type opt_class_signature
-      opt_class_structure opt_comma_ctyp opt_dot_dot opt_eq_ctyp opt_expr
-      opt_meth_list opt_mutable opt_polyt opt_private opt_rec opt_sig_items
-      opt_str_items opt_virtual opt_when_expr patt patt_as_patt_opt patt_eoi
+      opt_class_self_patt opt_class_self_type
+      opt_comma_ctyp opt_dot_dot opt_eq_ctyp opt_expr
+      opt_meth_list opt_mutable opt_polyt opt_private opt_rec
+      opt_virtual opt_when_expr patt patt_as_patt_opt patt_eoi
       patt_quot patt_tcon phrase pipe_ctyp poly_type row_field sem_ctyp
       sem_expr sem_expr_for_list sem_patt sem_patt_for_list semi sequence
       sig_item sig_item_quot sig_items star_ctyp str_item str_item_quot
@@ -466,7 +466,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
             <:expr< for $i$ = $e1$ $to:df$ $e2$ do { $get_seq el$ } >>
         | "while"; e1 = SELF; "do"; e2 = SELF; "done" ->
             <:expr< while $e1$ do { $get_seq e2$ } >>
-        | "object"; csp = opt_class_self_patt; cst = opt_class_structure; "end" ->
+        | "object"; csp = opt_class_self_patt; cst = class_structure; "end" ->
             <:expr< object ($csp$) $cst$ end >> ]
       | [ e = SELF; ","; el = (*FIXME comma_expr*)LIST1 NEXT SEP "," ->
             <:expr< ( $e$, $Ast.exCom_of_list el$ ) >> ]

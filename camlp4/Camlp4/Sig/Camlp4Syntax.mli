@@ -132,8 +132,6 @@ module type S = sig
   value opt_as_lident : Gram.Entry.t string;
   value opt_class_self_patt : Gram.Entry.t Ast.patt;
   value opt_class_self_type : Gram.Entry.t Ast.ctyp;
-  value opt_class_signature : Gram.Entry.t Ast.class_sig_item;
-  value opt_class_structure : Gram.Entry.t Ast.class_str_item;
   value opt_comma_ctyp : Gram.Entry.t Ast.ctyp;
   value opt_dot_dot : Gram.Entry.t Ast.meta_bool;
   value opt_eq_ctyp : Gram.Entry.t (list Ast.ctyp -> Ast.ctyp);
@@ -143,8 +141,6 @@ module type S = sig
   value opt_polyt : Gram.Entry.t Ast.ctyp;
   value opt_private : Gram.Entry.t Ast.meta_bool;
   value opt_rec : Gram.Entry.t Ast.meta_bool;
-  value opt_sig_items : Gram.Entry.t Ast.sig_item;
-  value opt_str_items : Gram.Entry.t Ast.str_item;
   value opt_virtual : Gram.Entry.t Ast.meta_bool;
   value opt_when_expr : Gram.Entry.t Ast.expr;
   value patt : Gram.Entry.t Ast.patt;

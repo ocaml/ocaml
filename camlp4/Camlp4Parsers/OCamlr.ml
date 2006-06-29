@@ -144,8 +144,6 @@ Old (no more supported) syntax:
   Gram.Entry.clear opt_as_lident;
   Gram.Entry.clear opt_class_self_patt;
   Gram.Entry.clear opt_class_self_type;
-  Gram.Entry.clear opt_class_signature;
-  Gram.Entry.clear opt_class_structure;
   Gram.Entry.clear opt_comma_ctyp;
   Gram.Entry.clear opt_dot_dot;
   Gram.Entry.clear opt_eq_ctyp;
@@ -155,8 +153,6 @@ Old (no more supported) syntax:
   Gram.Entry.clear opt_polyt;
   Gram.Entry.clear opt_private;
   Gram.Entry.clear opt_rec;
-  Gram.Entry.clear opt_sig_items;
-  Gram.Entry.clear opt_str_items;
   Gram.Entry.clear opt_virtual;
   Gram.Entry.clear opt_when_expr;
   Gram.Entry.clear patt;
@@ -339,10 +335,9 @@ Old (no more supported) syntax:
       module_binding_quot module_declaration module_expr module_expr_quot
       module_longident module_longident_with_app module_rec_declaration
       module_type module_type_quot more_ctyp name_tags opt_as_lident
-      opt_class_self_patt opt_class_self_type opt_class_signature
-      opt_class_structure opt_comma_ctyp opt_dot_dot opt_eq_ctyp opt_expr
-      opt_meth_list opt_mutable opt_polyt opt_private opt_rec opt_sig_items
-      opt_str_items opt_virtual opt_when_expr patt patt_as_patt_opt patt_eoi
+      opt_class_self_patt opt_class_self_type opt_comma_ctyp opt_dot_dot opt_eq_ctyp opt_expr
+      opt_meth_list opt_mutable opt_polyt opt_private opt_rec
+      opt_virtual opt_when_expr patt patt_as_patt_opt patt_eoi
       patt_quot patt_tcon phrase pipe_ctyp poly_type row_field sem_ctyp
       sem_expr sem_expr_for_list sem_patt sem_patt_for_list semi sequence
       sig_item sig_item_quot sig_items star_ctyp str_item str_item_quot
@@ -354,7 +349,7 @@ Old (no more supported) syntax:
       [ [ "functor"; "("; i = a_UIDENT; ":"; t = module_type; ")"; "->";
           me = SELF ->
             <:module_expr< functor ( $i$ : $t$ ) -> $me$ >>
-        | "struct"; st = opt_str_items; "end" ->
+        | "struct"; st = str_items; "end" ->
             <:module_expr< struct $st$ end >> ]
       | [ me1 = SELF; me2 = SELF -> <:module_expr< $me1$ $me2$ >> ]
       | "simple"
@@ -419,7 +414,7 @@ Old (no more supported) syntax:
             <:module_type< functor ( $i$ : $t$ ) -> $mt$ >> ]
       | [ mt = SELF; "with"; wc = with_constr ->
             <:module_type< $mt$ with $wc$ >> ]
-      | [ "sig"; sg = opt_sig_items; "end" ->
+      | [ "sig"; sg = sig_items; "end" ->
             <:module_type< sig $sg$ end >> ]
       | "simple"
         [ `ANTIQUOT (""|"mtyp"|"anti"|"list" as n) s ->
@@ -507,7 +502,7 @@ Old (no more supported) syntax:
             <:expr< for $i$ = $e1$ $to:df$ $e2$ do { $seq$ } >>
         | "while"; e = SELF; "do"; "{"; seq = sequence; "}" ->
             <:expr< while $e$ do { $seq$ } >>
-        | "object"; csp = opt_class_self_patt; cst = opt_class_structure; "end" ->
+        | "object"; csp = opt_class_self_patt; cst = class_structure; "end" ->
             <:expr< object ($csp$) $cst$ end >> ]
       | "where"
         [ e = SELF; "where"; rf = opt_rec; lb = let_binding ->
@@ -1082,7 +1077,7 @@ Old (no more supported) syntax:
         [ `ANTIQUOT (""|"cexp"|"anti" as n) s ->
             <:class_expr< $anti:mk_anti ~c:"class_expr" n s$ >>
         | ce = class_longident_and_param -> ce
-        | "object"; csp = opt_class_self_patt; cst = opt_class_structure; "end" ->
+        | "object"; csp = opt_class_self_patt; cst = class_structure; "end" ->
             <:class_expr< object ($csp$) $cst$ end >>
         | "("; ce = SELF; ":"; ct = class_type; ")" ->
             <:class_expr< ($ce$ : $ct$) >>
@@ -1095,16 +1090,9 @@ Old (no more supported) syntax:
       ] ]
     ;
     class_structure:
-      [ [ cst1 = class_str_item; semi; cst2 = SELF ->
-            <:class_str_item< $cst1$; $cst2$ >>
-        | cst = class_str_item; semi -> cst
-      ] ]
-    ;
-    opt_class_structure:
       [ [ `ANTIQUOT (""|"cst"|"anti"|"list" as n) s ->
             <:class_str_item< $anti:mk_anti ~c:"class_str_item" n s$ >>
-        | cst = class_structure -> cst
-        | -> <:class_str_item<>>
+        | l = LIST0 [ cst = class_str_item; semi -> cst ] -> Ast.crSem_of_list l
       ] ]
     ;
     opt_class_self_patt:
@@ -1154,7 +1142,7 @@ Old (no more supported) syntax:
       [ [ `ANTIQUOT (""|"ctyp"|"anti" as n) s ->
             <:class_type< $anti:mk_anti ~c:"class_type" n s$ >>
         | ct = class_type_longident_and_param -> ct
-        | "object"; cst = opt_class_self_type; csg = opt_class_signature; "end" ->
+        | "object"; cst = opt_class_self_type; csg = class_signature; "end" ->
             <:class_type< object ($cst$) $csg$ end >> ] ]
     ;
     class_type_longident_and_param:
@@ -1171,15 +1159,9 @@ Old (no more supported) syntax:
         | -> <:ctyp<>> ] ]
     ;
     class_signature:
-      [ [ sg1 = class_sig_item; semi; sg2 = SELF ->
-            <:class_sig_item< $sg1$; $sg2$ >>
-        | sg = class_sig_item; semi -> sg ] ]
-    ;
-    opt_class_signature:
       [ [ `ANTIQUOT (""|"csg"|"anti"|"list" as n) s ->
             <:class_sig_item< $anti:mk_anti ~c:"class_sig_item" n s$ >>
-        | csg = class_signature -> csg
-        | -> <:class_sig_item<>>
+        | l = LIST0 [ csg = class_sig_item; semi -> csg ] -> Ast.cgSem_of_list l
       ] ]
     ;
     class_sig_item:
@@ -1362,16 +1344,11 @@ Old (no more supported) syntax:
         | si = sig_item; semi; (sil, stopped) = SELF -> ([si :: sil], stopped)
         | `EOI -> ([], False) ] ]
     ;
-    opt_sig_items:
+    sig_items:
       [ [ `ANTIQUOT (""|"sigi"|"anti"|"list" as n) s ->
             <:sig_item< $anti:mk_anti n ~c:"sig_item" s$ >>
-        | st = sig_items -> st
-        | -> <:sig_item<>>
+        | l = LIST0 [ sg = sig_item; semi -> sg ] -> Ast.sgSem_of_list l
       ] ]
-    ;
-    sig_items:
-      [ [ sg1 = sig_item; semi; sg2 = SELF -> <:sig_item< $sg1$; $sg2$ >>
-        | sg = sig_item; semi -> sg ] ]
     ;
     implem:
       [ [ "#"; n = a_LIDENT; dp = opt_expr; semi ->
@@ -1380,16 +1357,10 @@ Old (no more supported) syntax:
         | `EOI -> ([], False)
       ] ]
     ;
-    opt_str_items:
+    str_items:
       [ [ `ANTIQUOT (""|"stri"|"anti"|"list" as n) s ->
             <:str_item< $anti:mk_anti n ~c:"str_item" s$ >>
-        | st = str_items -> st
-        | -> <:str_item<>>
-      ] ]
-    ;
-    str_items:
-      [ [ st1 = str_item; semi; st2 = SELF -> <:str_item< $st1$; $st2$ >>
-        | st = str_item; semi -> st
+        | l = LIST0 [ st = str_item; semi -> st ] -> Ast.stSem_of_list l
       ] ]
     ;
     top_phrase:
