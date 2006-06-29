@@ -261,7 +261,7 @@ install: dummy
 	$(CP) ocamldoc.hva *.cmi $(OCAMLDOC_LIBCMA) $(INSTALL_LIBDIR)
 	$(CP) $(INSTALL_MLIS) $(INSTALL_CMIS) $(INSTALL_LIBDIR)
 	if test -d $(INSTALL_MANODIR); then : ; else $(MKDIR) $(INSTALL_MANODIR); fi
-	$(CP) stdlib_man/* $(INSTALL_MANODIR)
+	if test -d stdlib_man; then $(CP) stdlib_man/* $(INSTALL_MANODIR); else : ; fi
 
 installopt:
 	if test -f $(OCAMLDOC_OPT) ; then $(MAKE) installopt_really ; fi
