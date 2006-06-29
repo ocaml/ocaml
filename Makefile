@@ -223,12 +223,12 @@ cleanboot:
 
 # Compile the native-code compiler
 opt-core:runtimeopt ocamlopt libraryopt
-opt: runtimeopt ocamlopt libraryopt otherlibrariesopt camlp4opt
+opt: runtimeopt ocamlopt libraryopt otherlibrariesopt
 
 # Native-code versions of the tools
 opt.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries \
 	 camlp4out $(DEBUGGER) ocamldoc ocamlopt.opt otherlibrariesopt \
-	 camlp4opt ocamllex.opt ocamltoolsopt.opt camlp4optopt ocamldoc.opt
+	 ocamllex.opt ocamltoolsopt.opt camlp4opt ocamldoc.opt
 
 # Installation
 install: FORCE
@@ -257,7 +257,7 @@ install: FORCE
         done
 	cd ocamldoc; $(MAKE) install
 	if test -f ocamlopt; then $(MAKE) installopt; else :; fi
-	cd camlp4; $(MAKE) install BINDIR=$(BINDIR) LIBDIR=$(LIBDIR) MANDIR=$(MANDIR)
+	cd camlp4; $(MAKE) install
 	if test -f debugger/ocamldebug; then (cd debugger; $(MAKE) install); \
 	   else :; fi
 	cp config/Makefile $(LIBDIR)/Makefile.config
@@ -339,6 +339,10 @@ utils/config.ml: utils/config.mlp config/Makefile
             -e 's|%%EXT_DLL%%|.so|' \
             -e 's|%%SYSTHREAD_SUPPORT%%|$(SYSTHREAD_SUPPORT)|' \
             utils/config.mlp > utils/config.ml
+	if test -w camlp4/build/camlp4_config.ml; \
+        then grep ast utils/config.ml >> camlp4/build/camlp4_config.ml && \
+             chmod -w camlp4/build/camlp4_config.ml; \
+        else : ; fi
 	@chmod -w utils/config.ml
 
 partialclean::
@@ -608,8 +612,6 @@ camlp4out: ocamlc
 	cd camlp4; $(MAKE) all
 camlp4opt: ocamlopt
 	cd camlp4; $(MAKE) opt
-camlp4optopt: ocamlopt
-	cd camlp4; $(MAKE) opt.opt
 partialclean::
 	cd camlp4; $(MAKE) clean
 alldepend::
