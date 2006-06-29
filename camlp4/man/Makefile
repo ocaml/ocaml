@@ -1,20 +1,13 @@
 # $Id$
 
-include ../config/Makefile
+include ../config/Makefile.cnf
 
 TARGET=camlp4.1
 ALIASES=camlp4o.1 camlp4r.1 mkcamlp4.1 ocpp.1 camlp4o.opt.1 camlp4r.opt.1
 
-all: $(TARGET)
+include ../config/Makefile.base
 
-clean::
-	rm -f $(TARGET)
-
-depend:
-
-get_promote:
-
-install:
+install-local:
 	if test -n '$(MANDIR)'; then \
 	  $(MKDIR) $(MANDIR)/man1 ; \
 	  cp $(TARGET) $(MANDIR)/man1/. ; \

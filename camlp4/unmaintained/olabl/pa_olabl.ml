@@ -343,7 +343,7 @@ module Plexer =
         parser
         [ [: `'>'; s :] -> maybe_end_quotation bp len s
         | [: `'<'; s :] ->
-            quotation bp (maybe_nested_quotation bp (store len '<') strm__) s
+            quotation bp (maybe_nested_quotation bp (store len '<') __strm) s
         | [: `'\\';
              len =
                parser
@@ -488,8 +488,8 @@ module Plexer =
           | _ ->
               match s with parser
               [ [: :] ->
-                  match Stream.peek strm__ with
-                  [ Some ('|' | '<' | ':') -> Stream.junk strm__
+                  match Stream.peek __strm with
+                  [ Some ('|' | '<' | ':') -> Stream.junk __strm
                   | _ -> () ] ] ]
       | [: `';'; _ = parser [ [: `';' :] -> () | [: :] -> () ] :] -> ()
       | [: `_ :] -> () ]
@@ -631,7 +631,7 @@ value mkumin loc f arg =
       <:expr< $lid:f$ $arg$ >> ]
 ;
 
-external loc_of_node : 'a -> MLast.loc = "%field0";
+external loc_of_node : 'a -> Loc.t = "%field0";
 
 value mklistexp loc last =
   loop True where rec loop top =
@@ -1706,15 +1706,15 @@ EXTEND
 END;
 
 type spat_comp =
-  [ SpTrm of MLast.loc and MLast.patt and option MLast.expr
-  | SpNtr of MLast.loc and MLast.patt and MLast.expr
-  | SpStr of MLast.loc and MLast.patt ]
+  [ SpTrm of Loc.t and MLast.patt and option MLast.expr
+  | SpNtr of Loc.t and MLast.patt and MLast.expr
+  | SpStr of Loc.t and MLast.patt ]
 ;
 type sexp_comp =
-  [ SeTrm of MLast.loc and MLast.expr | SeNtr of MLast.loc and MLast.expr ]
+  [ SeTrm of Loc.t and MLast.expr | SeNtr of Loc.t and MLast.expr ]
 ;
 
-value strm_n = "strm__";
+value strm_n = "__strm";
 value peek_fun loc = <:expr< Stream.peek >>;
 value junk_fun loc = <:expr< Stream.junk >>;
 

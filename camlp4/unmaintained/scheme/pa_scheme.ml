@@ -298,19 +298,19 @@ value lexer_gmake () =
 (* Building AST *)
 
 type sexpr =
-  [ Sacc of MLast.loc and sexpr and sexpr
-  | Schar of MLast.loc and string
-  | Sexpr of MLast.loc and list sexpr
-  | Sint of MLast.loc and string
-  | Sfloat of MLast.loc and string
-  | Slid of MLast.loc and string
-  | Slist of MLast.loc and list sexpr
-  | Sqid of MLast.loc and string
-  | Squot of MLast.loc and string and string
-  | Srec of MLast.loc and list sexpr
-  | Sstring of MLast.loc and string
-  | Stid of MLast.loc and string
-  | Suid of MLast.loc and string ]
+  [ Sacc of Loc.t and sexpr and sexpr
+  | Schar of Loc.t and string
+  | Sexpr of Loc.t and list sexpr
+  | Sint of Loc.t and string
+  | Sfloat of Loc.t and string
+  | Slid of Loc.t and string
+  | Slist of Loc.t and list sexpr
+  | Sqid of Loc.t and string
+  | Squot of Loc.t and string and string
+  | Srec of Loc.t and list sexpr
+  | Sstring of Loc.t and string
+  | Stid of Loc.t and string
+  | Suid of Loc.t and string ]
 ;
 
 value loc_of_sexpr =
@@ -325,7 +325,7 @@ value error_loc loc err =
 ;
 value error se err = error_loc (loc_of_sexpr se) err;
 
-value strm_n = "strm__";
+value strm_n = "__strm";
 value peek_fun loc = <:expr< Stream.peek >>;
 value junk_fun loc = <:expr< Stream.junk >>;
 

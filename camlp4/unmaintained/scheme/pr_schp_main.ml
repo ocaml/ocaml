@@ -79,7 +79,7 @@ value parser_cases ppf (spel, k) =
 value parser_body ppf (e, k) =
   let (bp, e) =
     match e with
-    [ <:expr< let $bp$ = Stream.count strm__ in $e$ >> -> (Some bp, e)
+    [ <:expr< let $bp$ = Stream.count __strm in $e$ >> -> (Some bp, e)
     | e -> (None, e) ]
   in
   match parser_of_expr e with
@@ -102,12 +102,12 @@ value parser_body ppf (e, k) =
 value pmatch ppf (e, k) =
   let (me, e) =
     match e with
-    [ <:expr< let (strm__ : Stream.t _) = $me$ in $e$ >> -> (me, e)
+    [ <:expr< let (__strm : Stream.t _) = $me$ in $e$ >> -> (me, e)
     | _ -> failwith "Pr_schp_main.pmatch" ]
   in
   let (bp, e) =
     match e with
-    [ <:expr< let $bp$ = Stream.count strm__ in $e$ >> -> (Some bp, e)
+    [ <:expr< let $bp$ = Stream.count __strm in $e$ >> -> (Some bp, e)
     | e -> (None, e) ]
   in
   let spel = parser_of_expr e in
@@ -121,12 +121,12 @@ value pmatch ppf (e, k) =
 
 pr_expr_fun_args.val :=
   extfun pr_expr_fun_args.val with
-  [ <:expr< fun [(strm__ : $_$) -> $_$] >> as ge -> ([], ge) ];
+  [ <:expr< fun [(__strm : $_$) -> $_$] >> as ge -> ([], ge) ];
 
 let lev = find_pr_level "top" pr_expr.pr_levels in
 lev.pr_rules :=
   extfun lev.pr_rules with
-  [ <:expr< fun (strm__ : $_$) -> $x$ >> ->
+  [ <:expr< fun (__strm : $_$) -> $x$ >> ->
       fun ppf curr next dg k -> fprintf ppf "%a" parser_body (x, k)
-  | <:expr< let (strm__ : Stream.t _) = $_$ in $_$ >> as e ->
+  | <:expr< let (__strm : Stream.t _) = $_$ in $_$ >> as e ->
       fun ppf curr next dg k -> fprintf ppf "%a" pmatch (e, k) ];

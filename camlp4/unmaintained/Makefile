@@ -13,26 +13,8 @@
 # The unmaintained directory
 #
 
+include ../config/Makefile.cnf
+
 DIRS=format lefteval ocamllex olabl scheme sml
 
-all:
-	for dir in $(DIRS); do \
-		cd $$dir && $(MAKE) all && cd .. ; \
-	done
-
-opt:
-	for dir in $(DIRS); do \
-		cd $$dir && $(MAKE) opt && cd .. ; \
-	done
-
-depend:
-	for dir in $(DIRS); do \
-		cd $$dir && $(MAKE)  depend && cd .. ; \
-	done
-
-clean:
-	for dir in $(DIRS); do \
-		cd $$dir && $(MAKE)  clean && cd .. ; \
-	done
-
-install:
+include ../config/Makefile.base

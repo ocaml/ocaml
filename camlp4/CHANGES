@@ -1,3 +1,7 @@
+- [...]
+  In the revised syntax of parsers the "?" is now a "??" like in the orignal
+  syntax to not conflict with optional labels.
+
 - [29 Jun 05] Add private row types. Make "private" a type constructor
   "TyPrv" rather than a flag. (Jacques)
 

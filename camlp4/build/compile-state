@@ -1,0 +1,20 @@
+#!/usr/bin/env ruby
+
+require 'pathname'
+require 'fileutils'
+
+case ARGV[0]
+when /r(estore)?/
+  Pathname.new('.').find do |path|
+    next unless path.to_s =~ /^(.*)\.bootstrap$/
+    FileUtils.cp(path, $1)
+  end
+when /s(ave)?/
+  Pathname.new('.').find do |path|
+    next unless path.to_s =~ /\.(cm([oia]|x|xa|)|o|a|run|opt|cache-status)$/
+    FileUtils.cp(path, path.to_s + '.bootstrap')
+  end
+else
+  STDERR.puts "Usage: #$0 ( r(estore)? | s(ave)? )"
+  exit 1
+end

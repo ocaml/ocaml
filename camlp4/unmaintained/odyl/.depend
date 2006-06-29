@@ -1,0 +1,4 @@
+odyl.cmo: odyl_main.cmi odyl_config.cmo 
+odyl.cmx: odyl_main.cmx odyl_config.cmx 
+odyl_main.cmo: odyl_config.cmo odyl_main.cmi 
+odyl_main.cmx: odyl_config.cmx odyl_main.cmi 

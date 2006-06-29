@@ -1,0 +1,14 @@
+debug.cmo: debug.cmi 
+debug.cmx: debug.cmi 
+extfun.cmo: extfun.cmi 
+extfun.cmx: extfun.cmi 
+fstream.cmo: fstream.cmi 
+fstream.cmx: fstream.cmi 
+grammar.cmo: token.cmi plexer.cmi loc.cmi 
+grammar.cmx: token.cmx plexer.cmi loc.cmx 
+loc.cmo: loc.cmi 
+loc.cmx: loc.cmi 
+token.cmo: loc.cmi token.cmi 
+token.cmx: loc.cmx token.cmi 
+plexer.cmi: token.cmi loc.cmi 
+token.cmi: loc.cmi 
