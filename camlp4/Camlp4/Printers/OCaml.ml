@@ -682,6 +682,8 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     | <:ctyp< +'$s$ >> -> pp f "+'%a" o#var s
     | <:ctyp< -'$s$ >> -> pp f "-'%a" o#var s
     | <:ctyp< $t1$ | $t2$ >> -> pp f "%a@ | %a" o#ctyp t1 o#ctyp t2
+    | <:ctyp< $t1$ : mutable $t2$ >> ->
+        pp f "@[mutable@ %a :@ %a@]" o#ctyp t1 o#ctyp t2
     | <:ctyp< $t1$ : $t2$ >> -> pp f "@[<2>%a :@ %a@]" o#ctyp t1 o#ctyp t2
     | <:ctyp< $t1$; $t2$ >> -> pp f "%a;@ %a" o#ctyp t1 o#ctyp t2
     | <:ctyp< $t1$ of $t2$ >> ->
@@ -718,10 +720,9 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     [ <:ctyp@loc< $t1$ and $t2$ >> ->
         let () = o#node f t (fun _ -> loc) in
         pp f "%a@ * %a" o#constructor_type t1 o#constructor_type t2
+    | <:ctyp< $_$ -> $_$ >> -> pp f "(%a)" o#ctyp t
     | t -> o#ctyp f t ];
 
-    (* <:ctyp< $lid:s$ : mutable $t$ >> -> pp f "@[mutable@ %a :@ %a@]" o#var s o#ctyp t *)
-    (* | <:ctyp< $lid:s$ : $t$ >> -> pp f "@[%a%a :@ %a@]" o#var s o#ctyp t *)
 
     method sig_item f sg =
       let () = o#node f sg Ast.loc_of_sig_item in

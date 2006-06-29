@@ -206,13 +206,12 @@ module Make (Structure : Structure.S) = struct
       | _ -> invalid_arg "parser_of_token_list" ]
   and parser_of_symbol entry nlevn c =
     fun
-    [ Smeta _ _symbl _act ->
-        failwith "FIXME"
-        (* let act = (magic "parser_of_symbol: act" act : 'a -> 'b -> 'c) entry symbl in *)
-        (* Action.mk *)
-          (* (List.fold_left *)
-            (* (fun act symb -> magic "parser_of_symbol: act2" act (parser_of_symbol entry nlevn c symb)) *)
-            (* act symbl) *)
+    [ Smeta _ symbl act ->
+        let act = Obj.magic act entry symbl in
+        Obj.magic
+          (List.fold_left
+            (fun act symb -> Obj.magic act (parser_of_symbol entry nlevn c symb))
+            act symbl)
     | Slist0 s ->
         let ps = parser_of_symbol entry nlevn c s in
         let rec loop al =

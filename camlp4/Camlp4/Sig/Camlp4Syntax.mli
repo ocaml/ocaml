@@ -55,6 +55,7 @@ module type S = sig
   value amp_ctyp : Gram.Entry.t Ast.ctyp;
   value and_ctyp : Gram.Entry.t Ast.ctyp;
   value assoc : Gram.Entry.t Ast.assoc;
+  value assoc0 : Gram.Entry.t Ast.assoc;
   value assoc_quot : Gram.Entry.t Ast.assoc;
   value binding : Gram.Entry.t Ast.binding;
   value binding_quot : Gram.Entry.t Ast.binding;

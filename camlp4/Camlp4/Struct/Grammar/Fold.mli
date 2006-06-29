@@ -1,3 +1,4 @@
+(* camlp4r *)
 (****************************************************************************)
 (*                                                                          *)
 (*                              Objective Caml                              *)
@@ -12,8 +13,18 @@
 (*                                                                          *)
 (****************************************************************************)
 
+(* $Id$ *)
+
 (* Authors:
- * - Nicolas Pouillard: initial version
+ * - Daniel de Rauglaudre: initial version
+ * - Nicolas Pouillard: refactoring
  *)
 
-Camlp4.Printers.OCaml.enable ();
+module Make (Structure : Structure.S) : sig
+  open Structure;
+
+  value sfold0 : ('a -> 'b -> 'b) -> 'b -> fold _ 'a 'b;
+  value sfold1 : ('a -> 'b -> 'b) -> 'b -> fold _ 'a 'b;
+  value sfold0sep : ('a -> 'b -> 'b) -> 'b -> foldsep _ 'a 'b;
+  (* value sfold1sep : ('a -> 'b -> 'b) -> 'b -> foldsep _ 'a 'b; *)
+end;

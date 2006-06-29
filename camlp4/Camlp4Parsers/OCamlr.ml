@@ -65,6 +65,7 @@ Old (no more supported) syntax:
   Gram.Entry.clear amp_ctyp;
   Gram.Entry.clear and_ctyp;
   Gram.Entry.clear assoc;
+  Gram.Entry.clear assoc0;
   Gram.Entry.clear assoc_quot;
   Gram.Entry.clear binding;
   Gram.Entry.clear binding_quot;
@@ -317,7 +318,7 @@ Old (no more supported) syntax:
     GLOBAL:
       a_CHAR a_FLOAT a_INT a_INT32 a_INT64 a_LABEL a_LIDENT
       a_LIDENT_or_operator a_NATIVEINT a_OPTLABEL a_STRING a_UIDENT a_ident
-      amp_ctyp and_ctyp assoc assoc_quot binding binding_quot
+      amp_ctyp and_ctyp assoc assoc0 assoc_quot binding binding_quot
       class_declaration class_description class_expr class_expr_quot
       class_fun_binding class_fun_def class_info_for_class_expr
       class_info_for_class_type class_longident class_longident_and_param
@@ -653,8 +654,10 @@ Old (no more supported) syntax:
         | ":>"; t = ctyp; "="; e = expr -> <:expr< ($e$ :> $t$) >> ] ]
     ;
     assoc:
-      [ [ a1 = SELF; "|"; a2 = SELF -> <:assoc< $a1$ | $a2$ >>
-        | `ANTIQUOT ("assoc"|"list" as n) s ->
+      [ [ l = LIST0 assoc0 SEP "|" -> Ast.asOr_of_list l ] ]
+    ;
+    assoc0:
+      [ [ `ANTIQUOT ("assoc"|"list" as n) s ->
             <:assoc< $anti:mk_anti ~c:"assoc" n s$ >>
         | `ANTIQUOT (""|"anti" as n) s ->
             <:assoc< $anti:mk_anti ~c:"assoc" n s$ >>
@@ -663,7 +666,6 @@ Old (no more supported) syntax:
         | `ANTIQUOT (""|"anti" as n) s; "when"; w = expr; "->"; e = expr ->
             <:assoc< $anti:mk_anti ~c:"patt" n s$ when $w$ -> $e$ >>
         | p = patt_as_patt_opt; w = opt_when_expr; "->"; e = expr -> <:assoc< $p$ when $w$ -> $e$ >>
-        | -> <:assoc<>>
       ] ]
     ;
     opt_when_expr:
@@ -907,9 +909,7 @@ Old (no more supported) syntax:
       ] ]
     ;
     constructor_declarations:
-      [ [ t1 = SELF; "|"; t2 = SELF -> <:ctyp< $t1$ | $t2$ >>
-        | t = constructor_declaration -> t
-      ] ]
+      [ [ l = LIST1 constructor_declaration SEP "|" -> Ast.tyOr_of_list l ] ]
     ;
     constructor_declaration:
       [ [ `ANTIQUOT (""|"typ" as n) s ->

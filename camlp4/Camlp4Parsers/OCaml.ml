@@ -252,7 +252,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
           | None -> raise Stream.Failure ]
         in
         match Stream.peek strm with
-        [ Some ((KEYWORD "[" | (LIDENT _ | UIDENT _)), _) -> skip_simple_ctyp 1
+        [ Some ((KEYWORD "[" | LIDENT _ | UIDENT _), _) -> skip_simple_ctyp 1
         | Some (KEYWORD "object", _) -> raise Stream.Failure
         | _ -> 1 ])
   ;
@@ -369,19 +369,19 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
   clear sem_expr;
   clear label_declaration;
   clear star_ctyp;
+  clear assoc;
 
   DELETE_RULE Gram value_let: "value" END;
   DELETE_RULE Gram value_val: "value" END;
   DELETE_RULE Gram str_item: value_let; opt_rec; binding END;
   DELETE_RULE Gram module_type: "'"; a_ident END;
-  DELETE_RULE Gram assoc: END;
   DELETE_RULE Gram label_expr: label_longident; fun_binding END;
 
   EXTEND Gram
     GLOBAL:
       a_CHAR a_FLOAT a_INT a_INT32 a_INT64 a_LABEL a_LIDENT
       a_LIDENT_or_operator a_NATIVEINT a_OPTLABEL a_STRING a_UIDENT a_ident
-      amp_ctyp and_ctyp assoc assoc_quot binding binding_quot
+      amp_ctyp and_ctyp assoc assoc0 assoc_quot binding binding_quot
       class_declaration class_description class_expr class_expr_quot
       class_fun_binding class_fun_def class_info_for_class_expr
       class_info_for_class_type class_longident class_longident_and_param
@@ -593,6 +593,9 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
             <:ident< $uid:i$.$lid:j$ >>
         | i = a_UIDENT; "."; j = SELF -> <:ident< $uid:i$.$j$ >> ] ]
     ;
+    assoc:
+      [ [ l = LIST1 assoc0 SEP "|" -> Ast.asOr_of_list l ] ]
+    ;
     (* Patterns *)
     patt:
       [ "as" LEFTA
@@ -689,6 +692,14 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     class_type_plus:
       [ [ test_ctyp_minusgreater; t = ctyp LEVEL "star"; "->"; ct = SELF ->
             <:class_type< [ $t$ ] -> $ct$ >>
+        | "~"; i = a_LIDENT; ":"; t = ctyp LEVEL "star"; "->"; ct = SELF ->
+            <:class_type< [ ~ $i$ : $t$ ] -> $ct$ >>
+        | i = LABEL (* FIXME inlie a_LABEL *); t =  ctyp LEVEL "star"; "->"; ct = SELF ->
+            <:class_type< [ ~ $i$ : $t$ ] -> $ct$ >>
+        | "?"; i = a_LIDENT; ":"; t = ctyp LEVEL "star"; "->"; ct = SELF ->
+            <:class_type< [ ? $i$ : $t$ ] -> $ct$ >> 
+        | i = OPTLABEL (* FIXME inline a_OPTLABEL *); t = ctyp LEVEL "star"; "->"; ct = SELF ->
+            <:class_type< [ ? $i$ : $t$ ] -> $ct$ >>
         | ct = class_type -> ct ] ]
     ;
     class_type_longident_and_param:

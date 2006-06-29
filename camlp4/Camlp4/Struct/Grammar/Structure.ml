@@ -81,6 +81,14 @@ module type S = sig
     (option position * list single_extend_statment);
   type delete_statment = list symbol;
 
+  type fold 'a 'b 'c =
+    internal_entry -> list symbol ->
+      (Stream.t 'a -> 'b) -> Stream.t 'a -> 'c;
+
+  type foldsep 'a 'b 'c =
+    internal_entry -> list symbol ->
+      (Stream.t 'a -> 'b) -> (Stream.t 'a -> unit) -> Stream.t 'a -> 'c;
+
   (* Accessors *)
   value get_filter : gram -> Token.Filter.t;
 
@@ -157,6 +165,15 @@ module Make (Lexer  : Sig.Lexer.S) = struct
   type extend_statment =
     (option position * list single_extend_statment);
   type delete_statment = list symbol;
+
+  type fold 'a 'b 'c =
+    internal_entry -> list symbol ->
+      (Stream.t 'a -> 'b) -> Stream.t 'a -> 'c;
+
+  type foldsep 'a 'b 'c =
+    internal_entry -> list symbol ->
+      (Stream.t 'a -> 'b) -> (Stream.t 'a -> unit) -> Stream.t 'a -> 'c;
+
   value get_filter g = g.gfilter;
 
   type not_filtered 'a = 'a;
@@ -247,8 +264,6 @@ value is_level_labelled n lev =
   [ Some n1 -> n = n1
   | None -> False ]
 ;
-
-value symb_failed_txt e s1 s2 = symb_failed e 0 s1 s2;
 
 value tokens g con =
   let list = ref [] in

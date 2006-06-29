@@ -62,4 +62,13 @@ module type S = sig
   type extend_statment =
     (option position * list single_extend_statment);
   type delete_statment = list symbol;
+
+  type fold 'a 'b 'c =
+    internal_entry -> list symbol ->
+      (Stream.t 'a -> 'b) -> Stream.t 'a -> 'c;
+
+  type foldsep 'a 'b 'c =
+    internal_entry -> list symbol ->
+      (Stream.t 'a -> 'b) -> (Stream.t 'a -> unit) -> Stream.t 'a -> 'c;
+
 end;

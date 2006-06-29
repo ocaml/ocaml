@@ -52,6 +52,7 @@ module Make (Warning : Sig.Warning.S)
   value amp_ctyp = Gram.Entry.mk "amp_ctyp";
   value and_ctyp = Gram.Entry.mk "and_ctyp";
   value assoc = Gram.Entry.mk "assoc";
+  value assoc0 = Gram.Entry.mk "assoc0";
   value binding = Gram.Entry.mk "binding";
   value class_declaration = Gram.Entry.mk "class_declaration";
   value class_description = Gram.Entry.mk "class_description";

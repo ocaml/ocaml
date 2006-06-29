@@ -128,4 +128,6 @@ value symb_failed entry prev_symb_result prev_symb symb =
   tree_failed entry prev_symb_result prev_symb tree
 ;
 
+value symb_failed_txt e s1 s2 = symb_failed e 0 s1 s2;
+
 end;

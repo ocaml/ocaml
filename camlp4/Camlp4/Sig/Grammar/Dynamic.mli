@@ -68,6 +68,10 @@ module type S = sig
   value delete_rule : Entry.t 'a -> delete_statment -> unit;
 
   value srules      : Entry.t 'a -> list (list symbol * Action.t) -> symbol;
+  value sfold0      : ('a -> 'b -> 'b) -> 'b -> fold _ 'a 'b;
+  value sfold1      : ('a -> 'b -> 'b) -> 'b -> fold _ 'a 'b;
+  value sfold0sep   : ('a -> 'b -> 'b) -> 'b -> foldsep _ 'a 'b;
+  (* value sfold1sep : ('a -> 'b -> 'b) -> 'b -> foldsep _ 'a 'b; *)
 
   (** Use the lexer to produce a non filtered token stream from a char stream. *)
   value lex : gram -> Loc.t -> Stream.t char

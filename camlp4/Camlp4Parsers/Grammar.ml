@@ -322,7 +322,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
             tl <:expr< [] >>
         in
         <:expr<
-          $uid:gm$.Smeta $str:n$ $el$ (Obj.repr ($make_ctyp_expr t tvar e$)) >>
+          $uid:gm$.Smeta $str:n$ $el$ ($uid:gm$.Action.mk ($make_ctyp_expr t tvar e$)) >>
     | TXlist _loc min t ts ->
         let txt = make_expr entry "" t.text in
         match (min, ts) with
@@ -823,6 +823,43 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
             sslist _loc min sep s
         | UIDENT "SOPT"; s = SELF ->
             ssopt _loc s ] ]
+    ;
+  END;
+
+  value sfold _loc n foldfun f e s =
+    let styp = STquo _loc (new_type_var ()) in
+    let e = <:expr< $uid:gm$.$lid:foldfun$ $f$ $e$ >> in
+    let t = STapp _loc (STapp _loc (STtyp <:ctyp< $uid:gm$.fold _ >>) s.styp) styp in
+    {used = s.used; text = TXmeta _loc n [s.text] e t; styp = styp; pattern = None }
+  ;
+
+  value sfoldsep _loc n foldfun f e s sep =
+    let styp = STquo _loc (new_type_var ()) in
+    let e = <:expr< $uid:gm$.$lid:foldfun$ $f$ $e$ >> in
+    let t =
+      STapp _loc (STapp _loc (STtyp <:ctyp< $uid:gm$.foldsep _ >>) s.styp) styp
+    in
+    {used = s.used @ sep.used; text = TXmeta _loc n [s.text; sep.text] e t;
+    styp = styp; pattern = None}
+  ;
+
+  EXTEND Gram
+    GLOBAL: symbol;
+    symbol: LEVEL "top"
+      [ [ UIDENT "FOLD0"; f = simple_expr; e = simple_expr; s = SELF ->
+            sfold _loc "FOLD0" "sfold0" f e s
+        | UIDENT "FOLD1"; f = simple_expr; e = simple_expr; s = SELF ->
+            sfold _loc "FOLD1" "sfold1" f e s
+        | UIDENT "FOLD0"; f = simple_expr; e = simple_expr; s = SELF;
+          UIDENT "SEP"; sep = symbol ->
+            sfoldsep _loc "FOLD0 SEP" "sfold0sep" f e s sep
+        | UIDENT "FOLD1"; f = simple_expr; e = simple_expr; s = SELF;
+          UIDENT "SEP"; sep = symbol ->
+            sfoldsep _loc "FOLD1 SEP" "sfold1sep" f e s sep ] ]
+    ;
+    simple_expr:
+      [ [ i = a_LIDENT -> <:expr< $lid:i$ >>
+        | "("; e = expr; ")" -> e ] ]
     ;
   END;
 

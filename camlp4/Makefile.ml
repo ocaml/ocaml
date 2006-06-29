@@ -157,6 +157,7 @@ let camlp4_package =
         ocaml_IModule ~impl_flags:"-rectypes" "Print";
         ocaml_Module "Failed";
         ocaml_Module "Parser";
+        ocaml_IModule "Fold";
         ocaml_Module "Insert";
         ocaml_Module "Delete";
         ocaml_Module "Entry";
@@ -205,6 +206,7 @@ let camlp4_printers =
     ocaml_Module "DumpCamlp4Ast";
     ocaml_Module "OCaml";
     ocaml_Module "OCamlr";
+    ocaml_Module "Null";
   ])
 
 let camlp4_filters =
@@ -344,22 +346,22 @@ let try_cp src dest = if Sys.file_exists src then cp src dest
 
 let doc () =
   let revised_to_ocaml f =
-    run ["./camlp4boot.run pr_o.cmo -o "^f^".ml -impl "^f^".ml4"] in
+    run ["./camlp4boot.run -printer OCaml -o "^f^".ml -impl "^f^".ml4"] in
   let ocamldoc title fl =
     run (("cd doc && ../../ocamldoc/ocamldoc -html -I ../../parsing "^
-          "-I ../build -I ../../utils -I .. -dump ocamldoc.out -t '"^title^"'") :: fl) in
+          "-I ../build -I ../../utils -I .. -rectypes -dump ocamldoc.out -t '"^title^"'") :: fl) in
   let ppf_of_file f = formatter_of_out_channel (open_out f) in
-  print_packed_sources (ppf_of_file "doc/Camlp4.ml4") camlp4_package;
+  (* print_packed_sources (ppf_of_file "doc/Camlp4.ml4") camlp4_package;
   print_packed_sources (ppf_of_file "doc/Camlp4Parsers.ml4") camlp4_parsers;
   print_packed_sources (ppf_of_file "doc/Camlp4Filters.ml4") camlp4_filters;
   print_packed_sources (ppf_of_file "doc/Camlp4Top.ml4") camlp4_top;
   revised_to_ocaml "doc/Camlp4";
   sed "(\\*___CAMLP4_LEXER___" "" "doc/Camlp4.ml";
-  sed "___CAMLP4_LEXER___\\*)" "" "doc/Camlp4.ml";
+  sed "___CAMLP4_LEXER___\\+|" "" "doc/Camlp4.ml";
   sed "^ *# [0-9]\\+.*$" "" "doc/Camlp4.ml";
   revised_to_ocaml "doc/Camlp4Parsers";
   revised_to_ocaml "doc/Camlp4Filters";
-  revised_to_ocaml "doc/Camlp4Top";
+  revised_to_ocaml "doc/Camlp4Top";                                             *)
   ocamldoc "Camlp4 a Pre-Processor-Pretty-Printer for Objective Caml"
            ["Camlp4.ml"; "Camlp4Parsers.ml";
             "Camlp4Filters.ml"; "Camlp4Top.ml"]

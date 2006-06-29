@@ -23,6 +23,7 @@ module Make (Lexer : Sig.Lexer.S)
   module Structure = Structure.Make Lexer;
   module Delete = Delete.Make Structure;
   module Insert = Insert.Make Structure;
+  module Fold = Fold.Make Structure;
   include Structure;
 
   value gram =
@@ -73,6 +74,10 @@ module Make (Lexer : Sig.Lexer.S)
       DeadEnd rl
     in
     Stree t;
+  value sfold0 = Fold.sfold0;
+  value sfold1 = Fold.sfold1;
+  value sfold0sep = Fold.sfold0sep;
+  (* value sfold1sep = Fold.sfold1sep; *)
 
   value extend = Insert.extend;
 
