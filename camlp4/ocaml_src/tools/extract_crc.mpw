@@ -1,3 +1,0 @@
-# $Id$
-
-"{OTOP}boot:ocamlrun" "{OTOP}otherlibs:dynlink:extract_crc" {"parameters"}
