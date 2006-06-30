@@ -504,7 +504,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     | <:expr< ( $tup:e$ ) >> ->
         pp f "@[<1>(%a)@]" o#expr e
     | <:expr< [| $e$ |] >> ->
-        pp f "@[<0>@[<2>[|@ %a@]@ |]@]" o#expr e 
+        pp f "@[<0>@[<2>[|@ %a@]@ |]@]" o#under_semi#expr e 
     | <:expr< ($e$ :> $t$) >> ->
         pp f "@[<2>(%a :>@ %a)@]" o#expr e o#ctyp t
     | <:expr< ($e$ : $t1$ :> $t2$) >> ->
