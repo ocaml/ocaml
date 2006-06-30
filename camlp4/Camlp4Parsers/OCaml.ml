@@ -594,7 +594,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
         | i = a_UIDENT; "."; j = SELF -> <:ident< $uid:i$.$j$ >> ] ]
     ;
     match_case:
-      [ [ l = LIST1 match_case0 SEP "|" -> Ast.asOr_of_list l ] ]
+      [ [ l = LIST1 match_case0 SEP "|" -> Ast.mcOr_of_list l ] ]
     ;
     (* Patterns *)
     patt:

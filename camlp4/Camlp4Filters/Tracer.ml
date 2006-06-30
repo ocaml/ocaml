@@ -38,17 +38,17 @@ module Make (AstFilters : Camlp4.Sig.AstFilters.S) = struct
                     else ();
                     $e$ } >>;
 
-  value rec map_match_rule =
+  value rec map_match_case =
     fun
     [ <:match_case@_loc< $m1$ | $m2$ >> ->
-        <:match_case< $map_match_rule m1$ | $map_match_rule m2$ >>
+        <:match_case< $map_match_case m1$ | $map_match_case m2$ >>
     | <:match_case@_loc< $p$ when $w$ -> $e$ >> ->
         <:match_case@_loc< $p$ when $w$ -> $add_debug_expr e$ >>
     | m -> m ]
 
   and map_expr =
     fun
-    [ <:expr@_loc< fun [ $m$ ] >> -> <:expr< fun [ $map_match_rule m$ ] >>
+    [ <:expr@_loc< fun [ $m$ ] >> -> <:expr< fun [ $map_match_case m$ ] >>
     | x -> x ];
 
   register_str_item_filter (new Ast.c_expr map_expr)#str_item;

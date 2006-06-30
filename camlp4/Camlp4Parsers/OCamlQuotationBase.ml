@@ -105,7 +105,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S)
             | "listident" -> <:expr< Ast.idAcc_of_list $e$ >>
             | "listctypand" -> <:expr< Ast.tyAnd_of_list $e$ >>
             | "listwith_constr" -> <:expr< Ast.wcAnd_of_list $e$ >>
-            | "listmatch_case" -> <:expr< Ast.asOr_of_list $e$ >>
+            | "listmatch_case" -> <:expr< Ast.mcOr_of_list $e$ >>
             | "listpatt;" -> <:expr< Ast.paSem_of_list $e$ >>
             | "antisig_item" -> <:expr< Ast.SgAnt $mloc _loc$ $e$ >>
             | "antistr_item" -> <:expr< Ast.StAnt $mloc _loc$ $e$ >>

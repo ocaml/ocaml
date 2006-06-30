@@ -654,7 +654,7 @@ Old (no more supported) syntax:
         | ":>"; t = ctyp; "="; e = expr -> <:expr< ($e$ :> $t$) >> ] ]
     ;
     match_case:
-      [ [ l = LIST0 match_case0 SEP "|" -> Ast.asOr_of_list l ] ]
+      [ [ l = LIST0 match_case0 SEP "|" -> Ast.mcOr_of_list l ] ]
     ;
     match_case0:
       [ [ `ANTIQUOT ("match_case"|"list" as n) s ->

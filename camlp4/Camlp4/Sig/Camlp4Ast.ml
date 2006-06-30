@@ -446,7 +446,7 @@ module type S = sig
   value wcAnd_of_list : list with_constr -> with_constr;
   value meApp_of_list : list module_expr -> module_expr;
   value mbAnd_of_list : list module_binding -> module_binding;
-  value asOr_of_list : list match_case -> match_case;
+  value mcOr_of_list : list match_case -> match_case;
   value idAcc_of_list : list ident -> ident;
   value idApp_of_list : list ident -> ident;
   value exSem_of_list : list expr -> expr;

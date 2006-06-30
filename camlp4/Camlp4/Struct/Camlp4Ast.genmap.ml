@@ -179,13 +179,13 @@ module Make (Loc : Sig.Loc.S)
         let _loc = loc_of_ident i in
         <:ident< $i$ $idApp_of_list is$ >> ];
 
-  value rec asOr_of_list =
+  value rec mcOr_of_list =
     fun
     [ [] -> <:match_case@ghost<>>
     | [x] -> x
     | [x::xs] ->
         let _loc = loc_of_match_case x in
-        <:match_case< $x$ | $asOr_of_list xs$ >> ];
+        <:match_case< $x$ | $mcOr_of_list xs$ >> ];
 
   value rec mbAnd_of_list =
     fun

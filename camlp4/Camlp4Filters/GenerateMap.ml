@@ -187,10 +187,10 @@ module Make (AstFilters : Camlp4.Sig.AstFilters.S) = struct
         patt_of_constructor t2 (patt_of_constructor t1 (i, acc))
     | _ -> (succ i, <:patt< $acc$ $lid:xi i$ >>) ]
 
-  and match_rule_of_sum_type =
+  and match_case_of_sum_type =
     fun
     [ <:ctyp< $t1$ | $t2$ >> ->
-         <:match_case< $match_rule_of_sum_type t1$ | $match_rule_of_sum_type t2$ >>
+         <:match_case< $match_case_of_sum_type t1$ | $match_case_of_sum_type t2$ >>
     | <:ctyp< $uid:s$ of $t$ >> ->
          <:match_case< $pat:snd (patt_of_constructor t (0, <:patt< $uid:s$ >>))$
                -> $snd (expr_of_constructor t (0, <:expr< $uid:s$ >>))$ >>
@@ -217,7 +217,7 @@ module Make (AstFilters : Camlp4.Sig.AstFilters.S) = struct
   and fun_of_ctyp =
     fun
     [ <:ctyp< [ $t$ ] >> ->
-        <:expr< fun [ $match_rule_of_sum_type t$ ] >>
+        <:expr< fun [ $match_case_of_sum_type t$ ] >>
     | <:ctyp< { $t$ } >> ->
         <:expr< fun { $record_patt_of_type t$ } -> { $record_binding_of_type t$ } >>
     | <:ctyp< ( $tup:t$ ) >> -> mk_tuple expr_of_ty t
