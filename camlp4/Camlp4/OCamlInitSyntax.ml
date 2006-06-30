@@ -51,8 +51,8 @@ module Make (Warning : Sig.Warning.S)
   value a_ident = Gram.Entry.mk "a_ident";
   value amp_ctyp = Gram.Entry.mk "amp_ctyp";
   value and_ctyp = Gram.Entry.mk "and_ctyp";
-  value assoc = Gram.Entry.mk "assoc";
-  value assoc0 = Gram.Entry.mk "assoc0";
+  value match_case = Gram.Entry.mk "match_case";
+  value match_case0 = Gram.Entry.mk "match_case0";
   value binding = Gram.Entry.mk "binding";
   value class_declaration = Gram.Entry.mk "class_declaration";
   value class_description = Gram.Entry.mk "class_description";
@@ -184,7 +184,7 @@ module Make (Warning : Sig.Warning.S)
   value class_expr_quot = Gram.Entry.mk "quotation of class expression";
   value with_constr_quot = Gram.Entry.mk "quotation of with constraint";
   value binding_quot = Gram.Entry.mk "quotation of binding";
-  value assoc_quot = Gram.Entry.mk "quotation of assoc (try/match/function case)";
+  value match_case_quot = Gram.Entry.mk "quotation of match_case (try/match/function case)";
   value module_binding_quot = Gram.Entry.mk "quotation of module rec binding";
   value ident_quot = Gram.Entry.mk "quotation of identifier";
 

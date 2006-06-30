@@ -261,21 +261,21 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
           (* FIXME when the Format module will fixed.
                   pp_print_if_newline f ();
                   pp_print_string f "| "; *)
-    method assoc f =
+    method match_case f =
       fun
-      [ <:assoc@_loc<>> ->
+      [ <:match_case@_loc<>> ->
           pp f "@[<2>_@ ->@ %a@]" o#raise_match_failure _loc
-      | a -> o#assoc_aux f a ];
+      | a -> o#match_case_aux f a ];
 
-    method assoc_aux f =
+    method match_case_aux f =
       fun
-      [ <:assoc<>> -> ()
-      | <:assoc< $anti:s$ >> -> o#anti f s
-      | <:assoc< $a1$ | $a2$ >> ->
-          pp f "%a%a" o#assoc_aux a1 o#assoc_aux a2
-      | <:assoc< $p$ -> $e$ >> ->
+      [ <:match_case<>> -> ()
+      | <:match_case< $anti:s$ >> -> o#anti f s
+      | <:match_case< $a1$ | $a2$ >> ->
+          pp f "%a%a" o#match_case_aux a1 o#match_case_aux a2
+      | <:match_case< $p$ -> $e$ >> ->
           pp f "@ | @[<2>%a@ ->@ %a@]" o#patt p o#under_pipe#expr e
-      | <:assoc< $p$ when $w$ -> $e$ >> ->
+      | <:match_case< $p$ when $w$ -> $e$ >> ->
           pp f "@ | @[<2>%a@ when@ %a@ ->@ %a@]"
             o#patt p o#under_pipe#expr w o#under_pipe#expr e ];
 
@@ -455,7 +455,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     | <:expr< fun $p$ -> $e$ >> when is_irrefut_patt p ->
         pp f "@[<2>fun@ %a@]" o#patt_expr_fun_args (p, e)
     | <:expr< fun [ $a$ ] >> ->
-        pp f "@[<hv0>function%a@]" o#assoc a
+        pp f "@[<hv0>function%a@]" o#match_case a
     | <:expr< if $e1$ then $e2$ else $e3$ >> ->
         pp f "@[<hv0>@[<2>if@ %a@]@ @[<2>then@ %a@]@ @[<2>else@ %a@]@]"
            o#expr e1 o#under_semi#expr e2 o#under_semi#expr e3
@@ -470,10 +470,10 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
               o#rec_flag r o#binding bi o#reset_semi#expr e ]
     | <:expr< match $e$ with [ $a$ ] >> ->
         pp f "@[<hv0>@[<hv0>@[<2>match %a@]@ with@]%a@]"
-          o#expr e o#assoc a
+          o#expr e o#match_case a
     | <:expr< try $e$ with [ $a$ ] >> ->
         pp f "@[<0>@[<hv2>try@ %a@]@ @[<0>with%a@]@]"
-          o#expr e o#assoc a
+          o#expr e o#match_case a
     | <:expr< assert False >> -> pp f "@[<2>assert@ false@]"
     | <:expr< assert $e$ >> -> pp f "@[<2>assert@ %a@]" o#expr e
     | <:expr< let module $s$ = $me$ in $e$ >> ->

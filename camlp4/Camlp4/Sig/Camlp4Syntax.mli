@@ -54,9 +54,9 @@ module type S = sig
   value a_ident : Gram.Entry.t string;
   value amp_ctyp : Gram.Entry.t Ast.ctyp;
   value and_ctyp : Gram.Entry.t Ast.ctyp;
-  value assoc : Gram.Entry.t Ast.assoc;
-  value assoc0 : Gram.Entry.t Ast.assoc;
-  value assoc_quot : Gram.Entry.t Ast.assoc;
+  value match_case : Gram.Entry.t Ast.match_case;
+  value match_case0 : Gram.Entry.t Ast.match_case;
+  value match_case_quot : Gram.Entry.t Ast.match_case;
   value binding : Gram.Entry.t Ast.binding;
   value binding_quot : Gram.Entry.t Ast.binding;
   value class_declaration : Gram.Entry.t Ast.class_expr;

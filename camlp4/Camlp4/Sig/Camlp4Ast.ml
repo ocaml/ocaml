@@ -131,7 +131,7 @@ module type S = sig
     | ExFlo of Loc.t and string (* 3.14 *)
       (* for s = e to/downto e do { e } *)
     | ExFor of Loc.t and string and expr and expr and meta_bool and expr
-    | ExFun of Loc.t and assoc (* fun [ a ] *)
+    | ExFun of Loc.t and match_case (* fun [ a ] *)
     | ExIfe of Loc.t and expr and expr and expr (* if e then e else e *)
     | ExInt of Loc.t and string (* 42 *)
     | ExInt32 of Loc.t and string
@@ -144,7 +144,7 @@ module type S = sig
       (* let module s = me in e *)
     | ExLmd of Loc.t and string and module_expr and expr
       (* match e with [ a ] *)
-    | ExMat of Loc.t and expr and assoc
+    | ExMat of Loc.t and expr and match_case
       (* new i *)
     | ExNew of Loc.t and ident
       (* object ((p))? (cst)? end *)
@@ -164,7 +164,7 @@ module type S = sig
       (* s *) (* "foo" *)
     | ExStr of Loc.t and string
       (* try e with [ a ] *)
-    | ExTry of Loc.t and expr and assoc
+    | ExTry of Loc.t and expr and match_case
       (* (e) *)
     | ExTup of Loc.t and expr
       (* e, e *)
@@ -245,13 +245,13 @@ module type S = sig
       (* s : mt *)
     | MbCol  of Loc.t and string and module_type
     | MbAnt of Loc.t and string (* $s$ *) ]
-  and assoc =
-    [ AsNil of Loc.t
+  and match_case =
+    [ McNil of Loc.t
       (* a | a *)
-    | AsOr of Loc.t and assoc and assoc
+    | McOr of Loc.t and match_case and match_case
       (* p (when e)? -> e *)
-    | AsArr of Loc.t and patt and expr and expr
-    | AsAnt of Loc.t and string (* $s$ *) ]
+    | McArr of Loc.t and patt and expr and expr
+    | McAnt of Loc.t and string (* $s$ *) ]
   and module_expr =
       (* i *)
     [ MeId  of Loc.t and ident
@@ -382,7 +382,7 @@ module type S = sig
   value loc_of_with_constr : with_constr -> Loc.t;
   value loc_of_binding : binding -> Loc.t;
   value loc_of_module_binding : module_binding -> Loc.t;
-  value loc_of_assoc : assoc -> Loc.t;
+  value loc_of_match_case : match_case -> Loc.t;
   value loc_of_ident : ident -> Loc.t;
 
   (** See {!Ast.S.map}. *)
@@ -406,7 +406,7 @@ module type S = sig
     method with_constr : with_constr -> with_constr;
     method binding : binding -> binding;
     method module_binding : module_binding -> module_binding;
-    method assoc : assoc -> assoc;
+    method match_case : match_case -> match_case;
     method ident : ident -> ident;
   end;
 
@@ -446,7 +446,7 @@ module type S = sig
   value wcAnd_of_list : list with_constr -> with_constr;
   value meApp_of_list : list module_expr -> module_expr;
   value mbAnd_of_list : list module_binding -> module_binding;
-  value asOr_of_list : list assoc -> assoc;
+  value asOr_of_list : list match_case -> match_case;
   value idAcc_of_list : list ident -> ident;
   value idApp_of_list : list ident -> ident;
   value exSem_of_list : list expr -> expr;
@@ -465,7 +465,7 @@ module type S = sig
   value list_of_class_expr : class_expr -> list class_expr -> list class_expr;
   value list_of_module_expr : module_expr -> list module_expr -> list module_expr;
   value list_of_module_binding : module_binding -> list module_binding -> list module_binding;
-  value list_of_assoc : assoc -> list assoc -> list assoc;
+  value list_of_match_case : match_case -> list match_case -> list match_case;
   value list_of_ident : ident -> list ident -> list ident;
 
   (** Like [String.escape] but takes care to not
@@ -503,7 +503,7 @@ module ToAst (M : S) : Ast.S
    and type class_str_item = M.class_str_item
    and type binding = M.binding
    and type module_binding = M.module_binding
-   and type assoc = M.assoc
+   and type match_case = M.match_case
    and type ident = M.ident
 = M;
 
@@ -615,7 +615,7 @@ module Make (Loc : Type.S) = struct
     | ExFlo of Loc.t and string (* 3.14 *)
       (* for s = e to/downto e do { e } *)
     | ExFor of Loc.t and string and expr and expr and meta_bool and expr
-    | ExFun of Loc.t and assoc (* fun [ a ] *)
+    | ExFun of Loc.t and match_case (* fun [ a ] *)
     | ExIfe of Loc.t and expr and expr and expr (* if e then e else e *)
     | ExInt of Loc.t and string (* 42 *)
     | ExInt32 of Loc.t and string
@@ -628,7 +628,7 @@ module Make (Loc : Type.S) = struct
       (* let module s = me in e *)
     | ExLmd of Loc.t and string and module_expr and expr
       (* match e with [ a ] *)
-    | ExMat of Loc.t and expr and assoc
+    | ExMat of Loc.t and expr and match_case
       (* new i *)
     | ExNew of Loc.t and ident
       (* object ((p))? (cst)? end *)
@@ -648,7 +648,7 @@ module Make (Loc : Type.S) = struct
       (* s *) (* "foo" *)
     | ExStr of Loc.t and string
       (* try e with [ a ] *)
-    | ExTry of Loc.t and expr and assoc
+    | ExTry of Loc.t and expr and match_case
       (* (e) *)
     | ExTup of Loc.t and expr
       (* e, e *)
@@ -729,13 +729,13 @@ module Make (Loc : Type.S) = struct
       (* s : mt *)
     | MbCol  of Loc.t and string and module_type
     | MbAnt of Loc.t and string (* $s$ *) ]
-  and assoc =
-    [ AsNil of Loc.t
+  and match_case =
+    [ McNil of Loc.t
       (* a | a *)
-    | AsOr of Loc.t and assoc and assoc
+    | McOr of Loc.t and match_case and match_case
       (* p (when e)? -> e *)
-    | AsArr of Loc.t and patt and expr and expr
-    | AsAnt of Loc.t and string (* $s$ *) ]
+    | McArr of Loc.t and patt and expr and expr
+    | McAnt of Loc.t and string (* $s$ *) ]
   and module_expr =
       (* i *)
     [ MeId  of Loc.t and ident

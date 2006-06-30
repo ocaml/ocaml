@@ -369,7 +369,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
   clear sem_expr;
   clear label_declaration;
   clear star_ctyp;
-  clear assoc;
+  clear match_case;
 
   DELETE_RULE Gram value_let: "value" END;
   DELETE_RULE Gram value_val: "value" END;
@@ -381,7 +381,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     GLOBAL:
       a_CHAR a_FLOAT a_INT a_INT32 a_INT64 a_LABEL a_LIDENT
       a_LIDENT_or_operator a_NATIVEINT a_OPTLABEL a_STRING a_UIDENT a_ident
-      amp_ctyp and_ctyp assoc assoc0 assoc_quot binding binding_quot
+      amp_ctyp and_ctyp match_case match_case0 match_case_quot binding binding_quot
       class_declaration class_description class_expr class_expr_quot
       class_fun_binding class_fun_def class_info_for_class_expr
       class_info_for_class_type class_longident class_longident_and_param
@@ -448,13 +448,13 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
         | "let"; "module"; m = a_UIDENT; mb = module_binding0; "in";
           e = expr LEVEL ";" ->
             <:expr< let module $m$ = $mb$ in $e$ >>
-        | "function"; OPT "|"; a = assoc ->
+        | "function"; OPT "|"; a = match_case ->
             <:expr< fun [ $a$ ] >>
         | "fun"; p = labeled_ipatt; e = fun_def ->
             <:expr< fun $p$ -> $e$ >>
-        | "match"; e = SELF; "with"; OPT "|"; a = assoc ->
+        | "match"; e = SELF; "with"; OPT "|"; a = match_case ->
             <:expr< match $e$ with [ $a$ ] >>
-        | "try"; e = SELF; "with"; OPT "|"; a = assoc ->
+        | "try"; e = SELF; "with"; OPT "|"; a = match_case ->
             <:expr< try $e$ with [ $a$ ] >>
         | "if"; e1 = SELF; "then"; e2 = expr LEVEL "top";
           "else"; e3 = expr LEVEL "top" ->
@@ -593,8 +593,8 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
             <:ident< $uid:i$.$lid:j$ >>
         | i = a_UIDENT; "."; j = SELF -> <:ident< $uid:i$.$j$ >> ] ]
     ;
-    assoc:
-      [ [ l = LIST1 assoc0 SEP "|" -> Ast.asOr_of_list l ] ]
+    match_case:
+      [ [ l = LIST1 match_case0 SEP "|" -> Ast.asOr_of_list l ] ]
     ;
     (* Patterns *)
     patt:

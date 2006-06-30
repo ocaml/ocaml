@@ -617,7 +617,7 @@ module Make (Ast : Sig.Camlp4Ast.S) = struct
     | <:expr@loc< fun [ $PaOlb _ lab po$ when $w$ -> $e$ ] >> ->
         mkexp loc
           (Pexp_function ("?" ^ lab) None [(patt_of_lab loc lab po, when_expr e w)])
-    | ExFun loc a -> mkexp loc (Pexp_function "" None (assoc a []))
+    | ExFun loc a -> mkexp loc (Pexp_function "" None (match_case a []))
     | ExIfe loc e1 e2 e3 ->
         mkexp loc (Pexp_ifthenelse (expr e1) (expr e2) (Some (expr e3)))
     | ExInt loc s ->
@@ -641,7 +641,7 @@ module Make (Ast : Sig.Camlp4Ast.S) = struct
     | ExLet loc rf bi e ->
         mkexp loc (Pexp_let (mkrf rf) (binding bi []) (expr e))
     | ExLmd loc i me e -> mkexp loc (Pexp_letmodule i (module_expr me) (expr e))
-    | ExMat loc e a -> mkexp loc (Pexp_match (expr e) (assoc a []))
+    | ExMat loc e a -> mkexp loc (Pexp_match (expr e) (match_case a []))
     | ExNew loc id -> mkexp loc (Pexp_new (long_type_ident id))
     | ExObj loc po cfl -> 
         let p =
@@ -679,7 +679,7 @@ module Make (Ast : Sig.Camlp4Ast.S) = struct
             [("", expr e1); ("", expr e2)])
     | ExStr loc s ->
         mkexp loc (Pexp_constant (Const_string (string_of_string_token loc s)))
-    | ExTry loc e a -> mkexp loc (Pexp_try (expr e) (assoc a []))
+    | ExTry loc e a -> mkexp loc (Pexp_try (expr e) (match_case a []))
     | <:expr@loc< ($e1$, $e2$) >> ->
          mkexp loc (Pexp_tuple (List.map expr (list_of_expr e1 (list_of_expr e2 [])))) 
     | <:expr@loc< ($tup:_$) >> -> error loc "singleton tuple"
@@ -717,12 +717,12 @@ module Make (Ast : Sig.Camlp4Ast.S) = struct
          binding x (binding y acc)
     | <:binding< $p$ = $e$ >> -> [(patt p, expr e) :: acc]
     | _ -> assert False ]
-  and assoc x acc =
+  and match_case x acc =
     match x with
-    [ <:assoc< $x$ | $y$ >> -> assoc x (assoc y acc)
-    | <:assoc< $pat:p$ when $w$ -> $e$ >> ->
+    [ <:match_case< $x$ | $y$ >> -> match_case x (match_case y acc)
+    | <:match_case< $pat:p$ when $w$ -> $e$ >> ->
         [(patt p, when_expr e w) :: acc]
-    | <:assoc<>> -> acc
+    | <:match_case<>> -> acc
     | _ -> assert False ]
   and when_expr e w =
     match w with

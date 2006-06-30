@@ -43,14 +43,14 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     value value_let = "value";
     value mode = if comments then `comments else `no_comments;
     value curry_constr = curry_constr;
-    value first_assoc = True;
+    value first_match_case = True;
 
     method under_pipe = o;
     method under_semi = o;
     method reset_semi = o;
     method reset = o;
-    method private unset_first_assoc = {< first_assoc = False >};
-    method private set_first_assoc = {< first_assoc = True >};
+    method private unset_first_match_case = {< first_match_case = False >};
+    method private set_first_match_case = {< first_match_case = True >};
 
     method var f =
       fun
@@ -75,22 +75,22 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
       | [x] -> pp f "%a@ " o#ctyp x
       | l -> pp f "@[<1>%a@]@ " (list o#ctyp "@ ") l ];
 
-    method assoc f =
+    method match_case f =
       fun
-      [ <:assoc<>> -> pp f "@ []"
-      | m -> pp f "@ [ %a ]" o#set_first_assoc#assoc_aux m ];
+      [ <:match_case<>> -> pp f "@ []"
+      | m -> pp f "@ [ %a ]" o#set_first_match_case#match_case_aux m ];
 
-    method assoc_aux f =
+    method match_case_aux f =
       fun
-      [ <:assoc<>> -> ()
-      | <:assoc< $anti:s$ >> -> o#anti f s
-      | <:assoc< $a1$ | $a2$ >> ->
-          pp f "%a%a" o#assoc_aux a1 o#unset_first_assoc#assoc_aux a2
-      | <:assoc< $p$ -> $e$ >> ->
-          let () = if first_assoc then () else pp f "@ | " in
+      [ <:match_case<>> -> ()
+      | <:match_case< $anti:s$ >> -> o#anti f s
+      | <:match_case< $a1$ | $a2$ >> ->
+          pp f "%a%a" o#match_case_aux a1 o#unset_first_match_case#match_case_aux a2
+      | <:match_case< $p$ -> $e$ >> ->
+          let () = if first_match_case then () else pp f "@ | " in
           pp f "@[<2>%a@ ->@ %a@]" o#patt p o#under_pipe#expr e
-      | <:assoc< $p$ when $w$ -> $e$ >> ->
-          let () = if first_assoc then () else pp f "@ | " in
+      | <:match_case< $p$ when $w$ -> $e$ >> ->
+          let () = if first_match_case then () else pp f "@ | " in
           pp f "@[<2>%a@ when@ %a@ ->@ %a@]"
             o#patt p o#under_pipe#expr w o#under_pipe#expr e ];
 
@@ -128,7 +128,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     | <:expr< fun $p$ -> $e$ >> when is_irrefut_patt p ->
         pp f "@[<2>fun@ %a@]" o#patt_expr_fun_args (p, e)
     | <:expr< fun [ $a$ ] >> ->
-        pp f "@[<hv0>fun%a@]" o#assoc a
+        pp f "@[<hv0>fun%a@]" o#match_case a
     | <:expr< assert False >> -> pp f "@[<2>assert@ False@]"
     | e -> super#expr f e ];
 

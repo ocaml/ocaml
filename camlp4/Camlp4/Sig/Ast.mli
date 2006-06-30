@@ -38,7 +38,7 @@ module type S = sig
   type class_sig_item = 'abstract;
   type class_expr = 'abstract;
   type class_str_item = 'abstract;
-  type assoc = 'abstract;
+  type match_case = 'abstract;
   type ident = 'abstract;
   type binding = 'abstract;
   type module_binding = 'abstract;
@@ -57,7 +57,7 @@ module type S = sig
   value loc_of_with_constr : with_constr -> Loc.t;
   value loc_of_binding : binding -> Loc.t;
   value loc_of_module_binding : module_binding -> Loc.t;
-  value loc_of_assoc : assoc -> Loc.t;
+  value loc_of_match_case : match_case -> Loc.t;
   value loc_of_ident : ident -> Loc.t;
 
   (** This class is the base class for map traversal on the Ast.
@@ -96,7 +96,7 @@ module type S = sig
     method with_constr : with_constr -> with_constr;
     method binding : binding -> binding;
     method module_binding : module_binding -> module_binding;
-    method assoc : assoc -> assoc;
+    method match_case : match_case -> match_case;
     method ident : ident -> ident;
   end;
 

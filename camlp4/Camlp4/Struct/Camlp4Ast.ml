@@ -18,7 +18,7 @@ module Make (Loc : Sig.Loc.S) : Sig.Camlp4Ast.S with module Loc = Loc =
     external loc_of_with_constr : with_constr -> Loc.t = "%field0";
     external loc_of_binding : binding -> Loc.t = "%field0";
     external loc_of_module_binding : module_binding -> Loc.t = "%field0";
-    external loc_of_assoc : assoc -> Loc.t = "%field0";
+    external loc_of_match_case : match_case -> Loc.t = "%field0";
     external loc_of_ident : ident -> Loc.t = "%field0";
     class map =
       object (o)
@@ -180,6 +180,14 @@ module Make (Loc : Sig.Loc.S) : Sig.Camlp4Ast.S with module Loc = Loc =
           [ BTrue -> BTrue
           | BFalse -> BFalse
           | BAnt _x0 -> BAnt (o#string _x0) ];
+        method match_case : match_case -> match_case =
+          fun
+          [ McNil _x0 -> McNil (o#_Loc_t _x0)
+          | McOr _x0 _x1 _x2 ->
+              McOr (o#_Loc_t _x0) (o#match_case _x1) (o#match_case _x2)
+          | McArr _x0 _x1 _x2 _x3 ->
+              McArr (o#_Loc_t _x0) (o#patt _x1) (o#expr _x2) (o#expr _x3)
+          | McAnt _x0 _x1 -> McAnt (o#_Loc_t _x0) (o#string _x1) ];
         method ident : ident -> ident =
           fun
           [ IdAcc _x0 _x1 _x2 ->
@@ -214,7 +222,7 @@ module Make (Loc : Sig.Loc.S) : Sig.Camlp4Ast.S with module Loc = Loc =
           | ExFor _x0 _x1 _x2 _x3 _x4 _x5 ->
               ExFor (o#_Loc_t _x0) (o#string _x1) (o#expr _x2) (o#expr _x3)
                 (o#meta_bool _x4) (o#expr _x5)
-          | ExFun _x0 _x1 -> ExFun (o#_Loc_t _x0) (o#assoc _x1)
+          | ExFun _x0 _x1 -> ExFun (o#_Loc_t _x0) (o#match_case _x1)
           | ExIfe _x0 _x1 _x2 _x3 ->
               ExIfe (o#_Loc_t _x0) (o#expr _x1) (o#expr _x2) (o#expr _x3)
           | ExInt _x0 _x1 -> ExInt (o#_Loc_t _x0) (o#string _x1)
@@ -231,7 +239,7 @@ module Make (Loc : Sig.Loc.S) : Sig.Camlp4Ast.S with module Loc = Loc =
               ExLmd (o#_Loc_t _x0) (o#string _x1) (o#module_expr _x2)
                 (o#expr _x3)
           | ExMat _x0 _x1 _x2 ->
-              ExMat (o#_Loc_t _x0) (o#expr _x1) (o#assoc _x2)
+              ExMat (o#_Loc_t _x0) (o#expr _x1) (o#match_case _x2)
           | ExNew _x0 _x1 -> ExNew (o#_Loc_t _x0) (o#ident _x1)
           | ExObj _x0 _x1 _x2 ->
               ExObj (o#_Loc_t _x0) (o#patt _x1) (o#class_str_item _x2)
@@ -247,7 +255,7 @@ module Make (Loc : Sig.Loc.S) : Sig.Camlp4Ast.S with module Loc = Loc =
               ExSte (o#_Loc_t _x0) (o#expr _x1) (o#expr _x2)
           | ExStr _x0 _x1 -> ExStr (o#_Loc_t _x0) (o#string _x1)
           | ExTry _x0 _x1 _x2 ->
-              ExTry (o#_Loc_t _x0) (o#expr _x1) (o#assoc _x2)
+              ExTry (o#_Loc_t _x0) (o#expr _x1) (o#match_case _x2)
           | ExTup _x0 _x1 -> ExTup (o#_Loc_t _x0) (o#expr _x1)
           | ExCom _x0 _x1 _x2 ->
               ExCom (o#_Loc_t _x0) (o#expr _x1) (o#expr _x2)
@@ -404,14 +412,6 @@ module Make (Loc : Sig.Loc.S) : Sig.Camlp4Ast.S with module Loc = Loc =
               BiSem (o#_Loc_t _x0) (o#binding _x1) (o#binding _x2)
           | BiEq _x0 _x1 _x2 -> BiEq (o#_Loc_t _x0) (o#patt _x1) (o#expr _x2)
           | BiAnt _x0 _x1 -> BiAnt (o#_Loc_t _x0) (o#string _x1) ];
-        method assoc : assoc -> assoc =
-          fun
-          [ AsNil _x0 -> AsNil (o#_Loc_t _x0)
-          | AsOr _x0 _x1 _x2 ->
-              AsOr (o#_Loc_t _x0) (o#assoc _x1) (o#assoc _x2)
-          | AsArr _x0 _x1 _x2 _x3 ->
-              AsArr (o#_Loc_t _x0) (o#patt _x1) (o#expr _x2) (o#expr _x3)
-          | AsAnt _x0 _x1 -> AsAnt (o#_Loc_t _x0) (o#string _x1) ];
       end;
     class c_expr f =
       object inherit map as super; method expr = fun x -> f (super#expr x);
@@ -536,10 +536,10 @@ module Make (Loc : Sig.Loc.S) : Sig.Camlp4Ast.S with module Loc = Loc =
           let _loc = loc_of_ident i in Ast.IdApp _loc i (idApp_of_list is) ];
     value rec asOr_of_list =
       fun
-      [ [] -> Ast.AsNil ghost
+      [ [] -> Ast.McNil ghost
       | [ x ] -> x
       | [ x :: xs ] ->
-          let _loc = loc_of_assoc x in Ast.AsOr _loc x (asOr_of_list xs) ];
+          let _loc = loc_of_match_case x in Ast.McOr _loc x (asOr_of_list xs) ];
     value rec mbAnd_of_list =
       fun
       [ [] -> Ast.MbNil ghost
@@ -697,10 +697,10 @@ module Make (Loc : Sig.Loc.S) : Sig.Camlp4Ast.S with module Loc = Loc =
       match x with
       [ Ast.MeApp _ x y -> list_of_module_expr x (list_of_module_expr y acc)
       | x -> [ x :: acc ] ];
-    value rec list_of_assoc x acc =
+    value rec list_of_match_case x acc =
       match x with
-      [ Ast.AsNil _ -> acc
-      | Ast.AsOr _ x y -> list_of_assoc x (list_of_assoc y acc)
+      [ Ast.McNil _ -> acc
+      | Ast.McOr _ x y -> list_of_match_case x (list_of_match_case y acc)
       | x -> [ x :: acc ] ];
     value rec list_of_ident x acc =
       match x with

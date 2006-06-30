@@ -40,10 +40,10 @@ module Make (AstFilters : Camlp4.Sig.AstFilters.S) = struct
 
   value rec map_match_rule =
     fun
-    [ <:assoc@_loc< $m1$ | $m2$ >> ->
-        <:assoc< $map_match_rule m1$ | $map_match_rule m2$ >>
-    | <:assoc@_loc< $p$ when $w$ -> $e$ >> ->
-        <:assoc@_loc< $p$ when $w$ -> $add_debug_expr e$ >>
+    [ <:match_case@_loc< $m1$ | $m2$ >> ->
+        <:match_case< $map_match_rule m1$ | $map_match_rule m2$ >>
+    | <:match_case@_loc< $p$ when $w$ -> $e$ >> ->
+        <:match_case@_loc< $p$ when $w$ -> $add_debug_expr e$ >>
     | m -> m ]
 
   and map_expr =

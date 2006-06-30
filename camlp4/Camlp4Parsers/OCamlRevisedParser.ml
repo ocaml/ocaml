@@ -77,13 +77,13 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     [ <:expr< try $_$ with [ Stream.Failure -> $e$] >> ->
         handle_failure e
     | <:expr< match $me$ with [ $a$ ] >> ->
-        let rec assoc_handle_failure =
+        let rec match_case_handle_failure =
           fun
-          [ <:assoc< $a1$ | $a2$ >> ->
-              assoc_handle_failure a1 && assoc_handle_failure a2
-          | <:assoc< $pat:_$ -> $e$ >> -> handle_failure e
+          [ <:match_case< $a1$ | $a2$ >> ->
+              match_case_handle_failure a1 && match_case_handle_failure a2
+          | <:match_case< $pat:_$ -> $e$ >> -> handle_failure e
           | _ -> False ]
-        in handle_failure me && assoc_handle_failure a
+        in handle_failure me && match_case_handle_failure a
     | <:expr< let $bi$ in $e$ >> ->
         let rec binding_handle_failure =
           fun
@@ -219,9 +219,9 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
             <:expr< do { $junk_fun _loc$ $lid:strm_n$; $skont$ } >>
           in
           match w with
-          [ Some w -> <:assoc< $pat:p$ when $w$ -> $e$ | $acc$ >>
-          | None -> <:assoc< $pat:p$ -> $e$ | $acc$ >> ])
-        tspel <:assoc<>>
+          [ Some w -> <:match_case< $pat:p$ when $w$ -> $e$ | $acc$ >>
+          | None -> <:match_case< $pat:p$ -> $e$ | $acc$ >> ])
+        tspel <:match_case<>>
     in
     <:expr< match $peek_fun _loc$ $lid:strm_n$ with [ $pel$ | _ -> $ekont ()$ ] >>
   ;

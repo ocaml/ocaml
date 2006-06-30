@@ -74,7 +74,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S)
             | "anticlass_str_item" -> <:patt< Ast.CrAnt $mloc _loc$ $p$ >>
             | "antiwith_constr" -> <:patt< Ast.WcAnt $mloc _loc$ $p$ >>
             | "antibinding" -> <:patt< Ast.BiAnt $mloc _loc$ $p$ >>
-            | "antiassoc" -> <:patt< Ast.AsAnt $mloc _loc$ $p$ >>
+            | "antimatch_case" -> <:patt< Ast.McAnt $mloc _loc$ $p$ >>
             | "antimodule_binding" -> <:patt< Ast.MbAnt $mloc _loc$ $p$ >>
             | "antiident" -> <:patt< Ast.IdAnt $mloc _loc$ $p$ >>
             | _ -> p ])
@@ -105,7 +105,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S)
             | "listident" -> <:expr< Ast.idAcc_of_list $e$ >>
             | "listctypand" -> <:expr< Ast.tyAnd_of_list $e$ >>
             | "listwith_constr" -> <:expr< Ast.wcAnd_of_list $e$ >>
-            | "listassoc" -> <:expr< Ast.asOr_of_list $e$ >>
+            | "listmatch_case" -> <:expr< Ast.asOr_of_list $e$ >>
             | "listpatt;" -> <:expr< Ast.paSem_of_list $e$ >>
             | "antisig_item" -> <:expr< Ast.SgAnt $mloc _loc$ $e$ >>
             | "antistr_item" -> <:expr< Ast.StAnt $mloc _loc$ $e$ >>
@@ -120,7 +120,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S)
             | "anticlass_str_item" -> <:expr< Ast.CrAnt $mloc _loc$ $e$ >>
             | "antiwith_constr" -> <:expr< Ast.WcAnt $mloc _loc$ $e$ >>
             | "antibinding" -> <:expr< Ast.BiAnt $mloc _loc$ $e$ >>
-            | "antiassoc" -> <:expr< Ast.AsAnt $mloc _loc$ $e$ >>
+            | "antimatch_case" -> <:expr< Ast.McAnt $mloc _loc$ $e$ >>
             | "antimodule_binding" -> <:expr< Ast.MbAnt $mloc _loc$ $e$ >>
             | "antiident" -> <:expr< Ast.IdAnt $mloc _loc$ $e$ >>
             | _ -> e ])
@@ -173,7 +173,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S)
                 class_str_item_quot ME.class_str_item MP.class_str_item;
   add_quotation "with_constr" with_constr_quot ME.with_constr MP.with_constr;
   add_quotation "binding" binding_quot ME.binding MP.binding;
-  add_quotation "assoc" assoc_quot ME.assoc MP.assoc;
+  add_quotation "match_case" match_case_quot ME.match_case MP.match_case;
   add_quotation "module_binding"
                 module_binding_quot ME.module_binding MP.module_binding;
   add_quotation "ident" ident_quot ME.ident MP.ident;

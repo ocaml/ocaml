@@ -190,12 +190,12 @@ module Make (AstFilters : Camlp4.Sig.AstFilters.S) = struct
   and match_rule_of_sum_type =
     fun
     [ <:ctyp< $t1$ | $t2$ >> ->
-         <:assoc< $match_rule_of_sum_type t1$ | $match_rule_of_sum_type t2$ >>
+         <:match_case< $match_rule_of_sum_type t1$ | $match_rule_of_sum_type t2$ >>
     | <:ctyp< $uid:s$ of $t$ >> ->
-         <:assoc< $pat:snd (patt_of_constructor t (0, <:patt< $uid:s$ >>))$
+         <:match_case< $pat:snd (patt_of_constructor t (0, <:patt< $uid:s$ >>))$
                -> $snd (expr_of_constructor t (0, <:expr< $uid:s$ >>))$ >>
     | <:ctyp< $uid:s$ >> ->
-         <:assoc< $uid:s$ -> $uid:s$ >>
+         <:match_case< $uid:s$ -> $uid:s$ >>
     | _ -> assert False ]
 
   and record_patt_of_type =

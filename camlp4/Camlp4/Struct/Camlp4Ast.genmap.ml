@@ -37,7 +37,7 @@ module Make (Loc : Sig.Loc.S)
   external loc_of_with_constr : with_constr -> Loc.t = "%field0";
   external loc_of_binding : binding -> Loc.t = "%field0";
   external loc_of_module_binding : module_binding -> Loc.t = "%field0";
-  external loc_of_assoc : assoc -> Loc.t = "%field0";
+  external loc_of_match_case : match_case -> Loc.t = "%field0";
   external loc_of_ident : ident -> Loc.t = "%field0";
 
   class map = Camlp4Filters.GenerateMap.generated;
@@ -181,11 +181,11 @@ module Make (Loc : Sig.Loc.S)
 
   value rec asOr_of_list =
     fun
-    [ [] -> <:assoc@ghost<>>
+    [ [] -> <:match_case@ghost<>>
     | [x] -> x
     | [x::xs] ->
-        let _loc = loc_of_assoc x in
-        <:assoc< $x$ | $asOr_of_list xs$ >> ];
+        let _loc = loc_of_match_case x in
+        <:match_case< $x$ | $asOr_of_list xs$ >> ];
 
   value rec mbAnd_of_list =
     fun
@@ -378,11 +378,11 @@ module Make (Loc : Sig.Loc.S)
         list_of_module_expr x (list_of_module_expr y acc)
     | x -> [x :: acc] ];
 
-  value rec list_of_assoc x acc =
+  value rec list_of_match_case x acc =
     match x with
-    [ <:assoc<>> -> acc
-    | <:assoc< $x$ | $y$ >> ->
-        list_of_assoc x (list_of_assoc y acc)
+    [ <:match_case<>> -> acc
+    | <:match_case< $x$ | $y$ >> ->
+        list_of_match_case x (list_of_match_case y acc)
     | x -> [x :: acc] ];
 
   value rec list_of_ident x acc =

@@ -96,8 +96,8 @@ module Make (Syntax : Sig.Camlp4Syntax.S) : sig
     method intlike : formatter -> string -> unit;
     method binding : formatter -> Ast.binding -> unit;
     method record_binding : formatter -> Ast.binding -> unit;
-    method assoc : formatter -> Ast.assoc -> unit;
-    method assoc_aux : formatter -> Ast.assoc -> unit;
+    method match_case : formatter -> Ast.match_case -> unit;
+    method match_case_aux : formatter -> Ast.match_case -> unit;
     method mk_expr_list : Ast.expr -> (list Ast.expr * option Ast.expr);
     method mk_patt_list : Ast.patt -> (list Ast.patt * option Ast.patt);
     method module_expr : formatter -> Ast.module_expr -> unit;

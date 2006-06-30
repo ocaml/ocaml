@@ -87,7 +87,7 @@ module Make (MetaLoc : META_LOC) = struct
 
   value rec meta_e x = expr x
   and meta_bi x = binding x
-  and meta_a x = assoc x
+  and meta_a x = match_case x
   and meta_mb x = module_binding x
   and meta_p x = patt x
   and meta_t x = ctyp x
@@ -197,11 +197,11 @@ module Make (MetaLoc : META_LOC) = struct
   | <:meta< <:patt< $p1$ = $p2$ >> >>
   | <:meta< <:patt< $p1$; $p2$ >> >> ]
 
-  and assoc = fun
-  [ <:meta< <:assoc<>> >>
-  | <:meta< <:assoc< $a1$ | $a2$ >> >>
-  | <:meta< <:assoc< $p$ when $e1$ -> $e2$ >> >>
-  | <:meta< <:assoc< $anti:s$ >> >> ]
+  and match_case = fun
+  [ <:meta< <:match_case<>> >>
+  | <:meta< <:match_case< $a1$ | $a2$ >> >>
+  | <:meta< <:match_case< $p$ when $e1$ -> $e2$ >> >>
+  | <:meta< <:match_case< $anti:s$ >> >> ]
 
   and binding = fun
   [ <:meta< <:binding<>> >>

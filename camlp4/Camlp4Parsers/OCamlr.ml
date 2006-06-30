@@ -64,9 +64,9 @@ Old (no more supported) syntax:
   Gram.Entry.clear a_ident;
   Gram.Entry.clear amp_ctyp;
   Gram.Entry.clear and_ctyp;
-  Gram.Entry.clear assoc;
-  Gram.Entry.clear assoc0;
-  Gram.Entry.clear assoc_quot;
+  Gram.Entry.clear match_case;
+  Gram.Entry.clear match_case0;
+  Gram.Entry.clear match_case_quot;
   Gram.Entry.clear binding;
   Gram.Entry.clear binding_quot;
   Gram.Entry.clear class_declaration;
@@ -318,7 +318,7 @@ Old (no more supported) syntax:
     GLOBAL:
       a_CHAR a_FLOAT a_INT a_INT32 a_INT64 a_LABEL a_LIDENT
       a_LIDENT_or_operator a_NATIVEINT a_OPTLABEL a_STRING a_UIDENT a_ident
-      amp_ctyp and_ctyp assoc assoc0 assoc_quot binding binding_quot
+      amp_ctyp and_ctyp match_case match_case0 match_case_quot binding binding_quot
       class_declaration class_description class_expr class_expr_quot
       class_fun_binding class_fun_def class_info_for_class_expr
       class_info_for_class_type class_longident class_longident_and_param
@@ -483,15 +483,15 @@ Old (no more supported) syntax:
             <:expr< let $opt:r$ $bi$ in $x$ >>
         | "let"; "module"; m = a_UIDENT; mb = module_binding0; "in"; e = SELF ->
             <:expr< let module $m$ = $mb$ in $e$ >>
-        | "fun"; "["; a = assoc; "]" ->
+        | "fun"; "["; a = match_case; "]" ->
             <:expr< fun [ $a$ ] >>
         | "fun"; p = labeled_ipatt; e = fun_def ->
             <:expr< fun $p$ -> $e$ >>
-        | "match"; e = SELF; "with"; "["; a = assoc; "]" ->
+        | "match"; e = SELF; "with"; "["; a = match_case; "]" ->
             <:expr< match $e$ with [ $a$ ] >>
         | "match"; e1 = SELF; "with"; p = ipatt; "->"; e2 = SELF ->
             <:expr< match $e1$ with $p$ -> $e2$ >>
-        | "try"; e = SELF; "with"; "["; a = assoc; "]" ->
+        | "try"; e = SELF; "with"; "["; a = match_case; "]" ->
             <:expr< try $e$ with [ $a$ ] >>
         | "try"; e1 = SELF; "with"; p = ipatt; "->"; e2 = SELF ->
             <:expr< try $e1$ with $p$ -> $e2$ >>
@@ -653,19 +653,19 @@ Old (no more supported) syntax:
         | ":"; t = ctyp; "="; e = expr -> <:expr< ($e$ : $t$) >> 
         | ":>"; t = ctyp; "="; e = expr -> <:expr< ($e$ :> $t$) >> ] ]
     ;
-    assoc:
-      [ [ l = LIST0 assoc0 SEP "|" -> Ast.asOr_of_list l ] ]
+    match_case:
+      [ [ l = LIST0 match_case0 SEP "|" -> Ast.asOr_of_list l ] ]
     ;
-    assoc0:
-      [ [ `ANTIQUOT ("assoc"|"list" as n) s ->
-            <:assoc< $anti:mk_anti ~c:"assoc" n s$ >>
+    match_case0:
+      [ [ `ANTIQUOT ("match_case"|"list" as n) s ->
+            <:match_case< $anti:mk_anti ~c:"match_case" n s$ >>
         | `ANTIQUOT (""|"anti" as n) s ->
-            <:assoc< $anti:mk_anti ~c:"assoc" n s$ >>
+            <:match_case< $anti:mk_anti ~c:"match_case" n s$ >>
         | `ANTIQUOT (""|"anti" as n) s; "->"; e = expr ->
-            <:assoc< $anti:mk_anti ~c:"patt" n s$ -> $e$ >>
+            <:match_case< $anti:mk_anti ~c:"patt" n s$ -> $e$ >>
         | `ANTIQUOT (""|"anti" as n) s; "when"; w = expr; "->"; e = expr ->
-            <:assoc< $anti:mk_anti ~c:"patt" n s$ when $w$ -> $e$ >>
-        | p = patt_as_patt_opt; w = opt_when_expr; "->"; e = expr -> <:assoc< $p$ when $w$ -> $e$ >>
+            <:match_case< $anti:mk_anti ~c:"patt" n s$ when $w$ -> $e$ >>
+        | p = patt_as_patt_opt; w = opt_when_expr; "->"; e = expr -> <:match_case< $p$ when $w$ -> $e$ >>
       ] ]
     ;
     opt_when_expr:
@@ -1493,9 +1493,9 @@ Old (no more supported) syntax:
       [ [ x = module_expr -> x
       ] ]
     ;
-    assoc_quot:
-      [ [ x = assoc -> x
-        | -> <:assoc<>> ] ]
+    match_case_quot:
+      [ [ x = match_case -> x
+        | -> <:match_case<>> ] ]
     ;
     binding_quot:
       [ [ b1 = SELF; "and"; b2 = SELF -> <:binding< $b1$ and $b2$ >>

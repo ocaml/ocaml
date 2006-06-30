@@ -88,7 +88,7 @@ module Make (MetaLoc : META_LOC) = struct
   
     value rec meta_e x = expr x
     and meta_bi x = binding x
-    and meta_a x = assoc x
+    and meta_a x = match_case x
     and meta_mb x = module_binding x
     and meta_p x = patt x
     and meta_t x = ctyp x
@@ -198,11 +198,11 @@ module Make (MetaLoc : META_LOC) = struct
     | <:patt@_loc< $p1$ = $p2$ >>                                       -> <:expr< Ast.PaEq $meta_loc_expr _loc$ $meta_p p1$ $meta_p p2$ >>
     | <:patt@_loc< $p1$; $p2$ >>                                        -> <:expr< Ast.PaSem $meta_loc_expr _loc$ $meta_p p1$ $meta_p p2$ >> ]
   
-    and assoc = fun
-    [ <:assoc@_loc<>>                                                   -> <:expr< Ast.AsNil $meta_loc_expr _loc$ >>
-    | <:assoc@_loc< $a1$ | $a2$ >>                                      -> <:expr< Ast.AsOr $meta_loc_expr _loc$ $meta_a a1$ $meta_a a2$ >>
-    | <:assoc@_loc< $p$ when $e1$ -> $e2$ >>                            -> <:expr< Ast.AsArr $meta_loc_expr _loc$ $meta_p p$ $meta_e e1$ $meta_e e2$ >>
-    | <:assoc@_loc< $anti:s$ >>                                         -> <:expr< $anti:s$ >> ]
+    and match_case = fun
+    [ <:match_case@_loc<>>                                              -> <:expr< Ast.McNil $meta_loc_expr _loc$ >>
+    | <:match_case@_loc< $a1$ | $a2$ >>                                 -> <:expr< Ast.McOr $meta_loc_expr _loc$ $meta_a a1$ $meta_a a2$ >>
+    | <:match_case@_loc< $p$ when $e1$ -> $e2$ >>                       -> <:expr< Ast.McArr $meta_loc_expr _loc$ $meta_p p$ $meta_e e1$ $meta_e e2$ >>
+    | Ast.McAnt _loc s                                    -> <:expr< $anti:s$ >> ]
   
     and binding = fun
     [ <:binding@_loc<>>                                                 -> <:expr< Ast.BiNil $meta_loc_expr _loc$ >>
@@ -394,7 +394,7 @@ module Make (MetaLoc : META_LOC) = struct
   
     value rec meta_e x = expr x
     and meta_bi x = binding x
-    and meta_a x = assoc x
+    and meta_a x = match_case x
     and meta_mb x = module_binding x
     and meta_p x = patt x
     and meta_t x = ctyp x
@@ -504,11 +504,11 @@ module Make (MetaLoc : META_LOC) = struct
     | <:patt@_loc< $p1$ = $p2$ >>                                       -> <:patt< Ast.PaEq $meta_loc_patt _loc$ $meta_p p1$ $meta_p p2$ >>
     | <:patt@_loc< $p1$; $p2$ >>                                        -> <:patt< Ast.PaSem $meta_loc_patt _loc$ $meta_p p1$ $meta_p p2$ >> ]
   
-    and assoc = fun
-    [ <:assoc@_loc<>>                                                   -> <:patt< Ast.AsNil $meta_loc_patt _loc$ >>
-    | <:assoc@_loc< $a1$ | $a2$ >>                                      -> <:patt< Ast.AsOr $meta_loc_patt _loc$ $meta_a a1$ $meta_a a2$ >>
-    | <:assoc@_loc< $p$ when $e1$ -> $e2$ >>                            -> <:patt< Ast.AsArr $meta_loc_patt _loc$ $meta_p p$ $meta_e e1$ $meta_e e2$ >>
-    | <:assoc@_loc< $anti:s$ >>                                         -> <:patt< $anti:s$ >> ]
+    and match_case = fun
+    [ <:match_case@_loc<>>                                              -> <:patt< Ast.McNil $meta_loc_patt _loc$ >>
+    | <:match_case@_loc< $a1$ | $a2$ >>                                 -> <:patt< Ast.McOr $meta_loc_patt _loc$ $meta_a a1$ $meta_a a2$ >>
+    | <:match_case@_loc< $p$ when $e1$ -> $e2$ >>                       -> <:patt< Ast.McArr $meta_loc_patt _loc$ $meta_p p$ $meta_e e1$ $meta_e e2$ >>
+    | Ast.McAnt _loc s                                     -> <:patt< $anti:s$ >> ]
   
     and binding = fun
     [ <:binding@_loc<>>                                                 -> <:patt< Ast.BiNil $meta_loc_patt _loc$ >>
