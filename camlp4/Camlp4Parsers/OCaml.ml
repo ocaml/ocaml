@@ -450,7 +450,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
             <:expr< let module $m$ = $mb$ in $e$ >>
         | "function"; OPT "|"; a = match_case ->
             <:expr< fun [ $a$ ] >>
-        | "fun"; p = labeled_ipatt; e = fun_def ->
+        | "fun"; p = patt LEVEL "simple"; e = fun_def ->
             <:expr< fun $p$ -> $e$ >>
         | "match"; e = SELF; "with"; OPT "|"; a = match_case ->
             <:expr< match $e$ with [ $a$ ] >>
