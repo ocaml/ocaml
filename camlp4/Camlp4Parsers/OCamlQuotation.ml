@@ -24,4 +24,10 @@ module Id = struct
   value version = "$Id$";
 end;
 
-let module M = Register.OCamlSyntaxExtension Id OCamlQuotationBase.Make in ();
+module Make (Syntax : Sig.Camlp4Syntax.S)
+= struct
+  module M = OCamlQuotationBase.Make Syntax Syntax.AntiquotSyntax;
+  include M;
+end;
+
+let module M = Register.OCamlSyntaxExtension Id Make in ();

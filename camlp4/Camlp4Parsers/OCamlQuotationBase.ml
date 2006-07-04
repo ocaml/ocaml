@@ -23,9 +23,11 @@ module Id = struct
 end;
 
 module Make (Syntax : Sig.Camlp4Syntax.S)
+            (TheAntiquotSyntax : Sig.AntiquotSyntax.S
+                                  with module Ast = Sig.Camlp4Ast.ToAst Syntax.Ast)
 = struct
   open Sig.Camlp4Token;
-  include Syntax;
+  include Syntax; (* Be careful an AntiquotSyntax module appears here *)
 
   module MetaLocHere = Camlp4.Struct.MetaAst.MetaLoc Ast;
   module MetaLoc = struct
@@ -46,12 +48,12 @@ module Make (Syntax : Sig.Camlp4Syntax.S)
     let len = String.length s in
     len > 2 && s.[0] = '\\' && s.[1] = '$';
 
-  value handle_antiquot_in_string s term entry loc decorate =
+  value handle_antiquot_in_string s term parse loc decorate =
     if is_antiquot s then
       let pos = String.index s ':' in
       let name = String.sub s 2 (pos - 2)
       and code = String.sub s (pos + 1) (String.length s - pos - 1) in
-      decorate name (Gram.parse_string entry loc code)
+      decorate name (parse loc code)
     else term;
 
   value antiquot_expander = object
@@ -59,7 +61,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S)
     method patt = fun
       [ <:patt@_loc< $anti:s$ >> | <:patt@_loc< $str:s$ >> as p ->
           let mloc = MetaLoc.meta_loc_patt in
-          handle_antiquot_in_string s p patt_eoi _loc (fun n p ->
+          handle_antiquot_in_string s p TheAntiquotSyntax.parse_patt _loc (fun n p ->
             match n with
             [ "antisig_item" -> <:patt< Ast.SgAnt $mloc _loc$ $p$ >>
             | "antistr_item" -> <:patt< Ast.StAnt $mloc _loc$ $p$ >>
@@ -82,7 +84,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S)
     method expr = fun
       [ <:expr@_loc< $anti:s$ >> | <:expr@_loc< $str:s$ >> as e ->
           let mloc = MetaLoc.meta_loc_expr in
-          handle_antiquot_in_string s e expr_eoi _loc (fun n e ->
+          handle_antiquot_in_string s e TheAntiquotSyntax.parse_expr _loc (fun n e ->
             match n with
             [ "`int" -> <:expr< string_of_int $e$ >>
             | "`int32" -> <:expr< Int32.to_string $e$ >>

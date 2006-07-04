@@ -22,4 +22,4 @@ let module Gram = MakeGram Lexer in
 let module M1 = OCamlInitSyntax.Make Warning Ast Gram Quotation in
 let module M2 = OCamlr.Make M1 in
 let module M3 = OCaml.Make M2 in
-let module M4 = OCamlQuotationBase.Make M3 in ();
+let module M3 = OCamlQuotationBase.Make M3 Syntax.AntiquotSyntax in ();

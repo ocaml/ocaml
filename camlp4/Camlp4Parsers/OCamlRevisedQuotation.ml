@@ -21,4 +21,4 @@ open PreCast;
 let module Gram = MakeGram Lexer in
 let module M1 = OCamlInitSyntax.Make Warning Ast Gram Quotation in
 let module M2 = OCamlr.Make M1 in
-let module M3 = OCamlQuotationBase.Make M2 in ();
+let module M3 = OCamlQuotationBase.Make M2 Syntax.AntiquotSyntax in ();
