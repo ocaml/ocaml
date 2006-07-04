@@ -26,8 +26,8 @@ install: yam
 doc: yam
 	$(YAM) -v doc
 
-yam:  build/build.ml
-	$(OCAML) $<
+yam: build/build.ml
+	$(OCAML) build/build.ml
 
 DIRS=boot man
 #DIRS=boot odyl lib camlp4 meta etc top ocpp man compile
