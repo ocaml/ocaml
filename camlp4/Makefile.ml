@@ -290,30 +290,32 @@ let file ppf f =
 let ext_split f = split '.' f
   
   
-let print_packed_sources ppf package_dir =
+let print_packed_sources ppf ?(skip = fun _ -> false) package_dir =
   let _ =
-  fold_units_sources [package_dir] (fun name sources k inside ->
+  fold_units_sources [package_dir] (fun name sources k (skip, inside) ->
     eprintf "%s: [%s] (%b)@." name (String.concat "; " sources) inside;
     let name = try chop_end '/' name with Not_found -> name in
-    let k () = ignore (k true) in
+    let k () = ignore (k (skip, true)) in
     if not inside then k () else (
+      if skip name then fprintf ppf "(**/**)@\n" else fprintf ppf "(** *)@\n";
       fprintf ppf "@[<2>module %s " name;
-      let (mli, ml, mll) =
+      let (mli, ml, mll, k) =
         List.fold_right
-          (fun x (mli, ml, mll) ->
+          (fun x (mli, ml, mll, k) ->
             match ext_split x with
-            | [_; "mli"] -> (Some x, ml, mll)
-            | [_; "ml"]  -> (mli, Some x, mll)
-            | [_; "mll"] -> (mli, ml, Some x)
-            | [x; "meta"; "ml"] -> (mli, Some (x^".ml"), mll)
-            | [x; "genmap"; "ml"] -> (mli, Some (x^".ml"), mll)
+            | [_; "mli"] -> (Some x, ml, mll, k)
+            | [_; "ml"]  -> (mli, Some x, mll, k)
+            | [_; "mll"] -> (mli, ml, Some x, k)
+            | [x; "meta"; "ml"] -> (mli, Some (x^".ml"), mll, fun () -> ())
+            | [x; "genmap"; "ml"] -> (mli, Some (x^".ml"), mll, fun () -> ())
             | [_; ext] -> failwith ("unknown extension " ^ ext)
             | _ -> failwith ("bad file "^x))
-          sources (None, None, None) in
-      (match mli with
-      | Some mli -> fprintf ppf ":@,@[<2>sig@\n%a@]@\nend@\n" file mli
-      | _ -> ());
-      fprintf ppf "=@ @[<2>struct@\n";
+          sources (None, None, None, k) in
+      (match (ml, mll, mli) with
+      | (None, None, Some mli) -> fprintf ppf "=@ @[<2>struct@\n"
+      | (_, _, Some mli) -> fprintf ppf ":@,@[<2>sig@\n%a@]@\nend@\n" file mli;
+                            fprintf ppf "=@ @[<2>struct@\n"
+      | _ -> fprintf ppf "=@ @[<2>struct@\n");
       (match (ml, mll, mli) with
       | (_, Some mll, _) ->
             fprintf ppf "(*___CAMLP4_LEXER___ %a ___CAMLP4_LEXER___*)@\n();"
@@ -321,10 +323,11 @@ let print_packed_sources ppf package_dir =
       | (Some ml, _, _) -> k (); fprintf ppf "%a" file ml
       | (None, _, Some mli) -> k (); fprintf ppf "%a" file mli
       | _ -> if sources <> [] then () else k ());
-      fprintf ppf "@]@\nend;@]@\n"
+      fprintf ppf "@]@\nend;@]@\n";
+      if skip name then fprintf ppf "(**/**)@\n";
     );
-    inside
-  ) false in fprintf ppf "@."
+    (skip, inside)
+  ) (skip, false) in fprintf ppf "@."
 
 let run l =
   let cmd = String.concat " " l in
@@ -346,24 +349,27 @@ let try_cp src dest = if Sys.file_exists src then cp src dest
 
 let doc () =
   let revised_to_ocaml f =
-    run ["./camlp4boot.run -printer OCaml -o "^f^".ml -impl "^f^".ml4"] in
+    run ["./boot/camlp4boot -printer OCaml -o "^f^".ml -impl "^f^".ml4"] in
   let ocamldoc title fl =
-    run (("cd doc && ../../ocamldoc/ocamldoc -html -I ../../parsing "^
-          "-I ../build -I ../../utils -I .. -rectypes -dump ocamldoc.out -t '"^title^"'") :: fl) in
+    run (("cd doc && ../../ocamldoc/ocamldoc -v -rectypes -html -I ../../parsing "^
+          "-I ../build -I ../../utils -I .. -dump ocamldoc.out -t '"^title^"'") :: fl) in
   let ppf_of_file f = formatter_of_out_channel (open_out f) in
-  (* print_packed_sources (ppf_of_file "doc/Camlp4.ml4") camlp4_package;
+  let skip_struct = function "Struct" -> true | _ -> false in
+  print_packed_sources (ppf_of_file "doc/Camlp4.ml4") ~skip:skip_struct camlp4_package;
   print_packed_sources (ppf_of_file "doc/Camlp4Parsers.ml4") camlp4_parsers;
+  print_packed_sources (ppf_of_file "doc/Camlp4Printers.ml4") camlp4_printers;
   print_packed_sources (ppf_of_file "doc/Camlp4Filters.ml4") camlp4_filters;
   print_packed_sources (ppf_of_file "doc/Camlp4Top.ml4") camlp4_top;
   revised_to_ocaml "doc/Camlp4";
   sed "(\\*___CAMLP4_LEXER___" "" "doc/Camlp4.ml";
-  sed "___CAMLP4_LEXER___\\+|" "" "doc/Camlp4.ml";
+  sed "___CAMLP4_LEXER___\\*)" "" "doc/Camlp4.ml";
   sed "^ *# [0-9]\\+.*$" "" "doc/Camlp4.ml";
   revised_to_ocaml "doc/Camlp4Parsers";
+  revised_to_ocaml "doc/Camlp4Printers";
   revised_to_ocaml "doc/Camlp4Filters";
-  revised_to_ocaml "doc/Camlp4Top";                                             *)
+  revised_to_ocaml "doc/Camlp4Top";
   ocamldoc "Camlp4 a Pre-Processor-Pretty-Printer for Objective Caml"
-           ["Camlp4.ml"; "Camlp4Parsers.ml";
+           ["Camlp4.ml"; "Camlp4Parsers.ml"; "Camlp4Printers.ml";
             "Camlp4Filters.ml"; "Camlp4Top.ml"]
 
 let other_objs =
@@ -378,6 +384,7 @@ let all =
                 ~includes:["../otherlibs/dynlink"]
                 ~byte_flags:("dynlink.cma"^^other_byte_objs) ~opt_flags:other_opt_objs
                 ~flags:"-linkall" "Camlp4" (misc_modules @ [camlp4_package]);
+  (* ocaml_Library ~default:`Byte ~flags:"-linkall" "Camlp4Parsers" []; *)
   mk_camlp4 "camlp4" [];
   mk_camlp4 "camlp4boot" [pa_r; pa_qb; pa_q; pa_rp; pa_g; pa_macro; pa_debug; pr_o; pr_dump];
   mk_camlp4 "camlp4r"  [pa_r; pa_rp; pr_dump];
@@ -411,43 +418,50 @@ let install_all dir =
        "sh -c 'echo \"  install {}\" ; mkdir -p"^^libdir_camlp4^
        "/`dirname {}`; cp {}"^^libdir_camlp4^"/`dirname {}`' \\;"]
 
+
+let byte =
+  "Camlp4.cmi" ::
+  "Camlp4.cma" ::
+  "Camlp4Parsers.cmi" ::
+  "Camlp4Printers.cmi" ::
+  "Camlp4Filters.cmi" ::
+  "Camlp4Top.cmi" ::
+  "Camlp4Parsers.cmo" ::
+  "Camlp4Printers.cmo" ::
+  "Camlp4Filters.cmo" ::
+  "Camlp4Top.cmo" ::
+  !byte_libraries
+
+let opt =
+  "Camlp4.cmxa" ::
+  "Camlp4.a" ::
+  "build/camlp4_config.cmx" ::
+  "Camlp4Parsers.cmx" ::
+  "Camlp4Printers.cmx" ::
+  "Camlp4Filters.cmx" ::
+  "Camlp4Top.cmx" ::
+  (* !opt_libraries @ *)
+  []
+
 let install () =
   mkdir [libdir_camlp4; bindir];
-  byte_libraries @= ["Camlp4.cmi"; "Camlp4.cma"];
-  opt_libraries @= ["Camlp4.cmxa"; "Camlp4.a"];
   install_all "Camlp4Parsers";
   install_all "Camlp4Printers";
   install_all "Camlp4Filters";
   install_all "Camlp4Top";
   let cp_bin conv bin =
     if Sys.file_exists bin then cp bin (bindir ^ "/" ^ conv bin) in
-  List.iter (fun x -> cp x libdir_camlp4) !byte_libraries;
-  List.iter (fun x -> try_cp x libdir_camlp4) !opt_libraries;
+  List.iter (fun x -> cp x libdir_camlp4) byte;
+  List.iter (fun x -> try_cp x libdir_camlp4) opt;
   List.iter (cp_bin conv_byte_extension) !byte_programs;
   List.iter (cp_bin conv_opt_extension) !opt_programs;
   ()
         (* cp mkcamlp4.sh "$(BINDIR)/mkcamlp4" *)
         (* chmod a+x "$(BINDIR)/mkcamlp4" *)
 
-let byte =
-  "Camlp4Parsers.cmo" ::
-  "Camlp4Printers.cmo" ::
-  "Camlp4Filters.cmo" ::
-  "Camlp4Top.cmo" ::
-  !byte_programs @
-  !byte_libraries @
-  []
 
-let opt =
-  "build/camlp4_config.cmx" ::
-  "Camlp4.cmxa" ::
-  "Camlp4Parsers.cmx" ::
-  "Camlp4Printers.cmx" ::
-  "Camlp4Filters.cmx" ::
-  "Camlp4Top.cmx" ::
-  !opt_programs @
-  (* !opt_libraries @ *)
-  []
+let byte = byte @ !byte_programs
+let opt = opt @ !opt_programs
 
 ;;
 
