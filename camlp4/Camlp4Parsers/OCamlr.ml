@@ -920,7 +920,9 @@ Old (no more supported) syntax:
       ] ]
     ;
     constructor_arg_list:
-      [ [ t1 = SELF; "and"; t2 = SELF -> <:ctyp< $t1$ and $t2$ >>
+      [ [ `ANTIQUOT ("list" as n) s ->
+            <:ctyp< $anti:mk_anti ~c:"ctypand" n s$ >>
+        | t1 = SELF; "and"; t2 = SELF -> <:ctyp< $t1$ and $t2$ >>
         | t = ctyp -> t
       ] ]
     ;
@@ -1249,11 +1251,6 @@ Old (no more supported) syntax:
         | t = ctyp -> t
       ] ]
     ;
-    and_ctyp:
-      [ [ t1 = SELF; "and"; t2 = SELF -> <:ctyp< $t1$ and $t2$ >>
-        | t = ctyp -> t
-      ] ]
-    ;
     amp_ctyp:
       [ [ t1 = SELF; "&"; t2 = SELF -> <:ctyp< $t1$ & $t2$ >>
         | t = ctyp -> t
@@ -1456,12 +1453,12 @@ Old (no more supported) syntax:
       [ [ x = more_ctyp; ","; y = comma_ctyp -> <:ctyp< $x$, $y$ >>
         | x = more_ctyp; ";"; y = sem_ctyp -> <:ctyp< $x$; $y$ >>
         | x = more_ctyp; "|"; y = pipe_ctyp -> <:ctyp< $x$ | $y$ >>
-        | x = more_ctyp; "of"; y = and_ctyp -> <:ctyp< $x$ of $y$ >>
+        | x = more_ctyp; "of"; y = constructor_arg_list -> <:ctyp< $x$ of $y$ >>
         | x = more_ctyp; "of"; "&"; y = amp_ctyp -> <:ctyp< $x$ of & $y$ >>
         | x = more_ctyp; ":"; y = more_ctyp -> <:ctyp< $x$ : $y$ >>
         | x = more_ctyp; "*"; y = star_ctyp -> <:ctyp< $x$ * $y$ >>
         | x = more_ctyp; "&"; y = amp_ctyp -> <:ctyp< $x$ & $y$ >>
-        | x = more_ctyp; "and"; y = and_ctyp -> <:ctyp< $x$ and $y$ >>
+        | x = more_ctyp; "and"; y = constructor_arg_list -> <:ctyp< $x$ and $y$ >>
         | x = more_ctyp -> x
         | -> <:ctyp<>>
       ] ]

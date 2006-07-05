@@ -686,6 +686,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
         pp f "@[mutable@ %a :@ %a@]" o#ctyp t1 o#ctyp t2
     | <:ctyp< $t1$ : $t2$ >> -> pp f "@[<2>%a :@ %a@]" o#ctyp t1 o#ctyp t2
     | <:ctyp< $t1$; $t2$ >> -> pp f "%a;@ %a" o#ctyp t1 o#ctyp t2
+    | <:ctyp< $t$ of $<:ctyp<>>$ >> -> o#ctyp f t
     | <:ctyp< $t1$ of $t2$ >> ->
         pp f "@[<h>%a@ @[<3>of@ %a@]@]" o#ctyp t1 o#constructor_type t2
     | <:ctyp< $t1$ of & $t2$ >> ->
