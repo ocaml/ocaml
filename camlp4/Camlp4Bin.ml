@@ -34,6 +34,7 @@ value rec parse_file dyn_loader name pa getdir =
         [ (_, "load", s) -> do { DynLoader.load dyn_loader s; None }
         | (_, "directory", s) -> do { DynLoader.include_dir dyn_loader s; None }
         | (_, "use", s) -> Some (parse_file dyn_loader s pa getdir)
+        | (_, "default_quotation", s) -> do { Quotation.default.val := s; None }
         | (loc, _, _) -> Loc.raise loc (Stream.Error "bad directive") ]
     | None -> None ]) in
   let loc = Loc.mk name
