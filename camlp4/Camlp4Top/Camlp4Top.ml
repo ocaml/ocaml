@@ -29,45 +29,43 @@ open Camlp4.Sig.Camlp4Token;
 module Ast2pt = Camlp4.Struct.Camlp4Ast2OCamlAst.Make Ast;
 module Lexer = Camlp4.Struct.Lexer.Make Token;
 
-Register.iter_and_take_callbacks (fun (_, f) -> f ());
-
 external not_filtered : 'a -> Gram.not_filtered 'a = "%identity";
 
 value wrap parse_fun =
-  let token_stream_ref = ref None in fun lb ->
-  let token_stream =
-    match token_stream_ref.val with
-    [ None ->
-      let () = if Sys.interactive.val then
-        Format.printf "\tCamlp4 Parsing version %s\n@." Config.version
-      else () in
-      let not_filtered_token_stream = Lexer.from_lexbuf lb in
-      let token_stream = Gram.filter (not_filtered not_filtered_token_stream) in
-      do { token_stream_ref.val := Some token_stream; token_stream }
-    | Some token_stream -> token_stream ]
-  in try
-    match token_stream with parser
-    [ [: `(EOI, _) :] -> raise End_of_file
-    | [: :] -> parse_fun token_stream ]
-  with
-  [ End_of_file | Sys.Break | (Loc.Exc_located _ (End_of_file | Sys.Break))
-      as x -> raise x
-  | x ->
-      let () = Stream.junk token_stream in
-      let x =
-        match x with
-        [ Loc.Exc_located loc x -> do { 
-          Toploop.print_location Format.err_formatter
-            (Loc.to_ocaml_location loc);
-          x }
-        | x -> x ]
-      in
-      do {
-        Format.eprintf "@[<0>%a@]@." Camlp4.ErrorHandler.print x;
-        raise Exit
-      }
-  ]
-;
+  let token_stream_ref = ref None in
+  fun lb ->
+    let () = Register.iter_and_take_callbacks (fun (_, f) -> f ()) in
+    let token_stream =
+      match token_stream_ref.val with
+      [ None ->
+        let () = if Sys.interactive.val then
+          Format.printf "\tCamlp4 Parsing version %s\n@." Config.version
+        else () in
+        let not_filtered_token_stream = Lexer.from_lexbuf lb in
+        let token_stream = Gram.filter (not_filtered not_filtered_token_stream) in
+        do { token_stream_ref.val := Some token_stream; token_stream }
+      | Some token_stream -> token_stream ]
+    in try
+      match token_stream with parser
+      [ [: `(EOI, _) :] -> raise End_of_file
+      | [: :] -> parse_fun token_stream ]
+    with
+    [ End_of_file | Sys.Break | (Loc.Exc_located _ (End_of_file | Sys.Break))
+        as x -> raise x
+    | x ->
+        let () = Stream.junk token_stream in
+        let x =
+          match x with
+          [ Loc.Exc_located loc x -> do { 
+            Toploop.print_location Format.err_formatter
+              (Loc.to_ocaml_location loc);
+            x }
+          | x -> x ]
+        in
+        do {
+          Format.eprintf "@[<0>%a@]@." Camlp4.ErrorHandler.print x;
+          raise Exit
+        } ];
 
 value toplevel_phrase token_stream =
   match Gram.parse_tokens_after_filter Syntax.top_phrase token_stream with
