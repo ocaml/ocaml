@@ -59,9 +59,6 @@ value rewrite_and_load n x =
     add_to_loaded_modules name;
     DynLoader.load dyn_loader name
   } in
-  let default x =
-    let y = "Camlp4"^n^"/"^x^".cmo" in
-    real_load (try find_in_path y with [ Not_found -> x ]) in
   let load = List.iter (fun n ->
     if SSet.mem n loaded_modules.val then ()
     else do {
@@ -69,31 +66,29 @@ value rewrite_and_load n x =
       DynLoader.load dyn_loader (file_of_module_name n);
     }) in
   do {
-    if n <> "Printers" then
-      match x with
-      [ "pa_r.cmo"      | "r"  | "OCamlr" -> load [pa_r]
-      | "pa_o.cmo"      | "o"  | "OCaml" -> load [pa_r; pa_o]
-      | "pa_rp.cmo"     | "rp" | "OCamlRevisedParser" -> load [pa_r; pa_o; pa_rp]
-      | "pa_op.cmo"     | "op" | "OCamlParser" -> load [pa_r; pa_o; pa_rp; pa_op]
-      | "pa_extend.cmo" | "pa_extend_m.cmo" | "g" | "Grammar" -> load [pa_r; pa_g]
-      | "pa_macro.cmo"  | "m"  | "Macro" -> load [pa_r; pa_m]
-      | "q" | "OCamlQuotation" -> load [pa_r; pa_qb; pa_q]
-      | "q_MLast.cmo" | "rq" | "OCamlRevisedQuotation" -> load [pa_r; pa_qb; pa_rq]
-      | "oq" | "OCamlOriginalQuotation" -> load [pa_r; pa_o; pa_qb; pa_oq]
-      | "rf" -> load [pa_r; pa_rp; pa_qb; pa_q; pa_g; pa_m]
-      | "of" -> load [pa_r; pa_o; pa_rp; pa_op; pa_qb; pa_rq; pa_g; pa_m]
-      | x -> default x ]
-    else
-      match x with
-      [ "pr_r.cmo" | "r" | "OCamlr" | "Camlp4Printers/OCamlr.cmo" ->
-          Camlp4.Printers.OCamlr.enable ()
-      | "pr_o.cmo" | "o" | "OCaml" | "Camlp4Printers/OCaml.cmo" ->
-          Camlp4.Printers.OCaml.enable ()
-      | "pr_dump.cmo" | "p" | "DumpOCamlAst" | "Camlp4Printers/DumpOCamlAst.cmo" ->
-          Camlp4.Printers.DumpOCamlAst.enable ()
-      | "d" | "DumpCamlp4Ast" | "Camlp4Printers/DumpCamlp4Ast" ->
-          Camlp4.Printers.DumpCamlp4Ast.enable ()
-      | x -> default x ];
+    match (n, x) with
+    [ ("Parsers"|"", "pa_r.cmo"      | "r"  | "OCamlr") -> load [pa_r]
+    | ("Parsers"|"", "pa_o.cmo"      | "o"  | "OCaml") -> load [pa_r; pa_o]
+    | ("Parsers"|"", "pa_rp.cmo"     | "rp" | "OCamlRevisedParser") -> load [pa_r; pa_o; pa_rp]
+    | ("Parsers"|"", "pa_op.cmo"     | "op" | "OCamlParser") -> load [pa_r; pa_o; pa_rp; pa_op]
+    | ("Parsers"|"", "pa_extend.cmo" | "pa_extend_m.cmo" | "g" | "Grammar") -> load [pa_r; pa_g]
+    | ("Parsers"|"", "pa_macro.cmo"  | "m"  | "Macro") -> load [pa_r; pa_m]
+    | ("Parsers"|"", "q" | "OCamlQuotation") -> load [pa_r; pa_qb; pa_q]
+    | ("Parsers"|"", "q_MLast.cmo" | "rq" | "OCamlRevisedQuotation") -> load [pa_r; pa_qb; pa_rq]
+    | ("Parsers"|"", "oq" | "OCamlOriginalQuotation") -> load [pa_r; pa_o; pa_qb; pa_oq]
+    | ("Parsers"|"", "rf") -> load [pa_r; pa_rp; pa_qb; pa_q; pa_g; pa_m]
+    | ("Parsers"|"", "of") -> load [pa_r; pa_o; pa_rp; pa_op; pa_qb; pa_rq; pa_g; pa_m]
+    | ("Printers"|"", "pr_r.cmo" | "r" | "OCamlr" | "Camlp4Printers/OCamlr.cmo") ->
+        Camlp4.Printers.OCamlr.enable ()
+    | ("Printers"|"", "pr_o.cmo" | "o" | "OCaml" | "Camlp4Printers/OCaml.cmo") ->
+        Camlp4.Printers.OCaml.enable ()
+    | ("Printers"|"", "pr_dump.cmo" | "p" | "DumpOCamlAst" | "Camlp4Printers/DumpOCamlAst.cmo") ->
+        Camlp4.Printers.DumpOCamlAst.enable ()
+    | ("Printers"|"", "d" | "DumpCamlp4Ast" | "Camlp4Printers/DumpCamlp4Ast") ->
+        Camlp4.Printers.DumpCamlp4Ast.enable ()
+    | _ ->
+      let y = "Camlp4"^n^"/"^x^".cmo" in
+      real_load (try find_in_path y with [ Not_found -> x ]) ];
     rcall_callback.val ();
   };
 
@@ -104,7 +99,7 @@ value rec parse_file dyn_loader name pa getdir =
     match getdir ast with
     [ Some x ->
         match x with
-        [ (_, "load", s) -> do { DynLoader.load dyn_loader s; None }
+        [ (_, "load", s) -> do { rewrite_and_load "" s; None }
         | (_, "directory", s) -> do { DynLoader.include_dir dyn_loader s; None }
         | (_, "use", s) -> Some (parse_file dyn_loader s pa getdir)
         | (_, "default_quotation", s) -> do { Quotation.default.val := s; None }
@@ -216,7 +211,7 @@ value input_file x =
         close_out o;
         task (process_impl dyn_loader) f;
       }
-    | ModuleImpl file_name -> DynLoader.load dyn_loader file_name
+    | ModuleImpl file_name -> rewrite_and_load "" file_name
     | IncludeDir dir -> DynLoader.include_dir dyn_loader dir ];
     rcall_callback.val ();
   };
