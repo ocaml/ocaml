@@ -172,5 +172,5 @@ let to_path n =
     None -> raise (Failure "to_path")
   | Some p -> p
 
-let from_longident longident = String.concat "." (Longident.flatten longident)
+let from_longident = Odoc_misc.string_of_longident
 
