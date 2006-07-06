@@ -531,9 +531,9 @@ let rec builtin_meths self env env2 body =
 
 module M = struct
   open CamlinternalOO
-  let builtin_meths arr self env env2 body =
+  let builtin_meths self env env2 body =
     let builtin, args = builtin_meths self env env2 body in
-    if not arr then [Lapply(oo_prim builtin, args)] else
+    (* if not arr then [Lapply(oo_prim builtin, args)] else *)
     let tag = match builtin with
       "get_const" -> GetConst
     | "get_var"   -> GetVar
@@ -625,8 +625,8 @@ let transl_class ids cl_id arity pub_meths cl vflag =
         begin try
           (* Doesn't seem to improve size for bytecode *)
           (* if not !Clflags.native_code then raise Not_found; *)
-          if !Clflags.debug then raise Not_found;
-          builtin_meths arr [self] env env2 (lfunction args body')
+          if not arr || !Clflags.debug then raise Not_found;
+          builtin_meths [self] env env2 (lfunction args body')
         with Not_found ->
           [lfunction (self :: args)
              (if not (IdentSet.mem env (free_variables body')) then body' else
