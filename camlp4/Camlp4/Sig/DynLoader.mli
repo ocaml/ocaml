@@ -36,4 +36,8 @@ module type S = sig
   (** [include_dir d] Add the directory [d] in the current load path
       list (like the common -I option). *)
   value include_dir : t -> string -> unit;
+
+  (** [find_in_path f] Returns the full path of the file [f] if
+      [f] is in the current load path, raises [Not_found] otherwise. *)
+  value find_in_path : t -> string -> string;
 end;

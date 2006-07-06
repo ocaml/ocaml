@@ -1,3 +1,4 @@
+(* camlp4r *)
 (****************************************************************************)
 (*                                                                          *)
 (*                              Objective Caml                              *)
@@ -16,13 +17,85 @@
  * - Daniel de Rauglaudre: initial version
  * - Nicolas Pouillard: refactoring
  *)
-(* camlp4r *)
+
 (* $Id$ *)
 
 open Camlp4;
 open PreCast.Syntax;
 open PreCast;
 open Format;
+module SSet = Set.Make String;
+
+value pa_r  = "Camlp4Parsers.OCamlr";
+value pa_o  = "Camlp4Parsers.OCaml";
+value pa_rp = "Camlp4Parsers.OCamlRevisedParser";
+value pa_op = "Camlp4Parsers.OCamlParser";
+value pa_g  = "Camlp4Parsers.Grammar";
+value pa_m  = "Camlp4Parsers.Macro";
+value pa_qb = "Camlp4Parsers.OCamlQuotationBase";
+value pa_q  = "Camlp4Parsers.OCamlQuotation";
+value pa_rq = "Camlp4Parsers.OCamlRevisedQuotation";
+value pa_oq = "Camlp4Parsers.OCamlOriginalQuotation";
+
+value dyn_loader = ref (fun []);
+value rcall_callback = ref (fun () -> ());
+value loaded_modules = ref SSet.empty;
+value add_to_loaded_modules name =
+  loaded_modules.val := SSet.add name loaded_modules.val;
+
+value file_of_module_name n =
+  let s = String.copy n in
+  let rec self pos =
+    try do {
+      let pos = String.index_from s pos '.';
+      s.[pos] := '/';
+    } with [ Not_found -> () ]
+  in do { self 0; s ^ ".cmo" };
+
+value rewrite_and_load n x =
+  let dyn_loader = dyn_loader.val () in
+  let find_in_path = DynLoader.find_in_path dyn_loader in
+  let real_load name = do {
+    add_to_loaded_modules name;
+    DynLoader.load dyn_loader name
+  } in
+  let default x =
+    let y = "Camlp4"^n^"/"^x^".cmo" in
+    real_load (try find_in_path y with [ Not_found -> x ]) in
+  let load = List.iter (fun n ->
+    if SSet.mem n loaded_modules.val then ()
+    else do {
+      add_to_loaded_modules n;
+      DynLoader.load dyn_loader (file_of_module_name n);
+    }) in
+  do {
+    if n <> "Printers" then
+      match x with
+      [ "pa_r.cmo"      | "r"  | "OCamlr" -> load [pa_r]
+      | "pa_o.cmo"      | "o"  | "OCaml" -> load [pa_r; pa_o]
+      | "pa_rp.cmo"     | "rp" | "OCamlRevisedParser" -> load [pa_r; pa_o; pa_rp]
+      | "pa_op.cmo"     | "op" | "OCamlParser" -> load [pa_r; pa_o; pa_rp; pa_op]
+      | "pa_extend.cmo" | "pa_extend_m.cmo" | "g" | "Grammar" -> load [pa_r; pa_g]
+      | "pa_macro.cmo"  | "m"  | "Macro" -> load [pa_r; pa_m]
+      | "q" | "OCamlQuotation" -> load [pa_r; pa_qb; pa_q]
+      | "q_MLast.cmo" | "rq" | "OCamlRevisedQuotation" -> load [pa_r; pa_qb; pa_rq]
+      | "oq" | "OCamlOriginalQuotation" -> load [pa_r; pa_o; pa_qb; pa_oq]
+      | "rf" -> load [pa_r; pa_rp; pa_qb; pa_q; pa_g; pa_m]
+      | "of" -> load [pa_r; pa_o; pa_rp; pa_op; pa_qb; pa_rq; pa_g; pa_m]
+      | x -> default x ]
+    else
+      match x with
+      [ "pr_r.cmo" | "r" | "OCamlr" | "Camlp4Printers/OCamlr.cmo" ->
+          Camlp4.Printers.OCamlr.enable ()
+      | "pr_o.cmo" | "o" | "OCaml" | "Camlp4Printers/OCaml.cmo" ->
+          Camlp4.Printers.OCaml.enable ()
+      | "pr_dump.cmo" | "p" | "DumpOCamlAst" | "Camlp4Printers/DumpOCamlAst.cmo" ->
+          Camlp4.Printers.DumpOCamlAst.enable ()
+      | "d" | "DumpCamlp4Ast" | "Camlp4Printers/DumpCamlp4Ast" ->
+          Camlp4.Printers.DumpCamlp4Ast.enable ()
+      | x -> default x ];
+    rcall_callback.val ();
+  };
 
 value print_warning = eprintf "%a:\n%s@." Loc.print;
 
@@ -121,73 +194,34 @@ type file_kind =
   | ModuleImpl of string
   | IncludeDir of string ];
 
-value rcall_callback = ref (fun () -> ());
-
-value file_name_filter =
-  let map = [
-    ("pa_r.cmo", "Camlp4Parsers/OCamlr.cmo");
-    ("pa_o.cmo", "Camlp4Parsers/OCaml.cmo");
-    ("pa_rp.cmo", "Camlp4Parsers/OCamlRevisedParser.cmo");
-    ("pa_op.cmo", "Camlp4Parsers/OCamlParser.cmo");
-    ("pa_extend.cmo", "Camlp4Parsers/Grammar.cmo");
-    ("pa_extend_m.cmo", "Camlp4Parsers/Grammar.cmo");
-    ("pa_macro.cmo", "Camlp4Parsers/Macro.cmo");
-    ("pr_dump.cmo", "Camlp4Printers/DumpOCamlAst.cmo");
-    ("pr_o.cmo", "Camlp4Printers/OCaml.cmo");
-    ("pr_r.cmo", "Camlp4Printers/OCamlr.cmo")
-  ] in
-  fun file_name ->
-    let file_name =
-      try List.assoc file_name map with [ Not_found -> file_name ] in
-    let f g = let () = g () in let () = rcall_callback.val () in None in
-    match file_name with
-    [ "Camlp4Printers/OCaml.cmo" ->
-        f Camlp4.Printers.OCaml.enable
-    | "Camlp4Printers/OCamlr.cmo" ->
-        f Camlp4.Printers.OCamlr.enable
-    | "Camlp4Printers/DumpOCamlAst.cmo" ->
-        f Camlp4.Printers.DumpOCamlAst.enable
-    | "Camlp4Printers/DumpCamlp4Ast.cmo" ->
-        f Camlp4.Printers.DumpCamlp4Ast.enable
-    | _ -> Some file_name ];
-
 value search_stdlib = ref True;
 value print_loaded_modules = ref False;
-value dyn_loader = ref None;
 value (task, do_task) =
-  let t = ref None
-  in (fun f x ->
-        match x with
-        [ None -> ()
-        | Some x ->
-            t.val := Some (if t.val = None then (fun _ -> f x)
-                            else (fun usage -> usage ())) ],
-      fun usage -> match t.val with [ Some f -> f usage | None -> () ]);
+  let t = ref None in
+  let task f x =
+    t.val := Some (if t.val = None then (fun _ -> f x)
+                   else (fun usage -> usage ())) in
+  let do_task usage = match t.val with [ Some f -> f usage | None -> () ] in
+  (task, do_task);
 value input_file x =
-  let dyn_loader = match dyn_loader.val with [ None -> assert False | Some d -> d ] in (* FIXME *)
+  let dyn_loader = dyn_loader.val () in
   do {
     rcall_callback.val (); 
     match x with
-    [ Intf file_name -> task (process_intf dyn_loader) (file_name_filter file_name)
-    | Impl file_name -> task (process_impl dyn_loader) (file_name_filter file_name)
+    [ Intf file_name -> task (process_intf dyn_loader) file_name
+    | Impl file_name -> task (process_impl dyn_loader) file_name
     | Str s -> do {
         let (f, o) = Filename.open_temp_file "from_string" ".ml";
         output_string o s;
         close_out o;
-        task (process_impl dyn_loader) (Some f);
+        task (process_impl dyn_loader) f;
       }
-    | ModuleImpl file_name ->
-        match file_name_filter file_name with
-        [ None -> () | Some x -> DynLoader.load dyn_loader x ]
+    | ModuleImpl file_name -> DynLoader.load dyn_loader file_name
     | IncludeDir dir -> DynLoader.include_dir dyn_loader dir ];
     rcall_callback.val ();
   };
 
 value initial_spec_list =
-  let f x y =
-    match file_name_filter ("Camlp4"^x^"/"^y^".cmo") with
-    [ None -> ()
-    | Some x -> input_file (ModuleImpl x) ] in
   [("-I", Arg.String (fun x -> input_file (IncludeDir x)),
     "<directory>  Add directory in search patch for object files.");
   ("-where", Arg.Unit print_stdlib,
@@ -219,11 +253,11 @@ value initial_spec_list =
   ("-no_quot", Arg.Clear Config.quotations,
     "Don't parse quotations, allowing to use, e.g. \"<:>\" as token.");
   ("-loaded-modules", Arg.Set print_loaded_modules, "Print the list of loaded modules.");
-  ("-parser", Arg.String (fun x -> f "Parsers" x),
+  ("-parser", Arg.String (rewrite_and_load "Parsers"),
     "<name>  Load the parser Camlp4Parsers/<name>.cmo");
-  ("-printer", Arg.String (fun x -> f "Printers" x),
+  ("-printer", Arg.String (rewrite_and_load "Printers"),
     "<name>  Load the printer Camlp4Printers/<name>.cmo");
-  ("-filter", Arg.String (fun x -> f "Filters" x),
+  ("-filter", Arg.String (rewrite_and_load "Filters"),
     "<name>  Load the filter Camlp4Filters/<name>.cmo")
 ];
 
@@ -237,21 +271,22 @@ value anon_fun name =
     else if Filename.check_suffix name ".cma" then ModuleImpl name
     else raise (Arg.Bad ("don't know what to do with " ^ name)));
 
-value main ?(callback = fun _ -> ()) argv =
+value main argv =
   let usage () = do { usage initial_spec_list (Options.ext_spec_list ()); exit 0 } in
-  let loaded_modules = Queue.create () in
   try do {
-    dyn_loader.val := Some (DynLoader.mk ~ocaml_stdlib:search_stdlib.val
-                                         ~camlp4_stdlib:search_stdlib.val ());
+    let dynloader = DynLoader.mk ~ocaml_stdlib:search_stdlib.val
+                                 ~camlp4_stdlib:search_stdlib.val ();
+    dyn_loader.val := fun () -> dynloader;
     let call_callback () =
-      callback (fun (name, module_callback) ->
-                  let () = Queue.push name loaded_modules in
-                  module_callback ());
+      Register.iter_and_take_callbacks
+        (fun (name, module_callback) ->
+           let () = add_to_loaded_modules name in
+           module_callback ());
     call_callback ();
     rcall_callback.val := call_callback;
     match Options.parse anon_fun argv with
     [ [] -> ()
-    | ["-help" :: _] -> usage ()
+    | ["-help"|"--help"|"-h"|"-?" :: _] -> usage ()
     | [s :: _] ->
         do { eprintf "%s: unknown or misused option\n" s;
             eprintf "Use option -help for usage@.";
@@ -259,7 +294,7 @@ value main ?(callback = fun _ -> ()) argv =
     do_task usage;
     call_callback ();
     if print_loaded_modules.val then do {
-      Queue.iter (eprintf "%s@.") loaded_modules;
+      SSet.iter (eprintf "%s@.") loaded_modules.val;
     } else ()
   }
   with
@@ -269,4 +304,4 @@ value main ?(callback = fun _ -> ()) argv =
   | Arg.Help _ -> usage ()
   | exc -> do { eprintf "@[<v0>%a@]@." ErrorHandler.print exc; exit 2 } ];
 
-main ~callback:Register.iter_and_take_callbacks Sys.argv;
+main Sys.argv;
