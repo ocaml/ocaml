@@ -652,7 +652,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     [ <:ctyp< $id:i$ >> -> o#ident f i
     | <:ctyp< $anti:s$ >> -> o#anti f s
     | <:ctyp< _ >> -> pp f "_"
-    | <:ctyp< ~ $s$ : $t$ >> -> pp f "@[<2>~%s:@ %a@]" s o#simple_ctyp t
+    | <:ctyp< ~ $s$ : $t$ >> -> pp f "@[<2>%s:@ %a@]" s o#simple_ctyp t
     | <:ctyp< ? $s$ : $t$ >> -> pp f "@[<2>?%s:@ %a@]" s o#simple_ctyp t
     | <:ctyp< < > >> -> pp f "< >"
     | <:ctyp< < .. > >> -> pp f "< .. >"

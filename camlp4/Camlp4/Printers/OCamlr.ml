@@ -177,6 +177,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     | <:ctyp< [ > $t$ ] >> -> pp f "@[<2>[ >@ %a@]@,]" o#ctyp t
     | <:ctyp< $t1$ == $t2$ >> ->
         pp f "@[<2>%a@ ==@ %a@]" o#simple_ctyp t1 o#simple_ctyp t2
+    | <:ctyp< ~ $s$ : $t$ >> -> pp f "@[<2>~%s:@ %a@]" s o#simple_ctyp t
     | t -> super#simple_ctyp f t ];
 
     method ctyp1 f = fun
