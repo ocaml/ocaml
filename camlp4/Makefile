@@ -14,7 +14,10 @@ clean-local:
 	if test -x ../ocaml; then \
 	$(OCAML) build/build.ml -clean; \
 	else \
+	if test -x $(YAM); then \
 	$(YAM) -v -clean; \
+	else : ; \
+	fi; \
 	fi
 
 cleanall:
