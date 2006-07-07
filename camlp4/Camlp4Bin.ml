@@ -253,7 +253,8 @@ value initial_spec_list =
   ("-printer", Arg.String (rewrite_and_load "Printers"),
     "<name>  Load the printer Camlp4Printers/<name>.cmo");
   ("-filter", Arg.String (rewrite_and_load "Filters"),
-    "<name>  Load the filter Camlp4Filters/<name>.cmo")
+    "<name>  Load the filter Camlp4Filters/<name>.cmo");
+  ("--", Arg.Unit ignore, "Deprecated, does nothing")
 ];
 
 Options.init initial_spec_list;
