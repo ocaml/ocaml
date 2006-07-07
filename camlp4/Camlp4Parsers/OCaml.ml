@@ -282,6 +282,15 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
       test 1)
   ;
 
+  value lident_colon =
+    Gram.Entry.of_parser "lident_colon"
+      (fun strm ->
+        match Stream.npeek 2 strm with
+        [ [(LIDENT i, _); (KEYWORD ":", _)] ->
+            do { Stream.junk strm; Stream.junk strm; i }
+        | _ -> raise Stream.Failure ])
+  ;
+
   value constr_arity = ref [("Some", 1); ("Match_Failure", 1)];
 
   value rec is_ident_constr_call =
@@ -450,7 +459,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
             <:expr< let module $m$ = $mb$ in $e$ >>
         | "function"; OPT "|"; a = match_case ->
             <:expr< fun [ $a$ ] >>
-        | "fun"; p = patt LEVEL "simple"; e = fun_def ->
+        | "fun"; p = labeled_ipatt; e = fun_def ->
             <:expr< fun $p$ -> $e$ >>
         | "match"; e = SELF; "with"; OPT "|"; a = match_case ->
             <:expr< match $e$ with [ $a$ ] >>
@@ -690,16 +699,14 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
       [ [ "constraint" -> () ] ]
     ;
     class_type_plus:
-      [ [ test_ctyp_minusgreater; t = ctyp LEVEL "star"; "->"; ct = SELF ->
-            <:class_type< [ $t$ ] -> $ct$ >>
-        | "~"; i = a_LIDENT; ":"; t = ctyp LEVEL "star"; "->"; ct = SELF ->
-            <:class_type< [ ~ $i$ : $t$ ] -> $ct$ >>
-        | i = LABEL (* FIXME inlie a_LABEL *); t =  ctyp LEVEL "star"; "->"; ct = SELF ->
+      [ [ i = lident_colon; t = ctyp LEVEL "star"; "->"; ct = SELF ->
             <:class_type< [ ~ $i$ : $t$ ] -> $ct$ >>
         | "?"; i = a_LIDENT; ":"; t = ctyp LEVEL "star"; "->"; ct = SELF ->
             <:class_type< [ ? $i$ : $t$ ] -> $ct$ >> 
         | i = OPTLABEL (* FIXME inline a_OPTLABEL *); t = ctyp LEVEL "star"; "->"; ct = SELF ->
             <:class_type< [ ? $i$ : $t$ ] -> $ct$ >>
+        | test_ctyp_minusgreater; t = ctyp LEVEL "star"; "->"; ct = SELF ->
+            <:class_type< [ $t$ ] -> $ct$ >>
         | ct = class_type -> ct ] ]
     ;
     class_type_longident_and_param:
@@ -722,20 +729,12 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
       [ [ t1 = SELF; "as"; "'"; i = a_ident -> <:ctyp< $t1$ as '$i$ >> ]
       | "arrow" RIGHTA
         [ t1 = SELF; "->"; t2 = SELF -> <:ctyp< $t1$ -> $t2$ >>
-        (*FIXME factor this*)
-
-        (*FIXME a_LIDENT don't works since the dynamic factorisation applies
-                only on tokens patt *)
-        (* | i = LIDENT; ":"; t1 = ctyp LEVEL "star"; "->"; t2 = SELF -> *)
-            (* <:ctyp< ( ~ $i$ : $t1$ ) -> $t2$ >> *)
-        | "~"; i = a_LIDENT; ":"; t1 = ctyp LEVEL "star"; "->"; t2 = SELF ->
-            <:ctyp< (~ $i$ : $t1$) -> $t2$ >>
-        | i = a_LABEL; t1 =  ctyp LEVEL "star"; "->"; t2 = SELF ->
-            <:ctyp< (~ $i$ : $t1$) -> $t2$ >>
-        | "?"; i = a_LIDENT; ":"; t1 = ctyp LEVEL "star"; "->"; t2 = SELF ->
-            <:ctyp< (? $i$ : $t1$) -> $t2$ >>
+        | i = lident_colon; t1 = ctyp LEVEL "star"; "->"; t2 = SELF ->
+            <:ctyp< ( ~ $i$ : $t1$ ) -> $t2$ >>
         | i = a_OPTLABEL; t1 = ctyp LEVEL "star"; "->"; t2 = SELF ->
-            <:ctyp< (? $i$ : $t1$) -> $t2$ >> ]
+            <:ctyp< ( ? $i$ : $t1$ ) -> $t2$ >>
+        | "?"; i=lident_colon;t1 = ctyp LEVEL "star"; "->"; t2 = SELF ->
+            <:ctyp< ( ? $i$ : $t1$ ) -> $t2$ >> ]
       | "star"
         [ t = SELF; "*"; tl = star_ctyp ->
             <:ctyp< ( $t$ * $tl$ ) >> ]
