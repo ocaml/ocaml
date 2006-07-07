@@ -344,14 +344,19 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     ;
     stream_patt:
       [ [ spc = stream_patt_comp -> [(spc, None)]
-        | spc = stream_patt_comp; ";";
-          sp = LIST1 stream_patt_comp_err SEP ";" ->
+        | spc = stream_patt_comp; ";"; sp = stream_patt_comp_err_list ->
             [(spc, None) :: sp]
         | -> [] ] ]
     ;
     stream_patt_comp_err:
       [ [ spc = stream_patt_comp; eo = OPT [ "??"; e = stream_expr -> e ] ->
             (spc, eo) ] ]
+    ;
+    stream_patt_comp_err_list:
+      [ [ spc = stream_patt_comp_err -> [spc]
+        | spc = stream_patt_comp_err; ";" -> [spc]
+        | spc = stream_patt_comp_err; ";"; sp = stream_patt_comp_err_list ->
+            [spc :: sp] ] ]
     ;
     stream_patt_comp:
       [ [ stream_quot; p = patt; eo = OPT [ "when"; e = stream_expr -> e ] -> SpTrm _loc p eo
