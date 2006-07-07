@@ -614,9 +614,10 @@ module Make (Ast : Sig.Camlp4Ast.S) = struct
         let lab = paolab lab p in
         mkexp loc
           (Pexp_function ("?" ^ lab) (Some (expr e1)) [(patt p, when_expr e2 w)])
-    | <:expr@loc< fun [ $PaOlb _ lab po$ when $w$ -> $e$ ] >> ->
+    | <:expr@loc< fun [ $PaOlb _ lab p$ when $w$ -> $e$ ] >> ->
+        let lab = paolab lab p in
         mkexp loc
-          (Pexp_function ("?" ^ lab) None [(patt_of_lab loc lab po, when_expr e w)])
+          (Pexp_function ("?" ^ lab) None [(patt_of_lab loc lab p, when_expr e w)])
     | ExFun loc a -> mkexp loc (Pexp_function "" None (match_case a []))
     | ExIfe loc e1 e2 e3 ->
         mkexp loc (Pexp_ifthenelse (expr e1) (expr e2) (Some (expr e3)))
@@ -939,9 +940,10 @@ module Make (Ast : Sig.Camlp4Ast.S) = struct
     | CeFun loc (PaOlbi _ lab p e) ce ->
         let lab = paolab lab p in
         mkpcl loc (Pcl_fun ("?" ^ lab) (Some (expr e)) (patt p) (class_expr ce))
-    | CeFun loc (PaOlb _ lab po) ce ->
+    | CeFun loc (PaOlb _ lab p) ce ->
+        let lab = paolab lab p in
         mkpcl loc
-          (Pcl_fun ("?" ^ lab) None (patt_of_lab loc lab po) (class_expr ce))
+          (Pcl_fun ("?" ^ lab) None (patt_of_lab loc lab p) (class_expr ce))
     | CeFun loc p ce -> mkpcl loc (Pcl_fun "" None (patt p) (class_expr ce))
     | CeLet loc rf bi ce ->
         mkpcl loc (Pcl_let (mkrf rf) (binding bi []) (class_expr ce))
