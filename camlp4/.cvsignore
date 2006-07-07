@@ -1,0 +1,17 @@
+*.cm*
+Camlp4/Sig/Grammar.ml
+Camlp4/Struct/Grammar.ml
+Camlp4/Struct/Lexer.ml
+Camlp4/Sig.ml
+Camlp4/Struct.ml
+Camlp4/Syntax.ml
+Camlp4Printers.ml
+Camlp4Parsers.ml
+Camlp4Filters.ml
+.cache-status
+Camlp4.ml
+yam
+build/camlp4_config.ml
+*.tmp.ml
+*.run
+*.opt
