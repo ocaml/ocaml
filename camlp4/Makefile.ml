@@ -53,9 +53,11 @@ let camlp4boot_may_debug mods =
   in "'" ^ String.concat " " camlp4_modules ^ "'"
 
 let () =
-  !options.ocamlc       := ocamlrun ^^ "../ocamlc -nostdlib -I ../stdlib";
-  !options.ocamlopt     := ocamlrun ^^ "../ocamlopt -nostdlib -I ../stdlib";
+  (* !options.ocamlc := ocamlrun ^^ "../ocamlc -nostdlib -I ../stdlib"; *)
+  (* !options.ocamlopt := ocamlrun ^^ "../ocamlopt -nostdlib -I ../stdlib"; *)
   (* !options.ocamlopt     := ocamlrun ^^ "../ocamlopt -p -nostdlib -I ../asmrun -I ../stdlib"; *)
+  !options.ocamlc       := "../ocamlcomp.sh";
+  !options.ocamlopt     := "../ocamlcompopt.sh";
   !options.ocamldoc     := ocamlrun ^^ "../ocamldoc/ocamldoc";
   !options.ocamlyacc    := ocamlrun ^^ "../boot/ocamlyacc";
   !options.ocamllex     := ocamlrun ^^ "../boot/ocamllex";
