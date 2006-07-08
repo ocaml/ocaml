@@ -120,7 +120,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     let () = o#node f e Ast.loc_of_expr in
     match e with
     [ <:expr< do { $e1$; $e2$ } >> ->
-        pp f "@[<hv0>@[<hv2>do {@ %a;@ %a@]@ }@]" o#expr e2 o#expr e1
+        pp f "@[<hv0>@[<hv2>do {@ %a;@ %a@]@ }@]" o#expr e1 o#expr e2
     | <:expr< do { $e$ } >> ->
         o#expr f e
     | <:expr< $e1$ := $e2$ >> ->
