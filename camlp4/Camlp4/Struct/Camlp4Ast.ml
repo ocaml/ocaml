@@ -454,31 +454,29 @@ module Make (Loc : Sig.Loc.S) : Sig.Camlp4Ast.S with module Loc = Loc =
       | _ -> False ];
     value ident_of_expr =
       let error () =
-        invalid_arg "ident_of_expr: this expression is not an identifier"
+        invalid_arg "ident_of_expr: this expression is not an identifier" in
+      let rec self =
+        fun
+        [ Ast.ExApp _loc e1 e2 -> Ast.IdApp _loc (self e1) (self e2)
+        | Ast.ExAcc _loc e1 e2 -> Ast.IdAcc _loc (self e1) (self e2)
+        | Ast.ExId _ (Ast.IdLid _ _) -> error ()
+        | Ast.ExId _ i -> if is_module_longident i then i else error ()
+        | _ -> error () ]
       in
-        let rec self =
-          fun
-          [ Ast.ExApp _loc e1 e2 -> Ast.IdApp _loc (self e1) (self e2)
-          | Ast.ExAcc _loc e1 e2 -> Ast.IdAcc _loc (self e1) (self e2)
-          | Ast.ExId _ (Ast.IdLid _ _) -> error ()
-          | Ast.ExId _ i -> if is_module_longident i then i else error ()
-          | _ -> error () ]
-        in
-          fun
-          [ Ast.ExId _ i -> i
-          | Ast.ExApp _loc e1 e2 -> error ()
-          | t -> self t ];
+        fun
+        [ Ast.ExId _ i -> i
+        | Ast.ExApp _loc e1 e2 -> error ()
+        | t -> self t ];
     value ident_of_ctyp =
       let error () =
-        invalid_arg "ident_of_ctyp: this type is not an identifier"
-      in
-        let rec self =
-          fun
-          [ Ast.TyApp _loc t1 t2 -> Ast.IdApp _loc (self t1) (self t2)
-          | Ast.TyId _ (Ast.IdLid _ _) -> error ()
-          | Ast.TyId _ i -> if is_module_longident i then i else error ()
-          | _ -> error () ]
-        in fun [ Ast.TyId _ i -> i | t -> self t ];
+        invalid_arg "ident_of_ctyp: this type is not an identifier" in
+      let rec self =
+        fun
+        [ Ast.TyApp _loc t1 t2 -> Ast.IdApp _loc (self t1) (self t2)
+        | Ast.TyId _ (Ast.IdLid _ _) -> error ()
+        | Ast.TyId _ i -> if is_module_longident i then i else error ()
+        | _ -> error () ]
+      in fun [ Ast.TyId _ i -> i | t -> self t ];
     value rec tyOr_of_list =
       fun
       [ [] -> Ast.TyNil ghost
