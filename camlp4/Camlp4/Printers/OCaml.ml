@@ -462,7 +462,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     | <:expr< lazy $e$ >> -> pp f "@[<2>lazy@ %a@]" o#expr e
     | <:expr< let $opt:r$ $bi$ in $e$ >> ->
         match e with
-        [ <:expr< let $_$ in $_$ >> ->
+        [ <:expr< let $opt:_$ $_$ in $_$ >> ->
             pp f "@[<0>@[<2>let %a%a in@]@ %a@]"
               o#rec_flag r o#binding bi o#reset_semi#expr e
         | _ ->
