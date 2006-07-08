@@ -30,7 +30,7 @@
 #     end;
 #   footer
 
-camlp4 = '../boot/ocamlrun ./camlp4boot.run'
+camlp4 = '../boot/ocamlrun ./boot/camlp4boot'
 puts '(* Generated file, do not edit by hand! *)'
 contents = ARGF.read.split("\n")
 kinds  = []
@@ -47,7 +47,7 @@ for line in contents do
   elsif line =~ /(.*)<:meta<\s*(.*)\s*>>(.*)/
     pre, q, post = $1, $2, $3
     File.open('/tmp/metaq.ml', 'w') { |f| f.print q, ';' }
-    antiquots = q.scan(/\$(?:(\w+):)?((\w+?)(\d*)(l)?)\$/)
+    antiquots = q.scan(/\$(?:((?:\w|`|\.)+):)?((\w+?)(\d*)(l)?)\$/)
     if antiquots.size == 1 and antiquots.first.first == 'anti'
       cur << "#{pre}#{q.gsub(/<:(\w+)</, '<:\1@_loc<').ljust(65)} -> <:meta_kind< $anti:s$ >>#{post}"
     else
@@ -62,18 +62,10 @@ for line in contents do
           # res = "meta_s #{lvar}"
         when /^(exp|pat|typ|mtyp|mexp|sigi|stri|id|tup)$/
           res = "meta_#{var}#{list} #{lvar}"
-        when /^(opt|list|anti|when)$/
-          if name =~ /^(opt|when)$/
-            if var =~ /^(b|pr|m|v|r)$/
-              res = "meta_bool _loc #{lvar}"
-            # elsif var == 's'
-            else
-              res = "meta_opt _loc meta_#{var} #{lvar}"
-              # res = "meta_#{var} #{lvar}"
-            end
-          else
-            res = "meta_#{name} _loc meta_#{var} #{lvar}"
-          end
+        when /^(rec|mutable|virtual|when|private|\.\.)$/
+          res = "meta_bool _loc #{lvar}"
+        when /^(list|anti)$/
+          res = "meta_#{name} _loc meta_#{var} #{lvar}"
         when /^(to|str)$/
           res = "meta_#{name} _loc #{lvar}"
         when String

@@ -365,7 +365,7 @@ module Make (Token : Sig.Camlp4Token.S)
     | '$'                                     { set_start_p c; ANTIQUOT("", "") }
     (* Removed because it breaks escapings like: <:expr< $str: "\n"$ >>
      * | '\\' _                     { istore_char c 1; parse (antiquot "") c } *)
-    | ('`'? identchar* as name) ':'
+    | ('`'? (identchar*|'.'+) as name) ':'
       { with_curr_loc (antiquot name) (shift (1 + String.length name) c)        }
     | _                                           { store_parse (antiquot "") c }
 

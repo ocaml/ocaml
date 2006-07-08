@@ -89,8 +89,7 @@ let ocaml_Module_with_meta =
   generic_ocaml_Module_extension ".meta.ml"
   (fun _ i o ->
     "if test ! -e"^^o^^
-       "|| (ruby --version > /dev/null 2> /dev/null"^^
-           "&& test -e ./camlp4boot.run);"^^
+       "|| (ruby --version > /dev/null 2> /dev/null);"^^
     "then ruby ./build/meta.rb"^^i^^">"^^o^^"; else : ; fi")
 let ocaml_Module_with_genmap =
   generic_ocaml_Module_extension ".genmap.ml"

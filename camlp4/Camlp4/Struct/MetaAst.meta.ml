@@ -13,7 +13,6 @@
 (*                                                                          *)
 (****************************************************************************)
 
-
 (* Authors:
  * - Nicolas Pouillard: initial version
  *)
@@ -136,7 +135,7 @@ module Make (MetaLoc : META_LOC) = struct
   | <:meta< <:expr< if $e1$ then $e2$ else $e3$ >> >>
   | <:meta< <:expr< $int:s$ >> >>
   | <:meta< <:expr< lazy $e$ >> >>
-  | <:meta< <:expr< let $opt:r$ $bi$ in $e$ >> >>
+  | <:meta< <:expr< let $rec:r$ $bi$ in $e$ >> >>
   | <:meta< <:expr< match $e$ with [ $a$ ] >> >>
   | <:meta< <:expr< { $bi$ } >> >>
   | <:meta< <:expr< { ($e$) with $bi$ } >> >>
@@ -234,9 +233,7 @@ module Make (MetaLoc : META_LOC) = struct
   | <:meta< <:ctyp< # $i$ >> >>
   | <:meta< <:ctyp< ~ $s$ : $t$ >> >>
   | <:meta< <:ctyp< $t1$ == $t2$ >> >>
-  (* | <:me-ta< <:ctyp< < $t$ > >> >> *)
-  (* | <:me-ta< <:ctyp< < $t$ .. > >> >> *)
-  | <:meta< <:ctyp< < $t$ $opt:b$ > >> >>
+  | <:meta< <:ctyp< < $t$ $..:b$ > >> >>
   | <:meta< <:ctyp< ? $s$ : $t$ >> >>
   | <:meta< <:ctyp< ! $t1$ . $t2$ >> >>
   | <:meta< <:ctyp< '$s$ >> >>
@@ -291,7 +288,7 @@ module Make (MetaLoc : META_LOC) = struct
   | <:meta< <:str_item< module type $s$ = $mt$ >> >>
   | <:meta< <:str_item< open $i$ >> >>
   | <:meta< <:str_item< type $t$ >> >>
-  | <:meta< <:str_item< value $opt:r$ $bi$ >> >>
+  | <:meta< <:str_item< value $rec:r$ $bi$ >> >>
   | <:meta< <:str_item< include $me$ >> >>
   | <:meta< <:str_item< class $ce$ >> >>
   | <:meta< <:str_item< class type $ct$ >> >>
@@ -321,10 +318,10 @@ module Make (MetaLoc : META_LOC) = struct
   and class_expr = fun
   [ <:meta< <:class_expr<>> >>
   | <:meta< <:class_expr< $ce$ $e$ >> >>
-  | <:meta< <:class_expr< $opt:v$ $id:i$ >> >>
-  | <:meta< <:class_expr< $opt:v$ $id:i$ [ $t$ ] >> >>
+  | <:meta< <:class_expr< $virtual:v$ $id:i$ >> >>
+  | <:meta< <:class_expr< $virtual:v$ $id:i$ [ $t$ ] >> >>
   | <:meta< <:class_expr< fun $p$ -> $ce$ >> >>
-  | <:meta< <:class_expr< let $opt:r$ $bi$ in $ce$ >> >>
+  | <:meta< <:class_expr< let $rec:r$ $bi$ in $ce$ >> >>
   | <:meta< <:class_expr< object ($p$) $cst$ end >> >>
   | <:meta< <:class_expr< $anti:s$ >> >>
   | <:meta< <:class_expr< $ce1$ and $ce2$ >> >>
@@ -334,8 +331,8 @@ module Make (MetaLoc : META_LOC) = struct
 
   and class_type = fun
   [ <:meta< <:class_type<>> >>
-  | <:meta< <:class_type< $opt:v$ $id:i$ >> >>
-  | <:meta< <:class_type< $opt:v$ $id:i$ [ $t$ ] >> >>
+  | <:meta< <:class_type< $virtual:v$ $id:i$ >> >>
+  | <:meta< <:class_type< $virtual:v$ $id:i$ [ $t$ ] >> >>
   | <:meta< <:class_type< [ $t$ ] -> $ct$ >> >>
   | <:meta< <:class_type< $anti:s$ >> >>
   | <:meta< <:class_type< object ($t$) $csg$ end >> >>
@@ -349,9 +346,9 @@ module Make (MetaLoc : META_LOC) = struct
   | <:meta< <:class_sig_item< $csg1$; $csg2$ >> >>
   | <:meta< <:class_sig_item< $anti:s$ >> >>
   | <:meta< <:class_sig_item< inherit $ct$ >> >>
-  | <:meta< <:class_sig_item< method $opt:pr$ $s$ : $t$ >> >>
-  | <:meta< <:class_sig_item< method virtual $opt:pr$ $s$ : $t$ >> >>
-  | <:meta< <:class_sig_item< value $opt:m$ $opt:v$ $s$ : $t$ >> >> ]
+  | <:meta< <:class_sig_item< method $private:pr$ $s$ : $t$ >> >>
+  | <:meta< <:class_sig_item< method virtual $private:pr$ $s$ : $t$ >> >>
+  | <:meta< <:class_sig_item< value $mutable:m$ $virtual:v$ $s$ : $t$ >> >> ]
 
   and class_str_item = fun
   [ <:meta< <:class_str_item<>> >>
@@ -360,10 +357,10 @@ module Make (MetaLoc : META_LOC) = struct
   | <:meta< <:class_str_item< type $t1$ = $t2$ >> >>
   | <:meta< <:class_str_item< inherit $ce$ as $s$ >> >>
   | <:meta< <:class_str_item< initializer $e$ >> >>
-  | <:meta< <:class_str_item< method $opt:pr$ $s$ : $t$ = $e$ >> >>
-  | <:meta< <:class_str_item< method virtual $opt:pr$ $s$ : $t$ >> >>
-  | <:meta< <:class_str_item< value $opt:m$ $s$ = $e$ >> >>
-  | <:meta< <:class_str_item< value virtual $opt:m$ $s$ : $t$ >> >> ];
+  | <:meta< <:class_str_item< method $private:pr$ $s$ : $t$ = $e$ >> >>
+  | <:meta< <:class_str_item< method virtual $private:pr$ $s$ : $t$ >> >>
+  | <:meta< <:class_str_item< value $mutable:m$ $s$ = $e$ >> >>
+  | <:meta< <:class_str_item< value virtual $mutable:m$ $s$ : $t$ >> >> ];
 
   <:stop_meta<>>
 end;

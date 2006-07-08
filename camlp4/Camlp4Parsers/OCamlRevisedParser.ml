@@ -121,8 +121,8 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     | <:expr< $chr:_$ >> -> e
     | <:expr< $str:_$ >> -> e
     | <:expr< $_$ . $_$ >> -> e
-    | <:expr< let $opt:rf$ $bi$ in $e$ >> ->
-        <:expr< let $opt:rf$ $subst_binding v bi$ in $subst v e$ >>
+    | <:expr< let $rec:rf$ $bi$ in $e$ >> ->
+        <:expr< let $rec:rf$ $subst_binding v bi$ in $subst v e$ >>
     | <:expr< $e1$ $e2$ >> -> <:expr< $subst v e1$ $subst v e2$ >>
     | <:expr< ( $tup:e$ ) >> -> <:expr< ( $tup:subst v e$ ) >>
     | <:expr< $e1$, $e2$ >> -> <:expr< $subst v e1$, $subst v e2$ >>

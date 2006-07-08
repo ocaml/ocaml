@@ -436,11 +436,11 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     str_item:
       [ "top"
           [ "let"; r = opt_rec; bi = binding; "in"; x = expr ->
-              <:str_item< let $opt:r$ $bi$ in $x$ >>
+              <:str_item< let $rec:r$ $bi$ in $x$ >>
           | "let"; r = opt_rec; bi = binding ->
               match bi with
               [ <:binding< _ = $e$ >> -> <:str_item< $exp:e$ >>
-              | _ -> <:str_item< value $opt:r$ $bi$ >> ]
+              | _ -> <:str_item< value $rec:r$ $bi$ >> ]
           | "let"; "module"; m = a_UIDENT; mb = module_binding0; "in"; e = expr ->
               <:str_item< let module $m$ = $mb$ in $e$ >>
       ] ]
@@ -453,7 +453,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
       | "top"
         [ "let"; r = opt_rec; bi = binding; "in";
           x = expr LEVEL ";" ->
-            <:expr< let $opt:r$ $bi$ in $x$ >>
+            <:expr< let $rec:r$ $bi$ in $x$ >>
         | "let"; "module"; m = a_UIDENT; mb = module_binding0; "in";
           e = expr LEVEL ";" ->
             <:expr< let module $m$ = $mb$ in $e$ >>
@@ -765,7 +765,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
         | "("; t = SELF; ")" -> <:ctyp< $t$ >>
         | "#"; i = class_longident -> <:ctyp< # $i$ >>
         | "<"; ml = opt_meth_list; v = opt_dot_dot; ">" ->
-            <:ctyp< < $ml$ $opt:v$ > >>
+            <:ctyp< < $ml$ $..:v$ > >>
         | "["; rfl = row_field; "]" ->
             <:ctyp< [ = $rfl$ ] >>
         | "["; ">"; "]" -> <:ctyp< [ > $<:ctyp<>>$ ] >>

@@ -14,7 +14,6 @@
 (*                                                                          *)
 (****************************************************************************)
 
-
 (* Authors:
  * - Nicolas Pouillard: initial version
  *)
@@ -137,7 +136,7 @@ module Make (MetaLoc : META_LOC) = struct
     | <:expr@_loc< if $e1$ then $e2$ else $e3$ >>                       -> <:expr< Ast.ExIfe $meta_loc_expr _loc$ $meta_e e1$ $meta_e e2$ $meta_e e3$ >>
     | <:expr@_loc< $int:s$ >>                                           -> <:expr< Ast.ExInt $meta_loc_expr _loc$ $meta_s _loc s$ >>
     | <:expr@_loc< lazy $e$ >>                                          -> <:expr< Ast.ExLaz $meta_loc_expr _loc$ $meta_e e$ >>
-    | <:expr@_loc< let $opt:r$ $bi$ in $e$ >>                           -> <:expr< Ast.ExLet $meta_loc_expr _loc$ $meta_bool _loc r$ $meta_bi bi$ $meta_e e$ >>
+    | <:expr@_loc< let $rec:r$ $bi$ in $e$ >>                           -> <:expr< Ast.ExLet $meta_loc_expr _loc$ $meta_bool _loc r$ $meta_bi bi$ $meta_e e$ >>
     | <:expr@_loc< match $e$ with [ $a$ ] >>                            -> <:expr< Ast.ExMat $meta_loc_expr _loc$ $meta_e e$ $meta_a a$ >>
     | <:expr@_loc< { $bi$ } >>                                          -> <:expr< Ast.ExRec $meta_loc_expr _loc$ $meta_bi bi$ (Ast.ExNil $meta_loc_expr _loc$) >>
     | <:expr@_loc< { ($e$) with $bi$ } >>                               -> <:expr< Ast.ExRec $meta_loc_expr _loc$ $meta_bi bi$ $meta_e e$ >>
@@ -235,9 +234,7 @@ module Make (MetaLoc : META_LOC) = struct
     | <:ctyp@_loc< # $i$ >>                                             -> <:expr< Ast.TyCls $meta_loc_expr _loc$ $meta_i i$ >>
     | <:ctyp@_loc< ~ $s$ : $t$ >>                                       -> <:expr< Ast.TyLab $meta_loc_expr _loc$ $meta_s _loc s$ $meta_t t$ >>
     | <:ctyp@_loc< $t1$ == $t2$ >>                                      -> <:expr< Ast.TyMan $meta_loc_expr _loc$ $meta_t t1$ $meta_t t2$ >>
-    (* | <:me-ta< <:ctyp< < $t$ > >> >> *)
-    (* | <:me-ta< <:ctyp< < $t$ .. > >> >> *)
-    | <:ctyp@_loc< < $t$ $opt:b$ > >>                                   -> <:expr< Ast.TyObj $meta_loc_expr _loc$ $meta_t t$ $meta_bool _loc b$ >>
+    | <:ctyp@_loc< < $t$ $..:b$ > >>                                    -> <:expr< Ast.TyObj $meta_loc_expr _loc$ $meta_t t$ $meta_bool _loc b$ >>
     | <:ctyp@_loc< ? $s$ : $t$ >>                                       -> <:expr< Ast.TyOlb $meta_loc_expr _loc$ $meta_s _loc s$ $meta_t t$ >>
     | <:ctyp@_loc< ! $t1$ . $t2$ >>                                     -> <:expr< Ast.TyPol $meta_loc_expr _loc$ $meta_t t1$ $meta_t t2$ >>
     | <:ctyp@_loc< '$s$ >>                                              -> <:expr< Ast.TyQuo $meta_loc_expr _loc$ $meta_s _loc s$ >>
@@ -292,7 +289,7 @@ module Make (MetaLoc : META_LOC) = struct
     | <:str_item@_loc< module type $s$ = $mt$ >>                        -> <:expr< Ast.StMty $meta_loc_expr _loc$ $meta_s _loc s$ $meta_mt mt$ >>
     | <:str_item@_loc< open $i$ >>                                      -> <:expr< Ast.StOpn $meta_loc_expr _loc$ $meta_i i$ >>
     | <:str_item@_loc< type $t$ >>                                      -> <:expr< Ast.StTyp $meta_loc_expr _loc$ $meta_t t$ >>
-    | <:str_item@_loc< value $opt:r$ $bi$ >>                            -> <:expr< Ast.StVal $meta_loc_expr _loc$ $meta_bool _loc r$ $meta_bi bi$ >>
+    | <:str_item@_loc< value $rec:r$ $bi$ >>                            -> <:expr< Ast.StVal $meta_loc_expr _loc$ $meta_bool _loc r$ $meta_bi bi$ >>
     | <:str_item@_loc< include $me$ >>                                  -> <:expr< Ast.StInc $meta_loc_expr _loc$ $meta_me me$ >>
     | <:str_item@_loc< class $ce$ >>                                    -> <:expr< Ast.StCls $meta_loc_expr _loc$ $meta_ce ce$ >>
     | <:str_item@_loc< class type $ct$ >>                               -> <:expr< Ast.StClt $meta_loc_expr _loc$ $meta_ct ct$ >>
@@ -322,10 +319,10 @@ module Make (MetaLoc : META_LOC) = struct
     and class_expr = fun
     [ <:class_expr@_loc<>>                                              -> <:expr< Ast.CeNil $meta_loc_expr _loc$ >>
     | <:class_expr@_loc< $ce$ $e$ >>                                    -> <:expr< Ast.CeApp $meta_loc_expr _loc$ $meta_ce ce$ $meta_e e$ >>
-    | <:class_expr@_loc< $opt:v$ $id:i$ >>                              -> <:expr< Ast.CeCon $meta_loc_expr _loc$ $meta_bool _loc v$ $meta_i i$ (Ast.TyNil $meta_loc_expr _loc$) >>
-    | <:class_expr@_loc< $opt:v$ $id:i$ [ $t$ ] >>                      -> <:expr< Ast.CeCon $meta_loc_expr _loc$ $meta_bool _loc v$ $meta_i i$ $meta_t t$ >>
+    | <:class_expr@_loc< $virtual:v$ $id:i$ >>                          -> <:expr< Ast.CeCon $meta_loc_expr _loc$ $meta_bool _loc v$ $meta_i i$ (Ast.TyNil $meta_loc_expr _loc$) >>
+    | <:class_expr@_loc< $virtual:v$ $id:i$ [ $t$ ] >>                  -> <:expr< Ast.CeCon $meta_loc_expr _loc$ $meta_bool _loc v$ $meta_i i$ $meta_t t$ >>
     | <:class_expr@_loc< fun $p$ -> $ce$ >>                             -> <:expr< Ast.CeFun $meta_loc_expr _loc$ $meta_p p$ $meta_ce ce$ >>
-    | <:class_expr@_loc< let $opt:r$ $bi$ in $ce$ >>                    -> <:expr< Ast.CeLet $meta_loc_expr _loc$ $meta_bool _loc r$ $meta_bi bi$ $meta_ce ce$ >>
+    | <:class_expr@_loc< let $rec:r$ $bi$ in $ce$ >>                    -> <:expr< Ast.CeLet $meta_loc_expr _loc$ $meta_bool _loc r$ $meta_bi bi$ $meta_ce ce$ >>
     | <:class_expr@_loc< object ($p$) $cst$ end >>                      -> <:expr< Ast.CeStr $meta_loc_expr _loc$ $meta_p p$ $meta_cst cst$ >>
     | <:class_expr@_loc< $anti:s$ >>                                    -> <:expr< $anti:s$ >>
     | <:class_expr@_loc< $ce1$ and $ce2$ >>                             -> <:expr< Ast.CeAnd $meta_loc_expr _loc$ $meta_ce ce1$ $meta_ce ce2$ >>
@@ -335,8 +332,8 @@ module Make (MetaLoc : META_LOC) = struct
   
     and class_type = fun
     [ <:class_type@_loc<>>                                              -> <:expr< Ast.CtNil $meta_loc_expr _loc$ >>
-    | <:class_type@_loc< $opt:v$ $id:i$ >>                              -> <:expr< Ast.CtCon $meta_loc_expr _loc$ $meta_bool _loc v$ $meta_i i$ (Ast.TyNil $meta_loc_expr _loc$) >>
-    | <:class_type@_loc< $opt:v$ $id:i$ [ $t$ ] >>                      -> <:expr< Ast.CtCon $meta_loc_expr _loc$ $meta_bool _loc v$ $meta_i i$ $meta_t t$ >>
+    | <:class_type@_loc< $virtual:v$ $id:i$ >>                          -> <:expr< Ast.CtCon $meta_loc_expr _loc$ $meta_bool _loc v$ $meta_i i$ (Ast.TyNil $meta_loc_expr _loc$) >>
+    | <:class_type@_loc< $virtual:v$ $id:i$ [ $t$ ] >>                  -> <:expr< Ast.CtCon $meta_loc_expr _loc$ $meta_bool _loc v$ $meta_i i$ $meta_t t$ >>
     | <:class_type@_loc< [ $t$ ] -> $ct$ >>                             -> <:expr< Ast.CtFun $meta_loc_expr _loc$ $meta_t t$ $meta_ct ct$ >>
     | <:class_type@_loc< $anti:s$ >>                                    -> <:expr< $anti:s$ >>
     | <:class_type@_loc< object ($t$) $csg$ end >>                      -> <:expr< Ast.CtSig $meta_loc_expr _loc$ $meta_t t$ $meta_csg csg$ >>
@@ -350,9 +347,9 @@ module Make (MetaLoc : META_LOC) = struct
     | <:class_sig_item@_loc< $csg1$; $csg2$ >>                          -> <:expr< Ast.CgSem $meta_loc_expr _loc$ $meta_csg csg1$ $meta_csg csg2$ >>
     | <:class_sig_item@_loc< $anti:s$ >>                                -> <:expr< $anti:s$ >>
     | <:class_sig_item@_loc< inherit $ct$ >>                            -> <:expr< Ast.CgInh $meta_loc_expr _loc$ $meta_ct ct$ >>
-    | <:class_sig_item@_loc< method $opt:pr$ $s$ : $t$ >>               -> <:expr< Ast.CgMth $meta_loc_expr _loc$ $meta_s _loc s$ $meta_bool _loc pr$ $meta_t t$ >>
-    | <:class_sig_item@_loc< method virtual $opt:pr$ $s$ : $t$ >>       -> <:expr< Ast.CgVir $meta_loc_expr _loc$ $meta_s _loc s$ $meta_bool _loc pr$ $meta_t t$ >>
-    | <:class_sig_item@_loc< value $opt:m$ $opt:v$ $s$ : $t$ >>         -> <:expr< Ast.CgVal $meta_loc_expr _loc$ $meta_s _loc s$ $meta_bool _loc m$ $meta_bool _loc v$ $meta_t t$ >> ]
+    | <:class_sig_item@_loc< method $private:pr$ $s$ : $t$ >>           -> <:expr< Ast.CgMth $meta_loc_expr _loc$ $meta_s _loc s$ $meta_bool _loc pr$ $meta_t t$ >>
+    | <:class_sig_item@_loc< method virtual $private:pr$ $s$ : $t$ >>   -> <:expr< Ast.CgVir $meta_loc_expr _loc$ $meta_s _loc s$ $meta_bool _loc pr$ $meta_t t$ >>
+    | <:class_sig_item@_loc< value $mutable:m$ $virtual:v$ $s$ : $t$ >>  -> <:expr< Ast.CgVal $meta_loc_expr _loc$ $meta_s _loc s$ $meta_bool _loc m$ $meta_bool _loc v$ $meta_t t$ >> ]
   
     and class_str_item = fun
     [ <:class_str_item@_loc<>>                                          -> <:expr< Ast.CrNil $meta_loc_expr _loc$ >>
@@ -361,10 +358,10 @@ module Make (MetaLoc : META_LOC) = struct
     | <:class_str_item@_loc< type $t1$ = $t2$ >>                        -> <:expr< Ast.CrCtr $meta_loc_expr _loc$ $meta_t t1$ $meta_t t2$ >>
     | <:class_str_item@_loc< inherit $ce$ as $s$ >>                     -> <:expr< Ast.CrInh $meta_loc_expr _loc$ $meta_ce ce$ $meta_s _loc s$ >>
     | <:class_str_item@_loc< initializer $e$ >>                         -> <:expr< Ast.CrIni $meta_loc_expr _loc$ $meta_e e$ >>
-    | <:class_str_item@_loc< method $opt:pr$ $s$ : $t$ = $e$ >>         -> <:expr< Ast.CrMth $meta_loc_expr _loc$ $meta_s _loc s$ $meta_bool _loc pr$ $meta_e e$ $meta_t t$ >>
-    | <:class_str_item@_loc< method virtual $opt:pr$ $s$ : $t$ >>       -> <:expr< Ast.CrVir $meta_loc_expr _loc$ $meta_s _loc s$ $meta_bool _loc pr$ $meta_t t$ >>
-    | <:class_str_item@_loc< value $opt:m$ $s$ = $e$ >>                 -> <:expr< Ast.CrVal $meta_loc_expr _loc$ $meta_s _loc s$ $meta_bool _loc m$ $meta_e e$ >>
-    | <:class_str_item@_loc< value virtual $opt:m$ $s$ : $t$ >>         -> <:expr< Ast.CrVvr $meta_loc_expr _loc$ $meta_s _loc s$ $meta_bool _loc m$ $meta_t t$ >> ];
+    | <:class_str_item@_loc< method $private:pr$ $s$ : $t$ = $e$ >>     -> <:expr< Ast.CrMth $meta_loc_expr _loc$ $meta_s _loc s$ $meta_bool _loc pr$ $meta_e e$ $meta_t t$ >>
+    | <:class_str_item@_loc< method virtual $private:pr$ $s$ : $t$ >>   -> <:expr< Ast.CrVir $meta_loc_expr _loc$ $meta_s _loc s$ $meta_bool _loc pr$ $meta_t t$ >>
+    | <:class_str_item@_loc< value $mutable:m$ $s$ = $e$ >>             -> <:expr< Ast.CrVal $meta_loc_expr _loc$ $meta_s _loc s$ $meta_bool _loc m$ $meta_e e$ >>
+    | <:class_str_item@_loc< value virtual $mutable:m$ $s$ : $t$ >>     -> <:expr< Ast.CrVvr $meta_loc_expr _loc$ $meta_s _loc s$ $meta_bool _loc m$ $meta_t t$ >> ];
   
   end;
 
@@ -443,7 +440,7 @@ module Make (MetaLoc : META_LOC) = struct
     | <:expr@_loc< if $e1$ then $e2$ else $e3$ >>                       -> <:patt< Ast.ExIfe $meta_loc_patt _loc$ $meta_e e1$ $meta_e e2$ $meta_e e3$ >>
     | <:expr@_loc< $int:s$ >>                                           -> <:patt< Ast.ExInt $meta_loc_patt _loc$ $meta_s _loc s$ >>
     | <:expr@_loc< lazy $e$ >>                                          -> <:patt< Ast.ExLaz $meta_loc_patt _loc$ $meta_e e$ >>
-    | <:expr@_loc< let $opt:r$ $bi$ in $e$ >>                           -> <:patt< Ast.ExLet $meta_loc_patt _loc$ $meta_bool _loc r$ $meta_bi bi$ $meta_e e$ >>
+    | <:expr@_loc< let $rec:r$ $bi$ in $e$ >>                           -> <:patt< Ast.ExLet $meta_loc_patt _loc$ $meta_bool _loc r$ $meta_bi bi$ $meta_e e$ >>
     | <:expr@_loc< match $e$ with [ $a$ ] >>                            -> <:patt< Ast.ExMat $meta_loc_patt _loc$ $meta_e e$ $meta_a a$ >>
     | <:expr@_loc< { $bi$ } >>                                          -> <:patt< Ast.ExRec $meta_loc_patt _loc$ $meta_bi bi$ (Ast.ExNil $meta_loc_patt _loc$) >>
     | <:expr@_loc< { ($e$) with $bi$ } >>                               -> <:patt< Ast.ExRec $meta_loc_patt _loc$ $meta_bi bi$ $meta_e e$ >>
@@ -541,9 +538,7 @@ module Make (MetaLoc : META_LOC) = struct
     | <:ctyp@_loc< # $i$ >>                                             -> <:patt< Ast.TyCls $meta_loc_patt _loc$ $meta_i i$ >>
     | <:ctyp@_loc< ~ $s$ : $t$ >>                                       -> <:patt< Ast.TyLab $meta_loc_patt _loc$ $meta_s _loc s$ $meta_t t$ >>
     | <:ctyp@_loc< $t1$ == $t2$ >>                                      -> <:patt< Ast.TyMan $meta_loc_patt _loc$ $meta_t t1$ $meta_t t2$ >>
-    (* | <:me-ta< <:ctyp< < $t$ > >> >> *)
-    (* | <:me-ta< <:ctyp< < $t$ .. > >> >> *)
-    | <:ctyp@_loc< < $t$ $opt:b$ > >>                                   -> <:patt< Ast.TyObj $meta_loc_patt _loc$ $meta_t t$ $meta_bool _loc b$ >>
+    | <:ctyp@_loc< < $t$ $..:b$ > >>                                    -> <:patt< Ast.TyObj $meta_loc_patt _loc$ $meta_t t$ $meta_bool _loc b$ >>
     | <:ctyp@_loc< ? $s$ : $t$ >>                                       -> <:patt< Ast.TyOlb $meta_loc_patt _loc$ $meta_s _loc s$ $meta_t t$ >>
     | <:ctyp@_loc< ! $t1$ . $t2$ >>                                     -> <:patt< Ast.TyPol $meta_loc_patt _loc$ $meta_t t1$ $meta_t t2$ >>
     | <:ctyp@_loc< '$s$ >>                                              -> <:patt< Ast.TyQuo $meta_loc_patt _loc$ $meta_s _loc s$ >>
@@ -598,7 +593,7 @@ module Make (MetaLoc : META_LOC) = struct
     | <:str_item@_loc< module type $s$ = $mt$ >>                        -> <:patt< Ast.StMty $meta_loc_patt _loc$ $meta_s _loc s$ $meta_mt mt$ >>
     | <:str_item@_loc< open $i$ >>                                      -> <:patt< Ast.StOpn $meta_loc_patt _loc$ $meta_i i$ >>
     | <:str_item@_loc< type $t$ >>                                      -> <:patt< Ast.StTyp $meta_loc_patt _loc$ $meta_t t$ >>
-    | <:str_item@_loc< value $opt:r$ $bi$ >>                            -> <:patt< Ast.StVal $meta_loc_patt _loc$ $meta_bool _loc r$ $meta_bi bi$ >>
+    | <:str_item@_loc< value $rec:r$ $bi$ >>                            -> <:patt< Ast.StVal $meta_loc_patt _loc$ $meta_bool _loc r$ $meta_bi bi$ >>
     | <:str_item@_loc< include $me$ >>                                  -> <:patt< Ast.StInc $meta_loc_patt _loc$ $meta_me me$ >>
     | <:str_item@_loc< class $ce$ >>                                    -> <:patt< Ast.StCls $meta_loc_patt _loc$ $meta_ce ce$ >>
     | <:str_item@_loc< class type $ct$ >>                               -> <:patt< Ast.StClt $meta_loc_patt _loc$ $meta_ct ct$ >>
@@ -628,10 +623,10 @@ module Make (MetaLoc : META_LOC) = struct
     and class_expr = fun
     [ <:class_expr@_loc<>>                                              -> <:patt< Ast.CeNil $meta_loc_patt _loc$ >>
     | <:class_expr@_loc< $ce$ $e$ >>                                    -> <:patt< Ast.CeApp $meta_loc_patt _loc$ $meta_ce ce$ $meta_e e$ >>
-    | <:class_expr@_loc< $opt:v$ $id:i$ >>                              -> <:patt< Ast.CeCon $meta_loc_patt _loc$ $meta_bool _loc v$ $meta_i i$ (Ast.TyNil $meta_loc_patt _loc$) >>
-    | <:class_expr@_loc< $opt:v$ $id:i$ [ $t$ ] >>                      -> <:patt< Ast.CeCon $meta_loc_patt _loc$ $meta_bool _loc v$ $meta_i i$ $meta_t t$ >>
+    | <:class_expr@_loc< $virtual:v$ $id:i$ >>                          -> <:patt< Ast.CeCon $meta_loc_patt _loc$ $meta_bool _loc v$ $meta_i i$ (Ast.TyNil $meta_loc_patt _loc$) >>
+    | <:class_expr@_loc< $virtual:v$ $id:i$ [ $t$ ] >>                  -> <:patt< Ast.CeCon $meta_loc_patt _loc$ $meta_bool _loc v$ $meta_i i$ $meta_t t$ >>
     | <:class_expr@_loc< fun $p$ -> $ce$ >>                             -> <:patt< Ast.CeFun $meta_loc_patt _loc$ $meta_p p$ $meta_ce ce$ >>
-    | <:class_expr@_loc< let $opt:r$ $bi$ in $ce$ >>                    -> <:patt< Ast.CeLet $meta_loc_patt _loc$ $meta_bool _loc r$ $meta_bi bi$ $meta_ce ce$ >>
+    | <:class_expr@_loc< let $rec:r$ $bi$ in $ce$ >>                    -> <:patt< Ast.CeLet $meta_loc_patt _loc$ $meta_bool _loc r$ $meta_bi bi$ $meta_ce ce$ >>
     | <:class_expr@_loc< object ($p$) $cst$ end >>                      -> <:patt< Ast.CeStr $meta_loc_patt _loc$ $meta_p p$ $meta_cst cst$ >>
     | <:class_expr@_loc< $anti:s$ >>                                    -> <:patt< $anti:s$ >>
     | <:class_expr@_loc< $ce1$ and $ce2$ >>                             -> <:patt< Ast.CeAnd $meta_loc_patt _loc$ $meta_ce ce1$ $meta_ce ce2$ >>
@@ -641,8 +636,8 @@ module Make (MetaLoc : META_LOC) = struct
   
     and class_type = fun
     [ <:class_type@_loc<>>                                              -> <:patt< Ast.CtNil $meta_loc_patt _loc$ >>
-    | <:class_type@_loc< $opt:v$ $id:i$ >>                              -> <:patt< Ast.CtCon $meta_loc_patt _loc$ $meta_bool _loc v$ $meta_i i$ (Ast.TyNil $meta_loc_patt _loc$) >>
-    | <:class_type@_loc< $opt:v$ $id:i$ [ $t$ ] >>                      -> <:patt< Ast.CtCon $meta_loc_patt _loc$ $meta_bool _loc v$ $meta_i i$ $meta_t t$ >>
+    | <:class_type@_loc< $virtual:v$ $id:i$ >>                          -> <:patt< Ast.CtCon $meta_loc_patt _loc$ $meta_bool _loc v$ $meta_i i$ (Ast.TyNil $meta_loc_patt _loc$) >>
+    | <:class_type@_loc< $virtual:v$ $id:i$ [ $t$ ] >>                  -> <:patt< Ast.CtCon $meta_loc_patt _loc$ $meta_bool _loc v$ $meta_i i$ $meta_t t$ >>
     | <:class_type@_loc< [ $t$ ] -> $ct$ >>                             -> <:patt< Ast.CtFun $meta_loc_patt _loc$ $meta_t t$ $meta_ct ct$ >>
     | <:class_type@_loc< $anti:s$ >>                                    -> <:patt< $anti:s$ >>
     | <:class_type@_loc< object ($t$) $csg$ end >>                      -> <:patt< Ast.CtSig $meta_loc_patt _loc$ $meta_t t$ $meta_csg csg$ >>
@@ -656,9 +651,9 @@ module Make (MetaLoc : META_LOC) = struct
     | <:class_sig_item@_loc< $csg1$; $csg2$ >>                          -> <:patt< Ast.CgSem $meta_loc_patt _loc$ $meta_csg csg1$ $meta_csg csg2$ >>
     | <:class_sig_item@_loc< $anti:s$ >>                                -> <:patt< $anti:s$ >>
     | <:class_sig_item@_loc< inherit $ct$ >>                            -> <:patt< Ast.CgInh $meta_loc_patt _loc$ $meta_ct ct$ >>
-    | <:class_sig_item@_loc< method $opt:pr$ $s$ : $t$ >>               -> <:patt< Ast.CgMth $meta_loc_patt _loc$ $meta_s _loc s$ $meta_bool _loc pr$ $meta_t t$ >>
-    | <:class_sig_item@_loc< method virtual $opt:pr$ $s$ : $t$ >>       -> <:patt< Ast.CgVir $meta_loc_patt _loc$ $meta_s _loc s$ $meta_bool _loc pr$ $meta_t t$ >>
-    | <:class_sig_item@_loc< value $opt:m$ $opt:v$ $s$ : $t$ >>         -> <:patt< Ast.CgVal $meta_loc_patt _loc$ $meta_s _loc s$ $meta_bool _loc m$ $meta_bool _loc v$ $meta_t t$ >> ]
+    | <:class_sig_item@_loc< method $private:pr$ $s$ : $t$ >>           -> <:patt< Ast.CgMth $meta_loc_patt _loc$ $meta_s _loc s$ $meta_bool _loc pr$ $meta_t t$ >>
+    | <:class_sig_item@_loc< method virtual $private:pr$ $s$ : $t$ >>   -> <:patt< Ast.CgVir $meta_loc_patt _loc$ $meta_s _loc s$ $meta_bool _loc pr$ $meta_t t$ >>
+    | <:class_sig_item@_loc< value $mutable:m$ $virtual:v$ $s$ : $t$ >>  -> <:patt< Ast.CgVal $meta_loc_patt _loc$ $meta_s _loc s$ $meta_bool _loc m$ $meta_bool _loc v$ $meta_t t$ >> ]
   
     and class_str_item = fun
     [ <:class_str_item@_loc<>>                                          -> <:patt< Ast.CrNil $meta_loc_patt _loc$ >>
@@ -667,10 +662,10 @@ module Make (MetaLoc : META_LOC) = struct
     | <:class_str_item@_loc< type $t1$ = $t2$ >>                        -> <:patt< Ast.CrCtr $meta_loc_patt _loc$ $meta_t t1$ $meta_t t2$ >>
     | <:class_str_item@_loc< inherit $ce$ as $s$ >>                     -> <:patt< Ast.CrInh $meta_loc_patt _loc$ $meta_ce ce$ $meta_s _loc s$ >>
     | <:class_str_item@_loc< initializer $e$ >>                         -> <:patt< Ast.CrIni $meta_loc_patt _loc$ $meta_e e$ >>
-    | <:class_str_item@_loc< method $opt:pr$ $s$ : $t$ = $e$ >>         -> <:patt< Ast.CrMth $meta_loc_patt _loc$ $meta_s _loc s$ $meta_bool _loc pr$ $meta_e e$ $meta_t t$ >>
-    | <:class_str_item@_loc< method virtual $opt:pr$ $s$ : $t$ >>       -> <:patt< Ast.CrVir $meta_loc_patt _loc$ $meta_s _loc s$ $meta_bool _loc pr$ $meta_t t$ >>
-    | <:class_str_item@_loc< value $opt:m$ $s$ = $e$ >>                 -> <:patt< Ast.CrVal $meta_loc_patt _loc$ $meta_s _loc s$ $meta_bool _loc m$ $meta_e e$ >>
-    | <:class_str_item@_loc< value virtual $opt:m$ $s$ : $t$ >>         -> <:patt< Ast.CrVvr $meta_loc_patt _loc$ $meta_s _loc s$ $meta_bool _loc m$ $meta_t t$ >> ];
+    | <:class_str_item@_loc< method $private:pr$ $s$ : $t$ = $e$ >>     -> <:patt< Ast.CrMth $meta_loc_patt _loc$ $meta_s _loc s$ $meta_bool _loc pr$ $meta_e e$ $meta_t t$ >>
+    | <:class_str_item@_loc< method virtual $private:pr$ $s$ : $t$ >>   -> <:patt< Ast.CrVir $meta_loc_patt _loc$ $meta_s _loc s$ $meta_bool _loc pr$ $meta_t t$ >>
+    | <:class_str_item@_loc< value $mutable:m$ $s$ = $e$ >>             -> <:patt< Ast.CrVal $meta_loc_patt _loc$ $meta_s _loc s$ $meta_bool _loc m$ $meta_e e$ >>
+    | <:class_str_item@_loc< value virtual $mutable:m$ $s$ : $t$ >>     -> <:patt< Ast.CrVvr $meta_loc_patt _loc$ $meta_s _loc s$ $meta_bool _loc m$ $meta_t t$ >> ];
   
   end;
 end;

@@ -460,9 +460,9 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
         pp f "@[<hv0>@[<2>if@ %a@]@ @[<2>then@ %a@]@ @[<2>else@ %a@]@]"
            o#expr e1 o#under_semi#expr e2 o#under_semi#expr e3
     | <:expr< lazy $e$ >> -> pp f "@[<2>lazy@ %a@]" o#expr e
-    | <:expr< let $opt:r$ $bi$ in $e$ >> ->
+    | <:expr< let $rec:r$ $bi$ in $e$ >> ->
         match e with
-        [ <:expr< let $opt:_$ $_$ in $_$ >> ->
+        [ <:expr< let $rec:_$ $_$ in $_$ >> ->
             pp f "@[<0>@[<2>let %a%a in@]@ %a@]"
               o#rec_flag r o#binding bi o#reset_semi#expr e
         | _ ->
@@ -559,7 +559,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
       <:expr< fun [ $_$ ] >> | <:expr< match $_$ with [ $_$ ] >> |
       <:expr< try $_$ with [ $_$ ] >> |
       <:expr< if $_$ then $_$ else $_$ >> |
-      <:expr< let $opt:_$ $_$ in $_$ >> |
+      <:expr< let $rec:_$ $_$ in $_$ >> |
       <:expr< let module $_$ = $_$ in $_$ >> |
       (* Note: `new' is treated differently in pa_o and in pa_r,
         and should not occur at this level *)
@@ -811,7 +811,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
             pp f "@[<2>open@ %a%s@]" o#ident sl semisep
       | <:str_item< type $t$ >> ->
             pp f "@[<hv0>@[<hv2>type %a@]%s@]" o#ctyp t semisep
-      | <:str_item< value $opt:r$ $bi$ >> ->
+      | <:str_item< value $rec:r$ $bi$ >> ->
             pp f "@[<2>%s %a%a%s@]" value_let o#rec_flag r o#binding bi semisep
       | <:str_item< $exp:e$ >> ->
             pp f "@[<2>let _ =@ %a%s@]" o#expr e semisep
@@ -887,7 +887,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
           pp f "@[<2>virtual@ %a@ @[@,[%a@]@,]@]" o#ident i o#ctyp t
     | <:class_expr< fun $p$ -> $ce$ >> ->
           pp f "@[<2>fun@ %a@ ->@ %a@]" o#patt p o#class_expr ce
-    | <:class_expr< let $opt:r$ $bi$ in $ce$ >> ->
+    | <:class_expr< let $rec:r$ $bi$ in $ce$ >> ->
           pp f "@[<2>let %a%a@]@ @[<2>in@ %a@]"
             o#rec_flag r o#binding bi o#class_expr ce
     | <:class_expr< object $cst$ end >> ->
@@ -949,13 +949,13 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
             pp f "@[<2>type@ %a =@ %a%s@]" o#ctyp t1 o#ctyp t2 semisep
       | <:class_sig_item< inherit $ct$ >> ->
             pp f "@[<2>inherit@ %a%s@]" o#class_type ct semisep
-      | <:class_sig_item< method $opt:pr$ $s$ : $t$ >> ->
+      | <:class_sig_item< method $private:pr$ $s$ : $t$ >> ->
             pp f "@[<2>method %a%a :@ %a%s@]" o#private_flag pr o#var s
               o#ctyp t semisep
-      | <:class_sig_item< method virtual $opt:pr$ $s$ : $t$ >> ->
+      | <:class_sig_item< method virtual $private:pr$ $s$ : $t$ >> ->
             pp f "@[<2>method virtual %a%a :@ %a%s@]"
               o#private_flag pr o#var s o#ctyp t semisep
-      | <:class_sig_item< value $opt:mu$ $opt:vi$ $s$ : $t$ >> ->
+      | <:class_sig_item< value $mutable:mu$ $virtual:vi$ $s$ : $t$ >> ->
             pp f "@[<2>%s %a%a%a :@ %a%s@]"
               value_val o#mutable_flag mu o#virtual_flag vi o#var s o#ctyp t
               semisep
@@ -979,19 +979,19 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
             pp f "@[<2>inherit@ %a as@ %a%s@]" o#class_expr ce o#var s semisep
       | <:class_str_item< initializer $e$ >> ->
             pp f "@[<2>initializer@ %a%s@]" o#expr e semisep
-      | <:class_str_item< method $opt:pr$ $s$ = $e$ >> ->
+      | <:class_str_item< method $private:pr$ $s$ = $e$ >> ->
             pp f "@[<2>method %a%a =@ %a%s@]"
               o#private_flag pr o#var s o#expr e semisep
-      | <:class_str_item< method $opt:pr$ $s$ : $t$ = $e$ >> ->
+      | <:class_str_item< method $private:pr$ $s$ : $t$ = $e$ >> ->
             pp f "@[<2>method %a%a :@ %a =@ %a%s@]"
               o#private_flag pr o#var s o#ctyp t o#expr e semisep
-      | <:class_str_item< method virtual $opt:pr$ $s$ : $t$ >> ->
+      | <:class_str_item< method virtual $private:pr$ $s$ : $t$ >> ->
             pp f "@[<2>method virtual@ %a%a :@ %a%s@]"
               o#private_flag pr o#var s o#ctyp t semisep
-      | <:class_str_item< value virtual $opt:mu$ $s$ : $t$ >> ->
+      | <:class_str_item< value virtual $mutable:mu$ $s$ : $t$ >> ->
             pp f "@[<2>%s virtual %a%a :@ %a%s@]"
               value_val o#mutable_flag mu o#var s o#ctyp t semisep
-      | <:class_str_item< value $opt:mu$ $s$ = $e$ >> ->
+      | <:class_str_item< value $mutable:mu$ $s$ = $e$ >> ->
             pp f "@[<2>%s %a%a =@ %a%s@]"
               value_val o#mutable_flag mu o#var s o#expr e semisep
       | <:class_str_item< $anti:s$ >> ->

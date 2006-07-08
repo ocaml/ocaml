@@ -41,13 +41,13 @@ module Make (AstFilters : Camlp4.Sig.AstFilters.S) = struct
     inherit Ast.map as super;
     method str_item =
       fun
-      [ <:str_item@_loc< value $opt:r$ $b$ >> ->
-          <:str_item< value $opt:r$ $decorate_binding decorate_fun b$ >>
+      [ <:str_item@_loc< value $rec:r$ $b$ >> ->
+          <:str_item< value $rec:r$ $decorate_binding decorate_fun b$ >>
       | st -> super#str_item st ];
     method expr =
       fun
-      [ <:expr@_loc< let $opt:r$ $b$ in $e$ >> ->
-          <:expr< let $opt:r$ $decorate_binding decorate_fun b$ in $o#expr e$ >>
+      [ <:expr@_loc< let $rec:r$ $b$ in $e$ >> ->
+          <:expr< let $rec:r$ $decorate_binding decorate_fun b$ in $o#expr e$ >>
       | <:expr@_loc< fun [ $_$ ] >> as e -> decorate_fun "<fun>" e
       | e -> super#expr e ];
   end;

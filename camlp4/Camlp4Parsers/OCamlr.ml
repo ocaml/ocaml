@@ -380,7 +380,7 @@ Old (no more supported) syntax:
         | "type"; td = type_declaration ->
             <:str_item< type $td$ >>
         | value_let; r = opt_rec; bi = binding ->
-            <:str_item< value $opt:r$ $bi$ >>
+            <:str_item< value $rec:r$ $bi$ >>
         | "class"; cd = class_declaration ->
             <:str_item< class $cd$ >>
         | "class"; "type"; ctd = class_type_declaration ->
@@ -480,7 +480,7 @@ Old (no more supported) syntax:
       [ "top" RIGHTA
         [ "let"; r = opt_rec; bi = binding; "in";
           x = SELF ->
-            <:expr< let $opt:r$ $bi$ in $x$ >>
+            <:expr< let $rec:r$ $bi$ in $x$ >>
         | "let"; "module"; m = a_UIDENT; mb = module_binding0; "in"; e = SELF ->
             <:expr< let module $m$ = $mb$ in $e$ >>
         | "fun"; "["; a = match_case; "]" ->
@@ -507,7 +507,7 @@ Old (no more supported) syntax:
             <:expr< object ($csp$) $cst$ end >> ]
       | "where"
         [ e = SELF; "where"; rf = opt_rec; lb = let_binding ->
-            <:expr< let $opt:rf$ $lb$ in $e$ >> ]
+            <:expr< let $rec:rf$ $lb$ in $e$ >> ]
       | ":=" NONA
         [ e1 = SELF; ":="; e2 = SELF; dummy ->
             match bigarray_set _loc e1 e2 with
@@ -626,7 +626,7 @@ Old (no more supported) syntax:
     ;
     sequence:
       [ [ "let"; rf = opt_rec; bi = binding; [ "in" | ";" ]; el = SELF ->
-            <:expr< let $opt:rf$ $bi$ in $mksequence _loc el$ >>
+            <:expr< let $rec:rf$ $bi$ in $mksequence _loc el$ >>
         | e = expr; ";"; el = SELF -> <:expr< $e$; $el$ >>
         | e = expr; ";" -> e
         | e = expr -> e ] ]
@@ -900,7 +900,7 @@ Old (no more supported) syntax:
         | "{"; t = label_declaration; OPT ";"; "}" -> <:ctyp< { $t$ } >>
         | "#"; i = class_longident -> <:ctyp< # $i$ >>
         | "<"; ml = opt_meth_list; v = opt_dot_dot; ">" ->
-            <:ctyp< < $ml$ $opt:v$ > >>
+            <:ctyp< < $ml$ $..:v$ > >>
       ] ]
     ;
     star_ctyp:
@@ -1008,7 +1008,7 @@ Old (no more supported) syntax:
     class_info_for_class_type:
       [ [ mv = opt_virtual; (i, ot) = class_name_and_param ->
             Ast.CtCon _loc mv (Ast.IdLid _loc i) ot
-            (* <:class_type< $opt:mv$ $lid:i$ [ $t$ ] >> *)
+            (* <:class_type< $virtual:mv$ $lid:i$ [ $t$ ] >> *)
 
         (* | mv = opt_virtual; i = a_LIDENT -> *)
             (* Ast.CeCon (_loc, mv, Ast.IdLid (_loc, i), Ast.ONone) *)
@@ -1033,7 +1033,7 @@ Old (no more supported) syntax:
         (* | *)
         mv = opt_virtual; (i, ot) = class_name_and_param ->
             Ast.CeCon _loc mv (Ast.IdLid _loc i) ot
-            (* <:class_expr< $opt:mv$ $lid:i$ [ $t$ ] >> *)
+            (* <:class_expr< $virtual:mv$ $lid:i$ [ $t$ ] >> *)
 
             (* <:class_expr< $lid:i$ [ $t$ ] >> *)
         (* | mv = opt_virtual; i = a_LIDENT -> *)
@@ -1071,7 +1071,7 @@ Old (no more supported) syntax:
         [ "fun"; p = ipatt; ce = class_fun_def ->
             <:class_expr< fun $p$ -> $ce$ >>
         | "let"; rf = opt_rec; bi = binding; "in"; ce = SELF ->
-            <:class_expr< let $opt:rf$ $bi$ in $ce$ >> ]
+            <:class_expr< let $rec:rf$ $bi$ in $ce$ >> ]
       | "apply" NONA
         [ ce = SELF; e = expr LEVEL "label" ->
             <:class_expr< $ce$ $e$ >> ]
@@ -1109,14 +1109,14 @@ Old (no more supported) syntax:
         | "inherit"; ce = class_expr; pb = opt_as_lident ->
             <:class_str_item< inherit $ce$ as $pb$ >>
         | value_val; mf = opt_mutable; lab = label; e = cvalue_binding ->
-            <:class_str_item< value $opt:mf$ $lab$ = $e$ >>
+            <:class_str_item< value $mutable:mf$ $lab$ = $e$ >>
         | value_val; "virtual"; mf = opt_mutable; l = label; ":"; t = poly_type ->
-            <:class_str_item< value virtual $opt:mf$ $l$ : $t$ >>
+            <:class_str_item< value virtual $mutable:mf$ $l$ : $t$ >>
         | "method"; "virtual"; pf = opt_private; l = label; ":"; t = poly_type ->
-            <:class_str_item< method virtual $opt:pf$ $l$ : $t$ >>
+            <:class_str_item< method virtual $private:pf$ $l$ : $t$ >>
         | "method"; pf = opt_private; l = label; topt = opt_polyt;
           e = fun_binding ->
-            <:class_str_item< method $opt:pf$ $l$ : $topt$ = $e$ >>
+            <:class_str_item< method $private:pf$ $l$ : $topt$ = $e$ >>
         | "type"; t1 = ctyp; "="; t2 = ctyp ->
             <:class_str_item< type $t1$ = $t2$ >>
         | "initializer"; se = expr -> <:class_str_item< initializer $se$ >> ] ]
@@ -1172,11 +1172,11 @@ Old (no more supported) syntax:
         | "inherit"; cs = class_type -> <:class_sig_item< inherit $cs$ >>
         | value_val; mf = opt_mutable; mv = opt_virtual;
           l = label; ":"; t = ctyp ->
-            <:class_sig_item< value $opt:mf$ $opt:mv$ $l$ : $t$ >>
+            <:class_sig_item< value $mutable:mf$ $virtual:mv$ $l$ : $t$ >>
         | "method"; "virtual"; pf = opt_private; l = label; ":"; t = poly_type ->
-            <:class_sig_item< method virtual $opt:pf$ $l$ : $t$ >>
+            <:class_sig_item< method virtual $private:pf$ $l$ : $t$ >>
         | "method"; pf = opt_private; l = label; ":"; t = poly_type ->
-            <:class_sig_item< method $opt:pf$ $l$ : $t$ >>
+            <:class_sig_item< method $private:pf$ $l$ : $t$ >>
         | type_constraint; t1 = ctyp; "="; t2 = ctyp ->
             <:class_sig_item< type $t1$ = $t2$ >> ] ]
     ;
@@ -1208,9 +1208,7 @@ Old (no more supported) syntax:
         | l = label; "="; e = expr -> <:binding< $lid:l$ = $e$ >> ] ]
     ;
     meth_list:
-      [ [ `ANTIQUOT (""|"typ"|"opt" as n) s ->
-            <:ctyp< $anti:mk_anti ~c:"ctyp" n s$ >>
-        | f = field; ";"; ml = SELF -> <:ctyp< $f$; $ml$ >>
+      [ [ f = field; ";"; ml = SELF -> <:ctyp< $f$; $ml$ >>
         | f = field; OPT ";" -> f ] ]
     ;
     opt_meth_list:
@@ -1219,7 +1217,9 @@ Old (no more supported) syntax:
       ] ]
     ;
     field:
-      [ [ lab = a_LIDENT; ":"; t = poly_type -> <:ctyp< $lid:lab$ : $t$ >> ] ]
+      [ [ `ANTIQUOT (""|"typ" as n) s ->
+            <:ctyp< $anti:mk_anti ~c:"ctyp" n s$ >>
+        | lab = a_LIDENT; ":"; t = poly_type -> <:ctyp< $lid:lab$ : $t$ >> ] ]
     ;
     poly_type:
       [ [ t = ctyp -> t ] ]
@@ -1302,31 +1302,31 @@ Old (no more supported) syntax:
     ;
     opt_private:
       [ [ "private" -> Ast.BTrue
-        | `ANTIQUOT ("opt" as n) s -> Ast.BAnt (mk_anti n s)
+        | `ANTIQUOT ("private" as n) s -> Ast.BAnt (mk_anti n s)
         | -> Ast.BFalse
       ] ]
     ;
     opt_mutable:
       [ [ "mutable" -> Ast.BTrue
-        | `ANTIQUOT ("opt" as n) s -> Ast.BAnt (mk_anti n s)
+        | `ANTIQUOT ("mutable" as n) s -> Ast.BAnt (mk_anti n s)
         | -> Ast.BFalse
       ] ]
     ;
     opt_virtual:
       [ [ "virtual" -> Ast.BTrue
-        | `ANTIQUOT ("opt" as n) s -> Ast.BAnt (mk_anti n s)
+        | `ANTIQUOT ("virtual" as n) s -> Ast.BAnt (mk_anti n s)
         | -> Ast.BFalse
       ] ]
     ;
     opt_dot_dot:
       [ [ ".." -> Ast.BTrue
-        | `ANTIQUOT ("opt" as n) s -> Ast.BAnt (mk_anti n s)
+        | `ANTIQUOT (".." as n) s -> Ast.BAnt (mk_anti n s)
         | -> Ast.BFalse
       ] ]
     ;
     opt_rec:
       [ [ "rec" -> Ast.BTrue
-        | `ANTIQUOT ("opt" as n) s -> Ast.BAnt (mk_anti n s)
+        | `ANTIQUOT ("rec" as n) s -> Ast.BAnt (mk_anti n s)
         | -> Ast.BFalse
       ] ]
     ;
@@ -1535,7 +1535,7 @@ Old (no more supported) syntax:
         | ce1 = SELF; "="; ce2 = SELF -> <:class_expr< $ce1$ = $ce2$ >>
         | "virtual"; (i, ot) = class_name_and_param ->
             Ast.CeCon _loc Ast.BTrue (Ast.IdLid _loc i) ot
-        | `ANTIQUOT ("opt" as n) s; i = ident; ot = opt_comma_ctyp ->
+        | `ANTIQUOT ("virtual" as n) s; i = ident; ot = opt_comma_ctyp ->
             Ast.CeCon _loc (Ast.BAnt (mk_anti ~c:"class_expr" n s)) i ot
         | x = class_expr -> x
         | -> <:class_expr<>>
@@ -1547,7 +1547,7 @@ Old (no more supported) syntax:
         | ct1 = SELF; ":"; ct2 = SELF -> <:class_type< $ct1$ : $ct2$ >>
         | "virtual"; (i, ot) = class_name_and_param ->
             Ast.CtCon _loc Ast.BTrue (Ast.IdLid _loc i) ot
-        | `ANTIQUOT ("opt" as n) s; i = ident; ot = opt_comma_ctyp ->
+        | `ANTIQUOT ("virtual" as n) s; i = ident; ot = opt_comma_ctyp ->
             Ast.CtCon _loc (Ast.BAnt (mk_anti ~c:"class_type" n s)) i ot
         | x = class_type_plus -> x
         | -> <:class_type<>>
