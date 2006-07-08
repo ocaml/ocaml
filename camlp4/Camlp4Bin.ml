@@ -84,8 +84,10 @@ value rewrite_and_load n x =
         Camlp4.Printers.OCaml.enable ()
     | ("Printers"|"", "pr_dump.cmo" | "p" | "DumpOCamlAst" | "Camlp4Printers/DumpOCamlAst.cmo") ->
         Camlp4.Printers.DumpOCamlAst.enable ()
-    | ("Printers"|"", "d" | "DumpCamlp4Ast" | "Camlp4Printers/DumpCamlp4Ast") ->
+    | ("Printers"|"", "d" | "DumpCamlp4Ast" | "Camlp4Printers/DumpCamlp4Ast.cmo") ->
         Camlp4.Printers.DumpCamlp4Ast.enable ()
+    | ("Printers"|"", "a" | "Auto" | "Camlp4Printers/Auto.cmo") ->
+        load ["Camlp4Printers.Auto"]
     | _ ->
       let y = "Camlp4"^n^"/"^x^".cmo" in
       real_load (try find_in_path y with [ Not_found -> x ]) ];

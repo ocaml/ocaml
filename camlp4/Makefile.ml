@@ -254,6 +254,7 @@ let fi_tracer = ocaml_Module "Camlp4Filters/Tracer"
 let camlp4_bin = ocaml_Module "Camlp4Bin"
 let top_rprint = ocaml_Module "Camlp4Top/Rprint"
 let top_camlp4_top = ocaml_Module "Camlp4Top/Camlp4Top"
+let camlp4Profiler = ocaml_IModule "Camlp4Profiler"
 
 let byte_programs = ref []
 let opt_programs = ref []
@@ -261,10 +262,7 @@ let byte_libraries = ref []
 let opt_libraries = ref []
 
 let special_modules =
-  if Sys.file_exists "./boot/Profiler.cmo" then
-    [ocaml_IModule "Camlp4Profiler"]
-  else []
-
+  if Sys.file_exists "./boot/Profiler.cmo" then [camlp4Profiler] else []
 
 let mk_camlp4_top_lib name modules =
   byte_libraries += (name ^ ".cma");
@@ -406,7 +404,8 @@ let all =
   mk_camlp4 "camlp4o"  [pa_r; pa_o; pa_rp; pa_op; pr_a];
   mk_camlp4 "camlp4of" [pa_r; pa_qb; pa_rq; pa_o; pa_rp; pa_op; pa_g; pa_macro; pr_a];
   mk_camlp4_tool "mkcamlp4" [ocaml_Module ~o:(options_without_debug ()) "mkcamlp4"];
-  mk_camlp4_tool "camlp4prof" [ocaml_Module ~o:(options_without_debug ()) "camlp4prof"];
+  mk_camlp4_tool "camlp4prof"
+    [camlp4Profiler; ocaml_Module ~o:(options_without_debug ()) "camlp4prof"];
   mk_camlp4_top_lib "camlp4r"  [pa_r; pa_rp; top_rprint];
   mk_camlp4_top_lib "camlp4rf" [pa_r; pa_rp; pa_qb; pa_q; pa_g; pa_macro; top_rprint];
   mk_camlp4_top_lib "camlp4o"  [pa_r; pa_o; pa_rp; pa_op];
