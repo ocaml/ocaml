@@ -52,29 +52,26 @@ module Make (AstFilters : Camlp4.Sig.AstFilters.S) = struct
       | e -> super#expr e ];
   end;
 
-  value rec decorate_fun id =
+  value decorate_this_expr e id =
     let buf = Buffer.create 42 in
-    let decorate_expr = (decorate decorate_fun)#expr in
+    let _loc = Ast.loc_of_expr e in
+    let () = Format.bprintf buf "%s @@ %a@?" id Loc.dump _loc in
+    let s = Buffer.contents buf in
+    <:expr< let () = Camlp4Profiler.count $`str:s$ in $e$ >>;
+
+  value rec decorate_fun id =
+    let decorate = decorate decorate_fun in
+    let decorate_expr = decorate#expr in
+    let decorate_match_case = decorate#match_case in
     fun
     [ <:expr@_loc< fun $p$ -> $e$ >> ->
         <:expr< fun $p$ -> $decorate_fun id e$ >>
-    | e ->
-        let _loc = Ast.loc_of_expr e in
-        let () = Format.bprintf buf "%s @@ %a@?" id Loc.dump _loc in
-        let s = Buffer.contents buf in
-        <:expr< let () = Camlp4Filters.Profiler.count $`str:s$
-                in $decorate_expr e$ >> ];
+    | <:expr@_loc< fun [ $m$ ] >> ->
+        decorate_this_expr <:expr< fun [ $decorate_match_case m$ ] >> id
+    | e -> decorate_this_expr (decorate_expr e) id ];
 
   register_str_item_filter (decorate decorate_fun)#str_item;
 
 end;
-
-value count =
-  let h = Hashtbl.create 1007 in
-  let () = at_exit (fun () ->
-    Hashtbl.iter (fun k v -> Format.eprintf "%s: %d@." k v.val) h) in
-  fun s ->
-    try incr (Hashtbl.find h s)
-    with [ Not_found -> Hashtbl.add h s (ref 1) ];
 
 let module M = Camlp4.Register.AstFilter Id Make in ();
