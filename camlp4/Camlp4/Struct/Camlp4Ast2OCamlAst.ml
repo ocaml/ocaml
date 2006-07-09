@@ -717,6 +717,7 @@ module Make (Ast : Sig.Camlp4Ast.S) = struct
     [ <:binding< $x$ and $y$ >> | <:binding< $x$; $y$ >> ->
          binding x (binding y acc)
     | <:binding< $p$ = $e$ >> -> [(patt p, expr e) :: acc]
+    | <:binding<>> -> acc
     | _ -> assert False ]
   and match_case x acc =
     match x with
