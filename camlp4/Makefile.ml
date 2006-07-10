@@ -269,7 +269,7 @@ let mk_camlp4_top_lib name modules =
   ocaml_Library ~default:`Byte ~libraries:["Camlp4"] ~flags:"-linkall" name
   (special_modules @ modules @ [top_camlp4_top])
 
-let mk_camlp4 name modules =
+let mk_camlp4_bin name modules =
   byte_programs += (name ^ ".run");
   opt_programs  += (name ^ ".opt");
   ocaml_Program ~default:`Byte ~includes:[unix] ~libraries:["unix"; "Camlp4"] ~flags:"-linkall" name
@@ -278,7 +278,11 @@ let mk_camlp4 name modules =
 let mk_camlp4_tool name modules =
   byte_programs += (name ^ ".run");
   opt_programs  += (name ^ ".opt");
-  ocaml_Program ~default:`Byte ~libraries:["Camlp4"] ~flags:"-linkall" name modules
+  [ocaml_Program ~default:`Byte ~libraries:["Camlp4"] ~flags:"-linkall" name modules]
+
+let mk_camlp4 name modules bin_mods top_mods=
+  [mk_camlp4_bin name (modules @ bin_mods);
+   mk_camlp4_top_lib name (modules @ top_mods)]
 
 let split c s =
   let rec self acc s =
@@ -392,23 +396,31 @@ let other_objs =
 let other_byte_objs = String.concat " " (List.map (fun x -> x ^ ".cmo") other_objs)
 let other_opt_objs = String.concat " " (List.map (fun x -> x ^ ".cmx") other_objs)
 let all =
- [ocaml_Library ~default:`Byte
+ List.flatten [
+  [ocaml_Library ~default:`Byte
                 ~includes:[dynlink]
                 ~byte_flags:("dynlink.cma"^^other_byte_objs) ~opt_flags:other_opt_objs
-                ~flags:"-linkall" "Camlp4" (misc_modules @ special_modules @ [camlp4_package]);
-  mk_camlp4 "camlp4" [];
-  mk_camlp4 "camlp4boot" [pa_r; pa_qb; pa_q; pa_rp; pa_g; pa_macro; pa_debug; pr_o; pr_a];
-  mk_camlp4 "camlp4r"  [pa_r; pa_rp; pr_a];
-  mk_camlp4 "camlp4rf" [pa_r; pa_qb; pa_q; pa_rp; pa_g; pa_macro; pr_a];
-  mk_camlp4 "camlp4o"  [pa_r; pa_o; pa_rp; pa_op; pr_a];
-  mk_camlp4 "camlp4of" [pa_r; pa_qb; pa_rq; pa_o; pa_rp; pa_op; pa_g; pa_macro; pr_a];
-  mk_camlp4_tool "mkcamlp4" [ocaml_Module ~o:(options_without_debug ()) "mkcamlp4"];
+                ~flags:"-linkall" "Camlp4"
+                (misc_modules @ special_modules @ [camlp4_package])];
+  mk_camlp4 "camlp4" [] [] [];
+  mk_camlp4 "camlp4boot"
+    [pa_r; pa_qb; pa_q; pa_rp; pa_g; pa_macro; pa_debug; pr_o] [pr_a] [top_rprint];
+  mk_camlp4 "camlp4r"
+    [pa_r; pa_rp] [pr_a] [top_rprint];
+  mk_camlp4 "camlp4rf"
+    [pa_r; pa_qb; pa_q; pa_rp; pa_g; pa_macro] [pr_a] [top_rprint];
+  mk_camlp4 "camlp4o"
+    [pa_r; pa_o; pa_rp; pa_op] [pr_a] [];
+  mk_camlp4 "camlp4of"
+    [pa_r; pa_qb; pa_q; pa_o; pa_rp; pa_op; pa_g; pa_macro] [pr_a] [];
+  mk_camlp4 "camlp4oof"
+    [pa_r; pa_o; pa_rp; pa_op; pa_qb; pa_oq; pa_g; pa_macro] [pr_a] [];
+  mk_camlp4 "camlp4orf"
+    [pa_r; pa_o; pa_rp; pa_op; pa_qb; pa_rq; pa_g; pa_macro] [pr_a] [];
+  mk_camlp4_tool "mkcamlp4"
+    [ocaml_Module ~o:(options_without_debug ()) "mkcamlp4"];
   mk_camlp4_tool "camlp4prof"
     [camlp4Profiler; ocaml_Module ~o:(options_without_debug ()) "camlp4prof"];
-  mk_camlp4_top_lib "camlp4r"  [pa_r; pa_rp; top_rprint];
-  mk_camlp4_top_lib "camlp4rf" [pa_r; pa_rp; pa_qb; pa_q; pa_g; pa_macro; top_rprint];
-  mk_camlp4_top_lib "camlp4o"  [pa_r; pa_o; pa_rp; pa_op];
-  mk_camlp4_top_lib "camlp4of" [pa_r; pa_qb; pa_rq; pa_o; pa_rp; pa_op; pa_g; pa_macro];
  ] @ extensions
 
 
