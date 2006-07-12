@@ -470,7 +470,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
             <:expr< if $e1$ then $e2$ else $e3$ >>
         | "if"; e1 = SELF; "then"; e2 = expr LEVEL "top" ->
             <:expr< if $e1$ then $e2$ else () >>
-        | "for"; i = LIDENT; "="; e1 = SELF; df = direction_flag; e2 = SELF;
+        | "for"; i = a_LIDENT; "="; e1 = SELF; df = direction_flag; e2 = SELF;
           "do"; el = SELF; "done" ->
             <:expr< for $i$ = $e1$ $to:df$ $e2$ do { $get_seq el$ } >>
         | "while"; e1 = SELF; "do"; e2 = SELF; "done" ->
@@ -536,9 +536,9 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
         [ i = LABEL; e = SELF -> <:expr< ~ $i$ : $e$ >> (* Here it's LABEL and not
                                                           tilde_label since ~a:b
                                                           is different than ~a : b *)
-        | "~"; i = LIDENT -> <:expr< ~ $i$ >>
+        | "~"; i = a_LIDENT -> <:expr< ~ $i$ >>
         | i = OPTLABEL; e = SELF -> <:expr< ? $i$ : $e$ >> (* Same remark for ?a:b *)
-        | "?"; i = LIDENT -> <:expr< ? $i$ >> ]
+        | "?"; i = a_LIDENT -> <:expr< ? $i$ >> ]
       | "." LEFTA
         [ e1 = SELF; "."; "("; e2 = SELF; ")" -> <:expr< $e1$ .( $e2$ ) >>
         | e1 = SELF; "."; "["; e2 = SELF; "]" -> <:expr< $e1$ .[ $e2$ ] >>

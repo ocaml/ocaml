@@ -697,7 +697,8 @@ module Make (Ast : Sig.Camlp4Ast.S) = struct
         let e2 = ExSeq loc el in
         mkexp loc (Pexp_while (expr e1) (expr e2))
     | <:expr@loc< $_$,$_$ >> -> error loc "expr, expr: not allowed here"
-    | <:expr@loc< $_$;$_$ >> -> error loc "expr; expr: not allowed here"
+    | <:expr@loc< $_$;$_$ >> ->
+        error loc "expr; expr: not allowed here, use do {...} or [|...|] to surround them"
     | ExId _ _ | ExNil _ as e -> error (loc_of_expr e) "invalid expr" ]
   and patt_of_lab _loc lab =
     fun
