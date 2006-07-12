@@ -76,6 +76,25 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
   value mk_anti ?(c = "") n s = "\\$"^n^c^":"^s;
   (*FIXME*)
 
+  value conc_seq e1 e2 =
+    match (e1, e2) with
+    [ (<:expr@_loc< do { $e1$ } >>, <:expr< do { $e2$ } >>) ->
+        <:expr< do { $e1$; $e2$ } >>
+    | (<:expr@_loc< do { $e1$ } >>, _) ->
+        <:expr< do { $e1$; $e2$ } >>
+    | (_, <:expr@_loc< do { $e2$ } >>) ->
+        <:expr< do { $e1$; $e2$ } >>
+    | _ ->
+        let _loc =
+          Loc.merge (Ast.loc_of_expr e1)
+                    (Ast.loc_of_expr e2) in
+        <:expr< do { $e1$; $e2$ } >> ];
+
+  value get_seq =
+    fun
+    [ <:expr< do { $e$ } >> -> e
+    | e -> e ];
+
   value is_operator =
     let ht = Hashtbl.create 73 in
     let ct = Hashtbl.create 73 in
@@ -428,7 +447,8 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     ;
     expr:
       [ ";" RIGHTA
-        [ e1 = SELF; ";"; e2 = SELF -> <:expr< $e1$; $e2$ >>
+        [ e1 = SELF; ";"; e2 = SELF ->
+            conc_seq e1 e2
         | e1 = SELF; ";" -> e1 ]
       | "top"
         [ "let"; r = opt_rec; bi = binding; "in";
@@ -452,9 +472,9 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
             <:expr< if $e1$ then $e2$ else () >>
         | "for"; i = LIDENT; "="; e1 = SELF; df = direction_flag; e2 = SELF;
           "do"; el = SELF; "done" ->
-            <:expr< for $i$ = $e1$ $to:df$ $e2$ do { $el$ } >>
+            <:expr< for $i$ = $e1$ $to:df$ $e2$ do { $get_seq el$ } >>
         | "while"; e1 = SELF; "do"; e2 = SELF; "done" ->
-            <:expr< while $e1$ do { $e2$ } >>
+            <:expr< while $e1$ do { $get_seq e2$ } >>
         | "object"; csp = opt_class_self_patt; cst = class_structure; "end" ->
             <:expr< object ($csp$) $cst$ end >> ]
       | [ e = SELF; ","; el = (*FIXME comma_expr*)LIST1 NEXT SEP "," ->

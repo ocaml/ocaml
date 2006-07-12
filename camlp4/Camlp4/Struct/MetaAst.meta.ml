@@ -139,6 +139,7 @@ module Make (MetaLoc : META_LOC) = struct
   | <:meta< <:expr< match $e$ with [ $a$ ] >> >>
   | <:meta< <:expr< { $bi$ } >> >>
   | <:meta< <:expr< { ($e$) with $bi$ } >> >>
+  | <:meta< <:expr< do { $e$ } >> >>
   | <:meta< <:expr< $e1$ .[ $e2$ ] >> >>
   | <:meta< <:expr< $str:s$ >> >>
   | <:meta< <:expr< try $e$ with [ $a$ ] >> >>

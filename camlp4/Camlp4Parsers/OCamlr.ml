@@ -236,6 +236,12 @@ Old (no more supported) syntax:
   value append_eLem el e = el @ [e];
   value mk_anti ?(c = "") n s = "\\$"^n^c^":"^s;
 
+  value mksequence _loc =
+    fun
+    [ <:expr< $_$; $_$ >> | <:expr< $anti:_$ >> as e -> <:expr< do { $e$ } >>
+    | e -> e ]
+  ;
+
   value bigarray_get _loc arr arg =
     let coords =
       match arg with
@@ -491,7 +497,7 @@ Old (no more supported) syntax:
             <:expr< try $e1$ with $p$ -> $e2$ >>
         | "if"; e1 = SELF; "then"; e2 = SELF; "else"; e3 = SELF ->
             <:expr< if $e1$ then $e2$ else $e3$ >>
-        | "do"; "{"; seq = sequence; "}" -> seq
+        | "do"; "{"; seq = sequence; "}" -> mksequence _loc seq
         | "for"; i = a_LIDENT; "="; e1 = SELF; df = direction_flag; e2 = SELF;
           "do"; "{"; seq = sequence; "}" ->
             <:expr< for $i$ = $e1$ $to:df$ $e2$ do { $seq$ } >>
@@ -620,7 +626,7 @@ Old (no more supported) syntax:
     ;
     sequence:
       [ [ "let"; rf = opt_rec; bi = binding; [ "in" | ";" ]; el = SELF ->
-            <:expr< let $rec:rf$ $bi$ in $el$ >>
+            <:expr< let $rec:rf$ $bi$ in $mksequence _loc el$ >>
         | e = expr; ";"; el = SELF -> <:expr< $e$; $el$ >>
         | e = expr; ";" -> e
         | e = expr -> e ] ]

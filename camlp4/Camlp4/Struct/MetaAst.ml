@@ -140,6 +140,7 @@ module Make (MetaLoc : META_LOC) = struct
     | <:expr@_loc< match $e$ with [ $a$ ] >>                            -> <:expr< Ast.ExMat $meta_loc_expr _loc$ $meta_e e$ $meta_a a$ >>
     | <:expr@_loc< { $bi$ } >>                                          -> <:expr< Ast.ExRec $meta_loc_expr _loc$ $meta_bi bi$ (Ast.ExNil $meta_loc_expr _loc$) >>
     | <:expr@_loc< { ($e$) with $bi$ } >>                               -> <:expr< Ast.ExRec $meta_loc_expr _loc$ $meta_bi bi$ $meta_e e$ >>
+    | <:expr@_loc< do { $e$ } >>                                        -> <:expr< Ast.ExSeq $meta_loc_expr _loc$ $meta_e e$ >>
     | <:expr@_loc< $e1$ .[ $e2$ ] >>                                    -> <:expr< Ast.ExSte $meta_loc_expr _loc$ $meta_e e1$ $meta_e e2$ >>
     | <:expr@_loc< $str:s$ >>                                           -> <:expr< Ast.ExStr $meta_loc_expr _loc$ $meta_str _loc s$ >>
     | <:expr@_loc< try $e$ with [ $a$ ] >>                              -> <:expr< Ast.ExTry $meta_loc_expr _loc$ $meta_e e$ $meta_a a$ >>
@@ -443,6 +444,7 @@ module Make (MetaLoc : META_LOC) = struct
     | <:expr@_loc< match $e$ with [ $a$ ] >>                            -> <:patt< Ast.ExMat $meta_loc_patt _loc$ $meta_e e$ $meta_a a$ >>
     | <:expr@_loc< { $bi$ } >>                                          -> <:patt< Ast.ExRec $meta_loc_patt _loc$ $meta_bi bi$ (Ast.ExNil $meta_loc_patt _loc$) >>
     | <:expr@_loc< { ($e$) with $bi$ } >>                               -> <:patt< Ast.ExRec $meta_loc_patt _loc$ $meta_bi bi$ $meta_e e$ >>
+    | <:expr@_loc< do { $e$ } >>                                        -> <:patt< Ast.ExSeq $meta_loc_patt _loc$ $meta_e e$ >>
     | <:expr@_loc< $e1$ .[ $e2$ ] >>                                    -> <:patt< Ast.ExSte $meta_loc_patt _loc$ $meta_e e1$ $meta_e e2$ >>
     | <:expr@_loc< $str:s$ >>                                           -> <:patt< Ast.ExStr $meta_loc_patt _loc$ $meta_str _loc s$ >>
     | <:expr@_loc< try $e$ with [ $a$ ] >>                              -> <:patt< Ast.ExTry $meta_loc_patt _loc$ $meta_e e$ $meta_a a$ >>

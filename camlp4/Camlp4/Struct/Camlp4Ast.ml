@@ -248,6 +248,7 @@ module Make (Loc : Sig.Loc.S) : Sig.Camlp4Ast.S with module Loc = Loc =
           | ExOvr _x0 _x1 -> ExOvr (o#_Loc_t _x0) (o#binding _x1)
           | ExRec _x0 _x1 _x2 ->
               ExRec (o#_Loc_t _x0) (o#binding _x1) (o#expr _x2)
+          | ExSeq _x0 _x1 -> ExSeq (o#_Loc_t _x0) (o#expr _x1)
           | ExSnd _x0 _x1 _x2 ->
               ExSnd (o#_Loc_t _x0) (o#expr _x1) (o#string _x2)
           | ExSte _x0 _x1 _x2 ->

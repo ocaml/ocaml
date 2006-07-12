@@ -119,8 +119,10 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     method expr f e =
     let () = o#node f e Ast.loc_of_expr in
     match e with
-    [ <:expr< $_$; $_$ >> ->
-        pp f "@[<hv0>@[<hv2>do {@ %a@]@ }@]" o#stms e
+    [ <:expr< do { $e1$; $e2$ } >> ->
+        pp f "@[<hv0>@[<hv2>do {@ %a;@ %a@]@ }@]" o#expr e1 o#expr e2
+    | <:expr< do { $e$ } >> ->
+        o#expr f e
     | <:expr< $e1$ := $e2$ >> ->
         pp f "@[<2>%a@ :=@ %a@]" o#expr e1 o#expr e2
     | <:expr< fun $p$ -> $e$ >> when is_irrefut_patt p ->
@@ -147,7 +149,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
           o#var s o#expr e1 o#expr e2 o#stms e3
     | <:expr< while $e1$ do { $e2$ } >> ->
         pp f "@[<2>while@ %a@ do {@ %a@ }@]" o#expr e1 o#stms e2
-    | <:expr< $_$; $_$ >> ->
+    | <:expr< do { $e$ } >> ->
         pp f "@[<hv0>@[<hv2>do {@ %a@]@ }@]" o#stms e
     | e -> super#simple_expr f e ];
 
