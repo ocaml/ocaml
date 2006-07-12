@@ -602,8 +602,7 @@ module Make (Ast : Sig.Camlp4Ast.S) = struct
           | t -> Some (ctyp t) ] in
         mkexp loc (Pexp_constraint (expr e) t1 (Some (ctyp t2)))
     | ExFlo loc s -> mkexp loc (Pexp_constant (Const_float s))
-    | ExFor loc i e1 e2 df el ->
-        let e3 = ExSeq loc el in
+    | ExFor loc i e1 e2 df e3 ->
         let df = if mb2b df then Upto else Downto in
         mkexp loc (Pexp_for i (expr e1) (expr e2) df (expr e3))
     | <:expr@loc< fun [ $PaLab _ lab po$ when $w$ -> $e$ ] >> ->
@@ -663,16 +662,7 @@ module Make (Ast : Sig.Camlp4Ast.S) = struct
             [ <:expr<>> -> None
             | e -> Some (expr e) ] in
           mkexp loc (Pexp_record (mklabexp lel []) eo) ]
-    | ExSeq _loc e ->
-        let rec loop =
-          fun
-          [ [] -> expr <:expr< () >>
-          | [e] -> expr e
-          | [e :: el] ->
-              let _loc = Loc.merge (loc_of_expr e) _loc in
-              mkexp _loc (Pexp_sequence (expr e) (loop el)) ]
-        in
-        loop (list_of_expr e [])
+    | <:expr@loc< $e1$;$e2$ >> -> mkexp loc (Pexp_sequence (expr e1) (expr e2))
     | ExSnd loc e s -> mkexp loc (Pexp_send (expr e) s)
     | ExSte loc e1 e2 ->
         mkexp loc
@@ -693,11 +683,9 @@ module Make (Ast : Sig.Camlp4Ast.S) = struct
         (* let ca = constructors_arity () in *)
         mkexp loc (Pexp_construct (lident (conv_con s)) None True)
     | ExVrn loc s -> mkexp loc (Pexp_variant s None)
-    | ExWhi loc e1 el ->
-        let e2 = ExSeq loc el in
+    | ExWhi loc e1 e2 ->
         mkexp loc (Pexp_while (expr e1) (expr e2))
     | <:expr@loc< $_$,$_$ >> -> error loc "expr, expr: not allowed here"
-    | <:expr@loc< $_$;$_$ >> -> error loc "expr; expr: not allowed here"
     | ExId _ _ | ExNil _ as e -> error (loc_of_expr e) "invalid expr" ]
   and patt_of_lab _loc lab =
     fun

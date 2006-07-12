@@ -255,8 +255,11 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
 
     method anti f s = pp f "$%s$" s;
 
-    method stms f = o#expr f;
-    (* list o#under_semi#expr ";@ " f; *)
+    method stms f =
+      fun
+      [ <:expr< $e1$; $e2$ >> ->
+          pp f "%a;@ %a" o#under_semi#stms e1 o#stms e2
+      | e -> o#expr f e ];
 
           (* FIXME when the Format module will fixed.
                   pp_print_if_newline f ();
@@ -418,16 +421,13 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     method expr f e =
     let () = o#node f e Ast.loc_of_expr in
     match e with
-    [ ((<:expr< do { $_$ } >> |
-        <:expr< let module $_$ = $_$ in $_$ >>) as e) when semi ->
+    [ ((<:expr< let module $_$ = $_$ in $_$ >>) as e) when semi ->
         pp f "(%a)" o#reset#expr e
     | ((<:expr< match $_$ with [ $_$ ] >> |
         <:expr< try $_$ with [ $_$ ] >> |
         <:expr< fun [ $_$ ] >>) as e) when pipe || semi ->
         pp f "(%a)" o#reset#expr e
 
-    | <:expr< do { $el$ } >> ->
-        pp f "@[<hv0>%a@]" o#stms el
     | <:expr< - $x$ >> ->
         pp f "@[<2>-@,%a@]" o#expr x
     | <:expr< -. $x$ >> ->
@@ -496,10 +496,8 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     let () = o#node f e Ast.loc_of_expr in
     match e with
     [ <:expr<>> -> ()
-    | <:expr< do { $e1$; $e2$ } >> ->
-        pp f "@[<hv0>@[<v2>begin@ %a;@ %a@]@ end@]" o#stms e1 o#stms e2
-    | <:expr< do { $e$ } >> ->
-        o#expr f e
+    | <:expr< $_$; $_$ >> ->
+        pp f "(@[<hv1>%a@])" o#stms e
     | <:expr< [$_$ :: $_$] >> -> o#expr_list_cons True f e
     | <:expr< ( $tup:e$ ) >> ->
         pp f "@[<1>(%a)@]" o#expr e
@@ -551,8 +549,6 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     | <:expr< new $i$ >> -> pp f "@[<2>new@ %a@]" o#ident i
     | <:expr< $e1$, $e2$ >> ->
         pp f "%a,@ %a" o#simple_expr e1 o#simple_expr e2
-    | <:expr< $e1$; $e2$ >> ->
-        pp f "%a;@ %a" o#under_semi#expr e1 o#expr e2
     | <:expr< $_$ $_$ >> | <:expr< $_$ . $_$ >> | <:expr< $_$ . ( $_$ ) >> |
       <:expr< $_$ . [ $_$ ] >> | <:expr< $_$ := $_$ >> |
       <:expr< $_$ # $_$ >> |

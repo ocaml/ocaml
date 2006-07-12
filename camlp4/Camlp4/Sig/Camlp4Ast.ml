@@ -155,8 +155,6 @@ module type S = sig
     | ExOvr of Loc.t and binding
       (* { b } or { (e) with b } *)
     | ExRec of Loc.t and binding and expr
-      (* do { e } *)
-    | ExSeq of Loc.t and expr
       (* e#s *)
     | ExSnd of Loc.t and expr and string
       (* e.[e] *)
@@ -639,8 +637,6 @@ module Make (Loc : Type.S) = struct
     | ExOvr of Loc.t and binding
       (* { b } or { (e) with b } *)
     | ExRec of Loc.t and binding and expr
-      (* do { e } *)
-    | ExSeq of Loc.t and expr
       (* e#s *)
     | ExSnd of Loc.t and expr and string
       (* e.[e] *)
