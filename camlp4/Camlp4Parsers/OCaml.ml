@@ -351,6 +351,12 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     | _ -> None ]
   ;
 
+  DELETE_RULE Gram expr: SELF; "where"; opt_rec; let_binding END;
+  DELETE_RULE Gram value_let: "value" END;
+  DELETE_RULE Gram value_val: "value" END;
+  DELETE_RULE Gram str_item: value_let; opt_rec; binding END;
+  DELETE_RULE Gram module_type: "'"; a_ident END;
+  DELETE_RULE Gram label_expr: label_longident; fun_binding END;
 
   value clear = Gram.Entry.clear;
   clear ctyp;
@@ -374,17 +380,12 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
   clear type_constraint;
   clear comma_expr;
   clear comma_patt;
+  clear sequence;
   clear sem_expr_for_list;
   clear sem_expr;
   clear label_declaration;
   clear star_ctyp;
   clear match_case;
-
-  DELETE_RULE Gram value_let: "value" END;
-  DELETE_RULE Gram value_val: "value" END;
-  DELETE_RULE Gram str_item: value_let; opt_rec; binding END;
-  DELETE_RULE Gram module_type: "'"; a_ident END;
-  DELETE_RULE Gram label_expr: label_longident; fun_binding END;
 
   EXTEND Gram
     GLOBAL:
@@ -426,6 +427,9 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
       [ [ e1 = expr LEVEL "top"; ";"; e2 = SELF -> <:expr< $e1$; $e2$ >>
         | e = expr LEVEL "top"; ";" -> e
         | e = expr LEVEL "top" -> e ] ]
+    ;
+    sequence:
+      [ [ e = sem_expr -> e ] ]
     ;
     sem_expr_for_list:
       [ [ e = expr LEVEL "top"; ";"; el = SELF -> fun acc -> <:expr< [ $e$ :: $el acc$ ] >>
