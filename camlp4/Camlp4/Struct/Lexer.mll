@@ -290,7 +290,8 @@ module Make (Token : Sig.Camlp4Token.S)
         { store c; with_curr_loc comment c; parse comment c                     }
     | "*)"                                                            { store c }
     | '<' (':' ident)? ('@' ident)? '<'
-        { store c; with_curr_loc quotation c; parse comment c                   }
+        { store c;
+          if quotations c then with_curr_loc quotation c; parse comment c       }
     | ident                                             { store_parse comment c }
     | "\""
         { store c;
@@ -423,6 +424,6 @@ module Make (Token : Sig.Camlp4Token.S)
     from_lexbuf ?quotations lb
 
   let mk () loc strm =
-    from_stream ~quotations:!Config.quotations loc strm;
+    from_stream ~quotations:!Config.quotations loc strm
 end
 }
