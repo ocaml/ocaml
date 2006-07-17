@@ -258,6 +258,10 @@ module Make (Token : Sig.Camlp4Token.S)
       { if quotations c
         then mk_quotation quotation c "" "" 2
         else parse (symbolchar_star "<<") c                                     }
+    | "<<>>"
+      { if quotations c
+        then QUOTATION { q_name = ""; q_loc = ""; q_shift = 2; q_contents = "" }
+        else parse (symbolchar_star "<<>>") c                                   }
     | "<@"
       { if quotations c then with_curr_loc maybe_quotation_at c
         else parse (symbolchar_star "<@") c                                     }
