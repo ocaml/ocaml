@@ -21,7 +21,7 @@
 open Camlp4;
 
 module Id = struct
-  value name    = "Camlp4Filters.GenerateMap";
+  value name    = "Camlp4Filters.GenerateFold";
   value version = "$Id$";
 end;
 
@@ -84,25 +84,27 @@ module Make (AstFilters : Camlp4.Sig.AstFilters.S) = struct
     let n = List.length tl in
     let exi i = <:expr< $lid:xi i$ >> in
     let pxi i = <:patt< $lid:xi i$ >> in
-    let el = list_mapi (fun i -> self (Some (exi i))) tl in
-    <:expr< fun ($tup:Ast.paCom_of_list (list_init pxi n)$)
-             -> ($tup:Ast.exCom_of_list el$) >>;
+    let (e, _) =
+      List.fold_left
+        (fun (acc, i) t -> (self ?obj:(Some acc) (Some (exi i)) t, succ i))
+        (<:expr<o>>, 0) tl in
+    <:expr< fun ($tup:Ast.paCom_of_list (list_init pxi n)$) -> $e$ >>;
 
   value builtins =
     <:class_str_item<
-      method string x : string = x;
-      method int x : int = x;
-      method float x : float = x;
-      method bool x : bool = x;
-      method list : ! 'a 'b . ('a -> 'b) -> list 'a -> list 'b =
-        List.map;
-      method option : ! 'a 'b . ('a -> 'b) -> option 'a -> option 'b =
-        fun f -> fun [ None -> None | Some x -> Some (f x) ];
-      method array : ! 'a 'b . ('a -> 'b) -> array 'a -> array 'b =
+      method string (_ : string) : 'self_type = o;
+      method int (_ : int) : 'self_type = o;
+      method float (_ : float) : 'self_type = o;
+      method bool (_ : bool) : 'self_type = o;
+      method list : ! 'a . ('self_type -> 'a -> 'self_type) -> list 'a -> 'self_type =
+        fun f -> List.fold_left f o;
+      method option : ! 'a . ('self_type -> 'a -> 'self_type) -> option 'a -> 'self_type =
+        fun f -> fun [ None -> o | Some x -> f o x ];
+(*       method array : ! 'a 'b . ('a -> 'b) -> array 'a -> array 'b =
         Array.map;
       method ref : ! 'a 'b . ('a -> 'b) -> ref 'a -> ref 'b =
         fun f { val = x } -> { val = f x };
-    >>;
+ *)    >>;
 
   (* FIXME UNUSED *)
   value builtins_sig =
@@ -130,15 +132,15 @@ module Make (AstFilters : Camlp4.Sig.AstFilters.S) = struct
     let add id1 id2 ty = set.val := StringMap.add id1 (id1, id2, [], ty) set.val
     and fold f = StringMap.fold f set.val in (add, fold);
 
-  value rec expr_of_ty x ty =
-    let rec self ox =
+  value rec expr_of_ty ?obj x ty =
+    let rec self ?(obj = <:expr<o>>) ox =
       fun
       [ <:ctyp< $lid:id$ >> ->
           match ox with
-          [ Some x -> <:expr< o#$id$ $x$ >>
-          | _ -> <:expr< o#$id$ >> ]
+          [ Some x -> <:expr< $obj$#$id$ $x$ >>
+          | _ -> <:expr< $obj$#$id$ >> ]
       | <:ctyp< $t1$ $t2$ >> ->
-          let e = <:expr< $self None t1$ $self None t2$ >> in
+          let e = <:expr< $self ~obj None t1$ (fun o -> $self None t2$) >> in
           match ox with
           [ Some x -> <:expr< $e$ $x$ >>
           | _   -> e ]
@@ -147,7 +149,7 @@ module Make (AstFilters : Camlp4.Sig.AstFilters.S) = struct
             let y = fresh "y" in
             let py = <:expr< $lid:y$ >> in
             let e = <:expr< $x$ $self (Some py) t1$ >>
-            in <:expr< fun $lid:y$ -> $self (Some e) t2$ >> in
+            in <:expr< fun $lid:y$ -> $self ~obj (Some e) t2$ >> in
           match ox with
           [ Some x -> mk_fun x
           | _ ->
@@ -162,8 +164,8 @@ module Make (AstFilters : Camlp4.Sig.AstFilters.S) = struct
       | <:ctyp< '$s$ >> ->
           let id = "_f_" ^ s in
           match ox with
-          [ Some x -> <:expr< $lid:id$ $x$ >>
-          | _   -> <:expr< $lid:id$ >> ]
+          [ Some x -> <:expr< $lid:id$ o $x$ >>
+          | _   -> <:expr< $lid:id$ o >> ]
       | <:ctyp< $id:i$ >> ->
           let id1 = "_" ^ lid_of_ident "_" i in
           let ty = <:ctyp< $lid:id1$ >> in
@@ -172,15 +174,21 @@ module Make (AstFilters : Camlp4.Sig.AstFilters.S) = struct
       | _ ->
           match ox with
           [ Some x -> <:expr< $x$ >>
-          | _   -> <:expr< fun x -> x >> ] ]
-    in self x ty
+          | _   -> <:expr< fun _ -> o >> ] ]
+    in self ?obj x ty
 
   and expr_of_constructor t (i, acc) =
     match t with
     [ <:ctyp< $t1$ and $t2$ >> ->
         expr_of_constructor t2 (expr_of_constructor t1 (i, acc))
-    | _ -> (succ i, <:expr< $acc$ $expr_of_ty (Some <:expr< $lid:xi i$ >>) t$ >>) ]
+    | _ -> (succ i, <:expr< $expr_of_ty ~obj:acc (Some <:expr< $lid:xi i$ >>) t$ >>) ]
 
+(*   and expr_of_constructor_for_fold t (i, acc) =
+    match t with
+    [ <:ctyp< $t1$ and $t2$ >> ->
+        expr_of_constructor_for_fold t2 (expr_of_constructor_for_fold t1 (i, acc))
+    | _ -> (succ i, <:expr< $acc$ $expr_of_ty (Some <:expr< $lid:xi i$ >>) t$ >>) ]
+ *)
   and patt_of_constructor t (i, acc) =
     match t with
     [ <:ctyp< $t1$ and $t2$ >> ->
@@ -193,9 +201,9 @@ module Make (AstFilters : Camlp4.Sig.AstFilters.S) = struct
          <:match_case< $match_case_of_sum_type t1$ | $match_case_of_sum_type t2$ >>
     | <:ctyp< $uid:s$ of $t$ >> ->
          <:match_case< $pat:snd (patt_of_constructor t (0, <:patt< $uid:s$ >>))$
-               -> $snd (expr_of_constructor t (0, <:expr< $uid:s$ >>))$ >>
+               -> $snd (expr_of_constructor t (0, <:expr< o >>))$ >>
     | <:ctyp< $uid:s$ >> ->
-         <:match_case< $uid:s$ -> $uid:s$ >>
+         <:match_case< $uid:s$ -> o >>
     | _ -> assert False ]
 
   and record_patt_of_type =
@@ -221,7 +229,7 @@ module Make (AstFilters : Camlp4.Sig.AstFilters.S) = struct
     | <:ctyp< { $t$ } >> ->
         <:expr< fun { $record_patt_of_type t$ } -> { $record_binding_of_type t$ } >>
     | <:ctyp< ( $tup:t$ ) >> -> mk_tuple expr_of_ty t
-    | _ -> <:expr< fun x -> x >> ]
+    | _ -> <:expr< fun _ -> o >> ]
 
   and string_of_type_param t =
     match t with
@@ -244,8 +252,8 @@ module Make (AstFilters : Camlp4.Sig.AstFilters.S) = struct
   and method_type_of_type_decl (_, name, params, _) =
     let t = ctyp_name_of_name_params name [] (* FIXME params *) in
     match List.length params with
-    [ 1 -> <:ctyp< ! 'a 'b . ('a -> 'b) -> $t$ 'a -> $t$ 'b >>
-    | 0 -> <:ctyp< $t$ -> $t$ >>
+    [ 1 -> <:ctyp< ! 'a . ('self_type -> 'a -> 'self_type) -> $t$ 'a -> 'self_type >>
+    | 0 -> <:ctyp< $t$ -> 'self_type >>
     | _ -> failwith "FIXME not implemented" ]
 
   and class_sig_item_of_type_decl _ ((name, _, _, _) as type_decl) acc =
@@ -298,16 +306,16 @@ module Make (AstFilters : Camlp4.Sig.AstFilters.S) = struct
   and inject_structure_drop_trash generated =
     Ast.map_str_item
       (fun
-       [ <:str_item@_loc< class $lid:c$ = Camlp4Filters.GenerateMap.generated >> ->
+       [ <:str_item@_loc< class $lid:c$ = Camlp4Filters.GenerateFold.generated >> ->
             (* FIXME <:str_item< class $lid:c$ = object (o) $builtins$; $generated$ end >> *)
             let x = <:class_str_item< $builtins$; $generated$ >> in
-            <:str_item< class $lid:c$ = object (o) $x$ end >>
+            <:str_item< class $lid:c$ = object (o : 'self_type) $x$ end >>
        | s -> s ])
   
   and inject_signature generated =
     Ast.map_sig_item
       (fun
-       [ <:sig_item@_loc< class $lid:c$ : Camlp4Filters.GenerateMap.generated >> ->
+       [ <:sig_item@_loc< class $lid:c$ : Camlp4Filters.GenerateFold.generated >> ->
             <:sig_item< class $lid:c$ : object $generated$ end >>
        | s -> s ])
 
