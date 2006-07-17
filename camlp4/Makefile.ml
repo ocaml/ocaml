@@ -96,12 +96,16 @@ let ocaml_Module_with_genmap =
    (fun _ i o ->
       "if test ! -e"^^o^^
          "|| (test -e ./camlp4boot.run"^^
-             "&& test -e Camlp4Filters/GenerateMap.cmo);"^^
-      "then (echo 'module Camlp4FiltersGenerateMapTrash = struct';"^^
+             "&& test -e Camlp4Filters/GenerateMap.cmo"^^
+             "&& test -e Camlp4Filters/GenerateFold.cmo"^^
+             "&& test -e Camlp4Filters/RemoveTrashModule.cmo);"^^
+      "then (echo 'module Camlp4FiltersTrash = struct';"^^
             "cat Camlp4/Sig/Camlp4Ast.ml; echo 'end;') > Camlp4/Struct/Camlp4Ast.tmp.ml;"^^
            "(echo '(* Generated file! Do not edit by hand *)';"^^
                "../boot/ocamlrun ./camlp4boot.run"^^
-                   "Camlp4Filters/GenerateMap.cmo -printer OCamlr"^^
+                   "./Camlp4Filters/GenerateMap.cmo"^^
+                   "./Camlp4Filters/GenerateFold.cmo"^^
+                   "./Camlp4Filters/RemoveTrashModule.cmo -printer OCamlr"^^
                    i^^" -no_comments) >"^^o^^"; else : ; fi")
 
 let misc_modules = [
@@ -172,6 +176,7 @@ let camlp4_package =
       ocaml_Module "Quotation";
       ocaml_IModule ~ext_includes:[dynlink] "DynLoader";
       ocaml_Module_with_genmap ~flags:"-w z -warn-error z" "Camlp4Ast";
+      ocaml_IModule "FreeVars";
       ocaml_Module_with_meta "MetaAst";
       ocaml_Module "AstFilters";
       ocaml_IModule ~ext_includes:[parsing] "Camlp4Ast2OCamlAst";
@@ -185,6 +190,7 @@ let camlp4_package =
       ocaml_IModule "DumpCamlp4Ast";
       ocaml_IModule "OCaml";
       ocaml_IModule "OCamlr" ~flags:"-w v -warn-error v";
+      (* ocaml_IModule "OCamlrr"; *)
     ])
   ])
 
@@ -192,6 +198,7 @@ let camlp4_parsers =
   ocaml_PackageDir "Camlp4Parsers" (lazy [
     ocaml_Module "OCamlr";
     ocaml_Module "OCaml";
+    (* ocaml_Module "OCamlrr"; *)
     ocaml_Module "OCamlQuotationBase";
     ocaml_Module "OCamlQuotation";
     ocaml_Module "OCamlRevisedQuotation";
@@ -210,6 +217,7 @@ let camlp4_printers =
     ocaml_Module "DumpCamlp4Ast";
     ocaml_Module "OCaml";
     ocaml_Module "OCamlr";
+    (* ocaml_Module "OCamlrr"; *)
     ocaml_Module "Null";
     ocaml_Module ~includes:[unix] "Auto";
   ])
@@ -221,6 +229,8 @@ let camlp4_filters =
     ocaml_Module "StripLocations";
     ocaml_Module "LiftCamlp4Ast";
     ocaml_Module "GenerateMap";
+    ocaml_Module "GenerateFold";
+    ocaml_Module "RemoveTrashModule";
     ocaml_Module "Profiler";
   ])
 
@@ -402,7 +412,7 @@ let all =
                 ~byte_flags:("dynlink.cma"^^other_byte_objs) ~opt_flags:other_opt_objs
                 ~flags:"-linkall" "Camlp4"
                 (misc_modules @ special_modules @ [camlp4_package])];
-  mk_camlp4 "camlp4" [] [] [];
+  [mk_camlp4_bin "camlp4" []];
   mk_camlp4 "camlp4boot"
     [pa_r; pa_qb; pa_q; pa_rp; pa_g; pa_macro; pa_debug; pr_o] [pr_a] [top_rprint];
   mk_camlp4 "camlp4r"
