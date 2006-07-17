@@ -534,7 +534,7 @@ CAMLprim value caml_ml_flush_partial(value vchannel)
   struct channel * channel = Channel(vchannel);
   int res;
 
-  if (channel->fd == -1) CAMLreturn Val_true;
+  if (channel->fd == -1) CAMLreturn(Val_true);
   Lock(channel);
   res = caml_flush_partial(channel);
   Unlock(channel);
@@ -546,7 +546,7 @@ CAMLprim value caml_ml_flush(value vchannel)
   CAMLparam1 (vchannel);
   struct channel * channel = Channel(vchannel);
 
-  if (channel->fd == -1) CAMLreturn Val_unit;
+  if (channel->fd == -1) CAMLreturn(Val_unit);
   Lock(channel);
   caml_flush(channel);
   Unlock(channel);
