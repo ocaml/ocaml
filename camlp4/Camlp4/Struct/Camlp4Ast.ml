@@ -425,10 +425,12 @@ module Make (Loc : Sig.Loc.S) : Sig.Camlp4Ast.S with module Loc = Loc =
         method option :
           ! 'a. ('self_type -> 'a -> 'self_type) -> option 'a -> 'self_type =
           fun f -> fun [ None -> o | Some x -> f o x ];
-        method array : ! 'a . ('self_type -> 'a -> 'self_type) -> array 'a -> 'self_type =
+        method array :
+          ! 'a. ('self_type -> 'a -> 'self_type) -> array 'a -> 'self_type =
           fun f -> Array.fold_left f o;
-        method ref : ! 'a . ('self_type -> 'a -> 'self_type) -> ref 'a -> 'self_type =
-          fun f { val = x } -> f o x;
+        method ref :
+          ! 'a. ('self_type -> 'a -> 'self_type) -> ref 'a -> 'self_type =
+          fun f { \val = x } -> f o x;
         method _Loc_t : Loc.t -> 'self_type = fun _ -> o;
         method with_constr : with_constr -> 'self_type =
           fun

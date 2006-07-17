@@ -41,6 +41,9 @@ module Make (Loc : Sig.Loc.S)
   external loc_of_ident : ident -> Loc.t = "%field0";
 
   class map = Camlp4Filters.GenerateMap.generated;
+
+  class fold = Camlp4Filters.GenerateFold.generated;
+
   class c_expr f = object
     inherit map as super;
     method expr x = f (super#expr x);
