@@ -410,6 +410,37 @@ module type S = sig
     method ident : ident -> ident;
   end;
 
+  (** See {!Ast.S.fold}. *)
+  class fold : object ('self_type)
+    method string : string -> 'self_type;
+    method int : int -> 'self_type;
+    method float : float -> 'self_type;
+    method bool : bool -> 'self_type;
+    method list : ! 'a . ('self_type -> 'a -> 'self_type) -> list 'a -> 'self_type;
+    method option : ! 'a . ('self_type -> 'a -> 'self_type) -> option 'a -> 'self_type;
+    method array : ! 'a . ('self_type -> 'a -> 'self_type) -> array 'a -> 'self_type;
+    method ref : ! 'a . ('self_type -> 'a -> 'self_type) -> ref 'a -> 'self_type;
+    method meta_bool : meta_bool -> 'self_type;
+    method meta_option : ! 'a . ('self_type -> 'a -> 'self_type) -> meta_option 'a -> 'self_type;
+    method _Loc_t : Loc.t -> 'self_type;
+    method expr : expr -> 'self_type;
+    method patt : patt -> 'self_type;
+    method ctyp : ctyp -> 'self_type;
+    method str_item : str_item -> 'self_type;
+    method sig_item : sig_item -> 'self_type;
+    method module_expr : module_expr -> 'self_type;
+    method module_type : module_type -> 'self_type;
+    method class_expr : class_expr -> 'self_type;
+    method class_type : class_type -> 'self_type;
+    method class_sig_item : class_sig_item -> 'self_type;
+    method class_str_item : class_str_item -> 'self_type;
+    method with_constr : with_constr -> 'self_type;
+    method binding : binding -> 'self_type;
+    method module_binding : module_binding -> 'self_type;
+    method match_case : match_case -> 'self_type;
+    method ident : ident -> 'self_type;
+  end;
+
   (** See {!Ast.S.remove_antiquots}. *)
   (* class remove_antiquots : object inherit map; end; *)
 
