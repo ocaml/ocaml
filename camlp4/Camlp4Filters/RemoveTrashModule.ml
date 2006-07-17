@@ -34,7 +34,7 @@ module Make (AstFilters : Camlp4.Sig.AstFilters.S) = struct
       (fun
        [ <:str_item@_loc< module Camlp4FiltersTrash = $_$ >> ->
             <:str_item<>>
-       | st -> st ]));
+       | st -> st ]))#str_item;
 
 end;
 
