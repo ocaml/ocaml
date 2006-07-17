@@ -100,24 +100,11 @@ module Make (AstFilters : Camlp4.Sig.AstFilters.S) = struct
         fun f -> List.fold_left f o;
       method option : ! 'a . ('self_type -> 'a -> 'self_type) -> option 'a -> 'self_type =
         fun f -> fun [ None -> o | Some x -> f o x ];
-(*       method array : ! 'a 'b . ('a -> 'b) -> array 'a -> array 'b =
-        Array.map;
-      method ref : ! 'a 'b . ('a -> 'b) -> ref 'a -> ref 'b =
-        fun f { val = x } -> { val = f x };
- *)    >>;
-
-  (* FIXME UNUSED *)
-  value builtins_sig =
-    <:sig_item<
-      value string : string -> string;
-      value int : int -> int;
-      value float : float -> float;
-      value bool : bool -> bool;
-      value list : ('a -> 'b) -> list 'a -> list 'b;
-      value array : ('a -> 'b) -> array 'a -> array 'b;
-      value option : ('a -> 'b) -> option 'a -> option 'b;
-      value ref : ('a -> 'b) -> ref 'a -> ref 'b;
-    >>;
+      method array : ! 'a . ('self_type -> 'a -> 'self_type) -> array 'a -> 'self_type =
+        fun f -> Array.fold_left f o;
+      method ref : ! 'a . ('self_type -> 'a -> 'self_type) -> ref 'a -> 'self_type =
+        fun f { val = x } -> f o x;
+  >>;
 
   value rec lid_of_ident sep =
     fun
