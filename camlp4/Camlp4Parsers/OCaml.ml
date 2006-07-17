@@ -575,26 +575,31 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     match_case:
       [ [ l = LIST1 match_case0 SEP "|" -> Ast.mcOr_of_list l ] ]
     ;
+    patt_constr:
+      [ [ i = module_longident -> <:patt< $id:i$ >>
+        | "`"; s = a_ident -> <:patt< `$s$ >> ] ]
+    ;
     (* Patterns *)
     patt:
-      [ "as" LEFTA
-        [ p1 = SELF; "as"; i = a_LIDENT -> <:patt< ($p1$ as $lid:i$) >> ]
-      | "|" LEFTA
+      [ "|" LEFTA
         [ p1 = SELF; "|"; p2 = SELF -> <:patt< $p1$ | $p2$ >> ]
       | ","
         [ p = SELF; ","; pl = (*FIXME comma_patt*) LIST1 NEXT SEP "," ->
             <:patt< ( $p$, $Ast.paCom_of_list pl$ ) >> ]
-      | ".." NONA
-        [ p1 = SELF; ".."; p2 = SELF -> <:patt< $p1$ .. $p2$ >> ]
       | "::" RIGHTA
         [ p1 = SELF; "::"; p2 = SELF -> <:patt< [$p1$ :: $p2$] >> ]
-      | RIGHTA
-        [ p1 = SELF; p2 = SELF ->
+      | "apply" RIGHTA
+        [ p1 = patt_constr; p2 = SELF ->
             match p2 with
             [ <:patt< ( $tup:p$ ) >> ->
                 List.fold_left (fun p1 p2 -> <:patt< $p1$ $p2$ >>) p1
                                 (Ast.list_of_patt p [])
-            | _ -> <:patt< $p1$ $p2$ >> ] ]
+            | _ -> <:patt< $p1$ $p2$ >> ]
+        | p = patt_constr -> p ]
+      | "as" LEFTA
+        [ p1 = SELF; "as"; i = a_LIDENT -> <:patt< ($p1$ as $lid:i$) >> ]
+      | ".." NONA
+        [ p1 = SELF; ".."; p2 = SELF -> <:patt< $p1$ .. $p2$ >> ]
       | "simple"
         [ `ANTIQUOT (""|"pat"|"anti" as n) s ->
             <:patt< $anti:mk_anti ~c:"patt" n s$ >>
@@ -753,7 +758,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
       [ [ ";;" -> () | -> () ] ]
     ;
     ipatt:
-      [ [ p = patt LEVEL "simple" -> p ] ]
+      [ [ p = patt -> p ] ]
     ;
     type_longident_and_parameters:
       [ [ "("; tpl = type_parameters; ")"; i = type_longident ->
@@ -848,7 +853,9 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
             <:patt< ? $i$ >>
         | "?"; "("; i = a_LIDENT; ":"; t = ctyp; ")" ->
             <:patt< ? ( $lid:i$ : $t$ ) >>
-        | p = patt LEVEL "simple" -> p
+        | p = patt LEVEL "as"; ","; pl = LIST1 patt LEVEL "as" SEP "," ->
+            <:patt< ( $p$, $Ast.paCom_of_list pl$ ) >>
+        | p = patt LEVEL "as" -> p
       ] ]
     ;
     label_expr:
