@@ -78,7 +78,7 @@ value use_file token_stream =
       let (pl, stopped_at_directive) =
         Gram.parse_tokens_after_filter Syntax.use_file token_stream
       in
-      if stopped_at_directive then
+      if stopped_at_directive <> None then
         match pl with
         [ [ <:str_item< #load $str:s$ >> ] ->
             do { Topdirs.dir_load Format.std_formatter s; loop () }
@@ -94,7 +94,7 @@ value use_file token_stream =
         let (pl, stopped_at_directive) =
           Gram.parse_tokens_after_filter Syntax.use_file token_stream
         in
-        if stopped_at_directive then pl @ loop () else pl
+        if stopped_at_directive <> None then pl @ loop () else pl
   in List.map Ast2pt.phrase (pl0 @ pl);
 
 Toploop.parse_toplevel_phrase.val := wrap toplevel_phrase;

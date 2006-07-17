@@ -284,6 +284,9 @@ Old (no more supported) syntax:
       else s'
     in find_alpha 0;
 
+  value stopped_at _loc =
+    Some (Loc.move_line 1 _loc) (* FIXME be more precise *);
+
   (* value list1sep symb sep one cons =
     let rec kont al =
       parser
@@ -1337,9 +1340,9 @@ Old (no more supported) syntax:
     ;
     interf:
       [ [ "#"; n = a_LIDENT; dp = opt_expr; semi ->
-            ([ <:sig_item< # $n$ $dp$ >> ], True)
+            ([ <:sig_item< # $n$ $dp$ >> ], stopped_at _loc)
         | si = sig_item; semi; (sil, stopped) = SELF -> ([si :: sil], stopped)
-        | `EOI -> ([], False) ] ]
+        | `EOI -> ([], None) ] ]
     ;
     sig_items:
       [ [ `ANTIQUOT (""|"sigi"|"anti"|"list" as n) s ->
@@ -1349,9 +1352,9 @@ Old (no more supported) syntax:
     ;
     implem:
       [ [ "#"; n = a_LIDENT; dp = opt_expr; semi ->
-            ([ <:str_item< # $n$ $dp$ >> ], True)
+            ([ <:str_item< # $n$ $dp$ >> ], stopped_at _loc)
         | si = str_item; semi; (sil, stopped) = SELF -> ([si :: sil], stopped)
-        | `EOI -> ([], False)
+        | `EOI -> ([], None)
       ] ]
     ;
     str_items:
@@ -1367,9 +1370,9 @@ Old (no more supported) syntax:
     ;
     use_file:
       [ [ "#"; n = a_LIDENT; dp = opt_expr; semi ->
-            ([ <:str_item< # $n$ $dp$ >> ], True)
+            ([ <:str_item< # $n$ $dp$ >> ], stopped_at _loc)
         | si = str_item; semi; (sil, stopped) = SELF -> ([si :: sil], stopped)
-        | `EOI -> ([], False)
+        | `EOI -> ([], None)
       ] ]
     ;
     phrase:

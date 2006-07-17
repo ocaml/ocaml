@@ -35,10 +35,10 @@ module type S = sig
   module Parser         : Parser.S with module Ast = Camlp4Ast.ToAst Ast;
   module Printer        : Printer.S with module Ast = Camlp4Ast.ToAst Ast;
 
-  value interf : Gram.Entry.t (list Ast.sig_item * bool);
-  value implem : Gram.Entry.t (list Ast.str_item * bool);
+  value interf : Gram.Entry.t (list Ast.sig_item * option Loc.t);
+  value implem : Gram.Entry.t (list Ast.str_item * option Loc.t);
   value top_phrase : Gram.Entry.t (option Ast.str_item);
-  value use_file : Gram.Entry.t (list Ast.str_item * bool);
+  value use_file : Gram.Entry.t (list Ast.str_item * option Loc.t);
   value a_CHAR : Gram.Entry.t string;
   value a_FLOAT : Gram.Entry.t string;
   value a_INT : Gram.Entry.t string;

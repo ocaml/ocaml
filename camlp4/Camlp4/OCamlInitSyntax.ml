@@ -217,25 +217,26 @@ module Make (Warning : Sig.Warning.S)
 
   module Parser = struct
     module Ast = Ast;
-    value wrap directive_handler pa cs =
-      let rec loop () =
-        let (pl, stopped_at_directive) = pa cs in
-        if stopped_at_directive then
+    value wrap directive_handler pa init_loc cs =
+      let rec loop loc =
+        let (pl, stopped_at_directive) = pa loc cs in
+        match stopped_at_directive with
+        [ Some new_loc ->
           let pl =
             match List.rev pl with
-            [ [] -> []
+            [ [] -> assert False
             | [x :: xs] ->
                 match directive_handler x with
                 [ None -> xs
                 | Some x -> [x :: xs] ] ]
-          in pl @ (loop ())
-        else pl
-      in loop ();
+          in (List.rev pl) @ (loop new_loc)
+        | None -> pl ]
+      in loop init_loc;
     value parse_implem ?(directive_handler = fun _ -> None) _loc cs =
-      let l = wrap directive_handler (Gram.parse implem _loc) cs in
+      let l = wrap directive_handler (Gram.parse implem) _loc cs in
       <:str_item< $list:l$ >>;
     value parse_interf ?(directive_handler = fun _ -> None) _loc cs =
-      let l = wrap directive_handler (Gram.parse interf _loc) cs in
+      let l = wrap directive_handler (Gram.parse interf) _loc cs in
       <:sig_item< $list:l$ >>;
   end;
 
