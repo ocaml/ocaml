@@ -413,6 +413,316 @@ module Make (Loc : Sig.Loc.S) : Sig.Camlp4Ast.S with module Loc = Loc =
           | BiEq _x0 _x1 _x2 -> BiEq (o#_Loc_t _x0) (o#patt _x1) (o#expr _x2)
           | BiAnt _x0 _x1 -> BiAnt (o#_Loc_t _x0) (o#string _x1) ];
       end;
+    class fold =
+      object ((o : 'self_type))
+        method string = fun (_ : string) -> (o : 'self_type);
+        method int = fun (_ : int) -> (o : 'self_type);
+        method float = fun (_ : float) -> (o : 'self_type);
+        method bool = fun (_ : bool) -> (o : 'self_type);
+        method list :
+          ! 'a. ('self_type -> 'a -> 'self_type) -> list 'a -> 'self_type =
+          fun f -> List.fold_left f o;
+        method option :
+          ! 'a. ('self_type -> 'a -> 'self_type) -> option 'a -> 'self_type =
+          fun f -> fun [ None -> o | Some x -> f o x ];
+        method array : ! 'a . ('self_type -> 'a -> 'self_type) -> array 'a -> 'self_type =
+          fun f -> Array.fold_left f o;
+        method ref : ! 'a . ('self_type -> 'a -> 'self_type) -> ref 'a -> 'self_type =
+          fun f { val = x } -> f o x;
+        method _Loc_t : Loc.t -> 'self_type = fun _ -> o;
+        method with_constr : with_constr -> 'self_type =
+          fun
+          [ WcNil _x0 -> o#_Loc_t _x0
+          | WcTyp _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
+          | WcMod _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ident _x1)#ident _x2
+          | WcAnd _x0 _x1 _x2 ->
+              ((o#_Loc_t _x0)#with_constr _x1)#with_constr _x2
+          | WcAnt _x0 _x1 -> (o#_Loc_t _x0)#string _x1 ];
+        method str_item : str_item -> 'self_type =
+          fun
+          [ StNil _x0 -> o#_Loc_t _x0
+          | StCls _x0 _x1 -> (o#_Loc_t _x0)#class_expr _x1
+          | StClt _x0 _x1 -> (o#_Loc_t _x0)#class_type _x1
+          | StSem _x0 _x1 _x2 -> ((o#_Loc_t _x0)#str_item _x1)#str_item _x2
+          | StDir _x0 _x1 _x2 -> ((o#_Loc_t _x0)#string _x1)#expr _x2
+          | StExc _x0 _x1 _x2 ->
+              ((o#_Loc_t _x0)#ctyp _x1)#meta_option (fun o -> o#ident) _x2
+          | StExp _x0 _x1 -> (o#_Loc_t _x0)#expr _x1
+          | StExt _x0 _x1 _x2 _x3 ->
+              (((o#_Loc_t _x0)#string _x1)#ctyp _x2)#string _x3
+          | StInc _x0 _x1 -> (o#_Loc_t _x0)#module_expr _x1
+          | StMod _x0 _x1 _x2 -> ((o#_Loc_t _x0)#string _x1)#module_expr _x2
+          | StRecMod _x0 _x1 -> (o#_Loc_t _x0)#module_binding _x1
+          | StMty _x0 _x1 _x2 -> ((o#_Loc_t _x0)#string _x1)#module_type _x2
+          | StOpn _x0 _x1 -> (o#_Loc_t _x0)#ident _x1
+          | StTyp _x0 _x1 -> (o#_Loc_t _x0)#ctyp _x1
+          | StVal _x0 _x1 _x2 -> ((o#_Loc_t _x0)#meta_bool _x1)#binding _x2
+          | StAnt _x0 _x1 -> (o#_Loc_t _x0)#string _x1 ];
+        method sig_item : sig_item -> 'self_type =
+          fun
+          [ SgNil _x0 -> o#_Loc_t _x0
+          | SgCls _x0 _x1 -> (o#_Loc_t _x0)#class_type _x1
+          | SgClt _x0 _x1 -> (o#_Loc_t _x0)#class_type _x1
+          | SgSem _x0 _x1 _x2 -> ((o#_Loc_t _x0)#sig_item _x1)#sig_item _x2
+          | SgDir _x0 _x1 _x2 -> ((o#_Loc_t _x0)#string _x1)#expr _x2
+          | SgExc _x0 _x1 -> (o#_Loc_t _x0)#ctyp _x1
+          | SgExt _x0 _x1 _x2 _x3 ->
+              (((o#_Loc_t _x0)#string _x1)#ctyp _x2)#string _x3
+          | SgInc _x0 _x1 -> (o#_Loc_t _x0)#module_type _x1
+          | SgMod _x0 _x1 _x2 -> ((o#_Loc_t _x0)#string _x1)#module_type _x2
+          | SgRecMod _x0 _x1 -> (o#_Loc_t _x0)#module_binding _x1
+          | SgMty _x0 _x1 _x2 -> ((o#_Loc_t _x0)#string _x1)#module_type _x2
+          | SgOpn _x0 _x1 -> (o#_Loc_t _x0)#ident _x1
+          | SgTyp _x0 _x1 -> (o#_Loc_t _x0)#ctyp _x1
+          | SgVal _x0 _x1 _x2 -> ((o#_Loc_t _x0)#string _x1)#ctyp _x2
+          | SgAnt _x0 _x1 -> (o#_Loc_t _x0)#string _x1 ];
+        method patt : patt -> 'self_type =
+          fun
+          [ PaNil _x0 -> o#_Loc_t _x0
+          | PaId _x0 _x1 -> (o#_Loc_t _x0)#ident _x1
+          | PaAli _x0 _x1 _x2 -> ((o#_Loc_t _x0)#patt _x1)#patt _x2
+          | PaAnt _x0 _x1 -> (o#_Loc_t _x0)#string _x1
+          | PaAny _x0 -> o#_Loc_t _x0
+          | PaApp _x0 _x1 _x2 -> ((o#_Loc_t _x0)#patt _x1)#patt _x2
+          | PaArr _x0 _x1 -> (o#_Loc_t _x0)#patt _x1
+          | PaCom _x0 _x1 _x2 -> ((o#_Loc_t _x0)#patt _x1)#patt _x2
+          | PaSem _x0 _x1 _x2 -> ((o#_Loc_t _x0)#patt _x1)#patt _x2
+          | PaChr _x0 _x1 -> (o#_Loc_t _x0)#string _x1
+          | PaInt _x0 _x1 -> (o#_Loc_t _x0)#string _x1
+          | PaInt32 _x0 _x1 -> (o#_Loc_t _x0)#string _x1
+          | PaInt64 _x0 _x1 -> (o#_Loc_t _x0)#string _x1
+          | PaNativeInt _x0 _x1 -> (o#_Loc_t _x0)#string _x1
+          | PaFlo _x0 _x1 -> (o#_Loc_t _x0)#string _x1
+          | PaLab _x0 _x1 _x2 -> ((o#_Loc_t _x0)#string _x1)#patt _x2
+          | PaOlb _x0 _x1 _x2 -> ((o#_Loc_t _x0)#string _x1)#patt _x2
+          | PaOlbi _x0 _x1 _x2 _x3 ->
+              (((o#_Loc_t _x0)#string _x1)#patt _x2)#expr _x3
+          | PaOrp _x0 _x1 _x2 -> ((o#_Loc_t _x0)#patt _x1)#patt _x2
+          | PaRng _x0 _x1 _x2 -> ((o#_Loc_t _x0)#patt _x1)#patt _x2
+          | PaRec _x0 _x1 -> (o#_Loc_t _x0)#patt _x1
+          | PaEq _x0 _x1 _x2 -> ((o#_Loc_t _x0)#patt _x1)#patt _x2
+          | PaStr _x0 _x1 -> (o#_Loc_t _x0)#string _x1
+          | PaTup _x0 _x1 -> (o#_Loc_t _x0)#patt _x1
+          | PaTyc _x0 _x1 _x2 -> ((o#_Loc_t _x0)#patt _x1)#ctyp _x2
+          | PaTyp _x0 _x1 -> (o#_Loc_t _x0)#ident _x1
+          | PaVrn _x0 _x1 -> (o#_Loc_t _x0)#string _x1 ];
+        method module_type : module_type -> 'self_type =
+          fun
+          [ MtId _x0 _x1 -> (o#_Loc_t _x0)#ident _x1
+          | MtFun _x0 _x1 _x2 _x3 ->
+              (((o#_Loc_t _x0)#string _x1)#module_type _x2)#module_type _x3
+          | MtQuo _x0 _x1 -> (o#_Loc_t _x0)#string _x1
+          | MtSig _x0 _x1 -> (o#_Loc_t _x0)#sig_item _x1
+          | MtWit _x0 _x1 _x2 ->
+              ((o#_Loc_t _x0)#module_type _x1)#with_constr _x2
+          | MtAnt _x0 _x1 -> (o#_Loc_t _x0)#string _x1 ];
+        method module_expr : module_expr -> 'self_type =
+          fun
+          [ MeId _x0 _x1 -> (o#_Loc_t _x0)#ident _x1
+          | MeApp _x0 _x1 _x2 ->
+              ((o#_Loc_t _x0)#module_expr _x1)#module_expr _x2
+          | MeFun _x0 _x1 _x2 _x3 ->
+              (((o#_Loc_t _x0)#string _x1)#module_type _x2)#module_expr _x3
+          | MeStr _x0 _x1 -> (o#_Loc_t _x0)#str_item _x1
+          | MeTyc _x0 _x1 _x2 ->
+              ((o#_Loc_t _x0)#module_expr _x1)#module_type _x2
+          | MeAnt _x0 _x1 -> (o#_Loc_t _x0)#string _x1 ];
+        method module_binding : module_binding -> 'self_type =
+          fun
+          [ MbNil _x0 -> o#_Loc_t _x0
+          | MbAnd _x0 _x1 _x2 ->
+              ((o#_Loc_t _x0)#module_binding _x1)#module_binding _x2
+          | MbColEq _x0 _x1 _x2 _x3 ->
+              (((o#_Loc_t _x0)#string _x1)#module_type _x2)#module_expr _x3
+          | MbCol _x0 _x1 _x2 -> ((o#_Loc_t _x0)#string _x1)#module_type _x2
+          | MbAnt _x0 _x1 -> (o#_Loc_t _x0)#string _x1 ];
+        method meta_option :
+          ! 'a.
+            ('self_type -> 'a -> 'self_type) -> meta_option 'a -> 'self_type =
+          fun _f_a ->
+            fun
+            [ ONone -> o
+            | OSome _x0 -> _f_a o _x0
+            | OAnt _x0 -> o#string _x0 ];
+        method meta_bool : meta_bool -> 'self_type =
+          fun [ BTrue -> o | BFalse -> o | BAnt _x0 -> o#string _x0 ];
+        method match_case : match_case -> 'self_type =
+          fun
+          [ McNil _x0 -> o#_Loc_t _x0
+          | McOr _x0 _x1 _x2 ->
+              ((o#_Loc_t _x0)#match_case _x1)#match_case _x2
+          | McArr _x0 _x1 _x2 _x3 ->
+              (((o#_Loc_t _x0)#patt _x1)#expr _x2)#expr _x3
+          | McAnt _x0 _x1 -> (o#_Loc_t _x0)#string _x1 ];
+        method ident : ident -> 'self_type =
+          fun
+          [ IdAcc _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ident _x1)#ident _x2
+          | IdApp _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ident _x1)#ident _x2
+          | IdLid _x0 _x1 -> (o#_Loc_t _x0)#string _x1
+          | IdUid _x0 _x1 -> (o#_Loc_t _x0)#string _x1
+          | IdAnt _x0 _x1 -> (o#_Loc_t _x0)#string _x1 ];
+        method expr : expr -> 'self_type =
+          fun
+          [ ExNil _x0 -> o#_Loc_t _x0
+          | ExId _x0 _x1 -> (o#_Loc_t _x0)#ident _x1
+          | ExAcc _x0 _x1 _x2 -> ((o#_Loc_t _x0)#expr _x1)#expr _x2
+          | ExAnt _x0 _x1 -> (o#_Loc_t _x0)#string _x1
+          | ExApp _x0 _x1 _x2 -> ((o#_Loc_t _x0)#expr _x1)#expr _x2
+          | ExAre _x0 _x1 _x2 -> ((o#_Loc_t _x0)#expr _x1)#expr _x2
+          | ExArr _x0 _x1 -> (o#_Loc_t _x0)#expr _x1
+          | ExSem _x0 _x1 _x2 -> ((o#_Loc_t _x0)#expr _x1)#expr _x2
+          | ExAsf _x0 -> o#_Loc_t _x0
+          | ExAsr _x0 _x1 -> (o#_Loc_t _x0)#expr _x1
+          | ExAss _x0 _x1 _x2 -> ((o#_Loc_t _x0)#expr _x1)#expr _x2
+          | ExChr _x0 _x1 -> (o#_Loc_t _x0)#string _x1
+          | ExCoe _x0 _x1 _x2 _x3 ->
+              (((o#_Loc_t _x0)#expr _x1)#ctyp _x2)#ctyp _x3
+          | ExFlo _x0 _x1 -> (o#_Loc_t _x0)#string _x1
+          | ExFor _x0 _x1 _x2 _x3 _x4 _x5 ->
+              (((((o#_Loc_t _x0)#string _x1)#expr _x2)#expr _x3)#meta_bool
+                 _x4)#
+                expr _x5
+          | ExFun _x0 _x1 -> (o#_Loc_t _x0)#match_case _x1
+          | ExIfe _x0 _x1 _x2 _x3 ->
+              (((o#_Loc_t _x0)#expr _x1)#expr _x2)#expr _x3
+          | ExInt _x0 _x1 -> (o#_Loc_t _x0)#string _x1
+          | ExInt32 _x0 _x1 -> (o#_Loc_t _x0)#string _x1
+          | ExInt64 _x0 _x1 -> (o#_Loc_t _x0)#string _x1
+          | ExNativeInt _x0 _x1 -> (o#_Loc_t _x0)#string _x1
+          | ExLab _x0 _x1 _x2 -> ((o#_Loc_t _x0)#string _x1)#expr _x2
+          | ExLaz _x0 _x1 -> (o#_Loc_t _x0)#expr _x1
+          | ExLet _x0 _x1 _x2 _x3 ->
+              (((o#_Loc_t _x0)#meta_bool _x1)#binding _x2)#expr _x3
+          | ExLmd _x0 _x1 _x2 _x3 ->
+              (((o#_Loc_t _x0)#string _x1)#module_expr _x2)#expr _x3
+          | ExMat _x0 _x1 _x2 -> ((o#_Loc_t _x0)#expr _x1)#match_case _x2
+          | ExNew _x0 _x1 -> (o#_Loc_t _x0)#ident _x1
+          | ExObj _x0 _x1 _x2 -> ((o#_Loc_t _x0)#patt _x1)#class_str_item _x2
+          | ExOlb _x0 _x1 _x2 -> ((o#_Loc_t _x0)#string _x1)#expr _x2
+          | ExOvr _x0 _x1 -> (o#_Loc_t _x0)#binding _x1
+          | ExRec _x0 _x1 _x2 -> ((o#_Loc_t _x0)#binding _x1)#expr _x2
+          | ExSeq _x0 _x1 -> (o#_Loc_t _x0)#expr _x1
+          | ExSnd _x0 _x1 _x2 -> ((o#_Loc_t _x0)#expr _x1)#string _x2
+          | ExSte _x0 _x1 _x2 -> ((o#_Loc_t _x0)#expr _x1)#expr _x2
+          | ExStr _x0 _x1 -> (o#_Loc_t _x0)#string _x1
+          | ExTry _x0 _x1 _x2 -> ((o#_Loc_t _x0)#expr _x1)#match_case _x2
+          | ExTup _x0 _x1 -> (o#_Loc_t _x0)#expr _x1
+          | ExCom _x0 _x1 _x2 -> ((o#_Loc_t _x0)#expr _x1)#expr _x2
+          | ExTyc _x0 _x1 _x2 -> ((o#_Loc_t _x0)#expr _x1)#ctyp _x2
+          | ExVrn _x0 _x1 -> (o#_Loc_t _x0)#string _x1
+          | ExWhi _x0 _x1 _x2 -> ((o#_Loc_t _x0)#expr _x1)#expr _x2 ];
+        method ctyp : ctyp -> 'self_type =
+          fun
+          [ TyNil _x0 -> o#_Loc_t _x0
+          | TyAli _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
+          | TyAny _x0 -> o#_Loc_t _x0
+          | TyApp _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
+          | TyArr _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
+          | TyCls _x0 _x1 -> (o#_Loc_t _x0)#ident _x1
+          | TyLab _x0 _x1 _x2 -> ((o#_Loc_t _x0)#string _x1)#ctyp _x2
+          | TyId _x0 _x1 -> (o#_Loc_t _x0)#ident _x1
+          | TyMan _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
+          | TyDcl _x0 _x1 _x2 _x3 _x4 ->
+              ((((o#_Loc_t _x0)#string _x1)#list (fun o -> o#ctyp) _x2)#ctyp
+                 _x3)#
+                list (fun o (_x0, _x1) -> (o#ctyp _x0)#ctyp _x1) _x4
+          | TyObj _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#meta_bool _x2
+          | TyOlb _x0 _x1 _x2 -> ((o#_Loc_t _x0)#string _x1)#ctyp _x2
+          | TyPol _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
+          | TyQuo _x0 _x1 -> (o#_Loc_t _x0)#string _x1
+          | TyQuP _x0 _x1 -> (o#_Loc_t _x0)#string _x1
+          | TyQuM _x0 _x1 -> (o#_Loc_t _x0)#string _x1
+          | TyVrn _x0 _x1 -> (o#_Loc_t _x0)#string _x1
+          | TyRec _x0 _x1 -> (o#_Loc_t _x0)#ctyp _x1
+          | TyCol _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
+          | TySem _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
+          | TyCom _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
+          | TySum _x0 _x1 -> (o#_Loc_t _x0)#ctyp _x1
+          | TyOf _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
+          | TyAnd _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
+          | TyOr _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
+          | TyPrv _x0 _x1 -> (o#_Loc_t _x0)#ctyp _x1
+          | TyMut _x0 _x1 -> (o#_Loc_t _x0)#ctyp _x1
+          | TyTup _x0 _x1 -> (o#_Loc_t _x0)#ctyp _x1
+          | TySta _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
+          | TyVrnEq _x0 _x1 -> (o#_Loc_t _x0)#ctyp _x1
+          | TyVrnSup _x0 _x1 -> (o#_Loc_t _x0)#ctyp _x1
+          | TyVrnInf _x0 _x1 -> (o#_Loc_t _x0)#ctyp _x1
+          | TyVrnInfSup _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
+          | TyAmp _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
+          | TyOfAmp _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
+          | TyAnt _x0 _x1 -> (o#_Loc_t _x0)#string _x1 ];
+        method class_type : class_type -> 'self_type =
+          fun
+          [ CtNil _x0 -> o#_Loc_t _x0
+          | CtCon _x0 _x1 _x2 _x3 ->
+              (((o#_Loc_t _x0)#meta_bool _x1)#ident _x2)#ctyp _x3
+          | CtFun _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#class_type _x2
+          | CtSig _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#class_sig_item _x2
+          | CtAnd _x0 _x1 _x2 ->
+              ((o#_Loc_t _x0)#class_type _x1)#class_type _x2
+          | CtCol _x0 _x1 _x2 ->
+              ((o#_Loc_t _x0)#class_type _x1)#class_type _x2
+          | CtEq _x0 _x1 _x2 ->
+              ((o#_Loc_t _x0)#class_type _x1)#class_type _x2
+          | CtAnt _x0 _x1 -> (o#_Loc_t _x0)#string _x1 ];
+        method class_str_item : class_str_item -> 'self_type =
+          fun
+          [ CrNil _x0 -> o#_Loc_t _x0
+          | CrSem _x0 _x1 _x2 ->
+              ((o#_Loc_t _x0)#class_str_item _x1)#class_str_item _x2
+          | CrCtr _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
+          | CrInh _x0 _x1 _x2 -> ((o#_Loc_t _x0)#class_expr _x1)#string _x2
+          | CrIni _x0 _x1 -> (o#_Loc_t _x0)#expr _x1
+          | CrMth _x0 _x1 _x2 _x3 _x4 ->
+              ((((o#_Loc_t _x0)#string _x1)#meta_bool _x2)#expr _x3)#ctyp _x4
+          | CrVal _x0 _x1 _x2 _x3 ->
+              (((o#_Loc_t _x0)#string _x1)#meta_bool _x2)#expr _x3
+          | CrVir _x0 _x1 _x2 _x3 ->
+              (((o#_Loc_t _x0)#string _x1)#meta_bool _x2)#ctyp _x3
+          | CrVvr _x0 _x1 _x2 _x3 ->
+              (((o#_Loc_t _x0)#string _x1)#meta_bool _x2)#ctyp _x3
+          | CrAnt _x0 _x1 -> (o#_Loc_t _x0)#string _x1 ];
+        method class_sig_item : class_sig_item -> 'self_type =
+          fun
+          [ CgNil _x0 -> o#_Loc_t _x0
+          | CgCtr _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
+          | CgSem _x0 _x1 _x2 ->
+              ((o#_Loc_t _x0)#class_sig_item _x1)#class_sig_item _x2
+          | CgInh _x0 _x1 -> (o#_Loc_t _x0)#class_type _x1
+          | CgMth _x0 _x1 _x2 _x3 ->
+              (((o#_Loc_t _x0)#string _x1)#meta_bool _x2)#ctyp _x3
+          | CgVal _x0 _x1 _x2 _x3 _x4 ->
+              ((((o#_Loc_t _x0)#string _x1)#meta_bool _x2)#meta_bool _x3)#
+                ctyp _x4
+          | CgVir _x0 _x1 _x2 _x3 ->
+              (((o#_Loc_t _x0)#string _x1)#meta_bool _x2)#ctyp _x3
+          | CgAnt _x0 _x1 -> (o#_Loc_t _x0)#string _x1 ];
+        method class_expr : class_expr -> 'self_type =
+          fun
+          [ CeNil _x0 -> o#_Loc_t _x0
+          | CeApp _x0 _x1 _x2 -> ((o#_Loc_t _x0)#class_expr _x1)#expr _x2
+          | CeCon _x0 _x1 _x2 _x3 ->
+              (((o#_Loc_t _x0)#meta_bool _x1)#ident _x2)#ctyp _x3
+          | CeFun _x0 _x1 _x2 -> ((o#_Loc_t _x0)#patt _x1)#class_expr _x2
+          | CeLet _x0 _x1 _x2 _x3 ->
+              (((o#_Loc_t _x0)#meta_bool _x1)#binding _x2)#class_expr _x3
+          | CeStr _x0 _x1 _x2 -> ((o#_Loc_t _x0)#patt _x1)#class_str_item _x2
+          | CeTyc _x0 _x1 _x2 ->
+              ((o#_Loc_t _x0)#class_expr _x1)#class_type _x2
+          | CeAnd _x0 _x1 _x2 ->
+              ((o#_Loc_t _x0)#class_expr _x1)#class_expr _x2
+          | CeEq _x0 _x1 _x2 ->
+              ((o#_Loc_t _x0)#class_expr _x1)#class_expr _x2
+          | CeAnt _x0 _x1 -> (o#_Loc_t _x0)#string _x1 ];
+        method binding : binding -> 'self_type =
+          fun
+          [ BiNil _x0 -> o#_Loc_t _x0
+          | BiAnd _x0 _x1 _x2 -> ((o#_Loc_t _x0)#binding _x1)#binding _x2
+          | BiSem _x0 _x1 _x2 -> ((o#_Loc_t _x0)#binding _x1)#binding _x2
+          | BiEq _x0 _x1 _x2 -> ((o#_Loc_t _x0)#patt _x1)#expr _x2
+          | BiAnt _x0 _x1 -> (o#_Loc_t _x0)#string _x1 ];
+      end;
     class c_expr f =
       object inherit map as super; method expr = fun x -> f (super#expr x);
       end;
