@@ -5,8 +5,6 @@ module FV = Camlp4.Struct.FreeVars.Make Ast;
 
 #default_quotation "expr";
 
-e e%%e
-
 value print_set f s = do {
   fprintf f "@[<2>{ ";
   FV.S.iter (fprintf f "%s@ ") s;
