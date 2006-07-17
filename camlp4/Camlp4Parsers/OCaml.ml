@@ -291,8 +291,6 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
         | _ -> raise Stream.Failure ])
   ;
 
-  value constr_arity = ref [("Some", 1); ("Match_Failure", 1)];
-
   value rec is_ident_constr_call =
     fun
     [ <:ident< $uid:_$ >> -> True
@@ -303,41 +301,12 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     fun
     [ <:expr< $id:i$ >> -> is_ident_constr_call i
     | <:expr< $_$.$e$ >> -> is_expr_constr_call e
-    | <:expr< $e$ $_$ >> -> is_expr_constr_call e
-    | _ -> False ];
-
-  value rec constr_ident_arity =
-    fun
-    [ <:ident< $uid:c$ >> ->
-        try List.assoc c constr_arity.val with [ Not_found -> 0 ]
-    | <:ident< $_$.$i$ >> -> constr_ident_arity i
-    | _ -> 1 ];
-
-
-  value rec constr_expr_arity =
-    fun
-    [ <:expr< $id:i$ >> -> constr_ident_arity i
-    | <:expr< $_$.$e$ >> -> constr_expr_arity e
     | <:expr@_loc< $e$ $_$ >> ->
-        if Config.constructors_arity.val && is_expr_constr_call e then
+        let res = is_expr_constr_call e in
+        if (not Config.constructors_arity.val) && res then
           Loc.raise _loc (Stream.Error "currified constructor")
-        else 1
-    | _ -> 1 ];
-
-  value rec is_patt_constr_call =
-    fun
-    [ <:patt< $id:i$ >> -> is_ident_constr_call i
-    | <:patt< $p$ $_$ >> -> is_patt_constr_call p
+        else res
     | _ -> False ];
-
-  value rec constr_patt_arity =
-    fun
-    [ <:patt< $id:i$ >> -> constr_ident_arity i
-    | <:patt@_loc< $p$ $_$ >> ->
-        if Config.constructors_arity.val && is_patt_constr_call p then
-          Loc.raise _loc (Stream.Error "currified constructor")
-        else 1
-    | _ -> 1 ];
 
   value rec patt_lid =
     fun
@@ -522,14 +491,11 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
         | "-."; e = SELF -> <:expr< $mkumin _loc "-." e$ >> ]
       | "apply" LEFTA
         [ e1 = SELF; e2 = SELF ->
-            match constr_expr_arity e1 with
-            [ 1 -> <:expr< $e1$ $e2$ >>
-            | _ ->
-                match e2 with
-                [ <:expr< ( $tup:e$ ) >> ->
-                    List.fold_left (fun e1 e2 -> <:expr< $e1$ $e2$ >>) e1
-                                   (Ast.list_of_expr e [])
-                | _ -> <:expr< $e1$ $e2$ >> ] ]
+            match (is_expr_constr_call e1, e2) with
+            [ (True, <:expr< ( $tup:e$ ) >>) ->
+                List.fold_left (fun e1 e2 -> <:expr< $e1$ $e2$ >>) e1
+                                (Ast.list_of_expr e [])
+            | _ -> <:expr< $e1$ $e2$ >> ]
         | "assert"; e = SELF ->
             match e with
             [ <:expr< False >> -> <:expr< assert False >>
@@ -622,21 +588,13 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
         [ p1 = SELF; ".."; p2 = SELF -> <:patt< $p1$ .. $p2$ >> ]
       | "::" RIGHTA
         [ p1 = SELF; "::"; p2 = SELF -> <:patt< [$p1$ :: $p2$] >> ]
-      | LEFTA
+      | RIGHTA
         [ p1 = SELF; p2 = SELF ->
-            match constr_patt_arity p1 with
-            [ 1 -> <:patt< $p1$ $p2$ >>
-            | n ->
-                let p2 =
-                  match p2 with
-                  [ <:patt@_loc< _ >> when n > 1 -> <:patt< ($tup:p2$) >>
-                  | _ -> p2 ]
-                in
-                match p2 with
-                [ <:patt< ( $tup:p$ ) >> ->
-                    List.fold_left (fun p1 p2 -> <:patt< $p1$ $p2$ >>) p1
-                                   (Ast.list_of_patt p [])
-                | _ -> <:patt< $p1$ $p2$ >> ] ] ]
+            match p2 with
+            [ <:patt< ( $tup:p$ ) >> ->
+                List.fold_left (fun p1 p2 -> <:patt< $p1$ $p2$ >>) p1
+                                (Ast.list_of_patt p [])
+            | _ -> <:patt< $p1$ $p2$ >> ] ]
       | "simple"
         [ `ANTIQUOT (""|"pat"|"anti" as n) s ->
             <:patt< $anti:mk_anti ~c:"patt" n s$ >>
