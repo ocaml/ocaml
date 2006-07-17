@@ -110,6 +110,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) : sig
     method module_rec_binding : formatter -> Ast.module_binding -> unit;
     method module_type : formatter -> Ast.module_type -> unit;
     method mutable_flag : formatter -> Ast.meta_bool -> unit;
+    method direction_flag : formatter -> Ast.meta_bool -> unit;
     method rec_flag : formatter -> Ast.meta_bool -> unit;
     method flag : formatter -> Ast.meta_bool -> string -> unit;
     method node : formatter -> 'b -> ('b -> Loc.t) -> unit;
@@ -140,7 +141,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) : sig
     method simple_ctyp : formatter -> Ast.ctyp -> unit;
     method simple_expr : formatter -> Ast.expr -> unit;
     method simple_patt : formatter -> Ast.patt -> unit;
-    method stms : formatter -> Ast.expr -> unit;
+    method seq : formatter -> Ast.expr -> unit;
     method string : formatter -> string -> unit;
     method sum_type : formatter -> Ast.ctyp -> unit;
     method type_params : formatter -> list Ast.ctyp -> unit;
