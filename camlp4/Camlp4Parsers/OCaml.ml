@@ -223,7 +223,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
       | [_ :: l] -> loop (n - 1) l ]
   ;
 
-  (* horrible hack to be able to parse class_types *)
+  (* horrible hacks to be able to parse class_types *)
 
   value test_ctyp_minusgreater =
     Gram.Entry.of_parser "test_ctyp_minusgreater"
@@ -282,6 +282,17 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
       test 1)
   ;
 
+  value test_just_a_lident_or_patt =
+    Gram.Entry.of_parser "test_just_a_lident_or_patt"
+      (fun strm ->
+        match Stream.npeek 3 strm with
+        [ [(KEYWORD "(", _); (KEYWORD s | SYMBOL s, _); (KEYWORD ")", _)] when is_operator s -> ()
+        | [((LIDENT _ | ANTIQUOT "lid" _), _); (KEYWORD ("as"|"|"|"::"|","|"."), _); _] ->
+            raise Stream.Failure
+        | [((LIDENT _ | ANTIQUOT "lid" _), _); _; _] -> ()
+        | _ -> raise Stream.Failure ])
+  ;
+
   value lident_colon =
     Gram.Entry.of_parser "lident_colon"
       (fun strm ->
@@ -307,18 +318,6 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
           Loc.raise _loc (Stream.Error "currified constructor")
         else res
     | _ -> False ];
-
-  value rec patt_lid =
-    fun
-    [ <:patt< $p1$ $p2$ >> ->
-        match p1 with
-        [ <:patt< $lid:i$ >> -> Some (Ast.loc_of_patt p1, i, [p2])
-        | _ ->
-            match patt_lid p1 with
-            [ Some (loc, i, pl) -> Some (loc, i, [p2 :: pl])
-            | None -> None ] ]
-    | _ -> None ]
-  ;
 
   DELETE_RULE Gram expr: SELF; "where"; opt_rec; let_binding END;
   DELETE_RULE Gram value_let: "value" END;
@@ -581,7 +580,9 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     ;
     (* Patterns *)
     patt:
-      [ "|" LEFTA
+      [ "as" LEFTA
+        [ p1 = SELF; "as"; i = a_LIDENT -> <:patt< ($p1$ as $lid:i$) >> ]
+      | "|" LEFTA
         [ p1 = SELF; "|"; p2 = SELF -> <:patt< $p1$ | $p2$ >> ]
       | ","
         [ p = SELF; ","; pl = (*FIXME comma_patt*) LIST1 NEXT SEP "," ->
@@ -596,10 +597,6 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
                                 (Ast.list_of_patt p [])
             | _ -> <:patt< $p1$ $p2$ >> ]
         | p = patt_constr -> p ]
-      | "as" LEFTA
-        [ p1 = SELF; "as"; i = a_LIDENT -> <:patt< ($p1$ as $lid:i$) >> ]
-      | ".." NONA
-        [ p1 = SELF; ".."; p2 = SELF -> <:patt< $p1$ .. $p2$ >> ]
       | "simple"
         [ `ANTIQUOT (""|"pat"|"anti" as n) s ->
             <:patt< $anti:mk_anti ~c:"patt" n s$ >>
@@ -618,6 +615,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
         | "-"; s = a_FLOAT -> <:patt< $flo:"-" ^ s$ >>
         | s = a_FLOAT -> <:patt< $flo:s$ >>
         | s = a_STRING -> <:patt< $str:s$ >>
+        | s1 = a_CHAR; ".."; s2 = a_CHAR -> <:patt< $chr:s1$ .. $chr:s2$ >>
         | s = a_CHAR -> <:patt< $chr:s$ >>
         | "false" -> <:patt< False >>
         | "true" -> <:patt< True >>
@@ -650,13 +648,10 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
         | e = expr LEVEL ":=" -> e ] ]
     ;                                                           *)
     let_binding:
-      [ [ p = patt; e = fun_binding ->
-            match patt_lid p with
-            [ Some (_loc, i, pl) ->
-                let e =
-                  List.fold_left (fun e p -> <:expr< fun $p$ -> $e$ >>) e pl
-                in <:binding< $lid:i$ = $e$ >>
-            | None -> <:binding< $p$ = $e$ >> ] ] ]
+      [ [ test_just_a_lident_or_patt; s = a_LIDENT_or_operator; e = fun_binding ->
+            <:binding< $lid:s$ = $e$ >>
+        | p = patt; "="; e = expr ->
+            <:binding< $p$ = $e$ >> ] ]
     ;
     (* comma_patt:
       [ [ p1 = SELF; ","; p2 = SELF -> <:patt< $p1$, $p2$ >>
@@ -853,7 +848,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
             <:patt< ? $i$ >>
         | "?"; "("; i = a_LIDENT; ":"; t = ctyp; ")" ->
             <:patt< ? ( $lid:i$ : $t$ ) >>
-        | p = patt LEVEL "as" -> p
+        | p = patt LEVEL "simple" -> p
       ] ]
     ;
     label_expr:
