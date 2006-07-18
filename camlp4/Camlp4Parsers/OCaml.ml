@@ -853,8 +853,6 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
             <:patt< ? $i$ >>
         | "?"; "("; i = a_LIDENT; ":"; t = ctyp; ")" ->
             <:patt< ? ( $lid:i$ : $t$ ) >>
-        | p = patt LEVEL "as"; ","; pl = LIST1 patt LEVEL "as" SEP "," ->
-            <:patt< ( $p$, $Ast.paCom_of_list pl$ ) >>
         | p = patt LEVEL "as" -> p
       ] ]
     ;
