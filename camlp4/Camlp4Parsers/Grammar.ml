@@ -383,7 +383,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     fun
     [ <:ident< $lid:x$ >> | <:ident< $uid:x$ >> -> x
     | <:ident< $uid:x$.$xs$ >> -> x ^ "__" ^ tvar_of_ident xs
-    | _ -> failwith "internal error in pa_extend" ]
+    | _ -> failwith "internal error in the Grammar extension" ]
   ;
 
   value mk_name _loc i =
@@ -527,7 +527,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
             let i =
               match e with
               [ <:expr< $lid:i$ >> -> i
-              | _ -> failwith "internal error in pa_extend" ]
+              | _ -> failwith "internal error in the Grammar extension" ]
             in <:binding< $lid:i$ =
                  (grammar_entry_create $str:i$ : $uid:gm$.Entry.t '$x$) >> in 
           let expr_of_name {expr = e; tvar = x; loc = _loc} =
@@ -579,7 +579,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
         List.map
           (fun e ->
             let (ent, pos, txt) = text_of_entry e.name.loc e in
-            let e = <:expr< $uid:gm$.extend $ent$ ($pos$, $txt$) >> in
+            let e = <:expr< $uid:gm$.extend $ent$ ((fun () -> ($pos$, $txt$)) ()) >> in
             if split_ext.val then <:expr< let aux () = $e$ in aux () >> else e)
           el
       in
