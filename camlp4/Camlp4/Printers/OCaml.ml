@@ -196,6 +196,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     value value_let = "let";
     value mode = if comments then `comments else `no_comments;
     value curry_constr = curry_constr;
+    value var_conversion = False;
 
     method semisep = semisep;
     method set_semisep s = {< semisep = s >};
@@ -217,25 +218,27 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
 
     method var f =
       fun
-      [ "" -> pp f "$lid:\"\"$"
-      | "val" -> pp f "contents"
-      | "True" -> pp f "true"
-      | "False" -> pp f "false"
-      | " True" -> pp f "True"
-      | " False" -> pp f "False"
+      [ ""   -> pp f "$lid:\"\"$"
       | "[]" -> pp f "[]"
       | "()" -> pp f "()"
       | v ->
-          match lex_string v with
-          [ (LIDENT s | UIDENT s | ESCAPED_IDENT s) when is_keyword s ->
-               pp f "%s__" s
-          | SYMBOL s ->
-              pp f "( %s )" s
-          | LIDENT s | UIDENT s | ESCAPED_IDENT s ->
-              pp_print_string f s
-          | tok -> failwith (sprintf
-                    "Bad token used as an identifier: %s"
-                    (Token.to_string tok)) ] ];
+          match (var_conversion, v) with
+          [ (True, "val") -> pp f "contents"
+          | (True, "True") -> pp f "true"
+          | (True, "False") -> pp f "false"
+          | (True, " True") -> pp f "True"
+          | (True, " False") -> pp f "False"
+          | _ ->
+            match lex_string v with
+            [ (LIDENT s | UIDENT s | ESCAPED_IDENT s) when is_keyword s ->
+                  pp f "%s__" s
+            | SYMBOL s ->
+                pp f "( %s )" s
+            | LIDENT s | UIDENT s | ESCAPED_IDENT s ->
+                pp_print_string f s
+            | tok -> failwith (sprintf
+                      "Bad token used as an identifier: %s"
+                      (Token.to_string tok)) ] ] ];
 
     method type_params f =
       fun
@@ -420,6 +423,8 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     | <:ident< $anti:s$ >> -> o#anti f s
     | <:ident< $lid:s$ >> | <:ident< $uid:s$ >> -> o#var f s ];
 
+    method private var_ident = {< var_conversion = True >}#ident;
+
     method expr f e =
     let () = o#node f e Ast.loc_of_expr in
     match e with
@@ -522,7 +527,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     | <:expr< $int32:s$ >> -> pp f "%al" o#intlike s
     | <:expr< $flo:s$ >> -> pp f "%s" s
     | <:expr< $chr:s$ >> -> pp f "'%s'" (ocaml_char s)
-    | <:expr< $id:i$ >> -> o#ident f i
+    | <:expr< $id:i$ >> -> o#var_ident f i
     | <:expr< { $b$ } >> ->
         pp f "@[<hv0>@[<hv2>{@ %a@]@ }@]" o#record_binding b
     | <:expr< { ($e$) with $b$ } >> ->
@@ -617,7 +622,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     let () = o#node f p Ast.loc_of_patt in
     match p with
     [ <:patt<>> -> ()
-    | <:patt< $id:i$ >> -> o#ident f i
+    | <:patt< $id:i$ >> -> o#var_ident f i
     | <:patt< $anti:s$ >> -> o#anti f s
     | <:patt< _ >> -> pp f "_"
     | <:patt< ( $tup:p$ ) >> -> pp f "@[<1>(%a)@]" o#patt3 p
