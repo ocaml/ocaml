@@ -3,19 +3,24 @@
 OCAMLRUN=CAML_LD_LIBRARY_PATH=../otherlibs/unix ../boot/ocamlrun
 OCAML=$(OCAMLRUN) ../ocaml -I ../stdlib -I ../otherlibs/unix
 YAM=$(OCAMLRUN) ./yam
+ifeq ($(VERBOSE),1)
+  YAM_OPTIONS=-v
+else 
+  YAM_OPTIONS=-q
+endif
 
-default all-local: yam
-	$(YAM) -v all
+default: all
 
-opt: yam
-	$(YAM) -v opt
+opt install doc all: yam
+	@echo 'YAM: $(YAM_OPTIONS) $@ (use "make $@ VERBOSE=1" for a verbose make)'
+	@$(YAM) $(YAM_OPTIONS) $@
 
-clean-local:
+clean:
 	if test -x ../ocaml; then \
 	$(OCAML) build/build.ml -clean; \
 	else \
 	if test -x $(YAM); then \
-	$(YAM) -v -clean; \
+	$(YAM) $(YAM_OPTIONS) -clean; \
 	else : ; \
 	fi; \
 	fi
@@ -23,26 +28,12 @@ clean-local:
 cleanall:
 	$(OCAML) build/build.ml -cleanall
 
-install: yam
-	$(YAM) install
-
-doc: yam
-	$(YAM) -v doc
-
 yam: build/build.ml
 	$(OCAML) build/build.ml
 
-DIRS=boot man
-#DIRS=boot odyl lib camlp4 meta etc top ocpp man compile
-
-all clean:
-	set -e; for i in $(SUBDIRS); do (cd $$i && $(MAKE) $@) || eval 'exit 1'; done
-	$(MAKE) $@-local
-	set -e; for i in $(SUBDIRS_LAST); do (cd $$i && $(MAKE) $@) || eval 'exit 1'; done
-
 uninstall:
 	rm -rf "$(LIBDIR)/camlp4"
-	cd "$(BINDIR)"; rm -f *camlp4* odyl ocpp
+	cd "$(BINDIR)"; rm -f *camlp4*
 
 # Normal bootstrap
 

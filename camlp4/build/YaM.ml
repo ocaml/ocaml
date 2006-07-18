@@ -244,7 +244,8 @@ let tokenize ?(skip=false) c =
 let ocamldep ~native ~depc ~sf =
   let nat = if native then "-native " else "" in
   let cmd = depc^^nat^^sf in
-    if !print_deps then printf "%s\n%!" cmd;
+    if !print_deps then printf "%s\n%!" cmd
+    else printf "DEPENDENCIES: %s\n%!" sf;
     let c_in = Unix.open_process_in cmd in
     let deps = tokenize ~skip:(native && is_ml sf) c_in in
     let deps' = 
@@ -743,7 +744,8 @@ let build ?target p =
 
   (* compilation d'une cible *)
   let compile u f stf (cmd,cmdd,out) =
-    if !print_cmds then printf "%s\n%!" cmd;
+    if !print_cmds then printf "%s\n%!" cmd
+    else printf "COMPILE: %s\n%!" f;
     ecall cmd;
     List.iter (fun f -> update_status ~cmdd ~t:date ~f (get_status f)) out
   in

@@ -54,12 +54,21 @@ let camlp4boot_may_debug mods =
     filter_opt "./boot/Profiler.cmo" @ mods
   in "'" ^ String.concat " " camlp4_modules ^ "'"
 
+let rec best =
+  function
+  | (f, x) :: xs -> if Sys.file_exists f then x else best xs
+  | [] -> failwith "no compiler available"
+
+let ocamlc =
+  best ["../ocamlc.opt", "../ocamlc.opt";
+        "../ocamlc",     ocamlrun ^^ "../ocamlc"]
+let ocamlopt =
+  best ["../ocamlopt.opt", "../ocamlopt.opt";
+        "../ocamlopt",     ocamlrun ^^ "../ocamlopt"]
+
 let () =
-  (* !options.ocamlc := ocamlrun ^^ "../ocamlc -nostdlib -I ../stdlib"; *)
-  (* !options.ocamlopt := ocamlrun ^^ "../ocamlopt -nostdlib -I ../stdlib"; *)
-  (* !options.ocamlopt     := ocamlrun ^^ "../ocamlopt -p -nostdlib -I ../asmrun -I ../stdlib"; *)
-  !options.ocamlc       := "../ocamlcomp.sh";
-  !options.ocamlopt     := "../ocamlcompopt.sh";
+  !options.ocamlc       := ocamlc ^^ " -nostdlib -I ../stdlib";
+  !options.ocamlopt     := ocamlopt ^^ " -nostdlib -I ../stdlib";
   !options.ocamldoc     := ocamlrun ^^ "../ocamldoc/ocamldoc";
   !options.ocamlyacc    := ocamlrun ^^ "../boot/ocamlyacc";
   !options.ocamllex     := ocamlrun ^^ "../boot/ocamllex";
