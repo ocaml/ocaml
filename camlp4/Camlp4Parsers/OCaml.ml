@@ -331,6 +331,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
   clear expr;
   clear patt;
   clear a_LIDENT_or_operator;
+  clear a_UIDENT;
   clear type_longident_and_parameters;
   clear type_parameters;
   clear ipatt;
@@ -532,8 +533,6 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
         | s = a_FLOAT -> <:expr< $flo:s$ >>
         | s = a_STRING -> <:expr< $str:s$ >>
         | c = a_CHAR -> <:expr< $chr:c$ >>
-        | `UIDENT "True" -> <:expr< $uid:" True"$ >>
-        | `UIDENT "False" -> <:expr< $uid:" False"$ >>
         | i = val_longident -> <:expr< $id:i$ >>
         | "false" -> <:expr< False >>
         | "true" -> <:expr< True >>
@@ -601,8 +600,6 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
         [ `ANTIQUOT (""|"pat"|"anti" as n) s ->
             <:patt< $anti:mk_anti ~c:"patt" n s$ >>
         | `ANTIQUOT ("tup" as n) s -> <:patt< ($tup:<:patt< $anti:mk_anti ~c:"patt" n s$ >>$) >>
-        | `UIDENT "True" -> <:patt< $uid:" True"$ >>
-        | `UIDENT "False" -> <:patt< $uid:" False"$ >>
         | i = ident -> <:patt< $id:i$ >>
         | s = a_INT -> <:patt< $int:s$ >>
         | s = a_INT32 -> <:patt< $int32:s$ >>
@@ -854,6 +851,13 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     label_expr:
       [ [ p = label_longident; "="; e = expr LEVEL "top" ->
             <:binding< $id:p$ = $e$ >> ] ]
+    ;
+    a_UIDENT:
+      [ [ `ANTIQUOT (""|"uid" as n) s -> mk_anti n s
+        | `UIDENT "True" -> " True"
+        | `UIDENT "False" -> " False"
+        | `UIDENT s -> s
+      ] ]
     ;
   END;
 end;

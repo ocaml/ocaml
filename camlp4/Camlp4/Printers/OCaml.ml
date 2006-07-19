@@ -221,13 +221,13 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
       [ ""   -> pp f "$lid:\"\"$"
       | "[]" -> pp f "[]"
       | "()" -> pp f "()"
+      | " True"  -> pp f "True"
+      | " False" -> pp f "False"
       | v ->
           match (var_conversion, v) with
           [ (True, "val") -> pp f "contents"
           | (True, "True") -> pp f "true"
           | (True, "False") -> pp f "false"
-          | (True, " True") -> pp f "True"
-          | (True, " False") -> pp f "False"
           | _ ->
             match lex_string v with
             [ (LIDENT s | UIDENT s | ESCAPED_IDENT s) when is_keyword s ->

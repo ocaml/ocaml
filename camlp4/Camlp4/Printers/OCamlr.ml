@@ -78,6 +78,8 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
       [ "" -> pp f "$lid:\"\"$"
       | "[]" -> pp f "[]"
       | "()" -> pp f "()"
+      | " True"  -> pp f "True"
+      | " False" -> pp f "False"
       | v ->
           match lex_string v with
           [ (LIDENT s | UIDENT s | ESCAPED_IDENT s) when is_keyword s ->
