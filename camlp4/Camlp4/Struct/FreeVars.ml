@@ -122,7 +122,7 @@ module Make (Ast : Sig.Camlp4Ast.S) = struct
 
     end;
 
-  value free_vars init_env e =
-    let fold = new fold_free_vars S.add init_env in (fold#expr e)#free;
+  value free_vars env_init e =
+    let fold = new fold_free_vars S.add ~env_init S.empty in (fold#expr e)#free;
 end;
 
