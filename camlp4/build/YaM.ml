@@ -845,3 +845,15 @@ let main ?rebuild ?deps l =
 
     ] ((+=) targets) "usage: yam {-version, -clean, [options] [targets...]}";
     !main ()
+
+let rec best =
+  function
+  | [_, x] -> x
+  | (f, x) :: xs -> if Sys.file_exists f then x else best xs
+  | [] -> invalid_arg "YaM.best: []"
+
+let scall cmd =
+  let cin = Unix.open_process_in cmd in
+  let str = input_line cin in str
+
+let which x = scall ("which"^^x)

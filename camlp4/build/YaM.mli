@@ -285,3 +285,9 @@ val string_of_list: ('a -> string) -> 'a list -> string
 
 val flatten: string list -> string
 (** Flatten a string list, using using {!YaM.(^^)}. *)
+
+val best: (string * string) list -> string
+
+val getenv: string -> string -> string
+
+val which : string -> string

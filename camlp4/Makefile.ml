@@ -54,17 +54,14 @@ let camlp4boot_may_debug mods =
     filter_opt "./boot/Profiler.cmo" @ mods
   in "'" ^ String.concat " " camlp4_modules ^ "'"
 
-let rec best =
-  function
-  | (f, x) :: xs -> if Sys.file_exists f then x else best xs
-  | [] -> "echo no compiler available && false"
-
 let ocamlc =
   best ["../ocamlc.opt", "../ocamlc.opt";
-        "../ocamlc",     ocamlrun ^^ "../ocamlc"]
+        "../ocamlc",     ocamlrun ^^ "../ocamlc";
+        "",              "echo no byte compiler available && false"]
 let ocamlopt =
   best ["../ocamlopt.opt", "../ocamlopt.opt";
-        "../ocamlopt",     ocamlrun ^^ "../ocamlopt"]
+        "../ocamlopt",     ocamlrun ^^ "../ocamlopt";
+        "",                "echo no native compiler available && false"]
 
 let () =
   !options.ocamlc       := ocamlc ^^ " -nostdlib -I ../stdlib";
