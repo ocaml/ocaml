@@ -57,7 +57,7 @@ let camlp4boot_may_debug mods =
 let rec best =
   function
   | (f, x) :: xs -> if Sys.file_exists f then x else best xs
-  | [] -> failwith "no compiler available"
+  | [] -> "echo no compiler available && false"
 
 let ocamlc =
   best ["../ocamlc.opt", "../ocamlc.opt";
