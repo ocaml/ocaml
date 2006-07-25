@@ -779,9 +779,11 @@ module Make (Ast : Sig.Camlp4Ast.S) = struct
            (List.map class_info_class_type (list_of_class_type ctd []))) :: l]
     | <:sig_item< $sg1$; $sg2$ >> -> sig_item sg1 (sig_item sg2 l)
     | SgDir _ _ _ -> l
-    | <:sig_item@loc< exception $uid:s$ >> -> [mksig loc (Psig_exception s []) :: l]
+    | <:sig_item@loc< exception $uid:s$ >> ->
+        [mksig loc (Psig_exception (conv_con s) []) :: l]
     | <:sig_item@loc< exception $uid:s$ of $t$ >> ->
-        [mksig loc (Psig_exception s (List.map ctyp (list_of_ctyp t []))) :: l]
+        [mksig loc (Psig_exception (conv_con s)
+                                   (List.map ctyp (list_of_ctyp t []))) :: l]
     | SgExc _ _ -> assert False (*FIXME*)
     | SgExt loc n t p -> [mksig loc (Psig_value n (mkvalue_desc t [p])) :: l]
     | SgInc loc mt -> [mksig loc (Psig_include (module_type mt)) :: l]
@@ -838,11 +840,12 @@ module Make (Ast : Sig.Camlp4Ast.S) = struct
     | <:str_item< $st1$; $st2$ >> -> str_item st1 (str_item st2 l)
     | StDir _ _ _ -> l
     | <:str_item@loc< exception $uid:s$ >> ->
-        [mkstr loc (Pstr_exception s []) :: l ]
+        [mkstr loc (Pstr_exception (conv_con s) []) :: l ]
     | <:str_item@loc< exception $uid:s$ of $t$ >> ->
-        [mkstr loc (Pstr_exception s (List.map ctyp (list_of_ctyp t []))) :: l ]
+        [mkstr loc (Pstr_exception (conv_con s)
+                      (List.map ctyp (list_of_ctyp t []))) :: l ]
     | <:str_item@loc< exception $uid:s$ = $i$ >> ->
-        [mkstr loc (Pstr_exn_rebind s (ident i)) :: l ]
+        [mkstr loc (Pstr_exn_rebind (conv_con s) (ident i)) :: l ]
     | StExc _ _ _ -> assert False (*FIXME*)
     | StExp loc e -> [mkstr loc (Pstr_eval (expr e)) :: l]
     | StExt loc n t p -> [mkstr loc (Pstr_primitive n (mkvalue_desc t [p])) :: l]
