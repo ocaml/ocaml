@@ -74,6 +74,10 @@ let () =
 
 let options_without_camlp4 = new_scope (lazy !options)
 
+let fake_options =
+  new_scope (lazy { !options with ocamlc = ref "echo ocamlc";
+                                  ocamlopt = ref "echo ocamlopt"})
+
 let () =
   !options.ocaml_Flags ^= "-w Ale -warn-error Ale";
   !options.ocaml_P4     := camlp4boot_may_debug [];
@@ -116,10 +120,10 @@ let ocaml_Module_with_genmap =
 
 let misc_modules = [
   ocaml_Module ~o:options_without_camlp4 "build/camlp4_config";
-  ocaml_IModule ~includes:[utils] ~o:options_without_camlp4 "../utils/misc";
-  ocaml_IModule ~includes:[utils] ~o:options_without_camlp4 "../utils/warnings";
-  ocaml_IModule ~includes:[parsing; utils] ~o:options_without_camlp4 "../parsing/linenum";
-  ocaml_IModule ~includes:[parsing; utils] ~o:options_without_camlp4 "../parsing/location";
+  ocaml_IModule ~includes:[utils] ~o:fake_options "../utils/misc";
+  ocaml_IModule ~includes:[utils] ~o:fake_options "../utils/warnings";
+  ocaml_IModule ~includes:[parsing; utils] ~o:fake_options "../parsing/linenum";
+  ocaml_IModule ~includes:[parsing; utils] ~o:fake_options "../parsing/location";
 ]
 
 let camlp4_package =
