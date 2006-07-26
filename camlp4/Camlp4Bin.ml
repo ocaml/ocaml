@@ -27,6 +27,7 @@ open Format;
 module SSet = Set.Make String;
 
 value pa_r  = "Camlp4Parsers.OCamlr";
+(* value pa_rr = "Camlp4Parsers.OCamlrr"; *)
 value pa_o  = "Camlp4Parsers.OCaml";
 value pa_rp = "Camlp4Parsers.OCamlRevisedParser";
 value pa_op = "Camlp4Parsers.OCamlParser";
@@ -68,6 +69,7 @@ value rewrite_and_load n x =
   do {
     match (n, x) with
     [ ("Parsers"|"", "pa_r.cmo"      | "r"  | "OCamlr") -> load [pa_r]
+    (* | ("Parsers"|"", "rr"  | "OCamlrr") -> load [pa_r; pa_rr] *)
     | ("Parsers"|"", "pa_o.cmo"      | "o"  | "OCaml") -> load [pa_r; pa_o]
     | ("Parsers"|"", "pa_rp.cmo"     | "rp" | "OCamlRevisedParser") -> load [pa_r; pa_o; pa_rp]
     | ("Parsers"|"", "pa_op.cmo"     | "op" | "OCamlParser") -> load [pa_r; pa_o; pa_rp; pa_op]
@@ -78,8 +80,11 @@ value rewrite_and_load n x =
     | ("Parsers"|"", "oq" | "OCamlOriginalQuotation") -> load [pa_r; pa_o; pa_qb; pa_oq]
     | ("Parsers"|"", "rf") -> load [pa_r; pa_rp; pa_qb; pa_q; pa_g; pa_m]
     | ("Parsers"|"", "of") -> load [pa_r; pa_o; pa_rp; pa_op; pa_qb; pa_rq; pa_g; pa_m]
+    | ("Filters"|"", "l" | "Lift" | "lift") -> load ["Camlp4Filters.LiftCamlp4Ast"]
     | ("Printers"|"", "pr_r.cmo" | "r" | "OCamlr" | "Camlp4Printers/OCamlr.cmo") ->
         Camlp4.Printers.OCamlr.enable ()
+    (* | ("Printers"|"", "rr" | "OCamlrr" | "Camlp4Printers/OCamlrr.cmo") -> *)
+        (* Camlp4.Printers.OCamlrr.enable () *)
     | ("Printers"|"", "pr_o.cmo" | "o" | "OCaml" | "Camlp4Printers/OCaml.cmo") ->
         Camlp4.Printers.OCaml.enable ()
     | ("Printers"|"", "pr_dump.cmo" | "p" | "DumpOCamlAst" | "Camlp4Printers/DumpOCamlAst.cmo") ->
