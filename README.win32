@@ -78,11 +78,11 @@ environment variable.  E.g. if Tcl/Tk was installed in C:\tcl, add
 THIRD-PARTY SOFTWARE:
 
 [1] Visual C++ version 6 or later.  We use Visual C++ 2005 Express Edition,
-    which can be downloaded for free from http://msdn.microsoft.com/.
+    which can be downloaded for free from http://www.microsoft.com/.
 
 [2] Windows header files and development libraries.  We found them in
     the Microsoft Windows Server 2003 R2 Platform SDK, which can
-    be downloaded for free from http://msdn.microsoft.com/.
+    be downloaded for free from http://www.microsoft.com/.
 
 [3] MASM version 6.11 or later. MASM can be
     downloaded for free from Microsoft's Web site; for directions, see
