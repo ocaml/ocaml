@@ -744,7 +744,7 @@ let build ?target p =
 
   (* compilation d'une cible *)
   let compile u f stf (cmd,cmdd,out) =
-    if !print_cmds then printf "%s\n%!" cmd
+    if cmd <> "" then if !print_cmds then printf "%s\n%!" cmd
     else printf "COMPILE: %s\n%!" f;
     ecall cmd;
     List.iter (fun f -> update_status ~cmdd ~t:date ~f (get_status f)) out
@@ -831,6 +831,10 @@ let main ?rebuild ?deps l =
   in
   let version() = alone "-version"; Printf.printf "YaM version 1.0\n"; exit 0 in
   let clean()   = alone "-clean"; clean p; exit 0 in
+  let verbosity s =
+    match s with
+    | ""|"0" -> print_cmds := false
+    | _ -> print_deps := true in
     Arg.parse [
       "-version", Arg.Unit   version,    " \tdisplay version information";
       "-clean",   Arg.Unit   clean,      " \tremove all generated files";
@@ -838,6 +842,8 @@ let main ?rebuild ?deps l =
       "-q",       Arg.Clear  print_cmds, " \t\tbe quiet: do not print commands";
       "-r",       Arg.String Sys.chdir,  " <dir>\tset `dir' as root directory";
       "-R",       Arg.Unit   cwd,        " \t\tset directory of YaM as root directory";
+
+      "-verbosity", Arg.String verbosity, " \tset the verbosity level: 0, 1, 2...";
 
           "-db",    Arg.Set   debug_build,  " \tdebug build";
           "-dd",    Arg.Set   debug_deps,   " \tdebug deps";

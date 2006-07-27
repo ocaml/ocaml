@@ -3,16 +3,12 @@
 OCAMLRUN=CAML_LD_LIBRARY_PATH=../otherlibs/unix ../boot/ocamlrun
 OCAML=$(OCAMLRUN) ../ocaml -I ../stdlib -I ../otherlibs/unix
 YAM=$(OCAMLRUN) ./yam
-ifeq ($(VERBOSE),1)
-  YAM_OPTIONS=-v
-else 
-  YAM_OPTIONS=-q
-endif
+YAM_OPTIONS=-verbosity '$(VERBOSE)'
 
 default: all
 
 opt install doc all: yam
-	@echo 'YAM: $(YAM_OPTIONS) $@ (use "make $@ VERBOSE=1" for a verbose make)'
+	@echo 'YAM $@ (use "make $@ VERBOSE=1" for a verbose make)'
 	@$(YAM) $(YAM_OPTIONS) $@
 
 clean:
