@@ -67,7 +67,7 @@ CPP=cl /nologo /EP
 MKDLL=link /nologo /dll /out:$(1) /implib:$(2) $(3)
 
 ### How to build a static library
-MKLIB=link /lib /nologo /debugtype:CV /out:$(1) $(2)
+MKLIB=link /lib /nologo /out:$(1) $(2)
 
 ### Canonicalize the name of a system library
 SYSLIB=$(1).lib
@@ -96,7 +96,7 @@ NATIVECCCOMPOPTS=/Ox /MT
 NATIVECCLINKOPTS=/MT
 
 ### Build partially-linked object file
-PARTIALLD=lib /nologo /debugtype:cv
+PARTIALLD=lib /nologo
 PACKLD=ld -r --oformat pe-i386
 
 ############# Configuration for the contributed libraries
