@@ -43,44 +43,26 @@ The remainder of this document gives more information on each port.
 REQUIREMENTS:
 
 This port runs under MS Windows NT, 2000 and XP.  
-Windows 95, 98 and ME are also supported, but less reliably.
+Windows 95, 98 and ME are no longer supported.
 
 The base bytecode system (ocamlc, ocaml, ocamllex, ocamlyacc, ...)
 runs without any additional tools.
 
 Statically linking Caml bytecode with C code (ocamlc -custom) requires the
-Microsoft Visual C++ compiler.  Dynamic loading of DLLs is
-supported out of the box, without additional software.
+Microsoft Visual C++ compiler (items [1] and [2] in the section
+"third-party software" below).  Dynamic loading of DLLs is supported
+out of the box, without additional software.
 
-The native-code compiler (ocamlopt) requires Visual C++ and the
-Microsoft assembler MASM version 6.11 or later.  MASM can be
-downloaded for free from Microsoft's Web site; for directions, see
-        http://www.easystreet.com/~jkirwan/pctools.html
-    or  http://www2.dgsys.com/~raymoon/faq/masm.html
-    or  the comp.lang.asm.x86 FAQ.
+The native-code compiler (ocamlopt) requires Visual C++ (items [1], [2])
+and the Microsoft assembler MASM (item [3]).
 
-The LablTk GUI requires Tcl/Tk 8.3.  Windows binaries are
-available from http://prdownloads.sourceforge.net/tcl/tcl832.exe.
+The LablTk GUI requires Tcl/Tk 8.3 (item [4]).
 
 
 INSTALLATION:
 
 The binary distribution is a self-installing executable archive.
 Just run it and it should install OCaml automatically.
-
-If you are using Windows 95, 98 or ME, you need to adjust environment
-variables as follows:
-  - add the "bin" subdirectory of the OCaml installation directory
-    to the PATH variable;
-  - set the OCAMLLIB variable to the "lib" subdirectory of the
-    OCaml installation directory.
-For instance, if you installed OCaml in C:\Program Files\Objective Caml,
-add the following two lines at the end of C:\autoexec.bat:
-
-    set PATH=%PATH%;"C:\Program Files\Objective Caml\bin"
-    set OCAMLLIB=C:\Program Files\Objective Caml\lib
-
-No such tweaking of environment variables is needed under NT, 2000 and XP.
 
 To run programs that use the LablTK GUI, the directory where the
 DLLs tk83.dll and tcl83.dll were installed (by the Tcl/Tk
@@ -93,6 +75,23 @@ environment variable.  E.g. if Tcl/Tk was installed in C:\tcl, add
 "C:\tcl\lib" to the LIB environment variable.
 
 
+THIRD-PARTY SOFTWARE:
+
+[1] Visual C++ version 6 or later.  We use Visual C++ 2005 Express Edition,
+    which can be downloaded for free from http://msdn.microsoft.com/.
+
+[2] Windows header files and development libraries.  We found them in
+    the Microsoft Windows Server 2003 R2 Platform SDK, which can
+    be downloaded for free from http://msdn.microsoft.com/.
+
+[3] MASM version 6.11 or later. MASM can be
+    downloaded for free from Microsoft's Web site; for directions, see
+    http://users.easystreet.com/jkirwan/new/pctools.html. 
+
+[4] TCL/TK version 8.3.  Windows binaries are available from
+    http://prdownloads.sourceforge.net/tcl/tcl832.exe.
+
+
 RECOMPILATION FROM THE SOURCES:
 
 The command-line tools can be recompiled from the Unix source
@@ -100,11 +99,9 @@ distribution (ocaml-X.YZ.tar.gz), which also contains the files modified
 for Windows.
 
 You will need the following software components to perform the recompilation:
-- Windows NT, 2000, or XP (we advise against compiling under Windows 95/98/ME)
-- Visual C++ version 6 or 7
-- MASM version 6.11 (see above)
+- Windows NT, 2000, or XP.
+- Items [1], [2], [3] and [4] from the list of recommended software above.
 - The Cygwin port of GNU tools, available from http://cygwin.com/
-- TCL/TK version 8.3 (for the LablTK GUI) (see above).
 
 Remember to add the directory where the libraries tk83.lib and
 tcl83.lib were installed (by the Tcl/Tk installer) to the LIB variable
@@ -186,20 +183,6 @@ INSTALLATION:
 The binary distribution is a self-installing executable archive.
 Just run it and it should install OCaml automatically.
 
-If you are using Windows 95, 98 or ME, you need to adjust environment
-variables as follows:
-  - add the "bin" subdirectory of the OCaml installation directory
-    to the PATH variable;
-  - set the OCAMLLIB variable to the "lib" subdirectory of the
-    OCaml installation directory.
-For instance, if you installed OCaml in C:\Program Files\Objective Caml,
-add the following two lines at the end of C:\autoexec.bat:
-
-    set PATH=%PATH%;"C:\Program Files\Objective Caml\bin"
-    set OCAMLLIB=C:\Program Files\Objective Caml\lib
-
-No such tweaking of environment variables is needed under NT, 2000 and XP.
-
 To run programs that use the LablTK GUI, the directory where the
 DLLs tk83.dll and tcl83.dll were installed (by the Tcl/Tk
 installer) must be added to the PATH environment variable.
@@ -214,7 +197,7 @@ environment variable.  E.g. if Tcl/Tk was installed in C:\tcl, add
 RECOMPILATION FROM THE SOURCES:
 
 You will need the following software components to perform the recompilation:
-- Windows NT, 2000, or XP (we advise against compiling under Windows 95/98/ME)
+- Windows NT, 2000, or XP.
 - Cygwin: http://sourceware.cygnus.com/cygwin/
 - TCL/TK version 8.3 (see above).
 
