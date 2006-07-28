@@ -30,3 +30,4 @@ value verbose                      : ref bool;
 value quotations                   : ref bool;
 value constructors_arity           : ref bool;
 value inter_phrases                : ref (option string);
+value current_input_file           : ref string;

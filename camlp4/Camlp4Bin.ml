@@ -201,6 +201,7 @@ value print_loaded_modules = ref False;
 value (task, do_task) =
   let t = ref None in
   let task f x =
+    let () = Config.current_input_file.val := x in
     t.val := Some (if t.val = None then (fun _ -> f x)
                    else (fun usage -> usage ())) in
   let do_task usage = match t.val with [ Some f -> f usage | None -> () ] in
@@ -261,6 +262,7 @@ value initial_spec_list =
     "<name>  Load the printer Camlp4Printers/<name>.cmo");
   ("-filter", Arg.String (rewrite_and_load "Filters"),
     "<name>  Load the filter Camlp4Filters/<name>.cmo");
+  ("-ignore", Arg.String ignore, "ignore the next argument");
   ("--", Arg.Unit ignore, "Deprecated, does nothing")
 ];
 

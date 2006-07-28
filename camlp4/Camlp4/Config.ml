@@ -48,3 +48,4 @@ value camlp4_ast_impl_magic_number = "Camlp42006M001";
 value camlp4_ast_intf_magic_number = "Camlp42006N001";
 value ocaml_ast_intf_magic_number = Camlp4_config.ast_intf_magic_number;
 value ocaml_ast_impl_magic_number = Camlp4_config.ast_impl_magic_number;
+value current_input_file = ref "";
