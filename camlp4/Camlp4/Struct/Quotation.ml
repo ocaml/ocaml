@@ -29,13 +29,11 @@ module Make (Ast : Sig.Ast.S)
   open Format;
   open Sig.Quotation;
 
-  type context =
-    { loc          : Loc.t         ;
-      loc_name_opt : option string };
+  type expand_fun 'a = Loc.t -> option string -> string -> 'a;
 
   type expander =
-    [ ExStr of bool -> context -> string -> string
-    | ExAst of (context -> string -> Ast.expr * context -> string -> Ast.patt) ];
+    [ ExStr of bool -> expand_fun string
+    | ExAst of (expand_fun Ast.expr) and (expand_fun Ast.patt) ];
 
   value expanders_table = ref [];
 
@@ -110,8 +108,7 @@ module Make (Ast : Sig.Ast.S)
   value expand_quotation loc expander quot =
     debug quot "expand_quotation: name: %s, str: %S@." quot.q_name quot.q_contents in
     let loc_name_opt = if quot.q_loc = "" then None else Some quot.q_loc in
-    let context = { loc = loc ; loc_name_opt = loc_name_opt } in
-    try expander context quot.q_contents with
+    try expander loc loc_name_opt quot.q_contents with
     [ Loc.Exc_located _ (Error.E _) as exc ->
         raise exc
     | Loc.Exc_located iloc exc ->
@@ -151,8 +148,8 @@ module Make (Ast : Sig.Ast.S)
     [ ExStr f ->
         let new_str = expand_quotation loc (f in_expr) quotation in
         parse_quotation_result parse loc quotation new_str
-    | ExAst fe_fp ->
-        expand_quotation loc (proj fe_fp) quotation ];
+    | ExAst fe fp ->
+        expand_quotation loc (proj (fe, fp)) quotation ];
 
   value expand_expr parse loc x =
     handle_quotation loc fst True parse x;

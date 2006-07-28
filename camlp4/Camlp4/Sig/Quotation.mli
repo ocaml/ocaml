@@ -32,9 +32,9 @@ module type S = sig
   module Ast : Ast.S;
   open Ast;
 
-  type context =
-    { loc          : Loc.t         ;
-      loc_name_opt : option string };
+  (** The Loc.t is the initial location. The option string is the optional name
+      for the location variable. The string is the quotation contents. *)
+  type expand_fun 'a = Loc.t -> option string -> string -> 'a;
 
   (** The type for quotation expanders kind:
   -      [ExStr exp] for an expander [exp] returning a string which
@@ -51,9 +51,8 @@ module type S = sig
           in position of a pattern. Quotation expanders created with this
           way are independant from the language syntax. *)
   type expander =
-    [ ExStr of bool -> context -> string -> string
-    | ExAst of (context -> string -> Ast.expr * context -> string -> Ast.patt) ]
-  ;
+    [ ExStr of bool -> expand_fun string
+    | ExAst of (expand_fun Ast.expr) and (expand_fun Ast.patt) ];
 
   (** [add name exp] adds the quotation [name] associated with the
       expander [exp]. *)

@@ -61,6 +61,7 @@ module Syntax     : Sig.Camlp4Syntax.S
                        and module Warning = Warning
                        and module Token   = Token
                        and module Ast     = Ast
-                       and module Gram    = Gram;
+                       and module Gram    = Gram
+                       and module Quotation = Quotation;
 module MakeGram (Lexer : Sig.Lexer.S with module Loc = Loc)
   : Sig.Grammar.Static.S with module Loc = Loc and module Token = Lexer.Token;
