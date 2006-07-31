@@ -2290,7 +2290,8 @@ class html =
         bs b title;
         bs b "</h1></center>\n" ;
         let info = Odoc_info.apply_opt
-            Odoc_info.info_of_comment_file !Odoc_info.Args.intro_file
+            (Odoc_info.info_of_comment_file module_list)
+	    !Odoc_info.Args.intro_file
         in
         (
          match info with

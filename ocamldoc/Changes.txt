@@ -12,6 +12,7 @@ TODO:
 
 =====
 Release 3.09.3:
+- fix: PR#4066 (missing crossref in text from intro files)
 - fix: PR#4007 (error in merging of top dependencies of modules)
 - fix: PR#3981 (-dot-colors has no effect)
 - mod: name resolution in cross-referencing: {!name} if name is not

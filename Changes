@@ -4,6 +4,7 @@ Objective Caml 3.09.3:
 Bug fixes:
 - ocamldoc: error in merging of top dependencies of modules PR#4007
 - ocamldoc: -dot-colors has no effect PR#3981
+- ocamdloc: missing crossref in text from intro files PR#4066
 
 New features:
 - ocamldoc: name resolution in cross-referencing {!name}: if name is not
