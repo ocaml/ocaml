@@ -152,9 +152,6 @@ void caml_record_signal(int signal_number)
 
 void caml_garbage_collection(void)
 {
-  int signal_number;
-  intnat signal_state;
-
   caml_young_limit = caml_young_start;
   if (caml_young_ptr < caml_young_start || caml_force_major_slice) {
     caml_minor_collection();
