@@ -73,11 +73,6 @@ method reload_operation op arg res =
       (* This add will be turned into a lea; args and results must be
          in registers *)
       super#reload_operation op arg res
-  | Iconst_symbol _ ->
-      if !pic_code
-      then super#reload_operation op arg res
-      else (arg, res)
-  | Iconst_int _
   | Iintop(Idiv | Imod | Ilsl | Ilsr | Iasr)
   | Iintop_imm(_, _) ->
       (* The argument(s) and results can be either in register or on stack *)
@@ -93,6 +88,14 @@ method reload_operation op arg res =
   | Ifloatofint | Iintoffloat ->
       (* Result must be in register, but argument can be on stack *)
       (arg, (if stackp res.(0) then [| self#makereg res.(0) |] else res))
+  | Iconst_int n ->
+      if n <= 0x7FFFFFFFn && n >= -0x80000000n
+      then (arg, res)
+      else super#reload_operation op arg res
+  | Iconst_symbol _ ->
+      if !pic_code
+      then super#reload_operation op arg res
+      else (arg, res)
   | _ -> (* Other operations: all args and results in registers *)
       super#reload_operation op arg res
 
