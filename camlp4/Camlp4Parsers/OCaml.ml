@@ -355,6 +355,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
   clear label_declaration;
   clear star_ctyp;
   clear match_case;
+  clear with_constr;
 
   EXTEND Gram
     GLOBAL:
@@ -656,6 +657,22 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     ;                                                           *)
     type_constraint:
       [ [ "constraint" -> () ] ]
+    ;
+    with_constr:
+      [ LEFTA
+        [ wc1 = SELF; "and"; wc2 = SELF -> <:with_constr< $wc1$ and $wc2$ >>
+        | `ANTIQUOT (""|"with_constr"|"anti"|"list" as n) s ->
+            <:with_constr< $anti:mk_anti ~c:"with_constr" n s$ >>
+        | "type"; `ANTIQUOT (""|"typ"|"anti" as n) s; "="; t = opt_private_ctyp ->
+            <:with_constr< type $anti:mk_anti ~c:"ctyp" n s$ = $t$ >>
+        | "type"; t1 = type_longident_and_parameters; "="; t2 = opt_private_ctyp ->
+            <:with_constr< type $t1$ = $t2$ >>
+        | "module"; i1 = module_longident; "="; i2 = module_longident_with_app ->
+            <:with_constr< module $i1$ = $i2$ >> ] ]
+    ;
+    opt_private_ctyp:
+      [ [ "private"; t = ctyp -> <:ctyp< private $t$ >>
+        | t = ctyp -> t ] ]
     ;
     class_type_plus:
       [ [ i = lident_colon; t = ctyp LEVEL "star"; "->"; ct = SELF ->

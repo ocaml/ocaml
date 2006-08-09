@@ -323,6 +323,11 @@ module Make (Ast : Sig.Camlp4Ast.S) = struct
     | _ -> lab ]
   ;
 
+  value opt_private_ctyp =
+    fun
+    [ <:ctyp< private $t$ >> -> (Ptype_private, ctyp t)
+    | t -> (Ptype_abstract, ctyp t) ];
+
   value rec type_parameters t acc =
     match t with
     [ <:ctyp< $t1$ $t2$ >> -> type_parameters t1 (type_parameters t2 acc)
@@ -345,10 +350,12 @@ module Make (Ast : Sig.Camlp4Ast.S) = struct
     | WcTyp loc id_tpl ct ->
         let (id, tpl) = type_parameters_and_type_name id_tpl [] in
         let (params, variance) = List.split tpl in
+        let (kind, ct) = opt_private_ctyp ct in
         [(id,
         Pwith_type
           {ptype_params = params; ptype_cstrs = [];
-            ptype_kind = Ptype_abstract; ptype_manifest = Some (ctyp ct);
+            ptype_kind = kind;
+            ptype_manifest = Some ct;
             ptype_loc = mkloc loc; ptype_variance = variance}) :: acc]
     | WcMod _ i1 i2 ->
         [(long_uident i1, Pwith_module (long_uident i2)) :: acc]
