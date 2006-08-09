@@ -95,8 +95,8 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     method type_params f =
       fun
       [ [] -> ()
-      | [x] -> pp f "%a@ " o#ctyp x
-      | l -> pp f "@[<1>%a@]@ " (list o#ctyp "@ ") l ];
+      | [x] -> pp f "@ %a" o#ctyp x
+      | l -> pp f "@ @[<1>%a@]" (list o#ctyp "@ ") l ];
 
     method match_case f =
       fun
