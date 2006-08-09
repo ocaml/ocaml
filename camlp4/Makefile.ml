@@ -79,7 +79,9 @@ let fake_options =
                                   ocamlopt = ref "echo ocamlopt"})
 
 let () =
-  !options.ocaml_Flags ^= "-w Ale -warn-error Ale";
+  !options.ocaml_Flags ^= "-w Ale -warn-error Ale"^^
+                            (if getenv "DTYPES" "" <> "" then "-dtypes"
+                             else "");
   !options.ocaml_P4     := camlp4boot_may_debug [];
   !options.ocaml_P4_opt := camlp4boot_may_debug ["-D OPT"];
   ()
@@ -278,14 +280,13 @@ let camlp4Profiler = ocaml_IModule "Camlp4Profiler"
 let byte_programs = ref []
 let opt_programs = ref []
 let byte_libraries = ref []
-let opt_libraries = ref []
+(* let opt_libraries = ref [] *)
 
 let special_modules =
   if Sys.file_exists "./boot/Profiler.cmo" then [camlp4Profiler] else []
 
 let mk_camlp4_top_lib name modules =
   byte_libraries += (name ^ ".cma");
-  opt_libraries  @= [name ^ ".cmxa"; name ^ ".a"];
   ocaml_Library ~default:`Byte ~libraries:["Camlp4"] ~flags:"-linkall" name
   (special_modules @ modules @ [top_camlp4_top])
 
@@ -300,7 +301,7 @@ let mk_camlp4_tool name modules =
   opt_programs  += (name ^ ".opt");
   [ocaml_Program ~default:`Byte ~libraries:["Camlp4"] ~flags:"-linkall" name modules]
 
-let mk_camlp4 name modules bin_mods top_mods=
+let mk_camlp4 name modules bin_mods top_mods =
   [mk_camlp4_bin name (modules @ bin_mods);
    mk_camlp4_top_lib name (modules @ top_mods)]
 
@@ -471,10 +472,12 @@ let byte =
   "Camlp4Printers.cmi" ::
   "Camlp4Filters.cmi" ::
   "Camlp4Top.cmi" ::
+  "Camlp4Bin.cmi" ::
   "Camlp4Parsers.cmo" ::
   "Camlp4Printers.cmo" ::
   "Camlp4Filters.cmo" ::
   "Camlp4Top.cmo" ::
+  "Camlp4Bin.cmo" ::
   !byte_libraries
 
 let opt =
@@ -484,7 +487,7 @@ let opt =
   "Camlp4Parsers.cmx" ::
   "Camlp4Printers.cmx" ::
   "Camlp4Filters.cmx" ::
-  "Camlp4Top.cmx" ::
+  "Camlp4Bin.cmx" ::
   (* !opt_libraries @ *)
   []
 

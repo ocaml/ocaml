@@ -16,7 +16,7 @@ let yam      = ocamlrun ^ " ./yam "
 let opt      = false
 
 (* Arguments to YaM *)
-let yam_args = ""
+let yam_args = "-verbosity " ^ (try Sys.getenv "VERBOSE" with Not_found -> "0")
 
 (* ------------------------------------------------- *)
 

@@ -172,6 +172,17 @@ val generic_ocaml_Module_extension:
   string -> unit_t
 (** Creates a compilation unit for a single, non interfaced OCaml module. *)
 
+val ocaml_fake_IModule:
+  ?o: options_t ->
+  ?flags: string -> ?byte_flags: string -> ?opt_flags: string -> 
+  ?impl_flags: string ->
+  ?pp: string -> ?includes: string list -> ?ext_includes: string list -> 
+  string -> unit_t
+(** Creates a fake compilation unit for an OCaml module, with its interface.
+    Comme ocaml_IModule sauf que la commande de construction n'est pas
+    appelee et que les fichiers ne sont pas detruit par clean.
+    en gros compile_cmd ne fait rien et trash = []. *)
+
 val phony_unit: ?depends: string list -> ?command: string -> string -> unit_t
 (** creates a phony unit which depends on [depends], and is built with [command]. *)
 

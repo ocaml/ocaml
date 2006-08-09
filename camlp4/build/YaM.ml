@@ -347,6 +347,23 @@ let ocaml_IModule ?o ?flags ?byte_flags ?opt_flags ?(impl_flags = "") ?pp ?inclu
       ~dep_files:   (fun f -> if is_cmi f then [mli_n] else [ml_n])
       ()
 
+(* Comme ocaml_IModule sauf que la commande de construction n'est pas
+ * appelee et que les fichiers ne sont pas detruit par clean.
+ * en gros compile_cmd ne fait rien et trash = []. *)
+let ocaml_fake_IModule ?o ?flags ?byte_flags ?opt_flags ?(impl_flags = "") ?pp ?includes ?ext_includes n =
+  let n, depc, bytec, optc = 
+    ocaml_options ?o ?flags ?byte_flags ?opt_flags ?pp ?includes ?ext_includes n
+  in 
+  let ml_n, mli_n, cmo_n, cmi_n, cmx_n = ml n, mli n, cmo n, cmi n, cmx n in
+  let targets = [cmo_n; cmi_n; cmx_n] in
+    generic_unit 
+      ~name:n
+      ~sources:[ml_n; mli_n] ~targets ~trash:[] ~objects:(cmx_n, cmo_n)  
+      ~dependencies:(fun ~native f -> ocamldepi ~native ~depc ~f ~n)
+      ~compile_cmd:(fun _ -> "", [])
+      ~dep_files:   (fun f -> if is_cmi f then [mli_n] else [ml_n])
+      ()
+
 
 (* interface ocaml pure *)
 let ocaml_Interface ?o ?flags ?byte_flags ?opt_flags ?pp ?includes ?ext_includes n =
