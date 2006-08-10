@@ -12,6 +12,9 @@ New features:
 - ocamldoc: name resolution in cross-referencing {!name}: if name is not
     found, then it is searched in the parent module/class, and in the parent
     of the parent, and so on until it is found.
+- ocamldoc:  new option -short-functors to use a short form to display
+  functors in html generator PR#4017
+
 
 Objective Caml 3.09.2:
 ----------------------

@@ -12,6 +12,8 @@ TODO:
 
 =====
 Release 3.09.3:
+- mod: PR#4017 new option -short-functors to use a short form to display
+  functors in html generator
 - fix: PR#4016 (using modtype constraint to filter module elements displayed in doc)
 - fix: PR#4066 (missing crossref in text from intro files)
 - fix: PR#4007 (error in merging of top dependencies of modules)

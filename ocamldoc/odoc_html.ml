@@ -1168,10 +1168,21 @@ class html =
           bs b (self#create_fully_qualified_module_idents_links father a.ma_name);
           bs b "</code>"
       | Module_functor (p, k) ->
-          bs b "<div class=\"sig_block\">";
+	  if !Odoc_info.Args.html_short_functors then
+	    bs b " "
+	  else
+            bs b "<div class=\"sig_block\">";
           self#html_of_module_parameter b father p;
+	  (
+	   match k with
+	     Module_functor _ -> ()
+	   | _ when !Odoc_info.Args.html_short_functors ->
+	       bs b ": "
+	   | _ -> ()
+	  );
           self#html_of_module_kind b father ?modu k;
-          bs b "</div>"
+          if not !Odoc_info.Args.html_short_functors then
+	    bs b "</div>"
       | Module_apply (k1, k2) ->
           (* TODO: l'application n'est pas correcte dans un .mli.
              Que faire ? -> afficher le module_type du typedtree  *)
@@ -1190,14 +1201,20 @@ class html =
           self#html_of_module_kind b father ?modu k
 
     method html_of_module_parameter b father p =
+      let (s_functor,s_arrow) =
+	if !Odoc_info.Args.html_short_functors then
+	  "", ""
+	else
+	  "functor ", "-> "
+      in
       self#html_of_text b
         [
-          Code "functor (";
+          Code (s_functor^"(");
           Code p.mp_name ;
           Code " : ";
         ] ;
       self#html_of_module_type_kind b father p.mp_kind;
-      self#html_of_text b [ Code ") -> "]
+      self#html_of_text b [ Code (") "^s_arrow)]
 
     method html_of_module_element b father ele =
       match ele with
@@ -1628,7 +1645,12 @@ class html =
        else
          bs b (Name.simple m.m_name)
       );
-      bs b ": ";
+      (
+       match m.m_kind with
+	 Module_functor _ when !Odoc_info.Args.html_short_functors  ->
+	   ()
+       | _ -> bs b ": "
+      );
       self#html_of_module_kind b father ~modu: m m.m_kind;
       bs b "</pre>";
       if info then
