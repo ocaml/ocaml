@@ -1250,7 +1250,7 @@ module Analyser =
           )
 
       | Parsetree.Pstr_recmodule mods ->
-	  (* A VOIR ICI ca merde avec /work/tmp/graph.ml: pas de lien avec les module type
+	  (* A VOIR ICI pb: pas de lien avec les module type
 	     dans les contraintes sur les modules *)
 	  let new_env =
             List.fold_left
@@ -1569,11 +1569,6 @@ module Analyser =
       | (Parsetree.Pmod_constraint (p_module_expr2, p_modtype),
          Typedtree.Tmod_constraint (tt_module_expr2, tt_modtype, _)) ->
 	  print_DEBUG ("Odoc_ast: case Parsetree.Pmod_constraint + Typedtree.Tmod_constraint "^module_name);
-
-          (* we create the module with p_module_expr2 and tt_module_expr2
-             but we change its type according to the constraint.
-             A VOIR : est-ce que c'est bien ?
-          *)
           let m_base2 = analyse_module
               env
               current_module_name
@@ -1592,10 +1587,6 @@ module Analyser =
             m_base with
             m_type = tt_modtype ;
             m_kind = Module_constraint (m_base2.m_kind, mtkind) ;
-
-(*                                      Module_type_alias { mta_name = "Not analyzed" ;
-                                                            mta_module = None })
-*)
           }
 
       | (Parsetree.Pmod_structure p_structure,
