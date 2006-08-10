@@ -33,9 +33,9 @@ open Odoc_types
 
 (** This variable contains the regular expression representing a blank.*)
 let blank = "[ \010\013\009\012']"
+
 (** This variable contains the regular expression representing a blank but not a '\n'.*)
 let simple_blank = "[ \013\009\012]"
-
 
 (** This module is used to search for structure items by name in a Typedtree.structure.
    One function creates two hash tables, which can then be used to search for elements.
@@ -849,6 +849,94 @@ module Analyser =
       in
       f (module_elements, included_modules)
 
+    (** This function removes the elements of the module which does not
+       belong to the given module type, if the module type is expanded
+       and the module has a "structure" kind. *)
+    let rec filter_module_with_module_type_constraint m mt =
+      match m.m_kind, mt with
+	Module_struct l, Types.Tmty_signature lsig ->
+          m.m_kind <- Module_struct (filter_module_elements_with_module_type_constraint l lsig);
+	  m.m_type <- mt;
+      | _ -> ()
+
+    (** This function removes the elements of the module type which does not
+       belong to the given module type, if the module type is expanded
+       and the module type has a "structure" kind. *)
+    and filter_module_type_with_module_type_constraint mtyp mt =
+      match mtyp.mt_kind, mt with
+	Some Module_type_struct l, Types.Tmty_signature lsig ->
+          mtyp.mt_kind <- Some (Module_type_struct (filter_module_elements_with_module_type_constraint l lsig));
+	  mtyp.mt_type <- Some mt;
+      | _ -> ()
+
+    and filter_module_elements_with_module_type_constraint l lsig =
+      let pred ele =
+        let f = match ele with
+          Element_module m ->
+	    (function
+                Types.Tsig_module (ident,t,_) ->
+                  let n1 = Name.simple m.m_name
+                  and n2 = Ident.name ident in
+                  (
+                   match n1 = n2 with
+                     true -> filter_module_with_module_type_constraint m t; true
+                   | false -> false
+                  )
+              | _ -> false)
+	| Element_module_type mt ->
+	    (function
+                Types.Tsig_modtype (ident,Types.Tmodtype_manifest t) ->
+                  let n1 = Name.simple mt.mt_name
+                  and n2 = Ident.name ident in
+                  (
+                   match n1 = n2 with
+                     true -> filter_module_type_with_module_type_constraint mt t; true
+                   | false -> false
+                  )
+              | _ -> false)
+	| Element_value v ->
+	    (function
+                Types.Tsig_value (ident,_) ->
+                  let n1 = Name.simple v.val_name
+                  and n2 = Ident.name ident in
+                  n1 = n2
+              | _ -> false)
+	| Element_type t ->
+	     (function
+                Types.Tsig_type (ident,_,_) ->
+		  (* A VOIR: il est possible que le détail du type soit caché *)
+                  let n1 = Name.simple t.ty_name
+                  and n2 = Ident.name ident in
+                  n1 = n2
+               | _ -> false)
+	| Element_exception e ->
+	    (function
+                Types.Tsig_exception (ident,_) ->
+                  let n1 = Name.simple e.ex_name
+                  and n2 = Ident.name ident in
+                  n1 = n2
+              | _ -> false)
+	| Element_class c ->
+	    (function
+                Types.Tsig_class (ident,_,_) ->
+                  let n1 = Name.simple c.cl_name
+                  and n2 = Ident.name ident in
+                  n1 = n2
+              | _ -> false)
+	| Element_class_type ct ->
+	    (function
+                Types.Tsig_cltype (ident,_,_) ->
+                  let n1 = Name.simple ct.clt_name
+                  and n2 = Ident.name ident in
+                  n1 = n2
+              | _ -> false)
+        | Element_module_comment _ -> fun _ -> true
+	| Element_included_module _ -> fun _ -> true
+        in
+        List.exists f lsig
+      in
+      List.filter pred l
+
     (** Analysis of a parse tree structure with a typed tree, to return module elements.*)
     let rec analyse_structure env current_module_name last_pos pos_limit parsetree typedtree =
       print_DEBUG "Odoc_ast:analyse_struture";
@@ -1494,16 +1582,16 @@ module Analyser =
               p_module_expr2
               tt_module_expr2
           in
-          let mtkind = Sig.analyse_module_type_kind
-              env
+          let mtkind = Sig.analyse_module_type_kind env
               (Name.concat current_module_name "??")
               p_modtype tt_modtype
           in
+	  let tt_modtype = Odoc_env.subst_module_type env tt_modtype in
+	  filter_module_with_module_type_constraint m_base2 tt_modtype;
           {
             m_base with
-            m_type = Odoc_env.subst_module_type env tt_modtype ;
-            m_kind = Module_constraint (m_base2.m_kind,
-                                        mtkind)
+            m_type = tt_modtype ;
+            m_kind = Module_constraint (m_base2.m_kind, mtkind) ;
 
 (*                                      Module_type_alias { mta_name = "Not analyzed" ;
                                                             mta_module = None })

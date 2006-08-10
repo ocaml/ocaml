@@ -2,6 +2,8 @@ Objective Caml 3.09.3:
 ----------------------
 
 Bug fixes:
+- ocamldoc: -using modtype constraint to filter module elements displayed
+  in doc PR#4016
 - ocamldoc: error in merging of top dependencies of modules PR#4007
 - ocamldoc: -dot-colors has no effect PR#3981
 - ocamdloc: missing crossref in text from intro files PR#4066

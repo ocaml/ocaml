@@ -444,7 +444,7 @@ module Module :
     and t_module = Odoc_module.t_module =
         {
           m_name : Name.t ; (** Complete name of the module. *)
-          m_type : Types.module_type ; (** The type of the module. *)
+          mutable m_type : Types.module_type ; (** The type of the module. *)
           mutable m_info : info option ; (** Information found in the optional associated comment. *)
           m_is_interface : bool ; (** [true] for modules read from interface files *)
           m_file : string ; (** The file the module is defined in. *)
@@ -477,7 +477,7 @@ module Module :
         {
           mt_name : Name.t ; (** Complete name of the module type. *)
           mutable mt_info : info option ; (** Information found in the optional associated comment. *)
-          mt_type : Types.module_type option ; (** [None] means that the module type is abstract. *)
+          mutable mt_type : Types.module_type option ; (** [None] means that the module type is abstract. *)
           mt_is_interface : bool ; (** [true] for modules read from interface files. *)
           mt_file : string ; (** The file the module type is defined in. *)
           mutable mt_kind : module_type_kind option ;
