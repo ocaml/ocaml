@@ -210,6 +210,11 @@ syntactically correct, no color is added.
 \item["-index-only"]
 Generate only index files.
 
+\item["-short-functors"]
+Use a short form to display functors:
+"module M : functor (A:Module) -> functor (B:Module2) -> sig .. end"
+is displayed as "module M (A:Module) (B:Module2) : sig .. end".
+
 \end{options}
 
 \subsubsection*{Options for generating \LaTeX\ files}
