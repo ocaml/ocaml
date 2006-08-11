@@ -101,7 +101,7 @@ for Windows.
 You will need the following software components to perform the recompilation:
 - Windows NT, 2000, or XP.
 - Items [1], [2], [3] and [4] from the list of recommended software above.
-- The Cygwin port of GNU tools, available from http://cygwin.com/
+- The Cygwin port of GNU tools, available from http://www.cygwin.com/
 
 Remember to add the directory where the libraries tk83.lib and
 tcl83.lib were installed (by the Tcl/Tk installer) to the LIB variable
@@ -165,7 +165,7 @@ runs without any additional tools.
 The native-code compiler (ocamlopt), as well as static linking of
 Caml bytecode with C code (ocamlc -custom), require 
 the Cygwin development tools, available at
-        http://sources.redhat.com/cygwin/
+        http://www.cygwin.com/
 You will need to install at least the following Cygwin packages (use
 the Setup tool from Cygwin):
 binutils, gcc-core, gcc-mingw-core, mingw-runtime, w32-api.
@@ -243,7 +243,7 @@ REQUIREMENTS:
 
 This port requires the Cygwin environment from Cygnus/RedHat, which
 is freely available at:
-          http://sources.redhat.com/cygwin/
+          http://www.cygwin.com/
 
 This port runs under all versions of MS Windows supported by Cygwin.
 
