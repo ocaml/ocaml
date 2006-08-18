@@ -324,8 +324,8 @@ utils/config.ml: utils/config.mlp config/Makefile
             -e 's|%%BYTELINK%%|$(BYTECC) $(BYTECCLINKOPTS)|' \
             -e 's|%%NATIVECC%%|$(NATIVECC) $(NATIVECCCOMPOPTS)|' \
             -e 's|%%NATIVELINK%%|$(NATIVECC) $(NATIVECCLINKOPTS)|' \
-            -e 's|%%PARTIALLD%%|ld -r $(NATIVECCLINKOPTS)|' \
-            -e 's|%%PACKLD%%|ld -r $(NATIVECCLINKOPTS)|' \
+            -e 's|%%PARTIALLD%%|$(PARTIALLD) $(NATIVECCLINKOPTS)|' \
+            -e 's|%%PACKLD%%|$(PARTIALLD) $(NATIVECCLINKOPTS)|' \
             -e 's|%%BYTECCLIBS%%|$(BYTECCLIBS)|' \
             -e 's|%%NATIVECCLIBS%%|$(NATIVECCLIBS)|' \
             -e 's|%%RANLIBCMD%%|$(RANLIBCMD)|' \

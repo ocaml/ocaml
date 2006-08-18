@@ -39,6 +39,7 @@ verbose=no
 withcurses=yes
 withsharedlibs=yes
 gcc_warnings="-Wall"
+partialld="ld -r"
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
 unset LANG
@@ -247,13 +248,11 @@ case "$bytecc,$host" in
     bytecccompopts="-fno-defer-pop $gcc_warnings -DSHRINKED_GNUC"
     mathlib="";;
   *,*-*-darwin*)
-    # Almost the same as rhapsody
     bytecccompopts="-fno-defer-pop -no-cpp-precomp $gcc_warnings"
     mathlib=""
-    if $arch64; then
-      # Tell gcc that we can use 32-bit code addresses for threaded code
-      echo "#define ARCH_CODE32" >> m.h
-    fi;;
+    # Tell gcc that we can use 32-bit code addresses for threaded code
+    # even if we compile in 64-bit mode
+    echo "#define ARCH_CODE32" >> m.h;;
   *,*-*-beos*)
     bytecccompopts="-fno-defer-pop $gcc_warnings"
     # No -lm library
@@ -629,8 +628,8 @@ case "$arch,$nativecc,$system,$host_type" in
                        nativecclinkopts="-posix";;
   *,*,rhapsody,*darwin[1-5].*)
                        nativecccompopts="$gcc_warnings -DSHRINKED_GNUC";;
-  *,*,rhapsody,*)
-                 nativecccompopts="$gcc_warnings -DDARWIN_VERSION_6 $dl_defs";;
+  *,*,rhapsody,*)      nativecccompopts="$gcc_warnings -DDARWIN_VERSION_6 $dl_defs"
+                       if $arch64; then partialld="ld -r -arch ppc64"; fi;;
   *,gcc*,cygwin,*)     nativecccompopts="$gcc_warnings -U_WIN32";;
   *,gcc*,*,*)          nativecccompopts="$gcc_warnings";;
 esac
@@ -1463,6 +1462,7 @@ echo "OTHERLIBRARIES=$otherlibraries" >> Makefile
 echo "DEBUGGER=$debugger" >> Makefile
 echo "CC_PROFILE=$cc_profile" >> Makefile
 echo "SYSTHREAD_SUPPORT=$systhread_support" >>Makefile
+echo "PARTIALLD=$partialld" >>Makefile
 
 rm -f tst hasgot.c
 rm -f ../m.h ../s.h ../Makefile
