@@ -139,7 +139,7 @@ sp is a local copy of the global variable caml_extern_sp. */
 #define SP_REG asm("%edi")
 #define ACCU_REG
 #endif
-#ifdef __ppc__
+#if defined(__ppc__) || defined(__ppc64__)
 #define PC_REG asm("26")
 #define SP_REG asm("27")
 #define ACCU_REG asm("28")
