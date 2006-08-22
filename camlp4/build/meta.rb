@@ -30,6 +30,8 @@
 #     end;
 #   footer
 
+require 'tempfile'
+
 camlp4 = '../boot/ocamlrun ./boot/camlp4boot'
 puts '(* Generated file, do not edit by hand! *)'
 contents = ARGF.read.split("\n")
@@ -38,6 +40,9 @@ header = []
 footer = []
 body   = []
 cur    = header
+tmp = Tempfile.new('metaq.ml')
+tmp.close
+tmp = tmp.path
 for line in contents do
   if line =~ /<:start_meta<\s*(.*?)\s*>>/
     kinds = $1.split(/\s*,\s*/)
@@ -46,12 +51,12 @@ for line in contents do
     cur = footer
   elsif line =~ /(.*)<:meta<\s*(.*)\s*>>(.*)/
     pre, q, post = $1, $2, $3
-    File.open('/tmp/metaq.ml', 'w') { |f| f.print q, ';' }
+    File.open(tmp, 'w') { |f| f.print q, ';' }
     antiquots = q.scan(/\$(?:((?:\w|`|\.)+):)?((\w+?)(\d*)(l)?)\$/)
     if antiquots.size == 1 and antiquots.first.first == 'anti'
       cur << "#{pre}#{q.gsub(/<:(\w+)</, '<:\1@_loc<').ljust(65)} -> <:meta_kind< $anti:s$ >>#{post}"
     else
-      metaq = `#{camlp4} -printer OCaml -curry-constr /tmp/metaq.ml`.
+      metaq = `#{camlp4} -printer OCaml -curry-constr -impl #{tmp}`.
         gsub(/;\s*\Z/, '').strip.gsub(/\b_?loc\b/, "$meta_loc_meta_kind _loc$")
       abort "abort: #{q}" unless $? == 0
       for antiquot in antiquots do
