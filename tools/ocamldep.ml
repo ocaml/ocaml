@@ -25,6 +25,18 @@ let native_only = ref false
 let force_slash = ref false
 let error_occurred = ref false
 
+(* Fix path to use '/' as directory separator instead of '\'.
+   Only under Windows. *)
+
+let fix_slash s =
+  if Sys.os_type = "Unix" then s else begin
+    let r = String.copy s in
+    for i = 0 to String.length r - 1 do
+      if r.[i] = '\\' then r.[i] <- '/'
+    done;
+    r
+  end
+
 let add_to_load_path dir =
   try
     let dir = Misc.expand_directory Config.standard_library dir in
@@ -33,11 +45,6 @@ let add_to_load_path dir =
   with Sys_error msg ->
     fprintf Format.err_formatter "@[Bad -I option: %s@]@." msg;
     error_occurred := true
-
-let concat_filename dirname filename =
-  if dirname = Filename.current_dir_name then filename
-  else if !force_slash then dirname ^ "/" ^ filename
-  else Filename.concat dirname filename
 
 let find_file name =
   let uname = String.uncapitalize name in
@@ -50,7 +57,7 @@ let find_file name =
     [] -> raise Not_found
   | (dir, contents) :: rem ->
       match find_in_array contents 0 with
-        Some truename -> concat_filename dir truename
+        Some truename -> Filename.concat dir truename
       | None -> find_in_path rem in
   find_in_path !load_path
 
@@ -76,6 +83,7 @@ let find_dependency modname (byt_deps, opt_deps) =
 let (depends_on, escaped_eol) = (": ", "\\\n    ")
 
 let print_filename s =
+  let s = if !force_slash then fix_slash s else s in
   if not (String.contains s ' ') then begin
     print_string s;
   end else begin
