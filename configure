@@ -541,7 +541,7 @@ if test $withsharedlibs = "yes"; then
       byteccrpath="-Wl,-rpath,"
       mksharedlibrpath="-rpath "
       shared_libraries_supported=true;;
-    powerpc-apple-darwin*)
+    *-apple-darwin*)
       mksharedlib="$bytecc -bundle -flat_namespace -undefined suppress -o"
       bytecccompopts="$dl_defs $bytecccompopts"
       #sharedcccompopts="-fnocommon"
