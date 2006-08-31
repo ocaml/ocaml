@@ -24,6 +24,7 @@ let load_path = ref ([] : (string * string array) list)
 let native_only = ref false
 let force_slash = ref false
 let error_occurred = ref false
+let raw_dependencies = ref false
 
 (* Fix path to use '/' as directory separator instead of '\'.
    Only under Windows. *)
@@ -127,6 +128,13 @@ let print_dependencies target_file deps =
         end in
     print_items (String.length target_file + 2) deps
 
+let print_raw_dependencies source_file deps =
+  print_filename source_file; print_string ":";
+  Depend.StringSet.iter
+    (fun dep -> print_char ' '; print_string dep)
+    deps;
+  print_char '\n'
+
 (* Optionally preprocess a source file *)
 
 let preprocessor = ref None
@@ -152,20 +160,15 @@ let remove_preprocessed inputfile =
 
 (* Parse a file or get a dumped syntax tree in it *)
 
-exception Outdated_version
-
 let is_ast_file ic ast_magic =
   try
     let buffer = String.create (String.length ast_magic) in
     really_input ic buffer 0 (String.length ast_magic);
     if buffer = ast_magic then true
     else if String.sub buffer 0 9 = String.sub ast_magic 0 9 then
-      raise Outdated_version
-    else false
-  with
-    Outdated_version ->
       failwith "Ocaml and preprocessor have incompatible versions"
-  | _ -> false
+    else false
+  with End_of_file -> false
 
 let parse_use_file ic =
   if is_ast_file ic Config.ast_impl_magic_number then
@@ -189,58 +192,78 @@ let parse_interface ic =
 
 (* Process one file *)
 
+let ml_file_dependencies source_file =
+  Depend.free_structure_names := Depend.StringSet.empty;
+  let input_file = preprocess source_file in
+  let ic = open_in_bin input_file in
+  try
+    let ast = parse_use_file ic in
+    Depend.add_use_file Depend.StringSet.empty ast;
+    if !raw_dependencies then begin
+      print_raw_dependencies source_file !Depend.free_structure_names
+    end else begin
+      let basename = Filename.chop_suffix source_file ".ml" in
+      let init_deps =
+        if Sys.file_exists (basename ^ ".mli")
+        then let cmi_name = basename ^ ".cmi" in ([cmi_name], [cmi_name])
+        else ([], []) in
+      let (byt_deps, opt_deps) =
+        Depend.StringSet.fold find_dependency
+                              !Depend.free_structure_names init_deps in
+      print_dependencies (basename ^ ".cmo") byt_deps;
+      print_dependencies (basename ^ ".cmx") opt_deps
+    end;
+    close_in ic; remove_preprocessed input_file
+  with x ->
+    close_in ic; remove_preprocessed input_file; raise x
+
+let mli_file_dependencies source_file =
+  Depend.free_structure_names := Depend.StringSet.empty;
+  let input_file = preprocess source_file in
+  let ic = open_in_bin input_file in
+  try
+    let ast = parse_interface ic in
+    Depend.add_signature Depend.StringSet.empty ast;
+    if !raw_dependencies then begin
+      print_raw_dependencies source_file !Depend.free_structure_names
+    end else begin
+      let basename = Filename.chop_suffix source_file ".mli" in
+      let (byt_deps, opt_deps) =
+        Depend.StringSet.fold find_dependency
+                              !Depend.free_structure_names ([], []) in
+      print_dependencies (basename ^ ".cmi") byt_deps
+    end;
+    close_in ic; remove_preprocessed input_file
+  with x ->
+    close_in ic; remove_preprocessed input_file; raise x
+
 let file_dependencies source_file =
   Location.input_name := source_file;
-  if Sys.file_exists source_file then begin
-    try
-      Depend.free_structure_names := Depend.StringSet.empty;
-      let input_file = preprocess source_file in
-      let ic = open_in_bin input_file in
-      try
-        if Filename.check_suffix source_file ".ml" then begin
-          let ast = parse_use_file ic in
-          Depend.add_use_file Depend.StringSet.empty ast;
-          let basename = Filename.chop_suffix source_file ".ml" in
-          let init_deps =
-            if Sys.file_exists (basename ^ ".mli")
-            then let cmi_name = basename ^ ".cmi" in ([cmi_name], [cmi_name])
-            else ([], []) in
-          let (byt_deps, opt_deps) =
-            Depend.StringSet.fold find_dependency !Depend.free_structure_names init_deps in
-          print_dependencies (basename ^ ".cmo") byt_deps;
-          print_dependencies (basename ^ ".cmx") opt_deps
-        end else
-        if Filename.check_suffix source_file ".mli" then begin
-          let ast = parse_interface ic in
-          Depend.add_signature Depend.StringSet.empty ast;
-          let basename = Filename.chop_suffix source_file ".mli" in
-          let (byt_deps, opt_deps) =
-            Depend.StringSet.fold find_dependency !Depend.free_structure_names ([], []) in
-          print_dependencies (basename ^ ".cmi") byt_deps
-        end else
-          ();
-        close_in ic; remove_preprocessed input_file
-      with x ->
-        close_in ic; remove_preprocessed input_file;
-        raise x
-    with x ->
-      let report_err = function
-      | Lexer.Error(err, range) ->
-          fprintf Format.err_formatter "@[%a%a@]@."
-          Location.print range  Lexer.report_error err
-      | Syntaxerr.Error err ->
-          fprintf Format.err_formatter "@[%a@]@."
-          Syntaxerr.report_error err
-      | Sys_error msg ->
-          fprintf Format.err_formatter "@[I/O error:@ %s@]@." msg
-      | x -> raise x in
-      error_occurred := true;
-      report_err x
-  end
+  try
+    if Sys.file_exists source_file then begin
+      if Filename.check_suffix source_file ".ml" then
+        ml_file_dependencies source_file
+      else if Filename.check_suffix source_file ".mli" then
+        mli_file_dependencies source_file
+      else ()
+    end
+  with x ->
+    let report_err = function
+    | Lexer.Error(err, range) ->
+        fprintf Format.err_formatter "@[%a%a@]@."
+        Location.print range  Lexer.report_error err
+    | Syntaxerr.Error err ->
+        fprintf Format.err_formatter "@[%a@]@."
+        Syntaxerr.report_error err
+    | Sys_error msg ->
+        fprintf Format.err_formatter "@[I/O error:@ %s@]@." msg
+    | x -> raise x in
+    error_occurred := true;
+    report_err x
 
 (* Entry point *)
 
-let usage = "Usage: ocamldep [-I <dir>] [-native] <files>"
+let usage = "Usage: ocamldep [options] <source files>\nOptions are:"
 
 let print_version () =
   printf "ocamldep, version %s@." Sys.ocaml_version;
@@ -253,6 +276,8 @@ let _ =
   Arg.parse [
      "-I", Arg.String add_to_load_path,
        "<dir>  Add <dir> to the list of include directories";
+     "-modules", Arg.Set raw_dependencies,
+       "  Print module dependencies in raw form (output is not suitable for make)";
      "-native", Arg.Set native_only,
        "  Generate dependencies for a pure native-code project \
        (no .cmo files)";
