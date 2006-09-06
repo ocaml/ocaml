@@ -323,8 +323,22 @@ and type_kind i ppf x =
   | Ptype_record (l, priv) ->
       line i ppf "Ptype_record %a\n" fmt_private_flag priv;
       list (i+1) string_x_mutable_flag_x_core_type_x_location ppf l;
-  | Ptype_private ->
-      line i ppf "Ptype_private\n"
+  | Ptype_private l ->
+      line i ppf "Ptype_private\n";
+      list (i+1) row_compat ppf l;
+
+and row_compat i ppf x =
+  match x with
+  | Pcfield (s, t) ->
+      line i ppf "Pcfield `%s\n" s;
+      option (i+1) core_type ppf t;
+  | Pcnofield s ->
+      line i ppf "Pcnofield `%s\n" s;
+  | Pctype t ->
+      line i ppf "Pctype\n";
+      core_type (i+1) ppf t;
+  | Pcnotype li ->
+      line i ppf "Pcnotype %a\n" fmt_longident li;
 
 and exception_declaration i ppf x = list i core_type ppf x
 

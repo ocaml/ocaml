@@ -71,6 +71,8 @@ val iter_row: (type_expr -> unit) -> row_desc -> unit
         (* Iteration on types in a row *)
 val iter_abbrev: (type_expr -> unit) -> abbrev_memo -> unit
         (* Iteration on types in an abbreviation list *)
+val iter_compat: (type_expr -> unit) -> row_compat -> unit
+        (* Iteration on compatibility information *)
 
 val copy_type_desc: (type_expr -> type_expr) -> type_desc -> type_desc
         (* Copy on types *)
@@ -78,6 +80,7 @@ val copy_row:
     (type_expr -> type_expr) ->
     bool -> row_desc -> bool -> type_expr -> row_desc
 val copy_kind: field_kind -> field_kind
+val copy_compat: (type_expr -> type_expr) -> row_compat -> row_compat
 
 val save_desc: type_expr -> type_desc -> unit
         (* Save a type description *)

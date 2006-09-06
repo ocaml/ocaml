@@ -133,7 +133,13 @@ and type_kind =
   | Ptype_variant of (string * core_type list * Location.t) list * private_flag
   | Ptype_record of
       (string * mutable_flag * core_type * Location.t) list * private_flag
-  | Ptype_private
+  | Ptype_private of row_compat list
+
+and row_compat =
+    Pcfield of label * core_type option
+  | Pcnofield of label
+  | Pctype of core_type
+  | Pcnotype of Longident.t
 
 and exception_declaration = core_type list
 

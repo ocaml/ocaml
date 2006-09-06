@@ -1177,8 +1177,8 @@ type_kind:
       { (Ptype_variant(List.rev $6, $4), Some $2) }
   | EQUAL core_type EQUAL private_flag LBRACE label_declarations opt_semi RBRACE
       { (Ptype_record(List.rev $6, $4), Some $2) }
-  | EQUAL PRIVATE core_type
-      { (Ptype_private, Some $3) }
+  | EQUAL PRIVATE core_type row_compat
+      { (Ptype_private $4, Some $3) }
 ;
 type_parameters:
     /*empty*/                                   { [] }
@@ -1223,12 +1223,13 @@ with_constraints:
   | with_constraints AND with_constraint        { $3 :: $1 }
 ;
 with_constraint:
-    TYPE type_parameters label_longident with_type_binder core_type constraints
+    TYPE type_parameters label_longident with_type_binder constraints
       { let params, variance = List.split $2 in
+        let kind, mfest = $4 in
         ($3, Pwith_type {ptype_params = params;
-                         ptype_cstrs = List.rev $6;
-                         ptype_kind = $4;
-                         ptype_manifest = Some $5;
+                         ptype_cstrs = List.rev $5;
+                         ptype_kind = kind;
+                         ptype_manifest = Some mfest;
                          ptype_variance = variance;
                          ptype_loc = symbol_rloc()}) }
     /* used label_longident instead of type_longident to disallow
@@ -1237,8 +1238,8 @@ with_constraint:
       { ($2, Pwith_module $4) }
 ;
 with_type_binder:
-    EQUAL          { Ptype_abstract }
-  | EQUAL PRIVATE  { Ptype_private }
+    EQUAL core_type                            { Ptype_abstract, $2 }
+  | EQUAL PRIVATE core_type row_compat         { Ptype_private $4, $3 }
 ;
 
 /* Polymorphic types */
@@ -1354,6 +1355,22 @@ opt_present:
 name_tag_list:
     name_tag                                    { [$1] }
   | name_tag_list name_tag                      { $2 :: $1 }
+;
+row_compat:
+    TILDE LBRACKET row_compat_list opt_semi RBRACKET
+                                                { List.rev $3 }
+  | /* empty */                                 { [] }
+;
+row_compat_list:
+    /* empty */                                 { [] }
+  | row_compat_list SEMI compat_field           { $3 :: $1 }
+;
+compat_field:
+    name_tag OF core_type                       { Pcfield ($1, Some $3) }
+  | name_tag                                    { Pcfield ($1, None) }
+  | TILDE name_tag                              { Pcnofield $2 }
+  | simple_core_type2                           { Pctype $1 }
+  | TILDE type_longident                        { Pcnotype $2 }
 ;
 simple_core_type_or_tuple:
     simple_core_type                            { $1 }

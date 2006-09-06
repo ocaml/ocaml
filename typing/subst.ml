@@ -164,6 +164,8 @@ let type_declaration s decl =
               List.map (fun (n, mut, arg) -> (n, mut, typexp s arg))
                        lbls,
               rep, priv)
+        | Type_private l ->
+            Type_private (List.map (copy_compat (typexp s)) l)
         end;
       type_manifest =
         begin match decl.type_manifest with

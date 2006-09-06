@@ -306,6 +306,15 @@ let out_module_type = ref (fun _ -> failwith "Oprint.out_module_type")
 let out_sig_item = ref (fun _ -> failwith "Oprint.out_sig_item")
 let out_signature = ref (fun _ -> failwith "Oprint.out_signature")
 
+let print_compat ppf = function
+    Ocp_field (l, Some ty) ->
+      fprintf ppf "@[<2>`%s of %a@]" l !out_type ty
+  | Ocp_field (l, None) -> fprintf ppf "`%s" l
+  | Ocp_nofield l -> fprintf ppf "~ `%s" l
+  | Ocp_type ty -> !out_type ppf ty
+  | Ocp_notype id ->
+      fprintf ppf "~ %a" print_ident id
+
 let rec print_out_module_type ppf =
   function
     Omty_abstract -> ()
@@ -361,13 +370,17 @@ and print_out_sig_item ppf =
       fprintf ppf "@[<2>%s %a :@ %a%a@]" kwd value_ident name !out_type
         ty pr_prims prims
 
-and print_out_type_decl kwd ppf (name, args, ty, priv, constraints) =
+and print_out_type_decl kwd ppf (name, args, ty, priv, compat, constraints) =
   let print_constraints ppf params =
     List.iter
       (fun (ty1, ty2) ->
          fprintf ppf "@ @[<2>constraint %a =@ %a@]" !out_type ty1
            !out_type ty2)
       params
+  and print_compats ppf cp =
+    if cp = [] then () else
+    fprintf ppf " ~@ [@[%a]@]"
+      (print_list print_compat (fun ppf -> fprintf ppf ";@ ")) cp
   in
   let type_defined ppf =
     match args with
@@ -408,9 +421,10 @@ and print_out_type_decl kwd ppf (name, args, ty, priv, constraints) =
         print_private priv
         !out_type ty
   in
-  fprintf ppf "@[<2>@[<hv 2>%t%a@]%a@]"
+  fprintf ppf "@[<2>@[<hv 2>%t%a%a@]%a@]"
     print_name_args
     print_out_tkind ty
+    print_compats compat
     print_constraints constraints
 and print_out_constr ppf (name, tyl) =
   match tyl with

@@ -489,6 +489,15 @@ let string_of_mutable = function
   | Immutable -> ""
   | Mutable -> "mutable "
 
+let tree_of_compat = function
+    Cfield (l, ot) -> Ocp_field (l, may_map (tree_of_typexp false) ot)
+  | Cnofield l -> Ocp_nofield l
+  | Ctype t -> Ocp_type (tree_of_typexp false t)
+  | Cnotype t ->
+      match (repr t).desc with
+        Tconstr(p,_,_) -> Ocp_notype (tree_of_path p)
+      | _ -> assert false
+
 let rec tree_of_type_decl id decl =
 
   reset();
@@ -523,6 +532,8 @@ let rec tree_of_type_decl id decl =
       List.iter (fun (_, args) -> List.iter mark_loops args) cstrs
   | Type_record(l, rep, priv) ->
       List.iter (fun (_, _, ty) -> mark_loops ty) l
+  | Type_private l ->
+      List.iter (iter_compat mark_loops) l
   end;
 
   let type_param =
@@ -540,6 +551,8 @@ let rec tree_of_type_decl id decl =
           end
       | Type_variant(_,p) | Type_record(_,_,p) ->
           p = Private
+      | Type_private _ ->
+          true
     in
     let vari =
       List.map2
@@ -558,21 +571,30 @@ let rec tree_of_type_decl id decl =
   in
   let (name, args) = type_defined decl in
   let constraints = tree_of_constraints params in
-  let ty, priv =
+  let ty, priv, compat =
     match decl.type_kind with
     | Type_abstract ->
         begin match ty_manifest with
-        | None -> (Otyp_abstract, Public)
+        | None -> (Otyp_abstract, Public, [])
         | Some ty ->
             tree_of_typexp false ty,
-            (if has_constr_row ty then Private else Public)
+            (if has_constr_row ty then Private else Public),
+            []
         end
     | Type_variant(cstrs, priv) ->
-        tree_of_manifest (Otyp_sum (List.map tree_of_constructor cstrs)), priv
+        tree_of_manifest (Otyp_sum (List.map tree_of_constructor cstrs)),
+        priv, []
     | Type_record(lbls, rep, priv) ->
-        tree_of_manifest (Otyp_record (List.map tree_of_label lbls)), priv
+        tree_of_manifest (Otyp_record (List.map tree_of_label lbls)),
+        priv, []
+    | Type_private l ->
+        begin match ty_manifest with
+          None -> assert false
+        | Some ty ->
+            tree_of_typexp false ty, Private, List.map tree_of_compat l
+        end
   in
-  (name, args, ty, priv, constraints)
+  (name, args, ty, priv, compat, constraints)
 
 and tree_of_constructor (name, args) =
   (name, tree_of_typlist false args)

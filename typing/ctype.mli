@@ -135,6 +135,9 @@ val full_expand: Env.t -> type_expr -> type_expr
 
 val enforce_constraints: Env.t -> type_expr -> unit
 
+val row_normal: Env.t -> row_desc -> row_desc
+val normalize_compat: Env.t -> row_compat list -> row_compat list
+
 val unify: Env.t -> type_expr -> type_expr -> unit
         (* Unify the two types given. Raise [Unify] if not possible. *)
 val unify_var: Env.t -> type_expr -> type_expr -> unit

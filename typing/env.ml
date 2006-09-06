@@ -420,7 +420,7 @@ let constructors_of_type ty_path decl =
       Datarepr.constructor_descrs
         (Btype.newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
         cstrs priv
-  | Type_record _ | Type_abstract -> []
+  | Type_record _ | Type_abstract | Type_private _ -> []
 
 (* Compute label descriptions *)
 
@@ -430,7 +430,7 @@ let labels_of_type ty_path decl =
       Datarepr.label_descrs
         (Btype.newgenty (Tconstr(ty_path, decl.type_params, ref Mnil)))
         labels rep priv
-  | Type_variant _ | Type_abstract -> []
+  | Type_variant _ | Type_abstract | Type_private _ -> []
 
 (* Given a signature and a root path, prefix all idents in the signature
    by the root path and build the corresponding substitution. *)

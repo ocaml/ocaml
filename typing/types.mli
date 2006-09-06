@@ -40,6 +40,7 @@ and type_desc =
 and row_desc =
     { row_fields: (label * row_field) list;
       row_more: type_expr;
+      row_abs: type_expr list;
       row_bound: type_expr list;
       row_closed: bool;
       row_fixed: bool;
@@ -52,6 +53,12 @@ and row_field =
         (* 2nd true denotes a tag in a pattern matching, and
            is erased later *)
   | Rabsent
+
+and row_compat =
+    Cfield of label * type_expr option
+  | Cnofield of label
+  | Ctype of type_expr
+  | Cnotype of type_expr
 
 and abbrev_memo =
     Mnil
@@ -145,6 +152,7 @@ and type_kind =
   | Type_variant of (string * type_expr list) list * private_flag
   | Type_record of (string * mutable_flag * type_expr) list
                  * record_representation * private_flag
+  | Type_private of row_compat list
 
 type exception_declaration = type_expr list
 
