@@ -102,32 +102,6 @@ let extensible_row row =
       match Btype.row_field_repr f with Reither _ -> false | _ -> true)
     row.row_fields
 
-let normalize_compat env cps =
-  let normal_ctype cfield ctype ty =
-    match expand_head env ty with
-    | {desc=Tvariant row} ->
-        let row = row_normal env row in
-        List.map
-          (fun (l,f) -> match Btype.row_field_repr f with
-          | Rpresent ot -> cfield l ot
-          | _ -> assert false)
-          row.row_fields @
-        List.map (fun a -> ctype a) row.row_abs @
-        (match row_more row with Tconstr _ as a -> [ctype a] | _ -> [])
-    | a -> Ctype a :: cps
-  in
-  List.fold_right
-    (fun cp cps ->
-      match cp with
-        Cfield _ -> cp :: cps
-      | Cnofield _ ->
-          if List.mem cp cps then cps else cp :: cps
-      | Ctype ty ->
-          normal_ctype (fun l ot -> Cfield(l,ot)) (fun t -> Ctype t) ty
-      | Cnotype ty ->
-          normal_ctype (fun l _ -> Cnofield l) (fun t -> Cnotype t) ty)
-    cps []
-
 let check_compat env cp ty =
   let (p, tl) =
     match ty.desc with Tconstr(p,tl,_) -> (p, tl) | _ -> assert false in

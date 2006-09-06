@@ -208,7 +208,6 @@ let rec iter_abbrev f = function
 let iter_compat f = function
     Cfield (l, Some t) -> f t
   | Ctype t            -> f t
-  | Cnotype t          -> f t
   | _                  -> ()
 
 let copy_row f fixed row keep more =
