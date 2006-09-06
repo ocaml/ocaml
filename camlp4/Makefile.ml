@@ -74,10 +74,6 @@ let () =
 
 let options_without_camlp4 = new_scope (lazy !options)
 
-let fake_options =
-  new_scope (lazy { !options with ocamlc = ref "echo ocamlc";
-                                  ocamlopt = ref "echo ocamlopt"})
-
 let () =
   !options.ocaml_Flags ^= "-w Ale -warn-error Ale"^^
                             (if getenv "DTYPES" "" <> "" then "-dtypes"
@@ -120,22 +116,31 @@ let ocaml_Module_with_genmap =
                    "./Camlp4Filters/RemoveTrashModule.cmo -printer OCamlr"^^
                    i^^" -no_comments) >"^^o^^"; else : ; fi")
 
-let misc_modules = [
-  ocaml_Module ~o:options_without_camlp4 "build/camlp4_config";
-  ocaml_IModule ~includes:[utils] ~o:fake_options "../utils/misc";
-  ocaml_IModule ~includes:[utils] ~o:fake_options "../utils/warnings";
-  ocaml_IModule ~includes:[parsing; utils] ~o:fake_options "../parsing/linenum";
-  ocaml_IModule ~includes:[parsing; utils] ~o:fake_options "../parsing/location";
-]
+let misc_modules =
+  let mk = ocaml_fake_IModule ~includes:[parsing;utils]
+                              ~o:options_without_camlp4 in
+  [
+    ocaml_Module ~o:options_without_camlp4 "build/camlp4_config";
+    mk "../utils/misc";
+    mk "../utils/warnings";
+    mk "../parsing/linenum";
+    mk "../parsing/location";
+  ]
 
-let camlp4_package =
+let camlp4_package_as_one_file = 
+    ocaml_Module ~includes:[build]
+                 ~ext_includes:[parsing; dynlink]
+                 ~o:options_without_camlp4
+                 "Camlp4"
+
+let camlp4_package_as_one_dir =
   ocaml_PackageDir "Camlp4" (lazy [
     ocaml_IModule ~includes:[build] "Config";
-    ocaml_IModule ~o:(options_without_debug ()) ~impl_flags:"-rectypes" "Debug";
+    ocaml_IModule ~o:(options_without_debug ()) "Debug";
     ocaml_IModule "Options";
     ocaml_PackageDir "Sig" (lazy [
       ocaml_Interface "Id";
-      ocaml_Interface ~includes:[parsing] "Loc";
+      ocaml_Interface ~ext_includes:[parsing] "Loc";
       ocaml_Interface "Error";
       ocaml_Interface "Warning";
       ocaml_Interface "Type";
@@ -174,7 +179,7 @@ let camlp4_package =
         ocaml_Module "Structure";
         ocaml_Module "Search";
         ocaml_Module "Tools";
-        ocaml_IModule ~impl_flags:"-rectypes" "Print";
+        ocaml_IModule "Print";
         ocaml_Module "Failed";
         ocaml_Module "Parser";
         ocaml_IModule "Fold";
@@ -192,6 +197,7 @@ let camlp4_package =
       ocaml_Module_with_meta "MetaAst";
       ocaml_Module "AstFilters";
       ocaml_IModule ~ext_includes:[parsing] "Camlp4Ast2OCamlAst";
+      ocaml_Module "CleanAst";
       ocaml_IModule "CommentFilter";
     ]);
     ocaml_Module "OCamlInitSyntax";
@@ -205,6 +211,11 @@ let camlp4_package =
       (* ocaml_IModule "OCamlrr"; *)
     ])
   ])
+
+let camlp4_package =
+  if Sys.file_exists "Camlp4.ml" && not (is_file_empty "Camlp4.ml")
+    then camlp4_package_as_one_file
+    else camlp4_package_as_one_dir
 
 let camlp4_parsers =
   ocaml_PackageDir "Camlp4Parsers" (lazy [
@@ -231,7 +242,7 @@ let camlp4_printers =
     ocaml_Module "OCamlr";
     (* ocaml_Module "OCamlrr"; *)
     ocaml_Module "Null";
-    ocaml_Module ~includes:[unix] "Auto";
+    ocaml_Module ~ext_includes:[unix] "Auto";
   ])
 
 let camlp4_filters =
@@ -248,8 +259,8 @@ let camlp4_filters =
 
 let camlp4_top =
   ocaml_PackageDir "Camlp4Top" (lazy [
-    ocaml_Module ~includes:[toplevel; typing; parsing] "Rprint";
-    ocaml_Module ~includes:[toplevel; parsing; utils] "Camlp4Top";
+    ocaml_Module ~ext_includes:[toplevel; typing; parsing] "Rprint";
+    ocaml_Module ~ext_includes:[toplevel; parsing; utils] "Camlp4Top";
   ])
 
 let extensions = [ camlp4_parsers; camlp4_printers; camlp4_filters; camlp4_top ]
@@ -384,30 +395,37 @@ let sed re str file =
 
 let try_cp src dest = if Sys.file_exists src then cp src dest
 
-let doc () =
+let pack () =
   let revised_to_ocaml f =
     run ["./boot/camlp4boot -printer OCaml -o "^f^".ml -impl "^f^".ml4"] in
-  let ocamldoc title fl =
-    run (("cd doc && ../../ocamldoc/ocamldoc -v -rectypes -html -I ../../parsing "^
-          "-I ../build -I ../../utils -I .. -dump ocamldoc.out -t '"^title^"'") :: fl) in
   let ppf_of_file f = formatter_of_out_channel (open_out f) in
   let skip_struct = function "Struct" -> true | _ -> false in
-  print_packed_sources (ppf_of_file "doc/Camlp4.ml4") ~skip:skip_struct camlp4_package;
-  print_packed_sources (ppf_of_file "doc/Camlp4Parsers.ml4") camlp4_parsers;
-  print_packed_sources (ppf_of_file "doc/Camlp4Printers.ml4") camlp4_printers;
-  print_packed_sources (ppf_of_file "doc/Camlp4Filters.ml4") camlp4_filters;
-  print_packed_sources (ppf_of_file "doc/Camlp4Top.ml4") camlp4_top;
-  revised_to_ocaml "doc/Camlp4";
-  sed "(\\*___CAMLP4_LEXER___" "" "doc/Camlp4.ml";
-  sed "___CAMLP4_LEXER___\\*)" "" "doc/Camlp4.ml";
-  sed "^ *# [0-9]\\+.*$" "" "doc/Camlp4.ml";
-  revised_to_ocaml "doc/Camlp4Parsers";
-  revised_to_ocaml "doc/Camlp4Printers";
-  revised_to_ocaml "doc/Camlp4Filters";
-  revised_to_ocaml "doc/Camlp4Top";
-  ocamldoc "Camlp4 a Pre-Processor-Pretty-Printer for Objective Caml"
-           ["Camlp4.ml"; "Camlp4Parsers.ml"; "Camlp4Printers.ml";
-            "Camlp4Filters.ml"; "Camlp4Top.ml"]
+  print_packed_sources (ppf_of_file "Camlp4.ml4")
+                       ~skip:skip_struct camlp4_package_as_one_dir;
+  print_packed_sources (ppf_of_file "Camlp4Parsers.ml4") camlp4_parsers;
+  print_packed_sources (ppf_of_file "Camlp4Printers.ml4") camlp4_printers;
+  print_packed_sources (ppf_of_file "Camlp4Filters.ml4") camlp4_filters;
+  print_packed_sources (ppf_of_file "Camlp4Top.ml4") camlp4_top;
+  revised_to_ocaml "Camlp4";
+  sed "(\\*___CAMLP4_LEXER___" "" "Camlp4.ml";
+  sed "___CAMLP4_LEXER___\\*)" "" "Camlp4.ml";
+  sed "^ *# [0-9]\\+.*$" "" "Camlp4.ml";
+  revised_to_ocaml "Camlp4Parsers";
+  revised_to_ocaml "Camlp4Printers";
+  revised_to_ocaml "Camlp4Filters";
+  revised_to_ocaml "Camlp4Top"
+
+let just_doc () =
+  run ["cd doc && ../../ocamldoc/ocamldoc";
+       "-v -short-functors -html";
+       "-I ../../parsing -I ../build -I ../../utils -I ..";
+       "-dump ocamldoc.out";
+       "-t 'Camlp4 a Pre-Processor-Pretty-Printer for Objective Caml'";
+       "../Camlp4.ml"; "../Camlp4Parsers.ml"; "../Camlp4Printers.ml";
+       "../Camlp4Filters.ml"; "../Camlp4Top.ml"]
+
+let doc () =
+  pack (); just_doc ()
 
 let other_objs =
   [
@@ -524,8 +542,14 @@ main ~rebuild:(ocaml ^ "build/build.ml")
   generic_unit ~name:"doc" ~targets:["doc"]
                ~dependencies:(fun ~native:_ _ -> [])
                ~compile_cmd:(fun _ -> doc (); exit 0)
-               ()
-
-
+               ();
+  generic_unit ~name:"just_doc" ~targets:["just_doc"]
+               ~dependencies:(fun ~native:_ _ -> [])
+               ~compile_cmd:(fun _ -> just_doc (); exit 0)
+               ();
+  generic_unit ~name:"pack" ~targets:["pack"]
+               ~dependencies:(fun ~native:_ _ -> [])
+               ~compile_cmd:(fun _ -> pack (); exit 0)
+               ();
  ])
 

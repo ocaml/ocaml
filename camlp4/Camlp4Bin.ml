@@ -24,6 +24,7 @@ open Camlp4;
 open PreCast.Syntax;
 open PreCast;
 open Format;
+module CleanAst = Camlp4.Struct.CleanAst.Make Ast;
 module SSet = Set.Make String;
 
 value pa_r  = "Camlp4Parsers.OCamlr";
@@ -128,9 +129,10 @@ value rec parse_file dyn_loader name pa getdir =
 
 value output_file = ref None;
 
-value process dyn_loader name pa pr fold_filters getdir =
+value process dyn_loader name pa pr clean fold_filters getdir =
   let ast = parse_file dyn_loader name pa getdir in
   let ast = fold_filters (fun t filter -> filter t) ast in
+  let ast = clean ast in
   pr ?input_file:(Some name) ?output_file:output_file.val ast;
 
 value gind =
@@ -147,9 +149,11 @@ open Register;
 
 value process_intf dyn_loader name =
   process dyn_loader name CurrentParser.parse_interf CurrentPrinter.print_interf
+          (new CleanAst.clean_ast)#sig_item
           AstFilters.fold_interf_filters gind;
 value process_impl dyn_loader name =
   process dyn_loader name CurrentParser.parse_implem CurrentPrinter.print_implem
+          (new CleanAst.clean_ast)#str_item
           AstFilters.fold_implem_filters gimd;
 
 value just_print_the_version () =
