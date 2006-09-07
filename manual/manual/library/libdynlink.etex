@@ -14,9 +14,9 @@ Dynamic linking is available only to bytecode programs compiled with
 "ocamlc", not to native-code programs compiled with "ocamlopt".
 
 \ifouthtml
-\begin{itemize}
+\begin{links}
 \item \ahref{libref/Dynlink.html}{Module \texttt{Dynlink}: dynamic loading of bytecode object files}
-\end{itemize}
+\end{links}
 
 \else
 \input{Dynlink.tex}

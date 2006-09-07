@@ -89,7 +89,7 @@ be called from C \\
 \end{latexonly}
 
 \ifouthtml
-\begin{itemize}
+\begin{links}
 \item \ahref{libref/Arg.html}{Module \texttt{Arg}: parsing of command line arguments}
 \item \ahref{libref/Array.html}{Module \texttt{Array}: array operations}
 \item \ahref{libref/ArrayLabels.html}{Module \texttt{ArrayLabels}: array operations (with labels)}
@@ -129,7 +129,7 @@ be called from C \\
 \item \ahref{libref/StringLabels.html}{Module \texttt{StringLabels}: string operations (with labels)}
 \item \ahref{libref/Sys.html}{Module \texttt{Sys}: system interface}
 \item \ahref{libref/Weak.html}{Module \texttt{Weak}: arrays of weak pointers}
-\end{itemize}
+\end{links}
 \else
 \input{Arg.tex}
 \input{Array.tex}

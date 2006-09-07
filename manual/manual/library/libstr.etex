@@ -20,9 +20,9 @@ or (if dynamic linking of C libraries is supported on your platform),
 start "ocaml" and type "#load \"str.cma\";;".
 
 \ifouthtml
-\begin{itemize}
+\begin{links}
 \item \ahref{libref/Str.html}{Module \texttt{Str}: regular expressions and string processing}
-\end{itemize}
+\end{links}
 
 \else
 \input{Str.tex}

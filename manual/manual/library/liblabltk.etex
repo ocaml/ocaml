@@ -85,9 +85,9 @@ here. We will just present some of the basic functions in the module
 Tcl "man" page of their name.
 
 \ifouthtml
-\begin{itemize}
+\begin{links}
 \item \ahref{libref/Tk.html}{The \texttt{Tk} library: Basic functions and types for LablTk}
-\end{itemize}
+\end{links}
 
 \else
 \input{Tk.tex}

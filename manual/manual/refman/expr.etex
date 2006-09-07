@@ -704,7 +704,7 @@ identity, as this type abbreviation is not yet completely defined.
 
 An object can be duplicated using the library function "Oo.copy"
 (see 
-\ifouthtml \ahref{libref/Oo.hml}{Module \texttt{Oo}}\else
+\ifouthtml \ahref{libref/Oo.html}{Module \texttt{Oo}}\else
 section~\ref{Oo}\fi). Inside a method, the expression
 @ '{<' inst-var-name '=' expr { ';' inst-var-name '=' expr } '>}'@
 returns a copy of self with the given instance variables replaced by

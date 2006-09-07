@@ -27,9 +27,9 @@ This library is not available.
 \end{windows}
 
 \ifouthtml
-\begin{itemize}
+\begin{links}
 \item \ahref{libref/Dbm.html}{Module \texttt{Dbm}: interface to the NDBM database}
-\end{itemize}
+\end{links}
 
 \else
 \input{Dbm.tex}

@@ -24,11 +24,11 @@ or (if dynamic linking of C libraries is supported on your platform),
 start "ocaml" and type "#load \"nums.cma\";;".
 
 \ifouthtml
-\begin{itemize}
+\begin{links}
 \item \ahref{libref/Num.html}{Module \texttt{Num}: operation on arbitrary-precision numbers}
 \item \ahref{libref/Big\_int.html}{Module \texttt{Big\_int}: operations on arbitrary-precision integers}
 \item \ahref{libref/Arith\_status.html}{Module \texttt{Arith\_status}: flags that control rational arithmetic}
-\end{itemize}
+\end{links}
 \else
 \input{Num.tex}
 \input{Bigint.tex}

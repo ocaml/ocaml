@@ -30,10 +30,10 @@ more information on the functions that are not supported under Windows.
 \end{windows}
 
 \ifouthtml
-\begin{itemize}
+\begin{links}
 \item \ahref{libref/Unix.html}{Module \texttt{Unix}: Unix system calls}
 \item \ahref{libref/UnixLabels.html}{Module \texttt{UnixLabels}: Labeled Unix system calls}
-\end{itemize}
+\end{links}
 \else
 \input{Unix.tex}
 

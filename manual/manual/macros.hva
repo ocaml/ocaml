@@ -86,11 +86,13 @@
 \def\year{2005}
 
 % Pour alltt
-
 \def\rminalltt#1{{\rm #1}}
-
 \def\goodbreak{\ \\}
-
 \def\@savedlistI{}
 
+%List of links with no space around items
+\newstyle{.li-links}{margin:0ex 0ex;}
+\newenvironment{links}
+{\setenvclass{itemize}{ftoc2}\setenvclass{li-itemize}{li-links}\itemize}
+{\enditemize}
 
