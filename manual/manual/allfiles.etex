@@ -90,13 +90,13 @@ and as a
 \label{p:appendix}
  
 \ifouthtml
-\begin{itemize}
+\begin{links}
 \item \ahref{libref/index_modules.html}{Index of modules}
 \item \ahref{libref/index_module_types.html}{Index of module types}
 \item \ahref{libref/index_types.html}{Index of types}
 \item \ahref{libref/index_exceptions.html}{Index of exceptions}
 \item \ahref{libref/index_values.html}{Index of values}
-\end{itemize}
+\end{links}
 \else
 \printindex{\jobname}{Index to the library}
 \fi
