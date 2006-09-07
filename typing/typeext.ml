@@ -660,6 +660,12 @@ let introduce_extid s =
 	| Parsetree.Pextexp_from_ml _
 	| Parsetree.Pextexp_check _
 	) -> ()  (* all these already allow subsumption on the result *)
+    | Parsetree.Pexp_ext (Parsetree.Pextexp_to_ml _) ->
+	()
+	  (* We need a way to specify exactly the return type!
+	     E.g.  ({: 1 :} : {{ 1 }}).
+	     Otherwise, subsumption would make the result type
+	     a fresh variable with no lower bound (-> Empty). *)
     | _ ->
 	let s' = { Parsetree.pexp_desc = s.Parsetree.pexp_desc;
 		   Parsetree.pexp_loc = s.Parsetree.pexp_loc } in
