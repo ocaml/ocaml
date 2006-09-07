@@ -279,6 +279,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
                         in
                         Oval_record (tree_of_fields 0 lbl_list)
                     end
+                | {type_kind = Type_private _} -> assert false
               with
                 Not_found ->                (* raised by Env.find_type *)
                   Oval_stuff "<abstr>"

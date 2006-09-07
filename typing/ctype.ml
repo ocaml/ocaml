@@ -1412,15 +1412,6 @@ let check_compat_define env conds ty =
       | _ ->
           List.iter (check_compat env false conds) row.row_abs;
           let fields = filter_row_fields false row.row_fields in
-          let cfields =
-            List.map
-              (fun (l, f) ->
-                let f = match row_field_repr f with
-                  Rpresent f -> f
-                | _ -> raise (Unify[])
-                in Cfield (l,f))
-              fields
-          and nfields = List.map (fun (l,_) -> Cnofield l) fields in
           List.iter
             (function
                 Cfield(l,f) ->
@@ -1428,16 +1419,29 @@ let check_compat_define env conds ty =
                     (fun (l',f') ->
                       if l <> l' then () else
                       match f, row_field_repr f' with
-                        None, Rpresent None -> ()
+                        None, (Rpresent None | Reither(true,[],_,_))-> ()
                       | Some ty1, Rpresent (Some ty2)
                         when !equal' env false [ty1] [ty2] -> ()
+                      | Some ty1, Reither (false, tl, _, _) when List.exists
+                            (fun ty2 -> !equal' env false [ty1] [ty2]) tl -> ()
                       | _ -> raise (Unify[]))
                     fields
               | Cnofield l ->
                   if List.mem_assoc l fields then raise (Unify[])
               | Ctype ty1 ->
+                  let cfields =
+                    List.fold_left
+                      (fun cl (l, f) ->
+                        match row_field_repr f with
+                          Rpresent f -> Cfield(l,f)::cl
+                        | Reither(c,tl,_,_) ->
+                            (if c then [Cfield(l,None)] else []) @
+                            List.map (fun t -> Cfield(l,Some t)) tl @ cl
+                        | Rabsent -> cl)
+                      [] fields in
                   check_compat env false cfields ty1
               | Cnotype ty1 ->
+                  let nfields = List.map (fun (l,_) -> Cnofield l) fields in
                   check_compat env false nfields ty1)
             conds
       end;

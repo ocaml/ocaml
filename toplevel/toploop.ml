@@ -162,8 +162,11 @@ let rec pr_item env = function
             Some v
       in
       Some (tree, valopt, rem)
-  | Tsig_type(id, _, _) :: rem when Btype.is_row_name (Ident.name id) ->
-      pr_item env rem
+  | Tsig_type(id, decl, _) :: Tsig_type(id', decl', rs) :: rem
+    when Btype.is_row_name (Ident.name id) ->
+      let decl = {decl' with type_kind = decl.type_kind} in
+      let tree = Printtyp.tree_of_type_declaration id' decl rs in
+      Some (tree, None, rem)
   | Tsig_type(id, decl, rs) :: rem ->
       let tree = Printtyp.tree_of_type_declaration id decl rs in
       Some (tree, None, rem)

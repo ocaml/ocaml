@@ -623,14 +623,13 @@ let compute_variance_decls env cldecls =
 (* Translate a set of mutually recursive type declarations *)
 let transl_type_decl env name_sdecl_list =
   (* Add dummy types for fixed rows *)
-  let fixed_types =
-    List.filter (fun (_,sd) -> is_private sd) name_sdecl_list
-  in
   let name_sdecl_list =
-    List.map
-      (fun (name,sdecl) -> name^"#row", {sdecl with ptype_manifest = None})
-      fixed_types
-    @ name_sdecl_list
+    List.fold_right
+      (fun (name,sdecl as ns) rem ->
+        if is_private sdecl then
+          (name^"#row", {sdecl with ptype_manifest = None}) :: ns :: rem
+        else ns :: rem)
+      name_sdecl_list []
   in
   (* Create identifiers. *)
   let id_list =
@@ -647,18 +646,23 @@ let transl_type_decl env name_sdecl_list =
   (* Enter types. *)
   let temp_env = List.fold_left2 enter_type env name_sdecl_list id_list in
   (* Translate each declaration. *)
+  let temp_env = ref temp_env in
   let decls =
-    List.map2 (transl_declaration temp_env) name_sdecl_list id_list in
+    List.map2
+      (fun (nm, sdecl) id ->
+        let (_, decl) = transl_declaration !temp_env (nm, sdecl) id in
+        let temp_env' = Env.add_type id decl !temp_env in
+        update_type !temp_env temp_env' id sdecl.ptype_loc;
+        temp_env := temp_env';
+        (id, decl))
+      name_sdecl_list id_list
+  in
   (* Build the final env. *)
   let newenv =
     List.fold_right
       (fun (id, decl) env -> Env.add_type id decl env)
       decls env
   in
-  (* Update stubs *)
-  List.iter2
-    (fun id (_, sdecl) -> update_type temp_env newenv id sdecl.ptype_loc)
-    id_list name_sdecl_list;
   (* Generalize type declarations. *)
   Ctype.end_def();
   List.iter (fun (_, decl) -> generalize_decl decl) decls;
