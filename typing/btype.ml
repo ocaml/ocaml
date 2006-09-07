@@ -112,7 +112,7 @@ let rec row_more row =
 
 let static_row row =
   let row = row_repr row in
-  row.row_closed && row.row_abs = [] &&
+  row.row_closed &&
   List.for_all
     (fun (_,f) -> match row_field_repr f with Reither _ -> false | _ -> true)
     row.row_fields
@@ -208,6 +208,7 @@ let rec iter_abbrev f = function
 let iter_compat f = function
     Cfield (l, Some t) -> f t
   | Ctype t            -> f t
+  | Cnotype t          -> f t
   | _                  -> ()
 
 let copy_row f fixed row keep more =

@@ -87,7 +87,7 @@ let merge_constraint initial_env loc sg lid constr =
       ([], _, _) ->
         raise(Error(loc, With_no_component lid))
     | (Tsig_type(id, decl, rs) :: rem, [s],
-       Pwith_type ({ptype_kind = Ptype_private} as sdecl))
+       Pwith_type ({ptype_kind = Ptype_private _} as sdecl))
       when Ident.name id = s ->
 	let decl_row =
 	  { type_params =

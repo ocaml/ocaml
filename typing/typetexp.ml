@@ -40,7 +40,7 @@ type error =
   | Invalid_variable_name of string
   | Cannot_quantify of string * type_expr
   | Abstract_in_smaller
-  | Incompatible_field of string * type_expr option * type_expr
+  | Incompatible_row of string * type_expr * type_expr
 
 exception Error of Location.t * error
 
@@ -93,42 +93,6 @@ let new_pre_univar () =
 let rec swap_list = function
     x :: y :: l -> y :: x :: swap_list l
   | l -> l
-
-let extensible_row row =
-  let row = Btype.row_repr row in
-  Btype.hash_constr_row row &&
-  List.for_all
-    (fun (_,f) ->
-      match Btype.row_field_repr f with Reither _ -> false | _ -> true)
-    row.row_fields
-
-let check_compat env cp ty =
-  let (p, tl) =
-    match ty.desc with Tconstr(p,tl,_) -> (p, tl) | _ -> assert false in
-  let compat =
-    try match (Env.find_type p env).type_kind with
-      Type_private l -> normalize_compat env l
-    | _ -> assert false
-    with Not_found -> []
-  in
-  List.exists
-    (fun cp' ->
-      match cp, cp' with
-      | Cfield(l, Some ty), Cfield(l', Some ty') ->
-          l = l' &&
-          let (_, ty') = instance_parameterized_type tl ty' in
-          equal env false [ty] [ty']
-      | Cfield(l,None), Cfield(l',None) -> l = l'
-      | Cfield(l,_), Cnofield l' -> l = l'
-      | Cfield(l,ot), (Ctype ty' | Cnotype ty') ->
-          let (_, ty') = instance_parameterized_type tl ty' in
-          
-      | Ctype ty, (Ctype ty' | Cnotype ty') ->
-          let (_, ty') = instance_parameterized_type tl ty' in
-          equal env false [ty] [ty']
-      | (Cnofield _ | Cnotype _), _ -> assert false
-      | _ -> false)
-    compat
 
 
 type policy = Fixed | Extensible | Univars
@@ -256,6 +220,7 @@ let rec transl_type env policy styp =
               row.row_fields
           in
           let row = { row_closed = true; row_fields = fields;
+                      row_abs = row.row_abs;
                       row_bound = !bound; row_name = Some (path, args);
                       row_fixed = false; row_more = newvar () } in
           let static = Btype.static_row row in
@@ -303,7 +268,7 @@ let rec transl_type env policy styp =
       let bound = ref [] and name = ref None in
       let mkfield l f =
         newty (Tvariant {row_fields=[l,f]; row_more=newvar();
-                         row_bound=[]; row_closed=true;
+                         row_abs=[]; row_bound=[]; row_closed=true;
                          row_fixed=false; row_name=None}) in
       let add_typed_field loc l f fields abs =
         try
@@ -312,15 +277,12 @@ let rec transl_type env policy styp =
           if equal env false [ty] [ty'] then fields
           else raise(Error(loc, Constructor_mismatch (ty,ty')))
         with Not_found ->
-          begin match f with
-            Rpresent ot ->
-              List.iter
-                (fun ty ->
-                  if check_compat env (Cfield(l,ot)) ty then () else
-                  raise (Error(loc, Incompatible_field(l, ot, ty))))
-                abs
-          | _ -> assert (abs = [])
-          end;
+          List.iter
+            (fun ty ->
+              try check_compat_fields env false [l,f] ty
+              with Unify _ ->
+                raise (Error(loc, Incompatible_row("field", mkfield l f, ty))))
+            abs;
           (l, f) :: fields
       in
       let rec add_field (fields, abs) = function
@@ -337,7 +299,7 @@ let rec transl_type env policy styp =
                 match stl with [] -> Rpresent None
                 | st :: _ -> Rpresent (Some(transl_type env policy st))
             in
-            (add_typed_field styp.ptyp_loc l f fields, abs)
+            (add_typed_field styp.ptyp_loc l f fields abs, abs)
         | Rinherit sty ->
             let ty = transl_type env policy sty in
             let nm =
@@ -345,15 +307,15 @@ let rec transl_type env policy styp =
                 {desc=Tconstr(p, tl, _)} -> Some(p, tl)
               | _                        -> None
             in
-            name := if fields = [] then nm else None;
+            name := if fields = [] && abs = [] then nm else None;
             let fl, al = match expand_head env ty, nm with
             | {desc=Tvariant row}, _ when Btype.static_row row ->
-                let row = Ctype.row_normal row in
+                let row = Ctype.row_normal env row in
                 (row.row_fields, row.row_abs)
-            | {desc=Tvariant row}, _ when extensible_row row ->
+            | {desc=Tvariant row} as t, _ when Btype.has_constr_row t ->
                 if present <> None then
-                  raise(Error(sty.ptyp_loc, Abstract_in_smaller))
-                let row = Ctype.row_normal row in
+                  raise(Error(sty.ptyp_loc, Abstract_in_smaller));
+                let row = Ctype.row_normal env row in
                 (row.row_fields, row.row_more :: row.row_abs)
             | {desc=Tvar}, Some(p, _) ->
                 raise(Error(sty.ptyp_loc, Unbound_type_constructor_2 p)) 
@@ -368,10 +330,10 @@ let rec transl_type env policy styp =
                   fields;
                 List.iter
                   (fun a' ->
-                    if check_compat env (Ctype a) a'
-                    || check_compat env (Ctype a') a then ()
-                    else raise(Error(sty.ptyp_loc,
-                                     Incompatible_components(a, a'))))
+                    try check_compat env false [Ctype a] a'
+                    with Unify _ ->
+                      raise(Error(sty.ptyp_loc,
+                                  Incompatible_row("component", a, a'))))
                   abs)
               al; 
             (List.fold_left
@@ -393,7 +355,7 @@ let rec transl_type env policy styp =
                fields fl,
              al @ abs)
       in
-      let fields = List.fold_left add_field [] fields in
+      let fields, abs = List.fold_left add_field ([],[]) fields in
       begin match present with None -> ()
       | Some present ->
           List.iter
@@ -415,7 +377,7 @@ let rec transl_type env policy styp =
       end;
       let row =
         { row_fields = List.rev fields; row_more = newvar ();
-          row_bound = !bound; row_closed = closed;
+          row_abs = abs; row_bound = !bound; row_closed = closed;
           row_fixed = false; row_name = !name } in
       let static = Btype.static_row row in
       let row =
@@ -628,14 +590,10 @@ let report_error ppf = function
   | Abstract_in_smaller ->
       fprintf ppf "This type includes abstract components.@ %s"
         "It should contain only present constructors."
-  | Incompatible_field (l, None, ty) ->
-      Printtyp.reset_and_mark_loops ty;
-      fprintf ppf "@[The field `%s@ %s@ %a@]" l
-        "is not compatible with the abstract component"
-        Printtyp.type_expr ty
-  | Incompatible_field (l, Some t, ty) ->
-      Printtyp.reset_and_mark_loops_list [t;ty];
-      fprintf ppf "@[The field [`%s of %a]@ %s@ %a@]"
-        l Printtyp.type_expr t
-        "is not compatible with the abstract component"
-        Printtyp.type_expr ty
+  | Incompatible_row (kind, ty1, ty2) ->
+      Printtyp.reset_and_mark_loops_list [ty1;ty2];
+      fprintf ppf "@[<hov>%s@ The %s@;<1 2>%a@ %s@;<1 2>%a@]"
+        "Invalid variant specification."
+        kind Printtyp.type_expr ty1
+        "is not compatible with the component"
+        Printtyp.type_expr ty2

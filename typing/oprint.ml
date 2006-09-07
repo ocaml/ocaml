@@ -193,9 +193,11 @@ and print_simple_out_type ppf =
       in
       let print_fields ppf =
         function
-          Ovar_fields fields ->
+          Ovar_fields (fields, abs) ->
             print_list print_row_field (fun ppf -> fprintf ppf "@;<1 -2>| ")
-              ppf fields
+              ppf fields;
+            print_list print_out_type (fun ppf -> fprintf ppf "@;<1 -2>| ")
+              ppf abs
         | Ovar_name (id, tyl) ->
             fprintf ppf "@[%a%a@]" print_typargs tyl print_ident id
       in

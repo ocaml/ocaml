@@ -1312,75 +1312,138 @@ let get_compat env ty =
       match desc.type_kind with
         Type_private l -> normalize_compat env l
       | _ -> assert false
-    in (p, tl, desc.type_params, compat)
+    in (compat, fun body -> apply env desc.type_params body tl)
   with Not_found -> (* allow unknown types *)
-    (p, [], [], [])
+    ([], fun x -> x)
+
+(* forward declaration *)
+let equal' = ref (fun _ -> assert false)
 
 (* Check compatibility *)
-let check_compat_fields env fl ty =
-  if fl = [] then () else
-  let p, tl1, tl2, compat = get_compat env ty in
-  List.iter
-    (fun (l,f) ->
-      if List.mem (Cnofield l) compat then () else
-      match row_field_repr f with
-      | Rpresent None | Reither(true,[],_,_) ->
-          if List.mem (Cfield(l,None)) compat then () else raise (Unify[])
-      | Rpresent (Some ty1) | Reither(false, [ty1], true, _) ->
-          let ok =
-            List.fold_left
-              (fun ok -> function
-                  Cfield(l', Some ty2) when l = l' ->
-                    let (tl2, ty2) = instance_parameterized_type tl2 ty2 in
-                    List.iter2 (!unify' env) tl1 tl2;
-                    !unify' env ty ty2;
-                    true
-                | _ -> ok)
-              false compat in
-          if not ok then raise (Unify[])
-      | Reither (false, _, false, e) ->
-          let tyl =
-            List.fold_left
-              (fun tyl -> function
-                  Cfield(l', Some ty2) when l = l' ->
-                    let (tl2, ty2) = instance_parameterized_type tl2 ty2 in
-                    List.iter2 (!unify' env) tl1 tl2;
-                    ty2 :: tyl
-                | _ -> tyl)
-              [] compat
-          in
-          if tyl = [] then raise (Unify[]) else begin
-            assert (!e = None);
-            set_row_field e (Reither (false, tyl, false, ref None))
-          end
-      | Reither _ | Rabsent -> ())
-    fl
+let check_compat_field env unif l f compat inst =
+  if List.mem (Cnofield l) compat then () else
+  match row_field_repr f with
+  | Rpresent None | Reither(true,[],_,_) ->
+      if List.mem (Cfield(l,None)) compat then () else raise (Unify[])
+  | Rpresent (Some ty1) | Reither(false, [ty1], true, _) ->
+      let ok =
+        List.fold_left
+          (fun ok -> function
+              Cfield(l', Some ty2) when l = l' ->
+                let ty2 = inst ty2 in
+                if unif then (!unify' env ty1 ty2; true)
+                else (ok || !equal' env false [ty1] [ty2])
+            | _ -> ok)
+          false compat in
+      if not ok then raise (Unify[])
+  | Reither (false, tl, false, e) ->
+      let tyl =
+        List.fold_left
+          (fun tyl -> function
+              Cfield(l', Some ty2) when l = l' ->
+                let ty2 = inst ty2 in
+                if unif || tyl = [] &&
+                List.exists (fun ty1 -> !equal' env false [ty1] [ty2]) tl
+                then ty2 :: tyl else tyl
+            | _ -> tyl)
+          [] compat
+      in
+      if tyl = [] then raise (Unify[]) else
+      if unif then begin
+        assert (!e = None);
+        set_row_field e (Reither (false, tyl, false, ref None))
+      end
+  | Reither _ | Rabsent -> ()
 
-let check_compat_type env ty1 ty =
-  let p, tl1, tl2, compat = get_compat env ty in
-  let p', tl1', tl2', compat' = get_compat env ty1 in
+let check_compat_fields env unif fl ty =
+  let compat, inst = get_compat env ty in
+  List.iter (fun (l,f) -> check_compat_field env unif l f compat inst) fl
+
+let check_compat_type env unif ty1 nt ty compat inst =
+  let compat', inst' = get_compat env ty1 in
   let notype ty1 = function
       Cnotype ty2 -> same_path ty1 ty2
     | _ -> false
   in
   if List.exists (notype ty1) compat then () else
   if List.exists (notype ty) compat' then () else
-  let unify_all tl1 tl2 ty1 l ok =
+  if nt then raise (Unify []) else
+  let unify_all inst ty1 l ok =
     List.fold_left
       (fun ok -> function
           Ctype ty2 when same_path ty1 ty2 ->
-            let (tl2, ty2) = instance_parameterized_type tl2 ty2 in
-            List.iter2 (!unify' env) tl1 tl2;
-            !unify' env ty1 ty2;
-            true
+            let ty2 = inst ty2 in
+            if unif then (!unify' env ty1 ty2; true)
+            else (ok || !equal' env false [ty1] [ty2])
         | _ -> ok)
       ok l
   in
-  let ok = unify_all tl1 tl2 ty1 compat false in
-  let ok = unify_all tl1' tl2' ty compat' ok in
+  let ok = unify_all inst ty1 compat false in
+  let ok = unify_all inst' ty compat' ok in
   if not ok then raise (Unify [])
 
+let check_compat env unif cl ty =
+  if cl <> [] then try
+    let compat, inst = get_compat env ty in
+    List.iter
+      (function
+          Cfield (l,f) ->
+            check_compat_field env unif l (Rpresent f) compat inst
+        | Cnofield l ->
+            if List.mem (Cnofield l) compat then () else raise (Unify[])
+        | Ctype ty1 ->
+            check_compat_type env unif ty1 false ty compat inst
+        | Cnotype ty1 ->
+            check_compat_type env unif ty1 true ty compat inst)
+      cl
+  with Cannot_apply -> assert false
 
+let check_compat_define env conds ty =
+  let conds = normalize_compat env conds in
+  let ty = expand_head env ty in
+  try match ty.desc with
+    Tconstr _ ->
+      check_compat env false conds ty; true
+  | Tvariant row ->
+      let row = row_normal env row in
+      begin match row_more row with
+        {desc=Tconstr _} as ty ->
+          check_compat env false conds ty
+      | _ ->
+          List.iter (check_compat env false conds) row.row_abs;
+          let fields = filter_row_fields false row.row_fields in
+          let cfields =
+            List.map
+              (fun (l, f) ->
+                let f = match row_field_repr f with
+                  Rpresent f -> f
+                | _ -> raise (Unify[])
+                in Cfield (l,f))
+              fields
+          and nfields = List.map (fun (l,_) -> Cnofield l) fields in
+          List.iter
+            (function
+                Cfield(l,f) ->
+                  List.iter
+                    (fun (l',f') ->
+                      if l <> l' then () else
+                      match f, row_field_repr f' with
+                        None, Rpresent None -> ()
+                      | Some ty1, Rpresent (Some ty2)
+                        when !equal' env false [ty1] [ty2] -> ()
+                      | _ -> raise (Unify[]))
+                    fields
+              | Cnofield l ->
+                  if List.mem_assoc l fields then raise (Unify[])
+              | Ctype ty1 ->
+                  check_compat env false cfields ty1
+              | Cnotype ty1 ->
+                  check_compat env false nfields ty1)
+            conds
+      end;
+      true
+  | _ -> assert false
+  with Unify _ -> false
 
                               (*****************)
                               (*  Occur check  *)
@@ -1919,21 +1982,23 @@ and unify_row env row1 row2 =
         row_field_repr f1 = Rabsent || row_field_repr f2 <> Rabsent)
       pairs
   in
-  let empty fields =
+  let empty fields abs =
+    abs = [] &&
     List.for_all (fun (_,f) -> row_field_repr f = Rabsent) fields in
   (* Check whether we are going to build an empty type *)
-  if closed && (empty r1 || row2.row_closed) && (empty r2 || row1.row_closed)
+  if closed && apairs = []
+  && (empty r1 abs1 || row2.row_closed) && (empty r2 abs2 || row1.row_closed)
   && List.for_all
       (fun (_,f1,f2) ->
         row_field_repr f1 = Rabsent || row_field_repr f2 = Rabsent)
       pairs
   then raise (Unify [mkvariant [] [] true, mkvariant [] [] true]);
   let name =
-    if row1.row_name <> None && (row1.row_closed || empty r2) &&
-      (not row2.row_closed || keep (fun f1 f2 -> f1, f2) && empty r1)
+    if row1.row_name <> None && (row1.row_closed || empty r2 abs2) &&
+      (not row2.row_closed || keep (fun f1 f2 -> f1, f2) && empty r1 abs1)
     then row1.row_name
-    else if row2.row_name <> None && (row2.row_closed || empty r1) &&
-      (not row1.row_closed || keep (fun f1 f2 -> f2, f1) && empty r2)
+    else if row2.row_name <> None && (row2.row_closed || empty r1 abs1) &&
+      (not row1.row_closed || keep (fun f1 f2 -> f2, f1) && empty r2 abs2)
     then row2.row_name
     else None
   in
@@ -1976,9 +2041,10 @@ and unify_row env row1 row2 =
       pairs;
     List.iter (fun (ty1, ty2) -> unify env ty1 ty2) apairs;
     (* Check compatibilities *)
-    List.iter (fun ty1 -> List.iter (check_compat_type env ty1) abs2) abs1;
-    List.iter (check_compat_fields env r1) abs2;
-    List.iter (check_compat_fields env r2) abs1;
+    let cabs1 = List.map (fun x -> Ctype x) abs1 in
+    List.iter (check_compat env true cabs1) abs2;
+    List.iter (check_compat_fields env true r1) abs2;
+    List.iter (check_compat_fields env true r2) abs1;
   with exn ->
     log_type rm1; rm1.desc <- md1; log_type rm2; rm2.desc <- md2; raise exn
   end
@@ -2555,6 +2621,8 @@ let equal env rename tyl1 tyl2 =
     eqtype_list rename (TypePairs.create 11) (ref []) env tyl1 tyl2; true
   with
     Unify _ -> false
+
+let () = equal' := equal
 
 (* Must empty univar_pairs first *)  
 let eqtype rename type_pairs subst env t1 t2 =
@@ -3191,16 +3259,21 @@ and subtype_fields env trace ty1 ty2 cstrs =
     cstrs pairs
 
 and subtype_row env trace row1 row2 cstrs =
-  let row1 = row_repr row1 and row2 = row_repr row2 in
-  let r1, r2, pairs =
-    merge_row_fields row1.row_fields row2.row_fields in
+  let row1 = row_normal env row1 and row2 = row_normal env row2 in
+  let r1, r2, pairs = merge_row_fields row1.row_fields row2.row_fields in
+  let abs1, abs2, apairs = merge_row_abs row1.row_abs row2.row_abs in
   let more1 = repr row1.row_more
   and more2 = repr row2.row_more in
   match more1.desc, more2.desc with
     Tconstr(p1,_,_), Tconstr(p2,_,_) when Path.same p1 p2 ->
       subtype_rec env ((more1,more2)::trace) more1 more2 cstrs
+  | Tconstr _, Tvar when List.exists (same_path more1) row2.row_abs ->
+      let ty2 = List.find (same_path more1) row2.row_abs in
+      subtype_rec env ((more1,ty2)::trace) more1 ty2 cstrs
   | (Tvar|Tconstr _), (Tvar|Tconstr _)
-    when row1.row_closed && r1 = [] ->
+    when row1.row_closed && r1 = [] && abs1 = [] ->
+      let al1, al2 = List.split apairs in
+      let cstrs = subtype_list env trace al1 al2 cstrs in
       List.fold_left
         (fun cstrs (_,f1,f2) ->
           match row_field_repr f1, row_field_repr f2 with
@@ -3214,9 +3287,11 @@ and subtype_row env trace row1 row2 cstrs =
           | _ -> raise Exit)
         cstrs pairs
   | Tunivar, Tunivar
-    when row1.row_closed = row2.row_closed && r1 = [] && r2 = [] ->
-      let cstrs =
-        subtype_rec env ((more1,more2)::trace) more1 more2 cstrs in
+    when row1.row_closed = row2.row_closed
+    && r1 = [] && r2 = [] && abs1 = [] && abs2 = [] ->
+      let cstrs = subtype_rec env ((more1,more2)::trace) more1 more2 cstrs in
+      let al1, al2 = List.split apairs in
+      let cstrs = subtype_list env trace al1 al2 cstrs in
       List.fold_left
         (fun cstrs (_,f1,f2) ->
           match row_field_repr f1, row_field_repr f2 with

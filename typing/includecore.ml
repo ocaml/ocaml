@@ -55,18 +55,24 @@ let type_manifest env ty1 params1 ty2 params2 =
   let ty1' = Ctype.expand_head env ty1 and ty2' = Ctype.expand_head env ty2 in
   match ty1'.desc, ty2'.desc with
     Tvariant row1, Tvariant row2 when is_absrow env (Btype.row_more row2) ->
-      let row1 = Btype.row_repr row1 and row2 = Btype.row_repr row2 in
+      let row1 = Ctype.row_normal env row1
+      and row2 = Btype.row_repr row2 in
       Ctype.equal env true (ty1::params1) (row2.row_more::params2) &&
       (match row1.row_more with	{desc=Tvar|Tconstr _} -> true | _ -> false) &&
+      let row2 =
+        Ctype.row_normal env {row2 with row_more = Btype.newgenvar()} in
       let r1, r2, pairs =
-	Ctype.merge_row_fields row1.row_fields row2.row_fields in
+	Ctype.merge_row_fields row1.row_fields row2.row_fields
+      and abs1, abs2, apairs =
+        Ctype.merge_row_abs row1.row_abs row2.row_abs in
       (not row2.row_closed ||
-       row1.row_closed && Ctype.filter_row_fields false r1 = []) &&
+       row1.row_closed && Ctype.filter_row_fields false r1 = [] && abs1=[]) &&
+      abs2 = [] &&
       List.for_all
 	(fun (_,f) -> match Btype.row_field_repr f with
 	  Rabsent | Reither _ -> true | Rpresent _ -> false)
 	r2 &&
-      let to_equal = ref (List.combine params1 params2) in
+      let to_equal = ref (apairs @ List.combine params1 params2) in
       List.for_all
 	(fun (_, f1, f2) ->
 	  match Btype.row_field_repr f1, Btype.row_field_repr f2 with
@@ -80,7 +86,7 @@ let type_manifest env ty1 params1 ty2 params2 =
 	  | Rabsent, (Reither _ | Rabsent) -> true
 	  | _ -> false)
 	pairs &&
-      let tl1, tl2 = List.split !to_equal in
+      let tl1, tl2 = List.split (List.rev !to_equal) in
       Ctype.equal env true tl1 tl2
   | Tobject (fi1, _), Tobject (fi2, _)
     when is_absrow env (snd(Ctype.flatten_fields fi2)) ->
@@ -122,6 +128,11 @@ let type_declarations env id decl1 decl2 =
             Ctype.equal env true (ty1::decl1.type_params)
                                  (ty2::decl2.type_params))
           labels1 labels2
+    | ((Type_abstract | Type_private _), Type_private cp2) ->
+        (* let cp1 = match k1 with Type_private c -> c | _ -> [] in *)
+        let ty1 = 
+          Btype.newgenty (Tconstr(Pident id, decl2.type_params, ref Mnil)) in
+        Ctype.check_compat_define env cp2 ty1
     | (_, _) -> false
   end &&
   begin match (decl1.type_manifest, decl2.type_manifest) with
@@ -138,7 +149,7 @@ let type_declarations env id decl1 decl2 =
   end &&
   if match decl2.type_kind with
   | Type_record(_,_,priv) | Type_variant(_,priv) -> priv = Private
-  | Type_abstract ->
+  | Type_abstract | Type_private _ ->
       match decl2.type_manifest with None -> true
       | Some ty -> Btype.has_constr_row (Ctype.expand_head env ty)
   then

@@ -108,6 +108,11 @@ module StringSet =
     let compare = compare
   end)
 
+let is_private sdecl =
+  match sdecl.ptype_kind with
+    Ptype_private _ -> sdecl.ptype_manifest <> None
+  | _ -> false
+
 let transl_declaration env (name, sdecl) id =
   (* Bind type parameters *)
   reset_type_variables();
@@ -128,7 +133,7 @@ let transl_declaration env (name, sdecl) id =
       type_arity = List.length params;
       type_kind =
         begin match sdecl.ptype_kind with
-          Ptype_abstract | Ptype_private ->
+          Ptype_abstract ->
             Type_abstract
         | Ptype_variant (cstrs, priv) ->
             let all_constrs = ref StringSet.empty in
@@ -164,13 +169,31 @@ let transl_declaration env (name, sdecl) id =
               then Record_float
               else Record_regular in
             Type_record(lbls', rep, priv)
+        | Ptype_private cl ->
+            if sdecl.ptype_manifest <> None then Type_abstract else
+            let transl_compat = function
+                Pcfield (l, ot) ->
+                  Cfield (l, may_map (transl_simple_type env true) ot)
+              | Pcnofield l -> Cnofield l
+              | Pctype t -> Ctype (transl_simple_type env true t)
+              | Pcnotype (lid, loc) ->
+                  let (path, decl) =
+                    try Env.lookup_type lid env
+                    with Not_found ->
+                      raise(Typetexp.Error(
+                            loc, Typetexp.Unbound_type_constructor lid))
+                  in
+                  Cnotype (Ctype.newconstr path
+                             (Ctype.instance_list decl.type_params))
+            in
+            Type_private (List.map transl_compat cl)
         end;
       type_manifest =
         begin match sdecl.ptype_manifest with
           None -> None
         | Some sty ->
             let ty =
-              transl_simple_type env (sdecl.ptype_kind <> Ptype_private) sty in
+              transl_simple_type env (not (is_private sdecl)) sty in
             if Ctype.cyclic_abbrev env id ty then
               raise(Error(sdecl.ptype_loc, Recursive_abbrev name));
             Some ty
@@ -185,7 +208,7 @@ let transl_declaration env (name, sdecl) id =
         raise(Error(loc, Unconsistent_constraint tr)))
     cstrs;
   Ctype.end_def ();
-  if sdecl.ptype_kind = Ptype_private then begin
+  if is_private sdecl then begin
     let (p, _) =
       try Env.lookup_type (Longident.Lident(Ident.name id ^ "#row")) env
       with Not_found -> assert false in
@@ -204,6 +227,8 @@ let generalize_decl decl =
       List.iter (fun (_, tyl) -> List.iter Ctype.generalize tyl) v
   | Type_record(r, rep, priv) ->
       List.iter (fun (_, _, ty) -> Ctype.generalize ty) r
+  | Type_private l ->
+      List.iter (Btype.iter_compat Ctype.generalize) l
   end;
   begin match decl.type_manifest with
   | None    -> ()
@@ -248,7 +273,7 @@ let check_constraints env (_, sdecl) (_, decl) =
   | Type_variant (l, _) ->
       let rec find_pl = function
           Ptype_variant(pl, _) -> pl
-        | Ptype_record _ | Ptype_abstract | Ptype_private -> assert false
+        | Ptype_record _ | Ptype_abstract | Ptype_private _ -> assert false
       in
       let pl = find_pl sdecl.ptype_kind in
       List.iter
@@ -264,7 +289,7 @@ let check_constraints env (_, sdecl) (_, decl) =
   | Type_record (l, _, _) ->
       let rec find_pl = function
           Ptype_record(pl, _) -> pl
-        | Ptype_variant _ | Ptype_abstract | Ptype_private -> assert false
+        | Ptype_variant _ | Ptype_abstract | Ptype_private _ -> assert false
       in
       let pl = find_pl sdecl.ptype_kind in
       let rec get_loc name = function
@@ -276,6 +301,10 @@ let check_constraints env (_, sdecl) (_, decl) =
         (fun (name, _, ty) ->
           check_constraints_rec env (get_loc name pl) visited ty)
         l
+  | Type_private tl ->
+      List.iter
+        (Btype.iter_compat (check_constraints_rec env sdecl.ptype_loc visited))
+        tl
   end;
   begin match decl.type_manifest with
   | None -> ()
@@ -459,16 +488,21 @@ let whole_type decl =
   | Type_record (ftl, _, _) ->
       Btype.newgenty
         (Ttuple (List.map (fun (_, _, ty) -> ty) ftl))
-  | Type_abstract ->
+  | Type_abstract | Type_private _ ->
       match decl.type_manifest with
         Some ty -> ty
       | _ -> Btype.newgenty (Ttuple [])
 
 let compute_variance_decl env check decl (required, loc) =
-  if decl.type_kind = Type_abstract && decl.type_manifest = None then
-    List.map (fun (c, n) -> if c || n then (c, n, n) else (true, true, true))
-      required
-  else
+  let explicit, abstract =
+    match decl.type_kind, decl.type_manifest with
+      (Type_abstract | Type_private _), None ->
+        List.map
+          (fun (c, n) -> if c || n then (c, n, n) else (true, true, true))
+          required,
+        true
+    | _ -> [], false in
+  if abstract then explicit else
   let params = List.map Btype.repr decl.type_params in
   let tvl0 = List.map make_variance params in
   let fvl = if check then Ctype.free_variables (whole_type decl) else [] in
@@ -493,10 +527,11 @@ let compute_variance_decl env check decl (required, loc) =
           let cn = (mut = Mutable) in
           compute_variance env tvl true cn cn ty)
         ftl
+  | Type_private _ -> assert false
   end;
   let priv =
     match decl.type_kind with
-      Type_abstract ->
+      Type_abstract | Type_private _ ->
         begin match decl.type_manifest with
           Some ty when not (Btype.has_constr_row ty) -> Public
         | _ -> Private
@@ -589,13 +624,11 @@ let compute_variance_decls env cldecls =
 let transl_type_decl env name_sdecl_list =
   (* Add dummy types for fixed rows *)
   let fixed_types =
-    List.filter (fun (_,sd) -> sd.ptype_kind = Ptype_private) name_sdecl_list
+    List.filter (fun (_,sd) -> is_private sd) name_sdecl_list
   in
   let name_sdecl_list =
     List.map
-      (fun (name,sdecl) ->
-        name^"#row",
-        {sdecl with ptype_kind = Ptype_abstract; ptype_manifest = None})
+      (fun (name,sdecl) -> name^"#row", {sdecl with ptype_manifest = None})
       fixed_types
     @ name_sdecl_list
   in
@@ -712,7 +745,6 @@ let transl_with_constraint env row_path sdecl =
        with Ctype.Unify tr ->
          raise(Error(loc, Unconsistent_constraint tr)))
     sdecl.ptype_cstrs;
-  let no_row = sdecl.ptype_kind <> Ptype_private in
   let decl =
     { type_params = params;
       type_arity = List.length params;
@@ -721,7 +753,7 @@ let transl_with_constraint env row_path sdecl =
         begin match sdecl.ptype_manifest with
           None -> None
         | Some sty ->
-            Some(transl_simple_type env no_row sty)
+            Some(transl_simple_type env (not (is_private sdecl)) sty)
         end;
       type_variance = [];
     }

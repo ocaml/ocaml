@@ -1362,7 +1362,7 @@ row_compat:
   | /* empty */                                 { [] }
 ;
 row_compat_list:
-    /* empty */                                 { [] }
+  | compat_field                                { [$1] }
   | row_compat_list SEMI compat_field           { $3 :: $1 }
 ;
 compat_field:
@@ -1370,7 +1370,7 @@ compat_field:
   | name_tag                                    { Pcfield ($1, None) }
   | TILDE name_tag                              { Pcnofield $2 }
   | simple_core_type2                           { Pctype $1 }
-  | TILDE type_longident                        { Pcnotype $2 }
+  | TILDE type_longident                        { Pcnotype ($2, symbol_rloc())}
 ;
 simple_core_type_or_tuple:
     simple_core_type                            { $1 }

@@ -169,7 +169,8 @@ let finalize_variant pat =
       end;
       (* Force check of well-formedness *)
       unify_pat pat.pat_env pat
-        (newty(Tvariant{row_fields=[]; row_more=newvar(); row_closed=false;
+        (newty(Tvariant{row_fields=[]; row_more=newvar();
+                        row_closed=false; row_abs=[];
                         row_bound=[]; row_fixed=false; row_name=None}));
   | _ -> ()
 
@@ -250,7 +251,7 @@ let rec build_as_type env p =
   | Tpat_variant(l, p', _) ->
       let ty = may_map (build_as_type env) p' in
       newty (Tvariant{row_fields=[l, Rpresent ty]; row_more=newvar();
-                      row_bound=[]; row_name=None;
+                      row_abs=[]; row_bound=[]; row_name=None;
                       row_fixed=false; row_closed=false})
   | Tpat_record lpl ->
       let lbl = fst(List.hd lpl) in
@@ -317,7 +318,8 @@ let build_or_pat env loc lid =
         | _ -> pats, fields)
       ([],[]) fields in
   let row =
-    { row_fields = List.rev fields; row_more = newvar(); row_bound = !bound;
+    { row_fields = List.rev fields; row_more = newvar();
+      row_abs = []; row_bound = !bound;
       row_closed = false; row_fixed = false; row_name = Some (path, tyl) }
   in
   let ty = newty (Tvariant row) in
@@ -424,6 +426,7 @@ let rec type_pat env sp =
       let arg_type = match arg with None -> [] | Some arg -> [arg.pat_type]  in
       let row = { row_fields =
                     [l, Reither(arg = None, arg_type, true, ref None)];
+                  row_abs = [];
                   row_bound = arg_type;
                   row_closed = false;
                   row_more = newvar ();
@@ -988,6 +991,7 @@ let rec type_exp env sexp =
         exp_loc = sexp.pexp_loc;
         exp_type= newty (Tvariant{row_fields = [l, Rpresent arg_type];
                                   row_more = newvar ();
+                                  row_abs = [];
                                   row_bound = [];
                                   row_closed = false;
                                   row_fixed = false;

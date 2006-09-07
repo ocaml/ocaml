@@ -337,7 +337,7 @@ and row_compat i ppf x =
   | Pctype t ->
       line i ppf "Pctype\n";
       core_type (i+1) ppf t;
-  | Pcnotype li ->
+  | Pcnotype (li, _) ->
       line i ppf "Pcnotype %a\n" fmt_longident li;
 
 and exception_declaration i ppf x = list i core_type ppf x

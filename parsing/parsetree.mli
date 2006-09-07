@@ -139,7 +139,7 @@ and row_compat =
     Pcfield of label * core_type option
   | Pcnofield of label
   | Pctype of core_type
-  | Pcnotype of Longident.t
+  | Pcnotype of Longident.t * Location.t
 
 and exception_declaration = core_type list
 

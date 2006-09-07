@@ -361,7 +361,8 @@ let rec tree_of_typexp sch ty =
             let fields = List.map (tree_of_row_field sch) fields in
             let tags =
               if all_present then None else Some (List.map fst present) in
-            Otyp_variant (non_gen, Ovar_fields fields, row.row_closed, tags)
+            let desc = Ovar_fields (fields, tree_of_typlist sch row.row_abs) in
+            Otyp_variant (non_gen, desc, row.row_closed, tags)
         end
     | Tobject (fi, nm) ->
         tree_of_typobject sch fi nm
@@ -589,7 +590,7 @@ let rec tree_of_type_decl id decl =
         priv, []
     | Type_private l ->
         begin match ty_manifest with
-          None -> assert false
+          None -> Otyp_abstract, Private, []
         | Some ty ->
             tree_of_typexp false ty, Private, List.map tree_of_compat l
         end
@@ -815,7 +816,10 @@ and tree_of_signature = function
   | [] -> []
   | Tsig_value(id, decl) :: rem ->
       tree_of_value_description id decl :: tree_of_signature rem
-  | Tsig_type(id, _, _) :: rem when is_row_name (Ident.name id) ->
+  | Tsig_type(id, decl, _) :: Tsig_type(id', decl', rs) :: rem
+    when is_row_name (Ident.name id) ->
+      let decl = {decl' with type_kind = decl.type_kind} in
+      Osig_type(tree_of_type_decl id' decl, tree_of_rec rs) ::
       tree_of_signature rem
   | Tsig_type(id, decl, rs) :: rem ->
       Osig_type(tree_of_type_decl id decl, tree_of_rec rs) ::
