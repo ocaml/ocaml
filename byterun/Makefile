@@ -13,7 +13,7 @@
 
 # $Id$
 
-include ../config/Makefile
+#include ../config/Makefile
 
 CC=$(BYTECC)
 CFLAGS=-DCAML_NAME_SPACE -O $(BYTECCCOMPOPTS)
