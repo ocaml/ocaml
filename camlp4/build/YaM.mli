@@ -302,3 +302,5 @@ val best: (string * string) list -> string
 val getenv: string -> string -> string
 
 val which : string -> string
+
+val is_file_empty : string -> bool

@@ -880,3 +880,9 @@ let scall cmd =
   let str = input_line cin in str
 
 let which x = scall ("which"^^x)
+
+let is_file_empty f =
+  let i = open_in f in
+  let res = in_channel_length i < 1 in
+  close_in i; res
+
