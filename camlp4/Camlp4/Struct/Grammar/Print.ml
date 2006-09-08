@@ -136,16 +136,18 @@ module MakeDump (Structure : Structure.S) = struct
   open Format;
   open Sig.Grammar.Structure;
 
+  type brothers = [ Bro of symbol and list brothers ];
+
   value rec print_tree ppf tree =
     let rec get_brothers acc =
       fun
       [ DeadEnd -> List.rev acc
       | LocAct _ _ -> List.rev acc
-      | Node {node = n; brother = b; son = s} -> get_brothers [(n, get_brothers [] s) :: acc] b ]
+      | Node {node = n; brother = b; son = s} -> get_brothers [Bro n (get_brothers [] s) :: acc] b ]
     and print_brothers ppf brothers =
       if brothers = [] then fprintf ppf "@ []"
       else
-        List.iter (fun (n, xs) -> do {
+        List.iter (fun [ Bro n xs -> do {
           fprintf ppf "@ @[<hv2>- %a" print_symbol n;
           match xs with
           [ [] -> ()
@@ -153,12 +155,12 @@ module MakeDump (Structure : Structure.S) = struct
                    with [ Exit -> fprintf ppf ":%a" print_brothers xs ]
           | _ -> fprintf ppf ":%a" print_brothers xs ];
           fprintf ppf "@]";
-        }) brothers
+        }]) brothers
     and print_children ppf = List.iter (fprintf ppf ";@ %a" print_symbol)
     and get_children acc =
       fun
       [ [] -> List.rev acc
-      | [(n, x)] -> get_children [n::acc] x
+      | [Bro n x] -> get_children [n::acc] x
       | _ -> raise Exit ]
     in print_brothers ppf (get_brothers [] tree)
   and print_symbol ppf =
