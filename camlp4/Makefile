@@ -7,7 +7,7 @@ YAM_OPTIONS=-verbosity '$(VERBOSE)'
 
 default: all
 
-opt install doc all: yam
+opt install doc all pack just_doc: yam
 	@echo 'YAM $@ (use "make $@ VERBOSE=1" for a verbose make)'
 	@$(YAM) $(YAM_OPTIONS) $@
 
