@@ -26,7 +26,6 @@ type t =                             (* A is all *)
   | Statement_type                   (* S *)
   | Unused_match                     (* U *)
   | Unused_pat
-  | Match_epsilon of string
   | Hide_instance_variable of string (* V *)
   | Illegal_backslash                (* X *)
   | Implicit_public_methods of string list
@@ -54,7 +53,6 @@ let letter = function        (* 'a' is all *)
   | Partial_match _ ->          'p'
   | Statement_type ->           's'
   | Unused_match
-  | Match_epsilon _
   | Unused_pat ->               'u'
   | Hide_instance_variable _ -> 'v'
   | Illegal_backslash
@@ -115,7 +113,6 @@ let message = function
        Here is an example of a value that is not matched:\n" ^ s
   | Unused_match -> "this match case is unused."
   | Unused_pat   -> "this pattern is unused."
-  | Match_epsilon s -> "the variable " ^ s ^ " can only match the empty sequence."
   | Fragile_pat "" ->
       "this pattern is fragile. It would hide\n\
        the addition of new constructors to the data types it matches."

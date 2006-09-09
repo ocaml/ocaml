@@ -26,7 +26,6 @@ type t =                             (* A is all *)
   | Statement_type                   (* S *)
   | Unused_match                     (* U *)
   | Unused_pat
-  | Match_epsilon of string
   | Hide_instance_variable of string (* V *)
   | Illegal_backslash                (* X *)
   | Implicit_public_methods of string list

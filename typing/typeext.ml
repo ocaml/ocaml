@@ -768,10 +768,15 @@ let ext_branch env loc t p a =
 	  Location.prerr_warning loc Warnings.Unused_match;
 	let res = P.filter ta p  in
 
-	Cduce_types.Ident.IdMap.iteri
+	(* HACK to avoid changing the interface of the Warnings module. *)
+	if (Warnings.is_active Warnings.Unused_match) 
+	then Cduce_types.Ident.IdMap.iteri
 	  (fun x t -> 
 	     if (CT.subtype (CT.descr t) SEQ.nil_type) then
-	       Location.prerr_warning loc (Warnings.Match_epsilon (id x)))
+	       Format.eprintf 
+		 "%aWarning U: the variable %s can only match the empty sequence@." 
+		 Location.print loc (id x);
+	  )
 	  res;
 	
 	res
