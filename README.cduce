@@ -108,3 +108,5 @@ CHANGE LOG:
 
 Since then
 - support line number directives within {{ ... }}
+- support non-ascii X-capture variable names
+- warning for variables that always bind to {{ [] }}

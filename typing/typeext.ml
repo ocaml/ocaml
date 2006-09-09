@@ -755,8 +755,9 @@ let add_values =
 let ext_branch env loc t p a =
   let module P = Cduce_types.Patterns in
   let fv = P.fv p in
+  let id x = U.to_string (snd x) in
   let ids = 
-    List.map (fun x -> x, Ident.create (Cduce_types.Ident.to_string x)) fv in
+    List.map (fun x -> x, Ident.create (id x)) fv in
   let vars = 
     if !extmode then List.map (fun (_,x) -> x, anyext_var) ids
     else
@@ -765,7 +766,16 @@ let ext_branch env loc t p a =
 	let ta = CT.cap t ta in
 	if (CT.is_empty ta) && (loc != Location.none) then
 	  Location.prerr_warning loc Warnings.Unused_match;
-	P.filter ta p 
+	let res = P.filter ta p  in
+
+	Cduce_types.Ident.IdMap.iteri
+	  (fun x t -> 
+	     if (CT.subtype (CT.descr t) SEQ.nil_type) then
+	       Location.prerr_warning loc (Warnings.Match_epsilon (id x)))
+	  res;
+	
+	res
+
       ) in
       to_eval := (fun () -> ignore (lazy_force loc z)) :: !to_eval; 
       (* to get a warning for unused
