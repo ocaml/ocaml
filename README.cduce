@@ -55,6 +55,11 @@ DOCUMENTATION:
 
 http://www.cduce.org/ocaml
 
+You can also build a documentation for the API of the Ocamlduce module:
+
+make htdoc
+
+
 
 CHANGE LOG:
 
@@ -80,13 +85,14 @@ CHANGE LOG:
 - synchronize with OCaml 3.09.1 (CVS version)
 - drop the stand-alone installation mode
 
-
 3.09.1
 - synchronize with OCaml 3.09.1 (released version)
 - better error messages
 
 3.09.1pl1
 - internal simplifications, minimize diff with OCaml
+- install tools in the BINDIR directory
+- build the ocamldoc for the Ocamlduce module (make htdoc)
 
 3.09.2
 - synchronize with OCaml 3.09.2 (released version)
