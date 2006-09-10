@@ -50,6 +50,8 @@ let rec apply_coercion restr arg =
             (Lapply(Lvar id, [apply_coercion cc_arg (Lvar param)]))))
   | Tcoerce_primitive p ->
       transl_primitive p
+  | Tcoerce_matcher row ->
+      transl_matcher row
 
 and apply_coercion_field id (pos, cc) =
   apply_coercion cc (Lprim(Pfield pos, [Lvar id]))
@@ -66,8 +68,8 @@ let rec compose_coercions c1 c2 =
       let v2 = Array.of_list pc2 in
       Tcoerce_structure
         (List.map
-          (function (p1, Tcoerce_primitive p) ->
-                      (p1, Tcoerce_primitive p)
+          (function (p1, (Tcoerce_primitive _ | Tcoerce_matcher _ as c1)) ->
+                      (p1, c1)
                   | (p1, c1) ->
                       let (p2, c2) = v2.(p1) in (p2, compose_coercions c1 c2))
              pc1)
@@ -275,6 +277,7 @@ and transl_structure fields cc rootpath = function
                   (fun (pos, cc) ->
                     match cc with
                       Tcoerce_primitive p -> transl_primitive p
+                    | Tcoerce_matcher row -> transl_matcher row
                     | _ -> apply_coercion cc (Lvar v.(pos)))
                   pos_cc_list)
       | _ ->

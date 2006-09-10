@@ -265,6 +265,12 @@ let check_sig_item type_names module_names modtype_names loc = function
       check "module type" loc modtype_names (Ident.name id)
   | _ -> ()
 
+let make_check_fun_desc id decl =
+  let m = Btype.newgenty in
+  let td = Tconstr(Pident id, decl.type_params, ref Mnil) in
+  let ty = m(Tarrow("", m td, Predef.type_bool, Cok)) in
+  {val_type=ty; val_kind=Val_reg}
+
 (* Check and translate a module type expression *)
 
 let rec transl_modtype env smty =
@@ -313,8 +319,18 @@ and transl_signature env sg =
               (fun (name, decl) -> check "type" item.psig_loc type_names name)
               sdecls;
             let (decls, newenv) = Typedecl.transl_type_decl env sdecls in
+            let sig_check =
+              List.fold_right
+                (fun (id,decl) sigs ->
+                  if Btype.is_row_name (Ident.name id) then
+                    let vd = make_check_fun_desc id decl in
+                    Tsig_value(Ident.create(Ident.name id), vd) :: sigs
+                  else sigs)
+                decls []
+            in
             let rem = transl_sig newenv srem in
-            map_rec' (fun rs (id, info) -> Tsig_type(id, info, rs)) decls rem
+            map_rec' (fun rs (id, info) -> Tsig_type(id, info, rs)) decls
+              (sig_check @ rem)
         | Psig_exception(name, sarg) ->
             let arg = Typedecl.transl_exception env sarg in
             let (id, newenv) = Env.enter_exception name arg env in
@@ -594,9 +610,26 @@ and type_structure anchor env sstr =
         let (decls, newenv) = Typedecl.transl_type_decl env sdecls in
         let newenv' = 
           enrich_type_decls anchor decls env newenv in
-        let (str_rem, sig_rem, final_env) = type_struct newenv' srem in
-        (Tstr_type decls :: str_rem,
-         map_rec' (fun rs (id, info) -> Tsig_type(id, info, rs)) decls sig_rem,
+        let (str_check, sig_check, newenv'') =
+          List.fold_right
+            (fun (id,decl) (strs, sigs, env as accu) ->
+              if Btype.is_row_name (Ident.name id) then
+                let vd = make_check_fun_desc id decl in
+                let id = Ident.create(Ident.name id) in
+                let p = {pat_desc=Tpat_var id; pat_env=env; pat_loc=loc;
+                         pat_type=vd.val_type} in
+                let e = {exp_desc=Texp_function([],Partial); exp_env=env;
+                         exp_loc=loc; exp_type=vd.val_type} in
+                Tstr_value(Nonrecursive, [p,e]) :: strs,
+                Tsig_value(id, vd) :: sigs,
+                Env.add_value id vd env
+              else accu)
+            decls ([], [], newenv')
+        in
+        let (str_rem, sig_rem, final_env) = type_struct newenv'' srem in
+        (Tstr_type decls :: str_check @ str_rem,
+         map_rec' (fun rs (id, info) -> Tsig_type(id, info, rs)) decls
+           (sig_check @ sig_rem),
          final_env)
     | {pstr_desc = Pstr_exception(name, sarg)} :: srem ->
         let arg = Typedecl.transl_exception env sarg in

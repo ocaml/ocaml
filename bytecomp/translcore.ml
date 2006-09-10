@@ -336,6 +336,33 @@ let transl_primitive p =
   let params = make_params p.prim_arity in
   Lfunction(Curried, params, Lprim(prim, List.map (fun id -> Lvar id) params))
 
+
+(* Generate a matcher for a given row type *)
+
+let transl_matcher row =
+  let row = {row with row_closed = false} in
+  let ty = Btype.newgenty (Tvariant row) in
+  let mkpat d =
+    {pat_desc=d; pat_type=ty; pat_loc=Location.none; pat_env=Env.empty} in
+  let fail = (mkpat Tpat_any, Lconst(Const_base(Const_int 0))) in
+  let tt = Lconst(Const_base(Const_int 1)) in
+  let cases =
+    List.fold_left
+      (fun cases (l,f) ->
+        match Btype.row_field_repr f with
+          Rpresent None ->
+            (mkpat(Tpat_variant(l, None, row)), tt) :: cases
+        | Rpresent (Some _) ->
+            (mkpat(Tpat_variant(l, Some(mkpat Tpat_any), row)), tt)::cases
+        | Rabsent -> cases
+        | _ -> assert false)
+      [fail] row.row_fields in
+  let param = Ident.create "param" in
+  Lfunction(Curried, [param],
+            Matching.for_function Location.none None
+              (Lvar param) cases Total)
+
+
 (* To check the well-formedness of r.h.s. of "let rec" definitions *)
 
 let check_recursive_lambda idlist lam =

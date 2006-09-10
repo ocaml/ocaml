@@ -121,6 +121,8 @@ let rec typexp s ty =
               in
               (* Register new type first for recursion *)
               more.desc <- Tsubst(newgenty(Ttuple[more';ty']));
+              (* Revert abs to normal names *)
+              let row = cleanup_row_abs row in
               (* Return a new copy *)
               let row =
                 copy_row (typexp s) true row (not dup) more' in

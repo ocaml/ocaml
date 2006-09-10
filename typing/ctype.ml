@@ -3506,7 +3506,7 @@ let rec nondep_type_rec env id ty =
                           if Path.isfree id p then None
                           else Some (p, List.map (nondep_type_rec env id) tl)))
       | Tvariant row ->
-          let row = row_repr row in
+          let row = row_normal env (cleanup_row_abs row) in
           let more = repr row.row_more in
           (* We must substitute in a subtle way *)
           (* Tsubst denotes the variant itself, as the row var is unchanged *)

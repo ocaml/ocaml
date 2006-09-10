@@ -287,7 +287,7 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
                   Oval_stuff "<unknown constructor>"
               end
           | Tvariant row ->
-              let row = Btype.row_repr row in
+              let row = Ctype.row_normal env row in
               if O.is_block obj then
                 let tag : int = O.obj (O.field obj 0) in
                 let rec find = function

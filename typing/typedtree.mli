@@ -36,6 +36,7 @@ and pattern_desc =
   | Tpat_record of (label_description * pattern) list
   | Tpat_array of pattern list
   | Tpat_or of pattern * pattern * Path.t option
+  | Tpat_check of Path.t * row_desc
 
 type partial = Partial | Total
 type optional = Required | Optional
@@ -152,6 +153,7 @@ and module_coercion =
   | Tcoerce_structure of (int * module_coercion) list
   | Tcoerce_functor of module_coercion * module_coercion
   | Tcoerce_primitive of Primitive.description
+  | Tcoerce_matcher of row_desc
 
 (* Auxiliary functions over the a.s.t. *)
 

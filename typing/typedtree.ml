@@ -37,6 +37,7 @@ and pattern_desc =
   | Tpat_record of (label_description * pattern) list
   | Tpat_array of pattern list
   | Tpat_or of pattern * pattern * Path.t option
+  | Tpat_check of Path.t * row_desc
 
 type partial = Partial | Total
 type optional = Required | Optional
@@ -150,6 +151,7 @@ and module_coercion =
   | Tcoerce_structure of (int * module_coercion) list
   | Tcoerce_functor of module_coercion * module_coercion
   | Tcoerce_primitive of Primitive.description
+  | Tcoerce_matcher of row_desc
 
 (* Auxiliary functions over the a.s.t. *)
 
@@ -164,7 +166,8 @@ let iter_pattern_desc f = function
   | Tpat_or(p1, p2, _) -> f p1; f p2
   | Tpat_any
   | Tpat_var _
-  | Tpat_constant _ -> ()
+  | Tpat_constant _
+  | Tpat_check _ -> ()
 
 let map_pattern_desc f d =
   match d with
@@ -185,7 +188,8 @@ let map_pattern_desc f d =
   | Tpat_var _
   | Tpat_constant _
   | Tpat_any
-  | Tpat_variant (_,None,_) -> d
+  | Tpat_variant (_,None,_)
+  | Tpat_check _ -> d
 
 (* List the identifiers bound by a pattern or a let *)
 

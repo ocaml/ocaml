@@ -617,7 +617,7 @@ let rec extract_vars r p = match p.pat_desc with
     List.fold_left extract_vars r pats
 | Tpat_variant (_,Some p, _) -> extract_vars r p
 | Tpat_or (p,_,_) -> extract_vars r p
-| Tpat_constant _|Tpat_any|Tpat_variant (_,None,_) -> r
+| Tpat_constant _|Tpat_any|Tpat_variant (_,None,_) | Tpat_check _ -> r
 
 exception Cannot_flatten
 
@@ -664,7 +664,7 @@ and group_constructor = function
   | _ -> false
 
 and group_variant = function
-  | {pat_desc = Tpat_variant (_, _, _)} -> true
+  | {pat_desc = Tpat_variant _ | Tpat_check _} -> true
   | _ -> false
 
 and group_var = function
@@ -690,7 +690,7 @@ let get_group p = match p.pat_desc with
 | Tpat_tuple _ -> group_tuple
 | Tpat_record _ -> group_record
 | Tpat_array _ -> group_array
-| Tpat_variant (_,_,_) -> group_variant
+| Tpat_variant _ | Tpat_check _ -> group_variant
 |  _ -> fatal_error "Matching.get_group"
 
 

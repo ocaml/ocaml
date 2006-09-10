@@ -162,6 +162,16 @@ let is_row_name s =
   let l = String.length s in
   if l < 4 then false else String.sub s (l-4) 4 = "#row"
 
+let cleanup_row_abs row =
+  let row = row_repr row in
+  { row with row_abs =
+    List.map
+      (fun t -> match repr t with
+        {desc = Tconstr(Path.Pdot(p,n,pos), tl, _)} when is_row_name n ->
+          let n = String.sub n 0 (String.length n - 4) in
+          newgenty (Tconstr(Path.Pdot(p, n, pos), tl, ref Mnil))
+      | t -> t)
+      row.row_abs }
 
                   (**********************************)
                   (*  Utilities for type traversal  *)

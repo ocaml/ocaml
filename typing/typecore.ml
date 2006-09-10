@@ -56,7 +56,7 @@ type error =
   | Abstract_wrong_label of label * type_expr
   | Scoping_let_module of string * type_expr
   | Masked_instance_variable of Longident.t
-  | Not_a_variant_type of Longident.t
+  | Invalid_type of string * Path.t
   | Incoherent_label_order
   | Less_general of string * (type_expr * type_expr) list
 
@@ -285,8 +285,47 @@ let rec build_as_type env p =
           | _ -> ()
       end;
       ty1
+  | Tpat_check (path, _) ->
+      let td = Env.find_type path env in
+      let tl = List.map (fun _ -> newvar()) td.type_params in
+      let ty = newconstr path tl in
+      let row =
+        {row_fields=[]; row_abs=[ty]; row_closed=false; row_fixed=false;
+         row_bound=[]; row_name=None; row_more=newvar()} in
+      unify_pat env p (newty(Tvariant row));
+      newty (Tvariant {row with row_more=newvar()})
   | Tpat_any | Tpat_var _ | Tpat_constant _ | Tpat_array _ -> p.pat_type
 
+let unrow_string s =
+  if is_row_name s then String.sub s 0 (String.length s - 4) else s
+
+let rec lid_of_path = function
+    Path.Pident id ->
+      Longident.Lident (unrow_string (Ident.name id))
+  | Path.Pdot (p1, s, _) ->
+      Longident.Ldot (lid_of_path p1, unrow_string s)
+  | Path.Papply (p1, p2) ->
+      Longident.Lapply (lid_of_path p1, lid_of_path p2)
+
+let build_check_pat env loc row ty =
+  let p =
+    match (repr ty).desc with
+      Tconstr(p,_,_) -> p
+    | _ -> assert false
+  in
+  let p, desc =
+    let lid = lid_of_path p in
+    try Env.lookup_type lid env
+    with Not_found ->
+      raise (Typetexp.Error(loc, Typetexp.Unbound_type_constructor lid))
+  in
+  match desc.type_manifest with
+    Some ty when has_constr_row ty ->
+      {pat_desc=Tpat_check (p, row); pat_loc=loc;
+       pat_env=env; pat_type=newty(Tvariant row)}
+  | _ ->
+      raise (Error(loc, Invalid_type("private", p)))
+    
 let build_or_pat env loc lid =
   let path, decl =
     try Env.lookup_type lid env
@@ -294,12 +333,16 @@ let build_or_pat env loc lid =
       raise(Typetexp.Error(loc, Typetexp.Unbound_type_constructor lid))
   in
   let tyl = List.map (fun _ -> newvar()) decl.type_params in
-  let fields =
+  let fields, abs =
     let ty = expand_head env (newty(Tconstr(path, tyl, ref Mnil))) in
     match ty.desc with
-      Tvariant row when static_row row ->
-        (row_repr row).row_fields
-    | _ -> raise(Error(loc, Not_a_variant_type lid))
+      Tvariant row when has_constr_row ty ->
+        let row = row_normal env row in
+        row.row_fields, [row.row_more]
+    | Tvariant row when static_row row ->
+        let row = row_normal env row in
+        row.row_fields, row.row_abs
+    | _ -> raise(Error(loc, Invalid_type("variant", path)))
   in
   let bound = ref [] in
   let pats, fields =
@@ -319,7 +362,7 @@ let build_or_pat env loc lid =
       ([],[]) fields in
   let row =
     { row_fields = List.rev fields; row_more = newvar();
-      row_abs = []; row_bound = !bound;
+      row_abs = abs; row_bound = !bound;
       row_closed = false; row_fixed = false; row_name = Some (path, tyl) }
   in
   let ty = newty (Tvariant row) in
@@ -329,8 +372,9 @@ let build_or_pat env loc lid =
                             pat_env=env; pat_type=ty})
       pats
   in
-  match pats with
-    [] -> raise(Error(loc, Not_a_variant_type lid))
+  let pat_abs = List.map (build_check_pat env gloc row) abs in
+  match pats @ pat_abs with
+    [] -> raise(Error(loc, Invalid_type("variant", path)))
   | pat :: pats ->
       let r =
         List.fold_left
@@ -2137,8 +2181,8 @@ let report_error ppf = function
   | Private_label (lid, ty) ->
       fprintf ppf "Cannot assign field %a of the private type %a"
         longident lid type_expr ty
-  | Not_a_variant_type lid ->
-      fprintf ppf "The type %a@ is not a variant type" longident lid
+  | Invalid_type (s, p) ->
+      fprintf ppf "The type %a@ is not a %s type" path p s
   | Incoherent_label_order ->
       fprintf ppf "This function is applied to arguments@ ";
       fprintf ppf "in an order different from other calls.@ ";

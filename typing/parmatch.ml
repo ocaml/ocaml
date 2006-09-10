@@ -205,6 +205,8 @@ let rec pretty_val ppf v = match v.pat_desc with
       fprintf ppf "@[(%a@ as %a)@]" pretty_val v Ident.print x
   | Tpat_or (v,w,_)    ->
       fprintf ppf "@[(%a|@,%a)@]" pretty_or v pretty_or w
+  | Tpat_check (p, _) ->
+      fprintf ppf "#%a" Printtyp.path p
 
 and pretty_car ppf v = match v.pat_desc with
 | Tpat_construct ({cstr_tag=tag}, [_ ; _])
@@ -262,6 +264,8 @@ let simple_match p1 p2 =
       c1.cstr_tag = c2.cstr_tag
   | Tpat_variant(l1, _, _), Tpat_variant(l2, _, _) ->
       l1 = l2
+  | Tpat_check(p1,_), Tpat_check(p2,_) ->
+      Path.same p1 p2
   | Tpat_constant(Const_float s1), Tpat_constant(Const_float s2) ->
       float_of_string s1 = float_of_string s2
   | Tpat_constant(c1), Tpat_constant(c2) -> c1 = c2
@@ -359,6 +363,7 @@ let rec normalize_pat q = match q.pat_desc with
       make_pat (Tpat_record (List.map (fun (lbl,_) -> lbl,omega) largs))
         q.pat_type q.pat_env
   | Tpat_or _ -> fatal_error "Parmatch.normalize_pat"
+  | Tpat_check _ -> q
 
 
 (*
@@ -592,12 +597,14 @@ let full_match closing env =  match env with
     false
 | ({pat_desc = Tpat_construct(c,_)},_) :: _ ->
     List.length env = c.cstr_consts + c.cstr_nonconsts
-| ({pat_desc = Tpat_variant(_,_,row)},_) :: _ ->
-    let fields =
-      List.map
-        (function ({pat_desc = Tpat_variant (tag, _, _)}, _) -> tag
+| ({pat_desc = Tpat_variant(_,_,row) | Tpat_check(_,row)},_) :: _ ->
+    let fields, abs =
+      List.fold_left
+        (fun (f,a) -> function
+            ({pat_desc = Tpat_variant (tag, _, _)}, _) -> tag :: f, a
+          | ({pat_desc = Tpat_check (p,_)}, _) -> f, p :: a
           | _ -> assert false)
-        env
+        ([],[]) env
     in
     let row = Btype.row_repr row in
     if closing && not row.row_fixed then
@@ -609,13 +616,15 @@ let full_match closing env =  match env with
           | Reither (_, _, true, _)
               (* m=true, do not discard matched tags, rather warn *)
           | Rpresent _ -> List.mem tag fields)
-        row.row_fields
+        row.row_fields &&
+      List.length abs = List.length row.row_abs
     else
       row.row_closed &&
       List.for_all
         (fun (tag,f) ->
           Btype.row_field_repr f = Rabsent || List.mem tag fields)
-        row.row_fields
+        row.row_fields &&
+      List.length abs = List.length row.row_abs
 | ({pat_desc = Tpat_constant(Const_char _)},_) :: _ ->
     List.length env = 256
 | ({pat_desc = Tpat_constant(_)},_) :: _ -> false
@@ -840,7 +849,8 @@ let build_other env =  match env with
 
 let rec has_instance p = match p.pat_desc with
   | Tpat_variant (l,_,r) when is_absent l r -> false
-  | Tpat_any | Tpat_var _ | Tpat_constant _ | Tpat_variant (_,None,_) -> true
+  | Tpat_any | Tpat_var _ | Tpat_constant _
+  | Tpat_variant (_,None,_) | Tpat_check _ -> true
   | Tpat_alias (p,_) | Tpat_variant (_,Some p,_) -> has_instance p
   | Tpat_or (p1,p2,_) -> has_instance p1 || has_instance p2
   | Tpat_construct (_,ps) | Tpat_tuple ps | Tpat_array ps -> has_instances ps
