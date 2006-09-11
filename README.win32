@@ -77,11 +77,14 @@ environment variable.  E.g. if Tcl/Tk was installed in C:\tcl, add
 
 THIRD-PARTY SOFTWARE:
 
-[1] Visual C++ version 6 or later.  We use Visual C++ 2005 Express Edition,
-    which can be downloaded for free from http://www.microsoft.com/.
+[1] Visual C++ version 6 or later.  We use Visual C++ 2003.
+    The free download Visual C++ 2005 Express Edition works under
+    Windows 2000, but not under Windows XP because of the "manifest"
+    annotations on DLLs, which are not yet supported by OCaml.
+    So, please stick with the 2003 edition for the time being.
 
 [2] Windows header files and development libraries.  We found them in
-    the Microsoft Windows Server 2003 R2 Platform SDK, which can
+    the Microsoft Windows Server 2003 SP1 Platform SDK, which can
     be downloaded for free from http://www.microsoft.com/.
 
 [3] MASM version 6.11 or later. MASM can be
