@@ -285,10 +285,10 @@ let rec build_as_type env p =
           | _ -> ()
       end;
       ty1
-  | Tpat_check (path, _) ->
-      let td = Env.find_type path env in
+  | Tpat_check (p1, _) ->
+      let p2, td = Env.lookup_type (Path.to_lid p1 ~rename:unrow_name) env in
       let tl = List.map (fun _ -> newvar()) td.type_params in
-      let ty = newconstr path tl in
+      let ty = newconstr p2 tl in
       let row =
         {row_fields=[]; row_abs=[ty]; row_closed=false; row_fixed=false;
          row_bound=[]; row_name=None; row_more=newvar()} in
@@ -296,25 +296,14 @@ let rec build_as_type env p =
       newty (Tvariant {row with row_more=newvar()})
   | Tpat_any | Tpat_var _ | Tpat_constant _ | Tpat_array _ -> p.pat_type
 
-let unrow_string s =
-  if is_row_name s then String.sub s 0 (String.length s - 4) else s
-
-let rec lid_of_path = function
-    Path.Pident id ->
-      Longident.Lident (unrow_string (Ident.name id))
-  | Path.Pdot (p1, s, _) ->
-      Longident.Ldot (lid_of_path p1, unrow_string s)
-  | Path.Papply (p1, p2) ->
-      Longident.Lapply (lid_of_path p1, lid_of_path p2)
-
 let build_check_pat env loc row ty =
   let p =
     match (repr ty).desc with
       Tconstr(p,_,_) -> p
     | _ -> assert false
   in
-  let p, desc =
-    let lid = lid_of_path p in
+  let pt, desc =
+    let lid = Path.to_lid ~rename:unrow_name p in
     try Env.lookup_type lid env
     with Not_found ->
       raise (Typetexp.Error(loc, Typetexp.Unbound_type_constructor lid))
@@ -378,7 +367,7 @@ let build_or_pat env loc lid =
   | pat :: pats ->
       let r =
         List.fold_left
-          (fun pat pat0 -> {pat_desc=Tpat_or(pat0,pat,Some path);
+          (fun pat pat0 -> {pat_desc=Tpat_or(pat,pat0,Some path);
                             pat_loc=gloc; pat_env=env; pat_type=ty})
           pat pats in
       rp { r with pat_loc = loc }

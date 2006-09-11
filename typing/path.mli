@@ -27,3 +27,7 @@ val nopos: int
 
 val name: t -> string
 val head: t -> Ident.t
+
+val to_lid: ?rename:(string -> string) -> t -> Longident.t
+    (* Return the long ident corresponding to this path.
+       The renaming function is applied to the last segment of the path. *)

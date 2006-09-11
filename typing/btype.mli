@@ -26,13 +26,6 @@ val newgenty: type_desc -> type_expr
 val newgenvar: unit -> type_expr
         (* Return a fresh generic variable *)
 
-(* Use Tsubst instead
-val newmarkedvar: int -> type_expr
-        (* Return a fresh marked variable *)
-val newmarkedgenvar: unit -> type_expr
-        (* Return a fresh marked generic variable *)
-*)
-
 val repr: type_expr -> type_expr
         (* Return the canonical representative of a type. *)
 
@@ -64,6 +57,7 @@ val proxy: type_expr -> type_expr
 (**** Utilities for private types ****)
 val has_constr_row: type_expr -> bool
 val is_row_name: string -> bool
+val unrow_name: string -> string
 
 (**** Utilities for type traversal ****)
 

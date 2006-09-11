@@ -94,6 +94,9 @@ let rec compat p q =
   | Tpat_array ps, Tpat_array qs ->
       List.length ps = List.length qs &&
       compats ps qs
+  | Tpat_check(p1,_), Tpat_check(p2,_) -> Path.same p1 p2
+  | Tpat_check _, _ -> true
+  | _, Tpat_check _ -> true
   | _,_  ->
       assert false
         
@@ -206,7 +209,8 @@ let rec pretty_val ppf v = match v.pat_desc with
   | Tpat_or (v,w,_)    ->
       fprintf ppf "@[(%a|@,%a)@]" pretty_or v pretty_or w
   | Tpat_check (p, _) ->
-      fprintf ppf "#%a" Printtyp.path p
+      fprintf ppf "#%a" Printtyp.longident
+        (Path.to_lid p ~rename:Btype.unrow_name)
 
 and pretty_car ppf v = match v.pat_desc with
 | Tpat_construct ({cstr_tag=tag}, [_ ; _])
@@ -597,7 +601,7 @@ let full_match closing env =  match env with
     false
 | ({pat_desc = Tpat_construct(c,_)},_) :: _ ->
     List.length env = c.cstr_consts + c.cstr_nonconsts
-| ({pat_desc = Tpat_variant(_,_,row) | Tpat_check(_,row)},_) :: _ ->
+| ({pat_desc = Tpat_variant(_,_,row) | Tpat_check(_,row)} as p,_) :: _ ->
     let fields, abs =
       List.fold_left
         (fun (f,a) -> function
@@ -606,7 +610,14 @@ let full_match closing env =  match env with
           | _ -> assert false)
         ([],[]) env
     in
-    let row = Btype.row_repr row in
+    let row = Ctype.row_normal p.pat_env row in
+    let abs_ok =
+      List.for_all
+        (fun ty -> match Btype.repr ty with
+          {desc=Tconstr(p,_,_)} -> List.exists (Path.same p) abs
+        | _ -> assert false)
+        row.row_abs
+    in
     if closing && not row.row_fixed then
       (* closing=true, we are considering the variant as closed *)
       List.for_all
@@ -617,14 +628,13 @@ let full_match closing env =  match env with
               (* m=true, do not discard matched tags, rather warn *)
           | Rpresent _ -> List.mem tag fields)
         row.row_fields &&
-      List.length abs = List.length row.row_abs
+      abs_ok
     else
-      row.row_closed &&
+      abs_ok && row.row_closed &&
       List.for_all
         (fun (tag,f) ->
           Btype.row_field_repr f = Rabsent || List.mem tag fields)
-        row.row_fields &&
-      List.length abs = List.length row.row_abs
+        row.row_fields
 | ({pat_desc = Tpat_constant(Const_char _)},_) :: _ ->
     List.length env = 256
 | ({pat_desc = Tpat_constant(_)},_) :: _ -> false
@@ -731,17 +741,19 @@ let build_other env =  match env with
       let all_tags =  List.map (fun (p,_) -> get_tag p) env in
       pat_of_constrs p (complete_constrs p all_tags)
 | ({pat_desc = Tpat_variant(_,_,row)} as p,_) :: _ ->
-    let tags =
-      List.map
-        (function ({pat_desc = Tpat_variant (tag, _, _)}, _) -> tag
-                | _ -> assert false)
-        env
+    let tags, abs =
+      List.fold_left
+        (fun (f,a) -> function
+            ({pat_desc = Tpat_variant (tag, _, _)}, _) -> tag :: f, a
+          | ({pat_desc = Tpat_check (p,_)}, _) -> f, p :: a
+          | _ -> assert false)
+        ([],[]) env
     in
-    let row = Btype.row_repr row in
+    let row = Ctype.row_normal p.pat_env row in
     let make_other_pat tag const =
       let arg = if const then None else Some omega in
       make_pat (Tpat_variant(tag, arg, row)) p.pat_type p.pat_env in
-    begin match
+    let field_pats =
       List.fold_left
         (fun others (tag,f) ->
           if List.mem tag tags then others else
@@ -751,7 +763,17 @@ let build_other env =  match env with
           | Reither (c, _, _, _) -> make_other_pat tag c :: others
           | Rpresent arg -> make_other_pat tag (arg = None) :: others)
         [] row.row_fields
-    with
+    and abs_pats =
+      List.fold_left
+        (fun others ty ->
+          match Btype.repr ty with
+            {desc=Tconstr(p1,_,_)} ->
+              if List.exists (Path.same p1) abs then others else
+              make_pat (Tpat_check(p1, row)) p.pat_type p.pat_env :: others
+          | _ -> assert false)
+        [] row.row_abs
+    in
+    begin match field_pats @ abs_pats with
       [] ->
         make_other_pat "AnyExtraTag" true
     | pat::other_pats ->
@@ -1619,7 +1641,8 @@ let check_unused tdefs casel =
                     ps
               | Used ->
                   check_used_extra pss qs
-            with e -> assert false
+            with Assert_failure _ as e -> raise e
+            | _ -> assert false
             end ;
                    
           if has_guard act then

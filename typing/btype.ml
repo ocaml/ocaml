@@ -33,13 +33,6 @@ let newty2 level desc  =
   incr new_id; { desc = desc; level = level; id = !new_id }
 let newgenty desc      = newty2 generic_level desc
 let newgenvar ()       = newgenty Tvar
-(*
-let newmarkedvar level =
-  incr new_id; { desc = Tvar; level = pivot_level - level; id = !new_id }
-let newmarkedgenvar () =
-  incr new_id;
-  { desc = Tvar; level = pivot_level - generic_level; id = !new_id }
-*)
 
 (**** Representative of a type ****)
 
@@ -162,16 +155,21 @@ let is_row_name s =
   let l = String.length s in
   if l < 4 then false else String.sub s (l-4) 4 = "#row"
 
+let unrow_name s =
+  if not (is_row_name s) then prerr_endline s;
+  assert (is_row_name s);
+  String.sub s 0 (String.length s - 4)
+
 let cleanup_row_abs row =
   let row = row_repr row in
   { row with row_abs =
     List.map
       (fun t -> match repr t with
         {desc = Tconstr(Path.Pdot(p,n,pos), tl, _)} when is_row_name n ->
-          let n = String.sub n 0 (String.length n - 4) in
-          newgenty (Tconstr(Path.Pdot(p, n, pos), tl, ref Mnil))
+          newgenty (Tconstr(Path.Pdot(p, unrow_name n, pos), tl, ref Mnil))
       | t -> t)
       row.row_abs }
+
 
                   (**********************************)
                   (*  Utilities for type traversal  *)

@@ -362,6 +362,60 @@ let transl_matcher row =
             Matching.for_function Location.none None
               (Lvar param) cases Total)
 
+let rec remove_abs lam pat =
+  let map_update fdesc l =
+    List.map (fun (x, lam) -> {pat with pat_desc = fdesc x}, lam) l in
+  match pat.pat_desc with
+    Tpat_any| Tpat_var _ | Tpat_constant _
+  | Tpat_variant (_,None,_) | Tpat_construct (_,[]) -> [pat, lam]
+  | Tpat_alias (pat, id) ->
+      map_update (fun pat -> Tpat_alias (pat, id))
+        (remove_abs lam pat)
+  | Tpat_tuple patl ->
+      map_update (fun patl -> Tpat_tuple patl) (remove_abs_list lam patl)
+  | Tpat_construct (constr, patl) ->
+      map_update (fun patl -> Tpat_construct (constr, patl))
+        (remove_abs_list lam patl)
+  | Tpat_variant (l, Some pat, row) ->
+      map_update (fun pat -> Tpat_variant (l, Some pat, row))
+        (remove_abs lam pat)
+  | Tpat_record lpatl ->
+      let ldl, patl = List.split lpatl in
+      map_update (fun patl -> Tpat_record (List.combine ldl patl))
+        (remove_abs_list lam patl)
+  | Tpat_array patl ->
+      map_update (fun patl -> Tpat_array patl) (remove_abs_list lam patl)
+  | Tpat_or (pat1, pat2, po) ->
+      begin match remove_abs lam pat1, remove_abs lam pat2 with
+        [pat1,lam1], [pat2,lam2] when lam1 == lam2 ->
+          [{pat with pat_desc = Tpat_or(pat1, pat2, po)}, lam1]
+      | pel1, pel2 -> pel1 @ pel2
+      end
+  | Tpat_check (p, row) ->
+      let id = Ident.create "variant" in
+      let (p,_) =
+        try Env.lookup_value (Path.to_lid p) pat.pat_env
+        with Not_found -> assert false in
+      [{pat with pat_desc = Tpat_var id},
+       Lifthenelse(Lapply(transl_path p,[Lvar id]), lam, staticfail)]
+      
+and remove_abs_list lam = function
+    [] -> [[], lam]
+  | pat :: patl ->
+      List.fold_right
+        (fun (patl, lam) ->
+          match remove_abs lam pat with
+            [pat, lam] -> (fun accu -> (pat::patl, lam) :: accu)
+          | pel ->
+              List.fold_right (fun (pat,lam) accu -> (pat::patl, lam) :: accu)
+                pel)
+        (remove_abs_list lam patl) []
+
+let remove_abs_rows cases =
+  List.fold_right
+    (fun (pat,lam) pel -> remove_abs lam pat @ pel)
+    cases []
+
 
 (* To check the well-formedness of r.h.s. of "let rec" definitions *)
 
@@ -766,9 +820,11 @@ and transl_list expr_list =
   List.map transl_exp expr_list
 
 and transl_cases pat_expr_list =
-  List.map
-    (fun (pat, expr) -> (pat, event_before expr (transl_exp expr)))
-    pat_expr_list
+  let cases =
+    List.map
+      (fun (pat, expr) -> (pat, event_before expr (transl_exp expr)))
+      pat_expr_list
+  in remove_abs_rows cases
 
 and transl_tupled_cases patl_expr_list =
   List.map (fun (patl, expr) -> (patl, transl_exp expr)) patl_expr_list

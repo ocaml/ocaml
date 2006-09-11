@@ -47,3 +47,11 @@ let rec head = function
   | Pdot(p, s, pos) -> head p
   | Papply(p1, p2) -> assert false
 
+let keep x = x
+let rec to_lid ?(rename=keep) = function
+    Pident id ->
+      Longident.Lident (rename (Ident.name id))
+  | Pdot (p1, s, _) ->
+      Longident.Ldot (to_lid p1, rename s)
+  | Papply (p1, p2) ->
+      Longident.Lapply (to_lid p1, to_lid p2)
