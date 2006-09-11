@@ -664,7 +664,7 @@ and group_constructor = function
   | _ -> false
 
 and group_variant = function
-  | {pat_desc = Tpat_variant _ | Tpat_check _} -> true
+  | {pat_desc = Tpat_variant (_, _, _)} -> true
   | _ -> false
 
 and group_var = function
@@ -690,7 +690,7 @@ let get_group p = match p.pat_desc with
 | Tpat_tuple _ -> group_tuple
 | Tpat_record _ -> group_record
 | Tpat_array _ -> group_array
-| Tpat_variant _ | Tpat_check _ -> group_variant
+| Tpat_variant (_,_,_) -> group_variant
 |  _ -> fatal_error "Matching.get_group"
 
 
