@@ -764,12 +764,14 @@ let ext_branch env loc t p a =
       let z = lazy (
 	let ta = compute_var loc a CT.any in
 	let ta = CT.cap t ta in
-	if (CT.is_empty ta) && (loc != Location.none) then
+	let unused = CT.is_empty ta in
+	if unused && (loc != Location.none) then
 	  Location.prerr_warning loc Warnings.Unused_match;
 	let res = P.filter ta p  in
 
 	(* HACK to avoid changing the interface of the Warnings module. *)
-	if (Warnings.is_active Warnings.Unused_match) 
+	if (Warnings.is_active Warnings.Unused_match) && (loc != Location.none)
+	  && not unused
 	then Cduce_types.Ident.IdMap.iteri
 	  (fun x t -> 
 	     if (CT.subtype (CT.descr t) SEQ.nil_type) then
