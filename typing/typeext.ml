@@ -820,8 +820,9 @@ let ext_concat env loc e1 e2 =
   if !extmode then anyext_var
   else atom loc
     (fun ub ->
-       let t1 = compute_var loc e1 SEQ.any in
-       let t2 = compute_var loc e2 SEQ.any in
+       let u = SEQ.ub_concat ub in
+       let t1 = compute_var loc e1 u in
+       let t2 = compute_var loc e2 u in
        SEQ.concat t1 t2)
 
 let ext_xml env loc e1 e2 e3 =
