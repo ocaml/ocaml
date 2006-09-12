@@ -646,6 +646,9 @@ let transl_type_decl env name_sdecl_list =
   (* Enter types. *)
   let temp_env = List.fold_left2 enter_type env name_sdecl_list id_list in
   (* Translate each declaration. *)
+  let decls =
+    List.map2 (transl_declaration temp_env) name_sdecl_list id_list in
+  (* Alternative incremental version, but needs tuning for constraints
   let temp_env = ref temp_env in
   let decls =
     List.map2
@@ -657,12 +660,17 @@ let transl_type_decl env name_sdecl_list =
         (id, decl))
       name_sdecl_list id_list
   in
+  *)
   (* Build the final env. *)
   let newenv =
     List.fold_right
       (fun (id, decl) env -> Env.add_type id decl env)
       decls env
   in
+  (* Update stubs *)
+  List.iter2
+    (fun id (_, sdecl) -> update_type temp_env newenv id sdecl.ptype_loc)
+    id_list name_sdecl_list;
   (* Generalize type declarations. *)
   Ctype.end_def();
   List.iter (fun (_, decl) -> generalize_decl decl) decls;
