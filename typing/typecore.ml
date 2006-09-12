@@ -180,7 +180,8 @@ let rec iter_pattern f p =
 
 let has_variants p =
   try
-    iter_pattern (function {pat_desc=Tpat_variant _} -> raise Exit | _ -> ())
+    iter_pattern
+      (function {pat_desc=Tpat_variant _|Tpat_check _} -> raise Exit | _ -> ())
       p;
     false
   with Exit ->

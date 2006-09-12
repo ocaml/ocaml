@@ -346,6 +346,7 @@ let transl_matcher row =
     {pat_desc=d; pat_type=ty; pat_loc=Location.none; pat_env=Env.empty} in
   let fail = (mkpat Tpat_any, Lconst(Const_base(Const_int 0))) in
   let tt = Lconst(Const_base(Const_int 1)) in
+  (* XXX Need to handle row.row_abs too! *)
   let cases =
     List.fold_left
       (fun cases (l,f) ->
@@ -361,6 +362,8 @@ let transl_matcher row =
   Lfunction(Curried, [param],
             Matching.for_function Location.none None
               (Lvar param) cases Total)
+
+(* Expand Tpat_check *)
 
 let rec remove_abs lam pat =
   let map_update fdesc l =

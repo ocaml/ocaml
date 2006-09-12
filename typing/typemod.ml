@@ -62,6 +62,14 @@ let type_module_path env loc lid =
   with Not_found ->
     raise(Error(loc, Unbound_module lid))
 
+(* Declare a matcher function *)
+
+let make_matcher_desc id decl =
+  let m = Btype.newgenty in
+  let td = Tconstr(Pident id, decl.type_params, ref Mnil) in
+  let ty = m(Tarrow("", m td, Predef.type_bool, Cok)) in
+  {val_type=ty; val_kind=Val_reg}
+
 (* Record a module type *)
 let rm node =
   Stypes.record (Stypes.Ti_mod node);
@@ -87,33 +95,29 @@ let merge_constraint initial_env loc sg lid constr =
       ([], _, _) ->
         raise(Error(loc, With_no_component lid))
     | (Tsig_type(id, decl, rs) :: rem, [s],
-       Pwith_type ({ptype_kind = Ptype_private _} as sdecl))
+       Pwith_type ({ptype_kind = Ptype_private scl} as sdecl))
       when Ident.name id = s ->
 	let decl_row =
-	  { type_params =
-	      List.map (fun _ -> Btype.newgenvar()) sdecl.ptype_params;
-	    type_arity = List.length sdecl.ptype_params;
-	    type_kind = Type_abstract;
-	    type_manifest = None;
-	    type_variance =
-	      List.map (fun (c,n) -> (not n, not c, not c))
-              sdecl.ptype_variance }
+          Typedecl.transl_with_constraint env None
+            {sdecl with ptype_manifest = None}
 	and id_row = Ident.create (s^"#row") in
 	let initial_env = Env.add_type id_row decl_row initial_env in
-        let newdecl = Typedecl.transl_with_constraint
-                        initial_env (Some(Pident id_row)) sdecl in
+        let newdecl =
+          Typedecl.transl_with_constraint initial_env
+            (Some(Pident id_row)) sdecl in
         check_type_decl env id row_id newdecl decl rs rem;
-	let decl_row = {decl_row with type_params = newdecl.type_params} in
+        let vd = make_matcher_desc id_row decl_row in
         let rs' = if rs = Trec_first then Trec_not else rs in
-        Tsig_type(id_row, decl_row, rs') :: Tsig_type(id, newdecl, rs) :: rem
+        Tsig_type(id_row, decl_row, rs') :: Tsig_type(id, newdecl, rs) ::
+        Tsig_value(Ident.create(Ident.name id_row), vd) :: rem
     | (Tsig_type(id, decl, rs) :: rem, [s], Pwith_type sdecl)
       when Ident.name id = s ->
         let newdecl = Typedecl.transl_with_constraint initial_env None sdecl in
         check_type_decl env id row_id newdecl decl rs rem;
         Tsig_type(id, newdecl, rs) :: rem
-    | (Tsig_type(id, decl, rs) :: rem, [s], Pwith_type sdecl)
+    | (Tsig_type(id, decl, rs) :: tdecl :: vdecl :: rem, [s], Pwith_type sdecl)
       when Ident.name id = s ^ "#row" ->
-        merge env rem namelist (Some id)
+        merge env (tdecl :: rem) namelist (Some id)
     | (Tsig_module(id, mty, rs) :: rem, [s], Pwith_module lid)
       when Ident.name id = s ->
         let (path, mty') = type_module_path initial_env loc lid in
@@ -265,12 +269,6 @@ let check_sig_item type_names module_names modtype_names loc = function
       check "module type" loc modtype_names (Ident.name id)
   | _ -> ()
 
-let make_check_fun_desc id decl =
-  let m = Btype.newgenty in
-  let td = Tconstr(Pident id, decl.type_params, ref Mnil) in
-  let ty = m(Tarrow("", m td, Predef.type_bool, Cok)) in
-  {val_type=ty; val_kind=Val_reg}
-
 (* Check and translate a module type expression *)
 
 let rec transl_modtype env smty =
@@ -323,7 +321,7 @@ and transl_signature env sg =
               List.fold_right
                 (fun (id,decl) sigs ->
                   if Btype.is_row_name (Ident.name id) then
-                    let vd = make_check_fun_desc id decl in
+                    let vd = make_matcher_desc id decl in
                     Tsig_value(Ident.create(Ident.name id), vd) :: sigs
                   else sigs)
                 decls []
@@ -614,7 +612,7 @@ and type_structure anchor env sstr =
           List.fold_right
             (fun (id,decl) (strs, sigs, env as accu) ->
               if Btype.is_row_name (Ident.name id) then
-                let vd = make_check_fun_desc id decl in
+                let vd = make_matcher_desc id decl in
                 let id = Ident.create(Ident.name id) in
                 let p = {pat_desc=Tpat_var id; pat_env=env; pat_loc=loc;
                          pat_type=vd.val_type} in

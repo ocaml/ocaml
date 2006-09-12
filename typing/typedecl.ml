@@ -100,6 +100,21 @@ let set_fixed_row env loc p decl =
     raise (Error (loc, Bad_fixed_type "has no row variable"));
   rv.desc <- Tconstr (p, decl.type_params, ref Mnil)
 
+let transl_compat env = function
+    Pcfield (l, ot) ->
+      Cfield (l, may_map (transl_simple_type env true) ot)
+  | Pcnofield l -> Cnofield l
+  | Pctype t -> Ctype (transl_simple_type env true t)
+  | Pcnotype (lid, loc) ->
+      let (path, decl) =
+        try Env.lookup_type lid env
+        with Not_found ->
+          raise(Typetexp.Error(
+                loc, Typetexp.Unbound_type_constructor lid))
+      in
+      Cnotype (Ctype.newconstr path
+                 (Ctype.instance_list decl.type_params))
+
 (* Translate one type declaration *)
 
 module StringSet =
@@ -171,22 +186,7 @@ let transl_declaration env (name, sdecl) id =
             Type_record(lbls', rep, priv)
         | Ptype_private cl ->
             if sdecl.ptype_manifest <> None then Type_abstract else
-            let transl_compat = function
-                Pcfield (l, ot) ->
-                  Cfield (l, may_map (transl_simple_type env true) ot)
-              | Pcnofield l -> Cnofield l
-              | Pctype t -> Ctype (transl_simple_type env true t)
-              | Pcnotype (lid, loc) ->
-                  let (path, decl) =
-                    try Env.lookup_type lid env
-                    with Not_found ->
-                      raise(Typetexp.Error(
-                            loc, Typetexp.Unbound_type_constructor lid))
-                  in
-                  Cnotype (Ctype.newconstr path
-                             (Ctype.instance_list decl.type_params))
-            in
-            Type_private (List.map transl_compat cl)
+            Type_private (List.map (transl_compat env) cl)
         end;
       type_manifest =
         begin match sdecl.ptype_manifest with
@@ -752,7 +752,12 @@ let transl_with_constraint env row_path sdecl =
   let decl =
     { type_params = params;
       type_arity = List.length params;
-      type_kind = Type_abstract;
+      type_kind =
+        begin match sdecl.ptype_kind with
+          Ptype_private scl when sdecl.ptype_manifest = None ->
+            Type_private (List.map (transl_compat env) scl)
+        | _ -> Type_abstract
+        end;
       type_manifest =
         begin match sdecl.ptype_manifest with
           None -> None

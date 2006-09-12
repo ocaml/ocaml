@@ -587,7 +587,8 @@ let close_variant env row =
     (* this unification cannot fail *)
     Ctype.unify env row.row_more
       (Btype.newgenty
-         (Tvariant {row with row_fields = []; row_more = Btype.newgenvar();
+         (Tvariant {row with row_fields = []; row_abs = [];
+                    row_more = Btype.newgenvar();
                     row_closed = true; row_name = nm}))
   end
 
@@ -740,7 +741,7 @@ let build_other env =  match env with
         | _ -> fatal_error "Parmatch.get_tag" in
       let all_tags =  List.map (fun (p,_) -> get_tag p) env in
       pat_of_constrs p (complete_constrs p all_tags)
-| ({pat_desc = Tpat_variant(_,_,row)} as p,_) :: _ ->
+| ({pat_desc = Tpat_variant(_,_,row) | Tpat_check(_,row)} as p,_) :: _ ->
     let tags, abs =
       List.fold_left
         (fun (f,a) -> function
@@ -1068,7 +1069,8 @@ let rec pressure_variants tdefs = function
               else try_non_omega (filter_all q0 (mark_partial pss))
             in
             begin match constrs, tdefs with
-              ({pat_desc=Tpat_variant(_,_,row)},_):: _, Some env ->
+              ({pat_desc=Tpat_variant(_,_,row) | Tpat_check(_,row)},_):: _,
+              Some env ->
                 let row = Btype.row_repr row in
                 if row.row_fixed
                 || pressure_variants None (filter_extra pss) then ()

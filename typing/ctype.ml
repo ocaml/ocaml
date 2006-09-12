@@ -1196,6 +1196,10 @@ let generic_abbrev env path =
    After expansion, row_abs contains only abstract types whose
    name ends in #row.
 *)
+let rec check_abs = function
+    [] -> true
+  | ty :: tyl ->
+      not (List.exists (same_path ty) tyl) && check_abs tyl
 let rec row_normal env row =
   let row = row_repr row in
   let need_expand =
@@ -1206,6 +1210,7 @@ let rec row_normal env row =
         | _ -> false)
       row.row_abs
   in
+  assert (check_abs row.row_abs);
   if not need_expand then row else
   let rec merge_abs fields abs = function
       [] -> (fields, abs)
@@ -1971,7 +1976,12 @@ and unify_row env row1 row2 =
               with Not_found -> (h,l)::hl)
             (List.map (fun (l,_) -> (hash_variant l, l)) row1.row_fields)
             (List.map fst r2));
-  let abs1, abs2, apairs = merge_row_abs row1.row_abs row2.row_abs in
+  let is_constr ty =
+    match repr ty with {desc=Tconstr _} -> true | _ -> false in
+  let row_abs row =
+    if is_constr row.row_more then row_more row :: row.row_abs else row.row_abs
+  in
+  let abs1, abs2, apairs = merge_row_abs (row_abs row1) (row_abs row2) in
   let more =
     if row1.row_fixed then rm1 else
     if row2.row_fixed then rm2 else

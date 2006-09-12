@@ -162,13 +162,14 @@ let unrow_name s =
 
 let cleanup_row_abs row =
   let row = row_repr row in
-  { row with row_abs =
+  let abs =
     List.map
       (fun t -> match repr t with
         {desc = Tconstr(Path.Pdot(p,n,pos), tl, _)} when is_row_name n ->
           newgenty (Tconstr(Path.Pdot(p, unrow_name n, pos), tl, ref Mnil))
       | t -> t)
-      row.row_abs }
+      row.row_abs in
+  { row with row_abs = abs }
 
 
                   (**********************************)
