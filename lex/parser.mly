@@ -152,11 +152,12 @@ regexp:
         { try
             Hashtbl.find named_regexps $1
           with Not_found ->
-            prerr_string "Reference to unbound regexp name `";
-            prerr_string $1;
-            prerr_string "' at char ";
-            prerr_int (Parsing.symbol_start());
-            prerr_newline();
+            let p = Parsing.symbol_start_pos () in
+            Printf.eprintf "File \"%s\", line %d, character %d:\n\
+                             Reference to unbound regexp name `%s'.\n"
+                           p.Lexing.pos_fname p.Lexing.pos_lnum
+                           (p.Lexing.pos_cnum - p.Lexing.pos_bol)
+                           $1;
             exit 2 }
   | regexp Tas ident
         {Bind ($1, $3)}
