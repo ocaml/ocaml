@@ -21,6 +21,8 @@ Bug fixes:
 - C interface: better definition of CAMLreturn PR#4068
 - otherlibs/unix: crash in gethostbyname PR#3043
 - tools: subtle problem with unset in makefile PR#4048
+- camlp4: install pa_o_fast.o PR#3812
+- camlp4: install more modules PR#3689
 
 New features:
 - ocamldoc: name resolution in cross-referencing {!name}: if name is not
