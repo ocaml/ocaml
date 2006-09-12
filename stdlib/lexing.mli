@@ -29,6 +29,9 @@ type position = {
    of characters between the beginning of the file and the beginning
    of the line); [pos_cnum] is the offset of the position (number of
    characters between the beginning of the file and the position).
+
+   See the documentation of type [lexbuf] for information about
+   how the lexing engine will manage positions.
  *)
 
 val dummy_pos : position;;
@@ -59,11 +62,13 @@ type lexbuf =
    The lexer buffer holds the current state of the scanner, plus
    a function to refill the buffer from the input.
 
-   Note that the lexing engine will only manage the [pos_cnum] field
+   Note that the lexing engine will only change the [pos_cnum] field
    of [lex_curr_p] by updating it with the number of characters read
-   since the start of the [lexbuf].  For the other fields to be
+   since the start of the [lexbuf].  The other fields are copied
+   without change by the lexing engine.  In order to keep them
    accurate, they must be initialised before the first use of the
-   lexbuf, and updated by the lexer actions.
+   lexbuf, and updated by the relevant lexer actions (i.e. at each
+   end of line).
  *)
 
 val from_channel : in_channel -> lexbuf
