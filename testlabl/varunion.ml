@@ -62,3 +62,33 @@ module M(X : sig type t = private [> `A] end) =
 
 type t = private [> `A ] ~ [`B];;
 match `B with #t -> 1 | `B -> 2;;
+
+(* expression *)
+module Mix(X:sig type t = private [> ] val show: t -> string end)
+    (Y:sig type t = private [> ] ~ [X.t] val show: t -> string end) =
+  struct
+    type t = [X.t | Y.t]
+    let show : t -> string = function
+        #X.t as x -> X.show x
+      | #Y.t as y -> Y.show y
+  end;;
+
+module EStr = struct
+  type t = [`Str of string]
+  let show (`Str s) = s
+end
+module EInt = struct
+  type t = [`Int of int]
+  let show (`Int i) = string_of_int i
+end
+module M = Mix(EStr)(EInt);;
+
+module type T = sig type t = private [> ] val show: t -> string end
+module Mix(X:T)(Y:T with type t = private [> ] ~ [X.t]) :
+    T with type t = [X.t | Y.t] =
+  struct
+    type t = [X.t | Y.t]
+    let show = function
+        #X.t as x -> X.show x
+      | #Y.t as y -> Y.show y
+  end;;
