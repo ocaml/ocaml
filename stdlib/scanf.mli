@@ -35,7 +35,7 @@ val stdib : scanbuf;;
     [stdib] is equivalent to [Scanning.from_channel stdin].
 
     Note: when input is read interactively from [stdin], the carriage return
-    that triggers the evaluation is incoporated in the input; thus, scanning
+    that triggers the evaluation is incorporated in the input; thus, scanning
     specifications must properly skip this character (simply add a space
     as the last character of the format string). *)
 
@@ -48,7 +48,7 @@ val from_string : string -> scanbuf;;
 val from_file : string -> scanbuf;;
 (** Bufferized file reading in text mode. The efficient and usual
     way to scan text mode files (in effect, [from_file] returns a
-    buffer that reads characters in large chunks, rather than one
+    scanning buffer that reads characters in large chunks, rather than one
     character at a time as buffers returned by [from_channel] do).
     [Scanning.from_file fname] returns a scanning buffer which reads
     from the given file [fname] in text mode. *)
@@ -70,14 +70,14 @@ val from_channel : in_channel -> scanbuf;;
 
 val end_of_input : scanbuf -> bool;;
 (** [Scanning.end_of_input ib] tests the end-of-input condition
-    of the given buffer. *)
+    of the given scanning buffer. *)
 val beginning_of_input : scanbuf -> bool;;
 (** [Scanning.beginning_of_input ib] tests the beginning of input
-    condition of the given buffer. *)
+    condition of the given scanning buffer. *)
 
 val name_of_input : scanbuf -> string;;
 (** [Scanning.file_name_of_input ib] returns the name of the character
-    source for the input buffer [ib]. *)
+    source for the scanning buffer [ib]. *)
 
 end;;
 
@@ -238,8 +238,8 @@ val fscanf : in_channel -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
     fresh scanning buffer (unless careful use of partial evaluation in
     the program). Hence, there are chances that some characters seem
     to be skipped (in fact they are pending in the previously used
-    buffer). This happens in particular when calling [fscanf] again
-    after a scan involving a format that necessitates some look ahead
+    scanning buffer). This happens in particular when calling [fscanf] again
+    after a scan involving a format that necessitated some look ahead
     (such as a format that ends by skipping whitespace in the input).
 
     To avoid confusion, consider using [bscanf] with an explicitly
@@ -268,16 +268,16 @@ val kscanf :
 val bscanf_format :
   Scanning.scanbuf -> ('a, 'b, 'c, 'd) format4 ->
     (('a, 'b, 'c, 'd) format4 -> 'e) -> 'e;;
-(** [bscanf_format ib fmt f] reads a format string token in buffer [ib],
-  according to the format string [fmt], and applies the function [f] to the
-  resulting format string value.
+(** [bscanf_format ib fmt f] reads a format string token from scannning buffer
+  [ib], according to the format string [fmt], and applies the function [f] to
+  the resulting format string value.
   Raises [Scan_failure] if the format string value read has not the same type
   as [fmt]. *)
 
 val sscanf_format :
   string -> ('a, 'b, 'c, 'd) format4 ->
     (('a, 'b, 'c, 'd) format4 -> 'e) -> 'e;;
-(** Same as {!Scanf.bscanf}, but inputs from the given string. *)
+(** Same as {!Scanf.bscanf_format}, but inputs from the given string. *)
 
 val format_from_string :
   string -> ('a, 'b, 'c, 'd) format4 -> ('a, 'b, 'c, 'd) format4;;
