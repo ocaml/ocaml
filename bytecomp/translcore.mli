@@ -27,7 +27,7 @@ val transl_apply: lambda -> (expression option * optional) list -> lambda
 val transl_let:
       rec_flag -> (pattern * expression) list -> lambda -> lambda
 val transl_primitive: Primitive.description -> lambda
-val transl_matcher: row_desc -> lambda
+val transl_matcher: row_desc -> Env.t -> lambda
 val transl_exception:
       Ident.t -> Path.t option -> exception_declaration -> lambda
 

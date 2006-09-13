@@ -153,7 +153,7 @@ and module_coercion =
   | Tcoerce_structure of (int * module_coercion) list
   | Tcoerce_functor of module_coercion * module_coercion
   | Tcoerce_primitive of Primitive.description
-  | Tcoerce_matcher of row_desc
+  | Tcoerce_matcher of row_desc * Env.t
 
 (* Auxiliary functions over the a.s.t. *)
 

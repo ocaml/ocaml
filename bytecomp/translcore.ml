@@ -339,14 +339,26 @@ let transl_primitive p =
 
 (* Generate a matcher for a given row type *)
 
-let transl_matcher row =
+let transl_matcher row env =
   let row = {row with row_closed = false} in
   let ty = Btype.newgenty (Tvariant row) in
   let mkpat d =
-    {pat_desc=d; pat_type=ty; pat_loc=Location.none; pat_env=Env.empty} in
-  let fail = (mkpat Tpat_any, Lconst(Const_base(Const_int 0))) in
-  let tt = Lconst(Const_base(Const_int 1)) in
-  (* XXX Need to handle row.row_abs too! *)
+    {pat_desc=d; pat_type=ty; pat_loc=Location.none; pat_env=env} in
+  let tt = Lconst(Const_base(Const_int 1))
+  and ff = Lconst(Const_base(Const_int 0)) in
+  let param = Ident.create "param" in
+  let check_abs =
+    List.fold_left
+      (fun lam ty ->
+        match Btype.repr ty with
+          {desc=Tconstr(p,_,_)} ->
+            let (p,_) =
+              try Env.lookup_value (Path.to_lid p) env
+              with Not_found -> assert false in
+            let check = Lapply(transl_path p, [Lvar param]) in
+            if lam == ff then check else Lifthenelse(check, tt, lam)
+        | _ -> assert false)
+      ff row.row_abs in
   let cases =
     List.fold_left
       (fun cases (l,f) ->
@@ -357,8 +369,7 @@ let transl_matcher row =
             (mkpat(Tpat_variant(l, Some(mkpat Tpat_any), row)), tt)::cases
         | Rabsent -> cases
         | _ -> assert false)
-      [fail] row.row_fields in
-  let param = Ident.create "param" in
+      [mkpat Tpat_any, check_abs] row.row_fields in
   Lfunction(Curried, [param],
             Matching.for_function Location.none None
               (Lvar param) cases Total)

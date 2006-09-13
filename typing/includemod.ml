@@ -246,8 +246,7 @@ and signature_components env subst = function
     [] -> []
   | (Tsig_value _, Tsig_value(id2, valdecl2), -1) :: rem ->
       let (id1, decl) = try
-        let s = Ident.name id2 in
-        let s = String.sub s 0 (String.length s - 4) in
+        let s = Btype.unrow_name (Ident.name id2) in
         Env.lookup_type (Longident.Lident s) env
       with Not_found -> assert false in
       let ty =
@@ -256,11 +255,11 @@ and signature_components env subst = function
         match Ctype.expand_head env ty with
           {desc=Tvariant row} ->
             let row = Ctype.row_normal env row in
-            assert (row.row_abs = []);
+            assert ((Btype.row_more row).desc = Tvar);
             row
         | _ -> assert false
       in
-      (-1, Tcoerce_matcher row) :: signature_components env subst rem
+      (-1, Tcoerce_matcher(row, env)) :: signature_components env subst rem
   | (Tsig_value(id1, valdecl1), Tsig_value(id2, valdecl2), pos) :: rem ->
       let cc = value_descriptions env subst id1 valdecl1 valdecl2 in
       begin match valdecl2.val_kind with
