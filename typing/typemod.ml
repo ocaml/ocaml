@@ -97,10 +97,11 @@ let merge_constraint initial_env loc sg lid constr =
     | (Tsig_type(id, decl, rs) :: rem, [s],
        Pwith_type ({ptype_kind = Ptype_private scl} as sdecl))
       when Ident.name id = s ->
+        let s' = s ^ "#row" in
 	let decl_row =
           Typedecl.transl_with_constraint env None
             {sdecl with ptype_manifest = None}
-	and id_row = Ident.create (s^"#row") in
+	and id_row = Ident.create s' in
 	let initial_env = Env.add_type id_row decl_row initial_env in
         let newdecl =
           Typedecl.transl_with_constraint initial_env
@@ -109,15 +110,24 @@ let merge_constraint initial_env loc sg lid constr =
         let vd = make_matcher_desc id_row decl_row in
         let rs' = if rs = Trec_first then Trec_not else rs in
         Tsig_type(id_row, decl_row, rs') :: Tsig_type(id, newdecl, rs) ::
-        Tsig_value(Ident.create(Ident.name id_row), vd) :: rem
+        let rec insert_matcher = function
+            (Tsig_type(_,_,Trec_next) as item) :: rem ->
+              item :: insert_matcher rem
+          | rem ->
+              Tsig_value(Ident.create s', vd) :: rem
+        in insert_matcher rem
     | (Tsig_type(id, decl, rs) :: rem, [s], Pwith_type sdecl)
       when Ident.name id = s ->
         let newdecl = Typedecl.transl_with_constraint initial_env None sdecl in
         check_type_decl env id row_id newdecl decl rs rem;
         Tsig_type(id, newdecl, rs) :: rem
-    | (Tsig_type(id, decl, rs) :: tdecl :: vdecl :: rem, [s], Pwith_type sdecl)
+    | (Tsig_type(id, decl, rs) :: rem, [s], Pwith_type sdecl)
       when Ident.name id = s ^ "#row" ->
-        merge env (tdecl :: rem) namelist (Some id)
+        let s' = s ^ "#row" in
+        let rem = List.filter
+            (function Tsig_value(id,_) -> Ident.name id <> s' | _ -> true)
+            rem
+        in merge env rem namelist (Some id)
     | (Tsig_module(id, mty, rs) :: rem, [s], Pwith_module lid)
       when Ident.name id = s ->
         let (path, mty') = type_module_path initial_env loc lid in
