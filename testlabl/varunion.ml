@@ -92,3 +92,7 @@ module Mix(X:T)(Y:T with type t = private [> ] ~ [X.t]) :
         #X.t as x -> X.show x
       | #Y.t as y -> Y.show y
   end;;
+
+(* deep *)
+module M : sig type t = private [> ] ~ [`A] end = struct type t = [`A] end
+module M' : sig type t = private [> ] end = struct type t = [M.t | `A] end;;
