@@ -18,6 +18,12 @@
  *)
 open PreCast;
 
+type parser_fun 'a =
+  ?directive_handler:('a -> option 'a) -> PreCast.Loc.t -> Stream.t char -> 'a;
+
+type printer_fun 'a =
+  ?input_file:string -> ?output_file:string -> 'a -> unit;
+
 value sig_item_parser = ref (fun ?directive_handler:(_) _ _ -> failwith "No interface parser");
 value str_item_parser = ref (fun ?directive_handler:(_) _ _ -> failwith "No implementation parser");
 
@@ -33,6 +39,16 @@ value iter_and_take_callbacks f =
 value declare_dyn_module m f =
   (* let () = Format.eprintf "declare_dyn_module: %s@." m in *)
   Queue.add (m, f) callbacks;
+
+value register_str_item_parser f = str_item_parser.val := f;
+value register_sig_item_parser f = sig_item_parser.val := f;
+value register_parser f g =
+  do { str_item_parser.val := f; sig_item_parser.val := g };
+
+value register_str_item_printer f = str_item_printer.val := f;
+value register_sig_item_printer f = sig_item_printer.val := f;
+value register_printer f g =
+  do { str_item_printer.val := f; sig_item_printer.val := g };
 
 module Plugin (Id : Sig.Id.S) (Maker : functor (Unit : sig end) -> sig end) = struct
   declare_dyn_module Id.name (fun _ -> let module M = Maker (struct end) in ());
@@ -57,10 +73,8 @@ module Printer
                                 -> Sig.Printer.S with module Ast = Syn.Ast) =
 struct
   declare_dyn_module Id.name (fun _ ->
-    let module M = Maker Syntax in do {
-      sig_item_printer.val := M.print_interf;
-      str_item_printer.val := M.print_implem;
-    });
+    let module M = Maker Syntax in
+    register_printer M.print_implem M.print_interf);
 end;
 
 module OCamlPrinter
@@ -68,10 +82,15 @@ module OCamlPrinter
                                 -> Sig.Printer.S with module Ast = Syn.Ast) =
 struct
   declare_dyn_module Id.name (fun _ ->
-    let module M = Maker Syntax in do {
-      sig_item_printer.val := M.print_interf;
-      str_item_printer.val := M.print_implem;
-    });
+    let module M = Maker Syntax in
+    register_printer M.print_implem M.print_interf);
+end;
+
+module OCamlPreCastPrinter
+  (Id : Sig.Id.S) (P : Sig.Printer.S with module Ast = PreCast.Ast) =
+struct
+  declare_dyn_module Id.name (fun _ ->
+    register_printer P.print_implem P.print_interf);
 end;
 
 module Parser
@@ -79,10 +98,8 @@ module Parser
                                 -> Sig.Parser.S with module Ast = Ast) =
 struct
   declare_dyn_module Id.name (fun _ ->
-    let module M = Maker PreCast.Ast in do {
-      sig_item_parser.val := M.parse_interf;
-      str_item_parser.val := M.parse_implem;
-    });
+    let module M = Maker PreCast.Ast in
+    register_parser M.parse_implem M.parse_interf);
 end;
 
 module OCamlParser
@@ -90,10 +107,15 @@ module OCamlParser
                                 -> Sig.Parser.S with module Ast = Ast) =
 struct
   declare_dyn_module Id.name (fun _ ->
-    let module M = Maker PreCast.Ast in do {
-      sig_item_parser.val := M.parse_interf;
-      str_item_parser.val := M.parse_implem;
-    });
+    let module M = Maker PreCast.Ast in
+    register_parser M.parse_implem M.parse_interf);
+end;
+
+module OCamlPreCastParser
+  (Id : Sig.Id.S) (P : Sig.Parser.S with module Ast = PreCast.Ast) =
+struct
+  declare_dyn_module Id.name (fun _ ->
+    register_parser P.parse_implem P.parse_interf);
 end;
 
 module AstFilter
