@@ -46,7 +46,7 @@ compare:
 install:
 	-$(MKDIR) "$(LIBDIR)/camlp4"
 	cp $(TARGET) *.mli "$(LIBDIR)/camlp4/."
-	cp *.cmi "$(LIBDIR)/camlp4/."
+	cp *.cmi *.cmo "$(LIBDIR)/camlp4/."
 	test -f $(TARGET:.cma=.cmxa) && $(MAKE) installopt LIBDIR="$(LIBDIR)" || true
 
 installopt:
