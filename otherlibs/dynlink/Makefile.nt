@@ -24,13 +24,20 @@ COMPFLAGS=-warn-error A -I ../../stdlib $(INCLUDES)
 OBJS=dynlinkaux.cmo dynlink.cmo
 
 COMPILEROBJS=\
-  ../../utils/misc.cmo ../../utils/config.cmo ../../utils/tbl.cmo \
-  ../../utils/clflags.cmo ../../utils/consistbl.cmo \
+  ../../utils/misc.cmo ../../utils/config.cmo ../../utils/clflags.cmo \
+  ../../utils/tbl.cmo ../../utils/consistbl.cmo \
+  ../../utils/terminfo.cmo ../../utils/warnings.cmo \
+  ../../parsing/asttypes.cmi ../../parsing/linenum.cmo \
+  ../../parsing/location.cmo ../../parsing/longident.cmo \
   ../../typing/ident.cmo ../../typing/path.cmo \
-  ../../typing/types.cmo ../../typing/btype.cmo ../../typing/predef.cmo \
+  ../../typing/primitive.cmo ../../typing/types.cmo \
+  ../../typing/btype.cmo ../../typing/subst.cmo ../../typing/predef.cmo \
+  ../../typing/datarepr.cmo ../../typing/env.cmo \
+  ../../bytecomp/lambda.cmo ../../bytecomp/instruct.cmo \
+  ../../bytecomp/cmo_format.cmi ../../bytecomp/opcodes.cmo \
   ../../bytecomp/runtimedef.cmo ../../bytecomp/bytesections.cmo \
   ../../bytecomp/dll.cmo ../../bytecomp/meta.cmo \
-  ../../bytecomp/symtable.cmo ../../bytecomp/opcodes.cmo
+  ../../bytecomp/symtable.cmo
 
 all: dynlink.cma extract_crc
 
@@ -41,6 +48,9 @@ dynlink.cma: $(OBJS)
 
 dynlinkaux.cmo dynlinkaux.cmi: $(COMPILEROBJS)
 	$(CAMLC) $(COMPFLAGS) -pack -o dynlinkaux.cmo $(COMPILEROBJS)
+
+extract_crc: dynlink.cma extract_crc.cmo
+	$(CAMLC) $(COMPFLAGS) -o extract_crc dynlink.cma extract_crc.cmo
 
 install:
 	cp dynlink.cmi dynlink.cma dynlink.mli $(LIBDIR)
