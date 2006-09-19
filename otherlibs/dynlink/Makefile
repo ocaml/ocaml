@@ -39,21 +39,6 @@ COMPILEROBJS=\
   ../../bytecomp/dll.cmo ../../bytecomp/meta.cmo \
   ../../bytecomp/symtable.cmo
 
-#  ../../utils/misc.cmo ../../utils/config.cmo ../../utils/tbl.cmo \
-#  ../../utils/clflags.cmo ../../utils/warnings.cmo ../../utils/consistbl.cmo \
-#  ../../parsing/asttypes.cmi ../../parsing/linenum.cmo \
-#  ../../parsing/location.cmo ../../parsing/longident.cmo \
-#  ../../typing/ident.cmo ../../typing/path.cmo \
-#  ../../typing/primitive.cmo \
-#  ../../typing/types.cmo ../../typing/btype.cmo \
-#  ../../typing/subst.cmo ../../typing/predef.cmo ../../typing/datarepr.cmo \
-#  ../../typing/env.cmo \
-#  ../../bytecomp/lambda.cmo ../../bytecomp/instruct.cmo \
-#  ../../bytecomp/opcodes.cmo ../../bytecomp/emitcode.cmo \
-#  ../../bytecomp/runtimedef.cmo ../../bytecomp/bytesections.cmo \
-#  ../../bytecomp/dll.cmo ../../bytecomp/meta.cmo \
-#  ../../bytecomp/symtable.cmo
-
 all: dynlink.cma extract_crc
 
 allopt:
