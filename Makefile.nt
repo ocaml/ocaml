@@ -563,25 +563,20 @@ alldepend::
 
 # Camlp4
 
-camlp4out:
-	cd camlp4/config ; \
-	(cat Makefile.tpl; \
-	 echo 'EXE=.exe'; \
-	 echo 'O=$(O)'; \
-	 echo 'A=$(A)'; \
-	 echo 'OPT='; \
-	 echo 'OTOP=../..'; \
-	 echo 'OLIBDIR=$$(OTOP)/boot'; \
-	 echo 'BINDIR=$(BINDIR)'; \
-	 echo 'LIBDIR=$(LIBDIR)'; \
-	 echo 'MANDIR=' ) > Makefile
-	cd camlp4 ; $(MAKE)
-camlp4opt:
-	cd camlp4 ; $(MAKE) opt
-camlp4optopt:
-	cd camlp4; $(MAKE) opt.opt
+camlp4/build/camlp4_config.ml: config/Makefile
+	echo '  let prefix = "$(PREFIX)"' > camlp4/build/camlp4_config.ml
+	echo '  let bindir = "$(BINDIR)"' >> camlp4/build/camlp4_config.ml
+	echo '  let mandir = "$(MANDIR)"' >> camlp4/build/camlp4_config.ml
+	echo '  let libdir = "$(LIBDIR)"' >> camlp4/build/camlp4_config.ml
+	
+camlp4out: ocamlc camlp4/build/camlp4_config.ml
+	cd camlp4; $(MAKE) all
+camlp4opt: ocamlopt
+	cd camlp4; $(MAKE) opt
 partialclean::
-	cd camlp4 ; $(MAKE) clean
+	cd camlp4; $(MAKE) clean
+alldepend::
+	cd camlp4; $(MAKE) depend
 
 # The Win32 toplevel GUI
 
