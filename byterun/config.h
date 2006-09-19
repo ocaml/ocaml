@@ -117,7 +117,7 @@ typedef struct { uint32 l, h; } uint64, int64;
 #define Stack_threshold (256 * sizeof(value))
 
 /* Default maximum size of the stack (words). */
-#define Max_stack_def (256 * 1024)
+#define Max_stack_def (1024 * 1024)
 
 
 /* Maximum size of a block allocated in the young generation (words). */
