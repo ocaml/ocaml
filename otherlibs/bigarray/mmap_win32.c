@@ -129,7 +129,7 @@ void caml_ba_unmap_file(void * addr, uintnat len)
   uintnat delta;
 
   GetSystemInfo(&sysinfo);
-  delta = (uintnat) (startpos % sysinfo.dwPageSize);
+  delta = (uintnat) addr % sysinfo.dwPageSize;
   UnmapViewOfFile((void *)((uintnat)addr - delta));
 }
 
