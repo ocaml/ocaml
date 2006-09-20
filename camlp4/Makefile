@@ -12,6 +12,10 @@
 
 # $Id$
 
+# RELEASE NOTE:
+#   Do not forget to call make genclean to update Makefile.clean before a
+#   release.
+
 OCAMLRUN=CAML_LD_LIBRARY_PATH=../otherlibs/unix ../boot/ocamlrun
 OCAML=$(OCAMLRUN) ../ocaml -I ../stdlib -I ../otherlibs/unix
 YAM=$(OCAMLRUN) ./yam
