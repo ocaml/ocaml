@@ -1,3 +1,15 @@
+#########################################################################
+#                                                                       #
+#                            Objective Caml                             #
+#                                                                       #
+#        Nicolas Pouillard, projet Gallium, INRIA Rocquencourt          #
+#                                                                       #
+#   Copyright 2006 Institut National de Recherche en Informatique et    #
+#   en Automatique.  All rights reserved.  This file is distributed     #
+#   under the terms of the Q Public License version 1.0.                #
+#                                                                       #
+#########################################################################
+
 # $Id$
 
 OCAMLRUN=CAML_LD_LIBRARY_PATH=../otherlibs/unix ../boot/ocamlrun
@@ -31,6 +43,8 @@ uninstall:
 	rm -rf "$(LIBDIR)/camlp4"
 	cd "$(BINDIR)"; rm -f *camlp4*
 
+depend:
+
 # Normal bootstrap
 
 bootstrap: backup promote clean all compare
@@ -52,5 +66,5 @@ compare:
 	fi
 
 .PHONY: clean install all uninstall backup restore boot-clean promote-debug \
-	promote compare opt doc cleanall all-local clean-local
+	promote compare opt doc cleanall all-local clean-local depend
 

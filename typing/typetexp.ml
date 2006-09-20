@@ -333,18 +333,17 @@ let rec transl_type env policy styp =
               raise(Error(styp.ptyp_loc, Present_has_no_type l)))
             present
       end;
-      ignore begin
-        List.fold_left
-          (fun hl (l,_) ->
-            let h = Btype.hash_variant l in
-            try
-              let l' = List.assoc h hl in
-              if l <> l' then raise(Error(styp.ptyp_loc, Variant_tags(l, l')));
-              hl
-            with Not_found -> (h,l) :: hl)
-          []
-          fields
-      end;
+      (* Check for tag conflicts *)
+      let ht = Hashtbl.create (List.length fields + 1) in
+      List.iter
+        (fun (l,_) ->
+          let h = Btype.hash_variant l in
+          try
+            let l' = Hashtbl.find ht h in
+            if l <> l' then raise(Error(styp.ptyp_loc, Variant_tags(l, l')))
+          with Not_found ->
+            Hashtbl.add ht h l)
+        fields;
       let row =
         { row_fields = List.rev fields; row_more = newvar ();
           row_bound = !bound; row_closed = closed;

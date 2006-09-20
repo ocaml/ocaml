@@ -7,6 +7,43 @@ Language features:
   definition replaces the old one, rather than creating a new
   variable.
 
+
+Objective Caml 3.09.3:
+----------------------
+
+Bug fixes:
+- ocamldoc: -using modtype constraint to filter module elements displayed
+    in doc PR#4016
+- ocamldoc: error in merging of top dependencies of modules PR#4007
+- ocamldoc: -dot-colors has no effect PR#3981
+- ocamdloc: missing crossref in text from intro files PR#4066
+- compilers: segfault with recursive modules PR#4008
+- compilers: infinite loop when compiling objects PR#4018
+- compilers: bad error message when signature mismatch PR#4001
+- compilers: infinite loop with -rectypes PR#3999
+- compilers: contravariance bug in private rows
+- compilers: unsafe cast with polymorphic exception PR#4002
+- native compiler: bad assembly code generated for AMD64 PR#4067
+- native compiler: stack alignment problems on MacOSX/i386 PR#4036
+- stdlib: crash in marshalling PR#4030
+- stdlib: crash when closing a channel twice PR#4039
+- stdlib: memory leak in Sys.readdir PR#4093
+- C interface: better definition of CAMLreturn PR#4068
+- otherlibs/unix: crash in gethostbyname PR#3043
+- tools: subtle problem with unset in makefile PR#4048
+- camlp4: install pa_o_fast.o PR#3812
+- camlp4: install more modules PR#3689
+
+New features:
+- ocamldoc: name resolution in cross-referencing {!name}: if name is not
+    found, then it is searched in the parent module/class, and in the parent
+    of the parent, and so on until it is found.
+- ocamldoc: new option -short-functors to use a short form to display
+    functors in html generator PR#4017
+- ocamlprof: added "-version" option
+
+
+
 Objective Caml 3.09.2:
 ----------------------
 
@@ -31,7 +68,7 @@ Bug fixes:
 - stdlib: Filename.dirname/basename wrong on Win32 PR#3933
 - stdlib: incomplete documentation of Pervasives.abs PR#3967
 - stdlib: Printf bugs PR#3902, PR#3955
-- tools/checkstack.c missing include
+- tools/checkstack.c: missing include
 - yacc: crash when given argument "-" PR#3956
 
 New features:

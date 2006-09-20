@@ -124,6 +124,8 @@ let index_only = ref false
 
 let colorize_code = ref false
 
+let html_short_functors = ref false
+
 let with_header = ref true
 
 let with_trailer = ref true
@@ -256,7 +258,8 @@ let options = ref [
   "-all-params", Arg.Set with_parameter_list, M.with_parameter_list ;
   "-css-style", Arg.String (fun s -> css_style := Some s), M.css_style ;
   "-index-only", Arg.Set index_only, M.index_only ;
-  "-colorize-code", Arg.Set colorize_code, M.colorize_code ^
+  "-colorize-code", Arg.Set colorize_code, M.colorize_code ;
+  "-short-functors", Arg.Set html_short_functors, M.html_short_functors ^
   "\n\n *** LaTeX options ***\n";
 
 (* latex only options *)

@@ -89,21 +89,21 @@ let merge_constraint initial_env loc sg lid constr =
     | (Tsig_type(id, decl, rs) :: rem, [s],
        Pwith_type ({ptype_kind = Ptype_private} as sdecl))
       when Ident.name id = s ->
-	let decl_row =
-	  { type_params =
-	      List.map (fun _ -> Btype.newgenvar()) sdecl.ptype_params;
-	    type_arity = List.length sdecl.ptype_params;
-	    type_kind = Type_abstract;
-	    type_manifest = None;
-	    type_variance =
-	      List.map (fun (c,n) -> (not n, not c, not c))
+        let decl_row =
+          { type_params =
+              List.map (fun _ -> Btype.newgenvar()) sdecl.ptype_params;
+            type_arity = List.length sdecl.ptype_params;
+            type_kind = Type_abstract;
+            type_manifest = None;
+            type_variance =
+              List.map (fun (c,n) -> (not n, not c, not c))
               sdecl.ptype_variance }
-	and id_row = Ident.create (s^"#row") in
-	let initial_env = Env.add_type id_row decl_row initial_env in
+        and id_row = Ident.create (s^"#row") in
+        let initial_env = Env.add_type id_row decl_row initial_env in
         let newdecl = Typedecl.transl_with_constraint
                         initial_env (Some(Pident id_row)) sdecl in
         check_type_decl env id row_id newdecl decl rs rem;
-	let decl_row = {decl_row with type_params = newdecl.type_params} in
+        let decl_row = {decl_row with type_params = newdecl.type_params} in
         let rs' = if rs = Trec_first then Trec_not else rs in
         Tsig_type(id_row, decl_row, rs') :: Tsig_type(id, newdecl, rs) :: rem
     | (Tsig_type(id, decl, rs) :: rem, [s], Pwith_type sdecl)
@@ -157,7 +157,7 @@ let approx_modtype transl_mty init_env smty =
     match smty.pmty_desc with
       Pmty_ident lid ->
         begin try
-          let (path, info) = Env.lookup_modtype lid env in 
+          let (path, info) = Env.lookup_modtype lid env in
           Tmty_ident path
         with Not_found ->
           raise(Error(smty.pmty_loc, Unbound_modtype lid))
@@ -210,7 +210,7 @@ let approx_modtype transl_mty init_env smty =
             let sg = Subst.signature Subst.identity
                        (extract_sig env smty.pmty_loc mty) in
             let newenv = Env.add_signature sg env in
-            sg @ approx_sig newenv srem            
+            sg @ approx_sig newenv srem
         | Psig_class sdecls | Psig_class_type sdecls ->
             let decls = Typeclass.approx_class_declarations env sdecls in
             let rem = approx_sig env srem in
@@ -271,7 +271,7 @@ let rec transl_modtype env smty =
   match smty.pmty_desc with
     Pmty_ident lid ->
       begin try
-        let (path, info) = Env.lookup_modtype lid env in 
+        let (path, info) = Env.lookup_modtype lid env in
         Tmty_ident path
       with Not_found ->
         raise(Error(smty.pmty_loc, Unbound_modtype lid))
@@ -292,7 +292,7 @@ let rec transl_modtype env smty =
             merge_constraint env smty.pmty_loc sg lid sdecl)
           init_sg constraints in
       Mtype.freshen (Tmty_signature final_sg)
-      
+
 and transl_signature env sg =
   let type_names = ref StringSet.empty
   and module_names = ref StringSet.empty
@@ -543,7 +543,7 @@ let rec type_module anchor env smod =
                mod_loc = smod.pmod_loc }
       | _ ->
           raise(Error(sfunct.pmod_loc, Cannot_apply funct.mod_type))
-      end        
+      end
   | Pmod_constraint(sarg, smty) ->
       let arg = type_module anchor env sarg in
       let mty = transl_modtype env smty in
@@ -592,7 +592,7 @@ and type_structure anchor env sstr =
           (fun (name, decl) -> check "type" loc type_names name)
           sdecls;
         let (decls, newenv) = Typedecl.transl_type_decl env sdecls in
-        let newenv' = 
+        let newenv' =
           enrich_type_decls anchor decls env newenv in
         let (str_rem, sig_rem, final_env) = type_struct newenv' srem in
         (Tstr_type decls :: str_rem,
@@ -849,7 +849,7 @@ let package_units objfiles cmifile modulename =
       raise(Error(Location.in_file mlifile, Interface_not_compiled mlifile))
     end;
     let dclsig = Env.read_signature modulename cmifile in
-    Includemod.compunit "(obtained by packing)" sg mlifile dclsig 
+    Includemod.compunit "(obtained by packing)" sg mlifile dclsig
   end else begin
     (* Determine imports *)
     let unit_names = List.map fst units in

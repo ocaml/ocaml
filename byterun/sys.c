@@ -72,7 +72,7 @@ CAMLexport void caml_sys_error(value arg)
   CAMLparam1 (arg);
   char * err;
   CAMLlocal1 (str);
-  
+
   if (errno == EAGAIN || errno == EWOULDBLOCK) {
     caml_raise_sys_blocked_io();
   } else {
@@ -233,7 +233,7 @@ CAMLprim value caml_sys_system_command(value command)
   int status, retcode;
   char *buf;
   intnat len;
-  
+
   len = caml_string_length (command);
   buf = caml_stat_alloc (len + 1);
   memmove (buf, String_val (command), len + 1);
@@ -311,7 +311,10 @@ CAMLprim value caml_sys_read_directory(value path)
   struct ext_table tbl;
 
   caml_ext_table_init(&tbl, 50);
-  if (caml_read_directory(String_val(path), &tbl) == -1) caml_sys_error(path);
+  if (caml_read_directory(String_val(path), &tbl) == -1){
+    caml_ext_table_free(&tbl, 1);
+    caml_sys_error(path);
+  }
   caml_ext_table_add(&tbl, NULL);
   result = caml_copy_string_array((char const **) tbl.contents);
   caml_ext_table_free(&tbl, 1);

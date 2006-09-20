@@ -35,16 +35,16 @@ let _ = Odoc_args.parse
     (default_dot_generator :> Odoc_args.doc_generator)
 
 let loaded_modules =
-  List.flatten 
-    (List.map 
+  List.flatten
+    (List.map
        (fun f ->
          Odoc_info.verbose (Odoc_messages.loading f);
-         try 
+         try
            let l = Odoc_analyse.load_modules f in
            Odoc_info.verbose Odoc_messages.ok;
            l
-         with Failure s -> 
-           prerr_endline s ; 
+         with Failure s ->
+           prerr_endline s ;
            incr Odoc_global.errors ;
            []
        )
@@ -58,11 +58,11 @@ let _ =
     None -> ()
   | Some f ->
       try Odoc_analyse.dump_modules f modules
-      with Failure s -> 
+      with Failure s ->
         prerr_endline s ;
         incr Odoc_global.errors
 
-let _ = 
+let _ =
   match !Odoc_args.doc_generator with
     None ->
       ()
@@ -71,7 +71,7 @@ let _ =
       gen#generate modules;
       Odoc_info.verbose Odoc_messages.ok
 
-let _ = 
+let _ =
   if !Odoc_global.errors > 0 then
   (
    prerr_endline (Odoc_messages.errors_occured !Odoc_global.errors) ;
@@ -79,4 +79,3 @@ let _ =
   )
   else
     exit 0
-  

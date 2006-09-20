@@ -64,7 +64,7 @@ and module_kind =
 (** Representation of a module. *)
 and t_module = {
     m_name : Name.t ;
-    m_type : Types.module_type ;
+    mutable m_type : Types.module_type ;
     mutable m_info : Odoc_types.info option ;
     m_is_interface : bool ; (** true for modules read from interface files *)
     m_file : string ; (** the file the module is defined in. *)
@@ -92,7 +92,7 @@ and module_type_kind =
 and t_module_type = {
     mt_name : Name.t ;
     mutable mt_info : Odoc_types.info option ;
-    mt_type : Types.module_type option ; (** [None] = abstract module type *)
+    mutable mt_type : Types.module_type option ; (** [None] = abstract module type *)
     mt_is_interface : bool ; (** true for modules read from interface files *)
     mt_file : string ; (** the file the module type is defined in. *)
     mutable mt_kind : module_type_kind option ; (** [None] = abstract module type if mt_type = None ;
@@ -207,41 +207,41 @@ let included_modules l =
 let rec module_elements ?(trans=true) m =
   let rec iter_kind = function
       Module_struct l ->
-	print_DEBUG "Odoc_module.module_element: Module_struct";
-	l
+        print_DEBUG "Odoc_module.module_element: Module_struct";
+        l
     | Module_alias ma ->
-	print_DEBUG "Odoc_module.module_element: Module_alias";
-	if trans then
+        print_DEBUG "Odoc_module.module_element: Module_alias";
+        if trans then
           match ma.ma_module with
             None -> []
           | Some (Mod m) -> module_elements m
           | Some (Modtype mt) -> module_type_elements mt
-	else
+        else
           []
     | Module_functor (_, k)
     | Module_apply (k, _) ->
-	print_DEBUG "Odoc_module.module_element: Module_functor ou Module_apply";
-	iter_kind k
+        print_DEBUG "Odoc_module.module_element: Module_functor ou Module_apply";
+        iter_kind k
     | Module_with (tk,_) ->
-	print_DEBUG "Odoc_module.module_element: Module_with";
-	module_type_elements ~trans: trans
+        print_DEBUG "Odoc_module.module_element: Module_with";
+        module_type_elements ~trans: trans
           { mt_name = "" ; mt_info = None ; mt_type = None ;
             mt_is_interface = false ; mt_file = "" ; mt_kind = Some tk ;
             mt_loc = Odoc_types.dummy_loc ;
           }
     | Module_constraint (k, tk) ->
-	print_DEBUG "Odoc_module.module_element: Module_constraint";
+        print_DEBUG "Odoc_module.module_element: Module_constraint";
       (* A VOIR : utiliser k ou tk ? *)
-	module_elements ~trans: trans
+        module_elements ~trans: trans
           { m_name = "" ;
-	    m_info = None ;
-	    m_type = Types.Tmty_signature [] ;
+            m_info = None ;
+            m_type = Types.Tmty_signature [] ;
             m_is_interface = false ; m_file = "" ; m_kind = k ;
             m_loc = Odoc_types.dummy_loc ;
             m_top_deps = [] ;
-	    m_code = None ;
-	    m_code_intf = None ;
-	    m_text_only = false ;
+            m_code = None ;
+            m_code_intf = None ;
+            m_text_only = false ;
           }
 (*
    module_type_elements ~trans: trans
@@ -265,11 +265,11 @@ and module_type_elements ?(trans=true) mt =
         else
           []
     | Some (Module_type_alias mta) ->
-	if trans then
+        if trans then
           match mta.mta_module with
             None -> []
           | Some mt -> module_type_elements mt
-	else
+        else
           []
   in
   iter_kind mt.mt_kind
@@ -342,7 +342,7 @@ let rec module_type_parameters ?(trans=true) mt =
               with
                 Not_found ->
                   (p, None)
-	in
+        in
         param :: (iter (Some k2))
     | Some (Module_type_alias mta) ->
         if trans then
@@ -368,38 +368,38 @@ let rec module_type_parameters ?(trans=true) mt =
 and module_parameters ?(trans=true) m =
   let rec iter = function
       Module_functor (p, k) ->
-	let param =
+        let param =
          (* we create the couple (parameter, description opt), using
             the description of the parameter if we can find it in the comment.*)
-	  match m.m_info with
+          match m.m_info with
             None ->(p, None)
-	  | Some i ->
-	      try
-		let d = List.assoc p.mp_name i.Odoc_types.i_params in
-		(p, Some d)
+          | Some i ->
+              try
+                let d = List.assoc p.mp_name i.Odoc_types.i_params in
+                (p, Some d)
               with
-		Not_found ->
+                Not_found ->
                   (p, None)
-	in
-	param :: (iter k)
+        in
+        param :: (iter k)
 
     | Module_alias ma ->
-	if trans then
+        if trans then
           match ma.ma_module with
             None -> []
           | Some (Mod m) -> module_parameters ~trans m
           | Some (Modtype mt) -> module_type_parameters ~trans mt
-	else
+        else
           []
     | Module_constraint (k, tk) ->
-	module_type_parameters ~trans: trans
+        module_type_parameters ~trans: trans
           { mt_name = "" ; mt_info = None ; mt_type = None ;
             mt_is_interface = false ; mt_file = "" ; mt_kind = Some tk ;
             mt_loc = Odoc_types.dummy_loc }
     | Module_struct _
     | Module_apply _
     | Module_with _ ->
-	[]
+        []
   in
   iter m.m_kind
 
@@ -435,14 +435,14 @@ let module_is_functor m =
   let rec iter = function
       Module_functor _ -> true
     | Module_alias ma ->
-	(
-	 match ma.ma_module with
+        (
+         match ma.ma_module with
            None -> false
-	 | Some (Mod mo) -> iter mo.m_kind
-	 | Some (Modtype mt) -> module_type_is_functor mt
-	)
+         | Some (Mod mo) -> iter mo.m_kind
+         | Some (Modtype mt) -> module_type_is_functor mt
+        )
     | Module_constraint (k, _) ->
-	iter k
+        iter k
     | _ -> false
   in
   iter m.m_kind

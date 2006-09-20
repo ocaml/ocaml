@@ -312,7 +312,7 @@ value caml_install_signal_handler(value signal_number, value action) /* ML */
   CAMLlocal1 (res);
 
   sig = caml_convert_signal_number(Int_val(signal_number));
-  if (sig < 0 || sig >= NSIG) 
+  if (sig < 0 || sig >= NSIG)
     caml_invalid_argument("Sys.signal: unavailable signal");
 #ifdef POSIX_SIGNALS
   switch(action) {

@@ -33,9 +33,9 @@ open Odoc_types
 
 (** This variable contains the regular expression representing a blank.*)
 let blank = "[ \010\013\009\012']"
+
 (** This variable contains the regular expression representing a blank but not a '\n'.*)
 let simple_blank = "[ \013\009\012]"
-
 
 (** This module is used to search for structure items by name in a Typedtree.structure.
    One function creates two hash tables, which can then be used to search for elements.
@@ -68,12 +68,12 @@ module Typedtree_search =
       | Typedtree.Tstr_module (ident, _) ->
           Hashtbl.add table (M (Name.from_ident ident)) tt
       | Typedtree.Tstr_recmodule mods ->
-	  List.iter
-	    (fun (ident,mod_expr) ->
-	      Hashtbl.add table (M (Name.from_ident ident))
-		(Typedtree.Tstr_module (ident,mod_expr))
-	    )
-	    mods
+          List.iter
+            (fun (ident,mod_expr) ->
+              Hashtbl.add table (M (Name.from_ident ident))
+                (Typedtree.Tstr_module (ident,mod_expr))
+            )
+            mods
       | Typedtree.Tstr_modtype (ident, _) ->
           Hashtbl.add table (MT (Name.from_ident ident)) tt
       | Typedtree.Tstr_exception (ident, _) ->
@@ -388,7 +388,7 @@ module Analyser =
 (*
       (
        match clexp.Typedtree.cl_desc with
-	 Tclass_ident _ -> prerr_endline "Tclass_ident"
+         Tclass_ident _ -> prerr_endline "Tclass_ident"
        | Tclass_structure _ -> prerr_endline "Tclass_structure"
        | Tclass_fun _ -> prerr_endline "Tclass_fun"
        | Tclass_apply _ -> prerr_endline "Tclass_apply"
@@ -507,18 +507,18 @@ module Analyser =
               with Not_found -> raise (Failure (Odoc_messages.inherit_classexp_not_found_in_typedtree n))
             in
             let (info_opt, ele_comments) =
-	      get_comments_in_class last_pos
-		p_clexp.Parsetree.pcl_loc.Location.loc_start.Lexing.pos_cnum
-	    in
+              get_comments_in_class last_pos
+                p_clexp.Parsetree.pcl_loc.Location.loc_start.Lexing.pos_cnum
+            in
             let text_opt = match info_opt with None -> None | Some i -> i.Odoc_types.i_desc in
             let name = tt_name_of_class_expr tt_clexp in
             let inher =
-	      {
-		ic_name = Odoc_env.full_class_or_class_type_name env name ;
-		ic_class = None ;
-		ic_text = text_opt ;
-	      }
-	    in
+              {
+                ic_name = Odoc_env.full_class_or_class_type_name env name ;
+                ic_class = None ;
+                ic_text = text_opt ;
+              }
+            in
             iter (acc_inher @ [ inher ]) (acc_fields @ ele_comments)
               p_clexp.Parsetree.pcl_loc.Location.loc_end.Lexing.pos_cnum
               q
@@ -826,7 +826,7 @@ module Analyser =
                   { (* A VOIR : chercher dans les modules et les module types, avec quel env ? *)
                     im_name = tt_name_from_module_expr mod_expr ;
                     im_module = None ;
-		    im_info = None ;
+                    im_info = None ;
                   }
                 ]
         | _ ->
@@ -842,13 +842,101 @@ module Analyser =
             []
         | ((Element_included_module im) :: q, (im_repl :: im_q)) ->
             (Element_included_module { im_repl with im_info = im.im_info })
-	    :: (f (q, im_q))
+            :: (f (q, im_q))
         | ((Element_included_module im) :: q, []) ->
             (Element_included_module im) :: q
         | (ele :: q, l) ->
             ele :: (f (q, l))
       in
       f (module_elements, included_modules)
+
+    (** This function removes the elements of the module which does not
+       belong to the given module type, if the module type is expanded
+       and the module has a "structure" kind. *)
+    let rec filter_module_with_module_type_constraint m mt =
+      match m.m_kind, mt with
+        Module_struct l, Types.Tmty_signature lsig ->
+          m.m_kind <- Module_struct (filter_module_elements_with_module_type_constraint l lsig);
+          m.m_type <- mt;
+      | _ -> ()
+
+    (** This function removes the elements of the module type which does not
+       belong to the given module type, if the module type is expanded
+       and the module type has a "structure" kind. *)
+    and filter_module_type_with_module_type_constraint mtyp mt =
+      match mtyp.mt_kind, mt with
+        Some Module_type_struct l, Types.Tmty_signature lsig ->
+          mtyp.mt_kind <- Some (Module_type_struct (filter_module_elements_with_module_type_constraint l lsig));
+          mtyp.mt_type <- Some mt;
+      | _ -> ()
+
+    and filter_module_elements_with_module_type_constraint l lsig =
+      let pred ele =
+        let f = match ele with
+          Element_module m ->
+            (function
+                Types.Tsig_module (ident,t,_) ->
+                  let n1 = Name.simple m.m_name
+                  and n2 = Ident.name ident in
+                  (
+                   match n1 = n2 with
+                     true -> filter_module_with_module_type_constraint m t; true
+                   | false -> false
+                  )
+              | _ -> false)
+        | Element_module_type mt ->
+            (function
+                Types.Tsig_modtype (ident,Types.Tmodtype_manifest t) ->
+                  let n1 = Name.simple mt.mt_name
+                  and n2 = Ident.name ident in
+                  (
+                   match n1 = n2 with
+                     true -> filter_module_type_with_module_type_constraint mt t; true
+                   | false -> false
+                  )
+              | _ -> false)
+        | Element_value v ->
+            (function
+                Types.Tsig_value (ident,_) ->
+                  let n1 = Name.simple v.val_name
+                  and n2 = Ident.name ident in
+                  n1 = n2
+              | _ -> false)
+        | Element_type t ->
+             (function
+                Types.Tsig_type (ident,_,_) ->
+                  (* A VOIR: il est possible que le détail du type soit caché *)
+                  let n1 = Name.simple t.ty_name
+                  and n2 = Ident.name ident in
+                  n1 = n2
+               | _ -> false)
+        | Element_exception e ->
+            (function
+                Types.Tsig_exception (ident,_) ->
+                  let n1 = Name.simple e.ex_name
+                  and n2 = Ident.name ident in
+                  n1 = n2
+              | _ -> false)
+        | Element_class c ->
+            (function
+                Types.Tsig_class (ident,_,_) ->
+                  let n1 = Name.simple c.cl_name
+                  and n2 = Ident.name ident in
+                  n1 = n2
+              | _ -> false)
+        | Element_class_type ct ->
+            (function
+                Types.Tsig_cltype (ident,_,_) ->
+                  let n1 = Name.simple ct.clt_name
+                  and n2 = Ident.name ident in
+                  n1 = n2
+              | _ -> false)
+        | Element_module_comment _ -> fun _ -> true
+        | Element_included_module _ -> fun _ -> true
+        in
+        List.exists f lsig
+      in
+      List.filter pred l
 
     (** Analysis of a parse tree structure with a typed tree, to return module elements.*)
     let rec analyse_structure env current_module_name last_pos pos_limit parsetree typedtree =
@@ -1033,13 +1121,13 @@ module Analyser =
                     ty_name = complete_name ;
                     ty_info = com_opt ;
                     ty_parameters =
-		      List.map2
-		        (fun p (co,cn,_) ->
-			  (Odoc_env.subst_type new_env p,
-			   co, cn)
-			)
-		      tt_type_decl.Types.type_params
-		      tt_type_decl.Types.type_variance ;
+                      List.map2
+                        (fun p (co,cn,_) ->
+                          (Odoc_env.subst_type new_env p,
+                           co, cn)
+                        )
+                      tt_type_decl.Types.type_params
+                      tt_type_decl.Types.type_variance ;
                     ty_kind = kind ;
                     ty_manifest =
                     (match tt_type_decl.Types.type_manifest with
@@ -1047,12 +1135,12 @@ module Analyser =
                     | Some t -> Some (Odoc_env.subst_type new_env t));
                     ty_loc = { loc_impl = Some (!file_name, loc_start) ; loc_inter = None } ;
                     ty_code =
-		      (
-		       if !Odoc_args.keep_code then
-			 Some (get_string_of_file loc_start new_end)
-		       else
-			 None
-		      ) ;
+                      (
+                       if !Odoc_args.keep_code then
+                         Some (get_string_of_file loc_start new_end)
+                       else
+                         None
+                      ) ;
                   }
                 in
                 let (maybe_more2, info_after_opt) =
@@ -1086,13 +1174,13 @@ module Analyser =
               ex_args = List.map (Odoc_env.subst_type new_env) tt_excep_decl ;
               ex_alias = None ;
               ex_loc = { loc_impl = Some (!file_name, loc.Location.loc_start.Lexing.pos_cnum) ; loc_inter = None } ;
-	      ex_code =
+              ex_code =
                 (
-		 if !Odoc_args.keep_code then
+                 if !Odoc_args.keep_code then
                    Some (get_string_of_file loc_start loc_end)
                  else
                    None
-		) ;
+                ) ;
             }
           in
           (0, new_env, [ Element_exception new_ex ])
@@ -1133,18 +1221,18 @@ module Analyser =
                  module_expr
                  tt_module_expr
              in
-	     let code =
-	       if !Odoc_args.keep_code then
-		 let loc = module_expr.Parsetree.pmod_loc in
-		 let st = loc.Location.loc_start.Lexing.pos_cnum in
-		 let en = loc.Location.loc_end.Lexing.pos_cnum in
-		 Some (get_string_of_file st en)
-	       else
-		 None
-	     in
-	     let new_module =
-	       { new_module_pre with m_code = code }
-	     in
+             let code =
+               if !Odoc_args.keep_code then
+                 let loc = module_expr.Parsetree.pmod_loc in
+                 let st = loc.Location.loc_start.Lexing.pos_cnum in
+                 let en = loc.Location.loc_end.Lexing.pos_cnum in
+                 Some (get_string_of_file st en)
+               else
+                 None
+             in
+             let new_module =
+               { new_module_pre with m_code = code }
+             in
              let new_env = Odoc_env.add_module env new_module.m_name in
              let new_env2 =
                match new_module.m_type with
@@ -1163,14 +1251,14 @@ module Analyser =
           )
 
       | Parsetree.Pstr_recmodule mods ->
-	  (* A VOIR ICI ca merde avec /work/tmp/graph.ml: pas de lien avec les module type
-	     dans les contraintes sur les modules *)
-	  let new_env =
+          (* A VOIR ICI pb: pas de lien avec les module type
+             dans les contraintes sur les modules *)
+          let new_env =
             List.fold_left
               (fun acc_env (name, _, mod_exp) ->
                 let complete_name = Name.concat current_module_name name in
-		let e = Odoc_env.add_module acc_env complete_name in
-		let tt_mod_exp =
+                let e = Odoc_env.add_module acc_env complete_name in
+                let tt_mod_exp =
                   try Typedtree_search.search_module table name
                   with Not_found -> raise (Failure (Odoc_messages.module_not_found_in_typedtree complete_name))
                 in
@@ -1181,12 +1269,12 @@ module Analyser =
                     None
                     mod_exp
                     tt_mod_exp
-		in
-		match new_module.m_type with
+                in
+                match new_module.m_type with
                   Types.Tmty_signature s ->
                     Odoc_env.add_signature e new_module.m_name
-		      ~rel: (Name.simple new_module.m_name) s
-		  | _ ->
+                      ~rel: (Name.simple new_module.m_name) s
+                  | _ ->
                       e
               )
               env
@@ -1209,14 +1297,14 @@ module Analyser =
                   else
                     get_comments_in_module last_pos loc_start
                 in
-		let new_module = analyse_module
+                let new_module = analyse_module
                     new_env
                     current_module_name
                     name
                     com_opt
                     mod_exp
                     tt_mod_exp
-		in
+                in
                 let eles = f loc_end q in
                 ele_comments @ ((Element_module new_module) :: eles)
           in
@@ -1371,7 +1459,7 @@ module Analyser =
             {
               im_name = "dummy" ;
               im_module = None ;
-	      im_info = comment_opt ;
+              im_info = comment_opt ;
             }
           in
           (0, env, [ Element_included_module im ]) (* A VOIR : étendre l'environnement ? avec quoi ? *)
@@ -1383,16 +1471,16 @@ module Analyser =
       let pos_end = p_module_expr.Parsetree.pmod_loc.Location.loc_end.Lexing.pos_cnum in
       let modtype =
         (* A VOIR : Odoc_env.subst_module_type env  ? *)
-	tt_module_expr.Typedtree.mod_type
+        tt_module_expr.Typedtree.mod_type
       in
       let m_code_intf =
-	match p_module_expr.Parsetree.pmod_desc with
-	  Parsetree.Pmod_constraint (_, pmodule_type) ->
-	    let loc_start = pmodule_type.Parsetree.pmty_loc.Location.loc_start.Lexing.pos_cnum in
+        match p_module_expr.Parsetree.pmod_desc with
+          Parsetree.Pmod_constraint (_, pmodule_type) ->
+            let loc_start = pmodule_type.Parsetree.pmty_loc.Location.loc_start.Lexing.pos_cnum in
             let loc_end = pmodule_type.Parsetree.pmty_loc.Location.loc_end.Lexing.pos_cnum in
-	    Some (get_string_of_file loc_start loc_end)
-	| _ ->
-	    None
+            Some (get_string_of_file loc_start loc_end)
+        | _ ->
+            None
       in
       let m_base =
         {
@@ -1404,9 +1492,9 @@ module Analyser =
           m_kind = Module_struct [] ;
           m_loc = { loc_impl = Some (!file_name, pos_start) ; loc_inter = None } ;
           m_top_deps = [] ;
-	  m_code = None ; (* code is set by the caller, after the module is created *)
-	  m_code_intf = m_code_intf ;
-	  m_text_only = false ;
+          m_code = None ; (* code is set by the caller, after the module is created *)
+          m_code_intf = m_code_intf ;
+          m_text_only = false ;
       }
       in
       match (p_module_expr.Parsetree.pmod_desc, tt_module_expr.Typedtree.mod_desc) with
@@ -1424,24 +1512,24 @@ module Analyser =
 
       | (Parsetree.Pmod_functor (_, pmodule_type, p_module_expr2),
          Typedtree.Tmod_functor (ident, mtyp, tt_module_expr2)) ->
-	   let loc_start = pmodule_type.Parsetree.pmty_loc.Location.loc_start.Lexing.pos_cnum in
+           let loc_start = pmodule_type.Parsetree.pmty_loc.Location.loc_start.Lexing.pos_cnum in
            let loc_end = pmodule_type.Parsetree.pmty_loc.Location.loc_end.Lexing.pos_cnum in
-	   let mp_type_code = get_string_of_file loc_start loc_end in
-	   print_DEBUG (Printf.sprintf "mp_type_code=%s" mp_type_code);
-	   let mp_name = Name.from_ident ident in
-	   let mp_kind = Sig.analyse_module_type_kind env
-	       current_module_name pmodule_type mtyp
-	   in
+           let mp_type_code = get_string_of_file loc_start loc_end in
+           print_DEBUG (Printf.sprintf "mp_type_code=%s" mp_type_code);
+           let mp_name = Name.from_ident ident in
+           let mp_kind = Sig.analyse_module_type_kind env
+               current_module_name pmodule_type mtyp
+           in
            let param =
              {
                mp_name = mp_name ;
                mp_type = Odoc_env.subst_module_type env mtyp ;
-	       mp_type_code = mp_type_code ;
-	       mp_kind = mp_kind ;
+               mp_type_code = mp_type_code ;
+               mp_kind = mp_kind ;
              }
            in
            let dummy_complete_name = (*Name.concat "__"*) param.mp_name in
-	   (* TODO: A VOIR CE __ *)
+           (* TODO: A VOIR CE __ *)
            let new_env = Odoc_env.add_module env dummy_complete_name in
            let m_base2 = analyse_module
                new_env
@@ -1458,9 +1546,9 @@ module Analyser =
          Typedtree.Tmod_apply (tt_module_expr1, tt_module_expr2, _))
       | (Parsetree.Pmod_apply (p_module_expr1, p_module_expr2),
          Typedtree.Tmod_constraint
-	   ({ Typedtree.mod_desc = Typedtree.Tmod_apply (tt_module_expr1, tt_module_expr2, _)},
+           ({ Typedtree.mod_desc = Typedtree.Tmod_apply (tt_module_expr1, tt_module_expr2, _)},
             _, _)
-	) ->
+        ) ->
           let m1 = analyse_module
               env
               current_module_name
@@ -1481,12 +1569,7 @@ module Analyser =
 
       | (Parsetree.Pmod_constraint (p_module_expr2, p_modtype),
          Typedtree.Tmod_constraint (tt_module_expr2, tt_modtype, _)) ->
-	  print_DEBUG ("Odoc_ast: case Parsetree.Pmod_constraint + Typedtree.Tmod_constraint "^module_name);
-
-          (* we create the module with p_module_expr2 and tt_module_expr2
-             but we change its type according to the constraint.
-             A VOIR : est-ce que c'est bien ?
-          *)
+          print_DEBUG ("Odoc_ast: case Parsetree.Pmod_constraint + Typedtree.Tmod_constraint "^module_name);
           let m_base2 = analyse_module
               env
               current_module_name
@@ -1495,58 +1578,54 @@ module Analyser =
               p_module_expr2
               tt_module_expr2
           in
-          let mtkind = Sig.analyse_module_type_kind
-              env
+          let mtkind = Sig.analyse_module_type_kind env
               (Name.concat current_module_name "??")
               p_modtype tt_modtype
           in
+          let tt_modtype = Odoc_env.subst_module_type env tt_modtype in
+          filter_module_with_module_type_constraint m_base2 tt_modtype;
           {
             m_base with
-            m_type = Odoc_env.subst_module_type env tt_modtype ;
-            m_kind = Module_constraint (m_base2.m_kind,
-                                        mtkind)
-
-(*                                      Module_type_alias { mta_name = "Not analyzed" ;
-                                                            mta_module = None })
-*)
+            m_type = tt_modtype ;
+            m_kind = Module_constraint (m_base2.m_kind, mtkind) ;
           }
 
       | (Parsetree.Pmod_structure p_structure,
          Typedtree.Tmod_constraint
-	   ({ Typedtree.mod_desc = Typedtree.Tmod_structure tt_structure},
-	    tt_modtype, _)
-	) ->
-	  (* needed for recursive modules *)
+           ({ Typedtree.mod_desc = Typedtree.Tmod_structure tt_structure},
+            tt_modtype, _)
+        ) ->
+          (* needed for recursive modules *)
 
-	  print_DEBUG ("Odoc_ast: case Parsetree.Pmod_structure + Typedtree.Tmod_constraint "^module_name);
-	  let elements = analyse_structure env complete_name pos_start pos_end p_structure tt_structure in
+          print_DEBUG ("Odoc_ast: case Parsetree.Pmod_structure + Typedtree.Tmod_constraint "^module_name);
+          let elements = analyse_structure env complete_name pos_start pos_end p_structure tt_structure in
           (* we must complete the included modules *)
           let included_modules_from_tt = tt_get_included_module_list tt_structure in
           let elements2 = replace_dummy_included_modules elements included_modules_from_tt in
           { m_base with
-	    m_type = Odoc_env.subst_module_type env tt_modtype ;
-	    m_kind = Module_struct elements2 ;
-	  }
+            m_type = Odoc_env.subst_module_type env tt_modtype ;
+            m_kind = Module_struct elements2 ;
+          }
 
       | (parsetree, typedtree) ->
           (*DEBUG*)let s_parse =
           (*DEBUG*)  match parsetree with
           (*DEBUG*)    Parsetree.Pmod_ident _ -> "Pmod_ident"
-	  (*DEBUG*)  | Parsetree.Pmod_structure _ -> "Pmod_structure"
-	  (*DEBUG*)  | Parsetree.Pmod_functor _ -> "Pmod_functor"
-	  (*DEBUG*)  | Parsetree.Pmod_apply _ -> "Pmod_apply"
-	  (*DEBUG*)  | Parsetree.Pmod_constraint _ -> "Pmod_constraint"
-	  (*DEBUG*)in
-	  (*DEBUG*)let s_typed =
+          (*DEBUG*)  | Parsetree.Pmod_structure _ -> "Pmod_structure"
+          (*DEBUG*)  | Parsetree.Pmod_functor _ -> "Pmod_functor"
+          (*DEBUG*)  | Parsetree.Pmod_apply _ -> "Pmod_apply"
+          (*DEBUG*)  | Parsetree.Pmod_constraint _ -> "Pmod_constraint"
+          (*DEBUG*)in
+          (*DEBUG*)let s_typed =
           (*DEBUG*)  match typedtree with
           (*DEBUG*)    Typedtree.Tmod_ident _ -> "Tmod_ident"
-	  (*DEBUG*)  | Typedtree.Tmod_structure _ -> "Tmod_structure"
-	  (*DEBUG*)  | Typedtree.Tmod_functor _ -> "Tmod_functor"
-	  (*DEBUG*)  | Typedtree.Tmod_apply _ -> "Tmod_apply"
-	  (*DEBUG*)  | Typedtree.Tmod_constraint _ -> "Tmod_constraint"
-	  (*DEBUG*)in
-	  (*DEBUG*)let code = get_string_of_file pos_start pos_end in
-	  print_DEBUG (Printf.sprintf "code=%s\ns_parse=%s\ns_typed=%s\n" code s_parse s_typed);
+          (*DEBUG*)  | Typedtree.Tmod_structure _ -> "Tmod_structure"
+          (*DEBUG*)  | Typedtree.Tmod_functor _ -> "Tmod_functor"
+          (*DEBUG*)  | Typedtree.Tmod_apply _ -> "Tmod_apply"
+          (*DEBUG*)  | Typedtree.Tmod_constraint _ -> "Tmod_constraint"
+          (*DEBUG*)in
+          (*DEBUG*)let code = get_string_of_file pos_start pos_end in
+          print_DEBUG (Printf.sprintf "code=%s\ns_parse=%s\ns_typed=%s\n" code s_parse s_typed);
 
           raise (Failure "analyse_module: parsetree and typedtree don't match.")
 
@@ -1586,12 +1665,8 @@ module Analyser =
          m_kind = kind ;
          m_loc = { loc_impl = Some (!file_name, 0) ; loc_inter = None } ;
          m_top_deps = [] ;
-	 m_code = (if !Odoc_args.keep_code then Some !file else None) ;
-	 m_code_intf = None ;
-	 m_text_only = false ;
+         m_code = (if !Odoc_args.keep_code then Some !file else None) ;
+         m_code_intf = None ;
+         m_text_only = false ;
        }
   end
-
-
-
-(* eof $Id$ *)

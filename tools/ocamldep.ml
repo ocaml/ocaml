@@ -66,7 +66,7 @@ let find_dependency modname (byt_deps, opt_deps) =
   try
     let filename = find_file (modname ^ ".mli") in
     let basename = Filename.chop_suffix filename ".mli" in
-    let optname = 
+    let optname =
       if Sys.file_exists (basename ^ ".ml")
       then basename ^ ".cmx"
       else basename ^ ".cmi" in

@@ -93,7 +93,6 @@ CMOFILES= odoc_config.cmo \
 	odoc_parser.cmo\
 	odoc_lexer.cmo\
 	odoc_see_lexer.cmo\
-	odoc_comments.cmo\
 	odoc_env.cmo\
 	odoc_merge.cmo\
 	odoc_sig.cmo\
@@ -103,6 +102,7 @@ CMOFILES= odoc_config.cmo \
 	odoc_search.cmo\
 	odoc_scan.cmo\
 	odoc_cross.cmo\
+	odoc_comments.cmo\
 	odoc_dep.cmo\
 	odoc_analyse.cmo\
 	odoc_info.cmo
@@ -210,6 +210,10 @@ $(OCAMLDOC_LIBCMXA): $(LIBCMXFILES)
 	$(OCAMLOPT) -a -o $@ $(LINKFLAGS) $(OCAMLCMXFILES) $(LIBCMXFILES)
 
 manpages: stdlib_man/Pervasives.3o
+
+dot: $(EXECMOFILES) odoc.cmo
+	$(OCAMLDOC_RUN) -dot -dot-reduce -o ocamldoc.dot $(INCLUDES) \
+	odoc*.ml
 
 # Parsers and lexers dependencies :
 ###################################

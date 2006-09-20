@@ -89,6 +89,7 @@ LBL(105):
         pushl   %ebx
         pushl   %eax
         movl    %esp, G(caml_gc_regs)
+        /* MacOSX note: 16-alignment of stack preserved at this point */
     /* Call the garbage collector */
         call    G(caml_garbage_collection)
     /* Restore all regs used by the code generator */
@@ -116,7 +117,13 @@ LBL(100):
         movl    %eax, G(caml_last_return_address)
         leal    4(%esp), %eax
         movl    %eax, G(caml_bottom_of_stack)
+#ifdef SYS_macosx
+        subl    $12, %esp       /* 16-alignment */
+#endif
         call    LBL(105)
+#ifdef SYS_macosx
+        addl    $12, %esp       /* undo 16-alignment */
+#endif
         jmp     G(caml_alloc1)
 
         .align  FUNCTION_ALIGN
@@ -133,7 +140,13 @@ LBL(101):
         movl    %eax, G(caml_last_return_address)
         leal    4(%esp), %eax
         movl    %eax, G(caml_bottom_of_stack)
+#ifdef SYS_macosx
+        subl    $12, %esp       /* 16-alignment */
+#endif
         call    LBL(105)
+#ifdef SYS_macosx
+        addl    $12, %esp       /* undo 16-alignment */
+#endif
         jmp     G(caml_alloc2)
 
         .align  FUNCTION_ALIGN
@@ -150,7 +163,13 @@ LBL(102):
         movl    %eax, G(caml_last_return_address)
         leal    4(%esp), %eax
         movl    %eax, G(caml_bottom_of_stack)
+#ifdef SYS_macosx
+        subl    $12, %esp       /* 16-alignment */
+#endif
         call    LBL(105)
+#ifdef SYS_macosx
+        addl    $12, %esp       /* undo 16-alignment */
+#endif
         jmp     G(caml_alloc3)
 
         .align  FUNCTION_ALIGN
@@ -171,7 +190,13 @@ LBL(103):
         movl    %eax, G(caml_last_return_address)
         leal    8(%esp), %eax
         movl    %eax, G(caml_bottom_of_stack)
+#ifdef SYS_macosx
+        subl    $8, %esp       /* 16-alignment */
+#endif
         call    LBL(105)
+#ifdef SYS_macosx
+        addl    $8, %esp       /* undo 16-alignment */
+#endif
         popl    %eax                    /* recover desired size */
         jmp     G(caml_allocN)
 

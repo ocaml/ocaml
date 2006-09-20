@@ -333,12 +333,11 @@ let info_of_string s =
     None -> dummy
   | Some i -> i
 
-let info_of_comment_file f =
+let info_of_comment_file modlist f =
   try
     let s = Odoc_misc.input_file_as_string f in
-    info_of_string s
+    let i = info_of_string s in
+    Odoc_cross.assoc_comments_info "" modlist i
   with
     Sys_error s ->
       failwith s
-
-(* eof $Id$ *)

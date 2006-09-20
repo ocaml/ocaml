@@ -993,12 +993,12 @@ class texi =
       let title = [
         self#node depth m.m_name ;
         Title (depth, None,
-	       if m.m_text_only then
-		 [ Raw m.m_name ]
-	       else
-		 [ Raw (Odoc_messages.modul ^ " ") ;
+               if m.m_text_only then
+                 [ Raw m.m_name ]
+               else
+                 [ Raw (Odoc_messages.modul ^ " ") ;
                    Code m.m_name ]
-	      ) ;
+              ) ;
         self#index `Module m.m_name ; Newline ] in
       puts chanout (self#texi_of_text title) ;
 
@@ -1105,7 +1105,8 @@ class texi =
         | Some f ->
             nl chan ;
             puts_nl chan
-              (self#texi_of_info (Some (Odoc_info.info_of_comment_file f)))
+              (self#texi_of_info
+                 (Some (Odoc_info.info_of_comment_file m_list f)))
       end ;
 
       (* write a top menu *)
