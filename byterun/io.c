@@ -69,6 +69,7 @@ CAMLexport struct channel * caml_open_descriptor_in(int fd)
   channel->revealed = 0;
   channel->old_revealed = 0;
   channel->refcount = 0;
+  channel->flags = 0;
   channel->next = caml_all_opened_channels;
   channel->prev = NULL;
   if (caml_all_opened_channels != NULL)

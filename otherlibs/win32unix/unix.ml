@@ -198,23 +198,10 @@ let single_write fd buf ofs len =
 
 (* Interfacing with the standard input/output library *)
 
-external open_read_descriptor : int -> in_channel = "caml_ml_open_descriptor_in"
-external open_write_descriptor : int -> out_channel
-                               = "caml_ml_open_descriptor_out"
-external fd_of_in_channel : in_channel -> int = "caml_channel_descriptor"
-external fd_of_out_channel : out_channel -> int = "caml_channel_descriptor"
-
-external open_handle : file_descr -> int = "win_fd_handle"
-
-let in_channel_of_descr handle =
-  open_read_descriptor(open_handle handle)
-let out_channel_of_descr handle =
-  open_write_descriptor(open_handle handle)
-
-let descr_of_in_channel inchan =
-  filedescr_of_fd(fd_of_in_channel inchan)
-let descr_of_out_channel outchan =
-  filedescr_of_fd(fd_of_out_channel outchan)
+external in_channel_of_descr: file_descr -> in_channel = "win_inchannel_of_filedescr"
+external out_channel_of_descr: file_descr -> out_channel = "win_outchannel_of_filedescr"
+external descr_of_in_channel : in_channel -> file_descr = "win_filedescr_of_channel"
+external descr_of_out_channel : out_channel -> file_descr = "win_filedescr_of_channel"
 
 (* Seeking and truncating *)
 
