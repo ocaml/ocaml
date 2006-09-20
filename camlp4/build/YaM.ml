@@ -560,6 +560,7 @@ let ocaml_Program ?(o= !options) ?flags ?byte_flags ?opt_flags ?includes ?(libra
 let phony_unit ?(depends=["@FORCE@"]) ?(command="") name = 
   generic_unit ~targets:[name] 
     ~name
+    ~trash:[]
     ~dependencies:(fun ~native f -> depends)
     ~compile_cmd: (fun _ -> command,[])
     ()
@@ -733,6 +734,14 @@ let clean p =
   silent_remove st_cache;
   iter_units (fun u -> List.iter silent_remove u.trash) p.units
 
+let genclean p out =
+  let trash =
+    fold_units (fun u -> List.fold_right (fun x acc -> x :: acc) u.trash)
+      [] p.units in
+  let out = open_out out in
+  Format.fprintf (Format.formatter_of_out_channel out)
+     "CLEANFILES = \\\n  %s@." (String.concat " \\\n  " trash);
+  close_out out
 
 (* (\* génération de la documentation *\) *)
 (* let doc p = *)
@@ -848,6 +857,7 @@ let main ?rebuild ?deps l =
   in
   let version() = alone "-version"; Printf.printf "YaM version 1.0\n"; exit 0 in
   let clean()   = alone "-clean"; clean p; exit 0 in
+  let genclean s = genclean p s; exit 0 in
   let verbosity s =
     match s with
     | ""|"0" -> print_cmds := false
@@ -855,6 +865,7 @@ let main ?rebuild ?deps l =
     Arg.parse [
       "-version", Arg.Unit   version,    " \tdisplay version information";
       "-clean",   Arg.Unit   clean,      " \tremove all generated files";
+      "-genclean",Arg.String genclean,   " \tgenerate a clean file list in the given file";
       "-v",       Arg.Set    print_deps, " \t\tbe verbose: print dependencies commands";
       "-q",       Arg.Clear  print_cmds, " \t\tbe quiet: do not print commands";
       "-r",       Arg.String Sys.chdir,  " <dir>\tset `dir' as root directory";

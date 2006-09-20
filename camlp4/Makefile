@@ -23,18 +23,29 @@ opt install doc all pack just_doc: yam
 	@echo 'YAM $@ (use "make $@ VERBOSE=1" for a verbose make)'
 	@$(YAM) $(YAM_OPTIONS) $@
 
+genclean: yam
+	$(YAM) -genclean Makefile.clean
+
 clean:
-	if test -x ../ocaml; then \
-	$(OCAML) build/build.ml -clean; \
+	if test -x ../boot/ocamlrun; then \
+	  if test -x ../ocaml; then \
+	    $(OCAML) build/build.ml -clean; \
+	  else \
+	    if test -x ./yam; then \
+	      $(YAM) $(YAM_OPTIONS) -clean; \
+	    else \
+	      $(MAKE) staticclean; \
+	    fi; \
+	  fi; \
 	else \
-	if test -x $(YAM); then \
-	$(YAM) $(YAM_OPTIONS) -clean; \
-	else : ; \
-	fi; \
+	  $(MAKE) staticclean; \
 	fi
 
 cleanall:
 	$(OCAML) build/build.ml -cleanall
+
+staticclean:
+	rm -f $(CLEANFILES)
 
 yam: build/build.ml
 	$(OCAML) build/build.ml
@@ -68,3 +79,4 @@ compare:
 .PHONY: clean install all uninstall backup restore boot-clean promote-debug \
 	promote compare opt doc cleanall all-local clean-local depend
 
+-include Makefile.clean

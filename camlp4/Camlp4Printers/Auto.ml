@@ -16,7 +16,11 @@
  * - Nicolas Pouillard: initial version
  *)
 
+IFDEF UNIX THEN
 if (Unix.fstat Unix.stdout).Unix.st_kind = Unix.S_CHR then
   Camlp4.Printers.OCaml.enable ()
 else
-  Camlp4.Printers.DumpOCamlAst.enable ();
+  Camlp4.Printers.DumpOCamlAst.enable ()
+ELSE
+  Camlp4.Printers.DumpOCamlAst.enable ()
+ENDIF;

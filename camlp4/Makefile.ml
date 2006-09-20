@@ -74,12 +74,16 @@ let () =
 
 let options_without_camlp4 = new_scope (lazy !options)
 
+let windows = Sys.os_type = "Win32"
+
+let may_define_unix = if windows then [] else ["-D UNIX"]
+
 let () =
   !options.ocaml_Flags ^= "-w Ale -warn-error Ale"^^
                             (if getenv "DTYPES" "" <> "" then "-dtypes"
                              else "");
-  !options.ocaml_P4     := camlp4boot_may_debug [];
-  !options.ocaml_P4_opt := camlp4boot_may_debug ["-D OPT"];
+  !options.ocaml_P4     := camlp4boot_may_debug may_define_unix;
+  !options.ocaml_P4_opt := camlp4boot_may_debug ("-D OPT" :: may_define_unix);
   ()
 
 let options_without_debug () = { (!options) with ocaml_P4     = ref camlp4boot
@@ -463,8 +467,6 @@ let all =
  ] @ extensions
 
 
-let windows = Sys.os_type = "Win32"
-
 (* X.run -> X.exe || X.run -> X *)
 let conv_byte_extension f =
   if windows then
@@ -535,19 +537,19 @@ main ~rebuild:(ocaml ^ "build/build.ml")
  (all @ [
   phony_unit ~depends:byte "all";
   phony_unit ~depends:opt "opt";
-  generic_unit ~name:"install" ~targets:["install"]
+  generic_unit ~name:"install" ~targets:["install"] ~trash:[]
                ~dependencies:(fun ~native:_ _ -> [])
                ~compile_cmd:(fun _ -> install (); exit 0)
                ();
-  generic_unit ~name:"doc" ~targets:["doc"]
+  generic_unit ~name:"doc" ~targets:["doc"] ~trash:[]
                ~dependencies:(fun ~native:_ _ -> [])
                ~compile_cmd:(fun _ -> doc (); exit 0)
                ();
-  generic_unit ~name:"just_doc" ~targets:["just_doc"]
+  generic_unit ~name:"just_doc" ~targets:["just_doc"] ~trash:[]
                ~dependencies:(fun ~native:_ _ -> [])
                ~compile_cmd:(fun _ -> just_doc (); exit 0)
                ();
-  generic_unit ~name:"pack" ~targets:["pack"]
+  generic_unit ~name:"pack" ~targets:["pack"] ~trash:[]
                ~dependencies:(fun ~native:_ _ -> [])
                ~compile_cmd:(fun _ -> pack (); exit 0)
                ();
