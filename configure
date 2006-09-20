@@ -590,7 +590,7 @@ case "$host" in
   hppa*-*-linux*)               arch=hppa; system=linux;;
   hppa*-*-gnu*)                 arch=hppa; system=gnu;;
   powerpc-*-linux*)             arch=power; model=ppc; system=elf;;
-  powerpc-*-netbsd*)            arch=power; model=ppc; system=bsd;;
+  powerpc-*-netbsd*)            arch=power; model=ppc; system=elf;;
   powerpc-*-rhapsody*)          arch=power; model=ppc; system=rhapsody;;
   powerpc-*-darwin*)            arch=power; system=rhapsody
                                 if $arch64; then model=ppc64; else model=ppc; fi;;
