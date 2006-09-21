@@ -357,6 +357,10 @@ val fstat : file_descr -> stats
 (** Return the information for the file associated with the given
    descriptor. *)
 
+val isatty : file_descr -> bool
+(** Return [true] if the given file descriptor refers to a terminal or
+   console window, [false] otherwise. *)
+
 (** {6 Seeking, truncating and statistics on large files} *)
 
 
