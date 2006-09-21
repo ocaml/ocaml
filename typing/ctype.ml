@@ -463,7 +463,7 @@ let closed_type_decl decl =
     | Type_record(r, rep, priv) ->
         List.iter (fun (_, _, ty) -> closed_type ty) r
     | Type_private l ->
-        List.iter (iter_compat closed_type) l
+        List.iter (function Ctype t -> closed_type t | _ -> ()) l
     end;
     begin match decl.type_manifest with
       None    -> ()
