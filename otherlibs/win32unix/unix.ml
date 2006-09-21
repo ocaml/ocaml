@@ -242,7 +242,9 @@ type stats =
 
 external stat : string -> stats = "unix_stat"
 let lstat = stat
-let fstat fd = invalid_arg "Unix.fstat not implemented"
+external fstat : file_descr -> stats = "unix_fstat"
+let isatty fd =
+  match (fstat fd).st_kind with S_CHR -> true | _ -> false
 
 (* Operations on file names *)
 
@@ -273,7 +275,7 @@ module LargeFile =
       }
     external stat : string -> stats = "unix_stat_64"
     let lstat = stat
-    let fstat fd = invalid_arg "Unix.LargeFile.fstat not implemented"
+    external fstat : file_descr -> stats = "unix_fstat_64"
   end
 
 (* File permissions and ownership *)

@@ -86,3 +86,30 @@ CAMLprim value unix_stat_64(value path)
   return stat_aux(1, &buf);
 }
 
+CAMLprim value unix_fstat(value handle)
+{
+  int ret;
+  struct _stati64 buf;
+
+  ret = _fstati64(win_CRT_fd_of_filedescr(handle), &buf);
+  if (ret == -1) uerror("fstat", Nothing);
+  if (buf.st_size > Max_long) {
+    win32_maperr(ERROR_ARITHMETIC_OVERFLOW);
+    uerror("fstat", Nothing);
+  }
+  return stat_aux(0, &buf);
+}
+
+CAMLprim value unix_fstat_64(value handle)
+{
+  int ret;
+  struct _stati64 buf;
+
+  ret = _fstati64(win_CRT_fd_of_filedescr(handle), &buf);
+  if (ret == -1) uerror("fstat", Nothing);
+  if (buf.st_size > Max_long) {
+    win32_maperr(ERROR_ARITHMETIC_OVERFLOW);
+    uerror("fstat", Nothing);
+  }
+  return stat_aux(1, &buf);
+}
