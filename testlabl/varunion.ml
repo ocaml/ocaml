@@ -96,3 +96,21 @@ module Mix(X:T)(Y:T with type t = private [> ] ~ [X.t]) :
 (* deep *)
 module M : sig type t = private [> ] ~ [`A] end = struct type t = [`A] end
 module M' : sig type t = private [> ] end = struct type t = [M.t | `A] end;;
+
+(* parameters *)
+module type T = sig
+  type t = private [> ] ~ [ `A of int ]
+  type ('a,'b) u = private [> ] ~ [ `A of 'a; `A of 'b; `B of 'b ]
+  type v = private [> ] ~ [ `A of int; `A of bool ]
+end
+module F(X:T) = struct
+  let h = function
+      `A _ -> true
+    | #X.t -> false
+  let f = function
+      `A _ | `B _ -> true
+    | #X.u -> false
+  let g = function
+      `A _ -> true
+    | #X.v -> false
+end
