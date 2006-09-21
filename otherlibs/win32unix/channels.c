@@ -16,13 +16,14 @@
 #include <mlvalues.h>
 #include <alloc.h>
 #include <io.h>
+#include <memory.h>
 #include "unixsupport.h"
 #include <fcntl.h>
 
 extern long _get_osfhandle(int);
 extern int _open_osfhandle(long, int);
 
-static int CRT_fd_of_filedescr(value handle)
+int win_CRT_fd_of_filedescr(value handle)
 {
   if (CRT_fd_val(handle) != NO_CRT_FD) {
     return CRT_fd_val(handle);
@@ -39,7 +40,7 @@ CAMLprim value win_inchannel_of_filedescr(value handle)
   CAMLlocal1(vchan);
   struct channel * chan;
 
-  chan = caml_open_descriptor_in(CRT_fd_of_filedescr(handle));
+  chan = caml_open_descriptor_in(win_CRT_fd_of_filedescr(handle));
   if (Descr_kind_val(handle) == KIND_SOCKET)
     chan->flags |= CHANNEL_FLAG_FROM_SOCKET;
   vchan = caml_alloc_channel(chan);
@@ -53,7 +54,7 @@ CAMLprim value win_outchannel_of_filedescr(value handle)
   int fd;
   struct channel * chan;
 
-  chan = caml_open_descriptor_out(CRT_fd_of_filedescr(handle));
+  chan = caml_open_descriptor_out(win_CRT_fd_of_filedescr(handle));
   if (Descr_kind_val(handle) == KIND_SOCKET)
     chan->flags |= CHANNEL_FLAG_FROM_SOCKET;
   vchan = caml_alloc_channel(chan);
@@ -68,13 +69,13 @@ CAMLprim value win_filedescr_of_channel(value vchan)
   HANDLE h;
 
   chan = Channel(vchan);
-  if (channel->fd == -1) uerror("descr_of_channel", Nothing);
-  h = (HANDLE) _get_osfhandle(channel->fd);
+  if (chan->fd == -1) uerror("descr_of_channel", Nothing);
+  h = (HANDLE) _get_osfhandle(chan->fd);
   if (chan->flags & CHANNEL_FLAG_FROM_SOCKET)
-    fd = win_alloc_socket(h);
+    fd = win_alloc_socket((SOCKET) h);
   else
     fd = win_alloc_handle(h);
-  CRT_fd_val(fd) = channel->fd;
+  CRT_fd_val(fd) = chan->fd;
   CAMLreturn(fd);
 }
 

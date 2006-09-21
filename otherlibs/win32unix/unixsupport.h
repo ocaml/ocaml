@@ -39,6 +39,7 @@ struct filedescr {
 extern value win_alloc_handle_or_socket(HANDLE);
 extern value win_alloc_handle(HANDLE);
 extern value win_alloc_socket(SOCKET);
+extern int win_CRT_fd_of_filedescr(value handle);
 
 #define NO_CRT_FD (-1)
 #define Nothing ((value) 0)
