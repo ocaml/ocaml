@@ -37,7 +37,6 @@ CAMLprim value unix_dup2(value fd1, value fd2)
   Descr_kind_val(fd2) = Descr_kind_val(fd1);
   /* Reflect the dup2 on the CRT fds, if any */
   if (CRT_fd_val(fd1) != NO_CRT_FD || CRT_fd_val(fd2) != NO_CRT_FD)
-    _dup2(Int_val(win_CRT_fd_of_filedescr(fd1)),
-	  Int_val(win_CRT_fd_of_filedescr(fd2)));
+    _dup2(win_CRT_fd_of_filedescr(fd1), win_CRT_fd_of_filedescr(fd2));
   return Val_unit;
 }
