@@ -41,12 +41,15 @@ static int wait_flag_table[] = { CAML_WNOHANG, CAML_WUNTRACED };
 CAMLprim value win_waitpid(value vflags, value vpid_req)
 {
   int flags;
-  DWORD status;
+  DWORD status, retcode;
   HANDLE pid_req = (HANDLE) Long_val(vpid_req);
 
   flags = convert_flag_list(vflags, wait_flag_table);
   if ((flags & CAML_WNOHANG) == 0) {
-    if (WaitForSingleObject(pid_req, INFINITE) == WAIT_FAILED) {
+    enter_blocking_section();
+    retcode = WaitForSingleObject(pid_req, INFINITE);
+    leave_blocking_section();
+    if (retcode == WAIT_FAILED) {
       win32_maperr(GetLastError());
       uerror("waitpid", Nothing);
     }
