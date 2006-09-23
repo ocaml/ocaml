@@ -428,13 +428,6 @@ void caml_startup(char ** argv)
 
 (* Build a custom runtime *)
 
-let rec extract suffix l =
-  match l with
-  | [] -> []
-  | h::t when Filename.check_suffix h suffix -> h :: (extract suffix t)
-  | h::t -> extract suffix t
-;;
-
 let build_custom_runtime prim_name exec_name =
   match Config.ccomp_type with
     "cc" ->
@@ -469,7 +462,9 @@ let build_custom_runtime prim_name exec_name =
          file is created in the current working directory. *)
       remove_file
         (Filename.chop_suffix (Filename.basename prim_name) ".c" ^ ".obj");
-      retcode
+      if retcode <> 0
+      then retcode
+      else Ccomp.merge_manifest exec_name
   | _ -> assert false
 
 let append_bytecode_and_cleanup bytecode_name exec_name prim_name =

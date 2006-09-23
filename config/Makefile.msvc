@@ -63,17 +63,23 @@ NATIVECCLIBS=advapi32.lib
 ### How to invoke the C preprocessor
 CPP=cl /nologo /EP
 
+### How to merge a .manifest (if any) in a .exe or .dll
+MERGEMANIFEST=\
+  test ! -f $(1).manifest || \
+  mt -nologo -outputresource:$(1) -manifest $(1).manifest && \
+  rm -f $(1).manifest
+
+### How to build an EXE
+MKEXE=$(BYTECC) /Fe$(1) $(2) && ($(MERGEMANIFEST))
+
 ### How to build a DLL
-MKDLL=link /nologo /dll /out:$(1) /implib:$(2) $(3)
+MKDLL=link /nologo /dll /out:$(1) /implib:$(2) $(3) && ($(MERGEMANIFEST))
 
 ### How to build a static library
 MKLIB=link /lib /nologo /out:$(1) $(2)
 
 ### Canonicalize the name of a system library
 SYSLIB=$(1).lib
-
-### Specify the name of the generated executable when calling the C compiler
-OUTPUTEXE=/Fe$(1)
 
 ### The ranlib command
 RANLIBCMD=

@@ -55,7 +55,7 @@ stdlib.cmxa: $(OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o stdlib.cmxa $(OBJS:.cmo=.cmx)
 
 camlheader camlheader_ur: headernt.c ../config/Makefile
-	$(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) $(call OUTPUTEXE,tmpheader.exe) headernt.c $(EXTRALIBS)
+	$(call MKEXE,tmpheader.exe,$(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) headernt.c $(EXTRALIBS))
 	rm -f camlheader.exe
 	mv tmpheader.exe camlheader
 	cp camlheader camlheader_ur

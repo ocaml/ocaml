@@ -63,6 +63,9 @@ NATIVECCLIBS=
 ### How to invoke the C preprocessor
 CPP=$(BYTECC) -E
 
+### How to build an EXE
+MKEXE=$(BYTECC) -o $(1) $(2)
+
 ### How to build a DLL
 MKDLL=$(BYTECC) -shared -o $(1) -Wl,--out-implib,$(2) $(3)
 
@@ -71,9 +74,6 @@ MKLIB=rm -f $(1); ar rcs $(1) $(2)
 
 ### Canonicalize the name of a system library
 SYSLIB=-l$(1)
-
-### Specify the name of the generated executable when calling the C compiler
-OUTPUTEXE=-o $(1)
 
 ### The ranlib command
 RANLIBCMD=ranlib

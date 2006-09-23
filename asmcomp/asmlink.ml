@@ -229,9 +229,9 @@ let call_linker file_list startup_file output_name =
       raise(Error(File_not_found libname)) in
   let c_lib =
     if !Clflags.nopervasives then "" else Config.native_c_libraries in
-  let cmd =
-    match Config.ccomp_type with
-      "cc" ->
+  match Config.ccomp_type with
+  | "cc" ->
+      let cmd =
         if not !Clflags.output_c_object then
           Printf.sprintf "%s %s -o %s %s %s %s %s %s %s %s %s"
             !Clflags.c_linker
@@ -253,8 +253,10 @@ let call_linker file_list startup_file output_name =
             (Filename.quote output_name)
             (Filename.quote startup_file)
             (Ccomp.quote_files (List.rev file_list))
-    | "msvc" ->
-        if not !Clflags.output_c_object then
+      in if Ccomp.command cmd <> 0 then raise(Error Linking_error)
+  | "msvc" ->
+      if not !Clflags.output_c_object then begin
+        let cmd =
           Printf.sprintf "%s /Fe%s %s %s %s %s %s %s %s"
             !Clflags.c_linker
             (Filename.quote output_name)
@@ -265,15 +267,19 @@ let call_linker file_list startup_file output_name =
               (List.rev_map Ccomp.expand_libname !Clflags.ccobjs))
             (Filename.quote runtime_lib)
             c_lib
-            (Ccomp.make_link_options !Clflags.ccopts)
-        else
+            (Ccomp.make_link_options !Clflags.ccopts) in
+        if Ccomp.command cmd <> 0 then raise(Error Linking_error);
+        if Ccomp.merge_manifest output_name <> 0 then raise(Error Linking_error)
+      end else begin
+        let cmd =
           Printf.sprintf "%s /out:%s %s %s"
             Config.native_partial_linker
             (Filename.quote output_name)
             (Filename.quote startup_file)
             (Ccomp.quote_files (List.rev file_list))
-    | _ -> assert false
-  in if Ccomp.command cmd <> 0 then raise(Error Linking_error)
+        in if Ccomp.command cmd <> 0 then raise(Error Linking_error)
+      end
+  | _ -> assert false
 
 let object_file_name name =
   let file_name =
