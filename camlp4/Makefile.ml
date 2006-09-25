@@ -449,7 +449,7 @@ let all =
                 (misc_modules @ special_modules @ [camlp4_package])];
   [mk_camlp4_bin "camlp4" []];
   mk_camlp4 "camlp4boot" ~unix:false
-    [pa_r; pa_qb; pa_q; pa_rp; pa_g; pa_macro; pa_debug; pr_o] [] [top_rprint];
+    [pa_r; pa_qb; pa_q; pa_rp; pa_g; pa_macro; pa_debug] [pr_dump] [top_rprint];
   mk_camlp4 "camlp4r"
     [pa_r; pa_rp] [pr_a] [top_rprint];
   mk_camlp4 "camlp4rf"
