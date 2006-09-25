@@ -1311,12 +1311,14 @@ let normalize_compat env cps =
 (* Obtain normalized compatibilities for private types *)
 let get_compat env ty =
   try
-    let (p, tl, compat) =
-      match (expand_head env ty).desc with
-        Tconstr(p,tl,_) -> (p, tl, [])    (* row *)
-      | Tvariant row ->                   (* type itself *)
+    let (p, tl, compat, ty') =
+      let ty = expand_head env ty in
+      match ty.desc with
+        Tconstr(p,tl,_) -> (p, tl, [], ty)    (* row *)
+      | Tvariant row ->                       (* type itself *)
           begin match row_more (row_normal env row) with
-            {desc=Tconstr(p,tl,_)} -> (p,tl,[Ctype ty])
+            {desc=Tconstr(p,tl,_)} ->
+              (p,tl,[Ctype ty],newty2 ty.level (Tconstr(p,tl,ref Mnil)))
           | _ -> raise Not_found
           end
       | _ -> raise Not_found in
@@ -1325,10 +1327,10 @@ let get_compat env ty =
       match desc.type_kind with
         Type_private l -> compat @ l
       | _ -> raise Not_found in
-    (normalize_compat env compat,
+    (normalize_compat env compat, ty',
      fun body -> apply env desc.type_params body tl)
   with Not_found -> (* allow unknown types *)
-    (normalize_compat env [Ctype ty], fun x -> x)
+    (normalize_compat env [Ctype ty], ty, fun x -> x)
 
 (* forward declaration *)
 let equal' = ref (fun _ -> assert false)
@@ -1370,11 +1372,11 @@ let check_compat_field env unif l f compat inst =
   | Reither _ | Rabsent -> ()
 
 let check_compat_fields env unif fl ty =
-  let compat, inst = get_compat env ty in
+  let compat, _, inst = get_compat env ty in
   List.iter (fun (l,f) -> check_compat_field env unif l f compat inst) fl
 
 let check_compat_type env unif ty1 nt ty compat inst =
-  let compat', inst' = get_compat env ty1 in
+  let compat', ty1, inst' = get_compat env ty1 in
   let notype ty1 = function
       Cnotype ty2 -> same_path ty1 ty2
     | _ -> false
@@ -1398,7 +1400,7 @@ let check_compat_type env unif ty1 nt ty compat inst =
 
 let check_compat env unif cl ty =
   if cl <> [] then try
-    let compat, inst = get_compat env ty in
+    let compat, ty, inst = get_compat env ty in
     List.iter
       (function
           Cfield (l,f) ->
