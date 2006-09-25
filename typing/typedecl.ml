@@ -185,7 +185,6 @@ let transl_declaration env (name, sdecl) id =
               else Record_regular in
             Type_record(lbls', rep, priv)
         | Ptype_private cl ->
-            if sdecl.ptype_manifest <> None then Type_abstract else
             Type_private (List.map (transl_compat env) cl)
         end;
       type_manifest =
@@ -511,7 +510,7 @@ let compute_variance_decl env check decl (required, loc) =
   let tvl2 = List.map make_variance fvl in
   let tvl = tvl0 @ tvl1 in
   begin match decl.type_kind with
-    Type_abstract ->
+    Type_abstract | Type_private _ ->
       begin match decl.type_manifest with
         None -> assert false
       | Some ty -> compute_variance env tvl true false false ty
@@ -527,7 +526,6 @@ let compute_variance_decl env check decl (required, loc) =
           let cn = (mut = Mutable) in
           compute_variance env tvl true cn cn ty)
         ftl
-  | Type_private _ -> assert false
   end;
   let priv =
     match decl.type_kind with
@@ -620,6 +618,21 @@ let compute_variance_decls env cldecls =
        {cltydef with clty_variance = variance}))
     decls cldecls
 
+(* Check compatibilities where needed *)
+let check_compat_decl env (_,loc) (_,decl) =
+  match decl with
+    {type_manifest = Some tm; type_kind = Type_private cl} when cl <> [] ->
+      let row =
+        match Btype.repr tm with
+          {desc = Tvariant row} -> Btype.row_repr row
+        | _ -> assert false
+      in
+      let ty =
+        Btype.newgenty (Tvariant {row with row_more = Btype.newgenvar()}) in
+      if Ctype.check_compat_define env cl ty then () else
+      raise (Error(loc, Bad_fixed_type "doesn't satisfy its compatibilities"))
+  | _ -> ()
+
 (* Translate a set of mutually recursive type declarations *)
 let transl_type_decl env name_sdecl_list =
   (* Add dummy types for fixed rows *)
@@ -699,6 +712,7 @@ let transl_type_decl env name_sdecl_list =
   let final_decls, final_env =
     compute_variance_fixpoint env decls required (List.map init_variance decls)
   in
+  List.iter2 (check_compat_decl final_env) id_loc_list final_decls;
   (* Done *)
   (final_decls, final_env)
 
@@ -762,7 +776,7 @@ let transl_with_constraint env row_path sdecl =
       type_arity = List.length params;
       type_kind =
         begin match sdecl.ptype_kind with
-          Ptype_private scl when sdecl.ptype_manifest = None ->
+          Ptype_private scl ->
             Type_private (List.map (transl_compat env) scl)
         | _ -> Type_abstract
         end;
@@ -941,4 +955,4 @@ let report_error ppf = function
   | Unavailable_type_constructor p ->
       fprintf ppf "The definition of type %a@ is unavailable" Printtyp.path p
   | Bad_fixed_type r ->
-      fprintf ppf "This fixed type %s" r
+      fprintf ppf "This private type %s" r

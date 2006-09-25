@@ -54,7 +54,6 @@ type error =
   | Variant_tags of string * string
   | Invalid_variable_name of string
   | Cannot_quantify of string * Types.type_expr
-  | Abstract_in_smaller
   | Incompatible_row of string * Types.type_expr * Types.type_expr
 
 exception Error of Location.t * error

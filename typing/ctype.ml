@@ -463,7 +463,8 @@ let closed_type_decl decl =
     | Type_record(r, rep, priv) ->
         List.iter (fun (_, _, ty) -> closed_type ty) r
     | Type_private l ->
-        List.iter (function Ctype t -> closed_type t | _ -> ()) l
+        List.iter
+          (function Ctype t|Cfield(_,Some t) -> closed_type t | _ -> ()) l
     end;
     begin match decl.type_manifest with
       None    -> ()
@@ -1307,19 +1308,27 @@ let normalize_compat env cps =
   in
   List.fold_right add_compat2 cps []
 
-(* Obtain normalized compatibilities for a private types *)
+(* Obtain normalized compatibilities for private types *)
 let get_compat env ty =
-  let (p, tl) =
-    match (repr ty).desc with Tconstr(p,tl,_) -> (p, tl) | _ -> assert false in
   try
+    let (p, tl, compat) =
+      match (expand_head env ty).desc with
+        Tconstr(p,tl,_) -> (p, tl, [])    (* row *)
+      | Tvariant row ->                   (* type itself *)
+          begin match row_more (row_normal env row) with
+            {desc=Tconstr(p,tl,_)} -> (p,tl,[Ctype ty])
+          | _ -> raise Not_found
+          end
+      | _ -> raise Not_found in
     let desc = Env.find_type p env in
     let compat =
       match desc.type_kind with
-        Type_private l -> normalize_compat env l
-      | _ -> assert false
-    in (compat, fun body -> apply env desc.type_params body tl)
+        Type_private l -> compat @ l
+      | _ -> raise Not_found in
+    (normalize_compat env compat,
+     fun body -> apply env desc.type_params body tl)
   with Not_found -> (* allow unknown types *)
-    ([], fun x -> x)
+    (normalize_compat env [Ctype ty], fun x -> x)
 
 (* forward declaration *)
 let equal' = ref (fun _ -> assert false)
@@ -1404,7 +1413,11 @@ let check_compat env unif cl ty =
   with Cannot_apply -> assert false
 
 let check_compat_define env conds ty =
-  let conds = normalize_compat env conds in
+  let conds1, conds2 =
+    List.partition
+      (function Ctype ty -> has_constr_row (expand_head env ty) | _ -> false)
+      conds in
+  let conds = conds1 @ normalize_compat env conds2 in
   let ty = expand_head env ty in
   try match ty.desc with
     Tconstr _ ->

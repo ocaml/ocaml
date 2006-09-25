@@ -39,7 +39,6 @@ type error =
   | Variant_tags of string * string
   | Invalid_variable_name of string
   | Cannot_quantify of string * type_expr
-  | Abstract_in_smaller
   | Incompatible_row of string * type_expr * type_expr
 
 exception Error of Location.t * error
@@ -313,8 +312,6 @@ let rec transl_type env policy styp =
                 let row = Ctype.row_normal env row in
                 (row.row_fields, row.row_abs)
             | {desc=Tvariant row} as t, _ when Btype.has_constr_row t ->
-                if present <> None then
-                  raise(Error(sty.ptyp_loc, Abstract_in_smaller));
                 let row = Ctype.row_normal env row in
                 (row.row_fields, row.row_more :: row.row_abs)
             | {desc=Tvar}, Some(p, _) ->
@@ -587,9 +584,6 @@ let report_error ppf = function
         (if v.desc = Tvar then "it escapes this scope" else
          if v.desc = Tunivar then "it is aliased to another variable"
          else "it is not a variable")
-  | Abstract_in_smaller ->
-      fprintf ppf "This type includes abstract components.@ %s"
-        "It should contain only present constructors."
   | Incompatible_row (kind, ty1, ty2) ->
       Printtyp.reset_and_mark_loops_list [ty1;ty2];
       fprintf ppf "@[<hov>%s@ The %s@;<1 2>%a@ %s@;<1 2>%a@]"

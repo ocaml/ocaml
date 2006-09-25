@@ -589,11 +589,11 @@ let rec tree_of_type_decl id decl =
         tree_of_manifest (Otyp_record (List.map tree_of_label lbls)),
         priv, []
     | Type_private l ->
-        begin match ty_manifest with
-          None -> Otyp_abstract, Private, []
-        | Some ty ->
-            tree_of_typexp false ty, Private, List.map tree_of_compat l
-        end
+        let tty =
+          match ty_manifest with
+            None -> Otyp_abstract
+          | Some ty -> tree_of_typexp false ty
+        in tty, Private, List.map tree_of_compat l
   in
   (name, args, ty, priv, compat, constraints)
 
@@ -816,15 +816,9 @@ and tree_of_signature = function
   | [] -> []
   | Tsig_value(id, decl) :: rem ->
       tree_of_value_description id decl :: tree_of_signature rem
-  | Tsig_type(id, {type_params=tl; type_kind=Type_private cl}, rs) ::
+  | Tsig_type(id, {type_kind=Type_private _}, rs) ::
     Tsig_type(id', decl', _) :: rem ->
-      let copy_type t =
-        try apply Env.empty tl t decl'.type_params
-        with Cannot_apply -> assert false
-      in
-      let cl' = List.map (copy_compat copy_type) cl in
-      let decl = {decl' with type_kind = Type_private cl'} in
-      Osig_type(tree_of_type_decl id' decl, tree_of_rec rs) ::
+      Osig_type(tree_of_type_decl id' decl', tree_of_rec rs) ::
       tree_of_signature rem
   | Tsig_type(id, decl, rs) :: rem ->
       Osig_type(tree_of_type_decl id decl, tree_of_rec rs) ::
