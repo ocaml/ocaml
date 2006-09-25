@@ -339,42 +339,94 @@ let transl_primitive p =
 
 (* Generate a matcher for a given row type *)
 
+let call_checker env id p =
+  let (p,_) =
+    try Env.lookup_value (Path.to_lid p) env
+    with Not_found -> assert false
+  in Lapply(transl_path p, [Lvar id])
+
+let tt = Lconst(Const_base(Const_int 1))
+and ff = Lconst(Const_base(Const_int 0))
+
+let make_matcher_cases pat patl paths lam fail =
+  let env = pat.pat_env in
+  let tags =
+    List.fold_left
+      (fun tags p -> try
+        let lid = Path.to_lid ~rename:Btype.unrow_name p in
+        let tm =
+          match Env.lookup_type lid env with
+            _, {type_manifest = Some t} -> t
+          | _ -> raise Not_found in
+        let fields =
+          match Btype.repr tm with
+            {desc=Tvariant row} -> (Btype.row_repr row).row_fields
+          | _ -> raise Not_found in
+        let tags' =
+          List.map fst (Ctype.filter_row_fields false fields) in
+        tags @ tags'
+      with Not_found -> tags)
+      [] paths in
+  let patl =
+    List.fold_left
+      (fun pl (l,p) -> if List.mem l tags then pl else p::pl) [] patl in
+  let vcase =
+    if patl = [] then [] else
+    [List.fold_left
+       (fun pat1 pat2 -> {pat with pat_desc = Tpat_or(pat2, pat1, None)})
+       (List.hd patl) (List.tl patl),
+     lam] in
+  if paths = [] then vcase else
+  let id = Ident.create "variant" in
+  let checks = List.map (call_checker pat.pat_env id) paths in
+  let checks =
+    List.fold_left
+      (fun lam1 lam2 -> Lprim(Psequor, [lam1; lam2]))
+      (List.hd checks) (List.tl checks) in
+  let lam' =
+    if lam = tt && fail = ff then checks else Lifthenelse(checks, lam, fail)
+  in
+  vcase @ [{pat with pat_desc = Tpat_var id}, lam']
+
 let transl_matcher row env =
   let row = {row with row_closed = false} in
   let ty = Btype.newgenty (Tvariant row) in
   let mkpat d =
     {pat_desc=d; pat_type=ty; pat_loc=Location.none; pat_env=env} in
-  let tt = Lconst(Const_base(Const_int 1))
-  and ff = Lconst(Const_base(Const_int 0)) in
-  let param = Ident.create "param" in
-  let check_abs =
-    List.fold_left
-      (fun lam ty ->
-        match Btype.repr ty with
-          {desc=Tconstr(p,_,_)} ->
-            let (p,_) =
-              try Env.lookup_value (Path.to_lid p) env
-              with Not_found -> assert false in
-            let check = Lapply(transl_path p, [Lvar param]) in
-            if lam == ff then check else Lifthenelse(check, tt, lam)
+  let paths =
+    List.map
+      (fun ty ->
+        match Btype.repr ty with {desc=Tconstr(p,_,_)} -> p
         | _ -> assert false)
-      ff row.row_abs in
-  let cases =
+      row.row_abs
+  and patl =
     List.fold_left
-      (fun cases (l,f) ->
+      (fun patl (l,f) ->
         match Btype.row_field_repr f with
           Rpresent None ->
-            (mkpat(Tpat_variant(l, None, row)), tt) :: cases
+            (l, mkpat (Tpat_variant(l, None, row))) :: patl
         | Rpresent (Some _) ->
-            (mkpat(Tpat_variant(l, Some(mkpat Tpat_any), row)), tt)::cases
-        | Rabsent -> cases
+            (l, mkpat (Tpat_variant(l, Some(mkpat Tpat_any), row))) ::patl
+        | Rabsent -> patl
         | _ -> assert false)
-      [mkpat Tpat_any, check_abs] row.row_fields in
+      [] row.row_fields in
+  let param = Ident.create "param" in
+  let cases = make_matcher_cases (mkpat Tpat_any) patl paths tt ff in
   Lfunction(Curried, [param],
             Matching.for_function Location.none None
               (Lvar param) cases Total)
 
 (* Expand Tpat_check *)
+
+let rec split_or_check pat =
+  match pat.pat_desc with
+    Tpat_check (p, _) -> [], [p]
+  | Tpat_variant (l, _, _) -> [l, pat], []
+  | Tpat_or(pat1, pat2, _) ->
+      let v1, c1 = split_or_check pat1
+      and v2, c2 = split_or_check pat2 in
+      v1 @ v2, c1 @ c2
+  | _ -> raise Exit
 
 let rec remove_abs lam pat =
   let map_update fdesc l =
@@ -400,18 +452,20 @@ let rec remove_abs lam pat =
   | Tpat_array patl ->
       map_update (fun patl -> Tpat_array patl) (remove_abs_list lam patl)
   | Tpat_or (pat1, pat2, po) ->
-      begin match remove_abs lam pat1, remove_abs lam pat2 with
-        [pat1,lam1], [pat2,lam2] when lam1 == lam2 ->
-          [{pat with pat_desc = Tpat_or(pat1, pat2, po)}, lam1]
-      | pel1, pel2 -> pel1 @ pel2
+      begin try
+        let vl, cl = split_or_check pat in
+        if cl = [] then raise Exit else
+        make_matcher_cases pat vl cl lam staticfail
+      with Exit ->
+        match remove_abs lam pat1, remove_abs lam pat2 with
+          [pat1,lam1], [pat2,lam2] when lam1 == lam2 ->
+            [{pat with pat_desc = Tpat_or(pat1, pat2, po)}, lam1]
+        | pel1, pel2 -> pel1 @ pel2
       end
   | Tpat_check (p, row) ->
       let id = Ident.create "variant" in
-      let (p,_) =
-        try Env.lookup_value (Path.to_lid p) pat.pat_env
-        with Not_found -> assert false in
-      [{pat with pat_desc = Tpat_var id},
-       Lifthenelse(Lapply(transl_path p,[Lvar id]), lam, staticfail)]
+      let check = call_checker pat.pat_env id p in
+      [{pat with pat_desc = Tpat_var id}, Lifthenelse(check, lam, staticfail)]
       
 and remove_abs_list lam = function
     [] -> [[], lam]

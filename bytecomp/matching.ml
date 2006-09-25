@@ -1998,7 +1998,8 @@ let combine_variant row arg partial ctx def (tag_lambda_list, total1, pats) =
     num_constr := max_int;
   let test_int_or_block arg if_int if_block =
     Lifthenelse(Lprim (Pisint, [arg]), if_int, if_block) in
-  let sig_complete =  List.length tag_lambda_list = !num_constr
+  let sig_complete =
+    List.length tag_lambda_list = !num_constr && row.row_abs = []
   and one_action = same_actions tag_lambda_list in
   let fail, to_add, local_jumps =
     if
