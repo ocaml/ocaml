@@ -48,7 +48,6 @@ module Make (Syntax : Sig.Camlp4Syntax.S) : sig
     Ast.patt -> list Ast.patt -> (Ast.patt * list Ast.patt);
   value get_ctyp_args :
     Ast.ctyp -> list Ast.ctyp -> (Ast.ctyp * list Ast.ctyp);
-  value is_irrefut_patt : Ast.patt -> bool;
   value expr_fun_args : Ast.expr -> (list Ast.patt * Ast.expr);
 
   (**

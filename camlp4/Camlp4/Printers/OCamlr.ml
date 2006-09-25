@@ -144,7 +144,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     match e with
     [ <:expr< $e1$ := $e2$ >> ->
         pp f "@[<2>%a@ :=@ %a@]" o#expr e1 o#expr e2
-    | <:expr< fun $p$ -> $e$ >> when is_irrefut_patt p ->
+    | <:expr< fun $p$ -> $e$ >> when Ast.is_irrefut_patt p ->
         pp f "@[<2>fun@ %a@]" o#patt_expr_fun_args (p, e)
     | <:expr< fun [ $a$ ] >> ->
         pp f "@[<hv0>fun%a@]" o#match_case a

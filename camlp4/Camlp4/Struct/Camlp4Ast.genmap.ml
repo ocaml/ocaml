@@ -88,6 +88,45 @@ module Make (Loc : Sig.Loc.S)
     | <:ident< $uid:_$ >> -> True
     | _ -> False ];
 
+  value rec is_irrefut_patt =
+    fun
+    [ <:patt< $lid:_$ >> -> True
+    | <:patt< () >> -> True
+    | <:patt< _ >> -> True
+    | <:patt< ($x$ as $y$) >> -> is_irrefut_patt x && is_irrefut_patt y
+    | <:patt< { $p$ } >> -> is_irrefut_patt p
+    | <:patt< $lid:_$ = $p$ >> -> is_irrefut_patt p
+    | <:patt< $p1$; $p2$ >> -> is_irrefut_patt p1 && is_irrefut_patt p2
+    | <:patt< $p1$, $p2$ >> -> is_irrefut_patt p1 && is_irrefut_patt p2
+    | <:patt< ($p$ : $_$) >> -> is_irrefut_patt p
+    | <:patt< ($tup:pl$) >> -> is_irrefut_patt pl
+    | <:patt< ? $_$ >> -> True
+    | <:patt< ? $_$ : ($p$) >> -> is_irrefut_patt p
+    | <:patt< ? $_$ : ($p$ = $_$) >> -> is_irrefut_patt p
+    | <:patt< ~ $_$ >> -> True
+    | <:patt< ~ $_$ : $p$ >> -> is_irrefut_patt p
+    | _ -> False ];
+
+  value rec is_constructor =
+    fun
+    [ <:ident< $_$.$i$ >> -> is_constructor i
+    | <:ident< $uid:_$ >> -> True
+    | <:ident< $lid:_$ >> | <:ident< $_$ $_$ >> -> False
+    | <:ident< $anti:_$ >> -> assert False ];
+
+  value is_patt_constructor =
+    fun
+    [ <:patt< $id:i$ >> -> is_constructor i
+    | <:patt< `$_$ >> -> True
+    | _ -> False ];
+
+  value rec is_expr_constructor =
+    fun
+    [ <:expr< $id:i$ >> -> is_constructor i
+    | <:expr< $e1$.$e2$ >> -> is_expr_constructor e1 && is_expr_constructor e2
+    | <:expr< `$_$ >> -> True
+    | _ -> False ];
+
   value ident_of_expr =
     let error () =
       invalid_arg "ident_of_expr: this expression is not an identifier" in

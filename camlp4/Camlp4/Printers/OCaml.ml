@@ -114,44 +114,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     [ <:ctyp< $a1$ $a2$ >> -> get_ctyp_args a1 [a2 :: al]
     | _ -> (a, al) ];
 
-  value rec is_irrefut_patt =
-    fun
-    [ <:patt< $lid:_$ >> -> True
-    | <:patt< () >> -> True
-    | <:patt< _ >> -> True
-    | <:patt< ($x$ as $y$) >> -> is_irrefut_patt x && is_irrefut_patt y
-    | <:patt< { $p$ } >> -> is_irrefut_patt p
-    | <:patt< $lid:_$ = $p$ >> -> is_irrefut_patt p
-    | <:patt< $p1$; $p2$ >> -> is_irrefut_patt p1 && is_irrefut_patt p2
-    | <:patt< $p1$, $p2$ >> -> is_irrefut_patt p1 && is_irrefut_patt p2
-    | <:patt< ($p$ : $_$) >> -> is_irrefut_patt p
-    | <:patt< ($tup:pl$) >> -> is_irrefut_patt pl
-    | <:patt< ? $_$ >> -> True
-    | <:patt< ? $_$ : ($p$) >> -> is_irrefut_patt p
-    | <:patt< ? $_$ : ($p$ = $_$) >> -> is_irrefut_patt p
-    | <:patt< ~ $_$ >> -> True
-    | <:patt< ~ $_$ : $p$ >> -> is_irrefut_patt p
-    | _ -> False ];
-
-  value rec is_constructor =
-    fun
-    [ <:ident< $_$.$i$ >> -> is_constructor i
-    | <:ident< $uid:_$ >> -> True
-    | <:ident< $lid:_$ >> | <:ident< $_$ $_$ >> -> False
-    | <:ident< $anti:_$ >> -> assert False ];
-
-  value is_patt_constructor =
-    fun
-    [ <:patt< $id:i$ >> -> is_constructor i
-    | <:patt< `$_$ >> -> True
-    | _ -> False ];
-
-  value rec is_expr_constructor =
-    fun
-    [ <:expr< $id:i$ >> -> is_constructor i
-    | <:expr< $e1$.$e2$ >> -> is_expr_constructor e1 && is_expr_constructor e2
-    | <:expr< `$_$ >> -> True
-    | _ -> False ];
+  value is_irrefut_patt = Ast.is_irrefut_patt;
 
   value rec expr_fun_args =
     fun
@@ -445,7 +408,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
         pp f "@[<2>%a@ %s@ %a@]" o#dot_expr x n o#dot_expr y
     | <:expr< $x$ $y$ >> ->
         let (a, al) = get_expr_args x [y] in
-        if (not curry_constr) && is_expr_constructor a then
+        if (not curry_constr) && Ast.is_expr_constructor a then
           match al with
           [ [ <:expr< ($tup:_$) >> ] ->
               pp f "@[<2>%a@ (%a)@]" o#dot_expr x o#expr y
@@ -607,7 +570,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     [ <:patt< [$_$ :: $_$] >> as p -> o#simple_patt f p
     | <:patt< $x$ $y$ >> ->
         let (a, al) = get_patt_args x [y] in
-        if (not curry_constr) && is_patt_constructor a then
+        if (not curry_constr) && Ast.is_patt_constructor a then
           match al with
           [ [ <:patt< ($tup:_$) >> ] ->
               pp f "@[<2>%a@ (%a)@]" o#simple_patt x o#patt y

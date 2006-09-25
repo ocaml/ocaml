@@ -252,7 +252,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
         (fun ((tok_match_pl, act, i) as accu) ->
           fun
           [ { pattern = None } -> accu
-          | { pattern = Some <:patt< _ >> } -> accu
+          | { pattern = Some p } when Ast.is_irrefut_patt p -> accu
           | { pattern = Some <:patt< ($_$ ($tup:<:patt< _ >>$) as $lid:s$) >> } ->
               (tok_match_pl,
                <:expr< let $lid:s$ = $uid:gm$.Token.extract_string $lid:s$
@@ -286,8 +286,10 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
         (fun (txt, i) s ->
           match s.pattern with
           [ None | Some <:patt< _ >> -> (<:expr< fun _ -> $txt$ >>, i)
-          | Some (<:patt< ($_$ ($tup:<:patt< _ >>$) as $p$) >> |
-                 (<:patt< $lid:_$ >> | <:patt< ($tup:_$) >> as p)) ->
+          | Some <:patt< ($_$ ($tup:<:patt< _ >>$) as $p$) >> ->
+              let p = make_ctyp_patt s.styp tvar p in
+              (<:expr< fun $p$ -> $txt$ >>, i)
+          | Some p when Ast.is_irrefut_patt p ->
               let p = make_ctyp_patt s.styp tvar p in
               (<:expr< fun $p$ -> $txt$ >>, i)
           | Some _ ->
@@ -597,7 +599,11 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
       (fun [ <:patt@_loc< $lid:_$ >> -> <:patt< _ >>
            | <:patt< ($p$ as $_$) >> -> p
            | p -> p ]) p in
-    let match_fun = <:expr< fun [ $pat:p'$ -> True | _ -> False ] >> in
+    let match_fun =
+      if Ast.is_irrefut_patt p' then
+        <:expr< fun [ $pat:p'$ -> True ] >>
+      else
+        <:expr< fun [ $pat:p'$ -> True | _ -> False ] >> in
     let descr = string_of_patt p' in
     let text = TXtok _loc match_fun descr in
     {used = []; text = text; styp = t; pattern = Some p };

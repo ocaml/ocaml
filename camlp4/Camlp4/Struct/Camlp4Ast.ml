@@ -764,6 +764,42 @@ module Make (Loc : Sig.Loc.S) : Sig.Camlp4Ast.S with module Loc = Loc =
           (is_module_longident i1) && (is_module_longident i2)
       | Ast.IdUid _ _ -> True
       | _ -> False ];
+    value rec is_irrefut_patt =
+      fun
+      [ Ast.PaId _ (Ast.IdLid _ _) -> True
+      | Ast.PaId _ (Ast.IdUid _ "()") -> True
+      | Ast.PaAny _ -> True
+      | Ast.PaAli _ x y -> (is_irrefut_patt x) && (is_irrefut_patt y)
+      | Ast.PaRec _ p -> is_irrefut_patt p
+      | Ast.PaEq _ (Ast.PaId _ (Ast.IdLid _ _)) p -> is_irrefut_patt p
+      | Ast.PaSem _ p1 p2 -> (is_irrefut_patt p1) && (is_irrefut_patt p2)
+      | Ast.PaCom _ p1 p2 -> (is_irrefut_patt p1) && (is_irrefut_patt p2)
+      | Ast.PaTyc _ p _ -> is_irrefut_patt p
+      | Ast.PaTup _ pl -> is_irrefut_patt pl
+      | Ast.PaOlb _ _ (Ast.PaNil _) -> True
+      | Ast.PaOlb _ _ p -> is_irrefut_patt p
+      | Ast.PaOlbi _ _ p _ -> is_irrefut_patt p
+      | Ast.PaLab _ _ (Ast.PaNil _) -> True
+      | Ast.PaLab _ _ p -> is_irrefut_patt p
+      | _ -> False ];
+    value rec is_constructor =
+      fun
+      [ Ast.IdAcc _ _ i -> is_constructor i
+      | Ast.IdUid _ _ -> True
+      | Ast.IdLid _ _ | Ast.IdApp _ _ _ -> False
+      | Ast.IdAnt _ _ -> assert False ];
+    value is_patt_constructor =
+      fun
+      [ Ast.PaId _ i -> is_constructor i
+      | Ast.PaVrn _ _ -> True
+      | _ -> False ];
+    value rec is_expr_constructor =
+      fun
+      [ Ast.ExId _ i -> is_constructor i
+      | Ast.ExAcc _ e1 e2 ->
+          (is_expr_constructor e1) && (is_expr_constructor e2)
+      | Ast.ExVrn _ _ -> True
+      | _ -> False ];
     value ident_of_expr =
       let error () =
         invalid_arg "ident_of_expr: this expression is not an identifier" in

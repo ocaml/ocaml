@@ -503,6 +503,13 @@ module type S = sig
       escape antiquotations strings. *)
   value safe_string_escaped : string -> string;
 
+  (** Returns True if the given pattern is irrefutable. *)
+  value is_irrefut_patt : patt -> bool;
+
+  value is_constructor : ident -> bool;
+  value is_patt_constructor : patt -> bool;
+  value is_expr_constructor : expr -> bool;
+
   value ty_of_stl : (Loc.t * string * list ctyp) -> ctyp;
   value ty_of_sbt : (Loc.t * string * bool * ctyp) -> ctyp;
   value bi_of_pe : (patt * expr) -> binding;
