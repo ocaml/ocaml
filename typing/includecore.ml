@@ -129,7 +129,6 @@ let type_declarations env id decl1 decl2 =
                                  (ty2::decl2.type_params))
           labels1 labels2
     | ((Type_abstract | Type_private _), Type_private cp2) ->
-        (* let cp1 = match k1 with Type_private c -> c | _ -> [] in *)
         let ty1 = 
           Btype.newgenty (Tconstr(Pident id, decl2.type_params, ref Mnil)) in
         Ctype.check_compat_define env cp2 ty1

@@ -64,11 +64,20 @@ let type_module_path env loc lid =
 
 (* Declare a matcher function *)
 
-let make_matcher_desc id decl =
+let matcher_desc () =
   let m = Btype.newgenty in
-  let td = Tconstr(Pident id, decl.type_params, ref Mnil) in
-  let ty = m(Tarrow("", m td, Predef.type_bool, Cok)) in
+  let row = {row_fields=[]; row_more=m Tvar; row_abs=[]; row_bound=[];
+             row_closed=false; row_fixed=false; row_name=None} in
+  let ty = m(Tarrow("", m(Tvariant row), Predef.type_bool, Cok)) in
   {val_type=ty; val_kind=Val_reg}
+
+let needs_matcher decl =
+  match decl.type_manifest with None -> false
+  | Some ty ->
+      match Btype.repr ty with {desc=Tvariant row} ->
+        let row = Btype.row_repr row in
+        row.row_closed = false
+      | _ -> false
 
 (* Record a module type *)
 let rm node =
@@ -107,15 +116,15 @@ let merge_constraint initial_env loc sg lid constr =
           Typedecl.transl_with_constraint initial_env
             (Some(Pident id_row)) sdecl in
         check_type_decl env id row_id newdecl decl rs rem;
-        let vd = make_matcher_desc id_row decl_row in
         let rs' = if rs = Trec_first then Trec_not else rs in
         Tsig_type(id_row, decl_row, rs') :: Tsig_type(id, newdecl, rs) ::
         let rec insert_matcher = function
             (Tsig_type(_,_,Trec_next) as item) :: rem ->
               item :: insert_matcher rem
           | rem ->
-              Tsig_value(Ident.create s', vd) :: rem
-        in insert_matcher rem
+              Tsig_value(Ident.create s', matcher_desc()) :: rem
+        in
+        if needs_matcher decl then insert_matcher rem else rem
     | (Tsig_type(id, decl, rs) :: rem, [s], Pwith_type sdecl)
       when Ident.name id = s ->
         let newdecl = Typedecl.transl_with_constraint initial_env None sdecl in
@@ -330,9 +339,9 @@ and transl_signature env sg =
             let sig_check =
               List.fold_right
                 (fun (id,decl) sigs ->
-                  if Btype.is_row_name (Ident.name id) then
-                    let vd = make_matcher_desc id decl in
-                    Tsig_value(Ident.create(Ident.name id), vd) :: sigs
+                  if needs_matcher decl then
+                    let s = Ident.name id ^ "#row" in
+                    Tsig_value(Ident.create s, matcher_desc()) :: sigs
                   else sigs)
                 decls []
             in
@@ -621,9 +630,9 @@ and type_structure anchor env sstr =
         let (str_check, sig_check, newenv'') =
           List.fold_right
             (fun (id,decl) (strs, sigs, env as accu) ->
-              if Btype.is_row_name (Ident.name id) then
-                let vd = make_matcher_desc id decl in
-                let id = Ident.create(Ident.name id) in
+              if needs_matcher decl then
+                let vd = matcher_desc () in
+                let id = Ident.create(Ident.name id ^ "#row") in
                 let p = {pat_desc=Tpat_var id; pat_env=env; pat_loc=loc;
                          pat_type=vd.val_type} in
                 let e = {exp_desc=Texp_function([],Partial); exp_env=env;

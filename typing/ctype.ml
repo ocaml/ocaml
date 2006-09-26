@@ -1427,7 +1427,7 @@ let check_compat_define env conds ty =
   | Tvariant row ->
       let row = row_normal env row in
       begin match row_more row with
-        {desc=Tconstr _} as ty ->
+        {desc=Tconstr _} ->
           check_compat env false conds ty
       | _ ->
           List.iter (check_compat env false conds) row.row_abs;
