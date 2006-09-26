@@ -376,7 +376,7 @@ let make_matcher_cases pat patl paths lam fail =
        (fun pat1 pat2 -> {pat with pat_desc = Tpat_or(pat2, pat1, None)})
        (List.hd patl) (List.tl patl),
      lam] in
-  if paths = [] then vcase else
+  if paths = [] then vcase @ [{pat with pat_desc = Tpat_any}, fail] else
   let id = Ident.create "variant" in
   let checks = List.map (call_checker pat.pat_env id) paths in
   let checks =
