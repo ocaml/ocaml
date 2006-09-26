@@ -92,6 +92,7 @@ module Mix(X:T)(Y:T with type t = private [> ] ~ [X.t]) :
         #X.t as x -> X.show x
       | #Y.t as y -> Y.show y
   end;;
+module M = Mix(EStr)(EInt);;
 
 (* deep *)
 module M : sig type t = private [> ] ~ [`A] end = struct type t = [`A] end
@@ -114,3 +115,36 @@ module F(X:T) = struct
       `A _ -> true
     | #X.v -> false
 end
+
+(* ... *)
+
+(* bad *)
+type t = private [> ]
+type u = private [> `A of int] ~ [t] ;;
+
+(* ok *)
+type t = private [> `A of int]
+type u = private [> `A of int] ~ [t] ;;
+
+module F(X: sig
+  type t = private [> ] ~ [~`A;~`B;~`C;~`D]
+  type u = private [> `A|`B|`C] ~ [t; `D]
+end) : sig type v = private [> ] ~ [X.t; X.u] end = struct
+  open X
+  let f = function #u -> 1 | #t -> 2 | `D -> 3
+  let g = function #u|#t|`D -> 2 
+  type v = [t|u|`D]
+end
+
+(* ok *)
+module M = struct type t = private [> `A] end;;
+module M' : sig type t = private [> ] ~ [`A] end = M;;
+
+(* ok *)
+module type T = sig type t = private [> ] ~ [`A] end;;
+module type T' = T with type t = private [> `A];;
+
+(* ok *)
+type t = private [> ] ~ [`A of int]
+let f = function `A x -> x | #t -> 0
+type t' = private [< `A of int | t];;
