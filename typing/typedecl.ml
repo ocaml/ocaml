@@ -625,7 +625,8 @@ let check_compat_decl env (_,loc) (_,decl) =
       let row =
         match Btype.repr tm with
           {desc = Tvariant row} -> Btype.row_repr row
-        | _ -> assert false
+        | _ ->
+            raise (Error(loc, Bad_fixed_type "cannot have compatibilities"))
       in
       let ty =
         Btype.newgenty (Tvariant {row with row_more = Btype.newgenvar()}) in
