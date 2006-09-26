@@ -42,7 +42,7 @@ PUBLIC_INCLUDES=alloc.h callback.h config.h custom.h fail.h intext.h \
 all: ocamlrun.exe libcamlrun.$(A)
 
 ocamlrun.exe: ocamlrun.dll main.$(DO)
-	$(CC) $(call OUTPUTEXE,ocamlrun.exe) main.$(DO) ocamlrun.$(A)
+	$(call MKEXE,ocamlrun.exe,main.$(DO) ocamlrun.$(A))
 
 ocamlrun.dll: $(DOBJS)
 	$(call MKDLL,ocamlrun.dll,ocamlrun.$(A),$(DOBJS) $(BYTECCLIBS))
