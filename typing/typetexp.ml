@@ -311,9 +311,10 @@ let rec transl_type env policy styp =
             | {desc=Tvariant row}, _ when Btype.static_row row ->
                 let row = Ctype.row_normal env row in
                 (row.row_fields, row.row_abs)
-            | {desc=Tvariant row} as t, _ when Btype.has_constr_row t ->
-                let row = Ctype.row_normal env row in
-                (row.row_fields, row.row_more :: row.row_abs)
+            | {desc=Tvariant row} as t, _ when Btype.has_constr_row t &&
+                Btype.static_row {(Btype.row_repr row) with row_closed=true} ->
+                  let row = Ctype.row_normal env row in
+                  (row.row_fields, row.row_more :: row.row_abs)
             | {desc=Tvar}, Some(p, _) ->
                 raise(Error(sty.ptyp_loc, Unbound_type_constructor_2 p)) 
             | _ ->
@@ -571,8 +572,8 @@ let report_error ppf = function
         Printtyp.type_expr ty'
   | Not_a_variant ty ->
       Printtyp.reset_and_mark_loops ty;
-      fprintf ppf "@[The type %a@ is not a polymorphic variant type@]"
-        Printtyp.type_expr ty
+      fprintf ppf "@[The type %a@ %s@]" Printtyp.type_expr ty
+        "cannot be inherited from"
   | Variant_tags (lab1, lab2) ->
       fprintf ppf
         "Variant tags `%s@ and `%s have same hash value.@ Change one of them."
