@@ -594,11 +594,18 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     in
     subst_gmod (let_in_of_extend _loc gram gl el args) gmod;
 
+  value wildcarder = object (self)
+    inherit Ast.map as super;
+    method patt =
+      fun
+      [ <:patt@_loc< $lid:_$ >> -> <:patt< _ >>
+      | <:patt< ($p$ as $_$) >> -> self#patt p
+      | <:patt@_loc< $p1$ = $p2$ >> -> <:patt@_loc< $p1$ = $self#patt p2$ >>
+      | p -> super#patt p ];
+  end;
+
   value mk_tok _loc p t =
-    let p' = Ast.map_patt
-      (fun [ <:patt@_loc< $lid:_$ >> -> <:patt< _ >>
-           | <:patt< ($p$ as $_$) >> -> p
-           | p -> p ]) p in
+    let p' = wildcarder#patt p in
     let match_fun =
       if Ast.is_irrefut_patt p' then
         <:expr< fun [ $pat:p'$ -> True ] >>
