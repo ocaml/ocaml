@@ -199,7 +199,7 @@ entry_t *caml_lookup_bundle(const char *name)
   return current;
 }
 
-void * caml_dlopen(char * libname)
+void * caml_dlopen(char * libname, int for_execution)
 {
   NSObjectFileImage image;
   entry_t *bentry = caml_lookup_bundle(libname);
@@ -283,9 +283,12 @@ char * caml_dlerror(void)
 #define RTLD_NODELETE 0
 #endif
 
-void * caml_dlopen(char * libname)
+void * caml_dlopen(char * libname, int for_execution)
 {
-  return dlopen(libname, RTLD_NOW|RTLD_GLOBAL|RTLD_NODELETE);
+  return dlopen(libname, 
+                for_execution
+                ? RTLD_NOW | RTLD_GLOBAL | RTLD_NODELETE
+                : RTLD_LAZY);
 }
 
 void caml_dlclose(void * handle)

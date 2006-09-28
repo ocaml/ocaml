@@ -36,8 +36,13 @@ CAMLextern char * caml_search_exe_in_path(char * name);
 extern char * caml_search_dll_in_path(struct ext_table * path, char * name);
 
 /* Open a shared library and return a handle on it.
+   If [for_execution] is true, perform full symbol resolution and
+   execute initialization code so that functions from the shared library
+   can be called.  If [for_execution] is false, functions from this
+   shared library will not be called, but just checked for presence,
+   so symbol resolution can be skipped.
    Return [NULL] on error. */
-extern void * caml_dlopen(char * libname);
+extern void * caml_dlopen(char * libname, int for_execution);
 
 /* Close a shared library handle */
 extern void caml_dlclose(void * handle);

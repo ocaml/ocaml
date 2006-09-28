@@ -120,9 +120,15 @@ char * caml_search_dll_in_path(struct ext_table * path, char * name)
   return res;
 }
 
-void * caml_dlopen(char * libname)
+void * caml_dlopen(char * libname, int for_execution)
 {
-  return (void *) LoadLibrary(libname);
+  HMODULE m;
+  m = LoadLibraryEx(libname, NULL,
+                    for_execution ? 0 : DONT_RESOLVE_DLL_REFERENCES);
+  /* LoadLibraryEx can fail under Win 95/98/ME in cases where LoadLibrary
+     would succeed.  Just try again with LoadLibrary for good measure. */
+  if (m == NULL) m = LoadLibrary(libname);
+  return (void *) m;
 }
 
 void caml_dlclose(void * handle)

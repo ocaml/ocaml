@@ -296,7 +296,7 @@ let link_bytecode tolink exec_name standalone =
       (* Initialize the DLL machinery *)
       Dll.init_compile !Clflags.no_std_include;
       Dll.add_path !load_path;
-      try Dll.open_dlls sharedobjs
+      try Dll.open_dlls Dll.For_checking sharedobjs
       with Failure reason -> raise(Error(Cannot_open_dll reason))
     end;
     let output_fun = output_string outchan
