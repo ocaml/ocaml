@@ -1,22 +1,14 @@
-(*
- *
- * Copyright (C) 2003-2004 Damien Pous
- * 
- * YaM is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License as published by
- * the Free Software Foundation; either version 2 of the License, or
- * (at your option) any later version.
- * 
- * YaM is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- * 
- * You should have received a copy of the GNU General Public License
- * along with YaM; if not, write to the Free Software
- * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
- * 
- *)
+(* * * Copyright (C) 2003-2004 Damien Pous * * YaM is free software;
+you can redistribute it and/or modify * it under the terms of the GNU
+General Public License as published by * the Free Software Foundation;
+either version 2 of the License, or * (at your option) any later
+version.  * * YaM is distributed in the hope that it will be useful, *
+but WITHOUT ANY WARRANTY; without even the implied warranty of *
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the * GNU
+General Public License for more details.  * * You should have received
+a copy of the GNU General Public License * along with YaM; if not,
+write to the Free Software * Foundation, Inc., 59 Temple Place, Suite
+330, Boston, MA 02111-1307 USA * *)
 
 open Printf
 
@@ -179,10 +171,21 @@ let silent_remove f = try Sys.remove f with Sys_error _ -> ()
 let touch_file f = if not (Sys.file_exists f) then close_out (open_out f)
 
 exception CmdError of string
-let call = Sys.command
+
+let makecommand =
+  match Sys.os_type with
+  | "Win32" -> (fun cmd -> "bash -c " ^ Filename.quote cmd)
+  |    _    -> (fun cmd -> cmd)
+
+let call cmd = Sys.command (makecommand cmd)
 let ecall cmd = if (call cmd) <> 0 then raise (CmdError cmd)
 let exitf ?(err=1) x = kprintf (fun msg -> eprintf "%s" msg; exit err) x
 
+let fileconcat dirname filename =
+  let l = String.length dirname in
+  if l = 0 || dirname.[l-1] = '/'
+  then dirname ^ filename
+  else dirname ^ "/" ^ filename
 
 let mk_ext e = (fun n -> n^e), (fun n -> Filename.check_suffix n e)
 let ml   , is_ml    = mk_ext ".ml"
@@ -211,10 +214,28 @@ let rec fold_units f a = function
   | u::q -> fold_units f (f u (fold_units f a u.sub_units)) q
 
 let get_line c = 
-  let s = input_line c in 
-    s, String.length s 
+  let rec get accu =
+    let s = input_line c in
+    let l = String.length s in
+    if l > 0 && s.[l-1] = '\\'
+    then get (String.sub s 0 (l-1) :: accu)
+    else if l > 1 && s.[l-1] = '\r' && s.[l-2] = '\\'
+    then get (String.sub s 0 (l-2) :: accu)
+    else String.concat "" (List.rev (s :: accu))
+  in get []
 
-
+let split_string pred s =
+  let rec split1 i accu =
+    if i >= String.length s
+    then List.rev accu
+    else if pred s.[i] then split1 (i+1) accu
+    else split2 i (i+1) accu
+  and split2 i j accu =
+    if j >= String.length s
+    then List.rev (String.sub s i (j-i) :: accu)
+    else if pred s.[j] then split1 (j+1) (String.sub s i (j-i) :: accu)
+    else split2 i (j+1) accu
+  in split1 0 []
 
 (* ---- Outils OCaml (c,dep,opt...) ---- *)
 
@@ -222,31 +243,19 @@ let get_line c =
 (* parsing de la sortie d'ocamldep *)
 let tokenize ?(skip=false) c =
   try
-    if skip then (
-      (* ignorage du premier bloc (cmo/cmx) *)
-      let last c = let s = input_line c in s.[String.length s - 1] in
-	try while last c = '\\' do () done 
-	with End_of_file -> ()
-    );
-    let s,ls  = get_line c in
-    let i = String.index s ':' in
-    let rec aux i acc ((s,ls) as sls) =
-      if s.[i]='\\' then aux 4 acc (get_line c)
-      else
-        let j = String.index_from s i ' ' in
-          if j+1 = ls then String.sub s i (j-i) :: acc
-          else let k,sls' = if s.[j+1]='\\' then 4, get_line c else j+1, sls in
-            aux k (String.sub s i (j-i) :: acc) sls'
-    in
-      aux (i+2) [] (s,ls)
+    if skip then ignore (get_line c);
+    match split_string (function ' ' | ':' -> true | _ -> false) 
+                       (get_line c) with
+    | [] -> []
+    | _ :: deps -> deps
   with End_of_file -> []
 
 let ocamldep ~native ~depc ~sf =
   let nat = if native then "-native " else "" in
-  let cmd = depc^^nat^^sf in
+  let cmd = depc^^"-slash"^^nat^^sf in
     if !print_deps then printf "%s\n%!" cmd
     else printf "DEPENDENCIES: %s\n%!" sf;
-    let c_in = Unix.open_process_in cmd in
+    let c_in = Unix.open_process_in (makecommand cmd) in
     let deps = tokenize ~skip:(native && is_ml sf) c_in in
     let deps' = 
       if native then deps 
@@ -276,7 +285,7 @@ let ocaml_options ?(o= !options) ?(flags="") ?(byte_flags="") ?(opt_flags="") ?p
   let opt_flags' = (print_inc !(o.ocaml_Includes))^^(print_inc includes)^^(print_p4 (oget !(o.ocaml_P4_opt) pp)) in
   let opt_flags' = !(o.ocaml_Flags)^^flags^^(print_inc !(o.ocaml_ExtIncludes))^^(print_inc ext_includes)^^opt_flags' in
   let optc   = !(o.ocamlopt)^^(for_pack o)^^opt_flags'^^opt_flags ^^ !(o.ocaml_OptFlags)  in
-    (Filename.concat !dir n), depc, bytec, optc
+    (fileconcat !dir n), depc, bytec, optc
 
 
 
@@ -383,8 +392,8 @@ let ocaml_Interface ?o ?flags ?byte_flags ?opt_flags ?pp ?includes ?ext_includes
 
 (* objet C *)
 let c_Module ?(o= !options) ?(flags="") ?(source_deps=[]) n =
-  let n = Filename.concat !dir n in 
-  let sources = List.map (Filename.concat !dir) source_deps in
+  let n = fileconcat !dir n in 
+  let sources = List.map (fileconcat !dir) source_deps in
   let c_n, o_n = cc n, oo n in
   let cc = !(o.ocamlc)^" -c"^^flags^^c_n in
   let sources = c_n::sources in
@@ -399,7 +408,7 @@ let c_Module ?(o= !options) ?(flags="") ?(source_deps=[]) n =
 
 (* lexer ocaml *)
 let ocaml_Lexer ?(o= !options) ?flags ?byte_flags ?opt_flags ?(lex_flags="") ?pp ?includes ?ext_includes n =
-  let n' = Filename.concat !dir n in 
+  let n' = fileconcat !dir n in 
   let mll_n, ml_n = mll n', ml n' in
   let ocamllex = !(o.ocamllex)^^lex_flags^^mll_n in
     generic_unit 
@@ -414,7 +423,7 @@ let ocaml_Lexer ?(o= !options) ?flags ?byte_flags ?opt_flags ?(lex_flags="") ?pp
 
 (* parser ocaml *)
 let ocaml_Parser ?(o= !options) ?flags ?byte_flags ?opt_flags ?(yacc_flags="") ?pp ?includes ?ext_includes n =
-  let n' = Filename.concat !dir n in 
+  let n' = fileconcat !dir n in 
   let mly_n, ml_n, mli_n = mly n', ml n', mli n' in
   let ocamlyacc = !(o.ocamlyacc)^^yacc_flags^^mly_n in
   let gen = [ml_n; mli_n] in
@@ -430,7 +439,7 @@ let ocaml_Parser ?(o= !options) ?flags ?byte_flags ?opt_flags ?(yacc_flags="") ?
 
 (* interface glade à compiler en ocaml *)
 let ocaml_Glade ?(o= !options) ?flags ?byte_flags ?opt_flags ?(glade_flags="") ?pp ?includes ?ext_includes n =
-  let n' = Filename.concat !dir n in 
+  let n' = fileconcat !dir n in 
   let glade_n, ml_n = glade n', ml n' in
   let ocamlglade = !(o.ocamlglade)^^glade_flags^^glade_n^" > "^ml_n in
     generic_unit 
@@ -445,7 +454,7 @@ let ocaml_Glade ?(o= !options) ?flags ?byte_flags ?opt_flags ?(glade_flags="") ?
 
 (* paquet de modules ocaml *)
 let ocaml_Package ?(o= !options) n sub_units = 
-  let n = Filename.concat !dir n in 
+  let n = fileconcat !dir n in 
   let ml_n, cmo_n, cmi_n, cmx_n, o_n = ml n, cmo n, cmi n, cmx n, oo n in
   let otmap2 f = List.fold_right
     (function { objects=None; targets=[x] }
@@ -481,9 +490,9 @@ let add_for_pack o n =
 
 (* paquet de modules regroupés dans un sous répertoire *)
 let ocaml_PackageDir ?o n l =
-  let n' = Filename.concat !dir n in 
+  let n' = fileconcat !dir n in 
   let dir' = !dir in
-    dir := Filename.concat n' "";
+    dir := fileconcat n' "";
     let l' = new_scope (lazy (!options.ocaml_Includes += n';
                               add_for_pack !options n; Lazy.force l)) in
       dir := dir';
@@ -572,7 +581,7 @@ let fold_units_sources units f =
 
 (* (\* unité utilisateur *\) *)
 (* let user_unit ?trash ~command ~depends name = *)
-(*   let targets = [Filename.concat !dir name] in *)
+(*   let targets = [fileconcat !dir name] in *)
 (*   let trash = oget targets trash in *)
 (*     generic_unit ~targets ~trash  *)
 (*       ~dependencies:(fun ~native _ -> depends) *)
@@ -682,7 +691,7 @@ let project ?(rebuild="ocaml build.ml")  ?(deps=["Makefile.ml"]) units =
     let rebuild = ref rebuild in
       for i=1 to Array.length Sys.argv -1 do rebuild := !rebuild^" "^Sys.argv.(i) done;
       printf "yam is out-dated, rebuilding it (%s)\n%!" !rebuild;
-      exit (Sys.command !rebuild)
+      exit (call !rebuild)
   ) in
 
   (* construction de la table cible -> unités *)
@@ -887,7 +896,7 @@ let rec best =
   | [] -> invalid_arg "YaM.best: []"
 
 let scall cmd =
-  let cin = Unix.open_process_in cmd in
+  let cin = Unix.open_process_in (makecommand cmd) in
   let str = input_line cin in str
 
 let which x = scall ("which"^^x)

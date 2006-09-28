@@ -304,3 +304,5 @@ val getenv: string -> string -> string
 val which : string -> string
 
 val is_file_empty : string -> bool
+
+val call : string -> int

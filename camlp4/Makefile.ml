@@ -27,9 +27,19 @@ let libdir_camlp4 = (getenv "LIBDIR" Camlp4_config.libdir) ^ "/camlp4/."
 
 let bindir = (getenv "BINDIR" Camlp4_config.bindir) ^ "/."
 
-let ocamlrun = "OCAMLRUNPARAM=l=1M ../boot/ocamlrun"
+(**
+let unixlib =
+  match Sys.os_type with
+  | "Win32" -> "../otherlibs/win32unix"
+  | _       -> "../otherlibs/unix"
+**)
+let ocamlrun = "../boot/ocamlrun" (* " -I " ^ unixlib *)
+let ocamlrun_os =
+  Filename.concat Filename.parent_dir_name
+                  (Filename.concat "boot" "ocamlrun")
+(*  ^ " -I " ^ unixlib *)
 
-let ocaml = ocamlrun ^ " ../ocaml -I ../stdlib -I ../otherlibs/unix "
+let ocaml = ocamlrun ^ " ../ocaml -I ../stdlib" (* "-I " ^ unixlib *)
 
 let debug_mode =
   (* true *)
@@ -37,7 +47,7 @@ let debug_mode =
 
 let camlp4_modules =
   [
-    ocamlrun;
+    ocamlrun_os;
     "./boot/camlp4boot";
   ]
 let camlp4_modules =
@@ -94,7 +104,10 @@ and typing = "../typing"
 and toplevel = "../toplevel"
 and utils = "../utils"
 and dynlink = "../otherlibs/dynlink"
-and unix = "../otherlibs/unix"
+and unix =
+  match Sys.os_type with
+  | "Win32" -> "../otherlibs/win32unix"
+  | _       -> "../otherlibs/unix"
 and build = "build"
 
 let ocaml_Module_with_meta =
@@ -386,10 +399,7 @@ let print_packed_sources ppf ?(skip = fun _ -> false) package_dir =
 let run l =
   let cmd = String.concat " " l in
   let () = Format.printf "%s@." cmd in
-  let st =
-    Sys.command cmd
-    (* 0 *)
-  in
+  let st = YaM.call cmd in
   if st <> 0 then failwith ("Exit: " ^ string_of_int st)
 
 let mkdir l = run ("mkdir" :: "-p" :: l)

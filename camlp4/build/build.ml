@@ -7,9 +7,17 @@
 let makefile = "Makefile.ml"
 
 (* Environment options *)
-let ocamlrun = "OCAMLRUNPARAM=l=1M CAML_LD_LIBRARY_PATH=../otherlibs/unix ../boot/ocamlrun"
-let ocamlc   = ocamlrun ^ " ../ocamlc -nostdlib -I ../stdlib -I ../otherlibs/unix"
-let ocamlopt = ocamlrun ^ " ../ocamlopt -nostdlib -I ../stdlib -I ../otherlibs/unix"
+let unixlib =
+  match Sys.os_type with
+  | "Win32" -> "../otherlibs/win32unix"
+  | _       -> "../otherlibs/unix"
+
+let ocamlrun =
+  Filename.concat Filename.parent_dir_name (Filename.concat "boot" "ocamlrun")
+  ^ " -I " ^ unixlib
+
+let ocamlc   = ocamlrun ^ " ../ocamlc -g -nostdlib -I ../stdlib -I " ^ unixlib
+let ocamlopt = ocamlrun ^ " ../ocamlopt -nostdlib -I ../stdlib -I " ^ unixlib
 let yam      = ocamlrun ^ " ./yam "
 
 (* Compile YaM in native mode ? *)

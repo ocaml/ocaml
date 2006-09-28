@@ -16,8 +16,8 @@
 #   Do not forget to call make genclean to update Makefile.clean before a
 #   release.
 
-OCAMLRUN=CAML_LD_LIBRARY_PATH=../otherlibs/unix ../boot/ocamlrun
-OCAML=$(OCAMLRUN) ../ocaml -I ../stdlib -I ../otherlibs/unix
+OCAMLRUN=../boot/ocamlrun -I ../otherlibs/unix -I ../otherlibs/win32unix
+OCAML=$(OCAMLRUN) ../ocaml -I ../stdlib -I ../otherlibs/unix -I ../otherlibs/win32unix
 YAM=$(OCAMLRUN) ./yam
 YAM_OPTIONS=-verbosity '$(VERBOSE)'
 
