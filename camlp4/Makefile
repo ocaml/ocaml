@@ -16,8 +16,9 @@
 #   Do not forget to call make genclean to update Makefile.clean before a
 #   release.
 
+OCAMLC=../boot/ocamlrun ../ocamlc -nostdlib \
+  -I ../stdlib -I ../otherlibs/unix -I ../otherlibs/win32unix -I build -g
 OCAMLRUN=../boot/ocamlrun -I ../otherlibs/unix -I ../otherlibs/win32unix
-OCAML=$(OCAMLRUN) ../ocaml -I ../stdlib -I ../otherlibs/unix -I ../otherlibs/win32unix
 YAM=$(OCAMLRUN) ./yam
 YAM_OPTIONS=-verbosity '$(VERBOSE)'
 
@@ -30,29 +31,27 @@ opt install doc all pack just_doc: yam
 genclean: yam
 	$(YAM) -genclean Makefile.clean
 
-clean:
-	if test -x ../boot/ocamlrun; then \
-	  if test -x ../ocaml; then \
-	    $(OCAML) build/build.ml -clean; \
-	  else \
-	    if test -x ./yam; then \
-	      $(YAM) $(YAM_OPTIONS) -clean; \
-	    else \
-	      $(MAKE) staticclean; \
-	    fi; \
-	  fi; \
-	else \
-	  $(MAKE) staticclean; \
-	fi
-
-cleanall:
-	$(OCAML) build/build.ml -cleanall
-
-staticclean:
+clean::
 	rm -f $(CLEANFILES)
 
-yam: build/build.ml
-	$(OCAML) build/build.ml
+YAM_OBJS=build/YaM.cmo build/camlp4_config.cmo Makefile.cmo
+
+yam: $(YAM_OBJS)
+	$(OCAMLC) -o yam unix.cma $(YAM_OBJS)
+
+clean::
+	rm -f yam .cache-status
+	rm -f *.cm[io] build/*.cm[io]
+
+.SUFFIXES: .mli .ml .cmi .cmo
+
+.mli.cmi:
+	$(OCAMLC) -c $*.mli
+.ml.cmo:
+	$(OCAMLC) -c $*.ml
+
+build/YaM.cmo: build/YaM.cmi
+Makefile.cmo: build/YaM.cmi build/camlp4_config.cmo
 
 uninstall:
 	rm -rf "$(LIBDIR)/camlp4"
@@ -83,4 +82,4 @@ compare:
 .PHONY: clean install all uninstall backup restore boot-clean promote-debug \
 	promote compare opt doc cleanall all-local clean-local depend
 
--include Makefile.clean
+include Makefile.clean
