@@ -255,8 +255,15 @@ and signature_components env subst = function
         match Ctype.expand_head env ty with
           {desc=Tvariant row} ->
             let row = Ctype.row_normal env row in
-            assert ((Btype.row_more row).desc = Tvar);
-            row
+            let more = Btype.row_more row in
+            begin match more.desc with
+              Tvar -> row
+            | Tconstr _ ->
+                {row_fields=[]; row_abs=[more]; row_closed=true;
+                 row_more=Btype.newty2 more.level Tvar; row_fixed=false;
+                 row_bound=[]; row_name=None}
+            | _ -> assert false
+            end
         | _ -> assert false
       in
       (-1, Tcoerce_matcher(row, env)) :: signature_components env subst rem

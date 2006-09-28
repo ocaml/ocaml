@@ -611,6 +611,19 @@ let full_match closing env =  match env with
           | _ -> assert false)
         ([],[]) env
     in
+    let abs =
+      List.map
+        (fun path -> try
+          let decl = Env.find_type path p.pat_env in
+          let ty =
+            Ctype.newconstr path
+              (List.map (fun _ -> Ctype.newvar()) decl.type_params) in
+          match Ctype.expand_head p.pat_env ty with
+            {desc=Tconstr(path,_,_)} -> path
+          | _ -> assert false
+        with Not_found -> path)
+        abs
+    in
     let row = Ctype.row_normal p.pat_env row in
     let abs_ok =
       List.for_all

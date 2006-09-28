@@ -310,12 +310,12 @@ let build_check_pat env loc row ty =
       raise (Typetexp.Error(loc, Typetexp.Unbound_type_constructor lid))
   in
   match desc.type_manifest with
-    Some ty when has_constr_row ty ->
+    Some ty when has_constr_row (expand_head env ty) ->
       {pat_desc=Tpat_check (p, row); pat_loc=loc;
        pat_env=env; pat_type=newty(Tvariant row)}
   | _ ->
       raise (Error(loc, Invalid_type("private", p)))
-    
+
 let build_or_pat env loc lid =
   let path, decl =
     try Env.lookup_type lid env
@@ -324,11 +324,25 @@ let build_or_pat env loc lid =
   in
   let tyl = List.map (fun _ -> newvar()) decl.type_params in
   let fields, abs =
-    let ty = expand_head env (newty(Tconstr(path, tyl, ref Mnil))) in
+    let ty0 = newty (Tconstr(path, tyl, ref Mnil)) in
+    let ty = expand_head env ty0  in
     match ty.desc with
       Tvariant row when has_constr_row ty ->
         let row = row_normal env row in
-        row.row_fields, [row.row_more]
+        let rm =
+          match expand_head_noapp env ty0 with
+            {desc=Tconstr(p,tyl,_)} ->
+              let p', _ = 
+                let lid = Path.to_lid p ~rename:(fun s -> s^"#row") in
+                try Env.lookup_type lid env
+                with Not_found ->
+                  raise(Typetexp.Error(
+                        loc, Typetexp.Unbound_type_constructor lid))
+              in
+              newty (Tconstr(p',tyl,ref Mnil))
+          | _ -> row.row_more
+        in
+        row.row_fields, [rm]
     | Tvariant row when static_row row ->
         let row = row_normal env row in
         row.row_fields, row.row_abs

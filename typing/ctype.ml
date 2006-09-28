@@ -1153,6 +1153,23 @@ let rec expand_head env ty =
     Btype.backtrack snap;
     repr ty
 
+(* Stop expanding if the path contains an application *)
+let rec flat_path = function
+    Path.Pident _ -> true
+  | Path.Pdot(p,_,_) -> flat_path p
+  | Path.Papply _ -> false
+
+let rec try_expand_head_noapp env ty =
+  let ty = repr (expand_abbrev env (repr ty)) in
+  match ty with
+    {desc = Tconstr(p,_,_)} ->
+      if flat_path p then
+        try try_expand_head_noapp env ty with Cannot_expand -> repr ty
+      else raise Cannot_expand
+  | ty -> ty
+let expand_head_noapp env ty =
+  try try_expand_head_noapp env ty with Cannot_expand -> repr ty
+
 (* Make sure that the type parameters of the type constructor [ty]
    respect the type constraints *)
 let enforce_constraints env ty =
@@ -2353,7 +2370,7 @@ and moregen_kind k1 k2 =
   | _                              -> raise (Unify [])
 
 and moregen_row inst_nongen type_pairs env row1 row2 =
-  let row1 = row_repr row1 and row2 = row_repr row2 in
+  let row1 = row_normal env row1 and row2 = row_normal env row2 in
   let r1, r2, pairs = merge_row_fields row1.row_fields row2.row_fields in
   let r1, r2 =
     if row2.row_closed then
@@ -2613,7 +2630,7 @@ and eqtype_row rename type_pairs subst env row1 row2 =
     {desc=Tvariant row2} -> eqtype_row rename type_pairs subst env row1 row2
   | _ -> raise Cannot_expand
   with Cannot_expand ->
-  let row1 = row_repr row1 and row2 = row_repr row2 in
+  let row1 = row_normal env row1 and row2 = row_normal env row2 in
   let r1, r2, pairs = merge_row_fields row1.row_fields row2.row_fields in
   if row1.row_closed <> row2.row_closed
   || not row1.row_closed && (r1 <> [] || r2 <> [])
