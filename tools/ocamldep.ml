@@ -139,6 +139,8 @@ let print_raw_dependencies source_file deps =
 
 let preprocessor = ref None
 
+exception Preprocessing_error
+
 let preprocess sourcefile =
   match !preprocessor with
     None -> sourcefile
@@ -148,8 +150,7 @@ let preprocess sourcefile =
       let comm = Printf.sprintf "%s %s > %s" pp sourcefile tmpfile in
       if Sys.command comm <> 0 then begin
         Misc.remove_file tmpfile;
-        Printf.eprintf "Preprocessing error\n";
-        exit 2
+        raise Preprocessing_error
       end;
       tmpfile
 
@@ -257,6 +258,9 @@ let file_dependencies source_file =
         Syntaxerr.report_error err
     | Sys_error msg ->
         fprintf Format.err_formatter "@[I/O error:@ %s@]@." msg
+    | Preprocessing_error ->
+        fprintf Format.err_formatter "@[Preprocessing error on file %s@]@."
+            source_file
     | x -> raise x in
     error_occurred := true;
     report_err x
