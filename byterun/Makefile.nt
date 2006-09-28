@@ -51,7 +51,7 @@ libcamlrun.$(A): $(SOBJS)
 	$(call MKLIB,libcamlrun.$(A),$(SOBJS))
 
 ocamlrund.exe: opnames.h $(DBGOBJS)
-	$(CC) $(BYTECCDBGOPTS) -o ocamlrund.exe $(DBGOBJS)
+	$(call MKEXE,ocamlrund.exe,$(BYTECCDBGCOMPOPTS) $(DBGOBJS))
 
 install:
 	cp ocamlrun.exe $(BINDIR)/ocamlrun.exe
