@@ -148,3 +148,122 @@ module type T' = T with type t = private [> `A];;
 type t = private [> ] ~ [`A of int]
 let f = function `A x -> x | #t -> 0
 type t' = private [< `A of int | t];;
+
+(* should be ok *)
+module F(X:sig end) :
+    sig type t = private [> ] type u = private [> ] ~ [t] end =
+  struct type t = [ `A] type u = [`B] end
+module M = F(String)
+let f = function #M.t -> 1 | #M.u -> 2
+let f = function #M.t -> 1 | _ -> 2
+type t = [M.t | M.u]
+let f = function #t -> 1 | _ -> 2
+
+(* Expression Problem: functorial form *)
+
+type num = [ `Num of int ]
+
+module type Exp = sig
+  type t = private [> num]
+  val eval : t -> t
+  val show : t -> string
+end
+
+module Num(X : Exp) = struct
+  type t = num
+  let eval (`Num _ as x) : X.t = x
+  let show (`Num n) = string_of_int n
+end
+
+type 'a add = [ `Add of 'a * 'a ]
+
+module Add(X : Exp with type t = private [> num | 'a add] as 'a) = struct
+  type t = X.t add
+  let show (`Add(e1, e2) : t) = "("^ X.show e1 ^"+"^ X.show e2 ^")"
+  let eval (`Add(e1, e2) : t) =
+    let e1 = X.eval e1 and e2 = X.eval e2 in
+    match e1, e2 with
+      `Num n1, `Num n2 -> `Num (n1+n2)
+    | `Num 0, e | e, `Num 0 -> e
+    | e12 -> `Add e12
+end 
+
+type 'a mul = [`Mul of 'a * 'a]
+
+module Mul(X : Exp with type t = private [> num | 'a mul] as 'a) = struct
+  type t = X.t mul
+  let show (`Mul(e1, e2) : t) = "("^ X.show e1 ^"*"^ X.show e2 ^")"
+  let eval (`Mul(e1, e2) : t) =
+    let e1 = X.eval e1 and e2 = X.eval e2 in
+    match e1, e2 with
+      `Num n1, `Num n2 -> `Num (n1*n2)
+    | `Num 0, e | e, `Num 0 -> e
+    | e12 -> `Mul e12
+end
+
+module Ext(X : sig type t = private [> ] end)(Y : sig type t end) = struct
+  module type S =
+    sig
+      type t = private [> ] ~ [ X.t ]
+      val eval : t -> Y.t
+      val show : t -> string
+    end
+end
+
+module Mix(E : Exp)(E1 : Ext(E)(E).S)(E2 : Ext(E1)(E).S) =
+  struct
+    type t = [E1.t | E2.t]
+    let eval = function
+        #E1.t as x -> E1.eval x
+      | #E2.t as x -> E2.eval x
+    let show = function
+        #E1.t as x -> E1.show x
+      | #E2.t as x -> E2.show x
+  end
+
+module rec EAdd : Exp with type t = [num | EAdd.t add] =
+    Mix(EAdd)(Num(EAdd))(Add(EAdd))
+
+module rec EAddMul : Exp with type t = [num | EAddMul.t add | EAddMul.t mul] =
+    Mix(EAddMul)(Mix(EAddMul)(Num(EAddMul))(Add(EAddMul)))(Mul(EAddMul))
+
+let e = EAddMul.eval (`Add(`Mul(`Num 2,`Num 3),`Num 1))
+
+(* Do functor applications in Mix *)
+module type T = sig type t = private [> num] end
+
+module Ext(E : T)(X : sig type t = private [> ] end) = struct
+  module type S = functor (Y : Exp with type t = E.t) ->
+    sig
+      type t = private [> ] ~ [ X.t ]
+      val eval : t -> Y.t
+      val show : t -> string
+    end
+end
+
+module Mix(E : Exp)(F1 : Ext(E)(E).S)(F2 : Ext(E)(F1(E)).S) =
+  struct
+    module E1 = F1(E)
+    module E2 = F2(E)
+    type t = [E1.t | E2.t]
+    let eval = function
+        #E1.t as x -> E1.eval x
+      | #E2.t as x -> E2.eval x
+    let show = function
+        #E1.t as x -> E1.show x
+      | #E2.t as x -> E2.show x
+  end
+
+module Join(E : Exp)(F1 : Ext(E)(E).S)(F2 : Ext(E)(F1(E)).S)
+    (E' : Exp with type t = E.t) =
+  Mix(E)(F1)(F2)
+
+module rec EAdd : (Exp with type t = [num | EAdd.t add]) =
+  Mix(EAdd)(Num)(Add)
+
+module rec EMul : (Exp with type t = [num | EMul.t mul]) =
+  Mix(EMul)(Num)(Mul)
+
+module rec EAddMul :
+    (Exp with type t = [num | EAddMul.t add | EAddMul.t mul]) =
+  Mix(EAddMul)(Join(EAddMul)(Num)(Add))(Mul)
