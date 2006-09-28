@@ -608,7 +608,18 @@ alldepend::
 
 # Camlp4
 
-camlp4out: ocamlc
+camlp4/build/camlp4_config.ml: config/Makefile utils/config.ml
+	(echo 'let prefix = "$(PREFIX)"'; \
+	 echo 'let bindir = "$(BINDIR)"'; \
+	 echo 'let mandir = "$(MANDIR)"'; \
+	 echo 'let libdir = "$(LIBDIR)"'; \
+         grep ast utils/config.ml) > camlp4/build/camlp4_config.ml
+
+partialclean::
+	rm -f camlp4/build/camlp4_config.ml
+beforedepend:: camlp4/build/camlp4_config.ml
+
+camlp4out: ocamlc camlp4/build/camlp4_config.ml
 	cd camlp4; $(MAKE) all
 camlp4opt: ocamlopt
 	cd camlp4; $(MAKE) opt

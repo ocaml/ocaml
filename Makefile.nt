@@ -197,11 +197,11 @@ cleanboot:
 	rm -rf boot/Saved/Saved.prev/*
 
 # Compile the native-code compiler
-opt: runtimeopt ocamlopt libraryopt otherlibrariesopt camlp4opt
+opt: runtimeopt ocamlopt libraryopt otherlibrariesopt
 
 # Native-code versions of the tools
 opt.opt: ocamlc.opt ocamlopt.opt ocamllex.opt ocamltoolsopt.opt \
-	camlp4optopt ocamldoc.opt
+	camlp4opt ocamldoc.opt
 
 # Installation
 install: installbyt installopt
@@ -563,12 +563,17 @@ alldepend::
 
 # Camlp4
 
-camlp4/build/camlp4_config.ml: config/Makefile
-	echo '  let prefix = "$(PREFIX)"' > camlp4/build/camlp4_config.ml
-	echo '  let bindir = "$(BINDIR)"' >> camlp4/build/camlp4_config.ml
-	echo '  let mandir = "$(MANDIR)"' >> camlp4/build/camlp4_config.ml
-	echo '  let libdir = "$(LIBDIR)"' >> camlp4/build/camlp4_config.ml
-	
+camlp4/build/camlp4_config.ml: config/Makefile utils/config.ml
+	(echo 'let prefix = "$(PREFIX)"'; \
+	 echo 'and bindir = "$(BINDIR)"'; \
+	 echo 'and mandir = "$(MANDIR)"'; \
+	 echo 'and libdir = "$(LIBDIR)"'; \
+         grep 'ast.*magic_number' utils/config.ml) > camlp4/build/camlp4_config.ml
+
+partialclean::
+	rm -f camlp4/build/camlp4_config.ml
+beforedepend:: camlp4/build/camlp4_config.ml
+
 camlp4out: ocamlc camlp4/build/camlp4_config.ml
 	cd camlp4; $(MAKE) all
 camlp4opt: ocamlopt

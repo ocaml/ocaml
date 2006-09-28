@@ -1407,19 +1407,6 @@ else
   echo "Configuration failed, LablTk will not be built."
 fi
 
-# Begin Camlp4
-(
-cd ../../camlp4/build
-rm -f camlp4_config.ml
-cat > camlp4_config.ml <<EOF
-  let prefix = "$prefix"
-  let bindir = "$bindir"
-  let mandir = "$mandir"
-  let libdir = "$libdir"
-EOF
-)
-# End Camlp4
-
 # Final twiddling of compiler options to work around known bugs
 
 nativeccprofopts="$nativecccompopts"
