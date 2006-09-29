@@ -285,10 +285,8 @@ char * caml_dlerror(void)
 
 void * caml_dlopen(char * libname, int for_execution)
 {
-  return dlopen(libname, 
-                for_execution
-                ? RTLD_NOW | RTLD_GLOBAL | RTLD_NODELETE
-                : RTLD_LAZY);
+  return dlopen(libname, RTLD_NOW | RTLD_GLOBAL | RTLD_NODELETE);
+  /* Could use RTLD_LAZY if for_execution == 0, but needs testing */
 }
 
 void caml_dlclose(void * handle)
