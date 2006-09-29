@@ -254,7 +254,7 @@ and signature_components env subst = function
       let row =
         match Ctype.expand_head env ty with
           {desc=Tvariant row} ->
-            let row = Ctype.row_normal env row in
+            let row = Ctype.row_normal env row ~noapp:true in
             let more = Btype.row_more row in
             begin match more.desc with
               Tvar -> row

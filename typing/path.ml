@@ -55,3 +55,8 @@ let rec to_lid ?(rename=keep) = function
       Longident.Ldot (to_lid p1, rename s)
   | Papply (p1, p2) ->
       Longident.Lapply (to_lid p1, to_lid p2)
+
+let rec flat = function
+    Pident _ -> true
+  | Pdot(p,_,_) -> flat p
+  | Papply _ -> false

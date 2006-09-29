@@ -1154,16 +1154,11 @@ let rec expand_head env ty =
     repr ty
 
 (* Stop expanding if the path contains an application *)
-let rec flat_path = function
-    Path.Pident _ -> true
-  | Path.Pdot(p,_,_) -> flat_path p
-  | Path.Papply _ -> false
-
 let rec try_expand_head_noapp env ty =
   let ty = repr (expand_abbrev env (repr ty)) in
   match ty with
     {desc = Tconstr(p,_,_)} ->
-      if flat_path p then
+      if Path.flat p then
         try try_expand_head_noapp env ty with Cannot_expand -> repr ty
       else raise Cannot_expand
   | ty -> ty
@@ -1213,32 +1208,49 @@ let generic_abbrev env path =
    Expand abstract rows to normalize a variant type.
    After expansion, row_abs contains only abstract types whose
    name ends in #row.
+   Two modes: noapp=true, do not allow applications in path,
+   so that they can be used later to access a matcher;
+   noapp=false, expand everything, to check equalities or unify.
 *)
-let rec check_abs = function
-    [] -> true
-  | ty :: tyl ->
-      not (List.exists (same_path ty) tyl) && check_abs tyl
-let rec row_normal env row =
+let rec row_normal ?(noapp=false) env row =
   let row = row_repr row in
   let need_expand =
     List.exists
       (fun t ->
-        match (repr t).desc with
-          Tconstr(p,_,_) -> generic_abbrev env p
-        | _ -> false)
+        try match try_expand_head env t with
+        | {desc=Tvariant row}
+          when static_row {(row_repr row) with row_closed = true} -> true
+        | _ ->
+            if noapp then ignore (try_expand_head_noapp env t);
+            true
+        with Cannot_expand -> false)
       row.row_abs
   in
-  assert (check_abs row.row_abs);
   if not need_expand then row else
   let rec merge_abs fields abs = function
       [] -> (fields, abs)
     | t :: rem ->
         match expand_head env t with
           {desc=Tvariant row'} ->
-            let row' = row_normal env row' in
+            let row' = row_normal ~noapp env row' in
             let abs' =
               match row_more row' with
-                {desc=Tconstr _} as t' -> t' :: row'.row_abs
+                {desc=Tconstr _} as t' ->
+                  let t' =
+                    if not noapp then t' else
+                    match (expand_head_noapp env t).desc with
+                      Tvariant _ -> t'
+                    | Tconstr(p,tyl,_) ->
+                        let lid =
+                          Path.to_lid p ~rename:
+                            (fun s -> assert(not (is_row_name s)); s^"#row") in
+                        let p',_ =
+                          try Env.lookup_type lid env
+                          with Not_found -> assert false
+                        in newty2 t'.level (Tconstr(p',tyl,ref Mnil))
+                    | _ -> assert false
+                  in
+                  t' :: row'.row_abs
               | _ -> row'.row_abs
             in
             let fields =
@@ -1247,12 +1259,14 @@ let rec row_normal env row =
                   if List.mem_assoc f fields then fields else fi :: fields)
                 fields row'.row_fields
             and abs =
-              List.fold_left
-                (fun abs ab' ->
+              (* Invariant: the abstract row should be first of the list *)
+              List.fold_right
+                (fun ab' abs ->
                   if List.exists (same_path ab') abs then abs else ab' :: abs)
-                abs abs'
+                abs' abs
             in merge_abs fields abs rem
         | {desc=Tconstr _} as ab' ->
+            let ab' = if noapp then expand_head_noapp env t else ab' in
             let abs =
               if List.exists (same_path ab') abs then abs else ab' :: abs
             in merge_abs fields abs rem

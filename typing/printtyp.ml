@@ -595,6 +595,10 @@ let rec tree_of_type_decl id decl =
           | Some ty -> tree_of_typexp false ty
         in tty, Private, List.map tree_of_compat l
   in
+  let priv =
+    match ty with
+      Otyp_constr _ | Otyp_alias(Otyp_constr _,_) -> Public
+    | _ -> priv in
   (name, args, ty, priv, compat, constraints)
 
 and tree_of_constructor (name, args) =

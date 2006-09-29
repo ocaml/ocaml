@@ -310,11 +310,11 @@ let build_check_pat env loc row ty =
       raise (Typetexp.Error(loc, Typetexp.Unbound_type_constructor lid))
   in
   match desc.type_manifest with
-    Some ty when has_constr_row (expand_head env ty) ->
+    Some ty when has_constr_row (expand_head env ty) && Path.flat p ->
       {pat_desc=Tpat_check (p, row); pat_loc=loc;
        pat_env=env; pat_type=newty(Tvariant row)}
   | _ ->
-      raise (Error(loc, Invalid_type("private", p)))
+      raise (Error(loc, Invalid_type("matchable private", pt)))
 
 let build_or_pat env loc lid =
   let path, decl =
@@ -327,25 +327,13 @@ let build_or_pat env loc lid =
     let ty0 = newty (Tconstr(path, tyl, ref Mnil)) in
     let ty = expand_head env ty0  in
     match ty.desc with
-      Tvariant row when has_constr_row ty ->
-        let row = row_normal env row in
-        let rm =
-          match expand_head_noapp env ty0 with
-            {desc=Tconstr(p,tyl,_)} ->
-              let p', _ = 
-                let lid = Path.to_lid p ~rename:(fun s -> s^"#row") in
-                try Env.lookup_type lid env
-                with Not_found ->
-                  raise(Typetexp.Error(
-                        loc, Typetexp.Unbound_type_constructor lid))
-              in
-              newty (Tconstr(p',tyl,ref Mnil))
-          | _ -> row.row_more
-        in
-        row.row_fields, [rm]
-    | Tvariant row when static_row row ->
-        let row = row_normal env row in
-        row.row_fields, row.row_abs
+    | Tvariant row when static_row {(row_repr row) with row_closed = true} ->
+        let row =
+          {row_fields=[]; row_abs=[ty0]; row_closed=true; row_bound=[];
+           row_more=newvar(); row_fixed=false; row_name=None} in
+        let row = row_normal env row ~noapp:true in
+        row.row_fields,
+        if has_constr_row ty then [List.hd row.row_abs] else row.row_abs
     | _ -> raise(Error(loc, Invalid_type("variant", path)))
   in
   let bound = ref [] in

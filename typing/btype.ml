@@ -156,7 +156,6 @@ let is_row_name s =
   if l < 4 then false else String.sub s (l-4) 4 = "#row"
 
 let unrow_name s =
-  if not (is_row_name s) then prerr_endline s;
   assert (is_row_name s);
   String.sub s 0 (String.length s - 4)
 

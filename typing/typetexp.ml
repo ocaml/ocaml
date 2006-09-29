@@ -308,13 +308,14 @@ let rec transl_type env policy styp =
             in
             name := if fields = [] && abs = [] then nm else None;
             let fl, al = match expand_head env ty, nm with
-            | {desc=Tvariant row}, _ when Btype.static_row row ->
-                let row = Ctype.row_normal env row in
+            | {desc=Tvariant row} as t, _
+              when Btype.static_row row || Btype.has_constr_row t &&
+              Btype.static_row {(Btype.row_repr row) with row_closed=true} ->
+                let row =
+                  {row_fields=[]; row_abs=[ty]; row_closed=true; row_bound=[];
+                   row_more=newvar(); row_fixed=false; row_name=None} in
+                let row = Ctype.row_normal env row ~noapp:true in
                 (row.row_fields, row.row_abs)
-            | {desc=Tvariant row} as t, _ when Btype.has_constr_row t &&
-                Btype.static_row {(Btype.row_repr row) with row_closed=true} ->
-                  let row = Ctype.row_normal env row in
-                  (row.row_fields, row.row_more :: row.row_abs)
             | {desc=Tvar}, Some(p, _) ->
                 raise(Error(sty.ptyp_loc, Unbound_type_constructor_2 p)) 
             | _ ->

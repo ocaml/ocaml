@@ -139,7 +139,7 @@ val full_expand: Env.t -> type_expr -> type_expr
 
 val enforce_constraints: Env.t -> type_expr -> unit
 
-val row_normal: Env.t -> row_desc -> row_desc
+val row_normal: ?noapp:bool -> Env.t -> row_desc -> row_desc
         (* Normalize a row by expanding components *)
 val check_compat_fields:
         Env.t -> bool -> (label * row_field) list -> type_expr -> unit
