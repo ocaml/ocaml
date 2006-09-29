@@ -158,6 +158,9 @@ let f = function #M.t -> 1 | #M.u -> 2
 let f = function #M.t -> 1 | _ -> 2
 type t = [M.t | M.u]
 let f = function #t -> 1 | _ -> 2
+(* bad *)
+let f = function #F(String).t -> 1 | _ -> 2;;
+
 
 (* Expression Problem: functorial form *)
 
@@ -197,7 +200,8 @@ module Mul(X : Exp with type t = private [> num | 'a mul] as 'a) = struct
     let e1 = X.eval e1 and e2 = X.eval e2 in
     match e1, e2 with
       `Num n1, `Num n2 -> `Num (n1*n2)
-    | `Num 0, e | e, `Num 0 -> e
+    | `Num 0, e | e, `Num 0 -> `Num 0
+    | `Num 1, e | e, `Num 1 -> e
     | e12 -> `Mul e12
 end
 
@@ -221,13 +225,32 @@ module Mix(E : Exp)(E1 : Ext(E)(E).S)(E2 : Ext(E1)(E).S) =
       | #E2.t as x -> E2.show x
   end
 
-module rec EAdd : Exp with type t = [num | EAdd.t add] =
+module rec EAdd : (Exp with type t = [num | EAdd.t add]) =
     Mix(EAdd)(Num(EAdd))(Add(EAdd))
 
-module rec EAddMul : Exp with type t = [num | EAddMul.t add | EAddMul.t mul] =
-    Mix(EAddMul)(Mix(EAddMul)(Num(EAddMul))(Add(EAddMul)))(Mul(EAddMul))
+(* A bit heavy: one must pass E to everybody *)
+module rec E : Exp with type t = [num | E.t add | E.t mul] =
+    Mix(E)(Mix(E)(Num(E))(Add(E)))(Mul(E))
 
-let e = EAddMul.eval (`Add(`Mul(`Num 2,`Num 3),`Num 1))
+let e = E.eval (`Add(`Mul(`Num 2,`Num 3),`Num 1))
+
+(* Alternatives *)
+(* Direct approach, no need of Mix *)
+module rec E : (Exp with type t = [num | E.t add | E.t mul]) =
+  struct
+    module E1 = Num(E)
+    module E2 = Add(E)
+    module E3 = Mul(E)
+    type t = E.t
+    let show = function
+      | #num as x -> E1.show x
+      | #add as x -> E2.show x
+      | #mul as x -> E3.show x
+    let eval = function
+      | #num as x -> E1.eval x
+      | #add as x -> E2.eval x
+      | #mul as x -> E3.eval x
+  end
 
 (* Do functor applications in Mix *)
 module type T = sig type t = private [> num] end
@@ -264,6 +287,49 @@ module rec EAdd : (Exp with type t = [num | EAdd.t add]) =
 module rec EMul : (Exp with type t = [num | EMul.t mul]) =
   Mix(EMul)(Num)(Mul)
 
-module rec EAddMul :
-    (Exp with type t = [num | EAddMul.t add | EAddMul.t mul]) =
-  Mix(EAddMul)(Join(EAddMul)(Num)(Add))(Mul)
+module rec E : (Exp with type t = [num | E.t add | E.t mul]) =
+  Mix(E)(Join(E)(Num)(Add))(Mul)
+
+(* Linear extension by the end: not so nice *)
+module LExt(X : sig type t = private [> ] end) = struct
+  module type S =
+    sig
+      type t = private [> ] ~ [X.t]
+      val eval : t -> X.t
+      val show : t -> string
+    end
+end
+module LNum(E: Exp)(X : LExt(E).S) =
+  struct
+    type t = [num | X.t]
+    let show = function
+        `Num n -> string_of_int n
+      | #X.t as x -> X.show x
+    let eval = function
+        #num as x -> x
+      | #X.t as x -> X.eval x
+  end
+module LAdd(E : Exp with type t = private [> num | 'a add] as 'a)
+    (X : LExt(E).S) =
+  LNum(E)
+    (struct
+      type t = [E.t add | X.t]
+      let show = function
+          `Add(e1,e2) -> "("^ E.show e1 ^"+"^ E.show e2 ^")"
+        | #X.t as x -> X.show x
+      let eval = function
+          `Add(e1,e2) ->
+            let e1 = E.eval e1 and e2 = E.eval e2 in
+            begin match e1, e2 with
+              `Num n1, `Num n2 -> `Num (n1+n2)
+            | `Num 0, e | e, `Num 0 -> e
+            | e12 -> `Add e12
+            end
+        | #X.t as x -> X.eval x
+    end)
+module LEnd = struct
+  type t = [`Dummy]
+  let show `Dummy = ""
+  let eval `Dummy = `Dummy
+end
+module rec L : Exp with type t = [num | L.t add | `Dummy] = LAdd(L)(LEnd)
