@@ -107,7 +107,7 @@ module Signature_search =
       | _ -> assert false
 
     let search_attribute_type name class_sig =
-      let (_, type_expr) = Types.Vars.find name class_sig.Types.cty_vars in
+      let (_, _, type_expr) = Types.Vars.find name class_sig.Types.cty_vars in
       type_expr
 
     let search_method_type name class_sig =
@@ -269,7 +269,7 @@ module Analyser =
           [] -> pos_limit
         | ele2 :: _ ->
             match ele2 with
-              Parsetree.Pctf_val (_, _, _, loc)
+              Parsetree.Pctf_val (_, _, _, _, loc)
             | Parsetree.Pctf_virt (_, _, _, loc)
             | Parsetree.Pctf_meth (_, _, _, loc)
             | Parsetree.Pctf_cstr (_, _, loc) -> loc.Location.loc_start.Lexing.pos_cnum
@@ -330,7 +330,7 @@ module Analyser =
             in
             ([], ele_comments)
 
-        | Parsetree.Pctf_val (name, mutable_flag, _, loc) :: q ->
+        | Parsetree.Pctf_val (name, mutable_flag, _, _, loc) :: q ->
             (* of (string * mutable_flag * core_type option * Location.t)*)
             let (comment_opt, eles_comments) = get_comments_in_class last_pos loc.Location.loc_start.Lexing.pos_cnum in
             let complete_name = Name.concat current_class_name name in
