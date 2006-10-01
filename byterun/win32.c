@@ -343,7 +343,11 @@ CAMLexport void caml_expand_command_line(int * argcp, char *** argvp)
 int caml_read_directory(char * dirname, struct ext_table * contents)
 {
   char * template;
+#if _MSC_VER <= 1200
+  int h;
+#else
   intptr_t h;
+#endif
   struct _finddata_t fileinfo;
   char * p;
 

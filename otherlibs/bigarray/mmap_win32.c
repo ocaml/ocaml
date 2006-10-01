@@ -28,6 +28,10 @@ extern int caml_ba_element_size[];  /* from bigarray_stubs.c */
 
 static void caml_ba_sys_error(void);
 
+#ifndef INVALID_SET_FILE_POINTER
+#define INVALID_SET_FILE_POINTER (-1)
+#endif
+
 static __int64 caml_ba_set_file_pointer(HANDLE h, __int64 dist, DWORD mode)
 {
   LARGE_INTEGER i;
