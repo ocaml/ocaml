@@ -51,4 +51,5 @@ module Make (Syntax : Sig.Camlp4Syntax.S) : sig
     ?input_file: string -> ?output_file: string -> Ast.str_item -> unit;
 end;
 
-value enable : unit -> unit;
+module MakeMore (Syntax : Sig.Camlp4Syntax.S)
+: Sig.Printer.S with module Ast = Syntax.Ast;

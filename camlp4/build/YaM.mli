@@ -169,6 +169,7 @@ val generic_ocaml_Module_extension:
   ?flags: string -> ?byte_flags: string -> ?opt_flags: string -> 
   ?cmd_flags: string ->
   ?pp: string -> ?includes: string list -> ?ext_includes: string list -> 
+  ?trash: string list ->
   string -> unit_t
 (** Creates a compilation unit for a single, non interfaced OCaml module. *)
 

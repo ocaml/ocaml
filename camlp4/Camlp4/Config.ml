@@ -1,3 +1,4 @@
+(* camlp4r *)
 (****************************************************************************)
 (*                                                                          *)
 (*                              Objective Caml                              *)
@@ -16,7 +17,6 @@
  * - Daniel de Rauglaudre: initial version
  * - Nicolas Pouillard: refactoring
  *)
-(* camlp4r *)
 
 value standard_library_default = Camlp4_config.libdir;
 

@@ -83,3 +83,11 @@ value iter_and_take_callbacks : ((string * (unit -> unit)) -> unit) -> unit;
 
 module CurrentParser : Sig.Parser.S with module Ast = PreCast.Ast;
 module CurrentPrinter : Sig.Printer.S with module Ast = PreCast.Ast;
+
+value enable_ocaml_printer : unit -> unit;
+value enable_ocamlr_printer : unit -> unit;
+(* value enable_ocamlrr_printer : unit -> unit; *)
+value enable_null_printer : unit -> unit;
+value enable_dump_ocaml_ast_printer : unit -> unit;
+value enable_dump_camlp4_ast_printer : unit -> unit;
+

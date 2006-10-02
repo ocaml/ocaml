@@ -114,24 +114,24 @@ let ocaml_Module_with_meta =
   generic_ocaml_Module_extension ".meta.ml"
   (fun _ i o ->
     "if test ! -e"^^o^^
-       "|| (ruby --version > /dev/null 2> /dev/null);"^^
+       "|| ( ruby --version > /dev/null 2> /dev/null ) ;"^^
     "then ruby ./build/meta.rb"^^i^^">"^^o^^"; else : ; fi")
 let ocaml_Module_with_genmap =
   generic_ocaml_Module_extension ".genmap.ml"
    (fun _ i o ->
       "if test ! -e"^^o^^
-         "|| (test -e ./camlp4boot.run"^^
+         "|| ( test -e ./camlp4boot.run"^^
              "&& test -e Camlp4Filters/GenerateMap.cmo"^^
              "&& test -e Camlp4Filters/GenerateFold.cmo"^^
-             "&& test -e Camlp4Filters/RemoveTrashModule.cmo);"^^
-      "then (echo 'module Camlp4FiltersTrash = struct';"^^
-            "cat Camlp4/Sig/Camlp4Ast.ml; echo 'end;') > Camlp4/Struct/Camlp4Ast.tmp.ml;"^^
-           "(echo '(* Generated file! Do not edit by hand *)';"^^
-               "../boot/ocamlrun ./camlp4boot.run"^^
+             "&& test -e Camlp4Filters/RemoveTrashModule.cmo ) ;"^^
+      "then ( echo 'module Camlp4FiltersTrash = struct' ;"^^
+             "cat Camlp4/Sig/Camlp4Ast.ml ; echo 'end;' ) > Camlp4/Struct/Camlp4Ast.tmp.ml ;"^^
+             "( echo '(* Generated file! Do not edit by hand *)' ;"^^
+                "../boot/ocamlrun ./camlp4boot.run"^^
                    "./Camlp4Filters/GenerateMap.cmo"^^
                    "./Camlp4Filters/GenerateFold.cmo"^^
                    "./Camlp4Filters/RemoveTrashModule.cmo -printer OCamlr"^^
-                   i^^" -no_comments) >"^^o^^"; else : ; fi")
+                   i^^" -no_comments ) >"^^o^^"; else : ; fi")
 
 let misc_modules =
   let mk = ocaml_fake_IModule ~includes:[parsing;utils]
@@ -218,15 +218,16 @@ let camlp4_package_as_one_dir =
       ocaml_IModule "CommentFilter";
     ]);
     ocaml_Module "OCamlInitSyntax";
-    ocaml_IModule "PreCast";
-    ocaml_IModule "Register";
     ocaml_PackageDir "Printers" (lazy [
+      ocaml_IModule "Null";
       ocaml_IModule "DumpOCamlAst";
       ocaml_IModule "DumpCamlp4Ast";
       ocaml_IModule "OCaml";
       ocaml_IModule "OCamlr" ~flags:"-w v -warn-error v";
       (* ocaml_IModule "OCamlrr"; *)
-    ])
+    ]);
+    ocaml_IModule "PreCast";
+    ocaml_IModule "Register"
   ])
 
 let camlp4_package =

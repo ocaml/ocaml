@@ -63,5 +63,15 @@ module Syntax     : Sig.Camlp4Syntax.S
                        and module Ast     = Ast
                        and module Gram    = Gram
                        and module Quotation = Quotation;
+
+module Printers : sig
+  module OCaml         : Sig.Printer.S with module Ast = Sig.Camlp4Ast.ToAst Ast;
+  module OCamlr        : Sig.Printer.S with module Ast = Sig.Camlp4Ast.ToAst Ast;
+  (* module OCamlrr       : Sig.Printer.S with module Ast = Sig.Camlp4Ast.ToAst Ast; *)
+  module DumpOCamlAst  : Sig.Printer.S with module Ast = Sig.Camlp4Ast.ToAst Ast;
+  module DumpCamlp4Ast : Sig.Printer.S with module Ast = Sig.Camlp4Ast.ToAst Ast;
+  module Null          : Sig.Printer.S with module Ast = Sig.Camlp4Ast.ToAst Ast;
+end;
+
 module MakeGram (Lexer : Sig.Lexer.S with module Loc = Loc)
   : Sig.Grammar.Static.S with module Loc = Loc and module Token = Lexer.Token;

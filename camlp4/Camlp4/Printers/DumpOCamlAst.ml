@@ -50,6 +50,3 @@ module Make (Syntax : Sig.Camlp4Syntax.S)
     with_open_out_file output_file (dump_pt Config.ocaml_ast_impl_magic_number input_file pt);
 
 end;
-
-value enable () =
-  let module M = Register.OCamlPrinter Id Make in ();

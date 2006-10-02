@@ -56,3 +56,13 @@ module Quotation = Struct.Quotation.Make Ast;
 module Syntax = OCamlInitSyntax.Make Warning Ast Gram Quotation;
 module AstFilters = Struct.AstFilters.Make Ast;
 module MakeGram = Struct.Grammar.Static.Make;
+
+module Printers = struct
+  module OCaml = Printers.OCaml.Make Syntax;
+  module OCamlr = Printers.OCamlr.Make Syntax;
+  (* module OCamlrr = Printers.OCamlrr.Make Syntax; *)
+  module DumpOCamlAst = Printers.DumpOCamlAst.Make Syntax;
+  module DumpCamlp4Ast = Printers.DumpCamlp4Ast.Make Syntax;
+  module Null = Printers.Null.Make Syntax;
+end;
+

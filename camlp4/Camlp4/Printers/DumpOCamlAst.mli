@@ -20,5 +20,3 @@ module Id : Sig.Id.S;
 
 module Make (Syntax : Sig.Camlp4Syntax.S) : Sig.Printer.S
   with module Ast = Syntax.Ast;
-
-value enable : unit -> unit;

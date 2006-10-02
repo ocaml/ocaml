@@ -16,4 +16,4 @@
  * - Nicolas Pouillard: initial version
  *)
 
-Camlp4.Printers.DumpCamlp4Ast.enable ();
+Camlp4.Register.enable_dump_camlp4_ast_printer ();

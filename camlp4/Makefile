@@ -47,16 +47,14 @@ genclean: yam
 	$(YAM) -genclean Makefile.clean
 
 clean::
+	rm -f yam .cache-status
 	rm -f $(CLEANFILES)
+	rm -f *.cm[io] build/*.cm[io]
 
 YAM_OBJS=build/YaM.cmo build/camlp4_config.cmo Makefile.cmo
 
 yam: $(YAM_OBJS)
 	$(OCAMLC) -o yam unix.cma $(YAM_OBJS)
-
-clean::
-	rm -f yam .cache-status
-	rm -f *.cm[io] build/*.cm[io]
 
 .SUFFIXES: .mli .ml .cmi .cmo
 
@@ -95,6 +93,6 @@ compare:
 	fi
 
 .PHONY: clean install all uninstall backup restore boot-clean promote-debug \
-	promote compare opt doc cleanall all-local clean-local depend
+	promote compare opt doc smartclean depend
 
 include Makefile.clean

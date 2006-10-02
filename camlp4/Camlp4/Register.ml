@@ -16,6 +16,8 @@
  * - Daniel de Rauglaudre: initial version
  * - Nicolas Pouillard: refactoring
  *)
+
+module PP = Printers;
 open PreCast;
 
 type parser_fun 'a =
@@ -144,4 +146,22 @@ module CurrentPrinter = struct
   value print_implem ?input_file ?output_file ast =
     str_item_printer.val ?input_file ?output_file ast; 
 end;
+
+value enable_ocaml_printer () =
+  let module M = OCamlPrinter PP.OCaml.Id PP.OCaml.MakeMore in ();
+
+value enable_ocamlr_printer () =
+  let module M = OCamlPrinter PP.OCamlr.Id PP.OCamlr.MakeMore in ();
+
+(* value enable_ocamlrr_printer () =
+  let module M = OCamlPrinter PP.OCamlrr.Id PP.OCamlrr.MakeMore in ();    *)
+
+value enable_dump_ocaml_ast_printer () =
+  let module M = OCamlPrinter PP.DumpOCamlAst.Id PP.DumpOCamlAst.Make in ();
+
+value enable_dump_camlp4_ast_printer () =
+  let module M = Printer PP.DumpCamlp4Ast.Id PP.DumpCamlp4Ast.Make in ();
+
+value enable_null_printer () =
+  let module M = Printer PP.Null.Id PP.Null.Make in ();
 

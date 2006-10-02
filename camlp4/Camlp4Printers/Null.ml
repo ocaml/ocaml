@@ -16,18 +16,4 @@
  * - Nicolas Pouillard: initial version
  *)
 
-open Camlp4;
-
-module Id = struct
-  value name = "Camlp4Printers.Null";
-  value version = "$Id$";
-end;
-
-module Make (Syntax : Sig.Syntax.S) = struct
-  include Syntax;
-  
-  value print_interf ?input_file:(_) ?output_file:(_) _ = ();
-  value print_implem ?input_file:(_) ?output_file:(_) _ = ();
-end;
-
-let module M = Register.Printer Id Make in ();
+Camlp4.Register.enable_null_printer ();

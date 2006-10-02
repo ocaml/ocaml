@@ -332,7 +332,7 @@ let ocaml_Module ?o ?flags ?byte_flags ?opt_flags ?pp ?includes ?ext_includes n 
 let generic_ocaml_Module_extension extension command =
   fun ?o ?flags ?byte_flags
       ?opt_flags ?(cmd_flags="")
-      ?pp ?includes ?ext_includes n ->
+      ?pp ?includes ?ext_includes ?trash n ->
   let n', depc, _, _ = 
     ocaml_options ?o ?flags ?byte_flags ?opt_flags ?pp ?includes ?ext_includes n
   in 
@@ -340,7 +340,7 @@ let generic_ocaml_Module_extension extension command =
   let cmd = command cmd_flags ext_n ml_n in
     generic_unit
       ~name:n
-      ~sources:[ext_n] ~targets:[ml_n] ~trash:[]
+      ~sources:[ext_n] ~targets:[ml_n] ?trash
       ~objects:(n'^".cmx", n'^".cmo") ~pregenerated:[ml_n]
       ~sub_units:[ocaml_Module ?o ?flags ?byte_flags ?opt_flags ?pp ?includes ?ext_includes n]
       ~dependencies:(fun ~native f -> [ext_n])

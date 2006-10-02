@@ -16,11 +16,9 @@
  * - Nicolas Pouillard: initial version
  *)
 
-IFDEF UNIX THEN
-if (Unix.fstat Unix.stdout).Unix.st_kind = Unix.S_CHR then
-  Camlp4.Printers.OCaml.enable ()
+open Camlp4.Register;
+
+if Unix.isatty Unix.stdout then
+  enable_ocaml_printer ()
 else
-  Camlp4.Printers.DumpOCamlAst.enable ()
-ELSE
-  Camlp4.Printers.DumpOCamlAst.enable ()
-ENDIF;
+  enable_dump_ocaml_ast_printer ();

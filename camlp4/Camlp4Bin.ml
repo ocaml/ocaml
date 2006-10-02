@@ -83,15 +83,15 @@ value rewrite_and_load n x =
     | ("Parsers"|"", "of") -> load [pa_r; pa_o; pa_rp; pa_op; pa_qb; pa_rq; pa_g; pa_m]
     | ("Filters"|"", "l" | "Lift" | "lift") -> load ["Camlp4Filters.LiftCamlp4Ast"]
     | ("Printers"|"", "pr_r.cmo" | "r" | "OCamlr" | "Camlp4Printers/OCamlr.cmo") ->
-        Camlp4.Printers.OCamlr.enable ()
+        Register.enable_ocamlr_printer ()
     (* | ("Printers"|"", "rr" | "OCamlrr" | "Camlp4Printers/OCamlrr.cmo") -> *)
-        (* Camlp4.Printers.OCamlrr.enable () *)
+        (* Register.enable_ocamlrr_printer () *)
     | ("Printers"|"", "pr_o.cmo" | "o" | "OCaml" | "Camlp4Printers/OCaml.cmo") ->
-        Camlp4.Printers.OCaml.enable ()
+        Register.enable_ocaml_printer ()
     | ("Printers"|"", "pr_dump.cmo" | "p" | "DumpOCamlAst" | "Camlp4Printers/DumpOCamlAst.cmo") ->
-        Camlp4.Printers.DumpOCamlAst.enable ()
+        Register.enable_dump_ocaml_ast_printer ()
     | ("Printers"|"", "d" | "DumpCamlp4Ast" | "Camlp4Printers/DumpCamlp4Ast.cmo") ->
-        Camlp4.Printers.DumpCamlp4Ast.enable ()
+        Register.enable_dump_camlp4_ast_printer ()
     | ("Printers"|"", "a" | "Auto" | "Camlp4Printers/Auto.cmo") ->
         load ["Camlp4Printers.Auto"]
     | _ ->

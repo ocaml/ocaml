@@ -48,6 +48,3 @@ module Make (Syntax : Sig.Syntax.S)
       (dump_ast Config.camlp4_ast_impl_magic_number ast);
 
 end;
-
-value enable () =
-  let module M = Register.Printer Id Make in ();
