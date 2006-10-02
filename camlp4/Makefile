@@ -28,6 +28,21 @@ opt install doc all pack just_doc: yam
 	@echo 'YAM $@ (use "make $@ VERBOSE=1" for a verbose make)'
 	@$(YAM) $(YAM_OPTIONS) $@
 
+smartclean::
+	if test -x ../boot/ocamlrun; then \
+	  if test -x ../ocaml; then \
+	    $(OCAML) build/build.ml -clean; \
+	  else \
+	    if test -x ./yam; then \
+	      $(YAM) $(YAM_OPTIONS) -clean; \
+	    else \
+	      $(MAKE) staticclean; \
+	    fi; \
+	  fi; \
+	else \
+	  rm -f $(CLEANFILES); \
+	fi
+
 genclean: yam
 	$(YAM) -genclean Makefile.clean
 
