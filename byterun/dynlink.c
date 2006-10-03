@@ -199,6 +199,8 @@ CAMLprim value caml_dynlink_open_lib(value mode, value filename)
   void * handle;
   value result;
 
+  caml_gc_message(0x100, "Opening shared library %s\n",
+                  (uintnat) String_val(filename));
   handle = caml_dlopen(String_val(filename), Int_val(mode));
   if (handle == NULL) caml_failwith(caml_dlerror());
   result = caml_alloc_small(1, Abstract_tag);
