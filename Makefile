@@ -472,7 +472,7 @@ clean::
 INSTALL_LIB_FILES= \
  cduce/ocamlduce.cma cduce/ocamlduce.cmi cduce_types.cmi cduce/ocamlduce.mli \
  cduce/ocamlduce.cmxa cduce/ocamlduce.o cduce_types.o cduce/ocamlduce.a \
- $(TOPOBJS)  
+ toplevel/toploop.cmi toplevel/topdirs.cmi toplevel/topmain.cmi $(TOPOBJS)  
 
 INSTALL_BINARIES= \
  ocamlducec ocamlduce ocamlducedep ocamlducedoc \
