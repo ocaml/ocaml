@@ -493,9 +493,9 @@ let conv_opt_extension f =
 
 let install_all dir =
   printf "Installing %s@.  " dir;
-  run ["find"^^dir^^"-name '*.cmi' -o -name '*.cmo' -exec"^^
-       "sh -c 'echo \"  install {}\" ; mkdir -p"^^libdir_camlp4^
-       "/`dirname {}`; cp {}"^^libdir_camlp4^"/`dirname {}`' \\;"]
+  run ["for i in " ^ dir ^ "/*.cm[io]; do"^^
+       "echo \"  install $i\" ; mkdir -p"^^libdir_camlp4^
+       "/`dirname $i`; cp $i"^^libdir_camlp4^"/`dirname $i`; done"]
 
 
 let byte =
@@ -546,7 +546,7 @@ let opt = opt @ !opt_programs
 
 ;;
 
-main ~rebuild:(ocaml ^ "build/build.ml")
+main ~rebuild:(ocaml ^^ "build/build.ml")
  (all @ [
   phony_unit ~depends:byte "all";
   phony_unit ~depends:opt "opt";
