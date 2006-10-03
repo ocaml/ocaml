@@ -697,7 +697,7 @@ let project ?(rebuild="ocaml build.ml")  ?(deps=["Makefile.ml"]) units =
   (* mise à jour éventuelle de YaM *)
   let () = if exists_file_newer Sys.executable_name deps then (
     let rebuild = ref rebuild in
-      for i=1 to Array.length Sys.argv -1 do rebuild := !rebuild^" "^Sys.argv.(i) done;
+      for i=1 to Array.length Sys.argv -1 do rebuild := !rebuild^" "^Filename.quote Sys.argv.(i) done;
       printf "yam is out-dated, rebuilding it (%s)\n%!" !rebuild;
       exit (call !rebuild)
   ) in
