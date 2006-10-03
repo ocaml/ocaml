@@ -533,7 +533,6 @@ let emit_instr i =
         `	add	{emit_reg i.arg.(0)}, {emit_int(n-1)}\n`;
         `{emit_label lbl}:	sar	{emit_reg i.arg.(0)}, {emit_int l}\n`
     | Lop(Iintop_imm(Imod, n)) ->
-        let l = Misc.log2 n in
         let lbl = new_label() in
         `	mov	eax, {emit_reg i.arg.(0)}\n`;
         `	test	eax, eax\n`;
