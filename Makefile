@@ -339,10 +339,6 @@ utils/config.ml: utils/config.mlp config/Makefile
             -e 's|%%EXT_DLL%%|.so|' \
             -e 's|%%SYSTHREAD_SUPPORT%%|$(SYSTHREAD_SUPPORT)|' \
             utils/config.mlp > utils/config.ml
-	if test -w camlp4/build/camlp4_config.ml; \
-        then grep ast utils/config.ml >> camlp4/build/camlp4_config.ml && \
-             chmod -w camlp4/build/camlp4_config.ml; \
-        else : ; fi
 	@chmod -w utils/config.ml
 
 partialclean::
