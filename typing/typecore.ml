@@ -754,10 +754,10 @@ let type_format loc fmt =
               (fun fmt -> incomplete_format (format_to_string fmt))
               (fun fmt -> bad_conversion (format_to_string fmt))
               c (string_to_format fmt) j in
-          let sfmt = String.sub fmt j (sj - j - 1) in
+          let sfmt = String.sub fmt j (sj - 2 - j) in
           let ty_sfmt = type_in_format sfmt in
           begin match c with
-          | '{' -> conversion sj ty_sfmt
+          | '{' -> conversion (sj - 1) ty_sfmt
           | _ -> incr meta; conversion (j - 1) ty_sfmt end
         | ')' when !meta > 0 -> decr meta; scan_format (j + 1)
         | c -> bad_conversion fmt i c in
