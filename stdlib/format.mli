@@ -590,7 +590,7 @@ val fprintf : formatter -> ('a, formatter, unit) format -> 'a;;
      [nspaces] and [offset] parameters of the break may be
      optionally specified with the following syntax:
      the [<] character, followed by an integer [nspaces] value,
-     then an integer offset, and a closing [>] character.
+     then an integer [offset], and a closing [>] character.
      If no parameters are provided, the good break defaults to a
      space.
    - [@?]: flush the pretty printer as with [print_flush ()].
