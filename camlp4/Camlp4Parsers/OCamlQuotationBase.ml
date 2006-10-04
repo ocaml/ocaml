@@ -29,18 +29,18 @@ module Make (Syntax : Sig.Camlp4Syntax.S)
   open Sig.Camlp4Token;
   include Syntax; (* Be careful an AntiquotSyntax module appears here *)
 
-  module MetaLocHere = Camlp4.Struct.MetaAst.MetaLoc Ast;
+  module MetaLocHere = Ast.Meta.MetaLoc;
   module MetaLoc = struct
     module Ast = Ast;
     value loc_name = ref None;
-    value meta_loc_expr _loc =
+    value meta_loc_expr _loc loc =
       match loc_name.val with
       [ None -> <:expr< $lid:Loc.name.val$ >>
-      | Some "here" -> MetaLocHere.meta_loc_expr _loc
+      | Some "here" -> MetaLocHere.meta_loc_expr _loc loc
       | Some x -> <:expr< $lid:x$ >> ];
-    value meta_loc_patt _loc = <:patt< _ >>;
+    value meta_loc_patt _loc _ = <:patt< _ >>;
   end;
-  module MetaAst = Camlp4.Struct.MetaAst.Make MetaLoc;
+  module MetaAst = Ast.Meta.Make MetaLoc;
   module ME = MetaAst.Expr;
   module MP = MetaAst.Patt;
 
@@ -60,7 +60,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S)
     inherit Ast.map as super;
     method patt = fun
       [ <:patt@_loc< $anti:s$ >> | <:patt@_loc< $str:s$ >> as p ->
-          let mloc = MetaLoc.meta_loc_patt in
+          let mloc _loc = MetaLoc.meta_loc_patt _loc _loc in
           handle_antiquot_in_string s p TheAntiquotSyntax.parse_patt _loc (fun n p ->
             match n with
             [ "antisig_item" -> <:patt< Ast.SgAnt $mloc _loc$ $p$ >>
@@ -83,7 +83,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S)
       | p -> super#patt p ];
     method expr = fun
       [ <:expr@_loc< $anti:s$ >> | <:expr@_loc< $str:s$ >> as e ->
-          let mloc = MetaLoc.meta_loc_expr in
+          let mloc _loc = MetaLoc.meta_loc_expr _loc _loc in
           handle_antiquot_in_string s e TheAntiquotSyntax.parse_expr _loc (fun n e ->
             match n with
             [ "`int" -> <:expr< string_of_int $e$ >>
@@ -134,12 +134,12 @@ module Make (Syntax : Sig.Camlp4Syntax.S)
     let expand_expr loc loc_name_opt s =
       let ast = Gram.parse_string entry_eoi loc s in
       let () = MetaLoc.loc_name.val := loc_name_opt in
-      let meta_ast = mexpr ast in
+      let meta_ast = mexpr loc ast in
       let exp_ast = antiquot_expander#expr meta_ast in
       exp_ast in
     let expand_patt _loc loc_name_opt s =
       let ast = Gram.parse_string entry_eoi _loc s in
-      let meta_ast = mpatt ast in
+      let meta_ast = mpatt _loc ast in
       let exp_ast = antiquot_expander#patt meta_ast in
       match loc_name_opt with
       [ None -> exp_ast
@@ -159,24 +159,24 @@ module Make (Syntax : Sig.Camlp4Syntax.S)
       Quotation.add name (Quotation.ExAst (expand_expr, expand_patt))
     };
 
-  add_quotation "sig_item" sig_item_quot ME.sig_item MP.sig_item;
-  add_quotation "str_item" str_item_quot ME.str_item MP.str_item;
-  add_quotation "ctyp" ctyp_quot ME.ctyp MP.ctyp;
-  add_quotation "patt" patt_quot ME.patt MP.patt;
-  add_quotation "expr" expr_quot ME.expr MP.expr;
-  add_quotation "module_type" module_type_quot ME.module_type MP.module_type;
-  add_quotation "module_expr" module_expr_quot ME.module_expr MP.module_expr;
-  add_quotation "class_type" class_type_quot ME.class_type MP.class_type;
-  add_quotation "class_expr" class_expr_quot ME.class_expr MP.class_expr;
+  add_quotation "sig_item" sig_item_quot ME.meta_sig_item MP.meta_sig_item;
+  add_quotation "str_item" str_item_quot ME.meta_str_item MP.meta_str_item;
+  add_quotation "ctyp" ctyp_quot ME.meta_ctyp MP.meta_ctyp;
+  add_quotation "patt" patt_quot ME.meta_patt MP.meta_patt;
+  add_quotation "expr" expr_quot ME.meta_expr MP.meta_expr;
+  add_quotation "module_type" module_type_quot ME.meta_module_type MP.meta_module_type;
+  add_quotation "module_expr" module_expr_quot ME.meta_module_expr MP.meta_module_expr;
+  add_quotation "class_type" class_type_quot ME.meta_class_type MP.meta_class_type;
+  add_quotation "class_expr" class_expr_quot ME.meta_class_expr MP.meta_class_expr;
   add_quotation "class_sig_item"
-                class_sig_item_quot ME.class_sig_item MP.class_sig_item;
+                class_sig_item_quot ME.meta_class_sig_item MP.meta_class_sig_item;
   add_quotation "class_str_item"
-                class_str_item_quot ME.class_str_item MP.class_str_item;
-  add_quotation "with_constr" with_constr_quot ME.with_constr MP.with_constr;
-  add_quotation "binding" binding_quot ME.binding MP.binding;
-  add_quotation "match_case" match_case_quot ME.match_case MP.match_case;
+                class_str_item_quot ME.meta_class_str_item MP.meta_class_str_item;
+  add_quotation "with_constr" with_constr_quot ME.meta_with_constr MP.meta_with_constr;
+  add_quotation "binding" binding_quot ME.meta_binding MP.meta_binding;
+  add_quotation "match_case" match_case_quot ME.meta_match_case MP.meta_match_case;
   add_quotation "module_binding"
-                module_binding_quot ME.module_binding MP.module_binding;
-  add_quotation "ident" ident_quot ME.ident MP.ident;
+                module_binding_quot ME.meta_module_binding MP.meta_module_binding;
+  add_quotation "ident" ident_quot ME.meta_ident MP.meta_ident;
 
 end;

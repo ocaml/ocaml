@@ -30,14 +30,14 @@ module Make (AstFilters : Camlp4.Sig.AstFilters.S) = struct
 
   module MetaLoc = struct
     module Ast = Ast;
-    value meta_loc_patt _loc = <:patt< loc >>;
-    value meta_loc_expr _loc = <:expr< loc >>;
+    value meta_loc_patt _loc _ = <:patt< loc >>;
+    value meta_loc_expr _loc _ = <:expr< loc >>;
   end;
-  module MetaAst = Camlp4.Struct.MetaAst.Make MetaLoc;
+  module MetaAst = Ast.Meta.Make MetaLoc;
 
   register_str_item_filter (fun ast ->
     let _loc = Ast.loc_of_str_item ast in
-    <:str_item< let loc = Loc.ghost in $exp:MetaAst.Expr.str_item ast$ >>);
+    <:str_item< let loc = Loc.ghost in $exp:MetaAst.Expr.meta_str_item _loc ast$ >>);
 
 end;
 

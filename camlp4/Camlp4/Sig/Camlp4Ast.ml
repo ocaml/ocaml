@@ -385,6 +385,89 @@ module type S = sig
   value loc_of_match_case : match_case -> Loc.t;
   value loc_of_ident : ident -> Loc.t;
 
+  module Meta : sig
+    module type META_LOC = sig
+      (** The first location is where to put the returned pattern.
+          Generally it's _loc to match with <:patt< ... >> quotations.
+          The second location is the one to treat. *)
+      value meta_loc_patt : Loc.t -> Loc.t -> patt;
+      (** The first location is where to put the returned expression.
+          Generally it's _loc to match with <:expr< ... >> quotations.
+          The second location is the one to treat. *)
+      value meta_loc_expr : Loc.t -> Loc.t -> expr;
+    end;
+    module MetaLoc : sig
+      value meta_loc_patt : Loc.t -> Loc.t -> patt;
+      value meta_loc_expr : Loc.t -> Loc.t -> expr;
+    end;
+    module MetaGhostLoc : sig
+      value meta_loc_patt : Loc.t -> 'a -> patt;
+      value meta_loc_expr : Loc.t -> 'a -> expr;
+    end;
+    module MetaLocVar : sig
+      value meta_loc_patt : Loc.t -> 'a -> patt;
+      value meta_loc_expr : Loc.t -> 'a -> expr;
+    end;
+    module Make (MetaLoc : META_LOC) : sig
+      module Expr : sig
+        value meta_string : Loc.t -> string -> expr;
+        value meta_int : Loc.t -> string -> expr;
+        value meta_float : Loc.t -> string -> expr;
+        value meta_char : Loc.t -> string -> expr;
+        value meta_bool : Loc.t -> bool -> expr;
+        value meta_list : (Loc.t -> 'a -> expr) -> Loc.t -> list 'a -> expr;
+        value meta_binding : Loc.t -> binding -> expr;
+        value meta_class_expr : Loc.t -> class_expr -> expr;
+        value meta_class_sig_item : Loc.t -> class_sig_item -> expr;
+        value meta_class_str_item : Loc.t -> class_str_item -> expr;
+        value meta_class_type : Loc.t -> class_type -> expr;
+        value meta_ctyp : Loc.t -> ctyp -> expr;
+        value meta_expr : Loc.t -> expr -> expr;
+        value meta_ident : Loc.t -> ident -> expr;
+        value meta_match_case : Loc.t -> match_case -> expr;
+        value meta_meta_bool : Loc.t -> meta_bool -> expr;
+        value meta_meta_option :
+          (Loc.t -> ident -> expr) ->
+            Loc.t -> meta_option ident -> expr;
+        value meta_module_binding : Loc.t -> module_binding -> expr;
+        value meta_module_expr : Loc.t -> module_expr -> expr;
+        value meta_module_type : Loc.t -> module_type -> expr;
+        value meta_patt : Loc.t -> patt -> expr;
+        value meta_sig_item : Loc.t -> sig_item -> expr;
+        value meta_str_item : Loc.t -> str_item -> expr;
+        value meta_with_constr : Loc.t -> with_constr -> expr;
+      end;
+      module Patt : sig
+        value meta_string : Loc.t -> string -> patt;
+        value meta_int : Loc.t -> string -> patt;
+        value meta_float : Loc.t -> string -> patt;
+        value meta_char : Loc.t -> string -> patt;
+        value meta_bool : Loc.t -> bool -> patt;
+        value meta_list : (Loc.t -> 'a -> patt) -> Loc.t -> list 'a -> patt;
+        value meta_binding : Loc.t -> binding -> patt;
+        value meta_class_expr : Loc.t -> class_expr -> patt;
+        value meta_class_sig_item : Loc.t -> class_sig_item -> patt;
+        value meta_class_str_item : Loc.t -> class_str_item -> patt;
+        value meta_class_type : Loc.t -> class_type -> patt;
+        value meta_ctyp : Loc.t -> ctyp -> patt;
+        value meta_expr : Loc.t -> expr -> patt;
+        value meta_ident : Loc.t -> ident -> patt;
+        value meta_match_case : Loc.t -> match_case -> patt;
+        value meta_meta_bool : Loc.t -> meta_bool -> patt;
+        value meta_meta_option :
+          (Loc.t -> ident -> patt) ->
+            Loc.t -> meta_option ident -> patt;
+        value meta_module_binding : Loc.t -> module_binding -> patt;
+        value meta_module_expr : Loc.t -> module_expr -> patt;
+        value meta_module_type : Loc.t -> module_type -> patt;
+        value meta_patt : Loc.t -> patt -> patt;
+        value meta_sig_item : Loc.t -> sig_item -> patt;
+        value meta_str_item : Loc.t -> str_item -> patt;
+        value meta_with_constr : Loc.t -> with_constr -> patt;
+      end;
+    end;
+  end;
+
   (** See {!Ast.S.map}. *)
   class map : object
     inherit Mapper.c;

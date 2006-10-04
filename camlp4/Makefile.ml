@@ -110,12 +110,6 @@ and unix =
   | _       -> "../otherlibs/unix"
 and build = "build"
 
-let ocaml_Module_with_meta =
-  generic_ocaml_Module_extension ".meta.ml"
-  (fun _ i o ->
-    "if test ! -e"^^o^^
-       "|| ( ruby --version > /dev/null 2> /dev/null ) ;"^^
-    "then ruby ./build/meta.rb"^^i^^">"^^o^^"; else : ; fi")
 let ocaml_Module_with_genmap =
   generic_ocaml_Module_extension ".genmap.ml"
    (fun _ i o ->
@@ -123,6 +117,7 @@ let ocaml_Module_with_genmap =
          "|| ( test -e ./camlp4boot.run"^^
              "&& test -e Camlp4Filters/GenerateMap.cmo"^^
              "&& test -e Camlp4Filters/GenerateFold.cmo"^^
+             "&& test -e Camlp4Filters/MetaGenerator.cmo"^^
              "&& test -e Camlp4Filters/RemoveTrashModule.cmo ) ;"^^
       "then ( echo 'module Camlp4FiltersTrash = struct' ;"^^
              "cat Camlp4/Sig/Camlp4Ast.ml ; echo 'end;' ) > Camlp4/Struct/Camlp4Ast.tmp.ml ;"^^
@@ -130,6 +125,7 @@ let ocaml_Module_with_genmap =
                 "../boot/ocamlrun ./camlp4boot.run"^^
                    "./Camlp4Filters/GenerateMap.cmo"^^
                    "./Camlp4Filters/GenerateFold.cmo"^^
+                   "./Camlp4Filters/MetaGenerator.cmo"^^
                    "./Camlp4Filters/RemoveTrashModule.cmo -printer OCamlr"^^
                    i^^" -no_comments ) >"^^o^^"; else : ; fi")
 
@@ -211,7 +207,6 @@ let camlp4_package_as_one_dir =
       ocaml_IModule ~ext_includes:[dynlink] "DynLoader";
       ocaml_Module_with_genmap ~flags:"-w z -warn-error z" "Camlp4Ast";
       ocaml_IModule "FreeVars";
-      ocaml_Module_with_meta "MetaAst";
       ocaml_Module "AstFilters";
       ocaml_IModule ~ext_includes:[parsing] "Camlp4Ast2OCamlAst";
       ocaml_Module "CleanAst";
@@ -271,6 +266,7 @@ let camlp4_filters =
     ocaml_Module "LiftCamlp4Ast";
     ocaml_Module "GenerateMap";
     ocaml_Module "GenerateFold";
+    ocaml_Module "MetaGenerator";
     ocaml_Module "RemoveTrashModule";
     ocaml_Module "Profiler";
   ])
@@ -301,6 +297,7 @@ let pr_o = ocaml_Module "Camlp4Printers/OCaml"
 let pr_a = ocaml_Module "Camlp4Printers/Auto"
 let fi_exc = ocaml_Module "Camlp4Filters/ExceptionTracer"
 let fi_tracer = ocaml_Module "Camlp4Filters/Tracer"
+let fi_meta = ocaml_Module "Camlp4Filters/MetaGenerator"
 let camlp4_bin = ocaml_Module "Camlp4Bin"
 let top_rprint = ocaml_Module "Camlp4Top/Rprint"
 let top_camlp4_top = ocaml_Module "Camlp4Top/Camlp4Top"

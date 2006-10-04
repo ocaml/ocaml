@@ -28,8 +28,6 @@ end;
 module Make (AstFilters : Camlp4.Sig.AstFilters.S) = struct
   open AstFilters;
   module StringMap = Map.Make String;
-  module MetaLoc = Camlp4.Struct.MetaAst.MetaGhostLoc Ast;
-  module MetaAst = Camlp4.Struct.MetaAst.Make MetaLoc;
   open Ast;
 
   value _loc = Loc.ghost;

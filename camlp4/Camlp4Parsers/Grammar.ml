@@ -28,8 +28,8 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
   open Sig.Camlp4Token;
   include Syntax;
 
-  module MetaLoc = Camlp4.Struct.MetaAst.MetaGhostLoc Ast;
-  module MetaAst = Camlp4.Struct.MetaAst.Make MetaLoc;
+  module MetaLoc = Ast.Meta.MetaGhostLoc;
+  module MetaAst = Ast.Meta.Make MetaLoc;
   module PP = Camlp4.Printers.OCaml.Make Syntax;
   value pp = new PP.printer ~comments:False ();
 
@@ -300,7 +300,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     in
     let txt =
       if meta_action.val then
-        <:expr< Obj.magic $MetaAst.Expr.expr txt$ >>
+        <:expr< Obj.magic $MetaAst.Expr.meta_expr _loc txt$ >>
       else txt
     in
     <:expr< $uid:gm$.Action.mk $txt$ >>
