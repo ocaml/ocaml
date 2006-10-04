@@ -780,7 +780,7 @@ let test43, test44 =
 test_raises_this_exc End_of_file test43 () &&
 test_raises_this_exc End_of_file test44 ();;
 
-(* Testing small range scanning (bug found). *)
+(* Testing small range scanning (bug found once). *)
 let test45 () =
  let s = "12.2" in
  let ib = Scanning.from_string s in
@@ -789,7 +789,7 @@ let test45 () =
 
 test (test45 ());;
 
-(* Testing meta formats. *)
+(* Testing printing meta formats. *)
 
 let test46, test47 =
   (fun () ->
@@ -802,9 +802,20 @@ let test46, test47 =
 test (test46 () = "1 spells one, in english.");;
 test (test47 () = "1 ,%s, in english.");;
 
+(* Testing scanning meta formats. *)
 let test48 () =
+  (* Testing format_from_string. *)
+  let test_meta_read s fmt efmt = format_from_string s fmt = efmt in
+  (* Test if format %i is indeed read as %i. *)
+  let s, fmt = "\"%i\"", format_of_string "%i" in
+  test_meta_read s fmt fmt &&
+  (* Test if format %i is compatible with %d and indeed read as %i. *)
+  let s, fmt = "\"%i\"", format_of_string "%d" in
+  test_meta_read s fmt "%i" &&
+  (* Complex test of scanning a meta format specified in the scanner input
+     format string and extraction of its specification from a string. *)
   sscanf "12 \"%i\"89 " "%i %{%d%}%s %!"
-    (fun i f s -> i=12 && f="%i" && s="89");;
+    (fun i f s -> i = 12 && f = "%i" && s = "89");;
 
 test (test48 ());;
 
@@ -825,10 +836,10 @@ let test49 () =
 
 test (test49 ());;
 
-(* Testing buffers defined via functions +
-   co-routines that read and write from the same buffers
-   + range chars and proper handling of \n (and of the end of file
-   condition). *)
+(* Testing buffers defined via functions
+   + co-routines that read and write from the same buffers
+   + range chars and proper handling of \n
+   + the end of file condition. *)
 let next_char ob () =
   let s = Buffer.contents ob in
   let len = String.length s in
@@ -927,17 +938,87 @@ let test53 () =
 
 test (test53 ());;
 
-(*******
-To be continued.
+let test54 () =
 
-let digest () =
-  let scan_line f = Scanf.scanf "%[^\n\r]@\n" f in
-  let digest s = String.uppercase (Digest.to_hex (Digest.string s)) in
-  let digest_line s = print_endline (s ^ "#" ^ digest s) in
+(* Routines to create the file that tscanf uses as a testbed case. *)
+let create_tscanf_data ob lines =
+  let add_line (p, e) =
+    Buffer.add_string ob (Printf.sprintf "%S" p);
+    Buffer.add_string ob " -> ";
+    Buffer.add_string ob (Printf.sprintf "%S" e);
+    Buffer.add_string ob ";\n" in
+  List.iter add_line lines;;
+
+let write_tscanf_data_file fname lines =
+  let oc = open_out fname in
+  let ob = Buffer.create 42 in
+  create_tscanf_data ob lines;
+  Buffer.output_buffer oc ob;
+  close_out oc;;
+
+(* The tscanf testbed case file name. *)
+let tscanf_data_file = "tscanf_data";;
+(* The contents of the tscanf testbed case file. *)
+let tscanf_data_file_lines = [
+    "Objective", "Caml";
+];;
+(* We write the tscanf testbed case file. *)
+write_tscanf_data_file tscanf_data_file tscanf_data_file_lines;;
+
+(* Then we verify that its contents is indeed correct. *)
+
+(* Reading back tscanf_data_file_lines (hence testing data file reading). *)
+let get_lines fname =
+  let ib = Scanf.Scanning.from_file fname in
+  let l = ref [] in
   try
-   while true do scan_line digest_line done
+    while not (Scanf.Scanning.end_of_input ib) do
+      Scanf.bscanf ib " %S -> %S ; " (fun x y ->
+        l := (x, y) :: !l)
+    done;
+    List.rev !l
+  with
+  | Scanf.Scan_failure s ->
+    failwith (Printf.sprintf "in file %s, %s" fname s)
+  | End_of_file ->
+    failwith (Printf.sprintf "in file %s, unexpected end of file" fname);;
+
+let test55 () =
+  get_lines tscanf_data_file = tscanf_data_file_lines;;
+
+test (test55 ());;
+
+(* Creating digests for files. *)
+let add_digest_ib ob ib =
+  let digest s = String.uppercase (Digest.to_hex (Digest.string s)) in
+  let scan_line ib f = Scanf.bscanf ib "%[^\n\r]\n" f in
+  let output_line_digest s =
+    Buffer.add_string ob s;
+    Buffer.add_char ob '#'; Buffer.add_string ob (digest s);
+    Buffer.add_char ob '\n' in
+  try
+   while true do scan_line ib output_line_digest done;
   with End_of_file -> ();;
 
+let digest_file fname =
+  let ib = Scanf.Scanning.from_file fname in
+  let ob = Buffer.create 42 in
+  add_digest_ib ob ib;
+  Buffer.contents ob;;
+
+let test56 () =
+  let ob = Buffer.create 42 in
+  let ib =
+    create_tscanf_data ob tscanf_data_file_lines;
+    let s = Buffer.contents ob in
+    Buffer.clear ob;
+    Scanning.from_string s in
+  let tscanf_data_file_lines_digest = add_digest_ib ob ib; Buffer.contents ob in
+  digest_file tscanf_data_file = tscanf_data_file_lines_digest;;
+
+test (test56 ());;
+
+(* To be continued ...
 (* Trying to scan records. *)
 let rec scan_fields ib scan_field accu =
   kscanf ib (fun ib exc -> accu)
@@ -954,4 +1035,7 @@ let scan_record scan_field ib =
   let accu = scan_fields ib scan_field [] in
   bscanf ib " }" ();
   List.rev accu;;
-***********)
+
+let scan_field ib =
+  bscanf ib "%s = %[^;]" (fun finame ficont -> finame, ficont);;
+*)
