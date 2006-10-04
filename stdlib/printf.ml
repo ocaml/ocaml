@@ -131,13 +131,13 @@ let extract_format_int conv fmt start stop widths =
      sfmt
    | _ -> sfmt;;
 
-(* Returns the position of the last character of the meta format
+(* Returns the position of the next character following the meta format
    string, starting from position [i], inside a given format [fmt].
    According to the character [conv], the meta format string is
    enclosed by the delimitors %{ and %} (when [conv = '{']) or %( and
    %) (when [conv = '(']). Hence, [sub_format] returns the index of
-   the character ')' or '}' that ends the meta format, according to
-   the character [conv]. *)
+   the character following the ')' or '}' that ends the meta format,
+   according to the character [conv]. *)
 let sub_format incomplete_format bad_conversion_format conv fmt i =
   let len = Sformat.length fmt in
   let rec sub_fmt c i =
@@ -153,7 +153,7 @@ let sub_format incomplete_format bad_conversion_format conv fmt i =
        | '(' | '{' as c ->
          let j = sub_fmt c (succ j) in sub (succ j)
        | '}' | ')' as c ->
-         if c = close then j else bad_conversion_format fmt i c
+         if c = close then succ j else bad_conversion_format fmt i c
        | _ -> sub (succ j) in
     sub i in
   sub_fmt conv i;;
@@ -195,12 +195,15 @@ let iter_on_format_args fmt add_conv add_char =
     | '{' as conv ->
       (* Just get a regular argument, skipping the specification. *)
       let i = add_conv skip i conv in
+      (* To go on, find the index of the next char after the meta format. *)
       let j = sub_format_for_printf conv fmt i in
-      (* Add the meta specification anyway. *)
+      (* Add the meta specification to the summary anyway. *)
       let rec loop i =
-        if i < j - 1 then loop (add_char i (Sformat.get fmt i)) in
+        if i < j - 2 then loop (add_char i (Sformat.get fmt i)) in
       loop i;
-      scan_conv skip j
+      (* Go on, starting at the closing brace to properly close the meta
+         specification in the summary. *)
+      scan_conv skip (j - 1)
     | '(' as conv ->
       (* Use the static format argument specification instead of
          the runtime format argument value: they must have the same type
@@ -442,7 +445,7 @@ let scan_format fmt args n pos cont_s cont_a cont_t cont_f cont_m =
     | '{' | '(' as conv (* ')' '}' *) ->
       let (xf : ('a, 'b, 'c, 'd) format4) = get_arg spec n in
       let i = succ i in
-      let j = sub_format_for_printf conv fmt i + 1 in
+      let j = sub_format_for_printf conv fmt i in
       if conv = '{' (* '}' *) then
         (* Just print the format argument as a specification. *)
         cont_s

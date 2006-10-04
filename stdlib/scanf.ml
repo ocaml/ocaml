@@ -214,45 +214,29 @@ let from_string s =
 
 let from_function = create "function input";;
 
-(* Perform bufferized input to improve efficiency. *)
-let file_buffer_size = ref 1024;;
-
-(* To close a channel at end of input. *)
-let scan_close_at_end ic = close_in ic; raise End_of_file;;
-
 (* Scan from an input channel. *)
-let from_ic scan_close_ic fname ic =
-  let len = !file_buffer_size in
-  let buf = String.create len in
-  let i = ref 0 in
-  let lim = ref 0 in
-  let next () =
-    if !i < !lim then begin let c = buf.[!i] in incr i; c end else begin
-      lim := input ic buf 0 len;
-      if !lim = 0 then scan_close_ic ic else begin
-        i := 1;
-        buf.[0]
-      end
-    end in
-  create fname next;;
 
-let from_ic_close_at_end = from_ic scan_close_at_end;;
+(* The input channel [ic] may not be allocated in this library, hence it may be
+   shared (two functions of the user's program may successively read from
+   it). Furthermore, the user may define more than one scanning buffer reading
+   from the same [ic] channel.
 
-let from_file fname = from_ic_close_at_end fname (open_in fname);;
-let from_file_bin fname = from_ic_close_at_end fname (open_in_bin fname);;
-
-(* Input channel [ic] is not allocated here, hence it may be shared (two
-   functions of the program may successively read from it). Furthermore, the
-   user may define more than one scanning buffer reading from the same [ic]
-   channel.
-
-   However, we cannot prevent scanf to use one lookahead character if needed;
-   this implies that multiple functions alternatively scanning the same [ic]
-   channel will miss characters from time to time, due to unnoticed look ahead
-   characters, silently read from [ic] (hence no more available for reading)
-   and retained inside the scanning buffer for correct scanning from the same
-   scanning buffer. This phenomenon is even worse in case of multiple
-   definition of scanning buffers from the same [ic].
+   However, we cannot prevent the scanning mechanism to use one lookahead
+   character, if needed by the semantics of format string specifications
+   (e.g. a trailing ``skip space'' specification in the format string); in this
+   case, the mandatory lookahead character is read from the channel and stored
+   into the scanning buffer for further reading. This implies that multiple
+   functions alternatively scanning the same [ic] channel will miss characters
+   from time to time, due to unnoticed look ahead characters, silently read
+   from [ic] (hence no more available for reading) and retained inside the
+   scanning buffer to ensure the correct incremental scanning of the same
+   scanning buffer. This phenomenon is even worse if one defines more than one
+   scanning buffer reading from the same input channel [ic]. We have no simple
+   way to circumvent this problem (unless the scanning buffer allocation is a
+   memo function that never allocates two different scanning buffers for the
+   same input channel, orelse the input channel API offers a ``consider this
+   char as unread'' procedure to keep back the lookahead character as available
+   in the input channel for further reading).
 
    Hence, we do bufferize characters to create a scanning buffer from an input
    channel in order to preserve the same semantics as other from_* functions
@@ -266,9 +250,38 @@ let from_file_bin fname = from_ic_close_at_end fname (open_in_bin fname);;
    gaining anything for multiple functions reading from [ic] or multiple
    allocation of scanning buffers reading from the same [ic].
 
-   A more ambitious fix could be to have a memo scanning buffer allocation
-   for reading from input channel not allocated from within Scanf's input
-   buffer creation functions. *)
+   As mentioned above, a more ambitious fix could be to change the input
+   channel API or to have a memo scanning buffer allocation for reading from
+   input channel not allocated from within Scanf's input buffer creation
+   functions. *)
+
+(* Perform bufferized input to improve efficiency. *)
+let file_buffer_size = ref 1024;;
+
+(* To close a channel at end of input. *)
+let scan_close_at_end ic = close_in ic; raise End_of_file;;
+
+let from_ic scan_close_ic fname ic =
+  let len = !file_buffer_size in
+  let buf = String.create len in
+  let i = ref 0 in
+  let lim = ref 0 in
+  let eof = ref false in
+  let next () =
+    if !i < !lim then begin let c = buf.[!i] in incr i; c end else
+    if !eof then raise End_of_file else begin
+      lim := input ic buf 0 len;
+      if !lim = 0 then begin eof := true; scan_close_ic ic end else begin
+        i := 1;
+        buf.[0]
+      end
+    end in
+  create fname next;;
+
+let from_ic_close_at_end = from_ic scan_close_at_end;;
+
+let from_file fname = from_ic_close_at_end fname (open_in fname);;
+let from_file_bin fname = from_ic_close_at_end fname (open_in_bin fname);;
 
 let scan_raise_at_end ic = raise End_of_file;;
 
@@ -309,8 +322,8 @@ let bad_input_escape c =
 
 let scanf_bad_input ib = function
   | Scan_failure s | Failure s ->
-      let i = Scanning.char_count ib in
-      bad_input (Printf.sprintf "scanf: bad input at char number %i: %s" i s)
+    let i = Scanning.char_count ib in
+    bad_input (Printf.sprintf "scanf: bad input at char number %i: %s" i s)
   | x -> raise x;;
 
 let bad_conversion fmt i c =
@@ -327,7 +340,8 @@ let incomplete_format fmt =
 let bad_float () = bad_input "no dot or exponent part found in float token";;
 
 let format_mismatch_err fmt1 fmt2 =
-  Printf.sprintf "format read %S does not match specification %S" fmt1 fmt2;;
+  Printf.sprintf
+    "format read ``%s'' does not match specification ``%s''" fmt1 fmt2;;
 
 let format_mismatch fmt1 fmt2 ib =
   scanf_bad_input ib (Scan_failure (format_mismatch_err fmt1 fmt2));;
@@ -1051,12 +1065,11 @@ let kscanf ib ef fmt f =
         let i = succ i in
         let j =
           Printf.sub_format
-            incomplete_format bad_conversion conv fmt (succ i) in
-        let mf = Sformat.sub fmt i (j - i - 2) in
+            incomplete_format bad_conversion conv fmt i in
+        let mf = Sformat.sub fmt i (j - 2 - i) in
         let _x = scan_String max ib in
         let rf = token_string ib in
-        if not (compatible_format_type mf rf)
-          then format_mismatch rf mf ib else
+        if not (compatible_format_type rf mf) then format_mismatch rf mf ib else
         if conv = '{' then scan_fmt (stack f rf) j else
         let nf = scan_fmt (Obj.magic rf) 0 in
         scan_fmt (stack f nf) j
