@@ -21,8 +21,17 @@ module Make (Loc : Sig.Loc.S)
 : Sig.Camlp4Ast.S with module Loc = Loc
 = struct
   module Loc = Loc;
-  module Ast = Sig.Camlp4Ast.Make Loc;
+
+  module Ast = struct
+    include Sig.Camlp4Ast.Make Loc;
+
+    value safe_string_escaped s =
+      if String.length s > 2 && s.[0] = '\\' && s.[1] = '$' then s
+      else String.escaped s;
+  end;
+
   include Ast;
+
   external loc_of_ctyp : ctyp -> Loc.t = "%field0";
   external loc_of_patt : patt -> Loc.t = "%field0";
   external loc_of_expr : expr -> Loc.t = "%field0";
@@ -39,6 +48,55 @@ module Make (Loc : Sig.Loc.S)
   external loc_of_module_binding : module_binding -> Loc.t = "%field0";
   external loc_of_match_case : match_case -> Loc.t = "%field0";
   external loc_of_ident : ident -> Loc.t = "%field0";
+
+  module Meta = struct
+
+    module type META_LOC = sig
+      (** The first location is where to put the returned pattern.
+          Generally it's _loc to match with <:patt< ... >> quotations.
+          The second location is the one to treat. *)
+      value meta_loc_patt : Loc.t -> Loc.t -> Ast.patt;
+      (** The first location is where to put the returned expression.
+          Generally it's _loc to match with <:expr< ... >> quotations.
+          The second location is the one to treat. *)
+      value meta_loc_expr : Loc.t -> Loc.t -> Ast.expr;
+    end;
+
+    module MetaLoc = struct
+      value meta_loc_patt _loc location =
+        let (a, b, c, d, e, f, g, h) = Loc.to_tuple location in
+        <:patt< Loc.of_tuple
+                  ($`str:a$, $`int:b$, $`int:c$, $`int:d$,
+                  $`int:e$, $`int:f$, $`int:g$,
+                  $if h then <:patt< True >> else <:patt< False >> $) >>;
+      value meta_loc_expr _loc location =
+        let (a, b, c, d, e, f, g, h) = Loc.to_tuple location in
+        <:expr< Loc.of_tuple
+                  ($`str:a$, $`int:b$, $`int:c$, $`int:d$,
+                  $`int:e$, $`int:f$, $`int:g$,
+                  $if h then <:expr< True >> else <:expr< False >> $) >>;
+    end;
+
+    module MetaGhostLoc = struct
+      value meta_loc_patt _loc _ = <:patt< Loc.ghost >>;
+      value meta_loc_expr _loc _ = <:expr< Loc.ghost >>;
+    end;
+
+    module MetaLocVar = struct
+      value meta_loc_patt _loc _ = <:patt< $lid:Loc.name.val$ >>;
+      value meta_loc_expr _loc _ = <:expr< $lid:Loc.name.val$ >>;
+    end;
+
+    module Make (MetaLoc : META_LOC) = struct
+      open MetaLoc;
+
+      value meta_acc_Loc_t = meta_loc_expr;
+      module Expr = Camlp4Filters.MetaGeneratorExpr Ast;
+      value meta_acc_Loc_t = meta_loc_patt;
+      module Patt = Camlp4Filters.MetaGeneratorPatt Ast;
+    end;
+
+  end;
 
   class map = Camlp4Filters.GenerateMap.generated;
 
@@ -75,10 +133,6 @@ module Make (Loc : Sig.Loc.S)
   value map_ctyp f ast = (new c_ctyp f)#ctyp ast;
   value map_expr f ast = (new c_expr f)#expr ast;
   value ghost = Loc.ghost;
-
-  value safe_string_escaped s =
-    if String.length s > 2 && s.[0] = '\\' && s.[1] = '$' then s
-    else String.escaped s;
 
   value rec is_module_longident =
     fun

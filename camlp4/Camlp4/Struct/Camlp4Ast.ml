@@ -2,7 +2,14 @@
 module Make (Loc : Sig.Loc.S) : Sig.Camlp4Ast.S with module Loc = Loc =
   struct
     module Loc = Loc;
-    module Ast = Sig.Camlp4Ast.Make(Loc);
+    module Ast =
+      struct
+        include Sig.Camlp4Ast.Make(Loc);
+        value safe_string_escaped s =
+          if ((String.length s) > 2) && ((s.[0] = '\\') && (s.[1] = '$'))
+          then s
+          else String.escaped s;
+      end;
     include Ast;
     external loc_of_ctyp : ctyp -> Loc.t = "%field0";
     external loc_of_patt : patt -> Loc.t = "%field0";
@@ -20,6 +27,3821 @@ module Make (Loc : Sig.Loc.S) : Sig.Camlp4Ast.S with module Loc = Loc =
     external loc_of_module_binding : module_binding -> Loc.t = "%field0";
     external loc_of_match_case : match_case -> Loc.t = "%field0";
     external loc_of_ident : ident -> Loc.t = "%field0";
+    module Meta =
+      struct
+        module type META_LOC =
+          sig
+            value meta_loc_patt : Loc.t -> Loc.t -> Ast.patt;
+            value meta_loc_expr : Loc.t -> Loc.t -> Ast.expr;
+          end;
+        module MetaLoc =
+          struct
+            value meta_loc_patt _loc location =
+              let (a, b, c, d, e, f, g, h) = Loc.to_tuple location
+              in
+                Ast.PaApp _loc
+                  (Ast.PaId _loc
+                     (Ast.IdAcc _loc (Ast.IdUid _loc "Loc")
+                        (Ast.IdLid _loc "of_tuple")))
+                  (Ast.PaTup _loc
+                     (Ast.PaCom _loc
+                        (Ast.PaStr _loc (Ast.safe_string_escaped a))
+                        (Ast.PaCom _loc
+                           (Ast.PaCom _loc
+                              (Ast.PaCom _loc
+                                 (Ast.PaCom _loc
+                                    (Ast.PaCom _loc
+                                       (Ast.PaCom _loc
+                                          (Ast.PaInt _loc (string_of_int b))
+                                          (Ast.PaInt _loc (string_of_int c)))
+                                       (Ast.PaInt _loc (string_of_int d)))
+                                    (Ast.PaInt _loc (string_of_int e)))
+                                 (Ast.PaInt _loc (string_of_int f)))
+                              (Ast.PaInt _loc (string_of_int g)))
+                           (if h
+                            then Ast.PaId _loc (Ast.IdUid _loc "True")
+                            else Ast.PaId _loc (Ast.IdUid _loc "False")))));
+            value meta_loc_expr _loc location =
+              let (a, b, c, d, e, f, g, h) = Loc.to_tuple location
+              in
+                Ast.ExApp _loc
+                  (Ast.ExId _loc
+                     (Ast.IdAcc _loc (Ast.IdUid _loc "Loc")
+                        (Ast.IdLid _loc "of_tuple")))
+                  (Ast.ExTup _loc
+                     (Ast.ExCom _loc
+                        (Ast.ExStr _loc (Ast.safe_string_escaped a))
+                        (Ast.ExCom _loc
+                           (Ast.ExCom _loc
+                              (Ast.ExCom _loc
+                                 (Ast.ExCom _loc
+                                    (Ast.ExCom _loc
+                                       (Ast.ExCom _loc
+                                          (Ast.ExInt _loc (string_of_int b))
+                                          (Ast.ExInt _loc (string_of_int c)))
+                                       (Ast.ExInt _loc (string_of_int d)))
+                                    (Ast.ExInt _loc (string_of_int e)))
+                                 (Ast.ExInt _loc (string_of_int f)))
+                              (Ast.ExInt _loc (string_of_int g)))
+                           (if h
+                            then Ast.ExId _loc (Ast.IdUid _loc "True")
+                            else Ast.ExId _loc (Ast.IdUid _loc "False")))));
+          end;
+        module MetaGhostLoc =
+          struct
+            value meta_loc_patt _loc _ =
+              Ast.PaId _loc
+                (Ast.IdAcc _loc (Ast.IdUid _loc "Loc")
+                   (Ast.IdLid _loc "ghost"));
+            value meta_loc_expr _loc _ =
+              Ast.ExId _loc
+                (Ast.IdAcc _loc (Ast.IdUid _loc "Loc")
+                   (Ast.IdLid _loc "ghost"));
+          end;
+        module MetaLocVar =
+          struct
+            value meta_loc_patt _loc _ =
+              Ast.PaId _loc (Ast.IdLid _loc Loc.name.val);
+            value meta_loc_expr _loc _ =
+              Ast.ExId _loc (Ast.IdLid _loc Loc.name.val);
+          end;
+        module Make (MetaLoc : META_LOC) =
+          struct
+            open MetaLoc;
+            value meta_acc_Loc_t = meta_loc_expr;
+            module Expr =
+              struct
+                value meta_string _loc s = Ast.ExStr _loc s;
+                value meta_int _loc s = Ast.ExInt _loc s;
+                value meta_float _loc s = Ast.ExFlo _loc s;
+                value meta_char _loc s = Ast.ExChr _loc s;
+                value meta_bool _loc =
+                  fun
+                  [ False -> Ast.ExId _loc (Ast.IdUid _loc "False")
+                  | True -> Ast.ExId _loc (Ast.IdUid _loc "True") ];
+                value rec meta_list mf_a _loc =
+                  fun
+                  [ [] -> Ast.ExId _loc (Ast.IdUid _loc "[]")
+                  | [ x :: xs ] ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc (Ast.ExId _loc (Ast.IdUid _loc "::"))
+                           (mf_a _loc x))
+                        (meta_list mf_a _loc xs) ];
+                value rec meta_binding _loc =
+                  fun
+                  [ Ast.BiAnt x0 x1 -> Ast.ExAnt x0 x1
+                  | Ast.BiEq x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "BiEq")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_patt _loc x1))
+                        (meta_expr _loc x2)
+                  | Ast.BiSem x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "BiSem")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_binding _loc x1))
+                        (meta_binding _loc x2)
+                  | Ast.BiAnd x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "BiAnd")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_binding _loc x1))
+                        (meta_binding _loc x2)
+                  | Ast.BiNil x0 ->
+                      Ast.ExApp _loc
+                        (Ast.ExId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "BiNil")))
+                        (meta_acc_Loc_t _loc x0) ]
+                and meta_class_expr _loc =
+                  fun
+                  [ Ast.CeAnt x0 x1 -> Ast.ExAnt x0 x1
+                  | Ast.CeEq x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "CeEq")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_class_expr _loc x1))
+                        (meta_class_expr _loc x2)
+                  | Ast.CeAnd x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "CeAnd")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_class_expr _loc x1))
+                        (meta_class_expr _loc x2)
+                  | Ast.CeTyc x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "CeTyc")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_class_expr _loc x1))
+                        (meta_class_type _loc x2)
+                  | Ast.CeStr x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "CeStr")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_patt _loc x1))
+                        (meta_class_str_item _loc x2)
+                  | Ast.CeLet x0 x1 x2 x3 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExApp _loc
+                                 (Ast.ExId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "CeLet")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_meta_bool _loc x1))
+                           (meta_binding _loc x2))
+                        (meta_class_expr _loc x3)
+                  | Ast.CeFun x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "CeFun")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_patt _loc x1))
+                        (meta_class_expr _loc x2)
+                  | Ast.CeCon x0 x1 x2 x3 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExApp _loc
+                                 (Ast.ExId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "CeCon")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_meta_bool _loc x1))
+                           (meta_ident _loc x2))
+                        (meta_ctyp _loc x3)
+                  | Ast.CeApp x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "CeApp")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_class_expr _loc x1))
+                        (meta_expr _loc x2)
+                  | Ast.CeNil x0 ->
+                      Ast.ExApp _loc
+                        (Ast.ExId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "CeNil")))
+                        (meta_acc_Loc_t _loc x0) ]
+                and meta_class_sig_item _loc =
+                  fun
+                  [ Ast.CgAnt x0 x1 -> Ast.ExAnt x0 x1
+                  | Ast.CgVir x0 x1 x2 x3 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExApp _loc
+                                 (Ast.ExId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "CgVir")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_string _loc x1))
+                           (meta_meta_bool _loc x2))
+                        (meta_ctyp _loc x3)
+                  | Ast.CgVal x0 x1 x2 x3 x4 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExApp _loc
+                                 (Ast.ExApp _loc
+                                    (Ast.ExId _loc
+                                       (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                          (Ast.IdUid _loc "CgVal")))
+                                    (meta_acc_Loc_t _loc x0))
+                                 (meta_string _loc x1))
+                              (meta_meta_bool _loc x2))
+                           (meta_meta_bool _loc x3))
+                        (meta_ctyp _loc x4)
+                  | Ast.CgMth x0 x1 x2 x3 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExApp _loc
+                                 (Ast.ExId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "CgMth")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_string _loc x1))
+                           (meta_meta_bool _loc x2))
+                        (meta_ctyp _loc x3)
+                  | Ast.CgInh x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "CgInh")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_class_type _loc x1)
+                  | Ast.CgSem x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "CgSem")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_class_sig_item _loc x1))
+                        (meta_class_sig_item _loc x2)
+                  | Ast.CgCtr x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "CgCtr")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.CgNil x0 ->
+                      Ast.ExApp _loc
+                        (Ast.ExId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "CgNil")))
+                        (meta_acc_Loc_t _loc x0) ]
+                and meta_class_str_item _loc =
+                  fun
+                  [ Ast.CrAnt x0 x1 -> Ast.ExAnt x0 x1
+                  | Ast.CrVvr x0 x1 x2 x3 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExApp _loc
+                                 (Ast.ExId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "CrVvr")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_string _loc x1))
+                           (meta_meta_bool _loc x2))
+                        (meta_ctyp _loc x3)
+                  | Ast.CrVir x0 x1 x2 x3 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExApp _loc
+                                 (Ast.ExId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "CrVir")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_string _loc x1))
+                           (meta_meta_bool _loc x2))
+                        (meta_ctyp _loc x3)
+                  | Ast.CrVal x0 x1 x2 x3 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExApp _loc
+                                 (Ast.ExId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "CrVal")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_string _loc x1))
+                           (meta_meta_bool _loc x2))
+                        (meta_expr _loc x3)
+                  | Ast.CrMth x0 x1 x2 x3 x4 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExApp _loc
+                                 (Ast.ExApp _loc
+                                    (Ast.ExId _loc
+                                       (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                          (Ast.IdUid _loc "CrMth")))
+                                    (meta_acc_Loc_t _loc x0))
+                                 (meta_string _loc x1))
+                              (meta_meta_bool _loc x2))
+                           (meta_expr _loc x3))
+                        (meta_ctyp _loc x4)
+                  | Ast.CrIni x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "CrIni")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_expr _loc x1)
+                  | Ast.CrInh x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "CrInh")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_class_expr _loc x1))
+                        (meta_string _loc x2)
+                  | Ast.CrCtr x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "CrCtr")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.CrSem x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "CrSem")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_class_str_item _loc x1))
+                        (meta_class_str_item _loc x2)
+                  | Ast.CrNil x0 ->
+                      Ast.ExApp _loc
+                        (Ast.ExId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "CrNil")))
+                        (meta_acc_Loc_t _loc x0) ]
+                and meta_class_type _loc =
+                  fun
+                  [ Ast.CtAnt x0 x1 -> Ast.ExAnt x0 x1
+                  | Ast.CtEq x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "CtEq")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_class_type _loc x1))
+                        (meta_class_type _loc x2)
+                  | Ast.CtCol x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "CtCol")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_class_type _loc x1))
+                        (meta_class_type _loc x2)
+                  | Ast.CtAnd x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "CtAnd")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_class_type _loc x1))
+                        (meta_class_type _loc x2)
+                  | Ast.CtSig x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "CtSig")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_class_sig_item _loc x2)
+                  | Ast.CtFun x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "CtFun")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_class_type _loc x2)
+                  | Ast.CtCon x0 x1 x2 x3 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExApp _loc
+                                 (Ast.ExId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "CtCon")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_meta_bool _loc x1))
+                           (meta_ident _loc x2))
+                        (meta_ctyp _loc x3)
+                  | Ast.CtNil x0 ->
+                      Ast.ExApp _loc
+                        (Ast.ExId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "CtNil")))
+                        (meta_acc_Loc_t _loc x0) ]
+                and meta_ctyp _loc =
+                  fun
+                  [ Ast.TyAnt x0 x1 -> Ast.ExAnt x0 x1
+                  | Ast.TyOfAmp x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TyOfAmp")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.TyAmp x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TyAmp")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.TyVrnInfSup x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TyVrnInfSup")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.TyVrnInf x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "TyVrnInf")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ctyp _loc x1)
+                  | Ast.TyVrnSup x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "TyVrnSup")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ctyp _loc x1)
+                  | Ast.TyVrnEq x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "TyVrnEq")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ctyp _loc x1)
+                  | Ast.TySta x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TySta")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.TyTup x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "TyTup")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ctyp _loc x1)
+                  | Ast.TyMut x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "TyMut")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ctyp _loc x1)
+                  | Ast.TyPrv x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "TyPrv")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ctyp _loc x1)
+                  | Ast.TyOr x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TyOr")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.TyAnd x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TyAnd")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.TyOf x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TyOf")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.TySum x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "TySum")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ctyp _loc x1)
+                  | Ast.TyCom x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TyCom")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.TySem x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TySem")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.TyCol x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TyCol")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.TyRec x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "TyRec")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ctyp _loc x1)
+                  | Ast.TyVrn x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "TyVrn")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.TyQuM x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "TyQuM")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.TyQuP x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "TyQuP")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.TyQuo x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "TyQuo")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.TyPol x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TyPol")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.TyOlb x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TyOlb")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_string _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.TyObj x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TyObj")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_meta_bool _loc x2)
+                  | Ast.TyDcl x0 x1 x2 x3 x4 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExApp _loc
+                                 (Ast.ExApp _loc
+                                    (Ast.ExId _loc
+                                       (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                          (Ast.IdUid _loc "TyDcl")))
+                                    (meta_acc_Loc_t _loc x0))
+                                 (meta_string _loc x1))
+                              (meta_list meta_ctyp _loc x2))
+                           (meta_ctyp _loc x3))
+                        (meta_list
+                           (fun _loc (x1, x2) ->
+                              Ast.ExTup _loc
+                                (Ast.ExCom _loc (meta_ctyp _loc x1)
+                                   (meta_ctyp _loc x2)))
+                           _loc x4)
+                  | Ast.TyMan x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TyMan")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.TyId x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "TyId")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ident _loc x1)
+                  | Ast.TyLab x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TyLab")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_string _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.TyCls x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "TyCls")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ident _loc x1)
+                  | Ast.TyArr x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TyArr")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.TyApp x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TyApp")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.TyAny x0 ->
+                      Ast.ExApp _loc
+                        (Ast.ExId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "TyAny")))
+                        (meta_acc_Loc_t _loc x0)
+                  | Ast.TyAli x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TyAli")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.TyNil x0 ->
+                      Ast.ExApp _loc
+                        (Ast.ExId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "TyNil")))
+                        (meta_acc_Loc_t _loc x0) ]
+                and meta_expr _loc =
+                  fun
+                  [ Ast.ExWhi x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "ExWhi")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_expr _loc x1))
+                        (meta_expr _loc x2)
+                  | Ast.ExVrn x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExVrn")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.ExTyc x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "ExTyc")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_expr _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.ExCom x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "ExCom")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_expr _loc x1))
+                        (meta_expr _loc x2)
+                  | Ast.ExTup x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExTup")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_expr _loc x1)
+                  | Ast.ExTry x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "ExTry")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_expr _loc x1))
+                        (meta_match_case _loc x2)
+                  | Ast.ExStr x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExStr")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.ExSte x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "ExSte")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_expr _loc x1))
+                        (meta_expr _loc x2)
+                  | Ast.ExSnd x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "ExSnd")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_expr _loc x1))
+                        (meta_string _loc x2)
+                  | Ast.ExSeq x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExSeq")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_expr _loc x1)
+                  | Ast.ExRec x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "ExRec")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_binding _loc x1))
+                        (meta_expr _loc x2)
+                  | Ast.ExOvr x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExOvr")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_binding _loc x1)
+                  | Ast.ExOlb x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "ExOlb")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_string _loc x1))
+                        (meta_expr _loc x2)
+                  | Ast.ExObj x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "ExObj")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_patt _loc x1))
+                        (meta_class_str_item _loc x2)
+                  | Ast.ExNew x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExNew")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ident _loc x1)
+                  | Ast.ExMat x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "ExMat")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_expr _loc x1))
+                        (meta_match_case _loc x2)
+                  | Ast.ExLmd x0 x1 x2 x3 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExApp _loc
+                                 (Ast.ExId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "ExLmd")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_string _loc x1))
+                           (meta_module_expr _loc x2))
+                        (meta_expr _loc x3)
+                  | Ast.ExLet x0 x1 x2 x3 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExApp _loc
+                                 (Ast.ExId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "ExLet")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_meta_bool _loc x1))
+                           (meta_binding _loc x2))
+                        (meta_expr _loc x3)
+                  | Ast.ExLaz x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExLaz")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_expr _loc x1)
+                  | Ast.ExLab x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "ExLab")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_string _loc x1))
+                        (meta_expr _loc x2)
+                  | Ast.ExNativeInt x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExNativeInt")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.ExInt64 x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExInt64")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.ExInt32 x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExInt32")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.ExInt x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExInt")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.ExIfe x0 x1 x2 x3 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExApp _loc
+                                 (Ast.ExId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "ExIfe")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_expr _loc x1))
+                           (meta_expr _loc x2))
+                        (meta_expr _loc x3)
+                  | Ast.ExFun x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExFun")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_match_case _loc x1)
+                  | Ast.ExFor x0 x1 x2 x3 x4 x5 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExApp _loc
+                                 (Ast.ExApp _loc
+                                    (Ast.ExApp _loc
+                                       (Ast.ExId _loc
+                                          (Ast.IdAcc _loc
+                                             (Ast.IdUid _loc "Ast")
+                                             (Ast.IdUid _loc "ExFor")))
+                                       (meta_acc_Loc_t _loc x0))
+                                    (meta_string _loc x1))
+                                 (meta_expr _loc x2))
+                              (meta_expr _loc x3))
+                           (meta_meta_bool _loc x4))
+                        (meta_expr _loc x5)
+                  | Ast.ExFlo x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExFlo")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.ExCoe x0 x1 x2 x3 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExApp _loc
+                                 (Ast.ExId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "ExCoe")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_expr _loc x1))
+                           (meta_ctyp _loc x2))
+                        (meta_ctyp _loc x3)
+                  | Ast.ExChr x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExChr")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.ExAss x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "ExAss")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_expr _loc x1))
+                        (meta_expr _loc x2)
+                  | Ast.ExAsr x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExAsr")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_expr _loc x1)
+                  | Ast.ExAsf x0 ->
+                      Ast.ExApp _loc
+                        (Ast.ExId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "ExAsf")))
+                        (meta_acc_Loc_t _loc x0)
+                  | Ast.ExSem x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "ExSem")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_expr _loc x1))
+                        (meta_expr _loc x2)
+                  | Ast.ExArr x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExArr")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_expr _loc x1)
+                  | Ast.ExAre x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "ExAre")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_expr _loc x1))
+                        (meta_expr _loc x2)
+                  | Ast.ExApp x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "ExApp")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_expr _loc x1))
+                        (meta_expr _loc x2)
+                  | Ast.ExAnt x0 x1 -> Ast.ExAnt x0 x1
+                  | Ast.ExAcc x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "ExAcc")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_expr _loc x1))
+                        (meta_expr _loc x2)
+                  | Ast.ExId x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExId")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ident _loc x1)
+                  | Ast.ExNil x0 ->
+                      Ast.ExApp _loc
+                        (Ast.ExId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "ExNil")))
+                        (meta_acc_Loc_t _loc x0) ]
+                and meta_ident _loc =
+                  fun
+                  [ Ast.IdAnt x0 x1 -> Ast.ExAnt x0 x1
+                  | Ast.IdUid x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "IdUid")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.IdLid x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "IdLid")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.IdApp x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "IdApp")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ident _loc x1))
+                        (meta_ident _loc x2)
+                  | Ast.IdAcc x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "IdAcc")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ident _loc x1))
+                        (meta_ident _loc x2) ]
+                and meta_match_case _loc =
+                  fun
+                  [ Ast.McAnt x0 x1 -> Ast.ExAnt x0 x1
+                  | Ast.McArr x0 x1 x2 x3 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExApp _loc
+                                 (Ast.ExId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "McArr")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_patt _loc x1))
+                           (meta_expr _loc x2))
+                        (meta_expr _loc x3)
+                  | Ast.McOr x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "McOr")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_match_case _loc x1))
+                        (meta_match_case _loc x2)
+                  | Ast.McNil x0 ->
+                      Ast.ExApp _loc
+                        (Ast.ExId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "McNil")))
+                        (meta_acc_Loc_t _loc x0) ]
+                and meta_meta_bool _loc =
+                  fun
+                  [ Ast.BAnt x0 -> Ast.ExAnt _loc x0
+                  | Ast.BFalse ->
+                      Ast.ExId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "BFalse"))
+                  | Ast.BTrue ->
+                      Ast.ExId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "BTrue")) ]
+                and meta_meta_option mf_a _loc =
+                  fun
+                  [ Ast.OAnt x0 -> Ast.ExAnt _loc x0
+                  | Ast.OSome x0 ->
+                      Ast.ExApp _loc
+                        (Ast.ExId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "OSome")))
+                        (mf_a _loc x0)
+                  | Ast.ONone ->
+                      Ast.ExId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "ONone")) ]
+                and meta_module_binding _loc =
+                  fun
+                  [ Ast.MbAnt x0 x1 -> Ast.ExAnt x0 x1
+                  | Ast.MbCol x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "MbCol")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_string _loc x1))
+                        (meta_module_type _loc x2)
+                  | Ast.MbColEq x0 x1 x2 x3 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExApp _loc
+                                 (Ast.ExId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "MbColEq")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_string _loc x1))
+                           (meta_module_type _loc x2))
+                        (meta_module_expr _loc x3)
+                  | Ast.MbAnd x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "MbAnd")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_module_binding _loc x1))
+                        (meta_module_binding _loc x2)
+                  | Ast.MbNil x0 ->
+                      Ast.ExApp _loc
+                        (Ast.ExId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "MbNil")))
+                        (meta_acc_Loc_t _loc x0) ]
+                and meta_module_expr _loc =
+                  fun
+                  [ Ast.MeAnt x0 x1 -> Ast.ExAnt x0 x1
+                  | Ast.MeTyc x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "MeTyc")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_module_expr _loc x1))
+                        (meta_module_type _loc x2)
+                  | Ast.MeStr x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "MeStr")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_str_item _loc x1)
+                  | Ast.MeFun x0 x1 x2 x3 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExApp _loc
+                                 (Ast.ExId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "MeFun")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_string _loc x1))
+                           (meta_module_type _loc x2))
+                        (meta_module_expr _loc x3)
+                  | Ast.MeApp x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "MeApp")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_module_expr _loc x1))
+                        (meta_module_expr _loc x2)
+                  | Ast.MeId x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "MeId")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ident _loc x1) ]
+                and meta_module_type _loc =
+                  fun
+                  [ Ast.MtAnt x0 x1 -> Ast.ExAnt x0 x1
+                  | Ast.MtWit x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "MtWit")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_module_type _loc x1))
+                        (meta_with_constr _loc x2)
+                  | Ast.MtSig x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "MtSig")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_sig_item _loc x1)
+                  | Ast.MtQuo x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "MtQuo")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.MtFun x0 x1 x2 x3 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExApp _loc
+                                 (Ast.ExId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "MtFun")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_string _loc x1))
+                           (meta_module_type _loc x2))
+                        (meta_module_type _loc x3)
+                  | Ast.MtId x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "MtId")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ident _loc x1) ]
+                and meta_patt _loc =
+                  fun
+                  [ Ast.PaVrn x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "PaVrn")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.PaTyp x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "PaTyp")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ident _loc x1)
+                  | Ast.PaTyc x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "PaTyc")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_patt _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.PaTup x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "PaTup")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_patt _loc x1)
+                  | Ast.PaStr x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "PaStr")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.PaEq x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "PaEq")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_patt _loc x1))
+                        (meta_patt _loc x2)
+                  | Ast.PaRec x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "PaRec")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_patt _loc x1)
+                  | Ast.PaRng x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "PaRng")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_patt _loc x1))
+                        (meta_patt _loc x2)
+                  | Ast.PaOrp x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "PaOrp")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_patt _loc x1))
+                        (meta_patt _loc x2)
+                  | Ast.PaOlbi x0 x1 x2 x3 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExApp _loc
+                                 (Ast.ExId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "PaOlbi")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_string _loc x1))
+                           (meta_patt _loc x2))
+                        (meta_expr _loc x3)
+                  | Ast.PaOlb x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "PaOlb")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_string _loc x1))
+                        (meta_patt _loc x2)
+                  | Ast.PaLab x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "PaLab")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_string _loc x1))
+                        (meta_patt _loc x2)
+                  | Ast.PaFlo x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "PaFlo")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.PaNativeInt x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "PaNativeInt")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.PaInt64 x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "PaInt64")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.PaInt32 x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "PaInt32")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.PaInt x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "PaInt")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.PaChr x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "PaChr")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.PaSem x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "PaSem")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_patt _loc x1))
+                        (meta_patt _loc x2)
+                  | Ast.PaCom x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "PaCom")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_patt _loc x1))
+                        (meta_patt _loc x2)
+                  | Ast.PaArr x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "PaArr")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_patt _loc x1)
+                  | Ast.PaApp x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "PaApp")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_patt _loc x1))
+                        (meta_patt _loc x2)
+                  | Ast.PaAny x0 ->
+                      Ast.ExApp _loc
+                        (Ast.ExId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "PaAny")))
+                        (meta_acc_Loc_t _loc x0)
+                  | Ast.PaAnt x0 x1 -> Ast.ExAnt x0 x1
+                  | Ast.PaAli x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "PaAli")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_patt _loc x1))
+                        (meta_patt _loc x2)
+                  | Ast.PaId x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "PaId")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ident _loc x1)
+                  | Ast.PaNil x0 ->
+                      Ast.ExApp _loc
+                        (Ast.ExId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "PaNil")))
+                        (meta_acc_Loc_t _loc x0) ]
+                and meta_sig_item _loc =
+                  fun
+                  [ Ast.SgAnt x0 x1 -> Ast.ExAnt x0 x1
+                  | Ast.SgVal x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "SgVal")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_string _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.SgTyp x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "SgTyp")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ctyp _loc x1)
+                  | Ast.SgOpn x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "SgOpn")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ident _loc x1)
+                  | Ast.SgMty x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "SgMty")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_string _loc x1))
+                        (meta_module_type _loc x2)
+                  | Ast.SgRecMod x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "SgRecMod")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_module_binding _loc x1)
+                  | Ast.SgMod x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "SgMod")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_string _loc x1))
+                        (meta_module_type _loc x2)
+                  | Ast.SgInc x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "SgInc")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_module_type _loc x1)
+                  | Ast.SgExt x0 x1 x2 x3 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExApp _loc
+                                 (Ast.ExId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "SgExt")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_string _loc x1))
+                           (meta_ctyp _loc x2))
+                        (meta_string _loc x3)
+                  | Ast.SgExc x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "SgExc")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ctyp _loc x1)
+                  | Ast.SgDir x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "SgDir")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_string _loc x1))
+                        (meta_expr _loc x2)
+                  | Ast.SgSem x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "SgSem")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_sig_item _loc x1))
+                        (meta_sig_item _loc x2)
+                  | Ast.SgClt x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "SgClt")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_class_type _loc x1)
+                  | Ast.SgCls x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "SgCls")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_class_type _loc x1)
+                  | Ast.SgNil x0 ->
+                      Ast.ExApp _loc
+                        (Ast.ExId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "SgNil")))
+                        (meta_acc_Loc_t _loc x0) ]
+                and meta_str_item _loc =
+                  fun
+                  [ Ast.StAnt x0 x1 -> Ast.ExAnt x0 x1
+                  | Ast.StVal x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "StVal")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_meta_bool _loc x1))
+                        (meta_binding _loc x2)
+                  | Ast.StTyp x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "StTyp")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ctyp _loc x1)
+                  | Ast.StOpn x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "StOpn")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ident _loc x1)
+                  | Ast.StMty x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "StMty")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_string _loc x1))
+                        (meta_module_type _loc x2)
+                  | Ast.StRecMod x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "StRecMod")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_module_binding _loc x1)
+                  | Ast.StMod x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "StMod")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_string _loc x1))
+                        (meta_module_expr _loc x2)
+                  | Ast.StInc x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "StInc")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_module_expr _loc x1)
+                  | Ast.StExt x0 x1 x2 x3 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExApp _loc
+                                 (Ast.ExId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "StExt")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_string _loc x1))
+                           (meta_ctyp _loc x2))
+                        (meta_string _loc x3)
+                  | Ast.StExp x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "StExp")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_expr _loc x1)
+                  | Ast.StExc x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "StExc")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_meta_option meta_ident _loc x2)
+                  | Ast.StDir x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "StDir")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_string _loc x1))
+                        (meta_expr _loc x2)
+                  | Ast.StSem x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "StSem")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_str_item _loc x1))
+                        (meta_str_item _loc x2)
+                  | Ast.StClt x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "StClt")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_class_type _loc x1)
+                  | Ast.StCls x0 x1 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "StCls")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_class_expr _loc x1)
+                  | Ast.StNil x0 ->
+                      Ast.ExApp _loc
+                        (Ast.ExId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "StNil")))
+                        (meta_acc_Loc_t _loc x0) ]
+                and meta_with_constr _loc =
+                  fun
+                  [ Ast.WcAnt x0 x1 -> Ast.ExAnt x0 x1
+                  | Ast.WcAnd x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "WcAnd")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_with_constr _loc x1))
+                        (meta_with_constr _loc x2)
+                  | Ast.WcMod x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "WcMod")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ident _loc x1))
+                        (meta_ident _loc x2)
+                  | Ast.WcTyp x0 x1 x2 ->
+                      Ast.ExApp _loc
+                        (Ast.ExApp _loc
+                           (Ast.ExApp _loc
+                              (Ast.ExId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "WcTyp")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.WcNil x0 ->
+                      Ast.ExApp _loc
+                        (Ast.ExId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "WcNil")))
+                        (meta_acc_Loc_t _loc x0) ];
+              end;
+            value meta_acc_Loc_t = meta_loc_patt;
+            module Patt =
+              struct
+                value meta_string _loc s = Ast.PaStr _loc s;
+                value meta_int _loc s = Ast.PaInt _loc s;
+                value meta_float _loc s = Ast.PaFlo _loc s;
+                value meta_char _loc s = Ast.PaChr _loc s;
+                value meta_bool _loc =
+                  fun
+                  [ False -> Ast.PaId _loc (Ast.IdUid _loc "False")
+                  | True -> Ast.PaId _loc (Ast.IdUid _loc "True") ];
+                value rec meta_list mf_a _loc =
+                  fun
+                  [ [] -> Ast.PaId _loc (Ast.IdUid _loc "[]")
+                  | [ x :: xs ] ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc (Ast.PaId _loc (Ast.IdUid _loc "::"))
+                           (mf_a _loc x))
+                        (meta_list mf_a _loc xs) ];
+                value rec meta_binding _loc =
+                  fun
+                  [ Ast.BiAnt x0 x1 -> Ast.PaAnt x0 x1
+                  | Ast.BiEq x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "BiEq")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_patt _loc x1))
+                        (meta_expr _loc x2)
+                  | Ast.BiSem x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "BiSem")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_binding _loc x1))
+                        (meta_binding _loc x2)
+                  | Ast.BiAnd x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "BiAnd")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_binding _loc x1))
+                        (meta_binding _loc x2)
+                  | Ast.BiNil x0 ->
+                      Ast.PaApp _loc
+                        (Ast.PaId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "BiNil")))
+                        (meta_acc_Loc_t _loc x0) ]
+                and meta_class_expr _loc =
+                  fun
+                  [ Ast.CeAnt x0 x1 -> Ast.PaAnt x0 x1
+                  | Ast.CeEq x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "CeEq")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_class_expr _loc x1))
+                        (meta_class_expr _loc x2)
+                  | Ast.CeAnd x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "CeAnd")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_class_expr _loc x1))
+                        (meta_class_expr _loc x2)
+                  | Ast.CeTyc x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "CeTyc")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_class_expr _loc x1))
+                        (meta_class_type _loc x2)
+                  | Ast.CeStr x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "CeStr")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_patt _loc x1))
+                        (meta_class_str_item _loc x2)
+                  | Ast.CeLet x0 x1 x2 x3 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaApp _loc
+                                 (Ast.PaId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "CeLet")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_meta_bool _loc x1))
+                           (meta_binding _loc x2))
+                        (meta_class_expr _loc x3)
+                  | Ast.CeFun x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "CeFun")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_patt _loc x1))
+                        (meta_class_expr _loc x2)
+                  | Ast.CeCon x0 x1 x2 x3 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaApp _loc
+                                 (Ast.PaId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "CeCon")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_meta_bool _loc x1))
+                           (meta_ident _loc x2))
+                        (meta_ctyp _loc x3)
+                  | Ast.CeApp x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "CeApp")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_class_expr _loc x1))
+                        (meta_expr _loc x2)
+                  | Ast.CeNil x0 ->
+                      Ast.PaApp _loc
+                        (Ast.PaId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "CeNil")))
+                        (meta_acc_Loc_t _loc x0) ]
+                and meta_class_sig_item _loc =
+                  fun
+                  [ Ast.CgAnt x0 x1 -> Ast.PaAnt x0 x1
+                  | Ast.CgVir x0 x1 x2 x3 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaApp _loc
+                                 (Ast.PaId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "CgVir")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_string _loc x1))
+                           (meta_meta_bool _loc x2))
+                        (meta_ctyp _loc x3)
+                  | Ast.CgVal x0 x1 x2 x3 x4 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaApp _loc
+                                 (Ast.PaApp _loc
+                                    (Ast.PaId _loc
+                                       (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                          (Ast.IdUid _loc "CgVal")))
+                                    (meta_acc_Loc_t _loc x0))
+                                 (meta_string _loc x1))
+                              (meta_meta_bool _loc x2))
+                           (meta_meta_bool _loc x3))
+                        (meta_ctyp _loc x4)
+                  | Ast.CgMth x0 x1 x2 x3 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaApp _loc
+                                 (Ast.PaId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "CgMth")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_string _loc x1))
+                           (meta_meta_bool _loc x2))
+                        (meta_ctyp _loc x3)
+                  | Ast.CgInh x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "CgInh")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_class_type _loc x1)
+                  | Ast.CgSem x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "CgSem")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_class_sig_item _loc x1))
+                        (meta_class_sig_item _loc x2)
+                  | Ast.CgCtr x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "CgCtr")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.CgNil x0 ->
+                      Ast.PaApp _loc
+                        (Ast.PaId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "CgNil")))
+                        (meta_acc_Loc_t _loc x0) ]
+                and meta_class_str_item _loc =
+                  fun
+                  [ Ast.CrAnt x0 x1 -> Ast.PaAnt x0 x1
+                  | Ast.CrVvr x0 x1 x2 x3 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaApp _loc
+                                 (Ast.PaId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "CrVvr")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_string _loc x1))
+                           (meta_meta_bool _loc x2))
+                        (meta_ctyp _loc x3)
+                  | Ast.CrVir x0 x1 x2 x3 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaApp _loc
+                                 (Ast.PaId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "CrVir")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_string _loc x1))
+                           (meta_meta_bool _loc x2))
+                        (meta_ctyp _loc x3)
+                  | Ast.CrVal x0 x1 x2 x3 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaApp _loc
+                                 (Ast.PaId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "CrVal")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_string _loc x1))
+                           (meta_meta_bool _loc x2))
+                        (meta_expr _loc x3)
+                  | Ast.CrMth x0 x1 x2 x3 x4 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaApp _loc
+                                 (Ast.PaApp _loc
+                                    (Ast.PaId _loc
+                                       (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                          (Ast.IdUid _loc "CrMth")))
+                                    (meta_acc_Loc_t _loc x0))
+                                 (meta_string _loc x1))
+                              (meta_meta_bool _loc x2))
+                           (meta_expr _loc x3))
+                        (meta_ctyp _loc x4)
+                  | Ast.CrIni x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "CrIni")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_expr _loc x1)
+                  | Ast.CrInh x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "CrInh")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_class_expr _loc x1))
+                        (meta_string _loc x2)
+                  | Ast.CrCtr x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "CrCtr")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.CrSem x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "CrSem")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_class_str_item _loc x1))
+                        (meta_class_str_item _loc x2)
+                  | Ast.CrNil x0 ->
+                      Ast.PaApp _loc
+                        (Ast.PaId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "CrNil")))
+                        (meta_acc_Loc_t _loc x0) ]
+                and meta_class_type _loc =
+                  fun
+                  [ Ast.CtAnt x0 x1 -> Ast.PaAnt x0 x1
+                  | Ast.CtEq x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "CtEq")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_class_type _loc x1))
+                        (meta_class_type _loc x2)
+                  | Ast.CtCol x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "CtCol")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_class_type _loc x1))
+                        (meta_class_type _loc x2)
+                  | Ast.CtAnd x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "CtAnd")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_class_type _loc x1))
+                        (meta_class_type _loc x2)
+                  | Ast.CtSig x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "CtSig")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_class_sig_item _loc x2)
+                  | Ast.CtFun x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "CtFun")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_class_type _loc x2)
+                  | Ast.CtCon x0 x1 x2 x3 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaApp _loc
+                                 (Ast.PaId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "CtCon")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_meta_bool _loc x1))
+                           (meta_ident _loc x2))
+                        (meta_ctyp _loc x3)
+                  | Ast.CtNil x0 ->
+                      Ast.PaApp _loc
+                        (Ast.PaId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "CtNil")))
+                        (meta_acc_Loc_t _loc x0) ]
+                and meta_ctyp _loc =
+                  fun
+                  [ Ast.TyAnt x0 x1 -> Ast.PaAnt x0 x1
+                  | Ast.TyOfAmp x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TyOfAmp")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.TyAmp x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TyAmp")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.TyVrnInfSup x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TyVrnInfSup")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.TyVrnInf x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "TyVrnInf")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ctyp _loc x1)
+                  | Ast.TyVrnSup x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "TyVrnSup")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ctyp _loc x1)
+                  | Ast.TyVrnEq x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "TyVrnEq")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ctyp _loc x1)
+                  | Ast.TySta x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TySta")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.TyTup x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "TyTup")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ctyp _loc x1)
+                  | Ast.TyMut x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "TyMut")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ctyp _loc x1)
+                  | Ast.TyPrv x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "TyPrv")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ctyp _loc x1)
+                  | Ast.TyOr x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TyOr")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.TyAnd x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TyAnd")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.TyOf x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TyOf")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.TySum x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "TySum")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ctyp _loc x1)
+                  | Ast.TyCom x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TyCom")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.TySem x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TySem")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.TyCol x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TyCol")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.TyRec x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "TyRec")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ctyp _loc x1)
+                  | Ast.TyVrn x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "TyVrn")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.TyQuM x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "TyQuM")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.TyQuP x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "TyQuP")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.TyQuo x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "TyQuo")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.TyPol x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TyPol")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.TyOlb x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TyOlb")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_string _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.TyObj x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TyObj")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_meta_bool _loc x2)
+                  | Ast.TyDcl x0 x1 x2 x3 x4 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaApp _loc
+                                 (Ast.PaApp _loc
+                                    (Ast.PaId _loc
+                                       (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                          (Ast.IdUid _loc "TyDcl")))
+                                    (meta_acc_Loc_t _loc x0))
+                                 (meta_string _loc x1))
+                              (meta_list meta_ctyp _loc x2))
+                           (meta_ctyp _loc x3))
+                        (meta_list
+                           (fun _loc (x1, x2) ->
+                              Ast.PaTup _loc
+                                (Ast.PaCom _loc (meta_ctyp _loc x1)
+                                   (meta_ctyp _loc x2)))
+                           _loc x4)
+                  | Ast.TyMan x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TyMan")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.TyId x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "TyId")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ident _loc x1)
+                  | Ast.TyLab x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TyLab")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_string _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.TyCls x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "TyCls")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ident _loc x1)
+                  | Ast.TyArr x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TyArr")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.TyApp x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TyApp")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.TyAny x0 ->
+                      Ast.PaApp _loc
+                        (Ast.PaId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "TyAny")))
+                        (meta_acc_Loc_t _loc x0)
+                  | Ast.TyAli x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "TyAli")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.TyNil x0 ->
+                      Ast.PaApp _loc
+                        (Ast.PaId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "TyNil")))
+                        (meta_acc_Loc_t _loc x0) ]
+                and meta_expr _loc =
+                  fun
+                  [ Ast.ExWhi x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "ExWhi")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_expr _loc x1))
+                        (meta_expr _loc x2)
+                  | Ast.ExVrn x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExVrn")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.ExTyc x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "ExTyc")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_expr _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.ExCom x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "ExCom")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_expr _loc x1))
+                        (meta_expr _loc x2)
+                  | Ast.ExTup x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExTup")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_expr _loc x1)
+                  | Ast.ExTry x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "ExTry")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_expr _loc x1))
+                        (meta_match_case _loc x2)
+                  | Ast.ExStr x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExStr")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.ExSte x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "ExSte")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_expr _loc x1))
+                        (meta_expr _loc x2)
+                  | Ast.ExSnd x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "ExSnd")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_expr _loc x1))
+                        (meta_string _loc x2)
+                  | Ast.ExSeq x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExSeq")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_expr _loc x1)
+                  | Ast.ExRec x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "ExRec")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_binding _loc x1))
+                        (meta_expr _loc x2)
+                  | Ast.ExOvr x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExOvr")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_binding _loc x1)
+                  | Ast.ExOlb x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "ExOlb")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_string _loc x1))
+                        (meta_expr _loc x2)
+                  | Ast.ExObj x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "ExObj")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_patt _loc x1))
+                        (meta_class_str_item _loc x2)
+                  | Ast.ExNew x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExNew")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ident _loc x1)
+                  | Ast.ExMat x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "ExMat")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_expr _loc x1))
+                        (meta_match_case _loc x2)
+                  | Ast.ExLmd x0 x1 x2 x3 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaApp _loc
+                                 (Ast.PaId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "ExLmd")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_string _loc x1))
+                           (meta_module_expr _loc x2))
+                        (meta_expr _loc x3)
+                  | Ast.ExLet x0 x1 x2 x3 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaApp _loc
+                                 (Ast.PaId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "ExLet")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_meta_bool _loc x1))
+                           (meta_binding _loc x2))
+                        (meta_expr _loc x3)
+                  | Ast.ExLaz x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExLaz")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_expr _loc x1)
+                  | Ast.ExLab x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "ExLab")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_string _loc x1))
+                        (meta_expr _loc x2)
+                  | Ast.ExNativeInt x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExNativeInt")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.ExInt64 x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExInt64")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.ExInt32 x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExInt32")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.ExInt x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExInt")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.ExIfe x0 x1 x2 x3 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaApp _loc
+                                 (Ast.PaId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "ExIfe")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_expr _loc x1))
+                           (meta_expr _loc x2))
+                        (meta_expr _loc x3)
+                  | Ast.ExFun x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExFun")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_match_case _loc x1)
+                  | Ast.ExFor x0 x1 x2 x3 x4 x5 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaApp _loc
+                                 (Ast.PaApp _loc
+                                    (Ast.PaApp _loc
+                                       (Ast.PaId _loc
+                                          (Ast.IdAcc _loc
+                                             (Ast.IdUid _loc "Ast")
+                                             (Ast.IdUid _loc "ExFor")))
+                                       (meta_acc_Loc_t _loc x0))
+                                    (meta_string _loc x1))
+                                 (meta_expr _loc x2))
+                              (meta_expr _loc x3))
+                           (meta_meta_bool _loc x4))
+                        (meta_expr _loc x5)
+                  | Ast.ExFlo x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExFlo")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.ExCoe x0 x1 x2 x3 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaApp _loc
+                                 (Ast.PaId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "ExCoe")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_expr _loc x1))
+                           (meta_ctyp _loc x2))
+                        (meta_ctyp _loc x3)
+                  | Ast.ExChr x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExChr")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.ExAss x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "ExAss")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_expr _loc x1))
+                        (meta_expr _loc x2)
+                  | Ast.ExAsr x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExAsr")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_expr _loc x1)
+                  | Ast.ExAsf x0 ->
+                      Ast.PaApp _loc
+                        (Ast.PaId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "ExAsf")))
+                        (meta_acc_Loc_t _loc x0)
+                  | Ast.ExSem x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "ExSem")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_expr _loc x1))
+                        (meta_expr _loc x2)
+                  | Ast.ExArr x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExArr")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_expr _loc x1)
+                  | Ast.ExAre x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "ExAre")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_expr _loc x1))
+                        (meta_expr _loc x2)
+                  | Ast.ExApp x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "ExApp")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_expr _loc x1))
+                        (meta_expr _loc x2)
+                  | Ast.ExAnt x0 x1 -> Ast.PaAnt x0 x1
+                  | Ast.ExAcc x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "ExAcc")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_expr _loc x1))
+                        (meta_expr _loc x2)
+                  | Ast.ExId x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "ExId")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ident _loc x1)
+                  | Ast.ExNil x0 ->
+                      Ast.PaApp _loc
+                        (Ast.PaId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "ExNil")))
+                        (meta_acc_Loc_t _loc x0) ]
+                and meta_ident _loc =
+                  fun
+                  [ Ast.IdAnt x0 x1 -> Ast.PaAnt x0 x1
+                  | Ast.IdUid x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "IdUid")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.IdLid x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "IdLid")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.IdApp x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "IdApp")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ident _loc x1))
+                        (meta_ident _loc x2)
+                  | Ast.IdAcc x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "IdAcc")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ident _loc x1))
+                        (meta_ident _loc x2) ]
+                and meta_match_case _loc =
+                  fun
+                  [ Ast.McAnt x0 x1 -> Ast.PaAnt x0 x1
+                  | Ast.McArr x0 x1 x2 x3 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaApp _loc
+                                 (Ast.PaId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "McArr")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_patt _loc x1))
+                           (meta_expr _loc x2))
+                        (meta_expr _loc x3)
+                  | Ast.McOr x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "McOr")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_match_case _loc x1))
+                        (meta_match_case _loc x2)
+                  | Ast.McNil x0 ->
+                      Ast.PaApp _loc
+                        (Ast.PaId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "McNil")))
+                        (meta_acc_Loc_t _loc x0) ]
+                and meta_meta_bool _loc =
+                  fun
+                  [ Ast.BAnt x0 -> Ast.PaAnt _loc x0
+                  | Ast.BFalse ->
+                      Ast.PaId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "BFalse"))
+                  | Ast.BTrue ->
+                      Ast.PaId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "BTrue")) ]
+                and meta_meta_option mf_a _loc =
+                  fun
+                  [ Ast.OAnt x0 -> Ast.PaAnt _loc x0
+                  | Ast.OSome x0 ->
+                      Ast.PaApp _loc
+                        (Ast.PaId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "OSome")))
+                        (mf_a _loc x0)
+                  | Ast.ONone ->
+                      Ast.PaId _loc
+                        (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                           (Ast.IdUid _loc "ONone")) ]
+                and meta_module_binding _loc =
+                  fun
+                  [ Ast.MbAnt x0 x1 -> Ast.PaAnt x0 x1
+                  | Ast.MbCol x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "MbCol")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_string _loc x1))
+                        (meta_module_type _loc x2)
+                  | Ast.MbColEq x0 x1 x2 x3 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaApp _loc
+                                 (Ast.PaId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "MbColEq")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_string _loc x1))
+                           (meta_module_type _loc x2))
+                        (meta_module_expr _loc x3)
+                  | Ast.MbAnd x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "MbAnd")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_module_binding _loc x1))
+                        (meta_module_binding _loc x2)
+                  | Ast.MbNil x0 ->
+                      Ast.PaApp _loc
+                        (Ast.PaId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "MbNil")))
+                        (meta_acc_Loc_t _loc x0) ]
+                and meta_module_expr _loc =
+                  fun
+                  [ Ast.MeAnt x0 x1 -> Ast.PaAnt x0 x1
+                  | Ast.MeTyc x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "MeTyc")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_module_expr _loc x1))
+                        (meta_module_type _loc x2)
+                  | Ast.MeStr x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "MeStr")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_str_item _loc x1)
+                  | Ast.MeFun x0 x1 x2 x3 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaApp _loc
+                                 (Ast.PaId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "MeFun")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_string _loc x1))
+                           (meta_module_type _loc x2))
+                        (meta_module_expr _loc x3)
+                  | Ast.MeApp x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "MeApp")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_module_expr _loc x1))
+                        (meta_module_expr _loc x2)
+                  | Ast.MeId x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "MeId")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ident _loc x1) ]
+                and meta_module_type _loc =
+                  fun
+                  [ Ast.MtAnt x0 x1 -> Ast.PaAnt x0 x1
+                  | Ast.MtWit x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "MtWit")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_module_type _loc x1))
+                        (meta_with_constr _loc x2)
+                  | Ast.MtSig x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "MtSig")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_sig_item _loc x1)
+                  | Ast.MtQuo x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "MtQuo")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.MtFun x0 x1 x2 x3 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaApp _loc
+                                 (Ast.PaId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "MtFun")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_string _loc x1))
+                           (meta_module_type _loc x2))
+                        (meta_module_type _loc x3)
+                  | Ast.MtId x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "MtId")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ident _loc x1) ]
+                and meta_patt _loc =
+                  fun
+                  [ Ast.PaVrn x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "PaVrn")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.PaTyp x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "PaTyp")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ident _loc x1)
+                  | Ast.PaTyc x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "PaTyc")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_patt _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.PaTup x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "PaTup")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_patt _loc x1)
+                  | Ast.PaStr x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "PaStr")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.PaEq x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "PaEq")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_patt _loc x1))
+                        (meta_patt _loc x2)
+                  | Ast.PaRec x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "PaRec")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_patt _loc x1)
+                  | Ast.PaRng x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "PaRng")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_patt _loc x1))
+                        (meta_patt _loc x2)
+                  | Ast.PaOrp x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "PaOrp")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_patt _loc x1))
+                        (meta_patt _loc x2)
+                  | Ast.PaOlbi x0 x1 x2 x3 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaApp _loc
+                                 (Ast.PaId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "PaOlbi")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_string _loc x1))
+                           (meta_patt _loc x2))
+                        (meta_expr _loc x3)
+                  | Ast.PaOlb x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "PaOlb")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_string _loc x1))
+                        (meta_patt _loc x2)
+                  | Ast.PaLab x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "PaLab")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_string _loc x1))
+                        (meta_patt _loc x2)
+                  | Ast.PaFlo x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "PaFlo")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.PaNativeInt x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "PaNativeInt")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.PaInt64 x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "PaInt64")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.PaInt32 x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "PaInt32")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.PaInt x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "PaInt")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.PaChr x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "PaChr")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_string _loc x1)
+                  | Ast.PaSem x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "PaSem")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_patt _loc x1))
+                        (meta_patt _loc x2)
+                  | Ast.PaCom x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "PaCom")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_patt _loc x1))
+                        (meta_patt _loc x2)
+                  | Ast.PaArr x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "PaArr")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_patt _loc x1)
+                  | Ast.PaApp x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "PaApp")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_patt _loc x1))
+                        (meta_patt _loc x2)
+                  | Ast.PaAny x0 ->
+                      Ast.PaApp _loc
+                        (Ast.PaId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "PaAny")))
+                        (meta_acc_Loc_t _loc x0)
+                  | Ast.PaAnt x0 x1 -> Ast.PaAnt x0 x1
+                  | Ast.PaAli x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "PaAli")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_patt _loc x1))
+                        (meta_patt _loc x2)
+                  | Ast.PaId x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "PaId")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ident _loc x1)
+                  | Ast.PaNil x0 ->
+                      Ast.PaApp _loc
+                        (Ast.PaId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "PaNil")))
+                        (meta_acc_Loc_t _loc x0) ]
+                and meta_sig_item _loc =
+                  fun
+                  [ Ast.SgAnt x0 x1 -> Ast.PaAnt x0 x1
+                  | Ast.SgVal x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "SgVal")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_string _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.SgTyp x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "SgTyp")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ctyp _loc x1)
+                  | Ast.SgOpn x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "SgOpn")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ident _loc x1)
+                  | Ast.SgMty x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "SgMty")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_string _loc x1))
+                        (meta_module_type _loc x2)
+                  | Ast.SgRecMod x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "SgRecMod")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_module_binding _loc x1)
+                  | Ast.SgMod x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "SgMod")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_string _loc x1))
+                        (meta_module_type _loc x2)
+                  | Ast.SgInc x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "SgInc")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_module_type _loc x1)
+                  | Ast.SgExt x0 x1 x2 x3 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaApp _loc
+                                 (Ast.PaId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "SgExt")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_string _loc x1))
+                           (meta_ctyp _loc x2))
+                        (meta_string _loc x3)
+                  | Ast.SgExc x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "SgExc")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ctyp _loc x1)
+                  | Ast.SgDir x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "SgDir")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_string _loc x1))
+                        (meta_expr _loc x2)
+                  | Ast.SgSem x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "SgSem")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_sig_item _loc x1))
+                        (meta_sig_item _loc x2)
+                  | Ast.SgClt x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "SgClt")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_class_type _loc x1)
+                  | Ast.SgCls x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "SgCls")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_class_type _loc x1)
+                  | Ast.SgNil x0 ->
+                      Ast.PaApp _loc
+                        (Ast.PaId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "SgNil")))
+                        (meta_acc_Loc_t _loc x0) ]
+                and meta_str_item _loc =
+                  fun
+                  [ Ast.StAnt x0 x1 -> Ast.PaAnt x0 x1
+                  | Ast.StVal x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "StVal")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_meta_bool _loc x1))
+                        (meta_binding _loc x2)
+                  | Ast.StTyp x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "StTyp")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ctyp _loc x1)
+                  | Ast.StOpn x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "StOpn")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_ident _loc x1)
+                  | Ast.StMty x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "StMty")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_string _loc x1))
+                        (meta_module_type _loc x2)
+                  | Ast.StRecMod x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "StRecMod")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_module_binding _loc x1)
+                  | Ast.StMod x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "StMod")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_string _loc x1))
+                        (meta_module_expr _loc x2)
+                  | Ast.StInc x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "StInc")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_module_expr _loc x1)
+                  | Ast.StExt x0 x1 x2 x3 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaApp _loc
+                                 (Ast.PaId _loc
+                                    (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                       (Ast.IdUid _loc "StExt")))
+                                 (meta_acc_Loc_t _loc x0))
+                              (meta_string _loc x1))
+                           (meta_ctyp _loc x2))
+                        (meta_string _loc x3)
+                  | Ast.StExp x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "StExp")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_expr _loc x1)
+                  | Ast.StExc x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "StExc")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_meta_option meta_ident _loc x2)
+                  | Ast.StDir x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "StDir")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_string _loc x1))
+                        (meta_expr _loc x2)
+                  | Ast.StSem x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "StSem")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_str_item _loc x1))
+                        (meta_str_item _loc x2)
+                  | Ast.StClt x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "StClt")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_class_type _loc x1)
+                  | Ast.StCls x0 x1 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaId _loc
+                              (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                 (Ast.IdUid _loc "StCls")))
+                           (meta_acc_Loc_t _loc x0))
+                        (meta_class_expr _loc x1)
+                  | Ast.StNil x0 ->
+                      Ast.PaApp _loc
+                        (Ast.PaId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "StNil")))
+                        (meta_acc_Loc_t _loc x0) ]
+                and meta_with_constr _loc =
+                  fun
+                  [ Ast.WcAnt x0 x1 -> Ast.PaAnt x0 x1
+                  | Ast.WcAnd x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "WcAnd")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_with_constr _loc x1))
+                        (meta_with_constr _loc x2)
+                  | Ast.WcMod x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "WcMod")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ident _loc x1))
+                        (meta_ident _loc x2)
+                  | Ast.WcTyp x0 x1 x2 ->
+                      Ast.PaApp _loc
+                        (Ast.PaApp _loc
+                           (Ast.PaApp _loc
+                              (Ast.PaId _loc
+                                 (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                                    (Ast.IdUid _loc "WcTyp")))
+                              (meta_acc_Loc_t _loc x0))
+                           (meta_ctyp _loc x1))
+                        (meta_ctyp _loc x2)
+                  | Ast.WcNil x0 ->
+                      Ast.PaApp _loc
+                        (Ast.PaId _loc
+                           (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
+                              (Ast.IdUid _loc "WcNil")))
+                        (meta_acc_Loc_t _loc x0) ];
+              end;
+          end;
+      end;
     class map =
       object (o)
         method string = fun x -> (x : string);
@@ -753,10 +4575,6 @@ module Make (Loc : Sig.Loc.S) : Sig.Camlp4Ast.S with module Loc = Loc =
     value map_ctyp f ast = (new c_ctyp f)#ctyp ast;
     value map_expr f ast = (new c_expr f)#expr ast;
     value ghost = Loc.ghost;
-    value safe_string_escaped s =
-      if ((String.length s) > 2) && ((s.[0] = '\\') && (s.[1] = '$'))
-      then s
-      else String.escaped s;
     value rec is_module_longident =
       fun
       [ Ast.IdAcc _ _ i -> is_module_longident i
