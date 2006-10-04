@@ -938,8 +938,6 @@ let test53 () =
 
 test (test53 ());;
 
-let test54 () =
-
 (* Routines to create the file that tscanf uses as a testbed case. *)
 let create_tscanf_data ob lines =
   let add_line (p, e) =
@@ -983,10 +981,10 @@ let get_lines fname =
   | End_of_file ->
     failwith (Printf.sprintf "in file %s, unexpected end of file" fname);;
 
-let test55 () =
+let test54 () =
   get_lines tscanf_data_file = tscanf_data_file_lines;;
 
-test (test55 ());;
+test (test54 ());;
 
 (* Creating digests for files. *)
 let add_digest_ib ob ib =
@@ -1006,7 +1004,7 @@ let digest_file fname =
   add_digest_ib ob ib;
   Buffer.contents ob;;
 
-let test56 () =
+let test55 () =
   let ob = Buffer.create 42 in
   let ib =
     create_tscanf_data ob tscanf_data_file_lines;
@@ -1016,7 +1014,7 @@ let test56 () =
   let tscanf_data_file_lines_digest = add_digest_ib ob ib; Buffer.contents ob in
   digest_file tscanf_data_file = tscanf_data_file_lines_digest;;
 
-test (test56 ());;
+test (test55 ());;
 
 (* To be continued ...
 (* Trying to scan records. *)
