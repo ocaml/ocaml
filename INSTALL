@@ -261,6 +261,9 @@ pinpoint the problem.
 
 COMMON PROBLEMS:
 
+* The Makefiles do not support parallel make (e.g. make -j2).
+Fix: do not pass the -j option to make, and be patient.
+
 * The Makefiles use the "include" directive, which is not supported by
 all versions of make. Use GNU make if this is a problem.
 
