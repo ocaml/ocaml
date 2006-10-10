@@ -157,10 +157,17 @@ module M = F(String)
 let f = function #M.t -> 1 | #M.u -> 2
 let f = function #M.t -> 1 | _ -> 2
 type t = [M.t | M.u]
-let f = function #t -> 1 | _ -> 2
+let f = function #t -> 1 | _ -> 2;;
+module G(X : sig type t = private [> ] type u = private [> ] ~ [t] end) =
+  struct let f = function #X.t -> 1 | _ -> 2 end;;
+module M1 = G(struct module N = F(String) type t = N.t type u = N.u end) ;;
+module M1 = G(struct type t = M.t type u = M.u end) ;;
 (* bad *)
 let f = function #F(String).t -> 1 | _ -> 2;;
-
+type t = [F(String).t | M.u]
+let f = function #t -> 1 | _ -> 2;;
+module N : sig type t = private [> ] end =
+  struct type t = [F(String).t | M.u] end;;
 
 (* Expression Problem: functorial form *)
 
@@ -333,3 +340,79 @@ module LEnd = struct
   let eval `Dummy = `Dummy
 end
 module rec L : Exp with type t = [num | L.t add | `Dummy] = LAdd(L)(LEnd)
+
+(* Back to first form, but add map *)
+
+module Num(X : Exp) = struct
+  type t = num
+  let map f x = x
+  let eval1 (`Num _ as x) : X.t = x
+  let show (`Num n) = string_of_int n
+end
+
+module Add(X : Exp with type t = private [> num | 'a add] as 'a) = struct
+  type t = X.t add
+  let show (`Add(e1, e2) : t) = "("^ X.show e1 ^"+"^ X.show e2 ^")"
+  let map f (`Add(e1, e2) : t) = `Add(f e1, f e2)
+  let eval1 (`Add(e1, e2) as e : t) =
+    match e1, e2 with
+      `Num n1, `Num n2 -> `Num (n1+n2)
+    | `Num 0, e | e, `Num 0 -> e
+    | _ -> e
+end 
+
+module Mul(X : Exp with type t = private [> num | 'a mul] as 'a) = struct
+  type t = X.t mul
+  let show (`Mul(e1, e2) : t) = "("^ X.show e1 ^"*"^ X.show e2 ^")"
+  let map f (`Mul(e1, e2) : t) = `Mul(f e1, f e2)
+  let eval1 (`Mul(e1, e2) as e : t) =
+    match e1, e2 with
+      `Num n1, `Num n2 -> `Num (n1*n2)
+    | `Num 0, e | e, `Num 0 -> `Num 0
+    | `Num 1, e | e, `Num 1 -> e
+    | _ -> e
+end
+
+module Ext(X : sig type t = private [> ] end)(Y : sig type t end) = struct
+  module type S =
+    sig
+      type t = private [> ] ~ [ X.t ]
+      val map  : (Y.t -> Y.t) -> t -> t
+      val eval1 : t -> Y.t
+      val show : t -> string
+    end
+end
+
+module Mix(E : Exp)(E1 : Ext(E)(E).S)(E2 : Ext(E1)(E).S) =
+  struct
+    type t = [E1.t | E2.t]
+    let map f = function
+        #E1.t as x -> (E1.map f x : E1.t :> t)
+      | #E2.t as x -> (E2.map f x : E2.t :> t)
+    let eval1 = function
+        #E1.t as x -> E1.eval1 x
+      | #E2.t as x -> E2.eval1 x
+    let show = function
+        #E1.t as x -> E1.show x
+      | #E2.t as x -> E2.show x
+  end
+
+module type ET = sig
+  type t
+  val map  : (t -> t) -> t -> t
+  val eval1 : t -> t
+  val show : t -> string
+end
+
+module Fin(E : ET) = struct
+  include E
+  let rec eval e = eval1 (map eval e)
+end
+
+module rec EAdd : (Exp with type t = [num | EAdd.t add]) =
+    Fin(Mix(EAdd)(Num(EAdd))(Add(EAdd)))
+
+module rec E : Exp with type t = [num | E.t add | E.t mul] =
+    Fin(Mix(E)(Mix(E)(Num(E))(Add(E)))(Mul(E)))
+
+let e = E.eval (`Add(`Mul(`Num 2,`Num 3),`Num 1))
