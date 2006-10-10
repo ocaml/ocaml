@@ -315,6 +315,12 @@ let rec transl_type env policy styp =
                   {row_fields=[]; row_abs=[ty]; row_closed=true; row_bound=[];
                    row_more=newvar(); row_fixed=false; row_name=None} in
                 let row = Ctype.row_normal env row ~noapp:true in
+                List.iter
+                  (fun ty ->
+                    match repr ty with
+                      {desc=Tconstr(p,_,_)} when Path.flat p -> ()
+                    | _ -> raise(Error(sty.ptyp_loc, Not_a_variant ty)))
+                  row.row_abs;
                 (row.row_fields, row.row_abs)
             | {desc=Tvar}, Some(p, _) ->
                 raise(Error(sty.ptyp_loc, Unbound_type_constructor_2 p)) 
@@ -574,7 +580,7 @@ let report_error ppf = function
   | Not_a_variant ty ->
       Printtyp.reset_and_mark_loops ty;
       fprintf ppf "@[The type %a@ %s@]" Printtyp.type_expr ty
-        "cannot be inherited from"
+        "is not a matchable variant type"
   | Variant_tags (lab1, lab2) ->
       fprintf ppf
         "Variant tags `%s@ and `%s have same hash value.@ Change one of them."

@@ -1244,10 +1244,11 @@ let rec row_normal ?(noapp=false) env row =
                         let lid =
                           Path.to_lid p ~rename:
                             (fun s -> assert(not (is_row_name s)); s^"#row") in
-                        let p',_ =
-                          try Env.lookup_type lid env
-                          with Not_found -> assert false
-                        in newty2 t'.level (Tconstr(p',tyl,ref Mnil))
+                        begin try
+                          let (p',_) = Env.lookup_type lid env in
+                          newty2 t'.level (Tconstr(p',tyl,ref Mnil))
+                        with Not_found -> t'
+                        end
                     | _ -> assert false
                   in
                   t' :: row'.row_abs

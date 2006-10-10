@@ -303,18 +303,14 @@ let build_check_pat env loc row ty =
       Tconstr(p,_,_) -> p
     | _ -> assert false
   in
-  let pt, desc =
-    let lid = Path.to_lid ~rename:unrow_name p in
-    try Env.lookup_type lid env
-    with Not_found ->
-      raise (Typetexp.Error(loc, Typetexp.Unbound_type_constructor lid))
-  in
-  match desc.type_manifest with
-    Some ty when has_constr_row (expand_head env ty) && Path.flat p ->
-      {pat_desc=Tpat_check (p, row); pat_loc=loc;
-       pat_env=env; pat_type=newty(Tvariant row)}
-  | _ ->
-      raise (Error(loc, Invalid_type("matchable private", pt)))
+  try
+    if not (Path.flat p) then raise Not_found;
+    ignore (Env.lookup_value (Path.to_lid p) env);
+    { pat_desc = Tpat_check (p, row);
+      pat_type = newty(Tvariant row);
+      pat_loc = loc; pat_env = env }
+  with Not_found ->
+    raise (Error(loc, Invalid_type("matchable variant", p)))
 
 let build_or_pat env loc lid =
   let path, decl =
@@ -334,7 +330,7 @@ let build_or_pat env loc lid =
         let row = row_normal env row ~noapp:true in
         row.row_fields,
         if has_constr_row ty then [List.hd row.row_abs] else row.row_abs
-    | _ -> raise(Error(loc, Invalid_type("variant", path)))
+    | _ -> raise(Error(loc, Invalid_type("matchable variant", path)))
   in
   let bound = ref [] in
   let pats, fields =
@@ -366,7 +362,7 @@ let build_or_pat env loc lid =
   in
   let pat_abs = List.map (build_check_pat env gloc row) abs in
   match pats @ pat_abs with
-    [] -> raise(Error(loc, Invalid_type("variant", path)))
+    [] -> raise(Error(loc, Invalid_type("matchable variant", path)))
   | pat :: pats ->
       let r =
         List.fold_left

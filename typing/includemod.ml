@@ -249,23 +249,27 @@ and signature_components env subst = function
         let s = Btype.unrow_name (Ident.name id2) in
         Env.lookup_type (Longident.Lident s) env
       with Not_found -> assert false in
-      let ty =
-        match decl.type_manifest with Some t -> t | _ -> assert false in
       let row =
-        match Ctype.expand_head env ty with
-          {desc=Tvariant row} ->
-            let row = Ctype.row_normal env row ~noapp:true in
-            let more = Btype.row_more row in
-            begin match more.desc with
-              Tvar -> row
-            | Tconstr _ ->
-                {row_fields=[]; row_abs=[more]; row_closed=true;
-                 row_more=Btype.newty2 more.level Tvar; row_fixed=false;
-                 row_bound=[]; row_name=None}
-            | _ -> assert false
-            end
-        | _ -> assert false
+        let ty0 = Btype.newgenty (Tconstr(id1, decl.type_params, ref Mnil)) in
+        let ty = Ctype.expand_head env ty0  in
+        match ty.desc with
+        | Tvariant row
+          when Btype.static_row {(Btype.row_repr row) with row_closed=true} ->
+            let row =
+              Ctype.row_normal env ~noapp:true
+                {row_fields=[]; row_abs=[ty0]; row_closed=true; row_bound=[];
+                 row_more=Btype.newgenvar(); row_fixed=false; row_name=None} in
+            if Btype.has_constr_row ty then
+              {row with row_fields = []; row_abs = [List.hd row.row_abs]}
+            else row
+        | _ -> raise (Error[Missing_field id2])
       in
+      List.iter
+        (fun ty ->
+          match Btype.repr ty with
+            {desc=Tconstr(p,_,_)} when Path.flat p -> ()
+          | _ -> raise (Error[Missing_field id2]))
+        row.row_abs;
       (-1, Tcoerce_matcher(row, env)) :: signature_components env subst rem
   | (Tsig_value(id1, valdecl1), Tsig_value(id2, valdecl2), pos) :: rem ->
       let cc = value_descriptions env subst id1 valdecl1 valdecl2 in
