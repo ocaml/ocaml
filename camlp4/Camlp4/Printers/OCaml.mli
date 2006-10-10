@@ -144,6 +144,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) : sig
     method string : formatter -> string -> unit;
     method sum_type : formatter -> Ast.ctyp -> unit;
     method type_params : formatter -> list Ast.ctyp -> unit;
+    method class_params : formatter -> Ast.ctyp -> unit;
     method under_pipe : 'a;
     method under_semi : 'a;
     method var : formatter -> string -> unit;

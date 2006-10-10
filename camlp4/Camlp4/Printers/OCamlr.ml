@@ -243,7 +243,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     [ <:class_expr< $id:i$ >> ->
           pp f "@[<2>%a@]" o#ident i
     | <:class_expr< $id:i$ [ $t$ ] >> ->
-          pp f "@[<2>%a@ @[<1>[%a]@]@]" o#ident i o#ctyp t
+          pp f "@[<2>%a@ @[<1>[%a]@]@]" o#ident i o#class_params t
     (* | <:class_expr< virtual $id:i$ >> -> *)
     | Ast.CeCon _ Ast.BTrue i <:ctyp<>> ->
           pp f "@[<2>virtual@ %a@]" o#ident i

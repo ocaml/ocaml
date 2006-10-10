@@ -336,6 +336,14 @@ module Make (Ast : Sig.Camlp4Ast.S) = struct
     | <:ctyp< '$s$ >> -> [(s, (False, False)) :: acc]
     | _ -> assert False ];
 
+  value rec class_parameters t acc =
+    match t with
+    [ <:ctyp< $t1$, $t2$ >> -> class_parameters t1 (class_parameters t2 acc)
+    | <:ctyp< +'$s$ >> -> [(s, (True, False)) :: acc]
+    | <:ctyp< -'$s$ >> -> [(s, (False, True)) :: acc]
+    | <:ctyp< '$s$ >> -> [(s, (False, False)) :: acc]
+    | _ -> assert False ];
+
   value rec type_parameters_and_type_name t acc =
     match t with
     [ <:ctyp< $t1$ $t2$ >> ->
@@ -897,7 +905,7 @@ module Make (Ast : Sig.Camlp4Ast.S) = struct
       let (loc_params, (params, variance)) =
         match params with
         [ <:ctyp<>> -> (loc, ([], []))
-        | t -> (loc_of_ctyp t, List.split (type_parameters t [])) ]
+        | t -> (loc_of_ctyp t, List.split (class_parameters t [])) ]
       in
       {pci_virt = if mb2b vir then Virtual else Concrete;
        pci_params = (params, mkloc loc_params);
@@ -913,7 +921,7 @@ module Make (Ast : Sig.Camlp4Ast.S) = struct
       let (loc_params, (params, variance)) =
         match params with
         [ <:ctyp<>> -> (loc, ([], []))
-        | t -> (loc_of_ctyp t, List.split (type_parameters t [])) ]
+        | t -> (loc_of_ctyp t, List.split (class_parameters t [])) ]
       in
       {pci_virt = if mb2b vir then Virtual else Concrete;
        pci_params = (params, mkloc loc_params);

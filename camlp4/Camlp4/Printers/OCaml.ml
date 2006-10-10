@@ -209,6 +209,12 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
       | [x] -> pp f "%a@ " o#ctyp x
       | l -> pp f "@[<1>(%a)@]@ " (list o#ctyp ",@ ") l ];
 
+    method class_params f =
+      fun
+      [ <:ctyp< $t1$, $t2$ >> ->
+          pp f "@[<1>%a,@ %a@]" o#class_params t1 o#class_params t2
+      | x -> o#ctyp f x ];
+
     method mutable_flag f b = o#flag f b "mutable";
     method rec_flag f b = o#flag f b "rec";
     method virtual_flag f b = o#flag f b "virtual";
@@ -849,13 +855,13 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     | <:class_expr< $id:i$ >> ->
           pp f "@[<2>%a@]" o#ident i
     | <:class_expr< $id:i$ [ $t$ ] >> ->
-          pp f "@[<2>@[<1>[%a]@]@ %a@]" o#ctyp t o#ident i
+          pp f "@[<2>@[<1>[%a]@]@ %a@]" o#class_params t o#ident i
     (* | <:class_expr< virtual $id:i$ >> -> *)
     | Ast.CeCon _ Ast.BTrue i <:ctyp<>> ->
           pp f "@[<2>virtual@ %a@]" o#ident i
     | Ast.CeCon _ Ast.BTrue i t ->
     (* | <:class_expr< virtual $id:i$ [ $t$ ] >> -> *)
-          pp f "@[<2>virtual@ @[<1>[%a]@]@ %a@]" o#ctyp t o#ident i
+          pp f "@[<2>virtual@ @[<1>[%a]@]@ %a@]" o#class_params t o#ident i
     | <:class_expr< fun $p$ -> $ce$ >> ->
           pp f "@[<2>fun@ %a@ ->@ %a@]" o#patt p o#class_expr ce
     | <:class_expr< let $rec:r$ $bi$ in $ce$ >> ->
@@ -884,13 +890,13 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     [ <:class_type< $id:i$ >> ->
           pp f "@[<2>%a@]" o#ident i
     | <:class_type< $id:i$ [ $t$ ] >> ->
-          pp f "@[<2>[@,%a@]@,]@ %a" o#ctyp t o#ident i
+          pp f "@[<2>[@,%a@]@,]@ %a" o#class_params t o#ident i
     (* | <:class_type< virtual $id:i$ >> -> *)
     | Ast.CtCon _ Ast.BTrue i <:ctyp<>> ->
           pp f "@[<2>virtual@ %a@]" o#ident i
     (* | <:class_type< virtual $id:i$ [ $t$ ] >> -> *)
     | Ast.CtCon _ Ast.BTrue i t ->
-          pp f "@[<2>virtual@ [@,%a@]@,]@ %a" o#ctyp t o#ident i
+          pp f "@[<2>virtual@ [@,%a@]@,]@ %a" o#class_params t o#ident i
     | <:class_type< [ $t$ ] -> $ct$ >> ->
           pp f "@[<2>%a@ ->@ %a@]" o#simple_ctyp t o#class_type ct
     | <:class_type< object $csg$ end >> ->
