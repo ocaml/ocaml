@@ -348,7 +348,7 @@ let call_checker env id p =
 let tt = Lconst(Const_base(Const_int 1))
 and ff = Lconst(Const_base(Const_int 0))
 
-let make_matcher_cases pat patl paths lam fail =
+let make_matcher_cases pat patl paths =
   let env = pat.pat_env in
   let tags =
     List.fold_left
@@ -375,18 +375,18 @@ let make_matcher_cases pat patl paths lam fail =
     [List.fold_left
        (fun pat1 pat2 -> {pat with pat_desc = Tpat_or(pat2, pat1, None)})
        (List.hd patl) (List.tl patl),
-     lam] in
-  if paths = [] then vcase @ [{pat with pat_desc = Tpat_any}, fail] else
+     tt] in
   let id = Ident.create "variant" in
   let checks = List.map (call_checker pat.pat_env id) paths in
   let checks =
+    if checks = [] then ff else
     List.fold_left
       (fun lam1 lam2 -> Lprim(Psequor, [lam1; lam2]))
       (List.hd checks) (List.tl checks) in
-  let lam' =
-    if lam = tt && fail = ff then checks else Lifthenelse(checks, lam, fail)
-  in
-  vcase @ [{pat with pat_desc = Tpat_var id}, lam']
+  let checks =
+    Matching.for_function Location.none None
+      (Lvar id) (vcase @ [{pat with pat_desc = Tpat_any}, checks]) Total in
+  ({pat with pat_desc = Tpat_var id}, checks)
 
 let transl_matcher row env =
   let row = {row with row_closed = false} in
@@ -411,10 +411,10 @@ let transl_matcher row env =
         | _ -> assert false)
       [] row.row_fields in
   let param = Ident.create "param" in
-  let cases = make_matcher_cases (mkpat Tpat_any) patl paths tt ff in
+  let cases = make_matcher_cases (mkpat Tpat_any) patl paths in
   Lfunction(Curried, [param],
             Matching.for_function Location.none None
-              (Lvar param) cases Total)
+              (Lvar param) [cases] Total)
 
 (* Expand Tpat_check *)
 
@@ -455,12 +455,14 @@ let rec remove_abs lam pat =
       begin try
         let vl, cl = split_or_check pat in
         if cl = [] then raise Exit else
-        make_matcher_cases pat vl cl lam staticfail
+        let (pat, checks) = make_matcher_cases pat vl cl in
+        [pat, Lifthenelse(checks, lam, staticfail)]
       with Exit ->
         match remove_abs lam pat1, remove_abs lam pat2 with
           [pat1,lam1], [pat2,lam2] when lam1 == lam2 ->
             [{pat with pat_desc = Tpat_or(pat1, pat2, po)}, lam1]
-        | pel1, pel2 -> pel1 @ pel2
+        | pel1, pel2 ->
+            pel1 @ pel2
       end
   | Tpat_check (p, row) ->
       let id = Ident.create "variant" in
@@ -481,7 +483,15 @@ and remove_abs_list lam = function
 
 let remove_abs_rows cases =
   List.fold_right
-    (fun (pat,lam) pel -> remove_abs lam pat @ pel)
+    (fun (pat,lam) pel ->
+      let cases = remove_abs lam pat in
+      begin match cases, lam with
+        [_], _ | _, (Lvar _ | Lconst _) -> ()
+      | _ ->
+          Format.eprintf "%a%s@." Location.print pat.pat_loc
+            "The action corresponding to this pattern has been duplicated"
+      end;
+      cases @ pel)
     cases []
 
 
