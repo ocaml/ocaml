@@ -66,7 +66,7 @@ and structure_components = {
   mutable comp_constrs: (string, (constructor_description * int)) Tbl.t;
   mutable comp_labels: (string, (label_description * int)) Tbl.t;
   mutable comp_types: (string, (type_declaration * int)) Tbl.t;
-  mutable comp_modules: (string, (module_type * int)) Tbl.t;
+  mutable comp_modules: (string, (module_type Lazy.t * int)) Tbl.t;
   mutable comp_modtypes: (string, (modtype_declaration * int)) Tbl.t;
   mutable comp_components: (string, (module_components * int)) Tbl.t;
   mutable comp_classes: (string, (class_declaration * int)) Tbl.t;
@@ -78,7 +78,8 @@ and functor_components = {
   fcomp_arg: module_type;               (* Argument signature *)
   fcomp_res: module_type;               (* Result signature *)
   fcomp_env: t;     (* Environment in which the result signature makes sense *)
-  fcomp_subst: Subst.t  (* Prefixing substitution for the result signature *)
+  fcomp_subst: Subst.t;  (* Prefixing substitution for the result signature *)
+  fcomp_cache: (Path.t, module_components) Hashtbl.t  (* For memoization *)
 }
 
 let empty = {
@@ -282,7 +283,7 @@ let find_module path env =
   | Pdot(p, s, pos) ->
       begin match Lazy.force (find_module_descr p env) with
         Structure_comps c ->
-          let (data, pos) = Tbl.find s c.comp_modules in data
+          let (data, pos) = Tbl.find s c.comp_modules in Lazy.force data
       | Functor_comps f ->
           raise Not_found
       end
@@ -336,7 +337,7 @@ and lookup_module lid env =
       begin match Lazy.force descr with
         Structure_comps c ->
           let (data, pos) = Tbl.find s c.comp_modules in
-          (Pdot(p, s, pos), data)
+          (Pdot(p, s, pos), Lazy.force data)
       | Functor_comps f ->
           raise Not_found
       end
@@ -514,7 +515,7 @@ let rec components_of_module env sub path mty =
               Tbl.add (Ident.name id) (cstr, !pos) c.comp_constrs;
             incr pos
         | Tsig_module(id, mty, _) ->
-            let mty' = Subst.modtype sub mty in
+            let mty' = lazy (Subst.modtype sub mty) in
             c.comp_modules <-
               Tbl.add (Ident.name id) (mty', !pos) c.comp_modules;
             let comps = components_of_module !env sub path mty in
@@ -547,7 +548,8 @@ let rec components_of_module env sub path mty =
           (* fcomp_res is prefixed lazily, because it is interpreted in env *)
           fcomp_res = ty_res;
           fcomp_env = env;
-          fcomp_subst = sub }
+          fcomp_subst = sub;
+          fcomp_cache = Hashtbl.create 17 }
   | Tmty_ident p ->
         Structure_comps {
           comp_values = Tbl.empty; comp_constrs = Tbl.empty;
@@ -621,11 +623,16 @@ and store_cltype id path desc env =
 (* Compute the components of a functor application in a path. *)
 
 let components_of_functor_appl f p1 p2 =
-  let p = Papply(p1, p2) in
-  let mty = 
-    Subst.modtype (Subst.add_module f.fcomp_param p2 Subst.identity)
-                  f.fcomp_res in
-  components_of_module f.fcomp_env f.fcomp_subst p mty
+  try
+    Hashtbl.find f.fcomp_cache p2
+  with Not_found ->
+    let p = Papply(p1, p2) in
+    let mty = 
+      Subst.modtype (Subst.add_module f.fcomp_param p2 Subst.identity)
+                    f.fcomp_res in
+    let comps = components_of_module f.fcomp_env f.fcomp_subst p mty in
+    Hashtbl.add f.fcomp_cache p2 comps;
+    comps
 
 (* Define forward functions *)
 
