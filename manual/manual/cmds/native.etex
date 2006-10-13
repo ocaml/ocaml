@@ -419,22 +419,22 @@ compilers should generate code that behave identically.
 
 \begin{itemize}
 
-\item The following operations abort the program (via an hardware trap
-or fatal Unix signal) instead of raising an exception:
-\begin{itemize}
-\item stack overflow (except on IA32/Linux, AMD64/Linux, PowerPC/MacOSX);
-\item on the Alpha processor only, floating-point operations involving
-infinite or denormalized numbers (all other processors supported by
-"ocamlopt" treat these numbers correctly, as per the IEEE 754 standard).
-\end{itemize}
-In particular, notice that stack overflow caused by excessively deep
-recursion is reported by most Unix kernels as a ``segmentation
-violation'' signal.
-
 \item Signals are detected only when the program performs an
 allocation in the heap. That is, if a signal is delivered while in a
 piece of code that does not allocate, its handler will not be called
 until the next heap allocation.
+
+\item Stack overflow, typically caused by excessively deep recursion, 
+is handled in one of the three following ways, depending on the
+platform used:
+\begin{itemize}
+\item By raising a "Stack_overflow" exception, like the bytecode
+  compiler does.  (IA32/Linux, AMD64/Linux, PowerPC/MacOSX.)
+\item By aborting the program on a ``segmentation fault'' signal.
+(All other Unix systems.)
+\item By terminating the program silently.
+(MS Windows ports.)
+\end{itemize}
 
 \item On IA32 processors only (Intel Pentium, AMD Athlon, etc, in
 32-bit mode), some intermediate results in floating-point computations
@@ -443,6 +443,10 @@ precision like the bytecode compiler always does.  Floating-point
 results can therefore differ between bytecode and native code; in
 general, the results obtained with native code are ``more exact''
 (less affected by rounding errors and loss of precision).
+
+\item On the Alpha processor only, floating-point operations involving
+infinite or denormalized numbers can abort the program on a
+``floating-point exception'' signal.
 
 \end{itemize}
 
