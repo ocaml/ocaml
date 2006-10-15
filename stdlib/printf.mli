@@ -62,7 +62,7 @@ val fprintf : out_channel -> ('a, out_channel, unit) format -> 'a
      the format specified by the second letter.
    - [Ld], [Li], [Lu], [Lx], [LX], [Lo]: convert an [int64] argument to
      the format specified by the second letter.
-   - [a]: user-defined printer. Takes two arguments and apply the
+   - [a]: user-defined printer. Takes two arguments and applies the
      first one to [outchan] (the current output channel) and to the
      second argument. The first argument must therefore have type
      [out_channel -> 'b -> unit] and the second ['b].

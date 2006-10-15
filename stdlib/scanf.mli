@@ -169,9 +169,9 @@ val bscanf :
    - [\( fmt %\)]: scanning format substitution.
      Reads a format string to replace [fmt]. The format string read
      must have the same type as [fmt].
-   - [l]: applies [f] to the number of lines read so far.
-   - [n]: applies [f] to the number of characters read so far.
-   - [N] or [L]: applies [f] to the number of tokens read so far.
+   - [l]: returns the number of lines read so far.
+   - [n]: returns the number of characters read so far.
+   - [N] or [L]: returns the number of tokens read so far.
    - [!]: matches the end of input condition.
    - [%]: matches one [%] character in the input.
 
@@ -207,6 +207,8 @@ val bscanf :
    conversion never raises exception [End_of_file]: if the end of
    input is reached the conversion succeeds and simply returns [""]).
 
+   Raise [Invalid_argument] if the format string is invalid.
+
    Notes:
 
    - the scanning indications introduce slight differences in the
@@ -219,7 +221,7 @@ val bscanf :
    ['\@'] characters).
 
    - in addition to relevant digits, ['_'] characters may appear
-   inside numbers (this is reminiscent to the usual Caml
+   inside numbers (this is reminiscent to the usual Caml lexical
    conventions). If stricter scanning is desired, use the range
    conversion facility instead of the number conversions.
 
