@@ -70,9 +70,26 @@
     static void name(int sig, siginfo_t * info, void * context)
 
   #define SET_SIGACT(sigact,name) \
-     sigact.sa_sigaction = (name);
+     sigact.sa_sigaction = (name); \
      sigact.sa_flags = SA_SIGINFO
 
+  #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
+
+/****************** I386, MacOS X */
+
+#elif defined(TARGET_i386) && defined(SYS_macosx)
+
+  #define DECLARE_SIGNAL_HANDLER(name) \
+    static void name(int sig, siginfo_t * info, void * context)
+
+  #define SET_SIGACT(sigact,name) \
+     sigact.sa_sigaction = (name); \
+     sigact.sa_flags = SA_SIGINFO
+
+  #include <sys/ucontext.h>
+
+  #define CONTEXT_STATE (((struct ucontext *)context)->uc_mcontext->ss)
+  #define CONTEXT_PC (CONTEXT_STATE.eip)
   #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
 
 /****************** MIPS, all OS */
