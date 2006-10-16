@@ -815,7 +815,12 @@ let emit_external_symbols () =
   external_symbols_indirect := StringSet.empty;
   `	.section __IMPORT,__jump_table,symbol_stubs,self_modifying_code+pure_instructions,5\n`;
   StringSet.iter emit_external_symbol_direct !external_symbols_direct;
-  external_symbols_direct := StringSet.empty
+  external_symbols_direct := StringSet.empty;
+  if !Clflags.gprofile then begin
+    `Lmcount$stub:\n`;
+    `	.indirect_symbol mcount\n`;
+    `	hlt ; hlt ; hlt ; hlt ; hlt\n`
+  end
 
 (* Emission of the profiling prelude *)
 
@@ -836,6 +841,15 @@ let emit_profile () =
       `	pushl	%ecx\n`;
       `	pushl	%edx\n`;
       `	call	.mcount\n`;
+      `	popl	%edx\n`;
+      `	popl	%ecx\n`;
+      `	popl	%eax\n`
+  | "macosx" ->
+      `	pushl	%eax\n`;
+      `	movl	%esp, %ebp\n`;
+      `	pushl	%ecx\n`;
+      `	pushl	%edx\n`;
+      `	call	Lmcount$stub\n`;
       `	popl	%edx\n`;
       `	popl	%ecx\n`;
       `	popl	%eax\n`

@@ -57,6 +57,13 @@
         popl %edx; popl %ecx; popl %eax; popl %ebp
 #define PROFILE_C \
         pushl %ebp; movl %esp, %ebp; call .mcount; popl %ebp
+#elif defined(SYS_macosx)
+#define PROFILE_CAML \
+        pushl %ebp; movl %esp, %ebp; pushl %eax; pushl %ecx; pushl %edx; \
+        call Lmcount$stub;  \
+        popl %edx; popl %ecx; popl %eax; popl %ebp
+#define PROFILE_C \
+        pushl %ebp; movl %esp, %ebp; call Lmcount$stub; popl %ebp
 #endif
 #else
 #define PROFILE_CAML
@@ -367,4 +374,12 @@ G(caml_extra_params):
         .space  64
 #else
         .zero   64
+#endif
+
+#if defined(PROFILING) && defined(SYS_macosx)
+        .section __IMPORT,__jump_table,symbol_stubs,self_modifying_code+pure_instructions,5
+Lmcount$stub:
+        .indirect_symbol mcount
+        hlt ; hlt ; hlt ; hlt ; hlt
+        .subsections_via_symbols
 #endif

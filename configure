@@ -674,6 +674,7 @@ case "$arch,$model,$system" in
   i386,*,linux_elf) profiling='prof';;
   i386,*,gnu) profiling='prof';;
   i386,*,bsd_elf) profiling='prof';;
+  i386,*,macosx) profiling='prof';;
   sparc,*,solaris)
     profiling='prof'
     case "$nativecc" in gcc*) ;; *) cc_profile='-xpg';; esac;;
