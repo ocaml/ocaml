@@ -53,6 +53,7 @@ let read_member_info pack_path file =
          (Compilenv.current_unit_infos()).ui_symbol ^ "__" ^ info.ui_name
       then raise(Error(Wrong_for_pack(file, pack_path)));
       Asmlink.check_consistency file info crc;
+      Compilenv.cache_unit_info info;
       PM_impl info
     end else
       PM_intf in

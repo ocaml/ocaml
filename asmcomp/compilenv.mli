@@ -83,6 +83,10 @@ val write_unit_info: unit_infos -> string -> unit
         (* Save the given infos in the given file *)
 val save_unit_info: string -> unit
         (* Save the infos for the current unit in the given file *)
+val cache_unit_info: unit_infos -> unit
+        (* Enter the given infos in the cache.  The infos will be
+           honored by [symbol_for_global] and [global_approx]
+           without looking at the corresponding .cmx file. *)
 
 val cmx_not_found_crc: Digest.t
         (* Special digest used in the [ui_imports_cmx] list to signal

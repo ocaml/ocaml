@@ -28,6 +28,7 @@ type error =
   | Assembler_error of string
   | Linking_error
   | Multiple_definition of string * string * string
+  | Missing_cmx of string * string
 
 exception Error of error
 
@@ -37,6 +38,7 @@ let crc_interfaces = Consistbl.create ()
 let crc_implementations = Consistbl.create ()
 let extra_implementations = ref ([] : string list)
 let implementations_defined = ref ([] : (string * string) list)
+let cmx_required = ref ([] : string list)
 
 let check_consistency file_name unit crc =
   begin try
@@ -52,10 +54,12 @@ let check_consistency file_name unit crc =
   begin try
     List.iter
       (fun (name, crc) ->
-        if crc = cmx_not_found_crc then
-          extra_implementations := name :: !extra_implementations
+        if crc <> cmx_not_found_crc then
+          Consistbl.check crc_implementations name crc file_name
+        else if List.mem name !cmx_required then
+          raise(Error(Missing_cmx(file_name, name)))
         else
-          Consistbl.check crc_implementations name crc file_name)
+          extra_implementations := name :: !extra_implementations)
       unit.ui_imports_cmx
   with Consistbl.Inconsistency(name, user, auth) ->
     raise(Error(Inconsistent_implementation(name, user, auth)))
@@ -67,7 +71,9 @@ let check_consistency file_name unit crc =
   end;
   Consistbl.set crc_implementations unit.ui_name crc file_name;
   implementations_defined := 
-    (unit.ui_name, file_name) :: !implementations_defined
+    (unit.ui_name, file_name) :: !implementations_defined;
+  if unit.ui_symbol <> unit.ui_name then
+    cmx_required := unit.ui_name :: !cmx_required
 
 let extract_crc_interfaces () =
   Consistbl.extract crc_interfaces
@@ -370,3 +376,11 @@ let report_error ppf = function
       fprintf ppf
         "@[<hov>Files %s@ and %s@ both define a module named %s@]"
         file1 file2 modname
+  | Missing_cmx(filename, name) ->
+      fprintf ppf
+        "@[<hov>File %s@ was compiled without access@ \
+         to the .cmx file@ for module %s,@ \
+         which was produced by `ocamlopt -for-pack'.@ \
+         Please recompile %s@ with the correct `-I' option@ \
+         so that %s.cmx@ is found.@]"
+        filename name filename name
