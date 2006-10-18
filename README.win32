@@ -1,16 +1,20 @@
        Release notes on the MS Windows ports of Objective Caml
        -------------------------------------------------------
 
-Starting with OCaml 3.05, there are no less than three ports of
-Objective Caml for MS Windows available:
+There are no less than four ports of Objective Caml for MS Windows available:
   - a native Win32 port, built with the Microsoft development tools;
   - a native Win32 port, built with the Cygwin/MinGW development tools;
   - a port consisting of the Unix sources compiled under the Cygwin
-    Unix-like environment for Windows.
+    Unix-like environment for Windows;
+  - a native Win64 port (64-bit Windows), built with the Microsoft 
+    development tools.
 
 Here is a summary of the main differences between these ports:
 
                                       Native MS     Native MinGW        Cygwin
+
+64 bits?                            Win32 or Win64    Win32 only      Win32 only
+
 Third-party software required
   - for base bytecode system            none            none            none
   - for ocamlc -custom                  MSVC            Cygwin          Cygwin
@@ -77,11 +81,9 @@ environment variable.  E.g. if Tcl/Tk was installed in C:\tcl, add
 
 THIRD-PARTY SOFTWARE:
 
-[1] Visual C++ version 6 or later.  We use Visual C++ 2003.
-    The free download Visual C++ 2005 Express Edition works under
-    Windows 2000, but not under Windows XP because of the "manifest"
-    annotations on DLLs, which are not yet supported by OCaml.
-    So, please stick with the 2003 edition for the time being.
+[1] Visual C++ version 2005, 2003, or 6.
+    We use Visual C++ 2005 Express Edition, freely downloadably
+    from http://www.microsoft.com.
 
 [2] Windows header files and development libraries.  We found them in
     the Microsoft Windows Server 2003 SP1 Platform SDK, which can
@@ -268,4 +270,83 @@ NOTES:
 The libraries available in this port are "num", "str", "threads",
 "unix" and "labltk".  "graph" is not available.
 The replay debugger is supported.
+
+------------------------------------------------------------------------------
+
+       The native Win64 port built with the Microsoft Platform SDK compilers
+       ---------------------------------------------------------------------
+
+REQUIREMENTS:
+
+This port runs under MS Windows XP 64 and Server 64 on Intel64/AMD64 machines.
+
+The base bytecode system (ocamlc, ocaml, ocamllex, ocamlyacc, ...)
+runs without any additional tools.
+
+Statically linking Caml bytecode with C code (ocamlc -custom) requires the
+Microsoft Platform SDK compiler (item [1] in the section
+"third-party software" below).  Dynamic loading of DLLs is supported
+out of the box, without additional software.
+
+The native-code compiler (ocamlopt) requires the Microsoft compiler
+and the Microsoft assembler MASM64 (item [1]).
+
+
+INSTALLATION:
+
+There is no binary distribution yet.  Please compile from sources as
+described below.
+
+
+THIRD-PARTY SOFTWARE:
+
+[1] Microsoft Windows Server 2003 R2 Platform SDK for AMD64 (PSDK-amd64.exe).
+    Can be downloaded for free from http://www.microsoft.com/.
+    Includes all we need, namely a C compiler, the masm64 assembler,
+    Windows libraries and include files.
+
+
+RECOMPILATION FROM THE SOURCES:
+
+The command-line tools can be recompiled from the Unix source
+distribution (ocaml-X.YZ.tar.gz), which also contains the files modified
+for Windows.
+
+You will need the following software components to perform the recompilation:
+- Windows XP 64 or Server 64.
+- The Platform SDK (item [1] from the list of recommended software above).
+- The Cygwin port of GNU tools, available from http://www.cygwin.com/
+
+To recompile, start a Cygwin shell and change to the top-level
+directory of the OCaml distribution.  Then, do
+
+        cp config/m-nt.h config/m.h
+        cp config/s-nt.h config/s.h
+        cp config/Makefile.msvc64 config/Makefile
+
+Then, edit config/Makefile as needed, following the comments in this file.
+Normally, the only variable that need to be changed is
+        PREFIX      where to install everything
+
+If, for whatever reason, you want to use the Microsoft Visual C++ 2005
+compiler for AMD64 instead of the Platform SDK compiler, replace the line
+        EXTRALIBS=bufferoverflowu.lib
+by
+        EXTRALIBS=
+
+Finally, use "make -f Makefile.nt" to build the system, e.g. 
+
+        make -f Makefile.nt world
+        make -f Makefile.nt bootstrap
+        make -f Makefile.nt opt
+        make -f Makefile.nt opt.opt
+        make -f Makefile.nt install
+
+
+NOTES:
+
+* Libraries available in this port: "num", "str", "threads", "graphics",
+  and large parts of "unix". 
+
+* The replay debugger and the graphical browser are not supported.
 
