@@ -24,15 +24,15 @@ CAMLprim value unix_connect(socket, address)
   SOCKET s = Socket_val(socket);
   union sock_addr_union addr;
   socklen_param_type addr_len;
-  DWORD errcode = 0;
+  DWORD err = 0;
 
   get_sockaddr(address, &addr, &addr_len);
   enter_blocking_section();
   if (connect(s, &addr.s_gen, addr_len) == -1)
-    errcode = WSAGetLastError();
+    err = WSAGetLastError();
   leave_blocking_section();
-  if (errcode) {
-    win32_maperr(errcode);
+  if (err) {
+    win32_maperr(err);
     uerror("connect", Nothing);
   }
   return Val_unit;

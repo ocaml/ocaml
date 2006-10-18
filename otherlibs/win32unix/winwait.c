@@ -43,16 +43,16 @@ CAMLprim value win_waitpid(value vflags, value vpid_req)
   int flags;
   DWORD status, retcode;
   HANDLE pid_req = (HANDLE) Long_val(vpid_req);
-  DWORD errcode = 0;
+  DWORD err = 0;
 
   flags = convert_flag_list(vflags, wait_flag_table);
   if ((flags & CAML_WNOHANG) == 0) {
     enter_blocking_section();
     retcode = WaitForSingleObject(pid_req, INFINITE);
-    if (retcode == WAIT_FAILED) errcode = GetLastError();
+    if (retcode == WAIT_FAILED) err = GetLastError();
     leave_blocking_section();
-    if (errcode) {
-      win32_maperr(errcode);
+    if (err) {
+      win32_maperr(err);
       uerror("waitpid", Nothing);
     }
   }
