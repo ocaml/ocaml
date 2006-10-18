@@ -19,35 +19,34 @@
 #include <signals.h>
 #include "unixsupport.h"
 
-CAMLprim value unix_read(value fd, value buf, value ofs, value len)
+CAMLprim value unix_read(value fd, value buf, value ofs, value vlen)
 {
+  intnat len;
   DWORD numbytes, numread;
   char iobuf[UNIX_BUFFER_SIZE];
+  DOWRD errcode = 0;
 
   Begin_root (buf);
-    numbytes = Long_val(len);
-    if (numbytes > UNIX_BUFFER_SIZE) numbytes = UNIX_BUFFER_SIZE;
+    len = Long_val(vlen);
+    numbytes = len > UNIX_BUFFER_SIZE ? UNIX_BUFFER_SIZE : len;
     if (Descr_kind_val(fd) == KIND_SOCKET) {
       int ret;
       SOCKET s = Socket_val(fd);
       enter_blocking_section();
       ret = recv(s, iobuf, numbytes, 0);
+      if (ret == SOCKET_ERROR) errcode = WSAGetLastError();
       leave_blocking_section();
-      if (ret == SOCKET_ERROR) {
-        win32_maperr(WSAGetLastError());
-        uerror("read", Nothing);
-      }
       numread = ret;
     } else {
-      BOOL ret;
       HANDLE h = Handle_val(fd);
       enter_blocking_section();
-      ret = ReadFile(h, iobuf, numbytes, &numread, NULL);
+      if (! ReadFile(h, iobuf, numbytes, &numread, NULL))
+        errcode = GetLastError();
       leave_blocking_section();
-      if (! ret) {
-        win32_maperr(GetLastError());
-        uerror("read", Nothing);
-      }
+    }
+    if (errcode) {
+      win32_maperr(errcode);
+      uerror("read", Nothing);
     }
     memmove (&Byte(buf, Long_val(ofs)), iobuf, numread);
   End_roots();

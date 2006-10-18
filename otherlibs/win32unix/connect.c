@@ -22,16 +22,17 @@ CAMLprim value unix_connect(socket, address)
      value socket, address;
 {
   SOCKET s = Socket_val(socket);
-  int retcode;
   union sock_addr_union addr;
   socklen_param_type addr_len;
+  DWORD errcode = 0;
 
   get_sockaddr(address, &addr, &addr_len);
   enter_blocking_section();
-  retcode = connect(s, &addr.s_gen, addr_len);
+  if (connect(s, &addr.s_gen, addr_len) == -1)
+    errcode = WSAGetLastError();
   leave_blocking_section();
-  if (retcode == -1) {
-    win32_maperr(WSAGetLastError());
+  if (errcode) {
+    win32_maperr(errcode);
     uerror("connect", Nothing);
   }
   return Val_unit;

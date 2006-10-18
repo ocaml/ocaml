@@ -25,6 +25,7 @@ CAMLprim value unix_write(value fd, value buf, value vofs, value vlen)
   intnat ofs, len, written;
   DWORD numbytes, numwritten;
   char iobuf[UNIX_BUFFER_SIZE];
+  DWORD errcode = 0;
 
   Begin_root (buf);
     ofs = Long_val(vofs);
@@ -38,22 +39,19 @@ CAMLprim value unix_write(value fd, value buf, value vofs, value vlen)
         SOCKET s = Socket_val(fd);
         enter_blocking_section();
         ret = send(s, iobuf, numbytes, 0);
+        if (ret == SOCKET_ERROR) errcode = WSAGetLastError();
         leave_blocking_section();
-        if (ret == SOCKET_ERROR) {
-          win32_maperr(WSAGetLastError());
-          uerror("write", Nothing);
-        }
         numwritten = ret;
       } else {
-        BOOL ret;
         HANDLE h = Handle_val(fd);
         enter_blocking_section();
-        ret = WriteFile(h, iobuf, numbytes, &numwritten, NULL);
+        if (! WriteFile(h, iobuf, numbytes, &numwritten, NULL))
+          errcode = GetLastError();
         leave_blocking_section();
-        if (! ret) {
-          win32_maperr(GetLastError());
-          uerror("write", Nothing);
-        }
+      }
+      if (errcode) {
+        win32_maperr(errcode);
+        uerror("write", Nothing);
       }
       written += numwritten;
       ofs += numwritten;
@@ -81,22 +79,19 @@ CAMLprim value unix_single_write(value fd, value buf, value vofs, value vlen)
         SOCKET s = Socket_val(fd);
         enter_blocking_section();
         ret = send(s, iobuf, numbytes, 0);
+        if (ret == SOCKET_ERROR) errcode = WSAGetLastError();
         leave_blocking_section();
-        if (ret == SOCKET_ERROR) {
-          win32_maperr(WSAGetLastError());
-          uerror("single_write", Nothing);
-        }
         numwritten = ret;
       } else {
-        BOOL ret;
         HANDLE h = Handle_val(fd);
         enter_blocking_section();
-        ret = WriteFile(h, iobuf, numbytes, &numwritten, NULL);
+        if (! WriteFile(h, iobuf, numbytes, &numwritten, NULL))
+          errcode = GetLastError();
         leave_blocking_section();
-        if (! ret) {
-          win32_maperr(GetLastError());
-          uerror("single_write", Nothing);
-        }
+      }
+      if (errcode) {
+        win32_maperr(errcode);
+        uerror("single_write", Nothing);
       }
       written = numwritten;
     }
