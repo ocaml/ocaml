@@ -105,8 +105,8 @@ NATIVECCCOMPOPTS=/Ox /MT
 NATIVECCLINKOPTS=/MT
 
 ### Build partially-linked object file
-PARTIALLD=lib /nologo
-PACKLD=ld -r --oformat pe-i386
+PARTIALLD=link /lib /nologo
+PACKLD=link /lib /nologo /out:# there must be no space after this '/out:'
 
 ############# Configuration for the contributed libraries
 

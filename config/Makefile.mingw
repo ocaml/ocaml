@@ -100,7 +100,7 @@ NATIVECCLINKOPTS=
 
 ### Build partially-linked object file
 PARTIALLD=ld -r $(NATIVECCLINKOPTS)
-PACKLD=$(PARTIALLD)
+PACKLD=$(PARTIALLD) -o #there must be a space after this '-o'
 
 ############# Configuration for the contributed libraries
 

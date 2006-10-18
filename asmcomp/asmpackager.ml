@@ -97,7 +97,7 @@ let make_package_object ppf members targetobj targetname coercion =
       (fun m -> chop_extension_if_any m.pm_file ^ Config.ext_obj)
       (List.filter (fun m -> m.pm_kind <> PM_intf) members) in
   let ld_cmd =
-    sprintf "%s -o %s %s %s"
+    sprintf "%s%s %s %s"
             Config.native_pack_linker
             (Filename.quote targetobj)
             (Filename.quote objtemp)
