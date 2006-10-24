@@ -398,16 +398,25 @@ external incr: int ref -> unit = "%incr"
 external decr: int ref -> unit = "%decr"
 
 (* Formats *)
-type ('a, 'b, 'c) format = ('a, 'b, 'c, 'c) format4
-external format_of_string :
- ('a, 'b, 'c, 'd) format4 -> ('a, 'b, 'c, 'd) format4 = "%identity"
-external format_to_string :
- ('a, 'b, 'c, 'd) format4 -> string = "%identity"
-external string_to_format : string -> ('a, 'b, 'c, 'd) format4 = "%identity"
+type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'd, 'd, 'd) format6 
 
-let (( ^^ ) : ('a, 'b, 'c, 'd) format4 -> ('d, 'b, 'c, 'e) format4 ->
-              ('a, 'b, 'c, 'e) format4) = fun fmt1 fmt2 ->
-  string_to_format (format_to_string fmt1 ^ format_to_string fmt2);;
+type ('a, 'b, 'c) format = ('a, 'b, 'c, 'c) format4
+
+external format_of_string :
+ ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
+ ('a, 'b, 'c, 'd, 'e, 'f) format6 = "%identity"
+
+external format_to_string :
+ ('a, 'b, 'c, 'd, 'e, 'f) format6 -> string = "%identity"
+external string_to_format :
+ string -> ('a, 'b, 'c, 'd, 'e, 'f) format6 = "%identity"
+
+let (( ^^ ) :
+      ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
+      ('f, 'b, 'c, 'e, 'g, 'h) format6 ->
+      ('a, 'b, 'c, 'd, 'g, 'h) format6) =
+  fun fmt1 fmt2 ->
+    string_to_format (format_to_string fmt1 ^ format_to_string fmt2);;
 
 let string_of_format fmt =
   let s = format_to_string fmt in

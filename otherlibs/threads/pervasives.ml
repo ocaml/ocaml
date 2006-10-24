@@ -496,23 +496,33 @@ module LargeFile =
   end
 
 (* Formats *)
+type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'd, 'd, 'd) format6 
+
 type ('a, 'b, 'c) format = ('a, 'b, 'c, 'c) format4
+
 external format_of_string :
- ('a, 'b, 'c, 'd) format4 -> ('a, 'b, 'c, 'd) format4 = "%identity"
-external string_of_format_sys :
- ('a, 'b, 'c, 'd) format4 -> string = "%identity"
-external string_to_format : string -> ('a, 'b, 'c, 'd) format4 = "%identity"
+ ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
+ ('a, 'b, 'c, 'd, 'e, 'f) format6 = "%identity"
 
-let (( ^^ ) : ('a, 'b, 'c, 'd) format4 -> ('d, 'b, 'c, 'e) format4 ->
-              ('a, 'b, 'c, 'e) format4) = fun fmt1 fmt2 ->
-  string_to_format (string_of_format_sys fmt1 ^ string_of_format_sys fmt2);;
+external format_to_string :
+ ('a, 'b, 'c, 'd, 'e, 'f) format6 -> string = "%identity"
+external string_to_format :
+ string -> ('a, 'b, 'c, 'd, 'e, 'f) format6 = "%identity"
 
-let string_of_format f =
-  let s = string_of_format_sys f in
+let (( ^^ ) :
+      ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
+      ('f, 'b, 'c, 'e, 'g, 'h) format6 ->
+      ('a, 'b, 'c, 'd, 'g, 'h) format6) =
+  fun fmt1 fmt2 ->
+    string_to_format (format_to_string fmt1 ^ format_to_string fmt2);;
+
+let string_of_format fmt =
+  let s = format_to_string fmt in
   let l = string_length s in
   let r = string_create l in
   string_blit s 0 r 0 l;
   r
+
 
 (* Miscellaneous *)
 
