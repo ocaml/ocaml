@@ -28,7 +28,6 @@ and ident_unit = Ident.create "unit"
 and ident_exn = Ident.create "exn"
 and ident_array = Ident.create "array"
 and ident_list = Ident.create "list"
-and ident_format4 = Ident.create "format4"
 and ident_format6 = Ident.create "format6"
 and ident_option = Ident.create "option"
 and ident_nativeint = Ident.create "nativeint"
@@ -45,7 +44,6 @@ and path_unit = Pident ident_unit
 and path_exn = Pident ident_exn
 and path_array = Pident ident_array
 and path_list = Pident ident_list
-and path_format4 = Pident ident_format4
 and path_format6 = Pident ident_format6
 and path_option = Pident ident_option
 and path_nativeint = Pident ident_nativeint
@@ -126,13 +124,6 @@ let build_initial_env add_type add_exception empty_env =
        Type_variant(["[]", []; "::", [tvar; type_list tvar]], Public);
      type_manifest = None;
      type_variance = [true, false, false]}
-  and decl_format4 =
-    {type_params = [newgenvar(); newgenvar(); newgenvar(); newgenvar()];
-     type_arity = 4;
-     type_kind = Type_abstract;
-     type_manifest = None;
-     type_variance = [true, true, true; true, true, true;
-		      true, true, true; true, true, true]}
   and decl_format6 =
     {type_params = [
        newgenvar(); newgenvar(); newgenvar();
@@ -182,7 +173,6 @@ let build_initial_env add_type add_exception empty_env =
   add_type ident_nativeint decl_abstr (
   add_type ident_lazy_t decl_lazy_t (
   add_type ident_option decl_option (
-  add_type ident_format4 decl_format4 (
   add_type ident_format6 decl_format6 (
   add_type ident_list decl_list (
   add_type ident_array decl_array (
@@ -193,7 +183,7 @@ let build_initial_env add_type add_exception empty_env =
   add_type ident_string decl_abstr (
   add_type ident_char decl_abstr (
   add_type ident_int decl_abstr (
-    empty_env))))))))))))))))))))))))))))
+    empty_env)))))))))))))))))))))))))))
 
 let builtin_values =
   List.map (fun id -> Ident.make_global id; (Ident.name id, id))

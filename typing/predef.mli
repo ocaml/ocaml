@@ -40,7 +40,6 @@ val path_unit: Path.t
 val path_exn: Path.t
 val path_array: Path.t
 val path_list: Path.t
-val path_format4: Path.t
 val path_format6: Path.t
 val path_option: Path.t
 val path_nativeint: Path.t
