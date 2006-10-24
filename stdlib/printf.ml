@@ -25,13 +25,13 @@ external format_int64: string -> int64 -> string
   = "caml_int64_format"
 
 module Sformat = struct
-  external unsafe_to_string : ('a, 'b, 'c, 'd) format4 -> string
+  external unsafe_to_string : ('a, 'b, 'c, 'd, 'e, 'f) format6 -> string
     = "%identity"
-  external length : ('a, 'b, 'c, 'd) format4 -> int
+  external length : ('a, 'b, 'c, 'd, 'e, 'f) format6 -> int
     = "%string_length"
-  external get : ('a, 'b, 'c, 'd) format4 -> int -> char
+  external get : ('a, 'b, 'c, 'd, 'e, 'f) format6 -> int -> char
     = "%string_safe_get"
-  external unsafe_get : ('a, 'b, 'c, 'd) format4 -> int -> char
+  external unsafe_get : ('a, 'b, 'c, 'd, 'e, 'f) format6 -> int -> char
     = "%string_unsafe_get"
   let sub fmt idx len = String.sub (unsafe_to_string fmt) idx len
   let to_string fmt = sub fmt 0 (length fmt)
@@ -443,7 +443,7 @@ let scan_format fmt args n pos cont_s cont_a cont_t cont_f cont_m =
       end
     | '!' -> cont_f n (succ i)
     | '{' | '(' as conv (* ')' '}' *) ->
-      let (xf : ('a, 'b, 'c, 'd) format4) = get_arg spec n in
+      let (xf : ('a, 'b, 'c, 'd, 'e, 'f) format6) = get_arg spec n in
       let i = succ i in
       let j = sub_format_for_printf conv fmt i in
       if conv = '{' (* '}' *) then

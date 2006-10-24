@@ -149,33 +149,33 @@ type index;;
 external index_of_int : int -> index = "%identity";;
 
 module Sformat : sig
-  external unsafe_to_string : ('a, 'b, 'c, 'd) format4 -> string
+  external unsafe_to_string : ('a, 'b, 'c, 'd, 'e, 'f) format6 -> string
     = "%identity"
-  external length : ('a, 'b, 'c, 'd) format4 -> int
+  external length : ('a, 'b, 'c, 'd, 'e, 'f) format6 -> int
     = "%string_length"
-  external get : ('a, 'b, 'c, 'd) format4 -> int -> char
+  external get : ('a, 'b, 'c, 'd, 'e, 'f) format6 -> int -> char
     = "%string_safe_get"
-  external unsafe_get : ('a, 'b, 'c, 'd) format4 -> int -> char
+  external unsafe_get : ('a, 'b, 'c, 'd, 'e, 'f) format6 -> int -> char
     = "%string_unsafe_get"
-  val sub : ('a, 'b, 'c, 'd) format4 -> int -> int -> string
-  val to_string : ('a, 'b, 'c, 'd) format4 -> string
+  val sub : ('a, 'b, 'c, 'd, 'e, 'f) format6 -> int -> int -> string
+  val to_string : ('a, 'b, 'c, 'd, 'e, 'f) format6 -> string
 end
 
-val scan_format : ('a, 'b, 'c, 'd) format4 ->
-    'e array ->
+val scan_format : ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
+    'ee array ->
     index ->
     int ->
-    (index -> string -> int -> 'f) ->
-    (index -> 'g -> 'h -> int -> 'f) ->
-    (index -> 'i -> int -> 'f) ->
-    (index -> int -> 'f) ->
-    (index -> ('j, 'k, 'l, 'm) format4 -> int -> 'f) -> 'f
+    (index -> string -> int -> 'ff) ->
+    (index -> 'g -> 'h -> int -> 'ff) ->
+    (index -> 'i -> int -> 'ff) ->
+    (index -> int -> 'ff) ->
+    (index -> ('j, 'k, 'l, 'm, 'n, 'o) format6 -> int -> 'ff) -> 'ff
 
 val sub_format :
-    (('a, 'b, 'c, 'd) format4 -> int) ->
-    (('a, 'b, 'c, 'd) format4 -> int -> char -> int) ->
-    char -> ('a, 'b, 'c, 'd) format4 -> int -> int
-val summarize_format_type : ('a, 'b, 'c, 'd) format4 -> string
+    (('a, 'b, 'c, 'd, 'e, 'f) format6 -> int) ->
+    (('a, 'b, 'c, 'd, 'e, 'f) format6 -> int -> char -> int) ->
+    char -> ('a, 'b, 'c, 'd, 'e, 'f) format6 -> int -> int
+val summarize_format_type : ('a, 'b, 'c, 'd, 'e, 'f) format6 -> string
 val kapr :
-    (('a, 'b, 'c, 'd) format4 -> Obj.t array -> 'e) ->
-    ('a, 'b, 'c, 'd) format4 -> 'e
+    (('a, 'b, 'c, 'd, 'e, 'f) format6 -> Obj.t array -> 'g) ->
+    ('a, 'b, 'c, 'd, 'e, 'f) format6 -> 'g
