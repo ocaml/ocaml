@@ -753,9 +753,9 @@ let type_format loc fmt =
           if j >= len then incomplete_format fmt else
           let sj =
             Printf.sub_format
-              (fun fmt -> incomplete_format (format_to_string (Obj.magic fmt)))
-              (fun fmt -> bad_conversion (format_to_string (Obj.magic fmt)))
-              c (Obj.magic (string_to_format fmt)) j in
+              (fun fmt -> incomplete_format (format_to_string fmt))
+              (fun fmt -> bad_conversion (format_to_string fmt))
+              c (string_to_format fmt) j in
           let sfmt = String.sub fmt j (sj - 2 - j) in
           let ty_sfmt = type_in_format sfmt in
           begin match c with
