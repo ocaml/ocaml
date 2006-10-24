@@ -667,7 +667,6 @@ let type_format loc fmt =
     let ty_input = newvar ()
     and ty_result = newvar ()
     and ty_aresult = newvar ()
-    and ty_ureader = newvar ()
     and ty_uresult = newvar () in
 
     let meta = ref 0 in
@@ -675,7 +674,7 @@ let type_format loc fmt =
     let rec scan_format i =
       if i >= len then
         if !meta = 0
-        then ty_aresult, ty_result
+        then ty_uresult, ty_result
         else incomplete_format fmt else
       match fmt.[i] with
       | '%' -> scan_opts i (i + 1)
@@ -701,8 +700,8 @@ let type_format loc fmt =
         if j >= len then incomplete_format fmt else
         match fmt.[j] with
         | '*' ->
-            let ty_aresult, ty_result = scan i (j + 1) in
-            ty_aresult, ty_arrow Predef.type_int ty_result
+          let ty_uresult, ty_result = scan i (j + 1) in
+          ty_uresult, ty_arrow Predef.type_int ty_result
         | '-' | '+' -> scan_decimal_string scan i (j + 1)
         | _ -> scan_decimal_string scan i j
       and scan_precision i j =
@@ -712,8 +711,8 @@ let type_format loc fmt =
         | _ -> scan_conversion i j
 
       and conversion j ty_arg =
-        let ty_aresult, ty_result = scan_format (j + 1) in
-        ty_aresult,
+        let ty_uresult, ty_result = scan_format (j + 1) in
+        ty_uresult,
         if skip then ty_result else ty_arrow ty_arg ty_result
 
       and scan_conversion i j =
@@ -732,8 +731,13 @@ let type_format loc fmt =
         | 'a' ->
           let ty_arg = newvar () in
           let ty_a = ty_arrow ty_input (ty_arrow ty_arg ty_aresult) in
-          let ty_aresult, ty_result = conversion j ty_arg in
-          ty_aresult, ty_arrow ty_a ty_result
+          let ty_uresult, ty_result = conversion j ty_arg in
+          ty_uresult, ty_arrow ty_a ty_result
+        | 'r' ->
+          let ty_arg = newvar () in
+          let ty_r = ty_arrow ty_input ty_arg in
+          let ty_uresult, ty_result = conversion j ty_arg in
+          ty_arrow ty_r ty_uresult, ty_result
         | 't' -> conversion j (ty_arrow ty_input ty_aresult)
         | 'l' | 'n' | 'L' as c ->
           let j = j + 1 in
@@ -765,7 +769,7 @@ let type_format loc fmt =
         | c -> bad_conversion fmt i c in
       scan_flags i j in
 
-    let ty_aresult, ty_args = scan_format 0 in
+    let ty_ureader, ty_args = scan_format 0 in
     newty
       (Tconstr
          (Predef.path_format6,

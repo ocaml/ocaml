@@ -184,7 +184,7 @@ let iter_on_format_args fmt add_conv add_char =
     | 'd' | 'i' |'o' | 'u' | 'x' | 'X' | 'N' -> add_conv skip i 'i'
     | 'f' | 'e' | 'E' | 'g' | 'G' | 'F' -> add_conv skip i 'f'
     | 'B' | 'b' -> add_conv skip i 'B'
-    | 'a' | 't' as conv -> add_conv skip i conv
+    | 'a' | 'r' | 't' as conv -> add_conv skip i conv
     | 'l' | 'n' | 'L' as conv ->
       let j = succ i in
       if j > lim then add_conv skip i 'i' else begin
