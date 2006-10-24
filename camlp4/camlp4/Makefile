@@ -68,13 +68,16 @@ compare:
 		if cmp $$j ../boot/$$j; then :; else exit 1; fi; \
 	done
 
-EXPORTED = mLast quotation ast2pt pcaml spretty reloc
+EXPORTED = quotation ast2pt pcaml spretty reloc
+EXPORTED_MLI = mLast
 
 install:
 	-$(MKDIR) "$(BINDIR)"
 	-$(MKDIR) "$(LIBDIR)/camlp4"
 	cp $(CAMLP4) "$(BINDIR)/."
 	for ext in mli cmi cmo cmx o; do for mod in $(EXPORTED); do \
+	  cp $${mod}.$${ext} "$(LIBDIR)/camlp4/."; done; done
+	for ext in mli cmi; do for mod in $(EXPORTED_MLI); do \
 	  cp $${mod}.$${ext} "$(LIBDIR)/camlp4/."; done; done
 	cp  argl.cmi argl.cmo "$(LIBDIR)/camlp4/."
 	for f in argl.o argl.cmx; do \
