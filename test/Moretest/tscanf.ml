@@ -789,7 +789,7 @@ let test45 () =
 
 test (test45 ());;
 
-(* Testing printing meta formats. *)
+(* Testing printing of meta formats. *)
 
 let test46, test47 =
   (fun () ->
@@ -802,15 +802,15 @@ let test46, test47 =
 test (test46 () = "1 spells one, in english.");;
 test (test47 () = "1 ,%s, in english.");;
 
-(* Testing scanning meta formats. *)
+(* Testing scanning of meta formats. *)
 let test48 () =
   (* Testing format_from_string. *)
   let test_meta_read s fmt efmt = format_from_string s fmt = efmt in
   (* Test if format %i is indeed read as %i. *)
-  let s, fmt = "\"%i\"", format_of_string "%i" in
+  let s, fmt = "%i", format_of_string "%i" in
   test_meta_read s fmt fmt &&
   (* Test if format %i is compatible with %d and indeed read as %i. *)
-  let s, fmt = "\"%i\"", format_of_string "%d" in
+  let s, fmt = "%i", format_of_string "%d" in
   test_meta_read s fmt "%i" &&
   (* Complex test of scanning a meta format specified in the scanner input
      format string and extraction of its specification from a string. *)
@@ -847,11 +847,9 @@ let next_char ob () =
   let c = s.[0] in
   Buffer.clear ob;
   Buffer.add_string ob (String.sub s 1 (len - 1));
-  (*prerr_endline (Printf.sprintf "giving %C" c);*)
   c;;
 
 let send_string ob s =
-  (*prerr_endline (Printf.sprintf "adding %s\n" s);*)
   Buffer.add_string ob s; Buffer.add_char ob '\n';;
 let send_int ob i = send_string ob (string_of_int i);;
 
