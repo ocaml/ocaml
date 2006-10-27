@@ -85,9 +85,12 @@ exception Scan_failure of string;;
 (** The exception that formatted input functions raise when the input
    cannot be read according to the given format. *)
 
-val bscanf :
-  Scanning.scanbuf -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
-(** [bscanf ib fmt f] reads tokens from the scanning buffer [ib] according
+type ('a, 'b, 'c, 'd) tscanf =
+     ('a, Scanning.scanbuf, 'b, 'c, 'a -> 'd, 'd) format6 -> 'c;;
+
+val bscanf : Scanning.scanbuf -> ('a, 'b, 'c, 'd) tscanf;;
+(**
+ [bscanf ib fmt f] reads tokens from the scanning buffer [ib] according
    to the format string [fmt], converts these tokens to values, and
    applies the function [f] to these values.
    The result of this application of [f] is the result of the whole construct.
@@ -160,6 +163,9 @@ val bscanf :
      first character of the range (or just after the [^] in case of
      range negation); hence [\[\]\]] matches a [\]] character and
      [\[^\]\]] matches any character that is not [\]].
+   - [r]: user-defined reader. Takes a reader function [rdr] as argument and
+     applies it to [ib]. The argument [rdr] must therefore have type
+     [Scanf.Scanning.scanbuf -> 't] and the argument read has type ['t].
    - [\{ fmt %\}]: reads a format string argument to the format
      specified by the internal format [fmt]. The format string to be
      read must have the same type as the internal format [fmt].
@@ -232,7 +238,7 @@ val bscanf :
    [ocamlyacc]-generated parsers.
 *)
 
-val fscanf : in_channel -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
+val fscanf : in_channel -> ('a, 'b, 'c, 'd) tscanf;;
 (** Same as {!Scanf.bscanf}, but inputs from the given channel.
 
     Warning: since all scanning functions operate from a scanning
@@ -251,16 +257,16 @@ val fscanf : in_channel -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
     This method is not only clearer it is also faster, since scanning
     buffers to files are optimized for fast bufferized reading. *)
 
-val sscanf : string -> ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
+val sscanf : string -> ('a, 'b, 'c, 'd) tscanf;;
 (** Same as {!Scanf.bscanf}, but inputs from the given string. *)
 
-val scanf : ('a, Scanning.scanbuf, 'b) format -> 'a -> 'b;;
+val scanf : ('a, 'b, 'c, 'd) tscanf;;
 (** Same as {!Scanf.bscanf}, but reads from the predefined scanning
     buffer {!Scanf.Scanning.stdib} that is connected to [stdin]. *)
 
 val kscanf :
-  Scanning.scanbuf -> (Scanning.scanbuf -> exn -> 'a) ->
-  ('b, Scanning.scanbuf, 'a) format -> 'b -> 'a;;
+  Scanning.scanbuf -> (Scanning.scanbuf -> exn -> 'd) ->
+    ('a, 'b, 'c, 'd) tscanf;;
 (** Same as {!Scanf.bscanf}, but takes an additional function argument
   [ef] that is called in case of error: if the scanning process or
   some conversion fails, the scanning function aborts and applies the
@@ -268,20 +274,23 @@ val kscanf :
   exception that aborted the scanning process. *)
 
 val bscanf_format :
-  Scanning.scanbuf -> ('a, 'b, 'c, 'd) format4 ->
-    (('a, 'b, 'c, 'd) format4 -> 'e) -> 'e;;
+  Scanning.scanbuf -> ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
+    (('a, 'b, 'c, 'd, 'e, 'f) format6 -> 'g) -> 'g;;
 (** [bscanf_format ib fmt f] reads a format string token from scannning buffer
-  [ib], according to the format string [fmt], and applies the function [f] to
-  the resulting format string value.
+  [ib], according to the given format string [fmt], and applies
+  the function [f] to the resulting format string value.
   Raises [Scan_failure] if the format string value read has not the same type
   as [fmt]. *)
 
 val sscanf_format :
-  string -> ('a, 'b, 'c, 'd) format4 ->
-    (('a, 'b, 'c, 'd) format4 -> 'e) -> 'e;;
+  string -> ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
+    (('a, 'b, 'c, 'd, 'e, 'f) format6 -> 'g) -> 'g;;
 (** Same as {!Scanf.bscanf_format}, but inputs from the given string. *)
 
 val format_from_string :
-  string -> ('a, 'b, 'c, 'd) format4 -> ('a, 'b, 'c, 'd) format4;;
-(** Same as {!Scanf.sscanf_format}, but converts the given string to a format
-  string. *)
+  string ->
+    ('a, 'b, 'c, 'd, 'e, 'f) format6 -> ('a, 'b, 'c, 'd, 'e, 'f) format6;;
+(** [format_from_string s fmt] converts a string argument to a format string,
+  according to the given format string [fmt].
+  Raises [Scan_failure] if [s], considered as a format string, has not the same
+  type as [fmt]. *)

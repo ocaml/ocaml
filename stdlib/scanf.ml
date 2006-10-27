@@ -306,10 +306,13 @@ end;;
 
 (* Formatted input functions. *)
 
+type ('a, 'b, 'c, 'd) tscanf =
+     ('a, Scanning.scanbuf, 'b, 'c, 'a -> 'd, 'd) format6 -> 'c;;
+
 module Sformat = Printf.Sformat;;
 
 external string_to_format :
- string -> ('a, 'b, 'c, 'd) format4 = "%identity";;
+ string -> ('a, 'b, 'c, 'd, 'e, 'f) format6 = "%identity";;
 
 (* Reporting errors. *)
 exception Scan_failure of string;;
@@ -962,7 +965,7 @@ let rec skip_whites ib =
    If the scanning or some conversion fails, the main scanning function
    aborts and applies the scanning buffer and a string that explains
    the error to the error handling function [ef] (the error continuation). *)
-let kscanf ib ef fmt f =
+let kscanf ib ef fmt = Obj.magic (fun f ->
 
   let lim = Sformat.length fmt - 1 in
 
@@ -997,7 +1000,7 @@ let kscanf ib ef fmt f =
     | 'S' ->
         let _x = scan_String max ib in
         scan_fmt (stack f (token_string ib)) (succ i)
-    | '[' ->
+    | '[' (* ']' *) ->
         let i, char_set = read_char_set fmt (succ i) in
         let i, stp = scan_fmt_stoppers (succ i) in
         let _x = scan_chars_in_char_set stp char_set max ib in
@@ -1061,7 +1064,7 @@ let kscanf ib ef fmt f =
           let p, i = read_width 0 (succ i) in
           scan_conversion skip (succ (max + p)) f i
         | _ -> scan_conversion skip max f i end
-    | '(' | '{' as conv ->
+    | '(' | '{' as conv (* ')' '}' *) ->
         let i = succ i in
         let j =
           Printf.sub_format
@@ -1070,7 +1073,7 @@ let kscanf ib ef fmt f =
         let _x = scan_String max ib in
         let rf = token_string ib in
         if not (compatible_format_type rf mf) then format_mismatch rf mf ib else
-        if conv = '{' then scan_fmt (stack f rf) j else
+        if conv = '{' (* '}' *) then scan_fmt (stack f rf) j else
         let nf = scan_fmt (Obj.magic rf) 0 in
         scan_fmt (stack f nf) j
     | c -> bad_conversion fmt i c
@@ -1088,7 +1091,7 @@ let kscanf ib ef fmt f =
     try scan_fmt (fun () -> f) 0 with
     | (Scan_failure _ | Failure _ | End_of_file) as exc ->
         stack (delay ef ib) exc in
-  return v;;
+  return v);;
 
 let bscanf ib = kscanf ib scanf_bad_input;;
 
@@ -1103,9 +1106,16 @@ let bscanf_format ib fmt f =
   let fmt1 = ignore (scan_String max_int ib); token_string ib in
   if not (compatible_format_type fmt1 fmt) then
     format_mismatch fmt1 fmt ib else
-  let fresh_fmt1 = String.copy fmt1 in
-  f (string_to_format fresh_fmt1);;
+  f (string_to_format fmt1);;
 
 let sscanf_format s fmt f = bscanf_format (Scanning.from_string s) fmt f;;
 
-let format_from_string s fmt = sscanf_format s fmt (fun x -> x);;
+let quote_string s =
+  let b = Buffer.create (String.length s + 2) in
+  Buffer.add_char b '\"';
+  Buffer.add_string b s;
+  Buffer.add_char b '\"';
+  Buffer.contents b;;
+
+let format_from_string s fmt =
+  sscanf_format (quote_string s) fmt (fun x -> x);;
