@@ -136,7 +136,7 @@ let extract_format_int conv fmt start stop widths =
    According to the character [conv], the meta format string is
    enclosed by the delimitors %{ and %} (when [conv = '{']) or %( and
    %) (when [conv = '(']). Hence, [sub_format] returns the index of
-   the character following the ')' or '}' that ends the meta format,
+   the character following the [')'] or ['}'] that ends the meta format,
    according to the character [conv]. *)
 let sub_format incomplete_format bad_conversion_format conv fmt i =
   let len = Sformat.length fmt in
@@ -235,24 +235,40 @@ let summarize_format_type fmt =
   iter_on_format_args fmt add_conv add_char;
   Buffer.contents b;;
 
+type num_args = {
+  mutable num_args : int;
+  mutable num_skip_args : int;
+  mutable num_rargs : int;
+};;
+
 (* Computes the number of arguments of a format (including flag
    arguments if any). *)
-let nargs_of_format_type fmt =
-  let num_args = ref 0
-  and skip_args = ref 0 in
+let num_args_of_format_type fmt =
+  let nargs = { num_args = 0; num_skip_args = 0; num_rargs = 0; } in
+  let incr_nargs skip c =
+    let inc = if c = 'a' then 2 else 1 in
+    if c = 'r' then nargs.num_rargs <- nargs.num_rargs + 1;
+    if skip
+    then nargs.num_skip_args <- nargs.num_skip_args + inc
+    else nargs.num_args <- nargs.num_args + inc in
+
   let add_conv skip i c =
     (* Just finishing a meta format: no additional argument to record. *)
-    if c = ')' || c = '}' then succ i else
-    let incr_args n = if c = 'a' then n := !n + 2 else n := !n + 1 in
-    if skip then incr_args skip_args else incr_args num_args;
+    if c <> ')' && c <> '}' then incr_nargs skip c;
     succ i
   and add_char i c = succ i in
+
   iter_on_format_args fmt add_conv add_char;
-  !skip_args + !num_args;;
+  nargs;;
+
+let nargs_of_format_type fmt =
+  let nargs = num_args_of_format_type fmt in
+  nargs.num_args + nargs.num_skip_args + nargs.num_rargs;;
 
 let list_iter_i f l =
   let rec loop i = function
   | [] -> ()
+  | [x] -> f i x (* Tail calling [f] *)
   | x :: xs -> f i x; loop (succ i) xs in
   loop 0 l;;
 
@@ -303,10 +319,13 @@ type positional_specification =
    | Spec_none | Spec_index of index;; 
 
 (* To scan an optional positional parameter specification,
-   i.e. an integer followed by a $.
-   We do not support *$ specifications, since this would lead to type checking
-   problems: the type would be dependant of the {\em value} of an integer
-   argument to printf. *)
+   i.e. an integer followed by a [$].
+   We do not support [*$] specifications, since this would lead to type checking
+   problems: the type of the specified [*$] parameter would be the type of the
+   corresponding argument to [printf], hence the type of the $n$-th argument to
+   [printf] with $n$ being the {\em value} of the integer argument defining
+   [*]; this means type dependency, which is out of scope of the Caml type
+   algebra. *)
 let scan_positional_spec fmt got_spec n i =
   match Sformat.unsafe_get fmt i with
   | '0'..'9' as d ->
@@ -338,7 +357,7 @@ let get_index spec n =
   | Spec_none -> n
   | Spec_index p -> p;;
 
-(* Decode a %format and act on it.
+(* Decode a format string and act on it.
    [fmt] is the printf format string, and [pos] points to a [%] character.
    After consuming the appropriate number of arguments and formatting
    them, one of the five continuations is called:
