@@ -101,14 +101,15 @@ let merge_constraint initial_env loc sg lid constr =
         and id_row = Ident.create (s^"#row") in
         let initial_env = Env.add_type id_row decl_row initial_env in
         let newdecl = Typedecl.transl_with_constraint
-                        initial_env (Some(Pident id_row)) sdecl in
+                        initial_env id (Some(Pident id_row)) sdecl in
         check_type_decl env id row_id newdecl decl rs rem;
         let decl_row = {decl_row with type_params = newdecl.type_params} in
         let rs' = if rs = Trec_first then Trec_not else rs in
         Tsig_type(id_row, decl_row, rs') :: Tsig_type(id, newdecl, rs) :: rem
     | (Tsig_type(id, decl, rs) :: rem, [s], Pwith_type sdecl)
       when Ident.name id = s ->
-        let newdecl = Typedecl.transl_with_constraint initial_env None sdecl in
+        let newdecl =
+          Typedecl.transl_with_constraint initial_env id None sdecl in
         check_type_decl env id row_id newdecl decl rs rem;
         Tsig_type(id, newdecl, rs) :: rem
     | (Tsig_type(id, decl, rs) :: rem, [s], Pwith_type sdecl)
