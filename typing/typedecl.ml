@@ -634,6 +634,19 @@ let check_compat_decl env (_,loc) (_,decl) =
       raise (Error(loc, Bad_fixed_type "doesn't satisfy its compatibilities"))
   | _ -> ()
 
+(* Force recursion to go through id for private types*)
+let name_recursion id decl =
+  match decl with
+    { type_kind = Type_private _; type_manifest = Some ty } ->
+      let ty = Ctype.repr ty in
+      let ty' = Btype.newty2 ty.level ty.desc in
+      if Ctype.deep_occur ty ty' then
+        let td = Tconstr(Path.Pident id, decl.type_params, ref Mnil) in
+        Btype.link_type ty (Btype.newty2 ty.level td);
+        {decl with type_manifest = Some ty'}
+      else decl
+  | _ -> decl
+
 (* Translate a set of mutually recursive type declarations *)
 let transl_type_decl env name_sdecl_list =
   (* Add dummy types for fixed rows *)
@@ -705,6 +718,8 @@ let transl_type_decl env name_sdecl_list =
   List.iter2 (check_abbrev newenv) name_sdecl_list decls;
   (* Check that constraints are enforced *)
   List.iter2 (check_constraints newenv) name_sdecl_list decls;
+  (* Name recursion *)
+  let decls = List.map (fun (id, decl) -> id, name_recursion id decl) decls in
   (* Add variances to the environment *)
   let required =
     List.map (fun (_, sdecl) -> sdecl.ptype_variance, sdecl.ptype_loc)
@@ -756,7 +771,7 @@ let transl_value_decl env valdecl =
 
 (* Translate a "with" constraint -- much simplified version of
     transl_type_decl. *)
-let transl_with_constraint env row_path sdecl =
+let transl_with_constraint env id row_path sdecl =
   reset_type_variables();
   Ctype.begin_def();
   let params =
@@ -796,6 +811,7 @@ let transl_with_constraint env row_path sdecl =
   begin match Ctype.closed_type_decl decl with None -> ()
   | Some ty -> raise(Error(sdecl.ptype_loc, Unbound_type_var(ty,decl)))
   end;
+  let decl = name_recursion id decl in
   let decl =
     {decl with type_variance =
      compute_variance_decl env false decl

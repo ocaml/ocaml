@@ -108,12 +108,12 @@ let merge_constraint initial_env loc sg lid constr =
       when Ident.name id = s ->
         let s' = s ^ "#row" in
 	let decl_row =
-          Typedecl.transl_with_constraint env None
+          Typedecl.transl_with_constraint env id None
             {sdecl with ptype_manifest = None}
 	and id_row = Ident.create s' in
 	let initial_env = Env.add_type id_row decl_row initial_env in
         let newdecl =
-          Typedecl.transl_with_constraint initial_env
+          Typedecl.transl_with_constraint initial_env id
             (Some(Pident id_row)) sdecl in
         check_type_decl env id row_id newdecl decl rs rem;
         let rs' = if rs = Trec_first then Trec_not else rs in
@@ -127,7 +127,8 @@ let merge_constraint initial_env loc sg lid constr =
         if needs_matcher decl then insert_matcher rem else rem
     | (Tsig_type(id, decl, rs) :: rem, [s], Pwith_type sdecl)
       when Ident.name id = s ->
-        let newdecl = Typedecl.transl_with_constraint initial_env None sdecl in
+        let newdecl =
+          Typedecl.transl_with_constraint initial_env id None sdecl in
         check_type_decl env id row_id newdecl decl rs rem;
         Tsig_type(id, newdecl, rs) :: rem
     | (Tsig_type(id, decl, rs) :: rem, [s], Pwith_type sdecl)
