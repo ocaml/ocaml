@@ -1538,7 +1538,7 @@ subtractive:
   | MINUSDOT                                    { "-." }
 ;
 
-/* JOCAML */
+/* > JOCAML */
 
 joinident:
   | LIDENT                                      { { pjident_desc=$1 ; pjident_loc=symbol_rloc () } }
@@ -1570,5 +1570,5 @@ joinautomaton_list_AND:
   | joinautomaton_list_AND AND joinautomaton    { $3 :: $1 }
   | joinautomaton                               { [$1] }
 ;
-
+/* < JOCAML */
 %%
