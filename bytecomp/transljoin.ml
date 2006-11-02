@@ -326,7 +326,7 @@ and simple_proc p = match p.exp_desc with
    simple_proc e
 | Texp_match (e,pps,Total) ->
    simple_exp e &&
-   List.for_all (fun (_,p) -> simple_proc e) pps
+   List.for_all (fun (_,e) -> simple_proc e) pps
 | Texp_match (_,_,Partial) -> false
 | Texp_ifthenelse (e, pifso, Some pifno) ->
    simple_exp e && simple_proc pifso && simple_proc pifno

@@ -263,7 +263,7 @@ install: FORCE
         done
 	-cd ocamldoc; $(MAKE) install
 	if test -f ocamlopt; then $(MAKE) installopt; else :; fi
-	cd camlp4; $(MAKE) install BINDIR=$(BINDIR) LIBDIR=$(LIBDIR) MANDIR=$(MANDIR)
+	- cd camlp4; $(MAKE) install BINDIR=$(BINDIR) LIBDIR=$(LIBDIR) MANDIR=$(MANDIR)
 	if test -f debugger/ocamldebug; then (cd debugger; $(MAKE) install); \
 	   else :; fi
 	cp config/Makefile $(LIBDIR)/Makefile.config
@@ -621,12 +621,14 @@ alldepend::
 
 # Camlp4
 
-camlp4out: ocamlc
-	cd camlp4; $(MAKE) all
-camlp4opt: ocamlopt
-	cd camlp4; $(MAKE) opt
-camlp4optopt: ocamlopt
-	cd camlp4; $(MAKE) opt.opt
+camlp4out camlp4opt camlp4optopt:
+
+#camlp4out: ocamlc
+#	cd camlp4; $(MAKE) all
+#camlp4opt: ocamlopt
+#	cd camlp4; $(MAKE) opt
+#camlp4optopt: ocamlopt
+#	cd camlp4; $(MAKE) opt.opt
 partialclean::
 	cd camlp4; $(MAKE) clean
 alldepend::
