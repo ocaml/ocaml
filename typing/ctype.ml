@@ -579,7 +579,7 @@ let rec generalize_spine ty =
       generalize_spine ty'
   | _ -> ()
 
-let try_expand_head' = (* Forward declaration *)
+let try_expand_once' = (* Forward declaration *)
   ref (fun env ty -> raise Cannot_expand)
 
 (*
@@ -601,7 +601,7 @@ let rec update_level env level ty =
       Tconstr(p, tl, abbrev)  when level < Path.binding_time p ->
         (* Try first to replace an abbreviation by its expansion. *)
         begin try
-          link_type ty (!try_expand_head' env ty);
+          link_type ty (!try_expand_once' env ty);
           update_level env level ty
         with Cannot_expand ->
           (* +++ Levels should be restored... *)
@@ -1112,23 +1112,24 @@ let safe_abbrev env ty =
     Btype.backtrack snap;
     false
 
+let try_expand_once env ty =
+  let ty = repr ty in
+  match ty.desc with
+    Tconstr _ -> repr (expand_abbrev env ty)
+  | _ -> raise Cannot_expand
+
+let _ = try_expand_once' := try_expand_once
+
 (* Fully expand the head of a type.
    Raise Cannot_expand if the type cannot be expanded.
    May raise Unify, if a recursion was hidden in the type. *)
 let rec try_expand_head env ty =
-  let ty = repr ty in
-  match ty.desc with
-    Tconstr _ ->
-      let ty' = expand_abbrev env ty in
-      begin try
-        try_expand_head env ty'
-      with Cannot_expand ->
-        repr ty'
-      end
-  | _ ->
-      raise Cannot_expand
-
-let _ = try_expand_head' := try_expand_head
+  let ty' = try_expand_once env ty in
+  begin try
+    try_expand_head env ty'
+  with Cannot_expand ->
+    ty'
+  end
 
 (* Expand once the head of a type *)
 let expand_head_once env ty =
