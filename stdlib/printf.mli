@@ -151,6 +151,14 @@ type index;;
 
 external index_of_int : int -> index = "%identity";;
 
+type ac = {
+  mutable ac_rglr : int;
+  mutable ac_skip : int;
+  mutable ac_rdrs : int;
+};;
+
+val ac_of_format : ('a, 'b, 'c, 'd, 'e, 'f) format6 -> ac;;
+
 module Sformat : sig
   external unsafe_to_string : ('a, 'b, 'c, 'd, 'e, 'f) format6 -> string
     = "%identity"
@@ -165,20 +173,22 @@ module Sformat : sig
 end
 
 val scan_format : ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
-    'ee array ->
+    'g array ->
     index ->
     int ->
-    (index -> string -> int -> 'ff) ->
-    (index -> 'g -> 'h -> int -> 'ff) ->
-    (index -> 'i -> int -> 'ff) ->
-    (index -> int -> 'ff) ->
-    (index -> ('j, 'k, 'l, 'm, 'n, 'o) format6 -> int -> 'ff) -> 'ff
+    (index -> string -> int -> 'h) ->
+    (index -> 'i -> 'j -> int -> 'h) ->
+    (index -> 'k -> int -> 'h) ->
+    (index -> int -> 'h) ->
+    (index -> ('l, 'm, 'n, 'o, 'p, 'q) format6 -> int -> 'h) -> 'h
 
 val sub_format :
     (('a, 'b, 'c, 'd, 'e, 'f) format6 -> int) ->
     (('a, 'b, 'c, 'd, 'e, 'f) format6 -> int -> char -> int) ->
     char -> ('a, 'b, 'c, 'd, 'e, 'f) format6 -> int -> int
+
 val summarize_format_type : ('a, 'b, 'c, 'd, 'e, 'f) format6 -> string
+
 val kapr :
     (('a, 'b, 'c, 'd, 'e, 'f) format6 -> Obj.t array -> 'g) ->
     ('a, 'b, 'c, 'd, 'e, 'f) format6 -> 'g
