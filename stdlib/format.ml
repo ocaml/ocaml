@@ -1193,6 +1193,7 @@ let mkprintf to_s get_out =
  **************************************************************)
 
 let kfprintf k ppf = mkprintf false (fun _ -> ppf) k;;
+let ifprintf ppf = Printf.kapr (fun _ -> Obj.magic ignore);;
 
 let fprintf ppf = kfprintf ignore ppf;;
 let printf fmt = fprintf std_formatter fmt;;

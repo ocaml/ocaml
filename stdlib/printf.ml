@@ -523,6 +523,8 @@ let mkprintf to_s get_out outc outs flush k fmt =
 
 let kfprintf k oc =
   mkprintf false (fun _ -> oc) output_char output_string flush k;;
+let ifprintf oc = kapr (fun _ -> Obj.magic ignore);;
+
 let fprintf oc = kfprintf ignore oc;;
 let printf fmt = fprintf stdout fmt;;
 let eprintf fmt = fprintf stderr fmt;;

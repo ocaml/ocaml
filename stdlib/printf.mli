@@ -113,10 +113,13 @@ val printf : ('a, out_channel, unit) format -> 'a
 val eprintf : ('a, out_channel, unit) format -> 'a
 (** Same as {!Printf.fprintf}, but output on [stderr]. *)
 
+val ifprintf : 'a -> ('b, 'a, unit) format -> 'b
+(** Same as {!Printf.fprintf}, but does not print anything.
+    Useful to ignore some material when conditionally printing. *)
+
 val sprintf : ('a, unit, string) format -> 'a
 (** Same as {!Printf.fprintf}, but instead of printing on an output channel,
-   return a string containing the result of formatting
-   the arguments. *)
+   return a string containing the result of formatting the arguments. *)
 
 val bprintf : Buffer.t -> ('a, Buffer.t, unit) format -> 'a
 (** Same as {!Printf.fprintf}, but instead of printing on an output channel,

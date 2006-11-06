@@ -656,6 +656,10 @@ val kfprintf : (formatter -> 'a) -> formatter ->
 (** Same as [fprintf] above, but instead of returning immediately,
    passes the formatter to its first argument at the end of printing. *)
 
+val ifprintf : formatter -> ('a, formatter, unit) format -> 'a;;
+(** Same as [fprintf] above, but does not print anything.
+   Useful to ignore some material when conditionally printing. *)
+
 val ksprintf : (string -> 'a) -> ('b, unit, string, 'a) format4 -> 'b;;
 (** Same as [sprintf] above, but instead of returning the string,
    passes it to the first argument. *)
