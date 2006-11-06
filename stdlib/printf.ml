@@ -235,35 +235,34 @@ let summarize_format_type fmt =
   iter_on_format_args fmt add_conv add_char;
   Buffer.contents b;;
 
-type num_args = {
-  mutable num_args : int;
-  mutable num_skip_args : int;
-  mutable num_rargs : int;
+type ac = {
+  mutable ac_rglr : int;
+  mutable ac_skip : int;
+  mutable ac_rdrs : int;
 };;
 
 (* Computes the number of arguments of a format (including flag
    arguments if any). *)
-let num_args_of_format_type fmt =
-  let nargs = { num_args = 0; num_skip_args = 0; num_rargs = 0; } in
-  let incr_nargs skip c =
+let ac_of_format fmt =
+  let ac = { ac_rglr = 0; ac_skip = 0; ac_rdrs = 0; } in
+  let incr_ac skip c =
     let inc = if c = 'a' then 2 else 1 in
-    if c = 'r' then nargs.num_rargs <- nargs.num_rargs + 1;
+    if c = 'r' then ac.ac_rdrs <- ac.ac_rdrs + 1;
     if skip
-    then nargs.num_skip_args <- nargs.num_skip_args + inc
-    else nargs.num_args <- nargs.num_args + inc in
-
+    then ac.ac_skip <- ac.ac_skip + inc
+    else ac.ac_rglr <- ac.ac_rglr + inc in
   let add_conv skip i c =
     (* Just finishing a meta format: no additional argument to record. *)
-    if c <> ')' && c <> '}' then incr_nargs skip c;
+    if c <> ')' && c <> '}' then incr_ac skip c;
     succ i
   and add_char i c = succ i in
 
   iter_on_format_args fmt add_conv add_char;
-  nargs;;
+  ac;;
 
-let nargs_of_format_type fmt =
-  let nargs = num_args_of_format_type fmt in
-  nargs.num_args + nargs.num_skip_args + nargs.num_rargs;;
+let count_arguments_of_format fmt =
+  let ac = ac_of_format fmt in
+  ac.ac_rglr + ac.ac_skip + ac.ac_rdrs;;
 
 let list_iter_i f l =
   let rec loop i = function
@@ -277,7 +276,7 @@ let list_iter_i f l =
    Note: in the following, we are careful not to be badly caught
    by the compiler optimizations on the representation of arrays. *)
 let kapr kpr fmt =
-  match nargs_of_format_type fmt with
+  match count_arguments_of_format fmt with
   | 0 -> kpr fmt [||]
   | 1 -> Obj.magic (fun x ->
       let a = Array.make 1 (Obj.repr 0) in
@@ -512,7 +511,7 @@ let mkprintf to_s get_out outc outs flush k fmt =
      and cont_f n i =
        flush out; doprn n i
      and cont_m n xf i =
-       let m = add_int_index (nargs_of_format_type xf) n in
+       let m = add_int_index (count_arguments_of_format xf) n in
        pr (Obj.magic (fun _ -> doprn m i)) n xf v in
 
      doprn n 0 in
