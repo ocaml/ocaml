@@ -238,7 +238,8 @@ module Make(O : OBJ)(EVP : EVALPATH with type value = O.t) = struct
                 match decl with
                 | {type_kind = Type_abstract; type_manifest = None} ->
                     Oval_stuff "<abstr>"
-                | {type_kind = Type_abstract; type_manifest = Some body} ->
+                | {type_kind = Type_abstract | Type_private _;
+                   type_manifest = Some body} ->
                     tree_of_val depth obj
                       (try Ctype.apply env decl.type_params body ty_list with
                          Ctype.Cannot_apply -> abstract_type)
