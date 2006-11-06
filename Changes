@@ -7,6 +7,15 @@ Language features:
   definition replaces the old one, rather than creating a new
   variable.
 
+Standard library:
+- Types format4 and format are now defined in terms of new type format6.
+- Printf:
+    new function ifprintf that prints nothing (useful to print conditionally).
+- Scanf:
+    new function format_from_string to convert a string to a format string,
+    new %r conversion to accomodate user defined scanners.
+- Format:
+    new function ifprintf that prints nothing.
 
 Objective Caml 3.09.3:
 ----------------------
