@@ -87,16 +87,23 @@ exception Scan_failure of string;;
 
 type ('a, 'b, 'c, 'd) tscanf =
      ('a, Scanning.scanbuf, 'b, 'c, 'a -> 'd, 'd) format6 -> 'c;;
+(** The type of scanning functions: [('a, 'b, 'c, 'd) tscanf] is the type of
+    the [scanf] function below, i.e. the type of a scanner that reads from
+    [stdin]; more precisely, [scanf fmt f] applies [f] to the arguments
+    specified by the format string [fmt], and those arguments are read from
+    [stdin] as expected. *)
 
 val bscanf : Scanning.scanbuf -> ('a, 'b, 'c, 'd) tscanf;;
-(**
- [bscanf ib fmt f] reads tokens from the scanning buffer [ib] according
-   to the format string [fmt], converts these tokens to values, and
-   applies the function [f] to these values.
-   The result of this application of [f] is the result of the whole construct.
+(** [bscanf ib fmt r1 ... rN f] reads arguments for the function [f] from the
+   scanning buffer [ib] according to the format string [fmt], and applies [f]
+   to these values.
+   This application of [f] is the result of the whole construct.
 
-   For instance, if [p] is the function [fun s i -> i + 1], then
-   [Scanf.sscanf "x = 1" "%s = %i" p] returns [2].
+   Arguments [r1] to [rN] are user-defined scanners that are applied to the
+   scanning buffer [ib] to read the argument of a [%r] conversion.
+
+   For instance, if [f] is the function [fun s i -> i + 1], then
+   [Scanf.sscanf "x = 1" "%s = %i" f] returns [2].
 
    The format is a character string which contains three types of
    objects:
@@ -163,9 +170,10 @@ val bscanf : Scanning.scanbuf -> ('a, 'b, 'c, 'd) tscanf;;
      first character of the range (or just after the [^] in case of
      range negation); hence [\[\]\]] matches a [\]] character and
      [\[^\]\]] matches any character that is not [\]].
-   - [r]: user-defined reader. Takes a reader function [rdr] as argument and
-     applies it to [ib]. The argument [rdr] must therefore have type
-     [Scanf.Scanning.scanbuf -> 't] and the argument read has type ['t].
+   - [r]: user-defined reader. Takes the next [ri] scanner argument and applies
+     it to the scanning buffer [ib] to read the next argument for [f]. Scanner
+     argument [ri] must therefore have type [Scanning.scanbuf -> 'a] and the
+     argument read has type ['a].
    - [\{ fmt %\}]: reads a format string argument to the format
      specified by the internal format [fmt]. The format string to be
      read must have the same type as the internal format [fmt].
@@ -184,6 +192,8 @@ val bscanf : Scanning.scanbuf -> ('a, 'b, 'c, 'd) tscanf;;
    Following the [%] character introducing a conversion, there may be
    the special flag [_]: the conversion that follows occurs as usual,
    but the resulting value is discarded.
+   For instance, if [f] is the function [fun i -> i + 1], then
+   [Scanf.sscanf "x = 1" "%_s = %i" f] returns [2].
 
    The field widths are composed of an optional integer literal
    indicating the maximal width of the token to read.
@@ -192,8 +202,8 @@ val bscanf : Scanning.scanbuf -> ('a, 'b, 'c, 'd) tscanf;;
    returns the next 8 characters (or all the characters still available,
    if less than 8 characters are available in the input).
 
-   Scanning indications appear just after the string conversions [s]
-   and [\[ range \]] to delimit the end of the token. A scanning
+   Scanning indications appear just after the string conversions [%s]
+   and [%\[ range \]] to delimit the end of the token. A scanning
    indication is introduced by a [@] character, followed by some
    constant character [c]. It means that the string token should end
    just before the next matching [c] (which is skipped). If no [c]
@@ -203,15 +213,15 @@ val bscanf : Scanning.scanbuf -> ('a, 'b, 'c, 'd) tscanf;;
    indication [\@c] does not follow a string conversion, it is treated
    as a plain [c] character.
 
-   Raise [Scanf.Scan_failure] if the given input does not match the format.
+   Raise [Scanf.Scan_failure] if the input does not match the format.
 
    Raise [Failure] if a conversion to a number is not possible.
 
-   Raise [End_of_file] if the end of input is encountered while some
-   more characters are needed to read the current conversion
-   specification (this means in particular that scanning a [%s]
-   conversion never raises exception [End_of_file]: if the end of
-   input is reached the conversion succeeds and simply returns [""]).
+   Raise [End_of_file] if the end of input is encountered while some more
+   characters are needed to read the current conversion specification.
+   As a consequence, scanning a [%s] conversion never raises exception
+   [End_of_file]: if the end of input is reached the conversion succeeds and
+   simply returns the characters read so far, or [""] if none were read.
 
    Raise [Invalid_argument] if the format string is invalid.
 
@@ -278,7 +288,7 @@ val bscanf_format :
     (('a, 'b, 'c, 'd, 'e, 'f) format6 -> 'g) -> 'g;;
 (** [bscanf_format ib fmt f] reads a format string token from scannning buffer
   [ib], according to the given format string [fmt], and applies
-  the function [f] to the resulting format string value.
+  [f] to the resulting format string value.
   Raises [Scan_failure] if the format string value read has not the same type
   as [fmt]. *)
 
