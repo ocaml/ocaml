@@ -946,6 +946,13 @@ let rec skip_whites ib =
     | _ -> ()
   end;;
 
+let list_iter_i f l =
+  let rec loop i = function
+  | [] -> ()
+  | [x] -> f i x (* Tail calling [f] *)
+  | x :: xs -> f i x; loop (succ i) xs in
+  loop 0 l;;
+
 (* The [kscanf] main scanning function.
    It takes as arguments:
      - an input buffer [ib] from which to read characters,
@@ -965,71 +972,94 @@ let rec skip_whites ib =
    If the scanning or some conversion fails, the main scanning function
    aborts and applies the scanning buffer and a string that explains
    the error to the error handling function [ef] (the error continuation). *)
-let kscanf ib ef fmt = Obj.magic (fun f ->
+let ascanf sc fmt =
+  let ac = Printf.ac_of_format fmt in
+   match ac.Printf.ac_rdrs with
+  | 0 -> Obj.magic (fun f -> sc fmt [||] f)
+  | 1 -> Obj.magic (fun x f -> sc fmt [| Obj.repr x |] f)
+  | 2 -> Obj.magic (fun x y f -> sc fmt [| Obj.repr x; Obj.repr y; |] f)
+  | 3 -> Obj.magic (fun x y z f ->
+                      sc fmt [| Obj.repr x; Obj.repr y; Obj.repr z; |] f) 
+  | nargs ->
+    let rec loop i args =
+      if i >= nargs then
+        let a = Array.make nargs (Obj.repr 0) in
+        list_iter_i (fun i arg -> a.(nargs - i - 1) <- arg) args;
+        Obj.magic (fun f -> sc fmt a f)
+      else Obj.magic (fun x -> loop (succ i) (x :: args)) in
+    loop 0 [];;
+
+let scan_format ib ef fmt v f =
 
   let lim = Sformat.length fmt - 1 in
+
+  let limr = Array.length v - 1 in
 
   let return v = Obj.magic v () in
   let delay f x () = f x in
   let stack f = delay (return f) in
   let no_stack f x = f in
 
-  let rec scan_fmt f i =
+  let rec scan_fmt ir f i =
     if i > lim then f else
     match Sformat.get fmt i with
-    | ' ' -> skip_whites ib; scan_fmt f (succ i)
+    | ' ' -> skip_whites ib; scan_fmt ir f (succ i)
     | '%' ->
         if i > lim then incomplete_format fmt else
-        scan_conversion false max_int f (succ i)
+        scan_conversion false max_int ir f (succ i)
     | '@' ->
         let i = succ i in
         if i > lim then incomplete_format fmt else begin
         check_char ib (Sformat.get fmt i);
-        scan_fmt f (succ i) end
-    | c -> check_char ib c; scan_fmt f (succ i)
+        scan_fmt ir f (succ i) end
+    | c -> check_char ib c; scan_fmt ir f (succ i)
 
-  and scan_conversion skip max f i =
+  and scan_conversion skip max ir f i =
     let stack = if skip then no_stack else stack in
     match Sformat.get fmt i with
     | '%' as conv ->
-        check_char ib conv; scan_fmt f (succ i)
+        check_char ib conv; scan_fmt ir f (succ i)
     | 's' ->
         let i, stp = scan_fmt_stoppers (succ i) in
         let _x = scan_string stp max ib in
-        scan_fmt (stack f (token_string ib)) (succ i)
+        scan_fmt ir (stack f (token_string ib)) (succ i)
     | 'S' ->
         let _x = scan_String max ib in
-        scan_fmt (stack f (token_string ib)) (succ i)
+        scan_fmt ir (stack f (token_string ib)) (succ i)
     | '[' (* ']' *) ->
         let i, char_set = read_char_set fmt (succ i) in
         let i, stp = scan_fmt_stoppers (succ i) in
         let _x = scan_chars_in_char_set stp char_set max ib in
-        scan_fmt (stack f (token_string ib)) (succ i)
+        scan_fmt ir (stack f (token_string ib)) (succ i)
     | 'c' when max = 0 ->
         let c = Scanning.checked_peek_char ib in
-        scan_fmt (stack f c) (succ i)
+        scan_fmt ir (stack f c) (succ i)
     | 'c' | 'C' as conv ->
         if max <> 1 && max <> max_int then bad_conversion fmt i conv else
         let _x =
           if conv = 'c' then scan_char max ib else scan_Char max ib in
-        scan_fmt (stack f (token_char ib)) (succ i)
+        scan_fmt ir (stack f (token_char ib)) (succ i)
     | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv ->
         let _x = scan_int_conv conv max ib in
-        scan_fmt (stack f (token_int conv ib)) (succ i)
+        scan_fmt ir (stack f (token_int conv ib)) (succ i)
     | 'N' as conv ->
-        scan_fmt (stack f (get_count conv ib)) (succ i)
+        scan_fmt ir (stack f (get_count conv ib)) (succ i)
     | 'f' | 'e' | 'E' | 'g' | 'G' ->
         let _x = scan_float max ib in
-        scan_fmt (stack f (token_float ib)) (succ i)
+        scan_fmt ir (stack f (token_float ib)) (succ i)
     | 'F' ->
         let _x = scan_Float max ib in
-        scan_fmt (stack f (token_float ib)) (succ i)
+        scan_fmt ir (stack f (token_float ib)) (succ i)
     | 'B' | 'b' ->
         let _x = scan_bool max ib in
-        scan_fmt (stack f (token_bool ib)) (succ i)
+        scan_fmt ir (stack f (token_bool ib)) (succ i)
+    | 'r' ->
+        if ir > limr then assert false else
+        let token = Obj.magic v.(ir) ib in
+        scan_fmt (succ ir) (stack f token) (succ i)
     | 'l' | 'n' | 'L' as conv ->
         let i = succ i in
-        if i > lim then scan_fmt (stack f (get_count conv ib)) i else begin
+        if i > lim then scan_fmt ir (stack f (get_count conv ib)) i else begin
         match Sformat.get fmt i with
         (* This is in fact an integer conversion (e.g. %ld, %ni, or %Lo). *)
         | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv ->
@@ -1038,17 +1068,17 @@ let kscanf ib ef fmt = Obj.magic (fun f ->
                (this character is either 'l', 'n' or 'L'), to find the
                conversion to apply to the integer token read. *)
             begin match Sformat.get fmt (i - 1) with
-            | 'l' -> scan_fmt (stack f (token_int32 conv ib)) (succ i)
-            | 'n' -> scan_fmt (stack f (token_nativeint conv ib)) (succ i)
-            | _ -> scan_fmt (stack f (token_int64 conv ib)) (succ i) end
+            | 'l' -> scan_fmt ir (stack f (token_int32 conv ib)) (succ i)
+            | 'n' -> scan_fmt ir (stack f (token_nativeint conv ib)) (succ i)
+            | _ -> scan_fmt ir (stack f (token_int64 conv ib)) (succ i) end
         (* This is not an integer conversion, but a regular %l, %n or %L. *)
-        | _ -> scan_fmt (stack f (get_count conv ib)) i end
+        | _ -> scan_fmt ir (stack f (get_count conv ib)) i end
     | '!' ->
-        if Scanning.end_of_input ib then scan_fmt f (succ i)
+        if Scanning.end_of_input ib then scan_fmt ir f (succ i)
         else bad_input "end of input not found"
     | '_' ->
         if i > lim then incomplete_format fmt else
-        scan_conversion true max f (succ i)
+        scan_conversion true max ir f (succ i)
     | '0' .. '9' as conv ->
         let rec read_width accu i =
           if i > lim then accu, i else
@@ -1062,8 +1092,8 @@ let kscanf ib ef fmt = Obj.magic (fun f ->
         match Sformat.get fmt i with
         | '.' ->
           let p, i = read_width 0 (succ i) in
-          scan_conversion skip (succ (max + p)) f i
-        | _ -> scan_conversion skip max f i end
+          scan_conversion skip (succ (max + p)) ir f i
+        | _ -> scan_conversion skip max ir f i end
     | '(' | '{' as conv (* ')' '}' *) ->
         let i = succ i in
         let j =
@@ -1073,9 +1103,9 @@ let kscanf ib ef fmt = Obj.magic (fun f ->
         let _x = scan_String max ib in
         let rf = token_string ib in
         if not (compatible_format_type rf mf) then format_mismatch rf mf ib else
-        if conv = '{' (* '}' *) then scan_fmt (stack f rf) j else
-        let nf = scan_fmt (Obj.magic rf) 0 in
-        scan_fmt (stack f nf) j
+        if conv = '{' (* '}' *) then scan_fmt ir (stack f rf) j else
+        let nf = scan_fmt ir (Obj.magic rf) 0 in
+        scan_fmt ir (stack f nf) j
     | c -> bad_conversion fmt i c
 
   and scan_fmt_stoppers i =
@@ -1088,10 +1118,16 @@ let kscanf ib ef fmt = Obj.magic (fun f ->
   Scanning.reset_token ib;
 
   let v =
-    try scan_fmt (fun () -> f) 0 with
+    try scan_fmt 0 (fun () -> f) 0 with
     | (Scan_failure _ | Failure _ | End_of_file) as exc ->
         stack (delay ef ib) exc in
-  return v);;
+  return v;;
+
+let mkscanf ib ef fmt =
+  let sc = scan_format ib ef in
+  ascanf sc fmt;;
+
+let kscanf ib ef fmt = mkscanf ib ef fmt;;
 
 let bscanf ib = kscanf ib scanf_bad_input;;
 
