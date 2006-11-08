@@ -582,10 +582,11 @@ alldepend::
 
 # OCamldoc
 
-ocamldoc: ocamlc ocamlyacc ocamllex
-	cd ocamldoc && $(MAKE) all
-ocamldoc.opt: ocamlc.opt ocamlyacc ocamllex
-	cd ocamldoc && $(MAKE) opt.opt
+ocamldoc ocamldoc.opt:
+#ocamldoc: ocamlc ocamlyacc ocamllex
+#	cd ocamldoc && $(MAKE) all
+#ocamldoc.opt: ocamlc.opt ocamlyacc ocamllex
+#	cd ocamldoc && $(MAKE) opt.opt
 partialclean::
 	cd ocamldoc && $(MAKE) clean
 alldepend::

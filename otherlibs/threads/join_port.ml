@@ -76,7 +76,10 @@ and listener port when_accepted () =
     let s,_ = force_accept port.loc_sock in
 (*DEBUG*)debug1 "LISTENER" "someone coming" ;
     let link = Join_link.create s in
-    when_accepted link
+    try when_accepted link
+    with e ->
+(*DEBUG*)debug1 "LISTENER"
+(*DEBUG*)  (sprintf "acceptor died of %s" (Join_misc.exn_to_string e))
   done with  e ->
 (*DEBUG*)debug0 "LISTENER"
 (*DEBUG*)  (sprintf "died of %s" (Join_misc.exn_to_string e)) ;
