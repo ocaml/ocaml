@@ -54,7 +54,7 @@ let local_space = {
 let space_to_string raddr = Join_misc.string_of_sockaddr raddr
 
 let create_remote_space id =
-(*DEBUG*)debug2 "RSPACE CREATE" (space_to_string id) ;
+(*DEBUG*)debug1 "RSPACE CREATE" (space_to_string id) ;
   {
     rspace_id = id ;
     next_kid =
@@ -89,7 +89,13 @@ let get_remote_space space space_id =
     with
     | Some r -> r
     | None -> new_rspace
-      
+
+(*
+and remove_remote_space space rspace =
+  let space_id = rspace.rspace_id in
+  Join_hash.remove space.remote_spaces space_id
+*)
+
 let find_local space uid =  
   try Join_hash.find space.uid2local uid
   with Not_found -> assert false
@@ -189,8 +195,7 @@ let rec start_listener space addr = match space.listener with
           let rspace = get_remote_space space rspace_id in
           open_link_accepted space rspace link in
         begin try
-          let my_id,_ =
-            Join_port.establish_server addr when_accepted in
+          let my_id,_ = Join_port.establish_server addr when_accepted in
 	  space.listener <- Listen my_id ;
         with
         | Join_port.Failed msg ->
@@ -226,13 +231,16 @@ and finally_open_link_accepted  space rspace link mtx =
       (join_handler space rspace link)
   with Join_link.Failed ->
 (*DEBUG*)debug1 "OPEN LINK ACCEPTED" "failed" ;
-    close_link rspace
+    close_link space rspace
 
 (* attempt to initiate communication with rspace, called by listener *)
 and open_link_accepted space rspace link =  match rspace.link with
-| Connected _
-| DeadConnection  -> (* lost race against other connectors *)
-     close_link_accepted link      
+| Connected _ -> (* lost race against other connectors *)
+    close_link_accepted link      
+| DeadConnection  -> (* Re-open a dead connection *)
+(*DEBUG*)debug1 "OPEN LINK ACCEPTED" "FOUND DEAD" ;
+    begin try Join_link.close link
+    with Join_link.Failed -> () end        
 (* Race, including race with partner connector *)
 | Connecting (mtx,_)
 | NoConnection mtx ->
@@ -307,7 +315,7 @@ and join_handler space rspace link () =
 with
 | Join_link.Failed ->
 (*DEBUG*)debug1 "HANDLER" "input operation failed" ;
-    close_link rspace
+    close_link space rspace
 | e ->
 (*DEBUG*)debug0 "BUG IN HANDLER"
 (*DEBUG*)  (sprintf "died of %s" (Join_misc.exn_to_string e)) ;
@@ -328,7 +336,7 @@ and call_sync space rspace kid g v =
 and do_remote_send space rspace do_msg a =
   try
     let link = get_link space rspace in
-    sender_work rspace link (do_msg (globalize_rec space a []))
+    sender_work space rspace link (do_msg (globalize_rec space a []))
   with NoLink -> ()
 
 and remote_reply_to space rspace kid a =
@@ -338,11 +346,11 @@ and remote_reply_to space rspace kid a =
 and remote_reply_to_exn space rspace kid e =
   try
     let link = get_link space rspace in
-    sender_work rspace link
+    sender_work space rspace link
       (ReplyExn (kid, e))
   with NoLink -> ()
 
-and close_link rspace = match rspace.link with
+and close_link space rspace = match rspace.link with
 | NoConnection _|Connecting (_,_) -> assert false
 | DeadConnection -> ()
 | Connected (_, mtx) ->
@@ -404,7 +412,18 @@ and open_link_sender space rspace mtx =  match rspace.link with
       let link = attempt_connect 0.1 in
       Join_message.output_value link (get_id space) ;
       Join_link.flush link ;
-      let accepted = (Join_message.input_value link : bool) in
+      let accepted =
+        try (Join_message.input_value link : bool)
+        with Join_link.Failed ->
+(*DEBUG*)debug1 "OPEN SENDER" "definitively rejected" ;       
+          begin
+            try Join_link.close link with Join_link.Failed -> ()
+          end ;
+          failwith
+            (sprintf
+               "%s does not accept me with identity %s"
+               (string_of_sockaddr r_addr)
+               (string_of_sockaddr (get_id space))) in
       if accepted then begin
 (*DEBUG*)debug1 "OPEN SENDER" "finally accepted" ;
         Mutex.lock mtx ;
@@ -429,7 +448,7 @@ and get_link space rspace =  match rspace.link with
       open_link_sender space rspace mtx
 
 
-and sender_work rspace link msg =
+and sender_work space rspace link msg =
 (*DEBUG*)debug2 "SENDER" ("message for "^string_of_space rspace.rspace_id) ;
   try
     Mutex.lock rspace.write_mtx ;
@@ -439,7 +458,7 @@ and sender_work rspace link msg =
   with Join_link.Failed -> (* This can happen several times, no big deal *)
     Mutex.unlock rspace.write_mtx ;
 (*DEBUG*)debug1 "SENDER" "output operation failed" ;
-    close_link rspace  (* since close_link is protected *)
+    close_link space rspace  (* since close_link is protected *)
 
 (* returns global identification for stub *)
 and export_stub space stub = match stub.stub_tag with
@@ -522,7 +541,7 @@ let do_remote_call space rspace_id do_msg kont a =
     with NoLink ->
       Join_hash.remove rspace.konts kid ; (* safe if absent *)
       raise Join_misc.JoinExit in
-  sender_work rspace link (do_msg kid (globalize_rec space a [])) ;
+  sender_work space rspace link (do_msg kid (globalize_rec space a [])) ;
   Mutex.lock kont.kmutex ;
   Join_scheduler.suspend_for_reply kont
 
