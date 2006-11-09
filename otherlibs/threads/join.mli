@@ -92,8 +92,10 @@ val connect : Unix.file_descr -> unit
 (* register a channel to be sent to when site fails *)
 val at_fail : site -> unit channel -> unit
 
+(*
 (* Give message to distant sites a chance to leave *)
 val flush_space : unit -> unit
+*)
 
 (* Various levels of debuging as directed by the
    environment variable VERBOSE *)

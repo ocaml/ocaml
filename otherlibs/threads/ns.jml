@@ -67,9 +67,9 @@ let name_key = "name_zorglub"
 
 let () = Join_space.register_service name_key name_service
 
-let connect space_id =
+let connect sockaddr =
   let link =
-    Join.call_service (Join.remote_service space_id name_key) () in
+    Join.call_service (Join.remote_service sockaddr name_key) () in
   (link : link)
   
 let lookup {lookup=lookup} key = lookup key

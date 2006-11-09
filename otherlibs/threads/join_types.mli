@@ -49,7 +49,9 @@ type continuation =
 (* Remote pointers *)
 (*******************)
 
-type space_id = Unix.sockaddr
+type t_uniq = int * float
+
+type space_id = { sock : Unix.sockaddr ; uniq : t_uniq ; }
 
 type service = space_id * string
 
@@ -131,6 +133,7 @@ type space =
     uid_mutex : Mutex.t ;
     next_uid : unit -> int ;
     uid2local : (int, stub_val) Join_hash.t ;
+    active_remote_spaces : (Unix.sockaddr, space_id) Join_hash.t ;
     remote_spaces : (space_id, remote_space) Join_hash.t ;
     services : (string, int) Join_hash.t ;
     mutable listener : listener ;

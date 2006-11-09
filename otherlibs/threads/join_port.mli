@@ -21,7 +21,7 @@ type server
    allocated (and returned as space_id) *)
 val establish_server :
     Unix.sockaddr option ->
-      (Join_link.t -> unit) -> Join_types.space_id * server
+      (Join_link.t -> unit) -> Unix.sockaddr * server
 
 (* raise Failed if server already killed *)
 val kill_server : server -> unit

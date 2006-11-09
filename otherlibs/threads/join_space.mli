@@ -60,6 +60,7 @@ val call_service :
       string (* key *) -> continuation ->
 	'a (* message *) -> 'b
 
+val rid_from_addr : Unix.sockaddr -> space_id
 
 val halt : unit -> unit
 

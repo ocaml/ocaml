@@ -17,12 +17,27 @@ open Printf
 open Join_misc
 (*DEBUG*)open Join_debug
 
-
-let same_space s1 s2 = Pervasives.compare s1 s2 = 0
-
-let compare_space s1 s2 = Pervasives.compare s1 s2
- 
 open Join_types
+
+let create_space_id addr =
+  { sock=addr ; uniq = (Unix.getpid(), Unix.gettimeofday()) ;}
+
+let rec attempt_connect r_addr d =
+  try Join_port.connect r_addr
+  with Join_port.Failed msg ->
+    if d > 5.0 then 
+      failwith
+        (sprintf "cannot connect to %s: %s"
+           (string_of_sockaddr r_addr) msg)
+    else
+      Thread.delay d ; attempt_connect r_addr (2.0 *. d)
+
+let same_addr (s1:Unix.sockaddr) s2 = Pervasives.compare s1 s2 = 0
+
+let same_space (s1:space_id) s2 = Pervasives.compare s1 s2 = 0
+
+let compare_space (s1:space_id) s2 = Pervasives.compare s1 s2
+ 
 
  (* Attempt to handle SIGPIPE *)
 let _ =
@@ -45,13 +60,14 @@ let local_space = {
       r)
   end ;
   uid2local = Join_hash.create () ;
+  active_remote_spaces = Join_hash.create () ;
   remote_spaces =  Join_hash.create () ;
   services = Join_hash.create () ;
   listener = Deaf (Mutex.create ()) ;
 } 
  ;;
 
-let space_to_string raddr = Join_misc.string_of_sockaddr raddr
+let space_to_string { sock=raddr } = Join_misc.string_of_sockaddr raddr
 
 let create_remote_space id =
 (*DEBUG*)debug1 "RSPACE CREATE" (space_to_string id) ;
@@ -174,29 +190,41 @@ let string_of_addr = function
 let check_addr id addro = match addro with
 | None -> ()
 | Some addr ->
-    if not (same_space id addr) then
+    if not (same_addr id addr) then
       failwith
         (sprintf "attempt to listen on %s, already running as %s"
-           (string_of_space addr) (string_of_space id))
+           (string_of_sockaddr addr) (string_of_sockaddr id))
 
 (* listener is started in several occasions, nevertheless ensure unicity *)
+type connect_msg = Query | Connect of space_id
+
 let rec start_listener space addr = match space.listener with
-| Listen id -> check_addr id addr
+| Listen {sock=id} -> check_addr id addr
 | Deaf mtx ->
     Mutex.lock mtx ;
     match space.listener with
-    | Listen id ->
+    | Listen {sock=id} ->
 	Mutex.unlock mtx ;
         check_addr id addr
     | Deaf _ ->
         let when_accepted link =
-          let rspace_id = (Join_message.input_value link : space_id) in
+	  let msg = (Join_message.input_value link : connect_msg) in
+	  match msg with
+	  | Query ->
+	      begin try
+		Join_message.output_value link (get_id space) ;
+		Join_link.flush link ;
+		Join_link.close link
+	      with Join_link.Failed ->
+		begin try Join_link.close link with _ -> () end
+	      end
+	  | Connect rspace_id ->
 (*DEBUG*)debug1 "LISTENER" ("his name: "^space_to_string rspace_id)  ;
-          let rspace = get_remote_space space rspace_id in
-          open_link_accepted space rspace link in
+              let rspace = get_remote_space space rspace_id in
+              open_link_accepted space rspace link in
         begin try
           let my_id,_ = Join_port.establish_server addr when_accepted in
-	  space.listener <- Listen my_id ;
+	  space.listener <- Listen (create_space_id my_id)
         with
         | Join_port.Failed msg ->
             Mutex.unlock mtx ;
@@ -257,7 +285,7 @@ and open_link_accepted space rspace link =  match rspace.link with
           Mutex.unlock mtx ; (* stay in connecting state *)
           close_link_accepted link
         end else if c > 0 then begin
-          (* I have replaced sender (it got false), should do its work *)
+          (* I have replaced my sender (it got false), should do its work *)
           Condition.broadcast cond ;
           finally_open_link_accepted space rspace link mtx
         end else assert false
@@ -399,18 +427,9 @@ and open_link_sender space rspace mtx =  match rspace.link with
       let cond = Condition.create () in
       rspace.link <- Connecting (mtx, cond) ;
       Mutex.unlock mtx ;
-      let r_addr = rspace.rspace_id in
-      let rec attempt_connect d =
-        try Join_port.connect r_addr
-        with Join_port.Failed msg ->
-          if d > 5.0 then 
-            failwith
-              (sprintf "cannot connect to %s: %s"
-                 (string_of_sockaddr r_addr) msg)
-          else
-            Thread.delay d ; attempt_connect (2.0 *. d) in
-      let link = attempt_connect 0.1 in
-      Join_message.output_value link (get_id space) ;
+      let {sock=r_addr} = rspace.rspace_id in
+      let link = attempt_connect r_addr 0.1 in
+      Join_message.output_value link (Connect (get_id space)) ;
       Join_link.flush link ;
       let accepted =
         try (Join_message.input_value link : bool)
@@ -423,7 +442,7 @@ and open_link_sender space rspace mtx =  match rspace.link with
             (sprintf
                "%s does not accept me with identity %s"
                (string_of_sockaddr r_addr)
-               (string_of_sockaddr (get_id space))) in
+               (string_of_space (get_id space))) in
       if accepted then begin
 (*DEBUG*)debug1 "OPEN SENDER" "finally accepted" ;
         Mutex.lock mtx ;
@@ -593,8 +612,35 @@ let do_call_service space rspace_id key kont a =
       (fun kid v -> Service (key, kid, v))
       kont a
   end
+
 let call_service space_id key kont a =
   do_call_service local_space  space_id key kont a
+
+let do_rid_from_addr space addr =
+  let my_id = get_id space in
+  if same_addr my_id.sock addr then
+    my_id
+  else begin
+(*DEBUG*)debug1 "RID"
+(*DEBUG*)  (sprintf "GET COMPLETE ID OF %s" (string_of_sockaddr addr)) ;
+    let link = attempt_connect addr 0.1 in
+    let rid =
+      try
+	Join_message.output_value link Query ;
+	Join_link.flush link ;
+	(Join_message.input_value link : space_id )
+      with Join_link.Failed ->
+	failwith
+	  (sprintf "cannot query %s for its complete name"
+	     (string_of_sockaddr addr)) in
+    begin try Join_link.close link with _ -> () end ;
+(*DEBUG*)let pid,stamp = rid.uniq in
+(*DEBUG*)debug1 "RID" (sprintf "GOT COMPLETE ID OF %s+%i+%f"
+(*DEBUG*)      (string_of_space rid) pid stamp) ;
+    rid
+  end
+
+let rid_from_addr addr = do_rid_from_addr local_space addr
 
 let kill_remote_space space rspace = assert false
 
@@ -693,9 +739,6 @@ let at_fail rspace_id hook = do_at_fail local_space rspace_id hook
    Well, at least all replies are delivered.
    This will go into deadlock if some remote sync call
    is pending on local definition.
-
-   Nothing particular is done for other remote message,
-   except that the queue is flushed
  *)
 
 let flush_out_queue space rspace =

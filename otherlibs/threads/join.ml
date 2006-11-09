@@ -407,7 +407,8 @@ match stub.stub_tag with
 (* RPC by name *)
 type service = Join_types.service
 
-let remote_service addr key =  addr, key
+let remote_service addr key =
+  Join_space.rid_from_addr addr, key
 
 let register_service key (f : 'a -> 'b) =
   Join_space.register_service key f
