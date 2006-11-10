@@ -212,7 +212,10 @@ let rec start_listener space addr = match space.listener with
 	  match msg with
 	  | Query ->
 	      begin try
-		Join_message.output_value link (get_id space) ;
+(*DEBUG*)debug1 "LISTENER" "QUERIED" ;
+                let my_id = get_id space in
+		Join_message.output_value link my_id ;
+(*DEBUG*)debug1 "LISTENER" (sprintf "ANSWERED %s" (string_of_space my_id)) ;
 		Join_link.flush link ;
 		Join_link.close link
 	      with Join_link.Failed ->
