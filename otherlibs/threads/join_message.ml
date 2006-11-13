@@ -54,12 +54,12 @@ let localize_exn (exn : exn) =
 	   r
        | _ -> assert false in
  (*DEBUG*)debug2 "LOCALIZE"
- (*DEBUG*)  (sprintf "successful localization of %s" (get_cstr_name cstr)) ;
+ (*DEBUG*)  "successful localization of %s" (get_cstr_name cstr) ;
      Obj.obj r
    with
    | Not_found ->
  (*DEBUG*)debug2 "LOCALIZE"
- (*DEBUG*)  (sprintf "failed localization of %s" (get_cstr_name cstr)) ;    
+ (*DEBUG*)  "failed localization of %s" (get_cstr_name cstr) ;    
        exn
 
 (* For efficiency, messages are transmitted as several
@@ -153,3 +153,14 @@ and output_msg oc = function
   | Service (key, kont, arg) ->
       output_value oc (Pservice (key, kont)) ;
       output_parameter oc arg
+
+
+let string_of_msg = function
+  | AsyncSend (_, _) -> "AsyncSend (chan, arg)"
+  | AloneSend (_, _) -> "AloneSend (alone, arg)"
+  | SyncSend (_, _, _) -> "SyncSend (chan, kont, arg)"
+  | AloneSyncSend (_, _, _) -> "AloneSyncSend (uid, kont, arg)"
+  | ReplySend (_, _) -> "ReplySend (kont, arg)"
+  | ReplyExn (_, _) -> "ReplyExn (kont, e)"
+  | Service (_, _, _) -> "Service (key, kont, arg)"
+

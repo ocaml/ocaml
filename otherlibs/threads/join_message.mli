@@ -36,4 +36,6 @@ val output_parameter : Join_link.t -> parameter -> unit
 val input_msg : Join_link.t -> message
 val output_msg : Join_link.t -> message -> unit
 
+(* for debug *)
+val string_of_msg : message -> string
 

@@ -12,7 +12,11 @@
 
 (* $Id$ *)
 
-val debug0 : string -> string -> unit
-val debug1 : string -> string -> unit
-val debug2 : string -> string -> unit
-val debug3 : string -> string -> unit
+open Printf
+
+type 'a t = string -> (('a, unit, string, unit) format4 -> 'a)
+
+val debug0 : 'a t
+val debug1 : 'a t
+val debug2 : 'a t
+val debug3 : 'a t

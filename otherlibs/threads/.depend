@@ -20,7 +20,7 @@ join_link.cmi: unix.cmi
 join_message.cmi: join_types.cmi join_link.cmi 
 join_misc.cmi: unix.cmi 
 join.cmi: unix.cmi join_types.cmi 
-join_port.cmi: unix.cmi join_types.cmi join_link.cmi 
+join_port.cmi: unix.cmi join_link.cmi 
 join_scheduler.cmi: join_types.cmi 
 join_space.cmi: unix.cmi marshal.cmi join_types.cmi 
 join_test.cmi: marshal.cmi join_types.cmi 

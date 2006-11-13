@@ -31,8 +31,7 @@ let create fd =
     inc  = Unix.in_channel_of_descr fd ;
     fd = fd ; }
   with e ->
-(*DEBUG*)debug1 "CREATE"
-(*DEBUG*)  (sprintf "failed on %s" (Join_misc.exn_to_string e)) ;
+(*DEBUG*)debug1 "CREATE" "failed on %s" (Join_misc.exn_to_string e) ;
     match e with
     | Out_of_memory -> raise e
     | _  -> assert false
@@ -43,12 +42,11 @@ let output_string { outc = outc } v =
     output_string outc v
   with
   | Sys_error _ as e ->
-(*DEBUG*)debug1 "OUTPUT_STRING"
-(*DEBUG*)  (sprintf "failed on %s" (Join_misc.exn_to_string e)) ;
+(*DEBUG*)debug1 "OUTPUT_STRING"  "failed on %s" (Join_misc.exn_to_string e) ;
       raise Failed
   | e ->
 (*DEBUG*)debug0 "FATAL OUTPUT_STRING"
-(*DEBUG*)  (sprintf "failed on %s" (Join_misc.exn_to_string e)) ;   
+(*DEBUG*)  "failed on %s" (Join_misc.exn_to_string e) ;   
       assert false
  
 
@@ -58,11 +56,11 @@ let flush { outc = outc } =
   with
   | Sys_error _ as e ->
 (*DEBUG*)debug1 "FLUSH"
-(*DEBUG*)  (sprintf "failed on %s" (Join_misc.exn_to_string e)) ;
+(*DEBUG*)  "failed on %s" (Join_misc.exn_to_string e) ;
       raise Failed
   | e ->
 (*DEBUG*)debug0 "FATAL FLUSH"
-(*DEBUG*)  (sprintf "failed on %s" (Join_misc.exn_to_string e)) ;   
+(*DEBUG*)  "failed on %s" (Join_misc.exn_to_string e) ;   
       assert false
 
 
@@ -72,11 +70,11 @@ let really_input { inc = inc } buff ofs len =
   with
   | End_of_file|Sys_error _ as e ->
 (*DEBUG*)debug1 "REALLY INPUT"
-(*DEBUG*)  (sprintf "failed on %s" (Join_misc.exn_to_string e)) ;
+(*DEBUG*)  "failed on %s" (Join_misc.exn_to_string e) ;
       raise Failed
   | e ->
 (*DEBUG*)debug0 "FATAL REALLY INPUT"
-(*DEBUG*)  (sprintf "failed on %s" (Join_misc.exn_to_string e)) ;   
+(*DEBUG*)  "failed on %s" (Join_misc.exn_to_string e) ;   
       assert false
 
 let close {fd=fd} =
@@ -85,9 +83,9 @@ let close {fd=fd} =
   with
   | Unix.Unix_error (Unix.EBADF,_,_) as e ->
 (*DEBUG*)debug1 "LINK CLOSE"
-(*DEBUG*)  (sprintf "failed on %s" (Join_misc.exn_to_string e)) ;
+(*DEBUG*)  "failed on %s" (Join_misc.exn_to_string e) ;
       raise Failed
   | e ->
 (*DEBUG*)debug0 "IO ERROR IN LINK CLOSE"
-(*DEBUG*)  (sprintf "failed on %s" (Join_misc.exn_to_string e)) ;   
+(*DEBUG*)  "failed on %s" (Join_misc.exn_to_string e) ;   
       exit 0

@@ -14,22 +14,34 @@
 
 open Printf
 
+type 'a t = string -> (('a, unit, string, unit) format4 -> 'a)
+
 (*DEBUG*)let verbose =
 (*DEBUG*)  try int_of_string (Sys.getenv "VERBOSE") with | _ -> 0
 (*DEBUG*)
 (*DEBUG*)let debug_mutex = Mutex.create ()
-(*DEBUG*)
-let debug lvl source msg = ()
 
-(*DEBUG*)let debug lvl source msg =
+let do_nothing source fmt =  ksprintf (fun _ -> ()) fmt
+
+let debug lvl source fmt = do_nothing source fmt
+
+(*
+(*DEBUG*)let do_something source fmt =
+(*DEBUG*)  ksprintf
+(*DEBUG*)    (fun s ->
+(*DEBUG*)      Mutex.lock debug_mutex ;
+(*DEBUG*)      eprintf "%s[%i]: " source (Thread.id (Thread.self ())) ;
+(*DEBUG*)      prerr_endline s ;
+(*DEBUG*)      Mutex.unlock debug_mutex) fmt
+(*DEBUG*)  
+(*DEBUG*)let debug lvl src fmt =
 (*DEBUG*)  if verbose >= lvl then begin
-(*DEBUG*)   Mutex.lock debug_mutex ;
-(*DEBUG*)    eprintf "%s[%i]: %s\n" source (Thread.id (Thread.self ())) msg ;
-(*DEBUG*)    flush stderr ;
-(*DEBUG*)    Mutex.unlock debug_mutex
-(*DEBUG*)  end
-(*DEBUG*)
-let debug0 = debug 0
-let debug1 = debug 1
-and debug2 = debug 2
-and debug3 = debug 3
+(*DEBUG*)    do_something src fmt
+(*DEBUG*)  end else
+(*DEBUG*)    do_nothing src fmt
+*)
+
+let debug0 src fmt = debug 0 src fmt
+and debug1 src fmt = debug 1 src fmt
+and debug2 src fmt = debug 2 src fmt
+and debug3 src fmt = debug 3 src fmt

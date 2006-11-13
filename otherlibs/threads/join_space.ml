@@ -70,7 +70,7 @@ let local_space = {
 let space_to_string { sock=raddr } = Join_misc.string_of_sockaddr raddr
 
 let create_remote_space id =
-(*DEBUG*)debug1 "RSPACE CREATE" (space_to_string id) ;
+(*DEBUG*)debug1 "RSPACE CREATE" "%s" (space_to_string id) ;
   {
     rspace_id = id ;
     next_kid =
@@ -173,12 +173,11 @@ external do_localize_message :
 let string_of_space = space_to_string 
 
 let verbose_close caller fd =  
-  (*DEBUG*)debug1 ("CLOSE from "^caller) (sprintf "%i" (Obj.magic fd)) ;
+(*DEBUG*)debug1 ("CLOSE from "^caller) "%i" (Obj.magic fd) ;
   try
     Unix.close fd
   with e ->
-    (*DEBUG*)debug1 ("CLOSE from "^caller)
-      (*DEBUG*) (Join_misc.exn_to_string e) ;
+(*DEBUG*)debug1 ("CLOSE from "^caller) "%s" (Join_misc.exn_to_string e) ;
     ()
 
 exception NoLink
@@ -215,14 +214,14 @@ let rec start_listener space addr = match space.listener with
 (*DEBUG*)debug1 "LISTENER" "QUERIED" ;
                 let my_id = get_id space in
 		Join_message.output_value link my_id ;
-(*DEBUG*)debug1 "LISTENER" (sprintf "ANSWERED %s" (string_of_space my_id)) ;
+(*DEBUG*)debug1 "LISTENER" "ANSWERED %s" (string_of_space my_id) ;
 		Join_link.flush link ;
 		Join_link.close link
 	      with Join_link.Failed ->
 		begin try Join_link.close link with _ -> () end
 	      end
 	  | Connect rspace_id ->
-(*DEBUG*)debug1 "LISTENER" ("his name: "^space_to_string rspace_id)  ;
+(*DEBUG*)debug1 "LISTENER" "his name: %s" (space_to_string rspace_id)  ;
               let rspace = get_remote_space space rspace_id in
               open_link_accepted space rspace link in
         begin try
@@ -299,10 +298,13 @@ and open_link_accepted space rspace link =  match rspace.link with
    treat incomming messages *)
 and join_handler space rspace link () =
 (*DEBUG*)debug1 "HANDLER"
-(*DEBUG*)  ("start receiving from "^string_of_space rspace.rspace_id) ;  try
+(*DEBUG*)  "start receiving from %s" (string_of_space rspace.rspace_id) ;  try
   while true do
     let msg = Join_message.input_msg link in
-(*DEBUG*)debug2 "HANDLER" ("message from "^string_of_space rspace.rspace_id) ;
+(*DEBUG*)debug2 "HANDLER"
+(*DEBUG*) "message [%s] from %s"
+(*DEBUG*)    (Join_message.string_of_msg msg)
+(*DEBUG*)    (string_of_space rspace.rspace_id) ;
     match msg with
     | AsyncSend (chan, v) ->
 	let auto = find_automaton space chan.auto_id
@@ -349,7 +351,7 @@ with
     close_link space rspace
 | e ->
 (*DEBUG*)debug0 "BUG IN HANDLER"
-(*DEBUG*)  (sprintf "died of %s" (Join_misc.exn_to_string e)) ;
+(*DEBUG*)  "died of %s" (Join_misc.exn_to_string e) ;
     ()
 
 and call_sync space rspace kid g v =
@@ -471,7 +473,7 @@ and get_link space rspace =  match rspace.link with
 
 
 and sender_work space rspace link msg =
-(*DEBUG*)debug2 "SENDER" ("message for "^string_of_space rspace.rspace_id) ;
+(*DEBUG*)debug2 "SENDER" "message for %s" (string_of_space rspace.rspace_id) ;
   try
     Mutex.lock rspace.write_mtx ;
     Join_message.output_msg link msg ;
@@ -479,7 +481,7 @@ and sender_work space rspace link msg =
     Mutex.unlock rspace.write_mtx
   with Join_link.Failed -> (* This can happen several times, no big deal *)
     Mutex.unlock rspace.write_mtx ;
-(*DEBUG*)debug1 "SENDER" "output operation failed" ;
+(*DEBUG*)debug1 "SENDER" "%s" "output operation failed" ;
     close_link space rspace  (* since close_link is protected *)
 
 (* returns global identification for stub *)
@@ -588,7 +590,7 @@ let remote_send_sync_alone rspace_id uid kont a =
 (* Services supply RCP by name *)
 
 let do_register_service space key f =
-(*DEBUG*)debug1 "REGISTER_SERVICE" key ;
+(*DEBUG*)debug1 "REGISTER_SERVICE" "%s" key ;
 (* Alloc some uid, but without a stub *)
   Mutex.lock space.uid_mutex ;
   let uid = space.next_uid () in
@@ -610,7 +612,7 @@ let do_call_service space rspace_id key kont a =
     let f = find_sync_forwarder space uid in
     f a
   else begin
-(*DEBUG*)debug2 "RCALL SERVICE" key ;    
+(*DEBUG*)debug2 "RCALL SERVICE" "%s" key ;    
     do_remote_call space rspace_id
       (fun kid v -> Service (key, kid, v))
       kont a
@@ -625,7 +627,7 @@ let do_rid_from_addr space addr =
     my_id
   else begin
 (*DEBUG*)debug1 "RID"
-(*DEBUG*)  (sprintf "GET COMPLETE ID OF %s" (string_of_sockaddr addr)) ;
+(*DEBUG*)  "GET COMPLETE ID OF %s" (string_of_sockaddr addr) ;
     let link = attempt_connect addr 0.1 in
     let rid =
       try
@@ -638,8 +640,8 @@ let do_rid_from_addr space addr =
 	     (string_of_sockaddr addr)) in
     begin try Join_link.close link with _ -> () end ;
 (*DEBUG*)let pid,stamp = rid.uniq in
-(*DEBUG*)debug1 "RID" (sprintf "GOT COMPLETE ID OF %s+%i+%f"
-(*DEBUG*)      (string_of_space rid) pid stamp) ;
+(*DEBUG*)debug1 "RID" "GOT COMPLETE ID OF %s+%i+%f"
+(*DEBUG*)  (string_of_space rid) pid stamp ;
     rid
   end
 
@@ -746,9 +748,11 @@ let at_fail rspace_id hook = do_at_fail local_space rspace_id hook
 
 let flush_out_queue space rspace =
 (* First wait for replies to be passed to out queue *)
-(*DEBUG*)debug2 "WAIT PENDING REPLIES" (space_to_string rspace.rspace_id) ;
+(*DEBUG*)debug2 "WAIT PENDING REPLIES" "%s"
+(*DEBUG*)  (space_to_string rspace.rspace_id) ;
   wait_zero rspace.replies_pending ;
-(*DEBUG*)debug2 "NO PENDING REPLIES" (space_to_string rspace.rspace_id) ;
+(*DEBUG*)debug2 "NO PENDING REPLIES" "%s"
+(*DEBUG*)  (space_to_string rspace.rspace_id) ;
   ()
 
 let do_flush_out_queues space =

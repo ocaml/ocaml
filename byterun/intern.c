@@ -317,8 +317,9 @@ static void intern_rec(value *dest)
           intern_cleanup() ;
           caml_failwith("input_value: no value saved");
         }
-        /* Saved values are not shared */
-        break ;
+        /* Beware of saved values in minor heap ! */
+	caml_initialize(dest, v) ;
+	return ;
         /*<JOCAML*/
       case CODE_INFIXPOINTER:
         ofs = read32u();

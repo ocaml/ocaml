@@ -282,7 +282,9 @@ static void writecode64(int code, intnat val)
 /*> JOCAML */
 
 #define MAX_SAVED 2
-
+#ifdef DEBUG
+#include <stdio.h>
+#endif
 static int32 saved_code[MAX_SAVED] ;
 static int ncodes_saved = 0 ;
 
@@ -291,7 +293,10 @@ CAMLprim value caml_register_saved_code(value v)
   if (ncodes_saved >=  MAX_SAVED) {
     caml_failwith("caml_register_saved_code called too many times\n") ;
   }
-  saved_code[ncodes_saved] =  ((char *)Code_val(v)) - caml_code_area_start ;
+  saved_code[ncodes_saved] =  ((code_t)Code_val(v)) - caml_start_code ;
+#ifdef DEBUG
+  fprintf(stderr, "CODE%i is %i\n", ncodes_saved, saved_code[ncodes_saved]) ;
+#endif
   ncodes_saved++ ;
   return Val_unit ;
 }
@@ -301,7 +306,7 @@ CAMLprim value caml_register_saved_code(value v)
 static int caml_find_saved_code(code_t c)
 {
   int i ;
-  int32 ofs = ((char *)c) - caml_code_area_start ;
+  int32 ofs = ((code_t)c) - caml_start_code ;
   for (i = 0 ; i < ncodes_saved ; i++) {
     if (saved_code[i] == ofs) return i ;
   }
@@ -311,7 +316,7 @@ static int caml_find_saved_code(code_t c)
 CAMLexport code_t caml_get_saved_code(int idx)
 {
   if (idx < ncodes_saved) {
-    return (code_t)( caml_code_area_start + saved_code[idx]) ;
+    return caml_start_code + saved_code[idx] ;
   } else {
     return NULL ;
   }
@@ -328,6 +333,9 @@ CAMLprim value caml_register_saved_value(value v)
   }
   saved_value[nvalues_saved] = v ;
   caml_register_global_root(&saved_value[nvalues_saved]) ;
+#ifdef DEBUG
+  fprintf(stderr, "REGISTER VALUE %i: %p\n", nvalues_saved, (void *)v) ;
+#endif
   nvalues_saved++ ;
   return Val_unit ;
 }
@@ -336,7 +344,12 @@ static int caml_find_saved_value(value v)
 {
   int i ;
   for (i = 0 ; i < nvalues_saved ; i++) {
-    if (saved_value[i] == v) return i ;
+    if (saved_value[i] == v) {
+#ifdef DEBUG
+      fprintf(stderr, "FOUND VALUE %i: %p\n", i, (void *)v) ;
+#endif
+      return i ;
+    }
   }
   return -1 ;
 }
@@ -345,6 +358,9 @@ static int caml_find_saved_value(value v)
 CAMLexport value caml_get_saved_value(int idx)
 {
   if (idx < nvalues_saved) {
+#ifdef DEBUG
+  fprintf(stderr, "GET VALUE %i: %p\n", idx, (void *)(saved_value[idx])) ;
+#endif
     return saved_value[idx] ;
   } else {
     return (value)NULL ;

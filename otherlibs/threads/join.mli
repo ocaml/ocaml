@@ -99,9 +99,11 @@ val flush_space : unit -> unit
 
 (* Various levels of debuging as directed by the
    environment variable VERBOSE *)
-val debug : string -> string -> unit
-val debug0 : string -> string -> unit
-val debug1 : string -> string -> unit
-val debug2 : string -> string -> unit
-val debug3 : string -> string -> unit
+type 'a debug = string -> (('a, unit, string, unit) format4 -> 'a)
+
+val debug : 'a debug
+val debug0 : 'a debug
+val debug1 : 'a debug
+val debug2 : 'a debug
+val debug3 : 'a debug
 

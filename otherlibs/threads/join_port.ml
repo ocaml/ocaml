@@ -44,7 +44,7 @@ let create_port porto =
         s
       with e -> close s ; raise e
     with e ->
-(*DEBUG*)debug1 "CREATE PORT" (exn_to_string e) ;
+(*DEBUG*)debug1 "CREATE PORT" "%s" (exn_to_string e) ;
         raise (Failed (exn_to_string e)) in
   let sockaddr = 
     let sockaddr = getsockname sock in
@@ -61,28 +61,28 @@ let rec force_accept s =
   try
 (*DEBUG*)debug1 "UNIX" "accept" ;
     let (_,addr) as r = Unix.accept s in
-(*DEBUG*)debug1 "UNIX" ("accepted: "^string_of_sockaddr addr) ;
+(*DEBUG*)debug1 "UNIX" "accepted: %s" (string_of_sockaddr addr) ;
     r
   with
   | Unix_error((EAGAIN|EINTR),_,_) -> 
-(*DEBUG*)debug1 "accept" "try again" ;
+(*DEBUG*)debug1 "accept" "%s" "try again" ;
       force_accept s
 
 
 and listener port when_accepted () =
   try while true do
 (*DEBUG*)debug1 "LISTENER"
-(*DEBUG*)  (sprintf "now accept on %s" (string_of_sockaddr port.loc_port)) ;
+(*DEBUG*)  "now accept on %s" (string_of_sockaddr port.loc_port) ;
     let s,_ = force_accept port.loc_sock in
-(*DEBUG*)debug1 "LISTENER" "someone coming" ;
+(*DEBUG*)debug1 "LISTENER" "%s" "someone coming" ;
     let link = Join_link.create s in
     try when_accepted link
     with e ->
 (*DEBUG*)debug1 "LISTENER"
-(*DEBUG*)  (sprintf "acceptor died of %s" (Join_misc.exn_to_string e))
+(*DEBUG*)  "acceptor died of %s" (Join_misc.exn_to_string e)
   done with  e ->
 (*DEBUG*)debug0 "LISTENER"
-(*DEBUG*)  (sprintf "died of %s" (Join_misc.exn_to_string e)) ;
+(*DEBUG*)  "died of %s" (Join_misc.exn_to_string e) ;
     ()
 
 let establish_server port when_accepted =
@@ -97,7 +97,7 @@ let kill_server { loc_sock = sock ; } =
     Unix.close sock ;
   with e ->
 (*DEBUG*)debug0 "KILL SERVER"
-(*DEBUG*)  (sprintf "got %s" (Join_misc.exn_to_string e)) ;
+(*DEBUG*)  "got %s" (Join_misc.exn_to_string e) ;
     raise (Failed (exn_to_string e))
     
 
@@ -114,11 +114,11 @@ let connect sockaddr =
           SOCK_STREAM 0 in
       try
         Unix.connect sock sockaddr ;
-(*DEBUG*)debug1 "CONNECTED" (string_of_sockaddr (getpeername sock)) ;
+(*DEBUG*)debug1 "CONNECTED" "%s" (string_of_sockaddr (getpeername sock)) ;
         sock
       with z -> close sock ; raise z
     with
     | e ->
-(*DEBUG*)debug1 "CONNECT" (exn_to_string e) ;
+(*DEBUG*)debug1 "CONNECT" "%s" (exn_to_string e) ;
         raise (Failed (exn_to_string e)) in
   Join_link.create sock (* Can fail only for OutOfMemory *)

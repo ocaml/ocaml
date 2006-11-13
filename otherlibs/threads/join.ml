@@ -203,8 +203,8 @@ let just_go_async auto f =
 
 let rec attempt_match tail auto reactions idx i =
   if i >= Obj.size reactions then begin
-(*DEBUG*)debug3 "ATTEMPT FAILED" (sprintf "%s %s"
-(*DEBUG*)  (get_name auto idx) (auto.status.to_string ())) ;    
+(*DEBUG*)debug3 "ATTEMPT FAILED" "%s %s"
+(*DEBUG*)  (get_name auto idx) (auto.status.to_string ()) ;    
     Mutex.unlock auto.mutex
   end else begin
     let (ipat, iprim, f) =
@@ -226,14 +226,14 @@ let rec attempt_match tail auto reactions idx i =
   end
 
 let local_send_async auto idx a =
-(*DEBUG*)debug3 "SEND_ASYNC" (sprintf "channel=%s, status=%s"
-(*DEBUG*)  (get_name auto idx) (auto.status.to_string ())) ;
+(*DEBUG*)debug3 "SEND_ASYNC" "channel=%s, status=%s"
+(*DEBUG*)  (get_name auto idx) (auto.status.to_string ()) ;
 (* Acknowledge new message by altering queue and status *)
   Mutex.lock auto.mutex ;
   put_queue auto idx a ;
   if not (auto.status.set idx) then begin
-(*DEBUG*)debug3 "SEND_ASYNC" (sprintf "Return: %s"
-(*DEBUG*)  (auto.status.to_string ())) ;
+(*DEBUG*)debug3 "SEND_ASYNC" "Return: %s"
+(*DEBUG*)  (auto.status.to_string ()) ;
     Mutex.unlock auto.mutex
   end else begin
     attempt_match false auto (Obj.magic auto.matches) idx 0
@@ -259,7 +259,7 @@ let send_async chan a = match chan with
     begin match stub.stub_tag with
     | Local ->
 	let guard = (Obj.magic stub.stub_val : 'a -> unit) in
-(*DEBUG*)debug3 "SEND ALONE" name ;
+(*DEBUG*)debug3 "SEND ALONE" "%s" name ;
 	local_send_alone guard a
     | Remote ->
 	let rspace = (Obj.magic stub.stub_val : space_id) in
@@ -269,14 +269,14 @@ let send_async chan a = match chan with
 let _ = Join_space.send_async_gen_ref.Join_space.async_gen <- send_async
 
 let local_tail_send_async auto idx a =
-(*DEBUG*)debug3 "TAIL_ASYNC" (sprintf "channel %s, status=%s"
-(*DEBUG*)  (get_name auto idx) (auto.status.to_string ())) ;
+(*DEBUG*)debug3 "TAIL_ASYNC" "channel %s, status=%s"
+(*DEBUG*)  (get_name auto idx) (auto.status.to_string ()) ;
 (* Acknowledge new message by altering queue and status *)
   Mutex.lock auto.mutex ;
   put_queue auto idx a ;
   if not (auto.status.set idx) then begin
-(*DEBUG*)debug3 "TAIL_ASYNC" (sprintf "Return: %s"
-(*DEBUG*) (auto.status.to_string ())) ;
+(*DEBUG*)debug3 "TAIL_ASYNC" "Return: %s"
+(*DEBUG*) (auto.status.to_string ()) ;
     Mutex.unlock auto.mutex
   end else begin
     attempt_match true auto (Obj.magic auto.matches) idx 0
@@ -300,7 +300,7 @@ let tail_send_async chan a = match chan with
 | Alone (stub,name) ->
     begin match stub.stub_tag with
     | Local ->
-(*DEBUG*)debug3 "TAIL SEND ALONE" name ;
+(*DEBUG*)debug3 "TAIL SEND ALONE" "%s" name ;
 	let guard = (Obj.magic stub.stub_val : 'a -> unit) in
 	local_tail_send_alone guard a
     | Remote ->
@@ -341,8 +341,8 @@ let fire_suspend k _ f =
 
 let rec attempt_match_sync idx auto kont reactions i =
   if i >= Obj.size reactions then begin
-(*DEBUG*)debug3 "SYNC ATTEMPT FAILED" (sprintf "%s %s"
-(*DEBUG*)  (get_name auto idx) (auto.status.to_string ())) ;    
+(*DEBUG*)debug3 "SYNC ATTEMPT FAILED" "%s %s"
+(*DEBUG*)  (get_name auto idx) (auto.status.to_string ()) ;    
     Join_scheduler.suspend_for_reply kont
   end else begin
     let (ipat, ipri, _) as t = Obj.magic (Obj.field reactions i) in
@@ -368,14 +368,14 @@ let rec attempt_match_sync idx auto kont reactions i =
   end
 
 let local_send_sync auto idx a =
-(*DEBUG*)  debug3 "SEND_SYNC" (sprintf "channel %s" (get_name auto idx)) ;
+(*DEBUG*)  debug3 "SEND_SYNC" "channel %s" (get_name auto idx) ;
   let kont = kont_create auto in
 (* Acknowledge new message by altering queue and status *)
   Mutex.lock auto.mutex ;
   put_queue auto idx (Obj.magic (kont,a)) ;
   if not (auto.status.set idx) then begin
-(*DEBUG*)debug3 "SEND_SYNC" (sprintf "Return: %s"
-(*DEBUG*) (auto.status.to_string ())) ;
+(*DEBUG*)debug3 "SEND_SYNC" "Return: %s"
+(*DEBUG*) (auto.status.to_string ()) ;
     Join_scheduler.suspend_for_reply kont
   end else begin
     attempt_match_sync idx auto kont (Obj.magic auto.matches) 0
@@ -394,7 +394,7 @@ let send_sync stub idx arg = match stub.stub_tag with
     Join_space.remote_send_sync rspace_id stub.uid idx kont arg
 
 let send_sync_alone stub name arg =
-(*DEBUG*)debug2 "SEND SYNC ALONE" name ;
+(*DEBUG*)debug2 "SEND SYNC ALONE" "%s" name ;
 match stub.stub_tag with
 | Local ->
     let g = (Obj.magic stub.stub_val : 'a -> 'b) in
@@ -483,6 +483,7 @@ let at_fail site (chan:unit channel) =
 let flush_space = Join_space.flush_space
 
 (* Debug from users programs *)
+type 'a debug = string -> (('a, unit, string, unit) format4 -> 'a)
 
 let debug = Join_debug.debug0
 and debug0 = Join_debug.debug0

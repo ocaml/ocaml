@@ -56,7 +56,7 @@ and decr_locked m r =
 let become_inactive () =
   decr_locked nthreads_mutex active ;
  (* if active reaches 0, this cannot change, so we unlock now *)
-(*DEBUG*)debug2 "CHECK" (tasks_status ()) ;
+(*DEBUG*)debug2 "CHECK" "%s" (tasks_status ()) ;
   if !active <= 0 then begin
     Mutex.lock active_mutex ;
     Condition.signal active_condition ;
@@ -87,7 +87,7 @@ and runmax =
 
 let really_exit_thread () =
   decr_locked nthreads_mutex nthreads ;
-(*DEBUG*)debug1 "REAL EXIT" (sprintf "nthreads=%i" !nthreads);
+(*DEBUG*)debug1 "REAL EXIT" "nthreads=%i" !nthreads ;
   Thread.exit ()
 
 (* Note: really_create_process
@@ -103,12 +103,12 @@ let really_create_process f =
     | _ -> ()
     end ;
     let t = Join_extern.thread_new f in
-(*DEBUG*)debug1 "REAL FORK" (sprintf "%i %s" (Thread.id t) (tasks_status ())) ;
+(*DEBUG*)debug1 "REAL FORK" "%i %s" (Thread.id t) (tasks_status ()) ;
     Some t
   with
   | e ->
 (*DEBUG*)debug1 "REAL FORK FAILED"
-(*DEBUG*)  (sprintf "%s, %s" (tasks_status ()) (Printexc.to_string e)) ;
+(*DEBUG*)  "%s, %s" (tasks_status ()) (Printexc.to_string e) ;
       decr_locked nthreads_mutex nthreads ;
       None
       
@@ -139,15 +139,15 @@ let fork_for_pool () = match !pool_kont with
 let rec do_pool () =
   incr in_pool ;
 (*DEBUG*)incr_locked nthreads_mutex suspended ;
-(*DEBUG*)debug2 "POOL SLEEP" (tasks_status ()) ;
+(*DEBUG*)debug2 "POOL SLEEP" "%s" (tasks_status ()) ;
   Condition.wait pool_condition pool_mutex ;
 (*DEBUG*)decr_locked nthreads_mutex suspended ;
-(*DEBUG*)debug2 "POOL AWAKE" (tasks_status ()) ;
+(*DEBUG*)debug2 "POOL AWAKE" "%s" (tasks_status ()) ;
   decr in_pool ;
   match !pool_kont with
   | f::rem ->
       pool_kont := rem ; decr pool_konts ;
-(*DEBUG*)debug2 "POOL RUN" (sprintf "%i" (Thread.id (Thread.self()))) ;
+(*DEBUG*)debug2 "POOL RUN" "%i" (Thread.id (Thread.self())) ;
       if rem <> [] && !in_pool = 0 then begin
         fork_for_pool ()
       end else
@@ -163,7 +163,7 @@ let pool_enter () =
   | f::rem ->
       pool_kont := rem ; decr pool_konts ;
       Mutex.unlock pool_mutex ;
-(*DEBUG*)debug2 "POOL FIRST RUN" (sprintf "%i" (Thread.id (Thread.self()))) ;
+(*DEBUG*)debug2 "POOL FIRST RUN" "%i" (Thread.id (Thread.self())) ;
       f ()
   | [] ->
       do_pool ()
@@ -177,7 +177,7 @@ let grab_from_pool () =
     fork_for_pool ()
 
 let exit_thread () =
-(*DEBUG*)debug2 "EXIT THREAD" (tasks_status ()) ;
+(*DEBUG*)debug2 "EXIT THREAD" "%s" (tasks_status ()) ;
   become_inactive () ;
   if !in_pool >= pool_size && !active > !pool_konts then
     really_exit_thread ()
@@ -187,7 +187,7 @@ let exit_thread () =
 let put_pool_locked f =
   pool_kont := f :: !pool_kont ; incr pool_konts ;
   Condition.signal pool_condition ;
-(*DEBUG*)debug2 "PUT POOL" (tasks_status ()) ;
+(*DEBUG*)debug2 "PUT POOL" "%s" (tasks_status ()) ;
   Mutex.unlock pool_mutex
 
 let put_pool f =
@@ -196,7 +196,7 @@ let put_pool f =
 
 
 let create_process f =
-(*DEBUG*)debug2 "CREATE_PROCESS" (tasks_status ()) ;
+(*DEBUG*)debug2 "CREATE_PROCESS" "%s" (tasks_status ()) ;
   incr_active () ;
 (* Wapper around f, to be sure to call my exit_thread *)  
   let g () = 
@@ -204,10 +204,10 @@ let create_process f =
     with
     | Join_misc.JoinExit ->
 (* technique to silentely suicide join-managed threads *)
-(*DEBUG*)debug2 "PROCESS OVER" "by JoinExit" ;
+(*DEBUG*)debug2 "PROCESS OVER" "%s" "by JoinExit" ;
       flush stdout; flush stderr
     | e ->
-(*DEBUG*)debug2 "PROCESS OVER" "by exception" ;
+(*DEBUG*)debug2 "PROCESS OVER" "%s" "by exception" ;
       flush stdout; flush stderr;
       Join_extern.thread_uncaught_exception e
     end ;
@@ -235,7 +235,7 @@ and inform_unsuspend () =
 (* Important: k.kmutex is locked ! *)
 let rec suspend_for_reply k =
 (*DEBUG*)debug3 "SUSPEND_FOR_REPLY"
-(*DEBUG*)  (tasks_status ()) ;  
+(*DEBUG*)  "%s" (tasks_status ()) ;  
   match k.kval with
   | Start ->
       begin
@@ -245,35 +245,35 @@ let rec suspend_for_reply k =
         match k.kval with
         | Ret v ->
             Mutex.unlock k.kmutex ;
-(*DEBUG*)debug3 "REPLIED" (tasks_status ()) ;
+(*DEBUG*)debug3 "REPLIED" "%s" (tasks_status ()) ;
             (Obj.obj v)
         | Exn e ->
             Mutex.unlock k.kmutex ;
-(*DEBUG*)debug3 "REPLIED EXN" (tasks_status ()) ;
+(*DEBUG*)debug3 "REPLIED EXN" "%s" (tasks_status ()) ;
             raise e
         | Go f ->
             Mutex.unlock k.kmutex ;
-(*DEBUG*)debug3 "REACTIVATED" (tasks_status ()) ;
+(*DEBUG*)debug3 "REACTIVATED" "%s" (tasks_status ()) ;
             Obj.obj (f ())
         | Start -> (* should not happen when properly signaled *)
-(*DEBUG*)debug0 "SPONTANEOUS REPLY" (tasks_status ()) ;
+(*DEBUG*)debug0 "SPONTANEOUS REPLY" "%s" (tasks_status ()) ;
             suspend_for_reply k
       end
   | Go f ->
       Mutex.unlock k.kmutex ;
-(*DEBUG*)debug3 "REACTIVATED IMMEDIATE" (tasks_status ()) ;
+(*DEBUG*)debug3 "REACTIVATED IMMEDIATE" "%s" (tasks_status ()) ;
       Obj.obj (f ())
   | Ret v ->
       Mutex.unlock k.kmutex ;
-(*DEBUG*)debug3 "REPLIED IMMEDIATE" (tasks_status ()) ;
+(*DEBUG*)debug3 "REPLIED IMMEDIATE" "%s" (tasks_status ()) ;
       (Obj.obj v)
   | Exn e ->
       Mutex.unlock k.kmutex ;
-(*DEBUG*)debug3 "REPLIED EXN IMMEDIATE" (tasks_status ()) ;
+(*DEBUG*)debug3 "REPLIED EXN IMMEDIATE" "%s" (tasks_status ()) ;
       raise e
 
 let reply_to v k = 
-(*DEBUG*)debug3 "REPLY" (sprintf "%i" (Obj.magic v)) ;
+(*DEBUG*)debug3 "REPLY" "%i" (Obj.magic v : int) ;
   Mutex.lock k.kmutex ;
   assert (k.kval = Start) ;
   k.kval <- Ret (Obj.repr v) ;
@@ -283,7 +283,7 @@ let reply_to v k =
 
 let reply_to_exn e k = 
 (*DEBUG*)debug3 "REPLY EXN"
-(*DEBUG*) (sprintf "%s" (Join_misc.exn_to_string e)) ;
+(*DEBUG*) "%s" (Join_misc.exn_to_string e) ;
   Mutex.lock k.kmutex ;
   match k.kval with
   | Start ->
@@ -301,13 +301,13 @@ let reply_to_exn e k =
 (* Called when all active tasks are waiting in thread pool *)
 let from_pool () =
   if !in_pool > 0 then begin
-(*DEBUG*)debug1 "HOOK" "SHOULD PERPHAPS SIGNAL" ;    
+(*DEBUG*)debug1 "HOOK" "%s" "SHOULD PERPHAPS SIGNAL" ;    
 (*    Condition.signal pool_condition  *) ()
   end else begin (* Create a new thread to enter pool *)
-(*DEBUG*)debug1 "HOOK" "CREATE" ;    
+(*DEBUG*)debug1 "HOOK" "%s" "CREATE" ;    
     incr_active () ;
     let b = really_create_process exit_thread in
-(*DEBUG*)debug1 "HOOK" (if b <> None then "PROCESS CREATED" else "FAILED");
+(*DEBUG*)debug1 "HOOK" "%s" (if b <> None then "PROCESS CREATED" else "FAILED");
     if b=None then begin
       prerr_endline "Threads are exhausted, good bye !"
     end
@@ -324,7 +324,7 @@ let rec exit_hook () =
       Mutex.unlock active_mutex ;
       from_pool ()
     end ;
-(*DEBUG*)debug1 "HOOK" (sprintf "suspend %s" (tasks_status ())) ;
+(*DEBUG*)debug1 "HOOK" "suspend %s" (tasks_status ()) ;
     Condition.wait active_condition active_mutex
   end else
     Mutex.unlock active_mutex
