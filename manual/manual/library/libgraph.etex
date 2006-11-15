@@ -3,7 +3,7 @@
 
 The "graphics" library provides a set of portable drawing primitives.
 Drawing takes place
-in a separate window that is created when "open_graph" is called.
+in a separate window that is created when "Graphics.open_graph" is called.
 
 \begin{unix}
 This library is implemented under the X11 windows system. 
@@ -19,24 +19,25 @@ For interactive use of the "graphics" library, do:
 or (if dynamic linking of C libraries is supported on your platform),
 start "ocaml" and type "#load \"graphics.cma\";;".
 
-Here are the graphics mode specifications supported by "open_graph" on
+Here are the graphics mode specifications supported by
+"Graphics.open_graph" on
 the X11 implementation of this library:
-the argument to "open_graph" has the format
+the argument to "Graphics.open_graph" has the format
 "\""{\it display-name} {\it geometry\/}"\"",
 where {\it display-name} is the name of the X-windows display to
 connect to, and {\it geometry} is a standard X-windows geometry
 specification. The two components are separated by a space. Either can
 be omitted, or both. Examples:
 \begin{options}
-\item["open_graph \"foo:0\""]
+\item["Graphics.open_graph \"foo:0\""]
 connects to the display "foo:0" and creates a window with the default geometry
-\item["open_graph \"foo:0 300x100+50-0\""]
+\item["Graphics.open_graph \"foo:0 300x100+50-0\""]
 connects to the display "foo:0" and creates a window 300 pixels wide
 by 100 pixels tall, at location $(50,0)$
-\item["open_graph \" 300x100+50-0\""]
+\item["Graphics.open_graph \" 300x100+50-0\""]
 connects to the default display and creates a window 300 pixels wide
 by 100 pixels tall, at location $(50,0)$
-\item["open_graph \"\""]
+\item["Graphics.open_graph \"\""]
 connects to the default display and creates a window with the default
 geometry.
 \end{options}
