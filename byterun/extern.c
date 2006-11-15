@@ -293,7 +293,7 @@ CAMLprim value caml_register_saved_code(value v)
   if (ncodes_saved >=  MAX_SAVED) {
     caml_failwith("caml_register_saved_code called too many times\n") ;
   }
-  saved_code[ncodes_saved] =  ((code_t)Code_val(v)) - caml_start_code ;
+  saved_code[ncodes_saved] =  ((char *)Code_val(v)) - caml_code_area_start ;
 #ifdef DEBUG
   fprintf(stderr, "CODE%i is %i\n", ncodes_saved, saved_code[ncodes_saved]) ;
 #endif
@@ -306,7 +306,7 @@ CAMLprim value caml_register_saved_code(value v)
 static int caml_find_saved_code(code_t c)
 {
   int i ;
-  int32 ofs = ((code_t)c) - caml_start_code ;
+  int32 ofs = ((char *)c) - caml_code_area_start ;
   for (i = 0 ; i < ncodes_saved ; i++) {
     if (saved_code[i] == ofs) return i ;
   }
@@ -316,7 +316,7 @@ static int caml_find_saved_code(code_t c)
 CAMLexport code_t caml_get_saved_code(int idx)
 {
   if (idx < ncodes_saved) {
-    return caml_start_code + saved_code[idx] ;
+    return (code_t)(caml_code_area_start + saved_code[idx]) ;
   } else {
     return NULL ;
   }
