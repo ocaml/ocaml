@@ -3,4 +3,5 @@
 *.hind
 libref
 manual.hmanual
+manual.css
 *.htoc
