@@ -24,13 +24,6 @@
    [Format], read
    {{:http://caml.inria.fr/resources/doc/guides/format.html}http://caml.inria.fr/resources/doc/guides/format.html}.
 
-   Warning: the material output by the following functions is delayed
-   in the pretty-printer queue in order to compute the proper line
-   breaking. Hence, you should not mix calls to the printing functions
-   of the basic I/O system with calls to the functions of this module:
-   this could result in some strange output seemingly unrelated with
-   the evaluation order of printing commands.
-
    You may consider this module as providing an extension to the
    [printf] facility to provide automatic line breaking. The addition of
    pretty-printing annotations to your regular [printf] formats gives you
@@ -70,6 +63,13 @@
    flushes all pending text (as with the [print_newline] function)
    after each phrase. Each phrase is therefore executed in the initial
    state of the pretty-printer.
+
+   Warning: the material output by the following functions is delayed
+   in the pretty-printer queue in order to compute the proper line
+   breaking. Hence, you should not mix calls to the printing functions
+   of the basic I/O system with calls to the functions of this module:
+   this could result in some strange output seemingly unrelated with
+   the evaluation order of printing commands.
 *)
 
 
