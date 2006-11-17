@@ -910,7 +910,8 @@ and set_tags =
 
  **************************************************************)
 
-module Sformat = Printf.Sformat;;
+module Sformat = Printf.CamlinternalPr.Sformat;;
+module Tformat = Printf.CamlinternalPr.Tformat;;
 
 (* Error messages when processing formats. *)
 
@@ -1000,7 +1001,7 @@ let mkprintf to_s get_out =
         if i >= len then Obj.magic (k ppf) else
         match Sformat.get fmt i with
         | '%' ->
-            Printf.scan_format fmt v n i cont_s cont_a cont_t cont_f cont_m
+            Tformat.scan_format fmt v n i cont_s cont_a cont_t cont_f cont_m
         | '@' ->
             let i = succ i in
             if i >= len then invalid_format fmt i else
@@ -1075,7 +1076,7 @@ let mkprintf to_s get_out =
           and cont_t n printer i = invalid_integer fmt i
           and cont_f n i = invalid_integer fmt i
           and cont_m n sfmt i = invalid_integer fmt i in
-          Printf.scan_format fmt v n i cont_s cont_a cont_t cont_f cont_m
+          Tformat.scan_format fmt v n i cont_s cont_a cont_t cont_f cont_m
        | _ ->
           let rec get j =
            if j >= len then invalid_integer fmt j else
@@ -1084,7 +1085,7 @@ let mkprintf to_s get_out =
            | _ ->
              let size =
              if j = i then size_of_int 0 else
-                let s = Sformat.sub fmt i (j - i) in
+                let s = Sformat.sub fmt (Sformat.index_of_int i) (j - i) in
                 format_int_of_string fmt j s in
              c size n j in
           get i
@@ -1121,11 +1122,11 @@ let mkprintf to_s get_out =
       and get_tag_name n i c =
        let rec get accu n i j =
         if j >= len
-        then c (implode_rev (Sformat.sub fmt i (j - i)) accu) n j else
+        then c (implode_rev (Sformat.sub fmt (Sformat.index_of_int i) (j - i)) accu) n j else
         match Sformat.get fmt j with
-        | '>' -> c (implode_rev (Sformat.sub fmt i (j - i)) accu) n j
+        | '>' -> c (implode_rev (Sformat.sub fmt (Sformat.index_of_int i) (j - i)) accu) n j
         | '%' ->
-          let s0 = Sformat.sub fmt i (j - i) in
+          let s0 = Sformat.sub fmt (Sformat.index_of_int i) (j - i) in
           let cont_s n s i = get (s :: s0 :: accu) n i i
           and cont_a n printer arg i =
             let s =
@@ -1143,7 +1144,7 @@ let mkprintf to_s get_out =
             format_invalid_arg "bad tag name specification" fmt i
           and cont_m n sfmt i =
             format_invalid_arg "bad tag name specification" fmt i in
-          Printf.scan_format fmt v n j cont_s cont_a cont_t cont_f cont_m
+          Tformat.scan_format fmt v n j cont_s cont_a cont_t cont_f cont_m
         | c -> get accu n i (succ j) in
        get [] n i i
 
@@ -1180,9 +1181,9 @@ let mkprintf to_s get_out =
           get_tag_name n (succ i) got_name
        | c -> pp_open_tag ppf ""; doprn n i in
 
-      doprn (Printf.index_of_int 0) 0 in
+      doprn (Sformat.index_of_int 0) 0 in
 
-   Printf.kapr kpr fmt in
+   Tformat.kapr kpr fmt in
 
   kprintf;;
 
@@ -1193,7 +1194,7 @@ let mkprintf to_s get_out =
  **************************************************************)
 
 let kfprintf k ppf = mkprintf false (fun _ -> ppf) k;;
-let ifprintf ppf = Printf.kapr (fun _ -> Obj.magic ignore);;
+let ifprintf ppf = Tformat.kapr (fun _ -> Obj.magic ignore);;
 
 let fprintf ppf = kfprintf ignore ppf;;
 let printf fmt = fprintf std_formatter fmt;;

@@ -756,7 +756,7 @@ let type_format loc fmt =
           let j = j + 1 in
           if j >= len then incomplete_format fmt else
           let sj =
-            Printf.sub_format
+            Printf.CamlinternalPr.Tformat.sub_format
               (fun fmt -> incomplete_format (format_to_string fmt))
               (fun fmt -> bad_conversion (format_to_string fmt))
               c (string_to_format fmt) j in

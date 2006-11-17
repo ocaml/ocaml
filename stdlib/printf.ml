@@ -25,27 +25,33 @@ external format_int64: string -> int64 -> string
   = "caml_int64_format"
 
 module Sformat = struct
-  external unsafe_to_string : ('a, 'b, 'c, 'd, 'e, 'f) format6 -> string
-    = "%identity"
+
+  type index;;
+
+  external unsafe_index_of_int : int -> index = "%identity";;
+  let index_of_int i =
+    if i >= 0 then unsafe_index_of_int i
+    else failwith ("index_of_int: negative argument " ^ string_of_int i);;
+  external int_of_index : index -> int = "%identity";;
+
+  let add_int_index i idx = index_of_int (i + int_of_index idx);;
+  let succ_index = add_int_index 1;;
+  (* Litteral position are one-based (hence pred p instead of p). *)
+  let index_of_litteral_position p = index_of_int (pred p);;
+
   external length : ('a, 'b, 'c, 'd, 'e, 'f) format6 -> int
-    = "%string_length"
+    = "%string_length";;
   external get : ('a, 'b, 'c, 'd, 'e, 'f) format6 -> int -> char
-    = "%string_safe_get"
+    = "%string_safe_get";;
   external unsafe_get : ('a, 'b, 'c, 'd, 'e, 'f) format6 -> int -> char
-    = "%string_unsafe_get"
-  let sub fmt idx len = String.sub (unsafe_to_string fmt) idx len
-  let to_string fmt = sub fmt 0 (length fmt)
+    = "%string_unsafe_get";;
+  external unsafe_to_string : ('a, 'b, 'c, 'd, 'e, 'f) format6 -> string
+    = "%identity";;
+  let sub fmt idx len =
+    String.sub (unsafe_to_string fmt) (int_of_index idx) len;;
+  let to_string fmt = sub fmt (unsafe_index_of_int 0) (length fmt);;
+
 end;;
-
-type index;;
-
-external index_of_int : int -> index = "%identity";;
-external int_of_index : index -> int = "%identity";;
-
-let add_int_index i idx = index_of_int (i + int_of_index idx);;
-let succ_index = add_int_index 1;;
-(* Litteral position are one-based (hence pred p instead of p). *)
-let index_of_litteral_position p = index_of_int (pred p);;
 
 let bad_conversion sfmt i c =
   invalid_arg
@@ -60,19 +66,19 @@ let incomplete_format fmt =
     ("printf: premature end of format string ``" ^
      Sformat.to_string fmt ^ "''");;
 
-(* Parses a format to return the specified length and the padding direction. *)
-let parse_string_format sfmt =
+(* Parses a string conversion to return the specified length and the padding direction. *)
+let parse_string_conversion sfmt =
   let rec parse neg i =
     if i >= String.length sfmt then (0, neg) else
     match String.unsafe_get sfmt i with
     | '1'..'9' ->
-        (int_of_string
-           (String.sub sfmt i (String.length sfmt - i - 1)),
-         neg)
+      (int_of_string
+         (String.sub sfmt i (String.length sfmt - i - 1)),
+       neg)
     | '-' ->
-        parse true (succ i)
+      parse true (succ i)
     | _ ->
-        parse neg (succ i) in
+      parse neg (succ i) in
   try parse false 1 with Failure _ -> bad_conversion sfmt 0 's'
 
 (* Pad a (sub) string into a blank string of length [p],
@@ -89,7 +95,7 @@ let pad_string pad_char p neg s i len =
 (* Format a string given a %s format, e.g. %40s or %-20s.
    To do: ignore other flags (#, +, etc)? *)
 let format_string sfmt s =
-  let (p, neg) = parse_string_format sfmt in
+  let (p, neg) = parse_string_conversion sfmt in
   pad_string ' ' p neg s 0 (String.length s);;
 
 (* Extract a format string out of [fmt] between [start] and [stop] inclusive.
@@ -235,11 +241,15 @@ let summarize_format_type fmt =
   iter_on_format_args fmt add_conv add_char;
   Buffer.contents b;;
 
-type ac = {
-  mutable ac_rglr : int;
-  mutable ac_skip : int;
-  mutable ac_rdrs : int;
-};;
+module Ac = struct
+  type ac = {
+    mutable ac_rglr : int;
+    mutable ac_skip : int;
+    mutable ac_rdrs : int;
+  }
+end;;
+
+open Ac;;
 
 (* Computes the number of arguments of a format (including flag
    arguments if any). *)
@@ -315,7 +325,7 @@ let kapr kpr fmt =
     loop 0 [];;
 
 type positional_specification =
-   | Spec_none | Spec_index of index;; 
+   | Spec_none | Spec_index of Sformat.index;; 
 
 (* To scan an optional positional parameter specification,
    i.e. an integer followed by a [$].
@@ -335,7 +345,7 @@ let scan_positional_spec fmt got_spec n i =
       | '$' ->
         if accu = 0
           then failwith "printf: bad positional specification (0)." else
-        got_spec (Spec_index (index_of_litteral_position accu)) (succ j)
+        got_spec (Spec_index (Sformat.index_of_litteral_position accu)) (succ j)
       (* Not a positional specification. *)
       | _ -> got_spec Spec_none i in
     get_int_litteral (int_of_char d - 48) (succ i)
@@ -346,8 +356,8 @@ let scan_positional_spec fmt got_spec n i =
    positional specification. *)
 let next_index spec n =
   match spec with
-  | Spec_none -> succ_index n
-  | Spec_index p -> n;;
+  | Spec_none -> Sformat.succ_index n
+  | Spec_index _ -> n;;
 
 (* Get the position of the actual argument to printf, according to its
    optional positional specification. *)
@@ -378,7 +388,8 @@ let get_index spec n =
    Don't do this at home, kids. *)
 let scan_format fmt args n pos cont_s cont_a cont_t cont_f cont_m =
 
-  let get_arg spec n = Obj.magic (args.(int_of_index (get_index spec n))) in
+  let get_arg spec n =
+    Obj.magic (args.(Sformat.int_of_index (get_index spec n))) in
 
   let rec scan_positional n widths i =
     let got_spec spec i = scan_flags spec n widths i in
@@ -432,7 +443,7 @@ let scan_format fmt args n pos cont_s cont_a cont_t cont_f cont_m =
       (* If the printer spec is Spec_none, go on as usual.
          If the printer spec is Spec_index p,
          printer's argument spec is Spec_index (succ_index p). *)
-      let n = succ_index (get_index spec n) in
+      let n = Sformat.succ_index (get_index spec n) in
       let arg = get_arg Spec_none n in
       cont_a (next_index spec n) printer arg (succ i)
     | 't' ->
@@ -511,12 +522,12 @@ let mkprintf to_s get_out outc outs flush k fmt =
      and cont_f n i =
        flush out; doprn n i
      and cont_m n xf i =
-       let m = add_int_index (count_arguments_of_format xf) n in
+       let m = Sformat.add_int_index (count_arguments_of_format xf) n in
        pr (Obj.magic (fun _ -> doprn m i)) n xf v in
 
      doprn n 0 in
 
-  let kpr = pr k (index_of_int 0) in
+  let kpr = pr k (Sformat.index_of_int 0) in
 
   kapr kpr fmt;;
 
@@ -549,3 +560,30 @@ let ksprintf k =
 let kprintf = ksprintf;;
 
 let sprintf fmt = ksprintf (fun s -> s) fmt;;
+
+module CamlinternalPr = struct
+
+  module Sformat = Sformat;;
+
+  module Tformat = struct
+
+    type ac =
+      Ac.ac = {
+      mutable ac_rglr : int;
+      mutable ac_skip : int;
+      mutable ac_rdrs : int;
+    };;
+
+    let ac_of_format = ac_of_format;;
+
+    let sub_format = sub_format;;
+
+    let summarize_format_type = summarize_format_type;;
+
+    let scan_format = scan_format;;
+
+    let kapr = kapr;;
+
+  end;;
+
+end;;
