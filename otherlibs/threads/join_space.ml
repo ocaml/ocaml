@@ -19,8 +19,10 @@ open Join_misc
 
 open Join_types
 
-let create_space_id addr =
-  { sock=addr ; uniq = (Unix.getpid(), Unix.gettimeofday()) ;}
+let create_real_space_id () =
+  { host = local_name ; r_uniq =  (Unix.getpid(), Unix.gettimeofday()) ; }
+
+let create_space_id addr id = { sock=addr ; uniq = id.r_uniq ; }
 
 let rec attempt_connect r_addr d =
   try Join_port.connect r_addr
@@ -50,6 +52,7 @@ let _ =
 
  (* Describe site *)
 let local_space = {
+  space_id = create_real_space_id () ;
   uid_mutex = Mutex.create () ;
   next_uid =
   begin 
@@ -60,7 +63,6 @@ let local_space = {
       r)
   end ;
   uid2local = Join_hash.create () ;
-  active_remote_spaces = Join_hash.create () ;
   remote_spaces =  Join_hash.create () ;
   services = Join_hash.create () ;
   listener = Deaf (Mutex.create ()) ;
@@ -226,7 +228,7 @@ let rec start_listener space addr = match space.listener with
               open_link_accepted space rspace link in
         begin try
           let my_id,_ = Join_port.establish_server addr when_accepted in
-	  space.listener <- Listen (create_space_id my_id)
+	  space.listener <- Listen (create_space_id my_id space.space_id)
         with
         | Join_port.Failed msg ->
             Mutex.unlock mtx ;

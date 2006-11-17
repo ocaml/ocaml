@@ -53,6 +53,8 @@ type t_uniq = int * float
 
 type space_id = { sock : Unix.sockaddr ; uniq : t_uniq ; }
 
+type real_space_id = { host : string ; r_uniq : t_uniq ; }
+
 type service = space_id * string
 
 type t_global= space_id * int (* value names in network *)
@@ -130,10 +132,10 @@ type listener =
 
 type space =
   {
+    space_id : real_space_id ;
     uid_mutex : Mutex.t ;
     next_uid : unit -> int ;
     uid2local : (int, stub_val) Join_hash.t ;
-    active_remote_spaces : (Unix.sockaddr, space_id) Join_hash.t ;
     remote_spaces : (space_id, remote_space) Join_hash.t ;
     services : (string, int) Join_hash.t ;
     mutable listener : listener ;
