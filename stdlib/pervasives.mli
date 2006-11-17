@@ -818,7 +818,7 @@ external decr : int ref -> unit = "%decr"
 
 (** See modules {!Printf} and {!Scanf} for more operations on
     format strings. *)
-type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'd, 'd, 'd) format6 
+type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'c, 'c, 'd) format6 
 
 type ('a, 'b, 'c) format = ('a, 'b, 'c, 'c) format4
 (** Simplified type for format strings, included for backward compatibility

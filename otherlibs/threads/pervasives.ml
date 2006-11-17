@@ -496,7 +496,7 @@ module LargeFile =
   end
 
 (* Formats *)
-type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'd, 'd, 'd) format6 
+type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'c, 'c, 'd) format6 
 
 type ('a, 'b, 'c) format = ('a, 'b, 'c, 'c) format4
 
