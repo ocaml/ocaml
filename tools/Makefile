@@ -48,9 +48,9 @@ clean::
 	rm -f ocamldep.opt
 
 install::
-	cp ocamldep $(BINDIR)/ocamldep$(EXE)
+	cp ocamldep $(BINDIR)/jocamldep$(EXE)
 	if test -f ocamldep.opt; \
-	  then cp ocamldep.opt $(BINDIR)/ocamldep.opt$(EXE); else :; fi
+	  then cp ocamldep.opt $(BINDIR)/jocamldep.opt$(EXE); else :; fi
 
 # The profiler
 
@@ -66,8 +66,8 @@ ocamlcp: ocamlcp.cmo
 	$(CAMLC) $(LINKFLAGS) -o ocamlcp main_args.cmo ocamlcp.cmo
 
 install::
-	cp ocamlprof $(BINDIR)/ocamlprof$(EXE)
-	cp ocamlcp $(BINDIR)/ocamlcp$(EXE)
+	cp ocamlprof $(BINDIR)/jocamlprof$(EXE)
+	cp ocamlcp $(BINDIR)/jocamlcp$(EXE)
 	cp profiling.cmi profiling.cmo $(LIBDIR)
 
 clean::
@@ -80,7 +80,7 @@ ocamlmktop: ocamlmktop.tpl ../config/Makefile
 	chmod +x ocamlmktop
 
 install::
-	cp ocamlmktop $(BINDIR)/ocamlmktop
+	cp ocamlmktop $(BINDIR)/jocamlmktop
 
 clean::
 	rm -f ocamlmktop
@@ -91,7 +91,7 @@ ocamlmklib: ocamlmklib.cmo
 	$(CAMLC) $(LINKFLAGS) -o ocamlmklib ocamlmklib.cmo
 
 install::
-	cp ocamlmklib $(BINDIR)/ocamlmklib
+	cp ocamlmklib $(BINDIR)/jocamlmklib
 
 clean::
 	rm -f ocamlmklib

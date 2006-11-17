@@ -49,8 +49,8 @@ libcamlrun.$(A): $(SOBJS)
 	$(call MKLIB,libcamlrun.$(A),$(SOBJS))
 
 install:
-	cp ocamlrun.exe $(BINDIR)/ocamlrun.exe
-	cp ocamlrun.dll $(BINDIR)/ocamlrun.dll
+	cp ocamlrun.exe $(BINDIR)/jocamlrun.exe
+	cp ocamlrun.dll $(BINDIR)/jocamlrun.dll
 	cp ocamlrun.$(A) $(LIBDIR)/ocamlrun.$(A)
 	cp libcamlrun.$(A) $(LIBDIR)/libcamlrun.$(A)
 	test -d $(LIBDIR)/caml || mkdir -p $(LIBDIR)/caml

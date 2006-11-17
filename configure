@@ -146,8 +146,8 @@ case "$bindir" in
    *) echo "BINDIR=$bindir" >> Makefile;;
 esac
 case "$libdir" in
-  "") echo 'LIBDIR=$(PREFIX)/lib/ocaml' >> Makefile
-      libdir="$prefix/lib/ocaml";;
+  "") echo 'LIBDIR=$(PREFIX)/lib/jocaml' >> Makefile
+      libdir="$prefix/lib/jocaml";;
    *) echo "LIBDIR=$libdir" >> Makefile;;
 esac
 echo 'STUBLIBDIR=$(LIBDIR)/stublibs' >> Makefile

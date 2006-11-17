@@ -241,16 +241,16 @@ install: FORCE
 	if test -d $(BINDIR); then : ; else $(MKDIR) $(BINDIR); fi
 	if test -d $(LIBDIR); then : ; else $(MKDIR) $(LIBDIR); fi
 	if test -d $(STUBLIBDIR); then : ; else $(MKDIR) $(STUBLIBDIR); fi
-	if test -d $(MANDIR)/man$(MANEXT); then : ; else $(MKDIR) $(MANDIR)/man$(MANEXT); fi
+	- if test -d $(MANDIR)/man$(MANEXT); then : ; else $(MKDIR) $(MANDIR)/man$(MANEXT); fi
 	cd $(LIBDIR); rm -f dllbigarray.so dlllabltk.so dllnums.so \
           dllthreads.so dllunix.so dllgraphics.so dllmldbm.so dllstr.so \
           dlltkanim.so
 	cd byterun; $(MAKE) install
-	cp ocamlc $(BINDIR)/ocamlc$(EXE)
-	cp ocaml $(BINDIR)/ocaml$(EXE)
+	cp ocamlc $(BINDIR)/jocamlc$(EXE)
+	cp ocaml $(BINDIR)/jocaml$(EXE)
 	cd stdlib; $(MAKE) install
-	cp lex/ocamllex $(BINDIR)/ocamllex$(EXE)
-	cp yacc/ocamlyacc$(EXE) $(BINDIR)/ocamlyacc$(EXE)
+	cp lex/ocamllex $(BINDIR)/jocamllex$(EXE)
+	cp yacc/ocamlyacc$(EXE) $(BINDIR)/jocamlyacc$(EXE)
 	cp toplevel/toplevellib.cma $(LIBDIR)/toplevellib.cma
 	cp expunge $(LIBDIR)/expunge$(EXE)
 	cp typing/outcometree.cmi typing/outcometree.mli $(LIBDIR)
@@ -271,16 +271,16 @@ install: FORCE
 # Installation of the native-code compiler
 installopt:
 	cd asmrun; $(MAKE) install
-	cp ocamlopt $(BINDIR)/ocamlopt$(EXE)
+	cp ocamlopt $(BINDIR)/jocamlopt$(EXE)
 	cd stdlib; $(MAKE) installopt
 	cd ocamldoc; $(MAKE) installopt
 	for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) installopt) || exit $$?; done
 	if test -f ocamlc.opt; \
-	  then cp ocamlc.opt $(BINDIR)/ocamlc.opt$(EXE); else :; fi
+	  then cp ocamlc.opt $(BINDIR)/jocamlc.opt$(EXE); else :; fi
 	if test -f ocamlopt.opt; \
-	  then cp ocamlopt.opt $(BINDIR)/ocamlopt.opt$(EXE); else :; fi
+	  then cp ocamlopt.opt $(BINDIR)/jocamlopt.opt$(EXE); else :; fi
 	if test -f lex/ocamllex.opt; \
-	  then cp lex/ocamllex.opt $(BINDIR)/ocamllex.opt$(EXE); else :; fi
+	  then cp lex/ocamllex.opt $(BINDIR)/jocamllex.opt$(EXE); else :; fi
 
 clean:: partialclean
 
@@ -335,7 +335,7 @@ partialclean::
 utils/config.ml: utils/config.mlp config/Makefile
 	@rm -f utils/config.ml
 	sed -e 's|%%LIBDIR%%|$(LIBDIR)|' \
-            -e 's|%%BYTERUN%%|$(BINDIR)/ocamlrun|' \
+            -e 's|%%BYTERUN%%|$(BINDIR)/jocamlrun|' \
             -e 's|%%CCOMPTYPE%%|cc|' \
             -e 's|%%BYTECC%%|$(BYTECC) $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)|' \
             -e 's|%%BYTELINK%%|$(BYTECC) $(BYTECCLINKOPTS)|' \
@@ -651,7 +651,7 @@ checkstack:
 package-macosx:
 	sudo rm -rf package-macosx/root
 	make BINDIR="`pwd`"/package-macosx/root/bin \
-	     LIBDIR="`pwd`"/package-macosx/root/lib/ocaml \
+	     LIBDIR="`pwd`"/package-macosx/root/lib/jocaml \
 	     MANDIR="`pwd`"/package-macosx/root/man \
              install
 	tools/make-package-macosx

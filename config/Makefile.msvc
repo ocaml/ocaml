@@ -17,7 +17,7 @@
 
 ######### General configuration
 
-PREFIX=C:/ocamlms
+PREFIX=C:/jocamlms
 
 ### Where to install the binaries.
 BINDIR=$(PREFIX)/bin

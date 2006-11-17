@@ -81,7 +81,7 @@ ocamldebug$(EXE): $(OBJS) $(OTHEROBJS)
 	$(CAMLC) $(LINKFLAGS) -o ocamldebug$(EXE) -linkall $(OTHEROBJS) $(OBJS)
 
 install:
-	cp ocamldebug$(EXE) $(BINDIR)/ocamldebug$(EXE)
+	cp ocamldebug$(EXE) $(BINDIR)/jocamldebug$(EXE)
 
 clean::
 	rm -f ocamldebug$(EXE)

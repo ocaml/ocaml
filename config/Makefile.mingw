@@ -17,13 +17,13 @@
 
 ######### General configuration
 
-PREFIX=C:/ocamlmgw
+PREFIX=C:/jocamlmgw
 
 ### Where to install the binaries
 BINDIR=$(PREFIX)/bin
 
 ### Where to install the standard library
-LIBDIR=$(PREFIX)/lib
+LIBDIR=$(PREFIX)/lib/
 
 ### Where to install the stub DLLs
 STUBLIBDIR=$(LIBDIR)/stublibs

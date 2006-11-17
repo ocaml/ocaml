@@ -13,4 +13,4 @@
 
 # $Id$
 
-exec %%BINDIR%%/ocamlc -linkall toplevellib.cma "$@" topstart.cmo
+exec %%BINDIR%%/jocamlc -linkall toplevellib.cma "$@" topstart.cmo

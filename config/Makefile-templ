@@ -21,7 +21,7 @@
 BINDIR=/usr/local/bin
 
 ### Where to install the standard library
-LIBDIR=/usr/local/lib/ocaml
+LIBDIR=/usr/local/lib/jocaml
 STUBLIBDIR=$(LIBDIR)/stublibs
 
 ### Where to install the man pages

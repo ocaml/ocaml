@@ -54,7 +54,7 @@ help.ml:
 	echo '";;' >> $@
 
 install:
-	if test -f ocamlbrowser.exe; then cp ocamlbrowser.exe $(BINDIR); fi
+	if test -f ocamlbrowser.exe; then cp ocamlbrowser.exe $(BINDIR)/jocamlbrowser$(EXE); fi
 
 clean:
 	rm -f *.cm? ocamlbrowser.exe dummy.mli *~ *.orig *.$(O)

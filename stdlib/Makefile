@@ -79,11 +79,11 @@ stdlib.p.cmxa: $(OBJS:.cmo=.p.cmx)
 
 camlheader camlheader_ur: header.c ../config/Makefile
 	if $(SHARPBANGSCRIPTS); then \
-          echo '#!$(BINDIR)/ocamlrun' > camlheader && \
+          echo '#!$(BINDIR)/jocamlrun' > camlheader && \
           echo '#!' | tr -d '\012' > camlheader_ur; \
         else \
 	  $(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) \
-                    -DRUNTIME_NAME='"$(BINDIR)/ocamlrun"' \
+                    -DRUNTIME_NAME='"$(BINDIR)/jocamlrun"' \
                     header.c -o tmpheader$(EXE) && \
           strip tmpheader$(EXE) && \
 	  mv tmpheader$(EXE) camlheader && \
