@@ -28,6 +28,7 @@ type primitive =
   | Psetfield of int * bool
   | Pfloatfield of int
   | Psetfloatfield of int
+  | Pduprecord of Types.record_representation * int
   (* External call *)
   | Pccall of Primitive.description
   (* Exceptions *)
@@ -96,7 +97,7 @@ and bigarray_kind =
   | Pbigarray_float32 | Pbigarray_float64
   | Pbigarray_sint8 | Pbigarray_uint8
   | Pbigarray_sint16 | Pbigarray_uint16
-  | Pbigarray_int32 | Pbigarray_int64 
+  | Pbigarray_int32 | Pbigarray_int64
   | Pbigarray_caml_int | Pbigarray_native_int
   | Pbigarray_complex32 | Pbigarray_complex64
 

@@ -83,6 +83,12 @@ let print_bigarray name kind ppf layout =
      | Pbigarray_c_layout -> "C"
      | Pbigarray_fortran_layout -> "Fortran")
 
+let record_rep ppf r =
+  match r with
+  | Record_regular -> fprintf ppf "regular"
+  | Record_float -> fprintf ppf "float"
+;;
+
 let primitive ppf = function
   | Pidentity -> fprintf ppf "id"
   | Pignore -> fprintf ppf "ignore"
@@ -96,6 +102,7 @@ let primitive ppf = function
       fprintf ppf "%s%i" instr n
   | Pfloatfield n -> fprintf ppf "floatfield %i" n
   | Psetfloatfield n -> fprintf ppf "setfloatfield %i" n
+  | Pduprecord (rep, size) -> fprintf ppf "duprecord %a %i" record_rep rep size
   | Pccall p -> fprintf ppf "%s" p.prim_name
   | Praise -> fprintf ppf "raise"
   | Psequand -> fprintf ppf "&&"
@@ -239,7 +246,7 @@ let rec lam ppf = function
             if !spc then fprintf ppf "@ " else spc := true;
             fprintf ppf "@[<hv 1>default:@ %a@]" lam l
         end in
-            
+
       fprintf ppf
        "@[<1>(%s %a@ @[<v 0>%a@])@]"
        (match sw.sw_failaction with None -> "switch*" | _ -> "switch")

@@ -622,7 +622,9 @@ let simplif_primitive_32bits = function
 
 let simplif_primitive p =
   match p with
-    Pbigarrayref(n, Pbigarray_unknown, layout) ->
+  | Pduprecord _ ->
+      Pccall (default_prim "caml_obj_dup")
+  | Pbigarrayref(n, Pbigarray_unknown, layout) ->
       Pccall (default_prim ("bigarray_get_" ^ string_of_int n))
   | Pbigarrayset(n, Pbigarray_unknown, layout) ->
       Pccall (default_prim ("bigarray_set_" ^ string_of_int n))
