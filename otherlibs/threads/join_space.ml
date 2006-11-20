@@ -200,6 +200,7 @@ let verbose_close caller fd =
 
 exception NoLink
 exception ListenFailed
+exception RoutingFailed
 
 let string_of_addr = function
   | None -> "default"
@@ -481,7 +482,7 @@ and find_route space rspace = match find_routes space rspace with
 | [] ->
 (*DEBUG*)debug0 "FIND ROUTE" "unreachable site: %s"
 (*DEBUG*)  (string_of_space rspace.rspace_id) ;
-      failwith "Routing"
+    raise RoutingFailed
 | r::_ -> r
 
 and find_routes space rspace =
@@ -496,7 +497,7 @@ and find_routes space rspace =
 	call_route_service space rspace.originator
 	  (space.space_id,rspace.rspace_id) in
       List.iter (fun r -> add_route rspace.route (Some r)) new_routes ;
-      find_routes space rspace
+      new_routes
   | _::_ -> routes (* Easy case *)
 
 (* First race between senders, mtx is locked! *)
@@ -516,9 +517,13 @@ and open_link_sender space rspace mtx =  match rspace.link with
       let cond = Condition.create () in
       rspace.link <- Connecting (mtx, cond) ;
       Mutex.unlock mtx ;
-      let route = find_route space rspace in
-      let link = attempt_connect route 0.1 in
-      connect_on_link  space rspace (mtx, cond) link route
+      try
+	let route = find_route space rspace in
+	let link = attempt_connect route 0.1 in
+	connect_on_link  space rspace (mtx, cond) link route
+      with
+      |	RoutingFailed -> raise RoutingFailed
+	  
 
 and connect_on_link space rspace (mtx, cond) link route =
   Join_message.output_value link
