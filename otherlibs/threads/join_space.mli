@@ -29,9 +29,11 @@ type sync_ref =
 val send_sync_ref : sync_ref
 
 (* Change a value to parameter and back *)
+
 val globalize :
     'a ->  Marshal.extern_flags list -> parameter
 val localize : parameter -> 'a
+
 
 val here : unit -> space_id
 
@@ -55,16 +57,13 @@ val remote_send_sync_alone :
 
 val register_service : string -> ('a -> 'b) -> unit
 
-val call_service :
-    space_id ->
-      string (* key *) -> continuation ->
-	'a (* message *) -> 'b
+val call_service : space_id -> string (* key *) -> 'a (* message *) -> 'b
 
 val rid_from_addr : Unix.sockaddr -> space_id
 
 val halt : unit -> unit
 
-val listen : Unix.sockaddr option -> unit
+val listen : Unix.sockaddr -> unit
 
 val connect : Unix.file_descr -> unit
 

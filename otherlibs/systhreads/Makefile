@@ -29,7 +29,7 @@ BYTECODE_JOIN_C_OBJS=join_b.o
 NATIVECODE_JOIN_C_OBJS=join_n.o
 
 JOIN_OBJS=join_debug.cmo join_misc.cmo join_link.cmo join_hash.cmo\
- join_queue.cmo join_extern.cmo join_scheduler.cmo join_port.cmo\
+ join_set.cmo join_queue.cmo join_extern.cmo join_scheduler.cmo join_port.cmo\
  join_message.cmo join_space.cmo join.cmo ns.cmo join_test.cmo
 
 GENFILES=thread.ml join.c join_types.mli\
@@ -38,6 +38,7 @@ GENFILES=thread.ml join.c join_types.mli\
  join_link.mli join_link.ml\
  join_port.mli join_port.ml\
  join_hash.mli join_hash.ml\
+ join_set.mli join_set.ml\
  join_queue.mli join_queue.ml\
  join_scheduler.mli join_scheduler.ml\
  join_message.mli join_message.ml\
@@ -135,6 +136,12 @@ join_hash.ml: ../threads/join_hash.ml
 
 join_hash.mli: ../threads/join_hash.mli
 	cp -f ../threads/join_hash.mli . && chmod -w join_hash.mli
+
+join_set.ml: ../threads/join_set.ml
+	cp -f ../threads/join_set.ml . && chmod -w join_set.ml
+
+join_set.mli: ../threads/join_set.mli
+	cp -f ../threads/join_set.mli . && chmod -w join_set.mli
 
 join_queue.ml: ../threads/join_queue.ml
 	cp -f ../threads/join_queue.ml . && chmod -w join_queue.ml

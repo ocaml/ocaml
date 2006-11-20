@@ -51,9 +51,7 @@ type continuation =
 
 type t_uniq = int * float
 
-type space_id = { sock : Unix.sockaddr ; uniq : t_uniq ; }
-
-type real_space_id = { host : string ; r_uniq : t_uniq ; }
+type space_id = { host : string ; uniq : t_uniq ; }
 
 type service = space_id * string
 
@@ -108,6 +106,8 @@ type 'a async =
     Async of stub * int
   | Alone of stub * string
 
+type route = Unix.sockaddr
+
 type link =
   | NoConnection of Mutex.t
   | Connecting of Mutex.t * Condition.t
@@ -120,6 +120,8 @@ type remote_space =
       next_kid : unit -> int ;
       replies_pending : Join_misc.counter ;
       konts : (int, continuation) Join_hash.t ;
+      originator : space_id ;
+      route : route Join_set.t ;
       mutable link : link ;
       write_mtx : Mutex.t ;
       mutable hooks : unit async list
@@ -128,11 +130,11 @@ type remote_space =
 
 type listener =
   | Deaf of Mutex.t
-  | Listen of space_id
+  | Listen of Unix.sockaddr Join_set.t
 
 type space =
   {
-    space_id : real_space_id ;
+    space_id : space_id ;
     uid_mutex : Mutex.t ;
     next_uid : unit -> int ;
     uid2local : (int, stub_val) Join_hash.t ;

@@ -232,6 +232,12 @@ and inform_unsuspend () =
 (*DEBUG*)decr_locked nthreads_mutex suspended
 
 
+let kont_create mutex =
+  {kmutex = mutex ;
+   kcondition = Condition.create () ;
+   kval = Start}
+
+
 (* Important: k.kmutex is locked ! *)
 let rec suspend_for_reply k =
 (*DEBUG*)debug3 "SUSPEND_FOR_REPLY"

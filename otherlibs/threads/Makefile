@@ -29,7 +29,7 @@ CAML_OBJS=thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo
 JOIN_C_OBJS=join.o
 
 JOIN_OBJS=join_debug.cmo join_misc.cmo join_link.cmo  join_hash.cmo\
- join_queue.cmo join_extern.cmo join_scheduler.cmo join_port.cmo\
+ join_set.cmo join_queue.cmo join_extern.cmo join_scheduler.cmo join_port.cmo\
  join_message.cmo join_space.cmo join.cmo ns.cmo join_test.cmo
 
 LIB=../../stdlib

@@ -19,11 +19,6 @@ open Join_misc
 
 open Join_types
 
-let create_real_space_id () =
-  { host = local_name ; r_uniq =  (Unix.getpid(), Unix.gettimeofday()) ; }
-
-let create_space_id addr id = { sock=addr ; uniq = id.r_uniq ; }
-
 let rec attempt_connect r_addr d =
   try Join_port.connect r_addr
   with Join_port.Failed msg ->
@@ -52,7 +47,9 @@ let _ =
 
  (* Describe site *)
 let local_space = {
-  space_id = create_real_space_id () ;
+  space_id =
+    { host = local_name ;
+      uniq = (Unix.getpid (), Unix.gettimeofday ()) ; } ;
   uid_mutex = Mutex.create () ;
   next_uid =
   begin 
@@ -69,9 +66,16 @@ let local_space = {
 } 
  ;;
 
-let space_to_string { sock=raddr } = Join_misc.string_of_sockaddr raddr
+let space_to_string { host=host ; uniq=(pid,_) } =
+  host ^ ":" ^ string_of_int pid
 
-let create_remote_space id =
+let string_of_space = space_to_string 
+
+let add_route t route = match route with
+| None -> ()
+| Some route -> Join_set.add t route
+
+let create_remote_space id originator route =
 (*DEBUG*)debug1 "RSPACE CREATE" "%s" (space_to_string id) ;
   {
     rspace_id = id ;
@@ -89,24 +93,38 @@ let create_remote_space id =
     replies_pending = counter_create () ;
     konts = Join_hash.create () ;
     link = NoConnection (Mutex.create ()) ;
+    originator = originator ;
+    route = begin
+        let rs = Join_set.create () in
+        add_route rs route ;
+        rs
+      end ;
     write_mtx = Mutex.create () ;
     hooks = [] ;
   }
 
-(* Get remote space from its name.
-   When absent one unique rspace data structure is
-   added to the space.remote_spaces table *)
+let make_remote_space space space_id originator route =
+  try
+    let r = Join_hash.find space.remote_spaces space_id in
+    add_route r.route route
+  with Not_found ->
+    let new_rspace = create_remote_space space_id originator route in
+    match
+      Join_hash.add_once space.remote_spaces space_id new_rspace
+    with
+    | Some r ->
+(*DEBUG*)debug1 "MAKE_REMOTE" "recreation of %s" (space_to_string space_id) ;
+	add_route r.route route
+    | None -> ()
+
+(* Get remote space from its name, should normally exist
+   since a previous import_stub or LISTENER
+   called make_remote_space *)
 
 let get_remote_space space space_id =
   try Join_hash.find space.remote_spaces space_id
-  with Not_found ->
-    let new_rspace = create_remote_space space_id in
-    match
-      Join_hash.add_once
-        space.remote_spaces space_id new_rspace
-    with
-    | Some r -> r
-    | None -> new_rspace
+  with Not_found -> assert false
+
 
 (*
 and remove_remote_space space rspace =
@@ -172,8 +190,6 @@ external do_localize_message :
     = "caml_localize_message" 
 
 
-let string_of_space = space_to_string 
-
 let verbose_close caller fd =  
 (*DEBUG*)debug1 ("CLOSE from "^caller) "%i" (Obj.magic fd) ;
   try
@@ -183,6 +199,7 @@ let verbose_close caller fd =
     ()
 
 exception NoLink
+exception ListenFailed
 
 let string_of_addr = function
   | None -> "default"
@@ -197,51 +214,90 @@ let check_addr id addro = match addro with
            (string_of_sockaddr addr) (string_of_sockaddr id))
 
 (* listener is started in several occasions, nevertheless ensure unicity *)
-type connect_msg = Query | Connect of space_id
+type connect_msg = Query | Connect of space_id * route
 
 let rec start_listener space addr = match space.listener with
-| Listen {sock=id} -> check_addr id addr
+| Listen socks ->
+    begin try
+      let addr = do_start_listener space (Some addr) in
+      Join_set.add socks addr
+    with ListenFailed -> ()  end
 | Deaf mtx ->
     Mutex.lock mtx ;
     match space.listener with
-    | Listen {sock=id} ->
+    | Listen sock ->
 	Mutex.unlock mtx ;
-        check_addr id addr
+	start_listener space addr
     | Deaf _ ->
-        let when_accepted link =
-	  let msg = (Join_message.input_value link : connect_msg) in
-	  match msg with
-	  | Query ->
-	      begin try
-(*DEBUG*)debug1 "LISTENER" "QUERIED" ;
-                let my_id = get_id space in
-		Join_message.output_value link my_id ;
-(*DEBUG*)debug1 "LISTENER" "ANSWERED %s" (string_of_space my_id) ;
-		Join_link.flush link ;
-		Join_link.close link
-	      with Join_link.Failed ->
-		begin try Join_link.close link with _ -> () end
-	      end
-	  | Connect rspace_id ->
-(*DEBUG*)debug1 "LISTENER" "his name: %s" (space_to_string rspace_id)  ;
-              let rspace = get_remote_space space rspace_id in
-              open_link_accepted space rspace link in
-        begin try
-          let my_id,_ = Join_port.establish_server addr when_accepted in
-	  space.listener <- Listen (create_space_id my_id space.space_id)
-        with
-        | Join_port.Failed msg ->
-            Mutex.unlock mtx ;
-            prerr_endline
-              (sprintf "cannot listen on %s: %s"
-                 (string_of_addr addr) msg) ;
-            exit 2 (* little we can do to repair that *)
-        end ;
+	begin try
+	  let _ = do_start_listener space (Some addr) in
+	  space.listener <- Listen (Join_set.singleton addr)
+	with ListenFailed -> () end ;
+	Mutex.unlock mtx
+	
+and start_anonymous_listener space = match space.listener with
+| Listen sock -> ()
+|  Deaf mtx ->
+    Mutex.lock mtx ;
+    match space.listener with
+    | Listen _ ->
+	Mutex.unlock mtx ;
+	()
+    | Deaf _ ->
+	begin try
+	  let addr = do_start_listener space None in
+	  space.listener <- Listen (Join_set.singleton addr)
+	with ListenFailed ->
+	  ()
+	end ;
 	Mutex.unlock mtx
 
-and  get_id space = match space.listener with
-| Listen id -> id
-| Deaf _ -> start_listener space None ; get_id space
+and do_start_listener space addr =
+  let when_accepted link =
+    let rec get_rspace () =	    
+      let msg = (Join_message.input_value link : connect_msg) in
+      match msg with
+      | Query ->
+(*DEBUG*)debug1 "LISTENER" "QUERIED" ;
+	  let my_id = get_id space in
+	  Join_message.output_value link my_id ;
+(*DEBUG*)debug1 "LISTENER" "ANSWERED %s" (string_of_space my_id) ;
+	  Join_link.flush link ;
+	  get_rspace ()
+      | Connect (rspace_id, route) ->
+(*DEBUG*)debug1 "LISTENER" "his name: %s [route %s]"
+(*DEBUG*) (space_to_string rspace_id)  (string_of_sockaddr route) ;
+	  make_remote_space space rspace_id rspace_id (Some route) ;
+	  get_remote_space space rspace_id  in	  
+    try
+      let rspace = get_rspace () in
+      open_link_accepted space rspace link
+    with
+    | Join_link.Failed (*From get_rspace*) ->
+(*DEBUG*)debug1 "LISTENER" "%s" "First message not available" ;
+	(try Join_link.close link with _ -> ()) ;
+	() in
+  begin try
+    let my_addr,_ = Join_port.establish_server addr when_accepted in
+    my_addr
+  with
+  | Join_port.Failed msg ->
+      prerr_endline
+        (sprintf "cannot listen on %s: %s"
+           (string_of_addr addr) msg) ;
+      raise ListenFailed
+  end
+
+
+and get_id space = space.space_id
+
+and get_routes space = match space.listener with
+| Listen routes -> Join_set.elements routes
+| Deaf _ -> start_anonymous_listener space ; get_routes space
+
+and get_route space = match get_routes space with
+| r::_ -> r
+| []   -> assert false
 
 (* called when a connection is aborted, at moment
    used only at setup time when ruled out by a more prioritary connection *)
@@ -299,8 +355,9 @@ and open_link_accepted space rspace link =  match rspace.link with
 (* once a connection with rspace is established,
    treat incomming messages *)
 and join_handler space rspace link () =
+  let rspace_id = rspace.rspace_id in
 (*DEBUG*)debug1 "HANDLER"
-(*DEBUG*)  "start receiving from %s" (string_of_space rspace.rspace_id) ;  try
+(*DEBUG*)  "start receiving from %s" (string_of_space rspace_id) ;  try
   while true do
     let msg = Join_message.input_msg link in
 (*DEBUG*)debug2 "HANDLER"
@@ -310,35 +367,36 @@ and join_handler space rspace link () =
     match msg with
     | AsyncSend (chan, v) ->
 	let auto = find_automaton space chan.auto_id
-	and v = localize_rec space v in
+	and v = localize_rec space rspace_id v in
 	send_async_ref.async auto chan.chan_id v
     | AloneSend (uid,v) ->
         let g = find_async_forwarder space uid
-        and v = localize_rec space v in
+        and v = localize_rec space rspace_id v in
 (* inlined async call, must match local_send_alone in join.ml *)
         Join_scheduler.create_process (fun () -> g v)
     | SyncSend (chan, kid, v) ->
 	let auto = find_automaton space chan.auto_id
-	and v = localize_rec space v
+	and v = localize_rec space rspace_id v
         and idx = chan.chan_id in
         call_sync space rspace kid
           (fun v -> send_sync_ref.sync auto idx v) v
     | AloneSyncSend (uid, kid, v) ->
         let g = find_sync_forwarder space uid
-        and v = localize_rec space v in
+        and v = localize_rec space rspace_id v in
         call_sync space rspace kid g v
     | Service (key, kid, v) ->
-        let v = localize_rec space v
+        let v = localize_rec space rspace_id v
         and fwd arg =
           let uid = find_service space key in
           let g = find_sync_forwarder space uid in
-          g arg in
+          let r = g arg	 in
+	  r in
         call_sync space rspace kid fwd v
     | ReplySend (kid, v) ->
 	let kont =
 	  try Join_hash.find_remove rspace.konts kid
 	  with Not_found -> assert false
-	and v = localize_rec space v in
+	and v = localize_rec space rspace_id v in
 	Join_scheduler.reply_to v kont
     | ReplyExn (kid, e) ->
 	let kont =
@@ -417,8 +475,32 @@ and close_link space rspace = match rspace.link with
 (*DEBUG*)debug1 "CLOSE LINK" "cleanup is over" ;
         ()
 
+(* Find route to remote space *)
+
+and find_route space rspace = match find_routes space rspace with
+| [] ->
+(*DEBUG*)debug0 "FIND ROUTE" "unreachable site: %s"
+(*DEBUG*)  (string_of_space rspace.rspace_id) ;
+      failwith "Routing"
+| r::_ -> r
+
+and find_routes space rspace =
+(*DEBUG*)debug1 "FIND ROUTES" "to %s" (string_of_space rspace.rspace_id) ;
+  let routes =  Join_set.elements rspace.route in
+  match routes with
+  | [] ->
+(*DEBUG*)debug1 "FIND ROUTES" "to %s, by originator %s"
+(*DEBUG*) (string_of_space rspace.rspace_id)
+(*DEBUG*) (string_of_space rspace.originator) ;
+      let new_routes =
+	call_route_service space rspace.originator
+	  (space.space_id,rspace.rspace_id) in
+      List.iter (fun r -> add_route rspace.route (Some r)) new_routes ;
+      find_routes space rspace
+  | _::_ -> routes (* Easy case *)
 
 (* First race between senders, mtx is locked! *)
+
 and open_link_sender space rspace mtx =  match rspace.link with
   | DeadConnection  ->    (* lost and connection already dead... *)
       Mutex.unlock mtx ; raise NoLink
@@ -434,36 +516,41 @@ and open_link_sender space rspace mtx =  match rspace.link with
       let cond = Condition.create () in
       rspace.link <- Connecting (mtx, cond) ;
       Mutex.unlock mtx ;
-      let {sock=r_addr} = rspace.rspace_id in
-      let link = attempt_connect r_addr 0.1 in
-      Join_message.output_value link (Connect (get_id space)) ;
-      Join_link.flush link ;
-      let accepted =
-        try (Join_message.input_value link : bool)
-        with Join_link.Failed ->
+      let route = find_route space rspace in
+      let link = attempt_connect route 0.1 in
+      connect_on_link  space rspace (mtx, cond) link route
+
+and connect_on_link space rspace (mtx, cond) link route =
+  Join_message.output_value link
+    (Connect (get_id space, get_route space)) ;
+  Join_link.flush link ;
+  let accepted =
+    try (Join_message.input_value link : bool)
+    with Join_link.Failed ->
 (*DEBUG*)debug1 "OPEN SENDER" "definitively rejected" ;       
-          begin
-            try Join_link.close link with Join_link.Failed -> ()
-          end ;
-          failwith
-            (sprintf
-               "%s does not accept me with identity %s"
-               (string_of_sockaddr r_addr)
-               (string_of_space (get_id space))) in
-      if accepted then begin
+      begin
+        try Join_link.close link with Join_link.Failed -> ()
+      end ;
+      failwith
+        (sprintf
+           "%s does not accept me with identity %s, on route %s"
+	   (string_of_space rspace.rspace_id)
+           (string_of_space (get_id space))
+           (string_of_sockaddr route)) in
+  if accepted then begin
 (*DEBUG*)debug1 "OPEN SENDER" "finally accepted" ;
-        Mutex.lock mtx ;
-        rspace.link <- Connected (link,mtx) ;
-        Condition.broadcast cond ;
-        Mutex.unlock mtx ;
-	Join_scheduler.create_process (join_handler space rspace link) ;
-        link
-      end else begin (* lost race against partner, listener should connect *)
+    Mutex.lock mtx ;
+    rspace.link <- Connected (link,mtx) ;
+    Condition.broadcast cond ;
+    Mutex.unlock mtx ;
+    Join_scheduler.create_process (join_handler space rspace link) ;
+    link
+  end else begin (* lost race against partner, listener should connect *)
 (*DEBUG*)debug1 "OPEN SENDER" "finally rejected" ;
-        begin try Join_link.close link
-        with Join_link.Failed -> () end ;
-        get_link space rspace 
-      end
+    begin try Join_link.close link
+    with Join_link.Failed -> () end ;
+    get_link space rspace 
+  end
   
 (* Get link for rspace, in case no connection is here yet, create one *)
 and get_link space rspace =  match rspace.link with
@@ -472,7 +559,6 @@ and get_link space rspace =  match rspace.link with
   | NoConnection mtx|Connecting (mtx,_) ->
       Mutex.lock mtx ;
       open_link_sender space rspace mtx
-
 
 and sender_work space rspace link msg =
 (*DEBUG*)debug2 "SENDER" "message for %s" (string_of_space rspace.rspace_id) ;
@@ -515,19 +601,78 @@ and export_stub space stub = match stub.stub_tag with
    values, note that the stub is allocated by
    do_localize_message *)
 
-and import_stub space (rspace_id, uid) =
+and import_stub space originator (rspace_id, uid) =
   if same_space rspace_id (get_id space) then
     Local, find_local space uid, uid
-  else
+  else begin
+    make_remote_space space rspace_id originator None ;
     Remote, (Obj.magic rspace_id : stub_val), uid
+  end
 
 and globalize_rec space v flags =
   let s,t =  do_globalize_message v flags in
   s, Array.map (export_stub space) t
 
-and localize_rec space (s,t) =
-  do_localize_message s (Array.map (import_stub space) t)
-    
+and localize_rec space originator (s,t) =
+  do_localize_message s (Array.map (import_stub space originator) t)
+
+(**************************************************)    
+(*  Synchronous message sending is in big let rec *)
+(*  because of calls to "joroute" service above   *)
+(**************************************************)
+(* When outlink is dead, get_link raises NoLink
+   then, sync calls can fail the join way,
+   this will make all tasks waiting replies to die silently *)
+
+and do_remote_call space rspace_id do_msg kont a =
+  let rspace = get_remote_space space rspace_id in
+  let kid = rspace.next_kid () in
+(* There is a race condition with link destruction
+   But the calling thread looks like it gets its JoinExit exception ? *)
+  Join_hash.add rspace.konts kid kont ; (* do it before getting the link *)
+  let link =
+    try get_link space rspace
+    with NoLink ->
+      Join_hash.remove rspace.konts kid ; (* safe if absent *)
+      raise Join_misc.JoinExit in
+  sender_work space rspace link (do_msg kid (globalize_rec space a [])) ;
+  Mutex.lock kont.kmutex ;
+  Join_scheduler.suspend_for_reply kont
+
+and do_call_service space rspace_id key a =
+  if same_space (get_id space) rspace_id then
+    let uid = find_service space key in
+    let f = find_sync_forwarder space uid in
+    f a
+  else begin
+(*DEBUG*)debug1 "RCALL SERVICE" "%s" key ; 
+    let kont = Join_scheduler.kont_create (Mutex.create ()) in
+    do_remote_call space rspace_id
+      (fun kid v -> Service (key, kid, v))
+      kont a
+  end
+
+and call_route_service space rspace_id a =
+  let routes =
+    Obj.magic (do_call_service space rspace_id "joroute" (Obj.magic a : 'a)) in
+  (routes : route list)
+
+and route_service space ((ask_id,rspace_id):(space_id * space_id)) =
+  if same_space rspace_id space.space_id then
+    (get_routes space)
+  else
+    let rs = find_routes space (get_remote_space space rspace_id) in
+    let host_ask = ask_id.host
+    and me = space.space_id.host in
+    if me = host_ask then rs
+    else
+      List.filter
+	(fun sock -> match sock with
+	| Unix.ADDR_INET (h,_) ->
+	    h <> Unix.inet_addr_loopback &&
+	    h <> Unix.inet6_addr_loopback
+	| _ -> false)
+	rs
 
 (***********************************)
 (* Various remote message sendings *)
@@ -551,25 +696,6 @@ let do_remote_send_alone space rspace_id uid a =
 let remote_send_alone rspace_id uid a =
 (*DEBUG*)debug3 "REMOTE" "SEND ALONE" ;
   do_remote_send_alone local_space rspace_id uid a
-
-(* When outlink is dead, get_link raises NoLink
-   then, sync calls can fail the join way,
-   this will make all tasks waiting replies to die silently *)
-
-let do_remote_call space rspace_id do_msg kont a =
-  let rspace = get_remote_space space rspace_id in
-  let kid = rspace.next_kid () in
-(* There is a race condition with link destruction
-   But the calling thread looks like it gets its JoinExit exception ? *)
-  Join_hash.add rspace.konts kid kont ; (* do it before getting the link *)
-  let link =
-    try get_link space rspace
-    with NoLink ->
-      Join_hash.remove rspace.konts kid ; (* safe if absent *)
-      raise Join_misc.JoinExit in
-  sender_work space rspace link (do_msg kid (globalize_rec space a [])) ;
-  Mutex.lock kont.kmutex ;
-  Join_scheduler.suspend_for_reply kont
 
 let do_remote_send_sync space rspace_id uid idx kont a =
   do_remote_call space rspace_id
@@ -597,36 +723,29 @@ let do_register_service space key f =
   Mutex.lock space.uid_mutex ;
   let uid = space.next_uid () in
   Mutex.unlock space.uid_mutex ;
+  Printf.eprintf "Register service '%s' [%i]\n" key uid ;
+  flush Pervasives.stderr ;
   Join_hash.add space.uid2local uid (Obj.magic f : stub_val) ;
   match Join_hash.add_once space.services key uid with
   | None -> ()
   | Some _ ->
       Join_hash.remove space.uid2local uid ;
       failwith
-	(sprintf "register_service: %s already exists" key)
+	(sprintf "register_service: \"%s\" already exists" key)
 
-let register_service key stub =
-  do_register_service local_space key stub
+let register_service key stub = do_register_service local_space key stub
 
-let do_call_service space rspace_id key kont a =
-  if same_space (get_id space) rspace_id then
-    let uid = find_service space key in
-    let f = find_sync_forwarder space uid in
-    f a
-  else begin
-(*DEBUG*)debug2 "RCALL SERVICE" "%s" key ;    
-    do_remote_call space rspace_id
-      (fun kid v -> Service (key, kid, v))
-      kont a
-  end
+let () = register_service "joroute"
+    (route_service local_space : (space_id * space_id) -> route list)
 
-let call_service space_id key kont a =
-  do_call_service local_space  space_id key kont a
+
+let call_service space_id key a =
+  do_call_service local_space  space_id key a
 
 let do_rid_from_addr space addr =
-  let my_id = get_id space in
-  if same_addr my_id.sock addr then
-    my_id
+  let my_route = get_route space in
+  if same_addr my_route addr then
+    get_id space
   else begin
 (*DEBUG*)debug1 "RID"
 (*DEBUG*)  "GET COMPLETE ID OF %s" (string_of_sockaddr addr) ;
@@ -640,10 +759,36 @@ let do_rid_from_addr space addr =
 	failwith
 	  (sprintf "cannot query %s for its complete name"
 	     (string_of_sockaddr addr)) in
-    begin try Join_link.close link with _ -> () end ;
-(*DEBUG*)let pid,stamp = rid.uniq in
-(*DEBUG*)debug1 "RID" "GOT COMPLETE ID OF %s+%i+%f"
-(*DEBUG*)  (string_of_space rid) pid stamp ;
+(*DEBUG*)let _,stamp = rid.uniq in
+(*DEBUG*)debug1 "RID" "GOT COMPLETE ID OF %s+%f"
+(*DEBUG*)  (string_of_space rid) stamp ;
+    make_remote_space space rid rid (Some addr) ;
+    let _link =
+      let rspace = get_remote_space space rid in
+      match rspace.link with
+      | DeadConnection | Connected (_,_)
+      | Connecting (_,_) ->
+(*DEBUG*)debug1 "RID" "lost race for connecting to %s"
+(*DEBUG*)  (string_of_space rid) ;	    
+	  begin try Join_link.close link with _ -> () end ;
+	  get_link space rspace
+      | NoConnection mtx ->
+	  Mutex.lock mtx ;
+	  match rspace.link with
+	  | DeadConnection | Connected (_,_)
+	  | Connecting (_,_) ->
+(*DEBUG*)debug1 "RID" "lost race (II) for connecting to %s"
+(*DEBUG*)  (string_of_space rid) ;	    
+              (* lost race, no need to wait on condition here *)
+	      Mutex.unlock mtx ;
+	      get_link space rspace
+	  | NoConnection _ ->
+(*DEBUG*)debug1 "RID" "won race for connecting to %s"
+(*DEBUG*)  (string_of_space rid) ;	    
+	      let cond = Condition.create () in
+	      rspace.link <- Connecting (mtx, cond) ;
+	      Mutex.unlock mtx ;
+	      connect_on_link space rspace (mtx,cond) link addr in
     rid
   end
 
@@ -679,7 +824,7 @@ let halt () = do_halt local_space
 
 (* exported versions of globalize/localize, for tests *)
 let globalize v flags = globalize_rec local_space v flags
-and localize v = localize_rec local_space v
+and localize v = localize_rec local_space local_space.space_id v
 
 (************************)
 (* explicit connections *)

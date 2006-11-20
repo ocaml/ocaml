@@ -25,7 +25,6 @@ let do_nothing source fmt =  ksprintf (fun _ -> ()) fmt
 
 let debug lvl source fmt = do_nothing source fmt
 
-(*
 (*DEBUG*)let do_something source fmt =
 (*DEBUG*)  ksprintf
 (*DEBUG*)    (fun s ->
@@ -39,7 +38,6 @@ let debug lvl source fmt = do_nothing source fmt
 (*DEBUG*)    do_something src fmt
 (*DEBUG*)  end else
 (*DEBUG*)    do_nothing src fmt
-*)
 
 let debug0 src fmt = debug 0 src fmt
 and debug1 src fmt = debug 1 src fmt

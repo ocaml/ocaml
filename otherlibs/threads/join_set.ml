@@ -4,7 +4,7 @@
 (*                                                                     *)
 (*            Luc Maranget, projet Moscova, INRIA Rocquencourt         *)
 (*                                                                     *)
-(*  Copyright 2004 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2006 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
@@ -12,23 +12,24 @@
 
 (* $Id$ *)
 
-open Join_types
+(*
+  mutable sets with readers/writer protection
+*)
 
-val create_process : (unit -> unit) -> unit
+open Join_misc
 
-val incr_active : unit -> unit
+type 'a t = {
+  mutable xs : 'a list ;
+  mtx : Mutex.t ;
+} 
 
-val tasks_status : unit -> string
+let create () = { xs = [] ; mtx = Mutex.create () ; }
+and singleton  x = { xs = [x] ; mtx = Mutex.create () ; }
 
-val inform_suspend : unit -> unit
-val inform_unsuspend : unit -> unit
+let add t x =
+  Mutex.lock t.mtx ;
+  if not (List.mem x t.xs) then t.xs <- x :: t.xs;
+  Mutex.unlock t.mtx
+					       
+let elements {xs=xs} = xs
 
-val kont_create : Mutex.t -> continuation
-
-(* Important: continuation mutex must be locked before call *)
-val suspend_for_reply : continuation -> 'a
-
-val reply_to : 'a -> continuation -> unit
-val reply_to_exn : exn -> continuation -> unit
-
-val exit_hook : unit -> unit

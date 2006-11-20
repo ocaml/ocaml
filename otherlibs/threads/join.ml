@@ -153,13 +153,8 @@ let patch_table a t =  a.matches <- t
 (* Implementing reply to sync channels *)
 (***************************************)
 
-let kont_create0 mutex =
-  {kmutex = mutex ;
-   kcondition = Condition.create () ;
-   kval = Start}
-
 (* Continuation mutex is automaton mutex *)
-let kont_create auto = kont_create0 auto.mutex
+let kont_create auto = Join_scheduler.kont_create auto.mutex
 
 (**********************)
 (* Asynchronous sends *)
@@ -389,7 +384,7 @@ let send_sync stub idx arg = match stub.stub_tag with
     let a = (Obj.magic stub.stub_val : automaton ) in
     local_send_sync a idx arg
 | Remote ->
-    let kont = kont_create0 (Mutex.create ())
+    let kont = Join_scheduler.kont_create (Mutex.create ())
     and rspace_id = (Obj.magic stub.stub_val : space_id) in
     Join_space.remote_send_sync rspace_id stub.uid idx kont arg
 
@@ -400,7 +395,7 @@ match stub.stub_tag with
     let g = (Obj.magic stub.stub_val : 'a -> 'b) in
     g arg
 | Remote ->
-    let kont = kont_create0 (Mutex.create ())
+    let kont = Join_scheduler.kont_create (Mutex.create ())
     and rspace_id = (Obj.magic stub.stub_val : space_id) in
     Join_space.remote_send_sync_alone rspace_id stub.uid kont arg
 
@@ -414,8 +409,7 @@ let register_service key (f : 'a -> 'b) =
   Join_space.register_service key f
   
 let call_service (rspace_id, key) arg =
-  let kont = kont_create0 (Mutex.create ()) in
-  Join_space.call_service rspace_id key kont arg
+  Join_space.call_service rspace_id key arg
   
 (* This code must create a one-argument closure,
    whose code pointer unambiguously characterize
@@ -473,7 +467,7 @@ let exit_hook = Join_scheduler.exit_hook
 
 let exn_global = Join_message.exn_global
 
-let listen addr = Join_space.listen (Some addr)
+let listen addr = Join_space.listen addr
 
 let connect fd = Join_space.connect fd
 

@@ -162,5 +162,5 @@ let string_of_msg = function
   | AloneSyncSend (_, _, _) -> "AloneSyncSend (uid, kont, arg)"
   | ReplySend (_, _) -> "ReplySend (kont, arg)"
   | ReplyExn (_, _) -> "ReplyExn (kont, e)"
-  | Service (_, _, _) -> "Service (key, kont, arg)"
+  | Service (key, _, _) -> Printf.sprintf "Service (\"%s\", kont, arg)" key
 

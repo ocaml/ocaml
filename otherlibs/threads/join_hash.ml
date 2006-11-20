@@ -22,7 +22,8 @@ type ('a,'b) t =
     find_remove : 'a -> 'b ;
     iter : ('a -> 'b -> unit) -> unit ;
     iter_empty : ('a -> 'b -> unit) -> unit ;
-    remove : 'a -> unit
+    remove : 'a -> unit ;
+    perform : 'a -> 'b -> ('b -> 'b) -> unit ;
   } 
 
 let create () =
@@ -52,6 +53,11 @@ let create () =
      (fun do_it -> Hashtbl.iter do_it t ; Hashtbl.clear t) ;
    remove = protect_write c
      (fun key -> Hashtbl.remove t key) ;
+   perform  = protect_write c
+     (fun key default perf ->
+       try
+	 Hashtbl.replace t key (perf (Hashtbl.find t key))
+       with Not_found -> Hashtbl.replace t key (perf default))
   } 
 
 
@@ -62,3 +68,4 @@ and find_remove t key = t.find_remove key
 and iter t do_it = t.iter do_it
 and iter_empty t do_it = t.iter_empty do_it
 and remove t key = t.remove key
+and perform t key default perf = t.perform key default perf

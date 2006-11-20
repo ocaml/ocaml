@@ -42,3 +42,6 @@ val iter_empty : ('a, 'b) t -> ('a -> 'b -> unit) -> unit
 
 (* remove a binding *)
 val remove : ('a,'b) t -> 'a -> unit
+
+(* Perform some operation on value *)
+val perform : ('a,'b) t -> 'a -> 'b -> ('b -> 'b) -> unit
