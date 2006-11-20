@@ -18,6 +18,7 @@
 open Primitives
 
 exception Current_checkpoint_lost
+exception Current_checkpoint_lost_start_at of int64 * int64
 
 val new_checkpoint : int -> io_channel -> unit
 val set_file_descriptor : int -> io_channel -> bool

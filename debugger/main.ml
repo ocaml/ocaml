@@ -33,12 +33,14 @@ let rec loop ppf =
   if !loaded && (not (yes_or_no "The program is running. Quit anyway")) then
     loop ppf
 
-let rec protect ppf loop =
+let current_duration = ref (-1L)
+
+let rec protect ppf restart loop =
   try
     loop ppf
   with
   | End_of_file ->
-      protect ppf (function ppf ->
+      protect ppf restart (function ppf ->
         forget_process
           !current_checkpoint.c_fd
           !current_checkpoint.c_pid;
@@ -46,12 +48,12 @@ let rec protect ppf loop =
         stop_user_input ();
         loop ppf)
   | Toplevel ->
-      protect ppf (function ppf ->
+      protect ppf restart (function ppf ->
         pp_print_flush ppf ();
         stop_user_input ();
         loop ppf)
   | Sys.Break ->
-      protect ppf (function ppf ->
+      protect ppf restart (function ppf ->
         fprintf ppf "Interrupted.@.";
         Exec.protect (function () ->
           stop_user_input ();
@@ -61,18 +63,52 @@ let rec protect ppf loop =
           end);
         loop ppf)
   | Current_checkpoint_lost ->
-      protect ppf (function ppf ->
+      protect ppf restart (function ppf ->
         fprintf ppf "Trying to recover...@.";
         stop_user_input ();
         recover ();
         try_select_frame 0;
         show_current_event ppf;
         loop ppf)
+  | Current_checkpoint_lost_start_at (time, init_duration) ->
+      protect ppf restart (function ppf ->
+        let b =
+          if !current_duration = -1L then begin
+            let msg = sprintf "Restart from time %Ld and try to get closer of the problem" time in
+            stop_user_input ();
+            if yes_or_no msg then
+              (current_duration := init_duration; true)
+            else
+              false
+            end
+          else
+            true in
+        if b then
+          begin
+            go_to time;
+            current_duration := Int64.div !current_duration 10L;
+            if !current_duration > 0L then
+              while true do
+                step !current_duration
+              done
+            else begin
+              current_duration := -1L;
+              stop_user_input ();
+              show_current_event ppf;
+              restart ppf;
+            end
+          end
+        else
+          begin
+            recover ();
+            show_current_event ppf;
+            loop ppf
+          end)
   | x ->
       kill_program ();
       raise x
 
-let toplevel_loop () = protect Format.std_formatter loop
+let toplevel_loop () = protect Format.std_formatter loop loop
 
 (* Parsing of command-line arguments *)
 
