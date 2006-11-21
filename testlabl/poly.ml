@@ -568,6 +568,7 @@ let h x =
   let x = List.hd [Some x; none] in (just x)#id;;
 
 (* polymorphic recursion *)
+(*
 let rec 'a. f : 'a -> _ = fun x -> 1 and g x = f x;;
 type 'a t = Leaf of 'a | Node of ('a * 'a) t;;
 let rec 'a. depth : 'a t -> _ =
@@ -586,3 +587,4 @@ and q () = r;;
 let rec 'a. f : _ -> _ = fun x -> x;;
 let 'a as [> `Int of int | `B of 'b] 'b. zero : 'a = `Int 0;;
 let 'a as [< `Int of int]. zero : 'a = `Int 0;;
+*)

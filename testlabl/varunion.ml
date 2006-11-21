@@ -60,8 +60,14 @@ let c = (`C 'c' : M.t) ;;
 module M(X : sig type t = private [> `A] end) = 
   struct let f (#X.t as x) = x end;;
 
+(* code generation *)
 type t = private [> `A ] ~ [`B];;
 match `B with #t -> 1 | `B -> 2;;
+
+module M : sig type t = private [> `A of int | `B] ~ [~`C] end =
+  struct type t = [`A of int | `B | `D of bool] end;;
+let f = function (`C | #M.t) -> 1+1 ;;
+let f = function (`A _ | `B #M.t) -> 1+1 ;;
 
 (* expression *)
 module Mix(X:sig type t = private [> ] val show: t -> string end)
