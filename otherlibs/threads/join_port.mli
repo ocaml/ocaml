@@ -12,7 +12,7 @@
 
 (* $Id$ *)
 
-exception Failed of string
+exception Failed of string * exn
 
 type server 
 

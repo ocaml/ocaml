@@ -26,7 +26,7 @@ let rec string_of_sockaddrs = function
 
 let rec attempt_connect r_addr d =
   try Join_port.connect r_addr
-  with Join_port.Failed msg ->
+  with Join_port.Failed (msg,_) ->
     if d > 5.0 then 
       failwith
         (sprintf "cannot connect to %s: %s"
@@ -200,7 +200,6 @@ let verbose_close caller fd =
     ()
 
 exception NoLink
-exception ListenFailed
 exception RoutingFailed
 
 let string_of_addr = function
@@ -220,10 +219,8 @@ type connect_msg = Query | Connect of space_id * route list
 
 let rec start_listener space addr = match space.listener with
 | Listen socks ->
-    begin try
-      let addr = do_start_listener space (Some addr) in
-      Join_set.add socks addr
-    with ListenFailed -> ()  end
+    let addr = do_start_listener space (Some addr) in
+    Join_set.add socks addr
 | Deaf mtx ->
     Mutex.lock mtx ;
     match space.listener with
@@ -231,11 +228,15 @@ let rec start_listener space addr = match space.listener with
 	Mutex.unlock mtx ;
 	start_listener space addr
     | Deaf _ ->
-	begin try
+        begin try
 	  let _ = do_start_listener space (Some addr) in
 	  space.listener <- Listen (Join_set.singleton addr)
-	with ListenFailed -> () end ;
+        with e ->
+	  Mutex.unlock mtx ;
+          raise e
+        end ;
 	Mutex.unlock mtx
+        
 	
 and start_anonymous_listener space = match space.listener with
 | Listen sock -> ()
@@ -249,10 +250,12 @@ and start_anonymous_listener space = match space.listener with
 	begin try
 	  let addr = do_start_listener space None in
 	  space.listener <- Listen (Join_set.singleton addr)
-	with ListenFailed ->
-	  ()
+	with e ->
+	  Mutex.unlock mtx ;
+          raise e
 	end ;
 	Mutex.unlock mtx
+
 
 and do_start_listener space addr =
   let when_accepted link =
@@ -282,16 +285,8 @@ and do_start_listener space addr =
 (*DEBUG*)debug1 "LISTENER" "%s" "First message not available" ;
 	(try Join_link.close link with _ -> ()) ;
 	() in
-  begin try
-    let my_addr,_ = Join_port.establish_server addr when_accepted in
-    my_addr
-  with
-  | Join_port.Failed msg ->
-      prerr_endline
-        (sprintf "cannot listen on %s: %s"
-           (string_of_addr addr) msg) ;
-      raise ListenFailed
-  end
+  let my_addr,_ = Join_port.establish_server addr when_accepted in
+  my_addr
 
 
 and get_id space = space.space_id

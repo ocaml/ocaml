@@ -467,7 +467,11 @@ let exit_hook = Join_scheduler.exit_hook
 
 let exn_global = Join_message.exn_global
 
-let listen addr = Join_space.listen addr
+let listen addr =
+  try Join_space.listen addr
+  with Join_port.Failed (msg,e) ->
+(*DEBUG*)debug0 "Join.listen" "failed: %s\n" msg ;
+    raise e
 
 let connect fd = Join_space.connect fd
 

@@ -17,7 +17,7 @@
 open Join_misc
 open Unix
 
-exception Failed of string
+exception Failed of string * exn
 
 type server =
   {
@@ -45,7 +45,7 @@ let create_port porto =
       with e -> close s ; raise e
     with e ->
 (*DEBUG*)debug1 "CREATE PORT" "%s" (exn_to_string e) ;
-        raise (Failed (exn_to_string e)) in
+        raise (Failed (exn_to_string e, e)) in
   let sockaddr = 
     let sockaddr = getsockname sock in
     match porto with
@@ -97,7 +97,7 @@ let kill_server { loc_sock = sock ; } =
   with e ->
 (*DEBUG*)debug0 "KILL SERVER"
 (*DEBUG*)  "got %s" (Join_misc.exn_to_string e) ;
-    raise (Failed (exn_to_string e))
+    raise e
     
 
 
@@ -119,5 +119,5 @@ let connect sockaddr =
     with
     | e ->
 (*DEBUG*)debug1 "CONNECT" "%s" (exn_to_string e) ;
-        raise (Failed (exn_to_string e)) in
+        raise (Failed (exn_to_string e,e)) in
   Join_link.create sock (* Can fail only for OutOfMemory *)
