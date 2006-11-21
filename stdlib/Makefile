@@ -18,11 +18,11 @@ include ../config/Makefile
 RUNTIME=../boot/ocamlrun
 COMPILER=../ocamlc
 CAMLC=$(RUNTIME) $(COMPILER)
-COMPFLAGS=-g -warn-error A -nostdlib
+COMPFLAGS=-g -warn-error A -nostdlib -nojoin
 OPTCOMPILER=../ocamlopt
 CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
-OPTCOMPFLAGS=-warn-error A -nostdlib
-CAMLDEP=../boot/ocamlrun ../tools/ocamldep
+OPTCOMPFLAGS=-warn-error A -nostdlib -nojoin
+CAMLDEP=../boot/ocamlrun ../tools/ocamldep -nojoin
 
 OBJS=pervasives.cmo $(OTHERS)
 OTHERS=array.cmo list.cmo char.cmo string.cmo sys.cmo \
@@ -69,13 +69,13 @@ installopt-prof:
 	cd $(LIBDIR); $(RANLIB) stdlib.p.a
 
 stdlib.cma: $(OBJS)
-	$(CAMLC) -a -o stdlib.cma $(OBJS)
+	$(CAMLC) -nojoin -a -o stdlib.cma $(OBJS)
 
 stdlib.cmxa: $(OBJS:.cmo=.cmx)
-	$(CAMLOPT) -a -o stdlib.cmxa $(OBJS:.cmo=.cmx)
+	$(CAMLOPT) -nojoin -a -o stdlib.cmxa $(OBJS:.cmo=.cmx)
 
 stdlib.p.cmxa: $(OBJS:.cmo=.p.cmx)
-	$(CAMLOPT) -a -o stdlib.p.cmxa $(OBJS:.cmo=.p.cmx)
+	$(CAMLOPT) -nojoin -a -o stdlib.p.cmxa $(OBJS:.cmo=.p.cmx)
 
 camlheader camlheader_ur: header.c ../config/Makefile
 	if $(SHARPBANGSCRIPTS); then \

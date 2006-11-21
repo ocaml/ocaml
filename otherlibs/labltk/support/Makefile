@@ -52,7 +52,7 @@ clean :
 	$(CAMLCOMP) $(COMPFLAGS) $<
 
 .ml.cmx:
-	$(CAMLOPT) -c $(COMPFLAGS) $<
+	$(CAMLOPT) -nojoin -c $(COMPFLAGS) $<
 
 .c.o:
 	$(BYTECC) $(BYTECCCOMPOPTS) $(CCFLAGS) -c $<
@@ -63,7 +63,7 @@ tkthread.cmo: tkthread.ml
 	$(CAMLCOMP) $(COMPFLAGS) $(THFLAGS) $<
 tkthread.cmx: tkthread.ml
 	if test -f $(OTHERS)/systhreads/threads.cmxa; then \
-	  $(CAMLOPT) -c $(COMPFLAGS) $(THFLAGS) $< ; \
+	  $(CAMLOPT) -nojoin -c $(COMPFLAGS) $(THFLAGS) $< ; \
 	fi
 
 depend:

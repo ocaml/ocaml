@@ -22,11 +22,11 @@ libtkanim.a: $(COBJS)
 	$(MKLIB) -o tkanim $(COBJS) $(TK_LINK)
 
 gifanimtest-static: all gifanimtest.cmo
-	$(CAMLC) -custom -o $@ -I ../lib -I ../support -I ../../unix -dllpath ../support -dllpath . unix.cma -ccopt -L. $(LIBNAME).cma tkanim.cma gifanimtest.cmo
+	$(CAMLC) -nojoin -custom -o $@ -I ../lib -I ../support -I ../../unix -dllpath ../support -dllpath . unix.cma -ccopt -L. $(LIBNAME).cma tkanim.cma gifanimtest.cmo
 
 # dynamic loading
 gifanimtest: all gifanimtest.cmo
-	$(CAMLC) -o $@ -I ../lib -I ../support -I ../../unix -dllpath ../support -dllpath . unix.cma $(LIBNAME).cma tkanim.cma gifanimtest.cmo
+	$(CAMLC) -nojoin -o $@ -I ../lib -I ../support -I ../../unix -dllpath ../support -dllpath . unix.cma $(LIBNAME).cma tkanim.cma gifanimtest.cmo
 
 #animwish: $(TKANIM_LIB) tkAppInit.o
 #	$(CC) -o $@  tkAppInit.o $(TK_LINK) $(X11_LINK) \
@@ -49,7 +49,7 @@ clean:
 	$(CAMLCOMP) $(COMPFLAGS) $<
 
 .ml.cmx:
-	$(CAMLOPT) -c $(COMPFLAGS) $<
+	$(CAMLOPT) -nojoin -c $(COMPFLAGS) $<
 
 .c.o:
 	$(BYTECC) $(BYTECCCOMPOPTS) $(CCFLAGS) -c $<

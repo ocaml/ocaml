@@ -36,11 +36,11 @@ $(OBJSX): ../lib/$(LIBNAME).cmxa
 ### Tests
 
 balloontest: balloontest.cmo 
-	$(CAMLC) -o balloontest -I ../support -I ../lib \
+	$(CAMLC) -nojoin -o balloontest -I ../support -I ../lib \
 	        -custom $(LIBNAME).cma jpflib.cma balloontest.cmo
 
 balloontest.opt: balloontest.cmx
-	$(CAMLOPT) -o balloontest.opt -I ../support -I ../lib \
+	$(CAMLOPT) -nojoin -o balloontest.opt -I ../support -I ../lib \
 	        $(LIBNAME).cmxa jpflib.cmxa balloontest.cmx
 
 balloontest.cmo : balloon.cmo jpflib.cma
@@ -57,7 +57,7 @@ balloontest.cmx : balloon.cmx jpflib.cmxa
 	$(CAMLCOMP) $(COMPFLAGS) $<
 
 .ml.cmx:
-	$(CAMLOPT) -c $(COMPFLAGS) $<
+	$(CAMLOPT) -nojoin -c $(COMPFLAGS) $<
 
 depend: 
 	mv Makefile Makefile.bak

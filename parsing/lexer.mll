@@ -102,7 +102,7 @@ let join_keyword_table =
   h
 
 let keywords () =
-  if !Clflags.join then join_keyword_table else keyword_table
+  if not !Clflags.nojoin then join_keyword_table else keyword_table
 
 (* To buffer string literals *)
 

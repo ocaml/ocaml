@@ -18,7 +18,7 @@ PROGS=test1.byt test2.byt test3.byt test4.byt test5.byt test6.byt \
   testio.byt testsocket.byt testwait.byt testsignal.byt testsignal2.byt \
   testsieve.byt token1.byt token2.byt
 
-CAMLC=../../../boot/ocamlrun ../../../ocamlc -I .. -I ../../../stdlib -I ../../unix
+CAMLC=../../../boot/ocamlrun ../../../ocamlc -nojoin -I .. -I ../../../stdlib -I ../../unix
 
 include ../../../config/Makefile
 

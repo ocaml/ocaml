@@ -30,12 +30,12 @@ all: ocamlbrowser$(EXE)
 
 ocamlbrowser$(EXE): $(TOPDIR)/toplevel/toplevellib.cma jglib.cma $(OBJ) \
 			../support/lib$(LIBNAME).a
-	$(CAMLC) -o ocamlbrowser$(EXE) $(INCLUDES) \
+	$(CAMLC) -nojoin -o ocamlbrowser$(EXE) $(INCLUDES) \
 		$(TOPDIR)/toplevel/toplevellib.cma \
 		unix.cma str.cma $(LIBNAME).cma jglib.cma $(OBJ)
 
 ocamlbrowser.cma: jglib.cma $(OBJ)
-	$(CAMLC) -a -o $@ -linkall jglib.cma $(OBJ)
+	$(CAMLC) -nojoin -a -o $@ -linkall jglib.cma $(OBJ)
 
 jglib.cma: $(JG)
 	$(CAMLCOMP) -a -o jglib.cma $(JG)

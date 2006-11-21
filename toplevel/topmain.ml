@@ -51,7 +51,7 @@ let print_version () =
 ;;
 (*> JOCAML *)
 let magic_join () =
-  join := true ;
+(*   join := true ; *)
   let dir = Misc.expand_directory Config.standard_library "+threads" in
   include_dirs := dir :: !include_dirs ;
   file_argument "join.cma";
@@ -67,7 +67,7 @@ let main () =
      "-init", Arg.String (fun s -> init_file := Some s),
            "<file>  Load <file> instead of default init file";
 (*> JOCAML *)
-    "-join", Arg.Unit magic_join, " Be a jocaml toplevel";
+    "-nojoin", Arg.Set nojoin, " Be a ocaml toplevel";
 (*< JOCAML *)    
      "-labels", Arg.Clear classic, " Labels commute (default)";
      "-noassert", Arg.Set noassert, " Do not compile assertion checks";
@@ -106,6 +106,9 @@ let main () =
      "-dlambda", Arg.Set dump_lambda, " (undocumented)";
      "-dinstr", Arg.Set dump_instr, " (undocumented)";
     ] file_argument usage;
+(*> JOCAML *)
+  if not !nojoin then magic_join ();
+(*< JOCAML *)
   if not (prepare Format.err_formatter) then exit 2;
   Toploop.loop Format.std_formatter
 

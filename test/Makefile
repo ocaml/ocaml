@@ -16,12 +16,12 @@ include ../config/Makefile
 
 CAMLC=../boot/ocamlrun ../ocamlc
 CAMLOPT=../boot/ocamlrun ../ocamlopt
-COMPFLAGS=-nostdlib -I ../stdlib -I KB -I Lex
+COMPFLAGS=-nostdlib -I ../stdlib -I KB -I Lex -nojoin
 OPTFLAGS=-S
 CAMLYACC=../yacc/ocamlyacc
 YACCFLAGS=-v
 CAMLLEX=../boot/ocamlrun ../lex/ocamllex
-CAMLDEP=../boot/ocamlrun ../tools/ocamldep
+CAMLDEP=../boot/ocamlrun ../tools/ocamldep -nojoin
 CAMLRUN=../byterun/ocamlrun
 CODERUNPARAMS=OCAMLRUNPARAM='o=100'
 

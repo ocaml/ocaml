@@ -18,8 +18,8 @@
 include config/Makefile
 include stdlib/StdlibModules
 
-CAMLC=boot/ocamlrun boot/ocamlc -nostdlib -I boot
-CAMLOPT=boot/ocamlrun ./ocamlopt -nostdlib -I stdlib
+CAMLC=boot/ocamlrun boot/ocamlc -nostdlib -I boot -nojoin
+CAMLOPT=boot/ocamlrun ./ocamlopt -nostdlib -I stdlib -nojoin
 COMPFLAGS=-warn-error A $(INCLUDES)
 LINKFLAGS=
 
@@ -174,7 +174,7 @@ coldstart:
 	cp byterun/ocamlrun$(EXE) boot/ocamlrun$(EXE)
 	cd yacc; $(MAKE) all
 	cp yacc/ocamlyacc$(EXE) boot/ocamlyacc$(EXE)
-	cd stdlib; $(MAKE) COMPILER=../boot/ocamlc all
+	cd stdlib; $(MAKE) COMPILER="../boot/ocamlc" all
 	cd stdlib; cp $(LIBFILES) ../boot
 	if test -f boot/libcamlrun.a; then :; else \
           ln -s ../byterun/libcamlrun.a boot/libcamlrun.a; fi

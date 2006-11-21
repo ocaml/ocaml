@@ -14,7 +14,7 @@
 
 include ../config/Makefile
 
-CAMLC=../ocamlcomp.sh
+CAMLC=../ocamlcomp.sh -nojoin
 COMPFLAGS=-warn-error A $(INCLUDES)
 LINKFLAGS=-linkall -I ../otherlibs/unix
 CAMLYACC=../boot/ocamlyacc

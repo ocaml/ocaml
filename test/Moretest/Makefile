@@ -14,10 +14,10 @@
 
 include ../../config/Makefile
 
-CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib
-CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
+CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib -nojoin
+CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib -nojoin
 OPTFLAGS=-S
-CAMLDEP=../../boot/ocamlrun ../../tools/ocamldep
+CAMLDEP=../../boot/ocamlrun ../../tools/ocamldep -nojoin
 CAMLRUN=../../byterun/ocamlrun
 CODERUNPARAMS=OCAMLRUNPARAM='o=100'
 

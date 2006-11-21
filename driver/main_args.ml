@@ -43,7 +43,7 @@ module Make_options (F :
      val _pp : string -> unit
      val _principal : unit -> unit
      val _rectypes : unit -> unit
-     val _join : unit -> unit
+     val _nojoin : unit -> unit
      val _thread : unit -> unit
      val _vmthread : unit -> unit
      val _unsafe : unit -> unit
@@ -115,7 +115,7 @@ struct
     "-principal", Arg.Unit F._principal,
            " Check principality of type inference";
     "-rectypes", Arg.Unit F._rectypes, " Allow arbitrary recursive types";
-    "-join", Arg.Unit F._join,
+    "-nojoin", Arg.Unit F._nojoin,
            " Be a join compiler";
     "-thread", Arg.Unit F._thread,
            " Generate code that supports the system threads library";

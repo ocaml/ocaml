@@ -42,7 +42,7 @@ $(OBJSX): ../lib/$(LIBNAME).cmxa
 	$(CAMLCOMP) $(COMPFLAGS) $<
 
 .ml.cmx:
-	$(CAMLOPT) -c $(COMPFLAGS) $<
+	$(CAMLOPT) -nojoin -c $(COMPFLAGS) $<
 
 
 depend: 

@@ -7,32 +7,32 @@ all: hello demo eyes calc clock tetris lang
 opt: hello.opt demo.opt eyes.opt calc.opt clock.opt tetris.opt
 
 hello: hello.cmo
-	$(CAMLC) $(COMPFLAGS) -o hello $(LIBNAME).cma hello.cmo
+	$(CAMLC) -nojoin $(COMPFLAGS) -o hello $(LIBNAME).cma hello.cmo
 
 demo: demo.cmo
-	$(CAMLC) $(COMPFLAGS) -o demo $(LIBNAME).cma demo.cmo
+	$(CAMLC) -nojoin $(COMPFLAGS) -o demo $(LIBNAME).cma demo.cmo
 
 eyes: eyes.cmo
-	$(CAMLC) $(COMPFLAGS) -o eyes $(LIBNAME).cma eyes.cmo
+	$(CAMLC) -nojoin $(COMPFLAGS) -o eyes $(LIBNAME).cma eyes.cmo
 
 calc: calc.cmo
-	$(CAMLC) $(COMPFLAGS) -o calc $(LIBNAME).cma calc.cmo
+	$(CAMLC) -nojoin $(COMPFLAGS) -o calc $(LIBNAME).cma calc.cmo
 
 clock: clock.cmo
-	$(CAMLC) $(COMPFLAGS) -o clock $(LIBNAME).cma unix.cma clock.cmo
+	$(CAMLC) -nojoin $(COMPFLAGS) -o clock $(LIBNAME).cma unix.cma clock.cmo
 
 clock.opt: clock.cmx
-	$(CAMLOPT) $(COMPFLAGS) -o clock.opt \
+	$(CAMLOPT) -nojoin $(COMPFLAGS) -o clock.opt \
 	      $(LIBNAME).cmxa unix.cmxa clock.cmx
 
 tetris: tetris.cmo
-	$(CAMLC) $(COMPFLAGS) -o tetris $(LIBNAME).cma tetris.cmo
+	$(CAMLC) -nojoin $(COMPFLAGS) -o tetris $(LIBNAME).cma tetris.cmo
 
 taquin: taquin.cmo
-	$(CAMLC) $(COMPFLAGS) -o taquin $(LIBNAME).cma taquin.cmo
+	$(CAMLC) -nojoin $(COMPFLAGS) -o taquin $(LIBNAME).cma taquin.cmo
 
 lang: lang.cmo
-	$(CAMLC) $(COMPFLAGS) -o lang $(LIBNAME).cma lang.cmo
+	$(CAMLC) -nojoin $(COMPFLAGS) -o lang $(LIBNAME).cma lang.cmo
 
 clean:
 	rm -f hello demo eyes calc clock tetris lang *.opt *.o *.cm*
@@ -47,7 +47,7 @@ clean:
 	$(CAMLCOMP) $(COMPFLAGS) $<
 
 .ml.cmx:
-	$(CAMLOPT) -c $(COMPFLAGS) $<
+	$(CAMLOPT) -nojoin -c $(COMPFLAGS) $<
 
 .cmx.opt:
-	$(CAMLOPT) $(COMPFLAGS) -o $@ $(LIBNAME).cmxa $<
+	$(CAMLOPT) -nojoin $(COMPFLAGS) -o $@ $(LIBNAME).cmxa $<

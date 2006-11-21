@@ -10,10 +10,10 @@ PPOBJS= pplex.cmo ppyac.cmo ppexec.cmo ppparse.cmo pp.cmo
 all: tkcompiler$(EXE) pp$(EXE)
 
 tkcompiler$(EXE) : $(OBJS)
-	$(CAMLC) -g $(LINKFLAGS) -o tkcompiler$(EXE) $(OBJS)
+	$(CAMLC) -nojoin -g $(LINKFLAGS) -o tkcompiler$(EXE) $(OBJS)
 
 pp$(EXE): $(PPOBJS)
-	$(CAMLC) -g $(LINKFLAGS) -o pp$(EXE) $(PPOBJS)
+	$(CAMLC) -nojoin -g $(LINKFLAGS) -o pp$(EXE) $(PPOBJS)
 
 lexer.ml: lexer.mll
 	$(CAMLLEX) lexer.mll

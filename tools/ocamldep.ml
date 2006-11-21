@@ -243,7 +243,7 @@ let _ =
   Clflags.classic := false;
   add_to_load_path Filename.current_dir_name;
   Arg.parse [
-     "-join", Arg.Set  Clflags.join,
+     "-nojoin", Arg.Set  Clflags.nojoin,
        "act over JoCaml source files" ;
      "-I", Arg.String add_to_load_path,
        "<dir>  Add <dir> to the list of include directories";

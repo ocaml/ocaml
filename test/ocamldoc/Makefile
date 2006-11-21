@@ -15,14 +15,14 @@
 ROOT=../..
 include $(ROOT)/config/Makefile
 
-CAMLC=$(ROOT)/boot/ocamlrun $(ROOT)/ocamlc
-CAMLOPT=$(ROOT)/boot/ocamlrun $(ROOT)/ocamlopt
+CAMLC=$(ROOT)/boot/ocamlrun $(ROOT)/ocamlc -nojoin
+CAMLOPT=$(ROOT)/boot/ocamlrun $(ROOT)/ocamlopt -nojoin
 COMPFLAGS=-nostdlib -I $(ROOT)/stdlib -I KB -I Lex
 OPTFLAGS=-S
 CAMLYACC=$(ROOT)/yacc/ocamlyacc
 YACCFLAGS=-v
 CAMLLEX=$(ROOT)/boot/ocamlrun $(ROOT)/lex/ocamllex
-CAMLDEP=$(ROOT)/boot/ocamlrun $(ROOT)/tools/ocamldep
+CAMLDEP=$(ROOT)/boot/ocamlrun $(ROOT)/tools/ocamldep -nojoin
 CAMLRUN=$(ROOT)/byterun/ocamlrun
 OCAMLDOC=$(ROOT)/boot/ocamlrun $(ROOT)/ocamldoc/ocamldoc
 OCAMLDOC_TEST=$(OCAMLDOC) -g $(ROOT)/ocamldoc/odoc_test.cmo -warn-error

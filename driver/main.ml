@@ -118,7 +118,7 @@ module Options = Main_args.Make_options (struct
   let _pp s = preprocessor := Some s
   let _principal = set principal
   let _rectypes = set recursive_types
-  let _join = set join
+  let _nojoin = set nojoin
   let _thread = set use_threads
   let _vmthread = set use_vmthreads
   let _unsafe = set fast

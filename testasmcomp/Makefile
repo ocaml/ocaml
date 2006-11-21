@@ -14,7 +14,7 @@
 
 include ../config/Makefile
 
-CAMLC=../boot/ocamlrun ../boot/ocamlc -I ../boot
+CAMLC=../boot/ocamlrun ../boot/ocamlc -I ../boot -nojoin
 COMPFLAGS=$(INCLUDES) -g
 LINKFLAGS=-g
 CAMLYACC=../boot/ocamlyacc
