@@ -221,13 +221,15 @@ end
 module Ext(X : sig type t = private [> ] end)(Y : sig type t end) = struct
   module type S =
     sig
-      type t = private [> ] ~ [ X.t ]
+      type t = private [> ] ~ [ ~ X.t ]
       val eval : t -> Y.t
       val show : t -> string
     end
 end
 
-module Mix(E : Exp)(E1 : Ext(E)(E).S)(E2 : Ext(E1)(E).S) =
+module Dummy = struct type t = [`Dummy] end
+
+module Mix(E : Exp)(E1 : Ext(Dummy)(E).S)(E2 : Ext(E1)(E).S) =
   struct
     type t = [E1.t | E2.t]
     let eval = function
