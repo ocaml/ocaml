@@ -728,8 +728,6 @@ let do_register_service space key f =
   Mutex.lock space.uid_mutex ;
   let uid = space.next_uid () in
   Mutex.unlock space.uid_mutex ;
-  Printf.eprintf "Register service '%s' [%i]\n" key uid ;
-  flush Pervasives.stderr ;
   Join_hash.add space.uid2local uid (Obj.magic f : stub_val) ;
   match Join_hash.add_once space.services key uid with
   | None -> ()
