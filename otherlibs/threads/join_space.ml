@@ -273,6 +273,9 @@ and do_start_listener space addr =
 	  get_remote_space space rspace_id  in	  
     try
       let rspace = get_rspace () in
+      Join_message.output_value link
+        (routes_for space rspace.rspace_id (get_routes space)) ;
+      Join_link.flush link ;
       open_link_accepted space rspace link
     with
     | Join_link.Failed (*From get_rspace*) ->
@@ -494,7 +497,10 @@ and find_routes space rspace =
 	call_route_service space rspace.originator
 	  (space.space_id,rspace.rspace_id) in
       add_routes rspace.route new_routes ;
-      new_routes
+(*DEBUG*)debug1 "FIND ROUTES" "to %s, found %s"
+(*DEBUG*)  (string_of_space rspace.rspace_id)
+(*DEBUG*)  (string_of_sockaddrs new_routes) ;
+     new_routes
   | _::_ -> routes (* Easy case *)
 
 (* First race between senders, mtx is locked! *)
@@ -527,7 +533,10 @@ and connect_on_link space rspace (mtx, cond) link route =
     (Connect (get_id space, get_routes space)) ;
   Join_link.flush link ;
   let accepted =
-    try (Join_message.input_value link : bool)
+    try
+      let more_routes =  (Join_message.input_value link : route list) in
+      add_routes rspace.route more_routes ;
+      (Join_message.input_value link : bool)
     with Join_link.Failed ->
 (*DEBUG*)debug1 "OPEN SENDER" "definitively rejected" ;       
       begin
