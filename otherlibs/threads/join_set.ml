@@ -25,10 +25,19 @@ type 'a t = {
 
 let create () = { xs = [] ; mtx = Mutex.create () ; }
 and singleton  x = { xs = [x] ; mtx = Mutex.create () ; }
+and from_list xs = { xs = xs ; mtx = Mutex.create () ; }
 
 let add t x =
   Mutex.lock t.mtx ;
   if not (List.mem x t.xs) then t.xs <- x :: t.xs;
+  Mutex.unlock t.mtx
+
+let adds t xs =
+  Mutex.lock t.mtx ;
+  List.iter
+    (fun x ->
+      if not (List.mem x t.xs) then t.xs <- x :: t.xs)
+    xs ;
   Mutex.unlock t.mtx
 					       
 let elements {xs=xs} = xs

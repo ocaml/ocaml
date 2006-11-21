@@ -23,7 +23,12 @@ val create : unit -> 'a t
 
 val singleton : 'a -> 'a t
 
+val from_list : 'a list -> 'a t
+
 val add : 'a t -> 'a -> unit
+
+val adds : 'a t -> 'a list -> unit
+
 
 val elements : 'a t -> 'a list
 

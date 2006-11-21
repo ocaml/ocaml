@@ -19,6 +19,11 @@ open Join_misc
 
 open Join_types
 
+let rec string_of_sockaddrs = function
+  | [] -> ""
+  | [r] -> string_of_sockaddr r
+  | r::rs -> string_of_sockaddr r ^","^string_of_sockaddrs rs
+
 let rec attempt_connect r_addr d =
   try Join_port.connect r_addr
   with Join_port.Failed msg ->
@@ -71,11 +76,11 @@ let space_to_string { host=host ; uniq=(pid,_) } =
 
 let string_of_space = space_to_string 
 
-let add_route t route = match route with
-| None -> ()
-| Some route -> Join_set.add t route
+let add_routes t routes = match routes with
+| [] -> ()
+| _::_ -> Join_set.adds t routes
 
-let create_remote_space id originator route =
+let create_remote_space id originator routes =
 (*DEBUG*)debug1 "RSPACE CREATE" "%s" (space_to_string id) ;
   {
     rspace_id = id ;
@@ -94,27 +99,23 @@ let create_remote_space id originator route =
     konts = Join_hash.create () ;
     link = NoConnection (Mutex.create ()) ;
     originator = originator ;
-    route = begin
-        let rs = Join_set.create () in
-        add_route rs route ;
-        rs
-      end ;
+    route = Join_set.from_list routes ;
     write_mtx = Mutex.create () ;
     hooks = [] ;
   }
 
-let make_remote_space space space_id originator route =
+let make_remote_space space space_id originator routes =
   try
     let r = Join_hash.find space.remote_spaces space_id in
-    add_route r.route route
+    add_routes r.route routes
   with Not_found ->
-    let new_rspace = create_remote_space space_id originator route in
+    let new_rspace = create_remote_space space_id originator routes in
     match
       Join_hash.add_once space.remote_spaces space_id new_rspace
     with
     | Some r ->
 (*DEBUG*)debug1 "MAKE_REMOTE" "recreation of %s" (space_to_string space_id) ;
-	add_route r.route route
+	add_routes r.route routes
     | None -> ()
 
 (* Get remote space from its name, should normally exist
@@ -215,7 +216,7 @@ let check_addr id addro = match addro with
            (string_of_sockaddr addr) (string_of_sockaddr id))
 
 (* listener is started in several occasions, nevertheless ensure unicity *)
-type connect_msg = Query | Connect of space_id * route
+type connect_msg = Query | Connect of space_id * route list
 
 let rec start_listener space addr = match space.listener with
 | Listen socks ->
@@ -265,10 +266,10 @@ and do_start_listener space addr =
 (*DEBUG*)debug1 "LISTENER" "ANSWERED %s" (string_of_space my_id) ;
 	  Join_link.flush link ;
 	  get_rspace ()
-      | Connect (rspace_id, route) ->
-(*DEBUG*)debug1 "LISTENER" "his name: %s [route %s]"
-(*DEBUG*) (space_to_string rspace_id)  (string_of_sockaddr route) ;
-	  make_remote_space space rspace_id rspace_id (Some route) ;
+      | Connect (rspace_id, routes) ->
+(*DEBUG*)debug1 "LISTENER" "his name: %s [routes %s]"
+(*DEBUG*) (space_to_string rspace_id)  (string_of_sockaddrs routes) ;
+	  make_remote_space space rspace_id rspace_id routes ;
 	  get_remote_space space rspace_id  in	  
     try
       let rspace = get_rspace () in
@@ -295,10 +296,6 @@ and get_id space = space.space_id
 and get_routes space = match space.listener with
 | Listen routes -> Join_set.elements routes
 | Deaf _ -> start_anonymous_listener space ; get_routes space
-
-and get_route space = match get_routes space with
-| r::_ -> r
-| []   -> assert false
 
 (* called when a connection is aborted, at moment
    used only at setup time when ruled out by a more prioritary connection *)
@@ -496,7 +493,7 @@ and find_routes space rspace =
       let new_routes =
 	call_route_service space rspace.originator
 	  (space.space_id,rspace.rspace_id) in
-      List.iter (fun r -> add_route rspace.route (Some r)) new_routes ;
+      add_routes rspace.route new_routes ;
       new_routes
   | _::_ -> routes (* Easy case *)
 
@@ -527,7 +524,7 @@ and open_link_sender space rspace mtx =  match rspace.link with
 
 and connect_on_link space rspace (mtx, cond) link route =
   Join_message.output_value link
-    (Connect (get_id space, get_route space)) ;
+    (Connect (get_id space, get_routes space)) ;
   Join_link.flush link ;
   let accepted =
     try (Join_message.input_value link : bool)
@@ -610,7 +607,7 @@ and import_stub space originator (rspace_id, uid) =
   if same_space rspace_id (get_id space) then
     Local, find_local space uid, uid
   else begin
-    make_remote_space space rspace_id originator None ;
+    make_remote_space space rspace_id originator [] ;
     Remote, (Obj.magic rspace_id : stub_val), uid
   end
 
@@ -667,17 +664,20 @@ and route_service space ((ask_id,rspace_id):(space_id * space_id)) =
     (get_routes space)
   else
     let rs = find_routes space (get_remote_space space rspace_id) in
-    let host_ask = ask_id.host
-    and me = space.space_id.host in
-    if me = host_ask then rs
-    else
-      List.filter
-	(fun sock -> match sock with
-	| Unix.ADDR_INET (h,_) ->
-	    h <> Unix.inet_addr_loopback &&
-	    h <> Unix.inet6_addr_loopback
-	| _ -> false)
-	rs
+    routes_for space ask_id rs
+
+and routes_for space ask_id rs =
+  let host_ask = ask_id.host
+  and me = space.space_id.host in
+  if me = host_ask then rs
+  else
+    List.filter
+      (fun sock -> match sock with
+      | Unix.ADDR_INET (h,_) ->
+	  h <> Unix.inet_addr_loopback &&
+	  h <> Unix.inet6_addr_loopback
+      | _ -> false)
+      rs
 
 (***********************************)
 (* Various remote message sendings *)
@@ -748,8 +748,8 @@ let call_service space_id key a =
   do_call_service local_space  space_id key a
 
 let do_rid_from_addr space addr =
-  let my_route = get_route space in
-  if same_addr my_route addr then
+  let my_routes = get_routes space in
+  if List.exists (same_addr addr) my_routes then
     get_id space
   else begin
 (*DEBUG*)debug1 "RID"
@@ -767,7 +767,8 @@ let do_rid_from_addr space addr =
 (*DEBUG*)let _,stamp = rid.uniq in
 (*DEBUG*)debug1 "RID" "GOT COMPLETE ID OF %s+%f"
 (*DEBUG*)  (string_of_space rid) stamp ;
-    make_remote_space space rid rid (Some addr) ;
+    make_remote_space space rid rid [addr] ;
+(* So as not to waste link just established, do actual Connect *)
     let _link =
       let rspace = get_remote_space space rid in
       match rspace.link with
