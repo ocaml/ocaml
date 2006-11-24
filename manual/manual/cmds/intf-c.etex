@@ -785,7 +785,7 @@ All the macros described in this section are declared in the
 \begin{gcrule}
 A function that has parameters or local variables of type "value" must
 begin with a call to one of the "CAMLparam" macros and return with
-"CAMLreturn" or "CAMLreturn0".
+"CAMLreturn", "CAMLreturn0", or "CAMLreturnT".
 \end{gcrule}
 
 There are six "CAMLparam" macros: "CAMLparam0" to "CAMLparam5", which
@@ -796,9 +796,12 @@ parameters of type "value", use "CAMLparam5" with five of these
 parameters, and use one or more calls to the "CAMLxparam" macros for
 the remaining parameters ("CAMLxparam1" to "CAMLxparam5").
 
-The macros "CAMLreturn" and "CAMLreturn0" are used to replace the C
+The macros "CAMLreturn", "CAMLreturn0", and "CAMLreturnT" are used to
+replace the C
 keyword "return".  Every occurence of "return x" must be replaced by
-"CAMLreturn (x)", every occurence of "return" without argument must be
+"CAMLreturn (x)" if "x" has type "value", or "CAMLreturnT (t, x)"
+(where "t" is the type of "x"); every occurence of "return" without
+argument must be
 replaced by "CAMLreturn0".  If your C function is a procedure (i.e. if
 it returns void), you must insert "CAMLreturn0" at the end (to replace
 C's implicit "return").
