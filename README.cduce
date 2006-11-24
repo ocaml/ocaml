@@ -106,7 +106,10 @@ CHANGE LOG:
 - don't install ocamlducec and ocamlducec.opt but only the second one
   (if available), renamed as ocamlducec; same for the other tools
 
-Since then
+3.09.2pl2
 - support line number directives within {{ ... }}
 - support non-ascii X-capture variable names
 - warning for variables that always bind to {{ [] }}
+
+Since then
+- ignore namespaces in ocamldoc, instead of failing

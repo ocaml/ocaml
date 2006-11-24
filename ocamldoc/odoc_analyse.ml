@@ -189,7 +189,7 @@ let process_error exn =
       fprintf ppf "@.Error: error-enabled warnings (%d occurrences)" n
   | x ->
       fprintf ppf "@]";
-      fprintf ppf "Compilation error. Use the OCaml compiler to get more details."
+      fprintf ppf "Compilation error %S. Use the OCaml compiler to get more details." (Printexc.to_string x)
   in
   Format.fprintf Format.err_formatter "@[%a@]@." report exn
 
