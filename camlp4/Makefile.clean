@@ -29,6 +29,11 @@ CLEANFILES = \
   Camlp4Filters/RemoveTrashModule.cmo \
   Camlp4Filters/RemoveTrashModule.cmi \
   Camlp4Filters/RemoveTrashModule.cmx \
+  Camlp4Filters/MetaGenerator.o \
+  Camlp4Filters/MetaGenerator.annot \
+  Camlp4Filters/MetaGenerator.cmo \
+  Camlp4Filters/MetaGenerator.cmi \
+  Camlp4Filters/MetaGenerator.cmx \
   Camlp4Filters/GenerateFold.o \
   Camlp4Filters/GenerateFold.annot \
   Camlp4Filters/GenerateFold.cmo \
@@ -667,11 +672,6 @@ CLEANFILES = \
   Camlp4Top/Rprint.cmo \
   Camlp4Top/Rprint.cmi \
   Camlp4Top/Rprint.cmx \
-  Camlp4Printers/OCaml.o \
-  Camlp4Printers/OCaml.annot \
-  Camlp4Printers/OCaml.cmo \
-  Camlp4Printers/OCaml.cmi \
-  Camlp4Printers/OCaml.cmx \
   Camlp4Parsers/Debug.o \
   Camlp4Parsers/Debug.annot \
   Camlp4Parsers/Debug.cmo \
@@ -714,16 +714,11 @@ CLEANFILES = \
   Camlp4Bin.cmo \
   Camlp4Bin.cmi \
   Camlp4Bin.cmx \
-  Camlp4Printers/Auto.o \
-  Camlp4Printers/Auto.annot \
-  Camlp4Printers/Auto.cmo \
-  Camlp4Printers/Auto.cmi \
-  Camlp4Printers/Auto.cmx \
-  Camlp4Printers/OCaml.o \
-  Camlp4Printers/OCaml.annot \
-  Camlp4Printers/OCaml.cmo \
-  Camlp4Printers/OCaml.cmi \
-  Camlp4Printers/OCaml.cmx \
+  Camlp4Printers/DumpOCamlAst.o \
+  Camlp4Printers/DumpOCamlAst.annot \
+  Camlp4Printers/DumpOCamlAst.cmo \
+  Camlp4Printers/DumpOCamlAst.cmi \
+  Camlp4Printers/DumpOCamlAst.cmx \
   Camlp4Parsers/Debug.o \
   Camlp4Parsers/Debug.annot \
   Camlp4Parsers/Debug.cmo \
@@ -772,6 +767,16 @@ CLEANFILES = \
   Camlp4.cmo \
   Camlp4.cmi \
   Camlp4.cmx \
+  Camlp4/Register.o \
+  Camlp4/Register.annot \
+  Camlp4/Register.cmo \
+  Camlp4/Register.cmi \
+  Camlp4/Register.cmx \
+  Camlp4/PreCast.o \
+  Camlp4/PreCast.annot \
+  Camlp4/PreCast.cmo \
+  Camlp4/PreCast.cmi \
+  Camlp4/PreCast.cmx \
   Camlp4/Printers.ml \
   Camlp4/Printers.o \
   Camlp4/Printers.cmo \
@@ -797,16 +802,11 @@ CLEANFILES = \
   Camlp4/Printers/DumpOCamlAst.cmo \
   Camlp4/Printers/DumpOCamlAst.cmi \
   Camlp4/Printers/DumpOCamlAst.cmx \
-  Camlp4/Register.o \
-  Camlp4/Register.annot \
-  Camlp4/Register.cmo \
-  Camlp4/Register.cmi \
-  Camlp4/Register.cmx \
-  Camlp4/PreCast.o \
-  Camlp4/PreCast.annot \
-  Camlp4/PreCast.cmo \
-  Camlp4/PreCast.cmi \
-  Camlp4/PreCast.cmx \
+  Camlp4/Printers/Null.o \
+  Camlp4/Printers/Null.annot \
+  Camlp4/Printers/Null.cmo \
+  Camlp4/Printers/Null.cmi \
+  Camlp4/Printers/Null.cmx \
   Camlp4/OCamlInitSyntax.o \
   Camlp4/OCamlInitSyntax.annot \
   Camlp4/OCamlInitSyntax.cmo \
@@ -837,11 +837,6 @@ CLEANFILES = \
   Camlp4/Struct/AstFilters.cmo \
   Camlp4/Struct/AstFilters.cmi \
   Camlp4/Struct/AstFilters.cmx \
-  Camlp4/Struct/MetaAst.o \
-  Camlp4/Struct/MetaAst.annot \
-  Camlp4/Struct/MetaAst.cmo \
-  Camlp4/Struct/MetaAst.cmi \
-  Camlp4/Struct/MetaAst.cmx \
   Camlp4/Struct/FreeVars.o \
   Camlp4/Struct/FreeVars.annot \
   Camlp4/Struct/FreeVars.cmo \

@@ -45,6 +45,7 @@ smartclean::
 
 genclean: yam
 	$(YAM) -genclean Makefile.clean
+	(echo /Camlp4Ast.ml/d; echo w; echo q) | ed Makefile.clean
 
 clean::
 	rm -f yam .cache-status
