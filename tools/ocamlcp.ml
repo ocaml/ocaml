@@ -96,7 +96,7 @@ let add_profarg s =
 
 let optlist =
     ("-p", Arg.String add_profarg,
-           "[afilmt]  Profile constructs specified by argument:\n\
+           "[afilmt]  Profile constructs specified by argument (default fm):\n\
         \032     a  Everything\n\
         \032     f  Function calls and method calls\n\
         \032     i  if ... then ... else\n\

@@ -24,8 +24,11 @@ let incr a i = a.(i) <- a.(i) + 1;;
 exception Bad_profile
 
 let dump_counters () =
-  begin try 
-    let ic = open_in_bin "ocamlprof.dump" in
+  let dumpfile =
+    try Sys.getenv "OCAMLPROF_DUMP" with Not_found -> "ocamlprof.dump"
+  in
+  begin try
+    let ic = open_in_bin dumpfile in
     let prevl = (input_value ic : profiling_counters) in
     close_in ic;
     List.iter2
@@ -44,7 +47,7 @@ let dump_counters () =
   with _ -> ()
   end;
   begin try
-    let oc = open_out_bin "ocamlprof.dump" in
+    let oc = open_out_bin dumpfile in
     output_value oc !counters;
     close_out oc
   with _ -> ()
