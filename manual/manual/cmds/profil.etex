@@ -63,7 +63,10 @@ Running a bytecode executable file that has been compiled with "ocamlcp"
 records the execution counts for the specified parts of the program
 and saves them in a file called "ocamlprof.dump" in the current directory.
 
-The "ocamlprof.dump" file is written only if the program terminates
+If the environment variable "OCAMLPROF_DUMP" is set when the program
+exits, its value is used as the file name instead of "ocamlprof.dump".
+
+The dump file is written only if the program terminates
 normally (by calling "exit" or by falling through). It is not written
 if the program terminates with an "uncaught exception".
 
@@ -88,13 +91,24 @@ The following options are recognized by "ocamlprof":
 
 \begin{options}
 \item["-f" \var{dumpfile}] 
-Specifies an alternate dump file of profiling information
+Specifies an alternate dump file of profiling information to be read.
 \item["-F" \var{string}]
 Specifies an additional string to be output with profiling information.
 By default, "ocamlprof" will annotate programs with comments of the form
 {\tt (* \var{n} *)} where \var{n} is the counter value for a profiling
 point. With option {\tt -F \var{s}}, the annotation will be
 {\tt (* \var{s}\var{n} *)}.
+\item["-impl" \var{sourcefile}]
+Treat \var{sourcefile} as an implementation file ({\em i.e.} as if its
+name ended with ".ml").
+\item["-intf" \var{sourcefile}]
+Treat \var{sourcefile} as an interface file ({\em i.e.} as if its
+name ended with ".mli").
+\item["-version"]
+Print the version number of ocamlprof and exit.
+\item["-instrument"]
+\item["-m" \var{flags}]
+These options are undocumented; they are used internally by "ocamlcp".
 \end{options}
 
 \section{Time profiling}
