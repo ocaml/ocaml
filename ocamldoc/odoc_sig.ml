@@ -956,7 +956,10 @@ module Analyser =
             in
             (maybe_more, new_env, eles)
 
-        | Parsetree.Psig_namespace _ -> assert false
+        | Parsetree.Psig_namespace _ -> 
+            Printf.eprintf
+              "(warning:namespaces not supported in ocamlducedoc)\n";
+	    (0, env, [])
         | Parsetree.Psig_class_type class_type_declaration_list ->
             (* we start by extending the environment *)
             let new_env =
