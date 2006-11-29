@@ -261,9 +261,9 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     Gram.Entry.of_parser "test_label_eq"
       (test 1 where rec test lev strm =
         match stream_peek_nth lev strm with
-        [ Some (UIDENT _ | LIDENT _ | KEYWORD ".") ->
+        [ Some (ANTIQUOT ("lid"|"exp"|"") _ | UIDENT _ | LIDENT _ | KEYWORD ".") ->
             test (lev + 1) strm
-        | Some (KEYWORD "=") -> ()
+        | Some (ANTIQUOT "binding" _ | KEYWORD ("="|"}")) -> ()
         | _ -> raise Stream.Failure ])
   ;
 
