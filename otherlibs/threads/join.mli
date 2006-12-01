@@ -97,6 +97,9 @@ val at_fail : site -> unit channel -> unit
 val flush_space : unit -> unit
 *)
 
+(* Give the liste of the socket addresses of the name server *)
+val get_sockaddrs : unit -> Unix.sockaddr list
+
 (* Various levels of debuging as directed by the
    environment variable VERBOSE *)
 type 'a debug = string -> (('a, unit, string, unit) format4 -> 'a)

@@ -917,3 +917,7 @@ let do_flush_out_queues space =
 
 let flush_space () =  do_flush_out_queues local_space
 
+(************************)
+(* Access to the routes *)
+(************************)
+let get_sockaddrs () = get_routes local_space

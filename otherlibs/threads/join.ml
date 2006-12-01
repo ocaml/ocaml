@@ -480,6 +480,8 @@ let at_fail site (chan:unit channel) =
   
 let flush_space = Join_space.flush_space
 
+let get_sockaddrs = Join_space.get_sockaddrs
+
 (* Debug from users programs *)
 type 'a debug = string -> (('a, unit, string, unit) format4 -> 'a)
 

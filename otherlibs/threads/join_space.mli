@@ -70,3 +70,5 @@ val connect : Unix.file_descr -> unit
 val at_fail : space_id -> unit async -> unit
 
 val flush_space : unit -> unit
+
+val get_sockaddrs : unit -> Unix.sockaddr list
