@@ -116,7 +116,7 @@ struct
            " Check principality of type inference";
     "-rectypes", Arg.Unit F._rectypes, " Allow arbitrary recursive types";
     "-nojoin", Arg.Unit F._nojoin,
-           " Be a join compiler";
+           " Be a ocaml compiler";
     "-thread", Arg.Unit F._thread,
            " Generate code that supports the system threads library";
     "-unsafe", Arg.Unit F._unsafe,
