@@ -26,6 +26,7 @@ open Trap_barrier
 open Input_handling
 open Debugger_config
 open Program_loading
+open Question
 
 exception Current_checkpoint_lost
 exception Current_checkpoint_lost_start_at of int64 * int64
