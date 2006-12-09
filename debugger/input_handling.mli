@@ -58,6 +58,3 @@ val stop_user_input : unit -> unit
 
 (* Resume reading user input. *)
 val resume_user_input : unit -> unit
-
-(* Ask user a yes or no question. *)
-val yes_or_no : string -> bool

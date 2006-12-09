@@ -18,10 +18,24 @@
 open Misc
 open Primitives
 
+let source_extensions = [".ml"]
+
 (*** Conversion function. ***)
 
-let source_of_module mdle =
-  find_in_path_uncap !Config.load_path (mdle ^ ".ml")
+let source_of_module pos mdle =
+  let fname = pos.Lexing.pos_fname in
+  if fname = "" then
+    let rec loop =
+      function
+      | [] -> raise Not_found
+      | ext :: exts ->
+          try find_in_path_uncap !Config.load_path (mdle ^ ext)
+          with Not_found -> loop exts
+    in loop source_extensions
+  else if Filename.is_implicit fname then
+    find_in_path !Config.load_path fname
+  else
+    fname
 
 (*** Buffer cache ***)
 
@@ -38,10 +52,10 @@ let buffer_list =
 let flush_buffer_list () =
   buffer_list := []
 
-let get_buffer mdle =
+let get_buffer pos mdle =
   try List.assoc mdle !buffer_list with
     Not_found ->
-      let inchan = open_in_bin (source_of_module mdle) in
+      let inchan = open_in_bin (source_of_module pos mdle) in
         let (content, _) as buffer =
           (String.create (in_channel_length inchan), ref [])
         in

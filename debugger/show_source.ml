@@ -46,7 +46,7 @@ let show_point ev selected =
   let before = (ev.ev_kind = Event_before) in
   if !emacs && selected then
     begin try
-      let source = source_of_module mdle in
+      let source = source_of_module ev.ev_loc.Location.loc_start mdle in
       printf "\026\026M%s:%i:%i" source
              ev.ev_loc.Location.loc_start.Lexing.pos_cnum
              ev.ev_loc.Location.loc_end.Lexing.pos_cnum;
@@ -58,21 +58,22 @@ let show_point ev selected =
     end
   else
     begin try
-      let buffer = get_buffer mdle in
-      let point = (Events.get_pos ev).Lexing.pos_cnum in
+      let pos = Events.get_pos ev in
+      let buffer = get_buffer pos mdle in
+      let point = pos.Lexing.pos_cnum in
       let (start, line_number) = line_of_pos buffer point in
       ignore(print_line buffer line_number start point before)
     with
       Out_of_range -> (* line_of_pos *)
         prerr_endline "Position out of range."
-    | Not_found    -> (* get_buffer *)
+    | Not_found    -> (* Events.get_pos || get_buffer *)
         prerr_endline ("No source file for " ^ mdle ^ ".")
     end
 
 (* Display part of the source. *)
-let show_listing mdle start stop point before =
+let show_listing pos mdle start stop point before =
   try
-    let buffer = get_buffer mdle in
+    let buffer = get_buffer pos mdle in
       let rec aff (line_start, line_number) =
         if line_number <= stop then
           aff (print_line buffer line_number line_start point before + 1, line_number + 1)

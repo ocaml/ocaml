@@ -28,6 +28,7 @@ open Parser
 open Parser_aux
 open Lexer
 open Input_handling
+open Question
 open Debugcom
 open Program_loading
 open Program_management
@@ -554,7 +555,7 @@ let instr_break ppf lexbuf =
         new_breakpoint
           (try
              let buffer =
-               try get_buffer module_name with
+               try get_buffer Lexing.dummy_pos module_name with
                | Not_found ->
                   eprintf "No source file for %s.@." module_name;
                   raise Toplevel
@@ -632,11 +633,10 @@ let instr_backtrace ppf lexbuf =
         do_backtrace (print_frame 0 number)
       else begin
         let num_frames = stack_depth() in
-        if num_frames < 0 then begin
+        if num_frames < 0 then
           fprintf ppf
-            "(Encountered a function with no debugging information)";
-          print_newline()
-        end else
+            "(Encountered a function with no debugging information)@."
+        else
           do_backtrace (print_frame (num_frames + number) max_int)
       end
 
@@ -686,13 +686,14 @@ let instr_list ppf lexbuf =
           ("", -1)
     in
       let mdle = convert_module mo in
+      let pos = Lexing.dummy_pos in
         let beginning =
           match beg with
           | None when (mo <> None) || (point = -1) ->
               1
           | None ->
               let buffer =
-                try get_buffer mdle with
+                try get_buffer pos mdle with
                 | Not_found -> error ("No source file for " ^ mdle ^ ".")
               in
               begin try
@@ -708,10 +709,10 @@ let instr_list ppf lexbuf =
             | Some x -> x
           in
             if mdle = curr_mod then
-              show_listing mdle beginning en point
+              show_listing pos mdle beginning en point
                 (current_event_is_before ())
             else
-              show_listing mdle beginning en (-1) true
+              show_listing pos mdle beginning en (-1) true
 
 (** Variables. **)
 let raw_variable kill name =

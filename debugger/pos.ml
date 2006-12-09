@@ -26,9 +26,9 @@ let get_desc ev =
                       (loc.loc_start.pos_cnum - loc.loc_start.pos_bol + 1)
                       (loc.loc_end.pos_cnum - loc.loc_start.pos_bol + 1)
   else begin
-    let filename = source_of_module ev.ev_module in
+    let filename = source_of_module ev.ev_loc.loc_start ev.ev_module in
     try
-      let (start, line) = line_of_pos (get_buffer ev.ev_module)
+      let (start, line) = line_of_pos (get_buffer loc.loc_start ev.ev_module)
                                       loc.loc_start.pos_cnum
       in
       Printf.sprintf "file %s, line %d, characters %d-%d"

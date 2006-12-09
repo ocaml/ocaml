@@ -16,6 +16,7 @@
 open Primitives
 open Misc
 open Input_handling
+open Question
 open Command_line
 open Debugger_config
 open Checkpoints
@@ -102,7 +103,7 @@ let rec protect ppf restart loop =
           begin
             recover ();
             show_current_event ppf;
-            loop ppf
+            restart ppf
           end)
   | x ->
       kill_program ();

@@ -53,6 +53,7 @@ OBJS=\
 	parameters.cmo \
 	lexer.cmo \
 	input_handling.cmo \
+	question.cmo \
 	debugcom.cmo \
 	exec.cmo \
 	source.cmo \

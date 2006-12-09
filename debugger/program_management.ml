@@ -24,6 +24,7 @@ open Instruct
 open Primitives
 open Parameters
 open Input_handling
+open Question
 open Debugcom
 open Program_loading
 open Time_travel
