@@ -782,7 +782,8 @@ labeled_simple_pattern:
       { ("", None, $1) }
 ;
 pattern_var:
-    LIDENT    { mkpat(Ppat_var $1) }
+    LIDENT            { mkpat(Ppat_var $1) }
+  | UNDERSCORE        { mkpat Ppat_any }
 ;
 opt_default:
     /* empty */                         { None }
