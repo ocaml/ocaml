@@ -186,7 +186,7 @@ method select_operation op args =
   | Cstore Word ->
       begin match args with
         [loc; Cop(Caddi, [Cop(Cload _, [loc']); Cconst_int n])]
-        when loc = loc' ->
+        when loc = loc' && self#is_immediate n ->
           let (addr, arg) = self#select_addressing loc in
           (Ispecific(Ioffset_loc(n, addr)), [arg])
       | _ ->
