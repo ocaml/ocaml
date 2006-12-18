@@ -103,6 +103,8 @@ module Win32 = struct
       | '\\' -> if i + 1 = l then Buffer.add_string b "\\\\"
                 else if s.[i + 1] = '\"' then Buffer.add_string b "\\\\\\\""
                 else Buffer.add_char b '\\'
+      | '&'  -> if i = 0 then Buffer.add_string b "&\""
+                else Buffer.add_string b "\"&\""
       |   c  -> Buffer.add_char b c
     done;
     Buffer.add_char b '\"';
