@@ -39,7 +39,7 @@ type-param:
 ;
 constr-decl:
           constr-name
-        | constr-name 'of' typexpr
+        | constr-name 'of' typexpr { '*' typexpr }
 ;
 field-decl:
           field-name ':' poly-typexpr
@@ -99,9 +99,10 @@ The type representation @'=' constr-decl { '|' constr-decl }@
 describes a variant type. The constructor declarations
 @constr-decl_1, \ldots, constr-decl_n@ describe the constructors
 associated to this variant type. The constructor
-declaration @constr-name 'of' typexpr@ declares the name
+declaration @constr-name 'of' typexpr_1, \ldots, typexpr_n@ declares the name
 @constr-name@ as a non-constant constructor, whose
-argument has type @typexpr@. The constructor declaration @constr-name@
+arguments have types @typexpr_1@ \ldots @typexpr_n@.
+The constructor declaration @constr-name@
 declares the name @constr-name@ as a constant
 constructor. Constructor names must be capitalized.
 
@@ -187,7 +188,7 @@ appear in the type equation and the type declaration.
 
 \begin{syntax}
 exception-definition:
-        'exception' constr-name ['of' typexpr]
+        'exception' constr-name ['of' typexpr { '*' typexpr }]
       | 'exception' constr-name '=' constr
 \end{syntax}
 
@@ -195,7 +196,7 @@ Exception definitions add new constructors to the built-in variant
 type \verb"exn" of exception values. The constructors are declared as
 for a definition of a variant type.
 
-The form @'exception' constr-name ['of' typexpr]@
+The form @'exception' constr-name ['of' typexpr { '*' typexpr }]@
 generates a new exception, distinct from all other exceptions in the system.
 The form @'exception' constr-name '=' constr@
 gives an alternate name to an existing exception.
