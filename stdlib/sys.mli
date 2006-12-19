@@ -193,7 +193,7 @@ val catch_break : bool -> unit
 
 val ocaml_version : string;;
 (** [ocaml_version] is the version of Objective Caml.
-    It is a string of the form ["major.minor[.patchlevel][+additional-info]"]
-    Where [major], [minor], and [patchlevel] are integers, and
-    [additional-info] is an arbitrary string.  The [[.patchlevel]] and
+    It is a string of the form ["major.minor[.patchlevel][+additional-info]"],
+    where [major], [minor], and [patchlevel] are integers, and
+    [additional-info] is an arbitrary string. The [[.patchlevel]] and
     [[+additional-info]] parts may be absent. *)
