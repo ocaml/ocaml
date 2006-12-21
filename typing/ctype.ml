@@ -791,14 +791,14 @@ let rec copy ty =
               let keep = more.level <> generic_level in
               let more' =
                 match more.desc with
-		  Tsubst ty -> ty
-		| Tconstr _ ->
-		    if keep then save_desc more more.desc;
-		    copy more
+                  Tsubst ty -> ty
+                | Tconstr _ ->
+                    if keep then save_desc more more.desc;
+                    copy more
                 | Tvar | Tunivar ->
                     save_desc more more.desc;
                     if keep then more else newty more.desc
-		|  _ -> assert false
+                |  _ -> assert false
               in
               (* Register new type first for recursion *)
               more.desc <- Tsubst(newgenty(Ttuple[more';t]));
@@ -928,7 +928,7 @@ let delayed_copy = ref []
 let rec copy_sep fixed free bound visited ty =
   let ty = repr ty in
   let univars = free ty in
-  if TypeSet.is_empty univars then 
+  if TypeSet.is_empty univars then
     if ty.level <> generic_level then ty else
     let t = newvar () in
     delayed_copy :=
@@ -1040,7 +1040,7 @@ let apply env params body args =
                               (*  Abbreviation expansion  *)
                               (****************************)
 
-(* 
+(*
    If the environnement has changed, memorized expansions might not
    be correct anymore, and so we flush the cache. This is safe but
    quite pessimistic: it would be enough to flush the cache when a
@@ -1054,7 +1054,7 @@ let check_abbrev_env env =
   end
 
 (* Expand an abbreviation. The expansion is memorized. *)
-(* 
+(*
    Assume the level is greater than the path binding time of the
    expanded abbreviation.
 *)
@@ -1338,7 +1338,7 @@ let occur_univar env ty =
   with exn ->
     unmark_type ty; raise exn
 
-(* Grouping univars by families according to their binders *) 
+(* Grouping univars by families according to their binders *)
 let add_univars =
   List.fold_left (fun s (t,_) -> TypeSet.add (repr t) s)
 
@@ -1536,7 +1536,7 @@ and unify3 env t1 t1' t2 t2' =
   (* Third step: truly unification *)
   (* Assumes either [t1 == t1'] or [t2 != t2'] *)
   let d1 = t1'.desc and d2 = t2'.desc in
-  
+
   let create_recursion = (t2 != t2') && (deep_occur t1' t2) in
   occur env t1' t2;
   update_level env t1'.level t2;
@@ -1618,7 +1618,7 @@ and unify3 env t1 t1' t2 t2' =
     end
 
 (*
-    (* 
+    (*
        Can only be done afterwards, once the row variable has
        (possibly) been instantiated.
     *)
@@ -1818,7 +1818,7 @@ and unify_row_field env fixed1 fixed2 undo l f1 f2 =
   | Rpresent None, Reither(true, [], _, e2) when not fixed2 ->
       set_row_field e2 f1
   | _ -> raise (Unify [])
-    
+
 
 let unify env ty1 ty2 =
   try
@@ -1938,7 +1938,7 @@ let filter_self_method env lab priv meths ty =
    Update the level of [ty]. First check that the levels of generic
    variables from the subject are not lowered.
 *)
-let moregen_occur env level ty = 
+let moregen_occur env level ty =
   let rec occur ty =
     let ty = repr ty in
     if ty.level > level then begin
@@ -2057,7 +2057,7 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
       filter_row_fields true r1, filter_row_fields false r2
     else r1, r2
   in
-  if r1 <> [] || row1.row_closed && (not row2.row_closed || r2 <> []) 
+  if r1 <> [] || row1.row_closed && (not row2.row_closed || r2 <> [])
   then raise (Unify []);
   let rm1 = repr row1.row_more and rm2 = repr row2.row_more in
   let univ =
@@ -2339,7 +2339,7 @@ and eqtype_row rename type_pairs subst env row1 row2 =
       | Rabsent, Rabsent -> ()
       | _ -> raise (Unify []))
     pairs
-   
+
 (* Two modes: with or without renaming of variables *)
 let equal env rename tyl1 tyl2 =
   try
@@ -2348,7 +2348,7 @@ let equal env rename tyl1 tyl2 =
   with
     Unify _ -> false
 
-(* Must empty univar_pairs first *)  
+(* Must empty univar_pairs first *)
 let eqtype rename type_pairs subst env t1 t2 =
   univar_pairs := [];
   eqtype rename type_pairs subst env t1 t2
@@ -2868,7 +2868,7 @@ let rec subtype_rec env trace t1 t2 cstrs =
   let t1 = repr t1 in
   let t2 = repr t2 in
   if t1 == t2 then cstrs else
-  
+
   begin try
     TypePairs.find subtypes (t1, t2);
     cstrs
@@ -2899,7 +2899,7 @@ let rec subtype_rec env trace t1 t2 cstrs =
               if co then
                 if cn then
                   (trace, newty2 t1.level (Ttuple[t1]),
-                   newty2 t2.level (Ttuple[t2]), !univar_pairs) :: cstrs 
+                   newty2 t2.level (Ttuple[t2]), !univar_pairs) :: cstrs
                 else subtype_rec env ((t1, t2)::trace) t1 t2 cstrs
               else
                 if cn then subtype_rec env ((t2, t1)::trace) t2 t1 cstrs
@@ -3149,7 +3149,7 @@ let rec normalize_type_rec env ty =
 let normalize_type env ty =
   normalize_type_rec env ty;
   unmark_type ty
-      
+
 
                               (*************************)
                               (*  Remove dependencies  *)

@@ -56,7 +56,7 @@ exception Error of Location.t * error
                        (**********************)
                        (*  Useful constants  *)
                        (**********************)
-                                   
+
 
 (*
    Self type have a dummy private method, thus preventing it to become
@@ -74,7 +74,7 @@ let unbound_class = Path.Pident (Ident.create "")
                 (************************************)
                 (*  Some operations on class types  *)
                 (************************************)
-                                   
+
 
 (* Fully expand the head of a class type *)
 let rec scrape_class_type =
@@ -189,7 +189,7 @@ let rc node =
                 (***********************************)
                 (*  Primitives for typing classes  *)
                 (***********************************)
-                                   
+
 
 (* Enter a value in the method environment only *)
 let enter_met_env lab kind ty val_env met_env par_env =
@@ -328,7 +328,7 @@ let rec class_type_field env self_type meths (val_sig, concr_meths, inher) =
 and class_signature env sty sign =
   let meths = ref Meths.empty in
   let self_type = transl_simple_type env false sty in
-  
+
   (* Check that the binder is a correct type, and introduce a dummy
      method preventing self type from being closed. *)
   let dummy_obj = Ctype.newvar () in
@@ -339,14 +339,14 @@ and class_signature env sty sign =
   with Ctype.Unify _ ->
     raise(Error(sty.ptyp_loc, Pattern_type_clash self_type))
   end;
-  
+
   (* Class type fields *)
   let (val_sig, concr_meths, inher) =
     List.fold_left (class_type_field env self_type meths)
       (Vars.empty, Concr.empty, [])
       sign
   in
-  
+
   {cty_self = self_type;
    cty_vars = val_sig;
    cty_concr = concr_meths;
@@ -378,7 +378,7 @@ and class_type env scty =
 
   | Pcty_signature (sty, sign) ->
       Tcty_signature (class_signature env sty sign)
-      
+
   | Pcty_fun (l, sty, scty) ->
       let ty = transl_simple_type env false sty in
       let cty = class_type env scty in
@@ -425,11 +425,11 @@ let rec class_field cl_num self_type meths vars
           cl_sig.cty_vars (val_env, met_env, par_env, [], inh_vals)
       in
       (* Inherited concrete methods *)
-      let inh_meths = 
+      let inh_meths =
         Concr.fold (fun lab rem -> (lab, Ident.create lab)::rem)
           cl_sig.cty_concr []
       in
-      (* Super *)      
+      (* Super *)
       let (val_env, met_env, par_env) =
         match super with
           None ->
@@ -694,7 +694,7 @@ and class_expr cl_num val_env met_env scl =
            try Ctype.unify val_env ty' ty with Ctype.Unify trace ->
              raise(Error(loc, Parameter_mismatch trace)))
         tyl params;
-      let cl =        
+      let cl =
         rc {cl_desc = Tclass_ident path;
             cl_loc = scl.pcl_loc;
             cl_type = clty';
@@ -974,7 +974,7 @@ let rec initial_env define_class approx
   let arity = List.length (fst cl.pci_params) in
   let (obj_params, obj_ty, env) = temp_abbrev env obj_id arity in
   let (cl_params, cl_ty, env) = temp_abbrev env cl_id arity in
-  
+
   (* Temporary type for the class constructor *)
   let constr_type = approx cl.pci_expr in
   if !Clflags.principal then Ctype.generalize_spine constr_type;
@@ -1021,7 +1021,7 @@ let class_infos define_class kind
 
   reset_type_variables ();
   Ctype.begin_class_def ();
-  
+
   (* Introduce class parameters *)
   let params =
     try
@@ -1033,7 +1033,7 @@ let class_infos define_class kind
 
   (* Allow self coercions (only for class declarations) *)
   let coercion_locs = ref [] in
-  
+
   (* Type the class expression *)
   let (expr, typ) =
     try
@@ -1045,9 +1045,9 @@ let class_infos define_class kind
     with exn ->
       Typecore.self_coercion := []; raise exn
   in
-  
+
   Ctype.end_def ();
-  
+
   let sty = Ctype.self_type typ in
 
   (* Generalize the row variable *)
@@ -1077,7 +1077,7 @@ let class_infos define_class kind
         Abbrev_type_clash (constr, ty, Ctype.expand_head env constr)))
     end
   end;
-  
+
   (* Check the other temporary abbreviation (#-type) *)
   begin
     let (cl_params', cl_type) = Ctype.instance_class params typ in
@@ -1147,7 +1147,7 @@ let class_infos define_class kind
     in
     List.map (function (lab, _, _) -> lab) fields
   in
-  
+
   (* Final definitions *)
   let (params', typ') = Ctype.instance_class params typ in
   let cltydef =
@@ -1378,7 +1378,7 @@ let approx_class sdecl =
   let self' =
     { ptyp_desc = Ptyp_any; ptyp_loc = Location.none } in
   let clty' =
-    { pcty_desc = Pcty_signature(self', []); 
+    { pcty_desc = Pcty_signature(self', []);
       pcty_loc = sdecl.pci_expr.pcty_loc } in
   { sdecl with pci_expr = clty' }
 
