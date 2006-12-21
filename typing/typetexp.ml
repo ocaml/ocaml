@@ -248,7 +248,7 @@ let rec transl_type env policy styp =
           end;
           ty
         with Not_found ->
-          begin_def ();
+          if !Clflags.principal then begin_def ();
           let t = newvar () in
           used_variables := Tbl.add alias (t, styp.ptyp_loc) !used_variables;
           let ty = transl_type env policy st in
@@ -256,8 +256,10 @@ let rec transl_type env policy styp =
             let trace = swap_list trace in
             raise(Error(styp.ptyp_loc, Alias_type_mismatch trace))
           end;
-          end_def ();
-          generalize_structure t;
+          if !Clflags.principal then begin
+            end_def ();
+            generalize_structure t;
+          end;
           instance t
       end
   | Ptyp_variant(fields, closed, present) ->
