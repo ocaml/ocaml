@@ -1,3 +1,5 @@
+(* cvs update -r varunion parsing typing bytecomp toplevel *)
+
 type t = private [> ];;
 type u = private [> ] ~ [t];;
 type v = [t | u];;
