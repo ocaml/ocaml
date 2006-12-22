@@ -181,7 +181,7 @@ let approx_modtype transl_mty init_env smty =
     match smty.pmty_desc with
       Pmty_ident lid ->
         begin try
-          let (path, info) = Env.lookup_modtype lid env in 
+          let (path, info) = Env.lookup_modtype lid env in
           Tmty_ident path
         with Not_found ->
           raise(Error(smty.pmty_loc, Unbound_modtype lid))
@@ -234,7 +234,7 @@ let approx_modtype transl_mty init_env smty =
             let sg = Subst.signature Subst.identity
                        (extract_sig env smty.pmty_loc mty) in
             let newenv = Env.add_signature sg env in
-            sg @ approx_sig newenv srem            
+            sg @ approx_sig newenv srem
         | Psig_class sdecls | Psig_class_type sdecls ->
             let decls = Typeclass.approx_class_declarations env sdecls in
             let rem = approx_sig env srem in
@@ -295,7 +295,7 @@ let rec transl_modtype env smty =
   match smty.pmty_desc with
     Pmty_ident lid ->
       begin try
-        let (path, info) = Env.lookup_modtype lid env in 
+        let (path, info) = Env.lookup_modtype lid env in
         Tmty_ident path
       with Not_found ->
         raise(Error(smty.pmty_loc, Unbound_modtype lid))
@@ -316,7 +316,7 @@ let rec transl_modtype env smty =
             merge_constraint env smty.pmty_loc sg lid sdecl)
           init_sg constraints in
       Mtype.freshen (Tmty_signature final_sg)
-      
+
 and transl_signature env sg =
   let type_names = ref StringSet.empty
   and module_names = ref StringSet.empty
@@ -577,7 +577,7 @@ let rec type_module anchor env smod =
                mod_loc = smod.pmod_loc }
       | _ ->
           raise(Error(sfunct.pmod_loc, Cannot_apply funct.mod_type))
-      end        
+      end
   | Pmod_constraint(sarg, smty) ->
       let arg = type_module anchor env sarg in
       let mty = transl_modtype env smty in
@@ -626,7 +626,7 @@ and type_structure anchor env sstr =
           (fun (name, decl) -> check "type" loc type_names name)
           sdecls;
         let (decls, newenv) = Typedecl.transl_type_decl env sdecls in
-        let newenv' = 
+        let newenv' =
           enrich_type_decls anchor decls env newenv in
         let (str_check, sig_check, newenv'') =
           List.fold_right
@@ -900,7 +900,7 @@ let package_units objfiles cmifile modulename =
       raise(Error(Location.in_file mlifile, Interface_not_compiled mlifile))
     end;
     let dclsig = Env.read_signature modulename cmifile in
-    Includemod.compunit "(obtained by packing)" sg mlifile dclsig 
+    Includemod.compunit "(obtained by packing)" sg mlifile dclsig
   end else begin
     (* Determine imports *)
     let unit_names = List.map fst units in

@@ -663,9 +663,9 @@ and is_nonexpansive_opt = function
    (Handling of * modifiers contributed by Thorsten Ohl.) *)
 
 external string_to_format :
- string -> ('a, 'b, 'c, 'd) format4 = "%identity"
+ string -> ('a, 'b, 'c, 'd, 'e, 'f) format6 = "%identity"
 external format_to_string :
- ('a, 'b, 'c, 'd) format4 -> string = "%identity"
+ ('a, 'b, 'c, 'd, 'e, 'f) format6 -> string = "%identity"
 
 let type_format loc fmt =
 
@@ -701,14 +701,15 @@ let type_format loc fmt =
 
     let ty_input = newvar ()
     and ty_result = newvar ()
-    and ty_aresult = newvar () in
+    and ty_aresult = newvar ()
+    and ty_uresult = newvar () in
 
     let meta = ref 0 in
 
     let rec scan_format i =
       if i >= len then
         if !meta = 0
-        then ty_aresult, ty_result
+        then ty_uresult, ty_result
         else incomplete_format fmt else
       match fmt.[i] with
       | '%' -> scan_opts i (i + 1)
@@ -734,8 +735,8 @@ let type_format loc fmt =
         if j >= len then incomplete_format fmt else
         match fmt.[j] with
         | '*' ->
-            let ty_aresult, ty_result = scan i (j + 1) in
-            ty_aresult, ty_arrow Predef.type_int ty_result
+          let ty_uresult, ty_result = scan i (j + 1) in
+          ty_uresult, ty_arrow Predef.type_int ty_result
         | '-' | '+' -> scan_decimal_string scan i (j + 1)
         | _ -> scan_decimal_string scan i j
       and scan_precision i j =
@@ -745,8 +746,8 @@ let type_format loc fmt =
         | _ -> scan_conversion i j
 
       and conversion j ty_arg =
-        let ty_aresult, ty_result = scan_format (j + 1) in
-        ty_aresult,
+        let ty_uresult, ty_result = scan_format (j + 1) in
+        ty_uresult,
         if skip then ty_result else ty_arrow ty_arg ty_result
 
       and scan_conversion i j =
@@ -765,8 +766,13 @@ let type_format loc fmt =
         | 'a' ->
           let ty_arg = newvar () in
           let ty_a = ty_arrow ty_input (ty_arrow ty_arg ty_aresult) in
-          let ty_aresult, ty_result = conversion j ty_arg in
-          ty_aresult, ty_arrow ty_a ty_result
+          let ty_uresult, ty_result = conversion j ty_arg in
+          ty_uresult, ty_arrow ty_a ty_result
+        | 'r' ->
+          let ty_arg = newvar () in
+          let ty_r = ty_arrow ty_input ty_arg in
+          let ty_uresult, ty_result = conversion j ty_arg in
+          ty_arrow ty_r ty_uresult, ty_result
         | 't' -> conversion j (ty_arrow ty_input ty_aresult)
         | 'l' | 'n' | 'L' as c ->
           let j = j + 1 in
@@ -785,24 +791,25 @@ let type_format loc fmt =
           let j = j + 1 in
           if j >= len then incomplete_format fmt else
           let sj =
-            Printf.sub_format
+            Printf.CamlinternalPr.Tformat.sub_format
               (fun fmt -> incomplete_format (format_to_string fmt))
               (fun fmt -> bad_conversion (format_to_string fmt))
               c (string_to_format fmt) j in
-          let sfmt = String.sub fmt j (sj - j - 1) in
+          let sfmt = String.sub fmt j (sj - 2 - j) in
           let ty_sfmt = type_in_format sfmt in
           begin match c with
-          | '{' -> conversion sj ty_sfmt
+          | '{' -> conversion (sj - 1) ty_sfmt
           | _ -> incr meta; conversion (j - 1) ty_sfmt end
         | ')' when !meta > 0 -> decr meta; scan_format (j + 1)
         | c -> bad_conversion fmt i c in
       scan_flags i j in
 
-    let ty_ares, ty_res = scan_format 0 in
+    let ty_ureader, ty_args = scan_format 0 in
     newty
-      (Tconstr(Predef.path_format4,
-               [ty_res; ty_input; ty_ares; ty_result],
-               ref Mnil)) in
+      (Tconstr
+         (Predef.path_format6,
+          [ty_args; ty_input; ty_aresult; ty_ureader; ty_uresult; ty_result],
+          ref Mnil)) in
 
   type_in_format fmt
 
@@ -1765,7 +1772,7 @@ and type_expect ?in_function env sexp ty_expected =
           exp_type =
             (* Terrible hack for format strings *)
             begin match (repr (expand_head env ty_expected)).desc with
-              Tconstr(path, _, _) when Path.same path Predef.path_format4 ->
+              Tconstr(path, _, _) when Path.same path Predef.path_format6 ->
                 type_format sexp.pexp_loc s
             | _ -> instance Predef.type_string
             end;
