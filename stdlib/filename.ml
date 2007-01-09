@@ -97,16 +97,21 @@ module Win32 = struct
     let l = String.length s in
     let b = Buffer.create (l + 20) in
     Buffer.add_char b '\"';
-    for i = 0 to l - 1 do
+    let rec loop i =
+      if i = l then () else
       match s.[i] with
-        '\"' -> Buffer.add_string b "\\\""
-      | '\\' -> if i + 1 = l then Buffer.add_string b "\\\\"
-                else if s.[i + 1] = '\"' then Buffer.add_string b "\\\\\\\""
-                else Buffer.add_char b '\\'
-      | '&'  -> if i = 0 then Buffer.add_string b "&\""
-                else Buffer.add_string b "\"&\""
-      |   c  -> Buffer.add_char b c
-    done;
+      | '\"' -> loop_bs 0 i;
+      | '\\' -> loop_bs 0 i;
+      | c    -> Buffer.add_char b c; loop (i+1);
+    and loop_bs n i =
+      if i = l then add_bs (2*n) else
+      match s.[i] with
+      | '\"' -> add_bs (2*n+1); Buffer.add_char b '\"'; loop (i+1);
+      | '\\' -> loop_bs (n+1) (i+1);
+      | c    -> add_bs n; loop i
+    and add_bs n = for j = 1 to n do Buffer.add_char b '\\'; done
+    in
+    loop 0;
     Buffer.add_char b '\"';
     Buffer.contents b
   let has_drive s =
