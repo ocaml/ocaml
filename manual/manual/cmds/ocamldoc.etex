@@ -138,7 +138,7 @@ Specify merge options between interfaces and implementations.
 Do not allow custom @-tags (see section \ref{s:ocamldoc-tags}).
 
 \item["-no-stop"]
-Keep elements placed after the "(**/**)" special comment
+Keep elements placed after/between the "(**/**)" special comment(s)
 (see section \ref{s:ocamldoc-comments}).
 
 \item["-o" \var{file}]
@@ -617,7 +617,8 @@ module type my_module_type =
 \subsection{The Stop special comment}
 The special comment "(**/**)" tells OCamldoc to discard
 elements placed after this comment, up to the end of the current
-class, class type,  module or module type.  For instance:
+class, class type,  module or module type, or up to the next stop comment.
+For instance:
 \begin{verbatim}
 class type foo =
   object
@@ -637,8 +638,10 @@ val foo : string
 (**/**)
 (** The value bar does not appear in the documentation.*)
 val bar : string
+(**/**)
 
-(** The type t does not appear either. *)
+(** The type t appears since in the documentation since the previous stop comment
+toggled off the "no documentation mode". *)
 type t = string
 \end{verbatim}
 
