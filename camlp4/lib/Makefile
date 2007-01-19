@@ -46,11 +46,11 @@ compare:
 install:
 	-$(MKDIR) "$(LIBDIR)/camlp4"
 	cp $(TARGET) *.mli "$(LIBDIR)/camlp4/."
-	cp *.cmi "$(LIBDIR)/camlp4/."
+	cp *.cmi *.cmo "$(LIBDIR)/camlp4/."
 	test -f $(TARGET:.cma=.cmxa) && $(MAKE) installopt LIBDIR="$(LIBDIR)" || true
 
 installopt:
-	for f in $(TARGET:.cma=.cmxa) $(TARGET:.cma=.p.cmxa) *.cmx ; do \
+	for f in $(TARGET:.cma=.cmxa) $(TARGET:.cma=.p.cmxa) *.cmx *.o ; do \
 		test -f $$f && cp $$f "$(LIBDIR)/camlp4/." || true ; \
 	done
 	# Special treatment for this one: some versions of make don't like $(A) in $(TARGET:.cma=.$(A)) 

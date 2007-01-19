@@ -1044,7 +1044,7 @@ class latex =
         (Module.module_elements ~trans: false m)
 
     (** Print the header of the TeX document. *)
-    method latex_header fmt =
+    method latex_header fmt module_list =
       ps fmt "\\documentclass[11pt]{article} \n";
       ps fmt "\\usepackage[latin1]{inputenc} \n";
       ps fmt "\\usepackage[T1]{fontenc} \n";
@@ -1067,7 +1067,8 @@ class latex =
       if !Args.with_toc then ps fmt "\\tableofcontents\n";
       (
        let info = Odoc_info.apply_opt
-           Odoc_info.info_of_comment_file !Odoc_info.Args.intro_file
+           (Odoc_info.info_of_comment_file module_list)
+	   !Odoc_info.Args.intro_file
        in
        (match info with None -> () | Some _ -> ps fmt "\\vspace{0.2cm}");
        self#latex_of_info fmt info;
@@ -1123,7 +1124,7 @@ class latex =
       try
         let chanout = open_out main_file in
         let fmt = Format.formatter_of_out_channel chanout in
-        if !Args.with_header then self#latex_header fmt;
+        if !Args.with_header then self#latex_header fmt module_list;
         List.iter
           (fun m ->
             if !Args.separate_files then

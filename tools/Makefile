@@ -195,7 +195,9 @@ clean::
 	rm -f dumpobj
 
 opnames.ml: ../byterun/instruct.h
-	unset LC_ALL LC_CTYPE LC_COLLATE LANG; \
+	unset LC_ALL || : ; \
+	unset LC_CTYPE || : ; \
+	unset LC_COLLATE LANG || : ; \
 	sed -e '/\/\*/d' \
             -e '/^#/d' \
             -e 's/enum \(.*\) {/let names_of_\1 = [|/' \

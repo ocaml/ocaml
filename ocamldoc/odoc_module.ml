@@ -64,7 +64,7 @@ and module_kind =
 (** Representation of a module. *)
 and t_module = {
     m_name : Name.t ;
-    m_type : Types.module_type ;
+    mutable m_type : Types.module_type ;
     mutable m_info : Odoc_types.info option ;
     m_is_interface : bool ; (** true for modules read from interface files *)
     m_file : string ; (** the file the module is defined in. *)
@@ -92,7 +92,7 @@ and module_type_kind =
 and t_module_type = {
     mt_name : Name.t ;
     mutable mt_info : Odoc_types.info option ;
-    mt_type : Types.module_type option ; (** [None] = abstract module type *)
+    mutable mt_type : Types.module_type option ; (** [None] = abstract module type *)
     mt_is_interface : bool ; (** true for modules read from interface files *)
     mt_file : string ; (** the file the module type is defined in. *)
     mutable mt_kind : module_type_kind option ; (** [None] = abstract module type if mt_type = None ;

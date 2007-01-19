@@ -66,7 +66,9 @@ val info_of_string : string -> Odoc_types.info
 (** [info_of_comment_file file] parses the given file
    and return an {!Odoc_types.info} structure. The content of the
    file must have the same syntax as the content of a special comment.
+   The given module list is used for cross reference.
    @raise Failure is the file could not be opened or there is a
    syntax error.
 *)
-val info_of_comment_file : string -> Odoc_types.info
+val info_of_comment_file :
+    Odoc_module.t_module list -> string -> Odoc_types.info

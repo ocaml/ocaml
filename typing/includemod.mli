@@ -40,6 +40,7 @@ type error =
   | Class_declarations of
       Ident.t * class_declaration * class_declaration *
       Ctype.class_match_failure list
+  | Unbound_modtype_path of Path.t
 
 exception Error of error list
 

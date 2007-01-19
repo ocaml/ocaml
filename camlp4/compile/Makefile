@@ -31,7 +31,7 @@ $D_fast.ml: compile.cmo $(SRC)
 
 install:
 	if test -f camlp4$D.fast.opt; then cp camlp4$D.fast.opt $(BINDIR)/camlp4$D.opt$(EXE); fi
-	for TARG in  pa_$D_fast.cmi  pa_$D_fast.cmo pa_$D_fast.cmx ; do if test -f $$TARG; then cp $$TARG "$(LIBDIR)/camlp4/."; fi; done
+	for TARG in  pa_$D_fast.cmi  pa_$D_fast.cmo pa_$D_fast.cmx pa_$D_fast.o ; do if test -f $$TARG; then cp $$TARG "$(LIBDIR)/camlp4/."; fi; done
 
 clean::
 	rm -f *.cm* *.pp[io] *.o *.bak .*.bak *.out *.opt

@@ -62,8 +62,8 @@ typing/includeclass.cmi: typing/types.cmi typing/typedtree.cmi typing/env.cmi \
     typing/ctype.cmi 
 typing/includecore.cmi: typing/types.cmi typing/typedtree.cmi \
     typing/ident.cmi typing/env.cmi 
-typing/includemod.cmi: typing/types.cmi typing/typedtree.cmi typing/ident.cmi \
-    typing/env.cmi typing/ctype.cmi 
+typing/includemod.cmi: typing/types.cmi typing/typedtree.cmi typing/path.cmi \
+    typing/ident.cmi typing/env.cmi typing/ctype.cmi 
 typing/mtype.cmi: typing/types.cmi typing/path.cmi typing/ident.cmi \
     typing/env.cmi 
 typing/oprint.cmi: typing/outcometree.cmi 

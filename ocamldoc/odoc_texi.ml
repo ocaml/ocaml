@@ -1105,7 +1105,8 @@ class texi =
         | Some f ->
             nl chan ;
             puts_nl chan
-              (self#texi_of_info (Some (Odoc_info.info_of_comment_file f)))
+              (self#texi_of_info
+		 (Some (Odoc_info.info_of_comment_file m_list f)))
       end ;
 
       (* write a top menu *)

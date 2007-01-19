@@ -111,5 +111,5 @@ CHANGE LOG:
 - support non-ascii X-capture variable names
 - warning for variables that always bind to {{ [] }}
 
-Since then
+3.09.3
 - ignore namespaces in ocamldoc, instead of failing

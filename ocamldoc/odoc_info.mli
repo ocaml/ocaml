@@ -444,7 +444,7 @@ module Module :
     and t_module = Odoc_module.t_module =
         {
           m_name : Name.t ; (** Complete name of the module. *)
-          m_type : Types.module_type ; (** The type of the module. *)
+          mutable m_type : Types.module_type ; (** The type of the module. *)
           mutable m_info : info option ; (** Information found in the optional associated comment. *)
           m_is_interface : bool ; (** [true] for modules read from interface files *)
           m_file : string ; (** The file the module is defined in. *)
@@ -477,7 +477,7 @@ module Module :
         {
           mt_name : Name.t ; (** Complete name of the module type. *)
           mutable mt_info : info option ; (** Information found in the optional associated comment. *)
-          mt_type : Types.module_type option ; (** [None] means that the module type is abstract. *)
+          mutable mt_type : Types.module_type option ; (** [None] means that the module type is abstract. *)
           mt_is_interface : bool ; (** [true] for modules read from interface files. *)
           mt_file : string ; (** The file the module type is defined in. *)
           mutable mt_kind : module_type_kind option ;
@@ -750,10 +750,11 @@ val info_string_of_info : info -> string
 (** [info_of_comment_file file] parses the given file
    and return an {!Odoc_info.info} structure. The content of the
    file must have the same syntax as the content of a special comment.
+   The given module list is used for cross reference.
    @raise Failure is the file could not be opened or there is a
    syntax error.
 *)
-val info_of_comment_file : string -> info
+val info_of_comment_file : Module.t_module list -> string -> info
 
 (** [remove_ending_newline s] returns [s] without the optional ending newline. *)
 val remove_ending_newline : string -> string
@@ -960,6 +961,10 @@ module Args :
 
       (** To colorize code in HTML generated documentation pages, not code pages. *)
       val colorize_code : bool ref
+
+      (** To display functors in short form rather than with "functor ... -> ",
+	 in HTML generated documentation. *)
+      val html_short_functors : bool ref
 
       (** The flag which indicates if we must generate a header (for LaTeX). *)
       val with_header : bool ref
