@@ -33,19 +33,21 @@
     This module provides general formatted input functions that reads from any
     kind of input, including strings, files, or anything that can return
     characters.
-    Hence, a typical call to a formatted input function [scan] is
-    [scan ib fmt f], meaning that [f] should be applied to the arguments
+    Hence, a typical call to a formatted input function [bscan] is
+    [bscan ib fmt f], meaning that [f] should be applied to the arguments
     read from input [ib], according to the format string [fmt].
 
-    The Caml scanning facility is reminiscent of the corresponding C
-    feature. It is also largely different: the formatted input functions are
-    higher-order functional free from assigments; the format strings
-    conventions are largely improved with useful additions to easily define
-    complex tokens; the formatted input functions support arbitrary interaction
-    with polymorphic user-defined scanners; in short, the formatted input
-    function facility has been turned to a functional language feature: it is
-    higher-order, based on functions, and fully type-checked at compile
-    time. *)
+    The Caml scanning facility is reminiscent of the corresponding C feature.
+    However, it is also largely different, simpler, and yet more powerful: the
+    formatted input functions are higher-order functionals and the parameter
+    passing mechanism is simply the regular function application not the
+    variable assigment based mechanism which is typical of formatted input in
+    imperative languages; the format strings also feature useful additions to
+    easily define complex tokens; as expected of a functional programming
+    language feature, the formatted input functions support polymorphism, in
+    particular arbitrary interaction with polymorphic user-defined scanners.
+    Furthermore, the Caml formatted input facility is fully type-checked at
+    compile time. *)
 
 (** {6 Scanning buffers} *)
 module Scanning : sig
