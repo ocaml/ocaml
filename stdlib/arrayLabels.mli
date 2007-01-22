@@ -22,17 +22,18 @@ external get : 'a array -> int -> 'a = "%array_safe_get"
 (** [Array.get a n] returns the element number [n] of array [a].
    The first element has number 0.
    The last element has number [Array.length a - 1].
-   Raise [Invalid_argument "Array.get"]  if [n] is outside the range
-   0 to [(Array.length a - 1)].
-   You can also write [a.(n)] instead of [Array.get a n]. *)
+   You can also write [a.(n)] instead of [Array.get a n].
+
+   Raise [Invalid_argument "index out of bounds"]
+   if [n] is outside the range 0 to [(Array.length a - 1)]. *)
 
 external set : 'a array -> int -> 'a -> unit = "%array_safe_set"
 (** [Array.set a n x] modifies array [a] in place, replacing
    element number [n] with [x].
+   You can also write [a.(n) <- x] instead of [Array.set a n x].
 
-   Raise [Invalid_argument "Array.set"] if [n] is outside the range
-   0 to [Array.length a - 1].
-   You can also write [a.(n) <- x] instead of [Array.set a n x]. *)
+   Raise [Invalid_argument "index out of bounds"]
+   if [n] is outside the range 0 to [Array.length a - 1]. *)
 
 external make : int -> 'a -> 'a array = "caml_make_vect"
 (** [Array.make n x] returns a fresh array of length [n],
@@ -54,7 +55,11 @@ val init : int -> f:(int -> 'a) -> 'a array
 (** [Array.init n f] returns a fresh array of length [n],
    with element number [i] initialized to the result of [f i].
    In other terms, [Array.init n f] tabulates the results of [f]
-   applied to the integers [0] to [n-1]. *)
+   applied to the integers [0] to [n-1].
+
+   Raise [Invalid_argument] if [n < 0] or [n > Sys.max_array_length].
+   If the return type of [f] is [float], then the maximum
+   size is only [Sys.max_array_length / 2].*)
 
 val make_matrix : dimx:int -> dimy:int -> 'a -> 'a array array
 (** [Array.make_matrix dimx dimy e] returns a two-dimensional array
@@ -64,7 +69,7 @@ val make_matrix : dimx:int -> dimy:int -> 'a -> 'a array array
    The element ([x,y]) of a matrix [m] is accessed
    with the notation [m.(x).(y)].
 
-   Raise [Invalid_argument] if [dimx] or [dimy] is less than 1 or
+   Raise [Invalid_argument] if [dimx] or [dimy] is negative or
    greater than [Sys.max_array_length].
    If the value of [e] is a floating-point number, then the maximum
    size is only [Sys.max_array_length / 2]. *)
@@ -151,7 +156,6 @@ val fold_right : f:('b -> 'a -> 'a) -> 'b array -> init:'a -> 'a
    where [n] is the length of the array [a]. *)
 
 
-
 (** {6 Sorting} *)
 
 
@@ -159,24 +163,36 @@ val sort : cmp:('a -> 'a -> int) -> 'a array -> unit
 (** Sort an array in increasing order according to a comparison
    function.  The comparison function must return 0 if its arguments
    compare as equal, a positive integer if the first is greater,
-   and a negative integer if the first is smaller.  For example,
-   the {!Pervasives.compare} function is a suitable comparison function.
-   After calling [Array.sort], the array is sorted in place in
-   increasing order.
+   and a negative integer if the first is smaller (see below for a
+   complete specification).  For example, {!Pervasives.compare} is
+   a suitable comparison function, provided there are no floating-point
+   NaN values in the data.  After calling [Array.sort], the
+   array is sorted in place in increasing order.
    [Array.sort] is guaranteed to run in constant heap space
-   and logarithmic stack space.
-
+   and (at most) logarithmic stack space.
 
    The current implementation uses Heap Sort.  It runs in constant
    stack space.
+
+   Specification of the comparison function:
+   Let [a] be the array and [cmp] the comparison function.  The following
+   must be true for all x, y, z in a :
+-   [cmp x y] > 0 if and only if [cmp y x] < 0
+-   if [cmp x y] >= 0 and [cmp y z] >= 0 then [cmp x z] >= 0
+
+   When [Array.sort] returns, [a] contains the same elements as before,
+   reordered in such a way that for all i and j valid indices of [a] :
+-   [cmp a.(i) a.(j)] >= 0 if and only if i >= j
 *)
 
 val stable_sort : cmp:('a -> 'a -> int) -> 'a array -> unit
-(** Same as {!ArrayLabels.sort}, but the sorting algorithm is stable and
-   not guaranteed to use a fixed amount of heap memory.
-   The current implementation is Merge Sort. It uses [n/2]
+(** Same as {!ArrayLabels.sort}, but the sorting algorithm is stable (i.e.
+   elements that compare equal are kept in their original order) and
+   not guaranteed to run in constant heap space.
+
+   The current implementation uses Merge Sort. It uses [n/2]
    words of heap space, where [n] is the length of the array.
-   It is faster than the current implementation of {!ArrayLabels.sort}.
+   It is usually faster than the current implementation of {!ArrayLabels.sort}.
 *)
 
 val fast_sort : cmp:('a -> 'a -> int) -> 'a array -> unit
