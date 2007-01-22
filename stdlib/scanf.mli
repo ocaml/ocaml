@@ -123,17 +123,23 @@ exception Scan_failure of string;;
 
 type ('a, 'b, 'c, 'd) scanner =
      ('a, Scanning.scanbuf, 'b, 'c, 'a -> 'd, 'd) format6 -> 'c;;
-(** The type of formatted input functions: [('a, 'b, 'c, 'd) scanner] is the
+(** The type of formatted input scanners: [('a, 'b, 'c, 'd) scanner] is the
     type of a formatted input function that reads from some scanning buffer
     according to some format string; more precisely, if [scan] is some
-    formatted input function, then [scan fmt f] applies [f] to the arguments
+    formatted input function, then [scan ib fmt f] applies [f] to the arguments
     specified by the format string [fmt], when [scan] has read those arguments
-    from some scanning buffer.
+    from some scanning buffer [ib].
 
     For instance, the [scanf] function below has type [('a, 'b, 'c, 'd)
     scanner], since it is a formatted input function that reads from [stdib]:
     [scanf fmt f] applies [f] to the arguments specified by [fmt], reading
-    those arguments from [stdin] as expected. *)
+    those arguments from [stdin] as expected.
+
+    If the format [fmt] has some [%r] indications, the corresponding input
+    functions must be provided before the [f] argument. For instance, if
+    [read_elem] is an input function for values of type [t], then [bscanf ib
+    "%r;" read_elem f] reads a value of type [t] followed by a [';']
+    character. *)
 
 (** {6 Formatted input functions} *)
 
@@ -145,8 +151,8 @@ val bscanf : Scanning.scanbuf -> ('a, 'b, 'c, 'd) scanner;;
    For instance, if [f] is the function [fun s i -> i + 1], then
    [Scanf.sscanf "x = 1" "%s = %i" f] returns [2].
 
-   Arguments [r1] to [rN] are user-defined scanners that are applied to the
-   scanning buffer [ib] to read the argument of a [%r] conversion.
+   Arguments [r1] to [rN] are user-defined input functions that read the
+   argument corresponding to a [%r] conversion.
 
    The format is a character string which contains three types of
    objects:
@@ -213,10 +219,10 @@ val bscanf : Scanning.scanbuf -> ('a, 'b, 'c, 'd) scanner;;
      first character of the range (or just after the [^] in case of
      range negation); hence [\[\]\]] matches a [\]] character and
      [\[^\]\]] matches any character that is not [\]].
-   - [r]: user-defined reader. Takes the next [ri] scanner argument and applies
-     it to the scanning buffer [ib] to read the next argument for [f]. Scanner
-     argument [ri] must therefore have type [Scanning.scanbuf -> 'a] and the
-     argument read has type ['a].
+   - [r]: user-defined reader. Takes the next [ri] formatted input function and
+     applies it to the scanning buffer [ib] to read the next argument. The
+     input function [ri] must therefore have type [Scanning.scanbuf -> 'a] and
+     the argument read has type ['a].
    - [\{ fmt %\}]: reads a format string argument to the format
      specified by the internal format [fmt]. The format string to be
      read must have the same type as the internal format [fmt].
