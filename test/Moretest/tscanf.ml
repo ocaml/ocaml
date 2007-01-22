@@ -1,3 +1,9 @@
+(* $Id$
+
+A testbed file for module Scanf.
+
+ *)
+
 open Testing;;
 
 open Scanf;;
