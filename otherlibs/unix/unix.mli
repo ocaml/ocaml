@@ -339,14 +339,14 @@ type stats =
 (** The informations returned by the {!Unix.stat} calls. *)
 
 val stat : string -> stats
-(** Return the informations for the named file. *)
+(** Return the information for the named file. *)
 
 val lstat : string -> stats
 (** Same as {!Unix.stat}, but in case the file is a symbolic link,
-   return the informations for the link itself. *)
+   return the information for the link itself. *)
 
 val fstat : file_descr -> stats
-(** Return the informations for the file associated with the given
+(** Return the information for the file associated with the given
    descriptor. *)
 
 val isatty : file_descr -> bool
