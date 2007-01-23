@@ -1569,7 +1569,8 @@ and unify3 env t1 t1' t2 t2' =
   let create_recursion = (t2 != t2') && (deep_occur t1' t2) in
   occur env t1' t2;
   update_level env t1'.level t2;
-  link_type t1' t2;
+  (match d1 with Text _ -> link_type t1' t2' | _ -> link_type t1' t2);
+  (* Never link a Text to a Tconstr... *)
   try
     begin match (d1, d2) with
       (Tvar, _) ->
