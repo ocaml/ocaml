@@ -1,6 +1,6 @@
 # Build the OCamlDuce tools using an existing OCaml installation
 
-VERSION=3.09.3
+VERSION=3.09.3pl1
 
 OCAMLDUCELIBDIR=$(shell ocamlfind printconf destdir)/ocamlduce
 

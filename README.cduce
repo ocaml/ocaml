@@ -113,3 +113,6 @@ CHANGE LOG:
 
 3.09.3
 - ignore namespaces in ocamldoc, instead of failing
+
+3.09.3pl1
+- bug fix in unification
