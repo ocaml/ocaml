@@ -65,41 +65,41 @@ L105:
         mov     caml_gc_regs, rsp
     ; Save floating-point registers 
         sub     rsp, 16*8
-        movlpd  [rsp + 0*8], xmm0
-        movlpd  [rsp + 1*8], xmm1
-        movlpd  [rsp + 2*8], xmm2
-        movlpd  [rsp + 3*8], xmm3
-        movlpd  [rsp + 4*8], xmm4
-        movlpd  [rsp + 5*8], xmm5
-        movlpd  [rsp + 6*8], xmm6
-        movlpd  [rsp + 7*8], xmm7
-        movlpd  [rsp + 8*8], xmm8
-        movlpd  [rsp + 9*8], xmm9
-        movlpd  [rsp + 10*8], xmm10
-        movlpd  [rsp + 11*8], xmm11
-        movlpd  [rsp + 12*8], xmm12
-        movlpd  [rsp + 13*8], xmm13
-        movlpd  [rsp + 14*8], xmm14
-        movlpd  [rsp + 15*8], xmm15
+        movlpd  QWORD PTR [rsp + 0*8], xmm0
+        movlpd  QWORD PTR [rsp + 1*8], xmm1
+        movlpd  QWORD PTR [rsp + 2*8], xmm2
+        movlpd  QWORD PTR [rsp + 3*8], xmm3
+        movlpd  QWORD PTR [rsp + 4*8], xmm4
+        movlpd  QWORD PTR [rsp + 5*8], xmm5
+        movlpd  QWORD PTR [rsp + 6*8], xmm6
+        movlpd  QWORD PTR [rsp + 7*8], xmm7
+        movlpd  QWORD PTR [rsp + 8*8], xmm8
+        movlpd  QWORD PTR [rsp + 9*8], xmm9
+        movlpd  QWORD PTR [rsp + 10*8], xmm10
+        movlpd  QWORD PTR [rsp + 11*8], xmm11
+        movlpd  QWORD PTR [rsp + 12*8], xmm12
+        movlpd  QWORD PTR [rsp + 13*8], xmm13
+        movlpd  QWORD PTR [rsp + 14*8], xmm14
+        movlpd  QWORD PTR [rsp + 15*8], xmm15
     ; Call the garbage collector 
         call    caml_garbage_collection
     ; Restore all regs used by the code generator 
-        movlpd  xmm0, [rsp + 0*8]
-        movlpd  xmm1, [rsp + 1*8]
-        movlpd  xmm2, [rsp + 2*8]
-        movlpd  xmm3, [rsp + 3*8]
-        movlpd  xmm4, [rsp + 4*8]
-        movlpd  xmm5, [rsp + 5*8]
-        movlpd  xmm6, [rsp + 6*8]
-        movlpd  xmm7, [rsp + 7*8]
-        movlpd  xmm8, [rsp + 8*8]
-        movlpd  xmm9, [rsp + 9*8]
-        movlpd  xmm10, [rsp + 10*8]
-        movlpd  xmm11, [rsp + 11*8]
-        movlpd  xmm12, [rsp + 12*8]
-        movlpd  xmm13, [rsp + 13*8]
-        movlpd  xmm14, [rsp + 14*8]
-        movlpd  xmm15, [rsp + 15*8]
+        movlpd  xmm0, QWORD PTR [rsp + 0*8]
+        movlpd  xmm1, QWORD PTR [rsp + 1*8]
+        movlpd  xmm2, QWORD PTR [rsp + 2*8]
+        movlpd  xmm3, QWORD PTR [rsp + 3*8]
+        movlpd  xmm4, QWORD PTR [rsp + 4*8]
+        movlpd  xmm5, QWORD PTR [rsp + 5*8]
+        movlpd  xmm6, QWORD PTR [rsp + 6*8]
+        movlpd  xmm7, QWORD PTR [rsp + 7*8]
+        movlpd  xmm8, QWORD PTR [rsp + 8*8]
+        movlpd  xmm9, QWORD PTR [rsp + 9*8]
+        movlpd  xmm10, QWORD PTR [rsp + 10*8]
+        movlpd  xmm11, QWORD PTR [rsp + 11*8]
+        movlpd  xmm12, QWORD PTR [rsp + 12*8]
+        movlpd  xmm13, QWORD PTR [rsp + 13*8]
+        movlpd  xmm14, QWORD PTR [rsp + 14*8]
+        movlpd  xmm15, QWORD PTR [rsp + 15*8]
         add     rsp, 16*8
         pop     rax
         pop     rbx
@@ -223,16 +223,16 @@ caml_start_program:
         push    r14
         push    r15
         sub     rsp, 8+10*16       ; stack 16-aligned + 10 saved xmm regs
-        movapd  [rsp + 0*16], xmm6
-        movapd  [rsp + 1*16], xmm7
-        movapd  [rsp + 2*16], xmm8
-        movapd  [rsp + 3*16], xmm9
-        movapd  [rsp + 4*16], xmm10
-        movapd  [rsp + 5*16], xmm11
-        movapd  [rsp + 6*16], xmm12
-        movapd  [rsp + 7*16], xmm13
-        movapd  [rsp + 8*16], xmm14
-        movapd  [rsp + 9*16], xmm15
+        movapd  OWORD PTR [rsp + 0*16], xmm6
+        movapd  OWORD PTR [rsp + 1*16], xmm7
+        movapd  OWORD PTR [rsp + 2*16], xmm8
+        movapd  OWORD PTR [rsp + 3*16], xmm9
+        movapd  OWORD PTR [rsp + 4*16], xmm10
+        movapd  OWORD PTR [rsp + 5*16], xmm11
+        movapd  OWORD PTR [rsp + 6*16], xmm12
+        movapd  OWORD PTR [rsp + 7*16], xmm13
+        movapd  OWORD PTR [rsp + 8*16], xmm14
+        movapd  OWORD PTR [rsp + 9*16], xmm15
     ; Initial entry point is caml_program 
         lea     r12, caml_program
     ; Common code for caml_start_program and caml_callback* 
@@ -266,16 +266,16 @@ L109:
         pop     caml_gc_regs
 	add	rsp, 8
     ; Restore callee-save registers. 
-        movapd  xmm6, [rsp + 0*16]
-        movapd  xmm7, [rsp + 1*16]
-        movapd  xmm8, [rsp + 2*16]
-        movapd  xmm9, [rsp + 3*16]
-        movapd  xmm10, [rsp + 4*16]
-        movapd  xmm11, [rsp + 5*16]
-        movapd  xmm12, [rsp + 6*16]
-        movapd  xmm13, [rsp + 7*16]
-        movapd  xmm14, [rsp + 8*16]
-        movapd  xmm15, [rsp + 9*16]
+        movapd  xmm6, OWORD PTR [rsp + 0*16]
+        movapd  xmm7, OWORD PTR [rsp + 1*16]
+        movapd  xmm8, OWORD PTR [rsp + 2*16]
+        movapd  xmm9, OWORD PTR [rsp + 3*16]
+        movapd  xmm10, OWORD PTR [rsp + 4*16]
+        movapd  xmm11, OWORD PTR [rsp + 5*16]
+        movapd  xmm12, OWORD PTR [rsp + 6*16]
+        movapd  xmm13, OWORD PTR [rsp + 7*16]
+        movapd  xmm14, OWORD PTR [rsp + 8*16]
+        movapd  xmm15, OWORD PTR [rsp + 9*16]
         add     rsp, 8+10*16
         pop     r15
         pop     r14
@@ -319,16 +319,16 @@ caml_callback_exn:
         push    r14
         push    r15
         sub     rsp, 8+10*16       ; stack 16-aligned + 10 saved xmm regs
-        movapd  [rsp + 0*16], xmm6
-        movapd  [rsp + 1*16], xmm7
-        movapd  [rsp + 2*16], xmm8
-        movapd  [rsp + 3*16], xmm9
-        movapd  [rsp + 4*16], xmm10
-        movapd  [rsp + 5*16], xmm11
-        movapd  [rsp + 6*16], xmm12
-        movapd  [rsp + 7*16], xmm13
-        movapd  [rsp + 8*16], xmm14
-        movapd  [rsp + 9*16], xmm15
+        movapd  OWORD PTR [rsp + 0*16], xmm6
+        movapd  OWORD PTR [rsp + 1*16], xmm7
+        movapd  OWORD PTR [rsp + 2*16], xmm8
+        movapd  OWORD PTR [rsp + 3*16], xmm9
+        movapd  OWORD PTR [rsp + 4*16], xmm10
+        movapd  OWORD PTR [rsp + 5*16], xmm11
+        movapd  OWORD PTR [rsp + 6*16], xmm12
+        movapd  OWORD PTR [rsp + 7*16], xmm13
+        movapd  OWORD PTR [rsp + 8*16], xmm14
+        movapd  OWORD PTR [rsp + 9*16], xmm15
     ; Initial loading of arguments 
         mov     rbx, rcx      ; closure 
         mov     rax, rdx      ; argument 
@@ -348,16 +348,16 @@ caml_callback2_exn:
         push    r14
         push    r15
         sub     rsp, 8+10*16       ; stack 16-aligned + 10 saved xmm regs
-        movapd  [rsp + 0*16], xmm6
-        movapd  [rsp + 1*16], xmm7
-        movapd  [rsp + 2*16], xmm8
-        movapd  [rsp + 3*16], xmm9
-        movapd  [rsp + 4*16], xmm10
-        movapd  [rsp + 5*16], xmm11
-        movapd  [rsp + 6*16], xmm12
-        movapd  [rsp + 7*16], xmm13
-        movapd  [rsp + 8*16], xmm14
-        movapd  [rsp + 9*16], xmm15
+        movapd  OWORD PTR [rsp + 0*16], xmm6
+        movapd  OWORD PTR [rsp + 1*16], xmm7
+        movapd  OWORD PTR [rsp + 2*16], xmm8
+        movapd  OWORD PTR [rsp + 3*16], xmm9
+        movapd  OWORD PTR [rsp + 4*16], xmm10
+        movapd  OWORD PTR [rsp + 5*16], xmm11
+        movapd  OWORD PTR [rsp + 6*16], xmm12
+        movapd  OWORD PTR [rsp + 7*16], xmm13
+        movapd  OWORD PTR [rsp + 8*16], xmm14
+        movapd  OWORD PTR [rsp + 9*16], xmm15
     ; Initial loading of arguments 
         mov     rdi, rcx        ; closure
         mov     rax, rdx        ; first argument 
@@ -378,16 +378,16 @@ caml_callback3_exn:
         push    r14
         push    r15
         sub     rsp, 8+10*16       ; stack 16-aligned + 10 saved xmm regs
-        movapd  [rsp + 0*16], xmm6
-        movapd  [rsp + 1*16], xmm7
-        movapd  [rsp + 2*16], xmm8
-        movapd  [rsp + 3*16], xmm9
-        movapd  [rsp + 4*16], xmm10
-        movapd  [rsp + 5*16], xmm11
-        movapd  [rsp + 6*16], xmm12
-        movapd  [rsp + 7*16], xmm13
-        movapd  [rsp + 8*16], xmm14
-        movapd  [rsp + 9*16], xmm15
+        movapd  OWORD PTR [rsp + 0*16], xmm6
+        movapd  OWORD PTR [rsp + 1*16], xmm7
+        movapd  OWORD PTR [rsp + 2*16], xmm8
+        movapd  OWORD PTR [rsp + 3*16], xmm9
+        movapd  OWORD PTR [rsp + 4*16], xmm10
+        movapd  OWORD PTR [rsp + 5*16], xmm11
+        movapd  OWORD PTR [rsp + 6*16], xmm12
+        movapd  OWORD PTR [rsp + 7*16], xmm13
+        movapd  OWORD PTR [rsp + 8*16], xmm14
+        movapd  OWORD PTR [rsp + 9*16], xmm15
     ; Initial loading of arguments 
         mov     rsi, rcx        ; closure
         mov     rax, rdx        ; first argument 

@@ -504,7 +504,7 @@ let emit_instr fallthrough i =
     | Lop(Ispecific(Ioffset_loc(n, addr))) ->
         `	add	QWORD PTR {emit_addressing addr i.arg 0}, {emit_int n}\n`
     | Lop(Ispecific(Ifloatarithmem(op, addr))) ->
-        `	{emit_string(instr_for_floatarithmem op)}	{emit_reg i.res.(0)}, {emit_addressing addr i.arg 1}\n`
+        `	{emit_string(instr_for_floatarithmem op)}	{emit_reg i.res.(0)}, REAL8 PTR {emit_addressing addr i.arg 1}\n`
     | Lreloadretaddr ->
         ()
     | Lreturn ->
@@ -562,9 +562,9 @@ let emit_instr fallthrough i =
         let lbl = new_label() in
         if !pic_code then begin
           `	lea	r11, {emit_label lbl}\n`;
-          `	jmp	[r11+{emit_reg i.arg.(0)}*8]\n`
+          `	jmp	QWORD PTR [r11+{emit_reg i.arg.(0)}*8]\n`
         end else begin
-          `	jmp	[{emit_reg i.arg.(0)}*8 + {emit_label lbl}]\n`
+          `	jmp	QWORD PTR [{emit_reg i.arg.(0)}*8 + {emit_label lbl}]\n`
         end;
         `	.DATA\n`;
         emit_align 8;
