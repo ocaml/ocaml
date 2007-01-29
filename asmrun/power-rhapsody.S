@@ -220,10 +220,43 @@ _caml_c_call:
     /* Return to caller */
         blr
 
+/* Raise an exception from Caml */
+        .globl  _caml_raise_exn
+_caml_raise_exn:
+        addis   r11, 0, ha16(_caml_backtrace_active)
+        lwz     r11, lo16(_caml_backtrace_active)(r11)
+        cmpwi   r11, 0
+        bne     L110
+L111:
+    /* Pop trap frame */
+        lg      r0, 0(r29)
+        mr      r1, r29
+        mtlr    r0
+        lg      r29, WORD(r1)
+        addi    r1, r1, 16
+    /* Branch to handler */
+        blr
+
+L110:
+        mr      r28, r3        /* preserve exn bucket in callee-save */
+                               /* arg 1: exception bucket (already in r3) */
+        mflr    r4             /* arg 2: PC of raise */
+        mr      r5, r1         /* arg 3: SP of raise */
+        mr      r6, r29        /* arg 4: SP of handler */
+        addi    r1, r1, -(16*WORD)    /* reserve stack space for C call */
+        bl      _caml_stash_backtrace
+        mr      r3, r28
+        b       L111
+
 /* Raise an exception from C */
 
         .globl  _caml_raise_exception
 _caml_raise_exception:
+        addis   r11, 0, ha16(_caml_backtrace_active)
+        lwz     r11, lo16(_caml_backtrace_active)(r11)
+        cmpwi   r11, 0
+        bne     L112
+L113:
     /* Reload Caml global registers */
         Loadglobal r1, _caml_exception_pointer, r11
         Loadglobal r31, _caml_young_ptr, r11
@@ -238,6 +271,16 @@ _caml_raise_exception:
         addi    r1, r1, 16
     /* Branch to handler */
         blr
+L112:
+        mr      r28, r3        /* preserve exn bucket in callee-save */
+                               /* arg 1: exception bucket (already in r3) */
+	Loadglobal r4, _caml_last_return_address, r11 /* arg 2: PC of raise */
+	Loadglobal r5, _caml_bottom_of_stack, r11 /* arg 3: SP of raise */
+        Loadglobal r6, _caml_exception_pointer, r11 /* arg 4: SP of handler */
+        addi    r1, r1, -(16*WORD)    /* reserve stack space for C call */
+        bl      _caml_stash_backtrace
+        mr      r3, r28
+        b       L113
 
 /* Start the Caml program */
 

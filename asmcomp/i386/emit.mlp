@@ -175,14 +175,7 @@ let emit_addressing addr r n =
 
 (* Record live pointers at call points *)
 
-type frame_descr =
-  { fd_lbl: int;                        (* Return address *)
-    fd_frame_size: int;                 (* Size of stack frame *)
-    fd_live_offset: int list }          (* Offsets/regs of live addresses *)
-
-let frame_descriptors = ref([] : frame_descr list)
-
-let record_frame_label live =
+let record_frame_label live dbg =
   let lbl = new_label() in
   let live_offset = ref [] in
   Reg.Set.iter
@@ -196,21 +189,12 @@ let record_frame_label live =
   frame_descriptors :=
     { fd_lbl = lbl;
       fd_frame_size = frame_size();
-      fd_live_offset = !live_offset } :: !frame_descriptors;
+      fd_live_offset = !live_offset;
+      fd_debuginfo = dbg } :: !frame_descriptors;
   lbl
 
-let record_frame live =
-  let lbl = record_frame_label live in `{emit_label lbl}:\n`
-
-let emit_frame fd =
-  `	.long	{emit_label fd.fd_lbl}\n`;
-  `	{emit_string word_dir}	{emit_int fd.fd_frame_size}\n`;
-  `	{emit_string word_dir}	{emit_int (List.length fd.fd_live_offset)}\n`;
-  List.iter
-    (fun n ->
-      `	{emit_string word_dir}	{emit_int n}\n`)
-    fd.fd_live_offset;
-  emit_align 4
+let record_frame live dbg =
+  let lbl = record_frame_label live dbg in `{emit_label lbl}:\n`
 
 (* Record calls to the GC -- we've moved them out of the way *)
 
@@ -224,6 +208,38 @@ let call_gc_sites = ref ([] : gc_call list)
 let emit_call_gc gc =
   `{emit_label gc.gc_lbl}:	call	{emit_symbol "caml_call_gc"}\n`;
   `{emit_label gc.gc_frame}:	jmp	{emit_label gc.gc_return_lbl}\n`
+
+(* Record calls to caml_ml_array_bound_error.
+   In -g mode, we maintain one call to caml_ml_array_bound_error
+   per bound check site.  Without -g, we can share a single call. *)
+
+type bound_error_call =
+  { bd_lbl: label;                      (* Entry label *)
+    bd_frame: label }                   (* Label of frame descriptor *)
+
+let bound_error_sites = ref ([] : bound_error_call list)
+let bound_error_call = ref 0
+
+let bound_error_label dbg =
+  if !Clflags.debug then begin
+    let lbl_bound_error = new_label() in
+    let lbl_frame = record_frame_label Reg.Set.empty dbg in
+    bound_error_sites :=
+     { bd_lbl = lbl_bound_error; bd_frame = lbl_frame } :: !bound_error_sites;
+   lbl_bound_error
+ end else begin
+   if !bound_error_call = 0 then bound_error_call := new_label();
+   !bound_error_call
+ end
+
+let emit_call_bound_error bd =
+  `{emit_label bd.bd_lbl}:	call	{emit_symbol "caml_ml_array_bound_error"}\n`;
+  `{emit_label bd.bd_frame}:\n`
+
+let emit_call_bound_errors () =
+  List.iter emit_call_bound_error !bound_error_sites;
+  if !bound_error_call > 0 then
+    `{emit_label !bound_error_call}:	jmp	{emit_symbol "caml_ml_array_bound_error"}\n`
 
 (* Names for instructions *)
 
@@ -442,10 +458,10 @@ let emit_instr fallthrough i =
         `	movl	${emit_symbol s}, {emit_reg i.res.(0)}\n`
     | Lop(Icall_ind) ->
         `	call	*{emit_reg i.arg.(0)}\n`;
-        record_frame i.live
+        record_frame i.live i.dbg
     | Lop(Icall_imm s) ->
         `	call	{emit_symbol s}\n`;
-        record_frame i.live
+        record_frame i.live i.dbg
     | Lop(Itailcall_ind) ->
         output_epilogue();
         `	jmp	*{emit_reg i.arg.(0)}\n`
@@ -466,7 +482,7 @@ let emit_instr fallthrough i =
             `	movl	L{emit_symbol s}$non_lazy_ptr, %eax\n`
           end;
           `	call	{emit_symbol "caml_c_call"}\n`;
-          record_frame i.live
+          record_frame i.live i.dbg
         end else begin
           if not macosx then
             `	call	{emit_symbol s}\n`
@@ -530,7 +546,7 @@ let emit_instr fallthrough i =
           `	movl	%eax, {emit_symbol "caml_young_ptr"}\n`;
           `	cmpl	{emit_symbol "caml_young_limit"}, %eax\n`;
           let lbl_call_gc = new_label() in
-          let lbl_frame = record_frame_label i.live in
+          let lbl_frame = record_frame_label i.live Debuginfo.none in
           `	jb	{emit_label lbl_call_gc}\n`;
           `	leal	4(%eax), {emit_reg i.res.(0)}\n`;
           call_gc_sites :=
@@ -545,7 +561,7 @@ let emit_instr fallthrough i =
           | _  -> `	movl	${emit_int n}, %eax\n`;
                   `	call	{emit_symbol "caml_allocN"}\n`
           end;
-          `{record_frame i.live}	leal	4(%eax), {emit_reg i.res.(0)}\n`
+          `{record_frame i.live Debuginfo.none}	leal	4(%eax), {emit_reg i.res.(0)}\n`
         end
     | Lop(Iintop(Icomp cmp)) ->
         `	cmpl	{emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}\n`;
@@ -558,13 +574,13 @@ let emit_instr fallthrough i =
         `	set{emit_string b}	%al\n`;
         `	movzbl	%al, {emit_reg i.res.(0)}\n`
     | Lop(Iintop Icheckbound) ->
-        if !range_check_trap = 0 then range_check_trap := new_label();
+        let lbl = bound_error_label i.dbg in
         `	cmpl	{emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}\n`;
-        `	jbe	{emit_label !range_check_trap}\n`
+        `	jbe	{emit_label lbl}\n`
     | Lop(Iintop_imm(Icheckbound, n)) ->
-        if !range_check_trap = 0 then range_check_trap := new_label();
+        let lbl = bound_error_label i.dbg in
         `	cmpl	${emit_int n}, {emit_reg i.arg.(0)}\n`;
-        `	jbe	{emit_label !range_check_trap}\n`
+        `	jbe	{emit_label lbl}\n`
     | Lop(Iintop(Idiv | Imod)) ->
         `	cltd\n`;
         `	idivl	{emit_reg i.arg.(1)}\n`
@@ -775,14 +791,18 @@ let emit_instr fallthrough i =
         `	addl	${emit_int (trap_frame_size - 4)}, %esp\n`;
         stack_offset := !stack_offset - trap_frame_size
     | Lraise ->
-        `	movl	{emit_symbol "caml_exception_pointer"}, %esp\n`;
-        `	popl    {emit_symbol "caml_exception_pointer"}\n`;
-        if trap_frame_size > 8 then
-          `	addl	${emit_int (trap_frame_size - 8)}, %esp\n`;
-        `	ret\n`
+        if !Clflags.debug then begin
+          `	call    {emit_symbol "caml_raise_exn"}\n`;
+          record_frame Reg.Set.empty i.dbg
+        end else begin
+          `	movl	{emit_symbol "caml_exception_pointer"}, %esp\n`;
+          `	popl    {emit_symbol "caml_exception_pointer"}\n`;
+          if trap_frame_size > 8 then
+            `	addl	${emit_int (trap_frame_size - 8)}, %esp\n`;
+          `	ret\n`
+        end
 
 let rec emit_all fallthrough i =
-
   match i.desc with
   |  Lend -> ()
   | _ ->
@@ -873,7 +893,8 @@ let fundecl fundecl =
   stack_offset := 0;
   float_constants := [];
   call_gc_sites := [];
-  range_check_trap := 0;
+  bound_error_sites := [];
+  bound_error_call := 0;
   `	.text\n`;
   emit_align 16;
   declare_function_symbol fundecl.fun_name;
@@ -885,9 +906,7 @@ let fundecl fundecl =
   `{emit_label !tailrec_entry_point}:\n`;
   emit_all true fundecl.fun_body;
   List.iter emit_call_gc !call_gc_sites;
-  if !range_check_trap > 0 then
-    `{emit_label !range_check_trap}:	call	{emit_symbol "caml_ml_array_bound_error"}\n`;
-    (* Never returns, but useful to have retaddr on stack for debugging *)
+  emit_call_bound_errors ();
   List.iter emit_float_constant !float_constants
 
 (* Emission of data *)
@@ -953,7 +972,18 @@ let end_assembly() =
   let lbl = Compilenv.make_symbol (Some "frametable") in
   `	.globl	{emit_symbol lbl}\n`;
   `{emit_symbol lbl}:\n`;
-  `	.long	{emit_int (List.length !frame_descriptors)}\n`;
-  List.iter emit_frame !frame_descriptors;
-  frame_descriptors := [];
+  emit_frames
+    { efa_label = (fun l -> `	.long	{emit_label l}\n`);
+      efa_16 = (fun n -> `	{emit_string word_dir}	{emit_int n}\n`);
+      efa_32 = (fun n -> `	.long	{emit_int32 n}\n`);
+      efa_word = (fun n -> `	.long	{emit_int n}\n`);
+      efa_align = emit_align;
+      efa_label_rel = (fun lbl ofs ->
+                           `	.long	({emit_label lbl} - .) + {emit_int32 ofs}\n`);
+      efa_def_label = (fun l -> `{emit_label l}:\n`);
+      efa_string = (fun s -> 
+        let s = s ^ "\000" in
+        if use_ascii_dir
+        then emit_string_directive "	.ascii	" s
+        else emit_bytes_directive  "	.byte	" s) };
   if macosx then emit_external_symbols ()

@@ -17,7 +17,7 @@ include ../config/Makefile
 CAMLC=../boot/ocamlrun ../ocamlc
 CAMLOPT=../boot/ocamlrun ../ocamlopt
 COMPFLAGS=-nostdlib -I ../stdlib -I KB -I Lex
-OPTFLAGS=-S
+OPTFLAGS=-S -g
 CAMLYACC=../yacc/ocamlyacc
 YACCFLAGS=-v
 CAMLLEX=../boot/ocamlrun ../lex/ocamllex

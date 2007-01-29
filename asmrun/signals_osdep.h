@@ -133,6 +133,7 @@
   #define CONTEXT_YOUNG_LIMIT (CONTEXT_STATE.r30)
   #define CONTEXT_YOUNG_PTR (CONTEXT_STATE.r31)
   #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
+  #define CONTEXT_SP (CONTEXT_STATE.r1)
 
 #else
 
@@ -152,6 +153,7 @@
   #define CONTEXT_YOUNG_LIMIT (*context_gpr_p(context, 30))
   #define CONTEXT_YOUNG_PTR (*context_gpr_p(context, 31))
   #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
+  #define CONTEXT_SP (*context_gpr_p(context, 1))
 
   static int ctx_version = 0;
   static void init_ctx (void)

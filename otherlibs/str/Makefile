@@ -22,7 +22,7 @@ CC=$(BYTECC)
 CFLAGS=-O -I../../byterun $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)
 CAMLC=../../ocamlcomp.sh
 CAMLOPT=../../ocamlcompopt.sh
-COMPFLAGS=-warn-error A
+COMPFLAGS=-warn-error A -g
 COBJS=strstubs.o
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
 

@@ -18,6 +18,7 @@ include ../../config/Makefile
 # Compilation options
 CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib -I ../win32unix
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib -I ../win32unix
+COMPFLAGS=-warn-error A -g
 
 THREAD_OBJS=thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo
 

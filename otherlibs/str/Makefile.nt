@@ -22,6 +22,7 @@ CC=$(BYTECC)
 CFLAGS=-I../../byterun
 CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../boot
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
+COMPFLAGS=-warn-error A -g
 DCOBJS=strstubs.$(DO)
 SCOBJS=strstubs.$(SO)
 

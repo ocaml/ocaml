@@ -43,6 +43,10 @@ class virtual selector_generic : object
     Mach.operation -> Reg.t array -> Reg.t array -> Reg.t array
     (* Can be overriden to deal with 2-address instructions
        or instructions with hardwired input/output registers *)
+  method insert_op_debug :
+    Mach.operation -> Debuginfo.t -> Reg.t array -> Reg.t array -> Reg.t array
+    (* Can be overriden to deal with 2-address instructions
+       or instructions with hardwired input/output registers *)
   method emit_extcall_args :
     environment -> Cmm.expression list -> Reg.t array * int
     (* Can be overriden to deal with stack-based calling conventions *)
@@ -59,6 +63,8 @@ class virtual selector_generic : object
      are not always applied to "self", but ideally they should be private. *)
   method extract : Mach.instruction
   method insert : Mach.instruction_desc -> Reg.t array -> Reg.t array -> unit
+  method insert_debug : Mach.instruction_desc -> Debuginfo.t ->
+                                        Reg.t array -> Reg.t array -> unit
   method insert_move : Reg.t -> Reg.t -> unit
   method insert_move_args : Reg.t array -> Reg.t array -> int -> unit
   method insert_move_results : Reg.t array -> Reg.t array -> int -> unit

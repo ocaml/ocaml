@@ -88,7 +88,7 @@ let rec float_needs = function
       let n1 = float_needs arg1 in
       let n2 = float_needs arg2 in
       if n1 = n2 then 1 + n1 else if n1 > n2 then n1 else n2
-  | Cop(Cextcall(fn, ty_res, alloc), args)
+  | Cop(Cextcall(fn, ty_res, alloc, dbg), args)
     when !fast_math && List.mem fn inline_float_ops ->
       begin match args with
         [arg] -> float_needs arg
@@ -161,7 +161,7 @@ method is_immediate (n : int) = true
 
 method is_simple_expr e =
   match e with
-  | Cop(Cextcall(fn, _, alloc), args)
+  | Cop(Cextcall(fn, _, alloc, _), args)
     when !fast_math && List.mem fn inline_float_ops ->
       (* inlined float ops are simple if their arguments are *)
       List.for_all self#is_simple_expr args
@@ -239,7 +239,7 @@ method select_operation op args =
           super#select_operation op args
       end
   (* Recognize inlined floating point operations *)
-  | Cextcall(fn, ty_res, false)
+  | Cextcall(fn, ty_res, false, dbg)
     when !fast_math && List.mem fn inline_float_ops ->
       (Ispecific(Ifloatspecial fn), args)
   (* Default *)
@@ -269,18 +269,21 @@ method select_floatarith regular_op reversed_op mem_op mem_rev_op args =
 
 (* Deal with register constraints *)
 
-method insert_op op rs rd =
+method insert_op_debug op dbg rs rd =
   try
     let (rsrc, rdst, move_res) = pseudoregs_for_operation op rs rd in
     self#insert_moves rs rsrc;
-    self#insert (Iop op) rsrc rdst;
+    self#insert_debug (Iop op) dbg rsrc rdst;
     if move_res then begin
       self#insert_moves rdst rd;
       rd
     end else
       rdst
   with Use_default ->
-    super#insert_op op rs rd
+    super#insert_op_debug op dbg rs rd
+
+method insert_op op rs rd =
+  self#insert_op_debug op Debuginfo.none rs rd
 
 (* Selection of push instructions for external calls *)
 

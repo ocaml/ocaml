@@ -23,6 +23,7 @@ CFLAGS=-I../../byterun \
           -DBNG_ARCH_$(BNG_ARCH) -DBNG_ASM_LEVEL=$(BNG_ASM_LEVEL)
 CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../boot -w s
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib -w s
+COMPFLAGS=-warn-error A -g
 
 CAMLOBJS=int_misc.cmo nat.cmo big_int.cmo arith_flags.cmo \
   ratio.cmo num.cmo arith_status.cmo

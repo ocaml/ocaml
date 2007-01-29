@@ -47,6 +47,13 @@ let slot_offset loc cls =
   | Incoming n -> frame_size() + n
   | Outgoing n -> n
 
+(* Whether stack backtraces are supported *)
+
+let supports_backtraces =
+  match Config.system with
+  | "rhapsody" -> true
+  | _ -> false
+
 (* Output a symbol *)
 
 let emit_symbol =
@@ -208,14 +215,7 @@ let emit_set_comp cmp res =
 
 (* Record live pointers at call points *)
 
-type frame_descr =
-  { fd_lbl: int;                        (* Return address *)
-    fd_frame_size: int;                 (* Size of stack frame *)
-    fd_live_offset: int list }          (* Offsets/regs of live addresses *)
-
-let frame_descriptors = ref([] : frame_descr list)
-
-let record_frame live =
+let record_frame live dbg =
   let lbl = new_label() in
   let live_offset = ref [] in
   Reg.Set.iter
@@ -229,18 +229,9 @@ let record_frame live =
   frame_descriptors :=
     { fd_lbl = lbl;
       fd_frame_size = frame_size();
-      fd_live_offset = !live_offset } :: !frame_descriptors;
-  `{emit_label lbl}:`
-
-let emit_frame fd =
-  `	{emit_string datag}	{emit_label fd.fd_lbl} + 4\n`;
-  `	.short	{emit_int fd.fd_frame_size}\n`;
-  `	.short	{emit_int (List.length fd.fd_live_offset)}\n`;
-  List.iter
-    (fun n ->
-      `	.short	{emit_int n}\n`)
-    fd.fd_live_offset;
-  `	.align	{emit_int aligng}\n`
+      fd_live_offset = !live_offset;
+      fd_debuginfo = dbg } :: !frame_descriptors;
+  `{emit_label lbl}:\n`
 
 (* Record floating-point and large integer literals *)
 
@@ -497,11 +488,11 @@ let rec emit_instr i dslot =
         `	addi	{emit_reg i.res.(0)}, {emit_reg i.res.(0)}, {emit_lower emit_symbol s}\n`
     | Lop(Icall_ind) ->
         `	mtctr	{emit_reg i.arg.(0)}\n`;
-        record_frame i.live;
-        `	bctrl\n`
+        `	bctrl\n`;
+        record_frame i.live i.dbg
     | Lop(Icall_imm s) ->
-        record_frame i.live;
-        `	bl	{emit_symbol s}\n`
+        `	bl	{emit_symbol s}\n`;
+        record_frame i.live i.dbg
     | Lop(Itailcall_ind) ->
         let n = frame_size() in
         `	mtctr	{emit_reg i.arg.(0)}\n`;
@@ -539,8 +530,8 @@ let rec emit_instr i dslot =
             `	addis	{emit_gpr 11}, 0, {emit_upper emit_symbol s}\n`;
             `	addi	{emit_gpr 11}, {emit_gpr 11}, {emit_lower emit_symbol s}\n`
           end;
-          record_frame i.live;
-          `	bl	{emit_symbol "caml_c_call"}\n`
+          `	bl	{emit_symbol "caml_c_call"}\n`;
+          record_frame i.live i.dbg
         end else begin
           if pic_externals then begin
             external_functions := StringSet.add s !external_functions;
@@ -584,16 +575,16 @@ let rec emit_instr i dslot =
         `	addi    {emit_gpr 31}, {emit_gpr 31}, {emit_int(-n)}\n`;
         `	{emit_string cmplg}	{emit_gpr 31}, {emit_gpr 30}\n`;
         `	addi	{emit_reg i.res.(0)}, {emit_gpr 31}, {emit_int size_addr}\n`;
-        record_frame i.live;
-        `	bltl	{emit_label !call_gc_label}\n`
+        `	bltl	{emit_label !call_gc_label}\n`;
+        record_frame i.live Debuginfo.none
     | Lop(Ispecific(Ialloc_far n)) ->
         if !call_gc_label = 0 then call_gc_label := new_label();
         let lbl = new_label() in
         `	addi    {emit_gpr 31}, {emit_gpr 31}, {emit_int(-n)}\n`;
         `	{emit_string cmplg}	{emit_gpr 31}, {emit_gpr 30}\n`;
         `	bge	{emit_label lbl}\n`;
-        record_frame i.live;
         `	bl	{emit_label !call_gc_label}\n`;
+        record_frame i.live Debuginfo.none;
         `{emit_label lbl}:	addi	{emit_reg i.res.(0)}, {emit_gpr 31}, {emit_int size_addr}\n`
     | Lop(Iintop Isub) ->               (* subfc has swapped arguments *)
         `	subfc	{emit_reg i.res.(0)}, {emit_reg i.arg.(1)}, {emit_reg i.arg.(0)}\n`
@@ -611,6 +602,8 @@ let rec emit_instr i dslot =
             emit_set_comp c i.res.(0)
         end
     | Lop(Iintop Icheckbound) ->
+        if !Clflags.debug && supports_backtraces then
+          record_frame Reg.Set.empty i.dbg;
         `	{emit_string tglle}   {emit_reg i.arg.(0)}, {emit_reg i.arg.(1)}\n`
     | Lop(Iintop op) ->
         let instr = name_for_intop op in
@@ -637,6 +630,8 @@ let rec emit_instr i dslot =
             emit_set_comp c i.res.(0)
         end
     | Lop(Iintop_imm(Icheckbound, n)) ->
+        if !Clflags.debug && supports_backtraces then
+          record_frame Reg.Set.empty i.dbg;
         `	{emit_string tglle}i   {emit_reg i.arg.(0)}, {emit_int n}\n`
     | Lop(Iintop_imm(op, n)) ->
         let instr = name_for_intop_imm op in
@@ -777,12 +772,17 @@ let rec emit_instr i dslot =
         `	addi	{emit_gpr 1}, {emit_gpr 1}, 16\n`;
         stack_offset := !stack_offset - 16
     | Lraise ->
-        `	{emit_string lg}	{emit_gpr 0}, 0({emit_gpr 29})\n`;
-        `	mr	{emit_gpr 1}, {emit_gpr 29}\n`;
-        `	mtlr	{emit_gpr 0}\n`;
-        `	{emit_string lg}	{emit_gpr 29}, {emit_int size_addr}({emit_gpr 1})\n`;
-        `	addi	{emit_gpr 1}, {emit_gpr 1}, 16\n`;
-        `	blr\n`
+        if !Clflags.debug && supports_backtraces then begin
+          `	bl	{emit_symbol "caml_raise_exn"}\n`;
+          record_frame Reg.Set.empty i.dbg
+        end else begin
+          `	{emit_string lg}	{emit_gpr 0}, 0({emit_gpr 29})\n`;
+          `	mr	{emit_gpr 1}, {emit_gpr 29}\n`;
+          `	mtlr	{emit_gpr 0}\n`;
+          `	{emit_string lg}	{emit_gpr 29}, {emit_int size_addr}({emit_gpr 1})\n`;
+          `	addi	{emit_gpr 1}, {emit_gpr 1}, 16\n`;
+          `	blr\n`
+        end
 
 and emit_delay = function
     None -> ()
@@ -968,6 +968,14 @@ let end_assembly() =
   let lbl = Compilenv.make_symbol (Some "frametable") in
   declare_global_data lbl;
   `{emit_symbol lbl}:\n`;
-  `	{emit_string datag}	{emit_int (List.length !frame_descriptors)}\n`;
-  List.iter emit_frame !frame_descriptors;
-  frame_descriptors := []
+  emit_frames
+    { efa_label = (fun l -> `	{emit_string datag}	{emit_label l}\n`);
+      efa_16 = (fun n -> `	.short	{emit_int n}\n`);
+      efa_32 = (fun n -> `	.long	{emit_int32 n}\n`);
+      efa_word = (fun n -> `	{emit_string datag}	{emit_int n}\n`);
+      efa_align = (fun n -> `	.align	{emit_int (Misc.log2 n)}\n`);
+      efa_label_rel = (fun lbl ofs ->
+                           `	.long	({emit_label lbl} - .) + {emit_int32 ofs}\n`);
+      efa_def_label = (fun l -> `{emit_label l}:\n`);
+      efa_string = (fun s -> emit_bytes_directive "	.byte	" (s ^ "\000"))
+     }

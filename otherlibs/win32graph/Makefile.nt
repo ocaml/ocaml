@@ -20,7 +20,7 @@ CC=$(BYTECC)
 CFLAGS=-I../../byterun
 CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
-COMPFLAGS=-warn-error A
+COMPFLAGS=-warn-error A -g
 
 COBJS=open.$(O) draw.$(O) events.$(O) dib.$(O)
 CAMLOBJS=graphics.cmo

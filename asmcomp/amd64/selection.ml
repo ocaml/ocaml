@@ -213,15 +213,18 @@ method select_floatarith commutative regular_op mem_op args =
 
 (* Deal with register constraints *)
 
-method insert_op op rs rd =
+method insert_op_debug op dbg rs rd =
   try
     let (rsrc, rdst) = pseudoregs_for_operation op rs rd in
     self#insert_moves rs rsrc;
-    self#insert (Iop op) rsrc rdst;
+    self#insert_debug (Iop op) dbg rsrc rdst;
     self#insert_moves rdst rd;
     rd
   with Use_default ->
-    super#insert_op op rs rd
+    super#insert_op_debug op dbg rs rd
+
+method insert_op op rs rd =
+  self#insert_op_debug op Debuginfo.none rs rd
 
 end
 

@@ -20,7 +20,7 @@ CC=$(BYTECC)
 CFLAGS=-I../../byterun -I../unix
 CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib
-COMPFLAGS=-warn-error A
+COMPFLAGS=-warn-error A -g
 
 # Files in this directory
 WIN_FILES = accept.c bind.c channels.c close.c \

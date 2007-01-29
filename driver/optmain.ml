@@ -114,6 +114,7 @@ let main () =
        "-for-pack", Arg.String (fun s -> for_package := Some s),
              "<ident>  Generate code that can later be `packed' with\n\
          \     ocamlopt -pack -o <ident>.cmx";
+       "-g", Arg.Set debug, " Record debugging information for exception backtrace";
        "-i", Arg.Unit (fun () -> print_types := true; compile_only := true),
              " Print inferred interface";
        "-I", Arg.String(fun dir -> include_dirs := dir :: !include_dirs),

@@ -24,7 +24,9 @@ CAMLextern code_t * caml_backtrace_buffer;
 CAMLextern value caml_backtrace_last_exn;
 
 extern void caml_init_backtrace(void);
+#ifndef NATIVE_CODE
 extern void caml_stash_backtrace(value exn, code_t pc, value * sp);
+#endif
 CAMLextern void caml_print_exception_backtrace(void);
 
 #endif /* CAML_BACKTRACE_H */

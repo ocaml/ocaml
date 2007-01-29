@@ -70,6 +70,14 @@
 #define PROFILE_C
 #endif
 
+#ifdef SYS_macosx
+#define ALIGN_STACK(amount) subl $ amount, %esp
+#define UNDO_ALIGN_STACK(amount) addl $ amount, %esp
+#else
+#define ALIGN_STACK(amount)
+#define UNDO_ALIGN_STACK(amount)
+#endif
+
 /* Allocation */
 
         .text
@@ -79,6 +87,7 @@
         .globl  G(caml_alloc3)
         .globl  G(caml_allocN)
 
+        .align  FUNCTION_ALIGN
 G(caml_call_gc):
         PROFILE_CAML
     /* Record lowest stack address and return address */
@@ -124,13 +133,9 @@ LBL(100):
         movl    %eax, G(caml_last_return_address)
         leal    4(%esp), %eax
         movl    %eax, G(caml_bottom_of_stack)
-#ifdef SYS_macosx
-        subl    $12, %esp       /* 16-alignment */
-#endif
+        ALIGN_STACK(12)
         call    LBL(105)
-#ifdef SYS_macosx
-        addl    $12, %esp       /* undo 16-alignment */
-#endif
+        UNDO_ALIGN_STACK(12)
         jmp     G(caml_alloc1)
 
         .align  FUNCTION_ALIGN
@@ -147,13 +152,9 @@ LBL(101):
         movl    %eax, G(caml_last_return_address)
         leal    4(%esp), %eax
         movl    %eax, G(caml_bottom_of_stack)
-#ifdef SYS_macosx
-        subl    $12, %esp       /* 16-alignment */
-#endif
+        ALIGN_STACK(12)
         call    LBL(105)
-#ifdef SYS_macosx
-        addl    $12, %esp       /* undo 16-alignment */
-#endif
+        UNDO_ALIGN_STACK(12)
         jmp     G(caml_alloc2)
 
         .align  FUNCTION_ALIGN
@@ -170,13 +171,9 @@ LBL(102):
         movl    %eax, G(caml_last_return_address)
         leal    4(%esp), %eax
         movl    %eax, G(caml_bottom_of_stack)
-#ifdef SYS_macosx
-        subl    $12, %esp       /* 16-alignment */
-#endif
+        ALIGN_STACK(12)
         call    LBL(105)
-#ifdef SYS_macosx
-        addl    $12, %esp       /* undo 16-alignment */
-#endif
+        UNDO_ALIGN_STACK(12)
         jmp     G(caml_alloc3)
 
         .align  FUNCTION_ALIGN
@@ -197,13 +194,9 @@ LBL(103):
         movl    %eax, G(caml_last_return_address)
         leal    8(%esp), %eax
         movl    %eax, G(caml_bottom_of_stack)
-#ifdef SYS_macosx
-        subl    $8, %esp       /* 16-alignment */
-#endif
+        ALIGN_STACK(8)
         call    LBL(105)
-#ifdef SYS_macosx
-        addl    $8, %esp       /* undo 16-alignment */
-#endif
+        UNDO_ALIGN_STACK(8)
         popl    %eax                    /* recover desired size */
         jmp     G(caml_allocN)
 
@@ -243,9 +236,7 @@ LBL(106):
         /* Note: 16-alignment preserved on MacOSX at this point */
     /* Build an exception handler */
         pushl   $ LBL(108)
-#ifdef SYS_macosx
-        subl	$8, %esp     /* 16-alignment */
-#endif
+        ALIGN_STACK(8)
         pushl   G(caml_exception_pointer)
         movl    %esp, G(caml_exception_pointer)
     /* Call the Caml code */
@@ -276,18 +267,59 @@ LBL(108):
         orl     $2, %eax
         jmp     LBL(109)
 
+/* Raise an exception from Caml */
+
+        .globl  G(caml_raise_exn)
+        .align  FUNCTION_ALIGN
+G(caml_raise_exn):
+        testl   $1, G(caml_backtrace_active)
+        jne     LBL(110)
+        movl    G(caml_exception_pointer), %esp
+        popl    G(caml_exception_pointer)
+        UNDO_ALIGN_STACK(8)
+        ret
+LBL(110):
+        movl    %eax, %esi          /* Save exception bucket in esi */
+        movl    G(caml_exception_pointer), %edi /* SP of handler */
+        movl    0(%esp), %eax       /* PC of raise */
+        leal    4(%esp), %edx       /* SP of raise */
+        ALIGN_STACK(12)
+        pushl   %edi                        /* arg 4: sp of handler */
+        pushl   %edx                        /* arg 3: sp of raise */
+        pushl   %eax                        /* arg 2: pc of raise */
+        pushl   %esi                        /* arg 1: exception bucket */
+        call    G(caml_stash_backtrace)
+        movl    %esi, %eax              /* Recover exception bucket */
+        movl    %edi, %esp
+        popl    G(caml_exception_pointer)
+        UNDO_ALIGN_STACK(8)
+        ret
+
 /* Raise an exception from C */
 
         .globl  G(caml_raise_exception)
         .align  FUNCTION_ALIGN
 G(caml_raise_exception):
         PROFILE_C
+	testl   $1, G(caml_backtrace_active)
+        jne     LBL(111)
         movl    4(%esp), %eax
         movl    G(caml_exception_pointer), %esp
         popl    G(caml_exception_pointer)
-#ifdef SYS_macosx
-        addl	$8, %esp
-#endif
+        UNDO_ALIGN_STACK(8)
+        ret
+LBL(111):
+        movl    4(%esp), %esi          /* Save exception bucket in esi */
+        ALIGN_STACK(12)
+        pushl   G(caml_exception_pointer)   /* arg 4: sp of handler */
+        pushl   G(caml_bottom_of_stack)     /* arg 3: sp of raise */
+        pushl   G(caml_last_return_address) /* arg 2: pc of raise */
+        pushl   %esi                        /* arg 1: exception bucket */
+        call    G(caml_stash_backtrace)
+        movl    %esi, %eax              /* Recover exception bucket */
+        movl    G(caml_exception_pointer), %esp
+        popl    G(caml_exception_pointer)
+        UNDO_ALIGN_STACK(8)
         ret
 
 /* Callback from C to Caml */
@@ -353,7 +385,8 @@ G(caml_ml_array_bound_error):
         ffree   %st(6)
         ffree   %st(7)
     /* Branch to [caml_array_bound_error] */
-        jmp     G(caml_array_bound_error)
+        movl    $ G(caml_array_bound_error), %eax
+        jmp     caml_c_call
 
         .data
         .globl  G(caml_system__frametable)
