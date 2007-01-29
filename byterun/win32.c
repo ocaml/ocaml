@@ -26,6 +26,7 @@
 #include <errno.h>
 #include <string.h>
 #include <signal.h>
+#include "fail.h"
 #include "memory.h"
 #include "misc.h"
 #include "osdeps.h"
@@ -397,3 +398,128 @@ void caml_signal_thread(void * lpParam)
 }
 
 #endif /* NATIVE_CODE */
+
+#ifdef NATIVE_CODE
+
+/* Handling of system stack overflow.  
+ * Based on code provided by Olivier Andrieu.
+
+ * An EXCEPTION_STACK_OVERFLOW is signaled when the guard page at the
+ * end of the stack has been accessed. Windows clears the PAGE_GUARD
+ * protection (making it a regular PAGE_READWRITE) and then calls our
+ * exception handler. This means that although we're handling an "out
+ * of stack" condition, there is a bit of stack available to call
+ * functions and allocate temporaries.
+ *
+ * PAGE_GUARD is a one-shot access protection mechanism: we need to
+ * restore the PAGE_GUARD protection on this page otherwise the next
+ * stack overflow won't be detected and the program will abruptly exit
+ * with STATUS_ACCESS_VIOLATION.
+ *
+ * Visual Studio 2003 and later (_MSC_VER >= 1300) have a
+ * _resetstkoflw() function that resets this protection.
+ * Unfortunately, it cannot work when called directly from the
+ * exception handler because at this point we are using the page that
+ * is to be protected.
+ *
+ * A solution is to used an alternate stack when restoring the
+ * protection. However it's not possible to use _resetstkoflw() then
+ * since it determines the stack pointer by calling alloca(): it would
+ * try to protect the alternate stack.
+ *
+ * Finally, we call caml_raise_stack_overflow; it will either call
+ * caml_raise_exception which switches back to the normal stack, or
+ * call caml_fatal_uncaught_exception which terminates the program
+ * quickly.
+ *
+ * NB: The PAGE_GUARD protection is only available on WinNT, not
+ * Win9x. There is an equivalent mechanism on Win9x with
+ * PAGE_NOACCESS.
+ *
+ */
+
+static uintnat win32_alt_stack[0x80];
+
+static void caml_reset_stack (void *faulting_address)
+{
+  OSVERSIONINFO osi;
+  SYSTEM_INFO si;
+  DWORD page_size;
+  MEMORY_BASIC_INFORMATION mbi;
+  DWORD oldprot;
+
+  /* get the os version (Win9x or WinNT ?) */
+  osi.dwOSVersionInfoSize = sizeof osi;
+  if (! GetVersionEx (&osi))
+    goto failed;
+
+  /* get the system's page size. */
+  GetSystemInfo (&si);
+  page_size = si.dwPageSize;
+
+  /* get some information on the page the fault occurred */
+  if (! VirtualQuery (faulting_address, &mbi, sizeof mbi))
+    goto failed;
+
+  /* restore the PAGE_GUARD protection on this page */
+  switch (osi.dwPlatformId) {
+  case VER_PLATFORM_WIN32_NT:
+    VirtualProtect (mbi.BaseAddress, page_size, 
+                    mbi.Protect | PAGE_GUARD, &oldprot);
+    break;
+  case VER_PLATFORM_WIN32_WINDOWS:
+    VirtualProtect (mbi.BaseAddress, page_size, 
+                    PAGE_NOACCESS, &oldprot);
+    break;
+  }
+
+ failed:
+  caml_raise_stack_overflow();
+}
+
+extern char * caml_code_area_start, * caml_code_area_end;
+
+#define In_code_area(pc) \
+  ((char *)(pc) >= caml_code_area_start && \
+   (char *)(pc) <= caml_code_area_end)
+
+static LONG CALLBACK
+    caml_UnhandledExceptionFilter (EXCEPTION_POINTERS* exn_info)
+{
+  DWORD code   = exn_info->ExceptionRecord->ExceptionCode;
+  CONTEXT *ctx = exn_info->ContextRecord;
+#ifdef _WIN64
+  DWORD64 *ctx_ip = &(ctx->Rip);
+  DWORD64 *ctx_sp = &(ctx->Rsp);
+#else
+  DWORD *ctx_ip = &(ctx->Eip);
+  DWORD *ctx_sp = &(ctx->Esp);
+#endif
+
+  if (code == EXCEPTION_STACK_OVERFLOW && In_code_area (*ctx_ip))
+    {
+      uintnat faulting_address;
+      uintnat * alt_esp;
+
+      /* grab the address that caused the fault */
+      faulting_address = exn_info->ExceptionRecord->ExceptionInformation[1];
+
+      /* call caml_reset_stack(faulting_address) using the alternate stack */
+      alt_esp  = win32_alt_stack + sizeof(win32_alt_stack) / sizeof(uintnat);
+      *--alt_esp = faulting_address;
+      *ctx_sp = (uintnat) (alt_esp - 1);
+      *ctx_ip = (uintnat) &caml_reset_stack;
+
+      return EXCEPTION_CONTINUE_EXECUTION;
+    }
+
+  return EXCEPTION_CONTINUE_SEARCH;
+}
+
+void caml_win32_overflow_detection()
+{
+  SetUnhandledExceptionFilter (caml_UnhandledExceptionFilter);
+}
+
+#endif
+

@@ -44,6 +44,7 @@
 typedef void (*sighandler)(int sig);
 extern sighandler caml_win32_signal(int sig, sighandler action);
 #define signal(sig,act) caml_win32_signal(sig,act)
+extern void caml_win32_overflow_detection();
 #endif
 
 extern char * caml_code_area_start, * caml_code_area_end;
@@ -481,5 +482,8 @@ void caml_init_signals(void)
     system_stack_top = (char *) &act;
     if (sigaltstack(&stk, NULL) == 0) { sigaction(SIGSEGV, &act, NULL); }
   }
+#endif
+#ifdef _WIN32
+  caml_win32_overflow_detection();
 #endif
 }
