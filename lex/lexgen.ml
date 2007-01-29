@@ -82,12 +82,21 @@ type ('args,'action) automata_entry =
 
 module Ints = Set.Make(struct type t = int let compare = compare end)
 
-module Tags = Set.Make(struct type t = tag_info let compare = compare end)
+let id_compare (id1,_) (id2,_) = String.compare id1 id2
+
+let tag_compare t1 t2 =
+  let c1 = id_compare t1.id t2.id in
+  if c1 <> 0 then c1
+  else
+    let c2 = Pervasives.compare t1.start t2.start in
+    if c2 <> 0 then c2
+    else
+      Pervasives.compare t1.action t2.action
+
+module Tags = Set.Make(struct type t = tag_info let compare = tag_compare end)
 
 module TagMap =
-  Map.Make (struct type t = tag_info let compare = compare end)
-
-let id_compare (id1,_) (id2,_) = String.compare id1 id2
+  Map.Make (struct type t = tag_info let compare = tag_compare end)
 
 module IdSet =
   Set.Make (struct type t = ident let compare = id_compare end)
@@ -532,14 +541,14 @@ type t_transition =
 
 type transition = t_transition * Tags.t
 
-let compare_trans (t1,tags1) (t2,tags2) =
+let trans_compare (t1,tags1) (t2,tags2) =
   match Pervasives.compare  t1 t2 with
   | 0 -> Tags.compare tags1 tags2
   | r -> r
 
 
 module TransSet =
-  Set.Make(struct type t = transition let compare = compare end)
+  Set.Make(struct type t = transition let compare = trans_compare end)
 
 let rec nullable = function
   | Empty|Tag _ -> true
