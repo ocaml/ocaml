@@ -386,7 +386,7 @@ G(caml_ml_array_bound_error):
         ffree   %st(7)
     /* Branch to [caml_array_bound_error] */
         movl    $ G(caml_array_bound_error), %eax
-        jmp     caml_c_call
+        jmp     G(caml_c_call)
 
         .data
         .globl  G(caml_system__frametable)
