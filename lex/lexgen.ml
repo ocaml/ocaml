@@ -23,7 +23,9 @@ exception Memory_overflow
 
 (* Deep abstract syntax for regular expressions *)
 
-type tag_info = {id : string ; start : bool ; action : int}
+type ident = string *  Syntax.location
+
+type tag_info = {id : ident ; start : bool ; action : int}
 
 type regexp =
     Empty
@@ -39,7 +41,7 @@ type tag_addr = Sum of (tag_base * int)
 type ident_info =
   | Ident_string of bool * tag_addr * tag_addr
   | Ident_char of bool * tag_addr
-type t_env = (string * ident_info) list
+type t_env = (ident * ident_info) list
 
 type ('args,'action) lexer_entry =
   { lex_name: string;
@@ -85,10 +87,13 @@ module Tags = Set.Make(struct type t = tag_info let compare = compare end)
 module TagMap =
   Map.Make (struct type t = tag_info let compare = compare end)
 
-module StringSet =
-  Set.Make (struct type t = string let compare = Pervasives.compare end)
-module StringMap =
-  Map.Make (struct type t = string let compare = Pervasives.compare end)
+let id_compare (id1,_) (id2,_) = String.compare id1 id2
+
+module IdSet =
+  Set.Make (struct type t = ident let compare = id_compare end)
+
+module IdMap =
+  Map.Make (struct type t =  ident let compare = id_compare end)
 
 (*********************)
 (* Variable cleaning *)
@@ -98,10 +103,10 @@ module StringMap =
 
 let rec do_remove_nested to_remove = function
   | Bind (e,x) ->
-      if StringSet.mem x to_remove then
+      if IdSet.mem x to_remove then
         do_remove_nested to_remove e
       else
-        Bind (do_remove_nested (StringSet.add x to_remove) e, x)
+        Bind (do_remove_nested (IdSet.add x to_remove) e, x)
   | Epsilon|Eof|Characters _ as e -> e
   | Sequence (e1, e2) ->
       Sequence
@@ -112,7 +117,7 @@ let rec do_remove_nested to_remove = function
   | Repetition e ->
       Repetition (do_remove_nested to_remove  e)
 
-let remove_nested_as e = do_remove_nested StringSet.empty e
+let remove_nested_as e = do_remove_nested IdSet.empty e
 
 (*********************)
 (* Variable analysis *)
@@ -128,36 +133,36 @@ let remove_nested_as e = do_remove_nested StringSet.empty e
 *)
 
 let stringset_delta s1 s2 =
-  StringSet.union
-    (StringSet.diff s1 s2)
-    (StringSet.diff s2 s1)
+  IdSet.union
+    (IdSet.diff s1 s2)
+    (IdSet.diff s2 s1)
 
 let rec find_all_vars = function
   | Characters _|Epsilon|Eof ->
-      StringSet.empty
+      IdSet.empty
   | Bind (e,x) ->
-      StringSet.add x (find_all_vars e)
+      IdSet.add x (find_all_vars e)
   | Sequence (e1,e2)|Alternative (e1,e2) ->
-      StringSet.union (find_all_vars e1) (find_all_vars e2)
+      IdSet.union (find_all_vars e1) (find_all_vars e2)
   | Repetition e -> find_all_vars e
 
 
 let rec do_find_opt = function
-  | Characters _|Epsilon|Eof -> StringSet.empty, StringSet.empty
+  | Characters _|Epsilon|Eof -> IdSet.empty, IdSet.empty
   | Bind (e,x) ->
       let opt,all = do_find_opt e in
-      opt, StringSet.add x all
+      opt, IdSet.add x all
   | Sequence (e1,e2) ->
       let opt1,all1 = do_find_opt e1
       and opt2,all2 = do_find_opt e2 in
-      StringSet.union opt1 opt2, StringSet.union all1 all2
+      IdSet.union opt1 opt2, IdSet.union all1 all2
   | Alternative (e1,e2) ->
       let opt1,all1 = do_find_opt e1
       and opt2,all2 = do_find_opt e2 in
-      StringSet.union
-        (StringSet.union opt1 opt2)
+      IdSet.union
+        (IdSet.union opt1 opt2)
         (stringset_delta all1 all2),
-      StringSet.union all1 all2
+      IdSet.union all1 all2
   | Repetition e  ->
       let r = find_all_vars e in
       r,r
@@ -175,26 +180,26 @@ let find_optional e =
 *)
 
 let rec do_find_double = function
-  | Characters _|Epsilon|Eof -> StringSet.empty, StringSet.empty
+  | Characters _|Epsilon|Eof -> IdSet.empty, IdSet.empty
   | Bind (e,x) ->
       let dbl,all = do_find_double e in
-      (if StringSet.mem x all then
-        StringSet.add x dbl
+      (if IdSet.mem x all then
+        IdSet.add x dbl
       else
         dbl),
-      StringSet.add x all
+      IdSet.add x all
   | Sequence (e1,e2) ->
       let dbl1, all1 = do_find_double e1
       and dbl2, all2 = do_find_double e2 in
-      StringSet.union
-        (StringSet.inter all1 all2)
-        (StringSet.union dbl1 dbl2),
-      StringSet.union all1 all2
+      IdSet.union
+        (IdSet.inter all1 all2)
+        (IdSet.union dbl1 dbl2),
+      IdSet.union all1 all2
   | Alternative (e1,e2) ->
       let dbl1, all1 = do_find_double e1
       and dbl2, all2 = do_find_double e2 in
-      StringSet.union dbl1 dbl2,
-      StringSet.union all1 all2
+      IdSet.union dbl1 dbl2,
+      IdSet.union all1 all2
   | Repetition e ->
       let r = find_all_vars e in
       r,r
@@ -218,27 +223,27 @@ let add_some_some x y = match x,y with
 | _,_            -> None
 
 let rec do_find_chars sz = function
-  | Epsilon|Eof    -> StringSet.empty, StringSet.empty, sz
-  | Characters _ -> StringSet.empty, StringSet.empty, add_some 1 sz
+  | Epsilon|Eof    -> IdSet.empty, IdSet.empty, sz
+  | Characters _ -> IdSet.empty, IdSet.empty, add_some 1 sz
   | Bind (e,x)   ->
       let c,s,e_sz = do_find_chars (Some 0) e in
       begin match e_sz  with
       | Some 1 ->
-          StringSet.add x c,s,add_some 1 sz
+          IdSet.add x c,s,add_some 1 sz
       | _ ->
-          c, StringSet.add x s, add_some_some sz e_sz
+          c, IdSet.add x s, add_some_some sz e_sz
       end
   | Sequence (e1,e2) ->
       let c1,s1,sz1 = do_find_chars sz e1 in
       let c2,s2,sz2 = do_find_chars sz1 e2 in
-      StringSet.union c1 c2,
-      StringSet.union s1 s2,
+      IdSet.union c1 c2,
+      IdSet.union s1 s2,
       sz2
   | Alternative (e1,e2) ->
       let c1,s1,sz1 = do_find_chars sz e1
       and c2,s2,sz2 = do_find_chars sz e2 in
-      StringSet.union c1 c2,
-      StringSet.union s1 s2,
+      IdSet.union c1 c2,
+      IdSet.union s1 s2,
       (if sz1 = sz2 then sz1 else None)
   | Repetition e -> do_find_chars None e
 
@@ -246,7 +251,7 @@ let rec do_find_chars sz = function
 
 let find_chars e =
   let c,s,_ = do_find_chars (Some 0) e in
-  StringSet.diff c s
+  IdSet.diff c s
 
 (*******************************)
 (* From shallow to deep syntax *)
@@ -281,7 +286,7 @@ let rec encode_regexp char_vars act = function
       Star r
   | Bind (r,x) ->
       let r = encode_regexp char_vars act r in
-      if StringSet.mem x char_vars then
+      if IdSet.mem x char_vars then
         Seq (Tag {id=x ; start=true ; action=act},r)
       else
         Seq (Tag {id=x ; start=true ; action=act},
@@ -340,7 +345,7 @@ let opt_regexp all_vars char_vars optional_vars double_vars r =
 
   let rec simple_forward pos r = match r with
     | Tag n ->
-        if StringSet.mem n.id double_vars then
+        if IdSet.mem n.id double_vars then
           r,Some pos
         else begin
           Hashtbl.add env (n.id,n.start) (Sum (Start, pos)) ;
@@ -383,7 +388,7 @@ let opt_regexp all_vars char_vars optional_vars double_vars r =
 
   let rec simple_backward pos r = match r with
     | Tag n ->
-        if StringSet.mem n.id double_vars then
+        if IdSet.mem n.id double_vars then
           r,Some pos
         else begin
           Hashtbl.add env (n.id,n.start) (Sum (End, pos)) ;
@@ -428,7 +433,7 @@ let opt_regexp all_vars char_vars optional_vars double_vars r =
 
   let rec alloc_exp pos r = match r with
     | Tag n ->
-        if StringSet.mem n.id double_vars then
+        if IdSet.mem n.id double_vars then
           r,pos
         else begin match pos with
         | Some a ->
@@ -456,15 +461,15 @@ let opt_regexp all_vars char_vars optional_vars double_vars r =
 
   let r,_ = alloc_exp None r in
   let m =      
-    StringSet.fold
+    IdSet.fold
       (fun x r ->
         let v =
-          if StringSet.mem x char_vars then
+          if IdSet.mem x char_vars then
             Ident_char
-              (StringSet.mem x optional_vars, get_tag_addr (x,true))
+              (IdSet.mem x optional_vars, get_tag_addr (x,true))
           else
             Ident_string
-              (StringSet.mem x optional_vars,
+              (IdSet.mem x optional_vars,
                get_tag_addr (x,true),
                get_tag_addr (x,false)) in
         (x,v)::r)

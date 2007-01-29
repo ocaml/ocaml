@@ -160,7 +160,14 @@ regexp:
                            $1;
             exit 2 }
   | regexp Tas ident
-        {Bind ($1, $3)}
+        {let p1 = Parsing.rhs_start_pos 3
+         and p2 = Parsing.rhs_end_pos 3 in
+         let p = {
+           start_pos = p1.Lexing.pos_cnum ;
+           end_pos = p2.Lexing.pos_cnum ;
+           start_line = p1.Lexing.pos_lnum ;
+           start_col = p1.Lexing.pos_cnum - p1.Lexing.pos_bol ; } in
+         Bind ($1, ($3, p))}
 ;
 
 ident:
