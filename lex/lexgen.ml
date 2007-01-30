@@ -25,7 +25,7 @@ exception Memory_overflow
 
 type ident = string *  Syntax.location
 
-type tag_info = {id : ident ; start : bool ; action : int}
+type tag_info = {id : string ; start : bool ; action : int}
 
 type regexp =
     Empty
@@ -84,14 +84,7 @@ module Ints = Set.Make(struct type t = int let compare = compare end)
 
 let id_compare (id1,_) (id2,_) = String.compare id1 id2
 
-let tag_compare t1 t2 =
-  let c1 = id_compare t1.id t2.id in
-  if c1 <> 0 then c1
-  else
-    let c2 = Pervasives.compare t1.start t2.start in
-    if c2 <> 0 then c2
-    else
-      Pervasives.compare t1.action t2.action
+let tag_compare t1 t2 = Pervasives.compare t1 t2
 
 module Tags = Set.Make(struct type t = tag_info let compare = tag_compare end)
 
@@ -293,13 +286,13 @@ let rec encode_regexp char_vars act = function
   | Repetition r ->
       let r = encode_regexp char_vars act r in
       Star r
-  | Bind (r,x) ->
+  | Bind (r,((name,_) as x)) ->
       let r = encode_regexp char_vars act r in
       if IdSet.mem x char_vars then
-        Seq (Tag {id=x ; start=true ; action=act},r)
+        Seq (Tag {id=name ; start=true ; action=act},r)
       else
-        Seq (Tag {id=x ; start=true ; action=act},
-          Seq (r, Tag {id=x ; start=false ; action=act}))
+        Seq (Tag {id=name ; start=true ; action=act},
+          Seq (r, Tag {id=name ; start=false ; action=act}))
 
 
 (* Optimisation,
@@ -331,6 +324,9 @@ let add_pos p i = match p with
 | Some (Sum (a,n)) -> Some (Sum (a,n+i))
 | None -> None
 
+let mem_name name id_set =
+  IdSet.exists (fun (id_name,_) -> name = id_name) id_set
+
 let opt_regexp all_vars char_vars optional_vars double_vars r =
 
 (* From removed tags to their addresses *)
@@ -354,7 +350,7 @@ let opt_regexp all_vars char_vars optional_vars double_vars r =
 
   let rec simple_forward pos r = match r with
     | Tag n ->
-        if IdSet.mem n.id double_vars then
+        if mem_name n.id double_vars then
           r,Some pos
         else begin
           Hashtbl.add env (n.id,n.start) (Sum (Start, pos)) ;
@@ -397,7 +393,7 @@ let opt_regexp all_vars char_vars optional_vars double_vars r =
 
   let rec simple_backward pos r = match r with
     | Tag n ->
-        if IdSet.mem n.id double_vars then
+        if mem_name n.id double_vars then
           r,Some pos
         else begin
           Hashtbl.add env (n.id,n.start) (Sum (End, pos)) ;
@@ -442,7 +438,7 @@ let opt_regexp all_vars char_vars optional_vars double_vars r =
 
   let rec alloc_exp pos r = match r with
     | Tag n ->
-        if IdSet.mem n.id double_vars then
+        if mem_name n.id double_vars then
           r,pos
         else begin match pos with
         | Some a ->
@@ -471,16 +467,17 @@ let opt_regexp all_vars char_vars optional_vars double_vars r =
   let r,_ = alloc_exp None r in
   let m =      
     IdSet.fold
-      (fun x r ->
+      (fun ((name,_) as x) r ->
+        
         let v =
           if IdSet.mem x char_vars then
             Ident_char
-              (IdSet.mem x optional_vars, get_tag_addr (x,true))
+              (IdSet.mem x optional_vars, get_tag_addr (name,true))
           else
             Ident_string
               (IdSet.mem x optional_vars,
-               get_tag_addr (x,true),
-               get_tag_addr (x,false)) in
+               get_tag_addr (name,true),
+               get_tag_addr (name,false)) in
         (x,v)::r)
       all_vars [] in
   m,r, !loc_count
@@ -1133,11 +1130,11 @@ let extract_tags l =
     (fun (act,m,_) ->
       envs.(act) <-
          List.fold_right
-           (fun (x,v) r -> match v with
-           | Ident_char (_,t) -> make_tag_entry x true act t r
+           (fun ((name,_),v) r -> match v with
+           | Ident_char (_,t) -> make_tag_entry name true act t r
            | Ident_string (_,t1,t2) ->
-               make_tag_entry x true act t1
-               (make_tag_entry x false act t2 r))
+               make_tag_entry name true act t1
+               (make_tag_entry name false act t2 r))
            m TagMap.empty)
     l ;
   envs
