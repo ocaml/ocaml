@@ -92,6 +92,11 @@ let h g = g ~x:3 ~y:2;;
 h f;;
 h (+);;
 \end{caml_example}
+Note that when you don't need an argument, you can still use a wildcard
+pattern, but you must prefix it with the label.
+\begin{caml_example}
+h (fun ~x:_ ~y -> y+1);;
+\end{caml_example}
 
 \subsection{Optional arguments}
 
@@ -461,7 +466,7 @@ when you use polymorphic variants. When you write a library, this is
 easy since you can describe exact types in interfaces, but for simple
 programs you are probably better off with core language variants.
 
-Beware also that certain idioms make trivial errors very hard to find.
+Beware also that some idioms make trivial errors very hard to find.
 For instance, the following code is probably wrong but the compiler
 has no way to see it.
 \begin{caml_example}
