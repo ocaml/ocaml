@@ -18,7 +18,7 @@ type t =                             (* A is all *)
   | Comment_start                    (* C *)
   | Comment_not_end
   | Deprecated                       (* D *)
-  | Fragile_pat of string            (* E *)
+  | Fragile_match of string            (* E *)
   | Partial_application              (* F *)
   | Labels_omitted                   (* L *)
   | Method_override of string list   (* M *)

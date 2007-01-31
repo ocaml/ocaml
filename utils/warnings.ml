@@ -18,7 +18,7 @@ type t =                             (* A is all *)
   | Comment_start                    (* C *)
   | Comment_not_end
   | Deprecated                       (* D *)
-  | Fragile_pat of string            (* E *)
+  | Fragile_match of string          (* E *)
   | Partial_application              (* F *)
   | Labels_omitted                   (* L *)
   | Method_override of string list   (* M *)
@@ -46,7 +46,7 @@ let letter = function        (* 'a' is all *)
   | Comment_start
   | Comment_not_end ->          'c'
   | Deprecated ->               'd'
-  | Fragile_pat _ ->            'e'
+  | Fragile_match _ ->          'e'
   | Partial_application ->      'f'
   | Labels_omitted ->           'l'
   | Method_override _ ->        'm'
@@ -112,14 +112,12 @@ let message = function
       "this pattern-matching is not exhaustive.\n\
        Here is an example of a value that is not matched:\n" ^ s
   | Unused_match -> "this match case is unused."
-  | Unused_pat   -> "this pattern is unused."
-  | Fragile_pat "" ->
-      "this pattern is fragile. It would hide\n\
-       the addition of new constructors to the data types it matches."
-  | Fragile_pat s ->
-      "this pattern is fragile. It would hide\n\
-       the addition of new constructors to the data types it matches.\n\
-       Here is an example of a more robust pattern:\n" ^ s
+  | Unused_pat   -> "this sub-pattern is unused."
+  | Fragile_match "" ->
+      "this pattern-matching is fragile."
+  | Fragile_match s ->
+      "this pattern-matching is fragile.\n\
+       It will remain exhaustive when constructors are added to type " ^ s ^ "."
   | Labels_omitted ->
       "labels were omitted in the application of this function."
   | Method_override [lab] ->
