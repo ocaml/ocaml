@@ -45,6 +45,7 @@ extern int win_CRT_fd_of_filedescr(value handle);
 #define Nothing ((value) 0)
 
 extern void win32_maperr(DWORD errcode);
+extern value unix_error_of_code (int errcode);
 extern void unix_error (int errcode, char * cmdname, value arg);
 extern void uerror (char * cmdname, value arg);
 extern value unix_freeze_buffer (value);
