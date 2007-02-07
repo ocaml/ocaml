@@ -1,0 +1,6 @@
+place.cmx wm.cmx imagephoto.cmx canvas.cmx button.cmx text.cmx label.cmx
+scrollbar.cmx image.cmx encoding.cmx pixmap.cmx palette.cmx font.cmx
+message.cmx menu.cmx entry.cmx listbox.cmx focus.cmx menubutton.cmx pack.cmx
+option.cmx toplevel.cmx frame.cmx dialog.cmx imagebitmap.cmx clipboard.cmx
+radiobutton.cmx tkwait.cmx grab.cmx selection.cmx scale.cmx optionmenu.cmx
+winfo.cmx grid.cmx checkbutton.cmx bell.cmx tkvars.cmx

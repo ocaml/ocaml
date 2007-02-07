@@ -1,0 +1,69 @@
+# Ocamlbuild tags file
+true: traverse
+
+"asmrun" or "byterun" or "yacc" or "boot" or "win32caml": not_hygienic
+
+<**/*.ml*>: warn_Alez
+
+"toplevel/topstart.byte": linkall
+
+<ocamldoc/*.ml>: ocamldoc_sources
+<ocamldoc/*.ml*>: include_unix, include_str, include_dynlink
+"ocamldoc/odoc.byte": use_unix, use_str, use_dynlink
+"ocamldoc/odoc_opt.native": use_unix, use_str
+
+<camlp4/**>: debug
+<camlp4/**/*.ml*>: camlp4boot, -warn_Alez, warn_Ale
+<camlp4/Camlp4_config.ml*>: -camlp4boot
+<camlp4/build/*> or <camlp4/boot/*> or "camlp4/Camlp4/Struct/Lexer.ml": -camlp4boot, -warn_Ale, warn_a, -debug
+"camlp4/Camlp4Bin.byte" or "camlp4/mkcamlp4.byte" or "camlp4/camlp4lib.cma": use_dynlink
+"camlp4/Camlp4/Printers/OCaml.ml" or "camlp4/Camlp4/Printers/OCamlr.ml": warn_Alezv
+<camlp4/Camlp4Printers/**.ml>: include_unix
+"camlp4/Camlp4/Struct/DynLoader.ml": include_dynlink
+<camlp4/Camlp4Top/**>: include_toplevel
+
+<ocamlbuild/*>: -warn_Alez, include_unix
+
+<**/pervasives.ml> or <**/pervasives.mli> or <**/camlinternalOO.mli>: nopervasives
+<**/camlinternalOO*.cmx>: inline(0)
+<**/scanf*.cmx>: inline(9)
+<**/*Labels.ml*>: nolabels
+
+"tools/addlabels.ml": warn_s
+
+<debugger/main.byte> or <debugger/main.native>: use_unix, use_dynlink, linkall
+<debugger/*.ml*>: include_unix
+
+<otherlibs/{,win32}unix/unix.cm{,x}a> or <otherlibs/str/str.cm{,x}a>: ocamlmklib
+<otherlibs/num/nums.cm{,x}a> or <otherlibs/dbm/dbm.cm{,x}a>: ocamlmklib
+<otherlibs/{,win32}graph/graphics.cm{,x}a>: ocamlmklib
+<otherlibs/threads/threads.cm{,x}a>: ocamlmklib
+<otherlibs/bigarray/bigarray.cm{,x}a>: ocamlmklib
+
+<otherlibs/{bigarray,systhreads}/**.ml*>: include_unix
+
+# See the remark about static linking of threads.cmxa in myocamlbuild.ml
+<otherlibs/systhreads/threads.cma>: ocamlmklib
+
+<**/*.ml{,i}>: include_stdlib
+"otherlibs/threads/unix.ml" or "otherlibs/threads/marshal.ml": -include_stdlib, include_threads_stdlib
+"otherlibs/threads/pervasives.ml": include_unix
+
+<otherlibs/**>: otherlibs
+<otherlibs/{,win32}unix/**>: otherlibs_unix
+<otherlibs/win32unix/**>: otherlibs_win32unix
+<otherlibs/bigarray/**>: otherlibs_bigarray
+<otherlibs/num/**>: otherlibs_num
+<otherlibs/threads/**>: otherlibs_threads
+<otherlibs/systhreads/**>: otherlibs_systhreads
+<otherlibs/dbm/**>: otherlibs_dbm
+<otherlibs/graph/**>: otherlibs_graph
+<otherlibs/win32graph/**>: otherlibs_win32graph
+<otherlibs/labltk/**>: otherlibs_labltk
+
+<otherlibs/labltk/support/tkthread.ml*> or <otherlibs/labltk/browser/*.ml*>: bootstrap_thread
+<otherlibs/labltk/**.{cm{,x},}a>: ocamlmklib
+"otherlibs/labltk/browser/jglib.cma": -ocamlmklib
+"otherlibs/labltk/browser/main.byte": use_unix, use_str, ocamlbrowser, bootstrap_thread
+<otherlibs/labltk/{browser,jpf}/**.ml*>: include_unix, include_str
+<otherlibs/labltk/{tkanim,frx}/**.ml*>: include_unix
