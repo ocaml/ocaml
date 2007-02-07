@@ -109,6 +109,8 @@ for i in $PUBLIC_INCLUDES; do
 done
 cd ..
 
+installdir otherlibs/{win32,}unix/unixsupport.h $LIBDIR/caml
+
 installdir byterun/ocamlrun.dll yacc/ocamlyacc byterun/ocamlrun $BINDIR
 
 installdir byterun/ld.conf $LIBDIR

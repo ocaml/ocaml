@@ -70,7 +70,7 @@ install:
 	cp libunix.a $(LIBDIR)/libunix.a
 	cd $(LIBDIR); $(RANLIB) libunix.a
 	cp unix.cma $(MLOBJS:.cmo=.cmi) $(MLOBJS:.cmo=.mli) $(LIBDIR)
-	cp unixsupport.h $(LIBDIR)
+	cp unixsupport.h $(LIBDIR)/caml
 
 installopt:
 	cp $(MLOBJS:.cmo=.cmx) unix.cmxa unix.a $(LIBDIR)

@@ -97,6 +97,9 @@ for lib in $OTHERLIBRARIES; do
     UNIXDIR="otherlibs/win32unix"
     add_file unixsupport.h cst2constr.h socketaddr.h
     add unix;;
+  unix)
+    add_file unixsupport.h
+    add unix;;
   *)
     add $lib
   esac

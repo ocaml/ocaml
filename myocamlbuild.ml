@@ -511,6 +511,16 @@ rule "tools/opnames.ml"
           byterun/instruct.h > tools/opnames.ml")
   end;;
 
+(* The version number *)
+rule "stdlib/sys.ml"
+  ~prod:"stdlib/sys.ml"
+  ~deps:["stdlib/sys.mlp"; "VERSION"]
+  begin fun _ _ ->
+    Seq [rm_f "stdlib/sys.ml";
+         Cmd (Sh"sed -e\"s|%%VERSION%%|`head -1 VERSION`|\" stdlib/sys.mlp >stdlib/sys.ml");
+         chmod (A"-w") "stdlib/sys.ml"]
+  end;;
+
 (* The predefined exceptions and primitives *)
 
 rule "camlheader"
