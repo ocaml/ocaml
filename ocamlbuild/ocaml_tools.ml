@@ -1,0 +1,73 @@
+(***********************************************************************)
+(*                             ocamlbuild                              *)
+(*                                                                     *)
+(*  Nicolas Pouillard, Berke Durak, projet Gallium, INRIA Rocquencourt *)
+(*                                                                     *)
+(*  Copyright 2007 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the Q Public License version 1.0.               *)
+(*                                                                     *)
+(***********************************************************************)
+
+(* $Id$ *)
+(* Original author: Nicolas Pouillard *)
+open My_std
+open Pathname.Operators
+open Tags.Operators
+open Tools
+open Command
+open Ocaml_utils
+
+let ocamlyacc mly env _build =
+  let mly = env mly in
+  Cmd(S[!Options.ocamlyacc; T(tags_of_pathname mly++"ocaml"++"parser"++"ocamlyacc");
+        flags_of_pathname mly; Px mly])
+
+let ocamllex mll env _build =
+  let mll = env mll in
+  Cmd(S[!Options.ocamllex; T(tags_of_pathname mll++"ocaml"++"lexer"++"ocamllex");
+        flags_of_pathname mll; Px mll])
+
+let infer_interface ml mli env build =
+  let ml = env ml and mli = env mli in
+  Ocaml_compiler.prepare_compile build ml;
+  Cmd(S[!Options.ocamlc; A"-i"; T(tags_of_pathname ml++"ocaml"++"infer_interface"); P ml; Sh">"; Px mli])
+
+let menhir mly env build =
+  let mly = env mly in
+  Ocaml_compiler.prepare_compile build mly;
+  Cmd(S[!Options.ocamlyacc; T(tags_of_pathname mly++"ocaml"++"parser"++"menhir");
+        A"--infer"; flags_of_pathname mly; Px mly])
+
+let ocamldoc_c tags arg odoc =
+  let tags = tags++"ocaml" in
+  Cmd (S [!Options.ocamldoc; A"-dump"; Px odoc; T(tags++"doc");
+          ocaml_ppflags tags; flags_of_pathname arg;
+          ocaml_include_flags arg; P arg])
+
+let ocamldoc_l tags deps out =
+  let tags = tags++"ocaml" in
+  Seq[Cmd (S[A"rm"; A"-rf"; Px out]);
+      Cmd (S[A"mkdir"; A"-p"; Px out]);
+      Cmd (S [!Options.ocamldoc;
+              S(List.map (fun a -> S[A"-load"; P a]) deps);
+              T(tags++"doc");
+              A"-html";
+              A"-d";
+              Px out])]
+
+let document_ocaml_interf mli odoc env build =
+  let mli = env mli and odoc = env odoc in
+  Ocaml_compiler.prepare_compile build mli;
+  ocamldoc_c (tags_of_pathname mli++"interf") mli odoc
+
+let document_ocaml_project odocl docdir env build =
+  let odocl = env odocl and docdir = env docdir in
+  let contents = string_list_of_file odocl in
+  let include_dirs = Pathname.include_dirs_of (Pathname.dirname odocl) in
+  let to_build =
+    List.map begin fun module_name ->
+      expand_module include_dirs module_name ["odoc"]
+    end contents in
+  let module_paths = List.map Outcome.good (build to_build) in
+  ocamldoc_l (tags_of_pathname docdir) module_paths docdir

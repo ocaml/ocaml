@@ -1,0 +1,30 @@
+To do:
+* Ensure that _build and _log are not created if not needed (with -help for
+  instance)
+* Fix report
+* Design a nice, friendly, future-proof plugin (myocamlbuild) API
+* Display: should display nothing (even when finish is called) when no real
+  event as occured.
+
+Being done:
+* Write doc
+
+Almost done:
+* Fine control for hygiene using a glob pattern (command line option + tag)
+  => the command line option is todo.
+  -tag "<glob1> or <glob2> ..." "tag1, -tag2, ..."
+
+Won't fix:
+* Config file for options => no since myocamlbuild is sufficent
+* Optimize MD5 (Daemon ? Dnotify ?) : too much hassle for little gain
+
+Done:
+* Fix uncaught exception handler to play well with the Display module
+* Finish display before executing target
+* Slurp: in a directory read files, before subdirs (to have _tags before foo/_tags)
+* Add a -clean option
+* Add ocamldoc rules (use .odoc extension)
+* Add .inferred.mli target rules
+* -- with no args does not call the executable
+* Complain when used with -- and no target
+* dep ["ocaml"; "link"; "use_foo"] ["foo/foo.o"] tags for adding targets

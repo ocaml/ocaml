@@ -1,0 +1,12 @@
+#load "discard_printf.cmo";;
+#load "debug.cmo";;
+#load "unix.cma";;
+#load "str.cma";;
+#load "my_unix.cmo";;
+#load "bool.cmo";;
+#load "glob_ast.cmo";;
+#load "glob_lexer.cmo";;
+#load "glob.cmo";;  
+#load "lexers.cmo";;
+#load "my_std.cmo";;
+#load "tags.cmo";;

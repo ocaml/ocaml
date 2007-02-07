@@ -1,0 +1,116 @@
+documentclass :beamer, :t, :compress, :red
+usepackage    :inputenc, :utf8
+
+title     "ocamlbuild, a tool for automatic compilation of O'Caml projects"
+authors   "Berke Durak", "Nicolas Pouillard"
+institute do
+  > @@Berke.Durak@inria.fr@@
+  hfill
+  > @@Nicolas.Pouillard@inria.fr@@
+end
+
+usetheme      :JuanLesPins
+usefonttheme  :serif
+beamer_header '\setbeamercolor*{titlelike}{parent=structure}'
+at_begin_subsection do
+  slide "Outline" do
+    tableofcontents 'sectionstyle=show/hide',
+                    'subsectionstyle=show/shaded/hide'
+  end
+end
+beamer_footline
+
+words "**O'Caml**"
+
+words "??ocamlbuild??"
+
+maketitle
+
+slide "Why such a tool?" do
+  * To make our O'Caml life easier.
+  * A Makefile is so painful.
+end
+
+slide "What does ocamlbuild handle?" do
+
+  box "Regular O'Caml projects of arbitrary size" do
+    > Trivially handled using the command line options.
+  end
+
+  box "Mostly regular O'Caml projects with common exceptions" do
+    > Requires writing one _tag_ file that declares those exceptions.
+  end
+
+  box "Almost any project" do
+    > Accomplished by writing an ocamlbuild plugin.
+  end
+
+end
+
+slide "What kind of services for a project?" do
+  * Compilation of the whole project.
+  * Minimal re-compilation after a change.
+  * Other builds like the documentation.
+  * Different build directories at a same time.
+  * Cleaning of what's built.
+  * Keeping an hygienic source directory.
+  * Saving time!
+end
+
+slide "What's a regular O'Caml project?" do
+  * O'Caml compilation units (ml and mli files).
+  * O'Caml parsers and lexers specifications (mly and mll files).
+  * Internal packages and libraries (mlpack, mllib).
+  * Use of external libraries.
+  * One main O'Caml unit that represents the starting point.
+end
+
+slide "How difficult are regular projects?" do
+  * 
+end
+
+slide "What's an exception?" do
+  box "Some flags can be different for some files" do
+    * Enable/disable some warning flags.
+    * Debugging (-g), profiling (-p), type annotations flags,
+      recursive types, -linkall, -thread, -custom.
+  end
+  * Have to link this binary with that library.
+  * Include or exclude that directory.
+  * Some dependencies.
+end
+
+slide "??Make?? and exceptions" do
+  * The ??make?? tool can handle rules but not exceptions.
+  * With ??make?? exceptions are encoded as specific rules.
+  * This generally makes rules and exceptions tightly bound by variables.
+  * This way totally doesn't scale, and is not *modular*.
+end
+
+slide "The tags, our way to specify exceptions" do
+  box "Rules produce commands with *tagged holes*" do
+    : let tagged_hole = tags_for(ml)++"ocaml"++"compile"++"byte" in
+      Cmd(S[A"ocamlc"; A"-c"; T(tagged_hole); P ml; A"-o"; Px cmo])
+  end
+  box "These holes can be filled by some command pieces (flags)" do
+    : flag ["ocaml"; "compile"; "byte"; "rectypes"] (A"-rectypes")
+  end
+  box "Files can also be tagged and make things happen" do
+    : "foo/bar.ml": rectypes
+  end
+end
+
+slide "The tags file (_tags)" do
+  * Each line is a pattern and a set of tags.
+  * The pattern is a boolean tree (*and*, *or*, *not*).
+  * Leafs are either constant strings or glob patterns.
+  * In the set of tags, they can appear positively or negatively.
+end
+
+slide "" do
+  
+end
+
+slide "A big thanks to" do
+  * Alain, Xavier, Michel...
+end

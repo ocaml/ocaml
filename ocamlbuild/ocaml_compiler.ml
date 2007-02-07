@@ -1,0 +1,315 @@
+(***********************************************************************)
+(*                             ocamlbuild                              *)
+(*                                                                     *)
+(*  Nicolas Pouillard, Berke Durak, projet Gallium, INRIA Rocquencourt *)
+(*                                                                     *)
+(*  Copyright 2007 Institut National de Recherche en Informatique et   *)
+(*  en Automatique.  All rights reserved.  This file is distributed    *)
+(*  under the terms of the Q Public License version 1.0.               *)
+(*                                                                     *)
+(***********************************************************************)
+
+(* $Id$ *)
+(* Original author: Nicolas Pouillard *)
+open My_std
+open Format
+open Log
+open Pathname.Operators
+open Tools
+open Command
+open Rule
+open Tags.Operators
+open Ocaml_utils
+open Rule.Common_commands
+open Outcome
+
+let forpack_flags arg tags =
+  if Tags.mem "pack" tags then
+    Ocaml_arch.forpack_flags_of_pathname arg
+  else N
+
+let ocamlc_c tags arg out =
+  let tags = tags++"ocaml"++"byte" in
+  Cmd (S [!Options.ocamlc; A"-c"; T(tags++"compile");
+          ocaml_ppflags tags; flags_of_pathname arg;
+          ocaml_include_flags arg; A"-o"; Px out; P arg])
+
+let ocamlc_link flag tags deps out =
+  Cmd (S [!Options.ocamlc; flag; T tags;
+          atomize_paths deps; flags_of_pathname out; A"-o"; Px out])
+
+let ocamlc_link_lib = ocamlc_link (A"-a")
+let ocamlc_link_prog = ocamlc_link N
+
+let ocamlmklib tags deps out =
+  Cmd (S [!Options.ocamlmklib; T tags;
+          atomize_paths deps; flags_of_pathname out; A"-o"; Px (Pathname.remove_extensions out)])
+
+let byte_lib_linker tags =
+  if Tags.mem "ocamlmklib" tags then
+    ocamlmklib tags
+  else
+    ocamlc_link_lib tags
+
+let byte_lib_linker_tags tags = tags++"ocaml"++"link"++"byte"++"library"
+
+let ocamlc_p tags deps out =
+  Cmd (S [!Options.ocamlc; A"-pack"; T tags;
+          atomize_paths deps; flags_of_pathname out; A"-o"; Px out])
+
+let ocamlopt_c tags arg out =
+  let tags = tags++"ocaml"++"native" in
+  Cmd (S [!Options.ocamlopt; A"-c"; Ocaml_arch.forpack_flags_of_pathname arg;
+          T(tags++"compile"); ocaml_ppflags tags; flags_of_pathname arg;
+          flags_of_pathname out; ocaml_include_flags arg;
+          A"-o"; Px out (* FIXME ocamlopt bug -o cannot be after the input file *); P arg])
+
+let ocamlopt_link flag tags deps out =
+  Cmd (S [!Options.ocamlopt; flag; forpack_flags out tags; T tags;
+          atomize_paths deps; flags_of_pathname out; A"-o"; Px out])
+
+let ocamlopt_link_lib = ocamlopt_link (A"-a")
+let ocamlopt_link_prog = ocamlopt_link N
+
+let ocamlopt_p tags deps out =
+  let include_flags = List.fold_right begin fun dep ->
+    ocaml_add_include_flag (Pathname.dirname dep)
+  end deps [] in
+  let cmi = cmi_of out and cmitmp = Pathname.update_extensions "cmitmp" out in
+  Seq[mv cmi cmitmp;
+      Cmd (S [!Options.ocamlopt; A"-pack"; forpack_flags out tags; T tags; S include_flags;
+              atomize_paths deps; flags_of_pathname out; (* FIXME: P (cmi_of out);*) A"-o"; Px out]);
+      cmp cmitmp cmi]
+
+let native_lib_linker tags =
+  if Tags.mem "ocamlmklib" tags then
+    ocamlmklib tags
+  else
+    ocamlopt_link_lib tags
+
+let native_lib_linker_tags tags = tags++"ocaml"++"link"++"native"++"library"
+
+let prepare_compile build ml =
+  let dir = Pathname.dirname ml in
+  let include_dirs = Pathname.include_dirs_of dir in
+  let modules = Ocamldep.module_dependencies_of ml in
+  let results =
+    build (List.map (fun x -> expand_module include_dirs x ["cmi"]) modules) in
+  List.iter2 begin fun name res ->
+    match res with
+    | Good _ -> ()
+    | Bad exn ->
+        if !Options.ignore_auto then
+          dprintf 3 "Warning: Failed to build the module \
+                     %s requested by ocamldep" name
+        else raise exn
+  end modules results
+
+let byte_compile_ocaml_interf mli cmi env build =
+  let mli = env mli and cmi = env cmi in
+  prepare_compile build mli;
+  ocamlc_c (tags_of_pathname mli++"interf") mli cmi
+
+let byte_compile_ocaml_implem ?tag ml cmo env build =
+  let ml = env ml and cmo = env cmo in
+  prepare_compile build ml;
+  ocamlc_c (tags_of_pathname ml++"implem"+++tag) ml cmo
+
+let cache_prepare_link = Hashtbl.create 107
+let rec prepare_link tag cmx extensions build =
+  let key = (tag, cmx, extensions) in
+  let dir = Pathname.dirname cmx in
+  let include_dirs = Pathname.include_dirs_of dir in
+  if Hashtbl.mem cache_prepare_link key then () else
+    let () = Hashtbl.add cache_prepare_link key true in
+    let modules = List.map (fun x -> expand_module include_dirs x extensions)
+                           (Ocamldep.module_dependencies_of (Pathname.update_extensions "ml" cmx)) in
+    List.iter begin function
+      | Good p -> prepare_link tag p extensions build
+      | Bad exn -> if not !Options.ignore_auto then raise exn        
+    end (build modules)
+
+let native_compile_ocaml_implem ?tag ?(cmx_ext="cmx") ml env build =
+  let ml = env ml in
+  let cmi = Pathname.update_extensions "cmi" ml in
+  let cmx = Pathname.update_extensions cmx_ext ml in
+  prepare_link cmx cmi [cmx_ext; "cmi"] build;
+  ocamlopt_c (tags_of_pathname ml++"implem"+++tag) ml cmx
+
+let libs_of_use_lib tags =
+  Tags.fold begin fun tag acc ->
+    if String.is_prefix "use_" tag then
+      let lib = String.after tag 4 in
+      try let libpath, extern = Hashtbl.find info_libraries lib in
+          if extern then acc else libpath :: acc
+      with Not_found -> acc
+    else acc
+  end tags []
+
+let prepare_libs cma_ext a_ext out build =
+  let out_no_ext = Pathname.remove_extension out in
+  let libs1 = List.union (libraries_of out_no_ext) (libs_of_use_lib (tags_of_pathname out)) in
+  let () = dprintf 10 "prepare_libs: %S -> %a" out pp_l libs1 in
+  let libs = List.map (fun x -> x-.-cma_ext) libs1 in
+  let libs2 = List.map (fun lib -> [lib-.-a_ext]) libs1 in
+  List.iter ignore_good (build libs2); libs
+
+let library_index = Hashtbl.create 32
+let package_index = Hashtbl.create 32
+let hidden_packages = ref []
+
+let hide_package_contents package = hidden_packages := package :: !hidden_packages
+
+module Ocaml_dependencies_input = struct
+  let fold_dependencies = Resource.Cache.fold_dependencies
+  let fold_libraries f = Hashtbl.fold f library_index
+  let fold_packages f = Hashtbl.fold f package_index
+end
+module Ocaml_dependencies = Ocaml_dependencies.Make(Ocaml_dependencies_input)
+
+let caml_transitive_closure = Ocaml_dependencies.caml_transitive_closure
+
+let link_gen cmX_ext cma_ext a_ext extensions linker tagger cmX out env build =
+  let cmX = env cmX and out = env out in
+  let tags = tagger (tags_of_pathname out) in
+  let dyndeps = Rule.build_deps_of_tags build tags in
+  let cmi = Pathname.update_extensions "cmi" cmX in
+  prepare_link cmX cmi extensions build;
+  let libs = prepare_libs cma_ext a_ext out build in
+  let hidden_packages = List.map (fun x -> x-.-cmX_ext) !hidden_packages in
+  let deps =
+    caml_transitive_closure
+      ~caml_obj_ext:cmX_ext ~caml_lib_ext:cma_ext
+      ~used_libraries:libs ~hidden_packages (cmX :: dyndeps) in
+  let deps = (List.filter (fun l -> not (List.mem l deps)) libs) @ deps in
+  if deps = [] then failwith "Link list cannot be empty";
+  let () = dprintf 6 "link: %a -o %a" print_string_list deps Pathname.print out in
+  linker tags deps out
+
+let byte_link_gen = link_gen "cmo" "cma" "cma" ["cmo"; "cmi"]
+
+let byte_link = byte_link_gen ocamlc_link_prog
+  (fun tags -> tags++"ocaml"++"link"++"byte"++"program")
+
+let byte_library_link = byte_link_gen byte_lib_linker byte_lib_linker_tags
+
+let byte_debug_link_gen =
+  link_gen "d.cmo" "d.cma" "d.cma" ["d.cmo"; "cmi"]
+
+let byte_debug_link = byte_debug_link_gen ocamlc_link_prog
+  (fun tags -> tags++"ocaml"++"link"++"byte"++"debug"++"program")
+
+let byte_debug_library_link = byte_debug_link_gen byte_lib_linker
+  (fun tags -> byte_lib_linker_tags tags++"debug")
+
+let native_link_gen linker =
+  link_gen "cmx" "cmxa" !Options.ext_lib [!Options.ext_obj; "cmi"] linker
+
+let native_link x = native_link_gen ocamlopt_link_prog
+  (fun tags -> tags++"ocaml"++"link"++"native"++"program") x
+
+let native_library_link x =
+  native_link_gen native_lib_linker native_lib_linker_tags x
+
+let native_profile_link_gen linker =
+  link_gen "p.cmx" "p.cmxa" ("p" -.- !Options.ext_lib) ["p" -.- !Options.ext_obj; "cmi"] linker
+
+let native_profile_link x = native_profile_link_gen ocamlopt_link_prog
+  (fun tags -> tags++"ocaml"++"link"++"native"++"profile"++"program") x
+
+let native_profile_library_link x = native_profile_link_gen native_lib_linker
+  (fun tags -> native_lib_linker_tags tags++"profile") x
+
+let link_units table extensions cmX_ext cma_ext a_ext linker tagger contents_list cmX env build =
+  let cmX = env cmX in
+  let tags = tagger (tags_of_pathname cmX) in
+  let _ = Rule.build_deps_of_tags build tags in
+  let dir =
+    let dir1 = Pathname.remove_extensions cmX in
+    if Pathname.exists_in_source_dir dir1 then dir1
+    else Pathname.dirname cmX in
+  let include_dirs = Pathname.include_dirs_of dir in
+  let extension_keys = List.map fst extensions in
+  let libs = prepare_libs cma_ext a_ext cmX build in
+  let results =
+    build begin
+      List.map begin fun module_name ->
+        expand_module include_dirs module_name extension_keys
+      end contents_list
+    end in
+  let module_paths =
+    List.map begin function
+      | Good p ->
+          let extension_values = List.assoc (Pathname.get_extensions p) extensions in
+          List.iter begin fun ext ->
+            List.iter ignore_good (build [[Pathname.update_extensions ext p]])
+          end extension_values; p
+      | Bad exn -> raise exn
+    end results in
+  Hashtbl.replace table cmX module_paths;
+  let hidden_packages = List.map (fun x -> x-.-cmX_ext) !hidden_packages in
+  let deps =
+    caml_transitive_closure
+      ~caml_obj_ext:cmX_ext ~caml_lib_ext:cma_ext
+      ~hidden_packages ~pack_mode:true module_paths in
+  let full_contents = libs @ module_paths in
+  let deps = List.filter (fun x -> List.mem x full_contents) deps in
+  let deps = (List.filter (fun l -> not (List.mem l deps)) libs) @ deps in
+  linker tags deps cmX
+
+let link_modules = link_units library_index
+let pack_modules = link_units package_index
+
+let link_from_file link modules_file cmX env build =
+  let modules_file = env modules_file in
+  let contents_list = string_list_of_file modules_file in
+  link contents_list cmX env build
+
+let byte_library_link_modules =
+  link_modules [("cmo",[]); ("cmi",[])] "cmo" "cma" "cma" byte_lib_linker byte_lib_linker_tags
+
+let byte_library_link_mllib = link_from_file byte_library_link_modules
+
+let byte_debug_library_link_modules =
+  link_modules [("d.cmo",[]); ("cmi",[])] "d.cmo" "d.cma" "d.cma" byte_lib_linker
+    (fun tags -> byte_lib_linker_tags tags++"debug")
+
+let byte_debug_library_link_mllib = link_from_file byte_debug_library_link_modules
+
+let byte_pack_modules =
+  pack_modules [("cmo",["cmi"]); ("cmi",[])] "cmo" "cma" "cma" ocamlc_p
+    (fun tags -> tags++"ocaml"++"pack"++"byte")
+
+let byte_pack_mlpack = link_from_file byte_pack_modules
+
+let byte_debug_pack_modules =
+  pack_modules [("d.cmo",["cmi"]); ("cmi",[])] "d.cmo" "d.cma" "d.cma" ocamlc_p
+    (fun tags -> tags++"ocaml"++"pack"++"byte"++"debug")
+
+let byte_debug_pack_mlpack = link_from_file byte_debug_pack_modules
+
+let native_pack_modules x =
+  pack_modules [("cmx",["cmi"; !Options.ext_obj]); ("cmi",[])] "cmx" "cmxa" !Options.ext_lib ocamlopt_p
+    (fun tags -> tags++"ocaml"++"pack"++"native") x
+
+let native_pack_mlpack = link_from_file native_pack_modules
+
+let native_profile_pack_modules x =
+  pack_modules [("p.cmx",["cmi"; "p" -.- !Options.ext_obj]); ("cmi",[])] "p.cmx" "p.cmxa"
+    ("p" -.- !Options.ext_lib) ocamlopt_p
+    (fun tags -> tags++"ocaml"++"pack"++"native"++"profile") x
+
+let native_profile_pack_mlpack = link_from_file native_profile_pack_modules
+
+let native_library_link_modules x =
+  link_modules [("cmx",[!Options.ext_obj]); ("cmi",[])] "cmx" "cmxa"
+     !Options.ext_lib native_lib_linker native_lib_linker_tags x
+
+let native_library_link_mllib = link_from_file native_library_link_modules
+
+let native_profile_library_link_modules x =
+  link_modules [("p.cmx",["p" -.- !Options.ext_obj]); ("cmi",[])] "p.cmx" "p.cmxa"
+    ("p" -.- !Options.ext_lib) native_lib_linker
+    (fun tags -> native_lib_linker_tags tags++"profile") x
+
+let native_profile_library_link_mllib = link_from_file native_profile_library_link_modules
