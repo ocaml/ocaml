@@ -1,11 +1,3 @@
 *.cm*
-Camlp4Printers.ml
-Camlp4Parsers.ml
-Camlp4Filters.ml
-Camlp4Top.ml
 .cache-status
-Camlp4.ml
-yam
 *.tmp.ml
-*.run
-*.opt
