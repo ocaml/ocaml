@@ -1,0 +1,41 @@
+_tags           # Defines tags to setup exceptions
+myocamlbuild.ml # Contains all needed rules that are differents
+boot/ocamldep
+myocamlbuild_config.mli
+utils/config.mlbuild # Should be renamed as utils/config.ml
+
+# Files that just contain module names of object files.
+**/*.mllib   # Files that describe the contents of an OCaml library
+**/*.mlpack  # Files that describe the contents of an OCaml package
+**/*.cilb    # Files that describe the contents of an C static library
+**/*.dilb    # Files that describe the contents of an C dynamic library
+
+build/
+  world.sh             # Build all the OCaml world
+  fastworld.sh         # Same as above but faster
+    boot-c-parts.sh         # Compile byterun, ocamlyacc and asmrun with the Makefiles
+    boot-c-parts-windows.sh # Same as boot-c-parts.sh but for windows
+    boot.sh                 # Compile the stdlib and ocamlc
+    camlp4-targets.sh       # Setup camlp4 targets
+    otherlibs-targets.sh    # Setup otherlibs targets
+    targets.sh              # All targets of the OCaml distribution
+
+  world.byte.sh        # Build the bytecode world
+  world.native.sh      # Build the native world
+  world.all.sh         # Build all the world the don't bootstrap
+
+  install.sh           # Install all needed files
+  distclean.sh         # Clean all generated files
+
+  myocamlbuild.sh      # Regenerate the boot/myocamlbuild program
+  mkconfig.sh          # Generate config/config.sh
+  mkmyocamlbuild_config.sh # Generate myocamlbuild_config.ml
+
+  camlp4-bootstrap.sh
+
+  # Partial stuffs (just camlp4 and ocamlbuild)
+  partial-boot.sh
+  camlp4-byte-only.sh
+  camlp4-native-only.sh
+  ocamlbuild-byte-only.sh
+  ocamlbuild-native-only.sh
