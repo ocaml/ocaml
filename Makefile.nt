@@ -114,7 +114,7 @@ defaultentry:
 	@echo "Please refer to the installation instructions in file README.win32."
 
 # Recompile the system using the bootstrap compiler
-all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml otherlibraries ocamldoc.byte camlp4out win32gui
+all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml otherlibraries ocamldoc.byte ocamlbuild.byte camlp4out win32gui
 
 # The compilation of ocaml will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
@@ -202,7 +202,7 @@ opt: runtimeopt ocamlopt libraryopt otherlibrariesopt
 
 # Native-code versions of the tools
 opt.opt: ocamlc.opt ocamlopt.opt ocamllex.opt ocamltoolsopt.opt \
-	camlp4opt ocamldoc.opt
+	ocamlbuild.native camlp4opt ocamldoc.opt
 
 # Installation
 install: installbyt installopt
@@ -228,7 +228,7 @@ installbyt:
 	mkdir -p $(STUBLIBDIR)
 	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i install; done
 	cd win32caml ; $(MAKE) install
-	cd camlp4 ; make install
+	./build/partial-install.sh
 	cp config/Makefile $(LIBDIR)/Makefile.config
 	cp README $(DISTRIB)/Readme.general.txt
 	cp README.win32 $(DISTRIB)/Readme.windows.txt
@@ -564,25 +564,25 @@ alldepend::
 
 # Camlp4
 
-camlp4/build/camlp4_config.ml: config/Makefile utils/config.ml
-	(echo 'let prefix = "$(PREFIX)"'; \
-	 echo 'and bindir = "$(BINDIR)"'; \
-	 echo 'and mandir = "$(MANDIR)"'; \
-	 echo 'and libdir = "$(LIBDIR)"'; \
-         grep 'ast.*magic_number' utils/config.ml) > camlp4/build/camlp4_config.ml
-
+camlp4out: ocamlc otherlibraries ocamlbuild-partial-boot ocamlbuild.byte
+	./build/camlp4-byte-only.sh
+camlp4opt: ocamlopt otherlibrariesopt ocamlbuild-partial-boot ocamlbuild.native
+	./build/camlp4-native-only.sh
 partialclean::
-	rm -f camlp4/build/camlp4_config.ml
-beforedepend:: camlp4/build/camlp4_config.ml
+	rm -rf _build/camlp4
 
-camlp4out: ocamlc camlp4/build/camlp4_config.ml
-	cd camlp4; $(MAKE) all
-camlp4opt: ocamlopt
-	cd camlp4; $(MAKE) opt
+# Ocamlbuild
+
+ocamlbuild.byte: ocamlc otherlibraries ocamlbuild-partial-boot
+	./build/ocamlbuild-byte-only.sh
+ocamlbuild.native: ocamlopt otherlibrariesopt ocamlbuild-partial-boot
+	./build/ocamlbuild-native-only.sh
 partialclean::
-	cd camlp4; $(MAKE) clean
-alldepend::
-	cd camlp4; $(MAKE) depend
+	rm -rf _build/ocamlbuild
+
+.PHONY: ocamlbuild-partial-boot
+ocamlbuild-partial-boot:
+	./build/partial-boot.sh
 
 # The Win32 toplevel GUI
 

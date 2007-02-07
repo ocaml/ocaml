@@ -124,7 +124,7 @@ Normally, the only variables that need to be changed are
         PREFIX      where to install everything
         TK_ROOT     where TCL/TK was installed
 
-Finally, use "make -f Makefile.nt" to build the system, e.g. 
+Finally, use "make -f Makefile.nt" to build the system, e.g.
 
         make -f Makefile.nt world
         make -f Makefile.nt bootstrap
@@ -132,6 +132,10 @@ Finally, use "make -f Makefile.nt" to build the system, e.g.
         make -f Makefile.nt opt.opt
         make -f Makefile.nt install
 
+Alternatively you can use the experimental build procdure using ocamlbuild:
+
+        ./build/fastworld.sh
+        ./build/install.sh
 
 NOTES:
 

@@ -41,6 +41,33 @@ S=s
 SO=s.o
 DO=d.o
 EXE=.exe
+EXT_DLL=.dll
+EXT_OBJ=.$(O)
+EXT_LIB=.$(A)
+EXT_ASM=.$(S)
+MANEXT=1
+SHARPBANGSCRIPTS=false
+PTHREAD_LINK=
+X11_INCLUDES=
+X11_LINK=
+DBM_INCLUDES=
+DBM_LINK=
+BYTECCRPATH=
+SUPPORTS_SHARED_LIBRARIES=true
+SHAREDCCCOMPOPTS=
+MKSHAREDLIBRPATH=
+NATIVECCPROFOPTS=
+NATIVECCRPATH=
+ASFLAGS=
+ASPP=
+ASPPFLAGS=
+ASPPPROFFLAGS=
+PROFILING=noprof
+DYNLINKOPTS=
+DEBUGGER=
+CC_PROFILE=
+SYSTHREAD_SUPPORT=true
+EXTRALIBS=
 
 ########## Configuration for the bytecode compiler
 
@@ -65,17 +92,22 @@ CPP=$(BYTECC) -E
 
 ### How to build an EXE
 MKEXE=$(BYTECC) -o $(1) $(2)
+#ml let mkexe out files opts = Printf.sprintf "%s -o %s %s %s" bytecc out opts files;;
 
 ### How to build a DLL
 MKDLL=$(BYTECC) -shared -o $(1) -Wl,--out-implib,$(2) $(3)
+#ml let mkdll out implib files opts = Printf.sprintf "%s -shared -o %s -Wl,--out-implib,%s %s %s" bytecc out implib files opts;;
 
 ### How to build a static library
 MKLIB=rm -f $(1); ar rcs $(1) $(2)
+#ml let mklib out files opts = Printf.sprintf "rm -f %s && ar rcs %s %s %s" out opts out files;;
 
 ### Canonicalize the name of a system library
 SYSLIB=-l$(1)
+#ml let syslib x = "-l"^x;;
 
 ### The ranlib command
+RANLIB=ranlib
 RANLIBCMD=ranlib
 
 ############# Configuration for the native-code compiler

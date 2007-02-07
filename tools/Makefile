@@ -88,8 +88,13 @@ clean::
 
 # To help building mixed-mode libraries (Caml + C)
 
-ocamlmklib: ocamlmklib.cmo
-	$(CAMLC) $(LINKFLAGS) -o ocamlmklib ocamlmklib.cmo
+ocamlmklib: myocamlbuild_config.cmo ocamlmklib.cmo
+	$(CAMLC) $(LINKFLAGS) -o ocamlmklib myocamlbuild_config.cmo ocamlmklib.cmo
+
+ocamlmklib.cmo: myocamlbuild_config.cmi
+myocamlbuild_config.ml: ../config/Makefile
+	../build/mkmyocamlbuild_config.sh
+	cp ../myocamlbuild_config.ml .
 
 install::
 	cp ocamlmklib $(BINDIR)/ocamlmklib

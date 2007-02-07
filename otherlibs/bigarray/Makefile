@@ -54,7 +54,7 @@ partialclean:
 	rm -f *.cm* 
 
 clean: partialclean
-	rm -f libbigarray.* *.o bigarray.a *.so
+	rm -f *.o *.so *.a
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 

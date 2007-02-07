@@ -124,7 +124,7 @@ defaultentry:
 
 # Recompile the system using the bootstrap compiler
 all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml \
-  otherlibraries camlp4out $(DEBUGGER) ocamldoc
+  otherlibraries ocamlbuild.byte camlp4out $(DEBUGGER) ocamldoc
 
 # The compilation of ocaml will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
@@ -228,8 +228,8 @@ opt: runtimeopt ocamlopt libraryopt otherlibrariesopt
 
 # Native-code versions of the tools
 opt.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries \
-	 camlp4out $(DEBUGGER) ocamldoc ocamlopt.opt otherlibrariesopt \
-	 ocamllex.opt ocamltoolsopt.opt camlp4opt ocamldoc.opt
+	 ocamlbuild.byte camlp4out $(DEBUGGER) ocamldoc ocamlopt.opt otherlibrariesopt \
+	 ocamllex.opt ocamltoolsopt.opt ocamlbuild.native camlp4opt ocamldoc.opt
 
 # Installation
 install: FORCE
@@ -258,10 +258,10 @@ install: FORCE
         done
 	cd ocamldoc; $(MAKE) install
 	if test -f ocamlopt; then $(MAKE) installopt; else :; fi
-	cd camlp4; $(MAKE) install
 	if test -f debugger/ocamldebug; then (cd debugger; $(MAKE) install); \
 	   else :; fi
 	cp config/Makefile $(LIBDIR)/Makefile.config
+	./build/partial-install.sh
 
 # Installation of the native-code compiler
 installopt:
@@ -605,25 +605,25 @@ alldepend::
 
 # Camlp4
 
-camlp4/build/camlp4_config.ml: config/Makefile utils/config.ml
-	(echo 'let prefix = "$(PREFIX)"'; \
-	 echo 'let bindir = "$(BINDIR)"'; \
-	 echo 'let mandir = "$(MANDIR)"'; \
-	 echo 'let libdir = "$(LIBDIR)"'; \
-         grep ast utils/config.ml) > camlp4/build/camlp4_config.ml
-
+camlp4out: ocamlc otherlibraries ocamlbuild-partial-boot ocamlbuild.byte
+	./build/camlp4-byte-only.sh
+camlp4opt: ocamlopt otherlibrariesopt ocamlbuild-partial-boot ocamlbuild.native
+	./build/camlp4-native-only.sh
 partialclean::
-	rm -f camlp4/build/camlp4_config.ml
-beforedepend:: camlp4/build/camlp4_config.ml
+	rm -rf _build/camlp4
 
-camlp4out: ocamlc camlp4/build/camlp4_config.ml
-	cd camlp4; $(MAKE) all
-camlp4opt: ocamlopt
-	cd camlp4; $(MAKE) opt
+# Ocamlbuild
+
+ocamlbuild.byte: ocamlc otherlibraries ocamlbuild-partial-boot
+	./build/ocamlbuild-byte-only.sh
+ocamlbuild.native: ocamlopt otherlibrariesopt ocamlbuild-partial-boot
+	./build/ocamlbuild-native-only.sh
 partialclean::
-	cd camlp4; $(MAKE) clean
-alldepend::
-	cd camlp4; $(MAKE) depend
+	rm -rf _build/ocamlbuild
+
+.PHONY: ocamlbuild-partial-boot
+ocamlbuild-partial-boot:
+	./build/partial-boot.sh
 
 # Check that the stack limit is reasonable.
 

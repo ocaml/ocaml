@@ -185,6 +185,11 @@ An alternative, and faster approach to steps 2 to 5 is
 The result is equivalent to "make world opt opt.opt", but this may
 fail if anything goes wrong in native-code generation.
 
+Another alternative, is to use the experimental build system that use
+ocamlbuild instead of make (it replaces steps 2 to 5):
+
+        ./build/fastworld.sh
+
 6- You can now install the Objective Caml system. This will create the
 following commands (in the binary directory selected during
 autoconfiguration):
@@ -213,6 +218,10 @@ From the top directory, become superuser and do:
 
         umask 022       # make sure to give read & execute permission to all
         make install
+
+      In the ocamlbuild setting instead of make install do:
+
+        ./build/install.sh
 
 7- Installation is complete. Time to clean up. From the toplevel
 directory, do "make clean".
