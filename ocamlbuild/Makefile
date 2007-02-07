@@ -49,7 +49,7 @@ all byte native: ocamlbuild.byte.start
 	cp ocamlbuild.byte.start boot/ocamlbuild
 	$(MAKE) $(MFLAGS) $(MAKECMDGOALS)
 	cp $(BUILDDIR)/ocamlbuild.native boot/ocamlbuild
-	$(MAKE) $(MFLAGS) $(MAKECMDGOALS) OCAMLBUILD_OPTIONS="-nothing-should-be-rebuilt -debug -1"
+	$(MAKE) $(MFLAGS) $(MAKECMDGOALS) OCAMLBUILD_OPTIONS="-nothing-should-be-rebuilt -verbose -1"
 endif
 
 ocamlbuild.byte.start:

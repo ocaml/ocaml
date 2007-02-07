@@ -6,9 +6,9 @@ mkdir _start
 cp *.ml* _start
 cd _start
 echo "let where = ref \"<start>\";;" > ocamlbuild_where.ml
-ocamlc -c tags.mli
 ocamlc -c std_signatures.mli
 ocamlc -c signatures.mli
+ocamlc -c tags.mli
 ocamlc -c ocamlbuild_where.mli
 ocamlc -c my_unix.mli
 ocamlc -c my_std.mli
