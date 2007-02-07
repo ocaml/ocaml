@@ -17,11 +17,9 @@
 cd package-macosx
 rm -rf ocaml.pkg ocaml-rw.dmg
 
-VERSION=`sed -n -e '/ocaml_version/s/.*"\([^"]*\)".*/\1/p' ../stdlib/sys.ml`
-VERSION_MAJOR=`sed -n -e '/ocaml_version/s/.*"\([0-9]*\)\..*/\1/p' \
-                   ../stdlib/sys.ml`
-VERSION_MINOR=`sed -n -e '/ocaml_version/s/.*"[0-9]*\.\([0-9]*\)[.+].*/\1/p' \
-                   ../stdlib/sys.ml`
+VERSION=`head -1 ../VERSION`
+VERSION_MAJOR=`sed -n -e '1s/^\([0-9]*\)\..*/\1/p' ../VERSION
+VERSION_MINOR=`sed -n -e '1s/^[0-9]*\.\([0-9]*\)[.+].*/\1/p' ../VERSION
 
 # Worked in 10.2:
 

@@ -41,10 +41,8 @@ mkcamlp4.sh: mkcamlp4.sh.tpl version.sh
 	sed -e "s!LIBDIR!$(LIBDIR)!g" -e "/define VERSION/r version.sh" \
 	    mkcamlp4.sh.tpl > mkcamlp4.sh
 
-version.sh : $(OTOP)/stdlib/sys.ml
-	sed -n -e 's/;;//' \
-            -e '/let *ocaml_version *= */s//VERSION=/p' \
-            <$(OTOP)/stdlib/sys.ml >version.sh
+version.sh : $(OTOP)/VERSION
+	echo "VERSION=\"`head -1 ../VERSION`\"" >version.sh
 
 install-local:
 	-$(MKDIR) "$(LIBDIR)/camlp4" "$(BINDIR)"

@@ -101,10 +101,8 @@ jumptbl.h : instruct.h
 	sed -n -e '/^  /s/ \([A-Z]\)/ \&\&lbl_\1/gp' \
 	       -e '/^}/q' instruct.h > jumptbl.h
 
-version.h : ../stdlib/sys.ml
-	sed -n -e 's/;;//' \
-            -e '/let *ocaml_version *= */s//#define OCAML_VERSION /p' \
-            <../stdlib/sys.ml >version.h
+version.h : ../VERSION
+	echo "#define OCAML_VERSION \"`head -1 ../VERSION`\"" >version.h
 
 .SUFFIXES: .d.o
 

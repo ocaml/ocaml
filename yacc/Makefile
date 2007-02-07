@@ -27,10 +27,8 @@ all: ocamlyacc$(EXE)
 ocamlyacc$(EXE): $(OBJS)
 	$(CC) $(CFLAGS) $(CCLINKFLAGS) -o ocamlyacc $(OBJS)
 
-version.h : ../stdlib/sys.ml
-	sed -n -e 's/;;//' \
-            -e '/let *ocaml_version *= */s//#define OCAML_VERSION /p' \
-            <../stdlib/sys.ml >version.h
+version.h : ../VERSION
+	echo "#define OCAML_VERSION \"`head -1 ../VERSION`\"" >version.h
 
 clean:
 	rm -f *.o ocamlyacc$(EXE) *~ version.h

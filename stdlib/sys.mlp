@@ -13,6 +13,10 @@
 
 (* $Id$ *)
 
+(* WARNING: sys.ml is generated from sys.mlp.  DO NOT EDIT sys.ml or
+   your changes will be lost.
+*)
+
 (* System interface *)
 
 external get_config: unit -> string * int = "caml_sys_get_config"
@@ -76,6 +80,6 @@ let catch_break on =
     set_signal sigint Signal_default
 
 
-(* OCaml version string, must be in the format described in sys.mli. *)
+(* The version string is found in file ../VERSION *)
 
-let ocaml_version = "3.10+dev21 (2006-12-18)";;
+let ocaml_version = "%%VERSION%%";;
