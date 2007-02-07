@@ -19,7 +19,8 @@
 
 (* $Id$ *)
 
-open Camlp4.Config;
+open Camlp4;
+open Camlp4_config;
 open Filename;
 open Format;
 

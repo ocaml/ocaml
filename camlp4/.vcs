@@ -1,18 +1,4 @@
 ---
 exclude:
-  - !re \.cm.*$
-  - Camlp4/Sig/Grammar.ml
-  - Camlp4/Struct/Grammar.ml
-  - Camlp4/Struct/Lexer.ml
-  - Camlp4/Sig.ml
-  - Camlp4/Struct.ml
-  - Camlp4/Syntax.ml
-  - Camlp4Printers.ml
-  - Camlp4Parsers.ml
-  - Camlp4Filters.ml
-  - .cache-status
-  - Camlp4.ml
-  - yam
+  - !re boot/camlp4boot\.save\..*
   - build/camlp4_config.ml
-  - !re \.tmp\.ml$
-  - !re \.(run|opt)$

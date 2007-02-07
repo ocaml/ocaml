@@ -22,8 +22,8 @@ module Id = struct
   value version = "$Id$";
 end;
 
-module Make (Syntax : Sig.Syntax.S)
-: Sig.Printer.S with module Ast = Syntax.Ast
+module Make (Syntax : Sig.Syntax)
+: Sig.Printer with module Ast = Syntax.Ast
 = struct
   include Syntax;
 
@@ -41,10 +41,10 @@ module Make (Syntax : Sig.Syntax.S)
 
   value print_interf ?input_file:(_) ?output_file ast =
     with_open_out_file output_file
-      (dump_ast Config.camlp4_ast_intf_magic_number ast);
+      (dump_ast Camlp4_config.camlp4_ast_intf_magic_number ast);
 
   value print_implem ?input_file:(_) ?output_file ast =
     with_open_out_file output_file
-      (dump_ast Config.camlp4_ast_impl_magic_number ast);
+      (dump_ast Camlp4_config.camlp4_ast_impl_magic_number ast);
 
 end;

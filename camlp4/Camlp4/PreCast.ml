@@ -22,7 +22,7 @@ module Id = struct
   value version = "$Id$";
 end;
 
-type camlp4_token = Sig.Camlp4Token.t ==
+type camlp4_token = Sig.camlp4_token ==
   [ KEYWORD       of string
   | SYMBOL        of string
   | LIDENT        of string
@@ -37,7 +37,7 @@ type camlp4_token = Sig.Camlp4Token.t ==
   | STRING        of string and string
   | LABEL         of string
   | OPTLABEL      of string
-  | QUOTATION     of Sig.Quotation.t
+  | QUOTATION     of Sig.quotation
   | ANTIQUOT      of string and string
   | COMMENT       of string
   | BLANKS        of string
@@ -53,7 +53,8 @@ module Lexer = Struct.Lexer.Make Token;
 module Gram = Struct.Grammar.Static.Make Lexer;
 module DynLoader = Struct.DynLoader;
 module Quotation = Struct.Quotation.Make Ast;
-module Syntax = OCamlInitSyntax.Make Warning Ast Gram Quotation;
+module MakeSyntax (U : sig end) = OCamlInitSyntax.Make Warning Ast Gram Quotation;
+module Syntax = MakeSyntax (struct end);
 module AstFilters = Struct.AstFilters.Make Ast;
 module MakeGram = Struct.Grammar.Static.Make;
 

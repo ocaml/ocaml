@@ -16,16 +16,16 @@
  * - Nicolas Pouillard: initial version
  *)
 
-module Make (Warning : Sig.Warning.S)
-            (Ast     : Sig.Camlp4Ast.S with module Loc = Warning.Loc)
-            (Gram    : Sig.Grammar.Static.S with module Loc = Warning.Loc
-                                            with type Token.t = Sig.Camlp4Token.t)
-            (Quotation : Sig.Quotation.S with module Ast = Sig.Camlp4Ast.ToAst Ast)
-: Sig.Camlp4Syntax.S with module Loc   = Ast.Loc
+module Make (Warning : Sig.Warning)
+            (Ast     : Sig.Camlp4Ast with module Loc = Warning.Loc)
+            (Gram    : Sig.Grammar.Static with module Loc = Warning.Loc
+                                            with type Token.t = Sig.camlp4_token)
+            (Quotation : Sig.Quotation with module Ast = Sig.Camlp4AstToAst Ast)
+: Sig.Camlp4Syntax with module Loc   = Ast.Loc
                       and module Ast   = Ast
                       and module Token = Gram.Token
                       and module Gram  = Gram
-                      and module AntiquotSyntax.Ast = Sig.Camlp4Ast.ToAst Ast
+                      and module AntiquotSyntax.Ast = Sig.Camlp4AstToAst Ast
                       and module Quotation = Quotation
 = struct
 
@@ -34,7 +34,7 @@ module Make (Warning : Sig.Warning.S)
   module Ast     = Ast;
   module Gram    = Gram;
   module Token   = Gram.Token;
-  open Sig.Camlp4Token;
+  open Sig;
 
   value a_CHAR = Gram.Entry.mk "a_CHAR";
   value a_FLOAT = Gram.Entry.mk "a_FLOAT";
@@ -197,7 +197,7 @@ module Make (Warning : Sig.Warning.S)
 
   module AntiquotSyntax = struct
     module Loc  = Ast.Loc;
-    module Ast  = Sig.Camlp4Ast.ToAst Ast;
+    module Ast  = Sig.Camlp4AstToAst Ast;
     module Gram = Gram;
     value antiquot_expr = Gram.Entry.mk "antiquot_expr";
     value antiquot_patt = Gram.Entry.mk "antiquot_patt";

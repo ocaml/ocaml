@@ -17,7 +17,7 @@
  * - Nicolas Pouillard: refactoring
  *)
 
-module Make (Loc : Sig.Loc.S) : Sig.Camlp4Token.S with module Loc = Loc;
+module Make (Loc : Sig.Loc) : Sig.Camlp4Token with module Loc = Loc;
 
 module Eval : sig
   value char : string -> char;

@@ -21,13 +21,13 @@
 
 (* $Id$ *)
 
-module Make (Ast : Sig.Ast.S)
-: Sig.Quotation.S with module Ast = Ast
+module Make (Ast : Sig.Ast)
+: Sig.Quotation with module Ast = Ast
 = struct
   module Ast = Ast;
   module Loc = Ast.Loc;
   open Format;
-  open Sig.Quotation;
+  open Sig;
 
   type expand_fun 'a = Loc.t -> option string -> string -> 'a;
 

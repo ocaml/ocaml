@@ -19,6 +19,8 @@
 (* camlp4r *)
 open Format;
 
+module Debug = struct value mode _ = False; end;
+
 type section = string;
 
 value out_channel =

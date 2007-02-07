@@ -1,3 +1,4 @@
+(* -*- camlp4r -*- *)
 (****************************************************************************)
 (*                                                                          *)
 (*                              Objective Caml                              *)
@@ -16,12 +17,13 @@
  * - Daniel de Rauglaudre: initial version
  * - Nicolas Pouillard: refactoring
  *)
-module Make (Structure : Structure.S) = struct                    (* -*- camlp4r -*- *)
+
+module Make (Structure : Structure.S) = struct
   module Tools = Tools.Make Structure;
   module Parser = Parser.Make Structure;
   open Structure;
   open Format;
-  open Sig.Grammar.Structure;
+  open Sig.Grammar;
 
   value is_before s1 s2 =
     match (s1, s2) with

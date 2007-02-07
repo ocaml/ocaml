@@ -17,4 +17,4 @@
  * - Nicolas Pouillard: refactoring
  *)
 
-include Sig.DynLoader.S;
+include Sig.DynLoader;

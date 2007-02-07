@@ -16,6 +16,7 @@
  * - Daniel de Rauglaudre: initial version
  * - Nicolas Pouillard: refactoring
  *)
+
 module Make (Structure : Structure.S) = struct
   module Dump  = Print.MakeDump Structure;
   module Print = Print.Make Structure;
@@ -40,13 +41,14 @@ module Make (Structure : Structure.S) = struct
       edesc = Dlevels [] };
 
   value action_parse entry ts : Action.t =
-    let c = Context.mk ts in
-    try entry.estart 0 c (Context.stream c) with
-    [ Stream.Failure ->
-        Loc.raise (Context.loc_ep c)
-          (Stream.Error ("illegal begin of " ^ entry.ename))
-    | Loc.Exc_located _ _ as exc -> raise exc
-    | exc -> Loc.raise (Context.loc_ep c) exc ];
+    Context.call_with_ctx ts
+      (fun c ->
+         try entry.estart 0 c (Context.stream c) with
+         [ Stream.Failure ->
+             Loc.raise (Context.loc_ep c)
+               (Stream.Error ("illegal begin of " ^ entry.ename))
+         | Loc.Exc_located _ _ as exc -> raise exc
+         | exc -> Loc.raise (Context.loc_ep c) exc ]);
 
   value lex entry loc cs = entry.egram.glexer loc cs;
 

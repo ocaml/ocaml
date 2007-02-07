@@ -17,7 +17,7 @@
  *)
 
 (** This module is suppose to contain nils elimination. *)
-module Make (Ast : Sig.Camlp4Ast.S) = struct
+module Make (Ast : Sig.Camlp4Ast) = struct
 
   class clean_ast = object (self)
 

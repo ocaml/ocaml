@@ -52,27 +52,27 @@ value register_sig_item_printer f = sig_item_printer.val := f;
 value register_printer f g =
   do { str_item_printer.val := f; sig_item_printer.val := g };
 
-module Plugin (Id : Sig.Id.S) (Maker : functor (Unit : sig end) -> sig end) = struct
+module Plugin (Id : Sig.Id) (Maker : functor (Unit : sig end) -> sig end) = struct
   declare_dyn_module Id.name (fun _ -> let module M = Maker (struct end) in ());
 end;
 
-module SyntaxExtension (Id : Sig.Id.S) (Maker : Sig.SyntaxExtension.S) = struct
+module SyntaxExtension (Id : Sig.Id) (Maker : Sig.SyntaxExtension) = struct
   declare_dyn_module Id.name (fun _ -> let module M = Maker Syntax in ());
 end;
 
 module OCamlSyntaxExtension
-  (Id : Sig.Id.S) (Maker : functor (Syn : Sig.Camlp4Syntax.S) -> Sig.Camlp4Syntax.S) =
+  (Id : Sig.Id) (Maker : functor (Syn : Sig.Camlp4Syntax) -> Sig.Camlp4Syntax) =
 struct
   declare_dyn_module Id.name (fun _ -> let module M = Maker Syntax in ());
 end;
 
-module SyntaxPlugin (Id : Sig.Id.S) (Maker : functor (Syn : Sig.Syntax.S) -> sig end) = struct
+module SyntaxPlugin (Id : Sig.Id) (Maker : functor (Syn : Sig.Syntax) -> sig end) = struct
   declare_dyn_module Id.name (fun _ -> let module M = Maker Syntax in ());
 end;
 
 module Printer
-  (Id : Sig.Id.S) (Maker : functor (Syn : Sig.Syntax.S)
-                                -> Sig.Printer.S with module Ast = Syn.Ast) =
+  (Id : Sig.Id) (Maker : functor (Syn : Sig.Syntax)
+                                -> Sig.Printer with module Ast = Syn.Ast) =
 struct
   declare_dyn_module Id.name (fun _ ->
     let module M = Maker Syntax in
@@ -80,8 +80,8 @@ struct
 end;
 
 module OCamlPrinter
-  (Id : Sig.Id.S) (Maker : functor (Syn : Sig.Camlp4Syntax.S)
-                                -> Sig.Printer.S with module Ast = Syn.Ast) =
+  (Id : Sig.Id) (Maker : functor (Syn : Sig.Camlp4Syntax)
+                                -> Sig.Printer with module Ast = Syn.Ast) =
 struct
   declare_dyn_module Id.name (fun _ ->
     let module M = Maker Syntax in
@@ -89,15 +89,15 @@ struct
 end;
 
 module OCamlPreCastPrinter
-  (Id : Sig.Id.S) (P : Sig.Printer.S with module Ast = PreCast.Ast) =
+  (Id : Sig.Id) (P : Sig.Printer with module Ast = PreCast.Ast) =
 struct
   declare_dyn_module Id.name (fun _ ->
     register_printer P.print_implem P.print_interf);
 end;
 
 module Parser
-  (Id : Sig.Id.S) (Maker : functor (Ast : Sig.Ast.S)
-                                -> Sig.Parser.S with module Ast = Ast) =
+  (Id : Sig.Id) (Maker : functor (Ast : Sig.Ast)
+                                -> Sig.Parser with module Ast = Ast) =
 struct
   declare_dyn_module Id.name (fun _ ->
     let module M = Maker PreCast.Ast in
@@ -105,8 +105,8 @@ struct
 end;
 
 module OCamlParser
-  (Id : Sig.Id.S) (Maker : functor (Ast : Sig.Camlp4Ast.S)
-                                -> Sig.Parser.S with module Ast = Ast) =
+  (Id : Sig.Id) (Maker : functor (Ast : Sig.Camlp4Ast)
+                                -> Sig.Parser with module Ast = Ast) =
 struct
   declare_dyn_module Id.name (fun _ ->
     let module M = Maker PreCast.Ast in
@@ -114,14 +114,14 @@ struct
 end;
 
 module OCamlPreCastParser
-  (Id : Sig.Id.S) (P : Sig.Parser.S with module Ast = PreCast.Ast) =
+  (Id : Sig.Id) (P : Sig.Parser with module Ast = PreCast.Ast) =
 struct
   declare_dyn_module Id.name (fun _ ->
     register_parser P.parse_implem P.parse_interf);
 end;
 
 module AstFilter
-  (Id : Sig.Id.S) (Maker : functor (F : Sig.AstFilters.S) -> sig end) =
+  (Id : Sig.Id) (Maker : functor (F : Sig.AstFilters) -> sig end) =
 struct
   declare_dyn_module Id.name (fun _ -> let module M = Maker AstFilters in ());
 end;

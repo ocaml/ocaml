@@ -27,7 +27,7 @@
 
 (** A lexical analyzer. *)
 
-(* FIXME interface module Make (Token : Token.S) |+ Note that this Token sig is not in Sig +| *)
+(* FIXME interface module Make (Token : Token) |+ Note that this Token sig is not in Sig +| *)
 (* : Sig.Lexer. S with module Loc = Token.Loc and module Token = Token; *)
 
 (* type context =
@@ -48,14 +48,13 @@ value mk' : context -> Stream.t char -> Stream.t (Token.t * Loc.t);             
  *)
 
 module TokenEval = Token.Eval
-module Make (Token : Sig.Camlp4Token.S)
+module Make (Token : Sig.Camlp4Token)
 = struct
   module Loc = Token.Loc
   module Token = Token
 
   open Lexing
-  open Sig.Camlp4Token
-  open Sig.Quotation
+  open Sig
 
   (* Error report *)
   module Error = struct
@@ -428,6 +427,6 @@ module Make (Token : Sig.Camlp4Token.S)
     from_lexbuf ?quotations lb
 
   let mk () loc strm =
-    from_stream ~quotations:!Config.quotations loc strm
+    from_stream ~quotations:!Camlp4_config.quotations loc strm
 end
 }

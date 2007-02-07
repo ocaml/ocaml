@@ -16,15 +16,17 @@
  * - Daniel de Rauglaudre: initial version
  * - Nicolas Pouillard: refactoring
  *)
-open Sig.Grammar.Structure;
+
+open Sig.Grammar;
+
 module type S = sig
-  module Loc          : Sig.Loc.S;
-  module Token        : Sig.Token.S with module Loc = Loc;
-  module Lexer        : Sig.Lexer.S
+  module Loc          : Sig.Loc;
+  module Token        : Sig.Token with module Loc = Loc;
+  module Lexer        : Sig.Lexer
                         with module Loc   = Loc
                          and module Token = Token;
   module Context      : Context.S with module Token = Token;
-  module Action       : Sig.Grammar.Action.S;
+  module Action       : Sig.Grammar.Action;
 
   type gram =
     { gfilter         : Token.Filter.t;
@@ -97,10 +99,10 @@ module type S = sig
   value removing : gram -> string -> unit;
 end;
 
-module Make (Lexer  : Sig.Lexer.S) = struct
+module Make (Lexer  : Sig.Lexer) = struct
   module Loc = Lexer.Loc;
   module Token = Lexer.Token;
-  module Action : Sig.Grammar.Action.S = struct
+  module Action : Sig.Grammar.Action = struct
     type  t     = Obj.t   ;
     value mk    = Obj.repr;
     value get   = Obj.obj ;

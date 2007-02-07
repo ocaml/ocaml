@@ -21,7 +21,7 @@
 
 (* $Id$ *)
 
-module Make (Camlp4Ast : Sig.Camlp4Ast.S) : sig
+module Make (Camlp4Ast : Sig.Camlp4Ast) : sig
   open Camlp4Ast;
 
   (** {6 Useful functions} *)

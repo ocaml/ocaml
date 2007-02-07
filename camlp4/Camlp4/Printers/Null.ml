@@ -22,7 +22,7 @@ module Id = struct
   value version = "$Id$";
 end;
 
-module Make (Syntax : Sig.Syntax.S) = struct
+module Make (Syntax : Sig.Syntax) = struct
   include Syntax;
   
   value print_interf ?input_file:(_) ?output_file:(_) _ = ();

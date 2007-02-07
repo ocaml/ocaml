@@ -20,7 +20,7 @@
 
 (* $Id$ *)
 
-module Make (Ast : Sig.Camlp4Ast.S) = struct
+module Make (Ast : Sig.Camlp4Ast) = struct
   open Format;
   open Parsetree;
   open Longident;
@@ -28,8 +28,8 @@ module Make (Ast : Sig.Camlp4Ast.S) = struct
   open Ast;
 
   value constructors_arity () =
-    debug ast2pt "constructors_arity: %b@." Config.constructors_arity.val in
-    Config.constructors_arity.val;
+    debug ast2pt "constructors_arity: %b@." Camlp4_config.constructors_arity.val in
+    Camlp4_config.constructors_arity.val;
 
   value error loc str = Loc.raise loc (Failure str);
 
@@ -93,7 +93,7 @@ module Make (Ast : Sig.Camlp4Ast.S) = struct
   ;
 
   value array_function str name =
-    ldot (lident str) (if Config.unsafe.val then "unsafe_" ^ name else name)
+    ldot (lident str) (if Camlp4_config.unsafe.val then "unsafe_" ^ name else name)
   ;
 
   value mkrf =

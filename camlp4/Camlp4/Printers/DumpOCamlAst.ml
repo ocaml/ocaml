@@ -17,13 +17,13 @@
  * - Nicolas Pouillard: refactoring
  *)
 
-module Id : Sig.Id.S = struct
+module Id : Sig.Id = struct
   value name = "Camlp4Printers.DumpOCamlAst";
   value version = "$Id$";
 end;
 
-module Make (Syntax : Sig.Camlp4Syntax.S)
-: Sig.Printer.S with module Ast = Syntax.Ast
+module Make (Syntax : Sig.Camlp4Syntax)
+: Sig.Printer with module Ast = Syntax.Ast
 = struct
   include Syntax;
   module Ast2pt = Struct.Camlp4Ast2OCamlAst.Make Ast;
@@ -43,10 +43,10 @@ module Make (Syntax : Sig.Camlp4Syntax.S)
 
   value print_interf ?(input_file = "-") ?output_file ast =
     let pt = Ast2pt.sig_item ast in
-    with_open_out_file output_file (dump_pt Config.ocaml_ast_intf_magic_number input_file pt);
+    with_open_out_file output_file (dump_pt Camlp4_config.ocaml_ast_intf_magic_number input_file pt);
 
   value print_implem ?(input_file = "-") ?output_file ast =
     let pt = Ast2pt.str_item ast in
-    with_open_out_file output_file (dump_pt Config.ocaml_ast_impl_magic_number input_file pt);
+    with_open_out_file output_file (dump_pt Camlp4_config.ocaml_ast_impl_magic_number input_file pt);
 
 end;

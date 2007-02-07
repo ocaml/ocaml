@@ -23,7 +23,7 @@ module Id = struct
   value version = "$Id$";
 end;
 
-module Make (Syntax : Sig.Camlp4Syntax.S) = struct
+module Make (Syntax : Sig.Camlp4Syntax) = struct
   include Syntax;
 
   value pp = fprintf;
@@ -79,9 +79,9 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
 
   module Lexer = Struct.Lexer.Make Token;
   let module M = ErrorHandler.Register Lexer.Error in ();
-  open Sig.Camlp4Token;
+  open Sig;
   value lexer s =
-    Lexer.from_string ~quotations:Config.quotations.val Loc.ghost s;
+    Lexer.from_string ~quotations:Camlp4_config.quotations.val Loc.ghost s;
   value lex_string str =
     try match lexer str with parser
         [: `(tok, _); `(EOI, _) :] -> tok
@@ -141,7 +141,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
           do_print_comments_before loc f s
     | [: :] -> () ];
 
-  class printer ?(curry_constr = False) ?(comments = True) () =
+  class printer ?curry_constr:(init_curry_constr = False) ?(comments = True) () =
   object (o)
 
     (** pipe means we are under a match case (try, function) *)
@@ -158,7 +158,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     value value_val = "val";
     value value_let = "let";
     value mode = if comments then `comments else `no_comments;
-    value curry_constr = curry_constr;
+    value curry_constr = init_curry_constr;
     value var_conversion = False;
 
     method semisep = semisep;
@@ -436,7 +436,7 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     | <:expr< if $e1$ then $e2$ else $e3$ >> ->
         pp f "@[<hv0>@[<2>if@ %a@]@ @[<2>then@ %a@]@ @[<2>else@ %a@]@]"
            o#expr e1 o#under_semi#expr e2 o#under_semi#expr e3
-    | <:expr< lazy $e$ >> -> pp f "@[<2>lazy@ %a@]" o#expr e
+    | <:expr< lazy $e$ >> -> pp f "@[<2>lazy@ %a@]" o#simple_expr e
     | <:expr< let $rec:r$ $bi$ in $e$ >> ->
         match e with
         [ <:expr< let $rec:_$ $_$ in $_$ >> ->
@@ -1006,8 +1006,8 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
 
 end;
 
-module MakeMore (Syntax : Sig.Camlp4Syntax.S)
-: Sig.Printer.S with module Ast = Syntax.Ast
+module MakeMore (Syntax : Sig.Camlp4Syntax)
+: Sig.Printer with module Ast = Syntax.Ast
 = struct
 
   include Make Syntax;

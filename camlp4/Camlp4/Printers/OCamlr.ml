@@ -23,9 +23,9 @@ module Id = struct
   value version = "$Id$";
 end;
 
-module Make (Syntax : Sig.Camlp4Syntax.S) = struct
+module Make (Syntax : Sig.Camlp4Syntax) = struct
   include Syntax;
-  open Sig.Camlp4Token;
+  open Sig;
 
   module PP_o = OCaml.Make Syntax;
 
@@ -33,16 +33,16 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
 
   value pp = fprintf;
 
-  class printer ?(curry_constr = True) ?(comments = True) () =
+  class printer ?curry_constr:(init_curry_constr = True) ?(comments = True) () =
   object (o)
-    inherit PP_o.printer ~curry_constr ~comments () as super;
+    inherit PP_o.printer ~curry_constr:init_curry_constr ~comments () as super;
 
     value semisep = ";";
     value andsep : format unit formatter unit = "@]@ @[<2>and@ ";
     value value_val = "value";
     value value_let = "value";
     value mode = if comments then `comments else `no_comments;
-    value curry_constr = curry_constr;
+    value curry_constr = init_curry_constr;
     value first_match_case = True;
 
     method under_pipe = o;
@@ -122,8 +122,16 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     method ident f i =
     let () = o#node f i Ast.loc_of_ident in
     match i with
-    [ <:ident< $i1$ $i2$ >> -> pp f "%a@ %a" o#ident i1 o#ident i2
-    | i -> super#ident f i ];
+    [ <:ident< $i1$ $i2$ >> -> pp f "%a@ %a" o#dot_ident i1 o#dot_ident i2
+    | i -> o#dot_ident f i ];
+
+    method private dot_ident f i =
+    let () = o#node f i Ast.loc_of_ident in
+    match i with
+    [ <:ident< $i1$.$i2$ >> -> pp f "%a.@,%a" o#dot_ident i1 o#dot_ident i2
+    | <:ident< $anti:s$ >> -> o#anti f s
+    | <:ident< $lid:s$ >> | <:ident< $uid:s$ >> -> o#var f s
+    | i -> pp f "(%a)" o#ident i ];
 
     method patt4 f = fun
     [ <:patt< [$_$ :: $_$] >> as p ->
@@ -184,6 +192,8 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
         | _ -> pp f " =@ %a" o#ctyp te ];
         if cl <> [] then pp f "@ %a" (list o#constrain "@ ") cl else ();
       }
+    | <:ctyp< $t1$ : mutable $t2$ >> ->
+        pp f "@[%a :@ mutable %a@]" o#ctyp t1 o#ctyp t2
     | t -> super#ctyp f t ];
 
     method simple_ctyp f t =
@@ -235,6 +245,16 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
     match ct with
     [ <:class_type< [ $t$ ] -> $ct$ >> ->
           pp f "@[<2>[ %a ] ->@ %a@]" o#simple_ctyp t o#class_type ct
+    | <:class_type< $id:i$ >> ->
+          pp f "@[<2>%a@]" o#ident i
+    | <:class_type< $id:i$ [ $t$ ] >> ->
+          pp f "@[<2>%a [@,%a@]@,]" o#ident i o#class_params t
+    (* | <:class_type< virtual $id:i$ >> -> *)
+    | Ast.CtCon _ Ast.BTrue i <:ctyp<>> ->
+          pp f "@[<2>virtual@ %a@]" o#ident i
+    (* | <:class_type< virtual $id:i$ [ $t$ ] >> -> *)
+    | Ast.CtCon _ Ast.BTrue i t ->
+          pp f "@[<2>virtual@ %a@ [@,%a@]@,]" o#ident i o#class_params t
     | ct -> super#class_type f ct ];
 
     method class_expr f ce =
@@ -260,8 +280,8 @@ module Make (Syntax : Sig.Camlp4Syntax.S) = struct
 
 end;
 
-module MakeMore (Syntax : Sig.Camlp4Syntax.S)
-: Sig.Printer.S with module Ast = Syntax.Ast
+module MakeMore (Syntax : Sig.Camlp4Syntax)
+: Sig.Printer with module Ast = Syntax.Ast
 = struct
 
   include Make Syntax;

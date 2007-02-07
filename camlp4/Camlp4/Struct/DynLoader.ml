@@ -31,8 +31,13 @@ value fold_load_path x f acc = Queue.fold (fun x y -> f y x) acc x;
 
 value mk ?(ocaml_stdlib = True) ?(camlp4_stdlib = True) () =
   let q = Queue.create () in do {
-    if ocaml_stdlib then include_dir q Config.ocaml_standard_library else ();
-    if camlp4_stdlib then include_dir q Config.camlp4_standard_library else ();
+    if ocaml_stdlib then include_dir q Camlp4_config.ocaml_standard_library else ();
+    if camlp4_stdlib then do {
+      include_dir q Camlp4_config.camlp4_standard_library;
+      include_dir q (Filename.concat Camlp4_config.camlp4_standard_library "Camlp4Parsers");
+      include_dir q (Filename.concat Camlp4_config.camlp4_standard_library "Camlp4Printers");
+      include_dir q (Filename.concat Camlp4_config.camlp4_standard_library "Camlp4Filters");
+    } else ();
     include_dir q ".";
   q
 };

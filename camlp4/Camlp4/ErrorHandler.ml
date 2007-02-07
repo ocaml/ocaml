@@ -131,7 +131,7 @@ value register f =
     fun ppf default_handler exn ->
       try f ppf exn with exn -> current_handler ppf default_handler exn;
 
-module Register (Error : Sig.Error.S) = struct
+module Register (Error : Sig.Error) = struct
   let current_handler = handler.val in
   handler.val :=
     fun ppf default_handler ->

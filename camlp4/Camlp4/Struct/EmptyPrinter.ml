@@ -16,7 +16,7 @@
  * - Nicolas Pouillard: initial version
  *)
 
-module Make (Ast : Sig.Ast.S) = struct
+module Make (Ast : Sig.Ast) = struct
   module Ast = Ast;
   
   value print_interf ?input_file:(_) ?output_file:(_) _ = failwith "No interface printer";

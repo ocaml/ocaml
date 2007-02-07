@@ -16,7 +16,7 @@
  * - Nicolas Pouillard: initial version
  *)
 
-module Id : Sig.Id.S;
+module Id : Sig.Id;
 
-module Make (Syntax : Sig.Camlp4Syntax.S) : Sig.Printer.S
+module Make (Syntax : Sig.Camlp4Syntax) : Sig.Printer
   with module Ast = Syntax.Ast;

@@ -16,7 +16,7 @@
  * - Daniel de Rauglaudre: initial version
  * - Nicolas Pouillard: refactoring
  *)
-module Make (Token : Sig.Camlp4Token.S) : sig
+module Make (Token : Sig.Camlp4Token) : sig
   open Token;
 
   type t = 'abstract;

@@ -18,13 +18,12 @@
 
 open Format;
 
-module Make (Loc : Sig.Loc.S)
-: Sig.Camlp4Token.S with module Loc = Loc
+module Make (Loc : Sig.Loc)
+: Sig.Camlp4Token with module Loc = Loc
 = struct
   module Loc  = Loc;
-  open Sig.Quotation;
-  open Sig.Camlp4Token;
-  type t = Sig.Camlp4Token.t;
+  open Sig;
+  type t = camlp4_token;
   type token = t;
 
   value to_string =
@@ -97,7 +96,7 @@ module Make (Loc : Sig.Loc.S)
   let module M = ErrorHandler.Register Error in ();
 
   module Filter = struct
-    type token_filter = Sig.Token.stream_filter t Loc.t;
+    type token_filter = stream_filter t Loc.t;
 
     type t =
       { is_kwd : string -> bool;

@@ -16,7 +16,7 @@
  * - Daniel de Rauglaudre: initial version
  * - Nicolas Pouillard: refactoring
  *)
-module Make (Loc : Sig.Loc.S) : Sig.Warning.S with module Loc = Loc = struct
+module Make (Loc : Sig.Loc) : Sig.Warning with module Loc = Loc = struct
   module Loc = Loc;
   open Format;
   type t = Loc.t -> string -> unit;

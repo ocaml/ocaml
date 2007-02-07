@@ -25,7 +25,7 @@ value try_to_string : exn -> string;
 
 value register : (Format.formatter -> exn -> unit) -> unit;
 
-module Register (Error : Sig.Error.S) : sig end;
+module Register (Error : Sig.Error) : sig end;
 
 module ObjTools : sig
   value print : Format.formatter -> Obj.t -> unit;

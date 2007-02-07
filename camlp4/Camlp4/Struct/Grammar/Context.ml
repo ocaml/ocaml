@@ -18,10 +18,10 @@
  *)
 
 module type S = sig
-  module Token : Sig.Token.S;
+  module Token : Sig.Token;
   open Token;
   type t = 'abstract;
-  value mk : Stream.t (Token.t * Loc.t) -> t;
+  value call_with_ctx : Stream.t (Token.t * Loc.t) -> (t -> 'a) -> 'a;
   value loc_bp : t -> Loc.t;
   value loc_ep : t -> Loc.t;
   value stream : t -> Stream.t (Token.t * Loc.t);
@@ -31,7 +31,7 @@ module type S = sig
   value bp : Stream.t (Token.t * Loc.t) -> Loc.t;
 end;
 
-module Make (Token : Sig.Token.S) : S with module Token = Token = struct
+module Make (Token : Sig.Token) : S with module Token = Token = struct
   module Token = Token;
   open Token;
 
@@ -78,5 +78,13 @@ module Make (Token : Sig.Token.S) : S with module Token = Token = struct
   value junk strm =
     do { set_loc (List.assq strm streams.val); Stream.junk strm };
   value bp strm = loc_bp (List.assq strm  streams.val);
+
+   value call_with_ctx strm f =
+     let streams_v = streams.val in
+     let r =
+       try f (mk strm) with exc -> do { streams.val := streams_v; raise exc }
+     in
+     do { streams.val := streams_v; r }
+   ;
 
 end;

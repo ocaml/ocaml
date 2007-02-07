@@ -16,8 +16,8 @@
  * - Daniel de Rauglaudre: initial version
  * - Nicolas Pouillard: refactoring
  *)
-module Make (Ast : Sig.Camlp4Ast.S)
-: Sig.AstFilters.S with module Ast = Ast
+module Make (Ast : Sig.Camlp4Ast)
+: Sig.AstFilters with module Ast = Ast
 = struct
 
   module Ast = Ast;

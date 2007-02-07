@@ -16,8 +16,8 @@
  * - Daniel de Rauglaudre: initial version
  * - Nicolas Pouillard: refactoring
  *)
-module Make (Lexer : Sig.Lexer.S)
-: Sig.Grammar.Dynamic.S with module Loc = Lexer.Loc
+module Make (Lexer : Sig.Lexer)
+: Sig.Grammar.Dynamic with module Loc = Lexer.Loc
                          and module Token = Lexer.Token
 = struct
   module Structure = Structure.Make Lexer;
@@ -34,7 +34,7 @@ module Make (Lexer : Sig.Lexer.S)
       gfilter = Token.Filter.mk (Hashtbl.mem gkeywords);
       glexer = Lexer.mk ();
       warning_verbose = ref True; (* FIXME *)
-      error_verbose = Config.verbose
+      error_verbose = Camlp4_config.verbose
     };
 
   value get_filter g = g.gfilter;

@@ -17,6 +17,6 @@
  * - Nicolas Pouillard: refactoring
  *)
 
-module Id : Sig.Id.S;
+module Id : Sig.Id;
 
-module Make (Syntax : Sig.Syntax.S) : Sig.Printer.S with module Ast = Syntax.Ast;
+module Make (Syntax : Sig.Syntax) : Sig.Printer with module Ast = Syntax.Ast;

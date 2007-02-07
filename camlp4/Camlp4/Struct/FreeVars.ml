@@ -17,7 +17,7 @@
  * - Nicolas Pouillard: initial version
  *)
 
-module Make (Ast : Sig.Camlp4Ast.S) = struct
+module Make (Ast : Sig.Camlp4Ast) = struct
 
   module S = Set.Make String;
 

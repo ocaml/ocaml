@@ -16,4 +16,4 @@
  * - Daniel de Rauglaudre: initial version
  * - Nicolas Pouillard: refactoring
  *)
-include Sig.Loc.S;
+include Sig.Loc;

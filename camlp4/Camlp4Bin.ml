@@ -27,32 +27,23 @@ open Format;
 module CleanAst = Camlp4.Struct.CleanAst.Make Ast;
 module SSet = Set.Make String;
 
-value pa_r  = "Camlp4Parsers.OCamlr";
-(* value pa_rr = "Camlp4Parsers.OCamlrr"; *)
-value pa_o  = "Camlp4Parsers.OCaml";
-value pa_rp = "Camlp4Parsers.OCamlRevisedParser";
-value pa_op = "Camlp4Parsers.OCamlParser";
-value pa_g  = "Camlp4Parsers.Grammar";
-value pa_m  = "Camlp4Parsers.Macro";
-value pa_qb = "Camlp4Parsers.OCamlQuotationBase";
-value pa_q  = "Camlp4Parsers.OCamlQuotation";
-value pa_rq = "Camlp4Parsers.OCamlRevisedQuotation";
-value pa_oq = "Camlp4Parsers.OCamlOriginalQuotation";
+value pa_r  = "Camlp4OCamlRevisedParser";
+(* value pa_rr = "Camlp4OCamlrrParser"; *)
+value pa_o  = "Camlp4OCamlParser";
+value pa_rp = "Camlp4OCamlRevisedParserParser";
+value pa_op = "Camlp4OCamlParserParser";
+value pa_g  = "Camlp4GrammarParser";
+value pa_m  = "Camlp4MacroParser";
+value pa_qb = "Camlp4QuotationCommon";
+value pa_q  = "Camlp4QuotationExpander";
+value pa_rq = "Camlp4OCamlRevisedQuotationExpander";
+value pa_oq = "Camlp4OCamlOriginalQuotationExpander";
 
 value dyn_loader = ref (fun []);
 value rcall_callback = ref (fun () -> ());
 value loaded_modules = ref SSet.empty;
 value add_to_loaded_modules name =
   loaded_modules.val := SSet.add name loaded_modules.val;
-
-value file_of_module_name n =
-  let s = String.copy n in
-  let rec self pos =
-    try do {
-      let pos = String.index_from s pos '.';
-      s.[pos] := '/';
-    } with [ Not_found -> () ]
-  in do { self 0; s ^ ".cmo" };
 
 value rewrite_and_load n x =
   let dyn_loader = dyn_loader.val () in
@@ -65,35 +56,43 @@ value rewrite_and_load n x =
     if SSet.mem n loaded_modules.val then ()
     else do {
       add_to_loaded_modules n;
-      DynLoader.load dyn_loader (file_of_module_name n);
+      DynLoader.load dyn_loader (n ^ ".cmo");
     }) in
   do {
-    match (n, x) with
-    [ ("Parsers"|"", "pa_r.cmo"      | "r"  | "OCamlr") -> load [pa_r]
+    match (n, String.lowercase x) with
+    [ ("Parsers"|"", "pa_r.cmo"      | "r"  | "ocamlr" | "ocamlrevised" | "camlp4ocamlrevisedparser.cmo") -> load [pa_r]
     (* | ("Parsers"|"", "rr"  | "OCamlrr") -> load [pa_r; pa_rr] *)
-    | ("Parsers"|"", "pa_o.cmo"      | "o"  | "OCaml") -> load [pa_r; pa_o]
-    | ("Parsers"|"", "pa_rp.cmo"     | "rp" | "OCamlRevisedParser") -> load [pa_r; pa_o; pa_rp]
-    | ("Parsers"|"", "pa_op.cmo"     | "op" | "OCamlParser") -> load [pa_r; pa_o; pa_rp; pa_op]
-    | ("Parsers"|"", "pa_extend.cmo" | "pa_extend_m.cmo" | "g" | "Grammar") -> load [pa_r; pa_g]
-    | ("Parsers"|"", "pa_macro.cmo"  | "m"  | "Macro") -> load [pa_r; pa_m]
-    | ("Parsers"|"", "q" | "OCamlQuotation") -> load [pa_r; pa_qb; pa_q]
-    | ("Parsers"|"", "q_MLast.cmo" | "rq" | "OCamlRevisedQuotation") -> load [pa_r; pa_qb; pa_rq]
-    | ("Parsers"|"", "oq" | "OCamlOriginalQuotation") -> load [pa_r; pa_o; pa_qb; pa_oq]
+    | ("Parsers"|"", "pa_o.cmo"      | "o"  | "ocaml" | "camlp4ocamlparser.cmo") -> load [pa_r; pa_o]
+    | ("Parsers"|"", "pa_rp.cmo"     | "rp" | "rparser" | "camlp4ocamlrevisedparserparser.cmo") -> load [pa_r; pa_o; pa_rp]
+    | ("Parsers"|"", "pa_op.cmo"     | "op" | "parser" | "camlp4ocamlparserparser.cmo") -> load [pa_r; pa_o; pa_rp; pa_op]
+    | ("Parsers"|"", "pa_extend.cmo" | "pa_extend_m.cmo" | "g" | "grammar" | "camlp4grammarparser.cmo") -> load [pa_r; pa_g]
+    | ("Parsers"|"", "pa_macro.cmo"  | "m"  | "macro" | "camlp4macroparser.cmo") -> load [pa_r; pa_m]
+    | ("Parsers"|"", "q" | "camlp4quotationexpander.cmo") -> load [pa_r; pa_qb; pa_q]
+    | ("Parsers"|"", "q_MLast.cmo" | "rq" | "camlp4ocamlrevisedquotationexpander.cmo") -> load [pa_r; pa_qb; pa_rq]
+    | ("Parsers"|"", "oq" | "camlp4ocamloriginalquotationexpander.cmo") -> load [pa_r; pa_o; pa_qb; pa_oq]
     | ("Parsers"|"", "rf") -> load [pa_r; pa_rp; pa_qb; pa_q; pa_g; pa_m]
     | ("Parsers"|"", "of") -> load [pa_r; pa_o; pa_rp; pa_op; pa_qb; pa_rq; pa_g; pa_m]
-    | ("Filters"|"", "l" | "Lift" | "lift") -> load ["Camlp4Filters.LiftCamlp4Ast"]
-    | ("Printers"|"", "pr_r.cmo" | "r" | "OCamlr" | "Camlp4Printers/OCamlr.cmo") ->
+    | ("Filters"|"", "lift" | "camlp4astlifter.cmo") -> load ["Camlp4AstLifter"]
+    | ("Filters"|"", "exn" | "camlp4exceptiontracer.cmo") -> load ["Camlp4ExceptionTracer"]
+    | ("Filters"|"", "prof" | "camlp4profiler.cmo") -> load ["Camlp4Profiler"]
+    | ("Filters"|"", "map" | "camlp4mapgenerator.cmo") -> load ["Camlp4MapGenerator"]
+    | ("Filters"|"", "fold" | "camlp4foldgenerator.cmo") -> load ["Camlp4FoldGenerator"]
+    | ("Filters"|"", "meta" | "camlp4metagenerator.cmo") -> load ["Camlp4MetaGenerator"]
+    | ("Filters"|"", "trash" | "camlp4trashremover.cmo") -> load ["Camlp4TrashRemover"]
+    | ("Filters"|"", "striploc" | "camlp4locationstripper.cmo") -> load ["Camlp4LocationStripper"]
+    | ("Filters"|"", "tracer" | "camlp4tracer.cmo") -> load ["Camlp4Tracer"]
+    | ("Printers"|"", "pr_r.cmo" | "r" | "ocamlr" | "camlp4ocamlrevisedprinter.cmo") ->
         Register.enable_ocamlr_printer ()
     (* | ("Printers"|"", "rr" | "OCamlrr" | "Camlp4Printers/OCamlrr.cmo") -> *)
         (* Register.enable_ocamlrr_printer () *)
-    | ("Printers"|"", "pr_o.cmo" | "o" | "OCaml" | "Camlp4Printers/OCaml.cmo") ->
+    | ("Printers"|"", "pr_o.cmo" | "o" | "ocaml" | "camlp4ocamlprinter.cmo") ->
         Register.enable_ocaml_printer ()
-    | ("Printers"|"", "pr_dump.cmo" | "p" | "DumpOCamlAst" | "Camlp4Printers/DumpOCamlAst.cmo") ->
+    | ("Printers"|"", "pr_dump.cmo" | "p" | "dumpocaml" | "camlp4ocamlastdumper.cmo") ->
         Register.enable_dump_ocaml_ast_printer ()
-    | ("Printers"|"", "d" | "DumpCamlp4Ast" | "Camlp4Printers/DumpCamlp4Ast.cmo") ->
+    | ("Printers"|"", "d" | "dumpcamlp4" | "camlp4astdumper.cmo") ->
         Register.enable_dump_camlp4_ast_printer ()
-    | ("Printers"|"", "a" | "Auto" | "Camlp4Printers/Auto.cmo") ->
-        load ["Camlp4Printers.Auto"]
+    | ("Printers"|"", "a" | "auto" | "camlp4autoprinter.cmo") ->
+        load ["Camlp4AutoPrinter"]
     | _ ->
       let y = "Camlp4"^n^"/"^x^".cmo" in
       real_load (try find_in_path y with [ Not_found -> x ]) ];
@@ -157,13 +156,13 @@ value process_impl dyn_loader name =
           AstFilters.fold_implem_filters gimd;
 
 value just_print_the_version () =
-  do { printf "%s@." Config.version; exit 0 };
+  do { printf "%s@." Camlp4_config.version; exit 0 };
 
 value print_version () =
-  do { eprintf "Camlp4 version %s@." Config.version; exit 0 };
+  do { eprintf "Camlp4 version %s@." Camlp4_config.version; exit 0 };
 
 value print_stdlib () =
-  do { printf "%s@." Config.camlp4_standard_library; exit 0 };
+  do { printf "%s@." Camlp4_config.camlp4_standard_library; exit 0 };
 
 value usage ini_sl ext_sl =
   do {
@@ -205,7 +204,7 @@ value print_loaded_modules = ref False;
 value (task, do_task) =
   let t = ref None in
   let task f x =
-    let () = Config.current_input_file.val := x in
+    let () = Camlp4_config.current_input_file.val := x in
     t.val := Some (if t.val = None then (fun _ -> f x)
                    else (fun usage -> usage ())) in
   let do_task usage = match t.val with [ Some f -> f usage | None -> () ] in
@@ -241,11 +240,11 @@ value initial_spec_list =
     "<file>  Parse <file> as an implementation, whatever its extension.");
   ("-str", Arg.String (fun x -> input_file (Str x)),
     "<string>  Parse <string> as an implementation.");
-  ("-unsafe", Arg.Set Config.unsafe,
+  ("-unsafe", Arg.Set Camlp4_config.unsafe,
     "Generate unsafe accesses to array and strings.");
   ("-noassert", Arg.Unit warn_noassert,
     "Obsolete, do not use this option.");
-  ("-verbose", Arg.Set Config.verbose,
+  ("-verbose", Arg.Set Camlp4_config.verbose,
     "More verbose in parsing errors.");
   ("-loc", Arg.Set_string Loc.name,
     "<name>   Name of the location variable (default: " ^ Loc.name.val ^ ").");
@@ -257,7 +256,7 @@ value initial_spec_list =
     "Print Camlp4 version and exit.");
   ("-version", Arg.Unit just_print_the_version,
     "Print Camlp4 version number and exit.");
-  ("-no_quot", Arg.Clear Config.quotations,
+  ("-no_quot", Arg.Clear Camlp4_config.quotations,
     "Don't parse quotations, allowing to use, e.g. \"<:>\" as token.");
   ("-loaded-modules", Arg.Set print_loaded_modules, "Print the list of loaded modules.");
   ("-parser", Arg.String (rewrite_and_load "Parsers"),

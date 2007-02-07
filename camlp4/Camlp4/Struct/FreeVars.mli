@@ -17,7 +17,7 @@
  * - Nicolas Pouillard: initial version
  *)
 
-module Make (Ast : Sig.Camlp4Ast.S) : sig
+module Make (Ast : Sig.Camlp4Ast) : sig
   module S : Set.S with type elt = string;
 
   value fold_binding_vars : (string -> 'accu -> 'accu) -> Ast.binding -> 'accu -> 'accu;

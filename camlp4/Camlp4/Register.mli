@@ -18,18 +18,18 @@
  *)
 
 module Plugin
-  (Id : Sig.Id.S) (Plugin : functor (Unit : sig end) -> sig end) : sig end;
+  (Id : Sig.Id) (Plugin : functor (Unit : sig end) -> sig end) : sig end;
 
 module SyntaxPlugin
-  (Id : Sig.Id.S) (SyntaxPlugin : functor (Syn : Sig.Syntax.S) -> sig end) :
+  (Id : Sig.Id) (SyntaxPlugin : functor (Syn : Sig.Syntax) -> sig end) :
     sig end;
 
 module SyntaxExtension
-  (Id : Sig.Id.S) (SyntaxExtension : Sig.SyntaxExtension.S) : sig end;
+  (Id : Sig.Id) (SyntaxExtension : Sig.SyntaxExtension) : sig end;
 
 module OCamlSyntaxExtension
-  (Id : Sig.Id.S)
-  (SyntaxExtension : functor (Syntax : Sig.Camlp4Syntax.S) -> Sig.Camlp4Syntax.S)
+  (Id : Sig.Id)
+  (SyntaxExtension : functor (Syntax : Sig.Camlp4Syntax) -> Sig.Camlp4Syntax)
   : sig end;
 
 (** {6 Registering Parsers} *)
@@ -42,13 +42,13 @@ value register_sig_item_parser : parser_fun PreCast.Ast.sig_item -> unit;
 value register_parser : parser_fun PreCast.Ast.str_item -> parser_fun PreCast.Ast.sig_item -> unit;
 
 module Parser
-  (Id : Sig.Id.S) (Maker : functor (Ast : Sig.Ast.S) -> Sig.Parser.S with module Ast = Ast) : sig end;
+  (Id : Sig.Id) (Maker : functor (Ast : Sig.Ast) -> Sig.Parser with module Ast = Ast) : sig end;
 
 module OCamlParser
-  (Id : Sig.Id.S) (Maker : functor (Ast : Sig.Camlp4Ast.S) -> Sig.Parser.S with module Ast = Ast) : sig end;
+  (Id : Sig.Id) (Maker : functor (Ast : Sig.Camlp4Ast) -> Sig.Parser with module Ast = Ast) : sig end;
 
 module OCamlPreCastParser
-  (Id : Sig.Id.S) (Parser : Sig.Parser.S with module Ast = PreCast.Ast) : sig end;
+  (Id : Sig.Id) (Parser : Sig.Parser with module Ast = PreCast.Ast) : sig end;
 
 (** {6 Registering Printers} *)
 
@@ -60,29 +60,29 @@ value register_sig_item_printer : printer_fun PreCast.Ast.sig_item -> unit;
 value register_printer : printer_fun PreCast.Ast.str_item -> printer_fun PreCast.Ast.sig_item -> unit;
 
 module Printer
-  (Id : Sig.Id.S)
-  (Maker : functor (Syn : Sig.Syntax.S) -> Sig.Printer.S with module Ast = Syn.Ast) :
+  (Id : Sig.Id)
+  (Maker : functor (Syn : Sig.Syntax) -> Sig.Printer with module Ast = Syn.Ast) :
     sig end;
 
 module OCamlPrinter
-  (Id : Sig.Id.S)
-  (Maker : functor (Syn : Sig.Camlp4Syntax.S) -> Sig.Printer.S with module Ast = Syn.Ast) :
+  (Id : Sig.Id)
+  (Maker : functor (Syn : Sig.Camlp4Syntax) -> Sig.Printer with module Ast = Syn.Ast) :
     sig end;
 
 module OCamlPreCastPrinter
-  (Id : Sig.Id.S) (Printer : Sig.Printer.S with module Ast = PreCast.Ast) :
+  (Id : Sig.Id) (Printer : Sig.Printer with module Ast = PreCast.Ast) :
     sig end;
 
 (** {6 Registering Filters} *)
 
 module AstFilter
-  (Id : Sig.Id.S) (Maker : functor (F : Sig.AstFilters.S) -> sig end) : sig end;
+  (Id : Sig.Id) (Maker : functor (F : Sig.AstFilters) -> sig end) : sig end;
 
 value declare_dyn_module : string -> (unit -> unit) -> unit;
 value iter_and_take_callbacks : ((string * (unit -> unit)) -> unit) -> unit;
 
-module CurrentParser : Sig.Parser.S with module Ast = PreCast.Ast;
-module CurrentPrinter : Sig.Printer.S with module Ast = PreCast.Ast;
+module CurrentParser : Sig.Parser with module Ast = PreCast.Ast;
+module CurrentPrinter : Sig.Printer with module Ast = PreCast.Ast;
 
 value enable_ocaml_printer : unit -> unit;
 value enable_ocamlr_printer : unit -> unit;

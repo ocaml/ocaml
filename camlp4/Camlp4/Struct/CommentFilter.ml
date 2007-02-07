@@ -16,7 +16,7 @@
  * - Daniel de Rauglaudre: initial version
  * - Nicolas Pouillard: refactoring
  *)
-module Make (Token : Sig.Camlp4Token.S) = struct
+module Make (Token : Sig.Camlp4Token) = struct
   open Token;
 
   type t = (Stream.t (string * Loc.t) * Queue.t (string * Loc.t));
@@ -31,7 +31,7 @@ module Make (Token : Sig.Camlp4Token.S) = struct
   value filter (_, q) =
     let rec self =
       parser
-      [ [: ` (Sig.Camlp4Token.COMMENT x, loc); xs :] ->
+      [ [: ` (Sig.COMMENT x, loc); xs :] ->
             do { Queue.add (x, loc) q;
                  debug comments "add: %S at %a@\n" x Loc.dump loc in
                  self xs }

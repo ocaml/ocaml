@@ -16,11 +16,11 @@
  * - Nicolas Pouillard: initial version
  *)
 
-module Id : Sig.Id.S;
+module Id : Sig.Id;
 
-module Make (Syntax : Sig.Camlp4Syntax.S) : sig
+module Make (Syntax : Sig.Camlp4Syntax) : sig
   open Format;
-  include Sig.Camlp4Syntax.S
+  include Sig.Camlp4Syntax
            with module Loc     = Syntax.Loc
             and module Warning = Syntax.Warning
             and module Token   = Syntax.Token
@@ -164,5 +164,5 @@ module Make (Syntax : Sig.Camlp4Syntax.S) : sig
     ?input_file: string -> ?output_file: string -> Ast.str_item -> unit;
 end;
 
-module MakeMore (Syntax : Sig.Camlp4Syntax.S)
-: Sig.Printer.S with module Ast = Syntax.Ast;
+module MakeMore (Syntax : Sig.Camlp4Syntax)
+: Sig.Printer with module Ast = Syntax.Ast;

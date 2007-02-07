@@ -16,6 +16,7 @@
  * - Daniel de Rauglaudre: initial version
  * - Nicolas Pouillard: refactoring
  *)
+
 module Make (Structure : Structure.S) = struct
   module Tools  = Tools.Make Structure;
   module Search = Search.Make Structure;
