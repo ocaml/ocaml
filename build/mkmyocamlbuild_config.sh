@@ -14,4 +14,7 @@ sed \
     -e 's/^let <lower>\(MAKE\|DO\).*$//g' \
     -e 's/"true"/true/g' \
     -e 's/"false"/false/g' \
-    config/Makefile | sed -f build/tolower.sed | sed -f build/tolower.sed > myocamlbuild_config.ml
+    config/Makefile | \
+    sed -f build/tolower.sed | \
+    sed -f build/tolower.sed | \
+    sed -f build/tolower.sed > myocamlbuild_config.ml
