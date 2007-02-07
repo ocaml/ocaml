@@ -151,3 +151,7 @@ installdir \
   ocamlbuild/ocamlbuild.cmo \
   ocamlbuild/ocamlbuild{,.p}.{cmx,$O} \
   $LIBDIR/ocamlbuild
+
+installdir \
+  ../ocamlbuild/man/ocamlbuild.1 \
+  $MANDIR/man1
