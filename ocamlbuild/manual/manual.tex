@@ -6,20 +6,20 @@
 \usepackage[T1]{fontenc}
 \usepackage[english]{babel}
 \usepackage[a4paper,lmargin=1cm,rmargin=1cm,tmargin=1cm,bmargin=1cm]{geometry}
+%%%
+\newcommand{\ocb}{\texttt{ocamlbuild}~}
+\newcommand{\tags}{\texttt{\_tags}~}
 %***)
 %(*** title
 \begin{document}
-\newcommand{\ocb}{\texttt{ocamlbuild}~}
-\newcommand{\tags}{\texttt{\_tags}~}
 \title{\ocb, a tool for \\ automatic compilation \\ of OCaml projects}
 \author{Nicolas \textsc{Pouillard}, Berke \textsc{Durak}}
 \date{January 2007}
 \maketitle
 %***)
 %(*** abstract
-\abstract{
-
-}
+\begin{abstract}
+\end{abstract}
 %***)
 %(*** Motivations
 \section{Motivations}
@@ -424,7 +424,7 @@ If you do not have subdirectories, you can put \texttt{*.ml} instead of
 \subsection{Glob patterns and expressions}
 \label{subsec:glob}
 Glob patterns have a syntax similar to those used by UNIX shells to select path
-names (like \texttt{foo\_\*\.ba?}).  They are used in \ocb to define the files
+names (like \texttt{foo\_*.ba?}).  They are used in \ocb to define the files
 and directories to which tags apply.  Glob expressions are glob patterns
 enclosed in brackets \texttt{<} and \texttt{>} combined using the standard
 boolean operators \texttt{and}, \texttt{or}, \texttt{not}.  This allows one to
@@ -446,7 +446,7 @@ $\texttt{-}$ and $\texttt{.}$.  This is called the pathname alphabet $P$.
     \hline
     \hline
 %%
-    {$u$ \vskip 0.5em A string of pathname characters} &
+    {$u$ \vspace*{0.5em} A string of pathname characters} &
     \texttt{foo.ml} &
     \texttt{foo.ml} &
     \texttt{fo.ml}, \texttt{bar/foo.ml} &
@@ -454,7 +454,7 @@ $\texttt{-}$ and $\texttt{.}$.  This is called the pathname alphabet $P$.
     ($\{ u \}$, where $u \in P^*$) \\
     \hline
 %%
-    {\texttt{*} \vskip 0.5em The wildcard star}&
+    {\texttt{*} \vspace*{0.5em} The wildcard star}&
     \texttt{*}&
     $\varepsilon$, \texttt{foo}, \texttt{bar} &
     \texttt{foo/bar}, \texttt{/bar} &
@@ -462,14 +462,14 @@ $\texttt{-}$ and $\texttt{.}$.  This is called the pathname alphabet $P$.
     ($P^*$) \\
     \hline
 %%
-    {\texttt{?} \vskip 0.5em The joker}&
+    {\texttt{?} \vspace*{0.5em} The joker}&
     \texttt{?}&
     \texttt{a}, \texttt{b}, \texttt{z} &
     \texttt{/}, \texttt{bar} &
     Any one-letter string, excluding the slash \\
     \hline
 %%
-    {\texttt{**/} \vskip 0.5em The prefix interdirectory star}&
+    {\texttt{**/} \vspace*{0.5em} The prefix interdirectory star}&
     \texttt{**/foo.ml}&
     \texttt{foo.ml}, \texttt{bar/foo.ml}, \texttt{bar/baz/foo.ml} &
     \texttt{foo/bar}, \texttt{/bar} &
@@ -477,7 +477,7 @@ $\texttt{-}$ and $\texttt{.}$.  This is called the pathname alphabet $P$.
     ($\varepsilon \cup P^*\mathtt{/}$) \\
     \hline
 %%
-    {\texttt{/**} \vskip 0.5em The suffix interdirectory star}&
+    {\texttt{/**} \vspace*{0.5em} The suffix interdirectory star}&
     \texttt{foo/**}&
     \texttt{foo}, \texttt{foo/bar} &
     \texttt{bar/foo} &
@@ -485,7 +485,7 @@ $\texttt{-}$ and $\texttt{.}$.  This is called the pathname alphabet $P$.
     ($\varepsilon \cup \mathtt{/}P^*$) \\
     \hline
 %%
-    {\texttt{/**/} \vskip 0.5em The infix interdirectory star}&
+    {\texttt{/**/} \vspace*{0.5em} The infix interdirectory star}&
     \texttt{bar/**/foo.ml}&
     \texttt{bar/foo.ml}, \texttt{bar/baz/foo.ml} &
     \texttt{foo.ml} &
@@ -495,7 +495,7 @@ $\texttt{-}$ and $\texttt{.}$.  This is called the pathname alphabet $P$.
 %%
     {$\mathtt{[} r_1 r_2 \cdots r_k \mathtt{]}$
     where $r_i$ is either $c$ or $c_1-c_2$ $(1 \leq i \leq k)$
-    \vskip 0.5em The positive character class}&
+    \vspace*{0.5em} The positive character class}&
     \texttt{[a-fA-F0-9\_.]}&
     \texttt{3}, \texttt{F}, \texttt{.} &
     \texttt{z}, \texttt{bar} &
@@ -506,7 +506,7 @@ $\texttt{-}$ and $\texttt{.}$.  This is called the pathname alphabet $P$.
 %%
     {\texttt{[\char`\^}$r_1 r_2 \cdots r_k \mathtt{]}$
     where $r_i$ is either $c$ or $c_1-c_2$ $(1 \leq i \leq k)$
-    \vskip 0.5em The negative character class}&
+    \vspace*{0.5em} The negative character class}&
     \texttt{[\char`\^a-fA-F0-9\_.]}&
     \texttt{z}, \texttt{bar} &
     \texttt{3}, \texttt{F}, \texttt{.} &
@@ -515,7 +515,7 @@ $\texttt{-}$ and $\texttt{.}$.  This is called the pathname alphabet $P$.
     ($\Sigma^* \setminus \left(\mathscr L(r_1) \cup \cdots \cup \mathscr L(r_n)\right)$) \\
     \hline
 %%
-    {$p_1 p_2$ \vskip 0.5em A concatenation of patterns}&
+    {$p_1 p_2$ \vspace*{0.5em} A concatenation of patterns}&
     \texttt{foo*}&
     \texttt{foo}, \texttt{foob}, \texttt{foobar} &
     \texttt{fo}, \texttt{bar} &
@@ -524,7 +524,7 @@ $\texttt{-}$ and $\texttt{.}$.  This is called the pathname alphabet $P$.
     ($\{ uv \mid u \in \mathscr L(p_1), v \in \mathscr L(p_2) \}$) \\
     \hline
 %%
-    {$\mathtt{\{} p_1 \mathtt{,} p_2 \mathtt{,} \cdots \mathtt{,} p_k \mathtt{\}}$ \vskip 0.5em A union of patterns}&
+    {$\mathtt{\{} p_1 \mathtt{,} p_2 \mathtt{,} \cdots \mathtt{,} p_k \mathtt{\}}$ \vspace*{0.5em} A union of patterns}&
     \texttt{toto.\{ml,mli\}}&
     \texttt{toto.ml}, \texttt{toto.mli} &
     \texttt{toto.} &

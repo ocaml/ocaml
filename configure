@@ -1436,7 +1436,7 @@ echo "SHAREDCCCOMPOPTS=$sharedcccompopts" >> Makefile
 echo "MKSHAREDLIBRPATH=$mksharedlibrpath" >> Makefile
 cat >> Makefile <<EOF
 SYSLIB=-l\$(1)
-#ml let syslib x = \"-l\"^x;;
+#ml let syslib x = "-l"^x;;
 
 MKEXE=\$(BYTECC) -o \$(1) \$(2)
 #ml let mkexe out files opts = Printf.sprintf "%s -o %s %s %s" bytecc out opts files;;

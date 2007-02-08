@@ -1,0 +1,1 @@
+\newcommand{\mathscr}[1]{{\mathcal{#1}}}
