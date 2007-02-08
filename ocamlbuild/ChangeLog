@@ -1,3 +1,104 @@
+2007-02-08  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Add manual/manual.hva.
+
+	* manual/manual.hva: New.
+
+2007-02-08  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Changes done with Luc.
+
+	* manual/manual.tex: .
+	* manual/Makefile: .
+
+2007-02-08  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Fix a bug found by Luc in hevea.
+
+	* ocaml_utils.ml,
+	* ocaml_utils.mli: Change keep_this_module into module_importance to
+	have a finer grain.
+	* ocaml_compiler.ml: Update to importance.
+	* ocamldep.ml,
+	* ocamldep.mli: We now try to also build stdlib modules but don't fail
+	if they don't exists.
+	* test/test5/stack.ml: New.
+	* test/test5/a.ml: A test case (from hevea).
+	* test/good-output: Update.
+
+2007-02-08  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Ocamldoc, extension:* tag ...
+
+	* ocaml_tools.mli,
+	* ocaml_tools.ml: The ocamldoc support now takes into account two modes
+	*d and -o.
+	* ocaml_specific.ml: Two more rules and many flags for some of the
+	standard behaviors.
+	* signatures.mli: Some comments.
+	* tools.ml: Add the extension:* tag.
+	* TODO: Update.
+
+2007-02-08  Berke Durak  <berke.durak@inria.fr>
+
+	Hygiene generates sterilize.sh.
+
+	* fda.ml: .
+	* fda.mli: .
+	* hygiene.ml: .
+	* hygiene.mli: .
+	* main.ml: .
+	* options.ml: .
+	* signatures.mli: .
+
+2007-02-07  Berke Durak  <berke.durak@inria.fr>
+
+	Updated section on ocamldoc.
+
+	* manual/manual.tex: .
+
+2007-02-07  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Some minor manual and slides changes.
+
+	* ocamlbuild-presentation.rslide,
+	* manual/manual.tex: Ditto.
+
+2007-02-07  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Make links for the documentation.
+
+	* main.ml: Handle doc.
+	* test/good-output: Update.
+
+2007-02-07  Berke Durak  <berke.durak@inria.fr>
+
+	Added manual section for ocamldoc.
+
+	* manual/manual.tex: .
+	* manual/Makefile: .
+
+2007-02-07  Berke Durak  <berke.durak@inria.fr>
+
+	Fixed truncated display problem.
+
+	* executor.ml: .
+	* .vcs: .
+
+2007-02-07  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Fix the bootstrap.
+
+	* start.sh: Swap lines.
+	* Makefile: -verbose.
+
+2007-02-07  Berke Durak  <berke.durak@inria.fr>
+
+	TODO + Executor.
+
+	* manual/manual.tex: .
+	* TODO: .
+
 2007-02-06  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
 
 	Make -a more static, to avoid some complications.

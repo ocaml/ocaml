@@ -50,6 +50,11 @@ let print_unix_status oc = function
   | WSTOPPED i -> fp oc "stop %d" i
 ;;
 (* ***)
+(*** exit *)
+let exit rc =
+  raise (Ocamlbuild_pack.My_std.Exit_with_code rc)
+;;
+(* ***)
 (*** print_job_id *)
 let print_job_id oc (x,y) = fp oc "%d.%d" x y;;
 (* ***)
@@ -180,6 +185,46 @@ let execute
     done
   in
   (* ***)
+  (*** do_read *)
+  let do_read =
+    let u = String.create 4096 in
+    fun ?(loop=false) fd job ->
+      (*if job.job_dying then
+        ()
+      else*)
+        try
+          let rec iteration () =
+            let m =
+              try
+                read fd u 0 (String.length u)
+              with
+              | Unix.Unix_error(_,_,_) -> 0
+            in
+            if m = 0 then
+              if job.job_dying then 
+                ()
+              else
+                terminate job
+            else
+              begin
+                Buffer.add_substring job.job_buffer u 0 m;
+                if loop then
+                  iteration ()
+                else
+                  ()
+              end
+          in
+          iteration ()
+        with
+        | x ->
+            display
+              begin fun oc ->
+                fp oc "Exception %s while reading output of command %S\n%!" job.job_command
+                  (Printexc.to_string x);
+              end;
+            exit Exit_codes.rc_io_error
+  in
+  (* ***)
   (*** process_jobs_to_terminate *)
   let process_jobs_to_terminate () =
     while not (Queue.is_empty jobs_to_terminate) do
@@ -189,6 +234,8 @@ let execute
       (*display begin fun oc -> fp oc "Terminating job %a\n%!" print_job_id job.job_id; end;*)
 
       decr jobs_active;
+      do_read ~loop:true (doi job.job_stdout) job;
+      do_read ~loop:true (doi job.job_stderr) job;
       outputs := FDM.remove (doi job.job_stdout) (FDM.remove (doi job.job_stderr) !outputs);
       jobs := JS.remove job !jobs;
       let status = close_process_full (job.job_stdout, job.job_stdin, job.job_stderr) in
@@ -236,31 +283,6 @@ let execute
     done
   in
   (* ***)
-  (*** do_read *)
-  let do_read =
-    let u = String.create 4096 in
-    fun fd job ->
-      if job.job_dying then
-        ()
-      else
-        try
-          let m = read fd u 0 (String.length u) in
-          if m = 0 then
-            terminate job
-          else
-            begin
-              Buffer.add_substring job.job_buffer u 0 m
-            end
-        with
-        | x ->
-            display
-              begin fun oc ->
-                fp oc "Exception %s while reading output of command %S\n%!" job.job_command
-                  (Printexc.to_string x);
-              end;
-            exit Exit_codes.rc_io_error
-  in
-  (* ***)
   (*** terminate_all_jobs *)
   let terminate_all_jobs () =
     JS.iter (terminate ~continue:false) !jobs
@@ -288,7 +310,7 @@ let execute
               end
               fdlist
           end
-          [chrfds, do_read;
+          [chrfds, do_read ~loop:false;
            chwfds, (fun _ _ -> ());
            chxfds,
              begin fun _ job ->

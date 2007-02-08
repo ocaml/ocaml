@@ -1,10 +1,8 @@
 To do:
-* Ensure that _build and _log are not created if not needed (with -help for
-  instance)
 * Fix report
 * Design a nice, friendly, future-proof plugin (myocamlbuild) API
-* Display: should display nothing (even when finish is called) when no real
-  event as occured.
+* Ocamlbuild should keep track of files removed from the source directory, e.g.,
+removing a .mli should be mirrored in the _build directory.
 
 Being done:
 * Write doc
@@ -28,3 +26,7 @@ Done:
 * -- with no args does not call the executable
 * Complain when used with -- and no target
 * dep ["ocaml"; "link"; "use_foo"] ["foo/foo.o"] tags for adding targets
+* Ensure that _build and _log are not created if not needed (with -help for
+  instance)
+* Display: should display nothing (even when finish is called) when no real
+  event as occured.

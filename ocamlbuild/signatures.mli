@@ -56,7 +56,7 @@ module type STRING = sig
 
   val first_chars : string -> int -> string
   (** [first_chars s n] returns the first [n] characters of [s].
-     This is the same function as {!String.before} ant {!Str.first_chars}. *)
+     This is the same function as {!before} ant {!Str.first_chars}. *)
 
   val last_chars : string -> int -> string
   (** [last_chars s n] returns the last [n] characters of [s].
@@ -339,6 +339,7 @@ module type OPTIONS = sig
   val ocamlmklib : command_spec ref
   val hygiene : bool ref
   val sterilize : bool ref
+  val sterilization_script : string ref
   val ignore_auto : bool ref
   val plugin : bool ref
   val just_plugin : bool ref
@@ -458,12 +459,17 @@ module type PLUGIN = sig
     string -> string -> unit
 
   (** [dep tags deps] Will build [deps] when [tags] will be activated. *)
-  val dep : string list -> string list -> unit
+  val dep : Tags.elt list -> Pathname.t list -> unit
 
-  val flag : string list -> Command.spec -> unit
+  val flag : Tags.elt list -> Command.spec -> unit
 
+  (** [non_dependency module_path module_name]
+       Example: 
+         [non_dependency "foo/bar/baz" "Goo"]
+       Says that the module [Baz] in the file [foo/bar/baz.*] does not depend on [Goo]. *)
   val non_dependency : Pathname.t -> string -> unit
 
+  (** [use_lib module_path lib_path]*)
   val use_lib : Pathname.t -> Pathname.t -> unit
 
   val expand_module :
@@ -488,9 +494,9 @@ module type PLUGIN = sig
       this package even if it contains that module. *)
   val hide_package_contents : string -> unit
 
-  val tag_file : string -> string list -> unit
+  val tag_file : Pathname.t -> Tags.elt list -> unit
 
-  val tag_any : string list -> unit
+  val tag_any : Tags.elt list -> unit
 
   val tags_of_pathname : Pathname.t -> Tags.t
 

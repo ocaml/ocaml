@@ -291,37 +291,43 @@ ocamldep.opt -modules d.ml > d.ml.depends
 ocamldep.opt -modules a.ml > a.ml.depends
 ocamldep.opt -modules a.mli > a.mli.depends
 ocamlc.opt -c -o a.cmi a.mli
+ocamldep.opt -modules stack.ml > stack.ml.depends
+ocamlc.opt -c -o stack.cmo stack.ml
 ocamldep.opt -modules b.ml > b.ml.depends
 ocamlc.opt -c -o a.cmo a.ml
 ocamlc.opt -c -o b.cmo b.ml
 ocamlc.opt -pack a.cmo b.cmo -o c.cmo
 ocamlc.opt -c -o d.cmo d.ml
-ocamlc.opt c.cmo d.cmo -o d.byte
+ocamlc.opt stack.cmo c.cmo d.cmo -o d.byte
+ocamlopt.opt -c -o stack.cmx stack.ml
 ocamlopt.opt -c -for-pack C -o a.cmx a.ml
 ocamlopt.opt -c -for-pack C -o b.cmx b.ml
 mv c.cmi c.cmitmp
 ocamlopt.opt -pack a.cmx b.cmx -o c.cmx
 cmp c.cmitmp c.cmi
 ocamlopt.opt -c -o d.cmx d.ml
-ocamlopt.opt c.cmx d.cmx -o d.native
+ocamlopt.opt stack.cmx c.cmx d.cmx -o d.native
 + ../../_build/ocamlbuild.native d.byte d.native -no-skip -classic-display -verbose 0 -nothing-should-be-rebuilt
 [cache hit] ocamldep.opt -modules d.ml > d.ml.depends
 [cache hit] ocamldep.opt -modules a.ml > a.ml.depends
 [cache hit] ocamldep.opt -modules a.mli > a.mli.depends
 [cache hit] ocamlc.opt -c -o a.cmi a.mli
+[cache hit] ocamldep.opt -modules stack.ml > stack.ml.depends
+[cache hit] ocamlc.opt -c -o stack.cmo stack.ml
 [cache hit] ocamlc.opt -c -o a.cmo a.ml
 [cache hit] ocamldep.opt -modules b.ml > b.ml.depends
 [cache hit] ocamlc.opt -c -o b.cmo b.ml
 [cache hit] ocamlc.opt -pack a.cmo b.cmo -o c.cmo
 [cache hit] ocamlc.opt -c -o d.cmo d.ml
-[cache hit] ocamlc.opt c.cmo d.cmo -o d.byte
+[cache hit] ocamlc.opt stack.cmo c.cmo d.cmo -o d.byte
+[cache hit] ocamlopt.opt -c -o stack.cmx stack.ml
 [cache hit] ocamlopt.opt -c -for-pack C -o a.cmx a.ml
 [cache hit] ocamlopt.opt -c -for-pack C -o b.cmx b.ml
 [cache hit] mv c.cmi c.cmitmp
 [cache hit] ocamlopt.opt -pack a.cmx b.cmx -o c.cmx
 [cache hit] cmp c.cmitmp c.cmi
 [cache hit] ocamlopt.opt -c -o d.cmx d.ml
-[cache hit] ocamlopt.opt c.cmx d.cmx -o d.native
+[cache hit] ocamlopt.opt stack.cmx c.cmx d.cmx -o d.native
  _____         _    __
 |_   _|__  ___| |_ / /_
   | |/ _ \/ __| __| '_ \
@@ -422,7 +428,7 @@ PASS
 + rm -rf _build
 + svn revert bb.ml
 + ../../_build/ocamlbuild.native bbcc.cma main.byte bbcc.cmxa main.native -no-skip -classic-display
-ocamlopt.opt -I /Users/ertai/local/lib/ocamlbuild unix.cmxa /Users/ertai/local/lib/ocamlbuild/ocamlbuildlib.cmxa myocamlbuild.ml /Users/ertai/local/lib/ocamlbuild/ocamlbuild.cmx -o myocamlbuild
+ocamlopt.opt -I /Users/ertai/wext/ocamlbuild/trunk2/_install/lib/ocamlbuild unix.cmxa /Users/ertai/wext/ocamlbuild/trunk2/_install/lib/ocamlbuild/ocamlbuildlib.cmxa myocamlbuild.ml /Users/ertai/wext/ocamlbuild/trunk2/_install/lib/ocamlbuild/ocamlbuild.cmx -o myocamlbuild
 ocamldep.opt -modules bb.ml > bb.ml.depends
 ocamldep.opt -modules bb.mli > bb.mli.depends
 ocamlc.opt -c -o bb.cmi bb.mli
@@ -612,7 +618,7 @@ Reverted 'bb.ml'
 + BUILD2=../../_build/ocamlbuild.native a.byte a.native -no-skip -classic-display  -verbose 0 -nothing-should-be-rebuilt 
 + rm -rf _build
 + ../../_build/ocamlbuild.native a.byte a.native -no-skip -classic-display
-ocamlopt.opt -I /Users/ertai/local/lib/ocamlbuild unix.cmxa /Users/ertai/local/lib/ocamlbuild/ocamlbuildlib.cmxa myocamlbuild.ml /Users/ertai/local/lib/ocamlbuild/ocamlbuild.cmx -o myocamlbuild
+ocamlopt.opt -I /Users/ertai/wext/ocamlbuild/trunk2/_install/lib/ocamlbuild unix.cmxa /Users/ertai/wext/ocamlbuild/trunk2/_install/lib/ocamlbuild/ocamlbuildlib.cmxa myocamlbuild.ml /Users/ertai/wext/ocamlbuild/trunk2/_install/lib/ocamlbuild/ocamlbuild.cmx -o myocamlbuild
 ocamldep.opt -modules a.ml > a.ml.depends
 ocamldep.opt -modules myconfig.ml > myconfig.ml.depends
 ocamlc.opt -c -o myconfig.cmo myconfig.ml

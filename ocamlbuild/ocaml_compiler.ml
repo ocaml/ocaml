@@ -94,15 +94,16 @@ let prepare_compile build ml =
   let include_dirs = Pathname.include_dirs_of dir in
   let modules = Ocamldep.module_dependencies_of ml in
   let results =
-    build (List.map (fun x -> expand_module include_dirs x ["cmi"]) modules) in
-  List.iter2 begin fun name res ->
-    match res with
-    | Good _ -> ()
-    | Bad exn ->
+    build (List.map (fun (_, x) -> expand_module include_dirs x ["cmi"]) modules) in
+  List.iter2 begin fun (mandatory, name) res ->
+    match mandatory, res with
+    | _, Good _ -> ()
+    | `mandatory, Bad exn ->
         if !Options.ignore_auto then
           dprintf 3 "Warning: Failed to build the module \
                      %s requested by ocamldep" name
         else raise exn
+    | `just_try, Bad _ -> ()
   end modules results
 
 let byte_compile_ocaml_interf mli cmi env build =
@@ -122,12 +123,14 @@ let rec prepare_link tag cmx extensions build =
   let include_dirs = Pathname.include_dirs_of dir in
   if Hashtbl.mem cache_prepare_link key then () else
     let () = Hashtbl.add cache_prepare_link key true in
-    let modules = List.map (fun x -> expand_module include_dirs x extensions)
-                           (Ocamldep.module_dependencies_of (Pathname.update_extensions "ml" cmx)) in
-    List.iter begin function
-      | Good p -> prepare_link tag p extensions build
-      | Bad exn -> if not !Options.ignore_auto then raise exn        
-    end (build modules)
+    let modules = Ocamldep.module_dependencies_of (Pathname.update_extensions "ml" cmx) in
+    let modules' = List.map (fun (_, x) -> expand_module include_dirs x extensions) modules in
+    List.iter2 begin fun (mandatory, _) result ->
+      match mandatory, result with
+      | _, Good p -> prepare_link tag p extensions build
+      | `mandatory, Bad exn -> if not !Options.ignore_auto then raise exn
+      | `just_try, Bad _ -> ()
+    end modules (build modules')
 
 let native_compile_ocaml_implem ?tag ?(cmx_ext="cmx") ml env build =
   let ml = env ml in

@@ -1,7 +1,7 @@
 documentclass :beamer, :t, :compress, :red
 usepackage    :inputenc, :utf8
 
-title     "ocamlbuild, a tool for automatic compilation of O'Caml projects"
+title     "ocamlbuild, a tool for automatic compilation of OCaml projects"
 authors   "Berke Durak", "Nicolas Pouillard"
 institute do
   > @@Berke.Durak@inria.fr@@
@@ -20,24 +20,24 @@ at_begin_subsection do
 end
 beamer_footline
 
-words "**O'Caml**"
+words "**OCaml**"
 
 words "??ocamlbuild??"
 
 maketitle
 
 slide "Why such a tool?" do
-  * To make our O'Caml life easier.
+  * To make our OCaml life easier.
   * A Makefile is so painful.
 end
 
 slide "What does ocamlbuild handle?" do
 
-  box "Regular O'Caml projects of arbitrary size" do
+  box "Regular OCaml projects of arbitrary size" do
     > Trivially handled using the command line options.
   end
 
-  box "Mostly regular O'Caml projects with common exceptions" do
+  box "Mostly regular OCaml projects with common exceptions" do
     > Requires writing one _tag_ file that declares those exceptions.
   end
 
@@ -57,12 +57,12 @@ slide "What kind of services for a project?" do
   * Saving time!
 end
 
-slide "What's a regular O'Caml project?" do
-  * O'Caml compilation units (ml and mli files).
-  * O'Caml parsers and lexers specifications (mly and mll files).
+slide "What's a regular OCaml project?" do
+  * OCaml compilation units (ml and mli files).
+  * OCaml parsers and lexers specifications (mly and mll files).
   * Internal packages and libraries (mlpack, mllib).
   * Use of external libraries.
-  * One main O'Caml unit that represents the starting point.
+  * One main OCaml unit that represents the starting point.
 end
 
 slide "How difficult are regular projects?" do

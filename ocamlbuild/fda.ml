@@ -45,9 +45,18 @@ let laws =
 let inspect entry =
   dprintf 5 "Doing sanity checks";
   let evil = ref false in
-  match Hygiene.check ~sterilize:!Options.sterilize laws entry with
-  | (entry, []) -> entry
-  | (entry, stuff) ->
+  match Hygiene.check
+    ?sterilize:
+      begin
+        if !Options.sterilize then
+          Some(!Options.sterilization_script)
+        else
+          None
+      end
+      laws entry
+  with
+  | [] -> ()
+  | stuff ->
     List.iter
       begin fun (law, msgs) ->
         Printf.printf "%s: %s:\n"
@@ -56,10 +65,7 @@ let inspect entry =
            | Fail ->
                if not !evil then
                  begin
-                   Printf.printf "IMPORTANT:\n\
-                                  \  I cannot work with leftover compiled files:  Please remove them.\n\
-                                  \  The directory should contain only source files.\n\
-                                  \  By default I compile in the %s/ directory.\n%!" !Options.build_dir;
+                   Printf.printf "IMPORTANT: I cannot work with leftover compiled files.\n%!";
                    evil := true
                  end;
               "ERROR")
@@ -72,5 +78,4 @@ let inspect entry =
       end
       stuff;
     if !evil then raise Exit_hygiene_failed;
-    entry
 ;;

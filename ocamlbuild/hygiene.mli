@@ -39,9 +39,8 @@ type law = {
 }
 
 (** [check ~sterilize laws entry] will scan the directory tree [entry] for violation to the given [laws].
-    Any warnings or errors will be printed on the [stdout].  If [sterilize] is true, the user will be
-    given the option to delete the offending files by interaction on [stdin/stdout].  This function
-    will return a pair [(entry', penalties)] where [entry'] is the updated directory tree (if the user
-    has agreed to remove offending files, for instance) and [penalties] is a list of laws and messages
-    describing the offenses. *)
-val check : ?sterilize:bool -> law list -> bool Slurp.entry -> bool Slurp.entry * (law * string list) list
+    Any warnings or errors will be printed on the [stdout].  If [sterilize] is [Some fn], a shell script will be written
+    into the file [fn] with commands to delete the offending files.  The command will return a pair [(fatal, penalties)]
+    where [fatal] is [true] when serious hygiene violations have been spotted, and [penalties] is a list of laws and
+    messages describing the offenses. *)
+val check : ?sterilize:string -> law list -> bool Slurp.entry -> (law * string list) list

@@ -11,12 +11,16 @@
 
 (* $Id$ *)
 (* Original author: Nicolas Pouillard *)
+
 val ocamldoc_c : Tags.t -> string -> string -> Command.t
-val ocamldoc_l : Tags.t -> string list -> string -> Command.t
+val ocamldoc_l_dir : Tags.t -> string list -> string -> string -> Command.t
+val ocamldoc_l_file : Tags.t -> string list -> string -> string -> Command.t
 
 val ocamlyacc : string -> Rule.action
 val ocamllex : string -> Rule.action
 val menhir : string -> Rule.action
 val infer_interface : string -> string -> Rule.action
 val document_ocaml_interf : string -> string -> Rule.action
-val document_ocaml_project : string -> string -> Rule.action
+val document_ocaml_project :
+  ?ocamldoc:(Tags.t -> string list -> string -> string -> Command.t) ->
+  string -> string -> string -> Rule.action

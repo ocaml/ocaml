@@ -39,8 +39,13 @@ let module_dependencies = Hashtbl.create 103
 let module_dependencies_of module_path =
   try Hashtbl.find module_dependencies module_path with Not_found -> []
 let register_module_dependencies module_path deps =
+  let deps' = List.fold_right begin fun dep acc ->
+    match module_importance module_path dep with
+    | `ignored -> acc
+    | (`just_try | `mandatory) as importance -> (importance, dep) :: acc
+  end deps [] in
   Hashtbl.replace module_dependencies module_path
-    (List.union (module_dependencies_of module_path) (List.filter (keep_this_module module_path) deps))
+    (List.union (module_dependencies_of module_path) deps')
 
 let depends name ?tags ~prod ~dep ?insert ?(ocamldep_command=ocamldep_command) () =
   Rule.custom_rule name ?tags ~prod ~dep ?insert

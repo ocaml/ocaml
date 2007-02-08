@@ -25,6 +25,6 @@ val libraries_of : Pathname.t -> Pathname.t list
 val use_lib : Pathname.t -> Pathname.t -> unit
 val cmi_of : Pathname.t -> Pathname.t
 val ocaml_add_include_flag : string -> Command.spec list -> Command.spec list
-val keep_this_module : string -> string -> bool
+val module_importance : string -> string -> [ `ignored | `mandatory | `just_try ]
 
 val info_libraries : (string, string * bool) Hashtbl.t

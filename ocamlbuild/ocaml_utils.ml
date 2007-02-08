@@ -42,14 +42,13 @@ let ignore_stdlib x =
 let non_dependencies = ref []
 let non_dependency m1 m2 = non_dependencies := (m1, m2) :: !non_dependencies
 
-let ignore_this_module modpath x =
-  List.mem (modpath, x) !non_dependencies
-  || (List.mem x !Options.ignore_list) || ignore_stdlib x
-
-let keep_this_module modpath x =
-  if ignore_this_module modpath x then
-    let () = dprintf 3 "This module (%s) is ignored by %s" x modpath in false
-  else true
+let module_importance modpath x =
+  if List.mem (modpath, x) !non_dependencies
+  || (List.mem x !Options.ignore_list) then begin
+    let () = dprintf 3 "This module (%s) is ignored by %s" x modpath in
+    `ignored
+  end
+  else if ignore_stdlib x then `just_try else `mandatory
 
 let expand_module include_dirs module_name exts =
   List.fold_right begin fun include_dir ->

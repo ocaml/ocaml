@@ -26,7 +26,8 @@ let build_dir = ref "_build"
 let include_dirs = ref []
 let exclude_dirs = ref []
 let nothing_should_be_rebuilt = ref false
-let sterilize = ref false
+let sterilize = ref true
+let sterilization_script = ref "sterilize.sh"
 let hygiene = ref true
 let ignore_auto = ref true
 let plugin = ref true
@@ -127,7 +128,8 @@ let spec =
    "-no-stdlib", Set nostdlib, " Don't ignore stdlib modules";
    "-just-plugin", Set just_plugin, " Just build myocamlbuild.ml";
    "-byte-plugin", Clear native_plugin, " Don't use a native plugin but bytecode";
-   "-sterilize", Set sterilize, " Enforce sanity-check rules by removing leftover files (DANGER)";
+   "-sterilization-script", Set_string sterilization_script, " Change the file name for the generated sterilization script";
+   "-no-sterilize", Clear sterilize, " Do not generate sterilization script";
    "-nothing-should-be-rebuilt", Set nothing_should_be_rebuilt, " Fail if something needs to be rebuilt";
    "-classic-display", Set Log.classic_display, " Display executed commands the old-fashioned way";
    "-use-menhir", Unit(fun () -> use_menhir := true; ocamlyacc := A"menhir"),

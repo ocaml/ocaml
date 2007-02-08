@@ -249,10 +249,23 @@ rule "ocaml: mli -> odoc"
   ~deps:["%.mli"; "%.mli.depends"]
   (Ocaml_tools.document_ocaml_interf "%.mli" "%.odoc");;
 
-rule "ocamldoc: document ocaml project *odoc -> docdir"
+rule "ocamldoc: document ocaml project odocl & *odoc -> docdir (html)"
   ~prod:"%.docdir/index.html"
   ~dep:"%.odocl"
-  (Ocaml_tools.document_ocaml_project "%.odocl" "%.docdir");;
+  (Ocaml_tools.document_ocaml_project
+      ~ocamldoc:Ocaml_tools.ocamldoc_l_dir "%.odocl" "%.docdir/index.html" "%.docdir");;
+
+rule "ocamldoc: document ocaml project odocl & *odoc -> docdir (man)"
+  ~prod:"%.docdir/man"
+  ~dep:"%.odocl"
+  (Ocaml_tools.document_ocaml_project
+      ~ocamldoc:Ocaml_tools.ocamldoc_l_dir "%.odocl" "%.docdir/man" "%.docdir");;
+
+rule "ocamldoc: document ocaml project odocl & *odoc -> man|latex|dot..."
+  ~prod:"%(dir).docdir/%(file)"
+  ~dep:"%(dir).odocl"
+  (Ocaml_tools.document_ocaml_project
+      ~ocamldoc:Ocaml_tools.ocamldoc_l_file "%(dir).odocl" "%(dir).docdir/%(file)" "%(dir).docdir");;
 
 (* To use menhir give the -use-menhir option at command line,
    Or put true: use_menhir in your tag file. *)
@@ -358,6 +371,13 @@ let ocaml_warn_flag c =
        (S[A"-warn-error"; A (sprintf "%c" (Char.lowercase c))]);;
 
 List.iter ocaml_warn_flag ['A'; 'C'; 'D'; 'E'; 'F'; 'L'; 'M'; 'P'; 'S'; 'U'; 'V'; 'Y'; 'Z'; 'X'];;
+
+flag ["ocaml"; "doc"; "docdir"; "extension:html"] (A"-html");;
+flag ["ocaml"; "doc"; "docdir"; "manpage"] (A"-man");;
+flag ["ocaml"; "doc"; "docfile"; "extension:dot"] (A"-dot");;
+flag ["ocaml"; "doc"; "docfile"; "extension:tex"] (A"-latex");;
+flag ["ocaml"; "doc"; "docfile"; "extension:ltx"] (A"-latex");;
+flag ["ocaml"; "doc"; "docfile"; "extension:texi"] (A"-texi");;
 
 (** Ocamlbuild plugin for it's own building *)
 let install_lib = lazy (try Sys.getenv "INSTALL_LIB" with Not_found -> !*stdlib_dir/"ocamlbuild" (* not My_std.getenv since it's lazy*)) in

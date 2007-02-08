@@ -88,12 +88,11 @@ let proceed () =
       not (Tags.mem "not_hygienic" tags) && not (Tags.mem "precious" tags)
     end entry in
   Hooks.call_hook Hooks.Before_hygiene;
-  let entry =
-    if !Options.hygiene then
-      Fda.inspect hygiene_entry
-    else
-      (Slurp.force hygiene_entry; hygiene_entry)
-  in
+  if !Options.hygiene then
+    Fda.inspect hygiene_entry
+  else
+    Slurp.force hygiene_entry;
+  let entry = hygiene_entry in
   Hooks.call_hook Hooks.After_hygiene;
   Options.include_dirs := Pathname.current_dir_name :: List.rev !entry_include_dirs;
   dprintf 3 "include directories are:@ %a" print_string_list !Options.include_dirs;
@@ -147,14 +146,17 @@ let proceed () =
     let cmds =
       List.fold_right begin fun (target, ext) acc ->
         let cmd = !Options.build_dir/target in
-        if ext = "byte" || ext = "native" then begin
-          if !Options.make_links then ignore (call (S [A"ln"; A"-sf"; P cmd; A Pathname.current_dir_name]));
-          cmd :: acc
-        end else begin
-          if !Options.program_to_execute then
-            eprintf "Warning: Won't execute %s whose extension is neither .byte nor .native" cmd;
-          acc
-        end
+        let link x =
+          if !Options.make_links then ignore (call (S [A"ln"; A"-sf"; P x; A Pathname.current_dir_name])) in
+        match ext with
+        | "byte" | "native" ->
+            link cmd; cmd :: acc
+        | "html" ->
+            link (Pathname.dirname cmd); acc
+        | _ ->
+            if !Options.program_to_execute then
+              eprintf "Warning: Won't execute %s whose extension is neither .byte nor .native" cmd;
+            acc
       end targets [] in
 
     if !Options.program_to_execute then
@@ -207,7 +209,7 @@ let main () =
   with
   | Exit_OK -> exit rc_ok
   | Fda.Exit_hygiene_failed ->
-      Log.eprintf "Exiting due to hygiene violations (try -sterilize).";
+      Log.eprintf "Exiting due to hygiene violations.";
       exit rc_hygiene
   | Exit_usage u ->
       Log.eprintf "Usage:@ %s." u;

@@ -15,4 +15,4 @@
 
 exception Exit_hygiene_failed
 
-val inspect : bool Slurp.entry -> bool Slurp.entry
+val inspect : bool Slurp.entry -> unit

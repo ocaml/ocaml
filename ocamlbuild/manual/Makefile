@@ -4,6 +4,7 @@ all: manual.pdf manual.html
 
 %.pdf: %.tex
 	pdflatex $<
+	pdflatex $<
 
 %.html: %.tex manual.hva
 	hevea -fix -O manual.hva $<
