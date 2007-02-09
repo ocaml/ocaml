@@ -62,7 +62,7 @@ clean:
 	rm -rf $(BUILDDIR)
 
 distclean: clean
-	rm -rf _start ocamlbuild.byte.start boot/ocamlbuild
+	rm -rf _log _start ocamlbuild.byte.start boot/ocamlbuild
 
 install: all
 	mkdir -p $(INSTALL_BIN)
