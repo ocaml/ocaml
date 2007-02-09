@@ -12,5 +12,3 @@ ocamlcompopt.sh
 package-macosx
 .DS_Store
 *.annot
-_build
-_log
