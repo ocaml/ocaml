@@ -456,6 +456,7 @@ let print_version () =
 
 let main () =
   try
+    Warnings.parse_options false "a";
     Arg.parse [
        "-f", Arg.String (fun s -> dumpfile := s),
              "<file>     Use <file> as dump file (default ocamlprof.dump)";

@@ -72,7 +72,7 @@ let rec select_addr exp =
       end
   | arg ->
       (Alinear arg, 0)
-    
+
 (* Special constraints on operand and result registers *)
 
 exception Use_default
@@ -87,10 +87,10 @@ let pseudoregs_for_operation op arg res =
     Iintop(Iadd|Isub|Imul|Iand|Ior|Ixor) | Iaddf|Isubf|Imulf|Idivf ->
       ([|res.(0); arg.(1)|], res)
   (* One-address unary operations: arg.(0) and res.(0) must be the same *)
-  | Iintop_imm((Iadd|Isub|Imul|Iand|Ior|Ixor|Ilsl|Ilsr|Iasr), _) 
+  | Iintop_imm((Iadd|Isub|Imul|Iand|Ior|Ixor|Ilsl|Ilsr|Iasr), _)
   | Iabsf | Inegf ->
       (res, res)
-  | Ispecific(Ifloatarithmem(_,_)) -> 
+  | Ispecific(Ifloatarithmem(_,_)) ->
       let arg' = Array.copy arg in
       arg'.(0) <- res.(0);
       (arg', res)
@@ -229,4 +229,3 @@ method insert_op op rs rd =
 end
 
 let fundecl f = (new selector)#emit_fundecl f
-

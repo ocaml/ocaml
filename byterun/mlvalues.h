@@ -239,7 +239,7 @@ CAMLextern void caml_Store_double_val (value,double);
 #define Store_double_field(v,i,d) do{ \
   mlsize_t caml__temp_i = (i); \
   double caml__temp_d = (d); \
-  Store_double_val((value)((double *) v + caml__temp_i), caml__temp_d); \
+  Store_double_val((value)((double *) (v) + caml__temp_i), caml__temp_d); \
 }while(0)
 
 /* Custom blocks.  They contain a pointer to a "method suite"

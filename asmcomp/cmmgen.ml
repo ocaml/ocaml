@@ -624,7 +624,9 @@ let simplif_primitive_32bits = function
 
 let simplif_primitive p =
   match p with
-    Pbigarrayref(n, Pbigarray_unknown, layout) ->
+  | Pduprecord _ ->
+      Pccall (default_prim "caml_obj_dup")
+  | Pbigarrayref(n, Pbigarray_unknown, layout) ->
       Pccall (default_prim ("caml_ba_get_" ^ string_of_int n))
   | Pbigarrayset(n, Pbigarray_unknown, layout) ->
       Pccall (default_prim ("caml_ba_set_" ^ string_of_int n))
@@ -822,7 +824,7 @@ let rec transl = function
       Cop(Capply(typ_addr, dbg), cargs)
   | Usend(kind, met, obj, args, dbg) ->
       let call_met obj args clos =
-        if args = [] then 
+        if args = [] then
           Cop(Capply(typ_addr, dbg), [get_field clos 0;obj;clos])
         else
           let arity = List.length args + 1 in

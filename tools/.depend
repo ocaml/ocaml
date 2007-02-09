@@ -35,14 +35,18 @@ ocamldep.cmx: ../parsing/syntaxerr.cmx ../parsing/parsetree.cmi \
     ../parsing/parse.cmx ../utils/misc.cmx ../parsing/longident.cmx \
     ../parsing/location.cmx ../parsing/lexer.cmx ./depend.cmx \
     ../utils/config.cmx ../utils/clflags.cmx 
+ocamlmklib.cmo: ./myocamlbuild_config.cmo 
+ocamlmklib.cmx: ./myocamlbuild_config.cmx 
 ocamlmktop.cmo: ../utils/ccomp.cmi 
 ocamlmktop.cmx: ../utils/ccomp.cmx 
-ocamlprof.cmo: ../parsing/syntaxerr.cmi ../parsing/parsetree.cmi \
-    ../parsing/parse.cmi ../utils/misc.cmi ../parsing/location.cmi \
-    ../parsing/lexer.cmi ../utils/config.cmi ../utils/clflags.cmi 
-ocamlprof.cmx: ../parsing/syntaxerr.cmx ../parsing/parsetree.cmi \
-    ../parsing/parse.cmx ../utils/misc.cmx ../parsing/location.cmx \
-    ../parsing/lexer.cmx ../utils/config.cmx ../utils/clflags.cmx 
+ocamlprof.cmo: ../utils/warnings.cmi ../parsing/syntaxerr.cmi \
+    ../parsing/parsetree.cmi ../parsing/parse.cmi ../utils/misc.cmi \
+    ../parsing/location.cmi ../parsing/lexer.cmi ../utils/config.cmi \
+    ../utils/clflags.cmi 
+ocamlprof.cmx: ../utils/warnings.cmx ../parsing/syntaxerr.cmx \
+    ../parsing/parsetree.cmi ../parsing/parse.cmx ../utils/misc.cmx \
+    ../parsing/location.cmx ../parsing/lexer.cmx ../utils/config.cmx \
+    ../utils/clflags.cmx 
 primreq.cmo: ../utils/config.cmi ../bytecomp/cmo_format.cmi 
 primreq.cmx: ../utils/config.cmx ../bytecomp/cmo_format.cmi 
 profiling.cmo: profiling.cmi 

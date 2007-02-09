@@ -96,6 +96,7 @@ let prim_size prim args =
   | Psetfield(f, isptr) -> if isptr then 4 else 1
   | Pfloatfield f -> 1
   | Psetfloatfield f -> 1
+  | Pduprecord _ -> 10 + List.length args
   | Pccall p -> (if p.prim_alloc then 10 else 4) + List.length args
   | Praise -> 4
   | Pstringlength -> 5
@@ -177,7 +178,7 @@ let lambda_smaller lam threshold =
 let rec is_pure_clambda = function
     Uvar v -> true
   | Uconst cst -> true
-  | Uprim((Psetglobal _ | Psetfield _ | Psetfloatfield _ |
+  | Uprim((Psetglobal _ | Psetfield _ | Psetfloatfield _ | Pduprecord _ |
            Pccall _ | Praise | Poffsetref _ | Pstringsetu | Pstringsets |
            Parraysetu _ | Parraysets _ | Pbigarrayset _), _, _) -> false
   | Uprim(p, args, _) -> List.for_all is_pure_clambda args
@@ -375,7 +376,7 @@ let bind_params params args body =
 let rec is_pure = function
     Lvar v -> true
   | Lconst cst -> true
-  | Lprim((Psetglobal _ | Psetfield _ | Psetfloatfield _ |
+  | Lprim((Psetglobal _ | Psetfield _ | Psetfloatfield _ | Pduprecord _ |
            Pccall _ | Praise | Poffsetref _ | Pstringsetu | Pstringsets |
            Parraysetu _ | Parraysets _), _) -> false
   | Lprim(p, args) -> List.for_all is_pure args

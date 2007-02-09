@@ -91,9 +91,9 @@ random.cmo: ./string.cmi ./pervasives.cmi ./nativeint.cmi ./int64.cmi \
 random.cmx: ./string.cmx ./pervasives.cmx ./nativeint.cmx ./int64.cmx \
     ./int32.cmx ./digest.cmx ./char.cmx ./array.cmx random.cmi 
 scanf.cmo: ./string.cmi ./printf.cmi ./obj.cmi ./list.cmi ./hashtbl.cmi \
-    ./buffer.cmi scanf.cmi 
+    ./buffer.cmi ./array.cmi scanf.cmi 
 scanf.cmx: ./string.cmx ./printf.cmx ./obj.cmx ./list.cmx ./hashtbl.cmx \
-    ./buffer.cmx scanf.cmi 
+    ./buffer.cmx ./array.cmx scanf.cmi 
 set.cmo: set.cmi 
 set.cmx: set.cmi 
 sort.cmo: ./array.cmi sort.cmi 

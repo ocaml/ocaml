@@ -128,15 +128,36 @@ let rec push_dummies n k = match n with
 
 type rhs_kind =
   | RHS_block of int
+  | RHS_floatblock of int
   | RHS_nonrec
 ;;
+
+let rec check_recordwith_updates id e =
+  match e with
+  | Lsequence (Lprim ((Psetfield _ | Psetfloatfield _), [Lvar id2; _]), cont)
+      -> id2 = id && check_recordwith_updates id cont
+  | Lvar id2 -> id2 = id
+  | _ -> false
+;;
+
 let rec size_of_lambda = function
   | Lfunction(kind, params, body) as funct ->
       RHS_block (1 + IdentSet.cardinal(free_variables funct))
+  | Llet (Strict, id, Lprim (Pduprecord (kind, size), _), body)
+    when check_recordwith_updates id body ->
+      begin match kind with
+      | Record_regular -> RHS_block size
+      | Record_float -> RHS_floatblock size
+      end
   | Llet(str, id, arg, body) -> size_of_lambda body
   | Lletrec(bindings, body) -> size_of_lambda body
   | Lprim(Pmakeblock(tag, mut), args) -> RHS_block (List.length args)
-  | Lprim(Pmakearray kind, args) -> RHS_block (List.length args)
+  | Lprim (Pmakearray (Paddrarray|Pintarray), args) ->
+      RHS_block (List.length args)
+  | Lprim (Pmakearray Pfloatarray, args) -> RHS_floatblock (List.length args)
+  | Lprim (Pmakearray Pgenarray, args) -> assert false
+  | Lprim (Pduprecord (Record_regular, size), args) -> RHS_block size
+  | Lprim (Pduprecord (Record_float, size), args) -> RHS_floatblock size
   | Levent (lam, _) -> size_of_lambda lam
   | Lsequence (lam, lam') -> size_of_lambda lam'
   | _ -> RHS_nonrec
@@ -171,7 +192,7 @@ let merge_repr ev ev' =
 let merge_events ev ev' =
   let (maj, min) =
     match ev.ev_kind, ev'.ev_kind with
-    (* Discard pseudo-events *)    
+    (* Discard pseudo-events *)
       Event_pseudo,  _                              -> ev', ev
     | _,             Event_pseudo                   -> ev,  ev'
     (* Keep following event, supposedly more informative *)
@@ -205,7 +226,7 @@ let weaken_event ev cont =
       end
   | _ ->
       Kevent ev :: cont
-  
+
 let add_event ev =
   function
     Kevent ev' :: cont -> weaken_event (merge_events ev ev') cont
@@ -275,6 +296,7 @@ let comp_primitive p args =
   | Psetfield(n, ptr) -> Ksetfield n
   | Pfloatfield n -> Kgetfloatfield n
   | Psetfloatfield n -> Ksetfloatfield n
+  | Pduprecord _ -> Kccall("caml_obj_dup", 1)
   | Pccall p -> Kccall(p.prim_name, p.prim_arity)
   | Pnegint -> Knegint
   | Paddint -> Kaddint
@@ -472,6 +494,10 @@ let rec comp_expr env exp sz cont =
           List.map (fun (id, exp) -> (id, exp, size_of_lambda exp)) decl in
         let rec comp_init new_env sz = function
           | [] -> comp_nonrec new_env sz ndecl decl_size
+          | (id, exp, RHS_floatblock blocksize) :: rem ->
+              Kconst(Const_base(Const_int blocksize)) ::
+              Kccall("caml_alloc_dummy_float", 1) :: Kpush ::
+              comp_init (add_var id (sz+1) new_env) (sz+1) rem
           | (id, exp, RHS_block blocksize) :: rem ->
               Kconst(Const_base(Const_int blocksize)) ::
               Kccall("caml_alloc_dummy", 1) :: Kpush ::
@@ -481,14 +507,14 @@ let rec comp_expr env exp sz cont =
               comp_init (add_var id (sz+1) new_env) (sz+1) rem
         and comp_nonrec new_env sz i = function
           | [] -> comp_rec new_env sz ndecl decl_size
-          | (id, exp, RHS_block blocksize) :: rem ->
+          | (id, exp, (RHS_block _ | RHS_floatblock _)) :: rem ->
               comp_nonrec new_env sz (i-1) rem
           | (id, exp, RHS_nonrec) :: rem ->
               comp_expr new_env exp sz
                 (Kassign (i-1) :: comp_nonrec new_env sz (i-1) rem)
         and comp_rec new_env sz i = function
           | [] -> comp_expr new_env body sz (add_pop ndecl cont)
-          | (id, exp, RHS_block blocksize) :: rem ->
+          | (id, exp, (RHS_block _ | RHS_floatblock _)) :: rem ->
               comp_expr new_env exp sz
                 (Kpush :: Kacc i :: Kccall("caml_update_dummy", 2) ::
                  comp_rec new_env sz (i-1) rem)
@@ -570,10 +596,10 @@ let rec comp_expr env exp sz cont =
       comp_args env args sz (comp_primitive p args :: cont)
   | Lprim(p, args) ->
       comp_args env args sz (comp_primitive p args :: cont)
-   | Lstaticcatch (body, (i, vars) , handler) ->      
+   | Lstaticcatch (body, (i, vars) , handler) ->
       let nvars = List.length vars in
       let branch1, cont1 = make_branch cont in
-      let r = 
+      let r =
         if nvars <> 1 then begin (* general case *)
           let lbl_handler, cont2 =
             label_code
@@ -612,8 +638,8 @@ let rec comp_expr env exp sz cont =
   | Ltrywith(body, id, handler) ->
       let (branch1, cont1) = make_branch cont in
       let lbl_handler = new_label() in
-      Kpushtrap lbl_handler :: 
-        comp_expr env body (sz+4) (Kpoptrap :: branch1 :: 
+      Kpushtrap lbl_handler ::
+        comp_expr env body (sz+4) (Kpoptrap :: branch1 ::
           Klabel lbl_handler :: Kpush ::
             comp_expr (add_var id (sz+1) env) handler (sz+1) (add_pop 1 cont1))
   | Lifthenelse(cond, ifso, ifnot) ->
@@ -643,7 +669,7 @@ let rec comp_expr env exp sz cont =
   | Lswitch(arg, sw) ->
       let (branch, cont1) = make_branch cont in
       let c = ref (discard_dead_code cont1) in
-(* Build indirection vectors *)      
+(* Build indirection vectors *)
       let store = mk_store Lambda.same in
       let act_consts = Array.create sw.sw_numconsts 0
       and act_blocks = Array.create sw.sw_numblocks 0 in
@@ -841,4 +867,3 @@ let compile_phrase expr =
   let init_code = comp_block empty_env expr 1 [Kreturn 1] in
   let fun_code = comp_remainder [] in
   (init_code, fun_code)
-

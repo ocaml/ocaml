@@ -199,7 +199,10 @@ static intnat compare_val(value v1, value v2, int total)
     case Custom_tag: {
       int res;
       int (*compare)(value v1, value v2) = Custom_ops_val(v1)->compare;
-      if (compare == NULL) caml_invalid_argument("equal: abstract value");
+      if (compare == NULL) {
+        compare_free_stack();
+        caml_invalid_argument("equal: abstract value");
+      }
       caml_compare_unordered = 0;
       res = Custom_ops_val(v1)->compare(v1, v2);
       if (caml_compare_unordered && !total) return UNORDERED;
