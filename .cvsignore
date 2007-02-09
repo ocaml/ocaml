@@ -12,3 +12,8 @@ ocamlcompopt.sh
 package-macosx
 .DS_Store
 *.annot
+_boot_log1
+_boot_log2
+_build
+_log
+myocamlbuild_config.ml
