@@ -91,9 +91,7 @@ camlheader camlheader_ur: header.c ../config/Makefile
         fi
 
 sys.ml: sys.mlp ../VERSION
-	@rm -f sys.ml
 	sed -e "s|%%VERSION%%|`head -1 ../VERSION`|" sys.mlp >sys.ml
-	@chmod -w sys.ml
 
 clean::
 	rm -f sys.ml
