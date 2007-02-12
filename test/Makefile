@@ -91,6 +91,12 @@ clean::
 	rm -f Lex/scanner.ml
 beforedepend:: Lex/scanner.ml
 
+# Moretest
+
+clean::
+	rm -f Moretest/*.cm* Moretest/*.[os]
+	rm -f Moretest/*~
+
 # Common rules
 
 .SUFFIXES:
