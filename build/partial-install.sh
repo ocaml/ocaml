@@ -12,46 +12,46 @@ cd `dirname $0`/..
 
 not_installed=$PWD/_build/not_installed
 
-rm -f $not_installed
+rm -f "$not_installed"
 
 wontinstall() {
-  echo $1 >> $not_installed
+  echo "$1" >> "$not_installed"
 }
 
 installbin() {
   if [ -f "$1" ]; then
-    echo "  install $2"
-    cp -f $1 $2
-    [ -x $2 ] || chmod +x $2
+    echo "  install binary $2"
+    cp -f "$1" "$2"
+    [ -x "$2" ] || chmod +x "$2"
   else
-    wontinstall $1
+    wontinstall "$1"
   fi
 }
 
 installbestbin() {
   if [ -f "$1" ]; then
     echo "  install binary $3 (with `basename $1`)"
-    cp -f $1 $3
+    cp -f "$1" "$3"
   else
     if [ -f "$2" ]; then
       echo "  install binary $3 (with `basename $2`)"
-      cp -f $2 $3
+      cp -f "$2" "$3"
     else
       echo "None of $1, $2 exists"
       exit 3
     fi
   fi
-  [ -x $3 ] || chmod +x $3
+  [ -x "$3" ] || chmod +x "$3"
 }
 
 installlib() {
   if [ -f "$1" ]; then
-    dest=$2/`basename $1`
+    dest="$2/`basename $1`"
     echo "  install library $dest"
-    cp -f $1 $2
-    ranlib $dest
+    cp -f "$1" "$2"
+    ranlib "$dest"
   else
-    wontinstall $1
+    wontinstall "$1"
   fi
 }
 
@@ -61,14 +61,14 @@ installdir() {
     if [ -f "$1" ]; then
       args="$args $1"
     else
-      wontinstall $1
+      wontinstall "$1"
     fi
     shift
   done
-  last=$1
+  last="$1"
   for file in $args; do
     echo "  install $last/`basename $file`"
-    cp -f $file $last
+    cp -f "$file" "$last"
   done
 }
 
@@ -78,9 +78,9 @@ installlibdir() {
     args="$args $1"
     shift
   done
-  last=$1
+  last="$1"
   for file in $args; do
-    installlib $file $last
+    installlib "$file" "$last"
   done
 }
 
@@ -89,6 +89,9 @@ mkdir -p $LIBDIR
 mkdir -p $LIBDIR/camlp4
 mkdir -p $LIBDIR/ocamlbuild
 mkdir -p $STUBLIBDIR
+mkdir -p $MANDIR/man1
+mkdir -p $MANDIR/man3
+mkdir -p $MANDIR/man$MANEXT
 
 cd _build
 
@@ -114,16 +117,11 @@ CAMLP4DIR=$LIBDIR/camlp4
 for dir in Camlp4Parsers Camlp4Printers Camlp4Filters Camlp4Top; do
   echo "Installing $dir..."
   mkdir -p $CAMLP4DIR/$dir
-  for file in $dir/*.cm*; do
-    echo "  install $CAMLP4DIR/$file"
-    cp $file $CAMLP4DIR/$dir
-  done
-  for file in $dir/*.$O; do
-    echo "  install $CAMLP4DIR/$file"
-    cp $file $CAMLP4DIR/$dir
-    base=`basename $file .$O`
-    installdir $dir/$base.p.$O $CAMLP4DIR/$dir
-  done
+  installdir     \
+    $dir/*.cm*   \
+    $dir/*.$O    \
+    $dir/*.p.$O  \
+    $CAMLP4DIR/$dir
 done
 installdir \
   camlp4lib.{cma,cmxa} Camlp4.cmi \
