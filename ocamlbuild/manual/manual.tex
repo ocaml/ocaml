@@ -13,96 +13,27 @@
 %***)
 %(*** title
 \begin{document}
-\title{\ocb, \\ a tool for automatic compilation of OCaml projects}
+\title{The \ocb users manual}
 \author{Berke \textsc{Durak}, Nicolas \textsc{Pouillard}}
-\date{January 2007}
+\date{February 2007}
 \maketitle
 %***)
 %(*** abstract
 \begin{abstract}
+\ocb is a tool automating the compilation of most OCaml projects with minimal
+user input.  Its use is not restricted to projects having a simple structure --
+the extra effort needed to make it work with the more complex projects is in
+reasonable proportion with their added complexity.  In practice, one will use a
+set of small text files, and, if needed, an OCaml compilation module that can
+fine-tune the behaviour and define custom rules.
 \end{abstract}
-%***)
-%(*** Motivations
-\section{Motivations}
-{\em This section describes the frustration that led us to write \ocb.}
-
-Many people have painfully found that the utilities of the \texttt{make}
-family, namely GNU Make, BSD Make, and their derivatives, fail to scale to
-large projects, especially when using multi-stage compilation rules, such as
-custom pre-processors, unless dependencies are hand-defined.  But as your
-project gets larger, more modular, and uses more diverse pre-processing tools,
-it becomes increasingly difficult to correctly define dependencies by hand.
-Hence people tend to use language-specific tools that attempt to extract
-dependencies.  However another problem then appears: \texttt{make} was designed
-with the idea of a static dependency graph.  Dependency extracting tools,
-however, are typically run by a rule in \texttt{make} itself; this means that
-make has to reload the dependency information.  This is the origin of the
-\texttt{make clean; make depend; make} mantra.  This approach tends to work
-quite well as long as all the files sit in a single directory and there is only
-one stage of pre-processing.  If there are two or more stages, then dependency
-extracting tools must be run two or more times - and this means multiple
-invocations of \texttt{make}.  Also, if one distributes the modules of a large
-project into multiple subdirectories, it becomes difficult to distribute the
-makefiles themselves, because the language of \texttt{make} was not conceived
-to be modular; the only two mechanisms permitted, inclusion of makefile
-fragments, and invocation of other make instances, must be skillfully
-coordinated with phony target names (\texttt{depend1, depend2...}) to insure
-inclusion of generated dependencies with multi-stage programming; changes in
-the structure of the project must be reflected by hand and the order of
-variable definitions must be well-thought ahead to avoid long afternoons spent
-combinatorially fiddling makefiles until it works but no one understands why.
-
-These problems become especially apparent with OCaml: to ensure type safety and
-to allow a small amount of cross-unit optimization when compiling native code,
-interface and object files include cryptographical digests of interfaces they
-are to be linked with.  This means that linking is safer, but that makefile sloppiness
-leads to messages such as:
-\begin{verbatim}
-Files foo.cmo and bar.cmo
-make inconsistent assumptions over interface Bar
-\end{verbatim}
-
-The typical reaction is then to issue the mantra \texttt{make clean; make
-depend; make} and everything compiles just fine... from the beginning.  Hence
-on medium projects, the programmer often has to wait for minutes instead of the
-few seconds that would be taken if \texttt{make} could correctly guess the
-small number of files that really had to be recompiled.
-
-It is not surprising that hacking a build tool such as \texttt{make} to include
-a programming language while retaining the original syntax and semantics gives
-an improvised and cumbersome macro language of dubious expressive power.  For
-example, using GNU make, suppose you have a list of \texttt{.ml}s that you want
-to convert into a list including both \texttt{.cmo}s and \texttt{.cmi}s, that
-is you want to transform \texttt{a.ml b.ml c.ml} into \texttt{a.cmi a.cmo b.cmi
-b.cmo c.cmi c.cmo} while preserving the dependency order which must be hand
-specified for linking \footnote{By the way, what's the point of having a
-declarative language if \texttt{make} can't sort the dependencies in
-topological order for giving them to \texttt{gcc} or whatever ?}.
-Unfortunately \texttt{\$patsubst \%.ml, \%.cmi \%.cmo, a.ml b.ml c.ml} won't
-work since the \%-sign in the right-hand of a \texttt{patsubst} gets
-substituted only once.  You then have to delve into something that is hardly
-lambda calculus: an intricate network of \texttt{foreach}, \texttt{eval},
-\texttt{call} and \texttt{define}s may get you the job done, unless you chicken
-out and opt for an external \texttt{awk}, \texttt{sed} or \texttt{perl} call.
-People who at this point have not lost their temper or sanity usually resort to
-metaprogramming by writing Makefile generators using a mixture of shell and m4.
-One such an attempt gave something that is the nightmare of wannabe package
-maintainers: it's called \texttt{autotools}.
-
-Note that it is also difficult to write \texttt{Makefiles} to build object
-files in a separate directory.  It is not impossible since the language of
-\texttt{make} is Turing-complete, a proof of which is left as an exercise.
-Note that building things in a separate directory is not necessarily a young
-enthusiast's way of giving a different look and feel to his projects -- it may
-be a good way of telling the computer that \texttt{foo.mli} is generated by
-\texttt{ocamlyacc} using \texttt{foo.mly} and can thus be removed.
 %***)
 %(*** Features of ocamlbuild
 \section{Features of \ocb}
 {\em This section is intended to read like a sales brochure or a datasheet.}
 
 \begin{itemize}
-\item Built-in compilation rules for OCaml projects handle all the nasty cases : native and byte-code,
+\item Built-in compilation rules for OCaml projects handle all the nasty cases: native and byte-code,
 missing \texttt{.mli} files, preprocessor rules, debugging and profiling flags, C stubs.
 \item Plugin mechanism for writing compilation rules and actions in a real programming language,
 OCaml itself.
@@ -132,17 +63,23 @@ lot of missing features, incomplete options and hideous bugs lurking in \ocb, an
 will find our first try at \ocb useful and hopefully help it grow into a tool that satisfies most needs of most users
 by providing feedback, bug reports and patches.
 
-The plugin API is lacking in maturity, as it has only been tested by the
-authors.  We believe a good API can only evolve under pressure from many peers
-and the courage to rewrite things cleanly when time is ripe by the developers.
+The plugin API maybe somewhat lacking in maturity, as it has only been tested
+by a few people.  We believe a good API can only evolve under pressure from
+many peers and the courage to rewrite things cleanly when time is ripe by the
+developers.  Most of the important functions a user will need are encapsulated
+in the plugin API, which is the \texttt{Ocamlbuild\_plugin} module pack.  We
+intend to keep that API backwards compatible.  It may happen that intricate
+projects need features not available in that module -- you may then use
+functions or values directly from the core \ocb modules.  We ask you to report
+such usage to the authors so that we may make the necessary changes to the API;
+you may also want to isolate calls to the non-API parts of the \ocb library
+from the rest of your plugin to to be able to keep the later when incompatible
+changes arise.
 
-Nonetheless the parts of \ocb that do not rely on the plugin API, namely, the command-line
-options, the \texttt{\_tags} file, the target names, names of the tags, and so
-on, are not expected to change in incompatible ways.  We intend to keep a project that compiles
-without a plugin compilable without modifications in the future.
-
-As for plugins, we recommend that users isolate calls to the \ocb library from their logic
-to be able to keep the later when incompatible API changes arise.
+The way that \ocb handles the command-line options, the \texttt{\_tags} file,
+the target names, names of the tags, and so on, are not expected to change in
+incompatible ways.  We intend to keep a project that compiles without a plugin
+compilable without modifications in the future.
 
 \begin{itemize}
 \item Plugin API not stable
@@ -185,9 +122,9 @@ directory are due to previous builds using other systems.  \ocb has so-called
 ``hygiene'' rules that state that object files (\texttt{.cmo}, \texttt{.cmi},
 or \texttt{.o} files, for instance) must not appear outside of the build
 directory.  These rules are enforced at startup; any violations will be reported
-and \ocb will exit.  You must then remove these files by hand or use, with caution,
-the \texttt{-sterilize} option which will remove them for you, after prompting
-you for confirmation.
+and \ocb will exit.  You must then remove these files by hand or run, with caution,
+the script \texttt{sterilize.sh}, which is generated in your source directory.
+This script will contain commands to remove them for you.
 
 To disable these checks, you can use the \texttt{-no-hygiene} flag.  If you have
 files that must elude the hygiene squad, just tag them with \texttt{precious}
@@ -338,7 +275,7 @@ If we want to compile byte-code instead of native, we just a target name of
 %(*** Compile flags
 \subsection{Compile flags}
 To pass a flag to the compiler, such as the \texttt{-rectypes} option,
-use the \texttt{-cflag} option as in :
+use the \texttt{-cflag} option as in:
 \begin{verbatim}
 ocamlbuild -cflag -rectypes hello.native
 \end{verbatim}
@@ -375,7 +312,7 @@ let _ =
 This requires linking with the \texttt{unix} and \texttt{num} modules, which is accomplished
 by using the \texttt{-lib unix} and \texttt{-lib num} flags, or, alternatively, \texttt{-libs unix,num}:
 \begin{verbatim}
-% ocamlbuild -libs nums,unix epoch.native -- a
+% ocamlbuild -libs nums,unix epoch.native --
 Finished, 4 targets (4 cached) in 00:00:00.
 1169051647000000000000 picoseconds have passed since January 1st, 1970.
 \end{verbatim}
@@ -874,6 +811,81 @@ fi
 %\subsection{Common errors}
 %***)
 \appendix
+%(*** Motivations
+\section{Motivations}
+{\em This inflammatory appendix describes the frustration that led us to write \ocb.}
+
+Many people have painfully found that the utilities of the \texttt{make}
+family, namely GNU Make, BSD Make, and their derivatives, fail to scale to
+large projects, especially when using multi-stage compilation rules, such as
+custom pre-processors, unless dependencies are hand-defined.  But as your
+project gets larger, more modular, and uses more diverse pre-processing tools,
+it becomes increasingly difficult to correctly define dependencies by hand.
+Hence people tend to use language-specific tools that attempt to extract
+dependencies.  However another problem then appears: \texttt{make} was designed
+with the idea of a static dependency graph.  Dependency extracting tools,
+however, are typically run by a rule in \texttt{make} itself; this means that
+make has to reload the dependency information.  This is the origin of the
+\texttt{make clean; make depend; make} mantra.  This approach tends to work
+quite well as long as all the files sit in a single directory and there is only
+one stage of pre-processing.  If there are two or more stages, then dependency
+extracting tools must be run two or more times - and this means multiple
+invocations of \texttt{make}.  Also, if one distributes the modules of a large
+project into multiple subdirectories, it becomes difficult to distribute the
+makefiles themselves, because the language of \texttt{make} was not conceived
+to be modular; the only two mechanisms permitted, inclusion of makefile
+fragments, and invocation of other make instances, must be skillfully
+coordinated with phony target names (\texttt{depend1, depend2...}) to insure
+inclusion of generated dependencies with multi-stage programming; changes in
+the structure of the project must be reflected by hand and the order of
+variable definitions must be well-thought ahead to avoid long afternoons spent
+combinatorially fiddling makefiles until it works but no one understands why.
+
+These problems become especially apparent with OCaml: to ensure type safety and
+to allow a small amount of cross-unit optimization when compiling native code,
+interface and object files include cryptographical digests of interfaces they
+are to be linked with.  This means that linking is safer, but that makefile sloppiness
+leads to messages such as:
+\begin{verbatim}
+Files foo.cmo and bar.cmo
+make inconsistent assumptions over interface Bar
+\end{verbatim}
+
+The typical reaction is then to issue the mantra \texttt{make clean; make
+depend; make} and everything compiles just fine... from the beginning.  Hence
+on medium projects, the programmer often has to wait for minutes instead of the
+few seconds that would be taken if \texttt{make} could correctly guess the
+small number of files that really had to be recompiled.
+
+It is not surprising that hacking a build tool such as \texttt{make} to include
+a programming language while retaining the original syntax and semantics gives
+an improvised and cumbersome macro language of dubious expressive power.  For
+example, using GNU make, suppose you have a list of \texttt{.ml}s that you want
+to convert into a list including both \texttt{.cmo}s and \texttt{.cmi}s, that
+is you want to transform \texttt{a.ml b.ml c.ml} into \texttt{a.cmi a.cmo b.cmi
+b.cmo c.cmi c.cmo} while preserving the dependency order which must be hand
+specified for linking \footnote{By the way, what's the point of having a
+declarative language if \texttt{make} can't sort the dependencies in
+topological order for giving them to \texttt{gcc} or whatever ?}.
+Unfortunately \texttt{\$patsubst \%.ml, \%.cmi \%.cmo, a.ml b.ml c.ml} won't
+work since the \%-sign in the right-hand of a \texttt{patsubst} gets
+substituted only once.  You then have to delve into something that is hardly
+lambda calculus: an intricate network of \texttt{foreach}, \texttt{eval},
+\texttt{call} and \texttt{define}s may get you the job done, unless you chicken
+out and opt for an external \texttt{awk}, \texttt{sed} or \texttt{perl} call.
+People who at this point have not lost their temper or sanity usually resort to
+metaprogramming by writing Makefile generators using a mixture of shell and m4.
+One such an attempt gave something that is the nightmare of wannabe package
+maintainers: it's called \texttt{autotools}.
+
+Note that it is also difficult to write \texttt{Makefiles} to build object
+files in a separate directory.  It is not impossible since the language of
+\texttt{make} is Turing-complete, a proof of which is left as an exercise.
+Note that building things in a separate directory is not necessarily a young
+enthusiast's way of giving a different look and feel to his projects -- it may
+be a good way of telling the computer that \texttt{foo.mli} is generated by
+\texttt{ocamlyacc} using \texttt{foo.mly} and can thus be removed.
+%***)
 %(*** Default rules
 \section{Default rules}
 \begin{center}

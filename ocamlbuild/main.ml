@@ -149,7 +149,7 @@ let proceed () =
         let link x =
           if !Options.make_links then ignore (call (S [A"ln"; A"-sf"; P x; A Pathname.current_dir_name])) in
         match ext with
-        | "byte" | "native" ->
+        | "byte" | "native" | "top" ->
             link cmd; cmd :: acc
         | "html" ->
             link (Pathname.dirname cmd); acc

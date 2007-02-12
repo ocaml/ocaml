@@ -302,6 +302,11 @@ rule "ocaml: ml & ml.depends & *cmi -> .inferred.mli"
   ~deps:["%.ml"; "%.ml.depends"]
   (Ocaml_tools.infer_interface "%.ml" "%.inferred.mli");;
 
+rule "ocaml: mltop -> top"
+  ~prod:"%.top"
+  ~dep:"%.mltop"
+  (Ocaml_compiler.byte_toplevel_link_mltop "%.mltop" "%.top");;
+
 flag ["ocaml"; "pp"] begin
   S (List.fold_right (fun x acc -> Sh x :: acc) !Options.ocaml_ppflags [])
 end;;
@@ -353,7 +358,8 @@ flag ["ocaml"; "link"; "profile"; "native"] (A "-p");;
 flag ["ocaml"; "link"; "program"; "custom"; "byte"] (A "-custom");;
 flag ["ocaml"; "compile"; "profile"; "native"] (A "-p");;
 flag ["ocaml"; "compile"; "thread"] (A "-thread");;
-flag ["ocaml"; "link"; "thread"] (S[A "threads.cmxa"; A "-thread"]);;
+flag ["ocaml"; "link"; "thread"; "native"] (S[A "threads.cmxa"; A "-thread"]);;
+flag ["ocaml"; "link"; "thread"; "byte"] (S[A "threads.cma"; A "-thread"]);;
 flag ["ocaml"; "compile"; "nopervasives"] (A"-nopervasives");;
 flag ["ocaml"; "compile"; "nolabels"] (A"-nolabels");;
 

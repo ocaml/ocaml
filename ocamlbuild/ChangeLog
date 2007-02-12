@@ -1,3 +1,34 @@
+2007-02-12  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Add ocamlmktop support.
+
+	* ocamlbuild.mltop: New.
+	* main.ml: Handle .top as binaries.
+	* ocaml_compiler.ml,
+	* ocaml_specific.ml,
+	* ocaml_compiler.mli: Add mktop functions and rules.
+	* options.ml,
+	* signatures.mli: Add an ocamlmktop option.
+
+2007-02-09  Berke Durak  <berke.durak@inria.fr>
+
+	Was attempting to link with threads.cmxa in byte mode.
+
+	* ocaml_specific.ml: .
+
+2007-02-09  Berke Durak  <berke.durak@inria.fr>
+
+	Talking of sterilize.sh.
+
+	* manual/manual.tex: .
+
+2007-02-09  Berke Durak  <berke.durak@inria.fr>
+
+	Rewrote some parts, filled the abstract, moved rantings to the appendix.
+
+	* manual/manual.tex: .
+	* .vcs: .
+
 2007-02-08  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
 
 	Add manual/manual.hva.

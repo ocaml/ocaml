@@ -45,6 +45,10 @@ let ocamlmklib tags deps out =
   Cmd (S [!Options.ocamlmklib; T tags;
           atomize_paths deps; flags_of_pathname out; A"-o"; Px (Pathname.remove_extensions out)])
 
+let ocamlmktop tags deps out =
+  Cmd( S [!Options.ocamlmktop; T tags;
+          atomize_paths deps; flags_of_pathname out; A"-o"; Px out])
+
 let byte_lib_linker tags =
   if Tags.mem "ocamlmklib" tags then
     ocamlmklib tags
@@ -272,6 +276,12 @@ let byte_library_link_modules =
   link_modules [("cmo",[]); ("cmi",[])] "cmo" "cma" "cma" byte_lib_linker byte_lib_linker_tags
 
 let byte_library_link_mllib = link_from_file byte_library_link_modules
+
+let byte_toplevel_link_modules =
+  link_modules [("cmo",[]); ("cmi",[])] "cmo" "cma" "cma" ocamlmktop
+               (fun tags -> tags++"ocaml"++"link"++"byte"++"toplevel")
+
+let byte_toplevel_link_mltop = link_from_file byte_toplevel_link_modules
 
 let byte_debug_library_link_modules =
   link_modules [("d.cmo",[]); ("cmi",[])] "d.cmo" "d.cma" "d.cma" byte_lib_linker

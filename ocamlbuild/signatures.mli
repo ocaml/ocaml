@@ -337,6 +337,7 @@ module type OPTIONS = sig
   val ocamllex : command_spec ref
   val ocamlrun : command_spec ref
   val ocamlmklib : command_spec ref
+  val ocamlmktop : command_spec ref
   val hygiene : bool ref
   val sterilize : bool ref
   val sterilization_script : string ref
