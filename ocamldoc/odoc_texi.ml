@@ -736,7 +736,7 @@ class texi =
         | { mt_name = name } -> name in
       let t =
         [ [ self#fixedblock
-              [ Newline ; minus ; Raw "module type" ;
+              [ Newline ; minus ; Raw "module type " ;
                 Raw (Name.simple mt.mt_name) ;
                 Raw (if is_alias mt
                 then " = " ^ (resolve_alias_name mt)
