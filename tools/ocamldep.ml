@@ -58,7 +58,8 @@ let find_file name =
     [] -> raise Not_found
   | (dir, contents) :: rem ->
       match find_in_array contents 0 with
-        Some truename -> Filename.concat dir truename
+        Some truename ->
+          if dir = "." then truename else Filename.concat dir truename
       | None -> find_in_path rem in
   find_in_path !load_path
 
