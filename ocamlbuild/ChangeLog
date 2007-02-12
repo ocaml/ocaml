@@ -1,5 +1,11 @@
 2007-02-12  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
 
+	Keep include dirs uniq.
+
+	* ocaml_compiler.ml: Ditto.
+
+2007-02-12  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
 	Add ocamlmktop support.
 
 	* ocamlbuild.mltop: New.
