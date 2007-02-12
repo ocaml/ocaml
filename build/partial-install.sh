@@ -8,7 +8,7 @@ set -e
 
 cd `dirname $0`/..
 
-source config/config.sh
+. config/config.sh
 
 not_installed=$PWD/_build/not_installed
 

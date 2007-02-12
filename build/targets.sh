@@ -1,6 +1,6 @@
-source config/config.sh
-source build/otherlibs-targets.sh
-source build/camlp4-targets.sh
+. config/config.sh
+. build/otherlibs-targets.sh
+. build/camlp4-targets.sh
 STDLIB_BYTE="stdlib/stdlib.cma stdlib/std_exit.cmo \
              stdlib/camlheader stdlib/camlheader_ur"
 OCAMLLEX_BYTE=lex/ocamllex$EXE

@@ -3,7 +3,7 @@ cd `dirname $0`
 set -e
 ./mkconfig.sh
 ./mkmyocamlbuild_config.sh
-source ../config/config.sh
+. ../config/config.sh
 if [ "x$EXE" = "x.exe" ]; then
   ./boot-c-parts-windows.sh
 else
@@ -12,7 +12,7 @@ fi
 ./boot.sh $@
 
 cd ..
-source build/targets.sh
+. build/targets.sh
 OCAMLMKLIB_BYTE="tools/ocamlmklib.byte"
 set -x
 $OCAMLBUILD $@ -log _boot_fast_log \

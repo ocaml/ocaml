@@ -2,6 +2,6 @@
 set -e
 export OCAMLBUILD_PARTIAL="true"
 cd `dirname $0`/..
-source build/targets.sh
+. build/targets.sh
 set -x
 $OCAMLBUILD $@ $OCAMLOPT_BYTE $OCAMLLEX_BYTE $OCAMLBUILD_NATIVE

@@ -2,7 +2,7 @@
 cd `dirname $0`/..
 set -ex
 
-source config/config.sh
+. config/config.sh
 
 (cd byterun && make -f Makefile.nt)
 (cd asmrun && make -f Makefile.nt all meta.$O dynlink.$O)

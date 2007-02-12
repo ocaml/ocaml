@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 cd `dirname $0`/..
-source build/targets.sh
+. build/targets.sh
 set -x
 $OCAMLBUILD $@ \
   $STDLIB_NATIVE $OCAMLC_NATIVE $OCAMLOPT_NATIVE \
