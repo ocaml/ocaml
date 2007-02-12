@@ -312,7 +312,7 @@ char * caml_dlerror(void)
 #endif
 #else
 
-void * caml_dlopen(char * libname)
+void * caml_dlopen(char * libname, int for_execution)
 {
   return NULL;
 }
