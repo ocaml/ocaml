@@ -4,7 +4,6 @@ set -ex
 (cd byterun && make clean)
 (cd asmrun && make clean)
 (cd yacc && make clean)
-(cd ocamlbuild && make distclean)
 rm -rf _build
 rm -f boot/ocamlrun boot/ocamlrun.exe boot/camlheader \
       boot/myocamlbuild boot/myocamlbuild.native boot/myocamlbuild.native.exe \
@@ -17,5 +16,8 @@ rm -f driver/main.byte driver/optmain.byte lex/main.byte \
       tools/myocamlbuild_config.ml camlp4/build/linenum.ml{i,l} \
       camlp4/build/terminfo.ml{i,}
 
+# from ocamlbuild bootstrap
+rm -f ocamlbuild/{_build,_log,_start,ocamlbuild.byte.start,boot/ocamlbuild}
+
 # from the old build system
-rm -f camlp4/build/camlp4_config.ml
+rm -f camlp4/build/camlp4_config.ml camlp4/**/*.cm*
