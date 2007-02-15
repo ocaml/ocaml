@@ -211,8 +211,8 @@ let make_startup_file ppf filename units_list =
   compile_phrase
     (Cmmgen.globals_map
       (List.map
-        (fun (unit,_,_) ->
-          try (unit.ui_name, List.assoc unit.ui_name unit.ui_imports_cmi)
+        (fun (unit,_,crc) ->
+          try (unit.ui_name, List.assoc unit.ui_name unit.ui_imports_cmi, crc)
           with Not_found -> assert false)
         units_list));
   compile_phrase(Cmmgen.data_segment_table ("_startup" :: name_list));

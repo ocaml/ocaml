@@ -114,6 +114,8 @@ extern int caml_frame_descriptors_mask;
   (((uintnat)(addr) >> 3) & caml_frame_descriptors_mask)
 
 extern void caml_init_frame_descriptors(void);
+extern void caml_register_frametable(intnat *);
+extern void caml_register_dyn_global(value);
 
 /* Declaration of variables used in the asm code */
 extern char * caml_bottom_of_stack;
@@ -123,6 +125,5 @@ extern char * caml_exception_pointer;
 extern value caml_globals[];
 extern intnat caml_globals_inited;
 extern intnat * caml_frametable[];
-
 
 #endif /* CAML_STACK_H */

@@ -36,6 +36,37 @@ void (*caml_scan_roots_hook) (scanning_action) = NULL;
 frame_descr ** caml_frame_descriptors = NULL;
 int caml_frame_descriptors_mask;
 
+/* Linked-list of frametables */
+
+typedef struct link {
+  void *data;
+  struct link *next;
+} link;  
+
+link *cons(void *data, link *tl) {
+  link *lnk = caml_stat_alloc(sizeof(link));
+  lnk->data = data;
+  lnk->next = tl;
+  return lnk;
+}
+
+#define iter_list(list,lnk) \
+  for (lnk = list; lnk != NULL; lnk = lnk->next)
+    
+  
+
+link *frametables = NULL;
+
+void caml_register_frametable(intnat *table) {
+  frametables = cons(table,frametables);
+
+  if (NULL != caml_frame_descriptors) {
+    caml_stat_free(caml_frame_descriptors);
+    caml_frame_descriptors = NULL;
+    /* force caml_init_frame_descriptors to be called */
+  }
+}
+
 void caml_init_frame_descriptors(void)
 {
   intnat num_descr, tblsize, i, j, len;
@@ -43,11 +74,21 @@ void caml_init_frame_descriptors(void)
   frame_descr * d;
   uintnat nextd;
   uintnat h;
+  link *lnk;
 
+  static int inited = 0;
+  
+  if (!inited) {
+    for (i = 0; caml_frametable[i] != 0; i++)
+      caml_register_frametable(caml_frametable[i]);
+    inited = 1;
+  }
+  
   /* Count the frame descriptors */
   num_descr = 0;
-  for (i = 0; caml_frametable[i] != 0; i++)
-    num_descr += *(caml_frametable[i]);
+  iter_list(frametables,lnk) {
+    num_descr += *((intnat*) lnk->data);
+  }
 
   /* The size of the hashtable is a power of 2 greater or equal to
      2 times the number of descriptors */
@@ -61,21 +102,21 @@ void caml_init_frame_descriptors(void)
   caml_frame_descriptors_mask = tblsize - 1;
 
   /* Fill the hash table */
-  for (i = 0; caml_frametable[i] != 0; i++) {
-    tbl = caml_frametable[i];
+  iter_list(frametables,lnk) {
+    tbl = (intnat*) lnk->data;
     len = *tbl;
     d = (frame_descr *)(tbl + 1);
     for (j = 0; j < len; j++) {
       h = Hash_retaddr(d->retaddr);
       while (caml_frame_descriptors[h] != NULL) {
-        h = (h+1) & caml_frame_descriptors_mask;
+	h = (h+1) & caml_frame_descriptors_mask;
       }
       caml_frame_descriptors[h] = d;
       nextd =
-        ((uintnat)d +
-         sizeof(char *) + sizeof(short) + sizeof(short) +
-         sizeof(short) * d->num_live + sizeof(frame_descr *) - 1)
-        & -sizeof(frame_descr *);
+	((uintnat)d +
+	 sizeof(char *) + sizeof(short) + sizeof(short) +
+	 sizeof(short) * d->num_live + sizeof(frame_descr *) - 1)
+	& -sizeof(frame_descr *);
       if (d->frame_size & 1) nextd += 8;
       d = (frame_descr *) nextd;
     }
@@ -89,6 +130,11 @@ uintnat caml_last_return_address = 1; /* not in Caml code initially */
 value * caml_gc_regs;
 intnat caml_globals_inited = 0;
 static intnat caml_globals_scanned = 0;
+static link * caml_dyn_globals = NULL;
+
+void caml_register_dyn_global(value v) {
+  caml_dyn_globals = cons((void*) v,caml_dyn_globals);
+}
 
 /* Call [caml_oldify_one] on (at least) all the roots that point to the minor
    heap. */
@@ -105,6 +151,7 @@ void caml_oldify_local_roots (void)
   value * root;
   struct global_root * gr;
   struct caml__roots_block *lr;
+  link *lnk;
 
   /* The global roots */
   for (i = caml_globals_scanned;
@@ -116,6 +163,14 @@ void caml_oldify_local_roots (void)
     }
   }
   caml_globals_scanned = caml_globals_inited;
+
+  /* Dynamic global roots */
+  iter_list(caml_dyn_globals, lnk) {
+    glob = (value) lnk->data;
+    for (j = 0; j < Wosize_val(glob); j++){
+      Oldify (&Field (glob, j));
+    }
+  }
 
   /* The stack and local roots */
   if (caml_frame_descriptors == NULL) caml_init_frame_descriptors();
@@ -198,6 +253,7 @@ void caml_do_roots (scanning_action f)
   int i, j;
   value glob;
   struct global_root * gr;
+  link *lnk;
 
   /* The global roots */
   for (i = 0; caml_globals[i] != 0; i++) {
@@ -205,6 +261,15 @@ void caml_do_roots (scanning_action f)
     for (j = 0; j < Wosize_val(glob); j++)
       f (Field (glob, j), &Field (glob, j));
   }
+
+  /* Dynamic global roots */
+  iter_list(caml_dyn_globals, lnk) {
+    glob = (value) lnk->data;
+    for (j = 0; j < Wosize_val(glob); j++){
+      f (Field (glob, j), &Field (glob, j));
+    }
+  }
+
   /* The stack and local roots */
   if (caml_frame_descriptors == NULL) caml_init_frame_descriptors();
   caml_do_local_roots(f, caml_bottom_of_stack, caml_last_return_address,
