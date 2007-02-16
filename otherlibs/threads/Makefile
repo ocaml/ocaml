@@ -82,10 +82,13 @@ marshal.mli: $(LIB)/marshal.mli
 marshal.cmi: $(LIB)/marshal.cmi
 	ln -s $(LIB)/marshal.cmi marshal.cmi
 
-unix.cmo: $(UNIXLIB)/unix.mli $(UNIXLIB)/unix.cmi $(UNIXLIB)/unixLabels.cmo links
-links:
+unix.mli: $(UNIXLIB)/unix.mli
 	ln -sf $(UNIXLIB)/unix.mli unix.mli
+
+unix.cmi: $(UNIXLIB)/unix.cmi
 	ln -sf $(UNIXLIB)/unix.cmi unix.cmi
+
+unix.cmo: unix.mli unix.cmi $(UNIXLIB)/unixLabels.cmo 
 	$(CAMLC) ${COMPFLAGS} -c unix.ml
 
 partialclean:
