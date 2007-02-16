@@ -926,16 +926,16 @@ let explanation unif t3 t4 ppf =
         "@,Self type cannot be unified with a closed object type"
   | Tfield (l, _, _, _), Tfield (l', _, _, _) when l = l' ->
       fprintf ppf "@,Types for method %s are incompatible" l
-  | Tfield (l, _, _, _), _ ->
-      fprintf ppf
-        "@,@[Only the first object type has a method %s@]" l
   | _, Tfield (l, _, _, _) ->
       fprintf ppf
-        "@,@[Only the second object type has a method %s@]" l
+        "@,@[The first object type has no method %s@]" l
+  | Tfield (l, _, _, _), _ ->
+      fprintf ppf
+        "@,@[The second object type has no method %s@]" l
   | Tvariant row1, Tvariant row2 ->
       let row1 = row_repr row1 and row2 = row_repr row2 in
       begin match
-        row1.row_fields, row1.row_closed, row2.row_fields, row1.row_closed with
+        row1.row_fields, row1.row_closed, row2.row_fields, row2.row_closed with
       | [], true, [], true ->
           fprintf ppf "@,These two variant types have no intersection"
       | [], true, fields, _ ->
