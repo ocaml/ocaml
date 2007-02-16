@@ -145,7 +145,7 @@ module Make (H : Hashtbl.HashedType) : (S with type data = H.t) = struct
       fold (fun d () -> add newt d) t ();
    (* assert Array.length newt.table = newlen; *)
       t.table <- newt.table;
-      t.limit <- t.limit + 2;
+   (* t.limit <- t.limit + 2; -- performance bug *)
     end
 
   and add_aux t d index =
