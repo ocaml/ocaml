@@ -1,3 +1,73 @@
+2007-02-16  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Relaxing plural options to spaces.
+
+	* lexers.mli,
+	* lexers.mll: Add comma_or_blank_sep_strings.
+	* options.ml: Use it.
+
+2007-02-16  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Add a plugin example.
+
+	* manual/myocamlbuild.ml: New.
+
+2007-02-16  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Typos.
+
+	* ocamlbuild-presentation.rslide: .
+	* manual/trace.out: .
+
+2007-02-16  Berke Durak  <berke.durak@inria.fr>
+
+	Fixed a few typos and sentences.
+
+	* ocamlbuild-presentation.rslide: .
+
+2007-02-15  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Little changes...
+
+	* ocamlbuild-presentation.rslide: .
+
+2007-02-15  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Slides almost done...
+
+	* manual/trace.out: New. Of course you needed it.
+	* ocamlbuild-presentation.rslide: Ditto.
+
+2007-02-15  Berke Durak  <berke.durak@inria.fr>
+
+	Improving slides.
+
+	* ocamlbuild-presentation.rslide: .
+
+2007-02-15  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Slides...
+
+	* ocamlbuild-presentation.rslide: .
+
+2007-02-15  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Working on slides...
+
+	* ocamlbuild-presentation.rslide: .
+
+2007-02-15  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	More slides...
+
+	* ocamlbuild-presentation.rslide: .
+
+2007-02-12  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Keep include dirs uniq.
+
+	* ocaml_compiler.ml: Ditto.
+
 2007-02-12  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
 
 	Keep include dirs uniq.
