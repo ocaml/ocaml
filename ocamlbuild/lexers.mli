@@ -25,6 +25,7 @@ val ocamldep_output : Lexing.lexbuf -> (string * string list) list
 val space_sep_strings : Lexing.lexbuf -> string list
 val blank_sep_strings : Lexing.lexbuf -> string list
 val comma_sep_strings : Lexing.lexbuf -> string list
+val comma_or_blank_sep_strings : Lexing.lexbuf -> string list
 val colon_sep_strings : Lexing.lexbuf -> string list
 val conf_lines : string option -> int -> string -> Lexing.lexbuf -> conf
 val meta_path : Lexing.lexbuf -> (string * bool) list

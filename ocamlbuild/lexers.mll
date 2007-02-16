@@ -70,6 +70,17 @@ and comma_sep_strings_aux = parse
   | space* eof { [] }
   | _ { raise (Error "Expecting comma-separated strings (2)") }
 
+and comma_or_blank_sep_strings = parse
+  | space* (not_space_nor_comma+ as word) space* eof { [word] }
+  | space* (not_space_nor_comma+ as word) { word :: comma_or_blank_sep_strings_aux lexbuf }
+  | space* eof { [] }
+  | _ { raise (Error "Expecting (comma|blank)-separated strings (1)") }
+and comma_or_blank_sep_strings_aux = parse
+  | space* ',' space* (not_space_nor_comma+ as word) { word :: comma_or_blank_sep_strings_aux lexbuf }
+  | space* (not_space_nor_comma+ as word) { word :: comma_or_blank_sep_strings_aux lexbuf }
+  | space* eof { [] }
+  | _ { raise (Error "Expecting (comma|blank)-separated strings (2)") }
+
 and colon_sep_strings = parse
   | ([^ ':']+ as word) eof { [word] }
   | ([^ ':']+ as word) { word :: colon_sep_strings_aux lexbuf }

@@ -83,7 +83,7 @@ let () = set_log_file "_log"
 let dummy = "*invalid-dummy-string*";; (* Dummy string for delimiting the latest argument *)
 
 let add_to rxs x =
-  let xs = Lexers.comma_sep_strings (Lexing.from_string x) in
+  let xs = Lexers.comma_or_blank_sep_strings (Lexing.from_string x) in
   rxs := xs :: !rxs
 let add_to' rxs x =
   if x <> dummy then
@@ -102,7 +102,7 @@ let spec =
    "-clean", Set must_clean, " Remove build directory and other files, then exit"; 
 
    "-I", String (add_to' my_include_dirs), "<path> Add to include directories";
-   "-Is", String (add_to my_include_dirs), "<path,...> (same as above, but accepts a comma-separated list)";
+   "-Is", String (add_to my_include_dirs), "<path,...> (same as above, but accepts a (comma or blank)-separated list)";
    "-X", String (add_to' my_exclude_dirs), "<path> Directory to ignore";
    "-Xs", String (add_to my_exclude_dirs), "<path,...> (idem)";
 
