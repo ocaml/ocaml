@@ -1761,8 +1761,8 @@ and unify_row env row1 row2 =
   in
   let md1 = rm1.desc and md2 = rm2.desc in
   begin try
-    set_more row1 r2;
     set_more row2 r1;
+    set_more row1 r2;
     List.iter
       (fun (l,f1,f2) ->
         try unify_row_field env row1.row_fixed row2.row_fixed l f1 f2
