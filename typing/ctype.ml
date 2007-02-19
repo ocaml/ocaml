@@ -2264,7 +2264,7 @@ let rec eqtype rename type_pairs subst env t1 t2 =
               enter_poly env univar_pairs t1 tl1 t2 tl2
                 (eqtype rename type_pairs subst env)
           | (Tunivar, Tunivar) ->
-              unify_univar t1 t2 !univar_pairs
+              unify_univar t1' t2' !univar_pairs
           | (_, _) ->
               raise (Unify [])
         end
