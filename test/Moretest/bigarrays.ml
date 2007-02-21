@@ -155,26 +155,26 @@ let _ =
   let a = Array1.create int c_layout 3 in
   for i = 0 to 2 do a.{i} <- i done;
   for i = 0 to 2 do test (i+1) a.{i} i done;
-  test 4 true (try a.{3}; false with Invalid_argument _ -> true);
-  test 5 true (try a.{-1}; false with Invalid_argument _ -> true);
+  test 4 true (try ignore a.{3}; false with Invalid_argument _ -> true);
+  test 5 true (try ignore a.{-1}; false with Invalid_argument _ -> true);
     
   let b = Array1.create float64 fortran_layout 3 in
   for i = 1 to 3 do b.{i} <- float i done;
   for i = 1 to 3 do test (5 + i) b.{i} (float i) done;
-  test 8 true (try b.{4}; false with Invalid_argument _ -> true);
-  test 9 true (try b.{0}; false with Invalid_argument _ -> true);
+  test 8 true (try ignore b.{4}; false with Invalid_argument _ -> true);
+  test 9 true (try ignore b.{0}; false with Invalid_argument _ -> true);
 
   let c = Array1.create complex64 c_layout 3 in
   for i = 0 to 2 do c.{i} <- {re=float i; im=0.0} done;
   for i = 0 to 2 do test (10 + i) c.{i} {re=float i; im=0.0} done;
-  test 13 true (try c.{3}; false with Invalid_argument _ -> true);
-  test 14 true (try c.{-1}; false with Invalid_argument _ -> true);
+  test 13 true (try ignore c.{3}; false with Invalid_argument _ -> true);
+  test 14 true (try ignore c.{-1}; false with Invalid_argument _ -> true);
 
   let d = Array1.create complex32 fortran_layout 3 in
   for i = 1 to 3 do d.{i} <- {re=float i; im=0.0} done;
   for i = 1 to 3 do test (14 + i) d.{i} {re=float i; im=0.0} done;
-  test 18 true (try d.{4}; false with Invalid_argument _ -> true);
-  test 19 true (try d.{0}; false with Invalid_argument _ -> true);
+  test 18 true (try ignore d.{4}; false with Invalid_argument _ -> true);
+  test 19 true (try ignore d.{0}; false with Invalid_argument _ -> true);
 
   testing_function "comparisons";
   let normalize_comparison n =
@@ -446,10 +446,10 @@ let _ =
     for j = 0 to 2 do if a.{i,j} <> i-j then ok := false done
   done;
   test 1 true !ok;
-  test 2 true (try a.{3,0}; false with Invalid_argument _ -> true);
-  test 3 true (try a.{-1,0}; false with Invalid_argument _ -> true);
-  test 4 true (try a.{0,3}; false with Invalid_argument _ -> true);
-  test 5 true (try a.{0,-1}; false with Invalid_argument _ -> true);
+  test 2 true (try ignore a.{3,0}; false with Invalid_argument _ -> true);
+  test 3 true (try ignore a.{-1,0}; false with Invalid_argument _ -> true);
+  test 4 true (try ignore a.{0,3}; false with Invalid_argument _ -> true);
+  test 5 true (try ignore a.{0,-1}; false with Invalid_argument _ -> true);
     
   let b = Array2.create float32 fortran_layout 3 3 in
   for i = 1 to 3 do for j = 1 to 3 do b.{i,j} <- float(i-j) done done;
@@ -458,10 +458,10 @@ let _ =
     for j = 1 to 3 do if b.{i,j} <> float(i-j) then ok := false done
   done;
   test 6 true !ok;
-  test 7 true (try b.{4,1}; false with Invalid_argument _ -> true);
-  test 8 true (try b.{0,1}; false with Invalid_argument _ -> true);
-  test 9 true (try b.{1,4}; false with Invalid_argument _ -> true);
-  test 10 true (try b.{1,0}; false with Invalid_argument _ -> true);
+  test 7 true (try ignore b.{4,1}; false with Invalid_argument _ -> true);
+  test 8 true (try ignore b.{0,1}; false with Invalid_argument _ -> true);
+  test 9 true (try ignore b.{1,4}; false with Invalid_argument _ -> true);
+  test 10 true (try ignore b.{1,0}; false with Invalid_argument _ -> true);
 
   testing_function "dim";
   let a = (make_array2 int c_layout 0 4 6 id) in
@@ -702,7 +702,7 @@ let _ =
     done;
     test 2 !ok true;
     let fd = Unix.openfile mapped_file [Unix.O_RDONLY] 0 in
-    let c = Array2.map_subfile fd float64 c_layout false (-1) 100 800L in
+    let c = Array2.map_file fd ~pos:800L float64 c_layout false (-1) 100 in
     Unix.close fd;
     let ok = ref true in
     for i = 1 to 99 do
@@ -712,7 +712,7 @@ let _ =
     done;
     test 3 !ok true;
     let fd = Unix.openfile mapped_file [Unix.O_RDONLY] 0 in
-    let c = Array2.map_subfile fd float64 c_layout false (-1) 100 79200L in
+    let c = Array2.map_file fd ~pos:79200L float64 c_layout false (-1) 100 in
     Unix.close fd;
     let ok = ref true in
     for j = 0 to 99 do
