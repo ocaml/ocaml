@@ -337,7 +337,7 @@ external truncate : float -> int = "%intoffloat"
 
 external int_of_float : float -> int = "%intoffloat"
 (** Truncate the given floating-point number to an integer.
-   The result is unspecified if it falls outside the
+   The result is unspecified if the argument is [nan] or falls outside the
    range of representable integers. *)
 
 val infinity : float
