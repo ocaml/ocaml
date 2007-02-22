@@ -314,7 +314,15 @@ module type MISC = sig
   val copy_chan : in_channel -> out_channel -> unit
   val copy_file : string -> string -> unit
   val print_string_list : Format.formatter -> string list -> unit
+
+  (** A shortcut to force lazy value (See {Lazy.force}). *)
   val ( !* ) : 'a Lazy.t -> 'a
+
+  (** The right associative application.
+      Useful when writing to much parentheses:
+      << f (g x ... t) >> becomes << f& g x ... t >>
+      << f (g (h x)) >>   becomes << f& g& h x >> *)
+  val ( & ) : ('a -> 'b) -> 'a -> 'b
 
   (** [r @:= l] is equivalent to [r := !r @ l] *)
   val ( @:= ) : 'a list ref -> 'a list -> unit

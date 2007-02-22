@@ -1,3 +1,14 @@
+2007-02-22  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	( & ), sanitize.sh, and the manual...
+
+	* signatures.mli: Add ( & ).
+
+	* hygiene.ml: Also clean the sanitize.sh script itself.
+	* my_std.ml: Add ( & ).
+	* manual/manual.tex: Some fixes and a section that I wrote but that's
+	needs reflexion about what solution we want to support.
+
 2007-02-22  Berke Durak  <berke.durak@inria.fr>
 
 	Implemented fixes suggested  by Commissar Leroy.

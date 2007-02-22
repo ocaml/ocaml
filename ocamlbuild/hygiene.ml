@@ -155,6 +155,9 @@ let check ?sanitize laws entry =
                 fp oc "rm -f %s\n" (Shell.quote_filename_if_needed fn)
               end
               microbes;
+            (* Also clean itself *)
+            fp oc "# Also clean the script itself\n";
+            fp oc "rm -f %s\n" (Shell.quote_filename_if_needed fn);
             close_out oc
       end;
     !penalties

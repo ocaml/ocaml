@@ -76,15 +76,10 @@ you may also want to isolate calls to the non-API parts of the \ocb library
 from the rest of your plugin to to be able to keep the later when incompatible
 changes arise.
 
-The way that \ocb handles the command-line options, the \texttt{\_tags} file,
+The way that \ocb handles the command-line options, the \tags file,
 the target names, names of the tags, and so on, are not expected to change in
 incompatible ways.  We intend to keep a project that compiles without a plugin
 compilable without modifications in the future.
-
-\begin{itemize}
-\item Plugin API not stable
-\item No built-in rules for creating toplevels or libraries
-\end{itemize}
 %***)
 %(*** Using ocamlbuild
 \section{Using \ocb}
@@ -528,7 +523,7 @@ either type:
 \begin{verbatim}
 % ocamlbuild -Is foo,bar,baz foo/main.native
 \end{verbatim}
-or add the following line in the \texttt{\_tags} file
+or add the following line in the \tags file
 \begin{verbatim}
 <foo> or <bar> or <baz>: include
 \end{verbatim}
@@ -597,6 +592,55 @@ Another way is to use the tags file.
     \hline
   \end{tabular}
 \end{center}
+
+%%%%% \subsubsection{An example, dealing with some configuration variables} 
+%%%%% 
+%%%%% It's quite common to have in your sources some files that you want to access
+%%%%% when your program is running. One often uses some variables that are setup by
+%%%%% the end user. Now suppose that there is only two files that use these variables
+%%%%% (mylib.ml and parseopt.ml).
+%%%%% 
+%%%%% In the \tags file:
+%%%%% \begin{verbatim}
+%%%%% "mylib.ml" or "parseopt.ml": pp(sed -e "s,LIBDIR,/usr/local/lib/FOO,g")
+%%%%% \end{verbatim}
+%%%%% 
+%%%%% In fact that solution is not really acceptable, since the variable is hardcoded
+%%%%% in the \tags file. Trying to workaround this issue by using some shell variable
+%%%%% does not work either since the -pp argument will be escaped in simple quotes.
+%%%%% Note also that using some script shell that will do that sed and use \verb'$LIBDIR'
+%%%%% as a shell variable is not a good idea since \ocb don't know this dependency on that
+%%%%% shell script.
+%%%%% 
+%%%%% There is in fact at least two good solutions. The first is to tell that dependency
+%%%%% using the \texttt{dep} function in your plugin. The second is simpler it just consist
+%%%%% on generating some OCaml file at configure time. By naming this configuration file
+%%%%% \texttt{myocamlbuild_config.ml} \ocb will make it also available to your plugin.
+%%%%% 
+%%%%% In your \texttt{myocamlbuild_config.mli} interface:
+%%%%% \begin{verbotim}
+%%%%% val prefix : string
+%%%%% val libdir : string
+%%%%% \end{verbotim}
+%%%%% 
+%%%%% And in your \texttt{configure} script 
+%%%%% \begin{verbatim}
+%%%%% #!/bin/sh
+%%%%% 
+%%%%% # Setting defaults values
+%%%%% PREFIX=/usr/local
+%%%%% LIBDIR=$PREFIX/lib/FOO
+%%%%% CONF=myocamlbuild_config.ml
+%%%%% 
+%%%%% # ... some shell to parse option and check configuration ...
+%%%%% 
+%%%%% # Dumping the configuration as an OCaml file.
+%%%%% rm -f $CONF
+%%%%% echo "let prefix = \"$PREFIX\";;" >> $CONF
+%%%%% echo "let libdir = \"$LIBDIR\";;" >> $CONF
+%%%%% chmod -w $CONF
+%%%%% \end{verbatim}
+
 %***)
 %(*** Debugging and profiling
 \subsection{Debugging byte code and profiling native code}
@@ -611,7 +655,7 @@ on the command line, or add a
 \begin{verbatim}
 true: debug
 \end{verbatim}
-line to your \texttt{\_tags} file.
+line to your \tags file.
 Please note that the byte-code profiler works in a wholly different way
 and is not supported by \ocb.
 %***)
@@ -701,7 +745,7 @@ launch \ocb with the \texttt{-use-menhir} option or add a
 \begin{verbatim}
 true: use_menhir
 \end{verbatim}
-line to your \texttt{\_tags} file.  Note that there is currently no way
+line to your \tags file.  Note that there is currently no way
 of using \texttt{menhir} and \texttt{ocamlyacc} in the same execution
 of \ocb.
 %***)
@@ -719,6 +763,7 @@ for different reasons (such as cross-compiling or using a wrapper such as
   \item \texttt{-ocamlyacc <command>}
   \item \texttt{-menhir <command>}
   \item \texttt{-ocamllex <command>}
+  \item \texttt{-ocamlmktop <command>}
   \item \texttt{-ocamlrun <command>}
 \end{itemize}
 
