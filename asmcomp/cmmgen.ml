@@ -1363,15 +1363,16 @@ and transl_unbox_int bi = function
 
 and transl_unbox_let box_fn unbox_fn transl_unbox_fn id exp body =
   let unboxed_id = Ident.create (Ident.name id) in
-  let (tr_body, need_boxed, is_assigned) =
-    subst_boxed_number unbox_fn id unboxed_id (transl body) in
+  let trbody1 = transl body in
+  let (trbody2, need_boxed, is_assigned) =
+    subst_boxed_number unbox_fn id unboxed_id trbody1 in
   if need_boxed && is_assigned then
-    Clet(id, transl exp, transl body)
+    Clet(id, transl exp, trbody1)
   else
     Clet(unboxed_id, transl_unbox_fn exp,
          if need_boxed
-         then Clet(id, box_fn(Cvar unboxed_id), tr_body)
-         else tr_body)
+         then Clet(id, box_fn(Cvar unboxed_id), trbody2)
+         else trbody2)
 
 and make_catch ncatch body handler = match body with
 | Cexit (nexit,[]) when nexit=ncatch -> handler
