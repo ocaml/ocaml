@@ -1,7 +1,11 @@
 # Ocamlbuild tags file
-true: traverse
 
-"asmrun" or "byterun" or "yacc" or "boot" or "win32caml": not_hygienic
+true: -traverse
+
+# Traverse only these directories
+<{bytecomp,driver,stdlib,tools,asmcomp,camlp4,ocamlbuild,toplevel,ocamldoc,typing,otherlibs,utils,debugger,lex,parsing,byterun}/**>: traverse
+
+"boot" or "byterun": not_hygienic
 
 <**/*.ml*>: warn_Alez
 

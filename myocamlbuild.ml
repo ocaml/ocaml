@@ -140,10 +140,12 @@ let ar = A"ar";;
 dispatch begin function
 | Before_hygiene ->
     if partial then
-      List.iter (fun x -> tag_file x ["not_hygienic"])
-        ["asmcomp"; "asmrun"; "boot"; "bytecomp"; "debugger"; "driver";
+      let patt = String.concat ","
+        ["asmcomp"; "bytecomp"; "debugger"; "driver";
          "lex"; "ocamldoc"; "otherlibs"; "parsing"; "stdlib"; "tools";
-         "toplevel"; "typing"; "utils"; "win32caml"]
+         "toplevel"; "typing"; "utils"]
+      in Ocamlbuild_pack.Configuration.parse_string
+           (sprintf "<{%s}/**>: not_hygienic, -traverse" patt)
   
 | After_options ->
     begin
