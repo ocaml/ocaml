@@ -30,3 +30,4 @@ Done:
   instance)
 * Display: should display nothing (even when finish is called) when no real
   event as occured.
+* Have some option to draw tags/rules that applies on a target (it's -show-tags).

@@ -38,6 +38,12 @@ let clean () =
   raise Exit_silently
 ;;
 
+let show_tags () =
+  List.iter begin fun path ->
+    Format.eprintf "@[<2>Tags for %S:@ {. %a .}@]@." path Tags.print (tags_of_pathname path)
+  end !Options.show_tags
+;;
+
 let proceed () =
   Hooks.call_hook Hooks.Before_options;
   Options.init ();
@@ -46,7 +52,7 @@ let proceed () =
   Tools.default_tags := Tags.of_list !Options.tags;
   Plugin.execute_plugin_if_needed ();
 
-  if !Options.targets = [] then raise Exit_silently;
+  if !Options.targets = [] && !Options.show_tags = [] then raise Exit_silently;
 
   let target_dirs = List.union [] (List.map Pathname.dirname !Options.targets) in
 
@@ -82,12 +88,12 @@ let proceed () =
       end
       (Slurp.slurp Filename.current_dir_name)
   in
+  Hooks.call_hook Hooks.Before_hygiene;
   let hygiene_entry =
     Slurp.map begin fun path name () ->
       let tags = tags_of_pathname (path/name) in
       not (Tags.mem "not_hygienic" tags) && not (Tags.mem "precious" tags)
     end entry in
-  Hooks.call_hook Hooks.Before_hygiene;
   if !Options.hygiene then
     Fda.inspect hygiene_entry
   else
@@ -121,6 +127,8 @@ let proceed () =
     ";
 
   Sys.catch_break true;
+
+  show_tags ();
 
   let targets =
     List.map begin fun starget ->

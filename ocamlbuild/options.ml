@@ -26,8 +26,8 @@ let build_dir = ref "_build"
 let include_dirs = ref []
 let exclude_dirs = ref []
 let nothing_should_be_rebuilt = ref false
-let sterilize = ref true
-let sterilization_script = ref "sterilize.sh"
+let sanitize = ref true
+let sanitization_script = ref "sanitize.sh"
 let hygiene = ref true
 let ignore_auto = ref true
 let plugin = ref true
@@ -61,6 +61,7 @@ let ocaml_lexflags_internal = ref []
 let program_args_internal = ref []
 let ignore_list_internal = ref []
 let tags_internal = ref [["quiet"]]
+let show_tags_internal = ref []
 
 let my_include_dirs = ref [[Filename.current_dir_name]]
 let my_exclude_dirs = ref [[".svn"; "CVS"]]
@@ -120,6 +121,7 @@ let spec =
    "-pp", String (add_to ocaml_ppflags_internal), "<flag,...> (idem)";
    "-tag", String (add_to' tags_internal), "<tag> Add to default tags";
    "-tags", String (add_to tags_internal), "<tag,...> (idem)";
+   "-show-tags", String (add_to' show_tags_internal), "<path> Show tags that applies on that pathname";
 
    "-ignore", String (add_to ignore_list_internal), "<module,...> Don't try to build these modules";
    "-no-links", Clear make_links, " Don't make links of produced final targets";
@@ -129,8 +131,8 @@ let spec =
    "-no-stdlib", Set nostdlib, " Don't ignore stdlib modules";
    "-just-plugin", Set just_plugin, " Just build myocamlbuild.ml";
    "-byte-plugin", Clear native_plugin, " Don't use a native plugin but bytecode";
-   "-sterilization-script", Set_string sterilization_script, " Change the file name for the generated sterilization script";
-   "-no-sterilize", Clear sterilize, " Do not generate sterilization script";
+   "-sanitization-script", Set_string sanitization_script, " Change the file name for the generated sanitization script";
+   "-no-sanitize", Clear sanitize, " Do not generate sanitization script";
    "-nothing-should-be-rebuilt", Set nothing_should_be_rebuilt, " Fail if something needs to be rebuilt";
    "-classic-display", Set Log.classic_display, " Display executed commands the old-fashioned way";
    "-use-menhir", Unit(fun () -> use_menhir := true; ocamlyacc := A"menhir"),
@@ -167,6 +169,7 @@ let ocaml_lexflags = ref []
 let program_args = ref []
 let ignore_list = ref []
 let tags = ref []
+let show_tags = ref []
 
 let init () =
   let anon_fun = add_to' targets_internal in
@@ -185,6 +188,7 @@ let init () =
   reorder program_args program_args_internal;
   reorder tags tags_internal;
   reorder ignore_list ignore_list_internal;
+  reorder show_tags show_tags_internal;
 
   let dir_reorder my dir =
     let d = !dir in

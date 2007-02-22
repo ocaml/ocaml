@@ -1,3 +1,28 @@
+2007-02-22  Berke Durak  <berke.durak@inria.fr>
+
+	Implemented fixes suggested  by Commissar Leroy.
+
+	* fda.ml: .
+	* hygiene.ml: .
+	* hygiene.mli: .
+	* man/ocamlbuild.1: .
+	* manual/manual.tex: .
+	* ocaml_specific.ml: .
+	* options.ml: .
+	* signatures.mli: .
+
+2007-02-20  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Add -show-tags.
+
+	* hygiene.ml: Rewrap the error message.
+	* main.ml: Do the show_tags job. Move one hook.
+	* ocaml_specific.ml: Add -g also in native code.
+	* options.ml,
+	* signatures.mli: Add the -show-tags option.
+	* tags.ml: Fix print.
+	* TODO: Add a done entry.
+
 2007-02-16  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
 
 	Relaxing plural options to spaces.

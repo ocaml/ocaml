@@ -339,8 +339,8 @@ module type OPTIONS = sig
   val ocamlmklib : command_spec ref
   val ocamlmktop : command_spec ref
   val hygiene : bool ref
-  val sterilize : bool ref
-  val sterilization_script : string ref
+  val sanitize : bool ref
+  val sanitization_script : string ref
   val ignore_auto : bool ref
   val plugin : bool ref
   val just_plugin : bool ref
@@ -362,6 +362,7 @@ module type OPTIONS = sig
   val program_args : string list ref
   val ignore_list : string list ref
   val tags : string list ref
+  val show_tags : string list ref
 
   val ext_obj : string ref
   val ext_lib : string ref

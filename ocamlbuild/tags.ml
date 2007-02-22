@@ -29,7 +29,7 @@ let print f s =
   let () = fprintf f "@[<0>" in
   let _ =
     fold begin fun elt first ->
-      if not first then fprintf f ",@,";
+      if not first then fprintf f ",@ ";
       pp_print_string f elt;
       false
     end s true in

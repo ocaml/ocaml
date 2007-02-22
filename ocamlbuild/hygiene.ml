@@ -55,11 +55,11 @@ let sf = Printf.sprintf
 
 module SS = Set.Make(String);;
 
-let check ?sterilize laws entry =
+let check ?sanitize laws entry =
   let penalties = ref [] in
   let microbes = ref SS.empty in
   let remove path name =
-    if sterilize <> None then
+    if sanitize <> None then
       microbes := SS.add (filename_concat path name) !microbes
   in
   let check_rule = fun entries -> function
@@ -123,26 +123,28 @@ let check ?sterilize laws entry =
     let microbes = !microbes in
     if not (SS.is_empty microbes) then
       begin
-        match sterilize with
+        match sanitize with
         | None ->
-            Log.eprintf "STERILIZE: the following are files that should probably not be in your\n\
+            Log.eprintf "sanitize: the following are files that should probably not be in your\n\
                          source tree:\n";
             SS.iter
               begin fun fn ->
                 Log.eprintf " %s" fn
               end
               microbes;
-            Log.eprintf "Remove them manually, don't use the -no-sterilize option, use -no-hygiene, or\n\
+            Log.eprintf "Remove them manually, don't use the -no-sanitize option, use -no-hygiene, or\n\
                           define hygiene exceptions using the tags or plugin mechanism.\n";
             raise Exit_hygiene_violations
         | Some fn ->
             let m = SS.cardinal microbes in
-            Log.eprintf "STERILIZE: a total of %d file%s that should probably not be in your\n\
-                           source tree has been found.  A script shell file %S is being created\n\
-                           Check this script and run it to remove unwanted files or use other\n\
-                           options (such as defining hygiene exceptions or using the -no-hygiene\n\
-                           option.\n"
-                           m (if m = 1 then "" else "s") fn;
+            Log.eprintf
+              "@[<hov 2>SANITIZE:@ a@ total@ of@ %d@ file%s@ that@ should@ probably\
+               @ not@ be@ in@ your@ source@ tree@ has@ been@ found.\
+               @ A@ script@ shell@ file@ %S@ is@ being@ created.\
+               @ Check@ this@ script@ and@ run@ it@ to@ remove@ unwanted@ files\
+               @ or@ use@ other@ options@ (such@ as@ defining@ hygiene@ exceptions\
+               @ or@ using@ the@ -no-hygiene@ option).@]" 
+               m (if m = 1 then "" else "s") fn;
             let oc = open_out_gen [Open_wronly; Open_creat; Open_trunc; Open_text] 0o755 fn in
             let fp = Printf.fprintf in
             fp oc "#!/bin/sh\n\

@@ -123,7 +123,7 @@ directory are due to previous builds using other systems.  \ocb has so-called
 or \texttt{.o} files, for instance) must not appear outside of the build
 directory.  These rules are enforced at startup; any violations will be reported
 and \ocb will exit.  You must then remove these files by hand or run, with caution,
-the script \texttt{sterilize.sh}, which is generated in your source directory.
+the script \texttt{sanitize.sh}, which is generated in your source directory.
 This script will contain commands to remove them for you.
 
 To disable these checks, you can use the \texttt{-no-hygiene} flag.  If you have

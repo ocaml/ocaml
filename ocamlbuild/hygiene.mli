@@ -19,7 +19,7 @@
 type rule =
   Implies_not of pattern * pattern (** The rule [Implies_not(".mll",".ml")] is broken if there is a file [foo.mll]
                                        together with a file [foo.ml] int the same directory.  The second file can
-                                       get sterilized. *)
+                                       get sanitized. *)
 | Not of pattern (* No files with suffix [pattern] will be tolerated. *)
 
 (** Suffix matching is enough for the purpose of this module. *)
@@ -38,9 +38,9 @@ type law = {
   law_penalty : penalty;  (** Breaking the law gives you either a warning or a failure. *)
 }
 
-(** [check ~sterilize laws entry] will scan the directory tree [entry] for violation to the given [laws].
-    Any warnings or errors will be printed on the [stdout].  If [sterilize] is [Some fn], a shell script will be written
+(** [check ~sanitize laws entry] will scan the directory tree [entry] for violation to the given [laws].
+    Any warnings or errors will be printed on the [stdout].  If [sanitize] is [Some fn], a shell script will be written
     into the file [fn] with commands to delete the offending files.  The command will return a pair [(fatal, penalties)]
     where [fatal] is [true] when serious hygiene violations have been spotted, and [penalties] is a list of laws and
     messages describing the offenses. *)
-val check : ?sterilize:string -> law list -> bool Slurp.entry -> (law * string list) list
+val check : ?sanitize:string -> law list -> bool Slurp.entry -> (law * string list) list

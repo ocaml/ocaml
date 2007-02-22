@@ -46,10 +46,10 @@ let inspect entry =
   dprintf 5 "Doing sanity checks";
   let evil = ref false in
   match Hygiene.check
-    ?sterilize:
+    ?sanitize:
       begin
-        if !Options.sterilize then
-          Some(!Options.sterilization_script)
+        if !Options.sanitize then
+          Some(!Options.sanitization_script)
         else
           None
       end
