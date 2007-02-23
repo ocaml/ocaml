@@ -104,6 +104,9 @@ printexc.o: printexc.c backtrace.h mlvalues.h compatibility.h config.h \
 roots.o: roots.c finalise.h roots.h misc.h compatibility.h config.h \
   ../config/m.h ../config/s.h memory.h gc.h mlvalues.h major_gc.h \
   freelist.h minor_gc.h globroots.h stacks.h
+signals_byt.o: signals_byt.c config.h ../config/m.h ../config/s.h \
+  compatibility.h memory.h gc.h mlvalues.h misc.h major_gc.h freelist.h \
+  minor_gc.h osdeps.h signals.h signals_machdep.h
 signals.o: signals.c alloc.h compatibility.h misc.h config.h \
   ../config/m.h ../config/s.h mlvalues.h callback.h fail.h memory.h gc.h \
   major_gc.h freelist.h minor_gc.h roots.h signals.h signals_machdep.h \
@@ -130,6 +133,9 @@ unix.o: unix.c config.h ../config/m.h ../config/s.h compatibility.h \
 weak.o: weak.c alloc.h compatibility.h misc.h config.h ../config/m.h \
   ../config/s.h mlvalues.h fail.h major_gc.h freelist.h memory.h gc.h \
   minor_gc.h
+win32.o: win32.c fail.h compatibility.h misc.h config.h ../config/m.h \
+  ../config/s.h mlvalues.h memory.h gc.h major_gc.h freelist.h minor_gc.h \
+  osdeps.h signals.h
 alloc.d.o: alloc.c alloc.h compatibility.h misc.h config.h ../config/m.h \
   ../config/s.h mlvalues.h custom.h major_gc.h freelist.h memory.h gc.h \
   minor_gc.h stacks.h
@@ -238,6 +244,9 @@ printexc.d.o: printexc.c backtrace.h mlvalues.h compatibility.h config.h \
 roots.d.o: roots.c finalise.h roots.h misc.h compatibility.h config.h \
   ../config/m.h ../config/s.h memory.h gc.h mlvalues.h major_gc.h \
   freelist.h minor_gc.h globroots.h stacks.h
+signals_byt.d.o: signals_byt.c config.h ../config/m.h ../config/s.h \
+  compatibility.h memory.h gc.h mlvalues.h misc.h major_gc.h freelist.h \
+  minor_gc.h osdeps.h signals.h signals_machdep.h
 signals.d.o: signals.c alloc.h compatibility.h misc.h config.h \
   ../config/m.h ../config/s.h mlvalues.h callback.h fail.h memory.h gc.h \
   major_gc.h freelist.h minor_gc.h roots.h signals.h signals_machdep.h \
@@ -264,3 +273,6 @@ unix.d.o: unix.c config.h ../config/m.h ../config/s.h compatibility.h \
 weak.d.o: weak.c alloc.h compatibility.h misc.h config.h ../config/m.h \
   ../config/s.h mlvalues.h fail.h major_gc.h freelist.h memory.h gc.h \
   minor_gc.h
+win32.d.o: win32.c fail.h compatibility.h misc.h config.h ../config/m.h \
+  ../config/s.h mlvalues.h memory.h gc.h major_gc.h freelist.h minor_gc.h \
+  osdeps.h signals.h

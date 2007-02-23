@@ -21,7 +21,7 @@ DFLAGS=-DCAML_NAME_SPACE -g -DDEBUG $(BYTECCCOMPOPTS)
 
 OBJS=interp.o misc.o stacks.o fix_code.o startup.o main.o \
   freelist.o major_gc.o minor_gc.o memory.o alloc.o roots.o globroots.o \
-  fail.o signals.o printexc.o backtrace.o \
+  fail.o signals.o signals_byt.o printexc.o backtrace.o \
   compare.o ints.o floats.o str.o array.o io.o extern.o intern.o \
   hash.o sys.o meta.o parsing.o gc_ctrl.o terminfo.o md5.o obj.o \
   lexing.o callback.o debugger.o weak.o compact.o finalise.o custom.o \
