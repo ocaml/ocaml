@@ -7,15 +7,62 @@ Language features:
   definition replaces the old one, rather than creating a new
   variable.
 
+New tools:
+- ocamlbuild (new): compilation manager for OCaml applications and libraries.
+  See description in reference manual.
+- Camlp4: heavily revised implementation, new API.
+
+New ports:
+- MacOSX PowerPC 64 bits.
+- MS Windows 32 bits using the Visual Studio 2005 toolchain.
+- MS Windows 64 bits (x64) using the Microsoft PSDK toolchain.
+
+Compilers:
+- Faster type-checking of functor applications.
+- Referencing an interface compiled with -rectypes from a module
+    not compiled with -rectypes is now an error.
+- Revised the "fragile matching" warning.
+
+Native-code compiler:
+- Print a stack backtrace on an uncaught exception.
+  (Compile and link with ocamlopt -g; execute with OCAMLRUNPARAM=b=1.)
+  Supported on Intel/AMD in 32 and 64 bits, PPC in 32 and 64 bits.
+- Stack overflow detection on MS Windows 32 and 64 bits (courtesy O. Andrieu).
+- Stack overflow detection on MacOS X PPC and Intel.
+- Intel/AMD 64 bits: generate position-independent code by default.
+- Fixed bug involving -for-pack and missing .cmx files (PR#4124).
+- Fixed bug causing duplication of literals  (PR#4152).
+
+Run-time system:
+- C/Caml interface functions take "char const *" arguments 
+  instead of "char *" when appropriate.
+- Faster string comparisons (fast case if strings are ==).
+
 Standard library:
-- Types format4 and format are now defined in terms of new type format6.
-- Printf:
-    new function ifprintf that prints nothing (useful to print conditionally).
+- Refined typing of format strings (type format6).
+- Printf, Format: new function ifprintf that consumes its arguments
+    and prints nothing (useful to print conditionally).
 - Scanf:
-    new function format_from_string to convert a string to a format string,
+    new function format_from_string to convert a string to a format string;
     new %r conversion to accomodate user defined scanners.
-- Format:
-    new function ifprintf that prints nothing.
+- Filename: improved Win32 implementation of Filename.quote.
+- List: List.nth now tail-recursive.
+
+Other libraries:
+- Bigarray: mmap_file takes an optional argument specifying 
+    the start position of the data in the mapped file
+- Dynlink: now defines only two modules, Dynlink and Dynlinkaux (internal),
+    reducing risks of name conflicts with user modules.
+- Unix: new function Unix.isatty.
+- Unix emulation under Win32: 
+    fixed incorrect error reporting in several functions (PR#4097);
+    better handling of channels opened on sockets (PR#4098);
+    fixed GC bug in Unix.system (PR#4112).
+
+Lexer generator (ocamllex): improved error reporting.
+
+License: fixed a typo in the "special exception" to the LGPL.
+
 
 Objective Caml 3.09.3:
 ----------------------
