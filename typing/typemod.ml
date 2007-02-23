@@ -831,7 +831,7 @@ let package_units objfiles cmifile modulename =
   let units =
     List.map
       (fun f ->
-         let pref = chop_extension_if_any f in
+         let pref = chop_extensions f in
          let modname = String.capitalize(Filename.basename pref) in
          let sg = Env.read_signature modname (pref ^ ".cmi") in
          if Filename.check_suffix f ".cmi" &&
