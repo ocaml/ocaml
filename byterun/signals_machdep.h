@@ -42,6 +42,16 @@
       : "r" (&(src)), "r" (0) \
       : "cr0", "memory")
 
+#elif defined(__GNUC__) && defined(__ppc64__)
+
+#define Read_and_clear(dst,src) \
+  asm("0: ldarx %0, 0, %1\n\t" \
+      "stdcx. %2, 0, %1\n\t" \
+      "bne- 0b" \
+      : "=&r" (dst) \
+      : "r" (&(src)), "r" (0) \
+      : "cr0", "memory")
+
 #else
 
 /* Default, non-atomic implementation */
