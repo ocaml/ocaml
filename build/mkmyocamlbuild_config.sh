@@ -10,7 +10,7 @@ sed \
     -e 's/\$(\([^)]*\))/"\^<:lower<\1>>\^"/g' \
     -e 's/""\^//g' \
     -e 's/\^""//g' \
-    -e 's/^let <lower>\(MAKE\|DO\).*$//g' \
+    -e 's/^let <:lower<\(MAKE\|DO\).*$//g' \
     -e 's/"true"/true/g' \
     -e 's/"false"/false/g' \
     config/Makefile | \
