@@ -31,6 +31,9 @@ STUBLIBDIR=$(LIBDIR)/stublibs
 ### Where to install the info files
 DISTRIB=$(PREFIX)
 
+### Where to install the man pages
+MANDIR=$(PREFIX)/man
+
 ########## Toolchain and OS dependencies
 
 TOOLCHAIN=msvc
