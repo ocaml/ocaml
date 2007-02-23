@@ -60,6 +60,12 @@ camlheader camlheader_ur: headernt.c ../config/Makefile
 	mv tmpheader.exe camlheader
 	cp camlheader camlheader_ur
 
+sys.ml: sys.mlp ../VERSION
+	sed -e "s|%%VERSION%%|`head -1 ../VERSION`|" sys.mlp >sys.ml
+
+clean::
+	rm -f sys.ml
+
 clean::
 	rm -f camlheader camlheader_ur
 
