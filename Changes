@@ -8,7 +8,7 @@ Language features:
   variable.
 
 New tools:
-- ocamlbuild (new): compilation manager for OCaml applications and libraries.
+- ocamlbuild: compilation manager for OCaml applications and libraries.
   See description in reference manual.
 - Camlp4: heavily revised implementation, new API.
 
@@ -25,7 +25,7 @@ Compilers:
 
 Native-code compiler:
 - Print a stack backtrace on an uncaught exception.
-  (Compile and link with ocamlopt -g; execute with OCAMLRUNPARAM=b=1.)
+  (Compile and link with ocamlopt -g; execute with OCAMLRUNPARAM='b=1'.)
   Supported on Intel/AMD in 32 and 64 bits, PPC in 32 and 64 bits.
 - Stack overflow detection on MS Windows 32 and 64 bits (courtesy O. Andrieu).
 - Stack overflow detection on MacOS X PPC and Intel.
@@ -47,12 +47,15 @@ Standard library:
     new %r conversion to accomodate user defined scanners.
 - Filename: improved Win32 implementation of Filename.quote.
 - List: List.nth now tail-recursive.
+- Sys: some functions (e.g. Sys.command) would incorrectly raise 
+    Sys_io_blocked, now raise Sys_error as intended.
 
 Other libraries:
 - Bigarray: mmap_file takes an optional argument specifying 
-    the start position of the data in the mapped file
+    the start position of the data in the mapped file.
 - Dynlink: now defines only two modules, Dynlink and Dynlinkaux (internal),
     reducing risks of name conflicts with user modules.
+- VM threads: improved performance of I/O operations (less polling).
 - Unix: new function Unix.isatty.
 - Unix emulation under Win32: 
     fixed incorrect error reporting in several functions (PR#4097);
