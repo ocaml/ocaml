@@ -343,6 +343,7 @@ CAMLexport void caml_expand_command_line(int * argcp, char *** argvp)
 
 int caml_read_directory(char * dirname, struct ext_table * contents)
 {
+  int dirnamelen;
   char * template;
 #if _MSC_VER <= 1200
   int h;
@@ -352,9 +353,15 @@ int caml_read_directory(char * dirname, struct ext_table * contents)
   struct _finddata_t fileinfo;
   char * p;
 
-  template = caml_stat_alloc(strlen(dirname) + 5);
+  dirnamelen = strlen(dirname);
+  template = caml_stat_alloc(dirnamelen + 5);
   strcpy(template, dirname);
-  strcat(template, "\\*.*");
+  switch (dirname[dirnamelen - 1]) {
+  case '/': case '\\': case ':':
+    strcat(template, "*.*"); break;
+  default:
+    strcat(template, "\\*.*");
+  }
   h = _findfirst(template, &fileinfo);
   caml_stat_free(template);
   if (h == -1) return errno == ENOENT ? 0 : -1;
