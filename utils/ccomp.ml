@@ -104,7 +104,7 @@ let merge_manifest exefile =
   let manfile = exefile ^ ".manifest" in
   if not (Sys.file_exists manfile) then 0 else begin
     let retcode =
-      command (Printf.sprintf "mt -nologo -outputresource:%s -manifest:%s"
+      command (Printf.sprintf "mt -nologo -outputresource:%s -manifest %s"
                               (Filename.quote exefile)
                               (Filename.quote manfile)) in
     Misc.remove_file manfile;
