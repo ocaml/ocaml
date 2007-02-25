@@ -231,18 +231,14 @@ external thread_wait_write_prim : Unix.file_descr -> unit = "thread_wait_write"
 let thread_wait_read fd = thread_wait_read_prim fd
 let thread_wait_write fd = thread_wait_write_prim fd
 
-external inchan_ready : in_channel -> bool = "thread_inchan_ready"
-external outchan_ready : out_channel -> int -> bool = "thread_outchan_ready"
 external descr_inchan : in_channel -> Unix.file_descr
                       = "caml_channel_descriptor"
 external descr_outchan : out_channel -> Unix.file_descr
                        = "caml_channel_descriptor"
 
-let wait_inchan ic =
-  if not (inchan_ready ic) then thread_wait_read(descr_inchan ic)
+let wait_inchan ic = thread_wait_read (descr_inchan ic)
 
-let wait_outchan oc len =
-  if not (outchan_ready oc len) then thread_wait_write(descr_outchan oc)
+let wait_outchan oc len = thread_wait_write (descr_outchan oc)
 
 (* General output functions *)
 
