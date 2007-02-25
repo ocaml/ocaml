@@ -113,7 +113,7 @@ let main() =
   test "line per line, short and long lines"
        copy_line copy_line linesfile ofile;
   test_trunc_line ofile;
-  Sys.remove linesfiles;
+  Sys.remove linesfile;
   Sys.remove ofile;
   exit 0
 
