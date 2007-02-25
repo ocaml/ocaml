@@ -73,23 +73,28 @@ CAMLexport void caml_sys_error(value arg)
   char * err;
   CAMLlocal1 (str);
 
+  err = error_message();
+  if (arg == NO_ARG) {
+    str = caml_copy_string(err);
+  } else {
+    int err_len = strlen(err);
+    int arg_len = caml_string_length(arg);
+    str = caml_alloc_string(arg_len + 2 + err_len);
+    memmove(&Byte(str, 0), String_val(arg), arg_len);
+    memmove(&Byte(str, arg_len), ": ", 2);
+    memmove(&Byte(str, arg_len + 2), err, err_len);
+  }
+  caml_raise_sys_error(str);
+  CAMLnoreturn;
+}
+
+CAMLexport void caml_sys_io_error(value arg)
+{
   if (errno == EAGAIN || errno == EWOULDBLOCK) {
     caml_raise_sys_blocked_io();
   } else {
-    err = error_message();
-    if (arg == NO_ARG) {
-      str = caml_copy_string(err);
-    } else {
-      int err_len = strlen(err);
-      int arg_len = caml_string_length(arg);
-      str = caml_alloc_string(arg_len + 2 + err_len);
-      memmove(&Byte(str, 0), String_val(arg), arg_len);
-      memmove(&Byte(str, arg_len), ": ", 2);
-      memmove(&Byte(str, arg_len + 2), err, err_len);
-    }
-    caml_raise_sys_error(str);
+    caml_sys_error(arg);
   }
-  CAMLnoreturn;
 }
 
 CAMLprim value caml_sys_exit(value retcode)

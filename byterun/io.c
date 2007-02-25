@@ -163,7 +163,7 @@ again:
       n = 1; goto again;
     }
   }
-  if (retcode == -1) caml_sys_error(NO_ARG);
+  if (retcode == -1) caml_sys_io_error(NO_ARG);
   return retcode;
 }
 
@@ -266,7 +266,7 @@ CAMLexport int caml_do_read(int fd, char *p, unsigned int n)
     retcode = read(fd, p, n);
     caml_leave_blocking_section();
   } while (retcode == -1 && errno == EINTR);
-  if (retcode == -1) caml_sys_error(NO_ARG);
+  if (retcode == -1) caml_sys_io_error(NO_ARG);
   return retcode;
 }
 
