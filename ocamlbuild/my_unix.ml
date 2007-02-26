@@ -51,10 +51,12 @@ let is_degraded = true
 let stat f =
   { stat_key = f;
     stat_file_kind =
-      try let _ = with_input_file f input_char in FK_file
-      with
-      | Sys_error "Is a directory" -> FK_dir
-      | End_of_file -> FK_file }
+      if Sys.file_exists f then
+        if Sys.is_directory f then
+          FK_dir
+        else
+          FK_file
+      else let _ = with_input_file f input_char in assert false }
 
 let run_and_open s kont =
   with_temp_file "ocamlbuild" "out" begin fun tmp ->
