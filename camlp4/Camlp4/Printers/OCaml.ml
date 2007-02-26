@@ -49,6 +49,16 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | [x] -> elt f x
     | [x::xs] -> do { elt f x; loop xs } ];
 
+  value rec list_of_meta_list =
+    fun
+    [ Ast.LNil -> []
+    | Ast.LCons x xs -> [x :: list_of_meta_list xs]
+    | Ast.LAnt x -> assert False ];
+
+  value meta_list elt sep f mxs =
+    let xs = list_of_meta_list mxs in
+    list elt sep f xs;
+
   module CommentFilter = Struct.CommentFilter.Make Token;
   value comment_filter = CommentFilter.mk ();
   CommentFilter.define (Gram.get_filter ()) comment_filter;
@@ -713,9 +723,9 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           do { o#sig_item f sg1; cut f; o#sig_item f sg2 }
       | <:sig_item< exception $t$ >> ->
           pp f "@[<2>exception@ %a%s@]" o#ctyp t semisep
-      | <:sig_item< external $s1$ : $t$ = $s2$ >> ->
+      | <:sig_item< external $s$ : $t$ = $sl$ >> ->
           pp f "@[<2>external@ %a :@ %a =@ %a%s@]"
-            o#var s1 o#ctyp t o#quoted_string s2 semisep
+            o#var s o#ctyp t (meta_list o#quoted_string "@ ") sl semisep
       | <:sig_item< module $s1$ ($s2$ : $mt1$) : $mt2$ >> ->
           let rec loop accu =
             fun
@@ -764,9 +774,9 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
             pp f "@[<2>exception@ %a%s@]" o#ctyp t semisep
       | <:str_item< exception $t$ = $sl$ >> ->
             pp f "@[<2>exception@ %a =@ %a%s@]" o#ctyp t o#ident sl semisep
-      | <:str_item< external $s1$ : $t$ = $s2$ >> ->
+      | <:str_item< external $s$ : $t$ = $sl$ >> ->
             pp f "@[<2>external@ %a :@ %a =@ %a%s@]"
-              o#var s1 o#ctyp t o#quoted_string s2 semisep
+              o#var s o#ctyp t (meta_list o#quoted_string "@ ") sl semisep
       | <:str_item< module $s1$ ($s2$ : $mt1$) = $me$ >> ->
           match o#module_expr_get_functor_args [(s2, mt1)] me with
           [ (al, me, Some mt2) ->

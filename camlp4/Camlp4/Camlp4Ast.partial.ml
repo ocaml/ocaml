@@ -7,6 +7,10 @@
     [ ONone
     | OSome of 'a
     | OAnt of string ];
+  type meta_list 'a =
+    [ LNil
+    | LCons of 'a and meta_list 'a
+    | LAnt of string ];
   type ident =
     [ IdAcc of Loc.t and ident and ident (* i . i *)
     | IdApp of Loc.t and ident and ident (* i i *)
@@ -171,10 +175,8 @@
     | SgDir of Loc.t and string and expr
       (* exception t *)
     | SgExc of Loc.t and ctyp
-      (* |+ external s : t = s ... s +|
-    | SgExt of Loc.t and string and ctyp and list string    *)
-      (* external s : t = s *)
-    | SgExt of Loc.t and string and ctyp and string
+      (* external s : t = s ... s *)
+    | SgExt of Loc.t and string and ctyp and meta_list string
       (* include mt *)
     | SgInc of Loc.t and module_type
       (* module s : mt *)
@@ -250,10 +252,8 @@
     | StExc of Loc.t and ctyp and meta_option(*FIXME*) ident
       (* e *)
     | StExp of Loc.t and expr
-      (* |+ external s : t = s ... s +|
-    | StExt of Loc.t and string and ctyp and list string    *)
-      (* external s : t = s *)
-    | StExt of Loc.t and string and ctyp and string
+      (* external s : t = s ... s *)
+    | StExt of Loc.t and string and ctyp and meta_list string
       (* include me *)
     | StInc of Loc.t and module_expr
       (* module s = me *)

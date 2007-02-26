@@ -350,7 +350,7 @@ module Sig =
       sig
         (** The name of the extension, typically the module name. *)
         val name : string
-        (** The version of the extension, typically $Id: Id.mli,v 1.2 2006/07/08 17:21:31 pouillar Exp $ with a versionning system. *)
+        (** The version of the extension, typically $Id: Sig.ml,v 1.1 2007/02/07 11:41:36 ertai Exp $ with a versionning system. *)
         val version : string
       end
     module type Loc =
@@ -489,6 +489,7 @@ module Sig =
         module Loc : Loc
         type meta_bool
         type 'a meta_option
+        type 'a meta_list
         type ctyp
         type patt
         type expr
@@ -543,6 +544,8 @@ module Sig =
             method meta_bool : meta_bool -> meta_bool
             method meta_option :
               'a 'b. ('a -> 'b) -> 'a meta_option -> 'b meta_option
+            method meta_list :
+              'a 'b. ('a -> 'b) -> 'a meta_list -> 'b meta_list
             method _Loc_t : Loc.t -> Loc.t
             method expr : expr -> expr
             method patt : patt -> patt
@@ -580,6 +583,10 @@ module Sig =
               'a.
                 ('self_type -> 'a -> 'self_type) ->
                   'a meta_option -> 'self_type
+            method meta_list :
+              'a.
+                ('self_type -> 'a -> 'self_type) ->
+                  'a meta_list -> 'self_type
             method _Loc_t : Loc.t -> 'self_type
             method expr : expr -> 'self_type
             method patt : patt -> 'self_type
@@ -622,6 +629,8 @@ module Sig =
         module Loc : Loc
         type meta_bool = | BTrue | BFalse | BAnt of string
         type 'a meta_option = | ONone | OSome of 'a | OAnt of string
+        type 'a meta_list =
+          | LNil | LCons of 'a * 'a meta_list | LAnt of string
         type ident =
           | IdAcc of Loc.t * ident * ident | (* i . i *)
           IdApp of Loc.t * ident * ident | (* i i *) IdLid of Loc.t * string
@@ -740,9 +749,7 @@ module Sig =
           (* sg ; sg *)
           (* # s or # s e *)
           (* exception t *)
-          (* |+ external s : t = s ... s +|
-    | SgExt of Loc.t and string and ctyp and list string    *)
-          (* external s : t = s *)
+          (* external s : t = s ... s *)
           (* include mt *)
           (* module s : mt *)
           (* module rec mb *)
@@ -782,9 +789,7 @@ module Sig =
           (* exception t or exception t = i *)
           (*FIXME*)
           (* e *)
-          (* |+ external s : t = s ... s +|
-    | StExt of Loc.t and string and ctyp and list string    *)
-          (* external s : t = s *)
+          (* external s : t = s ... s *)
           (* include me *)
           (* module s = me *)
           (* module rec mb *)
@@ -867,7 +872,7 @@ module Sig =
           | SgClt of Loc.t * class_type
           | SgSem of Loc.t * sig_item * sig_item
           | SgDir of Loc.t * string * expr | SgExc of Loc.t * ctyp
-          | SgExt of Loc.t * string * ctyp * string
+          | SgExt of Loc.t * string * ctyp * string meta_list
           | SgInc of Loc.t * module_type
           | SgMod of Loc.t * string * module_type
           | SgRecMod of Loc.t * module_binding
@@ -903,7 +908,7 @@ module Sig =
           | StSem of Loc.t * str_item * str_item
           | StDir of Loc.t * string * expr
           | StExc of Loc.t * ctyp * ident meta_option | StExp of Loc.t * expr
-          | StExt of Loc.t * string * ctyp * string
+          | StExt of Loc.t * string * ctyp * string meta_list
           | StInc of Loc.t * module_expr
           | StMod of Loc.t * string * module_expr
           | StRecMod of Loc.t * module_binding
@@ -1007,10 +1012,6 @@ module Sig =
                     val meta_expr : Loc.t -> expr -> expr
                     val meta_ident : Loc.t -> ident -> expr
                     val meta_match_case : Loc.t -> match_case -> expr
-                    val meta_meta_bool : Loc.t -> meta_bool -> expr
-                    val meta_meta_option :
-                      (Loc.t -> ident -> expr) ->
-                        Loc.t -> ident meta_option -> expr
                     val meta_module_binding : Loc.t -> module_binding -> expr
                     val meta_module_expr : Loc.t -> module_expr -> expr
                     val meta_module_type : Loc.t -> module_type -> expr
@@ -1037,10 +1038,6 @@ module Sig =
                     val meta_expr : Loc.t -> expr -> patt
                     val meta_ident : Loc.t -> ident -> patt
                     val meta_match_case : Loc.t -> match_case -> patt
-                    val meta_meta_bool : Loc.t -> meta_bool -> patt
-                    val meta_meta_option :
-                      (Loc.t -> ident -> patt) ->
-                        Loc.t -> ident meta_option -> patt
                     val meta_module_binding : Loc.t -> module_binding -> patt
                     val meta_module_expr : Loc.t -> module_expr -> patt
                     val meta_module_type : Loc.t -> module_type -> patt
@@ -1057,6 +1054,8 @@ module Sig =
             method meta_bool : meta_bool -> meta_bool
             method meta_option :
               'a 'b. ('a -> 'b) -> 'a meta_option -> 'b meta_option
+            method meta_list :
+              'a 'b. ('a -> 'b) -> 'a meta_list -> 'b meta_list
             method _Loc_t : Loc.t -> Loc.t
             method expr : expr -> expr
             method patt : patt -> patt
@@ -1094,6 +1093,10 @@ module Sig =
               'a.
                 ('self_type -> 'a -> 'self_type) ->
                   'a meta_option -> 'self_type
+            method meta_list :
+              'a.
+                ('self_type -> 'a -> 'self_type) ->
+                  'a meta_list -> 'self_type
             method _Loc_t : Loc.t -> 'self_type
             method expr : expr -> 'self_type
             method patt : patt -> 'self_type
@@ -1185,7 +1188,8 @@ module Sig =
       end
     module Camlp4AstToAst (M : Camlp4Ast) : Ast with module Loc = M.Loc
       and type meta_bool = M.meta_bool
-      and type 'a meta_option = 'a M.meta_option and type ctyp = M.ctyp
+      and type 'a meta_option = 'a M.meta_option
+      and type 'a meta_list = 'a M.meta_list and type ctyp = M.ctyp
       and type patt = M.patt and type expr = M.expr
       and type module_type = M.module_type and type sig_item = M.sig_item
       and type with_constr = M.with_constr
@@ -1200,6 +1204,8 @@ module Sig =
       struct
         type meta_bool = | BTrue | BFalse | BAnt of string
         type 'a meta_option = | ONone | OSome of 'a | OAnt of string
+        type 'a meta_list =
+          | LNil | LCons of 'a * 'a meta_list | LAnt of string
         type ident =
           | IdAcc of Loc.t * ident * ident | IdApp of Loc.t * ident * ident
           | IdLid of Loc.t * string | IdUid of Loc.t * string
@@ -1275,7 +1281,7 @@ module Sig =
           | SgClt of Loc.t * class_type
           | SgSem of Loc.t * sig_item * sig_item
           | SgDir of Loc.t * string * expr | SgExc of Loc.t * ctyp
-          | SgExt of Loc.t * string * ctyp * string
+          | SgExt of Loc.t * string * ctyp * string meta_list
           | SgInc of Loc.t * module_type
           | SgMod of Loc.t * string * module_type
           | SgRecMod of Loc.t * module_binding
@@ -1311,7 +1317,7 @@ module Sig =
           | StSem of Loc.t * str_item * str_item
           | StDir of Loc.t * string * expr
           | StExc of Loc.t * ctyp * ident meta_option | StExp of Loc.t * expr
-          | StExt of Loc.t * string * ctyp * string
+          | StExt of Loc.t * string * ctyp * string meta_list
           | StInc of Loc.t * module_expr
           | StMod of Loc.t * string * module_expr
           | StRecMod of Loc.t * module_binding
@@ -6339,6 +6345,21 @@ module Struct =
                               Ast.ExId (_loc,
                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                   Ast.IdUid (_loc, "BTrue")))
+                        and meta_meta_list mf_a _loc =
+                          function
+                          | Ast.LAnt x0 -> Ast.ExAnt (_loc, x0)
+                          | Ast.LCons (x0, x1) ->
+                              Ast.ExApp (_loc,
+                                Ast.ExApp (_loc,
+                                  Ast.ExId (_loc,
+                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
+                                      Ast.IdUid (_loc, "LCons"))),
+                                  mf_a _loc x0),
+                                meta_meta_list mf_a _loc x1)
+                          | Ast.LNil ->
+                              Ast.ExId (_loc,
+                                Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
+                                  Ast.IdUid (_loc, "LNil")))
                         and meta_meta_option mf_a _loc =
                           function
                           | Ast.OAnt x0 -> Ast.ExAnt (_loc, x0)
@@ -6823,7 +6844,7 @@ module Struct =
                                       meta_acc_Loc_t _loc x0),
                                     meta_string _loc x1),
                                   meta_ctyp _loc x2),
-                                meta_string _loc x3)
+                                meta_meta_list meta_string _loc x3)
                           | Ast.SgExc (x0, x1) ->
                               Ast.ExApp (_loc,
                                 Ast.ExApp (_loc,
@@ -6956,7 +6977,7 @@ module Struct =
                                       meta_acc_Loc_t _loc x0),
                                     meta_string _loc x1),
                                   meta_ctyp _loc x2),
-                                meta_string _loc x3)
+                                meta_meta_list meta_string _loc x3)
                           | Ast.StExp (x0, x1) ->
                               Ast.ExApp (_loc,
                                 Ast.ExApp (_loc,
@@ -8314,6 +8335,21 @@ module Struct =
                               Ast.PaId (_loc,
                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                   Ast.IdUid (_loc, "BTrue")))
+                        and meta_meta_list mf_a _loc =
+                          function
+                          | Ast.LAnt x0 -> Ast.PaAnt (_loc, x0)
+                          | Ast.LCons (x0, x1) ->
+                              Ast.PaApp (_loc,
+                                Ast.PaApp (_loc,
+                                  Ast.PaId (_loc,
+                                    Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
+                                      Ast.IdUid (_loc, "LCons"))),
+                                  mf_a _loc x0),
+                                meta_meta_list mf_a _loc x1)
+                          | Ast.LNil ->
+                              Ast.PaId (_loc,
+                                Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
+                                  Ast.IdUid (_loc, "LNil")))
                         and meta_meta_option mf_a _loc =
                           function
                           | Ast.OAnt x0 -> Ast.PaAnt (_loc, x0)
@@ -8798,7 +8834,7 @@ module Struct =
                                       meta_acc_Loc_t _loc x0),
                                     meta_string _loc x1),
                                   meta_ctyp _loc x2),
-                                meta_string _loc x3)
+                                meta_meta_list meta_string _loc x3)
                           | Ast.SgExc (x0, x1) ->
                               Ast.PaApp (_loc,
                                 Ast.PaApp (_loc,
@@ -8931,7 +8967,7 @@ module Struct =
                                       meta_acc_Loc_t _loc x0),
                                     meta_string _loc x1),
                                   meta_ctyp _loc x2),
-                                meta_string _loc x3)
+                                meta_meta_list meta_string _loc x3)
                           | Ast.StExp (x0, x1) ->
                               Ast.PaApp (_loc,
                                 Ast.PaApp (_loc,
@@ -9083,7 +9119,7 @@ module Struct =
                   | StExp (_x0, _x1) -> StExp (o#_Loc_t _x0, o#expr _x1)
                   | StExt (_x0, _x1, _x2, _x3) ->
                       StExt (o#_Loc_t _x0, o#string _x1, o#ctyp _x2,
-                        o#string _x3)
+                        o#meta_list o#string _x3)
                   | StInc (_x0, _x1) ->
                       StInc (o#_Loc_t _x0, o#module_expr _x1)
                   | StMod (_x0, _x1, _x2) ->
@@ -9111,7 +9147,7 @@ module Struct =
                   | SgExc (_x0, _x1) -> SgExc (o#_Loc_t _x0, o#ctyp _x1)
                   | SgExt (_x0, _x1, _x2, _x3) ->
                       SgExt (o#_Loc_t _x0, o#string _x1, o#ctyp _x2,
-                        o#string _x3)
+                        o#meta_list o#string _x3)
                   | SgInc (_x0, _x1) ->
                       SgInc (o#_Loc_t _x0, o#module_type _x1)
                   | SgMod (_x0, _x1, _x2) ->
@@ -9214,6 +9250,14 @@ module Struct =
                     | ONone -> ONone
                     | OSome _x0 -> OSome (_f_a _x0)
                     | OAnt _x0 -> OAnt (o#string _x0)
+                method meta_list :
+                  'a 'b. ('a -> 'b) -> 'a meta_list -> 'b meta_list =
+                  fun _f_a ->
+                    function
+                    | LNil -> LNil
+                    | LCons (_x0, _x1) ->
+                        LCons (_f_a _x0, o#meta_list _f_a _x1)
+                    | LAnt _x0 -> LAnt (o#string _x0)
                 method meta_bool : meta_bool -> meta_bool =
                   function
                   | BTrue -> BTrue
@@ -9520,7 +9564,8 @@ module Struct =
                         (fun o -> o#ident) _x2
                   | StExp (_x0, _x1) -> (o#_Loc_t _x0)#expr _x1
                   | StExt (_x0, _x1, _x2, _x3) ->
-                      (((o#_Loc_t _x0)#string _x1)#ctyp _x2)#string _x3
+                      (((o#_Loc_t _x0)#string _x1)#ctyp _x2)#meta_list
+                        (fun o -> o#string) _x3
                   | StInc (_x0, _x1) -> (o#_Loc_t _x0)#module_expr _x1
                   | StMod (_x0, _x1, _x2) ->
                       ((o#_Loc_t _x0)#string _x1)#module_expr _x2
@@ -9543,7 +9588,8 @@ module Struct =
                       ((o#_Loc_t _x0)#string _x1)#expr _x2
                   | SgExc (_x0, _x1) -> (o#_Loc_t _x0)#ctyp _x1
                   | SgExt (_x0, _x1, _x2, _x3) ->
-                      (((o#_Loc_t _x0)#string _x1)#ctyp _x2)#string _x3
+                      (((o#_Loc_t _x0)#string _x1)#ctyp _x2)#meta_list
+                        (fun o -> o#string) _x3
                   | SgInc (_x0, _x1) -> (o#_Loc_t _x0)#module_type _x1
                   | SgMod (_x0, _x1, _x2) ->
                       ((o#_Loc_t _x0)#string _x1)#module_type _x2
@@ -9638,6 +9684,16 @@ module Struct =
                     | ONone -> o
                     | OSome _x0 -> _f_a o _x0
                     | OAnt _x0 -> o#string _x0
+                method meta_list :
+                  'a.
+                    ('self_type -> 'a -> 'self_type) ->
+                      'a meta_list -> 'self_type =
+                  fun _f_a ->
+                    function
+                    | LNil -> o
+                    | LCons (_x0, _x1) ->
+                        (_f_a o _x0)#meta_list (fun o -> _f_a o) _x1
+                    | LAnt _x0 -> o#string _x0
                 method meta_bool : meta_bool -> 'self_type =
                   function
                   | BTrue -> o
@@ -10686,6 +10742,11 @@ module Struct =
             let type_decl tl cl t =
               type_decl tl cl (loc_of_ctyp t) None false t
             let mkvalue_desc t p = {  pval_type = ctyp t; pval_prim = p; }
+            let rec list_of_meta_list =
+              function
+              | Ast.LNil -> []
+              | Ast.LCons (x, xs) -> x :: (list_of_meta_list xs)
+              | Ast.LAnt x -> assert false
             let mkmutable m = if mb2b m then Mutable else Immutable
             let paolab lab p =
               match (lab, p) with
@@ -11267,8 +11328,10 @@ module Struct =
                         List.map ctyp (list_of_ctyp t [])))) ::
                     l
               | SgExc (_, _) -> assert false
-              | SgExt (loc, n, t, p) ->
-                  (mksig loc (Psig_value (n, mkvalue_desc t [ p ]))) :: l
+              | SgExt (loc, n, t, sl) ->
+                  (mksig loc
+                     (Psig_value (n, mkvalue_desc t (list_of_meta_list sl)))) ::
+                    l
               | SgInc (loc, mt) ->
                   (mksig loc (Psig_include (module_type mt))) :: l
               | SgMod (loc, n, mt) ->
@@ -11349,8 +11412,11 @@ module Struct =
                   (mkstr loc (Pstr_exn_rebind (conv_con s, ident i))) :: l
               | StExc (_, _, _) -> assert false
               | StExp (loc, e) -> (mkstr loc (Pstr_eval (expr e))) :: l
-              | StExt (loc, n, t, p) ->
-                  (mkstr loc (Pstr_primitive (n, mkvalue_desc t [ p ]))) :: l
+              | StExt (loc, n, t, sl) ->
+                  (mkstr loc
+                     (Pstr_primitive (n,
+                        mkvalue_desc t (list_of_meta_list sl)))) ::
+                    l
               | StInc (loc, me) ->
                   (mkstr loc (Pstr_include (module_expr me))) :: l
               | StMod (loc, n, me) ->
@@ -14017,7 +14083,7 @@ module Printers =
           struct
             let name = "Camlp4Printers.DumpCamlp4Ast"
             let version =
-              "$Id: DumpCamlp4Ast.ml,v 1.4 2006/10/03 08:54:08 ertai Exp $"
+              "$Id: DumpCamlp4Ast.ml,v 1.5 2007/02/07 10:09:21 ertai Exp $"
           end
         module Make (Syntax : Sig.Syntax) :
           Sig.Printer with module Ast = Syntax.Ast =
@@ -14051,7 +14117,7 @@ module Printers =
           struct
             let name = "Camlp4Printers.DumpOCamlAst"
             let version =
-              "$Id: DumpOCamlAst.ml,v 1.4 2006/10/03 08:54:08 ertai Exp $"
+              "$Id: DumpOCamlAst.ml,v 1.5 2007/02/07 10:09:21 ertai Exp $"
           end
         module Make (Syntax : Sig.Camlp4Syntax) :
           Sig.Printer with module Ast = Syntax.Ast =
@@ -14094,7 +14160,7 @@ module Printers =
           struct
             let name = "Camlp4.Printers.Null"
             let version =
-              "$Id: Null.ml,v 1.1 2006/10/03 08:54:08 ertai Exp $"
+              "$Id: Null.ml,v 1.2 2007/02/07 10:09:21 ertai Exp $"
           end
         module Make (Syntax : Sig.Syntax) =
           struct
@@ -14262,7 +14328,7 @@ module Printers =
           struct
             let name = "Camlp4.Printers.OCaml"
             let version =
-              "$Id: OCaml.ml,v 1.19 2006/10/10 22:32:43 ertai Exp $"
+              "$Id: OCaml.ml,v 1.20 2007/02/07 10:09:21 ertai Exp $"
           end
         module Make (Syntax : Sig.Camlp4Syntax) =
           struct
@@ -14287,6 +14353,13 @@ module Printers =
                 | [] -> ()
                 | [ x ] -> elt f x
                 | x :: xs -> (elt f x; loop xs)
+            let rec list_of_meta_list =
+              function
+              | Ast.LNil -> []
+              | Ast.LCons (x, xs) -> x :: (list_of_meta_list xs)
+              | Ast.LAnt x -> assert false
+            let meta_list elt sep f mxs =
+              let xs = list_of_meta_list mxs in list elt sep f xs
             module CommentFilter = Struct.CommentFilter.Make(Token)
             let comment_filter = CommentFilter.mk ()
             let _ = CommentFilter.define (Gram.get_filter ()) comment_filter
@@ -14724,7 +14797,8 @@ module Printers =
                             "@[<hv0>@[<2>if@ %a@]@ @[<2>then@ %a@]@ @[<2>else@ %a@]@]"
                             o#expr e1 o#under_semi#expr e2 o#under_semi#expr
                             e3
-                      | Ast.ExLaz (_, e) -> pp f "@[<2>lazy@ %a@]" o#expr e
+                      | Ast.ExLaz (_, e) ->
+                          pp f "@[<2>lazy@ %a@]" o#simple_expr e
                       | Ast.ExLet (_, r, bi, e) ->
                           (match e with
                            | Ast.ExLet (_, _, _, _) ->
@@ -15090,9 +15164,10 @@ module Printers =
                           (o#sig_item f sg1; cut f; o#sig_item f sg2)
                       | Ast.SgExc (_, t) ->
                           pp f "@[<2>exception@ %a%s@]" o#ctyp t semisep
-                      | Ast.SgExt (_, s1, t, s2) ->
-                          pp f "@[<2>external@ %a :@ %a =@ %a%s@]" o#var s1
-                            o#ctyp t o#quoted_string s2 semisep
+                      | Ast.SgExt (_, s, t, sl) ->
+                          pp f "@[<2>external@ %a :@ %a =@ %a%s@]" o#var s
+                            o#ctyp t (meta_list o#quoted_string "@ ") sl
+                            semisep
                       | Ast.SgMod (_, s1, (Ast.MtFun (_, s2, mt1, mt2))) ->
                           let rec loop accu =
                             (function
@@ -15130,6 +15205,7 @@ module Printers =
                             mb semisep
                       | Ast.SgDir (_, _, _) -> ()
                       | Ast.SgAnt (_, s) -> pp f "%a%s" o#anti s semisep
+                      | Ast.SgExt (_, _, _, _) -> assert false
                 method str_item =
                   fun f st ->
                     let () = o#node f st Ast.loc_of_str_item
@@ -15145,9 +15221,10 @@ module Printers =
                       | Ast.StExc (_, t, (Ast.OSome sl)) ->
                           pp f "@[<2>exception@ %a =@ %a%s@]" o#ctyp t
                             o#ident sl semisep
-                      | Ast.StExt (_, s1, t, s2) ->
-                          pp f "@[<2>external@ %a :@ %a =@ %a%s@]" o#var s1
-                            o#ctyp t o#quoted_string s2 semisep
+                      | Ast.StExt (_, s, t, sl) ->
+                          pp f "@[<2>external@ %a :@ %a =@ %a%s@]" o#var s
+                            o#ctyp t (meta_list o#quoted_string "@ ") sl
+                            semisep
                       | Ast.StMod (_, s1, (Ast.MeFun (_, s2, mt1, me))) ->
                           (match o#module_expr_get_functor_args [ (s2, mt1) ]
                                    me
@@ -15193,7 +15270,8 @@ module Printers =
                             mb semisep
                       | Ast.StDir (_, _, _) -> ()
                       | Ast.StAnt (_, s) -> pp f "%a%s" o#anti s semisep
-                      | Ast.StExc (_, _, (Ast.OAnt _)) -> assert false
+                      | Ast.StExc (_, _, (Ast.OAnt _)) |
+                          Ast.StExt (_, _, _, _) -> assert false
                 method module_type =
                   fun f mt ->
                     let () = o#node f mt Ast.loc_of_module_type
@@ -15505,7 +15583,7 @@ module Printers =
           struct
             let name = "Camlp4.Printers.OCamlr"
             let version =
-              "$Id: OCamlr.ml,v 1.16 2006/10/10 22:32:43 ertai Exp $"
+              "$Id: OCamlr.ml,v 1.17 2007/02/07 10:09:21 ertai Exp $"
           end
         module Make (Syntax : Sig.Camlp4Syntax) =
           struct
@@ -16163,12 +16241,13 @@ module PreCast :
       end
     module MakeGram (Lexer : Sig.Lexer with module Loc = Loc) :
       Sig.Grammar.Static with module Loc = Loc and module Token = Lexer.Token
+    module MakeSyntax (U : sig  end) : Sig.Syntax
   end =
   struct
     module Id =
       struct
         let name = "Camlp4.PreCast"
-        let version = "$Id: PreCast.ml,v 1.3 2006/10/02 12:59:00 ertai Exp $"
+        let version = "$Id: PreCast.ml,v 1.4 2007/02/07 10:09:21 ertai Exp $"
       end
     type camlp4_token =
       Sig.camlp4_token =
@@ -16188,7 +16267,9 @@ module PreCast :
     module Gram = Struct.Grammar.Static.Make(Lexer)
     module DynLoader = Struct.DynLoader
     module Quotation = Struct.Quotation.Make(Ast)
-    module Syntax = OCamlInitSyntax.Make(Warning)(Ast)(Gram)(Quotation)
+    module MakeSyntax (U : sig  end) =
+      OCamlInitSyntax.Make(Warning)(Ast)(Gram)(Quotation)
+    module Syntax = MakeSyntax(struct  end)
     module AstFilters = Struct.AstFilters.Make(Ast)
     module MakeGram = Struct.Grammar.Static.Make
     module Printers =

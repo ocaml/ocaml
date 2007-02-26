@@ -216,6 +216,7 @@ module type Ast = sig
 
   type meta_bool = 'abstract;
   type meta_option 'a = 'abstract;
+  type meta_list 'a = 'abstract;
   type ctyp = 'abstract;
   type patt = 'abstract;
   type expr = 'abstract;
@@ -270,6 +271,7 @@ module type Ast = sig
     inherit mapper;
     method meta_bool : meta_bool -> meta_bool;
     method meta_option : ! 'a 'b . ('a -> 'b) -> meta_option 'a -> meta_option 'b;
+    method meta_list : ! 'a 'b . ('a -> 'b) -> meta_list 'a -> meta_list 'b;
     method _Loc_t : Loc.t -> Loc.t;
     method expr : expr -> expr;
     method patt : patt -> patt;
@@ -301,6 +303,7 @@ module type Ast = sig
     method ref : ! 'a . ('self_type -> 'a -> 'self_type) -> ref 'a -> 'self_type;
     method meta_bool : meta_bool -> 'self_type;
     method meta_option : ! 'a . ('self_type -> 'a -> 'self_type) -> meta_option 'a -> 'self_type;
+    method meta_list : ! 'a . ('self_type -> 'a -> 'self_type) -> meta_list 'a -> 'self_type;
     method _Loc_t : Loc.t -> 'self_type;
     method expr : expr -> 'self_type;
     method patt : patt -> 'self_type;
@@ -406,10 +409,6 @@ module type Camlp4Ast = sig
         value meta_expr : Loc.t -> expr -> expr;
         value meta_ident : Loc.t -> ident -> expr;
         value meta_match_case : Loc.t -> match_case -> expr;
-        value meta_meta_bool : Loc.t -> meta_bool -> expr;
-        value meta_meta_option :
-          (Loc.t -> ident -> expr) ->
-            Loc.t -> meta_option ident -> expr;
         value meta_module_binding : Loc.t -> module_binding -> expr;
         value meta_module_expr : Loc.t -> module_expr -> expr;
         value meta_module_type : Loc.t -> module_type -> expr;
@@ -434,10 +433,6 @@ module type Camlp4Ast = sig
         value meta_expr : Loc.t -> expr -> patt;
         value meta_ident : Loc.t -> ident -> patt;
         value meta_match_case : Loc.t -> match_case -> patt;
-        value meta_meta_bool : Loc.t -> meta_bool -> patt;
-        value meta_meta_option :
-          (Loc.t -> ident -> patt) ->
-            Loc.t -> meta_option ident -> patt;
         value meta_module_binding : Loc.t -> module_binding -> patt;
         value meta_module_expr : Loc.t -> module_expr -> patt;
         value meta_module_type : Loc.t -> module_type -> patt;
@@ -454,6 +449,7 @@ module type Camlp4Ast = sig
     inherit mapper;
     method meta_bool : meta_bool -> meta_bool;
     method meta_option : ! 'a 'b . ('a -> 'b) -> meta_option 'a -> meta_option 'b;
+    method meta_list : ! 'a 'b . ('a -> 'b) -> meta_list 'a -> meta_list 'b;
     method _Loc_t : Loc.t -> Loc.t;
     method expr : expr -> expr;
     method patt : patt -> patt;
@@ -486,6 +482,7 @@ module type Camlp4Ast = sig
     method ref : ! 'a . ('self_type -> 'a -> 'self_type) -> ref 'a -> 'self_type;
     method meta_bool : meta_bool -> 'self_type;
     method meta_option : ! 'a . ('self_type -> 'a -> 'self_type) -> meta_option 'a -> 'self_type;
+    method meta_list : ! 'a . ('self_type -> 'a -> 'self_type) -> meta_list 'a -> 'self_type;
     method _Loc_t : Loc.t -> 'self_type;
     method expr : expr -> 'self_type;
     method patt : patt -> 'self_type;
@@ -591,6 +588,7 @@ module Camlp4AstToAst (M : Camlp4Ast) : Ast
   with module Loc = M.Loc
    and type meta_bool = M.meta_bool
    and type meta_option 'a = M.meta_option 'a
+   and type meta_list 'a = M.meta_list 'a
    and type ctyp = M.ctyp
    and type patt = M.patt
    and type expr = M.expr

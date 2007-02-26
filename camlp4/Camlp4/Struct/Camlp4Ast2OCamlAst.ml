@@ -314,6 +314,12 @@ module Make (Ast : Sig.Camlp4Ast) = struct
 
   value mkvalue_desc t p = {pval_type = ctyp t; pval_prim = p};
 
+  value rec list_of_meta_list =
+    fun
+    [ Ast.LNil -> []
+    | Ast.LCons x xs -> [x :: list_of_meta_list xs]
+    | Ast.LAnt _ -> assert False ];
+
   value mkmutable m = if mb2b m then Mutable else Immutable;
 
   value paolab lab p =
@@ -800,7 +806,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         [mksig loc (Psig_exception (conv_con s)
                                    (List.map ctyp (list_of_ctyp t []))) :: l]
     | SgExc _ _ -> assert False (*FIXME*)
-    | SgExt loc n t p -> [mksig loc (Psig_value n (mkvalue_desc t [p])) :: l]
+    | SgExt loc n t sl -> [mksig loc (Psig_value n (mkvalue_desc t (list_of_meta_list sl))) :: l]
     | SgInc loc mt -> [mksig loc (Psig_include (module_type mt)) :: l]
     | SgMod loc n mt -> [mksig loc (Psig_module n (module_type mt)) :: l]
     | SgRecMod loc mb ->
@@ -863,7 +869,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         [mkstr loc (Pstr_exn_rebind (conv_con s) (ident i)) :: l ]
     | StExc _ _ _ -> assert False (*FIXME*)
     | StExp loc e -> [mkstr loc (Pstr_eval (expr e)) :: l]
-    | StExt loc n t p -> [mkstr loc (Pstr_primitive n (mkvalue_desc t [p])) :: l]
+    | StExt loc n t sl -> [mkstr loc (Pstr_primitive n (mkvalue_desc t (list_of_meta_list sl))) :: l]
     | StInc loc me -> [mkstr loc (Pstr_include (module_expr me)) :: l]
     | StMod loc n me -> [mkstr loc (Pstr_module n (module_expr me)) :: l]
     | StRecMod loc mb ->

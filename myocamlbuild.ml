@@ -695,13 +695,8 @@ let mk_camlp4 name ?unix modules bin_mods top_mods =
   mk_camlp4_bin name ?unix (modules @ bin_mods);
   mk_camlp4_top_lib name (modules @ top_mods);;
 
-rule "camlp4: boot/Camlp4Ast.ml -> Camlp4/Struct/Camlp4Ast.ml"
-  ~prod:"camlp4/Camlp4/Struct/Camlp4Ast.ml"
-  ~dep:"camlp4/boot/Camlp4Ast.ml"
-  ~insert:`top
-  begin fun _ _ ->
-    cp "camlp4/boot/Camlp4Ast.ml" "camlp4/Camlp4/Struct/Camlp4Ast.ml"
-  end;;
+copy_rule "camlp4: boot/Camlp4Ast.ml -> Camlp4/Struct/Camlp4Ast.ml"
+  ~insert:`top "camlp4/boot/Camlp4Ast.ml" "camlp4/Camlp4/Struct/Camlp4Ast.ml";;
 
 rule "camlp4: Camlp4/Struct/Lexer.ml -> boot/Lexer.ml"
   ~prod:"camlp4/boot/Lexer.ml"
@@ -711,27 +706,63 @@ rule "camlp4: Camlp4/Struct/Lexer.ml -> boot/Lexer.ml"
           A"-printer"; A"r"; A"-o"; Px"camlp4/boot/Lexer.ml"])
   end;;
 
+module Camlp4deps = struct
+  let lexer = Genlex.make_lexer ["INCLUDE"; ";"; "="; ":"];;
+
+  let rec parse strm =
+    match Stream.peek strm with
+    | None -> []
+    | Some(Genlex.Kwd "INCLUDE") ->
+        Stream.junk strm;
+        begin match Stream.peek strm with
+        | Some(Genlex.String s) ->
+            Stream.junk strm;
+            s :: parse strm
+        | _ -> invalid_arg "Camlp4deps parse failure"
+        end
+    | Some _ ->
+        Stream.junk strm;
+        parse strm
+
+  let parse_file file =
+    with_input_file file begin fun ic ->
+      let strm = Stream.of_channel ic in
+      parse (lexer strm)
+    end
+
+  let build_deps build file =
+    let includes = parse_file file in
+    List.iter Outcome.ignore_good (build (List.map (fun i -> [i]) includes));
+end;;
+
 rule "camlp4: ml4 -> ml"
   ~prod:"%.ml"
   ~dep:"%.ml4"
-  begin fun env _ ->
-    Cmd(S[P cold_camlp4boot; A"-impl"; P(env"%.ml4"); A"-printer"; A"o";
-          A"-D"; A"OPT"; A"-o"; Px(env"%.ml")])
+  begin fun env build ->
+    let ml4 = env "%.ml4" and ml = env "%.ml" in
+    Camlp4deps.build_deps build ml4;
+    Cmd(S[P cold_camlp4boot; A"-impl"; P ml4; A"-printer"; A"o";
+          A"-D"; A"OPT"; A"-o"; Px ml])
   end;;
 
 rule "camlp4: mlast -> ml"
   ~prod:"%.ml"
-  ~dep:"%.mlast"
+  ~deps:["%.mlast"; "camlp4/Camlp4/Camlp4Ast.partial.ml"]
   begin fun env _ ->
+    let mlast = env "%.mlast" and ml = env "%.ml" in
+    (* Camlp4deps.build_deps build mlast; too hard to lex *)
     Cmd(S[P cold_camlp4boot;
           A"-printer"; A"r";
           A"-filter"; A"map";
           A"-filter"; A"fold";
           A"-filter"; A"meta";
           A"-filter"; A"trash";
-          A"-impl"; P(env "%.mlast");
-          A"-o"; Px(env "%.ml")])
+          A"-impl"; P mlast;
+          A"-o"; Px ml])
   end;;
+
+dep ["ocaml"; "compile"; "file:camlp4/Camlp4/Sig.ml"]
+    ["camlp4/Camlp4/Camlp4Ast.partial.ml"];;
 
 mk_camlp4_bin "camlp4" [];;
 mk_camlp4 "camlp4boot" ~unix:false

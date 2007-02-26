@@ -99,6 +99,7 @@ echo "Installing camlp4..."
 installbin camlp4/camlp4prof.byte$EXE $BINDIR/camlp4prof$EXE
 installbin camlp4/mkcamlp4.byte$EXE $BINDIR/mkcamlp4$EXE
 installbin camlp4/camlp4.byte$EXE $BINDIR/camlp4$EXE
+installbin camlp4/camlp4boot.byte$EXE $BINDIR/camlp4boot$EXE
 installbin camlp4/camlp4o.byte$EXE $BINDIR/camlp4o$EXE
 installbin camlp4/camlp4of.byte$EXE $BINDIR/camlp4of$EXE
 installbin camlp4/camlp4oof.byte$EXE $BINDIR/camlp4oof$EXE

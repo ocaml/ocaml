@@ -370,8 +370,8 @@ Old (no more supported) syntax:
             <:str_item< exception $t$ >>
         | "exception"; t = constructor_declaration; "="; i = type_longident ->
             <:str_item< exception $t$ = $i$ >>
-        | "external"; i = a_LIDENT; ":"; t = ctyp; "="; s = a_STRING ->
-            <:str_item< external $i$ : $t$ = $s$ >>
+        | "external"; i = a_LIDENT; ":"; t = ctyp; "="; sl = string_list ->
+            <:str_item< external $i$ : $t$ = $sl$ >>
         | "include"; me = module_expr -> <:str_item< include $me$ >>
         | "module"; i = a_UIDENT; mb = module_binding0 ->
             <:str_item< module $i$ = $mb$ >>
@@ -433,9 +433,8 @@ Old (no more supported) syntax:
             <:sig_item< $anti:mk_anti ~c:"sig_item" n s$ >>
         | "exception"; t = constructor_declaration ->
             <:sig_item< exception $t$ >>
-        (* | "external"; i = a_LIDENT; ":"; t = ctyp; "="; pd = LIST1 [ x = STRING -> x ] -> *)
-        | "external"; i = a_LIDENT; ":"; t = ctyp; "="; s = a_STRING ->
-            <:sig_item< external $i$ : $t$ = $s$ >>
+        | "external"; i = a_LIDENT; ":"; t = ctyp; "="; sl = string_list ->
+            <:sig_item< external $i$ : $t$ = $sl$ >>
         | "include"; mt = module_type -> <:sig_item< include $mt$ >>
         | "module"; i = a_UIDENT; mt = module_declaration ->
             <:sig_item< module $i$ : $mt$ >>
@@ -1427,6 +1426,11 @@ Old (no more supported) syntax:
     a_STRING:
       [ [ `ANTIQUOT (""|"str"|"`str" as n) s -> mk_anti n s
         | `STRING _ s -> s ] ]
+    ;
+    string_list:
+      [ [ `ANTIQUOT (""|"str_list") s -> Ast.LAnt (mk_anti "str_list" s)
+        | `STRING _ x; xs = string_list -> Ast.LCons x xs
+        | `STRING _ x -> Ast.LCons x Ast.LNil ] ]
     ;
     value_let:
       [ [ "value" -> () ] ]
