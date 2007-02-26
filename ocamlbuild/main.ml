@@ -44,6 +44,20 @@ let show_tags () =
   end !Options.show_tags
 ;;
 
+let show_documentation () =
+  let rules = Rule.get_rules () in
+  let flags = Flags.get_flags () in
+  let pp fmt = Log.raw_dprintf (-1) fmt in
+  List.iter begin fun rule ->
+    pp "%a@\n@\n" Rule.pretty_print rule
+  end rules;
+  List.iter begin fun (tags, flag) ->
+    let sflag = Command.string_of_command_spec flag in
+    pp "@[<2>flag@ {. %a .}@ %S@]@\n@\n" Tags.print tags sflag
+  end flags;
+  pp "@."
+;;
+
 let proceed () =
   Hooks.call_hook Hooks.Before_options;
   Options.init ();
@@ -52,7 +66,10 @@ let proceed () =
   Tools.default_tags := Tags.of_list !Options.tags;
   Plugin.execute_plugin_if_needed ();
 
-  if !Options.targets = [] && !Options.show_tags = [] then raise Exit_silently;
+  if !Options.targets = []
+    && !Options.show_tags = []
+    && not !Options.show_documentation
+    then raise Exit_silently;
 
   let target_dirs = List.union [] (List.map Pathname.dirname !Options.targets) in
 
@@ -111,7 +128,10 @@ let proceed () =
   Sys.chdir newpwd;
   (*let () = dprintf 0 "source_dir_path_set:@ %a" StringSet.print source_dir_path_set*)
 
-  dprintf 8 "Rules are:@ %a" (List.print Rule.print) (Rule.get_rules ());
+  if !Options.show_documentation then begin
+    show_documentation ();
+    raise Exit_silently
+  end;
   Resource.Cache.init ();
 
   Configuration.parse_string

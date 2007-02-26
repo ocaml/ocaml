@@ -72,6 +72,9 @@ module Common_commands : sig
   val cmp : Pathname.t -> Pathname.t -> Command.t
 end
 
+val print : Format.formatter -> t -> unit
+val pretty_print : Format.formatter -> t -> unit
+
 (** For system use only *)
 
 val subst : Resource.env -> t -> t
@@ -81,7 +84,6 @@ val compare : t -> t -> int
 
 val print_rule_name : Format.formatter -> t -> unit
 val print_rule_contents : Format.formatter -> t -> unit
-val print : Format.formatter -> t -> unit
 
 val get_rules : unit -> t list
 

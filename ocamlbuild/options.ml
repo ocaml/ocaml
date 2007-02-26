@@ -48,6 +48,7 @@ let ocamlmktop = ref (A"ocamlmktop")
 let ocamlrun = ref N
 let program_to_execute = ref false
 let must_clean = ref false
+let show_documentation = ref false
 let ext_lib = ref "a"
 let ext_obj = ref "o"
 let ext_dll = ref "so"
@@ -99,6 +100,7 @@ let spec =
    "-version", Unit (fun () -> print_endline version; raise Exit_OK), " Display the version";
    "-quiet", Unit (fun () -> Log.level := 0), " Make as quiet as possible";
    "-verbose", Int (fun i -> Log.level := i + 2), "<level> Set the verbosity level";
+   "-documentation", Set show_documentation, " Show rules and flags";
    "-log", String set_log_file, "<file> Set log file";
    "-no-log", Unit (fun () -> Log.log_file := lazy None), " No log file";
    "-clean", Set must_clean, " Remove build directory and other files, then exit"; 

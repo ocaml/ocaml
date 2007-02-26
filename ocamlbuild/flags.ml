@@ -41,3 +41,5 @@ let to_spec l =
       A ("-"^x) :: A y :: acc
     end l []
   end
+
+let get_flags () = !all_flags

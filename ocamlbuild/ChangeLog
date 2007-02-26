@@ -1,3 +1,31 @@
+2007-02-26  Berke Durak  <berke.durak@inria.fr>
+
+	Added disclaimer to default rules table.
+
+	* manual/manual.tex: .
+
+2007-02-26  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Add the -documentation option.
+
+	* main.ml: Implement it.
+	* flags.ml,
+	* flags.mli: Add get_flags.
+	* man/ocamlbuild.1: Update.
+	* signatures.mli,
+	* options.ml: Add show_documention.
+	* rule.ml,
+	* rule.mli: Add pretty_print.
+
+2007-02-26  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Add the -dont-catch-errors option.
+
+	* main.ml: Implement it.
+	* options.ml: Parse it.
+	* signatures.mli: Declare it.
+	* _tags: Use debug.
+
 2007-02-26  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
 
 	Deal with the camlp4 library name.

@@ -42,6 +42,10 @@ let print_rule_contents f r =
   fprintf f "@[<v2>{@ @[<2>name  =@ %S@];@ @[<2>tags  =@ %a@];@ @[<2>deps  =@ %a@];@ @[<2>prods = %a@];@ @[<2>code  = <fun>@]@]@ }"
     r.name Tags.print r.tags print_resource_list r.deps print_resource_list r.prods
 
+let pretty_print f r =
+  fprintf f "@[<hv2>rule@ %S@ ~deps:%a@ ~prods:%a@ <fun>@]"
+    r.name print_resource_list r.deps print_resource_list r.prods
+
 let print = print_rule_name
 
 let subst env rule =
