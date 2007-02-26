@@ -45,18 +45,6 @@ open Flags
 open Command
 open Rule
 
-let nop _env _build = ()
-
-let ocaml_lib ?(extern=false) ?(byte=true) ?(native=true) ?dir libpath =
-  let add_dir x =
-    match dir with
-    | Some dir -> S[A"-I"; P dir; x]
-    | None -> x
-  and lib = Pathname.basename libpath in
-  Hashtbl.replace info_libraries lib (libpath, extern);
-  if byte then flag ["ocaml"; "use_"^lib; "link"; "byte"] (add_dir (A (libpath^".cma")));
-  if native then flag ["ocaml"; "use_"^lib; "link"; "native"] (add_dir (A (libpath^".cmxa")));;
-
 let init () = let module M = struct
 
 let ext_lib = !Options.ext_lib;;
@@ -345,8 +333,11 @@ ocaml_lib ~extern:true "bigarray";;
 ocaml_lib ~extern:true "nums";;
 ocaml_lib ~extern:true "dbm";;
 ocaml_lib ~extern:true "graphics";;
-ocaml_lib ~extern:true "labltk";;
-ocaml_lib ~extern:true ~dir:"+camlp4" "camlp4";;
+ocaml_lib ~extern:true ~dir:"+labltk" "labltk";;
+ocaml_lib ~extern:true ~dir:"+camlp4" ~tag_name:"use_camlp4" "camlp4lib";;
+ocaml_lib ~extern:true ~dir:"+camlp4" ~tag_name:"use_old_camlp4" "camlp4";;
+ocaml_lib ~extern:true ~dir:"+ocamldoc" "ocamldoc";;
+ocaml_lib ~extern:true ~dir:"+ocamlbuild" "ocamlbuild";;
 
 flag ["ocaml"; "debug"; "compile"; "byte"] (A "-g");;
 flag ["ocaml"; "debug"; "link"; "byte"] (A "-g");;

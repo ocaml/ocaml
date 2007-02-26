@@ -10,8 +10,7 @@
 (***********************************************************************)
 
 (* $Id$ *)
+
 (* Original author: Nicolas Pouillard *)
-val nop : 'a -> 'b -> unit
-val ocaml_lib : ?extern:bool -> ?byte:bool -> ?native:bool -> ?dir:Pathname.t -> Pathname.t -> unit
 
 val init : unit -> unit

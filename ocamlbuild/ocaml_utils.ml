@@ -17,6 +17,7 @@ open Log
 open Pathname.Operators
 open Tags.Operators
 open Tools
+open Flags
 open Command;;
 
 
@@ -82,5 +83,25 @@ let libraries = Hashtbl.create 103
 let libraries_of m =
   try Hashtbl.find libraries m with Not_found -> []
 let use_lib m lib = Hashtbl.replace libraries m (lib :: libraries_of m)
+
+let ocaml_lib ?(extern=false) ?(byte=true) ?(native=true) ?dir ?tag_name libpath =
+  let add_dir x =
+    match dir with
+    | Some dir -> S[A"-I"; P dir; x]
+    | None -> x
+  in
+  let tag_name =
+    match tag_name with
+    | Some x -> x
+    | None -> "use_" ^ Pathname.basename libpath
+  in
+  Hashtbl.replace info_libraries tag_name (libpath, extern);
+  if byte then
+    flag ["ocaml"; tag_name; "link"; "byte"] (add_dir (A (libpath^".cma")));
+  if native then
+    flag ["ocaml"; tag_name; "link"; "native"] (add_dir (A (libpath^".cmxa")));
+  match dir with
+  | None -> ()
+  | Some dir -> flag ["ocaml"; tag_name; "compile"] (S[A"-I"; P dir])
 
 let cmi_of = Pathname.update_extensions "cmi"

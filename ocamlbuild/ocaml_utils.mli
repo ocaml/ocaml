@@ -28,3 +28,12 @@ val ocaml_add_include_flag : string -> Command.spec list -> Command.spec list
 val module_importance : string -> string -> [ `ignored | `mandatory | `just_try ]
 
 val info_libraries : (string, string * bool) Hashtbl.t
+
+val ocaml_lib :
+  ?extern:bool ->
+  ?byte:bool ->
+  ?native:bool ->
+  ?dir:Pathname.t ->
+  ?tag_name:string ->
+  Pathname.t -> unit
+

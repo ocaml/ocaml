@@ -40,7 +40,7 @@ let clean () =
 
 let show_tags () =
   List.iter begin fun path ->
-    Format.eprintf "@[<2>Tags for %S:@ {. %a .}@]@." path Tags.print (tags_of_pathname path)
+    Log.eprintf "@[<2>Tags for %S:@ {. %a .}@]" path Tags.print (tags_of_pathname path)
   end !Options.show_tags
 ;;
 

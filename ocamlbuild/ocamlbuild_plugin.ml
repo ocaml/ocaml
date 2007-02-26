@@ -31,6 +31,7 @@ let dep = Rule.dep
 let file_rule = Rule.file_rule
 let copy_rule = Rule.copy_rule
 let custom_rule = Rule.custom_rule
+let ocaml_lib = Ocamlbuild_pack.Ocaml_utils.ocaml_lib
 let flag = Ocamlbuild_pack.Flags.flag
 let non_dependency = Ocamlbuild_pack.Ocaml_utils.non_dependency
 let use_lib = Ocamlbuild_pack.Ocaml_utils.use_lib

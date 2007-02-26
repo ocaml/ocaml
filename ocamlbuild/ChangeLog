@@ -1,3 +1,29 @@
+2007-02-26  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Deal with the camlp4 library name.
+
+	* ocaml_specific.ml: Introduce use_old_camlp4 for the old one.
+
+2007-02-26  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Minor `ocaml_lib' improvments.
+
+	* signatures.mli: Declare and doc it.
+	* ocamlbuild_plugin.ml: Export it.
+	* ocaml_specific.ml,
+	* ocaml_specific.mli: Add some dirs to std libs.
+	Move the ocaml_lib implem to ...
+	* ocaml_utils.mli,
+	* ocaml_utils.ml: ... here. Improve it by adding the ~tag_name option.
+	* ocaml_compiler.ml: The hash now contains the tag.
+	* _tags: *.top use unix too.
+
+2007-02-22  Berke Durak  <berke.durak@inria.fr>
+
+	Should use Log.eprintf for show_tags.
+
+	* main.ml: .
+
 2007-02-22  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
 
 	( & ), sanitize.sh, and the manual...

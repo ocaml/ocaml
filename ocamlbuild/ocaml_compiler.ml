@@ -144,12 +144,9 @@ let native_compile_ocaml_implem ?tag ?(cmx_ext="cmx") ml env build =
 
 let libs_of_use_lib tags =
   Tags.fold begin fun tag acc ->
-    if String.is_prefix "use_" tag then
-      let lib = String.after tag 4 in
-      try let libpath, extern = Hashtbl.find info_libraries lib in
-          if extern then acc else libpath :: acc
-      with Not_found -> acc
-    else acc
+    try let libpath, extern = Hashtbl.find info_libraries tag in
+        if extern then acc else libpath :: acc
+    with Not_found -> acc
   end tags []
 
 let prepare_libs cma_ext a_ext out build =

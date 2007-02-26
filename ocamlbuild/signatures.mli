@@ -483,6 +483,32 @@ module type PLUGIN = sig
   (** [use_lib module_path lib_path]*)
   val use_lib : Pathname.t -> Pathname.t -> unit
 
+  (** [ocaml_lib <options> library_pathname]
+      Declare an ocaml library.
+
+      Example: ocaml_lib "foo/bar"
+        This will setup the tag use_bar tag.
+        At link time it will include:
+          foo/bar.cma or foo/bar.cmxa
+        If you supply the ~dir:"boo" option -I boo
+          will be added at link and compile time. 
+        Use ~extern:true for non-ocamlbuild handled libraries.
+        Use ~byte:false or ~native:false to disable byte or native mode.
+        Use ~tag_name:"usebar" to override the default tag name. *)
+  val ocaml_lib :
+    ?extern:bool ->
+    ?byte:bool ->
+    ?native:bool ->
+    ?dir:Pathname.t ->
+    ?tag_name:string ->
+    Pathname.t -> unit
+
+  (** [expand_module include_dirs module_name extensions]
+      Example:
+        [expand_module ["a";"b";"c"] "Foo" ["cmo";"cmi"] =
+         ["a/foo.cmo"; "a/Foo.cmo"; "a/foo.cmi"; "a/Foo.cmi";
+          "b/foo.cmo"; "b/Foo.cmo"; "b/foo.cmi"; "b/Foo.cmi";
+          "c/foo.cmo"; "c/Foo.cmo"; "c/foo.cmi"; "c/Foo.cmi"]] *)
   val expand_module :
     Pathname.t list -> Pathname.t -> string list -> Pathname.t list
 
