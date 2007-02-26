@@ -110,6 +110,7 @@ module Naming =
         | ':' -> st "_column_"
         | '~' -> st "_tilde_"
         | '!' -> st "_bang_"
+        | '?' -> st "_questionmark_"
         | c -> ch c
       done;
       Buffer.contents buf
