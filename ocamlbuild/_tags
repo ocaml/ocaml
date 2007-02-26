@@ -1,4 +1,5 @@
 # OCamlbuild tags file
+true: debug
 <*.ml> or <*.mli>: warn_A, warn_error_A, dtypes
 "discard_printf.ml": rectypes
 "ocamlbuildlib.cma" or "ocamlbuildlightlib.cma": linkall

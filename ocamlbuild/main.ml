@@ -214,63 +214,66 @@ let main () =
   in
   try
     proceed ()
-  with
-  | Exit_OK -> exit rc_ok
-  | Fda.Exit_hygiene_failed ->
-      Log.eprintf "Exiting due to hygiene violations.";
-      exit rc_hygiene
-  | Exit_usage u ->
-      Log.eprintf "Usage:@ %s." u;
-      exit rc_usage
-  | Exit_system_error msg ->
-      Log.eprintf "System error:@ %s." msg;
-      exit rc_system_error
-  | Exit_with_code rc ->
-      exit rc
-  | Exit_silently ->
-      Log.finish ~how:`Quiet ();
-      Pervasives.exit rc_ok
-  | Exit_silently_with_code rc ->
-      Log.finish ~how:`Quiet ();
-      Pervasives.exit rc
-  | Solver.Failed backtrace ->
-      Log.raw_dprintf (-1) "@[<v0>@[<2>Solver failed:@ %a@]@\n@[<v2>Backtrace:%a@]@]@."
-        Report.print_backtrace_analyze backtrace Report.print_backtrace backtrace;
-      exit rc_solver_failed
-  | Failure s ->
-      Log.eprintf "Failure:@ %s." s;
-      exit rc_failure
-  | Solver.Circular(r, rs) ->
-      Log.eprintf "Circular build detected@ (%a already seen in %a)"
-      Resource.print r (List.print Resource.print) rs;
-      exit rc_circularity
-  | Invalid_argument s ->
-      Log.eprintf
-        "INTERNAL ERROR: Invalid argument %s\n\
-         This is likely to be a bug, please report this to the ocamlbuild\n\
-         developers." s;
-      exit rc_invalid_argument
-  | Ocamldep.Error msg ->
-      Log.eprintf "Ocamldep error: %s" msg;
-      exit rc_ocamldep_error
-  | Lexers.Error msg ->
-      Log.eprintf "Lexical analysis error: %s" msg;
-      exit rc_lexing_error
-  | Arg.Bad msg ->
-      Log.eprintf "%s" msg;
-      exit rc_usage
-  | Exit_build_error msg ->
-      Log.eprintf "%s" msg;
-      exit rc_build_error
-  | Arg.Help msg ->
-      Log.eprintf "%s" msg;
-      exit rc_ok
-  | e ->
-      try
-        Log.eprintf "%a" My_unix.report_error e;
-        exit 100 
-      with
+  with e ->
+    if !Options.catch_errors then
+      try raise e with
+      | Exit_OK -> exit rc_ok
+      | Fda.Exit_hygiene_failed ->
+          Log.eprintf "Exiting due to hygiene violations.";
+          exit rc_hygiene
+      | Exit_usage u ->
+          Log.eprintf "Usage:@ %s." u;
+          exit rc_usage
+      | Exit_system_error msg ->
+          Log.eprintf "System error:@ %s." msg;
+          exit rc_system_error
+      | Exit_with_code rc ->
+          exit rc
+      | Exit_silently ->
+          Log.finish ~how:`Quiet ();
+          Pervasives.exit rc_ok
+      | Exit_silently_with_code rc ->
+          Log.finish ~how:`Quiet ();
+          Pervasives.exit rc
+      | Solver.Failed backtrace ->
+          Log.raw_dprintf (-1) "@[<v0>@[<2>Solver failed:@ %a@]@\n@[<v2>Backtrace:%a@]@]@."
+            Report.print_backtrace_analyze backtrace Report.print_backtrace backtrace;
+          exit rc_solver_failed
+      | Failure s ->
+          Log.eprintf "Failure:@ %s." s;
+          exit rc_failure
+      | Solver.Circular(r, rs) ->
+          Log.eprintf "Circular build detected@ (%a already seen in %a)"
+          Resource.print r (List.print Resource.print) rs;
+          exit rc_circularity
+      | Invalid_argument s ->
+          Log.eprintf
+            "INTERNAL ERROR: Invalid argument %s\n\
+            This is likely to be a bug, please report this to the ocamlbuild\n\
+            developers." s;
+          exit rc_invalid_argument
+      | Ocamldep.Error msg ->
+          Log.eprintf "Ocamldep error: %s" msg;
+          exit rc_ocamldep_error
+      | Lexers.Error msg ->
+          Log.eprintf "Lexical analysis error: %s" msg;
+          exit rc_lexing_error
+      | Arg.Bad msg ->
+          Log.eprintf "%s" msg;
+          exit rc_usage
+      | Exit_build_error msg ->
+          Log.eprintf "%s" msg;
+          exit rc_build_error
+      | Arg.Help msg ->
+          Log.eprintf "%s" msg;
+          exit rc_ok
       | e ->
-        Log.eprintf "Exception@ %s." (Printexc.to_string e);
-        exit 100
+          try
+            Log.eprintf "%a" My_unix.report_error e;
+            exit 100 
+          with
+          | e ->
+            Log.eprintf "Exception@ %s." (Printexc.to_string e);
+            exit 100
+    else raise e
 ;;

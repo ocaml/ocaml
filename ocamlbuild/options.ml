@@ -36,6 +36,7 @@ let native_plugin = ref true
 let make_links = ref true
 let nostdlib = ref false
 let use_menhir = ref false
+let catch_errors = ref true
 let ocamlc = ref (A"ocamlc.opt")
 let ocamlopt = ref (A"ocamlopt.opt")
 let ocamldep = ref (A"ocamldep.opt")
@@ -129,6 +130,7 @@ let spec =
    "-no-hygiene", Clear hygiene, " Don't apply sanity-check rules";
    "-no-plugin", Clear plugin, " Don't build myocamlbuild.ml";
    "-no-stdlib", Set nostdlib, " Don't ignore stdlib modules";
+   "-dont-catch-errors", Clear catch_errors, " Don't catch and display exceptions (useful to display the call stack)";
    "-just-plugin", Set just_plugin, " Just build myocamlbuild.ml";
    "-byte-plugin", Clear native_plugin, " Don't use a native plugin but bytecode";
    "-sanitization-script", Set_string sanitization_script, " Change the file name for the generated sanitization script";

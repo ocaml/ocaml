@@ -357,6 +357,7 @@ module type OPTIONS = sig
   val nostdlib : bool ref
   val program_to_execute : bool ref
   val must_clean : bool ref
+  val catch_errors : bool ref
   val internal_log_file : string option ref
   val use_menhir : bool ref
 
