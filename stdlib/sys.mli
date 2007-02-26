@@ -27,6 +27,11 @@ val executable_name : string
 external file_exists : string -> bool = "caml_sys_file_exists"
 (** Test if a file with the given name exists. *)
 
+external is_directory : string -> bool = "caml_sys_is_directory"
+(** Returns [true] if the given name refers to a directory,
+    [false] if it refers to another kind of file.
+    Raise [Sys_error] if no file exists with the given name. *)
+
 external remove : string -> unit = "caml_sys_remove"
 (** Remove the given file name from the file system. *)
 

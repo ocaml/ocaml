@@ -159,6 +159,17 @@ CAMLprim value caml_sys_file_exists(value name)
   return Val_bool(stat(String_val(name), &st) == 0);
 }
 
+CAMLprim value caml_sys_is_directory(value name)
+{
+  struct stat st;
+  if (stat(String_val(name), &st) == -1) caml_sys_error(name);
+#ifdef S_ISDIR
+  return Val_bool(S_ISDIR(st.st_mode));
+#else
+  return Val_bool(st.st_mode & S_IFDIR);
+#endif
+}
+
 CAMLprim value caml_sys_remove(value name)
 {
   int ret;
