@@ -742,14 +742,14 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         | "#"; i = class_longident -> <:ctyp< # $i$ >>
         | "<"; ml = opt_meth_list; v = opt_dot_dot; ">" ->
             <:ctyp< < $ml$ $..:v$ > >>
-        | "["; rfl = row_field; "]" ->
+        | "["; OPT "|"; rfl = row_field; "]" ->
             <:ctyp< [ = $rfl$ ] >>
         | "["; ">"; "]" -> <:ctyp< [ > $<:ctyp<>>$ ] >>
-        | "["; ">"; rfl = row_field; "]" ->
+        | "["; ">"; OPT "|"; rfl = row_field; "]" ->
             <:ctyp< [ > $rfl$ ] >>
-        | "[<"; rfl = row_field; "]" ->
+        | "[<"; OPT "|"; rfl = row_field; "]" ->
             <:ctyp< [ < $rfl$ ] >>
-        | "[<"; rfl = row_field; ">"; ntl = name_tags; "]" ->
+        | "[<"; OPT "|"; rfl = row_field; ">"; ntl = name_tags; "]" ->
             <:ctyp< [ < $rfl$ > $ntl$ ] >>
         ] ]
     ;
