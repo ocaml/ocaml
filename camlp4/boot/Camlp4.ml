@@ -350,7 +350,7 @@ module Sig =
       sig
         (** The name of the extension, typically the module name. *)
         val name : string
-        (** The version of the extension, typically $Id: Sig.ml,v 1.1 2007/02/07 11:41:36 ertai Exp $ with a versionning system. *)
+        (** The version of the extension, typically $Id: Camlp4.ml,v 1.2 2007/02/26 16:32:46 ertai Exp $ with a versionning system. *)
         val version : string
       end
     module type Loc =
@@ -10746,7 +10746,7 @@ module Struct =
               function
               | Ast.LNil -> []
               | Ast.LCons (x, xs) -> x :: (list_of_meta_list xs)
-              | Ast.LAnt x -> assert false
+              | Ast.LAnt _ -> assert false
             let mkmutable m = if mb2b m then Mutable else Immutable
             let paolab lab p =
               match (lab, p) with
@@ -14083,7 +14083,7 @@ module Printers =
           struct
             let name = "Camlp4Printers.DumpCamlp4Ast"
             let version =
-              "$Id: DumpCamlp4Ast.ml,v 1.5 2007/02/07 10:09:21 ertai Exp $"
+              "$Id: Camlp4.ml,v 1.2 2007/02/26 16:32:46 ertai Exp $"
           end
         module Make (Syntax : Sig.Syntax) :
           Sig.Printer with module Ast = Syntax.Ast =
@@ -14117,7 +14117,7 @@ module Printers =
           struct
             let name = "Camlp4Printers.DumpOCamlAst"
             let version =
-              "$Id: DumpOCamlAst.ml,v 1.5 2007/02/07 10:09:21 ertai Exp $"
+              "$Id: Camlp4.ml,v 1.2 2007/02/26 16:32:46 ertai Exp $"
           end
         module Make (Syntax : Sig.Camlp4Syntax) :
           Sig.Printer with module Ast = Syntax.Ast =
@@ -14160,7 +14160,7 @@ module Printers =
           struct
             let name = "Camlp4.Printers.Null"
             let version =
-              "$Id: Null.ml,v 1.2 2007/02/07 10:09:21 ertai Exp $"
+              "$Id: Camlp4.ml,v 1.2 2007/02/26 16:32:46 ertai Exp $"
           end
         module Make (Syntax : Sig.Syntax) =
           struct
@@ -14328,7 +14328,7 @@ module Printers =
           struct
             let name = "Camlp4.Printers.OCaml"
             let version =
-              "$Id: OCaml.ml,v 1.20 2007/02/07 10:09:21 ertai Exp $"
+              "$Id: Camlp4.ml,v 1.2 2007/02/26 16:32:46 ertai Exp $"
           end
         module Make (Syntax : Sig.Camlp4Syntax) =
           struct
@@ -15205,7 +15205,6 @@ module Printers =
                             mb semisep
                       | Ast.SgDir (_, _, _) -> ()
                       | Ast.SgAnt (_, s) -> pp f "%a%s" o#anti s semisep
-                      | Ast.SgExt (_, _, _, _) -> assert false
                 method str_item =
                   fun f st ->
                     let () = o#node f st Ast.loc_of_str_item
@@ -15270,8 +15269,7 @@ module Printers =
                             mb semisep
                       | Ast.StDir (_, _, _) -> ()
                       | Ast.StAnt (_, s) -> pp f "%a%s" o#anti s semisep
-                      | Ast.StExc (_, _, (Ast.OAnt _)) |
-                          Ast.StExt (_, _, _, _) -> assert false
+                      | Ast.StExc (_, _, (Ast.OAnt _)) -> assert false
                 method module_type =
                   fun f mt ->
                     let () = o#node f mt Ast.loc_of_module_type
@@ -15583,7 +15581,7 @@ module Printers =
           struct
             let name = "Camlp4.Printers.OCamlr"
             let version =
-              "$Id: OCamlr.ml,v 1.17 2007/02/07 10:09:21 ertai Exp $"
+              "$Id: Camlp4.ml,v 1.2 2007/02/26 16:32:46 ertai Exp $"
           end
         module Make (Syntax : Sig.Camlp4Syntax) =
           struct
@@ -16247,7 +16245,7 @@ module PreCast :
     module Id =
       struct
         let name = "Camlp4.PreCast"
-        let version = "$Id: PreCast.ml,v 1.4 2007/02/07 10:09:21 ertai Exp $"
+        let version = "$Id: Camlp4.ml,v 1.2 2007/02/26 16:32:46 ertai Exp $"
       end
     type camlp4_token =
       Sig.camlp4_token =
