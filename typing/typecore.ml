@@ -450,7 +450,9 @@ let rec type_pat env sp =
             Env.lookup_label lid env
           with Not_found ->
             raise(Error(sp.ppat_loc, Unbound_label lid)) in
+        begin_def ();
         let (vars, ty_arg, ty_res) = instance_label false label in
+        if vars = [] then end_def ();
         begin try
           unify env ty_res ty
         with Unify trace ->
@@ -458,8 +460,16 @@ let rec type_pat env sp =
         end;
         let arg = type_pat env sarg in
         unify_pat env arg ty_arg;
-        if List.exists (fun tv -> (repr tv).desc <> Tvar) vars then
-          raise (Error(sp.ppat_loc, Polymorphic_label lid));
+        if vars <> [] then begin
+          end_def ();
+          generalize ty_arg;
+          List.iter generalize vars;
+          let instantiated tv =
+            let tv = expand_head env tv in
+            tv.desc <> Tvar || tv.level <> generic_level in
+          if List.exists instantiated vars then
+            raise (Error(sp.ppat_loc, Polymorphic_label lid))
+        end;
         (label, arg)
       in
       rp {
