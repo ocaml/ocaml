@@ -311,6 +311,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   value rec is_expr_constr_call =
     fun
     [ <:expr< $id:i$ >> -> is_ident_constr_call i
+    | <:expr< `$_$ >> -> True
     | <:expr< $_$.$e$ >> -> is_expr_constr_call e
     | <:expr@_loc< $e$ $_$ >> ->
         let res = is_expr_constr_call e in
