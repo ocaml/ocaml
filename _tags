@@ -7,6 +7,9 @@ true: -traverse
 
 "boot" or "byterun": not_hygienic
 
+# These should not be required but it fails on *BSD and Windows...
+"yacc" or "asmrun" or "win32caml": not_hygienic
+
 <**/*.ml*>: warn_Alez
 
 "toplevel/topstart.byte": linkall
