@@ -630,6 +630,7 @@ let pa_oq = pa "Camlp4OCamlOriginalQuotationExpander"
 let pa_rp = pa "Camlp4OCamlRevisedParserParser"
 let pa_op = pa "Camlp4OCamlParserParser"
 let pa_g  = pa "Camlp4GrammarParser"
+let pa_l  = pa "Camlp4ListComprehension"
 let pa_macro = pa "Camlp4MacroParser"
 let pa_debug = pa "Camlp4DebugParser"
 
@@ -770,15 +771,15 @@ mk_camlp4 "camlp4boot" ~unix:false
 mk_camlp4 "camlp4r"
   [pa_r; pa_rp] [pr_a] [top_rprint];;
 mk_camlp4 "camlp4rf"
-  [pa_r; pa_qc; pa_q; pa_rp; pa_g; pa_macro] [pr_a] [top_rprint];;
+  [pa_r; pa_qc; pa_q; pa_rp; pa_g; pa_macro; pa_l] [pr_a] [top_rprint];;
 mk_camlp4 "camlp4o"
   [pa_r; pa_o; pa_rp; pa_op] [pr_a] [];;
 mk_camlp4 "camlp4of"
-  [pa_r; pa_qc; pa_q; pa_o; pa_rp; pa_op; pa_g; pa_macro] [pr_a] [];;
+  [pa_r; pa_qc; pa_q; pa_o; pa_rp; pa_op; pa_g; pa_macro; pa_l] [pr_a] [];;
 mk_camlp4 "camlp4oof"
-  [pa_r; pa_o; pa_rp; pa_op; pa_qc; pa_oq; pa_g; pa_macro] [pr_a] [];;
+  [pa_r; pa_o; pa_rp; pa_op; pa_qc; pa_oq; pa_g; pa_macro; pa_l] [pr_a] [];;
 mk_camlp4 "camlp4orf"
-  [pa_r; pa_o; pa_rp; pa_op; pa_qc; pa_rq; pa_g; pa_macro] [pr_a] [];;
+  [pa_r; pa_o; pa_rp; pa_op; pa_qc; pa_rq; pa_g; pa_macro; pa_l] [pr_a] [];;
 
 
 (* Labltk *)

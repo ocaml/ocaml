@@ -38,6 +38,7 @@ value pa_qb = "Camlp4QuotationCommon";
 value pa_q  = "Camlp4QuotationExpander";
 value pa_rq = "Camlp4OCamlRevisedQuotationExpander";
 value pa_oq = "Camlp4OCamlOriginalQuotationExpander";
+value pa_l  = "Camlp4ListComprehension";
 
 value dyn_loader = ref (fun []);
 value rcall_callback = ref (fun () -> ());
@@ -70,8 +71,9 @@ value rewrite_and_load n x =
     | ("Parsers"|"", "q" | "camlp4quotationexpander.cmo") -> load [pa_r; pa_qb; pa_q]
     | ("Parsers"|"", "q_MLast.cmo" | "rq" | "camlp4ocamlrevisedquotationexpander.cmo") -> load [pa_r; pa_qb; pa_rq]
     | ("Parsers"|"", "oq" | "camlp4ocamloriginalquotationexpander.cmo") -> load [pa_r; pa_o; pa_qb; pa_oq]
-    | ("Parsers"|"", "rf") -> load [pa_r; pa_rp; pa_qb; pa_q; pa_g; pa_m]
-    | ("Parsers"|"", "of") -> load [pa_r; pa_o; pa_rp; pa_op; pa_qb; pa_rq; pa_g; pa_m]
+    | ("Parsers"|"", "rf") -> load [pa_r; pa_rp; pa_qb; pa_q; pa_g; pa_l; pa_m]
+    | ("Parsers"|"", "of") -> load [pa_r; pa_o; pa_rp; pa_op; pa_qb; pa_rq; pa_g; pa_l; pa_m]
+    | ("Parsers"|"", "comp" | "camlp4listcomprehension.cmo") -> load [pa_l]
     | ("Filters"|"", "lift" | "camlp4astlifter.cmo") -> load ["Camlp4AstLifter"]
     | ("Filters"|"", "exn" | "camlp4exceptiontracer.cmo") -> load ["Camlp4ExceptionTracer"]
     | ("Filters"|"", "prof" | "camlp4profiler.cmo") -> load ["Camlp4Profiler"]
