@@ -2022,7 +2022,7 @@ let report_error ppf = function
       fprintf ppf "Unbound record field label %a" longident lid
   | Polymorphic_label lid ->
       fprintf ppf "@[The record field label %a is polymorphic.@ %s@]"
-        longident lid "You cannot instantiate it in a matching."
+        longident lid "You cannot instantiate it in a pattern."
   | Constructor_arity_mismatch(lid, expected, provided) ->
       fprintf ppf
        "@[The constructor %a@ expects %i argument(s),@ \
