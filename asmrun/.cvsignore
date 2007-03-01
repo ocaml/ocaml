@@ -31,3 +31,4 @@ meta.c
 globroots.c
 unix.c
 dynlink.c
+signals.c
