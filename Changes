@@ -55,6 +55,7 @@ Other libraries:
     the start position of the data in the mapped file.
 - Dynlink: now defines only two modules, Dynlink and Dynlinkaux (internal),
     reducing risks of name conflicts with user modules.
+- Labltk under Win32: now uses Tcl/Tk 8.4 instead of 8.3 by default.
 - VM threads: improved performance of I/O operations (less polling).
 - Unix: new function Unix.isatty.
 - Unix emulation under Win32:
