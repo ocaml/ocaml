@@ -250,7 +250,7 @@ void caml_init_signals(void)
     if (sigaltstack(&stk, NULL) == 0) { sigaction(SIGSEGV, &act, NULL); }
   }
 #endif
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(_WIN64)
   caml_win32_overflow_detection();
 #endif
 }

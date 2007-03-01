@@ -406,7 +406,7 @@ void caml_signal_thread(void * lpParam)
 
 #endif /* NATIVE_CODE */
 
-#ifdef NATIVE_CODE
+#if defined(NATIVE_CODE) && !defined(_WIN64)
 
 /* Handling of system stack overflow.  
  * Based on code provided by Olivier Andrieu.
@@ -443,6 +443,7 @@ void caml_signal_thread(void * lpParam)
  * Win9x. There is an equivalent mechanism on Win9x with
  * PAGE_NOACCESS.
  *
+ * Currently, does not work under Win64.
  */
 
 static uintnat win32_alt_stack[0x80];
@@ -495,13 +496,8 @@ static LONG CALLBACK
 {
   DWORD code   = exn_info->ExceptionRecord->ExceptionCode;
   CONTEXT *ctx = exn_info->ContextRecord;
-#ifdef _WIN64
-  DWORD64 *ctx_ip = &(ctx->Rip);
-  DWORD64 *ctx_sp = &(ctx->Rsp);
-#else
   DWORD *ctx_ip = &(ctx->Eip);
   DWORD *ctx_sp = &(ctx->Esp);
-#endif
 
   if (code == EXCEPTION_STACK_OVERFLOW && In_code_area (*ctx_ip))
     {
