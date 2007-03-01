@@ -146,11 +146,11 @@ BNG_ARCH=ia32
 BNG_ASM_LEVEL=1
 
 ### Configuration for LablTk
-# Set TK_ROOT to the directory where you installed TCL/TK 8.3
+# Set TK_ROOT to the directory where you installed TCL/TK 8.4
 # There must be no spaces or special characters in $(TK_ROOT)
 TK_ROOT=c:/tcl
 TK_DEFS=-I$(TK_ROOT)/include
-TK_LINK=$(TK_ROOT)/lib/tk83.lib $(TK_ROOT)/lib/tcl83.lib
+TK_LINK=$(TK_ROOT)/lib/tk84.lib $(TK_ROOT)/lib/tcl84.lib
 
 ############# Aliases for common commands
 
