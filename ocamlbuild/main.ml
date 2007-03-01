@@ -73,6 +73,19 @@ let proceed () =
 
   let target_dirs = List.union [] (List.map Pathname.dirname !Options.targets) in
 
+  Configuration.parse_string
+    "true: traverse
+     <**/*.ml> or <**/*.mli> or <**/*.mlpack> or <**/*.ml.depends>: ocaml
+     <**/*.byte>: ocaml, byte, program
+     <**/*.odoc>: ocaml, doc
+     <**/*.native>: ocaml, native, program
+     <**/*.cma>: ocaml, byte, library
+     <**/*.cmxa>: ocaml, native, library
+     <**/*.cmo>: ocaml, byte
+     <**/*.cmi>: ocaml, byte, native
+     <**/*.cmx>: ocaml, native
+    ";
+
   let newpwd = Sys.getcwd () in
   Sys.chdir Pathname.pwd;
   let entry_include_dirs = ref [] in
@@ -133,18 +146,6 @@ let proceed () =
     raise Exit_silently
   end;
   Resource.Cache.init ();
-
-  Configuration.parse_string
-    "<**/*.ml> or <**/*.mli> or <**/*.mlpack> or <**/*.ml.depends>: ocaml
-     <**/*.byte>: ocaml, byte, program
-     <**/*.odoc>: ocaml, doc
-     <**/*.native>: ocaml, native, program
-     <**/*.cma>: ocaml, byte, library
-     <**/*.cmxa>: ocaml, native, library
-     <**/*.cmo>: ocaml, byte
-     <**/*.cmi>: ocaml, byte, native
-     <**/*.cmx>: ocaml, native
-    ";
 
   Sys.catch_break true;
 

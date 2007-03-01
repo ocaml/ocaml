@@ -1,3 +1,35 @@
+2007-03-01  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Remove a rec.
+
+	* glob.ml: Parse is not rec.
+
+2007-03-01  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	true: traverse and FAQ.
+
+	* main.ml: Move the inital config upper to be loaded before the others
+	and hygiene.
+	* FAQ: New.
+
+2007-02-28  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Improve the glob dir handling.
+
+	* glob.ml: Extend the ast instead of parsing an extended string.
+
+2007-02-28  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Ensure that the whole boolean expression is only valid in the directory.
+
+	* glob.ml: Ditto.
+
+2007-02-28  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Put -g on link only for programs.
+
+	* ocaml_specific.ml: Ditto.
+
 2007-02-26  Berke Durak  <berke.durak@inria.fr>
 
 	Added disclaimer to default rules table.

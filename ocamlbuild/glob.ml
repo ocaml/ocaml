@@ -305,6 +305,17 @@ let add_dir dir x =
           Pattern(Concat(Word(My_std.filename_concat dir ""), p))
 ;;
 (* ***)
+(*** add_ast_dir *)
+let add_ast_dir dir x =
+  match dir with
+  | None -> x
+  | Some dir ->
+      let slash = Class(Atom('/','/')) in
+      let any = Class True in
+      let q = Union[Epsilon; Concat(slash, Star any)] in (* ( /** )? *)
+      And[Atom(Pattern(ref (Brute(ref 0, Concat(Word dir, q))))); x]
+;;
+(* ***)
 (*** parse *)
 let parse ?dir u =
   let l = Lexing.from_string u in
@@ -361,7 +372,7 @@ let parse ?dir u =
   in
   let x = parse_s () in
   read EOF;
-  x
+  add_ast_dir dir x
 ;;
 (* ***)
 (*** eval *)

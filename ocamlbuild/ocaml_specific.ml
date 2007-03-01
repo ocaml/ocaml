@@ -340,10 +340,10 @@ ocaml_lib ~extern:true ~dir:"+ocamldoc" "ocamldoc";;
 ocaml_lib ~extern:true ~dir:"+ocamlbuild" "ocamlbuild";;
 
 flag ["ocaml"; "debug"; "compile"; "byte"] (A "-g");;
-flag ["ocaml"; "debug"; "link"; "byte"] (A "-g");;
+flag ["ocaml"; "debug"; "link"; "byte"; "program"] (A "-g");;
 flag ["ocaml"; "debug"; "pack"; "byte"] (A "-g");;
 flag ["ocaml"; "debug"; "compile"; "native"] (A "-g");;
-flag ["ocaml"; "debug"; "link"; "native"] (A "-g");;
+flag ["ocaml"; "debug"; "link"; "native"; "program"] (A "-g");;
 flag ["ocaml"; "debug"; "pack"; "native"] (A "-g");;
 flag ["ocaml"; "dtypes"; "compile"] (A "-dtypes");;
 flag ["ocaml"; "rectypes"; "compile"] (A "-rectypes");;
