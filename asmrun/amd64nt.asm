@@ -439,10 +439,8 @@ caml_callback3_exn:
         PUBLIC  caml_ml_array_bound_error
         ALIGN   16
 caml_ml_array_bound_error:
-    ; Make the exception handler and alloc ptr available to the C code 
-	mov	caml_young_ptr, r15
-	mov	caml_exception_pointer, r14
-	jmp	caml_array_bound_error	
+	lea	rax, caml_array_bound_error
+	jmp	caml_c_call
 
         .DATA
         PUBLIC  caml_system__frametable

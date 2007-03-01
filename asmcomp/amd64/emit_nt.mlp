@@ -54,6 +54,10 @@ let slot_offset loc cl =
       else !stack_offset + (num_stack_slots.(0) + n) * 8
   | Outgoing n -> n
 
+(* Output a 32 bit integer in hex *)
+
+let emit_int32 n = emit_printf "0%lxh" n
+
 (* Symbols *)
 
 let emit_symbol s =
