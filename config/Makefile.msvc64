@@ -97,24 +97,28 @@ NATIVECCLIBS=advapi32.lib $(EXTRALIBS)
 CPP=cl /nologo /EP
 
 ### How to merge a .manifest (if any) in a .exe or .dll
-MERGEMANIFEST=\
-  test ! -f $(1).manifest || \
-  mt -nologo -outputresource:$(1) -manifest $(1).manifest && \
-  rm -f $(1).manifest
+MERGEMANIFEST=test ! -f $(1).manifest || mt -nologo -outputresource:$(1) -manifest $(1).manifest && rm -f $(1).manifest
+#ml let mergemanifest out = Printf.sprintf "test ! -f %s.manifest || mt -nologo -outputresource:%s -manifest %s.manifest && rm -f %s.manifest" out out out out;;
 
 ### How to build an EXE
 MKEXE=$(BYTECC) /Fe$(1) $(2) && ($(MERGEMANIFEST))
+#ml let mkexe out files opts = Printf.sprintf "%s /Fe%s %s %s && (%s)" bytecc out opts files (mergemanifest out);;
 
 ### How to build a DLL
 MKDLL=link /nologo /dll /machine:AMD64 /out:$(1) /implib:$(2) $(3) $(EXTRALIBS) && ($(MERGEMANIFEST))
+#ml let mkdll out implib files opts = Printf.sprintf "link /nologo /dll /machine:AMD64 /out:%s /implib:%s %s %s && (%s)" out implib opts files (mergemanifest out);;
 
 ### How to build a static library
 MKLIB=link /lib /nologo /machine:AMD64 /out:$(1) $(2)
+#ml let mklib out files opts = Printf.sprintf "link /lib /nologo /machine:AMD64 /out:%s %s %s" out opts files;;
+MKSHAREDLIBRPATH=
 
 ### Canonicalize the name of a system library
 SYSLIB=$(1).lib
+#ml let syslib x = x ^ ".lib";;
 
 ### The ranlib command
+RANLIB=
 RANLIBCMD=
 
 ############# Configuration for the native-code compiler
@@ -139,7 +143,7 @@ NATIVECCLINKOPTS=/MT
 
 ### Build partially-linked object file
 PARTIALLD=link /lib /nologo /machine:AMD64
-PACKLD=ld -r --oformat pe-i386
+PACKLD=link /lib /nologo /machine:AMD64 /out:# there must be no space after this '/out:'
 
 ############# Configuration for the contributed libraries
 
@@ -148,6 +152,10 @@ OTHERLIBRARIES=win32unix systhreads str num win32graph dynlink bigarray
 ### Name of the target architecture for the "num" library
 BNG_ARCH=generic
 BNG_ASM_LEVEL=0
+
+### Configuration for LablTk (not supported)
+TK_DEFS=
+TK_LINK=
 
 ############# Aliases for common commands
 
