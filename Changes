@@ -25,7 +25,7 @@ Compilers:
 
 Native-code compiler:
 - Print a stack backtrace on an uncaught exception.
-  (Compile and link with ocamlopt -g; execute with OCAMLRUNPARAM='b=1'.)
+  (Compile and link with ocamlopt -g; execute with OCAMLRUNPARAM=b.)
   Supported on Intel/AMD in 32 and 64 bits, PPC in 32 and 64 bits.
 - Stack overflow detection on MS Windows 32 bits (courtesy O. Andrieu).
 - Stack overflow detection on MacOS X PPC and Intel.
