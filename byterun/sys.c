@@ -292,8 +292,15 @@ CAMLprim value caml_sys_time(value unit)
 #endif
 }
 
+#ifdef _WIN32
+extern intnat caml_win32_random_seed (void);
+#endif
+
 CAMLprim value caml_sys_random_seed (value unit)
 {
+#ifdef _WIN32
+  return Val_long(caml_win32_random_seed());
+#else
   intnat seed;
 #ifdef HAS_GETTIMEOFDAY
   struct timeval tv;
@@ -303,9 +310,10 @@ CAMLprim value caml_sys_random_seed (value unit)
   seed = time (NULL);
 #endif
 #ifdef HAS_UNISTD
-  seed ^= getppid() << 16 | getpid();
+  seed ^= (getppid() << 16) ^ getpid();
 #endif
   return Val_long(seed);
+#endif
 }
 
 CAMLprim value caml_sys_get_config(value unit)

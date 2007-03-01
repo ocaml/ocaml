@@ -526,3 +526,20 @@ void caml_win32_overflow_detection()
 
 #endif
 
+/* Seeding of pseudo-random number generators */
+
+intnat caml_win32_random_seed (void)
+{
+  intnat seed;
+  SYSTEMTIME t;
+
+  GetLocalTime(&t);
+  seed = t.wMonth;
+  seed = (seed << 5) ^ t.wDay;
+  seed = (seed << 4) ^ t.wHour;
+  seed = (seed << 5) ^ t.wMinute;
+  seed = (seed << 5) ^ t.wSecond;
+  seed = (seed << 9) ^ t.wMilliseconds;
+  seed ^= GetCurrentProcessId();
+  return seed;
+}
