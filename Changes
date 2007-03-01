@@ -47,8 +47,8 @@ Standard library:
     new %r conversion to accomodate user defined scanners.
 - Filename: improved Win32 implementation of Filename.quote.
 - List: List.nth now tail-recursive.
-- Sys: some functions (e.g. Sys.command) would incorrectly raise
-    Sys_io_blocked, now raise Sys_error as intended.
+- Sys: added Sys.is_directory.  Some functions (e.g. Sys.command) that
+    could incorrectly raise Sys_io_blocked now raise Sys_error as intended.
 
 Other libraries:
 - Bigarray: mmap_file takes an optional argument specifying
