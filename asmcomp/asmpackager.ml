@@ -80,7 +80,10 @@ let check_units members =
 (* Make the .o file for the package *)
 
 let make_package_object ppf members targetobj targetname coercion =
-  let objtemp = Filename.temp_file "camlpackage" Config.ext_obj in
+  (* Put the full name of the module in the temporary file name
+     to avoid collisions with MSVC's link /lib in case of successive packs *)
+  let objtemp =
+    Filename.temp_file (Compilenv.make_symbol (Some "")) Config.ext_obj in
   let components =
     List.map
       (fun m ->
