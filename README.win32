@@ -60,7 +60,7 @@ out of the box, without additional software.
 The native-code compiler (ocamlopt) requires Visual C++ (items [1], [2])
 and the Microsoft assembler MASM (item [3]).
 
-The LablTk GUI requires Tcl/Tk 8.3 (item [4]).
+The LablTk GUI requires Tcl/Tk 8.4 (item [4]).
 
 
 INSTALLATION:
@@ -69,11 +69,11 @@ The binary distribution is a self-installing executable archive.
 Just run it and it should install OCaml automatically.
 
 To run programs that use the LablTK GUI, the directory where the
-DLLs tk83.dll and tcl83.dll were installed (by the Tcl/Tk
+DLLs tk84.dll and tcl84.dll were installed (by the Tcl/Tk
 installer) must be added to the PATH environment variable.
 
 To compile programs that use the LablTK GUI, the directory where the
-libraries tk83.lib and tcl83.lib were installed (by the Tcl/Tk
+libraries tk84.lib and tcl84.lib were installed (by the Tcl/Tk
 installer) must be added to the library search path in the LIB
 environment variable.  E.g. if Tcl/Tk was installed in C:\tcl, add
 "C:\tcl\lib" to the LIB environment variable.
@@ -82,7 +82,7 @@ environment variable.  E.g. if Tcl/Tk was installed in C:\tcl, add
 THIRD-PARTY SOFTWARE:
 
 [1] Visual C++ version 2005, 2003, or 6.
-    We use Visual C++ 2005 Express Edition, freely downloadably
+    We use Visual C++ 2005 Express Edition, which can be downloaded for free
     from http://www.microsoft.com.
 
 [2] Windows header files and development libraries.  We found them in
@@ -93,9 +93,8 @@ THIRD-PARTY SOFTWARE:
     downloaded for free from Microsoft's Web site; for directions, see
     http://users.easystreet.com/jkirwan/new/pctools.html. 
 
-[4] TCL/TK version 8.3.  Windows binaries are available from
-    http://prdownloads.sourceforge.net/tcl/tcl832.exe.
-
+[4] TCL/TK version 8.4.  Windows binaries are available as part of the
+    ActiveTCL distribution at http://www.activestate.com/products/ActiveTcl/
 
 RECOMPILATION FROM THE SOURCES:
 
@@ -108,8 +107,8 @@ You will need the following software components to perform the recompilation:
 - Items [1], [2], [3] and [4] from the list of recommended software above.
 - The Cygwin port of GNU tools, available from http://www.cygwin.com/
 
-Remember to add the directory where the libraries tk83.lib and
-tcl83.lib were installed (by the Tcl/Tk installer) to the LIB variable
+Remember to add the directory where the libraries tk84.lib and
+tcl84.lib were installed (by the Tcl/Tk installer) to the LIB variable
 (library search path).
 
 To recompile, start a Cygwin shell and change to the top-level
@@ -183,9 +182,9 @@ Do *not* install the Mingw/MSYS development tools from www.mingw.org:
 these are not compatible with this Caml port (@responsefile not
 recognized on the command line).
 
-The LablTk GUI requires Tcl/Tk 8.3.  Windows binaries are
-available from http://prdownloads.sourceforge.net/tcl/tcl832.exe.
-
+The LablTk GUI requires Tcl/Tk 8.4.  Windows binaries are available 
+as part of the ActiveTCL distribution at
+http://www.activestate.com/products/ActiveTcl/
 
 INSTALLATION:
 
@@ -193,11 +192,11 @@ The binary distribution is a self-installing executable archive.
 Just run it and it should install OCaml automatically.
 
 To run programs that use the LablTK GUI, the directory where the
-DLLs tk83.dll and tcl83.dll were installed (by the Tcl/Tk
+DLLs tk84.dll and tcl84.dll were installed (by the Tcl/Tk
 installer) must be added to the PATH environment variable.
 
 To compile programs that use the LablTK GUI, the directory where the
-libraries tk83.lib and tcl83.lib were installed (by the Tcl/Tk
+libraries tk84.lib and tcl84.lib were installed (by the Tcl/Tk
 installer) must be added to the library search path in the LIB
 environment variable.  E.g. if Tcl/Tk was installed in C:\tcl, add
 "C:\tcl\lib" to the LIB environment variable.
@@ -208,7 +207,7 @@ RECOMPILATION FROM THE SOURCES:
 You will need the following software components to perform the recompilation:
 - Windows NT, 2000, or XP.
 - Cygwin: http://sourceware.cygnus.com/cygwin/
-- TCL/TK version 8.3 (see above).
+- TCL/TK version 8.4 (see above).
 
 Do *not* install the standalone distribution of MinGW, nor the
 companion MSYS tools: these have problems with long command lines.
