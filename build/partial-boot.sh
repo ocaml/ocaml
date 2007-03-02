@@ -9,6 +9,5 @@ cp parsing/linenum.mll parsing/linenum.mli camlp4/build
 cp utils/terminfo.ml utils/terminfo.mli camlp4/build
 ./build/mkconfig.sh
 ./build/mkmyocamlbuild_config.sh
+ln -sf ../stdlib _build/
 ./build/boot.sh
-mkdir -p _build/stdlib
-cp -rf stdlib _build/
