@@ -96,10 +96,15 @@ let ocaml_lib ?(extern=false) ?(byte=true) ?(native=true) ?dir ?tag_name libpath
     | None -> "use_" ^ Pathname.basename libpath
   in
   Hashtbl.replace info_libraries tag_name (libpath, extern);
-  if byte then
-    flag ["ocaml"; tag_name; "link"; "byte"] (add_dir (A (libpath^".cma")));
-  if native then
-    flag ["ocaml"; tag_name; "link"; "native"] (add_dir (A (libpath^".cmxa")));
+  if extern then begin
+    if byte then
+      flag ["ocaml"; tag_name; "link"; "byte"] (add_dir (A (libpath^".cma")));
+    if native then
+      flag ["ocaml"; tag_name; "link"; "native"] (add_dir (A (libpath^".cmxa")));
+  end else begin
+    if not byte && not native then
+      invalid_arg "ocaml_lib: ~byte:false or ~native:false only works with ~extern:true";
+  end;
   match dir with
   | None -> ()
   | Some dir -> flag ["ocaml"; tag_name; "compile"] (S[A"-I"; P dir])

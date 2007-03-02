@@ -46,6 +46,7 @@ doc:
 	ln -sf $(BUILDDIR)/ocamlbuild.docdir doc
 else
 all byte native: ocamlbuild.byte.start
+	mkdir -p boot
 	cp ocamlbuild.byte.start boot/ocamlbuild
 	$(MAKE) $(MFLAGS) $(MAKECMDGOALS)
 	cp $(BUILDDIR)/ocamlbuild.native boot/ocamlbuild

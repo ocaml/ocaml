@@ -185,6 +185,12 @@ let link_gen cmX_ext cma_ext a_ext extensions linker tagger cmX out env build =
       ~caml_obj_ext:cmX_ext ~caml_lib_ext:cma_ext
       ~used_libraries:libs ~hidden_packages (cmX :: dyndeps) in
   let deps = (List.filter (fun l -> not (List.mem l deps)) libs) @ deps in
+
+  (* Hack to avoid linking twice with the standard library. *)
+  let stdlib = "stdlib/stdlib"-.-cma_ext in
+  let is_not_stdlib x = x <> stdlib in
+  let deps = List.filter is_not_stdlib deps in
+
   if deps = [] then failwith "Link list cannot be empty";
   let () = dprintf 6 "link: %a -o %a" print_string_list deps Pathname.print out in
   linker tags deps out
@@ -258,6 +264,12 @@ let link_units table extensions cmX_ext cma_ext a_ext linker tagger contents_lis
   let full_contents = libs @ module_paths in
   let deps = List.filter (fun x -> List.mem x full_contents) deps in
   let deps = (List.filter (fun l -> not (List.mem l deps)) libs) @ deps in
+
+  (* Hack to avoid linking twice with the standard library. *)
+  let stdlib = "stdlib/stdlib"-.-cma_ext in
+  let is_not_stdlib x = x <> stdlib in
+  let deps = List.filter is_not_stdlib deps in
+
   linker tags deps cmX
 
 let link_modules = link_units library_index

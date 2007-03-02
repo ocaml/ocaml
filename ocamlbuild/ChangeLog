@@ -1,3 +1,22 @@
+2007-03-02  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Same thing for the second link function.
+
+	* ocaml_compiler.ml: Ignore stdlib.
+
+2007-03-02  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Move the stdlib hack.
+
+	* ocaml_compiler.ml: Should works better.
+
+2007-03-02  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Little fix about library linking.
+
+	* ocaml_utils.ml: Avoid linking twice in some cases.
+	* ocaml_compiler.ml: Handle specially the OCaml stdlib.
+
 2007-03-01  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
 
 	Remove a rec.
