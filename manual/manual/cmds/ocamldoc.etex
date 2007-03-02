@@ -169,6 +169,9 @@ Verbose mode. Display progress information.
 \item["-warn-error"]
 Treat warnings as errors.
 
+\item["-hide-warnings"]
+Do not print OCamldoc warnings.
+
 \end{options}
 
 \subsubsection*{Type-checking options}
