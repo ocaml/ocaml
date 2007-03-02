@@ -65,6 +65,7 @@ Other libraries:
 
 OCamldoc:
 - correctly handle '?' in value names (PR#4215)
+- new option -hide-warnings not to print ocamldoc warnings
 
 Lexer generator (ocamllex): improved error reporting.
 
