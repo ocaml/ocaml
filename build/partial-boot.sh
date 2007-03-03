@@ -10,9 +10,7 @@ cp utils/terminfo.ml utils/terminfo.mli camlp4/build
 ./build/mkconfig.sh
 ./build/mkmyocamlbuild_config.sh
 . ./config/config.sh
-if [ "x$EXE" = "x.exe" ]; then
-  cp -rf stdlib _build/
-else
+if [ "x$EXE" != "x.exe" ]; then
   ln -sf ../stdlib _build/
 fi
 ./build/boot.sh
