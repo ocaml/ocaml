@@ -343,7 +343,6 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   clear constructor_arg_list;
   clear poly_type;
   clear class_name_and_param;
-  clear class_fun_def;
   clear class_longident_and_param;
   clear class_type_longident_and_param;
   clear class_type_plus;

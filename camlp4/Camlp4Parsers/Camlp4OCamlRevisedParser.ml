@@ -1070,7 +1070,7 @@ Old (no more supported) syntax:
     ;
     class_expr:
       [ "top"
-        [ "fun"; p = ipatt; ce = class_fun_def ->
+        [ "fun"; p = labeled_ipatt; ce = class_fun_def ->
             <:class_expr< fun $p$ -> $ce$ >>
         | "let"; rf = opt_rec; bi = binding; "in"; ce = SELF ->
             <:class_expr< let $rec:rf$ $bi$ in $ce$ >> ]
