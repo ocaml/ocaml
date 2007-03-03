@@ -20,10 +20,10 @@ if [ ! -z "$DEBUGGER" ]; then
   DEBUGGER=debugger/ocamldebug$EXE
 fi
 OCAMLDOC_BYTE="ocamldoc/ocamldoc$EXE ocamldoc/odoc_info.cma"
-STDLIB_NATIVE="stdlib/stdlib.cmxa stdlib/std_exit.cmx"
+STDLIB_NATIVE="stdlib/stdlib.cmxa stdlib/std_exit.cmx asmrun/libasmrun.$A"
 case $PROFILING in
 prof)
-  STDLIB_NATIVE="$STDLIB_NATIVE asmrun/libasmrun.$A asmrun/libasmrunp.$A \
+  STDLIB_NATIVE="$STDLIB_NATIVE asmrun/libasmrunp.$A \
                  stdlib/stdlib.p.cmxa stdlib/std_exit.p.cmx";;
 noprof) ;;
 *) echo "unexpected PROFILING value $PROFILING"; exit 1;;
