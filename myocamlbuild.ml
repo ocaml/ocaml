@@ -210,6 +210,9 @@ flag ["ocaml"; "link"; "file:driver/main.native"; "native"] begin
     A"-ccopt"; A C.bytecclinkopts; A"-cclib"; A C.bytecclibs]
 end;;
 
+dep ["ocaml"; "link"; "file:driver/main.native"; "native"]
+    ["asmrun/meta"-.-C.o; "asmrun/dynlink"-.-C.o];;
+
 flag ["ocaml"; "link"] (S[A"-I"; P "stdlib"]);;
 flag ["ocaml"; "compile"; "include_unix"] (S[A"-I"; P unix_dir]);;
 flag ["ocaml"; "compile"; "include_str"] (S[A"-I"; P str_dir]);;
@@ -322,25 +325,47 @@ copy_rule' ~insert:`bottom "%" "%.exe";;
 
 ocaml_lib "stdlib/stdlib";;
 
-if partial then
-  let build =
-    List.map begin fun xs ->
-      match List.filter Sys.file_exists xs with
-      | [] -> Outcome.Bad (Failure "myocamlbuild:partial")
-      | x :: _ ->
-          (* Format.eprintf "STDLIB: %S@." x; *)
-          Outcome.Good x
-    end
+let stdlib_mllib_contents =
+  lazy (string_list_of_file "stdlib/stdlib.mllib");;
+
+let import_stdlib_contents build exts =
+  let l =
+    List.fold_right begin fun x ->
+      List.fold_right begin fun ext acc ->
+        ["stdlib"/(String.uncapitalize x)-.-ext] :: acc
+      end exts
+    end !*stdlib_mllib_contents []
   in
-  let (_ : Command.t) =
-    Ocamlbuild_pack.Ocaml_compiler.byte_library_link_mllib
-      "stdlib/stdlib.mllib" "stdlib/stdlib.cma" (fun x -> x) build
-  in
-  let (_ : Command.t) =
-    Ocamlbuild_pack.Ocaml_compiler.native_library_link_mllib
-      "stdlib/stdlib.mllib" "stdlib/stdlib.cmxa" (fun x -> x) build
-  in ()
+  let res = build l in
+  List.iter Outcome.ignore_good res
 ;;
+
+rule "byte stdlib in partial mode"
+  ~prod:"byte_stdlib_partial_mode"
+  ~deps:["stdlib/stdlib.mllib"; "stdlib/stdlib.cma";
+         "stdlib/std_exit.cmo"; "stdlib/libcamlrun"-.-C.a]
+  begin fun env build ->
+    let (_ : Command.t) =
+      Ocamlbuild_pack.Ocaml_compiler.byte_library_link_mllib
+        "stdlib/stdlib.mllib" "stdlib/stdlib.cma" env build
+    in
+    import_stdlib_contents build ["cmi"];
+    touch "byte_stdlib_partial_mode"
+  end;;
+
+rule "native stdlib in partial mode"
+  ~prod:"native_stdlib_partial_mode"
+  ~deps:["stdlib/stdlib.mllib"; "stdlib/stdlib.cmxa";
+         "stdlib/stdlib"-.-C.a; "stdlib/std_exit.cmx";
+         "stdlib/std_exit"-.-C.o; "stdlib/libasmrun"-.-C.a]
+  begin fun env build ->
+    let (_ : Command.t) =
+      Ocamlbuild_pack.Ocaml_compiler.native_library_link_mllib
+        "stdlib/stdlib.mllib" "stdlib/stdlib.cmxa" env build
+    in
+    import_stdlib_contents build ["cmi"];
+    touch "native_stdlib_partial_mode"
+  end;;
 
 rule "C files"
   ~prod:("%"-.-C.o)
