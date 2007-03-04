@@ -206,12 +206,13 @@ use_lib "otherlibs/dynlink/extract_crc" "otherlibs/dynlink/dynlink";;
 hide_package_contents "otherlibs/dynlink/dynlinkaux";;
 
 flag ["ocaml"; "link"; "file:driver/main.native"; "native"] begin
-  S[A("asmrun/meta"-.-C.o); A("asmrun/dynlink"-.-C.o);
-    A"-ccopt"; A C.bytecclinkopts; A"-cclib"; A C.bytecclibs]
+  S[A"-ccopt"; A C.bytecclinkopts; A"-cclib"; A C.bytecclibs]
 end;;
 
 dep ["ocaml"; "link"; "file:driver/main.native"; "native"]
     ["asmrun/meta"-.-C.o; "asmrun/dynlink"-.-C.o];;
+
+dep ["ocaml"; "compile"; "native"] ["stdlib/libasmrun"-.-C.a];;
 
 flag ["ocaml"; "link"] (S[A"-I"; P "stdlib"]);;
 flag ["ocaml"; "compile"; "include_unix"] (S[A"-I"; P unix_dir]);;
@@ -275,6 +276,10 @@ List.iter (fun x -> let x = "otherlibs"/x in Pathname.define_context x [x; "stdl
 
 (* The bootstrap standard library *)
 copy_rule "The bootstrap standard library" "stdlib/%" "boot/%";;
+
+(* About the standard library *)
+copy_rule "stdlib asmrun"  ("asmrun/%"-.-C.a)  ("stdlib/%"-.-C.a);;
+copy_rule "stdlib byterun" ("byterun/%"-.-C.a) ("stdlib/%"-.-C.a);;
 
 (* The thread specific standard library *)
 copy_rule "The thread specific standard library (mllib)" ~insert:`bottom "stdlib/%.mllib" "otherlibs/threads/%.mllib";;
@@ -343,7 +348,8 @@ let import_stdlib_contents build exts =
 rule "byte stdlib in partial mode"
   ~prod:"byte_stdlib_partial_mode"
   ~deps:["stdlib/stdlib.mllib"; "stdlib/stdlib.cma";
-         "stdlib/std_exit.cmo"; "stdlib/libcamlrun"-.-C.a]
+         "stdlib/std_exit.cmo"; "stdlib/libcamlrun"-.-C.a;
+         "stdlib/camlheader"; "stdlib/camlheader_ur"]
   begin fun env build ->
     let (_ : Command.t) =
       Ocamlbuild_pack.Ocaml_compiler.byte_library_link_mllib
@@ -357,7 +363,8 @@ rule "native stdlib in partial mode"
   ~prod:"native_stdlib_partial_mode"
   ~deps:["stdlib/stdlib.mllib"; "stdlib/stdlib.cmxa";
          "stdlib/stdlib"-.-C.a; "stdlib/std_exit.cmx";
-         "stdlib/std_exit"-.-C.o; "stdlib/libasmrun"-.-C.a]
+         "stdlib/std_exit"-.-C.o; "stdlib/libasmrun"-.-C.a;
+         "stdlib/camlheader"; "stdlib/camlheader_ur"]
   begin fun env build ->
     let (_ : Command.t) =
       Ocamlbuild_pack.Ocaml_compiler.native_library_link_mllib
