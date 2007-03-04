@@ -37,14 +37,46 @@ let make_links = ref true
 let nostdlib = ref false
 let use_menhir = ref false
 let catch_errors = ref true
-let ocamlc = ref (A"ocamlc.opt")
-let ocamlopt = ref (A"ocamlopt.opt")
-let ocamldep = ref (A"ocamldep.opt")
-let ocamldoc = ref (A"ocamldoc.opt")
-let ocamlyacc = ref (A"ocamlyacc")
-let ocamllex = ref (A"ocamllex")
-let ocamlmklib = ref (A"ocamlmklib")
-let ocamlmktop = ref (A"ocamlmktop")
+
+let mk_virtual_solvers =
+
+  let dir = Myocamlbuild_config.bindir in
+
+  List.iter begin fun cmd ->
+    let long = filename_concat dir cmd in
+    let long_opt = long ^ ".opt" in
+    let opt = cmd ^ ".opt" in
+    let a_long_opt = A long_opt in
+    let a_long = A long in
+    let a_opt = A opt in
+    let a_cmd = A cmd in
+    let search_in_path = memo Command.search_in_path in
+    let solver =
+      if sys_file_exists dir then
+        fun () ->
+          if sys_file_exists long_opt then a_long_opt
+          else if sys_file_exists long then a_long
+          else try let _ = search_in_path opt in a_opt
+          with Not_found -> a_cmd
+      else
+        fun () ->
+          try let _ = search_in_path opt in a_opt
+          with Not_found -> a_cmd
+    in Command.setup_virtual_command_solver (String.uppercase cmd) solver
+  end
+
+let () =
+  mk_virtual_solvers
+    ["ocamlc"; "ocamlopt"; "ocamldep"; "ocamldoc";
+     "ocamlyacc"; "ocamllex"; "ocamlmklib"; "ocamlmktop"]
+let ocamlc = ref (V"OCAMLC")
+let ocamlopt = ref (V"OCAMLOPT")
+let ocamldep = ref (V"OCAMLDEP")
+let ocamldoc = ref (V"OCAMLDOC")
+let ocamlyacc = ref (V"OCAMLYACC")
+let ocamllex = ref (V"OCAMLLEX")
+let ocamlmklib = ref (V"OCAMLMKLIB")
+let ocamlmktop = ref (V"OCAMLMKTOP")
 let ocamlrun = ref N
 let program_to_execute = ref false
 let must_clean = ref false

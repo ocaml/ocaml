@@ -175,7 +175,7 @@ let caml_transitive_closure = Ocaml_dependencies.caml_transitive_closure
 let link_gen cmX_ext cma_ext a_ext extensions linker tagger cmX out env build =
   let cmX = env cmX and out = env out in
   let tags = tagger (tags_of_pathname out) in
-  let dyndeps = Rule.build_deps_of_tags build tags in
+  let dyndeps = Rule.build_deps_of_tags build (tags++"link_with") in
   let cmi = Pathname.update_extensions "cmi" cmX in
   prepare_link cmX cmi extensions build;
   let libs = prepare_libs cma_ext a_ext out build in
@@ -193,7 +193,7 @@ let link_gen cmX_ext cma_ext a_ext extensions linker tagger cmX out env build =
 
   if deps = [] then failwith "Link list cannot be empty";
   let () = dprintf 6 "link: %a -o %a" print_string_list deps Pathname.print out in
-  linker tags deps out
+  linker (tags++"dont_link_with") deps out
 
 let byte_link_gen = link_gen "cmo" "cma" "cma" ["cmo"; "cmi"]
 

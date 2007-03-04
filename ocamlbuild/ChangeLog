@@ -1,3 +1,14 @@
+2007-03-04  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Virtual solvers for ocaml tools.
+
+	* options.ml: Setup virtual command solver for commands like ocamlc,
+	ocamlopt... This allow to have full pathname but let also failback to
+	classic search path.
+	* ocaml_compiler.ml: Add a tag to differentiate dependencies at link
+	time.
+	* ocamlbuild-presentation.rslide: Add an item as suggested by a friend.
+
 2007-03-02  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
 
 	Same thing for the second link function.

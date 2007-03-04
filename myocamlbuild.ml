@@ -268,7 +268,7 @@ Pathname.define_context "driver" ["driver"; "asmcomp"; "bytecomp"; "typing"; "ut
 Pathname.define_context "debugger" ["bytecomp"; "utils"; "typing"; "parsing"; "toplevel"; "stdlib"];;
 Pathname.define_context "otherlibs/dynlink" ["otherlibs/dynlink"; "bytecomp"; "utils"; "typing"; "parsing"; "stdlib"];;
 Pathname.define_context "asmcomp" ["asmcomp"; "bytecomp"; "parsing"; "typing"; "utils"; "stdlib"];;
-Pathname.define_context "ocamlbuild" ["ocamlbuild"; "stdlib"];;
+Pathname.define_context "ocamlbuild" ["ocamlbuild"; "stdlib"; "."];;
 Pathname.define_context "lex" ["lex"; "stdlib"];;
 
 List.iter (fun x -> let x = "otherlibs"/x in Pathname.define_context x [x; "stdlib"])
