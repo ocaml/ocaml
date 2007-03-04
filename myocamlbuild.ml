@@ -644,14 +644,8 @@ rule "bytecomp/runtimedef.ml"
   ~prod:"bytecomp/runtimedef.ml"
   ~deps:["byterun/primitives"; "byterun/fail.h"]
   begin fun _ _ ->
-	  Cmd(Sh"(echo 'let builtin_exceptions = [|'; \
-  	 sed -n -e 's|.*/\\* \\(\"[A-Za-z_]*\"\\) \\*/$|  \\1;|p' byterun/fail.h | \
-  	 sed -e '$s/;$//'; \
-           echo '|]'; \
-           echo 'let builtin_primitives = [|'; \
-           sed -e 's/.*/  \"&\";/' -e '$s/;$//' byterun/primitives; \
-  	 echo '|]') > bytecomp/runtimedef.ml")
-	 end;;
+    Cmd(S[A"../build/mkruntimedef.sh";Sh">"; Px"bytecomp/runtimedef.ml"])
+  end;;
 
 (* Choose the right machine-dependent files *)
 
