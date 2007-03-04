@@ -1,0 +1,52 @@
+#!/bin/sh
+set -e
+
+usage() {
+  echo "Usage: $0 (make|ocb|ocamlbuild) (win (mingw|msvc|msvc64))?"
+  exit 1
+}
+
+case "$1" in
+  make|ocb|ocamlbuild) : ;;
+  *) usage;;
+esac
+
+case "$2" in
+  win) Makefile=Makefile.nt;;
+  *) Makefile=Makefile;;
+esac
+
+set -x
+
+[ -f config/Makefile ] && make -f $Makefile clean
+
+./build/distclean.sh
+
+cvs -q up -dP -r release310
+
+case "$2" in
+win)
+
+  # FIXME
+  sed -e 's/\(OTHERLIBRARIES=.*\) labltk/\1/' \
+    < "config/Makefile.$3" > config/Makefile
+
+  cp config/m-nt.h config/m.h
+  cp config/s-nt.h config/s.h
+  ;;
+
+*)
+  ./configure --prefix `pwd`/_install
+  ;;
+esac
+
+case "$1" in
+  make)
+    make -f $Makefile world opt opt.opt install
+    ;;
+  ocb|ocamlbuild)
+    ./build/fastworld.sh
+    ./build/install.sh
+    ;;
+  *) usage;;
+esac
