@@ -579,7 +579,7 @@ rule "stdlib/sys.ml"
     let version = with_input_file "VERSION" input_line in
     Seq [rm_f "stdlib/sys.ml";
          Cmd (S[A"sed"; A"-e";
-                A(sprintf "s|%%%%VERSION%%%%|%s|" version);
+                A(sprintf "s,%%%%VERSION%%%%,%s," version);
                 Sh"<"; P"stdlib/sys.mlp"; Sh">"; Px"stdlib/sys.ml"]);
          chmod (A"-w") "stdlib/sys.ml"]
   end;;
