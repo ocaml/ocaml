@@ -1,6 +1,9 @@
 . config/config.sh
 . build/otherlibs-targets.sh
 . build/camlp4-targets.sh
+
+export INSTALL_BIN="$BINDIR"
+
 STDLIB_BYTE="byterun/libcamlrun.$A stdlib/stdlib.cma \
              stdlib/std_exit.cmo stdlib/camlheader stdlib/camlheader_ur"
 OCAMLLEX_BYTE=lex/ocamllex$EXE
