@@ -14,10 +14,10 @@ case "$mode" in
   *) usage;;
 esac
 
-case "$2" in
+case "$1" in
   win)
     opt_win=win
-    opt_win2=$3
+    opt_win2=$2
     shift 2
     Makefile=Makefile.nt;;
   *) Makefile=Makefile;;
