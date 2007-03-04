@@ -2,17 +2,24 @@
 set -e
 
 usage() {
-  echo "Usage: $0 (make|ocb|ocamlbuild) (win (mingw|msvc|msvc64))?"
+  echo "Usage: $0 (make|ocb|ocamlbuild) (win (mingw|msvc|msvc64) | <configure-arg>*)"
   exit 1
 }
 
-case "$1" in
+mode=$1
+shift 1
+
+case "$mode" in
   make|ocb|ocamlbuild) : ;;
   *) usage;;
 esac
 
 case "$2" in
-  win) Makefile=Makefile.nt;;
+  win)
+    opt_win=win
+    opt_win2=$3
+    shift 2
+    Makefile=Makefile.nt;;
   *) Makefile=Makefile;;
 esac
 
@@ -24,23 +31,23 @@ set -x
 
 cvs -q up -dP -r release310
 
-case "$2" in
+case "$opt_win" in
 win)
 
   # FIXME
   sed -e 's/\(OTHERLIBRARIES=.*\) labltk/\1/' \
-    < "config/Makefile.$3" > config/Makefile
+    < "config/Makefile.$opt_win2" > config/Makefile
 
   cp config/m-nt.h config/m.h
   cp config/s-nt.h config/s.h
   ;;
 
 *)
-  ./configure --prefix `pwd`/_install
+  ./configure --prefix `pwd`/_install $@
   ;;
 esac
 
-case "$1" in
+case "$mode" in
   make)
     make -f $Makefile world opt opt.opt install
     ;;
@@ -48,5 +55,4 @@ case "$1" in
     ./build/fastworld.sh
     ./build/install.sh
     ;;
-  *) usage;;
 esac
