@@ -4,7 +4,7 @@
 
 export INSTALL_BIN="$BINDIR"
 
-STDLIB_BYTE="byterun/libcamlrun.$A stdlib/stdlib.cma \
+STDLIB_BYTE="stdlib/libcamlrun.$A stdlib/stdlib.cma \
              stdlib/std_exit.cmo stdlib/camlheader stdlib/camlheader_ur"
 OCAMLLEX_BYTE=lex/ocamllex$EXE
 OCAMLC_BYTE=ocamlc$EXE
