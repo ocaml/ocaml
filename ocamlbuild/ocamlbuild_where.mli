@@ -10,5 +10,8 @@
 (***********************************************************************)
 
 (* $Id$ *)
+
 (* Original author: Nicolas Pouillard *)
-val where : string ref
+
+val bindir : string ref
+val libdir : string ref

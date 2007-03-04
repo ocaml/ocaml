@@ -17,7 +17,8 @@ rm -f driver/main.byte driver/optmain.byte lex/main.byte \
       camlp4/build/terminfo.ml{i,}
 
 # from ocamlbuild bootstrap
-rm -f  ocamlbuild/{_log,ocamlbuild.byte.start,boot/ocamlbuild}
+rm -f  ocamlbuild/{_log,ocamlbuild.byte.start,boot/ocamlbuild} \
+       ocamlbuild/myocamlbuild_config.ml{i,}
 rm -rf ocamlbuild/{_build,_start}
 
 # from the old build system

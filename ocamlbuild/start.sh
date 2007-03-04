@@ -2,14 +2,10 @@
 set -e
 set -x
 rm -rf _start
-cp ../myocamlbuild_config.ml .
-cp ../myocamlbuild_config.mli .
 mkdir _start
 cp *.ml* _start
 cd _start
-echo "let where = ref \"<start>\";;" > ocamlbuild_where.ml
-ocamlc -c myocamlbuild_config.mli
-ocamlc -c myocamlbuild_config.ml
+echo "let bindir = ref \"<start>\";; let libdir = bindir;;" > ocamlbuild_where.ml
 ocamlc -c std_signatures.mli
 ocamlc -c signatures.mli
 ocamlc -c tags.mli
@@ -87,7 +83,7 @@ ocamlc -c rule.ml
 ocamlc -c report.ml
 ocamlc -c solver.ml
 ocamlc -c ocamlbuildlight.mli
-ocamlc -pack myocamlbuild_config.cmo discard_printf.cmo my_std.cmo bool.cmo glob_ast.cmo glob_lexer.cmo glob.cmo lexers.cmo my_unix.cmo tags.cmo display.cmo log.cmo shell.cmo slurp.cmo ocamlbuild_where.cmo command.cmo options.cmo pathname.cmo resource.cmo rule.cmo flags.cmo solver.cmo report.cmo ocaml_arch.cmo hygiene.cmo configuration.cmo tools.cmo fda.cmo plugin.cmo ocaml_utils.cmo ocamldep.cmo ocaml_dependencies.cmo ocaml_compiler.cmo ocaml_tools.cmo hooks.cmo ocaml_specific.cmo main.cmo -o ocamlbuild_pack.cmo
+ocamlc -pack discard_printf.cmo my_std.cmo bool.cmo glob_ast.cmo glob_lexer.cmo glob.cmo lexers.cmo my_unix.cmo tags.cmo display.cmo log.cmo shell.cmo slurp.cmo ocamlbuild_where.cmo command.cmo options.cmo pathname.cmo resource.cmo rule.cmo flags.cmo solver.cmo report.cmo ocaml_arch.cmo hygiene.cmo configuration.cmo tools.cmo fda.cmo plugin.cmo ocaml_utils.cmo ocamldep.cmo ocaml_dependencies.cmo ocaml_compiler.cmo ocaml_tools.cmo hooks.cmo ocaml_specific.cmo main.cmo -o ocamlbuild_pack.cmo
 ocamlc -c ocamlbuildlight.ml
 ocamlc ocamlbuild_pack.cmo ocamlbuildlight.cmo -o ../ocamlbuild.byte.start
 cd ..

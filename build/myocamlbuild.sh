@@ -8,9 +8,10 @@ if [ ! -x _build/ocamlbuild/ocamlbuildlight.byte ]; then
   mkdir -p _build/ocamlbuild
   cp ocamlbuild/_build/ocamlbuild{light{.cmo,.byte,lib.cma},_plugin.cmi,_pack.cmi} _build/ocamlbuild
 fi
+rm -f ocamlbuild/myocamlbuild_config.ml ocamlbuild/myocamlbuild_config.mli
 rm -rf _build/myocamlbuild boot/myocamlbuild boot/myocamlbuild.native
 ./boot/ocamlrun _build/ocamlbuild/ocamlbuildlight.byte -no-hygiene \
-  -tag debug -install-dir _build/ocamlbuild -byte-plugin -just-plugin
+  -tag debug -install-lib-dir _build/ocamlbuild -byte-plugin -just-plugin
 cp _build/myocamlbuild boot/myocamlbuild.boot
 # cp boot/myocamlbuild boot/myocamlbuild.boot
 # rm -f boot/myocamlbuild.boot

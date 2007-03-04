@@ -1,5 +1,15 @@
 2007-03-04  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
 
+	Split where in bindir and libdir.
+
+	* ocamlbuild_where.mli: Ditto.
+	* ocaml_specific.ml: Update.
+	* options.ml: Use bindir.
+	* plugin.ml: Update.
+	* start.sh: Update.
+
+2007-03-04  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
 	Virtual solvers for ocaml tools.
 
 	* options.ml: Setup virtual command solver for commands like ocamlc,
