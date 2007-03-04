@@ -576,8 +576,11 @@ rule "stdlib/sys.ml"
   ~prod:"stdlib/sys.ml"
   ~deps:["stdlib/sys.mlp"; "VERSION"]
   begin fun _ _ ->
+    let version = with_input_file "VERSION" input_line in
     Seq [rm_f "stdlib/sys.ml";
-         Cmd (Sh"sed -e\"s|%%VERSION%%|`head -1 VERSION`|\" stdlib/sys.mlp >stdlib/sys.ml");
+         Cmd (S[A"sed"; A"-e";
+                A(sprintf "s|%%%%VERSION%%%%|%s|" version);
+                Sh"<"; P"stdlib/sys.mlp"; Sh">"; Px"stdlib/sys.ml"]);
          chmod (A"-w") "stdlib/sys.ml"]
   end;;
 
