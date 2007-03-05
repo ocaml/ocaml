@@ -22,7 +22,7 @@ rm -f driver/main.byte driver/optmain.byte lex/main.byte \
 rm -f  ocamlbuild/_log ocamlbuild/,ocamlbuild.byte.start \
        ocamlbuild/boot/ocamlbuild ocamlbuild/myocamlbuild_config.ml \
        ocamlbuild/myocamlbuild_config.mli
-rm -rf ocamlbuild/{_build,_start}
+rm -rf ocamlbuild/_build ocamlbuild/_start
 
 # from the old build system
 rm -f camlp4/build/camlp4_config.ml camlp4/**/*.cm*
