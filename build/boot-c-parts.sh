@@ -4,8 +4,10 @@ set -ex
 
 # Create a bunch of symlinks to _build/boot
 mkdir -p _build/boot
-ln -sf ../../byterun/{ocamlrun,libcamlrun.a} \
-       ../../asmrun/libasmrun{,p}.a \
+ln -sf ../../byterun/ocamlrun \
+       ../../byterun/libcamlrun.a \
+       ../../asmrun/libasmrun.a \
+       ../../asmrun/libasmrunp.a \
        ../../yacc/ocamlyacc \
        ../../boot/ocamlc \
        ../../boot/ocamllex \

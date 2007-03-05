@@ -10,7 +10,9 @@ set -ex
 (cd win32caml && make)
 
 mkdir -p _build/boot
-cp -f byterun/{ocamlrun.exe,libcamlrun.$A,ocamlrun.dll} \
+cp -f byterun/ocamlrun.exe \
+      byterun/libcamlrun.$A \
+      byterun/ocamlrun.dll \
       asmrun/libasmrun.$A \
       yacc/ocamlyacc.exe \
       boot/ocamlc \
