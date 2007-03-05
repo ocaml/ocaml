@@ -1,3 +1,11 @@
+2007-03-05  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Relaxe executor on exception condition.
+
+	Patch from Berke.
+	* executor.ml: Ignore Not_found and exceptional conditions.
+	* TODO: Add an entry (needs to better understand POSIX).
+
 2007-03-04  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
 
 	Split where in bindir and libdir.
