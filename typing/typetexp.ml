@@ -221,9 +221,8 @@ let rec transl_type env policy styp =
                       row_fixed = false; row_more = newvar () } in
           let static = Btype.static_row row in
           let row =
-            if static then row else
-            { row with row_more =
-                if policy = Univars then new_pre_univar () else newvar () }
+            if static || policy <> Univars then row
+            else { row with row_more = new_pre_univar () }
           in
           newty (Tvariant row)
       | Tobject (fi, _) ->
@@ -352,13 +351,9 @@ let rec transl_type env policy styp =
           row_fixed = false; row_name = !name } in
       let static = Btype.static_row row in
       let row =
-        if static then row else
-        { row with row_more =
-            if policy = Univars then new_pre_univar () else
-            if policy = Fixed && not static then
-              raise(Error(styp.ptyp_loc, Unbound_type_variable "[..]"))
-            else row.row_more
-        } in
+        if static || policy <> Univars then row
+        else { row with row_more = new_pre_univar () }
+      in
       newty (Tvariant row)
   | Ptyp_poly(vars, st) ->
       begin_def();
