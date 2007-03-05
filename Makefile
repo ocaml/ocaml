@@ -609,8 +609,6 @@ camlp4out: ocamlc otherlibraries ocamlbuild-partial-boot ocamlbuild.byte
 	./build/camlp4-byte-only.sh
 camlp4opt: ocamlopt otherlibrariesopt ocamlbuild-partial-boot ocamlbuild.native
 	./build/camlp4-native-only.sh
-partialclean::
-	rm -rf _build/camlp4
 
 # Ocamlbuild
 
@@ -618,12 +616,12 @@ ocamlbuild.byte: ocamlc otherlibraries ocamlbuild-partial-boot
 	./build/ocamlbuild-byte-only.sh
 ocamlbuild.native: ocamlopt otherlibrariesopt ocamlbuild-partial-boot
 	./build/ocamlbuild-native-only.sh
-partialclean::
-	rm -rf _build/ocamlbuild
 
 .PHONY: ocamlbuild-partial-boot
 ocamlbuild-partial-boot:
 	./build/partial-boot.sh
+partialclean::
+	rm -rf _build
 
 # Check that the stack limit is reasonable.
 
