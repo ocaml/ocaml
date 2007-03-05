@@ -849,7 +849,9 @@ let report_error ppf = function
       let ty = Ctype.repr ty in
       let explain tl typ kwd lab =
         let ti = List.find (fun ti -> Ctype.deep_occur ty (typ ti)) tl in
-        Printtyp.reset_and_mark_loops_list [typ ti;ty];
+        let ty0 = (* Hack to force aliasing when needed *)
+          Btype.newgenty (Tobject(ty, ref None)) in
+        Printtyp.reset_and_mark_loops_list [typ ti; ty0];
         fprintf ppf
           ".@.@[<hov2>In %s@ %s%a@;<1 -2>the variable %a is unbound@]"
           kwd (lab ti) Printtyp.type_expr (typ ti) Printtyp.type_expr ty

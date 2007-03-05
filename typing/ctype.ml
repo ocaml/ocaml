@@ -427,15 +427,11 @@ let rec closed_type ty =
 
 let closed_parameterized_type params ty =
   List.iter mark_type params;
-  try
-    closed_type ty;
-    List.iter unmark_type params;
-    unmark_type ty;
-    true
-  with Non_closed _ ->
-    List.iter unmark_type params;
-    unmark_type ty;
-    false
+  let ok =
+    try closed_type ty; true with Non_closed _ -> false in
+  List.iter unmark_type params;
+  unmark_type ty;
+  ok
 
 let closed_type_decl decl =
   try
