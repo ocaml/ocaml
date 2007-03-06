@@ -112,12 +112,16 @@ let dynlink_dir    = if_partial_dir "otherlibs/dynlink";;
 let str_dir        = if_partial_dir "otherlibs/str";;
 let toplevel_dir   = if_partial_dir "toplevel";;
 
-let ocamlc_solver () =
-  if Pathname.exists "ocamlc.opt" && Pathname.exists ("stdlib/stdlib.cmxa") then
-    S[A"./ocamlc.opt"; A"-nostdlib"]
-  else if Pathname.exists "ocamlc" && Pathname.exists ("stdlib/stdlib.cma") then
-    S[ocamlrun; A"./ocamlc"; A"-nostdlib"]
-  else boot_ocamlc;;
+let ocamlc_solver =
+  let native_deps = ["ocamlc.opt"; "stdlib/stdlib.cmxa";
+                    "stdlib/std_exit.cmx"; "stdlib/std_exit"-.-C.o] in
+  let byte_deps = ["ocamlc"; "stdlib/stdlib.cma"; "stdlib/std_exit.cmo"] in
+  fun () ->
+    if List.for_all Pathname.exists native_deps then
+      S[A"./ocamlc.opt"; A"-nostdlib"]
+    else if List.for_all Pathname.exists byte_deps then
+      S[ocamlrun; A"./ocamlc"; A"-nostdlib"]
+    else boot_ocamlc;;
 
 Command.setup_virtual_command_solver "OCAMLC" ocamlc_solver;;
 Command.setup_virtual_command_solver "OCAMLCWIN" (convert_for_windows_shell ocamlc_solver);;

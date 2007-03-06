@@ -2,7 +2,8 @@
 . build/otherlibs-targets.sh
 . build/camlp4-targets.sh
 
-export INSTALL_BIN="$BINDIR"
+INSTALL_BIN="$BINDIR"
+export INSTALL_BIN
 
 STDLIB_BYTE="stdlib/libcamlrun.$A stdlib/stdlib.cma \
              stdlib/std_exit.cmo stdlib/camlheader stdlib/camlheader_ur"

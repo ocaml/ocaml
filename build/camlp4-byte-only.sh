@@ -1,6 +1,7 @@
 #!/bin/sh
 set -e
-export OCAMLBUILD_PARTIAL="true"
+OCAMLBUILD_PARTIAL="true"
+export OCAMLBUILD_PARTIAL
 cd `dirname $0`/..
 . build/targets.sh
 set -x
