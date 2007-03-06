@@ -80,4 +80,5 @@ esac
 
 curl -0 -F "log=@buildbot.log" \
         -F "host=`hostname`" \
+        -F "mode=$mode-$opt_win-$opt_win2" \
         http://weblog.feydakins.org/dropbox || :
