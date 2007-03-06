@@ -134,7 +134,7 @@ installdir \
   camlp4rf.cma \
   Camlp4Bin.cm[iox] Camlp4Bin.$O Camlp4Bin.p.$O Camlp4Top.cm[io] \
   $CAMLP4DIR
-installlibdir camlp4lib.$A camlp4lib.p.$A} $CAMLP4DIR
+installlibdir camlp4lib.$A camlp4lib.p.$A $CAMLP4DIR
 cd ..
 
 echo "Installing ocamlbuild..."

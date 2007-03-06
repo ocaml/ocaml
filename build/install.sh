@@ -150,7 +150,7 @@ installdir \
   stdlib/filename.cmi stdlib/filename.mli \
   stdlib/format.cmi stdlib/format.mli \
   stdlib/gc.cmi stdlib/gc.mli \
-  stdlib/genlex.cmi stdlib/genlex.mli} \
+  stdlib/genlex.cmi stdlib/genlex.mli \
   stdlib/hashtbl.cmi stdlib/hashtbl.mli \
   stdlib/int32.cmi stdlib/int32.mli \
   stdlib/int64.cmi stdlib/int64.mli \
@@ -570,7 +570,7 @@ installdir \
   camlp4orf.cma camlp4r.cma camlp4rf.cma \
   Camlp4Bin.cm[iox] Camlp4Bin.$O Camlp4Bin.p.$O Camlp4Top.cm[io] \
   $CAMLP4DIR
-installlibdir camlp4lib.$A camlp4lib.p.$A} $CAMLP4DIR
+installlibdir camlp4lib.$A camlp4lib.p.$A $CAMLP4DIR
 cd ..
 
 echo "Installing ocamlbuild..."
