@@ -50,12 +50,12 @@ posix_n.o: posix.c
 
 threads.cma: $(THREAD_OBJS)
 	$(MKLIB) -ocamlc '$(CAMLC)' -o threads $(THREAD_OBJS) \
-          -cclib -lunix -cclib "$(PTHREAD_LINK)"
+          -cclib -lunix $(PTHREAD_LINK)
 
 # See remark above: force static linking of libthreadsnat.a
 threads.cmxa: $(THREAD_OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o threads.cmxa $(THREAD_OBJS:.cmo=.cmx) \
-          -cclib -lthreadsnat -cclib -lunix -cclib "$(PTHREAD_LINK)"
+          -cclib -lthreadsnat -cclib -lunix $(PTHREAD_LINK)
 
 $(THREAD_OBJS:.cmo=.cmx): ../../ocamlopt
 
