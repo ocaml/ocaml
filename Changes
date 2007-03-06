@@ -11,7 +11,7 @@ Language features:
 
 New tools:
 - ocamlbuild: compilation manager for OCaml applications and libraries.
-  See description in reference manual.
+  See draft documentation at http://gallium.inria.fr/~pouillar/
 * Camlp4: heavily revised implementation, new API.
 
 New ports:
