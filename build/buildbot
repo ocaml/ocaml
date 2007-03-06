@@ -25,9 +25,9 @@ esac
 
 set -x
 
-[ -f config/Makefile ] && make -f $Makefile clean
+[ -f config/Makefile ] && make -f $Makefile clean || :
 
-./build/distclean.sh
+./build/distclean.sh || :
 
 cvs -q up -dP -r release310
 
