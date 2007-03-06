@@ -526,7 +526,7 @@ rule "libthreadsnat.a"
 
 (* See remark above: force static linking of libthreadsnat.a *)
 flag ["ocaml"; "link"; "library"; "otherlibs_systhreads"; "native"] begin
-  S[A"-cclib"; syscamllib "threadsnat"; (* A"-cclib"; syscamllib "unix"; seems to be useless and can be dangerous during bootstrap *) A"-cclib"; A C.pthread_link]
+  S[A"-cclib"; syscamllib "threadsnat"; (* A"-cclib"; syscamllib "unix"; seems to be useless and can be dangerous during bootstrap *) A C.pthread_link]
 end;
 end;;
 
