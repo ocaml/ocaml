@@ -979,7 +979,7 @@ let end_assembly() =
       efa_word = (fun n -> `	.long	{emit_int n}\n`);
       efa_align = emit_align;
       efa_label_rel = (fun lbl ofs ->
-                           `	.long	({emit_label lbl} - .) + {emit_int32 ofs}\n`);
+                           `	.long	{emit_label lbl} - . + {emit_int32 ofs}\n`);
       efa_def_label = (fun l -> `{emit_label l}:\n`);
       efa_string = (fun s -> 
         let s = s ^ "\000" in
