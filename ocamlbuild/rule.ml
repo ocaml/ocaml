@@ -285,6 +285,7 @@ module Common_commands = struct
   open Command
   let mv src dest = Cmd (S [A"mv"; P src; Px dest])
   let cp src dest = Cmd (S [A"cp"; P src; Px dest])
+  let cp_p src dest = Cmd (S [A"cp"; A"-p"; P src; Px dest])
   let ln_f pointed pointer = Cmd (S [A"ln"; A"-f"; P pointed; Px pointer])
   let ln_s pointed pointer = Cmd (S[A"ln"; A"-s"; P pointed; Px pointer])
   let rm_f x = Cmd (S [A"rm"; A"-f"; Px x])
@@ -296,5 +297,5 @@ open Common_commands
 
 let copy_rule name ?insert src dest =
   rule name ?insert ~prod:dest ~dep:src
-       (fun env _ -> cp (env src) (env dest))
+       (fun env _ -> cp_p (env src) (env dest))
 

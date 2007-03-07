@@ -64,6 +64,7 @@ val dep : string list -> string list -> unit
 module Common_commands : sig
   val mv : Pathname.t -> Pathname.t -> Command.t
   val cp : Pathname.t -> Pathname.t -> Command.t
+  val cp_p : Pathname.t -> Pathname.t -> Command.t
   val ln_f : Pathname.t -> Pathname.t -> Command.t
   val ln_s : Pathname.t -> Pathname.t -> Command.t
   val rm_f : Pathname.t -> Command.t

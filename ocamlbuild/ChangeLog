@@ -1,3 +1,11 @@
+2007-03-07  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Use cp -p in copy_rule, and fix some typos in the manual.
+
+	* manual/manual.tex: Typos.
+	* rule.ml,
+	* rule.mli: Add cp_p and use it for copy_rule.
+
 2007-03-05  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
 
 	Relaxe executor on exception condition.
