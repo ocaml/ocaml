@@ -146,9 +146,9 @@ installopt:
 
 depend:
 	gcc -MM $(CFLAGS) *.c > .depend
-	../../boot/ocamlrun ../../tools/ocamldep *.mli *.ml >> .depend
+	../../boot/ocamlrun ../../tools/ocamldep -nojoin *.mli *.ml >> .depend
 	cp ns.jml ns.ml 
-	../../boot/ocamlrun ../../tools/ocamldep -join ns.ml >> .depend
+	../../boot/ocamlrun ../../tools/ocamldep ns.ml >> .depend
 	/bin/rm ns.ml
 
 include .depend
