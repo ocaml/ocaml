@@ -27,11 +27,12 @@ let quote_filename_if_needed s =
 let chdir dir =
   reset_filesys_cache ();
   Sys.chdir dir
-let run args =
+let run args target =
   reset_readdir_cache ();
   let cmd = String.concat " " (List.map quote_filename_if_needed args) in
   if !*My_unix.is_degraded || Sys.os_type = "Win32" then
     begin
+      Log.event cmd target Tags.empty;
       let st = sys_command cmd in
       if st <> 0 then
         failwith (Printf.sprintf "Error during command `%s'.\nExit code %d.\n" cmd st)
@@ -49,23 +50,32 @@ let rm_f x =
 let mkdir dir =
   reset_filesys_cache_for_file dir;
   (*Sys.mkdir dir (* MISSING in ocaml *) *)
-  run ["mkdir"; dir]
+  run ["mkdir"; dir] dir
 let try_mkdir dir = if not (sys_file_exists dir) then mkdir dir
 let rec mkdir_p dir =
   if sys_file_exists dir then ()
   else (mkdir_p (Filename.dirname dir); mkdir dir)
-let cp = copy_file (* Décret du 2007-02-01 *)
-(*
-  let cp src dest =
+
+let cp_pf src dest =
   reset_filesys_cache_for_file dest;
-  run["cp";"-pf";src;dest]*)
+  run["cp";"-pf";src;dest] dest
+
+(* L'Arrêté du 2007-03-07 prend en consideration
+   differement les archives. Pour les autres fichiers
+   le décret du 2007-02-01 est toujours valable :-) *)
+let cp src dst =
+  if Filename.check_suffix src ".a"
+  && Filename.check_suffix dst ".a"
+  then cp_pf src dst
+  else copy_file src dst
+
 let readlink = My_unix.readlink
 let is_link = My_unix.is_link
 let rm_rf x =
   reset_filesys_cache ();
-  run["rm";"-Rf";x]
+  run["rm";"-Rf";x] x
 let mv src dest =
   reset_filesys_cache_for_file src;
   reset_filesys_cache_for_file dest;
-  run["mv"; src; dest]
+  run["mv"; src; dest] dest
   (*Sys.rename src dest*)

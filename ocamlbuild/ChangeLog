@@ -1,5 +1,11 @@
 2007-03-07  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
 
+	Handle specially archives files during an import.
+
+	* shell.ml: Ditto.
+
+2007-03-07  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
 	Use cp -p in copy_rule, and fix some typos in the manual.
 
 	* manual/manual.tex: Typos.
