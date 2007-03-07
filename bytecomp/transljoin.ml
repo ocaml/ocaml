@@ -40,7 +40,7 @@ let dump_patss fp xs = dump_list dump_pats fp xs
 (*
   This first section builds lambda expr needed by jocaml constructs.
   These are calls to functions or primitives defined in the
-  Jprims module.
+  Join_prim module.
 *)
 
 let get_signature name =
@@ -51,7 +51,7 @@ let get_signature name =
     fatal_error ("transjoin: module "^name^" not found")
 end
 
-let env_join = get_signature "Join"
+let env_join = get_signature "Join_prim"
 
 let transl_name env name =
   try

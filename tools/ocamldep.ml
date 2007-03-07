@@ -244,7 +244,7 @@ let _ =
   add_to_load_path Filename.current_dir_name;
   Arg.parse [
      "-nojoin", Arg.Set  Clflags.nojoin,
-       "act over JoCaml source files" ;
+       "act over pure OCaml source files" ;
      "-I", Arg.String add_to_load_path,
        "<dir>  Add <dir> to the list of include directories";
      "-native", Arg.Set native_only,

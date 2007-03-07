@@ -32,7 +32,7 @@ NATIVECODE_JOIN_C_OBJS=join_n.o
 
 JOIN_OBJS=join_debug.cmo join_misc.cmo join_link.cmo join_hash.cmo\
  join_set.cmo join_queue.cmo join_extern.cmo join_scheduler.cmo join_port.cmo\
- join_message.cmo join_space.cmo join.cmo ns.cmo join_test.cmo
+ join_message.cmo join_space.cmo join_prim.cmo join.cmo ns.cmo join_test.cmo
 
 GENFILES=thread.ml join.c join_types.mli\
  join_debug.mli join_debug.ml\
@@ -45,6 +45,7 @@ GENFILES=thread.ml join.c join_types.mli\
  join_scheduler.mli join_scheduler.ml\
  join_message.mli join_message.ml\
  join_space.mli join_space.ml\
+ join_prim.ml join_prim.mli\
  join.ml join.mli\
  ns.mli ns.jml\
  join_test.mli join_test.ml
@@ -160,6 +161,12 @@ join_scheduler.mli: ../threads/join_scheduler.mli
 join_types.mli: ../threads/join_types.mli
 	cp -f ../threads/join_types.mli . && chmod -w join_types.mli
 
+join_prim.ml: ../threads/join_prim.ml
+	cp -f ../threads/join_prim.ml . && chmod -w join_prim.ml
+
+join_prim.mli: ../threads/join_prim.mli
+	cp -f ../threads/join_prim.mli . && chmod -w join_prim.mli
+
 join.ml: ../threads/join.ml
 	cp -f ../threads/join.ml . && chmod -w join.ml
 
@@ -205,14 +212,14 @@ install:
 	cd $(LIBDIR); $(RANLIB) libthreads.a
 	if test -d $(LIBDIR)/threads; then :; else mkdir $(LIBDIR)/threads; fi
 	cp $(THREAD_OBJS:.cmo=.cmi) threads.cma $(LIBDIR)/threads
-	cp join.cmi ns.cmi join.cma $(LIBDIR)/threads
 	rm -f $(LIBDIR)/threads/stdlib.cma
 	cp thread.mli mutex.mli condition.mli event.mli threadUnix.mli $(LIBDIR)
 #For join lib and friends
 	if test -f dlljoin.so; then cp dlljoin.so $(STUBLIBDIR)/dlljoin.so; fi
 	cp libjoin.a $(LIBDIR)/libjoin.a
 	cd $(LIBDIR); $(RANLIB) libjoin.a
-	cp join.cmi ns.cmi join_test.cmi join.cma $(LIBDIR)/threads
+	cp join_prim.cmi join.cmi ns.cmi join.cma $(LIBDIR)/threads
+	cp join_prim.mli join.mli ns.mli join.cma $(LIBDIR)/threads
 
 
 installopt:
@@ -245,9 +252,10 @@ installopt:
 
 depend: $(GENFILES)
 	gcc -MM -I../../byterun *.c > .depend
-	../../boot/ocamlrun ../../tools/ocamldep *.mli *.ml >> .depend
+	/bin/rm -f ns.ml
+	../../boot/ocamlrun ../../tools/ocamldep -nojoin *.mli *.ml >> .depend
 	cp ns.jml ns.ml 
-	../../boot/ocamlrun ../../tools/ocamldep -join ns.ml >> .depend
+	../../boot/ocamlrun ../../tools/ocamldep ns.ml >> .depend
 	/bin/rm -f ns.ml
 
 include .depend

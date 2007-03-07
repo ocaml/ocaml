@@ -31,7 +31,7 @@ JOIN_C_OBJS=join.o
 
 JOIN_OBJS=join_debug.cmo join_misc.cmo join_link.cmo  join_hash.cmo\
  join_set.cmo join_queue.cmo join_extern.cmo join_scheduler.cmo join_port.cmo\
- join_message.cmo join_space.cmo join.cmo ns.cmo join_test.cmo
+ join_message.cmo join_space.cmo join_prim.cmo join.cmo ns.cmo join_test.cmo
 
 LIB=../../stdlib
 
@@ -124,8 +124,8 @@ install:
 	if test -f dllvmjoin.so; then cp dllvmjoin.so $(STUBLIBDIR)/.; fi
 	cp libvmjoin.a $(LIBDIR)/vmthreads/libvmjoin.a
 	cd $(LIBDIR)/vmthreads; $(RANLIB) libvmjoin.a
-	cp join.cmi ns.cmi join_test.cmi join.cma $(LIBDIR)/vmthreads
-	cp join.mli ns.mli join_test.mli $(LIBDIR)/vmthreads
+	cp join_prim.cmi join.cmi ns.cmi join_test.cmi join.cma $(LIBDIR)/vmthreads
+	cp join_prim.mli join.mli ns.mli join_test.mli $(LIBDIR)/vmthreads
 
 installopt:
 
@@ -145,7 +145,8 @@ installopt:
 	$(CAMLOPT) -c $(COMPFLAGS) $(OCAMLPP) $<
 
 depend:
-	gcc -MM $(CFLAGS) *.c > .depend
+	gcc -MM $(CFLAGS) *.c > .depen
+	/bin/rm -f ns.ml
 	../../boot/ocamlrun ../../tools/ocamldep -nojoin *.mli *.ml >> .depend
 	cp ns.jml ns.ml 
 	../../boot/ocamlrun ../../tools/ocamldep ns.ml >> .depend
