@@ -88,6 +88,7 @@ mkdir -p $LIBDIR/threads
 mkdir -p $LIBDIR/labltk
 mkdir -p $LIBDIR/ocamlbuild
 mkdir -p $LIBDIR/ocamldoc
+mkdir -p $LIBDIR/ocamldoc/custom
 mkdir -p $STUBLIBDIR
 mkdir -p $MANDIR/man1
 mkdir -p $MANDIR/man3
