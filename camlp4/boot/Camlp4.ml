@@ -350,7 +350,7 @@ module Sig =
       sig
         (** The name of the extension, typically the module name. *)
         val name : string
-        (** The version of the extension, typically $Id: Camlp4.ml,v 1.2 2007/02/26 16:32:46 ertai Exp $ with a versionning system. *)
+        (** The version of the extension, typically $Id: Sig.ml,v 1.2 2007/02/26 16:32:46 ertai Exp $ with a versionning system. *)
         val version : string
       end
     module type Loc =
@@ -1115,18 +1115,12 @@ module Sig =
             method match_case : match_case -> 'self_type
             method ident : ident -> 'self_type
           end
-        class c_expr : (expr -> expr) -> object inherit map end
-        class c_patt : (patt -> patt) -> object inherit map end
-        class c_ctyp : (ctyp -> ctyp) -> object inherit map end
-        class c_str_item : (str_item -> str_item) -> object inherit map end
-        class c_sig_item : (sig_item -> sig_item) -> object inherit map end
-        class c_loc : (Loc.t -> Loc.t) -> object inherit map end
-        val map_expr : (expr -> expr) -> expr -> expr
-        val map_patt : (patt -> patt) -> patt -> patt
-        val map_ctyp : (ctyp -> ctyp) -> ctyp -> ctyp
-        val map_str_item : (str_item -> str_item) -> str_item -> str_item
-        val map_sig_item : (sig_item -> sig_item) -> sig_item -> sig_item
-        val map_loc : (Loc.t -> Loc.t) -> Loc.t -> Loc.t
+        val map_expr : (expr -> expr) -> map
+        val map_patt : (patt -> patt) -> map
+        val map_ctyp : (ctyp -> ctyp) -> map
+        val map_str_item : (str_item -> str_item) -> map
+        val map_sig_item : (sig_item -> sig_item) -> map
+        val map_loc : (Loc.t -> Loc.t) -> map
         val ident_of_expr : expr -> ident
         val ident_of_ctyp : ctyp -> ident
         val biAnd_of_list : binding list -> binding
@@ -9927,36 +9921,36 @@ module Struct =
                       ((o#_Loc_t _x0)#patt _x1)#expr _x2
                   | BiAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
               end
-            class c_expr f =
-              object inherit map as super
+            let map_expr f =
+              object
+                inherit map as super
                 method expr = fun x -> f (super#expr x)
               end
-            class c_patt f =
-              object inherit map as super
+            let map_patt f =
+              object
+                inherit map as super
                 method patt = fun x -> f (super#patt x)
               end
-            class c_ctyp f =
-              object inherit map as super
+            let map_ctyp f =
+              object
+                inherit map as super
                 method ctyp = fun x -> f (super#ctyp x)
               end
-            class c_str_item f =
-              object inherit map as super
+            let map_str_item f =
+              object
+                inherit map as super
                 method str_item = fun x -> f (super#str_item x)
               end
-            class c_sig_item f =
-              object inherit map as super
+            let map_sig_item f =
+              object
+                inherit map as super
                 method sig_item = fun x -> f (super#sig_item x)
               end
-            class c_loc f =
-              object inherit map as super
+            let map_loc f =
+              object
+                inherit map as super
                 method _Loc_t = fun x -> f (super#_Loc_t x)
               end
-            let map_patt f ast = (new c_patt f)#patt ast
-            let map_loc f ast = (new c_loc f)#_Loc_t ast
-            let map_sig_item f ast = (new c_sig_item f)#sig_item ast
-            let map_str_item f ast = (new c_str_item f)#str_item ast
-            let map_ctyp f ast = (new c_ctyp f)#ctyp ast
-            let map_expr f ast = (new c_expr f)#expr ast
             let ghost = Loc.ghost
             let rec is_module_longident =
               function
@@ -14083,7 +14077,7 @@ module Printers =
           struct
             let name = "Camlp4Printers.DumpCamlp4Ast"
             let version =
-              "$Id: Camlp4.ml,v 1.2 2007/02/26 16:32:46 ertai Exp $"
+              "$Id: DumpCamlp4Ast.ml,v 1.5 2007/02/07 10:09:21 ertai Exp $"
           end
         module Make (Syntax : Sig.Syntax) :
           Sig.Printer with module Ast = Syntax.Ast =
@@ -14117,7 +14111,7 @@ module Printers =
           struct
             let name = "Camlp4Printers.DumpOCamlAst"
             let version =
-              "$Id: Camlp4.ml,v 1.2 2007/02/26 16:32:46 ertai Exp $"
+              "$Id: DumpOCamlAst.ml,v 1.5 2007/02/07 10:09:21 ertai Exp $"
           end
         module Make (Syntax : Sig.Camlp4Syntax) :
           Sig.Printer with module Ast = Syntax.Ast =
@@ -14160,7 +14154,7 @@ module Printers =
           struct
             let name = "Camlp4.Printers.Null"
             let version =
-              "$Id: Camlp4.ml,v 1.2 2007/02/26 16:32:46 ertai Exp $"
+              "$Id: Null.ml,v 1.2 2007/02/07 10:09:21 ertai Exp $"
           end
         module Make (Syntax : Sig.Syntax) =
           struct
@@ -14328,7 +14322,7 @@ module Printers =
           struct
             let name = "Camlp4.Printers.OCaml"
             let version =
-              "$Id: Camlp4.ml,v 1.2 2007/02/26 16:32:46 ertai Exp $"
+              "$Id: OCaml.ml,v 1.21 2007/02/26 16:32:46 ertai Exp $"
           end
         module Make (Syntax : Sig.Camlp4Syntax) =
           struct
@@ -15581,7 +15575,7 @@ module Printers =
           struct
             let name = "Camlp4.Printers.OCamlr"
             let version =
-              "$Id: Camlp4.ml,v 1.2 2007/02/26 16:32:46 ertai Exp $"
+              "$Id: OCamlr.ml,v 1.17 2007/02/07 10:09:21 ertai Exp $"
           end
         module Make (Syntax : Sig.Camlp4Syntax) =
           struct
@@ -16245,7 +16239,7 @@ module PreCast :
     module Id =
       struct
         let name = "Camlp4.PreCast"
-        let version = "$Id: Camlp4.ml,v 1.2 2007/02/26 16:32:46 ertai Exp $"
+        let version = "$Id: PreCast.ml,v 1.4 2007/02/07 10:09:21 ertai Exp $"
       end
     type camlp4_token =
       Sig.camlp4_token =

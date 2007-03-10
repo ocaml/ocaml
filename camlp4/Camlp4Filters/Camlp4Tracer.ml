@@ -51,7 +51,7 @@ module Make (AstFilters : Camlp4.Sig.AstFilters) = struct
     [ <:expr@_loc< fun [ $m$ ] >> -> <:expr< fun [ $map_match_case m$ ] >>
     | x -> x ];
 
-  register_str_item_filter (new Ast.c_expr map_expr)#str_item;
+  register_str_item_filter (Ast.map_expr map_expr)#str_item;
 
 end;
 

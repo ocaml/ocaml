@@ -4618,33 +4618,30 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
           | BiEq _x0 _x1 _x2 -> ((o#_Loc_t _x0)#patt _x1)#expr _x2
           | BiAnt _x0 _x1 -> (o#_Loc_t _x0)#string _x1 ];
       end;
-    class c_expr f =
+    value map_expr f =
       object inherit map as super; method expr = fun x -> f (super#expr x);
       end;
-    class c_patt f =
+    value map_patt f =
       object inherit map as super; method patt = fun x -> f (super#patt x);
       end;
-    class c_ctyp f =
+    value map_ctyp f =
       object inherit map as super; method ctyp = fun x -> f (super#ctyp x);
       end;
-    class c_str_item f =
-      object inherit map as super;
+    value map_str_item f =
+      object
+        inherit map as super;
         method str_item = fun x -> f (super#str_item x);
       end;
-    class c_sig_item f =
-      object inherit map as super;
+    value map_sig_item f =
+      object
+        inherit map as super;
         method sig_item = fun x -> f (super#sig_item x);
       end;
-    class c_loc f =
-      object inherit map as super;
+    value map_loc f =
+      object
+        inherit map as super;
         method _Loc_t = fun x -> f (super#_Loc_t x);
       end;
-    value map_patt f ast = (new c_patt f)#patt ast;
-    value map_loc f ast = (new c_loc f)#_Loc_t ast;
-    value map_sig_item f ast = (new c_sig_item f)#sig_item ast;
-    value map_str_item f ast = (new c_str_item f)#str_item ast;
-    value map_ctyp f ast = (new c_ctyp f)#ctyp ast;
-    value map_expr f ast = (new c_expr f)#expr ast;
     value ghost = Loc.ghost;
     value rec is_module_longident =
       fun

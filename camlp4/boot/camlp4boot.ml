@@ -23,7 +23,7 @@ module R =
       struct
         let name = "Camlp4RevisedParserParser"
         let version =
-          "$Id: Camlp4OCamlRevisedParser.ml,v 1.1 2007/02/07 10:09:22 ertai Exp $"
+          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.1 2007/03/03 09:21:36 pouillar Exp $"
       end
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
@@ -4399,14 +4399,16 @@ Old (no more supported) syntax:
                                 (Ast.CeLet (_loc, rf, bi, ce) : 'class_expr))));
                          ([ Gram.Skeyword "fun";
                             Gram.Snterm
-                              (Gram.Entry.obj (ipatt : 'ipatt Gram.Entry.t));
+                              (Gram.Entry.obj
+                                 (labeled_ipatt :
+                                   'labeled_ipatt Gram.Entry.t));
                             Gram.Snterm
                               (Gram.Entry.obj
                                  (class_fun_def :
                                    'class_fun_def Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun (ce : 'class_fun_def) (p : 'ipatt) _
-                                (_loc : Loc.t) ->
+                             (fun (ce : 'class_fun_def) (p : 'labeled_ipatt)
+                                _ (_loc : Loc.t) ->
                                 (Ast.CeFun (_loc, p, ce) : 'class_expr)))) ]);
                       ((Some "apply"), (Some Camlp4.Sig.Grammar.NonA),
                        [ ([ Gram.Sself;
@@ -11889,7 +11891,7 @@ module B =
  * - Daniel de Rauglaudre: initial version
  * - Nicolas Pouillard: refactoring
  *)
-    (* $Id: Camlp4Bin.ml,v 1.13 2007/02/07 10:09:21 ertai Exp $ *)
+    (* $Id: Camlp4Bin.ml,v 1.14 2007/02/27 15:48:22 pouillar Exp $ *)
     open Camlp4
     open PreCast.Syntax
     open PreCast
@@ -11907,8 +11909,9 @@ module B =
     let pa_q = "Camlp4QuotationExpander"
     let pa_rq = "Camlp4OCamlRevisedQuotationExpander"
     let pa_oq = "Camlp4OCamlOriginalQuotationExpander"
+    let pa_l = "Camlp4ListComprehension"
     let dyn_loader =
-      ref (fun _ -> raise (Match_failure ("./camlp4/Camlp4Bin.ml", 42, 24)))
+      ref (fun _ -> raise (Match_failure ("./camlp4/Camlp4Bin.ml", 43, 24)))
     let rcall_callback = ref (fun () -> ())
     let loaded_modules = ref SSet.empty
     let add_to_loaded_modules name =
@@ -11960,9 +11963,12 @@ module B =
              ("oq" | "camlp4ocamloriginalquotationexpander.cmo")) ->
               load [ pa_r; pa_o; pa_qb; pa_oq ]
           | (("Parsers" | ""), "rf") ->
-              load [ pa_r; pa_rp; pa_qb; pa_q; pa_g; pa_m ]
+              load [ pa_r; pa_rp; pa_qb; pa_q; pa_g; pa_l; pa_m ]
           | (("Parsers" | ""), "of") ->
-              load [ pa_r; pa_o; pa_rp; pa_op; pa_qb; pa_rq; pa_g; pa_m ]
+              load
+                [ pa_r; pa_o; pa_rp; pa_op; pa_qb; pa_rq; pa_g; pa_l; pa_m ]
+          | (("Parsers" | ""), ("comp" | "camlp4listcomprehension.cmo")) ->
+              load [ pa_l ]
           | (("Filters" | ""), ("lift" | "camlp4astlifter.cmo")) ->
               load [ "Camlp4AstLifter" ]
           | (("Filters" | ""), ("exn" | "camlp4exceptiontracer.cmo")) ->

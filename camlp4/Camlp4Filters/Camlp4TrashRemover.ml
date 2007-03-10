@@ -30,7 +30,7 @@ module Make (AstFilters : Camlp4.Sig.AstFilters) = struct
   open Ast;
 
   register_str_item_filter
-    (new Ast.c_str_item
+    (Ast.map_str_item
       (fun
        [ <:str_item@_loc< module Camlp4Trash = $_$ >> ->
             <:str_item<>>

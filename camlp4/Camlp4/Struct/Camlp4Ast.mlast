@@ -102,36 +102,30 @@ module Make (Loc : Sig.Loc)
 
   class fold = Camlp4Filters.GenerateFold.generated;
 
-  class c_expr f = object
+  value map_expr f = object
     inherit map as super;
     method expr x = f (super#expr x);
   end;
-  class c_patt f = object
+  value map_patt f = object
     inherit map as super;
     method patt x = f (super#patt x);
   end;
-  class c_ctyp f = object
+  value map_ctyp f = object
     inherit map as super;
     method ctyp x = f (super#ctyp x);
   end;
-  class c_str_item f = object
+  value map_str_item f = object
     inherit map as super;
     method str_item x = f (super#str_item x);
   end;
-  class c_sig_item f = object
+  value map_sig_item f = object
     inherit map as super;
     method sig_item x = f (super#sig_item x);
   end;
-  class c_loc f = object
+  value map_loc f = object
     inherit map as super;
     method _Loc_t x = f (super#_Loc_t x);
   end;
-  value map_patt f ast = (new c_patt f)#patt ast;
-  value map_loc f ast = (new c_loc f)#_Loc_t ast;
-  value map_sig_item f ast = (new c_sig_item f)#sig_item ast;
-  value map_str_item f ast = (new c_str_item f)#str_item ast;
-  value map_ctyp f ast = (new c_ctyp f)#ctyp ast;
-  value map_expr f ast = (new c_expr f)#expr ast;
   value ghost = Loc.ghost;
 
   value rec is_module_longident =

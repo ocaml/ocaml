@@ -502,22 +502,12 @@ module type Camlp4Ast = sig
     method ident : ident -> 'self_type;
   end;
 
-  (** See {!Ast.remove_antiquots}. *)
-  (* class remove_antiquots : object inherit map; end; *)
-
-  class c_expr : [expr -> expr] -> object inherit map; end;
-  class c_patt : [patt -> patt] -> object inherit map; end;
-  class c_ctyp : [ctyp -> ctyp] -> object inherit map; end;
-  class c_str_item : [str_item -> str_item] -> object inherit map; end;
-  class c_sig_item : [sig_item -> sig_item] -> object inherit map; end;
-  class c_loc : [Loc.t -> Loc.t] -> object inherit map; end;
-  
-  value map_expr : (expr -> expr) -> expr -> expr;
-  value map_patt : (patt -> patt) -> patt -> patt;
-  value map_ctyp : (ctyp -> ctyp) -> ctyp -> ctyp;
-  value map_str_item : (str_item -> str_item) -> str_item -> str_item;
-  value map_sig_item : (sig_item -> sig_item) -> sig_item -> sig_item;
-  value map_loc : (Loc.t -> Loc.t) -> Loc.t -> Loc.t;
+  value map_expr : (expr -> expr) -> map;
+  value map_patt : (patt -> patt) -> map;
+  value map_ctyp : (ctyp -> ctyp) -> map;
+  value map_str_item : (str_item -> str_item) -> map;
+  value map_sig_item : (sig_item -> sig_item) -> map;
+  value map_loc : (Loc.t -> Loc.t) -> map;
 
   value ident_of_expr : expr -> ident;
   value ident_of_ctyp : ctyp -> ident;

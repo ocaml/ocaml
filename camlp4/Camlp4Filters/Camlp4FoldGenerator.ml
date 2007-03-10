@@ -289,20 +289,20 @@ module Make (AstFilters : Camlp4.Sig.AstFilters) = struct
     StringMap.fold class_sig_item_of_type_decl tyMap <:class_sig_item<>>
 
   and inject_structure_drop_trash generated =
-    Ast.map_str_item
+    (Ast.map_str_item
       (fun
        [ <:str_item@_loc< class $lid:c$ = Camlp4Filters.GenerateFold.generated >> ->
             (* FIXME <:str_item< class $lid:c$ = object (o) $builtins$; $generated$ end >> *)
             let x = <:class_str_item< $builtins$; $generated$ >> in
             <:str_item< class $lid:c$ = object (o : 'self_type) $x$ end >>
-       | s -> s ])
+       | s -> s ]))#str_item
   
   and inject_signature generated =
-    Ast.map_sig_item
+    (Ast.map_sig_item
       (fun
        [ <:sig_item@_loc< class $lid:c$ : Camlp4Filters.GenerateFold.generated >> ->
             <:sig_item< class $lid:c$ : object $generated$ end >>
-       | s -> s ])
+       | s -> s ]))#sig_item
 
   and process_str_item str_item =
     let tyMap = collect_types_in_str_item str_item in
