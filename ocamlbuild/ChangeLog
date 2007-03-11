@@ -1,3 +1,25 @@
+2007-03-11  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Fix the List.union order.
+
+	* my_std.ml: Fix and improve List.union.
+	* pathname.ml: Use it and fix merge_include_dirs.
+	* test/good-output: Update since the union order was wrong.
+
+2007-03-11  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Re fix menhir and include dirs.
+
+	* ocaml_tools.ml: Specifiy ocamlc and -I with --ocamlc.
+
+2007-03-11  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Fix a bug: Add include directories to menhir.
+
+	* ocaml_tools.ml: Ditto.
+	* my_std.ml,
+	* signatures.mli: Specification typo.
+
 2007-03-07  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
 
 	Handle specially archives files during an import.

@@ -109,15 +109,16 @@ module List = struct
       | None -> acc
     end xs []
 
+  let rec rev_append_uniq acc =
+    function
+    | [] -> acc
+    | x :: xs ->
+        if mem x acc then rev_append_uniq acc xs
+        else rev_append_uniq (x :: acc) xs
+
   let union a b =
-    let rec self a b =
-      if a = [] then b else
-      match b with
-      | [] -> a
-      | x :: xs ->
-          if mem x a then self a xs
-          else self (x :: a) xs
-    in rev (self (rev a) b)
+    rev (rev_append_uniq (rev_append_uniq [] a) b)
+
 end
 
 module String = struct
@@ -169,7 +170,7 @@ module String = struct
       end
     in loop 0; text
 
-  (*** is_prefix : is v a prefix of u ? *)
+  (*** is_prefix : is u a prefix of v ? *)
   let is_prefix u v =
     let m = String.length u
     and n = String.length v

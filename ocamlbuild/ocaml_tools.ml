@@ -37,7 +37,9 @@ let infer_interface ml mli env build =
 let menhir mly env build =
   let mly = env mly in
   Ocaml_compiler.prepare_compile build mly;
-  Cmd(S[!Options.ocamlyacc; T(tags_of_pathname mly++"ocaml"++"parser"++"menhir");
+  Cmd(S[!Options.ocamlyacc;
+        A"--ocamlc"; Quote(S[!Options.ocamlc; ocaml_include_flags mly]);
+        T(tags_of_pathname mly++"ocaml"++"parser"++"menhir");
         A"--infer"; flags_of_pathname mly; Px mly])
 
 let ocamldoc_c tags arg odoc =

@@ -64,7 +64,7 @@ module type STRING = sig
 
   val eq_sub_strings : string -> int -> string -> int -> int -> bool
 
-  (** [is_prefix u v] is v a prefix of u ? *)
+  (** [is_prefix u v] is u a prefix of v ? *)
   val is_prefix : string -> string -> bool
   (** [is_suffix u v] : is v a suffix of u ? *)
   val is_suffix : string -> string -> bool
