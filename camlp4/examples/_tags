@@ -1,0 +1,2 @@
+"apply_operator.ml": camlp4rf, use_camlp4
+"lambda_quot.ml": camlp4rf, use_camlp4_full
