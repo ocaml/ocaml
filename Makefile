@@ -261,11 +261,11 @@ install: FORCE
 	for i in $(OTHERLIBRARIES); do \
           (cd otherlibs/$$i; $(MAKE) install) || exit $$?; \
         done
-	-cd ocamldoc; $(MAKE) install
+#	- cd ocamldoc; $(MAKE) install
 	if test -f ocamlopt; then $(MAKE) installopt; else :; fi
-	- cd camlp4; $(MAKE) install BINDIR=$(BINDIR) LIBDIR=$(LIBDIR) MANDIR=$(MANDIR)
-	if test -f debugger/ocamldebug; then (cd debugger; $(MAKE) install); \
-	   else :; fi
+#	- cd camlp4; $(MAKE) install BINDIR=$(BINDIR) LIBDIR=$(LIBDIR) MANDIR=$(MANDIR)
+#	if test -f debugger/ocamldebug; then (cd debugger; $(MAKE) install); \
+#	   else :; fi
 	cp config/Makefile $(LIBDIR)/Makefile.config
 
 # Installation of the native-code compiler
