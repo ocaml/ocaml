@@ -1,4 +1,5 @@
 #!/bin/sh
+# $Id$
 set -ex
 cd `dirname $0`/..
 OCAMLBUILD_PARTIAL="true"

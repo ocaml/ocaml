@@ -1,4 +1,5 @@
 #!/bin/sh
+# $Id$
 
 ######################################
 ######### Copied from build/install.sh

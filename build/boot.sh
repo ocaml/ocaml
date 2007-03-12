@@ -1,4 +1,5 @@
 #!/bin/sh
+# $Id$
 cd `dirname $0`/..
 set -ex
 ./boot/ocamlrun boot/myocamlbuild.boot boot/stdlib.cma boot/std_exit.cmo
