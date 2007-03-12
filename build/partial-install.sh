@@ -16,6 +16,7 @@ rm -f "$not_installed"
 
 wontinstall() {
   echo "$1" >> "$not_installed"
+  echo "  don't install $1"
 }
 
 installbin() {
@@ -138,26 +139,27 @@ installlibdir camlp4lib.$A camlp4lib.p.$A $CAMLP4DIR
 cd ..
 
 echo "Installing ocamlbuild..."
-
-installbin ocamlbuild/ocamlbuild.byte$EXE $BINDIR/ocamlbuild.byte$EXE
-installbin ocamlbuild/ocamlbuild.native$EXE $BINDIR/ocamlbuild.native$EXE
-installbestbin ocamlbuild/ocamlbuild.native$EXE ocamlbuild/ocamlbuild.byte$EXE $BINDIR/ocamlbuild$EXE
+cd ocamlbuild
+installbin ocamlbuild.byte$EXE $BINDIR/ocamlbuild.byte$EXE
+installbin ocamlbuild.native$EXE $BINDIR/ocamlbuild.native$EXE
+installbestbin ocamlbuild.native$EXE ocamlbuild.byte$EXE $BINDIR/ocamlbuild$EXE
 
 installlibdir \
-  ocamlbuild/ocamlbuildlib.$A ocamlbuild/ocamlbuildlib.p.$A \
+  ocamlbuildlib.$A ocamlbuildlib.p.$A \
   $LIBDIR/ocamlbuild
 
 installdir \
-  ocamlbuild/ocamlbuildlib.cmxa ocamlbuild/ocamlbuildlibp.cmxa\
-  ocamlbuild/ocamlbuildlib.cma \
-  ocamlbuild/ocamlbuild_plugin.cmi \
-  ocamlbuild/ocamlbuild_pack.cmi \
-  ocamlbuild/ocamlbuild.cmo \
-  ocamlbuild/ocamlbuild.cmx \
-  ocamlbuild/ocamlbuild.$O \
-  ocamlbuild/ocamlbuild.p.cmx \
-  ocamlbuild/ocamlbuild.p.$O \
+  ocamlbuildlib.cmxa ocamlbuildlib.p.cmxa \
+  ocamlbuildlib.cma \
+  ocamlbuild_plugin.cmi \
+  ocamlbuild_pack.cmi \
+  ocamlbuild.cmo \
+  ocamlbuild.cmx \
+  ocamlbuild.$O \
+  ocamlbuild.p.cmx \
+  ocamlbuild.p.$O \
   $LIBDIR/ocamlbuild
+cd ..
 
 installdir \
   ../ocamlbuild/man/ocamlbuild.1 \
