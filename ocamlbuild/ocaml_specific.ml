@@ -334,10 +334,16 @@ ocaml_lib ~extern:true "nums";;
 ocaml_lib ~extern:true "dbm";;
 ocaml_lib ~extern:true "graphics";;
 ocaml_lib ~extern:true ~dir:"+labltk" "labltk";;
-ocaml_lib ~extern:true ~dir:"+camlp4" ~tag_name:"use_camlp4" "camlp4lib";;
-ocaml_lib ~extern:true ~dir:"+camlp4" ~tag_name:"use_old_camlp4" "camlp4";;
 ocaml_lib ~extern:true ~dir:"+ocamldoc" "ocamldoc";;
 ocaml_lib ~extern:true ~dir:"+ocamlbuild" "ocamlbuild";;
+
+ocaml_lib ~extern:true ~dir:"+camlp4" ~tag_name:"use_camlp4" "camlp4lib";;
+ocaml_lib ~extern:true ~dir:"+camlp4" ~tag_name:"use_old_camlp4" "camlp4";;
+ocaml_lib ~extern:true ~dir:"+camlp4" ~tag_name:"use_camlp4_full" "camlp4fulllib";;
+flag ["ocaml"; "compile"; "use_camlp4_full"]
+     (S[A"-I"; A"+camlp4/Camlp4Parsers";
+        A"-I"; A"+camlp4/Camlp4Printers";
+        A"-I"; A"+camlp4/Camlp4Filters"]);;
 
 flag ["ocaml"; "debug"; "compile"; "byte"] (A "-g");;
 flag ["ocaml"; "debug"; "link"; "byte"; "program"] (A "-g");;

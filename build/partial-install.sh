@@ -122,20 +122,16 @@ for dir in Camlp4Parsers Camlp4Printers Camlp4Filters Camlp4Top; do
   installdir     \
     $dir/*.cm*   \
     $dir/*.$O    \
-    $dir/*.p.$O  \
     $CAMLP4DIR/$dir
 done
 installdir \
   camlp4lib.cma camlp4lib.cmxa Camlp4.cmi \
-  camlp4o.cma \
-  camlp4of.cma \
-  camlp4oof.cma \
-  camlp4orf.cma \
-  camlp4r.cma \
-  camlp4rf.cma \
-  Camlp4Bin.cm[iox] Camlp4Bin.$O Camlp4Bin.p.$O Camlp4Top.cm[io] \
+  camlp4fulllib.cma camlp4fulllib.cmxa \
+  camlp4o.cma camlp4of.cma camlp4oof.cma \
+  camlp4orf.cma camlp4r.cma camlp4rf.cma \
+  Camlp4Bin.cm[iox] Camlp4Bin.$O Camlp4Top.cm[io] \
   $CAMLP4DIR
-installlibdir camlp4lib.$A camlp4lib.p.$A $CAMLP4DIR
+installlibdir camlp4lib.$A camlp4fulllib.$A $CAMLP4DIR
 cd ..
 
 echo "Installing ocamlbuild..."
