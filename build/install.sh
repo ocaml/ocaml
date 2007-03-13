@@ -122,6 +122,7 @@ if [ "x$EXE" = "x.exe" ]; then
 fi
 
 installdir otherlibs/"$WIN32"unix/unixsupport.h \
+           otherlibs/bigarray/bigarray.h \
            $LIBDIR/caml
 
 installdir yacc/ocamlyacc byterun/ocamlrun $BINDIR
