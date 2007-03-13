@@ -22,18 +22,18 @@ and nativecc_rpath = "%%NATIVECCRPATH%%"
 and mksharedlib_rpath = "%%MKSHAREDLIBRPATH%%"
 and ranlib = "%%RANLIB%%"
 
-let bytecode_objs = ref []  (* .cmo,.cma,.ml,.mli files to pass to ocamlc *)
-and native_objs = ref []    (* .cmx,.cmxa,.ml,.mli files to pass to ocamlopt *)
+let bytecode_objs = ref []  (* .cmo,.cma,.ml,.mli files to pass to jocamlc *)
+and native_objs = ref []    (* .cmx,.cmxa,.ml,.mli files to pass to jocamlopt *)
 and c_objs = ref []         (* .o, .a files to pass to mksharedlib and ar *)
-and caml_libs = ref []      (* -cclib to pass to ocamlc, ocamlopt *)
-and caml_opts = ref []      (* -ccopt to pass to ocamlc, ocamlopt *)
+and caml_libs = ref []      (* -cclib to pass to jocamlc, jocamlopt *)
+and caml_opts = ref []      (* -ccopt to pass to jocamlc, jocamlopt *)
 and dynlink = ref supports_shared_libraries
 and failsafe = ref false    (* whether to fall back on static build only *)
-and c_libs = ref []         (* libs to pass to mksharedlib and ocamlc -cclib *)
-and c_opts = ref []      (* options to pass to mksharedlib and ocamlc -ccopt *)
+and c_libs = ref []         (* libs to pass to mksharedlib and jocamlc -cclib *)
+and c_opts = ref []      (* options to pass to mksharedlib and jocamlc -ccopt *)
 and ld_opts = ref []        (* options to pass only to the linker *)
-and ocamlc = ref (Filename.concat bindir "ocamlc")
-and ocamlopt = ref (Filename.concat bindir "ocamlopt")
+and jocamlc = ref (Filename.concat bindir "jocamlc")
+and jocamlopt = ref (Filename.concat bindir "jocamlopt")
 and output = ref "a"        (* Output name for Caml part of library *)
 and output_c = ref ""       (* Output name for C part of library *)
 and rpath = ref []          (* rpath options *)
@@ -50,7 +50,7 @@ let chop_suffix = Filename.chop_suffix
 exception Bad_argument of string
 
 let print_version () =
-  printf "ocamlmklib, version %s\n" Sys.ocaml_version;
+  printf "jocamlmklib, version %s\n" Sys.ocaml_version;
   exit 0;
 ;;
 
@@ -93,10 +93,10 @@ let parse_arguments argv =
      (c_opts := s :: !c_opts;
       let l = chop_prefix s "-L" in
       if not (Filename.is_relative l) then rpath := l :: !rpath)
-    else if s = "-ocamlc" then
-      ocamlc := next_arg ()
-    else if s = "-ocamlopt" then
-      ocamlopt := next_arg ()
+    else if s = "-ocamlc" || s = "-jocamlc" then
+      jocamlc := next_arg ()
+    else if s = "-ocamlopt" || s = "-jocamlopt" then
+      jocamlopt := next_arg ()
     else if s = "-o" then
       output := next_arg()
     else if s = "-oc" then
@@ -135,20 +135,22 @@ let parse_arguments argv =
   if !output_c = "" then output_c := !output
 
 let usage = "\
-Usage: ocamlmklib [options] <.cmo|.cma|.cmx|.cmxa|.ml|.mli|.o|.a files>
+Usage: jocamlmklib [options] <.cmo|.cma|.cmx|.cmxa|.ml|.mli|.o|.a files>
 Options are:
-  -cclib <lib>   C library passed to ocamlc -a or ocamlopt -a only
-  -ccopt <opt>   C option passed to ocamlc -a or ocamlopt -a only
+  -cclib <lib>   C library passed to jocamlc -a or jocamlopt -a only
+  -ccopt <opt>   C option passed to jocamlc -a or jocamlopt -a only
   -custom        disable dynamic loading
   -dllpath <dir> Add <dir> to the run-time search path for DLLs
   -I <dir>       Add <dir> to the path searched for Caml object files
+  -jocamlc <cmd>  Use <cmd> in place of \"jocamlc\"
+  -jocamlopt <cmd> Use <cmd> in place of \"jocamlopt\"
   -failsafe      fall back to static linking if DLL construction failed
   -ldopt <opt>   C option passed to the shared linker only
   -linkall       Build Caml archive with link-all behavior
   -l<lib>        Specify a dependent C library
   -L<dir>        Add <dir> to the path searched for C libraries
-  -ocamlc <cmd>  Use <cmd> in place of \"ocamlc\"
-  -ocamlopt <cmd> Use <cmd> in place of \"ocamlopt\"
+  -ocamlc <cmd>  Same as -jocamlc
+  -ocamlopt <cmd>  Same as -jocamlopt
   -o <name>      Generated Caml library is named <name>.cma or <name>.cmxa
   -oc <name>     Generated C library is named dll<name>.so or lib<name>.a
   -rpath <dir>   Same as -dllpath <dir>
@@ -225,7 +227,7 @@ let build_libs () =
   if !bytecode_objs <> [] then
     scommand
       (sprintf "%s -a %s -o %s.cma %s %s -dllib -l%s -cclib -l%s %s %s %s %s"
-                  !ocamlc
+                  !jocamlc
                   (if !dynlink then "" else "-custom")
                   !output
                   (String.concat " " !caml_opts)
@@ -239,7 +241,7 @@ let build_libs () =
   if !native_objs <> [] then
     scommand
       (sprintf "%s -a -o %s.cmxa %s %s -cclib -l%s %s %s %s %s"
-                  !ocamlopt
+                  !jocamlopt
                   !output
                   (String.concat " " !caml_opts)
                   (String.concat " " !native_objs)

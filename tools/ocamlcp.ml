@@ -35,10 +35,10 @@ let process_file filename =
   compargs := (Filename.quote filename) :: !compargs
 ;;
 
-let usage = "Usage: ocamlcp <options> <files>\noptions are:"
+let usage = "Usage: jocamlcp <options> <files>\noptions are:"
 
 let incompatible o =
-  fprintf stderr "ocamlcp: profiling is incompatible with the %s option\n" o;
+  fprintf stderr "jocamlcp: profiling is incompatible with the %s option\n" o;
   exit 2
 
 module Options = Main_args.Make_options (struct
@@ -108,15 +108,15 @@ let optlist =
 in
 Arg.parse optlist process_file usage;
 if !with_impl && !with_intf then begin
-  fprintf stderr "ocamlcp cannot deal with both \"-impl\" and \"-intf\"\n";
+  fprintf stderr "jocamlcp cannot deal with both \"-impl\" and \"-intf\"\n";
   fprintf stderr "please compile interfaces and implementations separately\n";
   exit 2;
 end else if !with_impl && !with_mli then begin
-  fprintf stderr "ocamlcp cannot deal with both \"-impl\" and .mli files\n";
+  fprintf stderr "jocamlcp cannot deal with both \"-impl\" and .mli files\n";
   fprintf stderr "please compile interfaces and implementations separately\n";
   exit 2;
 end else if !with_intf && !with_ml then begin
-  fprintf stderr "ocamlcp cannot deal with both \"-intf\" and .ml files\n";
+  fprintf stderr "jocamlcp cannot deal with both \"-intf\" and .ml files\n";
   fprintf stderr "please compile interfaces and implementations separately\n";
   exit 2;
 end;
@@ -124,7 +124,7 @@ if !with_impl then profargs := "-impl" :: !profargs;
 if !with_intf then profargs := "-intf" :: !profargs;
 let status =
   Sys.command
-    (Printf.sprintf "ocamlc -pp \"ocamlprof -instrument %s\" %s %s"
+    (Printf.sprintf "jocamlc -pp \"jocamlprof -instrument %s\" %s %s"
         (String.concat " " (List.rev !profargs))
         (if !make_archive then "" else "profiling.cmo")
         (String.concat " " (List.rev !compargs)))

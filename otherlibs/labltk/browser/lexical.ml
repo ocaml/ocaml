@@ -60,6 +60,10 @@ let tag ?(start=tstart) ?(stop=tend) tw =
       | LAZY
       | MATCH
       | OR
+(*> JOCAML *)
+      | REPLY
+      | SPAWN
+(*< JOCAML *)
       | THEN
       | TO
       | TRY
@@ -72,6 +76,9 @@ let tag ?(start=tstart) ?(stop=tend) tw =
       | BAR
       | CLASS
       | CONSTRAINT
+(*> JOCAML *)
+      | DEF
+(*< JOCAML *)
       | EXCEPTION
       | EXTERNAL
       | FUN
