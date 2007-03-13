@@ -143,7 +143,7 @@ value rec delete_rule_in_level_list entry symbols levs =
 
 
 value delete_rule entry sl =
-  try match entry.edesc with
+  match entry.edesc with
   [ Dlevels levs ->
       let levs = delete_rule_in_level_list entry sl levs in
       do {
@@ -158,10 +158,6 @@ value delete_rule entry sl =
             do { entry.econtinue := f; f lev bp a c strm }
       }
   | Dparser _ -> () ]
-  with
-  [ Not_found as e ->
-    let () = Format.eprintf "DELETE_RULE: Not_found@." in
-    raise e ]
 ;
 
 end;
