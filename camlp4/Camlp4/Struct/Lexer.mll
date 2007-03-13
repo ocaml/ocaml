@@ -272,9 +272,10 @@ module Make (Token : Sig.Camlp4Token)
           [^ '\010' '\013'] * newline
       { let inum = int_of_string num
         in update_loc c name inum true 0; LINE_DIRECTIVE(inum, name)            }
-    | ( "#"  | "`"  | "'"  | "("  | ")"  | ","  | "."  | ".." | ":"  | "::"
-      | ":=" | ":>" | ":]" | ";"  | ";;" | "["  | "[|" | "[<" | "[:"
-      | "]"  | "{"  | "{<" | "|]" | ">]" | "}"  | ">}" | "_" ) as x  { SYMBOL x }
+    | ( "#"  | "`"  | "'"  | ","  | "."  | ".." | ":"  | "::"
+      | ":=" | ":>" | ";"  | ";;" | "_"  | "[<" | "{<" | ">}" | ">]"
+      | ['[' '{' '(']  ['|' ':']?
+      | ['|' ':']? [']' '}' ')'] ) as x  { SYMBOL x }
 
     | '$' { if quotations c
             then with_curr_loc dollar (shift 1 c)
