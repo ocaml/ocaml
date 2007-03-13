@@ -205,7 +205,7 @@ installdir \
  stdlib/lexing.cmx stdlib/lexing.p.cmx stdlib/lexing.$O stdlib/lexing.p.$O \
  stdlib/list.cmx stdlib/list.p.cmx stdlib/list.$O stdlib/list.p.$O \
  stdlib/listLabels.cmx stdlib/listLabels.p.cmx stdlib/listLabels.$O stdlib/listLabels.p.$O \
- stdlib/ma.p.cmx stdlib/map.p.cmx stdlib/ma.p.$O stdlib/map.p.$O \
+ stdlib/map.cmx stdlib/map.p.cmx stdlib/map.$O stdlib/map.p.$O \
  stdlib/marshal.cmx stdlib/marshal.p.cmx stdlib/marshal.$O stdlib/marshal.p.$O \
  stdlib/moreLabels.cmx stdlib/moreLabels.p.cmx stdlib/moreLabels.$O stdlib/moreLabels.p.$O \
  stdlib/nativeint.cmx stdlib/nativeint.p.cmx stdlib/nativeint.$O stdlib/nativeint.p.$O \
