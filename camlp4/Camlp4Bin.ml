@@ -69,7 +69,7 @@ value rewrite_and_load n x =
     | ("Parsers"|"", "pa_extend.cmo" | "pa_extend_m.cmo" | "g" | "grammar" | "camlp4grammarparser.cmo") -> load [pa_r; pa_g]
     | ("Parsers"|"", "pa_macro.cmo"  | "m"  | "macro" | "camlp4macroparser.cmo") -> load [pa_r; pa_m]
     | ("Parsers"|"", "q" | "camlp4quotationexpander.cmo") -> load [pa_r; pa_qb; pa_q]
-    | ("Parsers"|"", "q_MLast.cmo" | "rq" | "camlp4ocamlrevisedquotationexpander.cmo") -> load [pa_r; pa_qb; pa_rq]
+    | ("Parsers"|"", "q_mlast.cmo" | "rq" | "camlp4ocamlrevisedquotationexpander.cmo") -> load [pa_r; pa_qb; pa_rq]
     | ("Parsers"|"", "oq" | "camlp4ocamloriginalquotationexpander.cmo") -> load [pa_r; pa_o; pa_qb; pa_oq]
     | ("Parsers"|"", "rf") -> load [pa_r; pa_rp; pa_qb; pa_q; pa_g; pa_l; pa_m]
     | ("Parsers"|"", "of") -> load [pa_r; pa_o; pa_rp; pa_op; pa_qb; pa_rq; pa_g; pa_l; pa_m]
