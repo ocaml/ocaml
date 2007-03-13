@@ -13763,25 +13763,20 @@ module Struct =
                       delete_rule_in_suffix entry symbols levs
                   | _ -> delete_rule_in_prefix entry symbols levs
                 let delete_rule entry sl =
-                  try
-                    match entry.edesc with
-                    | Dlevels levs ->
-                        let levs = delete_rule_in_level_list entry sl levs
-                        in
-                          (entry.edesc <- Dlevels levs;
-                           entry.estart <-
-                             (fun lev c strm ->
-                                let f = Parser.start_parser_of_entry entry
-                                in (entry.estart <- f; f lev c strm));
-                           entry.econtinue <-
-                             (fun lev bp a c strm ->
-                                let f = Parser.continue_parser_of_entry entry
-                                in (entry.econtinue <- f; f lev bp a c strm)))
-                    | Dparser _ -> ()
-                  with
-                  | (Not_found as e) ->
-                      let () = Format.eprintf "DELETE_RULE: Not_found@."
-                      in raise e
+                  match entry.edesc with
+                  | Dlevels levs ->
+                      let levs = delete_rule_in_level_list entry sl levs
+                      in
+                        (entry.edesc <- Dlevels levs;
+                         entry.estart <-
+                           (fun lev c strm ->
+                              let f = Parser.start_parser_of_entry entry
+                              in (entry.estart <- f; f lev c strm));
+                         entry.econtinue <-
+                           (fun lev bp a c strm ->
+                              let f = Parser.continue_parser_of_entry entry
+                              in (entry.econtinue <- f; f lev bp a c strm)))
+                  | Dparser _ -> ()
               end
           end
         module Fold :
