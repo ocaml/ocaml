@@ -1,3 +1,18 @@
+2007-03-13  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Fix a bug in expand_module.
+
+	* ocaml_utils.ml: Handle correctly pathnames instead of just basenames.
+
+2007-03-13  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Use sys_file_exists instead of Sys.file_exists.
+
+	* my_unix.ml: Since Sys.file_exists don't treat well captial letters.
+	* my_std.ml: Fix a bug.
+	* pathname.ml: Here is a an exception to the previous rule so, put a
+	comment.
+
 2007-03-11  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
 
 	Fix the List.union order.

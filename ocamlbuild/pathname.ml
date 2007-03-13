@@ -103,6 +103,7 @@ let clean_up_links entry =
     let pathname = in_source_dir (path/name) in
     if link_to_dir pathname !Options.build_dir then
       let z = readlink pathname in
+      (* Here is one exception where one can use Sys.file_exists directly *)
       (if not (Sys.file_exists z) then
         Shell.rm pathname; false)
     else true

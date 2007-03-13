@@ -216,10 +216,12 @@ let sys_readdir, reset_readdir_cache, reset_readdir_cache_for =
 let sys_file_exists x =
   let dirname = Filename.dirname x in
   let basename = Filename.basename x in
-  if basename = Filename.current_dir_name then true else
   match sys_readdir dirname with
   | Outcome.Bad _ -> false
-  | Outcome.Good a -> try Array.iter (fun x -> if x = basename then raise Exit) a; false with Exit -> true
+  | Outcome.Good a ->
+      if basename = Filename.current_dir_name then true else
+      try Array.iter (fun x -> if x = basename then raise Exit) a; false
+      with Exit -> true
 
 let sys_command =
   match Sys.os_type with
