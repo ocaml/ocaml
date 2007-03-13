@@ -114,14 +114,19 @@ for i in $PUBLIC_INCLUDES; do
 done
 cd ..
 
-installdir otherlibs/win32unix/unixsupport.h otherlibs/unix/unixsupport.h \
+WIN32=""
+if [ "x$EXE" = "x.exe" ]; then
+  installbin win32caml/ocamlwin.exe $PREFIX/OCamlWin.exe
+  installdir byterun/ocamlrun.dll $BINDIR
+  WIN32=win32
+fi
+
+installdir otherlibs/"$WIN32"unix/unixsupport.h \
            $LIBDIR/caml
 
-installdir byterun/ocamlrun.dll yacc/ocamlyacc byterun/ocamlrun $BINDIR
+installdir yacc/ocamlyacc byterun/ocamlrun $BINDIR
 
 installdir byterun/ld.conf $LIBDIR
-
-installbin win32caml/ocamlwin.exe $PREFIX/OCamlWin.exe
 
 cd _build
 
@@ -261,18 +266,16 @@ installdir \
   otherlibs/bigarray/bigarray.cma \
   otherlibs/dbm/dbm.cma \
   otherlibs/dynlink/dynlink.cma \
-  otherlibs/graph/graphics.cma otherlibs/win32/graph/graphics.cma \
+  otherlibs/"$WIN32"graph/graphics.cma \
   otherlibs/num/nums.cma \
   otherlibs/str/str.cma \
-  otherlibs/unix/unix.cma otherlibs/win32unix/unix.cma \
-  otherlibs/bigarray/bigarray.cmxa otherlibs/bigarray/bigarray.p.cmxa \
-  otherlibs/dbm/dbm.cmxa otherlibs/dbm/dbm.p.cmxa \
-  otherlibs/graph/graphics.cmxa otherlibs/graph/graphics.p.cmxa \
-  otherlibs/win32/graph/graphics.cmxa otherlibs/win32graph/graphics.p.cmxa \
-  otherlibs/num/nums.cmxa otherlibs/num/nums.p.cmxa \
-  otherlibs/str/str.cmxa otherlibs/str/str.p.cmxa \
-  otherlibs/unix/unix.cmxa otherlibs/unix/unix.p.cmxa \
-  otherlibs/win32unix/unix.cmxa otherlibs/win32unix/unix.p.cmxa \
+  otherlibs/"$WIN32"unix/unix.cma \
+  otherlibs/bigarray/bigarray.cmxa \
+  otherlibs/dbm/dbm.cmxa \
+  otherlibs/"$WIN32"graph/graphics.cmxa \
+  otherlibs/num/nums.cmxa \
+  otherlibs/str/str.cmxa \
+  otherlibs/"$WIN32"unix/unix.cmxa \
   toplevel/toplevellib.cma \
   otherlibs/systhreads/thread.mli \
   otherlibs/systhreads/mutex.mli \
@@ -331,7 +334,6 @@ installdir \
 installdir \
   otherlibs/systhreads/threads.cma \
   otherlibs/systhreads/threads.cmxa \
-  otherlibs/systhreads/threads.p.cmxa \
   otherlibs/systhreads/thread.cmi \
   otherlibs/systhreads/mutex.cmi \
   otherlibs/systhreads/condition.cmi \
@@ -342,13 +344,11 @@ installdir \
 installdir \
   otherlibs/bigarray/dllbigarray$EXT_DLL \
   otherlibs/dbm/dllmldbm$EXT_DLL \
-  otherlibs/graph/dllgraphics$EXT_DLL \
-  otherlibs/win32graph/dllgraphics$EXT_DLL \
+  otherlibs/"$WIN32"graph/dllgraphics$EXT_DLL \
   otherlibs/num/dllnums$EXT_DLL \
   otherlibs/str/dllstr$EXT_DLL \
   otherlibs/systhreads/dllthreads$EXT_DLL \
-  otherlibs/unix/dllunix$EXT_DLL \
-  otherlibs/win32unix/dllunix$EXT_DLL \
+  otherlibs/"$WIN32"unix/dllunix$EXT_DLL \
   otherlibs/threads/dllvmthreads$EXT_DLL \
   otherlibs/labltk/support/dlllabltk$EXT_DLL \
   otherlibs/labltk/tkanim/dlltkanim$EXT_DLL \
@@ -384,24 +384,14 @@ installlibdir \
   $LIBDIR/labltk
 
 installlibdir \
-  otherlibs/bigarray/libbigarray.$A otherlibs/bigarray/libbigarray.p.$A \
-  otherlibs/dbm/libmldbm.$A otherlibs/dbm/libmldbm.p.$A \
-  otherlibs/graph/libgraphics.$A \
-  otherlibs/graph/libgraphics.p.$A \
-  otherlibs/win32graph/libgraphics.$A \
-  otherlibs/win32graph/libgraphics.p.$A \
+  otherlibs/bigarray/libbigarray.$A \
+  otherlibs/dbm/libmldbm.$A \
+  otherlibs/"$WIN32"graph/libgraphics.$A \
   otherlibs/num/libnums.$A \
-  otherlibs/num/libnums.p.$A \
   otherlibs/str/libstr.$A \
-  otherlibs/str/libstr.p.$A \
   otherlibs/systhreads/libthreads.$A \
-  otherlibs/systhreads/libthreads.p.$A \
   otherlibs/systhreads/libthreadsnat.$A \
-  otherlibs/systhreads/libthreadsnat.p.$A \
-  otherlibs/unix/libunix.$A \
-  otherlibs/unix/libunix.p.$A \
-  otherlibs/win32unix/libunix.$A \
-  otherlibs/win32unix/libunix.p.$A \
+  otherlibs/"$WIN32"unix/libunix.$A \
   $LIBDIR
 
 echo "Installing object files and interfaces..."
@@ -413,7 +403,6 @@ installdir \
   toplevel/topmain.cmi \
   typing/outcometree.cmi \
   otherlibs/graph/graphicsX11.cmi \
-  otherlibs/win32graph/graphicsX11.cmi \
   otherlibs/dynlink/dynlink.cmi \
   otherlibs/num/arith_status.cmi \
   otherlibs/num/big_int.cmi \
@@ -422,103 +411,50 @@ installdir \
   otherlibs/num/ratio.cmi \
   otherlibs/bigarray/bigarray.cmi \
   otherlibs/dbm/dbm.cmi \
-  otherlibs/graph/graphics.cmi \
-  otherlibs/win32graph/graphics.cmi \
+  otherlibs/"$WIN32"graph/graphics.cmi \
   otherlibs/str/str.cmi \
-  otherlibs/unix/unix.cmi \
-  otherlibs/win32unix/unix.cmi \
-  otherlibs/unix/unixLabels.cmi \
-  otherlibs/win32unix/unixLabels.cmi \
+  otherlibs/"$WIN32"unix/unix.cmi \
+  otherlibs/"$WIN32"unix/unixLabels.cmi \
   otherlibs/num/arith_flags.cmx \
   otherlibs/num/arith_flags.$O \
-  otherlibs/num/arith_flags.p.cmx \
-  otherlibs/num/arith_flags.p.$O \
   otherlibs/num/int_misc.cmx \
-  otherlibs/num/int_misc.p.$O \
-  otherlibs/num/int_misc.cmx \
-  otherlibs/num/int_misc.p.$O \
+  otherlibs/num/int_misc.$O \
   otherlibs/num/arith_status.cmx \
-  otherlibs/num/arith_status.p.$O \
-  otherlibs/num/arith_status.cmx \
-  otherlibs/num/arith_status.p.$O \
+  otherlibs/num/arith_status.$O \
   otherlibs/num/big_int.cmx \
-  otherlibs/num/big_int.p.$O \
-  otherlibs/num/big_int.cmx \
-  otherlibs/num/big_int.p.$O \
+  otherlibs/num/big_int.$O \
   otherlibs/num/nat.cmx \
-  otherlibs/num/nat.p.$O \
-  otherlibs/num/nat.cmx \
-  otherlibs/num/nat.p.$O \
+  otherlibs/num/nat.$O \
   otherlibs/num/num.cmx \
-  otherlibs/num/num.p.$O \
-  otherlibs/num/num.cmx \
-  otherlibs/num/num.p.$O \
+  otherlibs/num/num.$O \
   otherlibs/num/ratio.cmx \
-  otherlibs/num/ratio.p.$O \
-  otherlibs/num/ratio.cmx \
-  otherlibs/num/ratio.p.$O \
+  otherlibs/num/ratio.$O \
   otherlibs/bigarray/bigarray.cmx \
-  otherlibs/bigarray/bigarray.p.$O \
-  otherlibs/bigarray/bigarray.cmx \
-  otherlibs/bigarray/bigarray.p.$O \
+  otherlibs/bigarray/bigarray.$O \
   otherlibs/dbm/dbm.cmx \
-  otherlibs/dbm/dbm.p.$O \
-  otherlibs/dbm/dbm.cmx \
-  otherlibs/dbm/dbm.p.$O \
-  otherlibs/graph/graphics.cmx \
-  otherlibs/graph/graphics.$O \
-  otherlibs/graph/graphics.p.cmx \
-  otherlibs/graph/graphics.p.$O \
-  otherlibs/win32graph/graphics.cmx \
-  otherlibs/win32graph/graphics.$O \
-  otherlibs/win32graph/graphics.p.cmx \
-  otherlibs/win32graph/graphics.p.$O \
+  otherlibs/dbm/dbm.$O \
+  otherlibs/"$WIN32"graph/graphics.cmx \
+  otherlibs/"$WIN32"graph/graphics.$O \
   otherlibs/str/str.cmx \
-  otherlibs/str/str.p.$O \
-  otherlibs/str/str.cmx \
-  otherlibs/str/str.p.$O \
-  otherlibs/unix/unix.cmx \
-  otherlibs/unix/unix.$O \
-  otherlibs/unix/unix.p.cmx \
-  otherlibs/unix/unix.p.$O \
-  otherlibs/win32unix/unix.cmx \
-  otherlibs/win32unix/unix.$O \
-  otherlibs/win32unix/unix.p.cmx \
-  otherlibs/win32unix/unix.p.$O \
-  otherlibs/unix/unixLabels.cmx \
-  otherlibs/unix/unixLabels.$O \
-  otherlibs/unix/unixLabels.p.cmx \
-  otherlibs/unix/unixLabels.p.$O \
-  otherlibs/win32unix/unixLabels.cmx \
-  otherlibs/win32unix/unixLabels.$O \
-  otherlibs/win32unix/unixLabels.p.cmx \
-  otherlibs/win32unix/unixLabels.p.$O \
+  otherlibs/str/str.$O \
+  otherlibs/"$WIN32"unix/unix.cmx \
+  otherlibs/"$WIN32"unix/unix.$O \
+  otherlibs/"$WIN32"unix/unixLabels.cmx \
+  otherlibs/"$WIN32"unix/unixLabels.$O \
   $LIBDIR
 
 installlibdir \
   otherlibs/bigarray/bigarray.$A \
-  otherlibs/bigarray/bigarray.p.$A \
   otherlibs/dbm/dbm.$A \
-  otherlibs/dbm/dbm.p.$A \
-  otherlibs/graph/graphics.$A \
-  otherlibs/graph/graphics.p.$A \
-  otherlibs/win32graph/graphics.$A \
-  otherlibs/win32graph/graphics.p.$A \
+  otherlibs/"$WIN32"graph/graphics.$A \
   otherlibs/num/nums.$A \
-  otherlibs/num/nums.p.$A \
   otherlibs/str/str.$A \
-  otherlibs/str/str.p.$A \
-  otherlibs/unix/unix.$A \
-  otherlibs/unix/unix.p.$A \
-  otherlibs/win32unix/unix.$A \
-  otherlibs/win32unix/unix.p.$A \
+  otherlibs/"$WIN32"unix/unix.$A \
   stdlib/stdlib.$A \
-  stdlib/stdlib.p.$A \
   $LIBDIR
 
 installlibdir \
   otherlibs/systhreads/threads.$A \
-  otherlibs/systhreads/threads.p.$A \
   $LIBDIR/threads
 
 echo "Installing manuals..."
@@ -531,7 +467,7 @@ installbin ocamldoc/ocamldoc.opt$EXE $BINDIR/ocamldoc.opt$EXE
 installdir \
   ../ocamldoc/ocamldoc.hva \
   ocamldoc/*.cmi \
-  ocamldoc/odoc_info.mli ocamldoc/odoc_infor.cm[ia] ocamldoc/odoc_info.cmxa \
+  ocamldoc/odoc_info.mli ocamldoc/odoc_info.cm[ia] ocamldoc/odoc_info.cmxa \
   ocamldoc/odoc_info.$A \
   $LIBDIR/ocamldoc
 
