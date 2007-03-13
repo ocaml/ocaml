@@ -14,6 +14,7 @@ cd `dirname $0`/..
 not_installed=$PWD/_build/not_installed
 
 rm -f "$not_installed"
+touch "$not_installed"
 
 wontinstall() {
   echo "$1" >> "$not_installed"
@@ -51,7 +52,9 @@ installlib() {
     dest="$2/`basename $1`"
     echo "  install library $dest"
     cp -f "$1" "$2"
-    ranlib "$dest"
+    if [ "$RANLIB" != "" ]; then
+      "$RANLIB" "$dest"
+    fi
   else
     wontinstall "$1"
   fi
@@ -142,19 +145,17 @@ installbin ocamlbuild.native$EXE $BINDIR/ocamlbuild.native$EXE
 installbestbin ocamlbuild.native$EXE ocamlbuild.byte$EXE $BINDIR/ocamlbuild$EXE
 
 installlibdir \
-  ocamlbuildlib.$A ocamlbuildlib.p.$A \
+  ocamlbuildlib.$A \
   $LIBDIR/ocamlbuild
 
 installdir \
-  ocamlbuildlib.cmxa ocamlbuildlib.p.cmxa \
+  ocamlbuildlib.cmxa \
   ocamlbuildlib.cma \
   ocamlbuild_plugin.cmi \
   ocamlbuild_pack.cmi \
   ocamlbuild.cmo \
   ocamlbuild.cmx \
   ocamlbuild.$O \
-  ocamlbuild.p.cmx \
-  ocamlbuild.p.$O \
   $LIBDIR/ocamlbuild
 cd ..
 
