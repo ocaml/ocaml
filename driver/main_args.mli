@@ -46,6 +46,7 @@ module Make_options (F :
       val _nojoin : unit -> unit
       val _thread : unit -> unit
       val _vmthread : unit -> unit
+      val _nothread : unit -> unit
       val _unsafe : unit -> unit
       val _use_prims : string -> unit
       val _use_runtime : string -> unit

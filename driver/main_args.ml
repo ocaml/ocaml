@@ -46,6 +46,7 @@ module Make_options (F :
      val _nojoin : unit -> unit
      val _thread : unit -> unit
      val _vmthread : unit -> unit
+     val _nothread : unit -> unit
      val _unsafe : unit -> unit
      val _use_prims : string -> unit
      val _use_runtime : string -> unit
@@ -105,6 +106,9 @@ struct
     "-nolabels", Arg.Unit F._nolabels, " Ignore non-optional labels in types";
     "-nostdlib", Arg.Unit F._nostdlib,
            " do not add default directory to the list of include directories";
+(*> JOCAML *)
+    "-nothread", Arg.Unit F._nothread, " Unset the thread support";
+(*< JOCAML *)    
     "-o", Arg.String F._o, "<file>  Set output file name to <file>";
     "-output-obj", Arg.Unit F._output_obj,
            " Output a C object file instead of an executable";
@@ -118,7 +122,7 @@ struct
     "-nojoin", Arg.Unit F._nojoin,
            " Be a ocaml compiler";
     "-thread", Arg.Unit F._thread,
-           " Generate code that supports the system threads library";
+           " Generate code that supports the system threads library (default)";
     "-unsafe", Arg.Unit F._unsafe,
            " No bounds checking on array and string access";
     "-use-runtime", Arg.String F._use_runtime,

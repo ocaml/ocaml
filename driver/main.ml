@@ -121,6 +121,7 @@ module Options = Main_args.Make_options (struct
   let _nojoin = set nojoin
   let _thread = set use_threads
   let _vmthread = set use_vmthreads
+  let _nothread = unset use_threads
   let _unsafe = set fast
   let _use_prims s = use_prims := s
   let _use_runtime s = use_runtime := s
