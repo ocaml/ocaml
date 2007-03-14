@@ -27,7 +27,7 @@
 \newcommand{\token}[1]{\texttt{#1}}
 \fi
 %%% warnings
-\def\stx@warning#1#2{\@ifundefined{stx@#1@silent}{\warning{#2}}{}}
+\def\stx@warning#1#2{\@ifundefined{stx@#1@silent}{\hva@warn{#2}}{}}
 \def\stx@silent#1{\def\csname stx@#1@silent\endcsname{}}
 %%% Do not warn about those
 %Not defined
@@ -66,7 +66,7 @@
 {{\@nostyle\@auxdowrite{\string\stx@exists\{#1\}}}%
 \gdef\csname stx@#1\endcsname{}\aname{#1}{#1}}
 {\@ifundefined{stx@#1@silent}
-{\warning{Redefinition of non-terminal '#1'}#1}
+{\hva@warn{Redefinition of non-terminal '#1'}#1}
 {\ref@anchor{#1}}}}
 %%%Change \@anchor and initial definition, for html only, of course!
 \ifhtml
