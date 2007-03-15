@@ -12,7 +12,6 @@
 
 (* $Id$ *)
 
-open Join_types
 
 type site
 
