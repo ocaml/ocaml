@@ -447,3 +447,19 @@ and reply_to_exn = Join_scheduler.reply_to_exn
 let raise_join_exit () = raise Join_misc.JoinExit
 
 let exn_global = Join_message.exn_global
+
+(****************************)
+(* Services, ie RPC by name *)
+(****************************)
+
+let as_space_id = Obj.magic
+
+let remote_service addr key =
+  Join_space.rid_from_addr addr, key
+
+let register_service key (f : 'a -> 'b) =
+  Join_space.register_service key f
+  
+let call_service (rspace_id, key) arg =
+  Join_space.call_service rspace_id key arg
+  

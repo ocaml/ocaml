@@ -218,8 +218,8 @@ install:
 	if test -f dlljoin.so; then cp dlljoin.so $(STUBLIBDIR)/dlljoin.so; fi
 	cp libjoin.a $(LIBDIR)/libjoin.a
 	cd $(LIBDIR); $(RANLIB) libjoin.a
-	cp join_prim.cmi join.cmi ns.cmi join.cma $(LIBDIR)/threads
-	cp join_prim.mli join.mli ns.mli join.cma $(LIBDIR)/threads
+	cp join_prim.cmi join.cmi ns.cmi join_test.cmi join.cma $(LIBDIR)/threads
+	cp join_prim.mli join.mli ns.mli join_test.mli join.cma $(LIBDIR)/threads
 
 
 installopt:

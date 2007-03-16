@@ -16,25 +16,17 @@ open Join_types
 open Printf
 (*DEBUG*)open Join_debug
 
-type site = space_id
-
 let local_addr = Join_misc.local_addr
+
+type site = space_id
 
 let here = Join_space.here
 
-(* RPC by name *)
-type service = Join_types.service
+let there addr = Join_space.rid_from_addr addr
 
-let remote_service addr key =
-  Join_space.rid_from_addr addr, key
-
-let register_service key (f : 'a -> 'b) =
-  Join_space.register_service key f
+let at_fail site (chan:unit channel) =
+  Join_space.at_fail site (Obj.magic chan : 'a async)
   
-let call_service (rspace_id, key) arg =
-  Join_space.call_service rspace_id key arg
-  
-
 
 let listen addr =
   try Join_space.listen addr
@@ -46,9 +38,6 @@ let connect fd = Join_space.connect fd
 
 let exit_hook = Join_scheduler.exit_hook
 
-let at_fail site (chan:unit channel) =
-  Join_space.at_fail site (Obj.magic chan : 'a async)
-  
 let flush_space = Join_space.flush_space
 
 let get_sockaddrs = Join_space.get_sockaddrs

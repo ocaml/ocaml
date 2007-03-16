@@ -63,3 +63,11 @@ val raise_join_exit : unit -> 'a
 
 (* Register an exception as a global one, compiler use *)
 val exn_global : (string * int * int) -> Obj.t -> unit
+
+
+(* Services provide RPC by name, library use only *)
+val as_space_id : Join.site ->  Join_types.space_id
+val remote_service : Unix.sockaddr -> string -> service
+val register_service : string -> ('a -> 'b) -> unit
+val call_service : service -> 'a -> 'b
+

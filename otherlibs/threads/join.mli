@@ -12,20 +12,22 @@
 
 (* $Id$ *)
 
-
-type site
-
+(* Convenience *)
 val local_addr : Unix.inet_addr
 
+
+(* Site identity *)
+type site
+
+(* here () returns the local site *)
 val here : unit -> site
 
+(* Get identity of the remote site listening on sockadrr *)
+val there : Unix.sockaddr -> site
 
-(* Services provide RPC by name *)
-type service 
+(* Register a channel to be sent to when site fails *)
+val at_fail : site -> unit channel -> unit
 
-val remote_service : Unix.sockaddr -> string -> service
-val register_service : string -> ('a -> 'b) -> unit
-val call_service : service -> 'a -> 'b
 
 
 (* start to listen for connections *)
@@ -39,9 +41,6 @@ val connect : Unix.file_descr -> unit
    work to achieve.
    This does not apply to program engaged in distribution. *)
 val exit_hook : unit -> unit
-
-(* register a channel to be sent to when site fails *)
-val at_fail : site -> unit channel -> unit
 
 (*
 (* Give message to distant sites a chance to leave *)
