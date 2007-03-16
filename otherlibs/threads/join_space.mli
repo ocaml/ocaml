@@ -35,7 +35,7 @@ val globalize :
 val localize : parameter -> 'a
 
 
-val here : unit -> space_id
+val here : space_id
 
 val remote_send_async :
     space_id ->

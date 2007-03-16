@@ -19,8 +19,8 @@ val local_addr : Unix.inet_addr
 (* Site identity *)
 type site
 
-(* here () returns the local site *)
-val here : unit -> site
+(* here returns the local site *)
+val here : site
 
 (* Get identity of the remote site listening on sockadrr *)
 val there : Unix.sockaddr -> site

@@ -840,7 +840,7 @@ and localize v = localize_rec local_space local_space.space_id v
 
 let listen addr = start_listener local_space addr
 
-let here () = get_id local_space
+let here = get_id local_space
 
 let do_connect space fd =
   let link = Join_link.create fd in

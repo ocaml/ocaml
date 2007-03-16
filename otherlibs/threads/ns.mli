@@ -12,21 +12,17 @@
 
 (* $Id$ *)
 
-(* convenience variable (same as Join.local_addr) *)
-val local_addr : Unix.inet_addr
-
 (* abstract type for the name service *)
 type t
 
 (* the local name service *)
-val local : t
+val here : t
 
 (* get remote name service *)
-val remote : Join.site -> t
+val of_site : Join.site -> t
 
-(* get remote name service by socket address,
-   shorthand for remote (Join.there addr) *)
-val connect : Unix.sockaddr -> t
+(* get remote name service by socket address *)
+val of_sockaddr : Unix.sockaddr -> t
 
 (* find value, raise Not_found when not present *)
 val lookup : t -> string -> 'a

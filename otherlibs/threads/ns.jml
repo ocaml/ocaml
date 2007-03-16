@@ -59,7 +59,7 @@ type t =
 
 let ns = { lookup = do_lookup ;  register = do_register ; }
 
-let local = ns
+let here = ns
   
 let name_service () = ns
 
@@ -67,13 +67,13 @@ let name_key = "name_zorglub"
 
 let () = Join_prim.register_service name_key name_service
 
-let remote site =
+let of_site site =
   let link =
     Join_prim.call_service (Join_prim.as_space_id site,name_key) () in
   (link : t)
 
 	
-let connect sockaddr = remote (Join.there sockaddr)
+let of_sockaddr sockaddr = of_site (Join.there sockaddr)
   
 let lookup {lookup=lookup} key = lookup key
 and register {register=register} key v = register (key, v)
