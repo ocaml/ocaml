@@ -625,6 +625,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
            "LIST0 STRING becomes LIST0 [ x = STRING -> x ]"))
     | _ -> () ];
 
+  Camlp4_config.antiquotations.val := True;
+
   EXTEND Gram
     GLOBAL: expr symbol;
     expr: AFTER "top"

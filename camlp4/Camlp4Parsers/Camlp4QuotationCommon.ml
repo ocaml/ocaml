@@ -131,14 +131,20 @@ module Make (Syntax : Sig.Camlp4Syntax)
 
   value add_quotation name entry mexpr mpatt =
     let entry_eoi = Gram.Entry.mk (Gram.Entry.name entry) in
+    let parse_quot_string entry loc s =
+      let q = Camlp4_config.antiquotations.val in
+      let () = Camlp4_config.antiquotations.val := True in
+      let res = Gram.parse_string entry loc s in
+      let () = Camlp4_config.antiquotations.val := q in
+      res in
     let expand_expr loc loc_name_opt s =
-      let ast = Gram.parse_string entry_eoi loc s in
+      let ast = parse_quot_string entry_eoi loc s in
       let () = MetaLoc.loc_name.val := loc_name_opt in
       let meta_ast = mexpr loc ast in
       let exp_ast = antiquot_expander#expr meta_ast in
       exp_ast in
     let expand_patt _loc loc_name_opt s =
-      let ast = Gram.parse_string entry_eoi _loc s in
+      let ast = parse_quot_string entry_eoi _loc s in
       let meta_ast = mpatt _loc ast in
       let exp_ast = antiquot_expander#patt meta_ast in
       match loc_name_opt with

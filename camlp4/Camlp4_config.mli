@@ -28,6 +28,7 @@ val program_name                 : string ref;;
 val unsafe                       : bool ref;;
 val verbose                      : bool ref;;
 val quotations                   : bool ref;;
+val antiquotations               : bool ref;;
 val constructors_arity           : bool ref;;
 val inter_phrases                : (string option) ref;;
 val current_input_file           : string ref;;

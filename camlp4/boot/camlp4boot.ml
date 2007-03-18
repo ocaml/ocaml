@@ -7627,13 +7627,18 @@ module Camlp4QuotationCommon =
           end
         let add_quotation name entry mexpr mpatt =
           let entry_eoi = Gram.Entry.mk (Gram.Entry.name entry) in
+          let parse_quot_string entry loc s =
+            let q = !Camlp4_config.antiquotations in
+            let () = Camlp4_config.antiquotations := true in
+            let res = Gram.parse_string entry loc s in
+            let () = Camlp4_config.antiquotations := q in res in
           let expand_expr loc loc_name_opt s =
-            let ast = Gram.parse_string entry_eoi loc s in
+            let ast = parse_quot_string entry_eoi loc s in
             let () = MetaLoc.loc_name := loc_name_opt in
             let meta_ast = mexpr loc ast in
             let exp_ast = antiquot_expander#expr meta_ast in exp_ast in
           let expand_patt _loc loc_name_opt s =
-            let ast = Gram.parse_string entry_eoi _loc s in
+            let ast = parse_quot_string entry_eoi _loc s in
             let meta_ast = mpatt _loc ast in
             let exp_ast = antiquot_expander#patt meta_ast
             in
@@ -9545,6 +9550,7 @@ module G =
                    ("Deprecated syntax, use a sub rule. " ^
                       "LIST0 STRING becomes LIST0 [ x = STRING -> x ]"))
           | _ -> ()
+        let _ = Camlp4_config.antiquotations := true
         let _ =
           let _ = (expr : 'expr Gram.Entry.t)
           and _ = (symbol : 'symbol Gram.Entry.t) in
@@ -11891,7 +11897,7 @@ module B =
  * - Daniel de Rauglaudre: initial version
  * - Nicolas Pouillard: refactoring
  *)
-    (* $Id: Camlp4Bin.ml,v 1.14 2007/02/27 15:48:22 pouillar Exp $ *)
+    (* $Id: Camlp4Bin.ml,v 1.14.2.1 2007/03/13 13:47:00 pouillar Exp $ *)
     open Camlp4
     open PreCast.Syntax
     open PreCast
@@ -11956,7 +11962,7 @@ module B =
           | (("Parsers" | ""), ("q" | "camlp4quotationexpander.cmo")) ->
               load [ pa_r; pa_qb; pa_q ]
           | (("Parsers" | ""),
-             ("q_MLast.cmo" | "rq" |
+             ("q_mlast.cmo" | "rq" |
                 "camlp4ocamlrevisedquotationexpander.cmo"))
               -> load [ pa_r; pa_qb; pa_rq ]
           | (("Parsers" | ""),
