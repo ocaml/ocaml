@@ -49,9 +49,9 @@ let print_version () =
   Printf.printf "The Objective Caml toplevel, version %s\n" Sys.ocaml_version;
   exit 0;
 ;;
+
 (*> JOCAML *)
 let magic_join () =
-(*   join := true ; *)
   let dir = Misc.expand_directory Config.standard_library "+threads" in
   include_dirs := dir :: !include_dirs ;
   file_argument "join.cma";
@@ -59,6 +59,7 @@ let magic_join () =
 (*< JOCAML *)         
 
 let main () =
+  magic_join () ;
   Arg.parse [
      "-I", Arg.String(fun dir ->
        let dir = Misc.expand_directory Config.standard_library dir in
@@ -66,9 +67,6 @@ let main () =
            "<dir>  Add <dir> to the list of include directories";
      "-init", Arg.String (fun s -> init_file := Some s),
            "<file>  Load <file> instead of default init file";
-(*> JOCAML *)
-    "-nojoin", Arg.Set nojoin, " Be a ocaml toplevel";
-(*< JOCAML *)    
      "-labels", Arg.Clear classic, " Labels commute (default)";
      "-noassert", Arg.Set noassert, " Do not compile assertion checks";
      "-nolabels", Arg.Set classic, " Ignore labels and do not commute";
@@ -106,9 +104,6 @@ let main () =
      "-dlambda", Arg.Set dump_lambda, " (undocumented)";
      "-dinstr", Arg.Set dump_instr, " (undocumented)";
     ] file_argument usage;
-(*> JOCAML *)
-  if not !nojoin then magic_join ();
-(*< JOCAML *)
   if not (prepare Format.err_formatter) then exit 2;
   Toploop.loop Format.std_formatter
 

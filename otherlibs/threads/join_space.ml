@@ -516,8 +516,18 @@ and open_link_sender space rspace mtx =  match rspace.link with
       rspace.link <- Connecting (mtx, cond) ;
       Mutex.unlock mtx ;
       try
-	let route = find_route space rspace in
-	let link = attempt_connect route 0.1 in
+	let routes = find_routes space rspace in
+        let rec get_link = function 
+          | [] -> assert false (* RoutingFailed above raised *)
+          | [route] ->  attempt_connect route 0.1, route
+          | route::rem ->
+(*DEBUG*)debug1 "GET_LINK" "try route %s" (string_of_sockaddr route) ;
+              begin try
+                attempt_connect route 0.1, route
+              with
+              | Failure _ -> get_link rem
+              end in
+        let link,route = get_link routes in
 	connect_on_link  space rspace (mtx, cond) link route
       with
       |	RoutingFailed -> raise RoutingFailed
