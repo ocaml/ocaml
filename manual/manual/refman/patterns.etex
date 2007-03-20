@@ -1,7 +1,7 @@
 \section{Patterns}
 \pdfsection{Patterns}
 \ikwd{as\@\texttt{as}}
-
+%HEVEA\cutname{patterns.html}
 \begin{syntax}
 pattern:
     value-name
