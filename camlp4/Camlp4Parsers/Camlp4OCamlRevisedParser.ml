@@ -1034,17 +1034,23 @@ Old (no more supported) syntax:
         | i = a_UIDENT -> <:ident< $uid:i$ >> ] ]
     ;
     module_longident_with_app:
-      [ [ i = SELF; j = SELF -> <:ident< $i$ $j$ >> ]
-      | [ i = SELF; "."; j = SELF -> <:ident< $i$.$j$ >> ]
-      | [ `ANTIQUOT (""|"id"|"anti"|"list" as n) s ->
+      [ "apply"
+        [ i = SELF; j = SELF -> <:ident< $i$ $j$ >> ]
+      | "."
+        [ i = SELF; "."; j = SELF -> <:ident< $i$.$j$ >> ]
+      | "simple"
+        [ `ANTIQUOT (""|"id"|"anti"|"list" as n) s ->
             <:ident< $anti:mk_anti ~c:"ident" n s$ >>
         | i = a_UIDENT -> <:ident< $uid:i$ >>
         | "("; i = SELF; ")" -> i ] ]
     ;
     type_longident:
-      [ [ i = SELF; j = SELF -> <:ident< $i$ $j$ >> ]
-      | [ i = SELF; "."; j = SELF -> <:ident< $i$.$j$ >> ]
-      | [ `ANTIQUOT (""|"id"|"anti"|"list" as n) s ->
+      [ "apply"
+        [ i = SELF; j = SELF -> <:ident< $i$ $j$ >> ]
+      | "."
+        [ i = SELF; "."; j = SELF -> <:ident< $i$.$j$ >> ]
+      | "simple"
+        [ `ANTIQUOT (""|"id"|"anti"|"list" as n) s ->
             <:ident< $anti:mk_anti ~c:"ident" n s$ >>
         | i = a_LIDENT -> <:ident< $lid:i$ >>
         | i = a_UIDENT -> <:ident< $uid:i$ >>

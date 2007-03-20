@@ -23,7 +23,7 @@ module R =
       struct
         let name = "Camlp4RevisedParserParser"
         let version =
-          "$Id: camlp4boot.ml,v 1.2.2.4 2007/03/18 18:07:33 pouillar Exp $"
+          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.2 2007/03/20 12:58:09 pouillar Exp $"
       end
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
@@ -4002,7 +4002,7 @@ Old (no more supported) syntax:
                  'module_longident_with_app Gram.Entry.t)
                ((fun () ->
                    (None,
-                    [ (None, None,
+                    [ ((Some "apply"), None,
                        [ ([ Gram.Sself; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (j : 'module_longident_with_app)
@@ -4010,7 +4010,7 @@ Old (no more supported) syntax:
                                 (_loc : Loc.t) ->
                                 (Ast.IdApp (_loc, i, j) :
                                   'module_longident_with_app)))) ]);
-                      (None, None,
+                      ((Some "."), None,
                        [ ([ Gram.Sself; Gram.Skeyword "."; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (j : 'module_longident_with_app) _
@@ -4018,7 +4018,7 @@ Old (no more supported) syntax:
                                 (_loc : Loc.t) ->
                                 (Ast.IdAcc (_loc, i, j) :
                                   'module_longident_with_app)))) ]);
-                      (None, None,
+                      ((Some "simple"), None,
                        [ ([ Gram.Skeyword "("; Gram.Sself; Gram.Skeyword ")" ],
                           (Gram.Action.mk
                              (fun _ (i : 'module_longident_with_app) _
@@ -4052,19 +4052,19 @@ Old (no more supported) syntax:
              Gram.extend (type_longident : 'type_longident Gram.Entry.t)
                ((fun () ->
                    (None,
-                    [ (None, None,
+                    [ ((Some "apply"), None,
                        [ ([ Gram.Sself; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (j : 'type_longident) (i : 'type_longident)
                                 (_loc : Loc.t) ->
                                 (Ast.IdApp (_loc, i, j) : 'type_longident)))) ]);
-                      (None, None,
+                      ((Some "."), None,
                        [ ([ Gram.Sself; Gram.Skeyword "."; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (j : 'type_longident) _
                                 (i : 'type_longident) (_loc : Loc.t) ->
                                 (Ast.IdAcc (_loc, i, j) : 'type_longident)))) ]);
-                      (None, None,
+                      ((Some "simple"), None,
                        [ ([ Gram.Skeyword "("; Gram.Sself; Gram.Skeyword ")" ],
                           (Gram.Action.mk
                              (fun _ (i : 'type_longident) _ (_loc : Loc.t) ->
@@ -7178,7 +7178,7 @@ module Camlp4QuotationCommon =
       struct
         let name = "Camlp4QuotationCommon"
         let version =
-          "$Id: Camlp4QuotationCommon.ml,v 1.1 2007/02/07 10:09:22 ertai Exp $"
+          "$Id: Camlp4QuotationCommon.ml,v 1.1.4.1 2007/03/18 18:07:32 pouillar Exp $"
       end
     module Make
       (Syntax : Sig.Camlp4Syntax)
@@ -7755,7 +7755,7 @@ module Q =
       struct
         let name = "Camlp4QuotationExpander"
         let version =
-          "$Id: camlp4boot.ml,v 1.2.2.4 2007/03/18 18:07:33 pouillar Exp $"
+          "$Id: Camlp4QuotationExpander.ml,v 1.1 2007/02/07 10:09:22 ertai Exp $"
       end
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
@@ -7789,7 +7789,7 @@ module Rp =
       struct
         let name = "Camlp4OCamlRevisedParserParser"
         let version =
-          "$Id: camlp4boot.ml,v 1.2.2.4 2007/03/18 18:07:33 pouillar Exp $"
+          "$Id: Camlp4OCamlRevisedParserParser.ml,v 1.1 2007/02/07 10:09:22 ertai Exp $"
       end
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
@@ -8686,7 +8686,7 @@ module G =
       struct
         let name = "Camlp4GrammarParser"
         let version =
-          "$Id: camlp4boot.ml,v 1.2.2.4 2007/03/18 18:07:33 pouillar Exp $"
+          "$Id: Camlp4GrammarParser.ml,v 1.1.4.1 2007/03/18 18:07:32 pouillar Exp $"
       end
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
@@ -11094,7 +11094,7 @@ module M =
       struct
         let name = "Camlp4MacroParser"
         let version =
-          "$Id: camlp4boot.ml,v 1.2.2.4 2007/03/18 18:07:33 pouillar Exp $"
+          "$Id: Camlp4MacroParser.ml,v 1.1 2007/02/07 10:09:22 ertai Exp $"
       end
     (*
 Added statements:
@@ -11710,7 +11710,7 @@ module D =
       struct
         let name = "Camlp4DebugParser"
         let version =
-          "$Id: camlp4boot.ml,v 1.2.2.4 2007/03/18 18:07:33 pouillar Exp $"
+          "$Id: Camlp4DebugParser.ml,v 1.1 2007/02/07 10:09:22 ertai Exp $"
       end
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
@@ -11906,7 +11906,7 @@ module B =
  * - Daniel de Rauglaudre: initial version
  * - Nicolas Pouillard: refactoring
  *)
-    (* $Id: camlp4boot.ml,v 1.2.2.4 2007/03/18 18:07:33 pouillar Exp $ *)
+    (* $Id: Camlp4Bin.ml,v 1.14.2.1 2007/03/13 13:47:00 pouillar Exp $ *)
     open Camlp4
     open PreCast.Syntax
     open PreCast

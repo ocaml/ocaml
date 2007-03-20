@@ -350,7 +350,7 @@ module Sig =
       sig
         (** The name of the extension, typically the module name. *)
         val name : string
-        (** The version of the extension, typically $Id: Sig.ml,v 1.2.2.1 2007/03/10 16:58:39 pouillar Exp $ with a versionning system. *)
+        (** The version of the extension, typically $Id: Sig.ml,v 1.2.2.2 2007/03/20 12:58:09 pouillar Exp $ with a versionning system. *)
         val version : string
       end
     module type Loc =

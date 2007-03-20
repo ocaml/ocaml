@@ -233,6 +233,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   DELETE_RULE Gram expr: SELF; ":="; SELF; dummy END;
   DELETE_RULE Gram expr: "~"; a_LIDENT; ":"; SELF END;
   DELETE_RULE Gram expr: "?"; a_LIDENT; ":"; SELF END;
+  (* Some other DELETE_RULE are after the grammar *)
 
   value clear = Gram.Entry.clear;
   clear ctyp;
@@ -625,6 +626,12 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         | "{"; t = label_declaration; "}" ->
             <:ctyp< { $t$ } >> ] ]
     ;
+    module_longident_with_app: LEVEL "apply"
+      [ [ i = SELF; "("; j = SELF; ")" -> <:ident< $i$ $j$ >> ] ]
+    ;
+    type_longident: LEVEL "apply"
+      [ [ i = SELF; "("; j = SELF; ")" -> <:ident< $i$ $j$ >> ] ]
+    ;
     constructor_arg_list:
       [ [ t1 = SELF; "*"; t2 = SELF -> <:ctyp< $t1$ and $t2$ >>
         | t = ctyp LEVEL "ctyp1" -> t
@@ -698,5 +705,9 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       ] ]
     ;
   END;
+
+  (* Some other DELETE_RULE are before the grammar *)
+  DELETE_RULE Gram module_longident_with_app: SELF; SELF END;
+  DELETE_RULE Gram type_longident: SELF; SELF END;
 end;
 let module M = Register.OCamlSyntaxExtension Id Make in ();
