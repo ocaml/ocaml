@@ -17,6 +17,7 @@
 
 include config/Makefile
 include stdlib/StdlibModules
+include otherlibs/systhreads/JoinModules
 
 CAMLC=boot/ocamlrun boot/ocamlc -nostdlib -I boot -nojoin
 CAMLOPT=boot/ocamlrun ./ocamlopt -nostdlib -I stdlib -nojoin
@@ -102,7 +103,10 @@ COMPOBJS=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(BYTECOMP) $(DRIVER)
 
 TOPLIB=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(BYTECOMP) $(TOPLEVEL)
 
-TOPOBJS=$(TOPLEVELLIB) otherlibs/unix/unix.cma otherlibs/systhreads/threads.cma $(TOPLEVELSTART)
+TOPOBJS=$(TOPLEVELLIB)\
+ otherlibs/unix/unix.cma otherlibs/systhreads/threads.cma\
+ otherlibs/systhreads/join.cma\
+ $(TOPLEVELSTART)
 
 OPTOBJS=$(OPTUTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) $(OPTDRIVER)
 
@@ -112,7 +116,7 @@ EXPUNGEOBJS=utils/misc.cmo utils/tbl.cmo \
   typing/predef.cmo bytecomp/runtimedef.cmo bytecomp/bytesections.cmo \
   bytecomp/dll.cmo bytecomp/meta.cmo bytecomp/symtable.cmo toplevel/expunge.cmo
 
-PERVASIVES=$(STDLIB_MODULES) outcometree topdirs toploop
+PERVASIVES=$(STDLIB_MODULES) $(JOIN_MODULES) outcometree topdirs toploop
 
 # For users who don't read the INSTALL file
 defaultentry:
