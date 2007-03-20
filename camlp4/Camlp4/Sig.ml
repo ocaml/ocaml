@@ -1279,6 +1279,12 @@ module type Camlp4Syntax = sig
   value value_val : Gram.Entry.t unit;
   value with_constr : Gram.Entry.t Ast.with_constr;
   value with_constr_quot : Gram.Entry.t Ast.with_constr;
+  value prefixop : Gram.Entry.t Ast.expr;
+  value infixop0 : Gram.Entry.t Ast.expr;
+  value infixop1 : Gram.Entry.t Ast.expr;
+  value infixop2 : Gram.Entry.t Ast.expr;
+  value infixop3 : Gram.Entry.t Ast.expr;
+  value infixop4 : Gram.Entry.t Ast.expr;
 end;
 
 module type SyntaxExtension = functor (Syn : Syntax)

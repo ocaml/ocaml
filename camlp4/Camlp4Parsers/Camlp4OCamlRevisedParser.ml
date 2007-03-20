@@ -287,6 +287,84 @@ Old (no more supported) syntax:
   value stopped_at _loc =
     Some (Loc.move_line 1 _loc) (* FIXME be more precise *);
 
+  value symbolchar =
+    let list =
+      ['!'; '$'; '%'; '&'; '*'; '+'; '-'; '.'; '/'; ':'; '<'; '='; '>'; '?';
+      '@'; '^'; '|'; '~']
+    in
+    let rec loop s i =
+      if i == String.length s then True
+      else if List.mem s.[i] list then loop s (i + 1)
+      else False
+    in
+    loop
+  ;
+
+  let list = ['!'; '?'; '~'] in
+  let excl = ["!="; "??"] in
+  Gram.Entry.setup_parser prefixop
+    (parser
+      [: `(KEYWORD x | SYMBOL x, _loc)
+          when
+            not (List.mem x excl) && String.length x >= 2 &&
+            List.mem x.[0] list && symbolchar x 1 :] ->
+        <:expr< $lid:x$ >>)
+  ;
+
+  let list_ok = ["<"; ">"; "<="; ">="; "="; "<>"; "=="; "!="; "$"] in 
+  let list_first_char_ok = ['='; '<'; '>'; '|'; '&'; '$'; '!'] in
+  let excl = ["<-"; "||"; "&&"] in
+  Gram.Entry.setup_parser infixop0
+    (parser
+      [: `(KEYWORD x | SYMBOL x, _loc)
+          when
+            (List.mem x list_ok) ||
+            (not (List.mem x excl) && String.length x >= 2 &&
+              List.mem x.[0] list_first_char_ok && symbolchar x 1) :] ->
+        <:expr< $lid:x$ >>)
+  ;
+
+  let list = ['@'; '^'] in
+  Gram.Entry.setup_parser infixop1
+    (parser
+      [: `(KEYWORD x | SYMBOL x, _loc)
+          when
+            String.length x >= 1 && List.mem x.[0] list &&
+            symbolchar x 1 :] ->
+        <:expr< $lid:x$ >>)
+  ;
+
+  let list = ['+'; '-'] in
+  Gram.Entry.setup_parser infixop2
+    (parser
+      [: `(KEYWORD x | SYMBOL x, _loc)
+          when
+            x <> "->" && String.length x >= 1 && List.mem x.[0] list &&
+            symbolchar x 1 :] ->
+        <:expr< $lid:x$ >>)
+  ;
+
+  let list = ['*'; '/'; '%'] in
+  Gram.Entry.setup_parser infixop3
+    (parser
+      [: `(KEYWORD x | SYMBOL x, _loc)
+          when
+            String.length x >= 1 && List.mem x.[0] list &&
+            (x.[0] <> '*' || String.length x < 2 || x.[1] <> '*') &&
+            symbolchar x 1 :] ->
+        <:expr< $lid:x$ >>)
+  ;
+
+  Gram.Entry.setup_parser infixop4
+    (parser
+      [: `(KEYWORD x | SYMBOL x, _loc)
+          when
+            String.length x >= 2 && x.[0] == '*' && x.[1] == '*' &&
+            symbolchar x 2 :] ->
+        <:expr< $lid:x$ >>)
+  ;
+
+
   (* value list1sep symb sep one cons =
     let rec kont al =
       parser
@@ -348,7 +426,8 @@ Old (no more supported) syntax:
       str_items top_phrase type_constraint type_declaration
       type_ident_and_parameters type_kind type_longident
       type_longident_and_parameters type_parameter type_parameters typevars
-      use_file val_longident value_let value_val with_constr with_constr_quot;
+      use_file val_longident value_let value_val with_constr with_constr_quot
+      infixop0 infixop1 infixop2 infixop3 infixop4;
     module_expr:
       [ [ "functor"; "("; i = a_UIDENT; ":"; t = module_type; ")"; "->";
           me = SELF ->
@@ -480,8 +559,7 @@ Old (no more supported) syntax:
     ;
     expr:
       [ "top" RIGHTA
-        [ "let"; r = opt_rec; bi = binding; "in";
-          x = SELF ->
+        [ "let"; r = opt_rec; bi = binding; "in"; x = SELF ->
             <:expr< let $rec:r$ $bi$ in $x$ >>
         | "let"; "module"; m = a_UIDENT; mb = module_binding0; "in"; e = SELF ->
             <:expr< let module $m$ = $mb$ in $e$ >>
@@ -516,41 +594,26 @@ Old (no more supported) syntax:
             [ Some e -> e
             | None -> <:expr< $e1$ := $e2$ >> ] ]
       | "||" RIGHTA
-        [ e1 = SELF; "||"; e2 = SELF -> <:expr< $e1$ || $e2$ >> ]
+        [ e1 = SELF; op = infixop6; e2 = SELF -> <:expr< $op$ $e1$ $e2$ >> ]
       | "&&" RIGHTA
-        [ e1 = SELF; "&&"; e2 = SELF -> <:expr< $e1$ && $e2$ >> ]
+        [ e1 = SELF; op = infixop5; e2 = SELF -> <:expr< $op$ $e1$ $e2$ >> ]
       | "<" LEFTA
-        [ e1 = SELF; "<"; e2 = SELF -> <:expr< $e1$ < $e2$ >>
-        | e1 = SELF; ">"; e2 = SELF -> <:expr< $e1$ > $e2$ >>
-        | e1 = SELF; "<="; e2 = SELF -> <:expr< $e1$ <= $e2$ >>
-        | e1 = SELF; ">="; e2 = SELF -> <:expr< $e1$ >= $e2$ >>
-        | e1 = SELF; "="; e2 = SELF -> <:expr< $e1$ = $e2$ >>
-        | e1 = SELF; "<>"; e2 = SELF -> <:expr< $e1$ <> $e2$ >>
-        | e1 = SELF; "=="; e2 = SELF -> <:expr< $e1$ == $e2$ >>
-        | e1 = SELF; "!="; e2 = SELF -> <:expr< $e1$ != $e2$ >> ]
+        [ e1 = SELF; op = infixop0; e2 = SELF -> <:expr< $op$ $e1$ $e2$ >> ]
       | "^" RIGHTA
-        [ e1 = SELF; "^"; e2 = SELF -> <:expr< $e1$ ^ $e2$ >>
-        | e1 = SELF; "^^"; e2 = SELF -> <:expr< $lid:"^^"$ $e1$ $e2$ >>
-        | e1 = SELF; "@"; e2 = SELF -> <:expr< $e1$ @ $e2$ >> ]
+        [ e1 = SELF; op = infixop1; e2 = SELF -> <:expr< $op$ $e1$ $e2$ >> ]
       | "+" LEFTA
-        [ e1 = SELF; "+"; e2 = SELF -> <:expr< $e1$ + $e2$ >>
-        | e1 = SELF; "-"; e2 = SELF -> <:expr< $e1$ - $e2$ >>
-        | e1 = SELF; "+."; e2 = SELF -> <:expr< $e1$ +. $e2$ >>
-        | e1 = SELF; "-."; e2 = SELF -> <:expr< $e1$ -. $e2$ >> ]
+        [ e1 = SELF; op = infixop2; e2 = SELF -> <:expr< $op$ $e1$ $e2$ >> ]
       | "*" LEFTA
-        [ e1 = SELF; "*"; e2 = SELF -> <:expr< $e1$ * $e2$ >>
-        | e1 = SELF; "/"; e2 = SELF -> <:expr< $e1$ / $e2$ >>
-        | e1 = SELF; "*."; e2 = SELF -> <:expr< $e1$ *. $e2$ >>
-        | e1 = SELF; "/."; e2 = SELF -> <:expr< $e1$ /. $e2$ >>
-        | e1 = SELF; "land"; e2 = SELF -> <:expr< $e1$ land $e2$ >>
+        [ e1 = SELF; "land"; e2 = SELF -> <:expr< $e1$ land $e2$ >>
         | e1 = SELF; "lor"; e2 = SELF -> <:expr< $e1$ lor $e2$ >>
         | e1 = SELF; "lxor"; e2 = SELF -> <:expr< $e1$ lxor $e2$ >>
-        | e1 = SELF; "mod"; e2 = SELF -> <:expr< $e1$ mod $e2$ >> ]
+        | e1 = SELF; "mod"; e2 = SELF -> <:expr< $e1$ mod $e2$ >>
+        | e1 = SELF; op = infixop3; e2 = SELF -> <:expr< $op$ $e1$ $e2$ >> ]
       | "**" RIGHTA
-        [ e1 = SELF; "**"; e2 = SELF -> <:expr< $e1$ ** $e2$ >>
-        | e1 = SELF; "asr"; e2 = SELF -> <:expr< $e1$ asr $e2$ >>
+        [ e1 = SELF; "asr"; e2 = SELF -> <:expr< $e1$ asr $e2$ >>
         | e1 = SELF; "lsl"; e2 = SELF -> <:expr< $e1$ lsl $e2$ >>
-        | e1 = SELF; "lsr"; e2 = SELF -> <:expr< $e1$ lsr $e2$ >> ]
+        | e1 = SELF; "lsr"; e2 = SELF -> <:expr< $e1$ lsr $e2$ >>
+        | e1 = SELF; op = infixop4; e2 = SELF -> <:expr< $op$ $e1$ $e2$ >> ]
       | "unary minus" NONA
         [ "-"; e = SELF -> mkumin _loc "-" e
         | "-."; e = SELF -> mkumin _loc "-." e ]
@@ -561,9 +624,14 @@ Old (no more supported) syntax:
         | "lazy"; e = SELF -> <:expr< lazy $e$ >> ]
       | "label" NONA
         [ "~"; i = a_LIDENT; ":"; e = SELF -> <:expr< ~ $i$ : $e$ >>
-        | `LABEL i; e = SELF -> <:expr< ~ $i$ : $e$ >>
         | "~"; i = a_LIDENT -> <:expr< ~ $i$ >>
+
+        (* Here it's LABEL and not tilde_label since ~a:b is different than ~a : b *)
+        | `LABEL i; e = SELF -> <:expr< ~ $i$ : $e$ >>
+
+        (* Same remark for ?a:b *)
         | `OPTLABEL i; e = SELF -> <:expr< ? $i$ : $e$ >>
+
         | "?"; i = a_LIDENT; ":"; e = SELF -> <:expr< ? $i$ : $e$ >>
         | "?"; i = a_LIDENT -> <:expr< ? $i$ >> ]
       | "." LEFTA
@@ -573,8 +641,8 @@ Old (no more supported) syntax:
         | e1 = SELF; "."; e2 = SELF -> <:expr< $e1$ . $e2$ >>
         | e = SELF; "#"; lab = label -> <:expr< $e$ # $lab$ >> ]
       | "~-" NONA
-        [ "~-"; e = SELF -> <:expr< ~- $e$ >>
-        | "~-."; e = SELF -> <:expr< ~-. $e$ >> ]
+        [ "!"; e = SELF -> <:expr< $e$.val >>
+        | f = prefixop; e = SELF -> <:expr< $f$ $e$ >> ]
       | "simple"
         [ `QUOTATION x -> Quotation.expand_expr (Gram.parse_string expr) _loc x
         | `ANTIQUOT ("exp"|""|"anti" as n) s ->
@@ -608,7 +676,15 @@ Old (no more supported) syntax:
         | "("; e = SELF; ":"; t = ctyp; ":>"; t2 = ctyp; ")" ->
             <:expr< ($e$ : $t$ :> $t2$ ) >>
         | "("; e = SELF; ":>"; t = ctyp; ")" -> <:expr< ($e$ :> $t$) >>
-        | "("; e = SELF; ")" -> e ] ]
+        | "("; e = SELF; ")" -> e
+        | "begin"; e = SELF; "end" -> <:expr< $e$ >>
+        | "begin"; "end" -> <:expr< () >> ] ]
+    ;
+    infixop5:
+      [ [ x = [ "&" | "&&" ] -> <:expr< $lid:x$ >> ] ]
+    ;
+    infixop6:
+      [ [ x = [ "or" | "||" ] -> <:expr< $lid:x$ >> ] ]
     ;
     (* sem_expr:
       [ [ e1 = SELF; ";"; e2 = SELF -> <:expr< $e1$; $e2$ >>

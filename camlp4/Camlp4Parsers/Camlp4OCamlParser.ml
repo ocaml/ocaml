@@ -31,21 +31,6 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   Camlp4_config.constructors_arity.val := False;
 
   (*FIXME remove this and use OCaml ones *)
-  value bigarray_get _loc arr arg =
-    let coords =
-      match arg with
-      [ <:expr< ($e1$, $e2$) >> | <:expr< $e1$, $e2$ >> ->
-          Ast.list_of_expr e1 (Ast.list_of_expr e2 [])
-      | _ -> [arg] ]
-    in
-    match coords with
-    [ [c1] -> <:expr< Bigarray.Array1.get $arr$ $c1$ >>
-    | [c1; c2] -> <:expr< Bigarray.Array2.get $arr$ $c1$ $c2$ >>
-    | [c1; c2; c3] -> <:expr< Bigarray.Array3.get $arr$ $c1$ $c2$ $c3$ >>
-    (* | coords -> <:expr< Bigarray.Genarray.get $arr$ [| $`list:coords$ |] >> ] *)
-    | coords ->
-       <:expr< Bigarray.Genarray.get $arr$ [| $Ast.exSem_of_list coords$ |] >> ];
-
   value bigarray_set _loc var newval =
     match var with
     [ <:expr< Bigarray.Array1.get $arr$ $c1$ >> ->
@@ -57,22 +42,6 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:expr< Bigarray.Genarray.get $arr$ [| $coords$ |] >> ->
         Some <:expr< Bigarray.Genarray.set $arr$ [| $coords$ |] $newval$ >>
     | _ -> None ];
-  value mkumin _loc f arg =
-    match (f, arg) with
-    [ ("-", <:expr< $int:n$ >>) when int_of_string n > 0 ->
-        <:expr< $int:"-" ^ n$ >>
-    | ("-", <:expr< $int32:n$ >>) when (Int32.of_string n) > 0l ->
-        <:expr< $int32:"-" ^ n$ >>
-    | ("-", <:expr< $int64:n$ >>) when (Int64.of_string n) > 0L ->
-        <:expr< $int64:"-" ^ n$ >>
-    | ("-", <:expr< $nativeint:n$ >>) when (Nativeint.of_string n) > 0n ->
-        <:expr< $nativeint:"-" ^ n$ >>
-    | (_, <:expr< $flo:n$ >>) when float_of_string n > 0.0 ->
-        <:expr< $flo:"-" ^ n$ >>
-    | _ ->
-        let f = "~" ^ f in
-        <:expr< $lid:f$ $arg$ >> ]
-  ;
   value mk_anti ?(c = "") n s = "\\$"^n^c^":"^s;
   (*FIXME*)
 
@@ -108,97 +77,6 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         try Hashtbl.find ht x with
         [ Not_found -> try Hashtbl.find ct x.[0] with [ Not_found -> False ] ]
     }
-  ;
-
-  value operator_rparen =
-    Gram.Entry.of_parser "operator_rparen"
-      (fun strm ->
-        match Stream.npeek 2 strm with
-        [ [(KEYWORD s | SYMBOL s, _); (KEYWORD ")", _)] when is_operator s ->
-            do { Stream.junk strm; Stream.junk strm; s }
-        | _ -> raise Stream.Failure ])
-  ;
-
-  value symbolchar =
-    let list =
-      ['!'; '$'; '%'; '&'; '*'; '+'; '-'; '.'; '/'; ':'; '<'; '='; '>'; '?';
-      '@'; '^'; '|'; '~']
-    in
-    let rec loop s i =
-      if i == String.length s then True
-      else if List.mem s.[i] list then loop s (i + 1)
-      else False
-    in
-    loop
-  ;
-
-  value prefixop =
-    let list = ['!'; '?'; '~'] in
-    let excl = ["!="; "??"] in
-    Gram.Entry.of_parser "prefixop"
-      (parser
-        [: `(KEYWORD x | SYMBOL x, _loc)
-            when
-              not (List.mem x excl) && String.length x >= 2 &&
-              List.mem x.[0] list && symbolchar x 1 :] ->
-          <:expr< $lid:x$ >>)
-  ;
-
-  value infixop0 =
-    let list_ok = ["<"; ">"; "<="; ">="; "="; "<>"; "=="; "!="; "$"] in 
-    let list_first_char_ok = ['='; '<'; '>'; '|'; '&'; '$'; '!'] in
-    let excl = ["<-"; "||"; "&&"] in
-    Gram.Entry.of_parser "infixop0"
-      (parser
-        [: `(KEYWORD x | SYMBOL x, _loc)
-            when
-              (List.mem x list_ok) ||
-              (not (List.mem x excl) && String.length x >= 2 &&
-                List.mem x.[0] list_first_char_ok && symbolchar x 1) :] ->
-          <:expr< $lid:x$ >>)
-  ;
-
-  value infixop1 =
-    let list = ['@'; '^'] in
-    Gram.Entry.of_parser "infixop1"
-      (parser
-        [: `(KEYWORD x | SYMBOL x, _loc)
-            when
-              String.length x >= 1 && List.mem x.[0] list &&
-              symbolchar x 1 :] ->
-          <:expr< $lid:x$ >>)
-  ;
-
-  value infixop2 =
-    let list = ['+'; '-'] in
-    Gram.Entry.of_parser "infixop2"
-      (parser
-        [: `(KEYWORD x | SYMBOL x, _loc)
-            when
-              x <> "->" && String.length x >= 1 && List.mem x.[0] list &&
-              symbolchar x 1 :] ->
-          <:expr< $lid:x$ >>)
-  ;
-
-  value infixop3 =
-    let list = ['*'; '/'; '%'] in
-    Gram.Entry.of_parser "infixop3"
-      (parser
-        [: `(KEYWORD x | SYMBOL x, _loc)
-            when
-              String.length x >= 1 && List.mem x.[0] list &&
-              symbolchar x 1 :] ->
-          <:expr< $lid:x$ >>)
-  ;
-
-  value infixop4 =
-    Gram.Entry.of_parser "infixop4"
-      (parser
-        [: `(KEYWORD x | SYMBOL x, _loc)
-            when
-              String.length x >= 3 && x.[0] == '*' && x.[1] == '*' &&
-              symbolchar x 2 :] ->
-          <:expr< $lid:x$ >>)
   ;
 
   value test_constr_decl =
@@ -320,16 +198,44 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         else res
     | _ -> False ];
 
+  value operator_rparen =
+    Gram.Entry.of_parser "operator_rparen"
+      (fun strm ->
+        match Stream.npeek 2 strm with
+        [ [(KEYWORD s | SYMBOL s, _); (KEYWORD ")", _)] when is_operator s ->
+            do { Stream.junk strm; Stream.junk strm; s }
+        | _ -> raise Stream.Failure ])
+  ;
+
   DELETE_RULE Gram expr: SELF; "where"; opt_rec; let_binding END;
   DELETE_RULE Gram value_let: "value" END;
   DELETE_RULE Gram value_val: "value" END;
   DELETE_RULE Gram str_item: value_let; opt_rec; binding END;
   DELETE_RULE Gram module_type: "'"; a_ident END;
   DELETE_RULE Gram label_expr: label_longident; fun_binding END;
+  DELETE_RULE Gram expr: "let"; opt_rec; binding; "in"; SELF END;
+  DELETE_RULE Gram expr: "let"; "module"; a_UIDENT; module_binding0; "in"; SELF END;
+  DELETE_RULE Gram expr: "fun"; "["; match_case; "]" END;
+  DELETE_RULE Gram expr: "match"; SELF; "with"; "["; match_case; "]" END;
+  DELETE_RULE Gram expr: "match"; SELF; "with"; ipatt; "->"; SELF END;
+  DELETE_RULE Gram expr: "try"; SELF; "with"; "["; match_case; "]" END;
+  DELETE_RULE Gram expr: "try"; SELF; "with"; ipatt; "->"; SELF END;
+  DELETE_RULE Gram expr: "if"; SELF; "then"; SELF; "else"; SELF END;
+  DELETE_RULE Gram expr: "do"; "{"; sequence; "}" END;
+  DELETE_RULE Gram expr: "for"; a_LIDENT; "="; SELF; direction_flag; SELF; "do"; "{"; sequence; "}" END;
+  DELETE_RULE Gram expr: "while"; SELF; "do"; "{"; sequence; "}" END;
+  DELETE_RULE Gram expr: SELF; SELF END;
+  DELETE_RULE Gram expr: "new"; class_longident END;
+  DELETE_RULE Gram expr: "["; sem_expr_for_list; "::"; expr; "]" END;
+  DELETE_RULE Gram expr: "{"; label_expr; "}" END;
+  DELETE_RULE Gram expr: "{"; "("; SELF; ")"; "with"; label_expr; "}" END;
+  DELETE_RULE Gram expr: "("; SELF; ","; comma_expr; ")" END;
+  DELETE_RULE Gram expr: SELF; ":="; SELF; dummy END;
+  DELETE_RULE Gram expr: "~"; a_LIDENT; ":"; SELF END;
+  DELETE_RULE Gram expr: "?"; a_LIDENT; ":"; SELF END;
 
   value clear = Gram.Entry.clear;
   clear ctyp;
-  clear expr;
   clear patt;
   clear a_LIDENT_or_operator;
   clear a_UIDENT;
@@ -347,7 +253,6 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   clear class_type_longident_and_param;
   clear class_type_plus;
   clear type_constraint;
-  clear comma_expr;
   clear comma_patt;
   clear sequence;
   clear sem_expr_for_list;
@@ -390,7 +295,6 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       type_ident_and_parameters type_kind type_longident
       type_longident_and_parameters type_parameter type_parameters typevars
       use_file val_longident value_let value_val with_constr with_constr_quot
-
       infixop0 infixop1 infixop2 infixop3 infixop4
     ;
     sem_expr:
@@ -419,13 +323,13 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
               <:str_item< let module $m$ = $mb$ in $e$ >>
       ] ]
     ;
-    expr:
+    expr: BEFORE "top"
       [ ";" RIGHTA
         [ e1 = SELF; ";"; e2 = SELF ->
             conc_seq e1 e2
-        | e1 = SELF; ";" -> e1 ]
-      | "top"
-        [ "let"; r = opt_rec; bi = binding; "in";
+        | e1 = SELF; ";" -> e1 ] ];
+    expr: LEVEL "top"
+      [ [ "let"; r = opt_rec; bi = binding; "in";
           x = expr LEVEL ";" ->
             <:expr< let $rec:r$ $bi$ in $x$ >>
         | "let"; "module"; m = a_UIDENT; mb = module_binding0; "in";
@@ -433,8 +337,6 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
             <:expr< let module $m$ = $mb$ in $e$ >>
         | "function"; OPT "|"; a = match_case ->
             <:expr< fun [ $a$ ] >>
-        | "fun"; p = labeled_ipatt; e = fun_def ->
-            <:expr< fun $p$ -> $e$ >>
         | "match"; e = SELF; "with"; OPT "|"; a = match_case ->
             <:expr< match $e$ with [ $a$ ] >>
         | "try"; e = SELF; "with"; OPT "|"; a = match_case ->
@@ -449,9 +351,10 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
             <:expr< for $i$ = $e1$ $to:df$ $e2$ do { $get_seq el$ } >>
         | "while"; e1 = SELF; "do"; e2 = SELF; "done" ->
             <:expr< while $e1$ do { $get_seq e2$ } >>
-        | "object"; csp = opt_class_self_patt; cst = class_structure; "end" ->
-            <:expr< object ($csp$) $cst$ end >> ]
-      | [ e = SELF; ","; el = (*FIXME comma_expr*)LIST1 NEXT SEP "," ->
+      ] ];
+    expr: BEFORE "||"
+      [ ","
+        [ e = SELF; ","; el = (*FIXME comma_expr*)LIST1 NEXT SEP "," ->
             <:expr< ( $e$, $Ast.exCom_of_list el$ ) >> ]
       | ":=" NONA
         [ e1 = SELF; ":="; e2 = expr LEVEL "top" ->
@@ -459,105 +362,29 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         | e1 = SELF; "<-"; e2 = expr LEVEL "top" ->
             match bigarray_set _loc e1 e2 with
             [ Some e -> e
-            | None -> <:expr< $e1$ := $e2$ >> ] ]
-      | "||" RIGHTA
-        [ e1 = SELF; op = infixop6; e2 = SELF -> <:expr< $op$ $e1$ $e2$ >> ]
-      | "&&" RIGHTA
-        [ e1 = SELF; op = infixop5; e2 = SELF -> <:expr< $op$ $e1$ $e2$ >> ]
-      | "<" LEFTA
-        [ e1 = SELF; op = infixop0; e2 = SELF -> <:expr< $op$ $e1$ $e2$ >> ]
-      | "^" RIGHTA
-        [ e1 = SELF; op = infixop1; e2 = SELF -> <:expr< $op$ $e1$ $e2$ >> ]
-      | RIGHTA
+            | None -> <:expr< $e1$ := $e2$ >> ]
+      ] ];
+    expr: AFTER "^"
+      [ "::" RIGHTA
         [ e1 = SELF; "::"; e2 = SELF -> <:expr< [$e1$ :: $e2$] >> ]
-      | "+" LEFTA
-        [ e1 = SELF; op = infixop2; e2 = SELF -> <:expr< $op$ $e1$ $e2$ >> ]
-      | "*" LEFTA
-        [ e1 = SELF; "*"; e2 = SELF -> <:expr< $e1$ * $e2$ >>
-        | e1 = SELF; "/"; e2 = SELF -> <:expr< $e1$ / $e2$ >>
-        | e1 = SELF; "%"; e2 = SELF -> <:expr< $lid:"%"$ $e1$ $e2$ >>
-        | e1 = SELF; "land"; e2 = SELF -> <:expr< $e1$ land $e2$ >>
-        | e1 = SELF; "lor"; e2 = SELF -> <:expr< $e1$ lor $e2$ >>
-        | e1 = SELF; "lxor"; e2 = SELF -> <:expr< $e1$ lxor $e2$ >>
-        | e1 = SELF; "mod"; e2 = SELF -> <:expr< $e1$ mod $e2$ >>
-        | e1 = SELF; op = infixop3; e2 = SELF -> <:expr< $op$ $e1$ $e2$ >> ]
-      | "**" RIGHTA
-        [ e1 = SELF; "**"; e2 = SELF -> <:expr< $e1$ ** $e2$ >>
-        | e1 = SELF; "asr"; e2 = SELF -> <:expr< $e1$ asr $e2$ >>
-        | e1 = SELF; "lsl"; e2 = SELF -> <:expr< $e1$ lsl $e2$ >>
-        | e1 = SELF; "lsr"; e2 = SELF -> <:expr< $e1$ lsr $e2$ >>
-        | e1 = SELF; op = infixop4; e2 = SELF -> <:expr< $op$ $e1$ $e2$ >> ]
-      | "unary minus" NONA
-        [ "-"; e = SELF -> <:expr< $mkumin _loc "-" e$ >>
-        | "-."; e = SELF -> <:expr< $mkumin _loc "-." e$ >> ]
-      | "apply" LEFTA
-        [ e1 = SELF; e2 = SELF ->
+      ];
+    expr: LEVEL "apply" (* LEFTA *)
+      [ [ e1 = SELF; e2 = SELF ->
             match (is_expr_constr_call e1, e2) with
             [ (True, <:expr< ( $tup:e$ ) >>) ->
                 List.fold_left (fun e1 e2 -> <:expr< $e1$ $e2$ >>) e1
                                 (Ast.list_of_expr e [])
             | _ -> <:expr< $e1$ $e2$ >> ]
-        | "assert"; e = SELF ->
-            match e with
-            [ <:expr< False >> -> <:expr< assert False >>
-            | _ -> <:expr< assert $e$ >> ]
-        | "lazy"; e = SELF ->
-            <:expr< lazy $e$ >> ]
-      | "label"
-        [ i = LABEL; e = SELF -> <:expr< ~ $i$ : $e$ >> (* Here it's LABEL and not
-                                                          tilde_label since ~a:b
-                                                          is different than ~a : b *)
-        | "~"; i = a_LIDENT -> <:expr< ~ $i$ >>
-        | i = OPTLABEL; e = SELF -> <:expr< ? $i$ : $e$ >> (* Same remark for ?a:b *)
-        | "?"; i = a_LIDENT -> <:expr< ? $i$ >> ]
-      | "." LEFTA
-        [ e1 = SELF; "."; "("; e2 = SELF; ")" -> <:expr< $e1$ .( $e2$ ) >>
-        | e1 = SELF; "."; "["; e2 = SELF; "]" -> <:expr< $e1$ .[ $e2$ ] >>
-        | e1 = SELF; "."; "{"; e2 = SELF; "}" -> bigarray_get _loc e1 e2
-        | e1 = SELF; "."; e2 = SELF -> <:expr< $e1$ . $e2$ >>
-        | e = SELF; "#"; lab = label -> <:expr< $e$ # $lab$ >> ]
-      | "~-" NONA
-        [ "!"; e = SELF -> <:expr< $e$ . val>>
-        | "~-"; e = SELF -> <:expr< ~- $e$ >>
-        | "~-."; e = SELF -> <:expr< ~-. $e$ >>
-        | f = prefixop; e = SELF -> <:expr< $f$ $e$ >> ]
-      | "simple" LEFTA
-        [ `QUOTATION x -> Quotation.expand_expr (Gram.parse_string expr) _loc x
-        | `ANTIQUOT ("exp"|""|"anti" as n) s ->
-            <:expr< $anti:mk_anti ~c:"expr" n s$ >>
-        | `ANTIQUOT ("tup" as n) s ->
-            <:expr< ($tup: <:expr< $anti:mk_anti ~c:"expr" n s$ >>$) >>
-        | s = a_INT -> <:expr< $int:s$ >>
-        | s = a_INT32 -> <:expr< $int32:s$ >>
-        | s = a_INT64 -> <:expr< $int64:s$ >>
-        | s = a_NATIVEINT -> <:expr< $nativeint:s$ >>
-        | s = a_FLOAT -> <:expr< $flo:s$ >>
-        | s = a_STRING -> <:expr< $str:s$ >>
-        | c = a_CHAR -> <:expr< $chr:c$ >>
-        | i = val_longident -> <:expr< $id:i$ >>
-        | "false" -> <:expr< False >>
+      ] ];
+    expr: LEVEL "simple" (* LEFTA *)
+      [ [ "false" -> <:expr< False >>
         | "true" -> <:expr< True >>
-        | "["; "]" -> <:expr< [] >>
-        | "["; mk = sem_expr_for_list; "]" -> mk <:expr< [] >>
-        | "[|"; "|]" -> <:expr< [| |] >>
-        | "[|"; el = sem_expr; "|]" -> <:expr< [| $el$ |] >>
         | "{"; test_label_eq; lel = label_expr; "}" ->
             <:expr< { $lel$ } >>
         | "{"; e = expr LEVEL "."; "with"; lel = label_expr; "}" ->
             <:expr< { ($e$) with $lel$ } >>
-        | "{<"; ">}" -> <:expr< {< >} >>
-        | "{<"; fel = field_expr; ">}" -> <:expr< {< $fel$ >} >>
-        | "("; ")" -> <:expr< () >>
         | "("; op = operator_rparen -> <:expr< $lid:op$ >>
-        | "("; e = SELF; ":"; t = ctyp; ")" -> <:expr< ($e$ : $t$) >>
-        | "("; e = SELF; ":"; t = ctyp; ":>"; t2 = ctyp; ")" ->
-            <:expr< ($e$ : $t$ :> $t2$) >>
-        | "("; e = SELF; ":>"; t = ctyp; ")" -> <:expr< ($e$ :> $t$) >>
-        | "("; e = SELF; ")" -> <:expr< $e$ >>
-        | "begin"; e = SELF; "end" -> <:expr< $e$ >>
-        | "begin"; "end" -> <:expr< () >>
         | "new"; i = class_longident -> <:expr< new $i$ >>
-        | "`"; s = a_ident -> <:expr< ` $s$ >>
       ] ]
     ;
     val_longident:
@@ -634,12 +461,6 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         | "#"; i = type_longident -> <:patt< # $i$ >>
         | `QUOTATION x ->
             Quotation.expand_patt (Gram.parse_string patt) _loc x ] ]
-    ;
-    infixop5:
-      [ [ x = [ "&" | "&&" ] -> <:expr< $lid:x$ >> ] ]
-    ;
-    infixop6:
-      [ [ x = [ "or" | "||" ] -> <:expr< $lid:x$ >> ] ]
     ;
     (* comma_expr:
       [ [ e1 = SELF; ","; e2 = SELF -> <:expr< $e1$, $e2$ >>

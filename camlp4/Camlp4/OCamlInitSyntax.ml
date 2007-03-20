@@ -187,7 +187,12 @@ module Make (Warning : Sig.Warning)
   value match_case_quot = Gram.Entry.mk "quotation of match_case (try/match/function case)";
   value module_binding_quot = Gram.Entry.mk "quotation of module rec binding";
   value ident_quot = Gram.Entry.mk "quotation of identifier";
-
+  value prefixop = Gram.Entry.mk "prefix operator (start with '!', '?', '~')";
+  value infixop0 = Gram.Entry.mk "infix operator (level 0) (comparison operators, and some others)";
+  value infixop1 = Gram.Entry.mk "infix operator (level 1) (start with '^', '@')";
+  value infixop2 = Gram.Entry.mk "infix operator (level 2) (start with '+', '-')";
+  value infixop3 = Gram.Entry.mk "infix operator (level 3) (start with '*', '/', '%')";
+  value infixop4 = Gram.Entry.mk "infix operator (level 4) (start with \"**\") (right assoc)";
 
   EXTEND Gram
     top_phrase:
