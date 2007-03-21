@@ -79,6 +79,12 @@ rule "ocaml: mlpack & d.cmo* -> d.cmo & cmi"
   ~deps:["%.mlpack"; "%.cmi"]
   (Ocaml_compiler.byte_debug_pack_mlpack "%.mlpack" "%.d.cmo");;
 
+rule "ocaml: mlpack & cmo* & cmi -> cmo"
+  ~tags:["ocaml"; "byte"]
+  ~prod:"%.cmo"
+  ~deps:["%.mli"; "%.cmi"; "%.mlpack"]
+  (Ocaml_compiler.byte_pack_mlpack "%.mlpack" "%.cmo");;
+
 rule "ocaml: mlpack & cmo* -> cmo & cmi"
   ~tags:["ocaml"; "byte"]
   ~prods:["%.cmo"; "%.cmi"]
@@ -354,6 +360,7 @@ flag ["ocaml"; "debug"; "link"; "native"; "program"] (A "-g");;
 flag ["ocaml"; "debug"; "pack"; "native"] (A "-g");;
 flag ["ocaml"; "dtypes"; "compile"] (A "-dtypes");;
 flag ["ocaml"; "rectypes"; "compile"] (A "-rectypes");;
+flag ["ocaml"; "rectypes"; "infer_interface"] (A "-rectypes");;
 flag ["ocaml"; "linkall"; "link"] (A "-linkall");;
 flag ["ocaml"; "link"; "profile"; "native"] (A "-p");;
 flag ["ocaml"; "link"; "program"; "custom"; "byte"] (A "-custom");;

@@ -1,3 +1,13 @@
+2007-03-20  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Two bugs, two fixes.
+
+	* ocaml_tools.ml: Add pp flags to interface inference.
+	* ocaml_specific.ml: Add a rule for packing with a cmi that already
+	exists.
+	* test/good-output: Update.
+	* Makefile: Change the default location.
+
 2007-03-13  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
 
 	Fix a bug in expand_module.

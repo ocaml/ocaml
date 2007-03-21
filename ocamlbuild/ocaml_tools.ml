@@ -30,9 +30,10 @@ let ocamllex mll env _build =
 
 let infer_interface ml mli env build =
   let ml = env ml and mli = env mli in
+  let tags = tags_of_pathname ml++"ocaml" in
   Ocaml_compiler.prepare_compile build ml;
-  Cmd(S[!Options.ocamlc; ocaml_include_flags ml; A"-i";
-        T(tags_of_pathname ml++"ocaml"++"infer_interface"); P ml; Sh">"; Px mli])
+  Cmd(S[!Options.ocamlc; ocaml_ppflags tags; ocaml_include_flags ml; A"-i";
+        T(tags++"infer_interface"); P ml; Sh">"; Px mli])
 
 let menhir mly env build =
   let mly = env mly in

@@ -1,7 +1,7 @@
 .PHONY: all byte native profile debug ppcache doc
 
 ifndef INSTALL_PREFIX
-INSTALL_PREFIX := /usr/local
+INSTALL_PREFIX := $(PWD)/_install
 endif
 
 ifndef INSTALL_LIB
@@ -25,7 +25,7 @@ OCAMLBUILD_OPTIONS := $(OCAMLBUILD_OPTIONS) $(O)
 endif
 
 ifeq ($(wildcard ./boot/oc*build),./boot/ocamlbuild)
-OCAMLBUILD=INSTALL_LIB=$(INSTALL_LIB) $(OCAMLBUILDCMD) -build-dir $(BUILDDIR) -no-links $(OCAMLBUILD_OPTIONS)
+OCAMLBUILD=INSTALL_LIB=$(INSTALL_LIB) INSTALL_BIN=$(INSTALL_BIN) $(OCAMLBUILDCMD) -build-dir $(BUILDDIR) -no-links $(OCAMLBUILD_OPTIONS)
 LIBS=ocamlbuildlib ocamlbuildlightlib
 PROGRAMS=ocamlbuild ocamlbuildlight
 BYTE=$(LIBS:=.cma) $(PROGRAMS:=.byte)
