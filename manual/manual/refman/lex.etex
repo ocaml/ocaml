@@ -1,6 +1,6 @@
 \section{Lexical conventions}
 \pdfsection{Lexical conventions}
-
+%HEVEA\cutname{lex.html}
 \subsubsection*{Blanks}
 
 The following characters are considered as blanks: space, newline,
