@@ -261,7 +261,7 @@ install: FORCE
 	if test -f debugger/ocamldebug; then (cd debugger; $(MAKE) install); \
 	   else :; fi
 	cp config/Makefile $(LIBDIR)/Makefile.config
-	./build/partial-install.sh
+	BINDIR=$(BINDIR) LIBDIR=$(LIBDIR) PREFIX=$(PREFIX) ./build/partial-install.sh
 
 # Installation of the native-code compiler
 installopt:
