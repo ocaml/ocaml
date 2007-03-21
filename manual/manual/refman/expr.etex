@@ -1,6 +1,6 @@
 \section{Expressions\label{s:value-expr}}
 \pdfsection{Expressions}
-%HEVEA\cutname{expr.html}f
+%HEVEA\cutname{expr.html}
 \ikwd{in\@\texttt{in}|see{\texttt{let}}}
 \ikwd{and\@\texttt{and}|see{\texttt{let}, \texttt{type}, \texttt{class}}}
 \ikwd{rec\@\texttt{rec}|see{\texttt{let}}}
