@@ -66,7 +66,7 @@ module Make (Loc : Sig.Loc)
       INT64 _ s | NATIVEINT _ s | FLOAT _ s | CHAR _ s | STRING _ s |
       LABEL s | OPTLABEL s | COMMENT s | BLANKS s | ESCAPED_IDENT s -> s
     | tok ->
-        invalid_arg ("Cannot extract a string from a this token: "^
+        invalid_arg ("Cannot extract a string from this token: "^
                      to_string tok) ];
 
   module Error = struct
