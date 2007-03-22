@@ -617,12 +617,13 @@ alldepend::
 
 # The replay debugger
 
-ocamldebugger: ocamlc ocamlyacc ocamllex
-	cd debugger; $(MAKE) all
-partialclean::
-	cd debugger; $(MAKE) clean
-alldepend::
-	cd debugger; $(MAKE) depend
+ocamldebugger:
+#ocamldebugger: ocamlc ocamlyacc ocamllex
+#	cd debugger; $(MAKE) all
+#partialclean::
+#	cd debugger; $(MAKE) clean
+#alldepend::
+#	cd debugger; $(MAKE) depend
 
 # Camlp4
 
@@ -634,10 +635,10 @@ camlp4out camlp4opt camlp4optopt:
 #	cd camlp4; $(MAKE) opt
 #camlp4optopt: ocamlopt
 #	cd camlp4; $(MAKE) opt.opt
-partialclean::
-	cd camlp4; $(MAKE) clean
-alldepend::
-	cd camlp4; $(MAKE) depend
+#partialclean::
+#	cd camlp4; $(MAKE) clean
+#alldepend::
+#	cd camlp4; $(MAKE) depend
 
 # Check that the stack limit is reasonable.
 
