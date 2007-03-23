@@ -861,7 +861,7 @@ Pathname.define_context "otherlibs/labltk/browser"
 file_rule "otherlibs/labltk/compiler/copyright"
   ~dep:"otherlibs/labltk/compiler/copyright"
   ~prod:"otherlibs/labltk/compiler/copyright.ml"
-  ~cache:(fun _ -> "0.1")
+  ~cache:(fun _ _ -> "0.1")
   begin fun _ oc ->
     Printf.fprintf oc "let copyright = \"%a\";;\n\
                        let write ~w = w copyright;;"
@@ -1036,7 +1036,7 @@ rule "labltktop"
 let labltk_installdir = C.libdir/"labltk" in
 file_rule "labltk"
   ~prod:"otherlibs/labltk/lib/labltk"
-  ~cache:(fun _ -> labltk_installdir)
+  ~cache:(fun _ _ -> labltk_installdir)
   begin fun _ oc ->
     Printf.fprintf oc
       "#!/bin/sh\n\

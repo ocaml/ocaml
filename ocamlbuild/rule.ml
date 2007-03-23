@@ -270,15 +270,15 @@ let rule name ?(tags=[]) ?(prods=[]) ?(deps=[]) ?prod ?dep ?(insert = `bottom) c
     code  = code }
 
 let file_rule name ?tags ~prod ?deps ?dep ?insert ~cache action =
-  rule name ?tags ~prod ?dep ?deps ?insert begin fun env _ ->
-    raise (Code_digest (cache env, (fun cached ->
+  rule name ?tags ~prod ?dep ?deps ?insert begin fun env build ->
+    raise (Code_digest (cache env build, (fun cached ->
       if not cached then
         with_output_file (env prod) (action env))))
   end
 
 let custom_rule name ?tags ?prods ?prod ?deps ?dep ?insert ~cache action =
-  rule name ?tags ?prods ?prod ?dep ?deps ?insert begin fun env _ ->
-    raise (Code_digest (cache env, fun cached -> action env ~cached))
+  rule name ?tags ?prods ?prod ?dep ?deps ?insert begin fun env build ->
+    raise (Code_digest (cache env build, fun cached -> action env ~cached))
   end
 
 module Common_commands = struct

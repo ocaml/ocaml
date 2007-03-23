@@ -19,6 +19,8 @@ include Signatures.COMMAND with type tags = Tags.t
 
 (** {6 For system use only, not for the casual user} *)
 
+val string_target_and_tags_of_command_spec : spec -> string * string * Tags.t
+
 (** Same as [to_string]. *)
 val to_string_for_digest : t -> string
 

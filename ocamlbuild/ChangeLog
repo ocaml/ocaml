@@ -1,3 +1,39 @@
+2007-03-22  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Allow to receive the build function in {custom,file}_rule.
+
+	* rule.ml,
+	* rule.mli,
+	* signatures.mli: Ditto.
+	* ocaml_specific.ml: Update.
+
+	* command.ml,
+	* command.mli: Add a function to get string and tags.
+
+	* ocamldep.ml,
+	* ocamldep.mli: Make tag based dependencies.
+
+	* ocaml_compiler.ml: Do the pack as one command to be sure running the
+	remove.
+
+	* test/test8/myocamlbuild.ml,
+	* test/good-output: Update.
+
+2007-03-21  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	Fix the previous fix.
+
+	* ocaml_compiler.ml: Remove the empty file.
+	* test/good-output: Update.
+
+2007-03-21  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
+
+	[native pack] use touch instead of mv and cmp.
+
+	* ocaml_compiler.ml: This version is will force ocamlopt to do the
+	right thing.
+	* test/good-output: Update.
+
 2007-03-20  Nicolas Pouillard  <nicolas.pouillard@gmail.com>
 
 	Two bugs, two fixes.

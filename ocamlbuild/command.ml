@@ -151,12 +151,16 @@ let rec string_of_command_spec_with_calls call_with_tags call_with_target resolv
 
 let string_of_command_spec x = string_of_command_spec_with_calls ignore ignore false x
 
-let string_print_of_command_spec spec =
+let string_target_and_tags_of_command_spec spec =
   let rtags = ref Tags.empty in
   let rtarget = ref "" in
   let s = string_of_command_spec_with_calls ((:=) rtags) ((:=) rtarget) true spec in
   let target = if !rtarget = "" then s else !rtarget in
-  (s, (fun quiet pretend () -> if not quiet then Log.event ~pretend s target !rtags))
+  s, target, !rtags
+
+let string_print_of_command_spec spec =
+  let s, target, tags = string_target_and_tags_of_command_spec spec in
+  (s, (fun quiet pretend () -> if not quiet then Log.event ~pretend s target tags))
 (* ***)
 
 let rec print f =
