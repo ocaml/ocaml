@@ -86,6 +86,13 @@ val chop_extension_if_any: string -> string
         (* Like Filename.chop_extension but returns the initial file
            name if it has no extension *)
 
+val chop_extensions: string -> string
+        (* Return the given file name without its extensions. The extensions
+           is the longest suffix starting with a period and not including
+           a directory separator, [.xyz.uvw] for instance.
+
+           Return the given name if it does not contain an extension. *)
+
 val search_substring: string -> string -> int -> int
         (* [search_substring pat str start] returns the position of the first
            occurrence of string [pat] in string [str].  Search starts

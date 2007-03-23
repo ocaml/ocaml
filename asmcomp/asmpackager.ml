@@ -43,7 +43,7 @@ type pack_member =
 
 let read_member_info pack_path file =
   let name =
-    String.capitalize(Filename.basename(chop_extension_if_any file)) in
+    String.capitalize(Filename.basename(chop_extensions file)) in
   let kind =
     if Filename.check_suffix file ".cmx" then begin
       let (info, crc) = Compilenv.read_unit_info file in
@@ -53,6 +53,7 @@ let read_member_info pack_path file =
          (Compilenv.current_unit_infos()).ui_symbol ^ "__" ^ info.ui_name
       then raise(Error(Wrong_for_pack(file, pack_path)));
       Asmlink.check_consistency file info crc;
+      Compilenv.cache_unit_info info;
       PM_impl info
     end else
       PM_intf in
@@ -79,7 +80,10 @@ let check_units members =
 (* Make the .o file for the package *)
 
 let make_package_object ppf members targetobj targetname coercion =
-  let objtemp = Filename.temp_file "camlpackage" Config.ext_obj in
+  (* Put the full name of the module in the temporary file name
+     to avoid collisions with MSVC's link /lib in case of successive packs *)
+  let objtemp =
+    Filename.temp_file (Compilenv.make_symbol (Some "")) Config.ext_obj in
   let components =
     List.map
       (fun m ->
@@ -96,8 +100,8 @@ let make_package_object ppf members targetobj targetname coercion =
       (fun m -> chop_extension_if_any m.pm_file ^ Config.ext_obj)
       (List.filter (fun m -> m.pm_kind <> PM_intf) members) in
   let ld_cmd =
-    sprintf "%s -o %s %s %s"
-            Config.native_pack_linker 
+    sprintf "%s%s %s %s"
+            Config.native_pack_linker
             (Filename.quote targetobj)
             (Filename.quote objtemp)
             (Ccomp.quote_files objfiles) in
@@ -118,17 +122,17 @@ let build_package_cmx members cmxfile =
           (fun accu n -> if List.mem n accu then accu else n :: accu))
       [] lst in
   let units =
-    List.fold_left
-      (fun accu m ->
+    List.fold_right
+      (fun m accu ->
         match m.pm_kind with PM_intf -> accu | PM_impl info -> info :: accu)
-      [] members in
+      members [] in
   let ui = Compilenv.current_unit_infos() in
   let pkg_infos =
     { ui_name = ui.ui_name;
       ui_symbol = ui.ui_symbol;
       ui_defines =
-          ui.ui_symbol ::
-          union (List.map (fun info -> info.ui_defines) units);
+          List.flatten (List.map (fun info -> info.ui_defines) units) @
+          [ui.ui_symbol];
       ui_imports_cmi =
           (ui.ui_name, Env.crc_of_unit ui.ui_name) ::
           filter(Asmlink.extract_crc_interfaces());
@@ -148,7 +152,7 @@ let build_package_cmx members cmxfile =
 
 (* Make the .cmx and the .o for the package *)
 
-let package_object_files ppf files targetcmx 
+let package_object_files ppf files targetcmx
                          targetobj targetname coercion =
   let pack_path =
     match !Clflags.for_package with
@@ -168,9 +172,9 @@ let package_files ppf files targetcmx =
         try find_in_path !Config.load_path f
         with Not_found -> raise(Error(File_not_found f)))
       files in
-  let prefix = chop_extension_if_any targetcmx in
+  let prefix = chop_extensions targetcmx in
   let targetcmi = prefix ^ ".cmi" in
-  let targetobj = prefix ^ Config.ext_obj in
+  let targetobj = chop_extension_if_any targetcmx ^ Config.ext_obj in
   let targetname = String.capitalize(Filename.basename prefix) in
   (* Set the name of the current "input" *)
   Location.input_name := targetcmx;
@@ -194,7 +198,7 @@ let report_error ppf = function
   | Forward_reference(file, ident) ->
       fprintf ppf "Forward reference to %s in file %s" ident file
   | Wrong_for_pack(file, path) ->
-      fprintf ppf "File %s@ was not compiled with the `-pack %s' option"
+      fprintf ppf "File %s@ was not compiled with the `-for-pack %s' option"
               file path
   | File_not_found file ->
       fprintf ppf "File %s not found" file

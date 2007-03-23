@@ -141,7 +141,7 @@ regexp:
           let s1 = as_cset $1
           and s2 = as_cset $3 in
           Characters (Cset.diff s1 s2)
-        } 
+        }
   | regexp Tor regexp
         { Alternative($1,$3) }
   | regexp regexp %prec CONCAT
@@ -152,14 +152,22 @@ regexp:
         { try
             Hashtbl.find named_regexps $1
           with Not_found ->
-            prerr_string "Reference to unbound regexp name `";
-            prerr_string $1;
-            prerr_string "' at char ";
-            prerr_int (Parsing.symbol_start());
-            prerr_newline();
+            let p = Parsing.symbol_start_pos () in
+            Printf.eprintf "File \"%s\", line %d, character %d:\n\
+                             Reference to unbound regexp name `%s'.\n"
+                           p.Lexing.pos_fname p.Lexing.pos_lnum
+                           (p.Lexing.pos_cnum - p.Lexing.pos_bol)
+                           $1;
             exit 2 }
   | regexp Tas ident
-        {Bind ($1, $3)}
+        {let p1 = Parsing.rhs_start_pos 3
+         and p2 = Parsing.rhs_end_pos 3 in
+         let p = {
+           start_pos = p1.Lexing.pos_cnum ;
+           end_pos = p2.Lexing.pos_cnum ;
+           start_line = p1.Lexing.pos_lnum ;
+           start_col = p1.Lexing.pos_cnum - p1.Lexing.pos_bol ; } in
+         Bind ($1, ($3, p))}
 ;
 
 ident:
@@ -182,4 +190,3 @@ char_class1:
 ;
 
 %%
-

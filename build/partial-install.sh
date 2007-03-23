@@ -125,11 +125,16 @@ for dir in Camlp4Parsers Camlp4Printers Camlp4Filters Camlp4Top; do
     $CAMLP4DIR/$dir
 done
 installdir \
-  camlp4lib.{cma,cmxa} Camlp4.cmi \
-  {camlp4o,camlp4of,camlp4oof,camlp4orf,camlp4r,camlp4rf}.cma \
-  Camlp4Bin.{cm[iox],$O,p.$O} Camlp4Top.cm[io] \
+  camlp4lib.cma camlp4lib.cmxa Camlp4.cmi \
+  camlp4o.cma \
+  camlp4of.cma \
+  camlp4oof.cma \
+  camlp4orf.cma \
+  camlp4r.cma \
+  camlp4rf.cma \
+  Camlp4Bin.cm[iox] Camlp4Bin.$O Camlp4Bin.p.$O Camlp4Top.cm[io] \
   $CAMLP4DIR
-installlibdir camlp4lib.{$A,p.$A} $CAMLP4DIR
+installlibdir camlp4lib.$A camlp4lib.p.$A $CAMLP4DIR
 cd ..
 
 echo "Installing ocamlbuild..."
@@ -139,16 +144,19 @@ installbin ocamlbuild/ocamlbuild.native$EXE $BINDIR/ocamlbuild.native$EXE
 installbestbin ocamlbuild/ocamlbuild.native$EXE ocamlbuild/ocamlbuild.byte$EXE $BINDIR/ocamlbuild$EXE
 
 installlibdir \
-  ocamlbuild/ocamlbuildlib.{$A,p.$A} \
+  ocamlbuild/ocamlbuildlib.$A ocamlbuild/ocamlbuildlib.p.$A \
   $LIBDIR/ocamlbuild
 
 installdir \
-  ocamlbuild/ocamlbuildlib{,.p}.cmxa \
+  ocamlbuild/ocamlbuildlib.cmxa ocamlbuild/ocamlbuildlibp.cmxa\
   ocamlbuild/ocamlbuildlib.cma \
   ocamlbuild/ocamlbuild_plugin.cmi \
   ocamlbuild/ocamlbuild_pack.cmi \
   ocamlbuild/ocamlbuild.cmo \
-  ocamlbuild/ocamlbuild{,.p}.{cmx,$O} \
+  ocamlbuild/ocamlbuild.cmx \
+  ocamlbuild/ocamlbuild.$O \
+  ocamlbuild/ocamlbuild.p.cmx \
+  ocamlbuild/ocamlbuild.p.$O \
   $LIBDIR/ocamlbuild
 
 installdir \

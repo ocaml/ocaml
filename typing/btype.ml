@@ -253,10 +253,9 @@ let rec copy_type_desc f = function
   | Tobject(ty, {contents = Some (p, tl)})
                         -> Tobject (f ty, ref (Some(p, List.map f tl)))
   | Tobject (ty, _)     -> Tobject (f ty, ref None)
-  | Tvariant row        ->
-      let row = row_repr row in
-      Tvariant (copy_row f true row false (f row.row_more))
-  | Tfield (p, k, ty1, ty2) -> Tfield (p, copy_kind k, f ty1, f ty2)
+  | Tvariant row        -> assert false (* too ambiguous *)
+  | Tfield (p, k, ty1, ty2) -> (* the kind is kept shared *)
+      Tfield (p, field_kind_repr k, f ty1, f ty2)
   | Tnil                -> Tnil
   | Tlink ty            -> copy_type_desc f ty.desc
   | Tsubst ty           -> assert false
@@ -274,10 +273,22 @@ let saved_desc = ref []
 let save_desc ty desc = 
   saved_desc := (ty, desc)::!saved_desc
 
+let saved_kinds = ref [] (* duplicated kind variables *)
+let new_kinds = ref []   (* new kind variables *)
+let dup_kind r =
+  (match !r with None -> () | Some _ -> assert false);
+  if not (List.memq r !new_kinds) then begin
+    saved_kinds := r :: !saved_kinds;
+    let r' = ref None in
+    new_kinds := r' :: !new_kinds;
+    r := Some (Fvar r')
+  end
+
 (* Restored type descriptions. *)
 let cleanup_types () =
   List.iter (fun (ty, desc) -> ty.desc <- desc) !saved_desc;
-  saved_desc := []
+  List.iter (fun r -> r := None) !saved_kinds;
+  saved_desc := []; saved_kinds := []; new_kinds := []
 
 (* Mark a type. *)
 let rec mark_type ty =
@@ -320,7 +331,7 @@ let unmark_type_decl decl =
 
 let unmark_class_signature sign =
   unmark_type sign.cty_self;
-  Vars.iter (fun l (m, t) -> unmark_type t) sign.cty_vars
+  Vars.iter (fun l (m, v, t) -> unmark_type t) sign.cty_vars
 
 let rec unmark_class_type =
   function

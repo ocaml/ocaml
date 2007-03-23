@@ -47,19 +47,6 @@ let quote_files lst =
   else s
 
 let compile_file name =
-  match Config.ccomp_type with
-  | "mrc" ->
-     let qname = Filename.quote name in
-     let includes = (Clflags.std_include_dir ()) @ !Clflags.include_dirs
-     in
-     let args =
-       Printf.sprintf " %s %s -i %s"
-         (String.concat " " (List.rev_map Filename.quote !Clflags.ccopts))
-         (String.concat "," (List.rev_map Filename.quote includes))
-         qname
-     in
-     command ("mrc " ^ args ^ " -o " ^ qname ^ ".x")
-  | "cc" | "msvc" ->
      command
        (Printf.sprintf
          "%s -c %s %s %s %s"
@@ -69,14 +56,13 @@ let compile_file name =
              (List.rev_map (fun dir -> "-I" ^ dir) !Clflags.include_dirs))
          (Clflags.std_include_flag "-I")
          (Filename.quote name))
-  | _ -> assert false
 
 let create_archive archive file_list =
   Misc.remove_file archive;
   let quoted_archive = Filename.quote archive in
   match Config.ccomp_type with
     "msvc" ->
-      command(Printf.sprintf "link /lib /nologo /debugtype:cv /out:%s %s"
+      command(Printf.sprintf "link /lib /nologo /out:%s %s"
                              quoted_archive (quote_files file_list))
   | _ ->
       let r1 =
@@ -96,4 +82,31 @@ let expand_libname name =
       Misc.find_in_path !Config.load_path libname
     with Not_found ->
       libname
+  end
+
+(* Handling of msvc's /link options *)
+
+let make_link_options optlist =
+  let rec split linkopts otheropts = function
+  | [] -> String.concat " " otheropts
+	  ^ " /link /subsystem:console "
+          ^ String.concat " " linkopts
+  | opt :: rem ->
+      if String.length opt >= 5 && String.sub opt 0 5 = "/link"
+      then split (String.sub opt 5 (String.length opt - 5) :: linkopts)
+                 otheropts rem
+      else split linkopts (opt :: otheropts) rem
+  in split [] [] optlist
+
+(* Handling of Visual C++ 2005 manifest files *)
+
+let merge_manifest exefile =
+  let manfile = exefile ^ ".manifest" in
+  if not (Sys.file_exists manfile) then 0 else begin
+    let retcode =
+      command (Printf.sprintf "mt -nologo -outputresource:%s -manifest %s"
+                              (Filename.quote exefile)
+                              (Filename.quote manfile)) in
+    Misc.remove_file manfile;
+    retcode
   end

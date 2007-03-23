@@ -49,7 +49,7 @@ val virtual_methods: Types.class_signature -> label list
 
 type error =
     Unconsistent_constraint of (type_expr * type_expr) list
-  | Method_type_mismatch of string * (type_expr * type_expr) list
+  | Field_type_mismatch of string * string * (type_expr * type_expr) list
   | Structure_expected of class_type
   | Cannot_apply of class_type
   | Apply_wrong_label of label
@@ -61,7 +61,7 @@ type error =
   | Unbound_class_type_2 of Longident.t
   | Abbrev_type_clash of type_expr * type_expr * type_expr
   | Constructor_type_mismatch of string * (type_expr * type_expr) list
-  | Virtual_class of bool * string list
+  | Virtual_class of bool * string list * string list
   | Parameter_arity_mismatch of Longident.t * int * int
   | Parameter_mismatch of (type_expr * type_expr) list
   | Bad_parameters of Ident.t * type_expr * type_expr
@@ -74,6 +74,7 @@ type error =
   | Non_collapsable_conjunction of
       Ident.t * Types.class_declaration * (type_expr * type_expr) list
   | Final_self_clash of (type_expr * type_expr) list
+  | Mutability_mismatch of string * mutable_flag
 
 exception Error of Location.t * error
 

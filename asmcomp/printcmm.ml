@@ -51,8 +51,9 @@ let chunk = function
   | Double_u -> "float64u"
 
 let operation = function
-  | Capply ty -> "app"
-  | Cextcall(lbl, ty, alloc) -> Printf.sprintf "extcall \"%s\"" lbl
+  | Capply(ty, d) -> "app" ^ Debuginfo.to_string d
+  | Cextcall(lbl, ty, alloc, d) ->
+      Printf.sprintf "extcall \"%s\"%s" lbl (Debuginfo.to_string d)
   | Cload Word -> "load"
   | Cload c -> Printf.sprintf "load %s" (chunk c)
   | Calloc -> "alloc"
@@ -82,8 +83,8 @@ let operation = function
   | Cfloatofint -> "floatofint"
   | Cintoffloat -> "intoffloat"
   | Ccmpf c -> Printf.sprintf "%sf" (comparison c)
-  | Craise -> "raise"
-  | Ccheckbound -> "checkbound"
+  | Craise d -> "raise" ^ Debuginfo.to_string d
+  | Ccheckbound d -> "checkbound" ^ Debuginfo.to_string d
 
 let rec expr ppf = function
   | Cconst_int n -> fprintf ppf "%i" n
@@ -123,8 +124,8 @@ let rec expr ppf = function
       fprintf ppf "@[<2>(%s" (operation op);
       List.iter (fun e -> fprintf ppf "@ %a" expr e) el;
       begin match op with
-      | Capply mty -> fprintf ppf "@ %a" machtype mty
-      | Cextcall(_, mty, _) -> fprintf ppf "@ %a" machtype mty
+      | Capply (mty, _) -> fprintf ppf "@ %a" machtype mty
+      | Cextcall(_, mty, _, _) -> fprintf ppf "@ %a" machtype mty
       | _ -> ()
       end;
       fprintf ppf ")@]"

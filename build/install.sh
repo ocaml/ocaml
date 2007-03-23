@@ -94,9 +94,9 @@ mkdir -p $MANDIR/man3
 mkdir -p $MANDIR/man$MANEXT
 
 echo "Installing core libraries..."
-installlibdir byterun/libcamlrun.{$A,p.$A} \
-              asmrun/libasmrun.{$A,p.$A} \
-              asmrun/libasmrunp.{$A,p.$A} \
+installlibdir byterun/libcamlrun.$A byterun/libcamlrunp.$A \
+              asmrun/libasmrun.$A asmrun/libasmrunp.$A \
+              asmrun/libasmrunp.$A asmrun/libasmrunpp.$A \
               $LIBDIR
 
 PUBLIC_INCLUDES="\
@@ -110,7 +110,8 @@ for i in $PUBLIC_INCLUDES; do
 done
 cd ..
 
-installdir otherlibs/{win32,}unix/unixsupport.h $LIBDIR/caml
+installdir otherlibs/win32unix/unixsupport.h otherlibs/unix/unixsupport.h \
+           $LIBDIR/caml
 
 installdir byterun/ocamlrun.dll yacc/ocamlyacc byterun/ocamlrun $BINDIR
 
@@ -132,101 +133,101 @@ set=set # coloration workaround
 echo "Installing the standard library..."
 installdir \
   stdlib/stdlib.cma \
-  stdlib/stdlib{,.p}.cmxa \
+  stdlib/stdlib.cmxa stdlib/stdlibp.cmxa \
   stdlib/camlheader \
   stdlib/camlheader_ur \
   stdlib/std_exit.cm[io] \
-  stdlib/arg.{cmi,mli} \
-  stdlib/array.{cmi,mli} \
-  stdlib/arrayLabels.{cmi,mli} \
-  stdlib/buffer.{cmi,mli} \
-  stdlib/callback.{cmi,mli} \
-  stdlib/camlinternalMod.{cmi,mli} \
-  stdlib/camlinternalOO.{cmi,mli} \
-  stdlib/char.{cmi,mli} \
-  stdlib/complex.{cmi,mli} \
-  stdlib/digest.{cmi,mli} \
-  stdlib/filename.{cmi,mli} \
-  stdlib/format.{cmi,mli} \
-  stdlib/gc.{cmi,mli} \
-  stdlib/genlex.{cmi,mli} \
-  stdlib/hashtbl.{cmi,mli} \
-  stdlib/int32.{cmi,mli} \
-  stdlib/int64.{cmi,mli} \
-  stdlib/lazy.{cmi,mli} \
-  stdlib/lexing.{cmi,mli} \
-  stdlib/list.{cmi,mli} \
-  stdlib/listLabels.{cmi,mli} \
-  stdlib/map.{cmi,mli} \
-  stdlib/marshal.{cmi,mli} \
-  stdlib/moreLabels.{cmi,mli} \
-  stdlib/nativeint.{cmi,mli} \
-  stdlib/obj.{cmi,mli} \
-  stdlib/oo.{cmi,mli} \
-  stdlib/parsing.{cmi,mli} \
-  stdlib/pervasives.{cmi,mli} \
-  stdlib/printexc.{cmi,mli} \
-  stdlib/printf.{cmi,mli} \
-  stdlib/queue.{cmi,mli} \
-  stdlib/random.{cmi,mli} \
-  stdlib/scanf.{cmi,mli} \
-  stdlib/sort.{cmi,mli} \
-  stdlib/stack.{cmi,mli} \
-  stdlib/stdLabels.{cmi,mli} \
-  stdlib/stream.{cmi,mli} \
-  stdlib/string.{cmi,mli} \
-  stdlib/stringLabels.{cmi,mli} \
-  stdlib/sys.{cmi,mli} \
-  stdlib/weak.{cmi,mli} \
-  stdlib/$set.{cmi,mli} \
-  stdlib/arg{,.p}.{cmx,$O} \
-  stdlib/array{,.p}.{cmx,$O} \
-  stdlib/arrayLabels{,.p}.{cmx,$O} \
-  stdlib/buffer{,.p}.{cmx,$O} \
-  stdlib/callback{,.p}.{cmx,$O} \
-  stdlib/camlinternalMod{,.p}.{cmx,$O} \
-  stdlib/camlinternalOO{,.p}.{cmx,$O} \
-  stdlib/char{,.p}.{cmx,$O} \
-  stdlib/complex{,.p}.{cmx,$O} \
-  stdlib/digest{,.p}.{cmx,$O} \
-  stdlib/filename{,.p}.{cmx,$O} \
-  stdlib/format{,.p}.{cmx,$O} \
-  stdlib/gc{,.p}.{cmx,$O} \
-  stdlib/genlex{,.p}.{cmx,$O} \
-  stdlib/hashtbl{,.p}.{cmx,$O} \
-  stdlib/int32{,.p}.{cmx,$O} \
-  stdlib/int64{,.p}.{cmx,$O} \
-  stdlib/lazy{,.p}.{cmx,$O} \
-  stdlib/lexing{,.p}.{cmx,$O} \
-  stdlib/list{,.p}.{cmx,$O} \
-  stdlib/listLabels{,.p}.{cmx,$O} \
-  stdlib/map{,.p}.{cmx,$O} \
-  stdlib/marshal{,.p}.{cmx,$O} \
-  stdlib/moreLabels{,.p}.{cmx,$O} \
-  stdlib/nativeint{,.p}.{cmx,$O} \
-  stdlib/obj{,.p}.{cmx,$O} \
-  stdlib/oo{,.p}.{cmx,$O} \
-  stdlib/parsing{,.p}.{cmx,$O} \
-  stdlib/pervasives{,.p}.{cmx,$O} \
-  stdlib/printexc{,.p}.{cmx,$O} \
-  stdlib/printf{,.p}.{cmx,$O} \
-  stdlib/queue{,.p}.{cmx,$O} \
-  stdlib/random{,.p}.{cmx,$O} \
-  stdlib/scanf{,.p}.{cmx,$O} \
-  stdlib/sort{,.p}.{cmx,$O} \
-  stdlib/stack{,.p}.{cmx,$O} \
-  stdlib/stdLabels{,.p}.{cmx,$O} \
-  stdlib/std_exit{,.p}.{cmx,$O} \
-  stdlib/stream{,.p}.{cmx,$O} \
-  stdlib/string{,.p}.{cmx,$O} \
-  stdlib/stringLabels{,.p}.{cmx,$O} \
-  stdlib/sys{,.p}.{cmx,$O} \
-  stdlib/weak{,.p}.{cmx,$O} \
-  stdlib/$set{,.p}.{cmx,$O} \
+  stdlib/arg.cmi stdlib/arg.mli \
+  stdlib/array.cmi stdlib/array.mli \
+  stdlib/arrayLabels.cmi stdlib/arrayLabels.mli \
+  stdlib/buffer.cmi stdlib/buffer.mli \
+  stdlib/callback.cmi stdlib/callback.mli \
+  stdlib/camlinternalMod.cmi stdlib/camlinternalMod.mli \
+  stdlib/camlinternalOO.cmi stdlib/camlinternalOO.mli \
+  stdlib/char.cmi stdlib/char.mli \
+  stdlib/complex.cmi stdlib/complex.mli \
+  stdlib/digest.cmi stdlib/digest.mli \
+  stdlib/filename.cmi stdlib/filename.mli \
+  stdlib/format.cmi stdlib/format.mli \
+  stdlib/gc.cmi stdlib/gc.mli \
+  stdlib/genlex.cmi stdlib/genlex.mli \
+  stdlib/hashtbl.cmi stdlib/hashtbl.mli \
+  stdlib/int32.cmi stdlib/int32.mli \
+  stdlib/int64.cmi stdlib/int64.mli \
+  stdlib/lazy.cmi stdlib/lazy.mli \
+  stdlib/lexing.cmi stdlib/lexing.mli \
+  stdlib/list.cmi stdlib/list.mli \
+  stdlib/listLabels.cmi stdlib/listLabels.mli \
+  stdlib/map.cmi stdlib/map.mli \
+  stdlib/marshal.cmi stdlib/marshal.mli \
+  stdlib/moreLabels.cmi stdlib/moreLabels.mli \
+  stdlib/nativeint.cmi stdlib/nativeint.mli \
+  stdlib/obj.cmi stdlib/obj.mli \
+  stdlib/oo.cmi stdlib/oo.mli \
+  stdlib/parsing.cmi stdlib/parsing.mli \
+  stdlib/pervasives.cmi stdlib/pervasives.mli \
+  stdlib/printexc.cmi stdlib/printexc.mli \
+  stdlib/printf.cmi stdlib/printf.mli \
+  stdlib/queue.cmi stdlib/queue.mli \
+  stdlib/random.cmi stdlib/random.mli \
+  stdlib/scanf.cmi stdlib/scanf.mli \
+  stdlib/sort.cmi stdlib/sort.mli \
+  stdlib/stack.cmi stdlib/stack.mli \
+  stdlib/stdLabels.cmi stdlib/stdLabels.mli \
+  stdlib/stream.cmi stdlib/stream.mli \
+  stdlib/string.cmi stdlib/string.mli \
+  stdlib/stringLabels.cmi stdlib/stringLabels.mli \
+  stdlib/sys.cmi stdlib/sys.mli \
+  stdlib/weak.cmi stdlib/weak.mli \
+  stdlib/$set.cmi stdlib/$set.mli \
+ stdlib/arg.cmx stdlib/argp.cmx stdlib/arg.$O stdlib/argp.$O \
+ stdlib/array.cmx stdlib/arrayp.cmx stdlib/array.$O stdlib/arrayp.$O \
+ stdlib/arrayLabels.cmx stdlib/arrayLabelsp.cmx stdlib/arrayLabels.$O stdlib/arrayLabelsp.$O \
+ stdlib/buffer.cmx stdlib/bufferp.cmx stdlib/buffer.$O stdlib/bufferp.$O \
+ stdlib/callback.cmx stdlib/callbackp.cmx stdlib/callback.$O stdlib/callbackp.$O \
+ stdlib/camlinternalMod.cmx stdlib/camlinternalModp.cmx stdlib/camlinternalMod.$O stdlib/camlinternalModp.$O \
+ stdlib/camlinternalOO.cmx stdlib/camlinternalOOp.cmx stdlib/camlinternalOO.$O stdlib/camlinternalOOp.$O \
+ stdlib/char.cmx stdlib/charp.cmx stdlib/char.$O stdlib/charp.$O \
+ stdlib/complex.cmx stdlib/complexp.cmx stdlib/complex.$O stdlib/complexp.$O \
+ stdlib/digest.cmx stdlib/digestp.cmx stdlib/digest.$O stdlib/digestp.$O \
+ stdlib/filename.cmx stdlib/filenamep.cmx stdlib/filename.$O stdlib/filenamep.$O \
+ stdlib/format.cmx stdlib/formatp.cmx stdlib/format.$O stdlib/formatp.$O \
+ stdlib/gc.cmx stdlib/gcp.cmx stdlib/gc.$O stdlib/gcp.$O \
+ stdlib/genlex.cmx stdlib/genlexp.cmx stdlib/genlex.$O stdlib/genlexp.$O \
+ stdlib/hashtbl.cmx stdlib/hashtblp.cmx stdlib/hashtbl.$O stdlib/hashtblp.$O \
+ stdlib/int32.cmx stdlib/int32p.cmx stdlib/int32.$O stdlib/int32p.$O \
+ stdlib/int64.cmx stdlib/int64p.cmx stdlib/int64.$O stdlib/int64p.$O \
+ stdlib/lazy.cmx stdlib/lazyp.cmx stdlib/lazy.$O stdlib/lazyp.$O \
+ stdlib/lexing.cmx stdlib/lexingp.cmx stdlib/lexing.$O stdlib/lexingp.$O \
+ stdlib/list.cmx stdlib/listp.cmx stdlib/list.$O stdlib/listp.$O \
+ stdlib/listLabels.cmx stdlib/listLabelsp.cmx stdlib/listLabels.$O stdlib/listLabelsp.$O \
+ stdlib/map.cmx stdlib/mapp.cmx stdlib/map.$O stdlib/mapp.$O \
+ stdlib/marshal.cmx stdlib/marshalp.cmx stdlib/marshal.$O stdlib/marshalp.$O \
+ stdlib/moreLabels.cmx stdlib/moreLabelsp.cmx stdlib/moreLabels.$O stdlib/moreLabelsp.$O \
+ stdlib/nativeint.cmx stdlib/nativeintp.cmx stdlib/nativeint.$O stdlib/nativeintp.$O \
+ stdlib/obj.cmx stdlib/objp.cmx stdlib/obj.$O stdlib/objp.$O \
+ stdlib/oo.cmx stdlib/oop.cmx stdlib/oo.$O stdlib/oop.$O \
+ stdlib/parsing.cmx stdlib/parsingp.cmx stdlib/parsing.$O stdlib/parsingp.$O \
+ stdlib/pervasives.cmx stdlib/pervasivesp.cmx stdlib/pervasives.$O stdlib/pervasivesp.$O \
+ stdlib/printexc.cmx stdlib/printexcp.cmx stdlib/printexc.$O stdlib/printexcp.$O \
+ stdlib/printf.cmx stdlib/printfp.cmx stdlib/printf.$O stdlib/printfp.$O \
+ stdlib/queue.cmx stdlib/queuep.cmx stdlib/queue.$O stdlib/queuep.$O \
+ stdlib/random.cmx stdlib/randomp.cmx stdlib/random.$O stdlib/randomp.$O \
+ stdlib/scanf.cmx stdlib/scanfp.cmx stdlib/scanf.$O stdlib/scanfp.$O \
+ stdlib/sort.cmx stdlib/sortp.cmx stdlib/sort.$O stdlib/sortp.$O \
+ stdlib/stack.cmx stdlib/stackp.cmx stdlib/stack.$O stdlib/stackp.$O \
+ stdlib/stdLabels.cmx stdlib/stdLabelsp.cmx stdlib/stdLabels.$O stdlib/stdLabelsp.$O \
+ stdlib/std_exit.cmx stdlib/std_exitp.cmx stdlib/std_exit.$O stdlib/std_exitp.$O \
+ stdlib/stream.cmx stdlib/streamp.cmx stdlib/stream.$O stdlib/streamp.$O \
+ stdlib/string.cmx stdlib/stringp.cmx stdlib/string.$O stdlib/stringp.$O \
+ stdlib/stringLabels.cmx stdlib/stringLabelsp.cmx stdlib/stringLabels.$O stdlib/stringLabelsp.$O \
+ stdlib/sys.cmx stdlib/sysp.cmx stdlib/sys.$O stdlib/sysp.$O \
+ stdlib/weak.cmx stdlib/weakp.cmx stdlib/weak.$O stdlib/weakp.$O \
+ stdlib/$set.cmx stdlib/$setp.cmx stdlib/$set.$O stdlib/$setp.$O \
   $LIBDIR
 
 installlibdir \
-  stdlib/stdlib.{$A,p.$A} \
+  stdlib/stdlib.$A stdlib/stdlibp.$A \
   $LIBDIR
 
 echo "Installing ocamllex, ocamldebug..."
@@ -256,16 +257,18 @@ installdir \
   otherlibs/bigarray/bigarray.cma \
   otherlibs/dbm/dbm.cma \
   otherlibs/dynlink/dynlink.cma \
-  otherlibs/{,win32}graph/graphics.cma \
+  otherlibs/graph/graphics.cma otherlibs/win32/graph/graphics.cma \
   otherlibs/num/nums.cma \
   otherlibs/str/str.cma \
-  otherlibs/{,win32}unix/unix.cma \
-  otherlibs/bigarray/bigarray{,.p}.cmxa \
-  otherlibs/dbm/dbm{,.p}.cmxa \
-  otherlibs/{,win32}graph/graphics{,.p}.cmxa \
-  otherlibs/num/nums{,.p}.cmxa \
-  otherlibs/str/str{,.p}.cmxa \
-  otherlibs/{,win32}unix/unix{,.p}.cmxa \
+  otherlibs/unix/unix.cma otherlibs/win32unix/unix.cma \
+  otherlibs/bigarray/bigarray.cmxa otherlibs/bigarray/bigarray.p.cmxa \
+  otherlibs/dbm/dbm.cmxa otherlibs/dbm/dbm.p.cmxa \
+  otherlibs/graph/graphics.cmxa otherlibs/graph/graphics.p.cmxa \
+  otherlibs/win32/graph/graphics.cmxa otherlibs/win32graph/graphics.p.cmxa \
+  otherlibs/num/nums.cmxa otherlibs/num/nums.p.cmxa \
+  otherlibs/str/str.cmxa otherlibs/str/str.p.cmxa \
+  otherlibs/unix/unix.cmxa otherlibs/unix/unix.p.cmxa \
+  otherlibs/win32unix/unix.cmxa otherlibs/win32unix/unix.p.cmxa \
   toplevel/toplevellib.cma \
   otherlibs/systhreads/thread.mli \
   otherlibs/systhreads/mutex.mli \
@@ -275,13 +278,27 @@ installdir \
   $LIBDIR
 
 installdir \
-  otherlibs/labltk/support/fileevent.{mli,cmi,cmx} \
-  otherlibs/labltk/support/protocol.{mli,cmi,cmx} \
-  otherlibs/labltk/support/textvariable.{mli,cmi,cmx} \
-  otherlibs/labltk/support/timer.{mli,cmi,cmx} \
-  otherlibs/labltk/support/rawwidget.{mli,cmi,cmx} \
-  otherlibs/labltk/support/widget.{mli,cmi,cmx} \
-  otherlibs/labltk/support/tkthread.{mli,cmi,cmo} \
+  otherlibs/labltk/support/fileevent.mli \
+  otherlibs/labltk/support/fileevent.cmi \
+  otherlibs/labltk/support/fileevent.cmx \
+  otherlibs/labltk/support/protocol.mli \
+  otherlibs/labltk/support/protocol.cmi \
+  otherlibs/labltk/support/protocol.cmx \
+  otherlibs/labltk/support/textvariable.mli \
+  otherlibs/labltk/support/textvariable.cmi \
+  otherlibs/labltk/support/textvariable.cmx \
+  otherlibs/labltk/support/timer.mli \
+  otherlibs/labltk/support/timer.cmi \
+  otherlibs/labltk/support/timer.cmx \
+  otherlibs/labltk/support/rawwidget.mli \
+  otherlibs/labltk/support/rawwidget.cmi \
+  otherlibs/labltk/support/rawwidget.cmx \
+  otherlibs/labltk/support/widget.mli \
+  otherlibs/labltk/support/widget.cmi \
+  otherlibs/labltk/support/widget.cmx \
+  otherlibs/labltk/support/tkthread.mli \
+  otherlibs/labltk/support/tkthread.cmi \
+  otherlibs/labltk/support/tkthread.cmo \
   otherlibs/labltk/support/tkthread.$O \
   otherlibs/labltk/labltk/*.mli \
   otherlibs/labltk/labltk/*.cmi \
@@ -309,7 +326,8 @@ installdir \
 
 installdir \
   otherlibs/systhreads/threads.cma \
-  otherlibs/systhreads/threads{,.p}.cmxa \
+  otherlibs/systhreads/threads.cmxa \
+  otherlibs/systhreads/threads.p.cmxa \
   otherlibs/systhreads/thread.cmi \
   otherlibs/systhreads/mutex.cmi \
   otherlibs/systhreads/condition.cmi \
@@ -320,11 +338,13 @@ installdir \
 installdir \
   otherlibs/bigarray/dllbigarray$EXT_DLL \
   otherlibs/dbm/dllmldbm$EXT_DLL \
-  otherlibs/{,win32}graph/dllgraphics$EXT_DLL \
+  otherlibs/graph/dllgraphics$EXT_DLL \
+  otherlibs/win32graph/dllgraphics$EXT_DLL \
   otherlibs/num/dllnums$EXT_DLL \
   otherlibs/str/dllstr$EXT_DLL \
   otherlibs/systhreads/dllthreads$EXT_DLL \
-  otherlibs/{,win32}unix/dllunix$EXT_DLL \
+  otherlibs/unix/dllunix$EXT_DLL \
+  otherlibs/win32unix/dllunix$EXT_DLL \
   otherlibs/threads/dllvmthreads$EXT_DLL \
   otherlibs/labltk/support/dlllabltk$EXT_DLL \
   otherlibs/labltk/tkanim/dlltkanim$EXT_DLL \
@@ -335,11 +355,16 @@ installlibdir \
   $LIBDIR/vmthreads
 
 installdir \
-  otherlibs/threads/thread.{cmi,mli} \
-  otherlibs/threads/mutex.{cmi,mli} \
-  otherlibs/threads/condition.{cmi,mli} \
-  otherlibs/threads/event.{cmi,mli} \
-  otherlibs/threads/threadUnix.{cmi,mli} \
+  otherlibs/threads/thread.cmi \
+  otherlibs/threads/thread.mli \
+  otherlibs/threads/mutex.cmi \
+  otherlibs/threads/mutex.mli \
+  otherlibs/threads/condition.cmi \
+  otherlibs/threads/condition.mli \
+  otherlibs/threads/event.cmi \
+  otherlibs/threads/event.mli \
+  otherlibs/threads/threadUnix.cmi \
+  otherlibs/threads/threadUnix.mli \
   otherlibs/threads/threads.cma \
   otherlibs/threads/stdlib.cma \
   otherlibs/threads/unix.cma \
@@ -355,25 +380,36 @@ installlibdir \
   $LIBDIR/labltk
 
 installlibdir \
-  otherlibs/bigarray/libbigarray.{$A,p.$A} \
-  otherlibs/dbm/libmldbm.{$A,p.$A} \
-  otherlibs/{,win32}graph/libgraphics.{$A,p.$A} \
-  otherlibs/num/libnums.{$A,p.$A} \
-  otherlibs/str/libstr.{$A,p.$A} \
-  otherlibs/systhreads/libthreads.{$A,p.$A} \
-  otherlibs/systhreads/libthreadsnat.{$A,p.$A} \
-  otherlibs/{,win32}unix/libunix.{$A,p.$A} \
+  otherlibs/bigarray/libbigarray.$A otherlibs/bigarray/libbigarray.p.$A \
+  otherlibs/dbm/libmldbm.$A otherlibs/dbm/libmldbm.p.$A \
+  otherlibs/graph/libgraphics.$A \
+  otherlibs/graph/libgraphics.p.$A \
+  otherlibs/win32graph/libgraphics.$A \
+  otherlibs/win32graph/libgraphics.p.$A \
+  otherlibs/num/libnums.$A \
+  otherlibs/num/libnums.p.$A \
+  otherlibs/str/libstr.$A \
+  otherlibs/str/libstr.p.$A \
+  otherlibs/systhreads/libthreads.$A \
+  otherlibs/systhreads/libthreads.p.$A \
+  otherlibs/systhreads/libthreadsnat.$A \
+  otherlibs/systhreads/libthreadsnat.p.$A \
+  otherlibs/unix/libunix.$A \
+  otherlibs/unix/libunix.p.$A \
+  otherlibs/win32unix/libunix.$A \
+  otherlibs/win32unix/libunix.p.$A \
   $LIBDIR
 
 echo "Installing object files and interfaces..."
 installdir \
-  tools/profiling.cm{o,i} \
+  tools/profiling.cm[oi] \
   toplevel/topstart.cmo \
   toplevel/toploop.cmi \
   toplevel/topdirs.cmi \
   toplevel/topmain.cmi \
   typing/outcometree.cmi \
-  otherlibs/{,win32}graph/graphicsX11.cmi \
+  otherlibs/graph/graphicsX11.cmi \
+  otherlibs/win32graph/graphicsX11.cmi \
   otherlibs/dynlink/dynlink.cmi \
   otherlibs/num/arith_status.cmi \
   otherlibs/num/big_int.cmi \
@@ -382,37 +418,103 @@ installdir \
   otherlibs/num/ratio.cmi \
   otherlibs/bigarray/bigarray.cmi \
   otherlibs/dbm/dbm.cmi \
-  otherlibs/{,win32}graph/graphics.cmi \
+  otherlibs/graph/graphics.cmi \
+  otherlibs/win32graph/graphics.cmi \
   otherlibs/str/str.cmi \
-  otherlibs/{,win32}unix/unix.cmi \
-  otherlibs/{,win32}unix/unixLabels.cmi \
-  otherlibs/num/arith_flags{,.p}.{cmx,$O} \
-  otherlibs/num/int_misc{,.p}.{cmx,$O} \
-  otherlibs/num/arith_status{,.p}.{cmx,$O} \
-  otherlibs/num/big_int{,.p}.{cmx,$O} \
-  otherlibs/num/nat{,.p}.{cmx,$O} \
-  otherlibs/num/num{,.p}.{cmx,$O} \
-  otherlibs/num/ratio{,.p}.{cmx,$O} \
-  otherlibs/bigarray/bigarray{,.p}.{cmx,$O} \
-  otherlibs/dbm/dbm{,.p}.{cmx,$O} \
-  otherlibs/{,win32}graph/graphics{,.p}.{cmx,$O} \
-  otherlibs/str/str{,.p}.{cmx,$O} \
-  otherlibs/{,win32}unix/unix{,.p}.{cmx,$O} \
-  otherlibs/{,win32}unix/unixLabels{,.p}.{cmx,$O} \
+  otherlibs/unix/unix.cmi \
+  otherlibs/win32unix/unix.cmi \
+  otherlibs/unix/unixLabels.cmi \
+  otherlibs/win32unix/unixLabels.cmi \
+  otherlibs/num/arith_flags.cmx \
+  otherlibs/num/arith_flags.$O \
+  otherlibs/num/arith_flags.p.cmx \
+  otherlibs/num/arith_flags.p.$O \
+  otherlibs/num/int_misc.cmx \
+  otherlibs/num/int_misc.p.$O \
+  otherlibs/num/int_misc.cmx \
+  otherlibs/num/int_misc.p.$O \
+  otherlibs/num/arith_status.cmx \
+  otherlibs/num/arith_status.p.$O \
+  otherlibs/num/arith_status.cmx \
+  otherlibs/num/arith_status.p.$O \
+  otherlibs/num/big_int.cmx \
+  otherlibs/num/big_int.p.$O \
+  otherlibs/num/big_int.cmx \
+  otherlibs/num/big_int.p.$O \
+  otherlibs/num/nat.cmx \
+  otherlibs/num/nat.p.$O \
+  otherlibs/num/nat.cmx \
+  otherlibs/num/nat.p.$O \
+  otherlibs/num/num.cmx \
+  otherlibs/num/num.p.$O \
+  otherlibs/num/num.cmx \
+  otherlibs/num/num.p.$O \
+  otherlibs/num/ratio.cmx \
+  otherlibs/num/ratio.p.$O \
+  otherlibs/num/ratio.cmx \
+  otherlibs/num/ratio.p.$O \
+  otherlibs/bigarray/bigarray.cmx \
+  otherlibs/bigarray/bigarray.p.$O \
+  otherlibs/bigarray/bigarray.cmx \
+  otherlibs/bigarray/bigarray.p.$O \
+  otherlibs/dbm/dbm.cmx \
+  otherlibs/dbm/dbm.p.$O \
+  otherlibs/dbm/dbm.cmx \
+  otherlibs/dbm/dbm.p.$O \
+  otherlibs/graph/graphics.cmx \
+  otherlibs/graph/graphics.$O \
+  otherlibs/graph/graphics.p.cmx \
+  otherlibs/graph/graphics.p.$O \
+  otherlibs/win32graph/graphics.cmx \
+  otherlibs/win32graph/graphics.$O \
+  otherlibs/win32graph/graphics.p.cmx \
+  otherlibs/win32graph/graphics.p.$O \
+  otherlibs/str/str.cmx \
+  otherlibs/str/str.p.$O \
+  otherlibs/str/str.cmx \
+  otherlibs/str/str.p.$O \
+  otherlibs/unix/unix.cmx \
+  otherlibs/unix/unix.$O \
+  otherlibs/unix/unix.p.cmx \
+  otherlibs/unix/unix.p.$O \
+  otherlibs/win32unix/unix.cmx \
+  otherlibs/win32unix/unix.$O \
+  otherlibs/win32unix/unix.p.cmx \
+  otherlibs/win32unix/unix.p.$O \
+  otherlibs/unix/unixLabels.cmx \
+  otherlibs/unix/unixLabels.$O \
+  otherlibs/unix/unixLabels.p.cmx \
+  otherlibs/unix/unixLabels.p.$O \
+  otherlibs/win32unix/unixLabels.cmx \
+  otherlibs/win32unix/unixLabels.$O \
+  otherlibs/win32unix/unixLabels.p.cmx \
+  otherlibs/win32unix/unixLabels.p.$O \
   $LIBDIR
 
 installlibdir \
-  otherlibs/bigarray/bigarray.{$A,p.$A} \
-  otherlibs/dbm/dbm.{$A,p.$A} \
-  otherlibs/{,win32}graph/graphics.{$A,p.$A} \
-  otherlibs/num/nums.{$A,p.$A} \
-  otherlibs/str/str.{$A,p.$A} \
-  otherlibs/{,win32}unix/unix.{$A,p.$A} \
-  stdlib/stdlib.{$A,p.$A} \
+  otherlibs/bigarray/bigarray.$A \
+  otherlibs/bigarray/bigarray.p.$A \
+  otherlibs/dbm/dbm.$A \
+  otherlibs/dbm/dbm.p.$A \
+  otherlibs/graph/graphics.$A \
+  otherlibs/graph/graphics.p.$A \
+  otherlibs/win32graph/graphics.$A \
+  otherlibs/win32graph/graphics.p.$A \
+  otherlibs/num/nums.$A \
+  otherlibs/num/nums.p.$A \
+  otherlibs/str/str.$A \
+  otherlibs/str/str.p.$A \
+  otherlibs/unix/unix.$A \
+  otherlibs/unix/unix.p.$A \
+  otherlibs/win32unix/unix.$A \
+  otherlibs/win32unix/unix.p.$A \
+  stdlib/stdlib.$A \
+  stdlib/stdlib.p.$A \
   $LIBDIR
 
 installlibdir \
-  otherlibs/systhreads/threads.{$A,p.$A} \
+  otherlibs/systhreads/threads.$A \
+  otherlibs/systhreads/threads.p.$A \
   $LIBDIR/threads
 
 echo "Installing manuals..."
@@ -425,7 +527,8 @@ installbin ocamldoc/ocamldoc.opt$EXE $BINDIR/ocamldoc.opt$EXE
 installdir \
   ../ocamldoc/ocamldoc.hva \
   ocamldoc/*.cmi \
-  ocamldoc/odoc_info.{mli,cm[ia],cmxa,$A} \
+  ocamldoc/odoc_info.mli ocamldoc/odoc_infor.cm[ia] ocamldoc/odoc_info.cmxa \
+  ocamldoc/odoc_info.$A \
   $LIBDIR/ocamldoc
 
 installdir \
@@ -462,11 +565,12 @@ for dir in Camlp4Parsers Camlp4Printers Camlp4Filters Camlp4Top; do
     $CAMLP4DIR/$dir
 done
 installdir \
-  camlp4lib.{cma,cmxa} Camlp4.cmi \
-  {camlp4o,camlp4of,camlp4oof,camlp4orf,camlp4r,camlp4rf}.cma \
-  Camlp4Bin.{cm[iox],$O,p.$O} Camlp4Top.cm[io] \
+  camlp4lib.cma camlp4lib.cmxa Camlp4.cmi \
+  camlp4o.cma camlp4of.cma camlp4oof.cma \
+  camlp4orf.cma camlp4r.cma camlp4rf.cma \
+  Camlp4Bin.cm[iox] Camlp4Bin.$O Camlp4Bin.p.$O Camlp4Top.cm[io] \
   $CAMLP4DIR
-installlibdir camlp4lib.{$A,p.$A} $CAMLP4DIR
+installlibdir camlp4lib.$A camlp4lib.p.$A $CAMLP4DIR
 cd ..
 
 echo "Installing ocamlbuild..."
@@ -476,16 +580,19 @@ installbin ocamlbuild/ocamlbuild.native$EXE $BINDIR/ocamlbuild.native$EXE
 installbestbin ocamlbuild/ocamlbuild.native$EXE ocamlbuild/ocamlbuild.byte$EXE $BINDIR/ocamlbuild$EXE
 
 installlibdir \
-  ocamlbuild/ocamlbuildlib.{$A,p.$A} \
+  ocamlbuild/ocamlbuildlib.$A ocamlbuild/ocamlbuildlib.p.$A \
   $LIBDIR/ocamlbuild
 
 installdir \
-  ocamlbuild/ocamlbuildlib{,.p}.cmxa \
+  ocamlbuild/ocamlbuildlib.cmxa ocamlbuild/ocamlbuildlib.p.cmxa \
   ocamlbuild/ocamlbuildlib.cma \
   ocamlbuild/ocamlbuild_plugin.cmi \
   ocamlbuild/ocamlbuild_pack.cmi \
   ocamlbuild/ocamlbuild.cmo \
-  ocamlbuild/ocamlbuild{,.p}.{cmx,$O} \
+  ocamlbuild/ocamlbuild.cmx \
+  ocamlbuild/ocamlbuild.$O \
+  ocamlbuild/ocamlbuild.p.cmx \
+  ocamlbuild/ocamlbuild.p.$O \
   $LIBDIR/ocamlbuild
 
 installdir \

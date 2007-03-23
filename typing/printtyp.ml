@@ -96,7 +96,7 @@ let rec safe_repr v = function
 
 let rec list_of_memo = function
     Mnil -> []
-  | Mcons (p, t1, t2, rem) -> (p,t1,t2) :: list_of_memo rem
+  | Mcons (p, t1, t2, rem) -> p :: list_of_memo rem
   | Mlink rem -> list_of_memo !rem
 
 let visited = ref []
@@ -119,9 +119,7 @@ and raw_type_desc ppf = function
   | Tconstr (p, tl, abbrev) ->
       fprintf ppf "@[<hov1>Tconstr(@,%a,@,%a,@,%a)@]" path p
         raw_type_list tl
-        (raw_list (fun ppf (p,t1,t2) ->
-          fprintf ppf "@[%a,@ %a,@ %a@]" path p raw_type t1 raw_type t2))
-        (list_of_memo !abbrev)
+        (raw_list path) (list_of_memo !abbrev)
   | Tobject (t, nm) ->
       fprintf ppf "@[<hov1>Tobject(@,%a,@,@[<1>ref%t@])@]" raw_type t
         (fun ppf ->
@@ -132,7 +130,7 @@ and raw_type_desc ppf = function
       fprintf ppf "@[<hov1>Tfield(@,%s,@,%s,@,%a,@;<0 -1>%a)@]" f
         (safe_kind_repr [] k)
         raw_type t1 raw_type t2
-  | Tnil -> fprintf ppf "Tnil"  
+  | Tnil -> fprintf ppf "Tnil"
   | Tlink t -> fprintf ppf "@[<1>Tlink@,%a@]" raw_type t
   | Tsubst t -> fprintf ppf "@[<1>Tsubst@,%a@]" raw_type t
   | Tunivar -> fprintf ppf "Tunivar"
@@ -183,7 +181,7 @@ let reset_names () = names := []; name_counter := 0
 let new_name () =
   let name =
     if !name_counter < 26
-    then String.make 1 (Char.chr(97 + !name_counter)) 
+    then String.make 1 (Char.chr(97 + !name_counter))
     else String.make 1 (Char.chr(97 + !name_counter mod 26)) ^
            string_of_int(!name_counter / 26) in
   incr name_counter;
@@ -198,7 +196,7 @@ let name_of_type t =
 let check_name_of_type t = ignore(name_of_type t)
 
 let non_gen_mark sch ty =
-  if sch && ty.desc = Tvar && ty.level <> generic_level then "_" else "" 
+  if sch && ty.desc = Tvar && ty.level <> generic_level then "_" else ""
 
 let print_name_of_type sch ppf t =
   fprintf ppf "'%s%s" (non_gen_mark sch t) (name_of_type t)
@@ -461,7 +459,7 @@ and type_sch ppf ty = typexp true 0 ppf ty
 and type_scheme ppf ty = reset_and_mark_loops ty; typexp true 0 ppf ty
 
 (* Maxence *)
-let type_scheme_max ?(b_reset_names=true) ppf ty = 
+let type_scheme_max ?(b_reset_names=true) ppf ty =
   if b_reset_names then reset_names () ;
   typexp true 0 ppf ty
 (* Fin Maxence *)
@@ -520,7 +518,7 @@ let rec tree_of_type_decl id decl =
         in
         mark_loops ty;
         Some ty
-  in 
+  in
   begin match decl.type_kind with
   | Type_abstract -> ()
   | Type_variant ([], _) -> ()
@@ -569,7 +567,7 @@ let rec tree_of_type_decl id decl =
         begin match ty_manifest with
         | None -> (Otyp_abstract, Public)
         | Some ty ->
-            tree_of_typexp false ty, 
+            tree_of_typexp false ty,
             (if has_constr_row ty then Private else Public)
         end
     | Type_variant(cstrs, priv) ->
@@ -594,6 +592,7 @@ let type_declaration id ppf decl =
 (* Print an exception declaration *)
 
 let tree_of_exception_declaration id decl =
+  reset_and_mark_loops_list decl;
   let tyl = tree_of_typlist false decl in
   Osig_exception (Ident.name id, tyl)
 
@@ -654,7 +653,7 @@ let rec prepare_class_type params = function
         Ctype.flatten_fields (Ctype.object_fields sign.cty_self)
       in
       List.iter (fun met -> mark_loops (method_type met)) fields;
-      Vars.iter (fun _ (_, ty) -> mark_loops ty) sign.cty_vars
+      Vars.iter (fun _ (_, _, ty) -> mark_loops ty) sign.cty_vars
   | Tcty_fun (_, ty, cty) ->
       mark_loops ty;
       prepare_class_type params cty
@@ -686,13 +685,15 @@ let rec tree_of_class_type sch params =
           csil (tree_of_constraints params)
       in
       let all_vars =
-        Vars.fold (fun l (m, t) all -> (l, m, t) :: all) sign.cty_vars [] in
+        Vars.fold (fun l (m, v, t) all -> (l, m, v, t) :: all) sign.cty_vars []
+      in
       (* Consequence of PR#3607: order of Map.fold has changed! *)
       let all_vars = List.rev all_vars in
       let csil =
         List.fold_left
-          (fun csil (l, m, t) ->
-             Ocsg_value (l, m = Mutable, tree_of_typexp sch t) :: csil)
+          (fun csil (l, m, v, t) ->
+            Ocsg_value (l, m = Mutable, v = Virtual, tree_of_typexp sch t)
+            :: csil)
           csil all_vars
       in
       let csil =
@@ -767,7 +768,9 @@ let tree_of_cltype_declaration id cl rs =
     List.exists
       (fun (lab, _, ty) ->
          not (lab = dummy_method || Concr.mem lab sign.cty_concr))
-      fields in
+      fields
+    || Vars.fold (fun _ (_,vr,_) b -> vr = Virtual || b) sign.cty_vars false
+  in
 
   Osig_class_type
     (virt, Ident.name id,
@@ -799,8 +802,7 @@ and tree_of_signature = function
       Osig_type(tree_of_type_decl id decl, tree_of_rec rs) ::
       tree_of_signature rem
   | Tsig_exception(id, decl) :: rem ->
-      Osig_exception (Ident.name id, tree_of_typlist false decl) ::
-      tree_of_signature rem
+      tree_of_exception_declaration id decl :: tree_of_signature rem
   | Tsig_module(id, mty, rs) :: rem ->
       Osig_module (Ident.name id, tree_of_modtype mty, tree_of_rec rs) ::
       tree_of_signature rem
@@ -821,7 +823,7 @@ and tree_of_modtype_declaration id decl =
   in
   Osig_modtype (Ident.name id, mty)
 
-let tree_of_module id mty rs = 
+let tree_of_module id mty rs =
   Osig_module (Ident.name id, tree_of_modtype mty, tree_of_rec rs)
 
 let modtype ppf mty = !Oprint.out_module_type ppf (tree_of_modtype mty)
@@ -840,7 +842,7 @@ let signature ppf sg =
 
 let type_expansion t ppf t' =
   if t == t' then type_expr ppf t else
-  let t' = if proxy t = proxy t' then unalias t' else t' in
+  let t' = if proxy t == proxy t' then unalias t' else t' in
   fprintf ppf "@[<2>%a@ =@ %a@]" type_expr t type_expr t'
 
 let rec trace fst txt ppf = function
@@ -927,16 +929,16 @@ let explanation unif t3 t4 ppf =
         "@,Self type cannot be unified with a closed object type"
   | Tfield (l, _, _, _), Tfield (l', _, _, _) when l = l' ->
       fprintf ppf "@,Types for method %s are incompatible" l
-  | Tfield (l, _, _, _), _ ->
-      fprintf ppf
-        "@,@[Only the first object type has a method %s@]" l
   | _, Tfield (l, _, _, _) ->
       fprintf ppf
-        "@,@[Only the second object type has a method %s@]" l
+        "@,@[The first object type has no method %s@]" l
+  | Tfield (l, _, _, _), _ ->
+      fprintf ppf
+        "@,@[The second object type has no method %s@]" l
   | Tvariant row1, Tvariant row2 ->
       let row1 = row_repr row1 and row2 = row_repr row2 in
       begin match
-        row1.row_fields, row1.row_closed, row2.row_fields, row1.row_closed with
+        row1.row_fields, row1.row_closed, row2.row_fields, row2.row_closed with
       | [], true, [], true ->
           fprintf ppf "@,These two variant types have no intersection"
       | [], true, fields, _ ->

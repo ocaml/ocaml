@@ -13,7 +13,6 @@
 
 (* $Id$ *)
 
-
 (** List operations.
 
    Some functions are flagged as not tail-recursive.  A tail-recursive
@@ -39,9 +38,10 @@ val tl : 'a list -> 'a list
    [Failure "tl"] if the list is empty. *)
 
 val nth : 'a list -> int -> 'a
-(** Return the n-th element of the given list.
+(** Return the [n]-th element of the given list.
    The first element (head of the list) is at position 0.
-   Raise [Failure "nth"] if the list is too short. *)
+   Raise [Failure "nth"] if the list is too short.
+   Raise [Invalid_argument "List.nth"] if [n] is negative. *)
 
 val rev : 'a list -> 'a list
 (** List reversal. *)
@@ -57,11 +57,13 @@ val rev_append : 'a list -> 'a list -> 'a list
    tail-recursive and more efficient. *)
 
 val concat : 'a list list -> 'a list
-(** Concatenate a list of lists.  Not tail-recursive
+(** Concatenate a list of lists.  The elements of the argument are all
+   concatenated together (in the same order) to give the result.
+   Not tail-recursive
    (length of the argument + length of the longest sub-list). *)
 
 val flatten : 'a list list -> 'a list
-(** Flatten a list of lists.  Not tail-recursive
+(** Same as [concat].  Not tail-recursive
    (length of the argument + length of the longest sub-list). *)
 
 
@@ -108,8 +110,8 @@ val map2 : f:('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
    different lengths.  Not tail-recursive. *)
 
 val rev_map2 : f:('a -> 'b -> 'c) -> 'a list -> 'b list -> 'c list
-(** [List.rev_map2 f l] gives the same result as
-   {!ListLabels.rev}[ (]{!ListLabels.map2}[ f l)], but is tail-recursive and
+(** [List.rev_map2 f l1 l2] gives the same result as
+   {!ListLabels.rev}[ (]{!ListLabels.map2}[ f l1 l2)], but is tail-recursive and
    more efficient. *)
 
 val fold_left2 :
@@ -125,8 +127,6 @@ val fold_right2 :
    [f a1 b1 (f a2 b2 (... (f an bn c) ...))].
    Raise [Invalid_argument] if the two lists have
    different lengths.  Not tail-recursive. *)
-
-
 
 
 (** {6 List scanning} *)
@@ -161,8 +161,6 @@ val memq : 'a -> set:'a list -> bool
    equality to compare list elements. *)
 
 
-
-
 (** {6 List searching} *)
 
 
@@ -188,8 +186,6 @@ val partition : f:('a -> bool) -> 'a list -> 'a list * 'a list
    The order of the elements in the input list is preserved. *)
 
 
-
-
 (** {6 Association lists} *)
 
 
@@ -202,8 +198,8 @@ val assoc : 'a -> ('a * 'b) list -> 'b
    list [l]. *)
 
 val assq : 'a -> ('a * 'b) list -> 'b
-(** Same as {!ListLabels.assoc}, but uses physical equality instead of structural
-   equality to compare keys. *)
+(** Same as {!ListLabels.assoc}, but uses physical equality instead of
+   structural equality to compare keys. *)
 
 val mem_assoc : 'a -> map:('a * 'b) list -> bool
 (** Same as {!ListLabels.assoc}, but simply return true if a binding exists,
@@ -219,10 +215,8 @@ val remove_assoc : 'a -> ('a * 'b) list -> ('a * 'b) list
    Not tail-recursive. *)
 
 val remove_assq : 'a -> ('a * 'b) list -> ('a * 'b) list
-(** Same as {!ListLabels.remove_assq}, but uses physical equality instead
+(** Same as {!ListLabels.remove_assoc}, but uses physical equality instead
    of structural equality to compare keys.  Not tail-recursive. *)
-
-
 
 
 (** {6 Lists of pairs} *)
@@ -242,29 +236,31 @@ val combine : 'a list -> 'b list -> ('a * 'b) list
    have different lengths.  Not tail-recursive. *)
 
 
-
 (** {6 Sorting} *)
 
 
 val sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
 (** Sort a list in increasing order according to a comparison
-   function.  The comparison function must return 0 if it arguments
+   function.  The comparison function must return 0 if its arguments
    compare as equal, a positive integer if the first is greater,
-   and a negative integer if the first is smaller.  For example,
-   the [compare] function is a suitable comparison function.
+   and a negative integer if the first is smaller (see Array.sort for
+   a complete specification).  For example,
+   {!Pervasives.compare} is a suitable comparison function.
    The resulting list is sorted in increasing order.
    [List.sort] is guaranteed to run in constant heap space
    (in addition to the size of the result list) and logarithmic
    stack space.
 
-   The current implementation uses Merge Sort and is the same as
-   {!ListLabels.stable_sort}.
+   The current implementation uses Merge Sort. It runs in constant
+   heap space and logarithmic stack space.
 *)
 
 val stable_sort : cmp:('a -> 'a -> int) -> 'a list -> 'a list
-(** Same as {!ListLabels.sort}, but the sorting algorithm is stable.
+(** Same as {!ListLabels.sort}, but the sorting algorithm is guaranteed to
+   be stable (i.e. elements that compare equal are kept in their
+   original order) .
 
-   The current implementation is Merge Sort. It runs in constant
+   The current implementation uses Merge Sort. It runs in constant
    heap space and logarithmic stack space.
 *)
 

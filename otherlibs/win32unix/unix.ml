@@ -198,23 +198,10 @@ let single_write fd buf ofs len =
 
 (* Interfacing with the standard input/output library *)
 
-external open_read_descriptor : int -> in_channel = "caml_ml_open_descriptor_in"
-external open_write_descriptor : int -> out_channel
-                               = "caml_ml_open_descriptor_out"
-external fd_of_in_channel : in_channel -> int = "caml_channel_descriptor"
-external fd_of_out_channel : out_channel -> int = "caml_channel_descriptor"
-
-external open_handle : file_descr -> int = "win_fd_handle"
-
-let in_channel_of_descr handle =
-  open_read_descriptor(open_handle handle)
-let out_channel_of_descr handle =
-  open_write_descriptor(open_handle handle)
-
-let descr_of_in_channel inchan =
-  filedescr_of_fd(fd_of_in_channel inchan)
-let descr_of_out_channel outchan =
-  filedescr_of_fd(fd_of_out_channel outchan)
+external in_channel_of_descr: file_descr -> in_channel = "win_inchannel_of_filedescr"
+external out_channel_of_descr: file_descr -> out_channel = "win_outchannel_of_filedescr"
+external descr_of_in_channel : in_channel -> file_descr = "win_filedescr_of_channel"
+external descr_of_out_channel : out_channel -> file_descr = "win_filedescr_of_channel"
 
 (* Seeking and truncating *)
 
@@ -255,7 +242,9 @@ type stats =
 
 external stat : string -> stats = "unix_stat"
 let lstat = stat
-let fstat fd = invalid_arg "Unix.fstat not implemented"
+external fstat : file_descr -> stats = "unix_fstat"
+let isatty fd =
+  match (fstat fd).st_kind with S_CHR -> true | _ -> false
 
 (* Operations on file names *)
 
@@ -286,7 +275,7 @@ module LargeFile =
       }
     external stat : string -> stats = "unix_stat_64"
     let lstat = stat
-    let fstat fd = invalid_arg "Unix.LargeFile.fstat not implemented"
+    external fstat : file_descr -> stats = "unix_fstat_64"
   end
 
 (* File permissions and ownership *)
@@ -337,7 +326,7 @@ external findnext : int -> string= "win_findnext"
 
 let opendir dirname =
   try
-    let (first_entry, handle) = findfirst (dirname ^ "\\*.*") in
+    let (first_entry, handle) = findfirst (Filename.concat dirname "*.*") in
     { dirname = dirname; handle = handle; entry_read = Dir_read first_entry }
   with End_of_file ->
     { dirname = dirname; handle = 0; entry_read = Dir_empty }

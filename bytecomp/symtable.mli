@@ -14,7 +14,7 @@
 
 (* Assign locations and numbers to globals and primitives *)
 
-open Emitcode
+open Cmo_format
 
 (* Functions for batch linking *)
 

@@ -70,9 +70,26 @@
     static void name(int sig, siginfo_t * info, void * context)
 
   #define SET_SIGACT(sigact,name) \
-     sigact.sa_sigaction = (name);
+     sigact.sa_sigaction = (name); \
      sigact.sa_flags = SA_SIGINFO
 
+  #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
+
+/****************** I386, MacOS X */
+
+#elif defined(TARGET_i386) && defined(SYS_macosx)
+
+  #define DECLARE_SIGNAL_HANDLER(name) \
+    static void name(int sig, siginfo_t * info, void * context)
+
+  #define SET_SIGACT(sigact,name) \
+     sigact.sa_sigaction = (name); \
+     sigact.sa_flags = SA_SIGINFO
+
+  #include <sys/ucontext.h>
+
+  #define CONTEXT_STATE (((struct ucontext *)context)->uc_mcontext->ss)
+  #define CONTEXT_PC (CONTEXT_STATE.eip)
   #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
 
 /****************** MIPS, all OS */
@@ -89,27 +106,54 @@
   typedef int context_reg;
   #define CONTEXT_PC (context->sc_pc)
   #define CONTEXT_EXCEPTION_POINTER (context->sc_regs[30])
-  #define CONTEXT_YOUNG_LIMIT (context->sc_regs[22]
+  #define CONTEXT_YOUNG_LIMIT (context->sc_regs[22])
   #define CONTEXT_YOUNG_PTR (context->sc_regs[23])
 
 /****************** PowerPC, MacOS X */
 
 #elif defined(TARGET_power) && defined(SYS_rhapsody)
 
+#ifdef __ppc64__
+
+  #define DECLARE_SIGNAL_HANDLER(name) \
+     static void name(int sig, siginfo_t * info, void * context)
+
+  #define SET_SIGACT(sigact,name) \
+     sigact.sa_sigaction = (name); \
+     sigact.sa_flags = SA_SIGINFO | SA_64REGSET
+
+  typedef unsigned long long context_reg;
+
+  #include <sys/ucontext.h>
+
+  #define CONTEXT_STATE (((struct ucontext64 *)context)->uc_mcontext64->ss)
+
+  #define CONTEXT_PC (CONTEXT_STATE.srr0)
+  #define CONTEXT_EXCEPTION_POINTER (CONTEXT_STATE.r29)
+  #define CONTEXT_YOUNG_LIMIT (CONTEXT_STATE.r30)
+  #define CONTEXT_YOUNG_PTR (CONTEXT_STATE.r31)
+  #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
+  #define CONTEXT_SP (CONTEXT_STATE.r1)
+
+#else
+
   #include <sys/utsname.h>
 
   #define DECLARE_SIGNAL_HANDLER(name) \
-     static void name(int sig, int code, void * context)
+     static void name(int sig, siginfo_t * info, void * context)
 
   #define SET_SIGACT(sigact,name) \
      sigact.sa_handler = (void (*)(int)) (name); \
      sigact.sa_flags = SA_SIGINFO
 
   typedef unsigned long context_reg;
+
   #define CONTEXT_PC (*context_gpr_p(context, -2))
   #define CONTEXT_EXCEPTION_POINTER (*context_gpr_p(context, 29))
   #define CONTEXT_YOUNG_LIMIT (*context_gpr_p(context, 30))
   #define CONTEXT_YOUNG_PTR (*context_gpr_p(context, 31))
+  #define CONTEXT_FAULTING_ADDRESS ((char *) info->si_addr)
+  #define CONTEXT_SP (*context_gpr_p(context, 1))
 
   static int ctx_version = 0;
   static void init_ctx (void)
@@ -167,6 +211,8 @@
       return &(regs[2 + regno]);
     }
   #endif
+
+#endif
 
 /****************** PowerPC, ELF (Linux) */
 

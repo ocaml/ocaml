@@ -17,7 +17,7 @@
 open Misc
 open Asttypes
 open Lambda
-open Emitcode
+open Cmo_format
 
 (* Functions for batch linking *)
 

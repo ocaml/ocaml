@@ -205,7 +205,7 @@ redirect the standard output of the compiler to a .mli file, and edit
 that file to remove all declarations of unexported names.
 
 .TP
-.BI \-I  directory
+.BI \-I \ directory
 Add the given directory to the list of directories searched for
 compiled interface files (.cmi) and compiled object code files
 (.cmo). By default, the current directory is searched first, then the

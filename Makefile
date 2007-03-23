@@ -19,8 +19,8 @@ include config/Makefile
 include stdlib/StdlibModules
 include otherlibs/systhreads/JoinModules
 
-CAMLC=boot/ocamlrun boot/ocamlc -nostdlib -I boot -nojoin
-CAMLOPT=boot/ocamlrun ./ocamlopt -nostdlib -I stdlib -nojoin
+CAMLC=boot/ocamlrun boot/ocamlc -nostdlib -I boot  $(NOJOIN)
+CAMLOPT=boot/ocamlrun ./ocamlopt -nostdlib -I stdlib $(NOJOIN)
 COMPFLAGS=-warn-error A $(INCLUDES)
 LINKFLAGS=
 
@@ -28,7 +28,7 @@ CAMLYACC=boot/ocamlyacc
 YACCFLAGS=-v
 CAMLLEX=boot/ocamlrun boot/ocamllex
 CAMLDEP=boot/ocamlrun tools/ocamldep
-DEPFLAGS=-nojoin $(INCLUDES)
+DEPFLAGS=$(NOJOIN) $(INCLUDES)
 CAMLRUN=byterun/ocamlrun
 SHELL=/bin/sh
 MKDIR=mkdir -p
@@ -72,7 +72,8 @@ BYTECOMP=bytecomp/meta.cmo bytecomp/instruct.cmo bytecomp/bytegen.cmo \
   bytecomp/bytesections.cmo bytecomp/dll.cmo bytecomp/symtable.cmo \
   bytecomp/bytelink.cmo bytecomp/bytelibrarian.cmo bytecomp/bytepackager.cmo
 
-ASMCOMP=asmcomp/arch.cmo asmcomp/cmm.cmo asmcomp/printcmm.cmo \
+ASMCOMP=asmcomp/arch.cmo asmcomp/debuginfo.cmo \
+  asmcomp/cmm.cmo asmcomp/printcmm.cmo \
   asmcomp/reg.cmo asmcomp/mach.cmo asmcomp/proc.cmo \
   asmcomp/clambda.cmo asmcomp/compilenv.cmo \
   asmcomp/closure.cmo asmcomp/cmmgen.cmo \
@@ -131,8 +132,7 @@ defaultentry:
 # enough for developping jocaml (et c'est deja pas mal)
 center:runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml otherlibraries
 # Recompile the system using the bootstrap compiler
-all: center \
-  camlp4out $(DEBUGGER) ocamldoc
+all: center camlp4out $(DEBUGGER) ocamldoc
 
 # The compilation of ocaml will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
@@ -233,12 +233,12 @@ cleanboot:
 # Compile the native-code compiler
 opt-core:runtimeopt ocamlopt libraryopt
 opt-center:opt-core otherlibrariesopt
-opt: runtimeopt ocamlopt libraryopt otherlibrariesopt camlp4opt
+opt: runtimeopt ocamlopt libraryopt otherlibrariesopt
 
 # Native-code versions of the tools
-opt.opt: checkstack core ocaml opt-core ocamlc.opt otherlibraries camlp4out \
-	 $(DEBUGGER) ocamldoc ocamlopt.opt otherlibrariesopt \
-	 camlp4opt ocamllex.opt ocamltoolsopt.opt camlp4optopt ocamldoc.opt
+opt.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries \
+	 camlp4out $(DEBUGGER) ocamldoc ocamlopt.opt otherlibrariesopt \
+	 ocamllex.opt ocamltoolsopt.opt camlp4opt ocamldoc.opt
 
 # Installation
 install: FORCE
@@ -271,13 +271,14 @@ install: FORCE
 #	if test -f debugger/ocamldebug; then (cd debugger; $(MAKE) install); \
 #	   else :; fi
 	cp config/Makefile $(LIBDIR)/Makefile.config
+#	./build/partial-install.sh
 
 # Installation of the native-code compiler
 installopt:
 	cd asmrun; $(MAKE) install
 	cp ocamlopt $(BINDIR)/jocamlopt$(EXE)
 	cd stdlib; $(MAKE) installopt
-	cd ocamldoc; $(MAKE) installopt
+#	cd ocamldoc; $(MAKE) installopt
 	for i in $(OTHERLIBRARIES); do (cd otherlibs/$$i; $(MAKE) installopt) || exit $$?; done
 	if test -f ocamlc.opt; \
 	  then cp ocamlc.opt $(BINDIR)/jocamlc.opt$(EXE); else :; fi
@@ -345,8 +346,8 @@ utils/config.ml: utils/config.mlp config/Makefile
             -e 's|%%BYTELINK%%|$(BYTECC) $(BYTECCLINKOPTS)|' \
             -e 's|%%NATIVECC%%|$(NATIVECC) $(NATIVECCCOMPOPTS)|' \
             -e 's|%%NATIVELINK%%|$(NATIVECC) $(NATIVECCLINKOPTS)|' \
-            -e 's|%%PARTIALLD%%|ld -r $(NATIVECCLINKOPTS)|' \
-            -e 's|%%PACKLD%%|ld -r $(NATIVECCLINKOPTS)|' \
+            -e 's|%%PARTIALLD%%|$(PARTIALLD) $(NATIVECCLINKOPTS)|' \
+            -e 's|%%PACKLD%%|$(PARTIALLD) $(NATIVECCLINKOPTS) -o |' \
             -e 's|%%BYTECCLIBS%%|$(BYTECCLIBS)|' \
             -e 's|%%NATIVECCLIBS%%|$(NATIVECCLIBS)|' \
             -e 's|%%RANLIBCMD%%|$(RANLIBCMD)|' \
@@ -591,10 +592,10 @@ ocamldoc ocamldoc.opt:
 #	cd ocamldoc && $(MAKE) all
 #ocamldoc.opt: ocamlc.opt ocamlyacc ocamllex
 #	cd ocamldoc && $(MAKE) opt.opt
-partialclean::
-	cd ocamldoc && $(MAKE) clean
-alldepend::
-	cd ocamldoc && $(MAKE) depend
+#partialclean::
+#	cd ocamldoc && $(MAKE) clean
+#alldepend::
+#	cd ocamldoc && $(MAKE) depend
 
 # The extra libraries
 

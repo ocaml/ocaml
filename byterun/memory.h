@@ -277,10 +277,13 @@ CAMLextern struct caml__roots_block *caml_local_roots;  /* defined in roots.c */
   return; \
 }while (0)
 
-#define CAMLreturn(result) do{ \
+#define CAMLreturnT(type, result) do{ \
+  type caml__temp_result = (result); \
   caml_local_roots = caml__frame; \
-  return (result); \
+  return (caml__temp_result); \
 }while(0)
+
+#define CAMLreturn(result) CAMLreturnT(value, result)
 
 #define CAMLnoreturn ((void) caml__frame)
 

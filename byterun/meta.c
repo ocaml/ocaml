@@ -160,14 +160,9 @@ value * caml_stack_high;
 value * caml_stack_threshold;
 value * caml_extern_sp;
 value * caml_trapsp;
-int caml_backtrace_active;
-int caml_backtrace_pos;
-code_t * caml_backtrace_buffer;
-value caml_backtrace_last_exn;
 int caml_callback_depth;
 int volatile caml_something_to_do;
 void (* volatile caml_async_action_hook)(void);
-void caml_print_exception_backtrace(void) { }
 struct longjmp_buffer * caml_external_raise;
 
 #endif

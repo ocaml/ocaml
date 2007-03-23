@@ -22,6 +22,7 @@ type instruction =
     mutable next: instruction;
     arg: Reg.t array;
     res: Reg.t array;
+    dbg: Debuginfo.t;
     live: Reg.Set.t }
 
 and instruction_desc =

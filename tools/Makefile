@@ -15,15 +15,17 @@
 include ../config/Makefile
 
 CAMLRUN=../boot/ocamlrun
-CAMLC=$(CAMLRUN) ../boot/ocamlc -nostdlib -I ../boot -nojoin
-CAMLOPT=$(CAMLRUN) ../ocamlopt -nostdlib -I ../stdlib -nojoin
+CAMLC=$(CAMLRUN) ../boot/ocamlc -nostdlib -I ../boot $(NOJOIN)
+CAMLOPT=$(CAMLRUN) ../ocamlopt -nostdlib -I ../stdlib $(NOJOIN)
 CAMLLEX=$(CAMLRUN) ../boot/ocamllex
 INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
          -I ../driver
 COMPFLAGS= -warn-error A $(INCLUDES)
 LINKFLAGS=$(INCLUDES)
 
-all: ocamldep ocamlprof ocamlcp ocamlmktop ocamlmklib scrapelabels addlabels 
+all: ocamldep ocamlmktop ocamlmklib
+#all: ocamldep ocamlprof ocamlcp ocamlmktop ocamlmklib scrapelabels addlabels \
+#     dumpobj
 
 opt.opt: ocamldep.opt
 
@@ -65,10 +67,10 @@ ocamlprof: $(CSLPROF) profiling.cmo
 ocamlcp: ocamlcp.cmo
 	$(CAMLC) $(LINKFLAGS) -o ocamlcp main_args.cmo ocamlcp.cmo
 
-install::
-	cp ocamlprof $(BINDIR)/jocamlprof$(EXE)
-	cp ocamlcp $(BINDIR)/jocamlcp$(EXE)
-	cp profiling.cmi profiling.cmo $(LIBDIR)
+#install::
+#	cp ocamlprof $(BINDIR)/jocamlprof$(EXE)
+#	cp ocamlcp $(BINDIR)/jocamlcp$(EXE)
+#	cp profiling.cmi profiling.cmo $(LIBDIR)
 
 clean::
 	rm -f ocamlprof ocamlcp
@@ -87,8 +89,13 @@ clean::
 
 # To help building mixed-mode libraries (Caml + C)
 
-ocamlmklib: ocamlmklib.cmo
-	$(CAMLC) $(LINKFLAGS) -o ocamlmklib ocamlmklib.cmo
+ocamlmklib: myocamlbuild_config.cmo ocamlmklib.cmo
+	$(CAMLC) $(LINKFLAGS) -o ocamlmklib myocamlbuild_config.cmo ocamlmklib.cmo
+
+ocamlmklib.cmo: myocamlbuild_config.cmi
+myocamlbuild_config.ml: ../config/Makefile
+	../build/mkmyocamlbuild_config.sh
+	cp ../myocamlbuild_config.ml .
 
 install::
 	cp ocamlmklib $(BINDIR)/jocamlmklib
@@ -139,8 +146,8 @@ scrapelabels: $(SCRAPELABELS)
 lexer301.ml: lexer301.mll
 	$(CAMLLEX) lexer301.mll
 
-install::
-	cp scrapelabels $(LIBDIR)
+#install::
+#	cp scrapelabels $(LIBDIR)
 
 clean::
 	rm -f scrapelabels lexer301.ml
@@ -155,8 +162,8 @@ addlabels: addlabels.ml
 	$(CAMLC) $(LINKFLAGS) -w sl -o addlabels \
 		$(ADDLABELS_IMPORTS) addlabels.ml
 
-install::
-	cp addlabels $(LIBDIR)
+#install::
+#	cp addlabels $(LIBDIR)
 
 clean::
 	rm -f addlabels
@@ -194,7 +201,9 @@ clean::
 	rm -f dumpobj
 
 opnames.ml: ../byterun/instruct.h
-	unset LC_ALL LC_CTYPE LC_COLLATE LANG; \
+	unset LC_ALL || : ; \
+	unset LC_CTYPE || : ; \
+	unset LC_COLLATE LANG || : ; \
 	sed -e '/\/\*/d' \
             -e '/^#/d' \
             -e 's/enum \(.*\) {/let names_of_\1 = [|/' \

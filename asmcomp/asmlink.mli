@@ -31,6 +31,7 @@ type error =
   | Assembler_error of string
   | Linking_error
   | Multiple_definition of string * string * string
+  | Missing_cmx of string * string
 
 exception Error of error
 

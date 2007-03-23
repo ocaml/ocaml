@@ -155,6 +155,9 @@ let get_global_info global_ident =
       infos
   end
 
+let cache_unit_info ui =
+  Hashtbl.add global_infos_table ui.ui_name (Some ui)
+
 (* Return the approximation of a global identifier *)
 
 let global_approx id =

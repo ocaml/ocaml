@@ -56,4 +56,4 @@ external float_of_bits : int64 -> float = "caml_int64_float_of_bits"
 
 type t = int64
 
-let compare = (Pervasives.compare: t -> t -> int)
+let compare (x: t) (y: t) = Pervasives.compare x y

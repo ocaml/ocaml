@@ -45,7 +45,7 @@ Their format is:
        at least two space characters.
 
 - in each block, the two positions are respectively the start and the
-- end of the range described by the block.
+  end of the range described by the block.
 - in a position, the filename is the name of the file, the first num
   is the line number, the second num is the offset of the beginning
   of the line, the third num is the offset of the position itself.

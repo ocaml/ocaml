@@ -79,8 +79,16 @@
       : "=&r" (res), "=&r" (carryaccu)                                      \
       : "r" (arg1), "r" (arg2), "r" (arg3), "1" (carryaccu))
 
+#ifdef __ppc64__
+#define BngMult(resh,resl,arg1,arg2)                                        \
+  asm("mulld %0, %2, %3 \n\t"                                               \
+      "mulhdu %1, %2, %3"                                                   \
+      : "=&r" (resl), "=r" (resh)                                           \
+      : "r" (arg1), "r" (arg2))
+#else
 #define BngMult(resh,resl,arg1,arg2)                                        \
   asm("mullw %0, %2, %3 \n\t"                                               \
       "mulhwu %1, %2, %3"                                                   \
       : "=&r" (resl), "=r" (resh)                                           \
       : "r" (arg1), "r" (arg2))
+#endif

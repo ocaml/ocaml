@@ -19,6 +19,7 @@ CC=$(BYTECC)
 CFLAGS=-I../../byterun -I../win32unix -DIN_OCAML_BIGARRAY
 CAMLC=../../boot/ocamlrun ../../ocamlc -I ../../stdlib -I ../win32unix
 CAMLOPT=../../boot/ocamlrun ../../ocamlopt -I ../../stdlib -I ../win32unix
+COMPFLAGS=-warn-error A -g
 
 C_OBJS=bigarray_stubs.obj mmap_win32.obj
 

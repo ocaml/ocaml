@@ -132,16 +132,8 @@ let rec typexp s ty =
               | None ->
                   Tvariant row
           end
-      | Tfield(label, kind, t1, t2) ->
-          begin match field_kind_repr kind with
-            Fpresent ->
-              Tfield(label, Fpresent, typexp s t1, typexp s t2)
-          | Fabsent ->
-              Tlink (typexp s t2)
-          | Fvar _ (* {contents = None} *) as k ->
-              let k = if s.for_saving then Fvar(ref None) else k in
-              Tfield(label, k, typexp s t1, typexp s t2)
-          end
+      | Tfield(label, kind, t1, t2) when field_kind_repr kind = Fabsent ->
+          Tlink (typexp s t2)
       | _ -> copy_type_desc (typexp s) desc
       end;
     ty'
@@ -186,7 +178,8 @@ let type_declaration s decl =
 
 let class_signature s sign =
   { cty_self = typexp s sign.cty_self;
-    cty_vars = Vars.map (function (m, t) -> (m, typexp s t)) sign.cty_vars;
+    cty_vars =
+      Vars.map (function (m, v, t) -> (m, v, typexp s t)) sign.cty_vars;
     cty_concr = sign.cty_concr;
     cty_inher =
       List.map (fun (p, tl) -> (type_path s p, List.map (typexp s) tl))

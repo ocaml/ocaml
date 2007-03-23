@@ -16,8 +16,9 @@
 
 type dll_handle
 type dll_address
+type dll_mode = For_checking | For_execution
 
-external dll_open: string -> dll_handle = "caml_dynlink_open_lib"
+external dll_open: dll_mode -> string -> dll_handle = "caml_dynlink_open_lib"
 external dll_close: dll_handle -> unit = "caml_dynlink_close_lib"
 external dll_sym: dll_handle -> string -> dll_address
                 = "caml_dynlink_lookup_symbol"
@@ -52,7 +53,7 @@ let extract_dll_name file =
 (* Open a list of DLLs, adding them to opened_dlls.
    Raise [Failure msg] in case of error. *)
 
-let open_dll name =
+let open_dll mode name =
   let name = name ^ Config.ext_dll in
   let fullname =
     try
@@ -62,13 +63,16 @@ let open_dll name =
       else fullname
     with Not_found -> name in
   if not (List.mem fullname !names_of_opened_dlls) then begin
-    let dll = dll_open fullname in
-    names_of_opened_dlls := fullname :: !names_of_opened_dlls;
-    opened_dlls := dll :: !opened_dlls
+    try
+      let dll = dll_open mode fullname in
+      names_of_opened_dlls := fullname :: !names_of_opened_dlls;
+      opened_dlls := dll :: !opened_dlls
+    with Failure msg ->
+      failwith (fullname ^ ": " ^ msg)
   end
 
-let open_dlls names =
-  List.iter open_dll names
+let open_dlls mode names =
+  List.iter (open_dll mode) names
 
 (* Close all DLLs *)
 

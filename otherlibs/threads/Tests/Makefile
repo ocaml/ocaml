@@ -33,6 +33,6 @@ sorts.byt: sorts.ml
 .SUFFIXES: .ml .byt
 
 .ml.byt:
-	$(CAMLC) -o $*.byt unix.cma threads.cma $*.ml $(LIBS)
+	$(CAMLC) -custom -o $*.byt unix.cma threads.cma $*.ml $(LIBS)
 
-$(PROGS): ../threads.cma ../libthreads.a
+$(PROGS): ../threads.cma ../libvmthreads.a

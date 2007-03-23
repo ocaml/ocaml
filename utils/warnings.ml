@@ -18,7 +18,7 @@ type t =                             (* A is all *)
   | Comment_start                    (* C *)
   | Comment_not_end
   | Deprecated                       (* D *)
-  | Fragile_pat of string            (* E *)
+  | Fragile_match of string          (* E *)
   | Partial_application              (* F *)
   | Labels_omitted                   (* L *)
   | Method_override of string list   (* M *)
@@ -26,7 +26,7 @@ type t =                             (* A is all *)
   | Statement_type                   (* S *)
   | Unused_match                     (* U *)
   | Unused_pat
-  | Hide_instance_variable of string (* V *)
+  | Instance_variable_override of string (* V *)
   | Illegal_backslash                (* X *)
   | Implicit_public_methods of string list
   | Unerasable_optional_argument
@@ -46,7 +46,7 @@ let letter = function        (* 'a' is all *)
   | Comment_start
   | Comment_not_end ->          'c'
   | Deprecated ->               'd'
-  | Fragile_pat _ ->            'e'
+  | Fragile_match _ ->          'e'
   | Partial_application ->      'f'
   | Labels_omitted ->           'l'
   | Method_override _ ->        'm'
@@ -54,7 +54,7 @@ let letter = function        (* 'a' is all *)
   | Statement_type ->           's'
   | Unused_match
   | Unused_pat ->               'u'
-  | Hide_instance_variable _ -> 'v'
+  | Instance_variable_override _ -> 'v'
   | Illegal_backslash
   | Implicit_public_methods _
   | Unerasable_optional_argument
@@ -112,23 +112,24 @@ let message = function
       "this pattern-matching is not exhaustive.\n\
        Here is an example of a value that is not matched:\n" ^ s
   | Unused_match -> "this match case is unused."
-  | Unused_pat   -> "this pattern is unused."
-  | Fragile_pat "" ->
-      "this pattern is fragile. It would hide\n\
-       the addition of new constructors to the data types it matches."
-  | Fragile_pat s ->
-      "this pattern is fragile. It would hide\n\
-       the addition of new constructors to the data types it matches.\n\
-       Here is an example of a more robust pattern:\n" ^ s
+  | Unused_pat   -> "this sub-pattern is unused."
+  | Fragile_match "" ->
+      "this pattern-matching is fragile."
+  | Fragile_match s ->
+      "this pattern-matching is fragile.\n\
+       It will remain exhaustive when constructors are added to type " ^ s ^ "."
   | Labels_omitted ->
       "labels were omitted in the application of this function."
-  | Method_override slist ->
+  | Method_override [lab] ->
+      "the method " ^ lab ^ " is overriden in the same class."
+  | Method_override (cname :: slist) ->
       String.concat " "
-        ("the following methods are overriden \
-          by the inherited class:\n " :: slist)
-  | Hide_instance_variable lab ->
-      "this definition of an instance variable " ^ lab ^
-      " hides a previously\ndefined instance variable of the same name."
+        ("the following methods are overriden by the class"
+         :: cname  :: ":\n " :: slist)
+  | Method_override [] -> assert false
+  | Instance_variable_override lab ->
+      "the instance variable " ^ lab ^ " is overriden.\n" ^
+      "The behaviour changed in ocaml 3.10 (previous behaviour was hiding.)"
   | Partial_application ->
       "this function application is partial,\n\
        maybe some arguments are missing."
@@ -147,7 +148,8 @@ let message = function
   | Not_principal s -> s^" is not principal."
   | Without_principality s -> s^" without principality."
   | Unused_argument -> "this argument will not be used by the function."
-  | Nonreturning_statement -> "this statement never returns."
+  | Nonreturning_statement ->
+      "this statement never returns (or has an unsound type.)"
   | Camlp4 s -> s
   | All_clauses_guarded ->
       "bad style, all clauses in this pattern-matching are guarded."

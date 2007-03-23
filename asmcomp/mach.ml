@@ -60,6 +60,7 @@ type instruction =
     next: instruction;
     arg: Reg.t array;
     res: Reg.t array;
+    dbg: Debuginfo.t;
     mutable live: Reg.Set.t }
 
 and instruction_desc =
@@ -85,6 +86,7 @@ let rec dummy_instr =
     next = dummy_instr;
     arg = [||]; 
     res = [||];
+    dbg = Debuginfo.none;
     live = Reg.Set.empty }
 
 let end_instr () =
@@ -92,13 +94,15 @@ let end_instr () =
     next = dummy_instr;
     arg = [||]; 
     res = [||];
+    dbg = Debuginfo.none;
     live = Reg.Set.empty }
 
 let instr_cons d a r n =
-  { desc = d; next = n; arg = a; res = r; live = Reg.Set.empty }
+  { desc = d; next = n; arg = a; res = r; 
+    dbg = Debuginfo.none; live = Reg.Set.empty }
 
-let instr_cons_live d a r l n =
-  { desc = d; next = n; arg = a; res = r; live = l }
+let instr_cons_debug d a r dbg n =
+  { desc = d; next = n; arg = a; res = r; dbg = dbg; live = Reg.Set.empty }
 
 let rec instr_iter f i =
   match i.desc with

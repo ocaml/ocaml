@@ -174,4 +174,4 @@ let contains s c = contains_from s 0 c;;
 
 type t = string
 
-let compare = (Pervasives.compare: t -> t -> int)
+let compare (x: t) (y: t) = Pervasives.compare x y

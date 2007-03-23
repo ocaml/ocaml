@@ -20,7 +20,8 @@ CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)
 CAMLC=../../ocamlcomp.sh -I ../unix
 CAMLOPT=../../ocamlcompopt.sh -I ../unix 
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
-COMPFLAGS=-warn-error A -nojoin
+COMPFLAGS=-warn-error A -nojoin -g
+
 
 C_OBJS=bigarray_stubs.o mmap_unix.o
 
@@ -54,7 +55,7 @@ partialclean:
 	rm -f *.cm* 
 
 clean: partialclean
-	rm -f libbigarray.* *.o bigarray.a *.so
+	rm -f *.o *.so *.a
 
 .SUFFIXES: .ml .mli .cmo .cmi .cmx
 

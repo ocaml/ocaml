@@ -133,8 +133,8 @@ let next_char ib =
     let c = ib.get_next_char () in
     ib.current_char <- c;
     ib.current_char_is_valid <- true;
-    ib.char_count <- ib.char_count + 1;
-    if c == '\n' then ib.line_count <- ib.line_count + 1;
+    ib.char_count <- succ ib.char_count;
+    if c == '\n' then ib.line_count <- succ ib.line_count;
     c with
   | End_of_file ->
     let c = null_char in
@@ -173,7 +173,7 @@ let token ib =
   let tokbuf = ib.tokbuf in
   let tok = Buffer.contents tokbuf in
   Buffer.clear tokbuf;
-  ib.token_count <- ib.token_count + 1;
+  ib.token_count <- succ ib.token_count;
   tok;;
 
 let token_count ib = ib.token_count;;
@@ -214,39 +214,103 @@ let from_string s =
 
 let from_function = create "function input";;
 
+(* Scan from an input channel. *)
+
+(* The input channel [ic] may not be allocated in this library, hence it may be
+   shared (two functions of the user's program may successively read from
+   it). Furthermore, the user may define more than one scanning buffer reading
+   from the same [ic] channel.
+
+   However, we cannot prevent the scanning mechanism to use one lookahead
+   character, if needed by the semantics of format string specifications
+   (e.g. a trailing ``skip space'' specification in the format string); in this
+   case, the mandatory lookahead character is read from the channel and stored
+   into the scanning buffer for further reading. This implies that multiple
+   functions alternatively scanning the same [ic] channel will miss characters
+   from time to time, due to unnoticed look ahead characters, silently read
+   from [ic] (hence no more available for reading) and retained inside the
+   scanning buffer to ensure the correct incremental scanning of the same
+   scanning buffer. This phenomenon is even worse if one defines more than one
+   scanning buffer reading from the same input channel [ic]. We have no simple
+   way to circumvent this problem (unless the scanning buffer allocation is a
+   memo function that never allocates two different scanning buffers for the
+   same input channel, orelse the input channel API offers a ``consider this
+   char as unread'' procedure to keep back the lookahead character as available
+   in the input channel for further reading).
+
+   Hence, we do bufferize characters to create a scanning buffer from an input
+   channel in order to preserve the same semantics as other from_* functions
+   above: two successive calls to the scanner will work appropriately, since
+   the bufferized character (if any) will be retained inside the scanning
+   buffer from a call to the next one.
+
+   Otherwise, if we do not bufferize characters, we will loose the clearly
+   correct scanning behaviour even for the simple regular case, when we scan
+   the (possibly shared) channel [ic] using a unique function, while not
+   gaining anything for multiple functions reading from [ic] or multiple
+   allocation of scanning buffers reading from the same [ic].
+
+   As mentioned above, a more ambitious fix could be to change the input
+   channel API or to have a memo scanning buffer allocation for reading from
+   input channel not allocated from within Scanf's input buffer creation
+   functions. *)
+
 (* Perform bufferized input to improve efficiency. *)
 let file_buffer_size = ref 1024;;
 
-let from_file_channel fname ic =
+(* To close a channel at end of input. *)
+let scan_close_at_end ic = close_in ic; raise End_of_file;;
+
+let from_ic scan_close_ic fname ic =
   let len = !file_buffer_size in
   let buf = String.create len in
   let i = ref 0 in
   let lim = ref 0 in
+  let eof = ref false in
   let next () =
-    if !i < !lim then begin let c = buf.[!i] in incr i; c end else begin
+    if !i < !lim then begin let c = buf.[!i] in incr i; c end else
+    if !eof then raise End_of_file else begin
       lim := input ic buf 0 len;
-      if !lim = 0 then raise End_of_file else begin
+      if !lim = 0 then begin eof := true; scan_close_ic ic end else begin
         i := 1;
         buf.[0]
       end
     end in
   create fname next;;
 
-let from_file fname = from_file_channel fname (open_in fname);;
-let from_file_bin fname = from_file_channel fname (open_in_bin fname);;
+let from_ic_close_at_end = from_ic scan_close_at_end;;
 
-let from_input_channel fname ic =
-  let next () = input_char ic in
-  create fname next;;
+let from_file fname = from_ic_close_at_end fname (open_in fname);;
+let from_file_bin fname = from_ic_close_at_end fname (open_in_bin fname);;
 
-let from_channel = from_input_channel "input channel";;
+let scan_raise_at_end ic = raise End_of_file;;
 
-(* The scanning buffer reading from [stdin].*)
-let stdib = from_input_channel "stdin" stdin;;
+let from_channel = from_ic scan_raise_at_end "input channel";;
+
+(* The scanning buffer reading from [stdin].
+   One could try to define stdib as a scanning buffer reading a character at a
+   time (no bufferization at all), but unfortunately the toplevel
+   interaction would be wrong.
+   This is due to some kind of ``race condition'' when reading from stdin,
+   since the interactive compiler and scanf will simultaneously read the
+   material they need from stdin; then, confusion will result from what should
+   be read by the toplevel and what should be read by scanf.
+   This is even more complicated by the one character lookahead that scanf
+   is sometimes obliged to maintain: the lookahead character will be available
+   for the next (scanf) entry, seamingly coming from nowhere.
+   Also no End_of_file is raised when reading from stdin: if not enough
+   characters have been read, we simply ask to read more. *)
+let stdib = from_ic scan_raise_at_end "stdin" stdin;;
 
 end;;
 
 (* Formatted input functions. *)
+
+type ('a, 'b, 'c, 'd) scanner =
+     ('a, Scanning.scanbuf, 'b, 'c, 'a -> 'd, 'd) format6 -> 'c;;
+
+external string_to_format :
+ string -> ('a, 'b, 'c, 'd, 'e, 'f) format6 = "%identity";;
 
 (* Reporting errors. *)
 exception Scan_failure of string;;
@@ -259,31 +323,37 @@ let bad_input_escape c =
 
 let scanf_bad_input ib = function
   | Scan_failure s | Failure s ->
-      let i = Scanning.char_count ib in
-      bad_input (Printf.sprintf "scanf: bad input at char number %i: %s" i s)
+    let i = Scanning.char_count ib in
+    bad_input (Printf.sprintf "scanf: bad input at char number %i: %s" i s)
   | x -> raise x;;
+
+module Sformat = Printf.CamlinternalPr.Sformat;;
+module Tformat = Printf.CamlinternalPr.Tformat;;
 
 let bad_conversion fmt i c =
   invalid_arg
     (Printf.sprintf
        "scanf: bad conversion %%%c, at char number %i \
-        in format string ``%s''" c i fmt);;
+        in format string ``%s''" c i (Sformat.to_string fmt));;
 
 let incomplete_format fmt =
   invalid_arg
-    (Printf.sprintf "scanf: premature end of format string ``%s''" fmt);;
+    (Printf.sprintf "scanf: premature end of format string ``%s''"
+       (Sformat.to_string fmt));;
 
 let bad_float () = bad_input "no dot or exponent part found in float token";;
 
 let format_mismatch_err fmt1 fmt2 =
-  Printf.sprintf "format read %S does not match specification %S" fmt1 fmt2;;
+  Printf.sprintf
+    "format read ``%s'' does not match specification ``%s''" fmt1 fmt2;;
 
 let format_mismatch fmt1 fmt2 ib =
   scanf_bad_input ib (Scan_failure (format_mismatch_err fmt1 fmt2));;
 
 (* Checking that 2 format string are type compatible. *)
 let compatible_format_type fmt1 fmt2 =
-  Printf.summarize_format_type fmt1 = Printf.summarize_format_type fmt2;;
+  Tformat.summarize_format_type (string_to_format fmt1) =
+  Tformat.summarize_format_type (string_to_format fmt2);;
 
 (* Checking that [c] is indeed in the input, then skips it.
    In this case, the character c has been explicitely specified in the
@@ -347,9 +417,12 @@ let token_float ib = float_of_string (Scanning.token ib);;
    since those modules are not available to Scanf.
    However, we can bind and use the corresponding primitives that are
    available in the runtime. *)
-external nativeint_of_string: string -> nativeint = "caml_nativeint_of_string";;
-external int32_of_string : string -> int32 = "caml_int32_of_string";;
-external int64_of_string : string -> int64 = "caml_int64_of_string";;
+external nativeint_of_string : string -> nativeint
+  = "caml_nativeint_of_string";;
+external int32_of_string : string -> int32
+  = "caml_int32_of_string";;
+external int64_of_string : string -> int64
+  = "caml_int64_of_string";;
 
 let token_nativeint conv ib = nativeint_of_string (token_int_literal conv ib);;
 let token_int32 conv ib = int32_of_string (token_int_literal conv ib);;
@@ -373,11 +446,11 @@ let rec scan_decimal_digits max ib =
   if Scanning.eof ib then max else
   match c with
   | '0' .. '9' as c ->
-     let max = Scanning.store_char ib c max in
-     scan_decimal_digits max ib
+    let max = Scanning.store_char ib c max in
+    scan_decimal_digits max ib
   | '_' ->
-     let max = Scanning.ignore_char ib max in
-     scan_decimal_digits max ib
+    let max = Scanning.ignore_char ib max in
+    scan_decimal_digits max ib
   | _ -> max;;
 
 let scan_decimal_digits_plus max ib =
@@ -397,11 +470,11 @@ let scan_digits_plus digitp max ib =
     if Scanning.eof ib then max else
     match c with
     | c when digitp c ->
-       let max = Scanning.store_char ib c max in
-       scan_digits max
+      let max = Scanning.store_char ib c max in
+      scan_digits max
     | '_' ->
-       let max = Scanning.ignore_char ib max in
-       scan_digits max
+      let max = Scanning.ignore_char ib max in
+      scan_digits max
     | _ -> max in
 
   let c = Scanning.checked_peek_char ib in
@@ -449,15 +522,15 @@ let scan_optionally_signed_decimal_int max ib =
 let scan_unsigned_int max ib =
   match Scanning.checked_peek_char ib with
   | '0' as c ->
-      let max = Scanning.store_char ib c max in
-      if max = 0 then max else
-      let c = Scanning.peek_char ib in
-      if Scanning.eof ib then max else
-      begin match c with
-      | 'x' | 'X' -> scan_hexadecimal_int (Scanning.store_char ib c max) ib
-      | 'o' -> scan_octal_int (Scanning.store_char ib c max) ib
-      | 'b' -> scan_binary_int (Scanning.store_char ib c max) ib
-      | c -> scan_decimal_digits max ib end
+    let max = Scanning.store_char ib c max in
+    if max = 0 then max else
+    let c = Scanning.peek_char ib in
+    if Scanning.eof ib then max else
+    begin match c with
+    | 'x' | 'X' -> scan_hexadecimal_int (Scanning.store_char ib c max) ib
+    | 'o' -> scan_octal_int (Scanning.store_char ib c max) ib
+    | 'b' -> scan_binary_int (Scanning.store_char ib c max) ib
+    | c -> scan_decimal_digits max ib end
   | c -> scan_unsigned_decimal_int max ib;;
 
 let scan_optionally_signed_int max ib =
@@ -492,7 +565,7 @@ let scan_exp_part max ib =
   if Scanning.eof ib then max else
   match c with
   | 'e' | 'E' as c ->
-     scan_optionally_signed_decimal_int (Scanning.store_char ib c max) ib
+    scan_optionally_signed_decimal_int (Scanning.store_char ib c max) ib
   | _ -> max;;
 
 (* Scan the integer part of a floating point number, (not using the
@@ -510,9 +583,9 @@ let scan_float max ib =
   if Scanning.eof ib then max else
   match c with
   | '.' ->
-     let max = Scanning.store_char ib c max in
-     let max = scan_frac_part max ib in
-     scan_exp_part max ib
+    let max = Scanning.store_char ib c max in
+    let max = scan_frac_part max ib in
+    scan_exp_part max ib
   | c -> scan_exp_part max ib;;
 
 let scan_Float max ib =
@@ -522,11 +595,11 @@ let scan_Float max ib =
   if Scanning.eof ib then bad_float () else
   match c with
   | '.' ->
-     let max = Scanning.store_char ib c max in
-     let max = scan_frac_part max ib in
-     scan_exp_part max ib
+    let max = Scanning.store_char ib c max in
+    let max = scan_frac_part max ib in
+    scan_exp_part max ib
   | 'e' | 'E' ->
-     scan_exp_part max ib
+    scan_exp_part max ib
   | c -> bad_float ();;
 
 (* Scan a regular string: stops when encountering a space or one of the
@@ -554,7 +627,7 @@ let char_for_backslash = function
   | 'r' -> '\013'
   | 'b' -> '\008'
   | 't' -> '\009'
-  | c   -> c
+  | c   -> c;;
 
 (* The integer value corresponding to the facial value of a valid
    decimal digit character. *)
@@ -577,17 +650,17 @@ let scan_backslash_char max ib =
   if Scanning.eof ib then bad_input "a char" else
   match c with
   | '\\' | '\'' | '"' | 'n' | 't' | 'b' | 'r' (* '"' helping Emacs *) ->
-     Scanning.store_char ib (char_for_backslash c) max
+    Scanning.store_char ib (char_for_backslash c) max
   | '0' .. '9' as c ->
-     let get_digit () =
-       let c = Scanning.next_char ib in
-       match c with
-       | '0' .. '9' as c -> c
-       | c -> bad_input_escape c in
-     let c0 = c in
-     let c1 = get_digit () in
-     let c2 = get_digit () in
-     Scanning.store_char ib (char_for_decimal_code c0 c1 c2) (max - 2)
+    let get_digit () =
+      let c = Scanning.next_char ib in
+      match c with
+      | '0' .. '9' as c -> c
+      | c -> bad_input_escape c in
+    let c0 = c in
+    let c1 = get_digit () in
+    let c2 = get_digit () in
+    Scanning.store_char ib (char_for_decimal_code c0 c1 c2) (max - 2)
   | c -> bad_input_char c;;
 
 let scan_Char max ib =
@@ -610,11 +683,11 @@ let scan_String max ib =
     if Scanning.eof ib then bad_input "a string" else
     match c, s with
     | '"', true (* '"' helping Emacs *) ->
-       loop false (Scanning.ignore_char ib max)
+      loop false (Scanning.ignore_char ib max)
     | '"', false (* '"' helping Emacs *) ->
-       Scanning.ignore_char ib max
+      Scanning.ignore_char ib max
     | '\\', false ->
-       skip_spaces true (Scanning.ignore_char ib max)
+      skip_spaces true (Scanning.ignore_char ib max)
     | c, false -> loop false (Scanning.store_char ib c max)
     | c, _ -> bad_input_char c
   and skip_spaces s max =
@@ -624,7 +697,7 @@ let scan_String max ib =
     match c, s with
     | '\n', true
     | ' ', false ->
-       skip_spaces false (Scanning.ignore_char ib max)
+      skip_spaces false (Scanning.ignore_char ib max)
     | '\\', false -> loop false max
     | c, false -> loop false (Scanning.store_char ib c max)
     | _, _ -> loop false (scan_backslash_char (max - 1) ib) in
@@ -648,29 +721,29 @@ type char_set =
 
 (* Char sets are read as sub-strings in the format string. *)
 let read_char_set fmt i =
-  let lim = String.length fmt - 1 in
+  let lim = Sformat.length fmt - 1 in
 
   let rec find_in_set j =
     if j > lim then incomplete_format fmt else
-    match fmt.[j] with
+    match Sformat.get fmt j with
     | ']' -> j
-    | c -> find_in_set (j + 1)
+    | c -> find_in_set (succ j)
 
   and find_set i =
     if i > lim then incomplete_format fmt else
-    match fmt.[i] with
-    | ']' -> find_in_set (i + 1)
+    match Sformat.get fmt i with
+    | ']' -> find_in_set (succ i)
     | c -> find_in_set i in
 
   if i > lim then incomplete_format fmt else
-  match fmt.[i] with
+  match Sformat.get fmt i with
   | '^' ->
-     let i = i + 1 in
-     let j = find_set i in
-     j, Neg_set (String.sub fmt i (j - i))
+    let i = succ i in
+    let j = find_set i in
+    j, Neg_set (Sformat.sub fmt (Sformat.index_of_int i) (j - i))
   | _ ->
-     let j = find_set i in
-     j, Pos_set (String.sub fmt i (j - i));;
+    let j = find_set i in
+    j, Pos_set (Sformat.sub fmt (Sformat.index_of_int i) (j - i));;
 
 (* Char sets are now represented as bitvects that are represented as
    byte strings. *)
@@ -716,18 +789,18 @@ let make_char_bit_vect bit set =
     if i <= lim then
     match set.[i] with
     | '-' when rp ->
-       (* if i = 0 then rp is false (since the initial call is
-          loop bit false 0). Hence i >= 1 and the following is safe. *)
-       let c1 = set.[i - 1] in
-       let i = i + 1 in
-       if i > lim then loop bit false (i - 1) else
-       let c2 = set.[i] in
-       for j = int_of_char c1 to int_of_char c2 do
-         set_bit_of_range r j bit done;
-       loop bit false (i + 1)
+      (* if i = 0 then rp is false (since the initial call is
+         loop bit false 0). Hence i >= 1 and the following is safe. *)
+      let c1 = set.[i - 1] in
+      let i = succ i in
+      if i > lim then loop bit false (i - 1) else
+      let c2 = set.[i] in
+      for j = int_of_char c1 to int_of_char c2 do
+        set_bit_of_range r j bit done;
+      loop bit false (succ i)
     | c ->
-       set_bit_of_range r (int_of_char set.[i]) bit;
-       loop bit true (i + 1) in
+      set_bit_of_range r (int_of_char set.[i]) bit;
+      loop bit true (succ i) in
   loop bit false 0;
   r;;
 
@@ -741,35 +814,35 @@ let make_pred bit set stp =
 let make_setp stp char_set =
   match char_set with
   | Pos_set set ->
-      begin match String.length set with
-      | 0 -> (fun c -> 0)
-      | 1 ->
-          let p = set.[0] in
-          (fun c -> if c == p then 1 else 0)
-      | 2 ->
-          let p1 = set.[0] and p2 = set.[1] in
-          (fun c -> if c == p1 || c == p2 then 1 else 0)
-      | 3 ->
-          let p1 = set.[0] and p2 = set.[1] and p3 = set.[2] in
-          if p2 = '-' then make_pred 1 set stp else
-          (fun c -> if c == p1 || c == p2 || c == p3 then 1 else 0)
-      | n -> make_pred 1 set stp
-      end
+    begin match String.length set with
+    | 0 -> (fun c -> 0)
+    | 1 ->
+      let p = set.[0] in
+      (fun c -> if c == p then 1 else 0)
+    | 2 ->
+      let p1 = set.[0] and p2 = set.[1] in
+      (fun c -> if c == p1 || c == p2 then 1 else 0)
+    | 3 ->
+      let p1 = set.[0] and p2 = set.[1] and p3 = set.[2] in
+      if p2 = '-' then make_pred 1 set stp else
+      (fun c -> if c == p1 || c == p2 || c == p3 then 1 else 0)
+    | n -> make_pred 1 set stp
+    end
   | Neg_set set ->
-      begin match String.length set with
-      | 0 -> (fun c -> 1)
-      | 1 ->
-          let p = set.[0] in
-          (fun c -> if c != p then 1 else 0)
-      | 2 ->
-          let p1 = set.[0] and p2 = set.[1] in
-          (fun c -> if c != p1 && c != p2 then 1 else 0)
-      | 3 ->
-          let p1 = set.[0] and p2 = set.[1] and p3 = set.[2] in
-          if p2 = '-' then make_pred 0 set stp else
-          (fun c -> if c != p1 && c != p2 && c != p3 then 1 else 0)
-      | n -> make_pred 0 set stp
-      end;;
+    begin match String.length set with
+    | 0 -> (fun c -> 1)
+    | 1 ->
+      let p = set.[0] in
+      (fun c -> if c != p then 1 else 0)
+    | 2 ->
+      let p1 = set.[0] and p2 = set.[1] in
+      (fun c -> if c != p1 && c != p2 then 1 else 0)
+    | 3 ->
+      let p1 = set.[0] and p2 = set.[1] and p3 = set.[2] in
+      if p2 = '-' then make_pred 0 set stp else
+      (fun c -> if c != p1 && c != p2 && c != p3 then 1 else 0)
+    | n -> make_pred 0 set stp
+    end;;
 
 let setp_table = Hashtbl.create 7;;
 
@@ -777,17 +850,17 @@ let add_setp stp char_set setp =
   let char_set_tbl =
     try Hashtbl.find setp_table char_set with
     | Not_found ->
-        let char_set_tbl = Hashtbl.create 3 in
-        Hashtbl.add setp_table char_set char_set_tbl;
-        char_set_tbl in
+      let char_set_tbl = Hashtbl.create 3 in
+      Hashtbl.add setp_table char_set char_set_tbl;
+      char_set_tbl in
   Hashtbl.add char_set_tbl stp setp;;
 
 let find_setp stp char_set =
   try Hashtbl.find (Hashtbl.find setp_table char_set) stp with
   | Not_found ->
-     let setp = make_setp stp char_set in
-     add_setp stp char_set setp;
-     setp;;
+    let setp = make_setp stp char_set in
+    add_setp stp char_set setp;
+    setp;;
 
 let scan_chars_in_char_set stp char_set max ib =
   let rec loop_pos1 cp1 max =
@@ -843,19 +916,19 @@ let scan_chars_in_char_set stp char_set max ib =
   let max =
     match char_set with
     | Pos_set set ->
-        begin match String.length set with
-        | 0 -> loop (fun c -> 0) max
-        | 1 -> loop_pos1 set.[0] max
-        | 2 -> loop_pos2 set.[0] set.[1] max
-        | 3 when set.[1] != '-' -> loop_pos3 set.[0] set.[1] set.[2] max
-        | n -> loop (find_setp stp char_set) max end
+      begin match String.length set with
+      | 0 -> loop (fun c -> 0) max
+      | 1 -> loop_pos1 set.[0] max
+      | 2 -> loop_pos2 set.[0] set.[1] max
+      | 3 when set.[1] != '-' -> loop_pos3 set.[0] set.[1] set.[2] max
+      | n -> loop (find_setp stp char_set) max end
     | Neg_set set ->
-        begin match String.length set with
-        | 0 -> loop (fun c -> 1) max
-        | 1 -> loop_neg1 set.[0] max
-        | 2 -> loop_neg2 set.[0] set.[1] max
-        | 3 when set.[1] != '-' -> loop_neg3 set.[0] set.[1] set.[2] max
-        | n -> loop (find_setp stp char_set) max end in
+      begin match String.length set with
+      | 0 -> loop (fun c -> 1) max
+      | 1 -> loop_neg1 set.[0] max
+      | 2 -> loop_neg2 set.[0] set.[1] max
+      | 3 when set.[1] != '-' -> loop_neg3 set.[0] set.[1] set.[2] max
+      | n -> loop (find_setp stp char_set) max end in
   ignore_stoppers stp ib;
   max;;
 
@@ -874,10 +947,12 @@ let rec skip_whites ib =
     | _ -> ()
   end;;
 
-external format_to_string :
- ('a, 'b, 'c, 'd) format4 -> string = "%identity";;
-external string_to_format :
- string -> ('a, 'b, 'c, 'd) format4 = "%identity";;
+let list_iter_i f l =
+  let rec loop i = function
+  | [] -> ()
+  | [x] -> f i x (* Tail calling [f] *)
+  | x :: xs -> f i x; loop (succ i) xs in
+  loop 0 l;;
 
 (* The [kscanf] main scanning function.
    It takes as arguments:
@@ -898,128 +973,162 @@ external string_to_format :
    If the scanning or some conversion fails, the main scanning function
    aborts and applies the scanning buffer and a string that explains
    the error to the error handling function [ef] (the error continuation). *)
-let kscanf ib ef fmt f =
-  let fmt = format_to_string fmt in
-  let lim = String.length fmt - 1 in
+let ascanf sc fmt =
+  let ac = Tformat.ac_of_format fmt in
+   match ac.Tformat.ac_rdrs with
+  | 0 -> Obj.magic (fun f -> sc fmt [||] f)
+  | 1 -> Obj.magic (fun x f -> sc fmt [| Obj.repr x |] f)
+  | 2 -> Obj.magic (fun x y f -> sc fmt [| Obj.repr x; Obj.repr y; |] f)
+  | 3 -> Obj.magic (fun x y z f ->
+                      sc fmt [| Obj.repr x; Obj.repr y; Obj.repr z; |] f) 
+  | nargs ->
+    let rec loop i args =
+      if i >= nargs then
+        let a = Array.make nargs (Obj.repr 0) in
+        list_iter_i (fun i arg -> a.(nargs - i - 1) <- arg) args;
+        Obj.magic (fun f -> sc fmt a f)
+      else Obj.magic (fun x -> loop (succ i) (x :: args)) in
+    loop 0 [];;
+
+let scan_format ib ef fmt v f =
+
+  let lim = Sformat.length fmt - 1 in
+
+  let limr = Array.length v - 1 in
 
   let return v = Obj.magic v () in
   let delay f x () = f x in
   let stack f = delay (return f) in
   let no_stack f x = f in
 
-  let rec scan_fmt f i =
+  let rec scan_fmt ir f i =
     if i > lim then f else
-    match fmt.[i] with
-    | ' ' -> skip_whites ib; scan_fmt f (i + 1)
+    match Sformat.get fmt i with
+    | ' ' -> skip_whites ib; scan_fmt ir f (succ i)
     | '%' ->
-        if i > lim then incomplete_format fmt else
-        scan_conversion false max_int f (i + 1)
+      if i > lim then incomplete_format fmt else
+      scan_conversion false max_int ir f (succ i)
     | '@' ->
-        let i = i + 1 in
-        if i > lim then incomplete_format fmt else begin
-        check_char ib fmt.[i];
-        scan_fmt f (i + 1) end
-    | c -> check_char ib c; scan_fmt f (i + 1)
+      let i = succ i in
+      if i > lim then incomplete_format fmt else begin
+      check_char ib (Sformat.get fmt i);
+      scan_fmt ir f (succ i) end
+    | c -> check_char ib c; scan_fmt ir f (succ i)
 
-  and scan_conversion skip max f i =
+  and scan_conversion skip max ir f i =
     let stack = if skip then no_stack else stack in
-    match fmt.[i] with
+    match Sformat.get fmt i with
     | '%' as conv ->
-        check_char ib conv; scan_fmt f (i + 1)
-    | 'c' when max = 0 ->
-        let c = Scanning.checked_peek_char ib in
-        scan_fmt (stack f c) (i + 1)
-    | 'c' | 'C' as conv ->
-        if max <> 1 && max <> max_int then bad_conversion fmt i conv else
-        let _x =
-          if conv = 'c' then scan_char max ib else scan_Char max ib in
-        scan_fmt (stack f (token_char ib)) (i + 1)
-    | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv ->
-        let _x = scan_int_conv conv max ib in
-        scan_fmt (stack f (token_int conv ib)) (i + 1)
-    | 'f' | 'g' | 'G' | 'e' | 'E' ->
-        let _x = scan_float max ib in
-        scan_fmt (stack f (token_float ib)) (i + 1)
-    | 'F' ->
-        let _x = scan_Float max ib in
-        scan_fmt (stack f (token_float ib)) (i + 1)
+      check_char ib conv; scan_fmt ir f (succ i)
     | 's' ->
-        let i, stp = scan_fmt_stoppers (i + 1) in
-        let _x = scan_string stp max ib in
-        scan_fmt (stack f (token_string ib)) (i + 1)
-    | '[' ->
-        let i, char_set = read_char_set fmt (i + 1) in
-        let i, stp = scan_fmt_stoppers (i + 1) in
-        let _x = scan_chars_in_char_set stp char_set max ib in
-        scan_fmt (stack f (token_string ib)) (i + 1)
+      let i, stp = scan_fmt_stoppers (succ i) in
+      let _x = scan_string stp max ib in
+      scan_fmt ir (stack f (token_string ib)) (succ i)
     | 'S' ->
-        let _x = scan_String max ib in
-        scan_fmt (stack f (token_string ib)) (i + 1)
-    | 'B' | 'b' ->
-        let _x = scan_bool max ib in
-        scan_fmt (stack f (token_bool ib)) (i + 1)
-    | 'l' | 'n' | 'L' as conv ->
-        let i = i + 1 in
-        if i > lim then scan_fmt (stack f (get_count conv ib)) i else begin
-        match fmt.[i] with
-        | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv ->
-            let _x = scan_int_conv conv max ib in
-            begin match conv with
-            | 'l' -> scan_fmt (stack f (token_int32 conv ib)) (i + 1)
-            | 'n' -> scan_fmt (stack f (token_nativeint conv ib)) (i + 1)
-            | _ -> scan_fmt (stack f (token_int64 conv ib)) (i + 1) end
-        | c -> scan_fmt (stack f (get_count conv ib)) i end
+      let _x = scan_String max ib in
+      scan_fmt ir (stack f (token_string ib)) (succ i)
+    | '[' (* ']' *) ->
+      let i, char_set = read_char_set fmt (succ i) in
+      let i, stp = scan_fmt_stoppers (succ i) in
+      let _x = scan_chars_in_char_set stp char_set max ib in
+      scan_fmt ir (stack f (token_string ib)) (succ i)
+    | 'c' when max = 0 ->
+      let c = Scanning.checked_peek_char ib in
+      scan_fmt ir (stack f c) (succ i)
+    | 'c' | 'C' as conv ->
+      if max <> 1 && max <> max_int then bad_conversion fmt i conv else
+      let _x =
+        if conv = 'c' then scan_char max ib else scan_Char max ib in
+      scan_fmt ir (stack f (token_char ib)) (succ i)
+    | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv ->
+      let _x = scan_int_conv conv max ib in
+      scan_fmt ir (stack f (token_int conv ib)) (succ i)
     | 'N' as conv ->
-        scan_fmt (stack f (get_count conv ib)) (i + 1)
+      scan_fmt ir (stack f (get_count conv ib)) (succ i)
+    | 'f' | 'e' | 'E' | 'g' | 'G' ->
+      let _x = scan_float max ib in
+      scan_fmt ir (stack f (token_float ib)) (succ i)
+    | 'F' ->
+      let _x = scan_Float max ib in
+      scan_fmt ir (stack f (token_float ib)) (succ i)
+    | 'B' | 'b' ->
+      let _x = scan_bool max ib in
+      scan_fmt ir (stack f (token_bool ib)) (succ i)
+    | 'r' ->
+      if ir > limr then assert false else
+      let token = Obj.magic v.(ir) ib in
+      scan_fmt (succ ir) (stack f token) (succ i)
+    | 'l' | 'n' | 'L' as conv ->
+      let i = succ i in
+      if i > lim then scan_fmt ir (stack f (get_count conv ib)) i else begin
+      match Sformat.get fmt i with
+      (* This is in fact an integer conversion (e.g. %ld, %ni, or %Lo). *)
+      | 'd' | 'i' | 'o' | 'u' | 'x' | 'X' as conv ->
+        let _x = scan_int_conv conv max ib in
+        (* Look back to the character that triggered the integer conversion
+           (this character is either 'l', 'n' or 'L'), to find the
+           conversion to apply to the integer token read. *)
+        begin match Sformat.get fmt (i - 1) with
+        | 'l' -> scan_fmt ir (stack f (token_int32 conv ib)) (succ i)
+        | 'n' -> scan_fmt ir (stack f (token_nativeint conv ib)) (succ i)
+        | _ -> scan_fmt ir (stack f (token_int64 conv ib)) (succ i) end
+      (* This is not an integer conversion, but a regular %l, %n or %L. *)
+      | _ -> scan_fmt ir (stack f (get_count conv ib)) i end
     | '!' ->
-        if Scanning.end_of_input ib then scan_fmt f (i + 1)
-        else bad_input "end of input not found"
+      if Scanning.end_of_input ib then scan_fmt ir f (succ i)
+      else bad_input "end of input not found"
     | '_' ->
-        if i > lim then incomplete_format fmt else
-        scan_conversion true max f (i + 1)
+      if i > lim then incomplete_format fmt else
+      scan_conversion true max ir f (succ i)
     | '0' .. '9' as conv ->
-        let rec read_width accu i =
-          if i > lim then accu, i else
-          match fmt.[i] with
-          | '0' .. '9' as c ->
-             let accu = 10 * accu + int_value_of_char c in
-             read_width accu (i + 1)
-          | _ -> accu, i in
-        let max, i = read_width (int_value_of_char conv) (i + 1) in
-        if i > lim then incomplete_format fmt else begin
-        match fmt.[i] with
-        | '.' ->
-          let p, i = read_width 0 (i + 1) in
-          scan_conversion skip (max + p + 1) f i
-        | _ -> scan_conversion skip max f i end
-    | '(' | '{' as conv ->
-        let i = succ i in
-        let j =
-          Printf.sub_format incomplete_format bad_conversion conv fmt i + 1 in
-        let mf = String.sub fmt i (j - i - 2) in
-        let _x = scan_String max ib in
-        let rf = token_string ib in
-        if not (compatible_format_type mf rf)
-          then format_mismatch rf mf ib else 
-        if conv = '{' then scan_fmt (stack f rf) j else
-        let nf = scan_fmt (Obj.magic rf) 0 in
-        scan_fmt (stack f nf) j
+      let rec read_width accu i =
+        if i > lim then accu, i else
+        match Sformat.get fmt i with
+        | '0' .. '9' as c ->
+          let accu = 10 * accu + int_value_of_char c in
+          read_width accu (succ i)
+        | _ -> accu, i in
+      let max, i = read_width (int_value_of_char conv) (succ i) in
+      if i > lim then incomplete_format fmt else begin
+      match Sformat.get fmt i with
+      | '.' ->
+        let p, i = read_width 0 (succ i) in
+        scan_conversion skip (succ (max + p)) ir f i
+      | _ -> scan_conversion skip max ir f i end
+    | '(' | '{' as conv (* ')' '}' *) ->
+      let i = succ i in
+      let j =
+        Tformat.sub_format
+          incomplete_format bad_conversion conv fmt i in
+      let mf = Sformat.sub fmt (Sformat.index_of_int i) (j - 2 - i) in
+      let _x = scan_String max ib in
+      let rf = token_string ib in
+      if not (compatible_format_type rf mf) then format_mismatch rf mf ib else
+      if conv = '{' (* '}' *) then scan_fmt ir (stack f rf) j else
+      let nf = scan_fmt ir (Obj.magic rf) 0 in
+      scan_fmt ir (stack f nf) j
     | c -> bad_conversion fmt i c
 
   and scan_fmt_stoppers i =
     if i > lim then i - 1, [] else
-    match fmt.[i] with
-    | '@' when i < lim -> let i = i + 1 in i, [fmt.[i]]
+    match Sformat.get fmt i with
+    | '@' when i < lim -> let i = succ i in i, [Sformat.get fmt i]
     | '@' when i = lim -> incomplete_format fmt
     | _ -> i - 1, [] in
 
   Scanning.reset_token ib;
 
   let v =
-    try scan_fmt (fun () -> f) 0 with
+    try scan_fmt 0 (fun () -> f) 0 with
     | (Scan_failure _ | Failure _ | End_of_file) as exc ->
-        stack (delay ef ib) exc in
+      stack (delay ef ib) exc in
   return v;;
+
+let mkscanf ib ef fmt =
+  let sc = scan_format ib ef in
+  ascanf sc fmt;;
+
+let kscanf ib ef fmt = mkscanf ib ef fmt;;
 
 let bscanf ib = kscanf ib scanf_bad_input;;
 
@@ -1029,15 +1138,21 @@ let sscanf s = bscanf (Scanning.from_string s);;
 
 let scanf fmt = bscanf Scanning.stdib fmt;;
 
-let bscanf_format ib fmt2 f =
+let bscanf_format ib fmt f =
+  let fmt = Sformat.unsafe_to_string fmt in
   let fmt1 = ignore (scan_String max_int ib); token_string ib in
-  let fmt2 = format_to_string fmt2 in
-  if compatible_format_type fmt1 fmt2
-  then let fresh_fmt = String.copy fmt1 in f (string_to_format fresh_fmt)
-  else format_mismatch fmt1 fmt2 ib;;
+  if not (compatible_format_type fmt1 fmt) then
+    format_mismatch fmt1 fmt ib else
+  f (string_to_format fmt1);;
 
-let sscanf_format s fmt =
-  let fmt = format_to_string fmt in
-  if compatible_format_type s fmt
-  then let fresh_fmt = String.copy s in string_to_format fresh_fmt
-  else bad_input (format_mismatch_err s fmt);;
+let sscanf_format s fmt f = bscanf_format (Scanning.from_string s) fmt f;;
+
+let quote_string s =
+  let b = Buffer.create (String.length s + 2) in
+  Buffer.add_char b '\"';
+  Buffer.add_string b s;
+  Buffer.add_char b '\"';
+  Buffer.contents b;;
+
+let format_from_string s fmt =
+  sscanf_format (quote_string s) fmt (fun x -> x);;

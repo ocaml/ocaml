@@ -1,3 +1,181 @@
+Objective Caml 3.10.0:
+----------------------
+
+(Changes that can break existing programs are marked with a "*"  )
+
+Language features:
+- Added virtual instance variables in classes "val virtual v : t"
+* Changed the behaviour of instance variable overriding; the new
+  definition replaces the old one, rather than creating a new
+  variable.
+
+New tools:
+- ocamlbuild: compilation manager for OCaml applications and libraries.
+  See draft documentation at http://gallium.inria.fr/~pouillar/
+* Camlp4: heavily revised implementation, new API.
+
+New ports:
+- MacOS X PowerPC 64 bits.
+- MS Windows 64 bits (x64) using the Microsoft PSDK toolchain.
+- MS Windows 32 bits using the Visual Studio 2005 toolchain.
+
+Compilers:
+- Faster type-checking of functor applications.
+- Referencing an interface compiled with -rectypes from a module
+    not compiled with -rectypes is now an error.
+- Revised the "fragile matching" warning.
+
+Native-code compiler:
+- Print a stack backtrace on an uncaught exception.
+  (Compile and link with ocamlopt -g; execute with OCAMLRUNPARAM=b.)
+  Supported on Intel/AMD in 32 and 64 bits, PPC in 32 and 64 bits.
+- Stack overflow detection on MS Windows 32 bits (courtesy O. Andrieu).
+- Stack overflow detection on MacOS X PPC and Intel.
+- Intel/AMD 64 bits: generate position-independent code by default.
+- Fixed bug involving -for-pack and missing .cmx files (PR#4124).
+- Fixed bug causing duplication of literals  (PR#4152).
+
+Run-time system:
+- C/Caml interface functions take "char const *" arguments
+  instead of "char *" when appropriate.
+- Faster string comparisons (fast case if strings are ==).
+
+Standard library:
+- Refined typing of format strings (type format6).
+- Printf, Format: new function ifprintf that consumes its arguments
+    and prints nothing (useful to print conditionally).
+- Scanf:
+    new function format_from_string to convert a string to a format string;
+    new %r conversion to accomodate user defined scanners.
+- Filename: improved Win32 implementation of Filename.quote.
+- List: List.nth now tail-recursive.
+- Sys: added Sys.is_directory.  Some functions (e.g. Sys.command) that
+    could incorrectly raise Sys_io_blocked now raise Sys_error as intended.
+
+Other libraries:
+- Bigarray: mmap_file takes an optional argument specifying
+    the start position of the data in the mapped file.
+- Dynlink: now defines only two modules, Dynlink and Dynlinkaux (internal),
+    reducing risks of name conflicts with user modules.
+- Labltk under Win32: now uses Tcl/Tk 8.4 instead of 8.3 by default.
+- VM threads: improved performance of I/O operations (less polling).
+- Unix: new function Unix.isatty.
+- Unix emulation under Win32:
+    fixed incorrect error reporting in several functions (PR#4097);
+    better handling of channels opened on sockets (PR#4098);
+    fixed GC bug in Unix.system (PR#4112).
+
+Documentation generator (OCamldoc):
+- correctly handle '?' in value names (PR#4215)
+- new option -hide-warnings not to print ocamldoc warnings
+
+Lexer generator (ocamllex): improved error reporting.
+
+License: fixed a typo in the "special exception" to the LGPL.
+
+
+Objective Caml 3.09.3:
+----------------------
+
+Bug fixes:
+- ocamldoc: -using modtype constraint to filter module elements displayed
+    in doc PR#4016
+- ocamldoc: error in merging of top dependencies of modules PR#4007
+- ocamldoc: -dot-colors has no effect PR#3981
+- ocamdloc: missing crossref in text from intro files PR#4066
+- compilers: segfault with recursive modules PR#4008
+- compilers: infinite loop when compiling objects PR#4018
+- compilers: bad error message when signature mismatch PR#4001
+- compilers: infinite loop with -rectypes PR#3999
+- compilers: contravariance bug in private rows
+- compilers: unsafe cast with polymorphic exception PR#4002
+- native compiler: bad assembly code generated for AMD64 PR#4067
+- native compiler: stack alignment problems on MacOSX/i386 PR#4036
+- stdlib: crash in marshalling PR#4030
+- stdlib: crash when closing a channel twice PR#4039
+- stdlib: memory leak in Sys.readdir PR#4093
+- C interface: better definition of CAMLreturn PR#4068
+- otherlibs/unix: crash in gethostbyname PR#3043
+- tools: subtle problem with unset in makefile PR#4048
+- camlp4: install pa_o_fast.o PR#3812
+- camlp4: install more modules PR#3689
+
+New features:
+- ocamldoc: name resolution in cross-referencing {!name}: if name is not
+    found, then it is searched in the parent module/class, and in the parent
+    of the parent, and so on until it is found.
+- ocamldoc: new option -short-functors to use a short form to display
+    functors in html generator PR#4017
+- ocamlprof: added "-version" option
+
+
+
+Objective Caml 3.09.2:
+----------------------
+
+Bug fixes:
+- Makefile: problem with "make world.opt" PR#3954
+- compilers: problem compiling several modules with one command line PR#3979
+- compilers,ocamldoc: error message that Emacs cannot parse
+- compilers: crash when printing type error PR#3968
+- compilers: -dtypes wrong for monomorphic type variables PR#3894
+- compilers: wrong warning on optional arguments PR#3980
+- compilers: crash when wrong use of type constructor in let rec PR#3976
+- compilers: better wording of "statement never returns" warning PR#3889
+- runtime: inefficiency of signal handling PR#3990
+- runtime: crashes with I/O in multithread programs PR#3906
+- camlp4: empty file name in error messages PR#3886
+- camlp4: stack overflow PR#3948
+- otherlibs/labltk: ocamlbrowser ignores its command line options PR#3961
+- otherlibs/unix: Unix.times wrong under Mac OS X PR#3960
+- otherlibs/unix: wrong doc for execvp and execvpe PR#3973
+- otherlibs/win32unix: random crash in Unix.stat PR#3998
+- stdlib: update_mod not found under Windows PR#3847
+- stdlib: Filename.dirname/basename wrong on Win32 PR#3933
+- stdlib: incomplete documentation of Pervasives.abs PR#3967
+- stdlib: Printf bugs PR#3902, PR#3955
+- tools/checkstack.c: missing include
+- yacc: crash when given argument "-" PR#3956
+
+New features:
+- ported to MacOS X on Intel PR#3985
+- configure: added support for GNU Hurd PR#3991
+
+Objective Caml 3.09.1:
+----------------------
+
+Bug fixes:
+- compilers: raise not_found with -principal PR#3855
+- compilers: assert failure in typeclass.cml PR#3856
+- compilers: assert failure in typing/ctype.ml PR#3909
+- compilers: fatal error exception Ctype.Unify PR#3918
+- compilers: spurious warning Y in objects PR#3868
+- compilers: spurious warning Z on loop index PR#3907
+- compilers: error message that emacs cannot parse
+- ocamlopt: problems with -for-pack/-pack PR#3825, PR#3826, PR#3919
+- ocamlopt: can't produce shared libraries on x86_64 PR#3869, PR#3924
+- ocamlopt: float alignment problem on SPARC PR#3944
+- ocamlopt: can't compile on MIPS PR#3936
+- runtime: missing dependence for ld.conf
+- runtime: missing dependence for .depend.nt PR#3880
+- runtime: memory leak in caml_register_named_value PR#3940
+- runtime: crash in Marshal.to_buffer PR#3879
+- stdlib: Sys.time giving wrong results on Mac OS X PR#3850
+- stdlib: Weak.get_copy causing random crashes in rare cases
+- stdlib, debugger, labltk: use TMPDIR if set PR#3895
+- stdlib: scanf bug on int32 and nativeint PR#3932
+- camlp4: mkcamlp4 option parsing problem PR#3941
+- camlp4: bug in pretty-printing of lazy/assert/new
+- camlp4: update the unmaintained makefile for _loc name
+- ocamldoc: several fixes see ocamldoc/Changes.txt
+- otherlibs/str: bug in long sequences of alternatives PR#3783
+- otherlibs/systhreads: deadlock in Windows PR#3910
+- tools: update dumpobj to handle new event format PR#3873
+- toplevel: activate warning Y in toplevel PR#3832
+
+New features:
+- otherlibs/labltk: browser uses menu bars instead of menu buttons
+
 Objective Caml 3.09.0:
 ----------------------
 
@@ -16,8 +194,8 @@ Type checking:
 Both compilers:
 - Added warnings 'Y' and 'Z' for local variables that are bound but
   never used.
-- Added warning for some uses non-returning functions (e.g. raise), when they are
-  passed extra arguments, or followed by extra statements.
+- Added warning for some uses non-returning functions (e.g. raise), when they
+  are passed extra arguments, or followed by extra statements.
 - Pattern matching: more prudent compilation in case of guards; fixed PR#3780.
 - Compilation of classes: reduction in size of generated code.
 - Compilation of "module rec" definitions: fixed a bad interaction with
@@ -25,7 +203,7 @@ Both compilers:
 
 Native-code compiler (ocamlopt):
 * Revised implementation of the -pack option (packing of several compilation
-  units into one).  The .cmx files that are to be packed with 
+  units into one).  The .cmx files that are to be packed with
   "ocamlopt -pack -o P.cmx" must be compiled with "ocamlopt -for-pack P".
   In exchange for this additional constraint, ocamlopt -pack is now
   available on all platforms (no need for binutils).
@@ -244,7 +422,7 @@ Both compilers:
   .cmi / .cmo / .cmx files.
 
 Bytecode compiler:
-- Option -output-obj is now compatible with Dynlink and 
+- Option -output-obj is now compatible with Dynlink and
   with embedded toplevels.
 
 Native-code compiler:
@@ -327,7 +505,7 @@ Language features:
   (written with an 'l', 'n' or 'L' suffix respectively).
 
 Type-checking:
-- Allow polymorphic generalization of covariant parts of expansive 
+- Allow polymorphic generalization of covariant parts of expansive
   expressions.  For instance, if f: unit -> 'a list, "let x = f ()"
   gives "x" the generalized type forall 'a. 'a list, instead of '_a list
   as before.
@@ -386,7 +564,7 @@ Native-code compiler:
     Small performance tweaks for the Pentium 4.
     Fixed illegal "imul" instruction generated by reloading phase.
 - Sparc port:
-    Enhanced code generation for Sparc V8 (option -march=v8) and 
+    Enhanced code generation for Sparc V8 (option -march=v8) and
     Sparc V9 (option -march=v9).
     Profiling support added for Solaris.
 - PowerPC port:
@@ -544,7 +722,7 @@ Run-time system:
 - Better support for lazy data in the garbage collector.
 - Fixed issues with the heap compactor.
 - Fixed issues with finalized Caml values.
-- The type "int64" is now supported on all platforms: we use software 
+- The type "int64" is now supported on all platforms: we use software
   emulation if the C compiler doesn't support 64-bit integers.
 - Support for float formats that are neither big-endian nor little-endian
   (one known example: the ARM).
@@ -590,12 +768,12 @@ Standard library:
 
 Other libraries:
 - Bigarray:
-    support for bigarrays of complex numbers; 
+    support for bigarrays of complex numbers;
     added functions Genarray.dims,
       {Genarray,Array1,Array2,Array3}.{kind,layout}.
 - Dynlink: fixed bug with loading of mixed-mode Caml/C libraries.
 - LablTK:
-    now supports also the CamlTK API (no labels); 
+    now supports also the CamlTK API (no labels);
     support for Activate and Deactivate events;
     support for virtual events;
     added UTF conversion;
@@ -626,7 +804,7 @@ Windows port:
 - Graphics library: fixed several bugs in event handling.
 - Threads library: fixed preemption bug.
 - Unix library: better handling of the underlying differences between
-  sockets and regular file descriptors; 
+  sockets and regular file descriptors;
   added Unix.lockf and a better Unix.rename (thanks to Tracy Camp).
 - LablTk library: fixed a bug in Fileinput
 
@@ -672,15 +850,15 @@ Standard library:
 - Pervasives.float_of_string: now raises Failure on ill-formed input.
 - Pervasives: added useful float constants max_float, min_float, epsilon_float.
 - printf functions in Printf and Format: added % formats for int32, nativeint,
-  int64; "*" in width and precision specifications now supported 
+  int64; "*" in width and precision specifications now supported
   (contributed by Thorsten Ohl).
 - Added Hashtbl.copy, Stack.copy.
-- Hashtbl: revised resizing strategy to avoid quadratic behavior 
+- Hashtbl: revised resizing strategy to avoid quadratic behavior
   on Hashtbl.add.
 - New module MoreLabels providing labelized versions of modules
   Hashtbl, Map and Set.
 - Pervasives.output_value and Marshal.to_* : improved hashing strategy
-  for internal data structures, avoid excessive slowness on 
+  for internal data structures, avoid excessive slowness on
   quasi-linearly-allocated inputs.
 
 Other libraries:
@@ -793,7 +971,7 @@ Byte-code compiler:
   variables.
 
 Native-code compiler:
-- Removed re-sharing of string literals, causes too many surprises with 
+- Removed re-sharing of string literals, causes too many surprises with
   in-place string modifications.
 - Corrected wrong compilation of toplevel "include" statements.
 - Fixed bug in runtime function "callbackN_exn".
@@ -862,11 +1040,11 @@ New ports:
 - Cygwin under MS Windows.  This port is an alternative to the earlier
   Windows port of OCaml, which relied on MS compilers; the Cygwin
   Windows port does not need MS Visual C++ nor MASM, runs faster
-  in bytecode, and has a better implementation of the Unix library, 
+  in bytecode, and has a better implementation of the Unix library,
   but currently lacks threads and COM component support.
 
 Type-checking:
-- Relaxed "monomorphic restriction" on type constructors in a 
+- Relaxed "monomorphic restriction" on type constructors in a
   mutually-recursive type definition, e.g. the following is again allowed
     type u = C of int t | D of string t and 'a t = ...
 - Fixed name-capture bug in "include SIG" and "SIG with ..." constructs.
@@ -880,7 +1058,7 @@ Type-checking:
 Both compilers:
 - Revised compilation of pattern matching.
 - Option -I +<subdir> to search a subdirectory <subdir> of the standard
-  library directory (i.e. write "ocamlc -I +labltk" instead of 
+  library directory (i.e. write "ocamlc -I +labltk" instead of
   "ocamlc -I /usr/local/lib/ocaml/labltk").
 - Option -warn-error to turn warnings into errors.
 - Option -where to print the location of the standard library directory.
@@ -924,7 +1102,7 @@ Standard library:
 - Module Hashtbl: added Hashtbl.replace.
 - Module Int64: added bits_of_float, float_of_bits (access to IEEE 754
     representation of floats).
-- Module List:  List.partition now tail-rec; 
+- Module List:  List.partition now tail-rec;
     improved memory behavior of List.stable_sort.
 - Module Nativeint: added Nativeint.size (number of bits in a nativeint).
 - Module Obj: fixed incorrect resizing of float arrays in Obj.resize.
@@ -1061,7 +1239,7 @@ Other libraries:
 - Dbm: fixed bug with Dbm.iter on empty database.
 
 New or updated ports:
-- Alpha/Digital Unix: lifted 256M limitation on total memory space 
+- Alpha/Digital Unix: lifted 256M limitation on total memory space
   induced by -taso
 - Port to AIX 4.3 on PowerPC
 - Port to HPUX 10 on HPPA
@@ -1104,8 +1282,8 @@ Syntax:
   the equivalent "# LINENO" is still supported.
 
 Typing:
-- When an incomplete pattern-matching is detected, report also a 
-  value or value template that is not covered by the cases of 
+- When an incomplete pattern-matching is detected, report also a
+  value or value template that is not covered by the cases of
   the pattern-matching.
 - Several bugs in class type matching and in type error reporting fixed.
 - Added an option -rectypes to support general recursive types,
@@ -1474,7 +1652,7 @@ Objective Caml 1.06:
     in class type declared in module signature).
   - Objects can be compared using generic comparison functions.
   - Fixed compilation of partial application of object constructors.
- 
+
 * Type system:
   - Occur-check now more strict (all recursions must traverse an object).
   - A few bugs fixed.
@@ -1589,7 +1767,7 @@ Objective Caml 1.04:
   - At toplevel, allow several phrases without intermediate ";;".
 
 * Typing:
-  - Allow constraints on datatype parameters, e.g. 
+  - Allow constraints on datatype parameters, e.g.
     type 'a foo = ... constraint 'a = 'b * 'c.
   - Fixed bug in signature matching in presence of free type variables '_a.
   - Extensive cleanup of internals of type inference.
@@ -1691,7 +1869,7 @@ Objective Caml 1.03:
 
 Objective Caml 1.02:
 --------------------
-* Typing: 
+* Typing:
   - fixed bug with type names escaping their scope via unification
     with non-generalized type variables '_a;
   - keep #class abbreviations longer;
@@ -1735,7 +1913,7 @@ Objective Caml 1.02:
   - added -thread option to select a thread-safe version of the
     standard library, the ThreadIO module is no longer needed.
 
-* The "graph" library: avoid invalid pixmaps when doing 
+* The "graph" library: avoid invalid pixmaps when doing
   open_graph/close_graph several times.
 
 * The "dynlink" library: support for "private" (no re-export) dynamic loading.
@@ -1748,7 +1926,7 @@ Objective Caml 1.02:
 
 Objective Caml 1.01:
 --------------------
-* Typing: better report of type incompatibilities; 
+* Typing: better report of type incompatibilities;
   non-generalizable type variables in a struct...end no longer flagged
   immediately as an error;
   name clashes during "open" avoided.
@@ -1955,7 +2133,7 @@ Caml Special Light 1.07:
 * Syntax: optional ;; allowed in compilation units and structures
 (back by popular demand)
 
-* cslopt: 
+* cslopt:
 generic handling of float arrays fixed
 direct function application when the function expr is not a path fixed
 compilation of "let rec" over values fixed

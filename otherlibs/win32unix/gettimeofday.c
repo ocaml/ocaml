@@ -24,12 +24,13 @@ static DWORD initial_tickcount;
 
 CAMLprim value unix_gettimeofday(value unit)
 {
-  if (initial_time == 0) {
-    initial_tickcount = GetTickCount();
+  DWORD tickcount = GetTickCount();
+  if (initial_time == 0 || tickcount < initial_tickcount) {
+    initial_tickcount = tickcount;
     initial_time = time(NULL);
     return copy_double((double) initial_time);
   } else {
-    return copy_double(initial_time +
-                       (GetTickCount() - initial_tickcount) * 1e-3);
+    return copy_double((double) initial_time +
+		       (double) (tickcount - initial_tickcount) * 1e-3);
   }
 }

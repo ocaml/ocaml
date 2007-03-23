@@ -23,7 +23,8 @@ CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)
 CAMLC=../../ocamlcomp.sh
 CAMLOPT=../../ocamlcompopt.sh
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
-COMPFLAGS=-warn-error A -nojoin
+COMPFLAGS=-warn-error A -nojoin -g
+
 
 OBJS=accept.o access.o addrofstr.o alarm.o bind.o chdir.o chmod.o \
   chown.o chroot.o close.o closedir.o connect.o cst2constr.o cstringv.o \
@@ -33,7 +34,7 @@ OBJS=accept.o access.o addrofstr.o alarm.o bind.o chdir.o chmod.o \
   getgr.o getgroups.o gethost.o gethostname.o getlogin.o \
   getnameinfo.o getpeername.o getpid.o getppid.o getproto.o getpw.o \
   gettimeofday.o getserv.o getsockname.o getuid.o \
-  gmtime.o itimer.o kill.o link.o listen.o lockf.o lseek.o mkdir.o \
+  gmtime.o isatty.o itimer.o kill.o link.o listen.o lockf.o lseek.o mkdir.o \
   mkfifo.o nice.o open.o opendir.o pipe.o putenv.o read.o \
   readdir.o readlink.o rename.o rewinddir.o rmdir.o select.o sendrecv.o \
   setgid.o setsid.o setuid.o shutdown.o signals.o \
@@ -70,6 +71,7 @@ install:
 	cp libunix.a $(LIBDIR)/libunix.a
 	cd $(LIBDIR); $(RANLIB) libunix.a
 	cp unix.cma $(MLOBJS:.cmo=.cmi) $(MLOBJS:.cmo=.mli) $(LIBDIR)
+	cp unixsupport.h $(LIBDIR)/caml
 
 installopt:
 	cp $(MLOBJS:.cmo=.cmx) unix.cmxa unix.a $(LIBDIR)

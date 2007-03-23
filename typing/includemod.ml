@@ -35,6 +35,7 @@ type error =
   | Class_declarations of
       Ident.t * class_declaration * class_declaration *
       Ctype.class_match_failure list
+  | Unbound_modtype_path of Path.t
 
 exception Error of error list
 
@@ -89,7 +90,7 @@ let expand_module_path env path =
   try
     Env.find_modtype_expansion path env
   with Not_found ->
-    raise Dont_match
+    raise(Error[Unbound_modtype_path path])
 
 (* Extract name, kind and ident from a signature item *)
 
@@ -377,6 +378,8 @@ let include_err ppf = function
       (Printtyp.class_declaration id) d1
       (Printtyp.class_declaration id) d2
       Includeclass.report_error reason
+  | Unbound_modtype_path path ->
+      fprintf ppf "Unbound module type %a" Printtyp.path path
 
 let report_error ppf = function
   |  [] -> ()

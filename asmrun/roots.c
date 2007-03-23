@@ -33,24 +33,15 @@ void (*caml_scan_roots_hook) (scanning_action) = NULL;
 
 /* The hashtable of frame descriptors */
 
-typedef struct {
-  uintnat retaddr;
-  short frame_size;
-  short num_live;
-  short live_ofs[1];
-} frame_descr;
+frame_descr ** caml_frame_descriptors = NULL;
+int caml_frame_descriptors_mask;
 
-static frame_descr ** frame_descriptors = NULL;
-static int frame_descriptors_mask;
-
-#define Hash_retaddr(addr) \
-  (((uintnat)(addr) >> 3) & frame_descriptors_mask)
-
-static void init_frame_descriptors(void)
+void caml_init_frame_descriptors(void)
 {
   intnat num_descr, tblsize, i, j, len;
   intnat * tbl;
   frame_descr * d;
+  uintnat nextd;
   uintnat h;
 
   /* Count the frame descriptors */
@@ -64,10 +55,10 @@ static void init_frame_descriptors(void)
   while (tblsize < 2 * num_descr) tblsize *= 2;
 
   /* Allocate the hash table */
-  frame_descriptors =
+  caml_frame_descriptors =
     (frame_descr **) caml_stat_alloc(tblsize * sizeof(frame_descr *));
-  for (i = 0; i < tblsize; i++) frame_descriptors[i] = NULL;
-  frame_descriptors_mask = tblsize - 1;
+  for (i = 0; i < tblsize; i++) caml_frame_descriptors[i] = NULL;
+  caml_frame_descriptors_mask = tblsize - 1;
 
   /* Fill the hash table */
   for (i = 0; caml_frametable[i] != 0; i++) {
@@ -76,15 +67,17 @@ static void init_frame_descriptors(void)
     d = (frame_descr *)(tbl + 1);
     for (j = 0; j < len; j++) {
       h = Hash_retaddr(d->retaddr);
-      while (frame_descriptors[h] != NULL) {
-        h = (h+1) & frame_descriptors_mask;
+      while (caml_frame_descriptors[h] != NULL) {
+        h = (h+1) & caml_frame_descriptors_mask;
       }
-      frame_descriptors[h] = d;
-      d = (frame_descr *)
-        (((uintnat)d +
-          sizeof(char *) + sizeof(short) + sizeof(short) +
-          sizeof(short) * d->num_live + sizeof(frame_descr *) - 1)
-         & -sizeof(frame_descr *));
+      caml_frame_descriptors[h] = d;
+      nextd =
+        ((uintnat)d +
+         sizeof(char *) + sizeof(short) + sizeof(short) +
+         sizeof(short) * d->num_live + sizeof(frame_descr *) - 1)
+        & -sizeof(frame_descr *);
+      if (d->frame_size & 1) nextd += 8;
+      d = (frame_descr *) nextd;
     }
   }
 }
@@ -107,7 +100,7 @@ void caml_oldify_local_roots (void)
   frame_descr * d;
   uintnat h;
   int i, j, n, ofs;
-  short * p;
+  unsigned short * p;
   value glob;
   value * root;
   struct global_root * gr;
@@ -125,7 +118,7 @@ void caml_oldify_local_roots (void)
   caml_globals_scanned = caml_globals_inited;
 
   /* The stack and local roots */
-  if (frame_descriptors == NULL) init_frame_descriptors();
+  if (caml_frame_descriptors == NULL) caml_init_frame_descriptors();
   sp = caml_bottom_of_stack;
   retaddr = caml_last_return_address;
   regs = caml_gc_regs;
@@ -134,11 +127,11 @@ void caml_oldify_local_roots (void)
       /* Find the descriptor corresponding to the return address */
       h = Hash_retaddr(retaddr);
       while(1) {
-        d = frame_descriptors[h];
+        d = caml_frame_descriptors[h];
         if (d->retaddr == retaddr) break;
-        h = (h+1) & frame_descriptors_mask;
+        h = (h+1) & caml_frame_descriptors_mask;
       }
-      if (d->frame_size >= 0) {
+      if (d->frame_size != 0xFFFF) {
         /* Scan the roots in this frame */
         for (p = d->live_ofs, n = d->num_live; n > 0; n--, p++) {
           ofs = *p;
@@ -151,9 +144,9 @@ void caml_oldify_local_roots (void)
         }
         /* Move to next frame */
 #ifndef Stack_grows_upwards
-        sp += d->frame_size;
+        sp += (d->frame_size & 0xFFFC);
 #else
-        sp -= d->frame_size;
+        sp -= (d->frame_size & 0xFFFC);
 #endif
         retaddr = Saved_return_address(sp);
 #ifdef Already_scanned
@@ -213,7 +206,7 @@ void caml_do_roots (scanning_action f)
       f (Field (glob, j), &Field (glob, j));
   }
   /* The stack and local roots */
-  if (frame_descriptors == NULL) init_frame_descriptors();
+  if (caml_frame_descriptors == NULL) caml_init_frame_descriptors();
   caml_do_local_roots(f, caml_bottom_of_stack, caml_last_return_address,
                       caml_gc_regs, caml_local_roots);
   /* Global C roots */
@@ -236,7 +229,7 @@ void caml_do_local_roots(scanning_action f, char * bottom_of_stack,
   frame_descr * d;
   uintnat h;
   int i, j, n, ofs;
-  short * p;
+  unsigned short * p;
   value * root;
   struct caml__roots_block *lr;
 
@@ -248,11 +241,11 @@ void caml_do_local_roots(scanning_action f, char * bottom_of_stack,
       /* Find the descriptor corresponding to the return address */
       h = Hash_retaddr(retaddr);
       while(1) {
-        d = frame_descriptors[h];
+        d = caml_frame_descriptors[h];
         if (d->retaddr == retaddr) break;
-        h = (h+1) & frame_descriptors_mask;
+        h = (h+1) & caml_frame_descriptors_mask;
       }
-      if (d->frame_size >= 0) {
+      if (d->frame_size != 0xFFFF) {
         /* Scan the roots in this frame */
         for (p = d->live_ofs, n = d->num_live; n > 0; n--, p++) {
           ofs = *p;
@@ -265,9 +258,9 @@ void caml_do_local_roots(scanning_action f, char * bottom_of_stack,
         }
         /* Move to next frame */
 #ifndef Stack_grows_upwards
-        sp += d->frame_size;
+        sp += (d->frame_size & 0xFFFC);
 #else
-        sp -= d->frame_size;
+        sp -= (d->frame_size & 0xFFFC);
 #endif
         retaddr = Saved_return_address(sp);
 #ifdef Mask_already_scanned

@@ -27,6 +27,7 @@ type error =
   | Corrupted_interface of string
   | Illegal_renaming of string * string
   | Inconsistent_import of string * string * string
+  | Need_recursive_types of string * string
 
 exception Error of error
 
@@ -68,7 +69,7 @@ and structure_components = {
   mutable comp_constrs: (string, (constructor_description * int)) Tbl.t;
   mutable comp_labels: (string, (label_description * int)) Tbl.t;
   mutable comp_types: (string, (type_declaration * int)) Tbl.t;
-  mutable comp_modules: (string, (module_type * int)) Tbl.t;
+  mutable comp_modules: (string, (module_type Lazy.t * int)) Tbl.t;
   mutable comp_modtypes: (string, (modtype_declaration * int)) Tbl.t;
   mutable comp_components: (string, (module_components * int)) Tbl.t;
   mutable comp_classes: (string, (class_declaration * int)) Tbl.t;
@@ -80,7 +81,8 @@ and functor_components = {
   fcomp_arg: module_type;               (* Argument signature *)
   fcomp_res: module_type;               (* Result signature *)
   fcomp_env: t;     (* Environment in which the result signature makes sense *)
-  fcomp_subst: Subst.t  (* Prefixing substitution for the result signature *)
+  fcomp_subst: Subst.t;  (* Prefixing substitution for the result signature *)
+  fcomp_cache: (Path.t, module_components) Hashtbl.t  (* For memoization *)
 }
 
 let empty = {
@@ -126,12 +128,15 @@ let current_unit = ref ""
 
 (* Persistent structure descriptions *)
 
+type pers_flags = Rectypes
+
 type pers_struct =
   { ps_name: string;
     ps_sig: signature;
     ps_comps: module_components;
     ps_crcs: (string * Digest.t) list;
-    ps_filename: string }
+    ps_filename: string;
+    ps_flags: pers_flags list }
 
 let persistent_structures =
   (Hashtbl.create 17 : (string, pers_struct) Hashtbl.t)
@@ -161,6 +166,7 @@ let read_pers_struct modname filename =
     end;
     let (name, sign) = input_value ic in
     let crcs = input_value ic in
+    let flags = input_value ic in
     close_in ic;
     let comps =
       !components_of_module' empty Subst.identity
@@ -170,10 +176,16 @@ let read_pers_struct modname filename =
                ps_sig = sign;
                ps_comps = comps;
                ps_crcs = crcs;
-               ps_filename = filename } in
+               ps_filename = filename;
+               ps_flags = flags } in
     if ps.ps_name <> modname then
       raise(Error(Illegal_renaming(ps.ps_name, filename)));
     check_consistency filename ps.ps_crcs;
+    List.iter
+      (function Rectypes ->
+        if not !Clflags.recursive_types then
+          raise(Error(Need_recursive_types(ps.ps_name, !current_unit))))
+      ps.ps_flags;
     Hashtbl.add persistent_structures modname ps;
     ps
   with End_of_file | Failure _ ->
@@ -275,7 +287,7 @@ let find_module path env =
   | Pdot(p, s, pos) ->
       begin match Lazy.force (find_module_descr p env) with
         Structure_comps c ->
-          let (data, pos) = Tbl.find s c.comp_modules in data
+          let (data, pos) = Tbl.find s c.comp_modules in Lazy.force data
       | Functor_comps f ->
           raise Not_found
       end
@@ -329,7 +341,7 @@ and lookup_module lid env =
       begin match Lazy.force descr with
         Structure_comps c ->
           let (data, pos) = Tbl.find s c.comp_modules in
-          (Pdot(p, s, pos), data)
+          (Pdot(p, s, pos), Lazy.force data)
       | Functor_comps f ->
           raise Not_found
       end
@@ -513,7 +525,7 @@ let rec components_of_module env sub path mty =
               Tbl.add (Ident.name id) (cstr, !pos) c.comp_constrs;
             incr pos
         | Tsig_module(id, mty, _) ->
-            let mty' = Subst.modtype sub mty in
+            let mty' = lazy (Subst.modtype sub mty) in
             c.comp_modules <-
               Tbl.add (Ident.name id) (mty', !pos) c.comp_modules;
             let comps = components_of_module !env sub path mty in
@@ -546,7 +558,8 @@ let rec components_of_module env sub path mty =
           (* fcomp_res is prefixed lazily, because it is interpreted in env *)
           fcomp_res = ty_res;
           fcomp_env = env;
-          fcomp_subst = sub }
+          fcomp_subst = sub;
+          fcomp_cache = Hashtbl.create 17 }
   | Tmty_ident p ->
         Structure_comps {
           comp_values = Tbl.empty; comp_constrs = Tbl.empty;
@@ -620,11 +633,16 @@ and store_cltype id path desc env =
 (* Compute the components of a functor application in a path. *)
 
 let components_of_functor_appl f p1 p2 =
-  let p = Papply(p1, p2) in
-  let mty = 
-    Subst.modtype (Subst.add_module f.fcomp_param p2 Subst.identity)
-                  f.fcomp_res in
-  components_of_module f.fcomp_env f.fcomp_subst p mty
+  try
+    Hashtbl.find f.fcomp_cache p2
+  with Not_found ->
+    let p = Papply(p1, p2) in
+    let mty = 
+      Subst.modtype (Subst.add_module f.fcomp_param p2 Subst.identity)
+                    f.fcomp_res in
+    let comps = components_of_module f.fcomp_env f.fcomp_subst p mty in
+    Hashtbl.add f.fcomp_cache p2 comps;
+    comps
 
 (* Define forward functions *)
 
@@ -767,6 +785,8 @@ let save_signature_with_imports sg modname filename imports =
     let crc = Digest.file filename in
     let crcs = (modname, crc) :: imports in
     output_value oc crcs;
+    let flags = if !Clflags.recursive_types then [Rectypes] else [] in
+    output_value oc flags;
     close_out oc;
     (* Enter signature in persistent table so that imported_unit()
        will also return its crc *)
@@ -778,7 +798,8 @@ let save_signature_with_imports sg modname filename imports =
         ps_sig = sg;
         ps_comps = comps;
         ps_crcs = crcs;
-        ps_filename = filename } in
+        ps_filename = filename;
+        ps_flags = flags } in
     Hashtbl.add persistent_structures modname ps;
     Consistbl.set crc_units modname crc filename
   with exn ->
@@ -813,3 +834,7 @@ let report_error ppf = function
       "@[<hov>The files %s@ and %s@ \
               make inconsistent assumptions@ over interface %s@]"
       source1 source2 name
+  | Need_recursive_types(import, export) ->
+      fprintf ppf
+        "@[<hov>Unit %s imports from %s, which uses recursive types.@ %s@]"
+        import export "The compilation flag -rectypes is required"

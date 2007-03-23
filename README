@@ -22,10 +22,10 @@ native-code compiler currently runs on the following platforms:
 Tier 1 (actively used and maintained by the core Caml team):
 
     AMD64 (Opteron)    Linux
-    IA32 (Pentium)     Linux, FreeBSD, MS Windows
+    IA32 (Pentium)     Linux, FreeBSD, MacOS X, MS Windows
     PowerPC            MacOS X
 
-Tier 2 (maintained but less actively, with help from users):
+Tier 2 (maintained when possible, with help from users):
 
     Alpha              Digital Unix/Compaq Tru64, Linux, all BSD
     AMD64              FreeBSD, OpenBSD
@@ -78,9 +78,9 @@ CONTENTS:
 COPYRIGHT:
 
 All files marked "Copyright INRIA" in this distribution are copyright
-1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004 Institut National de
-Recherche en Informatique et en Automatique (INRIA) and distributed
-under the conditions stated in file LICENSE.
+1996, 1997, 1998, 1999, 2000, 2001, 2002, 2003, 2004, 2005, 2006
+Institut National de Recherche en Informatique et en Automatique
+(INRIA) and distributed under the conditions stated in file LICENSE.
 
 INSTALLATION:
 
@@ -112,11 +112,9 @@ Messages to the list should be sent to:
 
               caml-list@inria.fr
 
-If you wish to subscribe to this list, please send a message to:
+You can subscribe to this list via the Web interface at
 
-              caml-list-request@inria.fr
-
-with the single word "subscribe" in the body of the message.
+    http://yquem.inria.fr/cgi-bin/mailman/listinfo/caml-list
 
 Archives of the list are available on the Web site http://caml.inria.fr/
 
@@ -126,11 +124,7 @@ including Caml.
 
 BUG REPORTS AND USER FEEDBACK:
 
-Send your bug reports by E-mail to:
-
-              caml-bugs@inria.fr
-
-or report them using the Web interface to the bug-tracking system
+Please report bugs using the Web interface to the bug-tracking system
 at http://caml.inria.fr/bin/caml-bugs
 
 To be effective, bug reports should include a complete program
@@ -139,3 +133,6 @@ configuration you are using (machine type, etc).
 
 You can also contact the implementors directly at caml@inria.fr.
 
+
+----
+$Id$

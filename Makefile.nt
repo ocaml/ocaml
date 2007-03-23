@@ -64,7 +64,8 @@ BYTECOMP=bytecomp/meta.cmo bytecomp/instruct.cmo bytecomp/bytegen.cmo \
   bytecomp/bytesections.cmo bytecomp/dll.cmo bytecomp/symtable.cmo \
   bytecomp/bytelink.cmo bytecomp/bytelibrarian.cmo bytecomp/bytepackager.cmo
 
-ASMCOMP=asmcomp/arch.cmo asmcomp/cmm.cmo asmcomp/printcmm.cmo \
+ASMCOMP=asmcomp/arch.cmo asmcomp/debuginfo.cmo \
+  asmcomp/cmm.cmo asmcomp/printcmm.cmo \
   asmcomp/reg.cmo asmcomp/mach.cmo asmcomp/proc.cmo \
   asmcomp/clambda.cmo asmcomp/compilenv.cmo \
   asmcomp/closure.cmo asmcomp/cmmgen.cmo \
@@ -113,7 +114,7 @@ defaultentry:
 	@echo "Please refer to the installation instructions in file README.win32."
 
 # Recompile the system using the bootstrap compiler
-all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml otherlibraries ocamldoc.byte camlp4out win32gui
+all: runtime ocamlc ocamllex ocamlyacc ocamltools library ocaml otherlibraries ocamldoc.byte ocamlbuild.byte camlp4out win32gui
 
 # The compilation of ocaml will fail if the runtime has changed.
 # Never mind, just do make bootstrap to reach fixpoint again.
@@ -197,11 +198,11 @@ cleanboot:
 	rm -rf boot/Saved/Saved.prev/*
 
 # Compile the native-code compiler
-opt: runtimeopt ocamlopt libraryopt otherlibrariesopt camlp4opt
+opt: runtimeopt ocamlopt libraryopt otherlibrariesopt
 
 # Native-code versions of the tools
 opt.opt: ocamlc.opt ocamlopt.opt ocamllex.opt ocamltoolsopt.opt \
-	camlp4optopt ocamldoc.opt
+	ocamlbuild.native camlp4opt ocamldoc.opt
 
 # Installation
 install: installbyt installopt
@@ -227,7 +228,7 @@ installbyt:
 	mkdir -p $(STUBLIBDIR)
 	for i in $(OTHERLIBRARIES); do $(MAKEREC) -C otherlibs/$$i install; done
 	cd win32caml ; $(MAKE) install
-	cd camlp4 ; make install
+	./build/partial-install.sh
 	cp config/Makefile $(LIBDIR)/Makefile.config
 	cp README $(DISTRIB)/Readme.general.txt
 	cp README.win32 $(DISTRIB)/Readme.windows.txt
@@ -563,25 +564,23 @@ alldepend::
 
 # Camlp4
 
-camlp4out:
-	cd camlp4/config ; \
-	(cat Makefile.tpl; \
-	 echo 'EXE=.exe'; \
-	 echo 'O=$(O)'; \
-	 echo 'A=$(A)'; \
-	 echo 'OPT='; \
-	 echo 'OTOP=../..'; \
-	 echo 'OLIBDIR=$$(OTOP)/boot'; \
-	 echo 'BINDIR=$(BINDIR)'; \
-	 echo 'LIBDIR=$(LIBDIR)'; \
-	 echo 'MANDIR=' ) > Makefile
-	cd camlp4 ; $(MAKE)
-camlp4opt:
-	cd camlp4 ; $(MAKE) opt
-camlp4optopt:
-	cd camlp4; $(MAKE) opt.opt
+camlp4out: ocamlc otherlibraries ocamlbuild-partial-boot ocamlbuild.byte
+	./build/camlp4-byte-only.sh
+camlp4opt: ocamlopt otherlibrariesopt ocamlbuild-partial-boot ocamlbuild.native
+	./build/camlp4-native-only.sh
+
+# Ocamlbuild
+
+ocamlbuild.byte: ocamlc otherlibraries ocamlbuild-partial-boot
+	./build/ocamlbuild-byte-only.sh
+ocamlbuild.native: ocamlopt otherlibrariesopt ocamlbuild-partial-boot
+	./build/ocamlbuild-native-only.sh
+
+.PHONY: ocamlbuild-partial-boot
+ocamlbuild-partial-boot:
+	./build/partial-boot.sh
 partialclean::
-	cd camlp4 ; $(MAKE) clean
+	rm -rf _build
 
 # The Win32 toplevel GUI
 

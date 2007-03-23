@@ -221,6 +221,22 @@ int error_table[] = {
 
 static value * unix_error_exn = NULL;
 
+value unix_error_of_code (int errcode)
+{
+  int errconstr;
+  value err;
+
+  errconstr =
+      cst_to_constr(errcode, error_table, sizeof(error_table)/sizeof(int), -1);
+  if (errconstr == Val_int(-1)) {
+    err = alloc_small(1, 0);
+    Field(err, 0) = Val_int(errcode);
+  } else {
+    err = errconstr;
+  }
+  return err;
+}
+
 void unix_error(int errcode, char *cmdname, value cmdarg)
 {
   value res;
@@ -230,14 +246,7 @@ void unix_error(int errcode, char *cmdname, value cmdarg)
   Begin_roots3 (name, err, arg);
     arg = cmdarg == Nothing ? copy_string("") : cmdarg;
     name = copy_string(cmdname);
-    errconstr =
-      cst_to_constr(errcode, error_table, sizeof(error_table)/sizeof(int), -1);
-    if (errconstr == Val_int(-1)) {
-      err = alloc_small(1, 0);
-      Field(err, 0) = Val_int(errcode);
-    } else {
-      err = errconstr;
-    }
+    err = unix_error_of_code (errcode);
     if (unix_error_exn == NULL) {
       unix_error_exn = caml_named_value("Unix.Unix_error");
       if (unix_error_exn == NULL)

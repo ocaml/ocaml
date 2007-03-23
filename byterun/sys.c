@@ -34,6 +34,10 @@
 #ifdef HAS_TIMES
 #include <sys/times.h>
 #endif
+#ifdef HAS_GETRUSAGE
+#include <sys/time.h>
+#include <sys/resource.h>
+#endif
 #ifdef HAS_GETTIMEOFDAY
 #include <sys/time.h>
 #endif
@@ -68,24 +72,29 @@ CAMLexport void caml_sys_error(value arg)
   CAMLparam1 (arg);
   char * err;
   CAMLlocal1 (str);
-  
+
+  err = error_message();
+  if (arg == NO_ARG) {
+    str = caml_copy_string(err);
+  } else {
+    int err_len = strlen(err);
+    int arg_len = caml_string_length(arg);
+    str = caml_alloc_string(arg_len + 2 + err_len);
+    memmove(&Byte(str, 0), String_val(arg), arg_len);
+    memmove(&Byte(str, arg_len), ": ", 2);
+    memmove(&Byte(str, arg_len + 2), err, err_len);
+  }
+  caml_raise_sys_error(str);
+  CAMLnoreturn;
+}
+
+CAMLexport void caml_sys_io_error(value arg)
+{
   if (errno == EAGAIN || errno == EWOULDBLOCK) {
     caml_raise_sys_blocked_io();
   } else {
-    err = error_message();
-    if (arg == NO_ARG) {
-      str = caml_copy_string(err);
-    } else {
-      int err_len = strlen(err);
-      int arg_len = caml_string_length(arg);
-      str = caml_alloc_string(arg_len + 2 + err_len);
-      memmove(&Byte(str, 0), String_val(arg), arg_len);
-      memmove(&Byte(str, arg_len), ": ", 2);
-      memmove(&Byte(str, arg_len + 2), err, err_len);
-    }
-    caml_raise_sys_error(str);
+    caml_sys_error(arg);
   }
-  CAMLnoreturn;
 }
 
 CAMLprim value caml_sys_exit(value retcode)
@@ -148,6 +157,17 @@ CAMLprim value caml_sys_file_exists(value name)
 {
   struct stat st;
   return Val_bool(stat(String_val(name), &st) == 0);
+}
+
+CAMLprim value caml_sys_is_directory(value name)
+{
+  struct stat st;
+  if (stat(String_val(name), &st) == -1) caml_sys_error(name);
+#ifdef S_ISDIR
+  return Val_bool(S_ISDIR(st.st_mode));
+#else
+  return Val_bool(st.st_mode & S_IFDIR);
+#endif
 }
 
 CAMLprim value caml_sys_remove(value name)
@@ -229,7 +249,7 @@ CAMLprim value caml_sys_system_command(value command)
   int status, retcode;
   char *buf;
   intnat len;
-  
+
   len = caml_string_length (command);
   buf = caml_stat_alloc (len + 1);
   memmove (buf, String_val (command), len + 1);
@@ -247,25 +267,40 @@ CAMLprim value caml_sys_system_command(value command)
 
 CAMLprim value caml_sys_time(value unit)
 {
-#ifdef HAS_TIMES
-#ifndef CLK_TCK
-#ifdef HZ
-#define CLK_TCK HZ
+#ifdef HAS_GETRUSAGE
+  struct rusage ru;
+
+  getrusage (RUSAGE_SELF, &ru);
+  return caml_copy_double (ru.ru_utime.tv_sec + ru.ru_utime.tv_usec / 1e6
+                           + ru.ru_stime.tv_sec + ru.ru_stime.tv_usec / 1e6);
 #else
-#define CLK_TCK 60
-#endif
-#endif
-  struct tms t;
-  times(&t);
-  return caml_copy_double((double)(t.tms_utime + t.tms_stime) / CLK_TCK);
-#else
-  /* clock() is standard ANSI C */
-  return caml_copy_double((double)clock() / CLOCKS_PER_SEC);
+  #ifdef HAS_TIMES
+    #ifndef CLK_TCK
+      #ifdef HZ
+        #define CLK_TCK HZ
+      #else
+        #define CLK_TCK 60
+      #endif
+    #endif
+    struct tms t;
+    times(&t);
+    return caml_copy_double((double)(t.tms_utime + t.tms_stime) / CLK_TCK);
+  #else
+    /* clock() is standard ANSI C */
+    return caml_copy_double((double)clock() / CLOCKS_PER_SEC);
+  #endif
 #endif
 }
 
+#ifdef _WIN32
+extern intnat caml_win32_random_seed (void);
+#endif
+
 CAMLprim value caml_sys_random_seed (value unit)
 {
+#ifdef _WIN32
+  return Val_long(caml_win32_random_seed());
+#else
   intnat seed;
 #ifdef HAS_GETTIMEOFDAY
   struct timeval tv;
@@ -275,9 +310,10 @@ CAMLprim value caml_sys_random_seed (value unit)
   seed = time (NULL);
 #endif
 #ifdef HAS_UNISTD
-  seed ^= getppid() << 16 | getpid();
+  seed ^= (getppid() << 16) ^ getpid();
 #endif
   return Val_long(seed);
+#endif
 }
 
 CAMLprim value caml_sys_get_config(value unit)
@@ -299,7 +335,10 @@ CAMLprim value caml_sys_read_directory(value path)
   struct ext_table tbl;
 
   caml_ext_table_init(&tbl, 50);
-  if (caml_read_directory(String_val(path), &tbl) == -1) caml_sys_error(path);
+  if (caml_read_directory(String_val(path), &tbl) == -1){
+    caml_ext_table_free(&tbl, 1);
+    caml_sys_error(path);
+  }
   caml_ext_table_add(&tbl, NULL);
   result = caml_copy_string_array((char const **) tbl.contents);
   caml_ext_table_free(&tbl, 1);

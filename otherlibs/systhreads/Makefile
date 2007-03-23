@@ -20,8 +20,9 @@ CAMLOPT=../../ocamlcompopt.sh -I ../unix
 JCC=../../ocamlcomp.sh -I ../unix
 JCOPT=../../ocamlcompopt.sh -I ../unix
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
-COMPFLAGS=-warn-error A
+COMPFLAGS=-warn-error A -g
 #OCAMLPP=-pp '../../ocamldoc/remove_DEBUG'
+
 
 BYTECODE_C_OBJS=posix_b.o
 NATIVECODE_C_OBJS=posix_n.o
@@ -97,13 +98,13 @@ join.cma: $(JOIN_OBJS) threads.cma ../unix/unix.cma
 # See remark above: force static linking of libthreadsnat.a
 threads.cmxa: $(THREAD_OBJS:.cmo=.cmx)
 	$(CAMLOPT) -nojoin -a -o threads.cmxa $(THREAD_OBJS:.cmo=.cmx) \
-          -cclib -lthreadsnat -cclib -lunix -cclib "$(PTHREAD_LINK)"
+          -cclib -lthreadsnat -cclib -lunix $(PTHREAD_LINK)
 
 join.cmxa: $(THREAD_OBJS:.cmo=.cmx) $(JOIN_OBJS:.cmo=.cmx)
 	$(CAMLOPT) -nojoin -a -o join.cmxa  \
 	../unix/unix.cmx ../unix/unixLabels.cmx \
 	$(THREAD_OBJS:.cmo=.cmx) $(JOIN_OBJS:.cmo=.cmx) \
-         -cclib -lthreadsnat -cclib -ljoinnat -cclib -lunix -cclib "$(PTHREAD_LINK)"
+         -cclib -lthreadsnat -cclib -ljoinnat -cclib -lunix $(PTHREAD_LINK)
 
 $(THREAD_OBJS:.cmo=.cmx) $(JOIN_OBJS:.cmo=.cmx): ../../ocamlopt
 
@@ -218,8 +219,8 @@ install:
 	if test -f dlljoin.so; then cp dlljoin.so $(STUBLIBDIR)/dlljoin.so; fi
 	cp libjoin.a $(LIBDIR)/libjoin.a
 	cd $(LIBDIR); $(RANLIB) libjoin.a
-	cp join_prim.cmi join.cmi ns.cmi join_test.cmi join.cma $(LIBDIR)/threads
-	cp join_prim.mli join.mli ns.mli join_test.mli join.cma $(LIBDIR)/threads
+	cp join_prim.cmi join.cmi ns.cmi join_test.cmi join.cma $(LIBDIR)/threads	
+
 
 
 installopt:
@@ -239,10 +240,10 @@ installopt:
 	$(CAMLC) -nojoin -c $(COMPFLAGS) $<
 
 .ml.cmo:
-	$(CAMLC) -nojoin -c -g $(COMPFLAGS) $(OCAMLPP) $<
+	$(CAMLC) -nojoin -g -c $(COMPFLAGS) $(OCAMLPP) $<
 
 .jml.cmo:
-	$(JCC) -c -g $(COMPFLAGS) $(OCAMLPP) -impl $<
+	$(JCC) -c $(COMPFLAGS) $(OCAMLPP) -impl $<
 
 .ml.cmx:
 	$(CAMLOPT) -nojoin -c $(COMPFLAGS) $(OCAMLPP) $<
@@ -251,7 +252,7 @@ installopt:
 	$(JCOPT) -c $(COMPFLAGS) $(OCAMLPP) -impl $<
 
 depend: $(GENFILES)
-	gcc -MM -I../../byterun *.c > .depend
+	-gcc -MM -I../../byterun *.c > .depend
 	/bin/rm -f ns.ml
 	../../boot/ocamlrun ../../tools/ocamldep -nojoin *.mli *.ml >> .depend
 	cp ns.jml ns.ml 

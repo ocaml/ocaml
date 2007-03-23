@@ -172,10 +172,12 @@ external ( mod ) : int -> int -> int = "%modint"
    [x = (x / y) * y + x mod y] and
    [abs(x mod y) <= abs(y)-1].
    If [y = 0], [x mod y] raises [Division_by_zero].
-   Notice that [x mod y] is negative if and only if [x < 0]. *)
+   Notice that [x mod y] is nonpositive if and only if [x < 0].
+   Raise [Division_by_zero] if [y] is zero. *)
 
 val abs : int -> int
-(** Return the absolute value of the argument. *)
+(** Return the absolute value of the argument.  Note that this may be
+  negative if the argument is [min_int]. *)
 
 val max_int : int
 (** The greatest representable integer. *)
@@ -335,7 +337,7 @@ external truncate : float -> int = "%intoffloat"
 
 external int_of_float : float -> int = "%intoffloat"
 (** Truncate the given floating-point number to an integer.
-   The result is unspecified if it falls outside the
+   The result is unspecified if the argument is [nan] or falls outside the
    range of representable integers. *)
 
 val infinity : float
@@ -816,6 +818,7 @@ external decr : int ref -> unit = "%decr"
 
 (** See modules {!Printf} and {!Scanf} for more operations on
     format strings. *)
+type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'c, 'c, 'd) format6 
 
 type ('a, 'b, 'c) format = ('a, 'b, 'c, 'c) format4
 (** Simplified type for format strings, included for backward compatibility
@@ -825,17 +828,19 @@ type ('a, 'b, 'c) format = ('a, 'b, 'c, 'c) format4
     and ['b] is the type of the first argument given to
     [%a] and [%t] printing functions. *)
 
-val string_of_format : ('a, 'b, 'c, 'd) format4 -> string
+val string_of_format : ('a, 'b, 'c, 'd, 'e, 'f) format6 -> string
 (** Converts a format string into a string. *)
 
 external format_of_string :
-  ('a, 'b, 'c, 'd) format4 -> ('a, 'b, 'c, 'd) format4 = "%identity"
+  ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
+  ('a, 'b, 'c, 'd, 'e, 'f) format6 = "%identity"
 (** [format_of_string s] returns a format string read from the string
     literal [s]. *)
 
 val ( ^^ ) :
-  ('a, 'b, 'c, 'd) format4 -> ('d, 'b, 'c, 'e) format4 ->
-  ('a, 'b, 'c, 'e) format4;;
+      ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
+      ('f, 'b, 'c, 'e, 'g, 'h) format6 ->
+      ('a, 'b, 'c, 'd, 'g, 'h) format6
 (** [f1 ^^ f2] catenates formats [f1] and [f2].  The result is a format
   that accepts arguments from [f1], then arguments from [f2]. *)
 

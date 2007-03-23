@@ -17,6 +17,9 @@ PREREQUISITES
     limit stacksize 64M  # if your shell is zsh or tcsh
     ulimit -s 65536      # if your shell is bash
 
+* If you do not have write access to /tmp, you should set the environment
+  variable TMPDIR to the name of some other temporary directory.
+
 
 INSTALLATION INSTRUCTIONS
 
@@ -182,6 +185,11 @@ An alternative, and faster approach to steps 2 to 5 is
 The result is equivalent to "make world opt opt.opt", but this may
 fail if anything goes wrong in native-code generation.
 
+Another alternative, is to use the experimental build system that use
+ocamlbuild instead of make (it replaces steps 2 to 5):
+
+        ./build/fastworld.sh
+
 6- You can now install the Objective Caml system. This will create the
 following commands (in the binary directory selected during
 autoconfiguration):
@@ -210,6 +218,10 @@ From the top directory, become superuser and do:
 
         umask 022       # make sure to give read & execute permission to all
         make install
+
+      In the ocamlbuild setting instead of make install do:
+
+        ./build/install.sh
 
 7- Installation is complete. Time to clean up. From the toplevel
 directory, do "make clean".
@@ -257,6 +269,9 @@ pinpoint the problem.
 
 
 COMMON PROBLEMS:
+
+* The Makefiles do not support parallel make (e.g. make -j2).
+Fix: do not pass the -j option to make, and be patient.
 
 * The Makefiles use the "include" directive, which is not supported by
 all versions of make. Use GNU make if this is a problem.

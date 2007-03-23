@@ -231,18 +231,14 @@ external thread_wait_write_prim : Unix.file_descr -> unit = "thread_wait_write"
 let thread_wait_read fd = thread_wait_read_prim fd
 let thread_wait_write fd = thread_wait_write_prim fd
 
-external inchan_ready : in_channel -> bool = "thread_inchan_ready"
-external outchan_ready : out_channel -> int -> bool = "thread_outchan_ready"
 external descr_inchan : in_channel -> Unix.file_descr
                       = "caml_channel_descriptor"
 external descr_outchan : out_channel -> Unix.file_descr
                        = "caml_channel_descriptor"
 
-let wait_inchan ic =
-  if not (inchan_ready ic) then thread_wait_read(descr_inchan ic)
+let wait_inchan ic = thread_wait_read (descr_inchan ic)
 
-let wait_outchan oc len =
-  if not (outchan_ready oc len) then thread_wait_write(descr_outchan oc)
+let wait_outchan oc len = thread_wait_write (descr_outchan oc)
 
 (* General output functions *)
 
@@ -496,23 +492,33 @@ module LargeFile =
   end
 
 (* Formats *)
+type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'c, 'c, 'd) format6 
+
 type ('a, 'b, 'c) format = ('a, 'b, 'c, 'c) format4
+
 external format_of_string :
- ('a, 'b, 'c, 'd) format4 -> ('a, 'b, 'c, 'd) format4 = "%identity"
-external string_of_format_sys :
- ('a, 'b, 'c, 'd) format4 -> string = "%identity"
-external string_to_format : string -> ('a, 'b, 'c, 'd) format4 = "%identity"
+ ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
+ ('a, 'b, 'c, 'd, 'e, 'f) format6 = "%identity"
 
-let (( ^^ ) : ('a, 'b, 'c, 'd) format4 -> ('d, 'b, 'c, 'e) format4 ->
-              ('a, 'b, 'c, 'e) format4) = fun fmt1 fmt2 ->
-  string_to_format (string_of_format_sys fmt1 ^ string_of_format_sys fmt2);;
+external format_to_string :
+ ('a, 'b, 'c, 'd, 'e, 'f) format6 -> string = "%identity"
+external string_to_format :
+ string -> ('a, 'b, 'c, 'd, 'e, 'f) format6 = "%identity"
 
-let string_of_format f =
-  let s = string_of_format_sys f in
+let (( ^^ ) :
+      ('a, 'b, 'c, 'd, 'e, 'f) format6 ->
+      ('f, 'b, 'c, 'e, 'g, 'h) format6 ->
+      ('a, 'b, 'c, 'd, 'g, 'h) format6) =
+  fun fmt1 fmt2 ->
+    string_to_format (format_to_string fmt1 ^ format_to_string fmt2);;
+
+let string_of_format fmt =
+  let s = format_to_string fmt in
   let l = string_length s in
   let r = string_create l in
   string_blit s 0 r 0 l;
   r
+
 
 (* Miscellaneous *)
 

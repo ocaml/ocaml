@@ -145,6 +145,13 @@ static void init_extern_output(void)
   extern_limit = extern_output_block->data + SIZE_EXTERN_OUTPUT_BLOCK;
 }
 
+static void close_extern_output(void)
+{
+  if (extern_userprovided_output == NULL){
+    extern_output_block->end = extern_ptr;
+  }
+}
+
 static void free_extern_output(void)
 {
   struct output_block * blk, * nextblk;
@@ -383,7 +390,7 @@ static void extern_rec(value v)
     } else if (n >= -(1 << 15) && n < (1 << 15)) {
       writecode16(CODE_INT16, n);
 #ifdef ARCH_SIXTYFOUR
-    } else if (n < -(1L << 31) || n >= (1L << 31)) {
+    } else if (n < -((intnat)1 << 31) || n >= ((intnat)1 << 31)) {
       writecode64(CODE_INT64, n);
 #endif
     } else
@@ -493,7 +500,7 @@ static void extern_rec(value v)
       void (*serialize)(value v, uintnat * wsize_32,
                         uintnat * wsize_64)
         = Custom_ops_val(v)->serialize;
-      if (serialize == NULL) 
+      if (serialize == NULL)
         extern_invalid_argument("output_value: abstract value (Custom)");
       Write(ctag);
       writeblock(ident, strlen(ident) + 1);
@@ -518,7 +525,7 @@ static void extern_rec(value v)
       if (tag < 16 && sz < 8) {
         Write(PREFIX_SMALL_BLOCK + tag + (sz << 4));
 #ifdef ARCH_SIXTYFOUR
-      } else if (hd >= (1UL << 32)) {
+      } else if (hd >= ((uintnat)1 << 32)) {
         writecode64(CODE_BLOCK64, Whitehd_hd (hd));
 #endif
       } else {
@@ -581,14 +588,14 @@ static intnat extern_value(value v, value flags)
   /* Marshal the object */
   extern_rec(v);
   /* Record end of output */
-  extern_output_block->end = extern_ptr;
+  close_extern_output();
   /* Undo the modifications done on externed blocks */
   extern_replay_trail();
   /* Write the sizes */
   res_len = extern_output_length();
 #ifdef ARCH_SIXTYFOUR
-  if (res_len >= (1L << 32) ||
-      size_32 >= (1L << 32) || size_64 >= (1L << 32)) {
+  if (res_len >= ((intnat)1 << 32) ||
+      size_32 >= ((intnat)1 << 32) || size_64 >= ((intnat)1 << 32)) {
     /* The object is so big its size cannot be written in the header.
        Besides, some of the array lengths or string lengths or shared offsets
        it contains may have overflowed the 32 bits used to write them. */
@@ -645,17 +652,23 @@ CAMLprim value caml_output_value_to_string(value v, value flags)
 {
   intnat len, ofs;
   value res;
-  struct output_block * blk;
+  struct output_block * blk, * nextblk;
 
   init_extern_output();
   len = extern_value(v, flags);
+  /* PR#4030: it is prudent to save extern_output_first before allocating
+     the result, as in caml_output_val */
+  blk = extern_output_first;
   res = caml_alloc_string(len);
-  for (ofs = 0, blk = extern_output_first; blk != NULL; blk = blk->next) {
+  ofs = 0;
+  while (blk != NULL) {
     int n = blk->end - blk->data;
     memmove(&Byte(res, ofs), blk->data, n);
     ofs += n;
+    nextblk = blk->next;
+    free(blk);
+    blk = nextblk;
   }
-  free_extern_output();
   return res;
 }
 
@@ -810,7 +823,7 @@ CAMLexport void caml_serialize_block_float_8(void * data, intnat len)
   memmove(extern_ptr, data, len * 8);
   extern_ptr += len * 8;
 #elif ARCH_FLOAT_ENDIANNESS == 0x76543210
-  { 
+  {
     unsigned char * p;
     char * q;
     for (p = data, q = extern_ptr; len > 0; len--, p += 8, q += 8)
@@ -818,7 +831,7 @@ CAMLexport void caml_serialize_block_float_8(void * data, intnat len)
     extern_ptr = q;
   }
 #else
-  { 
+  {
     unsigned char * p;
     char * q;
     for (p = data, q = extern_ptr; len > 0; len--, p += 8, q += 8)

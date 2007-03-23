@@ -219,20 +219,6 @@ SHARPBANGSCRIPTS=true
 
 ### How to perform a partial link
 PARTIALLD=ld -r $(NATIVECCLINKOPTS)
-PACKLD=$(PARTIALLD)
-
-### Path to the "objcopy" program from GNU binutils.
-# You need a sufficiently recent version of the binutils so that
-# the option --redefine-sym is supported by objcopy.
-# Leave blank if you don't have "objcopy", but then "ocamlopt -pack"
-# will not work
-#BINUTILS_OBJCOPY=/usr/bin/objcopy
-
-### Path to the "nm" program from GNU binutils.
-# Other versions of nm do *not* work for our purposes.
-# Leave blank if you don't have GNU "nm", but then "ocamlopt -pack"
-# will not work
-#BINUTILS_NM=/usr/bin/nm
 
 ############# Configuration for the contributed libraries
 

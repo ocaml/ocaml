@@ -44,7 +44,8 @@ val type_self_pattern:
         string -> type_expr -> Env.t -> Env.t -> Env.t -> Parsetree.pattern ->
         Typedtree.pattern *
         (Ident.t * type_expr) Meths.t ref *
-        (Ident.t * Asttypes.mutable_flag * type_expr) Vars.t ref *
+        (Ident.t * Asttypes.mutable_flag * Asttypes.virtual_flag * type_expr)
+            Vars.t ref *
         Env.t * Env.t * Env.t
 val type_expect:
         ?in_function:(Location.t * type_expr) ->
@@ -69,6 +70,7 @@ type error =
     Unbound_value of Longident.t
   | Unbound_constructor of Longident.t
   | Unbound_label of Longident.t
+  | Polymorphic_label of Longident.t
   | Constructor_arity_mismatch of Longident.t * int * int
   | Label_mismatch of Longident.t * (type_expr * type_expr) list
   | Pattern_type_clash of (type_expr * type_expr) list

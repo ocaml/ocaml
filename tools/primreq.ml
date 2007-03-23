@@ -16,7 +16,7 @@
    files *)
 
 open Config
-open Emitcode
+open Cmo_format
 
 module StringSet = Set.Make(struct type t = string let compare = compare end)
 

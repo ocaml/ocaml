@@ -252,6 +252,7 @@ let out_type = ref print_out_type
 
 let type_parameter ppf (ty, (co, cn)) =
   fprintf ppf "%s'%s" (if not cn then "+" else if not co then "-" else "")
+    (*if co then if cn then "!" else "+" else if cn then "-" else "?"*)
     ty
 
 let print_out_class_params ppf =
@@ -293,8 +294,10 @@ and print_out_class_sig_item ppf =
       fprintf ppf "@[<2>method %s%s%s :@ %a@]"
         (if priv then "private " else "") (if virt then "virtual " else "")
         name !out_type ty
-  | Ocsg_value (name, mut, ty) ->
-      fprintf ppf "@[<2>val %s%s :@ %a@]" (if mut then "mutable " else "")
+  | Ocsg_value (name, mut, vr, ty) ->
+      fprintf ppf "@[<2>val %s%s%s :@ %a@]"
+        (if mut then "mutable " else "")
+        (if vr then "virtual " else "")
         name !out_type ty
 
 let out_class_type = ref print_out_class_type

@@ -83,7 +83,7 @@ static struct compare_item * compare_resize_stack(struct compare_item * sp)
 #define LESS -1
 #define EQUAL 0
 #define GREATER 1
-#define UNORDERED (1L << (8 * sizeof(value) - 1))
+#define UNORDERED ((intnat)1 << (8 * sizeof(value) - 1))
 
 /* The return value of compare_val is as follows:
       > 0                 v1 is greater than v2
@@ -199,7 +199,10 @@ static intnat compare_val(value v1, value v2, int total)
     case Custom_tag: {
       int res;
       int (*compare)(value v1, value v2) = Custom_ops_val(v1)->compare;
-      if (compare == NULL) caml_invalid_argument("equal: abstract value");
+      if (compare == NULL) {
+        compare_free_stack();
+        caml_invalid_argument("equal: abstract value");
+      }
       caml_compare_unordered = 0;
       res = Custom_ops_val(v1)->compare(v1, v2);
       if (caml_compare_unordered && !total) return UNORDERED;

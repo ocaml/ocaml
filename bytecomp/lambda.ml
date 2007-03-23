@@ -28,6 +28,7 @@ type primitive =
   | Psetfield of int * bool
   | Pfloatfield of int
   | Psetfloatfield of int
+  | Pduprecord of Types.record_representation * int
   (* External call *)
   | Pccall of Primitive.description
   (* Exceptions *)
@@ -252,7 +253,7 @@ let rec iter f = function
   | Lprim(p, args) ->
       List.iter f args
   | Lswitch(arg, sw) ->
-      f arg; 
+      f arg;
       List.iter (fun (key, case) -> f case) sw.sw_consts;
       List.iter (fun (key, case) -> f case) sw.sw_blocks;
       begin match sw.sw_failaction with
@@ -464,6 +465,7 @@ let may_raise = function
   | Psetfield (_,_)
   | Pfloatfield _
   | Psetfloatfield _
+  | Pduprecord (_,_)
   | Psequand | Psequor | Pnot
   | Pnegint | Paddint | Psubint | Pmulint 
   | Pandint | Porint | Pxorint
@@ -476,11 +478,11 @@ let may_raise = function
   | Paddfloat | Psubfloat | Pmulfloat | Pdivfloat
   | Pfloatcomp _
   | Pstringlength
- (* since they are usafe... assume they do not fail *)
+ (* since they are unsafe... assume they do not fail *)
   | Pstringrefu | Pstringsetu
   | Pmakearray _
   | Parraylength _
- (* since they are usafe... assume they do not fail *)
+ (* since they are unsafe... assume they do not fail *)
   | Parrayrefu _ | Parraysetu _
   (* Interval tests *)
   | Pisint | Pisout

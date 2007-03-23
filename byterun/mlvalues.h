@@ -68,8 +68,8 @@ typedef uintnat mark_t;
 /* Example: Val_long as in "Val from long" or "Val of long". */
 #define Val_long(x)     (((intnat)(x) << 1) + 1)
 #define Long_val(x)     ((x) >> 1)
-#define Max_long ((1L << (8 * sizeof(value) - 2)) - 1)
-#define Min_long (-(1L << (8 * sizeof(value) - 2)))
+#define Max_long (((intnat)1 << (8 * sizeof(value) - 2)) - 1)
+#define Min_long (-((intnat)1 << (8 * sizeof(value) - 2)))
 #define Val_int(x) Val_long(x)
 #define Int_val(x) ((int) Long_val(x))
 #define Unsigned_long_val(x) ((uintnat)(x) >> 1)
@@ -109,7 +109,7 @@ bits  63    10 9     8 7   0
 
 #define Num_tags (1 << 8)
 #ifdef ARCH_SIXTYFOUR
-#define Max_wosize ((1L << 54) - 1)
+#define Max_wosize (((intnat)1 << 54) - 1)
 #else
 #define Max_wosize ((1 << 22) - 1)
 #endif
@@ -244,7 +244,7 @@ CAMLextern void caml_Store_double_val (value,double);
 #define Store_double_field(v,i,d) do{ \
   mlsize_t caml__temp_i = (i); \
   double caml__temp_d = (d); \
-  Store_double_val((value)((double *) v + caml__temp_i), caml__temp_d); \
+  Store_double_val((value)((double *) (v) + caml__temp_i), caml__temp_d); \
 }while(0)
 
 /* Custom blocks.  They contain a pointer to a "method suite"

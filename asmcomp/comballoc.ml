@@ -49,13 +49,14 @@ let rec combine i allocstate =
             (instr_cons (Iop(Ialloc newsz)) i.arg i.res newnext, ofs)
           end
       end
-  | Iop(Icall_ind | Icall_imm _ | Iextcall(_, _) |
+  | Iop(Icall_ind | Icall_imm _ | Iextcall _ |
         Itailcall_ind | Itailcall_imm _) ->
       let newnext = combine_restart i.next in
-      (instr_cons i.desc i.arg i.res newnext, allocated_size allocstate)
+      (instr_cons_debug i.desc i.arg i.res i.dbg newnext,
+       allocated_size allocstate)
   | Iop op ->
       let (newnext, sz) = combine i.next allocstate in
-      (instr_cons i.desc i.arg i.res newnext, sz)
+      (instr_cons_debug i.desc i.arg i.res i.dbg newnext, sz)
   | Iifthenelse(test, ifso, ifnot) ->
       let newifso = combine_restart ifso in
       let newifnot = combine_restart ifnot in
