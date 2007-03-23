@@ -106,9 +106,17 @@ module Make (Syntax : Sig.Camlp4Syntax)
             | "listclass_expr" -> <:expr< Ast.ceAnd_of_list $e$ >>
             | "listident" -> <:expr< Ast.idAcc_of_list $e$ >>
             | "listctypand" -> <:expr< Ast.tyAnd_of_list $e$ >>
+            | "listctyp;" -> <:expr< Ast.tySem_of_list $e$ >>
+            | "listctyp*" -> <:expr< Ast.tySta_of_list $e$ >>
+            | "listctyp|" -> <:expr< Ast.tyOr_of_list $e$ >>
+            | "listctyp," -> <:expr< Ast.tyCom_of_list $e$ >>
+            | "listctyp&" -> <:expr< Ast.tyAmp_of_list $e$ >>
             | "listwith_constr" -> <:expr< Ast.wcAnd_of_list $e$ >>
             | "listmatch_case" -> <:expr< Ast.mcOr_of_list $e$ >>
+            | "listpatt," -> <:expr< Ast.paCom_of_list $e$ >>
             | "listpatt;" -> <:expr< Ast.paSem_of_list $e$ >>
+            | "listexpr," -> <:expr< Ast.exCom_of_list $e$ >>
+            | "listexpr;" -> <:expr< Ast.exSem_of_list $e$ >>
             | "antisig_item" -> <:expr< Ast.SgAnt $mloc _loc$ $e$ >>
             | "antistr_item" -> <:expr< Ast.StAnt $mloc _loc$ $e$ >>
             | "antictyp" -> <:expr< Ast.TyAnt $mloc _loc$ $e$ >>

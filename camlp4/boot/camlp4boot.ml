@@ -23,7 +23,7 @@ module R =
       struct
         let name = "Camlp4RevisedParserParser"
         let version =
-          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.2 2007/03/20 12:58:09 pouillar Exp $"
+          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.3 2007/03/20 14:48:59 pouillar Exp $"
       end
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
@@ -109,7 +109,6 @@ Old (no more supported) syntax:
         let _ = Gram.Entry.clear expr
         let _ = Gram.Entry.clear expr_eoi
         let _ = Gram.Entry.clear expr_quot
-        let _ = Gram.Entry.clear field
         let _ = Gram.Entry.clear field_expr
         let _ = Gram.Entry.clear fun_binding
         let _ = Gram.Entry.clear fun_def
@@ -161,10 +160,8 @@ Old (no more supported) syntax:
         let _ = Gram.Entry.clear patt_quot
         let _ = Gram.Entry.clear patt_tcon
         let _ = Gram.Entry.clear phrase
-        let _ = Gram.Entry.clear pipe_ctyp
         let _ = Gram.Entry.clear poly_type
         let _ = Gram.Entry.clear row_field
-        let _ = Gram.Entry.clear sem_ctyp
         let _ = Gram.Entry.clear sem_expr
         let _ = Gram.Entry.clear sem_expr_for_list
         let _ = Gram.Entry.clear sem_patt
@@ -492,16 +489,6 @@ Old (no more supported) syntax:
                    ->
                    (Stream.junk __strm; Ast.ExId (_loc, Ast.IdLid (_loc, x)))
                | _ -> raise Stream.Failure)
-        (* value list1sep symb sep one cons =
-    let rec kont al =
-      parser
-      [ [: v = sep; a = symb; s :] -> kont (cons al (one a)) s
-      | [: :] -> al ]
-    in
-    parser [: a = symb; s :] -> kont (one a) s;
-
-  value sem_expr =
-    list1sep expr ";" (fun x -> x) (fun e1 e2 -> <:expr< $e1$; $e2$ >>)    *)
         (* transmit the context *)
         let _ =
           Gram.Entry.setup_parser sem_expr
@@ -518,15 +505,6 @@ Old (no more supported) syntax:
              in
                fun (__strm : _ Stream.t) ->
                  let a = symb __strm in kont a __strm)
-        (* sem_expr_for_list:
-      [ [ e = expr; ";"; el = SELF -> fun acc -> <:expr< [ $e$ :: $el acc$ ] >>
-        | e = expr -> fun acc -> <:expr< [ $e$ :: $acc$ ] >>
-      ] ]
-    ;
-    comma_expr:
-      [ [ e1 = SELF; ","; e2 = SELF -> <:expr< $e1$, $e2$ >>
-        | e = expr -> e ] ]
-    ;                                                                              *)
         let _ =
           let _ = (a_CHAR : 'a_CHAR Gram.Entry.t)
           and _ = (infixop4 : 'infixop4 Gram.Entry.t)
@@ -567,10 +545,8 @@ Old (no more supported) syntax:
           and _ = (sem_patt : 'sem_patt Gram.Entry.t)
           and _ = (sem_expr_for_list : 'sem_expr_for_list Gram.Entry.t)
           and _ = (sem_expr : 'sem_expr Gram.Entry.t)
-          and _ = (sem_ctyp : 'sem_ctyp Gram.Entry.t)
           and _ = (row_field : 'row_field Gram.Entry.t)
           and _ = (poly_type : 'poly_type Gram.Entry.t)
-          and _ = (pipe_ctyp : 'pipe_ctyp Gram.Entry.t)
           and _ = (phrase : 'phrase Gram.Entry.t)
           and _ = (patt_tcon : 'patt_tcon Gram.Entry.t)
           and _ = (patt_quot : 'patt_quot Gram.Entry.t)
@@ -625,7 +601,6 @@ Old (no more supported) syntax:
           and _ = (fun_def : 'fun_def Gram.Entry.t)
           and _ = (fun_binding : 'fun_binding Gram.Entry.t)
           and _ = (field_expr : 'field_expr Gram.Entry.t)
-          and _ = (field : 'field Gram.Entry.t)
           and _ = (expr_quot : 'expr_quot Gram.Entry.t)
           and _ = (expr_eoi : 'expr_eoi Gram.Entry.t)
           and _ = (expr : 'expr Gram.Entry.t)
@@ -702,12 +677,7 @@ Old (no more supported) syntax:
           let (* Here it's LABEL and not tilde_label since ~a:b is different than ~a : b *)
             (* Same remark for ?a:b *) infixop5 : 'infixop5 Gram.Entry.t =
             grammar_entry_create "infixop5"
-          and
-            (* sem_expr:
-      [ [ e1 = SELF; ";"; e2 = SELF -> <:expr< $e1$; $e2$ >>
-        | e = expr -> e ] ]
-    ;                                                           *)
-            (* | i = opt_label; "("; p = patt_tcon; ")" -> *)
+          and (* | i = opt_label; "("; p = patt_tcon; ")" -> *)
             (* <:patt< ? $i$ : ($p$) >> *)
             (* <:class_type< $virtual:mv$ $lid:i$ [ $t$ ] >> *)
             (* | mv = opt_virtual; i = a_LIDENT -> *)
@@ -2202,6 +2172,20 @@ Old (no more supported) syntax:
                           (Gram.Action.mk
                              (fun (e : 'expr) (_loc : Loc.t) ->
                                 (e : 'comma_expr))));
+                         ([ Gram.Stoken
+                              (((function
+                                 | ANTIQUOT ("list", _) -> true
+                                 | _ -> false),
+                                "ANTIQUOT (\"list\", _)")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | ANTIQUOT ((("list" as n)), s) ->
+                                    (Ast.ExAnt (_loc,
+                                       mk_anti ~c: "expr," n s) :
+                                      'comma_expr)
+                                | _ -> assert false)));
                          ([ Gram.Sself; Gram.Skeyword ","; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (e2 : 'comma_expr) _ (e1 : 'comma_expr)
@@ -2238,6 +2222,20 @@ Old (no more supported) syntax:
                              (fun (el : 'sequence) _ (e : 'expr)
                                 (_loc : Loc.t) ->
                                 (Ast.ExSem (_loc, e, el) : 'sequence))));
+                         ([ Gram.Stoken
+                              (((function
+                                 | ANTIQUOT ("list", _) -> true
+                                 | _ -> false),
+                                "ANTIQUOT (\"list\", _)")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | ANTIQUOT ((("list" as n)), s) ->
+                                    (Ast.ExAnt (_loc,
+                                       mk_anti ~c: "expr;" n s) :
+                                      'sequence)
+                                | _ -> assert false)));
                          ([ Gram.Skeyword "let";
                             Gram.Snterm
                               (Gram.Entry.obj
@@ -2982,6 +2980,20 @@ Old (no more supported) syntax:
                           (Gram.Action.mk
                              (fun (p : 'patt) (_loc : Loc.t) ->
                                 (p : 'comma_patt))));
+                         ([ Gram.Stoken
+                              (((function
+                                 | ANTIQUOT ("list", _) -> true
+                                 | _ -> false),
+                                "ANTIQUOT (\"list\", _)")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | ANTIQUOT ((("list" as n)), s) ->
+                                    (Ast.PaAnt (_loc,
+                                       mk_anti ~c: "patt," n s) :
+                                      'comma_patt)
+                                | _ -> assert false)));
                          ([ Gram.Sself; Gram.Skeyword ","; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (p2 : 'comma_patt) _ (p1 : 'comma_patt)
@@ -2997,6 +3009,20 @@ Old (no more supported) syntax:
                           (Gram.Action.mk
                              (fun (p : 'patt) (_loc : Loc.t) ->
                                 (p : 'sem_patt))));
+                         ([ Gram.Stoken
+                              (((function
+                                 | ANTIQUOT ("list", _) -> true
+                                 | _ -> false),
+                                "ANTIQUOT (\"list\", _)")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | ANTIQUOT ((("list" as n)), s) ->
+                                    (Ast.PaAnt (_loc,
+                                       mk_anti ~c: "patt;" n s) :
+                                      'sem_patt)
+                                | _ -> assert false)));
                          ([ Gram.Sself; Gram.Skeyword ";"; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (p2 : 'sem_patt) _ (p1 : 'sem_patt)
@@ -3192,6 +3218,20 @@ Old (no more supported) syntax:
                           (Gram.Action.mk
                              (fun (p : 'ipatt) (_loc : Loc.t) ->
                                 (p : 'comma_ipatt))));
+                         ([ Gram.Stoken
+                              (((function
+                                 | ANTIQUOT ("list", _) -> true
+                                 | _ -> false),
+                                "ANTIQUOT (\"list\", _)")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | ANTIQUOT ((("list" as n)), s) ->
+                                    (Ast.PaAnt (_loc,
+                                       mk_anti ~c: "patt," n s) :
+                                      'comma_ipatt)
+                                | _ -> assert false)));
                          ([ Gram.Sself; Gram.Skeyword ","; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (p2 : 'comma_ipatt) _ (p1 : 'comma_ipatt)
@@ -3214,6 +3254,20 @@ Old (no more supported) syntax:
                                 (_loc : Loc.t) ->
                                 (Ast.PaEq (_loc, Ast.PaId (_loc, i), p) :
                                   'label_ipatt))));
+                         ([ Gram.Stoken
+                              (((function
+                                 | ANTIQUOT ("list", _) -> true
+                                 | _ -> false),
+                                "ANTIQUOT (\"list\", _)")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | ANTIQUOT ((("list" as n)), s) ->
+                                    (Ast.PaAnt (_loc,
+                                       mk_anti ~c: "patt;" n s) :
+                                      'label_ipatt)
+                                | _ -> assert false)));
                          ([ Gram.Stoken
                               (((function
                                  | ANTIQUOT (("" | "pat" | "anti"), _) ->
@@ -3735,7 +3789,34 @@ Old (no more supported) syntax:
                           (Gram.Action.mk
                              (fun (t2 : 'star_ctyp) _ (t1 : 'star_ctyp)
                                 (_loc : Loc.t) ->
-                                (Ast.TySta (_loc, t1, t2) : 'star_ctyp)))) ]) ]))
+                                (Ast.TySta (_loc, t1, t2) : 'star_ctyp))));
+                         ([ Gram.Stoken
+                              (((function
+                                 | ANTIQUOT ("list", _) -> true
+                                 | _ -> false),
+                                "ANTIQUOT (\"list\", _)")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | ANTIQUOT ((("list" as n)), s) ->
+                                    (Ast.TyAnt (_loc,
+                                       mk_anti ~c: "ctyp*" n s) :
+                                      'star_ctyp)
+                                | _ -> assert false)));
+                         ([ Gram.Stoken
+                              (((function
+                                 | ANTIQUOT (("" | "typ"), _) -> true
+                                 | _ -> false),
+                                "ANTIQUOT ((\"\" | \"typ\"), _)")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | ANTIQUOT ((("" | "typ" as n)), s) ->
+                                    (Ast.TyAnt (_loc, mk_anti ~c: "ctyp" n s) :
+                                      'star_ctyp)
+                                | _ -> assert false))) ]) ]))
                   ());
              Gram.extend
                (constructor_declarations :
@@ -3743,17 +3824,61 @@ Old (no more supported) syntax:
                ((fun () ->
                    (None,
                     [ (None, None,
-                       [ ([ Gram.Slist1sep
-                              (Gram.Snterm
-                                 (Gram.Entry.obj
-                                    (constructor_declaration :
-                                      'constructor_declaration Gram.Entry.t)),
-                              Gram.Skeyword "|") ],
+                       [ ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (a_UIDENT : 'a_UIDENT Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun (l : 'constructor_declaration list)
+                             (fun (s : 'a_UIDENT) (_loc : Loc.t) ->
+                                (Ast.TyId (_loc, Ast.IdUid (_loc, s)) :
+                                  'constructor_declarations))));
+                         ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (a_UIDENT : 'a_UIDENT Gram.Entry.t));
+                            Gram.Skeyword "of";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (constructor_arg_list :
+                                   'constructor_arg_list Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (t : 'constructor_arg_list) _
+                                (s : 'a_UIDENT) (_loc : Loc.t) ->
+                                (Ast.TyOf (_loc,
+                                   Ast.TyId (_loc, Ast.IdUid (_loc, s)), t) :
+                                  'constructor_declarations))));
+                         ([ Gram.Sself; Gram.Skeyword "|"; Gram.Sself ],
+                          (Gram.Action.mk
+                             (fun (t2 : 'constructor_declarations) _
+                                (t1 : 'constructor_declarations)
                                 (_loc : Loc.t) ->
-                                (Ast.tyOr_of_list l :
-                                  'constructor_declarations)))) ]) ]))
+                                (Ast.TyOr (_loc, t1, t2) :
+                                  'constructor_declarations))));
+                         ([ Gram.Stoken
+                              (((function
+                                 | ANTIQUOT ("list", _) -> true
+                                 | _ -> false),
+                                "ANTIQUOT (\"list\", _)")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | ANTIQUOT ((("list" as n)), s) ->
+                                    (Ast.TyAnt (_loc,
+                                       mk_anti ~c: "ctyp|" n s) :
+                                      'constructor_declarations)
+                                | _ -> assert false)));
+                         ([ Gram.Stoken
+                              (((function
+                                 | ANTIQUOT (("" | "typ"), _) -> true
+                                 | _ -> false),
+                                "ANTIQUOT ((\"\" | \"typ\"), _)")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | ANTIQUOT ((("" | "typ" as n)), s) ->
+                                    (Ast.TyAnt (_loc, mk_anti ~c: "ctyp" n s) :
+                                      'constructor_declarations)
+                                | _ -> assert false))) ]) ]))
                   ());
              Gram.extend
                (constructor_declaration :
@@ -3860,6 +3985,20 @@ Old (no more supported) syntax:
                                 (Ast.TyCol (_loc,
                                    Ast.TyId (_loc, Ast.IdLid (_loc, s)), t) :
                                   'label_declaration))));
+                         ([ Gram.Stoken
+                              (((function
+                                 | ANTIQUOT ("list", _) -> true
+                                 | _ -> false),
+                                "ANTIQUOT (\"list\", _)")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | ANTIQUOT ((("list" as n)), s) ->
+                                    (Ast.TyAnt (_loc,
+                                       mk_anti ~c: "ctyp;" n s) :
+                                      'label_declaration)
+                                | _ -> assert false)));
                          ([ Gram.Stoken
                               (((function
                                  | ANTIQUOT (("" | "typ"), _) -> true
@@ -4321,7 +4460,7 @@ Old (no more supported) syntax:
                (comma_type_parameter : 'comma_type_parameter Gram.Entry.t)
                ((fun () ->
                    (None,
-                    [ (None, (Some Camlp4.Sig.Grammar.LeftA),
+                    [ (None, None,
                        [ ([ Gram.Snterm
                               (Gram.Entry.obj
                                  (type_parameter :
@@ -4329,6 +4468,20 @@ Old (no more supported) syntax:
                           (Gram.Action.mk
                              (fun (t : 'type_parameter) (_loc : Loc.t) ->
                                 (t : 'comma_type_parameter))));
+                         ([ Gram.Stoken
+                              (((function
+                                 | ANTIQUOT ("list", _) -> true
+                                 | _ -> false),
+                                "ANTIQUOT (\"list\", _)")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | ANTIQUOT ((("list" as n)), s) ->
+                                    (Ast.TyAnt (_loc,
+                                       mk_anti ~c: "ctyp," n s) :
+                                      'comma_type_parameter)
+                                | _ -> assert false)));
                          ([ Gram.Sself; Gram.Skeyword ","; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (t2 : 'comma_type_parameter) _
@@ -4363,6 +4516,20 @@ Old (no more supported) syntax:
                           (Gram.Action.mk
                              (fun (t : 'ctyp) (_loc : Loc.t) ->
                                 (t : 'comma_ctyp))));
+                         ([ Gram.Stoken
+                              (((function
+                                 | ANTIQUOT ("list", _) -> true
+                                 | _ -> false),
+                                "ANTIQUOT (\"list\", _)")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | ANTIQUOT ((("list" as n)), s) ->
+                                    (Ast.TyAnt (_loc,
+                                       mk_anti ~c: "ctyp," n s) :
+                                      'comma_ctyp)
+                                | _ -> assert false)));
                          ([ Gram.Sself; Gram.Skeyword ","; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (t2 : 'comma_ctyp) _ (t1 : 'comma_ctyp)
@@ -5170,40 +5337,7 @@ Old (no more supported) syntax:
              Gram.extend (meth_list : 'meth_list Gram.Entry.t)
                ((fun () ->
                    (None,
-                    [ (None, None,
-                       [ ([ Gram.Snterm
-                              (Gram.Entry.obj (field : 'field Gram.Entry.t));
-                            Gram.Sopt (Gram.Skeyword ";") ],
-                          (Gram.Action.mk
-                             (fun _ (f : 'field) (_loc : Loc.t) ->
-                                (f : 'meth_list))));
-                         ([ Gram.Snterm
-                              (Gram.Entry.obj (field : 'field Gram.Entry.t));
-                            Gram.Skeyword ";"; Gram.Sself ],
-                          (Gram.Action.mk
-                             (fun (ml : 'meth_list) _ (f : 'field)
-                                (_loc : Loc.t) ->
-                                (Ast.TySem (_loc, f, ml) : 'meth_list)))) ]) ]))
-                  ());
-             Gram.extend (opt_meth_list : 'opt_meth_list Gram.Entry.t)
-               ((fun () ->
-                   (None,
-                    [ (None, None,
-                       [ ([],
-                          (Gram.Action.mk
-                             (fun (_loc : Loc.t) ->
-                                (Ast.TyNil _loc : 'opt_meth_list))));
-                         ([ Gram.Snterm
-                              (Gram.Entry.obj
-                                 (meth_list : 'meth_list Gram.Entry.t)) ],
-                          (Gram.Action.mk
-                             (fun (ml : 'meth_list) (_loc : Loc.t) ->
-                                (ml : 'opt_meth_list)))) ]) ]))
-                  ());
-             Gram.extend (field : 'field Gram.Entry.t)
-               ((fun () ->
-                   (None,
-                    [ (None, None,
+                    [ (None, (Some Camlp4.Sig.Grammar.LeftA),
                        [ ([ Gram.Snterm
                               (Gram.Entry.obj
                                  (a_LIDENT : 'a_LIDENT Gram.Entry.t));
@@ -5216,7 +5350,21 @@ Old (no more supported) syntax:
                                 (_loc : Loc.t) ->
                                 (Ast.TyCol (_loc,
                                    Ast.TyId (_loc, Ast.IdLid (_loc, lab)), t) :
-                                  'field))));
+                                  'meth_list))));
+                         ([ Gram.Stoken
+                              (((function
+                                 | ANTIQUOT ("list", _) -> true
+                                 | _ -> false),
+                                "ANTIQUOT (\"list\", _)")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | ANTIQUOT ((("list" as n)), s) ->
+                                    (Ast.TyAnt (_loc,
+                                       mk_anti ~c: "ctyp;" n s) :
+                                      'meth_list)
+                                | _ -> assert false)));
                          ([ Gram.Stoken
                               (((function
                                  | ANTIQUOT (("" | "typ"), _) -> true
@@ -5228,8 +5376,29 @@ Old (no more supported) syntax:
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("" | "typ" as n)), s) ->
                                     (Ast.TyAnt (_loc, mk_anti ~c: "ctyp" n s) :
-                                      'field)
-                                | _ -> assert false))) ]) ]))
+                                      'meth_list)
+                                | _ -> assert false)));
+                         ([ Gram.Sself; Gram.Skeyword ";"; Gram.Sself ],
+                          (Gram.Action.mk
+                             (fun (ml2 : 'meth_list) _ (ml1 : 'meth_list)
+                                (_loc : Loc.t) ->
+                                (Ast.TySem (_loc, ml1, ml2) : 'meth_list)))) ]) ]))
+                  ());
+             Gram.extend (opt_meth_list : 'opt_meth_list Gram.Entry.t)
+               ((fun () ->
+                   (None,
+                    [ (None, None,
+                       [ ([],
+                          (Gram.Action.mk
+                             (fun (_loc : Loc.t) ->
+                                (Ast.TyNil _loc : 'opt_meth_list))));
+                         ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (meth_list : 'meth_list Gram.Entry.t));
+                            Gram.Sopt (Gram.Skeyword ";") ],
+                          (Gram.Action.mk
+                             (fun _ (ml : 'meth_list) (_loc : Loc.t) ->
+                                (ml : 'opt_meth_list)))) ]) ]))
                   ());
              Gram.extend (poly_type : 'poly_type Gram.Entry.t)
                ((fun () ->
@@ -5320,6 +5489,20 @@ Old (no more supported) syntax:
                                 (Ast.TyOr (_loc, t1, t2) : 'row_field))));
                          ([ Gram.Stoken
                               (((function
+                                 | ANTIQUOT ("list", _) -> true
+                                 | _ -> false),
+                                "ANTIQUOT (\"list\", _)")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | ANTIQUOT ((("list" as n)), s) ->
+                                    (Ast.TyAnt (_loc,
+                                       mk_anti ~c: "ctyp|" n s) :
+                                      'row_field)
+                                | _ -> assert false)));
+                         ([ Gram.Stoken
+                              (((function
                                  | ANTIQUOT (("" | "typ"), _) -> true
                                  | _ -> false),
                                 "ANTIQUOT ((\"\" | \"typ\"), _)")) ],
@@ -5332,36 +5515,6 @@ Old (no more supported) syntax:
                                       'row_field)
                                 | _ -> assert false))) ]) ]))
                   ());
-             Gram.extend (sem_ctyp : 'sem_ctyp Gram.Entry.t)
-               ((fun () ->
-                   (None,
-                    [ (None, None,
-                       [ ([ Gram.Snterm
-                              (Gram.Entry.obj (ctyp : 'ctyp Gram.Entry.t)) ],
-                          (Gram.Action.mk
-                             (fun (t : 'ctyp) (_loc : Loc.t) ->
-                                (t : 'sem_ctyp))));
-                         ([ Gram.Sself; Gram.Skeyword ";"; Gram.Sself ],
-                          (Gram.Action.mk
-                             (fun (t2 : 'sem_ctyp) _ (t1 : 'sem_ctyp)
-                                (_loc : Loc.t) ->
-                                (Ast.TySem (_loc, t1, t2) : 'sem_ctyp)))) ]) ]))
-                  ());
-             Gram.extend (pipe_ctyp : 'pipe_ctyp Gram.Entry.t)
-               ((fun () ->
-                   (None,
-                    [ (None, None,
-                       [ ([ Gram.Snterm
-                              (Gram.Entry.obj (ctyp : 'ctyp Gram.Entry.t)) ],
-                          (Gram.Action.mk
-                             (fun (t : 'ctyp) (_loc : Loc.t) ->
-                                (t : 'pipe_ctyp))));
-                         ([ Gram.Sself; Gram.Skeyword "|"; Gram.Sself ],
-                          (Gram.Action.mk
-                             (fun (t2 : 'pipe_ctyp) _ (t1 : 'pipe_ctyp)
-                                (_loc : Loc.t) ->
-                                (Ast.TyOr (_loc, t1, t2) : 'pipe_ctyp)))) ]) ]))
-                  ());
              Gram.extend (amp_ctyp : 'amp_ctyp Gram.Entry.t)
                ((fun () ->
                    (None,
@@ -5371,6 +5524,20 @@ Old (no more supported) syntax:
                           (Gram.Action.mk
                              (fun (t : 'ctyp) (_loc : Loc.t) ->
                                 (t : 'amp_ctyp))));
+                         ([ Gram.Stoken
+                              (((function
+                                 | ANTIQUOT ("list", _) -> true
+                                 | _ -> false),
+                                "ANTIQUOT (\"list\", _)")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | ANTIQUOT ((("list" as n)), s) ->
+                                    (Ast.TyAnt (_loc,
+                                       mk_anti ~c: "ctyp&" n s) :
+                                      'amp_ctyp)
+                                | _ -> assert false)));
                          ([ Gram.Sself; Gram.Skeyword "&"; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (t2 : 'amp_ctyp) _ (t1 : 'amp_ctyp)
@@ -6508,11 +6675,44 @@ Old (no more supported) syntax:
                             Gram.Skeyword ":";
                             Gram.Snterm
                               (Gram.Entry.obj
+                                 (more_ctyp : 'more_ctyp Gram.Entry.t));
+                            Gram.Skeyword ";";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (label_declaration :
+                                   'label_declaration Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (z : 'label_declaration) _ (y : 'more_ctyp)
+                                _ (x : 'more_ctyp) (_loc : Loc.t) ->
+                                (Ast.TySem (_loc, Ast.TyCol (_loc, x, y), z) :
+                                  'ctyp_quot))));
+                         ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (more_ctyp : 'more_ctyp Gram.Entry.t));
+                            Gram.Skeyword ":";
+                            Gram.Snterm
+                              (Gram.Entry.obj
                                  (more_ctyp : 'more_ctyp Gram.Entry.t)) ],
                           (Gram.Action.mk
                              (fun (y : 'more_ctyp) _ (x : 'more_ctyp)
                                 (_loc : Loc.t) ->
                                 (Ast.TyCol (_loc, x, y) : 'ctyp_quot))));
+                         ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (more_ctyp : 'more_ctyp Gram.Entry.t));
+                            Gram.Skeyword "of"; Gram.Skeyword "&";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (amp_ctyp : 'amp_ctyp Gram.Entry.t));
+                            Gram.Skeyword "|";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (row_field : 'row_field Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (z : 'row_field) _ (y : 'amp_ctyp) _ _
+                                (x : 'more_ctyp) (_loc : Loc.t) ->
+                                (Ast.TyOr (_loc, Ast.TyOfAmp (_loc, x, y), z) :
+                                  'ctyp_quot))));
                          ([ Gram.Snterm
                               (Gram.Entry.obj
                                  (more_ctyp : 'more_ctyp Gram.Entry.t));
@@ -6531,6 +6731,25 @@ Old (no more supported) syntax:
                             Gram.Snterm
                               (Gram.Entry.obj
                                  (constructor_arg_list :
+                                   'constructor_arg_list Gram.Entry.t));
+                            Gram.Skeyword "|";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (constructor_declarations :
+                                   'constructor_declarations Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (z : 'constructor_declarations) _
+                                (y : 'constructor_arg_list) _
+                                (x : 'more_ctyp) (_loc : Loc.t) ->
+                                (Ast.TyOr (_loc, Ast.TyOf (_loc, x, y), z) :
+                                  'ctyp_quot))));
+                         ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (more_ctyp : 'more_ctyp Gram.Entry.t));
+                            Gram.Skeyword "of";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (constructor_arg_list :
                                    'constructor_arg_list Gram.Entry.t)) ],
                           (Gram.Action.mk
                              (fun (y : 'constructor_arg_list) _
@@ -6542,10 +6761,11 @@ Old (no more supported) syntax:
                             Gram.Skeyword "|";
                             Gram.Snterm
                               (Gram.Entry.obj
-                                 (pipe_ctyp : 'pipe_ctyp Gram.Entry.t)) ],
+                                 (constructor_declarations :
+                                   'constructor_declarations Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun (y : 'pipe_ctyp) _ (x : 'more_ctyp)
-                                (_loc : Loc.t) ->
+                             (fun (y : 'constructor_declarations) _
+                                (x : 'more_ctyp) (_loc : Loc.t) ->
                                 (Ast.TyOr (_loc, x, y) : 'ctyp_quot))));
                          ([ Gram.Snterm
                               (Gram.Entry.obj
@@ -6553,9 +6773,10 @@ Old (no more supported) syntax:
                             Gram.Skeyword ";";
                             Gram.Snterm
                               (Gram.Entry.obj
-                                 (sem_ctyp : 'sem_ctyp Gram.Entry.t)) ],
+                                 (label_declaration :
+                                   'label_declaration Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun (y : 'sem_ctyp) _ (x : 'more_ctyp)
+                             (fun (y : 'label_declaration) _ (x : 'more_ctyp)
                                 (_loc : Loc.t) ->
                                 (Ast.TySem (_loc, x, y) : 'ctyp_quot))));
                          ([ Gram.Snterm
@@ -7485,6 +7706,36 @@ module Camlp4QuotationCommon =
                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                    Ast.IdLid (_loc, "tyAnd_of_list"))),
                                e)
+                         | "listctyp;" ->
+                             Ast.ExApp (_loc,
+                               Ast.ExId (_loc,
+                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
+                                   Ast.IdLid (_loc, "tySem_of_list"))),
+                               e)
+                         | "listctyp*" ->
+                             Ast.ExApp (_loc,
+                               Ast.ExId (_loc,
+                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
+                                   Ast.IdLid (_loc, "tySta_of_list"))),
+                               e)
+                         | "listctyp|" ->
+                             Ast.ExApp (_loc,
+                               Ast.ExId (_loc,
+                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
+                                   Ast.IdLid (_loc, "tyOr_of_list"))),
+                               e)
+                         | "listctyp," ->
+                             Ast.ExApp (_loc,
+                               Ast.ExId (_loc,
+                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
+                                   Ast.IdLid (_loc, "tyCom_of_list"))),
+                               e)
+                         | "listctyp&" ->
+                             Ast.ExApp (_loc,
+                               Ast.ExId (_loc,
+                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
+                                   Ast.IdLid (_loc, "tyAmp_of_list"))),
+                               e)
                          | "listwith_constr" ->
                              Ast.ExApp (_loc,
                                Ast.ExId (_loc,
@@ -7497,11 +7748,29 @@ module Camlp4QuotationCommon =
                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                    Ast.IdLid (_loc, "mcOr_of_list"))),
                                e)
+                         | "listpatt," ->
+                             Ast.ExApp (_loc,
+                               Ast.ExId (_loc,
+                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
+                                   Ast.IdLid (_loc, "paCom_of_list"))),
+                               e)
                          | "listpatt;" ->
                              Ast.ExApp (_loc,
                                Ast.ExId (_loc,
                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                    Ast.IdLid (_loc, "paSem_of_list"))),
+                               e)
+                         | "listexpr," ->
+                             Ast.ExApp (_loc,
+                               Ast.ExId (_loc,
+                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
+                                   Ast.IdLid (_loc, "exCom_of_list"))),
+                               e)
+                         | "listexpr;" ->
+                             Ast.ExApp (_loc,
+                               Ast.ExId (_loc,
+                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
+                                   Ast.IdLid (_loc, "exSem_of_list"))),
                                e)
                          | "antisig_item" ->
                              Ast.ExApp (_loc,

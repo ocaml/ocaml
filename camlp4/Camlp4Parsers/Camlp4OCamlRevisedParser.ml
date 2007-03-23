@@ -110,7 +110,6 @@ Old (no more supported) syntax:
   Gram.Entry.clear expr;
   Gram.Entry.clear expr_eoi;
   Gram.Entry.clear expr_quot;
-  Gram.Entry.clear field;
   Gram.Entry.clear field_expr;
   Gram.Entry.clear fun_binding;
   Gram.Entry.clear fun_def;
@@ -162,10 +161,8 @@ Old (no more supported) syntax:
   Gram.Entry.clear patt_quot;
   Gram.Entry.clear patt_tcon;
   Gram.Entry.clear phrase;
-  Gram.Entry.clear pipe_ctyp;
   Gram.Entry.clear poly_type;
   Gram.Entry.clear row_field;
-  Gram.Entry.clear sem_ctyp;
   Gram.Entry.clear sem_expr;
   Gram.Entry.clear sem_expr_for_list;
   Gram.Entry.clear sem_patt;
@@ -365,17 +362,6 @@ Old (no more supported) syntax:
   ;
 
 
-  (* value list1sep symb sep one cons =
-    let rec kont al =
-      parser
-      [ [: v = sep; a = symb; s :] -> kont (cons al (one a)) s
-      | [: :] -> al ]
-    in
-    parser [: a = symb; s :] -> kont (one a) s;
-
-  value sem_expr =
-    list1sep expr ";" (fun x -> x) (fun e1 e2 -> <:expr< $e1$; $e2$ >>)    *)
-
   (* transmit the context *)
   Gram.Entry.setup_parser sem_expr
    (let symb = Gram.parse_tokens_after_filter expr in
@@ -385,15 +371,6 @@ Old (no more supported) syntax:
       | [: :] -> al ]
     in
     parser [: a = symb; s :] -> kont a s);
-    (* sem_expr_for_list:
-      [ [ e = expr; ";"; el = SELF -> fun acc -> <:expr< [ $e$ :: $el acc$ ] >>
-        | e = expr -> fun acc -> <:expr< [ $e$ :: $acc$ ] >>
-      ] ]
-    ;
-    comma_expr:
-      [ [ e1 = SELF; ","; e2 = SELF -> <:expr< $e1$, $e2$ >>
-        | e = expr -> e ] ]
-    ;                                                                              *)
 
   EXTEND Gram
     GLOBAL:
@@ -410,7 +387,7 @@ Old (no more supported) syntax:
       comma_ctyp comma_expr comma_ipatt comma_patt comma_type_parameter
       constrain constructor_arg_list constructor_declaration
       constructor_declarations ctyp ctyp_quot cvalue_binding direction_flag
-      dummy eq_expr expr expr_eoi expr_quot field field_expr fun_binding
+      dummy eq_expr expr expr_eoi expr_quot field_expr fun_binding
       fun_def ident ident_quot implem interf ipatt ipatt_tcon label
       label_declaration label_expr label_ipatt label_longident label_patt
       labeled_ipatt let_binding meth_list module_binding module_binding0
@@ -420,7 +397,7 @@ Old (no more supported) syntax:
       opt_class_self_patt opt_class_self_type opt_comma_ctyp opt_dot_dot opt_eq_ctyp opt_expr
       opt_meth_list opt_mutable opt_polyt opt_private opt_rec
       opt_virtual opt_when_expr patt patt_as_patt_opt patt_eoi
-      patt_quot patt_tcon phrase pipe_ctyp poly_type row_field sem_ctyp
+      patt_quot patt_tcon phrase poly_type row_field
       sem_expr sem_expr_for_list sem_patt sem_patt_for_list semi sequence
       sig_item sig_item_quot sig_items star_ctyp str_item str_item_quot
       str_items top_phrase type_constraint type_declaration
@@ -686,10 +663,6 @@ Old (no more supported) syntax:
     infixop6:
       [ [ x = [ "or" | "||" ] -> <:expr< $lid:x$ >> ] ]
     ;
-    (* sem_expr:
-      [ [ e1 = SELF; ";"; e2 = SELF -> <:expr< $e1$; $e2$ >>
-        | e = expr -> e ] ]
-    ;                                                           *)
     sem_expr_for_list:
       [ [ e = expr; ";"; el = SELF -> fun acc -> <:expr< [ $e$ :: $el acc$ ] >>
         | e = expr -> fun acc -> <:expr< [ $e$ :: $acc$ ] >>
@@ -697,6 +670,7 @@ Old (no more supported) syntax:
     ;
     comma_expr:
       [ [ e1 = SELF; ","; e2 = SELF -> <:expr< $e1$, $e2$ >>
+        | `ANTIQUOT ("list" as n) s -> <:expr< $anti:mk_anti ~c:"expr," n s$ >>
         | e = expr -> e ] ]
     ;
     dummy:
@@ -705,6 +679,7 @@ Old (no more supported) syntax:
     sequence:
       [ [ "let"; rf = opt_rec; bi = binding; [ "in" | ";" ]; el = SELF ->
             <:expr< let $rec:rf$ $bi$ in $mksequence _loc el$ >>
+        | `ANTIQUOT ("list" as n) s -> <:expr< $anti:mk_anti ~c:"expr;" n s$ >>
         | e = expr; ";"; el = SELF -> <:expr< $e$; $el$ >>
         | e = expr; ";" -> e
         | e = expr -> e ] ]
@@ -830,11 +805,13 @@ Old (no more supported) syntax:
     ;
     comma_patt:
       [ [ p1 = SELF; ","; p2 = SELF -> <:patt< $p1$, $p2$ >>
+        | `ANTIQUOT ("list" as n) s -> <:patt< $anti:mk_anti ~c:"patt," n s$ >>
         | p = patt -> p ] ]
     ;
     sem_patt:
       [ LEFTA
         [ p1 = SELF; ";"; p2 = SELF -> <:patt< $p1$; $p2$ >>
+        | `ANTIQUOT ("list" as n) s -> <:patt< $anti:mk_anti ~c:"patt;" n s$ >>
         | p = patt -> p ] ]
     ;
     sem_patt_for_list:
@@ -872,6 +849,7 @@ Old (no more supported) syntax:
     comma_ipatt:
       [ LEFTA
         [ p1 = SELF; ","; p2 = SELF -> <:patt< $p1$, $p2$ >>
+        | `ANTIQUOT ("list" as n) s -> <:patt< $anti:mk_anti ~c:"patt," n s$ >>
         | p = ipatt -> p ] ]
     ;
     label_ipatt:
@@ -879,6 +857,7 @@ Old (no more supported) syntax:
         [ p1 = SELF; ";"; p2 = SELF -> <:patt< $p1$; $p2$ >>
         | `ANTIQUOT (""|"pat"|"anti" as n) s ->
             <:patt< $anti:mk_anti ~c:"patt" n s$ >>
+        | `ANTIQUOT ("list" as n) s -> <:patt< $anti:mk_anti ~c:"patt;" n s$ >>
         | i = label_longident; "="; p = ipatt -> <:patt< $id:i$ = $p$ >>
       ] ]
     ;
@@ -982,19 +961,35 @@ Old (no more supported) syntax:
       ] ]
     ;
     star_ctyp:
-      [ [ t1 = SELF; "*"; t2 = SELF -> <:ctyp< $t1$ * $t2$ >>
+      [ [ `ANTIQUOT (""|"typ" as n) s ->
+            <:ctyp< $anti:mk_anti ~c:"ctyp" n s$ >>
+        | `ANTIQUOT ("list" as n) s ->
+            <:ctyp< $anti:mk_anti ~c:"ctyp*" n s$ >>
+        | t1 = SELF; "*"; t2 = SELF ->
+            <:ctyp< $t1$ * $t2$ >>
         | t = ctyp -> t
       ] ]
     ;
     constructor_declarations:
-      [ [ l = LIST1 constructor_declaration SEP "|" -> Ast.tyOr_of_list l ] ]
+      [ [ `ANTIQUOT (""|"typ" as n) s ->
+            <:ctyp< $anti:mk_anti ~c:"ctyp" n s$ >>
+        | `ANTIQUOT ("list" as n) s ->
+            <:ctyp< $anti:mk_anti ~c:"ctyp|" n s$ >>
+        | t1 = SELF; "|"; t2 = SELF ->
+            <:ctyp< $t1$ | $t2$ >>
+        | s = a_UIDENT; "of"; t = constructor_arg_list ->
+            <:ctyp< $uid:s$ of $t$ >>
+        | s = a_UIDENT ->
+            <:ctyp< $uid:s$ >>
+      ] ]
     ;
     constructor_declaration:
       [ [ `ANTIQUOT (""|"typ" as n) s ->
             <:ctyp< $anti:mk_anti ~c:"ctyp" n s$ >>
         | s = a_UIDENT; "of"; t = constructor_arg_list ->
             <:ctyp< $uid:s$ of $t$ >>
-        | s = a_UIDENT -> <:ctyp< $uid:s$ >>
+        | s = a_UIDENT ->
+            <:ctyp< $uid:s$ >>
       ] ]
     ;
     constructor_arg_list:
@@ -1009,6 +1004,8 @@ Old (no more supported) syntax:
         [ t1 = SELF; ";"; t2 = SELF -> <:ctyp< $t1$; $t2$ >>
         | `ANTIQUOT (""|"typ" as n) s ->
             <:ctyp< $anti:mk_anti ~c:"ctyp" n s$ >>
+        | `ANTIQUOT ("list" as n) s ->
+            <:ctyp< $anti:mk_anti ~c:"ctyp;" n s$ >>
         | s = a_LIDENT; ":"; t = poly_type ->  <:ctyp< $lid:s$ : $t$ >>
         | s = a_LIDENT; ":"; "mutable"; t = poly_type ->
             <:ctyp< $lid:s$ : mutable $t$ >>
@@ -1131,8 +1128,8 @@ Old (no more supported) syntax:
       ] ]
     ;
     comma_type_parameter:
-      [ LEFTA
-        [ t1 = SELF; ","; t2 = SELF -> <:ctyp< $t1$, $t2$ >>
+      [ [ t1 = SELF; ","; t2 = SELF -> <:ctyp< $t1$, $t2$ >>
+        | `ANTIQUOT ("list" as n) s -> <:ctyp< $anti:mk_anti ~c:"ctyp," n s$ >>
         | t = type_parameter -> t
       ] ]
     ;
@@ -1143,6 +1140,7 @@ Old (no more supported) syntax:
     ;
     comma_ctyp:
       [ [ t1 = SELF; ","; t2 = SELF -> <:ctyp< $t1$, $t2$ >>
+        | `ANTIQUOT ("list" as n) s -> <:ctyp< $anti:mk_anti ~c:"ctyp," n s$ >>
         | t = ctyp -> t
       ] ]
     ;
@@ -1292,18 +1290,16 @@ Old (no more supported) syntax:
         | l = label; "="; e = expr -> <:binding< $lid:l$ = $e$ >> ] ]
     ;
     meth_list:
-      [ [ f = field; ";"; ml = SELF -> <:ctyp< $f$; $ml$ >>
-        | f = field; OPT ";" -> f ] ]
+      [ LEFTA
+        [ ml1 = SELF; ";"; ml2 = SELF        -> <:ctyp< $ml1$; $ml2$ >>
+        | `ANTIQUOT (""|"typ" as n) s        -> <:ctyp< $anti:mk_anti ~c:"ctyp" n s$ >>
+        | `ANTIQUOT ("list" as n) s          -> <:ctyp< $anti:mk_anti ~c:"ctyp;" n s$ >>
+        | lab = a_LIDENT; ":"; t = poly_type -> <:ctyp< $lid:lab$ : $t$ >> ] ]
     ;
     opt_meth_list:
-      [ [ ml = meth_list -> ml
+      [ [ ml = meth_list; OPT ";" -> ml
         | -> <:ctyp<>>
       ] ]
-    ;
-    field:
-      [ [ `ANTIQUOT (""|"typ" as n) s ->
-            <:ctyp< $anti:mk_anti ~c:"ctyp" n s$ >>
-        | lab = a_LIDENT; ":"; t = poly_type -> <:ctyp< $lid:lab$ : $t$ >> ] ]
     ;
     poly_type:
       [ [ t = ctyp -> t ] ]
@@ -1319,24 +1315,17 @@ Old (no more supported) syntax:
     row_field:
       [ [ `ANTIQUOT (""|"typ" as n) s ->
             <:ctyp< $anti:mk_anti ~c:"ctyp" n s$ >>
+        | `ANTIQUOT ("list" as n) s ->
+            <:ctyp< $anti:mk_anti ~c:"ctyp|" n s$ >>
         | t1 = SELF; "|"; t2 = SELF -> <:ctyp< $t1$ | $t2$ >>
         | "`"; i = a_ident -> <:ctyp< `$i$ >>
         | "`"; i = a_ident; "of"; "&"; t = amp_ctyp -> <:ctyp< `$i$ of & $t$ >>
         | "`"; i = a_ident; "of"; t = amp_ctyp -> <:ctyp< `$i$ of $t$ >>
         | t = ctyp -> t ] ]
     ;
-    sem_ctyp:
-      [ [ t1 = SELF; ";"; t2 = SELF -> <:ctyp< $t1$ ; $t2$ >>
-        | t = ctyp -> t
-      ] ]
-    ;
-    pipe_ctyp:
-      [ [ t1 = SELF; "|"; t2 = SELF -> <:ctyp< $t1$ | $t2$ >>
-        | t = ctyp -> t
-      ] ]
-    ;
     amp_ctyp:
       [ [ t1 = SELF; "&"; t2 = SELF -> <:ctyp< $t1$ & $t2$ >>
+        | `ANTIQUOT ("list" as n) s -> <:ctyp< $anti:mk_anti ~c:"ctyp&" n s$ >>
         | t = ctyp -> t
       ] ]
     ;
@@ -1540,11 +1529,17 @@ Old (no more supported) syntax:
     ;
     ctyp_quot:
       [ [ x = more_ctyp; ","; y = comma_ctyp -> <:ctyp< $x$, $y$ >>
-        | x = more_ctyp; ";"; y = sem_ctyp -> <:ctyp< $x$; $y$ >>
-        | x = more_ctyp; "|"; y = pipe_ctyp -> <:ctyp< $x$ | $y$ >>
+        | x = more_ctyp; ";"; y = label_declaration -> <:ctyp< $x$; $y$ >>
+        | x = more_ctyp; "|"; y = constructor_declarations -> <:ctyp< $x$ | $y$ >>
         | x = more_ctyp; "of"; y = constructor_arg_list -> <:ctyp< $x$ of $y$ >>
+        | x = more_ctyp; "of"; y = constructor_arg_list; "|"; z = constructor_declarations ->
+            <:ctyp< $ <:ctyp< $x$ of $y$ >> $ | $z$ >>
         | x = more_ctyp; "of"; "&"; y = amp_ctyp -> <:ctyp< $x$ of & $y$ >>
+        | x = more_ctyp; "of"; "&"; y = amp_ctyp; "|"; z = row_field ->
+            <:ctyp< $ <:ctyp< $x$ of & $y$ >> $ | $z$ >>
         | x = more_ctyp; ":"; y = more_ctyp -> <:ctyp< $x$ : $y$ >>
+        | x = more_ctyp; ":"; y = more_ctyp; ";"; z = label_declaration ->
+            <:ctyp< $ <:ctyp< $x$ : $y$ >> $ ; $z$ >>
         | x = more_ctyp; "*"; y = star_ctyp -> <:ctyp< $x$ * $y$ >>
         | x = more_ctyp; "&"; y = amp_ctyp -> <:ctyp< $x$ & $y$ >>
         | x = more_ctyp; "and"; y = constructor_arg_list -> <:ctyp< $x$ and $y$ >>

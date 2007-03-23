@@ -90,7 +90,6 @@ module Make (Warning : Sig.Warning)
   value eq_expr = Gram.Entry.mk "eq_expr";
   value expr = Gram.Entry.mk "expr";
   value expr_eoi = Gram.Entry.mk "expr_eoi";
-  value field = Gram.Entry.mk "field";
   value field_expr = Gram.Entry.mk "field_expr";
   value fun_binding = Gram.Entry.mk "fun_binding";
   value fun_def = Gram.Entry.mk "fun_def";
@@ -141,10 +140,8 @@ module Make (Warning : Sig.Warning)
   value patt_eoi = Gram.Entry.mk "patt_eoi";
   value patt_tcon = Gram.Entry.mk "patt_tcon";
   value phrase = Gram.Entry.mk "phrase";
-  value pipe_ctyp = Gram.Entry.mk "pipe_ctyp";
   value poly_type = Gram.Entry.mk "poly_type";
   value row_field = Gram.Entry.mk "row_field";
-  value sem_ctyp = Gram.Entry.mk "sem_ctyp";
   value sem_expr = Gram.Entry.mk "sem_expr";
   value sem_expr_for_list = Gram.Entry.mk "sem_expr_for_list";
   value sem_patt = Gram.Entry.mk "sem_patt";

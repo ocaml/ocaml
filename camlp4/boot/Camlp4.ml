@@ -1129,7 +1129,10 @@ module Sig =
         val paCom_of_list : patt list -> patt
         val tyOr_of_list : ctyp list -> ctyp
         val tyAnd_of_list : ctyp list -> ctyp
+        val tyAmp_of_list : ctyp list -> ctyp
         val tySem_of_list : ctyp list -> ctyp
+        val tyCom_of_list : ctyp list -> ctyp
+        val tySta_of_list : ctyp list -> ctyp
         val stSem_of_list : str_item list -> str_item
         val sgSem_of_list : sig_item list -> sig_item
         val crSem_of_list : class_str_item list -> class_str_item
@@ -2229,7 +2232,7 @@ module Struct =
                   OPTLABEL s | COMMENT s | BLANKS s | ESCAPED_IDENT s -> s
               | tok ->
                   invalid_arg
-                    ("Cannot extract a string from a this token: " ^
+                    ("Cannot extract a string from this token: " ^
                        (to_string tok))
             module Error =
               struct
@@ -10382,6 +10385,27 @@ module Struct =
               | t :: ts ->
                   let _loc = loc_of_ctyp t
                   in Ast.TySem (_loc, t, tySem_of_list ts)
+            let rec tyCom_of_list =
+              function
+              | [] -> Ast.TyNil ghost
+              | [ t ] -> t
+              | t :: ts ->
+                  let _loc = loc_of_ctyp t
+                  in Ast.TyCom (_loc, t, tyCom_of_list ts)
+            let rec tyAmp_of_list =
+              function
+              | [] -> Ast.TyNil ghost
+              | [ t ] -> t
+              | t :: ts ->
+                  let _loc = loc_of_ctyp t
+                  in Ast.TyAmp (_loc, t, tyAmp_of_list ts)
+            let rec tySta_of_list =
+              function
+              | [] -> Ast.TyNil ghost
+              | [ t ] -> t
+              | t :: ts ->
+                  let _loc = loc_of_ctyp t
+                  in Ast.TySta (_loc, t, tySta_of_list ts)
             let rec stSem_of_list =
               function
               | [] -> Ast.StNil ghost
@@ -10783,6 +10807,16 @@ module Struct =
             let string_of_string_token loc s =
               try Token.Eval.string s
               with | (Failure _ as exn) -> Loc.raise loc exn
+            let remove_underscores s =
+              let l = String.length s in
+              let rec remove src dst =
+                if src >= l
+                then if dst >= l then s else String.sub s 0 dst
+                else
+                  (match s.[src] with
+                   | '_' -> remove (src + 1) dst
+                   | c -> (s.[dst] <- c; remove (src + 1) (dst + 1)))
+              in remove 0 0
             let mkloc = Loc.to_ocaml_location
             let mkghloc loc = Loc.to_ocaml_location (Loc.ghostify loc)
             let mktyp loc d = {  ptyp_desc = d; ptyp_loc = mkloc loc; }
@@ -11241,7 +11275,9 @@ module Struct =
                          error loc
                            "Integer literal exceeds the range of representable integers of type nativeint")
                   in mkpat loc (Ppat_constant (Const_nativeint nati))
-              | PaFlo (loc, s) -> mkpat loc (Ppat_constant (Const_float s))
+              | PaFlo (loc, s) ->
+                  mkpat loc
+                    (Ppat_constant (Const_float (remove_underscores s)))
               | PaLab (loc, _, _) ->
                   error loc "labeled pattern not allowed here"
               | PaOlb (loc, _, _) | PaOlbi (loc, _, _, _) ->
@@ -11417,7 +11453,9 @@ module Struct =
                   let t1 =
                     (match t1 with | Ast.TyNil _ -> None | t -> Some (ctyp t))
                   in mkexp loc (Pexp_constraint (expr e, t1, Some (ctyp t2)))
-              | ExFlo (loc, s) -> mkexp loc (Pexp_constant (Const_float s))
+              | ExFlo (loc, s) ->
+                  mkexp loc
+                    (Pexp_constant (Const_float (remove_underscores s)))
               | ExFor (loc, i, e1, e2, df, el) ->
                   let e3 = ExSeq (loc, el) in
                   let df = if mb2b df then Upto else Downto

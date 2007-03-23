@@ -518,7 +518,10 @@ module type Camlp4Ast = sig
   value paCom_of_list : list patt -> patt;
   value tyOr_of_list : list ctyp -> ctyp;
   value tyAnd_of_list : list ctyp -> ctyp;
+  value tyAmp_of_list : list ctyp -> ctyp;
   value tySem_of_list : list ctyp -> ctyp;
+  value tyCom_of_list : list ctyp -> ctyp;
+  value tySta_of_list : list ctyp -> ctyp;
   value stSem_of_list : list str_item -> str_item;
   value sgSem_of_list : list sig_item -> sig_item;
   value crSem_of_list : list class_str_item -> class_str_item;
@@ -1198,7 +1201,6 @@ module type Camlp4Syntax = sig
   value expr : Gram.Entry.t Ast.expr;
   value expr_eoi : Gram.Entry.t Ast.expr;
   value expr_quot : Gram.Entry.t Ast.expr;
-  value field : Gram.Entry.t Ast.ctyp;
   value field_expr : Gram.Entry.t Ast.binding;
   value fun_binding : Gram.Entry.t Ast.expr;
   value fun_def : Gram.Entry.t Ast.expr;
@@ -1248,10 +1250,8 @@ module type Camlp4Syntax = sig
   value patt_quot : Gram.Entry.t Ast.patt;
   value patt_tcon : Gram.Entry.t Ast.patt;
   value phrase : Gram.Entry.t Ast.str_item;
-  value pipe_ctyp : Gram.Entry.t Ast.ctyp;
   value poly_type : Gram.Entry.t Ast.ctyp;
   value row_field : Gram.Entry.t Ast.ctyp;
-  value sem_ctyp : Gram.Entry.t Ast.ctyp;
   value sem_expr : Gram.Entry.t Ast.expr;
   value sem_expr_for_list : Gram.Entry.t (Ast.expr -> Ast.expr);
   value sem_patt : Gram.Entry.t Ast.patt;

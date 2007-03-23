@@ -224,6 +224,27 @@ module Make (Loc : Sig.Loc)
     | [t::ts] ->
         let _loc = loc_of_ctyp t in <:ctyp< $t$ ; $tySem_of_list ts$ >> ];
 
+  value rec tyCom_of_list =
+    fun
+    [ [] -> <:ctyp@ghost<>>
+    | [t] -> t
+    | [t::ts] ->
+        let _loc = loc_of_ctyp t in <:ctyp< $t$, $tyCom_of_list ts$ >> ];
+
+  value rec tyAmp_of_list =
+    fun
+    [ [] -> <:ctyp@ghost<>>
+    | [t] -> t
+    | [t::ts] ->
+        let _loc = loc_of_ctyp t in <:ctyp< $t$ & $tyAmp_of_list ts$ >> ];
+
+  value rec tySta_of_list =
+    fun
+    [ [] -> <:ctyp@ghost<>>
+    | [t] -> t
+    | [t::ts] ->
+        let _loc = loc_of_ctyp t in <:ctyp< $t$ * $tySta_of_list ts$ >> ];
+
   value rec stSem_of_list =
     fun
     [ [] -> <:str_item@ghost<>>

@@ -4726,6 +4726,24 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
       | [ t ] -> t
       | [ t :: ts ] ->
           let _loc = loc_of_ctyp t in Ast.TySem _loc t (tySem_of_list ts) ];
+    value rec tyCom_of_list =
+      fun
+      [ [] -> Ast.TyNil ghost
+      | [ t ] -> t
+      | [ t :: ts ] ->
+          let _loc = loc_of_ctyp t in Ast.TyCom _loc t (tyCom_of_list ts) ];
+    value rec tyAmp_of_list =
+      fun
+      [ [] -> Ast.TyNil ghost
+      | [ t ] -> t
+      | [ t :: ts ] ->
+          let _loc = loc_of_ctyp t in Ast.TyAmp _loc t (tyAmp_of_list ts) ];
+    value rec tySta_of_list =
+      fun
+      [ [] -> Ast.TyNil ghost
+      | [ t ] -> t
+      | [ t :: ts ] ->
+          let _loc = loc_of_ctyp t in Ast.TySta _loc t (tySta_of_list ts) ];
     value rec stSem_of_list =
       fun
       [ [] -> Ast.StNil ghost

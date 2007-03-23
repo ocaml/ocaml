@@ -278,7 +278,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       comma_ctyp comma_expr comma_ipatt comma_patt comma_type_parameter
       constrain constructor_arg_list constructor_declaration
       constructor_declarations ctyp ctyp_quot cvalue_binding direction_flag
-      dummy eq_expr expr expr_eoi expr_quot field field_expr fun_binding
+      dummy eq_expr expr expr_eoi expr_quot field_expr fun_binding
       fun_def ident ident_quot implem interf ipatt ipatt_tcon label
       label_declaration label_expr label_ipatt label_longident label_patt
       labeled_ipatt let_binding meth_list module_binding module_binding0
@@ -289,7 +289,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       opt_comma_ctyp opt_dot_dot opt_eq_ctyp opt_expr
       opt_meth_list opt_mutable opt_polyt opt_private opt_rec
       opt_virtual opt_when_expr patt patt_as_patt_opt patt_eoi
-      patt_quot patt_tcon phrase pipe_ctyp poly_type row_field sem_ctyp
+      patt_quot patt_tcon phrase poly_type row_field
       sem_expr sem_expr_for_list sem_patt sem_patt_for_list semi sequence
       sig_item sig_item_quot sig_items star_ctyp str_item str_item_quot
       str_items top_phrase type_constraint type_declaration
