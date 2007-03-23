@@ -73,7 +73,7 @@ let print_version_string () =
 let print_standard_library () =
   print_string Config.standard_library; print_newline(); exit 0
 
-let usage = "Usage: ocamlc <options> <files>\nOptions are:"
+let usage = "Usage: jocamlc <options> <files>\nOptions are:"
 
 (* Error messages to standard error formatter *)
 let anonymous = process_file Format.err_formatter;;

@@ -16,6 +16,7 @@ open Printf
 
 type 'a t = string -> (('a, unit, string, unit) format4 -> 'a)
 
+val debug : 'a t
 val debug0 : 'a t
 val debug1 : 'a t
 val debug2 : 'a t

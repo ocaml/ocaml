@@ -75,13 +75,13 @@ and incr_active () = incr_locked  nthreads_mutex active
 
 let pool_size =
   try
-    int_of_string (Sys.getenv "POOLSIZE")
+    int_of_string (Sys.getenv "JOPOOLSIZE")
   with
   | _ -> 10
 
 and runmax =
    try
-    Some (int_of_string (Sys.getenv "RUNMAX"))
+    Some (int_of_string (Sys.getenv "JORUNMAX"))
   with
   | _ -> None
 

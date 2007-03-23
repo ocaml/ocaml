@@ -82,7 +82,7 @@ let default_output = function
   | Some s -> s
   | None -> Config.default_executable_name
 
-let usage = "Usage: ocamlopt <options> <files>\nOptions are:"
+let usage = "Usage: jocamlopt <options> <files>\nOptions are:"
 
 let show_config () =
   Config.print_config stdout;

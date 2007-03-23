@@ -45,9 +45,4 @@ let get_sockaddrs = Join_space.get_sockaddrs
 (* Debug from users programs *)
 type 'a debug = string -> (('a, unit, string, unit) format4 -> 'a)
 
-let debug = Join_debug.debug0
-and debug0 = Join_debug.debug0
-and debug1 = Join_debug.debug1
-and debug2 = Join_debug.debug2
-and debug3 = Join_debug.debug3
-
+let debug = Join_debug.debug

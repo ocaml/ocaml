@@ -268,7 +268,7 @@ let file_dependencies source_file =
 
 (* Entry point *)
 
-let usage = "Usage: ocamldep [options] <source files>\nOptions are:"
+let usage = "Usage: jocamldep [options] <source files>\nOptions are:"
 
 let print_version () =
   printf "ocamldep, version %s@." Sys.ocaml_version;

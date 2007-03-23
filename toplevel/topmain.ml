@@ -14,7 +14,7 @@
 
 open Clflags
 
-let usage = "Usage: ocaml <options> <object-files> [script-file]\noptions are:"
+let usage = "Usage: jocaml <options> <object-files> [script-file]\noptions are:"
 
 let preload_objects = ref []
 
@@ -46,7 +46,7 @@ let file_argument name =
     end
 
 let print_version () =
-  Printf.printf "The Objective Caml toplevel, version %s\n" Sys.ocaml_version;
+  Printf.printf "The JoCaml toplevel, version %s\n" Sys.ocaml_version;
   exit 0;
 ;;
 
