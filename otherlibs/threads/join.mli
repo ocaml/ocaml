@@ -25,6 +25,9 @@ val here : site
 (* Get identity of the remote site listening on sockadrr *)
 val there : Unix.sockaddr -> site
 
+(* Get identity of the remote site where reception on channel takes place *)
+val where_from : 'a channel -> site
+
 (* Register a channel to be sent to when site fails *)
 val at_fail : site -> unit channel -> unit
 

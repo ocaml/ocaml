@@ -24,6 +24,10 @@ let here = Join_space.here
 
 let there addr = Join_space.rid_from_addr addr
 
+let where_from (chan:'a channel) =
+  Join_prim.where_from (Obj.magic chan : 'a async)
+
+
 let at_fail site (chan:unit channel) =
   Join_space.at_fail site (Obj.magic chan : 'a async)
   

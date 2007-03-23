@@ -43,6 +43,8 @@ val local_tail_send_alone : ('a -> unit) -> 'a -> unit
 val send_async : 'a async -> 'a -> unit
 val tail_send_async : 'a async -> 'a -> unit
 
+val where_from : 'a async -> space_id
+
 (* Synchronous channels are plain fonctions *)
 val local_send_sync : automaton -> int -> 'a -> 'b
 

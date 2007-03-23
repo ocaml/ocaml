@@ -299,6 +299,12 @@ let tail_send_async chan a = match chan with
     end
 
 
+let where_from chan =
+  let stub = match chan with Async(stub,_)|Alone(stub,_) -> stub in
+  match stub.stub_tag with
+  | Local -> Join_space.here
+  | Remote -> (Obj.magic stub.stub_val : space_id)
+
 (*********************)
 (* Synchronous sends *)
 (*********************)
