@@ -42,6 +42,18 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     with [ Failure _ as exn -> Loc.raise loc exn ]
   ;
 
+  value remove_underscores s =
+    let l = String.length s in
+    let rec remove src dst =
+      if src >= l then
+        if dst >= l then s else String.sub s 0 dst
+      else
+        match s.[src] with
+        [ '_' -> remove (src + 1) dst
+        |  c  -> do { s.[dst] := c; remove (src + 1) (dst + 1) } ]
+    in remove 0 0
+  ;
+
   value mkloc = Loc.to_ocaml_location;
   value mkghloc loc = Loc.to_ocaml_location (Loc.ghostify loc);
 
@@ -465,7 +477,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         let nati = try Nativeint.of_string s with [
           Failure _ -> error loc "Integer literal exceeds the range of representable integers of type nativeint"
         ] in mkpat loc (Ppat_constant (Const_nativeint nati))
-    | PaFlo loc s -> mkpat loc (Ppat_constant (Const_float s))
+    | PaFlo loc s -> mkpat loc (Ppat_constant (Const_float (remove_underscores s)))
     | PaLab loc _ _ -> error loc "labeled pattern not allowed here"
     | PaOlb loc _ _ | PaOlbi loc _ _ _ -> error loc "labeled pattern not allowed here"
     | PaOrp loc p1 p2 -> mkpat loc (Ppat_or (patt p1) (patt p2))
@@ -622,7 +634,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
           [ <:ctyp<>> -> None
           | t -> Some (ctyp t) ] in
         mkexp loc (Pexp_constraint (expr e) t1 (Some (ctyp t2)))
-    | ExFlo loc s -> mkexp loc (Pexp_constant (Const_float s))
+    | ExFlo loc s -> mkexp loc (Pexp_constant (Const_float (remove_underscores s)))
     | ExFor loc i e1 e2 df el ->
         let e3 = ExSeq loc el in
         let df = if mb2b df then Upto else Downto in
