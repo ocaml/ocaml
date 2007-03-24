@@ -250,7 +250,7 @@ Old (no more supported) syntax:
     [ [c1] -> <:expr< Bigarray.Array1.get $arr$ $c1$ >>
     | [c1; c2] -> <:expr< Bigarray.Array2.get $arr$ $c1$ $c2$ >>
     | [c1; c2; c3] -> <:expr< Bigarray.Array3.get $arr$ $c1$ $c2$ $c3$ >>
-    (* | coords -> <:expr< Bigarray.Genarray.get $arr$ [| $`list:coords$ |] >> ] *)
+    (* | coords -> <:expr< Bigarray.Genarray.get $arr$ [| $list:coords$ |] >> ] *)
     | coords ->
        <:expr< Bigarray.Genarray.get $arr$ [| $Ast.exSem_of_list coords$ |] >> ];
 
@@ -621,7 +621,7 @@ Old (no more supported) syntax:
         [ "!"; e = SELF -> <:expr< $e$.val >>
         | f = prefixop; e = SELF -> <:expr< $f$ $e$ >> ]
       | "simple"
-        [ `QUOTATION x -> Quotation.expand_expr (Gram.parse_string expr) _loc x
+        [ `QUOTATION x -> Quotation.expand_expr (Gram.parse_string expr_eoi) _loc x
         | `ANTIQUOT ("exp"|""|"anti" as n) s ->
             <:expr< $anti:mk_anti ~c:"expr" n s$ >>
         | `ANTIQUOT ("tup" as n) s ->
@@ -783,7 +783,7 @@ Old (no more supported) syntax:
         | "("; p = SELF; "as"; p2 = SELF; ")" -> <:patt< ($p$ as $p2$) >>
         | "("; p = SELF; ","; pl = comma_patt; ")" -> <:patt< ($p$, $pl$) >>
         | "_" -> <:patt< _ >>
-        | `QUOTATION x -> Quotation.expand_patt (Gram.parse_string patt) _loc x
+        | `QUOTATION x -> Quotation.expand_patt (Gram.parse_string patt_eoi) _loc x
         | "`"; s = a_ident -> <:patt< ` $s$ >>
         | "#"; i = type_longident -> <:patt< # $i$ >>
         | `LABEL i; p = SELF -> <:patt< ~ $i$ : $p$ >>
@@ -1088,38 +1088,14 @@ Old (no more supported) syntax:
     ;
     class_info_for_class_type:
       [ [ mv = opt_virtual; (i, ot) = class_name_and_param ->
-            Ast.CtCon _loc mv (Ast.IdLid _loc i) ot
-            (* <:class_type< $virtual:mv$ $lid:i$ [ $t$ ] >> *)
-
-        (* | mv = opt_virtual; i = a_LIDENT -> *)
-            (* Ast.CeCon (_loc, mv, Ast.IdLid (_loc, i), Ast.ONone) *)
-            (* <:class_type< $lid:i$ >> *)
+            (* Ast.CtCon _loc mv (Ast.IdLid _loc i) ot *)
+            <:class_type< $virtual:mv$ $lid:i$ [ $ot$ ] >>
       ] ]
     ;
-      (* [ [ "virtual"; i = a_LIDENT; "["; t = comma_type_parameter; "]" ->
-            <:class_type< virtual $lid:i$ [ $t$ ] >>
-        | "virtual"; i = a_LIDENT ->
-            <:class_type< virtual $lid:i$ >>
-        | i = a_LIDENT; "["; t = comma_type_parameter; "]" ->
-            <:class_type< $lid:i$ [ $t$ ] >>
-        | i = a_LIDENT -> <:class_type< $lid:i$ >>
-      ] ]
-    ;                                                                       *)
     class_info_for_class_expr:
-      [ [
-        (* "virtual"; i = a_LIDENT; "["; t = comma_type_parameter; "]" -> *)
-            (* <:class_expr< virtual $lid:i$ [ $t$ ] >> *)
-        (* | "virtual"; i = a_LIDENT -> *)
-            (* <:class_expr< virtual $lid:i$ >> *)
-        (* | *)
-        mv = opt_virtual; (i, ot) = class_name_and_param ->
-            Ast.CeCon _loc mv (Ast.IdLid _loc i) ot
-            (* <:class_expr< $virtual:mv$ $lid:i$ [ $t$ ] >> *)
-
-            (* <:class_expr< $lid:i$ [ $t$ ] >> *)
-        (* | mv = opt_virtual; i = a_LIDENT -> *)
-            (* Ast.CeCon (_loc, mv, Ast.IdLid (_loc, i), Ast.ONone) *)
-            (* <:class_expr< $lid:i$ >> *)
+      [ [ mv = opt_virtual; (i, ot) = class_name_and_param ->
+            (* Ast.CeCon _loc mv (Ast.IdLid _loc i) ot *)
+            <:class_expr< $virtual:mv$ $lid:i$ [ $ot$ ] >>
       ] ]
     ;
     class_name_and_param:
@@ -1196,6 +1172,8 @@ Old (no more supported) syntax:
             <:class_str_item< value virtual $mutable:mf$ $l$ : $t$ >>
         | "method"; "virtual"; pf = opt_private; l = label; ":"; t = poly_type ->
             <:class_str_item< method virtual $private:pf$ $l$ : $t$ >>
+        | "method"; pf = opt_private; "virtual"; l = label; ":"; t = poly_type ->
+            <:class_str_item< method virtual $private:pf$ $l$ : $t$ >>
         | "method"; pf = opt_private; l = label; topt = opt_polyt;
           e = fun_binding ->
             <:class_str_item< method $private:pf$ $l$ : $topt$ = $e$ >>
@@ -1259,6 +1237,8 @@ Old (no more supported) syntax:
             <:class_sig_item< method virtual $private:pf$ $l$ : $t$ >>
         | "method"; pf = opt_private; l = label; ":"; t = poly_type ->
             <:class_sig_item< method $private:pf$ $l$ : $t$ >>
+        | "method"; pf = opt_private; "virtual"; l = label; ":"; t = poly_type ->
+            <:class_sig_item< method virtual $private:pf$ $l$ : $t$ >>
         | type_constraint; t1 = ctyp; "="; t2 = ctyp ->
             <:class_sig_item< type $t1$ = $t2$ >> ] ]
     ;
@@ -1618,9 +1598,12 @@ Old (no more supported) syntax:
       [ [ ce1 = SELF; "and"; ce2 = SELF -> <:class_expr< $ce1$ and $ce2$ >>
         | ce1 = SELF; "="; ce2 = SELF -> <:class_expr< $ce1$ = $ce2$ >>
         | "virtual"; (i, ot) = class_name_and_param ->
-            Ast.CeCon _loc Ast.BTrue (Ast.IdLid _loc i) ot
+            <:class_expr< virtual $lid:i$ [ $ot$ ] >>
+            (* Ast.CeCon _loc Ast.BTrue (Ast.IdLid _loc i) ot *)
         | `ANTIQUOT ("virtual" as n) s; i = ident; ot = opt_comma_ctyp ->
-            Ast.CeCon _loc (Ast.BAnt (mk_anti ~c:"class_expr" n s)) i ot
+            let anti = Ast.BAnt (mk_anti ~c:"class_expr" n s) in
+            <:class_expr< $virtual:anti$ $id:i$ [ $ot$ ] >>
+            (* Ast.CeCon _loc (Ast.BAnt (mk_anti ~c:"class_expr" n s)) i ot *)
         | x = class_expr -> x
         | -> <:class_expr<>>
       ] ]
@@ -1630,9 +1613,12 @@ Old (no more supported) syntax:
         | ct1 = SELF; "="; ct2 = SELF -> <:class_type< $ct1$ = $ct2$ >>
         | ct1 = SELF; ":"; ct2 = SELF -> <:class_type< $ct1$ : $ct2$ >>
         | "virtual"; (i, ot) = class_name_and_param ->
-            Ast.CtCon _loc Ast.BTrue (Ast.IdLid _loc i) ot
+            (* Ast.CtCon _loc Ast.BTrue (Ast.IdLid _loc i) ot *)
+            <:class_type< virtual $lid:i$ [ $ot$ ] >>
         | `ANTIQUOT ("virtual" as n) s; i = ident; ot = opt_comma_ctyp ->
-            Ast.CtCon _loc (Ast.BAnt (mk_anti ~c:"class_type" n s)) i ot
+            (* Ast.CtCon _loc (Ast.BAnt (mk_anti ~c:"class_type" n s)) i ot *)
+            let anti = Ast.BAnt (mk_anti ~c:"class_type" n s) in
+            <:class_type< $virtual:anti$ $id:i$ [ $ot$ ] >>
         | x = class_type_plus -> x
         | -> <:class_type<>>
       ] ]

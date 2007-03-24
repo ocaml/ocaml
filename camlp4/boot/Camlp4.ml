@@ -350,7 +350,7 @@ module Sig =
       sig
         (** The name of the extension, typically the module name. *)
         val name : string
-        (** The version of the extension, typically $Id: Sig.ml,v 1.2.2.2 2007/03/20 12:58:09 pouillar Exp $ with a versionning system. *)
+        (** The version of the extension, typically $Id: Sig.ml,v 1.2.2.3 2007/03/23 15:58:02 pouillar Exp $ with a versionning system. *)
         val version : string
       end
     module type Loc =
@@ -632,46 +632,44 @@ module Sig =
         type 'a meta_list =
           | LNil | LCons of 'a * 'a meta_list | LAnt of string
         type ident =
-          | IdAcc of Loc.t * ident * ident | (* i . i *)
-          IdApp of Loc.t * ident * ident | (* i i *) IdLid of Loc.t * string
-          | (* foo *) IdUid of Loc.t * string | (* Bar *)
-          IdAnt of Loc.t * string
+          | (* i . i *) (* i i *) (* foo *) (* Bar *)
+          IdAcc of Loc.t * ident * ident | IdApp of Loc.t * ident * ident
+          | IdLid of Loc.t * string | IdUid of Loc.t * string
+          | IdAnt of Loc.t * string
         (* $s$ *)
         type ctyp =
-          | TyNil of Loc.t | TyAli of Loc.t * ctyp * ctyp | (* t as t *)
-          (* list 'a as 'a *) TyAny of Loc.t | (* _ *)
-          TyApp of Loc.t * ctyp * ctyp | (* t t *) (* list 'a *)
-          TyArr of Loc.t * ctyp * ctyp | (* t -> t *) (* int -> string *)
-          TyCls of Loc.t * ident | (* #i *) (* #point *)
-          TyLab of Loc.t * string * ctyp | (* ~s *) TyId of Loc.t * ident
-          | (* i *) (* Lazy.t *) TyMan of Loc.t * ctyp * ctyp | (* t == t *)
-          (* type t = [ A | B ] == Foo.t *)
+          | (* t as t *) (* list 'a as 'a *) (* _ *) (* t t *) (* list 'a *)
+          (* t -> t *) (* int -> string *) (* #i *) (* #point *) (* ~s *)
+          (* i *) (* Lazy.t *) (* t == t *) (* type t = [ A | B ] == Foo.t *)
           (* type t 'a 'b 'c = t constraint t = t constraint t = t *)
-          TyDcl of Loc.t * string * ctyp list * ctyp * (ctyp * ctyp) list
-          | (* < (t)? (..)? > *) (* < move : int -> 'a .. > as 'a  *)
-          TyObj of Loc.t * ctyp * meta_bool | TyOlb of Loc.t * string * ctyp
-          | (* ?s *) TyPol of Loc.t * ctyp * ctyp | (* ! t . t *)
-          (* ! 'a . list 'a -> 'a *) TyQuo of Loc.t * string | (* 's *)
-          TyQuP of Loc.t * string | (* +'s *) TyQuM of Loc.t * string
-          | (* -'s *) TyVrn of Loc.t * string | (* `s *)
-          TyRec of Loc.t * ctyp | (* { t } *)
-          (* { foo : int ; bar : mutable string } *)
-          TyCol of Loc.t * ctyp * ctyp | (* t : t *)
-          TySem of Loc.t * ctyp * ctyp | (* t; t *)
-          TyCom of Loc.t * ctyp * ctyp | (* t, t *) TySum of Loc.t * ctyp
-          | (* [ t ] *) (* [ A of int and string | B ] *)
-          TyOf of Loc.t * ctyp * ctyp | (* t of t *) (* A of int *)
-          TyAnd of Loc.t * ctyp * ctyp | (* t and t *)
-          TyOr of Loc.t * ctyp * ctyp | (* t | t *) TyPrv of Loc.t * ctyp
-          | (* private t *) TyMut of Loc.t * ctyp | (* mutable t *)
-          TyTup of Loc.t * ctyp | (* ( t ) *) (* (int * string) *)
-          TySta of Loc.t * ctyp * ctyp | (* t * t *) TyVrnEq of Loc.t * ctyp
-          | (* [ = t ] *) TyVrnSup of Loc.t * ctyp | (* [ > t ] *)
-          TyVrnInf of Loc.t * ctyp | (* [ < t ] *)
-          TyVrnInfSup of Loc.t * ctyp * ctyp | (* [ < t > t ] *)
-          TyAmp of Loc.t * ctyp * ctyp | (* t & t *)
-          TyOfAmp of Loc.t * ctyp * ctyp | (* t of & t *)
-          TyAnt of Loc.t * string
+          (* < (t)? (..)? > *) (* < move : int -> 'a .. > as 'a  *) (* ?s *)
+          (* ! t . t *) (* ! 'a . list 'a -> 'a *) (* 's *) (* +'s *)
+          (* -'s *) (* `s *) (* { t } *)
+          (* { foo : int ; bar : mutable string } *) (* t : t *) (* t; t *)
+          (* t, t *) (* [ t ] *) (* [ A of int and string | B ] *)
+          (* t of t *) (* A of int *) (* t and t *) (* t | t *)
+          (* private t *) (* mutable t *) (* ( t ) *) (* (int * string) *)
+          (* t * t *) (* [ = t ] *) (* [ > t ] *) (* [ < t ] *)
+          (* [ < t > t ] *) (* t & t *) (* t of & t *) TyNil of Loc.t
+          | TyAli of Loc.t * ctyp * ctyp | TyAny of Loc.t
+          | TyApp of Loc.t * ctyp * ctyp | TyArr of Loc.t * ctyp * ctyp
+          | TyCls of Loc.t * ident | TyLab of Loc.t * string * ctyp
+          | TyId of Loc.t * ident | TyMan of Loc.t * ctyp * ctyp
+          | TyDcl of Loc.t * string * ctyp list * ctyp * (ctyp * ctyp) list
+          | TyObj of Loc.t * ctyp * meta_bool
+          | TyOlb of Loc.t * string * ctyp | TyPol of Loc.t * ctyp * ctyp
+          | TyQuo of Loc.t * string | TyQuP of Loc.t * string
+          | TyQuM of Loc.t * string | TyVrn of Loc.t * string
+          | TyRec of Loc.t * ctyp | TyCol of Loc.t * ctyp * ctyp
+          | TySem of Loc.t * ctyp * ctyp | TyCom of Loc.t * ctyp * ctyp
+          | TySum of Loc.t * ctyp | TyOf of Loc.t * ctyp * ctyp
+          | TyAnd of Loc.t * ctyp * ctyp | TyOr of Loc.t * ctyp * ctyp
+          | TyPrv of Loc.t * ctyp | TyMut of Loc.t * ctyp
+          | TyTup of Loc.t * ctyp | TySta of Loc.t * ctyp * ctyp
+          | TyVrnEq of Loc.t * ctyp | TyVrnSup of Loc.t * ctyp
+          | TyVrnInf of Loc.t * ctyp | TyVrnInfSup of Loc.t * ctyp * ctyp
+          | TyAmp of Loc.t * ctyp * ctyp | TyOfAmp of Loc.t * ctyp * ctyp
+          | TyAnt of Loc.t * string
         (* $s$ *)
         type (* i *)
           (* p as p *)
@@ -940,19 +938,18 @@ module Sig =
           | CeAnd of Loc.t * class_expr * class_expr
           | CeEq of Loc.t * class_expr * class_expr | CeAnt of Loc.t * string
           and class_str_item =
-          | CrNil of Loc.t | (* cst ; cst *)
-          CrSem of Loc.t * class_str_item * class_str_item | (* type t = t *)
-          CrCtr of Loc.t * ctyp * ctyp | (* inherit ce or inherit ce as s *)
-          CrInh of Loc.t * class_expr * string | (* initializer e *)
-          CrIni of Loc.t * expr
-          | (* method (private)? s : t = e or method (private)? s = e *)
-          CrMth of Loc.t * string * meta_bool * expr * ctyp
-          | (* value (mutable)? s = e *)
-          CrVal of Loc.t * string * meta_bool * expr
-          | (* method virtual (private)? s : t *)
-          CrVir of Loc.t * string * meta_bool * ctyp
-          | (* value virtual (private)? s : t *)
-          CrVvr of Loc.t * string * meta_bool * ctyp
+          | (* cst ; cst *) (* type t = t *)
+          (* inherit ce or inherit ce as s *) (* initializer e *)
+          (* method (private)? s : t = e or method (private)? s = e *)
+          (* value (mutable)? s = e *) (* method virtual (private)? s : t *)
+          (* value virtual (private)? s : t *) CrNil of Loc.t
+          | CrSem of Loc.t * class_str_item * class_str_item
+          | CrCtr of Loc.t * ctyp * ctyp
+          | CrInh of Loc.t * class_expr * string | CrIni of Loc.t * expr
+          | CrMth of Loc.t * string * meta_bool * expr * ctyp
+          | CrVal of Loc.t * string * meta_bool * expr
+          | CrVir of Loc.t * string * meta_bool * ctyp
+          | CrVvr of Loc.t * string * meta_bool * ctyp
           | CrAnt of Loc.t * string
         val loc_of_ctyp : ctyp -> Loc.t
         val loc_of_patt : patt -> Loc.t
@@ -1680,7 +1677,6 @@ module Sig =
         val expr : Ast.expr Gram.Entry.t
         val expr_eoi : Ast.expr Gram.Entry.t
         val expr_quot : Ast.expr Gram.Entry.t
-        val field : Ast.ctyp Gram.Entry.t
         val field_expr : Ast.binding Gram.Entry.t
         val fun_binding : Ast.expr Gram.Entry.t
         val fun_def : Ast.expr Gram.Entry.t
@@ -1730,10 +1726,8 @@ module Sig =
         val patt_quot : Ast.patt Gram.Entry.t
         val patt_tcon : Ast.patt Gram.Entry.t
         val phrase : Ast.str_item Gram.Entry.t
-        val pipe_ctyp : Ast.ctyp Gram.Entry.t
         val poly_type : Ast.ctyp Gram.Entry.t
         val row_field : Ast.ctyp Gram.Entry.t
-        val sem_ctyp : Ast.ctyp Gram.Entry.t
         val sem_expr : Ast.expr Gram.Entry.t
         val sem_expr_for_list : (Ast.expr -> Ast.expr) Gram.Entry.t
         val sem_patt : Ast.patt Gram.Entry.t
@@ -16372,7 +16366,6 @@ module OCamlInitSyntax =
         let eq_expr = Gram.Entry.mk "eq_expr"
         let expr = Gram.Entry.mk "expr"
         let expr_eoi = Gram.Entry.mk "expr_eoi"
-        let field = Gram.Entry.mk "field"
         let field_expr = Gram.Entry.mk "field_expr"
         let fun_binding = Gram.Entry.mk "fun_binding"
         let fun_def = Gram.Entry.mk "fun_def"
@@ -16424,10 +16417,8 @@ module OCamlInitSyntax =
         let patt_eoi = Gram.Entry.mk "patt_eoi"
         let patt_tcon = Gram.Entry.mk "patt_tcon"
         let phrase = Gram.Entry.mk "phrase"
-        let pipe_ctyp = Gram.Entry.mk "pipe_ctyp"
         let poly_type = Gram.Entry.mk "poly_type"
         let row_field = Gram.Entry.mk "row_field"
-        let sem_ctyp = Gram.Entry.mk "sem_ctyp"
         let sem_expr = Gram.Entry.mk "sem_expr"
         let sem_expr_for_list = Gram.Entry.mk "sem_expr_for_list"
         let sem_patt = Gram.Entry.mk "sem_patt"
