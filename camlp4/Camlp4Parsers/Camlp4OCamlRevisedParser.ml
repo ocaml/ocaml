@@ -498,6 +498,8 @@ Old (no more supported) syntax:
             <:sig_item< module rec $mb$ >>
         | "module"; "type"; i = a_UIDENT; "="; mt = module_type ->
             <:sig_item< module type $i$ = $mt$ >>
+        | "module"; "type"; i = a_UIDENT ->
+            <:sig_item< module type $i$ = 'abstract >>
         | "open"; i = module_longident -> <:sig_item< open $i$ >>
         | "type"; t = type_declaration ->
             <:sig_item< type $t$ >>

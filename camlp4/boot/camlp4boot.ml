@@ -23,7 +23,7 @@ module R =
       struct
         let name = "Camlp4RevisedParserParser"
         let version =
-          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.4 2007/03/23 15:58:02 pouillar Exp $"
+          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.5 2007/03/24 12:43:50 pouillar Exp $"
       end
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
@@ -1152,6 +1152,15 @@ Old (no more supported) syntax:
                           (Gram.Action.mk
                              (fun (i : 'module_longident) _ (_loc : Loc.t) ->
                                 (Ast.SgOpn (_loc, i) : 'sig_item))));
+                         ([ Gram.Skeyword "module"; Gram.Skeyword "type";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (a_UIDENT : 'a_UIDENT Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (i : 'a_UIDENT) _ _ (_loc : Loc.t) ->
+                                (Ast.SgMty (_loc, i,
+                                   Ast.MtQuo (_loc, "abstract")) :
+                                  'sig_item))));
                          ([ Gram.Skeyword "module"; Gram.Skeyword "type";
                             Gram.Snterm
                               (Gram.Entry.obj

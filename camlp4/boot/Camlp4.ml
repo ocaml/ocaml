@@ -15539,6 +15539,8 @@ module Printers =
                       | Ast.SgMod (_, s, mt) ->
                           pp f "@[<2>module %a :@ %a%s@]" o#var s
                             o#module_type mt semisep
+                      | Ast.SgMty (_, s, (Ast.MtQuo (_, _))) ->
+                          pp f "@[<2>module type %a%s@]" o#var s semisep
                       | Ast.SgMty (_, s, mt) ->
                           pp f "@[<2>module type %a =@ %a%s@]" o#var s
                             o#module_type mt semisep

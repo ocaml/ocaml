@@ -738,6 +738,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       | <:sig_item< module $s$ : $mt$ >> ->
           pp f "@[<2>module %a :@ %a%s@]"
             o#var s o#module_type mt semisep
+      | <:sig_item< module type $s$ = '$_$ >> ->
+          pp f "@[<2>module type %a%s@]" o#var s semisep
       | <:sig_item< module type $s$ = $mt$ >> ->
           pp f "@[<2>module type %a =@ %a%s@]"
             o#var s o#module_type mt semisep
