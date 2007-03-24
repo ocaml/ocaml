@@ -37,6 +37,15 @@ Added statements:
      IFNDEF <uident> THEN <structure_items> ELSE <structure_items> (END | ENDIF)
      INCLUDE <string>
 
+  At toplevel (signature item):
+
+     DEFINE <uident>
+     IFDEF <uident> THEN <signature_items> (END | ENDIF)
+     IFDEF <uident> THEN <signature_items> ELSE <signature_items> (END | ENDIF)
+     IFNDEF <uident> THEN <signature_items> (END | ENDIF)
+     IFNDEF <uident> THEN <signature_items> ELSE <signature_items> (END | ENDIF)
+     INCLUDE <string>
+
   In expressions:
 
      IFDEF <uident> THEN <expression> ELSE <expression> (END | ENDIF)
@@ -253,7 +262,19 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
             parse_include_file str_items fname ] ]
     ;
     sig_item: FIRST
-      [ [ "INCLUDE"; fname = STRING ->
+      [ [ "DEFINE"; i = uident ->
+            do { define None i; <:sig_item<>> }
+        | "UNDEF"; i = uident ->
+            do { undef i; <:sig_item<>> }
+        | "IFDEF"; i = uident; "THEN"; sg = sig_items; _ = endif ->
+            if is_defined i then sg else <:sig_item<>>
+        | "IFDEF"; i = uident; "THEN"; sg1 = sig_items; "ELSE"; sg2 = sig_items; _ = endif ->
+            if is_defined i then sg1 else sg2
+        | "IFNDEF"; i = uident; "THEN"; sg = sig_items; _ = endif ->
+            if is_defined i then <:sig_item<>> else sg
+        | "IFNDEF"; i = uident; "THEN"; sg1 = sig_items; "ELSE"; sg2 = sig_items; _ = endif ->
+            if is_defined i then sg2 else sg1
+        | "INCLUDE"; fname = STRING ->
             parse_include_file sig_items fname ] ]
     ;
     endif:
