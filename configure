@@ -1084,22 +1084,22 @@ esac
 
 # Determine the target architecture for the "num" library
 
-case "$host" in
-  alpha*-*-*)    bng_arch=alpha; bng_asm_level=1;;
-  i[3456]86-*-*) bng_arch=ia32
-                 if sh ./trycompile ia32sse2.c
-                 then bng_asm_level=2
-                 else bng_asm_level=1
-                 fi;;
-  mips-*-*)      bng_arch=mips; bng_asm_level=1;;
-  powerpc-*-*)   bng_arch=ppc; bng_asm_level=1;;
-  sparc*-*-*)    bng_arch=sparc; bng_asm_level=1;;
-  x86_64-*-*)    bng_arch=amd64; bng_asm_level=1;;
-  *)             bng_arch=generic; bng_asm_level=0;;
-esac
-
-echo "BNG_ARCH=$bng_arch" >> Makefile
-echo "BNG_ASM_LEVEL=$bng_asm_level" >> Makefile
+#case "$host" in
+#  alpha*-*-*)    bng_arch=alpha; bng_asm_level=1;;
+#  i[3456]86-*-*) bng_arch=ia32
+#                 if sh ./trycompile ia32sse2.c
+#                 then bng_asm_level=2
+#                 else bng_asm_level=1
+#                 fi;;
+#  mips-*-*)      bng_arch=mips; bng_asm_level=1;;
+#  powerpc-*-*)   bng_arch=ppc; bng_asm_level=1;;
+#  sparc*-*-*)    bng_arch=sparc; bng_asm_level=1;;
+#  x86_64-*-*)    bng_arch=amd64; bng_asm_level=1;;
+#  *)             bng_arch=generic; bng_asm_level=0;;
+#esac
+#
+#echo "BNG_ARCH=$bng_arch" >> Makefile
+#echo "BNG_ASM_LEVEL=$bng_asm_level" >> Makefile
 
 # Determine if the bytecode thread library is supported
 
@@ -1578,17 +1578,17 @@ else
   fi
 fi
 
-if test "$debugger" = "ocamldebugger"; then
-  echo "Source-level replay debugger: supported"
-else
-  echo "Source-level replay debugger: not supported"
-fi
+#if test "$debugger" = "ocamldebugger"; then
+#  echo "Source-level replay debugger: supported"
+#else
+#  echo "Source-level replay debugger: not supported"
+#fi
 
 echo "Additional libraries supported:"
 echo "        $otherlibraries"
 
-echo "Configuration for the \"num\" library:"
-echo "        target architecture ...... $bng_arch (asm level $bng_asm_level)"
+#echo "Configuration for the \"num\" library:"
+#echo "        target architecture ...... $bng_arch (asm level $bng_asm_level)"
 
 if test "$x11_include" != "not found" && test "$x11_lib" != "not found"; then
 echo "Configuration for the \"graph\" library:"
@@ -1596,14 +1596,14 @@ echo "        options for compiling .... $x11_include"
 echo "        options for linking ...... $x11_link"
 fi
 
-if test $has_tk = true; then
-echo "Configuration for the \"labltk\" library:"
-echo "        use tcl/tk version ....... $tcl_version"
-echo "        options for compiling .... $tk_defs"
-echo "        options for linking ...... $tk_libs"
-else
-echo "The \"labltk\" library: not supported"
-fi
+#if test $has_tk = true; then
+#echo "Configuration for the \"labltk\" library:"
+#echo "        use tcl/tk version ....... $tcl_version"
+#echo "        options for compiling .... $tk_defs"
+#echo "        options for linking ...... $tk_libs"
+#else
+#echo "The \"labltk\" library: not supported"
+#fi
 
 echo
 echo "** JoCaml configuration completed successfully **"
