@@ -119,13 +119,16 @@ let is_dir name =
 let expand_directory alt alt2 s =
   if String.length s > 0 && s.[0] = '+'
   then
-    let d =
-      Filename.concat alt
-        (String.sub s 1 (String.length s - 1)) in
-    if alt2 = "" || is_dir d then d
-    else
-       Filename.concat alt2
-        (String.sub s 1 (String.length s - 1))
+    let r =
+      let d =
+        Filename.concat alt
+          (String.sub s 1 (String.length s - 1)) in
+      if alt2 = "" || is_dir d then d
+      else
+        Filename.concat alt2
+          (String.sub s 1 (String.length s - 1)) in
+(*    prerr_endline (">>> "^s^" -> "^r) ; *)
+    r
   else s
 
 (* Hashtable functions *)

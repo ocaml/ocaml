@@ -154,7 +154,8 @@ let main () =
        "-rectypes", Arg.Set recursive_types,
              " Allow arbitrary recursive types";
 (*> JOCAML *)
-       "-nojoin", Arg.Set nojoin, " Be a ocaml compiler";
+       "-nojoin", Arg.Unit (fun () -> nojoin := true ; use_threads := false),
+               " Be a ocaml compiler";
 (*< JOCAML *)    
        "-S", Arg.Set keep_asm_file, " Keep intermediate assembly file";
        "-thread", Arg.Set use_threads,

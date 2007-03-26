@@ -17,8 +17,8 @@ include ../../config/Makefile
 
 CC=$(BYTECC)
 CFLAGS=-I../../byterun -O $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) -g
-COMPILER=../../ocamlcomp.sh -I ../unix
-CAMLC=../../ocamlcomp.sh -I ../unix -nojoin
+COMPILER=../../ocamlcomp.sh -I ../unix $(NOJOIN)
+CAMLC=../../ocamlcomp.sh -I ../unix $(NOJOIN)
 JCC=../../ocamlcomp.sh -I ../unix 
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
 COMPFLAGS=-warn-error A

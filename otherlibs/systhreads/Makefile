@@ -15,8 +15,8 @@
 
 include ../../config/Makefile
 
-CAMLC=../../ocamlcomp.sh -I ../unix
-CAMLOPT=../../ocamlcompopt.sh -I ../unix
+CAMLC=../../ocamlcomp.sh $(NOJOIN) -I ../unix
+CAMLOPT=../../ocamlcompopt.sh $(NOJOIN) -I ../unix
 JCC=../../ocamlcomp.sh -I ../unix
 JCOPT=../../ocamlcompopt.sh -I ../unix
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
@@ -97,11 +97,11 @@ join.cma: $(JOIN_OBJS) threads.cma ../unix/unix.cma
 
 # See remark above: force static linking of libthreadsnat.a
 threads.cmxa: $(THREAD_OBJS:.cmo=.cmx)
-	$(CAMLOPT) -nojoin -a -o threads.cmxa $(THREAD_OBJS:.cmo=.cmx) \
+	$(CAMLOPT) $(NOJOIN) -a -o threads.cmxa $(THREAD_OBJS:.cmo=.cmx) \
           -cclib -lthreadsnat -cclib -lunix $(PTHREAD_LINK)
 
 join.cmxa: $(THREAD_OBJS:.cmo=.cmx) $(JOIN_OBJS:.cmo=.cmx)
-	$(CAMLOPT) -nojoin -a -o join.cmxa  \
+	$(CAMLOPT)  $(NOJOIN) -a -o join.cmxa  \
 	../unix/unix.cmx ../unix/unixLabels.cmx \
 	$(THREAD_OBJS:.cmo=.cmx) $(JOIN_OBJS:.cmo=.cmx) \
          -cclib -lthreadsnat -cclib -ljoinnat -cclib -lunix $(PTHREAD_LINK)
@@ -237,10 +237,10 @@ installopt:
 .SUFFIXES: .jml .ml .mli .cmo .cmi .cmx
 
 .mli.cmi:
-	$(CAMLC) -nojoin -c $(COMPFLAGS) $<
+	$(CAMLC) -c $(COMPFLAGS) $<
 
 .ml.cmo:
-	$(CAMLC) -nojoin -g -c $(COMPFLAGS) $(OCAMLPP) $<
+	$(CAMLC) -g -c $(COMPFLAGS) $(OCAMLPP) $<
 
 .jml.cmo:
 	$(JCC) -c $(COMPFLAGS) $(OCAMLPP) -impl $<
