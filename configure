@@ -40,6 +40,7 @@ withcurses=yes
 withsharedlibs=yes
 gcc_warnings="-Wall"
 partialld="ld -r"
+ocamlc=''
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
 unset LANG
@@ -69,6 +70,8 @@ while : ; do
             manext=1;;
         esac
         shift;;
+    -ocamlc)
+        ocamlc=$2; shift;;
     -host*|--host*)
         host_type=$2; shift;;
     -cc*)
@@ -159,6 +162,40 @@ case "$mandir" in
    *) echo "MANDIR=$mandir" >> Makefile;;
 esac
 echo "MANEXT=$manext" >> Makefile
+
+# Companion ocaml
+case "$ocamlc" in
+ "")
+   if sh ./searchpath ocamlc
+   then
+     ocamlc="ocamlc"
+   fi
+   ;;
+ *)
+   if test ! -e $ocamlc
+   then
+     ocamlc=''
+   fi
+esac
+has_ocaml=false
+jocaml_version=`head -1 ../../VERSION`
+case "$ocamlc" in
+ "") echo "Warning: could not find ocamlc";;
+ *)
+   ocaml_version=`$ocamlc -version`
+   if test "$jocaml_version" = "$ocaml_version"
+   then
+     has_ocaml=true
+     ocamllib=`$ocamlc -where`
+   else
+     echo "Warning: Version mismatch ocaml is $ocaml_version, jocaml is $jocaml_version"
+   fi
+   ;;
+esac
+if $has_ocaml
+then
+  echo OCAMLLIB=$ocamllib >> Makefile
+fi
 
 # Determine the system type
 
@@ -721,7 +758,10 @@ fi
 
 echo "#define OCAML_OS_TYPE \"$ostype\"" >> s.h
 echo "#define OCAML_STDLIB_DIR \"$libdir\"" >> s.h
-
+if $has_ocaml
+then
+echo "#define OCAML_LIB \"$ocamllib\"" >> s.h
+fi
 # Use 64-bit file offset if possible
 
 bytecccompopts="$bytecccompopts -D_FILE_OFFSET_BITS=64"
@@ -772,7 +812,7 @@ fi
 
 # Configuration for the libraries
 
-otherlibraries="unix str num dynlink bigarray"
+otherlibraries="unix dynlink"
 
 # For the Unix library
 
@@ -1023,13 +1063,13 @@ fi
 
 # Determine if the debugger is supported
 
-if test "$has_sockets" = "yes"; then
-  echo "Replay debugger supported."
-  debugger="ocamldebugger"
-else
-  echo "No replay debugger (missing system calls)"
-  debugger=""
-fi
+#if test "$has_sockets" = "yes"; then
+#  echo "Replay debugger supported."
+#  debugger="ocamldebugger"
+#else
+#  echo "No replay debugger (missing system calls)"
+#  debugger=""
+#fi
 
 
 # Determine if system stack overflows can be detected
@@ -1060,6 +1100,18 @@ esac
 
 echo "BNG_ARCH=$bng_arch" >> Makefile
 echo "BNG_ASM_LEVEL=$bng_asm_level" >> Makefile
+
+# Determine if the bytecode thread library is supported
+
+if test "$has_select" = "yes" \
+&& test "$has_setitimer" = "yes" \
+&& test "$has_gettimeofday" = "yes" \
+&& test "$has_wait" = "yes"; then
+  echo "Bytecode threads library supported."
+  otherlibraries="$otherlibraries threads"
+else
+  echo "Bytecode threads library not supported (missing system calls)"
+fi
 
 # Determine if the POSIX threads library is supported
 
@@ -1105,17 +1157,6 @@ else
 fi
 echo "PTHREAD_LINK=$pthread_caml_link" >> Makefile
 
-# Determine if the bytecode thread library is supported
-
-if test "$has_select" = "yes" \
-&& test "$has_setitimer" = "yes" \
-&& test "$has_gettimeofday" = "yes" \
-&& test "$has_wait" = "yes"; then
-  echo "Bytecode threads library supported."
-  otherlibraries="$otherlibraries threads"
-else
-  echo "Bytecode threads library not supported (missing system calls)"
-fi
 
 # Determine the location of X include files and libraries
 
@@ -1233,7 +1274,6 @@ do
   fi
 done
 
-
 if test "$x11_include" = "not found" || test "$x11_link" = "not found"
 then
   echo "X11 not found, the \"graph\" library will not be supported."
@@ -1257,47 +1297,47 @@ dbm_include="not found"
 dbm_link="not found"
 use_gdbm_ndbm=no
 
-for dir in /usr/include /usr/include/db1 /usr/include/gdbm; do
-  if test -f $dir/ndbm.h; then
-    dbm_include=$dir
-    if sh ./hasgot dbm_open; then
-      dbm_link=""
-    elif sh ./hasgot -lndbm dbm_open; then
-      dbm_link="-lndbm"
-    elif sh ./hasgot -ldb1 dbm_open; then
-      dbm_link="-ldb1"
-    elif sh ./hasgot -lgdbm dbm_open; then
-      dbm_link="-lgdbm"
-    elif sh ./hasgot -lgdbm_compat -lgdbm dbm_open; then
-      dbm_link="-lgdbm_compat -lgdbm"
-    fi
-    break
-  fi
-  if test -f $dir/gdbm-ndbm.h; then
-    dbm_include=$dir
-    use_gdbm_ndbm=yes
-    if sh ./hasgot -lgdbm_compat -lgdbm dbm_open; then
-      dbm_link="-lgdbm_compat -lgdbm"
-    fi
-    break
-  fi
-done
-if test "$dbm_include" = "not found" || test "$dbm_link" = "not found"; then
-  echo "NDBM not found, the \"dbm\" library will not be supported."
-else
-  echo "NDBM found (in $dbm_include)"
-  if test "$dbm_include" = "/usr/include"; then
-    dbm_include=""
-  else
-    dbm_include="-I$dbm_include"
-  fi
-  if test "$use_gdbm_ndbm" = "yes"; then
-    echo "#define DBM_USES_GDBM_NDBM" >> s.h
-  fi
-  otherlibraries="$otherlibraries dbm"
-fi
-echo "DBM_INCLUDES=$dbm_include" >> Makefile
-echo "DBM_LINK=$dbm_link" >> Makefile
+#for dir in /usr/include /usr/include/db1 /usr/include/gdbm; do
+#  if test -f $dir/ndbm.h; then
+#    dbm_include=$dir
+#    if sh ./hasgot dbm_open; then
+#      dbm_link=""
+#    elif sh ./hasgot -lndbm dbm_open; then
+#      dbm_link="-lndbm"
+#    elif sh ./hasgot -ldb1 dbm_open; then
+#      dbm_link="-ldb1"
+#    elif sh ./hasgot -lgdbm dbm_open; then
+#      dbm_link="-lgdbm"
+#    elif sh ./hasgot -lgdbm_compat -lgdbm dbm_open; then
+#      dbm_link="-lgdbm_compat -lgdbm"
+#    fi
+#    break
+#  fi
+#  if test -f $dir/gdbm-ndbm.h; then
+#    dbm_include=$dir
+#    use_gdbm_ndbm=yes
+#    if sh ./hasgot -lgdbm_compat -lgdbm dbm_open; then
+#      dbm_link="-lgdbm_compat -lgdbm"
+#    fi
+#    break
+#  fi
+#done
+#if test "$dbm_include" = "not found" || test "$dbm_link" = "not found"; then
+#  echo "NDBM not found, the \"dbm\" library will not be supported."
+#else
+#  echo "NDBM found (in $dbm_include)"
+#  if test "$dbm_include" = "/usr/include"; then
+#    dbm_include=""
+#  else
+#    dbm_include="-I$dbm_include"
+#  fi
+#  if test "$use_gdbm_ndbm" = "yes"; then
+#    echo "#define DBM_USES_GDBM_NDBM" >> s.h
+#  fi
+#  otherlibraries="$otherlibraries dbm"
+#fi
+#echo "DBM_INCLUDES=$dbm_include" >> Makefile
+#echo "DBM_LINK=$dbm_link" >> Makefile
 
 # Look for tcl/tk
 
@@ -1494,11 +1534,14 @@ mv m.h s.h Makefile ..
 echo
 echo "** Configuration summary **"
 echo
-echo "Directories where Objective Caml will be installed:"
+echo "Directories where JoCaml will be installed:"
 echo "        binaries.................. $bindir"
 echo "        standard library.......... $libdir"
-echo "        manual pages.............. $mandir (with extension .$manext)"
-
+#echo "        manual pages.............. $mandir (with extension .$manext)"
+if $has_ocaml
+then
+echo "        companion ocaml........... $ocamllib"
+fi
 echo "Configuration for the bytecode compiler:"
 echo "        C compiler used........... $bytecc"
 echo "        options for compiling..... $bytecccompopts"
@@ -1563,5 +1606,5 @@ echo "The \"labltk\" library: not supported"
 fi
 
 echo
-echo "** Objective Caml configuration completed successfully **"
+echo "** JoCaml configuration completed successfully **"
 echo

@@ -35,7 +35,7 @@ let _ = Hashtbl.add directive_table "quit" (Directive_none dir_quit)
 (* To add a directory to the load path *)
 
 let dir_directory s =
-  let d = expand_directory Config.standard_library s in
+  let d = expand_directory Config.standard_library Config.ocaml_library s in
   Config.load_path := d :: !Config.load_path;
   Dll.add_path [d]
 

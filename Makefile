@@ -340,6 +340,7 @@ partialclean::
 utils/config.ml: utils/config.mlp config/Makefile
 	@rm -f utils/config.ml
 	sed -e 's|%%LIBDIR%%|$(LIBDIR)|' \
+            -e 's|%%OCAMLLIB%%|$(OCAMLLIB)|' \
             -e 's|%%BYTERUN%%|$(BINDIR)/jocamlrun|' \
             -e 's|%%CCOMPTYPE%%|cc|' \
             -e 's|%%BYTECC%%|$(BYTECC) $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS)|' \

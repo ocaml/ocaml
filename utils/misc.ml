@@ -112,10 +112,20 @@ let remove_file filename =
 (* Expand a -I option: if it starts with +, make it relative to the standard
    library directory *)
 
-let expand_directory alt s =
+let is_dir name =
+  try Sys.is_directory name
+  with Sys_error _ -> false
+
+let expand_directory alt alt2 s =
   if String.length s > 0 && s.[0] = '+'
-  then Filename.concat alt
-                       (String.sub s 1 (String.length s - 1))
+  then
+    let d =
+      Filename.concat alt
+        (String.sub s 1 (String.length s - 1)) in
+    if alt2 = "" || is_dir d then d
+    else
+       Filename.concat alt2
+        (String.sub s 1 (String.length s - 1))
   else s
 
 (* Hashtable functions *)

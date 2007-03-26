@@ -72,15 +72,13 @@ static c_primitive lookup_primitive(char * name)
 
 #define LD_CONF_NAME "ld.conf"
 
-static char * parse_ld_conf(void)
+static char * do_parse_ld_conf(char *dir)
 {
   char * stdlib, * ldconfname, * config, * p, * q;
   struct stat st;
   int ldconf, nread;
 
-  stdlib = getenv("OCAMLLIB");
-  if (stdlib == NULL) stdlib = getenv("CAMLLIB");
-  if (stdlib == NULL) stdlib = OCAML_STDLIB_DIR;
+  stdlib = dir ;
   ldconfname = caml_stat_alloc(strlen(stdlib) + 2 + sizeof(LD_CONF_NAME));
   strcpy(ldconfname, stdlib);
   strcat(ldconfname, "/" LD_CONF_NAME);
@@ -113,6 +111,15 @@ static char * parse_ld_conf(void)
   return config;
 }
 
+static char * parse_ld_conf(void)
+{
+  char * stdlib ;
+  stdlib = getenv("OCAMLLIB");
+  if (stdlib == NULL) stdlib = getenv("CAMLLIB");
+  if (stdlib == NULL) stdlib = OCAML_STDLIB_DIR;
+  return do_parse_ld_conf(stdlib) ;
+}
+
 /* Open the given shared library and add it to shared_libs.
    Abort on error. */
 static void open_shared_lib(char * name)
@@ -139,6 +146,9 @@ void caml_build_primitive_table(char * lib_path,
                                 char * req_prims)
 {
   char * tofree1, * tofree2;
+#ifdef OCAML_LIB
+  char * tofree3 ;
+#endif  
   char * p;
 
   /* Initialize the search path for dynamic libraries:
@@ -152,6 +162,9 @@ void caml_build_primitive_table(char * lib_path,
     for (p = lib_path; *p != 0; p += strlen(p) + 1)
       caml_ext_table_add(&caml_shared_libs_path, p);
   tofree2 = parse_ld_conf();
+#ifdef OCAML_LIB
+  tofree3 = do_parse_ld_conf(OCAML_LIB) ;
+#endif  
   /* Open the shared libraries */
   caml_ext_table_init(&shared_libs, 8);
   if (libs != NULL)
@@ -174,6 +187,9 @@ void caml_build_primitive_table(char * lib_path,
   /* Clean up */
   caml_stat_free(tofree1);
   caml_stat_free(tofree2);
+#ifdef OCAML_LIB
+  caml_stat_free(tofree3);
+#endif 
   caml_ext_table_free(&caml_shared_libs_path, 0);
 }
 

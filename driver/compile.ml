@@ -31,7 +31,7 @@ let init_path () =
     else if !Clflags.use_threads then "+threads" :: !Clflags.include_dirs
     else !Clflags.include_dirs in
   let exp_dirs =
-    List.map (expand_directory Config.standard_library) dirs in
+    List.map (expand_directory Config.standard_library Config.ocaml_library) dirs in
   load_path := "" :: List.rev_append exp_dirs (Clflags.std_include_dir ());
   Env.reset_cache ()
 

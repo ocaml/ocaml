@@ -52,7 +52,7 @@ let print_version () =
 
 (*> JOCAML *)
 let magic_join () =
-  let dir = Misc.expand_directory Config.standard_library "+threads" in
+  let dir = Misc.expand_directory Config.standard_library "" "+threads" in
   include_dirs := dir :: !include_dirs ;
     ()
 (*< JOCAML *)         
@@ -61,7 +61,9 @@ let main () =
   magic_join () ;
   Arg.parse [
      "-I", Arg.String(fun dir ->
-       let dir = Misc.expand_directory Config.standard_library dir in
+       let dir =
+         Misc.expand_directory
+           Config.standard_library Config.ocaml_library dir in
        include_dirs := dir :: !include_dirs),
            "<dir>  Add <dir> to the list of include directories";
      "-init", Arg.String (fun s -> init_file := Some s),
