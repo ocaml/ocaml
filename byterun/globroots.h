@@ -27,11 +27,11 @@ struct global_root {
   struct global_root * forward[1]; /* variable-length array */
 };
 
-#define MAX_LEVEL 15
+#define NUM_LEVELS 17
 
 struct global_root_list {
   value * root;                 /* dummy value for layout compatibility */
-  struct global_root * forward[MAX_LEVEL]; /* forward chaining */
+  struct global_root * forward[NUM_LEVELS]; /* forward chaining */
   int level;                    /* max used level */
 };
 
