@@ -12,6 +12,8 @@
 
 (* $Id$ *)
 
+type - 'a chan
+
 (* Convenience *)
 val local_addr : Unix.inet_addr
 
@@ -26,10 +28,10 @@ val here : site
 val there : Unix.sockaddr -> site
 
 (* Get identity of the remote site where reception on channel takes place *)
-val where_from : 'a channel -> site
+val where_from : 'a chan -> site
 
 (* Register a channel to be sent to when site fails *)
-val at_fail : site -> unit channel -> unit
+val at_fail : site -> unit chan -> unit
 
 
 

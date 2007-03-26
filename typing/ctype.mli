@@ -144,7 +144,7 @@ val unify_var: Env.t -> type_expr -> type_expr -> unit
            is a variable. *)
 val filter_arrow: Env.t -> type_expr -> label -> type_expr * type_expr
         (* A special case of unification (with l:'a -> 'b). *)
-val make_channel : type_expr -> type_expr
+val make_channel : Env.t -> type_expr -> type_expr
         (* Build 't channel type *)
 val filter_channel: Env.t -> type_expr -> type_expr
         (* A special case of unification (with 'a channel). *)

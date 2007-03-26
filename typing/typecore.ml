@@ -2466,7 +2466,7 @@ and type_clause env names reac =
       let targ = arg.pat_type in
       let otchan,is_sync =
         match kdesc with
-        | {continuation_kind=false} -> Ctype.make_channel targ, false
+        | {continuation_kind=false} -> Ctype.make_channel env targ, false
         | {continuation_type=tres}  ->
             newty (Tarrow ("", targ, tres, Cok)), true in
       begin try
@@ -2507,7 +2507,7 @@ and type_auto env
             chan, {jchannel_sync=true; jchannel_env=env ;
                    jchannel_ident=chan ;
                    jchannel_type=ty ; jchannel_id=id}
-        | Tconstr (p, _, _) when Path.same p Predef.path_channel ->
+        | Tconstr (p, _, _) (* when Path.same p Predef.path_channel *) ->
             chan, {jchannel_sync=false; jchannel_env=env ;
                    jchannel_ident=chan ;
                    jchannel_type=ty; jchannel_id=id}

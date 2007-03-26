@@ -141,7 +141,7 @@ let is_unit_channel_type ty env =
   let channel_ty = Ctype.expand_head env (Ctype.correct_levels ty) in
   match (Ctype.repr channel_ty).desc with
   |  Tconstr(p, [msg_ty], _)
-    when Path.same p Predef.path_channel ->
+    (* when Path.same p Predef.path_channel *) ->
       is_base_type msg_ty env Predef.path_unit
   | _ ->
       (* This can happen with synchronous channels *)

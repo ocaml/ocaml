@@ -16,6 +16,8 @@ open Join_types
 open Printf
 (*DEBUG*)open Join_debug
 
+type 'a chan = 'a async
+
 let local_addr = Join_misc.local_addr
 
 type site = space_id
@@ -24,11 +26,10 @@ let here = Join_space.here
 
 let there addr = Join_space.rid_from_addr addr
 
-let where_from (chan:'a channel) =
-  Join_prim.where_from (Obj.magic chan : 'a async)
+let where_from chan = Join_prim.where_from chan
 
 
-let at_fail site (chan:unit channel) =
+let at_fail site (chan:unit chan) =
   Join_space.at_fail site (Obj.magic chan : 'a async)
   
 

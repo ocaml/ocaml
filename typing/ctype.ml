@@ -1887,18 +1887,28 @@ let rec filter_arrow env t l =
 (*
    Unify [t] and ['a channel]. Return ['a]
 *)
-let make_channel t = newty (Tconstr (Predef.path_channel,[t],ref Mnil))
+
+let path_channel env =
+  let p,_ =
+    Env.lookup_type
+      (Longident.Ldot ( Longident.Lident "Join", "chan"))
+      env in
+  p
+
+let make_channel env t =
+  newty (Tconstr (path_channel env,[t],ref Mnil))
 
 let filter_channel env t =
+  let path_channel = path_channel env in
   let t = expand_head env t in
   match t.desc with
     Tvar ->
       let t1 = newvar () in
-      let t' = make_channel t1 in
+      let t' = make_channel env t1 in
       update_level env t.level t';
       t.desc <- Tlink t';
       t1
-  | Tconstr(p, [t1], _) when Path.same p Predef.path_channel ->
+  | Tconstr(p, [t1], _) when Path.same p path_channel ->
       t1
   | _ ->
       raise (Unify [])
