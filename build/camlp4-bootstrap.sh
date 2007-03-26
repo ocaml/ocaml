@@ -26,4 +26,9 @@ $OCAMLBUILD $TMPTARGETS $TARGETS
 for t in $TARGETS; do
   echo promote $t
   cp _build/$t camlp4/boot/`basename $t`
+  if cmp _build/$t camlp4/boot/`basename $t`.old; then
+    echo fixpoint for $t
+  else
+    echo $t is different, you should rebootstrap it by cleaning, building and call this script
+  fi
 done

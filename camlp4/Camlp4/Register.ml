@@ -34,13 +34,18 @@ value str_item_printer = ref (fun ?input_file:(_) ?output_file:(_) _ -> failwith
 
 value callbacks = Queue.create ();
 
+value loaded_modules = ref [];
+
 value iter_and_take_callbacks f =
   let rec loop () = loop (f (Queue.take callbacks)) in
   try loop () with [ Queue.Empty -> () ];
 
 value declare_dyn_module m f =
-  (* let () = Format.eprintf "declare_dyn_module: %s@." m in *)
-  Queue.add (m, f) callbacks;
+  begin
+    (* let () = Format.eprintf "declare_dyn_module: %s@." m in *)
+    loaded_modules.val := [ m :: loaded_modules.val ];
+    Queue.add (m, f) callbacks;
+  end;
 
 value register_str_item_parser f = str_item_parser.val := f;
 value register_sig_item_parser f = sig_item_parser.val := f;

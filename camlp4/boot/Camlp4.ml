@@ -1734,6 +1734,7 @@ module Sig =
         val sem_patt_for_list : (Ast.patt -> Ast.patt) Gram.Entry.t
         val semi : unit Gram.Entry.t
         val sequence : Ast.expr Gram.Entry.t
+        val do_sequence : Ast.expr Gram.Entry.t
         val sig_item : Ast.sig_item Gram.Entry.t
         val sig_item_quot : Ast.sig_item Gram.Entry.t
         val sig_items : Ast.sig_item Gram.Entry.t
@@ -14584,6 +14585,7 @@ module Printers =
                       method ctyp1 : formatter -> Ast.ctyp -> unit
                       method constructor_type : formatter -> Ast.ctyp -> unit
                       method dot_expr : formatter -> Ast.expr -> unit
+                      method apply_expr : formatter -> Ast.expr -> unit
                       method expr : formatter -> Ast.expr -> unit
                       method expr_list : formatter -> Ast.expr list -> unit
                       method expr_list_cons :
@@ -14685,7 +14687,7 @@ module Printers =
           struct
             let name = "Camlp4.Printers.OCaml"
             let version =
-              "$Id: OCaml.ml,v 1.21 2007/02/26 16:32:46 ertai Exp $"
+              "$Id: OCaml.ml,v 1.21.2.1 2007/03/24 15:30:49 pouillar Exp $"
           end
         module Make (Syntax : Sig.Camlp4Syntax) =
           struct
@@ -15113,8 +15115,8 @@ module Printers =
                           (Ast.ExApp (_, (Ast.ExId (_, (Ast.IdLid (_, n)))),
                              x)),
                           y) when is_infix n ->
-                          pp f "@[<2>%a@ %s@ %a@]" o#dot_expr x n o#dot_expr
-                            y
+                          pp f "@[<2>%a@ %s@ %a@]" o#apply_expr x n
+                            o#apply_expr y
                       | Ast.ExApp (_, x, y) ->
                           let (a, al) = get_expr_args x [ y ]
                           in
@@ -15124,16 +15126,16 @@ module Printers =
                             then
                               (match al with
                                | [ Ast.ExTup (_, _) ] ->
-                                   pp f "@[<2>%a@ (%a)@]" o#dot_expr x 
+                                   pp f "@[<2>%a@ (%a)@]" o#apply_expr x
                                      o#expr y
                                | [ _ ] ->
-                                   pp f "@[<2>%a@ %a@]" o#dot_expr x
-                                     o#dot_expr y
+                                   pp f "@[<2>%a@ %a@]" o#apply_expr x
+                                     o#apply_expr y
                                | al ->
-                                   pp f "@[<2>%a@ (%a)@]" o#dot_expr a
+                                   pp f "@[<2>%a@ (%a)@]" o#apply_expr a
                                      (list o#under_pipe#expr ",@ ") al)
                             else
-                              pp f "@[<2>%a@]" (list o#dot_expr "@ ")
+                              pp f "@[<2>%a@]" (list o#apply_expr "@ ")
                                 (a :: al)
                       | Ast.ExAss (_,
                           (Ast.ExAcc (_, e1,
@@ -15178,6 +15180,13 @@ module Printers =
                       | Ast.ExLmd (_, s, me, e) ->
                           pp f "@[<2>let module %a =@ %a@]@ @[<2>in@ %a@]"
                             o#var s o#module_expr me o#expr e
+                      | e -> o#apply_expr f e
+                method apply_expr =
+                  fun f e ->
+                    let () = o#node f e Ast.loc_of_expr
+                    in
+                      match e with
+                      | Ast.ExNew (_, i) -> pp f "@[<2>new@ %a@]" o#ident i
                       | e -> o#dot_expr f e
                 method dot_expr =
                   fun f e ->
@@ -15261,7 +15270,6 @@ module Printers =
                           pp f
                             "@[<hv0>@[<hv2>object @[<2>(%a)@]@ %a@]@ end@]"
                             o#patt p o#class_str_item cst
-                      | Ast.ExNew (_, i) -> pp f "@[<2>new@ %a@]" o#ident i
                       | Ast.ExCom (_, e1, e2) ->
                           pp f "%a,@ %a" o#simple_expr e1 o#simple_expr e2
                       | Ast.ExSem (_, e1, e2) ->
@@ -15272,8 +15280,8 @@ module Printers =
                           Ast.ExFun (_, _) | Ast.ExMat (_, _, _) |
                           Ast.ExTry (_, _, _) | Ast.ExIfe (_, _, _, _) |
                           Ast.ExLet (_, _, _, _) | Ast.ExLmd (_, _, _, _) |
-                          Ast.ExAsr (_, _) | Ast.ExAsf _ | Ast.ExLaz (_, _)
-                          -> pp f "(%a)" o#reset#expr e
+                          Ast.ExAsr (_, _) | Ast.ExAsf _ | Ast.ExLaz (_, _) |
+                          Ast.ExNew (_, _) -> pp f "(%a)" o#reset#expr e
                 method direction_flag =
                   fun f b ->
                     match b with
@@ -15697,11 +15705,11 @@ module Printers =
                       | Ast.CeCon (_, Ast.BFalse, i, t) ->
                           pp f "@[<2>@[<1>[%a]@]@ %a@]" o#class_params t
                             o#ident i
-                      | Ast.CeCon (_, Ast.BTrue, i, (Ast.TyNil _)) ->
-                          pp f "@[<2>virtual@ %a@]" o#ident i
-                      | Ast.CeCon (_, Ast.BTrue, i, t) ->
+                      | Ast.CeCon (_, Ast.BTrue, (Ast.IdLid (_, i)),
+                          (Ast.TyNil _)) -> pp f "@[<2>virtual@ %a@]" o#var i
+                      | Ast.CeCon (_, Ast.BTrue, (Ast.IdLid (_, i)), t) ->
                           pp f "@[<2>virtual@ @[<1>[%a]@]@ %a@]"
-                            o#class_params t o#ident i
+                            o#class_params t o#var i
                       | Ast.CeFun (_, p, ce) ->
                           pp f "@[<2>fun@ %a@ ->@ %a@]" o#patt p o#class_expr
                             ce
@@ -15741,11 +15749,11 @@ module Printers =
                       | Ast.CtCon (_, Ast.BFalse, i, t) ->
                           pp f "@[<2>[@,%a@]@,]@ %a" o#class_params t 
                             o#ident i
-                      | Ast.CtCon (_, Ast.BTrue, i, (Ast.TyNil _)) ->
-                          pp f "@[<2>virtual@ %a@]" o#ident i
-                      | Ast.CtCon (_, Ast.BTrue, i, t) ->
+                      | Ast.CtCon (_, Ast.BTrue, (Ast.IdLid (_, i)),
+                          (Ast.TyNil _)) -> pp f "@[<2>virtual@ %a@]" o#var i
+                      | Ast.CtCon (_, Ast.BTrue, (Ast.IdLid (_, i)), t) ->
                           pp f "@[<2>virtual@ [@,%a@]@,]@ %a" o#class_params
-                            t o#ident i
+                            t o#var i
                       | Ast.CtFun (_, t, ct) ->
                           pp f "@[<2>%a@ ->@ %a@]" o#simple_ctyp t
                             o#class_type ct
@@ -16112,25 +16120,6 @@ module Printers =
                           (Ast.ExId (_, (Ast.IdLid (_, "val"))))) ->
                           pp f "@[<2>%a.@,val@]" o#simple_expr e
                       | e -> super#dot_expr f e
-                method simple_expr =
-                  fun f e ->
-                    let () = o#node f e Ast.loc_of_expr
-                    in
-                      match e with
-                      | Ast.ExFor (_, s, e1, e2, Ast.BTrue, e3) ->
-                          pp f
-                            "@[<hv0>@[<hv2>@[<2>for %a@ =@ %a@ to@ %a@ do {@]@ %a@]@ }@]"
-                            o#var s o#expr e1 o#expr e2 o#seq e3
-                      | Ast.ExFor (_, s, e1, e2, Ast.BFalse, e3) ->
-                          pp f
-                            "@[<hv0>@[<hv2>@[<2>for %a@ =@ %a@ downto@ %a@ do {@]@ %a@]@ }@]"
-                            o#var s o#expr e1 o#expr e2 o#seq e3
-                      | Ast.ExWhi (_, e1, e2) ->
-                          pp f "@[<2>while@ %a@ do {@ %a@ }@]" o#expr e1
-                            o#seq e2
-                      | Ast.ExSeq (_, e) ->
-                          pp f "@[<hv0>@[<hv2>do {@ %a@]@ }@]" o#seq e
-                      | e -> super#simple_expr f e
                 method ctyp =
                   fun f t ->
                     let () = o#node f t Ast.loc_of_ctyp
@@ -16227,10 +16216,10 @@ module Printers =
                       | Ast.CtCon (_, Ast.BFalse, i, t) ->
                           pp f "@[<2>%a [@,%a@]@,]" o#ident i o#class_params
                             t
-                      | Ast.CtCon (_, Ast.BTrue, i, (Ast.TyNil _)) ->
-                          pp f "@[<2>virtual@ %a@]" o#ident i
-                      | Ast.CtCon (_, Ast.BTrue, i, t) ->
-                          pp f "@[<2>virtual@ %a@ [@,%a@]@,]" o#ident i
+                      | Ast.CtCon (_, Ast.BTrue, (Ast.IdLid (_, i)),
+                          (Ast.TyNil _)) -> pp f "@[<2>virtual@ %a@]" o#var i
+                      | Ast.CtCon (_, Ast.BTrue, (Ast.IdLid (_, i)), t) ->
+                          pp f "@[<2>virtual@ %a@ [@,%a@]@,]" o#var i
                             o#class_params t
                       | ct -> super#class_type f ct
                 method class_expr =
@@ -16243,10 +16232,10 @@ module Printers =
                       | Ast.CeCon (_, Ast.BFalse, i, t) ->
                           pp f "@[<2>%a@ @[<1>[%a]@]@]" o#ident i
                             o#class_params t
-                      | Ast.CeCon (_, Ast.BTrue, i, (Ast.TyNil _)) ->
-                          pp f "@[<2>virtual@ %a@]" o#ident i
-                      | Ast.CeCon (_, Ast.BTrue, i, t) ->
-                          pp f "@[<2>virtual@ %a@ @[<1>[%a]@]@]" o#ident i
+                      | Ast.CeCon (_, Ast.BTrue, (Ast.IdLid (_, i)),
+                          (Ast.TyNil _)) -> pp f "@[<2>virtual@ %a@]" o#var i
+                      | Ast.CeCon (_, Ast.BTrue, (Ast.IdLid (_, i)), t) ->
+                          pp f "@[<2>virtual@ %a@ @[<1>[%a]@]@]" o#var i
                             o#ctyp t
                       | ce -> super#class_expr f ce
               end
@@ -16427,6 +16416,7 @@ module OCamlInitSyntax =
         let sem_patt_for_list = Gram.Entry.mk "sem_patt_for_list"
         let semi = Gram.Entry.mk "semi"
         let sequence = Gram.Entry.mk "sequence"
+        let do_sequence = Gram.Entry.mk "do_sequence"
         let sig_item = Gram.Entry.mk "sig_item"
         let sig_items = Gram.Entry.mk "sig_items"
         let star_ctyp = Gram.Entry.mk "star_ctyp"
@@ -16710,6 +16700,7 @@ module Register :
       sig  end
     val declare_dyn_module : string -> (unit -> unit) -> unit
     val iter_and_take_callbacks : ((string * (unit -> unit)) -> unit) -> unit
+    val loaded_modules : (string list) ref
     module CurrentParser : Sig.Parser with module Ast = PreCast.Ast
     module CurrentPrinter : Sig.Printer with module Ast = PreCast.Ast
     val enable_ocaml_printer : unit -> unit
@@ -16741,10 +16732,12 @@ module Register :
         (fun ?input_file:(_) ?output_file:(_) _ ->
            failwith "No implementation printer")
     let callbacks = Queue.create ()
+    let loaded_modules = ref []
     let iter_and_take_callbacks f =
       let rec loop () = loop (f (Queue.take callbacks))
       in try loop () with | Queue.Empty -> ()
-    let declare_dyn_module m f = Queue.add (m, f) callbacks
+    let declare_dyn_module m f =
+      (loaded_modules := m :: !loaded_modules; Queue.add (m, f) callbacks)
     let register_str_item_parser f = str_item_parser := f
     let register_sig_item_parser f = sig_item_parser := f
     let register_parser f g = (str_item_parser := f; sig_item_parser := g)

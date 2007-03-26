@@ -80,6 +80,7 @@ module AstFilter
 
 value declare_dyn_module : string -> (unit -> unit) -> unit;
 value iter_and_take_callbacks : ((string * (unit -> unit)) -> unit) -> unit;
+value loaded_modules : ref (list string);
 
 module CurrentParser : Sig.Parser with module Ast = PreCast.Ast;
 module CurrentPrinter : Sig.Printer with module Ast = PreCast.Ast;

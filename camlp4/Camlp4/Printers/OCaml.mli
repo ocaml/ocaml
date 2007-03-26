@@ -83,6 +83,7 @@ module Make (Syntax : Sig.Camlp4Syntax) : sig
     method ctyp1 : formatter -> Ast.ctyp -> unit;
     method constructor_type : formatter -> Ast.ctyp -> unit;
     method dot_expr : formatter -> Ast.expr -> unit;
+    method apply_expr : formatter -> Ast.expr -> unit;
     method expr : formatter -> Ast.expr -> unit;
     method expr_list : formatter -> list Ast.expr -> unit;
     method expr_list_cons : bool -> formatter -> Ast.expr -> unit;

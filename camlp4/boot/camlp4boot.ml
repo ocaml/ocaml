@@ -23,7 +23,7 @@ module R =
       struct
         let name = "Camlp4RevisedParserParser"
         let version =
-          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.5 2007/03/24 12:43:50 pouillar Exp $"
+          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.6 2007/03/24 15:30:49 pouillar Exp $"
       end
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
@@ -226,8 +226,8 @@ Old (no more supported) syntax:
         let mkassert _loc =
           function
           | Ast.ExId (_, (Ast.IdUid (_, "False"))) -> Ast.ExAsf _loc
-          | (* this case take care about
-                                  the special assert false node *)
+          | (* this case takes care about
+                                   the special assert false node *)
               e -> Ast.ExAsr (_loc, e)
         let append_eLem el e = el @ [ e ]
         let mk_anti ?(c = "") n s = "\\$" ^ (n ^ (c ^ (":" ^ s)))
@@ -378,6 +378,13 @@ Old (no more supported) syntax:
                      Ast.ExArr (_loc, coords)),
                    newval))
           | _ -> None
+        let test_not_left_brace_nor_do =
+          Gram.Entry.of_parser "test_not_left_brace_nor_do"
+            (fun strm ->
+               match Stream.peek strm with
+               | Some (((KEYWORD "{" | KEYWORD "do"), _)) ->
+                   raise Stream.Failure
+               | _ -> ())
         let choose_tvar tpl =
           let abs = "abstract" in
           let rec find_alpha n =
@@ -507,6 +514,7 @@ Old (no more supported) syntax:
                  let a = symb __strm in kont a __strm)
         let _ =
           let _ = (a_CHAR : 'a_CHAR Gram.Entry.t)
+          and _ = (do_sequence : 'do_sequence Gram.Entry.t)
           and _ = (infixop4 : 'infixop4 Gram.Entry.t)
           and _ = (infixop3 : 'infixop3 Gram.Entry.t)
           and _ = (infixop2 : 'infixop2 Gram.Entry.t)
@@ -679,8 +687,6 @@ Old (no more supported) syntax:
             grammar_entry_create "infixop5"
           and (* | i = opt_label; "("; p = patt_tcon; ")" -> *)
             (* <:patt< ? $i$ : ($p$) >> *)
-            (* Ast.CtCon _loc mv (Ast.IdLid _loc i) ot *)
-            (* Ast.CeCon _loc mv (Ast.IdLid _loc i) ot *)
             (* | i = opt_label; "("; p = ipatt_tcon; ")" ->
             <:patt< ? $i$ : ($p$) >>
         | i = opt_label; "("; p = ipatt_tcon; "="; e = expr; ")" ->
@@ -1416,13 +1422,12 @@ Old (no more supported) syntax:
                                 (csp : 'opt_class_self_patt) _ (_loc : Loc.t)
                                 -> (Ast.ExObj (_loc, csp, cst) : 'expr))));
                          ([ Gram.Skeyword "while"; Gram.Sself;
-                            Gram.Skeyword "do"; Gram.Skeyword "{";
+                            Gram.Skeyword "do";
                             Gram.Snterm
                               (Gram.Entry.obj
-                                 (sequence : 'sequence Gram.Entry.t));
-                            Gram.Skeyword "}" ],
+                                 (do_sequence : 'do_sequence Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun _ (seq : 'sequence) _ _ (e : 'expr) _
+                             (fun (seq : 'do_sequence) _ (e : 'expr) _
                                 (_loc : Loc.t) ->
                                 (Ast.ExWhi (_loc, e, seq) : 'expr))));
                          ([ Gram.Skeyword "for";
@@ -1435,24 +1440,21 @@ Old (no more supported) syntax:
                                  (direction_flag :
                                    'direction_flag Gram.Entry.t));
                             Gram.Sself; Gram.Skeyword "do";
-                            Gram.Skeyword "{";
                             Gram.Snterm
                               (Gram.Entry.obj
-                                 (sequence : 'sequence Gram.Entry.t));
-                            Gram.Skeyword "}" ],
+                                 (do_sequence : 'do_sequence Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun _ (seq : 'sequence) _ _ (e2 : 'expr)
+                             (fun (seq : 'do_sequence) _ (e2 : 'expr)
                                 (df : 'direction_flag) (e1 : 'expr) _
                                 (i : 'a_LIDENT) _ (_loc : Loc.t) ->
                                 (Ast.ExFor (_loc, i, e1, e2, df, seq) :
                                   'expr))));
-                         ([ Gram.Skeyword "do"; Gram.Skeyword "{";
+                         ([ Gram.Skeyword "do";
                             Gram.Snterm
                               (Gram.Entry.obj
-                                 (sequence : 'sequence Gram.Entry.t));
-                            Gram.Skeyword "}" ],
+                                 (do_sequence : 'do_sequence Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun _ (seq : 'sequence) _ _ (_loc : Loc.t) ->
+                             (fun (seq : 'do_sequence) _ (_loc : Loc.t) ->
                                 (mksequence _loc seq : 'expr))));
                          ([ Gram.Skeyword "if"; Gram.Sself;
                             Gram.Skeyword "then"; Gram.Sself;
@@ -1464,43 +1466,19 @@ Old (no more supported) syntax:
                          ([ Gram.Skeyword "try"; Gram.Sself;
                             Gram.Skeyword "with";
                             Gram.Snterm
-                              (Gram.Entry.obj (ipatt : 'ipatt Gram.Entry.t));
-                            Gram.Skeyword "->"; Gram.Sself ],
-                          (Gram.Action.mk
-                             (fun (e2 : 'expr) _ (p : 'ipatt) _ (e1 : 'expr)
-                                _ (_loc : Loc.t) ->
-                                (Ast.ExTry (_loc, e1,
-                                   Ast.McArr (_loc, p, Ast.ExNil _loc, e2)) :
-                                  'expr))));
-                         ([ Gram.Skeyword "try"; Gram.Sself;
-                            Gram.Skeyword "with"; Gram.Skeyword "[";
-                            Gram.Snterm
                               (Gram.Entry.obj
-                                 (match_case : 'match_case Gram.Entry.t));
-                            Gram.Skeyword "]" ],
+                                 (match_case : 'match_case Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun _ (a : 'match_case) _ _ (e : 'expr) _
+                             (fun (a : 'match_case) _ (e : 'expr) _
                                 (_loc : Loc.t) ->
                                 (Ast.ExTry (_loc, e, a) : 'expr))));
                          ([ Gram.Skeyword "match"; Gram.Sself;
                             Gram.Skeyword "with";
                             Gram.Snterm
-                              (Gram.Entry.obj (ipatt : 'ipatt Gram.Entry.t));
-                            Gram.Skeyword "->"; Gram.Sself ],
-                          (Gram.Action.mk
-                             (fun (e2 : 'expr) _ (p : 'ipatt) _ (e1 : 'expr)
-                                _ (_loc : Loc.t) ->
-                                (Ast.ExMat (_loc, e1,
-                                   Ast.McArr (_loc, p, Ast.ExNil _loc, e2)) :
-                                  'expr))));
-                         ([ Gram.Skeyword "match"; Gram.Sself;
-                            Gram.Skeyword "with"; Gram.Skeyword "[";
-                            Gram.Snterm
                               (Gram.Entry.obj
-                                 (match_case : 'match_case Gram.Entry.t));
-                            Gram.Skeyword "]" ],
+                                 (match_case : 'match_case Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun _ (a : 'match_case) _ _ (e : 'expr) _
+                             (fun (a : 'match_case) _ (e : 'expr) _
                                 (_loc : Loc.t) ->
                                 (Ast.ExMat (_loc, e, a) : 'expr))));
                          ([ Gram.Skeyword "fun";
@@ -1518,13 +1496,17 @@ Old (no more supported) syntax:
                                    Ast.McArr (_loc, p, Ast.ExNil _loc, e)) :
                                   'expr))));
                          ([ Gram.Skeyword "fun"; Gram.Skeyword "[";
-                            Gram.Snterm
-                              (Gram.Entry.obj
-                                 (match_case : 'match_case Gram.Entry.t));
+                            Gram.Slist0sep
+                              (Gram.Snterm
+                                 (Gram.Entry.obj
+                                    (match_case0 : 'match_case0 Gram.Entry.t)),
+                              Gram.Skeyword "|");
                             Gram.Skeyword "]" ],
                           (Gram.Action.mk
-                             (fun _ (a : 'match_case) _ _ (_loc : Loc.t) ->
-                                (Ast.ExFun (_loc, a) : 'expr))));
+                             (fun _ (a : 'match_case0 list) _ _
+                                (_loc : Loc.t) ->
+                                (Ast.ExFun (_loc, Ast.mcOr_of_list a) :
+                                  'expr))));
                          ([ Gram.Skeyword "let"; Gram.Skeyword "module";
                             Gram.Snterm
                               (Gram.Entry.obj
@@ -1864,11 +1846,14 @@ Old (no more supported) syntax:
                              (fun _ _ (_loc : Loc.t) ->
                                 (Ast.ExId (_loc, Ast.IdUid (_loc, "()")) :
                                   'expr))));
-                         ([ Gram.Skeyword "begin"; Gram.Sself;
+                         ([ Gram.Skeyword "begin";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (sequence : 'sequence Gram.Entry.t));
                             Gram.Skeyword "end" ],
                           (Gram.Action.mk
-                             (fun _ (e : 'expr) _ (_loc : Loc.t) ->
-                                (e : 'expr))));
+                             (fun _ (seq : 'sequence) _ (_loc : Loc.t) ->
+                                (mksequence _loc seq : 'expr))));
                          ([ Gram.Skeyword "("; Gram.Sself; Gram.Skeyword ")" ],
                           (Gram.Action.mk
                              (fun _ (e : 'expr) _ (_loc : Loc.t) ->
@@ -1894,6 +1879,16 @@ Old (no more supported) syntax:
                              (fun _ (t2 : 'ctyp) _ (t : 'ctyp) _ (e : 'expr)
                                 _ (_loc : Loc.t) ->
                                 (Ast.ExCoe (_loc, e, t, t2) : 'expr))));
+                         ([ Gram.Skeyword "("; Gram.Sself; Gram.Skeyword ";";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (sequence : 'sequence Gram.Entry.t));
+                            Gram.Skeyword ")" ],
+                          (Gram.Action.mk
+                             (fun _ (seq : 'sequence) _ (e : 'expr) _
+                                (_loc : Loc.t) ->
+                                (mksequence _loc (Ast.ExSem (_loc, e, seq)) :
+                                  'expr))));
                          ([ Gram.Skeyword "("; Gram.Sself; Gram.Skeyword ",";
                             Gram.Snterm
                               (Gram.Entry.obj
@@ -2043,6 +2038,21 @@ Old (no more supported) syntax:
                                 (Ast.ExInt (_loc, s) : 'expr))));
                          ([ Gram.Stoken
                               (((function
+                                 | ANTIQUOT ("seq", _) -> true
+                                 | _ -> false),
+                                "ANTIQUOT (\"seq\", _)")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | ANTIQUOT ((("seq" as n)), s) ->
+                                    (Ast.ExSeq (_loc,
+                                       Ast.ExAnt (_loc,
+                                         mk_anti ~c: "expr" n s)) :
+                                      'expr)
+                                | _ -> assert false)));
+                         ([ Gram.Stoken
+                              (((function
                                  | ANTIQUOT ("tup", _) -> true
                                  | _ -> false),
                                 "ANTIQUOT (\"tup\", _)")) ],
@@ -2083,6 +2093,30 @@ Old (no more supported) syntax:
                                        (Gram.parse_string expr_eoi) _loc x :
                                       'expr)
                                 | _ -> assert false))) ]) ]))
+                  ());
+             Gram.extend (do_sequence : 'do_sequence Gram.Entry.t)
+               ((fun () ->
+                   (None,
+                    [ (None, None,
+                       [ ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (test_not_left_brace_nor_do :
+                                   'test_not_left_brace_nor_do Gram.Entry.t));
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (sequence : 'sequence Gram.Entry.t));
+                            Gram.Skeyword "done" ],
+                          (Gram.Action.mk
+                             (fun _ (seq : 'sequence) _ (_loc : Loc.t) ->
+                                (seq : 'do_sequence))));
+                         ([ Gram.Skeyword "{";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (sequence : 'sequence Gram.Entry.t));
+                            Gram.Skeyword "}" ],
+                          (Gram.Action.mk
+                             (fun _ (seq : 'sequence) _ (_loc : Loc.t) ->
+                                (seq : 'do_sequence)))) ]) ]))
                   ());
              Gram.extend (infixop5 : 'infixop5 Gram.Entry.t)
                ((fun () ->
@@ -2372,14 +2406,26 @@ Old (no more supported) syntax:
                ((fun () ->
                    (None,
                     [ (None, None,
-                       [ ([ Gram.Slist0sep
+                       [ ([ Gram.Snterm
+                              (Gram.Entry.obj (ipatt : 'ipatt Gram.Entry.t));
+                            Gram.Skeyword "->";
+                            Gram.Snterm
+                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (e : 'expr) _ (p : 'ipatt) (_loc : Loc.t)
+                                ->
+                                (Ast.McArr (_loc, p, Ast.ExNil _loc, e) :
+                                  'match_case))));
+                         ([ Gram.Skeyword "[";
+                            Gram.Slist0sep
                               (Gram.Snterm
                                  (Gram.Entry.obj
                                     (match_case0 : 'match_case0 Gram.Entry.t)),
-                              Gram.Skeyword "|") ],
+                              Gram.Skeyword "|");
+                            Gram.Skeyword "]" ],
                           (Gram.Action.mk
-                             (fun (l : 'match_case0 list) (_loc : Loc.t) ->
-                                (Ast.mcOr_of_list l : 'match_case)))) ]) ]))
+                             (fun _ (l : 'match_case0 list) _ (_loc : Loc.t)
+                                -> (Ast.mcOr_of_list l : 'match_case)))) ]) ]))
                   ());
              Gram.extend (match_case0 : 'match_case0 Gram.Entry.t)
                ((fun () ->
@@ -6942,12 +6988,14 @@ Old (no more supported) syntax:
                           (Gram.Action.mk
                              (fun (_loc : Loc.t) ->
                                 (Ast.McNil _loc : 'match_case_quot))));
-                         ([ Gram.Snterm
-                              (Gram.Entry.obj
-                                 (match_case : 'match_case Gram.Entry.t)) ],
+                         ([ Gram.Slist0sep
+                              (Gram.Snterm
+                                 (Gram.Entry.obj
+                                    (match_case0 : 'match_case0 Gram.Entry.t)),
+                              Gram.Skeyword "|") ],
                           (Gram.Action.mk
-                             (fun (x : 'match_case) (_loc : Loc.t) ->
-                                (x : 'match_case_quot)))) ]) ]))
+                             (fun (x : 'match_case0 list) (_loc : Loc.t) ->
+                                (Ast.mcOr_of_list x : 'match_case_quot)))) ]) ]))
                   ());
              Gram.extend (binding_quot : 'binding_quot Gram.Entry.t)
                ((fun () ->
@@ -7170,9 +7218,7 @@ Old (no more supported) syntax:
                        [ ([],
                           (Gram.Action.mk
                              (fun (_loc : Loc.t) ->
-                                ((* Ast.CeCon _loc Ast.BTrue (Ast.IdLid _loc i) ot *)
-                                  (* Ast.CeCon _loc (Ast.BAnt (mk_anti ~c:"class_expr" n s)) i ot *)
-                                  Ast.CeNil _loc : 'class_expr_quot))));
+                                (Ast.CeNil _loc : 'class_expr_quot))));
                          ([ Gram.Snterm
                               (Gram.Entry.obj
                                  (class_expr : 'class_expr Gram.Entry.t)) ],
@@ -7232,9 +7278,7 @@ Old (no more supported) syntax:
                        [ ([],
                           (Gram.Action.mk
                              (fun (_loc : Loc.t) ->
-                                ((* Ast.CtCon _loc Ast.BTrue (Ast.IdLid _loc i) ot *)
-                                  (* Ast.CtCon _loc (Ast.BAnt (mk_anti ~c:"class_type" n s)) i ot *)
-                                  Ast.CtNil _loc : 'class_type_quot))));
+                                (Ast.CtNil _loc : 'class_type_quot))));
                          ([ Gram.Snterm
                               (Gram.Entry.obj
                                  (class_type_plus :
@@ -12293,7 +12337,7 @@ module B =
     module CleanAst = Camlp4.Struct.CleanAst.Make(Ast)
     module SSet = Set.Make(String)
     let pa_r = "Camlp4OCamlRevisedParser"
-    (* value pa_rr = "Camlp4OCamlrrParser"; *)
+    let pa_rr = "Camlp4OCamlReloadedParser"
     let pa_o = "Camlp4OCamlParser"
     let pa_rp = "Camlp4OCamlRevisedParserParser"
     let pa_op = "Camlp4OCamlParserParser"
@@ -12304,8 +12348,9 @@ module B =
     let pa_rq = "Camlp4OCamlRevisedQuotationExpander"
     let pa_oq = "Camlp4OCamlOriginalQuotationExpander"
     let pa_l = "Camlp4ListComprehension"
+    open Register
     let dyn_loader =
-      ref (fun _ -> raise (Match_failure ("./camlp4/Camlp4Bin.ml", 43, 24)))
+      ref (fun _ -> raise (Match_failure ("./camlp4/Camlp4Bin.ml", 45, 24)))
     let rcall_callback = ref (fun () -> ())
     let loaded_modules = ref SSet.empty
     let add_to_loaded_modules name =
@@ -12318,7 +12363,9 @@ module B =
       let load =
         List.iter
           (fun n ->
-             if SSet.mem n !loaded_modules
+             if
+               (SSet.mem n !loaded_modules) ||
+                 (List.mem n !Register.loaded_modules)
              then ()
              else
                (add_to_loaded_modules n;
@@ -12329,10 +12376,13 @@ module B =
              ("pa_r.cmo" | "r" | "ocamlr" | "ocamlrevised" |
                 "camlp4ocamlrevisedparser.cmo"))
               -> load [ pa_r ]
-          | (* | ("Parsers"|"", "rr"  | "OCamlrr") -> load [pa_r; pa_rr] *)
-              (("Parsers" | ""),
-               ("pa_o.cmo" | "o" | "ocaml" | "camlp4ocamlparser.cmo"))
-              -> load [ pa_r; pa_o ]
+          | (("Parsers" | ""),
+             ("rr" | "reloaded" | "ocamlreloaded" |
+                "camlp4ocamlreloadedparser.cmo"))
+              -> load [ pa_rr ]
+          | (("Parsers" | ""),
+             ("pa_o.cmo" | "o" | "ocaml" | "camlp4ocamlparser.cmo")) ->
+              load [ pa_r; pa_o ]
           | (("Parsers" | ""),
              ("pa_rp.cmo" | "rp" | "rparser" |
                 "camlp4ocamlrevisedparserparser.cmo"))
@@ -12343,16 +12393,16 @@ module B =
           | (("Parsers" | ""),
              ("pa_extend.cmo" | "pa_extend_m.cmo" | "g" | "grammar" |
                 "camlp4grammarparser.cmo"))
-              -> load [ pa_r; pa_g ]
+              -> load [ pa_g ]
           | (("Parsers" | ""),
              ("pa_macro.cmo" | "m" | "macro" | "camlp4macroparser.cmo")) ->
-              load [ pa_r; pa_m ]
+              load [ pa_m ]
           | (("Parsers" | ""), ("q" | "camlp4quotationexpander.cmo")) ->
-              load [ pa_r; pa_qb; pa_q ]
+              load [ pa_qb; pa_q ]
           | (("Parsers" | ""),
              ("q_mlast.cmo" | "rq" |
                 "camlp4ocamlrevisedquotationexpander.cmo"))
-              -> load [ pa_r; pa_qb; pa_rq ]
+              -> load [ pa_qb; pa_rq ]
           | (("Parsers" | ""),
              ("oq" | "camlp4ocamloriginalquotationexpander.cmo")) ->
               load [ pa_r; pa_o; pa_qb; pa_oq ]
@@ -12384,11 +12434,9 @@ module B =
           | (("Printers" | ""),
              ("pr_r.cmo" | "r" | "ocamlr" | "camlp4ocamlrevisedprinter.cmo"))
               -> Register.enable_ocamlr_printer ()
-          | (* | ("Printers"|"", "rr" | "OCamlrr" | "Camlp4Printers/OCamlrr.cmo") -> *)
-              (* Register.enable_ocamlrr_printer () *)
-              (("Printers" | ""),
-               ("pr_o.cmo" | "o" | "ocaml" | "camlp4ocamlprinter.cmo"))
-              -> Register.enable_ocaml_printer ()
+          | (("Printers" | ""),
+             ("pr_o.cmo" | "o" | "ocaml" | "camlp4ocamlprinter.cmo")) ->
+              Register.enable_ocaml_printer ()
           | (("Printers" | ""),
              ("pr_dump.cmo" | "p" | "dumpocaml" | "camlp4ocamlastdumper.cmo"))
               -> Register.enable_dump_ocaml_ast_printer ()
@@ -12440,14 +12488,13 @@ module B =
       function
       | Ast.StDir (loc, n, (Ast.ExStr (_, s))) -> Some ((loc, n, s))
       | _ -> None
-    open Register
     let process_intf dyn_loader name =
       process dyn_loader name CurrentParser.parse_interf CurrentPrinter.
-        print_interf new CleanAst.clean_ast#sig_item AstFilters.
+        print_interf (new CleanAst.clean_ast)#sig_item AstFilters.
         fold_interf_filters gind
     let process_impl dyn_loader name =
       process dyn_loader name CurrentParser.parse_implem CurrentPrinter.
-        print_implem new CleanAst.clean_ast#str_item AstFilters.
+        print_implem (new CleanAst.clean_ast)#str_item AstFilters.
         fold_implem_filters gimd
     let just_print_the_version () =
       (printf "%s@." Camlp4_config.version; exit 0)

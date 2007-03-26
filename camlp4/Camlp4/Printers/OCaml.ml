@@ -421,18 +421,18 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         pp f "@[<2>-.@,%a@]" o#expr x
     | <:expr< [$_$ :: $_$] >> -> o#expr_list_cons False f e
     | <:expr@_loc< $lid:n$ $x$ $y$ >> when is_infix n ->
-        pp f "@[<2>%a@ %s@ %a@]" o#dot_expr x n o#dot_expr y
+        pp f "@[<2>%a@ %s@ %a@]" o#apply_expr x n o#apply_expr y
     | <:expr< $x$ $y$ >> ->
         let (a, al) = get_expr_args x [y] in
         if (not curry_constr) && Ast.is_expr_constructor a then
           match al with
           [ [ <:expr< ($tup:_$) >> ] ->
-              pp f "@[<2>%a@ (%a)@]" o#dot_expr x o#expr y
-          | [_] -> pp f "@[<2>%a@ %a@]" o#dot_expr x o#dot_expr y
+              pp f "@[<2>%a@ (%a)@]" o#apply_expr x o#expr y
+          | [_] -> pp f "@[<2>%a@ %a@]" o#apply_expr x o#apply_expr y
           | al ->
-              pp f "@[<2>%a@ (%a)@]" o#dot_expr a
+              pp f "@[<2>%a@ (%a)@]" o#apply_expr a
                  (list o#under_pipe#expr ",@ ") al ]
-        else pp f "@[<2>%a@]" (list o#dot_expr "@ ") [a::al]
+        else pp f "@[<2>%a@]" (list o#apply_expr "@ ") [a::al]
     | <:expr< $e1$.val := $e2$ >> ->
         pp f "@[<2>%a :=@ %a@]" o#expr e1 o#expr e2
     | <:expr< $e1$ := $e2$ >> ->
@@ -465,6 +465,12 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:expr< assert $e$ >> -> pp f "@[<2>assert@ %a@]" o#expr e
     | <:expr< let module $s$ = $me$ in $e$ >> ->
           pp f "@[<2>let module %a =@ %a@]@ @[<2>in@ %a@]" o#var s o#module_expr me o#expr e
+    | e -> o#apply_expr f e ];
+
+    method apply_expr f e =
+    let () = o#node f e Ast.loc_of_expr in
+    match e with
+    [ <:expr< new $i$ >> -> pp f "@[<2>new@ %a@]" o#ident i
     | e -> o#dot_expr f e ];
 
     method dot_expr f e =
@@ -530,7 +536,6 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:expr< object ($p$) $cst$ end >> ->
         pp f "@[<hv0>@[<hv2>object @[<2>(%a)@]@ %a@]@ end@]"
           o#patt p o#class_str_item cst
-    | <:expr< new $i$ >> -> pp f "@[<2>new@ %a@]" o#ident i
     | <:expr< $e1$, $e2$ >> ->
         pp f "%a,@ %a" o#simple_expr e1 o#simple_expr e2
     | <:expr< $e1$; $e2$ >> ->
@@ -543,9 +548,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       <:expr< if $_$ then $_$ else $_$ >> |
       <:expr< let $rec:_$ $_$ in $_$ >> |
       <:expr< let module $_$ = $_$ in $_$ >> |
-      (* Note: `new' is treated differently in pa_o and in pa_r,
-        and should not occur at this level *)
-      <:expr< assert $_$ >> | <:expr< assert False >> | <:expr< lazy $_$ >> ->
+      <:expr< assert $_$ >> | <:expr< assert False >> |
+      <:expr< lazy $_$ >> | <:expr< new $_$ >> ->
         pp f "(%a)" o#reset#expr e ];
 
     method direction_flag f b =
@@ -868,12 +872,10 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           pp f "@[<2>%a@]" o#ident i
     | <:class_expr< $id:i$ [ $t$ ] >> ->
           pp f "@[<2>@[<1>[%a]@]@ %a@]" o#class_params t o#ident i
-    (* | <:class_expr< virtual $id:i$ >> -> *)
-    | Ast.CeCon _ Ast.BTrue i <:ctyp<>> ->
-          pp f "@[<2>virtual@ %a@]" o#ident i
-    | Ast.CeCon _ Ast.BTrue i t ->
-    (* | <:class_expr< virtual $id:i$ [ $t$ ] >> -> *)
-          pp f "@[<2>virtual@ @[<1>[%a]@]@ %a@]" o#class_params t o#ident i
+    | <:class_expr< virtual $lid:i$ >> ->
+          pp f "@[<2>virtual@ %a@]" o#var i
+    | <:class_expr< virtual $lid:i$ [ $t$ ] >> ->
+          pp f "@[<2>virtual@ @[<1>[%a]@]@ %a@]" o#class_params t o#var i
     | <:class_expr< fun $p$ -> $ce$ >> ->
           pp f "@[<2>fun@ %a@ ->@ %a@]" o#patt p o#class_expr ce
     | <:class_expr< let $rec:r$ $bi$ in $ce$ >> ->
@@ -903,12 +905,10 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           pp f "@[<2>%a@]" o#ident i
     | <:class_type< $id:i$ [ $t$ ] >> ->
           pp f "@[<2>[@,%a@]@,]@ %a" o#class_params t o#ident i
-    (* | <:class_type< virtual $id:i$ >> -> *)
-    | Ast.CtCon _ Ast.BTrue i <:ctyp<>> ->
-          pp f "@[<2>virtual@ %a@]" o#ident i
-    (* | <:class_type< virtual $id:i$ [ $t$ ] >> -> *)
-    | Ast.CtCon _ Ast.BTrue i t ->
-          pp f "@[<2>virtual@ [@,%a@]@,]@ %a" o#class_params t o#ident i
+    | <:class_type< virtual $lid:i$ >> ->
+          pp f "@[<2>virtual@ %a@]" o#var i
+    | <:class_type< virtual $lid:i$ [ $t$ ] >> ->
+          pp f "@[<2>virtual@ [@,%a@]@,]@ %a" o#class_params t o#var i
     | <:class_type< [ $t$ ] -> $ct$ >> ->
           pp f "@[<2>%a@ ->@ %a@]" o#simple_ctyp t o#class_type ct
     | <:class_type< object $csg$ end >> ->

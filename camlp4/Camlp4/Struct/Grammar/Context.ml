@@ -68,8 +68,8 @@ module Make (Token : Sig.Token) : S with module Token = Token = struct
     loop list n;
 
   value njunk c n =
-    do { for i = 1 to n do { Stream.junk c.strm };
-        set_loc c };
+    (for i = 1 to n do Stream.junk c.strm done;
+     set_loc c);
 
   value streams = ref [];
   value mk strm =

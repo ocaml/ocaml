@@ -1258,6 +1258,7 @@ module type Camlp4Syntax = sig
   value sem_patt_for_list : Gram.Entry.t (Ast.patt -> Ast.patt);
   value semi : Gram.Entry.t unit;
   value sequence : Gram.Entry.t Ast.expr;
+  value do_sequence : Gram.Entry.t Ast.expr;
   value sig_item : Gram.Entry.t Ast.sig_item;
   value sig_item_quot : Gram.Entry.t Ast.sig_item;
   value sig_items : Gram.Entry.t Ast.sig_item;

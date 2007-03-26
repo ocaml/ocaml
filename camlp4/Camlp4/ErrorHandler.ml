@@ -113,10 +113,10 @@ value default_handler ppf x = do {
     (Obj.obj (Obj.field (Obj.field x 0) 0) : string);
   if Obj.size x > 1 then do {
     pp_print_string ppf " (";
-    for i = 1 to Obj.size x - 1 do {
+    for i = 1 to Obj.size x - 1 do
       if i > 1 then pp_print_string ppf ", " else ();
       ObjTools.print ppf (Obj.field x i);
-    };
+    done;
     pp_print_char ppf ')'
   }
   else ();

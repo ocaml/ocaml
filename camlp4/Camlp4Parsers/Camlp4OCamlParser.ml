@@ -59,11 +59,6 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
                     (Ast.loc_of_expr e2) in
         <:expr< do { $e1$; $e2$ } >> ];
 
-  value get_seq =
-    fun
-    [ <:expr< do { $e$ } >> -> e
-    | e -> e ];
-
   value is_operator =
     let ht = Hashtbl.create 73 in
     let ct = Hashtbl.create 73 in
@@ -215,15 +210,9 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   DELETE_RULE Gram label_expr: label_longident; fun_binding END;
   DELETE_RULE Gram expr: "let"; opt_rec; binding; "in"; SELF END;
   DELETE_RULE Gram expr: "let"; "module"; a_UIDENT; module_binding0; "in"; SELF END;
-  DELETE_RULE Gram expr: "fun"; "["; match_case; "]" END;
-  DELETE_RULE Gram expr: "match"; SELF; "with"; "["; match_case; "]" END;
-  DELETE_RULE Gram expr: "match"; SELF; "with"; ipatt; "->"; SELF END;
-  DELETE_RULE Gram expr: "try"; SELF; "with"; "["; match_case; "]" END;
-  DELETE_RULE Gram expr: "try"; SELF; "with"; ipatt; "->"; SELF END;
+  DELETE_RULE Gram expr: "fun"; "["; LIST0 match_case0 SEP "|"; "]" END;
   DELETE_RULE Gram expr: "if"; SELF; "then"; SELF; "else"; SELF END;
-  DELETE_RULE Gram expr: "do"; "{"; sequence; "}" END;
-  DELETE_RULE Gram expr: "for"; a_LIDENT; "="; SELF; direction_flag; SELF; "do"; "{"; sequence; "}" END;
-  DELETE_RULE Gram expr: "while"; SELF; "do"; "{"; sequence; "}" END;
+  DELETE_RULE Gram expr: "do"; do_sequence END;
   DELETE_RULE Gram expr: SELF; SELF END;
   DELETE_RULE Gram expr: "new"; class_longident END;
   DELETE_RULE Gram expr: "["; sem_expr_for_list; "::"; expr; "]" END;
@@ -245,6 +234,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   clear ipatt;
   clear labeled_ipatt;
   clear semi;
+  clear do_sequence;
   clear let_binding;
   clear type_kind;
   clear constructor_arg_list;
@@ -296,7 +286,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       type_ident_and_parameters type_kind type_longident
       type_longident_and_parameters type_parameter type_parameters typevars
       use_file val_longident value_let value_val with_constr with_constr_quot
-      infixop0 infixop1 infixop2 infixop3 infixop4
+      infixop0 infixop1 infixop2 infixop3 infixop4 do_sequence
     ;
     sem_expr:
       [ [ e1 = expr LEVEL "top"; ";"; e2 = SELF -> <:expr< $e1$; $e2$ >>
@@ -305,6 +295,10 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     ;
     sequence:
       [ [ e = sem_expr -> e ] ]
+    ;
+    do_sequence:
+      [ [ seq = sequence; "done" -> seq
+      ] ]
     ;
     sem_expr_for_list:
       [ [ e = expr LEVEL "top"; ";"; el = SELF -> fun acc -> <:expr< [ $e$ :: $el acc$ ] >>
@@ -336,22 +330,13 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         | "let"; "module"; m = a_UIDENT; mb = module_binding0; "in";
           e = expr LEVEL ";" ->
             <:expr< let module $m$ = $mb$ in $e$ >>
-        | "function"; OPT "|"; a = match_case ->
+        | "function"; a = match_case ->
             <:expr< fun [ $a$ ] >>
-        | "match"; e = SELF; "with"; OPT "|"; a = match_case ->
-            <:expr< match $e$ with [ $a$ ] >>
-        | "try"; e = SELF; "with"; OPT "|"; a = match_case ->
-            <:expr< try $e$ with [ $a$ ] >>
         | "if"; e1 = SELF; "then"; e2 = expr LEVEL "top";
           "else"; e3 = expr LEVEL "top" ->
             <:expr< if $e1$ then $e2$ else $e3$ >>
         | "if"; e1 = SELF; "then"; e2 = expr LEVEL "top" ->
             <:expr< if $e1$ then $e2$ else () >>
-        | "for"; i = a_LIDENT; "="; e1 = SELF; df = direction_flag; e2 = SELF;
-          "do"; el = SELF; "done" ->
-            <:expr< for $i$ = $e1$ $to:df$ $e2$ do { $get_seq el$ } >>
-        | "while"; e1 = SELF; "do"; e2 = SELF; "done" ->
-            <:expr< while $e1$ do { $get_seq e2$ } >>
       ] ];
     expr: BEFORE "||"
       [ ","
@@ -400,7 +385,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         | i = a_UIDENT; "."; j = SELF -> <:ident< $uid:i$.$j$ >> ] ]
     ;
     match_case:
-      [ [ l = LIST1 match_case0 SEP "|" -> Ast.mcOr_of_list l ] ]
+      [ [ OPT "|"; l = LIST1 match_case0 SEP "|" -> Ast.mcOr_of_list l ] ]
     ;
     patt_constr:
       [ [ i = module_longident -> <:patt< $id:i$ >>

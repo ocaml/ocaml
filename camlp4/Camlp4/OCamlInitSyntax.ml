@@ -148,6 +148,7 @@ module Make (Warning : Sig.Warning)
   value sem_patt_for_list = Gram.Entry.mk "sem_patt_for_list";
   value semi = Gram.Entry.mk "semi";
   value sequence = Gram.Entry.mk "sequence";
+  value do_sequence = Gram.Entry.mk "do_sequence";
   value sig_item = Gram.Entry.mk "sig_item";
   value sig_items = Gram.Entry.mk "sig_items";
   value star_ctyp = Gram.Entry.mk "star_ctyp";

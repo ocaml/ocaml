@@ -225,8 +225,8 @@ Old (no more supported) syntax:
   value mkassert _loc =
     fun
     [ <:expr< False >> ->
-        <:expr< assert False >> (* this case take care about
-                                  the special assert false node *)
+        <:expr< assert False >> (* this case takes care about
+                                   the special assert false node *)
     | e -> <:expr< assert $e$ >> ]
   ;
 
@@ -265,6 +265,13 @@ Old (no more supported) syntax:
     | <:expr< Bigarray.Genarray.get $arr$ [| $coords$ |] >> ->
         Some <:expr< Bigarray.Genarray.set $arr$ [| $coords$ |] $newval$ >>
     | _ -> None ];
+
+  value test_not_left_brace_nor_do =
+    Gram.Entry.of_parser "test_not_left_brace_nor_do"
+      (fun strm ->
+        match Stream.peek strm with
+        [ Some(KEYWORD "{" | KEYWORD "do", _) -> raise Stream.Failure
+        | _ -> () ]);
 
   value choose_tvar tpl =
     let abs = "abstract" in
@@ -404,7 +411,7 @@ Old (no more supported) syntax:
       type_ident_and_parameters type_kind type_longident
       type_longident_and_parameters type_parameter type_parameters typevars
       use_file val_longident value_let value_val with_constr with_constr_quot
-      infixop0 infixop1 infixop2 infixop3 infixop4;
+      infixop0 infixop1 infixop2 infixop3 infixop4 do_sequence;
     module_expr:
       [ [ "functor"; "("; i = a_UIDENT; ":"; t = module_type; ")"; "->";
           me = SELF ->
@@ -542,25 +549,20 @@ Old (no more supported) syntax:
             <:expr< let $rec:r$ $bi$ in $x$ >>
         | "let"; "module"; m = a_UIDENT; mb = module_binding0; "in"; e = SELF ->
             <:expr< let module $m$ = $mb$ in $e$ >>
-        | "fun"; "["; a = match_case; "]" ->
-            <:expr< fun [ $a$ ] >>
+        | "fun"; "["; a = LIST0 match_case0 SEP "|"; "]" ->
+            <:expr< fun [ $list:a$ ] >>
         | "fun"; p = labeled_ipatt; e = fun_def ->
             <:expr< fun $p$ -> $e$ >>
-        | "match"; e = SELF; "with"; "["; a = match_case; "]" ->
+        | "match"; e = SELF; "with"; a = match_case ->
             <:expr< match $e$ with [ $a$ ] >>
-        | "match"; e1 = SELF; "with"; p = ipatt; "->"; e2 = SELF ->
-            <:expr< match $e1$ with $p$ -> $e2$ >>
-        | "try"; e = SELF; "with"; "["; a = match_case; "]" ->
+        | "try"; e = SELF; "with"; a = match_case ->
             <:expr< try $e$ with [ $a$ ] >>
-        | "try"; e1 = SELF; "with"; p = ipatt; "->"; e2 = SELF ->
-            <:expr< try $e1$ with $p$ -> $e2$ >>
         | "if"; e1 = SELF; "then"; e2 = SELF; "else"; e3 = SELF ->
             <:expr< if $e1$ then $e2$ else $e3$ >>
-        | "do"; "{"; seq = sequence; "}" -> mksequence _loc seq
-        | "for"; i = a_LIDENT; "="; e1 = SELF; df = direction_flag; e2 = SELF;
-          "do"; "{"; seq = sequence; "}" ->
+        | "do"; seq = do_sequence -> mksequence _loc seq
+        | "for"; i = a_LIDENT; "="; e1 = SELF; df = direction_flag; e2 = SELF; "do"; seq = do_sequence ->
             <:expr< for $i$ = $e1$ $to:df$ $e2$ do { $seq$ } >>
-        | "while"; e = SELF; "do"; "{"; seq = sequence; "}" ->
+        | "while"; e = SELF; "do"; seq = do_sequence ->
             <:expr< while $e$ do { $seq$ } >>
         | "object"; csp = opt_class_self_patt; cst = class_structure; "end" ->
             <:expr< object ($csp$) $cst$ end >> ]
@@ -627,7 +629,9 @@ Old (no more supported) syntax:
         | `ANTIQUOT ("exp"|""|"anti" as n) s ->
             <:expr< $anti:mk_anti ~c:"expr" n s$ >>
         | `ANTIQUOT ("tup" as n) s ->
-            <:expr< ($tup: <:expr< $anti:mk_anti ~c:"expr" n s$ >>$) >>
+            <:expr< $tup: <:expr< $anti:mk_anti ~c:"expr" n s$ >>$ >>
+        | `ANTIQUOT ("seq" as n) s ->
+            <:expr< do $anti:mk_anti ~c:"expr" n s$ done >>
         | s = a_INT -> <:expr< $int:s$ >>
         | s = a_INT32 -> <:expr< $int32:s$ >>
         | s = a_INT64 -> <:expr< $int64:s$ >>
@@ -652,12 +656,18 @@ Old (no more supported) syntax:
         | "("; ")" -> <:expr< () >>
         | "("; e = SELF; ":"; t = ctyp; ")" -> <:expr< ($e$ : $t$) >>
         | "("; e = SELF; ","; el = comma_expr; ")" -> <:expr< ( $e$, $el$ ) >>
+        | "("; e = SELF; ";"; seq = sequence; ")" -> mksequence _loc <:expr< $e$; $seq$ >>
         | "("; e = SELF; ":"; t = ctyp; ":>"; t2 = ctyp; ")" ->
             <:expr< ($e$ : $t$ :> $t2$ ) >>
         | "("; e = SELF; ":>"; t = ctyp; ")" -> <:expr< ($e$ :> $t$) >>
         | "("; e = SELF; ")" -> e
-        | "begin"; e = SELF; "end" -> <:expr< $e$ >>
+        | "begin"; seq = sequence; "end" -> mksequence _loc seq
         | "begin"; "end" -> <:expr< () >> ] ]
+    ;
+    do_sequence:
+      [ [ "{"; seq = sequence; "}" -> seq
+        | test_not_left_brace_nor_do; seq = sequence; "done" -> seq
+      ] ]
     ;
     infixop5:
       [ [ x = [ "&" | "&&" ] -> <:expr< $lid:x$ >> ] ]
@@ -709,7 +719,8 @@ Old (no more supported) syntax:
         | ":>"; t = ctyp; "="; e = expr -> <:expr< ($e$ :> $t$) >> ] ]
     ;
     match_case:
-      [ [ l = LIST0 match_case0 SEP "|" -> Ast.mcOr_of_list l ] ]
+      [ [ "["; l = LIST0 match_case0 SEP "|"; "]" -> Ast.mcOr_of_list l
+        | p = ipatt; "->"; e = expr -> <:match_case< $p$ -> $e$ >> ] ]
     ;
     match_case0:
       [ [ `ANTIQUOT ("match_case"|"list" as n) s ->
@@ -1090,13 +1101,11 @@ Old (no more supported) syntax:
     ;
     class_info_for_class_type:
       [ [ mv = opt_virtual; (i, ot) = class_name_and_param ->
-            (* Ast.CtCon _loc mv (Ast.IdLid _loc i) ot *)
             <:class_type< $virtual:mv$ $lid:i$ [ $ot$ ] >>
       ] ]
     ;
     class_info_for_class_expr:
       [ [ mv = opt_virtual; (i, ot) = class_name_and_param ->
-            (* Ast.CeCon _loc mv (Ast.IdLid _loc i) ot *)
             <:class_expr< $virtual:mv$ $lid:i$ [ $ot$ ] >>
       ] ]
     ;
@@ -1557,7 +1566,7 @@ Old (no more supported) syntax:
       ] ]
     ;
     match_case_quot:
-      [ [ x = match_case -> x
+      [ [ x = LIST0 match_case0 SEP "|" -> <:match_case< $list:x$ >>
         | -> <:match_case<>> ] ]
     ;
     binding_quot:
@@ -1601,11 +1610,9 @@ Old (no more supported) syntax:
         | ce1 = SELF; "="; ce2 = SELF -> <:class_expr< $ce1$ = $ce2$ >>
         | "virtual"; (i, ot) = class_name_and_param ->
             <:class_expr< virtual $lid:i$ [ $ot$ ] >>
-            (* Ast.CeCon _loc Ast.BTrue (Ast.IdLid _loc i) ot *)
         | `ANTIQUOT ("virtual" as n) s; i = ident; ot = opt_comma_ctyp ->
             let anti = Ast.BAnt (mk_anti ~c:"class_expr" n s) in
             <:class_expr< $virtual:anti$ $id:i$ [ $ot$ ] >>
-            (* Ast.CeCon _loc (Ast.BAnt (mk_anti ~c:"class_expr" n s)) i ot *)
         | x = class_expr -> x
         | -> <:class_expr<>>
       ] ]
@@ -1615,10 +1622,8 @@ Old (no more supported) syntax:
         | ct1 = SELF; "="; ct2 = SELF -> <:class_type< $ct1$ = $ct2$ >>
         | ct1 = SELF; ":"; ct2 = SELF -> <:class_type< $ct1$ : $ct2$ >>
         | "virtual"; (i, ot) = class_name_and_param ->
-            (* Ast.CtCon _loc Ast.BTrue (Ast.IdLid _loc i) ot *)
             <:class_type< virtual $lid:i$ [ $ot$ ] >>
         | `ANTIQUOT ("virtual" as n) s; i = ident; ot = opt_comma_ctyp ->
-            (* Ast.CtCon _loc (Ast.BAnt (mk_anti ~c:"class_type" n s)) i ot *)
             let anti = Ast.BAnt (mk_anti ~c:"class_type" n s) in
             <:class_type< $virtual:anti$ $id:i$ [ $ot$ ] >>
         | x = class_type_plus -> x
