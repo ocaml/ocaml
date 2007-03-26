@@ -188,7 +188,8 @@ typedef opcode_t * code_t;
 #define Class_val(val) Field((val), 0)
 #define Oid_val(val) Long_val(Field((val), 1))
 CAMLextern value caml_get_public_method (value obj, value tag);
-/* called as: callback(caml_get_public_method(obj, hash_variant(name)), obj) */
+/* called as:
+   caml_callback(caml_get_public_method(obj, caml_hash_variant(name)), obj) */
 
 /* Special case of tuples of fields: closures */
 #define Closure_tag 247
