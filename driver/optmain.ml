@@ -160,9 +160,6 @@ let main () =
        "-S", Arg.Set keep_asm_file, " Keep intermediate assembly file";
        "-thread", Arg.Set use_threads,
              " Generate code that supports the system threads library (default)";
-(*> JOCAML *)
-       "-nothread", Arg.Clear use_threads, " Unset the -thread option";
-(*< JOCAML *)    
        "-unsafe", Arg.Set fast,
              " No bounds checking on array and string access";
        "-v", Arg.Unit print_version_and_library,

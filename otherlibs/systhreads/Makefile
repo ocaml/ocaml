@@ -97,11 +97,11 @@ join.cma: $(JOIN_OBJS) threads.cma ../unix/unix.cma
 
 # See remark above: force static linking of libthreadsnat.a
 threads.cmxa: $(THREAD_OBJS:.cmo=.cmx)
-	$(CAMLOPT) $(NOJOIN) -a -o threads.cmxa $(THREAD_OBJS:.cmo=.cmx) \
+	$(CAMLOPT) -a -o threads.cmxa $(THREAD_OBJS:.cmo=.cmx) \
           -cclib -lthreadsnat -cclib -lunix $(PTHREAD_LINK)
 
 join.cmxa: $(THREAD_OBJS:.cmo=.cmx) $(JOIN_OBJS:.cmo=.cmx)
-	$(CAMLOPT)  $(NOJOIN) -a -o join.cmxa  \
+	$(CAMLOPT) -a -o join.cmxa  \
 	../unix/unix.cmx ../unix/unixLabels.cmx \
 	$(THREAD_OBJS:.cmo=.cmx) $(JOIN_OBJS:.cmo=.cmx) \
          -cclib -lthreadsnat -cclib -ljoinnat -cclib -lunix $(PTHREAD_LINK)
@@ -246,7 +246,7 @@ installopt:
 	$(JCC) -c $(COMPFLAGS) $(OCAMLPP) -impl $<
 
 .ml.cmx:
-	$(CAMLOPT) -nojoin -c $(COMPFLAGS) $(OCAMLPP) $<
+	$(CAMLOPT) -c $(COMPFLAGS) $(OCAMLPP) $<
 
 .jml.cmx:
 	$(JCOPT) -c $(COMPFLAGS) $(OCAMLPP) -impl $<

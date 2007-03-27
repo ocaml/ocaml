@@ -308,6 +308,8 @@ let link ppf objfiles output_name =
   let stdexit =
     if !Clflags.gprofile then "std_exit.p.cmx" else "std_exit.cmx" in
   let objfiles =
+    if !Clflags.nojoin then objfiles else "join.cmxa" :: objfiles in
+  let objfiles =
     if !Clflags.nopervasives then objfiles
     else if !Clflags.output_c_object then stdlib :: objfiles
     else stdlib :: (objfiles @ [stdexit]) in

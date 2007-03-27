@@ -118,11 +118,12 @@ module Options = Main_args.Make_options (struct
   let _pp s = preprocessor := Some s
   let _principal = set principal
   let _rectypes = set recursive_types
+(*>JOCAML*)
+  let _thread () =  use_vmthreads := false ; use_threads := true
+  let _vmthread () =  use_vmthreads := true ; use_threads := false
   let _nojoin () =
-    nojoin := true ;  use_threads := false ; use_vmthreads := false
-  let _thread = set use_threads
-  let _vmthread = set use_vmthreads
-  let _nothread = unset use_threads
+    nojoin := true ; use_vmthreads := false ; use_threads := false
+(*<JOCAML*)
   let _unsafe = set fast
   let _use_prims s = use_prims := s
   let _use_runtime s = use_runtime := s

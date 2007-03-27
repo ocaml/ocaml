@@ -489,6 +489,9 @@ let fix_exec_name name =
 
 let link objfiles output_name =
   let objfiles =
+    if !Clflags.nojoin then objfiles
+    else "join.cma" :: objfiles in
+  let objfiles =
     if !Clflags.nopervasives then objfiles
     else if !Clflags.output_c_object then "stdlib.cma" :: objfiles
     else "stdlib.cma" :: (objfiles @ ["std_exit.cmo"]) in
