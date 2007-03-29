@@ -1538,9 +1538,12 @@ echo "Directories where JoCaml will be installed:"
 echo "        binaries.................. $bindir"
 echo "        standard library.......... $libdir"
 #echo "        manual pages.............. $mandir (with extension .$manext)"
+echo "Companion ocaml:"
 if $has_ocaml
 then
-echo "        companion ocaml........... $ocamllib"
+echo "        version: $ocaml_version, library: $ocamllib."
+else
+echo "        none, JoCaml is alone!"
 fi
 echo "Configuration for the bytecode compiler:"
 echo "        C compiler used........... $bytecc"
