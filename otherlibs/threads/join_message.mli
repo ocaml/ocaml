@@ -12,6 +12,8 @@
 
 (* $Id$ *)
 
+val magic : string
+
 (* Function exn_global loc exn_cstr
    registers the exception constructor exn_cstr as a global one.
 

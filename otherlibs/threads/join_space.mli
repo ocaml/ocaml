@@ -1,6 +1,6 @@
 (***********************************************************************)
 (*                                                                     *)
-(*                    ______________                                   *)
+(*                    Objective Caml                                   *)
 (*                                                                     *)
 (*      Fabrice Le Fessant, projet SOR/PARA INRIA Rocquencourt         *)
 (*      Luc Maranget, projet Moscova                                   *)

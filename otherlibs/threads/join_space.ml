@@ -16,8 +16,11 @@
 open Printf
 open Join_misc
 (*DEBUG*)open Join_debug
-
 open Join_types
+
+external do_is_bytecode  : unit -> bool = "caml_is_bytecode"
+
+let is_bytecode = do_is_bytecode ()
 
 let rec string_of_sockaddrs = function
   | [] -> ""
@@ -41,7 +44,7 @@ let same_space (s1:space_id) s2 = Pervasives.compare s1 s2 = 0
 let compare_space (s1:space_id) s2 = Pervasives.compare s1 s2
  
 
- (* Attempt to handle SIGPIPE *)
+(* Attempt to handle SIGPIPE *)
 let _ =
   Sys.set_signal
     Sys.sigpipe
@@ -214,9 +217,20 @@ let check_addr id addro = match addro with
         (sprintf "attempt to listen on %s, already running as %s"
            (string_of_sockaddr addr) (string_of_sockaddr id))
 
-(* listener is started in several occasions, nevertheless ensure unicity *)
-type connect_msg = Query | Connect of space_id * route list
 
+type connect_msg =
+  | Query
+  | Connect of space_id * string * bool * route list
+
+and connect_answer =
+  | Ok
+  | VersionMismatch
+  | ByteNative
+
+exception ConnectMismatch of connect_answer
+
+
+(* there can be several listeners *)
 let rec start_listener space addr = match space.listener with
 | Listen socks ->
     let addr = do_start_listener space (Some addr) in
@@ -237,7 +251,7 @@ let rec start_listener space addr = match space.listener with
         end ;
 	Mutex.unlock mtx
         
-	
+(* anonymous listener is started at most once *)
 and start_anonymous_listener space = match space.listener with
 | Listen sock -> ()
 |  Deaf mtx ->
@@ -269,9 +283,20 @@ and do_start_listener space addr =
 (*DEBUG*)debug1 "LISTENER" "ANSWERED %s" (string_of_space my_id) ;
 	  Join_link.flush link ;
 	  get_rspace ()
-      | Connect (rspace_id, routes) ->
-(*DEBUG*)debug1 "LISTENER" "his name: %s [routes %s]"
-(*DEBUG*) (space_to_string rspace_id)  (string_of_sockaddrs routes) ;
+      | Connect (rspace_id, r_magic, r_isb, routes) ->
+(*DEBUG*)debug1 "LISTENER" "his name: %s [%s, routes %s]"
+(*DEBUG*) (space_to_string rspace_id) 
+(*DEBUG*) (if r_isb then "byte" else "native") (string_of_sockaddrs routes) ;
+          let answer =
+            if r_magic <> Join_message.magic then VersionMismatch
+            else if r_isb <> is_bytecode then ByteNative
+            else Ok in
+          Join_message.output_value link answer ;
+          Join_link.flush link ;
+          begin match answer with
+          | VersionMismatch|ByteNative -> raise (ConnectMismatch answer)
+          | Ok -> ()
+          end ;
 	  make_remote_space space rspace_id rspace_id routes ;
 	  get_remote_space space rspace_id  in	  
     try
@@ -281,6 +306,10 @@ and do_start_listener space addr =
       Join_link.flush link ;
       open_link_accepted space rspace link
     with
+    | ConnectMismatch _ ->
+(*DEBUG*)debug1 "LISTENER" "%s" "Mismatch" ;
+        (try Join_link.close link with _ -> ()) ;
+	()
     | Join_link.Failed (*From get_rspace*) ->
 (*DEBUG*)debug1 "LISTENER" "%s" "First message not available" ;
 	(try Join_link.close link with _ -> ()) ;
@@ -297,6 +326,7 @@ and get_routes space = match space.listener with
 
 (* called when a connection is aborted, at moment
    used only at setup time when ruled out by a more prioritary connection *)
+
 and close_link_accepted link =
   try (* announce partner we failed *)
     Join_message.output_value link false ;
@@ -422,6 +452,7 @@ and call_sync space rspace kid g v =
       (* At this point the reply is flushed, or the rspace is dead *)
       decr rspace.replies_pending)
 
+(* When outlink is dead, messages are discarded silently *)
 and do_remote_send space rspace do_msg a =
   try
     let link = get_link space rspace in
@@ -535,24 +566,47 @@ and open_link_sender space rspace mtx =  match rspace.link with
 
 and connect_on_link space rspace (mtx, cond) link route =
   Join_message.output_value link
-    (Connect (get_id space, get_routes space)) ;
+    (Connect
+       (get_id space, Join_message.magic, is_bytecode, get_routes space)) ;
   Join_link.flush link ;
+
   let accepted =
+    let destroy_sender () =
+      begin try Join_link.close link with Join_link.Failed -> () end ;
+(*DEBUG*)debug1 "OPEN SENDER" "distroy" ;
+      Mutex.lock mtx ;
+      rspace.link <- DeadConnection ;
+      Condition.broadcast cond ;
+      Mutex.unlock mtx in
+      
     try
+      let answer = (Join_message.input_value link : connect_answer)  in
+      begin match answer with
+      | Ok -> ()
+      | ByteNative|VersionMismatch -> raise (ConnectMismatch answer)
+      end ;
       let more_routes =  (Join_message.input_value link : route list) in
       add_routes rspace.route more_routes ;
       (Join_message.input_value link : bool)
-    with Join_link.Failed ->
+    with
+    | ConnectMismatch answer ->
+(*DEBUG*)debug1 "OPEN SENDER" "Mismatch" ;       
+        destroy_sender () ;
+        failwith
+          (sprintf "connection attempt failed: %s"
+             (match answer with
+             | ByteNative -> "byte against native"
+             | VersionMismatch -> "different JoCaml versions"
+             | Ok -> assert false))
+    | Join_link.Failed ->
 (*DEBUG*)debug1 "OPEN SENDER" "definitively rejected" ;       
-      begin
-        try Join_link.close link with Join_link.Failed -> ()
-      end ;
-      failwith
-        (sprintf
-           "%s does not accept me with identity %s, on route %s"
-	   (string_of_space rspace.rspace_id)
-           (string_of_space (get_id space))
-           (string_of_sockaddr route)) in
+        destroy_sender () ;
+        failwith
+          (sprintf
+             "%s does not accept me with identity %s, on route %s"
+	     (string_of_space rspace.rspace_id)
+             (string_of_space (get_id space))
+             (string_of_sockaddr route)) in
   if accepted then begin
 (*DEBUG*)debug1 "OPEN SENDER" "finally accepted" ;
     Mutex.lock mtx ;
@@ -636,6 +690,7 @@ and localize_rec space originator (s,t) =
 (*  Synchronous message sending is in big let rec *)
 (*  because of calls to "joroute" service above   *)
 (**************************************************)
+
 (* When outlink is dead, get_link raises NoLink
    then, sync calls can fail the join way,
    this will make all tasks waiting replies to die silently *)
@@ -696,9 +751,6 @@ and routes_for space ask_id rs =
 (***********************************)
 (* Various remote message sendings *)
 (***********************************)
-
-(* When outlink is dead, get_tout_queue raises NoLink
-   async messages are distroyed silentely *)
 
 let do_remote_send_async space rspace_id uid idx a =
   do_remote_send space (get_remote_space space rspace_id)
@@ -773,6 +825,7 @@ let do_rid_from_addr space addr =
 	Join_link.flush link ;
 	(Join_message.input_value link : space_id )
       with Join_link.Failed ->
+        begin try Join_link.close link with _ -> () end ;
 	failwith
 	  (sprintf "cannot query %s for its complete name"
 	     (string_of_sockaddr addr)) in
@@ -806,7 +859,10 @@ let do_rid_from_addr space addr =
 	      let cond = Condition.create () in
 	      rspace.link <- Connecting (mtx, cond) ;
 	      Mutex.unlock mtx ;
-	      connect_on_link space rspace (mtx,cond) link addr in
+              try connect_on_link space rspace (mtx,cond) link addr
+              (* Signal distant site is dead since
+                 rid_from_addr is a function *)
+              with NoLink -> raise Join_misc.JoinExit in
     rid
   end
 

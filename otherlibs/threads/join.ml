@@ -28,6 +28,9 @@ let there addr = Join_space.rid_from_addr addr
 
 let where_from chan = Join_prim.where_from chan
 
+exception Exit = Join_misc.JoinExit
+
+let () = Join_prim.exn_global ("join.ml", 31, 0) (Obj.repr Exit)
 
 let at_fail site (chan:unit chan) =
   Join_space.at_fail site (Obj.magic chan : 'a async)

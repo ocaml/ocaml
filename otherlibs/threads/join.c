@@ -25,6 +25,18 @@
 #include "fail.h"
 #include "misc.h"
 
+/* Need to make a difference native/bytecode, since
+   closures (sync channels) have different layouts */
+
+CAMLprim value caml_is_bytecode(value unit) {
+  CAMLparam1(unit) ;
+#ifdef NATIVE_CODE
+  CAMLreturn(Val_bool(0)) ;
+#else
+  CAMLreturn (Val_bool(1)) ;
+#endif
+}
+
 static int join_marshal_initialized = 0 ;
 
 #define INITIAL_SAVED_POINTERS_SIZE 64

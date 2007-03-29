@@ -16,6 +16,13 @@ open Join_types
 (*DEBUG*)open Printf
 (*DEBUG*)open Join_debug
 
+(*****************************)
+(* Magic number for messages *)
+(*****************************)
+
+(* Changes with format of messages *)
+let magic = "JoCaml310"
+
 (*********************)
 (* Global exceptions *)
 (*********************)
