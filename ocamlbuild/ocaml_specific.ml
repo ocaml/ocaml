@@ -358,6 +358,8 @@ flag ["ocaml"; "debug"; "pack"; "byte"] (A "-g");;
 flag ["ocaml"; "debug"; "compile"; "native"] (A "-g");;
 flag ["ocaml"; "debug"; "link"; "native"; "program"] (A "-g");;
 flag ["ocaml"; "debug"; "pack"; "native"] (A "-g");;
+flag ["ocaml"; "link"; "native"; "output_obj"] (A"-output-obj");;
+flag ["ocaml"; "link"; "byte"; "output_obj"] (A"-output-obj");;
 flag ["ocaml"; "dtypes"; "compile"] (A "-dtypes");;
 flag ["ocaml"; "rectypes"; "compile"] (A "-rectypes");;
 flag ["ocaml"; "rectypes"; "infer_interface"] (A "-rectypes");;

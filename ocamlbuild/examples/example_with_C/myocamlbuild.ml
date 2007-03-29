@@ -8,13 +8,13 @@ dispatch begin function
 | After_rules ->
     let libasmrun = !*Ocamlbuild_pack.Ocaml_utils.stdlib_dir/"libasmrun.a" in
 
+    flag ["ocaml"; "link"; "output_obj"] (A"-output-obj");
+
     rule "output C obj"
-      ~dep:"%.ml"
+      ~deps:["%.cmx"; "%.o"]
       ~prod:"%caml.o"
-      begin fun env _ ->
-        let caml_o = env "%caml.o" and ml = env "%.ml" in
-        Cmd(S[!Options.ocamlopt; A"-output-obj"; P ml; A"-o"; Px caml_o])
-      end;
+      (Ocamlbuild_pack.Ocaml_compiler.native_link "%.cmx" "%caml.o");
+
     rule "build C lib"
       ~deps:["%wrap.o"; "%caml.o"]
       ~prod:"lib%.a"
