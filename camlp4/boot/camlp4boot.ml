@@ -23,7 +23,7 @@ module R =
       struct
         let name = "Camlp4RevisedParserParser"
         let version =
-          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.6 2007/03/24 15:30:49 pouillar Exp $"
+          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.7 2007/03/26 12:55:32 pouillar Exp $"
       end
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
@@ -749,6 +749,18 @@ Old (no more supported) syntax:
                              (fun (i : 'module_longident) (_loc : Loc.t) ->
                                 (Ast.MeId (_loc, i) : 'module_expr))));
                          ([ Gram.Stoken
+                              (((function | QUOTATION _ -> true | _ -> false),
+                                "QUOTATION _")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | QUOTATION x ->
+                                    (Quotation.expand _loc x Quotation.
+                                       DynAst.module_expr_tag :
+                                      'module_expr)
+                                | _ -> assert false)));
+                         ([ Gram.Stoken
                               (((function
                                  | ANTIQUOT (("" | "mexp" | "anti" | "list"),
                                      _) -> true
@@ -775,6 +787,18 @@ Old (no more supported) syntax:
                           (Gram.Action.mk
                              (fun (e : 'expr) (_loc : Loc.t) ->
                                 (Ast.StExp (_loc, e) : 'str_item))));
+                         ([ Gram.Stoken
+                              (((function | QUOTATION _ -> true | _ -> false),
+                                "QUOTATION _")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | QUOTATION x ->
+                                    (Quotation.expand _loc x Quotation.
+                                       DynAst.str_item_tag :
+                                      'str_item)
+                                | _ -> assert false)));
                          ([ Gram.Stoken
                               (((function
                                  | ANTIQUOT (("" | "stri" | "anti" | "list"),
@@ -978,6 +1002,18 @@ Old (no more supported) syntax:
                                 (Ast.MbColEq (_loc, m, mt, me) :
                                   'module_binding))));
                          ([ Gram.Stoken
+                              (((function | QUOTATION _ -> true | _ -> false),
+                                "QUOTATION _")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | QUOTATION x ->
+                                    (Quotation.expand _loc x Quotation.
+                                       DynAst.module_binding_tag :
+                                      'module_binding)
+                                | _ -> assert false)));
+                         ([ Gram.Stoken
                               (((function
                                  | ANTIQUOT ("", _) -> true
                                  | _ -> false),
@@ -1089,6 +1125,18 @@ Old (no more supported) syntax:
                              (fun (i : 'module_longident_with_app)
                                 (_loc : Loc.t) ->
                                 (Ast.MtId (_loc, i) : 'module_type))));
+                         ([ Gram.Stoken
+                              (((function | QUOTATION _ -> true | _ -> false),
+                                "QUOTATION _")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | QUOTATION x ->
+                                    (Quotation.expand _loc x Quotation.
+                                       DynAst.module_type_tag :
+                                      'module_type)
+                                | _ -> assert false)));
                          ([ Gram.Stoken
                               (((function
                                  | ANTIQUOT (("" | "mtyp" | "anti" | "list"),
@@ -1232,6 +1280,18 @@ Old (no more supported) syntax:
                                 (_loc : Loc.t) ->
                                 (Ast.SgExc (_loc, t) : 'sig_item))));
                          ([ Gram.Stoken
+                              (((function | QUOTATION _ -> true | _ -> false),
+                                "QUOTATION _")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | QUOTATION x ->
+                                    (Quotation.expand _loc x Quotation.
+                                       DynAst.sig_item_tag :
+                                      'sig_item)
+                                | _ -> assert false)));
+                         ([ Gram.Stoken
                               (((function
                                  | ANTIQUOT (("" | "sigi" | "anti" | "list"),
                                      _) -> true
@@ -1295,6 +1355,18 @@ Old (no more supported) syntax:
                                 (_loc : Loc.t) ->
                                 (Ast.MbCol (_loc, m, mt) :
                                   'module_rec_declaration))));
+                         ([ Gram.Stoken
+                              (((function | QUOTATION _ -> true | _ -> false),
+                                "QUOTATION _")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | QUOTATION x ->
+                                    (Quotation.expand _loc x Quotation.
+                                       DynAst.module_binding_tag :
+                                      'module_rec_declaration)
+                                | _ -> assert false)));
                          ([ Gram.Stoken
                               (((function
                                  | ANTIQUOT
@@ -1376,6 +1448,18 @@ Old (no more supported) syntax:
                                        Ast.TyAnt (_loc,
                                          mk_anti ~c: "ctyp" n s),
                                        t) :
+                                      'with_constr)
+                                | _ -> assert false)));
+                         ([ Gram.Stoken
+                              (((function | QUOTATION _ -> true | _ -> false),
+                                "QUOTATION _")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | QUOTATION x ->
+                                    (Quotation.expand _loc x Quotation.
+                                       DynAst.with_constr_tag :
                                       'with_constr)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -2089,8 +2173,8 @@ Old (no more supported) syntax:
                                 ->
                                 match __camlp4_0 with
                                 | QUOTATION x ->
-                                    (Quotation.expand_expr
-                                       (Gram.parse_string expr_eoi) _loc x :
+                                    (Quotation.expand _loc x Quotation.
+                                       DynAst.expr_tag :
                                       'expr)
                                 | _ -> assert false))) ]) ]))
                   ());
@@ -2807,8 +2891,8 @@ Old (no more supported) syntax:
                                 ->
                                 match __camlp4_0 with
                                 | QUOTATION x ->
-                                    (Quotation.expand_patt
-                                       (Gram.parse_string patt_eoi) _loc x :
+                                    (Quotation.expand _loc x Quotation.
+                                       DynAst.patt_tag :
                                       'patt)
                                 | _ -> assert false)));
                          ([ Gram.Skeyword "_" ],
@@ -3127,6 +3211,18 @@ Old (no more supported) syntax:
                                       'label_patt)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
+                              (((function | QUOTATION _ -> true | _ -> false),
+                                "QUOTATION _")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | QUOTATION x ->
+                                    (Quotation.expand _loc x Quotation.
+                                       DynAst.patt_tag :
+                                      'label_patt)
+                                | _ -> assert false)));
+                         ([ Gram.Stoken
                               (((function
                                  | ANTIQUOT (("" | "pat" | "anti"), _) ->
                                      true
@@ -3195,6 +3291,18 @@ Old (no more supported) syntax:
                              (fun _ _ (_loc : Loc.t) ->
                                 (Ast.PaId (_loc, Ast.IdUid (_loc, "()")) :
                                   'ipatt))));
+                         ([ Gram.Stoken
+                              (((function | QUOTATION _ -> true | _ -> false),
+                                "QUOTATION _")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | QUOTATION x ->
+                                    (Quotation.expand _loc x Quotation.
+                                       DynAst.patt_tag :
+                                      'ipatt)
+                                | _ -> assert false)));
                          ([ Gram.Stoken
                               (((function
                                  | ANTIQUOT ("tup", _) -> true
@@ -3290,6 +3398,18 @@ Old (no more supported) syntax:
                                 (Ast.PaEq (_loc, Ast.PaId (_loc, i), p) :
                                   'label_ipatt))));
                          ([ Gram.Stoken
+                              (((function | QUOTATION _ -> true | _ -> false),
+                                "QUOTATION _")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | QUOTATION x ->
+                                    (Quotation.expand _loc x Quotation.
+                                       DynAst.patt_tag :
+                                      'label_ipatt)
+                                | _ -> assert false)));
+                         ([ Gram.Stoken
                               (((function
                                  | ANTIQUOT ("list", _) -> true
                                  | _ -> false),
@@ -3351,6 +3471,18 @@ Old (no more supported) syntax:
                                 (t1 : 'type_declaration) (_loc : Loc.t) ->
                                 (Ast.TyAnd (_loc, t1, t2) :
                                   'type_declaration))));
+                         ([ Gram.Stoken
+                              (((function | QUOTATION _ -> true | _ -> false),
+                                "QUOTATION _")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | QUOTATION x ->
+                                    (Quotation.expand _loc x Quotation.
+                                       DynAst.ctyp_tag :
+                                      'type_declaration)
+                                | _ -> assert false)));
                          ([ Gram.Stoken
                               (((function
                                  | ANTIQUOT ("list", _) -> true
@@ -3513,6 +3645,18 @@ Old (no more supported) syntax:
                           (Gram.Action.mk
                              (fun (i : 'a_ident) _ (_loc : Loc.t) ->
                                 (Ast.TyQuo (_loc, i) : 'type_parameter))));
+                         ([ Gram.Stoken
+                              (((function | QUOTATION _ -> true | _ -> false),
+                                "QUOTATION _")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | QUOTATION x ->
+                                    (Quotation.expand _loc x Quotation.
+                                       DynAst.ctyp_tag :
+                                      'type_parameter)
+                                | _ -> assert false)));
                          ([ Gram.Stoken
                               (((function
                                  | ANTIQUOT (("" | "typ" | "anti"), _) ->
@@ -3755,6 +3899,18 @@ Old (no more supported) syntax:
                                 (Ast.TyId (_loc, Ast.IdLid (_loc, i)) :
                                   'ctyp))));
                          ([ Gram.Stoken
+                              (((function | QUOTATION _ -> true | _ -> false),
+                                "QUOTATION _")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | QUOTATION x ->
+                                    (Quotation.expand _loc x Quotation.
+                                       DynAst.ctyp_tag :
+                                      'ctyp)
+                                | _ -> assert false)));
+                         ([ Gram.Stoken
                               (((function
                                  | ANTIQUOT ("id", _) -> true
                                  | _ -> false),
@@ -3888,6 +4044,18 @@ Old (no more supported) syntax:
                                 (Ast.TyOr (_loc, t1, t2) :
                                   'constructor_declarations))));
                          ([ Gram.Stoken
+                              (((function | QUOTATION _ -> true | _ -> false),
+                                "QUOTATION _")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | QUOTATION x ->
+                                    (Quotation.expand _loc x Quotation.
+                                       DynAst.ctyp_tag :
+                                      'constructor_declarations)
+                                | _ -> assert false)));
+                         ([ Gram.Stoken
                               (((function
                                  | ANTIQUOT ("list", _) -> true
                                  | _ -> false),
@@ -3942,6 +4110,18 @@ Old (no more supported) syntax:
                                 (Ast.TyOf (_loc,
                                    Ast.TyId (_loc, Ast.IdUid (_loc, s)), t) :
                                   'constructor_declaration))));
+                         ([ Gram.Stoken
+                              (((function | QUOTATION _ -> true | _ -> false),
+                                "QUOTATION _")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | QUOTATION x ->
+                                    (Quotation.expand _loc x Quotation.
+                                       DynAst.ctyp_tag :
+                                      'constructor_declaration)
+                                | _ -> assert false)));
                          ([ Gram.Stoken
                               (((function
                                  | ANTIQUOT (("" | "typ"), _) -> true
@@ -4020,6 +4200,18 @@ Old (no more supported) syntax:
                                 (Ast.TyCol (_loc,
                                    Ast.TyId (_loc, Ast.IdLid (_loc, s)), t) :
                                   'label_declaration))));
+                         ([ Gram.Stoken
+                              (((function | QUOTATION _ -> true | _ -> false),
+                                "QUOTATION _")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | QUOTATION x ->
+                                    (Quotation.expand _loc x Quotation.
+                                       DynAst.ctyp_tag :
+                                      'label_declaration)
+                                | _ -> assert false)));
                          ([ Gram.Stoken
                               (((function
                                  | ANTIQUOT ("list", _) -> true
@@ -4365,6 +4557,18 @@ Old (no more supported) syntax:
                                 (Ast.CeEq (_loc, ci, ce) :
                                   'class_declaration))));
                          ([ Gram.Stoken
+                              (((function | QUOTATION _ -> true | _ -> false),
+                                "QUOTATION _")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | QUOTATION x ->
+                                    (Quotation.expand _loc x Quotation.
+                                       DynAst.class_expr_tag :
+                                      'class_declaration)
+                                | _ -> assert false)));
+                         ([ Gram.Stoken
                               (((function
                                  | ANTIQUOT (("" | "cdcl" | "anti" | "list"),
                                      _) -> true
@@ -4666,6 +4870,18 @@ Old (no more supported) syntax:
                              (fun (ce : 'class_longident_and_param)
                                 (_loc : Loc.t) -> (ce : 'class_expr))));
                          ([ Gram.Stoken
+                              (((function | QUOTATION _ -> true | _ -> false),
+                                "QUOTATION _")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | QUOTATION x ->
+                                    (Quotation.expand _loc x Quotation.
+                                       DynAst.class_expr_tag :
+                                      'class_expr)
+                                | _ -> assert false)));
+                         ([ Gram.Stoken
                               (((function
                                  | ANTIQUOT (("" | "cexp" | "anti"), _) ->
                                      true
@@ -4895,6 +5111,18 @@ Old (no more supported) syntax:
                                 (_loc : Loc.t) ->
                                 (Ast.CrInh (_loc, ce, pb) : 'class_str_item))));
                          ([ Gram.Stoken
+                              (((function | QUOTATION _ -> true | _ -> false),
+                                "QUOTATION _")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | QUOTATION x ->
+                                    (Quotation.expand _loc x Quotation.
+                                       DynAst.class_str_item_tag :
+                                      'class_str_item)
+                                | _ -> assert false)));
+                         ([ Gram.Stoken
                               (((function
                                  | ANTIQUOT (("" | "cst" | "anti" | "list"),
                                      _) -> true
@@ -5025,6 +5253,18 @@ Old (no more supported) syntax:
                           (Gram.Action.mk
                              (fun (ct : 'class_type_longident_and_param)
                                 (_loc : Loc.t) -> (ct : 'class_type))));
+                         ([ Gram.Stoken
+                              (((function | QUOTATION _ -> true | _ -> false),
+                                "QUOTATION _")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | QUOTATION x ->
+                                    (Quotation.expand _loc x Quotation.
+                                       DynAst.class_type_tag :
+                                      'class_type)
+                                | _ -> assert false)));
                          ([ Gram.Stoken
                               (((function
                                  | ANTIQUOT (("" | "ctyp" | "anti"), _) ->
@@ -5237,6 +5477,18 @@ Old (no more supported) syntax:
                              (fun (cs : 'class_type) _ (_loc : Loc.t) ->
                                 (Ast.CgInh (_loc, cs) : 'class_sig_item))));
                          ([ Gram.Stoken
+                              (((function | QUOTATION _ -> true | _ -> false),
+                                "QUOTATION _")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | QUOTATION x ->
+                                    (Quotation.expand _loc x Quotation.
+                                       DynAst.class_sig_item_tag :
+                                      'class_sig_item)
+                                | _ -> assert false)));
+                         ([ Gram.Stoken
                               (((function
                                  | ANTIQUOT (("" | "csg" | "anti" | "list"),
                                      _) -> true
@@ -5283,6 +5535,18 @@ Old (no more supported) syntax:
                                 (Ast.CtCol (_loc, ci, ct) :
                                   'class_description))));
                          ([ Gram.Stoken
+                              (((function | QUOTATION _ -> true | _ -> false),
+                                "QUOTATION _")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | QUOTATION x ->
+                                    (Quotation.expand _loc x Quotation.
+                                       DynAst.class_type_tag :
+                                      'class_description)
+                                | _ -> assert false)));
+                         ([ Gram.Stoken
                               (((function
                                  | ANTIQUOT (("" | "typ" | "anti" | "list"),
                                      _) -> true
@@ -5326,6 +5590,18 @@ Old (no more supported) syntax:
                                 (_loc : Loc.t) ->
                                 (Ast.CtEq (_loc, ci, ct) :
                                   'class_type_declaration))));
+                         ([ Gram.Stoken
+                              (((function | QUOTATION _ -> true | _ -> false),
+                                "QUOTATION _")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | QUOTATION x ->
+                                    (Quotation.expand _loc x Quotation.
+                                       DynAst.class_type_tag :
+                                      'class_type_declaration)
+                                | _ -> assert false)));
                          ([ Gram.Stoken
                               (((function
                                  | ANTIQUOT (("" | "typ" | "anti" | "list"),
@@ -5419,6 +5695,18 @@ Old (no more supported) syntax:
                                    Ast.TyId (_loc, Ast.IdLid (_loc, lab)), t) :
                                   'meth_list))));
                          ([ Gram.Stoken
+                              (((function | QUOTATION _ -> true | _ -> false),
+                                "QUOTATION _")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | QUOTATION x ->
+                                    (Quotation.expand _loc x Quotation.
+                                       DynAst.ctyp_tag :
+                                      'meth_list)
+                                | _ -> assert false)));
+                         ([ Gram.Stoken
                               (((function
                                  | ANTIQUOT ("list", _) -> true
                                  | _ -> false),
@@ -5488,6 +5776,18 @@ Old (no more supported) syntax:
                           (Gram.Action.mk
                              (fun (i : 'a_ident) _ (_loc : Loc.t) ->
                                 (Ast.TyQuo (_loc, i) : 'typevars))));
+                         ([ Gram.Stoken
+                              (((function | QUOTATION _ -> true | _ -> false),
+                                "QUOTATION _")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | QUOTATION x ->
+                                    (Quotation.expand _loc x Quotation.
+                                       DynAst.ctyp_tag :
+                                      'typevars)
+                                | _ -> assert false)));
                          ([ Gram.Stoken
                               (((function
                                  | ANTIQUOT (("" | "typ"), _) -> true
@@ -7984,6 +8284,9 @@ module Camlp4QuotationCommon =
             let () = MetaLoc.loc_name := loc_name_opt in
             let meta_ast = mexpr loc ast in
             let exp_ast = antiquot_expander#expr meta_ast in exp_ast in
+          let expand_str_item loc loc_name_opt s =
+            let exp_ast = expand_expr loc loc_name_opt s
+            in Ast.StExp (loc, exp_ast) in
           let expand_patt _loc loc_name_opt s =
             let ast = parse_quot_string entry_eoi _loc s in
             let meta_ast = mpatt _loc ast in
@@ -8024,8 +8327,9 @@ module Camlp4QuotationCommon =
                                 | EOI -> (x : 'entry_eoi)
                                 | _ -> assert false))) ]) ]))
                   ());
-             Quotation.add name
-               (Quotation.ExAst ((expand_expr, expand_patt))))
+             Quotation.add name Quotation.DynAst.expr_tag expand_expr;
+             Quotation.add name Quotation.DynAst.patt_tag expand_patt;
+             Quotation.add name Quotation.DynAst.str_item_tag expand_str_item)
         let _ =
           add_quotation "sig_item" sig_item_quot ME.meta_sig_item MP.
             meta_sig_item
@@ -12289,6 +12593,345 @@ module D =
       end
     let _ = let module M = Register.OCamlSyntaxExtension(Id)(Make) in ()
   end
+module L =
+  struct
+    open Camlp4
+    (* -*- camlp4r -*- *)
+    (****************************************************************************)
+    (*                                                                          *)
+    (*                              Objective Caml                              *)
+    (*                                                                          *)
+    (*                            INRIA Rocquencourt                            *)
+    (*                                                                          *)
+    (*  Copyright  2007  Institut  National  de  Recherche en Informatique et   *)
+    (*  en Automatique.  All rights reserved.  This file is distributed under   *)
+    (*  the terms of the GNU Library General Public License, with the special   *)
+    (*  exception on linking described in LICENSE at the top of the Objective   *)
+    (*  Caml source tree.                                                       *)
+    (*                                                                          *)
+    (****************************************************************************)
+    (* Authors:
+ * - Nao Hirokawa: initial version
+ * - Nicolas Pouillard: revised syntax version
+ *)
+    module Id =
+      struct
+        let name = "Camlp4ListComprenhsion"
+        let version =
+          "$Id: Camlp4ListComprehension.ml,v 1.1 2007/02/27 15:50:57 pouillar Exp $"
+      end
+    module Make (Syntax : Sig.Camlp4Syntax) =
+      struct
+        open Sig
+        include Syntax
+        let rec loop n =
+          function
+          | [] -> None
+          | [ (x, _) ] -> if n = 1 then Some x else None
+          | _ :: l -> loop (n - 1) l
+        let stream_peek_nth n strm = loop n (Stream.npeek n strm)
+        (* usual trick *)
+        let test_patt_lessminus =
+          Gram.Entry.of_parser "test_patt_lessminus"
+            (fun strm ->
+               let rec skip_patt n =
+                 match stream_peek_nth n strm with
+                 | Some (KEYWORD "<-") -> n
+                 | Some (KEYWORD ("[" | "[<")) ->
+                     skip_patt ((ignore_upto "]" (n + 1)) + 1)
+                 | Some (KEYWORD "(") ->
+                     skip_patt ((ignore_upto ")" (n + 1)) + 1)
+                 | Some (KEYWORD "{") ->
+                     skip_patt ((ignore_upto "}" (n + 1)) + 1)
+                 | Some (KEYWORD ("as" | "::" | ";" | "," | "_")) |
+                     Some (LIDENT _ | UIDENT _) -> skip_patt (n + 1)
+                 | Some _ | None -> raise Stream.Failure
+               and ignore_upto end_kwd n =
+                 match stream_peek_nth n strm with
+                 | Some (KEYWORD prm) when prm = end_kwd -> n
+                 | Some (KEYWORD ("[" | "[<")) ->
+                     ignore_upto end_kwd ((ignore_upto "]" (n + 1)) + 1)
+                 | Some (KEYWORD "(") ->
+                     ignore_upto end_kwd ((ignore_upto ")" (n + 1)) + 1)
+                 | Some (KEYWORD "{") ->
+                     ignore_upto end_kwd ((ignore_upto "}" (n + 1)) + 1)
+                 | Some _ -> ignore_upto end_kwd (n + 1)
+                 | None -> raise Stream.Failure
+               in skip_patt 1)
+        let map _loc p e l =
+          match (p, e) with
+          | (Ast.PaId (_, (Ast.IdLid (_, x))),
+             Ast.ExId (_, (Ast.IdLid (_, y)))) when x = y -> l
+          | _ ->
+              if Ast.is_irrefut_patt p
+              then
+                Ast.ExApp (_loc,
+                  Ast.ExApp (_loc,
+                    Ast.ExId (_loc,
+                      Ast.IdAcc (_loc, Ast.IdUid (_loc, "List"),
+                        Ast.IdLid (_loc, "map"))),
+                    Ast.ExFun (_loc, Ast.McArr (_loc, p, Ast.ExNil _loc, e))),
+                  l)
+              else
+                Ast.ExApp (_loc,
+                  Ast.ExApp (_loc,
+                    Ast.ExApp (_loc,
+                      Ast.ExId (_loc,
+                        Ast.IdAcc (_loc, Ast.IdUid (_loc, "List"),
+                          Ast.IdLid (_loc, "fold_right"))),
+                      Ast.ExFun (_loc,
+                        Ast.McOr (_loc,
+                          Ast.McArr (_loc, p,
+                            Ast.ExId (_loc, Ast.IdUid (_loc, "True")),
+                            Ast.ExApp (_loc,
+                              Ast.ExFun (_loc,
+                                Ast.McArr (_loc,
+                                  Ast.PaId (_loc, Ast.IdLid (_loc, "x")),
+                                  Ast.ExNil _loc,
+                                  Ast.ExFun (_loc,
+                                    Ast.McArr (_loc,
+                                      Ast.PaId (_loc, Ast.IdLid (_loc, "xs")),
+                                      Ast.ExNil _loc,
+                                      Ast.ExApp (_loc,
+                                        Ast.ExApp (_loc,
+                                          Ast.ExId (_loc,
+                                            Ast.IdUid (_loc, "::")),
+                                          Ast.ExId (_loc,
+                                            Ast.IdLid (_loc, "x"))),
+                                        Ast.ExId (_loc,
+                                          Ast.IdLid (_loc, "xs"))))))),
+                              e)),
+                          Ast.McArr (_loc, Ast.PaAny _loc, Ast.ExNil _loc,
+                            Ast.ExFun (_loc,
+                              Ast.McArr (_loc,
+                                Ast.PaId (_loc, Ast.IdLid (_loc, "l")),
+                                Ast.ExNil _loc,
+                                Ast.ExId (_loc, Ast.IdLid (_loc, "l")))))))),
+                    l),
+                  Ast.ExId (_loc, Ast.IdUid (_loc, "[]")))
+        let filter _loc p b l =
+          if Ast.is_irrefut_patt p
+          then
+            Ast.ExApp (_loc,
+              Ast.ExApp (_loc,
+                Ast.ExId (_loc,
+                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "List"),
+                    Ast.IdLid (_loc, "filter"))),
+                Ast.ExFun (_loc, Ast.McArr (_loc, p, Ast.ExNil _loc, b))),
+              l)
+          else
+            Ast.ExApp (_loc,
+              Ast.ExApp (_loc,
+                Ast.ExId (_loc,
+                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "List"),
+                    Ast.IdLid (_loc, "filter"))),
+                Ast.ExFun (_loc,
+                  Ast.McOr (_loc,
+                    Ast.McArr (_loc, p,
+                      Ast.ExId (_loc, Ast.IdUid (_loc, "True")), b),
+                    Ast.McArr (_loc, Ast.PaAny _loc, Ast.ExNil _loc,
+                      Ast.ExId (_loc, Ast.IdUid (_loc, "False")))))),
+              l)
+        let concat _loc l =
+          Ast.ExApp (_loc,
+            Ast.ExId (_loc,
+              Ast.IdAcc (_loc, Ast.IdUid (_loc, "List"),
+                Ast.IdLid (_loc, "concat"))),
+            l)
+        let rec compr _loc e =
+          function
+          | [ `gen ((p, l)) ] -> map _loc p e l
+          | `gen ((p, l)) :: `cond b :: items ->
+              compr _loc e ((`gen ((p, (filter _loc p b l)))) :: items)
+          | `gen ((p, l)) :: ((`gen ((_, _)) :: _ as is)) ->
+              concat _loc (map _loc p (compr _loc e is) l)
+          | _ -> raise Stream.Failure
+        let _ =
+          Gram.delete_rule expr
+            [ Gram.Skeyword "[";
+              Gram.Snterm
+                (Gram.Entry.obj
+                   (sem_expr_for_list : 'sem_expr_for_list Gram.Entry.t));
+              Gram.Skeyword "]" ]
+        let is_revised =
+          try
+            (Gram.delete_rule expr
+               [ Gram.Skeyword "[";
+                 Gram.Snterm
+                   (Gram.Entry.obj
+                      (sem_expr_for_list : 'sem_expr_for_list Gram.Entry.t));
+                 Gram.Skeyword "::";
+                 Gram.Snterm (Gram.Entry.obj (expr : 'expr Gram.Entry.t));
+                 Gram.Skeyword "]" ];
+             true)
+          with | Not_found -> false
+        let comprehension_or_sem_expr_for_list =
+          Gram.Entry.mk "comprehension_or_sem_expr_for_list"
+        let _ =
+          let _ = (expr : 'expr Gram.Entry.t)
+          and _ =
+            (comprehension_or_sem_expr_for_list :
+              'comprehension_or_sem_expr_for_list Gram.Entry.t) in
+          let grammar_entry_create = Gram.Entry.mk in
+          let item : 'item Gram.Entry.t = grammar_entry_create "item"
+          in
+            (Gram.extend (expr : 'expr Gram.Entry.t)
+               ((fun () ->
+                   ((Some (Camlp4.Sig.Grammar.Level "simple")),
+                    [ (None, None,
+                       [ ([ Gram.Skeyword "[";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (comprehension_or_sem_expr_for_list :
+                                   'comprehension_or_sem_expr_for_list Gram.
+                                     Entry.t));
+                            Gram.Skeyword "]" ],
+                          (Gram.Action.mk
+                             (fun _ (e : 'comprehension_or_sem_expr_for_list)
+                                _ (_loc : Loc.t) -> (e : 'expr)))) ]) ]))
+                  ());
+             Gram.extend
+               (comprehension_or_sem_expr_for_list :
+                 'comprehension_or_sem_expr_for_list Gram.Entry.t)
+               ((fun () ->
+                   (None,
+                    [ (None, None,
+                       [ ([ Gram.Snterml
+                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t),
+                              "top") ],
+                          (Gram.Action.mk
+                             (fun (e : 'expr) (_loc : Loc.t) ->
+                                (Ast.ExApp (_loc,
+                                   Ast.ExApp (_loc,
+                                     Ast.ExId (_loc, Ast.IdUid (_loc, "::")),
+                                     e),
+                                   Ast.ExId (_loc, Ast.IdUid (_loc, "[]"))) :
+                                  'comprehension_or_sem_expr_for_list))));
+                         ([ Gram.Snterml
+                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t),
+                              "top");
+                            Gram.Skeyword "|";
+                            Gram.Slist1sep
+                              (Gram.Snterm
+                                 (Gram.Entry.obj (item : 'item Gram.Entry.t)),
+                              Gram.Skeyword ";") ],
+                          (Gram.Action.mk
+                             (fun (l : 'item list) _ (e : 'expr)
+                                (_loc : Loc.t) ->
+                                (compr _loc e l :
+                                  'comprehension_or_sem_expr_for_list))));
+                         ([ Gram.Snterml
+                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t),
+                              "top");
+                            Gram.Skeyword ";" ],
+                          (Gram.Action.mk
+                             (fun _ (e : 'expr) (_loc : Loc.t) ->
+                                (Ast.ExApp (_loc,
+                                   Ast.ExApp (_loc,
+                                     Ast.ExId (_loc, Ast.IdUid (_loc, "::")),
+                                     e),
+                                   Ast.ExId (_loc, Ast.IdUid (_loc, "[]"))) :
+                                  'comprehension_or_sem_expr_for_list))));
+                         ([ Gram.Snterml
+                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t),
+                              "top");
+                            Gram.Skeyword ";";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (sem_expr_for_list :
+                                   'sem_expr_for_list Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (mk : 'sem_expr_for_list) _ (e : 'expr)
+                                (_loc : Loc.t) ->
+                                (Ast.ExApp (_loc,
+                                   Ast.ExApp (_loc,
+                                     Ast.ExId (_loc, Ast.IdUid (_loc, "::")),
+                                     e),
+                                   mk
+                                     (Ast.ExId (_loc, Ast.IdUid (_loc, "[]")))) :
+                                  'comprehension_or_sem_expr_for_list)))) ]) ]))
+                  ());
+             Gram.extend (item : 'item Gram.Entry.t)
+               ((fun () ->
+                   (None,
+                    [ (None, None,
+                       [ ([ Gram.Snterml
+                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t),
+                              "top") ],
+                          (Gram.Action.mk
+                             (fun (e : 'expr) (_loc : Loc.t) ->
+                                (`cond e : 'item))));
+                         ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (test_patt_lessminus :
+                                   'test_patt_lessminus Gram.Entry.t));
+                            Gram.Snterm
+                              (Gram.Entry.obj (patt : 'patt Gram.Entry.t));
+                            Gram.Skeyword "<-";
+                            Gram.Snterml
+                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t),
+                              "top") ],
+                          (Gram.Action.mk
+                             (fun (e : 'expr) _ (p : 'patt) _ (_loc : Loc.t)
+                                -> (`gen ((p, e)) : 'item)))) ]) ]))
+                  ()))
+        let _ =
+          if is_revised
+          then
+            (let _ = (expr : 'expr Gram.Entry.t)
+             and _ =
+               (comprehension_or_sem_expr_for_list :
+                 'comprehension_or_sem_expr_for_list Gram.Entry.t)
+             in
+               Gram.extend
+                 (comprehension_or_sem_expr_for_list :
+                   'comprehension_or_sem_expr_for_list Gram.Entry.t)
+                 ((fun () ->
+                     (None,
+                      [ (None, None,
+                         [ ([ Gram.Snterml
+                                (Gram.Entry.obj (expr : 'expr Gram.Entry.t),
+                                "top");
+                              Gram.Skeyword "::";
+                              Gram.Snterm
+                                (Gram.Entry.obj (expr : 'expr Gram.Entry.t)) ],
+                            (Gram.Action.mk
+                               (fun (last : 'expr) _ (e : 'expr)
+                                  (_loc : Loc.t) ->
+                                  (Ast.ExApp (_loc,
+                                     Ast.ExApp (_loc,
+                                       Ast.ExId (_loc,
+                                         Ast.IdUid (_loc, "::")),
+                                       e),
+                                     last) :
+                                    'comprehension_or_sem_expr_for_list))));
+                           ([ Gram.Snterml
+                                (Gram.Entry.obj (expr : 'expr Gram.Entry.t),
+                                "top");
+                              Gram.Skeyword ";";
+                              Gram.Snterm
+                                (Gram.Entry.obj
+                                   (sem_expr_for_list :
+                                     'sem_expr_for_list Gram.Entry.t));
+                              Gram.Skeyword "::";
+                              Gram.Snterm
+                                (Gram.Entry.obj (expr : 'expr Gram.Entry.t)) ],
+                            (Gram.Action.mk
+                               (fun (last : 'expr) _
+                                  (mk : 'sem_expr_for_list) _ (e : 'expr)
+                                  (_loc : Loc.t) ->
+                                  (Ast.ExApp (_loc,
+                                     Ast.ExApp (_loc,
+                                       Ast.ExId (_loc,
+                                         Ast.IdUid (_loc, "::")),
+                                       e),
+                                     mk last) :
+                                    'comprehension_or_sem_expr_for_list)))) ]) ]))
+                    ()))
+          else ()
+      end
+    let _ = let module M = Register.OCamlSyntaxExtension(Id)(Make) in ()
+  end
 module P =
   struct
     (****************************************************************************)
@@ -12329,7 +12972,7 @@ module B =
  * - Daniel de Rauglaudre: initial version
  * - Nicolas Pouillard: refactoring
  *)
-    (* $Id: Camlp4Bin.ml,v 1.14.2.1 2007/03/13 13:47:00 pouillar Exp $ *)
+    (* $Id: Camlp4Bin.ml,v 1.14.2.2 2007/03/26 12:55:32 pouillar Exp $ *)
     open Camlp4
     open PreCast.Syntax
     open PreCast

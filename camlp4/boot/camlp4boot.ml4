@@ -5,5 +5,6 @@ module Rp = struct INCLUDE "camlp4/Camlp4Parsers/Camlp4OCamlRevisedParserParser.
 module G = struct INCLUDE "camlp4/Camlp4Parsers/Camlp4GrammarParser.ml"; end;
 module M = struct INCLUDE "camlp4/Camlp4Parsers/Camlp4MacroParser.ml"; end;
 module D = struct INCLUDE "camlp4/Camlp4Parsers/Camlp4DebugParser.ml"; end;
+module L = struct INCLUDE "camlp4/Camlp4Parsers/Camlp4ListComprehension.ml"; end;
 module P = struct INCLUDE "camlp4/Camlp4Printers/Camlp4OCamlAstDumper.ml"; end;
 module B = struct INCLUDE "camlp4/Camlp4Bin.ml"; end;

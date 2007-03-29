@@ -13,6 +13,7 @@ module Struct = struct
     struct INCLUDE "camlp4/Camlp4/Struct/Token.ml"; end;
   module Lexer = struct INCLUDE "camlp4/boot/Lexer.ml"; end;
   module Camlp4Ast = struct INCLUDE "camlp4/Camlp4/Struct/Camlp4Ast.ml"; end;
+  module DynAst = struct INCLUDE "camlp4/Camlp4/Struct/DynAst.ml"; end;
   module Quotation = struct INCLUDE "camlp4/Camlp4/Struct/Quotation.ml"; end;
   module AstFilters = struct INCLUDE "camlp4/Camlp4/Struct/AstFilters.ml"; end;
   module Camlp4Ast2OCamlAst :

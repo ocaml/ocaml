@@ -414,6 +414,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         [ `ANTIQUOT (""|"pat"|"anti" as n) s ->
             <:patt< $anti:mk_anti ~c:"patt" n s$ >>
         | `ANTIQUOT ("tup" as n) s -> <:patt< ($tup:<:patt< $anti:mk_anti ~c:"patt" n s$ >>$) >>
+        | `QUOTATION x -> Quotation.expand _loc x Quotation.DynAst.patt_tag
         | i = ident -> <:patt< $id:i$ >>
         | s = a_INT -> <:patt< $int:s$ >>
         | s = a_INT32 -> <:patt< $int32:s$ >>
@@ -444,9 +445,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         | "("; p = patt; ")" -> <:patt< $p$ >>
         | "_" -> <:patt< _ >>
         | "`"; s = a_ident -> <:patt< ` $s$ >>
-        | "#"; i = type_longident -> <:patt< # $i$ >>
-        | `QUOTATION x ->
-            Quotation.expand_patt (Gram.parse_string patt) _loc x ] ]
+        | "#"; i = type_longident -> <:patt< # $i$ >> ] ]
     ;
     (* comma_expr:
       [ [ e1 = SELF; ","; e2 = SELF -> <:expr< $e1$, $e2$ >>
@@ -470,6 +469,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         [ wc1 = SELF; "and"; wc2 = SELF -> <:with_constr< $wc1$ and $wc2$ >>
         | `ANTIQUOT (""|"with_constr"|"anti"|"list" as n) s ->
             <:with_constr< $anti:mk_anti ~c:"with_constr" n s$ >>
+        | `QUOTATION x -> Quotation.expand _loc x Quotation.DynAst.with_constr_tag
         | "type"; `ANTIQUOT (""|"typ"|"anti" as n) s; "="; t = opt_private_ctyp ->
             <:with_constr< type $anti:mk_anti ~c:"ctyp" n s$ = $t$ >>
         | "type"; t1 = type_longident_and_parameters; "="; t2 = opt_private_ctyp ->
@@ -542,6 +542,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
             <:ctyp< ($tup:<:ctyp< $anti:mk_anti ~c:"ctyp" n s$ >>$) >>
         | `ANTIQUOT ("id" as n) s ->
             <:ctyp< $id:<:ident< $anti:mk_anti ~c:"ident" n s$ >>$ >>
+        | `QUOTATION x -> Quotation.expand _loc x Quotation.DynAst.ctyp_tag
         | "("; t = SELF; ","; mk = comma_ctyp_app; ")";
           i = ctyp LEVEL "ctyp2" ->
             mk <:ctyp< $i$ $t$ >>
@@ -637,6 +638,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         [ t1 = SELF; ";"; t2 = SELF -> <:ctyp< $t1$; $t2$ >>
         | `ANTIQUOT (""|"typ" as n) s ->
             <:ctyp< $anti:mk_anti ~c:"ctyp" n s$ >>
+        | `QUOTATION x -> Quotation.expand _loc x Quotation.DynAst.ctyp_tag
         | s = a_LIDENT; ":"; t = poly_type ->  <:ctyp< $lid:s$ : $t$ >>
         | "mutable"; s = a_LIDENT; ":"; t = poly_type ->
             <:ctyp< $lid:s$ : mutable $t$ >>

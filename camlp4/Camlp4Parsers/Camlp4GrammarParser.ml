@@ -309,7 +309,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   value srules loc t rl tvar =
     List.map
       (fun r ->
-        let sl = List.map (fun s -> s.text) r.prod in
+        let sl = [ s.text | s <- r.prod ] in
         let ac = text_of_action loc r.prod t r.action tvar in
         (sl, ac))
       rl

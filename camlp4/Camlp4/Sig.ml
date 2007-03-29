@@ -628,6 +628,40 @@ module type AstFilters = sig
 
 end;
 
+(** Ast as one single type *)
+
+module type DynAst = sig
+  module Ast : Ast;
+  type tag 'a;
+
+  value ctyp_tag : tag Ast.ctyp;
+  value patt_tag : tag Ast.patt;
+  value expr_tag : tag Ast.expr;
+  value module_type_tag : tag Ast.module_type;
+  value sig_item_tag : tag Ast.sig_item;
+  value with_constr_tag : tag Ast.with_constr;
+  value module_expr_tag : tag Ast.module_expr;
+  value str_item_tag : tag Ast.str_item;
+  value class_type_tag : tag Ast.class_type;
+  value class_sig_item_tag : tag Ast.class_sig_item;
+  value class_expr_tag : tag Ast.class_expr;
+  value class_str_item_tag : tag Ast.class_str_item;
+  value match_case_tag : tag Ast.match_case;
+  value ident_tag : tag Ast.ident;
+  value binding_tag : tag Ast.binding;
+  value module_binding_tag : tag Ast.module_binding;
+
+  value string_of_tag : tag 'a -> string;
+
+  module Pack (X : sig type t 'a; end) : sig
+    type pack;
+    value pack : tag 'a -> X.t 'a -> pack;
+    value unpack : tag 'a -> pack -> X.t 'a;
+    value print_tag : Format.formatter -> pack -> unit;
+  end;
+end;
+
+
 (** Quotation operations. *)
 
 type quotation =
@@ -638,45 +672,32 @@ type quotation =
 
 module type Quotation = sig
   module Ast : Ast;
+  module DynAst : DynAst with module Ast = Ast;
   open Ast;
 
   (** The Loc.t is the initial location. The option string is the optional name
       for the location variable. The string is the quotation contents. *)
   type expand_fun 'a = Loc.t -> option string -> string -> 'a;
 
-  (** The type for quotation expanders kind:
-  -      [ExStr exp] for an expander [exp] returning a string which
-          can be parsed to create a syntax tree. Its boolean parameter
-          tells whether the quotation is in position of an expression
-          (True) or in position of a pattern (False). Quotations expanders
-          created with this way may work for some particular language syntax,
-          and not for another one (e.g. may work when used with Revised
-          syntax and not when used with Ocaml syntax, and conversely).
-  -      [ExAst (expr_exp, patt_exp)] for expanders returning directly
-          syntax trees, therefore not necessiting to be parsed afterwards.
-          The function [expr_exp] is called when the quotation is in
-          position of an expression, and [patt_exp] when the quotation is
-          in position of a pattern. Quotation expanders created with this
-          way are independant from the language syntax. *)
-  type expander =
-    [ ExStr of bool -> expand_fun string
-    | ExAst of (expand_fun Ast.expr) and (expand_fun Ast.patt) ];
-
   (** [add name exp] adds the quotation [name] associated with the
       expander [exp]. *)
-  value add : string -> expander -> unit;
+  value add : string -> DynAst.tag 'a -> expand_fun 'a -> unit;
 
   (** [find name] returns the expander of the given quotation name. *)
-  value find : string -> expander;
+  value find : string -> DynAst.tag 'a -> expand_fun 'a;
 
   (** [default] holds the default quotation name. *)
   value default : ref string;
 
+  (** [parse_quotation_result parse_function loc position_tag quotation quotation_result]
+      It's a parser wrapper, this function handles the error reporting for you. *)
+  value parse_quotation_result :
+    (Loc.t -> string -> 'a) -> Loc.t -> quotation -> string -> string -> 'a;
+
   (** function translating quotation names; default = identity *)
   value translate : ref (string -> string);
 
-  value expand_expr : (Loc.t -> string -> Ast.expr) -> Loc.t -> quotation -> Ast.expr;
-  value expand_patt : (Loc.t -> string -> Ast.patt) -> Loc.t -> quotation -> Ast.patt;
+  value expand : Loc.t -> quotation -> DynAst.tag 'a -> 'a;
 
   (** [dump_file] optionally tells Camlp4 to dump the
       result of an expander if this result is syntactically incorrect.

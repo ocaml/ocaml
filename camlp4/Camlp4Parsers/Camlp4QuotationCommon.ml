@@ -151,6 +151,9 @@ module Make (Syntax : Sig.Camlp4Syntax)
       let meta_ast = mexpr loc ast in
       let exp_ast = antiquot_expander#expr meta_ast in
       exp_ast in
+    let expand_str_item loc loc_name_opt s =
+      let exp_ast = expand_expr loc loc_name_opt s in
+      <:str_item@loc< $exp:exp_ast$ >> in
     let expand_patt _loc loc_name_opt s =
       let ast = parse_quot_string entry_eoi _loc s in
       let meta_ast = mpatt _loc ast in
@@ -170,7 +173,9 @@ module Make (Syntax : Sig.Camlp4Syntax)
           [ [ x = entry; `EOI -> x ] ]
         ;
       END;
-      Quotation.add name (Quotation.ExAst (expand_expr, expand_patt))
+      Quotation.add name Quotation.DynAst.expr_tag expand_expr;
+      Quotation.add name Quotation.DynAst.patt_tag expand_patt;
+      Quotation.add name Quotation.DynAst.str_item_tag expand_str_item;
     };
 
   add_quotation "sig_item" sig_item_quot ME.meta_sig_item MP.meta_sig_item;

@@ -27,7 +27,7 @@ module Make (Structure : Structure.S) = struct
     [ DeadEnd -> []
     | LocAct _ _ -> [[]]
     | Node {node = n; brother = b; son = s} ->
-        List.map (fun l -> [n :: l]) (flatten_tree s) @ flatten_tree b ];
+        [ [n :: l] | l <- flatten_tree s ] @ flatten_tree b ];
 
   value rec print_symbol ppf =
     fun
@@ -101,7 +101,7 @@ module Make (Structure : Structure.S) = struct
       List.fold_left
         (fun sep lev ->
           let rules =
-            List.map (fun t -> [Sself :: t]) (flatten_tree lev.lsuffix) @
+            [ [Sself :: t] | t <- flatten_tree lev.lsuffix ] @
               flatten_tree lev.lprefix
           in
           do {

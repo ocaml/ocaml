@@ -1,4 +1,5 @@
-"apply_operator.ml": camlp4rf, use_camlp4
+"apply_operator.ml" or "type_quotation.ml": camlp4rf, use_camlp4
 "lambda_quot.ml": camlp4rf, use_camlp4_full
 "macros.ml" or "dirac.ml" or "puzzle.ml": camlp4of, use_camlp4
 "test_macros.ml": pp(camlp4of ./macros.cmo)
+"lambda_test.ml": pp(camlp4of ./lambda_quot.cmo)

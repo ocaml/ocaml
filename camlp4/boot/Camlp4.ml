@@ -350,7 +350,7 @@ module Sig =
       sig
         (** The name of the extension, typically the module name. *)
         val name : string
-        (** The version of the extension, typically $Id: Sig.ml,v 1.2.2.3 2007/03/23 15:58:02 pouillar Exp $ with a versionning system. *)
+        (** The version of the extension, typically $Id: Sig.ml,v 1.2.2.4 2007/03/26 12:55:32 pouillar Exp $ with a versionning system. *)
         val version : string
       end
     module type Loc =
@@ -1363,25 +1363,52 @@ module Sig =
         val fold_implem_filters :
           ('a -> Ast.str_item filter -> 'a) -> 'a -> 'a
       end
+    module type DynAst =
+      sig
+        module Ast : Ast
+        type 'a tag
+        val ctyp_tag : Ast.ctyp tag
+        val patt_tag : Ast.patt tag
+        val expr_tag : Ast.expr tag
+        val module_type_tag : Ast.module_type tag
+        val sig_item_tag : Ast.sig_item tag
+        val with_constr_tag : Ast.with_constr tag
+        val module_expr_tag : Ast.module_expr tag
+        val str_item_tag : Ast.str_item tag
+        val class_type_tag : Ast.class_type tag
+        val class_sig_item_tag : Ast.class_sig_item tag
+        val class_expr_tag : Ast.class_expr tag
+        val class_str_item_tag : Ast.class_str_item tag
+        val match_case_tag : Ast.match_case tag
+        val ident_tag : Ast.ident tag
+        val binding_tag : Ast.binding tag
+        val module_binding_tag : Ast.module_binding tag
+        val string_of_tag : 'a tag -> string
+        module Pack (X : sig type 'a t end) :
+          sig
+            type pack
+            val pack : 'a tag -> 'a X.t -> pack
+            val unpack : 'a tag -> pack -> 'a X.t
+            val print_tag : Format.formatter -> pack -> unit
+          end
+      end
     type quotation =
       { q_name : string; q_loc : string; q_shift : int; q_contents : string
       }
     module type Quotation =
       sig
         module Ast : Ast
+        module DynAst : DynAst with module Ast = Ast
         open Ast
         type 'a expand_fun = Loc.t -> string option -> string -> 'a
-        type expander =
-          | ExStr of (bool -> string expand_fun)
-          | ExAst of Ast.expr expand_fun * Ast.patt expand_fun
-        val add : string -> expander -> unit
-        val find : string -> expander
+        val add : string -> 'a DynAst.tag -> 'a expand_fun -> unit
+        val find : string -> 'a DynAst.tag -> 'a expand_fun
         val default : string ref
+        val parse_quotation_result :
+          (Loc.t -> string -> 'a) ->
+            Loc.t -> quotation -> string -> string -> 'a
         val translate : (string -> string) ref
-        val expand_expr :
-          (Loc.t -> string -> Ast.expr) -> Loc.t -> quotation -> Ast.expr
-        val expand_patt :
-          (Loc.t -> string -> Ast.patt) -> Loc.t -> quotation -> Ast.patt
+        val expand : Loc.t -> quotation -> 'a DynAst.tag -> 'a
         val dump_file : (string option) ref
         module Error : Error
       end
@@ -10640,42 +10667,115 @@ module Struct =
               | x -> x :: acc
           end
       end
+    module DynAst =
+      struct
+        module Make (Ast : Sig.Ast) : Sig.DynAst with module Ast = Ast =
+          struct
+            module Ast = Ast
+            type 'a tag =
+              | Tag_ctyp | Tag_patt | Tag_expr | Tag_module_type
+              | Tag_sig_item | Tag_with_constr | Tag_module_expr
+              | Tag_str_item | Tag_class_type | Tag_class_sig_item
+              | Tag_class_expr | Tag_class_str_item | Tag_match_case
+              | Tag_ident | Tag_binding | Tag_module_binding
+            let string_of_tag =
+              function
+              | Tag_ctyp -> "ctyp"
+              | Tag_patt -> "patt"
+              | Tag_expr -> "expr"
+              | Tag_module_type -> "module_type"
+              | Tag_sig_item -> "sig_item"
+              | Tag_with_constr -> "with_constr"
+              | Tag_module_expr -> "module_expr"
+              | Tag_str_item -> "str_item"
+              | Tag_class_type -> "class_type"
+              | Tag_class_sig_item -> "class_sig_item"
+              | Tag_class_expr -> "class_expr"
+              | Tag_class_str_item -> "class_str_item"
+              | Tag_match_case -> "match_case"
+              | Tag_ident -> "ident"
+              | Tag_binding -> "binding"
+              | Tag_module_binding -> "module_binding"
+            let ctyp_tag = Tag_ctyp
+            let patt_tag = Tag_patt
+            let expr_tag = Tag_expr
+            let module_type_tag = Tag_module_type
+            let sig_item_tag = Tag_sig_item
+            let with_constr_tag = Tag_with_constr
+            let module_expr_tag = Tag_module_expr
+            let str_item_tag = Tag_str_item
+            let class_type_tag = Tag_class_type
+            let class_sig_item_tag = Tag_class_sig_item
+            let class_expr_tag = Tag_class_expr
+            let class_str_item_tag = Tag_class_str_item
+            let match_case_tag = Tag_match_case
+            let ident_tag = Tag_ident
+            let binding_tag = Tag_binding
+            let module_binding_tag = Tag_module_binding
+            type dyn
+            external dyn_tag : 'a tag -> dyn tag = "%identity"
+            module Pack (X : sig type 'a t end) =
+              struct
+                type pack = ((dyn tag) * Obj.t)
+                exception Pack_error
+                let pack tag v = ((dyn_tag tag), (Obj.repr v))
+                let unpack (tag : 'a tag) (tag', obj) =
+                  if (dyn_tag tag) = tag'
+                  then (Obj.obj obj : 'a X.t)
+                  else raise Pack_error
+                let print_tag f (tag, _) =
+                  Format.pp_print_string f (string_of_tag tag)
+              end
+          end
+      end
     module Quotation =
       struct
         module Make (Ast : Sig.Ast) : Sig.Quotation with module Ast = Ast =
           struct
             module Ast = Ast
+            module DynAst = DynAst.Make(Ast)
             module Loc = Ast.Loc
             open Format
             open Sig
             type 'a expand_fun = Loc.t -> string option -> string -> 'a
-            type expander =
-              | ExStr of (bool -> string expand_fun)
-              | ExAst of Ast.expr expand_fun * Ast.patt expand_fun
-            let expanders_table = ref []
+            module Exp_key = DynAst.Pack(struct type 'a t = unit end)
+            module Exp_fun =
+              DynAst.Pack(struct type 'a t = 'a expand_fun end)
+            let expanders_table :
+              (((string * Exp_key.pack) * Exp_fun.pack) list) ref = ref []
             let default = ref ""
             let translate = ref (fun x -> x)
             let expander_name name =
               match !translate name with | "" -> !default | name -> name
-            let find name = List.assoc (expander_name name) !expanders_table
-            let add name f = expanders_table := (name, f) :: !expanders_table
+            let find name tag =
+              let key = ((expander_name name), (Exp_key.pack tag ()))
+              in Exp_fun.unpack tag (List.assoc key !expanders_table)
+            let add name tag f =
+              let elt = ((name, (Exp_key.pack tag ())), (Exp_fun.pack tag f))
+              in expanders_table := elt :: !expanders_table
             let dump_file = ref None
             module Error =
               struct
                 type error =
                   | Finding | Expanding | ParsingResult of Loc.t * string
                   | Locating
-                type t = (string * error * exn)
+                type t = (string * string * error * exn)
                 exception E of t
-                let print ppf (name, ctx, exn) =
+                let print ppf (name, position, ctx, exn) =
                   let name = if name = "" then !default else name in
-                  let pp x = fprintf ppf "@?@[<2>While %s %S:" x name in
+                  let pp x =
+                    fprintf ppf "@?@[<2>While %s %S in a position of %S:" x
+                      name position in
                   let () =
                     match ctx with
                     | Finding ->
                         (pp "finding quotation";
-                         fprintf ppf " available quotations are:\n@[<2>";
-                         List.iter (fun (s, _) -> fprintf ppf "%s@ " s)
+                         fprintf ppf "@ @[<hv2>Available quotations are:@\n";
+                         List.iter
+                           (fun ((s, t), _) ->
+                              fprintf ppf
+                                "@[<2>%s@ (in@ a@ position@ of %a)@]@ " s
+                                Exp_key.print_tag t)
                            !expanders_table;
                          fprintf ppf "@]")
                     | Expanding -> pp "expanding quotation"
@@ -10711,54 +10811,50 @@ module Struct =
               end
             let _ = let module M = ErrorHandler.Register(Error) in ()
             open Error
-            let expand_quotation loc expander quot =
+            let expand_quotation loc expander pos_tag quot =
               let loc_name_opt =
                 if quot.q_loc = "" then None else Some quot.q_loc
               in
                 try expander loc loc_name_opt quot.q_contents
                 with | (Loc.Exc_located (_, (Error.E _)) as exc) -> raise exc
                 | Loc.Exc_located (iloc, exc) ->
-                    let exc1 = Error.E (((quot.q_name), Expanding, exc))
+                    let exc1 =
+                      Error.E (((quot.q_name), pos_tag, Expanding, exc))
                     in raise (Loc.Exc_located (iloc, exc1))
                 | exc ->
-                    let exc1 = Error.E (((quot.q_name), Expanding, exc))
+                    let exc1 =
+                      Error.E (((quot.q_name), pos_tag, Expanding, exc))
                     in raise (Loc.Exc_located (loc, exc1))
-            let parse_quotation_result parse loc quot str =
+            let parse_quotation_result parse loc quot pos_tag str =
               try parse loc str
               with
-              | Loc.Exc_located (iloc, (Error.E ((n, Expanding, exc)))) ->
+              | Loc.Exc_located (iloc,
+                  (Error.E ((n, pos_tag, Expanding, exc)))) ->
                   let ctx = ParsingResult (iloc, quot.q_contents) in
-                  let exc1 = Error.E ((n, ctx, exc))
+                  let exc1 = Error.E ((n, pos_tag, ctx, exc))
                   in raise (Loc.Exc_located (iloc, exc1))
               | Loc.Exc_located (iloc, ((Error.E _ as exc))) ->
                   raise (Loc.Exc_located (iloc, exc))
               | Loc.Exc_located (iloc, exc) ->
                   let ctx = ParsingResult (iloc, quot.q_contents) in
-                  let exc1 = Error.E (((quot.q_name), ctx, exc))
+                  let exc1 = Error.E (((quot.q_name), pos_tag, ctx, exc))
                   in raise (Loc.Exc_located (iloc, exc1))
-            let handle_quotation loc proj in_expr parse quotation =
+            let expand loc quotation tag =
+              let pos_tag = DynAst.string_of_tag tag in
               let name = quotation.q_name in
               let expander =
-                try find name
+                try find name tag
                 with | (Loc.Exc_located (_, (Error.E _)) as exc) -> raise exc
                 | Loc.Exc_located (qloc, exc) ->
                     raise
-                      (Loc.Exc_located (qloc, Error.E ((name, Finding, exc))))
+                      (Loc.Exc_located (qloc,
+                         Error.E ((name, pos_tag, Finding, exc))))
                 | exc ->
                     raise
-                      (Loc.Exc_located (loc, Error.E ((name, Finding, exc)))) in
+                      (Loc.Exc_located (loc,
+                         Error.E ((name, pos_tag, Finding, exc)))) in
               let loc = Loc.join (Loc.move `start quotation.q_shift loc)
-              in
-                match expander with
-                | ExStr f ->
-                    let new_str = expand_quotation loc (f in_expr) quotation
-                    in parse_quotation_result parse loc quotation new_str
-                | ExAst (fe, fp) ->
-                    expand_quotation loc (proj (fe, fp)) quotation
-            let expand_expr parse loc x =
-              handle_quotation loc fst true parse x
-            let expand_patt parse loc x =
-              handle_quotation loc snd false parse x
+              in expand_quotation loc expander pos_tag quotation
           end
       end
     module AstFilters =
@@ -14687,7 +14783,7 @@ module Printers =
           struct
             let name = "Camlp4.Printers.OCaml"
             let version =
-              "$Id: OCaml.ml,v 1.21.2.1 2007/03/24 15:30:49 pouillar Exp $"
+              "$Id: OCaml.ml,v 1.21.2.2 2007/03/26 12:55:32 pouillar Exp $"
           end
         module Make (Syntax : Sig.Camlp4Syntax) =
           struct
@@ -15948,7 +16044,7 @@ module Printers =
           struct
             let name = "Camlp4.Printers.OCamlr"
             let version =
-              "$Id: OCamlr.ml,v 1.17 2007/02/07 10:09:21 ertai Exp $"
+              "$Id: OCamlr.ml,v 1.17.4.1 2007/03/26 12:55:32 pouillar Exp $"
           end
         module Make (Syntax : Sig.Camlp4Syntax) =
           struct
