@@ -112,94 +112,95 @@ thread.ml: thread_posix.ml
 	ln -s thread_posix.ml thread.ml
 
 join_debug.ml: ../threads/join_debug.ml
-	cp -f ../threads/join_debug.ml . && chmod -w join_debug.ml
+	ln -s ../threads/join_debug.ml .
 
 join_debug.mli: ../threads/join_debug.mli
-	cp -f ../threads/join_debug.mli . && chmod -w join_debug.mli
+	ln -s ../threads/join_debug.mli .
 
 join_misc.ml: ../threads/join_misc.ml
-	cp -f ../threads/join_misc.ml . && chmod -w join_misc.ml
+	ln -s ../threads/join_misc.ml .
 
 join_misc.mli: ../threads/join_misc.mli
-	cp -f ../threads/join_misc.mli . && chmod -w join_misc.mli
+	ln -s ../threads/join_misc.mli .
 
 join_link.ml: ../threads/join_link.ml
-	cp -f ../threads/join_link.ml . && chmod -w join_link.ml
+	ln -s ../threads/join_link.ml .
 
 join_link.mli: ../threads/join_link.mli
-	cp -f ../threads/join_link.mli . && chmod -w join_link.mli
+	ln -s ../threads/join_link.mli .
 
 join_port.ml: ../threads/join_port.ml
-	cp -f ../threads/join_port.ml . && chmod -w join_port.ml
+	ln -s ../threads/join_port.ml .
 
 join_port.mli: ../threads/join_port.mli
-	cp -f ../threads/join_port.mli . && chmod -w join_port.mli
+	ln -s ../threads/join_port.mli .
 
 join_hash.ml: ../threads/join_hash.ml
-	cp -f ../threads/join_hash.ml . && chmod -w join_hash.ml
+	ln -s ../threads/join_hash.ml .
 
 join_hash.mli: ../threads/join_hash.mli
-	cp -f ../threads/join_hash.mli . && chmod -w join_hash.mli
+	ln -s ../threads/join_hash.mli .
 
 join_set.ml: ../threads/join_set.ml
-	cp -f ../threads/join_set.ml . && chmod -w join_set.ml
+	ln -s ../threads/join_set.ml .
 
 join_set.mli: ../threads/join_set.mli
-	cp -f ../threads/join_set.mli . && chmod -w join_set.mli
+	ln -s ../threads/join_set.mli .
 
 join_queue.ml: ../threads/join_queue.ml
-	cp -f ../threads/join_queue.ml . && chmod -w join_queue.ml
+	ln -s ../threads/join_queue.ml .
 
 join_queue.mli: ../threads/join_queue.mli
-	cp -f ../threads/join_queue.mli . && chmod -w join_queue.mli
+	ln -s ../threads/join_queue.mli .
 
 join_scheduler.ml: ../threads/join_scheduler.ml
-	cp -f ../threads/join_scheduler.ml . && chmod -w join_scheduler.ml
+	ln -s ../threads/join_scheduler.ml .
 
 join_scheduler.mli: ../threads/join_scheduler.mli
-	cp -f ../threads/join_scheduler.mli . && chmod -w join_scheduler.mli
+	ln -s ../threads/join_scheduler.mli .
 
 join_types.mli: ../threads/join_types.mli
-	cp -f ../threads/join_types.mli . && chmod -w join_types.mli
+	ln -s ../threads/join_types.mli .
 
 join_prim.ml: ../threads/join_prim.ml
-	cp -f ../threads/join_prim.ml . && chmod -w join_prim.ml
+	ln -s ../threads/join_prim.ml .
 
 join_prim.mli: ../threads/join_prim.mli
-	cp -f ../threads/join_prim.mli . && chmod -w join_prim.mli
+	ln -s ../threads/join_prim.mli .
 
 join.ml: ../threads/join.ml
-	cp -f ../threads/join.ml . && chmod -w join.ml
+	ln -s ../threads/join.ml .
 
 join.mli: ../threads/join.mli
-	cp -f ../threads/join.mli . && chmod -w join.mli
+	ln -s ../threads/join.mli .
 
 join_test.ml: ../threads/join_test.ml
-	cp -f ../threads/join_test.ml . && chmod -w join_test.ml
+	ln -s ../threads/join_test.ml .
 
 join_test.mli: ../threads/join_test.mli
-	cp -f ../threads/join_test.mli . && chmod -w join_test.mli
+	ln -s ../threads/join_test.mli .
 
 ns.jml: ../threads/ns.jml
-	cp -f ../threads/ns.jml . && chmod -w ns.jml
+	ln -s ../threads/ns.jml .
 
 ns.mli: ../threads/ns.mli
-	cp -f ../threads/ns.mli . && chmod -w ns.mli
+	ln -s ../threads/ns.mli .
 
 join_message.ml: ../threads/join_message.ml
-	cp -f ../threads/join_message.ml . && chmod -w join_message.ml
+	ln -s ../threads/join_message.ml .
 
 join_message.mli: ../threads/join_message.mli
-	cp -f ../threads/join_message.mli . && chmod -w join_message.mli
+	ln -s ../threads/join_message.mli .
 
 join_space.ml: ../threads/join_space.ml
-	cp -f ../threads/join_space.ml . && chmod -w join_space.ml
+	ln -s ../threads/join_space.ml .
 
 join_space.mli: ../threads/join_space.mli
-	cp -f ../threads/join_space.mli . && chmod -w join_space.mli
+	ln -s ../threads/join_space.mli .
 
 join.c: ../threads/join.c
-	cp -f ../threads/join.c . && chmod -w join.c
+	ln -s ../threads/join.c .
+
 partialclean:
 	rm -f *.cm*
 
