@@ -350,7 +350,7 @@ module Sig =
       sig
         (** The name of the extension, typically the module name. *)
         val name : string
-        (** The version of the extension, typically $Id: Sig.ml,v 1.2.2.4 2007/03/26 12:55:32 pouillar Exp $ with a versionning system. *)
+        (** The version of the extension, typically $Id: Sig.ml,v 1.2.2.5 2007/03/29 14:31:04 pouillar Exp $ with a versionning system. *)
         val version : string
       end
     module type Loc =
@@ -2544,15 +2544,15 @@ module Struct =
               in
                 c.lexbuf.lex_start_p <-
                   { (p) with  pos_cnum = p.pos_cnum + shift; }
-            let with_curr_loc f c =
-              f { (c) with  loc = Loc.of_lexbuf c.lexbuf; } c.lexbuf
+            let update_loc c = { (c) with  loc = Loc.of_lexbuf c.lexbuf; }
+            let with_curr_loc f c = f (update_loc c) c.lexbuf
             let parse_nested f c =
               (with_curr_loc f c; set_start_p c; buff_contents c)
             let shift n c = { (c) with  loc = Loc.move `both n c.loc; }
             let store_parse f c = (store c; f c c.lexbuf)
             let parse f c = f c c.lexbuf
             let mk_quotation quotation c name loc shift =
-              let s = parse_nested quotation c in
+              let s = parse_nested quotation (update_loc c) in
               let contents = String.sub s 0 ((String.length s) - 2)
               in
                 QUOTATION

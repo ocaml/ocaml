@@ -149,7 +149,8 @@ module Make (Token : Sig.Camlp4Token)
     let p = c.lexbuf.lex_start_p in
     c.lexbuf.lex_start_p <- { (p) with pos_cnum = p.pos_cnum + shift }
 
-  let with_curr_loc f c = f { (c) with loc = Loc.of_lexbuf c.lexbuf } c.lexbuf
+  let update_loc c = { (c) with loc = Loc.of_lexbuf c.lexbuf }
+  let with_curr_loc f c = f (update_loc c) c.lexbuf
   let parse_nested f c =
     with_curr_loc f c;
     set_start_p c;
@@ -158,7 +159,7 @@ module Make (Token : Sig.Camlp4Token)
   let store_parse f c = store c ; f c c.lexbuf
   let parse f c = f c c.lexbuf
   let mk_quotation quotation c name loc shift =
-    let s = parse_nested quotation c in
+    let s = parse_nested quotation (update_loc c) in
     let contents = String.sub s 0 (String.length s - 2) in
     QUOTATION { q_name     = name     ;
                 q_loc      = loc      ;
@@ -408,15 +409,12 @@ module Make (Token : Sig.Camlp4Token)
 
   and dollar c = parse
     | '$'                                     { set_start_p c; ANTIQUOT("", "") }
-    (* Removed because it breaks escapings like: <:expr< $str: "\n"$ >>
-     * | '\\' _                     { istore_char c 1; parse (antiquot "") c } *)
     | ('`'? (identchar*|'.'+) as name) ':'
       { with_curr_loc (antiquot name) (shift (1 + String.length name) c)        }
     | _                                           { store_parse (antiquot "") c }
 
   and antiquot name c = parse
     | '$'                      { set_start_p c; ANTIQUOT(name, buff_contents c) }
-    (* Idem: | '\\' _             { istore_char c 1; parse (antiquot name) c } *)
     | eof                                   { err Unterminated_antiquot (loc c) }
     | newline
       { update_loc c None 1 false 0; store_parse (antiquot name) c              }

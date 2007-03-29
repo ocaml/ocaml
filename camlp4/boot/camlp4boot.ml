@@ -23,7 +23,7 @@ module R =
       struct
         let name = "Camlp4RevisedParserParser"
         let version =
-          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.7 2007/03/26 12:55:32 pouillar Exp $"
+          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.9 2007/03/29 15:17:37 pouillar Exp $"
       end
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
@@ -7170,9 +7170,10 @@ Old (no more supported) syntax:
                              (fun (x : 'type_parameter) (_loc : Loc.t) ->
                                 (x : 'more_ctyp))));
                          ([ Gram.Snterm
-                              (Gram.Entry.obj (ctyp : 'ctyp Gram.Entry.t)) ],
+                              (Gram.Entry.obj
+                                 (type_kind : 'type_kind Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun (x : 'ctyp) (_loc : Loc.t) ->
+                             (fun (x : 'type_kind) (_loc : Loc.t) ->
                                 (x : 'more_ctyp))));
                          ([ Gram.Skeyword "`";
                             Gram.Snterm
@@ -7768,7 +7769,7 @@ module Camlp4QuotationCommon =
       struct
         let name = "Camlp4QuotationCommon"
         let version =
-          "$Id: Camlp4QuotationCommon.ml,v 1.1.4.2 2007/03/23 15:58:02 pouillar Exp $"
+          "$Id: Camlp4QuotationCommon.ml,v 1.1.4.3 2007/03/29 14:31:05 pouillar Exp $"
       end
     module Make
       (Syntax : Sig.Camlp4Syntax)
@@ -9328,7 +9329,7 @@ module G =
       struct
         let name = "Camlp4GrammarParser"
         let version =
-          "$Id: Camlp4GrammarParser.ml,v 1.1.4.1 2007/03/18 18:07:32 pouillar Exp $"
+          "$Id: Camlp4GrammarParser.ml,v 1.1.4.2 2007/03/29 14:31:05 pouillar Exp $"
       end
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
