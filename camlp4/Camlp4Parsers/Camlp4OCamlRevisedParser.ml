@@ -239,6 +239,18 @@ Old (no more supported) syntax:
     | e -> e ]
   ;
 
+  value module_type_app mt1 mt2 =
+    match (mt1, mt2) with
+    [ (<:module_type@_loc< $id:i1$ >>, <:module_type< $id:i2$ >>) ->
+        <:module_type< $id:<:ident< $i1$ $i2$ >>$ >>
+    | _ -> raise Stream.Failure ];
+
+  value module_type_acc mt1 mt2 =
+    match (mt1, mt2) with
+    [ (<:module_type@_loc< $id:i1$ >>, <:module_type< $id:i2$ >>) ->
+        <:module_type< $id:<:ident< $i1$.$i2$ >>$ >>
+    | _ -> raise Stream.Failure ];
+
   value bigarray_get _loc arr arg =
     let coords =
       match arg with
@@ -484,6 +496,8 @@ Old (no more supported) syntax:
             <:module_type< functor ( $i$ : $t$ ) -> $mt$ >> ]
       | [ mt = SELF; "with"; wc = with_constr ->
             <:module_type< $mt$ with $wc$ >> ]
+      | [ mt1 = SELF; mt2 = SELF -> module_type_app mt1 mt2 ]
+      | [ mt1 = SELF; "."; mt2 = SELF -> module_type_acc mt1 mt2 ]
       | [ "sig"; sg = sig_items; "end" ->
             <:module_type< sig $sg$ end >> ]
       | "simple"

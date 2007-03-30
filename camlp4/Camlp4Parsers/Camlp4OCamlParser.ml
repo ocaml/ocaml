@@ -207,6 +207,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   DELETE_RULE Gram value_val: "value" END;
   DELETE_RULE Gram str_item: value_let; opt_rec; binding END;
   DELETE_RULE Gram module_type: "'"; a_ident END;
+  DELETE_RULE Gram module_type: SELF; SELF END;
+  DELETE_RULE Gram module_type: SELF; "."; SELF END;
   DELETE_RULE Gram label_expr: label_longident; fun_binding END;
   DELETE_RULE Gram expr: "let"; opt_rec; binding; "in"; SELF END;
   DELETE_RULE Gram expr: "let"; "module"; a_UIDENT; module_binding0; "in"; SELF END;
