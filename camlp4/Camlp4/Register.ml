@@ -77,7 +77,7 @@ end;
 
 module Printer
   (Id : Sig.Id) (Maker : functor (Syn : Sig.Syntax)
-                                -> Sig.Printer with module Ast = Syn.Ast) =
+                                -> (Sig.Printer Syn.Ast).S) =
 struct
   declare_dyn_module Id.name (fun _ ->
     let module M = Maker Syntax in
@@ -86,7 +86,7 @@ end;
 
 module OCamlPrinter
   (Id : Sig.Id) (Maker : functor (Syn : Sig.Camlp4Syntax)
-                                -> Sig.Printer with module Ast = Syn.Ast) =
+                                -> (Sig.Printer Syn.Ast).S) =
 struct
   declare_dyn_module Id.name (fun _ ->
     let module M = Maker Syntax in
@@ -94,7 +94,7 @@ struct
 end;
 
 module OCamlPreCastPrinter
-  (Id : Sig.Id) (P : Sig.Printer with module Ast = PreCast.Ast) =
+  (Id : Sig.Id) (P : (Sig.Printer PreCast.Ast).S) =
 struct
   declare_dyn_module Id.name (fun _ ->
     register_printer P.print_implem P.print_interf);
@@ -102,7 +102,7 @@ end;
 
 module Parser
   (Id : Sig.Id) (Maker : functor (Ast : Sig.Ast)
-                                -> Sig.Parser with module Ast = Ast) =
+                                -> (Sig.Parser Ast).S) =
 struct
   declare_dyn_module Id.name (fun _ ->
     let module M = Maker PreCast.Ast in
@@ -111,7 +111,7 @@ end;
 
 module OCamlParser
   (Id : Sig.Id) (Maker : functor (Ast : Sig.Camlp4Ast)
-                                -> Sig.Parser with module Ast = Ast) =
+                                -> (Sig.Parser Ast).S) =
 struct
   declare_dyn_module Id.name (fun _ ->
     let module M = Maker PreCast.Ast in
@@ -119,7 +119,7 @@ struct
 end;
 
 module OCamlPreCastParser
-  (Id : Sig.Id) (P : Sig.Parser with module Ast = PreCast.Ast) =
+  (Id : Sig.Id) (P : (Sig.Parser PreCast.Ast).S) =
 struct
   declare_dyn_module Id.name (fun _ ->
     register_parser P.parse_implem P.parse_interf);
@@ -131,10 +131,8 @@ struct
   declare_dyn_module Id.name (fun _ -> let module M = Maker AstFilters in ());
 end;
 
-let module M = Syntax.Parser in do {
-  sig_item_parser.val := M.parse_interf;
-  str_item_parser.val := M.parse_implem;
-};
+sig_item_parser.val := Syntax.parse_interf;
+str_item_parser.val := Syntax.parse_implem;
 
 module CurrentParser = struct
   module Ast = Ast;

@@ -19,7 +19,7 @@ open Camlp4;                                             (* -*- camlp4r -*- *)
 
 open PreCast;
 let module Gram = MakeGram Lexer in
-let module M1 = OCamlInitSyntax.Make Warning Ast Gram Quotation in
+let module M1 = OCamlInitSyntax.Make Ast Gram Quotation in
 let module M2 = Camlp4OCamlRevisedParser.Make M1 in
 let module M3 = Camlp4OCamlParser.Make M2 in
 let module M3 = Camlp4QuotationCommon.Make M3 Syntax.AntiquotSyntax in ();

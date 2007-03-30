@@ -1019,7 +1019,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
 end;
 
 module MakeMore (Syntax : Sig.Camlp4Syntax)
-: Sig.Printer with module Ast = Syntax.Ast
+: (Sig.Printer Syntax.Ast).S
 = struct
 
   include Make Syntax;

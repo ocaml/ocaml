@@ -22,7 +22,6 @@ module Make (Syntax : Sig.Camlp4Syntax) : sig
   open Format;
   include Sig.Camlp4Syntax
            with module Loc     = Syntax.Loc
-            and module Warning = Syntax.Warning
             and module Token   = Syntax.Token
             and module Ast     = Syntax.Ast
             and module Gram    = Syntax.Gram;
@@ -43,13 +42,6 @@ module Make (Syntax : Sig.Camlp4Syntax) : sig
 
   value print :
     option string -> (printer -> formatter -> 'a -> unit) -> 'a -> unit;
-
-  value print_interf :
-    ?input_file: string -> ?output_file: string -> Ast.sig_item -> unit;
-
-  value print_implem :
-    ?input_file: string -> ?output_file: string -> Ast.str_item -> unit;
 end;
 
-module MakeMore (Syntax : Sig.Camlp4Syntax)
-: Sig.Printer with module Ast = Syntax.Ast;
+module MakeMore (Syntax : Sig.Camlp4Syntax) : (Sig.Printer Syntax.Ast).S;

@@ -46,14 +46,13 @@ type camlp4_token = Sig.camlp4_token ==
   | EOI ];
 
 module Loc = Struct.Loc;
-module Warning = Struct.Warning.Make Loc;
 module Ast = Struct.Camlp4Ast.Make Loc;
 module Token = Struct.Token.Make Loc;
 module Lexer = Struct.Lexer.Make Token;
 module Gram = Struct.Grammar.Static.Make Lexer;
 module DynLoader = Struct.DynLoader;
 module Quotation = Struct.Quotation.Make Ast;
-module MakeSyntax (U : sig end) = OCamlInitSyntax.Make Warning Ast Gram Quotation;
+module MakeSyntax (U : sig end) = OCamlInitSyntax.Make Ast Gram Quotation;
 module Syntax = MakeSyntax (struct end);
 module AstFilters = Struct.AstFilters.Make Ast;
 module MakeGram = Struct.Grammar.Static.Make;

@@ -117,7 +117,7 @@ value rec parse_file dyn_loader name pa getdir =
     | None -> None ]) in
   let loc = Loc.mk name
   in do {
-    Warning.current.val := print_warning;
+    current_warning.val := print_warning;
     let ic = if name = "-" then stdin else open_in_bin name in
     let cs = Stream.of_channel ic in
     let clear () = if name = "-" then () else close_in ic in

@@ -174,12 +174,13 @@ module type Loc = sig
 
 end;
 
-module type Warning = sig
-  module Loc : Loc;
-  type t = Loc.t -> string -> unit;
-  value default : t;
-  value current : ref t;
-  value print   : t;
+module Warning (Loc : Loc) = struct
+  module type S = sig
+    type warning = Loc.t -> string -> unit;
+    value default_warning : warning;
+    value current_warning : ref warning;
+    value print_warning   : warning;
+  end;
 end;
 
 (** Base class for map traversal, it includes some builtin types. *)
@@ -1089,37 +1090,35 @@ end;
 
 
 (** {6 Parser} *)
-module type Parser = sig
+module Parser (Ast : Ast) = struct
+  module type S = sig
 
-  module Ast : Ast;
-  open Ast;
+    (** Called when parsing an implementation (ml file) to build the syntax
+        tree; the returned list contains the phrases (structure items) as a
+        single "declare" node (a list of structure items);   if  the parser
+        encounter a directive it stops (since the directive may change  the
+        syntax), the given [directive_handler] function  evaluates  it  and
+        the parsing starts again. *)
+    value parse_implem : ?directive_handler:(Ast.str_item -> option Ast.str_item) ->
+                        Ast.Loc.t -> Stream.t char -> Ast.str_item;
 
-  (** Called when parsing an implementation (ml file) to build the syntax
-      tree; the returned list contains the phrases (structure items) as a
-      single "declare" node (a list of structure items);   if  the parser
-      encounter a directive it stops (since the directive may change  the
-      syntax), the given [directive_handler] function  evaluates  it  and
-      the parsing starts again. *)
-  value parse_implem : ?directive_handler:(str_item -> option str_item) ->
-                       Loc.t -> Stream.t char -> Ast.str_item;
-
-  (** Same as {!parse_implem} but for interface (mli file). *)
-  value parse_interf : ?directive_handler:(sig_item -> option sig_item) ->
-                       Loc.t -> Stream.t char -> Ast.sig_item;
-
+    (** Same as {!parse_implem} but for interface (mli file). *)
+    value parse_interf : ?directive_handler:(Ast.sig_item -> option Ast.sig_item) ->
+                        Ast.Loc.t -> Stream.t char -> Ast.sig_item;
+  end;
 end;
 
 (** {6 Printer} *)
 
-module type Printer = sig
+module Printer (Ast : Ast) = struct
+  module type S = sig
 
-  module Ast : Ast;
+    value print_interf : ?input_file:string -> ?output_file:string ->
+                        Ast.sig_item -> unit;
+    value print_implem : ?input_file:string -> ?output_file:string ->
+                        Ast.str_item -> unit;
 
-  value print_interf : ?input_file:string -> ?output_file:string ->
-                       Ast.sig_item -> unit;
-  value print_implem : ?input_file:string -> ?output_file:string ->
-                       Ast.str_item -> unit;
-
+  end;
 end;
 
 (** A syntax module is a sort of constistent bunch of modules and values.
@@ -1128,15 +1127,16 @@ end;
    There is also the main grammar entries. *)
 module type Syntax = sig
   module Loc            : Loc;
-  module Warning        : Warning with module Loc = Loc;
   module Ast            : Ast with module Loc = Loc;
   module Token          : Token with module Loc = Loc;
   module Gram           : Grammar.Static with module Loc = Loc and module Token = Token;
   module AntiquotSyntax : AntiquotSyntax with module Ast = Ast;
                           (* Gram is not constrained here for flexibility *)
   module Quotation      : Quotation with module Ast = Ast;
-  module Parser         : Parser with module Ast = Ast;
-  module Printer        : Printer with module Ast = Ast;
+
+  include (Warning Loc).S;
+  include (Parser  Ast).S;
+  include (Printer Ast).S;
 end;
 
 (** A syntax module is a sort of constistent bunch of modules and values.
@@ -1145,7 +1145,6 @@ end;
     There is also the main grammar entries. *)
 module type Camlp4Syntax = sig
   module Loc            : Loc;
-  module Warning        : Warning with module Loc = Loc;
 
   module Ast            : Camlp4Ast with module Loc = Loc;
   module Token          : Camlp4Token with module Loc = Loc;
@@ -1154,8 +1153,10 @@ module type Camlp4Syntax = sig
   module AntiquotSyntax : AntiquotSyntax with module Ast = Camlp4AstToAst Ast;
                           (* Gram is not constrained here for flexibility *)
   module Quotation      : Quotation with module Ast = Camlp4AstToAst Ast;
-  module Parser         : Parser with module Ast = Camlp4AstToAst Ast;
-  module Printer        : Printer with module Ast = Camlp4AstToAst Ast;
+
+  include (Warning Loc).S;
+  include (Parser  Ast).S;
+  include (Printer Ast).S;
 
   value interf : Gram.Entry.t (list Ast.sig_item * option Loc.t);
   value implem : Gram.Entry.t (list Ast.str_item * option Loc.t);
@@ -1311,7 +1312,6 @@ end;
 
 module type SyntaxExtension = functor (Syn : Syntax)
                     -> (Syntax with module Loc            = Syn.Loc
-                                and module Warning        = Syn.Warning
                                 and module Ast            = Syn.Ast
                                 and module Token          = Syn.Token
                                 and module Gram           = Syn.Gram

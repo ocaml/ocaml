@@ -101,7 +101,7 @@ Toploop.parse_toplevel_phrase.val := wrap toplevel_phrase;
 
 Toploop.parse_use_file.val := wrap use_file;
 
-Warning.current.val :=
+current_warning.val :=
   fun loc txt ->
     Toploop.print_warning (Loc.to_ocaml_location loc) Format.err_formatter
       (Warnings.Camlp4 txt);

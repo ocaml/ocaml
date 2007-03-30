@@ -7,7 +7,6 @@ module Struct = struct
   module Loc :
     sig INCLUDE "camlp4/Camlp4/Struct/Loc.mli"; end =
     struct INCLUDE "camlp4/Camlp4/Struct/Loc.ml"; end;
-  module Warning = struct INCLUDE "camlp4/Camlp4/Struct/Warning.ml"; end;
   module Token :
     sig INCLUDE "camlp4/Camlp4/Struct/Token.mli"; end =
     struct INCLUDE "camlp4/Camlp4/Struct/Token.ml"; end;

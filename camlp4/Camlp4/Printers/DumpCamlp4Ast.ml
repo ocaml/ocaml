@@ -23,7 +23,7 @@ module Id = struct
 end;
 
 module Make (Syntax : Sig.Syntax)
-: Sig.Printer with module Ast = Syntax.Ast
+: (Sig.Printer Syntax.Ast).S
 = struct
   include Syntax;
 

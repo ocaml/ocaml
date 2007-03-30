@@ -23,7 +23,7 @@ module R =
       struct
         let name = "Camlp4RevisedParserParser"
         let version =
-          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.9 2007/03/29 15:17:37 pouillar Exp $"
+          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.10 2007/03/30 13:37:30 pouillar Exp $"
       end
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
@@ -9460,7 +9460,7 @@ module G =
                (fun s (r, e) ->
                   if !r = Unused
                   then
-                    Warning.print e.name.loc
+                    print_warning e.name.loc
                       ("Unused local entry \"" ^ (s ^ "\""))
                   else ())
                ht)
@@ -13133,7 +13133,7 @@ module B =
              | None -> None) in
       let loc = Loc.mk name
       in
-        (Warning.current := print_warning;
+        (current_warning := print_warning;
          let ic = if name = "-" then stdin else open_in_bin name in
          let cs = Stream.of_channel ic in
          let clear () = if name = "-" then () else close_in ic in

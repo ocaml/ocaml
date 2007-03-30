@@ -42,7 +42,6 @@ type camlp4_token = Sig.camlp4_token ==
 
 module Id         : Sig.Id;
 module Loc        : Sig.Loc;
-module Warning    : Sig.Warning with module Loc = Loc;
 module Ast        : Sig.Camlp4Ast with module Loc = Loc;
 module Token      : Sig.Token
                       with module Loc = Loc
@@ -58,19 +57,17 @@ module DynLoader  : Sig.DynLoader;
 module AstFilters : Sig.AstFilters with module Ast = Ast;
 module Syntax     : Sig.Camlp4Syntax
                       with module Loc     = Loc
-                       and module Warning = Warning
                        and module Token   = Token
                        and module Ast     = Ast
                        and module Gram    = Gram
                        and module Quotation = Quotation;
 
 module Printers : sig
-  module OCaml         : Sig.Printer with module Ast = Sig.Camlp4AstToAst Ast;
-  module OCamlr        : Sig.Printer with module Ast = Sig.Camlp4AstToAst Ast;
-  (* module OCamlrr       : Sig.Printer with module Ast = Sig.Camlp4AstToAst Ast; *)
-  module DumpOCamlAst  : Sig.Printer with module Ast = Sig.Camlp4AstToAst Ast;
-  module DumpCamlp4Ast : Sig.Printer with module Ast = Sig.Camlp4AstToAst Ast;
-  module Null          : Sig.Printer with module Ast = Sig.Camlp4AstToAst Ast;
+  module OCaml         : (Sig.Printer Ast).S;
+  module OCamlr        : (Sig.Printer Ast).S;
+  module DumpOCamlAst  : (Sig.Printer Ast).S;
+  module DumpCamlp4Ast : (Sig.Printer Ast).S;
+  module Null          : (Sig.Printer Ast).S;
 end;
 
 module MakeGram (Lexer : Sig.Lexer with module Loc = Loc)

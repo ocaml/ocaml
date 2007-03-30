@@ -450,13 +450,15 @@ module Sig =
       the predefined quotations for OCaml syntax trees. Default: [_loc]. *)
         val name : string ref
       end
-    module type Warning =
-      sig
-        module Loc : Loc
-        type t = Loc.t -> string -> unit
-        val default : t
-        val current : t ref
-        val print : t
+    module Warning (Loc : Loc) =
+      struct
+        module type S =
+          sig
+            type warning = Loc.t -> string -> unit
+            val default_warning : warning
+            val current_warning : warning ref
+            val print_warning : warning
+          end
       end
     (** Base class for map traversal, it includes some builtin types. *)
     class mapper =
@@ -1594,42 +1596,46 @@ module Sig =
         module Error : Error
         val mk : unit -> Loc.t -> char Stream.t -> (Token.t * Loc.t) Stream.t
       end
-    module type Parser =
-      sig
-        module Ast : Ast
-        open Ast
-        val parse_implem :
-          ?directive_handler: (str_item -> str_item option) ->
-            Loc.t -> char Stream.t -> Ast.str_item
-        val parse_interf :
-          ?directive_handler: (sig_item -> sig_item option) ->
-            Loc.t -> char Stream.t -> Ast.sig_item
+    module Parser (Ast : Ast) =
+      struct
+        module type S =
+          sig
+            val parse_implem :
+              ?directive_handler: (Ast.str_item -> Ast.str_item option) ->
+                Ast.Loc.t -> char Stream.t -> Ast.str_item
+            val parse_interf :
+              ?directive_handler: (Ast.sig_item -> Ast.sig_item option) ->
+                Ast.Loc.t -> char Stream.t -> Ast.sig_item
+          end
       end
-    module type Printer =
-      sig
-        module Ast : Ast
-        val print_interf :
-          ?input_file: string -> ?output_file: string -> Ast.sig_item -> unit
-        val print_implem :
-          ?input_file: string -> ?output_file: string -> Ast.str_item -> unit
+    module Printer (Ast : Ast) =
+      struct
+        module type S =
+          sig
+            val print_interf :
+              ?input_file: string ->
+                ?output_file: string -> Ast.sig_item -> unit
+            val print_implem :
+              ?input_file: string ->
+                ?output_file: string -> Ast.str_item -> unit
+          end
       end
     module type Syntax =
       sig
         module Loc : Loc
-        module Warning : Warning with module Loc = Loc
         module Ast : Ast with module Loc = Loc
         module Token : Token with module Loc = Loc
         module Gram : Grammar.Static with module Loc = Loc
           and module Token = Token
         module AntiquotSyntax : AntiquotSyntax with module Ast = Ast
         module Quotation : Quotation with module Ast = Ast
-        module Parser : Parser with module Ast = Ast
-        module Printer : Printer with module Ast = Ast
+        include Warning(Loc).S
+        include Parser(Ast).S
+        include Printer(Ast).S
       end
     module type Camlp4Syntax =
       sig
         module Loc : Loc
-        module Warning : Warning with module Loc = Loc
         module Ast : Camlp4Ast with module Loc = Loc
         module Token : Camlp4Token with module Loc = Loc
         module Gram : Grammar.Static with module Loc = Loc
@@ -1637,8 +1643,9 @@ module Sig =
         module AntiquotSyntax :
           AntiquotSyntax with module Ast = Camlp4AstToAst(Ast)
         module Quotation : Quotation with module Ast = Camlp4AstToAst(Ast)
-        module Parser : Parser with module Ast = Camlp4AstToAst(Ast)
-        module Printer : Printer with module Ast = Camlp4AstToAst(Ast)
+        include Warning(Loc).S
+        include Parser(Ast).S
+        include Printer(Ast).S
         val interf : ((Ast.sig_item list) * (Loc.t option)) Gram.Entry.t
         val implem : ((Ast.str_item list) * (Loc.t option)) Gram.Entry.t
         val top_phrase : (Ast.str_item option) Gram.Entry.t
@@ -1793,8 +1800,8 @@ module Sig =
       end
     module type SyntaxExtension =
       functor (Syn : Syntax) -> Syntax with module Loc = Syn.Loc
-        and module Warning = Syn.Warning and module Ast = Syn.Ast
-        and module Token = Syn.Token and module Gram = Syn.Gram
+        and module Ast = Syn.Ast and module Token = Syn.Token
+        and module Gram = Syn.Gram
         and module AntiquotSyntax = Syn.AntiquotSyntax
         and module Quotation = Syn.Quotation
   end
@@ -2185,18 +2192,6 @@ module Struct =
           match exc with
           | Exc_located (_, _) -> raise exc
           | _ -> raise (Exc_located (loc, exc))
-      end
-    module Warning =
-      struct
-        module Make (Loc : Sig.Loc) : Sig.Warning with module Loc = Loc =
-          struct
-            module Loc = Loc
-            open Format
-            type t = Loc.t -> string -> unit
-            let default loc txt = eprintf "<W> %a: %s@." Loc.print loc txt
-            let current = ref default
-            let print loc txt = !current loc txt
-          end
       end
     module Token :
       sig
@@ -12280,11 +12275,10 @@ module Struct =
         let to_string _ = assert false
       end
     module EmptyPrinter :
-      sig module Make (Ast : Sig.Ast) : Sig.Printer with module Ast = Ast end =
+      sig module Make (Ast : Sig.Ast) : Sig.Printer(Ast).S end =
       struct
         module Make (Ast : Sig.Ast) =
           struct
-            module Ast = Ast
             let print_interf ?input_file:(_) ?output_file:(_) _ =
               failwith "No interface printer"
             let print_implem ?input_file:(_) ?output_file:(_) _ =
@@ -14529,8 +14523,7 @@ module Printers =
     module DumpCamlp4Ast :
       sig
         module Id : Sig.Id
-        module Make (Syntax : Sig.Syntax) :
-          Sig.Printer with module Ast = Syntax.Ast
+        module Make (Syntax : Sig.Syntax) : Sig.Printer(Syntax.Ast).S
       end =
       struct
         module Id =
@@ -14539,8 +14532,7 @@ module Printers =
             let version =
               "$Id: DumpCamlp4Ast.ml,v 1.5 2007/02/07 10:09:21 ertai Exp $"
           end
-        module Make (Syntax : Sig.Syntax) :
-          Sig.Printer with module Ast = Syntax.Ast =
+        module Make (Syntax : Sig.Syntax) : Sig.Printer(Syntax.Ast).S =
           struct
             include Syntax
             let with_open_out_file x f =
@@ -14563,8 +14555,7 @@ module Printers =
     module DumpOCamlAst :
       sig
         module Id : Sig.Id
-        module Make (Syntax : Sig.Camlp4Syntax) :
-          Sig.Printer with module Ast = Syntax.Ast
+        module Make (Syntax : Sig.Camlp4Syntax) : Sig.Printer(Syntax.Ast).S
       end =
       struct
         module Id : Sig.Id =
@@ -14573,8 +14564,7 @@ module Printers =
             let version =
               "$Id: DumpOCamlAst.ml,v 1.5 2007/02/07 10:09:21 ertai Exp $"
           end
-        module Make (Syntax : Sig.Camlp4Syntax) :
-          Sig.Printer with module Ast = Syntax.Ast =
+        module Make (Syntax : Sig.Camlp4Syntax) : Sig.Printer(Syntax.Ast).S =
           struct
             include Syntax
             module Ast2pt = Struct.Camlp4Ast2OCamlAst.Make(Ast)
@@ -14606,8 +14596,7 @@ module Printers =
     module Null :
       sig
         module Id : Sig.Id
-        module Make (Syntax : Sig.Syntax) :
-          Sig.Printer with module Ast = Syntax.Ast
+        module Make (Syntax : Sig.Syntax) : Sig.Printer(Syntax.Ast).S
       end =
       struct
         module Id =
@@ -14630,7 +14619,6 @@ module Printers =
           sig
             open Format
             include Sig.Camlp4Syntax with module Loc = Syntax.Loc
-              and module Warning = Syntax.Warning
               and module Token = Syntax.Token and module Ast = Syntax.Ast
               and module Gram = Syntax.Gram
             val list' :
@@ -14767,15 +14755,9 @@ module Printers =
             val print :
               string option ->
                 (printer -> formatter -> 'a -> unit) -> 'a -> unit
-            val print_interf :
-              ?input_file: string ->
-                ?output_file: string -> Ast.sig_item -> unit
-            val print_implem :
-              ?input_file: string ->
-                ?output_file: string -> Ast.str_item -> unit
           end
-        module MakeMore (Syntax : Sig.Camlp4Syntax) :
-          Sig.Printer with module Ast = Syntax.Ast
+        module MakeMore (Syntax : Sig.Camlp4Syntax) : Sig.Printer(Syntax.
+          Ast).S
       end =
       struct
         open Format
@@ -15965,8 +15947,8 @@ module Printers =
             let print_implem ?input_file:(_) ?output_file st =
               print output_file (fun o -> o#implem) st
           end
-        module MakeMore (Syntax : Sig.Camlp4Syntax) :
-          Sig.Printer with module Ast = Syntax.Ast =
+        module MakeMore (Syntax : Sig.Camlp4Syntax) : Sig.Printer(Syntax.
+          Ast).S =
           struct
             include Make(Syntax)
             let semisep = ref false
@@ -16016,7 +15998,6 @@ module Printers =
           sig
             open Format
             include Sig.Camlp4Syntax with module Loc = Syntax.Loc
-              and module Warning = Syntax.Warning
               and module Token = Syntax.Token and module Ast = Syntax.Ast
               and module Gram = Syntax.Gram
             class printer :
@@ -16028,15 +16009,9 @@ module Printers =
             val print :
               string option ->
                 (printer -> formatter -> 'a -> unit) -> 'a -> unit
-            val print_interf :
-              ?input_file: string ->
-                ?output_file: string -> Ast.sig_item -> unit
-            val print_implem :
-              ?input_file: string ->
-                ?output_file: string -> Ast.str_item -> unit
           end
-        module MakeMore (Syntax : Sig.Camlp4Syntax) :
-          Sig.Printer with module Ast = Syntax.Ast
+        module MakeMore (Syntax : Sig.Camlp4Syntax) : Sig.Printer(Syntax.
+          Ast).S
       end =
       struct
         open Format
@@ -16340,8 +16315,8 @@ module Printers =
             let print_interf = print_interf
             let print_implem = print_implem
           end
-        module MakeMore (Syntax : Sig.Camlp4Syntax) :
-          Sig.Printer with module Ast = Syntax.Ast =
+        module MakeMore (Syntax : Sig.Camlp4Syntax) : Sig.Printer(Syntax.
+          Ast).S =
           struct
             include Make(Syntax)
             let margin = ref 78
@@ -16377,10 +16352,9 @@ module Printers =
 module OCamlInitSyntax =
   struct
     module Make
-      (Warning : Sig.Warning)
-      (Ast : Sig.Camlp4Ast with module Loc = Warning.Loc)
+      (Ast : Sig.Camlp4Ast)
       (Gram :
-        Sig.Grammar.Static with module Loc = Warning.Loc with
+        Sig.Grammar.Static with module Loc = Ast.Loc with
           type Token.t = Sig.camlp4_token)
       (Quotation : Sig.Quotation with module Ast = Sig.Camlp4AstToAst(Ast)) :
       Sig.Camlp4Syntax with module Loc = Ast.Loc and module Ast = Ast
@@ -16388,12 +16362,16 @@ module OCamlInitSyntax =
       and module AntiquotSyntax.Ast = Sig.Camlp4AstToAst(Ast)
       and module Quotation = Quotation =
       struct
-        module Warning = Warning
         module Loc = Ast.Loc
         module Ast = Ast
         module Gram = Gram
         module Token = Gram.Token
         open Sig
+        type warning = Loc.t -> string -> unit
+        let default_warning loc txt =
+          Format.eprintf "<W> %a: %s@." Loc.print loc txt
+        let current_warning = ref default_warning
+        let print_warning loc txt = !current_warning loc txt
         let a_CHAR = Gram.Entry.mk "a_CHAR"
         let a_FLOAT = Gram.Entry.mk "a_FLOAT"
         let a_INT = Gram.Entry.mk "a_INT"
@@ -16626,33 +16604,32 @@ module OCamlInitSyntax =
             let parse_patt loc str = Gram.parse_string antiquot_patt loc str
           end
         module Quotation = Quotation
-        module Parser =
-          struct
-            module Ast = Ast
-            let wrap directive_handler pa init_loc cs =
-              let rec loop loc =
-                let (pl, stopped_at_directive) = pa loc cs
-                in
-                  match stopped_at_directive with
-                  | Some new_loc ->
-                      let pl =
-                        (match List.rev pl with
-                         | [] -> assert false
-                         | x :: xs ->
-                             (match directive_handler x with
-                              | None -> xs
-                              | Some x -> x :: xs))
-                      in (List.rev pl) @ (loop new_loc)
-                  | None -> pl
-              in loop init_loc
-            let parse_implem ?(directive_handler = fun _ -> None) _loc cs =
-              let l = wrap directive_handler (Gram.parse implem) _loc cs
-              in Ast.stSem_of_list l
-            let parse_interf ?(directive_handler = fun _ -> None) _loc cs =
-              let l = wrap directive_handler (Gram.parse interf) _loc cs
-              in Ast.sgSem_of_list l
-          end
-        module Printer = Struct.EmptyPrinter.Make(Ast)
+        let wrap directive_handler pa init_loc cs =
+          let rec loop loc =
+            let (pl, stopped_at_directive) = pa loc cs
+            in
+              match stopped_at_directive with
+              | Some new_loc ->
+                  let pl =
+                    (match List.rev pl with
+                     | [] -> assert false
+                     | x :: xs ->
+                         (match directive_handler x with
+                          | None -> xs
+                          | Some x -> x :: xs))
+                  in (List.rev pl) @ (loop new_loc)
+              | None -> pl
+          in loop init_loc
+        let parse_implem ?(directive_handler = fun _ -> None) _loc cs =
+          let l = wrap directive_handler (Gram.parse implem) _loc cs
+          in Ast.stSem_of_list l
+        let parse_interf ?(directive_handler = fun _ -> None) _loc cs =
+          let l = wrap directive_handler (Gram.parse interf) _loc cs
+          in Ast.sgSem_of_list l
+        let print_interf ?input_file:(_) ?output_file:(_) _ =
+          failwith "No interface printer"
+        let print_implem ?input_file:(_) ?output_file:(_) _ =
+          failwith "No implementation printer"
       end
   end
 module PreCast :
@@ -16669,7 +16646,6 @@ module PreCast :
         | NEWLINE | LINE_DIRECTIVE of int * string option | EOI
     module Id : Sig.Id
     module Loc : Sig.Loc
-    module Warning : Sig.Warning with module Loc = Loc
     module Ast : Sig.Camlp4Ast with module Loc = Loc
     module Token : Sig.Token with module Loc = Loc and type t = camlp4_token
     module Lexer : Sig.Lexer with module Loc = Loc and module Token = Token
@@ -16680,18 +16656,15 @@ module PreCast :
     module DynLoader : Sig.DynLoader
     module AstFilters : Sig.AstFilters with module Ast = Ast
     module Syntax : Sig.Camlp4Syntax with module Loc = Loc
-      and module Warning = Warning and module Token = Token
-      and module Ast = Ast and module Gram = Gram
+      and module Token = Token and module Ast = Ast and module Gram = Gram
       and module Quotation = Quotation
     module Printers :
       sig
-        module OCaml : Sig.Printer with module Ast = Sig.Camlp4AstToAst(Ast)
-        module OCamlr : Sig.Printer with module Ast = Sig.Camlp4AstToAst(Ast)
-        module DumpOCamlAst :
-          Sig.Printer with module Ast = Sig.Camlp4AstToAst(Ast)
-        module DumpCamlp4Ast :
-          Sig.Printer with module Ast = Sig.Camlp4AstToAst(Ast)
-        module Null : Sig.Printer with module Ast = Sig.Camlp4AstToAst(Ast)
+        module OCaml : Sig.Printer(Ast).S
+        module OCamlr : Sig.Printer(Ast).S
+        module DumpOCamlAst : Sig.Printer(Ast).S
+        module DumpCamlp4Ast : Sig.Printer(Ast).S
+        module Null : Sig.Printer(Ast).S
       end
     module MakeGram (Lexer : Sig.Lexer with module Loc = Loc) :
       Sig.Grammar.Static with module Loc = Loc and module Token = Lexer.Token
@@ -16714,7 +16687,6 @@ module PreCast :
         | ANTIQUOT of string * string | COMMENT of string | BLANKS of string
         | NEWLINE | LINE_DIRECTIVE of int * string option | EOI
     module Loc = Struct.Loc
-    module Warning = Struct.Warning.Make(Loc)
     module Ast = Struct.Camlp4Ast.Make(Loc)
     module Token = Struct.Token.Make(Loc)
     module Lexer = Struct.Lexer.Make(Token)
@@ -16722,7 +16694,7 @@ module PreCast :
     module DynLoader = Struct.DynLoader
     module Quotation = Struct.Quotation.Make(Ast)
     module MakeSyntax (U : sig  end) =
-      OCamlInitSyntax.Make(Warning)(Ast)(Gram)(Quotation)
+      OCamlInitSyntax.Make(Ast)(Gram)(Quotation)
     module Syntax = MakeSyntax(struct  end)
     module AstFilters = Struct.AstFilters.Make(Ast)
     module MakeGram = Struct.Grammar.Static.Make
@@ -16759,17 +16731,14 @@ module Register :
       PreCast.Ast.str_item parser_fun ->
         PreCast.Ast.sig_item parser_fun -> unit
     module Parser
-      (Id : Sig.Id)
-      (Maker : functor (Ast : Sig.Ast) -> Sig.Parser with module Ast = Ast) :
+      (Id : Sig.Id) (Maker : functor (Ast : Sig.Ast) -> Sig.Parser(Ast).S) :
       sig  end
     module OCamlParser
       (Id : Sig.Id)
-      (Maker :
-        functor (Ast : Sig.Camlp4Ast) -> Sig.Parser with module Ast = Ast) :
+      (Maker : functor (Ast : Sig.Camlp4Ast) -> Sig.Parser(Ast).S) : 
       sig  end
     module OCamlPreCastParser
-      (Id : Sig.Id) (Parser : Sig.Parser with module Ast = PreCast.Ast) :
-      sig  end
+      (Id : Sig.Id) (Parser : Sig.Parser(PreCast.Ast).S) : sig  end
     type 'a printer_fun =
       ?input_file: string -> ?output_file: string -> 'a -> unit
     val register_str_item_printer : PreCast.Ast.str_item printer_fun -> unit
@@ -16779,26 +16748,22 @@ module Register :
         PreCast.Ast.sig_item printer_fun -> unit
     module Printer
       (Id : Sig.Id)
-      (Maker :
-        functor (Syn : Sig.Syntax) -> Sig.Printer with module Ast = Syn.Ast) :
+      (Maker : functor (Syn : Sig.Syntax) -> Sig.Printer(Syn.Ast).S) :
       sig  end
     module OCamlPrinter
       (Id : Sig.Id)
-      (Maker :
-        functor (Syn : Sig.Camlp4Syntax) ->
-          Sig.Printer with module Ast = Syn.Ast) :
+      (Maker : functor (Syn : Sig.Camlp4Syntax) -> Sig.Printer(Syn.Ast).S) :
       sig  end
     module OCamlPreCastPrinter
-      (Id : Sig.Id) (Printer : Sig.Printer with module Ast = PreCast.Ast) :
-      sig  end
+      (Id : Sig.Id) (Printer : Sig.Printer(PreCast.Ast).S) : sig  end
     module AstFilter
       (Id : Sig.Id) (Maker : functor (F : Sig.AstFilters) -> sig  end) :
       sig  end
     val declare_dyn_module : string -> (unit -> unit) -> unit
     val iter_and_take_callbacks : ((string * (unit -> unit)) -> unit) -> unit
     val loaded_modules : (string list) ref
-    module CurrentParser : Sig.Parser with module Ast = PreCast.Ast
-    module CurrentPrinter : Sig.Printer with module Ast = PreCast.Ast
+    module CurrentParser : Sig.Parser(PreCast.Ast).S
+    module CurrentPrinter : Sig.Printer(PreCast.Ast).S
     val enable_ocaml_printer : unit -> unit
     val enable_ocamlr_printer : unit -> unit
     val enable_null_printer : unit -> unit
@@ -16870,8 +16835,7 @@ module Register :
       end
     module Printer
       (Id : Sig.Id)
-      (Maker :
-        functor (Syn : Sig.Syntax) -> Sig.Printer with module Ast = Syn.Ast) =
+      (Maker : functor (Syn : Sig.Syntax) -> Sig.Printer(Syn.Ast).S) =
       struct
         let _ =
           declare_dyn_module Id.name
@@ -16880,9 +16844,7 @@ module Register :
       end
     module OCamlPrinter
       (Id : Sig.Id)
-      (Maker :
-        functor (Syn : Sig.Camlp4Syntax) ->
-          Sig.Printer with module Ast = Syn.Ast) =
+      (Maker : functor (Syn : Sig.Camlp4Syntax) -> Sig.Printer(Syn.Ast).S) =
       struct
         let _ =
           declare_dyn_module Id.name
@@ -16890,15 +16852,14 @@ module Register :
                in register_printer M.print_implem M.print_interf)
       end
     module OCamlPreCastPrinter
-      (Id : Sig.Id) (P : Sig.Printer with module Ast = PreCast.Ast) =
+      (Id : Sig.Id) (P : Sig.Printer(PreCast.Ast).S) =
       struct
         let _ =
           declare_dyn_module Id.name
             (fun _ -> register_printer P.print_implem P.print_interf)
       end
     module Parser
-      (Id : Sig.Id)
-      (Maker : functor (Ast : Sig.Ast) -> Sig.Parser with module Ast = Ast) =
+      (Id : Sig.Id) (Maker : functor (Ast : Sig.Ast) -> Sig.Parser(Ast).S) =
       struct
         let _ =
           declare_dyn_module Id.name
@@ -16907,16 +16868,14 @@ module Register :
       end
     module OCamlParser
       (Id : Sig.Id)
-      (Maker :
-        functor (Ast : Sig.Camlp4Ast) -> Sig.Parser with module Ast = Ast) =
+      (Maker : functor (Ast : Sig.Camlp4Ast) -> Sig.Parser(Ast).S) =
       struct
         let _ =
           declare_dyn_module Id.name
             (fun _ -> let module M = Maker(PreCast.Ast)
                in register_parser M.parse_implem M.parse_interf)
       end
-    module OCamlPreCastParser
-      (Id : Sig.Id) (P : Sig.Parser with module Ast = PreCast.Ast) =
+    module OCamlPreCastParser (Id : Sig.Id) (P : Sig.Parser(PreCast.Ast).S) =
       struct
         let _ =
           declare_dyn_module Id.name
@@ -16929,10 +16888,8 @@ module Register :
           declare_dyn_module Id.name
             (fun _ -> let module M = Maker(AstFilters) in ())
       end
-    let _ = let module M = Syntax.Parser
-      in
-        (sig_item_parser := M.parse_interf;
-         str_item_parser := M.parse_implem)
+    let _ = sig_item_parser := Syntax.parse_interf
+    let _ = str_item_parser := Syntax.parse_implem
     module CurrentParser =
       struct
         module Ast = Ast

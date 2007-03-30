@@ -17,8 +17,6 @@
  *)
 
 module Make (Ast : Sig.Ast) = struct
-  module Ast = Ast;
-  
   value print_interf ?input_file:(_) ?output_file:(_) _ = failwith "No interface printer";
   value print_implem ?input_file:(_) ?output_file:(_) _ = failwith "No implementation printer";
 end;

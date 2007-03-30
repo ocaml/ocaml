@@ -16,9 +16,8 @@
  * - Nicolas Pouillard: initial version
  *)
 
-module Make (Warning : Sig.Warning)
-            (Ast     : Sig.Camlp4Ast with module Loc = Warning.Loc)
-            (Gram    : Sig.Grammar.Static with module Loc = Warning.Loc
+module Make (Ast     : Sig.Camlp4Ast)
+            (Gram    : Sig.Grammar.Static with module Loc = Ast.Loc
                                             with type Token.t = Sig.camlp4_token)
             (Quotation : Sig.Quotation with module Ast = Sig.Camlp4AstToAst Ast)
 : Sig.Camlp4Syntax with module Loc = Ast.Loc
@@ -29,12 +28,17 @@ module Make (Warning : Sig.Warning)
                     and module Quotation = Quotation
 = struct
 
-  module Warning = Warning;
   module Loc     = Ast.Loc;
   module Ast     = Ast;
   module Gram    = Gram;
   module Token   = Gram.Token;
   open Sig;
+
+  (* Warnings *)
+  type warning = Loc.t -> string -> unit;
+  value default_warning loc txt = Format.eprintf "<W> %a: %s@." Loc.print loc txt;
+  value current_warning = ref default_warning;
+  value print_warning loc txt = current_warning.val loc txt;
 
   value a_CHAR = Gram.Entry.mk "a_CHAR";
   value a_FLOAT = Gram.Entry.mk "a_FLOAT";
@@ -218,31 +222,30 @@ module Make (Warning : Sig.Warning)
 
   module Quotation = Quotation;
 
-  module Parser = struct
-    module Ast = Ast;
-    value wrap directive_handler pa init_loc cs =
-      let rec loop loc =
-        let (pl, stopped_at_directive) = pa loc cs in
-        match stopped_at_directive with
-        [ Some new_loc ->
-          let pl =
-            match List.rev pl with
-            [ [] -> assert False
-            | [x :: xs] ->
-                match directive_handler x with
-                [ None -> xs
-                | Some x -> [x :: xs] ] ]
-          in (List.rev pl) @ (loop new_loc)
-        | None -> pl ]
-      in loop init_loc;
-    value parse_implem ?(directive_handler = fun _ -> None) _loc cs =
-      let l = wrap directive_handler (Gram.parse implem) _loc cs in
-      <:str_item< $list:l$ >>;
-    value parse_interf ?(directive_handler = fun _ -> None) _loc cs =
-      let l = wrap directive_handler (Gram.parse interf) _loc cs in
-      <:sig_item< $list:l$ >>;
-  end;
+  value wrap directive_handler pa init_loc cs =
+    let rec loop loc =
+      let (pl, stopped_at_directive) = pa loc cs in
+      match stopped_at_directive with
+      [ Some new_loc ->
+        let pl =
+          match List.rev pl with
+          [ [] -> assert False
+          | [x :: xs] ->
+              match directive_handler x with
+              [ None -> xs
+              | Some x -> [x :: xs] ] ]
+        in (List.rev pl) @ (loop new_loc)
+      | None -> pl ]
+    in loop init_loc;
 
-  module Printer = Struct.EmptyPrinter.Make Ast;
+  value parse_implem ?(directive_handler = fun _ -> None) _loc cs =
+    let l = wrap directive_handler (Gram.parse implem) _loc cs in
+    <:str_item< $list:l$ >>;
 
+  value parse_interf ?(directive_handler = fun _ -> None) _loc cs =
+    let l = wrap directive_handler (Gram.parse interf) _loc cs in
+    <:sig_item< $list:l$ >>;
+
+  value print_interf ?input_file:(_) ?output_file:(_) _ = failwith "No interface printer";
+  value print_implem ?input_file:(_) ?output_file:(_) _ = failwith "No implementation printer";
 end;

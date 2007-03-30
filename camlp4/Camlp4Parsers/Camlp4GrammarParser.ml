@@ -147,7 +147,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       Hashtbl.iter
         (fun s (r, e) ->
           if r.val = Unused then
-            Warning.print e.name.loc ("Unused local entry \"" ^ s ^ "\"")
+            print_warning e.name.loc ("Unused local entry \"" ^ s ^ "\"")
           else ())
         ht;
     }
