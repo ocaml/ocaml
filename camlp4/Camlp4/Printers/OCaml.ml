@@ -462,7 +462,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         pp f "@[<0>@[<hv2>try@ %a@]@ @[<0>with%a@]@]"
           o#expr e o#match_case a
     | <:expr< assert False >> -> pp f "@[<2>assert@ false@]"
-    | <:expr< assert $e$ >> -> pp f "@[<2>assert@ %a@]" o#expr e
+    | <:expr< assert $e$ >> -> pp f "@[<2>assert@ %a@]" o#dot_expr e
     | <:expr< let module $s$ = $me$ in $e$ >> ->
           pp f "@[<2>let module %a =@ %a@]@ @[<2>in@ %a@]" o#var s o#module_expr me o#expr e
     | e -> o#apply_expr f e ];
