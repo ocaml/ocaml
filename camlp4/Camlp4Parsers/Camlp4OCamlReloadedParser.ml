@@ -27,6 +27,15 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   include Syntax;
 
   Gram.Entry.clear match_case;
+  Gram.Entry.clear semi;
+
+  value mkseq _loc =
+    fun
+    [ <:expr< $_$; $_$ >> | <:expr< $anti:_$ >> as e -> <:expr< do { $e$ } >>
+    | e -> e ]
+  ;
+
+  DELETE_RULE Gram match_case0: patt_as_patt_opt; opt_when_expr; "->"; expr END;
 
   value revised =
     try
@@ -42,22 +51,41 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       expr: LEVEL "top"
       [ [ "function"; a = match_case -> <:expr< fun [ $a$ ] >> ] ];
     END;
-  end else ();
+    DELETE_RULE Gram value_let: "value" END;
+    DELETE_RULE Gram value_val: "value" END;
+  end else begin
+    DELETE_RULE Gram value_let: "let" END;
+    DELETE_RULE Gram value_val: "val" END;
+  end;
 
   EXTEND Gram
-    GLOBAL: match_case match_case0 expr;
+    GLOBAL: match_case match_case0 expr value_let value_val semi;
 
     match_case:
       [ [ OPT "|"; l = LIST1 match_case0 SEP "|"; "end" -> Ast.mcOr_of_list l
         | "end" -> <:match_case<>> ] ]
     ;
 
+    match_case0:
+      [ [ p = patt_as_patt_opt; w = opt_when_expr; "->"; e = sequence ->
+            <:match_case< $p$ when $w$ -> $mkseq _loc e$ >> ] ]
+    ;
+
     expr: LEVEL "top"
-      [ [ "if"; e1 = SELF; "then"; e2 = expr LEVEL "top";
-          "else"; e3 = expr LEVEL "top"; "end" ->
-            <:expr< if $e1$ then $e2$ else $e3$ >>
-        | "if"; e1 = SELF; "then"; e2 = expr LEVEL "top"; "end" ->
-            <:expr< if $e1$ then $e2$ else () >> ] ]
+      [ [ "if"; e1 = sequence; "then"; e2 = sequence; "else"; e3 = sequence; "end" ->
+            <:expr< if $mkseq _loc e1$ then $mkseq _loc e2$ else $mkseq _loc e3$ >>
+        | "if"; e1 = sequence; "then"; e2 = sequence; "end" ->
+            <:expr< if $mkseq _loc e1$ then $mkseq _loc e2$ else () >> ] ]
+    ;
+
+    value_let:
+      [ [ "val" -> () ] ]
+    ;
+    value_val:
+      [ [ "val" -> () ] ]
+    ;
+    semi:
+      [ [ ";;" -> () | ";" -> () | -> () ] ]
     ;
   END;
 

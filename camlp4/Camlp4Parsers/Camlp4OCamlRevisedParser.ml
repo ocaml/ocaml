@@ -574,17 +574,18 @@ Old (no more supported) syntax:
             <:expr< fun [ $list:a$ ] >>
         | "fun"; p = labeled_ipatt; e = fun_def ->
             <:expr< fun $p$ -> $e$ >>
-        | "match"; e = SELF; "with"; a = match_case ->
-            <:expr< match $e$ with [ $a$ ] >>
-        | "try"; e = SELF; "with"; a = match_case ->
-            <:expr< try $e$ with [ $a$ ] >>
+        | "match"; e = sequence; "with"; a = match_case ->
+            <:expr< match $mksequence _loc e$ with [ $a$ ] >>
+        | "try"; e = sequence; "with"; a = match_case ->
+            <:expr< try $mksequence _loc e$ with [ $a$ ] >>
         | "if"; e1 = SELF; "then"; e2 = SELF; "else"; e3 = SELF ->
             <:expr< if $e1$ then $e2$ else $e3$ >>
         | "do"; seq = do_sequence -> mksequence _loc seq
-        | "for"; i = a_LIDENT; "="; e1 = SELF; df = direction_flag; e2 = SELF; "do"; seq = do_sequence ->
-            <:expr< for $i$ = $e1$ $to:df$ $e2$ do { $seq$ } >>
-        | "while"; e = SELF; "do"; seq = do_sequence ->
-            <:expr< while $e$ do { $seq$ } >>
+        | "for"; i = a_LIDENT; "="; e1 = sequence; df = direction_flag;
+          e2 = sequence; "do"; seq = do_sequence ->
+            <:expr< for $i$ = $mksequence _loc e1$ $to:df$ $mksequence _loc e2$ do { $seq$ } >>
+        | "while"; e = sequence; "do"; seq = do_sequence ->
+            <:expr< while $mksequence _loc e$ do { $seq$ } >>
         | "object"; csp = opt_class_self_patt; cst = class_structure; "end" ->
             <:expr< object ($csp$) $cst$ end >> ]
       | "where"

@@ -4,4 +4,4 @@
 "test_macros.ml": pp(camlp4of ./macros.cmo)
 "lambda_test.ml": pp(camlp4of ./lambda_quot.cmo)
 <parse_files.*>: camlp4of, use_camlp4_full, use_dynlink
-<free_vars_test.*>: camlp4rf, use_camlp4
+<{free_vars_test,poly_rec}.*>: camlp4rf, use_camlp4
