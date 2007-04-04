@@ -332,6 +332,14 @@ let camlp4_flags camlp4s =
 
 camlp4_flags ["camlp4o"; "camlp4r"; "camlp4of"; "camlp4rf"; "camlp4orf"];;
 
+let camlp4_flags' camlp4s =
+  List.iter begin fun (camlp4, flags) ->
+    flag ["ocaml"; "pp"; camlp4] flags
+  end camlp4s;;
+
+camlp4_flags' ["camlp4orr", S[A"camlp4of"; A"-parser"; A"reloaded"];
+               "camlp4rrr", S[A"camlp4rf"; A"-parser"; A"reloaded"]];;
+
 ocaml_lib ~extern:true ~native:false "dynlink";;
 ocaml_lib ~extern:true "unix";;
 ocaml_lib ~extern:true "str";;
