@@ -27,8 +27,9 @@ let ocamldep_command arg =
      flags_of_pathname arg; A "-modules"]
 
 let menhir_ocamldep_command arg out =
+  let menhir = if !Options.ocamlyacc = N then V"MENHIR" else !Options.ocamlyacc in
   let tags = tags_of_pathname arg++"ocaml"++"menhir_ocamldep" in
-  S [!Options.ocamlyacc; T tags; A"--raw-depend";
+  S [menhir; T tags; A"--raw-depend";
      A"--ocamldep"; Quote (ocamldep_command arg);
      P arg; Sh ">"; Px out]
 

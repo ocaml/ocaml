@@ -62,12 +62,12 @@ let mk_virtual_solvers =
 let () =
   mk_virtual_solvers
     ["ocamlc"; "ocamlopt"; "ocamldep"; "ocamldoc";
-     "ocamlyacc"; "ocamllex"; "ocamlmklib"; "ocamlmktop"]
+    "ocamlyacc"; "menhir"; "ocamllex"; "ocamlmklib"; "ocamlmktop"]
 let ocamlc = ref (V"OCAMLC")
 let ocamlopt = ref (V"OCAMLOPT")
 let ocamldep = ref (V"OCAMLDEP")
 let ocamldoc = ref (V"OCAMLDOC")
-let ocamlyacc = ref (V"OCAMLYACC")
+let ocamlyacc = ref N
 let ocamllex = ref (V"OCAMLLEX")
 let ocamlmklib = ref (V"OCAMLMKLIB")
 let ocamlmktop = ref (V"OCAMLMKTOP")
@@ -165,8 +165,7 @@ let spec =
    "-no-sanitize", Clear sanitize, " Do not generate sanitization script";
    "-nothing-should-be-rebuilt", Set nothing_should_be_rebuilt, " Fail if something needs to be rebuilt";
    "-classic-display", Set Log.classic_display, " Display executed commands the old-fashioned way";
-   "-use-menhir", Unit(fun () -> use_menhir := true; ocamlyacc := A"menhir"),
-                  " Use menhir instead of ocamlyacc";
+   "-use-menhir", Set use_menhir, " Use menhir instead of ocamlyacc";
 
    "-j", Set_int Command.jobs, "<N> Allow N jobs at once (0 for unlimited)";
 
