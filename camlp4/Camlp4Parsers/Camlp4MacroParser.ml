@@ -60,8 +60,9 @@ Added statements:
 
   As Camlp4 options:
 
-     -D<uident>                      define <uident>
+     -D<uident> or -D<uident>=expr   define <uident> with optional value <expr>
      -U<uident>                      undefine it
+
      -I<dir>                         add <dir> to the search path for INCLUDE'd files
 
   After having used a DEFINE <uident> followed by "= <expression>", you
@@ -220,6 +221,13 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     with
     [ Not_found -> () ];
 
+  (* Thanks to Christopher Conway for his patch *)
+  value parse_def s =
+    match Gram.parse_string expr (Loc.mk "<command line>") s with
+    [ <:expr< $uid:n$ >> -> define None n
+    | <:expr< $uid:n$ = $e$ >> -> define (Some ([],e)) n
+    | _ -> invalid_arg s ];
+
   (* This is a list of directories to search for INCLUDE statements. *)
   value include_dirs = ref [];
 
@@ -312,7 +320,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     ;
   END;
 
-  Options.add "-D" (Arg.String (define None))
+  Options.add "-D" (Arg.String parse_def)
     "<string> Define for IFDEF instruction.";
   Options.add "-U" (Arg.String undef)
     "<string> Undefine for IFDEF instruction.";
