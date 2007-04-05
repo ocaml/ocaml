@@ -265,7 +265,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     in
     let me =
       match me with
-      [ <:expr@_loc< $_$; $_$ >> | <:expr@_loc< $anti:_$ >> as e -> <:expr< do { $e$ } >>
+      [ <:expr@_loc< $_$; $_$ >> as e -> <:expr< do { $e$ } >>
       | e -> e ]
     in
     match me with

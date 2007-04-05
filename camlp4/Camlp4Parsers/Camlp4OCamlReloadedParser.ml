@@ -31,7 +31,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
 
   value mkseq _loc =
     fun
-    [ <:expr< $_$; $_$ >> | <:expr< $anti:_$ >> as e -> <:expr< do { $e$ } >>
+    [ <:expr< $_$; $_$ >> as e -> <:expr< do { $e$ } >>
     | e -> e ]
   ;
 

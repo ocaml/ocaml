@@ -350,7 +350,7 @@ module Sig =
       sig
         (** The name of the extension, typically the module name. *)
         val name : string
-        (** The version of the extension, typically $Id: Sig.ml,v 1.2.2.5 2007/03/29 14:31:04 pouillar Exp $ with a versionning system. *)
+        (** The version of the extension, typically $Id: Sig.ml,v 1.2.2.6 2007/03/30 15:50:12 pouillar Exp $ with a versionning system. *)
         val version : string
       end
     module type Loc =
@@ -14530,7 +14530,7 @@ module Printers =
           struct
             let name = "Camlp4Printers.DumpCamlp4Ast"
             let version =
-              "$Id: DumpCamlp4Ast.ml,v 1.5 2007/02/07 10:09:21 ertai Exp $"
+              "$Id: DumpCamlp4Ast.ml,v 1.5.4.1 2007/03/30 15:50:12 pouillar Exp $"
           end
         module Make (Syntax : Sig.Syntax) : Sig.Printer(Syntax.Ast).S =
           struct
@@ -14562,7 +14562,7 @@ module Printers =
           struct
             let name = "Camlp4Printers.DumpOCamlAst"
             let version =
-              "$Id: DumpOCamlAst.ml,v 1.5 2007/02/07 10:09:21 ertai Exp $"
+              "$Id: DumpOCamlAst.ml,v 1.5.4.1 2007/03/30 15:50:12 pouillar Exp $"
           end
         module Make (Syntax : Sig.Camlp4Syntax) : Sig.Printer(Syntax.Ast).S =
           struct
@@ -14765,7 +14765,7 @@ module Printers =
           struct
             let name = "Camlp4.Printers.OCaml"
             let version =
-              "$Id: OCaml.ml,v 1.21.2.2 2007/03/26 12:55:32 pouillar Exp $"
+              "$Id: OCaml.ml,v 1.21.2.4 2007/04/02 07:36:38 pouillar Exp $"
           end
         module Make (Syntax : Sig.Camlp4Syntax) =
           struct
@@ -15254,7 +15254,8 @@ module Printers =
                           pp f "@[<0>@[<hv2>try@ %a@]@ @[<0>with%a@]@]"
                             o#expr e o#match_case a
                       | Ast.ExAsf _ -> pp f "@[<2>assert@ false@]"
-                      | Ast.ExAsr (_, e) -> pp f "@[<2>assert@ %a@]" o#expr e
+                      | Ast.ExAsr (_, e) ->
+                          pp f "@[<2>assert@ %a@]" o#dot_expr e
                       | Ast.ExLmd (_, s, me, e) ->
                           pp f "@[<2>let module %a =@ %a@]@ @[<2>in@ %a@]"
                             o#var s o#module_expr me o#expr e
@@ -16019,7 +16020,7 @@ module Printers =
           struct
             let name = "Camlp4.Printers.OCamlr"
             let version =
-              "$Id: OCamlr.ml,v 1.17.4.1 2007/03/26 12:55:32 pouillar Exp $"
+              "$Id: OCamlr.ml,v 1.17.4.2 2007/03/30 15:50:12 pouillar Exp $"
           end
         module Make (Syntax : Sig.Camlp4Syntax) =
           struct
@@ -16674,7 +16675,8 @@ module PreCast :
     module Id =
       struct
         let name = "Camlp4.PreCast"
-        let version = "$Id: PreCast.ml,v 1.4 2007/02/07 10:09:21 ertai Exp $"
+        let version =
+          "$Id: PreCast.ml,v 1.4.4.1 2007/03/30 15:50:12 pouillar Exp $"
       end
     type camlp4_token =
       Sig.camlp4_token =

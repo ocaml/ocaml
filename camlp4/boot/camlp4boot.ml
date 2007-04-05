@@ -23,7 +23,7 @@ module R =
       struct
         let name = "Camlp4RevisedParserParser"
         let version =
-          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.10 2007/03/30 13:37:30 pouillar Exp $"
+          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.11 2007/04/04 17:26:21 pouillar Exp $"
       end
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
@@ -235,6 +235,10 @@ Old (no more supported) syntax:
           function
           | (Ast.ExSem (_, _, _) | Ast.ExAnt (_, _) as e) ->
               Ast.ExSeq (_loc, e)
+          | e -> e
+        let mksequence' _loc =
+          function
+          | (Ast.ExSem (_, _, _) as e) -> Ast.ExSeq (_loc, e)
           | e -> e
         let module_type_app mt1 mt2 =
           match (mt1, mt2) with
@@ -1527,33 +1531,44 @@ Old (no more supported) syntax:
                              (fun _ (cst : 'class_structure)
                                 (csp : 'opt_class_self_patt) _ (_loc : Loc.t)
                                 -> (Ast.ExObj (_loc, csp, cst) : 'expr))));
-                         ([ Gram.Skeyword "while"; Gram.Sself;
+                         ([ Gram.Skeyword "while";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (sequence : 'sequence Gram.Entry.t));
                             Gram.Skeyword "do";
                             Gram.Snterm
                               (Gram.Entry.obj
                                  (do_sequence : 'do_sequence Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun (seq : 'do_sequence) _ (e : 'expr) _
+                             (fun (seq : 'do_sequence) _ (e : 'sequence) _
                                 (_loc : Loc.t) ->
-                                (Ast.ExWhi (_loc, e, seq) : 'expr))));
+                                (Ast.ExWhi (_loc, mksequence' _loc e, seq) :
+                                  'expr))));
                          ([ Gram.Skeyword "for";
                             Gram.Snterm
                               (Gram.Entry.obj
                                  (a_LIDENT : 'a_LIDENT Gram.Entry.t));
-                            Gram.Skeyword "="; Gram.Sself;
+                            Gram.Skeyword "=";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (sequence : 'sequence Gram.Entry.t));
                             Gram.Snterm
                               (Gram.Entry.obj
                                  (direction_flag :
                                    'direction_flag Gram.Entry.t));
-                            Gram.Sself; Gram.Skeyword "do";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (sequence : 'sequence Gram.Entry.t));
+                            Gram.Skeyword "do";
                             Gram.Snterm
                               (Gram.Entry.obj
                                  (do_sequence : 'do_sequence Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun (seq : 'do_sequence) _ (e2 : 'expr)
-                                (df : 'direction_flag) (e1 : 'expr) _
+                             (fun (seq : 'do_sequence) _ (e2 : 'sequence)
+                                (df : 'direction_flag) (e1 : 'sequence) _
                                 (i : 'a_LIDENT) _ (_loc : Loc.t) ->
-                                (Ast.ExFor (_loc, i, e1, e2, df, seq) :
+                                (Ast.ExFor (_loc, i, mksequence' _loc e1,
+                                   mksequence' _loc e2, df, seq) :
                                   'expr))));
                          ([ Gram.Skeyword "do";
                             Gram.Snterm
@@ -1569,24 +1584,32 @@ Old (no more supported) syntax:
                              (fun (e3 : 'expr) _ (e2 : 'expr) _ (e1 : 'expr)
                                 _ (_loc : Loc.t) ->
                                 (Ast.ExIfe (_loc, e1, e2, e3) : 'expr))));
-                         ([ Gram.Skeyword "try"; Gram.Sself;
+                         ([ Gram.Skeyword "try";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (sequence : 'sequence Gram.Entry.t));
                             Gram.Skeyword "with";
                             Gram.Snterm
                               (Gram.Entry.obj
                                  (match_case : 'match_case Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun (a : 'match_case) _ (e : 'expr) _
+                             (fun (a : 'match_case) _ (e : 'sequence) _
                                 (_loc : Loc.t) ->
-                                (Ast.ExTry (_loc, e, a) : 'expr))));
-                         ([ Gram.Skeyword "match"; Gram.Sself;
+                                (Ast.ExTry (_loc, mksequence' _loc e, a) :
+                                  'expr))));
+                         ([ Gram.Skeyword "match";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (sequence : 'sequence Gram.Entry.t));
                             Gram.Skeyword "with";
                             Gram.Snterm
                               (Gram.Entry.obj
                                  (match_case : 'match_case Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun (a : 'match_case) _ (e : 'expr) _
+                             (fun (a : 'match_case) _ (e : 'sequence) _
                                 (_loc : Loc.t) ->
-                                (Ast.ExMat (_loc, e, a) : 'expr))));
+                                (Ast.ExMat (_loc, mksequence' _loc e, a) :
+                                  'expr))));
                          ([ Gram.Skeyword "fun";
                             Gram.Snterm
                               (Gram.Entry.obj
@@ -8454,7 +8477,7 @@ module Rp =
       struct
         let name = "Camlp4OCamlRevisedParserParser"
         let version =
-          "$Id: Camlp4OCamlRevisedParserParser.ml,v 1.1 2007/02/07 10:09:22 ertai Exp $"
+          "$Id: Camlp4OCamlRevisedParserParser.ml,v 1.1.4.1 2007/04/04 17:26:21 pouillar Exp $"
       end
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
@@ -8838,7 +8861,11 @@ module Rp =
                           Ast.IdLid (_loc, "count"))),
                       Ast.ExId (_loc, Ast.IdLid (_loc, strm_n)))),
                   pc)
-            | None -> pc
+            | None -> pc in
+          let me =
+            match me with
+            | (Ast.ExSem (_loc, _, _) as e) -> Ast.ExSeq (_loc, e)
+            | e -> e
           in
             match me with
             | Ast.ExId (_, (Ast.IdLid (_, x))) when x = strm_n -> e
@@ -8978,7 +9005,10 @@ module Rp =
                ((fun () ->
                    ((Some (Camlp4.Sig.Grammar.Level "top")),
                     [ (None, None,
-                       [ ([ Gram.Skeyword "match"; Gram.Sself;
+                       [ ([ Gram.Skeyword "match";
+                            Gram.Snterm
+                              (Gram.Entry.obj
+                                 (sequence : 'sequence Gram.Entry.t));
                             Gram.Skeyword "with"; Gram.Skeyword "parser";
                             Gram.Sopt
                               (Gram.Snterm
@@ -8991,8 +9021,8 @@ module Rp =
                                    'parser_case_list Gram.Entry.t)) ],
                           (Gram.Action.mk
                              (fun (pcl : 'parser_case_list)
-                                (po : 'parser_ipatt option) _ _ (e : 'expr) _
-                                (_loc : Loc.t) ->
+                                (po : 'parser_ipatt option) _ _
+                                (e : 'sequence) _ (_loc : Loc.t) ->
                                 (cparser_match _loc e po pcl : 'expr))));
                          ([ Gram.Skeyword "parser";
                             Gram.Sopt
@@ -9351,7 +9381,7 @@ module G =
       struct
         let name = "Camlp4GrammarParser"
         let version =
-          "$Id: Camlp4GrammarParser.ml,v 1.1.4.2 2007/03/29 14:31:05 pouillar Exp $"
+          "$Id: Camlp4GrammarParser.ml,v 1.1.4.3 2007/03/30 15:50:12 pouillar Exp $"
       end
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
@@ -11759,7 +11789,7 @@ module M =
       struct
         let name = "Camlp4MacroParser"
         let version =
-          "$Id: Camlp4MacroParser.ml,v 1.1.4.1 2007/03/24 11:48:15 pouillar Exp $"
+          "$Id: Camlp4MacroParser.ml,v 1.1.4.2 2007/04/04 17:25:03 pouillar Exp $"
       end
     (*
 Added statements:
@@ -11798,8 +11828,9 @@ Added statements:
 
   As Camlp4 options:
 
-     -D<uident>                      define <uident>
+     -D<uident> or -D<uident>=expr   define <uident> with optional value <expr>
      -U<uident>                      undefine it
+
      -I<dir>                         add <dir> to the search path for INCLUDE'd files
 
   After having used a DEFINE <uident> followed by "= <expression>", you
@@ -12023,6 +12054,15 @@ Added statements:
                 | None -> ());
                defined := list_remove x !defined)
           with | Not_found -> ()
+        (* Thanks to Christopher Conway for his patch *)
+        let parse_def s =
+          match Gram.parse_string expr (Loc.mk "<command line>") s with
+          | Ast.ExId (_, (Ast.IdUid (_, n))) -> define None n
+          | Ast.ExApp (_,
+              (Ast.ExApp (_, (Ast.ExId (_, (Ast.IdLid (_, "=")))),
+                 (Ast.ExId (_, (Ast.IdUid (_, n)))))),
+              e) -> define (Some (([], e))) n
+          | _ -> invalid_arg s
         (* This is a list of directories to search for INCLUDE statements. *)
         let include_dirs = ref []
         (* Add something to the above, make sure it ends with a slash. *)
@@ -12425,7 +12465,7 @@ Added statements:
                                   'uident)))) ]) ]))
                   ()))
         let _ =
-          Options.add "-D" (Arg.String (define None))
+          Options.add "-D" (Arg.String parse_def)
             "<string> Define for IFDEF instruction."
         let _ =
           Options.add "-U" (Arg.String undef)
@@ -12995,7 +13035,7 @@ module B =
  * - Daniel de Rauglaudre: initial version
  * - Nicolas Pouillard: refactoring
  *)
-    (* $Id: Camlp4Bin.ml,v 1.14.2.2 2007/03/26 12:55:32 pouillar Exp $ *)
+    (* $Id: Camlp4Bin.ml,v 1.14.2.3 2007/03/30 15:50:12 pouillar Exp $ *)
     open Camlp4
     open PreCast.Syntax
     open PreCast

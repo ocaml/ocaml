@@ -239,6 +239,12 @@ Old (no more supported) syntax:
     | e -> e ]
   ;
 
+  value mksequence' _loc =
+    fun
+    [ <:expr< $_$; $_$ >> as e -> <:expr< do { $e$ } >>
+    | e -> e ]
+  ;
+
   value module_type_app mt1 mt2 =
     match (mt1, mt2) with
     [ (<:module_type@_loc< $id:i1$ >>, <:module_type< $id:i2$ >>) ->
@@ -575,17 +581,17 @@ Old (no more supported) syntax:
         | "fun"; p = labeled_ipatt; e = fun_def ->
             <:expr< fun $p$ -> $e$ >>
         | "match"; e = sequence; "with"; a = match_case ->
-            <:expr< match $mksequence _loc e$ with [ $a$ ] >>
+            <:expr< match $mksequence' _loc e$ with [ $a$ ] >>
         | "try"; e = sequence; "with"; a = match_case ->
-            <:expr< try $mksequence _loc e$ with [ $a$ ] >>
+            <:expr< try $mksequence' _loc e$ with [ $a$ ] >>
         | "if"; e1 = SELF; "then"; e2 = SELF; "else"; e3 = SELF ->
             <:expr< if $e1$ then $e2$ else $e3$ >>
         | "do"; seq = do_sequence -> mksequence _loc seq
         | "for"; i = a_LIDENT; "="; e1 = sequence; df = direction_flag;
           e2 = sequence; "do"; seq = do_sequence ->
-            <:expr< for $i$ = $mksequence _loc e1$ $to:df$ $mksequence _loc e2$ do { $seq$ } >>
+            <:expr< for $i$ = $mksequence' _loc e1$ $to:df$ $mksequence' _loc e2$ do { $seq$ } >>
         | "while"; e = sequence; "do"; seq = do_sequence ->
-            <:expr< while $mksequence _loc e$ do { $seq$ } >>
+            <:expr< while $mksequence' _loc e$ do { $seq$ } >>
         | "object"; csp = opt_class_self_patt; cst = class_structure; "end" ->
             <:expr< object ($csp$) $cst$ end >> ]
       | "where"
