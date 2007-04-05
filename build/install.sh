@@ -510,7 +510,7 @@ installdir \
   camlp4o.cma camlp4of.cma camlp4oof.cma \
   camlp4orf.cma camlp4r.cma camlp4rf.cma \
   Camlp4Bin.cm[iox] Camlp4Bin.$O Camlp4Top.cm[io] \
-  Camlp4_config.cmi camlp4prof.cm[iox] camlp4prof.$0 \
+  Camlp4_config.cmi camlp4prof.cm[iox] camlp4prof.$O \
   $CAMLP4DIR
 installlibdir camlp4lib.$A camlp4fulllib.$A $CAMLP4DIR
 cd ..
