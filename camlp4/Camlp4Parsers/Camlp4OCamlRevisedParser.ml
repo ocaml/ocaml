@@ -1202,6 +1202,8 @@ Old (no more supported) syntax:
     class_structure:
       [ [ `ANTIQUOT (""|"cst"|"anti"|"list" as n) s ->
             <:class_str_item< $anti:mk_anti ~c:"class_str_item" n s$ >>
+        | `ANTIQUOT (""|"cst"|"anti"|"list" as n) s; semi; cst = SELF ->
+            <:class_str_item< $anti:mk_anti ~c:"class_str_item" n s$; $cst$ >>
         | l = LIST0 [ cst = class_str_item; semi -> cst ] -> Ast.crSem_of_list l
       ] ]
     ;
@@ -1275,6 +1277,8 @@ Old (no more supported) syntax:
     class_signature:
       [ [ `ANTIQUOT (""|"csg"|"anti"|"list" as n) s ->
             <:class_sig_item< $anti:mk_anti ~c:"class_sig_item" n s$ >>
+        | `ANTIQUOT (""|"csg"|"anti"|"list" as n) s; semi; csg = SELF ->
+            <:class_sig_item< $anti:mk_anti ~c:"class_sig_item" n s$; $csg$ >>
         | l = LIST0 [ csg = class_sig_item; semi -> csg ] -> Ast.cgSem_of_list l
       ] ]
     ;
@@ -1454,6 +1458,8 @@ Old (no more supported) syntax:
     sig_items:
       [ [ `ANTIQUOT (""|"sigi"|"anti"|"list" as n) s ->
             <:sig_item< $anti:mk_anti n ~c:"sig_item" s$ >>
+        | `ANTIQUOT (""|"sigi"|"anti"|"list" as n) s; semi; sg = SELF ->
+            <:sig_item< $anti:mk_anti n ~c:"sig_item" s$; $sg$ >>
         | l = LIST0 [ sg = sig_item; semi -> sg ] -> Ast.sgSem_of_list l
       ] ]
     ;
@@ -1467,6 +1473,8 @@ Old (no more supported) syntax:
     str_items:
       [ [ `ANTIQUOT (""|"stri"|"anti"|"list" as n) s ->
             <:str_item< $anti:mk_anti n ~c:"str_item" s$ >>
+        | `ANTIQUOT (""|"stri"|"anti"|"list" as n) s; semi; st = SELF ->
+            <:str_item< $anti:mk_anti n ~c:"str_item" s$; $st$ >>
         | l = LIST0 [ st = str_item; semi -> st ] -> Ast.stSem_of_list l
       ] ]
     ;

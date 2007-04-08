@@ -23,7 +23,7 @@ module R =
       struct
         let name = "Camlp4RevisedParserParser"
         let version =
-          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.11 2007/04/04 17:26:21 pouillar Exp $"
+          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.12 2007/04/05 18:06:36 pouillar Exp $"
       end
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
@@ -4997,6 +4997,28 @@ Old (no more supported) syntax:
                                  | ANTIQUOT (("" | "cst" | "anti" | "list"),
                                      _) -> true
                                  | _ -> false),
+                                "ANTIQUOT ((\"\" | \"cst\" | \"anti\" | \"list\"), _)"));
+                            Gram.Snterm
+                              (Gram.Entry.obj (semi : 'semi Gram.Entry.t));
+                            Gram.Sself ],
+                          (Gram.Action.mk
+                             (fun (cst : 'class_structure) _
+                                (__camlp4_0 : Gram.Token.t) (_loc : Loc.t) ->
+                                match __camlp4_0 with
+                                | ANTIQUOT
+                                    ((("" | "cst" | "anti" | "list" as n)),
+                                    s) ->
+                                    (Ast.CrSem (_loc,
+                                       Ast.CrAnt (_loc,
+                                         mk_anti ~c: "class_str_item" n s),
+                                       cst) :
+                                      'class_structure)
+                                | _ -> assert false)));
+                         ([ Gram.Stoken
+                              (((function
+                                 | ANTIQUOT (("" | "cst" | "anti" | "list"),
+                                     _) -> true
+                                 | _ -> false),
                                 "ANTIQUOT ((\"\" | \"cst\" | \"anti\" | \"list\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
@@ -5413,6 +5435,28 @@ Old (no more supported) syntax:
                           (Gram.Action.mk
                              (fun (l : 'e__5 list) (_loc : Loc.t) ->
                                 (Ast.cgSem_of_list l : 'class_signature))));
+                         ([ Gram.Stoken
+                              (((function
+                                 | ANTIQUOT (("" | "csg" | "anti" | "list"),
+                                     _) -> true
+                                 | _ -> false),
+                                "ANTIQUOT ((\"\" | \"csg\" | \"anti\" | \"list\"), _)"));
+                            Gram.Snterm
+                              (Gram.Entry.obj (semi : 'semi Gram.Entry.t));
+                            Gram.Sself ],
+                          (Gram.Action.mk
+                             (fun (csg : 'class_signature) _
+                                (__camlp4_0 : Gram.Token.t) (_loc : Loc.t) ->
+                                match __camlp4_0 with
+                                | ANTIQUOT
+                                    ((("" | "csg" | "anti" | "list" as n)),
+                                    s) ->
+                                    (Ast.CgSem (_loc,
+                                       Ast.CgAnt (_loc,
+                                         mk_anti ~c: "class_sig_item" n s),
+                                       csg) :
+                                      'class_signature)
+                                | _ -> assert false)));
                          ([ Gram.Stoken
                               (((function
                                  | ANTIQUOT (("" | "csg" | "anti" | "list"),
@@ -6407,6 +6451,28 @@ Old (no more supported) syntax:
                                  | ANTIQUOT (("" | "sigi" | "anti" | "list"),
                                      _) -> true
                                  | _ -> false),
+                                "ANTIQUOT ((\"\" | \"sigi\" | \"anti\" | \"list\"), _)"));
+                            Gram.Snterm
+                              (Gram.Entry.obj (semi : 'semi Gram.Entry.t));
+                            Gram.Sself ],
+                          (Gram.Action.mk
+                             (fun (sg : 'sig_items) _
+                                (__camlp4_0 : Gram.Token.t) (_loc : Loc.t) ->
+                                match __camlp4_0 with
+                                | ANTIQUOT
+                                    ((("" | "sigi" | "anti" | "list" as n)),
+                                    s) ->
+                                    (Ast.SgSem (_loc,
+                                       Ast.SgAnt (_loc,
+                                         mk_anti n ~c: "sig_item" s),
+                                       sg) :
+                                      'sig_items)
+                                | _ -> assert false)));
+                         ([ Gram.Stoken
+                              (((function
+                                 | ANTIQUOT (("" | "sigi" | "anti" | "list"),
+                                     _) -> true
+                                 | _ -> false),
                                 "ANTIQUOT ((\"\" | \"sigi\" | \"anti\" | \"list\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
@@ -6476,6 +6542,28 @@ Old (no more supported) syntax:
                           (Gram.Action.mk
                              (fun (l : 'e__7 list) (_loc : Loc.t) ->
                                 (Ast.stSem_of_list l : 'str_items))));
+                         ([ Gram.Stoken
+                              (((function
+                                 | ANTIQUOT (("" | "stri" | "anti" | "list"),
+                                     _) -> true
+                                 | _ -> false),
+                                "ANTIQUOT ((\"\" | \"stri\" | \"anti\" | \"list\"), _)"));
+                            Gram.Snterm
+                              (Gram.Entry.obj (semi : 'semi Gram.Entry.t));
+                            Gram.Sself ],
+                          (Gram.Action.mk
+                             (fun (st : 'str_items) _
+                                (__camlp4_0 : Gram.Token.t) (_loc : Loc.t) ->
+                                match __camlp4_0 with
+                                | ANTIQUOT
+                                    ((("" | "stri" | "anti" | "list" as n)),
+                                    s) ->
+                                    (Ast.StSem (_loc,
+                                       Ast.StAnt (_loc,
+                                         mk_anti n ~c: "str_item" s),
+                                       st) :
+                                      'str_items)
+                                | _ -> assert false)));
                          ([ Gram.Stoken
                               (((function
                                  | ANTIQUOT (("" | "stri" | "anti" | "list"),
@@ -8477,7 +8565,7 @@ module Rp =
       struct
         let name = "Camlp4OCamlRevisedParserParser"
         let version =
-          "$Id: Camlp4OCamlRevisedParserParser.ml,v 1.1.4.1 2007/04/04 17:26:21 pouillar Exp $"
+          "$Id: Camlp4OCamlRevisedParserParser.ml,v 1.1.4.2 2007/04/05 18:06:36 pouillar Exp $"
       end
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
