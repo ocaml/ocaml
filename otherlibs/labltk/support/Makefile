@@ -34,9 +34,9 @@ install: lib$(LIBNAME).a $(PUB)
 installopt: opt
 	@if test -d $(INSTALLDIR); then : ; else mkdir $(INSTALLDIR); fi
 	cp $(PUBMLI:.mli=.cmx) $(INSTALLDIR)
-	if test -f tkthread.o; then \
-	  cp tkthread.o $(INSTALLDIR); \
-	  chmod 644 $(INSTALLDIR)/tkthread.o; \
+	if test -f tkthread.cmx; then \
+	  cp tkthread.cmx tkthread.o $(INSTALLDIR); \
+	  chmod 644 $(INSTALLDIR)/tkthread.cmx $(INSTALLDIR)/tkthread.o; \
 	fi
 
 clean : 

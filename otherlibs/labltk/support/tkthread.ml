@@ -26,7 +26,7 @@ let cannot_sync () =
   | Some id -> Thread.id (Thread.self ()) = id
 
 let gui_safe () =
-  not (Sys.os_type = "Win32") || !loop_id = Some(Thread.id (Thread.self ()))
+  !loop_id = Some(Thread.id (Thread.self ()))
 
 let has_jobs () = not (with_jobs Queue.is_empty)
 let n_jobs () = with_jobs Queue.length
@@ -52,9 +52,9 @@ let rec job_timer () =
 
 let thread_main () =
   try
+    loop_id := Some (Thread.id (Thread.self ()));
     ignore (Protocol.openTk());
     job_timer();
-    loop_id := Some (Thread.id (Thread.self ()));
     Protocol.mainLoop();
     loop_id := None;
   with exn ->
