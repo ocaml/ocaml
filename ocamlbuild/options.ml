@@ -89,6 +89,7 @@ let ocaml_lexflags_internal = ref []
 let program_args_internal = ref []
 let ignore_list_internal = ref []
 let tags_internal = ref [["quiet"]]
+let tag_lines_internal = ref []
 let show_tags_internal = ref []
 
 let my_include_dirs = ref [[Filename.current_dir_name]]
@@ -150,6 +151,7 @@ let spec =
    "-pp", String (add_to ocaml_ppflags_internal), "<flag,...> (idem)";
    "-tag", String (add_to' tags_internal), "<tag> Add to default tags";
    "-tags", String (add_to tags_internal), "<tag,...> (idem)";
+   "-tag-line", String (add_to' tag_lines_internal), "<tag> Use this line of tags (as in _tags)";
    "-show-tags", String (add_to' show_tags_internal), "<path> Show tags that applies on that pathname";
 
    "-ignore", String (add_to ignore_list_internal), "<module,...> Don't try to build these modules";
@@ -199,6 +201,7 @@ let ocaml_lexflags = ref []
 let program_args = ref []
 let ignore_list = ref []
 let tags = ref []
+let tag_lines = ref []
 let show_tags = ref []
 
 let init () =
@@ -217,6 +220,7 @@ let init () =
   reorder ocaml_lexflags ocaml_lexflags_internal;
   reorder program_args program_args_internal;
   reorder tags tags_internal;
+  reorder tag_lines tag_lines_internal;
   reorder ignore_list ignore_list_internal;
   reorder show_tags show_tags_internal;
 

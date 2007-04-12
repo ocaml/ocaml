@@ -372,6 +372,7 @@ module type OPTIONS = sig
   val program_args : string list ref
   val ignore_list : string list ref
   val tags : string list ref
+  val tag_lines : string list ref
   val show_tags : string list ref
 
   val ext_obj : string ref
