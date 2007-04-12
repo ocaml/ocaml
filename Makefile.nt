@@ -175,6 +175,7 @@ promote-cross:
 	cp ocamlc boot/ocamlc
 	cp lex/ocamllex boot/ocamllex
 	cp yacc/ocamlyacc.exe boot/ocamlyacc.exe
+	cp tools/ocamldep boot/ocamldep
 	cd stdlib ; cp $(LIBFILES) ../boot
 
 # Promote the newly compiled system to the rank of bootstrap compiler
@@ -192,6 +193,7 @@ restore:
 compare:
 	- cmp -i 4096 boot/ocamlc ocamlc
 	- cmp -i 4096 boot/ocamllex lex/ocamllex
+	- cmp -i 4096 boot/ocamldep tools/ocamldep
 
 # Remove old bootstrap compilers
 cleanboot:

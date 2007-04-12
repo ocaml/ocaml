@@ -198,6 +198,7 @@ promote-cross:
 	cp ocamlc boot/ocamlc
 	cp lex/ocamllex boot/ocamllex
 	cp yacc/ocamlyacc$(EXE) boot/ocamlyacc$(EXE)
+	cp tools/ocamldep boot/ocamldep
 	cd stdlib; cp $(LIBFILES) ../boot
 
 # Promote the newly compiled system to the rank of bootstrap compiler
@@ -213,7 +214,7 @@ restore:
 
 # Check if fixpoint reached
 compare:
-	@if cmp boot/ocamlc ocamlc && cmp boot/ocamllex lex/ocamllex; \
+	@if cmp boot/ocamlc ocamlc && cmp boot/ocamllex lex/ocamllex && cmp boot/ocamldep tools/ocamldep; \
 	then echo "Fixpoint reached, bootstrap succeeded."; \
         else echo "Fixpoint not reached, try one more bootstrapping cycle."; \
 	fi
