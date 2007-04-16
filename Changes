@@ -49,6 +49,8 @@ Standard library:
 - List: List.nth now tail-recursive.
 - Sys: added Sys.is_directory.  Some functions (e.g. Sys.command) that
     could incorrectly raise Sys_io_blocked now raise Sys_error as intended.
+- String and Char: the function ``escaped'' now escapes all the characters
+    especially handled by the compiler's lexer (PR#4220).
 
 Other libraries:
 - Bigarray: mmap_file takes an optional argument specifying

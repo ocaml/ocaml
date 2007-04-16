@@ -87,8 +87,8 @@ let escaped s =
     for i = 0 to length s - 1 do
       n := !n +
         (match unsafe_get s i with
-           '"' | '\\' | '\n' | '\t' -> 2
-          | c -> if is_printable c then 1 else 4)
+         | '"' | '\\' | '\n' | '\t' | '\r' | '\b' -> 2
+         | c -> if is_printable c then 1 else 4)
     done;
     if !n = length s then s else begin
       let s' = create !n in
@@ -96,12 +96,16 @@ let escaped s =
         for i = 0 to length s - 1 do
           begin
             match unsafe_get s i with
-              ('"' | '\\') as c ->
+            | ('"' | '\\') as c ->
                 unsafe_set s' !n '\\'; incr n; unsafe_set s' !n c
             | '\n' ->
                 unsafe_set s' !n '\\'; incr n; unsafe_set s' !n 'n'
             | '\t' ->
                 unsafe_set s' !n '\\'; incr n; unsafe_set s' !n 't'
+            | '\r' ->
+                unsafe_set s' !n '\\'; incr n; unsafe_set s' !n 'r'
+            | '\b' ->
+                unsafe_set s' !n '\\'; incr n; unsafe_set s' !n 'b'
             | c ->
                 if is_printable c then
                   unsafe_set s' !n c
@@ -174,4 +178,4 @@ let contains s c = contains_from s 0 c;;
 
 type t = string
 
-let compare (x: t) (y: t) = Pervasives.compare x y
+let compare = Pervasives.compare
