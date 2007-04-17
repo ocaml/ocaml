@@ -23,7 +23,7 @@ module R =
       struct
         let name = "Camlp4RevisedParserParser"
         let version =
-          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.12 2007/04/05 18:06:36 pouillar Exp $"
+          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.13 2007/04/08 14:46:23 pouillar Exp $"
       end
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
@@ -11872,12 +11872,14 @@ module M =
     (* Authors:
  * - Daniel de Rauglaudre: initial version
  * - Nicolas Pouillard: refactoring
+ * - Aleksey Nogin: extra features and bug fixes.
+ * - Christopher Conway: extra feature (-D<uident>=)
  *)
     module Id =
       struct
         let name = "Camlp4MacroParser"
         let version =
-          "$Id: Camlp4MacroParser.ml,v 1.1.4.2 2007/04/04 17:25:03 pouillar Exp $"
+          "$Id: Camlp4MacroParser.ml,v 1.1 2007/02/07 10:09:22 ertai Exp $"
       end
     (*
 Added statements:
@@ -11887,25 +11889,22 @@ Added statements:
      DEFINE <uident>
      DEFINE <uident> = <expression>
      DEFINE <uident> (<parameters>) = <expression>
-     IFDEF <uident> THEN <structure_items> (END | ENDIF)
-     IFDEF <uident> THEN <structure_items> ELSE <structure_items> (END | ENDIF)
-     IFNDEF <uident> THEN <structure_items> (END | ENDIF)
-     IFNDEF <uident> THEN <structure_items> ELSE <structure_items> (END | ENDIF)
+     IFDEF <uident> THEN <structure_items> [ ELSE <structure_items> ] (END | ENDIF)
+     IFNDEF <uident> THEN <structure_items> [ ELSE <structure_items> ] (END | ENDIF)
      INCLUDE <string>
 
   At toplevel (signature item):
 
      DEFINE <uident>
-     IFDEF <uident> THEN <signature_items> (END | ENDIF)
-     IFDEF <uident> THEN <signature_items> ELSE <signature_items> (END | ENDIF)
-     IFNDEF <uident> THEN <signature_items> (END | ENDIF)
-     IFNDEF <uident> THEN <signature_items> ELSE <signature_items> (END | ENDIF)
+     IFDEF <uident> THEN <signature_items> [ ELSE <signature_items> ] (END | ENDIF)
+     IFNDEF <uident> THEN <signature_items> [ ELSE <signature_items> ] (END | ENDIF)
      INCLUDE <string>
 
   In expressions:
 
-     IFDEF <uident> THEN <expression> ELSE <expression> (END | ENDIF)
-     IFNDEF <uident> THEN <expression> ELSE <expression> (END | ENDIF)
+     IFDEF <uident> THEN <expression> [ ELSE <expression> ] (END | ENDIF)
+     IFNDEF <uident> THEN <expression> [ ELSE <expression> ] (END | ENDIF)
+     DEFINE <lident> = <expression> IN <expression>
      __FILE__
      __LOCATION__
 
@@ -11918,7 +11917,6 @@ Added statements:
 
      -D<uident> or -D<uident>=expr   define <uident> with optional value <expr>
      -U<uident>                      undefine it
-
      -I<dir>                         add <dir> to the search path for INCLUDE'd files
 
   After having used a DEFINE <uident> followed by "= <expression>", you
@@ -11926,7 +11924,13 @@ Added statements:
   the macro cannot be used as a pattern, there is an error message if
   it is used in a pattern.
 
+  You can also define a local macro in an expression usigng the DEFINE ... IN form.
+  Note that local macros have lowercase names and can not take parameters.
 
+  If a macro is defined to = NOTHING, and then used as an argument to a function,
+  this will be equivalent to function taking one less argument. Similarly,
+  passing NOTHING as an argument to a macro is equivalent to "erasing" the
+  corresponding parameter from the macro body.
 
   The toplevel statement INCLUDE <string> can be used to include a
   file containing macro definitions and also any other toplevel items.
@@ -11944,7 +11948,9 @@ Added statements:
         include Syntax
         type 'a item_or_def =
           | SdStr of 'a | SdDef of string * ((string list) * Ast.expr) option
-          | SdUnd of string | SdITE of string * 'a * 'a | SdInc of string
+          | SdUnd of string
+          | SdITE of string * ('a item_or_def) list * ('a item_or_def) list
+          | SdLazy of 'a Lazy.t
         let rec list_remove x =
           function
           | (y, _) :: l when y = x -> l
@@ -11952,17 +11958,6 @@ Added statements:
           | [] -> []
         let defined = ref []
         let is_defined i = List.mem_assoc i !defined
-        class reloc _loc =
-          object inherit Ast.map as super method _Loc_t = fun _ -> _loc end
-        class subst _loc env =
-          object inherit reloc _loc as super
-            method expr =
-              function
-              | (Ast.ExId (_, (Ast.IdLid (_, x))) |
-                   Ast.ExId (_, (Ast.IdUid (_, x)))
-                 as e) -> (try List.assoc x env with | Not_found -> e)
-              | e -> super#expr e
-          end
         let bad_patt _loc =
           Loc.raise _loc
             (Failure
@@ -11971,6 +11966,7 @@ Added statements:
           let rec loop =
             function
             | Ast.ExApp (_, e1, e2) -> Ast.PaApp (_loc, loop e1, loop e2)
+            | Ast.ExNil _ -> Ast.PaNil _loc
             | Ast.ExId (_, (Ast.IdLid (_, x))) ->
                 (try List.assoc x env
                  with | Not_found -> Ast.PaId (_loc, Ast.IdLid (_loc, x)))
@@ -11991,6 +11987,26 @@ Added statements:
                 in Ast.PaRec (_loc, substbi bi)
             | _ -> bad_patt _loc
           in loop
+        class reloc _loc =
+          object inherit Ast.map as super method _Loc_t = fun _ -> _loc end
+        class subst _loc env =
+          object inherit reloc _loc as super
+            method expr =
+              function
+              | (Ast.ExId (_, (Ast.IdLid (_, x))) |
+                   Ast.ExId (_, (Ast.IdUid (_, x)))
+                 as e) ->
+                  (try List.assoc x env with | Not_found -> super#expr e)
+              | e -> super#expr e
+            method patt =
+              function
+              | (Ast.PaId (_, (Ast.IdLid (_, x))) |
+                   Ast.PaId (_, (Ast.IdUid (_, x)))
+                 as p) ->
+                  (try substp _loc [] (List.assoc x env)
+                   with | Not_found -> super#patt p)
+              | p -> super#patt p
+          end
         let incorrect_number loc l1 l2 =
           Loc.raise loc
             (Failure
@@ -12142,7 +12158,6 @@ Added statements:
                 | None -> ());
                defined := list_remove x !defined)
           with | Not_found -> ()
-        (* Thanks to Christopher Conway for his patch *)
         let parse_def s =
           match Gram.parse_string expr (Loc.mk "<command line>") s with
           | Ast.ExId (_, (Ast.IdUid (_, n))) -> define None n
@@ -12174,20 +12189,73 @@ Added statements:
               let ch = open_in file in
               let st = Stream.of_channel ch
               in Gram.parse rule (Loc.mk file) st
+        let rec execute_macro nil cons =
+          function
+          | SdStr i -> i
+          | SdDef (x, eo) -> (define eo x; nil)
+          | SdUnd x -> (undef x; nil)
+          | SdITE (i, l1, l2) ->
+              execute_macro_list nil cons (if is_defined i then l1 else l2)
+          | SdLazy l -> Lazy.force l
+        and execute_macro_list nil cons =
+          function
+          | [] -> nil
+          | hd :: tl -> (* The evaluation order is important here *)
+              let il1 = execute_macro nil cons hd in
+              let il2 = execute_macro_list nil cons tl in cons il1 il2
         let _ =
           let _ = (expr : 'expr Gram.Entry.t)
           and _ = (sig_item : 'sig_item Gram.Entry.t)
           and _ = (str_item : 'str_item Gram.Entry.t)
           and _ = (patt : 'patt Gram.Entry.t) in
           let grammar_entry_create = Gram.Entry.mk in
-          let endif : 'endif Gram.Entry.t = grammar_entry_create "endif"
+          let macro_def : 'macro_def Gram.Entry.t =
+            grammar_entry_create "macro_def"
           and uident : 'uident Gram.Entry.t = grammar_entry_create "uident"
           and opt_macro_value : 'opt_macro_value Gram.Entry.t =
             grammar_entry_create "opt_macro_value"
+          and endif : 'endif Gram.Entry.t = grammar_entry_create "endif"
+          and sglist : 'sglist Gram.Entry.t = grammar_entry_create "sglist"
+          and smlist : 'smlist Gram.Entry.t = grammar_entry_create "smlist"
+          and else_expr : 'else_expr Gram.Entry.t =
+            grammar_entry_create "else_expr"
+          and else_macro_def_sig : 'else_macro_def_sig Gram.Entry.t =
+            grammar_entry_create "else_macro_def_sig"
+          and else_macro_def : 'else_macro_def Gram.Entry.t =
+            grammar_entry_create "else_macro_def"
+          and macro_def_sig : 'macro_def_sig Gram.Entry.t =
+            grammar_entry_create "macro_def_sig"
           in
             (Gram.extend (str_item : 'str_item Gram.Entry.t)
                ((fun () ->
                    ((Some Camlp4.Sig.Grammar.First),
+                    [ (None, None,
+                       [ ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (macro_def : 'macro_def Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (x : 'macro_def) (_loc : Loc.t) ->
+                                (execute_macro (Ast.StNil _loc)
+                                   (fun a b -> Ast.StSem (_loc, a, b)) x :
+                                  'str_item)))) ]) ]))
+                  ());
+             Gram.extend (sig_item : 'sig_item Gram.Entry.t)
+               ((fun () ->
+                   ((Some Camlp4.Sig.Grammar.First),
+                    [ (None, None,
+                       [ ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (macro_def_sig :
+                                   'macro_def_sig Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (x : 'macro_def_sig) (_loc : Loc.t) ->
+                                (execute_macro (Ast.SgNil _loc)
+                                   (fun a b -> Ast.SgSem (_loc, a, b)) x :
+                                  'sig_item)))) ]) ]))
+                  ());
+             Gram.extend (macro_def : 'macro_def Gram.Entry.t)
+               ((fun () ->
+                   (None,
                     [ (None, None,
                        [ ([ Gram.Skeyword "INCLUDE";
                             Gram.Stoken
@@ -12196,78 +12264,45 @@ Added statements:
                           (Gram.Action.mk
                              (fun (fname : Gram.Token.t) _ (_loc : Loc.t) ->
                                 (let fname = Gram.Token.extract_string fname
-                                 in parse_include_file str_items fname :
-                                  'str_item))));
+                                 in
+                                   SdLazy
+                                     (lazy
+                                        (parse_include_file str_items fname)) :
+                                  'macro_def))));
                          ([ Gram.Skeyword "IFNDEF";
                             Gram.Snterm
                               (Gram.Entry.obj (uident : 'uident Gram.Entry.t));
                             Gram.Skeyword "THEN";
                             Gram.Snterm
-                              (Gram.Entry.obj
-                                 (str_items : 'str_items Gram.Entry.t));
-                            Gram.Skeyword "ELSE";
+                              (Gram.Entry.obj (smlist : 'smlist Gram.Entry.t));
                             Gram.Snterm
                               (Gram.Entry.obj
-                                 (str_items : 'str_items Gram.Entry.t));
-                            Gram.Snterm
-                              (Gram.Entry.obj (endif : 'endif Gram.Entry.t)) ],
+                                 (else_macro_def :
+                                   'else_macro_def Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun _ (st2 : 'str_items) _ (st1 : 'str_items) _
+                             (fun (st1 : 'else_macro_def) (st2 : 'smlist) _
                                 (i : 'uident) _ (_loc : Loc.t) ->
-                                (if is_defined i then st2 else st1 :
-                                  'str_item))));
-                         ([ Gram.Skeyword "IFNDEF";
-                            Gram.Snterm
-                              (Gram.Entry.obj (uident : 'uident Gram.Entry.t));
-                            Gram.Skeyword "THEN";
-                            Gram.Snterm
-                              (Gram.Entry.obj
-                                 (str_items : 'str_items Gram.Entry.t));
-                            Gram.Snterm
-                              (Gram.Entry.obj (endif : 'endif Gram.Entry.t)) ],
-                          (Gram.Action.mk
-                             (fun _ (st : 'str_items) _ (i : 'uident) _
-                                (_loc : Loc.t) ->
-                                (if is_defined i then Ast.StNil _loc else st :
-                                  'str_item))));
+                                (SdITE (i, st1, st2) : 'macro_def))));
                          ([ Gram.Skeyword "IFDEF";
                             Gram.Snterm
                               (Gram.Entry.obj (uident : 'uident Gram.Entry.t));
                             Gram.Skeyword "THEN";
                             Gram.Snterm
-                              (Gram.Entry.obj
-                                 (str_items : 'str_items Gram.Entry.t));
-                            Gram.Skeyword "ELSE";
+                              (Gram.Entry.obj (smlist : 'smlist Gram.Entry.t));
                             Gram.Snterm
                               (Gram.Entry.obj
-                                 (str_items : 'str_items Gram.Entry.t));
-                            Gram.Snterm
-                              (Gram.Entry.obj (endif : 'endif Gram.Entry.t)) ],
+                                 (else_macro_def :
+                                   'else_macro_def Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun _ (st2 : 'str_items) _ (st1 : 'str_items) _
+                             (fun (st2 : 'else_macro_def) (st1 : 'smlist) _
                                 (i : 'uident) _ (_loc : Loc.t) ->
-                                (if is_defined i then st1 else st2 :
-                                  'str_item))));
-                         ([ Gram.Skeyword "IFDEF";
-                            Gram.Snterm
-                              (Gram.Entry.obj (uident : 'uident Gram.Entry.t));
-                            Gram.Skeyword "THEN";
-                            Gram.Snterm
-                              (Gram.Entry.obj
-                                 (str_items : 'str_items Gram.Entry.t));
-                            Gram.Snterm
-                              (Gram.Entry.obj (endif : 'endif Gram.Entry.t)) ],
-                          (Gram.Action.mk
-                             (fun _ (st : 'str_items) _ (i : 'uident) _
-                                (_loc : Loc.t) ->
-                                (if is_defined i then st else Ast.StNil _loc :
-                                  'str_item))));
+                                (SdITE (i, st1, st2) : 'macro_def))));
                          ([ Gram.Skeyword "UNDEF";
                             Gram.Snterm
                               (Gram.Entry.obj (uident : 'uident Gram.Entry.t)) ],
                           (Gram.Action.mk
                              (fun (i : 'uident) _ (_loc : Loc.t) ->
-                                ((undef i; Ast.StNil _loc) : 'str_item))));
+                                (SdUnd i : 'macro_def))));
                          ([ Gram.Skeyword "DEFINE";
                             Gram.Snterm
                               (Gram.Entry.obj (uident : 'uident Gram.Entry.t));
@@ -12278,11 +12313,11 @@ Added statements:
                           (Gram.Action.mk
                              (fun (def : 'opt_macro_value) (i : 'uident) _
                                 (_loc : Loc.t) ->
-                                ((define def i; Ast.StNil _loc) : 'str_item)))) ]) ]))
+                                (SdDef (i, def) : 'macro_def)))) ]) ]))
                   ());
-             Gram.extend (sig_item : 'sig_item Gram.Entry.t)
+             Gram.extend (macro_def_sig : 'macro_def_sig Gram.Entry.t)
                ((fun () ->
-                   ((Some Camlp4.Sig.Grammar.First),
+                   (None,
                     [ (None, None,
                        [ ([ Gram.Skeyword "INCLUDE";
                             Gram.Stoken
@@ -12291,84 +12326,166 @@ Added statements:
                           (Gram.Action.mk
                              (fun (fname : Gram.Token.t) _ (_loc : Loc.t) ->
                                 (let fname = Gram.Token.extract_string fname
-                                 in parse_include_file sig_items fname :
-                                  'sig_item))));
+                                 in
+                                   SdLazy
+                                     (lazy
+                                        (parse_include_file sig_items fname)) :
+                                  'macro_def_sig))));
                          ([ Gram.Skeyword "IFNDEF";
                             Gram.Snterm
                               (Gram.Entry.obj (uident : 'uident Gram.Entry.t));
                             Gram.Skeyword "THEN";
                             Gram.Snterm
-                              (Gram.Entry.obj
-                                 (sig_items : 'sig_items Gram.Entry.t));
-                            Gram.Skeyword "ELSE";
+                              (Gram.Entry.obj (sglist : 'sglist Gram.Entry.t));
                             Gram.Snterm
                               (Gram.Entry.obj
-                                 (sig_items : 'sig_items Gram.Entry.t));
-                            Gram.Snterm
-                              (Gram.Entry.obj (endif : 'endif Gram.Entry.t)) ],
+                                 (else_macro_def_sig :
+                                   'else_macro_def_sig Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun _ (sg2 : 'sig_items) _ (sg1 : 'sig_items) _
-                                (i : 'uident) _ (_loc : Loc.t) ->
-                                (if is_defined i then sg2 else sg1 :
-                                  'sig_item))));
-                         ([ Gram.Skeyword "IFNDEF";
-                            Gram.Snterm
-                              (Gram.Entry.obj (uident : 'uident Gram.Entry.t));
-                            Gram.Skeyword "THEN";
-                            Gram.Snterm
-                              (Gram.Entry.obj
-                                 (sig_items : 'sig_items Gram.Entry.t));
-                            Gram.Snterm
-                              (Gram.Entry.obj (endif : 'endif Gram.Entry.t)) ],
-                          (Gram.Action.mk
-                             (fun _ (sg : 'sig_items) _ (i : 'uident) _
-                                (_loc : Loc.t) ->
-                                (if is_defined i then Ast.SgNil _loc else sg :
-                                  'sig_item))));
+                             (fun (sg1 : 'else_macro_def_sig) (sg2 : 'sglist)
+                                _ (i : 'uident) _ (_loc : Loc.t) ->
+                                (SdITE (i, sg1, sg2) : 'macro_def_sig))));
                          ([ Gram.Skeyword "IFDEF";
                             Gram.Snterm
                               (Gram.Entry.obj (uident : 'uident Gram.Entry.t));
                             Gram.Skeyword "THEN";
                             Gram.Snterm
-                              (Gram.Entry.obj
-                                 (sig_items : 'sig_items Gram.Entry.t));
-                            Gram.Skeyword "ELSE";
+                              (Gram.Entry.obj (sglist : 'sglist Gram.Entry.t));
                             Gram.Snterm
                               (Gram.Entry.obj
-                                 (sig_items : 'sig_items Gram.Entry.t));
-                            Gram.Snterm
-                              (Gram.Entry.obj (endif : 'endif Gram.Entry.t)) ],
+                                 (else_macro_def_sig :
+                                   'else_macro_def_sig Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun _ (sg2 : 'sig_items) _ (sg1 : 'sig_items) _
-                                (i : 'uident) _ (_loc : Loc.t) ->
-                                (if is_defined i then sg1 else sg2 :
-                                  'sig_item))));
-                         ([ Gram.Skeyword "IFDEF";
-                            Gram.Snterm
-                              (Gram.Entry.obj (uident : 'uident Gram.Entry.t));
-                            Gram.Skeyword "THEN";
-                            Gram.Snterm
-                              (Gram.Entry.obj
-                                 (sig_items : 'sig_items Gram.Entry.t));
-                            Gram.Snterm
-                              (Gram.Entry.obj (endif : 'endif Gram.Entry.t)) ],
-                          (Gram.Action.mk
-                             (fun _ (sg : 'sig_items) _ (i : 'uident) _
-                                (_loc : Loc.t) ->
-                                (if is_defined i then sg else Ast.SgNil _loc :
-                                  'sig_item))));
+                             (fun (sg2 : 'else_macro_def_sig) (sg1 : 'sglist)
+                                _ (i : 'uident) _ (_loc : Loc.t) ->
+                                (SdITE (i, sg1, sg2) : 'macro_def_sig))));
                          ([ Gram.Skeyword "UNDEF";
                             Gram.Snterm
                               (Gram.Entry.obj (uident : 'uident Gram.Entry.t)) ],
                           (Gram.Action.mk
                              (fun (i : 'uident) _ (_loc : Loc.t) ->
-                                ((undef i; Ast.SgNil _loc) : 'sig_item))));
+                                (SdUnd i : 'macro_def_sig))));
                          ([ Gram.Skeyword "DEFINE";
                             Gram.Snterm
                               (Gram.Entry.obj (uident : 'uident Gram.Entry.t)) ],
                           (Gram.Action.mk
                              (fun (i : 'uident) _ (_loc : Loc.t) ->
-                                ((define None i; Ast.SgNil _loc) : 'sig_item)))) ]) ]))
+                                (SdDef (i, None) : 'macro_def_sig)))) ]) ]))
+                  ());
+             Gram.extend (else_macro_def : 'else_macro_def Gram.Entry.t)
+               ((fun () ->
+                   (None,
+                    [ (None, None,
+                       [ ([ Gram.Snterm
+                              (Gram.Entry.obj (endif : 'endif Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun _ (_loc : Loc.t) -> ([] : 'else_macro_def))));
+                         ([ Gram.Skeyword "ELSE";
+                            Gram.Snterm
+                              (Gram.Entry.obj (smlist : 'smlist Gram.Entry.t));
+                            Gram.Snterm
+                              (Gram.Entry.obj (endif : 'endif Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun _ (st : 'smlist) _ (_loc : Loc.t) ->
+                                (st : 'else_macro_def)))) ]) ]))
+                  ());
+             Gram.extend
+               (else_macro_def_sig : 'else_macro_def_sig Gram.Entry.t)
+               ((fun () ->
+                   (None,
+                    [ (None, None,
+                       [ ([ Gram.Snterm
+                              (Gram.Entry.obj (endif : 'endif Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun _ (_loc : Loc.t) ->
+                                ([] : 'else_macro_def_sig))));
+                         ([ Gram.Skeyword "ELSE";
+                            Gram.Snterm
+                              (Gram.Entry.obj (sglist : 'sglist Gram.Entry.t));
+                            Gram.Snterm
+                              (Gram.Entry.obj (endif : 'endif Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun _ (st : 'sglist) _ (_loc : Loc.t) ->
+                                (st : 'else_macro_def_sig)))) ]) ]))
+                  ());
+             Gram.extend (else_expr : 'else_expr Gram.Entry.t)
+               ((fun () ->
+                   (None,
+                    [ (None, None,
+                       [ ([ Gram.Snterm
+                              (Gram.Entry.obj (endif : 'endif Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun _ (_loc : Loc.t) ->
+                                (Ast.ExId (_loc, Ast.IdUid (_loc, "()")) :
+                                  'else_expr))));
+                         ([ Gram.Skeyword "ELSE";
+                            Gram.Snterm
+                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t));
+                            Gram.Snterm
+                              (Gram.Entry.obj (endif : 'endif Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun _ (e : 'expr) _ (_loc : Loc.t) ->
+                                (e : 'else_expr)))) ]) ]))
+                  ());
+             Gram.extend (smlist : 'smlist Gram.Entry.t)
+               ((fun () ->
+                   (None,
+                    [ (None, None,
+                       [ ([ Gram.Slist1
+                              (Gram.srules smlist
+                                 [ ([ Gram.Snterm
+                                        (Gram.Entry.obj
+                                           (str_item :
+                                             'str_item Gram.Entry.t));
+                                      Gram.Snterm
+                                        (Gram.Entry.obj
+                                           (semi : 'semi Gram.Entry.t)) ],
+                                    (Gram.Action.mk
+                                       (fun _ (si : 'str_item) (_loc : Loc.t)
+                                          -> (SdStr si : 'e__21))));
+                                   ([ Gram.Snterm
+                                        (Gram.Entry.obj
+                                           (macro_def :
+                                             'macro_def Gram.Entry.t));
+                                      Gram.Snterm
+                                        (Gram.Entry.obj
+                                           (semi : 'semi Gram.Entry.t)) ],
+                                    (Gram.Action.mk
+                                       (fun _ (d : 'macro_def) (_loc : Loc.t)
+                                          -> (d : 'e__21)))) ]) ],
+                          (Gram.Action.mk
+                             (fun (sml : 'e__21 list) (_loc : Loc.t) ->
+                                (sml : 'smlist)))) ]) ]))
+                  ());
+             Gram.extend (sglist : 'sglist Gram.Entry.t)
+               ((fun () ->
+                   (None,
+                    [ (None, None,
+                       [ ([ Gram.Slist1
+                              (Gram.srules sglist
+                                 [ ([ Gram.Snterm
+                                        (Gram.Entry.obj
+                                           (sig_item :
+                                             'sig_item Gram.Entry.t));
+                                      Gram.Snterm
+                                        (Gram.Entry.obj
+                                           (semi : 'semi Gram.Entry.t)) ],
+                                    (Gram.Action.mk
+                                       (fun _ (si : 'sig_item) (_loc : Loc.t)
+                                          -> (SdStr si : 'e__22))));
+                                   ([ Gram.Snterm
+                                        (Gram.Entry.obj
+                                           (macro_def_sig :
+                                             'macro_def_sig Gram.Entry.t));
+                                      Gram.Snterm
+                                        (Gram.Entry.obj
+                                           (semi : 'semi Gram.Entry.t)) ],
+                                    (Gram.Action.mk
+                                       (fun _ (d : 'macro_def_sig)
+                                          (_loc : Loc.t) -> (d : 'e__22)))) ]) ],
+                          (Gram.Action.mk
+                             (fun (sgl : 'e__22 list) (_loc : Loc.t) ->
+                                (sgl : 'sglist)))) ]) ]))
                   ());
              Gram.extend (endif : 'endif Gram.Entry.t)
                ((fun () ->
@@ -12407,13 +12524,13 @@ Added statements:
                                           ->
                                           (let x =
                                              Gram.Token.extract_string x
-                                           in x : 'e__21)))) ],
+                                           in x : 'e__23)))) ],
                               Gram.Skeyword ",");
                             Gram.Skeyword ")"; Gram.Skeyword "=";
                             Gram.Snterm
                               (Gram.Entry.obj (expr : 'expr Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun (e : 'expr) _ _ (pl : 'e__21 list) _
+                             (fun (e : 'expr) _ _ (pl : 'e__23 list) _
                                 (_loc : Loc.t) ->
                                 (Some ((pl, e)) : 'opt_macro_value)))) ]) ]))
                   ());
@@ -12421,26 +12538,38 @@ Added statements:
                ((fun () ->
                    ((Some (Camlp4.Sig.Grammar.Level "top")),
                     [ (None, None,
-                       [ ([ Gram.Skeyword "IFNDEF";
+                       [ ([ Gram.Skeyword "DEFINE";
+                            Gram.Stoken
+                              (((function | LIDENT ((_)) -> true | _ -> false),
+                                "LIDENT _"));
+                            Gram.Skeyword "="; Gram.Sself;
+                            Gram.Skeyword "IN"; Gram.Sself ],
+                          (Gram.Action.mk
+                             (fun (body : 'expr) _ (def : 'expr) _
+                                (i : Gram.Token.t) _ (_loc : Loc.t) ->
+                                (let i = Gram.Token.extract_string i
+                                 in (new subst _loc [ (i, def) ])#expr body :
+                                  'expr))));
+                         ([ Gram.Skeyword "IFNDEF";
                             Gram.Snterm
                               (Gram.Entry.obj (uident : 'uident Gram.Entry.t));
                             Gram.Skeyword "THEN"; Gram.Sself;
-                            Gram.Skeyword "ELSE"; Gram.Sself;
                             Gram.Snterm
-                              (Gram.Entry.obj (endif : 'endif Gram.Entry.t)) ],
+                              (Gram.Entry.obj
+                                 (else_expr : 'else_expr Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun _ (e2 : 'expr) _ (e1 : 'expr) _
+                             (fun (e2 : 'else_expr) (e1 : 'expr) _
                                 (i : 'uident) _ (_loc : Loc.t) ->
                                 (if is_defined i then e2 else e1 : 'expr))));
                          ([ Gram.Skeyword "IFDEF";
                             Gram.Snterm
                               (Gram.Entry.obj (uident : 'uident Gram.Entry.t));
                             Gram.Skeyword "THEN"; Gram.Sself;
-                            Gram.Skeyword "ELSE"; Gram.Sself;
                             Gram.Snterm
-                              (Gram.Entry.obj (endif : 'endif Gram.Entry.t)) ],
+                              (Gram.Entry.obj
+                                 (else_expr : 'else_expr Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun _ (e2 : 'expr) _ (e1 : 'expr) _
+                             (fun (e2 : 'else_expr) (e1 : 'expr) _
                                 (i : 'uident) _ (_loc : Loc.t) ->
                                 (if is_defined i then e1 else e2 : 'expr)))) ]) ]))
                   ());
@@ -12563,6 +12692,22 @@ Added statements:
             "<string> Add a directory to INCLUDE search path."
       end
     let _ = let module M = Register.OCamlSyntaxExtension(Id)(Make) in ()
+    module MakeNothing (AstFilters : Camlp4.Sig.AstFilters) =
+      struct
+        open AstFilters
+        open Ast
+        let remove_nothings =
+          function
+          | Ast.ExApp (_, e, (Ast.ExId (_, (Ast.IdUid (_, "NOTHING"))))) |
+              Ast.ExFun (_,
+                (Ast.McArr (_, (Ast.PaId (_, (Ast.IdUid (_, "NOTHING")))),
+                   (Ast.ExNil _), e)))
+              -> e
+          | e -> e
+        let _ =
+          register_str_item_filter (Ast.map_expr remove_nothings)#str_item
+      end
+    let _ = let module M = Camlp4.Register.AstFilter(Id)(MakeNothing) in ()
   end
 module D =
   struct

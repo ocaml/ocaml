@@ -51,5 +51,20 @@ value f =
       print_int (A * a_should_be_present + 5)
     ENDIF;
 
+IFDEF A THEN
+  DEFINE Z = "ok";
+ELSE
+  DEFINE Z = "ko";
+ENDIF;
+
+Z;
+
+IFDEF DNE THEN
+  DEFINE Z = "ko2";
+ELSE
+  DEFINE Z = "ok2";
+ENDIF;
+
+Z;
 
 pouet;
