@@ -511,6 +511,7 @@ module type Camlp4Ast = sig
   value map_loc : (Loc.t -> Loc.t) -> map;
 
   value ident_of_expr : expr -> ident;
+  value ident_of_patt : patt -> ident;
   value ident_of_ctyp : ctyp -> ident;
 
   value biAnd_of_list : list binding -> binding;

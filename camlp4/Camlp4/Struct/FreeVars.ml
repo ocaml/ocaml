@@ -29,7 +29,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | _ -> assert False ];
 
   class c_fold_pattern_vars ['accu] f init =
-    object (o)
+    object
       inherit Ast.fold as super;
       value acc = init;
       method acc : 'accu = acc;
@@ -37,7 +37,6 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         fun
         [ <:patt< $lid:s$ >> | <:patt< ~ $s$ >> | <:patt< ? $s$ >> ->
               {< acc = f s acc >}
-        | <:patt< $lid:_$ = $p$ >> -> o#patt p
         | p -> super#patt p ];
     end;
 

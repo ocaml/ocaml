@@ -503,7 +503,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
         error (loc_of_patt p) "invalid pattern" ]
   and mklabpat =
     fun
-    [ <:patt< $id:i$ = $p$ >> -> (ident ~conv_lid:conv_lab i, patt p)
+    [ <:patt< $i$ = $p$ >> -> (ident ~conv_lid:conv_lab i, patt p)
     | p -> error (loc_of_patt p) "invalid pattern" ];
 
   value rec expr_fa al =

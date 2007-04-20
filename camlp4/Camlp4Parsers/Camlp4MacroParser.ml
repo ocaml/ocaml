@@ -132,7 +132,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       | <:expr< { $bi$ } >> ->
           let rec substbi = fun
             [ <:binding< $b1$; $b2$ >> -> <:patt< $substbi b1$; $substbi b2$ >>
-            | <:binding< $p$ = $e$ >> -> <:patt< $p$ = $loop e$ >>
+            | <:binding< $p$ = $e$ >> -> <:patt< $Ast.ident_of_patt p$ = $loop e$ >>
             | _ -> bad_patt _loc ]
           in <:patt< { $substbi bi$ } >>
       | _ -> bad_patt _loc ];

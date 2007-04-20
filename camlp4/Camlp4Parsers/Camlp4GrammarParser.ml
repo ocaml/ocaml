@@ -600,7 +600,6 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       fun
       [ <:patt@_loc< $lid:_$ >> -> <:patt< _ >>
       | <:patt< ($p$ as $_$) >> -> self#patt p
-      | <:patt@_loc< $p1$ = $p2$ >> -> <:patt@_loc< $p1$ = $self#patt p2$ >>
       | p -> super#patt p ];
   end;
 

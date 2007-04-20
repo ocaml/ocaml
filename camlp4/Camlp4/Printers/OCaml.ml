@@ -561,7 +561,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     method patt f p =
     let () = o#node f p Ast.loc_of_patt in match p with
     [ <:patt< ( $p1$ as $p2$ ) >> -> pp f "@[<1>(%a@ as@ %a)@]" o#patt p1 o#patt p2
-    | <:patt< $p1$ = $p2$ >> -> pp f "@[<2>%a =@ %a@]" o#patt p1 o#patt p2
+    | <:patt< $i$ = $p$ >> -> pp f "@[<2>%a =@ %a@]" o#var_ident i o#patt p
     | <:patt< $p1$; $p2$ >> -> pp f "%a;@ %a" o#patt p1 o#patt p2
     | p -> o#patt1 f p ];
 

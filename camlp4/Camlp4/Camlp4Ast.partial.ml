@@ -84,7 +84,7 @@
     | PaOrp of Loc.t and patt and patt (* p | p *)
     | PaRng of Loc.t and patt and patt (* p .. p *)
     | PaRec of Loc.t and patt (* { p } *)
-    | PaEq  of Loc.t and patt and patt (* p = p *)
+    | PaEq  of Loc.t and ident and patt (* i = p *)
     | PaStr of Loc.t and string (* s *)
     | PaTup of Loc.t and patt (* ( p ) *)
     | PaTyc of Loc.t and patt and ctyp (* (p : t) *)

@@ -868,7 +868,7 @@ Old (no more supported) syntax:
         | `QUOTATION x -> Quotation.expand _loc x Quotation.DynAst.patt_tag
         | `ANTIQUOT ("list" as n) s ->
             <:patt< $anti:mk_anti ~c:"patt;" n s$ >>
-        | i = label_longident; "="; p = patt -> <:patt< $id:i$ = $p$ >>
+        | i = label_longident; "="; p = patt -> <:patt< $i$ = $p$ >>
       ] ]
     ;
     ipatt:
@@ -902,7 +902,7 @@ Old (no more supported) syntax:
             <:patt< $anti:mk_anti ~c:"patt" n s$ >>
         | `ANTIQUOT ("list" as n) s -> <:patt< $anti:mk_anti ~c:"patt;" n s$ >>
         | `QUOTATION x -> Quotation.expand _loc x Quotation.DynAst.patt_tag
-        | i = label_longident; "="; p = ipatt -> <:patt< $id:i$ = $p$ >>
+        | i = label_longident; "="; p = ipatt -> <:patt< $i$ = $p$ >>
       ] ]
     ;
     type_declaration:
@@ -1567,7 +1567,13 @@ Old (no more supported) syntax:
     patt_quot:
       [ [ x = patt; ","; y = comma_patt -> <:patt< $x$, $y$ >>
         | x = patt; ";"; y = sem_patt -> <:patt< $x$; $y$ >>
-        | x = patt; "="; y = patt -> <:patt< $x$ = $y$ >>
+        | x = patt; "="; y = patt ->
+            let i =
+              match x with
+              [ <:patt@loc< $anti:s$ >> -> <:ident@loc< $anti:s$ >>
+              | p -> Ast.ident_of_patt p ]
+            in
+            <:patt< $i$ = $y$ >>
         | x = patt -> x
         | -> <:patt<>>
       ] ]
