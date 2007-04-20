@@ -3239,8 +3239,7 @@ Old (no more supported) syntax:
                           (Gram.Action.mk
                              (fun (p : 'patt) _ (i : 'label_longident)
                                 (_loc : Loc.t) ->
-                                (Ast.PaEq (_loc, Ast.PaId (_loc, i), p) :
-                                  'label_patt))));
+                                (Ast.PaEq (_loc, i, p) : 'label_patt))));
                          ([ Gram.Stoken
                               (((function
                                  | ANTIQUOT ("list", _) -> true
@@ -3440,8 +3439,7 @@ Old (no more supported) syntax:
                           (Gram.Action.mk
                              (fun (p : 'ipatt) _ (i : 'label_longident)
                                 (_loc : Loc.t) ->
-                                (Ast.PaEq (_loc, Ast.PaId (_loc, i), p) :
-                                  'label_ipatt))));
+                                (Ast.PaEq (_loc, i, p) : 'label_ipatt))));
                          ([ Gram.Stoken
                               (((function | QUOTATION _ -> true | _ -> false),
                                 "QUOTATION _")) ],
@@ -7099,7 +7097,11 @@ Old (no more supported) syntax:
                               (Gram.Entry.obj (patt : 'patt Gram.Entry.t)) ],
                           (Gram.Action.mk
                              (fun (y : 'patt) _ (x : 'patt) (_loc : Loc.t) ->
-                                (Ast.PaEq (_loc, x, y) : 'patt_quot))));
+                                (let i =
+                                   match x with
+                                   | Ast.PaAnt (loc, s) -> Ast.IdAnt (loc, s)
+                                   | p -> Ast.ident_of_patt p
+                                 in Ast.PaEq (_loc, i, y) : 'patt_quot))));
                          ([ Gram.Snterm
                               (Gram.Entry.obj (patt : 'patt Gram.Entry.t));
                             Gram.Skeyword ";";
@@ -10312,7 +10314,6 @@ module G =
               function
               | Ast.PaId (_loc, (Ast.IdLid (_, _))) -> Ast.PaAny _loc
               | Ast.PaAli (_, p, _) -> self#patt p
-              | Ast.PaEq (_loc, p1, p2) -> Ast.PaEq (_loc, p1, self#patt p2)
               | p -> super#patt p
           end
         let mk_tok _loc p t =
@@ -11879,7 +11880,7 @@ module M =
       struct
         let name = "Camlp4MacroParser"
         let version =
-          "$Id: Camlp4MacroParser.ml,v 1.1 2007/02/07 10:09:22 ertai Exp $"
+          "$Id: Camlp4MacroParser.ml,v 1.1.4.3 2007/04/17 13:47:54 pouillar Exp $"
       end
     (*
 Added statements:
@@ -11982,7 +11983,8 @@ Added statements:
                   (function
                    | Ast.BiSem (_, b1, b2) ->
                        Ast.PaSem (_loc, substbi b1, substbi b2)
-                   | Ast.BiEq (_, p, e) -> Ast.PaEq (_loc, p, loop e)
+                   | Ast.BiEq (_, p, e) ->
+                       Ast.PaEq (_loc, Ast.ident_of_patt p, loop e)
                    | _ -> bad_patt _loc)
                 in Ast.PaRec (_loc, substbi bi)
             | _ -> bad_patt _loc

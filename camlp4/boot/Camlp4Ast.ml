@@ -43,6 +43,333 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
     external loc_of_module_binding : module_binding -> Loc.t = "%field0";
     external loc_of_match_case : match_case -> Loc.t = "%field0";
     external loc_of_ident : ident -> Loc.t = "%field0";
+    value ghost = Loc.ghost;
+    value rec is_module_longident =
+      fun
+      [ Ast.IdAcc _ _ i -> is_module_longident i
+      | Ast.IdApp _ i1 i2 ->
+          (is_module_longident i1) && (is_module_longident i2)
+      | Ast.IdUid _ _ -> True
+      | _ -> False ];
+    value ident_of_expr =
+      let error () =
+        invalid_arg "ident_of_expr: this expression is not an identifier" in
+      let rec self =
+        fun
+        [ Ast.ExApp _loc e1 e2 -> Ast.IdApp _loc (self e1) (self e2)
+        | Ast.ExAcc _loc e1 e2 -> Ast.IdAcc _loc (self e1) (self e2)
+        | Ast.ExId _ (Ast.IdLid _ _) -> error ()
+        | Ast.ExId _ i -> if is_module_longident i then i else error ()
+        | _ -> error () ]
+      in
+        fun [ Ast.ExId _ i -> i | Ast.ExApp _ _ _ -> error () | t -> self t ];
+    value ident_of_ctyp =
+      let error () =
+        invalid_arg "ident_of_ctyp: this type is not an identifier" in
+      let rec self =
+        fun
+        [ Ast.TyApp _loc t1 t2 -> Ast.IdApp _loc (self t1) (self t2)
+        | Ast.TyId _ (Ast.IdLid _ _) -> error ()
+        | Ast.TyId _ i -> if is_module_longident i then i else error ()
+        | _ -> error () ]
+      in fun [ Ast.TyId _ i -> i | t -> self t ];
+    value ident_of_patt =
+      let error () =
+        invalid_arg "ident_of_patt: this pattern is not an identifier" in
+      let rec self =
+        fun
+        [ Ast.PaApp _loc p1 p2 -> Ast.IdApp _loc (self p1) (self p2)
+        | Ast.PaId _ (Ast.IdLid _ _) -> error ()
+        | Ast.PaId _ i -> if is_module_longident i then i else error ()
+        | _ -> error () ]
+      in fun [ Ast.PaId _ i -> i | p -> self p ];
+    value rec is_irrefut_patt =
+      fun
+      [ Ast.PaId _ (Ast.IdLid _ _) -> True
+      | Ast.PaId _ (Ast.IdUid _ "()") -> True
+      | Ast.PaAny _ -> True
+      | Ast.PaAli _ x y -> (is_irrefut_patt x) && (is_irrefut_patt y)
+      | Ast.PaRec _ p -> is_irrefut_patt p
+      | Ast.PaEq _ (Ast.IdLid _ _) p -> is_irrefut_patt p
+      | Ast.PaSem _ p1 p2 -> (is_irrefut_patt p1) && (is_irrefut_patt p2)
+      | Ast.PaCom _ p1 p2 -> (is_irrefut_patt p1) && (is_irrefut_patt p2)
+      | Ast.PaTyc _ p _ -> is_irrefut_patt p
+      | Ast.PaTup _ pl -> is_irrefut_patt pl
+      | Ast.PaOlb _ _ (Ast.PaNil _) -> True
+      | Ast.PaOlb _ _ p -> is_irrefut_patt p
+      | Ast.PaOlbi _ _ p _ -> is_irrefut_patt p
+      | Ast.PaLab _ _ (Ast.PaNil _) -> True
+      | Ast.PaLab _ _ p -> is_irrefut_patt p
+      | _ -> False ];
+    value rec is_constructor =
+      fun
+      [ Ast.IdAcc _ _ i -> is_constructor i
+      | Ast.IdUid _ _ -> True
+      | Ast.IdLid _ _ | Ast.IdApp _ _ _ -> False
+      | Ast.IdAnt _ _ -> assert False ];
+    value is_patt_constructor =
+      fun
+      [ Ast.PaId _ i -> is_constructor i
+      | Ast.PaVrn _ _ -> True
+      | _ -> False ];
+    value rec is_expr_constructor =
+      fun
+      [ Ast.ExId _ i -> is_constructor i
+      | Ast.ExAcc _ e1 e2 ->
+          (is_expr_constructor e1) && (is_expr_constructor e2)
+      | Ast.ExVrn _ _ -> True
+      | _ -> False ];
+    value rec tyOr_of_list =
+      fun
+      [ [] -> Ast.TyNil ghost
+      | [ t ] -> t
+      | [ t :: ts ] ->
+          let _loc = loc_of_ctyp t in Ast.TyOr _loc t (tyOr_of_list ts) ];
+    value rec tyAnd_of_list =
+      fun
+      [ [] -> Ast.TyNil ghost
+      | [ t ] -> t
+      | [ t :: ts ] ->
+          let _loc = loc_of_ctyp t in Ast.TyAnd _loc t (tyAnd_of_list ts) ];
+    value rec tySem_of_list =
+      fun
+      [ [] -> Ast.TyNil ghost
+      | [ t ] -> t
+      | [ t :: ts ] ->
+          let _loc = loc_of_ctyp t in Ast.TySem _loc t (tySem_of_list ts) ];
+    value rec tyCom_of_list =
+      fun
+      [ [] -> Ast.TyNil ghost
+      | [ t ] -> t
+      | [ t :: ts ] ->
+          let _loc = loc_of_ctyp t in Ast.TyCom _loc t (tyCom_of_list ts) ];
+    value rec tyAmp_of_list =
+      fun
+      [ [] -> Ast.TyNil ghost
+      | [ t ] -> t
+      | [ t :: ts ] ->
+          let _loc = loc_of_ctyp t in Ast.TyAmp _loc t (tyAmp_of_list ts) ];
+    value rec tySta_of_list =
+      fun
+      [ [] -> Ast.TyNil ghost
+      | [ t ] -> t
+      | [ t :: ts ] ->
+          let _loc = loc_of_ctyp t in Ast.TySta _loc t (tySta_of_list ts) ];
+    value rec stSem_of_list =
+      fun
+      [ [] -> Ast.StNil ghost
+      | [ t ] -> t
+      | [ t :: ts ] ->
+          let _loc = loc_of_str_item t in Ast.StSem _loc t (stSem_of_list ts) ];
+    value rec sgSem_of_list =
+      fun
+      [ [] -> Ast.SgNil ghost
+      | [ t ] -> t
+      | [ t :: ts ] ->
+          let _loc = loc_of_sig_item t in Ast.SgSem _loc t (sgSem_of_list ts) ];
+    value rec biAnd_of_list =
+      fun
+      [ [] -> Ast.BiNil ghost
+      | [ b ] -> b
+      | [ b :: bs ] ->
+          let _loc = loc_of_binding b in Ast.BiAnd _loc b (biAnd_of_list bs) ];
+    value rec wcAnd_of_list =
+      fun
+      [ [] -> Ast.WcNil ghost
+      | [ w ] -> w
+      | [ w :: ws ] ->
+          let _loc = loc_of_with_constr w
+          in Ast.WcAnd _loc w (wcAnd_of_list ws) ];
+    value rec idAcc_of_list =
+      fun
+      [ [] -> assert False
+      | [ i ] -> i
+      | [ i :: is ] ->
+          let _loc = loc_of_ident i in Ast.IdAcc _loc i (idAcc_of_list is) ];
+    value rec idApp_of_list =
+      fun
+      [ [] -> assert False
+      | [ i ] -> i
+      | [ i :: is ] ->
+          let _loc = loc_of_ident i in Ast.IdApp _loc i (idApp_of_list is) ];
+    value rec mcOr_of_list =
+      fun
+      [ [] -> Ast.McNil ghost
+      | [ x ] -> x
+      | [ x :: xs ] ->
+          let _loc = loc_of_match_case x in Ast.McOr _loc x (mcOr_of_list xs) ];
+    value rec mbAnd_of_list =
+      fun
+      [ [] -> Ast.MbNil ghost
+      | [ x ] -> x
+      | [ x :: xs ] ->
+          let _loc = loc_of_module_binding x
+          in Ast.MbAnd _loc x (mbAnd_of_list xs) ];
+    value rec meApp_of_list =
+      fun
+      [ [] -> assert False
+      | [ x ] -> x
+      | [ x :: xs ] ->
+          let _loc = loc_of_module_expr x
+          in Ast.MeApp _loc x (meApp_of_list xs) ];
+    value rec ceAnd_of_list =
+      fun
+      [ [] -> Ast.CeNil ghost
+      | [ x ] -> x
+      | [ x :: xs ] ->
+          let _loc = loc_of_class_expr x
+          in Ast.CeAnd _loc x (ceAnd_of_list xs) ];
+    value rec ctAnd_of_list =
+      fun
+      [ [] -> Ast.CtNil ghost
+      | [ x ] -> x
+      | [ x :: xs ] ->
+          let _loc = loc_of_class_type x
+          in Ast.CtAnd _loc x (ctAnd_of_list xs) ];
+    value rec cgSem_of_list =
+      fun
+      [ [] -> Ast.CgNil ghost
+      | [ x ] -> x
+      | [ x :: xs ] ->
+          let _loc = loc_of_class_sig_item x
+          in Ast.CgSem _loc x (cgSem_of_list xs) ];
+    value rec crSem_of_list =
+      fun
+      [ [] -> Ast.CrNil ghost
+      | [ x ] -> x
+      | [ x :: xs ] ->
+          let _loc = loc_of_class_str_item x
+          in Ast.CrSem _loc x (crSem_of_list xs) ];
+    value rec paSem_of_list =
+      fun
+      [ [] -> Ast.PaNil ghost
+      | [ x ] -> x
+      | [ x :: xs ] ->
+          let _loc = loc_of_patt x in Ast.PaSem _loc x (paSem_of_list xs) ];
+    value rec paCom_of_list =
+      fun
+      [ [] -> Ast.PaNil ghost
+      | [ x ] -> x
+      | [ x :: xs ] ->
+          let _loc = loc_of_patt x in Ast.PaCom _loc x (paCom_of_list xs) ];
+    value rec biSem_of_list =
+      fun
+      [ [] -> Ast.BiNil ghost
+      | [ x ] -> x
+      | [ x :: xs ] ->
+          let _loc = loc_of_binding x in Ast.BiSem _loc x (biSem_of_list xs) ];
+    value rec exSem_of_list =
+      fun
+      [ [] -> Ast.ExNil ghost
+      | [ x ] -> x
+      | [ x :: xs ] ->
+          let _loc = loc_of_expr x in Ast.ExSem _loc x (exSem_of_list xs) ];
+    value rec exCom_of_list =
+      fun
+      [ [] -> Ast.ExNil ghost
+      | [ x ] -> x
+      | [ x :: xs ] ->
+          let _loc = loc_of_expr x in Ast.ExCom _loc x (exCom_of_list xs) ];
+    value ty_of_stl =
+      fun
+      [ (_loc, s, []) -> Ast.TyId _loc (Ast.IdUid _loc s)
+      | (_loc, s, tl) ->
+          Ast.TyOf _loc (Ast.TyId _loc (Ast.IdUid _loc s)) (tyAnd_of_list tl) ];
+    value ty_of_sbt =
+      fun
+      [ (_loc, s, True, t) ->
+          Ast.TyCol _loc (Ast.TyId _loc (Ast.IdLid _loc s))
+            (Ast.TyMut _loc t)
+      | (_loc, s, False, t) ->
+          Ast.TyCol _loc (Ast.TyId _loc (Ast.IdLid _loc s)) t ];
+    value bi_of_pe (p, e) = let _loc = loc_of_patt p in Ast.BiEq _loc p e;
+    value sum_type_of_list l = tyOr_of_list (List.map ty_of_stl l);
+    value record_type_of_list l = tySem_of_list (List.map ty_of_sbt l);
+    value binding_of_pel l = biAnd_of_list (List.map bi_of_pe l);
+    value rec pel_of_binding =
+      fun
+      [ Ast.BiAnd _ b1 b2 -> (pel_of_binding b1) @ (pel_of_binding b2)
+      | Ast.BiEq _ p e -> [ (p, e) ]
+      | Ast.BiSem _ b1 b2 -> (pel_of_binding b1) @ (pel_of_binding b2)
+      | _ -> assert False ];
+    value rec list_of_binding x acc =
+      match x with
+      [ Ast.BiAnd _ b1 b2 | Ast.BiSem _ b1 b2 ->
+          list_of_binding b1 (list_of_binding b2 acc)
+      | t -> [ t :: acc ] ];
+    value rec list_of_with_constr x acc =
+      match x with
+      [ Ast.WcAnd _ w1 w2 ->
+          list_of_with_constr w1 (list_of_with_constr w2 acc)
+      | t -> [ t :: acc ] ];
+    value rec list_of_ctyp x acc =
+      match x with
+      [ Ast.TyNil _ -> acc
+      | Ast.TyAmp _ x y | Ast.TyCom _ x y | Ast.TySta _ x y | Ast.TySem _ x y
+          | Ast.TyAnd _ x y | Ast.TyOr _ x y ->
+          list_of_ctyp x (list_of_ctyp y acc)
+      | x -> [ x :: acc ] ];
+    value rec list_of_patt x acc =
+      match x with
+      [ Ast.PaNil _ -> acc
+      | Ast.PaCom _ x y | Ast.PaSem _ x y ->
+          list_of_patt x (list_of_patt y acc)
+      | x -> [ x :: acc ] ];
+    value rec list_of_expr x acc =
+      match x with
+      [ Ast.ExNil _ -> acc
+      | Ast.ExCom _ x y | Ast.ExSem _ x y ->
+          list_of_expr x (list_of_expr y acc)
+      | x -> [ x :: acc ] ];
+    value rec list_of_str_item x acc =
+      match x with
+      [ Ast.StNil _ -> acc
+      | Ast.StSem _ x y -> list_of_str_item x (list_of_str_item y acc)
+      | x -> [ x :: acc ] ];
+    value rec list_of_sig_item x acc =
+      match x with
+      [ Ast.SgNil _ -> acc
+      | Ast.SgSem _ x y -> list_of_sig_item x (list_of_sig_item y acc)
+      | x -> [ x :: acc ] ];
+    value rec list_of_class_sig_item x acc =
+      match x with
+      [ Ast.CgNil _ -> acc
+      | Ast.CgSem _ x y ->
+          list_of_class_sig_item x (list_of_class_sig_item y acc)
+      | x -> [ x :: acc ] ];
+    value rec list_of_class_str_item x acc =
+      match x with
+      [ Ast.CrNil _ -> acc
+      | Ast.CrSem _ x y ->
+          list_of_class_str_item x (list_of_class_str_item y acc)
+      | x -> [ x :: acc ] ];
+    value rec list_of_class_type x acc =
+      match x with
+      [ Ast.CtAnd _ x y -> list_of_class_type x (list_of_class_type y acc)
+      | x -> [ x :: acc ] ];
+    value rec list_of_class_expr x acc =
+      match x with
+      [ Ast.CeAnd _ x y -> list_of_class_expr x (list_of_class_expr y acc)
+      | x -> [ x :: acc ] ];
+    value rec list_of_module_expr x acc =
+      match x with
+      [ Ast.MeApp _ x y -> list_of_module_expr x (list_of_module_expr y acc)
+      | x -> [ x :: acc ] ];
+    value rec list_of_match_case x acc =
+      match x with
+      [ Ast.McNil _ -> acc
+      | Ast.McOr _ x y -> list_of_match_case x (list_of_match_case y acc)
+      | x -> [ x :: acc ] ];
+    value rec list_of_ident x acc =
+      match x with
+      [ Ast.IdAcc _ x y | Ast.IdApp _ x y ->
+          list_of_ident x (list_of_ident y acc)
+      | x -> [ x :: acc ] ];
+    value rec list_of_module_binding x acc =
+      match x with
+      [ Ast.MbAnd _ x y ->
+          list_of_module_binding x (list_of_module_binding y acc)
+      | x -> [ x :: acc ] ];
     module Meta =
       struct
         module type META_LOC =
@@ -1528,7 +1855,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "PaEq")))
                               (meta_acc_Loc_t _loc x0))
-                           (meta_patt _loc x1))
+                           (meta_ident _loc x1))
                         (meta_patt _loc x2)
                   | Ast.PaRec x0 x1 ->
                       Ast.ExApp _loc
@@ -3409,7 +3736,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
                                  (Ast.IdAcc _loc (Ast.IdUid _loc "Ast")
                                     (Ast.IdUid _loc "PaEq")))
                               (meta_acc_Loc_t _loc x0))
-                           (meta_patt _loc x1))
+                           (meta_ident _loc x1))
                         (meta_patt _loc x2)
                   | Ast.PaRec x0 x1 ->
                       Ast.PaApp _loc
@@ -4002,7 +4329,8 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
           | PaRng _x0 _x1 _x2 ->
               PaRng (o#_Loc_t _x0) (o#patt _x1) (o#patt _x2)
           | PaRec _x0 _x1 -> PaRec (o#_Loc_t _x0) (o#patt _x1)
-          | PaEq _x0 _x1 _x2 -> PaEq (o#_Loc_t _x0) (o#patt _x1) (o#patt _x2)
+          | PaEq _x0 _x1 _x2 ->
+              PaEq (o#_Loc_t _x0) (o#ident _x1) (o#patt _x2)
           | PaStr _x0 _x1 -> PaStr (o#_Loc_t _x0) (o#string _x1)
           | PaTup _x0 _x1 -> PaTup (o#_Loc_t _x0) (o#patt _x1)
           | PaTyc _x0 _x1 _x2 ->
@@ -4387,7 +4715,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
           | PaOrp _x0 _x1 _x2 -> ((o#_Loc_t _x0)#patt _x1)#patt _x2
           | PaRng _x0 _x1 _x2 -> ((o#_Loc_t _x0)#patt _x1)#patt _x2
           | PaRec _x0 _x1 -> (o#_Loc_t _x0)#patt _x1
-          | PaEq _x0 _x1 _x2 -> ((o#_Loc_t _x0)#patt _x1)#patt _x2
+          | PaEq _x0 _x1 _x2 -> ((o#_Loc_t _x0)#ident _x1)#patt _x2
           | PaStr _x0 _x1 -> (o#_Loc_t _x0)#string _x1
           | PaTup _x0 _x1 -> (o#_Loc_t _x0)#patt _x1
           | PaTyc _x0 _x1 _x2 -> ((o#_Loc_t _x0)#patt _x1)#ctyp _x2
@@ -4642,322 +4970,5 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
         inherit map as super;
         method _Loc_t = fun x -> f (super#_Loc_t x);
       end;
-    value ghost = Loc.ghost;
-    value rec is_module_longident =
-      fun
-      [ Ast.IdAcc _ _ i -> is_module_longident i
-      | Ast.IdApp _ i1 i2 ->
-          (is_module_longident i1) && (is_module_longident i2)
-      | Ast.IdUid _ _ -> True
-      | _ -> False ];
-    value rec is_irrefut_patt =
-      fun
-      [ Ast.PaId _ (Ast.IdLid _ _) -> True
-      | Ast.PaId _ (Ast.IdUid _ "()") -> True
-      | Ast.PaAny _ -> True
-      | Ast.PaAli _ x y -> (is_irrefut_patt x) && (is_irrefut_patt y)
-      | Ast.PaRec _ p -> is_irrefut_patt p
-      | Ast.PaEq _ (Ast.PaId _ (Ast.IdLid _ _)) p -> is_irrefut_patt p
-      | Ast.PaSem _ p1 p2 -> (is_irrefut_patt p1) && (is_irrefut_patt p2)
-      | Ast.PaCom _ p1 p2 -> (is_irrefut_patt p1) && (is_irrefut_patt p2)
-      | Ast.PaTyc _ p _ -> is_irrefut_patt p
-      | Ast.PaTup _ pl -> is_irrefut_patt pl
-      | Ast.PaOlb _ _ (Ast.PaNil _) -> True
-      | Ast.PaOlb _ _ p -> is_irrefut_patt p
-      | Ast.PaOlbi _ _ p _ -> is_irrefut_patt p
-      | Ast.PaLab _ _ (Ast.PaNil _) -> True
-      | Ast.PaLab _ _ p -> is_irrefut_patt p
-      | _ -> False ];
-    value rec is_constructor =
-      fun
-      [ Ast.IdAcc _ _ i -> is_constructor i
-      | Ast.IdUid _ _ -> True
-      | Ast.IdLid _ _ | Ast.IdApp _ _ _ -> False
-      | Ast.IdAnt _ _ -> assert False ];
-    value is_patt_constructor =
-      fun
-      [ Ast.PaId _ i -> is_constructor i
-      | Ast.PaVrn _ _ -> True
-      | _ -> False ];
-    value rec is_expr_constructor =
-      fun
-      [ Ast.ExId _ i -> is_constructor i
-      | Ast.ExAcc _ e1 e2 ->
-          (is_expr_constructor e1) && (is_expr_constructor e2)
-      | Ast.ExVrn _ _ -> True
-      | _ -> False ];
-    value ident_of_expr =
-      let error () =
-        invalid_arg "ident_of_expr: this expression is not an identifier" in
-      let rec self =
-        fun
-        [ Ast.ExApp _loc e1 e2 -> Ast.IdApp _loc (self e1) (self e2)
-        | Ast.ExAcc _loc e1 e2 -> Ast.IdAcc _loc (self e1) (self e2)
-        | Ast.ExId _ (Ast.IdLid _ _) -> error ()
-        | Ast.ExId _ i -> if is_module_longident i then i else error ()
-        | _ -> error () ]
-      in
-        fun [ Ast.ExId _ i -> i | Ast.ExApp _ _ _ -> error () | t -> self t ];
-    value ident_of_ctyp =
-      let error () =
-        invalid_arg "ident_of_ctyp: this type is not an identifier" in
-      let rec self =
-        fun
-        [ Ast.TyApp _loc t1 t2 -> Ast.IdApp _loc (self t1) (self t2)
-        | Ast.TyId _ (Ast.IdLid _ _) -> error ()
-        | Ast.TyId _ i -> if is_module_longident i then i else error ()
-        | _ -> error () ]
-      in fun [ Ast.TyId _ i -> i | t -> self t ];
-    value rec tyOr_of_list =
-      fun
-      [ [] -> Ast.TyNil ghost
-      | [ t ] -> t
-      | [ t :: ts ] ->
-          let _loc = loc_of_ctyp t in Ast.TyOr _loc t (tyOr_of_list ts) ];
-    value rec tyAnd_of_list =
-      fun
-      [ [] -> Ast.TyNil ghost
-      | [ t ] -> t
-      | [ t :: ts ] ->
-          let _loc = loc_of_ctyp t in Ast.TyAnd _loc t (tyAnd_of_list ts) ];
-    value rec tySem_of_list =
-      fun
-      [ [] -> Ast.TyNil ghost
-      | [ t ] -> t
-      | [ t :: ts ] ->
-          let _loc = loc_of_ctyp t in Ast.TySem _loc t (tySem_of_list ts) ];
-    value rec tyCom_of_list =
-      fun
-      [ [] -> Ast.TyNil ghost
-      | [ t ] -> t
-      | [ t :: ts ] ->
-          let _loc = loc_of_ctyp t in Ast.TyCom _loc t (tyCom_of_list ts) ];
-    value rec tyAmp_of_list =
-      fun
-      [ [] -> Ast.TyNil ghost
-      | [ t ] -> t
-      | [ t :: ts ] ->
-          let _loc = loc_of_ctyp t in Ast.TyAmp _loc t (tyAmp_of_list ts) ];
-    value rec tySta_of_list =
-      fun
-      [ [] -> Ast.TyNil ghost
-      | [ t ] -> t
-      | [ t :: ts ] ->
-          let _loc = loc_of_ctyp t in Ast.TySta _loc t (tySta_of_list ts) ];
-    value rec stSem_of_list =
-      fun
-      [ [] -> Ast.StNil ghost
-      | [ t ] -> t
-      | [ t :: ts ] ->
-          let _loc = loc_of_str_item t in Ast.StSem _loc t (stSem_of_list ts) ];
-    value rec sgSem_of_list =
-      fun
-      [ [] -> Ast.SgNil ghost
-      | [ t ] -> t
-      | [ t :: ts ] ->
-          let _loc = loc_of_sig_item t in Ast.SgSem _loc t (sgSem_of_list ts) ];
-    value rec biAnd_of_list =
-      fun
-      [ [] -> Ast.BiNil ghost
-      | [ b ] -> b
-      | [ b :: bs ] ->
-          let _loc = loc_of_binding b in Ast.BiAnd _loc b (biAnd_of_list bs) ];
-    value rec wcAnd_of_list =
-      fun
-      [ [] -> Ast.WcNil ghost
-      | [ w ] -> w
-      | [ w :: ws ] ->
-          let _loc = loc_of_with_constr w
-          in Ast.WcAnd _loc w (wcAnd_of_list ws) ];
-    value rec idAcc_of_list =
-      fun
-      [ [] -> assert False
-      | [ i ] -> i
-      | [ i :: is ] ->
-          let _loc = loc_of_ident i in Ast.IdAcc _loc i (idAcc_of_list is) ];
-    value rec idApp_of_list =
-      fun
-      [ [] -> assert False
-      | [ i ] -> i
-      | [ i :: is ] ->
-          let _loc = loc_of_ident i in Ast.IdApp _loc i (idApp_of_list is) ];
-    value rec mcOr_of_list =
-      fun
-      [ [] -> Ast.McNil ghost
-      | [ x ] -> x
-      | [ x :: xs ] ->
-          let _loc = loc_of_match_case x in Ast.McOr _loc x (mcOr_of_list xs) ];
-    value rec mbAnd_of_list =
-      fun
-      [ [] -> Ast.MbNil ghost
-      | [ x ] -> x
-      | [ x :: xs ] ->
-          let _loc = loc_of_module_binding x
-          in Ast.MbAnd _loc x (mbAnd_of_list xs) ];
-    value rec meApp_of_list =
-      fun
-      [ [] -> assert False
-      | [ x ] -> x
-      | [ x :: xs ] ->
-          let _loc = loc_of_module_expr x
-          in Ast.MeApp _loc x (meApp_of_list xs) ];
-    value rec ceAnd_of_list =
-      fun
-      [ [] -> Ast.CeNil ghost
-      | [ x ] -> x
-      | [ x :: xs ] ->
-          let _loc = loc_of_class_expr x
-          in Ast.CeAnd _loc x (ceAnd_of_list xs) ];
-    value rec ctAnd_of_list =
-      fun
-      [ [] -> Ast.CtNil ghost
-      | [ x ] -> x
-      | [ x :: xs ] ->
-          let _loc = loc_of_class_type x
-          in Ast.CtAnd _loc x (ctAnd_of_list xs) ];
-    value rec cgSem_of_list =
-      fun
-      [ [] -> Ast.CgNil ghost
-      | [ x ] -> x
-      | [ x :: xs ] ->
-          let _loc = loc_of_class_sig_item x
-          in Ast.CgSem _loc x (cgSem_of_list xs) ];
-    value rec crSem_of_list =
-      fun
-      [ [] -> Ast.CrNil ghost
-      | [ x ] -> x
-      | [ x :: xs ] ->
-          let _loc = loc_of_class_str_item x
-          in Ast.CrSem _loc x (crSem_of_list xs) ];
-    value rec paSem_of_list =
-      fun
-      [ [] -> Ast.PaNil ghost
-      | [ x ] -> x
-      | [ x :: xs ] ->
-          let _loc = loc_of_patt x in Ast.PaSem _loc x (paSem_of_list xs) ];
-    value rec paCom_of_list =
-      fun
-      [ [] -> Ast.PaNil ghost
-      | [ x ] -> x
-      | [ x :: xs ] ->
-          let _loc = loc_of_patt x in Ast.PaCom _loc x (paCom_of_list xs) ];
-    value rec biSem_of_list =
-      fun
-      [ [] -> Ast.BiNil ghost
-      | [ x ] -> x
-      | [ x :: xs ] ->
-          let _loc = loc_of_binding x in Ast.BiSem _loc x (biSem_of_list xs) ];
-    value rec exSem_of_list =
-      fun
-      [ [] -> Ast.ExNil ghost
-      | [ x ] -> x
-      | [ x :: xs ] ->
-          let _loc = loc_of_expr x in Ast.ExSem _loc x (exSem_of_list xs) ];
-    value rec exCom_of_list =
-      fun
-      [ [] -> Ast.ExNil ghost
-      | [ x ] -> x
-      | [ x :: xs ] ->
-          let _loc = loc_of_expr x in Ast.ExCom _loc x (exCom_of_list xs) ];
-    value ty_of_stl =
-      fun
-      [ (_loc, s, []) -> Ast.TyId _loc (Ast.IdUid _loc s)
-      | (_loc, s, tl) ->
-          Ast.TyOf _loc (Ast.TyId _loc (Ast.IdUid _loc s)) (tyAnd_of_list tl) ];
-    value ty_of_sbt =
-      fun
-      [ (_loc, s, True, t) ->
-          Ast.TyCol _loc (Ast.TyId _loc (Ast.IdLid _loc s))
-            (Ast.TyMut _loc t)
-      | (_loc, s, False, t) ->
-          Ast.TyCol _loc (Ast.TyId _loc (Ast.IdLid _loc s)) t ];
-    value bi_of_pe (p, e) = let _loc = loc_of_patt p in Ast.BiEq _loc p e;
-    value sum_type_of_list l = tyOr_of_list (List.map ty_of_stl l);
-    value record_type_of_list l = tySem_of_list (List.map ty_of_sbt l);
-    value binding_of_pel l = biAnd_of_list (List.map bi_of_pe l);
-    value rec pel_of_binding =
-      fun
-      [ Ast.BiAnd _ b1 b2 -> (pel_of_binding b1) @ (pel_of_binding b2)
-      | Ast.BiEq _ p e -> [ (p, e) ]
-      | Ast.BiSem _ b1 b2 -> (pel_of_binding b1) @ (pel_of_binding b2)
-      | _ -> assert False ];
-    value rec list_of_binding x acc =
-      match x with
-      [ Ast.BiAnd _ b1 b2 | Ast.BiSem _ b1 b2 ->
-          list_of_binding b1 (list_of_binding b2 acc)
-      | t -> [ t :: acc ] ];
-    value rec list_of_with_constr x acc =
-      match x with
-      [ Ast.WcAnd _ w1 w2 ->
-          list_of_with_constr w1 (list_of_with_constr w2 acc)
-      | t -> [ t :: acc ] ];
-    value rec list_of_ctyp x acc =
-      match x with
-      [ Ast.TyNil _ -> acc
-      | Ast.TyAmp _ x y | Ast.TyCom _ x y | Ast.TySta _ x y | Ast.TySem _ x y
-          | Ast.TyAnd _ x y | Ast.TyOr _ x y ->
-          list_of_ctyp x (list_of_ctyp y acc)
-      | x -> [ x :: acc ] ];
-    value rec list_of_patt x acc =
-      match x with
-      [ Ast.PaNil _ -> acc
-      | Ast.PaCom _ x y | Ast.PaSem _ x y ->
-          list_of_patt x (list_of_patt y acc)
-      | x -> [ x :: acc ] ];
-    value rec list_of_expr x acc =
-      match x with
-      [ Ast.ExNil _ -> acc
-      | Ast.ExCom _ x y | Ast.ExSem _ x y ->
-          list_of_expr x (list_of_expr y acc)
-      | x -> [ x :: acc ] ];
-    value rec list_of_str_item x acc =
-      match x with
-      [ Ast.StNil _ -> acc
-      | Ast.StSem _ x y -> list_of_str_item x (list_of_str_item y acc)
-      | x -> [ x :: acc ] ];
-    value rec list_of_sig_item x acc =
-      match x with
-      [ Ast.SgNil _ -> acc
-      | Ast.SgSem _ x y -> list_of_sig_item x (list_of_sig_item y acc)
-      | x -> [ x :: acc ] ];
-    value rec list_of_class_sig_item x acc =
-      match x with
-      [ Ast.CgNil _ -> acc
-      | Ast.CgSem _ x y ->
-          list_of_class_sig_item x (list_of_class_sig_item y acc)
-      | x -> [ x :: acc ] ];
-    value rec list_of_class_str_item x acc =
-      match x with
-      [ Ast.CrNil _ -> acc
-      | Ast.CrSem _ x y ->
-          list_of_class_str_item x (list_of_class_str_item y acc)
-      | x -> [ x :: acc ] ];
-    value rec list_of_class_type x acc =
-      match x with
-      [ Ast.CtAnd _ x y -> list_of_class_type x (list_of_class_type y acc)
-      | x -> [ x :: acc ] ];
-    value rec list_of_class_expr x acc =
-      match x with
-      [ Ast.CeAnd _ x y -> list_of_class_expr x (list_of_class_expr y acc)
-      | x -> [ x :: acc ] ];
-    value rec list_of_module_expr x acc =
-      match x with
-      [ Ast.MeApp _ x y -> list_of_module_expr x (list_of_module_expr y acc)
-      | x -> [ x :: acc ] ];
-    value rec list_of_match_case x acc =
-      match x with
-      [ Ast.McNil _ -> acc
-      | Ast.McOr _ x y -> list_of_match_case x (list_of_match_case y acc)
-      | x -> [ x :: acc ] ];
-    value rec list_of_ident x acc =
-      match x with
-      [ Ast.IdAcc _ x y | Ast.IdApp _ x y ->
-          list_of_ident x (list_of_ident y acc)
-      | x -> [ x :: acc ] ];
-    value rec list_of_module_binding x acc =
-      match x with
-      [ Ast.MbAnd _ x y ->
-          list_of_module_binding x (list_of_module_binding y acc)
-      | x -> [ x :: acc ] ];
   end;
 
