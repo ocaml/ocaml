@@ -788,30 +788,33 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
     Misc.try_finally (fun () -> type_structure initial_env ast)
                      (fun () -> Stypes.dump (outputprefix ^ ".annot"))
   in
+  let simple_sg = simplify_signature sg in
   Typecore.force_delayed_checks ();
   if !Clflags.print_types then begin
-    fprintf std_formatter "%a@." Printtyp.signature (simplify_signature sg);
-    (str, Tcoerce_none)
+    fprintf std_formatter "%a@." Printtyp.signature simple_sg;
+    (str, Tcoerce_none)   (* result is ignored by Compile.implementation *)
   end else begin
-    let coercion =
-      let sourceintf =
-        Misc.chop_extension_if_any sourcefile ^ !Config.interface_suffix in
-      if Sys.file_exists sourceintf then begin
-        let intf_file =
-          try
-            find_in_path_uncap !Config.load_path (modulename ^ ".cmi")
-          with Not_found ->
-            raise(Error(Location.none, Interface_not_compiled sourceintf)) in
-        let dclsig = Env.read_signature modulename intf_file in
-        Includemod.compunit sourcefile sg intf_file dclsig
-      end else begin
-        check_nongen_schemes finalenv str;
-        normalize_signature finalenv sg;
-        if not !Clflags.dont_write_files then
-          Env.save_signature sg modulename (outputprefix ^ ".cmi");
-        Tcoerce_none
-      end in
-    (str, coercion)
+    let sourceintf =
+      Misc.chop_extension_if_any sourcefile ^ !Config.interface_suffix in
+    if Sys.file_exists sourceintf then begin
+      let intf_file =
+        try
+          find_in_path_uncap !Config.load_path (modulename ^ ".cmi")
+        with Not_found ->
+          raise(Error(Location.none, Interface_not_compiled sourceintf)) in
+      let dclsig = Env.read_signature modulename intf_file in
+      let coercion = Includemod.compunit sourcefile sg intf_file dclsig in
+      (str, coercion)
+    end else begin
+      check_nongen_schemes finalenv str;
+      normalize_signature finalenv sg;
+      let coercion =
+        Includemod.compunit sourcefile sg
+                            "(inferred signature)" simple_sg in
+      if not !Clflags.dont_write_files then
+        Env.save_signature simple_sg modulename (outputprefix ^ ".cmi");
+      (str, coercion)
+    end
   end
 
 (* "Packaging" of several compilation units into one unit
