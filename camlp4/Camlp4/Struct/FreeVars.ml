@@ -23,7 +23,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
 
   value rec fold_binding_vars f bi acc =
     match bi with
-    [ <:binding< $bi1$ and $bi2$ >> | <:binding< $bi1$; $bi2$ >> ->
+    [ <:binding< $bi1$ and $bi2$ >> ->
         fold_binding_vars f bi1 (fold_binding_vars f bi2 acc)
     | <:binding< $lid:i$ = $_$ >> -> f i acc
     | _ -> assert False ];

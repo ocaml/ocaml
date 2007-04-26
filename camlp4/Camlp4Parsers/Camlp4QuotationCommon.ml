@@ -76,6 +76,7 @@ module Make (Syntax : Sig.Camlp4Syntax)
             | "anticlass_str_item" -> <:patt< Ast.CrAnt $mloc _loc$ $p$ >>
             | "antiwith_constr" -> <:patt< Ast.WcAnt $mloc _loc$ $p$ >>
             | "antibinding" -> <:patt< Ast.BiAnt $mloc _loc$ $p$ >>
+            | "antirec_binding" -> <:patt< Ast.RbAnt $mloc _loc$ $p$ >>
             | "antimatch_case" -> <:patt< Ast.McAnt $mloc _loc$ $p$ >>
             | "antimodule_binding" -> <:patt< Ast.MbAnt $mloc _loc$ $p$ >>
             | "antiident" -> <:patt< Ast.IdAnt $mloc _loc$ $p$ >>
@@ -102,6 +103,7 @@ module Make (Syntax : Sig.Camlp4Syntax)
             | "listmodule_binding" -> <:expr< Ast.mbAnd_of_list $e$ >>
             | "listbinding" -> <:expr< Ast.biAnd_of_list $e$ >>
             | "listbinding;" -> <:expr< Ast.biSem_of_list $e$ >>
+            | "listrec_binding" -> <:expr< Ast.rbSem_of_list $e$ >>
             | "listclass_type" -> <:expr< Ast.ctAnd_of_list $e$ >>
             | "listclass_expr" -> <:expr< Ast.ceAnd_of_list $e$ >>
             | "listident" -> <:expr< Ast.idAcc_of_list $e$ >>
@@ -130,6 +132,7 @@ module Make (Syntax : Sig.Camlp4Syntax)
             | "anticlass_str_item" -> <:expr< Ast.CrAnt $mloc _loc$ $e$ >>
             | "antiwith_constr" -> <:expr< Ast.WcAnt $mloc _loc$ $e$ >>
             | "antibinding" -> <:expr< Ast.BiAnt $mloc _loc$ $e$ >>
+            | "antirec_binding" -> <:expr< Ast.RbAnt $mloc _loc$ $e$ >>
             | "antimatch_case" -> <:expr< Ast.McAnt $mloc _loc$ $e$ >>
             | "antimodule_binding" -> <:expr< Ast.MbAnt $mloc _loc$ $e$ >>
             | "antiident" -> <:expr< Ast.IdAnt $mloc _loc$ $e$ >>
@@ -193,6 +196,7 @@ module Make (Syntax : Sig.Camlp4Syntax)
                 class_str_item_quot ME.meta_class_str_item MP.meta_class_str_item;
   add_quotation "with_constr" with_constr_quot ME.meta_with_constr MP.meta_with_constr;
   add_quotation "binding" binding_quot ME.meta_binding MP.meta_binding;
+  add_quotation "rec_binding" rec_binding_quot ME.meta_rec_binding MP.meta_rec_binding;
   add_quotation "match_case" match_case_quot ME.meta_match_case MP.meta_match_case;
   add_quotation "module_binding"
                 module_binding_quot ME.meta_module_binding MP.meta_module_binding;

@@ -19,13 +19,13 @@
  *)
 
 module type Type = sig
-  type t = 'abstract;
+  type t;
 end;
 
 (** Signature for errors modules, an Error modules can be registred with
     the {!ErrorHandler.Register} functor in order to be well printed. *)
 module type Error = sig
-  type t = 'abstract;
+  type t;
   exception E of t;
   value to_string : t -> string;
   value print : Format.formatter -> t -> unit;
@@ -215,25 +215,26 @@ module type Ast = sig
 
   module Loc : Loc;
 
-  type meta_bool = 'abstract;
-  type meta_option 'a = 'abstract;
-  type meta_list 'a = 'abstract;
-  type ctyp = 'abstract;
-  type patt = 'abstract;
-  type expr = 'abstract;
-  type module_type = 'abstract;
-  type sig_item = 'abstract;
-  type with_constr = 'abstract;
-  type module_expr = 'abstract;
-  type str_item = 'abstract;
-  type class_type = 'abstract;
-  type class_sig_item = 'abstract;
-  type class_expr = 'abstract;
-  type class_str_item = 'abstract;
-  type match_case = 'abstract;
-  type ident = 'abstract;
-  type binding = 'abstract;
-  type module_binding = 'abstract;
+  type meta_bool;
+  type meta_option 'a;
+  type meta_list 'a;
+  type ctyp;
+  type patt;
+  type expr;
+  type module_type;
+  type sig_item;
+  type with_constr;
+  type module_expr;
+  type str_item;
+  type class_type;
+  type class_sig_item;
+  type class_expr;
+  type class_str_item;
+  type match_case;
+  type ident;
+  type binding;
+  type rec_binding;
+  type module_binding;
 
   value loc_of_ctyp : ctyp -> Loc.t;
   value loc_of_patt : patt -> Loc.t;
@@ -248,6 +249,7 @@ module type Ast = sig
   value loc_of_class_str_item : class_str_item -> Loc.t;
   value loc_of_with_constr : with_constr -> Loc.t;
   value loc_of_binding : binding -> Loc.t;
+  value loc_of_rec_binding : rec_binding -> Loc.t;
   value loc_of_module_binding : module_binding -> Loc.t;
   value loc_of_match_case : match_case -> Loc.t;
   value loc_of_ident : ident -> Loc.t;
@@ -288,6 +290,7 @@ module type Ast = sig
     method class_str_item : class_str_item -> class_str_item;
     method with_constr : with_constr -> with_constr;
     method binding : binding -> binding;
+    method rec_binding : rec_binding -> rec_binding;
     method module_binding : module_binding -> module_binding;
     method match_case : match_case -> match_case;
     method ident : ident -> ident;
@@ -319,6 +322,7 @@ module type Ast = sig
     method class_str_item : class_str_item -> 'self_type;
     method with_constr : with_constr -> 'self_type;
     method binding : binding -> 'self_type;
+    method rec_binding : rec_binding -> 'self_type;
     method module_binding : module_binding -> 'self_type;
     method match_case : match_case -> 'self_type;
     method ident : ident -> 'self_type;
@@ -366,6 +370,7 @@ module type Camlp4Ast = sig
   value loc_of_class_str_item : class_str_item -> Loc.t;
   value loc_of_with_constr : with_constr -> Loc.t;
   value loc_of_binding : binding -> Loc.t;
+  value loc_of_rec_binding : rec_binding -> Loc.t;
   value loc_of_module_binding : module_binding -> Loc.t;
   value loc_of_match_case : match_case -> Loc.t;
   value loc_of_ident : ident -> Loc.t;
@@ -402,6 +407,7 @@ module type Camlp4Ast = sig
         value meta_bool : Loc.t -> bool -> expr;
         value meta_list : (Loc.t -> 'a -> expr) -> Loc.t -> list 'a -> expr;
         value meta_binding : Loc.t -> binding -> expr;
+        value meta_rec_binding : Loc.t -> rec_binding -> expr;
         value meta_class_expr : Loc.t -> class_expr -> expr;
         value meta_class_sig_item : Loc.t -> class_sig_item -> expr;
         value meta_class_str_item : Loc.t -> class_str_item -> expr;
@@ -426,6 +432,7 @@ module type Camlp4Ast = sig
         value meta_bool : Loc.t -> bool -> patt;
         value meta_list : (Loc.t -> 'a -> patt) -> Loc.t -> list 'a -> patt;
         value meta_binding : Loc.t -> binding -> patt;
+        value meta_rec_binding : Loc.t -> rec_binding -> patt;
         value meta_class_expr : Loc.t -> class_expr -> patt;
         value meta_class_sig_item : Loc.t -> class_sig_item -> patt;
         value meta_class_str_item : Loc.t -> class_str_item -> patt;
@@ -466,6 +473,7 @@ module type Camlp4Ast = sig
     method class_str_item : class_str_item -> class_str_item;
     method with_constr : with_constr -> with_constr;
     method binding : binding -> binding;
+    method rec_binding : rec_binding -> rec_binding;
     method module_binding : module_binding -> module_binding;
     method match_case : match_case -> match_case;
     method ident : ident -> ident;
@@ -498,6 +506,7 @@ module type Camlp4Ast = sig
     method class_str_item : class_str_item -> 'self_type;
     method with_constr : with_constr -> 'self_type;
     method binding : binding -> 'self_type;
+    method rec_binding : rec_binding -> 'self_type;
     method module_binding : module_binding -> 'self_type;
     method match_case : match_case -> 'self_type;
     method ident : ident -> 'self_type;
@@ -515,7 +524,7 @@ module type Camlp4Ast = sig
   value ident_of_ctyp : ctyp -> ident;
 
   value biAnd_of_list : list binding -> binding;
-  value biSem_of_list : list binding -> binding;
+  value rbSem_of_list : list rec_binding -> rec_binding;
   value paSem_of_list : list patt -> patt;
   value paCom_of_list : list patt -> patt;
   value tyOr_of_list : list ctyp -> ctyp;
@@ -541,6 +550,7 @@ module type Camlp4Ast = sig
 
   value list_of_ctyp : ctyp -> list ctyp -> list ctyp;
   value list_of_binding : binding -> list binding -> list binding;
+  value list_of_rec_binding : rec_binding -> list rec_binding -> list rec_binding;
   value list_of_with_constr : with_constr -> list with_constr -> list with_constr;
   value list_of_patt : patt -> list patt -> list patt;
   value list_of_expr : expr -> list expr -> list expr;
@@ -597,6 +607,7 @@ module Camlp4AstToAst (M : Camlp4Ast) : Ast
    and type class_expr = M.class_expr
    and type class_str_item = M.class_str_item
    and type binding = M.binding
+   and type rec_binding = M.rec_binding
    and type module_binding = M.module_binding
    and type match_case = M.match_case
    and type ident = M.ident
@@ -651,6 +662,7 @@ module type DynAst = sig
   value match_case_tag : tag Ast.match_case;
   value ident_tag : tag Ast.ident;
   value binding_tag : tag Ast.binding;
+  value rec_binding_tag : tag Ast.rec_binding;
   value module_binding_tag : tag Ast.module_binding;
 
   value string_of_tag : tag 'a -> string;
@@ -717,7 +729,7 @@ module type Token = sig
 
   module Loc : Loc;
 
-  type t = 'abstract;
+  type t;
 
   value to_string : t -> string;
   
@@ -734,7 +746,7 @@ module type Token = sig
     (** The type for this filter chain.
         A basic implementation just store the [is_keyword] function given
         by [mk] and use it in the [filter] function. *)
-    type t = 'abstract;
+    type t;
 
     (** The given predicate function returns true if the given string
         is a keyword. This function can be used in filters to translate
@@ -818,7 +830,7 @@ type camlp4_token =
 module type Camlp4Token = Token with type t = camlp4_token;
 
 module type DynLoader = sig
-  type t = 'abstract;
+  type t;
   exception Error of string and string;
 
   (** [mk ?ocaml_stdlib ?camlp4_stdlib]
@@ -847,7 +859,7 @@ module Grammar = struct
   (** Internal signature for sematantic actions of grammars,
       not for the casual user. These functions are unsafe. *)
   module type Action = sig
-    type  t     = 'abstract;
+    type  t    ;
 
     value mk    : 'a ->  t;
     value get   :  t -> 'a;
@@ -873,9 +885,9 @@ module Grammar = struct
     module Action : Action;
     module Token  : Token with module Loc = Loc;
 
-    type gram = 'abstract;
-    type internal_entry = 'abstract;
-    type tree = 'abstract;
+    type gram;
+    type internal_entry;
+    type tree;
 
     type token_pattern = ((Token.t -> bool) * string);
 
@@ -923,7 +935,7 @@ module Grammar = struct
     module Entry : sig
       (** The abstract type of grammar entries. The type parameter is the type
           of the semantic actions that are associated with this entry. *)
-      type t 'a = 'abstract;
+      type t 'a;
   
       (** Make a new entry from the given name. *)
       value mk : gram -> string -> t 'a;
@@ -953,7 +965,7 @@ module Grammar = struct
     (** [get_filter g] Get the {!Token.Filter} associated to the [g]. *)
     value get_filter : gram -> Token.Filter.t;
 
-    type not_filtered 'a = 'abstract;
+    type not_filtered 'a;
 
     (** This function is called by the EXTEND ... END syntax. *)
     value extend      : Entry.t 'a -> extend_statment -> unit;
@@ -1004,7 +1016,7 @@ module Grammar = struct
     module Entry : sig
       (** The abstract type of grammar entries. The type parameter is the type
           of the semantic actions that are associated with this entry. *)
-      type t 'a = 'abstract;
+      type t 'a;
 
       (** Make a new entry from the given name. *)
       value mk : string -> t 'a;
@@ -1034,7 +1046,7 @@ module Grammar = struct
     (** Get the {!Token.Filter} associated to the grammar module. *)
     value get_filter : unit -> Token.Filter.t;
 
-    type not_filtered 'a = 'abstract;
+    type not_filtered 'a;
 
     (** This function is called by the EXTEND ... END syntax. *)
     value extend      : Entry.t 'a -> extend_statment -> unit;
@@ -1183,6 +1195,7 @@ module type Camlp4Syntax = sig
   value match_case_quot : Gram.Entry.t Ast.match_case;
   value binding : Gram.Entry.t Ast.binding;
   value binding_quot : Gram.Entry.t Ast.binding;
+  value rec_binding_quot : Gram.Entry.t Ast.rec_binding;
   value class_declaration : Gram.Entry.t Ast.class_expr;
   value class_description : Gram.Entry.t Ast.class_type;
   value class_expr : Gram.Entry.t Ast.class_expr;
@@ -1224,7 +1237,7 @@ module type Camlp4Syntax = sig
   value expr : Gram.Entry.t Ast.expr;
   value expr_eoi : Gram.Entry.t Ast.expr;
   value expr_quot : Gram.Entry.t Ast.expr;
-  value field_expr : Gram.Entry.t Ast.binding;
+  value field_expr : Gram.Entry.t Ast.rec_binding;
   value fun_binding : Gram.Entry.t Ast.expr;
   value fun_def : Gram.Entry.t Ast.expr;
   value ident : Gram.Entry.t Ast.ident;
@@ -1233,7 +1246,7 @@ module type Camlp4Syntax = sig
   value ipatt_tcon : Gram.Entry.t Ast.patt;
   value label : Gram.Entry.t string;
   value label_declaration : Gram.Entry.t Ast.ctyp;
-  value label_expr : Gram.Entry.t Ast.binding;
+  value label_expr : Gram.Entry.t Ast.rec_binding;
   value label_ipatt : Gram.Entry.t Ast.patt;
   value label_longident : Gram.Entry.t Ast.ident;
   value label_patt : Gram.Entry.t Ast.patt;

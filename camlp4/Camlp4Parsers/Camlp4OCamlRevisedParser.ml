@@ -69,6 +69,7 @@ Old (no more supported) syntax:
   Gram.Entry.clear match_case_quot;
   Gram.Entry.clear binding;
   Gram.Entry.clear binding_quot;
+  Gram.Entry.clear rec_binding_quot;
   Gram.Entry.clear class_declaration;
   Gram.Entry.clear class_description;
   Gram.Entry.clear class_expr;
@@ -399,7 +400,7 @@ Old (no more supported) syntax:
 
   EXTEND Gram
     GLOBAL:
-      a_CHAR a_FLOAT a_INT a_INT32 a_INT64 a_LABEL a_LIDENT
+      a_CHAR a_FLOAT a_INT a_INT32 a_INT64 a_LABEL a_LIDENT rec_binding_quot
       a_LIDENT_or_operator a_NATIVEINT a_OPTLABEL a_STRING a_UIDENT a_ident
       amp_ctyp and_ctyp match_case match_case0 match_case_quot binding binding_quot
       class_declaration class_description class_expr class_expr_quot
@@ -773,13 +774,16 @@ Old (no more supported) syntax:
       ] ]
     ;
     label_expr:
-      [ LEFTA
-        [ b1 = SELF; ";"; b2 = SELF -> <:binding< $b1$ ; $b2$ >>
-        | `ANTIQUOT (""|"binding"|"anti" as n) s ->
-            <:binding< $anti:mk_anti ~c:"binding" n s$ >>
+      [ [ b1 = SELF; ";"; b2 = SELF -> <:rec_binding< $b1$ ; $b2$ >>
+        | `ANTIQUOT ("rec_binding" as n) s ->
+            <:rec_binding< $anti:mk_anti ~c:"rec_binding" n s$ >>
+        | `ANTIQUOT (""|"anti" as n) s ->
+            <:rec_binding< $anti:mk_anti ~c:"rec_binding" n s$ >>
+        | `ANTIQUOT (""|"anti" as n) s; "="; e = expr ->
+            <:rec_binding< $anti:mk_anti ~c:"ident" n s$ = $e$ >>
         | `ANTIQUOT ("list" as n) s ->
-            <:binding< $anti:mk_anti ~c:"binding;" n s$ >>
-        | p = label_longident; e = fun_binding -> <:binding< $id:p$ = $e$ >> ] ]
+            <:rec_binding< $anti:mk_anti ~c:"rec_binding" n s$ >>
+        | i = label_longident; e = fun_binding -> <:rec_binding< $i$ = $e$ >> ] ]
     ;
     fun_def:
       [ RIGHTA
@@ -1321,12 +1325,12 @@ Old (no more supported) syntax:
     ;
     field_expr:
       [ LEFTA
-        [ b1 = SELF; ";"; b2 = SELF -> <:binding< $b1$ ; $b2$ >>
+        [ b1 = SELF; ";"; b2 = SELF -> <:rec_binding< $b1$ ; $b2$ >>
         | `ANTIQUOT (""|"bi"|"anti" as n) s ->
-            <:binding< $anti:mk_anti ~c:"binding" n s$ >>
+            <:rec_binding< $anti:mk_anti ~c:"rec_binding" n s$ >>
         | `ANTIQUOT ("list" as n) s ->
-            <:binding< $anti:mk_anti ~c:"binding;" n s$ >>
-        | l = label; "="; e = expr -> <:binding< $lid:l$ = $e$ >> ] ]
+            <:rec_binding< $anti:mk_anti ~c:"rec_binding" n s$ >>
+        | l = label; "="; e = expr -> <:rec_binding< $lid:l$ = $e$ >> ] ]
     ;
     meth_list:
       [ LEFTA
@@ -1630,12 +1634,13 @@ Old (no more supported) syntax:
         | -> <:match_case<>> ] ]
     ;
     binding_quot:
-      [ [ b1 = SELF; "and"; b2 = SELF -> <:binding< $b1$ and $b2$ >>
-        | b1 = SELF; ";"; b2 = SELF -> <:binding< $b1$ ; $b2$ >>
-        | x = binding -> x
-        | x = label_expr -> x
+      [ [ x = binding -> x
         | -> <:binding<>>
       ] ]
+    ;
+    rec_binding_quot:
+      [ [ x = label_expr -> x
+        | -> <:rec_binding<>> ] ]
     ;
     module_binding_quot:
       [ [ b1 = SELF; "and"; b2 = SELF ->

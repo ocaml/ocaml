@@ -45,6 +45,7 @@ module Make (Loc : Sig.Loc)
   external loc_of_class_str_item : class_str_item -> Loc.t = "%field0";
   external loc_of_with_constr : with_constr -> Loc.t = "%field0";
   external loc_of_binding : binding -> Loc.t = "%field0";
+  external loc_of_rec_binding : rec_binding -> Loc.t = "%field0";
   external loc_of_module_binding : module_binding -> Loc.t = "%field0";
   external loc_of_match_case : match_case -> Loc.t = "%field0";
   external loc_of_ident : ident -> Loc.t = "%field0";
@@ -202,6 +203,14 @@ module Make (Loc : Sig.Loc)
     | [b::bs] ->
         let _loc = loc_of_binding b in <:binding< $b$ and $biAnd_of_list bs$ >> ];
 
+  value rec rbSem_of_list =
+    fun
+    [ [] -> <:rec_binding@ghost<>>
+    | [b] -> b
+    | [b::bs] ->
+        let _loc = loc_of_rec_binding b in
+        <:rec_binding< $b$; $rbSem_of_list bs$ >> ];
+
   value rec wcAnd_of_list =
     fun
     [ [] -> <:with_constr@ghost<>>
@@ -298,14 +307,6 @@ module Make (Loc : Sig.Loc)
         let _loc = loc_of_patt x in
         <:patt< $x$, $paCom_of_list xs$ >> ];
 
-  value rec biSem_of_list =
-    fun
-    [ [] -> <:binding@ghost<>>
-    | [x] -> x
-    | [x::xs] ->
-        let _loc = loc_of_binding x in
-        <:binding< $x$; $biSem_of_list xs$ >> ];
-
   value rec exSem_of_list =
     fun
     [ [] -> <:expr@ghost<>>
@@ -341,13 +342,18 @@ module Make (Loc : Sig.Loc)
     fun
     [ <:binding< $b1$ and $b2$ >> -> pel_of_binding b1 @ pel_of_binding b2
     | <:binding< $p$ = $e$ >> -> [(p, e)]
-    | <:binding< $b1$ ; $b2$ >> -> pel_of_binding b1 @ pel_of_binding b2
     | _ -> assert False ];
 
   value rec list_of_binding x acc =
     match x with
-    [ <:binding< $b1$ and $b2$ >> | <:binding< $b1$; $b2$ >> ->
+    [ <:binding< $b1$ and $b2$ >> ->
          list_of_binding b1 (list_of_binding b2 acc)
+    | t -> [t :: acc] ];
+
+  value rec list_of_rec_binding x acc =
+    match x with
+    [ <:rec_binding< $b1$; $b2$ >> ->
+         list_of_rec_binding b1 (list_of_rec_binding b2 acc)
     | t -> [t :: acc] ];
 
   value rec list_of_with_constr x acc =

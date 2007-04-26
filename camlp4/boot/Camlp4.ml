@@ -350,7 +350,7 @@ module Sig =
       sig
         (** The name of the extension, typically the module name. *)
         val name : string
-        (** The version of the extension, typically $Id: Sig.ml,v 1.2.2.6 2007/03/30 15:50:12 pouillar Exp $ with a versionning system. *)
+        (** The version of the extension, typically $Id: Sig.ml,v 1.2.2.7 2007/04/20 14:57:28 pouillar Exp $ with a versionning system. *)
         val version : string
       end
     module type Loc =
@@ -507,6 +507,7 @@ module Sig =
         type match_case
         type ident
         type binding
+        type rec_binding
         type module_binding
         val loc_of_ctyp : ctyp -> Loc.t
         val loc_of_patt : patt -> Loc.t
@@ -521,6 +522,7 @@ module Sig =
         val loc_of_class_str_item : class_str_item -> Loc.t
         val loc_of_with_constr : with_constr -> Loc.t
         val loc_of_binding : binding -> Loc.t
+        val loc_of_rec_binding : rec_binding -> Loc.t
         val loc_of_module_binding : module_binding -> Loc.t
         val loc_of_match_case : match_case -> Loc.t
         val loc_of_ident : ident -> Loc.t
@@ -562,6 +564,7 @@ module Sig =
             method class_str_item : class_str_item -> class_str_item
             method with_constr : with_constr -> with_constr
             method binding : binding -> binding
+            method rec_binding : rec_binding -> rec_binding
             method module_binding : module_binding -> module_binding
             method match_case : match_case -> match_case
             method ident : ident -> ident
@@ -603,6 +606,7 @@ module Sig =
             method class_str_item : class_str_item -> 'self_type
             method with_constr : with_constr -> 'self_type
             method binding : binding -> 'self_type
+            method rec_binding : rec_binding -> 'self_type
             method module_binding : module_binding -> 'self_type
             method match_case : match_case -> 'self_type
             method ident : ident -> 'self_type
@@ -764,9 +768,11 @@ module Sig =
           (* $s$ *)
           (* b and b *)
           (* let a = 42 and c = 43 *)
-          (* b ; b *)
           (* p = e *)
           (* let patt = expr *)
+          (* $s$ *)
+          (* b ; b *)
+          (* i = e *)
           (* $s$ *)
           (* mb and mb *)
           (* module rec (s : mt) = me and (s : mt) = me *)
@@ -854,8 +860,8 @@ module Sig =
           | ExLmd of Loc.t * string * module_expr * expr
           | ExMat of Loc.t * expr * match_case | ExNew of Loc.t * ident
           | ExObj of Loc.t * patt * class_str_item
-          | ExOlb of Loc.t * string * expr | ExOvr of Loc.t * binding
-          | ExRec of Loc.t * binding * expr | ExSeq of Loc.t * expr
+          | ExOlb of Loc.t * string * expr | ExOvr of Loc.t * rec_binding
+          | ExRec of Loc.t * rec_binding * expr | ExSeq of Loc.t * expr
           | ExSnd of Loc.t * expr * string | ExSte of Loc.t * expr * expr
           | ExStr of Loc.t * string | ExTry of Loc.t * expr * match_case
           | ExTup of Loc.t * expr | ExCom of Loc.t * expr * expr
@@ -886,8 +892,10 @@ module Sig =
           | WcAnt of Loc.t * string
           and binding =
           | BiNil of Loc.t | BiAnd of Loc.t * binding * binding
-          | BiSem of Loc.t * binding * binding | BiEq of Loc.t * patt * expr
-          | BiAnt of Loc.t * string
+          | BiEq of Loc.t * patt * expr | BiAnt of Loc.t * string
+          and rec_binding =
+          | RbNil of Loc.t | RbSem of Loc.t * rec_binding * rec_binding
+          | RbEq of Loc.t * ident * expr | RbAnt of Loc.t * string
           and module_binding =
           | MbNil of Loc.t | MbAnd of Loc.t * module_binding * module_binding
           | MbColEq of Loc.t * string * module_type * module_expr
@@ -966,6 +974,7 @@ module Sig =
         val loc_of_class_str_item : class_str_item -> Loc.t
         val loc_of_with_constr : with_constr -> Loc.t
         val loc_of_binding : binding -> Loc.t
+        val loc_of_rec_binding : rec_binding -> Loc.t
         val loc_of_module_binding : module_binding -> Loc.t
         val loc_of_match_case : match_case -> Loc.t
         val loc_of_ident : ident -> Loc.t
@@ -1003,6 +1012,7 @@ module Sig =
                     val meta_list :
                       (Loc.t -> 'a -> expr) -> Loc.t -> 'a list -> expr
                     val meta_binding : Loc.t -> binding -> expr
+                    val meta_rec_binding : Loc.t -> rec_binding -> expr
                     val meta_class_expr : Loc.t -> class_expr -> expr
                     val meta_class_sig_item : Loc.t -> class_sig_item -> expr
                     val meta_class_str_item : Loc.t -> class_str_item -> expr
@@ -1029,6 +1039,7 @@ module Sig =
                     val meta_list :
                       (Loc.t -> 'a -> patt) -> Loc.t -> 'a list -> patt
                     val meta_binding : Loc.t -> binding -> patt
+                    val meta_rec_binding : Loc.t -> rec_binding -> patt
                     val meta_class_expr : Loc.t -> class_expr -> patt
                     val meta_class_sig_item : Loc.t -> class_sig_item -> patt
                     val meta_class_str_item : Loc.t -> class_str_item -> patt
@@ -1069,6 +1080,7 @@ module Sig =
             method class_str_item : class_str_item -> class_str_item
             method with_constr : with_constr -> with_constr
             method binding : binding -> binding
+            method rec_binding : rec_binding -> rec_binding
             method module_binding : module_binding -> module_binding
             method match_case : match_case -> match_case
             method ident : ident -> ident
@@ -1110,6 +1122,7 @@ module Sig =
             method class_str_item : class_str_item -> 'self_type
             method with_constr : with_constr -> 'self_type
             method binding : binding -> 'self_type
+            method rec_binding : rec_binding -> 'self_type
             method module_binding : module_binding -> 'self_type
             method match_case : match_case -> 'self_type
             method ident : ident -> 'self_type
@@ -1124,7 +1137,7 @@ module Sig =
         val ident_of_patt : patt -> ident
         val ident_of_ctyp : ctyp -> ident
         val biAnd_of_list : binding list -> binding
-        val biSem_of_list : binding list -> binding
+        val rbSem_of_list : rec_binding list -> rec_binding
         val paSem_of_list : patt list -> patt
         val paCom_of_list : patt list -> patt
         val tyOr_of_list : ctyp list -> ctyp
@@ -1149,6 +1162,8 @@ module Sig =
         val exCom_of_list : expr list -> expr
         val list_of_ctyp : ctyp -> ctyp list -> ctyp list
         val list_of_binding : binding -> binding list -> binding list
+        val list_of_rec_binding :
+          rec_binding -> rec_binding list -> rec_binding list
         val list_of_with_constr :
           with_constr -> with_constr list -> with_constr list
         val list_of_patt : patt -> patt list -> patt list
@@ -1195,6 +1210,7 @@ module Sig =
       and type class_sig_item = M.class_sig_item
       and type class_expr = M.class_expr
       and type class_str_item = M.class_str_item and type binding = M.binding
+      and type rec_binding = M.rec_binding
       and type module_binding = M.module_binding
       and type match_case = M.match_case and type ident = M.ident = M
     module MakeCamlp4Ast (Loc : Type) =
@@ -1260,8 +1276,8 @@ module Sig =
           | ExLmd of Loc.t * string * module_expr * expr
           | ExMat of Loc.t * expr * match_case | ExNew of Loc.t * ident
           | ExObj of Loc.t * patt * class_str_item
-          | ExOlb of Loc.t * string * expr | ExOvr of Loc.t * binding
-          | ExRec of Loc.t * binding * expr | ExSeq of Loc.t * expr
+          | ExOlb of Loc.t * string * expr | ExOvr of Loc.t * rec_binding
+          | ExRec of Loc.t * rec_binding * expr | ExSeq of Loc.t * expr
           | ExSnd of Loc.t * expr * string | ExSte of Loc.t * expr * expr
           | ExStr of Loc.t * string | ExTry of Loc.t * expr * match_case
           | ExTup of Loc.t * expr | ExCom of Loc.t * expr * expr
@@ -1292,8 +1308,10 @@ module Sig =
           | WcAnt of Loc.t * string
           and binding =
           | BiNil of Loc.t | BiAnd of Loc.t * binding * binding
-          | BiSem of Loc.t * binding * binding | BiEq of Loc.t * patt * expr
-          | BiAnt of Loc.t * string
+          | BiEq of Loc.t * patt * expr | BiAnt of Loc.t * string
+          and rec_binding =
+          | RbNil of Loc.t | RbSem of Loc.t * rec_binding * rec_binding
+          | RbEq of Loc.t * ident * expr | RbAnt of Loc.t * string
           and module_binding =
           | MbNil of Loc.t | MbAnd of Loc.t * module_binding * module_binding
           | MbColEq of Loc.t * string * module_type * module_expr
@@ -1385,6 +1403,7 @@ module Sig =
         val match_case_tag : Ast.match_case tag
         val ident_tag : Ast.ident tag
         val binding_tag : Ast.binding tag
+        val rec_binding_tag : Ast.rec_binding tag
         val module_binding_tag : Ast.module_binding tag
         val string_of_tag : 'a tag -> string
         module Pack (X : sig type 'a t end) :
@@ -1671,6 +1690,7 @@ module Sig =
         val match_case_quot : Ast.match_case Gram.Entry.t
         val binding : Ast.binding Gram.Entry.t
         val binding_quot : Ast.binding Gram.Entry.t
+        val rec_binding_quot : Ast.rec_binding Gram.Entry.t
         val class_declaration : Ast.class_expr Gram.Entry.t
         val class_description : Ast.class_type Gram.Entry.t
         val class_expr : Ast.class_expr Gram.Entry.t
@@ -1712,7 +1732,7 @@ module Sig =
         val expr : Ast.expr Gram.Entry.t
         val expr_eoi : Ast.expr Gram.Entry.t
         val expr_quot : Ast.expr Gram.Entry.t
-        val field_expr : Ast.binding Gram.Entry.t
+        val field_expr : Ast.rec_binding Gram.Entry.t
         val fun_binding : Ast.expr Gram.Entry.t
         val fun_def : Ast.expr Gram.Entry.t
         val ident : Ast.ident Gram.Entry.t
@@ -1721,7 +1741,7 @@ module Sig =
         val ipatt_tcon : Ast.patt Gram.Entry.t
         val label : string Gram.Entry.t
         val label_declaration : Ast.ctyp Gram.Entry.t
-        val label_expr : Ast.binding Gram.Entry.t
+        val label_expr : Ast.rec_binding Gram.Entry.t
         val label_ipatt : Ast.patt Gram.Entry.t
         val label_longident : Ast.ident Gram.Entry.t
         val label_patt : Ast.patt Gram.Entry.t
@@ -5351,6 +5371,7 @@ module Struct =
               "%field0"
             external loc_of_with_constr : with_constr -> Loc.t = "%field0"
             external loc_of_binding : binding -> Loc.t = "%field0"
+            external loc_of_rec_binding : rec_binding -> Loc.t = "%field0"
             external loc_of_module_binding : module_binding -> Loc.t =
               "%field0"
             external loc_of_match_case : match_case -> Loc.t = "%field0"
@@ -5509,6 +5530,13 @@ module Struct =
               | b :: bs ->
                   let _loc = loc_of_binding b
                   in Ast.BiAnd (_loc, b, biAnd_of_list bs)
+            let rec rbSem_of_list =
+              function
+              | [] -> Ast.RbNil ghost
+              | [ b ] -> b
+              | b :: bs ->
+                  let _loc = loc_of_rec_binding b
+                  in Ast.RbSem (_loc, b, rbSem_of_list bs)
             let rec wcAnd_of_list =
               function
               | [] -> Ast.WcNil ghost
@@ -5593,13 +5621,6 @@ module Struct =
               | x :: xs ->
                   let _loc = loc_of_patt x
                   in Ast.PaCom (_loc, x, paCom_of_list xs)
-            let rec biSem_of_list =
-              function
-              | [] -> Ast.BiNil ghost
-              | [ x ] -> x
-              | x :: xs ->
-                  let _loc = loc_of_binding x
-                  in Ast.BiSem (_loc, x, biSem_of_list xs)
             let rec exSem_of_list =
               function
               | [] -> Ast.ExNil ghost
@@ -5637,13 +5658,16 @@ module Struct =
               | Ast.BiAnd (_, b1, b2) ->
                   (pel_of_binding b1) @ (pel_of_binding b2)
               | Ast.BiEq (_, p, e) -> [ (p, e) ]
-              | Ast.BiSem (_, b1, b2) ->
-                  (pel_of_binding b1) @ (pel_of_binding b2)
               | _ -> assert false
             let rec list_of_binding x acc =
               match x with
-              | Ast.BiAnd (_, b1, b2) | Ast.BiSem (_, b1, b2) ->
+              | Ast.BiAnd (_, b1, b2) ->
                   list_of_binding b1 (list_of_binding b2 acc)
+              | t -> t :: acc
+            let rec list_of_rec_binding x acc =
+              match x with
+              | Ast.RbSem (_, b1, b2) ->
+                  list_of_rec_binding b1 (list_of_rec_binding b2 acc)
               | t -> t :: acc
             let rec list_of_with_constr x acc =
               match x with
@@ -5845,17 +5869,6 @@ module Struct =
                                     meta_acc_Loc_t _loc x0),
                                   meta_patt _loc x1),
                                 meta_expr _loc x2)
-                          | Ast.BiSem (x0, x1, x2) ->
-                              Ast.ExApp (_loc,
-                                Ast.ExApp (_loc,
-                                  Ast.ExApp (_loc,
-                                    Ast.ExId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "BiSem"))),
-                                    meta_acc_Loc_t _loc x0),
-                                  meta_binding _loc x1),
-                                meta_binding _loc x2)
                           | Ast.BiAnd (x0, x1, x2) ->
                               Ast.ExApp (_loc,
                                 Ast.ExApp (_loc,
@@ -6689,7 +6702,7 @@ module Struct =
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "ExRec"))),
                                     meta_acc_Loc_t _loc x0),
-                                  meta_binding _loc x1),
+                                  meta_rec_binding _loc x1),
                                 meta_expr _loc x2)
                           | Ast.ExOvr (x0, x1) ->
                               Ast.ExApp (_loc,
@@ -6698,7 +6711,7 @@ module Struct =
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExOvr"))),
                                   meta_acc_Loc_t _loc x0),
-                                meta_binding _loc x1)
+                                meta_rec_binding _loc x1)
                           | Ast.ExOlb (x0, x1, x2) ->
                               Ast.ExApp (_loc,
                                 Ast.ExApp (_loc,
@@ -7480,6 +7493,37 @@ module Struct =
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "PaNil"))),
                                 meta_acc_Loc_t _loc x0)
+                        and meta_rec_binding _loc =
+                          function
+                          | Ast.RbAnt (x0, x1) -> Ast.ExAnt (x0, x1)
+                          | Ast.RbEq (x0, x1, x2) ->
+                              Ast.ExApp (_loc,
+                                Ast.ExApp (_loc,
+                                  Ast.ExApp (_loc,
+                                    Ast.ExId (_loc,
+                                      Ast.IdAcc (_loc,
+                                        Ast.IdUid (_loc, "Ast"),
+                                        Ast.IdUid (_loc, "RbEq"))),
+                                    meta_acc_Loc_t _loc x0),
+                                  meta_ident _loc x1),
+                                meta_expr _loc x2)
+                          | Ast.RbSem (x0, x1, x2) ->
+                              Ast.ExApp (_loc,
+                                Ast.ExApp (_loc,
+                                  Ast.ExApp (_loc,
+                                    Ast.ExId (_loc,
+                                      Ast.IdAcc (_loc,
+                                        Ast.IdUid (_loc, "Ast"),
+                                        Ast.IdUid (_loc, "RbSem"))),
+                                    meta_acc_Loc_t _loc x0),
+                                  meta_rec_binding _loc x1),
+                                meta_rec_binding _loc x2)
+                          | Ast.RbNil x0 ->
+                              Ast.ExApp (_loc,
+                                Ast.ExId (_loc,
+                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
+                                    Ast.IdUid (_loc, "RbNil"))),
+                                meta_acc_Loc_t _loc x0)
                         and meta_sig_item _loc =
                           function
                           | Ast.SgAnt (x0, x1) -> Ast.ExAnt (x0, x1)
@@ -7835,17 +7879,6 @@ module Struct =
                                     meta_acc_Loc_t _loc x0),
                                   meta_patt _loc x1),
                                 meta_expr _loc x2)
-                          | Ast.BiSem (x0, x1, x2) ->
-                              Ast.PaApp (_loc,
-                                Ast.PaApp (_loc,
-                                  Ast.PaApp (_loc,
-                                    Ast.PaId (_loc,
-                                      Ast.IdAcc (_loc,
-                                        Ast.IdUid (_loc, "Ast"),
-                                        Ast.IdUid (_loc, "BiSem"))),
-                                    meta_acc_Loc_t _loc x0),
-                                  meta_binding _loc x1),
-                                meta_binding _loc x2)
                           | Ast.BiAnd (x0, x1, x2) ->
                               Ast.PaApp (_loc,
                                 Ast.PaApp (_loc,
@@ -8679,7 +8712,7 @@ module Struct =
                                         Ast.IdUid (_loc, "Ast"),
                                         Ast.IdUid (_loc, "ExRec"))),
                                     meta_acc_Loc_t _loc x0),
-                                  meta_binding _loc x1),
+                                  meta_rec_binding _loc x1),
                                 meta_expr _loc x2)
                           | Ast.ExOvr (x0, x1) ->
                               Ast.PaApp (_loc,
@@ -8688,7 +8721,7 @@ module Struct =
                                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                       Ast.IdUid (_loc, "ExOvr"))),
                                   meta_acc_Loc_t _loc x0),
-                                meta_binding _loc x1)
+                                meta_rec_binding _loc x1)
                           | Ast.ExOlb (x0, x1, x2) ->
                               Ast.PaApp (_loc,
                                 Ast.PaApp (_loc,
@@ -9470,6 +9503,37 @@ module Struct =
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "PaNil"))),
                                 meta_acc_Loc_t _loc x0)
+                        and meta_rec_binding _loc =
+                          function
+                          | Ast.RbAnt (x0, x1) -> Ast.PaAnt (x0, x1)
+                          | Ast.RbEq (x0, x1, x2) ->
+                              Ast.PaApp (_loc,
+                                Ast.PaApp (_loc,
+                                  Ast.PaApp (_loc,
+                                    Ast.PaId (_loc,
+                                      Ast.IdAcc (_loc,
+                                        Ast.IdUid (_loc, "Ast"),
+                                        Ast.IdUid (_loc, "RbEq"))),
+                                    meta_acc_Loc_t _loc x0),
+                                  meta_ident _loc x1),
+                                meta_expr _loc x2)
+                          | Ast.RbSem (x0, x1, x2) ->
+                              Ast.PaApp (_loc,
+                                Ast.PaApp (_loc,
+                                  Ast.PaApp (_loc,
+                                    Ast.PaId (_loc,
+                                      Ast.IdAcc (_loc,
+                                        Ast.IdUid (_loc, "Ast"),
+                                        Ast.IdUid (_loc, "RbSem"))),
+                                    meta_acc_Loc_t _loc x0),
+                                  meta_rec_binding _loc x1),
+                                meta_rec_binding _loc x2)
+                          | Ast.RbNil x0 ->
+                              Ast.PaApp (_loc,
+                                Ast.PaId (_loc,
+                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
+                                    Ast.IdUid (_loc, "RbNil"))),
+                                meta_acc_Loc_t _loc x0)
                         and meta_sig_item _loc =
                           function
                           | Ast.SgAnt (x0, x1) -> Ast.PaAnt (x0, x1)
@@ -9877,6 +9941,15 @@ module Struct =
                   | SgVal (_x0, _x1, _x2) ->
                       SgVal (o#_Loc_t _x0, o#string _x1, o#ctyp _x2)
                   | SgAnt (_x0, _x1) -> SgAnt (o#_Loc_t _x0, o#string _x1)
+                method rec_binding : rec_binding -> rec_binding =
+                  function
+                  | RbNil _x0 -> RbNil (o#_Loc_t _x0)
+                  | RbSem (_x0, _x1, _x2) ->
+                      RbSem (o#_Loc_t _x0, o#rec_binding _x1,
+                        o#rec_binding _x2)
+                  | RbEq (_x0, _x1, _x2) ->
+                      RbEq (o#_Loc_t _x0, o#ident _x1, o#expr _x2)
+                  | RbAnt (_x0, _x1) -> RbAnt (o#_Loc_t _x0, o#string _x1)
                 method patt : patt -> patt =
                   function
                   | PaNil _x0 -> PaNil (o#_Loc_t _x0)
@@ -10051,9 +10124,10 @@ module Struct =
                       ExObj (o#_Loc_t _x0, o#patt _x1, o#class_str_item _x2)
                   | ExOlb (_x0, _x1, _x2) ->
                       ExOlb (o#_Loc_t _x0, o#string _x1, o#expr _x2)
-                  | ExOvr (_x0, _x1) -> ExOvr (o#_Loc_t _x0, o#binding _x1)
+                  | ExOvr (_x0, _x1) ->
+                      ExOvr (o#_Loc_t _x0, o#rec_binding _x1)
                   | ExRec (_x0, _x1, _x2) ->
-                      ExRec (o#_Loc_t _x0, o#binding _x1, o#expr _x2)
+                      ExRec (o#_Loc_t _x0, o#rec_binding _x1, o#expr _x2)
                   | ExSeq (_x0, _x1) -> ExSeq (o#_Loc_t _x0, o#expr _x1)
                   | ExSnd (_x0, _x1, _x2) ->
                       ExSnd (o#_Loc_t _x0, o#expr _x1, o#string _x2)
@@ -10225,8 +10299,6 @@ module Struct =
                   | BiNil _x0 -> BiNil (o#_Loc_t _x0)
                   | BiAnd (_x0, _x1, _x2) ->
                       BiAnd (o#_Loc_t _x0, o#binding _x1, o#binding _x2)
-                  | BiSem (_x0, _x1, _x2) ->
-                      BiSem (o#_Loc_t _x0, o#binding _x1, o#binding _x2)
                   | BiEq (_x0, _x1, _x2) ->
                       BiEq (o#_Loc_t _x0, o#patt _x1, o#expr _x2)
                   | BiAnt (_x0, _x1) -> BiAnt (o#_Loc_t _x0, o#string _x1)
@@ -10317,6 +10389,14 @@ module Struct =
                   | SgVal (_x0, _x1, _x2) ->
                       ((o#_Loc_t _x0)#string _x1)#ctyp _x2
                   | SgAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
+                method rec_binding : rec_binding -> 'self_type =
+                  function
+                  | RbNil _x0 -> o#_Loc_t _x0
+                  | RbSem (_x0, _x1, _x2) ->
+                      ((o#_Loc_t _x0)#rec_binding _x1)#rec_binding _x2
+                  | RbEq (_x0, _x1, _x2) ->
+                      ((o#_Loc_t _x0)#ident _x1)#expr _x2
+                  | RbAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
                 method patt : patt -> 'self_type =
                   function
                   | PaNil _x0 -> o#_Loc_t _x0
@@ -10479,9 +10559,9 @@ module Struct =
                       ((o#_Loc_t _x0)#patt _x1)#class_str_item _x2
                   | ExOlb (_x0, _x1, _x2) ->
                       ((o#_Loc_t _x0)#string _x1)#expr _x2
-                  | ExOvr (_x0, _x1) -> (o#_Loc_t _x0)#binding _x1
+                  | ExOvr (_x0, _x1) -> (o#_Loc_t _x0)#rec_binding _x1
                   | ExRec (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#binding _x1)#expr _x2
+                      ((o#_Loc_t _x0)#rec_binding _x1)#expr _x2
                   | ExSeq (_x0, _x1) -> (o#_Loc_t _x0)#expr _x1
                   | ExSnd (_x0, _x1, _x2) ->
                       ((o#_Loc_t _x0)#expr _x1)#string _x2
@@ -10637,8 +10717,6 @@ module Struct =
                   | BiNil _x0 -> o#_Loc_t _x0
                   | BiAnd (_x0, _x1, _x2) ->
                       ((o#_Loc_t _x0)#binding _x1)#binding _x2
-                  | BiSem (_x0, _x1, _x2) ->
-                      ((o#_Loc_t _x0)#binding _x1)#binding _x2
                   | BiEq (_x0, _x1, _x2) ->
                       ((o#_Loc_t _x0)#patt _x1)#expr _x2
                   | BiAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
@@ -10685,7 +10763,8 @@ module Struct =
               | Tag_sig_item | Tag_with_constr | Tag_module_expr
               | Tag_str_item | Tag_class_type | Tag_class_sig_item
               | Tag_class_expr | Tag_class_str_item | Tag_match_case
-              | Tag_ident | Tag_binding | Tag_module_binding
+              | Tag_ident | Tag_binding | Tag_rec_binding
+              | Tag_module_binding
             let string_of_tag =
               function
               | Tag_ctyp -> "ctyp"
@@ -10703,6 +10782,7 @@ module Struct =
               | Tag_match_case -> "match_case"
               | Tag_ident -> "ident"
               | Tag_binding -> "binding"
+              | Tag_rec_binding -> "rec_binding"
               | Tag_module_binding -> "module_binding"
             let ctyp_tag = Tag_ctyp
             let patt_tag = Tag_patt
@@ -10719,6 +10799,7 @@ module Struct =
             let match_case_tag = Tag_match_case
             let ident_tag = Tag_ident
             let binding_tag = Tag_binding
+            let rec_binding_tag = Tag_rec_binding
             let module_binding_tag = Tag_module_binding
             type dyn
             external dyn_tag : 'a tag -> dyn tag = "%identity"
@@ -11636,7 +11717,7 @@ module Struct =
                   mkexp loc (Pexp_override (mkideexp iel []))
               | ExRec (loc, lel, eo) ->
                   (match lel with
-                   | Ast.BiNil _ -> error loc "empty record"
+                   | Ast.RbNil _ -> error loc "empty record"
                    | _ ->
                        let eo =
                          (match eo with
@@ -11706,8 +11787,7 @@ module Struct =
               | e -> ("", (expr e))
             and binding x acc =
               match x with
-              | Ast.BiAnd (_, x, y) | Ast.BiSem (_, x, y) ->
-                  binding x (binding y acc)
+              | Ast.BiAnd (_, x, y) -> binding x (binding y acc)
               | Ast.BiEq (_, p, e) -> ((patt p), (expr e)) :: acc
               | Ast.BiNil _ -> acc
               | _ -> assert false
@@ -11723,17 +11803,14 @@ module Struct =
               | w -> mkexp (loc_of_expr w) (Pexp_when (expr w, expr e))
             and mklabexp x acc =
               match x with
-              | Ast.BiAnd (_, x, y) | Ast.BiSem (_, x, y) ->
-                  mklabexp x (mklabexp y acc)
-              | Ast.BiEq (_, (Ast.PaId (_, i)), e) ->
+              | Ast.RbSem (_, x, y) -> mklabexp x (mklabexp y acc)
+              | Ast.RbEq (_, i, e) ->
                   ((ident ~conv_lid: conv_lab i), (expr e)) :: acc
               | _ -> assert false
             and mkideexp x acc =
               match x with
-              | Ast.BiAnd (_, x, y) | Ast.BiSem (_, x, y) ->
-                  mkideexp x (mkideexp y acc)
-              | Ast.BiEq (_, (Ast.PaId (_, (Ast.IdLid (_, s)))), e) ->
-                  (s, (expr e)) :: acc
+              | Ast.RbSem (_, x, y) -> mkideexp x (mkideexp y acc)
+              | Ast.RbEq (_, (Ast.IdLid (_, s)), e) -> (s, (expr e)) :: acc
               | _ -> assert false
             and mktype_decl x acc =
               match x with
@@ -12087,7 +12164,7 @@ module Struct =
                 method expr =
                   function
                   | Ast.ExLet (_, _, (Ast.BiNil _), e) |
-                      Ast.ExRec (_, (Ast.BiNil _), e) |
+                      Ast.ExRec (_, (Ast.RbNil _), e) |
                       Ast.ExCom (_, (Ast.ExNil _), e) |
                       Ast.ExCom (_, e, (Ast.ExNil _)) |
                       Ast.ExSem (_, (Ast.ExNil _), e) |
@@ -12111,10 +12188,13 @@ module Struct =
                 method binding =
                   function
                   | Ast.BiAnd (_, (Ast.BiNil _), bi) |
-                      Ast.BiAnd (_, bi, (Ast.BiNil _)) |
-                      Ast.BiSem (_, (Ast.BiNil _), bi) |
-                      Ast.BiSem (_, bi, (Ast.BiNil _)) -> self#binding bi
+                      Ast.BiAnd (_, bi, (Ast.BiNil _)) -> self#binding bi
                   | bi -> super#binding bi
+                method rec_binding =
+                  function
+                  | Ast.RbSem (_, (Ast.RbNil _), bi) |
+                      Ast.RbSem (_, bi, (Ast.RbNil _)) -> self#rec_binding bi
+                  | bi -> super#rec_binding bi
                 method module_binding =
                   function
                   | Ast.MbAnd (_, (Ast.MbNil _), mb) |
@@ -12335,7 +12415,7 @@ module Struct =
             module S = Set.Make(String)
             let rec fold_binding_vars f bi acc =
               match bi with
-              | Ast.BiAnd (_, bi1, bi2) | Ast.BiSem (_, bi1, bi2) ->
+              | Ast.BiAnd (_, bi1, bi2) ->
                   fold_binding_vars f bi1 (fold_binding_vars f bi2 acc)
               | Ast.BiEq (_, (Ast.PaId (_, (Ast.IdLid (_, i)))), _) ->
                   f i acc
@@ -14692,7 +14772,7 @@ module Printers =
                       method intlike : formatter -> string -> unit
                       method binding : formatter -> Ast.binding -> unit
                       method record_binding :
-                        formatter -> Ast.binding -> unit
+                        formatter -> Ast.rec_binding -> unit
                       method match_case : formatter -> Ast.match_case -> unit
                       method match_case_aux :
                         formatter -> Ast.match_case -> unit
@@ -14775,7 +14855,7 @@ module Printers =
           struct
             let name = "Camlp4.Printers.OCaml"
             let version =
-              "$Id: OCaml.ml,v 1.21.2.4 2007/04/02 07:36:38 pouillar Exp $"
+              "$Id: OCaml.ml,v 1.21.2.5 2007/04/20 14:57:28 pouillar Exp $"
           end
         module Make (Syntax : Sig.Camlp4Syntax) =
           struct
@@ -15038,21 +15118,19 @@ module Printers =
                              | _ ->
                                  pp f "%a @[<0>%a=@]@ %a" o#simple_patt p
                                    (list' o#simple_patt "" "@ ") pl o#expr e)
-                      | Ast.BiSem (_, _, _) -> assert false
                       | Ast.BiAnt (_, s) -> o#anti f s
                 method record_binding =
                   fun f bi ->
-                    let () = o#node f bi Ast.loc_of_binding
+                    let () = o#node f bi Ast.loc_of_rec_binding
                     in
                       match bi with
-                      | Ast.BiNil _ -> ()
-                      | Ast.BiEq (_, p, e) ->
-                          pp f "@ @[<2>%a =@ %a@];" o#simple_patt p o#expr e
-                      | Ast.BiSem (_, b1, b2) ->
+                      | Ast.RbNil _ -> ()
+                      | Ast.RbEq (_, i, e) ->
+                          pp f "@ @[<2>%a =@ %a@];" o#var_ident i o#expr e
+                      | Ast.RbSem (_, b1, b2) ->
                           (o#under_semi#record_binding f b1;
                            o#under_semi#record_binding f b2)
-                      | Ast.BiAnd (_, _, _) -> assert false
-                      | Ast.BiAnt (_, s) -> o#anti f s
+                      | Ast.RbAnt (_, s) -> o#anti f s
                 method object_dup =
                   fun f ->
                     list
@@ -16539,6 +16617,7 @@ module OCamlInitSyntax =
         let class_expr_quot = Gram.Entry.mk "quotation of class expression"
         let with_constr_quot = Gram.Entry.mk "quotation of with constraint"
         let binding_quot = Gram.Entry.mk "quotation of binding"
+        let rec_binding_quot = Gram.Entry.mk "quotation of record binding"
         let match_case_quot =
           Gram.Entry.mk "quotation of match_case (try/match/function case)"
         let module_binding_quot =

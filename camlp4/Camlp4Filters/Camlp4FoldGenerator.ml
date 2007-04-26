@@ -202,9 +202,9 @@ module Make (AstFilters : Camlp4.Sig.AstFilters) = struct
   and record_binding_of_type =
     fun
     [ <:ctyp< $lid:s$ : mutable $t$ >> | <:ctyp< $lid:s$ : $t$ >> ->
-         <:binding< $lid:s$ = $expr_of_ty (Some <:expr< $lid:xs s$ >>) t$ >>
+         <:rec_binding< $lid:s$ = $expr_of_ty (Some <:expr< $lid:xs s$ >>) t$ >>
     | <:ctyp< $t1$ ; $t2$ >> ->
-         <:binding< $record_binding_of_type t1$; $record_binding_of_type t2$ >>
+         <:rec_binding< $record_binding_of_type t1$; $record_binding_of_type t2$ >>
     | _ -> assert False ]
 
   and fun_of_ctyp tyid =

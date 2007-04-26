@@ -283,20 +283,18 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
                 (list o#simple_patt "@ ") [p::pl] o#ctyp t o#expr e
           | _ -> pp f "%a @[<0>%a=@]@ %a" o#simple_patt
                     p (list' o#simple_patt "" "@ ") pl o#expr e ]
-      | <:binding< $_$ ; $_$ >> -> assert False
       | <:binding< $anti:s$ >> -> o#anti f s ];
 
     method record_binding f bi =
-      let () = o#node f bi Ast.loc_of_binding in
+      let () = o#node f bi Ast.loc_of_rec_binding in
       match bi with
-      [ <:binding<>> -> ()
-      | <:binding< $p$ = $e$ >> ->
-          pp f "@ @[<2>%a =@ %a@];" o#simple_patt p o#expr e
-      | <:binding< $b1$ ; $b2$ >> ->
+      [ <:rec_binding<>> -> ()
+      | <:rec_binding< $i$ = $e$ >> ->
+          pp f "@ @[<2>%a =@ %a@];" o#var_ident i o#expr e
+      | <:rec_binding< $b1$ ; $b2$ >> ->
           do { o#under_semi#record_binding f b1;
                o#under_semi#record_binding f b2 }
-      | <:binding< $_$ and $_$ >> -> assert False
-      | <:binding< $anti:s$ >> -> o#anti f s ];
+      | <:rec_binding< $anti:s$ >> -> o#anti f s ];
 
     method object_dup f =
       list (fun f (s, e) -> pp f "@[<2>%a =@ %a@]" o#var s o#expr e) ";@ " f;

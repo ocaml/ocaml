@@ -186,6 +186,7 @@ module Make (Ast     : Sig.Camlp4Ast)
   value class_expr_quot = Gram.Entry.mk "quotation of class expression";
   value with_constr_quot = Gram.Entry.mk "quotation of with constraint";
   value binding_quot = Gram.Entry.mk "quotation of binding";
+  value rec_binding_quot = Gram.Entry.mk "quotation of record binding";
   value match_case_quot = Gram.Entry.mk "quotation of match_case (try/match/function case)";
   value module_binding_quot = Gram.Entry.mk "quotation of module rec binding";
   value ident_quot = Gram.Entry.mk "quotation of identifier";

@@ -689,7 +689,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | ExOvr loc iel -> mkexp loc (Pexp_override (mkideexp iel []))
     | ExRec loc lel eo ->
         match lel with
-        [ <:binding<>> -> error loc "empty record"
+        [ <:rec_binding<>> -> error loc "empty record"
         | _ ->
           let eo =
             match eo with
@@ -748,7 +748,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | e -> ("", expr e) ]
   and binding x acc =
     match x with
-    [ <:binding< $x$ and $y$ >> | <:binding< $x$; $y$ >> ->
+    [ <:binding< $x$ and $y$ >> ->
          binding x (binding y acc)
     | <:binding< $p$ = $e$ >> -> [(patt p, expr e) :: acc]
     | <:binding<>> -> acc
@@ -766,15 +766,15 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | w -> mkexp (loc_of_expr w) (Pexp_when (expr w) (expr e)) ]
   and mklabexp x acc =
     match x with
-    [ <:binding< $x$ and $y$ >> | <:binding< $x$; $y$ >> ->
+    [ <:rec_binding< $x$; $y$ >> ->
          mklabexp x (mklabexp y acc)
-    | <:binding< $id:i$ = $e$ >> -> [(ident ~conv_lid:conv_lab i, expr e) :: acc]
+    | <:rec_binding< $i$ = $e$ >> -> [(ident ~conv_lid:conv_lab i, expr e) :: acc]
     | _ -> assert False ]
   and mkideexp x acc =
     match x with
-    [ <:binding< $x$ and $y$ >> | <:binding< $x$; $y$ >> ->
+    [ <:rec_binding< $x$; $y$ >> ->
          mkideexp x (mkideexp y acc)
-    | <:binding< $lid:s$ = $e$ >> -> [(s, expr e) :: acc]
+    | <:rec_binding< $lid:s$ = $e$ >> -> [(s, expr e) :: acc]
     | _ -> assert False ]
   and mktype_decl x acc =
     match x with

@@ -683,8 +683,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       ] ]
     ;
     label_expr:
-      [ [ p = label_longident; "="; e = expr LEVEL "top" ->
-            <:binding< $id:p$ = $e$ >> ] ]
+      [ [ i = label_longident; "="; e = expr LEVEL "top" ->
+            <:rec_binding< $i$ = $e$ >> ] ]
     ;
     a_UIDENT:
       [ [ `ANTIQUOT (""|"uid" as n) s -> mk_anti n s

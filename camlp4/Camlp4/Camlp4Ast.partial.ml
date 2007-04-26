@@ -128,9 +128,9 @@
       (* ?s or ?s:e *)
     | ExOlb of Loc.t and string and expr
       (* {< b >} *)
-    | ExOvr of Loc.t and binding
+    | ExOvr of Loc.t and rec_binding
       (* { b } or { (e) with b } *)
-    | ExRec of Loc.t and binding and expr
+    | ExRec of Loc.t and rec_binding and expr
       (* do { e } *)
     | ExSeq of Loc.t and expr
       (* e#s *)
@@ -205,11 +205,16 @@
     [ BiNil of Loc.t
       (* b and b *) (* let a = 42 and c = 43 *)
     | BiAnd of Loc.t and binding and binding
-      (* b ; b *)
-    | BiSem of Loc.t and binding and binding
       (* p = e *) (* let patt = expr *)
     | BiEq  of Loc.t and patt and expr
     | BiAnt of Loc.t and string (* $s$ *) ]
+  and rec_binding =
+    [ RbNil of Loc.t
+      (* b ; b *)
+    | RbSem of Loc.t and rec_binding and rec_binding
+      (* i = e *)
+    | RbEq  of Loc.t and ident and expr
+    | RbAnt of Loc.t and string (* $s$ *) ]
   and module_binding =
     [ MbNil of Loc.t
       (* mb and mb *) (* module rec (s : mt) = me and (s : mt) = me *)

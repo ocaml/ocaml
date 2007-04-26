@@ -23,7 +23,7 @@ module R =
       struct
         let name = "Camlp4RevisedParserParser"
         let version =
-          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.13 2007/04/08 14:46:23 pouillar Exp $"
+          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.14 2007/04/20 14:57:28 pouillar Exp $"
       end
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
@@ -68,6 +68,7 @@ Old (no more supported) syntax:
         let _ = Gram.Entry.clear match_case_quot
         let _ = Gram.Entry.clear binding
         let _ = Gram.Entry.clear binding_quot
+        let _ = Gram.Entry.clear rec_binding_quot
         let _ = Gram.Entry.clear class_declaration
         let _ = Gram.Entry.clear class_description
         let _ = Gram.Entry.clear class_expr
@@ -689,6 +690,7 @@ Old (no more supported) syntax:
           and _ = (a_OPTLABEL : 'a_OPTLABEL Gram.Entry.t)
           and _ = (a_NATIVEINT : 'a_NATIVEINT Gram.Entry.t)
           and _ = (a_LIDENT_or_operator : 'a_LIDENT_or_operator Gram.Entry.t)
+          and _ = (rec_binding_quot : 'rec_binding_quot Gram.Entry.t)
           and _ = (a_LIDENT : 'a_LIDENT Gram.Entry.t)
           and _ = (a_LABEL : 'a_LABEL Gram.Entry.t)
           and _ = (a_INT64 : 'a_INT64 Gram.Entry.t)
@@ -2052,7 +2054,7 @@ Old (no more supported) syntax:
                          ([ Gram.Skeyword "{<"; Gram.Skeyword ">}" ],
                           (Gram.Action.mk
                              (fun _ _ (_loc : Loc.t) ->
-                                (Ast.ExOvr (_loc, Ast.BiNil _loc) : 'expr))));
+                                (Ast.ExOvr (_loc, Ast.RbNil _loc) : 'expr))));
                          ([ Gram.Skeyword "{"; Gram.Skeyword "("; Gram.Sself;
                             Gram.Skeyword ")"; Gram.Skeyword "with";
                             Gram.Snterm
@@ -2685,7 +2687,7 @@ Old (no more supported) syntax:
              Gram.extend (label_expr : 'label_expr Gram.Entry.t)
                ((fun () ->
                    (None,
-                    [ (None, (Some Camlp4.Sig.Grammar.LeftA),
+                    [ (None, None,
                        [ ([ Gram.Snterm
                               (Gram.Entry.obj
                                  (label_longident :
@@ -2694,10 +2696,9 @@ Old (no more supported) syntax:
                               (Gram.Entry.obj
                                  (fun_binding : 'fun_binding Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun (e : 'fun_binding) (p : 'label_longident)
+                             (fun (e : 'fun_binding) (i : 'label_longident)
                                 (_loc : Loc.t) ->
-                                (Ast.BiEq (_loc, Ast.PaId (_loc, p), e) :
-                                  'label_expr))));
+                                (Ast.RbEq (_loc, i, e) : 'label_expr))));
                          ([ Gram.Stoken
                               (((function
                                  | ANTIQUOT ("list", _) -> true
@@ -2708,31 +2709,62 @@ Old (no more supported) syntax:
                                 ->
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("list" as n)), s) ->
-                                    (Ast.BiAnt (_loc,
-                                       mk_anti ~c: "binding;" n s) :
+                                    (Ast.RbAnt (_loc,
+                                       mk_anti ~c: "rec_binding" n s) :
                                       'label_expr)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
                               (((function
-                                 | ANTIQUOT (("" | "binding" | "anti"), _) ->
-                                     true
+                                 | ANTIQUOT (("" | "anti"), _) -> true
                                  | _ -> false),
-                                "ANTIQUOT ((\"\" | \"binding\" | \"anti\"), _)")) ],
+                                "ANTIQUOT ((\"\" | \"anti\"), _)"));
+                            Gram.Skeyword "=";
+                            Gram.Snterm
+                              (Gram.Entry.obj (expr : 'expr Gram.Entry.t)) ],
+                          (Gram.Action.mk
+                             (fun (e : 'expr) _ (__camlp4_0 : Gram.Token.t)
+                                (_loc : Loc.t) ->
+                                match __camlp4_0 with
+                                | ANTIQUOT ((("" | "anti" as n)), s) ->
+                                    (Ast.RbEq (_loc,
+                                       Ast.IdAnt (_loc,
+                                         mk_anti ~c: "ident" n s),
+                                       e) :
+                                      'label_expr)
+                                | _ -> assert false)));
+                         ([ Gram.Stoken
+                              (((function
+                                 | ANTIQUOT (("" | "anti"), _) -> true
+                                 | _ -> false),
+                                "ANTIQUOT ((\"\" | \"anti\"), _)")) ],
                           (Gram.Action.mk
                              (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
                                 ->
                                 match __camlp4_0 with
-                                | ANTIQUOT ((("" | "binding" | "anti" as n)),
-                                    s) ->
-                                    (Ast.BiAnt (_loc,
-                                       mk_anti ~c: "binding" n s) :
+                                | ANTIQUOT ((("" | "anti" as n)), s) ->
+                                    (Ast.RbAnt (_loc,
+                                       mk_anti ~c: "rec_binding" n s) :
+                                      'label_expr)
+                                | _ -> assert false)));
+                         ([ Gram.Stoken
+                              (((function
+                                 | ANTIQUOT ("rec_binding", _) -> true
+                                 | _ -> false),
+                                "ANTIQUOT (\"rec_binding\", _)")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | ANTIQUOT ((("rec_binding" as n)), s) ->
+                                    (Ast.RbAnt (_loc,
+                                       mk_anti ~c: "rec_binding" n s) :
                                       'label_expr)
                                 | _ -> assert false)));
                          ([ Gram.Sself; Gram.Skeyword ";"; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (b2 : 'label_expr) _ (b1 : 'label_expr)
                                 (_loc : Loc.t) ->
-                                (Ast.BiSem (_loc, b1, b2) : 'label_expr)))) ]) ]))
+                                (Ast.RbSem (_loc, b1, b2) : 'label_expr)))) ]) ]))
                   ());
              Gram.extend (fun_def : 'fun_def Gram.Entry.t)
                ((fun () ->
@@ -5726,8 +5758,7 @@ Old (no more supported) syntax:
                           (Gram.Action.mk
                              (fun (e : 'expr) _ (l : 'label) (_loc : Loc.t)
                                 ->
-                                (Ast.BiEq (_loc,
-                                   Ast.PaId (_loc, Ast.IdLid (_loc, l)), e) :
+                                (Ast.RbEq (_loc, Ast.IdLid (_loc, l), e) :
                                   'field_expr))));
                          ([ Gram.Stoken
                               (((function
@@ -5739,8 +5770,8 @@ Old (no more supported) syntax:
                                 ->
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("list" as n)), s) ->
-                                    (Ast.BiAnt (_loc,
-                                       mk_anti ~c: "binding;" n s) :
+                                    (Ast.RbAnt (_loc,
+                                       mk_anti ~c: "rec_binding" n s) :
                                       'field_expr)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
@@ -5754,15 +5785,15 @@ Old (no more supported) syntax:
                                 match __camlp4_0 with
                                 | ANTIQUOT ((("" | "bi" | "anti" as n)), s)
                                     ->
-                                    (Ast.BiAnt (_loc,
-                                       mk_anti ~c: "binding" n s) :
+                                    (Ast.RbAnt (_loc,
+                                       mk_anti ~c: "rec_binding" n s) :
                                       'field_expr)
                                 | _ -> assert false)));
                          ([ Gram.Sself; Gram.Skeyword ";"; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (b2 : 'field_expr) _ (b1 : 'field_expr)
                                 (_loc : Loc.t) ->
-                                (Ast.BiSem (_loc, b1, b2) : 'field_expr)))) ]) ]))
+                                (Ast.RbSem (_loc, b1, b2) : 'field_expr)))) ]) ]))
                   ());
              Gram.extend (meth_list : 'meth_list Gram.Entry.t)
                ((fun () ->
@@ -7443,26 +7474,25 @@ Old (no more supported) syntax:
                                 (Ast.BiNil _loc : 'binding_quot))));
                          ([ Gram.Snterm
                               (Gram.Entry.obj
-                                 (label_expr : 'label_expr Gram.Entry.t)) ],
-                          (Gram.Action.mk
-                             (fun (x : 'label_expr) (_loc : Loc.t) ->
-                                (x : 'binding_quot))));
-                         ([ Gram.Snterm
-                              (Gram.Entry.obj
                                  (binding : 'binding Gram.Entry.t)) ],
                           (Gram.Action.mk
                              (fun (x : 'binding) (_loc : Loc.t) ->
-                                (x : 'binding_quot))));
-                         ([ Gram.Sself; Gram.Skeyword ";"; Gram.Sself ],
+                                (x : 'binding_quot)))) ]) ]))
+                  ());
+             Gram.extend (rec_binding_quot : 'rec_binding_quot Gram.Entry.t)
+               ((fun () ->
+                   (None,
+                    [ (None, None,
+                       [ ([],
                           (Gram.Action.mk
-                             (fun (b2 : 'binding_quot) _ (b1 : 'binding_quot)
-                                (_loc : Loc.t) ->
-                                (Ast.BiSem (_loc, b1, b2) : 'binding_quot))));
-                         ([ Gram.Sself; Gram.Skeyword "and"; Gram.Sself ],
+                             (fun (_loc : Loc.t) ->
+                                (Ast.RbNil _loc : 'rec_binding_quot))));
+                         ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (label_expr : 'label_expr Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun (b2 : 'binding_quot) _ (b1 : 'binding_quot)
-                                (_loc : Loc.t) ->
-                                (Ast.BiAnd (_loc, b1, b2) : 'binding_quot)))) ]) ]))
+                             (fun (x : 'label_expr) (_loc : Loc.t) ->
+                                (x : 'rec_binding_quot)))) ]) ]))
                   ());
              Gram.extend
                (module_binding_quot : 'module_binding_quot Gram.Entry.t)
@@ -8057,6 +8087,14 @@ module Camlp4QuotationCommon =
                                      Ast.IdUid (_loc, "BiAnt"))),
                                  mloc _loc),
                                p)
+                         | "antirec_binding" ->
+                             Ast.PaApp (_loc,
+                               Ast.PaApp (_loc,
+                                 Ast.PaId (_loc,
+                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
+                                     Ast.IdUid (_loc, "RbAnt"))),
+                                 mloc _loc),
+                               p)
                          | "antimatch_case" ->
                              Ast.PaApp (_loc,
                                Ast.PaApp (_loc,
@@ -8186,6 +8224,12 @@ module Camlp4QuotationCommon =
                                Ast.ExId (_loc,
                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                    Ast.IdLid (_loc, "biSem_of_list"))),
+                               e)
+                         | "listrec_binding" ->
+                             Ast.ExApp (_loc,
+                               Ast.ExId (_loc,
+                                 Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
+                                   Ast.IdLid (_loc, "rbSem_of_list"))),
                                e)
                          | "listclass_type" ->
                              Ast.ExApp (_loc,
@@ -8381,6 +8425,14 @@ module Camlp4QuotationCommon =
                                      Ast.IdUid (_loc, "BiAnt"))),
                                  mloc _loc),
                                e)
+                         | "antirec_binding" ->
+                             Ast.ExApp (_loc,
+                               Ast.ExApp (_loc,
+                                 Ast.ExId (_loc,
+                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
+                                     Ast.IdUid (_loc, "RbAnt"))),
+                                 mloc _loc),
+                               e)
                          | "antimatch_case" ->
                              Ast.ExApp (_loc,
                                Ast.ExApp (_loc,
@@ -8499,6 +8551,9 @@ module Camlp4QuotationCommon =
         let _ =
           add_quotation "binding" binding_quot ME.meta_binding MP.
             meta_binding
+        let _ =
+          add_quotation "rec_binding" rec_binding_quot ME.meta_rec_binding
+            MP.meta_rec_binding
         let _ =
           add_quotation "match_case" match_case_quot ME.meta_match_case MP.
             meta_match_case
@@ -9471,7 +9526,7 @@ module G =
       struct
         let name = "Camlp4GrammarParser"
         let version =
-          "$Id: Camlp4GrammarParser.ml,v 1.1.4.3 2007/03/30 15:50:12 pouillar Exp $"
+          "$Id: Camlp4GrammarParser.ml,v 1.1.4.4 2007/04/20 14:57:28 pouillar Exp $"
       end
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
@@ -11880,7 +11935,7 @@ module M =
       struct
         let name = "Camlp4MacroParser"
         let version =
-          "$Id: Camlp4MacroParser.ml,v 1.1.4.3 2007/04/17 13:47:54 pouillar Exp $"
+          "$Id: Camlp4MacroParser.ml,v 1.1.4.4 2007/04/20 14:57:28 pouillar Exp $"
       end
     (*
 Added statements:
@@ -11981,10 +12036,9 @@ Added statements:
             | Ast.ExRec (_, bi, (Ast.ExNil _)) ->
                 let rec substbi =
                   (function
-                   | Ast.BiSem (_, b1, b2) ->
+                   | Ast.RbSem (_, b1, b2) ->
                        Ast.PaSem (_loc, substbi b1, substbi b2)
-                   | Ast.BiEq (_, p, e) ->
-                       Ast.PaEq (_loc, Ast.ident_of_patt p, loop e)
+                   | Ast.RbEq (_, i, e) -> Ast.PaEq (_loc, i, loop e)
                    | _ -> bad_patt _loc)
                 in Ast.PaRec (_loc, substbi bi)
             | _ -> bad_patt _loc

@@ -35,6 +35,7 @@ module Make (Ast : Sig.Ast) : Sig.DynAst with module Ast = Ast = struct
     | Tag_match_case
     | Tag_ident
     | Tag_binding
+    | Tag_rec_binding
     | Tag_module_binding ];
 
   value string_of_tag =
@@ -54,6 +55,7 @@ module Make (Ast : Sig.Ast) : Sig.DynAst with module Ast = Ast = struct
     | Tag_match_case -> "match_case"
     | Tag_ident -> "ident"
     | Tag_binding -> "binding"
+    | Tag_rec_binding -> "rec_binding"
     | Tag_module_binding -> "module_binding" ];
 
   value ctyp_tag = Tag_ctyp;
@@ -71,6 +73,7 @@ module Make (Ast : Sig.Ast) : Sig.DynAst with module Ast = Ast = struct
   value match_case_tag = Tag_match_case;
   value ident_tag = Tag_ident;
   value binding_tag = Tag_binding;
+  value rec_binding_tag = Tag_rec_binding;
   value module_binding_tag = Tag_module_binding;
 
   type dyn;
