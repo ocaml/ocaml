@@ -78,11 +78,16 @@ let ocamlopt_link_prog = ocamlopt_link N
 let ocamlopt_p tags deps out =
   let dirnames = List.union [] (List.map Pathname.dirname deps) in
   let include_flags = List.fold_right ocaml_add_include_flag dirnames [] in
-  let cmi = cmi_of out and cmitmp = Pathname.update_extensions "cmitmp" out in
-  Seq[mv cmi cmitmp;
-      Cmd (S [!Options.ocamlopt; A"-pack"; forpack_flags out tags; T tags; S include_flags;
-              atomize_paths deps; flags_of_pathname out; (* FIXME: P (cmi_of out);*) A"-o"; Px out]);
-      cmp cmitmp cmi]
+  let mli = Pathname.update_extensions "mli" out in
+  let cmd =
+    S [!Options.ocamlopt; A"-pack"; forpack_flags out tags; T tags;
+       S include_flags; atomize_paths deps; flags_of_pathname out;
+       A"-o"; Px out] in
+  if (*FIXME true ||*) Pathname.exists mli then Cmd cmd
+  else
+    let rm = S[A"rm"; A"-f"; P mli] in
+    Cmd(S[A"touch"; P mli; Sh" ; if "; cmd; Sh" ; then "; rm; Sh" ; else ";
+          rm; Sh" ; exit 1; fi"])
 
 let native_lib_linker tags =
   if Tags.mem "ocamlmklib" tags then

@@ -302,9 +302,7 @@ ocamlc.opt stack.cmo c.cmo d.cmo -o d.byte
 ocamlopt.opt -c -o stack.cmx stack.ml
 ocamlopt.opt -c -for-pack C -o a.cmx a.ml
 ocamlopt.opt -c -for-pack C -o b.cmx b.ml
-mv c.cmi c.cmitmp
-ocamlopt.opt -pack a.cmx b.cmx -o c.cmx
-cmp c.cmitmp c.cmi
+touch c.mli ; ocamlopt.opt -pack a.cmx b.cmx -o c.cmx ; rm -f c.mli
 ocamlopt.opt -c -o d.cmx d.ml
 ocamlopt.opt stack.cmx c.cmx d.cmx -o d.native
 + ../../_build/ocamlbuild.native d.byte d.native -no-skip -classic-display -verbose 0 -nothing-should-be-rebuilt
@@ -323,9 +321,7 @@ ocamlopt.opt stack.cmx c.cmx d.cmx -o d.native
 [cache hit] ocamlopt.opt -c -o stack.cmx stack.ml
 [cache hit] ocamlopt.opt -c -for-pack C -o a.cmx a.ml
 [cache hit] ocamlopt.opt -c -for-pack C -o b.cmx b.ml
-[cache hit] mv c.cmi c.cmitmp
-[cache hit] ocamlopt.opt -pack a.cmx b.cmx -o c.cmx
-[cache hit] cmp c.cmitmp c.cmi
+[cache hit] touch c.mli ; ocamlopt.opt -pack a.cmx b.cmx -o c.cmx ; rm -f c.mli
 [cache hit] ocamlopt.opt -c -o d.cmx d.ml
 [cache hit] ocamlopt.opt stack.cmx c.cmx d.cmx -o d.native
  _____         _    __
