@@ -2276,6 +2276,8 @@ let rec eqtype rename type_pairs subst env t1 t2 =
               with Not_found ->
                 subst := (t1', t2') :: !subst
               end
+	  | Text _, Text _ when !extmode ->
+	      ()
 	  | Text { ext_const = Some t1 }, Text { ext_const = Some t2 } ->
 	      if not (Cduce_types.Types.equiv t1 t2) then
 		raise (Unify [])
