@@ -191,6 +191,16 @@ module Make (AstFilters : Camlp4.Sig.AstFilters) = struct
          <:match_case< $uid:s$ -> o >>
     | _ -> assert False ]
 
+  and match_case_of_poly_sum_type =
+    fun
+    [ <:ctyp< $t1$ | $t2$ >> ->
+         <:match_case< $match_case_of_poly_sum_type t1$ | $match_case_of_poly_sum_type t2$ >>
+    | <:ctyp< `$i$ of $t$ >> ->
+         <:match_case< `$i$ x -> $expr_of_ty ~obj:<:expr< o >> (Some <:expr< x >>) t$ >>
+    | <:ctyp< `$i$ >> ->
+         <:match_case< `$i$ -> o >>
+    | _ -> assert False ]
+
   and record_patt_of_type =
     fun
     [ <:ctyp< $lid:s$ : $_$ >> ->
@@ -221,6 +231,10 @@ module Make (AstFilters : Camlp4.Sig.AstFilters) = struct
         let id1 = "_" ^ lid_of_ident "_" i in
         if id1 = tyid then <:expr< fun _ -> o >>
         else expr_of_ty None t
+    | <:ctyp< [ = $t$ ] >> | <:ctyp< [ < $t$ ] >> | <:ctyp< private [ < $t$ ] >> ->
+        <:expr< fun [ $match_case_of_poly_sum_type t$ ] >>
+    | <:ctyp< [ > $t$ ] >> | <:ctyp< private [ > $t$ ] >> ->
+        <:expr< fun [ $match_case_of_poly_sum_type t$ | x -> x ] >>
     | _ -> assert False ]
 
   and string_of_type_param t =
