@@ -130,7 +130,7 @@ let fork_for_pool () = match !pool_kont with
       Mutex.lock pool_mutex ;
       pool_kont := f :: !pool_kont ; incr pool_konts ;
       Mutex.unlock pool_mutex ;
-      prerr_endline "Threads exhausted" ;
+(*DEBUG*)debug1 "FORK" "DELAYED" ;
     end
 | [] ->
     Mutex.unlock pool_mutex
