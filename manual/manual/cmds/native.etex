@@ -425,15 +425,16 @@ piece of code that does not allocate, its handler will not be called
 until the next heap allocation.
 
 \item Stack overflow, typically caused by excessively deep recursion, 
-is handled in one of the three following ways, depending on the
+is handled in one of the following ways, depending on the
 platform used:
 \begin{itemize}
 \item By raising a "Stack_overflow" exception, like the bytecode
-  compiler does.  (IA32/Linux, AMD64/Linux, PowerPC/MacOSX.)
+  compiler does.  (IA32/Linux, AMD64/Linux, PowerPC/MacOSX, MS Windows
+  32-bit ports).
 \item By aborting the program on a ``segmentation fault'' signal.
 (All other Unix systems.)
 \item By terminating the program silently.
-(MS Windows ports.)
+(MS Windows 64 bits).
 \end{itemize}
 
 \item On IA32 processors only (Intel Pentium, AMD Athlon, etc, in
