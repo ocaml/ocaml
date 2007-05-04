@@ -26,19 +26,51 @@
 #include "mlvalues.h"
 #include "roots.h"
 #include "signals.h"
+#include "weak.h"
 
 asize_t caml_minor_heap_size;
 CAMLexport char *caml_young_start = NULL, *caml_young_end = NULL;
 CAMLexport char *caml_young_ptr = NULL, *caml_young_limit = NULL;
-static value **ref_table = NULL, **ref_table_end, **ref_table_threshold;
-CAMLexport value **caml_ref_table_ptr = NULL, **caml_ref_table_limit;
-static asize_t ref_table_size, ref_table_reserve;
+
+CAMLexport struct caml_ref_table
+  caml_ref_table = { NULL, NULL, NULL, NULL, NULL, 0, 0},
+  caml_weak_ref_table = { NULL, NULL, NULL, NULL, NULL, 0, 0};
+
 int caml_in_minor_collection = 0;
+
+void caml_alloc_table (struct caml_ref_table *tbl, asize_t sz, asize_t rsv)
+{
+  value **new_table;
+
+  tbl->size = sz;
+  tbl->reserve = rsv;
+  new_table = (value **) caml_stat_alloc ((tbl->size + tbl->reserve)
+                                          * sizeof (value *));
+  if (tbl->base != NULL) caml_stat_free (tbl->base);
+  tbl->base = new_table;
+  tbl->ptr = tbl->base;
+  tbl->threshold = tbl->base + tbl->size;
+  tbl->limit = tbl->threshold;
+  tbl->end = tbl->base + tbl->size + tbl->reserve;
+}
+
+static void reset_table (struct caml_ref_table *tbl)
+{
+  tbl->size = 0;
+  tbl->reserve = 0;
+  if (tbl->base != NULL) caml_stat_free (tbl->base);
+  tbl->base = tbl->ptr = tbl->threshold = tbl->limit = tbl->end = NULL;
+}
+
+static void clear_table (struct caml_ref_table *tbl)
+{
+    tbl->ptr = tbl->base;
+    tbl->limit = tbl->threshold;
+}
 
 void caml_set_minor_heap_size (asize_t size)
 {
   char *new_heap;
-  value **new_table;
 
   Assert (size >= Minor_heap_min);
   Assert (size <= Minor_heap_max);
@@ -55,16 +87,8 @@ void caml_set_minor_heap_size (asize_t size)
   caml_young_ptr = caml_young_end;
   caml_minor_heap_size = size;
 
-  ref_table_size = caml_minor_heap_size / sizeof (value) / 8;
-  ref_table_reserve = 256;
-  new_table = (value **) caml_stat_alloc ((ref_table_size + ref_table_reserve)
-                                          * sizeof (value *));
-  if (ref_table != NULL) caml_stat_free (ref_table);
-  ref_table = new_table;
-  caml_ref_table_ptr = ref_table;
-  ref_table_threshold = ref_table + ref_table_size;
-  caml_ref_table_limit = ref_table_threshold;
-  ref_table_end = ref_table + ref_table_size + ref_table_reserve;
+  reset_table (&caml_ref_table);
+  reset_table (&caml_weak_ref_table);
 }
 
 static value oldify_todo_list = 0;
@@ -187,16 +211,25 @@ void caml_empty_minor_heap (void)
     caml_in_minor_collection = 1;
     caml_gc_message (0x02, "<", 0);
     caml_oldify_local_roots();
-    for (r = ref_table; r < caml_ref_table_ptr; r++){
+    for (r = caml_ref_table.base; r < caml_ref_table.ptr; r++){
       caml_oldify_one (**r, *r);
     }
     caml_oldify_mopup ();
+    for (r = caml_weak_ref_table.base; r < caml_weak_ref_table.ptr; r++){
+      if (Is_block (**r) && Is_young (**r)){
+        if (Hd_val (**r) == 0){
+          **r = Field (**r, 0);
+        }else{
+          **r = caml_weak_none;
+        }
+      }
+    }
     if (caml_young_ptr < caml_young_start) caml_young_ptr = caml_young_start;
     caml_stat_minor_words += Wsize_bsize (caml_young_end - caml_young_ptr);
     caml_young_ptr = caml_young_end;
     caml_young_limit = caml_young_start;
-    caml_ref_table_ptr = ref_table;
-    caml_ref_table_limit = ref_table_threshold;
+    clear_table (&caml_ref_table);
+    clear_table (&caml_weak_ref_table);
     caml_gc_message (0x02, ">", 0);
     caml_in_minor_collection = 0;
   }
@@ -238,32 +271,34 @@ CAMLexport value caml_check_urgent_gc (value extra_root)
   CAMLreturn (extra_root);
 }
 
-void caml_realloc_ref_table (void)
-{                       Assert (caml_ref_table_ptr == caml_ref_table_limit);
-                             Assert (caml_ref_table_limit <= ref_table_end);
-                       Assert (caml_ref_table_limit >= ref_table_threshold);
+void caml_realloc_ref_table (struct caml_ref_table *tbl)
+{                                           Assert (tbl->ptr == tbl->limit);
+                                            Assert (tbl->limit <= tbl->end);
+                                      Assert (tbl->limit >= tbl->threshold);
 
-  if (caml_ref_table_limit == ref_table_threshold){
+  if (tbl->base == NULL){
+    caml_alloc_table (tbl, caml_minor_heap_size / sizeof (value) / 8, 256);
+  }else if (tbl->limit == tbl->threshold){
     caml_gc_message (0x08, "ref_table threshold crossed\n", 0);
-    caml_ref_table_limit = ref_table_end;
+    tbl->limit = tbl->end;
     caml_urge_major_slice ();
   }else{ /* This will almost never happen with the bytecode interpreter. */
     asize_t sz;
-    asize_t cur_ptr = caml_ref_table_ptr - ref_table;
+    asize_t cur_ptr = tbl->ptr - tbl->base;
                                              Assert (caml_force_major_slice);
 
-    ref_table_size *= 2;
-    sz = (ref_table_size + ref_table_reserve) * sizeof (value *);
-    caml_gc_message (0x08, "Growing ref_table to %" 
+    tbl->size *= 2;
+    sz = (tbl->size + tbl->reserve) * sizeof (value *);
+    caml_gc_message (0x08, "Growing ref_table to %"
                            ARCH_INTNAT_PRINTF_FORMAT "dk bytes\n",
                      (intnat) sz/1024);
-    ref_table = (value **) realloc ((char *) ref_table, sz);
-    if (ref_table == NULL){
+    tbl->base = (value **) realloc ((char *) tbl->base, sz);
+    if (tbl->base == NULL){
       caml_fatal_error ("Fatal error: ref_table overflow\n");
     }
-    ref_table_end = ref_table + ref_table_size + ref_table_reserve;
-    ref_table_threshold = ref_table + ref_table_size;
-    caml_ref_table_ptr = ref_table + cur_ptr;
-    caml_ref_table_limit = ref_table_end;
+    tbl->end = tbl->base + tbl->size + tbl->reserve;
+    tbl->threshold = tbl->base + tbl->size;
+    tbl->ptr = tbl->base + cur_ptr;
+    tbl->limit = tbl->end;
   }
 }

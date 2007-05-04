@@ -358,10 +358,10 @@ void caml_initialize (value *fp, value val)
 {
   *fp = val;
   if (Is_block (val) && Is_young (val) && Is_in_heap (fp)){
-    *caml_ref_table_ptr++ = fp;
-    if (caml_ref_table_ptr >= caml_ref_table_limit){
-      caml_realloc_ref_table ();
+    if (caml_ref_table.ptr >= caml_ref_table.limit){
+      caml_realloc_ref_table (&caml_ref_table);
     }
+    *caml_ref_table.ptr++ = fp;
   }
 }
 

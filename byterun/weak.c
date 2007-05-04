@@ -52,12 +52,20 @@ CAMLprim value caml_weak_set (value ar, value n, value el)
   if (offset < 1 || offset >= Wosize_val (ar)){
     caml_invalid_argument ("Weak.set");
   }
-  Field (ar, offset) = caml_weak_none;
   if (el != None_val){
     value v;                                  Assert (Wosize_val (el) == 1);
     v = Field (el, 0);
-    if (Is_block (v) && (Is_young (v) || Is_in_heap (v))){
-      Modify (&Field (ar, offset), v);
+    if (Is_block (v) && Is_young (v)){
+      /* modified version of Modify */
+      value old = Field (ar, offset);
+      Field (ar, offset) = v;
+      if (!(Is_block (old) && Is_young (old))){
+        if (caml_weak_ref_table.ptr >= caml_weak_ref_table.limit){
+          CAMLassert (caml_weak_ref_table.ptr == caml_weak_ref_table.limit);
+          caml_realloc_ref_table (&caml_weak_ref_table);
+        }
+        *caml_weak_ref_table.ptr++ = &Field (ar, offset);
+      }
     }else{
       Field (ar, offset) = v;
     }
