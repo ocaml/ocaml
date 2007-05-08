@@ -26,15 +26,17 @@
     As an example, consider the formatted input function [scanf] that reads
     from standard input; a typical call to [scanf] is simply [scanf fmt f],
     meaning that [f] should be applied to the arguments read according to the
-    format string [fmt]. For instance, if [f] is defined as [let f x = x + 1], then
-    [scanf "%d" f] will read a decimal integer [i] from [stdin] and return
-    [f i]; thus, if we enter [41] at the keyboard, [scanf "%d" f] evaluates to [42].
+    format string [fmt]. For instance, if [f] is defined as [let f x = x + 1],
+    then [scanf "%d" f] will read a decimal integer [i] from [stdin] and return
+    [f i]; thus, if we enter [41] at the keyboard, [scanf "%d" f] evaluates to
+    [42].
 
     This module provides general formatted input functions that reads from any
     kind of input, including strings, files, or anything that can return
-    characters.
-    Hence, a typical call to a formatted input function [bscan] is
-    [bscan ib fmt f], meaning that [f] should be applied to the arguments
+    characters. The more general source of characters is named a [scanbuf], and
+    it is the first argument of scanning functions.
+    Hence, a typical call to a formatted input function [bscanf] is
+    [bscanf ib fmt f], meaning that [f] should be applied to the arguments
     read from input [ib], according to the format string [fmt].
 
     The Caml scanning facility is reminiscent of the corresponding C feature.
@@ -53,10 +55,11 @@
 module Scanning : sig
 
 type scanbuf;;
+
 (** The type of scanning buffers. A scanning buffer is the source from which a
-    formatted input function gets characters. The scanning buffer holds the current
-    state of the scan, plus a function to get the next char from the input, and
-    a token buffer to store the string matched so far.
+    formatted input function gets characters. The scanning buffer holds the
+    current state of the scan, plus a function to get the next char from the
+    input, and a token buffer to store the string matched so far.
 
    Note: a scan may often require to examine one character in advance;
    when this ``lookahead'' character does not belong to the token read, 
@@ -117,9 +120,7 @@ val name_of_input : scanbuf -> string;;
 
 end;;
 
-exception Scan_failure of string;;
-(** The exception that formatted input functions raise when the input cannot be
-    read according to the given format. *)
+(** {6 Type of formatted input functions} *)
 
 type ('a, 'b, 'c, 'd) scanner =
      ('a, Scanning.scanbuf, 'b, 'c, 'a -> 'd, 'd) format6 -> 'c;;
@@ -128,7 +129,7 @@ type ('a, 'b, 'c, 'd) scanner =
     according to some format string; more precisely, if [scan] is some
     formatted input function, then [scan ib fmt f] applies [f] to the arguments
     specified by the format string [fmt], when [scan] has read those arguments
-    from some scanning buffer [ib].
+    from scanning buffer [ib].
 
     For instance, the [scanf] function below has type [('a, 'b, 'c, 'd)
     scanner], since it is a formatted input function that reads from [stdib]:
@@ -140,6 +141,10 @@ type ('a, 'b, 'c, 'd) scanner =
     [read_elem] is an input function for values of type [t], then [bscanf ib
     "%r;" read_elem f] reads a value of type [t] followed by a [';']
     character. *)
+
+exception Scan_failure of string;;
+(** The exception that formatted input functions raise when the input cannot be
+    read according to the given format. *)
 
 (** {6 Formatted input functions} *)
 
@@ -159,7 +164,7 @@ val bscanf : Scanning.scanbuf -> ('a, 'b, 'c, 'd) scanner;;
    - plain characters, which are simply matched with the characters of the
    input,
    - conversion specifications, each of which causes reading and conversion of
-   one argument for [f],
+   one argument for the function [f],
    - scanning indications to specify boundaries of tokens.
 
    Among plain characters the space character (ASCII code 32) has a
@@ -278,12 +283,12 @@ val bscanf : Scanning.scanbuf -> ('a, 'b, 'c, 'd) scanner;;
 
    - the scanning indications introduce slight differences in the
    syntax of [Scanf] format strings compared to those used by the
-   [Printf] module. However, scanning indications are similar to those
-   of the [Format] module; hence, when producing formatted text to be
-   scanned by [!Scanf.bscanf], it is wise to use printing functions
-   from [Format] (or, if you need to use functions from [Printf],
-   banish or carefully double check the format strings that contain
-   ['\@'] characters).
+   [Printf] module. However, the scanning indications are similar
+   to those used in the [Format] module; hence, when producing
+   formatted text to be scanned by [!Scanf.bscanf], it is wise
+   to use printing functions from [Format] (or, if you need to
+   use functions from [Printf], banish or carefully double check
+   the format strings that contain ['\@'] characters).
 
    - in addition to relevant digits, ['_'] characters may appear
    inside numbers (this is reminiscent to the usual Caml lexical
@@ -331,6 +336,8 @@ val kscanf :
   some conversion fails, the scanning function aborts and applies the
   error handling function [ef] to the scanning buffer and the
   exception that aborted the scanning process. *)
+
+(** {6 Reading format strings} *)
 
 val bscanf_format :
   Scanning.scanbuf -> ('a, 'b, 'c, 'd, 'e, 'f) format6 ->

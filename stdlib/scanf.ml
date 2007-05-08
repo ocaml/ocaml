@@ -968,7 +968,7 @@ let list_iter_i f l =
 
    If the entire scanning succeeds (i.e. the format string has been
    exhausted and the buffer has provided tokens according to the
-   format string), the tokens are applied to [f].
+   format string), [f] is applied to the tokens.
 
    If the scanning or some conversion fails, the main scanning function
    aborts and applies the scanning buffer and a string that explains
