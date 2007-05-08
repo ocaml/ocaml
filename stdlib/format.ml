@@ -13,6 +13,9 @@
 
 (* $Id$ *)
 
+(* A pretty-printing facility and definition of formatters for ``parallel''
+   (i.e. unrelated or independent) pretty-printing on multiple out channels. *)
+
 (**************************************************************
 
   Data structures definitions.
@@ -209,7 +212,7 @@ let pp_clear_queue state =
    pretty-printing algorithm's invariants. Given that this arithmetic
    correctness check is difficult and error prone and given that 1e10
    + 1 is in practice large enough, there is no need to attempt to set
-   pp_infinity to the theoretically maximum limit. Is it not worth the
+   pp_infinity to the theoretically maximum limit. It is not worth the
    burden ! *)
 
 let pp_infinity = 1000000010;;
@@ -260,7 +263,7 @@ let pp_skip_token state =
 
 (**************************************************************
 
-  The main pretting printing functions.
+  The main pretty printing functions.
 
  **************************************************************)
 
@@ -382,21 +385,23 @@ let format_pp_token state size = function
    Size is known when not negative.
    Printing is delayed when the text waiting in the queue requires
    more room to format than exists on the current line. *)
-let rec advance_left state =
-    try
-     match peek_queue state.pp_queue with
-      {elem_size = size; token = tok; length = len} ->
-       let size = int_of_size size in
-       if not
-        (size < 0 &&
-         (state.pp_right_total - state.pp_left_total < state.pp_space_left))
-        then begin
-         ignore(take_queue state.pp_queue);
-         format_pp_token state (if size < 0 then pp_infinity else size) tok;
-         state.pp_left_total <- len + state.pp_left_total;
-         advance_left state
-        end
-    with Empty_queue -> ();;
+let rec advance_loop state =
+  match peek_queue state.pp_queue with
+  | {elem_size = size; token = tok; length = len} ->
+    let size = int_of_size size in
+    if not
+         (size < 0 &&
+          (state.pp_right_total - state.pp_left_total < state.pp_space_left))
+    then begin
+      ignore(take_queue state.pp_queue);
+      format_pp_token state (if size < 0 then pp_infinity else size) tok;
+      state.pp_left_total <- len + state.pp_left_total;
+      advance_loop state
+    end;;
+
+let advance_left state =
+  try advance_loop state with
+  | Empty_queue -> ();;
 
 let enqueue_advance state tok = pp_enqueue state tok; advance_left state;;
 
@@ -479,7 +484,7 @@ let pp_open_box_gen state indent br_ty =
 (* The box which is always opened. *)
 let pp_open_sys_box state = pp_open_box_gen state 0 Pp_hovbox;;
 
-(* Close a block, setting sizes of its subblocks. *)
+(* Close a block, setting sizes of its sub blocks. *)
 let pp_close_box state () =
     if state.pp_curr_depth > 1 then
      begin
@@ -802,8 +807,9 @@ let rec display_blanks state n =
 (* Default function to output new lines. *)
 let display_newline state () = state.pp_output_function "\n" 0  1;;
 
-let make_formatter f g =
-  let ff = pp_make_formatter f g ignore ignore in
+(* Make a formatter with default functions to output spaces and new lines. *)
+let make_formatter output flush =
+  let ff = pp_make_formatter output flush ignore ignore in
   ff.pp_output_newline <- display_newline ff;
   ff.pp_output_spaces <- display_blanks ff;
   ff;;
@@ -816,6 +822,7 @@ let formatter_of_buffer b =
 
 let stdbuf = Buffer.create 512;;
 
+(* Predefined formatters. *)
 let str_formatter = formatter_of_buffer stdbuf;;
 let std_formatter = formatter_of_out_channel stdout;;
 let err_formatter = formatter_of_out_channel stderr;;
@@ -1121,10 +1128,16 @@ let mkprintf to_s get_out =
 
       and get_tag_name n i c =
        let rec get accu n i j =
-        if j >= len
-        then c (implode_rev (Sformat.sub fmt (Sformat.index_of_int i) (j - i)) accu) n j else
+        if j >= len then
+          c (implode_rev
+               (Sformat.sub fmt (Sformat.index_of_int i) (j - i))
+               accu)
+            n j else
         match Sformat.get fmt j with
-        | '>' -> c (implode_rev (Sformat.sub fmt (Sformat.index_of_int i) (j - i)) accu) n j
+        | '>' ->
+          c (implode_rev (Sformat.sub fmt (Sformat.index_of_int i) (j - i))
+                         accu)
+            n j
         | '%' ->
           let s0 = Sformat.sub fmt (Sformat.index_of_int i) (j - i) in
           let cont_s n s i = get (s :: s0 :: accu) n i i
