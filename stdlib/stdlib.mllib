@@ -1,0 +1,47 @@
+# This file lists all standard library modules.
+# It is used in particular to know what to expunge in toplevels.
+# $Id$
+
+Pervasives
+Arg
+Array
+ArrayLabels
+Buffer
+Callback
+CamlinternalMod
+CamlinternalOO
+Char
+Complex
+Digest
+Filename
+Format
+Gc
+Genlex
+Hashtbl
+Int32
+Int64
+Lazy
+Lexing
+List
+ListLabels
+Map
+Marshal
+MoreLabels
+Nativeint
+Obj
+Oo
+Parsing
+Printexc
+Printf
+Queue
+Random
+Scanf
+Set
+Sort
+Stack
+StdLabels
+Stream
+String
+StringLabels
+Sys
+Weak
