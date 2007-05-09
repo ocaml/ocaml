@@ -409,6 +409,7 @@ let token_int_literal conv ib =
    Failure when the conversion is not possible.
    This exception is then trapped in kscanf. *)
 let token_int conv ib = int_of_string (token_int_literal conv ib);;
+
 let token_float ib = float_of_string (Scanning.token ib);;
 
 (* To scan native ints, int32 and int64 integers.
@@ -627,7 +628,7 @@ let char_for_backslash = function
   | 'r' -> '\013'
   | 'b' -> '\008'
   | 't' -> '\009'
-  | c   -> c;;
+  | c -> c;;
 
 (* The integer value corresponding to the facial value of a valid
    decimal digit character. *)
