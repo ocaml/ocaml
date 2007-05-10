@@ -648,6 +648,8 @@ Old (no more supported) syntax:
         [ `QUOTATION x -> Quotation.expand _loc x Quotation.DynAst.expr_tag
         | `ANTIQUOT ("exp"|""|"anti" as n) s ->
             <:expr< $anti:mk_anti ~c:"expr" n s$ >>
+        | `ANTIQUOT ("`bool" as n) s ->
+            <:expr< $anti:mk_anti n s$ >>
         | `ANTIQUOT ("tup" as n) s ->
             <:expr< $tup: <:expr< $anti:mk_anti ~c:"expr" n s$ >>$ >>
         | `ANTIQUOT ("seq" as n) s ->
