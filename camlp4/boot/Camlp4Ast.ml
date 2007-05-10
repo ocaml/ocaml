@@ -4300,7 +4300,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
         method array : ! 'a 'b. ('a -> 'b) -> array 'a -> array 'b = Array.
           map;
         method ref : ! 'a 'b. ('a -> 'b) -> ref 'a -> ref 'b =
-          fun f { \val = x } -> {  \val = f x; };
+          fun f { val = x } -> { val = f x; };
         method _Loc_t : Loc.t -> Loc.t = fun x -> x;
         method with_constr : with_constr -> with_constr =
           fun
@@ -4716,7 +4716,7 @@ module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
           fun f -> Array.fold_left f o;
         method ref :
           ! 'a. ('self_type -> 'a -> 'self_type) -> ref 'a -> 'self_type =
-          fun f { \val = x } -> f o x;
+          fun f { val = x } -> f o x;
         method _Loc_t : Loc.t -> 'self_type = fun _ -> o;
         method with_constr : with_constr -> 'self_type =
           fun

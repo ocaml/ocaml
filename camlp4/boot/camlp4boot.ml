@@ -23,7 +23,7 @@ module R =
       struct
         let name = "Camlp4RevisedParserParser"
         let version =
-          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.15 2007/04/26 19:51:50 pouillar Exp $"
+          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.17 2007/05/10 14:24:22 pouillar Exp $"
       end
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
@@ -55,7 +55,6 @@ Old (no more supported) syntax:
         let _ = Gram.Entry.clear a_INT64
         let _ = Gram.Entry.clear a_LABEL
         let _ = Gram.Entry.clear a_LIDENT
-        let _ = Gram.Entry.clear a_LIDENT_or_operator
         let _ = Gram.Entry.clear a_NATIVEINT
         let _ = Gram.Entry.clear a_OPTLABEL
         let _ = Gram.Entry.clear a_STRING
@@ -501,7 +500,13 @@ Old (no more supported) syntax:
         (* transmit the context *)
         let _ =
           Gram.Entry.setup_parser sem_expr
-            (let symb = Gram.parse_tokens_after_filter expr in
+            (let symb1 = Gram.parse_tokens_after_filter expr in
+             let symb (__strm : _ Stream.t) =
+               match Stream.peek __strm with
+               | Some ((ANTIQUOT ((("list" as n)), s), _loc)) ->
+                   (Stream.junk __strm;
+                    Ast.ExAnt (_loc, mk_anti ~c: "expr;" n s))
+               | _ -> symb1 __strm in
              let rec kont al (__strm : _ Stream.t) =
                match Stream.peek __strm with
                | Some ((KEYWORD ";", _loc)) ->
@@ -676,7 +681,6 @@ Old (no more supported) syntax:
           and _ = (a_STRING : 'a_STRING Gram.Entry.t)
           and _ = (a_OPTLABEL : 'a_OPTLABEL Gram.Entry.t)
           and _ = (a_NATIVEINT : 'a_NATIVEINT Gram.Entry.t)
-          and _ = (a_LIDENT_or_operator : 'a_LIDENT_or_operator Gram.Entry.t)
           and _ = (rec_binding_quot : 'rec_binding_quot Gram.Entry.t)
           and _ = (a_LIDENT : 'a_LIDENT Gram.Entry.t)
           and _ = (a_LABEL : 'a_LABEL Gram.Entry.t)
@@ -1196,13 +1200,12 @@ Old (no more supported) syntax:
                                  (value_val : 'value_val Gram.Entry.t));
                             Gram.Snterm
                               (Gram.Entry.obj
-                                 (a_LIDENT_or_operator :
-                                   'a_LIDENT_or_operator Gram.Entry.t));
+                                 (a_LIDENT : 'a_LIDENT Gram.Entry.t));
                             Gram.Skeyword ":";
                             Gram.Snterm
                               (Gram.Entry.obj (ctyp : 'ctyp Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun (t : 'ctyp) _ (i : 'a_LIDENT_or_operator) _
+                             (fun (t : 'ctyp) _ (i : 'a_LIDENT) _
                                 (_loc : Loc.t) ->
                                 (Ast.SgVal (_loc, i, t) : 'sig_item))));
                          ([ Gram.Skeyword "type";
@@ -2182,6 +2185,18 @@ Old (no more supported) syntax:
                                        Ast.ExAnt (_loc,
                                          mk_anti ~c: "expr" n s)) :
                                       'expr)
+                                | _ -> assert false)));
+                         ([ Gram.Stoken
+                              (((function
+                                 | ANTIQUOT ("`bool", _) -> true
+                                 | _ -> false),
+                                "ANTIQUOT (\"`bool\", _)")) ],
+                          (Gram.Action.mk
+                             (fun (__camlp4_0 : Gram.Token.t) (_loc : Loc.t)
+                                ->
+                                match __camlp4_0 with
+                                | ANTIQUOT ((("`bool" as n)), s) ->
+                                    (Ast.ExAnt (_loc, mk_anti n s) : 'expr)
                                 | _ -> assert false)));
                          ([ Gram.Stoken
                               (((function
@@ -5614,7 +5629,10 @@ Old (no more supported) syntax:
                ((fun () ->
                    (None,
                     [ (None, None,
-                       [ ([ Gram.Skeyword "type" ],
+                       [ ([ Gram.Skeyword "constraint" ],
+                          (Gram.Action.mk
+                             (fun _ (_loc : Loc.t) -> (() : 'type_constraint))));
+                         ([ Gram.Skeyword "type" ],
                           (Gram.Action.mk
                              (fun _ (_loc : Loc.t) -> (() : 'type_constraint)))) ]) ]))
                   ());
@@ -6895,18 +6913,6 @@ Old (no more supported) syntax:
                                     (mk_anti n s : 'a_LIDENT)
                                 | _ -> assert false))) ]) ]))
                   ());
-             Gram.extend
-               (a_LIDENT_or_operator : 'a_LIDENT_or_operator Gram.Entry.t)
-               ((fun () ->
-                   (None,
-                    [ (None, None,
-                       [ ([ Gram.Snterm
-                              (Gram.Entry.obj
-                                 (a_LIDENT : 'a_LIDENT Gram.Entry.t)) ],
-                          (Gram.Action.mk
-                             (fun (x : 'a_LIDENT) (_loc : Loc.t) ->
-                                (x : 'a_LIDENT_or_operator)))) ]) ]))
-                  ());
              Gram.extend (a_LABEL : 'a_LABEL Gram.Entry.t)
                ((fun () ->
                    (None,
@@ -7927,7 +7933,7 @@ module Camlp4QuotationCommon =
       struct
         let name = "Camlp4QuotationCommon"
         let version =
-          "$Id: Camlp4QuotationCommon.ml,v 1.1.4.4 2007/04/26 19:51:50 pouillar Exp $"
+          "$Id: Camlp4QuotationCommon.ml,v 1.1.4.5 2007/05/10 14:24:22 pouillar Exp $"
       end
     module Make
       (Syntax : Sig.Camlp4Syntax)
@@ -8164,6 +8170,12 @@ module Camlp4QuotationCommon =
                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Char"),
                                    Ast.IdLid (_loc, "escaped"))),
                                e)
+                         | "`bool" ->
+                             Ast.ExIfe (_loc, e,
+                               ME.meta_expr _loc
+                                 (Ast.ExId (_loc, Ast.IdUid (_loc, "True"))),
+                               ME.meta_expr _loc
+                                 (Ast.ExId (_loc, Ast.IdUid (_loc, "False"))))
                          | "liststr_item" ->
                              Ast.ExApp (_loc,
                                Ast.ExId (_loc,
@@ -9649,12 +9661,10 @@ module G =
                    prod = [ ({ pattern = None; styp = STtok _ } as s) ];
                    action = None } ->
                    {
-                     
                      prod =
                        [ {
                            (s)
                            with
-                           
                            pattern =
                              Some (Ast.PaId (_loc, Ast.IdLid (_loc, "x")));
                          } ];
@@ -9668,12 +9678,10 @@ module G =
                    }
                | { prod = [ ({ pattern = None } as s) ]; action = None } ->
                    {
-                     
                      prod =
                        [ {
                            (s)
                            with
-                           
                            pattern =
                              Some (Ast.PaId (_loc, Ast.IdLid (_loc, "x")));
                          } ];
@@ -10060,13 +10068,13 @@ module G =
               x ^ ("__" ^ (tvar_of_ident xs))
           | _ -> failwith "internal error in the Grammar extension"
         let mk_name _loc i =
-          {  expr = Ast.ExId (_loc, i); tvar = tvar_of_ident i; loc = _loc; }
+          { expr = Ast.ExId (_loc, i); tvar = tvar_of_ident i; loc = _loc; }
         let slist loc min sep symb = TXlist (loc, min, symb, sep)
         let sstoken _loc s =
           let n = mk_name _loc (Ast.IdLid (_loc, "a_" ^ s))
           in TXnterm (_loc, n, None)
         let mk_symbol p s t =
-          {  used = []; text = s; styp = t; pattern = Some p; }
+          { used = []; text = s; styp = t; pattern = Some p; }
         let sslist _loc min sep s =
           let rl =
             let r1 =
@@ -10076,7 +10084,7 @@ module G =
                   [ mk_symbol (Ast.PaId (_loc, Ast.IdLid (_loc, "a")))
                       (TXnterm (_loc, n, None)) (STquo (_loc, "a_list")) ] in
               let act = Ast.ExId (_loc, Ast.IdLid (_loc, "a"))
-              in {  prod = prod; action = Some act; } in
+              in { prod = prod; action = Some act; } in
             let r2 =
               let prod =
                 [ mk_symbol (Ast.PaId (_loc, Ast.IdLid (_loc, "a")))
@@ -10088,14 +10096,14 @@ module G =
                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Qast"),
                       Ast.IdUid (_loc, "List"))),
                   Ast.ExId (_loc, Ast.IdLid (_loc, "a")))
-              in {  prod = prod; action = Some act; }
+              in { prod = prod; action = Some act; }
             in [ r1; r2 ] in
           let used =
             match sep with | Some symb -> symb.used @ s.used | None -> s.used in
           let used = "a_list" :: used in
           let text = TXrules (_loc, srules _loc "a_list" rl "") in
           let styp = STquo (_loc, "a_list")
-          in {  used = used; text = text; styp = styp; pattern = None; }
+          in { used = used; text = text; styp = styp; pattern = None; }
         let ssopt _loc s =
           let rl =
             let r1 =
@@ -10105,19 +10113,17 @@ module G =
                   [ mk_symbol (Ast.PaId (_loc, Ast.IdLid (_loc, "a")))
                       (TXnterm (_loc, n, None)) (STquo (_loc, "a_opt")) ] in
               let act = Ast.ExId (_loc, Ast.IdLid (_loc, "a"))
-              in {  prod = prod; action = Some act; } in
+              in { prod = prod; action = Some act; } in
             let r2 =
               let s =
                 match s.text with
                 | TXkwd (_loc, _) | TXtok (_loc, _, _) ->
                     let rl =
                       [ {
-                          
                           prod =
                             [ {
                                 (s)
                                 with
-                                
                                 pattern =
                                   Some
                                     (Ast.PaId (_loc, Ast.IdLid (_loc, "x")));
@@ -10138,7 +10144,6 @@ module G =
                     let t = new_type_var ()
                     in
                       {
-                        
                         used = [];
                         text = TXrules (_loc, srules _loc t rl "");
                         styp = STquo (_loc, t);
@@ -10155,12 +10160,12 @@ module G =
                     Ast.IdAcc (_loc, Ast.IdUid (_loc, "Qast"),
                       Ast.IdUid (_loc, "Option"))),
                   Ast.ExId (_loc, Ast.IdLid (_loc, "a")))
-              in {  prod = prod; action = Some act; }
+              in { prod = prod; action = Some act; }
             in [ r1; r2 ] in
           let used = "a_opt" :: s.used in
           let text = TXrules (_loc, srules _loc "a_opt" rl "") in
           let styp = STquo (_loc, "a_opt")
-          in {  used = used; text = text; styp = styp; pattern = None; }
+          in { used = used; text = text; styp = styp; pattern = None; }
         let text_of_entry _loc e =
           let ent =
             let x = e.name in
@@ -10381,7 +10386,7 @@ module G =
                     Ast.ExId (_loc, Ast.IdUid (_loc, "False"))))) in
           let descr = string_of_patt p' in
           let text = TXtok (_loc, match_fun, descr)
-          in {  used = []; text = text; styp = t; pattern = Some p; }
+          in { used = []; text = text; styp = t; pattern = Some p; }
         let symbol = Gram.Entry.mk "symbol"
         let check_not_tok s =
           match s with
@@ -10775,7 +10780,7 @@ module G =
                           (Gram.Action.mk
                              (fun (ll : 'level_list) (pos : 'position option)
                                 _ (n : 'name) (_loc : Loc.t) ->
-                                ({  name = n; pos = pos; levels = ll; } :
+                                ({ name = n; pos = pos; levels = ll; } :
                                   'entry)))) ]) ]))
                   ());
              Gram.extend (position : 'position Gram.Entry.t)
@@ -10937,8 +10942,8 @@ module G =
                           (Gram.Action.mk
                              (fun (rules : 'rule_list) (ass : 'assoc option)
                                 (lab : 'e__13 option) (_loc : Loc.t) ->
-                                ({  label = lab; assoc = ass; rules = rules;
-                                 } : 'level)))) ]) ]))
+                                ({ label = lab; assoc = ass; rules = rules; } :
+                                  'level)))) ]) ]))
                   ());
              Gram.extend (assoc : 'assoc Gram.Entry.t)
                ((fun () ->
@@ -11036,7 +11041,7 @@ module G =
                                    (semi_sep : 'semi_sep Gram.Entry.t))) ],
                           (Gram.Action.mk
                              (fun (psl : 'psymbol list) (_loc : Loc.t) ->
-                                ({  prod = psl; action = None; } : 'rule))));
+                                ({ prod = psl; action = None; } : 'rule))));
                          ([ Gram.Slist0sep
                               (Gram.Snterm
                                  (Gram.Entry.obj
@@ -11050,7 +11055,7 @@ module G =
                           (Gram.Action.mk
                              (fun (act : 'expr) _ (psl : 'psymbol list)
                                 (_loc : Loc.t) ->
-                                ({  prod = psl; action = Some act; } : 'rule)))) ]) ]))
+                                ({ prod = psl; action = Some act; } : 'rule)))) ]) ]))
                   ());
              Gram.extend (psymbol : 'psymbol Gram.Entry.t)
                ((fun () ->
@@ -11082,7 +11087,7 @@ module G =
                                             Ast.IdUid (_loc, u)),
                                           p))
                                        s.styp
-                                 | _ -> { (s) with  pattern = Some p; } :
+                                 | _ -> { (s) with pattern = Some p; } :
                                   'psymbol))));
                          ([ Gram.Stoken
                               (((function | LIDENT ((_)) -> true | _ -> false),
@@ -11119,7 +11124,6 @@ module G =
                                  let styp = STquo (_loc, i)
                                  in
                                    {
-                                     
                                      used = [ i ];
                                      text = text;
                                      styp = styp;
@@ -11166,7 +11170,6 @@ module G =
                                          {
                                            (s)
                                            with
-                                           
                                            text = text;
                                            pattern = Some p';
                                          }
@@ -11174,7 +11177,6 @@ module G =
                                        {
                                          (s)
                                          with
-                                         
                                          pattern =
                                            Some
                                              (Ast.PaId (_loc,
@@ -11202,7 +11204,6 @@ module G =
                                      let text = TXopt (_loc, s.text)
                                      in
                                        {
-                                         
                                          used = s.used;
                                          text = text;
                                          styp = styp;
@@ -11249,7 +11250,6 @@ module G =
                                      let text = slist _loc true sep s
                                      in
                                        {
-                                         
                                          used = used;
                                          text = text;
                                          styp = styp;
@@ -11296,7 +11296,6 @@ module G =
                                      let text = slist _loc false sep s
                                      in
                                        {
-                                         
                                          used = used;
                                          text = text;
                                          styp = styp;
@@ -11337,7 +11336,6 @@ module G =
                              (fun (lev : 'e__18 option) (n : 'name)
                                 (_loc : Loc.t) ->
                                 ({
-                                   
                                    used = [ n.tvar ];
                                    text = TXnterm (_loc, n, lev);
                                    styp = STquo (_loc, n.tvar);
@@ -11381,7 +11379,6 @@ module G =
                                         il))
                                  in
                                    {
-                                     
                                      used = [ n.tvar ];
                                      text = TXnterm (_loc, n, lev);
                                      styp = STquo (_loc, n.tvar);
@@ -11396,7 +11393,6 @@ module G =
                                 (let s = Gram.Token.extract_string s
                                  in
                                    {
-                                     
                                      used = [];
                                      text = TXkwd (_loc, s);
                                      styp = STtok _loc;
@@ -11451,7 +11447,6 @@ module G =
                                          Ast.PaTup (_loc, Ast.PaAny _loc))
                                      in
                                        {
-                                         
                                          used = [];
                                          text = text;
                                          styp = STtok _loc;
@@ -11509,7 +11504,6 @@ module G =
                                  let t = new_type_var ()
                                  in
                                    {
-                                     
                                      used = used_of_rule_list rl;
                                      text =
                                        TXrules (_loc, srules _loc t rl "");
@@ -11528,7 +11522,6 @@ module G =
                                 match __camlp4_0 with
                                 | UIDENT "NEXT" ->
                                     ({
-                                       
                                        used = [];
                                        text = TXnext _loc;
                                        styp = STself (_loc, "NEXT");
@@ -11546,7 +11539,6 @@ module G =
                                 match __camlp4_0 with
                                 | UIDENT "SELF" ->
                                     ({
-                                       
                                        used = [];
                                        text = TXself _loc;
                                        styp = STself (_loc, "SELF");
@@ -11728,7 +11720,6 @@ module G =
               styp)
           in
             {
-              
               used = s.used;
               text = TXmeta (_loc, n, [ s.text ], e, t);
               styp = styp;
@@ -11757,7 +11748,6 @@ module G =
               styp)
           in
             {
-              
               used = s.used @ sep.used;
               text = TXmeta (_loc, n, [ s.text; sep.text ], e, t);
               styp = styp;
