@@ -314,6 +314,7 @@ flag ["ocaml"; "link"] begin
 end;;
 
 flag ["ocaml"; "ocamlyacc"] (atomize !Options.ocaml_yaccflags);;
+flag ["ocaml"; "menhir"] (atomize !Options.ocaml_yaccflags);;
 
 flag ["ocaml"; "ocamllex"] (atomize !Options.ocaml_lexflags);;
 
@@ -350,7 +351,7 @@ ocaml_lib ~extern:true "graphics";;
 ocaml_lib ~extern:true ~tag_name:"use_toplevel" "toplevellib";;
 ocaml_lib ~extern:true ~dir:"+labltk" "labltk";;
 ocaml_lib ~extern:true ~dir:"+ocamldoc" "ocamldoc";;
-ocaml_lib ~extern:true ~dir:"+ocamlbuild" "ocamlbuild";;
+ocaml_lib ~extern:true ~dir:"+ocamlbuild" ~tag_name:"use_ocamlbuild" "ocamlbuildlib";;
 
 ocaml_lib ~extern:true ~dir:"+camlp4" ~tag_name:"use_camlp4" "camlp4lib";;
 ocaml_lib ~extern:true ~dir:"+camlp4" ~tag_name:"use_old_camlp4" "camlp4";;
