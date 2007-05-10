@@ -31,7 +31,7 @@ Programs that use system threads must be linked as follows:
         ocamlc -thread \var{other options} threads.cma \var{other files}
         ocamlopt -thread \var{other options} threads.cmxa \var{other files}
 \end{alltt}
-All object files on the command line must also have been compiled with
+Compilation units that use the "threads" library must also be compiled with
 the "-thread" option (see chapter~\ref{c:camlc}).
 
 Programs that use VM-level threads must be compiled with the "-vmthread"
@@ -39,6 +39,8 @@ option to "ocamlc" (see chapter~\ref{c:camlc}), and be linked as follows:
 \begin{alltt}
         ocamlc -vmthread \var{other options} threads.cma \var{other files}
 \end{alltt}
+Compilation units that use "threads" library must also be compiled with
+the "-vmthread" option (see chapter~\ref{c:camlc}).
 
 \ifouthtml
 \begin{links}
