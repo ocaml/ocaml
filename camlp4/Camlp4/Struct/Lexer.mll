@@ -197,6 +197,7 @@ module Make (Token : Sig.Camlp4Token)
   let identchar =
     ['A'-'Z' 'a'-'z' '_' '\192'-'\214' '\216'-'\246' '\248'-'\255' '\'' '0'-'9']
   let ident = (lowercase|uppercase) identchar*
+  let locname = ident
   let not_star_symbolchar =
     ['$' '!' '%' '&' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
   let symbolchar = '*' | not_star_symbolchar
@@ -334,7 +335,7 @@ module Make (Token : Sig.Camlp4Token)
       "(*"
         { store c; with_curr_loc comment c; parse comment c                     }
     | "*)"                                                            { store c }
-    | '<' (':' ident)? ('@' ident)? '<'
+    | '<' (':' ident)? ('@' locname)? '<'
         { store c;
           if quotations c then with_curr_loc quotation c; parse comment c       }
     | ident                                             { store_parse comment c }
@@ -392,13 +393,13 @@ module Make (Token : Sig.Camlp4Token)
   and maybe_quotation_colon c = parse
     | (ident as name) '<'
       { mk_quotation quotation c name "" (3 + String.length name)               }
-    | (ident as name) '@' (ident as loc) '<'
+    | (ident as name) '@' (locname as loc) '<'
       { mk_quotation quotation c name loc
                      (4 + String.length loc + String.length name)               }
     | symbolchar* as tok                                   { SYMBOL("<:" ^ tok) }
 
   and quotation c = parse
-    | '<' (':' ident)? ('@' ident)? '<'      {                          store c ;
+    | '<' (':' ident)? ('@' locname)? '<'    {                          store c ;
                                                       with_curr_loc quotation c ;
                                                               parse quotation c }
     | ">>"                                                            { store c }
@@ -418,7 +419,7 @@ module Make (Token : Sig.Camlp4Token)
     | eof                                   { err Unterminated_antiquot (loc c) }
     | newline
       { update_loc c None 1 false 0; store_parse (antiquot name) c              }
-    | '<' (':' ident)? ('@' ident)? '<'
+    | '<' (':' ident)? ('@' locname)? '<'
       { store c; with_curr_loc quotation c; parse (antiquot name) c             }
     | _                                         { store_parse (antiquot name) c }
 
