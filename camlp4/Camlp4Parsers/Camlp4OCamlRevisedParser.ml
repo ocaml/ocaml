@@ -56,7 +56,6 @@ Old (no more supported) syntax:
   Gram.Entry.clear a_INT64;
   Gram.Entry.clear a_LABEL;
   Gram.Entry.clear a_LIDENT;
-  Gram.Entry.clear a_LIDENT_or_operator;
   Gram.Entry.clear a_NATIVEINT;
   Gram.Entry.clear a_OPTLABEL;
   Gram.Entry.clear a_STRING;
@@ -392,7 +391,7 @@ Old (no more supported) syntax:
   EXTEND Gram
     GLOBAL:
       a_CHAR a_FLOAT a_INT a_INT32 a_INT64 a_LABEL a_LIDENT rec_binding_quot
-      a_LIDENT_or_operator a_NATIVEINT a_OPTLABEL a_STRING a_UIDENT a_ident
+      a_NATIVEINT a_OPTLABEL a_STRING a_UIDENT a_ident
       amp_ctyp and_ctyp match_case match_case0 match_case_quot binding binding_quot
       class_declaration class_description class_expr class_expr_quot
       class_fun_binding class_fun_def class_info_for_class_expr
@@ -527,7 +526,7 @@ Old (no more supported) syntax:
         | "open"; i = module_longident -> <:sig_item< open $i$ >>
         | "type"; t = type_declaration ->
             <:sig_item< type $t$ >>
-        | value_val; i = a_LIDENT_or_operator; ":"; t = ctyp ->
+        | value_val; i = a_LIDENT; ":"; t = ctyp ->
             <:sig_item< value $i$ : $t$ >>
         | "class"; cd = class_description ->
             <:sig_item< class $cd$ >>
@@ -1524,9 +1523,6 @@ Old (no more supported) syntax:
     a_LIDENT:
       [ [ `ANTIQUOT (""|"lid" as n) s -> mk_anti n s
         | `LIDENT s -> s ] ]
-    ;
-    a_LIDENT_or_operator:
-      [ [ x = a_LIDENT -> x ] ]
     ;
     a_LABEL:
       [ [ "~"; `ANTIQUOT ("" as n) s; ":" -> mk_anti n s

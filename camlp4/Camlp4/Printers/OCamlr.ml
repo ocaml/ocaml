@@ -33,6 +33,12 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
 
   value pp = fprintf;
 
+  value is_keyword =
+    let keywords = ["where"]
+    and not_keywords = ["false"; "function"; "true"; "val"]
+    in fun s -> not (List.mem s not_keywords)
+             && (is_keyword s || List.mem s keywords);
+
   class printer ?curry_constr:(init_curry_constr = True) ?(comments = True) () =
   object (o)
     inherit PP_o.printer ~curry_constr:init_curry_constr ~comments () as super;
@@ -83,9 +89,9 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       | v ->
           match lex_string v with
           [ (LIDENT s | UIDENT s | ESCAPED_IDENT s) when is_keyword s ->
-               pp f "\\%s" s
+              pp f "%s__" s
           | SYMBOL s ->
-              pp f "\\%s" s
+              pp f "( %s )" s
           | LIDENT s | UIDENT s | ESCAPED_IDENT s ->
               pp_print_string f s
           | tok -> failwith (sprintf

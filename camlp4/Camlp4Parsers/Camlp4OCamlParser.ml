@@ -193,15 +193,6 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         else res
     | _ -> False ];
 
-  value operator_rparen =
-    Gram.Entry.of_parser "operator_rparen"
-      (fun strm ->
-        match Stream.npeek 2 strm with
-        [ [(KEYWORD s | SYMBOL s, _); (KEYWORD ")", _)] when is_operator s ->
-            do { Stream.junk strm; Stream.junk strm; s }
-        | _ -> raise Stream.Failure ])
-  ;
-
   DELETE_RULE Gram expr: SELF; "where"; opt_rec; let_binding END;
   DELETE_RULE Gram value_let: "value" END;
   DELETE_RULE Gram value_val: "value" END;
@@ -229,7 +220,6 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   value clear = Gram.Entry.clear;
   clear ctyp;
   clear patt;
-  clear a_LIDENT_or_operator;
   clear a_UIDENT;
   clear type_longident_and_parameters;
   clear type_parameters;
@@ -258,7 +248,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   EXTEND Gram
     GLOBAL:
       a_CHAR a_FLOAT a_INT a_INT32 a_INT64 a_LABEL a_LIDENT
-      a_LIDENT_or_operator a_NATIVEINT a_OPTLABEL a_STRING a_UIDENT a_ident
+      a_NATIVEINT a_OPTLABEL a_STRING a_UIDENT a_ident
       amp_ctyp and_ctyp match_case match_case0 match_case_quot binding binding_quot
       class_declaration class_description class_expr class_expr_quot
       class_fun_binding class_fun_def class_info_for_class_expr
@@ -371,7 +361,6 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
             <:expr< { $lel$ } >>
         | "{"; e = expr LEVEL "."; "with"; lel = label_expr; "}" ->
             <:expr< { ($e$) with $lel$ } >>
-        | "("; op = operator_rparen -> <:expr< $lid:op$ >>
         | "new"; i = class_longident -> <:expr< new $i$ >>
       ] ]
     ;
@@ -382,8 +371,6 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         | i = a_LIDENT -> <:ident< $lid:i$ >>
         | `ANTIQUOT (""|"id"|"anti"|"list" as n) s; "."; i = SELF ->
             <:ident< $anti:mk_anti ~c:"ident" n s$.$i$ >>
-        | i = a_UIDENT; "."; "("; j = operator_rparen ->
-            <:ident< $uid:i$.$lid:j$ >>
         | i = a_UIDENT; "."; j = SELF -> <:ident< $uid:i$.$j$ >> ] ]
     ;
     match_case:
@@ -444,7 +431,6 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         | "[|"; pl = sem_patt; "|]" -> <:patt< [| $pl$ |] >>
         | "{"; pl = label_patt; "}" -> <:patt< { $pl$ } >>
         | "("; ")" -> <:patt< () >>
-        | "("; op = operator_rparen -> <:patt< $lid:op$ >>
         | "("; p = patt; ":"; t = ctyp; ")" -> <:patt< ($p$ : $t$) >>
         | "("; p = patt; ")" -> <:patt< $p$ >>
         | "_" -> <:patt< _ >>
@@ -456,7 +442,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         | e = expr LEVEL ":=" -> e ] ]
     ;                                                           *)
     let_binding:
-      [ [ test_just_a_lident_or_patt; s = a_LIDENT_or_operator; e = fun_binding ->
+      [ [ test_just_a_lident_or_patt; s = a_LIDENT; e = fun_binding ->
             <:binding< $lid:s$ = $e$ >>
         | p = patt; "="; e = expr ->
             <:binding< $p$ = $e$ >> ] ]
@@ -637,10 +623,6 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     ;
     value_val:
       [ [ "val" -> () ] ]
-    ;
-    a_LIDENT_or_operator:
-      [ [ x = a_LIDENT -> x
-        | "("; x = operator_rparen -> x ] ]
     ;
     label_declaration:
       [ LEFTA

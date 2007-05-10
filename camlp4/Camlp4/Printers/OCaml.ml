@@ -512,9 +512,9 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:expr< $chr:s$ >> -> pp f "'%s'" (ocaml_char s)
     | <:expr< $id:i$ >> -> o#var_ident f i
     | <:expr< { $b$ } >> ->
-        pp f "@[<hv0>@[<hv2>{@ %a@]@ }@]" o#record_binding b
+        pp f "@[<hv0>@[<hv2>{%a@]@ }@]" o#record_binding b
     | <:expr< { ($e$) with $b$ } >> ->
-        pp f "@[<hv0>@[<hv2>{@ (%a)@ with@ %a@]@ }@]"
+        pp f "@[<hv0>@[<hv2>{@ (%a)@ with%a@]@ }@]"
           o#expr e o#record_binding b
     | <:expr< $str:s$ >> -> pp f "\"%s\"" s
     | <:expr< while $e1$ do { $e2$ } >> ->
@@ -525,7 +525,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:expr< ? $s$ : $e$ >> -> pp f "@[<2>?%s:@ %a@]" s o#dot_expr e
     | <:expr< ` $lid:s$ >> -> pp f "`%a" o#var s
     | <:expr< {< $b$ >} >> ->
-        pp f "@[<hv0>@[<hv2>{<@ %a@]@ >}@]" o#record_binding b
+        pp f "@[<hv0>@[<hv2>{<%a@]@ >}@]" o#record_binding b
     | <:expr< object $cst$ end >> ->
         pp f "@[<hv0>@[<hv2>object@ %a@]@ end@]" o#class_str_item cst
     | <:expr< object ($p$ : $t$) $cst$ end >> ->

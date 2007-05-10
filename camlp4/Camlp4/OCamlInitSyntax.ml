@@ -47,7 +47,6 @@ module Make (Ast     : Sig.Camlp4Ast)
   value a_INT64 = Gram.Entry.mk "a_INT64";
   value a_LABEL = Gram.Entry.mk "a_LABEL";
   value a_LIDENT = Gram.Entry.mk "a_LIDENT";
-  value a_LIDENT_or_operator = Gram.Entry.mk "a_LIDENT_or_operator";
   value a_NATIVEINT = Gram.Entry.mk "a_NATIVEINT";
   value a_OPTLABEL = Gram.Entry.mk "a_OPTLABEL";
   value a_STRING = Gram.Entry.mk "a_STRING";

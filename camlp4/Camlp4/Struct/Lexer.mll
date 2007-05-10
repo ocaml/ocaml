@@ -199,7 +199,7 @@ module Make (Token : Sig.Camlp4Token)
   let ident = (lowercase|uppercase) identchar*
   let locname = ident
   let not_star_symbolchar =
-    ['$' '!' '%' '&' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~']
+    ['$' '!' '%' '&' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~' '\\']
   let symbolchar = '*' | not_star_symbolchar
   let hexa_char = ['0'-'9' 'A'-'F' 'a'-'f']
   let decimal_literal =
@@ -315,16 +315,24 @@ module Make (Token : Sig.Camlp4Token)
           [^ '\010' '\013'] * newline
       { let inum = int_of_string num
         in update_loc c name inum true 0; LINE_DIRECTIVE(inum, name)            }
-    | '(' (not_star_symbolchar symbolchar* as op) ')'        { ESCAPED_IDENT op }
+    | '(' (not_star_symbolchar as op) ')'
+                                             { ESCAPED_IDENT (String.make 1 op) }
+    | '(' (not_star_symbolchar symbolchar* not_star_symbolchar as op) ')'
+                                                             { ESCAPED_IDENT op }
+    | '(' (not_star_symbolchar symbolchar* as op) blank+ ')'
+                                                             { ESCAPED_IDENT op }
+    | '(' blank+ (symbolchar* not_star_symbolchar as op) ')'
+                                                             { ESCAPED_IDENT op }
+    | '(' blank+ (symbolchar+ as op) blank+ ')'
+                                                             { ESCAPED_IDENT op }
     | ( "#"  | "`"  | "'"  | ","  | "."  | ".." | ":"  | "::"
       | ":=" | ":>" | ";"  | ";;" | "_"
       | left_delimitor | right_delimitor ) as x  { SYMBOL x }
     | '$' { if antiquots c
             then with_curr_loc dollar (shift 1 c)
             else parse (symbolchar_star "$") c }
-    | ['~' '?' '!' '=' '<' '>' '|' '&' '@' '^' '+' '-' '*' '/' '%'] symbolchar *
+    | ['~' '?' '!' '=' '<' '>' '|' '&' '@' '^' '+' '-' '*' '/' '%' '\\'] symbolchar *
                                                                 as x { SYMBOL x }
-    | '\\' ((symbolchar | identchar)+ as x)                   { ESCAPED_IDENT x }
     | eof
       { let pos = lexbuf.lex_curr_p in
         lexbuf.lex_curr_p <- { pos with pos_bol  = pos.pos_bol  + 1 ;

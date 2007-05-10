@@ -1206,7 +1206,6 @@ module type Camlp4Syntax = sig
   value a_INT64 : Gram.Entry.t string;
   value a_LABEL : Gram.Entry.t string;
   value a_LIDENT : Gram.Entry.t string;
-  value a_LIDENT_or_operator : Gram.Entry.t string;
   value a_NATIVEINT : Gram.Entry.t string;
   value a_OPTLABEL : Gram.Entry.t string;
   value a_STRING : Gram.Entry.t string;
