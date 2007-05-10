@@ -645,7 +645,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:ctyp< ? $s$ : $t$ >> -> pp f "@[<2>?%s:@ %a@]" s o#simple_ctyp t
     | <:ctyp< < > >> -> pp f "< >"
     | <:ctyp< < .. > >> -> pp f "< .. >"
-    | <:ctyp< < $t$ .. > >> -> pp f "@[<0>@[<2><@ %a@ ..@]@ >@]" o#ctyp t
+    | <:ctyp< < $t$ .. > >> -> pp f "@[<0>@[<2><@ %a;@ ..@]@ >@]" o#ctyp t
     | <:ctyp< < $t$ > >> -> pp f "@[<0>@[<2><@ %a@]@ >@]" o#ctyp t
     | <:ctyp< '$s$ >> -> pp f "'%a" o#var s
     | <:ctyp< { $t$ } >> -> pp f "@[<2>{@ %a@]@ }" o#ctyp t
@@ -686,9 +686,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | Ast.TyDcl _ tn tp te cl -> do {
         pp f "@[<2>%a%a@]" o#type_params tp o#var tn;
         match te with
-        [ <:ctyp< '$s$ >>
-            when not (List.exists (fun [ <:ctyp< '$s'$ >> -> s = s'
-                                       | _ -> False ]) tp) -> ()
+        [ <:ctyp<>> -> ()
         | _ -> pp f " =@ %a" o#ctyp te ];
         if cl <> [] then pp f "@ %a" (list o#constrain "@ ") cl else ();
       }
@@ -740,7 +738,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       | <:sig_item< module $s$ : $mt$ >> ->
           pp f "@[<2>module %a :@ %a%s@]"
             o#var s o#module_type mt semisep
-      | <:sig_item< module type $s$ = '$_$ >> ->
+      | <:sig_item< module type $s$ = $ <:module_type<>> $ >> ->
           pp f "@[<2>module type %a%s@]" o#var s semisep
       | <:sig_item< module type $s$ = $mt$ >> ->
           pp f "@[<2>module type %a =@ %a%s@]"
@@ -821,7 +819,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     method module_type f mt =
     let () = o#node f mt Ast.loc_of_module_type in
     match mt with
-    [ <:module_type< $id:i$ >> -> o#ident f i
+    [ <:module_type<>> -> assert False
+    | <:module_type< $id:i$ >> -> o#ident f i
     | <:module_type< $anti:s$ >> -> o#anti f s
     | <:module_type< functor ( $s$ : $mt1$ ) -> $mt2$ >> ->
           pp f "@[<2>functor@ @[<1>(%a :@ %a)@]@ ->@ %a@]"
@@ -847,7 +846,8 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     method module_expr f me =
     let () = o#node f me Ast.loc_of_module_expr in
     match me with
-    [ <:module_expr< $id:i$ >> -> o#ident f i
+    [ <:module_expr<>> -> assert False
+    | <:module_expr< $id:i$ >> -> o#ident f i
     | <:module_expr< $anti:s$ >> -> o#anti f s
     | <:module_expr< $me1$ $me2$ >> ->
           pp f "@[<2>%a@,(%a)@]" o#module_expr me1 o#module_expr me2

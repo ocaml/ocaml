@@ -292,21 +292,6 @@ Old (no more supported) syntax:
         [ Some(KEYWORD "{" | KEYWORD "do", _) -> raise Stream.Failure
         | _ -> () ]);
 
-  value choose_tvar tpl =
-    let abs = "abstract" in
-    let rec find_alpha n =
-      let ns = if n = 0 then "" else string_of_int n in
-      let s' = abs ^ ns in
-      let rec mem =
-        fun
-        [ [ <:ctyp< '$s$ >> | <:ctyp< +'$s$ >> | <:ctyp< -'$s$ >> :: xs ] ->
-              (s = s') || mem xs
-        | [] -> False
-        | _ -> assert False ] in
-      if mem tpl then find_alpha (succ n)
-      else s'
-    in find_alpha 0;
-
   value stopped_at _loc =
     Some (Loc.move_line 1 _loc) (* FIXME be more precise *);
 
@@ -389,14 +374,20 @@ Old (no more supported) syntax:
 
 
   (* transmit the context *)
-  Gram.Entry.setup_parser sem_expr
-   (let symb = Gram.parse_tokens_after_filter expr in
+  Gram.Entry.setup_parser sem_expr begin
+    let symb1 = Gram.parse_tokens_after_filter expr in
+    let symb =
+      parser
+      [ [: `(ANTIQUOT ("list" as n) s, _loc) :] -> <:expr< $anti:mk_anti ~c:"expr;" n s$ >>
+      | [: a = symb1 :] -> a ]
+    in
     let rec kont al =
       parser
       [ [: `(KEYWORD ";", _loc); a = symb; s :] -> kont <:expr< $al$; $a$ >> s
       | [: :] -> al ]
     in
-    parser [: a = symb; s :] -> kont a s);
+    parser [: a = symb; s :] -> kont a s
+  end;
 
   EXTEND Gram
     GLOBAL:
@@ -532,7 +523,7 @@ Old (no more supported) syntax:
         | "module"; "type"; i = a_UIDENT; "="; mt = module_type ->
             <:sig_item< module type $i$ = $mt$ >>
         | "module"; "type"; i = a_UIDENT ->
-            <:sig_item< module type $i$ = 'abstract >>
+            <:sig_item< module type $i$ >>
         | "open"; i = module_longident -> <:sig_item< open $i$ >>
         | "type"; t = type_declaration ->
             <:sig_item< type $t$ >>
@@ -918,14 +909,14 @@ Old (no more supported) syntax:
         | `QUOTATION x -> Quotation.expand _loc x Quotation.DynAst.ctyp_tag
         | t1 = SELF; "and"; t2 = SELF -> <:ctyp< $t1$ and $t2$ >>
         | (n, tpl) = type_ident_and_parameters; tk = opt_eq_ctyp;
-          cl = LIST0 constrain -> Ast.TyDcl _loc n tpl (tk tpl) cl ] ]
+          cl = LIST0 constrain -> Ast.TyDcl _loc n tpl tk cl ] ]
     ;
     constrain:
       [ [ "constraint"; t1 = ctyp; "="; t2 = ctyp -> (t1, t2) ] ]
     ;
     opt_eq_ctyp:
-      [ [ "="; tk = type_kind -> fun _ -> tk
-        | -> fun tpl -> <:ctyp< '$choose_tvar tpl$ >> ] ]
+      [ [ "="; tk = type_kind -> tk
+        | -> <:ctyp<>> ] ]
     ;
     type_kind:
       [ [ t = ctyp -> t ] ]
@@ -1304,7 +1295,7 @@ Old (no more supported) syntax:
             <:class_sig_item< type $t1$ = $t2$ >> ] ]
     ;
     type_constraint:
-      [ [ "type" -> () ] ]
+      [ [ "type" | "constraint" -> () ] ]
     ;
     class_description:
       [ [ cd1 = SELF; "and"; cd2 = SELF -> <:class_type< $cd1$ and $cd2$ >>
@@ -1623,10 +1614,12 @@ Old (no more supported) syntax:
     ;
     module_type_quot:
       [ [ x = module_type -> x
+        | -> <:module_type<>>
       ] ]
     ;
     module_expr_quot:
       [ [ x = module_expr -> x
+        | -> <:module_expr<>>
       ] ]
     ;
     match_case_quot:

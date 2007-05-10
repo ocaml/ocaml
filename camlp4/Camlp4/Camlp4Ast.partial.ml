@@ -152,8 +152,9 @@
       (* while e do { e } *)
     | ExWhi of Loc.t and expr and expr ]
   and module_type =
+    [ MtNil of Loc.t
       (* i *) (* A.B.C *)
-    [ MtId  of Loc.t and ident
+    | MtId  of Loc.t and ident
       (* functor (s : mt) -> mt *)
     | MtFun of Loc.t and string and module_type and module_type
       (* 's *)
@@ -232,8 +233,9 @@
     | McArr of Loc.t and patt and expr and expr
     | McAnt of Loc.t and string (* $s$ *) ]
   and module_expr =
+    [ MeNil of Loc.t
       (* i *)
-    [ MeId  of Loc.t and ident
+    | MeId  of Loc.t and ident
       (* me me *)
     | MeApp of Loc.t and module_expr and module_expr
       (* functor (s : mt) -> me *)

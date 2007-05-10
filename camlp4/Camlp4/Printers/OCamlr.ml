@@ -171,9 +171,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     [ Ast.TyDcl _ tn tp te cl -> do {
         pp f "@[<2>%a%a@]" o#var tn o#type_params tp;
         match te with
-        [ <:ctyp< '$s$ >>
-            when not (List.exists (fun [ <:ctyp< '$s'$ >> -> s = s'
-                                       | _ -> False ]) tp) -> ()
+        [ <:ctyp<>> -> ()
         | _ -> pp f " =@ %a" o#ctyp te ];
         if cl <> [] then pp f "@ %a" (list o#constrain "@ ") cl else ();
       }

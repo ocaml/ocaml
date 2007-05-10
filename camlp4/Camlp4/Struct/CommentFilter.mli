@@ -19,7 +19,7 @@
 module Make (Token : Sig.Camlp4Token) : sig
   open Token;
 
-  type t = 'abstract;
+  type t;
 
   value mk : unit -> t;
 

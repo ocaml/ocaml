@@ -44,7 +44,7 @@ end;
 
 module type Loc = sig
 
-  type t = 'a;
+  type t;
 
   (** Return a start location for the given file name.
       This location starts at the begining of the file. *)
@@ -350,7 +350,31 @@ end;
     It provides:
       - Types for all kinds of structure.
       - Map: A base class for map traversals.
-      - Map classes and functions for common kinds. *)
+      - Map classes and functions for common kinds.
+
+    (* Core language *)
+    ctyp               (* Representaion of types                                     *)
+    patt               (* The type of patterns                                       *)
+    expr               (* The type of expressions                                    *)
+    match_case         (* The type of cases for match/function/try constructions     *)
+    ident              (* The type of identifiers (including path like Foo(X).Bar.y) *)
+    binding            (* The type of let bindings                                   *)
+    rec_binding        (* The type of record definitions                             *)
+
+    (* Modules *)
+    module_type        (* The type of module types                                   *)
+    sig_item           (* The type of signature items                                *)
+    str_item           (* The type of structure items                                *)
+    module_expr        (* The type of module expressions                             *)
+    module_binding     (* The type of recursive module definitions                   *)
+    with_constr        (* The type of `with' constraints                             *)
+
+    (* Classes *)
+    class_type         (* The type of class types                                    *)
+    class_sig_item     (* The type of class signature items                          *)
+    class_expr         (* The type of class expressions                              *)
+    class_str_item     (* The type of class structure items                          *)
+ *)
 module type Camlp4Ast = sig
 
   module Loc : Loc;
@@ -1271,7 +1295,7 @@ module type Camlp4Syntax = sig
   value opt_class_self_type : Gram.Entry.t Ast.ctyp;
   value opt_comma_ctyp : Gram.Entry.t Ast.ctyp;
   value opt_dot_dot : Gram.Entry.t Ast.meta_bool;
-  value opt_eq_ctyp : Gram.Entry.t (list Ast.ctyp -> Ast.ctyp);
+  value opt_eq_ctyp : Gram.Entry.t Ast.ctyp;
   value opt_expr : Gram.Entry.t Ast.expr;
   value opt_meth_list : Gram.Entry.t Ast.ctyp;
   value opt_mutable : Gram.Entry.t Ast.meta_bool;

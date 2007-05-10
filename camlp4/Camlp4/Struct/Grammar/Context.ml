@@ -20,7 +20,7 @@
 module type S = sig
   module Token : Sig.Token;
   open Token;
-  type t = 'abstract;
+  type t;
   value call_with_ctx : Stream.t (Token.t * Loc.t) -> (t -> 'a) -> 'a;
   value loc_bp : t -> Loc.t;
   value loc_ep : t -> Loc.t;

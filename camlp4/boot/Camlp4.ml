@@ -350,7 +350,7 @@ module Sig =
       sig
         (** The name of the extension, typically the module name. *)
         val name : string
-        (** The version of the extension, typically $Id: Sig.ml,v 1.2.2.7 2007/04/20 14:57:28 pouillar Exp $ with a versionning system. *)
+        (** The version of the extension, typically $Id: Sig.ml,v 1.2.2.8 2007/04/26 19:51:49 pouillar Exp $ with a versionning system. *)
         val version : string
       end
     module type Loc =
@@ -868,7 +868,7 @@ module Sig =
           | ExTyc of Loc.t * expr * ctyp | ExVrn of Loc.t * string
           | ExWhi of Loc.t * expr * expr
           and module_type =
-          | MtId of Loc.t * ident
+          | MtNil of Loc.t | MtId of Loc.t * ident
           | MtFun of Loc.t * string * module_type * module_type
           | MtQuo of Loc.t * string | MtSig of Loc.t * sig_item
           | MtWit of Loc.t * module_type * with_constr
@@ -904,7 +904,7 @@ module Sig =
           | McNil of Loc.t | McOr of Loc.t * match_case * match_case
           | McArr of Loc.t * patt * expr * expr | McAnt of Loc.t * string
           and module_expr =
-          | MeId of Loc.t * ident
+          | MeNil of Loc.t | MeId of Loc.t * ident
           | MeApp of Loc.t * module_expr * module_expr
           | MeFun of Loc.t * string * module_type * module_expr
           | MeStr of Loc.t * str_item
@@ -1284,7 +1284,7 @@ module Sig =
           | ExTyc of Loc.t * expr * ctyp | ExVrn of Loc.t * string
           | ExWhi of Loc.t * expr * expr
           and module_type =
-          | MtId of Loc.t * ident
+          | MtNil of Loc.t | MtId of Loc.t * ident
           | MtFun of Loc.t * string * module_type * module_type
           | MtQuo of Loc.t * string | MtSig of Loc.t * sig_item
           | MtWit of Loc.t * module_type * with_constr
@@ -1320,7 +1320,7 @@ module Sig =
           | McNil of Loc.t | McOr of Loc.t * match_case * match_case
           | McArr of Loc.t * patt * expr * expr | McAnt of Loc.t * string
           and module_expr =
-          | MeId of Loc.t * ident
+          | MeNil of Loc.t | MeId of Loc.t * ident
           | MeApp of Loc.t * module_expr * module_expr
           | MeFun of Loc.t * string * module_type * module_expr
           | MeStr of Loc.t * str_item
@@ -1766,7 +1766,7 @@ module Sig =
         val opt_class_self_type : Ast.ctyp Gram.Entry.t
         val opt_comma_ctyp : Ast.ctyp Gram.Entry.t
         val opt_dot_dot : Ast.meta_bool Gram.Entry.t
-        val opt_eq_ctyp : (Ast.ctyp list -> Ast.ctyp) Gram.Entry.t
+        val opt_eq_ctyp : Ast.ctyp Gram.Entry.t
         val opt_expr : Ast.expr Gram.Entry.t
         val opt_meth_list : Ast.ctyp Gram.Entry.t
         val opt_mutable : Ast.meta_bool Gram.Entry.t
@@ -7200,6 +7200,12 @@ module Struct =
                                       Ast.IdUid (_loc, "MeId"))),
                                   meta_acc_Loc_t _loc x0),
                                 meta_ident _loc x1)
+                          | Ast.MeNil x0 ->
+                              Ast.ExApp (_loc,
+                                Ast.ExId (_loc,
+                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
+                                    Ast.IdUid (_loc, "MeNil"))),
+                                meta_acc_Loc_t _loc x0)
                         and meta_module_type _loc =
                           function
                           | Ast.MtAnt (x0, x1) -> Ast.ExAnt (x0, x1)
@@ -7251,6 +7257,12 @@ module Struct =
                                       Ast.IdUid (_loc, "MtId"))),
                                   meta_acc_Loc_t _loc x0),
                                 meta_ident _loc x1)
+                          | Ast.MtNil x0 ->
+                              Ast.ExApp (_loc,
+                                Ast.ExId (_loc,
+                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
+                                    Ast.IdUid (_loc, "MtNil"))),
+                                meta_acc_Loc_t _loc x0)
                         and meta_patt _loc =
                           function
                           | Ast.PaVrn (x0, x1) ->
@@ -9210,6 +9222,12 @@ module Struct =
                                       Ast.IdUid (_loc, "MeId"))),
                                   meta_acc_Loc_t _loc x0),
                                 meta_ident _loc x1)
+                          | Ast.MeNil x0 ->
+                              Ast.PaApp (_loc,
+                                Ast.PaId (_loc,
+                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
+                                    Ast.IdUid (_loc, "MeNil"))),
+                                meta_acc_Loc_t _loc x0)
                         and meta_module_type _loc =
                           function
                           | Ast.MtAnt (x0, x1) -> Ast.PaAnt (x0, x1)
@@ -9261,6 +9279,12 @@ module Struct =
                                       Ast.IdUid (_loc, "MtId"))),
                                   meta_acc_Loc_t _loc x0),
                                 meta_ident _loc x1)
+                          | Ast.MtNil x0 ->
+                              Ast.PaApp (_loc,
+                                Ast.PaId (_loc,
+                                  Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
+                                    Ast.IdUid (_loc, "MtNil"))),
+                                meta_acc_Loc_t _loc x0)
                         and meta_patt _loc =
                           function
                           | Ast.PaVrn (x0, x1) ->
@@ -9996,6 +10020,7 @@ module Struct =
                   | PaVrn (_x0, _x1) -> PaVrn (o#_Loc_t _x0, o#string _x1)
                 method module_type : module_type -> module_type =
                   function
+                  | MtNil _x0 -> MtNil (o#_Loc_t _x0)
                   | MtId (_x0, _x1) -> MtId (o#_Loc_t _x0, o#ident _x1)
                   | MtFun (_x0, _x1, _x2, _x3) ->
                       MtFun (o#_Loc_t _x0, o#string _x1, o#module_type _x2,
@@ -10008,6 +10033,7 @@ module Struct =
                   | MtAnt (_x0, _x1) -> MtAnt (o#_Loc_t _x0, o#string _x1)
                 method module_expr : module_expr -> module_expr =
                   function
+                  | MeNil _x0 -> MeNil (o#_Loc_t _x0)
                   | MeId (_x0, _x1) -> MeId (o#_Loc_t _x0, o#ident _x1)
                   | MeApp (_x0, _x1, _x2) ->
                       MeApp (o#_Loc_t _x0, o#module_expr _x1,
@@ -10439,6 +10465,7 @@ module Struct =
                   | PaVrn (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
                 method module_type : module_type -> 'self_type =
                   function
+                  | MtNil _x0 -> o#_Loc_t _x0
                   | MtId (_x0, _x1) -> (o#_Loc_t _x0)#ident _x1
                   | MtFun (_x0, _x1, _x2, _x3) ->
                       (((o#_Loc_t _x0)#string _x1)#module_type _x2)#
@@ -10450,6 +10477,7 @@ module Struct =
                   | MtAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
                 method module_expr : module_expr -> 'self_type =
                   function
+                  | MeNil _x0 -> o#_Loc_t _x0
                   | MeId (_x0, _x1) -> (o#_Loc_t _x0)#ident _x1
                   | MeApp (_x0, _x1, _x2) ->
                       ((o#_Loc_t _x0)#module_expr _x1)#module_expr _x2
@@ -11251,15 +11279,15 @@ module Struct =
               | _ -> assert false
             let rec type_decl tl cl loc m pflag =
               function
-              | TyMan (_, t1, t2) ->
+              | Ast.TyMan (_, t1, t2) ->
                   type_decl tl cl loc (Some (ctyp t1)) pflag t2
-              | TyPrv (_, t) -> type_decl tl cl loc m true t
-              | TyRec (_, t) ->
+              | Ast.TyPrv (_, t) -> type_decl tl cl loc m true t
+              | Ast.TyRec (_, t) ->
                   mktype loc tl cl
                     (Ptype_record (List.map mktrecord (list_of_ctyp t []),
                        mkprivate' pflag))
                     m
-              | TySum (_, t) ->
+              | Ast.TySum (_, t) ->
                   mktype loc tl cl
                     (Ptype_variant (List.map mkvariant (list_of_ctyp t []),
                        mkprivate' pflag))
@@ -11271,10 +11299,7 @@ module Struct =
                   else
                     (let m =
                        match t with
-                       | TyQuo (_, s) ->
-                           if List.mem_assoc s tl
-                           then Some (ctyp t)
-                           else None
+                       | Ast.TyNil _ -> None
                        | _ -> Some (ctyp t) in
                      let k = if pflag then Ptype_private else Ptype_abstract
                      in mktype loc tl cl k m)
@@ -11830,15 +11855,17 @@ module Struct =
               | _ -> assert false
             and module_type =
               function
-              | MtId (loc, i) -> mkmty loc (Pmty_ident (long_uident i))
-              | MtFun (loc, n, nt, mt) ->
+              | Ast.MtNil loc ->
+                  error loc "abstract/nil module type not allowed here"
+              | Ast.MtId (loc, i) -> mkmty loc (Pmty_ident (long_uident i))
+              | Ast.MtFun (loc, n, nt, mt) ->
                   mkmty loc
                     (Pmty_functor (n, module_type nt, module_type mt))
-              | MtQuo (loc, _) ->
-                  error loc "abstract module type not allowed here"
-              | MtSig (loc, sl) ->
+              | Ast.MtQuo (loc, _) ->
+                  error loc "module type variable not allowed here"
+              | Ast.MtSig (loc, sl) ->
                   mkmty loc (Pmty_signature (sig_item sl []))
-              | MtWit (loc, mt, wc) ->
+              | Ast.MtWit (loc, mt, wc) ->
                   mkmty loc (Pmty_with (module_type mt, mkwithc wc []))
               | Ast.MtAnt (_, _) -> assert false
             and sig_item s l =
@@ -11906,15 +11933,16 @@ module Struct =
               | _ -> assert false
             and module_expr =
               function
-              | MeId (loc, i) -> mkmod loc (Pmod_ident (long_uident i))
-              | MeApp (loc, me1, me2) ->
+              | Ast.MeNil loc -> error loc "nil module expression"
+              | Ast.MeId (loc, i) -> mkmod loc (Pmod_ident (long_uident i))
+              | Ast.MeApp (loc, me1, me2) ->
                   mkmod loc (Pmod_apply (module_expr me1, module_expr me2))
-              | MeFun (loc, n, mt, me) ->
+              | Ast.MeFun (loc, n, mt, me) ->
                   mkmod loc
                     (Pmod_functor (n, module_type mt, module_expr me))
-              | MeStr (loc, sl) ->
+              | Ast.MeStr (loc, sl) ->
                   mkmod loc (Pmod_structure (str_item sl []))
-              | MeTyc (loc, me, mt) ->
+              | Ast.MeTyc (loc, me, mt) ->
                   mkmod loc
                     (Pmod_constraint (module_expr me, module_type mt))
               | Ast.MeAnt (loc, _) ->
@@ -14855,7 +14883,7 @@ module Printers =
           struct
             let name = "Camlp4.Printers.OCaml"
             let version =
-              "$Id: OCaml.ml,v 1.21.2.5 2007/04/20 14:57:28 pouillar Exp $"
+              "$Id: OCaml.ml,v 1.21.2.6 2007/04/26 19:51:49 pouillar Exp $"
           end
         module Make (Syntax : Sig.Camlp4Syntax) =
           struct
@@ -15584,7 +15612,7 @@ module Printers =
                       | Ast.TyObj (_, (Ast.TyNil _), Ast.BTrue) ->
                           pp f "< .. >"
                       | Ast.TyObj (_, t, Ast.BTrue) ->
-                          pp f "@[<0>@[<2><@ %a@ ..@]@ >@]" o#ctyp t
+                          pp f "@[<0>@[<2><@ %a;@ ..@]@ >@]" o#ctyp t
                       | Ast.TyObj (_, t, Ast.BFalse) ->
                           pp f "@[<0>@[<2><@ %a@]@ >@]" o#ctyp t
                       | Ast.TyQuo (_, s) -> pp f "'%a" o#var s
@@ -15642,14 +15670,7 @@ module Printers =
                       | Ast.TyDcl (_, tn, tp, te, cl) ->
                           (pp f "@[<2>%a%a@]" o#type_params tp o#var tn;
                            (match te with
-                            | Ast.TyQuo (_, s) when
-                                not
-                                  (List.exists
-                                     (function
-                                      | Ast.TyQuo (_, s') -> s = s'
-                                      | _ -> false)
-                                     tp)
-                                -> ()
+                            | Ast.TyNil _ -> ()
                             | _ -> pp f " =@ %a" o#ctyp te);
                            if cl <> []
                            then pp f "@ %a" (list o#constrain "@ ") cl
@@ -15714,7 +15735,7 @@ module Printers =
                       | Ast.SgMod (_, s, mt) ->
                           pp f "@[<2>module %a :@ %a%s@]" o#var s
                             o#module_type mt semisep
-                      | Ast.SgMty (_, s, (Ast.MtQuo (_, _))) ->
+                      | Ast.SgMty (_, s, (Ast.MtNil _)) ->
                           pp f "@[<2>module type %a%s@]" o#var s semisep
                       | Ast.SgMty (_, s, mt) ->
                           pp f "@[<2>module type %a =@ %a%s@]" o#var s
@@ -15809,6 +15830,7 @@ module Printers =
                     let () = o#node f mt Ast.loc_of_module_type
                     in
                       match mt with
+                      | Ast.MtNil _ -> assert false
                       | Ast.MtId (_, i) -> o#ident f i
                       | Ast.MtAnt (_, s) -> o#anti f s
                       | Ast.MtFun (_, s, mt1, mt2) ->
@@ -15841,6 +15863,7 @@ module Printers =
                     let () = o#node f me Ast.loc_of_module_expr
                     in
                       match me with
+                      | Ast.MeNil _ -> assert false
                       | Ast.MeId (_, i) -> o#ident f i
                       | Ast.MeAnt (_, s) -> o#anti f s
                       | Ast.MeApp (_, me1, me2) ->
@@ -16288,14 +16311,7 @@ module Printers =
                       | Ast.TyDcl (_, tn, tp, te, cl) ->
                           (pp f "@[<2>%a%a@]" o#var tn o#type_params tp;
                            (match te with
-                            | Ast.TyQuo (_, s) when
-                                not
-                                  (List.exists
-                                     (function
-                                      | Ast.TyQuo (_, s') -> s = s'
-                                      | _ -> false)
-                                     tp)
-                                -> ()
+                            | Ast.TyNil _ -> ()
                             | _ -> pp f " =@ %a" o#ctyp te);
                            if cl <> []
                            then pp f "@ %a" (list o#constrain "@ ") cl

@@ -300,14 +300,14 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | _ -> assert False (*FIXME*) ];
   value rec type_decl tl cl loc m pflag =
     fun
-    [ TyMan _ t1 t2 ->
+    [ <:ctyp< $t1$ == $t2$ >> ->
         type_decl tl cl loc (Some (ctyp t1)) pflag t2
-    | TyPrv _ t ->
+    | <:ctyp< private $t$ >> ->
         type_decl tl cl loc m True t
-    | TyRec _ t ->
+    | <:ctyp< { $t$ } >> ->
         mktype loc tl cl
           (Ptype_record (List.map mktrecord (list_of_ctyp t [])) (mkprivate' pflag)) m
-    | TySum _ t ->
+    | <:ctyp< [ $t$ ] >> ->
         mktype loc tl cl
           (Ptype_variant (List.map mkvariant (list_of_ctyp t [])) (mkprivate' pflag)) m
     | t ->
@@ -315,7 +315,7 @@ module Make (Ast : Sig.Camlp4Ast) = struct
           error loc "only one manifest type allowed by definition" else
         let m =
           match t with
-          [ TyQuo _ s -> if List.mem_assoc s tl then Some (ctyp t) else None
+          [ <:ctyp<>> -> None
           | _ -> Some (ctyp t) ]
         in
         let k = if pflag then Ptype_private else Ptype_abstract in
@@ -792,13 +792,14 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | _ -> assert False ]
   and module_type =
     fun
-    [ MtId loc i -> mkmty loc (Pmty_ident (long_uident i))
-    | MtFun loc n nt mt ->
+    [ <:module_type@loc<>> -> error loc "abstract/nil module type not allowed here"
+    | <:module_type@loc< $id:i$ >> -> mkmty loc (Pmty_ident (long_uident i))
+    | <:module_type@loc< functor ($n$ : $nt$) -> $mt$ >> ->
         mkmty loc (Pmty_functor n (module_type nt) (module_type mt))
-    | MtQuo loc _ -> error loc "abstract module type not allowed here"
-    | MtSig loc sl ->
+    | <:module_type@loc< '$_$ >> -> error loc "module type variable not allowed here"
+    | <:module_type@loc< sig $sl$ end >> ->
         mkmty loc (Pmty_signature (sig_item sl []))
-    | MtWit loc mt wc ->
+    | <:module_type@loc< $mt$ with $wc$ >> ->
         mkmty loc (Pmty_with (module_type mt) (mkwithc wc []))
     | <:module_type< $anti:_$ >> -> assert False ]
   and sig_item s l =
@@ -851,14 +852,15 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | _ -> assert False ]
   and module_expr =
     fun
-    [ MeId loc i -> mkmod loc (Pmod_ident (long_uident i))
-    | MeApp loc me1 me2 ->
+    [ <:module_expr@loc<>> -> error loc "nil module expression"
+    | <:module_expr@loc< $id:i$ >> -> mkmod loc (Pmod_ident (long_uident i))
+    | <:module_expr@loc< $me1$ $me2$ >> ->
         mkmod loc (Pmod_apply (module_expr me1) (module_expr me2))
-    | MeFun loc n mt me ->
+    | <:module_expr@loc< functor ($n$ : $mt$) -> $me$ >> ->
         mkmod loc (Pmod_functor n (module_type mt) (module_expr me))
-    | MeStr loc sl ->
+    | <:module_expr@loc< struct $sl$ end >> ->
         mkmod loc (Pmod_structure (str_item sl []))
-    | MeTyc loc me mt ->
+    | <:module_expr@loc< ($me$ : $mt$) >> ->
         mkmod loc (Pmod_constraint (module_expr me) (module_type mt))
     | <:module_expr@loc< $anti:_$ >> -> error loc "antiquotation in module_expr" ]
   and str_item s l =

@@ -23,7 +23,7 @@ module R =
       struct
         let name = "Camlp4RevisedParserParser"
         let version =
-          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.14 2007/04/20 14:57:28 pouillar Exp $"
+          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.15 2007/04/26 19:51:50 pouillar Exp $"
       end
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
@@ -400,19 +400,6 @@ Old (no more supported) syntax:
                | Some (((KEYWORD "{" | KEYWORD "do"), _)) ->
                    raise Stream.Failure
                | _ -> ())
-        let choose_tvar tpl =
-          let abs = "abstract" in
-          let rec find_alpha n =
-            let ns = if n = 0 then "" else string_of_int n in
-            let s' = abs ^ ns in
-            let rec mem =
-              function
-              | (Ast.TyQuo (_, s) | Ast.TyQuP (_, s) | Ast.TyQuM (_, s)) ::
-                  xs -> (s = s') || (mem xs)
-              | [] -> false
-              | _ -> assert false
-            in if mem tpl then find_alpha (succ n) else s'
-          in find_alpha 0
         let stopped_at _loc = Some (Loc.move_line 1 _loc)
         (* FIXME be more precise *)
         let symbolchar =
@@ -1240,8 +1227,7 @@ Old (no more supported) syntax:
                                  (a_UIDENT : 'a_UIDENT Gram.Entry.t)) ],
                           (Gram.Action.mk
                              (fun (i : 'a_UIDENT) _ _ (_loc : Loc.t) ->
-                                (Ast.SgMty (_loc, i,
-                                   Ast.MtQuo (_loc, "abstract")) :
+                                (Ast.SgMty (_loc, i, Ast.MtNil _loc) :
                                   'sig_item))));
                          ([ Gram.Skeyword "module"; Gram.Skeyword "type";
                             Gram.Snterm
@@ -3538,7 +3524,7 @@ Old (no more supported) syntax:
                              (fun (cl : 'constrain list) (tk : 'opt_eq_ctyp)
                                 ((n, tpl) : 'type_ident_and_parameters)
                                 (_loc : Loc.t) ->
-                                (Ast.TyDcl (_loc, n, tpl, tk tpl, cl) :
+                                (Ast.TyDcl (_loc, n, tpl, tk, cl) :
                                   'type_declaration))));
                          ([ Gram.Sself; Gram.Skeyword "and"; Gram.Sself ],
                           (Gram.Action.mk
@@ -3609,15 +3595,14 @@ Old (no more supported) syntax:
                        [ ([],
                           (Gram.Action.mk
                              (fun (_loc : Loc.t) ->
-                                (fun tpl -> Ast.TyQuo (_loc, choose_tvar tpl) :
-                                  'opt_eq_ctyp))));
+                                (Ast.TyNil _loc : 'opt_eq_ctyp))));
                          ([ Gram.Skeyword "=";
                             Gram.Snterm
                               (Gram.Entry.obj
                                  (type_kind : 'type_kind Gram.Entry.t)) ],
                           (Gram.Action.mk
                              (fun (tk : 'type_kind) _ (_loc : Loc.t) ->
-                                (fun _ -> tk : 'opt_eq_ctyp)))) ]) ]))
+                                (tk : 'opt_eq_ctyp)))) ]) ]))
                   ());
              Gram.extend (type_kind : 'type_kind Gram.Entry.t)
                ((fun () ->
@@ -7429,7 +7414,11 @@ Old (no more supported) syntax:
                ((fun () ->
                    (None,
                     [ (None, None,
-                       [ ([ Gram.Snterm
+                       [ ([],
+                          (Gram.Action.mk
+                             (fun (_loc : Loc.t) ->
+                                (Ast.MtNil _loc : 'module_type_quot))));
+                         ([ Gram.Snterm
                               (Gram.Entry.obj
                                  (module_type : 'module_type Gram.Entry.t)) ],
                           (Gram.Action.mk
@@ -7440,7 +7429,11 @@ Old (no more supported) syntax:
                ((fun () ->
                    (None,
                     [ (None, None,
-                       [ ([ Gram.Snterm
+                       [ ([],
+                          (Gram.Action.mk
+                             (fun (_loc : Loc.t) ->
+                                (Ast.MeNil _loc : 'module_expr_quot))));
+                         ([ Gram.Snterm
                               (Gram.Entry.obj
                                  (module_expr : 'module_expr Gram.Entry.t)) ],
                           (Gram.Action.mk
@@ -7934,7 +7927,7 @@ module Camlp4QuotationCommon =
       struct
         let name = "Camlp4QuotationCommon"
         let version =
-          "$Id: Camlp4QuotationCommon.ml,v 1.1.4.3 2007/03/29 14:31:05 pouillar Exp $"
+          "$Id: Camlp4QuotationCommon.ml,v 1.1.4.4 2007/04/26 19:51:50 pouillar Exp $"
       end
     module Make
       (Syntax : Sig.Camlp4Syntax)
@@ -11935,7 +11928,7 @@ module M =
       struct
         let name = "Camlp4MacroParser"
         let version =
-          "$Id: Camlp4MacroParser.ml,v 1.1.4.4 2007/04/20 14:57:28 pouillar Exp $"
+          "$Id: Camlp4MacroParser.ml,v 1.1.4.5 2007/04/26 19:51:49 pouillar Exp $"
       end
     (*
 Added statements:

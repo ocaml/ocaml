@@ -571,7 +571,12 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       ] ]
     ;
     star_ctyp:
-      [ [ t1 = ctyp LEVEL "ctyp1"; "*"; t2 = SELF -> <:ctyp< $t1$ * $t2$ >>
+      [ [ `ANTIQUOT (""|"typ" as n) s ->
+            <:ctyp< $anti:mk_anti ~c:"ctyp" n s$ >>
+        | `ANTIQUOT ("list" as n) s ->
+            <:ctyp< $anti:mk_anti ~c:"ctyp*" n s$ >>
+        | t1 = ctyp LEVEL "ctyp1"; "*"; t2 = SELF ->
+            <:ctyp< $t1$ * $t2$ >>
         | t = ctyp LEVEL "ctyp1" -> t
       ] ]
     ;
