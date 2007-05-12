@@ -34,10 +34,14 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     do {
       Printf.eprintf "\
 New syntax:
+    (e1; e2; ... ; en) OR begin e1; e2; ... ; en end
+    while e do e1; e2; ... ; en done
+    for v = v1 to/downto v2 do e1; e2; ... ; en done
+Old syntax (still supported):
     do {e1; e2; ... ; en}
     while e do {e1; e2; ... ; en}
     for v = v1 to/downto v2 do {e1; e2; ... ; en}
-Old (no more supported) syntax:
+Very old (no more supported) syntax:
     do e1; e2; ... ; en-1; return en
     while e do e1; e2; ... ; en; done
     for v = v1 to/downto v2 do e1; e2; ... ; en; done
@@ -296,8 +300,8 @@ Old (no more supported) syntax:
 
   value symbolchar =
     let list =
-      ['!'; '$'; '%'; '&'; '*'; '+'; '-'; '.'; '/'; ':'; '<'; '='; '>'; '?';
-      '@'; '^'; '|'; '~']
+      ['$'; '!'; '%'; '&'; '*'; '+'; '-'; '.'; '/'; ':'; '<'; '='; '>'; '?';
+       '@'; '^'; '|'; '~'; '\\']
     in
     let rec loop s i =
       if i == String.length s then True
@@ -351,7 +355,7 @@ Old (no more supported) syntax:
         <:expr< $lid:x$ >>)
   ;
 
-  let list = ['*'; '/'; '%'] in
+  let list = ['*'; '/'; '%'; '\\'] in
   Gram.Entry.setup_parser infixop3
     (parser
       [: `(KEYWORD x | SYMBOL x, _loc)
