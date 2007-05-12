@@ -66,13 +66,12 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   module StringSet = Set.Make String;
 
   value is_infix =
-    let infixes =
+    let first_chars = ['='; '<'; '>'; '|'; '&'; '$'; '@'; '^'; '+'; '-'; '*'; '/'; '%'; '\\']
+    and infixes =
       List.fold_right StringSet.add
-(*         "**."; "=.";  "<>.";  "<.";  ">."; "<=."; ">=."; "~-"; "~-." *)
-        ["=="; "!="; "+"; "-"; "+."; "-."; "*"; "*."; "/"; "/."; "**";
-          "="; "<>"; "<"; ">"; "<="; ">="; "^"; "^^"; "@"; "&&"; "||";
-         "asr"; "land"; "lor"; "lsl"; "lsr"; "lxor"; "mod"; "or" ] StringSet.empty
-    in fun s -> StringSet.mem s infixes;
+        ["asr"; "land"; "lor"; "lsl"; "lsr"; "lxor"; "mod"; "or"] StringSet.empty
+    in fun s -> (StringSet.mem s infixes
+                 || (s <> "" && List.mem s.[0] first_chars));
 
   value is_keyword =
     let keywords =
@@ -251,7 +250,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     method match_case f =
       fun
       [ <:match_case@_loc<>> ->
-          pp f "@[<2>_@ ->@ %a@]" o#raise_match_failure _loc
+          pp f "@[<2>@ _ ->@ %a@]" o#raise_match_failure _loc
       | a -> o#match_case_aux f a ];
 
     method match_case_aux f =
