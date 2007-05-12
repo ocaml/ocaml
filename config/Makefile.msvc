@@ -102,7 +102,7 @@ MKEXE=$(BYTECC) /Fe$(1) $(2) && ($(MERGEMANIFESTEXE))
 
 ### How to merge a .manifest (if any) in a .dll
 MERGEMANIFESTDLL=test ! -f $(1).manifest || mt -nologo -outputresource:"$(1);\#2" -manifest $(1).manifest && rm -f $(1).manifest
-#ml let mergemanifestexe out = Printf.sprintf "test ! -f %s.manifest || mt -nologo -outputresource:\"%s;\\#2\" -manifest %s.manifest && rm -f %s.manifest" out out out out;;
+#ml let mergemanifestdll out = Printf.sprintf "test ! -f %s.manifest || mt -nologo -outputresource:\"%s;\\#2\" -manifest %s.manifest && rm -f %s.manifest" out out out out;;
 
 ### How to build a DLL
 MKDLL=link /nologo /dll /out:$(1) /implib:$(2) $(3) && ($(MERGEMANIFESTDLL))
