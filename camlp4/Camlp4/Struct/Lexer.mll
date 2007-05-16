@@ -230,7 +230,7 @@ module Make (Token : Sig.Camlp4Token)
 
   let left_delimitor =
     (* At least a safe_delimchars *)
-    left_delims (delimchars|left_delims)* safe_delimchars (delimchars|left_delims)*
+    left_delims delimchars* safe_delimchars (delimchars|left_delims)*
 
   (* A '(' or a new super '(' without "(<" *)
   | '(' (['|' ':'] delimchars*)?
