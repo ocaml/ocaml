@@ -220,10 +220,10 @@ module Make (Token : Sig.Camlp4Token)
   (* Delimitors are extended (from 3.09) in a conservative way *)
 
   (* These chars that can't start an expression or a pattern: *)
-  let safe_delimchars = ['%' '&' '.' '/' '@' '^']
+  let safe_delimchars = ['%' '&' '/' '@' '^']
 
   (* These symbols are unsafe since "[<", "[|", etc. exsist. *)
-  let delimchars = safe_delimchars | ['|' '<' '>' ':' '=']
+  let delimchars = safe_delimchars | ['|' '<' '>' ':' '=' '.']
 
   let left_delims  = ['(' '[' '{']
   let right_delims = [')' ']' '}']
