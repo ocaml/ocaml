@@ -44,6 +44,7 @@ type summary =
 
 type t = {
   values: (Path.t * value_description) Ident.tbl;
+  annotations: (Path.t * Annot.ident) Ident.tbl;
   constrs: constructor_description Ident.tbl;
   labels: label_description Ident.tbl;
   types: (Path.t * type_declaration) Ident.tbl;
@@ -63,6 +64,7 @@ and module_components_repr =
 
 and structure_components = {
   mutable comp_values: (string, (value_description * int)) Tbl.t;
+  mutable comp_annotations: (string, (Annot.ident * int)) Tbl.t;
   mutable comp_constrs: (string, (constructor_description * int)) Tbl.t;
   mutable comp_labels: (string, (label_description * int)) Tbl.t;
   mutable comp_types: (string, (type_declaration * int)) Tbl.t;
@@ -83,7 +85,7 @@ and functor_components = {
 }
 
 let empty = {
-  values = Ident.empty; constrs = Ident.empty;
+  values = Ident.empty; annotations = Ident.empty; constrs = Ident.empty;
   labels = Ident.empty; types = Ident.empty;
   modules = Ident.empty; modtypes = Ident.empty;
   components = Ident.empty; classes = Ident.empty;
@@ -388,6 +390,13 @@ let lookup_simple proj1 proj2 lid env =
 
 let lookup_value =
   lookup (fun env -> env.values) (fun sc -> sc.comp_values)
+let lookup_annot id e =
+  let (path, annot) =
+    lookup (fun env -> env.annotations) (fun sc -> sc.comp_annotations) id e
+  in
+  match annot with
+  | Annot.Iref_external "" -> (path, Annot.Iref_external (Path.name path))
+  | _ -> (path, annot)
 and lookup_constructor =
   lookup_simple (fun env -> env.constrs) (fun sc -> sc.comp_constrs)
 and lookup_label =
@@ -478,7 +487,8 @@ let rec components_of_module env sub path mty =
   lazy(match scrape_modtype mty env with
     Tmty_signature sg ->
       let c =
-        { comp_values = Tbl.empty; comp_constrs = Tbl.empty;
+        { comp_values = Tbl.empty; comp_annotations = Tbl.empty;
+          comp_constrs = Tbl.empty;
           comp_labels = Tbl.empty; comp_types = Tbl.empty;
           comp_modules = Tbl.empty; comp_modtypes = Tbl.empty;
           comp_components = Tbl.empty; comp_classes = Tbl.empty;
@@ -492,6 +502,11 @@ let rec components_of_module env sub path mty =
             let decl' = Subst.value_description sub decl in
             c.comp_values <-
               Tbl.add (Ident.name id) (decl', !pos) c.comp_values;
+            if !Clflags.annotations then begin
+              c.comp_annotations <-
+                Tbl.add (Ident.name id) (Annot.Iref_external "", !pos)
+                        c.comp_annotations;
+            end;
             begin match decl.val_kind with
               Val_prim _ -> () | _ -> incr pos
             end
@@ -552,7 +567,8 @@ let rec components_of_module env sub path mty =
           fcomp_cache = Hashtbl.create 17 }
   | Tmty_ident p ->
         Structure_comps {
-          comp_values = Tbl.empty; comp_constrs = Tbl.empty;
+          comp_values = Tbl.empty; comp_annotations = Tbl.empty;
+          comp_constrs = Tbl.empty;
           comp_labels = Tbl.empty; comp_types = Tbl.empty;
           comp_modules = Tbl.empty; comp_modtypes = Tbl.empty;
           comp_components = Tbl.empty; comp_classes = Tbl.empty;
@@ -564,6 +580,12 @@ and store_value id path decl env =
   { env with
     values = Ident.add id (path, decl) env.values;
     summary = Env_value(env.summary, id, decl) }
+
+and store_annot id path annot env =
+  if !Clflags.annotations then
+    { env with
+      annotations = Ident.add id (path, annot) env.annotations }
+  else env
 
 and store_type id path info env =
   { env with
@@ -645,6 +667,9 @@ let _ =
 let add_value id desc env =
   store_value id (Pident id) desc env
 
+let add_annot id annot env =
+  store_annot id (Pident id) annot env
+
 and add_type id info env =
   store_type id (Pident id) info env
 
@@ -704,8 +729,9 @@ let open_signature root sg env =
       (fun env item p ->
         match item with
           Tsig_value(id, decl) ->
-            store_value (Ident.hide id) p
+            let e1 = store_value (Ident.hide id) p
                         (Subst.value_description sub decl) env
+            in store_annot (Ident.hide id) p (Annot.Iref_external "") e1
         | Tsig_type(id, decl, _) ->
             store_type (Ident.hide id) p
                        (Subst.type_declaration sub decl) env

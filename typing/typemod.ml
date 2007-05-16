@@ -503,7 +503,7 @@ let rec type_module anchor env smod =
            mod_env = env;
            mod_loc = smod.pmod_loc }
   | Pmod_structure sstr ->
-      let (str, sg, finalenv) = type_structure anchor env sstr in
+      let (str, sg, finalenv) = type_structure anchor env sstr smod.pmod_loc in
       rm { mod_desc = Tmod_structure str;
            mod_type = Tmty_signature sg;
            mod_env = env;
@@ -558,7 +558,7 @@ let rec type_module anchor env smod =
            mod_env = env;
            mod_loc = smod.pmod_loc }
 
-and type_structure anchor env sstr =
+and type_structure anchor env sstr scope =
   let type_names = ref StringSet.empty
   and module_names = ref StringSet.empty
   and modtype_names = ref StringSet.empty in
@@ -571,9 +571,20 @@ and type_structure anchor env sstr =
         let expr = Typecore.type_expression env sexpr in
         let (str_rem, sig_rem, final_env) = type_struct env srem in
         (Tstr_eval expr :: str_rem, sig_rem, final_env)
-    | {pstr_desc = Pstr_value(rec_flag, sdefs)} :: srem ->
+    | {pstr_desc = Pstr_value(rec_flag, sdefs); pstr_loc = loc} :: srem ->
+        let scope =
+          match rec_flag with
+          | Recursive -> Some (Annot.Idef {scope with
+                                 Location.loc_start = loc.Location.loc_start})
+          | Nonrecursive ->
+              let start = match srem with
+                | [] -> scope.Location.loc_end
+                | {pstr_loc = loc2} :: _ -> loc2.Location.loc_start
+              in Some (Annot.Idef {scope with Location.loc_start = start})
+          | Default -> None
+        in
         let (defs, newenv) =
-          Typecore.type_binding env rec_flag sdefs in
+          Typecore.type_binding env rec_flag sdefs scope in
         let (str_rem, sig_rem, final_env) = type_struct newenv srem in
         let bound_idents = let_bound_idents defs in
         let make_sig_value id =
@@ -723,7 +734,7 @@ and type_structure anchor env sstr =
          sg @ sig_rem,
          final_env)
   in
-  if !Clflags.save_types
+  if !Clflags.annotations
   then List.iter (function {pstr_loc = l} -> Stypes.record_phrase l) sstr;
   type_struct env sstr
 
@@ -784,10 +795,7 @@ and simplify_signature sg =
 
 let type_implementation sourcefile outputprefix modulename initial_env ast =
   Typecore.reset_delayed_checks ();
-  let (str, sg, finalenv) =
-    Misc.try_finally (fun () -> type_structure initial_env ast)
-                     (fun () -> Stypes.dump (outputprefix ^ ".annot"))
-  in
+  let (str, sg, finalenv) = type_structure initial_env ast Location.none in
   Typecore.force_delayed_checks ();
   if !Clflags.print_types then begin
     fprintf std_formatter "%a@." Printtyp.signature (simplify_signature sg);

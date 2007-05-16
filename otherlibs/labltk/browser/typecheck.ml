@@ -92,7 +92,7 @@ let f txt =
   txt.signature <- [];
   txt.psignature <- [];
   ignore (Stypes.get_info ());
-  Clflags.save_types := true;
+  Clflags.annotations := true;
 
   begin try
 
@@ -109,7 +109,7 @@ let f txt =
     List.iter psl ~f:
     begin function
       Ptop_def pstr ->
-        let str, sign, env' = Typemod.type_structure !env pstr in
+        let str, sign, env' = Typemod.type_structure !env pstr Location.none in
         txt.structure <- txt.structure @ str;
         txt.signature <- txt.signature @ sign;
         env := env'

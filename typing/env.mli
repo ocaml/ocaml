@@ -37,6 +37,7 @@ val find_modtype_expansion: Path.t -> t -> Types.module_type
 (* Lookup by long identifiers *)
 
 val lookup_value: Longident.t -> t -> Path.t * value_description
+val lookup_annot: Longident.t -> t -> Path.t * Annot.ident
 val lookup_constructor: Longident.t -> t -> constructor_description
 val lookup_label: Longident.t -> t -> label_description
 val lookup_type: Longident.t -> t -> Path.t * type_declaration
@@ -48,6 +49,7 @@ val lookup_cltype: Longident.t -> t -> Path.t * cltype_declaration
 (* Insertion by identifier *)
 
 val add_value: Ident.t -> value_description -> t -> t
+val add_annot: Ident.t -> Annot.ident -> t -> t
 val add_type: Ident.t -> type_declaration -> t -> t
 val add_exception: Ident.t -> exception_declaration -> t -> t
 val add_module: Ident.t -> module_type -> t -> t

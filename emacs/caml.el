@@ -297,6 +297,8 @@ have caml-electric-indent on, which see.")
 
   ;; caml-types
   (define-key caml-mode-map [?\C-c?\C-t] 'caml-types-show-type)
+  (define-key caml-mode-map [?\C-c?\C-s] 'caml-types-show-call)
+  (define-key caml-mode-map [?\C-c?\C-i] 'caml-types-show-ident)
   ;; must be a mouse-down event. Can be any button and any prefix
   (define-key caml-mode-map [?\C-c down-mouse-1] 'caml-types-explore)
   ;; caml-help

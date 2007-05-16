@@ -111,12 +111,14 @@ let implementation ppf sourcefile outputprefix =
       ++ print_if ppf Clflags.dump_instr Printinstr.instrlist
       ++ Emitcode.to_file oc modulename;
       Warnings.check_fatal ();
-      Pparse.remove_preprocessed inputfile;
       close_out oc;
+      Pparse.remove_preprocessed inputfile;
+      Stypes.dump (outputprefix ^ ".annot");
     with x ->
       close_out oc;
       remove_file objfile;
       Pparse.remove_preprocessed_if_ast inputfile;
+      Stypes.dump (outputprefix ^ ".annot");
       raise x
   end
 

@@ -569,7 +569,10 @@ and transl_exp0 e =
     && List.for_all (fun (arg,_) -> arg <> None) args ->
       let args, args' = cut p.prim_arity args in
       let wrap f =
-        event_after e (if args' = [] then f else transl_apply f args') in
+        if args' = []
+        then event_after e f
+        else event_after e (transl_apply f args' e.exp_loc)
+      in
       let wrap0 f =
         if args' = [] then f else wrap f in
       let args = List.map (function Some x, _ -> x | _ -> assert false) args in
@@ -594,7 +597,7 @@ and transl_exp0 e =
             if primitive_is_ccall prim then wrap p else wrap0 p
       end
   | Texp_apply(funct, oargs) ->
-      event_after e (transl_apply (transl_exp funct) oargs)
+      event_after e (transl_apply (transl_exp funct) oargs e.exp_loc)
   | Texp_match({exp_desc = Texp_tuple argl}, pat_expr_list, partial) ->
       Matching.for_multiple_match e.exp_loc
         (transl_list argl) (transl_cases pat_expr_list) partial
@@ -705,7 +708,7 @@ and transl_exp0 e =
       in
       event_after e lam
   | Texp_new (cl, _) ->
-      Lapply(Lprim(Pfield 0, [transl_path cl]), [lambda_unit])
+      Lapply(Lprim(Pfield 0, [transl_path cl]), [lambda_unit], Location.none)
   | Texp_instvar(path_self, path) ->
       Lprim(Parrayrefu Paddrarray, [transl_path path_self; transl_path path])
   | Texp_setinstvar(path_self, path, expr) ->
@@ -713,7 +716,8 @@ and transl_exp0 e =
   | Texp_override(path_self, modifs) ->
       let cpy = Ident.create "copy" in
       Llet(Strict, cpy,
-           Lapply(Translobj.oo_prim "copy", [transl_path path_self]),
+           Lapply(Translobj.oo_prim "copy", [transl_path path_self],
+                  Location.none),
            List.fold_right
              (fun (path, expr) rem ->
                 Lsequence(transl_setinstvar (Lvar cpy) path expr, rem))
@@ -748,17 +752,17 @@ and transl_cases pat_expr_list =
 and transl_tupled_cases patl_expr_list =
   List.map (fun (patl, expr) -> (patl, transl_exp expr)) patl_expr_list
 
-and transl_apply lam sargs =
+and transl_apply lam sargs loc =
   let lapply funct args =
     match funct with
       Lsend(k, lmet, lobj, largs) ->
         Lsend(k, lmet, lobj, largs @ args)
     | Levent(Lsend(k, lmet, lobj, largs), _) ->
         Lsend(k, lmet, lobj, largs @ args)
-    | Lapply(lexp, largs) ->
-        Lapply(lexp, largs @ args)
+    | Lapply(lexp, largs, _) ->
+        Lapply(lexp, largs @ args, loc)
     | lexp ->
-        Lapply(lexp, args)
+        Lapply(lexp, args, loc)
   in
   let rec build_apply lam args = function
       (None, optional) :: l ->

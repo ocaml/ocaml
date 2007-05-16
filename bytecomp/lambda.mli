@@ -133,7 +133,7 @@ type shared_code = (int * int) list     (* stack size -> code label *)
 type lambda =
     Lvar of Ident.t
   | Lconst of structured_constant
-  | Lapply of lambda * lambda list
+  | Lapply of lambda * lambda list * Location.t
   | Lfunction of function_kind * Ident.t list * lambda
   | Llet of let_kind * Ident.t * lambda * lambda
   | Lletrec of (Ident.t * lambda) list * lambda

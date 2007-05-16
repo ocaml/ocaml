@@ -2,9 +2,9 @@
 (*                                                                     *)
 (*                           Objective Caml                            *)
 (*                                                                     *)
-(*          Damien Doligez, projet Moscova, INRIA Rocquencourt         *)
+(*          Damien Doligez, projet Gallium, INRIA Rocquencourt         *)
 (*                                                                     *)
-(*  Copyright 2003 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2007 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
@@ -12,24 +12,12 @@
 
 (* $Id$ *)
 
-(* Recording and dumping (partial) type information *)
+(* Data types for annotations (Stypes.ml) *)
 
-(* Clflags.save_types must be true *)
+type call = Tail | Stack | Inline;;
 
-open Typedtree;;
-
-type annotation =
-  | Ti_pat   of pattern
-  | Ti_expr  of expression
-  | Ti_class of class_expr
-  | Ti_mod   of module_expr
-  | An_call of Location.t * Annot.call
-  | An_ident of Location.t * Annot.ident
+type ident =
+  | Iref_internal of Location.t (* defining occurrence *)
+  | Iref_external of string     (* fully qualified name *)
+  | Idef of Location.t          (* scope *)
 ;;
-
-val record : annotation -> unit;;
-val record_phrase : Location.t -> unit;;
-val dump : string -> unit;;
-
-val get_location : annotation -> Location.t;;
-val get_info : unit -> annotation list;;

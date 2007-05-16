@@ -414,13 +414,15 @@ let rec comp_expr env exp sz cont =
       end
   | Lconst cst ->
       Kconst cst :: cont
-  | Lapply(func, args) ->
+  | Lapply(func, args, loc) ->
       let nargs = List.length args in
-      if is_tailcall cont then
+      if is_tailcall cont then begin
+        Stypes.record (Stypes.An_call (loc, Annot.Tail));
         comp_args env args sz
           (Kpush :: comp_expr env func (sz + nargs)
             (Kappterm(nargs, sz + nargs) :: discard_dead_code cont))
-      else
+      end else begin
+        Stypes.record (Stypes.An_call (loc, Annot.Stack));
         if nargs < 4 then
           comp_args env args sz
             (Kpush :: comp_expr env func (sz + nargs) (Kapply nargs :: cont))
@@ -431,6 +433,7 @@ let rec comp_expr env exp sz cont =
             (Kpush :: comp_expr env func (sz + 3 + nargs)
                       (Kapply nargs :: cont1))
         end
+      end
   | Lsend(kind, met, obj, args) ->
       let args = if kind = Cached then List.tl args else args in
       let nargs = List.length args + 1 in
@@ -746,7 +749,7 @@ let rec comp_expr env exp sz cont =
       | Lev_after ty ->
           let info =
             match lam with
-              Lapply(_, args)   -> Event_return (List.length args)
+              Lapply(_, args, _)   -> Event_return (List.length args)
             | Lsend(_, _, _, args) -> Event_return (List.length args + 1)
             | _                 -> Event_other
           in

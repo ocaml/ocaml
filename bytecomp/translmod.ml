@@ -47,7 +47,8 @@ let rec apply_coercion restr arg =
       name_lambda arg (fun id ->
         Lfunction(Curried, [param],
           apply_coercion cc_res
-            (Lapply(Lvar id, [apply_coercion cc_arg (Lvar param)]))))
+            (Lapply(Lvar id, [apply_coercion cc_arg (Lvar param)],
+                    Location.none))))
   | Tcoerce_primitive p ->
       transl_primitive p
 
@@ -202,7 +203,7 @@ let eval_rec_bindings bindings cont =
   | (id, None, rhs) :: rem ->
       bind_inits rem
   | (id, Some(loc, shape), rhs) :: rem ->
-      Llet(Strict, id, Lapply(mod_prim "init_mod", [loc; shape]),
+      Llet(Strict, id, Lapply(mod_prim "init_mod", [loc; shape], Location.none),
            bind_inits rem)
   and bind_strict = function
     [] ->
@@ -217,7 +218,8 @@ let eval_rec_bindings bindings cont =
   | (id, None, rhs) :: rem ->
       patch_forwards rem
   | (id, Some(loc, shape), rhs) :: rem ->
-      Lsequence(Lapply(mod_prim "update_mod", [shape; Lvar id; rhs]),
+      Lsequence(Lapply(mod_prim "update_mod", [shape; Lvar id; rhs],
+                       Location.none),
                 patch_forwards rem)
   in
     bind_inits bindings
@@ -258,7 +260,7 @@ let rec transl_module cc rootpath mexp =
       oo_wrap mexp.mod_env true
         (apply_coercion cc)
         (Lapply(transl_module Tcoerce_none None funct,
-                [transl_module ccarg None arg]))
+                [transl_module ccarg None arg], mexp.mod_loc))
   | Tmod_constraint(arg, mty, ccarg) ->
       transl_module (compose_coercions cc ccarg) rootpath arg
 
@@ -556,12 +558,14 @@ let toplevel_name id =
 let toploop_getvalue id =
   Lapply(Lprim(Pfield toploop_getvalue_pos,
                  [Lprim(Pgetglobal toploop_ident, [])]),
-         [Lconst(Const_base(Const_string (toplevel_name id)))])
+         [Lconst(Const_base(Const_string (toplevel_name id)))],
+         Location.none)
 
 let toploop_setvalue id lam =
   Lapply(Lprim(Pfield toploop_setvalue_pos,
                  [Lprim(Pgetglobal toploop_ident, [])]),
-         [Lconst(Const_base(Const_string (toplevel_name id))); lam])
+         [Lconst(Const_base(Const_string (toplevel_name id))); lam],
+         Location.none)
 
 let toploop_setvalue_id id = toploop_setvalue id (Lvar id)
 

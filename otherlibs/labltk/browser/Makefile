@@ -60,5 +60,6 @@ dummy.mli:
 	ln -s dummyUnix.mli $@
 shell.cmo: dummy.cmi
 setpath.cmo fileselect.cmo lexical.cmi searchid.cmi typecheck.cmi: $(TOPDIR)/toplevel/toplevellib.cma
+mytypes.cmi searchpos.cmi searchpos.cmo typecheck.cmo: $(TOPDIR)/typing/stypes.cmi
 
 include	.depend

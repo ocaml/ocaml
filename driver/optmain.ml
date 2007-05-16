@@ -97,6 +97,8 @@ let main () =
   try
     Arg.parse (Arch.command_line_options @ [
        "-a", Arg.Set make_archive, " Build a library";
+       "-annot", Arg.Set annotations,
+             " Save information in <filename>.annot";
        "-c", Arg.Set compile_only, " Compile only (do not link)";
        "-cc", Arg.String(fun s -> c_compiler := s; c_linker := s),
              "<comp>  Use <comp> as the C compiler and linker";
@@ -109,12 +111,13 @@ let main () =
              " Optimize code size rather than speed";
        "-config", Arg.Unit show_config,
              " print configuration values and exit";
-       "-dtypes", Arg.Set save_types,
-             " Save type information in <filename>.annot";
+       "-dtypes", Arg.Set annotations,
+             " (deprecated) same as -annot";
        "-for-pack", Arg.String (fun s -> for_package := Some s),
              "<ident>  Generate code that can later be `packed' with\n\
          \     ocamlopt -pack -o <ident>.cmx";
-       "-g", Arg.Set debug, " Record debugging information for exception backtrace";
+       "-g", Arg.Set debug,
+             " Record debugging information for exception backtrace";
        "-i", Arg.Unit (fun () -> print_types := true; compile_only := true),
              " Print inferred interface";
        "-I", Arg.String(fun dir -> include_dirs := dir :: !include_dirs),

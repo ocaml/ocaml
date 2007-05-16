@@ -492,7 +492,7 @@ let rec close fenv cenv = function
       end
   | Lfunction(kind, params, body) as funct ->
       close_one_function fenv cenv (Ident.create "fun") funct
-  | Lapply(funct, args) ->
+  | Lapply(funct, args, loc) ->
       let nargs = List.length args in
       begin match (close fenv cenv funct, close_list fenv cenv args) with
         ((ufunct, Value_closure(fundesc, approx_res)),

@@ -871,6 +871,7 @@ let search_pos_ti ~pos = function
   | Ti_expr e  -> search_pos_expr ~pos e
   | Ti_class c -> search_pos_class_expr ~pos c
   | Ti_mod m   -> search_pos_module_expr ~pos m
+  | _ -> ()
 
 let rec search_pos_info ~pos = function
     [] -> []

@@ -561,7 +561,7 @@ let rec class_field cl_num self_type meths vars
   | Pcf_let (rec_flag, sdefs, loc) ->
       let (defs, val_env) =
         try
-          Typecore.type_let val_env rec_flag sdefs
+          Typecore.type_let val_env rec_flag sdefs None
         with Ctype.Unify [(ty, _)] ->
           raise(Error(loc, Make_nongen_seltype ty))
       in
@@ -910,7 +910,7 @@ and class_expr cl_num val_env met_env scl =
   | Pcl_let (rec_flag, sdefs, scl') ->
       let (defs, val_env) =
         try
-          Typecore.type_let val_env rec_flag sdefs
+          Typecore.type_let val_env rec_flag sdefs None
         with Ctype.Unify [(ty, _)] ->
           raise(Error(scl.pcl_loc, Make_nongen_seltype ty))
       in

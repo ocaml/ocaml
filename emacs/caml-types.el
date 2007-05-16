@@ -12,7 +12,7 @@
 
 ;(* $Id$ *)
 
-; An emacs-lisp complement to the "-dtypes" option of ocamlc and ocamlopt.
+; An emacs-lisp complement to the "-annot" option of ocamlc and ocamlopt.
 
 ;; XEmacs compatibility
 
@@ -25,15 +25,15 @@
 
 (defvar caml-types-location-re nil "Regexp to parse *.annot files.
 
-Annotation files *.annot may be generated with the \"-dtypes\" option 
-of ocamlc and ocamlopt. 
+Annotation files *.annot may be generated with the \"-annot\" option
+of ocamlc and ocamlopt.
 
 Their format is:
 
   file ::= block *
   block ::= position <SP> position <LF> annotation *
   position ::= filename <SP> num <SP> num <SP> num
-  annotation ::= keyword open-paren <LF> <SP> <SP> data <LF> close-paren
+  annotation ::= keyword open-paren <LF> <SP> <SP> data <LF> close-paren <LF>
 
   <SP> is a space character (ASCII 0x20)
   <LF> is a line-feed character (ASCII 0x0A)
@@ -52,37 +52,59 @@ Their format is:
 - the char number within the line is the difference between the third
   and second nums.
 
-For the moment, the only possible keyword is \"type\"."
+The current list of keywords is:
+type call ident"
 )
 
 (let* ((caml-types-filename-re "\"\\(\\([^\\\"]\\|\\\\.\\)*\\)\"")
-       (caml-types-number-re "\\([0-9]*\\)")
-       (caml-types-position-re
+       (caml-types-number-re "\\([0-9]*\\)"))
+  (setq caml-types-position-re
         (concat caml-types-filename-re " "
                 caml-types-number-re " "
                 caml-types-number-re " "
-                caml-types-number-re)))
+                caml-types-number-re))
   (setq caml-types-location-re
         (concat "^" caml-types-position-re " " caml-types-position-re)))
 
 (defvar caml-types-expr-ovl (make-overlay 1 1))
-
-(make-face 'caml-types-face)
-(set-face-doc-string 'caml-types-face
+(make-face 'caml-types-expr-face)
+(set-face-doc-string 'caml-types-expr-face
                      "face for hilighting expressions and types")
-(if (not (face-differs-from-default-p 'caml-types-face))
-    (set-face-background 'caml-types-face "#88FF44"))
+(if (not (face-differs-from-default-p 'caml-types-expr-face))
+    (set-face-background 'caml-types-expr-face "#88FF44"))
+(overlay-put caml-types-expr-ovl 'face 'caml-types-expr-face)
 
 (defvar caml-types-typed-ovl (make-overlay 1 1))
-
 (make-face 'caml-types-typed-face)
 (set-face-doc-string 'caml-types-typed-face
                      "face for hilighting typed expressions")
 (if (not (face-differs-from-default-p 'caml-types-typed-face))
     (set-face-background 'caml-types-typed-face "#FF8844"))
-
-(overlay-put caml-types-expr-ovl 'face 'caml-types-face)
 (overlay-put caml-types-typed-ovl 'face 'caml-types-typed-face)
+
+(defvar caml-types-scope-ovl (make-overlay 1 1))
+(make-face 'caml-types-scope-face)
+(set-face-doc-string 'caml-types-scope-face
+                     "face for hilighting variable scopes")
+(if (not (face-differs-from-default-p 'caml-types-scope-face))
+    (set-face-background 'caml-types-scope-face "#BBFFFF"))
+(overlay-put caml-types-scope-ovl 'face 'caml-types-scope-face)
+
+(defvar caml-types-def-ovl (make-overlay 1 1))
+(make-face 'caml-types-def-face)
+(set-face-doc-string 'caml-types-def-face
+                     "face for hilighting binding occurrences")
+(if (not (face-differs-from-default-p 'caml-types-def-face))
+    (set-face-background 'caml-types-def-face "#FF4444"))
+(overlay-put caml-types-def-ovl 'face 'caml-types-def-face)
+
+(defvar caml-types-occ-ovl (make-overlay 1 1))
+(make-face 'caml-types-occ-face)
+(set-face-doc-string 'caml-types-occ-face
+                     "face for hilighting variable occurrences")
+(if (not (face-differs-from-default-p 'caml-types-occ-face))
+    (set-face-background 'caml-types-occ-face "#44FF44"))
+(overlay-put caml-types-occ-ovl 'face 'caml-types-occ-face)
 
 
 (defvar caml-types-annotation-tree nil)
@@ -130,7 +152,7 @@ See `caml-types-location-re' for annotation file format.
     (caml-types-preprocess type-file)
     (setq caml-types-buffer (get-buffer-create caml-types-buffer-name))
     (let* ((targ-loc (vector target-file target-line target-bol target-cnum))
-           (node (caml-types-find-location targ-loc ()
+           (node (caml-types-find-location targ-loc "type" ()
                                            caml-types-annotation-tree)))
       (cond
        ((null node)
@@ -139,7 +161,7 @@ See `caml-types-location-re' for annotation file format.
        (t
         (let ((left (caml-types-get-pos target-buf (elt node 0)))
               (right (caml-types-get-pos target-buf (elt node 1)))
-              (type (elt node 2)))
+              (type (cdr (assoc "type" (elt node 2)))))
           (move-overlay caml-types-expr-ovl left right target-buf)
           (with-current-buffer caml-types-buffer
             (erase-buffer)
@@ -152,6 +174,153 @@ See `caml-types-location-re' for annotation file format.
     (unwind-protect
         (caml-sit-for 60)
       (delete-overlay caml-types-expr-ovl)
+      )))
+
+(defun caml-types-show-call (arg)
+  "Show the kind of call at point.
+   The smallest function call that contains point is
+   temporarily highlighted.  Its kind is highlighted in the .annot
+   file and the mark is set to the beginning of the kind.
+   The kind is also displayed in the mini-buffer.
+
+The kind is also displayed in the buffer *caml-types*, which is
+displayed when the command is called with Prefix argument 4. 
+
+See `caml-types-location-re' for annotation file format.
+"
+  (interactive "p")
+  (let* ((target-buf (current-buffer))
+         (target-file (file-name-nondirectory (buffer-file-name)))
+         (target-line (1+ (count-lines (point-min)
+                                       (caml-line-beginning-position))))
+         (target-bol (caml-line-beginning-position))
+         (target-cnum (point))
+         (type-file (concat (file-name-sans-extension (buffer-file-name))
+                            ".annot")))
+    (caml-types-preprocess type-file)
+    (setq caml-types-buffer (get-buffer-create caml-types-buffer-name))
+    (let* ((targ-loc (vector target-file target-line target-bol target-cnum))
+           (node (caml-types-find-location targ-loc "call" ()
+                                           caml-types-annotation-tree)))
+      (cond
+       ((null node)
+         (delete-overlay caml-types-expr-ovl)
+         (message "Point is not within a function call."))
+       (t
+        (let ((left (caml-types-get-pos target-buf (elt node 0)))
+              (right (caml-types-get-pos target-buf (elt node 1)))
+              (kind (cdr (assoc "call" (elt node 2)))))
+          (move-overlay caml-types-expr-ovl left right target-buf)
+          (with-current-buffer caml-types-buffer
+            (erase-buffer)
+            (insert kind)
+            (message (format "%s call" kind)))
+          ))))
+    (if (and (= arg 4)
+             (not (window-live-p (get-buffer-window caml-types-buffer))))
+        (display-buffer caml-types-buffer))
+    (unwind-protect
+        (caml-sit-for 60)
+      (delete-overlay caml-types-expr-ovl)
+      )))
+
+(defun caml-types-show-ident (arg)
+  "Show the kind of call at point.
+   The smallest function call that contains point is
+   temporarily highlighted.  Its kind is highlighted in the .annot
+   file and the mark is set to the beginning of the kind.
+   The kind is also displayed in the mini-buffer.
+
+The kind is also displayed in the buffer *caml-types*, which is
+displayed when the command is called with Prefix argument 4. 
+
+See `caml-types-location-re' for annotation file format.
+"
+  (interactive "p")
+  (let* ((target-buf (current-buffer))
+         (target-file (file-name-nondirectory (buffer-file-name)))
+         (target-line (1+ (count-lines (point-min)
+                                       (caml-line-beginning-position))))
+         (target-bol (caml-line-beginning-position))
+         (target-cnum (point))
+         (type-file (concat (file-name-sans-extension (buffer-file-name))
+                            ".annot")))
+    (caml-types-preprocess type-file)
+    (setq caml-types-buffer (get-buffer-create caml-types-buffer-name))
+    (let* ((targ-loc (vector target-file target-line target-bol target-cnum))
+           (node (caml-types-find-location targ-loc "ident" ()
+                                           caml-types-annotation-tree)))
+      (cond
+       ((null node)
+         (delete-overlay caml-types-expr-ovl)
+         (message "Point is not within an identifier."))
+       (t
+        (let ((left (caml-types-get-pos target-buf (elt node 0)))
+              (right (caml-types-get-pos target-buf (elt node 1)))
+              (kind (cdr (assoc "ident" (elt node 2)))))
+          (move-overlay caml-types-expr-ovl left right target-buf)
+          (let* ((loc-re (concat caml-types-position-re " "
+                                 caml-types-position-re))
+                 (end-re (concat caml-types-position-re " --"))
+                 (def-re (concat "def " loc-re))
+                 (def-end-re (concat "def " end-re))
+                 (internal-re (concat "internal_ref " loc-re))
+                 (external-re "external_ref \\(.*\\)"))
+            (cond
+             ((string-match def-re kind)
+              (let ((l-file (file-name-nondirectory (match-string 1 kind)))
+                    (l-line (string-to-int (match-string 3 kind)))
+                    (l-bol (string-to-int (match-string 4 kind)))
+                    (l-cnum (string-to-int (match-string 5 kind)))
+                    (r-file (file-name-nondirectory (match-string 6 kind)))
+                    (r-line (string-to-int (match-string 8 kind)))
+                    (r-bol (string-to-int (match-string 9 kind)))
+                    (r-cnum (string-to-int (match-string 10 kind))))
+                (let* ((lpos (vector l-file l-line l-bol l-cnum))
+                       (rpos (vector r-file r-line r-bol r-cnum))
+                       (left (caml-types-get-pos target-buf lpos))
+                       (right (caml-types-get-pos target-buf rpos)))
+                  (move-overlay caml-types-scope-ovl left right target-buf))))
+             ((string-match def-end-re kind)
+              (let ((l-file (file-name-nondirectory (match-string 1 kind)))
+                    (l-line (string-to-int (match-string 3 kind)))
+                    (l-bol (string-to-int (match-string 4 kind)))
+                    (l-cnum (string-to-int (match-string 5 kind))))
+                (let* ((lpos (vector l-file l-line l-bol l-cnum))
+                       (left (caml-types-get-pos target-buf lpos))
+                       (right (buffer-size target-buf)))
+                  (move-overlay caml-types-scope-ovl left right target-buf))))
+             ((string-match internal-re kind)
+              (let ((l-file (file-name-nondirectory (match-string 1 kind)))
+                    (l-line (string-to-int (match-string 3 kind)))
+                    (l-bol (string-to-int (match-string 4 kind)))
+                    (l-cnum (string-to-int (match-string 5 kind)))
+                    (r-file (file-name-nondirectory (match-string 6 kind)))
+                    (r-line (string-to-int (match-string 8 kind)))
+                    (r-bol (string-to-int (match-string 9 kind)))
+                    (r-cnum (string-to-int (match-string 10 kind))))
+                (let* ((lpos (vector l-file l-line l-bol l-cnum))
+                       (rpos (vector r-file r-line r-bol r-cnum))
+                       (left (caml-types-get-pos target-buf lpos))
+                       (right (caml-types-get-pos target-buf rpos)))
+                  (move-overlay caml-types-def-ovl left right target-buf)
+                  (message (format "this variable is bound at line %d char %d"
+                                   l-line (- l-cnum l-bol))))))
+             ((string-match external-re kind)
+              (let ((fullname (match-string 1 kind)))
+                (with-current-buffer caml-types-buffer
+                  (erase-buffer)
+                  (insert fullname)
+                  (message (format "external ident: %s" fullname)))))))
+          ))))
+    (if (and (= arg 4)
+             (not (window-live-p (get-buffer-window caml-types-buffer))))
+        (display-buffer caml-types-buffer))
+    (unwind-protect
+        (caml-sit-for 60)
+      (delete-overlay caml-types-expr-ovl)
+      (delete-overlay caml-types-def-ovl)
+      (delete-overlay caml-types-scope-ovl)
       )))
 
 (defun caml-types-preprocess (type-file)
@@ -173,7 +342,7 @@ See `caml-types-location-re' for annotation file format.
         (setq caml-types-annotation-tree tree
               caml-types-annotation-date type-date)
         (kill-buffer type-buf)
-        (message ""))
+        (message "done"))
       )))
 
 (defun caml-types-date< (date1 date2)
@@ -191,18 +360,26 @@ See `caml-types-location-re' for annotation file format.
   (symbol-name (intern elem table)))
 
 
+(defun next-annotation ()
+  (forward-char 1)
+  (if (re-search-forward "^[a-z\"]" () t)
+      (forward-char -1)
+    (goto-char (point-max)))
+  (looking-at "[a-z]")
+)
+
 ; tree of intervals
 ; each node is a vector
-; [ pos-left pos-right type-info child child child... ]
-; type-info =
-;  () if this node does not correspond to an annotated interval
-;  (type-start . type-end)  address of the annotation in the .annot file
+; [ pos-left pos-right annotation child child child... ]
+; annotation is a list of:
+;   (kind . info) where kind = "type" "call" etc.
+;                 and info = the contents of the annotation
 
 (defun caml-types-build-tree (target-file)
   (let ((stack ())
         (accu ())
         (table (caml-types-make-hash-table))
-        (type-info ()))
+        (annotation ()))
     (while (re-search-forward caml-types-location-re () t)
       (let ((l-file (file-name-nondirectory (match-string 1)))
             (l-line (string-to-int (match-string 3)))
@@ -213,14 +390,13 @@ See `caml-types-location-re' for annotation file format.
             (r-bol (string-to-int (match-string 9)))
             (r-cnum (string-to-int (match-string 10))))
         (unless (caml-types-not-in-file l-file r-file target-file)
-          (while (and (re-search-forward "^" () t)
-                      (not (looking-at "type"))
-                      (not (looking-at "\\\"")))
-            (forward-char 1))
-          (setq type-info
-                (if (looking-at
-                     "^type(\n\\(  \\([^\n)]\\|.)\\|\n[^)]\\)*\\)\n)")
-                    (caml-types-hcons (match-string 1) table)))
+          (setq annotation ())
+          (while (next-annotation)
+            (cond ((looking-at
+                    "^\\([a-z]+\\)(\n  \\(\\([^\n)]\\|.)\\|\n[^)]\\)*\\)\n)")
+                   (let ((kind (caml-types-hcons (match-string 1) table))
+                         (info (caml-types-hcons (match-string 2) table)))
+                     (setq annotation (cons (cons kind info) annotation))))))
           (setq accu ())
           (while (and stack
                       (caml-types-pos-contains l-cnum r-cnum (car stack)))
@@ -228,7 +404,7 @@ See `caml-types-location-re' for annotation file format.
             (setq stack (cdr stack)))
           (let* ((left-pos (vector l-file l-line l-bol l-cnum))
                  (right-pos (vector r-file r-line r-bol r-cnum))
-                 (node (caml-types-make-node left-pos right-pos type-info
+                 (node (caml-types-make-node left-pos right-pos annotation
                                              accu)))
             (setq stack (cons node stack))))))
     (if (null stack)
@@ -245,12 +421,12 @@ See `caml-types-location-re' for annotation file format.
       (and (not (string= r-file target-file))
            (not (string= r-file "")))))
 
-(defun caml-types-make-node (left-pos right-pos type-info children)
+(defun caml-types-make-node (left-pos right-pos annotation children)
   (let ((result (make-vector (+ 3 (length children)) ()))
         (i 3))
     (aset result 0 left-pos)
     (aset result 1 right-pos)
-    (aset result 2 type-info)
+    (aset result 2 annotation)
     (while children
       (aset result i (car children))
       (setq children (cdr children))
@@ -261,15 +437,15 @@ See `caml-types-location-re' for annotation file format.
   (and (<= l-cnum (elt (elt node 0) 3))
        (>= r-cnum (elt (elt node 1) 3))))
 
-(defun caml-types-find-location (targ-pos curr node)
+(defun caml-types-find-location (targ-pos kind curr node)
   (if (not (caml-types-pos-inside targ-pos node))
       curr
-    (if (elt node 2)
+    (if (and (elt node 2) (assoc kind (elt node 2)))
         (setq curr node))
     (let ((i (caml-types-search node targ-pos)))
       (if (and (> i 3)
                (caml-types-pos-inside targ-pos (elt node (1- i))))
-          (caml-types-find-location targ-pos curr (elt node (1- i)))
+          (caml-types-find-location targ-pos kind curr (elt node (1- i)))
         curr))))
 
 ; trouve le premier fils qui commence apres la position
@@ -377,7 +553,7 @@ See `caml-types-location-re' for annotation file format.
      (with-current-buffer buf (toggle-read-only 1))
      )
    (t
-    (error "No annotation file. You should compile with option \"-dtypes\"."))
+    (error "No annotation file. You should compile with option \"-annot\"."))
     )
   buf))
 
@@ -494,7 +670,7 @@ The function uses two overlays.
                            target-pos
                            (vector target-file target-line target-bol cnum))
                      (save-excursion
-                       (setq node (caml-types-find-location
+                       (setq node (caml-types-find-location "type"
                                    target-pos () target-tree))
                        (set-buffer caml-types-buffer)
                        (erase-buffer)
@@ -567,7 +743,7 @@ The function uses two overlays.
 (defun caml-types-version ()
   "internal version number of caml-types.el"
   (interactive)
-  (message "2")
+  (message "3")
 )
 
 (provide 'caml-types)
