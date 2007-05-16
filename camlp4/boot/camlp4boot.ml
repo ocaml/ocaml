@@ -23,7 +23,7 @@ module R =
       struct
         let name = "Camlp4RevisedParserParser"
         let version =
-          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.17 2007/05/10 14:24:22 pouillar Exp $"
+          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.19 2007/05/12 22:48:16 pouillar Exp $"
       end
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
@@ -35,10 +35,14 @@ module R =
           (Printf.eprintf
              "\
 New syntax:
+    (e1; e2; ... ; en) OR begin e1; e2; ... ; en end
+    while e do e1; e2; ... ; en done
+    for v = v1 to/downto v2 do e1; e2; ... ; en done
+Old syntax (still supported):
     do {e1; e2; ... ; en}
     while e do {e1; e2; ... ; en}
     for v = v1 to/downto v2 do {e1; e2; ... ; en}
-Old (no more supported) syntax:
+Very old (no more supported) syntax:
     do e1; e2; ... ; en-1; return en
     while e do e1; e2; ... ; en; done
     for v = v1 to/downto v2 do e1; e2; ... ; en; done
@@ -403,8 +407,8 @@ Old (no more supported) syntax:
         (* FIXME be more precise *)
         let symbolchar =
           let list =
-            [ '!'; '$'; '%'; '&'; '*'; '+'; '-'; '.'; '/'; ':'; '<'; '=';
-              '>'; '?'; '@'; '^'; '|'; '~' ] in
+            [ '$'; '!'; '%'; '&'; '*'; '+'; '-'; '.'; '/'; ':'; '<'; '=';
+              '>'; '?'; '@'; '^'; '|'; '~'; '\\' ] in
           let rec loop s i =
             if i == (String.length s)
             then true
@@ -472,7 +476,7 @@ Old (no more supported) syntax:
                       Ast.ExId (_loc, Ast.IdLid (_loc, x)))
                  | _ -> raise Stream.Failure)
         let _ =
-          let list = [ '*'; '/'; '%' ]
+          let list = [ '*'; '/'; '%'; '\\' ]
           in
             Gram.Entry.setup_parser infixop3
               (fun (__strm : _ Stream.t) ->
