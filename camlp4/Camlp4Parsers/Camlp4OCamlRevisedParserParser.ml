@@ -384,24 +384,9 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         | se = stream_expr_comp -> [se] ] ]
     ;
     stream_expr_comp:
-      [ [ stream_quot; e = stream_expr -> SeTrm _loc e | e = stream_expr -> SeNtr _loc e ] ]
+      [ [ stream_quot; e = stream_expr -> SeTrm _loc e
+        | e = stream_expr -> SeNtr _loc e ] ]
     ;
-    (*
-    Gram.Entry.clear stream_expr;
-    Gram.Entry.clear stream_expr;
-    stream_expr:
-      [ [ e = expr LEVEL "stream_expr" -> e ] ]
-    ;
-    stream_begin:
-      [ [ "[<" -> () ] ]
-    ;
-    stream_end:
-      [ [ ">]" -> () ] ]
-    ;
-    stream_quot:
-      [ [ "'" -> () ] ]
-    ;
-    *)
   END;
 
 end;
