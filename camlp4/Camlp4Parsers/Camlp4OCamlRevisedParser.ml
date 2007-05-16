@@ -426,12 +426,14 @@ Very old (no more supported) syntax:
       use_file val_longident value_let value_val with_constr with_constr_quot
       infixop0 infixop1 infixop2 infixop3 infixop4 do_sequence;
     module_expr:
-      [ [ "functor"; "("; i = a_UIDENT; ":"; t = module_type; ")"; "->";
+      [ "top"
+        [ "functor"; "("; i = a_UIDENT; ":"; t = module_type; ")"; "->";
           me = SELF ->
             <:module_expr< functor ( $i$ : $t$ ) -> $me$ >>
         | "struct"; st = str_items; "end" ->
             <:module_expr< struct $st$ end >> ]
-      | [ me1 = SELF; me2 = SELF -> <:module_expr< $me1$ $me2$ >> ]
+      | "apply"
+        [ me1 = SELF; me2 = SELF -> <:module_expr< $me1$ $me2$ >> ]
       | "simple"
         [ `ANTIQUOT (""|"mexp"|"anti"|"list" as n) s ->
             <:module_expr< $anti:mk_anti ~c:"module_expr" n s$ >>
@@ -493,13 +495,18 @@ Very old (no more supported) syntax:
             <:module_binding< $m$ : $mt$ = $me$ >> ] ]
     ;
     module_type:
-      [ [ "functor"; "("; i = a_UIDENT; ":"; t = SELF; ")"; "->"; mt = SELF ->
+      [ "top"
+        [ "functor"; "("; i = a_UIDENT; ":"; t = SELF; ")"; "->"; mt = SELF ->
             <:module_type< functor ( $i$ : $t$ ) -> $mt$ >> ]
-      | [ mt = SELF; "with"; wc = with_constr ->
+      | "with"
+        [ mt = SELF; "with"; wc = with_constr ->
             <:module_type< $mt$ with $wc$ >> ]
-      | [ mt1 = SELF; mt2 = SELF -> module_type_app mt1 mt2 ]
-      | [ mt1 = SELF; "."; mt2 = SELF -> module_type_acc mt1 mt2 ]
-      | [ "sig"; sg = sig_items; "end" ->
+      | "apply"
+        [ mt1 = SELF; mt2 = SELF; dummy -> module_type_app mt1 mt2 ]
+      | "."
+        [ mt1 = SELF; "."; mt2 = SELF -> module_type_acc mt1 mt2 ]
+      | "sig"
+        [ "sig"; sg = sig_items; "end" ->
             <:module_type< sig $sg$ end >> ]
       | "simple"
         [ `ANTIQUOT (""|"mtyp"|"anti"|"list" as n) s ->
@@ -787,11 +794,11 @@ Very old (no more supported) syntax:
         | "->"; e = expr -> e ] ]
     ;
     patt:
-      [ LEFTA
+      [ "|" LEFTA
         [ p1 = SELF; "|"; p2 = SELF -> <:patt< $p1$ | $p2$ >> ]
-      | NONA
+      | ".." NONA
         [ p1 = SELF; ".."; p2 = SELF -> <:patt< $p1$ .. $p2$ >> ]
-      | LEFTA
+      | "apply" LEFTA
         [ p1 = SELF; p2 = SELF -> <:patt< $p1$ $p2$ >> ]
       | "simple"
         [ `ANTIQUOT (""|"pat"|"anti" as n) s ->
@@ -948,13 +955,13 @@ Very old (no more supported) syntax:
         | "-"; "'"; i = a_ident -> <:ctyp< -'$lid:i$ >> ] ]
     ;
     ctyp:
-      [ LEFTA
+      [ "==" LEFTA
         [ t1 = SELF; "=="; t2 = SELF -> <:ctyp< $t1$ == $t2$ >> ]
-      | NONA
+      | "private" NONA
         [ "private"; t = ctyp LEVEL "alias" -> <:ctyp< private $t$ >> ]
       | "alias" LEFTA
         [ t1 = SELF; "as"; t2 = SELF -> <:ctyp< $t1$ as $t2$ >> ]
-      | LEFTA
+      | "forall" LEFTA
         [ "!"; t1 = typevars; "."; t2 = ctyp -> <:ctyp< ! $t1$ . $t2$ >> ]
       | "arrow" RIGHTA
         [ t1 = SELF; "->"; t2 = SELF -> <:ctyp< $t1$ -> $t2$ >> ]
@@ -963,12 +970,12 @@ Very old (no more supported) syntax:
         | i = a_LABEL; t =  SELF  -> <:ctyp< ~ $i$ : $t$ >>
         | "?"; i = a_LIDENT; ":"; t = SELF -> <:ctyp< ? $i$ : $t$ >>
         | i = a_OPTLABEL; t = SELF -> <:ctyp< ? $i$ : $t$ >> ]
-      | LEFTA
+      | "apply" LEFTA
         [ t1 = SELF; t2 = SELF ->
             let t = <:ctyp< $t1$ $t2$ >> in
             try <:ctyp< $id:Ast.ident_of_ctyp t$ >>
             with [ Invalid_argument _ -> t ] ]
-      | LEFTA
+      | "." LEFTA
         [ t1 = SELF; "."; t2 = SELF ->
             try <:ctyp< $id:Ast.ident_of_ctyp t1$.$id:Ast.ident_of_ctyp t2$ >>
             with [ Invalid_argument s -> raise (Stream.Error s) ] ]
@@ -1654,9 +1661,12 @@ Very old (no more supported) syntax:
       ] ]
     ;
     ident_quot:
-      [ [ i = SELF; j = SELF -> <:ident< $i$ $j$ >> ]
-      | [ i = SELF; "."; j = SELF -> <:ident< $i$.$j$ >> ]
-      | [ `ANTIQUOT (""|"id"|"anti"|"list" as n) s ->
+      [ "apply"
+        [ i = SELF; j = SELF -> <:ident< $i$ $j$ >> ]
+      | "."
+        [ i = SELF; "."; j = SELF -> <:ident< $i$.$j$ >> ]
+      | "simple"
+        [ `ANTIQUOT (""|"id"|"anti"|"list" as n) s ->
             <:ident< $anti:mk_anti ~c:"ident" n s$ >>
         | i = a_UIDENT -> <:ident< $uid:i$ >>
         | i = a_LIDENT -> <:ident< $lid:i$ >>

@@ -710,7 +710,7 @@ Very old (no more supported) syntax:
             (Gram.extend (module_expr : 'module_expr Gram.Entry.t)
                ((fun () ->
                    (None,
-                    [ (None, None,
+                    [ ((Some "top"), None,
                        [ ([ Gram.Skeyword "struct";
                             Gram.Snterm
                               (Gram.Entry.obj
@@ -732,7 +732,7 @@ Very old (no more supported) syntax:
                              (fun (me : 'module_expr) _ _ (t : 'module_type)
                                 _ (i : 'a_UIDENT) _ _ (_loc : Loc.t) ->
                                 (Ast.MeFun (_loc, i, t, me) : 'module_expr)))) ]);
-                      (None, None,
+                      ((Some "apply"), None,
                        [ ([ Gram.Sself; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (me2 : 'module_expr) (me1 : 'module_expr)
@@ -1087,7 +1087,7 @@ Very old (no more supported) syntax:
              Gram.extend (module_type : 'module_type Gram.Entry.t)
                ((fun () ->
                    (None,
-                    [ (None, None,
+                    [ ((Some "top"), None,
                        [ ([ Gram.Skeyword "functor"; Gram.Skeyword "(";
                             Gram.Snterm
                               (Gram.Entry.obj
@@ -1098,7 +1098,7 @@ Very old (no more supported) syntax:
                              (fun (mt : 'module_type) _ _ (t : 'module_type)
                                 _ (i : 'a_UIDENT) _ _ (_loc : Loc.t) ->
                                 (Ast.MtFun (_loc, i, t, mt) : 'module_type)))) ]);
-                      (None, None,
+                      ((Some "with"), None,
                        [ ([ Gram.Sself; Gram.Skeyword "with";
                             Gram.Snterm
                               (Gram.Entry.obj
@@ -1107,19 +1107,21 @@ Very old (no more supported) syntax:
                              (fun (wc : 'with_constr) _ (mt : 'module_type)
                                 (_loc : Loc.t) ->
                                 (Ast.MtWit (_loc, mt, wc) : 'module_type)))) ]);
-                      (None, None,
-                       [ ([ Gram.Sself; Gram.Sself ],
+                      ((Some "apply"), None,
+                       [ ([ Gram.Sself; Gram.Sself;
+                            Gram.Snterm
+                              (Gram.Entry.obj (dummy : 'dummy Gram.Entry.t)) ],
                           (Gram.Action.mk
-                             (fun (mt2 : 'module_type) (mt1 : 'module_type)
+                             (fun _ (mt2 : 'module_type) (mt1 : 'module_type)
                                 (_loc : Loc.t) ->
                                 (module_type_app mt1 mt2 : 'module_type)))) ]);
-                      (None, None,
+                      ((Some "."), None,
                        [ ([ Gram.Sself; Gram.Skeyword "."; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (mt2 : 'module_type) _ (mt1 : 'module_type)
                                 (_loc : Loc.t) ->
                                 (module_type_acc mt1 mt2 : 'module_type)))) ]);
-                      (None, None,
+                      ((Some "sig"), None,
                        [ ([ Gram.Skeyword "sig";
                             Gram.Snterm
                               (Gram.Entry.obj
@@ -2796,17 +2798,17 @@ Very old (no more supported) syntax:
              Gram.extend (patt : 'patt Gram.Entry.t)
                ((fun () ->
                    (None,
-                    [ (None, (Some Camlp4.Sig.Grammar.LeftA),
+                    [ ((Some "|"), (Some Camlp4.Sig.Grammar.LeftA),
                        [ ([ Gram.Sself; Gram.Skeyword "|"; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (p2 : 'patt) _ (p1 : 'patt) (_loc : Loc.t)
                                 -> (Ast.PaOrp (_loc, p1, p2) : 'patt)))) ]);
-                      (None, (Some Camlp4.Sig.Grammar.NonA),
+                      ((Some ".."), (Some Camlp4.Sig.Grammar.NonA),
                        [ ([ Gram.Sself; Gram.Skeyword ".."; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (p2 : 'patt) _ (p1 : 'patt) (_loc : Loc.t)
                                 -> (Ast.PaRng (_loc, p1, p2) : 'patt)))) ]);
-                      (None, (Some Camlp4.Sig.Grammar.LeftA),
+                      ((Some "apply"), (Some Camlp4.Sig.Grammar.LeftA),
                        [ ([ Gram.Sself; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (p2 : 'patt) (p1 : 'patt) (_loc : Loc.t) ->
@@ -3755,12 +3757,12 @@ Very old (no more supported) syntax:
              Gram.extend (ctyp : 'ctyp Gram.Entry.t)
                ((fun () ->
                    (None,
-                    [ (None, (Some Camlp4.Sig.Grammar.LeftA),
+                    [ ((Some "=="), (Some Camlp4.Sig.Grammar.LeftA),
                        [ ([ Gram.Sself; Gram.Skeyword "=="; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (t2 : 'ctyp) _ (t1 : 'ctyp) (_loc : Loc.t)
                                 -> (Ast.TyMan (_loc, t1, t2) : 'ctyp)))) ]);
-                      (None, (Some Camlp4.Sig.Grammar.NonA),
+                      ((Some "private"), (Some Camlp4.Sig.Grammar.NonA),
                        [ ([ Gram.Skeyword "private";
                             Gram.Snterml
                               (Gram.Entry.obj (ctyp : 'ctyp Gram.Entry.t),
@@ -3773,7 +3775,7 @@ Very old (no more supported) syntax:
                           (Gram.Action.mk
                              (fun (t2 : 'ctyp) _ (t1 : 'ctyp) (_loc : Loc.t)
                                 -> (Ast.TyAli (_loc, t1, t2) : 'ctyp)))) ]);
-                      (None, (Some Camlp4.Sig.Grammar.LeftA),
+                      ((Some "forall"), (Some Camlp4.Sig.Grammar.LeftA),
                        [ ([ Gram.Skeyword "!";
                             Gram.Snterm
                               (Gram.Entry.obj
@@ -3822,7 +3824,7 @@ Very old (no more supported) syntax:
                              (fun (t : 'ctyp) _ (i : 'a_LIDENT) _
                                 (_loc : Loc.t) ->
                                 (Ast.TyLab (_loc, i, t) : 'ctyp)))) ]);
-                      (None, (Some Camlp4.Sig.Grammar.LeftA),
+                      ((Some "apply"), (Some Camlp4.Sig.Grammar.LeftA),
                        [ ([ Gram.Sself; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (t2 : 'ctyp) (t1 : 'ctyp) (_loc : Loc.t) ->
@@ -3831,7 +3833,7 @@ Very old (no more supported) syntax:
                                    try Ast.TyId (_loc, Ast.ident_of_ctyp t)
                                    with | Invalid_argument _ -> t :
                                   'ctyp)))) ]);
-                      (None, (Some Camlp4.Sig.Grammar.LeftA),
+                      ((Some "."), (Some Camlp4.Sig.Grammar.LeftA),
                        [ ([ Gram.Sself; Gram.Skeyword "."; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (t2 : 'ctyp) _ (t1 : 'ctyp) (_loc : Loc.t)
@@ -7613,19 +7615,19 @@ Very old (no more supported) syntax:
              Gram.extend (ident_quot : 'ident_quot Gram.Entry.t)
                ((fun () ->
                    (None,
-                    [ (None, None,
+                    [ ((Some "apply"), None,
                        [ ([ Gram.Sself; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (j : 'ident_quot) (i : 'ident_quot)
                                 (_loc : Loc.t) ->
                                 (Ast.IdApp (_loc, i, j) : 'ident_quot)))) ]);
-                      (None, None,
+                      ((Some "."), None,
                        [ ([ Gram.Sself; Gram.Skeyword "."; Gram.Sself ],
                           (Gram.Action.mk
                              (fun (j : 'ident_quot) _ (i : 'ident_quot)
                                 (_loc : Loc.t) ->
                                 (Ast.IdAcc (_loc, i, j) : 'ident_quot)))) ]);
-                      (None, None,
+                      ((Some "simple"), None,
                        [ ([ Gram.Skeyword "("; Gram.Sself; Gram.Skeyword ")" ],
                           (Gram.Action.mk
                              (fun _ (i : 'ident_quot) _ (_loc : Loc.t) ->
@@ -8631,7 +8633,7 @@ module Rp =
       struct
         let name = "Camlp4OCamlRevisedParserParser"
         let version =
-          "$Id: Camlp4OCamlRevisedParserParser.ml,v 1.1.4.2 2007/04/05 18:06:36 pouillar Exp $"
+          "$Id: Camlp4OCamlRevisedParserParser.ml,v 1.1.4.3 2007/05/16 12:48:13 pouillar Exp $"
       end
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
@@ -9492,22 +9494,6 @@ module Rp =
                                 (SeTrm (_loc, e) : 'stream_expr_comp)))) ]) ]))
                   ()))
       end
-    (*
-    Gram.Entry.clear stream_expr;
-    Gram.Entry.clear stream_expr;
-    stream_expr:
-      [ [ e = expr LEVEL "stream_expr" -> e ] ]
-    ;
-    stream_begin:
-      [ [ "[<" -> () ] ]
-    ;
-    stream_end:
-      [ [ ">]" -> () ] ]
-    ;
-    stream_quot:
-      [ [ "'" -> () ] ]
-    ;
-    *)
     module M = Register.OCamlSyntaxExtension(Id)(Make)
   end
 module G =

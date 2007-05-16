@@ -198,7 +198,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   DELETE_RULE Gram value_val: "value" END;
   DELETE_RULE Gram str_item: value_let; opt_rec; binding END;
   DELETE_RULE Gram module_type: "'"; a_ident END;
-  DELETE_RULE Gram module_type: SELF; SELF END;
+  DELETE_RULE Gram module_type: SELF; SELF; dummy END;
   DELETE_RULE Gram module_type: SELF; "."; SELF END;
   DELETE_RULE Gram label_expr: label_longident; fun_binding END;
   DELETE_RULE Gram expr: "let"; opt_rec; binding; "in"; SELF END;
@@ -607,6 +607,12 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         | "{"; t = label_declaration; "}" ->
             <:ctyp< { $t$ } >> ] ]
     ;
+    module_expr: LEVEL "apply"
+      [ [ i = SELF; "("; j = SELF; ")" -> <:module_expr< $i$ $j$ >> ] ]
+    ;
+    ident_quot: LEVEL "apply"
+      [ [ i = SELF; "("; j = SELF; ")" -> <:ident< $i$ $j$ >> ] ]
+    ;
     module_longident_with_app: LEVEL "apply"
       [ [ i = SELF; "("; j = SELF; ")" -> <:ident< $i$ $j$ >> ] ]
     ;
@@ -685,7 +691,12 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   END;
 
   (* Some other DELETE_RULE are before the grammar *)
+  DELETE_RULE Gram module_longident_with_app: "("; SELF; ")" END;
+  DELETE_RULE Gram type_longident: "("; SELF; ")" END;
+  DELETE_RULE Gram ident_quot: "("; SELF; ")" END;
   DELETE_RULE Gram module_longident_with_app: SELF; SELF END;
   DELETE_RULE Gram type_longident: SELF; SELF END;
+  DELETE_RULE Gram ident_quot: SELF; SELF END;
+  DELETE_RULE Gram module_expr: SELF; SELF END;
 end;
 let module M = Register.OCamlSyntaxExtension Id Make in ();
