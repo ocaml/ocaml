@@ -375,6 +375,19 @@ Very old (no more supported) syntax:
         <:expr< $lid:x$ >>)
   ;
 
+  value rec infix_kwds_filter =
+    parser
+    [ [: `((KEYWORD "(", _) as tok); xs :] ->
+        match xs with parser
+        [ [: `(KEYWORD ("mod"|"land"|"lor"|"lxor"|"lsl"|"lsr"|"asr" as i), _loc);
+             `(KEYWORD ")", _); xs :] ->
+                [: `(LIDENT i, _loc); infix_kwds_filter xs :]
+        | [: xs :] ->
+                [: `tok; infix_kwds_filter xs :] ]
+    | [: `x; xs :] -> [: `x; infix_kwds_filter xs :] ];
+
+  Token.Filter.define_filter (Gram.get_filter ())
+    (fun f strm -> infix_kwds_filter (f strm));
 
   (* transmit the context *)
   Gram.Entry.setup_parser sem_expr begin

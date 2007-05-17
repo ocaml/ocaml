@@ -65,23 +65,23 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
 
   module StringSet = Set.Make String;
 
+  value infix_lidents = ["asr"; "land"; "lor"; "lsl"; "lsr"; "lxor"; "mod"; "or"];
+
   value is_infix =
     let first_chars = ['='; '<'; '>'; '|'; '&'; '$'; '@'; '^'; '+'; '-'; '*'; '/'; '%'; '\\']
     and infixes =
-      List.fold_right StringSet.add
-        ["asr"; "land"; "lor"; "lsl"; "lsr"; "lxor"; "mod"; "or"] StringSet.empty
+      List.fold_right StringSet.add infix_lidents StringSet.empty
     in fun s -> (StringSet.mem s infixes
                  || (s <> "" && List.mem s.[0] first_chars));
 
   value is_keyword =
-    let keywords =
+    let keywords = (* without infix_lidents *)
       List.fold_right StringSet.add
-        ["and";  "as";   "assert"; "asr"; "begin"; "class"; "constraint"; "do";
-         "done";  "downto";  "else";  "end";  "exception"; "external"; "false";
-         "for";   "fun";   "function";   "functor";   "if";   "in";  "include";
-         "inherit";  "initializer"; "land"; "lazy"; "let"; "lor"; "lsl"; "lsr";
-         "lxor";   "match";   "method";   "mod";  "module";  "mutable";  "new";
-         "object";  "of";  "open";  "or";  "parser";  "private";  "rec"; "sig";
+        ["and"; "as"; "assert"; "begin"; "class"; "constraint"; "do";
+         "done"; "downto"; "else"; "end"; "exception"; "external"; "false";
+         "for"; "fun"; "function"; "functor"; "if"; "in"; "include";
+         "inherit"; "initializer"; "lazy"; "let"; "match"; "method"; "module";
+         "mutable"; "new"; "object";  "of";  "open"; "parser";  "private";  "rec"; "sig";
          "struct";  "then";  "to";  "true";  "try";  "type";  "val"; "virtual";
          "when"; "while"; "with"] StringSet.empty
       in fun s -> StringSet.mem s keywords;
@@ -203,7 +203,9 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
           | _ ->
             match lex_string v with
             [ (LIDENT s | UIDENT s | ESCAPED_IDENT s) when is_keyword s ->
-                  pp f "%s__" s
+                pp f "%s__" s
+            | (LIDENT s | ESCAPED_IDENT s) when List.mem s infix_lidents ->
+                pp f "( %s )" s
             | SYMBOL s ->
                 pp f "( %s )" s
             | LIDENT s | UIDENT s | ESCAPED_IDENT s ->
