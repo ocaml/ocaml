@@ -52,7 +52,7 @@ struct channel {
 };
 
 enum {
-  CHANNEL_FLAG_FROM_SOCKET = 1,   /* For Windows */
+  CHANNEL_FLAG_FROM_SOCKET = 1  /* For Windows */
 };
 
 /* For an output channel:
