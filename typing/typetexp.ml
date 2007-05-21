@@ -271,8 +271,9 @@ let rec transl_type env policy styp =
         try
           let f' = List.assoc l fields in
           let ty = mkfield l f and ty' = mkfield l f' in
-          if equal env false [ty] [ty'] then fields
-          else raise(Error(loc, Constructor_mismatch (ty,ty')))
+          if equal env false [ty] [ty'] then fields else
+          try unify env ty ty'; fields
+          with Unify trace -> raise(Error(loc, Constructor_mismatch (ty,ty')))
         with Not_found ->
           (l, f) :: fields
       in

@@ -1,4 +1,5 @@
 #!/bin/sh
+# $Id$
 set -e
 OCAMLBUILD_PARTIAL="true"
 export OCAMLBUILD_PARTIAL

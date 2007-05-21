@@ -526,7 +526,7 @@ mksharedlibrpath=''
 
 if test $withsharedlibs = "yes"; then
   case "$host" in
-    *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*|*-*-gnu*)
+    *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*|*-*-netbsd*|*-*-gnu*)
       sharedcccompopts="-fPIC"
       mksharedlib="$bytecc -shared -o"
       bytecclinkopts="$bytecclinkopts -Wl,-E"
@@ -1528,6 +1528,7 @@ echo "TOOLCHAIN=cc" >> Makefile
 rm -f tst hasgot.c
 rm -f ../m.h ../s.h ../Makefile
 mv m.h s.h Makefile ..
+( cd ../.. ; build/mkconfig.sh )
 
 # Print a summary
 

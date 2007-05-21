@@ -1,4 +1,5 @@
 #!/bin/sh
+# $Id$
 cd `dirname $0`
 set -e
 ./mkconfig.sh

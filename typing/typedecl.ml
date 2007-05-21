@@ -369,6 +369,7 @@ let check_recursion env loc path decl to_check =
         Ctype.correct_abbrev env path decl.type_params body
       with Ctype.Recursive_abbrev ->
         raise(Error(loc, Recursive_abbrev (Path.name path)))
+      | Ctype.Unify trace -> raise(Error(loc, Type_clash trace))
       end;
       (* Check that recursion is regular *)
       if decl.type_params = [] then () else

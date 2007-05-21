@@ -104,4 +104,6 @@ case "$mode" in
     ;;
 esac
 
+(cat _build/not_installed || bad) 2>&1 | log not_installed
+
 finish

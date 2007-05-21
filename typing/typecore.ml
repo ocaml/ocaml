@@ -2205,11 +2205,17 @@ and type_expect ?in_function env sexp ty_expected =
               raise(Error(loc,
                           Too_many_arguments (in_function <> None, ty_fun)))
       in
-      if is_optional l then begin
-        try unify env ty_arg (type_option(newvar()))
-        with Unify _ -> assert false
-      end;
-      let cases, partial, _ =
+      let ty_arg =
+        if is_optional l then
+          let tv = newvar() in
+          begin
+            try unify env ty_arg (type_option tv)
+            with Unify _ -> assert false
+          end;
+          type_option tv
+        else ty_arg
+      in
+      let cases, partial,_  =
         type_cases ~in_function:(loc,ty_fun) E env ty_arg ty_res
           (Some sexp.pexp_loc) caselist in
       let not_function ty =

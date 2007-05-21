@@ -826,7 +826,7 @@ dep ["ocaml"; "compile"; "file:camlp4/Camlp4/Sig.ml"]
 
 mk_camlp4_bin "camlp4" [];;
 mk_camlp4 "camlp4boot" ~unix:false
-  [pa_r; pa_qc; pa_q; pa_rp; pa_g; pa_macro; pa_debug] [pr_dump] [top_rprint];;
+  [pa_r; pa_qc; pa_q; pa_rp; pa_g; pa_macro; pa_debug; pa_l] [pr_dump] [top_rprint];;
 mk_camlp4 "camlp4r"
   [pa_r; pa_rp] [pr_a] [top_rprint];;
 mk_camlp4 "camlp4rf"
@@ -861,7 +861,7 @@ Pathname.define_context "otherlibs/labltk/browser"
 file_rule "otherlibs/labltk/compiler/copyright"
   ~dep:"otherlibs/labltk/compiler/copyright"
   ~prod:"otherlibs/labltk/compiler/copyright.ml"
-  ~cache:(fun _ -> "0.1")
+  ~cache:(fun _ _ -> "0.1")
   begin fun _ oc ->
     Printf.fprintf oc "let copyright = \"%a\";;\n\
                        let write ~w = w copyright;;"
@@ -1036,7 +1036,7 @@ rule "labltktop"
 let labltk_installdir = C.libdir/"labltk" in
 file_rule "labltk"
   ~prod:"otherlibs/labltk/lib/labltk"
-  ~cache:(fun _ -> labltk_installdir)
+  ~cache:(fun _ _ -> labltk_installdir)
   begin fun _ oc ->
     Printf.fprintf oc
       "#!/bin/sh\n\

@@ -23,6 +23,7 @@ true: use_stdlib
 
 "toplevel/topstart.byte": linkall
 
+<ocamldoc/**>: -debug
 <ocamldoc/*.ml>: ocamldoc_sources
 <ocamldoc/*.ml*>: include_unix, include_str, include_dynlink
 "ocamldoc/odoc.byte": use_unix, use_str, use_dynlink
@@ -36,6 +37,7 @@ true: use_stdlib
 <camlp4/Camlp4Printers/**.ml>: include_unix
 "camlp4/Camlp4/Struct/DynLoader.ml": include_dynlink
 <camlp4/Camlp4Top/**>: include_toplevel
+<camlp4/camlp4{,boot,o,r,of,rf,oof,orf}.byte>: -debug
 
 <ocamlbuild/*>: -warn_Alez, include_unix
 
