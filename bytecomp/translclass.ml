@@ -72,9 +72,10 @@ let transl_val tbl create name =
           [Lvar tbl; transl_label name])
 
 let transl_vals tbl create vals rem =
+  let strict = if create then Strict else StrictOpt in
   List.fold_right
     (fun (name, id) rem ->
-      Llet(StrictOpt, id, transl_val tbl create name, rem))
+      Llet(strict, id, transl_val tbl create name, rem))
     vals rem
 
 let meths_super tbl meths inh_meths =
@@ -203,8 +204,8 @@ let rec build_object_init_0 cl_table params cl copy_env subst_env top ids =
 
 
 let bind_method tbl lab id cl_init =
-  Llet(StrictOpt, id, Lapply (oo_prim "get_method_label",
-                              [Lvar tbl; transl_label lab]),
+  Llet(Strict, id, Lapply (oo_prim "get_method_label",
+                           [Lvar tbl; transl_label lab]),
        cl_init)
 
 let bind_methods tbl meths vals cl_init =
@@ -218,7 +219,7 @@ let bind_methods tbl meths vals cl_init =
     if nvals = 0 then "get_method_labels", [] else
     "new_methods_variables", [transl_meth_list (List.map fst vals)]
   in
-  Llet(StrictOpt, ids,
+  Llet(Strict, ids,
        Lapply (oo_prim getter,
                [Lvar tbl; transl_meth_list (List.map fst methl)] @ names),
        List.fold_right
