@@ -20,8 +20,8 @@ CAMLOPT=$(CAMLRUN) ../ocamlopt -nostdlib -I ../stdlib $(NOJOIN)
 CAMLLEX=$(CAMLRUN) ../boot/ocamllex
 INCLUDES=-I ../utils -I ../parsing -I ../typing -I ../bytecomp -I ../asmcomp \
          -I ../driver
-COMPFLAGS= -warn-error A $(INCLUDES)
-LINKFLAGS=$(INCLUDES)
+COMPFLAGS= -warn-error A $(NOJOIN) $(INCLUDES)
+LINKFLAGS=$(NOJOIN) $(INCLUDES)
 
 all: ocamldep ocamlmktop ocamlmklib
 #all: ocamldep ocamlprof ocamlcp ocamlmktop ocamlmklib scrapelabels addlabels \

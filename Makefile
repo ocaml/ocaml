@@ -513,7 +513,7 @@ beforedepend:: asmcomp/emit.ml
 
 tools/cvt_emit: tools/cvt_emit.mll
 	cd tools; \
-	$(MAKE) CAMLC="../$(CAMLRUN) ../boot/ocamlc -I ../stdlib" cvt_emit
+	$(MAKE) CAMLC="../$(CAMLRUN) ../boot/ocamlc $(NOJOIN) -I ../stdlib" cvt_emit
 
 # The "expunge" utility
 
