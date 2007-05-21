@@ -71,8 +71,7 @@ let transl_val tbl create name =
   Lapply (oo_prim (if create then "new_variable" else "get_variable"),
           [Lvar tbl; transl_label name])
 
-let transl_vals tbl create vals rem =
-  let strict = if create then Strict else StrictOpt in
+let transl_vals tbl create strict vals rem =
   List.fold_right
     (fun (name, id) rem ->
       Llet(strict, id, transl_val tbl create name, rem))
@@ -89,7 +88,7 @@ let meths_super tbl meths inh_meths =
     inh_meths []
 
 let bind_super tbl (vals, meths) cl_init =
-  transl_vals tbl false vals
+  transl_vals tbl false StrictOpt vals
     (List.fold_right (fun (nm, id, def) rem -> Llet(StrictOpt, id, def, rem))
        meths cl_init)
 
@@ -212,7 +211,7 @@ let bind_methods tbl meths vals cl_init =
   let methl = Meths.fold (fun lab id tl -> (lab,id) :: tl) meths [] in
   let len = List.length methl and nvals = List.length vals in
   if len < 2 && nvals = 0 then Meths.fold (bind_method tbl) meths cl_init else
-  if len = 0 && nvals < 2 then transl_vals tbl true vals cl_init else
+  if len = 0 && nvals < 2 then transl_vals tbl true Strict vals cl_init else
   let ids = Ident.create "ids" in
   let i = ref (len + nvals) in
   let getter, names =
@@ -310,7 +309,7 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
         build_class_init cla cstr super inh_init cl_init msubst top cl
       in
       let vals = List.map (function (id, _) -> (Ident.name id, id)) vals in
-      (inh_init, transl_vals cla true vals cl_init)
+      (inh_init, transl_vals cla true StrictOpt vals cl_init)
   | Tclass_apply (cl, exprs) ->
       build_class_init cla cstr super inh_init cl_init msubst top cl
   | Tclass_let (rec_flag, defs, vals, cl) ->
@@ -318,7 +317,7 @@ let rec build_class_init cla cstr super inh_init cl_init msubst top cl =
         build_class_init cla cstr super inh_init cl_init msubst top cl
       in
       let vals = List.map (function (id, _) -> (Ident.name id, id)) vals in
-      (inh_init, transl_vals cla true vals cl_init)
+      (inh_init, transl_vals cla true StrictOpt vals cl_init)
   | Tclass_constraint (cl, vals, meths, concr_meths) ->
       let virt_meths =
         List.filter (fun lab -> not (Concr.mem lab concr_meths)) meths in
