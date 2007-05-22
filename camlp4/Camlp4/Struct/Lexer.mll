@@ -201,6 +201,8 @@ module Make (Token : Sig.Camlp4Token)
   let not_star_symbolchar =
     ['$' '!' '%' '&' '+' '-' '.' '/' ':' '<' '=' '>' '?' '@' '^' '|' '~' '\\']
   let symbolchar = '*' | not_star_symbolchar
+  let quotchar =
+    ['!' '%' '&' '+' '-' '.' '/' ':' '=' '?' '@' '^' '|' '~' '\\' '*']
   let hexa_char = ['0'-'9' 'A'-'F' 'a'-'f']
   let decimal_literal =
     ['0'-'9'] ['0'-'9' '_']*
@@ -296,10 +298,11 @@ module Make (Token : Sig.Camlp4Token)
     | "*)"
         { warn Comment_not_end (Loc.of_lexbuf lexbuf)                           ;
           move_start_p (-1) c; SYMBOL "*"                                       }
-    | "<<"
+    | "<<" (quotchar* as beginning)
       { if quotations c
-        then mk_quotation quotation c "" "" 2
-        else parse (symbolchar_star "<<") c                                     }
+        then (move_start_p (-String.length beginning);
+              mk_quotation quotation c "" "" 2)
+        else parse (symbolchar_star ("<<" ^ beginning)) c                       }
     | "<<>>"
       { if quotations c
         then QUOTATION { q_name = ""; q_loc = ""; q_shift = 2; q_contents = "" }

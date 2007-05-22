@@ -23,7 +23,7 @@ module R =
       struct
         let name = "Camlp4RevisedParserParser"
         let version =
-          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.22 2007/05/18 13:37:36 pouillar Exp $"
+          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.23 2007/05/22 09:05:39 pouillar Exp $"
       end
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
@@ -13391,7 +13391,7 @@ module B =
  * - Daniel de Rauglaudre: initial version
  * - Nicolas Pouillard: refactoring
  *)
-    (* $Id: Camlp4Bin.ml,v 1.14.2.3 2007/03/30 15:50:12 pouillar Exp $ *)
+    (* $Id: Camlp4Bin.ml,v 1.14.2.4 2007/05/22 09:05:38 pouillar Exp $ *)
     open Camlp4
     open PreCast.Syntax
     open PreCast
