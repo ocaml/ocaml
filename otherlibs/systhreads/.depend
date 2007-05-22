@@ -1,34 +1,31 @@
 join.o: join.c ../../byterun/mlvalues.h ../../byterun/compatibility.h \
-  ../../byterun/config.h ../../config/m.h ../../config/s.h \
-  ../../byterun/misc.h ../../byterun/alloc.h ../../byterun/memory.h \
-  ../../byterun/gc.h ../../byterun/major_gc.h ../../byterun/freelist.h \
-  ../../byterun/minor_gc.h ../../byterun/roots.h ../../byterun/custom.h \
-  ../../byterun/intext.h ../../byterun/io.h ../../byterun/fix_code.h \
-  ../../byterun/fail.h
-posix.o: posix.c ../../byterun/alloc.h ../../byterun/compatibility.h \
-  ../../byterun/misc.h ../../byterun/compatibility.h \
   ../../byterun/config.h ../../byterun/../config/m.h \
-  ../../byterun/../config/s.h ../../byterun/compatibility.h \
-  ../../byterun/mlvalues.h ../../byterun/compatibility.h \
-  ../../byterun/config.h ../../byterun/misc.h ../../byterun/backtrace.h \
-  ../../byterun/mlvalues.h ../../byterun/callback.h \
-  ../../byterun/compatibility.h ../../byterun/mlvalues.h \
-  ../../byterun/custom.h ../../byterun/compatibility.h \
-  ../../byterun/mlvalues.h ../../byterun/fail.h \
-  ../../byterun/compatibility.h ../../byterun/misc.h \
-  ../../byterun/mlvalues.h ../../byterun/io.h ../../byterun/misc.h \
-  ../../byterun/mlvalues.h ../../byterun/memory.h \
-  ../../byterun/compatibility.h ../../byterun/config.h ../../byterun/gc.h \
-  ../../byterun/mlvalues.h ../../byterun/major_gc.h \
-  ../../byterun/freelist.h ../../byterun/misc.h ../../byterun/mlvalues.h \
-  ../../byterun/misc.h ../../byterun/minor_gc.h ../../byterun/misc.h \
-  ../../byterun/misc.h ../../byterun/mlvalues.h ../../byterun/printexc.h \
-  ../../byterun/misc.h ../../byterun/mlvalues.h ../../byterun/roots.h \
-  ../../byterun/misc.h ../../byterun/memory.h ../../byterun/signals.h \
-  ../../byterun/compatibility.h ../../byterun/misc.h \
-  ../../byterun/mlvalues.h ../../byterun/stacks.h ../../byterun/misc.h \
-  ../../byterun/mlvalues.h ../../byterun/memory.h ../../byterun/sys.h \
-  ../../byterun/misc.h
+  ../../byterun/../config/s.h ../../byterun/misc.h ../../byterun/alloc.h \
+  ../../byterun/mlvalues.h ../../byterun/memory.h ../../byterun/gc.h \
+  ../../byterun/major_gc.h ../../byterun/freelist.h \
+  ../../byterun/minor_gc.h ../../byterun/roots.h ../../byterun/memory.h \
+  ../../byterun/custom.h ../../byterun/intext.h ../../byterun/io.h \
+  ../../byterun/fix_code.h ../../byterun/fail.h ../../byterun/misc.h
+posix.o: posix.c ../../byterun/alloc.h ../../byterun/compatibility.h \
+  ../../byterun/misc.h ../../byterun/config.h ../../byterun/../config/m.h \
+  ../../byterun/../config/s.h ../../byterun/mlvalues.h \
+  ../../byterun/backtrace.h ../../byterun/callback.h \
+  ../../byterun/custom.h ../../byterun/fail.h ../../byterun/io.h \
+  ../../byterun/memory.h ../../byterun/gc.h ../../byterun/major_gc.h \
+  ../../byterun/freelist.h ../../byterun/minor_gc.h ../../byterun/misc.h \
+  ../../byterun/mlvalues.h ../../byterun/printexc.h ../../byterun/roots.h \
+  ../../byterun/memory.h ../../byterun/signals.h ../../byterun/stacks.h \
+  ../../byterun/sys.h
+win32.o: win32.c ../../byterun/alloc.h ../../byterun/compatibility.h \
+  ../../byterun/misc.h ../../byterun/config.h ../../byterun/../config/m.h \
+  ../../byterun/../config/s.h ../../byterun/mlvalues.h \
+  ../../byterun/backtrace.h ../../byterun/callback.h \
+  ../../byterun/custom.h ../../byterun/fail.h ../../byterun/io.h \
+  ../../byterun/memory.h ../../byterun/gc.h ../../byterun/major_gc.h \
+  ../../byterun/freelist.h ../../byterun/minor_gc.h ../../byterun/misc.h \
+  ../../byterun/mlvalues.h ../../byterun/printexc.h ../../byterun/roots.h \
+  ../../byterun/memory.h ../../byterun/signals.h ../../byterun/stacks.h \
+  ../../byterun/sys.h
 condition.cmi: mutex.cmi 
 join_extern.cmi: thread.cmi 
 join_message.cmi: join_types.cmi join_link.cmi 
@@ -58,10 +55,10 @@ join_message.cmx: join_types.cmi join_link.cmx join_hash.cmx join_debug.cmx \
     join_message.cmi 
 join_misc.cmo: mutex.cmi join_debug.cmi condition.cmi join_misc.cmi 
 join_misc.cmx: mutex.cmx join_debug.cmx condition.cmx join_misc.cmi 
-join.cmo: join_types.cmi join_space.cmi join_scheduler.cmi join_port.cmi \
-    join_misc.cmi join_debug.cmi join.cmi 
-join.cmx: join_types.cmi join_space.cmx join_scheduler.cmx join_port.cmx \
-    join_misc.cmx join_debug.cmx join.cmi 
+join.cmo: join_types.cmi join_space.cmi join_scheduler.cmi join_prim.cmi \
+    join_port.cmi join_misc.cmi join_debug.cmi join.cmi 
+join.cmx: join_types.cmi join_space.cmx join_scheduler.cmx join_prim.cmx \
+    join_port.cmx join_misc.cmx join_debug.cmx join.cmi 
 join_port.cmo: join_scheduler.cmi join_misc.cmi join_link.cmi join_debug.cmi \
     join_port.cmi 
 join_port.cmx: join_scheduler.cmx join_misc.cmx join_link.cmx join_debug.cmx \

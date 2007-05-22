@@ -294,6 +294,7 @@ let tail_send_async chan a = match chan with
 	let guard = (Obj.magic stub.stub_val : 'a -> unit) in
 	local_tail_send_alone guard a
     | Remote ->
+(*DEBUG*)debug3 "TAIL SEND ALONE" "%s" name ;
 	let rspace = (Obj.magic stub.stub_val : space_id) in
 	Join_space.remote_send_alone true rspace stub.uid a
     end

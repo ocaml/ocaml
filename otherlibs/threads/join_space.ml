@@ -470,10 +470,11 @@ and blocking_remote_send space rspace do_msg a =
 
 and do_remote_send may_block space rspace do_msg a =
   if may_block then
+    blocking_remote_send space rspace do_msg a
+  else
     Join_scheduler.create_process
       (fun () -> blocking_remote_send space rspace do_msg a)
-  else
-    blocking_remote_send space rspace do_msg a
+
 
 (* Remote replies are not exported, and always called inside a fresh process *)
 and remote_reply_to space rspace kid a =
@@ -772,7 +773,7 @@ let do_remote_send_async may_block space rspace_id uid idx a =
     (fun v -> AsyncSend ({auto_id=uid; chan_id=idx;}, v)) a
 
 let remote_send_async may_block rspace uid idx a =
-(*DEBUG*)debug3 "REMOTE" "SEND ASYNC" ;
+(*DEBUG*)debug3 "REMOTE" "SEND ASYNC (%s) " (if may_block then "MAY_BLOCK" else "BLOCK NOT ALLOWED") ;
   do_remote_send_async may_block local_space rspace uid idx a
     
 let do_remote_send_alone  may_block space rspace_id uid a =
@@ -780,7 +781,7 @@ let do_remote_send_alone  may_block space rspace_id uid a =
     (fun v -> AloneSend (uid, v)) a
 
 let remote_send_alone  may_block rspace_id uid a =
-(*DEBUG*)debug3 "REMOTE" "SEND ALONE" ;
+(*DEBUG*)debug3 "REMOTE" "SEND ALONE (%s)" (if may_block then "MAY_BLOCK" else "BLOCK NOT ALLOWED") ;
   do_remote_send_alone may_block local_space rspace_id uid a
 
 let do_remote_send_sync space rspace_id uid idx kont a =
