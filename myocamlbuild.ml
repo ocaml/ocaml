@@ -717,6 +717,7 @@ file_rule "camlp4/Camlp4_import.ml"
      "utils/misc.ml";
      "utils/terminfo.ml";
      "utils/warnings.ml";
+     "typing/outcometree.mli";
      "parsing/location.ml";
      "parsing/asttypes.mli";
      "parsing/parsetree.mli";
@@ -724,7 +725,7 @@ file_rule "camlp4/Camlp4_import.ml"
      "utils/config.mlbuild";
      "parsing/longident.ml"]
   ~prod:"camlp4/Camlp4_import.ml"
-  ~cache:(fun _ _ -> "0.1")
+  ~cache:(fun _ _ -> "0.2")
   begin fun _ oc ->
     Printf.fprintf oc "\
       module Misc = struct\n%a\nend;;\n\
@@ -735,6 +736,7 @@ file_rule "camlp4/Camlp4_import.ml"
       module Longident = struct\n%a\nend;;\n\
       module Asttypes = struct\n%a\nend;;\n\
       module Parsetree = struct\n%a\nend;;\n\
+      module Outcometree = struct\n%a\nend;;\n\
       module Myocamlbuild_config = struct\n%a\nend;;\n\
       module Config = struct\n%a\nend;;\n%!"
       fp_cat "utils/misc.ml"
@@ -745,6 +747,7 @@ file_rule "camlp4/Camlp4_import.ml"
       fp_cat "parsing/longident.ml"
       fp_cat "parsing/asttypes.mli"
       fp_cat "parsing/parsetree.mli"
+      fp_cat "typing/outcometree.mli"
       fp_cat "myocamlbuild_config.ml"
       fp_cat "utils/config.mlbuild"
   end;;
