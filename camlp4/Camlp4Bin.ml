@@ -118,13 +118,12 @@ value rec parse_file dyn_loader name pa getdir =
   let loc = Loc.mk name
   in do {
     current_warning.val := print_warning;
-    let ic = if name = "-" then stdin else open_in_bin name in
-    let cs = Stream.of_channel ic in
-    let clear () = if name = "-" then () else close_in ic in
+    let ic = if name = "-" then stdin else open_in_bin name;
+    let cs = Stream.of_channel ic;
+    let clear () = if name = "-" then () else close_in ic;
     let phr =
       try pa ?directive_handler loc cs
-      with x -> do { clear (); raise x }
-    in
+      with x -> do { clear (); raise x };
     clear ();
     phr
   };

@@ -733,19 +733,22 @@ Very old (no more supported) syntax:
     dummy:
       [ [ -> () ] ]
     ;
+    sequence':
+      [ [ -> fun e -> e
+        | ";" -> fun e -> e
+        | ";"; el = sequence -> fun e -> <:expr< $e$; $el$ >> ] ]
+    ;
     sequence:
-      [ [ "let"; rf = opt_rec; bi = binding; "in"; e = expr ->
-            <:expr< let $rec:rf$ $bi$ in $e$ >>
+      [ [ "let"; rf = opt_rec; bi = binding; "in"; e = expr; k = sequence' ->
+            k <:expr< let $rec:rf$ $bi$ in $e$ >>
         | "let"; rf = opt_rec; bi = binding; ";"; el = SELF ->
             <:expr< let $rec:rf$ $bi$ in $mksequence _loc el$ >>
-        | "let"; "module"; m = a_UIDENT; mb = module_binding0; "in"; e = expr ->
-            <:expr< let module $m$ = $mb$ in $e$ >>
+        | "let"; "module"; m = a_UIDENT; mb = module_binding0; "in"; e = expr; k = sequence' ->
+            k <:expr< let module $m$ = $mb$ in $e$ >>
         | "let"; "module"; m = a_UIDENT; mb = module_binding0; ";"; el = SELF ->
             <:expr< let module $m$ = $mb$ in $mksequence _loc el$ >>
         | `ANTIQUOT ("list" as n) s -> <:expr< $anti:mk_anti ~c:"expr;" n s$ >>
-        | e = expr; ";"; el = SELF -> <:expr< $e$; $el$ >>
-        | e = expr; ";" -> e
-        | e = expr -> e ] ]
+        | e = expr; k = sequence' -> k e ] ]
     ;
     binding:
       [ LEFTA

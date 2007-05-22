@@ -299,7 +299,7 @@ module Make (Structure : Structure.S) = struct
                     let symbols = List.map (change_to_self entry) symbols in
                     do {
                       List.iter (check_gram entry) symbols;
-                      let (e1, symbols) = get_initial symbols in
+                      let (e1, symbols) = get_initial symbols;
                       insert_tokens entry.egram symbols;
                       insert_level entry e1 symbols action lev
                     })

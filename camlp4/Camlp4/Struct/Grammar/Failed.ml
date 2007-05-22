@@ -109,8 +109,8 @@ value tree_failed entry prev_symb_result prev_symb tree =
   in
   do {
     if entry.egram.error_verbose.val then do {
-      let tree = Search.tree_in_entry prev_symb tree entry.edesc in
-      let ppf = err_formatter in
+      let tree = Search.tree_in_entry prev_symb tree entry.edesc;
+      let ppf = err_formatter;
       fprintf ppf "@[<v 0>@,";
       fprintf ppf "----------------------------------@,";
       fprintf ppf "Parse error in entry [%s], rule:@;<0 2>" entry.ename;
