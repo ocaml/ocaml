@@ -746,7 +746,7 @@ file_rule "camlp4/Camlp4_import.ml"
       fp_cat "parsing/asttypes.mli"
       fp_cat "parsing/parsetree.mli"
       fp_cat "myocamlbuild_config.ml"
-      fp_cat "utils/config.ml"
+      fp_cat "utils/config.mlbuild"
   end;;
 
 let mk_camlp4_top_lib name modules =
