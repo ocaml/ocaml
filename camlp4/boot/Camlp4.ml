@@ -366,9 +366,9 @@ module Sig =
         (** Return a location where both positions are set the given position. *)
         val of_lexing_position : Lexing.position -> t
         (** Return an OCaml location. *)
-        val to_ocaml_location : t -> Location.t
+        val to_ocaml_location : t -> Camlp4_import.Location.t
         (** Return a location from an OCaml location. *)
-        val of_ocaml_location : Location.t -> t
+        val of_ocaml_location : Camlp4_import.Location.t -> t
         (** Return a location from ocamllex buffer. *)
         val of_lexbuf : Lexing.lexbuf -> t
         (** Return a location from [(file_name, start_line, start_bol, start_off,
@@ -2126,21 +2126,26 @@ module Struct =
           in loc
         let to_ocaml_location x =
           {
-            Location.loc_start = pos_to_lexing_position x.start x.file_name;
+            Camlp4_import.Location.loc_start =
+              pos_to_lexing_position x.start x.file_name;
             loc_end = pos_to_lexing_position x.stop x.file_name;
             loc_ghost = x.ghost;
           }
-        let of_ocaml_location x =
-          let (a, b) = ((x.Location.loc_start), (x.Location.loc_end)) in
-          let res =
-            {
-              file_name =
-                better_file_name a.Lexing.pos_fname b.Lexing.pos_fname;
-              start = pos_of_lexing_position a;
-              stop = pos_of_lexing_position b;
-              ghost = x.Location.loc_ghost;
-            }
-          in res
+        let of_ocaml_location =
+          function
+          | {
+              Camlp4_import.Location.loc_start = a;
+              loc_end = b;
+              loc_ghost = g } ->
+              let res =
+                {
+                  file_name =
+                    better_file_name a.Lexing.pos_fname b.Lexing.pos_fname;
+                  start = pos_of_lexing_position a;
+                  stop = pos_of_lexing_position b;
+                  ghost = g;
+                }
+              in res
         let start_pos x = pos_to_lexing_position x.start x.file_name
         let stop_pos x = pos_to_lexing_position x.stop x.file_name
         let merge a b =
@@ -11166,18 +11171,18 @@ module Struct =
         module Make (Camlp4Ast : Sig.Camlp4Ast) :
           sig
             open Camlp4Ast
-            val sig_item : sig_item -> Parsetree.signature
-            val str_item : str_item -> Parsetree.structure
-            val phrase : str_item -> Parsetree.toplevel_phrase
+            val sig_item : sig_item -> Camlp4_import.Parsetree.signature
+            val str_item : str_item -> Camlp4_import.Parsetree.structure
+            val phrase : str_item -> Camlp4_import.Parsetree.toplevel_phrase
           end
       end =
       struct
         module Make (Ast : Sig.Camlp4Ast) =
           struct
             open Format
-            open Parsetree
-            open Longident
-            open Asttypes
+            open Camlp4_import.Parsetree
+            open Camlp4_import.Longident
+            open Camlp4_import.Asttypes
             open Ast
             let constructors_arity () = !Camlp4_config.constructors_arity
             let error loc str = Loc.raise loc (Failure str)
@@ -14967,8 +14972,6 @@ module Printers =
                       method flag :
                         formatter -> Ast.meta_bool -> string -> unit
                       method node : formatter -> 'b -> ('b -> Loc.t) -> unit
-                      method object_dup :
-                        formatter -> (string * Ast.expr) list -> unit
                       method patt : formatter -> Ast.patt -> unit
                       method patt1 : formatter -> Ast.patt -> unit
                       method patt2 : formatter -> Ast.patt -> unit
@@ -15023,7 +15026,7 @@ module Printers =
           struct
             let name = "Camlp4.Printers.OCaml"
             let version =
-              "$Id: OCaml.ml,v 1.21.2.9 2007/05/12 22:44:55 pouillar Exp $"
+              "$Id: OCaml.ml,v 1.21.2.10 2007/05/17 10:02:17 pouillar Exp $"
           end
         module Make (Syntax : Sig.Camlp4Syntax) =
           struct
@@ -15059,14 +15062,14 @@ module Printers =
             let comment_filter = CommentFilter.mk ()
             let _ = CommentFilter.define (Gram.get_filter ()) comment_filter
             module StringSet = Set.Make(String)
+            let infix_lidents =
+              [ "asr"; "land"; "lor"; "lsl"; "lsr"; "lxor"; "mod"; "or" ]
             let is_infix =
               let first_chars =
                 [ '='; '<'; '>'; '|'; '&'; '$'; '@'; '^'; '+'; '-'; '*'; '/';
                   '%'; '\\' ]
               and infixes =
-                List.fold_right StringSet.add
-                  [ "asr"; "land"; "lor"; "lsl"; "lsr"; "lxor"; "mod"; "or" ]
-                  StringSet.empty
+                List.fold_right StringSet.add infix_lidents StringSet.empty
               in
                 fun s ->
                   (StringSet.mem s infixes) ||
@@ -15074,15 +15077,14 @@ module Printers =
             let is_keyword =
               let keywords =
                 List.fold_right StringSet.add
-                  [ "and"; "as"; "assert"; "asr"; "begin"; "class";
-                    "constraint"; "do"; "done"; "downto"; "else"; "end";
-                    "exception"; "external"; "false"; "for"; "fun";
-                    "function"; "functor"; "if"; "in"; "include"; "inherit";
-                    "initializer"; "land"; "lazy"; "let"; "lor"; "lsl";
-                    "lsr"; "lxor"; "match"; "method"; "mod"; "module";
-                    "mutable"; "new"; "object"; "of"; "open"; "or"; "parser";
-                    "private"; "rec"; "sig"; "struct"; "then"; "to"; "true";
-                    "try"; "type"; "val"; "virtual"; "when"; "while"; "with" ]
+                  [ "and"; "as"; "assert"; "begin"; "class"; "constraint";
+                    "do"; "done"; "downto"; "else"; "end"; "exception";
+                    "external"; "false"; "for"; "fun"; "function"; "functor";
+                    "if"; "in"; "include"; "inherit"; "initializer"; "lazy";
+                    "let"; "match"; "method"; "module"; "mutable"; "new";
+                    "object"; "of"; "open"; "parser"; "private"; "rec";
+                    "sig"; "struct"; "then"; "to"; "true"; "try"; "type";
+                    "val"; "virtual"; "when"; "while"; "with" ]
                   StringSet.empty
               in fun s -> StringSet.mem s keywords
             module Lexer = Struct.Lexer.Make(Token)
@@ -15207,6 +15209,8 @@ module Printers =
                              (match lex_string v with
                               | LIDENT s | UIDENT s | ESCAPED_IDENT s when
                                   is_keyword s -> pp f "%s__" s
+                              | LIDENT s | ESCAPED_IDENT s when
+                                  List.mem s infix_lidents -> pp f "( %s )" s
                               | SYMBOL s -> pp f "( %s )" s
                               | LIDENT s | UIDENT s | ESCAPED_IDENT s ->
                                   pp_print_string f s
@@ -15301,12 +15305,6 @@ module Printers =
                           (o#under_semi#record_binding f b1;
                            o#under_semi#record_binding f b2)
                       | Ast.RbAnt (_, s) -> o#anti f s
-                method object_dup =
-                  fun f ->
-                    list
-                      (fun f (s, e) ->
-                         pp f "@[<2>%a =@ %a@]" o#var s o#expr e)
-                      ";@ " f
                 method mk_patt_list =
                   function
                   | Ast.PaApp (_,
@@ -15515,7 +15513,7 @@ module Printers =
                           pp f "@[<2>assert@ %a@]" o#dot_expr e
                       | Ast.ExLmd (_, s, me, e) ->
                           pp f "@[<2>let module %a =@ %a@]@ @[<2>in@ %a@]"
-                            o#var s o#module_expr me o#expr e
+                            o#var s o#module_expr me o#reset_semi#expr e
                       | e -> o#apply_expr f e
                 method apply_expr =
                   fun f e ->
