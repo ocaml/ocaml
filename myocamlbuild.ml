@@ -239,8 +239,6 @@ let setup_arch arch =
 let camlp4_arch =
   dir "" [
     dir "stdlib" [];
-    dir "utils" [];
-    dir "parsing" [];
     dir "camlp4" [
       dir "build" [];
       dir_pack "Camlp4" [
@@ -257,12 +255,13 @@ setup_arch camlp4_arch;;
 
 Pathname.define_context "" ["stdlib"];;
 Pathname.define_context "utils" [Pathname.current_dir_name; "stdlib"];;
-Pathname.define_context "camlp4" ["camlp4/build"; "utils"; "stdlib"];;
-Pathname.define_context "camlp4/boot" ["camlp4/build"; "utils"; "parsing"; "camlp4"; "stdlib"];;
-Pathname.define_context "camlp4/Camlp4Parsers" ["camlp4"; "camlp4/build"; "stdlib"];;
-Pathname.define_context "camlp4/Camlp4Printers" ["camlp4"; "camlp4/build"; "stdlib"];;
-Pathname.define_context "camlp4/Camlp4Filters" ["camlp4"; "camlp4/build"; "stdlib"];;
-Pathname.define_context "camlp4/Camlp4Top" ["typing"; "stdlib"];;
+Pathname.define_context "camlp4" ["camlp4"; "stdlib"];;
+Pathname.define_context "camlp4/boot" ["camlp4"; "stdlib"];;
+Pathname.define_context "camlp4/Camlp4Parsers" ["camlp4"; "stdlib"];;
+Pathname.define_context "camlp4/Camlp4Printers" ["camlp4"; "stdlib"];;
+Pathname.define_context "camlp4/Camlp4Filters" ["camlp4"; "stdlib"];;
+Pathname.define_context "camlp4/Camlp4Top" ["camlp4"; "stdlib"];;
+Pathname.define_context "parsing" ["parsing"; "utils"; "stdlib"];;
 Pathname.define_context "typing" ["typing"; "parsing"; "utils"; "stdlib"];;
 Pathname.define_context "ocamldoc" ["typing"; "parsing"; "utils"; "tools"; "bytecomp"; "stdlib"];;
 Pathname.define_context "bytecomp" ["bytecomp"; "parsing"; "typing"; "utils"; "stdlib"];;
@@ -710,6 +709,45 @@ let camlp4lib_cmxa = p4 "camlp4lib.cmxa"
 
 let special_modules =
   if Sys.file_exists "./boot/Profiler.cmo" then [camlp4Profiler] else []
+;;
+
+file_rule "camlp4/Camlp4_import.ml"
+  ~deps:
+    ["parsing/linenum.ml";
+     "utils/misc.ml";
+     "utils/terminfo.ml";
+     "utils/warnings.ml";
+     "parsing/location.ml";
+     "parsing/asttypes.mli";
+     "parsing/parsetree.mli";
+     "myocamlbuild_config.ml";
+     "utils/config.mlbuild";
+     "parsing/longident.ml"]
+  ~prod:"camlp4/Camlp4_import.ml"
+  ~cache:(fun _ _ -> "0.1")
+  begin fun _ oc ->
+    Printf.fprintf oc "\
+      module Misc = struct\n%a\nend;;\n\
+      module Terminfo = struct\n%a\nend;;\n\
+      module Linenum = struct\n%a\nend;;\n\
+      module Warnings = struct\n%a\nend;;\n\
+      module Location = struct\n%a\nend;;\n\
+      module Longident = struct\n%a\nend;;\n\
+      module Asttypes = struct\n%a\nend;;\n\
+      module Parsetree = struct\n%a\nend;;\n\
+      module Myocamlbuild_config = struct\n%a\nend;;\n\
+      module Config = struct\n%a\nend;;\n%!"
+      fp_cat "utils/misc.ml"
+      fp_cat "utils/terminfo.ml"
+      fp_cat "parsing/linenum.ml"
+      fp_cat "utils/warnings.ml"
+      fp_cat "parsing/location.ml"
+      fp_cat "parsing/longident.ml"
+      fp_cat "parsing/asttypes.mli"
+      fp_cat "parsing/parsetree.mli"
+      fp_cat "myocamlbuild_config.ml"
+      fp_cat "utils/config.ml"
+  end;;
 
 let mk_camlp4_top_lib name modules =
   let name = "camlp4"/name in

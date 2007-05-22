@@ -1,9 +1,3 @@
 Camlp4
-Linenum
-Misc
-Warnings
-Location
-Config
+Camlp4_import
 Camlp4_config
-Myocamlbuild_config
-Longident

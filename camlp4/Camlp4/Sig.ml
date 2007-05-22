@@ -60,10 +60,10 @@ module type Loc = sig
   value of_lexing_position : Lexing.position -> t;
 
   (** Return an OCaml location. *)
-  value to_ocaml_location : t -> Location.t;
+  value to_ocaml_location : t -> Camlp4_import.Location.t;
 
   (** Return a location from an OCaml location. *)
-  value of_ocaml_location : Location.t -> t;
+  value of_ocaml_location : Camlp4_import.Location.t -> t;
 
   (** Return a location from ocamllex buffer. *)
   value of_lexbuf : Lexing.lexbuf -> t;

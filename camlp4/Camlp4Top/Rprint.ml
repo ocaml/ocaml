@@ -383,7 +383,7 @@ and print_out_type_decl kwd ppf (name, args, ty, priv, constraints) =
           (print_list type_parameter (fun ppf -> fprintf ppf "@ ")) args ]
   and print_kind ppf ty =
     fprintf ppf "%s@ %a"
-      (if priv = Asttypes.Private then " private" else "")
+      (if priv = Obj.magic Camlp4_import.Asttypes.Private then " private" else "")
       Toploop.print_out_type.val ty
   in
   let print_types ppf = fun

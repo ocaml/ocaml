@@ -22,9 +22,9 @@
 
 module Make (Ast : Sig.Camlp4Ast) = struct
   open Format;
-  open Parsetree;
-  open Longident;
-  open Asttypes;
+  open Camlp4_import.Parsetree;
+  open Camlp4_import.Longident;
+  open Camlp4_import.Asttypes;
   open Ast;
 
   value constructors_arity () =

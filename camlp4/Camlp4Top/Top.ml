@@ -20,7 +20,30 @@
 
 (* $Id$ *)
 
-open Parsetree;
+(* There is a few Obj.magic due to the fact that we no longer have compiler
+   files like Parsetree, Location, Longident but Camlp4_import that wrap them to
+   avoid name clashing. *)
+module Toploop : sig
+  value print_location :
+    Format.formatter -> Camlp4_import.Location.t -> unit;
+  value print_warning :
+    Camlp4_import.Location.t -> Format.formatter -> Camlp4_import.Warnings.t -> unit;
+  value parse_toplevel_phrase :
+    ref (Lexing.lexbuf -> Camlp4_import.Parsetree.toplevel_phrase);
+  value parse_use_file :
+    ref (Lexing.lexbuf -> list Camlp4_import.Parsetree.toplevel_phrase);
+end = struct
+  value print_location fmt loc =
+    Toploop.print_location fmt (Obj.magic loc);
+  value parse_toplevel_phrase =
+    Obj.magic Toploop.parse_toplevel_phrase;
+  value parse_use_file =
+    Obj.magic Toploop.parse_use_file;
+  value print_warning loc fmt w =
+    Toploop.print_warning (Obj.magic loc) fmt (Obj.magic w);
+end;
+
+open Camlp4_import.Parsetree;
 open Lexing;
 open Camlp4;
 open PreCast;
@@ -104,6 +127,6 @@ Toploop.parse_use_file.val := wrap use_file;
 current_warning.val :=
   fun loc txt ->
     Toploop.print_warning (Loc.to_ocaml_location loc) Format.err_formatter
-      (Warnings.Camlp4 txt);
+      (Camlp4_import.Warnings.Camlp4 txt);
 
 Register.iter_and_take_callbacks (fun (_, f) -> f ());
