@@ -297,9 +297,6 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
                o#under_semi#record_binding f b2 }
       | <:rec_binding< $anti:s$ >> -> o#anti f s ];
 
-    method object_dup f =
-      list (fun f (s, e) -> pp f "@[<2>%a =@ %a@]" o#var s o#expr e) ";@ " f;
-
     method mk_patt_list =
       fun
       [ <:patt< [$p1$ :: $p2$] >> ->
@@ -463,7 +460,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
     | <:expr< assert False >> -> pp f "@[<2>assert@ false@]"
     | <:expr< assert $e$ >> -> pp f "@[<2>assert@ %a@]" o#dot_expr e
     | <:expr< let module $s$ = $me$ in $e$ >> ->
-          pp f "@[<2>let module %a =@ %a@]@ @[<2>in@ %a@]" o#var s o#module_expr me o#expr e
+          pp f "@[<2>let module %a =@ %a@]@ @[<2>in@ %a@]" o#var s o#module_expr me o#reset_semi#expr e
     | e -> o#apply_expr f e ];
 
     method apply_expr f e =

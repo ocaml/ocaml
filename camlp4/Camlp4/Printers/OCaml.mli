@@ -113,8 +113,6 @@ module Make (Syntax : Sig.Camlp4Syntax) : sig
     method rec_flag : formatter -> Ast.meta_bool -> unit;
     method flag : formatter -> Ast.meta_bool -> string -> unit;
     method node : formatter -> 'b -> ('b -> Loc.t) -> unit;
-    method object_dup :
-      formatter -> list (string * Ast.expr) -> unit;
     method patt : formatter -> Ast.patt -> unit;
     method patt1 : formatter -> Ast.patt -> unit;
     method patt2 : formatter -> Ast.patt -> unit;
