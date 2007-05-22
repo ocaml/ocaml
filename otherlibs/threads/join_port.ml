@@ -51,7 +51,7 @@ let create_port porto =
     match porto with
     | Some _ -> sockaddr
     | None -> match sockaddr with
-      | ADDR_INET (_, port) ->  ADDR_INET (Join_misc.local_addr, port)
+      | ADDR_INET (_, port) ->  ADDR_INET (Join_misc.get_local_addr (), port)
       | ADDR_UNIX _ -> assert false in
   {loc_port=sockaddr ;  loc_sock=sock ; }
 

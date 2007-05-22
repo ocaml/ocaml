@@ -243,7 +243,7 @@ let send_async chan a = match chan with
 	local_send_async auto idx a
     | Remote ->
 	let rspace = (Obj.magic stub.stub_val : space_id) in
-	Join_space.remote_send_async rspace stub.uid idx a
+	Join_space.remote_send_async false rspace stub.uid idx a
     end
 | Alone (stub,name) ->
     begin match stub.stub_tag with
@@ -253,7 +253,7 @@ let send_async chan a = match chan with
 	local_send_alone guard a
     | Remote ->
 	let rspace = (Obj.magic stub.stub_val : space_id) in
-	Join_space.remote_send_alone rspace stub.uid a
+	Join_space.remote_send_alone false rspace stub.uid a
     end
     
 let _ = Join_space.send_async_gen_ref.Join_space.async_gen <- send_async
@@ -285,7 +285,7 @@ let tail_send_async chan a = match chan with
 	local_tail_send_async auto idx a
     | Remote ->
 	let rspace = (Obj.magic stub.stub_val : space_id) in
-	Join_space.remote_send_async rspace stub.uid idx a
+	Join_space.remote_send_async true rspace stub.uid idx a
     end
 | Alone (stub,name) ->
     begin match stub.stub_tag with
@@ -295,7 +295,7 @@ let tail_send_async chan a = match chan with
 	local_tail_send_alone guard a
     | Remote ->
 	let rspace = (Obj.magic stub.stub_val : space_id) in
-	Join_space.remote_send_alone rspace stub.uid a
+	Join_space.remote_send_alone true rspace stub.uid a
     end
 
 

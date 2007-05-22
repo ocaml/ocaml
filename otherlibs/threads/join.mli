@@ -15,8 +15,7 @@
 type - 'a chan
 
 (* Convenience *)
-val local_addr : Unix.inet_addr
-
+val get_local_addr : unit -> Unix.inet_addr
 
 (* Site identity *)
 type site

@@ -46,7 +46,7 @@ val exn_to_string : exn -> string
 (*****************************)
 
 val local_name : string
-val local_addr : Unix.inet_addr
+val get_local_addr : unit -> Unix.inet_addr
 val string_of_sockaddr : Unix.sockaddr -> string
 
 (* Why not put this here ! *)

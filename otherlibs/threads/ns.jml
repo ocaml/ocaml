@@ -20,7 +20,7 @@ open Unix
 (* This  enforces critical initialization in Join,
    when ns is called before any join operation *)
 
-let local_addr = Join.local_addr
+let _site = Join.here
 
 def exception Not_found
 

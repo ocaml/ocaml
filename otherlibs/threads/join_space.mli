@@ -38,10 +38,12 @@ val localize : parameter -> 'a
 val here : space_id
 
 val remote_send_async :
+    bool (* may_block *) ->
     space_id ->
       int (* uid *) -> int (* channnel *) -> 'a (* message *) -> unit
 
 val remote_send_alone :
+    bool  (* may_block *) ->
     space_id ->
       int (* uid *) -> 'a (* message *) -> unit
 

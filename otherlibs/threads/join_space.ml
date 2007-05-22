@@ -203,7 +203,6 @@ let verbose_close caller fd =
     ()
 
 exception NoLink
-exception RoutingFailed
 
 let string_of_addr = function
   | None -> "default"
@@ -217,6 +216,8 @@ let check_addr id addro = match addro with
         (sprintf "attempt to listen on %s, already running as %s"
            (string_of_sockaddr addr) (string_of_sockaddr id))
 
+
+exception RoutingFailed
 
 type connect_msg =
   | Query
@@ -452,22 +453,36 @@ and call_sync space rspace kid g v =
       (* At this point the reply is flushed, or the rspace is dead *)
       decr rspace.replies_pending)
 
-(* When outlink is dead, messages are discarded silently *)
-and do_remote_send space rspace do_msg a =
-  try
-    let link = get_link space rspace in
-    sender_work space rspace link (do_msg (globalize_rec space a []))
-  with NoLink -> ()
 
+(* 
+  - When outlink is dead, messages are discarded silently
+    exception handler for NoLink
+
+  - If blocking is not allowed, a process is created, since
+    opening the link or sending on it may block (or even fail)
+*)
+
+and blocking_remote_send space rspace do_msg a =
+   try
+     let link = get_link space rspace in
+     sender_work space rspace link (do_msg (globalize_rec space a []))
+   with NoLink -> ()
+
+and do_remote_send may_block space rspace do_msg a =
+  if may_block then
+    Join_scheduler.create_process
+      (fun () -> blocking_remote_send space rspace do_msg a)
+  else
+    blocking_remote_send space rspace do_msg a
+
+(* Remote replies are not exported, and always called inside a fresh process *)
 and remote_reply_to space rspace kid a =
-  do_remote_send space rspace
-    (fun v -> ReplySend (kid, v)) a
+  blocking_remote_send space rspace (fun v -> ReplySend (kid, v)) a
 
 and remote_reply_to_exn space rspace kid e =
   try
     let link = get_link space rspace in
-    sender_work space rspace link
-      (ReplyExn (kid, e))
+    sender_work space rspace link (ReplyExn (kid, e))
   with NoLink -> ()
 
 and close_link space rspace = match rspace.link with
@@ -624,11 +639,11 @@ and connect_on_link space rspace (mtx, cond) link route =
   
 (* Get link for rspace, in case no connection is here yet, create one *)
 and get_link space rspace =  match rspace.link with
-  | DeadConnection -> raise NoLink
-  | Connected (link,_) -> link
-  | NoConnection mtx|Connecting (mtx,_) ->
-      Mutex.lock mtx ;
-      open_link_sender space rspace mtx
+| DeadConnection -> raise NoLink
+| Connected (link,_) -> link
+| NoConnection mtx|Connecting (mtx,_) ->
+    Mutex.lock mtx ;
+    open_link_sender space rspace mtx
 
 and sender_work space rspace link msg =
 (*DEBUG*)debug2 "SENDER" "message for %s" (string_of_space rspace.rspace_id) ;
@@ -752,21 +767,21 @@ and routes_for space ask_id rs =
 (* Various remote message sendings *)
 (***********************************)
 
-let do_remote_send_async space rspace_id uid idx a =
-  do_remote_send space (get_remote_space space rspace_id)
+let do_remote_send_async may_block space rspace_id uid idx a =
+  do_remote_send may_block space (get_remote_space space rspace_id)
     (fun v -> AsyncSend ({auto_id=uid; chan_id=idx;}, v)) a
 
-let remote_send_async rspace uid idx a =
+let remote_send_async may_block rspace uid idx a =
 (*DEBUG*)debug3 "REMOTE" "SEND ASYNC" ;
-  do_remote_send_async local_space rspace uid idx a
+  do_remote_send_async may_block local_space rspace uid idx a
     
-let do_remote_send_alone space rspace_id uid a =
-  do_remote_send space (get_remote_space space rspace_id)
+let do_remote_send_alone  may_block space rspace_id uid a =
+  do_remote_send  may_block space (get_remote_space space rspace_id)
     (fun v -> AloneSend (uid, v)) a
 
-let remote_send_alone rspace_id uid a =
+let remote_send_alone  may_block rspace_id uid a =
 (*DEBUG*)debug3 "REMOTE" "SEND ALONE" ;
-  do_remote_send_alone local_space rspace_id uid a
+  do_remote_send_alone may_block local_space rspace_id uid a
 
 let do_remote_send_sync space rspace_id uid idx kont a =
   do_remote_call space rspace_id

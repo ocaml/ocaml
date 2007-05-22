@@ -174,11 +174,14 @@ let exn_to_string = function
     Buffer.contents buff
   | e -> Printexc.to_string e
 
-let first_addr entry = entry.h_addr_list.(0)
-
 let local_name = gethostname ()
 
-let local_addr = first_addr (gethostbyname local_name)
+let get_local_addr () =
+  try
+    let first_addr entry = entry.h_addr_list.(0) in
+    first_addr (gethostbyname local_name)
+  with
+  | Not_found -> inet_addr_loopback
 
 let string_of_sockaddr = function
   | ADDR_UNIX s -> s

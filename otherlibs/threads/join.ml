@@ -18,7 +18,7 @@ open Printf
 
 type 'a chan = 'a async
 
-let local_addr = Join_misc.local_addr
+let get_local_addr () = Join_misc.get_local_addr ()
 
 type site = space_id
 
