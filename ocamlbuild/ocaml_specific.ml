@@ -341,6 +341,8 @@ let camlp4_flags' camlp4s =
 camlp4_flags' ["camlp4orr", S[A"camlp4of"; A"-parser"; A"reloaded"];
                "camlp4rrr", S[A"camlp4rf"; A"-parser"; A"reloaded"]];;
 
+flag ["ocaml"; "pp"; "camlp4:no_quot"] (A"-no_quot");;
+
 ocaml_lib ~extern:true ~native:false "dynlink";;
 ocaml_lib ~extern:true "unix";;
 ocaml_lib ~extern:true "str";;
