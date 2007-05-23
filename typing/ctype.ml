@@ -442,15 +442,11 @@ let rec closed_type ty =
 
 let closed_parameterized_type params ty =
   List.iter mark_type params;
-  try
-    closed_type ty;
-    List.iter unmark_type params;
-    unmark_type ty;
-    true
-  with Non_closed _ ->
-    List.iter unmark_type params;
-    unmark_type ty;
-    false
+  let ok =
+    try closed_type ty; true with Non_closed _ -> false in
+  List.iter unmark_type params;
+  unmark_type ty;
+  ok
 
 let closed_type_decl decl =
   try
@@ -1301,28 +1297,12 @@ let normalize_compat env cps =
         List.map (fun a -> ctype a) row.row_abs @
         (match row_more row with {desc=Tconstr _} as a -> [ctype a] | _ -> [])
     | a -> Ctype a :: cps
-  and compatible l ot = function
-    | Cfield (l', ot') when l = l' ->
-        begin match ot, ot' with
-          None, None -> true
-        | Some t, Some t' ->
-            let snap = snapshot () in
-            let del =
-              try !unify' env t t'; true with Unify _ -> false in
-            backtrack snap;
-            del
-        | _ -> false
-        end
-    | _ -> true
   in
   let add_compat cp cps =
     match cp with
       Cfield (l,ot) ->
-        if List.mem (Cnofield l) cps then cps else
-        if List.for_all (compatible  l ot) cps then cp :: cps else
-        (* replace incompatible compatibilities by Cnofield *)
-        Cnofield l ::
-        List.filter (function Cfield(l',_) -> l <> l' | _ -> true) cps
+        (* Cannot replace incompatible compatibilities by Cnofield *)
+        if List.mem (Cnofield l) cps then cps else cp :: cps
     | Cnofield l ->
         Cnofield l ::
         List.filter
@@ -2613,7 +2593,7 @@ let rec eqtype rename type_pairs subst env t1 t2 =
               enter_poly env univar_pairs t1 tl1 t2 tl2
                 (eqtype rename type_pairs subst env)
           | (Tunivar, Tunivar) ->
-              unify_univar t1 t2 !univar_pairs
+              unify_univar t1' t2' !univar_pairs
           | (_, _) ->
               raise (Unify [])
         end
