@@ -41,24 +41,27 @@ module Mix(I: sig type t = private [> ] ~ [`A;`B] end)
     (X: sig type t = private [> I.t | `A of int ] ~ [`B] end)
     (Y: sig type t = private [> I.t | `B of bool] ~ [X.t] end) =
   struct
-    type t = [X.t]
+    type t = [X.t | Y.t]
     let which = function #X.t -> `X | #Y.t -> `Y
   end;;
 
 (* ok *)
 module M =
-  Mix(struct type t = [`A of int | `C of char] end)
+  Mix(struct type t = [`C of char] end)
+    (struct type t = [`A of int | `C of char] end)
     (struct type t = [`B of bool | `C of char] end);;
 
 (* bad *)
 module M =
-  Mix(struct type t = [`A of int | `B of bool] end)
+  Mix(struct type t = [`B of bool] end)
+    (struct type t = [`A of int | `B of bool] end)
     (struct type t = [`B of bool | `C of char] end);;
 
 (* ok *)
 module M1 = struct type t = [`A of int | `C of char] end
 module M2 = struct type t = [`B of bool | `C of char] end
-module M = Mix(M1)(M2) ;;
+module I = struct type t = [`C of char] end
+module M = Mix(I)(M1)(M2) ;;
 
 let c = (`C 'c' : M.t) ;;
 
@@ -69,7 +72,7 @@ module M(X : sig type t = private [> `A] end) =
 type t = private [> `A ] ~ [`B];;
 match `B with #t -> 1 | `B -> 2;;
 
-module M : sig type t = private [> `A of int | `B] ~ [~`C] end =
+module M : sig type t = private [> `A of int | `B] ~ [`C] end =
   struct type t = [`A of int | `B | `D of bool] end;;
 let f = function (`C | #M.t) -> 1+1 ;;
 let f = function (`A _ | `B #M.t) -> 1+1 ;;
@@ -106,28 +109,8 @@ module Mix(X:T)(Y:T with type t = private [> ] ~ [X.t]) :
 module M = Mix(EStr)(EInt);;
 
 (* deep *)
-module M : sig type t = private [> ] ~ [`A] end = struct type t = [`A] end
+module M : sig type t = private [> `A] end = struct type t = [`A] end
 module M' : sig type t = private [> ] end = struct type t = [M.t | `A] end;;
-
-(* parameters *)
-module type T = sig
-  type t = private [> ] ~ [ `A of int ]
-  type ('a,'b) u = private [> ] ~ [ `A of 'a; `A of 'b; `B of 'b ]
-  type v = private [> ] ~ [ `A of int; `A of bool ]
-end
-module F(X:T) = struct
-  let h = function
-      `A _ -> true
-    | #X.t -> false
-  let f = function
-      `A _ | `B _ -> true
-    | #X.u -> false
-  let g = function
-      `A _ -> true
-    | #X.v -> false
-end
-
-(* ... *)
 
 (* bad *)
 type t = private [> ]
@@ -138,9 +121,9 @@ type t = private [> `A of int]
 type u = private [> `A of int] ~ [t] ;;
 
 module F(X: sig
-  type t = private [> ] ~ [~`A;~`B;~`C;~`D]
+  type t = private [> ] ~ [`A;`B;`C;`D]
   type u = private [> `A|`B|`C] ~ [t; `D]
-end) : sig type v = private [> ] ~ [X.t; X.u] end = struct
+end) : sig type v = private [< X.t | X.u | `D] end = struct
   open X
   let f = function #u -> 1 | #t -> 2 | `D -> 3
   let g = function #u|#t|`D -> 2 
@@ -156,7 +139,7 @@ module type T = sig type t = private [> ] ~ [`A] end;;
 module type T' = T with type t = private [> `A];;
 
 (* ok *)
-type t = private [> ] ~ [`A of int]
+type t = private [> ] ~ [`A]
 let f = function `A x -> x | #t -> 0
 type t' = private [< `A of int | t];;
 
