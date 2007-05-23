@@ -529,3 +529,6 @@ package: clean
 	tar czf ocamlduce-$(VERSION).tar.gz \
           --exclude CVS --exclude ".#*" ocamlduce-$(VERSION)
 	rm -Rf ocamlduce-$(VERSION)
+
+upload:
+	scp ocamlduce-$(VERSION).tar.gz yquem.inria.fr:public_html/ocamlduce/download/
