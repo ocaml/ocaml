@@ -63,7 +63,8 @@ INCLUDES_NODEP=	-I $(OCAMLSRCDIR)/stdlib \
 	-I $(OCAMLSRCDIR)/otherlibs/str \
 	-I $(OCAMLSRCDIR)/otherlibs/dynlink \
 	-I $(OCAMLSRCDIR)/otherlibs/unix \
-	-I $(OCAMLSRCDIR)/otherlibs/graph
+	-I $(OCAMLSRCDIR)/otherlibs/graph \
+	-I $(OCAMLSRCDIR)
 
 INCLUDES=$(INCLUDES_DEP) $(INCLUDES_NODEP)
 
