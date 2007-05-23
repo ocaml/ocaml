@@ -1014,15 +1014,15 @@ class latex =
     method generate_for_top_module fmt m =
       let (first_t, rest_t) = self#first_and_rest_of_info m.m_info in
       let text =
-	if m.m_text_only then
-	  [ Title (1, None, [Raw m.m_name]  @
+        if m.m_text_only then
+          [ Title (1, None, [Raw m.m_name]  @
                    (match first_t with
                      [] -> []
                    | t -> (Raw " : ") :: t)
-		  ) ;
-	  ]
-	else
-	  [ Title (1, None,
+                  ) ;
+          ]
+        else
+          [ Title (1, None,
                    [ Raw (Odoc_messages.modul^" ") ; Code m.m_name ] @
                    (match first_t with
                      [] -> []
@@ -1068,7 +1068,7 @@ class latex =
       (
        let info = Odoc_info.apply_opt
            (Odoc_info.info_of_comment_file module_list)
-	   !Odoc_info.Args.intro_file
+           !Odoc_info.Args.intro_file
        in
        (match info with None -> () | Some _ -> ps fmt "\\vspace{0.2cm}");
        self#latex_of_info fmt info;

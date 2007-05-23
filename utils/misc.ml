@@ -162,6 +162,17 @@ let no_overflow_lsl a = min_int asr 1 <= a && a <= max_int asr 1
 let chop_extension_if_any fname =
   try Filename.chop_extension fname with Invalid_argument _ -> fname
 
+let chop_extensions file =
+  let dirname = Filename.dirname file and basename = Filename.basename file in
+  try
+    let pos = String.index basename '.' in
+    let basename = String.sub basename 0 pos in
+    if Filename.is_implicit file && dirname = Filename.current_dir_name then
+      basename
+    else
+      Filename.concat dirname basename
+  with Not_found -> file
+
 let search_substring pat str start =
   let rec search i j =
     if j >= String.length pat then i

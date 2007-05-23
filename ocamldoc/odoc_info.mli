@@ -210,7 +210,7 @@ module Type :
       | Type_variant of variant_constructor list * bool
                    (** constructors * bool *)
       | Type_record of record_field list * bool
-	           (** fields * bool *)
+                   (** fields * bool *)
 
     (** Representation of a type. *)
     type t_type = Odoc_type.t_type =
@@ -410,7 +410,7 @@ module Module :
         {
           im_name : Name.t ; (** Complete name of the included module. *)
           mutable im_module : mmt option ; (** The included module or module type, if we found it. *)
-	  mutable im_info : Odoc_types.info option ; (** comment associated to the includ directive *)
+          mutable im_info : Odoc_types.info option ; (** comment associated to the includ directive *)
         }
 
     and module_alias = Odoc_module.module_alias =
@@ -420,10 +420,10 @@ module Module :
         }
 
     and module_parameter = Odoc_module.module_parameter = {
-	mp_name : string ; (** the name *)
-	mp_type : Types.module_type ; (** the type *)
-	mp_type_code : string ; (** the original code *)
-	mp_kind : module_type_kind ; (** the way the parameter was built *)
+        mp_name : string ; (** the name *)
+        mp_type : Types.module_type ; (** the type *)
+        mp_type_code : string ; (** the original code *)
+        mp_kind : module_type_kind ; (** the way the parameter was built *)
       }
 
     (** Different kinds of a module. *)
@@ -451,9 +451,9 @@ module Module :
           mutable m_kind : module_kind ; (** The way the module is defined. *)
           mutable m_loc : location ;
           mutable m_top_deps : Name.t list ; (** The toplevels module names this module depends on. *)
-	  mutable m_code : string option ; (** The whole code of the module *)
-	  mutable m_code_intf : string option ; (** The whole code of the interface of the module *)
-	  m_text_only : bool ; (** [true] if the module comes from a text file *)
+          mutable m_code : string option ; (** The whole code of the module *)
+          mutable m_code_intf : string option ; (** The whole code of the interface of the module *)
+          m_text_only : bool ; (** [true] if the module comes from a text file *)
         }
 
     and module_type_alias = Odoc_module.module_type_alias =
@@ -711,6 +711,9 @@ val verbose : string -> unit
    error counter is incremented. *)
 val warning : string -> unit
 
+(** A flag to indicate whether ocamldoc warnings must be printed or not. *)
+val print_warnings : bool ref
+
 (** Increment this counter when an error is encountered.
    The ocamldoc tool will print the number of errors
    encountered exit with code 1 if this number is greater
@@ -920,13 +923,13 @@ module Args :
     sig
       (** The kind of source file in arguments. *)
       type source_file =
-	  Impl_file of string
-	| Intf_file of string
-	| Text_file of string
+          Impl_file of string
+        | Intf_file of string
+        | Text_file of string
 
       (** The class type of documentation generators. *)
       class type doc_generator =
-	object method generate : Module.t_module list -> unit end
+        object method generate : Module.t_module list -> unit end
 
       (** The file used by the generators outputting only one file. *)
       val out_file : string ref
@@ -944,7 +947,7 @@ module Args :
       val intro_file : string option ref
 
       (** Flag to indicate whether we must display the complete list of parameters
-	 for functions and methods. *)
+         for functions and methods. *)
       val with_parameter_list : bool ref
 
       (** The list of module names to hide. *)
@@ -963,7 +966,7 @@ module Args :
       val colorize_code : bool ref
 
       (** To display functors in short form rather than with "functor ... -> ",
-	 in HTML generated documentation. *)
+         in HTML generated documentation. *)
       val html_short_functors : bool ref
 
       (** The flag which indicates if we must generate a header (for LaTeX). *)

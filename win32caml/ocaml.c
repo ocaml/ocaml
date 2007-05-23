@@ -329,7 +329,7 @@ static HWND CreateMdiClient(HWND hwndparent)
 
 void GotoEOF(void)
 {
-	HWND hEdit = (HWND)GetWindowLong(hwndSession,DWL_USER);
+	HWND hEdit = (HWND)GetWindowLongPtr(hwndSession,DWLP_USER);
 	int linesCount = SendMessage(hEdit,EM_GETLINECOUNT,0,0);
 	int lineindex = SendMessage(hEdit,EM_LINEINDEX,linesCount-1,0);
 	int lastLineLength = SendMessage(hEdit,EM_LINELENGTH,linesCount-1,0);
@@ -348,7 +348,7 @@ Errors:
 ------------------------------------------------------------------------*/
 void GotoPrompt(void)
 {
-	HWND hEdit = (HWND)GetWindowLong(hwndSession,DWL_USER);
+	HWND hEdit = (HWND)GetWindowLongPtr(hwndSession,DWLP_USER);
 	int lineindex = SendMessage(hEdit,EM_LINEINDEX,LastPromptPosition.line,0)+2;
 	SendMessage(hEdit,EM_SETSEL,lineindex,lineindex);
 }
@@ -452,7 +452,7 @@ Errors:        None
 void RewriteCurrentEditBuffer(void)
 {
 	// get the editbox's handle
-	HWND hEdit = (HWND)GetWindowLong(hwndSession,DWL_USER);
+	HWND hEdit = (HWND)GetWindowLongPtr(hwndSession,DWLP_USER);
 
 	// calculate what to highlight
 	int linesCount = SendMessage(hEdit,EM_GETLINECOUNT,0,0);
@@ -489,7 +489,7 @@ Errors:        None
 void RefreshCurrentEditBuffer(void)
 {
 	// get the editbox's handle
-	HWND hEdit = (HWND)GetWindowLong(hwndSession,DWL_USER);
+	HWND hEdit = (HWND)GetWindowLongPtr(hwndSession,DWLP_USER);
 
 	// get the last line index
 	int linesCount = SendMessage(hEdit,EM_GETLINECOUNT,0,0) - 1;
@@ -891,9 +891,9 @@ static LRESULT CALLBACK SubClassEdit(HWND hwnd, UINT msg, WPARAM mp1, LPARAM mp2
 static void SubClassEditField(HWND hwnd)
 {
 	if (lpEProc == NULL) {
-		lpEProc = (WNDPROC) GetWindowLong(hwnd, GWL_WNDPROC);
+		lpEProc = (WNDPROC) GetWindowLongPtr(hwnd, GWLP_WNDPROC);
 	}
-	SetWindowLong(hwnd, GWL_WNDPROC, (DWORD) SubClassEdit);
+	SetWindowLongPtr(hwnd, GWLP_WNDPROC, (LONG_PTR) SubClassEdit);
 }
 
 /*------------------------------------------------------------------------
@@ -1241,19 +1241,19 @@ static LRESULT CALLBACK MdiChildWndProc(HWND hwnd,UINT msg,WPARAM wparam,LPARAM 
 				(HMENU) EditControls++,
 				hInst,
 				NULL);
-			SetWindowLong(hwnd, DWL_USER, (DWORD) hwndChild);
+			SetWindowLongPtr(hwnd, DWLP_USER, (LONG_PTR) hwndChild);
 			SendMessage(hwndChild, WM_SETFONT, (WPARAM) ProgramParams.hFont, 0L);
 			SendMessage(hwndChild,EM_LIMITTEXT,0xffffffff,0);
 			SubClassEditField(hwndChild);
 			break;
 			// Resize the edit control
 		case WM_SIZE:
-			hwndChild = (HWND) GetWindowLong(hwnd, DWL_USER);
+			hwndChild = (HWND) GetWindowLongPtr(hwnd, DWLP_USER);
 			MoveWindow(hwndChild, 0, 0, LOWORD(lparam), HIWORD(lparam), TRUE);
 			break;
 			// Always set the focus to the edit control.
 		case WM_SETFOCUS:
-			hwndChild = (HWND) GetWindowLong(hwnd, DWL_USER);
+			hwndChild = (HWND) GetWindowLongPtr(hwnd, DWLP_USER);
 			SetFocus(hwndChild);
 			break;
 			// Repainting of the edit control about to happen.
@@ -1285,7 +1285,7 @@ static LRESULT CALLBACK MdiChildWndProc(HWND hwnd,UINT msg,WPARAM wparam,LPARAM 
 			if (busy)
 				break;
 
-			hwndChild = (HWND) GetWindowLong(hwnd, DWL_USER);
+			hwndChild = (HWND) GetWindowLongPtr(hwnd, DWLP_USER);
 
 			// add what they wrote to the edit buffer
 			AppendToEditBuffer(hwndChild);
@@ -1308,7 +1308,7 @@ static LRESULT CALLBACK MdiChildWndProc(HWND hwnd,UINT msg,WPARAM wparam,LPARAM 
 			// has written something in its end of the pipe.
 		case WM_TIMERTICK:
 		/** Modified by Chris Watford 21 Sept 2003 **/
-			hwndChild = (HWND) GetWindowLong(hwnd, DWL_USER);
+			hwndChild = (HWND) GetWindowLongPtr(hwnd, DWLP_USER);
 
 			if (ReadToLineBuffer())
 			{
@@ -1509,7 +1509,7 @@ int AddLineBuffer(void)
 {
 	HWND hEditCtrl;
 
-	hEditCtrl = (HWND)GetWindowLong(hwndSession,DWL_USER);
+	hEditCtrl = (HWND)GetWindowLongPtr(hwndSession,DWLP_USER);
 	return SendMessage(hEditCtrl,EM_REPLACESEL,0,(LPARAM)lineBuffer);
 
 }

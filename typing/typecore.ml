@@ -26,6 +26,7 @@ type error =
     Unbound_value of Longident.t
   | Unbound_constructor of Longident.t
   | Unbound_label of Longident.t
+  | Polymorphic_label of Longident.t
   | Constructor_arity_mismatch of Longident.t * int * int
   | Label_mismatch of Longident.t * (type_expr * type_expr) list
   | Pattern_type_clash of (type_expr * type_expr) list
@@ -449,7 +450,9 @@ let rec type_pat env sp =
             Env.lookup_label lid env
           with Not_found ->
             raise(Error(sp.ppat_loc, Unbound_label lid)) in
-        let (_, ty_arg, ty_res) = instance_label false label in
+        begin_def ();
+        let (vars, ty_arg, ty_res) = instance_label false label in
+        if vars = [] then end_def ();
         begin try
           unify env ty_res ty
         with Unify trace ->
@@ -457,6 +460,16 @@ let rec type_pat env sp =
         end;
         let arg = type_pat env sarg in
         unify_pat env arg ty_arg;
+        if vars <> [] then begin
+          end_def ();
+          generalize ty_arg;
+          List.iter generalize vars;
+          let instantiated tv =
+            let tv = expand_head env tv in
+            tv.desc <> Tvar || tv.level <> generic_level in
+          if List.exists instantiated vars then
+            raise (Error(sp.ppat_loc, Polymorphic_label lid))
+        end;
         (label, arg)
       in
       rp {
@@ -611,11 +624,11 @@ let rec is_nonexpansive exp =
       List.for_all
         (function
             Cf_meth _ -> true
-          | Cf_val (_,_,e) -> incr count; is_nonexpansive e
+          | Cf_val (_,_,e,_) -> incr count; is_nonexpansive_opt e
           | Cf_init e -> is_nonexpansive e
           | Cf_inher _ | Cf_let _ -> false)
         fields &&
-      Vars.fold (fun _ (mut,_) b -> decr count; b && mut = Immutable)
+      Vars.fold (fun _ (mut,_,_) b -> decr count; b && mut = Immutable)
         vars true &&
       !count = 0
   | _ -> false
@@ -626,6 +639,11 @@ and is_nonexpansive_opt = function
 
 (* Typing of printf formats.
    (Handling of * modifiers contributed by Thorsten Ohl.) *)
+
+external string_to_format :
+ string -> ('a, 'b, 'c, 'd, 'e, 'f) format6 = "%identity"
+external format_to_string :
+ ('a, 'b, 'c, 'd, 'e, 'f) format6 -> string = "%identity"
 
 let type_format loc fmt =
 
@@ -661,14 +679,15 @@ let type_format loc fmt =
 
     let ty_input = newvar ()
     and ty_result = newvar ()
-    and ty_aresult = newvar () in
+    and ty_aresult = newvar ()
+    and ty_uresult = newvar () in
 
     let meta = ref 0 in
 
     let rec scan_format i =
       if i >= len then
         if !meta = 0
-        then ty_aresult, ty_result
+        then ty_uresult, ty_result
         else incomplete_format fmt else
       match fmt.[i] with
       | '%' -> scan_opts i (i + 1)
@@ -694,8 +713,8 @@ let type_format loc fmt =
         if j >= len then incomplete_format fmt else
         match fmt.[j] with
         | '*' ->
-            let ty_aresult, ty_result = scan i (j + 1) in
-            ty_aresult, ty_arrow Predef.type_int ty_result
+          let ty_uresult, ty_result = scan i (j + 1) in
+          ty_uresult, ty_arrow Predef.type_int ty_result
         | '-' | '+' -> scan_decimal_string scan i (j + 1)
         | _ -> scan_decimal_string scan i j
       and scan_precision i j =
@@ -705,8 +724,8 @@ let type_format loc fmt =
         | _ -> scan_conversion i j
 
       and conversion j ty_arg =
-        let ty_aresult, ty_result = scan_format (j + 1) in
-        ty_aresult,
+        let ty_uresult, ty_result = scan_format (j + 1) in
+        ty_uresult,
         if skip then ty_result else ty_arrow ty_arg ty_result
 
       and scan_conversion i j =
@@ -725,8 +744,13 @@ let type_format loc fmt =
         | 'a' ->
           let ty_arg = newvar () in
           let ty_a = ty_arrow ty_input (ty_arrow ty_arg ty_aresult) in
-          let ty_aresult, ty_result = conversion j ty_arg in
-          ty_aresult, ty_arrow ty_a ty_result
+          let ty_uresult, ty_result = conversion j ty_arg in
+          ty_uresult, ty_arrow ty_a ty_result
+        | 'r' ->
+          let ty_arg = newvar () in
+          let ty_r = ty_arrow ty_input ty_arg in
+          let ty_uresult, ty_result = conversion j ty_arg in
+          ty_arrow ty_r ty_uresult, ty_result
         | 't' -> conversion j (ty_arrow ty_input ty_aresult)
         | 'l' | 'n' | 'L' as c ->
           let j = j + 1 in
@@ -745,21 +769,25 @@ let type_format loc fmt =
           let j = j + 1 in
           if j >= len then incomplete_format fmt else
           let sj =
-            Printf.sub_format incomplete_format bad_conversion c fmt j in
-          let sfmt = String.sub fmt j (sj - j - 1) in
+            Printf.CamlinternalPr.Tformat.sub_format
+              (fun fmt -> incomplete_format (format_to_string fmt))
+              (fun fmt -> bad_conversion (format_to_string fmt))
+              c (string_to_format fmt) j in
+          let sfmt = String.sub fmt j (sj - 2 - j) in
           let ty_sfmt = type_in_format sfmt in
           begin match c with
-          | '{' -> conversion sj ty_sfmt
+          | '{' -> conversion (sj - 1) ty_sfmt
           | _ -> incr meta; conversion (j - 1) ty_sfmt end
         | ')' when !meta > 0 -> decr meta; scan_format (j + 1)
         | c -> bad_conversion fmt i c in
       scan_flags i j in
 
-    let ty_ares, ty_res = scan_format 0 in
+    let ty_ureader, ty_args = scan_format 0 in
     newty
-      (Tconstr(Predef.path_format4,
-               [ty_res; ty_input; ty_ares; ty_result],
-               ref Mnil)) in
+      (Tconstr
+         (Predef.path_format6,
+          [ty_args; ty_input; ty_aresult; ty_ureader; ty_uresult; ty_result],
+          ref Mnil)) in
 
   type_in_format fmt
 
@@ -842,11 +870,15 @@ let check_univars env kind exp ty_expected vars =
                 Less_general(kind, [ty, ty; ty_expected, ty_expected])))
 
 (* Check that a type is not a function *)
-let check_partial_application env exp =
-  match expand_head env exp.exp_type with
-  | {desc = Tarrow _} ->
+let check_application_result env statement exp =
+  match (expand_head env exp.exp_type).desc with
+  | Tarrow _ ->
       Location.prerr_warning exp.exp_loc Warnings.Partial_application
-  | _ -> ()
+  | Tvar -> ()
+  | Tconstr (p, _, _) when Path.same p Predef.path_unit -> ()
+  | _ ->
+      if statement then
+        Location.prerr_warning exp.exp_loc Warnings.Statement_type
 
 (* Hack to allow coercion of self. Will clean-up later. *)
 let self_coercion = ref ([] : (Path.t * Location.t list ref) list)
@@ -1361,7 +1393,7 @@ and real_type_exp env sexp =
         (path_self, _) ->
           let type_override (lab, snewval) =
             begin try
-              let (id, _, ty) = Vars.find lab !vars in
+              let (id, _, _, ty) = Vars.find lab !vars in
               (Path.Pident id, type_expect env snewval (instance ty))
             with
               Not_found ->
@@ -1629,7 +1661,7 @@ and type_application env funct sargs =
             else begin
               may_warn sarg0.pexp_loc
                 (Warnings.Not_principal "using an optional argument here");
-              Some (fun () -> option_some (type_argument env sarg0 
+              Some (fun () -> option_some (type_argument env sarg0
                                              (extract_option_type env ty)))
             end
           with Not_found ->
@@ -1669,7 +1701,7 @@ and type_application env funct sargs =
       | Tarrow _ ->
           Location.prerr_warning exp.exp_loc Warnings.Partial_application
       | Tvar ->
-          add_delayed_check (fun () -> check_partial_application env exp)
+          add_delayed_check (fun () -> check_application_result env false exp)
       | _ -> ()
       end;
       ([Some exp, Required], ty_res)
@@ -1731,7 +1763,7 @@ and real_type_expect ?in_function env sexp ty_expected =
           exp_type =
             (* Terrible hack for format strings *)
             begin match (repr (expand_head env ty_expected)).desc with
-              Tconstr(path, _, _) when Path.same path Predef.path_format4 ->
+              Tconstr(path, _, _) when Path.same path Predef.path_format6 ->
                 type_format sexp.pexp_loc s
             | _ -> instance Predef.type_string
             end;
@@ -1794,10 +1826,16 @@ and real_type_expect ?in_function env sexp ty_expected =
               raise(Error(loc,
                           Too_many_arguments (in_function <> None, ty_fun)))
       in
-      if is_optional l then begin
-        try unify env ty_arg (type_option(newvar()))
-        with Unify _ -> assert false
-      end;
+      let ty_arg =
+        if is_optional l then
+          let tv = newvar() in
+          begin
+            try unify env ty_arg (type_option tv)
+            with Unify _ -> assert false
+          end;
+          type_option tv
+        else ty_arg
+      in
       let cases, partial =
         type_cases ~in_function:(loc,ty_fun) env ty_arg ty_res
           (Some sexp.pexp_loc) caselist in
@@ -1812,6 +1850,14 @@ and real_type_expect ?in_function env sexp ty_expected =
         exp_desc = Texp_function(cases, partial);
         exp_loc = sexp.pexp_loc;
         exp_type = newty (Tarrow(l, ty_arg, ty_res, Cok));
+        exp_env = env }
+  | Pexp_when(scond, sbody) ->
+      let cond = type_expect env scond (instance Predef.type_bool) in
+      let body = type_expect env sbody ty_expected in
+      re {
+        exp_desc = Texp_when(cond, body);
+        exp_loc = sexp.pexp_loc;
+        exp_type = body.exp_type;
         exp_env = env }
   | Pexp_poly(sbody, sty) ->
       let ty =
@@ -1860,7 +1906,7 @@ and type_statement env sexp =
   | Tvar when ty.level > tv.level ->
       Location.prerr_warning sexp.pexp_loc Warnings.Nonreturning_statement
   | Tvar ->
-      add_delayed_check (fun () -> check_partial_application env exp)
+      add_delayed_check (fun () -> check_application_result env true exp)
   | _ ->
       Location.prerr_warning sexp.pexp_loc Warnings.Statement_type
   end;
@@ -1994,6 +2040,9 @@ let report_error ppf = function
       fprintf ppf "Unbound constructor %a" longident lid
   | Unbound_label lid ->
       fprintf ppf "Unbound record field label %a" longident lid
+  | Polymorphic_label lid ->
+      fprintf ppf "@[The record field label %a is polymorphic.@ %s@]"
+        longident lid "You cannot instantiate it in a pattern."
   | Constructor_arity_mismatch(lid, expected, provided) ->
       fprintf ppf
        "@[The constructor %a@ expects %i argument(s),@ \

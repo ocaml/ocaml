@@ -375,6 +375,7 @@ let check_recursion env loc path decl to_check =
         Ctype.correct_abbrev env path decl.type_params body
       with Ctype.Recursive_abbrev ->
         raise(Error(loc, Recursive_abbrev (Path.name path)))
+      | Ctype.Unify trace -> raise(Error(loc, Type_clash trace))
       end;
       (* Check that recursion is regular *)
       if decl.type_params = [] then () else
@@ -594,6 +595,20 @@ let compute_variance_decls env cldecls =
        {cltydef with clty_variance = variance}))
     decls cldecls
 
+(* Force recursion to go through id for private types*)
+let name_recursion sdecl id decl =
+  match decl with
+    { type_kind = Type_abstract; type_manifest = Some ty }
+    when sdecl.ptype_kind = Ptype_private ->
+      let ty = Ctype.repr ty in
+      let ty' = Btype.newty2 ty.level ty.desc in
+      if Ctype.deep_occur ty ty' then
+        let td = Tconstr(Path.Pident id, decl.type_params, ref Mnil) in
+        Btype.link_type ty (Btype.newty2 ty.level td);
+        {decl with type_manifest = Some ty'}
+      else decl
+  | _ -> decl
+
 (* Translate a set of mutually recursive type declarations *)
 let transl_type_decl env name_sdecl_list =
   (* Add dummy types for fixed rows *)
@@ -664,6 +679,11 @@ let transl_type_decl env name_sdecl_list =
   List.iter2 (check_abbrev newenv) name_sdecl_list decls;
   (* Check that constraints are enforced *)
   List.iter2 (check_constraints newenv) name_sdecl_list decls;
+  (* Name recursion *)
+  let decls =
+    List.map2 (fun (_, sdecl) (id, decl) -> id, name_recursion sdecl id decl)
+      name_sdecl_list decls
+  in
   (* Add variances to the environment *)
   let required =
     List.map (fun (_, sdecl) -> sdecl.ptype_variance, sdecl.ptype_loc)
@@ -715,7 +735,7 @@ let transl_value_decl env valdecl =
 
 (* Translate a "with" constraint -- much simplified version of
     transl_type_decl. *)
-let transl_with_constraint env row_path sdecl =
+let transl_with_constraint env id row_path sdecl =
   reset_type_variables();
   Ctype.begin_def();
   let params =
@@ -751,6 +771,7 @@ let transl_with_constraint env row_path sdecl =
   begin match Ctype.closed_type_decl decl with None -> ()
   | Some ty -> raise(Error(sdecl.ptype_loc, Unbound_type_var(ty,decl)))
   end;
+  let decl = name_recursion sdecl id decl in
   let decl =
     {decl with type_variance =
      compute_variance_decl env false decl
@@ -848,7 +869,9 @@ let report_error ppf = function
       let ty = Ctype.repr ty in
       let explain tl typ kwd lab =
         let ti = List.find (fun ti -> Ctype.deep_occur ty (typ ti)) tl in
-        Printtyp.reset_and_mark_loops_list [typ ti;ty];
+        let ty0 = (* Hack to force aliasing when needed *)
+          Btype.newgenty (Tobject(ty, ref None)) in
+        Printtyp.reset_and_mark_loops_list [typ ti; ty0];
         fprintf ppf
           ".@.@[<hov2>In %s@ %s%a@;<1 -2>the variable %a is unbound@]"
           kwd (lab ti) Printtyp.type_expr (typ ti) Printtyp.type_expr ty

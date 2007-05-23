@@ -114,6 +114,7 @@ let main () =
        "-for-pack", Arg.String (fun s -> for_package := Some s),
              "<ident>  Generate code that can later be `packed' with\n\
          \     ocamlopt -pack -o <ident>.cmx";
+       "-g", Arg.Set debug, " Record debugging information for exception backtrace";
        "-i", Arg.Unit (fun () -> print_types := true; compile_only := true),
              " Print inferred interface";
        "-I", Arg.String(fun dir -> include_dirs := dir :: !include_dirs),
@@ -173,7 +174,7 @@ let main () =
          \032    P/p enable/disable partial match\n\
          \032    S/s enable/disable non-unit statement\n\
          \032    U/u enable/disable unused match case\n\
-         \032    V/v enable/disable hidden instance variables\n\
+         \032    V/v enable/disable overriden instance variables\n\
          \032    Y/y enable/disable suspicious unused variables\n\
          \032    Z/z enable/disable all other unused variables\n\
          \032    X/x enable/disable all other warnings\n\

@@ -22,11 +22,11 @@ CFLAGS=$(FLAGS) -O $(NATIVECCCOMPOPTS)
 DFLAGS=$(FLAGS) -g -DDEBUG $(NATIVECCCOMPOPTS)
 PFLAGS=$(FLAGS) -pg -O -DPROFILING $(NATIVECCPROFOPTS)
 
-COBJS=startup.o main.o fail.o roots.o globroots.o signals.o \
+COBJS=startup.o main.o fail.o roots.o globroots.o signals.o signals_asm.o \
   misc.o freelist.o major_gc.o minor_gc.o memory.o alloc.o compare.o ints.o \
   floats.o str.o array.o io.o extern.o intern.o hash.o sys.o parsing.o \
   gc_ctrl.o terminfo.o md5.o obj.o lexing.o printexc.o callback.o weak.o \
-  compact.o finalise.o custom.o unix.o
+  compact.o finalise.o custom.o unix.o backtrace.o
 
 ASMOBJS=$(ARCH).o
 
@@ -142,12 +142,14 @@ dynlink.c: ../byterun/dynlink.c
 	ln -s ../byterun/dynlink.c dynlink.c
 ../byterun/config.h:
 	cp `ocamlc -where`/caml/config.h ../byterun/config.h
+signals.c: ../byterun/signals.c
+	ln -s ../byterun/signals.c signals.c
 
 LINKEDFILES=misc.c freelist.c major_gc.c minor_gc.c memory.c alloc.c array.c \
   compare.c ints.c floats.c str.c io.c extern.c intern.c hash.c sys.c \
   parsing.c gc_ctrl.c terminfo.c md5.c obj.c lexing.c printexc.c callback.c \
   weak.c compact.c finalise.c meta.c custom.c main.c globroots.c unix.c \
-  dynlink.c ../byterun/config.h
+  dynlink.c signals.c ../byterun/config.h 
 
 clean::
 	rm -f $(LINKEDFILES)
@@ -183,9 +185,8 @@ clean::
 	rm -f *.o *.a *~
 
 depend: $(COBJS:.o=.c) ${LINKEDFILES}
-	gcc -MM $(FLAGS) *.c > .depend
+	-gcc -MM $(FLAGS) *.c > .depend
 	gcc -MM $(FLAGS) -DDEBUG *.c | sed -e 's/\.o/.d.o/' >> .depend
 	gcc -MM $(FLAGS) -DDEBUG *.c | sed -e 's/\.o/.p.o/' >> .depend
 
 include .depend
-

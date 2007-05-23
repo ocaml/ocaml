@@ -34,7 +34,7 @@ CAMLexport int caml_callback_depth = 0;
 
 #ifndef LOCAL_CALLBACK_BYTECODE
 static opcode_t callback_code[] = { ACC, 0, APPLY, 0, POP, 1, STOP };
-#endif 
+#endif
 
 
 #ifdef THREADED_CODE
@@ -207,7 +207,7 @@ struct named_value {
 
 static struct named_value * named_value_table[Named_value_size] = { NULL, };
 
-static unsigned int hash_value_name(char *name)
+static unsigned int hash_value_name(char const *name)
 {
   unsigned int h;
   for (h = 0; *name != 0; name++) h = h * 19 + *name;
@@ -236,7 +236,7 @@ CAMLprim value caml_register_named_value(value vname, value val)
   return Val_unit;
 }
 
-CAMLexport value * caml_named_value(char *name)
+CAMLexport value * caml_named_value(char const *name)
 {
   struct named_value * nv;
   for (nv = named_value_table[hash_value_name(name)];

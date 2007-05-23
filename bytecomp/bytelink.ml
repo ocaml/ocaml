@@ -18,7 +18,7 @@ open Sys
 open Misc
 open Config
 open Instruct
-open Emitcode
+open Cmo_format
 
 type error =
     File_not_found of string
@@ -296,7 +296,7 @@ let link_bytecode tolink exec_name standalone =
       (* Initialize the DLL machinery *)
       Dll.init_compile !Clflags.no_std_include;
       Dll.add_path !load_path;
-      try Dll.open_dlls sharedobjs
+      try Dll.open_dlls Dll.For_checking sharedobjs
       with Failure reason -> raise(Error(Cannot_open_dll reason))
     end;
     let output_fun = output_string outchan
@@ -428,13 +428,6 @@ void caml_startup(char ** argv)
 
 (* Build a custom runtime *)
 
-let rec extract suffix l =
-  match l with
-  | [] -> []
-  | h::t when Filename.check_suffix h suffix -> h :: (extract suffix t)
-  | h::t -> extract suffix t
-;;
-
 let build_custom_runtime prim_name exec_name =
   match Config.ccomp_type with
     "cc" ->
@@ -464,12 +457,14 @@ let build_custom_runtime prim_name exec_name =
             (List.rev_map Ccomp.expand_libname !Clflags.ccobjs))
           (Filename.quote (Ccomp.expand_libname "-lcamlrun"))
           Config.bytecomp_c_libraries
-          (String.concat " " (List.rev !Clflags.ccopts))) in
+          (Ccomp.make_link_options !Clflags.ccopts)) in
       (* C compiler doesn't clean up after itself.  Note that the .obj
          file is created in the current working directory. *)
       remove_file
         (Filename.chop_suffix (Filename.basename prim_name) ".c" ^ ".obj");
-      retcode
+      if retcode <> 0
+      then retcode
+      else Ccomp.merge_manifest exec_name
   | _ -> assert false
 
 let append_bytecode_and_cleanup bytecode_name exec_name prim_name =

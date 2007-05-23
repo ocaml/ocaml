@@ -122,26 +122,36 @@ let output_tag_access oc = function
   | Sum (a,i) ->
       fprintf oc "(%a + %d)" output_base_mem a i
 
-let output_env oc env =
+let output_env sourcefile ic oc tr env =
   let pref = ref "let" in
   match env with
   | [] -> ()
-  | _  -> 
+  | _  ->
+      (* Probably, we are better with variables sorted
+         in apparition order *)
+      let env =
+        List.sort
+          (fun ((_,p1),_) ((_,p2),_) ->
+            Pervasives.compare p1.start_pos  p2.start_pos)
+          env in
+
       List.iter
-        (fun (x,v) ->
+        (fun ((x,pos),v) ->
+          fprintf oc "%s\n" !pref ;
+          copy_chunk sourcefile ic oc tr pos false ;
           begin match v with
           | Ident_string (o,nstart,nend) ->
               fprintf oc
-                "\n  %s %s = Lexing.sub_lexeme%s lexbuf %a %a"
-                !pref x (if o then "_opt" else "")
+                "= Lexing.sub_lexeme%s lexbuf %a %a"
+                (if o then "_opt" else "")
                 output_tag_access nstart output_tag_access nend
           | Ident_char (o,nstart) ->
               fprintf oc
-                "\n  %s %s = Lexing.sub_lexeme_char%s lexbuf %a"
-                !pref x (if o then "_opt" else "")
+                "= Lexing.sub_lexeme_char%s lexbuf %a"
+                (if o then "_opt" else "")
                 output_tag_access nstart
           end ;
-          pref := "and")
+          pref := "\nand")
         env ;
       fprintf oc " in\n"
 

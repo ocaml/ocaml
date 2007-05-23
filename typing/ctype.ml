@@ -443,15 +443,11 @@ let rec closed_type ty =
 
 let closed_parameterized_type params ty =
   List.iter mark_type params;
-  try
-    closed_type ty;
-    List.iter unmark_type params;
-    unmark_type ty;
-    true
-  with Non_closed _ ->
-    List.iter unmark_type params;
-    unmark_type ty;
-    false
+  let ok =
+    try closed_type ty; true with Non_closed _ -> false in
+  List.iter unmark_type params;
+  unmark_type ty;
+  ok
 
 let closed_type_decl decl =
   try
@@ -595,7 +591,7 @@ let rec generalize_spine ty =
       generalize_spine ty'
   | _ -> ()
 
-let try_expand_head' = (* Forward declaration *)
+let try_expand_once' = (* Forward declaration *)
   ref (fun env ty -> raise Cannot_expand)
 
 (*
@@ -617,7 +613,7 @@ let rec update_level env level ty =
       Tconstr(p, tl, abbrev)  when level < Path.binding_time p ->
         (* Try first to replace an abbreviation by its expansion. *)
         begin try
-          link_type ty (!try_expand_head' env ty);
+          link_type ty (!try_expand_once' env ty);
           update_level env level ty
         with Cannot_expand ->
           (* +++ Levels should be restored... *)
@@ -807,14 +803,14 @@ let rec copy ty =
               let keep = more.level <> generic_level in
               let more' =
                 match more.desc with
-		  Tsubst ty -> ty
-		| Tconstr _ ->
-		    if keep then save_desc more more.desc;
-		    copy more
+                  Tsubst ty -> ty
+                | Tconstr _ ->
+                    if keep then save_desc more more.desc;
+                    copy more
                 | Tvar | Tunivar ->
                     save_desc more more.desc;
                     if keep then more else newty more.desc
-		|  _ -> assert false
+                |  _ -> assert false
               in
               (* Register new type first for recursion *)
               more.desc <- Tsubst(newgenty(Ttuple[more';t]));
@@ -873,7 +869,7 @@ let instance_class params cty =
         Tcty_signature
           {cty_self = copy sign.cty_self;
            cty_vars =
-             Vars.map (function (mut, ty) -> (mut, copy ty)) sign.cty_vars;
+             Vars.map (function (m, v, ty) -> (m, v, copy ty)) sign.cty_vars;
            cty_concr = sign.cty_concr;
            cty_inher =
              List.map (fun (p,tl) -> (p, List.map copy tl)) sign.cty_inher}
@@ -944,7 +940,7 @@ let delayed_copy = ref []
 let rec copy_sep fixed free bound visited ty =
   let ty = repr ty in
   let univars = free ty in
-  if TypeSet.is_empty univars then 
+  if TypeSet.is_empty univars then
     if ty.level <> generic_level then ty else
     let t = newvar () in
     delayed_copy :=
@@ -1056,7 +1052,7 @@ let apply env params body args =
                               (*  Abbreviation expansion  *)
                               (****************************)
 
-(* 
+(*
    If the environnement has changed, memorized expansions might not
    be correct anymore, and so we flush the cache. This is safe but
    quite pessimistic: it would be enough to flush the cache when a
@@ -1070,7 +1066,7 @@ let check_abbrev_env env =
   end
 
 (* Expand an abbreviation. The expansion is memorized. *)
-(* 
+(*
    Assume the level is greater than the path binding time of the
    expanded abbreviation.
 *)
@@ -1128,23 +1124,24 @@ let safe_abbrev env ty =
     Btype.backtrack snap;
     false
 
+let try_expand_once env ty =
+  let ty = repr ty in
+  match ty.desc with
+    Tconstr _ -> repr (expand_abbrev env ty)
+  | _ -> raise Cannot_expand
+
+let _ = try_expand_once' := try_expand_once
+
 (* Fully expand the head of a type.
    Raise Cannot_expand if the type cannot be expanded.
    May raise Unify, if a recursion was hidden in the type. *)
 let rec try_expand_head env ty =
-  let ty = repr ty in
-  match ty.desc with
-    Tconstr _ ->
-      let ty' = expand_abbrev env ty in
-      begin try
-        try_expand_head env ty'
-      with Cannot_expand ->
-        repr ty'
-      end
-  | _ ->
-      raise Cannot_expand
-
-let _ = try_expand_head' := try_expand_head
+  let ty' = try_expand_once env ty in
+  begin try
+    try_expand_head env ty'
+  with Cannot_expand ->
+    ty'
+  end
 
 (* Expand once the head of a type *)
 let expand_head_once env ty =
@@ -1355,7 +1352,7 @@ let occur_univar env ty =
   with exn ->
     unmark_type ty; raise exn
 
-(* Grouping univars by families according to their binders *) 
+(* Grouping univars by families according to their binders *)
 let add_univars =
   List.fold_left (fun s (t,_) -> TypeSet.add (repr t) s)
 
@@ -1650,7 +1647,7 @@ and unify3 env t1 t1' t2 t2' =
     end
 
 (*
-    (* 
+    (*
        Can only be done afterwards, once the row variable has
        (possibly) been instantiated.
     *)
@@ -1792,12 +1789,11 @@ and unify_row env row1 row2 =
   in
   let md1 = rm1.desc and md2 = rm2.desc in
   begin try
-    set_more row1 r2;
     set_more row2 r1;
-    let undo = ref [] in
+    set_more row1 r2;
     List.iter
       (fun (l,f1,f2) ->
-        try unify_row_field env row1.row_fixed row2.row_fixed undo l f1 f2
+        try unify_row_field env row1.row_fixed row2.row_fixed l f1 f2
         with Unify trace ->
           raise (Unify ((mkvariant [l,f1] true,
                          mkvariant [l,f2] true) :: trace)))
@@ -1806,7 +1802,7 @@ and unify_row env row1 row2 =
     log_type rm1; rm1.desc <- md1; log_type rm2; rm2.desc <- md2; raise exn
   end
 
-and unify_row_field env fixed1 fixed2 undo l f1 f2 =
+and unify_row_field env fixed1 fixed2 l f1 f2 =
   let f1 = row_field_repr f1 and f2 = row_field_repr f2 in
   if f1 == f2 then () else
   match f1, f2 with
@@ -1822,7 +1818,7 @@ and unify_row_field env fixed1 fixed2 undo l f1 f2 =
             List.iter (unify env t1) tl;
             !e1 <> None || !e2 <> None
         end in
-      if redo then unify_row_field env fixed1 fixed2 undo l f1 f2 else
+      if redo then unify_row_field env fixed1 fixed2 l f1 f2 else
       let tl1 = List.map repr tl1 and tl2 = List.map repr tl2 in
       let rec remq tl = function [] -> []
         | ty :: tl' ->
@@ -1833,7 +1829,6 @@ and unify_row_field env fixed1 fixed2 undo l f1 f2 =
       let f1' = Reither(c1 || c2, tl1', m1 || m2, e)
       and f2' = Reither(c1 || c2, tl2', m1 || m2, e) in
       set_row_field e1 f1'; set_row_field e2 f2';
-      undo := (l, e2) :: !undo
   | Reither(_, _, false, e1), Rabsent -> set_row_field e1 f2
   | Rabsent, Reither(_, _, false, e2) -> set_row_field e2 f1
   | Rabsent, Rabsent -> ()
@@ -1850,7 +1845,7 @@ and unify_row_field env fixed1 fixed2 undo l f1 f2 =
   | Rpresent None, Reither(true, [], _, e2) when not fixed2 ->
       set_row_field e2 f1
   | _ -> raise (Unify [])
-    
+
 
 let unify env ty1 ty2 =
   try
@@ -1970,7 +1965,7 @@ let filter_self_method env lab priv meths ty =
    Update the level of [ty]. First check that the levels of generic
    variables from the subject are not lowered.
 *)
-let moregen_occur env level ty = 
+let moregen_occur env level ty =
   let rec occur ty =
     let ty = repr ty in
     if ty.level > level then begin
@@ -2091,7 +2086,7 @@ and moregen_row inst_nongen type_pairs env row1 row2 =
       filter_row_fields true r1, filter_row_fields false r2
     else r1, r2
   in
-  if r1 <> [] || row1.row_closed && (not row2.row_closed || r2 <> []) 
+  if r1 <> [] || row1.row_closed && (not row2.row_closed || r2 <> [])
   then raise (Unify []);
   let rm1 = repr row1.row_more and rm2 = repr row2.row_more in
   let univ =
@@ -2305,7 +2300,7 @@ let rec eqtype rename type_pairs subst env t1 t2 =
               enter_poly env univar_pairs t1 tl1 t2 tl2
                 (eqtype rename type_pairs subst env)
           | (Tunivar, Tunivar) ->
-              unify_univar t1 t2 !univar_pairs
+              unify_univar t1' t2' !univar_pairs
           | (_, _) ->
               raise (Unify [])
         end
@@ -2379,7 +2374,7 @@ and eqtype_row rename type_pairs subst env row1 row2 =
       | Rabsent, Rabsent -> ()
       | _ -> raise (Unify []))
     pairs
-   
+
 (* Two modes: with or without renaming of variables *)
 let equal env rename tyl1 tyl2 =
   try
@@ -2388,7 +2383,7 @@ let equal env rename tyl1 tyl2 =
   with
     Unify _ -> false
 
-(* Must empty univar_pairs first *)  
+(* Must empty univar_pairs first *)
 let eqtype rename type_pairs subst env t1 t2 =
   univar_pairs := [];
   eqtype rename type_pairs subst env t1 t2
@@ -2408,10 +2403,11 @@ type class_match_failure =
   | CM_Val_type_mismatch of string * (type_expr * type_expr) list
   | CM_Meth_type_mismatch of string * (type_expr * type_expr) list
   | CM_Non_mutable_value of string
+  | CM_Non_concrete_value of string
   | CM_Missing_value of string
   | CM_Missing_method of string
   | CM_Hide_public of string
-  | CM_Hide_virtual of string
+  | CM_Hide_virtual of string * string
   | CM_Public_method of string
   | CM_Private_method of string
   | CM_Virtual_method of string
@@ -2444,8 +2440,8 @@ let rec moregen_clty trace type_pairs env cty1 cty2 =
            end)
         pairs;
       Vars.iter
-        (fun lab (mut, ty) ->
-           let (mut', ty') = Vars.find lab sign1.cty_vars in
+        (fun lab (mut, v, ty) ->
+           let (mut', v', ty') = Vars.find lab sign1.cty_vars in
            try moregen true type_pairs env ty' ty with Unify trace ->
              raise (Failure [CM_Val_type_mismatch
                                 (lab, expand_trace env trace)]))
@@ -2491,7 +2487,7 @@ let match_class_types env pat_sch subj_sch =
              end
            in
            if Concr.mem lab sign1.cty_concr then err
-           else CM_Hide_virtual lab::err)
+           else CM_Hide_virtual ("method", lab) :: err)
         miss1 []
     in
     let missing_method = List.map (fun (m, _, _) -> m) miss2 in
@@ -2509,16 +2505,26 @@ let match_class_types env pat_sch subj_sch =
     in
     let error =
       Vars.fold
-        (fun lab (mut, ty) err ->
+        (fun lab (mut, vr, ty) err ->
           try
-            let (mut', ty') = Vars.find lab sign1.cty_vars in
+            let (mut', vr', ty') = Vars.find lab sign1.cty_vars in
             if mut = Mutable && mut' <> Mutable then
               CM_Non_mutable_value lab::err
+            else if vr = Concrete && vr' <> Concrete then
+              CM_Non_concrete_value lab::err
             else
               err
           with Not_found ->
             CM_Missing_value lab::err)
         sign2.cty_vars error
+    in
+    let error =
+      Vars.fold
+        (fun lab (_,vr,_) err ->
+          if vr = Virtual && not (Vars.mem lab sign2.cty_vars) then
+            CM_Hide_virtual ("instance variable", lab) :: err
+          else err)
+        sign1.cty_vars error
     in
     let error =
       List.fold_right
@@ -2570,8 +2576,8 @@ let rec equal_clty trace type_pairs subst env cty1 cty2 =
              end)
           pairs;
         Vars.iter
-          (fun lab (mut, ty) ->
-             let (mut', ty') = Vars.find lab sign1.cty_vars in
+          (fun lab (_, _, ty) ->
+             let (_, _, ty') = Vars.find lab sign1.cty_vars in
              try eqtype true type_pairs subst env ty ty' with Unify trace ->
                raise (Failure [CM_Val_type_mismatch
                                   (lab, expand_trace env trace)]))
@@ -2608,7 +2614,7 @@ let match_class_declarations env patt_params patt_type subj_params subj_type =
           end
         in
         if Concr.mem lab sign1.cty_concr then err
-        else CM_Hide_virtual lab::err)
+        else CM_Hide_virtual ("method", lab) :: err)
       miss1 []
   in
   let missing_method = List.map (fun (m, _, _) -> m) miss2 in
@@ -2632,16 +2638,26 @@ let match_class_declarations env patt_params patt_type subj_params subj_type =
   in
   let error =
     Vars.fold
-      (fun lab (mut, ty) err ->
+      (fun lab (mut, vr, ty) err ->
          try
-           let (mut', ty') = Vars.find lab sign1.cty_vars in
+           let (mut', vr', ty') = Vars.find lab sign1.cty_vars in
            if mut = Mutable && mut' <> Mutable then
              CM_Non_mutable_value lab::err
+           else if vr = Concrete && vr' <> Concrete then
+             CM_Non_concrete_value lab::err
            else
              err
          with Not_found ->
            CM_Missing_value lab::err)
       sign2.cty_vars error
+  in
+  let error =
+    Vars.fold
+      (fun lab (_,vr,_) err ->
+        if vr = Virtual && not (Vars.mem lab sign2.cty_vars) then
+          CM_Hide_virtual ("instance variable", lab) :: err
+        else err)
+      sign1.cty_vars error
   in
   let error =
     List.fold_right
@@ -2913,7 +2929,7 @@ let rec subtype_rec env trace t1 t2 cstrs =
   let t1 = repr t1 in
   let t2 = repr t2 in
   if t1 == t2 then cstrs else
-  
+
   begin try
     TypePairs.find subtypes (t1, t2);
     cstrs
@@ -2944,7 +2960,7 @@ let rec subtype_rec env trace t1 t2 cstrs =
               if co then
                 if cn then
                   (trace, newty2 t1.level (Ttuple[t1]),
-                   newty2 t2.level (Ttuple[t2]), !univar_pairs) :: cstrs 
+                   newty2 t2.level (Ttuple[t2]), !univar_pairs) :: cstrs
                 else subtype_rec env ((t1, t2)::trace) t1 t2 cstrs
               else
                 if cn then subtype_rec env ((t2, t1)::trace) t2 t1 cstrs
@@ -3196,7 +3212,7 @@ let rec normalize_type_rec env ty =
 let normalize_type env ty =
   normalize_type_rec env ty;
   unmark_type ty
-      
+
 
                               (*************************)
                               (*  Remove dependencies  *)
@@ -3345,7 +3361,7 @@ let nondep_type_decl env mid id is_covariant decl =
 let nondep_class_signature env id sign =
   { cty_self = nondep_type_rec env id sign.cty_self;
     cty_vars =
-      Vars.map (function (m, t) -> (m, nondep_type_rec env id t))
+      Vars.map (function (m, v, t) -> (m, v, nondep_type_rec env id t))
         sign.cty_vars;
     cty_concr = sign.cty_concr;
     cty_inher =

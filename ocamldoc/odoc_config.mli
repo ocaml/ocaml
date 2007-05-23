@@ -15,3 +15,6 @@
 
 (** Default path to search for custom generators and to install them. *)
 val custom_generators_path : string
+
+(** A flag to indicate whether to print ocamldoc warnings or not. *)
+val print_warnings : bool ref

@@ -97,33 +97,30 @@ void caml_fatal_uncaught_exception(value exn)
 {
   char * msg;
   value * at_exit;
-#ifndef NATIVE_CODE
   int saved_backtrace_active, saved_backtrace_pos;
-#endif
+
   /* Build a string representation of the exception */
   msg = caml_format_exception(exn);
   /* Perform "at_exit" processing, ignoring all exceptions that may
      be triggered by this */
-#ifndef NATIVE_CODE
   saved_backtrace_active = caml_backtrace_active;
   saved_backtrace_pos = caml_backtrace_pos;
   caml_backtrace_active = 0;
-#endif
   at_exit = caml_named_value("Pervasives.do_at_exit");
   if (at_exit != NULL) caml_callback_exn(*at_exit, Val_unit);
-#ifndef NATIVE_CODE
   caml_backtrace_active = saved_backtrace_active;
   caml_backtrace_pos = saved_backtrace_pos;
-#endif
   /* Display the uncaught exception */
   fprintf(stderr, "Fatal error: exception %s\n", msg);
   free(msg);
   /* Display the backtrace if available */
+  if (caml_backtrace_active
 #ifndef NATIVE_CODE
-  if (caml_backtrace_active && !caml_debugger_in_use){
+      && !caml_debugger_in_use
+#endif
+      ) {
     caml_print_exception_backtrace();
   }
-#endif
   /* Terminate the process */
   exit(2);
 }

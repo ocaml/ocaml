@@ -95,7 +95,7 @@ let output_entry sourcefile ic oc oci e =
     (fun (num, env, loc) ->
       fprintf oc "  | ";
       fprintf oc "%d ->\n" num;
-      output_env oc env;
+      output_env sourcefile ic oc oci env;
       copy_chunk sourcefile ic oc oci loc true;
       fprintf oc "\n")
     e.auto_actions;

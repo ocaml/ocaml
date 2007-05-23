@@ -39,8 +39,11 @@ type addressing_mode =
 
 let big_endian = true
 
-let size_addr = 4
-let size_int = 4
+let ppc64 =
+  match Config.model with "ppc64" -> true | _ -> false
+
+let size_addr = if ppc64 then 8 else 4
+let size_int = size_addr
 let size_float = 8
 
 (* Operations on addressing modes *)

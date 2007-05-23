@@ -3,31 +3,41 @@
 true: -traverse
 
 # Traverse only these directories
-<{bytecomp,driver,stdlib,tools,asmcomp,camlp4,ocamlbuild,toplevel,ocamldoc,typing,otherlibs,utils,debugger,lex,parsing,byterun}/**>: traverse
+<{bytecomp,driver,stdlib,tools,asmcomp,camlp4,ocamlbuild,toplevel,ocamldoc,typing,otherlibs,utils,debugger,lex,parsing,byterun,asmrun}/**>: traverse
 
-"boot" or "byterun": not_hygienic
+"boot" or "byterun" or "asmrun": not_hygienic
 
 # These should not be required but it fails on *BSD and Windows...
-"yacc" or "asmrun" or "win32caml": not_hygienic
+"yacc" or "win32caml": not_hygienic
+
+# We want -g everywhere it's possible
+true: debug
+
+# By default everything we link needs the stdlib
+true: use_stdlib
+
+# The stdlib don't require the stdlib
+<stdlib/**>: -use_stdlib
 
 <**/*.ml*>: warn_Alez
 
 "toplevel/topstart.byte": linkall
 
+<ocamldoc/**>: -debug
 <ocamldoc/*.ml>: ocamldoc_sources
 <ocamldoc/*.ml*>: include_unix, include_str, include_dynlink
 "ocamldoc/odoc.byte": use_unix, use_str, use_dynlink
 "ocamldoc/odoc_opt.native": use_unix, use_str
 
-<camlp4/**>: debug
 <camlp4/**/*.ml*>: camlp4boot, -warn_Alez, warn_Ale
 <camlp4/Camlp4_config.ml*>: -camlp4boot
-<camlp4/build/*> or <camlp4/boot/*> or "camlp4/Camlp4/Struct/Lexer.ml": -camlp4boot, -warn_Ale, warn_a, -debug
+<camlp4/build/*> or <camlp4/boot/*> or "camlp4/Camlp4/Struct/Lexer.ml": -camlp4boot, -warn_Ale, warn_a
 "camlp4/Camlp4Bin.byte" or "camlp4/mkcamlp4.byte" or "camlp4/camlp4lib.cma": use_dynlink
 "camlp4/Camlp4/Printers/OCaml.ml" or "camlp4/Camlp4/Printers/OCamlr.ml": warn_Alezv
 <camlp4/Camlp4Printers/**.ml>: include_unix
 "camlp4/Camlp4/Struct/DynLoader.ml": include_dynlink
 <camlp4/Camlp4Top/**>: include_toplevel
+<camlp4/camlp4{,boot,o,r,of,rf,oof,orf}.byte>: -debug
 
 <ocamlbuild/*>: -warn_Alez, include_unix
 
@@ -52,8 +62,6 @@ true: -traverse
 # See the remark about static linking of threads.cmxa in myocamlbuild.ml
 <otherlibs/systhreads/threads.cma>: ocamlmklib
 
-<**/*.ml{,i}>: include_stdlib
-"otherlibs/threads/unix.ml" or "otherlibs/threads/marshal.ml": -include_stdlib, include_threads_stdlib
 "otherlibs/threads/pervasives.ml": include_unix
 
 <otherlibs/**>: otherlibs

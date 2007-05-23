@@ -15,7 +15,7 @@
 (* Dump a compilation unit description *)
 
 open Config
-open Emitcode
+open Cmo_format
 
 let print_digest d =
   for i = 0 to String.length d - 1 do

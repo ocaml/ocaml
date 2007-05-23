@@ -21,7 +21,7 @@ CAMLC=$(RUNTIME) $(COMPILER)
 COMPFLAGS=-warn-error A -nostdlib
 OPTCOMPILER=../ocamlopt
 CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
-OPTCOMPFLAGS=-warn-error A -nostdlib
+OPTCOMPFLAGS=-warn-error A -nostdlib -g
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 
 OBJS=pervasives.cmo $(OTHERS)
@@ -55,10 +55,16 @@ stdlib.cmxa: $(OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o stdlib.cmxa $(OBJS:.cmo=.cmx)
 
 camlheader camlheader_ur: headernt.c ../config/Makefile
-	$(BYTECC) $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) -o tmpheader.exe headernt.c
+	$(call MKEXE,tmpheader.exe,-I../byterun $(BYTECCCOMPOPTS) $(BYTECCLINKOPTS) headernt.c $(EXTRALIBS))
 	rm -f camlheader.exe
 	mv tmpheader.exe camlheader
 	cp camlheader camlheader_ur
+
+sys.ml: sys.mlp ../VERSION
+	sed -e "s|%%VERSION%%|`head -1 ../VERSION`|" sys.mlp >sys.ml
+
+clean::
+	rm -f sys.ml
 
 clean::
 	rm -f camlheader camlheader_ur

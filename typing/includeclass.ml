@@ -78,14 +78,17 @@ let include_err ppf =
   | CM_Non_mutable_value lab ->
       fprintf ppf
        "@[The non-mutable instance variable %s cannot become mutable@]" lab
+  | CM_Non_concrete_value lab ->
+      fprintf ppf
+       "@[The virtual instance variable %s cannot become concrete@]" lab
   | CM_Missing_value lab ->
       fprintf ppf "@[The first class type has no instance variable %s@]" lab
   | CM_Missing_method lab ->
       fprintf ppf "@[The first class type has no method %s@]" lab
   | CM_Hide_public lab ->
      fprintf ppf "@[The public method %s cannot be hidden@]" lab
-  | CM_Hide_virtual lab ->
-      fprintf ppf "@[The virtual method %s cannot be hidden@]" lab
+  | CM_Hide_virtual (k, lab) ->
+      fprintf ppf "@[The virtual %s %s cannot be hidden@]" k lab
   | CM_Public_method lab ->
       fprintf ppf "@[The public method %s cannot become private" lab
   | CM_Virtual_method lab ->

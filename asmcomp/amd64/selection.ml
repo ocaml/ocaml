@@ -72,7 +72,7 @@ let rec select_addr exp =
       end
   | arg ->
       (Alinear arg, 0)
-    
+
 (* Special constraints on operand and result registers *)
 
 exception Use_default
@@ -87,10 +87,10 @@ let pseudoregs_for_operation op arg res =
     Iintop(Iadd|Isub|Imul|Iand|Ior|Ixor) | Iaddf|Isubf|Imulf|Idivf ->
       ([|res.(0); arg.(1)|], res)
   (* One-address unary operations: arg.(0) and res.(0) must be the same *)
-  | Iintop_imm((Iadd|Isub|Imul|Iand|Ior|Ixor|Ilsl|Ilsr|Iasr), _) 
+  | Iintop_imm((Iadd|Isub|Imul|Iand|Ior|Ixor|Ilsl|Ilsr|Iasr), _)
   | Iabsf | Inegf ->
       (res, res)
-  | Ispecific(Ifloatarithmem(_,_)) -> 
+  | Ispecific(Ifloatarithmem(_,_)) ->
       let arg' = Array.copy arg in
       arg'.(0) <- res.(0);
       (arg', res)
@@ -186,7 +186,7 @@ method select_operation op args =
   | Cstore Word ->
       begin match args with
         [loc; Cop(Caddi, [Cop(Cload _, [loc']); Cconst_int n])]
-        when loc = loc' ->
+        when loc = loc' && self#is_immediate n ->
           let (addr, arg) = self#select_addressing loc in
           (Ispecific(Ioffset_loc(n, addr)), [arg])
       | _ ->
@@ -213,17 +213,19 @@ method select_floatarith commutative regular_op mem_op args =
 
 (* Deal with register constraints *)
 
-method insert_op op rs rd =
+method insert_op_debug op dbg rs rd =
   try
     let (rsrc, rdst) = pseudoregs_for_operation op rs rd in
     self#insert_moves rs rsrc;
-    self#insert (Iop op) rsrc rdst;
+    self#insert_debug (Iop op) dbg rsrc rdst;
     self#insert_moves rdst rd;
     rd
   with Use_default ->
-    super#insert_op op rs rd
+    super#insert_op_debug op dbg rs rd
+
+method insert_op op rs rd =
+  self#insert_op_debug op Debuginfo.none rs rd
 
 end
 
 let fundecl f = (new selector)#emit_fundecl f
-

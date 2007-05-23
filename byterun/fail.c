@@ -60,7 +60,7 @@ CAMLexport void caml_raise_with_arg(value tag, value arg)
   CAMLnoreturn;
 }
 
-CAMLexport void caml_raise_with_string(value tag, char *msg)
+CAMLexport void caml_raise_with_string(value tag, char const *msg)
 {
   CAMLparam1 (tag);
   CAMLlocal1 (vmsg);
@@ -70,12 +70,12 @@ CAMLexport void caml_raise_with_string(value tag, char *msg)
   CAMLnoreturn;
 }
 
-CAMLexport void caml_failwith (char *msg)
+CAMLexport void caml_failwith (char const *msg)
 {
   caml_raise_with_string(Field(caml_global_data, FAILURE_EXN), msg);
 }
 
-CAMLexport void caml_invalid_argument (char *msg)
+CAMLexport void caml_invalid_argument (char const *msg)
 {
   caml_raise_with_string(Field(caml_global_data, INVALID_EXN), msg);
 }
@@ -96,7 +96,7 @@ static struct {
 
 CAMLexport void caml_raise_out_of_memory(void)
 {
-  if (out_of_memory_bucket.exn == 0) 
+  if (out_of_memory_bucket.exn == 0)
     caml_fatal_error
       ("Fatal error: out of memory while raising Out_of_memory\n");
   caml_raise((value) &(out_of_memory_bucket.exn));

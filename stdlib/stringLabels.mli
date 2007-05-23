@@ -22,16 +22,18 @@ external get : string -> int -> char = "%string_safe_get"
 (** [String.get s n] returns character number [n] in string [s].
    The first character is character number 0.
    The last character is character number [String.length s - 1].
-   Raise [Invalid_argument] if [n] is outside the range
-   0 to [(String.length s - 1)].
-   You can also write [s.[n]] instead of [String.get s n]. *)
+   You can also write [s.[n]] instead of [String.get s n].
+
+   Raise [Invalid_argument "index out of bounds"]
+   if [n] is outside the range 0 to [(String.length s - 1)]. *)
+
 
 external set : string -> int -> char -> unit = "%string_safe_set"
 (** [String.set s n c] modifies string [s] in place,
    replacing the character number [n] by [c].
-   Raise [Invalid_argument] if [n] is outside the range
-   0 to [(String.length s - 1)].
-   You can also write [s.[n] <- c] instead of [String.set s n c]. *)
+   You can also write [s.[n] <- c] instead of [String.set s n c].
+   Raise [Invalid_argument "index out of bounds"]
+   if [n] is outside the range 0 to [(String.length s - 1)]. *)
 
 external create : int -> string = "caml_create_string"
 (** [String.create n] returns a fresh string of length [n].
@@ -80,7 +82,7 @@ val concat : sep:string -> string list -> string
 val iter : f:(char -> unit) -> string -> unit
 (** [String.iter f s] applies function [f] in turn to all
    the characters of [s].  It is equivalent to
-   [f s.(0); f s.(1); ...; f s.(String.length s - 1); ()]. *)
+   [f s.[0]; f s.[1]; ...; f s.[String.length s - 1]; ()]. *)
 
 val escaped : string -> string
 (** Return a copy of the argument, with special characters
@@ -137,10 +139,10 @@ val lowercase : string -> string
    Latin-1 (8859-1) character set. *)
 
 val capitalize : string -> string
-(** Return a copy of the argument, with the first letter set to uppercase. *)
+(** Return a copy of the argument, with the first character set to uppercase. *)
 
 val uncapitalize : string -> string
-(** Return a copy of the argument, with the first letter set to lowercase. *)
+(** Return a copy of the argument, with the first character set to lowercase. *)
 
 type t = string
 (** An alias for the type of strings. *)

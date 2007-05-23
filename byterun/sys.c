@@ -72,24 +72,29 @@ CAMLexport void caml_sys_error(value arg)
   CAMLparam1 (arg);
   char * err;
   CAMLlocal1 (str);
-  
+
+  err = error_message();
+  if (arg == NO_ARG) {
+    str = caml_copy_string(err);
+  } else {
+    int err_len = strlen(err);
+    int arg_len = caml_string_length(arg);
+    str = caml_alloc_string(arg_len + 2 + err_len);
+    memmove(&Byte(str, 0), String_val(arg), arg_len);
+    memmove(&Byte(str, arg_len), ": ", 2);
+    memmove(&Byte(str, arg_len + 2), err, err_len);
+  }
+  caml_raise_sys_error(str);
+  CAMLnoreturn;
+}
+
+CAMLexport void caml_sys_io_error(value arg)
+{
   if (errno == EAGAIN || errno == EWOULDBLOCK) {
     caml_raise_sys_blocked_io();
   } else {
-    err = error_message();
-    if (arg == NO_ARG) {
-      str = caml_copy_string(err);
-    } else {
-      int err_len = strlen(err);
-      int arg_len = caml_string_length(arg);
-      str = caml_alloc_string(arg_len + 2 + err_len);
-      memmove(&Byte(str, 0), String_val(arg), arg_len);
-      memmove(&Byte(str, arg_len), ": ", 2);
-      memmove(&Byte(str, arg_len + 2), err, err_len);
-    }
-    caml_raise_sys_error(str);
+    caml_sys_error(arg);
   }
-  CAMLnoreturn;
 }
 
 CAMLprim value caml_sys_exit(value retcode)
@@ -152,6 +157,17 @@ CAMLprim value caml_sys_file_exists(value name)
 {
   struct stat st;
   return Val_bool(stat(String_val(name), &st) == 0);
+}
+
+CAMLprim value caml_sys_is_directory(value name)
+{
+  struct stat st;
+  if (stat(String_val(name), &st) == -1) caml_sys_error(name);
+#ifdef S_ISDIR
+  return Val_bool(S_ISDIR(st.st_mode));
+#else
+  return Val_bool(st.st_mode & S_IFDIR);
+#endif
 }
 
 CAMLprim value caml_sys_remove(value name)
@@ -233,7 +249,7 @@ CAMLprim value caml_sys_system_command(value command)
   int status, retcode;
   char *buf;
   intnat len;
-  
+
   len = caml_string_length (command);
   buf = caml_stat_alloc (len + 1);
   memmove (buf, String_val (command), len + 1);
@@ -276,8 +292,15 @@ CAMLprim value caml_sys_time(value unit)
 #endif
 }
 
+#ifdef _WIN32
+extern intnat caml_win32_random_seed (void);
+#endif
+
 CAMLprim value caml_sys_random_seed (value unit)
 {
+#ifdef _WIN32
+  return Val_long(caml_win32_random_seed());
+#else
   intnat seed;
 #ifdef HAS_GETTIMEOFDAY
   struct timeval tv;
@@ -287,9 +310,10 @@ CAMLprim value caml_sys_random_seed (value unit)
   seed = time (NULL);
 #endif
 #ifdef HAS_UNISTD
-  seed ^= getppid() << 16 | getpid();
+  seed ^= (getppid() << 16) ^ getpid();
 #endif
   return Val_long(seed);
+#endif
 }
 
 CAMLprim value caml_sys_get_config(value unit)

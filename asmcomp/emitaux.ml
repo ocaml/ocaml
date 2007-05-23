@@ -14,6 +14,11 @@
 
 (* Common functions for emitting assembly code *)
 
+open Debuginfo
+open Cmm
+open Reg
+open Linearize
+
 let output_channel = ref stdout
 
 let emit_string s = output_string !output_channel s
@@ -26,6 +31,8 @@ let emit_nativeint n = output_string !output_channel (Nativeint.to_string n)
 
 let emit_printf fmt =
   Printf.fprintf !output_channel fmt
+
+let emit_int32 n = emit_printf "0x%lx" n
 
 let emit_symbol esc s =
   for i = 0 to String.length s - 1 do
@@ -86,3 +93,66 @@ let emit_bytes_directive directive s =
    done;
    if !pos > 0 then emit_char '\n'
 
+(* Record live pointers at call points *)
+
+type frame_descr =
+  { fd_lbl: int;                        (* Return address *)
+    fd_frame_size: int;                 (* Size of stack frame *)
+    fd_live_offset: int list;           (* Offsets/regs of live addresses *)
+    fd_debuginfo: Debuginfo.t }         (* Location, if any *)
+
+let frame_descriptors = ref([] : frame_descr list)
+
+type emit_frame_actions =
+  { efa_label: int -> unit;
+    efa_16: int -> unit;
+    efa_32: int32 -> unit;
+    efa_word: int -> unit;
+    efa_align: int -> unit;
+    efa_label_rel: int -> int32 -> unit;
+    efa_def_label: int -> unit;
+    efa_string: string -> unit }
+
+let emit_frames a =
+  let filenames = Hashtbl.create 7 in
+  let lbl_filenames = ref 200000 in
+  let label_filename name =
+    try 
+      Hashtbl.find filenames name
+    with Not_found ->
+      let lbl = !lbl_filenames in
+      Hashtbl.add filenames name lbl;
+      incr lbl_filenames;
+      lbl in
+  let emit_frame fd =
+    a.efa_label fd.fd_lbl;
+    a.efa_16 (if fd.fd_debuginfo == Debuginfo.none
+              then fd.fd_frame_size
+              else fd.fd_frame_size + 1);
+    a.efa_16 (List.length fd.fd_live_offset);
+    List.iter a.efa_16 fd.fd_live_offset;
+    a.efa_align Arch.size_addr;
+    if fd.fd_debuginfo != Debuginfo.none then begin
+      let d = fd.fd_debuginfo in
+      let line = min 0xFFFFF d.dinfo_line
+      and char_start = min 0xFF d.dinfo_char_start
+      and char_end = min 0x3FF d.dinfo_char_end
+      and kind = match d.dinfo_kind with Dinfo_call -> 0 | Dinfo_raise -> 1 in
+      let info =
+        Int64.add (Int64.shift_left (Int64.of_int line) 44) (
+        Int64.add (Int64.shift_left (Int64.of_int char_start) 36) (
+        Int64.add (Int64.shift_left (Int64.of_int char_end) 26)
+                  (Int64.of_int kind))) in
+      a.efa_label_rel
+        (label_filename d.dinfo_file) 
+        (Int64.to_int32 info);
+      a.efa_32 (Int64.to_int32 (Int64.shift_right info 32))
+    end in
+  let emit_filename name lbl =
+    a.efa_def_label lbl;
+    a.efa_string name;
+    a.efa_align Arch.size_addr in
+  a.efa_word (List.length !frame_descriptors);
+  List.iter emit_frame !frame_descriptors;
+  Hashtbl.iter emit_filename filenames;
+  frame_descriptors := []

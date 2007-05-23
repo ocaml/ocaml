@@ -145,6 +145,7 @@ end = struct let poly = poly end;;
 
 (* type dispatch *)
 
+type num = [ `Int | `Float ]
 let print0 = multifun
     `Int -> print_int
   | `Float -> print_float

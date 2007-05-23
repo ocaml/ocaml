@@ -17,9 +17,15 @@
 (* Extract the name of a DLLs from its external name (xxx.so or -lxxx) *)
 val extract_dll_name: string -> string
 
-(* Open a list of DLLs, adding them to opened_dlls.
-   Raise [Failure msg] in case of error. *)
-val open_dlls: string list -> unit
+type dll_mode =
+  | For_checking     (* will just check existence of symbols;
+                        no need to do full symbol resolution *)
+  | For_execution    (* will call functions from this DLL;
+                        must resolve symbols completely *)
+
+(* Open a list of DLLs.  First argument indicates whether to perform
+   full symbol resolution.  Raise [Failure msg] in case of error. *)
+val open_dlls: dll_mode -> string list -> unit
 
 (* Close all DLLs *)
 val close_all_dlls: unit -> unit

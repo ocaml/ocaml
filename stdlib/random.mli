@@ -33,7 +33,7 @@ val bits : unit -> int
 
 val int : int -> int
 (** [Random.int bound] returns a random integer between 0 (inclusive)
-     and [bound] (exclusive).  [bound] must be more than 0 and less
+     and [bound] (exclusive).  [bound] must be greater than 0 and less
      than 2{^30}. *)
 
 val int32 : Int32.t -> Int32.t;;

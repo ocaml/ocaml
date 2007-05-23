@@ -247,10 +247,44 @@ FUNCTION(caml_start_program)
         orq     $2, %rax
         jmp     .L109
 
+/* Raise an exception from Caml */
+
+FUNCTION(caml_raise_exn)
+        testl   $1, caml_backtrace_active(%rip)
+        jne     .L110
+        movq    %r14, %rsp
+        popq    %r14
+        ret
+.L110:
+        movq    %rax, %r12            /* Save exception bucket */
+        movq    %rax, %rdi            /* arg 1: exception bucket */
+        movq    0(%rsp), %rsi         /* arg 2: pc of raise */
+        leaq    8(%rsp), %rdx         /* arg 3: sp of raise */
+        movq    %r14, %rcx            /* arg 4: sp of handler */
+        call    caml_stash_backtrace
+        movq    %r12, %rax            /* Recover exception bucket */
+        movq    %r14, %rsp
+        popq    %r14
+        ret
+
 /* Raise an exception from C */
 
 FUNCTION(caml_raise_exception)
+        testl   $1, caml_backtrace_active(%rip)
+        jne     .L111
         movq    %rdi, %rax
+        movq    caml_exception_pointer(%rip), %rsp
+        popq    %r14                  /* Recover previous exception handler */
+        movq    caml_young_ptr(%rip), %r15 /* Reload alloc ptr */
+        ret
+.L111:
+        movq    %rdi, %r12            /* Save exception bucket */
+                                      /* arg 1: exception bucket */
+        movq    caml_last_return_address(%rip), %rsi /* arg 2: pc of raise */
+        movq    caml_bottom_of_stack(%rip), %rdx /* arg 3: sp of raise */
+        movq    caml_exception_pointer(%rip), %rcx /* arg 4: sp of handler */
+        call    caml_stash_backtrace
+        movq    %r12, %rax            /* Recover exception bucket */
         movq    caml_exception_pointer(%rip), %rsp
         popq    %r14                  /* Recover previous exception handler */
         movq    caml_young_ptr(%rip), %r15 /* Reload alloc ptr */
@@ -307,10 +341,8 @@ FUNCTION(caml_callback3_exn)
         jmp     .L106
 
 FUNCTION(caml_ml_array_bound_error)
-    /* Make the exception handler and alloc ptr available to the C code */
-	movq	%r15, caml_young_ptr(%rip)
-	movq	%r14, caml_exception_pointer(%rip)
-	jmp	caml_array_bound_error	
+        leaq    caml_array_bound_error(%rip), %rax
+        jmp     caml_c_call
 
         .data
         .globl  caml_system__frametable

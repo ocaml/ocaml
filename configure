@@ -39,6 +39,7 @@ verbose=no
 withcurses=yes
 withsharedlibs=yes
 gcc_warnings="-Wall"
+partialld="ld -r"
 
 # Try to turn internationalization off, can cause config.guess to malfunction!
 unset LANG
@@ -247,9 +248,11 @@ case "$bytecc,$host" in
     bytecccompopts="-fno-defer-pop $gcc_warnings -DSHRINKED_GNUC"
     mathlib="";;
   *,*-*-darwin*)
-    # Almost the same as rhapsody
     bytecccompopts="-fno-defer-pop -no-cpp-precomp $gcc_warnings"
-    mathlib="";;
+    mathlib=""
+    # Tell gcc that we can use 32-bit code addresses for threaded code
+    # even if we compile in 64-bit mode
+    echo "#define ARCH_CODE32" >> m.h;;
   *,*-*-beos*)
     bytecccompopts="-fno-defer-pop $gcc_warnings"
     # No -lm library
@@ -325,9 +328,11 @@ echo "Checking the sizes of integers and pointers..."
 set `sh ./runtest sizes.c`
 case "$2,$3" in
   4,4) echo "OK, this is a regular 32 bit architecture."
-       echo "#undef ARCH_SIXTYFOUR" >> m.h;;
+       echo "#undef ARCH_SIXTYFOUR" >> m.h
+       arch64=false;;
   *,8) echo "Wow! A 64 bit architecture!"
-       echo "#define ARCH_SIXTYFOUR" >> m.h;;
+       echo "#define ARCH_SIXTYFOUR" >> m.h
+       arch64=true;;
   *,*) echo "This architecture seems to be neither 32 bits nor 64 bits."
        echo "Objective Caml won't run on this architecture."
        exit 2;;
@@ -483,7 +488,7 @@ mksharedlibrpath=''
 
 if test $withsharedlibs = "yes"; then
   case "$host" in
-    *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*|*-*-gnu*)
+    *-*-linux-gnu|*-*-linux|*-*-freebsd[3-9]*|*-*-netbsd*|*-*-gnu*)
       sharedcccompopts="-fPIC"
       mksharedlib="$bytecc -shared -o"
       bytecclinkopts="$bytecclinkopts -Wl,-E"
@@ -536,8 +541,8 @@ if test $withsharedlibs = "yes"; then
       byteccrpath="-Wl,-rpath,"
       mksharedlibrpath="-rpath "
       shared_libraries_supported=true;;
-    powerpc-apple-darwin*)
-      mksharedlib="cc -bundle -flat_namespace -undefined suppress -o"
+    *-apple-darwin*)
+      mksharedlib="$bytecc -bundle -flat_namespace -undefined suppress -o"
       bytecccompopts="$dl_defs $bytecccompopts"
       #sharedcccompopts="-fnocommon"
       dl_needs_underscore=true
@@ -585,9 +590,10 @@ case "$host" in
   hppa*-*-linux*)               arch=hppa; system=linux;;
   hppa*-*-gnu*)                 arch=hppa; system=gnu;;
   powerpc-*-linux*)             arch=power; model=ppc; system=elf;;
-  powerpc-*-netbsd*)            arch=power; model=ppc; system=bsd;;
+  powerpc-*-netbsd*)            arch=power; model=ppc; system=elf;;
   powerpc-*-rhapsody*)          arch=power; model=ppc; system=rhapsody;;
-  powerpc-*-darwin*)            arch=power; model=ppc; system=rhapsody;;
+  powerpc-*-darwin*)            arch=power; system=rhapsody
+                                if $arch64; then model=ppc64; else model=ppc; fi;;
   arm*-*-linux*)                arch=arm; system=linux;;
   arm*-*-gnu*)                  arch=arm; system=gnu;;
   ia64-*-linux*)                arch=ia64; system=linux;;
@@ -596,6 +602,7 @@ case "$host" in
   x86_64-*-linux*)              arch=amd64; system=linux;;
   x86_64-*-gnu*)                arch=amd64; system=gnu;;
   x86_64-*-freebsd*)            arch=amd64; system=freebsd;;
+  x86_64-*-netbsd*)             arch=amd64; system=netbsd;;
   x86_64-*-openbsd*)            arch=amd64; system=openbsd;;
 esac
 
@@ -621,8 +628,8 @@ case "$arch,$nativecc,$system,$host_type" in
                        nativecclinkopts="-posix";;
   *,*,rhapsody,*darwin[1-5].*)
                        nativecccompopts="$gcc_warnings -DSHRINKED_GNUC";;
-  *,*,rhapsody,*)
-                 nativecccompopts="$gcc_warnings -DDARWIN_VERSION_6 $dl_defs";;
+  *,*,rhapsody,*)      nativecccompopts="$gcc_warnings -DDARWIN_VERSION_6 $dl_defs"
+                       if $arch64; then partialld="ld -r -arch ppc64"; fi;;
   *,gcc*,cygwin,*)     nativecccompopts="$gcc_warnings -U_WIN32";;
   *,gcc*,*,*)          nativecccompopts="$gcc_warnings";;
 esac
@@ -653,7 +660,7 @@ case "$arch,$model,$system" in
   hppa,*,*)         aspp="$cc"; asppflags='-traditional -c -DSYS_$(SYSTEM)';;
   power,*,elf)      aspp='gcc'; asppflags='-c';;
   power,*,bsd)      aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
-  power,*,rhapsody) ;;
+  power,*,rhapsody) aspp="$bytecc"; asppflags='-c';;
   arm,*,linux)      aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   arm,*,gnu)        aspp='gcc'; asppflags='-c -DSYS_$(SYSTEM)';;
   ia64,*,*)         asflags=-xexplicit
@@ -667,6 +674,7 @@ case "$arch,$model,$system" in
   i386,*,linux_elf) profiling='prof';;
   i386,*,gnu) profiling='prof';;
   i386,*,bsd_elf) profiling='prof';;
+  i386,*,macosx) profiling='prof';;
   sparc,*,solaris)
     profiling='prof'
     case "$nativecc" in gcc*) ;; *) cc_profile='-xpg';; esac;;
@@ -978,7 +986,7 @@ elif sh ./hasgot $dllib -ldl dlopen; then
   echo "dlopen() found in -ldl."
   dllib="$dllib -ldl"
 else
-  shared_libraries_supported=no
+  shared_libraries_supported=false
 fi
 
 if $shared_libraries_supported; then
@@ -1026,7 +1034,7 @@ fi
 # Determine if system stack overflows can be detected
 
 case "$arch,$system" in
-  i386,linux_elf|amd64,linux)
+  i386,linux_elf|amd64,linux|power,rhapsody|i386,macosx)
     echo "System stack overflow can be detected."
     echo "#define HAS_STACK_OVERFLOW_DETECTION" >> s.h;;
   *)
@@ -1058,10 +1066,14 @@ systhread_support=false
 
 if test "$pthread_wanted" = "yes"; then
   case "$host" in
-    *-*-solaris*)  pthread_link="-lpthread -lposix4";;
-    *-*-freebsd*)  pthread_link="-pthread";;
-    *-*-openbsd*)  pthread_link="-pthread";;
-    *)             pthread_link="-lpthread";;
+    *-*-solaris*)  pthread_link="-lpthread -lposix4"
+                   pthread_caml_link="-cclib -lpthread -cclib -lposix4";;
+    *-*-freebsd*)  pthread_link="-pthread"
+                   pthread_caml_link="-cclib -pthread";;
+    *-*-openbsd*)  pthread_link="-pthread"
+                   pthread_caml_link="-cclib -pthread";;
+    *)             pthread_link="-lpthread"
+                   pthread_caml_link="-cclib -lpthread";;
   esac
   if ./hasgot -i pthread.h $pthread_link pthread_self; then
     echo "POSIX threads library supported."
@@ -1079,7 +1091,6 @@ if test "$pthread_wanted" = "yes"; then
           nativecccompopts="$nativecccompopts -pthread";;
     esac
     echo "Options for linking with POSIX threads: $pthread_link"
-    echo "PTHREAD_LINK=$pthread_link" >> Makefile
     if sh ./hasgot $pthread_link sigwait; then
       echo "sigwait() found"
       echo "#define HAS_SIGWAIT" >> s.h
@@ -1088,7 +1099,10 @@ if test "$pthread_wanted" = "yes"; then
     echo "POSIX threads not found."
     pthread_link=""
   fi
+else
+  pthread_link=""
 fi
+echo "PTHREAD_LINK=$pthread_caml_link" >> Makefile
 
 # Determine if the bytecode thread library is supported
 
@@ -1232,9 +1246,9 @@ else
   else
     x11_include="-I$x11_include"
   fi
-  echo "X11_INCLUDES=$x11_include" >> Makefile
-  echo "X11_LINK=$x11_link" >> Makefile
 fi
+echo "X11_INCLUDES=$x11_include" >> Makefile
+echo "X11_LINK=$x11_link" >> Makefile
 
 # See if we can compile the dbm library
 
@@ -1276,13 +1290,13 @@ else
   else
     dbm_include="-I$dbm_include"
   fi
-  echo "DBM_INCLUDES=$dbm_include" >> Makefile
-  echo "DBM_LINK=$dbm_link" >> Makefile
   if test "$use_gdbm_ndbm" = "yes"; then
     echo "#define DBM_USES_GDBM_NDBM" >> s.h
   fi
   otherlibraries="$otherlibraries dbm"
 fi
+echo "DBM_INCLUDES=$dbm_include" >> Makefile
+echo "DBM_LINK=$dbm_link" >> Makefile
 
 # Look for tcl/tk
 
@@ -1312,7 +1326,8 @@ if test $has_tk = true; then
     "-I/usr/include/tcl8.3 -I/usr/include/tk8.3" \
     "-I/usr/local/include/tcl8.2 -I/usr/local/include/tk8.2" \
     "-I/usr/include/tcl8.2 -I/usr/include/tk8.2" \
-    "-I/sw/include"
+    "-I/sw/include" \
+    "-I/usr/pkg/include"
   do if test -z "$tcl_version"; then
     tk_defs="$tk_incs"
     tcl_version=`sh ./runtest $tk_defs $tk_x11_include tclversion.c`
@@ -1358,16 +1373,26 @@ if test $has_tk = true; then
   elif sh ./hasgot -L/sw/lib $tk_libs -ltcl$tclmaj.$tclmin $tkauxlibs \
                    Tcl_DoOneEvent
   then tk_libs="-L/sw/lib -ltk$tkmaj.$tkmin -ltcl$tclmaj.$tclmin $dllib"
+  elif sh ./hasgot -L/usr/pkg/lib $tk_libs $tk_x11_libs \
+        -ltk$tkmaj$tkmin -ltcl$tclmaj$tclmin -lpthread $tkauxlibs \
+                   Tcl_DoOneEvent
+  then
+    tk_libs="-L/usr/pkg/lib $tk_libs $tk_x11_libs -ltk$tkmaj$tkmin -ltcl$tclmaj$tclmin -lpthread $tkauxlibs"
   else
     echo "Tcl library not found."
     has_tk=false
   fi
 fi
+
 if test $has_tk = true; then
   if sh ./hasgot $tk_libs $tk_x11_libs $tkauxlibs Tk_SetGrid; then
     echo "Tcl/Tk libraries found."
   elif sh ./hasgot -L/sw/lib $tk_libs $tk_x11_libs $tkauxlibs Tk_SetGrid; then
     tk_libs="-L/sw/lib $tk_libs"
+    echo "Tcl/Tk libraries found."
+  elif sh ./hasgot -L/usr/pkg/lib $tk_libs $tk_x11_libs $tkauxlibs \
+                   Tk_SetGrid; then
+    tk_libs="-L/usr/pkg/lib $tk_libs"
     echo "Tcl/Tk libraries found."
   else
     echo "Tcl library found."
@@ -1387,19 +1412,9 @@ if test $has_tk = true; then
   otherlibraries="$otherlibraries labltk"
 else
   echo "Configuration failed, LablTk will not be built."
+  echo "TK_DEFS=" >> Makefile
+  echo "TK_LINK=" >> Makefile
 fi
-
-# Begin Camlp4
-(
-cd ../../camlp4/config
-EXE=$exe ./configure_batch -prefix "$prefix" -bindir "$bindir" -libdir "$libdir" -mandir "$mandir" -ocaml-top ../.. > /dev/null
-)
-
-case $? in
-    0) echo "Camlp4 correctly configured.";;
-    *) echo "Warning: Camlp4 configuration terminated with error code $?";;
-esac
-# End Camlp4
 
 # Final twiddling of compiler options to work around known bugs
 
@@ -1422,8 +1437,22 @@ echo "BYTECCRPATH=$byteccrpath" >> Makefile
 echo "EXE=$exe" >> Makefile
 echo "SUPPORTS_SHARED_LIBRARIES=$shared_libraries_supported" >> Makefile
 echo "SHAREDCCCOMPOPTS=$sharedcccompopts" >> Makefile
-echo "MKSHAREDLIB=$mksharedlib" >> Makefile
 echo "MKSHAREDLIBRPATH=$mksharedlibrpath" >> Makefile
+cat >> Makefile <<EOF
+SYSLIB=-l\$(1)
+#ml let syslib x = "-l"^x;;
+
+MKEXE=\$(BYTECC) -o \$(1) \$(2)
+#ml let mkexe out files opts = Printf.sprintf "%s -o %s %s %s" bytecc out opts files;;
+
+### How to build a DLL
+MKDLL=$mksharedlib \$(1) \$(3)
+#ml let mkdll out _implib files opts = Printf.sprintf "%s %s %s %s" "$mksharedlib" out opts files;;
+
+### How to build a static library
+MKLIB=ar rc \$(1) \$(2); ranlib \$(1)
+#ml let mklib out files opts = Printf.sprintf "ar rc %s %s %s; ranlib %s" out opts files out;;
+EOF
 echo "ARCH=$arch" >> Makefile
 echo "MODEL=$model" >> Makefile
 echo "SYSTEM=$system" >> Makefile
@@ -1442,7 +1471,18 @@ echo "DYNLINKOPTS=$dllib" >> Makefile
 echo "OTHERLIBRARIES=$otherlibraries" >> Makefile
 echo "DEBUGGER=$debugger" >> Makefile
 echo "CC_PROFILE=$cc_profile" >> Makefile
-echo "SYSTHREAD_SUPPORT=$systhread_support" >>Makefile
+echo "SYSTHREAD_SUPPORT=$systhread_support" >> Makefile
+echo "PARTIALLD=$partialld" >> Makefile
+echo "DLLCCCOMPOPTS=" >> Makefile
+echo "O=o" >> Makefile
+echo "A=a" >> Makefile
+echo "EXT_OBJ=.o" >> Makefile
+echo "EXT_ASM=.s" >> Makefile
+echo "EXT_LIB=.a" >> Makefile
+echo "EXT_DLL=.so" >> Makefile
+echo "EXTRALIBS=" >> Makefile
+echo "CCOMPTYPE=cc" >> Makefile
+echo "TOOLCHAIN=cc" >> Makefile
 
 rm -f tst hasgot.c
 rm -f ../m.h ../s.h ../Makefile

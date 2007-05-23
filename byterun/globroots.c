@@ -28,7 +28,7 @@
    1 with probability 3/16, 2 with probability 3/64, etc.
    We use a simple linear congruential PRNG (see Knuth vol 2) instead
    of random(), because we need exactly 32 bits of pseudo-random data
-   (i.e. 2 * (MAX_LEVEL + 1)).  Moreover, the congruential PRNG 
+   (i.e. 2 * (NUM_LEVELS - 1)).  Moreover, the congruential PRNG
    is faster and guaranteed to be deterministic (to reproduce bugs). */
 
 static uint32 random_seed = 0;
@@ -45,7 +45,7 @@ static int random_level(void)
      "less random" than the most significant bits with a modulus of 2^m,
      so consume most significant bits first */
   while ((r & 0xC0000000U) == 0xC0000000U) { level++; r = r << 2; }
-  Assert(level <= MAX_LEVEL);
+  Assert(level < NUM_LEVELS);
   return level;
 }
 
@@ -57,10 +57,10 @@ struct global_root_list caml_global_roots = { NULL, { NULL, }, 0 };
 
 CAMLexport void caml_register_global_root(value *r)
 {
-  struct global_root * update[MAX_LEVEL];
+  struct global_root * update[NUM_LEVELS];
   struct global_root * e, * f;
   int i, new_level;
-  
+
   Assert (((intnat) r & 3) == 0);  /* compact.c demands this (for now) */
 
   /* Init "cursor" to list head */
@@ -97,7 +97,7 @@ CAMLexport void caml_register_global_root(value *r)
 
 CAMLexport void caml_remove_global_root(value *r)
 {
-  struct global_root * update[MAX_LEVEL];
+  struct global_root * update[NUM_LEVELS];
   struct global_root * e, * f;
   int i;
 

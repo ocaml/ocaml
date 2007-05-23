@@ -42,7 +42,7 @@ let regs ppf v =
   | 0 -> ()
   | 1 -> reg ppf v.(0)
   | n -> reg ppf v.(0);
-         for i = 1 to n-1 do fprintf ppf "@ %a" reg v.(i) done
+         for i = 1 to n-1 do fprintf ppf " %a" reg v.(i) done
 
 let regset ppf s =
   let first = ref true in
@@ -182,6 +182,8 @@ let rec instr ppf i =
   | Iraise ->
       fprintf ppf "raise %a" reg i.arg.(0)
   end;
+  if i.dbg != Debuginfo.none then
+    fprintf ppf " %s" (Debuginfo.to_string i.dbg);
   begin match i.next.desc with
     Iend -> ()
   | _ -> fprintf ppf "@,%a" instr i.next

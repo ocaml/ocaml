@@ -27,7 +27,7 @@ type regular_expression =
   | Sequence of regular_expression * regular_expression
   | Alternative of regular_expression * regular_expression
   | Repetition of regular_expression
-  | Bind of regular_expression * string
+  | Bind of regular_expression * (string * location)
 
 type ('arg,'action) entry =
   {name:string ;

@@ -43,7 +43,7 @@ type pack_member =
 
 let read_member_info pack_path file =
   let name =
-    String.capitalize(Filename.basename(chop_extension_if_any file)) in
+    String.capitalize(Filename.basename(chop_extensions file)) in
   let kind =
     if Filename.check_suffix file ".cmx" then begin
       let (info, crc) = Compilenv.read_unit_info file in
@@ -53,6 +53,7 @@ let read_member_info pack_path file =
          (Compilenv.current_unit_infos()).ui_symbol ^ "__" ^ info.ui_name
       then raise(Error(Wrong_for_pack(file, pack_path)));
       Asmlink.check_consistency file info crc;
+      Compilenv.cache_unit_info info;
       PM_impl info
     end else
       PM_intf in
@@ -79,7 +80,10 @@ let check_units members =
 (* Make the .o file for the package *)
 
 let make_package_object ppf members targetobj targetname coercion =
-  let objtemp = Filename.temp_file "camlpackage" Config.ext_obj in
+  (* Put the full name of the module in the temporary file name
+     to avoid collisions with MSVC's link /lib in case of successive packs *)
+  let objtemp =
+    Filename.temp_file (Compilenv.make_symbol (Some "")) Config.ext_obj in
   let components =
     List.map
       (fun m ->
@@ -96,7 +100,7 @@ let make_package_object ppf members targetobj targetname coercion =
       (fun m -> chop_extension_if_any m.pm_file ^ Config.ext_obj)
       (List.filter (fun m -> m.pm_kind <> PM_intf) members) in
   let ld_cmd =
-    sprintf "%s -o %s %s %s"
+    sprintf "%s%s %s %s"
             Config.native_pack_linker
             (Filename.quote targetobj)
             (Filename.quote objtemp)
@@ -168,9 +172,9 @@ let package_files ppf files targetcmx =
         try find_in_path !Config.load_path f
         with Not_found -> raise(Error(File_not_found f)))
       files in
-  let prefix = chop_extension_if_any targetcmx in
+  let prefix = chop_extensions targetcmx in
   let targetcmi = prefix ^ ".cmi" in
-  let targetobj = prefix ^ Config.ext_obj in
+  let targetobj = chop_extension_if_any targetcmx ^ Config.ext_obj in
   let targetname = String.capitalize(Filename.basename prefix) in
   (* Set the name of the current "input" *)
   Location.input_name := targetcmx;

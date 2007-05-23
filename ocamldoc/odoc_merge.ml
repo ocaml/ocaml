@@ -529,7 +529,7 @@ let rec merge_module_types merge_options mli ml =
                 Element_module m2 ->
                   if m2.m_name = m.m_name then
                     (
-                     ignore(merge_modules merge_options m m2);
+                     ignore (merge_modules merge_options m m2);
 (*
                      m.m_info <- merge_info_opt merge_options m.m_info m2.m_info;
                      m.m_loc <- { m.m_loc with loc_impl = m2.m_loc.loc_impl } ;
@@ -693,18 +693,18 @@ and merge_modules merge_options mli ml =
   let code =
     if !Odoc_args.keep_code then
       match mli.m_code, ml.m_code with
-	Some s, _ -> Some s
-      |	_, Some s -> Some s
-      |	_ -> None
+        Some s, _ -> Some s
+      | _, Some s -> Some s
+      | _ -> None
     else
       None
   in
   let code_intf =
     if !Odoc_args.keep_code then
       match mli.m_code_intf, ml.m_code_intf with
-	Some s, _ -> Some s
-      |	_, Some s -> Some s
-      |	_ -> None
+        Some s, _ -> Some s
+      | _, Some s -> Some s
+      | _ -> None
     else
       None
   in
@@ -777,7 +777,7 @@ and merge_modules merge_options mli ml =
                 Element_module m2 ->
                   if m2.m_name = m.m_name then
                     (
-                     ignore(merge_modules merge_options m m2);
+                     ignore (merge_modules merge_options m m2);
 (*
                      m.m_info <- merge_info_opt merge_options m.m_info m2.m_info;
                      m.m_loc <- { m.m_loc with loc_impl = m2.m_loc.loc_impl } ;
@@ -964,5 +964,3 @@ let merge merge_options modules_list =
 
   in
   iter modules_list
-  
-(* eof $Id$ *)

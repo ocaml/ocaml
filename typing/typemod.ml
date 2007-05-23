@@ -17,6 +17,7 @@
 open Misc
 open Longident
 open Path
+open Asttypes
 open Parsetree
 open Types
 open Typedtree
@@ -88,26 +89,27 @@ let merge_constraint initial_env loc sg lid constr =
     | (Tsig_type(id, decl, rs) :: rem, [s],
        Pwith_type ({ptype_kind = Ptype_private} as sdecl))
       when Ident.name id = s ->
-	let decl_row =
-	  { type_params =
-	      List.map (fun _ -> Btype.newgenvar()) sdecl.ptype_params;
-	    type_arity = List.length sdecl.ptype_params;
-	    type_kind = Type_abstract;
-	    type_manifest = None;
-	    type_variance =
-	      List.map (fun (c,n) -> (not n, not c, not c))
-	      sdecl.ptype_variance }
-	and id_row = Ident.create (s^"#row") in
-	let initial_env = Env.add_type id_row decl_row initial_env in
+        let decl_row =
+          { type_params =
+              List.map (fun _ -> Btype.newgenvar()) sdecl.ptype_params;
+            type_arity = List.length sdecl.ptype_params;
+            type_kind = Type_abstract;
+            type_manifest = None;
+            type_variance =
+              List.map (fun (c,n) -> (not n, not c, not c))
+              sdecl.ptype_variance }
+        and id_row = Ident.create (s^"#row") in
+        let initial_env = Env.add_type id_row decl_row initial_env in
         let newdecl = Typedecl.transl_with_constraint
-                        initial_env (Some(Pident id_row)) sdecl in
+                        initial_env id (Some(Pident id_row)) sdecl in
         check_type_decl env id row_id newdecl decl rs rem;
-	let decl_row = {decl_row with type_params = newdecl.type_params} in
+        let decl_row = {decl_row with type_params = newdecl.type_params} in
         let rs' = if rs = Trec_first then Trec_not else rs in
         Tsig_type(id_row, decl_row, rs') :: Tsig_type(id, newdecl, rs) :: rem
     | (Tsig_type(id, decl, rs) :: rem, [s], Pwith_type sdecl)
       when Ident.name id = s ->
-        let newdecl = Typedecl.transl_with_constraint initial_env None sdecl in
+        let newdecl =
+          Typedecl.transl_with_constraint initial_env id None sdecl in
         check_type_decl env id row_id newdecl decl rs rem;
         Tsig_type(id, newdecl, rs) :: rem
     | (Tsig_type(id, decl, rs) :: rem, [s], Pwith_type sdecl)
@@ -156,7 +158,7 @@ let approx_modtype transl_mty init_env smty =
     match smty.pmty_desc with
       Pmty_ident lid ->
         begin try
-          let (path, info) = Env.lookup_modtype lid env in 
+          let (path, info) = Env.lookup_modtype lid env in
           Tmty_ident path
         with Not_found ->
           raise(Error(smty.pmty_loc, Unbound_modtype lid))
@@ -209,7 +211,7 @@ let approx_modtype transl_mty init_env smty =
             let sg = Subst.signature Subst.identity
                        (extract_sig env smty.pmty_loc mty) in
             let newenv = Env.add_signature sg env in
-            sg @ approx_sig newenv srem            
+            sg @ approx_sig newenv srem
         | Psig_class sdecls | Psig_class_type sdecls ->
             let decls = Typeclass.approx_class_declarations env sdecls in
             let rem = approx_sig env srem in
@@ -270,7 +272,7 @@ let rec transl_modtype env smty =
   match smty.pmty_desc with
     Pmty_ident lid ->
       begin try
-        let (path, info) = Env.lookup_modtype lid env in 
+        let (path, info) = Env.lookup_modtype lid env in
         Tmty_ident path
       with Not_found ->
         raise(Error(smty.pmty_loc, Unbound_modtype lid))
@@ -291,7 +293,7 @@ let rec transl_modtype env smty =
             merge_constraint env smty.pmty_loc sg lid sdecl)
           init_sg constraints in
       Mtype.freshen (Tmty_signature final_sg)
-      
+
 and transl_signature env sg =
   let type_names = ref StringSet.empty
   and module_names = ref StringSet.empty
@@ -549,7 +551,7 @@ let rec type_module anchor env smod =
                mod_loc = smod.pmod_loc }
       | _ ->
           raise(Error(sfunct.pmod_loc, Cannot_apply funct.mod_type))
-      end        
+      end
   | Pmod_constraint(sarg, smty) ->
       let arg = type_module anchor env sarg in
       let mty = transl_modtype env smty in
@@ -598,7 +600,7 @@ and type_structure anchor env sstr =
           (fun (name, decl) -> check "type" loc type_names name)
           sdecls;
         let (decls, newenv) = Typedecl.transl_type_decl env sdecls in
-        let newenv' = 
+        let newenv' =
           enrich_type_decls anchor decls env newenv in
         let (str_rem, sig_rem, final_env) = type_struct newenv' srem in
         (Tstr_type decls :: str_rem,
@@ -675,8 +677,9 @@ and type_structure anchor env sstr =
         let (classes, new_env) = Typeclass.class_declarations env cl in
         let (str_rem, sig_rem, final_env) = type_struct new_env srem in
         (Tstr_class
-           (List.map (fun (i, _,_,_,_,_,_,_, s, m, c) ->
-              (i, s, m, c)) classes) ::
+           (List.map (fun (i, d, _,_,_,_,_,_, s, m, c) ->
+              let vf = if d.cty_new = None then Virtual else Concrete in
+              (i, s, m, c, vf)) classes) ::
          Tstr_cltype
            (List.map (fun (_,_, i, d, _,_,_,_,_,_,_) -> (i, d)) classes) ::
          Tstr_type
@@ -796,6 +799,7 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
     Misc.try_finally (fun () -> type_structure initial_env ast)
                      (fun () -> Typeext.register_exttypes (); Stypes.dump (outputprefix ^ ".annot"))
   in
+  let simple_sg = simplify_signature sg in
   Typecore.force_delayed_checks ();
 
   Typeext.flush_ext_annot finalenv;
@@ -812,30 +816,31 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
   if !Clflags.print_types then begin
     Typeext.solve finalenv;
     fprintf std_formatter "%a@." Printtyp.signature (simplify_signature sg);
-    (str, Tcoerce_none)
+    (str, Tcoerce_none)   (* result is ignored by Compile.implementation *)
   end else begin
-    let coercion =
-      let sourceintf =
-        Misc.chop_extension_if_any sourcefile ^ !Config.interface_suffix in
-      if Sys.file_exists sourceintf then begin
-        let intf_file =
-          try
-            find_in_path_uncap !Config.load_path (modulename ^ ".cmi")
-          with Not_found ->
-            raise(Error(Location.none, Interface_not_compiled sourceintf)) in
-        let dclsig = Env.read_signature modulename intf_file in
-        let coerc = Includemod.compunit sourcefile sg intf_file dclsig in
-	Typeext.solve finalenv;
-	coerc
-      end else begin	
-	Typeext.solve finalenv;
-        check_nongen_schemes finalenv str;
-        normalize_signature finalenv sg;
-        if not !Clflags.dont_write_files then
-          Env.save_signature sg modulename (outputprefix ^ ".cmi");
-        Tcoerce_none
-      end in
-    (str, coercion)
+    let sourceintf =
+      Misc.chop_extension_if_any sourcefile ^ !Config.interface_suffix in
+    if Sys.file_exists sourceintf then begin
+      let intf_file =
+        try
+          find_in_path_uncap !Config.load_path (modulename ^ ".cmi")
+        with Not_found ->
+          raise(Error(Location.none, Interface_not_compiled sourceintf)) in
+      let dclsig = Env.read_signature modulename intf_file in
+      let coercion = Includemod.compunit sourcefile sg intf_file dclsig in
+      Typeext.solve finalenv;
+      (str, coercion)
+    end else begin
+      Typeext.solve finalenv;
+      check_nongen_schemes finalenv str;
+      normalize_signature finalenv sg;
+      let coercion =
+        Includemod.compunit sourcefile sg
+                            "(inferred signature)" simple_sg in
+      if not !Clflags.dont_write_files then
+        Env.save_signature simple_sg modulename (outputprefix ^ ".cmi");
+      (str, coercion)
+    end
   end
 
 (* "Packaging" of several compilation units into one unit
@@ -855,7 +860,7 @@ let package_units objfiles cmifile modulename =
   let units =
     List.map
       (fun f ->
-         let pref = chop_extension_if_any f in
+         let pref = chop_extensions f in
          let modname = String.capitalize(Filename.basename pref) in
          let sg = Env.read_signature modname (pref ^ ".cmi") in
          if Filename.check_suffix f ".cmi" &&
@@ -874,7 +879,7 @@ let package_units objfiles cmifile modulename =
       raise(Error(Location.in_file mlifile, Interface_not_compiled mlifile))
     end;
     let dclsig = Env.read_signature modulename cmifile in
-    Includemod.compunit "(obtained by packing)" sg mlifile dclsig 
+    Includemod.compunit "(obtained by packing)" sg mlifile dclsig
   end else begin
     (* Determine imports *)
     let unit_names = List.map fst units in

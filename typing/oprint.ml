@@ -250,6 +250,7 @@ let out_type = ref print_out_type
 
 let type_parameter ppf (ty, (co, cn)) =
   fprintf ppf "%s'%s" (if not cn then "+" else if not co then "-" else "")
+    (*if co then if cn then "!" else "+" else if cn then "-" else "?"*)
     ty
 
 let print_out_class_params ppf =
@@ -291,8 +292,10 @@ and print_out_class_sig_item ppf =
       fprintf ppf "@[<2>method %s%s%s :@ %a@]"
         (if priv then "private " else "") (if virt then "virtual " else "")
         name !out_type ty
-  | Ocsg_value (name, mut, ty) ->
-      fprintf ppf "@[<2>val %s%s :@ %a@]" (if mut then "mutable " else "")
+  | Ocsg_value (name, mut, vr, ty) ->
+      fprintf ppf "@[<2>val %s%s%s :@ %a@]"
+        (if mut then "mutable " else "")
+        (if vr then "virtual " else "")
         name !out_type ty
 
 let out_class_type = ref print_out_class_type
@@ -388,20 +391,20 @@ and print_out_type_decl kwd ppf (name, args, ty, priv, constraints) =
     | _ -> ty
   in
   let print_private ppf = function
-    Asttypes.Private -> fprintf ppf "private "
+    Asttypes.Private -> fprintf ppf " private"
   | Asttypes.Public -> () in
   let rec print_out_tkind ppf = function
   | Otyp_abstract -> ()
   | Otyp_record lbls ->
-      fprintf ppf " = %a{%a@;<1 -2>}"
+      fprintf ppf " =%a {%a@;<1 -2>}"
         print_private priv
         (print_list_init print_out_label (fun ppf -> fprintf ppf "@ ")) lbls
   | Otyp_sum constrs ->
-      fprintf ppf " =@;<1 2>%a%a"
+      fprintf ppf " =%a@;<1 2>%a"
         print_private priv
         (print_list print_out_constr (fun ppf -> fprintf ppf "@ | ")) constrs
   | ty ->
-      fprintf ppf " =@;<1 2>%a%a"
+      fprintf ppf " =%a@;<1 2>%a"
         print_private priv
         !out_type ty
   in

@@ -29,13 +29,13 @@ let tl = function
     [] -> failwith "tl"
   | a::l -> l
 
-let rec nth l n =
-  match l with
-    [] -> failwith "nth"
-  | a::l ->
-      if n = 0 then a else
-      if n > 0 then nth l (n-1) else
-      invalid_arg "List.nth"
+let nth l n =
+  if n < 0 then invalid_arg "List.nth" else
+  let rec nth_aux l n =
+    match l with
+    | [] -> failwith "nth"
+    | a::l -> if n = 0 then a else nth_aux l (n-1)
+  in nth_aux l n
 
 let append = (@)
 

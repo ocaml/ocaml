@@ -21,7 +21,7 @@ CAMLC=$(RUNTIME) $(COMPILER)
 COMPFLAGS=-g -warn-error A -nostdlib
 OPTCOMPILER=../ocamlopt
 CAMLOPT=$(RUNTIME) $(OPTCOMPILER)
-OPTCOMPFLAGS=-warn-error A -nostdlib
+OPTCOMPFLAGS=-warn-error A -nostdlib -g
 CAMLDEP=../boot/ocamlrun ../tools/ocamldep
 
 OBJS=pervasives.cmo $(OTHERS)
@@ -89,6 +89,12 @@ camlheader camlheader_ur: header.c ../config/Makefile
 	  mv tmpheader$(EXE) camlheader && \
           cp camlheader camlheader_ur; \
         fi
+
+sys.ml: sys.mlp ../VERSION
+	sed -e "s|%%VERSION%%|`head -1 ../VERSION`|" sys.mlp >sys.ml
+
+clean::
+	rm -f sys.ml
 
 clean::
 	rm -f camlheader camlheader_ur

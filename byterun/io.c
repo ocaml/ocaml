@@ -69,6 +69,7 @@ CAMLexport struct channel * caml_open_descriptor_in(int fd)
   channel->revealed = 0;
   channel->old_revealed = 0;
   channel->refcount = 0;
+  channel->flags = 0;
   channel->next = caml_all_opened_channels;
   channel->prev = NULL;
   if (caml_all_opened_channels != NULL)
@@ -162,7 +163,7 @@ again:
       n = 1; goto again;
     }
   }
-  if (retcode == -1) caml_sys_error(NO_ARG);
+  if (retcode == -1) caml_sys_io_error(NO_ARG);
   return retcode;
 }
 
@@ -265,7 +266,7 @@ CAMLexport int caml_do_read(int fd, char *p, unsigned int n)
     retcode = read(fd, p, n);
     caml_leave_blocking_section();
   } while (retcode == -1 && errno == EINTR);
-  if (retcode == -1) caml_sys_error(NO_ARG);
+  if (retcode == -1) caml_sys_io_error(NO_ARG);
   return retcode;
 }
 
@@ -534,7 +535,7 @@ CAMLprim value caml_ml_flush_partial(value vchannel)
   struct channel * channel = Channel(vchannel);
   int res;
 
-  if (channel->fd == -1) CAMLreturn (Val_true);
+  if (channel->fd == -1) CAMLreturn(Val_true);
   Lock(channel);
   res = caml_flush_partial(channel);
   Unlock(channel);
@@ -546,7 +547,7 @@ CAMLprim value caml_ml_flush(value vchannel)
   CAMLparam1 (vchannel);
   struct channel * channel = Channel(vchannel);
 
-  if (channel->fd == -1) CAMLreturn (Val_unit);
+  if (channel->fd == -1) CAMLreturn(Val_unit);
   Lock(channel);
   caml_flush(channel);
   Unlock(channel);

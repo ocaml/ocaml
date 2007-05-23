@@ -29,6 +29,8 @@
         EXTERN	_caml_last_return_address: DWORD
         EXTERN	_caml_gc_regs: DWORD
 	EXTERN	_caml_exception_pointer: DWORD
+        EXTERN  _caml_backtrace_active: DWORD
+        EXTERN  _caml_stash_backtrace: PROC
 
 ; Allocation 
 
@@ -194,15 +196,53 @@ L108:
         or      eax, 2
         jmp     L109
 
+; Raise an exception for Caml
+
+        PUBLIC  _caml_raise_exn
+        ALIGN   4
+_caml_raise_exn:
+        test    _caml_backtrace_active, 1
+        jne     L110
+        mov	esp, _caml_exception_pointer
+        pop	_caml_exception_pointer
+        ret	
+L110:
+        mov     esi, eax                ; Save exception bucket in esi
+        mov     edi, _caml_exception_pointer ; SP of handler
+        mov     eax, [esp]              ; PC of raise
+        lea     edx, [esp+4]
+        push    edi                     ; arg 4: SP of handler
+        push    edx                     ; arg 3: SP of raise
+        push    eax                     ; arg 2: PC of raise
+        push    esi                     ; arg 1: exception bucket
+        call    _caml_stash_backtrace
+        mov     eax, esi                ; recover exception bucket
+        mov     esp, edi                ; cut the stack
+        pop     _caml_exception_pointer
+        ret
+
 ; Raise an exception from C 
 
         PUBLIC  _caml_raise_exception
         ALIGN  4
 _caml_raise_exception:
+        test    _caml_backtrace_active, 1
+        jne     L111
         mov	eax, [esp+4]
         mov	esp, _caml_exception_pointer
         pop	_caml_exception_pointer
         ret	
+L111:
+        mov     esi, [esp+4]            ; Save exception bucket in esi
+        push    _caml_exception_pointer ; arg 4: SP of handler
+        push    _caml_bottom_of_stack   ; arg 3: SP of raise
+        push    _caml_last_return_address ; arg 2: PC of raise
+        push    esi                     ; arg 1: exception bucket
+        call    _caml_stash_backtrace
+        mov     eax, esi                ; recover exception bucket
+        mov     esp, _caml_exception_pointer ; cut the stack
+        pop     _caml_exception_pointer
+        ret
 
 ; Callback from C to Caml 
 
@@ -263,8 +303,9 @@ _caml_ml_array_bound_error:
         ffree   st(5)
         ffree   st(6)
         ffree   st(7)
-    ; Branch to array_bound_error
-        jmp     _caml_array_bound_error
+    ; Branch to caml_array_bound_error
+        mov     eax, offset _caml_array_bound_error
+        jmp     _caml_c_call
 
         .DATA
         PUBLIC  _caml_system__frametable

@@ -87,8 +87,8 @@ let rec build_alias_list = function
       (
        match m.m_kind with
          Module_alias ma ->
-	   Hashtbl.add module_aliases m.m_name (ma.ma_name, Alias_to_resolve);
-	   Hashtbl.add module_and_modtype_aliases m.m_name (ma.ma_name, Alias_to_resolve)
+           Hashtbl.add module_aliases m.m_name (ma.ma_name, Alias_to_resolve);
+           Hashtbl.add module_and_modtype_aliases m.m_name (ma.ma_name, Alias_to_resolve)
        | _ -> ()
       );
       build_alias_list q
@@ -96,8 +96,8 @@ let rec build_alias_list = function
       (
        match mt.mt_kind with
          Some (Module_type_alias mta) ->
-	   Hashtbl.add module_and_modtype_aliases
-	     mt.mt_name (mta.mta_name, Alias_to_resolve)
+           Hashtbl.add module_and_modtype_aliases
+             mt.mt_name (mta.mta_name, Alias_to_resolve)
        | _ -> ()
       );
       build_alias_list q
@@ -106,8 +106,8 @@ let rec build_alias_list = function
        match e.ex_alias with
          None -> ()
        | Some ea ->
-	   Hashtbl.add exception_aliases
-	     e.ex_name (ea.ea_name,Alias_to_resolve)
+           Hashtbl.add exception_aliases
+             e.ex_name (ea.ea_name,Alias_to_resolve)
       );
       build_alias_list q
   | _ :: q ->
@@ -126,26 +126,26 @@ let name_alias =
   let rec f t name =
     try
       match Hashtbl.find t name with
-	(s, Alias_resolved) -> s
-      |	(s, Alias_to_resolve) -> f t s
+        (s, Alias_resolved) -> s
+      | (s, Alias_to_resolve) -> f t s
     with
       Not_found ->
-	try
-	  Hashtbl.iter
-	    (fun n2 (n3, _) ->
-	      if Name.prefix n2 name then
-		let ln2 = String.length n2 in
-		let s = n3^(String.sub name ln2 ((String.length name) - ln2)) in
-		raise (Found s)
-	    )
-	    t ;
-	  Hashtbl.replace t name (name, Alias_resolved);
-	  name
-	with
-	  Found s ->
-	    let s2 = f t s in
-	    Hashtbl.replace t s2 (s2, Alias_resolved);
-	    s2
+        try
+          Hashtbl.iter
+            (fun n2 (n3, _) ->
+              if Name.prefix n2 name then
+                let ln2 = String.length n2 in
+                let s = n3^(String.sub name ln2 ((String.length name) - ln2)) in
+                raise (Found s)
+            )
+            t ;
+          Hashtbl.replace t name (name, Alias_resolved);
+          name
+        with
+          Found s ->
+            let s2 = f t s in
+            Hashtbl.replace t s2 (s2, Alias_resolved);
+            s2
   in
   fun name alias_tbl ->
     f alias_tbl name
@@ -252,10 +252,10 @@ class scan =
       add_known_element e.ex_name (Odoc_search.Res_exception e)
     method scan_attribute a =
       add_known_element a.att_value.val_name
-	(Odoc_search.Res_attribute a)
+        (Odoc_search.Res_attribute a)
     method scan_method m =
       add_known_element m.met_value.val_name
-	(Odoc_search.Res_method m)
+        (Odoc_search.Res_method m)
     method scan_class_pre c =
       add_known_element c.cl_name (Odoc_search.Res_class c);
       true
@@ -614,113 +614,113 @@ let rec assoc_comments_text_elements parent_name module_list t_ele =
   | Ref (initial_name, None) ->
       (
        let rec iter_parent ?parent_name name =
-	 let res =
-	   match get_known_elements name with
-	     [] ->
-	       (
-		try
-		  let re = Str.regexp ("^"^(Str.quote name)^"$") in
-		  let t = Odoc_search.find_section module_list re in
-		  let v2 = (name, Some (RK_section t)) in
-		  add_verified v2 ;
-		  (name, Some (RK_section t))
-	      with
-		  Not_found ->
-		    (name, None)
-	       )
-	   | ele :: _ ->
-	   (* we look for the first element with this name *)
+         let res =
+           match get_known_elements name with
+             [] ->
+               (
+                try
+                  let re = Str.regexp ("^"^(Str.quote name)^"$") in
+                  let t = Odoc_search.find_section module_list re in
+                  let v2 = (name, Some (RK_section t)) in
+                  add_verified v2 ;
+                  (name, Some (RK_section t))
+              with
+                  Not_found ->
+                    (name, None)
+               )
+           | ele :: _ ->
+           (* we look for the first element with this name *)
                let (name, kind) =
-		 match ele with
-		   Odoc_search.Res_module m -> (m.m_name, RK_module)
-		 | Odoc_search.Res_module_type mt -> (mt.mt_name, RK_module_type)
-		 | Odoc_search.Res_class c -> (c.cl_name, RK_class)
-		 | Odoc_search.Res_class_type ct -> (ct.clt_name, RK_class_type)
-		 | Odoc_search.Res_value v -> (v.val_name, RK_value)
-		 | Odoc_search.Res_type t -> (t.ty_name, RK_type)
-		 | Odoc_search.Res_exception e -> (e.ex_name, RK_exception)
-		 | Odoc_search.Res_attribute a -> (a.att_value.val_name, RK_attribute)
-		 | Odoc_search.Res_method m -> (m.met_value.val_name, RK_method)
-		 | Odoc_search.Res_section (_ ,t)-> assert false
+                 match ele with
+                   Odoc_search.Res_module m -> (m.m_name, RK_module)
+                 | Odoc_search.Res_module_type mt -> (mt.mt_name, RK_module_type)
+                 | Odoc_search.Res_class c -> (c.cl_name, RK_class)
+                 | Odoc_search.Res_class_type ct -> (ct.clt_name, RK_class_type)
+                 | Odoc_search.Res_value v -> (v.val_name, RK_value)
+                 | Odoc_search.Res_type t -> (t.ty_name, RK_type)
+                 | Odoc_search.Res_exception e -> (e.ex_name, RK_exception)
+                 | Odoc_search.Res_attribute a -> (a.att_value.val_name, RK_attribute)
+                 | Odoc_search.Res_method m -> (m.met_value.val_name, RK_method)
+                 | Odoc_search.Res_section (_ ,t)-> assert false
                in
                add_verified (name, Some kind) ;
-	       (name, Some kind)
-	 in
-	 match res with
-	 | (name, Some k) -> Ref (name, Some k)
-	 | (_, None) ->
-	     match parent_name with
-	       None ->
-		 Odoc_messages.pwarning (Odoc_messages.cross_element_not_found initial_name);
-		 Ref (initial_name, None)
-	     | Some p ->
-		 let parent_name =
-		   match Name.father p with
-		     "" -> None
-		   | s -> Some s
-		 in
-		 iter_parent ?parent_name (Name.concat p initial_name)
+               (name, Some kind)
+         in
+         match res with
+         | (name, Some k) -> Ref (name, Some k)
+         | (_, None) ->
+             match parent_name with
+               None ->
+                 Odoc_messages.pwarning (Odoc_messages.cross_element_not_found initial_name);
+                 Ref (initial_name, None)
+             | Some p ->
+                 let parent_name =
+                   match Name.father p with
+                     "" -> None
+                   | s -> Some s
+                 in
+                 iter_parent ?parent_name (Name.concat p initial_name)
        in
        iter_parent ~parent_name initial_name
       )
   | Ref (initial_name, Some kind) ->
       (
        let rec iter_parent ?parent_name name =
-	 let v = (name, Some kind) in
-	 if was_verified v then
-	   Ref (name, Some kind)
-	 else
-	   let res =
-	     match kind with
-	     | RK_section _ ->
-		 (
-	          (** we just verify that we find an element of this kind with this name *)
-		  try
-		    let re = Str.regexp ("^"^(Str.quote name)^"$") in
-		    let t = Odoc_search.find_section module_list re in
-		    let v2 = (name, Some (RK_section t)) in
-		    add_verified v2 ;
-		    (name, Some (RK_section t))
-		  with
-		    Not_found ->
-		      (name, None)
-		 )
-	     | _ ->
-		 let f =
-		   match kind with
-		     RK_module -> module_exists
-		   | RK_module_type -> module_type_exists
-		   | RK_class -> class_exists
-		   | RK_class_type -> class_type_exists
-		   | RK_value -> value_exists
-		   | RK_type -> type_exists
-		   | RK_exception -> exception_exists
-		   | RK_attribute -> attribute_exists
-		   | RK_method -> method_exists
-		   | RK_section _ -> assert false
-		 in
-		 if f name then
-		   (
-		    add_verified v ;
-		    (name, Some kind)
-		   )
-		 else
-		   (name, None)
-	   in
-	   match res with
-	   | (name, Some k) -> Ref (name, Some k)
-	   | (_, None) ->
-	       match parent_name with
-		 None ->
-		   Odoc_messages.pwarning (not_found_of_kind kind initial_name);
-		   Ref (initial_name, None)
-	       | Some p ->
-		   let parent_name =
-		     match Name.father p with
-		       "" -> None
-		     | s -> Some s
-		   in
-		   iter_parent ?parent_name (Name.concat p initial_name)
+         let v = (name, Some kind) in
+         if was_verified v then
+           Ref (name, Some kind)
+         else
+           let res =
+             match kind with
+             | RK_section _ ->
+                 (
+                  (** we just verify that we find an element of this kind with this name *)
+                  try
+                    let re = Str.regexp ("^"^(Str.quote name)^"$") in
+                    let t = Odoc_search.find_section module_list re in
+                    let v2 = (name, Some (RK_section t)) in
+                    add_verified v2 ;
+                    (name, Some (RK_section t))
+                  with
+                    Not_found ->
+                      (name, None)
+                 )
+             | _ ->
+                 let f =
+                   match kind with
+                     RK_module -> module_exists
+                   | RK_module_type -> module_type_exists
+                   | RK_class -> class_exists
+                   | RK_class_type -> class_type_exists
+                   | RK_value -> value_exists
+                   | RK_type -> type_exists
+                   | RK_exception -> exception_exists
+                   | RK_attribute -> attribute_exists
+                   | RK_method -> method_exists
+                   | RK_section _ -> assert false
+                 in
+                 if f name then
+                   (
+                    add_verified v ;
+                    (name, Some kind)
+                   )
+                 else
+                   (name, None)
+           in
+           match res with
+           | (name, Some k) -> Ref (name, Some k)
+           | (_, None) ->
+               match parent_name with
+                 None ->
+                   Odoc_messages.pwarning (not_found_of_kind kind initial_name);
+                   Ref (initial_name, None)
+               | Some p ->
+                   let parent_name =
+                     match Name.father p with
+                       "" -> None
+                     | s -> Some s
+                   in
+                   iter_parent ?parent_name (Name.concat p initial_name)
        in
        iter_parent ~parent_name initial_name
       )
@@ -781,7 +781,7 @@ and assoc_comments_module_kind parent_name module_list mk =
   match mk with
   | Module_struct eles ->
       Module_struct
-	(List.map (assoc_comments_module_element parent_name module_list) eles)
+        (List.map (assoc_comments_module_element parent_name module_list) eles)
   | Module_alias _
   | Module_functor _ ->
       mk
@@ -792,22 +792,22 @@ and assoc_comments_module_kind parent_name module_list mk =
       Module_with (assoc_comments_module_type_kind parent_name module_list mtk, s)
   | Module_constraint (mk1, mtk) ->
       Module_constraint
-	(assoc_comments_module_kind parent_name module_list mk1,
+        (assoc_comments_module_kind parent_name module_list mk1,
          assoc_comments_module_type_kind parent_name module_list mtk)
 
 and assoc_comments_module_type_kind parent_name module_list mtk =
   match mtk with
   | Module_type_struct eles ->
       Module_type_struct
-	(List.map (assoc_comments_module_element parent_name module_list) eles)
+        (List.map (assoc_comments_module_element parent_name module_list) eles)
   | Module_type_functor (params, mtk1) ->
       Module_type_functor
-	(params, assoc_comments_module_type_kind parent_name module_list mtk1)
+        (params, assoc_comments_module_type_kind parent_name module_list mtk1)
   | Module_type_alias _ ->
       mtk
   | Module_type_with (mtk1, s) ->
       Module_type_with
-	(assoc_comments_module_type_kind parent_name module_list mtk1, s)
+        (assoc_comments_module_type_kind parent_name module_list mtk1, s)
 
 and assoc_comments_class_kind parent_name module_list ck =
   match ck with
@@ -815,12 +815,12 @@ and assoc_comments_class_kind parent_name module_list ck =
       let inher2 =
         List.map
           (fun ic ->
-	    { ic with
+            { ic with
               ic_text = ao (assoc_comments_text parent_name module_list) ic.ic_text })
           inher
       in
       Class_structure
-	(inher2, List.map (assoc_comments_class_element parent_name module_list) eles)
+        (inher2, List.map (assoc_comments_class_element parent_name module_list) eles)
 
   | Class_apply _
   | Class_constr _ -> ck
@@ -967,7 +967,3 @@ let associate module_list =
 
   (* Find a type for each name of element which is referenced in comments. *)
   ignore (associate_type_of_elements_in_comments module_list)
-
-
-
-(* eof $Id$ *)

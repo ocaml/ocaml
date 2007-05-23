@@ -16,7 +16,7 @@
 
 val link: string list -> string -> unit
 
-val check_consistency: string -> Emitcode.compilation_unit -> unit
+val check_consistency: string -> Cmo_format.compilation_unit -> unit
 
 val extract_crc_interfaces: unit -> (string * Digest.t) list
 

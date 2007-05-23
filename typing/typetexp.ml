@@ -221,9 +221,8 @@ let rec transl_type env policy styp =
                       row_fixed = false; row_more = newvar () } in
           let static = Btype.static_row row in
           let row =
-            if static then row else
-            { row with row_more =
-                if policy = Univars then new_pre_univar () else newvar () }
+            if static || policy <> Univars then row
+            else { row with row_more = new_pre_univar () }
           in
           newty (Tvariant row)
       | Tobject (fi, _) ->
@@ -248,7 +247,7 @@ let rec transl_type env policy styp =
           end;
           ty
         with Not_found ->
-          begin_def ();
+          if !Clflags.principal then begin_def ();
           let t = newvar () in
           used_variables := Tbl.add alias (t, styp.ptyp_loc) !used_variables;
           let ty = transl_type env policy st in
@@ -256,8 +255,10 @@ let rec transl_type env policy styp =
             let trace = swap_list trace in
             raise(Error(styp.ptyp_loc, Alias_type_mismatch trace))
           end;
-          end_def ();
-          generalize_structure t;
+          if !Clflags.principal then begin
+            end_def ();
+            generalize_structure t;
+          end;
           instance t
       end
   | Ptyp_variant(fields, closed, present) ->
@@ -270,8 +271,9 @@ let rec transl_type env policy styp =
         try
           let f' = List.assoc l fields in
           let ty = mkfield l f and ty' = mkfield l f' in
-          if equal env false [ty] [ty'] then fields
-          else raise(Error(loc, Constructor_mismatch (ty,ty')))
+          if equal env false [ty] [ty'] then fields else
+          try unify env ty ty'; fields
+          with Unify trace -> raise(Error(loc, Constructor_mismatch (ty,ty')))
         with Not_found ->
           (l, f) :: fields
       in
@@ -350,13 +352,9 @@ let rec transl_type env policy styp =
           row_fixed = false; row_name = !name } in
       let static = Btype.static_row row in
       let row =
-        if static then row else
-        { row with row_more =
-            if policy = Univars then new_pre_univar () else
-            if policy = Fixed && not static then
-              raise(Error(styp.ptyp_loc, Unbound_type_variable "[..]"))
-            else row.row_more
-        } in
+        if static || policy <> Univars then row
+        else { row with row_more = new_pre_univar () }
+      in
       newty (Tvariant row)
   | Ptyp_poly(vars, st) ->
       begin_def();

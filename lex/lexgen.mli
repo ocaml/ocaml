@@ -35,6 +35,7 @@ and memory_action =
 
 and tag_action = SetTag of int * int | EraseTag of int
 
+type ident = string *  Syntax.location
 
 (* Representation of entry points *)
 type tag_base = Start | End | Mem of int
@@ -42,7 +43,8 @@ type tag_addr = Sum of (tag_base * int)
 type ident_info =
   | Ident_string of bool * tag_addr * tag_addr
   | Ident_char of bool * tag_addr
-type t_env = (string * ident_info) list
+
+type t_env = (ident * ident_info) list
 
 type ('args,'action) automata_entry =
   { auto_name: string;

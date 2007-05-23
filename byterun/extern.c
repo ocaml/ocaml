@@ -299,7 +299,7 @@ static void extern_rec(value v)
     } else if (n >= -(1 << 15) && n < (1 << 15)) {
       writecode16(CODE_INT16, n);
 #ifdef ARCH_SIXTYFOUR
-    } else if (n < -(1L << 31) || n >= (1L << 31)) {
+    } else if (n < -((intnat)1 << 31) || n >= ((intnat)1 << 31)) {
       writecode64(CODE_INT64, n);
 #endif
     } else
@@ -401,7 +401,7 @@ static void extern_rec(value v)
       void (*serialize)(value v, uintnat * wsize_32,
                         uintnat * wsize_64)
         = Custom_ops_val(v)->serialize;
-      if (serialize == NULL) 
+      if (serialize == NULL)
         extern_invalid_argument("output_value: abstract value (Custom)");
       Write(CODE_CUSTOM);
       writeblock(ident, strlen(ident) + 1);
@@ -417,7 +417,7 @@ static void extern_rec(value v)
       if (tag < 16 && sz < 8) {
         Write(PREFIX_SMALL_BLOCK + tag + (sz << 4));
 #ifdef ARCH_SIXTYFOUR
-      } else if (hd >= (1UL << 32)) {
+      } else if (hd >= ((uintnat)1 << 32)) {
         writecode64(CODE_BLOCK64, Whitehd_hd (hd));
 #endif
       } else {
@@ -478,8 +478,8 @@ static intnat extern_value(value v, value flags)
   /* Write the sizes */
   res_len = extern_output_length();
 #ifdef ARCH_SIXTYFOUR
-  if (res_len >= (1L << 32) ||
-      size_32 >= (1L << 32) || size_64 >= (1L << 32)) {
+  if (res_len >= ((intnat)1 << 32) ||
+      size_32 >= ((intnat)1 << 32) || size_64 >= ((intnat)1 << 32)) {
     /* The object is so big its size cannot be written in the header.
        Besides, some of the array lengths or string lengths or shared offsets
        it contains may have overflowed the 32 bits used to write them. */
@@ -707,7 +707,7 @@ CAMLexport void caml_serialize_block_float_8(void * data, intnat len)
   memmove(extern_ptr, data, len * 8);
   extern_ptr += len * 8;
 #elif ARCH_FLOAT_ENDIANNESS == 0x76543210
-  { 
+  {
     unsigned char * p;
     char * q;
     for (p = data, q = extern_ptr; len > 0; len--, p += 8, q += 8)
@@ -715,7 +715,7 @@ CAMLexport void caml_serialize_block_float_8(void * data, intnat len)
     extern_ptr = q;
   }
 #else
-  { 
+  {
     unsigned char * p;
     char * q;
     for (p = data, q = extern_ptr; len > 0; len--, p += 8, q += 8)

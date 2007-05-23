@@ -170,7 +170,7 @@ static value event_for_location(value events, code_t pc)
 
 static void print_location(value events, int index)
 {
-  code_t pc = caml_backtrace_buffer[index];
+   code_t pc = caml_backtrace_buffer[index];
   char * info;
   value ev;
 

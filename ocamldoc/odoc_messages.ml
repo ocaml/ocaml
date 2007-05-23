@@ -45,6 +45,7 @@ let add_load_dir = "<dir>\tAdd the given directory to the search path for custom
 let load_file = "<file.cm[o|a]>\n\t\tLoad file defining a new documentation generator\n\t\t"^bytecode_only
 let nolabels = "\tIgnore non-optional labels in types"
 let werr = "\tTreat ocamldoc warnings as errors"
+let hide_warnings = "\n\t\tdo not print ocamldoc warnings"
 let target_dir = "<dir>\tGenerate files in directory <dir>, rather than in current\n"^
   "\t\tdirectory (for man and HTML generators)"
 let dump = "<file>\tDump collected information into <file>"
@@ -211,7 +212,7 @@ let merge_options =
 
 let warning = "Warning"
 let pwarning s =
-  prerr_endline (warning^": "^s);
+  if !Odoc_config.print_warnings then prerr_endline (warning^": "^s);
   if !Odoc_global.warn_error then incr Odoc_global.errors
 
 let bad_magic_number =

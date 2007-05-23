@@ -341,5 +341,3 @@ let info_of_comment_file modlist f =
   with
     Sys_error s ->
       failwith s
-
-(* eof $Id$ *)

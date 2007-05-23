@@ -110,6 +110,7 @@ module Naming =
         | ':' -> st "_column_"
         | '~' -> st "_tilde_"
         | '!' -> st "_bang_"
+        | '?' -> st "_questionmark_"
         | c -> ch c
       done;
       Buffer.contents buf
@@ -899,7 +900,7 @@ class html =
         in
         bs b "<head>\n";
         bs b style;
-	bs b character_encoding ;
+        bs b character_encoding ;
         bs b "<link rel=\"Start\" href=\"";
         bs b self#index;
         bs b "\">\n" ;
@@ -1168,21 +1169,21 @@ class html =
           bs b (self#create_fully_qualified_module_idents_links father a.ma_name);
           bs b "</code>"
       | Module_functor (p, k) ->
-	  if !Odoc_info.Args.html_short_functors then
-	    bs b " "
-	  else
+          if !Odoc_info.Args.html_short_functors then
+            bs b " "
+          else
             bs b "<div class=\"sig_block\">";
           self#html_of_module_parameter b father p;
-	  (
-	   match k with
-	     Module_functor _ -> ()
-	   | _ when !Odoc_info.Args.html_short_functors ->
-	       bs b ": "
-	   | _ -> ()
-	  );
+          (
+           match k with
+             Module_functor _ -> ()
+           | _ when !Odoc_info.Args.html_short_functors ->
+               bs b ": "
+           | _ -> ()
+          );
           self#html_of_module_kind b father ?modu k;
           if not !Odoc_info.Args.html_short_functors then
-	    bs b "</div>"
+            bs b "</div>"
       | Module_apply (k1, k2) ->
           (* TODO: l'application n'est pas correcte dans un .mli.
              Que faire ? -> afficher le module_type du typedtree  *)
@@ -1202,10 +1203,10 @@ class html =
 
     method html_of_module_parameter b father p =
       let (s_functor,s_arrow) =
-	if !Odoc_info.Args.html_short_functors then
-	  "", ""
-	else
-	  "functor ", "-> "
+        if !Odoc_info.Args.html_short_functors then
+          "", ""
+        else
+          "functor ", "-> "
       in
       self#html_of_text b
         [
@@ -1647,8 +1648,8 @@ class html =
       );
       (
        match m.m_kind with
-	 Module_functor _ when !Odoc_info.Args.html_short_functors  ->
-	   ()
+         Module_functor _ when !Odoc_info.Args.html_short_functors  ->
+           ()
        | _ -> bs b ": "
       );
       self#html_of_module_kind b father ~modu: m m.m_kind;
@@ -2062,7 +2063,7 @@ class html =
         let b = new_buf () in
         let pre_name = opt (fun c -> c.cl_name) pre in
         let post_name = opt (fun c -> c.cl_name) post in
-	bs b doctype ;
+        bs b doctype ;
         bs b "<html>\n";
         self#print_header b
           ~nav: (Some (pre_name, post_name, cl.cl_name))
@@ -2109,7 +2110,7 @@ class html =
         let b = new_buf () in
         let pre_name = opt (fun ct -> ct.clt_name) pre in
         let post_name = opt (fun ct -> ct.clt_name) post in
-	bs b doctype ;
+        bs b doctype ;
         bs b "<html>\n";
         self#print_header b
           ~nav: (Some (pre_name, post_name, clt.clt_name))
@@ -2155,7 +2156,7 @@ class html =
         let b = new_buf () in
         let pre_name = opt (fun mt -> mt.mt_name) pre in
         let post_name = opt (fun mt -> mt.mt_name) post in
-	bs b doctype ;
+        bs b doctype ;
         bs b "<html>\n";
         self#print_header b
           ~nav: (Some (pre_name, post_name, mt.mt_name))
@@ -2223,7 +2224,7 @@ class html =
         let b = new_buf () in
         let pre_name = opt (fun m -> m.m_name) pre in
         let post_name = opt (fun m -> m.m_name) post in
-	bs b doctype ;
+        bs b doctype ;
         bs b "<html>\n";
         self#print_header b
           ~nav: (Some (pre_name, post_name, modu.m_name))
@@ -2232,16 +2233,16 @@ class html =
         bs b "<body>\n" ;
         self#print_navbar b pre_name post_name modu.m_name ;
         bs b "<center><h1>";
-	if modu.m_text_only then
-	  bs b modu.m_name
-	else
-	  (
+        if modu.m_text_only then
+          bs b modu.m_name
+        else
+          (
            bs b
              (
               if Module.module_is_functor modu then
-		Odoc_messages.functo
+                Odoc_messages.functo
               else
-		Odoc_messages.modul
+                Odoc_messages.modul
              );
            bp b " <a href=\"%s\">%s</a>" type_file modu.m_name;
            (
@@ -2249,7 +2250,7 @@ class html =
               None -> ()
             | Some _ -> bp b " (<a href=\"%s\">.ml</a>)" code_file
            )
-	  );
+          );
         bs b "</h1></center>\n<br>\n";
 
         if not modu.m_text_only then self#html_of_module b ~with_link: false modu;
@@ -2304,7 +2305,7 @@ class html =
         let chanout = open_out (Filename.concat !Args.target_dir self#index) in
         let b = new_buf () in
         let title = match !Args.title with None -> "" | Some t -> self#escape t in
-	bs b doctype ;
+        bs b doctype ;
         bs b "<html>\n";
         self#print_header b self#title;
         bs b "<body>\n";
@@ -2313,7 +2314,7 @@ class html =
         bs b "</h1></center>\n" ;
         let info = Odoc_info.apply_opt
             (Odoc_info.info_of_comment_file module_list)
-	    !Odoc_info.Args.intro_file
+            !Odoc_info.Args.intro_file
         in
         (
          match info with
@@ -2322,7 +2323,7 @@ class html =
              bs b "<br/>";
              self#html_of_Module_list b
                (List.map (fun m -> m.m_name) module_list);
-	     bs b "</body>\n</html>"
+             bs b "</body>\n</html>"
          | Some i -> self#html_of_info ~indent: false b info
         );
         Buffer.output_buffer chanout b;

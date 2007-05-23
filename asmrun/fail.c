@@ -62,7 +62,7 @@ void caml_raise(value v)
 #else
 #define PUSHED_AFTER >
 #endif
-  while (caml_local_roots != NULL && 
+  while (caml_local_roots != NULL &&
          (char *) caml_local_roots PUSHED_AFTER caml_exception_pointer) {
     caml_local_roots = caml_local_roots->next;
   }
@@ -94,17 +94,17 @@ void caml_raise_with_arg(value tag, value arg)
   CAMLnoreturn;
 }
 
-void caml_raise_with_string(value tag, char *msg)
+void caml_raise_with_string(value tag, char const *msg)
 {
   caml_raise_with_arg(tag, caml_copy_string(msg));
 }
 
-void caml_failwith (char *msg)
+void caml_failwith (char const *msg)
 {
   caml_raise_with_string((value) caml_exn_Failure, msg);
 }
 
-void caml_invalid_argument (char *msg)
+void caml_invalid_argument (char const *msg)
 {
   caml_raise_with_string((value) caml_exn_Invalid_argument, msg);
 }

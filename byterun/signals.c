@@ -13,6 +13,8 @@
 
 /* $Id$ */
 
+/* Signal handling, code common to the bytecode and native systems */
+
 #include <signal.h>
 #include "alloc.h"
 #include "callback.h"
@@ -30,20 +32,14 @@
 #define NSIG 64
 #endif
 
-#ifdef _WIN32
-typedef void (*sighandler)(int sig);
-extern sighandler caml_win32_signal(int sig, sighandler action);
-#define signal(sig,act) caml_win32_signal(sig,act)
-#endif
+/* The set of pending signals (received but not yet processed) */
 
 CAMLexport intnat volatile caml_signals_are_pending = 0;
 CAMLexport intnat volatile caml_pending_signals[NSIG];
-CAMLexport int volatile caml_something_to_do = 0;
-int volatile caml_force_major_slice = 0;
-value caml_signal_handlers = 0;
-CAMLexport void (* volatile caml_async_action_hook)(void) = NULL;
 
-static void caml_process_pending_signals(void)
+/* Execute all pending signals */
+
+void caml_process_pending_signals(void)
 {
   int i;
 
@@ -58,19 +54,25 @@ static void caml_process_pending_signals(void)
   }
 }
 
-void caml_process_event(void)
-{
-  void (*async_action)(void);
+/* Record the delivery of a signal, and arrange for it to be processed
+   as soon as possible:
+   - in bytecode: via caml_something_to_do, processed in caml_process_event
+   - in native-code: by playing with the allocation limit, processed
+       in caml_garbage_collection
+*/
 
-  if (caml_force_major_slice) caml_minor_collection ();
-                             /* FIXME should be [caml_check_urgent_gc] */
-  caml_process_pending_signals();
-  async_action = caml_async_action_hook;
-  if (async_action != NULL) {
-    caml_async_action_hook = NULL;
-    (*async_action)();
-  }
+void caml_record_signal(int signal_number)
+{
+  caml_pending_signals[signal_number] = 1;
+  caml_signals_are_pending = 1;
+#ifndef NATIVE_CODE
+  caml_something_to_do = 1;
+#else
+  caml_young_limit = caml_young_end;
+#endif
 }
+
+/* Management of blocking sections. */
 
 static intnat volatile caml_async_signal_mode = 0;
 
@@ -100,9 +102,28 @@ CAMLexport void (*caml_leave_blocking_section_hook)(void) =
 CAMLexport int (*caml_try_leave_blocking_section_hook)(void) =
    caml_try_leave_blocking_section_default;
 
-CAMLexport int caml_rev_convert_signal_number(int signo);
+CAMLexport void caml_enter_blocking_section(void)
+{
+  while (1){
+    /* Process all pending signals now */
+    caml_process_pending_signals();
+    caml_enter_blocking_section_hook ();
+    /* Check again for pending signals.
+       If none, done; otherwise, try again */
+    if (! caml_signals_are_pending) break;
+    caml_leave_blocking_section_hook ();
+  }
+}
+
+CAMLexport void caml_leave_blocking_section(void)
+{
+  caml_leave_blocking_section_hook ();
+  caml_process_pending_signals();
+}
 
 /* Execute a signal handler immediately */
+
+static value caml_signal_handlers = 0;
 
 void caml_execute_signal(int signal_number, int in_signal_handler)
 {
@@ -131,54 +152,25 @@ void caml_execute_signal(int signal_number, int in_signal_handler)
   if (Is_exception_result(res)) caml_raise(Extract_exception(res));
 }
 
-/* Record the delivery of a signal, and arrange so that caml_process_event
-   is called as soon as possible. */
+/* Arrange for a garbage collection to be performed as soon as possible */
 
-void caml_record_signal(int signal_number)
-{
-  caml_pending_signals[signal_number] = 1;
-  caml_signals_are_pending = 1;
-  caml_something_to_do = 1;
-}
-
-static void handle_signal(int signal_number)
-{
-#if !defined(POSIX_SIGNALS) && !defined(BSD_SIGNALS)
-  signal(signal_number, handle_signal);
-#endif
-  if (signal_number < 0 || signal_number >= NSIG) return;
-  if (caml_try_leave_blocking_section_hook()) {
-    caml_execute_signal(signal_number, 1);
-    caml_enter_blocking_section_hook();
-  }else{
-    caml_record_signal(signal_number);
- }
-}
+int volatile caml_force_major_slice = 0;
 
 void caml_urge_major_slice (void)
 {
   caml_force_major_slice = 1;
+#ifndef NATIVE_CODE
   caml_something_to_do = 1;
+#else
+  caml_young_limit = caml_young_end;
+  /* This is only moderately effective on ports that cache [caml_young_limit]
+     in a register, since [caml_modify] is called directly, not through
+     [caml_c_call], so it may take a while before the register is reloaded
+     from [caml_young_limit]. */
+#endif
 }
 
-CAMLexport void caml_enter_blocking_section(void)
-{
-  while (1){
-    /* Process all pending signals now */
-    caml_process_pending_signals();
-    caml_enter_blocking_section_hook ();
-    /* Check again for pending signals.
-       If none, done; otherwise, try again */
-    if (! caml_signals_are_pending) break;
-    caml_leave_blocking_section_hook ();
-  }
-}
-
-CAMLexport void caml_leave_blocking_section(void)
-{
-  caml_leave_blocking_section_hook ();
-  caml_process_pending_signals();
-}
+/* OS-independent numbering of signals */
 
 #ifndef SIGABRT
 #define SIGABRT -1
@@ -266,48 +258,43 @@ CAMLexport int caml_rev_convert_signal_number(int signo)
   return signo;
 }
 
+/* Installation of a signal handler (as per [Sys.signal]) */
+
 CAMLprim value caml_install_signal_handler(value signal_number, value action)
 {
   CAMLparam2 (signal_number, action);
-  int sig;
-  void (*act)(int signo), (*oldact)(int signo);
-#ifdef POSIX_SIGNALS
-  struct sigaction sigact, oldsigact;
-#endif
   CAMLlocal1 (res);
+  int sig, act, oldact;
 
   sig = caml_convert_signal_number(Int_val(signal_number));
   if (sig < 0 || sig >= NSIG) 
     caml_invalid_argument("Sys.signal: unavailable signal");
   switch(action) {
   case Val_int(0):              /* Signal_default */
-    act = SIG_DFL;
+    act = 0;
     break;
   case Val_int(1):              /* Signal_ignore */
-    act = SIG_IGN;
+    act = 1;
     break;
   default:                      /* Signal_handle */
-    act = handle_signal;
+    act = 2;
     break;
   }
-#ifdef POSIX_SIGNALS
-  sigact.sa_handler = act;
-  sigemptyset(&sigact.sa_mask);
-  sigact.sa_flags = 0;
-  if (sigaction(sig, &sigact, &oldsigact) == -1) caml_sys_error(NO_ARG);
-  oldact = oldsigact.sa_handler;
-#else
-  oldact = signal(sig, act);
-  if (oldact == SIG_ERR) caml_sys_error(NO_ARG);
-#endif
-  if (oldact == handle_signal) {
-    res = caml_alloc_small (1, 0);          /* Signal_handle */
+  oldact = caml_set_signal_action(sig, act);
+  switch (oldact) {
+  case 0:                       /* was Signal_default */
+    res = Val_int(0);
+    break;
+  case 1:                       /* was Signal_ignore */
+    res = Val_int(1);
+    break;
+  case 2:                       /* was Signal_handle */
+    res = caml_alloc_small (1, 0);
     Field(res, 0) = Field(caml_signal_handlers, sig);
+    break;
+  default:                      /* error in caml_set_signal_action */
+    caml_sys_error(NO_ARG);
   }
-  else if (oldact == SIG_IGN)
-    res = Val_int(1);           /* Signal_ignore */
-  else
-    res = Val_int(0);           /* Signal_default */
   if (Is_block(action)) {
     if (caml_signal_handlers == 0) {
       caml_signal_handlers = caml_alloc(NSIG, 0);

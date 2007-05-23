@@ -140,8 +140,8 @@ let rec rename i sub =
       end
   | Iop _ ->
       let (new_next, sub_next) = rename i.next sub in
-      (instr_cons i.desc (subst_regs i.arg sub) (subst_regs i.res sub)
-                         new_next,
+      (instr_cons_debug i.desc (subst_regs i.arg sub) (subst_regs i.res sub)
+                        i.dbg new_next,
        sub_next)
   | Iifthenelse(tst, ifso, ifnot) ->
       let (new_ifso, sub_ifso) = rename ifso sub in
@@ -187,7 +187,7 @@ let rec rename i sub =
       (instr_cons (Itrywith(new_body, new_handler)) [||] [||] new_next,
        sub_next)
   | Iraise ->
-      (instr_cons Iraise (subst_regs i.arg sub) [||] i.next,
+      (instr_cons_debug Iraise (subst_regs i.arg sub) [||] i.dbg i.next,
        None)
       
 (* Second pass: replace registers by their final representatives *)

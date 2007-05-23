@@ -20,37 +20,7 @@ open Asttypes
 open Lambda
 open Instruct
 open Opcodes
-
-
-(* Relocation information *)
-
-type reloc_info =
-    Reloc_literal of structured_constant    (* structured constant *)
-  | Reloc_getglobal of Ident.t             (* reference to a global *)
-  | Reloc_setglobal of Ident.t             (* definition of a global *)
-  | Reloc_primitive of string               (* C primitive number *)
-
-(* Descriptor for compilation units *)
-
-type compilation_unit =
-  { cu_name: string;                    (* Name of compilation unit *)
-    mutable cu_pos: int;                (* Absolute position in file *)
-    cu_codesize: int;                   (* Size of code block *)
-    cu_reloc: (reloc_info * int) list;  (* Relocation information *)
-    cu_imports: (string * Digest.t) list; (* Names and CRC of intfs imported *)
-    cu_primitives: string list;         (* Primitives declared inside *)
-    mutable cu_force_link: bool;        (* Must be linked even if unref'ed *)
-    mutable cu_debug: int;              (* Position of debugging info, or 0 *)
-    cu_debugsize: int }                 (* Length of debugging info *)
-
-(* Descriptor for libraries *)
-
-type library =
-  { lib_units: compilation_unit list;   (* List of compilation units *)
-    lib_custom: bool;                   (* Requires custom mode linking? *)
-    lib_ccobjs: string list;            (* C object files needed for -custom *)
-    lib_ccopts: string list;            (* Extra opts to C compiler *)
-    lib_dllibs: string list }           (* DLLs needed *)
+open Cmo_format
 
 (* Buffering of bytecode *)
 

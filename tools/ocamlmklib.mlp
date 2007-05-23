@@ -13,18 +13,11 @@
 (* $Id$ *)
 
 open Printf
-
-let bindir = "%%BINDIR%%"
-and supports_shared_libraries = %%SUPPORTS_SHARED_LIBRARIES%%
-and mksharedlib = "%%MKSHAREDLIB%%"
-and bytecc_rpath = "%%BYTECCRPATH%%"
-and nativecc_rpath = "%%NATIVECCRPATH%%"
-and mksharedlib_rpath = "%%MKSHAREDLIBRPATH%%"
-and ranlib = "%%RANLIB%%"
+open Myocamlbuild_config
 
 let bytecode_objs = ref []  (* .cmo,.cma,.ml,.mli files to pass to ocamlc *)
 and native_objs = ref []    (* .cmx,.cmxa,.ml,.mli files to pass to ocamlopt *)
-and c_objs = ref []         (* .o, .a files to pass to mksharedlib and ar *)
+and c_objs = ref []         (* .o, .a, .obj, .lib files to pass to mksharedlib and ar *)
 and caml_libs = ref []      (* -cclib to pass to ocamlc, ocamlopt *)
 and caml_opts = ref []      (* -ccopt to pass to ocamlc, ocamlopt *)
 and dynlink = ref supports_shared_libraries
@@ -37,6 +30,7 @@ and ocamlopt = ref (Filename.concat bindir "ocamlopt")
 and output = ref "a"        (* Output name for Caml part of library *)
 and output_c = ref ""       (* Output name for C part of library *)
 and rpath = ref []          (* rpath options *)
+and implib = ref ""         (* windows implib flag *)
 and verbose = ref false
 
 let starts_with s pref =
@@ -69,7 +63,7 @@ let parse_arguments argv =
     else if ends_with s ".ml" || ends_with s ".mli" then
      (bytecode_objs := s :: !bytecode_objs;
       native_objs := s :: !native_objs)
-    else if ends_with s ".o" || ends_with s ".a" then
+    else if List.exists (ends_with s) [".o"; ".a"; ".obj"; ".lib"] then
       c_objs := s :: !c_objs
     else if s = "-cclib" then
       caml_libs := next_arg () :: "-cclib" :: !caml_libs
@@ -77,6 +71,8 @@ let parse_arguments argv =
       caml_opts := next_arg () :: "-ccopt" :: !caml_opts
     else if s = "-custom" then
       dynlink := false
+    else if s = "-implib" then
+      implib := next_arg ()
     else if s = "-I" then
       caml_opts := next_arg () :: "-I" :: !caml_opts
     else if s = "-failsafe" then
@@ -135,7 +131,7 @@ let parse_arguments argv =
   if !output_c = "" then output_c := !output
 
 let usage = "\
-Usage: ocamlmklib [options] <.cmo|.cma|.cmx|.cmxa|.ml|.mli|.o|.a files>
+Usage: ocamlmklib [options] <.cmo|.cma|.cmx|.cmxa|.ml|.mli|.o|.a|.obj|.lib files>
 Options are:
   -cclib <lib>   C library passed to ocamlc -a or ocamlopt -a only
   -ccopt <opt>   C option passed to ocamlc -a or ocamlopt -a only
@@ -202,25 +198,20 @@ let build_libs () =
   if !c_objs <> [] then begin
     if !dynlink then begin
       let retcode = command
-        (sprintf "%s %s %s %s %s %s %s"
-                    mksharedlib
-                    (prepostfix "dll" !output_c ".so")
+        (mkdll (prepostfix "dll" !output_c ext_dll)
+               !implib
+               (sprintf "%s %s %s %s %s"
                     (String.concat " " !c_objs)
                     (String.concat " " !c_opts)
                     (String.concat " " !ld_opts)
-                    (make_rpath mksharedlib_rpath)
-                    (String.concat " " !c_libs)) in
+                    (make_rpath mksharedlibrpath)
+                    (String.concat " " !c_libs)) "") in
       if retcode <> 0 then if !failsafe then dynlink := false else exit 2
     end;
-    safe_remove (prepostfix "lib" !output_c ".a");
+    safe_remove (prepostfix "lib" !output_c ext_lib);
     scommand
-      (sprintf "ar rc %s %s"
-                  (prepostfix "lib" !output_c ".a")
-                  (String.concat " " !c_objs));
-    scommand
-      (sprintf "%s %s"
-                  ranlib
-                  (prepostfix "lib" !output_c ".a"))
+      (mklib (prepostfix "lib" !output_c ext_lib)
+             (String.concat " " !c_objs) "");
   end;
   if !bytecode_objs <> [] then
     scommand
@@ -230,10 +221,10 @@ let build_libs () =
                   !output
                   (String.concat " " !caml_opts)
                   (String.concat " " !bytecode_objs)
-                  !output_c
-                  !output_c
+                  (Filename.basename !output_c)
+                  (Filename.basename !output_c)
                   (String.concat " " (prefix_list "-ccopt " !c_opts))
-                  (make_rpath_ccopt bytecc_rpath)
+                  (make_rpath_ccopt byteccrpath)
                   (String.concat " " (prefix_list "-cclib " !c_libs))
                   (String.concat " " !caml_libs));
   if !native_objs <> [] then
@@ -243,9 +234,9 @@ let build_libs () =
                   !output
                   (String.concat " " !caml_opts)
                   (String.concat " " !native_objs)
-                  !output_c
+                  (Filename.basename !output_c)
                   (String.concat " " (prefix_list "-ccopt " !c_opts))
-                  (make_rpath_ccopt nativecc_rpath)
+                  (make_rpath_ccopt nativeccrpath)
                   (String.concat " " (prefix_list "-cclib " !c_libs))
                   (String.concat " " !caml_libs))
 

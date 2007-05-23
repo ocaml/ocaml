@@ -23,6 +23,7 @@ open Location
 open Obj
 open Opcodes
 open Opnames
+open Cmo_format
 open Printf
 
 (* Read signed and unsigned integers *)

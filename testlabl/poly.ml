@@ -554,3 +554,37 @@ let f5 x =
   (x : <m:'a. [< `A of <p:int> ] as 'a> :> <m:'a. [< `A of < > ] as 'a>);;
 let f6 x =
   (x : <m:'a. [< `A of < > ] as 'a> :> <m:'a. [< `A of <p:int> ] as 'a>);;
+
+(* Not really principal? *)
+class c = object method id : 'a. 'a -> 'a = fun x -> x end;;
+type u = c option;;
+let just = function None -> failwith "just" | Some x -> x;;
+let f x = let l = [Some x; (None : u)] in (just(List.hd l))#id;;
+let g x =
+  let none = match None with y -> ignore [y;(None:u)]; y in
+  let x = List.hd [Some x; none] in (just x)#id;;
+let h x =
+  let none = let y = None in ignore [y;(None:u)]; y in
+  let x = List.hd [Some x; none] in (just x)#id;;
+
+(* polymorphic recursion *)
+(*
+let rec 'a. f : 'a -> _ = fun x -> 1 and g x = f x;;
+type 'a t = Leaf of 'a | Node of ('a * 'a) t;;
+let rec 'a. depth : 'a t -> _ =
+  function Leaf _ -> 1 | Node x -> 1 + d x
+and d x = depth x;;
+let rec 'a. depth : 'a t -> _ =
+  function Leaf _ -> 1 | Node x -> 1 + depth x;;
+let rec 'a. depth : 'a t -> _ =
+  function Leaf x -> x | Node x -> 1 + depth x;;
+let rec 'a. depth : 'a t -> _ =
+  function Leaf x -> x | Node x -> depth x;;
+let rec 'a 'b. depth : 'a t -> 'b =
+  function Leaf x -> x | Node x -> depth x;;
+let rec 'a. r : 'a list * 'b list ref = [], ref []
+and q () = r;;
+let rec 'a. f : _ -> _ = fun x -> x;;
+let 'a as [> `Int of int | `B of 'b] 'b. zero : 'a = `Int 0;;
+let 'a as [< `Int of int]. zero : 'a = `Int 0;;
+*)

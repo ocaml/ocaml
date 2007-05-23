@@ -21,7 +21,7 @@ DFLAGS=-DCAML_NAME_SPACE -g -DDEBUG $(BYTECCCOMPOPTS)
 
 OBJS=interp.o misc.o stacks.o fix_code.o startup.o main.o \
   freelist.o major_gc.o minor_gc.o memory.o alloc.o roots.o globroots.o \
-  fail.o signals.o printexc.o backtrace.o \
+  fail.o signals.o signals_byt.o printexc.o backtrace.o \
   compare.o ints.o floats.o str.o array.o io.o extern.o intern.o \
   hash.o sys.o meta.o parsing.o gc_ctrl.o terminfo.o md5.o obj.o \
   lexing.o callback.o debugger.o weak.o compact.o finalise.o custom.o \
@@ -72,6 +72,7 @@ libcamlrund.a: $(DOBJS)
 clean:
 	rm -f ocamlrun$(EXE) ocamlrund$(EXE) *.o lib*.a
 	rm -f primitives prims.c opnames.h jumptbl.h ld.conf
+	rm -f version.h
 
 primitives : $(PRIMS)
 	sed -n -e "s/CAMLprim value \([a-z0-9_][a-z0-9_]*\).*/\1/p" \
@@ -100,10 +101,8 @@ jumptbl.h : instruct.h
 	sed -n -e '/^  /s/ \([A-Z]\)/ \&\&lbl_\1/gp' \
 	       -e '/^}/q' instruct.h > jumptbl.h
 
-version.h : ../stdlib/sys.ml
-	sed -n -e 's/;;//' \
-            -e '/let *ocaml_version *= */s//#define OCAML_VERSION /p' \
-            <../stdlib/sys.ml >version.h
+version.h : ../VERSION
+	echo "#define OCAML_VERSION \"`head -1 ../VERSION`\"" >version.h
 
 .SUFFIXES: .d.o
 
@@ -114,7 +113,7 @@ version.h : ../stdlib/sys.ml
 	@ if test -f $*.f.o; then mv $*.f.o $*.o; else :; fi
 
 depend : prims.c opnames.h jumptbl.h version.h
-	gcc -MM $(BYTECCCOMPOPTS) *.c > .depend
-	gcc -MM $(BYTECCCOMPOPTS) -DDEBUG *.c | sed -e 's/\.o/.d.o/' >> .depend
+	-gcc -MM $(BYTECCCOMPOPTS) *.c > .depend
+	-gcc -MM $(BYTECCCOMPOPTS) -DDEBUG *.c | sed -e 's/\.o/.d.o/' >> .depend
 
 include .depend

@@ -46,8 +46,7 @@ val create_table : string array -> table
 val init_class : table -> unit
 val inherits :
     table -> string array -> string array -> string array ->
-    (t * (table -> obj -> Obj.t) * t * obj) -> bool ->
-    (Obj.t * int array * closure array)
+    (t * (table -> obj -> Obj.t) * t * obj) -> bool -> Obj.t array
 val make_class :
     string array -> (table -> Obj.t -> t) ->
     (t * (table -> Obj.t -> t) * (Obj.t -> t) * Obj.t)
@@ -79,6 +78,7 @@ val lookup_tables : tables -> closure array -> tables
 
 (** {6 Builtins to reduce code size} *)
 
+(*
 val get_const : t -> closure
 val get_var : int -> closure
 val get_env : int -> int -> closure
@@ -103,6 +103,7 @@ val send_const : tag -> obj -> int -> closure
 val send_var : tag -> int -> int -> closure
 val send_env : tag -> int -> int -> int -> closure
 val send_meth : tag -> label -> int -> closure
+*)
 
 type impl =
     GetConst

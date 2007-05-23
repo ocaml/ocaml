@@ -17,7 +17,7 @@ include ../config/Makefile
 CAMLC=../boot/ocamlrun ../ocamlc
 CAMLOPT=../boot/ocamlrun ../ocamlopt
 COMPFLAGS=-nostdlib -I ../stdlib -I KB -I Lex
-OPTFLAGS=-S
+OPTFLAGS=-S -g
 CAMLYACC=../yacc/ocamlyacc
 YACCFLAGS=-v
 CAMLLEX=../boot/ocamlrun ../lex/ocamllex
@@ -91,6 +91,12 @@ clean::
 	rm -f Lex/scanner.ml
 beforedepend:: Lex/scanner.ml
 
+# Moretest
+
+clean::
+	rm -f Moretest/*.cm* Moretest/*.[os]
+	rm -f Moretest/*~
+
 # Common rules
 
 .SUFFIXES:
@@ -139,14 +145,14 @@ bytetest:
 	set -e; \
         for prog in $(BYTE_EXE:.byt=); do \
           echo $$prog; \
-          $(CAMLRUN) $$prog.byt | cmp - Results/$$prog.out; \
+          $(CAMLRUN) $$prog.byt | diff -b -q - Results/$$prog.out; \
         done
 
 codetest:
 	set -e; \
         for prog in $(CODE_EXE:.out=); do \
           echo $$prog; \
-          ./$$prog.out | cmp - Results/$$prog.out; \
+          ./$$prog.out | diff -b -q - Results/$$prog.out; \
         done
 
 clean::

@@ -123,7 +123,7 @@ method oper_in_basic_block = function
   | Icall_imm _ -> false
   | Itailcall_ind -> false
   | Itailcall_imm _ -> false
-  | Iextcall(_, _) -> false
+  | Iextcall _ -> false
   | Istackoffset _ -> false
   | Ialloc _ -> false
   | _ -> true
@@ -328,8 +328,7 @@ method schedule_fundecl f =
           clear_code_dag();
           schedule_block [] i
         end else
-          { desc = i.desc; arg = i.arg; res = i.res; live = i.live;
-            next = schedule i.next }
+          { i with next = schedule i.next }
 
   and schedule_block ready_queue i =
     if self#instr_in_basic_block i then
@@ -338,7 +337,7 @@ method schedule_fundecl f =
       let critical_outputs =
         match i.desc with
           Lop(Icall_ind | Itailcall_ind) -> [| i.arg.(0) |]
-        | Lop(Icall_imm _ | Itailcall_imm _ | Iextcall(_, _)) -> [||]
+        | Lop(Icall_imm _ | Itailcall_imm _ | Iextcall _) -> [||]
         | Lreturn -> [||]
         | _ -> i.arg in
       List.iter (fun x -> ignore (longest_path critical_outputs x)) ready_queue;

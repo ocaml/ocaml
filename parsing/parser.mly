@@ -185,7 +185,7 @@ let bigarray_set arr arg newval =
                        ["", arr; "", c1; "", c2; "", c3; "", newval]))
   | coords ->
       mkexp(Pexp_apply(ghexp(Pexp_ident(bigarray_function "Genarray" "set")),
-                       ["", arr; 
+                       ["", arr;
                         "", ghexp(Pexp_array coords);
                         "", newval]))
 
@@ -781,6 +781,8 @@ class_fields:
       { [] }
   | class_fields INHERIT class_expr parent_binder
       { Pcf_inher ($3, $4) :: $1 }
+  | class_fields VAL virtual_value
+      { Pcf_valvirt $3 :: $1 }
   | class_fields VAL value
       { Pcf_val $3 :: $1 }
   | class_fields virtual_method
@@ -796,14 +798,20 @@ parent_binder:
     AS LIDENT
           { Some $2 }
   | /* empty */
-          {None}
+          { None }
+;
+virtual_value:
+    MUTABLE VIRTUAL label COLON core_type
+      { $3, Mutable, $5, symbol_rloc () }
+  | VIRTUAL mutable_flag label COLON core_type
+      { $3, $2, $5, symbol_rloc () }
 ;
 value:
-        mutable_flag label EQUAL seq_expr
-          { $2, $1, $4, symbol_rloc () }
-      | mutable_flag label type_constraint EQUAL seq_expr
-          { $2, $1, (let (t, t') = $3 in ghexp(Pexp_constraint($5, t, t'))),
-            symbol_rloc () }
+    mutable_flag label EQUAL seq_expr
+      { $2, $1, $4, symbol_rloc () }
+  | mutable_flag label type_constraint EQUAL seq_expr
+      { $2, $1, (let (t, t') = $3 in ghexp(Pexp_constraint($5, t, t'))),
+        symbol_rloc () }
 ;
 virtual_method:
     METHOD PRIVATE VIRTUAL label COLON poly_type
@@ -869,8 +877,12 @@ class_sig_fields:
   | class_sig_fields CONSTRAINT constrain       { Pctf_cstr  $3 :: $1 }
 ;
 value_type:
-    mutable_flag label COLON core_type
-      { $2, $1, Some $4, symbol_rloc () }
+    VIRTUAL mutable_flag label COLON core_type
+      { $3, $2, Virtual, $5, symbol_rloc () }
+  | MUTABLE virtual_flag label COLON core_type
+      { $3, Mutable, $2, $5, symbol_rloc () }
+  | label COLON core_type
+      { $1, Immutable, Concrete, $3, symbol_rloc () }
 ;
 method_type:
     METHOD private_flag label COLON poly_type
@@ -928,7 +940,8 @@ labeled_simple_pattern:
       { ("", None, $1) }
 ;
 pattern_var:
-    LIDENT    { mkpat(Ppat_var $1) }
+    LIDENT            { mkpat(Ppat_var $1) }
+  | UNDERSCORE        { mkpat Ppat_any }
 ;
 opt_default:
     /* empty */                         { None }

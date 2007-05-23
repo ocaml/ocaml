@@ -38,9 +38,10 @@ val tl : 'a list -> 'a list
    [Failure "tl"] if the list is empty. *)
 
 val nth : 'a list -> int -> 'a
-(** Return the n-th element of the given list.
+(** Return the [n]-th element of the given list.
    The first element (head of the list) is at position 0.
-   Raise [Failure "nth"] if the list is too short. *)
+   Raise [Failure "nth"] if the list is too short.
+   Raise [Invalid_argument "List.nth"] if [n] is negative. *)
 
 val rev : 'a list -> 'a list
 (** List reversal. *)

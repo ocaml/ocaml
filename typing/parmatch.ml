@@ -29,6 +29,9 @@ let make_pat desc ty tenv =
 
 let omega = make_pat Tpat_any Ctype.none Env.empty
 
+let extra_pat =
+  make_pat (Tpat_var (Ident.create "+")) Ctype.none Env.empty
+  
 let rec omegas i =
   if i <= 0 then [] else omega :: omegas (i-1)
 
@@ -625,8 +628,7 @@ let full_match closing env =  match env with
 | _ -> fatal_error "Parmatch.full_match"
 
 let extendable_match env = match env with
-| ({pat_desc = Tpat_construct ({cstr_tag=Cstr_exception _},_)},_)::_ -> false
-| ({pat_desc = Tpat_construct(c,_)} as p,_) :: _ ->
+| ({pat_desc = Tpat_construct({cstr_tag=(Cstr_constant _|Cstr_block _)},_)} as p,_) :: _ ->
     let path = get_type_path p.pat_type p.pat_env in
     not
       (Path.same path Predef.path_bool ||
@@ -634,6 +636,16 @@ let extendable_match env = match env with
       Path.same path Predef.path_option)
 | _ -> false
 
+
+let should_extend ext env = match ext with
+| None -> false
+| Some ext -> match env with
+  | ({pat_desc =
+       Tpat_construct({cstr_tag=(Cstr_constant _|Cstr_block _)},_)} as p,_)
+    :: _ ->
+      let path = get_type_path p.pat_type p.pat_env in
+      Path.same path ext
+  | _ -> false
 
 (* complement constructor tags *)
 let complete_tags nconsts nconstrs tags =
@@ -705,7 +717,7 @@ let build_other_constant proj make first next p env =
   in the first column of env
 *)
 
-let build_other env =  match env with
+let build_other ext env =  match env with
 | ({pat_desc = Tpat_construct ({cstr_tag=Cstr_exception _} as c,_)},_)
   ::_ ->
     make_pat
@@ -716,11 +728,16 @@ let build_other env =  match env with
           []))
       Ctype.none Env.empty
 | ({pat_desc = Tpat_construct (_,_)} as p,_) :: _ ->
-      let get_tag = function
-        | {pat_desc = Tpat_construct (c,_)} -> c.cstr_tag
-        | _ -> fatal_error "Parmatch.get_tag" in
-      let all_tags =  List.map (fun (p,_) -> get_tag p) env in
-      pat_of_constrs p (complete_constrs p all_tags)
+    begin match ext with
+    | Some ext when Path.same ext (get_type_path p.pat_type p.pat_env) ->
+        extra_pat
+    | _ ->
+        let get_tag = function
+          | {pat_desc = Tpat_construct (c,_)} -> c.cstr_tag
+          | _ -> fatal_error "Parmatch.get_tag" in
+        let all_tags =  List.map (fun (p,_) -> get_tag p) env in
+        pat_of_constrs p (complete_constrs p all_tags)
+    end
 | ({pat_desc = Tpat_variant(_,_,row)} as p,_) :: _ ->
     let tags =
       List.map
@@ -880,62 +897,6 @@ let rec satisfiable pss qs = match pss with
         satisfiable (filter_one q0 pss) (simple_match_args q0 q @ qs)
 
 (*
-  Like satisfiable, looking for a matching value with an extra constructor.
-  That is, look for the situation where adding one constructor
-  would NOT yield a non-exhaustive matching.
-  *)
-
-let relevant_location loc r = match r with
-  | None -> None
-  | Some rloc ->
-      if rloc = Location.none then
-        Some loc
-      else
-        r
-        
-let rec satisfiable_extra some pss qs = match qs with
-| [] -> if pss = [] then some else None
-| {pat_desc = Tpat_or(q1,q2,_)}::qs ->
-    let r1 = satisfiable_extra some pss (q1::qs) in
-    begin match r1 with
-    | Some _ -> r1
-    | None -> satisfiable_extra some pss (q2::qs)
-    end
-| {pat_desc = Tpat_alias(q,_)}::qs ->
-    satisfiable_extra some pss (q::qs)
-| {pat_desc = (Tpat_any | Tpat_var(_))} as q::qs ->
-    let q0 = discr_pat omega pss in
-    let r =
-      match filter_all q0 pss with
-          (* first column of pss is made of variables only *)
-      | [] -> satisfiable_extra some (filter_extra pss) qs
-      | constrs ->
-          if extendable_match constrs then
-            let rloc =
-              satisfiable_extra (Some q.pat_loc) (filter_extra pss) qs in
-            match rloc with
-            | Some loc -> rloc
-            | None -> try_many_extra some qs constrs
-          else
-            try_many_extra some qs constrs in
-    relevant_location q.pat_loc r
-| q::qs ->
-    let q0 = discr_pat q pss in
-    relevant_location
-      q.pat_loc
-      (satisfiable_extra
-         some (filter_one q0 pss) (simple_match_args q0 q @ qs))
-
-and try_many_extra some qs = function
-  | [] -> None
-  | (p,pss)::rem ->
-      let rloc = satisfiable_extra some pss (simple_match_args p omega @ qs) in
-      match rloc with
-      | Some _ -> rloc
-      | None -> try_many_extra some qs rem
-
-
-(*
   Now another satisfiable function that additionally
   supplies an example of a matching value.
 
@@ -954,7 +915,7 @@ let rec try_many f = function
       | r -> r
       end
 
-let rec exhaust pss n = match pss with
+let rec exhaust ext pss n = match pss with
 | []    ->  Rsome (omegas n)
 | []::_ ->  Rnone
 | pss   ->
@@ -962,7 +923,7 @@ let rec exhaust pss n = match pss with
     begin match filter_all q0 pss with
           (* first column of pss is made of variables only *)
     | [] ->
-        begin match exhaust (filter_extra pss) (n-1) with
+        begin match exhaust ext (filter_extra pss) (n-1) with
         | Rsome r -> Rsome (q0::r)
         | r -> r
       end
@@ -972,11 +933,13 @@ let rec exhaust pss n = match pss with
             Rnone
           else
             match
-              exhaust pss (List.length (simple_match_args p omega) + n - 1)
+              exhaust
+                ext pss (List.length (simple_match_args p omega) + n - 1)
             with
             | Rsome r -> Rsome (set_args p r)
             | r       -> r in
-        if full_match false constrs
+        if
+          full_match false constrs && not (should_extend ext constrs)
         then
           try_many try_non_omega constrs
         else
@@ -988,12 +951,12 @@ let rec exhaust pss n = match pss with
              * D exhaustive => pss exhaustive
              * D non-exhaustive => we have a non-filtered value
           *)
-          let r =  exhaust (filter_extra pss) (n-1) in
+          let r =  exhaust ext (filter_extra pss) (n-1) in
           match r with
           | Rnone -> Rnone
           | Rsome r ->
               try
-                Rsome (build_other constrs::r)
+                Rsome (build_other ext constrs::r)
               with
       (* cannot occur, since constructors don't make a full signature *)
               | Empty -> fatal_error "Parmatch.exhaust"
@@ -1419,10 +1382,7 @@ and lubs ps qs = match ps,qs with
       
       
 (******************************)
-(* Entry points               *)
-(*    - Variant closing       *)
-(*    - Partial match         *)
-(*    - Unused match case     *)
+(* Exported variant closing   *)
 (******************************)
 
 (* Apply pressure to variants *)
@@ -1431,9 +1391,13 @@ let pressure_variants tdefs patl =
   let pss = List.map (fun p -> [p;omega]) patl in
   ignore (pressure_variants (Some tdefs) pss)
 
+(*****************************)
+(* Utilities for diagnostics *)
+(*****************************)
+
 (*
-  Build up a working pattern matrix.
-   - Forget about guarded patterns
+  Build up a working pattern matrix by forgetting
+  about guarded patterns
 *)
 
 let has_guard act =   match act.exp_desc with
@@ -1450,13 +1414,17 @@ let rec initial_matrix = function
       else
         [pat] :: initial_matrix rem
 
+(******************************************)
+(* Look for a row that matches some value *)
+(******************************************)
+
 (*
-   All the following ``*_all'' functions
-   check whether a given value [v] is matched by some row in pss.
-   They are used to whether the exhaustiveness exemple is
-   matched by a guarded clause
+  Useful for seeing if the example of
+  non-matched value can indeed be matched
+  (by a guarded clause)
 *)
-  
+
+
 
 exception NoGuard
 
@@ -1513,12 +1481,12 @@ let check_partial_all v casel =
   with
   | NoGuard -> None
 
-let check_partial loc casel =
-  if Warnings.is_active (Warnings.Partial_match "") then begin
-  let pss = initial_matrix casel in
-  let pss = get_mins le_pats pss in
-  match pss with
-  | [] ->
+(************************)
+(* Exhaustiveness check *)
+(************************)
+
+let do_check_partial loc casel pss = match pss with
+| [] ->
         (*
           This can occur
           - For empty matches generated by ocamlp4 (no warning)
@@ -1527,66 +1495,134 @@ let check_partial loc casel =
           Then match MUST be considered non-exhaustive,
           otherwise compilation of PM is broken.
           *)
-      begin match casel with
-      | [] -> ()
-      | _  -> Location.prerr_warning loc Warnings.All_clauses_guarded
-      end ;
-      Partial
-  | ps::_  ->      
-      begin match exhaust pss (List.length ps) with
-      | Rnone -> Total
-      | Rsome [v] ->
-          let errmsg =
-            try
-              let buf = Buffer.create 16 in
-              let fmt = formatter_of_buffer buf in
-              top_pretty fmt v;
-              begin match check_partial_all v casel with
-              | None -> ()
-              | Some _ ->
-                  (* This is ``Some l'', where l is the location of
+    begin match casel with
+    | [] -> ()
+    | _  -> Location.prerr_warning loc Warnings.All_clauses_guarded
+    end ;
+    Partial
+| ps::_  ->      
+    begin match exhaust None pss (List.length ps) with
+    | Rnone -> Total
+    | Rsome [v] ->
+        let errmsg =
+          try
+            let buf = Buffer.create 16 in
+            let fmt = formatter_of_buffer buf in
+            top_pretty fmt v;
+            begin match check_partial_all v casel with
+            | None -> ()
+            | Some _ ->
+                  (* This is 'Some loc', where loc is the location of
                      a possibly matching clause.
-                     I forget about l, because printing two locations
+                     Forget about loc, because printing two locations
                      is a pain in the top-level *)                  
-                  Buffer.add_string buf
-                    "\n(However, some guarded clause may match this value.)"
-              end ;
-              Buffer.contents buf
-            with _ ->
-              "" in          
-          Location.prerr_warning loc (Warnings.Partial_match errmsg) ;
-          Partial
-      | _ ->
-          fatal_error "Parmatch.check_partial"
-      end
+                Buffer.add_string buf
+                  "\n(However, some guarded clause may match this value.)"
+            end ;
+            Buffer.contents buf
+          with _ ->
+            "" in          
+        Location.prerr_warning loc (Warnings.Partial_match errmsg) ;
+        Partial
+    | _ ->
+        fatal_error "Parmatch.check_partial"
+    end
+
+
+(*****************)
+(* Fragile check *)
+(*****************)
+
+(* Collect all data types in a pattern *)
+
+let rec add_path path = function
+  | [] -> [path]
+  | x::rem as paths ->
+      if Path.same path x then paths
+      else x::add_path path rem
+
+let extendable_path path =
+  not
+    (Path.same path Predef.path_bool ||
+    Path.same path Predef.path_list ||
+    Path.same path Predef.path_option)
+
+let rec collect_paths_from_pat r p = match p.pat_desc with
+| Tpat_construct({cstr_tag=(Cstr_constant _|Cstr_block _)},ps) ->
+    let path =  get_type_path p.pat_type p.pat_env in
+    List.fold_left
+      collect_paths_from_pat
+      (if extendable_path path then add_path path r else r)
+      ps
+| Tpat_any|Tpat_var _|Tpat_constant _| Tpat_variant (_,None,_) -> r
+| Tpat_tuple ps | Tpat_array ps
+| Tpat_construct ({cstr_tag=Cstr_exception _}, ps)->
+    List.fold_left collect_paths_from_pat r ps
+| Tpat_record lps ->
+    List.fold_left
+      (fun r (_,p) -> collect_paths_from_pat r p)
+      r lps
+| Tpat_variant (_, Some p, _) | Tpat_alias (p,_) -> collect_paths_from_pat r p
+| Tpat_or (p1,p2,_) ->
+    collect_paths_from_pat (collect_paths_from_pat r p1) p2
+      
+
+(*
+  Actual fragile check
+   1. Collect data types in the patterns of the match.
+   2. One exhautivity check per datatype, considering that
+      the type is extended.
+*)
+
+let do_check_fragile loc casel pss =
+  let exts =
+    List.fold_left
+      (fun r (p,_) -> collect_paths_from_pat r p)
+      [] casel in
+  match exts with
+  | [] -> ()
+  | _ -> match pss with
+    | [] -> ()
+    | ps::_ ->
+        List.iter
+          (fun ext ->
+            match exhaust (Some ext) pss (List.length ps) with
+            | Rnone ->
+                Location.prerr_warning
+                  loc
+                  (Warnings.Fragile_match (Path.name ext))
+            | Rsome _ -> ())
+          exts
+
+
+(********************************)
+(* Exported exhustiveness check *)
+(********************************)
+
+(*
+   Fragile check is performed when required and
+   on exhaustive matches only.
+*)
+
+let check_partial loc casel =
+  if Warnings.is_active (Warnings.Partial_match "") then begin
+    let pss = initial_matrix casel in
+    let pss = get_mins le_pats pss in
+    let total = do_check_partial loc casel pss in
+    if
+      total = Total && Warnings.is_active (Warnings.Fragile_match "")
+    then begin
+      do_check_fragile loc casel pss
+    end ;
+    total
   end else
     Partial
 
 
-let location_of_clause = function
-    pat :: _ -> pat.pat_loc
-  | _ -> fatal_error "Parmatch.location_of_clause"
+(********************************)
+(* Exported unused clause check *)
+(********************************)
 
-let seen_pat q pss = [q]::pss
-
-(* Extra check
-    Will this clause match if someone adds a constructor somewhere
-*)
-
-let warn_fragile () = Warnings.is_active (Warnings.Fragile_pat "")
-
-let check_used_extra pss qs =
-  if warn_fragile () then begin
-    match satisfiable_extra None pss qs with
-    | Some location ->
-        Location.prerr_warning
-          location
-          (Warnings.Fragile_pat "")
-    | None -> ()
-  end
-
-  
-  
 let check_unused tdefs casel =
   if Warnings.is_active Warnings.Unused_match then
     let rec do_rec pref = function
@@ -1600,23 +1636,20 @@ let check_unused tdefs casel =
               match r with
               | Unused ->
                   Location.prerr_warning
-                    (location_of_clause qs) Warnings.Unused_match
+                    q.pat_loc Warnings.Unused_match
               | Upartial ps ->
                   List.iter
                     (fun p ->
                       Location.prerr_warning
                         p.pat_loc Warnings.Unused_pat)
                     ps
-              | Used ->
-                  check_used_extra pss qs
+              | Used -> ()
             with e -> assert false
             end ;
                    
           if has_guard act then
             do_rec pref rem
           else
-            do_rec (seen_pat q pref) rem in
-
-
+            do_rec ([q]::pref) rem in
 
     do_rec [] casel

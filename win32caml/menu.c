@@ -240,7 +240,7 @@ static int CallChangeFont(HWND hwnd)
         strcpy(CurrentFontName, CurrentFont.lfFaceName);
         CurrentFontFamily = lf.lfPitchAndFamily;
         CurrentFontStyle = lf.lfWeight;
-    hwndChild = (HWND) GetWindowLong(hwndSession, DWL_USER);
+    hwndChild = (HWND) GetWindowLongPtr(hwndSession, DWLP_USER);
         SendMessage(hwndChild,WM_SETFONT,(WPARAM)ProgramParams.hFont,0);
         ForceRepaint();
         return (1);
@@ -338,7 +338,7 @@ void Undo(HWND hwnd)
 {
         HWND hEdit;
 
-        hEdit = (HWND)GetWindowLong(hwnd,DWL_USER);
+        hEdit = (HWND)GetWindowLongPtr(hwnd,DWLP_USER);
         SendMessage(hEdit,EM_UNDO,0,0);
 }
 
@@ -352,7 +352,7 @@ void Undo(HWND hwnd)
 ------------------------------------------------------------------------*/
 void ForceRepaint(void)
 {
-        HWND hwndEdit = (HWND)GetWindowLong(hwndSession,DWL_USER);
+        HWND hwndEdit = (HWND)GetWindowLongPtr(hwndSession,DWLP_USER);
         InvalidateRect(hwndEdit,NULL,1);
 }
 
@@ -365,7 +365,7 @@ void ForceRepaint(void)
 ------------------------------------------------------------------------*/
 static void Add_Char_To_Queue(int c)
 {
-        HWND hwndEdit = (HWND)GetWindowLong(hwndSession,DWL_USER);
+        HWND hwndEdit = (HWND)GetWindowLongPtr(hwndSession,DWLP_USER);
         SendMessage(hwndEdit,WM_CHAR,c,1);
 }
 
@@ -386,7 +386,7 @@ void AddLineToControl(char *buf)
         if (*buf == 0)
                 return;
 
-        hEditCtrl = (HWND)GetWindowLong(hwndSession,DWL_USER);
+        hEditCtrl = (HWND)GetWindowLongPtr(hwndSession,DWLP_USER);
 
         GotoEOF();
 
@@ -419,7 +419,7 @@ void AddStringToControl(char* buf)
         if((*buf) == 0)
             return;
 
-        hEditCtrl = (HWND)GetWindowLong(hwndSession, DWL_USER);
+        hEditCtrl = (HWND)GetWindowLongPtr(hwndSession, DWLP_USER);
         GotoEOF();
 
         SendMessage(hEditCtrl ,EM_REPLACESEL, (WPARAM)FALSE, (LPARAM)buf);
@@ -521,7 +521,7 @@ static BOOL CALLBACK HistoryDlgProc(HWND hDlg, UINT message, WPARAM wParam, LPAR
 static void SaveText(char *fname)
 {
         int i,len;
-        HWND hEdit = (HWND)GetWindowLong(hwndSession,DWL_USER);
+        HWND hEdit = (HWND)GetWindowLongPtr(hwndSession,DWLP_USER);
         int linesCount = SendMessage(hEdit,EM_GETLINECOUNT,0,0);
         FILE *f;
         char *buf = SafeMalloc(8192);
@@ -665,7 +665,7 @@ static void Add_Clipboard_To_Queue(void)
 ------------------------------------------------------------------------*/
 static void CopyToClipboard(HWND hwnd)
 {
-        HWND hwndEdit = (HWND)GetWindowLong(hwndSession,DWL_USER);
+        HWND hwndEdit = (HWND)GetWindowLongPtr(hwndSession,DWLP_USER);
         SendMessage(hwndEdit,WM_COPY,0,0);
 }
 
@@ -678,7 +678,7 @@ static void CopyToClipboard(HWND hwnd)
 ------------------------------------------------------------------------*/
 int ResetText(void)
 {
-        HWND hwndEdit = (HWND) GetWindowLong(hwndSession,DWL_USER);
+        HWND hwndEdit = (HWND) GetWindowLongPtr(hwndSession,DWLP_USER);
         TEXTRANGE cr;
         int len = SendMessage(hwndEdit,WM_GETTEXTLENGTH,0,0);
         char *tmp = malloc(len+10),*p;

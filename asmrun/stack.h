@@ -53,9 +53,9 @@
 #endif
 
 #ifdef TARGET_power
-#define Saved_return_address(sp) *((intnat *)((sp) - 4))
+#define Saved_return_address(sp) *((intnat *)((sp) - SIZEOF_PTR))
 #define Already_scanned(sp, retaddr) ((retaddr) & 1)
-#define Mark_scanned(sp, retaddr) (*((intnat *)((sp) - 4)) = (retaddr) | 1)
+#define Mark_scanned(sp, retaddr) (*((intnat *)((sp) - SIZEOF_PTR)) = (retaddr) | 1)
 #define Mask_already_scanned(retaddr) ((retaddr) & ~1)
 #ifdef SYS_aix
 #define Trap_frame_size 32
@@ -95,6 +95,25 @@ struct caml_context {
   uintnat last_retaddr;         /* last return address in Caml code */
   value * gc_regs;              /* pointer to register block */
 };
+
+/* Structure of frame descriptors */
+
+typedef struct {
+  uintnat retaddr;
+  unsigned short frame_size;
+  unsigned short num_live;
+  unsigned short live_ofs[1];
+} frame_descr;
+
+/* Hash table of frame descriptors */
+
+extern frame_descr ** caml_frame_descriptors;
+extern int caml_frame_descriptors_mask;
+
+#define Hash_retaddr(addr) \
+  (((uintnat)(addr) >> 3) & caml_frame_descriptors_mask)
+
+extern void caml_init_frame_descriptors(void);
 
 /* Declaration of variables used in the asm code */
 extern char * caml_bottom_of_stack;
