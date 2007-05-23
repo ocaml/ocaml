@@ -16,7 +16,7 @@ REQUIREMENTS:
 A working OCaml installation must be available to compile OCamlDuce.
 The version of OCaml must match the version of OCamlDuce.
 
-A recent version of findlib must also be available.
+A recent version of findlib must also be available for the installation.
 
 
 INSTALLATION:
@@ -116,3 +116,6 @@ CHANGE LOG:
 
 3.09.3pl1
 - bug fix in unification
+
+3.10
+- merge with OCaml 3.10 and CDuce 0.4.2
