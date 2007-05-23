@@ -26,19 +26,22 @@ module Mix(X: sig type t = private [> `A of int ] end)
   struct type t = [X.t | Y.t] end;;
 
 (* ok *)
-module Mix(X: sig type t = private [> `A of int ] ~ [`B of bool] end)
-    (Y: sig type t = private [> `B of bool] ~ [X.t] end) =
-  struct type t = [X.t | Y.t] end;;
-
-(* ok *)
-module Mix(X: sig type t = private [> `A of int ] ~ [~`B] end)
+module Mix(X: sig type t = private [> `A of int ] ~ [`B] end)
     (Y: sig type t = private [> `B of bool] ~ [X.t] end) =
   struct type t = [X.t | Y.t] let is_t = function #t -> true | _ -> false end;;
 
-module Mix(X: sig type t = private [> `A of int ] ~ [~`B] end)
+module Mix(X: sig type t = private [> `A of int ] ~ [`B] end)
     (Y: sig type t = private [> `B of bool] ~ [X.t] end) =
   struct
     type t = [X.t | Y.t]
+    let which = function #X.t -> `X | #Y.t -> `Y
+  end;;
+
+module Mix(I: sig type t = private [> ] ~ [`A;`B] end)
+    (X: sig type t = private [> I.t | `A of int ] ~ [`B] end)
+    (Y: sig type t = private [> I.t | `B of bool] ~ [X.t] end) =
+  struct
+    type t = [X.t]
     let which = function #X.t -> `X | #Y.t -> `Y
   end;;
 
