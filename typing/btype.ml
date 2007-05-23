@@ -214,10 +214,8 @@ let rec iter_abbrev f = function
   | Mlink rem              -> iter_abbrev f !rem
 
 let iter_compat f = function
-    Cfield (l, Some t) -> f t
-  | Ctype t            -> f t
-  | Cnotype t          -> f t
-  | _                  -> ()
+    Cfield l -> ()
+  | Ctype t  -> f t
 
 let copy_row f fixed row keep more =
   let bound = ref [] in
@@ -282,9 +280,7 @@ let rec copy_type_desc f = function
       Tpoly (f ty, tyl)
 
 let copy_compat f = function
-    Cfield (l, Some t) -> Cfield (l, Some(f t))
-  | Ctype t            -> Ctype (f t)
-  | Cnotype t          -> Cnotype (f t)
+    Ctype t            -> Ctype (f t)
   | c                  -> c
 
 (* Utilities for copying *)

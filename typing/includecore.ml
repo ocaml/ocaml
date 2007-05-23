@@ -129,9 +129,13 @@ let type_declarations env id decl1 decl2 =
                                  (ty2::decl2.type_params))
           labels1 labels2
     | ((Type_abstract | Type_private _), Type_private cp2) ->
-        let ty1 = 
-          Btype.newgenty (Tconstr(Pident id, decl2.type_params, ref Mnil)) in
-        Ctype.check_compat_define env cp2 ty1
+	begin match decl2.type_manifest with
+	  None -> true
+	| Some ty2 ->
+            let ty1 = 
+              Btype.newgenty (Tconstr(Pident id, decl2.type_params, ref Mnil))
+	    in Ctype.check_compat_define env cp2 ty1 ty2
+	end
     | (_, _) -> false
   end &&
   begin match (decl1.type_manifest, decl2.type_manifest) with

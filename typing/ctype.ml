@@ -458,9 +458,7 @@ let closed_type_decl decl =
         List.iter (fun (_, tyl) -> List.iter closed_type tyl) v
     | Type_record(r, rep, priv) ->
         List.iter (fun (_, _, ty) -> closed_type ty) r
-    | Type_private l ->
-        List.iter
-          (function Ctype t|Cfield(_,Some t) -> closed_type t | _ -> ()) l
+    | Type_private l -> ()
     end;
     begin match decl.type_manifest with
       None    -> ()
@@ -1221,19 +1219,16 @@ let generic_abbrev env path =
 *)
 let rec row_normal ?(noapp=false) env row =
   let row = row_repr row in
-  let need_expand =
-    List.exists
-      (fun t ->
-        try match try_expand_head env t with
-        | {desc=Tvariant row}
-          when static_row {(row_repr row) with row_closed = true} -> true
-        | _ ->
-            if noapp then ignore (try_expand_head_noapp env t);
-            true
-        with Cannot_expand -> false)
-      row.row_abs
+  let need_expand t =
+    try match try_expand_head env t with
+    | {desc=Tvariant row}
+      when static_row {(row_repr row) with row_closed = true} -> true
+    | _ ->
+        if noapp then ignore (try_expand_head_noapp env t);
+        true
+    with Cannot_expand -> false
   in
-  if not need_expand then row else
+  if not (List.exists need_expand row.row_abs) then row else
   let rec merge_abs fields abs = function
       [] -> (fields, abs)
     | t :: rem ->
@@ -1283,212 +1278,114 @@ let rec row_normal ?(noapp=false) env row =
   let fields, abs = merge_abs row.row_fields [] row.row_abs in
   {row with row_fields = fields; row_abs = abs}
 
+let same_compat cp1 cp2 =
+  match cp1, cp2 with
+    Cfield l1, Cfield l2 -> l1 = l2 
+  | Ctype t1, Ctype t2 -> same_path t1 t2
+  | _ -> false
+
 (* Normalize compatibilities, for compatibility check *)
 let normalize_compat env cps =
-  let normal_ctype cfield ctype ty =
+  let normal_ctype ty =
     match expand_head env ty with
     | {desc=Tvariant row} ->
         let row = row_normal env row in
         List.map
           (fun (l,f) -> match row_field_repr f with
-          | Rpresent ot -> cfield l ot
+          | Rpresent _ -> Cfield l
           | _ -> assert false)
           row.row_fields @
-        List.map (fun a -> ctype a) row.row_abs @
-        (match row_more row with {desc=Tconstr _} as a -> [ctype a] | _ -> [])
+        List.map (fun a -> Ctype a) row.row_abs @
+        (match row_more row with {desc=Tconstr _} as a -> [Ctype a] | _ -> [])
     | a -> Ctype a :: cps
   in
   let add_compat cp cps =
-    match cp with
-      Cfield (l,ot) ->
-        (* Cannot replace incompatible compatibilities by Cnofield *)
-        if List.mem (Cnofield l) cps then cps else cp :: cps
-    | Cnofield l ->
-        Cnofield l ::
-        List.filter
-          (function Cfield(l',_) | Cnofield l' -> l <> l' | _ -> true)
-          cps
-    | Ctype ty ->
-        if List.exists (function Cnotype ty' -> same_path ty ty' | _ -> false)
-            cps
-        then cps else cp :: cps
-    | Cnotype ty ->
-        cp ::
-        List.filter (function
-            Ctype ty' | Cnotype ty' -> not (same_path ty ty') | _ -> true)
-          cps
-  in
+    if List.exists (same_compat cp) cps then cps else cp :: cps in
   let add_compat2 cp cps =
     match cp with
-      Ctype ty ->
-        let l = normal_ctype (fun l ot -> Cfield(l,ot)) (fun t -> Ctype t) ty
-        in List.fold_right add_compat l cps
-    | Cnotype ty ->
-        let l = normal_ctype (fun l _ -> Cnofield l) (fun t -> Cnotype t) ty
-        in List.fold_right add_compat l cps
-    | c ->
-        add_compat c cps
+      Ctype ty -> List.fold_right add_compat (normal_ctype ty) cps
+    | c -> add_compat c cps
   in
   List.fold_right add_compat2 cps []
 
 (* Obtain normalized compatibilities for private types *)
 let get_compat env ty =
   try
-    let (p, tl, compat, ty') =
-      let ty = expand_head env ty in
-      match ty.desc with
-        Tconstr(p,tl,_) -> (p, tl, [], ty)    (* row *)
-      | Tvariant row ->                       (* type itself *)
-          begin match row_more (row_normal env row) with
-            {desc=Tconstr(p,tl,_)} ->
-              (p,tl,[Ctype ty],newty2 ty.level (Tconstr(p,tl,ref Mnil)))
-          | _ -> raise Not_found
-          end
-      | _ -> raise Not_found in
+    let p =
+      match (expand_head env ty).desc with
+	Tconstr (p, _, _) -> p
+      | Tvariant row ->
+	  begin match (row_more (row_normal env row)).desc with
+	    Tconstr (p, _, _) -> p
+	  | _ -> raise Not_found
+	  end
+      | _ -> raise Not_found
+    in
     let desc = Env.find_type p env in
-    let compat =
-      match desc.type_kind with
-        Type_private l -> compat @ l
-      | _ -> raise Not_found in
-    (normalize_compat env compat, ty',
-     fun body -> apply env desc.type_params body tl)
+    match desc.type_kind with
+      Type_private cl -> normalize_compat env cl
+    | _ -> raise Not_found
   with Not_found -> (* allow unknown types *)
-    (normalize_compat env [Ctype ty], ty, fun x -> x)
+    normalize_compat env [Ctype ty]
 
 (* forward declaration *)
 let equal' = ref (fun _ -> assert false)
 
 (* Check compatibility *)
-let check_compat_field env unif l f compat inst =
-  if List.mem (Cnofield l) compat then () else
-  match row_field_repr f with
-  | Rpresent None | Reither(true,[],_,_) ->
-      if List.mem (Cfield(l,None)) compat then () else raise (Unify[])
-  | Rpresent (Some ty1) | Reither(false, [ty1], true, _) ->
-      let ok =
-        List.fold_left
-          (fun ok -> function
-              Cfield(l', Some ty2) when l = l' ->
-                let ty2 = inst ty2 in
-                if unif then (!unify' env ty1 ty2; true)
-                else (ok || !equal' env false [ty1] [ty2])
-            | _ -> ok)
-          false compat in
-      if not ok then raise (Unify[])
-  | Reither (false, tl, false, e) ->
-      let tyl =
-        List.fold_left
-          (fun tyl -> function
-              Cfield(l', Some ty2) when l = l' ->
-                let ty2 = inst ty2 in
-                if unif || tyl = [] &&
-                List.exists (fun ty1 -> !equal' env false [ty1] [ty2]) tl
-                then ty2 :: tyl else tyl
-            | _ -> tyl)
-          [] compat
-      in
-      if tyl = [] then raise (Unify[]) else
-      if unif then begin
-        assert (!e = None);
-        set_row_field e (Reither (false, tyl, false, ref None))
-      end
-  | Reither _ | Rabsent -> ()
-
-let check_compat_fields env unif fl ty =
-  let compat, _, inst = get_compat env ty in
-  List.iter (fun (l,f) -> check_compat_field env unif l f compat inst) fl
-
-let check_compat_type env unif ty1 nt ty compat inst =
-  let compat', ty1, inst' = get_compat env ty1 in
+let check_compat_type env ty1 ty compat =
   let notype ty1 = function
-      Cnotype ty2 -> same_path ty1 ty2
+      Ctype ty2 -> same_path ty1 ty2
     | _ -> false
   in
-  if List.exists (notype ty1) compat then () else
-  if List.exists (notype ty) compat' then () else
-  if nt then raise (Unify []) else
-  let unify_all inst ty1 l ok =
-    List.fold_left
-      (fun ok -> function
-          Ctype ty2 when same_path ty1 ty2 ->
-            let ty2 = inst ty2 in
-            if unif then (!unify' env ty1 ty2; true)
-            else (ok || !equal' env false [ty1] [ty2])
-        | _ -> ok)
-      ok l
+  List.exists (notype ty1) compat ||
+  List.exists (notype ty) (get_compat env ty1)
+
+let check_compat env cl ty =
+  cl = [] ||
+  let compat = get_compat env ty in
+  List.for_all
+    (function
+        Cfield _ as cp -> List.mem cp compat
+      | Ctype ty1 -> check_compat_type env ty1 ty compat)
+    (normalize_compat env cl)
+
+let mkcompat fields abs =
+  List.map (fun t -> Ctype t) abs @
+  List.map (fun (l,_) -> Cfield l) (filter_row_fields false fields)
+
+let check_compat_define env conds ty ty2 =
+  let ty2 = expand_head env ty2 in
+  let compat =
+    match ty2.desc with
+      Tvariant row ->
+	let row = row_repr row in
+	normalize_compat env (mkcompat row.row_fields row.row_abs)
+    | _ -> []
   in
-  let ok = unify_all inst ty1 compat false in
-  let ok = unify_all inst' ty compat' ok in
-  if not ok then raise (Unify [])
-
-let check_compat env unif cl ty =
-  if cl <> [] then try
-    let compat, ty, inst = get_compat env ty in
-    List.iter
-      (function
-          Cfield (l,f) ->
-            check_compat_field env unif l (Rpresent f) compat inst
-        | Cnofield l ->
-            if List.mem (Cnofield l) compat then () else raise (Unify[])
-        | Ctype ty1 ->
-            check_compat_type env unif ty1 false ty compat inst
-        | Cnotype ty1 ->
-            check_compat_type env unif ty1 true ty compat inst)
-      cl
-  with Cannot_apply -> assert false
-
-let check_compat_define env conds ty =
-  let conds1, conds2 =
-    List.partition
-      (function Ctype ty -> has_constr_row (expand_head env ty) | _ -> false)
-      conds in
-  let conds = conds1 @ normalize_compat env conds2 in
+  let conds =
+    List.filter (fun cp -> not (List.exists (same_compat cp) compat))
+      (normalize_compat env conds)
+  in
   let ty = expand_head env ty in
   try match ty.desc with
     Tconstr _ ->
-      check_compat env false conds ty; true
+      check_compat env conds ty
   | Tvariant row ->
       let row = row_normal env row in
       begin match row_more row with
         {desc=Tconstr _} ->
-          check_compat env false conds ty
+          check_compat env conds ty
       | _ ->
-          List.iter (check_compat env false conds) row.row_abs;
+          List.for_all (check_compat env conds) row.row_abs &&
           let fields = filter_row_fields false row.row_fields in
-          List.iter
+          List.for_all
             (function
-                Cfield(l,f) ->
-                  List.iter
-                    (fun (l',f') ->
-                      if l <> l' then () else
-                      match f, row_field_repr f' with
-                        None, (Rpresent None | Reither(true,[],_,_))-> ()
-                      | Some ty1, Rpresent (Some ty2)
-                        when !equal' env false [ty1] [ty2] -> ()
-                      | Some ty1, Reither (false, tl, _, _) when List.exists
-                            (fun ty2 -> !equal' env false [ty1] [ty2]) tl -> ()
-                      | _ -> raise (Unify[]))
-                    fields
-              | Cnofield l ->
-                  if List.mem_assoc l fields then raise (Unify[])
+		Cfield l -> not (List.mem_assoc l fields)
               | Ctype ty1 ->
-                  let cfields =
-                    List.fold_left
-                      (fun cl (l, f) ->
-                        match row_field_repr f with
-                          Rpresent f -> Cfield(l,f)::cl
-                        | Reither(c,tl,_,_) ->
-                            (if c then [Cfield(l,None)] else []) @
-                            List.map (fun t -> Cfield(l,Some t)) tl @ cl
-                        | Rabsent -> cl)
-                      [] fields in
-                  check_compat env false cfields ty1
-              | Cnotype ty1 ->
-                  let nfields = List.map (fun (l,_) -> Cnofield l) fields in
-                  check_compat env false nfields ty1)
+                  let cfields = List.map (fun (l,_) -> Cfield l) fields in
+                  check_compat env cfields ty1)
             conds
-      end;
-      true
+      end
   | _ -> assert false
   with Unify _ -> false
 
@@ -2095,10 +1992,9 @@ and unify_row env row1 row2 =
       pairs;
     List.iter (fun (ty1, ty2) -> unify env ty1 ty2) apairs;
     (* Check compatibilities *)
-    let cabs1 = List.map (fun x -> Ctype x) abs1 in
-    List.iter (check_compat env true cabs1) abs2;
-    List.iter (check_compat_fields env true r1) abs2;
-    List.iter (check_compat_fields env true r2) abs1;
+    if List.for_all (check_compat env (mkcompat r1 abs1)) abs2
+    && List.for_all (check_compat env (mkcompat r2 [])) abs1 then ()
+    else raise (Unify [])
   with exn ->
     log_type rm1; rm1.desc <- md1; log_type rm2; rm2.desc <- md2; raise exn
   end

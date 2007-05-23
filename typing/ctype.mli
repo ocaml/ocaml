@@ -141,15 +141,15 @@ val enforce_constraints: Env.t -> type_expr -> unit
 
 val row_normal: ?noapp:bool -> Env.t -> row_desc -> row_desc
         (* Normalize a row by expanding components *)
-val check_compat_fields:
-        Env.t -> bool -> (label * row_field) list -> type_expr -> unit
-val check_compat: Env.t -> bool -> row_compat list -> type_expr -> unit
+val check_compat: Env.t -> row_compat list -> type_expr -> bool
         (* Check that an abstract type satisfies compatibilities.
            Flag is true for forcing unification, false for checking equality.
            Raise Unify if incompatible. *)
-val check_compat_define: Env.t -> row_compat list -> type_expr -> bool
+val check_compat_define:
+        Env.t -> row_compat list -> type_expr -> type_expr -> bool
         (* Check that a variant or abstract type satisfies compatibilities,
            normalizing then first. *)
+val mkvariant: (label * row_field) list -> type_expr list -> bool -> type_expr
 
 val unify: Env.t -> type_expr -> type_expr -> unit
         (* Unify the two types given. Raise [Unify] if not possible. *)

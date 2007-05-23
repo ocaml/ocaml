@@ -309,13 +309,9 @@ let out_sig_item = ref (fun _ -> failwith "Oprint.out_sig_item")
 let out_signature = ref (fun _ -> failwith "Oprint.out_signature")
 
 let print_compat ppf = function
-    Ocp_field (l, Some ty) ->
-      fprintf ppf "@[<2>`%s of %a@]" l !out_type ty
-  | Ocp_field (l, None) -> fprintf ppf "`%s" l
-  | Ocp_nofield l -> fprintf ppf "~ `%s" l
+    Ocp_field l -> fprintf ppf "`%s" l
   | Ocp_type ty -> !out_type ppf ty
-  | Ocp_notype id ->
-      fprintf ppf "~ %a" print_ident id
+  | Ocp_notype id -> print_ident ppf id
 
 let rec print_out_module_type ppf =
   function

@@ -101,19 +101,19 @@ let set_fixed_row env loc p decl =
   rv.desc <- Tconstr (p, decl.type_params, ref Mnil)
 
 let transl_compat env = function
-    Pcfield (l, ot) ->
-      Cfield (l, may_map (transl_simple_type env true) ot)
-  | Pcnofield l -> Cnofield l
-  | Pctype t -> Ctype (transl_simple_type env true t)
-  | Pcnotype (lid, loc) ->
-      let (path, decl) =
-        try Env.lookup_type lid env
-        with Not_found ->
-          raise(Typetexp.Error(
-                loc, Typetexp.Unbound_type_constructor lid))
-      in
-      Cnotype (Ctype.newconstr path
-                 (Ctype.instance_list decl.type_params))
+  | Pcnofield l -> Cfield l
+  | Pctype t ->
+      match t.ptyp_desc with
+	Ptyp_constr (lid, []) ->
+	  let (path, decl) =
+            try Env.lookup_type lid env
+            with Not_found ->
+              raise(Typetexp.Error
+		      (t.ptyp_loc, Typetexp.Unbound_type_constructor lid))
+	  in
+	  Ctype (Ctype.newconstr path (Ctype.instance_list decl.type_params))
+      | _ ->
+	  Ctype (transl_simple_type env true t)
 
 (* Translate one type declaration *)
 
@@ -185,7 +185,8 @@ let transl_declaration env (name, sdecl) id =
               else Record_regular in
             Type_record(lbls', rep, priv)
         | Ptype_private cl ->
-            Type_private (List.map (transl_compat env) cl)
+            Type_private (Ctype (Ctype.newconstr (Path.Pident id) params) ::
+			  List.map (transl_compat env) cl)
         end;
       type_manifest =
         begin match sdecl.ptype_manifest with
@@ -301,6 +302,11 @@ let check_constraints env (_, sdecl) (_, decl) =
           check_constraints_rec env (get_loc name pl) visited ty)
         l
   | Type_private tl ->
+      (* List.iter
+	(function Clabel _ -> ()
+	  | Ctype ({ty_desc=Tconstr _} as ty) ->
+	    try Ctype.enforce_constraints env ty with Unify _ -> assert false)
+	tl; *)
       List.iter
         (Btype.iter_compat (check_constraints_rec env sdecl.ptype_loc visited))
         tl
@@ -622,17 +628,29 @@ let compute_variance_decls env cldecls =
 (* Check compatibilities where needed *)
 let check_compat_decl env (_,loc) (_,decl) =
   match decl with
-    {type_manifest = Some tm; type_kind = Type_private cl} when cl <> [] ->
+    {type_manifest = Some tm; type_kind = Type_private (_::_ as cl)} ->
       let row =
         match Btype.repr tm with
           {desc = Tvariant row} -> Btype.row_repr row
-        | _ ->
-            raise (Error(loc, Bad_fixed_type "cannot have compatibilities"))
+        | _ -> raise (Error(loc, Bad_fixed_type "cannot have compatibilities"))
+      in
+      let mkty = function
+	  Ctype ty -> Ctype.mkvariant [] [ty] false
+	| Cfield l ->
+	    Ctype.mkvariant [l, Rpresent (Some(Btype.newgenty (Ttuple[])))]
+	      [] false
       in
       let ty =
-        Btype.newgenty (Tvariant {row with row_more = Btype.newgenvar()}) in
-      if Ctype.check_compat_define env cl ty then () else
-      raise (Error(loc, Bad_fixed_type "doesn't satisfy its compatibilities"))
+        Btype.newgenty (
+	Tvariant {row with row_fixed = false; row_more = Btype.newgenvar()}) in
+      let snap = Btype.snapshot () in
+      begin try
+	List.iter
+	  (fun cp -> Ctype.unify env ty (mkty cp); Btype.backtrack snap) cl
+      with Ctype.Unify l ->
+	raise (Typetexp.Error(loc, Type_mismatch l))
+(*raise (Error(loc, Bad_fixed_type "doesn't satisfy its compatibilities"))*)
+      end
   | _ -> ()
 
 (* Force recursion to go through id for private types*)

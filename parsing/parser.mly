@@ -1292,12 +1292,8 @@ simple_core_type2:
       { mktyp(Ptyp_var $2) }
   | UNDERSCORE
       { mktyp(Ptyp_any) }
-  | type_longident
-      { mktyp(Ptyp_constr($1, [])) }
-  | simple_core_type2 type_longident
-      { mktyp(Ptyp_constr($2, [$1])) }
-  | LPAREN core_type_comma_list RPAREN type_longident
-      { mktyp(Ptyp_constr($4, List.rev $2)) }
+  | type_constructor
+      { $1 }
   | LESS meth_list GREATER
       { mktyp(Ptyp_object $2) }
   | LESS GREATER
@@ -1326,6 +1322,14 @@ simple_core_type2:
       { mktyp(Ptyp_variant(List.rev $3, true, Some [])) }
   | LBRACKETLESS opt_bar row_field_list GREATER name_tag_list RBRACKET
       { mktyp(Ptyp_variant(List.rev $3, true, Some (List.rev $5))) }
+;
+type_constructor:
+  | type_longident
+      { mktyp(Ptyp_constr($1, [])) }
+  | simple_core_type2 type_longident
+      { mktyp(Ptyp_constr($2, [$1])) }
+  | LPAREN core_type_comma_list RPAREN type_longident
+      { mktyp(Ptyp_constr($4, List.rev $2)) }
 ;
 row_field_list:
     row_field                                   { [$1] }
@@ -1367,11 +1371,8 @@ row_compat_list:
   | row_compat_list SEMI compat_field           { $3 :: $1 }
 ;
 compat_field:
-    name_tag OF core_type                       { Pcfield ($1, Some $3) }
-  | name_tag                                    { Pcfield ($1, None) }
-  | TILDE name_tag                              { Pcnofield $2 }
-  | simple_core_type2                           { Pctype $1 }
-  | TILDE type_longident                        { Pcnotype ($2, symbol_rloc())}
+  | name_tag                                    { Pcnofield $1 }
+  | type_constructor                            { Pctype $1 }
 ;
 simple_core_type_or_tuple:
     simple_core_type                            { $1 }

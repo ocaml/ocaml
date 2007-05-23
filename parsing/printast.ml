@@ -336,16 +336,11 @@ and type_kind i ppf x =
 
 and row_compat i ppf x =
   match x with
-  | Pcfield (s, t) ->
-      line i ppf "Pcfield `%s\n" s;
-      option (i+1) core_type ppf t;
   | Pcnofield s ->
       line i ppf "Pcnofield `%s\n" s;
   | Pctype t ->
       line i ppf "Pctype\n";
       core_type (i+1) ppf t;
-  | Pcnotype (li, _) ->
-      line i ppf "Pcnotype %a\n" fmt_longident li;
 
 and exception_declaration i ppf x = list i core_type ppf x
 

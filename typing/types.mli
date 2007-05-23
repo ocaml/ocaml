@@ -55,10 +55,8 @@ and row_field =
   | Rabsent
 
 and row_compat =
-    Cfield of label * type_expr option
-  | Cnofield of label
+    Cfield of label
   | Ctype of type_expr
-  | Cnotype of type_expr
 
 and abbrev_memo =
     Mnil

@@ -280,9 +280,8 @@ let rec transl_type env policy styp =
         with Not_found ->
           List.iter
             (fun ty ->
-              try check_compat_fields env false [l,f] ty
-              with Unify _ ->
-                raise (Error(loc, Incompatible_row("field", mkfield l f, ty))))
+              if check_compat env [Cfield l] ty then () else
+              raise (Error(loc, Incompatible_row("field", mkfield l f, ty))))
             abs;
           (l, f) :: fields
       in
@@ -337,10 +336,9 @@ let rec transl_type env policy styp =
                   fields;
                 List.iter
                   (fun a' ->
-                    try check_compat env false [Ctype a] a'
-                    with Unify _ ->
-                      raise(Error(sty.ptyp_loc,
-                                  Incompatible_row("component", a, a'))))
+                    if check_compat env [Ctype a] a' then () else
+                    raise(Error(sty.ptyp_loc,
+                                Incompatible_row("component", a, a'))))
                   abs)
               al; 
             (List.fold_left

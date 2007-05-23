@@ -491,13 +491,8 @@ let string_of_mutable = function
   | Mutable -> "mutable "
 
 let tree_of_compat = function
-    Cfield (l, ot) -> Ocp_field (l, may_map (tree_of_typexp false) ot)
-  | Cnofield l -> Ocp_nofield l
+    Cfield l -> Ocp_field l
   | Ctype t -> Ocp_type (tree_of_typexp false t)
-  | Cnotype t ->
-      match (repr t).desc with
-        Tconstr(p,_,_) -> Ocp_notype (tree_of_path p)
-      | _ -> assert false
 
 let rec tree_of_type_decl id decl =
 

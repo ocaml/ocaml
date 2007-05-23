@@ -65,8 +65,7 @@ and out_variant =
   | Ovar_name of out_ident * out_type list
 
 and out_compat =
-  | Ocp_field of string * out_type option
-  | Ocp_nofield of string
+  | Ocp_field of string
   | Ocp_type of out_type
   | Ocp_notype of out_ident
 
