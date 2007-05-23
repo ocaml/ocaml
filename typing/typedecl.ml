@@ -185,8 +185,15 @@ let transl_declaration env (name, sdecl) id =
               else Record_regular in
             Type_record(lbls', rep, priv)
         | Ptype_private cl ->
-            Type_private (Ctype (Ctype.newconstr (Path.Pident id) params) ::
-			  List.map (transl_compat env) cl)
+            let p =
+              if Btype.is_row_name (Ident.name id) then
+                fst (Env.lookup_type
+                       (Longident.Lident (Btype.unrow_name (Ident.name id)))
+                       env)
+              else Path.Pident id
+            in
+            Type_private (Ctype (Ctype.newconstr p params) ::
+                          List.map (transl_compat env) cl)
         end;
       type_manifest =
         begin match sdecl.ptype_manifest with
@@ -628,7 +635,8 @@ let compute_variance_decls env cldecls =
 (* Check compatibilities where needed *)
 let check_compat_decl env (_,loc) (_,decl) =
   match decl with
-    {type_manifest = Some tm; type_kind = Type_private (_::_ as cl)} ->
+    {type_manifest = Some tm; type_kind = Type_private (_::cl)} ->
+      if cl = [] then () else
       let row =
         match Btype.repr tm with
           {desc = Tvariant row} -> Btype.row_repr row
@@ -647,9 +655,10 @@ let check_compat_decl env (_,loc) (_,decl) =
       begin try
 	List.iter
 	  (fun cp -> Ctype.unify env ty (mkty cp); Btype.backtrack snap) cl
-      with Ctype.Unify l ->
-	raise (Typetexp.Error(loc, Type_mismatch l))
-(*raise (Error(loc, Bad_fixed_type "doesn't satisfy its compatibilities"))*)
+      with Ctype.Unify l ->       
+	(* raise (Typetexp.Error(loc, Type_mismatch l)) *)
+        raise (Error(loc,
+                     Bad_fixed_type "doesn't satisfy its compatibilities"))
       end
   | _ -> ()
 
@@ -812,7 +821,8 @@ let transl_with_constraint env id row_path sdecl =
       type_kind =
         begin match sdecl.ptype_kind with
           Ptype_private scl ->
-            Type_private (List.map (transl_compat env) scl)
+            Type_private (Ctype (Ctype.newconstr (Path.Pident id) params) ::
+                          List.map (transl_compat env) scl)
         | _ -> Type_abstract
         end;
       type_manifest =

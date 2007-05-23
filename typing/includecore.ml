@@ -128,7 +128,7 @@ let type_declarations env id decl1 decl2 =
             Ctype.equal env true (ty1::decl1.type_params)
                                  (ty2::decl2.type_params))
           labels1 labels2
-    | ((Type_abstract | Type_private _), Type_private cp2) ->
+    | ((Type_abstract | Type_private _), Type_private (self :: cp2)) ->
 	begin match decl2.type_manifest with
 	  None -> true
 	| Some ty2 ->

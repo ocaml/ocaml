@@ -285,7 +285,7 @@ let rec transl_type env policy styp =
             abs;
           (l, f) :: fields
       in
-      let rec add_field (fields, abs) = function
+      let rec add_field (fields, abs, acl) = function
           Rtag (l, c, stl) ->
             name := None;
             let f = match present with
@@ -299,7 +299,7 @@ let rec transl_type env policy styp =
                 match stl with [] -> Rpresent None
                 | st :: _ -> Rpresent (Some(transl_type env policy st))
             in
-            (add_typed_field styp.ptyp_loc l f fields abs, abs)
+            (add_typed_field styp.ptyp_loc l f fields abs, abs, acl)
         | Rinherit sty ->
             let ty = transl_type env policy sty in
             let nm =
@@ -307,22 +307,23 @@ let rec transl_type env policy styp =
                 {desc=Tconstr(p, tl, _)} -> Some(p, tl)
               | _                        -> None
             in
-            name := if fields = [] && abs = [] then nm else None;
-            let fl, al = match expand_head env ty, nm with
+            name := if fields = [] && acl = [] then nm else None;
+            let fl, al, acl' = match expand_head env ty, nm with
             | {desc=Tvariant row} as t, _
               when Btype.static_row row || Btype.has_constr_row t &&
               Btype.static_row {(Btype.row_repr row) with row_closed=true} ->
                 let row =
                   {row_fields=[]; row_abs=[ty]; row_closed=true; row_bound=[];
                    row_more=newvar(); row_fixed=false; row_name=None} in
-                let row = Ctype.row_normal env row ~noapp:true in
+                let abs = (Ctype.row_normal env row ~noapp:true).row_abs in
                 List.iter
                   (fun ty ->
                     match repr ty with
                       {desc=Tconstr(p,_,_)} when Path.flat p -> ()
                     | _ -> raise(Error(sty.ptyp_loc, Not_a_variant ty)))
-                  row.row_abs;
-                (row.row_fields, row.row_abs)
+                  abs;
+                let row = Ctype.row_normal env row in
+                (row.row_fields, abs, row.row_abs)
             | {desc=Tvar}, Some(p, _) ->
                 raise(Error(sty.ptyp_loc, Unbound_type_constructor_2 p)) 
             | _ ->
@@ -339,8 +340,8 @@ let rec transl_type env policy styp =
                     if check_compat env [Ctype a] a' then () else
                     raise(Error(sty.ptyp_loc,
                                 Incompatible_row("component", a, a'))))
-                  abs)
-              al; 
+                  acl)
+              acl'; 
             (List.fold_left
                (fun fields (l, f) ->
                  let f = match present with
@@ -356,11 +357,11 @@ let rec transl_type env policy styp =
                      end
                  | _ -> f
                  in
-                 add_typed_field sty.ptyp_loc l f fields abs)
+                 add_typed_field sty.ptyp_loc l f fields acl)
                fields fl,
-             al @ abs)
+             al @ abs, acl' @ acl)
       in
-      let fields, abs = List.fold_left add_field ([],[]) fields in
+      let fields, abs, acl = List.fold_left add_field ([],[],[]) fields in
       begin match present with None -> ()
       | Some present ->
           List.iter
