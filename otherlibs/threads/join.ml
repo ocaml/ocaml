@@ -20,20 +20,40 @@ type 'a chan = 'a async
 
 let get_local_addr () = Join_misc.get_local_addr ()
 
-type site = space_id
+type site = unit chan
 
-let here = Join_space.here
+let here = Join_prim.create_alone (fun _ -> ()) "here"
 
-let there addr = Join_space.rid_from_addr addr
+let site_service () = here
 
-let where_from chan = Join_prim.where_from chan
+let site_key = "name_youhou"
+
+let () = Join_prim.register_service site_key site_service
+
+let there addr = 
+  let space_id = Join_space.rid_from_addr addr in
+  let site = Join_prim.call_service (space_id, site_key) () in
+  (site : site)
+
+let where_from chan =
+  let stub = match chan with Async(stub,_)|Alone(stub,_) -> stub in
+  match stub.stub_tag with
+  | Local -> here
+  | Remote -> 
+      let space_id = (Obj.magic stub.stub_val : space_id) in
+      let site = Join_prim.call_service (space_id, site_key) () in
+      (site : site)
+
+let same_site s1 s2 = 
+  (Join_prim.space_id_of_chan s1) = (Join_prim.space_id_of_chan s2)
 
 exception Exit = Join_misc.JoinExit
 
-let () = Join_prim.exn_global ("join.ml", 31, 0) (Obj.repr Exit)
+let () = Join_prim.exn_global ("join.ml", 50, 0) (Obj.repr Exit)
 
 let at_fail site (chan:unit chan) =
-  Join_space.at_fail site (Obj.magic chan : 'a async)
+  let chan' = (Obj.magic chan : unit async) in
+  Join_space.at_fail (Join_prim.space_id_of_chan chan') chan'
   
 
 let listen addr =

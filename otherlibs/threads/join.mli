@@ -29,6 +29,9 @@ val there : Unix.sockaddr -> site
 (* Get identity of the remote site where reception on channel takes place *)
 val where_from : 'a chan -> site
 
+(* Test the equality of two sites *)
+val same_site : site -> site -> bool
+
 (* Raised when site fails, in response to synchronous calls *)
 exception Exit
 

@@ -69,7 +69,7 @@ let () = Join_prim.register_service name_key name_service
 
 let of_site site =
   let link =
-    Join_prim.call_service (Join_prim.as_space_id site,name_key) () in
+    Join_prim.call_service (Join_prim.space_id_of_site site,name_key) () in
   (link : t)
 
 	

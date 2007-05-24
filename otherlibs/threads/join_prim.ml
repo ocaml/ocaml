@@ -300,7 +300,7 @@ let tail_send_async chan a = match chan with
     end
 
 
-let where_from chan =
+let space_id_of_chan chan =
   let stub = match chan with Async(stub,_)|Alone(stub,_) -> stub in
   match stub.stub_tag with
   | Local -> Join_space.here
@@ -459,7 +459,8 @@ let exn_global = Join_message.exn_global
 (* Services, ie RPC by name *)
 (****************************)
 
-let as_space_id = Obj.magic
+let space_id_of_site (s: Join.site) = 
+  space_id_of_chan (Obj.magic s: unit async)
 
 let remote_service addr key =
   Join_space.rid_from_addr addr, key

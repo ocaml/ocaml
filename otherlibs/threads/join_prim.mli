@@ -43,7 +43,7 @@ val local_tail_send_alone : ('a -> unit) -> 'a -> unit
 val send_async : 'a async -> 'a -> unit
 val tail_send_async : 'a async -> 'a -> unit
 
-val where_from : 'a async -> space_id
+val space_id_of_chan : 'a async -> space_id
 
 (* Synchronous channels are plain fonctions *)
 val local_send_sync : automaton -> int -> 'a -> 'b
@@ -68,7 +68,7 @@ val exn_global : (string * int * int) -> Obj.t -> unit
 
 
 (* Services provide RPC by name, library use only *)
-val as_space_id : Join.site ->  Join_types.space_id
+val space_id_of_site : Join.site ->  Join_types.space_id
 val remote_service : Unix.sockaddr -> string -> service
 val register_service : string -> ('a -> 'b) -> unit
 val call_service : service -> 'a -> 'b
