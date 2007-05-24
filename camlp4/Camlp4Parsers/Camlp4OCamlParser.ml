@@ -244,6 +244,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
   clear star_ctyp;
   clear match_case;
   clear with_constr;
+  clear top_phrase;
 
   EXTEND Gram
     GLOBAL:
@@ -686,6 +687,13 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
         | `UIDENT "True" -> " True"
         | `UIDENT "False" -> " False"
         | `UIDENT s -> s
+      ] ]
+    ;
+    top_phrase:
+      [ [ "#"; n = a_LIDENT; dp = opt_expr; ";;" ->
+            Some <:str_item< # $n$ $dp$ >>
+        | l = LIST1 str_item; ";;" -> Some (Ast.stSem_of_list l)
+        | `EOI -> None
       ] ]
     ;
   END;
