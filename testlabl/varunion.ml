@@ -163,6 +163,15 @@ let f = function #t -> 1 | _ -> 2;;
 module N : sig type t = private [> ] end =
   struct type t = [F(String).t | M.u] end;;
 
+(* compatibility improvement *)
+type a = [`A of int | `B]
+type b = [`A of bool | `B]
+type c = private [> ] ~ [a;b]
+let f = function #c -> 1 | `A x -> truncate x
+type d = private [> ] ~ [a]
+let g = function #d -> 1 | `A x -> truncate x;;
+
+
 (* Expression Problem: functorial form *)
 
 type num = [ `Num of int ]
@@ -256,9 +265,19 @@ module rec E : (Exp with type t = [num | E.t add | E.t mul]) =
   end
 
 (* Do functor applications in Mix *)
-module type T = sig type t = private [> num] end
+module type T = sig type t = private [> ] end
+module type Tnum = sig type t = private [> num] end
 
-module Ext(E : T)(X : sig type t = private [> ] end) = struct
+module Ext(E : Tnum) = struct
+  module type S = functor (Y : Exp with type t = E.t) ->
+    sig
+      type t = private [> num]
+      val eval : t -> Y.t
+      val show : t -> string
+    end
+end
+
+module Ext'(E : Tnum)(X : T) = struct
   module type S = functor (Y : Exp with type t = E.t) ->
     sig
       type t = private [> ] ~ [ X.t ]
@@ -267,10 +286,7 @@ module Ext(E : T)(X : sig type t = private [> ] end) = struct
     end
 end
 
-module type S = Ext(E)(E).S;;
-module M(E:Exp) = Ext(E)(E)
-
-module Mix(E : Exp)(F1 : Ext(E)(E).S)(F2 : Ext(E)(F1(E)).S) =
+module Mix(E : Exp)(F1 : Ext(E).S)(F2 : Ext'(E)(F1(E)).S) =
   struct
     module E1 = F1(E)
     module E2 = F2(E)
@@ -283,7 +299,7 @@ module Mix(E : Exp)(F1 : Ext(E)(E).S)(F2 : Ext(E)(F1(E)).S) =
       | #E2.t as x -> E2.show x
   end
 
-module Join(E : Exp)(F1 : Ext(E)(E).S)(F2 : Ext(E)(F1(E)).S)
+module Join(E : Exp)(F1 : Ext(E).S)(F2 : Ext'(E)(F1(E)).S)
     (E' : Exp with type t = E.t) =
   Mix(E)(F1)(F2)
 
@@ -297,15 +313,15 @@ module rec E : (Exp with type t = [num | E.t add | E.t mul]) =
   Mix(E)(Join(E)(Num)(Add))(Mul)
 
 (* Linear extension by the end: not so nice *)
-module LExt(X : sig type t = private [> ] end) = struct
+module LExt(X : T) = struct
   module type S =
     sig
-      type t = private [> ] ~ [X.t]
+      type t
       val eval : t -> X.t
       val show : t -> string
     end
 end
-module LNum(E: Exp)(X : LExt(E).S) =
+module LNum(E: Exp)(X : LExt(E).S with type t = private [> ] ~ [num]) =
   struct
     type t = [num | X.t]
     let show = function
@@ -316,29 +332,29 @@ module LNum(E: Exp)(X : LExt(E).S) =
       | #X.t as x -> X.eval x
   end
 module LAdd(E : Exp with type t = private [> num | 'a add] as 'a)
-    (X : LExt(E).S) =
-  LNum(E)
-    (struct
-      type t = [E.t add | X.t]
-      let show = function
-          `Add(e1,e2) -> "("^ E.show e1 ^"+"^ E.show e2 ^")"
-        | #X.t as x -> X.show x
-      let eval = function
-          `Add(e1,e2) ->
-            let e1 = E.eval e1 and e2 = E.eval e2 in
-            begin match e1, e2 with
-              `Num n1, `Num n2 -> `Num (n1+n2)
-            | `Num 0, e | e, `Num 0 -> e
-            | e12 -> `Add e12
-            end
-        | #X.t as x -> X.eval x
-    end)
+    (X : LExt(E).S with type t = private [> ] ~ [add]) =
+  struct
+    type t = [E.t add | X.t]
+    let show = function
+        `Add(e1,e2) -> "("^ E.show e1 ^"+"^ E.show e2 ^")"
+      | #X.t as x -> X.show x
+    let eval = function
+        `Add(e1,e2) ->
+          let e1 = E.eval e1 and e2 = E.eval e2 in
+          begin match e1, e2 with
+            `Num n1, `Num n2 -> `Num (n1+n2)
+          | `Num 0, e | e, `Num 0 -> e
+          | e12 -> `Add e12
+          end
+      | #X.t as x -> X.eval x
+  end
 module LEnd = struct
   type t = [`Dummy]
   let show `Dummy = ""
   let eval `Dummy = `Dummy
 end
-module rec L : Exp with type t = [num | L.t add | `Dummy] = LAdd(L)(LEnd)
+module rec L : Exp with type t = [num | L.t add | `Dummy] =
+    LAdd(L)(LNum(L)(LEnd))
 
 (* Back to first form, but add map *)
 
@@ -382,7 +398,7 @@ module Ext(X : sig type t = private [> ] end)(Y : sig type t end) = struct
     end
 end
 
-module Mix(E : Exp)(E1 : Ext(E)(E).S)(E2 : Ext(E1)(E).S) =
+module Mix(E : Exp)(E1 : Ext(Dummy)(E).S)(E2 : Ext(E1)(E).S) =
   struct
     type t = [E1.t | E2.t]
     let map f = function
