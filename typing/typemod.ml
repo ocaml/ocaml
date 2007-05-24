@@ -799,7 +799,6 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
     Misc.try_finally (fun () -> type_structure initial_env ast)
                      (fun () -> Typeext.register_exttypes (); Stypes.dump (outputprefix ^ ".annot"))
   in
-  let simple_sg = simplify_signature sg in
   Typecore.force_delayed_checks ();
 
   Typeext.flush_ext_annot finalenv;
@@ -812,10 +811,11 @@ let type_implementation sourcefile outputprefix modulename initial_env ast =
                      (fun () -> Typeext.register_exttypes (); Stypes.dump (outputprefix ^ ".annot"))
   in
   Typecore.force_delayed_checks ();
+  let simple_sg = simplify_signature sg in
 
   if !Clflags.print_types then begin
     Typeext.solve finalenv;
-    fprintf std_formatter "%a@." Printtyp.signature (simplify_signature sg);
+    fprintf std_formatter "%a@." Printtyp.signature simple_sg;
     (str, Tcoerce_none)   (* result is ignored by Compile.implementation *)
   end else begin
     let sourceintf =
