@@ -51,10 +51,8 @@ exception Exit = Join_misc.JoinExit
 
 let () = Join_prim.exn_global ("join.ml", 50, 0) (Obj.repr Exit)
 
-let at_fail site (chan:unit chan) =
-  let chan' = (Obj.magic chan : unit async) in
-  Join_space.at_fail (Join_prim.space_id_of_chan chan') chan'
-  
+let at_fail site chan =
+  Join_space.at_fail (Join_prim.space_id_of_chan site) chan  
 
 let listen addr =
   try Join_space.listen addr
