@@ -58,7 +58,16 @@ let type_manifest env ty1 params1 ty2 params2 =
       let row1 = Ctype.row_normal env row1
       and row2 = Btype.row_repr row2 in
       Ctype.equal env true (ty1::params1) (row2.row_more::params2) &&
-      (match row1.row_more with	{desc=Tvar|Tconstr _} -> true | _ -> false) &&
+      let row1, ok =
+        match row1.row_more.desc with
+          Tvar -> row1, true
+	| Tconstr _ ->
+            Ctype.row_normal env
+              {row1 with row_closed = true; row_more = Btype.newgenvar();
+               row_abs = row1.row_more :: row1.row_abs},
+            true
+        | _ -> row1, false in
+      ok &&
       let row2 =
         Ctype.row_normal env {row2 with row_more = Btype.newgenvar()} in
       let r1, r2, pairs =
@@ -129,6 +138,7 @@ let type_declarations env id decl1 decl2 =
                                  (ty2::decl2.type_params))
           labels1 labels2
     | ((Type_abstract | Type_private _), Type_private (self :: cp2)) ->
+        cp2 = [] ||
 	begin match decl2.type_manifest with
 	  None -> true
 	| Some ty2 ->

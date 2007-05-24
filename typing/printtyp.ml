@@ -39,13 +39,16 @@ let ident ppf id = fprintf ppf "%s" (Ident.name id)
 
 let ident_pervasive = Ident.create_persistent "Pervasives"
 
+let norm_name s = s
+  (* if Btype.is_row_name s then Btype.unrow_name s else s *)
+
 let rec tree_of_path = function
   | Pident id ->
-      Oide_ident (Ident.name id)
+      Oide_ident (norm_name (Ident.name id))
   | Pdot(Pident id, s, pos) when Ident.same id ident_pervasive ->
       Oide_ident s
   | Pdot(p, s, pos) ->
-      Oide_dot (tree_of_path p, s)
+      Oide_dot (tree_of_path p, norm_name s)
   | Papply(p1, p2) ->
       Oide_apply (tree_of_path p1, tree_of_path p2)
 
@@ -522,13 +525,13 @@ let rec tree_of_type_decl id decl =
         Some ty
   in
   begin match decl.type_kind with
-  | Type_abstract -> ()
+  | Type_abstract | Type_private [] -> ()
   | Type_variant ([], _) -> ()
   | Type_variant (cstrs, priv) ->
       List.iter (fun (_, args) -> List.iter mark_loops args) cstrs
   | Type_record(l, rep, priv) ->
       List.iter (fun (_, _, ty) -> mark_loops ty) l
-  | Type_private l ->
+  | Type_private (_ :: l) ->
       List.iter (iter_compat mark_loops) l
   end;
 
@@ -584,6 +587,7 @@ let rec tree_of_type_decl id decl =
         tree_of_manifest (Otyp_record (List.map tree_of_label lbls)),
         priv, []
     | Type_private l ->
+        let l = if l = [] then l else List.tl l in
         let tty =
           match ty_manifest with
             None -> Otyp_abstract
@@ -813,6 +817,8 @@ let rec tree_of_modtype = function
 
 and tree_of_signature = function
   | [] -> []
+  | Tsig_value(id, _) :: rem when Btype.is_row_name (Ident.name id) ->
+      tree_of_signature rem
   | Tsig_value(id, decl) :: rem ->
       tree_of_value_description id decl :: tree_of_signature rem
   | Tsig_type(id, {type_kind=Type_private _}, rs) ::
