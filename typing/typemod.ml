@@ -124,7 +124,7 @@ let merge_constraint initial_env loc sg lid constr =
           | rem ->
               Tsig_value(Ident.create s', matcher_desc()) :: rem
         in
-        if needs_matcher decl then insert_matcher rem else rem
+        if needs_matcher newdecl then insert_matcher rem else rem
     | (Tsig_type(id, decl, rs) :: rem, [s], Pwith_type sdecl)
       when Ident.name id = s ->
         let newdecl =
