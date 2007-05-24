@@ -209,7 +209,7 @@ end
 module Ext(X : sig type t = private [> ] end)(Y : sig type t end) = struct
   module type S =
     sig
-      type t = private [> ] ~ [ ~ X.t ]
+      type t = private [> ] ~ [ X.t ]
       val eval : t -> Y.t
       val show : t -> string
     end
@@ -266,6 +266,9 @@ module Ext(E : T)(X : sig type t = private [> ] end) = struct
       val show : t -> string
     end
 end
+
+module type S = Ext(E)(E).S;;
+module M(E:Exp) = Ext(E)(E)
 
 module Mix(E : Exp)(F1 : Ext(E)(E).S)(F2 : Ext(E)(F1(E)).S) =
   struct
