@@ -674,7 +674,7 @@ val open_in_bin : string -> in_channel
    mode, this function behaves like {!Pervasives.open_in}. *)
 
 val open_in_gen : open_flag list -> int -> string -> in_channel
-(** [open_in mode perm filename] opens the named file for reading,
+(** [open_in_gen mode perm filename] opens the named file for reading,
    as described above. The extra arguments
    [mode] and [perm] specify the opening mode and file permissions.
    {!Pervasives.open_in} and {!Pervasives.open_in_bin} are special
@@ -816,17 +816,22 @@ external decr : int ref -> unit = "%decr"
 
 (** {6 Operations on format strings} *)
 
-(** See modules {!Printf} and {!Scanf} for more operations on
-    format strings. *)
-type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'c, 'c, 'd) format6 
+(** Format strings are used to read and print data using formatted input
+    functions in module {!Scanf} and formatted output in modules {!Printf} and
+    {!Format}. *)
 
-type ('a, 'b, 'c) format = ('a, 'b, 'c, 'c) format4
-(** Simplified type for format strings, included for backward compatibility
-    with earlier releases of Objective Caml.
+(** Format strings have a general and highly polymorphic type
+    [('a, 'b, 'c, 'd, 'e, 'f) format6]. Type [format6] is built in.
+    The two simplified types, [format] and [format4] below are
+    included for and backward compatibility with earlier releases of Objective
+    Caml.
     ['a] is the type of the parameters of the format,
     ['c] is the result type for the "printf"-style function,
     and ['b] is the type of the first argument given to
     [%a] and [%t] printing functions. *)
+type ('a, 'b, 'c, 'd) format4 = ('a, 'b, 'c, 'c, 'c, 'd) format6 
+
+type ('a, 'b, 'c) format = ('a, 'b, 'c, 'c) format4
 
 val string_of_format : ('a, 'b, 'c, 'd, 'e, 'f) format6 -> string
 (** Converts a format string into a string. *)

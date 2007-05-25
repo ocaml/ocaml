@@ -184,11 +184,12 @@ val bscanf : Scanning.scanbuf -> ('a, 'b, 'c, 'd) scanner;;
    - [u]: reads an unsigned decimal integer.
    - [x] or [X]: reads an unsigned hexadecimal integer.
    - [o]: reads an unsigned octal integer.
-   - [s]: reads a string argument that spreads as much as possible,
-     until the next white space, the next scanning indication, or the
-     end-of-input is reached. Hence, this conversion always succeeds:
-     it returns an empty string if the bounding condition holds
-     when the scan begins.
+   - [s]: reads a string argument that spreads as much as possible, until the
+     following bounding condition holds: a whitespace has been found, a
+     scanning indication has been encountered, or the end-of-input has been
+     reached.
+     Hence, this conversion always succeeds: it returns an empty
+     string if the bounding condition holds when the scan begins.
    - [S]: reads a delimited string argument (delimiters and special
      escaped characters follow the lexical conventions of Caml).
    - [c]: reads a single character. To test the current input character

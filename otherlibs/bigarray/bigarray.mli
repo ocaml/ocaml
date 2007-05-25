@@ -391,7 +391,7 @@ module Genarray :
      the file descriptor [fd] (as opened previously with
      [Unix.openfile], for example).  The optional [pos] parameter
      is the byte offset in the file of the data being mapped;
-     it default to 0 (map from the beginning of the file).
+     it defaults to 0 (map from the beginning of the file).
 
      If [shared] is [true], all modifications performed on the array
      are reflected in the file.  This requires that [fd] be opened
