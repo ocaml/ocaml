@@ -153,7 +153,7 @@ type wait_flag = Unix.wait_flag =
     WNOHANG (** do not block if no child has
                died yet, but immediately return with a pid equal to 0.*)
   | WUNTRACED (** report also the children that receive stop signals. *)
-(** Flags for {!Unix.waitpid}. *)
+(** Flags for {!UnixLabels.waitpid}. *)
 
 val execv : prog:string -> args:string array -> 'a
 (** [execv prog args] execute the program in file [prog], with
