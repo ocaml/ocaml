@@ -645,8 +645,9 @@ let check_compat_decl env (_,loc) (_,decl) =
       let mkty = function
 	  Ctype ty -> Ctype.mkvariant [] [ty] false
 	| Cfield l ->
-	    Ctype.mkvariant [l, Rpresent (Some(Btype.newgenty (Ttuple[])))]
-	      [] false
+	    Ctype.mkvariant
+              [l, Reither(true,[Btype.newgenvar()], true, ref None)]
+              [] false
       in
       let ty =
         Btype.newgenty (
