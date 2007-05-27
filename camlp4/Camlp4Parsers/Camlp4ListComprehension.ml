@@ -49,7 +49,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
               skip_patt (ignore_upto ")" (n + 1) + 1)
           | Some (KEYWORD "{") -> 
               skip_patt (ignore_upto "}" (n + 1) + 1)
-          | Some (KEYWORD ("as" | "::" | ";" | "," | "_"))
+          | Some (KEYWORD ("as" | "::" | "," | "_"))
           | Some (LIDENT _ | UIDENT _) -> skip_patt (n + 1)
           | Some _ | None -> raise Stream.Failure ]
         and ignore_upto end_kwd n =
