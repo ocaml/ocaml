@@ -753,8 +753,8 @@ let is_one_instr i =
           end
       | Iconst_int n -> is_offset_native n
       | Istackoffset _ -> true
-      | Iload(_, Iindexed n) -> i.res.(0).typ <> Float & is_offset n
-      | Istore(_, Iindexed n) -> i.arg.(0).typ <> Float & is_offset n
+      | Iload(_, Iindexed n) -> i.res.(0).typ <> Float && is_offset n
+      | Istore(_, Iindexed n) -> i.arg.(0).typ <> Float && is_offset n
       | Iintop(Iadd | Isub | Iand | Ior | Ixor) -> true
       | Iintop_imm((Iadd | Isub | Ilsl | Ilsr | Iasr), _) -> true
       | Inegf | Iabsf | Iaddf | Isubf | Imulf | Idivf -> true
@@ -789,7 +789,7 @@ let rec emit_all i =
       emit_instr i.next (Some i);
       emit_all i.next.next
   | {next = {desc = Lcondbranch(_, _) | Lswitch _}}
-    when is_one_instr i & no_interference i.res i.next.arg ->
+    when is_one_instr i && no_interference i.res i.next.arg ->
       emit_instr i.next (Some i);
       emit_all i.next.next
   | _ ->
