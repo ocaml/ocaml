@@ -49,7 +49,7 @@ let same_site s1 s2 =
 
 exception Exit = Join_misc.JoinExit
 
-let () = Join_prim.exn_global ("join.ml", 50, 0) (Obj.repr Exit)
+let () = Join_prim.exn_global ("join.ml", 52, 0) (Obj.repr Exit)
 
 let at_fail site chan =
   Join_space.at_fail (Join_prim.space_id_of_chan site) chan  

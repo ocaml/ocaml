@@ -72,12 +72,16 @@ while : ; do
         shift;;
     -ocamlc)
         ocamlc=$2; shift;;
+    -ocamllib)
+        ocamllib=$2; shift;;
     -host*|--host*)
         host_type=$2; shift;;
     -cc*)
         ccoption="$2"; shift;;
     -lib*)
         cclibs="$2 $cclibs"; shift;;
+    -dldefs*|--dldefs*)
+         dl_defs="$2"; shift;;
     -no-curses)
         withcurses=no;;
     -no-shared-libs)
@@ -86,20 +90,6 @@ while : ; do
         x11_include_dir=$2; shift;;
     -x11lib*|--x11lib*)
         x11_lib_dir=$2; shift;;
-    -with-pthread*|--with-pthread*)
-        ;; # Ignored for backward compatibility
-    -no-pthread*|--no-pthread*)
-        pthread_wanted=no;;
-    -no-tk|--no-tk)
-        tk_wanted=no;;
-    -tkdefs*|--tkdefs*)
-        tk_defs=$2; shift;;
-    -tklibs*|--tklibs*)
-        tk_libs=$2; shift;;
-    -tk-no-x11|--tk-no-x11)
-        tk_x11=no;;
-    -dldefs*|--dldefs*)
-        dl_defs="$2"; shift;;
     -dllibs*|--dllibs*)
         dllib="$2"; shift;;
     -verbose|--verbose)
@@ -164,34 +154,40 @@ esac
 echo "MANEXT=$manext" >> Makefile
 
 # Companion ocaml
-case "$ocamlc" in
- "")
-   if sh ./searchpath ocamlc
-   then
-     ocamlc="ocamlc"
-   fi
+if test -z "$ocamllib"
+then
+  case "$ocamlc" in
+   "")
+     if sh ./searchpath ocamlc
+     then
+       ocamlc="ocamlc"
+     fi
+     ;;
+   *)
+     if test ! -e $ocamlc
+     then
+       ocamlc=''
+     fi
+  esac
+  has_ocaml=false
+  jocaml_version=`head -1 ../../VERSION`
+  case "$ocamlc" in
+   "") echo "Warning: could not find ocamlc";;
+   *)
+     ocaml_version=`$ocamlc -version`
+     if test "$jocaml_version" = "$ocaml_version"
+     then
+       has_ocaml=true
+       ocamllib=`$ocamlc -where`
+     else
+       echo "Warning: Version mismatch ocaml is $ocaml_version, jocaml is $jocaml_version"
+     fi
    ;;
- *)
-   if test ! -e $ocamlc
-   then
-     ocamlc=''
-   fi
-esac
-has_ocaml=false
-jocaml_version=`head -1 ../../VERSION`
-case "$ocamlc" in
- "") echo "Warning: could not find ocamlc";;
- *)
-   ocaml_version=`$ocamlc -version`
-   if test "$jocaml_version" = "$ocaml_version"
-   then
-     has_ocaml=true
-     ocamllib=`$ocamlc -where`
-   else
-     echo "Warning: Version mismatch ocaml is $ocaml_version, jocaml is $jocaml_version"
-   fi
-   ;;
-esac
+  esac
+else
+  has_ocaml=true
+  ocaml_version=unchecked
+fi
 if $has_ocaml
 then
   echo OCAMLLIB=$ocamllib >> Makefile
