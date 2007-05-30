@@ -65,6 +65,12 @@ let print_version_and_library () =
   print_string Config.version; print_newline();
   print_string "Standard library directory: ";
   print_string Config.standard_library; print_newline();
+  begin match Config.ocaml_library with
+  | None -> ()
+  | Some d ->
+      print_string "Companion OCaml library directory: ";
+       print_string d; print_newline()
+  end ;
   exit 0
 
 let print_version_string () =

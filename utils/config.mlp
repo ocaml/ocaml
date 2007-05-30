@@ -16,7 +16,10 @@
 let version = Sys.ocaml_version
 
 let standard_library_default = "%%LIBDIR%%"
-let ocaml_library = "%%OCAMLLIB%%"
+let _ocaml_library = "%%OCAMLLIB%%"
+let ocaml_library = match _ocaml_library with
+| "" -> None
+| s  -> Some s
 
 let standard_library =
   try

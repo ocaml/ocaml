@@ -90,8 +90,7 @@ let std_include_flag prefix =
 
 let std_include_dir () =
   if !no_std_include then []
-  else if Config.ocaml_library = "" then
-    [Config.standard_library]
-  else
-    [Config.standard_library; Config.ocaml_library]    
+  else match Config.ocaml_library with
+  | None -> [Config.standard_library]
+  | Some s -> [Config.standard_library; s]    
 ;;

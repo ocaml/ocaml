@@ -52,7 +52,7 @@ let print_version () =
 
 (*> JOCAML *)
 let magic_join () =
-  let dir = Misc.expand_directory Config.standard_library "" "+threads" in
+  let dir = Misc.expand_directory Config.standard_library None "+threads" in
   include_dirs := dir :: !include_dirs ;
     ()
 (*< JOCAML *)         

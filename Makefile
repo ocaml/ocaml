@@ -246,7 +246,7 @@ install: FORCE
 	if test -d $(BINDIR); then : ; else $(MKDIR) $(BINDIR); fi
 	if test -d $(LIBDIR); then : ; else $(MKDIR) $(LIBDIR); fi
 	if test -d $(STUBLIBDIR); then : ; else $(MKDIR) $(STUBLIBDIR); fi
-	- if test -d $(MANDIR)/man$(MANEXT); then : ; else $(MKDIR) $(MANDIR)/man$(MANEXT); fi
+#	- if test -d $(MANDIR)/man$(MANEXT); then : ; else $(MKDIR) $(MANDIR)/man$(MANEXT); fi
 	cd $(LIBDIR); rm -f dllbigarray.so dlllabltk.so dllnums.so \
           dllthreads.so dllunix.so dllgraphics.so dllmldbm.so dllstr.so \
           dlltkanim.so
@@ -262,7 +262,7 @@ install: FORCE
 	cp toplevel/topstart.cmo $(LIBDIR)
 	cp toplevel/toploop.cmi toplevel/topdirs.cmi toplevel/topmain.cmi $(LIBDIR)
 	cd tools; $(MAKE) install
-	-cd man; $(MAKE) install
+#	-cd man; $(MAKE) install
 	for i in $(OTHERLIBRARIES); do \
           (cd otherlibs/$$i; $(MAKE) install) || exit $$?; \
         done

@@ -123,11 +123,13 @@ let expand_directory alt alt2 s =
       let d =
         Filename.concat alt
           (String.sub s 1 (String.length s - 1)) in
-      if alt2 = "" || is_dir d then d
-      else
-        Filename.concat alt2
-          (String.sub s 1 (String.length s - 1)) in
-(*    prerr_endline (">>> "^s^" -> "^r) ; *)
+      match alt2 with
+      | None -> d
+      | Some alt2 ->
+          if is_dir d then d
+          else
+            Filename.concat alt2
+              (String.sub s 1 (String.length s - 1)) in
     r
   else s
 

@@ -19,9 +19,9 @@ val version: string
 
 val standard_library: string
         (* The directory containing the standard libraries *)
-val ocaml_library : string
+val ocaml_library : string option
         (*  The directory containing the standard libraries of ocaml,
-            or "" if no companion ocaml *)
+            or None if no companion ocaml *)
 
 val standard_runtime: string
         (* The full path to the standard bytecode interpreter ocamlrun *)
