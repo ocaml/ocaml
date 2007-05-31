@@ -772,7 +772,8 @@ module Make (Ast : Sig.Camlp4Ast) = struct
     | _ -> assert False ]
   and mkideexp x acc =
     match x with
-    [ <:rec_binding< $x$; $y$ >> ->
+    [ <:rec_binding<>> -> acc
+    | <:rec_binding< $x$; $y$ >> ->
          mkideexp x (mkideexp y acc)
     | <:rec_binding< $lid:s$ = $e$ >> -> [(s, expr e) :: acc]
     | _ -> assert False ]
