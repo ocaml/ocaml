@@ -54,8 +54,8 @@ join.cmxa: $(JOIN_X)
 	$(CAMLOPT) -a -o join.cmxa $(JOIN_X)
 
 partialclean::
-	/bin/rm -f join.{cma,cmxa,a}
-	rm -f $(JOIN_OBJS) $(JOIN_X) *.cmi
+	/bin/rm -f join.{cma,cmxa,a} vmjoin.cma
+	rm -f $(JOIN_OBJS) $(JOIN_X) *.cmi *.o
 
 clean: partialclean
 

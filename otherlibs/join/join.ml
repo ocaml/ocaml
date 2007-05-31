@@ -17,19 +17,10 @@ open Join_types
 
 type 'a chan = 'a async
 
-let get_local_addr = Join_misc.get_local_addr 
-
 exception Exit = Join_misc.JoinExit
 
 def exception Exit
 
-let listen addr =
-  try Join_space.listen addr
-  with Join_port.Failed (msg,e) ->
-(*DEBUG*)debug0 "Join.listen" "failed: %s\n" msg ;
-    raise e
-
-let connect fd = Join_space.connect fd
 
 let exit_hook = Join_scheduler.exit_hook
 

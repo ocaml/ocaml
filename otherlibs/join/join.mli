@@ -22,27 +22,11 @@
 type - 'a chan
 (** The type of asynchronous channels carrying values of type ['a]. *)
 
-val get_local_addr : unit -> Unix.inet_addr
-(** Returns the default Internet address of the local site,
-    never fails. At worst, [get_local_addr ()] returns the loopback
-    address [Unix.inet_addr_loopback] *)
-
 
 exception Exit
 (** Raised by the JoCaml runtime system,
     when some remote synchronous call cannot be completed because of
     the failure of the remote site *)
-
-
-val listen : Unix.sockaddr -> unit
-(** Start to listen for connections on the socket address given as argument.
-    Raises [Failure] in case of failure. *)
-
-
-(**/**)
-val connect : Unix.file_descr -> unit
-(** start with connected socket *)
-(**/**)
 
 
 val exit_hook : unit -> unit
@@ -90,6 +74,16 @@ module Site : sig
   (** Get identity of the remote site listening on sockaddr.
       Raise [Failure] if connection to sockaddr cannot be established. *)
 
+  val listen : Unix.sockaddr -> unit
+  (** Start to listen for connections on the socket address given as argument.
+      Raises [Failure] in case of failure. *)
+
+
+  (**/**)
+  val connect : Unix.file_descr -> unit
+  (** start with connected socket *)
+  (**/**)
+
 
   val where_from : 'a chan -> t
   (** [where_from c] returns the identity of the remote site where reception
@@ -110,6 +104,11 @@ module Site : sig
      a bit unsafe, due to naive routing.
      A failure may express the impossibility to contact a remote site for
     the first time. *)
+
+  val get_local_addr : unit -> Unix.inet_addr
+  (** Returns the default Internet address of the local site,
+      never fails. At worst, [get_local_addr ()] returns the loopback
+      address [Unix.inet_addr_loopback] *)
 
 end
 

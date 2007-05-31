@@ -22,6 +22,18 @@ def _here() = assert false ; 0
 
 let here = (Obj.magic _here : unit async)
 
+
+let get_local_addr = Join_misc.get_local_addr 
+
+let listen addr =
+  try Join_space.listen addr
+  with Join_port.Failed (msg,e) ->
+(*DEBUG*)debug0 "Join.listen" "failed: %s\n" msg ;
+    raise e
+
+let connect fd = Join_space.connect fd
+
+
 let site_service () = here
 let site_key = "name_youhou"
 let () = Join_prim.register_service site_key site_service
