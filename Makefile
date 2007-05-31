@@ -316,14 +316,17 @@ partialclean::
 # The toplevel
 
 toplibs:
-	for i in unix systhreads join; do \
+	for i in unix systhreads threads ; do \
           (cd otherlibs/$$i; $(MAKE) RUNTIME=$(RUNTIME) all) || exit $$?; \
         done
+	(cd otherlibs/join; $(MAKE) join.cma) || exit $$?
 
 toplibsopt:
-	for i in  unix systhreads join; do \
+	for i in  unix systhreads threads ; do \
           (cd otherlibs/$$i; $(MAKE) allopt) || exit $$?; \
         done
+	(cd otherlibs/join; $(MAKE) join.cmxa) || exit $$?
+
 
 ocaml: toplibs $(TOPOBJS) expunge
 	$(CAMLC) $(LINKFLAGS) -thread -I otherlibs/unix -I otherlibs/systhreads -I otherlibs/join \
