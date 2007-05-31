@@ -520,12 +520,14 @@ and close_link space rspace = match rspace.link with
 
 (* Find route to remote space *)
 
+(*
 and find_route space rspace = match find_routes space rspace with
 | [] ->
 (*DEBUG*)debug0 "FIND ROUTE" "unreachable site: %s"
 (*DEBUG*)  (string_of_space rspace.rspace_id) ;
     raise RoutingFailed
 | r::_ -> r
+*)
 
 and find_routes space rspace =
 (*DEBUG*)debug1 "FIND ROUTES" "to %s" (string_of_space rspace.rspace_id) ;
@@ -565,7 +567,7 @@ and open_link_sender space rspace mtx =  match rspace.link with
       try
 	let routes = find_routes space rspace in
         let rec get_link = function 
-          | [] -> assert false (* RoutingFailed above raised *)
+          | [] -> raise RoutingFailed
           | [route] ->  attempt_connect route 0.1, route
           | route::rem ->
 (*DEBUG*)debug1 "GET_LINK" "try route %s" (string_of_sockaddr route) ;
@@ -577,8 +579,13 @@ and open_link_sender space rspace mtx =  match rspace.link with
         let link,route = get_link routes in
 	connect_on_link  space rspace (mtx, cond) link route
       with
-      |	RoutingFailed -> raise RoutingFailed
-	  
+      |	RoutingFailed ->
+(*DEBUG*)debug1 "OPEN SENDER" "Routing failed" ;
+          Mutex.lock mtx ;
+          rspace.link <- DeadConnection ;
+          Condition.broadcast cond ;
+          Mutex.unlock mtx ;
+          raise NoLink
 
 and connect_on_link space rspace (mtx, cond) link route =
   Join_message.output_value link
@@ -970,7 +977,9 @@ let rec do_at_fail space rspace_id (hook : unit async) =
             rspace.hooks <- hook :: rspace.hooks ;
             Mutex.unlock mtx
         | NoConnection _ -> (* connect, just to test liveness! *)
-            ignore (open_link_sender space rspace mtx) ;
+            begin try
+              ignore (open_link_sender space rspace mtx)
+            with NoLink -> () end ;
             do_at_fail space rspace_id hook
   end
 
