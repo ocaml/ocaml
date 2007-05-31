@@ -4,7 +4,7 @@
 (*                                                                     *)
 (*            Luc Maranget, projet Moscova, INRIA Rocquencourt         *)
 (*                                                                     *)
-(*  Copyright 2005 Institut National de Recherche en Informatique et   *)
+(*  Copyright 2004 Institut National de Recherche en Informatique et   *)
 (*  en Automatique.  All rights reserved.  This file is distributed    *)
 (*  under the terms of the Q Public License version 1.0.               *)
 (*                                                                     *)
@@ -12,22 +12,33 @@
 
 (* $Id$ *)
 
-(* abstract type for the name service *)
-type t
+open Join_types
+(*DEBUG*)open Join_debug
 
-(* the local name service *)
-val here : t
+type 'a chan = 'a async
 
-(* get remote name service *)
-val of_site : Join.site -> t
+let get_local_addr = Join_misc.get_local_addr 
 
-(* get remote name service by socket address *)
-val of_sockaddr : Unix.sockaddr -> t
+exception Exit = Join_misc.JoinExit
 
-(* find value, raise Not_found when not present *)
-val lookup : t -> string -> 'a
+let () = Join_prim.exn_global ("join.ml", 52, 0) (Obj.repr Exit)
 
-(* register binding, returns when done *)
-val register : t -> string -> 'a -> unit
+let listen addr =
+  try Join_space.listen addr
+  with Join_port.Failed (msg,e) ->
+(*DEBUG*)debug0 "Join.listen" "failed: %s\n" msg ;
+    raise e
+
+let connect fd = Join_space.connect fd
+
+let exit_hook = Join_scheduler.exit_hook
 
 
+(* Debug from users programs *)
+type 'a debug = string -> (('a, unit, string, unit) format4 -> 'a)
+
+let debug = Join_debug.debug
+
+
+module Site = Site
+module Ns = Ns

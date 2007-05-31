@@ -3,4 +3,4 @@
 # $Id$
 
 THREAD_MODULES=thread mutex condition event
-JOIN_MODULES=unix $(THREAD_MODULES) join_prim join ns
+JOIN_MODULES=unix $(THREAD_MODULES) join

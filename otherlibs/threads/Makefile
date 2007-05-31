@@ -23,15 +23,17 @@ JCC=../../ocamlcomp.sh -I ../unix
 MKLIB=../../boot/ocamlrun ../../tools/ocamlmklib
 COMPFLAGS=-warn-error A
 
-C_OBJS=scheduler.o
-
-CAML_OBJS=thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo
 
 JOIN_C_OBJS=join.o
 
 JOIN_OBJS=join_debug.cmo join_misc.cmo join_link.cmo  join_hash.cmo\
  join_set.cmo join_queue.cmo join_extern.cmo join_scheduler.cmo join_port.cmo\
- join_message.cmo join_space.cmo join_prim.cmo join.cmo ns.cmo join_test.cmo
+ join_message.cmo join_space.cmo join_prim.cmo join_test.cmo
+
+C_OBJS=scheduler.o $(JOIN_C_OBJS)
+
+CAML_OBJS=thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo $(JOIN_OBJS)
+
 
 LIB=../../stdlib
 
@@ -56,7 +58,8 @@ UNIXLIB=../unix
 
 UNIXLIB_OBJS=unix.cmo $(UNIXLIB)/unixLabels.cmo
 
-all: libvmthreads.a threads.cma stdlib.cma unix.cma libvmjoin.a join.cma
+all: libvmthreads.a threads.cma stdlib.cma unix.cma 
+#	libvmjoin_hide.a join_hide.cma
 
 allopt:
 
@@ -72,11 +75,11 @@ stdlib.cma: $(LIB_OBJS)
 unix.cma: $(UNIXLIB_OBJS)
 	$(MKLIB) -ocamlc '$(CAMLC)' -o unix -linkall $(UNIXLIB_OBJS)
 
-libvmjoin.a: $(JOIN_C_OBJS)
-	$(MKLIB) -o join -oc vmjoin $(JOIN_C_OBJS)
+libvmjoin_hide.a: $(JOIN_C_OBJS)
+	$(MKLIB) -o join_hide -oc vmjoin_hide $(JOIN_C_OBJS)
 
-join.cma: $(JOIN_OBJS) unix.cma threads.cma
-	$(MKLIB) -ocamlc '$(CAMLC)' -o join -oc vmjoin unix.cma threads.cma $(JOIN_OBJS)
+join_hide.cma: $(JOIN_OBJS) unix.cma threads.cma
+	$(MKLIB) -ocamlc '$(CAMLC)' -o join_hide -oc vmjoin_hide unix.cma threads.cma $(JOIN_OBJS)
 
 pervasives.cmo: pervasives.mli pervasives.cmi pervasives.ml
 	$(CAMLC) ${COMPFLAGS} -nopervasives -c pervasives.ml
@@ -110,7 +113,7 @@ partialclean:
 
 clean: partialclean
 	rm -f libvmthreads.a dllvmthreads.so *.o
-	rm -f libvmjoin.a dllvmjoin.so *.o
+	rm -f libvmjoin_hide.a dllvmjoin_hide.so *.o
 	rm -f pervasives.mli marshal.mli unix.mli
 
 install:
@@ -121,11 +124,11 @@ install:
 	cp thread.cmi mutex.cmi condition.cmi event.cmi threadUnix.cmi threads.cma stdlib.cma unix.cma $(LIBDIR)/vmthreads
 	cp thread.mli mutex.mli condition.mli event.mli threadUnix.mli $(LIBDIR)/vmthreads
 #Install the join library (and friends)
-	if test -f dllvmjoin.so; then cp dllvmjoin.so $(STUBLIBDIR)/.; fi
-	cp libvmjoin.a $(LIBDIR)/vmthreads/libvmjoin.a
-	cd $(LIBDIR)/vmthreads; $(RANLIB) libvmjoin.a
-	cp join_prim.cmi join.cmi ns.cmi join_test.cmi join.cma $(LIBDIR)/vmthreads
-	cp join_prim.mli join.mli ns.mli join_test.mli $(LIBDIR)/vmthreads
+# 	if test -f dllvmjoin_hide.so; then cp dllvmjoin_hide.so $(STUBLIBDIR)/.; fi
+# 	cp libvmjoin_hide.a $(LIBDIR)/vmthreads/libvmjoin_hide.a
+# 	cd $(LIBDIR)/vmthreads; $(RANLIB) libvmjoin_hide.a
+# 	cp join_prim.cmi join_hide.cma $(LIBDIR)/vmthreads
+# 	cp join_prim.mli $(LIBDIR)/vmthreads
 
 installopt:
 
@@ -146,10 +149,6 @@ installopt:
 
 depend:
 	gcc -MM $(CFLAGS) *.c > .depen
-	/bin/rm -f ns.ml
 	../../boot/ocamlrun ../../tools/ocamldep -nojoin *.mli *.ml >> .depend
-	cp ns.jml ns.ml 
-	../../boot/ocamlrun ../../tools/ocamldep ns.ml >> .depend
-	/bin/rm ns.ml
 
 include .depend

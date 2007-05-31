@@ -11,3 +11,7 @@ weakset.cmo: weakset.cmi
 weakset.cmx: weakset.cmi 
 whashtbl.cmo: weakarray.cmi whashtbl.cmi 
 whashtbl.cmx: weakarray.cmx whashtbl.cmi 
+join.cmo: site.cmo join.cmi 
+join.cmx: site.cmx join.cmi 
+ns.cmo: site.cmo 
+ns.cmx: site.cmx 

@@ -459,9 +459,6 @@ let exn_global = Join_message.exn_global
 (* Services, ie RPC by name *)
 (****************************)
 
-let space_id_of_site (s: Join.site) = 
-  space_id_of_chan (Obj.magic s: unit async)
-
 let remote_service addr key =
   Join_space.rid_from_addr addr, key
 

@@ -107,14 +107,12 @@ typing/btype.cmo: typing/types.cmi typing/path.cmi utils/misc.cmi \
     typing/btype.cmi 
 typing/btype.cmx: typing/types.cmx typing/path.cmx utils/misc.cmx \
     typing/btype.cmi 
-typing/ctype.cmo: typing/types.cmi typing/subst.cmi typing/predef.cmi \
-    typing/path.cmi utils/misc.cmi parsing/longident.cmi typing/ident.cmi \
-    typing/env.cmi utils/clflags.cmi typing/btype.cmi parsing/asttypes.cmi \
-    typing/ctype.cmi 
-typing/ctype.cmx: typing/types.cmx typing/subst.cmx typing/predef.cmx \
-    typing/path.cmx utils/misc.cmx parsing/longident.cmx typing/ident.cmx \
-    typing/env.cmx utils/clflags.cmx typing/btype.cmx parsing/asttypes.cmi \
-    typing/ctype.cmi 
+typing/ctype.cmo: typing/types.cmi typing/subst.cmi typing/path.cmi \
+    utils/misc.cmi parsing/longident.cmi typing/ident.cmi typing/env.cmi \
+    utils/clflags.cmi typing/btype.cmi parsing/asttypes.cmi typing/ctype.cmi 
+typing/ctype.cmx: typing/types.cmx typing/subst.cmx typing/path.cmx \
+    utils/misc.cmx parsing/longident.cmx typing/ident.cmx typing/env.cmx \
+    utils/clflags.cmx typing/btype.cmx parsing/asttypes.cmi typing/ctype.cmi 
 typing/datarepr.cmo: typing/types.cmi typing/predef.cmi utils/misc.cmi \
     parsing/asttypes.cmi typing/datarepr.cmi 
 typing/datarepr.cmx: typing/types.cmx typing/predef.cmx utils/misc.cmx \
@@ -508,6 +506,8 @@ asmcomp/selectgen.cmi: utils/tbl.cmi asmcomp/reg.cmi asmcomp/mach.cmi \
 asmcomp/selection.cmi: asmcomp/mach.cmi asmcomp/cmm.cmi 
 asmcomp/spill.cmi: asmcomp/mach.cmi 
 asmcomp/split.cmi: asmcomp/mach.cmi 
+asmcomp/arch.cmo: utils/misc.cmi utils/config.cmi 
+asmcomp/arch.cmx: utils/misc.cmx utils/config.cmx 
 asmcomp/asmgen.cmo: asmcomp/split.cmi asmcomp/spill.cmi asmcomp/selection.cmi \
     asmcomp/scheduling.cmi asmcomp/reload.cmi asmcomp/reg.cmi \
     asmcomp/proc.cmi asmcomp/printmach.cmi asmcomp/printlinear.cmi \
@@ -607,13 +607,15 @@ asmcomp/emitaux.cmx: asmcomp/reg.cmx asmcomp/linearize.cmx \
     asmcomp/debuginfo.cmx asmcomp/cmm.cmx asmcomp/arch.cmx \
     asmcomp/emitaux.cmi 
 asmcomp/emit.cmo: asmcomp/reg.cmi asmcomp/proc.cmi utils/misc.cmi \
-    asmcomp/mach.cmi asmcomp/linearize.cmi asmcomp/emitaux.cmi \
-    asmcomp/debuginfo.cmi utils/config.cmi asmcomp/compilenv.cmi \
-    asmcomp/cmm.cmi utils/clflags.cmi asmcomp/arch.cmo asmcomp/emit.cmi 
+    asmcomp/mach.cmi parsing/location.cmi asmcomp/linearize.cmi \
+    asmcomp/emitaux.cmi asmcomp/debuginfo.cmi utils/config.cmi \
+    asmcomp/compilenv.cmi asmcomp/cmm.cmi utils/clflags.cmi asmcomp/arch.cmo \
+    asmcomp/emit.cmi 
 asmcomp/emit.cmx: asmcomp/reg.cmx asmcomp/proc.cmx utils/misc.cmx \
-    asmcomp/mach.cmx asmcomp/linearize.cmx asmcomp/emitaux.cmx \
-    asmcomp/debuginfo.cmx utils/config.cmx asmcomp/compilenv.cmx \
-    asmcomp/cmm.cmx utils/clflags.cmx asmcomp/arch.cmx asmcomp/emit.cmi 
+    asmcomp/mach.cmx parsing/location.cmx asmcomp/linearize.cmx \
+    asmcomp/emitaux.cmx asmcomp/debuginfo.cmx utils/config.cmx \
+    asmcomp/compilenv.cmx asmcomp/cmm.cmx utils/clflags.cmx asmcomp/arch.cmx \
+    asmcomp/emit.cmi 
 asmcomp/interf.cmo: asmcomp/reg.cmi asmcomp/proc.cmi utils/misc.cmi \
     asmcomp/mach.cmi asmcomp/interf.cmi 
 asmcomp/interf.cmx: asmcomp/reg.cmx asmcomp/proc.cmx utils/misc.cmx \
@@ -647,9 +649,11 @@ asmcomp/printmach.cmx: asmcomp/reg.cmx asmcomp/proc.cmx asmcomp/printcmm.cmx \
     asmcomp/mach.cmx asmcomp/debuginfo.cmx asmcomp/cmm.cmx asmcomp/arch.cmx \
     asmcomp/printmach.cmi 
 asmcomp/proc.cmo: asmcomp/reg.cmi utils/misc.cmi asmcomp/mach.cmi \
-    asmcomp/cmm.cmi utils/ccomp.cmi asmcomp/arch.cmo asmcomp/proc.cmi 
+    utils/config.cmi asmcomp/cmm.cmi utils/clflags.cmi utils/ccomp.cmi \
+    asmcomp/arch.cmo asmcomp/proc.cmi 
 asmcomp/proc.cmx: asmcomp/reg.cmx utils/misc.cmx asmcomp/mach.cmx \
-    asmcomp/cmm.cmx utils/ccomp.cmx asmcomp/arch.cmx asmcomp/proc.cmi 
+    utils/config.cmx asmcomp/cmm.cmx utils/clflags.cmx utils/ccomp.cmx \
+    asmcomp/arch.cmx asmcomp/proc.cmi 
 asmcomp/reg.cmo: asmcomp/cmm.cmi asmcomp/reg.cmi 
 asmcomp/reg.cmx: asmcomp/cmm.cmx asmcomp/reg.cmi 
 asmcomp/reloadgen.cmo: asmcomp/reg.cmi utils/misc.cmi asmcomp/mach.cmi \

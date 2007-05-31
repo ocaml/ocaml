@@ -106,7 +106,7 @@ TOPLIB=$(UTILS) $(PARSING) $(TYPING) $(COMP) $(BYTECOMP) $(TOPLEVEL)
 
 TOPOBJS=$(TOPLEVELLIB)\
  otherlibs/unix/unix.cma otherlibs/systhreads/threads.cma\
- otherlibs/systhreads/join.cma\
+ otherlibs/join/join.cma\
  $(TOPLEVELSTART)
 
 OPTOBJS=$(OPTUTILS) $(PARSING) $(TYPING) $(COMP) $(ASMCOMP) $(OPTDRIVER)
@@ -316,17 +316,17 @@ partialclean::
 # The toplevel
 
 toplibs:
-	for i in unix systhreads; do \
+	for i in unix systhreads join; do \
           (cd otherlibs/$$i; $(MAKE) RUNTIME=$(RUNTIME) all) || exit $$?; \
         done
 
 toplibsopt:
-	for i in  unix systhreads; do \
+	for i in  unix systhreads join; do \
           (cd otherlibs/$$i; $(MAKE) allopt) || exit $$?; \
         done
 
 ocaml: toplibs $(TOPOBJS) expunge
-	$(CAMLC) $(LINKFLAGS) -thread -I otherlibs/unix -I otherlibs/systhreads \
+	$(CAMLC) $(LINKFLAGS) -thread -I otherlibs/unix -I otherlibs/systhreads -I otherlibs/join \
 		-linkall -o ocaml.tmp $(TOPOBJS)
 	- $(CAMLRUN) ./expunge ocaml.tmp ocaml $(PERVASIVES)
 	rm -f ocaml.tmp

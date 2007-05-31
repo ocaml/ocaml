@@ -24,16 +24,17 @@ COMPFLAGS=-warn-error A -g
 #OCAMLPP=-pp '../../ocamldoc/remove_DEBUG'
 
 
-BYTECODE_C_OBJS=posix_b.o
-NATIVECODE_C_OBJS=posix_n.o
-THREAD_OBJS= thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo
 
 BYTECODE_JOIN_C_OBJS=join_b.o
 NATIVECODE_JOIN_C_OBJS=join_n.o
 
 JOIN_OBJS=join_debug.cmo join_misc.cmo join_link.cmo join_hash.cmo\
  join_set.cmo join_queue.cmo join_extern.cmo join_scheduler.cmo join_port.cmo\
- join_message.cmo join_space.cmo join_prim.cmo join.cmo ns.cmo join_test.cmo
+ join_message.cmo join_space.cmo join_prim.cmo join_test.cmo
+
+BYTECODE_C_OBJS=posix_b.o $(BYTECODE_JOIN_C_OBJS)
+NATIVECODE_C_OBJS=posix_n.o $(NATIVECODE_JOIN_C_OBJS)
+THREAD_OBJS= thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo $(JOIN_OBJS)
 
 GENFILES=thread.ml join.c join_types.mli\
  join_debug.mli join_debug.ml\
@@ -47,19 +48,19 @@ GENFILES=thread.ml join.c join_types.mli\
  join_message.mli join_message.ml\
  join_space.mli join_space.ml\
  join_prim.ml join_prim.mli\
- join.ml join.mli\
- ns.mli ns.jml\
  join_test.mli join_test.ml
 
-all: libthreads.a threads.cma libjoin.a join.cma
+all: libthreads.a threads.cma 
+#libjoin_hide.a join_hide.cma
 
-allopt: libthreadsnat.a threads.cmxa libjoinnat.a join.cmxa
+allopt: libthreadsnat.a threads.cmxa 
+#libjoinnat.a join_hide.cmxa
 
 libthreads.a: $(BYTECODE_C_OBJS)
 	$(MKLIB) -o threads $(BYTECODE_C_OBJS)
 
-libjoin.a: $(BYTECODE_JOIN_C_OBJS)
-	$(MKLIB) -o join $(BYTECODE_JOIN_C_OBJS)
+libjoin_hide.a: $(BYTECODE_JOIN_C_OBJS)
+	$(MKLIB) -o join_hide $(BYTECODE_JOIN_C_OBJS)
 
 posix_b.o: posix.c
 	$(BYTECC) -O -I../../byterun $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) \
@@ -91,8 +92,8 @@ threads.cma: $(THREAD_OBJS)
 	$(MKLIB) -ocamlc '$(CAMLC)' -o threads $(THREAD_OBJS) \
           -cclib -lunix $(PTHREAD_LINK)
 
-join.cma: $(JOIN_OBJS) threads.cma ../unix/unix.cma
-	$(MKLIB) -ocamlc '$(CAMLC)' -o join ../unix/unix.cma threads.cma $(JOIN_OBJS) \
+join_hide.cma: $(JOIN_OBJS) threads.cma ../unix/unix.cma
+	$(MKLIB) -ocamlc '$(CAMLC)' -o join_hide ../unix/unix.cma threads.cma $(JOIN_OBJS) \
           -cclib -lunix $(PTHREAD_LINK)
 
 # See remark above: force static linking of libthreadsnat.a
@@ -100,8 +101,8 @@ threads.cmxa: $(THREAD_OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o threads.cmxa $(THREAD_OBJS:.cmo=.cmx) \
           -cclib -lthreadsnat -cclib -lunix $(PTHREAD_LINK)
 
-join.cmxa: $(THREAD_OBJS:.cmo=.cmx) $(JOIN_OBJS:.cmo=.cmx)
-	$(CAMLOPT) -a -o join.cmxa  \
+join_hide.cmxa: $(THREAD_OBJS:.cmo=.cmx) $(JOIN_OBJS:.cmo=.cmx)
+	$(CAMLOPT) -a -o join_hide.cmxa  \
 	../unix/unix.cmx ../unix/unixLabels.cmx \
 	$(THREAD_OBJS:.cmo=.cmx) $(JOIN_OBJS:.cmo=.cmx) \
          -cclib -lthreadsnat -cclib -ljoinnat -cclib -lunix $(PTHREAD_LINK)
@@ -168,23 +169,11 @@ join_prim.ml: ../threads/join_prim.ml
 join_prim.mli: ../threads/join_prim.mli
 	ln -s ../threads/join_prim.mli .
 
-join.ml: ../threads/join.ml
-	ln -s ../threads/join.ml .
-
-join.mli: ../threads/join.mli
-	ln -s ../threads/join.mli .
-
 join_test.ml: ../threads/join_test.ml
 	ln -s ../threads/join_test.ml .
 
 join_test.mli: ../threads/join_test.mli
 	ln -s ../threads/join_test.mli .
-
-ns.jml: ../threads/ns.jml
-	ln -s ../threads/ns.jml .
-
-ns.mli: ../threads/ns.mli
-	ln -s ../threads/ns.mli .
 
 join_message.ml: ../threads/join_message.ml
 	ln -s ../threads/join_message.ml .
@@ -217,10 +206,10 @@ install:
 	rm -f $(LIBDIR)/threads/stdlib.cma
 	cp thread.mli mutex.mli condition.mli event.mli threadUnix.mli $(LIBDIR)
 #For join lib and friends
-	if test -f dlljoin.so; then cp dlljoin.so $(STUBLIBDIR)/dlljoin.so; fi
-	cp libjoin.a $(LIBDIR)/libjoin.a
-	cd $(LIBDIR); $(RANLIB) libjoin.a
-	cp join_prim.cmi join.cmi ns.cmi join_test.cmi join.cma $(LIBDIR)/threads	
+#	if test -f dlljoin_hide.so; then cp dlljoin_hide.so $(STUBLIBDIR)/dlljoin_hide.so; fi
+#	cp libjoin_hide.a $(LIBDIR)/libjoin_hide.a
+#	cd $(LIBDIR); $(RANLIB) libjoin_hide.a
+#	cp join_prim.cmi join_test.cmi join_hide.cma $(LIBDIR)/threads	
 
 
 
@@ -230,10 +219,10 @@ installopt:
 	cp $(THREAD_OBJS:.cmo=.cmx) threads.cmxa threads.a $(LIBDIR)/threads
 	cd $(LIBDIR)/threads; $(RANLIB) threads.a
 #For join lib and friends
-	cp libjoinnat.a $(LIBDIR)/libjoinnat.a
-	cd $(LIBDIR); $(RANLIB) libjoinnat.a
-	cp join.cmxa join.a $(LIBDIR)/threads
-	cd $(LIBDIR)/threads; $(RANLIB) join.a
+#	cp libjoinnat.a $(LIBDIR)/libjoinnat.a
+#	cd $(LIBDIR); $(RANLIB) libjoinnat.a
+#	cp join_hide.cmxa join_hide.a $(LIBDIR)/threads
+#	cd $(LIBDIR)/threads; $(RANLIB) join_hide.a
 
 .SUFFIXES: .jml .ml .mli .cmo .cmi .cmx
 
@@ -254,10 +243,6 @@ installopt:
 
 depend: $(GENFILES)
 	-gcc -MM -I../../byterun *.c > .depend
-	/bin/rm -f ns.ml
 	../../boot/ocamlrun ../../tools/ocamldep -nojoin *.mli *.ml >> .depend
-	cp ns.jml ns.ml 
-	../../boot/ocamlrun ../../tools/ocamldep ns.ml >> .depend
-	/bin/rm -f ns.ml
 
 include .depend
