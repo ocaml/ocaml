@@ -14,6 +14,7 @@
 
 (** The JoCaml core library.
 
+  This modules offers basic functionalities for JoCaml.
     
 *)
 
@@ -22,15 +23,20 @@ type - 'a chan
 (** The type of asynchronous channels carrying values of type ['a]. *)
 
 val get_local_addr : unit -> Unix.inet_addr
-(** Convenience *)
+(** Returns the default Internet address of the local site,
+    never fails. At worst, [get_local_addr ()] returns the loopback
+    address [Unix.inet_addr_loopback] *)
 
 
 exception Exit
-(** Raised when site fails, in response to synchronous calls *)
+(** Raised by the JoCaml runtime system,
+    when some remote synchronous call cannot be completed because of
+    the failure of the remote site *)
 
 
 val listen : Unix.sockaddr -> unit
-(** start to listen for connections *)
+(** Start to listen for connections on the socket address given as argument.
+    Raises [Pervasives.Failure] in case of failure. *)
 
 
 (**/**)
@@ -40,64 +46,99 @@ val connect : Unix.file_descr -> unit
 
 
 val exit_hook : unit -> unit
-(** Hook for [at_exit] will somehow control termination of program.
+(** Hook to be given as argument to {!Pervasives.at_exit}.
+    This  will somehow control termination of program.
     More precisely, program terminates when they is no more
     work to achieve.
-    This does not apply to program engaged in distribution. *)
+    This does not apply to program engaged in distribution.
+    @see <http://caml.inria.fr/pub/docs/manual-ocaml/libref/Pervasives.html#VALat_exit> [Pervasives.at_exit] *)
 
 
 type 'a debug = string -> (('a, unit, string, unit) format4 -> 'a)
+(** The type of the  argument of {!Join.debug} *)
 
 val debug : 'a debug
-(** Print a message on standard error,
+(** Print a message on standard error.
     Usage: debug tag fmt ...
        - fmt ... is in printf style.
-       - tag is a string 
+       - tag is a string.
+    A lock is taken so that messages do not interleave.
 *)
 
+(** Site definition *)
 
 module Site : sig 
-  (** Site definition *)
+
+  (**
+    Sites are abstractions for running JoCaml runtimes. Sites have unique
+    identities, which can be passed on channels, computed from Internet
+    addresses or extracted from asynchornous channels.
+
+    Sites must be compared with the [equal] and [compare] functions
+    of this module.
+  *)
 
   type t
-  (** the type of site identities *)
+  (** The type of site identities. *)
 
   val here : t
-  (** [here] returns the local site *)
+  (** Local site identity. *)
 
   val there : Unix.sockaddr -> t
-  (** Get identity of the remote site listening on sockadrr *)
+  (** Get identity of the remote site listening on sockaddr.
+      Raise [Failure] if connection to sockaddr cannot be established. *)
 
 
   val where_from : 'a chan -> t
-  (** Get identity of the remote site where reception on channel takes place *)
+  (** [where_from c] returns the identity of the remote site where reception
+      on channel [c] takes place.
+      Raise {!Join.Exit} when the remote site has failed. *)
 
-  val same_site : t -> t -> bool
-  (** Test the equality of two sites *)
+  val equal : t -> t -> bool
+  (** Test the equality of two sites. *)
+
+  val compare : t -> t -> int
+  (** Compare two sites, order is arbitrary. *)
 
   val at_fail : t -> unit chan -> unit
- (** Register a channel to be sent to when site fails *)
+ (** [at_fail s c] registers channel [c] as a guard on failure of site  [s].
+     If [s] failure is detected, a message () is sent on channel [c] *)
 
 end
 
+
+(** Dynamic, unsafe, value repository. *)
+
 module Ns : sig
+(** Dynamic, unsafe, value repository.
+
+    Every site offers a name service. The name service offers associations
+    from strings to values.
+*)
+
   type t
-  (** abstract type for the name service *)
+  (** Abstract type for the name service. *)
 
   val here : t
-  (** the local name service *)
+  (** The local name service *)
 
   val of_site : Site.t -> t
-  (** get remote name service *)
+  (** Get remote name service by site identity. *)
+
+  val there : Unix.sockaddr -> t
+  (** Get remote name service by socket address.
+      Basically, [there addr] is [of_site (Site.there addr)] *)
 
   val of_sockaddr : Unix.sockaddr -> t
-  (** get remote name service by socket address *)
+  (** Synonym for [there] *)
+
+
 
   val lookup : t -> string -> 'a
-  (** find value, raise Not_found when not present *)
+  (** Find value, raise [Not_found] when not present. *)
 
   val register : t -> string -> 'a -> unit
-  (** register binding, returns when done *)
+  (** Register binding, returns when done. *)
 
 end
 

@@ -34,7 +34,8 @@ JOIN_OBJS=join_debug.cmo join_misc.cmo join_link.cmo join_hash.cmo\
 
 BYTECODE_C_OBJS=posix_b.o $(BYTECODE_JOIN_C_OBJS)
 NATIVECODE_C_OBJS=posix_n.o $(NATIVECODE_JOIN_C_OBJS)
-THREAD_OBJS= thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo $(JOIN_OBJS)
+CAML_THREAD_OBJS=thread.cmo mutex.cmo condition.cmo event.cmo threadUnix.cmo 
+THREAD_OBJS= $(CAML_THREAD_OBJS) $(JOIN_OBJS)
 
 GENFILES=thread.ml join.c join_types.mli\
  join_debug.mli join_debug.ml\
@@ -51,16 +52,12 @@ GENFILES=thread.ml join.c join_types.mli\
  join_test.mli join_test.ml
 
 all: libthreads.a threads.cma 
-#libjoin_hide.a join_hide.cma
+
 
 allopt: libthreadsnat.a threads.cmxa 
-#libjoinnat.a join_hide.cmxa
 
 libthreads.a: $(BYTECODE_C_OBJS)
 	$(MKLIB) -o threads $(BYTECODE_C_OBJS)
-
-libjoin_hide.a: $(BYTECODE_JOIN_C_OBJS)
-	$(MKLIB) -o join_hide $(BYTECODE_JOIN_C_OBJS)
 
 posix_b.o: posix.c
 	$(BYTECC) -O -I../../byterun $(BYTECCCOMPOPTS) $(SHAREDCCCOMPOPTS) \
@@ -92,20 +89,10 @@ threads.cma: $(THREAD_OBJS)
 	$(MKLIB) -ocamlc '$(CAMLC)' -o threads $(THREAD_OBJS) \
           -cclib -lunix $(PTHREAD_LINK)
 
-join_hide.cma: $(JOIN_OBJS) threads.cma ../unix/unix.cma
-	$(MKLIB) -ocamlc '$(CAMLC)' -o join_hide ../unix/unix.cma threads.cma $(JOIN_OBJS) \
-          -cclib -lunix $(PTHREAD_LINK)
-
 # See remark above: force static linking of libthreadsnat.a
 threads.cmxa: $(THREAD_OBJS:.cmo=.cmx)
 	$(CAMLOPT) -a -o threads.cmxa $(THREAD_OBJS:.cmo=.cmx) \
           -cclib -lthreadsnat -cclib -lunix $(PTHREAD_LINK)
-
-join_hide.cmxa: $(THREAD_OBJS:.cmo=.cmx) $(JOIN_OBJS:.cmo=.cmx)
-	$(CAMLOPT) -a -o join_hide.cmxa  \
-	../unix/unix.cmx ../unix/unixLabels.cmx \
-	$(THREAD_OBJS:.cmo=.cmx) $(JOIN_OBJS:.cmo=.cmx) \
-         -cclib -lthreadsnat -cclib -ljoinnat -cclib -lunix $(PTHREAD_LINK)
 
 $(THREAD_OBJS:.cmo=.cmx) $(JOIN_OBJS:.cmo=.cmx): ../../ocamlopt
 
@@ -202,27 +189,17 @@ install:
 	cp libthreads.a $(LIBDIR)/libthreads.a
 	cd $(LIBDIR); $(RANLIB) libthreads.a
 	if test -d $(LIBDIR)/threads; then :; else mkdir $(LIBDIR)/threads; fi
-	cp $(THREAD_OBJS:.cmo=.cmi) threads.cma $(LIBDIR)/threads
-	rm -f $(LIBDIR)/threads/stdlib.cma
-	cp thread.mli mutex.mli condition.mli event.mli threadUnix.mli $(LIBDIR)
-#For join lib and friends
-#	if test -f dlljoin_hide.so; then cp dlljoin_hide.so $(STUBLIBDIR)/dlljoin_hide.so; fi
-#	cp libjoin_hide.a $(LIBDIR)/libjoin_hide.a
-#	cd $(LIBDIR); $(RANLIB) libjoin_hide.a
-#	cp join_prim.cmi join_test.cmi join_hide.cma $(LIBDIR)/threads	
-
-
+	cp thread.mli mutex.mli condition.mli\
+  event.mli threadUnix.mli $(LIBDIR)/threads
+	cp join_prim.cmi join_test.cmi $(LIBDIR)/threads
+	cp $(CAML_THREAD_OBJS:.cmo=.cmi) threads.cma $(LIBDIR)/threads
 
 installopt:
 	cp libthreadsnat.a $(LIBDIR)/libthreadsnat.a
 	cd $(LIBDIR); $(RANLIB) libthreadsnat.a
 	cp $(THREAD_OBJS:.cmo=.cmx) threads.cmxa threads.a $(LIBDIR)/threads
 	cd $(LIBDIR)/threads; $(RANLIB) threads.a
-#For join lib and friends
-#	cp libjoinnat.a $(LIBDIR)/libjoinnat.a
-#	cd $(LIBDIR); $(RANLIB) libjoinnat.a
-#	cp join_hide.cmxa join_hide.a $(LIBDIR)/threads
-#	cd $(LIBDIR)/threads; $(RANLIB) join_hide.a
+
 
 .SUFFIXES: .jml .ml .mli .cmo .cmi .cmx
 

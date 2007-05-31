@@ -18,8 +18,9 @@ open Join_types
 
 type t = unit async
 
-let here = Join_prim.create_alone (fun _ -> ()) "here"
+def _here() = assert false ; 0
 
+let here = (Obj.magic _here : unit async)
 
 let site_service () = here
 let site_key = "name_youhou"
@@ -39,8 +40,13 @@ let where_from chan =
       let site = Join_prim.call_service (space_id, site_key) () in
       (site : t)
 
-let same_site s1 s2 = 
+let equal s1 s2 = 
   (Join_prim.space_id_of_chan s1) = (Join_prim.space_id_of_chan s2)
 
+and compare s1 s2 =
+  Pervasives.compare
+    (Join_prim.space_id_of_chan s1)
+    (Join_prim.space_id_of_chan s2)
+  
 let at_fail site chan =
   Join_space.at_fail (Join_prim.space_id_of_chan site) chan  

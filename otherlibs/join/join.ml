@@ -21,7 +21,7 @@ let get_local_addr = Join_misc.get_local_addr
 
 exception Exit = Join_misc.JoinExit
 
-let () = Join_prim.exn_global ("join.ml", 52, 0) (Obj.repr Exit)
+def exception Exit
 
 let listen addr =
   try Join_space.listen addr

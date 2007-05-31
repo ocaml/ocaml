@@ -1,17 +1,4 @@
-jprims.cmo: jprims.cmi 
-jprims.cmx: jprims.cmi 
-jprims.cmo: jprims.cmi 
-jprims.cmx: jprims.cmi 
-whashtbl.cmi: weakarray.cmi 
-jprims.cmo: jprims.cmi 
-jprims.cmx: jprims.cmi 
-weakarray.cmo: weakarray.cmi 
-weakarray.cmx: weakarray.cmi 
-weakset.cmo: weakset.cmi 
-weakset.cmx: weakset.cmi 
-whashtbl.cmo: weakarray.cmi whashtbl.cmi 
-whashtbl.cmx: weakarray.cmx whashtbl.cmi 
-join.cmo: site.cmo join.cmi 
-join.cmx: site.cmx join.cmi 
+join.cmo: site.cmo ns.cmo join.cmi 
+join.cmx: site.cmx ns.cmx join.cmi 
 ns.cmo: site.cmo 
 ns.cmx: site.cmx 

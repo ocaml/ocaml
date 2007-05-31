@@ -741,7 +741,10 @@ and do_call_service space rspace_id key a =
 
 and call_route_service space rspace_id a =
   let routes =
-    Obj.magic (do_call_service space rspace_id "joroute" (Obj.magic a : 'a)) in
+    try
+      Obj.magic
+        (do_call_service space rspace_id "joroute" (Obj.magic a : 'a))
+    with _ -> raise RoutingFailed in
   (routes : route list)
 
 and route_service space ((ask_id,rspace_id):(space_id * space_id)) =

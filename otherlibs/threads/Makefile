@@ -59,7 +59,6 @@ UNIXLIB=../unix
 UNIXLIB_OBJS=unix.cmo $(UNIXLIB)/unixLabels.cmo
 
 all: libvmthreads.a threads.cma stdlib.cma unix.cma 
-#	libvmjoin_hide.a join_hide.cma
 
 allopt:
 
@@ -74,12 +73,6 @@ stdlib.cma: $(LIB_OBJS)
 
 unix.cma: $(UNIXLIB_OBJS)
 	$(MKLIB) -ocamlc '$(CAMLC)' -o unix -linkall $(UNIXLIB_OBJS)
-
-libvmjoin_hide.a: $(JOIN_C_OBJS)
-	$(MKLIB) -o join_hide -oc vmjoin_hide $(JOIN_C_OBJS)
-
-join_hide.cma: $(JOIN_OBJS) unix.cma threads.cma
-	$(MKLIB) -ocamlc '$(CAMLC)' -o join_hide -oc vmjoin_hide unix.cma threads.cma $(JOIN_OBJS)
 
 pervasives.cmo: pervasives.mli pervasives.cmi pervasives.ml
 	$(CAMLC) ${COMPFLAGS} -nopervasives -c pervasives.ml
@@ -113,7 +106,6 @@ partialclean:
 
 clean: partialclean
 	rm -f libvmthreads.a dllvmthreads.so *.o
-	rm -f libvmjoin_hide.a dllvmjoin_hide.so *.o
 	rm -f pervasives.mli marshal.mli unix.mli
 
 install:
@@ -122,13 +114,8 @@ install:
 	cp libvmthreads.a $(LIBDIR)/vmthreads/libvmthreads.a
 	cd $(LIBDIR)/vmthreads; $(RANLIB) libvmthreads.a
 	cp thread.cmi mutex.cmi condition.cmi event.cmi threadUnix.cmi threads.cma stdlib.cma unix.cma $(LIBDIR)/vmthreads
+	cp join_prim.cmi join_test.cmi $(LIBDIR)/vmthreads
 	cp thread.mli mutex.mli condition.mli event.mli threadUnix.mli $(LIBDIR)/vmthreads
-#Install the join library (and friends)
-# 	if test -f dllvmjoin_hide.so; then cp dllvmjoin_hide.so $(STUBLIBDIR)/.; fi
-# 	cp libvmjoin_hide.a $(LIBDIR)/vmthreads/libvmjoin_hide.a
-# 	cd $(LIBDIR)/vmthreads; $(RANLIB) libvmjoin_hide.a
-# 	cp join_prim.cmi join_hide.cma $(LIBDIR)/vmthreads
-# 	cp join_prim.mli $(LIBDIR)/vmthreads
 
 installopt:
 
@@ -141,14 +128,14 @@ installopt:
 	$(CAMLC) -c $(COMPFLAGS) $(OCAMLPP) $<
 
 .jml.cmo:
-	$(JCC) -c $(COMPFLAGS) $(OCAMLPP) -impl $<
+	$(JCC) -c $(COMPFLAGS) $(OCAMLPP) -nostdlib -impl $<
 
 .ml.cmx:
 	$(CAMLOPT) -c $(COMPFLAGS) $<
 	$(CAMLOPT) -c $(COMPFLAGS) $(OCAMLPP) $<
 
 depend:
-	gcc -MM $(CFLAGS) *.c > .depen
+	gcc -MM $(CFLAGS) *.c > .depend
 	../../boot/ocamlrun ../../tools/ocamldep -nojoin *.mli *.ml >> .depend
 
 include .depend

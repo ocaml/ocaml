@@ -23,26 +23,7 @@ COMPFLAGS=-warn-error A
 
 
 JOIN_OBJS=site.cmo ns.cmo join.cmo
-
-LIB=../../stdlib
-
-LIB_OBJS=pervasives.cmo \
-  $(LIB)/array.cmo $(LIB)/list.cmo $(LIB)/char.cmo $(LIB)/string.cmo \
-  $(LIB)/sys.cmo $(LIB)/hashtbl.cmo $(LIB)/sort.cmo \
-  marshal.cmo $(LIB)/obj.cmo $(LIB)/int32.cmo $(LIB)/int64.cmo \
-  $(LIB)/nativeint.cmo \
-  $(LIB)/lexing.cmo $(LIB)/parsing.cmo \
-  $(LIB)/set.cmo $(LIB)/map.cmo $(LIB)/stack.cmo $(LIB)/queue.cmo \
-  $(LIB)/stream.cmo $(LIB)/buffer.cmo \
-  $(LIB)/printf.cmo $(LIB)/format.cmo \
-  $(LIB)/scanf.cmo $(LIB)/arg.cmo \
-  $(LIB)/printexc.cmo $(LIB)/gc.cmo $(LIB)/digest.cmo $(LIB)/random.cmo \
-  $(LIB)/camlinternalOO.cmo $(LIB)/oo.cmo $(LIB)/camlinternalMod.cmo \
-  $(LIB)/genlex.cmo $(LIB)/callback.cmo $(LIB)/weak.cmo \
-  $(LIB)/lazy.cmo $(LIB)/filename.cmo $(LIB)/complex.cmo \
-  $(LIB)/arrayLabels.cmo $(LIB)/listLabels.cmo $(LIB)/stringLabels.cmo \
-  $(LIB)/stdLabels.cmo $(LIB)/moreLabels.cmo
-
+JOIN_X=$(JOIN_OBJS:.cmo=.cmx)
 
 VMTHREADSLIB=../threads
 VMTHREADSLIB_OBJS=$(VMTHREADSLIB)/threads.cma
@@ -52,41 +33,41 @@ SYSTHREADSLIB_OBJS=$(SYSTHREADSLIB)/threads.cma
 
 THREADS=../systhreads
 
-all: vmjoin.cma join.cma
+all: vmjoin.cma join.cma 
 
 allopt: join.cmxa
 
+$(JOIN_OBJS): join.cmi $(VMTHREADSLIB_OBJS) $(SYSTHREADSLIB_OBJS)
+
+$(JOIN_X): join.cmi $(SYSTHREADSLIB)/threads.cmxa
+
 vmjoin.cma: $(JOIN_OBJS) 
 	if test -f $(VMTHREADSLIB_OBJS); then \
-		$(CAMLC) -a -o vmjoin.cma $(VMTHREADSLIB_OBJS) $(JOIN_OBJS); \
+		$(CAMLC) -a -o vmjoin.cma  $(JOIN_OBJS); \
 	fi
 
 
 join.cma: $(JOIN_OBJS) 
-	$(CAMLC) -a -o join.cma $(SYSTHREADSLIB_OBJS) $(JOIN_OBJS)
+	$(CAMLC) -a -o join.cma $(JOIN_OBJS)
 
-join.cmxa: $(JOIN_OBJS:.cmo=.cmx)
-	$(CAMLOPT) -a -o join.cmxa \
-		$(SYSTHREADSLIB_OBJS:.cma=.cmxa) $(JOIN_OBJS:.cmo=.cmx)
+join.cmxa: $(JOIN_X)
+	$(CAMLOPT) -a -o join.cmxa $(JOIN_X)
 
-
-
-
-partialclean:
-	rm -f *.cm*
+partialclean::
+	/bin/rm -f join.{cma,cmxa,a}
+	rm -f $(JOIN_OBJS) $(JOIN_X) *.cmi
 
 clean: partialclean
 
 
 install:
-#Install the join library (and friends)
 	cp join.mli join.cmi $(LIBDIR)/vmthreads
 	cp vmjoin.cma $(LIBDIR)/vmthreads/join.cma
 	cp join.mli join.cmi $(LIBDIR)/threads
 	cp join.cma $(LIBDIR)/threads/join.cma
 
 installopt:
-	cp join.cmxa $(LIBDIR)/threads/join.cmxa
+	cp join.cmxa join.a $(LIBDIR)/threads
 
 .SUFFIXES: .jml .ml .mli .cmo .cmi .cmx
 
@@ -94,20 +75,12 @@ installopt:
 	$(CAMLC) -c $(COMPFLAGS) -I $(THREADS) $<
 
 .ml.cmo:
-	$(CAMLC) -c $(COMPFLAGS) -I $(THREADS) $(OCAMLPP) $<
-
-.jml.cmo:
-	$(JCC) -c $(COMPFLAGS) -I $(THREADS) $(OCAMLPP) -impl $<
+	$(JCC) -c $(COMPFLAGS) -I $(THREADS) $(OCAMLPP) $<
 
 .ml.cmx:
-	$(CAMLOPT) -c $(COMPFLAGS) -I $(THREADS) $<
-	$(CAMLOPT) -c $(COMPFLAGS) -I $(THREADS) $(OCAMLPP) $<
+	$(JCOPT) -c $(COMPFLAGS) -I $(THREADS) $(OCAMLPP) $<
 
 depend:
-	/bin/rm -f ns.ml
-	../../boot/ocamlrun ../../tools/ocamldep -nojoin *.mli *.ml >> .depend
-	cp ns.jml ns.ml 
-	../../boot/ocamlrun ../../tools/ocamldep ns.ml >> .depend
-	/bin/rm ns.ml
+	../../boot/ocamlrun ../../tools/ocamldep *.mli *.ml > .depend
 
 include .depend

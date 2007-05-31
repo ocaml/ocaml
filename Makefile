@@ -117,7 +117,7 @@ EXPUNGEOBJS=utils/misc.cmo utils/tbl.cmo \
   typing/predef.cmo bytecomp/runtimedef.cmo bytecomp/bytesections.cmo \
   bytecomp/dll.cmo bytecomp/meta.cmo bytecomp/symtable.cmo toplevel/expunge.cmo
 
-PERVASIVES=$(STDLIB_MODULES) $(JOIN_MODULES) outcometree topdirs toploop
+PERVASIVES=$(STDLIB_MODULES) $(JOIN_MODULES) join_prim outcometree topdirs toploop
 
 # For users who don't read the INSTALL file
 defaultentry:
@@ -328,7 +328,7 @@ toplibsopt:
 ocaml: toplibs $(TOPOBJS) expunge
 	$(CAMLC) $(LINKFLAGS) -thread -I otherlibs/unix -I otherlibs/systhreads -I otherlibs/join \
 		-linkall -o ocaml.tmp $(TOPOBJS)
-	- $(CAMLRUN) ./expunge ocaml.tmp ocaml $(PERVASIVES)
+	$(CAMLRUN) ./expunge ocaml.tmp ocaml $(PERVASIVES)
 	rm -f ocaml.tmp
 
 toplevel/toplevellib.cma: $(TOPLIB)
