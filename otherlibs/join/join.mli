@@ -71,13 +71,13 @@ val debug : 'a debug
 module Site : sig 
 
   (**
-    Sites are abstractions for running JoCaml runtimes. Sites have unique
+    Sites are abstractions of JoCaml runtimes. Sites have unique
     identities, which can be passed on channels, computed from Internet
     addresses or extracted from asynchronous channels.
 
     Sites must be compared with the [equal] and [compare] functions
-    of this module. However sites are interseting for the function
-    {!Site.at_fail} that performs failure detection.
+    of this module. Sites are useful for performing crude failure detection
+    (See  {!Site.at_fail} below).
   *)
 
   type t
