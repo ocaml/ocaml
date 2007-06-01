@@ -38,6 +38,7 @@ let create_port porto =
 	  (Unix.domain_of_sockaddr port)
 	  SOCK_STREAM 0 in
       try
+	set_close_on_exec s ;
         setsockopt s SO_REUSEADDR true;
 	bind s port ;
         listen s 5;

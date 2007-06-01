@@ -72,11 +72,11 @@ module Site : sig
 
   val there : Unix.sockaddr -> t
   (** Get identity of the remote site listening on sockaddr.
-      Raise [Failure] if connection to sockaddr cannot be established. *)
+      Raise [Failure] if the connection cannot be established. *)
 
   val listen : Unix.sockaddr -> unit
   (** Start to listen for connections on the socket address given as argument.
-      Raises [Failure] in case of failure. *)
+      Raises [Unix.Error] in case of failure. *)
 
 
   (**/**)
@@ -87,8 +87,7 @@ module Site : sig
 
   val where_from : 'a chan -> t
   (** [where_from c] returns the identity of the remote site where reception
-      on channel [c] takes place.
-      Raise {!Join.Exit} when the remote site has failed. *)
+      on channel [c] takes place. *)
 
   val equal : t -> t -> bool
   (** Test the equality of two sites. *)

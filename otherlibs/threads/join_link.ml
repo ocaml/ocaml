@@ -27,6 +27,7 @@ type t =
 
 let create fd =
   try
+    Unix.set_close_on_exec fd ;
   { outc = Unix.out_channel_of_descr fd ;
     inc  = Unix.in_channel_of_descr fd ;
     fd = fd ; }

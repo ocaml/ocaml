@@ -17,7 +17,7 @@ open Printf
 type 'a t = string -> (('a, unit, string, unit) format4 -> 'a)
 
 (*DEBUG*)let verbose =
-(*DEBUG*)  try int_of_string (Sys.getenv "JOVERBOSE") with | _ -> 0
+(*DEBUG*)  try int_of_string (Sys.getenv "JOVERBOSE") with | _ -> -1
 
 let debug_mutex = Mutex.create ()
 

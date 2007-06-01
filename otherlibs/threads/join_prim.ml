@@ -299,7 +299,6 @@ let tail_send_async chan a = match chan with
 	Join_space.remote_send_alone true rspace stub.uid a
     end
 
-
 let space_id_of_chan chan =
   let stub = match chan with Async(stub,_)|Alone(stub,_) -> stub in
   match stub.stub_tag with

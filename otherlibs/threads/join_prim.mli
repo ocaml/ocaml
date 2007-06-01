@@ -43,6 +43,7 @@ val local_tail_send_alone : ('a -> unit) -> 'a -> unit
 val send_async : 'a async -> 'a -> unit
 val tail_send_async : 'a async -> 'a -> unit
 
+
 val space_id_of_chan : 'a async -> space_id
 
 (* Synchronous channels are plain fonctions *)
@@ -68,7 +69,11 @@ val exn_global : (string * int * int) -> Obj.t -> unit
 
 
 (* Services provide RPC by name, library use only *)
+(*
 val remote_service : Unix.sockaddr -> string -> service
+(** Raise Join.Exit *)
+*)
+
 val register_service : string -> ('a -> 'b) -> unit
 val call_service : service -> 'a -> 'b
 

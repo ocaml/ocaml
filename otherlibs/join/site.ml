@@ -28,7 +28,7 @@ let get_local_addr = Join_misc.get_local_addr
 let listen addr =
   try Join_space.listen addr
   with Join_port.Failed (msg,e) ->
-(*DEBUG*)debug0 "Join.listen" "failed: %s\n" msg ;
+(*DEBUG*)debug1 "Join.listen" "failed: %s" msg ;
     raise e
 
 let connect fd = Join_space.connect fd
@@ -43,7 +43,8 @@ let there addr =
   let site = Join_prim.call_service (space_id, site_key) () in
   (site : t)
 
-let where_from chan =
+let where_from ( chan : 'a async ) = (Obj.magic chan : t)
+(* In place of
   let stub = match chan with Async(stub,_)|Alone(stub,_) -> stub in
   match stub.stub_tag with
   | Local -> here
@@ -51,6 +52,7 @@ let where_from chan =
       let space_id = (Obj.magic stub.stub_val : space_id) in
       let site = Join_prim.call_service (space_id, site_key) () in
       (site : t)
+*)
 
 let equal s1 s2 = 
   (Join_prim.space_id_of_chan s1) = (Join_prim.space_id_of_chan s2)

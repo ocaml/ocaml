@@ -27,14 +27,15 @@ let rec string_of_sockaddrs = function
   | [r] -> string_of_sockaddr r
   | r::rs -> string_of_sockaddr r ^","^string_of_sockaddrs rs
 
+exception ConnectFailed of string
+
 let rec attempt_connect r_addr d =
   try Join_port.connect r_addr
   with Join_port.Failed (msg,_) ->
-    if d > 5.0 then 
-      failwith
-        (sprintf "cannot connect to %s: %s"
-           (string_of_sockaddr r_addr) msg)
-    else
+    if d > 5.0 then begin
+(*DEBUG*)debug0 "ATTEMPT CONNECT" "failed: %s" msg ;
+      raise (ConnectFailed msg)
+    end else
       Thread.delay d ; attempt_connect r_addr (2.0 *. d)
 
 let same_addr (s1:Unix.sockaddr) s2 = Pervasives.compare s1 s2 = 0
@@ -208,6 +209,7 @@ let string_of_addr = function
   | None -> "default"
   | Some a -> string_of_sockaddr a
 
+(*
 let check_addr id addro = match addro with
 | None -> ()
 | Some addr ->
@@ -215,7 +217,7 @@ let check_addr id addro = match addro with
       failwith
         (sprintf "attempt to listen on %s, already running as %s"
            (string_of_sockaddr addr) (string_of_sockaddr id))
-
+*)
 
 exception RoutingFailed
 
@@ -574,13 +576,13 @@ and open_link_sender space rspace mtx =  match rspace.link with
               begin try
                 attempt_connect route 0.1, route
               with
-              | Failure _ -> get_link rem
+              | ConnectFailed _ -> get_link rem
               end in
         let link,route = get_link routes in
 	connect_on_link  space rspace (mtx, cond) link route
       with
-      |	RoutingFailed ->
-(*DEBUG*)debug1 "OPEN SENDER" "Routing failed" ;
+      |	RoutingFailed|ConnectFailed _ as e ->
+(*DEBUG*)debug1 "OPEN SENDER" "failed on %s" (Printexc.to_string e) ;
           Mutex.lock mtx ;
           rspace.link <- DeadConnection ;
           Condition.broadcast cond ;
@@ -837,6 +839,10 @@ let () = register_service "joroute"
 let call_service space_id key a =
   do_call_service local_space  space_id key a
 
+(*
+  This connection attempt is quite special, since the remote structure
+  may not exist yet. In fact we may not even know the remote id
+*)
 let do_rid_from_addr space addr =
   let my_routes = get_routes space in
   if List.exists (same_addr addr) my_routes then
@@ -844,7 +850,11 @@ let do_rid_from_addr space addr =
   else begin
 (*DEBUG*)debug1 "RID"
 (*DEBUG*)  "GET COMPLETE ID OF %s" (string_of_sockaddr addr) ;
-    let link = attempt_connect addr 0.1 in
+    let link =
+      try attempt_connect addr 0.1
+      (* Signal distant site is dead since
+         rid_from_addr is a function *)
+      with ConnectFailed msg -> failwith msg in
     let rid =
       try
 	Join_message.output_value link Query ;
@@ -858,6 +868,7 @@ let do_rid_from_addr space addr =
 (*DEBUG*)let _,stamp = rid.uniq in
 (*DEBUG*)debug1 "RID" "GOT COMPLETE ID OF %s+%f"
 (*DEBUG*)  (string_of_space rid) stamp ;
+(* Now, we can create the remote space struture *)
     make_remote_space space rid rid [addr] ;
 (* So as not to waste link just established, do actual Connect *)
     let _link =
@@ -888,14 +899,12 @@ let do_rid_from_addr space addr =
               try connect_on_link space rspace (mtx,cond) link addr
               (* Signal distant site is dead since
                  rid_from_addr is a function *)
-              with NoLink -> raise Join_misc.JoinExit in
+              with NoLink as e ->
+		failwith (Join_misc.exn_to_string e) in
     rid
   end
 
 let rid_from_addr addr = do_rid_from_addr local_space addr
-
-let kill_remote_space space rspace = assert false
-
 
 (********************************)
 (* Use exit 0, in place of halt *)
