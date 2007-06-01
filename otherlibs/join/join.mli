@@ -97,9 +97,9 @@ module Site : sig
 
   val at_fail : t -> unit chan -> unit
  (** [at_fail s c] registers channel [c] as a guard on failure of site  [s].
-     If [s] failure is detected, a message () is sent on channel [c] *)
+     If [s] failure is detected, a message () is sent on channel [c]. 
 
- (** At the moment, site failure detection is
+     At the moment, site failure detection is
      a bit unsafe, due to naive routing.
      A failure may express the impossibility to contact a remote site for
     the first time. *)
