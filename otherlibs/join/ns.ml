@@ -17,18 +17,6 @@ open Unix
 (*DEBUG*)open Join_debug
 
 
-(* XXX BEGIN pas necessaire 
- 
-(* This  enforces critical initialization in Site,
-   when ns is called before any join operation *)
-
-let _site = Site.here
-
-   XXX END *)
-
-
-def exception Not_found
-
 (* Readers/Writer controler, in join *)
 def readers(n) & enter_read() = readers(n+1) & reply to enter_read
 or  readers(n) & leave_read() = readers(n-1) & reply to leave_read

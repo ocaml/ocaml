@@ -20,7 +20,8 @@ type 'a chan = 'a async
 exception Exit = Join_misc.JoinExit
 
 def exception Exit
-
+def exception Not_found (* Name service *)
+def exception Invalid_argument (* Name service *)
 
 let exit_hook = Join_scheduler.exit_hook
 

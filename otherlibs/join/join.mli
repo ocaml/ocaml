@@ -117,8 +117,8 @@ end
 module Ns : sig
 (** Dynamic, unsafe, value repository.
 
-    Every site offers a name service. The name service offers associations
-    from strings to values.
+    Every site offers a name service. The name service provides
+    a mapping from strings to values.
 *)
 
   type t
