@@ -76,7 +76,7 @@ module Site : sig
 
   val listen : Unix.sockaddr -> unit
   (** Start to listen for connections on the socket address given as argument.
-      Raises [Unix.Error] in case of failure. *)
+      Raises [Failure] in case of failure. *)
 
 
   (**/**)

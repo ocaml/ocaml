@@ -27,9 +27,9 @@ let get_local_addr = Join_misc.get_local_addr
 
 let listen addr =
   try Join_space.listen addr
-  with Join_port.Failed (msg,e) ->
+  with Join_port.Failed (msg,_e) ->
 (*DEBUG*)debug1 "Join.listen" "failed: %s" msg ;
-    raise e
+    failwith msg
 
 let connect fd = Join_space.connect fd
 
