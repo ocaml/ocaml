@@ -1937,8 +1937,9 @@ and unify_row env row1 row2 =
     abs = [] &&
     List.for_all (fun (_,f) -> row_field_repr f = Rabsent) fields in
   (* Check whether we are going to build an empty type *)
-  if closed && apairs = []
-  && (empty r1 abs1 || row2.row_closed) && (empty r2 abs2 || row1.row_closed)
+  let empty1 = empty r1 abs1 and empty2 = empty r2 abs2 in
+  if closed && apairs = [] && not (empty1 && empty2)
+  && (empty1 || row2.row_closed) && (empty2 || row1.row_closed)
   && List.for_all
       (fun (_,f1,f2) ->
         row_field_repr f1 = Rabsent || row_field_repr f2 = Rabsent)

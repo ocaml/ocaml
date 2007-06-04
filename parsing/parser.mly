@@ -1304,6 +1304,8 @@ simple_core_type2:
       { mktyp(Ptyp_class($3, [$1], $4)) }
   | LPAREN core_type_comma_list RPAREN SHARP class_longident opt_present
       { mktyp(Ptyp_class($5, List.rev $2, $6)) }
+  | LBRACKET RBRACKET
+      { mktyp(Ptyp_variant([], true, None)) }
   | LBRACKET tag_field RBRACKET
       { mktyp(Ptyp_variant([$2], true, None)) }
 /* PR#3835: this is not LR(1), would need lookahead=2
