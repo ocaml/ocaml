@@ -18,6 +18,11 @@
  * - Nicolas Pouillard: refactoring
  *)
 
+(** Camlp4 signature repository *)
+
+(** {6 Basic signatures} *)
+
+(** Signature with just a type. *)
 module type Type = sig
   type t;
 end;
@@ -42,6 +47,19 @@ module type Id = sig
 
 end;
 
+(** A signature for warnings abstract from locations. *)
+module Warning (Loc : Type) = struct
+  module type S = sig
+    type warning = Loc.t -> string -> unit;
+    value default_warning : warning;
+    value current_warning : ref warning;
+    value print_warning   : warning;
+  end;
+end;
+
+(** {6 Advanced signatures} *)
+
+(** A signature for locations. *)
 module type Loc = sig
 
   type t;
@@ -97,7 +115,7 @@ module type Loc = sig
       The "begin of line" of both positions become the current offset. *)
   value move_line : int -> t -> t;
 
-  (** Accessors *)
+  (** {6 Accessors} *)
 
   (** Return the file name *)
   value file_name  : t -> string;
@@ -174,46 +192,14 @@ module type Loc = sig
 
 end;
 
-module Warning (Loc : Loc) = struct
-  module type S = sig
-    type warning = Loc.t -> string -> unit;
-    value default_warning : warning;
-    value current_warning : ref warning;
-    value print_warning   : warning;
-  end;
-end;
-
-(** Base class for map traversal, it includes some builtin types. *)
-class mapper : object
-  method string : string -> string;
-  method int : int -> int;
-  method float : float -> float;
-  method bool : bool -> bool;
-  method list : ! 'a 'b . ('a -> 'b) -> list 'a -> list 'b;
-  method option : ! 'a 'b . ('a -> 'b) -> option 'a -> option 'b;
-  method array : ! 'a 'b . ('a -> 'b) -> array 'a -> array 'b;
-  method ref : ! 'a 'b . ('a -> 'b) -> ref 'a -> ref 'b;
-end = object
-  method string x : string = x;
-  method int x : int = x;
-  method float x : float = x;
-  method bool x : bool = x;
-  method list : ! 'a 'b . ('a -> 'b) -> list 'a -> list 'b =
-    List.map;
-  method option : ! 'a 'b . ('a -> 'b) -> option 'a -> option 'b =
-    fun f -> fun [ None -> None | Some x -> Some (f x) ];
-  method array : ! 'a 'b . ('a -> 'b) -> array 'a -> array 'b =
-    Array.map;
-  method ref : ! 'a 'b . ('a -> 'b) -> ref 'a -> ref 'b =
-    fun f { val = x } -> { val = f x };
-end;
-
 (** Abstract syntax tree minimal signature.
     Types of this signature are abstract.
     See the {!Camlp4Ast} signature for a concrete definition. *)
 module type Ast = sig
 
   module Loc : Loc;
+
+  (** {6 Syntactic categories as abstract types} *)
 
   type meta_bool;
   type meta_option 'a;
@@ -236,6 +222,8 @@ module type Ast = sig
   type rec_binding;
   type module_binding;
 
+  (** {6 Location accessors} *)
+
   value loc_of_ctyp : ctyp -> Loc.t;
   value loc_of_patt : patt -> Loc.t;
   value loc_of_expr : expr -> Loc.t;
@@ -254,6 +242,8 @@ module type Ast = sig
   value loc_of_match_case : match_case -> Loc.t;
   value loc_of_ident : ident -> Loc.t;
 
+  (** {6 Traversals} *)
+
   (** This class is the base class for map traversal on the Ast.
       To make a custom traversal class one just extend it like that:
       
@@ -271,7 +261,14 @@ module type Ast = sig
       assert (map <:expr< fun x -> (x, 42) >> = <:expr< fun x -> (42, x) >>);]
   *)
   class map : object
-    inherit mapper;
+    method string : string -> string;
+    method int : int -> int;
+    method float : float -> float;
+    method bool : bool -> bool;
+    method list : ! 'a 'b . ('a -> 'b) -> list 'a -> list 'b;
+    method option : ! 'a 'b . ('a -> 'b) -> option 'a -> option 'b;
+    method array : ! 'a 'b . ('a -> 'b) -> array 'a -> array 'b;
+    method ref : ! 'a 'b . ('a -> 'b) -> ref 'a -> ref 'b;
     method meta_bool : meta_bool -> meta_bool;
     method meta_option : ! 'a 'b . ('a -> 'b) -> meta_option 'a -> meta_option 'b;
     method meta_list : ! 'a 'b . ('a -> 'b) -> meta_list 'a -> meta_list 'b;
@@ -296,6 +293,7 @@ module type Ast = sig
     method ident : ident -> ident;
   end;
 
+  (** Fold style traversal *)
   class fold : object ('self_type)
     method string : string -> 'self_type;
     method int : int -> 'self_type;
@@ -330,20 +328,6 @@ module type Ast = sig
 
 end;
 
-
-(** The AntiquotSyntax signature describe the minimal interface needed
-    for antiquotation handling. *)
-module type AntiquotSyntax = sig
-  module Ast          : Ast;
-
-  (** The parse function for expressions.
-      The underlying expression grammar entry is generally "expr; EOI". *)
-  value parse_expr    : Ast.Loc.t -> string -> Ast.expr;
-
-  (** The parse function for patterns.
-      The underlying pattern grammar entry is generally "patt; EOI". *)
-  value parse_patt    : Ast.Loc.t -> string -> Ast.patt;
-end;
 
 (** Signature for OCaml syntax trees.
     This signature is an extension of {!Ast}
@@ -478,7 +462,14 @@ module type Camlp4Ast = sig
 
   (** See {!Ast.map}. *)
   class map : object
-    inherit mapper;
+    method string : string -> string;
+    method int : int -> int;
+    method float : float -> float;
+    method bool : bool -> bool;
+    method list : ! 'a 'b . ('a -> 'b) -> list 'a -> list 'b;
+    method option : ! 'a 'b . ('a -> 'b) -> option 'a -> option 'b;
+    method array : ! 'a 'b . ('a -> 'b) -> array 'a -> array 'b;
+    method ref : ! 'a 'b . ('a -> 'b) -> ref 'a -> ref 'b;
     method meta_bool : meta_bool -> meta_bool;
     method meta_option : ! 'a 'b . ('a -> 'b) -> meta_option 'a -> meta_option 'b;
     method meta_list : ! 'a 'b . ('a -> 'b) -> meta_list 'a -> meta_list 'b;
@@ -645,6 +636,11 @@ module MakeCamlp4Ast (Loc : Type) = struct
 
 end;
 
+(** {6 Filters} *)
+
+(** A type for stream filters. *)
+type stream_filter 'a 'loc = Stream.t ('a * 'loc) -> Stream.t ('a * 'loc);
+
 (** Registerinng and folding of Ast filters.
     Two kinds of filters must be handled:
       - Implementation filters: str_item -> str_item.
@@ -652,8 +648,6 @@ end;
 module type AstFilters = sig
 
   module Ast : Camlp4Ast;
-
-  (** {6 Filters} *)
 
   type filter 'a = 'a -> 'a;
 
@@ -665,8 +659,7 @@ module type AstFilters = sig
 
 end;
 
-(** Ast as one single type *)
-
+(** ASTs as one single dynamic type *)
 module type DynAst = sig
   module Ast : Ast;
   type tag 'a;
@@ -700,14 +693,19 @@ module type DynAst = sig
 end;
 
 
-(** Quotation operations. *)
+(** {6 Quotation operations} *)
 
+(** The generic quotation type.
+    To see how fields are used here is an example:
+       <:q_name@q_loc<q_contents>>
+    The last one, q_shift is equal to the length of "<:q_name@q_loc<". *)
 type quotation =
   { q_name     : string ;
     q_loc      : string ;
     q_shift    : int    ;
     q_contents : string };
 
+(** The signature for a quotation expander registery. *)
 module type Quotation = sig
   module Ast : Ast;
   module DynAst : DynAst with module Ast = Ast;
@@ -747,8 +745,9 @@ module type Quotation = sig
 
 end;
 
-type stream_filter 'a 'loc = Stream.t ('a * 'loc) -> Stream.t ('a * 'loc);
+(** {6 Tokens} *)
 
+(** A signature for tokens. *)
 module type Token = sig
 
   module Loc : Loc;
@@ -827,7 +826,6 @@ end;
      ["n"]. To interpret a string use the first string of the [STRING]
      constructor (or if you need to compute it use the module
      {!Camlp4.Struct.Token.Eval}. Same thing for the constructor [CHAR]. *)
-
 type camlp4_token =
   [ KEYWORD       of string
   | SYMBOL        of string
@@ -851,8 +849,12 @@ type camlp4_token =
   | LINE_DIRECTIVE of int and option string
   | EOI ];
 
+(** A signature for specialized tokens. *)
 module type Camlp4Token = Token with type t = camlp4_token;
 
+(** {6 Dynamic loaders} *)
+
+(** A signature for dynamic loaders. *)
 module type DynLoader = sig
   type t;
   exception Error of string and string;
@@ -878,6 +880,7 @@ module type DynLoader = sig
   value find_in_path : t -> string -> string;
 end;
 
+(** A signature for grammars. *)
 module Grammar = struct
 
   (** Internal signature for sematantic actions of grammars,
@@ -1112,6 +1115,7 @@ module Grammar = struct
 
 end;
 
+(** A signature for lexers. *)
 module type Lexer = sig
   module Loc : Loc;
   module Token : Token with module Loc = Loc;
@@ -1126,8 +1130,18 @@ module type Lexer = sig
 end;
 
 
-(** {6 Parser} *)
+(** A signature for parsers abstract from ASTs. *)
 module Parser (Ast : Ast) = struct
+  module type SIMPLE = sig
+    (** The parse function for expressions.
+        The underlying expression grammar entry is generally "expr; EOI". *)
+    value parse_expr : Ast.Loc.t -> string -> Ast.expr;
+
+    (** The parse function for patterns.
+        The underlying pattern grammar entry is generally "patt; EOI". *)
+    value parse_patt : Ast.Loc.t -> string -> Ast.patt;
+  end;
+
   module type S = sig
 
     (** Called when parsing an implementation (ml file) to build the syntax
@@ -1145,8 +1159,7 @@ module Parser (Ast : Ast) = struct
   end;
 end;
 
-(** {6 Printer} *)
-
+(** A signature for printers abstract from ASTs. *)
 module Printer (Ast : Ast) = struct
   module type S = sig
 
@@ -1167,9 +1180,9 @@ module type Syntax = sig
   module Ast            : Ast with module Loc = Loc;
   module Token          : Token with module Loc = Loc;
   module Gram           : Grammar.Static with module Loc = Loc and module Token = Token;
-  module AntiquotSyntax : AntiquotSyntax with module Ast = Ast;
-                          (* Gram is not constrained here for flexibility *)
   module Quotation      : Quotation with module Ast = Ast;
+
+  module AntiquotSyntax : (Parser Ast).SIMPLE;
 
   include (Warning Loc).S;
   include (Parser  Ast).S;
@@ -1187,9 +1200,9 @@ module type Camlp4Syntax = sig
   module Token          : Camlp4Token with module Loc = Loc;
 
   module Gram           : Grammar.Static with module Loc = Loc and module Token = Token;
-  module AntiquotSyntax : AntiquotSyntax with module Ast = Camlp4AstToAst Ast;
-                          (* Gram is not constrained here for flexibility *)
   module Quotation      : Quotation with module Ast = Camlp4AstToAst Ast;
+
+  module AntiquotSyntax : (Parser Ast).SIMPLE;
 
   include (Warning Loc).S;
   include (Parser  Ast).S;
@@ -1347,11 +1360,11 @@ module type Camlp4Syntax = sig
   value infixop4 : Gram.Entry.t Ast.expr;
 end;
 
+(** A signature for syntax extension (syntax -> syntax functors). *)
 module type SyntaxExtension = functor (Syn : Syntax)
                     -> (Syntax with module Loc            = Syn.Loc
                                 and module Ast            = Syn.Ast
                                 and module Token          = Syn.Token
                                 and module Gram           = Syn.Gram
-                                and module AntiquotSyntax = Syn.AntiquotSyntax
                                 and module Quotation      = Syn.Quotation);
 
