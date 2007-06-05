@@ -209,12 +209,12 @@ module Make (AstFilters : Camlp4.Sig.AstFilters) = struct
         <:patt< $record_patt_of_type t1$; $record_patt_of_type t2$ >>
     | _ -> assert False ]
 
-  and record_binding_of_type =
-    fun
+  and expr_of_record_type t obj =
+    match t with
     [ <:ctyp< $lid:s$ : mutable $t$ >> | <:ctyp< $lid:s$ : $t$ >> ->
-         <:rec_binding< $lid:s$ = $expr_of_ty (Some <:expr< $lid:xs s$ >>) t$ >>
+          <:expr< $expr_of_ty ~obj (Some <:expr< $lid:xs s$ >>) t$ >>
     | <:ctyp< $t1$ ; $t2$ >> ->
-         <:rec_binding< $record_binding_of_type t1$; $record_binding_of_type t2$ >>
+         expr_of_record_type t2 (expr_of_record_type t1 obj)
     | _ -> assert False ]
 
   and fun_of_ctyp tyid =
@@ -222,7 +222,7 @@ module Make (AstFilters : Camlp4.Sig.AstFilters) = struct
     [ <:ctyp< [ $t$ ] >> ->
         <:expr< fun [ $match_case_of_sum_type t$ ] >>
     | <:ctyp< { $t$ } >> ->
-        <:expr< fun { $record_patt_of_type t$ } -> { $record_binding_of_type t$ } >>
+        <:expr< fun { $record_patt_of_type t$ } -> $expr_of_record_type t <:expr<o>>$ >>
     | <:ctyp< ( $tup:t$ ) >> -> mk_tuple expr_of_ty t
     | <:ctyp< $_$ $_$ >> | <:ctyp< $_$ -> $_$ >> | <:ctyp< '$_$ >> as t ->
         expr_of_ty None t
