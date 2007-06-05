@@ -243,6 +243,12 @@ rule "ocaml: mli -> odoc"
   ~deps:["%.mli"; "%.mli.depends"]
   (Ocaml_tools.document_ocaml_interf "%.mli" "%.odoc");;
 
+rule "ocaml: ml -> odoc"
+  ~tags:["ocaml"; "doc"]
+  ~prod:"%.odoc"
+  ~deps:["%.ml"; "%.ml.depends"]
+  (Ocaml_tools.document_ocaml_implem "%.ml" "%.odoc");;
+
 rule "ocamldoc: document ocaml project odocl & *odoc -> docdir (html)"
   ~prod:"%.docdir/index.html"
   ~dep:"%.odocl"

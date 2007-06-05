@@ -21,6 +21,7 @@ val ocamllex : string -> Rule.action
 val menhir : string -> Rule.action
 val infer_interface : string -> string -> Rule.action
 val document_ocaml_interf : string -> string -> Rule.action
+val document_ocaml_implem : string -> string -> Rule.action
 val document_ocaml_project :
   ?ocamldoc:(Tags.t -> string list -> string -> string -> Command.t) ->
   string -> string -> string -> Rule.action
