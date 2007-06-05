@@ -144,7 +144,8 @@ open Unix
 
 let prerr_exn = function
   | Unix_error(err, fun_name, arg) ->
-    prerr_string Sys.argv.(0);
+    begin try prerr_string Sys.argv.(0)
+    with Invalid_argument _ -> prerr_string "????" end;
     prerr_string ": \"";
     prerr_string fun_name;
     prerr_string "\" failed";
@@ -160,7 +161,8 @@ let prerr_exn = function
 let exn_to_string = function
   | Unix_error(err, fun_name, arg) ->
     let buff = Buffer.create 80 in
-    Buffer.add_string buff Sys.argv.(0);
+    begin try Buffer.add_string buff Sys.argv.(0)
+    with Invalid_argument _ -> Buffer.add_string buff "????" end;
     Buffer.add_string buff ": \"";
     Buffer.add_string buff fun_name;
     Buffer.add_string buff "\" failed";
@@ -181,7 +183,7 @@ let get_local_addr () =
     let first_addr entry = entry.h_addr_list.(0) in
     first_addr (gethostbyname local_name)
   with
-  | Not_found -> inet_addr_loopback
+  | Not_found | Invalid_argument _ -> inet_addr_loopback
 
 let string_of_sockaddr = function
   | ADDR_UNIX s -> s
