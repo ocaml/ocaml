@@ -26,6 +26,8 @@ module Make (Syntax : Sig.Camlp4Syntax) : sig
             and module Ast     = Syntax.Ast
             and module Gram    = Syntax.Gram;
 
+  type sep = format unit formatter unit;
+
   value list' :
     (formatter -> 'a -> unit) ->
       format 'b formatter unit ->
@@ -64,7 +66,7 @@ module Make (Syntax : Sig.Camlp4Syntax) : sig
 
     value pipe : bool;
     value semi : bool;
-    value semisep : string;
+    value semisep : sep;
     value value_val : string;
     value value_let : string;
     method anti : formatter -> string -> unit;
@@ -130,11 +132,11 @@ module Make (Syntax : Sig.Camlp4Syntax) : sig
     method raise_match_failure : formatter -> Loc.t -> unit;
     method reset : 'a;
     method reset_semi : 'a;
-    method semisep : string;
+    method semisep : sep;
     method set_comments : bool -> 'a;
     method set_curry_constr : bool -> 'a;
     method set_loc_and_comments : 'a;
-    method set_semisep : string -> 'a;
+    method set_semisep : sep -> 'a;
     method simple_ctyp : formatter -> Ast.ctyp -> unit;
     method simple_expr : formatter -> Ast.expr -> unit;
     method simple_patt : formatter -> Ast.patt -> unit;
