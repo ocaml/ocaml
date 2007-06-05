@@ -1,10 +1,11 @@
 <{apply_operator,type_quotation,global_handler,expression_closure{,_filter}}.ml> or <free_vars_test.*>: camlp4rf, use_camlp4
 "lambda_quot.ml": camlp4rf, use_camlp4_full
 "lambda_quot_o.ml": camlp4of, use_camlp4_full
-"macros.ml" or <arith.*>: camlp4of, use_camlp4
+"macros.ml" or <arith.*> or "gen_match_case.ml": camlp4of, use_camlp4
 "test_macros.ml": pp(camlp4of ./macros.cmo)
 "lambda_test.ml": pp(camlp4of ./lambda_quot_o.cmo)
 <parse_files.*>: camlp4of, use_camlp4_full, use_dynlink
 "test_type_quotation.ml": pp(camlp4of ./type_quotation.cmo)
 "apply_operator_test.ml": pp(camlp4o ./apply_operator.cmo)
 "expression_closure_test.ml": pp(camlp4o ./expression_closure_filter.cmo)
+"gen_type_N.ml": camlp4orf, use_camlp4

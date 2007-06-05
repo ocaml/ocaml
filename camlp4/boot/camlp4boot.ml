@@ -1,6 +1,7 @@
 module R =
   struct
     open Camlp4
+      
     (* -*- camlp4r -*- *)
     (****************************************************************************)
     (*                                                                          *)
@@ -22,15 +23,21 @@ module R =
     module Id =
       struct
         let name = "Camlp4RevisedParserParser"
+          
         let version =
           "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.23 2007/05/22 09:05:39 pouillar Exp $"
+          
       end
+      
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
         open Sig
+          
         include Syntax
+          
         (* Camlp4_config.constructors_arity.val := True; *)
         let _ = Camlp4_config.constructors_arity := false
+          
         let help_sequences () =
           (Printf.eprintf
              "\
@@ -49,158 +56,304 @@ Very old (no more supported) syntax:
   ";
            flush stderr;
            exit 1)
+          
         let _ =
           Options.add "-help_seq" (Arg.Unit help_sequences)
             "Print explanations about new sequences and exit."
+          
         let _ = Gram.Entry.clear a_CHAR
+          
         let _ = Gram.Entry.clear a_FLOAT
+          
         let _ = Gram.Entry.clear a_INT
+          
         let _ = Gram.Entry.clear a_INT32
+          
         let _ = Gram.Entry.clear a_INT64
+          
         let _ = Gram.Entry.clear a_LABEL
+          
         let _ = Gram.Entry.clear a_LIDENT
+          
         let _ = Gram.Entry.clear a_NATIVEINT
+          
         let _ = Gram.Entry.clear a_OPTLABEL
+          
         let _ = Gram.Entry.clear a_STRING
+          
         let _ = Gram.Entry.clear a_UIDENT
+          
         let _ = Gram.Entry.clear a_ident
+          
         let _ = Gram.Entry.clear amp_ctyp
+          
         let _ = Gram.Entry.clear and_ctyp
+          
         let _ = Gram.Entry.clear match_case
+          
         let _ = Gram.Entry.clear match_case0
+          
         let _ = Gram.Entry.clear match_case_quot
+          
         let _ = Gram.Entry.clear binding
+          
         let _ = Gram.Entry.clear binding_quot
+          
         let _ = Gram.Entry.clear rec_binding_quot
+          
         let _ = Gram.Entry.clear class_declaration
+          
         let _ = Gram.Entry.clear class_description
+          
         let _ = Gram.Entry.clear class_expr
+          
         let _ = Gram.Entry.clear class_expr_quot
+          
         let _ = Gram.Entry.clear class_fun_binding
+          
         let _ = Gram.Entry.clear class_fun_def
+          
         let _ = Gram.Entry.clear class_info_for_class_expr
+          
         let _ = Gram.Entry.clear class_info_for_class_type
+          
         let _ = Gram.Entry.clear class_longident
+          
         let _ = Gram.Entry.clear class_longident_and_param
+          
         let _ = Gram.Entry.clear class_name_and_param
+          
         let _ = Gram.Entry.clear class_sig_item
+          
         let _ = Gram.Entry.clear class_sig_item_quot
+          
         let _ = Gram.Entry.clear class_signature
+          
         let _ = Gram.Entry.clear class_str_item
+          
         let _ = Gram.Entry.clear class_str_item_quot
+          
         let _ = Gram.Entry.clear class_structure
+          
         let _ = Gram.Entry.clear class_type
+          
         let _ = Gram.Entry.clear class_type_declaration
+          
         let _ = Gram.Entry.clear class_type_longident
+          
         let _ = Gram.Entry.clear class_type_longident_and_param
+          
         let _ = Gram.Entry.clear class_type_plus
+          
         let _ = Gram.Entry.clear class_type_quot
+          
         let _ = Gram.Entry.clear comma_ctyp
+          
         let _ = Gram.Entry.clear comma_expr
+          
         let _ = Gram.Entry.clear comma_ipatt
+          
         let _ = Gram.Entry.clear comma_patt
+          
         let _ = Gram.Entry.clear comma_type_parameter
+          
         let _ = Gram.Entry.clear constrain
+          
         let _ = Gram.Entry.clear constructor_arg_list
+          
         let _ = Gram.Entry.clear constructor_declaration
+          
         let _ = Gram.Entry.clear constructor_declarations
+          
         let _ = Gram.Entry.clear ctyp
+          
         let _ = Gram.Entry.clear ctyp_quot
+          
         let _ = Gram.Entry.clear cvalue_binding
+          
         let _ = Gram.Entry.clear direction_flag
+          
         let _ = Gram.Entry.clear dummy
+          
         let _ = Gram.Entry.clear eq_expr
+          
         let _ = Gram.Entry.clear expr
+          
         let _ = Gram.Entry.clear expr_eoi
+          
         let _ = Gram.Entry.clear expr_quot
+          
         let _ = Gram.Entry.clear field_expr
+          
         let _ = Gram.Entry.clear fun_binding
+          
         let _ = Gram.Entry.clear fun_def
+          
         let _ = Gram.Entry.clear ident
+          
         let _ = Gram.Entry.clear ident_quot
+          
         let _ = Gram.Entry.clear implem
+          
         let _ = Gram.Entry.clear interf
+          
         let _ = Gram.Entry.clear ipatt
+          
         let _ = Gram.Entry.clear ipatt_tcon
+          
         let _ = Gram.Entry.clear label
+          
         let _ = Gram.Entry.clear label_declaration
+          
         let _ = Gram.Entry.clear label_expr
+          
         let _ = Gram.Entry.clear label_ipatt
+          
         let _ = Gram.Entry.clear label_longident
+          
         let _ = Gram.Entry.clear label_patt
+          
         let _ = Gram.Entry.clear labeled_ipatt
+          
         let _ = Gram.Entry.clear let_binding
+          
         let _ = Gram.Entry.clear meth_list
+          
         let _ = Gram.Entry.clear module_binding
+          
         let _ = Gram.Entry.clear module_binding0
+          
         let _ = Gram.Entry.clear module_binding_quot
+          
         let _ = Gram.Entry.clear module_declaration
+          
         let _ = Gram.Entry.clear module_expr
+          
         let _ = Gram.Entry.clear module_expr_quot
+          
         let _ = Gram.Entry.clear module_longident
+          
         let _ = Gram.Entry.clear module_longident_with_app
+          
         let _ = Gram.Entry.clear module_rec_declaration
+          
         let _ = Gram.Entry.clear module_type
+          
         let _ = Gram.Entry.clear module_type_quot
+          
         let _ = Gram.Entry.clear more_ctyp
+          
         let _ = Gram.Entry.clear name_tags
+          
         let _ = Gram.Entry.clear opt_as_lident
+          
         let _ = Gram.Entry.clear opt_class_self_patt
+          
         let _ = Gram.Entry.clear opt_class_self_type
+          
         let _ = Gram.Entry.clear opt_comma_ctyp
+          
         let _ = Gram.Entry.clear opt_dot_dot
+          
         let _ = Gram.Entry.clear opt_eq_ctyp
+          
         let _ = Gram.Entry.clear opt_expr
+          
         let _ = Gram.Entry.clear opt_meth_list
+          
         let _ = Gram.Entry.clear opt_mutable
+          
         let _ = Gram.Entry.clear opt_polyt
+          
         let _ = Gram.Entry.clear opt_private
+          
         let _ = Gram.Entry.clear opt_rec
+          
         let _ = Gram.Entry.clear opt_virtual
+          
         let _ = Gram.Entry.clear opt_when_expr
+          
         let _ = Gram.Entry.clear patt
+          
         let _ = Gram.Entry.clear patt_as_patt_opt
+          
         let _ = Gram.Entry.clear patt_eoi
+          
         let _ = Gram.Entry.clear patt_quot
+          
         let _ = Gram.Entry.clear patt_tcon
+          
         let _ = Gram.Entry.clear phrase
+          
         let _ = Gram.Entry.clear poly_type
+          
         let _ = Gram.Entry.clear row_field
+          
         let _ = Gram.Entry.clear sem_expr
+          
         let _ = Gram.Entry.clear sem_expr_for_list
+          
         let _ = Gram.Entry.clear sem_patt
+          
         let _ = Gram.Entry.clear sem_patt_for_list
+          
         let _ = Gram.Entry.clear semi
+          
         let _ = Gram.Entry.clear sequence
+          
         let _ = Gram.Entry.clear sig_item
+          
         let _ = Gram.Entry.clear sig_item_quot
+          
         let _ = Gram.Entry.clear sig_items
+          
         let _ = Gram.Entry.clear star_ctyp
+          
         let _ = Gram.Entry.clear str_item
+          
         let _ = Gram.Entry.clear str_item_quot
+          
         let _ = Gram.Entry.clear str_items
+          
         let _ = Gram.Entry.clear top_phrase
+          
         let _ = Gram.Entry.clear type_constraint
+          
         let _ = Gram.Entry.clear type_declaration
+          
         let _ = Gram.Entry.clear type_ident_and_parameters
+          
         let _ = Gram.Entry.clear type_kind
+          
         let _ = Gram.Entry.clear type_longident
+          
         let _ = Gram.Entry.clear type_longident_and_parameters
+          
         let _ = Gram.Entry.clear type_parameter
+          
         let _ = Gram.Entry.clear type_parameters
+          
         let _ = Gram.Entry.clear typevars
+          
         let _ = Gram.Entry.clear use_file
+          
         let _ = Gram.Entry.clear val_longident
+          
         let _ = Gram.Entry.clear value_let
+          
         let _ = Gram.Entry.clear value_val
+          
         let _ = Gram.Entry.clear with_constr
+          
         let _ = Gram.Entry.clear with_constr_quot
+          
         let neg_string n =
           let len = String.length n
           in
             if (len > 0) && (n.[0] = '-')
             then String.sub n 1 (len - 1)
             else "-" ^ n
+          
         let mkumin _loc f arg =
           match arg with
           | Ast.ExInt (_, n) -> Ast.ExInt (_loc, neg_string n)
@@ -211,6 +364,7 @@ Very old (no more supported) syntax:
           | _ ->
               Ast.ExApp (_loc, Ast.ExId (_loc, Ast.IdLid (_loc, "~" ^ f)),
                 arg)
+          
         let mklistexp _loc last =
           let rec loop top =
             function
@@ -227,33 +381,41 @@ Very old (no more supported) syntax:
                       e1),
                     loop false el)
           in loop true
+          
         let mkassert _loc =
           function
           | Ast.ExId (_, (Ast.IdUid (_, "False"))) -> Ast.ExAsf _loc
           | (* this case takes care about
                                    the special assert false node *)
               e -> Ast.ExAsr (_loc, e)
+          
         let append_eLem el e = el @ [ e ]
+          
         let mk_anti ?(c = "") n s = "\\$" ^ (n ^ (c ^ (":" ^ s)))
+          
         let mksequence _loc =
           function
           | (Ast.ExSem (_, _, _) | Ast.ExAnt (_, _) as e) ->
               Ast.ExSeq (_loc, e)
           | e -> e
+          
         let mksequence' _loc =
           function
           | (Ast.ExSem (_, _, _) as e) -> Ast.ExSeq (_loc, e)
           | e -> e
+          
         let module_type_app mt1 mt2 =
           match (mt1, mt2) with
           | (Ast.MtId (_loc, i1), Ast.MtId (_, i2)) ->
               Ast.MtId (_loc, Ast.IdApp (_loc, i1, i2))
           | _ -> raise Stream.Failure
+          
         let module_type_acc mt1 mt2 =
           match (mt1, mt2) with
           | (Ast.MtId (_loc, i1), Ast.MtId (_, i2)) ->
               Ast.MtId (_loc, Ast.IdAcc (_loc, i1, i2))
           | _ -> raise Stream.Failure
+          
         let bigarray_get _loc arr arg =
           let coords =
             match arg with
@@ -305,6 +467,7 @@ Very old (no more supported) syntax:
                           Ast.IdLid (_loc, "get")))),
                     arr),
                   Ast.ExArr (_loc, Ast.exSem_of_list coords))
+          
         let bigarray_set _loc var newval =
           match var with
           | Ast.ExApp (_,
@@ -396,6 +559,7 @@ Very old (no more supported) syntax:
                      Ast.ExArr (_loc, coords)),
                    newval))
           | _ -> None
+          
         let test_not_left_brace_nor_do =
           Gram.Entry.of_parser "test_not_left_brace_nor_do"
             (fun strm ->
@@ -403,7 +567,9 @@ Very old (no more supported) syntax:
                | Some (((KEYWORD "{" | KEYWORD "do"), _)) ->
                    raise Stream.Failure
                | _ -> ())
+          
         let stopped_at _loc = Some (Loc.move_line 1 _loc)
+          
         (* FIXME be more precise *)
         let symbolchar =
           let list =
@@ -414,6 +580,7 @@ Very old (no more supported) syntax:
             then true
             else if List.mem s.[i] list then loop s (i + 1) else false
           in loop
+          
         let _ =
           let list = [ '!'; '?'; '~' ] in
           let excl = [ "!="; "??" ]
@@ -429,6 +596,7 @@ Very old (no more supported) syntax:
                      (Stream.junk __strm;
                       Ast.ExId (_loc, Ast.IdLid (_loc, x)))
                  | _ -> raise Stream.Failure)
+          
         let _ =
           let list_ok =
             [ "<"; ">"; "<="; ">="; "="; "<>"; "=="; "!="; "$" ] in
@@ -448,6 +616,7 @@ Very old (no more supported) syntax:
                      (Stream.junk __strm;
                       Ast.ExId (_loc, Ast.IdLid (_loc, x)))
                  | _ -> raise Stream.Failure)
+          
         let _ =
           let list = [ '@'; '^' ]
           in
@@ -461,6 +630,7 @@ Very old (no more supported) syntax:
                      (Stream.junk __strm;
                       Ast.ExId (_loc, Ast.IdLid (_loc, x)))
                  | _ -> raise Stream.Failure)
+          
         let _ =
           let list = [ '+'; '-' ]
           in
@@ -475,6 +645,7 @@ Very old (no more supported) syntax:
                      (Stream.junk __strm;
                       Ast.ExId (_loc, Ast.IdLid (_loc, x)))
                  | _ -> raise Stream.Failure)
+          
         let _ =
           let list = [ '*'; '/'; '%'; '\\' ]
           in
@@ -491,6 +662,7 @@ Very old (no more supported) syntax:
                      (Stream.junk __strm;
                       Ast.ExId (_loc, Ast.IdLid (_loc, x)))
                  | _ -> raise Stream.Failure)
+          
         let _ =
           Gram.Entry.setup_parser infixop4
             (fun (__strm : _ Stream.t) ->
@@ -501,6 +673,7 @@ Very old (no more supported) syntax:
                    ->
                    (Stream.junk __strm; Ast.ExId (_loc, Ast.IdLid (_loc, x)))
                | _ -> raise Stream.Failure)
+          
         let rec infix_kwds_filter (__strm : _ Stream.t) =
           match Stream.peek __strm with
           | Some (((KEYWORD "(", _) as tok)) ->
@@ -538,9 +711,11 @@ Very old (no more supported) syntax:
                  Stream.icons x
                    (Stream.slazy (fun _ -> infix_kwds_filter xs)))
           | _ -> raise Stream.Failure
+          
         let _ =
           Token.Filter.define_filter (Gram.get_filter ())
             (fun f strm -> infix_kwds_filter (f strm))
+          
         (* transmit the context *)
         let _ =
           Gram.Entry.setup_parser sem_expr
@@ -563,6 +738,7 @@ Very old (no more supported) syntax:
              in
                fun (__strm : _ Stream.t) ->
                  let a = symb __strm in kont a __strm)
+          
         let _ =
           let _ = (a_CHAR : 'a_CHAR Gram.Entry.t)
           and _ = (do_sequence : 'do_sequence Gram.Entry.t)
@@ -8006,12 +8182,17 @@ Very old (no more supported) syntax:
                                 | EOI -> (x : 'expr_eoi)
                                 | _ -> assert false))) ]) ]))
                   ()))
+          
       end
+      
     let _ = let module M = Register.OCamlSyntaxExtension(Id)(Make) in ()
+      
   end
+  
 module Camlp4QuotationCommon =
   struct
     open Camlp4
+      
     (* -*- camlp4r -*- *)
     (****************************************************************************)
     (*                                                                          *)
@@ -8032,35 +8213,49 @@ module Camlp4QuotationCommon =
     module Id =
       struct
         let name = "Camlp4QuotationCommon"
+          
         let version =
           "$Id: Camlp4QuotationCommon.ml,v 1.1.4.5 2007/05/10 14:24:22 pouillar Exp $"
+          
       end
+      
     module Make
       (Syntax : Sig.Camlp4Syntax)
-      (TheAntiquotSyntax :
-        Sig.AntiquotSyntax with module Ast = Sig.Camlp4AstToAst(Syntax.Ast)) =
+      (TheAntiquotSyntax : Sig.Parser(Syntax.Ast).SIMPLE) =
       struct
         open Sig
+          
         include Syntax
+          
         (* Be careful an AntiquotSyntax module appears here *)
         module MetaLocHere = Ast.Meta.MetaLoc
+          
         module MetaLoc =
           struct
             module Ast = Ast
+              
             let loc_name = ref None
+              
             let meta_loc_expr _loc loc =
               match !loc_name with
               | None -> Ast.ExId (_loc, Ast.IdLid (_loc, !Loc.name))
               | Some "here" -> MetaLocHere.meta_loc_expr _loc loc
               | Some x -> Ast.ExId (_loc, Ast.IdLid (_loc, x))
+              
             let meta_loc_patt _loc _ = Ast.PaAny _loc
+              
           end
+          
         module MetaAst = Ast.Meta.Make(MetaLoc)
+          
         module ME = MetaAst.Expr
+          
         module MP = MetaAst.Patt
+          
         let is_antiquot s =
           let len = String.length s
           in (len > 2) && ((s.[0] = '\\') && (s.[1] = '$'))
+          
         let handle_antiquot_in_string s term parse loc decorate =
           if is_antiquot s
           then
@@ -8070,9 +8265,11 @@ module Camlp4QuotationCommon =
                String.sub s (pos + 1) (((String.length s) - pos) - 1)
              in decorate name (parse loc code))
           else term
+          
         let antiquot_expander =
           object
             inherit Ast.map as super
+              
             method patt =
               function
               | (Ast.PaAnt (_loc, s) | Ast.PaStr (_loc, s) as p) ->
@@ -8220,6 +8417,7 @@ module Camlp4QuotationCommon =
                                p)
                          | _ -> p)
               | p -> super#patt p
+              
             method expr =
               function
               | (Ast.ExAnt (_loc, s) | Ast.ExStr (_loc, s) as e) ->
@@ -8564,7 +8762,9 @@ module Camlp4QuotationCommon =
                                e)
                          | _ -> e)
               | e -> super#expr e
+              
           end
+          
         let add_quotation name entry mexpr mpatt =
           let entry_eoi = Gram.Entry.mk (Gram.Entry.name entry) in
           let parse_quot_string entry loc s =
@@ -8623,54 +8823,75 @@ module Camlp4QuotationCommon =
              Quotation.add name Quotation.DynAst.expr_tag expand_expr;
              Quotation.add name Quotation.DynAst.patt_tag expand_patt;
              Quotation.add name Quotation.DynAst.str_item_tag expand_str_item)
+          
         let _ =
           add_quotation "sig_item" sig_item_quot ME.meta_sig_item MP.
             meta_sig_item
+          
         let _ =
           add_quotation "str_item" str_item_quot ME.meta_str_item MP.
             meta_str_item
+          
         let _ = add_quotation "ctyp" ctyp_quot ME.meta_ctyp MP.meta_ctyp
+          
         let _ = add_quotation "patt" patt_quot ME.meta_patt MP.meta_patt
+          
         let _ = add_quotation "expr" expr_quot ME.meta_expr MP.meta_expr
+          
         let _ =
           add_quotation "module_type" module_type_quot ME.meta_module_type
             MP.meta_module_type
+          
         let _ =
           add_quotation "module_expr" module_expr_quot ME.meta_module_expr
             MP.meta_module_expr
+          
         let _ =
           add_quotation "class_type" class_type_quot ME.meta_class_type MP.
             meta_class_type
+          
         let _ =
           add_quotation "class_expr" class_expr_quot ME.meta_class_expr MP.
             meta_class_expr
+          
         let _ =
           add_quotation "class_sig_item" class_sig_item_quot ME.
             meta_class_sig_item MP.meta_class_sig_item
+          
         let _ =
           add_quotation "class_str_item" class_str_item_quot ME.
             meta_class_str_item MP.meta_class_str_item
+          
         let _ =
           add_quotation "with_constr" with_constr_quot ME.meta_with_constr
             MP.meta_with_constr
+          
         let _ =
           add_quotation "binding" binding_quot ME.meta_binding MP.
             meta_binding
+          
         let _ =
           add_quotation "rec_binding" rec_binding_quot ME.meta_rec_binding
             MP.meta_rec_binding
+          
         let _ =
           add_quotation "match_case" match_case_quot ME.meta_match_case MP.
             meta_match_case
+          
         let _ =
           add_quotation "module_binding" module_binding_quot ME.
             meta_module_binding MP.meta_module_binding
+          
         let _ = add_quotation "ident" ident_quot ME.meta_ident MP.meta_ident
+          
       end
+      
   end
+  
 module Q =
   struct
     open Camlp4
+      
     (* -*- camlp4r -*- *)
     (****************************************************************************)
     (*                                                                          *)
@@ -8692,19 +8913,28 @@ module Q =
     module Id =
       struct
         let name = "Camlp4QuotationExpander"
+          
         let version =
           "$Id: Camlp4QuotationExpander.ml,v 1.1 2007/02/07 10:09:22 ertai Exp $"
+          
       end
+      
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
         module M = Camlp4QuotationCommon.Make(Syntax)(Syntax.AntiquotSyntax)
+          
         include M
+          
       end
+      
     let _ = let module M = Register.OCamlSyntaxExtension(Id)(Make) in ()
+      
   end
+  
 module Rp =
   struct
     open Camlp4
+      
     (* -*- camlp4r -*- *)
     (****************************************************************************)
     (*                                                                          *)
@@ -8726,33 +8956,49 @@ module Rp =
     module Id : Sig.Id =
       struct
         let name = "Camlp4OCamlRevisedParserParser"
+          
         let version =
           "$Id: Camlp4OCamlRevisedParserParser.ml,v 1.1.4.3 2007/05/16 12:48:13 pouillar Exp $"
+          
       end
+      
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
         open Sig
+          
         include Syntax
+          
         type spat_comp =
           | SpTrm of Loc.t * Ast.patt * Ast.expr option
           | SpNtr of Loc.t * Ast.patt * Ast.expr | SpStr of Loc.t * Ast.patt
+        
         type sexp_comp =
           | SeTrm of Loc.t * Ast.expr | SeNtr of Loc.t * Ast.expr
+        
         let stream_expr = Gram.Entry.mk "stream_expr"
+          
         let stream_begin = Gram.Entry.mk "stream_begin"
+          
         let stream_end = Gram.Entry.mk "stream_end"
+          
         let stream_quot = Gram.Entry.mk "stream_quot"
+          
         let parser_case = Gram.Entry.mk "parser_case"
+          
         let parser_case_list = Gram.Entry.mk "parser_case_list"
+          
         let strm_n = "__strm"
+          
         let peek_fun _loc =
           Ast.ExId (_loc,
             Ast.IdAcc (_loc, Ast.IdUid (_loc, "Stream"),
               Ast.IdLid (_loc, "peek")))
+          
         let junk_fun _loc =
           Ast.ExId (_loc,
             Ast.IdAcc (_loc, Ast.IdUid (_loc, "Stream"),
               Ast.IdLid (_loc, "junk")))
+          
         (* Parsers. *)
         (* In syntax generated, many cases are optimisations. *)
         let rec pattern_eq_expression p e =
@@ -8764,11 +9010,13 @@ module Rp =
           | (Ast.PaApp (_, p1, p2), Ast.ExApp (_, e1, e2)) ->
               (pattern_eq_expression p1 e1) && (pattern_eq_expression p2 e2)
           | _ -> false
+          
         let is_raise e =
           match e with
           | Ast.ExApp (_, (Ast.ExId (_, (Ast.IdLid (_, "raise")))), _) ->
               true
           | _ -> false
+          
         let is_raise_failure e =
           match e with
           | Ast.ExApp (_, (Ast.ExId (_, (Ast.IdLid (_, "raise")))),
@@ -8777,6 +9025,7 @@ module Rp =
                     (Ast.IdUid (_, "Failure")))))))
               -> true
           | _ -> false
+          
         let rec handle_failure e =
           match e with
           | Ast.ExTry (_, _,
@@ -8824,6 +9073,7 @@ module Rp =
           | Ast.ExId (_, (Ast.IdLid (_, _))) -> false
           | Ast.ExApp (_, x, _) -> is_constr_apply x
           | _ -> false
+          
         let rec subst v e =
           let _loc = Ast.loc_of_expr e
           in
@@ -8852,6 +9102,7 @@ module Rp =
               Ast.BiEq (_loc, Ast.PaId (_loc, Ast.IdLid (_loc, v')),
                 if v = v' then e else subst v e)
           | _ -> raise Not_found
+          
         let stream_pattern_component skont ckont =
           function
           | SpTrm (_loc, p, None) ->
@@ -8981,6 +9232,7 @@ module Rp =
                      Ast.BiEq (_loc, p,
                        Ast.ExId (_loc, Ast.IdLid (_loc, strm_n))),
                      skont))
+          
         let rec stream_pattern _loc epo e ekont =
           function
           | [] ->
@@ -9013,6 +9265,7 @@ module Rp =
                 in stream_pattern _loc epo e ekont spcl in
               let ckont = ekont err
               in stream_pattern_component skont ckont spc
+          
         let stream_patterns_term _loc ekont tspel =
           let pel =
             List.fold_right
@@ -9055,12 +9308,14 @@ module Rp =
                 Ast.ExId (_loc, Ast.IdLid (_loc, strm_n))),
               Ast.McOr (_loc, pel,
                 Ast.McArr (_loc, Ast.PaAny _loc, Ast.ExNil _loc, ekont ())))
+          
         let rec group_terms =
           function
           | ((SpTrm (_loc, p, w), None) :: spcl, epo, e) :: spel ->
               let (tspel, spel) = group_terms spel
               in (((p, w, _loc, spcl, epo, e) :: tspel), spel)
           | spel -> ([], spel)
+          
         let rec parser_cases _loc =
           function
           | [] ->
@@ -9076,6 +9331,7 @@ module Rp =
                | (tspel, spel) ->
                    stream_patterns_term _loc
                      (fun _ -> parser_cases _loc spel) tspel)
+          
         let cparser _loc bpo pc =
           let e = parser_cases _loc pc in
           let e =
@@ -9098,6 +9354,7 @@ module Rp =
                     Ast.IdLid (_loc, "t"))),
                 Ast.TyAny _loc))
           in Ast.ExFun (_loc, Ast.McArr (_loc, p, Ast.ExNil _loc, e))
+          
         let cparser_match _loc me bpo pc =
           let pc = parser_cases _loc pc in
           let e =
@@ -9131,6 +9388,7 @@ module Rp =
                         Ast.TyAny _loc)),
                     me),
                   e)
+          
         (* streams *)
         let rec not_computing =
           function
@@ -9147,6 +9405,7 @@ module Rp =
           | Ast.ExApp (_, x, y) ->
               (is_cons_apply_not_computing x) && (not_computing y)
           | _ -> false
+          
         let slazy _loc e =
           match e with
           | Ast.ExApp (_, f, (Ast.ExId (_, (Ast.IdUid (_, "()"))))) ->
@@ -9158,6 +9417,7 @@ module Rp =
           | _ ->
               Ast.ExFun (_loc,
                 Ast.McArr (_loc, Ast.PaAny _loc, Ast.ExNil _loc, e))
+          
         let rec cstream gloc =
           function
           | [] ->
@@ -9225,6 +9485,7 @@ module Rp =
                         Ast.IdLid (_loc, "lapp"))),
                     slazy _loc e),
                   cstream gloc secl)
+          
         (* Syntax extensions in Revised Syntax grammar *)
         let _ =
           let _ = (expr : 'expr Gram.Entry.t)
@@ -9587,12 +9848,17 @@ module Rp =
                              (fun (e : 'stream_expr) _ (_loc : Loc.t) ->
                                 (SeTrm (_loc, e) : 'stream_expr_comp)))) ]) ]))
                   ()))
+          
       end
+      
     module M = Register.OCamlSyntaxExtension(Id)(Make)
+      
   end
+  
 module G =
   struct
     open Camlp4
+      
     (* -*- camlp4r -*- *)
     (****************************************************************************)
     (*                                                                          *)
@@ -9614,29 +9880,43 @@ module G =
     module Id =
       struct
         let name = "Camlp4GrammarParser"
+          
         let version =
           "$Id: Camlp4GrammarParser.ml,v 1.1.4.4 2007/04/20 14:57:28 pouillar Exp $"
+          
       end
+      
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
         open Sig
+          
         include Syntax
+          
         module MetaLoc = Ast.Meta.MetaGhostLoc
+          
         module MetaAst = Ast.Meta.Make(MetaLoc)
+          
         module PP = Camlp4.Printers.OCaml.Make(Syntax)
+          
         let pp = new PP.printer ~comments: false ()
+          
         let string_of_patt patt =
           let buf = Buffer.create 42 in
           let () = Format.bprintf buf "%a@?" pp#patt patt in
           let str = Buffer.contents buf
           in if str = "" then assert false else str
+          
         let split_ext = ref false
+          
         type loc = Loc.t
+        
         type 'e name = { expr : 'e; tvar : string; loc : loc }
+        
         type styp =
           | STlid of loc * string | STapp of loc * styp * styp
           | STquo of loc * string | STself of loc * string | STtok of loc
           | STstring_tok of loc | STany of loc | STtyp of Ast.ctyp
+        
         type (** The first is the match function expr,
              the second is the string description.
              The description string will be used for
@@ -9664,9 +9944,13 @@ module G =
           { used : string list; text : ('e, 'p) text; styp : styp;
             pattern : 'p option
           }
+        
         type used = | Unused | UsedScanned | UsedNotScanned
+        
         let _loc = Loc.ghost
+          
         let gm = "Camlp4Grammar__"
+          
         let mark_used modif ht n =
           try
             let rll = Hashtbl.find_all ht n
@@ -9678,8 +9962,10 @@ module G =
                    else ())
                 rll
           with | Not_found -> ()
+          
         let rec mark_symbol modif ht symb =
           List.iter (fun e -> mark_used modif ht e) symb.used
+          
         let check_use nl el =
           let ht = Hashtbl.create 301 in
           let modif = ref false
@@ -9728,12 +10014,15 @@ module G =
                       ("Unused local entry \"" ^ (s ^ "\""))
                   else ())
                ht)
+          
         let new_type_var =
           let i = ref 0 in fun () -> (incr i; "e__" ^ (string_of_int !i))
+          
         let used_of_rule_list rl =
           List.fold_left
             (fun nl r -> List.fold_left (fun nl s -> s.used @ nl) nl r.prod)
             [] rl
+          
         let retype_rule_list_without_patterns _loc rl =
           try
             (* ...; [ "foo" ]; ... ==> ...; (x = [ "foo" ] -> Token.extract_string x); ... *)
@@ -9775,7 +10064,9 @@ module G =
                | _ -> raise Exit)
               rl
           with | Exit -> rl
+          
         let meta_action = ref false
+          
         let mklistexp _loc =
           let rec loop top =
             function
@@ -9789,6 +10080,7 @@ module G =
                       e1),
                     loop false el)
           in loop true
+          
         let mklistpat _loc =
           let rec loop top =
             function
@@ -9802,10 +10094,12 @@ module G =
                       p1),
                     loop false pl)
           in loop true
+          
         let rec expr_fa al =
           function
           | Ast.ExApp (_, f, a) -> expr_fa (a :: al) f
           | f -> (f, al)
+          
         let rec make_ctyp styp tvar =
           match styp with
           | STlid (_loc, s) -> Ast.TyId (_loc, Ast.IdLid (_loc, s))
@@ -9828,6 +10122,7 @@ module G =
                   Ast.IdLid (_loc, "t")))
           | STstring_tok _loc -> Ast.TyId (_loc, Ast.IdLid (_loc, "string"))
           | STtyp t -> t
+          
         let make_ctyp_patt styp tvar patt =
           let styp =
             match styp with | STstring_tok _loc -> STtok _loc | t -> t
@@ -9836,10 +10131,12 @@ module G =
             | Ast.TyAny _ -> patt
             | t ->
                 let _loc = Ast.loc_of_patt patt in Ast.PaTyc (_loc, patt, t)
+          
         let make_ctyp_expr styp tvar expr =
           match make_ctyp styp tvar with
           | Ast.TyAny _ -> expr
           | t -> let _loc = Ast.loc_of_expr expr in Ast.ExTyc (_loc, expr, t)
+          
         let text_of_action _loc psl rtvar act tvar =
           let locid = Ast.PaId (_loc, Ast.IdLid (_loc, !Loc.name)) in
           let act =
@@ -9965,12 +10262,14 @@ module G =
                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Action"),
                     Ast.IdLid (_loc, "mk")))),
               txt)
+          
         let srules loc t rl tvar =
           List.map
             (fun r ->
                let sl = List.map (fun s -> s.text) r.prod in
                let ac = text_of_action loc r.prod t r.action tvar in (sl, ac))
             rl
+          
         let rec make_expr entry tvar =
           function
           | TXmeta (_loc, n, tl, e, t) ->
@@ -10135,6 +10434,7 @@ module G =
                      Ast.ExTup (_loc, Ast.ExCom (_loc, sl, ac))),
                    txt))
             (Ast.ExId (_loc, Ast.IdUid (_loc, "[]"))) rl
+          
         let expr_of_delete_rule _loc n sl =
           let sl =
             List.fold_right
@@ -10145,20 +10445,26 @@ module G =
                    e))
               sl (Ast.ExId (_loc, Ast.IdUid (_loc, "[]")))
           in ((n.expr), sl)
+          
         let rec tvar_of_ident =
           function
           | Ast.IdLid (_, x) | Ast.IdUid (_, x) -> x
           | Ast.IdAcc (_, (Ast.IdUid (_, x)), xs) ->
               x ^ ("__" ^ (tvar_of_ident xs))
           | _ -> failwith "internal error in the Grammar extension"
+          
         let mk_name _loc i =
           { expr = Ast.ExId (_loc, i); tvar = tvar_of_ident i; loc = _loc; }
+          
         let slist loc min sep symb = TXlist (loc, min, symb, sep)
+          
         let sstoken _loc s =
           let n = mk_name _loc (Ast.IdLid (_loc, "a_" ^ s))
           in TXnterm (_loc, n, None)
+          
         let mk_symbol p s t =
           { used = []; text = s; styp = t; pattern = Some p; }
+          
         let sslist _loc min sep s =
           let rl =
             let r1 =
@@ -10188,6 +10494,7 @@ module G =
           let text = TXrules (_loc, srules _loc "a_list" rl "") in
           let styp = STquo (_loc, "a_list")
           in { used = used; text = text; styp = styp; pattern = None; }
+          
         let ssopt _loc s =
           let rl =
             let r1 =
@@ -10250,6 +10557,7 @@ module G =
           let text = TXrules (_loc, srules _loc "a_opt" rl "") in
           let styp = STquo (_loc, "a_opt")
           in { used = used; text = text; styp = styp; pattern = None; }
+          
         let text_of_entry _loc e =
           let ent =
             let x = e.name in
@@ -10299,6 +10607,7 @@ module G =
                  in txt)
               e.levels (Ast.ExId (_loc, Ast.IdUid (_loc, "[]")))
           in (ent, pos, txt)
+          
         let let_in_of_extend _loc gram gl el args =
           match gl with
           | None -> args
@@ -10392,14 +10701,19 @@ module G =
                           xs
                           (Ast.BiEq (_loc, Ast.PaAny _loc, expr_of_name x))
                       in Ast.ExLet (_loc, Ast.BFalse, globals, e)))
+          
         class subst gmod =
           object inherit Ast.map as super
+                   
             method ident =
               function
               | Ast.IdUid (_, x) when x = gm -> gmod
               | x -> super#ident x
+              
           end
+          
         let subst_gmod ast gmod = (new subst gmod)#expr ast
+          
         let text_of_functorial_extend _loc gmod gram gl el =
           let args =
             let el =
@@ -10444,15 +10758,19 @@ module G =
                     List.fold_left (fun acc x -> Ast.ExSem (_loc, acc, x)) e
                       el)
           in subst_gmod (let_in_of_extend _loc gram gl el args) gmod
+          
         let wildcarder =
           object (self)
             inherit Ast.map as super
+              
             method patt =
               function
               | Ast.PaId (_loc, (Ast.IdLid (_, _))) -> Ast.PaAny _loc
               | Ast.PaAli (_, p, _) -> self#patt p
               | p -> super#patt p
+              
           end
+          
         let mk_tok _loc p t =
           let p' = wildcarder#patt p in
           let match_fun =
@@ -10471,7 +10789,9 @@ module G =
           let descr = string_of_patt p' in
           let text = TXtok (_loc, match_fun, descr)
           in { used = []; text = text; styp = t; pattern = Some p; }
+          
         let symbol = Gram.Entry.mk "symbol"
+          
         let check_not_tok s =
           match s with
           | { text = TXtok (_loc, _, _) } ->
@@ -10480,7 +10800,9 @@ module G =
                    ("Deprecated syntax, use a sub rule. " ^
                       "LIST0 STRING becomes LIST0 [ x = STRING -> x ]"))
           | _ -> ()
+          
         let _ = Camlp4_config.antiquotations := true
+          
         let _ =
           let _ = (expr : 'expr Gram.Entry.t)
           and _ = (symbol : 'symbol Gram.Entry.t) in
@@ -11720,6 +12042,7 @@ module G =
                           (Gram.Action.mk
                              (fun _ (_loc : Loc.t) -> (() : 'semi_sep)))) ]) ]))
                   ()))
+          
         let _ =
           Gram.extend (symbol : 'symbol Gram.Entry.t)
             ((fun () ->
@@ -11781,6 +12104,7 @@ module G =
                              (min : 'e__18) (_loc : Loc.t) ->
                              (sslist _loc min sep s : 'symbol)))) ]) ]))
                ())
+          
         let sfold _loc n foldfun f e s =
           let styp = STquo (_loc, new_type_var ()) in
           let e =
@@ -11809,6 +12133,7 @@ module G =
               styp = styp;
               pattern = None;
             }
+          
         let sfoldsep _loc n foldfun f e s sep =
           let styp = STquo (_loc, new_type_var ()) in
           let e =
@@ -11837,6 +12162,7 @@ module G =
               styp = styp;
               pattern = None;
             }
+          
         let _ =
           let _ = (symbol : 'symbol Gram.Entry.t) in
           let grammar_entry_create = Gram.Entry.mk in
@@ -11963,21 +12289,29 @@ module G =
                                 (Ast.ExId (_loc, Ast.IdLid (_loc, i)) :
                                   'simple_expr)))) ]) ]))
                   ()))
+          
         let _ =
           Options.add "-split_ext" (Arg.Set split_ext)
             "Split EXTEND by functions to turn around a PowerPC problem."
+          
         let _ =
           Options.add "-split_gext" (Arg.Set split_ext)
             "Old name for the option -split_ext."
+          
         let _ =
           Options.add "-meta_action" (Arg.Set meta_action) "Undocumented"
+          
       end
+      
     (* FIXME *)
     module M = Register.OCamlSyntaxExtension(Id)(Make)
+      
   end
+  
 module M =
   struct
     open Camlp4
+      
     (* -*- camlp4r -*- *)
     (****************************************************************************)
     (*                                                                          *)
@@ -12001,9 +12335,12 @@ module M =
     module Id =
       struct
         let name = "Camlp4MacroParser"
+          
         let version =
           "$Id: Camlp4MacroParser.ml,v 1.1.4.5 2007/04/26 19:51:49 pouillar Exp $"
+          
       end
+      
     (*
 Added statements:
 
@@ -12065,26 +12402,34 @@ Added statements:
 
 *)
     open Camlp4
+      
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
         open Sig
+          
         include Syntax
+          
         type 'a item_or_def =
           | SdStr of 'a | SdDef of string * ((string list) * Ast.expr) option
           | SdUnd of string
           | SdITE of string * ('a item_or_def) list * ('a item_or_def) list
           | SdLazy of 'a Lazy.t
+        
         let rec list_remove x =
           function
           | (y, _) :: l when y = x -> l
           | d :: l -> d :: (list_remove x l)
           | [] -> []
+          
         let defined = ref []
+          
         let is_defined i = List.mem_assoc i !defined
+          
         let bad_patt _loc =
           Loc.raise _loc
             (Failure
                "this macro cannot be used in a pattern (see its definition)")
+          
         let substp _loc env =
           let rec loop =
             function
@@ -12110,10 +12455,15 @@ Added statements:
                 in Ast.PaRec (_loc, substbi bi)
             | _ -> bad_patt _loc
           in loop
+          
         class reloc _loc =
-          object inherit Ast.map as super method _Loc_t = fun _ -> _loc end
+          object inherit Ast.map as super
+                    method _Loc_t = fun _ -> _loc
+                       end
+          
         class subst _loc env =
           object inherit reloc _loc as super
+                   
             method expr =
               function
               | (Ast.ExId (_, (Ast.IdLid (_, x))) |
@@ -12121,6 +12471,7 @@ Added statements:
                  as e) ->
                   (try List.assoc x env with | Not_found -> super#expr e)
               | e -> super#expr e
+              
             method patt =
               function
               | (Ast.PaId (_, (Ast.IdLid (_, x))) |
@@ -12129,12 +12480,15 @@ Added statements:
                   (try substp _loc [] (List.assoc x env)
                    with | Not_found -> super#patt p)
               | p -> super#patt p
+              
           end
+          
         let incorrect_number loc l1 l2 =
           Loc.raise loc
             (Failure
                (Printf.sprintf "expected %d parameters; found %d"
                   (List.length l2) (List.length l1)))
+          
         let define eo x =
           ((match eo with
             | Some (([], e)) ->
@@ -12245,6 +12599,7 @@ Added statements:
                       ()))
             | None -> ());
            defined := (x, eo) :: !defined)
+          
         let undef x =
           try
             ((let eo = List.assoc x !defined
@@ -12281,6 +12636,7 @@ Added statements:
                 | None -> ());
              defined := list_remove x !defined)
           with | Not_found -> ()
+          
         let parse_def s =
           match Gram.parse_string expr (Loc.mk "<command line>") s with
           | Ast.ExId (_, (Ast.IdUid (_, n))) -> define None n
@@ -12289,8 +12645,10 @@ Added statements:
                  (Ast.ExId (_, (Ast.IdUid (_, n)))))),
               e) -> define (Some (([], e))) n
           | _ -> invalid_arg s
+          
         (* This is a list of directories to search for INCLUDE statements. *)
         let include_dirs = ref []
+          
         (* Add something to the above, make sure it ends with a slash. *)
         let add_include_dir str =
           if str <> ""
@@ -12301,6 +12659,7 @@ Added statements:
                else str ^ "/"
              in include_dirs := !include_dirs @ [ str ])
           else ()
+          
         let parse_include_file rule =
           let dir_ok file dir = Sys.file_exists (dir ^ file)
           in
@@ -12312,6 +12671,7 @@ Added statements:
               let ch = open_in file in
               let st = Stream.of_channel ch
               in Gram.parse rule (Loc.mk file) st
+          
         let rec execute_macro nil cons =
           function
           | SdStr i -> i
@@ -12326,6 +12686,7 @@ Added statements:
           | hd :: tl -> (* The evaluation order is important here *)
               let il1 = execute_macro nil cons hd in
               let il2 = execute_macro_list nil cons tl in cons il1 il2
+          
         let _ =
           let _ = (expr : 'expr Gram.Entry.t)
           and _ = (sig_item : 'sig_item Gram.Entry.t)
@@ -12804,21 +13165,29 @@ Added statements:
                                 (let i = Gram.Token.extract_string i in i :
                                   'uident)))) ]) ]))
                   ()))
+          
         let _ =
           Options.add "-D" (Arg.String parse_def)
             "<string> Define for IFDEF instruction."
+          
         let _ =
           Options.add "-U" (Arg.String undef)
             "<string> Undefine for IFDEF instruction."
+          
         let _ =
           Options.add "-I" (Arg.String add_include_dir)
             "<string> Add a directory to INCLUDE search path."
+          
       end
+      
     let _ = let module M = Register.OCamlSyntaxExtension(Id)(Make) in ()
+      
     module MakeNothing (AstFilters : Camlp4.Sig.AstFilters) =
       struct
         open AstFilters
+          
         open Ast
+          
         let remove_nothings =
           function
           | Ast.ExApp (_, e, (Ast.ExId (_, (Ast.IdUid (_, "NOTHING"))))) |
@@ -12827,14 +13196,20 @@ Added statements:
                    (Ast.ExNil _), e)))
               -> e
           | e -> e
+          
         let _ =
           register_str_item_filter (Ast.map_expr remove_nothings)#str_item
+          
       end
+      
     let _ = let module M = Camlp4.Register.AstFilter(Id)(MakeNothing) in ()
+      
   end
+  
 module D =
   struct
     open Camlp4
+      
     (* -*- camlp4r -*- *)
     (****************************************************************************)
     (*                                                                          *)
@@ -12855,14 +13230,20 @@ module D =
     module Id =
       struct
         let name = "Camlp4DebugParser"
+          
         let version =
           "$Id: Camlp4DebugParser.ml,v 1.1 2007/02/07 10:09:22 ertai Exp $"
+          
       end
+      
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
         open Sig
+          
         include Syntax
+          
         module StringSet = Set.Make(String)
+          
         let debug_mode =
           try
             let str = Sys.getenv "STATIC_CAMLP4_DEBUG" in
@@ -12882,12 +13263,14 @@ module D =
               then (fun _ -> true)
               else (fun x -> StringSet.mem x sections)
           with | Not_found -> (fun _ -> false)
+          
         let rec apply accu =
           function
           | [] -> accu
           | x :: xs ->
               let _loc = Ast.loc_of_expr x
               in apply (Ast.ExApp (_loc, accu, x)) xs
+          
         let mk_debug_mode _loc =
           function
           | None ->
@@ -12899,6 +13282,7 @@ module D =
                 Ast.IdAcc (_loc, Ast.IdUid (_loc, m),
                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Debug"),
                     Ast.IdLid (_loc, "mode"))))
+          
         let mk_debug _loc m fmt section args =
           let call =
             apply
@@ -12915,6 +13299,7 @@ module D =
               Ast.ExApp (_loc, mk_debug_mode _loc m,
                 Ast.ExStr (_loc, section)),
               call, Ast.ExId (_loc, Ast.IdUid (_loc, "()")))
+          
         let _ =
           let _ = (expr : 'expr Gram.Entry.t) in
           let grammar_entry_create = Gram.Entry.mk in
@@ -13009,12 +13394,17 @@ module D =
                                 | LIDENT "debug" -> (None : 'start_debug)
                                 | _ -> assert false))) ]) ]))
                   ()))
+          
       end
+      
     let _ = let module M = Register.OCamlSyntaxExtension(Id)(Make) in ()
+      
   end
+  
 module L =
   struct
     open Camlp4
+      
     (* -*- camlp4r -*- *)
     (****************************************************************************)
     (*                                                                          *)
@@ -13036,19 +13426,26 @@ module L =
     module Id =
       struct
         let name = "Camlp4ListComprenhsion"
+          
         let version =
-          "$Id: Camlp4ListComprehension.ml,v 1.1 2007/02/27 15:50:57 pouillar Exp $"
+          "$Id: Camlp4ListComprehension.ml,v 1.1.2.1 2007/05/27 16:23:35 pouillar Exp $"
+          
       end
+      
     module Make (Syntax : Sig.Camlp4Syntax) =
       struct
         open Sig
+          
         include Syntax
+          
         let rec loop n =
           function
           | [] -> None
           | [ (x, _) ] -> if n = 1 then Some x else None
           | _ :: l -> loop (n - 1) l
+          
         let stream_peek_nth n strm = loop n (Stream.npeek n strm)
+          
         (* usual trick *)
         let test_patt_lessminus =
           Gram.Entry.of_parser "test_patt_lessminus"
@@ -13062,7 +13459,7 @@ module L =
                      skip_patt ((ignore_upto ")" (n + 1)) + 1)
                  | Some (KEYWORD "{") ->
                      skip_patt ((ignore_upto "}" (n + 1)) + 1)
-                 | Some (KEYWORD ("as" | "::" | ";" | "," | "_")) |
+                 | Some (KEYWORD ("as" | "::" | "," | "_")) |
                      Some (LIDENT _ | UIDENT _) -> skip_patt (n + 1)
                  | Some _ | None -> raise Stream.Failure
                and ignore_upto end_kwd n =
@@ -13077,6 +13474,7 @@ module L =
                  | Some _ -> ignore_upto end_kwd (n + 1)
                  | None -> raise Stream.Failure
                in skip_patt 1)
+          
         let map _loc p e l =
           match (p, e) with
           | (Ast.PaId (_, (Ast.IdLid (_, x))),
@@ -13128,6 +13526,7 @@ module L =
                                 Ast.ExId (_loc, Ast.IdLid (_loc, "l")))))))),
                     l),
                   Ast.ExId (_loc, Ast.IdUid (_loc, "[]")))
+          
         let filter _loc p b l =
           if Ast.is_irrefut_patt p
           then
@@ -13151,12 +13550,14 @@ module L =
                     Ast.McArr (_loc, Ast.PaAny _loc, Ast.ExNil _loc,
                       Ast.ExId (_loc, Ast.IdUid (_loc, "False")))))),
               l)
+          
         let concat _loc l =
           Ast.ExApp (_loc,
             Ast.ExId (_loc,
               Ast.IdAcc (_loc, Ast.IdUid (_loc, "List"),
                 Ast.IdLid (_loc, "concat"))),
             l)
+          
         let rec compr _loc e =
           function
           | [ `gen ((p, l)) ] -> map _loc p e l
@@ -13165,6 +13566,7 @@ module L =
           | `gen ((p, l)) :: ((`gen ((_, _)) :: _ as is)) ->
               concat _loc (map _loc p (compr _loc e is) l)
           | _ -> raise Stream.Failure
+          
         let _ =
           Gram.delete_rule expr
             [ Gram.Skeyword "[";
@@ -13172,6 +13574,7 @@ module L =
                 (Gram.Entry.obj
                    (sem_expr_for_list : 'sem_expr_for_list Gram.Entry.t));
               Gram.Skeyword "]" ]
+          
         let is_revised =
           try
             (Gram.delete_rule expr
@@ -13184,8 +13587,10 @@ module L =
                  Gram.Skeyword "]" ];
              true)
           with | Not_found -> false
+          
         let comprehension_or_sem_expr_for_list =
           Gram.Entry.mk "comprehension_or_sem_expr_for_list"
+          
         let _ =
           let _ = (expr : 'expr Gram.Entry.t)
           and _ =
@@ -13294,6 +13699,7 @@ module L =
                              (fun (e : 'expr) _ (p : 'patt) _ (_loc : Loc.t)
                                 -> (`gen ((p, e)) : 'item)))) ]) ]))
                   ()))
+          
         let _ =
           if is_revised
           then
@@ -13348,9 +13754,13 @@ module L =
                                     'comprehension_or_sem_expr_for_list)))) ]) ]))
                     ()))
           else ()
+          
       end
+      
     let _ = let module M = Register.OCamlSyntaxExtension(Id)(Make) in ()
+      
   end
+  
 module P =
   struct
     (****************************************************************************)
@@ -13370,7 +13780,9 @@ module P =
  * - Nicolas Pouillard: initial version
  *)
     let _ = Camlp4.Register.enable_dump_ocaml_ast_printer ()
+      
   end
+  
 module B =
   struct
     (* camlp4r *)
@@ -13393,30 +13805,53 @@ module B =
  *)
     (* $Id: Camlp4Bin.ml,v 1.14.2.4 2007/05/22 09:05:38 pouillar Exp $ *)
     open Camlp4
+      
     open PreCast.Syntax
+      
     open PreCast
+      
     open Format
+      
     module CleanAst = Camlp4.Struct.CleanAst.Make(Ast)
+      
     module SSet = Set.Make(String)
+      
     let pa_r = "Camlp4OCamlRevisedParser"
+      
     let pa_rr = "Camlp4OCamlReloadedParser"
+      
     let pa_o = "Camlp4OCamlParser"
+      
     let pa_rp = "Camlp4OCamlRevisedParserParser"
+      
     let pa_op = "Camlp4OCamlParserParser"
+      
     let pa_g = "Camlp4GrammarParser"
+      
     let pa_m = "Camlp4MacroParser"
+      
     let pa_qb = "Camlp4QuotationCommon"
+      
     let pa_q = "Camlp4QuotationExpander"
+      
     let pa_rq = "Camlp4OCamlRevisedQuotationExpander"
+      
     let pa_oq = "Camlp4OCamlOriginalQuotationExpander"
+      
     let pa_l = "Camlp4ListComprehension"
+      
     open Register
+      
     let dyn_loader =
       ref (fun _ -> raise (Match_failure ("./camlp4/Camlp4Bin.ml", 45, 24)))
+      
     let rcall_callback = ref (fun () -> ())
+      
     let loaded_modules = ref SSet.empty
+      
     let add_to_loaded_modules name =
       loaded_modules := SSet.add name !loaded_modules
+      
     let rewrite_and_load n x =
       let dyn_loader = !dyn_loader () in
       let find_in_path = DynLoader.find_in_path dyn_loader in
@@ -13510,7 +13945,9 @@ module B =
               let y = "Camlp4" ^ (n ^ ("/" ^ (x ^ ".cmo")))
               in real_load (try find_in_path y with | Not_found -> x));
          !rcall_callback ())
+      
     let print_warning = eprintf "%a:\n%s@." Loc.print
+      
     let rec parse_file dyn_loader name pa getdir =
       let directive_handler =
         Some
@@ -13536,34 +13973,44 @@ module B =
          let phr =
            try pa ?directive_handler loc cs with | x -> (clear (); raise x)
          in (clear (); phr))
+      
     let output_file = ref None
+      
     let process dyn_loader name pa pr clean fold_filters getdir =
       let ast = parse_file dyn_loader name pa getdir in
       let ast = fold_filters (fun t filter -> filter t) ast in
       let ast = clean ast
       in pr ?input_file: (Some name) ?output_file: !output_file ast
+      
     let gind =
       function
       | Ast.SgDir (loc, n, (Ast.ExStr (_, s))) -> Some ((loc, n, s))
       | _ -> None
+      
     let gimd =
       function
       | Ast.StDir (loc, n, (Ast.ExStr (_, s))) -> Some ((loc, n, s))
       | _ -> None
+      
     let process_intf dyn_loader name =
       process dyn_loader name CurrentParser.parse_interf CurrentPrinter.
         print_interf (new CleanAst.clean_ast)#sig_item AstFilters.
         fold_interf_filters gind
+      
     let process_impl dyn_loader name =
       process dyn_loader name CurrentParser.parse_implem CurrentPrinter.
         print_implem (new CleanAst.clean_ast)#str_item AstFilters.
         fold_implem_filters gimd
+      
     let just_print_the_version () =
       (printf "%s@." Camlp4_config.version; exit 0)
+      
     let print_version () =
       (eprintf "Camlp4 version %s@." Camlp4_config.version; exit 0)
+      
     let print_stdlib () =
       (printf "%s@." Camlp4_config.camlp4_standard_library; exit 0)
+      
     let usage ini_sl ext_sl =
       (eprintf
          "\
@@ -13583,16 +14030,21 @@ Options:
          (eprintf "Options added by loaded object files:@.";
           Options.print_usage_list ext_sl)
        else ())
+      
     let warn_noassert () =
       eprintf
         "\
 camlp4 warning: option -noassert is obsolete
 You should give the -noassert option to the ocaml compiler instead.@."
+      
     type file_kind =
       | Intf of string | Impl of string | Str of string
       | ModuleImpl of string | IncludeDir of string
+    
     let search_stdlib = ref true
+      
     let print_loaded_modules = ref false
+      
     let (task, do_task) =
       let t = ref None in
       let task f x =
@@ -13603,6 +14055,7 @@ You should give the -noassert option to the ocaml compiler instead.@."
               (if !t = None then (fun _ -> f x) else (fun usage -> usage ())) in
       let do_task usage = match !t with | Some f -> f usage | None -> ()
       in (task, do_task)
+      
     let input_file x =
       let dyn_loader = !dyn_loader ()
       in
@@ -13619,6 +14072,7 @@ You should give the -noassert option to the ocaml compiler instead.@."
           | ModuleImpl file_name -> rewrite_and_load "" file_name
           | IncludeDir dir -> DynLoader.include_dir dyn_loader dir);
          !rcall_callback ())
+      
     let initial_spec_list =
       [ ("-I", (Arg.String (fun x -> input_file (IncludeDir x))),
          "<directory>  Add directory in search patch for object files.");
@@ -13660,7 +14114,9 @@ You should give the -noassert option to the ocaml compiler instead.@."
          "<name>  Load the filter Camlp4Filters/<name>.cmo");
         ("-ignore", (Arg.String ignore), "ignore the next argument");
         ("--", (Arg.Unit ignore), "Deprecated, does nothing") ]
+      
     let _ = Options.init initial_spec_list
+      
     let anon_fun name =
       input_file
         (if Filename.check_suffix name ".mli"
@@ -13675,6 +14131,7 @@ You should give the -noassert option to the ocaml compiler instead.@."
                if Filename.check_suffix name ".cma"
                then ModuleImpl name
                else raise (Arg.Bad ("don't know what to do with " ^ name)))
+      
     let main argv =
       let usage () =
         (usage initial_spec_list (Options.ext_spec_list ()); exit 0)
@@ -13711,6 +14168,9 @@ You should give the -noassert option to the ocaml compiler instead.@."
              exit 2)
         | Arg.Help _ -> usage ()
         | exc -> (eprintf "@[<v0>%a@]@." ErrorHandler.print exc; exit 2)
+      
     let _ = main Sys.argv
+      
   end
+  
 

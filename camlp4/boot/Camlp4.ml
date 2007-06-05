@@ -19,8 +19,11 @@ module Debug :
  *)
     (* camlp4r *)
     type section = string
+    
     val mode : section -> bool
+      
     val printf : section -> ('a, Format.formatter, unit) format -> 'a
+      
   end =
   struct
     (****************************************************************************)
@@ -42,8 +45,12 @@ module Debug :
  *)
     (* camlp4r *)
     open Format
-    module Debug = struct let mode _ = false end
+      
+    module Debug = struct let mode _ = false
+                             end
+      
     type section = string
+    
     let out_channel =
       try
         let f = Sys.getenv "CAMLP4_DEBUG_FILE"
@@ -51,7 +58,9 @@ module Debug :
           open_out_gen [ Open_wronly; Open_creat; Open_append; Open_text ]
             0o666 f
       with | Not_found -> stderr
+      
     module StringSet = Set.Make(String)
+      
     let mode =
       try
         let str = Sys.getenv "CAMLP4_DEBUG" in
@@ -69,6 +78,7 @@ module Debug :
           then (fun _ -> true)
           else (fun x -> StringSet.mem x sections)
       with | Not_found -> (fun _ -> false)
+      
     let formatter =
       let header = "camlp4-debug: " in
       let normal s =
@@ -91,8 +101,11 @@ module Debug :
           (fun buf pos len ->
              let p = pred len in output (String.sub buf pos p) buf.[pos + p])
           (fun () -> flush out_channel)
+      
     let printf section fmt = fprintf formatter ("%s: " ^^ fmt) section
+      
   end
+  
 module Options :
   sig
     (****************************************************************************)
@@ -113,12 +126,18 @@ module Options :
  * - Nicolas Pouillard: refactoring
  *)
     type spec_list = (string * Arg.spec * string) list
+    
     val init : spec_list -> unit
+      
     val add : string -> Arg.spec -> string -> unit
+      
     (** Add an option to the command line options. *)
     val print_usage_list : spec_list -> unit
+      
     val ext_spec_list : unit -> spec_list
+      
     val parse : (string -> unit) -> string array -> string list
+      
   end =
   struct
     (****************************************************************************)
@@ -139,7 +158,9 @@ module Options :
  * - Nicolas Pouillard: refactoring
  *)
     type spec_list = (string * Arg.spec * string) list
+    
     open Format
+      
     let rec action_arg s sl =
       function
       | Arg.Unit f -> if s = "" then (f (); Some sl) else None
@@ -215,12 +236,14 @@ module Options :
           (match if s = "" then sl else s :: sl with
            | s :: sl when List.mem s syms -> (f s; Some sl)
            | _ -> None)
+      
     let common_start s1 s2 =
       let rec loop i =
         if (i == (String.length s1)) || (i == (String.length s2))
         then i
         else if s1.[i] == s2.[i] then loop (i + 1) else i
       in loop 0
+      
     let parse_arg fold s sl =
       fold
         (fun (name, action, _) acu ->
@@ -234,6 +257,7 @@ module Options :
                 with | Arg.Bad _ -> acu)
              else acu)
         None
+      
     let rec parse_aux fold anon_fun =
       function
       | [] -> []
@@ -244,6 +268,7 @@ module Options :
              | Some sl -> parse_aux fold anon_fun sl
              | None -> s :: (parse_aux fold anon_fun sl))
           else ((anon_fun s : unit); parse_aux fold anon_fun sl)
+      
     let align_doc key s =
       let s =
         let rec loop i =
@@ -282,11 +307,13 @@ module Options :
         String.make (max 1 ((16 - (String.length key)) - (String.length p)))
           ' '
       in p ^ (tab ^ s)
+      
     let make_symlist l =
       match l with
       | [] -> "<none>"
       | h :: t ->
           (List.fold_left (fun x y -> x ^ ("|" ^ y)) ("{" ^ h) t) ^ "}"
+      
     let print_usage_list l =
       List.iter
         (fun (key, spec, doc) ->
@@ -297,24 +324,34 @@ module Options :
                in eprintf "  %s %s\n" synt (align_doc synt doc)
            | _ -> eprintf "  %s %s\n" key (align_doc key doc))
         l
+      
     let remaining_args argv =
       let rec loop l i =
         if i == (Array.length argv) then l else loop (argv.(i) :: l) (i + 1)
       in List.rev (loop [] (!Arg.current + 1))
+      
     let init_spec_list = ref []
+      
     let ext_spec_list = ref []
+      
     let init spec_list = init_spec_list := spec_list
+      
     let add name spec descr =
       ext_spec_list := (name, spec, descr) :: !ext_spec_list
+      
     let fold f init =
       let spec_list = !init_spec_list @ !ext_spec_list in
       let specs = Sort.list (fun (k1, _, _) (k2, _, _) -> k1 >= k2) spec_list
       in List.fold_right f specs init
+      
     let parse anon_fun argv =
       let remaining_args = remaining_args argv
       in parse_aux fold anon_fun remaining_args
+      
     let ext_spec_list () = !ext_spec_list
+      
   end
+  
 module Sig =
   struct
     (* camlp4r *)
@@ -335,197 +372,272 @@ module Sig =
  * - Daniel de Rauglaudre: initial version
  * - Nicolas Pouillard: refactoring
  *)
-    module type Type = sig type t end
+    (** Camlp4 signature repository *)
+    (** {6 Basic signatures} *)
+    (** Signature with just a type. *)
+    module type Type = sig type t
+                            end
+      
     (** Signature for errors modules, an Error modules can be registred with
     the {!ErrorHandler.Register} functor in order to be well printed. *)
     module type Error =
       sig
         type t
+        
         exception E of t
+          
         val to_string : t -> string
+          
         val print : Format.formatter -> t -> unit
+          
       end
+      
     (** A signature for extensions identifiers. *)
     module type Id =
       sig
         (** The name of the extension, typically the module name. *)
         val name : string
+          
         (** The version of the extension, typically $Id: Sig.ml,v 1.2.2.11 2007/05/22 09:09:39 pouillar Exp $ with a versionning system. *)
         val version : string
+          
       end
+      
+    (** A signature for warnings abstract from locations. *)
+    module Warning (Loc : Type) =
+      struct
+        module type S =
+          sig
+            type warning = Loc.t -> string -> unit
+            
+            val default_warning : warning
+              
+            val current_warning : warning ref
+              
+            val print_warning : warning
+              
+          end
+          
+      end
+      
+    (** {6 Advanced signatures} *)
+    (** A signature for locations. *)
     module type Loc =
       sig
         type t
+        
         (** Return a start location for the given file name.
       This location starts at the begining of the file. *)
         val mk : string -> t
+          
         (** The [ghost] location can be used when no location
       information is available. *)
         val ghost : t
+          
         (** {6 Conversion functions} *)
         (** Return a location where both positions are set the given position. *)
         val of_lexing_position : Lexing.position -> t
+          
         (** Return an OCaml location. *)
         val to_ocaml_location : t -> Camlp4_import.Location.t
+          
         (** Return a location from an OCaml location. *)
         val of_ocaml_location : Camlp4_import.Location.t -> t
+          
         (** Return a location from ocamllex buffer. *)
         val of_lexbuf : Lexing.lexbuf -> t
+          
         (** Return a location from [(file_name, start_line, start_bol, start_off,
       stop_line,  stop_bol,  stop_off, ghost)]. *)
         val of_tuple :
           (string * int * int * int * int * int * int * bool) -> t
+          
         (** Return [(file_name, start_line, start_bol, start_off,
       stop_line,  stop_bol,  stop_off, ghost)]. *)
         val to_tuple :
           t -> (string * int * int * int * int * int * int * bool)
+          
         (** [merge loc1 loc2] Return a location that starts at [loc1] and end at [loc2]. *)
         val merge : t -> t -> t
+          
         (** The stop pos becomes equal to the start pos. *)
         val join : t -> t
+          
         (** [move selector n loc]
       Return the location where positions are moved.
       Affected positions are chosen with [selector].
       Returned positions have their character offset plus [n]. *)
         val move : [ `start | `stop | `both ] -> int -> t -> t
+          
         (** [shift n loc] Return the location where the new start position is the old
       stop position, and where the new stop position character offset is the
       old one plus [n]. *)
         val shift : int -> t -> t
+          
         (** [move_line n loc] Return the location with the old line count plus [n].
       The "begin of line" of both positions become the current offset. *)
         val move_line : int -> t -> t
-        (** Accessors *)
+          
+        (** {6 Accessors} *)
         (** Return the file name *)
         val file_name : t -> string
+          
         (** Return the line number of the begining of this location. *)
         val start_line : t -> int
+          
         (** Return the line number of the ending of this location. *)
         val stop_line : t -> int
+          
         (** Returns the number of characters from the begining of the file
       to the begining of the line of location's begining. *)
         val start_bol : t -> int
+          
         (** Returns the number of characters from the begining of the file
       to the begining of the line of location's ending. *)
         val stop_bol : t -> int
+          
         (** Returns the number of characters from the begining of the file
       of the begining of this location. *)
         val start_off : t -> int
+          
         (** Return the number of characters from the begining of the file
       of the ending of this location. *)
         val stop_off : t -> int
+          
         (** Return the start position as a Lexing.position. *)
         val start_pos : t -> Lexing.position
+          
         (** Return the stop position as a Lexing.position. *)
         val stop_pos : t -> Lexing.position
+          
         (** Generally, return true if this location does not come
       from an input stream. *)
         val is_ghost : t -> bool
+          
         (** Return the associated ghost location. *)
         val ghostify : t -> t
+          
         (** Return the location with the give file name *)
         val set_file_name : string -> t -> t
+          
         (** [strictly_before loc1 loc2] True if the stop position of [loc1] is
       strictly_before the start position of [loc2]. *)
         val strictly_before : t -> t -> bool
+          
         (** Return the location with an absolute file name. *)
         val make_absolute : t -> t
+          
         (** Print the location into the formatter in a format suitable for error
       reporting. *)
         val print : Format.formatter -> t -> unit
+          
         (** Print the location in a short format useful for debugging. *)
         val dump : Format.formatter -> t -> unit
+          
         (** Same as {!print} but return a string instead of printting it. *)
         val to_string : t -> string
+          
         (** [Exc_located loc e] is an encapsulation of the exception [e] with
       the input location [loc]. To be used in quotation expanders
       and in grammars to specify some input location for an error.
       Do not raise this exception directly: rather use the following
       function [Loc.raise]. *)
         exception Exc_located of t * exn
+          
         (** [raise loc e], if [e] is already an [Exc_located] exception,
       re-raise it, else raise the exception [Exc_located loc e]. *)
         val raise : t -> exn -> 'a
+          
         (** The name of the location variable used in grammars and in
       the predefined quotations for OCaml syntax trees. Default: [_loc]. *)
         val name : string ref
+          
       end
-    module Warning (Loc : Loc) =
-      struct
-        module type S =
-          sig
-            type warning = Loc.t -> string -> unit
-            val default_warning : warning
-            val current_warning : warning ref
-            val print_warning : warning
-          end
-      end
-    (** Base class for map traversal, it includes some builtin types. *)
-    class mapper =
-      (object method string = fun x -> (x : string)
-         method int = fun x -> (x : int)
-         method float = fun x -> (x : float)
-         method bool = fun x -> (x : bool)
-         method list : 'a 'b. ('a -> 'b) -> 'a list -> 'b list = List.map
-         method option : 'a 'b. ('a -> 'b) -> 'a option -> 'b option =
-           fun f -> function | None -> None | Some x -> Some (f x)
-         method array : 'a 'b. ('a -> 'b) -> 'a array -> 'b array = Array.map
-         method ref : 'a 'b. ('a -> 'b) -> 'a ref -> 'b ref =
-           fun f { contents = x } -> { contents = f x; }
-       end :
-       object
-         method string : string -> string
-         method int : int -> int
-         method float : float -> float
-         method bool : bool -> bool
-         method list : 'a 'b. ('a -> 'b) -> 'a list -> 'b list
-         method option : 'a 'b. ('a -> 'b) -> 'a option -> 'b option
-         method array : 'a 'b. ('a -> 'b) -> 'a array -> 'b array
-         method ref : 'a 'b. ('a -> 'b) -> 'a ref -> 'b ref
-       end)
+      
     (** Abstract syntax tree minimal signature.
     Types of this signature are abstract.
     See the {!Camlp4Ast} signature for a concrete definition. *)
     module type Ast =
       sig
         module Loc : Loc
+          
+        (** {6 Syntactic categories as abstract types} *)
         type meta_bool
+        
         type 'a meta_option
+        
         type 'a meta_list
+        
         type ctyp
+        
         type patt
+        
         type expr
+        
         type module_type
+        
         type sig_item
+        
         type with_constr
+        
         type module_expr
+        
         type str_item
+        
         type class_type
+        
         type class_sig_item
+        
         type class_expr
+        
         type class_str_item
+        
         type match_case
+        
         type ident
+        
         type binding
+        
         type rec_binding
+        
         type module_binding
+        
+        (** {6 Location accessors} *)
         val loc_of_ctyp : ctyp -> Loc.t
+          
         val loc_of_patt : patt -> Loc.t
+          
         val loc_of_expr : expr -> Loc.t
+          
         val loc_of_module_type : module_type -> Loc.t
+          
         val loc_of_module_expr : module_expr -> Loc.t
+          
         val loc_of_sig_item : sig_item -> Loc.t
+          
         val loc_of_str_item : str_item -> Loc.t
+          
         val loc_of_class_type : class_type -> Loc.t
+          
         val loc_of_class_sig_item : class_sig_item -> Loc.t
+          
         val loc_of_class_expr : class_expr -> Loc.t
+          
         val loc_of_class_str_item : class_str_item -> Loc.t
+          
         val loc_of_with_constr : with_constr -> Loc.t
+          
         val loc_of_binding : binding -> Loc.t
+          
         val loc_of_rec_binding : rec_binding -> Loc.t
+          
         val loc_of_module_binding : module_binding -> Loc.t
+          
         val loc_of_match_case : match_case -> Loc.t
+          
         val loc_of_ident : ident -> Loc.t
+          
+        (** {6 Traversals} *)
         (** This class is the base class for map traversal on the Ast.
       To make a custom traversal class one just extend it like that:
       
@@ -544,86 +656,143 @@ module Sig =
   *)
         class map :
           object
-            inherit mapper
+            method string : string -> string
+              
+            method int : int -> int
+              
+            method float : float -> float
+              
+            method bool : bool -> bool
+              
+            method list : 'a 'b. ('a -> 'b) -> 'a list -> 'b list
+              
+            method option : 'a 'b. ('a -> 'b) -> 'a option -> 'b option
+              
+            method array : 'a 'b. ('a -> 'b) -> 'a array -> 'b array
+              
+            method ref : 'a 'b. ('a -> 'b) -> 'a ref -> 'b ref
+              
             method meta_bool : meta_bool -> meta_bool
+              
             method meta_option :
               'a 'b. ('a -> 'b) -> 'a meta_option -> 'b meta_option
+              
             method meta_list :
               'a 'b. ('a -> 'b) -> 'a meta_list -> 'b meta_list
+              
             method _Loc_t : Loc.t -> Loc.t
+              
             method expr : expr -> expr
+              
             method patt : patt -> patt
+              
             method ctyp : ctyp -> ctyp
+              
             method str_item : str_item -> str_item
+              
             method sig_item : sig_item -> sig_item
+              
             method module_expr : module_expr -> module_expr
+              
             method module_type : module_type -> module_type
+              
             method class_expr : class_expr -> class_expr
+              
             method class_type : class_type -> class_type
+              
             method class_sig_item : class_sig_item -> class_sig_item
+              
             method class_str_item : class_str_item -> class_str_item
+              
             method with_constr : with_constr -> with_constr
+              
             method binding : binding -> binding
+              
             method rec_binding : rec_binding -> rec_binding
+              
             method module_binding : module_binding -> module_binding
+              
             method match_case : match_case -> match_case
+              
             method ident : ident -> ident
+              
           end
+          
+        (** Fold style traversal *)
         class fold :
           object ('self_type)
             method string : string -> 'self_type
+              
             method int : int -> 'self_type
+              
             method float : float -> 'self_type
+              
             method bool : bool -> 'self_type
+              
             method list :
               'a. ('self_type -> 'a -> 'self_type) -> 'a list -> 'self_type
+              
             method option :
               'a. ('self_type -> 'a -> 'self_type) -> 'a option -> 'self_type
+              
             method array :
               'a. ('self_type -> 'a -> 'self_type) -> 'a array -> 'self_type
+              
             method ref :
               'a. ('self_type -> 'a -> 'self_type) -> 'a ref -> 'self_type
+              
             method meta_bool : meta_bool -> 'self_type
+              
             method meta_option :
               'a.
                 ('self_type -> 'a -> 'self_type) ->
                   'a meta_option -> 'self_type
+              
             method meta_list :
               'a.
                 ('self_type -> 'a -> 'self_type) ->
                   'a meta_list -> 'self_type
+              
             method _Loc_t : Loc.t -> 'self_type
+              
             method expr : expr -> 'self_type
+              
             method patt : patt -> 'self_type
+              
             method ctyp : ctyp -> 'self_type
+              
             method str_item : str_item -> 'self_type
+              
             method sig_item : sig_item -> 'self_type
+              
             method module_expr : module_expr -> 'self_type
+              
             method module_type : module_type -> 'self_type
+              
             method class_expr : class_expr -> 'self_type
+              
             method class_type : class_type -> 'self_type
+              
             method class_sig_item : class_sig_item -> 'self_type
+              
             method class_str_item : class_str_item -> 'self_type
+              
             method with_constr : with_constr -> 'self_type
+              
             method binding : binding -> 'self_type
+              
             method rec_binding : rec_binding -> 'self_type
+              
             method module_binding : module_binding -> 'self_type
+              
             method match_case : match_case -> 'self_type
+              
             method ident : ident -> 'self_type
+              
           end
+          
       end
-    (** The AntiquotSyntax signature describe the minimal interface needed
-    for antiquotation handling. *)
-    module type AntiquotSyntax =
-      sig
-        module Ast : Ast
-        (** The parse function for expressions.
-      The underlying expression grammar entry is generally "expr; EOI". *)
-        val parse_expr : Ast.Loc.t -> string -> Ast.expr
-        (** The parse function for patterns.
-      The underlying pattern grammar entry is generally "patt; EOI". *)
-        val parse_patt : Ast.Loc.t -> string -> Ast.patt
-      end
+      
     (** Signature for OCaml syntax trees.
     This signature is an extension of {!Ast}
     It provides:
@@ -657,15 +826,20 @@ module Sig =
     module type Camlp4Ast =
       sig
         module Loc : Loc
+          
         type meta_bool = | BTrue | BFalse | BAnt of string
+        
         type 'a meta_option = | ONone | OSome of 'a | OAnt of string
+        
         type 'a meta_list =
           | LNil | LCons of 'a * 'a meta_list | LAnt of string
+        
         type ident =
           | (* i . i *) (* i i *) (* foo *) (* Bar *)
           IdAcc of Loc.t * ident * ident | IdApp of Loc.t * ident * ident
           | IdLid of Loc.t * string | IdUid of Loc.t * string
           | IdAnt of Loc.t * string
+        
         (* $s$ *)
         type ctyp =
           | (* t as t *) (* list 'a as 'a *) (* _ *) (* t t *) (* list 'a *)
@@ -700,6 +874,7 @@ module Sig =
           | TyVrnInf of Loc.t * ctyp | TyVrnInfSup of Loc.t * ctyp * ctyp
           | TyAmp of Loc.t * ctyp * ctyp | TyOfAmp of Loc.t * ctyp * ctyp
           | TyAnt of Loc.t * string
+        
         (* $s$ *)
         type (* i *)
           (* p as p *)
@@ -985,243 +1160,452 @@ module Sig =
           | CrVir of Loc.t * string * meta_bool * ctyp
           | CrVvr of Loc.t * string * meta_bool * ctyp
           | CrAnt of Loc.t * string
+        
         val loc_of_ctyp : ctyp -> Loc.t
+          
         val loc_of_patt : patt -> Loc.t
+          
         val loc_of_expr : expr -> Loc.t
+          
         val loc_of_module_type : module_type -> Loc.t
+          
         val loc_of_module_expr : module_expr -> Loc.t
+          
         val loc_of_sig_item : sig_item -> Loc.t
+          
         val loc_of_str_item : str_item -> Loc.t
+          
         val loc_of_class_type : class_type -> Loc.t
+          
         val loc_of_class_sig_item : class_sig_item -> Loc.t
+          
         val loc_of_class_expr : class_expr -> Loc.t
+          
         val loc_of_class_str_item : class_str_item -> Loc.t
+          
         val loc_of_with_constr : with_constr -> Loc.t
+          
         val loc_of_binding : binding -> Loc.t
+          
         val loc_of_rec_binding : rec_binding -> Loc.t
+          
         val loc_of_module_binding : module_binding -> Loc.t
+          
         val loc_of_match_case : match_case -> Loc.t
+          
         val loc_of_ident : ident -> Loc.t
+          
         module Meta :
           sig
             module type META_LOC =
               sig
                 val meta_loc_patt : Loc.t -> Loc.t -> patt
+                  
                 val meta_loc_expr : Loc.t -> Loc.t -> expr
+                  
               end
+              
             module MetaLoc :
               sig
                 val meta_loc_patt : Loc.t -> Loc.t -> patt
+                  
                 val meta_loc_expr : Loc.t -> Loc.t -> expr
+                  
               end
+              
             module MetaGhostLoc :
               sig
                 val meta_loc_patt : Loc.t -> 'a -> patt
+                  
                 val meta_loc_expr : Loc.t -> 'a -> expr
+                  
               end
+              
             module MetaLocVar :
               sig
                 val meta_loc_patt : Loc.t -> 'a -> patt
+                  
                 val meta_loc_expr : Loc.t -> 'a -> expr
+                  
               end
+              
             module Make (MetaLoc : META_LOC) :
               sig
                 module Expr :
                   sig
                     val meta_string : Loc.t -> string -> expr
+                      
                     val meta_int : Loc.t -> string -> expr
+                      
                     val meta_float : Loc.t -> string -> expr
+                      
                     val meta_char : Loc.t -> string -> expr
+                      
                     val meta_bool : Loc.t -> bool -> expr
+                      
                     val meta_list :
                       (Loc.t -> 'a -> expr) -> Loc.t -> 'a list -> expr
+                      
                     val meta_binding : Loc.t -> binding -> expr
+                      
                     val meta_rec_binding : Loc.t -> rec_binding -> expr
+                      
                     val meta_class_expr : Loc.t -> class_expr -> expr
+                      
                     val meta_class_sig_item : Loc.t -> class_sig_item -> expr
+                      
                     val meta_class_str_item : Loc.t -> class_str_item -> expr
+                      
                     val meta_class_type : Loc.t -> class_type -> expr
+                      
                     val meta_ctyp : Loc.t -> ctyp -> expr
+                      
                     val meta_expr : Loc.t -> expr -> expr
+                      
                     val meta_ident : Loc.t -> ident -> expr
+                      
                     val meta_match_case : Loc.t -> match_case -> expr
+                      
                     val meta_module_binding : Loc.t -> module_binding -> expr
+                      
                     val meta_module_expr : Loc.t -> module_expr -> expr
+                      
                     val meta_module_type : Loc.t -> module_type -> expr
+                      
                     val meta_patt : Loc.t -> patt -> expr
+                      
                     val meta_sig_item : Loc.t -> sig_item -> expr
+                      
                     val meta_str_item : Loc.t -> str_item -> expr
+                      
                     val meta_with_constr : Loc.t -> with_constr -> expr
+                      
                   end
+                  
                 module Patt :
                   sig
                     val meta_string : Loc.t -> string -> patt
+                      
                     val meta_int : Loc.t -> string -> patt
+                      
                     val meta_float : Loc.t -> string -> patt
+                      
                     val meta_char : Loc.t -> string -> patt
+                      
                     val meta_bool : Loc.t -> bool -> patt
+                      
                     val meta_list :
                       (Loc.t -> 'a -> patt) -> Loc.t -> 'a list -> patt
+                      
                     val meta_binding : Loc.t -> binding -> patt
+                      
                     val meta_rec_binding : Loc.t -> rec_binding -> patt
+                      
                     val meta_class_expr : Loc.t -> class_expr -> patt
+                      
                     val meta_class_sig_item : Loc.t -> class_sig_item -> patt
+                      
                     val meta_class_str_item : Loc.t -> class_str_item -> patt
+                      
                     val meta_class_type : Loc.t -> class_type -> patt
+                      
                     val meta_ctyp : Loc.t -> ctyp -> patt
+                      
                     val meta_expr : Loc.t -> expr -> patt
+                      
                     val meta_ident : Loc.t -> ident -> patt
+                      
                     val meta_match_case : Loc.t -> match_case -> patt
+                      
                     val meta_module_binding : Loc.t -> module_binding -> patt
+                      
                     val meta_module_expr : Loc.t -> module_expr -> patt
+                      
                     val meta_module_type : Loc.t -> module_type -> patt
+                      
                     val meta_patt : Loc.t -> patt -> patt
+                      
                     val meta_sig_item : Loc.t -> sig_item -> patt
+                      
                     val meta_str_item : Loc.t -> str_item -> patt
+                      
                     val meta_with_constr : Loc.t -> with_constr -> patt
+                      
                   end
+                  
               end
+              
           end
+          
         class map :
           object
-            inherit mapper
+            method string : string -> string
+              
+            method int : int -> int
+              
+            method float : float -> float
+              
+            method bool : bool -> bool
+              
+            method list : 'a 'b. ('a -> 'b) -> 'a list -> 'b list
+              
+            method option : 'a 'b. ('a -> 'b) -> 'a option -> 'b option
+              
+            method array : 'a 'b. ('a -> 'b) -> 'a array -> 'b array
+              
+            method ref : 'a 'b. ('a -> 'b) -> 'a ref -> 'b ref
+              
             method meta_bool : meta_bool -> meta_bool
+              
             method meta_option :
               'a 'b. ('a -> 'b) -> 'a meta_option -> 'b meta_option
+              
             method meta_list :
               'a 'b. ('a -> 'b) -> 'a meta_list -> 'b meta_list
+              
             method _Loc_t : Loc.t -> Loc.t
+              
             method expr : expr -> expr
+              
             method patt : patt -> patt
+              
             method ctyp : ctyp -> ctyp
+              
             method str_item : str_item -> str_item
+              
             method sig_item : sig_item -> sig_item
+              
             method module_expr : module_expr -> module_expr
+              
             method module_type : module_type -> module_type
+              
             method class_expr : class_expr -> class_expr
+              
             method class_type : class_type -> class_type
+              
             method class_sig_item : class_sig_item -> class_sig_item
+              
             method class_str_item : class_str_item -> class_str_item
+              
             method with_constr : with_constr -> with_constr
+              
             method binding : binding -> binding
+              
             method rec_binding : rec_binding -> rec_binding
+              
             method module_binding : module_binding -> module_binding
+              
             method match_case : match_case -> match_case
+              
             method ident : ident -> ident
+              
           end
+          
         class fold :
           object ('self_type)
             method string : string -> 'self_type
+              
             method int : int -> 'self_type
+              
             method float : float -> 'self_type
+              
             method bool : bool -> 'self_type
+              
             method list :
               'a. ('self_type -> 'a -> 'self_type) -> 'a list -> 'self_type
+              
             method option :
               'a. ('self_type -> 'a -> 'self_type) -> 'a option -> 'self_type
+              
             method array :
               'a. ('self_type -> 'a -> 'self_type) -> 'a array -> 'self_type
+              
             method ref :
               'a. ('self_type -> 'a -> 'self_type) -> 'a ref -> 'self_type
+              
             method meta_bool : meta_bool -> 'self_type
+              
             method meta_option :
               'a.
                 ('self_type -> 'a -> 'self_type) ->
                   'a meta_option -> 'self_type
+              
             method meta_list :
               'a.
                 ('self_type -> 'a -> 'self_type) ->
                   'a meta_list -> 'self_type
+              
             method _Loc_t : Loc.t -> 'self_type
+              
             method expr : expr -> 'self_type
+              
             method patt : patt -> 'self_type
+              
             method ctyp : ctyp -> 'self_type
+              
             method str_item : str_item -> 'self_type
+              
             method sig_item : sig_item -> 'self_type
+              
             method module_expr : module_expr -> 'self_type
+              
             method module_type : module_type -> 'self_type
+              
             method class_expr : class_expr -> 'self_type
+              
             method class_type : class_type -> 'self_type
+              
             method class_sig_item : class_sig_item -> 'self_type
+              
             method class_str_item : class_str_item -> 'self_type
+              
             method with_constr : with_constr -> 'self_type
+              
             method binding : binding -> 'self_type
+              
             method rec_binding : rec_binding -> 'self_type
+              
             method module_binding : module_binding -> 'self_type
+              
             method match_case : match_case -> 'self_type
+              
             method ident : ident -> 'self_type
+              
           end
+          
         val map_expr : (expr -> expr) -> map
+          
         val map_patt : (patt -> patt) -> map
+          
         val map_ctyp : (ctyp -> ctyp) -> map
+          
         val map_str_item : (str_item -> str_item) -> map
+          
         val map_sig_item : (sig_item -> sig_item) -> map
+          
         val map_loc : (Loc.t -> Loc.t) -> map
+          
         val ident_of_expr : expr -> ident
+          
         val ident_of_patt : patt -> ident
+          
         val ident_of_ctyp : ctyp -> ident
+          
         val biAnd_of_list : binding list -> binding
+          
         val rbSem_of_list : rec_binding list -> rec_binding
+          
         val paSem_of_list : patt list -> patt
+          
         val paCom_of_list : patt list -> patt
+          
         val tyOr_of_list : ctyp list -> ctyp
+          
         val tyAnd_of_list : ctyp list -> ctyp
+          
         val tyAmp_of_list : ctyp list -> ctyp
+          
         val tySem_of_list : ctyp list -> ctyp
+          
         val tyCom_of_list : ctyp list -> ctyp
+          
         val tySta_of_list : ctyp list -> ctyp
+          
         val stSem_of_list : str_item list -> str_item
+          
         val sgSem_of_list : sig_item list -> sig_item
+          
         val crSem_of_list : class_str_item list -> class_str_item
+          
         val cgSem_of_list : class_sig_item list -> class_sig_item
+          
         val ctAnd_of_list : class_type list -> class_type
+          
         val ceAnd_of_list : class_expr list -> class_expr
+          
         val wcAnd_of_list : with_constr list -> with_constr
+          
         val meApp_of_list : module_expr list -> module_expr
+          
         val mbAnd_of_list : module_binding list -> module_binding
+          
         val mcOr_of_list : match_case list -> match_case
+          
         val idAcc_of_list : ident list -> ident
+          
         val idApp_of_list : ident list -> ident
+          
         val exSem_of_list : expr list -> expr
+          
         val exCom_of_list : expr list -> expr
+          
         val list_of_ctyp : ctyp -> ctyp list -> ctyp list
+          
         val list_of_binding : binding -> binding list -> binding list
+          
         val list_of_rec_binding :
           rec_binding -> rec_binding list -> rec_binding list
+          
         val list_of_with_constr :
           with_constr -> with_constr list -> with_constr list
+          
         val list_of_patt : patt -> patt list -> patt list
+          
         val list_of_expr : expr -> expr list -> expr list
+          
         val list_of_str_item : str_item -> str_item list -> str_item list
+          
         val list_of_sig_item : sig_item -> sig_item list -> sig_item list
+          
         val list_of_class_sig_item :
           class_sig_item -> class_sig_item list -> class_sig_item list
+          
         val list_of_class_str_item :
           class_str_item -> class_str_item list -> class_str_item list
+          
         val list_of_class_type :
           class_type -> class_type list -> class_type list
+          
         val list_of_class_expr :
           class_expr -> class_expr list -> class_expr list
+          
         val list_of_module_expr :
           module_expr -> module_expr list -> module_expr list
+          
         val list_of_module_binding :
           module_binding -> module_binding list -> module_binding list
+          
         val list_of_match_case :
           match_case -> match_case list -> match_case list
+          
         val list_of_ident : ident -> ident list -> ident list
+          
         val safe_string_escaped : string -> string
+          
         val is_irrefut_patt : patt -> bool
+          
         val is_constructor : ident -> bool
+          
         val is_patt_constructor : patt -> bool
+          
         val is_expr_constructor : expr -> bool
+          
         val ty_of_stl : (Loc.t * string * (ctyp list)) -> ctyp
+          
         val ty_of_sbt : (Loc.t * string * bool * ctyp) -> ctyp
+          
         val bi_of_pe : (patt * expr) -> binding
+          
         val pel_of_binding : binding -> (patt * expr) list
+          
         val binding_of_pel : (patt * expr) list -> binding
+          
         val sum_type_of_list : (Loc.t * string * (ctyp list)) list -> ctyp
+          
         val record_type_of_list : (Loc.t * string * bool * ctyp) list -> ctyp
+          
       end
+      
     module Camlp4AstToAst (M : Camlp4Ast) : Ast with module Loc = M.Loc
       and type meta_bool = M.meta_bool
       and type 'a meta_option = 'a M.meta_option
@@ -1237,16 +1621,21 @@ module Sig =
       and type rec_binding = M.rec_binding
       and type module_binding = M.module_binding
       and type match_case = M.match_case and type ident = M.ident = M
+      
     module MakeCamlp4Ast (Loc : Type) =
       struct
         type meta_bool = | BTrue | BFalse | BAnt of string
+        
         type 'a meta_option = | ONone | OSome of 'a | OAnt of string
+        
         type 'a meta_list =
           | LNil | LCons of 'a * 'a meta_list | LAnt of string
+        
         type ident =
           | IdAcc of Loc.t * ident * ident | IdApp of Loc.t * ident * ident
           | IdLid of Loc.t * string | IdUid of Loc.t * string
           | IdAnt of Loc.t * string
+        
         type ctyp =
           | TyNil of Loc.t | TyAli of Loc.t * ctyp * ctyp | TyAny of Loc.t
           | TyApp of Loc.t * ctyp * ctyp | TyArr of Loc.t * ctyp * ctyp
@@ -1267,6 +1656,7 @@ module Sig =
           | TyVrnInf of Loc.t * ctyp | TyVrnInfSup of Loc.t * ctyp * ctyp
           | TyAmp of Loc.t * ctyp * ctyp | TyOfAmp of Loc.t * ctyp * ctyp
           | TyAnt of Loc.t * string
+        
         type patt =
           | PaNil of Loc.t | PaId of Loc.t * ident
           | PaAli of Loc.t * patt * patt | PaAnt of Loc.t * string
@@ -1396,90 +1786,157 @@ module Sig =
           | CrVir of Loc.t * string * meta_bool * ctyp
           | CrVvr of Loc.t * string * meta_bool * ctyp
           | CrAnt of Loc.t * string
+        
       end
+      
+    type ('a, 'loc) stream_filter =
+      ('a * 'loc) Stream.t -> ('a * 'loc) Stream.t
+    
     module type AstFilters =
       sig
         module Ast : Camlp4Ast
+          
         type 'a filter = 'a -> 'a
+        
         val register_sig_item_filter : Ast.sig_item filter -> unit
+          
         val register_str_item_filter : Ast.str_item filter -> unit
+          
         val fold_interf_filters :
           ('a -> Ast.sig_item filter -> 'a) -> 'a -> 'a
+          
         val fold_implem_filters :
           ('a -> Ast.str_item filter -> 'a) -> 'a -> 'a
+          
       end
+      
     module type DynAst =
       sig
         module Ast : Ast
+          
         type 'a tag
+        
         val ctyp_tag : Ast.ctyp tag
+          
         val patt_tag : Ast.patt tag
+          
         val expr_tag : Ast.expr tag
+          
         val module_type_tag : Ast.module_type tag
+          
         val sig_item_tag : Ast.sig_item tag
+          
         val with_constr_tag : Ast.with_constr tag
+          
         val module_expr_tag : Ast.module_expr tag
+          
         val str_item_tag : Ast.str_item tag
+          
         val class_type_tag : Ast.class_type tag
+          
         val class_sig_item_tag : Ast.class_sig_item tag
+          
         val class_expr_tag : Ast.class_expr tag
+          
         val class_str_item_tag : Ast.class_str_item tag
+          
         val match_case_tag : Ast.match_case tag
+          
         val ident_tag : Ast.ident tag
+          
         val binding_tag : Ast.binding tag
+          
         val rec_binding_tag : Ast.rec_binding tag
+          
         val module_binding_tag : Ast.module_binding tag
+          
         val string_of_tag : 'a tag -> string
-        module Pack (X : sig type 'a t end) :
+          
+        module Pack (X : sig type 'a t
+                              end) :
           sig
             type pack
+            
             val pack : 'a tag -> 'a X.t -> pack
+              
             val unpack : 'a tag -> pack -> 'a X.t
+              
             val print_tag : Format.formatter -> pack -> unit
+              
           end
+          
       end
+      
     type quotation =
       { q_name : string; q_loc : string; q_shift : int; q_contents : string
       }
+    
     module type Quotation =
       sig
         module Ast : Ast
+          
         module DynAst : DynAst with module Ast = Ast
+          
         open Ast
+          
         type 'a expand_fun = Loc.t -> string option -> string -> 'a
+        
         val add : string -> 'a DynAst.tag -> 'a expand_fun -> unit
+          
         val find : string -> 'a DynAst.tag -> 'a expand_fun
+          
         val default : string ref
+          
         val parse_quotation_result :
           (Loc.t -> string -> 'a) ->
             Loc.t -> quotation -> string -> string -> 'a
+          
         val translate : (string -> string) ref
+          
         val expand : Loc.t -> quotation -> 'a DynAst.tag -> 'a
+          
         val dump_file : (string option) ref
+          
         module Error : Error
+          
       end
-    type ('a, 'loc) stream_filter =
-      ('a * 'loc) Stream.t -> ('a * 'loc) Stream.t
+      
     module type Token =
       sig
         module Loc : Loc
+          
         type t
+        
         val to_string : t -> string
+          
         val print : Format.formatter -> t -> unit
+          
         val match_keyword : string -> t -> bool
+          
         val extract_string : t -> string
+          
         module Filter :
           sig
             type token_filter = (t, Loc.t) stream_filter
+            
             type t
+            
             val mk : (string -> bool) -> t
+              
             val define_filter : t -> (token_filter -> token_filter) -> unit
+              
             val filter : t -> token_filter
+              
             val keyword_added : t -> string -> bool -> unit
+              
             val keyword_removed : t -> string -> unit
+              
           end
+          
         module Error : Error
+          
       end
+      
     type camlp4_token =
       | KEYWORD of string | SYMBOL of string | LIDENT of string
       | UIDENT of string | ESCAPED_IDENT of string | INT of int * string
@@ -1489,40 +1946,65 @@ module Sig =
       | OPTLABEL of string | QUOTATION of quotation
       | ANTIQUOT of string * string | COMMENT of string | BLANKS of string
       | NEWLINE | LINE_DIRECTIVE of int * string option | EOI
+    
     module type Camlp4Token = Token with type t = camlp4_token
+      
     module type DynLoader =
       sig
         type t
+        
         exception Error of string * string
+          
         val mk : ?ocaml_stdlib: bool -> ?camlp4_stdlib: bool -> unit -> t
+          
         val fold_load_path : t -> (string -> 'a -> 'a) -> 'a -> 'a
+          
         val load : t -> string -> unit
+          
         val include_dir : t -> string -> unit
+          
         val find_in_path : t -> string -> string
+          
       end
+      
     module Grammar =
       struct
         module type Action =
           sig
             type t
+            
             val mk : 'a -> t
+              
             val get : t -> 'a
+              
             val getf : t -> 'a -> 'b
+              
             val getf2 : t -> 'a -> 'b -> 'c
+              
           end
+          
         type assoc = | NonA | RightA | LeftA
+        
         type position =
           | First | Last | Before of string | After of string
           | Level of string
+        
         module type Structure =
           sig
             module Loc : Loc
+              
             module Action : Action
+              
             module Token : Token with module Loc = Loc
+              
             type gram
+            
             type internal_entry
+            
             type tree
+            
             type token_pattern = ((Token.t -> bool) * string)
+            
             type symbol =
               | Smeta of string * symbol list * Action.t
               | Snterm of internal_entry | Snterml of internal_entry * string
@@ -1530,128 +2012,209 @@ module Sig =
               | Slist1 of symbol | Slist1sep of symbol * symbol
               | Sopt of symbol | Sself | Snext | Stoken of token_pattern
               | Skeyword of string | Stree of tree
+            
             type production_rule = ((symbol list) * Action.t)
+            
             type single_extend_statment =
               ((string option) * (assoc option) * (production_rule list))
+            
             type extend_statment =
               ((position option) * (single_extend_statment list))
+            
             type delete_statment = symbol list
+            
             type ('a, 'b, 'c) fold =
               internal_entry ->
                 symbol list -> ('a Stream.t -> 'b) -> 'a Stream.t -> 'c
+            
             type ('a, 'b, 'c) foldsep =
               internal_entry ->
                 symbol list ->
                   ('a Stream.t -> 'b) ->
                     ('a Stream.t -> unit) -> 'a Stream.t -> 'c
+            
           end
+          
         module type Dynamic =
           sig
             include Structure
+              
             val mk : unit -> gram
+              
             module Entry :
               sig
                 type 'a t
+                
                 val mk : gram -> string -> 'a t
+                  
                 val of_parser :
                   gram ->
                     string -> ((Token.t * Loc.t) Stream.t -> 'a) -> 'a t
+                  
                 val setup_parser :
                   'a t -> ((Token.t * Loc.t) Stream.t -> 'a) -> unit
+                  
                 val name : 'a t -> string
+                  
                 val print : Format.formatter -> 'a t -> unit
+                  
                 val dump : Format.formatter -> 'a t -> unit
+                  
                 val obj : 'a t -> internal_entry
+                  
                 val clear : 'a t -> unit
+                  
               end
+              
             val get_filter : gram -> Token.Filter.t
+              
             type 'a not_filtered
+            
             val extend : 'a Entry.t -> extend_statment -> unit
+              
             val delete_rule : 'a Entry.t -> delete_statment -> unit
+              
             val srules :
               'a Entry.t -> ((symbol list) * Action.t) list -> symbol
+              
             val sfold0 : ('a -> 'b -> 'b) -> 'b -> (_, 'a, 'b) fold
+              
             val sfold1 : ('a -> 'b -> 'b) -> 'b -> (_, 'a, 'b) fold
+              
             val sfold0sep : ('a -> 'b -> 'b) -> 'b -> (_, 'a, 'b) foldsep
+              
             val lex :
               gram ->
                 Loc.t ->
                   char Stream.t -> ((Token.t * Loc.t) Stream.t) not_filtered
+              
             val lex_string :
               gram ->
                 Loc.t -> string -> ((Token.t * Loc.t) Stream.t) not_filtered
+              
             val filter :
               gram ->
                 ((Token.t * Loc.t) Stream.t) not_filtered ->
                   (Token.t * Loc.t) Stream.t
+              
             val parse : 'a Entry.t -> Loc.t -> char Stream.t -> 'a
+              
             val parse_string : 'a Entry.t -> Loc.t -> string -> 'a
+              
             val parse_tokens_before_filter :
               'a Entry.t -> ((Token.t * Loc.t) Stream.t) not_filtered -> 'a
+              
             val parse_tokens_after_filter :
               'a Entry.t -> (Token.t * Loc.t) Stream.t -> 'a
+              
           end
+          
         module type Static =
           sig
             include Structure
+              
             module Entry :
               sig
                 type 'a t
+                
                 val mk : string -> 'a t
+                  
                 val of_parser :
                   string -> ((Token.t * Loc.t) Stream.t -> 'a) -> 'a t
+                  
                 val setup_parser :
                   'a t -> ((Token.t * Loc.t) Stream.t -> 'a) -> unit
+                  
                 val name : 'a t -> string
+                  
                 val print : Format.formatter -> 'a t -> unit
+                  
                 val dump : Format.formatter -> 'a t -> unit
+                  
                 val obj : 'a t -> internal_entry
+                  
                 val clear : 'a t -> unit
+                  
               end
+              
             val get_filter : unit -> Token.Filter.t
+              
             type 'a not_filtered
+            
             val extend : 'a Entry.t -> extend_statment -> unit
+              
             val delete_rule : 'a Entry.t -> delete_statment -> unit
+              
             val srules :
               'a Entry.t -> ((symbol list) * Action.t) list -> symbol
+              
             val sfold0 : ('a -> 'b -> 'b) -> 'b -> (_, 'a, 'b) fold
+              
             val sfold1 : ('a -> 'b -> 'b) -> 'b -> (_, 'a, 'b) fold
+              
             val sfold0sep : ('a -> 'b -> 'b) -> 'b -> (_, 'a, 'b) foldsep
+              
             val lex :
               Loc.t ->
                 char Stream.t -> ((Token.t * Loc.t) Stream.t) not_filtered
+              
             val lex_string :
               Loc.t -> string -> ((Token.t * Loc.t) Stream.t) not_filtered
+              
             val filter :
               ((Token.t * Loc.t) Stream.t) not_filtered ->
                 (Token.t * Loc.t) Stream.t
+              
             val parse : 'a Entry.t -> Loc.t -> char Stream.t -> 'a
+              
             val parse_string : 'a Entry.t -> Loc.t -> string -> 'a
+              
             val parse_tokens_before_filter :
               'a Entry.t -> ((Token.t * Loc.t) Stream.t) not_filtered -> 'a
+              
             val parse_tokens_after_filter :
               'a Entry.t -> (Token.t * Loc.t) Stream.t -> 'a
+              
           end
+          
       end
+      
     module type Lexer =
       sig
         module Loc : Loc
+          
         module Token : Token with module Loc = Loc
+          
         module Error : Error
+          
         val mk : unit -> Loc.t -> char Stream.t -> (Token.t * Loc.t) Stream.t
+          
       end
+      
     module Parser (Ast : Ast) =
       struct
+        module type SIMPLE =
+          sig
+            val parse_expr : Ast.Loc.t -> string -> Ast.expr
+              
+            val parse_patt : Ast.Loc.t -> string -> Ast.patt
+              
+          end
+          
         module type S =
           sig
             val parse_implem :
               ?directive_handler: (Ast.str_item -> Ast.str_item option) ->
                 Ast.Loc.t -> char Stream.t -> Ast.str_item
+              
             val parse_interf :
               ?directive_handler: (Ast.sig_item -> Ast.sig_item option) ->
                 Ast.Loc.t -> char Stream.t -> Ast.sig_item
+              
           end
+          
       end
+      
     module Printer (Ast : Ast) =
       struct
         module type S =
@@ -1659,220 +2222,406 @@ module Sig =
             val print_interf :
               ?input_file: string ->
                 ?output_file: string -> Ast.sig_item -> unit
+              
             val print_implem :
               ?input_file: string ->
                 ?output_file: string -> Ast.str_item -> unit
+              
           end
+          
       end
+      
     module type Syntax =
       sig
         module Loc : Loc
+          
         module Ast : Ast with module Loc = Loc
+          
         module Token : Token with module Loc = Loc
+          
         module Gram : Grammar.Static with module Loc = Loc
           and module Token = Token
-        module AntiquotSyntax : AntiquotSyntax with module Ast = Ast
+          
         module Quotation : Quotation with module Ast = Ast
+          
+        module AntiquotSyntax : Parser(Ast).SIMPLE
+          
         include Warning(Loc).S
+          
         include Parser(Ast).S
+          
         include Printer(Ast).S
+          
       end
+      
     module type Camlp4Syntax =
       sig
         module Loc : Loc
+          
         module Ast : Camlp4Ast with module Loc = Loc
+          
         module Token : Camlp4Token with module Loc = Loc
+          
         module Gram : Grammar.Static with module Loc = Loc
           and module Token = Token
-        module AntiquotSyntax :
-          AntiquotSyntax with module Ast = Camlp4AstToAst(Ast)
+          
         module Quotation : Quotation with module Ast = Camlp4AstToAst(Ast)
+          
+        module AntiquotSyntax : Parser(Ast).SIMPLE
+          
         include Warning(Loc).S
+          
         include Parser(Ast).S
+          
         include Printer(Ast).S
+          
         val interf : ((Ast.sig_item list) * (Loc.t option)) Gram.Entry.t
+          
         val implem : ((Ast.str_item list) * (Loc.t option)) Gram.Entry.t
+          
         val top_phrase : (Ast.str_item option) Gram.Entry.t
+          
         val use_file : ((Ast.str_item list) * (Loc.t option)) Gram.Entry.t
+          
         val a_CHAR : string Gram.Entry.t
+          
         val a_FLOAT : string Gram.Entry.t
+          
         val a_INT : string Gram.Entry.t
+          
         val a_INT32 : string Gram.Entry.t
+          
         val a_INT64 : string Gram.Entry.t
+          
         val a_LABEL : string Gram.Entry.t
+          
         val a_LIDENT : string Gram.Entry.t
+          
         val a_NATIVEINT : string Gram.Entry.t
+          
         val a_OPTLABEL : string Gram.Entry.t
+          
         val a_STRING : string Gram.Entry.t
+          
         val a_UIDENT : string Gram.Entry.t
+          
         val a_ident : string Gram.Entry.t
+          
         val amp_ctyp : Ast.ctyp Gram.Entry.t
+          
         val and_ctyp : Ast.ctyp Gram.Entry.t
+          
         val match_case : Ast.match_case Gram.Entry.t
+          
         val match_case0 : Ast.match_case Gram.Entry.t
+          
         val match_case_quot : Ast.match_case Gram.Entry.t
+          
         val binding : Ast.binding Gram.Entry.t
+          
         val binding_quot : Ast.binding Gram.Entry.t
+          
         val rec_binding_quot : Ast.rec_binding Gram.Entry.t
+          
         val class_declaration : Ast.class_expr Gram.Entry.t
+          
         val class_description : Ast.class_type Gram.Entry.t
+          
         val class_expr : Ast.class_expr Gram.Entry.t
+          
         val class_expr_quot : Ast.class_expr Gram.Entry.t
+          
         val class_fun_binding : Ast.class_expr Gram.Entry.t
+          
         val class_fun_def : Ast.class_expr Gram.Entry.t
+          
         val class_info_for_class_expr : Ast.class_expr Gram.Entry.t
+          
         val class_info_for_class_type : Ast.class_type Gram.Entry.t
+          
         val class_longident : Ast.ident Gram.Entry.t
+          
         val class_longident_and_param : Ast.class_expr Gram.Entry.t
+          
         val class_name_and_param : (string * Ast.ctyp) Gram.Entry.t
+          
         val class_sig_item : Ast.class_sig_item Gram.Entry.t
+          
         val class_sig_item_quot : Ast.class_sig_item Gram.Entry.t
+          
         val class_signature : Ast.class_sig_item Gram.Entry.t
+          
         val class_str_item : Ast.class_str_item Gram.Entry.t
+          
         val class_str_item_quot : Ast.class_str_item Gram.Entry.t
+          
         val class_structure : Ast.class_str_item Gram.Entry.t
+          
         val class_type : Ast.class_type Gram.Entry.t
+          
         val class_type_declaration : Ast.class_type Gram.Entry.t
+          
         val class_type_longident : Ast.ident Gram.Entry.t
+          
         val class_type_longident_and_param : Ast.class_type Gram.Entry.t
+          
         val class_type_plus : Ast.class_type Gram.Entry.t
+          
         val class_type_quot : Ast.class_type Gram.Entry.t
+          
         val comma_ctyp : Ast.ctyp Gram.Entry.t
+          
         val comma_expr : Ast.expr Gram.Entry.t
+          
         val comma_ipatt : Ast.patt Gram.Entry.t
+          
         val comma_patt : Ast.patt Gram.Entry.t
+          
         val comma_type_parameter : Ast.ctyp Gram.Entry.t
+          
         val constrain : (Ast.ctyp * Ast.ctyp) Gram.Entry.t
+          
         val constructor_arg_list : Ast.ctyp Gram.Entry.t
+          
         val constructor_declaration : Ast.ctyp Gram.Entry.t
+          
         val constructor_declarations : Ast.ctyp Gram.Entry.t
+          
         val ctyp : Ast.ctyp Gram.Entry.t
+          
         val ctyp_quot : Ast.ctyp Gram.Entry.t
+          
         val cvalue_binding : Ast.expr Gram.Entry.t
+          
         val direction_flag : Ast.meta_bool Gram.Entry.t
+          
         val dummy : unit Gram.Entry.t
+          
         val eq_expr : (string -> Ast.patt -> Ast.patt) Gram.Entry.t
+          
         val expr : Ast.expr Gram.Entry.t
+          
         val expr_eoi : Ast.expr Gram.Entry.t
+          
         val expr_quot : Ast.expr Gram.Entry.t
+          
         val field_expr : Ast.rec_binding Gram.Entry.t
+          
         val fun_binding : Ast.expr Gram.Entry.t
+          
         val fun_def : Ast.expr Gram.Entry.t
+          
         val ident : Ast.ident Gram.Entry.t
+          
         val ident_quot : Ast.ident Gram.Entry.t
+          
         val ipatt : Ast.patt Gram.Entry.t
+          
         val ipatt_tcon : Ast.patt Gram.Entry.t
+          
         val label : string Gram.Entry.t
+          
         val label_declaration : Ast.ctyp Gram.Entry.t
+          
         val label_expr : Ast.rec_binding Gram.Entry.t
+          
         val label_ipatt : Ast.patt Gram.Entry.t
+          
         val label_longident : Ast.ident Gram.Entry.t
+          
         val label_patt : Ast.patt Gram.Entry.t
+          
         val labeled_ipatt : Ast.patt Gram.Entry.t
+          
         val let_binding : Ast.binding Gram.Entry.t
+          
         val meth_list : Ast.ctyp Gram.Entry.t
+          
         val module_binding : Ast.module_binding Gram.Entry.t
+          
         val module_binding0 : Ast.module_expr Gram.Entry.t
+          
         val module_binding_quot : Ast.module_binding Gram.Entry.t
+          
         val module_declaration : Ast.module_type Gram.Entry.t
+          
         val module_expr : Ast.module_expr Gram.Entry.t
+          
         val module_expr_quot : Ast.module_expr Gram.Entry.t
+          
         val module_longident : Ast.ident Gram.Entry.t
+          
         val module_longident_with_app : Ast.ident Gram.Entry.t
+          
         val module_rec_declaration : Ast.module_binding Gram.Entry.t
+          
         val module_type : Ast.module_type Gram.Entry.t
+          
         val module_type_quot : Ast.module_type Gram.Entry.t
+          
         val more_ctyp : Ast.ctyp Gram.Entry.t
+          
         val name_tags : Ast.ctyp Gram.Entry.t
+          
         val opt_as_lident : string Gram.Entry.t
+          
         val opt_class_self_patt : Ast.patt Gram.Entry.t
+          
         val opt_class_self_type : Ast.ctyp Gram.Entry.t
+          
         val opt_comma_ctyp : Ast.ctyp Gram.Entry.t
+          
         val opt_dot_dot : Ast.meta_bool Gram.Entry.t
+          
         val opt_eq_ctyp : Ast.ctyp Gram.Entry.t
+          
         val opt_expr : Ast.expr Gram.Entry.t
+          
         val opt_meth_list : Ast.ctyp Gram.Entry.t
+          
         val opt_mutable : Ast.meta_bool Gram.Entry.t
+          
         val opt_polyt : Ast.ctyp Gram.Entry.t
+          
         val opt_private : Ast.meta_bool Gram.Entry.t
+          
         val opt_rec : Ast.meta_bool Gram.Entry.t
+          
         val opt_virtual : Ast.meta_bool Gram.Entry.t
+          
         val opt_when_expr : Ast.expr Gram.Entry.t
+          
         val patt : Ast.patt Gram.Entry.t
+          
         val patt_as_patt_opt : Ast.patt Gram.Entry.t
+          
         val patt_eoi : Ast.patt Gram.Entry.t
+          
         val patt_quot : Ast.patt Gram.Entry.t
+          
         val patt_tcon : Ast.patt Gram.Entry.t
+          
         val phrase : Ast.str_item Gram.Entry.t
+          
         val poly_type : Ast.ctyp Gram.Entry.t
+          
         val row_field : Ast.ctyp Gram.Entry.t
+          
         val sem_expr : Ast.expr Gram.Entry.t
+          
         val sem_expr_for_list : (Ast.expr -> Ast.expr) Gram.Entry.t
+          
         val sem_patt : Ast.patt Gram.Entry.t
+          
         val sem_patt_for_list : (Ast.patt -> Ast.patt) Gram.Entry.t
+          
         val semi : unit Gram.Entry.t
+          
         val sequence : Ast.expr Gram.Entry.t
+          
         val do_sequence : Ast.expr Gram.Entry.t
+          
         val sig_item : Ast.sig_item Gram.Entry.t
+          
         val sig_item_quot : Ast.sig_item Gram.Entry.t
+          
         val sig_items : Ast.sig_item Gram.Entry.t
+          
         val star_ctyp : Ast.ctyp Gram.Entry.t
+          
         val str_item : Ast.str_item Gram.Entry.t
+          
         val str_item_quot : Ast.str_item Gram.Entry.t
+          
         val str_items : Ast.str_item Gram.Entry.t
+          
         val type_constraint : unit Gram.Entry.t
+          
         val type_declaration : Ast.ctyp Gram.Entry.t
+          
         val type_ident_and_parameters :
           (string * (Ast.ctyp list)) Gram.Entry.t
+          
         val type_kind : Ast.ctyp Gram.Entry.t
+          
         val type_longident : Ast.ident Gram.Entry.t
+          
         val type_longident_and_parameters : Ast.ctyp Gram.Entry.t
+          
         val type_parameter : Ast.ctyp Gram.Entry.t
+          
         val type_parameters : (Ast.ctyp -> Ast.ctyp) Gram.Entry.t
+          
         val typevars : Ast.ctyp Gram.Entry.t
+          
         val val_longident : Ast.ident Gram.Entry.t
+          
         val value_let : unit Gram.Entry.t
+          
         val value_val : unit Gram.Entry.t
+          
         val with_constr : Ast.with_constr Gram.Entry.t
+          
         val with_constr_quot : Ast.with_constr Gram.Entry.t
+          
         val prefixop : Ast.expr Gram.Entry.t
+          
         val infixop0 : Ast.expr Gram.Entry.t
+          
         val infixop1 : Ast.expr Gram.Entry.t
+          
         val infixop2 : Ast.expr Gram.Entry.t
+          
         val infixop3 : Ast.expr Gram.Entry.t
+          
         val infixop4 : Ast.expr Gram.Entry.t
+          
       end
+      
     module type SyntaxExtension =
       functor (Syn : Syntax) -> Syntax with module Loc = Syn.Loc
         and module Ast = Syn.Ast and module Token = Syn.Token
-        and module Gram = Syn.Gram
-        and module AntiquotSyntax = Syn.AntiquotSyntax
-        and module Quotation = Syn.Quotation
+        and module Gram = Syn.Gram and module Quotation = Syn.Quotation
+      
   end
+  
 module ErrorHandler :
   sig
     val print : Format.formatter -> exn -> unit
+      
     val try_print : Format.formatter -> exn -> unit
+      
     val to_string : exn -> string
+      
     val try_to_string : exn -> string
+      
     val register : (Format.formatter -> exn -> unit) -> unit
+      
     module Register (Error : Sig.Error) : sig  end
+      
     module ObjTools :
       sig
         val print : Format.formatter -> Obj.t -> unit
+          
         val print_desc : Format.formatter -> Obj.t -> unit
+          
         val to_string : Obj.t -> string
+          
         val desc : Obj.t -> string
+          
       end
+      
   end =
   struct
     open Format
+      
     module ObjTools =
       struct
         let desc obj =
           if Obj.is_block obj
           then "tag = " ^ (string_of_int (Obj.tag obj))
           else "int_val = " ^ (string_of_int (Obj.obj obj))
+          
         let rec to_string r =
           if Obj.is_int r
           then
@@ -1949,9 +2698,13 @@ module ErrorHandler :
                    failwith
                      ("ObjTools.to_string: unknown tag (" ^
                         ((string_of_int t) ^ ")")))
+          
         let print ppf x = fprintf ppf "%s" (to_string x)
+          
         let print_desc ppf x = fprintf ppf "%s" (desc x)
+          
       end
+      
     let default_handler ppf x =
       let x = Obj.repr x
       in
@@ -1967,8 +2720,10 @@ module ErrorHandler :
             pp_print_char ppf ')')
          else ();
          fprintf ppf "@.")
+      
     let handler =
       ref (fun ppf default_handler exn -> default_handler ppf exn)
+      
     let register f =
       let current_handler = !handler
       in
@@ -1976,6 +2731,7 @@ module ErrorHandler :
           fun ppf default_handler exn ->
             try f ppf exn
             with | exn -> current_handler ppf default_handler exn
+      
     module Register (Error : Sig.Error) =
       struct
         let _ =
@@ -1986,7 +2742,9 @@ module ErrorHandler :
                 function
                 | Error.E x -> Error.print ppf x
                 | x -> current_handler ppf default_handler x
+          
       end
+      
     let gen_print ppf default_handler =
       function
       | Out_of_memory -> fprintf ppf "Out of memory"
@@ -2002,24 +2760,34 @@ module ErrorHandler :
       | Stream.Failure -> fprintf ppf "Parse failure"
       | Stream.Error str -> fprintf ppf "Parse error: %s" str
       | x -> !handler ppf default_handler x
+      
     let print ppf = gen_print ppf default_handler
+      
     let try_print ppf = gen_print ppf (fun _ -> raise)
+      
     let to_string exn =
       let buf = Buffer.create 128 in
       let () = bprintf buf "%a" print exn in Buffer.contents buf
+      
     let try_to_string exn =
       let buf = Buffer.create 128 in
       let () = bprintf buf "%a" try_print exn in Buffer.contents buf
+      
   end
+  
 module Struct =
   struct
-    module Loc : sig include Sig.Loc end =
+    module Loc : sig include Sig.Loc
+                        end =
       struct
         open Format
+          
         type pos = { line : int; bol : int; off : int }
+        
         type t =
           { file_name : string; start : pos; stop : pos; ghost : bool
           }
+        
         let dump_sel f x =
           let s =
             match x with
@@ -2028,21 +2796,26 @@ module Struct =
             | `both -> "`both"
             | _ -> "<not-printable>"
           in pp_print_string f s
+          
         let dump_pos f x =
           fprintf f "@[<hov 2>{ line = %d ;@ bol = %d ;@ off = %d } : pos@]"
             x.line x.bol x.off
+          
         let dump_long f x =
           fprintf f
             "@[<hov 2>{ file_name = %s ;@ start = %a (%d-%d);@ stop = %a (%d);@ ghost = %b@ } : Loc.t@]"
             x.file_name dump_pos x.start (x.start.off - x.start.bol)
             (x.stop.off - x.start.bol) dump_pos x.stop
             (x.stop.off - x.stop.bol) x.ghost
+          
         let dump f x =
           fprintf f "[%S: %d:%d-%d %d:%d%t]" x.file_name x.start.line
             (x.start.off - x.start.bol) (x.stop.off - x.start.bol)
             x.stop.line (x.stop.off - x.stop.bol)
             (fun o -> if x.ghost then fprintf o " (ghost)" else ())
+          
         let start_pos = { line = 1; bol = 0; off = 0; }
+          
         let ghost =
           {
             file_name = "ghost-location";
@@ -2050,6 +2823,7 @@ module Struct =
             stop = start_pos;
             ghost = true;
           }
+          
         let mk file_name =
           {
             file_name = file_name;
@@ -2057,6 +2831,7 @@ module Struct =
             stop = start_pos;
             ghost = false;
           }
+          
         let of_tuple (file_name, start_line, start_bol, start_off, stop_line,
                       stop_bol, stop_off, ghost)
                      =
@@ -2066,6 +2841,7 @@ module Struct =
             stop = { line = stop_line; bol = stop_bol; off = stop_off; };
             ghost = ghost;
           }
+          
         let to_tuple {
                        file_name = file_name;
                        start =
@@ -2080,6 +2856,7 @@ module Struct =
                      } =
           (file_name, start_line, start_bol, start_off, stop_line, stop_bol,
            stop_off, ghost)
+          
         let pos_of_lexing_position p =
           let pos =
             {
@@ -2088,6 +2865,7 @@ module Struct =
               off = p.Lexing.pos_cnum;
             }
           in pos
+          
         let pos_to_lexing_position p file_name =
           {
             Lexing.pos_fname = file_name;
@@ -2095,6 +2873,7 @@ module Struct =
             pos_bol = p.bol;
             pos_cnum = p.off;
           }
+          
         let better_file_name a b =
           match (a, b) with
           | ("", "") -> a
@@ -2103,6 +2882,7 @@ module Struct =
           | ("-", x) -> x
           | (x, "-") -> x
           | (x, _) -> x
+          
         let of_lexbuf lb =
           let start = Lexing.lexeme_start_p lb
           and stop = Lexing.lexeme_end_p lb in
@@ -2115,6 +2895,7 @@ module Struct =
               ghost = false;
             }
           in loc
+          
         let of_lexing_position pos =
           let loc =
             {
@@ -2124,6 +2905,7 @@ module Struct =
               ghost = false;
             }
           in loc
+          
         let to_ocaml_location x =
           {
             Camlp4_import.Location.loc_start =
@@ -2131,6 +2913,7 @@ module Struct =
             loc_end = pos_to_lexing_position x.stop x.file_name;
             loc_ghost = x.ghost;
           }
+          
         let of_ocaml_location =
           function
           | {
@@ -2146,8 +2929,11 @@ module Struct =
                   ghost = g;
                 }
               in res
+          
         let start_pos x = pos_to_lexing_position x.start x.file_name
+          
         let stop_pos x = pos_to_lexing_position x.stop x.file_name
+          
         let merge a b =
           if a == b
           then a
@@ -2159,39 +2945,58 @@ module Struct =
                | (true, _) -> { (a) with stop = b.stop; }
                | (_, true) -> { (b) with start = a.start; }
              in r)
+          
         let join x = { (x) with stop = x.start; }
+          
         let map f start_stop_both x =
           match start_stop_both with
           | `start -> { (x) with start = f x.start; }
           | `stop -> { (x) with stop = f x.stop; }
           | `both -> { (x) with start = f x.start; stop = f x.stop; }
+          
         let move_pos chars x = { (x) with off = x.off + chars; }
+          
         let move s chars x = map (move_pos chars) s x
+          
         let move_line lines x =
           let move_line_pos x =
             { (x) with line = x.line + lines; bol = x.off; }
           in map move_line_pos `both x
+          
         let shift width x =
           { (x) with start = x.stop; stop = move_pos width x.stop; }
+          
         let file_name x = x.file_name
+          
         let start_line x = x.start.line
+          
         let stop_line x = x.stop.line
+          
         let start_bol x = x.start.bol
+          
         let stop_bol x = x.stop.bol
+          
         let start_off x = x.start.off
+          
         let stop_off x = x.stop.off
+          
         let is_ghost x = x.ghost
+          
         let set_file_name s x = { (x) with file_name = s; }
+          
         let ghostify x = { (x) with ghost = true; }
+          
         let make_absolute x =
           let pwd = Sys.getcwd ()
           in
             if Filename.is_relative x.file_name
             then { (x) with file_name = Filename.concat pwd x.file_name; }
             else x
+          
         let strictly_before x y =
           let b = (x.stop.off < y.start.off) && (x.file_name = y.file_name)
           in b
+          
         let to_string x =
           let (a, b) = ((x.start), (x.stop)) in
           let res =
@@ -2203,7 +3008,9 @@ module Struct =
               sprintf "%s (end at line %d, character %d)" res x.stop.line
                 (b.off - b.bol)
             else res
+          
         let print out x = pp_print_string out (to_string x)
+          
         let check x msg =
           if
             ((start_line x) > (stop_line x)) ||
@@ -2219,7 +3026,9 @@ module Struct =
                print x;
              false)
           else true
+          
         exception Exc_located of t * exn
+          
         let _ =
           ErrorHandler.register
             (fun ppf ->
@@ -2227,29 +3036,42 @@ module Struct =
                | Exc_located (loc, exn) ->
                    fprintf ppf "%a:@\n%a" print loc ErrorHandler.print exn
                | exn -> raise exn)
+          
         let name = ref "_loc"
+          
         let raise loc exc =
           match exc with
           | Exc_located (_, _) -> raise exc
           | _ -> raise (Exc_located (loc, exc))
+          
       end
+      
     module Token :
       sig
         module Make (Loc : Sig.Loc) : Sig.Camlp4Token with module Loc = Loc
+          
         module Eval :
           sig
             val char : string -> char
+              
             val string : ?strict: unit -> string -> string
+              
           end
+          
       end =
       struct
         open Format
+          
         module Make (Loc : Sig.Loc) : Sig.Camlp4Token with module Loc = Loc =
           struct
             module Loc = Loc
+              
             open Sig
+              
             type t = camlp4_token
+            
             type token = t
+            
             let to_string =
               function
               | KEYWORD s -> sprintf "KEYWORD %S" s
@@ -2278,9 +3100,12 @@ module Struct =
               | LINE_DIRECTIVE (i, None) -> sprintf "LINE_DIRECTIVE %d" i
               | LINE_DIRECTIVE (i, (Some s)) ->
                   sprintf "LINE_DIRECTIVE %d %S" i s
+              
             let print ppf x = pp_print_string ppf (to_string x)
+              
             let match_keyword kwd =
               function | KEYWORD kwd' when kwd = kwd' -> true | _ -> false
+              
             let extract_string =
               function
               | KEYWORD s | SYMBOL s | LIDENT s | UIDENT s | INT (_, s) |
@@ -2291,13 +3116,16 @@ module Struct =
                   invalid_arg
                     ("Cannot extract a string from this token: " ^
                        (to_string tok))
+              
             module Error =
               struct
                 type t =
                   | Illegal_token of string | Keyword_as_label of string
                   | Illegal_token_pattern of string * string
                   | Illegal_constructor of string
+                
                 exception E of t
+                  
                 let print ppf =
                   function
                   | Illegal_token s -> fprintf ppf "Illegal token (%s)" s
@@ -2309,24 +3137,32 @@ module Struct =
                       fprintf ppf "Illegal token pattern: %s %S" p_con p_prm
                   | Illegal_constructor con ->
                       fprintf ppf "Illegal constructor %S" con
+                  
                 let to_string x =
                   let b = Buffer.create 50 in
                   let () = bprintf b "%a" print x in Buffer.contents b
+                  
               end
+              
             let _ = let module M = ErrorHandler.Register(Error) in ()
+              
             module Filter =
               struct
                 type token_filter = (t, Loc.t) stream_filter
+                
                 type t =
                   { is_kwd : string -> bool; mutable filter : token_filter
                   }
+                
                 let err error loc =
                   raise (Loc.Exc_located (loc, Error.E error))
+                  
                 let keyword_conversion tok is_kwd =
                   match tok with
                   | SYMBOL s | LIDENT s | UIDENT s when is_kwd s -> KEYWORD s
                   | ESCAPED_IDENT s -> LIDENT s
                   | _ -> tok
+                  
                 let check_keyword_as_label tok loc is_kwd =
                   let s =
                     match tok with | LABEL s -> s | OPTLABEL s -> s | _ -> ""
@@ -2334,15 +3170,20 @@ module Struct =
                     if (s <> "") && (is_kwd s)
                     then err (Error.Keyword_as_label s) loc
                     else ()
+                  
                 let check_unknown_keywords tok loc =
                   match tok with
                   | SYMBOL s -> err (Error.Illegal_token s) loc
                   | _ -> ()
+                  
                 let error_no_respect_rules p_con p_prm =
                   raise
                     (Error.E (Error.Illegal_token_pattern (p_con, p_prm)))
+                  
                 let check_keyword _ = true
+                  
                 let error_on_unknown_keywords = ref false
+                  
                 let rec ignore_layout (__strm : _ Stream.t) =
                   match Stream.peek __strm with
                   | Some
@@ -2357,7 +3198,9 @@ module Struct =
                          Stream.icons x
                            (Stream.slazy (fun _ -> ignore_layout s)))
                   | _ -> Stream.sempty
+                  
                 let mk is_kwd = { is_kwd = is_kwd; filter = ignore_layout; }
+                  
                 let filter x =
                   let f tok loc =
                     let tok = keyword_conversion tok x.is_kwd
@@ -2385,28 +3228,38 @@ module Struct =
                            Stream.icons x (Stream.slazy (fun _ -> tracer xs)))
                     | _ -> Stream.sempty
                   in fun strm -> tracer (x.filter (filter strm))
+                  
                 let define_filter x f = x.filter <- f x.filter
+                  
                 let keyword_added _ _ _ = ()
+                  
                 let keyword_removed _ _ = ()
+                  
               end
+              
           end
+          
         module Eval =
           struct
             let valch x = (Char.code x) - (Char.code '0')
+              
             let valch_hex x =
               let d = Char.code x
               in
                 if d >= 97
                 then d - 87
                 else if d >= 65 then d - 55 else d - 48
+              
             let rec skip_indent (__strm : _ Stream.t) =
               match Stream.peek __strm with
               | Some (' ' | '\t') -> (Stream.junk __strm; skip_indent __strm)
               | _ -> ()
+              
             let skip_opt_linefeed (__strm : _ Stream.t) =
               match Stream.peek __strm with
               | Some '\010' -> (Stream.junk __strm; ())
               | _ -> ()
+              
             let rec backslash (__strm : _ Stream.t) =
               match Stream.peek __strm with
               | Some '\010' -> (Stream.junk __strm; '\010')
@@ -2447,6 +3300,7 @@ module Struct =
                           | _ -> raise (Stream.Error "")))
                     | _ -> raise (Stream.Error "")))
               | _ -> raise Stream.Failure
+              
             let rec backslash_in_string strict store (__strm : _ Stream.t) =
               match Stream.peek __strm with
               | Some '\010' -> (Stream.junk __strm; skip_indent __strm)
@@ -2463,6 +3317,7 @@ module Struct =
                         | Some c when not strict ->
                             (Stream.junk __strm; store '\\'; store c)
                         | _ -> failwith "invalid string token"))
+              
             let char s =
               if (String.length s) = 1
               then s.[0]
@@ -2478,6 +3333,7 @@ module Struct =
                           (try backslash __strm
                            with | Stream.Failure -> raise (Stream.Error "")))
                      | _ -> failwith "invalid char token")
+              
             let string ?strict s =
               let buf = Buffer.create 23 in
               let store = Buffer.add_char buf in
@@ -2494,17 +3350,25 @@ module Struct =
                      let s = __strm in (store c; parse s))
                 | _ -> Buffer.contents buf
               in parse (Stream.of_string s)
+              
           end
+          
       end
+      
     module Lexer =
       struct
         module TokenEval = Token.Eval
+          
         module Make (Token : Sig.Camlp4Token) =
           struct
             module Loc = Token.Loc
+              
             module Token = Token
+              
             open Lexing
+              
             open Sig
+              
             module Error =
               struct
                 type t =
@@ -2513,8 +3377,11 @@ module Struct =
                   | Unterminated_quotation | Unterminated_antiquot
                   | Unterminated_string_in_comment | Comment_start
                   | Comment_not_end | Literal_overflow of string
+                
                 exception E of t
+                  
                 open Format
+                  
                 let print ppf =
                   function
                   | Illegal_character c ->
@@ -2542,16 +3409,22 @@ module Struct =
                       fprintf ppf "this is the start of a comment"
                   | Comment_not_end ->
                       fprintf ppf "this is not the end of a comment"
+                  
                 let to_string x =
                   let b = Buffer.create 50 in
                   let () = bprintf b "%a" print x in Buffer.contents b
+                  
               end
+              
             let _ = let module M = ErrorHandler.Register(Error) in ()
+              
             open Error
+              
             type context =
               { loc : Loc.t; in_comment : bool; quotations : bool;
                 antiquots : bool; lexbuf : lexbuf; buffer : Buffer.t
               }
+            
             let default_context lb =
               {
                 loc = Loc.ghost;
@@ -2561,30 +3434,47 @@ module Struct =
                 lexbuf = lb;
                 buffer = Buffer.create 256;
               }
+              
             let store c = Buffer.add_string c.buffer (Lexing.lexeme c.lexbuf)
+              
             let istore_char c i =
               Buffer.add_char c.buffer (Lexing.lexeme_char c.lexbuf i)
+              
             let buff_contents c =
               let contents = Buffer.contents c.buffer
               in (Buffer.reset c.buffer; contents)
+              
             let loc c = Loc.merge c.loc (Loc.of_lexbuf c.lexbuf)
+              
             let quotations c = c.quotations
+              
             let antiquots c = c.antiquots
+              
             let is_in_comment c = c.in_comment
+              
             let in_comment c = { (c) with in_comment = true; }
+              
             let set_start_p c = c.lexbuf.lex_start_p <- Loc.start_pos c.loc
+              
             let move_start_p shift c =
               let p = c.lexbuf.lex_start_p
               in
                 c.lexbuf.lex_start_p <-
                   { (p) with pos_cnum = p.pos_cnum + shift; }
+              
             let update_loc c = { (c) with loc = Loc.of_lexbuf c.lexbuf; }
+              
             let with_curr_loc f c = f (update_loc c) c.lexbuf
+              
             let parse_nested f c =
               (with_curr_loc f c; set_start_p c; buff_contents c)
+              
             let shift n c = { (c) with loc = Loc.move `both n c.loc; }
+              
             let store_parse f c = (store c; f c c.lexbuf)
+              
             let parse f c = f c c.lexbuf
+              
             let mk_quotation quotation c name loc shift =
               let s = parse_nested quotation (update_loc c) in
               let contents = String.sub s 0 ((String.length s) - 2)
@@ -2596,6 +3486,7 @@ module Struct =
                     q_shift = shift;
                     q_contents = contents;
                   }
+              
             let update_loc c file line absolute chars =
               let lexbuf = c.lexbuf in
               let pos = lexbuf.lex_curr_p in
@@ -2610,10 +3501,13 @@ module Struct =
                     pos_lnum = if absolute then line else pos.pos_lnum + line;
                     pos_bol = pos.pos_cnum - chars;
                   }
+              
             let err error loc = raise (Loc.Exc_located (loc, Error.E error))
+              
             let warn error loc =
               Format.eprintf "Warning: %a: %a@." Loc.print loc Error.print
                 error
+              
             let __ocaml_lex_tables =
               {
                 Lexing.lex_base =
@@ -5127,6 +6021,7 @@ module Struct =
     \255\000\004\001\009\003\010\002\011\255\001\255\255\000\001\255\
     ";
               }
+              
             let rec token c lexbuf =
               (lexbuf.Lexing.lex_mem <- Array.create 12 (-1);
                __ocaml_lex_token_rec c lexbuf 0)
@@ -5531,6 +6426,7 @@ module Struct =
               | __ocaml_lex_state ->
                   (lexbuf.Lexing.refill_buff lexbuf;
                    __ocaml_lex_antiquot_rec name c lexbuf __ocaml_lex_state)
+              
             let lexing_store s buff max =
               let rec self n s =
                 if n >= max
@@ -5540,11 +6436,13 @@ module Struct =
                    | Some x -> (Stream.junk s; buff.[n] <- x; succ n)
                    | _ -> n)
               in self 0 s
+              
             let from_context c =
               let next _ =
                 let tok = with_curr_loc token c in
                 let loc = Loc.of_lexbuf c.lexbuf in Some (tok, loc)
               in Stream.from next
+              
             let from_lexbuf ?(quotations = true) lb =
               let c =
                 {
@@ -5555,58 +6453,88 @@ module Struct =
                   quotations = quotations;
                 }
               in from_context c
+              
             let setup_loc lb loc =
               let start_pos = Loc.start_pos loc
               in
                 (lb.lex_abs_pos <- start_pos.pos_cnum;
                  lb.lex_curr_p <- start_pos)
+              
             let from_string ?quotations loc str =
               let lb = Lexing.from_string str
               in (setup_loc lb loc; from_lexbuf ?quotations lb)
+              
             let from_stream ?quotations loc strm =
               let lb = Lexing.from_function (lexing_store strm)
               in (setup_loc lb loc; from_lexbuf ?quotations lb)
+              
             let mk () loc strm =
               from_stream ~quotations: !Camlp4_config.quotations loc strm
+              
           end
+          
       end
+      
     module Camlp4Ast =
       struct
         module Make (Loc : Sig.Loc) : Sig.Camlp4Ast with module Loc = Loc =
           struct
             module Loc = Loc
+              
             module Ast =
               struct
                 include Sig.MakeCamlp4Ast(Loc)
+                  
                 let safe_string_escaped s =
                   if
                     ((String.length s) > 2) &&
                       ((s.[0] = '\\') && (s.[1] = '$'))
                   then s
                   else String.escaped s
+                  
               end
+              
             include Ast
+              
             external loc_of_ctyp : ctyp -> Loc.t = "%field0"
+              
             external loc_of_patt : patt -> Loc.t = "%field0"
+              
             external loc_of_expr : expr -> Loc.t = "%field0"
+              
             external loc_of_module_type : module_type -> Loc.t = "%field0"
+              
             external loc_of_module_expr : module_expr -> Loc.t = "%field0"
+              
             external loc_of_sig_item : sig_item -> Loc.t = "%field0"
+              
             external loc_of_str_item : str_item -> Loc.t = "%field0"
+              
             external loc_of_class_type : class_type -> Loc.t = "%field0"
+              
             external loc_of_class_sig_item : class_sig_item -> Loc.t =
               "%field0"
+              
             external loc_of_class_expr : class_expr -> Loc.t = "%field0"
+              
             external loc_of_class_str_item : class_str_item -> Loc.t =
               "%field0"
+              
             external loc_of_with_constr : with_constr -> Loc.t = "%field0"
+              
             external loc_of_binding : binding -> Loc.t = "%field0"
+              
             external loc_of_rec_binding : rec_binding -> Loc.t = "%field0"
+              
             external loc_of_module_binding : module_binding -> Loc.t =
               "%field0"
+              
             external loc_of_match_case : match_case -> Loc.t = "%field0"
+              
             external loc_of_ident : ident -> Loc.t = "%field0"
+              
             let ghost = Loc.ghost
+              
             let rec is_module_longident =
               function
               | Ast.IdAcc (_, _, i) -> is_module_longident i
@@ -5614,6 +6542,7 @@ module Struct =
                   (is_module_longident i1) && (is_module_longident i2)
               | Ast.IdUid (_, _) -> true
               | _ -> false
+              
             let ident_of_expr =
               let error () =
                 invalid_arg
@@ -5633,6 +6562,7 @@ module Struct =
                 | Ast.ExId (_, i) -> i
                 | Ast.ExApp (_, _, _) -> error ()
                 | t -> self t
+              
             let ident_of_ctyp =
               let error () =
                 invalid_arg "ident_of_ctyp: this type is not an identifier" in
@@ -5645,6 +6575,7 @@ module Struct =
                     if is_module_longident i then i else error ()
                 | _ -> error ()
               in function | Ast.TyId (_, i) -> i | t -> self t
+              
             let ident_of_patt =
               let error () =
                 invalid_arg
@@ -5658,6 +6589,7 @@ module Struct =
                     if is_module_longident i then i else error ()
                 | _ -> error ()
               in function | Ast.PaId (_, i) -> i | p -> self p
+              
             let rec is_irrefut_patt =
               function
               | Ast.PaId (_, (Ast.IdLid (_, _))) -> true
@@ -5679,17 +6611,20 @@ module Struct =
               | Ast.PaLab (_, _, (Ast.PaNil _)) -> true
               | Ast.PaLab (_, _, p) -> is_irrefut_patt p
               | _ -> false
+              
             let rec is_constructor =
               function
               | Ast.IdAcc (_, _, i) -> is_constructor i
               | Ast.IdUid (_, _) -> true
               | Ast.IdLid (_, _) | Ast.IdApp (_, _, _) -> false
               | Ast.IdAnt (_, _) -> assert false
+              
             let is_patt_constructor =
               function
               | Ast.PaId (_, i) -> is_constructor i
               | Ast.PaVrn (_, _) -> true
               | _ -> false
+              
             let rec is_expr_constructor =
               function
               | Ast.ExId (_, i) -> is_constructor i
@@ -5697,6 +6632,7 @@ module Struct =
                   (is_expr_constructor e1) && (is_expr_constructor e2)
               | Ast.ExVrn (_, _) -> true
               | _ -> false
+              
             let rec tyOr_of_list =
               function
               | [] -> Ast.TyNil ghost
@@ -5704,6 +6640,7 @@ module Struct =
               | t :: ts ->
                   let _loc = loc_of_ctyp t
                   in Ast.TyOr (_loc, t, tyOr_of_list ts)
+              
             let rec tyAnd_of_list =
               function
               | [] -> Ast.TyNil ghost
@@ -5711,6 +6648,7 @@ module Struct =
               | t :: ts ->
                   let _loc = loc_of_ctyp t
                   in Ast.TyAnd (_loc, t, tyAnd_of_list ts)
+              
             let rec tySem_of_list =
               function
               | [] -> Ast.TyNil ghost
@@ -5718,6 +6656,7 @@ module Struct =
               | t :: ts ->
                   let _loc = loc_of_ctyp t
                   in Ast.TySem (_loc, t, tySem_of_list ts)
+              
             let rec tyCom_of_list =
               function
               | [] -> Ast.TyNil ghost
@@ -5725,6 +6664,7 @@ module Struct =
               | t :: ts ->
                   let _loc = loc_of_ctyp t
                   in Ast.TyCom (_loc, t, tyCom_of_list ts)
+              
             let rec tyAmp_of_list =
               function
               | [] -> Ast.TyNil ghost
@@ -5732,6 +6672,7 @@ module Struct =
               | t :: ts ->
                   let _loc = loc_of_ctyp t
                   in Ast.TyAmp (_loc, t, tyAmp_of_list ts)
+              
             let rec tySta_of_list =
               function
               | [] -> Ast.TyNil ghost
@@ -5739,6 +6680,7 @@ module Struct =
               | t :: ts ->
                   let _loc = loc_of_ctyp t
                   in Ast.TySta (_loc, t, tySta_of_list ts)
+              
             let rec stSem_of_list =
               function
               | [] -> Ast.StNil ghost
@@ -5746,6 +6688,7 @@ module Struct =
               | t :: ts ->
                   let _loc = loc_of_str_item t
                   in Ast.StSem (_loc, t, stSem_of_list ts)
+              
             let rec sgSem_of_list =
               function
               | [] -> Ast.SgNil ghost
@@ -5753,6 +6696,7 @@ module Struct =
               | t :: ts ->
                   let _loc = loc_of_sig_item t
                   in Ast.SgSem (_loc, t, sgSem_of_list ts)
+              
             let rec biAnd_of_list =
               function
               | [] -> Ast.BiNil ghost
@@ -5760,6 +6704,7 @@ module Struct =
               | b :: bs ->
                   let _loc = loc_of_binding b
                   in Ast.BiAnd (_loc, b, biAnd_of_list bs)
+              
             let rec rbSem_of_list =
               function
               | [] -> Ast.RbNil ghost
@@ -5767,6 +6712,7 @@ module Struct =
               | b :: bs ->
                   let _loc = loc_of_rec_binding b
                   in Ast.RbSem (_loc, b, rbSem_of_list bs)
+              
             let rec wcAnd_of_list =
               function
               | [] -> Ast.WcNil ghost
@@ -5774,6 +6720,7 @@ module Struct =
               | w :: ws ->
                   let _loc = loc_of_with_constr w
                   in Ast.WcAnd (_loc, w, wcAnd_of_list ws)
+              
             let rec idAcc_of_list =
               function
               | [] -> assert false
@@ -5781,6 +6728,7 @@ module Struct =
               | i :: is ->
                   let _loc = loc_of_ident i
                   in Ast.IdAcc (_loc, i, idAcc_of_list is)
+              
             let rec idApp_of_list =
               function
               | [] -> assert false
@@ -5788,6 +6736,7 @@ module Struct =
               | i :: is ->
                   let _loc = loc_of_ident i
                   in Ast.IdApp (_loc, i, idApp_of_list is)
+              
             let rec mcOr_of_list =
               function
               | [] -> Ast.McNil ghost
@@ -5795,6 +6744,7 @@ module Struct =
               | x :: xs ->
                   let _loc = loc_of_match_case x
                   in Ast.McOr (_loc, x, mcOr_of_list xs)
+              
             let rec mbAnd_of_list =
               function
               | [] -> Ast.MbNil ghost
@@ -5802,6 +6752,7 @@ module Struct =
               | x :: xs ->
                   let _loc = loc_of_module_binding x
                   in Ast.MbAnd (_loc, x, mbAnd_of_list xs)
+              
             let rec meApp_of_list =
               function
               | [] -> assert false
@@ -5809,6 +6760,7 @@ module Struct =
               | x :: xs ->
                   let _loc = loc_of_module_expr x
                   in Ast.MeApp (_loc, x, meApp_of_list xs)
+              
             let rec ceAnd_of_list =
               function
               | [] -> Ast.CeNil ghost
@@ -5816,6 +6768,7 @@ module Struct =
               | x :: xs ->
                   let _loc = loc_of_class_expr x
                   in Ast.CeAnd (_loc, x, ceAnd_of_list xs)
+              
             let rec ctAnd_of_list =
               function
               | [] -> Ast.CtNil ghost
@@ -5823,6 +6776,7 @@ module Struct =
               | x :: xs ->
                   let _loc = loc_of_class_type x
                   in Ast.CtAnd (_loc, x, ctAnd_of_list xs)
+              
             let rec cgSem_of_list =
               function
               | [] -> Ast.CgNil ghost
@@ -5830,6 +6784,7 @@ module Struct =
               | x :: xs ->
                   let _loc = loc_of_class_sig_item x
                   in Ast.CgSem (_loc, x, cgSem_of_list xs)
+              
             let rec crSem_of_list =
               function
               | [] -> Ast.CrNil ghost
@@ -5837,6 +6792,7 @@ module Struct =
               | x :: xs ->
                   let _loc = loc_of_class_str_item x
                   in Ast.CrSem (_loc, x, crSem_of_list xs)
+              
             let rec paSem_of_list =
               function
               | [] -> Ast.PaNil ghost
@@ -5844,6 +6800,7 @@ module Struct =
               | x :: xs ->
                   let _loc = loc_of_patt x
                   in Ast.PaSem (_loc, x, paSem_of_list xs)
+              
             let rec paCom_of_list =
               function
               | [] -> Ast.PaNil ghost
@@ -5851,6 +6808,7 @@ module Struct =
               | x :: xs ->
                   let _loc = loc_of_patt x
                   in Ast.PaCom (_loc, x, paCom_of_list xs)
+              
             let rec exSem_of_list =
               function
               | [] -> Ast.ExNil ghost
@@ -5858,6 +6816,7 @@ module Struct =
               | x :: xs ->
                   let _loc = loc_of_expr x
                   in Ast.ExSem (_loc, x, exSem_of_list xs)
+              
             let rec exCom_of_list =
               function
               | [] -> Ast.ExNil ghost
@@ -5865,12 +6824,14 @@ module Struct =
               | x :: xs ->
                   let _loc = loc_of_expr x
                   in Ast.ExCom (_loc, x, exCom_of_list xs)
+              
             let ty_of_stl =
               function
               | (_loc, s, []) -> Ast.TyId (_loc, Ast.IdUid (_loc, s))
               | (_loc, s, tl) ->
                   Ast.TyOf (_loc, Ast.TyId (_loc, Ast.IdUid (_loc, s)),
                     tyAnd_of_list tl)
+              
             let ty_of_sbt =
               function
               | (_loc, s, true, t) ->
@@ -5878,32 +6839,41 @@ module Struct =
                     Ast.TyMut (_loc, t))
               | (_loc, s, false, t) ->
                   Ast.TyCol (_loc, Ast.TyId (_loc, Ast.IdLid (_loc, s)), t)
+              
             let bi_of_pe (p, e) =
               let _loc = loc_of_patt p in Ast.BiEq (_loc, p, e)
+              
             let sum_type_of_list l = tyOr_of_list (List.map ty_of_stl l)
+              
             let record_type_of_list l = tySem_of_list (List.map ty_of_sbt l)
+              
             let binding_of_pel l = biAnd_of_list (List.map bi_of_pe l)
+              
             let rec pel_of_binding =
               function
               | Ast.BiAnd (_, b1, b2) ->
                   (pel_of_binding b1) @ (pel_of_binding b2)
               | Ast.BiEq (_, p, e) -> [ (p, e) ]
               | _ -> assert false
+              
             let rec list_of_binding x acc =
               match x with
               | Ast.BiAnd (_, b1, b2) ->
                   list_of_binding b1 (list_of_binding b2 acc)
               | t -> t :: acc
+              
             let rec list_of_rec_binding x acc =
               match x with
               | Ast.RbSem (_, b1, b2) ->
                   list_of_rec_binding b1 (list_of_rec_binding b2 acc)
               | t -> t :: acc
+              
             let rec list_of_with_constr x acc =
               match x with
               | Ast.WcAnd (_, w1, w2) ->
                   list_of_with_constr w1 (list_of_with_constr w2 acc)
               | t -> t :: acc
+              
             let rec list_of_ctyp x acc =
               match x with
               | Ast.TyNil _ -> acc
@@ -5912,80 +6882,96 @@ module Struct =
                   Ast.TyAnd (_, x, y) | Ast.TyOr (_, x, y) ->
                   list_of_ctyp x (list_of_ctyp y acc)
               | x -> x :: acc
+              
             let rec list_of_patt x acc =
               match x with
               | Ast.PaNil _ -> acc
               | Ast.PaCom (_, x, y) | Ast.PaSem (_, x, y) ->
                   list_of_patt x (list_of_patt y acc)
               | x -> x :: acc
+              
             let rec list_of_expr x acc =
               match x with
               | Ast.ExNil _ -> acc
               | Ast.ExCom (_, x, y) | Ast.ExSem (_, x, y) ->
                   list_of_expr x (list_of_expr y acc)
               | x -> x :: acc
+              
             let rec list_of_str_item x acc =
               match x with
               | Ast.StNil _ -> acc
               | Ast.StSem (_, x, y) ->
                   list_of_str_item x (list_of_str_item y acc)
               | x -> x :: acc
+              
             let rec list_of_sig_item x acc =
               match x with
               | Ast.SgNil _ -> acc
               | Ast.SgSem (_, x, y) ->
                   list_of_sig_item x (list_of_sig_item y acc)
               | x -> x :: acc
+              
             let rec list_of_class_sig_item x acc =
               match x with
               | Ast.CgNil _ -> acc
               | Ast.CgSem (_, x, y) ->
                   list_of_class_sig_item x (list_of_class_sig_item y acc)
               | x -> x :: acc
+              
             let rec list_of_class_str_item x acc =
               match x with
               | Ast.CrNil _ -> acc
               | Ast.CrSem (_, x, y) ->
                   list_of_class_str_item x (list_of_class_str_item y acc)
               | x -> x :: acc
+              
             let rec list_of_class_type x acc =
               match x with
               | Ast.CtAnd (_, x, y) ->
                   list_of_class_type x (list_of_class_type y acc)
               | x -> x :: acc
+              
             let rec list_of_class_expr x acc =
               match x with
               | Ast.CeAnd (_, x, y) ->
                   list_of_class_expr x (list_of_class_expr y acc)
               | x -> x :: acc
+              
             let rec list_of_module_expr x acc =
               match x with
               | Ast.MeApp (_, x, y) ->
                   list_of_module_expr x (list_of_module_expr y acc)
               | x -> x :: acc
+              
             let rec list_of_match_case x acc =
               match x with
               | Ast.McNil _ -> acc
               | Ast.McOr (_, x, y) ->
                   list_of_match_case x (list_of_match_case y acc)
               | x -> x :: acc
+              
             let rec list_of_ident x acc =
               match x with
               | Ast.IdAcc (_, x, y) | Ast.IdApp (_, x, y) ->
                   list_of_ident x (list_of_ident y acc)
               | x -> x :: acc
+              
             let rec list_of_module_binding x acc =
               match x with
               | Ast.MbAnd (_, x, y) ->
                   list_of_module_binding x (list_of_module_binding y acc)
               | x -> x :: acc
+              
             module Meta =
               struct
                 module type META_LOC =
                   sig
                     val meta_loc_patt : Loc.t -> Loc.t -> Ast.patt
+                      
                     val meta_loc_expr : Loc.t -> Loc.t -> Ast.expr
+                      
                   end
+                  
                 module MetaLoc =
                   struct
                     let meta_loc_patt _loc location =
@@ -6015,6 +7001,7 @@ module Struct =
                                   Ast.PaId (_loc, Ast.IdUid (_loc, "True"))
                                 else
                                   Ast.PaId (_loc, Ast.IdUid (_loc, "False"))))))
+                      
                     let meta_loc_expr _loc location =
                       let (a, b, c, d, e, f, g, h) = Loc.to_tuple location
                       in
@@ -6042,40 +7029,55 @@ module Struct =
                                   Ast.ExId (_loc, Ast.IdUid (_loc, "True"))
                                 else
                                   Ast.ExId (_loc, Ast.IdUid (_loc, "False"))))))
+                      
                   end
+                  
                 module MetaGhostLoc =
                   struct
                     let meta_loc_patt _loc _ =
                       Ast.PaId (_loc,
                         Ast.IdAcc (_loc, Ast.IdUid (_loc, "Loc"),
                           Ast.IdLid (_loc, "ghost")))
+                      
                     let meta_loc_expr _loc _ =
                       Ast.ExId (_loc,
                         Ast.IdAcc (_loc, Ast.IdUid (_loc, "Loc"),
                           Ast.IdLid (_loc, "ghost")))
+                      
                   end
+                  
                 module MetaLocVar =
                   struct
                     let meta_loc_patt _loc _ =
                       Ast.PaId (_loc, Ast.IdLid (_loc, !Loc.name))
+                      
                     let meta_loc_expr _loc _ =
                       Ast.ExId (_loc, Ast.IdLid (_loc, !Loc.name))
+                      
                   end
+                  
                 module Make (MetaLoc : META_LOC) =
                   struct
                     open MetaLoc
+                      
                     let meta_acc_Loc_t = meta_loc_expr
+                      
                     module Expr =
                       struct
                         let meta_string _loc s = Ast.ExStr (_loc, s)
+                          
                         let meta_int _loc s = Ast.ExInt (_loc, s)
+                          
                         let meta_float _loc s = Ast.ExFlo (_loc, s)
+                          
                         let meta_char _loc s = Ast.ExChr (_loc, s)
+                          
                         let meta_bool _loc =
                           function
                           | false ->
                               Ast.ExId (_loc, Ast.IdUid (_loc, "False"))
                           | true -> Ast.ExId (_loc, Ast.IdUid (_loc, "True"))
+                          
                         let rec meta_list mf_a _loc =
                           function
                           | [] -> Ast.ExId (_loc, Ast.IdUid (_loc, "[]"))
@@ -6085,6 +7087,7 @@ module Struct =
                                   Ast.ExId (_loc, Ast.IdUid (_loc, "::")),
                                   mf_a _loc x),
                                 meta_list mf_a _loc xs)
+                          
                         let rec meta_binding _loc =
                           function
                           | Ast.BiAnt (x0, x1) -> Ast.ExAnt (x0, x1)
@@ -8085,19 +9088,27 @@ module Struct =
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "WcNil"))),
                                 meta_acc_Loc_t _loc x0)
+                          
                       end
+                      
                     let meta_acc_Loc_t = meta_loc_patt
+                      
                     module Patt =
                       struct
                         let meta_string _loc s = Ast.PaStr (_loc, s)
+                          
                         let meta_int _loc s = Ast.PaInt (_loc, s)
+                          
                         let meta_float _loc s = Ast.PaFlo (_loc, s)
+                          
                         let meta_char _loc s = Ast.PaChr (_loc, s)
+                          
                         let meta_bool _loc =
                           function
                           | false ->
                               Ast.PaId (_loc, Ast.IdUid (_loc, "False"))
                           | true -> Ast.PaId (_loc, Ast.IdUid (_loc, "True"))
+                          
                         let rec meta_list mf_a _loc =
                           function
                           | [] -> Ast.PaId (_loc, Ast.IdUid (_loc, "[]"))
@@ -8107,6 +9118,7 @@ module Struct =
                                   Ast.PaId (_loc, Ast.IdUid (_loc, "::")),
                                   mf_a _loc x),
                                 meta_list mf_a _loc xs)
+                          
                         let rec meta_binding _loc =
                           function
                           | Ast.BiAnt (x0, x1) -> Ast.PaAnt (x0, x1)
@@ -10107,24 +11119,37 @@ module Struct =
                                   Ast.IdAcc (_loc, Ast.IdUid (_loc, "Ast"),
                                     Ast.IdUid (_loc, "WcNil"))),
                                 meta_acc_Loc_t _loc x0)
+                          
                       end
+                      
                   end
+                  
               end
+              
             class map =
               object (o)
                 method string = fun x -> (x : string)
+                  
                 method int = fun x -> (x : int)
+                  
                 method float = fun x -> (x : float)
+                  
                 method bool = fun x -> (x : bool)
+                  
                 method list : 'a 'b. ('a -> 'b) -> 'a list -> 'b list = List.
                   map
+                  
                 method option : 'a 'b. ('a -> 'b) -> 'a option -> 'b option =
                   fun f -> function | None -> None | Some x -> Some (f x)
+                  
                 method array : 'a 'b. ('a -> 'b) -> 'a array -> 'b array =
                   Array.map
+                  
                 method ref : 'a 'b. ('a -> 'b) -> 'a ref -> 'b ref =
                   fun f { contents = x } -> { contents = f x; }
+                  
                 method _Loc_t : Loc.t -> Loc.t = fun x -> x
+                  
                 method with_constr : with_constr -> with_constr =
                   function
                   | WcNil _x0 -> WcNil (o#_Loc_t _x0)
@@ -10136,6 +11161,7 @@ module Struct =
                       WcAnd (o#_Loc_t _x0, o#with_constr _x1,
                         o#with_constr _x2)
                   | WcAnt (_x0, _x1) -> WcAnt (o#_Loc_t _x0, o#string _x1)
+                  
                 method str_item : str_item -> str_item =
                   function
                   | StNil _x0 -> StNil (o#_Loc_t _x0)
@@ -10167,6 +11193,7 @@ module Struct =
                   | StVal (_x0, _x1, _x2) ->
                       StVal (o#_Loc_t _x0, o#meta_bool _x1, o#binding _x2)
                   | StAnt (_x0, _x1) -> StAnt (o#_Loc_t _x0, o#string _x1)
+                  
                 method sig_item : sig_item -> sig_item =
                   function
                   | SgNil _x0 -> SgNil (o#_Loc_t _x0)
@@ -10195,6 +11222,7 @@ module Struct =
                   | SgVal (_x0, _x1, _x2) ->
                       SgVal (o#_Loc_t _x0, o#string _x1, o#ctyp _x2)
                   | SgAnt (_x0, _x1) -> SgAnt (o#_Loc_t _x0, o#string _x1)
+                  
                 method rec_binding : rec_binding -> rec_binding =
                   function
                   | RbNil _x0 -> RbNil (o#_Loc_t _x0)
@@ -10204,6 +11232,7 @@ module Struct =
                   | RbEq (_x0, _x1, _x2) ->
                       RbEq (o#_Loc_t _x0, o#ident _x1, o#expr _x2)
                   | RbAnt (_x0, _x1) -> RbAnt (o#_Loc_t _x0, o#string _x1)
+                  
                 method patt : patt -> patt =
                   function
                   | PaNil _x0 -> PaNil (o#_Loc_t _x0)
@@ -10248,6 +11277,7 @@ module Struct =
                       PaTyc (o#_Loc_t _x0, o#patt _x1, o#ctyp _x2)
                   | PaTyp (_x0, _x1) -> PaTyp (o#_Loc_t _x0, o#ident _x1)
                   | PaVrn (_x0, _x1) -> PaVrn (o#_Loc_t _x0, o#string _x1)
+                  
                 method module_type : module_type -> module_type =
                   function
                   | MtNil _x0 -> MtNil (o#_Loc_t _x0)
@@ -10261,6 +11291,7 @@ module Struct =
                       MtWit (o#_Loc_t _x0, o#module_type _x1,
                         o#with_constr _x2)
                   | MtAnt (_x0, _x1) -> MtAnt (o#_Loc_t _x0, o#string _x1)
+                  
                 method module_expr : module_expr -> module_expr =
                   function
                   | MeNil _x0 -> MeNil (o#_Loc_t _x0)
@@ -10276,6 +11307,7 @@ module Struct =
                       MeTyc (o#_Loc_t _x0, o#module_expr _x1,
                         o#module_type _x2)
                   | MeAnt (_x0, _x1) -> MeAnt (o#_Loc_t _x0, o#string _x1)
+                  
                 method module_binding : module_binding -> module_binding =
                   function
                   | MbNil _x0 -> MbNil (o#_Loc_t _x0)
@@ -10288,6 +11320,7 @@ module Struct =
                   | MbCol (_x0, _x1, _x2) ->
                       MbCol (o#_Loc_t _x0, o#string _x1, o#module_type _x2)
                   | MbAnt (_x0, _x1) -> MbAnt (o#_Loc_t _x0, o#string _x1)
+                  
                 method meta_option :
                   'a 'b. ('a -> 'b) -> 'a meta_option -> 'b meta_option =
                   fun _f_a ->
@@ -10295,6 +11328,7 @@ module Struct =
                     | ONone -> ONone
                     | OSome _x0 -> OSome (_f_a _x0)
                     | OAnt _x0 -> OAnt (o#string _x0)
+                  
                 method meta_list :
                   'a 'b. ('a -> 'b) -> 'a meta_list -> 'b meta_list =
                   fun _f_a ->
@@ -10303,11 +11337,13 @@ module Struct =
                     | LCons (_x0, _x1) ->
                         LCons (_f_a _x0, o#meta_list _f_a _x1)
                     | LAnt _x0 -> LAnt (o#string _x0)
+                  
                 method meta_bool : meta_bool -> meta_bool =
                   function
                   | BTrue -> BTrue
                   | BFalse -> BFalse
                   | BAnt _x0 -> BAnt (o#string _x0)
+                  
                 method match_case : match_case -> match_case =
                   function
                   | McNil _x0 -> McNil (o#_Loc_t _x0)
@@ -10317,6 +11353,7 @@ module Struct =
                       McArr (o#_Loc_t _x0, o#patt _x1, o#expr _x2,
                         o#expr _x3)
                   | McAnt (_x0, _x1) -> McAnt (o#_Loc_t _x0, o#string _x1)
+                  
                 method ident : ident -> ident =
                   function
                   | IdAcc (_x0, _x1, _x2) ->
@@ -10326,6 +11363,7 @@ module Struct =
                   | IdLid (_x0, _x1) -> IdLid (o#_Loc_t _x0, o#string _x1)
                   | IdUid (_x0, _x1) -> IdUid (o#_Loc_t _x0, o#string _x1)
                   | IdAnt (_x0, _x1) -> IdAnt (o#_Loc_t _x0, o#string _x1)
+                  
                 method expr : expr -> expr =
                   function
                   | ExNil _x0 -> ExNil (o#_Loc_t _x0)
@@ -10400,6 +11438,7 @@ module Struct =
                   | ExVrn (_x0, _x1) -> ExVrn (o#_Loc_t _x0, o#string _x1)
                   | ExWhi (_x0, _x1, _x2) ->
                       ExWhi (o#_Loc_t _x0, o#expr _x1, o#expr _x2)
+                  
                 method ctyp : ctyp -> ctyp =
                   function
                   | TyNil _x0 -> TyNil (o#_Loc_t _x0)
@@ -10463,6 +11502,7 @@ module Struct =
                   | TyOfAmp (_x0, _x1, _x2) ->
                       TyOfAmp (o#_Loc_t _x0, o#ctyp _x1, o#ctyp _x2)
                   | TyAnt (_x0, _x1) -> TyAnt (o#_Loc_t _x0, o#string _x1)
+                  
                 method class_type : class_type -> class_type =
                   function
                   | CtNil _x0 -> CtNil (o#_Loc_t _x0)
@@ -10482,6 +11522,7 @@ module Struct =
                   | CtEq (_x0, _x1, _x2) ->
                       CtEq (o#_Loc_t _x0, o#class_type _x1, o#class_type _x2)
                   | CtAnt (_x0, _x1) -> CtAnt (o#_Loc_t _x0, o#string _x1)
+                  
                 method class_str_item : class_str_item -> class_str_item =
                   function
                   | CrNil _x0 -> CrNil (o#_Loc_t _x0)
@@ -10506,6 +11547,7 @@ module Struct =
                       CrVvr (o#_Loc_t _x0, o#string _x1, o#meta_bool _x2,
                         o#ctyp _x3)
                   | CrAnt (_x0, _x1) -> CrAnt (o#_Loc_t _x0, o#string _x1)
+                  
                 method class_sig_item : class_sig_item -> class_sig_item =
                   function
                   | CgNil _x0 -> CgNil (o#_Loc_t _x0)
@@ -10526,6 +11568,7 @@ module Struct =
                       CgVir (o#_Loc_t _x0, o#string _x1, o#meta_bool _x2,
                         o#ctyp _x3)
                   | CgAnt (_x0, _x1) -> CgAnt (o#_Loc_t _x0, o#string _x1)
+                  
                 method class_expr : class_expr -> class_expr =
                   function
                   | CeNil _x0 -> CeNil (o#_Loc_t _x0)
@@ -10550,6 +11593,7 @@ module Struct =
                   | CeEq (_x0, _x1, _x2) ->
                       CeEq (o#_Loc_t _x0, o#class_expr _x1, o#class_expr _x2)
                   | CeAnt (_x0, _x1) -> CeAnt (o#_Loc_t _x0, o#string _x1)
+                  
                 method binding : binding -> binding =
                   function
                   | BiNil _x0 -> BiNil (o#_Loc_t _x0)
@@ -10558,32 +11602,43 @@ module Struct =
                   | BiEq (_x0, _x1, _x2) ->
                       BiEq (o#_Loc_t _x0, o#patt _x1, o#expr _x2)
                   | BiAnt (_x0, _x1) -> BiAnt (o#_Loc_t _x0, o#string _x1)
+                  
               end
+              
             class fold =
               object ((o : 'self_type))
                 method string = fun (_ : string) -> (o : 'self_type)
+                  
                 method int = fun (_ : int) -> (o : 'self_type)
+                  
                 method float = fun (_ : float) -> (o : 'self_type)
+                  
                 method bool = fun (_ : bool) -> (o : 'self_type)
+                  
                 method list :
                   'a.
                     ('self_type -> 'a -> 'self_type) -> 'a list -> 'self_type =
                   fun f -> List.fold_left f o
+                  
                 method option :
                   'a.
                     ('self_type -> 'a -> 'self_type) ->
                       'a option -> 'self_type =
                   fun f -> function | None -> o | Some x -> f o x
+                  
                 method array :
                   'a.
                     ('self_type -> 'a -> 'self_type) ->
                       'a array -> 'self_type =
                   fun f -> Array.fold_left f o
+                  
                 method ref :
                   'a.
                     ('self_type -> 'a -> 'self_type) -> 'a ref -> 'self_type =
                   fun f { contents = x } -> f o x
+                  
                 method _Loc_t : Loc.t -> 'self_type = fun _ -> o
+                  
                 method with_constr : with_constr -> 'self_type =
                   function
                   | WcNil _x0 -> o#_Loc_t _x0
@@ -10594,6 +11649,7 @@ module Struct =
                   | WcAnd (_x0, _x1, _x2) ->
                       ((o#_Loc_t _x0)#with_constr _x1)#with_constr _x2
                   | WcAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
+                  
                 method str_item : str_item -> 'self_type =
                   function
                   | StNil _x0 -> o#_Loc_t _x0
@@ -10621,6 +11677,7 @@ module Struct =
                   | StVal (_x0, _x1, _x2) ->
                       ((o#_Loc_t _x0)#meta_bool _x1)#binding _x2
                   | StAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
+                  
                 method sig_item : sig_item -> 'self_type =
                   function
                   | SgNil _x0 -> o#_Loc_t _x0
@@ -10645,6 +11702,7 @@ module Struct =
                   | SgVal (_x0, _x1, _x2) ->
                       ((o#_Loc_t _x0)#string _x1)#ctyp _x2
                   | SgAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
+                  
                 method rec_binding : rec_binding -> 'self_type =
                   function
                   | RbNil _x0 -> o#_Loc_t _x0
@@ -10653,6 +11711,7 @@ module Struct =
                   | RbEq (_x0, _x1, _x2) ->
                       ((o#_Loc_t _x0)#ident _x1)#expr _x2
                   | RbAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
+                  
                 method patt : patt -> 'self_type =
                   function
                   | PaNil _x0 -> o#_Loc_t _x0
@@ -10693,6 +11752,7 @@ module Struct =
                       ((o#_Loc_t _x0)#patt _x1)#ctyp _x2
                   | PaTyp (_x0, _x1) -> (o#_Loc_t _x0)#ident _x1
                   | PaVrn (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
+                  
                 method module_type : module_type -> 'self_type =
                   function
                   | MtNil _x0 -> o#_Loc_t _x0
@@ -10705,6 +11765,7 @@ module Struct =
                   | MtWit (_x0, _x1, _x2) ->
                       ((o#_Loc_t _x0)#module_type _x1)#with_constr _x2
                   | MtAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
+                  
                 method module_expr : module_expr -> 'self_type =
                   function
                   | MeNil _x0 -> o#_Loc_t _x0
@@ -10718,6 +11779,7 @@ module Struct =
                   | MeTyc (_x0, _x1, _x2) ->
                       ((o#_Loc_t _x0)#module_expr _x1)#module_type _x2
                   | MeAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
+                  
                 method module_binding : module_binding -> 'self_type =
                   function
                   | MbNil _x0 -> o#_Loc_t _x0
@@ -10729,6 +11791,7 @@ module Struct =
                   | MbCol (_x0, _x1, _x2) ->
                       ((o#_Loc_t _x0)#string _x1)#module_type _x2
                   | MbAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
+                  
                 method meta_option :
                   'a.
                     ('self_type -> 'a -> 'self_type) ->
@@ -10738,6 +11801,7 @@ module Struct =
                     | ONone -> o
                     | OSome _x0 -> _f_a o _x0
                     | OAnt _x0 -> o#string _x0
+                  
                 method meta_list :
                   'a.
                     ('self_type -> 'a -> 'self_type) ->
@@ -10748,11 +11812,13 @@ module Struct =
                     | LCons (_x0, _x1) ->
                         (_f_a o _x0)#meta_list (fun o -> _f_a o) _x1
                     | LAnt _x0 -> o#string _x0
+                  
                 method meta_bool : meta_bool -> 'self_type =
                   function
                   | BTrue -> o
                   | BFalse -> o
                   | BAnt _x0 -> o#string _x0
+                  
                 method match_case : match_case -> 'self_type =
                   function
                   | McNil _x0 -> o#_Loc_t _x0
@@ -10761,6 +11827,7 @@ module Struct =
                   | McArr (_x0, _x1, _x2, _x3) ->
                       (((o#_Loc_t _x0)#patt _x1)#expr _x2)#expr _x3
                   | McAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
+                  
                 method ident : ident -> 'self_type =
                   function
                   | IdAcc (_x0, _x1, _x2) ->
@@ -10770,6 +11837,7 @@ module Struct =
                   | IdLid (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
                   | IdUid (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
                   | IdAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
+                  
                 method expr : expr -> 'self_type =
                   function
                   | ExNil _x0 -> o#_Loc_t _x0
@@ -10836,6 +11904,7 @@ module Struct =
                   | ExVrn (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
                   | ExWhi (_x0, _x1, _x2) ->
                       ((o#_Loc_t _x0)#expr _x1)#expr _x2
+                  
                 method ctyp : ctyp -> 'self_type =
                   function
                   | TyNil _x0 -> o#_Loc_t _x0
@@ -10896,6 +11965,7 @@ module Struct =
                   | TyOfAmp (_x0, _x1, _x2) ->
                       ((o#_Loc_t _x0)#ctyp _x1)#ctyp _x2
                   | TyAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
+                  
                 method class_type : class_type -> 'self_type =
                   function
                   | CtNil _x0 -> o#_Loc_t _x0
@@ -10912,6 +11982,7 @@ module Struct =
                   | CtEq (_x0, _x1, _x2) ->
                       ((o#_Loc_t _x0)#class_type _x1)#class_type _x2
                   | CtAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
+                  
                 method class_str_item : class_str_item -> 'self_type =
                   function
                   | CrNil _x0 -> o#_Loc_t _x0
@@ -10932,6 +12003,7 @@ module Struct =
                   | CrVvr (_x0, _x1, _x2, _x3) ->
                       (((o#_Loc_t _x0)#string _x1)#meta_bool _x2)#ctyp _x3
                   | CrAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
+                  
                 method class_sig_item : class_sig_item -> 'self_type =
                   function
                   | CgNil _x0 -> o#_Loc_t _x0
@@ -10949,6 +12021,7 @@ module Struct =
                   | CgVir (_x0, _x1, _x2, _x3) ->
                       (((o#_Loc_t _x0)#string _x1)#meta_bool _x2)#ctyp _x3
                   | CgAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
+                  
                 method class_expr : class_expr -> 'self_type =
                   function
                   | CeNil _x0 -> o#_Loc_t _x0
@@ -10970,6 +12043,7 @@ module Struct =
                   | CeEq (_x0, _x1, _x2) ->
                       ((o#_Loc_t _x0)#class_expr _x1)#class_expr _x2
                   | CeAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
+                  
                 method binding : binding -> 'self_type =
                   function
                   | BiNil _x0 -> o#_Loc_t _x0
@@ -10978,44 +12052,67 @@ module Struct =
                   | BiEq (_x0, _x1, _x2) ->
                       ((o#_Loc_t _x0)#patt _x1)#expr _x2
                   | BiAnt (_x0, _x1) -> (o#_Loc_t _x0)#string _x1
+                  
               end
+              
             let map_expr f =
               object
                 inherit map as super
+                  
                 method expr = fun x -> f (super#expr x)
+                  
               end
+              
             let map_patt f =
               object
                 inherit map as super
+                  
                 method patt = fun x -> f (super#patt x)
+                  
               end
+              
             let map_ctyp f =
               object
                 inherit map as super
+                  
                 method ctyp = fun x -> f (super#ctyp x)
+                  
               end
+              
             let map_str_item f =
               object
                 inherit map as super
+                  
                 method str_item = fun x -> f (super#str_item x)
+                  
               end
+              
             let map_sig_item f =
               object
                 inherit map as super
+                  
                 method sig_item = fun x -> f (super#sig_item x)
+                  
               end
+              
             let map_loc f =
               object
                 inherit map as super
+                  
                 method _Loc_t = fun x -> f (super#_Loc_t x)
+                  
               end
+              
           end
+          
       end
+      
     module DynAst =
       struct
         module Make (Ast : Sig.Ast) : Sig.DynAst with module Ast = Ast =
           struct
             module Ast = Ast
+              
             type 'a tag =
               | Tag_ctyp | Tag_patt | Tag_expr | Tag_module_type
               | Tag_sig_item | Tag_with_constr | Tag_module_expr
@@ -11023,6 +12120,7 @@ module Struct =
               | Tag_class_expr | Tag_class_str_item | Tag_match_case
               | Tag_ident | Tag_binding | Tag_rec_binding
               | Tag_module_binding
+            
             let string_of_tag =
               function
               | Tag_ctyp -> "ctyp"
@@ -11042,72 +12140,121 @@ module Struct =
               | Tag_binding -> "binding"
               | Tag_rec_binding -> "rec_binding"
               | Tag_module_binding -> "module_binding"
+              
             let ctyp_tag = Tag_ctyp
+              
             let patt_tag = Tag_patt
+              
             let expr_tag = Tag_expr
+              
             let module_type_tag = Tag_module_type
+              
             let sig_item_tag = Tag_sig_item
+              
             let with_constr_tag = Tag_with_constr
+              
             let module_expr_tag = Tag_module_expr
+              
             let str_item_tag = Tag_str_item
+              
             let class_type_tag = Tag_class_type
+              
             let class_sig_item_tag = Tag_class_sig_item
+              
             let class_expr_tag = Tag_class_expr
+              
             let class_str_item_tag = Tag_class_str_item
+              
             let match_case_tag = Tag_match_case
+              
             let ident_tag = Tag_ident
+              
             let binding_tag = Tag_binding
+              
             let rec_binding_tag = Tag_rec_binding
+              
             let module_binding_tag = Tag_module_binding
+              
             type dyn
+            
             external dyn_tag : 'a tag -> dyn tag = "%identity"
-            module Pack (X : sig type 'a t end) =
+              
+            module Pack (X : sig type 'a t
+                                  end) =
               struct
                 type pack = ((dyn tag) * Obj.t)
+                
                 exception Pack_error
+                  
                 let pack tag v = ((dyn_tag tag), (Obj.repr v))
+                  
                 let unpack (tag : 'a tag) (tag', obj) =
                   if (dyn_tag tag) = tag'
                   then (Obj.obj obj : 'a X.t)
                   else raise Pack_error
+                  
                 let print_tag f (tag, _) =
                   Format.pp_print_string f (string_of_tag tag)
+                  
               end
+              
           end
+          
       end
+      
     module Quotation =
       struct
         module Make (Ast : Sig.Ast) : Sig.Quotation with module Ast = Ast =
           struct
             module Ast = Ast
+              
             module DynAst = DynAst.Make(Ast)
+              
             module Loc = Ast.Loc
+              
             open Format
+              
             open Sig
+              
             type 'a expand_fun = Loc.t -> string option -> string -> 'a
-            module Exp_key = DynAst.Pack(struct type 'a t = unit end)
+            
+            module Exp_key = DynAst.Pack(struct type 'a t = unit
+                                                 end)
+              
             module Exp_fun =
-              DynAst.Pack(struct type 'a t = 'a expand_fun end)
+              DynAst.Pack(struct type 'a t = 'a expand_fun
+                                  end)
+              
             let expanders_table :
               (((string * Exp_key.pack) * Exp_fun.pack) list) ref = ref []
+              
             let default = ref ""
+              
             let translate = ref (fun x -> x)
+              
             let expander_name name =
               match !translate name with | "" -> !default | name -> name
+              
             let find name tag =
               let key = ((expander_name name), (Exp_key.pack tag ()))
               in Exp_fun.unpack tag (List.assoc key !expanders_table)
+              
             let add name tag f =
               let elt = ((name, (Exp_key.pack tag ())), (Exp_fun.pack tag f))
               in expanders_table := elt :: !expanders_table
+              
             let dump_file = ref None
+              
             module Error =
               struct
                 type error =
                   | Finding | Expanding | ParsingResult of Loc.t * string
                   | Locating
+                
                 type t = (string * string * error * exn)
+                
                 exception E of t
+                  
                 let print ppf (name, position, ctx, exn) =
                   let name = if name = "" then !default else name in
                   let pp x =
@@ -11152,12 +12299,17 @@ module Struct =
                                fprintf ppf
                                  "\n(consider setting variable Quotation.dump_file, or using the -QD option)")
                   in fprintf ppf "@\n%a@]@." ErrorHandler.print exn
+                  
                 let to_string x =
                   let b = Buffer.create 50 in
                   let () = bprintf b "%a" print x in Buffer.contents b
+                  
               end
+              
             let _ = let module M = ErrorHandler.Register(Error) in ()
+              
             open Error
+              
             let expand_quotation loc expander pos_tag quot =
               let loc_name_opt =
                 if quot.q_loc = "" then None else Some quot.q_loc
@@ -11172,6 +12324,7 @@ module Struct =
                     let exc1 =
                       Error.E (((quot.q_name), pos_tag, Expanding, exc))
                     in raise (Loc.Exc_located (loc, exc1))
+              
             let parse_quotation_result parse loc quot pos_tag str =
               try parse loc str
               with
@@ -11186,6 +12339,7 @@ module Struct =
                   let ctx = ParsingResult (iloc, quot.q_contents) in
                   let exc1 = Error.E (((quot.q_name), pos_tag, ctx, exc))
                   in raise (Loc.Exc_located (iloc, exc1))
+              
             let expand loc quotation tag =
               let pos_tag = DynAst.string_of_tag tag in
               let name = quotation.q_name in
@@ -11202,49 +12356,76 @@ module Struct =
                          Error.E ((name, pos_tag, Finding, exc)))) in
               let loc = Loc.join (Loc.move `start quotation.q_shift loc)
               in expand_quotation loc expander pos_tag quotation
+              
           end
+          
       end
+      
     module AstFilters =
       struct
         module Make (Ast : Sig.Camlp4Ast) :
           Sig.AstFilters with module Ast = Ast =
           struct
             module Ast = Ast
+              
             type 'a filter = 'a -> 'a
+            
             let interf_filters = Queue.create ()
+              
             let fold_interf_filters f i = Queue.fold f i interf_filters
+              
             let implem_filters = Queue.create ()
+              
             let fold_implem_filters f i = Queue.fold f i implem_filters
+              
             let register_sig_item_filter f = Queue.add f interf_filters
+              
             let register_str_item_filter f = Queue.add f implem_filters
+              
           end
+          
       end
+      
     module Camlp4Ast2OCamlAst :
       sig
         module Make (Camlp4Ast : Sig.Camlp4Ast) :
           sig
             open Camlp4Ast
+              
             val sig_item : sig_item -> Camlp4_import.Parsetree.signature
+              
             val str_item : str_item -> Camlp4_import.Parsetree.structure
+              
             val phrase : str_item -> Camlp4_import.Parsetree.toplevel_phrase
+              
           end
+          
       end =
       struct
         module Make (Ast : Sig.Camlp4Ast) =
           struct
             open Format
+              
             open Camlp4_import.Parsetree
+              
             open Camlp4_import.Longident
+              
             open Camlp4_import.Asttypes
+              
             open Ast
+              
             let constructors_arity () = !Camlp4_config.constructors_arity
+              
             let error loc str = Loc.raise loc (Failure str)
+              
             let char_of_char_token loc s =
               try Token.Eval.char s
               with | (Failure _ as exn) -> Loc.raise loc exn
+              
             let string_of_string_token loc s =
               try Token.Eval.string s
               with | (Failure _ as exn) -> Loc.raise loc exn
+              
             let remove_underscores s =
               let l = String.length s in
               let rec remove src dst =
@@ -11255,32 +12436,52 @@ module Struct =
                    | '_' -> remove (src + 1) dst
                    | c -> (s.[dst] <- c; remove (src + 1) (dst + 1)))
               in remove 0 0
+              
             let mkloc = Loc.to_ocaml_location
+              
             let mkghloc loc = Loc.to_ocaml_location (Loc.ghostify loc)
+              
             let mktyp loc d = { ptyp_desc = d; ptyp_loc = mkloc loc; }
+              
             let mkpat loc d = { ppat_desc = d; ppat_loc = mkloc loc; }
+              
             let mkghpat loc d = { ppat_desc = d; ppat_loc = mkghloc loc; }
+              
             let mkexp loc d = { pexp_desc = d; pexp_loc = mkloc loc; }
+              
             let mkmty loc d = { pmty_desc = d; pmty_loc = mkloc loc; }
+              
             let mksig loc d = { psig_desc = d; psig_loc = mkloc loc; }
+              
             let mkmod loc d = { pmod_desc = d; pmod_loc = mkloc loc; }
+              
             let mkstr loc d = { pstr_desc = d; pstr_loc = mkloc loc; }
+              
             let mkfield loc d = { pfield_desc = d; pfield_loc = mkloc loc; }
+              
             let mkcty loc d = { pcty_desc = d; pcty_loc = mkloc loc; }
+              
             let mkpcl loc d = { pcl_desc = d; pcl_loc = mkloc loc; }
+              
             let mkpolytype t =
               match t.ptyp_desc with
               | Ptyp_poly (_, _) -> t
               | _ -> { (t) with ptyp_desc = Ptyp_poly ([], t); }
+              
             let mb2b =
               function
               | Ast.BTrue -> true
               | Ast.BFalse -> false
               | Ast.BAnt _ -> assert false
+              
             let mkvirtual m = if mb2b m then Virtual else Concrete
+              
             let lident s = Lident s
+              
             let ldot l s = Ldot (l, s)
+              
             let lapply l s = Lapply (l, s)
+              
             let conv_con =
               let t = Hashtbl.create 73
               in
@@ -11288,30 +12489,36 @@ module Struct =
                    [ ("True", "true"); ("False", "false"); (" True", "True");
                      (" False", "False") ];
                  fun s -> try Hashtbl.find t s with | Not_found -> s)
+              
             let conv_lab =
               let t = Hashtbl.create 73
               in
                 (List.iter (fun (s, s') -> Hashtbl.add t s s')
                    [ ("val", "contents") ];
                  fun s -> try Hashtbl.find t s with | Not_found -> s)
+              
             let array_function str name =
               ldot (lident str)
                 (if !Camlp4_config.unsafe then "unsafe_" ^ name else name)
+              
             let mkrf =
               function
               | Ast.BTrue -> Recursive
               | Ast.BFalse -> Nonrecursive
               | Ast.BAnt _ -> assert false
+              
             let mkli s =
               let rec loop f =
                 function
                 | i :: il -> loop (fun s -> ldot (f i) s) il
                 | [] -> f s
               in loop (fun s -> lident s)
+              
             let rec ctyp_fa al =
               function
               | TyApp (_, f, a) -> ctyp_fa (a :: al) f
               | f -> (f, al)
+              
             let ident_tag ?(conv_lid = fun x -> x) i =
               let rec self i acc =
                 match i with
@@ -11344,19 +12551,25 @@ module Struct =
                     in (x, `lident)
                 | _ -> error (loc_of_ident i) "invalid long identifier"
               in self i None
+              
             let ident ?conv_lid i = fst (ident_tag ?conv_lid i)
+              
             let long_lident msg i =
               match ident_tag i with
               | (i, `lident) -> i
               | _ -> error (loc_of_ident i) msg
+              
             let long_type_ident = long_lident "invalid long identifier type"
+              
             let long_class_ident = long_lident "invalid class name"
+              
             let long_uident ?(conv_con = fun x -> x) i =
               match ident_tag i with
               | (Ldot (i, s), `uident) -> ldot i (conv_con s)
               | (Lident s, `uident) -> lident (conv_con s)
               | (i, `app) -> i
               | _ -> error (loc_of_ident i) "uppercase identifier expected"
+              
             let rec ctyp_long_id_prefix t =
               match t with
               | Ast.TyId (_, i) -> ident i
@@ -11364,18 +12577,21 @@ module Struct =
                   let li1 = ctyp_long_id_prefix m1 in
                   let li2 = ctyp_long_id_prefix m2 in Lapply (li1, li2)
               | t -> error (loc_of_ctyp t) "invalid module expression"
+              
             let ctyp_long_id t =
               match t with
               | Ast.TyId (_, i) -> (false, (long_type_ident i))
               | TyApp (loc, _, _) -> error loc "invalid type name"
               | TyCls (_, i) -> (true, (ident i))
               | t -> error (loc_of_ctyp t) "invalid type"
+              
             let rec ty_var_list_of_ctyp =
               function
               | Ast.TyApp (_, t1, t2) ->
                   (ty_var_list_of_ctyp t1) @ (ty_var_list_of_ctyp t2)
               | Ast.TyQuo (_, s) -> [ s ]
               | _ -> assert false
+              
             let rec ctyp =
               function
               | TyId (loc, i) ->
@@ -11477,6 +12693,7 @@ module Struct =
               | Ast.TyCol (loc, (Ast.TyId (_, (Ast.IdLid (_, lab)))), t) ->
                   (mkfield loc (Pfield (lab, mkpolytype (ctyp t)))) :: acc
               | _ -> assert false
+              
             let mktype loc tl cl tk tm =
               let (params, variance) = List.split tl
               in
@@ -11488,8 +12705,11 @@ module Struct =
                   ptype_loc = mkloc loc;
                   ptype_variance = variance;
                 }
+              
             let mkprivate' m = if m then Private else Public
+              
             let mkprivate m = mkprivate' (mb2b m)
+              
             let mktrecord =
               function
               | Ast.TyCol (loc, (Ast.TyId (_, (Ast.IdLid (_, s)))),
@@ -11498,6 +12718,7 @@ module Struct =
               | Ast.TyCol (loc, (Ast.TyId (_, (Ast.IdLid (_, s)))), t) ->
                   (s, Immutable, (mkpolytype (ctyp t)), (mkloc loc))
               | _ -> assert false
+              
             let mkvariant =
               function
               | Ast.TyId (loc, (Ast.IdUid (_, s))) ->
@@ -11506,6 +12727,7 @@ module Struct =
                   ((conv_con s), (List.map ctyp (list_of_ctyp t [])),
                    (mkloc loc))
               | _ -> assert false
+              
             let rec type_decl tl cl loc m pflag =
               function
               | Ast.TyMan (_, t1, t2) ->
@@ -11532,15 +12754,20 @@ module Struct =
                        | _ -> Some (ctyp t) in
                      let k = if pflag then Ptype_private else Ptype_abstract
                      in mktype loc tl cl k m)
+              
             let type_decl tl cl t =
               type_decl tl cl (loc_of_ctyp t) None false t
+              
             let mkvalue_desc t p = { pval_type = ctyp t; pval_prim = p; }
+              
             let rec list_of_meta_list =
               function
               | Ast.LNil -> []
               | Ast.LCons (x, xs) -> x :: (list_of_meta_list xs)
               | Ast.LAnt _ -> assert false
+              
             let mkmutable m = if mb2b m then Mutable else Immutable
+              
             let paolab lab p =
               match (lab, p) with
               | ("",
@@ -11549,10 +12776,12 @@ module Struct =
                   -> i
               | ("", p) -> error (loc_of_patt p) "bad ast in label"
               | _ -> lab
+              
             let opt_private_ctyp =
               function
               | Ast.TyPrv (_, t) -> (Ptype_private, (ctyp t))
               | t -> (Ptype_abstract, (ctyp t))
+              
             let rec type_parameters t acc =
               match t with
               | Ast.TyApp (_, t1, t2) ->
@@ -11561,6 +12790,7 @@ module Struct =
               | Ast.TyQuM (_, s) -> (s, (false, true)) :: acc
               | Ast.TyQuo (_, s) -> (s, (false, false)) :: acc
               | _ -> assert false
+              
             let rec class_parameters t acc =
               match t with
               | Ast.TyCom (_, t1, t2) ->
@@ -11569,12 +12799,14 @@ module Struct =
               | Ast.TyQuM (_, s) -> (s, (false, true)) :: acc
               | Ast.TyQuo (_, s) -> (s, (false, false)) :: acc
               | _ -> assert false
+              
             let rec type_parameters_and_type_name t acc =
               match t with
               | Ast.TyApp (_, t1, t2) ->
                   type_parameters_and_type_name t1 (type_parameters t2 acc)
               | Ast.TyId (_, i) -> ((ident i), acc)
               | _ -> assert false
+              
             let rec mkwithc wc acc =
               match wc with
               | WcNil _ -> acc
@@ -11599,10 +12831,12 @@ module Struct =
               | Ast.WcAnd (_, wc1, wc2) -> mkwithc wc1 (mkwithc wc2 acc)
               | Ast.WcAnt (loc, _) ->
                   error loc "bad with constraint (antiquotation)"
+              
             let rec patt_fa al =
               function
               | PaApp (_, f, a) -> patt_fa (a :: al) f
               | f -> (f, al)
+              
             let rec deep_mkrangepat loc c1 c2 =
               if c1 = c2
               then mkghpat loc (Ppat_constant (Const_char c1))
@@ -11610,6 +12844,7 @@ module Struct =
                 mkghpat loc
                   (Ppat_or (mkghpat loc (Ppat_constant (Const_char c1)),
                      deep_mkrangepat loc (Char.chr ((Char.code c1) + 1)) c2))
+              
             let rec mkrangepat loc c1 c2 =
               if c1 > c2
               then mkrangepat loc c2 c1
@@ -11620,6 +12855,7 @@ module Struct =
                   mkpat loc
                     (Ppat_or (mkghpat loc (Ppat_constant (Const_char c1)),
                        deep_mkrangepat loc (Char.chr ((Char.code c1) + 1)) c2))
+              
             let rec patt =
               function
               | Ast.PaId (loc, (Ast.IdLid (_, s))) -> mkpat loc (Ppat_var s)
@@ -11747,14 +12983,17 @@ module Struct =
               | Ast.PaEq (_, i, p) ->
                   ((ident ~conv_lid: conv_lab i), (patt p))
               | p -> error (loc_of_patt p) "invalid pattern"
+              
             let rec expr_fa al =
               function
               | ExApp (_, f, a) -> expr_fa (a :: al) f
               | f -> (f, al)
+              
             let rec class_expr_fa al =
               function
               | CeApp (_, ce, a) -> class_expr_fa (a :: al) ce
               | ce -> (ce, al)
+              
             let rec sep_expr_acc l =
               function
               | ExAcc (_, e1, e2) -> sep_expr_acc (sep_expr_acc l e2) e1
@@ -11775,8 +13014,10 @@ module Struct =
                         as i) -> Ast.ExId (_loc, i))
                   in sep_expr_acc l (normalize_acc i)
               | e -> ((loc_of_expr e), [], e) :: l
+              
             let list_of_opt_ctyp ot acc =
               match ot with | Ast.TyNil _ -> acc | t -> list_of_ctyp t acc
+              
             let rec expr =
               function
               | Ast.ExAcc (loc, x, (Ast.ExId (_, (Ast.IdLid (_, "val"))))) ->
@@ -12062,6 +13303,7 @@ module Struct =
               | _ -> assert false
             and mkideexp x acc =
               match x with
+              | Ast.RbNil _ -> acc
               | Ast.RbSem (_, x, y) -> mkideexp x (mkideexp y acc)
               | Ast.RbEq (_, (Ast.IdLid (_, s)), e) -> (s, (expr e)) :: acc
               | _ -> assert false
@@ -12387,8 +13629,11 @@ module Struct =
                   (Pcf_valvirt ((s, (mkmutable b), (ctyp t), (mkloc loc)))) ::
                     l
               | CrAnt (_, _) -> assert false
+              
             let sig_item ast = sig_item ast []
+              
             let str_item ast = str_item ast []
+              
             let directive =
               function
               | Ast.ExNil _ -> Pdir_none
@@ -12397,148 +13642,193 @@ module Struct =
               | Ast.ExId (_, (Ast.IdUid (_, "True"))) -> Pdir_bool true
               | Ast.ExId (_, (Ast.IdUid (_, "False"))) -> Pdir_bool false
               | e -> Pdir_ident (ident (ident_of_expr e))
+              
             let phrase =
               function
               | StDir (_, d, dp) -> Ptop_dir (d, directive dp)
               | si -> Ptop_def (str_item si)
+              
           end
+          
       end
+      
     module CleanAst =
       struct
         module Make (Ast : Sig.Camlp4Ast) =
           struct
             class clean_ast =
-              object (self)
-                inherit Ast.map as super
+              object inherit Ast.map as super
+                       
                 method with_constr =
-                  function
-                  | Ast.WcAnd (_, (Ast.WcNil _), wc) |
-                      Ast.WcAnd (_, wc, (Ast.WcNil _)) -> self#with_constr wc
-                  | wc -> super#with_constr wc
+                  fun wc ->
+                    match super#with_constr wc with
+                    | Ast.WcAnd (_, (Ast.WcNil _), wc) |
+                        Ast.WcAnd (_, wc, (Ast.WcNil _)) -> wc
+                    | wc -> wc
+                  
                 method expr =
-                  function
-                  | Ast.ExLet (_, _, (Ast.BiNil _), e) |
-                      Ast.ExRec (_, (Ast.RbNil _), e) |
-                      Ast.ExCom (_, (Ast.ExNil _), e) |
-                      Ast.ExCom (_, e, (Ast.ExNil _)) |
-                      Ast.ExSem (_, (Ast.ExNil _), e) |
-                      Ast.ExSem (_, e, (Ast.ExNil _)) -> self#expr e
-                  | e -> super#expr e
+                  fun e ->
+                    match super#expr e with
+                    | Ast.ExLet (_, _, (Ast.BiNil _), e) |
+                        Ast.ExRec (_, (Ast.RbNil _), e) |
+                        Ast.ExCom (_, (Ast.ExNil _), e) |
+                        Ast.ExCom (_, e, (Ast.ExNil _)) |
+                        Ast.ExSem (_, (Ast.ExNil _), e) |
+                        Ast.ExSem (_, e, (Ast.ExNil _)) -> e
+                    | e -> e
+                  
                 method patt =
-                  function
-                  | Ast.PaAli (_, p, (Ast.PaNil _)) |
-                      Ast.PaOrp (_, (Ast.PaNil _), p) |
-                      Ast.PaOrp (_, p, (Ast.PaNil _)) |
-                      Ast.PaCom (_, (Ast.PaNil _), p) |
-                      Ast.PaCom (_, p, (Ast.PaNil _)) |
-                      Ast.PaSem (_, (Ast.PaNil _), p) |
-                      Ast.PaSem (_, p, (Ast.PaNil _)) -> self#patt p
-                  | p -> super#patt p
+                  fun p ->
+                    match super#patt p with
+                    | Ast.PaAli (_, p, (Ast.PaNil _)) |
+                        Ast.PaOrp (_, (Ast.PaNil _), p) |
+                        Ast.PaOrp (_, p, (Ast.PaNil _)) |
+                        Ast.PaCom (_, (Ast.PaNil _), p) |
+                        Ast.PaCom (_, p, (Ast.PaNil _)) |
+                        Ast.PaSem (_, (Ast.PaNil _), p) |
+                        Ast.PaSem (_, p, (Ast.PaNil _)) -> p
+                    | p -> p
+                  
                 method match_case =
-                  function
-                  | Ast.McOr (_, (Ast.McNil _), mc) |
-                      Ast.McOr (_, mc, (Ast.McNil _)) -> self#match_case mc
-                  | mc -> super#match_case mc
+                  fun mc ->
+                    match super#match_case mc with
+                    | Ast.McOr (_, (Ast.McNil _), mc) |
+                        Ast.McOr (_, mc, (Ast.McNil _)) -> mc
+                    | mc -> mc
+                  
                 method binding =
-                  function
-                  | Ast.BiAnd (_, (Ast.BiNil _), bi) |
-                      Ast.BiAnd (_, bi, (Ast.BiNil _)) -> self#binding bi
-                  | bi -> super#binding bi
+                  fun bi ->
+                    match super#binding bi with
+                    | Ast.BiAnd (_, (Ast.BiNil _), bi) |
+                        Ast.BiAnd (_, bi, (Ast.BiNil _)) -> bi
+                    | bi -> bi
+                  
                 method rec_binding =
-                  function
-                  | Ast.RbSem (_, (Ast.RbNil _), bi) |
-                      Ast.RbSem (_, bi, (Ast.RbNil _)) -> self#rec_binding bi
-                  | bi -> super#rec_binding bi
+                  fun rb ->
+                    match super#rec_binding rb with
+                    | Ast.RbSem (_, (Ast.RbNil _), bi) |
+                        Ast.RbSem (_, bi, (Ast.RbNil _)) -> bi
+                    | bi -> bi
+                  
                 method module_binding =
-                  function
-                  | Ast.MbAnd (_, (Ast.MbNil _), mb) |
-                      Ast.MbAnd (_, mb, (Ast.MbNil _)) ->
-                      self#module_binding mb
-                  | mb -> super#module_binding mb
+                  fun mb ->
+                    match super#module_binding mb with
+                    | Ast.MbAnd (_, (Ast.MbNil _), mb) |
+                        Ast.MbAnd (_, mb, (Ast.MbNil _)) -> mb
+                    | mb -> mb
+                  
                 method ctyp =
-                  function
-                  | Ast.TyPol (_, (Ast.TyNil _), t) |
-                      Ast.TyAli (_, (Ast.TyNil _), t) |
-                      Ast.TyAli (_, t, (Ast.TyNil _)) |
-                      Ast.TyArr (_, t, (Ast.TyNil _)) |
-                      Ast.TyArr (_, (Ast.TyNil _), t) |
-                      Ast.TyOr (_, (Ast.TyNil _), t) |
-                      Ast.TyOr (_, t, (Ast.TyNil _)) |
-                      Ast.TyOf (_, t, (Ast.TyNil _)) |
-                      Ast.TyAnd (_, (Ast.TyNil _), t) |
-                      Ast.TyAnd (_, t, (Ast.TyNil _)) |
-                      Ast.TySem (_, t, (Ast.TyNil _)) |
-                      Ast.TySem (_, (Ast.TyNil _), t) |
-                      Ast.TyCom (_, (Ast.TyNil _), t) |
-                      Ast.TyCom (_, t, (Ast.TyNil _)) |
-                      Ast.TyAmp (_, t, (Ast.TyNil _)) |
-                      Ast.TyAmp (_, (Ast.TyNil _), t) |
-                      Ast.TySta (_, (Ast.TyNil _), t) |
-                      Ast.TySta (_, t, (Ast.TyNil _)) -> self#ctyp t
-                  | t -> super#ctyp t
+                  fun t ->
+                    match super#ctyp t with
+                    | Ast.TyPol (_, (Ast.TyNil _), t) |
+                        Ast.TyAli (_, (Ast.TyNil _), t) |
+                        Ast.TyAli (_, t, (Ast.TyNil _)) |
+                        Ast.TyArr (_, t, (Ast.TyNil _)) |
+                        Ast.TyArr (_, (Ast.TyNil _), t) |
+                        Ast.TyOr (_, (Ast.TyNil _), t) |
+                        Ast.TyOr (_, t, (Ast.TyNil _)) |
+                        Ast.TyOf (_, t, (Ast.TyNil _)) |
+                        Ast.TyAnd (_, (Ast.TyNil _), t) |
+                        Ast.TyAnd (_, t, (Ast.TyNil _)) |
+                        Ast.TySem (_, t, (Ast.TyNil _)) |
+                        Ast.TySem (_, (Ast.TyNil _), t) |
+                        Ast.TyCom (_, (Ast.TyNil _), t) |
+                        Ast.TyCom (_, t, (Ast.TyNil _)) |
+                        Ast.TyAmp (_, t, (Ast.TyNil _)) |
+                        Ast.TyAmp (_, (Ast.TyNil _), t) |
+                        Ast.TySta (_, (Ast.TyNil _), t) |
+                        Ast.TySta (_, t, (Ast.TyNil _)) -> t
+                    | t -> t
+                  
                 method sig_item =
-                  function
-                  | Ast.SgSem (_, (Ast.SgNil _), sg) |
-                      Ast.SgSem (_, sg, (Ast.SgNil _)) -> self#sig_item sg
-                  | sg -> super#sig_item sg
+                  fun sg ->
+                    match super#sig_item sg with
+                    | Ast.SgSem (_, (Ast.SgNil _), sg) |
+                        Ast.SgSem (_, sg, (Ast.SgNil _)) -> sg
+                    | sg -> sg
+                  
                 method str_item =
-                  function
-                  | Ast.StSem (_, (Ast.StNil _), st) |
-                      Ast.StSem (_, st, (Ast.StNil _)) -> self#str_item st
-                  | st -> super#str_item st
+                  fun st ->
+                    match super#str_item st with
+                    | Ast.StSem (_, (Ast.StNil _), st) |
+                        Ast.StSem (_, st, (Ast.StNil _)) -> st
+                    | st -> st
+                  
                 method module_type =
-                  function
-                  | Ast.MtWit (_, mt, (Ast.WcNil _)) -> self#module_type mt
-                  | mt -> super#module_type mt
+                  fun mt ->
+                    match super#module_type mt with
+                    | Ast.MtWit (_, mt, (Ast.WcNil _)) -> mt
+                    | mt -> mt
+                  
                 method class_expr =
-                  function
-                  | Ast.CeAnd (_, (Ast.CeNil _), ce) |
-                      Ast.CeAnd (_, ce, (Ast.CeNil _)) -> self#class_expr ce
-                  | ce -> super#class_expr ce
+                  fun ce ->
+                    match super#class_expr ce with
+                    | Ast.CeAnd (_, (Ast.CeNil _), ce) |
+                        Ast.CeAnd (_, ce, (Ast.CeNil _)) -> ce
+                    | ce -> ce
+                  
                 method class_type =
-                  function
-                  | Ast.CtAnd (_, (Ast.CtNil _), ct) |
-                      Ast.CtAnd (_, ct, (Ast.CtNil _)) -> self#class_type ct
-                  | ct -> super#class_type ct
+                  fun ct ->
+                    match super#class_type ct with
+                    | Ast.CtAnd (_, (Ast.CtNil _), ct) |
+                        Ast.CtAnd (_, ct, (Ast.CtNil _)) -> ct
+                    | ct -> ct
+                  
                 method class_sig_item =
-                  function
-                  | Ast.CgSem (_, (Ast.CgNil _), csg) |
-                      Ast.CgSem (_, csg, (Ast.CgNil _)) ->
-                      self#class_sig_item csg
-                  | csg -> super#class_sig_item csg
+                  fun csg ->
+                    match super#class_sig_item csg with
+                    | Ast.CgSem (_, (Ast.CgNil _), csg) |
+                        Ast.CgSem (_, csg, (Ast.CgNil _)) -> csg
+                    | csg -> csg
+                  
                 method class_str_item =
-                  function
-                  | Ast.CrSem (_, (Ast.CrNil _), cst) |
-                      Ast.CrSem (_, cst, (Ast.CrNil _)) ->
-                      self#class_str_item cst
-                  | cst -> super#class_str_item cst
+                  fun cst ->
+                    match super#class_str_item cst with
+                    | Ast.CrSem (_, (Ast.CrNil _), cst) |
+                        Ast.CrSem (_, cst, (Ast.CrNil _)) -> cst
+                    | cst -> cst
+                  
               end
+              
           end
+          
       end
+      
     module CommentFilter :
       sig
         module Make (Token : Sig.Camlp4Token) :
           sig
             open Token
+              
             type t
+            
             val mk : unit -> t
+              
             val define : Token.Filter.t -> t -> unit
+              
             val filter :
               t -> (Token.t * Loc.t) Stream.t -> (Token.t * Loc.t) Stream.t
+              
             val take_list : t -> (string * Loc.t) list
+              
             val take_stream : t -> (string * Loc.t) Stream.t
+              
           end
+          
       end =
       struct
         module Make (Token : Sig.Camlp4Token) =
           struct
             open Token
+              
             type t =
               (((string * Loc.t) Stream.t) * ((string * Loc.t) Queue.t))
+            
             let mk () =
               let q = Queue.create () in
               let f _ = try Some (Queue.take q) with | Queue.Empty -> None
               in ((Stream.from f), q)
+              
             let filter (_, q) =
               let rec self (__strm : _ Stream.t) =
                 match Stream.peek __strm with
@@ -12551,24 +13841,35 @@ module Struct =
                      in Stream.icons x (Stream.slazy (fun _ -> self xs)))
                 | _ -> Stream.sempty
               in self
+              
             let take_list (_, q) =
               let rec self accu =
                 if Queue.is_empty q
                 then accu
                 else self ((Queue.take q) :: accu)
               in self []
+              
             let take_stream = fst
+              
             let define token_fiter comments_strm =
               Token.Filter.define_filter token_fiter
                 (fun previous strm -> previous (filter comments_strm strm))
+              
           end
+          
       end
-    module DynLoader : sig include Sig.DynLoader end =
+      
+    module DynLoader : sig include Sig.DynLoader
+                              end =
       struct
         type t = string Queue.t
+        
         exception Error of string * string
+          
         let include_dir x y = Queue.add y x
+          
         let fold_load_path x f acc = Queue.fold (fun x y -> f y x) acc x
+          
         let mk ?(ocaml_stdlib = true) ?(camlp4_stdlib = true) () =
           let q = Queue.create ()
           in
@@ -12590,6 +13891,7 @@ module Struct =
              else ();
              include_dir q ".";
              q)
+          
         let find_in_path x name =
           if not (Filename.is_implicit name)
           then if Sys.file_exists name then name else raise Not_found
@@ -12607,66 +13909,99 @@ module Struct =
                     | x -> x)
                  None
              in match res with | None -> raise Not_found | Some x -> x)
+          
         let load =
           let _initialized = ref false
           in
             fun _path file ->
               raise
                 (Error (file, "native-code program cannot do a dynamic load"))
+          
       end
-    module EmptyError : sig include Sig.Error end =
+      
+    module EmptyError : sig include Sig.Error
+                               end =
       struct
         type t = unit
+        
         exception E of t
+          
         let print _ = assert false
+          
         let to_string _ = assert false
+          
       end
+      
     module EmptyPrinter :
-      sig module Make (Ast : Sig.Ast) : Sig.Printer(Ast).S end =
+      sig module Make (Ast : Sig.Ast) : Sig.Printer(Ast).S
+             end =
       struct
         module Make (Ast : Sig.Ast) =
           struct
             let print_interf ?input_file:(_) ?output_file:(_) _ =
               failwith "No interface printer"
+              
             let print_implem ?input_file:(_) ?output_file:(_) _ =
               failwith "No implementation printer"
+              
           end
+          
       end
+      
     module FreeVars :
       sig
         module Make (Ast : Sig.Camlp4Ast) :
           sig
             module S : Set.S with type elt = string
+              
             val fold_binding_vars :
               (string -> 'accu -> 'accu) -> Ast.binding -> 'accu -> 'accu
+              
             class ['accu] c_fold_pattern_vars :
               (string -> 'accu -> 'accu) ->
                 'accu ->
-                  object inherit Ast.fold val acc : 'accu method acc : 'accu
+                  object inherit Ast.fold
+                            val acc : 'accu
+                               method acc : 'accu
+                                 
                   end
+              
             val fold_pattern_vars :
               (string -> 'accu -> 'accu) -> Ast.patt -> 'accu -> 'accu
+              
             class ['accu] fold_free_vars :
               (string -> 'accu -> 'accu) ->
                 ?env_init: S.t ->
                   'accu ->
                     object ('self_type)
                       inherit Ast.fold
+                        
                       val free : 'accu
+                        
                       val env : S.t
+                        
                       method free : 'accu
+                        
                       method set_env : S.t -> 'self_type
+                        
                       method add_atom : string -> 'self_type
+                        
                       method add_patt : Ast.patt -> 'self_type
+                        
                       method add_binding : Ast.binding -> 'self_type
+                        
                     end
+              
             val free_vars : S.t -> Ast.expr -> S.t
+              
           end
+          
       end =
       struct
         module Make (Ast : Sig.Camlp4Ast) =
           struct
             module S = Set.Make(String)
+              
             let rec fold_binding_vars f bi acc =
               match bi with
               | Ast.BiAnd (_, bi1, bi2) ->
@@ -12674,32 +14009,47 @@ module Struct =
               | Ast.BiEq (_, (Ast.PaId (_, (Ast.IdLid (_, i)))), _) ->
                   f i acc
               | _ -> assert false
+              
             class ['accu] c_fold_pattern_vars f init =
               object inherit Ast.fold as super
+                       
                 val acc = init
+                  
                 method acc : 'accu = acc
+                  
                 method patt =
                   function
                   | Ast.PaId (_, (Ast.IdLid (_, s))) |
                       Ast.PaLab (_, s, (Ast.PaNil _)) |
                       Ast.PaOlb (_, s, (Ast.PaNil _)) -> {< acc = f s acc; >}
                   | p -> super#patt p
+                  
               end
+              
             let fold_pattern_vars f p init =
               ((new c_fold_pattern_vars f init)#patt p)#acc
+              
             class ['accu] fold_free_vars (f : string -> 'accu -> 'accu)
                     ?(env_init = S.empty) free_init =
               object (o)
                 inherit Ast.fold as super
+                  
                 val free = (free_init : 'accu)
+                  
                 val env = (env_init : S.t)
+                  
                 method free = free
+                  
                 method set_env = fun env -> {< env = env; >}
+                  
                 method add_atom = fun s -> {< env = S.add s env; >}
+                  
                 method add_patt =
                   fun p -> {< env = fold_pattern_vars S.add p env; >}
+                  
                 method add_binding =
                   fun bi -> {< env = fold_binding_vars S.add bi env; >}
+                  
                 method expr =
                   function
                   | Ast.ExId (_, (Ast.IdLid (_, s))) |
@@ -12717,11 +14067,13 @@ module Struct =
                   | Ast.ExObj (_, p, cst) ->
                       ((o#add_patt p)#class_str_item cst)#set_env env
                   | e -> super#expr e
+                  
                 method match_case =
                   function
                   | Ast.McArr (_, p, e1, e2) ->
                       (((o#add_patt p)#expr e1)#expr e2)#set_env env
                   | m -> super#match_case m
+                  
                 method str_item =
                   function
                   | Ast.StExt (_, s, t, _) -> (o#ctyp t)#add_atom s
@@ -12730,6 +14082,7 @@ module Struct =
                   | Ast.StVal (_, Ast.BTrue, bi) ->
                       (o#add_binding bi)#binding bi
                   | st -> super#str_item st
+                  
                 method class_expr =
                   function
                   | Ast.CeFun (_, p, ce) ->
@@ -12743,6 +14096,7 @@ module Struct =
                   | Ast.CeStr (_, p, cst) ->
                       ((o#add_patt p)#class_str_item cst)#set_env env
                   | ce -> super#class_expr ce
+                  
                 method class_str_item =
                   function
                   | (Ast.CrInh (_, _, "") as cst) -> super#class_str_item cst
@@ -12750,16 +14104,22 @@ module Struct =
                   | Ast.CrVal (_, s, _, e) -> (o#expr e)#add_atom s
                   | Ast.CrVvr (_, s, _, t) -> (o#ctyp t)#add_atom s
                   | cst -> super#class_str_item cst
+                  
                 method module_expr =
                   function
                   | Ast.MeStr (_, st) -> (o#str_item st)#set_env env
                   | me -> super#module_expr me
+                  
               end
+              
             let free_vars env_init e =
               let fold = new fold_free_vars S.add ~env_init S.empty
               in (fold#expr e)#free
+              
           end
+          
       end
+      
     module Grammar =
       struct
         module Context =
@@ -12767,40 +14127,60 @@ module Struct =
             module type S =
               sig
                 module Token : Sig.Token
+                  
                 open Token
+                  
                 type t
+                
                 val call_with_ctx :
                   (Token.t * Loc.t) Stream.t -> (t -> 'a) -> 'a
+                  
                 val loc_bp : t -> Loc.t
+                  
                 val loc_ep : t -> Loc.t
+                  
                 val stream : t -> (Token.t * Loc.t) Stream.t
+                  
                 val peek_nth : t -> int -> (Token.t * Loc.t) option
+                  
                 val njunk : t -> int -> unit
+                  
                 val junk : (Token.t * Loc.t) Stream.t -> unit
+                  
                 val bp : (Token.t * Loc.t) Stream.t -> Loc.t
+                  
               end
+              
             module Make (Token : Sig.Token) : S with module Token = Token =
               struct
                 module Token = Token
+                  
                 open Token
+                  
                 type t =
                   { mutable strm : (Token.t * Loc.t) Stream.t;
                     mutable loc : Loc.t
                   }
+                
                 let loc_bp c =
                   match Stream.peek c.strm with
                   | None -> Loc.ghost
                   | Some ((_, loc)) -> loc
+                  
                 let loc_ep c = c.loc
+                  
                 let set_loc c =
                   match Stream.peek c.strm with
                   | Some ((_, loc)) -> c.loc <- loc
                   | None -> ()
+                  
                 let mk strm =
                   match Stream.peek strm with
                   | Some ((_, loc)) -> { strm = strm; loc = loc; }
                   | None -> { strm = strm; loc = Loc.ghost; }
+                  
                 let stream c = c.strm
+                  
                 let peek_nth c n =
                   let list = Stream.npeek n c.strm in
                   let rec loop list n =
@@ -12809,34 +14189,49 @@ module Struct =
                     | (_ :: l, n) -> loop l (n - 1)
                     | ([], _) -> None
                   in loop list n
+                  
                 let njunk c n =
                   (for i = 1 to n do Stream.junk c.strm done; set_loc c)
+                  
                 let streams = ref []
+                  
                 let mk strm =
                   let c = mk strm in
                   let () = streams := (strm, c) :: !streams in c
+                  
                 let junk strm =
                   (set_loc (List.assq strm !streams); Stream.junk strm)
+                  
                 let bp strm = loc_bp (List.assq strm !streams)
+                  
                 let call_with_ctx strm f =
                   let streams_v = !streams in
                   let r =
                     try f (mk strm)
                     with | exc -> (streams := streams_v; raise exc)
                   in (streams := streams_v; r)
+                  
               end
+              
           end
+          
         module Structure =
           struct
             open Sig.Grammar
+              
             module type S =
               sig
                 module Loc : Sig.Loc
+                  
                 module Token : Sig.Token with module Loc = Loc
+                  
                 module Lexer : Sig.Lexer with module Loc = Loc
                   and module Token = Token
+                  
                 module Context : Context.S with module Token = Token
+                  
                 module Action : Sig.Grammar.Action
+                  
                 type gram =
                   { gfilter : Token.Filter.t;
                     gkeywords : (string, int ref) Hashtbl.t;
@@ -12844,9 +14239,12 @@ module Struct =
                       Loc.t -> char Stream.t -> (Token.t * Loc.t) Stream.t;
                     warning_verbose : bool ref; error_verbose : bool ref
                   }
+                
                 type efun =
                   Context.t -> (Token.t * Loc.t) Stream.t -> Action.t
+                
                 type token_pattern = ((Token.t -> bool) * string)
+                
                 type internal_entry =
                   { egram : gram; ename : string;
                     mutable estart : int -> efun;
@@ -12874,37 +14272,57 @@ module Struct =
                   and node =
                   { node : symbol; son : tree; brother : tree
                   }
+                
                 type production_rule = ((symbol list) * Action.t)
+                
                 type single_extend_statment =
                   ((string option) * (assoc option) * (production_rule list))
+                
                 type extend_statment =
                   ((position option) * (single_extend_statment list))
+                
                 type delete_statment = symbol list
+                
                 type ('a, 'b, 'c) fold =
                   internal_entry ->
                     symbol list -> ('a Stream.t -> 'b) -> 'a Stream.t -> 'c
+                
                 type ('a, 'b, 'c) foldsep =
                   internal_entry ->
                     symbol list ->
                       ('a Stream.t -> 'b) ->
                         ('a Stream.t -> unit) -> 'a Stream.t -> 'c
+                
                 val get_filter : gram -> Token.Filter.t
+                  
                 val using : gram -> string -> unit
+                  
                 val removing : gram -> string -> unit
+                  
               end
+              
             module Make (Lexer : Sig.Lexer) =
               struct
                 module Loc = Lexer.Loc
+                  
                 module Token = Lexer.Token
+                  
                 module Action : Sig.Grammar.Action =
                   struct
                     type t = Obj.t
+                    
                     let mk = Obj.repr
+                      
                     let get = Obj.obj
+                      
                     let getf = Obj.obj
+                      
                     let getf2 = Obj.obj
+                      
                   end
+                  
                 module Lexer = Lexer
+                  
                 type gram =
                   { gfilter : Token.Filter.t;
                     gkeywords : (string, int ref) Hashtbl.t;
@@ -12912,10 +14330,14 @@ module Struct =
                       Loc.t -> char Stream.t -> (Token.t * Loc.t) Stream.t;
                     warning_verbose : bool ref; error_verbose : bool ref
                   }
+                
                 module Context = Context.Make(Token)
+                  
                 type efun =
                   Context.t -> (Token.t * Loc.t) Stream.t -> Action.t
+                
                 type token_pattern = ((Token.t -> bool) * string)
+                
                 type internal_entry =
                   { egram : gram; ename : string;
                     mutable estart : int -> efun;
@@ -12943,22 +14365,31 @@ module Struct =
                   and node =
                   { node : symbol; son : tree; brother : tree
                   }
+                
                 type production_rule = ((symbol list) * Action.t)
+                
                 type single_extend_statment =
                   ((string option) * (assoc option) * (production_rule list))
+                
                 type extend_statment =
                   ((position option) * (single_extend_statment list))
+                
                 type delete_statment = symbol list
+                
                 type ('a, 'b, 'c) fold =
                   internal_entry ->
                     symbol list -> ('a Stream.t -> 'b) -> 'a Stream.t -> 'c
+                
                 type ('a, 'b, 'c) foldsep =
                   internal_entry ->
                     symbol list ->
                       ('a Stream.t -> 'b) ->
                         ('a Stream.t -> unit) -> 'a Stream.t -> 'c
+                
                 let get_filter g = g.gfilter
+                  
                 type 'a not_filtered = 'a
+                
                 let using { gkeywords = table; gfilter = filter } kwd =
                   let r =
                     try Hashtbl.find table kwd
@@ -12966,6 +14397,7 @@ module Struct =
                     | Not_found ->
                         let r = ref 0 in (Hashtbl.add table kwd r; r)
                   in (Token.Filter.keyword_added filter kwd (!r = 0); incr r)
+                  
                 let removing { gkeywords = table; gfilter = filter } kwd =
                   let r = Hashtbl.find table kwd in
                   let () = decr r
@@ -12975,13 +14407,17 @@ module Struct =
                       (Token.Filter.keyword_removed filter kwd;
                        Hashtbl.remove table kwd)
                     else ()
+                  
               end
+              
           end
+          
         module Search =
           struct
             module Make (Structure : Structure.S) =
               struct
                 open Structure
+                  
                 let tree_in_entry prev_symb tree =
                   function
                   | Dlevels levels ->
@@ -13066,18 +14502,25 @@ module Struct =
                          | _ -> None)
                       in search_levels levels
                   | Dparser _ -> tree
+                  
               end
+              
           end
+          
         module Tools =
           struct
             module Make (Structure : Structure.S) =
               struct
                 open Structure
+                  
                 let empty_entry ename _ _ _ =
                   raise (Stream.Error ("entry [" ^ (ename ^ "] is empty")))
+                  
                 let is_level_labelled n lev =
                   match lev.lname with | Some n1 -> n = n1 | None -> false
+                  
                 let warning_verbose = ref true
+                  
                 let rec get_token_list entry tokl last_tok tree =
                   match tree with
                   | Node
@@ -13092,11 +14535,14 @@ module Struct =
                       else
                         Some
                           (((List.rev (last_tok :: tokl)), last_tok, tree))
+                  
                 let is_antiquot s =
                   let len = String.length s in (len > 1) && (s.[0] = '$')
+                  
                 let eq_Stoken_ids s1 s2 =
                   (not (is_antiquot s1)) &&
                     ((not (is_antiquot s2)) && (s1 = s2))
+                  
                 let logically_eq_symbols entry =
                   let rec eq_symbols s1 s2 =
                     match (s1, s2) with
@@ -13126,6 +14572,7 @@ module Struct =
                         -> true
                     | _ -> false
                   in eq_symbols
+                  
                 let rec eq_symbol s1 s2 =
                   match (s1, s2) with
                   | (Snterm e1, Snterm e2) -> e1 == e2
@@ -13142,55 +14589,78 @@ module Struct =
                   | (Stoken ((_, s1)), Stoken ((_, s2))) ->
                       eq_Stoken_ids s1 s2
                   | _ -> s1 = s2
+                  
               end
+              
           end
+          
         module Print :
           sig
             module Make (Structure : Structure.S) :
               sig
                 val flatten_tree :
                   Structure.tree -> (Structure.symbol list) list
+                  
                 val print_symbol :
                   Format.formatter -> Structure.symbol -> unit
+                  
                 val print_meta :
                   Format.formatter -> string -> Structure.symbol list -> unit
+                  
                 val print_symbol1 :
                   Format.formatter -> Structure.symbol -> unit
+                  
                 val print_rule :
                   Format.formatter -> Structure.symbol list -> unit
+                  
                 val print_level :
                   Format.formatter ->
                     (Format.formatter -> unit -> unit) ->
                       (Structure.symbol list) list -> unit
+                  
                 val levels : Format.formatter -> Structure.level list -> unit
+                  
                 val entry :
                   Format.formatter -> Structure.internal_entry -> unit
+                  
               end
+              
             module MakeDump (Structure : Structure.S) :
               sig
                 val print_symbol :
                   Format.formatter -> Structure.symbol -> unit
+                  
                 val print_meta :
                   Format.formatter -> string -> Structure.symbol list -> unit
+                  
                 val print_symbol1 :
                   Format.formatter -> Structure.symbol -> unit
+                  
                 val print_rule :
                   Format.formatter -> Structure.symbol list -> unit
+                  
                 val print_level :
                   Format.formatter ->
                     (Format.formatter -> unit -> unit) ->
                       (Structure.symbol list) list -> unit
+                  
                 val levels : Format.formatter -> Structure.level list -> unit
+                  
                 val entry :
                   Format.formatter -> Structure.internal_entry -> unit
+                  
               end
+              
           end =
           struct
             module Make (Structure : Structure.S) =
               struct
                 open Structure
+                  
                 open Format
+                  
                 open Sig.Grammar
+                  
                 let rec flatten_tree =
                   function
                   | DeadEnd -> []
@@ -13198,6 +14668,7 @@ module Struct =
                   | Node { node = n; brother = b; son = s } ->
                       (List.map (fun l -> n :: l) (flatten_tree s)) @
                         (flatten_tree b)
+                  
                 let rec print_symbol ppf =
                   function
                   | Smeta (n, sl, _) -> print_meta ppf n sl
@@ -13262,6 +14733,7 @@ module Struct =
                            fun ppf -> fprintf ppf "%a| " pp_print_space ()))
                        (fun _ -> ()) rules
                    in fprintf ppf " ]@]")
+                  
                 let levels ppf elev =
                   let _ =
                     List.fold_left
@@ -13284,19 +14756,26 @@ module Struct =
                             fun ppf -> fprintf ppf "@,| "))
                       (fun _ -> ()) elev
                   in ()
+                  
                 let entry ppf e =
                   (fprintf ppf "@[<v 0>%s: [ " e.ename;
                    (match e.edesc with
                     | Dlevels elev -> levels ppf elev
                     | Dparser _ -> fprintf ppf "<parser>");
                    fprintf ppf " ]@]")
+                  
               end
+              
             module MakeDump (Structure : Structure.S) =
               struct
                 open Structure
+                  
                 open Format
+                  
                 open Sig.Grammar
+                  
                 type brothers = | Bro of symbol * brothers list
+                
                 let rec print_tree ppf tree =
                   let rec get_brothers acc =
                     function
@@ -13394,6 +14873,7 @@ module Struct =
                            fun ppf -> fprintf ppf "%a| " pp_print_space ()))
                        (fun _ -> ()) rules
                    in fprintf ppf " ]@]")
+                  
                 let levels ppf elev =
                   let _ =
                     List.fold_left
@@ -13415,23 +14895,32 @@ module Struct =
                           fun ppf -> fprintf ppf "@,| "))
                       (fun _ -> ()) elev
                   in ()
+                  
                 let entry ppf e =
                   (fprintf ppf "@[<v 0>%s: [ " e.ename;
                    (match e.edesc with
                     | Dlevels elev -> levels ppf elev
                     | Dparser _ -> fprintf ppf "<parser>");
                    fprintf ppf " ]@]")
+                  
               end
+              
           end
+          
         module Failed =
           struct
             module Make (Structure : Structure.S) =
               struct
                 module Tools = Tools.Make(Structure)
+                  
                 module Search = Search.Make(Structure)
+                  
                 module Print = Print.Make(Structure)
+                  
                 open Structure
+                  
                 open Format
+                  
                 let rec name_of_symbol entry =
                   function
                   | Snterm e -> "[" ^ (e.ename ^ "]")
@@ -13441,6 +14930,7 @@ module Struct =
                   | Stoken ((_, descr)) -> descr
                   | Skeyword kwd -> "\"" ^ (kwd ^ "\"")
                   | _ -> "???"
+                  
                 let rec name_of_symbol_failed entry =
                   function
                   | Slist0 s -> name_of_symbol_failed entry s
@@ -13487,7 +14977,9 @@ module Struct =
                                      | _ -> assert false))
                                "" tokl)
                   | DeadEnd | LocAct (_, _) -> "???"
+                  
                 let magic _s x = Obj.magic x
+                  
                 let tree_failed entry prev_symb_result prev_symb tree =
                   let txt = name_of_tree_failed entry tree in
                   let txt =
@@ -13543,32 +15035,47 @@ module Struct =
                            fprintf ppf "@]@."))
                      else ();
                      txt ^ (" (in [" ^ (entry.ename ^ "])")))
+                  
                 let symb_failed entry prev_symb_result prev_symb symb =
                   let tree =
                     Node { node = symb; brother = DeadEnd; son = DeadEnd; }
                   in tree_failed entry prev_symb_result prev_symb tree
+                  
                 let symb_failed_txt e s1 s2 = symb_failed e 0 s1 s2
+                  
               end
+              
           end
+          
         module Parser =
           struct
             module Make (Structure : Structure.S) =
               struct
                 module Tools = Tools.Make(Structure)
+                  
                 module Failed = Failed.Make(Structure)
+                  
                 module Print = Print.Make(Structure)
+                  
                 open Structure
+                  
                 open Sig.Grammar
+                  
                 module Stream =
                   struct
                     include Stream
+                      
                     let junk strm = Context.junk strm
+                      
                     let count strm = Context.bp strm
+                      
                   end
+                  
                 let add_loc c bp parse_fun strm =
                   let x = parse_fun c strm in
                   let ep = Context.loc_ep c in
                   let loc = Loc.merge bp ep in (x, loc)
+                  
                 let level_number entry lab =
                   let rec lookup levn =
                     function
@@ -13581,14 +15088,18 @@ module Struct =
                     match entry.edesc with
                     | Dlevels elev -> lookup 0 elev
                     | Dparser _ -> raise Not_found
+                  
                 let strict_parsing = ref false
+                  
                 let strict_parsing_warning = ref false
+                  
                 let rec top_symb entry =
                   function
                   | Sself | Snext -> Snterm entry
                   | Snterml (e, _) -> Snterm e
                   | Slist1sep (s, sep) -> Slist1sep (top_symb entry s, sep)
                   | _ -> raise Stream.Failure
+                  
                 let top_tree entry =
                   function
                   | Node { node = s; brother = bro; son = son } ->
@@ -13596,12 +15107,14 @@ module Struct =
                         { node = top_symb entry s; brother = bro; son = son;
                         }
                   | LocAct (_, _) | DeadEnd -> raise Stream.Failure
+                  
                 let entry_of_symb entry =
                   function
                   | Sself | Snext -> entry
                   | Snterm e -> e
                   | Snterml (e, _) -> e
                   | _ -> raise Stream.Failure
+                  
                 let continue entry loc a s c son p1 (__strm : _ Stream.t) =
                   let a =
                     (entry_of_symb entry s).econtinue 0 loc a c __strm in
@@ -13612,10 +15125,12 @@ module Struct =
                         raise
                           (Stream.Error (Failed.tree_failed entry a s son))
                   in Action.mk (fun _ -> Action.getf act a)
+                  
                 let skip_if_empty c bp p strm =
                   if (Context.loc_ep c) == bp
                   then Action.mk (fun _ -> p strm)
                   else raise Stream.Failure
+                  
                 let do_recover parser_of_tree entry nlevn alevn loc a s c son
                                (__strm : _ Stream.t) =
                   try
@@ -13631,6 +15146,7 @@ module Struct =
                        | Stream.Failure ->
                            continue entry loc a s c son
                              (parser_of_tree entry nlevn alevn son c) __strm)
+                  
                 let recover parser_of_tree entry nlevn alevn loc a s c son
                             strm =
                   if !strict_parsing
@@ -13652,6 +15168,7 @@ module Struct =
                      in
                        do_recover parser_of_tree entry nlevn alevn loc a s c
                          son strm)
+                  
                 let rec parser_of_tree entry nlevn alevn =
                   function
                   | DeadEnd ->
@@ -13949,6 +15466,7 @@ module Struct =
                 and parse_top_symb entry symb strm =
                   Context.call_with_ctx strm
                     (fun c -> parse_top_symb' entry symb c (Context.stream c))
+                  
                 let rec start_parser_of_levels entry clevn =
                   function
                   | [] ->
@@ -13995,11 +15513,13 @@ module Struct =
                                                   entry.econtinue levn loc a
                                                     c strm
                                             | _ -> p1 levn c __strm))))
+                  
                 let start_parser_of_entry entry =
                   match entry.edesc with
                   | Dlevels [] -> Tools.empty_entry entry.ename
                   | Dlevels elev -> start_parser_of_levels entry 0 elev
                   | Dparser p -> (fun _ _ strm -> p strm)
+                  
                 let rec continue_parser_of_levels entry clevn =
                   function
                   | [] ->
@@ -14035,6 +15555,7 @@ module Struct =
                                            in
                                              entry.econtinue levn loc a c
                                                strm)))
+                  
                 let continue_parser_of_entry entry =
                   match entry.edesc with
                   | Dlevels elev ->
@@ -14046,23 +15567,32 @@ module Struct =
                   | Dparser _ ->
                       (fun _ _ _ _ (__strm : _ Stream.t) ->
                          raise Stream.Failure)
+                  
               end
+              
           end
+          
         module Insert =
           struct
             module Make (Structure : Structure.S) =
               struct
                 module Tools = Tools.Make(Structure)
+                  
                 module Parser = Parser.Make(Structure)
+                  
                 open Structure
+                  
                 open Format
+                  
                 open Sig.Grammar
+                  
                 let is_before s1 s2 =
                   match (s1, s2) with
                   | ((Skeyword _ | Stoken _), (Skeyword _ | Stoken _)) ->
                       false
                   | ((Skeyword _ | Stoken _), _) -> true
                   | _ -> false
+                  
                 let rec derive_eps =
                   function
                   | Slist0 _ -> true
@@ -14079,6 +15609,7 @@ module Struct =
                       ((derive_eps s) && (tree_derive_eps son)) ||
                         (tree_derive_eps bro)
                   | DeadEnd -> false
+                  
                 let empty_lev lname assoc =
                   let assoc = match assoc with | Some a -> a | None -> LeftA
                   in
@@ -14088,6 +15619,7 @@ module Struct =
                       lsuffix = DeadEnd;
                       lprefix = DeadEnd;
                     }
+                  
                 let change_lev entry lev n lname assoc =
                   let a =
                     match assoc with
@@ -14119,8 +15651,10 @@ module Struct =
                        lsuffix = lev.lsuffix;
                        lprefix = lev.lprefix;
                      })
+                  
                 let change_to_self entry =
                   function | Snterm e when e == entry -> Sself | x -> x
+                  
                 let get_level entry position levs =
                   match position with
                   | Some First -> ([], empty_lev, levs)
@@ -14178,6 +15712,7 @@ module Struct =
                        | lev :: levs ->
                            ([], (change_lev entry lev "<top>"), levs)
                        | [] -> ([], empty_lev, []))
+                  
                 let rec check_gram entry =
                   function
                   | Snterm e ->
@@ -14217,10 +15752,12 @@ module Struct =
                        tree_check_gram entry bro;
                        tree_check_gram entry son)
                   | LocAct (_, _) | DeadEnd -> ()
+                  
                 let get_initial =
                   function
                   | Sself :: symbols -> (true, symbols)
                   | symbols -> (false, symbols)
+                  
                 let insert_tokens gram symbols =
                   let rec insert =
                     function
@@ -14240,6 +15777,7 @@ module Struct =
                         (insert s; tinsert bro; tinsert son)
                     | LocAct (_, _) | DeadEnd -> ()
                   in List.iter insert symbols
+                  
                 let insert_tree entry gsymbols action tree =
                   let rec insert symbols tree =
                     match symbols with
@@ -14321,6 +15859,7 @@ module Struct =
                           }
                     | [] -> LocAct (action, [])
                   in insert gsymbols tree
+                  
                 let insert_level entry e1 symbols action slev =
                   match e1 with
                   | true ->
@@ -14339,6 +15878,7 @@ module Struct =
                         lprefix =
                           insert_tree entry symbols action slev.lprefix;
                       }
+                  
                 let levels_of_rules entry position rules =
                   let elev =
                     match entry.edesc with
@@ -14376,6 +15916,7 @@ module Struct =
                               in ((lev :: levs), empty_lev))
                            ([], make_lev) rules
                        in levs1 @ ((List.rev levs) @ levs2))
+                  
                 let extend entry (position, rules) =
                   let elev = levels_of_rules entry position rules
                   in
@@ -14388,15 +15929,21 @@ module Struct =
                        fun lev bp a c strm ->
                          let f = Parser.continue_parser_of_entry entry
                          in (entry.econtinue <- f; f lev bp a c strm))
+                  
               end
+              
           end
+          
         module Delete =
           struct
             module Make (Structure : Structure.S) =
               struct
                 module Tools = Tools.Make(Structure)
+                  
                 module Parser = Parser.Make(Structure)
+                  
                 open Structure
+                  
                 let delete_rule_in_tree entry =
                   let rec delete_in_tree symbols tree =
                     match (symbols, tree) with
@@ -14448,6 +15995,7 @@ module Struct =
                         in Some ((None, t))
                     | None -> None
                   in delete_in_tree
+                  
                 let rec decr_keyw_use gram =
                   function
                   | Skeyword kwd -> removing gram kwd
@@ -14469,6 +16017,7 @@ module Struct =
                       (decr_keyw_use gram n.node;
                        decr_keyw_use_in_tree gram n.son;
                        decr_keyw_use_in_tree gram n.brother)
+                  
                 let rec delete_rule_in_suffix entry symbols =
                   function
                   | lev :: levs ->
@@ -14495,6 +16044,7 @@ module Struct =
                              delete_rule_in_suffix entry symbols levs
                            in lev :: levs)
                   | [] -> raise Not_found
+                  
                 let rec delete_rule_in_prefix entry symbols =
                   function
                   | lev :: levs ->
@@ -14521,6 +16071,7 @@ module Struct =
                              delete_rule_in_prefix entry symbols levs
                            in lev :: levs)
                   | [] -> raise Not_found
+                  
                 let rec delete_rule_in_level_list entry symbols levs =
                   match symbols with
                   | Sself :: symbols ->
@@ -14528,6 +16079,7 @@ module Struct =
                   | Snterm e :: symbols when e == entry ->
                       delete_rule_in_suffix entry symbols levs
                   | _ -> delete_rule_in_prefix entry symbols levs
+                  
                 let delete_rule entry sl =
                   match entry.edesc with
                   | Dlevels levs ->
@@ -14543,32 +16095,49 @@ module Struct =
                               let f = Parser.continue_parser_of_entry entry
                               in (entry.econtinue <- f; f lev bp a c strm)))
                   | Dparser _ -> ()
+                  
               end
+              
           end
+          
         module Fold :
           sig
             module Make (Structure : Structure.S) :
               sig
                 open Structure
+                  
                 val sfold0 : ('a -> 'b -> 'b) -> 'b -> (_, 'a, 'b) fold
+                  
                 val sfold1 : ('a -> 'b -> 'b) -> 'b -> (_, 'a, 'b) fold
+                  
                 val sfold0sep : ('a -> 'b -> 'b) -> 'b -> (_, 'a, 'b) foldsep
+                  
               end
+              
           end =
           struct
             module Make (Structure : Structure.S) =
               struct
                 open Structure
+                  
                 open Format
+                  
                 module Parse = Parser.Make(Structure)
+                  
                 module Fail = Failed.Make(Structure)
+                  
                 open Sig.Grammar
+                  
                 module Stream =
                   struct
                     include Stream
+                      
                     let junk strm = Context.junk strm
+                      
                     let count strm = Context.bp strm
+                      
                   end
+                  
                 let sfold0 f e _entry _symbl psymb =
                   let rec fold accu (__strm : _ Stream.t) =
                     match try Some (psymb __strm)
@@ -14577,6 +16146,7 @@ module Struct =
                     | Some a -> fold (f a accu) __strm
                     | _ -> accu
                   in fun (__strm : _ Stream.t) -> fold e __strm
+                  
                 let sfold1 f e _entry _symbl psymb =
                   let rec fold accu (__strm : _ Stream.t) =
                     match try Some (psymb __strm)
@@ -14590,6 +16160,7 @@ module Struct =
                       in
                         try fold (f a e) __strm
                         with | Stream.Failure -> raise (Stream.Error "")
+                  
                 let sfold0sep f e entry symbl psymb psep =
                   let failed =
                     function
@@ -14614,6 +16185,7 @@ module Struct =
                       with
                       | Some a -> kont (f a e) __strm
                       | _ -> e
+                  
                 let sfold1sep f e entry symbl psymb psep =
                   let failed =
                     function
@@ -14645,21 +16217,33 @@ module Struct =
                   in
                     fun (__strm : _ Stream.t) ->
                       let a = psymb __strm in kont (f a e) __strm
+                  
               end
+              
           end
+          
         module Entry =
           struct
             module Make (Structure : Structure.S) =
               struct
                 module Dump = Print.MakeDump(Structure)
+                  
                 module Print = Print.Make(Structure)
+                  
                 module Tools = Tools.Make(Structure)
+                  
                 open Format
+                  
                 open Structure
+                  
                 type 'a t = internal_entry
+                
                 let name e = e.ename
+                  
                 let print ppf e = fprintf ppf "%a@\n" Print.entry e
+                  
                 let dump ppf e = fprintf ppf "%a@\n" Dump.entry e
+                  
                 let mk g n =
                   {
                     egram = g;
@@ -14670,6 +16254,7 @@ module Struct =
                          raise Stream.Failure);
                     edesc = Dlevels [];
                   }
+                  
                 let action_parse entry ts : Action.t =
                   Context.call_with_ctx ts
                     (fun c ->
@@ -14681,19 +16266,27 @@ module Struct =
                                 ("illegal begin of " ^ entry.ename))
                        | (Loc.Exc_located (_, _) as exc) -> raise exc
                        | exc -> Loc.raise (Context.loc_ep c) exc)
+                  
                 let lex entry loc cs = entry.egram.glexer loc cs
+                  
                 let lex_string entry loc str =
                   lex entry loc (Stream.of_string str)
+                  
                 let filter entry ts =
                   Token.Filter.filter (get_filter entry.egram) ts
+                  
                 let parse_tokens_after_filter entry ts =
                   Action.get (action_parse entry ts)
+                  
                 let parse_tokens_before_filter entry ts =
                   parse_tokens_after_filter entry (filter entry ts)
+                  
                 let parse entry loc cs =
                   parse_tokens_before_filter entry (lex entry loc cs)
+                  
                 let parse_string entry loc str =
                   parse_tokens_before_filter entry (lex_string entry loc str)
+                  
                 let of_parser g n (p : (Token.t * Loc.t) Stream.t -> 'a) :
                   'a t =
                   {
@@ -14705,6 +16298,7 @@ module Struct =
                          raise Stream.Failure);
                     edesc = Dparser (fun ts -> Action.mk (p ts));
                   }
+                  
                 let setup_parser e (p : (Token.t * Loc.t) Stream.t -> 'a) =
                   let f ts = Action.mk (p ts)
                   in
@@ -14713,6 +16307,7 @@ module Struct =
                        (fun _ _ _ _ (__strm : _ Stream.t) ->
                           raise Stream.Failure);
                      e.edesc <- Dparser f)
+                  
                 let clear e =
                   (e.estart <-
                      (fun _ _ (__strm : _ Stream.t) -> raise Stream.Failure);
@@ -14720,9 +16315,13 @@ module Struct =
                      (fun _ _ _ _ (__strm : _ Stream.t) ->
                         raise Stream.Failure);
                    e.edesc <- Dlevels [])
+                  
                 let obj x = x
+                  
               end
+              
           end
+          
         module Static =
           struct
             module Make (Lexer : Sig.Lexer) :
@@ -14730,10 +16329,15 @@ module Struct =
               and module Token = Lexer.Token =
               struct
                 module Structure = Structure.Make(Lexer)
+                  
                 module Delete = Delete.Make(Structure)
+                  
                 module Insert = Insert.Make(Structure)
+                  
                 module Fold = Fold.Make(Structure)
+                  
                 include Structure
+                  
                 let gram =
                   let gkeywords = Hashtbl.create 301
                   in
@@ -14744,32 +16348,53 @@ module Struct =
                       warning_verbose = ref true;
                       error_verbose = Camlp4_config.verbose;
                     }
+                  
                 module Entry =
                   struct
                     module E = Entry.Make(Structure)
+                      
                     type 'a t = 'a E.t
+                    
                     let mk = E.mk gram
+                      
                     let of_parser name strm = E.of_parser gram name strm
+                      
                     let setup_parser = E.setup_parser
+                      
                     let name = E.name
+                      
                     let print = E.print
+                      
                     let clear = E.clear
+                      
                     let dump = E.dump
+                      
                     let obj x = x
+                      
                   end
+                  
                 let get_filter () = gram.gfilter
+                  
                 let lex loc cs = gram.glexer loc cs
+                  
                 let lex_string loc str = lex loc (Stream.of_string str)
+                  
                 let filter ts = Token.Filter.filter gram.gfilter ts
+                  
                 let parse_tokens_after_filter entry ts =
                   Entry.E.parse_tokens_after_filter entry ts
+                  
                 let parse_tokens_before_filter entry ts =
                   parse_tokens_after_filter entry (filter ts)
+                  
                 let parse entry loc cs =
                   parse_tokens_before_filter entry (lex loc cs)
+                  
                 let parse_string entry loc str =
                   parse_tokens_before_filter entry (lex_string loc str)
+                  
                 let delete_rule = Delete.delete_rule
+                  
                 let srules e rl =
                   let t =
                     List.fold_left
@@ -14777,12 +16402,19 @@ module Struct =
                          Insert.insert_tree e symbols action tree)
                       DeadEnd rl
                   in Stree t
+                  
                 let sfold0 = Fold.sfold0
+                  
                 let sfold1 = Fold.sfold1
+                  
                 let sfold0sep = Fold.sfold0sep
+                  
                 let extend = Insert.extend
+                  
               end
+              
           end
+          
         module Dynamic =
           struct
             module Make (Lexer : Sig.Lexer) :
@@ -14790,11 +16422,17 @@ module Struct =
               and module Token = Lexer.Token =
               struct
                 module Structure = Structure.Make(Lexer)
+                  
                 module Delete = Delete.Make(Structure)
+                  
                 module Insert = Insert.Make(Structure)
+                  
                 module Entry = Entry.Make(Structure)
+                  
                 module Fold = Fold.Make(Structure)
+                  
                 include Structure
+                  
                 let mk () =
                   let gkeywords = Hashtbl.create 301
                   in
@@ -14805,20 +16443,30 @@ module Struct =
                       warning_verbose = ref true;
                       error_verbose = Camlp4_config.verbose;
                     }
+                  
                 let get_filter g = g.gfilter
+                  
                 let lex g loc cs = g.glexer loc cs
+                  
                 let lex_string g loc str = lex g loc (Stream.of_string str)
+                  
                 let filter g ts = Token.Filter.filter g.gfilter ts
+                  
                 let parse_tokens_after_filter entry ts =
                   Entry.parse_tokens_after_filter entry ts
+                  
                 let parse_tokens_before_filter entry ts =
                   parse_tokens_after_filter entry (filter entry.egram ts)
+                  
                 let parse entry loc cs =
                   parse_tokens_before_filter entry (lex entry.egram loc cs)
+                  
                 let parse_string entry loc str =
                   parse_tokens_before_filter entry
                     (lex_string entry.egram loc str)
+                  
                 let delete_rule = Delete.delete_rule
+                  
                 let srules e rl =
                   let t =
                     List.fold_left
@@ -14826,31 +16474,46 @@ module Struct =
                          Insert.insert_tree e symbols action tree)
                       DeadEnd rl
                   in Stree t
+                  
                 let sfold0 = Fold.sfold0
+                  
                 let sfold1 = Fold.sfold1
+                  
                 let sfold0sep = Fold.sfold0sep
+                  
                 let extend = Insert.extend
+                  
               end
+              
           end
+          
       end
+      
   end
+  
 module Printers =
   struct
     module DumpCamlp4Ast :
       sig
         module Id : Sig.Id
+          
         module Make (Syntax : Sig.Syntax) : Sig.Printer(Syntax.Ast).S
+          
       end =
       struct
         module Id =
           struct
             let name = "Camlp4Printers.DumpCamlp4Ast"
+              
             let version =
               "$Id: DumpCamlp4Ast.ml,v 1.5.4.2 2007/05/22 09:05:39 pouillar Exp $"
+              
           end
+          
         module Make (Syntax : Sig.Syntax) : Sig.Printer(Syntax.Ast).S =
           struct
             include Syntax
+              
             let with_open_out_file x f =
               match x with
               | Some file ->
@@ -14858,32 +16521,45 @@ module Printers =
                   in (f oc; flush oc; close_out oc)
               | None ->
                   (set_binary_mode_out stdout true; f stdout; flush stdout)
+              
             let dump_ast magic ast oc =
               (output_string oc magic; output_value oc ast)
+              
             let print_interf ?input_file:(_) ?output_file ast =
               with_open_out_file output_file
                 (dump_ast Camlp4_config.camlp4_ast_intf_magic_number ast)
+              
             let print_implem ?input_file:(_) ?output_file ast =
               with_open_out_file output_file
                 (dump_ast Camlp4_config.camlp4_ast_impl_magic_number ast)
+              
           end
+          
       end
+      
     module DumpOCamlAst :
       sig
         module Id : Sig.Id
+          
         module Make (Syntax : Sig.Camlp4Syntax) : Sig.Printer(Syntax.Ast).S
+          
       end =
       struct
         module Id : Sig.Id =
           struct
             let name = "Camlp4Printers.DumpOCamlAst"
+              
             let version =
               "$Id: DumpOCamlAst.ml,v 1.5.4.2 2007/05/22 09:05:39 pouillar Exp $"
+              
           end
+          
         module Make (Syntax : Sig.Camlp4Syntax) : Sig.Printer(Syntax.Ast).S =
           struct
             include Syntax
+              
             module Ast2pt = Struct.Camlp4Ast2OCamlAst.Make(Ast)
+              
             let with_open_out_file x f =
               match x with
               | Some file ->
@@ -14891,201 +16567,321 @@ module Printers =
                   in (f oc; flush oc; close_out oc)
               | None ->
                   (set_binary_mode_out stdout true; f stdout; flush stdout)
+              
             let dump_pt magic fname pt oc =
               (output_string oc magic;
                output_value oc (if fname = "-" then "" else fname);
                output_value oc pt)
+              
             let print_interf ?(input_file = "-") ?output_file ast =
               let pt = Ast2pt.sig_item ast
               in
                 with_open_out_file output_file
                   (dump_pt Camlp4_config.ocaml_ast_intf_magic_number
                      input_file pt)
+              
             let print_implem ?(input_file = "-") ?output_file ast =
               let pt = Ast2pt.str_item ast
               in
                 with_open_out_file output_file
                   (dump_pt Camlp4_config.ocaml_ast_impl_magic_number
                      input_file pt)
+              
           end
+          
       end
+      
     module Null :
       sig
         module Id : Sig.Id
+          
         module Make (Syntax : Sig.Syntax) : Sig.Printer(Syntax.Ast).S
+          
       end =
       struct
         module Id =
           struct
             let name = "Camlp4.Printers.Null"
+              
             let version =
               "$Id: Null.ml,v 1.2 2007/02/07 10:09:21 ertai Exp $"
+              
           end
+          
         module Make (Syntax : Sig.Syntax) =
           struct
             include Syntax
+              
             let print_interf ?input_file:(_) ?output_file:(_) _ = ()
+              
             let print_implem ?input_file:(_) ?output_file:(_) _ = ()
+              
           end
+          
       end
+      
     module OCaml :
       sig
         module Id : Sig.Id
+          
         module Make (Syntax : Sig.Camlp4Syntax) :
           sig
             open Format
+              
             include Sig.Camlp4Syntax with module Loc = Syntax.Loc
               and module Token = Syntax.Token and module Ast = Syntax.Ast
               and module Gram = Syntax.Gram
+              
+            type sep = (unit, formatter, unit) format
+            
             val list' :
               (formatter -> 'a -> unit) ->
                 ('b, formatter, unit) format ->
                   (unit, formatter, unit) format ->
                     formatter -> 'a list -> unit
+              
             val list :
               (formatter -> 'a -> unit) ->
                 ('b, formatter, unit) format -> formatter -> 'a list -> unit
+              
             val lex_string : string -> Token.t
+              
             val is_infix : string -> bool
+              
             val is_keyword : string -> bool
+              
             val ocaml_char : string -> string
+              
             val get_expr_args :
               Ast.expr -> Ast.expr list -> (Ast.expr * (Ast.expr list))
+              
             val get_patt_args :
               Ast.patt -> Ast.patt list -> (Ast.patt * (Ast.patt list))
+              
             val get_ctyp_args :
               Ast.ctyp -> Ast.ctyp list -> (Ast.ctyp * (Ast.ctyp list))
+              
             val expr_fun_args : Ast.expr -> ((Ast.patt list) * Ast.expr)
+              
             class printer :
               ?curry_constr: bool ->
                 ?comments: bool ->
                   unit ->
                     object ('a)
                       method interf : formatter -> Ast.sig_item -> unit
+                        
                       method implem : formatter -> Ast.str_item -> unit
+                        
                       method sig_item : formatter -> Ast.sig_item -> unit
+                        
                       method str_item : formatter -> Ast.str_item -> unit
+                        
                       val pipe : bool
+                        
                       val semi : bool
-                      val semisep : string
+                        
+                      val semisep : sep
+                        
                       val value_val : string
+                        
                       val value_let : string
+                        
                       method anti : formatter -> string -> unit
+                        
                       method class_declaration :
                         formatter -> Ast.class_expr -> unit
+                        
                       method class_expr : formatter -> Ast.class_expr -> unit
+                        
                       method class_sig_item :
                         formatter -> Ast.class_sig_item -> unit
+                        
                       method class_str_item :
                         formatter -> Ast.class_str_item -> unit
+                        
                       method class_type : formatter -> Ast.class_type -> unit
+                        
                       method constrain :
                         formatter -> (Ast.ctyp * Ast.ctyp) -> unit
+                        
                       method ctyp : formatter -> Ast.ctyp -> unit
+                        
                       method ctyp1 : formatter -> Ast.ctyp -> unit
+                        
                       method constructor_type : formatter -> Ast.ctyp -> unit
+                        
                       method dot_expr : formatter -> Ast.expr -> unit
+                        
                       method apply_expr : formatter -> Ast.expr -> unit
+                        
                       method expr : formatter -> Ast.expr -> unit
+                        
                       method expr_list : formatter -> Ast.expr list -> unit
+                        
                       method expr_list_cons :
                         bool -> formatter -> Ast.expr -> unit
+                        
                       method functor_arg :
                         formatter -> (string * Ast.module_type) -> unit
+                        
                       method functor_args :
                         formatter -> (string * Ast.module_type) list -> unit
+                        
                       method ident : formatter -> Ast.ident -> unit
+                        
                       method intlike : formatter -> string -> unit
+                        
                       method binding : formatter -> Ast.binding -> unit
+                        
                       method record_binding :
                         formatter -> Ast.rec_binding -> unit
+                        
                       method match_case : formatter -> Ast.match_case -> unit
+                        
                       method match_case_aux :
                         formatter -> Ast.match_case -> unit
+                        
                       method mk_expr_list :
                         Ast.expr -> ((Ast.expr list) * (Ast.expr option))
+                        
                       method mk_patt_list :
                         Ast.patt -> ((Ast.patt list) * (Ast.patt option))
+                        
                       method module_expr :
                         formatter -> Ast.module_expr -> unit
+                        
                       method module_expr_get_functor_args :
                         (string * Ast.module_type) list ->
                           Ast.module_expr ->
                             (((string * Ast.module_type) list) * Ast.
                              module_expr * (Ast.module_type option))
+                        
                       method module_rec_binding :
                         formatter -> Ast.module_binding -> unit
+                        
                       method module_type :
                         formatter -> Ast.module_type -> unit
+                        
                       method mutable_flag :
                         formatter -> Ast.meta_bool -> unit
+                        
                       method direction_flag :
                         formatter -> Ast.meta_bool -> unit
+                        
                       method rec_flag : formatter -> Ast.meta_bool -> unit
+                        
                       method flag :
                         formatter -> Ast.meta_bool -> string -> unit
+                        
                       method node : formatter -> 'b -> ('b -> Loc.t) -> unit
+                        
                       method patt : formatter -> Ast.patt -> unit
+                        
                       method patt1 : formatter -> Ast.patt -> unit
+                        
                       method patt2 : formatter -> Ast.patt -> unit
+                        
                       method patt3 : formatter -> Ast.patt -> unit
+                        
                       method patt4 : formatter -> Ast.patt -> unit
+                        
                       method patt5 : formatter -> Ast.patt -> unit
+                        
                       method patt_expr_fun_args :
                         formatter -> (Ast.patt * Ast.expr) -> unit
+                        
                       method patt_class_expr_fun_args :
                         formatter -> (Ast.patt * Ast.class_expr) -> unit
+                        
                       method print_comments_before :
                         Loc.t -> formatter -> unit
+                        
                       method private_flag :
                         formatter -> Ast.meta_bool -> unit
+                        
                       method virtual_flag :
                         formatter -> Ast.meta_bool -> unit
+                        
                       method quoted_string : formatter -> string -> unit
+                        
                       method raise_match_failure : formatter -> Loc.t -> unit
+                        
                       method reset : 'a
+                        
                       method reset_semi : 'a
-                      method semisep : string
+                        
+                      method semisep : sep
+                        
                       method set_comments : bool -> 'a
+                        
                       method set_curry_constr : bool -> 'a
+                        
                       method set_loc_and_comments : 'a
-                      method set_semisep : string -> 'a
+                        
+                      method set_semisep : sep -> 'a
+                        
                       method simple_ctyp : formatter -> Ast.ctyp -> unit
+                        
                       method simple_expr : formatter -> Ast.expr -> unit
+                        
                       method simple_patt : formatter -> Ast.patt -> unit
+                        
                       method seq : formatter -> Ast.expr -> unit
+                        
                       method string : formatter -> string -> unit
+                        
                       method sum_type : formatter -> Ast.ctyp -> unit
+                        
                       method type_params : formatter -> Ast.ctyp list -> unit
+                        
                       method class_params : formatter -> Ast.ctyp -> unit
+                        
                       method under_pipe : 'a
+                        
                       method under_semi : 'a
+                        
                       method var : formatter -> string -> unit
+                        
                       method with_constraint :
                         formatter -> Ast.with_constr -> unit
+                        
                     end
+              
             val with_outfile :
               string option -> (formatter -> 'a -> unit) -> 'a -> unit
+              
             val print :
               string option ->
                 (printer -> formatter -> 'a -> unit) -> 'a -> unit
+              
           end
+          
         module MakeMore (Syntax : Sig.Camlp4Syntax) : Sig.Printer(Syntax.
           Ast).S
+          
       end =
       struct
         open Format
+          
         module Id =
           struct
             let name = "Camlp4.Printers.OCaml"
+              
             let version =
               "$Id: OCaml.ml,v 1.21.2.11 2007/05/22 09:03:12 pouillar Exp $"
+              
           end
+          
         module Make (Syntax : Sig.Camlp4Syntax) =
           struct
             include Syntax
+              
+            type sep = (unit, formatter, unit) format
+            
             let pp = fprintf
+              
             let cut f = fprintf f "@ "
+              
             let list' elt sep sep' f =
               let rec loop =
                 function
@@ -15096,6 +16892,7 @@ module Printers =
                 | [] -> ()
                 | [ x ] -> (elt f x; pp f sep')
                 | x :: xs -> (elt f x; pp f sep'; loop xs)
+              
             let list elt sep f =
               let rec loop =
                 function | [] -> () | x :: xs -> (pp f sep; elt f x; loop xs)
@@ -15104,19 +16901,27 @@ module Printers =
                 | [] -> ()
                 | [ x ] -> elt f x
                 | x :: xs -> (elt f x; loop xs)
+              
             let rec list_of_meta_list =
               function
               | Ast.LNil -> []
               | Ast.LCons (x, xs) -> x :: (list_of_meta_list xs)
               | Ast.LAnt x -> assert false
+              
             let meta_list elt sep f mxs =
               let xs = list_of_meta_list mxs in list elt sep f xs
+              
             module CommentFilter = Struct.CommentFilter.Make(Token)
+              
             let comment_filter = CommentFilter.mk ()
+              
             let _ = CommentFilter.define (Gram.get_filter ()) comment_filter
+              
             module StringSet = Set.Make(String)
+              
             let infix_lidents =
               [ "asr"; "land"; "lor"; "lsl"; "lsr"; "lxor"; "mod"; "or" ]
+              
             let is_infix =
               let first_chars =
                 [ '='; '<'; '>'; '|'; '&'; '$'; '@'; '^'; '+'; '-'; '*'; '/';
@@ -15127,6 +16932,7 @@ module Printers =
                 fun s ->
                   (StringSet.mem s infixes) ||
                     ((s <> "") && (List.mem s.[0] first_chars))
+              
             let is_keyword =
               let keywords =
                 List.fold_right StringSet.add
@@ -15140,12 +16946,17 @@ module Printers =
                     "val"; "virtual"; "when"; "while"; "with" ]
                   StringSet.empty
               in fun s -> StringSet.mem s keywords
+              
             module Lexer = Struct.Lexer.Make(Token)
+              
             let _ = let module M = ErrorHandler.Register(Lexer.Error) in ()
+              
             open Sig
+              
             let lexer s =
               Lexer.from_string ~quotations: !Camlp4_config.quotations Loc.
                 ghost s
+              
             let lex_string str =
               try
                 let (__strm : _ Stream.t) = lexer str
@@ -15168,20 +16979,26 @@ module Printers =
                     (sprintf
                        "Cannot print %S this identifier does not respect OCaml lexing rules (%s)"
                        str (Lexer.Error.to_string exn))
+              
             let ocaml_char = function | "'" -> "\\'" | c -> c
+              
             let rec get_expr_args a al =
               match a with
               | Ast.ExApp (_, a1, a2) -> get_expr_args a1 (a2 :: al)
               | _ -> (a, al)
+              
             let rec get_patt_args a al =
               match a with
               | Ast.PaApp (_, a1, a2) -> get_patt_args a1 (a2 :: al)
               | _ -> (a, al)
+              
             let rec get_ctyp_args a al =
               match a with
               | Ast.TyApp (_, a1, a2) -> get_ctyp_args a1 (a2 :: al)
               | _ -> (a, al)
+              
             let is_irrefut_patt = Ast.is_irrefut_patt
+              
             let rec expr_fun_args =
               function
               | (Ast.ExFun (_, (Ast.McArr (_, p, (Ast.ExNil _), e))) as ge)
@@ -15190,6 +17007,7 @@ module Printers =
                   then (let (pl, e) = expr_fun_args e in ((p :: pl), e))
                   else ([], ge)
               | ge -> ([], ge)
+              
             let rec class_expr_fun_args =
               function
               | (Ast.CeFun (_, p, ce) as ge) ->
@@ -15198,6 +17016,7 @@ module Printers =
                     (let (pl, ce) = class_expr_fun_args ce in ((p :: pl), ce))
                   else ([], ge)
               | ge -> ([], ge)
+              
             let rec do_print_comments_before loc f (__strm : _ Stream.t) =
               match Stream.peek __strm with
               | Some ((comm, comm_loc)) when Loc.strictly_before comm_loc loc
@@ -15207,30 +17026,48 @@ module Printers =
                    let () = f comm comm_loc
                    in do_print_comments_before loc f s)
               | _ -> ()
+              
             class printer ?curry_constr:(init_curry_constr = false)
                     ?(comments = true) () =
               object (o)
                 val pipe = false
+                  
                 val semi = false
+                  
                 method under_pipe = {< pipe = true; >}
+                  
                 method under_semi = {< semi = true; >}
+                  
                 method reset_semi = {< semi = false; >}
+                  
                 method reset = {< pipe = false; semi = false; >}
-                val semisep = ";;"
-                val andsep =
-                  ("@]@ @[<2>and@ " : (unit, formatter, unit) format)
+                  
+                val semisep = (";;" : sep)
+                  
+                val andsep = ("@]@ @[<2>and@ " : sep)
+                  
                 val value_val = "val"
+                  
                 val value_let = "let"
+                  
                 val mode = if comments then `comments else `no_comments
+                  
                 val curry_constr = init_curry_constr
+                  
                 val var_conversion = false
+                  
                 method semisep = semisep
+                  
                 method set_semisep = fun s -> {< semisep = s; >}
+                  
                 method set_comments =
                   fun b ->
                     {< mode = if b then `comments else `no_comments; >}
+                  
                 method set_loc_and_comments = {< mode = `loc_and_comments; >}
+                  
                 method set_curry_constr = fun b -> {< curry_constr = b; >}
+                  
                 method print_comments_before =
                   fun loc f ->
                     match mode with
@@ -15245,6 +17082,7 @@ module Printers =
                             (fun s -> pp f "%s(*comm_loc: %a*)@ " s Loc.dump)
                             (CommentFilter.take_stream comment_filter)
                     | _ -> ()
+                  
                 method var =
                   fun f ->
                     function
@@ -15272,12 +17110,14 @@ module Printers =
                                     (sprintf
                                        "Bad token used as an identifier: %s"
                                        (Token.to_string tok))))
+                  
                 method type_params =
                   fun f ->
                     function
                     | [] -> ()
                     | [ x ] -> pp f "%a@ " o#ctyp x
                     | l -> pp f "@[<1>(%a)@]@ " (list o#ctyp ",@ ") l
+                  
                 method class_params =
                   fun f ->
                     function
@@ -15285,17 +17125,24 @@ module Printers =
                         pp f "@[<1>%a,@ %a@]" o#class_params t1
                           o#class_params t2
                     | x -> o#ctyp f x
+                  
                 method mutable_flag = fun f b -> o#flag f b "mutable"
+                  
                 method rec_flag = fun f b -> o#flag f b "rec"
+                  
                 method virtual_flag = fun f b -> o#flag f b "virtual"
+                  
                 method private_flag = fun f b -> o#flag f b "private"
+                  
                 method flag =
                   fun f b n ->
                     match b with
                     | Ast.BTrue -> (pp_print_string f n; pp f "@ ")
                     | Ast.BFalse -> ()
                     | Ast.BAnt s -> o#anti f s
+                  
                 method anti = fun f s -> pp f "$%s$" s
+                  
                 method seq =
                   fun f ->
                     function
@@ -15303,12 +17150,14 @@ module Printers =
                         pp f "%a;@ %a" o#under_semi#seq e1 o#seq e2
                     | Ast.ExSeq (_, e) -> o#seq f e
                     | e -> o#expr f e
+                  
                 method match_case =
                   fun f ->
                     function
                     | Ast.McNil _loc ->
                         pp f "@[<2>@ _ ->@ %a@]" o#raise_match_failure _loc
                     | a -> o#match_case_aux f a
+                  
                 method match_case_aux =
                   fun f ->
                     function
@@ -15322,6 +17171,7 @@ module Printers =
                     | Ast.McArr (_, p, w, e) ->
                         pp f "@ | @[<2>%a@ when@ %a@ ->@ %a@]" o#patt p
                           o#under_pipe#expr w o#under_pipe#expr e
+                  
                 method binding =
                   fun f bi ->
                     let () = o#node f bi Ast.loc_of_binding
@@ -15346,6 +17196,7 @@ module Printers =
                                  pp f "%a @[<0>%a=@]@ %a" o#simple_patt p
                                    (list' o#simple_patt "" "@ ") pl o#expr e)
                       | Ast.BiAnt (_, s) -> o#anti f s
+                  
                 method record_binding =
                   fun f bi ->
                     let () = o#node f bi Ast.loc_of_rec_binding
@@ -15358,6 +17209,7 @@ module Printers =
                           (o#under_semi#record_binding f b1;
                            o#under_semi#record_binding f b2)
                       | Ast.RbAnt (_, s) -> o#anti f s
+                  
                 method mk_patt_list =
                   function
                   | Ast.PaApp (_,
@@ -15367,6 +17219,7 @@ module Printers =
                       let (pl, c) = o#mk_patt_list p2 in ((p1 :: pl), c)
                   | Ast.PaId (_, (Ast.IdUid (_, "[]"))) -> ([], None)
                   | p -> ([], (Some p))
+                  
                 method mk_expr_list =
                   function
                   | Ast.ExApp (_,
@@ -15376,12 +17229,14 @@ module Printers =
                       let (el, c) = o#mk_expr_list e2 in ((e1 :: el), c)
                   | Ast.ExId (_, (Ast.IdUid (_, "[]"))) -> ([], None)
                   | e -> ([], (Some e))
+                  
                 method expr_list =
                   fun f ->
                     function
                     | [] -> pp f "[]"
                     | [ e ] -> pp f "[ %a ]" o#expr e
                     | el -> pp f "@[<2>[ %a@] ]" (list o#expr ";@ ") el
+                  
                 method expr_list_cons =
                   fun simple f e ->
                     let (el, c) = o#mk_expr_list e
@@ -15393,27 +17248,35 @@ module Printers =
                            then pp f "@[<2>(%a)@]"
                            else pp f "@[<2>%a@]") (list o#dot_expr " ::@ ")
                             (el @ [ x ])
+                  
                 method patt_expr_fun_args =
                   fun f (p, e) ->
                     let (pl, e) = expr_fun_args e
                     in
                       pp f "%a@ ->@ %a" (list o#patt "@ ") (p :: pl) o#expr e
+                  
                 method patt_class_expr_fun_args =
                   fun f (p, ce) ->
                     let (pl, ce) = class_expr_fun_args ce
                     in
                       pp f "%a =@]@ %a" (list o#patt "@ ") (p :: pl)
                         o#class_expr ce
+                  
                 method constrain =
                   fun f (t1, t2) ->
                     pp f "@[<2>constraint@ %a =@ %a@]" o#ctyp t1 o#ctyp t2
+                  
                 method sum_type =
                   fun f t -> (pp_print_string f "| "; o#ctyp f t)
+                  
                 method string = fun f -> pp f "%s"
+                  
                 method quoted_string = fun f -> pp f "%S"
+                  
                 method intlike =
                   fun f s ->
                     if s.[0] = '-' then pp f "(%s)" s else pp f "%s" s
+                  
                 method module_expr_get_functor_args =
                   fun accu ->
                     function
@@ -15422,10 +17285,13 @@ module Printers =
                     | Ast.MeTyc (_, me, mt) ->
                         ((List.rev accu), me, (Some mt))
                     | me -> ((List.rev accu), me, None)
+                  
                 method functor_args = fun f -> list o#functor_arg "@ " f
+                  
                 method functor_arg =
                   fun f (s, mt) ->
                     pp f "@[<2>(%a :@ %a)@]" o#var s o#module_type mt
+                  
                 method module_rec_binding =
                   fun f ->
                     function
@@ -15440,12 +17306,14 @@ module Printers =
                          pp f andsep;
                          o#module_rec_binding f mb2)
                     | Ast.MbAnt (_, s) -> o#anti f s
+                  
                 method class_declaration =
                   fun f ->
                     function
                     | Ast.CeTyc (_, ce, ct) ->
                         pp f "%a :@ %a" o#class_expr ce o#class_type ct
                     | ce -> o#class_expr f ce
+                  
                 method raise_match_failure =
                   fun f _loc ->
                     let n = Loc.file_name _loc in
@@ -15463,9 +17331,11 @@ module Printers =
                                  Ast.ExStr (_loc, Ast.safe_string_escaped n)),
                                Ast.ExInt (_loc, string_of_int l)),
                              Ast.ExInt (_loc, string_of_int c))))
+                  
                 method node : 'a. formatter -> 'a -> ('a -> Loc.t) -> unit =
                   fun f node loc_of_node ->
                     o#print_comments_before (loc_of_node node) f
+                  
                 method ident =
                   fun f i ->
                     let () = o#node f i Ast.loc_of_ident
@@ -15477,7 +17347,9 @@ module Printers =
                           pp f "%a@,(%a)" o#ident i1 o#ident i2
                       | Ast.IdAnt (_, s) -> o#anti f s
                       | Ast.IdLid (_, s) | Ast.IdUid (_, s) -> o#var f s
+                  
                 method private var_ident = {< var_conversion = true; >}#ident
+                  
                 method expr =
                   fun f e ->
                     let () = o#node f e Ast.loc_of_expr
@@ -15568,6 +17440,7 @@ module Printers =
                           pp f "@[<2>let module %a =@ %a@]@ @[<2>in@ %a@]"
                             o#var s o#module_expr me o#reset_semi#expr e
                       | e -> o#apply_expr f e
+                  
                 method apply_expr =
                   fun f e ->
                     let () = o#node f e Ast.loc_of_expr
@@ -15575,6 +17448,7 @@ module Printers =
                       match e with
                       | Ast.ExNew (_, i) -> pp f "@[<2>new@ %a@]" o#ident i
                       | e -> o#dot_expr f e
+                  
                 method dot_expr =
                   fun f e ->
                     let () = o#node f e Ast.loc_of_expr
@@ -15592,6 +17466,7 @@ module Printers =
                       | Ast.ExSnd (_, e, s) ->
                           pp f "@[<2>%a#@,%s@]" o#dot_expr e s
                       | e -> o#simple_expr f e
+                  
                 method simple_expr =
                   fun f e ->
                     let () = o#node f e Ast.loc_of_expr
@@ -15668,12 +17543,14 @@ module Printers =
                           Ast.ExLet (_, _, _, _) | Ast.ExLmd (_, _, _, _) |
                           Ast.ExAsr (_, _) | Ast.ExAsf _ | Ast.ExLaz (_, _) |
                           Ast.ExNew (_, _) -> pp f "(%a)" o#reset#expr e
+                  
                 method direction_flag =
                   fun f b ->
                     match b with
                     | Ast.BTrue -> pp_print_string f "to"
                     | Ast.BFalse -> pp_print_string f "downto"
                     | Ast.BAnt s -> o#anti f s
+                  
                 method patt =
                   fun f p ->
                     let () = o#node f p Ast.loc_of_patt
@@ -15686,13 +17563,16 @@ module Printers =
                       | Ast.PaSem (_, p1, p2) ->
                           pp f "%a;@ %a" o#patt p1 o#patt p2
                       | p -> o#patt1 f p
+                  
                 method patt1 =
                   fun f ->
                     function
                     | Ast.PaOrp (_, p1, p2) ->
                         pp f "@[<2>%a@ |@ %a@]" o#patt1 p1 o#patt2 p2
                     | p -> o#patt2 f p
+                  
                 method patt2 = fun f p -> o#patt3 f p
+                  
                 method patt3 =
                   fun f ->
                     function
@@ -15701,6 +17581,7 @@ module Printers =
                     | Ast.PaCom (_, p1, p2) ->
                         pp f "%a,@ %a" o#patt3 p1 o#patt3 p2
                     | p -> o#patt4 f p
+                  
                 method patt4 =
                   fun f ->
                     function
@@ -15718,6 +17599,7 @@ module Printers =
                                pp f "@[<2>%a@]" (list o#patt5 " ::@ ")
                                  (pl @ [ x ]))
                     | p -> o#patt5 f p
+                  
                 method patt5 =
                   fun f ->
                     function
@@ -15746,6 +17628,7 @@ module Printers =
                             pp f "@[<2>%a@]" (list o#simple_patt "@ ")
                               (a :: al)
                     | p -> o#simple_patt f p
+                  
                 method simple_patt =
                   fun f p ->
                     let () = o#node f p Ast.loc_of_patt
@@ -15786,6 +17669,7 @@ module Printers =
                            Ast.PaCom (_, _, _) | Ast.PaSem (_, _, _) |
                            Ast.PaEq (_, _, _)
                          as p) -> pp f "@[<1>(%a)@]" o#patt p
+                  
                 method simple_ctyp =
                   fun f t ->
                     let () = o#node f t Ast.loc_of_ctyp
@@ -15825,6 +17709,7 @@ module Printers =
                       | Ast.TySta (_, t1, t2) ->
                           pp f "%a *@ %a" o#simple_ctyp t1 o#simple_ctyp t2
                       | t -> pp f "@[<1>(%a)@]" o#ctyp t
+                  
                 method ctyp =
                   fun f t ->
                     let () = o#node f t Ast.loc_of_ctyp
@@ -15867,6 +17752,7 @@ module Printers =
                            then pp f "@ %a" (list o#constrain "@ ") cl
                            else ())
                       | t -> o#ctyp1 f t
+                  
                 method ctyp1 =
                   fun f ->
                     function
@@ -15886,6 +17772,7 @@ module Printers =
                     | Ast.TyPrv (_, t) ->
                         pp f "@[private@ %a@]" o#simple_ctyp t
                     | t -> o#simple_ctyp f t
+                  
                 method constructor_type =
                   fun f t ->
                     match t with
@@ -15896,6 +17783,7 @@ module Printers =
                             o#constructor_type t2
                     | Ast.TyArr (_, _, _) -> pp f "(%a)" o#ctyp t
                     | t -> o#ctyp f t
+                  
                 method sig_item =
                   fun f sg ->
                     let () = o#node f sg Ast.loc_of_sig_item
@@ -15907,11 +17795,11 @@ module Printers =
                       | Ast.SgSem (_, sg1, sg2) ->
                           (o#sig_item f sg1; cut f; o#sig_item f sg2)
                       | Ast.SgExc (_, t) ->
-                          pp f "@[<2>exception@ %a%s@]" o#ctyp t semisep
+                          pp f "@[<2>exception@ %a%(%)@]" o#ctyp t semisep
                       | Ast.SgExt (_, s, t, sl) ->
-                          pp f "@[<2>external@ %a :@ %a =@ %a%s@]" o#var s
-                            o#ctyp t (meta_list o#quoted_string "@ ") sl
-                            semisep
+                          pp f "@[<2>external@ %a :@ %a =@ %a%(%)@]" 
+                            o#var s o#ctyp t (meta_list o#quoted_string "@ ")
+                            sl semisep
                       | Ast.SgMod (_, s1, (Ast.MtFun (_, s2, mt1, mt2))) ->
                           let rec loop accu =
                             (function
@@ -15920,37 +17808,39 @@ module Printers =
                              | mt -> ((List.rev accu), mt)) in
                           let (al, mt) = loop [ (s2, mt1) ] mt2
                           in
-                            pp f "@[<2>module %a@ @[<0>%a@] :@ %a%s@]" 
+                            pp f "@[<2>module %a@ @[<0>%a@] :@ %a%(%)@]"
                               o#var s1 o#functor_args al o#module_type mt
                               semisep
                       | Ast.SgMod (_, s, mt) ->
-                          pp f "@[<2>module %a :@ %a%s@]" o#var s
+                          pp f "@[<2>module %a :@ %a%(%)@]" o#var s
                             o#module_type mt semisep
                       | Ast.SgMty (_, s, (Ast.MtNil _)) ->
-                          pp f "@[<2>module type %a%s@]" o#var s semisep
+                          pp f "@[<2>module type %a%(%)@]" o#var s semisep
                       | Ast.SgMty (_, s, mt) ->
-                          pp f "@[<2>module type %a =@ %a%s@]" o#var s
+                          pp f "@[<2>module type %a =@ %a%(%)@]" o#var s
                             o#module_type mt semisep
                       | Ast.SgOpn (_, sl) ->
-                          pp f "@[<2>open@ %a%s@]" o#ident sl semisep
+                          pp f "@[<2>open@ %a%(%)@]" o#ident sl semisep
                       | Ast.SgTyp (_, t) ->
-                          pp f "@[<hv0>@[<hv2>type %a@]%s@]" o#ctyp t semisep
+                          pp f "@[<hv0>@[<hv2>type %a@]%(%)@]" o#ctyp t
+                            semisep
                       | Ast.SgVal (_, s, t) ->
-                          pp f "@[<2>%s %a :@ %a%s@]" value_val o#var s
+                          pp f "@[<2>%s %a :@ %a%(%)@]" value_val o#var s
                             o#ctyp t semisep
                       | Ast.SgInc (_, mt) ->
-                          pp f "@[<2>include@ %a%s@]" o#module_type mt
+                          pp f "@[<2>include@ %a%(%)@]" o#module_type mt
                             semisep
                       | Ast.SgClt (_, ct) ->
-                          pp f "@[<2>class type %a%s@]" o#class_type ct
+                          pp f "@[<2>class type %a%(%)@]" o#class_type ct
                             semisep
                       | Ast.SgCls (_, ce) ->
-                          pp f "@[<2>class %a%s@]" o#class_type ce semisep
+                          pp f "@[<2>class %a%(%)@]" o#class_type ce semisep
                       | Ast.SgRecMod (_, mb) ->
-                          pp f "@[<2>module rec %a%s@]" o#module_rec_binding
-                            mb semisep
+                          pp f "@[<2>module rec %a%(%)@]"
+                            o#module_rec_binding mb semisep
                       | Ast.SgDir (_, _, _) -> ()
-                      | Ast.SgAnt (_, s) -> pp f "%a%s" o#anti s semisep
+                      | Ast.SgAnt (_, s) -> pp f "%a%(%)" o#anti s semisep
+                  
                 method str_item =
                   fun f st ->
                     let () = o#node f st Ast.loc_of_str_item
@@ -15962,60 +17852,62 @@ module Printers =
                       | Ast.StSem (_, st1, st2) ->
                           (o#str_item f st1; cut f; o#str_item f st2)
                       | Ast.StExc (_, t, Ast.ONone) ->
-                          pp f "@[<2>exception@ %a%s@]" o#ctyp t semisep
+                          pp f "@[<2>exception@ %a%(%)@]" o#ctyp t semisep
                       | Ast.StExc (_, t, (Ast.OSome sl)) ->
-                          pp f "@[<2>exception@ %a =@ %a%s@]" o#ctyp t
+                          pp f "@[<2>exception@ %a =@ %a%(%)@]" o#ctyp t
                             o#ident sl semisep
                       | Ast.StExt (_, s, t, sl) ->
-                          pp f "@[<2>external@ %a :@ %a =@ %a%s@]" o#var s
-                            o#ctyp t (meta_list o#quoted_string "@ ") sl
-                            semisep
+                          pp f "@[<2>external@ %a :@ %a =@ %a%(%)@]" 
+                            o#var s o#ctyp t (meta_list o#quoted_string "@ ")
+                            sl semisep
                       | Ast.StMod (_, s1, (Ast.MeFun (_, s2, mt1, me))) ->
                           (match o#module_expr_get_functor_args [ (s2, mt1) ]
                                    me
                            with
                            | (al, me, Some mt2) ->
                                pp f
-                                 "@[<2>module %a@ @[<0>%a@] :@ %a =@ %a%s@]"
+                                 "@[<2>module %a@ @[<0>%a@] :@ %a =@ %a%(%)@]"
                                  o#var s1 o#functor_args al o#module_type mt2
                                  o#module_expr me semisep
                            | (al, me, _) ->
-                               pp f "@[<2>module %a@ @[<0>%a@] =@ %a%s@]"
+                               pp f "@[<2>module %a@ @[<0>%a@] =@ %a%(%)@]"
                                  o#var s1 o#functor_args al o#module_expr me
                                  semisep)
                       | Ast.StMod (_, s, (Ast.MeTyc (_, me, mt))) ->
-                          pp f "@[<2>module %a :@ %a =@ %a%s@]" o#var s
+                          pp f "@[<2>module %a :@ %a =@ %a%(%)@]" o#var s
                             o#module_type mt o#module_expr me semisep
                       | Ast.StMod (_, s, me) ->
-                          pp f "@[<2>module %a =@ %a%s@]" o#var s
+                          pp f "@[<2>module %a =@ %a%(%)@]" o#var s
                             o#module_expr me semisep
                       | Ast.StMty (_, s, mt) ->
-                          pp f "@[<2>module type %a =@ %a%s@]" o#var s
+                          pp f "@[<2>module type %a =@ %a%(%)@]" o#var s
                             o#module_type mt semisep
                       | Ast.StOpn (_, sl) ->
-                          pp f "@[<2>open@ %a%s@]" o#ident sl semisep
+                          pp f "@[<2>open@ %a%(%)@]" o#ident sl semisep
                       | Ast.StTyp (_, t) ->
-                          pp f "@[<hv0>@[<hv2>type %a@]%s@]" o#ctyp t semisep
+                          pp f "@[<hv0>@[<hv2>type %a@]%(%)@]" o#ctyp t
+                            semisep
                       | Ast.StVal (_, r, bi) ->
-                          pp f "@[<2>%s %a%a%s@]" value_let o#rec_flag r
+                          pp f "@[<2>%s %a%a%(%)@]" value_let o#rec_flag r
                             o#binding bi semisep
                       | Ast.StExp (_, e) ->
-                          pp f "@[<2>let _ =@ %a%s@]" o#expr e semisep
+                          pp f "@[<2>let _ =@ %a%(%)@]" o#expr e semisep
                       | Ast.StInc (_, me) ->
-                          pp f "@[<2>include@ %a%s@]" o#module_expr me
+                          pp f "@[<2>include@ %a%(%)@]" o#module_expr me
                             semisep
                       | Ast.StClt (_, ct) ->
-                          pp f "@[<2>class type %a%s@]" o#class_type ct
+                          pp f "@[<2>class type %a%(%)@]" o#class_type ct
                             semisep
                       | Ast.StCls (_, ce) ->
-                          pp f "@[<hv2>class %a%s@]" o#class_declaration ce
+                          pp f "@[<hv2>class %a%(%)@]" o#class_declaration ce
                             semisep
                       | Ast.StRecMod (_, mb) ->
-                          pp f "@[<2>module rec %a%s@]" o#module_rec_binding
-                            mb semisep
+                          pp f "@[<2>module rec %a%(%)@]"
+                            o#module_rec_binding mb semisep
                       | Ast.StDir (_, _, _) -> ()
-                      | Ast.StAnt (_, s) -> pp f "%a%s" o#anti s semisep
+                      | Ast.StAnt (_, s) -> pp f "%a%(%)" o#anti s semisep
                       | Ast.StExc (_, _, (Ast.OAnt _)) -> assert false
+                  
                 method module_type =
                   fun f mt ->
                     let () = o#node f mt Ast.loc_of_module_type
@@ -16033,6 +17925,7 @@ module Printers =
                       | Ast.MtWit (_, mt, wc) ->
                           pp f "@[<2>%a@ with@ %a@]" o#module_type mt
                             o#with_constraint wc
+                  
                 method with_constraint =
                   fun f wc ->
                     let () = o#node f wc Ast.loc_of_with_constr
@@ -16049,6 +17942,7 @@ module Printers =
                            pp f andsep;
                            o#with_constraint f wc2)
                       | Ast.WcAnt (_, s) -> o#anti f s
+                  
                 method module_expr =
                   fun f me ->
                     let () = o#node f me Ast.loc_of_module_expr
@@ -16074,6 +17968,7 @@ module Printers =
                       | Ast.MeTyc (_, me, mt) ->
                           pp f "@[<1>(%a :@ %a)@]" o#module_expr me
                             o#module_type mt
+                  
                 method class_expr =
                   fun f ce ->
                     let () = o#node f ce Ast.loc_of_class_expr
@@ -16120,6 +18015,7 @@ module Printers =
                           pp f "@[<2>%a =@]@ %a" o#class_expr ce1
                             o#class_expr ce2
                       | _ -> assert false
+                  
                 method class_type =
                   fun f ct ->
                     let () = o#node f ct Ast.loc_of_class_type
@@ -16155,6 +18051,7 @@ module Printers =
                       | Ast.CtEq (_, ct1, ct2) ->
                           pp f "%a =@ %a" o#class_type ct1 o#class_type ct2
                       | _ -> assert false
+                  
                 method class_sig_item =
                   fun f csg ->
                     let () = o#node f csg Ast.loc_of_class_sig_item
@@ -16169,21 +18066,23 @@ module Printers =
                            cut f;
                            o#class_sig_item f csg2)
                       | Ast.CgCtr (_, t1, t2) ->
-                          pp f "@[<2>type@ %a =@ %a%s@]" o#ctyp t1 o#ctyp t2
-                            semisep
+                          pp f "@[<2>type@ %a =@ %a%(%)@]" o#ctyp t1 
+                            o#ctyp t2 semisep
                       | Ast.CgInh (_, ct) ->
-                          pp f "@[<2>inherit@ %a%s@]" o#class_type ct semisep
+                          pp f "@[<2>inherit@ %a%(%)@]" o#class_type ct
+                            semisep
                       | Ast.CgMth (_, s, pr, t) ->
-                          pp f "@[<2>method %a%a :@ %a%s@]" o#private_flag pr
-                            o#var s o#ctyp t semisep
+                          pp f "@[<2>method %a%a :@ %a%(%)@]" o#private_flag
+                            pr o#var s o#ctyp t semisep
                       | Ast.CgVir (_, s, pr, t) ->
-                          pp f "@[<2>method virtual %a%a :@ %a%s@]"
+                          pp f "@[<2>method virtual %a%a :@ %a%(%)@]"
                             o#private_flag pr o#var s o#ctyp t semisep
                       | Ast.CgVal (_, s, mu, vi, t) ->
-                          pp f "@[<2>%s %a%a%a :@ %a%s@]" value_val
+                          pp f "@[<2>%s %a%a%a :@ %a%(%)@]" value_val
                             o#mutable_flag mu o#virtual_flag vi o#var s
                             o#ctyp t semisep
-                      | Ast.CgAnt (_, s) -> pp f "%a%s" o#anti s semisep
+                      | Ast.CgAnt (_, s) -> pp f "%a%(%)" o#anti s semisep
+                  
                 method class_str_item =
                   fun f cst ->
                     let () = o#node f cst Ast.loc_of_class_str_item
@@ -16198,40 +18097,45 @@ module Printers =
                            cut f;
                            o#class_str_item f cst2)
                       | Ast.CrCtr (_, t1, t2) ->
-                          pp f "@[<2>type %a =@ %a%s@]" o#ctyp t1 o#ctyp t2
+                          pp f "@[<2>type %a =@ %a%(%)@]" o#ctyp t1 o#ctyp t2
                             semisep
                       | Ast.CrInh (_, ce, "") ->
-                          pp f "@[<2>inherit@ %a%s@]" o#class_expr ce semisep
+                          pp f "@[<2>inherit@ %a%(%)@]" o#class_expr ce
+                            semisep
                       | Ast.CrInh (_, ce, s) ->
-                          pp f "@[<2>inherit@ %a as@ %a%s@]" o#class_expr ce
-                            o#var s semisep
+                          pp f "@[<2>inherit@ %a as@ %a%(%)@]" o#class_expr
+                            ce o#var s semisep
                       | Ast.CrIni (_, e) ->
-                          pp f "@[<2>initializer@ %a%s@]" o#expr e semisep
+                          pp f "@[<2>initializer@ %a%(%)@]" o#expr e semisep
                       | Ast.CrMth (_, s, pr, e, (Ast.TyNil _)) ->
-                          pp f "@[<2>method %a%a =@ %a%s@]" o#private_flag pr
-                            o#var s o#expr e semisep
+                          pp f "@[<2>method %a%a =@ %a%(%)@]" o#private_flag
+                            pr o#var s o#expr e semisep
                       | Ast.CrMth (_, s, pr, e, t) ->
-                          pp f "@[<2>method %a%a :@ %a =@ %a%s@]"
+                          pp f "@[<2>method %a%a :@ %a =@ %a%(%)@]"
                             o#private_flag pr o#var s o#ctyp t o#expr e
                             semisep
                       | Ast.CrVir (_, s, pr, t) ->
-                          pp f "@[<2>method virtual@ %a%a :@ %a%s@]"
+                          pp f "@[<2>method virtual@ %a%a :@ %a%(%)@]"
                             o#private_flag pr o#var s o#ctyp t semisep
                       | Ast.CrVvr (_, s, mu, t) ->
-                          pp f "@[<2>%s virtual %a%a :@ %a%s@]" value_val
+                          pp f "@[<2>%s virtual %a%a :@ %a%(%)@]" value_val
                             o#mutable_flag mu o#var s o#ctyp t semisep
                       | Ast.CrVal (_, s, mu, e) ->
-                          pp f "@[<2>%s %a%a =@ %a%s@]" value_val
+                          pp f "@[<2>%s %a%a =@ %a%(%)@]" value_val
                             o#mutable_flag mu o#var s o#expr e semisep
-                      | Ast.CrAnt (_, s) -> pp f "%a%s" o#anti s semisep
+                      | Ast.CrAnt (_, s) -> pp f "%a%(%)" o#anti s semisep
+                  
                 method implem =
                   fun f st ->
                     match st with
                     | Ast.StExp (_, e) ->
-                        pp f "@[<0>%a%s@]@." o#expr e semisep
+                        pp f "@[<0>%a%(%)@]@." o#expr e semisep
                     | st -> pp f "@[<v0>%a@]@." o#str_item st
+                  
                 method interf = fun f sg -> pp f "@[<v0>%a@]@." o#sig_item sg
+                  
               end
+              
             let with_outfile output_file fct arg =
               let call close f =
                 ((try fct f arg with | exn -> (close (); raise exn));
@@ -16243,94 +18147,144 @@ module Printers =
                     let oc = open_out s in
                     let f = formatter_of_out_channel oc
                     in call (fun () -> close_out oc) f
+              
             let print output_file fct =
               let o = new printer () in with_outfile output_file (fct o)
+              
             let print_interf ?input_file:(_) ?output_file sg =
               print output_file (fun o -> o#interf) sg
+              
             let print_implem ?input_file:(_) ?output_file st =
               print output_file (fun o -> o#implem) st
+              
           end
+          
         module MakeMore (Syntax : Sig.Camlp4Syntax) : Sig.Printer(Syntax.
           Ast).S =
           struct
             include Make(Syntax)
-            let semisep = ref false
+              
+            let semisep : sep ref = ref ("@\n" : sep)
+              
             let margin = ref 78
+              
             let comments = ref true
+              
             let locations = ref false
+              
             let curry_constr = ref false
+              
             let print output_file fct =
               let o =
                 new printer ~comments: !comments ~curry_constr: !curry_constr
                   () in
-              let o =
-                if !semisep then o#set_semisep ";;" else o#set_semisep "" in
+              let o = o#set_semisep !semisep in
               let o = if !locations then o#set_loc_and_comments else o
               in
                 with_outfile output_file
                   (fun f ->
                      let () = Format.pp_set_margin f !margin
                      in Format.fprintf f "@[<v0>%a@]@." (fct o))
+              
             let print_interf ?input_file:(_) ?output_file sg =
               print output_file (fun o -> o#interf) sg
+              
             let print_implem ?input_file:(_) ?output_file st =
               print output_file (fun o -> o#implem) st
+              
+            let check_sep s =
+              if String.contains s '%'
+              then failwith "-sep Format error, % found in string"
+              else (Obj.magic (Struct.Token.Eval.string s : string) : sep)
+              
             let _ =
               Options.add "-l" (Arg.Int (fun i -> margin := i))
                 "<length> line length for pretty printing."
+              
             let _ =
-              Options.add "-ss" (Arg.Set semisep) "Print double semicolons."
+              Options.add "-ss" (Arg.Unit (fun () -> semisep := ";;"))
+                " Print double semicolons."
+              
+            let _ =
+              Options.add "-no_ss" (Arg.Unit (fun () -> semisep := ""))
+                " Do not print double semicolons (default)."
+              
+            let _ =
+              Options.add "-sep"
+                (Arg.String (fun s -> semisep := check_sep s))
+                " Use this string between phrases."
+              
             let _ =
               Options.add "-curry-constr" (Arg.Set curry_constr)
                 "Use currified constructors."
-            let _ =
-              Options.add "-no_ss" (Arg.Clear semisep)
-                "Do not print double semicolons (default)."
+              
             let _ =
               Options.add "-no_comments" (Arg.Clear comments)
                 "Do not add comments."
+              
             let _ =
               Options.add "-add_locations" (Arg.Set locations)
                 "Add locations as comment."
+              
           end
+          
       end
+      
     module OCamlr :
       sig
         module Id : Sig.Id
+          
         module Make (Syntax : Sig.Camlp4Syntax) :
           sig
             open Format
+              
             include Sig.Camlp4Syntax with module Loc = Syntax.Loc
               and module Token = Syntax.Token and module Ast = Syntax.Ast
               and module Gram = Syntax.Gram
+              
             class printer :
               ?curry_constr: bool ->
                 ?comments: bool ->
-                  unit -> object ('a) inherit OCaml.Make(Syntax).printer end
+                  unit -> object ('a) inherit OCaml.Make(Syntax).printer
+                                         end
+              
             val with_outfile :
               string option -> (formatter -> 'a -> unit) -> 'a -> unit
+              
             val print :
               string option ->
                 (printer -> formatter -> 'a -> unit) -> 'a -> unit
+              
           end
+          
         module MakeMore (Syntax : Sig.Camlp4Syntax) : Sig.Printer(Syntax.
           Ast).S
+          
       end =
       struct
         open Format
+          
         module Id =
           struct
             let name = "Camlp4.Printers.OCamlr"
+              
             let version =
               "$Id: OCamlr.ml,v 1.17.4.4 2007/05/10 22:43:18 pouillar Exp $"
+              
           end
+          
         module Make (Syntax : Sig.Camlp4Syntax) =
           struct
             include Syntax
+              
             open Sig
+              
             module PP_o = OCaml.Make(Syntax)
+              
             open PP_o
+              
             let pp = fprintf
+              
             let is_keyword =
               let keywords = [ "where" ]
               and not_keywords = [ "false"; "function"; "true"; "val" ]
@@ -16338,28 +18292,42 @@ module Printers =
                 fun s ->
                   (not (List.mem s not_keywords)) &&
                     ((is_keyword s) || (List.mem s keywords))
+              
             class printer ?curry_constr:(init_curry_constr = true)
                     ?(comments = true) () =
               object (o)
                 inherit
                   PP_o.printer ~curry_constr: init_curry_constr ~comments () as
                   super
-                val semisep = ";"
-                val andsep =
-                  ("@]@ @[<2>and@ " : (unit, formatter, unit) format)
+                  
+                val semisep = (";" : sep)
+                  
+                val andsep = ("@]@ @[<2>and@ " : sep)
+                  
                 val value_val = "value"
+                  
                 val value_let = "value"
+                  
                 val mode = if comments then `comments else `no_comments
+                  
                 val curry_constr = init_curry_constr
+                  
                 val first_match_case = true
+                  
                 method under_pipe = o
+                  
                 method under_semi = o
+                  
                 method reset_semi = o
+                  
                 method reset = o
+                  
                 method private unset_first_match_case =
                   {< first_match_case = false; >}
+                  
                 method private set_first_match_case =
                   {< first_match_case = true; >}
+                  
                 method seq =
                   fun f e ->
                     let rec self right f e =
@@ -16383,6 +18351,7 @@ module Printers =
                               | _ -> go_right f e2))
                         | e -> o#expr f e
                     in self true f e
+                  
                 method var =
                   fun f ->
                     function
@@ -16402,12 +18371,14 @@ module Printers =
                              failwith
                                (sprintf "Bad token used as an identifier: %s"
                                   (Token.to_string tok)))
+                  
                 method type_params =
                   fun f ->
                     function
                     | [] -> ()
                     | [ x ] -> pp f "@ %a" o#ctyp x
                     | l -> pp f "@ @[<1>%a@]" (list o#ctyp "@ ") l
+                  
                 method match_case =
                   fun f ->
                     function
@@ -16415,6 +18386,7 @@ module Printers =
                     | m ->
                         pp f "@ [ %a ]" o#set_first_match_case#match_case_aux
                           m
+                  
                 method match_case_aux =
                   fun f ->
                     function
@@ -16433,7 +18405,9 @@ module Printers =
                         in
                           pp f "@[<2>%a@ when@ %a@ ->@ %a@]" o#patt p
                             o#under_pipe#expr w o#under_pipe#expr e
+                  
                 method sum_type = fun f t -> pp f "@[<hv0>[ %a ]@]" o#ctyp t
+                  
                 method ident =
                   fun f i ->
                     let () = o#node f i Ast.loc_of_ident
@@ -16442,6 +18416,7 @@ module Printers =
                       | Ast.IdApp (_, i1, i2) ->
                           pp f "%a@ %a" o#dot_ident i1 o#dot_ident i2
                       | i -> o#dot_ident f i
+                  
                 method private dot_ident =
                   fun f i ->
                     let () = o#node f i Ast.loc_of_ident
@@ -16452,6 +18427,7 @@ module Printers =
                       | Ast.IdAnt (_, s) -> o#anti f s
                       | Ast.IdLid (_, s) | Ast.IdUid (_, s) -> o#var f s
                       | i -> pp f "(%a)" o#ident i
+                  
                 method patt4 =
                   fun f ->
                     function
@@ -16469,6 +18445,7 @@ module Printers =
                                pp f "@[<2>[ %a ::@ %a ]@]"
                                  (list o#patt ";@ ") pl o#patt x)
                     | p -> super#patt4 f p
+                  
                 method expr_list_cons =
                   fun _ f e ->
                     let (el, c) = o#mk_expr_list e
@@ -16478,6 +18455,7 @@ module Printers =
                       | Some x ->
                           pp f "@[<2>[ %a ::@ %a ]@]" (list o#expr ";@ ") el
                             o#expr x
+                  
                 method expr =
                   fun f e ->
                     let () = o#node f e Ast.loc_of_expr
@@ -16492,6 +18470,7 @@ module Printers =
                           pp f "@[<hv0>fun%a@]" o#match_case a
                       | Ast.ExAsf _ -> pp f "@[<2>assert@ False@]"
                       | e -> super#expr f e
+                  
                 method dot_expr =
                   fun f e ->
                     let () = o#node f e Ast.loc_of_expr
@@ -16501,6 +18480,7 @@ module Printers =
                           (Ast.ExId (_, (Ast.IdLid (_, "val"))))) ->
                           pp f "@[<2>%a.@,val@]" o#simple_expr e
                       | e -> super#dot_expr f e
+                  
                 method ctyp =
                   fun f t ->
                     let () = o#node f t Ast.loc_of_ctyp
@@ -16517,6 +18497,7 @@ module Printers =
                       | Ast.TyCol (_, t1, (Ast.TyMut (_, t2))) ->
                           pp f "@[%a :@ mutable %a@]" o#ctyp t1 o#ctyp t2
                       | t -> super#ctyp f t
+                  
                 method simple_ctyp =
                   fun f t ->
                     let () = o#node f t Ast.loc_of_ctyp
@@ -16536,6 +18517,7 @@ module Printers =
                       | Ast.TyLab (_, s, t) ->
                           pp f "@[<2>~%s:@ %a@]" s o#simple_ctyp t
                       | t -> super#simple_ctyp f t
+                  
                 method ctyp1 =
                   fun f ->
                     function
@@ -16553,6 +18535,7 @@ module Printers =
                           pp f "@[<2>! %a.@ %a@]" (list o#ctyp "@ ")
                             (a :: al) o#ctyp t2
                     | t -> super#ctyp1 f t
+                  
                 method constructor_type =
                   fun f t ->
                     match t with
@@ -16562,11 +18545,14 @@ module Printers =
                           pp f "%a@ and %a" o#constructor_type t1
                             o#constructor_type t2
                     | t -> o#ctyp f t
+                  
                 method str_item =
                   fun f st ->
                     match st with
-                    | Ast.StExp (_, e) -> pp f "@[<2>%a%s@]" o#expr e semisep
+                    | Ast.StExp (_, e) ->
+                        pp f "@[<2>%a%(%)@]" o#expr e semisep
                     | st -> super#str_item f st
+                  
                 method module_expr =
                   fun f me ->
                     let () = o#node f me Ast.loc_of_module_expr
@@ -16576,7 +18562,9 @@ module Printers =
                           pp f "@[<2>%a@,(%a)@]" o#module_expr me1
                             o#module_expr me2
                       | me -> super#module_expr f me
+                  
                 method implem = fun f st -> pp f "@[<v0>%a@]@." o#str_item st
+                  
                 method class_type =
                   fun f ct ->
                     let () = o#node f ct Ast.loc_of_class_type
@@ -16596,6 +18584,7 @@ module Printers =
                           pp f "@[<2>virtual@ %a@ [@,%a@]@,]" o#var i
                             o#class_params t
                       | ct -> super#class_type f ct
+                  
                 method class_expr =
                   fun f ce ->
                     let () = o#node f ce Ast.loc_of_class_expr
@@ -16612,20 +18601,32 @@ module Printers =
                           pp f "@[<2>virtual@ %a@ @[<1>[%a]@]@]" o#var i
                             o#ctyp t
                       | ce -> super#class_expr f ce
+                  
               end
+              
             let with_outfile = with_outfile
+              
             let print = print
+              
             let print_interf = print_interf
+              
             let print_implem = print_implem
+              
           end
+          
         module MakeMore (Syntax : Sig.Camlp4Syntax) : Sig.Printer(Syntax.
           Ast).S =
           struct
             include Make(Syntax)
+              
             let margin = ref 78
+              
             let comments = ref true
+              
             let locations = ref false
+              
             let curry_constr = ref true
+              
             let print output_file fct =
               let o =
                 new printer ~comments: !comments ~curry_constr: !curry_constr
@@ -16636,22 +18637,31 @@ module Printers =
                   (fun f ->
                      let () = Format.pp_set_margin f !margin
                      in Format.fprintf f "@[<v0>%a@]@." (fct o))
+              
             let print_interf ?input_file:(_) ?output_file sg =
               print output_file (fun o -> o#interf) sg
+              
             let print_implem ?input_file:(_) ?output_file st =
               print output_file (fun o -> o#implem) st
+              
             let _ =
               Options.add "-l" (Arg.Int (fun i -> margin := i))
                 "<length> line length for pretty printing."
+              
             let _ =
               Options.add "-no_comments" (Arg.Clear comments)
                 "Do not add comments."
+              
             let _ =
               Options.add "-add_locations" (Arg.Set locations)
                 "Add locations as comment."
+              
           end
+          
       end
+      
   end
+  
 module OCamlInitSyntax =
   struct
     module Make
@@ -16662,194 +18672,357 @@ module OCamlInitSyntax =
       (Quotation : Sig.Quotation with module Ast = Sig.Camlp4AstToAst(Ast)) :
       Sig.Camlp4Syntax with module Loc = Ast.Loc and module Ast = Ast
       and module Token = Gram.Token and module Gram = Gram
-      and module AntiquotSyntax.Ast = Sig.Camlp4AstToAst(Ast)
       and module Quotation = Quotation =
       struct
         module Loc = Ast.Loc
+          
         module Ast = Ast
+          
         module Gram = Gram
+          
         module Token = Gram.Token
+          
         open Sig
+          
         type warning = Loc.t -> string -> unit
+        
         let default_warning loc txt =
           Format.eprintf "<W> %a: %s@." Loc.print loc txt
+          
         let current_warning = ref default_warning
+          
         let print_warning loc txt = !current_warning loc txt
+          
         let a_CHAR = Gram.Entry.mk "a_CHAR"
+          
         let a_FLOAT = Gram.Entry.mk "a_FLOAT"
+          
         let a_INT = Gram.Entry.mk "a_INT"
+          
         let a_INT32 = Gram.Entry.mk "a_INT32"
+          
         let a_INT64 = Gram.Entry.mk "a_INT64"
+          
         let a_LABEL = Gram.Entry.mk "a_LABEL"
+          
         let a_LIDENT = Gram.Entry.mk "a_LIDENT"
+          
         let a_NATIVEINT = Gram.Entry.mk "a_NATIVEINT"
+          
         let a_OPTLABEL = Gram.Entry.mk "a_OPTLABEL"
+          
         let a_STRING = Gram.Entry.mk "a_STRING"
+          
         let a_UIDENT = Gram.Entry.mk "a_UIDENT"
+          
         let a_ident = Gram.Entry.mk "a_ident"
+          
         let amp_ctyp = Gram.Entry.mk "amp_ctyp"
+          
         let and_ctyp = Gram.Entry.mk "and_ctyp"
+          
         let match_case = Gram.Entry.mk "match_case"
+          
         let match_case0 = Gram.Entry.mk "match_case0"
+          
         let binding = Gram.Entry.mk "binding"
+          
         let class_declaration = Gram.Entry.mk "class_declaration"
+          
         let class_description = Gram.Entry.mk "class_description"
+          
         let class_expr = Gram.Entry.mk "class_expr"
+          
         let class_fun_binding = Gram.Entry.mk "class_fun_binding"
+          
         let class_fun_def = Gram.Entry.mk "class_fun_def"
+          
         let class_info_for_class_expr =
           Gram.Entry.mk "class_info_for_class_expr"
+          
         let class_info_for_class_type =
           Gram.Entry.mk "class_info_for_class_type"
+          
         let class_longident = Gram.Entry.mk "class_longident"
+          
         let class_longident_and_param =
           Gram.Entry.mk "class_longident_and_param"
+          
         let class_name_and_param = Gram.Entry.mk "class_name_and_param"
+          
         let class_sig_item = Gram.Entry.mk "class_sig_item"
+          
         let class_signature = Gram.Entry.mk "class_signature"
+          
         let class_str_item = Gram.Entry.mk "class_str_item"
+          
         let class_structure = Gram.Entry.mk "class_structure"
+          
         let class_type = Gram.Entry.mk "class_type"
+          
         let class_type_declaration = Gram.Entry.mk "class_type_declaration"
+          
         let class_type_longident = Gram.Entry.mk "class_type_longident"
+          
         let class_type_longident_and_param =
           Gram.Entry.mk "class_type_longident_and_param"
+          
         let class_type_plus = Gram.Entry.mk "class_type_plus"
+          
         let comma_ctyp = Gram.Entry.mk "comma_ctyp"
+          
         let comma_expr = Gram.Entry.mk "comma_expr"
+          
         let comma_ipatt = Gram.Entry.mk "comma_ipatt"
+          
         let comma_patt = Gram.Entry.mk "comma_patt"
+          
         let comma_type_parameter = Gram.Entry.mk "comma_type_parameter"
+          
         let constrain = Gram.Entry.mk "constrain"
+          
         let constructor_arg_list = Gram.Entry.mk "constructor_arg_list"
+          
         let constructor_declaration = Gram.Entry.mk "constructor_declaration"
+          
         let constructor_declarations =
           Gram.Entry.mk "constructor_declarations"
+          
         let ctyp = Gram.Entry.mk "ctyp"
+          
         let cvalue_binding = Gram.Entry.mk "cvalue_binding"
+          
         let direction_flag = Gram.Entry.mk "direction_flag"
+          
         let dummy = Gram.Entry.mk "dummy"
+          
         let entry_eoi = Gram.Entry.mk "entry_eoi"
+          
         let eq_expr = Gram.Entry.mk "eq_expr"
+          
         let expr = Gram.Entry.mk "expr"
+          
         let expr_eoi = Gram.Entry.mk "expr_eoi"
+          
         let field_expr = Gram.Entry.mk "field_expr"
+          
         let fun_binding = Gram.Entry.mk "fun_binding"
+          
         let fun_def = Gram.Entry.mk "fun_def"
+          
         let ident = Gram.Entry.mk "ident"
+          
         let implem = Gram.Entry.mk "implem"
+          
         let interf = Gram.Entry.mk "interf"
+          
         let ipatt = Gram.Entry.mk "ipatt"
+          
         let ipatt_tcon = Gram.Entry.mk "ipatt_tcon"
+          
         let label = Gram.Entry.mk "label"
+          
         let label_declaration = Gram.Entry.mk "label_declaration"
+          
         let label_expr = Gram.Entry.mk "label_expr"
+          
         let label_ipatt = Gram.Entry.mk "label_ipatt"
+          
         let label_longident = Gram.Entry.mk "label_longident"
+          
         let label_patt = Gram.Entry.mk "label_patt"
+          
         let labeled_ipatt = Gram.Entry.mk "labeled_ipatt"
+          
         let let_binding = Gram.Entry.mk "let_binding"
+          
         let meth_list = Gram.Entry.mk "meth_list"
+          
         let module_binding = Gram.Entry.mk "module_binding"
+          
         let module_binding0 = Gram.Entry.mk "module_binding0"
+          
         let module_declaration = Gram.Entry.mk "module_declaration"
+          
         let module_expr = Gram.Entry.mk "module_expr"
+          
         let module_longident = Gram.Entry.mk "module_longident"
+          
         let module_longident_with_app =
           Gram.Entry.mk "module_longident_with_app"
+          
         let module_rec_declaration = Gram.Entry.mk "module_rec_declaration"
+          
         let module_type = Gram.Entry.mk "module_type"
+          
         let more_ctyp = Gram.Entry.mk "more_ctyp"
+          
         let name_tags = Gram.Entry.mk "name_tags"
+          
         let opt_as_lident = Gram.Entry.mk "opt_as_lident"
+          
         let opt_class_self_patt = Gram.Entry.mk "opt_class_self_patt"
+          
         let opt_class_self_type = Gram.Entry.mk "opt_class_self_type"
+          
         let opt_class_signature = Gram.Entry.mk "opt_class_signature"
+          
         let opt_class_structure = Gram.Entry.mk "opt_class_structure"
+          
         let opt_comma_ctyp = Gram.Entry.mk "opt_comma_ctyp"
+          
         let opt_dot_dot = Gram.Entry.mk "opt_dot_dot"
+          
         let opt_eq_ctyp = Gram.Entry.mk "opt_eq_ctyp"
+          
         let opt_expr = Gram.Entry.mk "opt_expr"
+          
         let opt_meth_list = Gram.Entry.mk "opt_meth_list"
+          
         let opt_mutable = Gram.Entry.mk "opt_mutable"
+          
         let opt_polyt = Gram.Entry.mk "opt_polyt"
+          
         let opt_private = Gram.Entry.mk "opt_private"
+          
         let opt_rec = Gram.Entry.mk "opt_rec"
+          
         let opt_sig_items = Gram.Entry.mk "opt_sig_items"
+          
         let opt_str_items = Gram.Entry.mk "opt_str_items"
+          
         let opt_virtual = Gram.Entry.mk "opt_virtual"
+          
         let opt_when_expr = Gram.Entry.mk "opt_when_expr"
+          
         let patt = Gram.Entry.mk "patt"
+          
         let patt_as_patt_opt = Gram.Entry.mk "patt_as_patt_opt"
+          
         let patt_eoi = Gram.Entry.mk "patt_eoi"
+          
         let patt_tcon = Gram.Entry.mk "patt_tcon"
+          
         let phrase = Gram.Entry.mk "phrase"
+          
         let poly_type = Gram.Entry.mk "poly_type"
+          
         let row_field = Gram.Entry.mk "row_field"
+          
         let sem_expr = Gram.Entry.mk "sem_expr"
+          
         let sem_expr_for_list = Gram.Entry.mk "sem_expr_for_list"
+          
         let sem_patt = Gram.Entry.mk "sem_patt"
+          
         let sem_patt_for_list = Gram.Entry.mk "sem_patt_for_list"
+          
         let semi = Gram.Entry.mk "semi"
+          
         let sequence = Gram.Entry.mk "sequence"
+          
         let do_sequence = Gram.Entry.mk "do_sequence"
+          
         let sig_item = Gram.Entry.mk "sig_item"
+          
         let sig_items = Gram.Entry.mk "sig_items"
+          
         let star_ctyp = Gram.Entry.mk "star_ctyp"
+          
         let str_item = Gram.Entry.mk "str_item"
+          
         let str_items = Gram.Entry.mk "str_items"
+          
         let top_phrase = Gram.Entry.mk "top_phrase"
+          
         let type_constraint = Gram.Entry.mk "type_constraint"
+          
         let type_declaration = Gram.Entry.mk "type_declaration"
+          
         let type_ident_and_parameters =
           Gram.Entry.mk "type_ident_and_parameters"
+          
         let type_kind = Gram.Entry.mk "type_kind"
+          
         let type_longident = Gram.Entry.mk "type_longident"
+          
         let type_longident_and_parameters =
           Gram.Entry.mk "type_longident_and_parameters"
+          
         let type_parameter = Gram.Entry.mk "type_parameter"
+          
         let type_parameters = Gram.Entry.mk "type_parameters"
+          
         let typevars = Gram.Entry.mk "typevars"
+          
         let use_file = Gram.Entry.mk "use_file"
+          
         let val_longident = Gram.Entry.mk "val_longident"
+          
         let value_let = Gram.Entry.mk "value_let"
+          
         let value_val = Gram.Entry.mk "value_val"
+          
         let with_constr = Gram.Entry.mk "with_constr"
+          
         let expr_quot = Gram.Entry.mk "quotation of expression"
+          
         let patt_quot = Gram.Entry.mk "quotation of pattern"
+          
         let ctyp_quot = Gram.Entry.mk "quotation of type"
+          
         let str_item_quot = Gram.Entry.mk "quotation of structure item"
+          
         let sig_item_quot = Gram.Entry.mk "quotation of signature item"
+          
         let class_str_item_quot =
           Gram.Entry.mk "quotation of class structure item"
+          
         let class_sig_item_quot =
           Gram.Entry.mk "quotation of class signature item"
+          
         let module_expr_quot = Gram.Entry.mk "quotation of module expression"
+          
         let module_type_quot = Gram.Entry.mk "quotation of module type"
+          
         let class_type_quot = Gram.Entry.mk "quotation of class type"
+          
         let class_expr_quot = Gram.Entry.mk "quotation of class expression"
+          
         let with_constr_quot = Gram.Entry.mk "quotation of with constraint"
+          
         let binding_quot = Gram.Entry.mk "quotation of binding"
+          
         let rec_binding_quot = Gram.Entry.mk "quotation of record binding"
+          
         let match_case_quot =
           Gram.Entry.mk "quotation of match_case (try/match/function case)"
+          
         let module_binding_quot =
           Gram.Entry.mk "quotation of module rec binding"
+          
         let ident_quot = Gram.Entry.mk "quotation of identifier"
+          
         let prefixop =
           Gram.Entry.mk "prefix operator (start with '!', '?', '~')"
+          
         let infixop0 =
           Gram.Entry.mk
             "infix operator (level 0) (comparison operators, and some others)"
+          
         let infixop1 =
           Gram.Entry.mk "infix operator (level 1) (start with '^', '@')"
+          
         let infixop2 =
           Gram.Entry.mk "infix operator (level 2) (start with '+', '-')"
+          
         let infixop3 =
           Gram.Entry.mk "infix operator (level 3) (start with '*', '/', '%')"
+          
         let infixop4 =
           Gram.Entry.mk
             "infix operator (level 4) (start with \"**\") (right assoc)"
+          
         let _ =
           Gram.extend (top_phrase : 'top_phrase Gram.Entry.t)
             ((fun () ->
@@ -16863,13 +19036,19 @@ module OCamlInitSyntax =
                              | EOI -> (None : 'top_phrase)
                              | _ -> assert false))) ]) ]))
                ())
+          
         module AntiquotSyntax =
           struct
             module Loc = Ast.Loc
+              
             module Ast = Sig.Camlp4AstToAst(Ast)
+              
             module Gram = Gram
+              
             let antiquot_expr = Gram.Entry.mk "antiquot_expr"
+              
             let antiquot_patt = Gram.Entry.mk "antiquot_patt"
+              
             let _ =
               (Gram.extend (antiquot_expr : 'antiquot_expr Gram.Entry.t)
                  ((fun () ->
@@ -16903,10 +19082,15 @@ module OCamlInitSyntax =
                                   | EOI -> (x : 'antiquot_patt)
                                   | _ -> assert false))) ]) ]))
                     ()))
+              
             let parse_expr loc str = Gram.parse_string antiquot_expr loc str
+              
             let parse_patt loc str = Gram.parse_string antiquot_patt loc str
+              
           end
+          
         module Quotation = Quotation
+          
         let wrap directive_handler pa init_loc cs =
           let rec loop loc =
             let (pl, stopped_at_directive) = pa loc cs
@@ -16923,18 +19107,25 @@ module OCamlInitSyntax =
                   in (List.rev pl) @ (loop new_loc)
               | None -> pl
           in loop init_loc
+          
         let parse_implem ?(directive_handler = fun _ -> None) _loc cs =
           let l = wrap directive_handler (Gram.parse implem) _loc cs
           in Ast.stSem_of_list l
+          
         let parse_interf ?(directive_handler = fun _ -> None) _loc cs =
           let l = wrap directive_handler (Gram.parse interf) _loc cs
           in Ast.sgSem_of_list l
+          
         let print_interf ?input_file:(_) ?output_file:(_) _ =
           failwith "No interface printer"
+          
         let print_implem ?input_file:(_) ?output_file:(_) _ =
           failwith "No implementation printer"
+          
       end
+      
   end
+  
 module PreCast :
   sig
     type camlp4_token =
@@ -16947,39 +19138,61 @@ module PreCast :
         | OPTLABEL of string | QUOTATION of Sig.quotation
         | ANTIQUOT of string * string | COMMENT of string | BLANKS of string
         | NEWLINE | LINE_DIRECTIVE of int * string option | EOI
+    
     module Id : Sig.Id
+      
     module Loc : Sig.Loc
+      
     module Ast : Sig.Camlp4Ast with module Loc = Loc
+      
     module Token : Sig.Token with module Loc = Loc and type t = camlp4_token
+      
     module Lexer : Sig.Lexer with module Loc = Loc and module Token = Token
+      
     module Gram : Sig.Grammar.Static with module Loc = Loc
       and module Token = Token
+      
     module Quotation :
       Sig.Quotation with module Ast = Sig.Camlp4AstToAst(Ast)
+      
     module DynLoader : Sig.DynLoader
+      
     module AstFilters : Sig.AstFilters with module Ast = Ast
+      
     module Syntax : Sig.Camlp4Syntax with module Loc = Loc
       and module Token = Token and module Ast = Ast and module Gram = Gram
       and module Quotation = Quotation
+      
     module Printers :
       sig
         module OCaml : Sig.Printer(Ast).S
+          
         module OCamlr : Sig.Printer(Ast).S
+          
         module DumpOCamlAst : Sig.Printer(Ast).S
+          
         module DumpCamlp4Ast : Sig.Printer(Ast).S
+          
         module Null : Sig.Printer(Ast).S
+          
       end
+      
     module MakeGram (Lexer : Sig.Lexer with module Loc = Loc) :
       Sig.Grammar.Static with module Loc = Loc and module Token = Lexer.Token
+      
     module MakeSyntax (U : sig  end) : Sig.Syntax
+      
   end =
   struct
     module Id =
       struct
         let name = "Camlp4.PreCast"
+          
         let version =
           "$Id: PreCast.ml,v 1.4.4.1 2007/03/30 15:50:12 pouillar Exp $"
+          
       end
+      
     type camlp4_token =
       Sig.camlp4_token =
         | KEYWORD of string | SYMBOL of string | LIDENT of string
@@ -16990,138 +19203,208 @@ module PreCast :
         | OPTLABEL of string | QUOTATION of Sig.quotation
         | ANTIQUOT of string * string | COMMENT of string | BLANKS of string
         | NEWLINE | LINE_DIRECTIVE of int * string option | EOI
+    
     module Loc = Struct.Loc
+      
     module Ast = Struct.Camlp4Ast.Make(Loc)
+      
     module Token = Struct.Token.Make(Loc)
+      
     module Lexer = Struct.Lexer.Make(Token)
+      
     module Gram = Struct.Grammar.Static.Make(Lexer)
+      
     module DynLoader = Struct.DynLoader
+      
     module Quotation = Struct.Quotation.Make(Ast)
+      
     module MakeSyntax (U : sig  end) =
       OCamlInitSyntax.Make(Ast)(Gram)(Quotation)
+      
     module Syntax = MakeSyntax(struct  end)
+      
     module AstFilters = Struct.AstFilters.Make(Ast)
+      
     module MakeGram = Struct.Grammar.Static.Make
+      
     module Printers =
       struct
         module OCaml = Printers.OCaml.Make(Syntax)
+          
         module OCamlr = Printers.OCamlr.Make(Syntax)
+          
         module DumpOCamlAst = Printers.DumpOCamlAst.Make(Syntax)
+          
         module DumpCamlp4Ast = Printers.DumpCamlp4Ast.Make(Syntax)
+          
         module Null = Printers.Null.Make(Syntax)
+          
       end
+      
   end
+  
 module Register :
   sig
     module Plugin
       (Id : Sig.Id) (Plugin : functor (Unit : sig  end) -> sig  end) :
       sig  end
+      
     module SyntaxPlugin
       (Id : Sig.Id) (SyntaxPlugin : functor (Syn : Sig.Syntax) -> sig  end) :
       sig  end
+      
     module SyntaxExtension
       (Id : Sig.Id) (SyntaxExtension : Sig.SyntaxExtension) : sig  end
+      
     module OCamlSyntaxExtension
       (Id : Sig.Id)
       (SyntaxExtension :
         functor (Syntax : Sig.Camlp4Syntax) -> Sig.Camlp4Syntax) :
       sig  end
+      
     type 'a parser_fun =
       ?directive_handler: ('a -> 'a option) ->
         PreCast.Loc.t -> char Stream.t -> 'a
+    
     val register_str_item_parser : PreCast.Ast.str_item parser_fun -> unit
+      
     val register_sig_item_parser : PreCast.Ast.sig_item parser_fun -> unit
+      
     val register_parser :
       PreCast.Ast.str_item parser_fun ->
         PreCast.Ast.sig_item parser_fun -> unit
+      
     module Parser
       (Id : Sig.Id) (Maker : functor (Ast : Sig.Ast) -> Sig.Parser(Ast).S) :
       sig  end
+      
     module OCamlParser
       (Id : Sig.Id)
       (Maker : functor (Ast : Sig.Camlp4Ast) -> Sig.Parser(Ast).S) : 
       sig  end
+      
     module OCamlPreCastParser
       (Id : Sig.Id) (Parser : Sig.Parser(PreCast.Ast).S) : sig  end
+      
     type 'a printer_fun =
       ?input_file: string -> ?output_file: string -> 'a -> unit
+    
     val register_str_item_printer : PreCast.Ast.str_item printer_fun -> unit
+      
     val register_sig_item_printer : PreCast.Ast.sig_item printer_fun -> unit
+      
     val register_printer :
       PreCast.Ast.str_item printer_fun ->
         PreCast.Ast.sig_item printer_fun -> unit
+      
     module Printer
       (Id : Sig.Id)
       (Maker : functor (Syn : Sig.Syntax) -> Sig.Printer(Syn.Ast).S) :
       sig  end
+      
     module OCamlPrinter
       (Id : Sig.Id)
       (Maker : functor (Syn : Sig.Camlp4Syntax) -> Sig.Printer(Syn.Ast).S) :
       sig  end
+      
     module OCamlPreCastPrinter
       (Id : Sig.Id) (Printer : Sig.Printer(PreCast.Ast).S) : sig  end
+      
     module AstFilter
       (Id : Sig.Id) (Maker : functor (F : Sig.AstFilters) -> sig  end) :
       sig  end
+      
     val declare_dyn_module : string -> (unit -> unit) -> unit
+      
     val iter_and_take_callbacks : ((string * (unit -> unit)) -> unit) -> unit
+      
     val loaded_modules : (string list) ref
+      
     module CurrentParser : Sig.Parser(PreCast.Ast).S
+      
     module CurrentPrinter : Sig.Printer(PreCast.Ast).S
+      
     val enable_ocaml_printer : unit -> unit
+      
     val enable_ocamlr_printer : unit -> unit
+      
     val enable_null_printer : unit -> unit
+      
     val enable_dump_ocaml_ast_printer : unit -> unit
+      
     val enable_dump_camlp4_ast_printer : unit -> unit
+      
   end =
   struct
     module PP = Printers
+      
     open PreCast
+      
     type 'a parser_fun =
       ?directive_handler: ('a -> 'a option) ->
         PreCast.Loc.t -> char Stream.t -> 'a
+    
     type 'a printer_fun =
       ?input_file: string -> ?output_file: string -> 'a -> unit
+    
     let sig_item_parser =
       ref (fun ?directive_handler:(_) _ _ -> failwith "No interface parser")
+      
     let str_item_parser =
       ref
         (fun ?directive_handler:(_) _ _ ->
            failwith "No implementation parser")
+      
     let sig_item_printer =
       ref
         (fun ?input_file:(_) ?output_file:(_) _ ->
            failwith "No interface printer")
+      
     let str_item_printer =
       ref
         (fun ?input_file:(_) ?output_file:(_) _ ->
            failwith "No implementation printer")
+      
     let callbacks = Queue.create ()
+      
     let loaded_modules = ref []
+      
     let iter_and_take_callbacks f =
       let rec loop () = loop (f (Queue.take callbacks))
       in try loop () with | Queue.Empty -> ()
+      
     let declare_dyn_module m f =
       (loaded_modules := m :: !loaded_modules; Queue.add (m, f) callbacks)
+      
     let register_str_item_parser f = str_item_parser := f
+      
     let register_sig_item_parser f = sig_item_parser := f
+      
     let register_parser f g = (str_item_parser := f; sig_item_parser := g)
+      
     let register_str_item_printer f = str_item_printer := f
+      
     let register_sig_item_printer f = sig_item_printer := f
+      
     let register_printer f g = (str_item_printer := f; sig_item_printer := g)
+      
     module Plugin
       (Id : Sig.Id) (Maker : functor (Unit : sig  end) -> sig  end) =
       struct
         let _ =
           declare_dyn_module Id.name
             (fun _ -> let module M = Maker(struct  end) in ())
+          
       end
+      
     module SyntaxExtension (Id : Sig.Id) (Maker : Sig.SyntaxExtension) =
       struct
         let _ =
           declare_dyn_module Id.name
             (fun _ -> let module M = Maker(Syntax) in ())
+          
       end
+      
     module OCamlSyntaxExtension
       (Id : Sig.Id)
       (Maker : functor (Syn : Sig.Camlp4Syntax) -> Sig.Camlp4Syntax) =
@@ -17129,14 +19412,18 @@ module Register :
         let _ =
           declare_dyn_module Id.name
             (fun _ -> let module M = Maker(Syntax) in ())
+          
       end
+      
     module SyntaxPlugin
       (Id : Sig.Id) (Maker : functor (Syn : Sig.Syntax) -> sig  end) =
       struct
         let _ =
           declare_dyn_module Id.name
             (fun _ -> let module M = Maker(Syntax) in ())
+          
       end
+      
     module Printer
       (Id : Sig.Id)
       (Maker : functor (Syn : Sig.Syntax) -> Sig.Printer(Syn.Ast).S) =
@@ -17145,7 +19432,9 @@ module Register :
           declare_dyn_module Id.name
             (fun _ -> let module M = Maker(Syntax)
                in register_printer M.print_implem M.print_interf)
+          
       end
+      
     module OCamlPrinter
       (Id : Sig.Id)
       (Maker : functor (Syn : Sig.Camlp4Syntax) -> Sig.Printer(Syn.Ast).S) =
@@ -17154,14 +19443,18 @@ module Register :
           declare_dyn_module Id.name
             (fun _ -> let module M = Maker(Syntax)
                in register_printer M.print_implem M.print_interf)
+          
       end
+      
     module OCamlPreCastPrinter
       (Id : Sig.Id) (P : Sig.Printer(PreCast.Ast).S) =
       struct
         let _ =
           declare_dyn_module Id.name
             (fun _ -> register_printer P.print_implem P.print_interf)
+          
       end
+      
     module Parser
       (Id : Sig.Id) (Maker : functor (Ast : Sig.Ast) -> Sig.Parser(Ast).S) =
       struct
@@ -17169,7 +19462,9 @@ module Register :
           declare_dyn_module Id.name
             (fun _ -> let module M = Maker(PreCast.Ast)
                in register_parser M.parse_implem M.parse_interf)
+          
       end
+      
     module OCamlParser
       (Id : Sig.Id)
       (Maker : functor (Ast : Sig.Camlp4Ast) -> Sig.Parser(Ast).S) =
@@ -17178,49 +19473,71 @@ module Register :
           declare_dyn_module Id.name
             (fun _ -> let module M = Maker(PreCast.Ast)
                in register_parser M.parse_implem M.parse_interf)
+          
       end
+      
     module OCamlPreCastParser (Id : Sig.Id) (P : Sig.Parser(PreCast.Ast).S) =
       struct
         let _ =
           declare_dyn_module Id.name
             (fun _ -> register_parser P.parse_implem P.parse_interf)
+          
       end
+      
     module AstFilter
       (Id : Sig.Id) (Maker : functor (F : Sig.AstFilters) -> sig  end) =
       struct
         let _ =
           declare_dyn_module Id.name
             (fun _ -> let module M = Maker(AstFilters) in ())
+          
       end
+      
     let _ = sig_item_parser := Syntax.parse_interf
+      
     let _ = str_item_parser := Syntax.parse_implem
+      
     module CurrentParser =
       struct
         module Ast = Ast
+          
         let parse_interf ?directive_handler loc strm =
           !sig_item_parser ?directive_handler loc strm
+          
         let parse_implem ?directive_handler loc strm =
           !str_item_parser ?directive_handler loc strm
+          
       end
+      
     module CurrentPrinter =
       struct
         module Ast = Ast
+          
         let print_interf ?input_file ?output_file ast =
           !sig_item_printer ?input_file ?output_file ast
+          
         let print_implem ?input_file ?output_file ast =
           !str_item_printer ?input_file ?output_file ast
+          
       end
+      
     let enable_ocaml_printer () =
       let module M = OCamlPrinter(PP.OCaml.Id)(PP.OCaml.MakeMore) in ()
+      
     let enable_ocamlr_printer () =
       let module M = OCamlPrinter(PP.OCamlr.Id)(PP.OCamlr.MakeMore) in ()
+      
     let enable_dump_ocaml_ast_printer () =
       let module M = OCamlPrinter(PP.DumpOCamlAst.Id)(PP.DumpOCamlAst.Make)
       in ()
+      
     let enable_dump_camlp4_ast_printer () =
       let module M = Printer(PP.DumpCamlp4Ast.Id)(PP.DumpCamlp4Ast.Make)
       in ()
+      
     let enable_null_printer () =
       let module M = Printer(PP.Null.Id)(PP.Null.Make) in ()
+      
   end
+  
 
