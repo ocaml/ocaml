@@ -368,7 +368,7 @@ let rec closed_schema_rec ty =
         closed_schema_rec t2
     | Tvariant row ->
         let row = row_repr row in
-        iter_row closed_schema_rec {row with row_bound = []};
+        iter_row closed_schema_rec row;
         if not (static_row row) then closed_schema_rec row.row_more
     | _ ->
         iter_type_expr closed_schema_rec ty
@@ -405,7 +405,7 @@ let rec free_vars_rec real ty =
         free_vars_rec true ty1; free_vars_rec false ty2
     | Tvariant row ->
         let row = row_repr row in
-        iter_row (free_vars_rec true) {row with row_bound = []};
+        iter_row (free_vars_rec true) row;
         if not (static_row row) then free_vars_rec false row.row_more
     | _    ->
         iter_type_expr (free_vars_rec true) ty
@@ -1432,7 +1432,7 @@ let mkvariant fields closed =
   newgenty
     (Tvariant
        {row_fields = fields; row_closed = closed; row_more = newvar();
-        row_bound = []; row_fixed = false; row_name = None })
+        row_bound = (); row_fixed = false; row_name = None })
 
 (**** Unification ****)
 
@@ -1736,8 +1736,7 @@ and unify_row env row1 row2 =
     then row2.row_name
     else None
   in
-  let bound = row1.row_bound @ row2.row_bound in
-  let row0 = {row_fields = []; row_more = more; row_bound = bound;
+  let row0 = {row_fields = []; row_more = more; row_bound = ();
               row_closed = closed; row_fixed = fixed; row_name = name} in
   let set_more row rest =
     let rest =
@@ -2799,7 +2798,6 @@ let rec build_subtype env visited loops posi level t =
       let level' = pred_enlarge level in
       let visited =
         t :: if level' < level then [] else filter_visited visited in
-      let bound = ref row.row_bound in
       let fields = filter_row_fields false row.row_fields in
       let fields =
         List.map
@@ -2811,18 +2809,18 @@ let rec build_subtype env visited loops posi level t =
                 orig, Unchanged
           | Rpresent(Some t) ->
               let (t', c) = build_subtype env visited loops posi level' t in
-              if posi && level > 0 then begin
-                bound := t' :: !bound;
-                (l, Reither(false, [t'], false, ref None)), c
-              end else
-                (l, Rpresent(Some t')), c
+              let f =
+                if posi && level > 0
+                then Reither(false, [t'], false, ref None)
+                else Rpresent(Some t')
+              in (l, f), c
           | _ -> assert false)
           fields
       in
       let c = collect fields in
       let row =
         { row_fields = List.map fst fields; row_more = newvar();
-          row_bound = !bound; row_closed = posi; row_fixed = false;
+          row_bound = (); row_closed = posi; row_fixed = false;
           row_name = if c > Unchanged then None else row.row_name }
       in
       (newty (Tvariant row), Changed)
@@ -3135,13 +3133,9 @@ let rec normalize_type_rec env ty =
           row.row_fields in
       let fields =
         List.sort (fun (p,_) (q,_) -> compare p q)
-          (List.filter (fun (_,fi) -> fi <> Rabsent) fields)
-      and bound = List.fold_left
-          (fun tyl ty -> if List.memq ty tyl then tyl else ty :: tyl)
-          [] (List.map repr row.row_bound)
-      in
+          (List.filter (fun (_,fi) -> fi <> Rabsent) fields) in
       log_type ty;
-      ty.desc <- Tvariant {row with row_fields = fields; row_bound = bound}
+      ty.desc <- Tvariant {row with row_fields = fields}
     | Tobject (fi, nm) ->
         begin match !nm with
         | None -> ()

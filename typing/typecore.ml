@@ -152,10 +152,13 @@ let unify_pat env pat expected_ty =
 (* make all Reither present in open variants *)
 let finalize_variant pat =
   match pat.pat_desc with
-    Tpat_variant(tag, opat, row) ->
-      let row = row_repr row in
-      let field = row_field tag row in
-      begin match field with
+    Tpat_variant(tag, opat, r) ->
+      let row =
+        match expand_head pat.pat_env pat.pat_type with
+          {desc = Tvariant row} -> r := row; row_repr row
+        | _ -> assert false
+      in
+      begin match row_field tag row with
       | Rabsent -> assert false
       | Reither (true, [], _, e) when not row.row_closed ->
           set_row_field e (Rpresent None)
@@ -168,10 +171,10 @@ let finalize_variant pat =
           set_row_field e (Reither (c, [], false, ref None))
       | _ -> ()
       end;
-      (* Force check of well-formedness *)
-      unify_pat pat.pat_env pat
+      (* Force check of well-formedness   WHY? *)
+      (* unify_pat pat.pat_env pat
         (newty(Tvariant{row_fields=[]; row_more=newvar(); row_closed=false;
-                        row_bound=[]; row_fixed=false; row_name=None}));
+                        row_bound=(); row_fixed=false; row_name=None})); *)
   | _ -> ()
 
 let rec iter_pattern f p =
@@ -251,7 +254,7 @@ let rec build_as_type env p =
   | Tpat_variant(l, p', _) ->
       let ty = may_map (build_as_type env) p' in
       newty (Tvariant{row_fields=[l, Rpresent ty]; row_more=newvar();
-                      row_bound=[]; row_name=None;
+                      row_bound=(); row_name=None;
                       row_fixed=false; row_closed=false})
   | Tpat_record lpl ->
       let lbl = fst(List.hd lpl) in
@@ -301,7 +304,6 @@ let build_or_pat env loc lid =
         (row_repr row).row_fields
     | _ -> raise(Error(loc, Not_a_variant_type lid))
   in
-  let bound = ref [] in
   let pats, fields =
     List.fold_left
       (fun (pats,fields) (l,f) ->
@@ -310,7 +312,6 @@ let build_or_pat env loc lid =
             (l,None) :: pats,
             (l, Reither(true,[], true, ref None)) :: fields
         | Rpresent (Some ty) ->
-            bound := ty :: !bound;
             (l, Some {pat_desc=Tpat_any; pat_loc=Location.none; pat_env=env;
                       pat_type=ty})
             :: pats,
@@ -318,13 +319,14 @@ let build_or_pat env loc lid =
         | _ -> pats, fields)
       ([],[]) fields in
   let row =
-    { row_fields = List.rev fields; row_more = newvar(); row_bound = !bound;
+    { row_fields = List.rev fields; row_more = newvar(); row_bound = ();
       row_closed = false; row_fixed = false; row_name = Some (path, tyl) }
   in
   let ty = newty (Tvariant row) in
   let gloc = {loc with Location.loc_ghost=true} in
+  let row' = ref {row with row_more=newvar()} in
   let pats =
-    List.map (fun (l,p) -> {pat_desc=Tpat_variant(l,p,row); pat_loc=gloc;
+    List.map (fun (l,p) -> {pat_desc=Tpat_variant(l,p,row'); pat_loc=gloc;
                             pat_env=env; pat_type=ty})
       pats
   in
@@ -425,13 +427,13 @@ let rec type_pat env sp =
       let arg_type = match arg with None -> [] | Some arg -> [arg.pat_type]  in
       let row = { row_fields =
                     [l, Reither(arg = None, arg_type, true, ref None)];
-                  row_bound = arg_type;
+                  row_bound = ();
                   row_closed = false;
                   row_more = newvar ();
                   row_fixed = false;
                   row_name = None } in
       rp {
-        pat_desc = Tpat_variant(l, arg, row);
+        pat_desc = Tpat_variant(l, arg, ref {row with row_more = newvar()});
         pat_loc = sp.ppat_loc;
         pat_type = newty (Tvariant row);
         pat_env = env }
@@ -1008,7 +1010,7 @@ let rec type_exp env sexp =
         exp_loc = sexp.pexp_loc;
         exp_type= newty (Tvariant{row_fields = [l, Rpresent arg_type];
                                   row_more = newvar ();
-                                  row_bound = [];
+                                  row_bound = ();
                                   row_closed = false;
                                   row_fixed = false;
                                   row_name = None});

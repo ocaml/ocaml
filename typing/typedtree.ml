@@ -33,7 +33,7 @@ and pattern_desc =
   | Tpat_constant of constant
   | Tpat_tuple of pattern list
   | Tpat_construct of constructor_description * pattern list
-  | Tpat_variant of label * pattern option * row_desc
+  | Tpat_variant of label * pattern option * row_desc ref
   | Tpat_record of (label_description * pattern) list
   | Tpat_array of pattern list
   | Tpat_or of pattern * pattern * Path.t option

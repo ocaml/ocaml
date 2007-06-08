@@ -124,8 +124,6 @@ let rec typexp s ty =
               (* Return a new copy *)
               let row =
                 copy_row (typexp s) true row (not dup) more' in
-              let row =
-                if s.for_saving then {row with row_bound = []} else row in
               match row.row_name with
                 Some (p, tl) ->
                   Tvariant {row with row_name = Some (type_path s p, tl)}

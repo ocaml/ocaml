@@ -176,8 +176,7 @@ let rec iter_row f row =
   match (repr row.row_more).desc with
     Tvariant row -> iter_row f row
   | Tvar | Tunivar | Tsubst _ | Tconstr _ ->
-      Misc.may (fun (_,l) -> List.iter f l) row.row_name;
-      List.iter f row.row_bound
+      Misc.may (fun (_,l) -> List.iter f l) row.row_name
   | _ -> assert false
 
 let iter_type_expr f ty =
@@ -203,7 +202,6 @@ let rec iter_abbrev f = function
   | Mlink rem              -> iter_abbrev f !rem
 
 let copy_row f fixed row keep more =
-  let bound = ref [] in
   let fields = List.map
       (fun (l, fi) -> l,
         match row_field_repr fi with
@@ -212,10 +210,6 @@ let copy_row f fixed row keep more =
             let e = if keep then e else ref None in
             let m = if row.row_fixed then fixed else m in
             let tl = List.map f tl in
-            bound := List.filter
-                (function {desc=Tconstr(_,[],_)} -> false | _ -> true)
-                (List.map repr tl)
-              @ !bound;
             Reither(c, tl, m, e)
         | _ -> fi)
       row.row_fields in
@@ -223,7 +217,7 @@ let copy_row f fixed row keep more =
     match row.row_name with None -> None
     | Some (path, tl) -> Some (path, List.map f tl) in
   { row_fields = fields; row_more = more;
-    row_bound = !bound; row_fixed = row.row_fixed && fixed;
+    row_bound = (); row_fixed = row.row_fixed && fixed;
     row_closed = row.row_closed; row_name = name; }
 
 let rec copy_kind = function

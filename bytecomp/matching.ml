@@ -2337,8 +2337,8 @@ and do_compile_matching repr partial ctx arg pmh = match pmh with
         ctx pm
   | Tpat_variant(lab, _, row) ->
       compile_test (compile_match repr partial) partial
-        (divide_variant row)
-        (combine_variant row arg partial)
+        (divide_variant !row)
+        (combine_variant !row arg partial)
         ctx pm
   | _ -> assert false
   end
