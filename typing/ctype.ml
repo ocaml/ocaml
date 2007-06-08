@@ -322,17 +322,21 @@ let rec class_type_arity =
 
 let sort_row_fields = Sort.list (fun (p,_) (q,_) -> p < q)
 
+let rec merge_rf r1 r2 pairs fi1 fi2 =
+  match fi1, fi2 with
+    (l1,f1 as p1)::fi1', (l2,f2 as p2)::fi2' ->
+      if l1 = l2 then merge_rf r1 r2 ((l1,f1,f2)::pairs) fi1' fi2' else
+      if l1 < l2 then merge_rf (p1::r1) r2 pairs fi1' fi2 else
+      merge_rf r1 (p2::r2) pairs fi1 fi2'
+  | [], _ -> (List.rev r1, List.rev_append r2 fi2, pairs)
+  | _, [] -> (List.rev_append r1 fi1, List.rev r2, pairs)
+
 let merge_row_fields fi1 fi2 =
-  let rec merge r1 r2 pairs fi1 fi2 =
-    match fi1, fi2 with
-      (l1,f1 as p1)::fi1', (l2,f2 as p2)::fi2' ->
-        if l1 = l2 then merge r1 r2 ((l1,f1,f2)::pairs) fi1' fi2' else
-        if l1 < l2 then merge (p1::r1) r2 pairs fi1' fi2 else
-        merge r1 (p2::r2) pairs fi1 fi2'
-    | [], _ -> (List.rev r1, List.rev_append r2 fi2, pairs)
-    | _, [] -> (List.rev_append r1 fi1, List.rev r2, pairs)
-  in
-  merge [] [] [] (sort_row_fields fi1) (sort_row_fields fi2)
+  match fi1, fi2 with
+    [], _ | _, [] -> (fi1, fi2, [])
+  | [p1], _ when not (List.mem_assoc (fst p1) fi2) -> (fi1, fi2, [])
+  | _, [p2] when not (List.mem_assoc (fst p2) fi1) -> (fi1, fi2, [])
+  | _ -> merge_rf [] [] [] (sort_row_fields fi1) (sort_row_fields fi2)
 
 let rec filter_row_fields erase = function
     [] -> []
