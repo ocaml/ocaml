@@ -122,7 +122,8 @@ let pool_condition = Condition.create ()
 and pool_mutex = Mutex.create ()
 and pool_kont = ref [] 
 
-let fork_for_pool () = match !pool_kont with
+(* Create actuall threads for all tasks in pool *)
+let rec fork_for_pool () = match !pool_kont with
 | f::rem ->
     pool_kont := rem ; decr pool_konts ;
     Mutex.unlock pool_mutex ;
@@ -131,6 +132,9 @@ let fork_for_pool () = match !pool_kont with
       pool_kont := f :: !pool_kont ; incr pool_konts ;
       Mutex.unlock pool_mutex ;
 (*DEBUG*)debug1 "FORK" "DELAYED" ;
+    end else if rem <> [] && !in_pool = 0 then begin
+      Mutex.lock pool_mutex ;
+      fork_for_pool ()
     end
 | [] ->
     Mutex.unlock pool_mutex
@@ -153,8 +157,7 @@ let rec do_pool () =
       end else
         Mutex.unlock pool_mutex ;
       f ()
-  | [] ->
-      do_pool ()
+  | [] -> do_pool ()
 
 (* Get a chance to avoid suspending *)
 let pool_enter () =

@@ -138,7 +138,7 @@ let wait_zero c =
   hard_wait_zero c ;
   Mutex.unlock c.cmutex
     
-(* A few wrapping of socket primitives *)
+(* Nicer Printexc functions *)
 
 open Unix
 
@@ -176,6 +176,7 @@ let exn_to_string = function
     Buffer.contents buff
   | e -> Printexc.to_string e
 
+(* A few Unix stuff *)
 let local_name = gethostname ()
 
 let get_local_addr () =
@@ -191,4 +192,11 @@ let string_of_sockaddr = function
       string_of_inet_addr a^":"^string_of_int p
 
 exception JoinExit
+
+(* All options that can be set from outside are here *)
+
+(* STILL TO TEST
+let globalize_flags = [Marshal.Closures]
+*)
+let globalize_flags = []
 

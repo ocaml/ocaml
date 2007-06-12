@@ -27,6 +27,8 @@ let rec string_of_sockaddrs = function
   | [r] -> string_of_sockaddr r
   | r::rs -> string_of_sockaddr r ^","^string_of_sockaddrs rs
 
+(* Connection to remote listener: simple timeout technique *)
+
 exception ConnectFailed of string
 
 let rec attempt_connect r_addr d =
@@ -467,7 +469,8 @@ and call_sync space rspace kid g v =
 and blocking_remote_send space rspace do_msg a =
    try
      let link = get_link space rspace in
-     sender_work space rspace link (do_msg (globalize_rec space a []))
+     sender_work space rspace link
+       (do_msg (globalize_rec space a globalize_flags))
    with NoLink -> ()
 
 and do_remote_send may_block space rspace do_msg a =
@@ -731,7 +734,8 @@ and do_remote_call space rspace_id do_msg kont a =
     with NoLink ->
       Join_hash.remove rspace.konts kid ; (* safe if absent *)
       raise Join_misc.JoinExit in
-  sender_work space rspace link (do_msg kid (globalize_rec space a [])) ;
+  sender_work space rspace link
+    (do_msg kid (globalize_rec space a globalize_flags)) ;
   Mutex.lock kont.kmutex ;
   Join_scheduler.suspend_for_reply kont
 

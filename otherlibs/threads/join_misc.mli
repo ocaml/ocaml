@@ -53,3 +53,8 @@ val string_of_sockaddr : Unix.sockaddr -> string
 (* To commit suicide from join managed threads : raise JoinExit *)
 exception JoinExit
 
+(************************)
+(* Join library options *)
+(************************)
+
+val globalize_flags : Marshal.extern_flags list
