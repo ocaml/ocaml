@@ -32,6 +32,7 @@ let active_mutex = Mutex.create ()
 and active_condition = Condition.create ()
 and active = ref 1
 and in_pool = ref 0
+and signaled = ref 0
 and pool_konts = ref 0
 (* Number of threads devoted to join *)
 (*DEBUG*)and nthreads = ref 1
@@ -50,8 +51,9 @@ and decr_locked m r =
   Mutex.unlock m
 
 (*DEBUG*)let tasks_status () =
-(*DEBUG*)sprintf "active=%i, nthread=%i suspended=%i[%i, %i]"
-(*DEBUG*) !active !nthreads !suspended !in_pool !pool_konts
+(*DEBUG*)sprintf
+(*DEBUG*)  "act=%i, nth=%i sus=%i pool[in=%i, k=%i, sig=%i]"
+(*DEBUG*) !active !nthreads !suspended !in_pool !pool_konts !signaled
 
 let become_inactive () =
   decr_locked nthreads_mutex active ;
@@ -147,15 +149,12 @@ let rec do_pool () =
   Condition.wait pool_condition pool_mutex ;
 (*DEBUG*)decr_locked nthreads_mutex suspended ;
 (*DEBUG*)debug2 "POOL AWAKE" "%s" (tasks_status ()) ;
-  decr in_pool ;
+  decr in_pool ; decr signaled ;
   match !pool_kont with
   | f::rem ->
       pool_kont := rem ; decr pool_konts ;
 (*DEBUG*)debug2 "POOL RUN" "%i" (Thread.id (Thread.self())) ;
-      if rem <> [] && !in_pool = 0 then begin
-        fork_for_pool ()
-      end else
-        Mutex.unlock pool_mutex ;
+      Mutex.unlock pool_mutex ;
       f ()
   | [] -> do_pool ()
 
@@ -173,8 +172,9 @@ let pool_enter () =
 
 let grab_from_pool () =
   Mutex.lock pool_mutex ;
-  if !in_pool > 0 then begin
+  if !in_pool > !signaled then begin
     Condition.signal pool_condition ;
+    incr signaled ;
     Mutex.unlock pool_mutex
   end else
     fork_for_pool ()
@@ -182,7 +182,7 @@ let grab_from_pool () =
 let exit_thread () =
 (*DEBUG*)debug2 "EXIT THREAD" "%s" (tasks_status ()) ;
   become_inactive () ;
-  if !in_pool >= pool_size && !active > !pool_konts then
+  if !in_pool - !signaled >= pool_size && !active > !pool_konts then
     really_exit_thread ()
   else 
     pool_enter ()
@@ -191,6 +191,7 @@ let put_pool_locked f =
   pool_kont := f :: !pool_kont ; incr pool_konts ;
   Condition.signal pool_condition ;
 (*DEBUG*)debug2 "PUT POOL" "%s" (tasks_status ()) ;
+  incr signaled ;
   Mutex.unlock pool_mutex
 
 let put_pool f =
@@ -217,7 +218,7 @@ let create_process f =
     exit_thread () in
 
   Mutex.lock pool_mutex ;
-  if !in_pool = 0 then begin
+  if !in_pool = !signaled then begin
     Mutex.unlock pool_mutex ;
     match really_create_process g with
     | None -> put_pool g
