@@ -75,8 +75,6 @@
     | PaNativeInt of Loc.t and string
     | PaFlo of Loc.t and string
     | PaLab of Loc.t and string and patt (* ~s or ~s:(p) *)
-    (* ?s or ?s:(p = e) or ?(p = e) *)
-    (* | PaOlb of Loc.t and string and meta_option(*FIXME*) (patt * meta_option(*FIXME*) expr) *)
     (* ?s or ?s:(p) *)
     | PaOlb of Loc.t and string and patt
     (* ?s:(p = e) or ?(p = e) *)
@@ -107,7 +105,7 @@
     | ExFlo of Loc.t and string (* 3.14 *)
       (* for s = e to/downto e do { e } *)
     | ExFor of Loc.t and string and expr and expr and meta_bool and expr
-    | ExFun of Loc.t and match_case (* fun [ a ] *)
+    | ExFun of Loc.t and match_case (* fun [ mc ] *)
     | ExIfe of Loc.t and expr and expr and expr (* if e then e else e *)
     | ExInt of Loc.t and string (* 42 *)
     | ExInt32 of Loc.t and string
@@ -115,11 +113,11 @@
     | ExNativeInt of Loc.t and string
     | ExLab of Loc.t and string and expr (* ~s or ~s:e *)
     | ExLaz of Loc.t and expr (* lazy e *)
-      (* let b in e or let rec b in e *)
+      (* let bi in e or let rec bi in e *)
     | ExLet of Loc.t and meta_bool and binding and expr
       (* let module s = me in e *)
     | ExLmd of Loc.t and string and module_expr and expr
-      (* match e with [ a ] *)
+      (* match e with [ mc ] *)
     | ExMat of Loc.t and expr and match_case
       (* new i *)
     | ExNew of Loc.t and ident
@@ -127,9 +125,9 @@
     | ExObj of Loc.t and patt and class_str_item
       (* ?s or ?s:e *)
     | ExOlb of Loc.t and string and expr
-      (* {< b >} *)
+      (* {< rb >} *)
     | ExOvr of Loc.t and rec_binding
-      (* { b } or { (e) with b } *)
+      (* { rb } or { (e) with rb } *)
     | ExRec of Loc.t and rec_binding and expr
       (* do { e } *)
     | ExSeq of Loc.t and expr
@@ -139,7 +137,7 @@
     | ExSte of Loc.t and expr and expr
       (* s *) (* "foo" *)
     | ExStr of Loc.t and string
-      (* try e with [ a ] *)
+      (* try e with [ mc ] *)
     | ExTry of Loc.t and expr and match_case
       (* (e) *)
     | ExTup of Loc.t and expr
@@ -159,7 +157,7 @@
     | MtFun of Loc.t and string and module_type and module_type
       (* 's *)
     | MtQuo of Loc.t and string
-      (* sig (sg)? end *)
+      (* sig sg end *)
     | MtSig of Loc.t and sig_item
       (* mt with wc *)
     | MtWit of Loc.t and module_type and with_constr 
@@ -204,14 +202,14 @@
     | WcAnt of Loc.t and string (* $s$ *) ]
   and binding =
     [ BiNil of Loc.t
-      (* b and b *) (* let a = 42 and c = 43 *)
+      (* bi and bi *) (* let a = 42 and c = 43 *)
     | BiAnd of Loc.t and binding and binding
       (* p = e *) (* let patt = expr *)
     | BiEq  of Loc.t and patt and expr
     | BiAnt of Loc.t and string (* $s$ *) ]
   and rec_binding =
     [ RbNil of Loc.t
-      (* b ; b *)
+      (* rb ; rb *)
     | RbSem of Loc.t and rec_binding and rec_binding
       (* i = e *)
     | RbEq  of Loc.t and ident and expr
@@ -240,7 +238,7 @@
     | MeApp of Loc.t and module_expr and module_expr
       (* functor (s : mt) -> me *)
     | MeFun of Loc.t and string and module_type and module_expr
-      (* struct (st)? end *)
+      (* struct st end *)
     | MeStr of Loc.t and str_item
       (* (me : mt) *)
     | MeTyc of Loc.t and module_expr and module_type
@@ -273,7 +271,7 @@
     | StOpn of Loc.t and ident
       (* type t *)
     | StTyp of Loc.t and ctyp
-      (* value b or value rec b *)
+      (* value b or value rec bi *)
     | StVal of Loc.t and meta_bool and binding
     | StAnt of Loc.t and string (* $s$ *) ]
   and class_type =
@@ -315,7 +313,7 @@
     | CeCon of Loc.t and meta_bool and ident and ctyp
       (* fun p -> ce *)
     | CeFun of Loc.t and patt and class_expr
-      (* let (rec)? b in ce *)
+      (* let (rec)? bi in ce *)
     | CeLet of Loc.t and meta_bool and binding and class_expr
       (* object ((p))? (cst)? end *)
     | CeStr of Loc.t and patt and class_str_item
