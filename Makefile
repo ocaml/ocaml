@@ -225,7 +225,7 @@ cleanboot:
 
 # Compile the native-code compiler
 opt-core:runtimeopt ocamlopt libraryopt
-opt: runtimeopt ocamlopt libraryopt otherlibrariesopt
+opt: runtimeopt ocamlopt libraryopt otherlibrariesopt ocamlbuildlib.native
 
 # Native-code versions of the tools
 opt.opt: checkstack runtime core ocaml opt-core ocamlc.opt otherlibraries \
@@ -617,6 +617,8 @@ ocamlbuild.byte: ocamlc otherlibraries ocamlbuild-partial-boot
 	./build/ocamlbuild-byte-only.sh
 ocamlbuild.native: ocamlopt otherlibrariesopt ocamlbuild-partial-boot
 	./build/ocamlbuild-native-only.sh
+ocamlbuildlib.native: ocamlopt otherlibrariesopt ocamlbuild-partial-boot
+	./build/ocamlbuildlib-native-only.sh
 
 .PHONY: ocamlbuild-partial-boot
 ocamlbuild-partial-boot:

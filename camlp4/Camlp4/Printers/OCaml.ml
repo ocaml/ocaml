@@ -959,7 +959,7 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       | <:class_str_item< $cst1$; $cst2$ >> ->
             do { o#class_str_item f cst1; cut f; o#class_str_item f cst2 }
       | <:class_str_item< type $t1$ = $t2$ >> ->
-            pp f "@[<2>type %a =@ %a%(%)@]" o#ctyp t1 o#ctyp t2 semisep
+            pp f "@[<2>constraint %a =@ %a%(%)@]" o#ctyp t1 o#ctyp t2 semisep
       | <:class_str_item< inherit $ce$ >> ->
             pp f "@[<2>inherit@ %a%(%)@]" o#class_expr ce semisep
       | <:class_str_item< inherit $ce$ as $lid:s$ >> ->

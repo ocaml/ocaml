@@ -1259,7 +1259,7 @@ Very old (no more supported) syntax:
         | "method"; pf = opt_private; l = label; topt = opt_polyt;
           e = fun_binding ->
             <:class_str_item< method $private:pf$ $l$ : $topt$ = $e$ >>
-        | "type"; t1 = ctyp; "="; t2 = ctyp ->
+        | type_constraint; t1 = ctyp; "="; t2 = ctyp ->
             <:class_str_item< type $t1$ = $t2$ >>
         | "initializer"; se = expr -> <:class_str_item< initializer $se$ >> ] ]
     ;
