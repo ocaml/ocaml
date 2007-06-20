@@ -74,7 +74,7 @@ let proceed () =
   let target_dirs = List.union [] (List.map Pathname.dirname !Options.targets) in
 
   Configuration.parse_string
-    "#true: traverse
+    "true: traverse
      <**/*.ml> or <**/*.mli> or <**/*.mlpack> or <**/*.ml.depends>: ocaml
      <**/*.byte>: ocaml, byte, program
      <**/*.odoc>: ocaml, doc
