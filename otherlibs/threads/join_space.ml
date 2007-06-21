@@ -601,7 +601,7 @@ and connect_on_link space rspace (mtx, cond) link route =
   let accepted =
     let destroy_sender () =
       begin try Join_link.close link with Join_link.Failed -> () end ;
-(*DEBUG*)debug1 "OPEN SENDER" "distroy" ;
+(*DEBUG*)debug1 "OPEN SENDER" "Distroy" ;
       Mutex.lock mtx ;
       rspace.link <- DeadConnection ;
       Condition.broadcast cond ;
@@ -875,7 +875,7 @@ let do_rid_from_addr space addr =
 (* Now, we can create the remote space struture *)
     make_remote_space space rid rid [addr] ;
 (* So as not to waste link just established, do actual Connect *)
-    let _link =
+   let _link = try
       let rspace = get_remote_space space rid in
       match rspace.link with
       | DeadConnection | Connected (_,_)
@@ -900,11 +900,10 @@ let do_rid_from_addr space addr =
 	      let cond = Condition.create () in
 	      rspace.link <- Connecting (mtx, cond) ;
 	      Mutex.unlock mtx ;
-              try connect_on_link space rspace (mtx,cond) link addr
-              (* Signal distant site is dead since
-                 rid_from_addr is a function *)
-              with NoLink as e ->
-		failwith (Join_misc.exn_to_string e) in
+              connect_on_link space rspace (mtx,cond) link addr
+    (* Signal distant site is dead since
+       rid_from_addr is a function *)
+      with NoLink -> raise Join_misc.JoinExit in
     rid
   end
 

@@ -1,3 +1,7 @@
+- In Join_space: rid_from_space catches Join_space.NoLink in all situations and
+  raises Join.Exit. -> site_of_addr raise Join.Exit when
+  remote site is dead.
+
 - Be more eager to fork (tasks were entered uselessly in pool)
 
 JoCaml 3.10.0:
