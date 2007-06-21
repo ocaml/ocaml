@@ -595,7 +595,9 @@ module Make (Syntax : Sig.Camlp4Syntax) = struct
       ] ]
     ;
     type_kind:
-      [ [ "private"; tk = type_kind -> <:ctyp< private $tk$ >>
+      [ [ `ANTIQUOT (""|"typ"|"anti" as n) s ->
+            <:ctyp< $anti:mk_anti ~c:"ctyp" n s$ >>
+        | "private"; tk = type_kind -> <:ctyp< private $tk$ >>
         | test_constr_decl; OPT "|";
           t = constructor_declarations -> <:ctyp< [ $t$ ] >>
         | t = ctyp -> <:ctyp< $t$ >>

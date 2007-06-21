@@ -19,7 +19,7 @@ open Camlp4;                                        (* -*- camlp4r -*- *)
  *)
 
 module Id = struct
-  value name = "Camlp4RevisedParserParser";
+  value name = "Camlp4RevisedParser";
   value version = "$Id$";
 end;
 
@@ -1355,7 +1355,7 @@ Very old (no more supported) syntax:
             <:rec_binding< $anti:mk_anti ~c:"rec_binding" n s$ >>
         | `ANTIQUOT ("list" as n) s ->
             <:rec_binding< $anti:mk_anti ~c:"rec_binding" n s$ >>
-        | l = label; "="; e = expr -> <:rec_binding< $lid:l$ = $e$ >> ] ]
+        | l = label; "="; e = expr LEVEL "top" -> <:rec_binding< $lid:l$ = $e$ >> ] ]
     ;
     meth_list:
       [ LEFTA
