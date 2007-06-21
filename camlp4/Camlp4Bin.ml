@@ -216,12 +216,14 @@ value input_file x =
     match x with
     [ Intf file_name -> task (process_intf dyn_loader) file_name
     | Impl file_name -> task (process_impl dyn_loader) file_name
-    | Str s -> do {
-        let (f, o) = Filename.open_temp_file "from_string" ".ml";
-        output_string o s;
-        close_out o;
-        task (process_impl dyn_loader) f;
-      }
+    | Str s ->
+        begin
+          let (f, o) = Filename.open_temp_file "from_string" ".ml";
+          output_string o s;
+          close_out o;
+          task (process_impl dyn_loader) f;
+          at_exit (fun () -> Sys.remove f);
+        end
     | ModuleImpl file_name -> rewrite_and_load "" file_name
     | IncludeDir dir -> DynLoader.include_dir dyn_loader dir ];
     rcall_callback.val ();
