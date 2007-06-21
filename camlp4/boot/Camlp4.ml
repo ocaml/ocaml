@@ -398,7 +398,7 @@ module Sig =
         (** The name of the extension, typically the module name. *)
         val name : string
           
-        (** The version of the extension, typically $Id: Sig.ml,v 1.2.2.11 2007/05/22 09:09:39 pouillar Exp $ with a versionning system. *)
+        (** The version of the extension, typically $Id: Sig.ml,v 1.2.2.12 2007/06/05 13:41:06 pouillar Exp $ with a versionning system. *)
         val version : string
           
       end
@@ -889,8 +889,6 @@ module Sig =
           (* c *)
           (* 'x' *)
           (* ~s or ~s:(p) *)
-          (* ?s or ?s:(p = e) or ?(p = e) *)
-          (* | PaOlb of Loc.t and string and meta_option(*FIXME*) (patt * meta_option(*FIXME*) expr) *)
           (* ?s or ?s:(p) *)
           (* ?s:(p = e) or ?(p = e) *)
           (* p | p *)
@@ -916,25 +914,25 @@ module Sig =
           (* (e : t) or (e : t :> t) *)
           (* 3.14 *)
           (* for s = e to/downto e do { e } *)
-          (* fun [ a ] *)
+          (* fun [ mc ] *)
           (* if e then e else e *)
           (* 42 *)
           (* ~s or ~s:e *)
           (* lazy e *)
-          (* let b in e or let rec b in e *)
+          (* let bi in e or let rec bi in e *)
           (* let module s = me in e *)
-          (* match e with [ a ] *)
+          (* match e with [ mc ] *)
           (* new i *)
           (* object ((p))? (cst)? end *)
           (* ?s or ?s:e *)
-          (* {< b >} *)
-          (* { b } or { (e) with b } *)
+          (* {< rb >} *)
+          (* { rb } or { (e) with rb } *)
           (* do { e } *)
           (* e#s *)
           (* e.[e] *)
           (* s *)
           (* "foo" *)
-          (* try e with [ a ] *)
+          (* try e with [ mc ] *)
           (* (e) *)
           (* e, e *)
           (* (e : t) *)
@@ -944,7 +942,7 @@ module Sig =
           (* A.B.C *)
           (* functor (s : mt) -> mt *)
           (* 's *)
-          (* sig (sg)? end *)
+          (* sig sg end *)
           (* mt with wc *)
           (* $s$ *)
           (* class cict *)
@@ -965,12 +963,12 @@ module Sig =
           (* module i = i *)
           (* wc and wc *)
           (* $s$ *)
-          (* b and b *)
+          (* bi and bi *)
           (* let a = 42 and c = 43 *)
           (* p = e *)
           (* let patt = expr *)
           (* $s$ *)
-          (* b ; b *)
+          (* rb ; rb *)
           (* i = e *)
           (* $s$ *)
           (* mb and mb *)
@@ -984,7 +982,7 @@ module Sig =
           (* i *)
           (* me me *)
           (* functor (s : mt) -> me *)
-          (* struct (st)? end *)
+          (* struct st end *)
           (* (me : mt) *)
           (* $s$ *)
           (* class cice *)
@@ -1001,7 +999,7 @@ module Sig =
           (* module type s = mt *)
           (* open i *)
           (* type t *)
-          (* value b or value rec b *)
+          (* value b or value rec bi *)
           (* $s$ *)
           (* (virtual)? i ([ t ])? *)
           (* [t] -> ct *)
@@ -1020,7 +1018,7 @@ module Sig =
           (* ce e *)
           (* (virtual)? i ([ t ])? *)
           (* fun p -> ce *)
-          (* let (rec)? b in ce *)
+          (* let (rec)? bi in ce *)
           (* object ((p))? (cst)? end *)
           (* ce : ct *)
           (* ce and ce *)
@@ -16868,7 +16866,7 @@ module Printers =
             let name = "Camlp4.Printers.OCaml"
               
             let version =
-              "$Id: OCaml.ml,v 1.21.2.11 2007/05/22 09:03:12 pouillar Exp $"
+              "$Id: OCaml.ml,v 1.21.2.13 2007/06/20 13:26:29 ertai Exp $"
               
           end
           
@@ -18097,8 +18095,8 @@ module Printers =
                            cut f;
                            o#class_str_item f cst2)
                       | Ast.CrCtr (_, t1, t2) ->
-                          pp f "@[<2>type %a =@ %a%(%)@]" o#ctyp t1 o#ctyp t2
-                            semisep
+                          pp f "@[<2>constraint %a =@ %a%(%)@]" o#ctyp t1
+                            o#ctyp t2 semisep
                       | Ast.CrInh (_, ce, "") ->
                           pp f "@[<2>inherit@ %a%(%)@]" o#class_expr ce
                             semisep
@@ -18269,7 +18267,7 @@ module Printers =
             let name = "Camlp4.Printers.OCamlr"
               
             let version =
-              "$Id: OCamlr.ml,v 1.17.4.4 2007/05/10 22:43:18 pouillar Exp $"
+              "$Id: OCamlr.ml,v 1.17.4.5 2007/06/05 13:39:52 pouillar Exp $"
               
           end
           

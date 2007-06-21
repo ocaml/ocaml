@@ -25,7 +25,7 @@ module R =
         let name = "Camlp4RevisedParserParser"
           
         let version =
-          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.23 2007/05/22 09:05:39 pouillar Exp $"
+          "$Id: Camlp4OCamlRevisedParser.ml,v 1.2.2.24 2007/06/20 13:26:29 ertai Exp $"
           
       end
       
@@ -5377,7 +5377,10 @@ Very old (no more supported) syntax:
                           (Gram.Action.mk
                              (fun (se : 'expr) _ (_loc : Loc.t) ->
                                 (Ast.CrIni (_loc, se) : 'class_str_item))));
-                         ([ Gram.Skeyword "type";
+                         ([ Gram.Snterm
+                              (Gram.Entry.obj
+                                 (type_constraint :
+                                   'type_constraint Gram.Entry.t));
                             Gram.Snterm
                               (Gram.Entry.obj (ctyp : 'ctyp Gram.Entry.t));
                             Gram.Skeyword "=";
@@ -8215,7 +8218,7 @@ module Camlp4QuotationCommon =
         let name = "Camlp4QuotationCommon"
           
         let version =
-          "$Id: Camlp4QuotationCommon.ml,v 1.1.4.5 2007/05/10 14:24:22 pouillar Exp $"
+          "$Id: Camlp4QuotationCommon.ml,v 1.1.4.6 2007/06/05 13:41:06 pouillar Exp $"
           
       end
       
