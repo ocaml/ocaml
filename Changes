@@ -1,3 +1,5 @@
+- Unused var warning corrected.
+
 - In Join_space: rid_from_space catches Join_space.NoLink in all situations and
   raises Join.Exit. -> site_of_addr raise Join.Exit when
   remote site is dead.

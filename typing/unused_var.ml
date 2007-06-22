@@ -87,16 +87,20 @@ let get_pel_vars pel =
 ;;
 
 (*>JOCAML*)
+
 let get_jpat_vars acc jpat =
   let _, p =  jpat.pjpat_desc in
   get_vars acc p
 
 let get_jpats_vars = List.fold_left get_jpat_vars
 
-let get_jpat_chan (vacc,asacc) jpat =
+let get_jpat_chan acc jpat =
   let jident,_ = jpat.pjpat_desc in
-  (jident.pjident_desc, jident.pjident_loc, ref false)::vacc,
-  asacc
+  let v = jident.pjident_desc in
+  if List.exists (fun (w,_,_) -> v = w) acc then
+    acc
+  else
+    (v, jident.pjident_loc, ref false)::acc
 
 let get_clause_chans acc cl =
   let pats,_ = cl.pjclause_desc in
@@ -105,8 +109,8 @@ let get_clause_chans acc cl =
 let get_def_chans acc d =
   List.fold_left get_clause_chans acc d.pjauto_desc
 
-let get_defs_chans ds =
-  List.map (get_def_chans ([],[])) ds
+let get_defs_chans ds = List.fold_left get_def_chans [] ds
+
 (*<JOCAML*)
 
 let rec structure ppf tbl l =
@@ -250,15 +254,15 @@ and join_def ppf tbl d =
   List.iter (join_clause ppf tbl) d.pjauto_desc
 
 and join_defs ppf tbl ds body =
-  let defined = get_defs_chans ds in
-  List.iter (add_vars tbl) defined ;
+  let defined = (get_defs_chans ds,[]) in
+  add_vars tbl defined ;
   List.iter (fun d -> join_def ppf tbl d)  ds ;
   begin match body with
   | None ->
-      List.iter (rm_vars tbl) defined
+      rm_vars tbl defined
   | Some f ->
       f ppf tbl ;
-      check_rm_let ppf tbl defined
+      check_rm_let ppf tbl [defined]
   end
 (*<JOCAML*)
 
